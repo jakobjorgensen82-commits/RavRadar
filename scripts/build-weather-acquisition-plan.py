@@ -30,6 +30,7 @@ from lib.open_meteo_current_fallback import merge_donor_bank, select_donor_recor
 from lib.weather_acquisition_plan import (
     MAX_PLAN_BYTES, build_current_acquisition_plan, exact_hour,
     planning_regional_covered_pairs, read_current_acquisition_plan,
+    build_qualified_acquisition_plan, read_qualified_acquisition_plan, scalar_snapshot_paths,
 )
 
 
@@ -51,6 +52,10 @@ def arguments() -> argparse.Namespace:
     parser.add_argument("--regional-policy", type=Path, default=Path("data/current-regional-proxy-policy.json"))
     parser.add_argument("--output", type=Path, default=Path(".cache/weather-current-acquisition-plan.json"))
     parser.add_argument("--report", type=Path, default=Path("data/diagnostics/weather-acquisition-plan.json"))
+    parser.add_argument("--scalar-plan", type=Path, default=Path(".cache/weather-scalar-needs.json"))
+    parser.add_argument("--qualified-output", type=Path, default=Path(".cache/weather-qualified-acquisition-plan.json"))
+    parser.add_argument("--scalar-snapshot", type=Path)
+    parser.add_argument("--scalar-history", type=Path)
     return parser.parse_args()
 
 
@@ -253,6 +258,26 @@ def build(args: argparse.Namespace) -> tuple[dict[str, Any], dict[str, Any]]:
     atomic_json(args.output, document, readback=lambda path: read_current_acquisition_plan(
         path, production_reference_at=reference_text, targets=targets,
     ))
+    # Preserve the standalone exact V1 for every old caller. The closed V2
+    # embeds this identical V1, but failure never replaces current admission.
+    if hasattr(args, "scalar_plan"):
+        qualified_output = args.qualified_output
+        try:
+            if args.scalar_snapshot is None:
+                raise ValueError("SCALAR_PLAN_SNAPSHOT_CONTEXT_REQUIRED")
+            scalar = json.loads(args.scalar_plan.read_text(encoding="utf-8"))
+            qualified = build_qualified_acquisition_plan(document, scalar,
+                targets=targets, production_reference_at=reference_text)
+            paths = scalar_snapshot_paths(Path.cwd(), args.scalar_snapshot, args.scalar_history)
+            verification_deadline = monotonic() + 120
+            atomic_json(qualified_output, qualified, readback=lambda path: read_qualified_acquisition_plan(
+                path, current_plan_path=args.output, targets=targets,
+                production_reference_at=reference_text, snapshot_paths=paths,
+                check_continue=lambda: monotonic() < verification_deadline))
+            report["scalarPlanning"] = {"status": "qualified-retained-advisory", "sourceAdmission": False}
+        except (OSError, UnicodeError, ValueError, TypeError, KeyError, RecursionError):
+            qualified_output.unlink(missing_ok=True)
+            report["scalarPlanning"] = {"status": "unavailable", "failureCode": "QUALIFIED_SCALAR_PLAN_UNAVAILABLE"}
     atomic_json(args.report, report)
     return document, report
 

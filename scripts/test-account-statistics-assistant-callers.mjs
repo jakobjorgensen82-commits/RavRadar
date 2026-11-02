@@ -1268,6 +1268,10 @@ test('public587 national entry refuses unissued before I/O and leaves historical
 // TEST ONLY: exact590 package DATA inverse before whole unchanged588/587 oracles.
 // This view is never passed to a runtime/native receipt verifier or installer.
 async function reviewed588PackageViewForUnchangedOracles(pkg){
+  if(crypto.createHash('sha256').update(JSON.stringify(Object.keys(pkg.scripts).sort().map(key=>[key,pkg.scripts[key]]))).digest('hex')==='fd4857146f205c9dc04248c642807456e01cdf47d6087de026ddd5f9c2316663'){
+    const {inverseReviewedDmiScalarGapSourceScripts}=await import('./lib/account-statistics-assistant-package-review.mjs');
+    return reviewed588PackageViewForUnchangedOracles({...pkg,scripts:inverseReviewedDmiScalarGapSourceScripts(pkg.scripts)});
+  }
   const {ASSISTANT_PUBLIC590_SUCCESSOR_SOURCE_COMMAND,ASSISTANT_PUBLIC587_SUCCESSOR_SOURCE_COMMAND,
     verifyAssistantPublic590SuccessorPackage,verifyAssistantPublic587SuccessorPackage}
     =await import('./national584-source-evidence.mjs');
@@ -1480,3 +1484,27 @@ function reviewedPrivateStudyOperatorPublisher(source){
   return previous;
 }
 // END EXACT PRIVATE STUDY OPERATOR DIAGNOSTIC TEST VIEW
+
+
+test('DMI scalar source registration qualifies75 commands before unchanged72-command oracles',async()=>{
+  const actual=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8')).scripts,original=structuredClone(actual);
+  const {inverseReviewedDmiScalarGapSourceScripts:inverse,inverseReviewedForecastShareProjectionSourceScripts:sharing,
+    inverseAssistantPublic588SuccessorSourceScripts:later}=await import('./lib/account-statistics-assistant-package-review.mjs');
+  const prior=inverse(actual),digest=value=>crypto.createHash('sha256').update(JSON.stringify(Object.keys(value).sort().map(key=>[key,value[key]]))).digest('hex');
+  assert.equal(digest(actual),'fd4857146f205c9dc04248c642807456e01cdf47d6087de026ddd5f9c2316663');
+  assert.equal(digest(prior),'9975859065142d025c5a9a75b5a2045c304aec8a2e109bccb2f27da6d0e7da3b');
+  assert.deepEqual(sharing(actual),sharing(prior));assert.deepEqual(later(actual),later(prior));
+  assert.deepEqual(actual,original,'No current package registration is rewritten for a historical oracle');
+  const group='npm run test:weather-acquisition',added=' && node --test scripts/test-completed-private-runtime-workflow-inverse.mjs';
+  for(const mutate of [v=>v['test:weather-source-critical']=prior['test:weather-source-critical'],
+    v=>v['test:weather-source-critical']+= ' && '+group,
+    v=>v['validate:source:checks']=prior['validate:source:checks'],
+    v=>v['validate:source:checks']+=added,
+    v=>v['validate:source:checks']=added.slice(4)+' && '+prior['validate:source:checks'],
+    v=>v['test:weather-acquisition']+=' --unexpected',v=>v.unreviewed='node scripts/UNREVIEWED.mjs']){
+    const changed=structuredClone(actual);mutate(changed);assert.throws(()=>inverse(changed));
+    assert.throws(()=>sharing(changed));
+  }
+  assert.throws(()=>inverse(prior));assert.throws(()=>inverse(actual,{}));
+  assert.throws(()=>inverse(null));assert.throws(()=>inverse({...actual,unreviewed:false}));
+});

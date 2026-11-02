@@ -1,3 +1,17 @@
+## 2. november — de historiske kildeprøver bevarer deres oprindelige input
+
+Den første samlede kontrol af DMI-kandidaten stoppede i to gamle inputkontrakter: den udvidede kommandofortegnelse og den flyttede scalar-kalder i updateren. De 32 afslag er kortlagt til disse to fælles årsager; de er ikke i sig selv bevis for fejl i nye vejrdata.
+
+Den afgrænsede efterfølger genskaber kun de præcist gennemgåede, hele forgængerinput ved de eksisterende testlæsegrænser. Gamle størrelser, hashes, assertions og funktionelle prøver bevares. Ukendte eller ændrede bytes afvises fortsat, mens de nye normale DMI-/loaderprøver læser den faktiske nye kode. Ingen produktionsværdi, scoreformel, kildeprioritet, administratoropsætning, geometri eller SQL ændres.
+
+Den fælles package-helper er et beskyttet native-kontrolinput. Dens ændring kræver derfor korrekt ny samlet kvalifikation; tidligere native-bevis må ikke kaldes uændret eller stiltiende genbruges. Normale målprøver, præcis GitHub-kvalifikation og faktisk vejreffekt er fortsat særskilte krav. Aktuelle kørsler og fejlevidens står i det private checkpoint.
+
+## 2. november — kvalificerede datahuller før native opgraderinger, lokal kandidat
+
+Den samlede lokale DMI-kandidat skelner reelle mangler fra allerede dækkede timer med manglende native opgradering. Den genbruger den normale bevarede femkomponentfortolkning og centrale SOURCE-vandstandsrouting før DMI. Per-PART-mangler, TREND ved T og privat T+3 bevares, og den eksisterende parameter-/zoneadgang afgrænser hver samlings prioritet og ekstra feltlæsning. Ukendt kontekst beholder den konservative native vej.
+
+Otte relevante normale lokale kaldere består på den faktiske samlede kandidat. De tidligere hele workflow-orakler er bevaret gennem én præcis inverse; de to manglende almindelige kildekalderindgange er tilkoblet uden dobbelt udførelse. Præcis GitHub-kontrol, sikker merge og målt effekt i en ny almindelig generation er åbne. Ingen ny version, C/I/T, SQL, geometri, scoreformel, kildeprioritet eller tidsbudget. SOURCE forbliver særskilt og inaktiv. Aktuelle kørsler og private måletal føres kun i checkpointet. Se DEC-0261 og håndbog 89.294.
+
 ## 2. november — privat rapport er forberedt; lokal rettelse af ventetid og fejlfaser
 
 En ny, afgrænset skrivefri kontrol af kontrolbasen viser, at den fejlede rapportkørsel nåede gennem alle ti lagre og gemte ét færdigt rapportforslag. Verificering og levering til admin er fortsat uafklarede. Forslaget bevares til normal genlæsning uden ny tilfældig beregning. Statistikfunktionen er kontrolleret lukket igen; normal turlagring fungerer.

@@ -1,3 +1,4 @@
+import { verifiedPartScalarPlanningHourly } from './lib/weather-component-runtime.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -132,6 +133,7 @@ test('normal PART production plans on current central identity and passes the pr
       return { synthetic: true };
     },
   });
+  context.verifiedPartScalarPlanningHourly = vm.runInContext(`(${verifiedPartScalarPlanningHourly.toString()})`, context);
   await vm.runInContext(`(async () => { ${source.slice(start, end)} })()`, context);
   assert.equal(scored, true);
   assert.equal(output.weatherEngine.componentFallback.prepared, true);
@@ -244,6 +246,7 @@ test('scalar planning and public current scoring use their own exact applicabili
         return { inputs: {}, summary: {} };
       },
     });
+    context.verifiedPartScalarPlanningHourly = vm.runInContext(`(${verifiedPartScalarPlanningHourly.toString()})`, context);
     await vm.runInContext(`(async () => { ${source.slice(start, planningEnd)} })()`, context);
     assert.equal(originRead, true, 'normal planning excerpt completed its fixed origin read');
     assert.equal(companionsRead, true, 'the normal companion boundary is included in the planning excerpt');
@@ -599,4 +602,150 @@ test('epoch scalar bridge reaches actual score/preflight/proxy and packed121 row
   assert.equal(proxyClean[0].waveHeightM, 1.2, 'the unchanged normal compact proxy proof passes the actual sanitizer');
   assert.equal(proxied.selected.get(selectedPart.partId).hourly[0].waveHeightM, null, 'persistence retains RAW selected input, not derived proxy');
   assert.equal(JSON.stringify({oldRecord, fresh}), originals, 'archive/NEW input records stay unchanged');
+});
+
+
+// This normal CI case deliberately requires the existing Copernicus Python
+// runtime. A Node-only/stdlib profile must not claim this physical boundary.
+test('retained scalar physical CLI preserves original files through offline CP and exact DMI planning', async () => {
+  const io = fs.promises;
+  const {tmpdir} = await import('node:os');
+  const {fileURLToPath} = await import('node:url');
+  const {spawnSync} = await import('node:child_process');
+  const {packDmiPartContinuity} = await import('./lib/dmi-part-continuity.mjs');
+  const {writeDmiForecastFileAtomic} = await import('./lib/dmi-forecast-file.mjs');
+  const {writeDmiBulkDocument} = await import('./lib/dmi-bulk-storage.mjs');
+  const {dmiWaterSourceFixture} = await import('./test-helpers/dmi-water-source-fixture.mjs');
+  const {loadRetainedPartScalarPlanning, loadRetainedWeatherComponentPlanningInputs}
+    = await import('./lib/weather-component-runtime.mjs');
+  const repository = fileURLToPath(new URL('../', import.meta.url));
+  const parent = await io.realpath(tmpdir());
+  const root = await io.mkdtemp(path.join(parent, 'rr-retained-scalar-physical-'));
+  const rootIdentity = await io.lstat(root, {bigint:true});
+  let cleanupSafe = true;
+  try {
+    assert.equal(await io.realpath(root), root);
+    assert.equal(path.dirname(root), parent);
+    assert(rootIdentity.isDirectory() && !rootIdentity.isSymbolicLink());
+    await io.mkdir(path.join(root, '.cache/copernicus-components'), {recursive:true});
+    await io.mkdir(path.join(root, 'data/live'), {recursive:true});
+    const H0 = '2026-01-01T00:00:00.000Z';
+    const at = offset => new Date(Date.parse(H0)+offset*3600000).toISOString();
+    const part = {partId:'TEST',zoneId:'ZONE-TEST',parentZoneId:'ZONE-TEST',
+      name:'Syntetisk kystdel',landPoint:[2.001,1],waterPoint:[2,1],onshoreDirectionDeg:90};
+    const identity = dmiExpectedIdentityForPart(part);
+    const fixtureText = await io.readFile(new URL('./test-dmi-protected-tuple-continuity.mjs', import.meta.url), 'utf8');
+    const from = fixtureText.indexOf('const vectorSelection =');
+    const until = fixtureText.indexOf('const options =', from);
+    assert(from >= 0 && until > from, 'Existing normal native fixture boundary');
+    const fixture = Function('part','identity','time',fixtureText.slice(from,until)
+      +';return {row,bulk};')(part,identity,at);
+    const hourly = Array.from({length:121}, (_,i) => fixture.row(i));
+    for (const row of hourly) {
+      delete row.waterLevelCm; delete row.sources.waterLevel;
+      delete row.currentUMps; delete row.currentVMps; delete row.sources.current;
+    }
+    const records = new Map([[part.partId,{point:part.waterPoint,zoneId:identity.entityId,
+      generatedAt:H0,hourly}]]);
+    const partContinuity = await packDmiPartContinuity(records,[part],H0);
+    await writeDmiForecastFileAtomic(path.join(root,'data/live/dmi-forecast-cache.json'),
+      {schemaVersion:1,zones:{},partContinuity});
+    const station = {sourceKey:'tidewater:SYNTHETIC',stationId:'SYNTHETIC',name:'Syntetisk kilde',
+      sourceType:'forecast-point',point:[2,1],registryStatus:'active-forecast-point',properties:{status:'Active'}};
+    const sourceRows = Object.fromEntries(Array.from({length:49},(_,i) =>
+      [at(i),dmiWaterSourceFixture(station,at(i),20+i,H0)]));
+    const bulk = {...fixture.bulk,schemaVersion:2,generatedAt:H0,timeStrideHours:1,
+      zones:{...fixture.bulk.zones,['SOURCE::'+station.sourceKey]:{hourly:sourceRows}}};
+    const dmiPath = path.join(root,'.cache/recovery-candidate.json');
+    await writeDmiBulkDocument(dmiPath,bulk);
+    await writeDmiBulkDocument(path.join(root,'.cache/deployed-dmi-bulk-cache.json'),bulk);
+    const writeJson = (file,value) => io.writeFile(path.join(root,file),JSON.stringify(value)+'\n',{flag:'wx'});
+    await writeJson('data/live/coastal-parts-v2.json',{schemaVersion:2,enabled:true,zoneCount:1,
+      partCount:1,zones:{[part.zoneId]:[part]}});
+    await writeJson('data/zones.geojson',{type:'FeatureCollection',features:[{type:'Feature',
+      geometry:{type:'Point',coordinates:part.waterPoint},properties:{id:part.zoneId,name:'Syntetisk zone',
+        dataPoint:part.waterPoint,coastLine:[[1.9,1],[2.1,1]],onshoreDirectionDeg:90}}]});
+    await writeJson('data/live/dmi-water-stations.json',{stations:[station]});
+    await writeJson('data/water-level-station-routing.json',{schemaVersion:1,zones:{[part.zoneId]:{
+      enabled:true,method:'manual-weights',requireAll:true,stations:[{sourceKey:station.sourceKey,weight:1}]}}});
+    await writeJson('.cache/invalid-candidate.json',{schemaVersion:2,zones:[]});
+    const originals = ['.cache/recovery-candidate.json','.cache/deployed-dmi-bulk-cache.json',
+      '.cache/invalid-candidate.json','data/live/dmi-forecast-cache.json','data/live/coastal-parts-v2.json',
+      'data/zones.geojson','data/live/dmi-water-stations.json','data/water-level-station-routing.json'];
+    const snapshot = async () => Promise.all(originals.map(async file => {
+      const filename = path.join(root,file), before = await io.lstat(filename,{bigint:true});
+      assert(before.isFile() && !before.isSymbolicLink());
+      const bytes = await io.readFile(filename), after = await io.lstat(filename,{bigint:true});
+      for (const key of ['dev','ino','size','mtimeNs','birthtimeNs']) assert.equal(after[key],before[key]);
+      return {file,sha256:crypto.createHash('sha256').update(bytes).digest('hex'),
+        identity:['dev','ino','size','mtimeNs','birthtimeNs'].map(key => String(before[key]))};
+    }));
+    const before = await snapshot();
+    const allowed = new Set(['PATH','SYSTEMROOT','WINDIR','TEMP','TMP','HOME','USERPROFILE',
+      'LOCALAPPDATA','APPDATA','PROGRAMFILES','PROGRAMFILES(X86)','PYTHON']);
+    const childEnv = Object.fromEntries(Object.entries(process.env).filter(([key]) => allowed.has(key.toUpperCase())));
+    Object.assign(childEnv,{PYTHONDONTWRITEBYTECODE:'1',PYTHONUTF8:'1'});
+    const run = (executable,args,extra={}) => {
+      cleanupSafe = false;
+      const child = spawnSync(executable,args,{cwd:root,env:{...childEnv,...extra},
+        windowsHide:true,encoding:'utf8',timeout:150000,maxBuffer:2*1024*1024});
+      // An outer timeout or an unproved nested stop never authorizes deletion.
+      cleanupSafe = !child.error && child.signal === null && child.status !== null && child.status !== 2;
+      assert.equal(child.error,undefined,'Physical normal child must actually close');
+      assert.equal(child.signal,null,'Physical normal child must not be force-stopped');
+      assert.equal(child.status,0,child.stderr);
+      return child.stdout;
+    };
+    run(process.execPath,[fileURLToPath(new URL('./plan-weather-scalar-acquisition.mjs',import.meta.url)),
+      '--cache',dmiPath,'--at',H0],{RAVRADAR_RETAINED_SCALAR_CONTEXT:'ordinary-restored',
+        RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE:'true'});
+    const python = process.env.PYTHON ?? 'python';
+    run(python,['-B','-X','utf8',fileURLToPath(new URL('./build-weather-acquisition-plan.py',import.meta.url)),
+      '--at',H0,'--scalar-snapshot',dmiPath]);
+    const report = JSON.parse(await io.readFile(path.join(root,'data/diagnostics/weather-acquisition-plan.json'),'utf8'));
+    assert.deepEqual(report.scalarPlanning,{status:'qualified-retained-advisory',sourceAdmission:false});
+    const probe = String.raw`
+import sys, os, time
+from pathlib import Path
+from datetime import datetime
+repository=Path(sys.argv[1]);sys.path.insert(0,str(repository/'scripts'))
+fixture=repository/'scripts/test-dmi-dkss-primary-mode.py'
+source=fixture.read_text(encoding='utf-8');namespace={'__file__':str(fixture),'__name__':'normal_physical_dmi_reader'}
+exec(compile(source[:source.index('\ndef classify(')],str(fixture),'exec'),namespace)
+producer=namespace['producer']
+from lib.copernicus_current import load_targets
+from lib.weather_acquisition_plan import read_current_acquisition_plan, scalar_gap_components_at
+reference=datetime.fromisoformat('2026-01-01T00:00:00+00:00')
+targets=load_targets(Path('data/live/coastal-parts-v2.json'))
+os.environ.update(DMI_BULK_QUALIFIED_ACQUISITION_PLAN_PATH='.cache/weather-qualified-acquisition-plan.json',DMI_BULK_SCALAR_SNAPSHOT_PATH=str(Path('.cache/recovery-candidate.json').resolve()),DMI_BULK_CURRENT_ACQUISITION_PLAN_PATH='.cache/weather-current-acquisition-plan.json')
+current=read_current_acquisition_plan('.cache/weather-current-acquisition-plan.json',production_reference_at=reference,targets=targets)
+compiled,diagnostic=producer.load_qualified_scalar_acquisition_planning(targets,reference,current)
+assert diagnostic['valid'] is True and diagnostic['sourceAdmission'] is False
+assert scalar_gap_components_at(compiled,'2026-01-01T04:00:00Z')==set()
+assert scalar_gap_components_at(compiled,'2026-01-05T00:00:00Z')=={'waterLevel'}
+assert scalar_gap_components_at(compiled,'2026-01-06T00:00:00Z')=={'waterLevel'}
+value,diagnostic=producer.load_qualified_scalar_acquisition_planning(targets,reference,{('TEST','2026-01-01T00:00:00Z')})
+assert value is None and diagnostic['valid'] is False
+producer.WORK_DEADLINE=time.monotonic()-1
+value,diagnostic=producer.load_qualified_scalar_acquisition_planning(targets,reference,current)
+assert value is None and diagnostic['valid'] is False
+print('NORMAL_PHYSICAL_DMI_READER_PASS')
+`;
+    assert.equal(run(python,['-B','-X','utf8','-c',probe,repository]).trim(),'NORMAL_PHYSICAL_DMI_READER_PASS');
+    await assert.rejects(loadRetainedPartScalarPlanning({root,dmiCachePath:path.join(root,'.cache/invalid-candidate.json'),
+      productionReferenceAt:H0}));
+    await assert.rejects(loadRetainedWeatherComponentPlanningInputs({privateCacheRoot:path.join(root,'.cache'),
+      parts:[part],productionReferenceAt:H0,retentionStartAt:at(-72),retentionEndAt:at(120),
+      readVerifiedHourly:() => { throw Error('EXPIRED_PLANNING_MUST_NOT_READ'); },
+      planningDeadlineAt:Date.now()-1}),/RETAINED_SCALAR_PLANNING_DEADLINE/);
+    assert.deepEqual(await snapshot(),before,'All eight original fixture files and identities remain unchanged');
+  } finally {
+    if (cleanupSafe) {
+      const current = await io.lstat(root,{bigint:true});
+      assert.equal(await io.realpath(root),root);assert.equal(path.dirname(root),parent);
+      assert(current.isDirectory() && !current.isSymbolicLink());
+      assert.equal(current.dev,rootIdentity.dev);assert.equal(current.ino,rootIdentity.ino);
+      await io.rm(root,{recursive:true,force:false});
+    }
+  }
 });

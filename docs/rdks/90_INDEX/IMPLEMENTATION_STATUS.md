@@ -1,3 +1,20 @@
+## 2. november — de historiske kildeprøver bevarer deres oprindelige input
+
+Den første samlede kontrol af DMI-kandidaten stoppede i to gamle inputkontrakter: den udvidede kommandofortegnelse og den flyttede scalar-kalder i updateren. De 32 afslag er kortlagt til disse to fælles årsager; de er ikke i sig selv bevis for fejl i nye vejrdata.
+
+Den afgrænsede efterfølger genskaber kun de præcist gennemgåede, hele forgængerinput ved de eksisterende testlæsegrænser. Gamle størrelser, hashes, assertions og funktionelle prøver bevares. Ukendte eller ændrede bytes afvises fortsat, mens de nye normale DMI-/loaderprøver læser den faktiske nye kode. Ingen produktionsværdi, scoreformel, kildeprioritet, administratoropsætning, geometri eller SQL ændres.
+
+Den fælles package-helper er et beskyttet native-kontrolinput. Dens ændring kræver derfor korrekt ny samlet kvalifikation; tidligere native-bevis må ikke kaldes uændret eller stiltiende genbruges. Normale målprøver, præcis GitHub-kvalifikation og faktisk vejreffekt er fortsat særskilte krav. Aktuelle kørsler og fejlevidens står i det private checkpoint.
+
+## 2. november — DMI-kø: normal lokal integration, levering åben
+
+- [x] Normal bevaret PART-/SOURCE-fortolkning før DMI; vandstand ved T og T+3; samlingsafgrænsning efter eksisterende komponent-/zonepolicy.
+- [x] Otte normale lokale mål på samlet kandidat; fysisk offline-kæde og uændrede originaler; præcise gamle workflow-orakler og almindelige CI-kaldere.
+- [ ] Præcis GitHub-kvalifikation, sikker levering og faktisk ny offentlig dækningsvirkning.
+- [ ] SOURCE-revisionens egen præ-DMI-indgang integreres særskilt før dens aktivering.
+
+Ingen ny version/model/SQL, kilde-, budget-, score- eller geometriændring. Se DEC-0261 og håndbog 89.294; privat checkpoint har skiftende evidens.
+
 ## 2. november — privat rapportforberedelse er faktisk bevaret
 
 - [x] Skrivefri kontrol af den eneste gemte rapport: alle ti lagre behandlet, ét færdigt forslag bevaret. Ingen individuel tur- eller brugerinspektion.

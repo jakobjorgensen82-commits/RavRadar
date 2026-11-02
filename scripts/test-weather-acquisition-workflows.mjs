@@ -488,3 +488,26 @@ test('runtime audit execution observation keeps actual exit and private-free met
     fs.rmSync(absolute,{recursive:true,force:true});
   }
 });
+
+
+test('qualified scalar planning uses the restored snapshot and preserves conservative special routes', () => {
+  const budget = step(actualNormalWorkflow, 'Choose DMI budget from retained five-component PART coverage');
+  const planner = step(actualNormalWorkflow, 'Plan global current acquisition before DMI');
+  const dmi = step(actualNormalWorkflow, 'Update DMI bulk model cache');
+  assert.match(budget, /printf 'cache_path=%s\\n' "\$recovery_cache" >> "\$GITHUB_OUTPUT"/);
+  assert.match(planner, /DMI_PLANNING_SNAPSHOT: \$\{\{ steps\.dmi-recovery-budget\.outputs\.cache_path \}\}/);
+  assert.match(planner, /node scripts\/plan-weather-scalar-acquisition\.mjs "\$\{scalar_args\[@\]\}"/);
+  assert.match(planner, /--scalar-snapshot "\$DMI_PLANNING_SNAPSHOT"/);
+  assert.match(planner, /--scalar-history "\$DMI_PART_CONTINUITY_DONOR_PATH"/);
+  assert.match(planner, /scalar_status.*-eq 2; then[\s\S]*exit 2/);
+  assert.doesNotMatch(planner, /continue-on-error: true/);
+  assert.match(planner, /rm -f \.cache\/weather-scalar-needs\.json \.cache\/weather-qualified-acquisition-plan\.json/);
+  assert.match(dmi, /DMI_BULK_CURRENT_ACQUISITION_PLAN_PATH: \.cache\/weather-current-acquisition-plan\.json/);
+  assert.match(dmi, /DMI_BULK_QUALIFIED_ACQUISITION_PLAN_PATH: \.cache\/weather-qualified-acquisition-plan\.json/);
+  assert.match(dmi, /DMI_BULK_SCALAR_SNAPSHOT_PATH: \$\{\{ steps\.dmi-recovery-budget\.outputs\.cache_path \}\}/);
+  const expression = planner.match(/RAVRADAR_RETAINED_SCALAR_CONTEXT: \$\{\{ (.+) && 'ordinary-restored' \|\| '' \}\}/)?.[1];
+  assert.ok(expression);
+  const history = step(actualNormalWorkflow, 'Plan bounded current history from the actual selected continuation');
+  assert.ok(history.includes(expression+" && '--prepare-cached-native-originals'"),
+    'Reuse the complete existing ordinary-restored context, not a broader flag');
+});

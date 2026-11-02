@@ -109,7 +109,7 @@ import { OPEN_METEO_FUTURE_HOURS, trimOpenMeteoForecast } from './lib/open-meteo
 import { buildOpenMeteoIndependentHourlyComponents, fetchOpenMeteoComponentResponses } from './lib/open-meteo-hourly-components.mjs';
 import { OPEN_METEO_PART_COMPONENTS, OPEN_METEO_NATIVE_NEAREST_POLICIES, openMeteoComponentRequestParts, openMeteoComponentGridMatches } from './lib/open-meteo-part-bank.mjs';
 import { preferQualifiedDmiComponentSource } from './lib/weather-component-selection.mjs';
-import { prepareWeatherComponentRuntime, persistWeatherComponentSelections } from './lib/weather-component-runtime.mjs';
+import { prepareWeatherComponentRuntime, persistWeatherComponentSelections, verifiedPartScalarPlanningHourly } from './lib/weather-component-runtime.mjs';
 import { safeWeatherComponentSummary } from './lib/weather-component-safe-summary.mjs';
 import { recordSelectedWeatherComponents } from './lib/weather-component-selection-history.mjs';
 import {
@@ -4592,18 +4592,11 @@ if (coastalPartsContract.enabled) {
     openMeteoSpatialPolicies: OPEN_METEO_NATIVE_NEAREST_POLICIES,
     copernicusBudgetMs: COMPONENT_COPERNICUS_BUDGET_MS,
     openMeteoBudgetMs: COMPONENT_OPEN_METEO_BUDGET_MS,
-    readVerifiedHourly: (part, inputs) => {
-      const routed = applyVerifiedWaterSourceRoutingToPartHourly({
-        part, parentFeature: parentById.get(part.zoneId),
-        hourly: verifiedIntegratedPartHourly(
-          planningRecords.get(part.partId), dmiBulkCache, `PART::${part.partId}`, part,
-          { ...inputs, requireNativeGridSampling: false, liveCurrentPilot }),
-        ...waterSourceRoutingContext,
-      });
-      // This plan consumes only wind/wave/waterLevel/waterTemperature, not current.
-      // NEW current is assembled and strictly checked in the score caller.
-      return routed.hourly;
-    },
+    readVerifiedHourly: (part, inputs) => verifiedPartScalarPlanningHourly({
+      part, parentFeature: parentById.get(part.zoneId),
+      record: planningRecords.get(part.partId), dmiBulkCache,
+      inputs, liveCurrentPilot, waterSourceRoutingContext,
+    }),
   });
   if (stateEpochView !== null || currentFamilyColdStart !== null) {
     weatherComponents.inputs.weatherStateEpochScalarPartRecords = new Map(

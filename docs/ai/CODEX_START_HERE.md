@@ -1,3 +1,7 @@
+## 2. november — DMI-køens nye lokale afgrænsning
+
+Læs CURRENT_TRUTHs nye front, DEC-0261s tillæg og håndbog 89.294. Reelle komponenthuller og native opgraderinger skal skelnes gennem den samme normale fortolkning. Lokal prøve er ikke offentlig levering; SOURCE er fortsat inaktiv.
+
 ## 1. november — find det autentiske fulde kildebevis
 
 Den korte kildevej søgte kun seks forfædre tilbage. Et fortsat gyldigt fuldt kildebevis kunne derfor falde uden for søgningen efter flere almindelige merges, selv om alle beskyttede model- og PostgreSQL-input var uændrede.
