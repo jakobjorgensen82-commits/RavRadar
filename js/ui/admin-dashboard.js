@@ -1,35 +1,35 @@
-import { mountPrivateTripStudyCard } from './admin-private-trip-study.js?v=4.0.594';
-import { analyzeObservations } from '../services/learning-analysis.js?v=4.0.594';
-import { historicalSummary } from '../services/historical-analysis.js?v=4.0.594';
-import { loadZoneRegistry } from '../services/zone-registry.js?v=4.0.594';
-import { recommendWaterStationBracket } from '../core/water-station-routing.js?v=4.0.594';
-import { loadAdminDocument, readAdminDocumentNow, queueAdminDocumentSave, saveAdminDocumentNow, onAdminSaveStatus, centralAdminStorageEnabled, adminStorageHealth } from '../services/admin-document-store.js?v=4.0.594';
-import { listProfiles, savePermissions, PERMISSIONS, EXPERT_PERMISSIONS, myAccess, hasPermission } from '../services/permissions-service.js?v=4.0.594';
-import { authEnabled, currentSession, requireFreshSession, testConnection, signOut, authIdentityEpoch, onAuthChange } from '../services/auth-service.js?v=4.0.594';
-import { loadAdminTripCount } from '../services/admin-trip-count.js?v=4.0.594&ui=admin-current-data-20261028';
-import { loadAdminAccountCategories, filterAdminAccountProfiles } from '../services/admin-account-categories.js?v=4.0.594&ui=admin-current-data-20261028';
-import { auditCurrentDirection } from '../core/current-direction-audit.js?v=4.0.594';
-import { renderCoastlineEditor, destroyCoastlineEditor } from './admin-coastline-editor.js?v=4.0.594';
-import { createDirectionEditor } from './admin-direction-editor.js?v=4.0.594';
-import { runFullPersistenceTest } from '../services/persistence-test-service.js?v=4.0.594';
-import { runFullSiteFunctionTest } from '../services/site-function-test-service.js?v=4.0.594&ui=admin-model-startup-20261101';
-import { submitHandbookReview, listHandbookReviews, updateHandbookReview, exportLocalHandbookDrafts, localHandbookDraftCount, listLocalHandbookDrafts, deleteLocalHandbookDraft, retryLocalHandbookDraft, archiveHandbookReview } from '../services/handbook-review-store.js?v=4.0.594';
-import { loadVisitorReport } from '../services/visitor-report-service.js?v=4.0.594';
-import { decodeRuntimeDiagnosticsEnvelope } from '../services/protected-runtime-envelope.js?v=4.0.594';
-import { sanitizeTrustedHtml } from '../services/html-sanitizer.js?v=4.0.594';
-import { projectAdminObservationDto } from '../services/calibration-eligibility.js?v=4.0.594';
+import { mountPrivateTripStudyCard } from './admin-private-trip-study.js?v=4.0.595';
+import { analyzeObservations } from '../services/learning-analysis.js?v=4.0.595';
+import { historicalSummary } from '../services/historical-analysis.js?v=4.0.595';
+import { loadZoneRegistry } from '../services/zone-registry.js?v=4.0.595';
+import { recommendWaterStationBracket } from '../core/water-station-routing.js?v=4.0.595';
+import { loadAdminDocument, readAdminDocumentNow, queueAdminDocumentSave, saveAdminDocumentNow, onAdminSaveStatus, centralAdminStorageEnabled, adminStorageHealth } from '../services/admin-document-store.js?v=4.0.595';
+import { listProfiles, savePermissions, PERMISSIONS, EXPERT_PERMISSIONS, myAccess, hasPermission } from '../services/permissions-service.js?v=4.0.595';
+import { authEnabled, currentSession, requireFreshSession, testConnection, signOut, authIdentityEpoch, onAuthChange } from '../services/auth-service.js?v=4.0.595';
+import { loadAdminTripCount } from '../services/admin-trip-count.js?v=4.0.595&ui=admin-current-data-20261028';
+import { loadAdminAccountCategories, filterAdminAccountProfiles } from '../services/admin-account-categories.js?v=4.0.595&ui=admin-current-data-20261028';
+import { auditCurrentDirection } from '../core/current-direction-audit.js?v=4.0.595';
+import { renderCoastlineEditor, destroyCoastlineEditor } from './admin-coastline-editor.js?v=4.0.595';
+import { createDirectionEditor } from './admin-direction-editor.js?v=4.0.595';
+import { runFullPersistenceTest } from '../services/persistence-test-service.js?v=4.0.595';
+import { runFullSiteFunctionTest } from '../services/site-function-test-service.js?v=4.0.595&ui=admin-model-startup-20261101';
+import { submitHandbookReview, listHandbookReviews, updateHandbookReview, exportLocalHandbookDrafts, localHandbookDraftCount, listLocalHandbookDrafts, deleteLocalHandbookDraft, retryLocalHandbookDraft, archiveHandbookReview } from '../services/handbook-review-store.js?v=4.0.595';
+import { loadVisitorReport } from '../services/visitor-report-service.js?v=4.0.595';
+import { decodeRuntimeDiagnosticsEnvelope } from '../services/protected-runtime-envelope.js?v=4.0.595';
+import { sanitizeTrustedHtml } from '../services/html-sanitizer.js?v=4.0.595';
+import { projectAdminObservationDto } from '../services/calibration-eligibility.js?v=4.0.595';
 import {
  applyAdminObservationModelPolicy,
  resolveAdminActivePublicRavScore,
-} from './admin-active-ravscore.js?v=4.0.594';
+} from './admin-active-ravscore.js?v=4.0.595';
 import {
  loadConditions,
  loadDataManifest,
  loadPublicStartupSnapshot,
  loadZones,
-} from '../services/data-service.js?v=4.0.594&ui=admin-model-startup-20261101';
+} from '../services/data-service.js?v=4.0.595&ui=admin-model-startup-20261101';
 
-const VERSION='4.0.594';
+const VERSION='4.0.595';
 const SITE_TEST_MODE=new URLSearchParams(location.search).has('ravradarAdminSiteTest');
 const WATER_ROUTING_KEY='ravradar-water-station-routing-v1';
 const DIRECTION_REVIEW_KEY='ravradar-direction-reviews-v1';
@@ -629,7 +629,7 @@ function renderObservations(){
  const exportCard=active.ok
   ? `<article class="admin-card"><h2>Eksport og databeskyttelse</h2><p>Eksporten er en fast allowlist uden bruger-id, GPS, rute eller råt vejrsnapshot. Hver række klassificeres mod den verificerede aktive binding for ${esc(active.value.labelDa)}; eksportens topniveau bærer samme eksakte binding.</p><button id="exportObs" class="admin-button">Eksportér dataminimeret JSON</button></article>`
   : activeModelUnavailableCard(active,{title:'Observationseksport blokeret'});
- content.innerHTML=`<div class="admin-grid"><article class="admin-card"><h2>Observationer</h2><div class="metric">${obs.length}</div></article><article class="admin-card"><h2>Registrerede fund</h2><div class="metric">${finds}</div></article><article class="admin-card"><h2>Bundne snapshots</h2><div class="metric">${obs.filter(x=>x.forecast_snapshot_id).length}</div><p class="muted">Eksporteres kun som sikker snapshotreference</p></article></div>${exportCard}`;
+ content.innerHTML=`<p class="muted">Tallene og eksporten gælder kun observationer på denne enhed.</p><div class="admin-grid"><article class="admin-card"><h2>Observationer</h2><div class="metric">${obs.length}</div></article><article class="admin-card"><h2>Registrerede fund</h2><div class="metric">${finds}</div></article><article class="admin-card"><h2>Bundne snapshots</h2><div class="metric">${obs.filter(x=>x.forecast_snapshot_id).length}</div><p class="muted">Eksporteres kun som sikker snapshotreference</p></article></div>${exportCard}`;
  if(!active.ok)return;
  document.querySelector('#exportObs').onclick=()=>{
   const rows=obs.map(row=>activeAdminObservationDto(row,active.value));

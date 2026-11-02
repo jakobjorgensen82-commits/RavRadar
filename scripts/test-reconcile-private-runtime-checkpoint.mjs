@@ -1,3 +1,4 @@
+import { assertSourcePrivateRuntimeCheckpointReconcileRequest, reconcileSourcePrivateRuntimeCheckpoint } from './reconcile-private-runtime-checkpoint.mjs';
 import { classifyProductionTargetFreshness } from './check-production-target-freshness.mjs';
 import { assertSavedPrivateRuntimeCheckpointReconcileRequest, privateRuntimeCheckpointReconcileFailureDiagnostic } from './reconcile-private-runtime-checkpoint.mjs';
 import { ESTABLISHED_NATIVE_CURRENT_ORIGIN_BINDING as OLD_FAMILY } from './lib/established-native-current-origin-successor-source.mjs';
@@ -161,6 +162,117 @@ test('normal CURRENT B/S interruption reconciliation preserves whole pairs and r
     assert.deepEqual(local, JSON.parse(await fs.readFile(saved[index].checkpointPath)));
     assert.equal(result.storageDownloads, 0); assert.equal(result.nativeAdmissionIssued, false); return result;
   }
+  // Reuse the genuine normal current-B build/install and bounded S transports.
+  // Synthetic request metadata below is NOT a SOURCE owner/origin/native grant.
+  async function withSourceRequest(options, operationalAction, use) {
+    // These synthetic B/S cases require this actual issued SOURCE model/canonical.
+    // No old585/594 model is relabelled and no native/original authority is issued.
+    const ownSource = await import('./lib/source-producer-successor-source.mjs');
+    const ownBinding = ownSource.requireSourceProducerBinding();
+    const ownOutput = ownSource.requireSourceProducerOutput();
+    const ownCanonical = await ownSource.readSourceProducerCanonicalSource();
+    assert.equal(ownCanonical.admission, 'NO_ADMISSION');
+    assert.equal(crypto.createHash('sha256').update(ownCanonical.canonicalSource).digest('hex'), ownOutput.canonicalSha256);
+    assert.equal(options.expected.modelBinding.modelBundleSha256, ownBinding.I);
+    assert.equal(options.expected.contractHashes.continuationStateContractSha256, ownBinding.T);
+    const values = { INPUT_OPERATION: 'source', OPERATIONAL_ACTION: operationalAction,
+      COMPLETED_PRIVATE_RUNTIME: 'false', CHECKPOINT_ONLY: 'false', QUICK_CONFIRMATION: 'false',
+      RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP: 'false', RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY: 'false',
+      NATIVE_IDENTITY_RECOVERY: 'false', CURRENT_FAMILY_COLD_START: 'false', PRODUCE_HANDOFF: 'false',
+      QUICK_PROGRESS_SOURCE: '', CHECKPOINT_TARGET_HOUR: '',
+      GITHUB_WORKSPACE: options.repositoryRoot,
+      RAVRADAR_PRODUCTION_TARGET_HOUR: options.expected.targetReferenceAt,
+      RAVRADAR_ARCHIVED_WEATHER_RESTART_CONTEXT_PATH: undefined,
+      RAVRADAR_ARCHIVED_WEATHER_RESTART_CONTEXT_SHA256: undefined,
+      RAVRADAR_CURRENT_FAMILY_COLD_START_CONTEXT_PATH: undefined,
+      RAVRADAR_CURRENT_FAMILY_COLD_START_CONTEXT_SHA256: undefined };
+    const previous = Object.fromEntries(Object.keys(values).map(key => [key, process.env[key]]));
+    try {
+      for (const [key, value] of Object.entries(values)) {
+        if (value === undefined) delete process.env[key]; else process.env[key] = value;
+      }
+      return await use(values);
+    } finally {
+      for (const [key, value] of Object.entries(previous)) {
+        if (value === undefined) delete process.env[key]; else process.env[key] = value;
+      }
+    }
+  }
+  await t.test('SOURCE own issued model: synthetic normal B/install and one normal S CAS/readback', async () => {
+    for (const operationalAction of ['integrated', 'integrated-historical-maintenance']) {
+      const backend = await paired(); await publishB(backend, 1);
+      const options = await installed(backend, 1), beforeB = clone(backend.documents.get(B));
+      const beforeVersion = backend.documents.get(S).version;
+      const original = await fs.readFile(path.join(options.bundlePath, 'payload/data/live/conditions.json'));
+      const working = await fs.readFile(path.join(options.repositoryRoot, 'data/live/conditions.json'));
+      const result = await withSourceRequest(options, operationalAction, () => reconcileSourcePrivateRuntimeCheckpoint({
+        ...options, operationalAction, targetReferenceAt: options.expected.targetReferenceAt,
+        request: backend.documentRequest, ...strictRequests(backend) }));
+      assert.equal(result.outcome, 'ADVANCED_READBACK_PROVED');
+      assert.equal(result.paired, true); assert.equal(result.checkpointPublishCalls, 1);
+      assert.equal(result.nativeAdmissionIssued, false); assert.equal(result.storageDownloads, 0);
+      assert.equal(backend.documents.get(S).version, beforeVersion + 1);
+      assert.deepEqual(backend.documents.get(B), beforeB);
+      const expected = JSON.parse(await fs.readFile(saved[1].checkpointPath));
+      assert.deepEqual(backend.documents.get(S).payload, expected);
+      assert.deepEqual(JSON.parse(await fs.readFile(path.join(options.repositoryRoot,
+        '.cache/ravscore-continuation-checkpoint/checkpoint.json'))), expected);
+      assert.deepEqual(await fs.readFile(path.join(options.bundlePath, 'payload/data/live/conditions.json')), original);
+      assert.deepEqual(await fs.readFile(path.join(options.repositoryRoot, 'data/live/conditions.json')), working);
+    }
+  });
+  await t.test('SOURCE request action root target and old expected cannot bypass old ordinary/saved refusals', async () => {
+    const backend = await paired(), options = await installed(backend, 0);
+    const beforeB = clone(backend.documents.get(B)), beforeS = clone(backend.documents.get(S));
+    await withSourceRequest(options, 'integrated-historical-maintenance', async values => {
+      assert.doesNotThrow(() => assertSourcePrivateRuntimeCheckpointReconcileRequest(values));
+      assert.throws(() => assertOrdinaryPrivateRuntimeCheckpointReconcileRequest(values), /OPERATIONAL_ACTION/);
+      assert.throws(() => assertSavedPrivateRuntimeCheckpointReconcileRequest(values), /SAVED_REQUEST/);
+      for (const key of ['COMPLETED_PRIVATE_RUNTIME', 'CHECKPOINT_ONLY', 'QUICK_CONFIRMATION',
+        'RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP', 'RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY',
+        'NATIVE_IDENTITY_RECOVERY', 'CURRENT_FAMILY_COLD_START', 'PRODUCE_HANDOFF'])
+        for (const value of ['true', '', undefined])
+          assert.throws(() => assertSourcePrivateRuntimeCheckpointReconcileRequest({ ...values, [key]: value }), /SOURCE_MODE_COLLISION/);
+      for (const INPUT_OPERATION of ['', 'save', undefined])
+        assert.throws(() => assertSourcePrivateRuntimeCheckpointReconcileRequest({ ...values, INPUT_OPERATION }), /SOURCE_REQUEST/);
+      for (const OPERATIONAL_ACTION of ['', 'candidate-maintenance', undefined])
+        assert.throws(() => assertSourcePrivateRuntimeCheckpointReconcileRequest({ ...values, OPERATIONAL_ACTION }), /SOURCE_OPERATIONAL_ACTION/);
+      for (const key of ['QUICK_PROGRESS_SOURCE', 'CHECKPOINT_TARGET_HOUR',
+        'RAVRADAR_ARCHIVED_WEATHER_RESTART_CONTEXT_PATH', 'RAVRADAR_ARCHIVED_WEATHER_RESTART_CONTEXT_SHA256',
+        'RAVRADAR_CURRENT_FAMILY_COLD_START_CONTEXT_PATH', 'RAVRADAR_CURRENT_FAMILY_COLD_START_CONTEXT_SHA256'])
+        assert.throws(() => assertSourcePrivateRuntimeCheckpointReconcileRequest({ ...values, [key]: 'unreviewed' }), /SOURCE_MODE_COLLISION/);
+      let calls = 0;
+      const refuse = async () => { calls++; throw new Error('SOURCE_DENIAL_MUST_NOT_REACH_TRANSPORT'); };
+      const args = { ...options, operationalAction: 'integrated-historical-maintenance',
+        targetReferenceAt: options.expected.targetReferenceAt,
+        request: refuse, checkpointRequest: refuse, checkpointVersionRequest: refuse, rpcRequest: refuse };
+      for (const [change, pattern] of [
+        [{ operationalAction: 'integrated' }, /SOURCE_ACTION_CHANGED/],
+        [{ operationalAction: undefined }, /SOURCE_ACTION_CHANGED/],
+        [{ repositoryRoot: path.join(options.repositoryRoot, 'another') }, /SOURCE_ROOT_CHANGED/],
+        [{ targetReferenceAt: refs[1] }, /SOURCE_TARGET_CHANGED/],
+        [{ expected: undefined }, /SOURCE_CURRENT_EXPECTATION_REQUIRED/],
+        [{ expected: { ...options.expected, modelBinding: { ...options.expected.modelBinding,
+          modelBundleSha256: OLD_FAMILY.I } } }, /PAIRED_PUBLICATION_SOURCE_INSTALLED_CURRENT_REQUIRED/],
+        [{ expected: { ...options.expected, contractHashes: { ...options.expected.contractHashes,
+          continuationStateContractSha256: OLD_FAMILY.T } } }, /PAIRED_PUBLICATION_SOURCE_INSTALLED_CURRENT_REQUIRED/],
+        // Preserve current I/T to reach the separate whole-current expectation guard.
+        [{ expected: { ...options.expected, modelBinding: { ...options.expected.modelBinding,
+          modelContractSha256: '0'.repeat(64) } } }, /SOURCE_CURRENT_EXPECTATION/],
+        [{ expected: { ...options.expected, contractHashes: { ...options.expected.contractHashes,
+          fullRuntimeContractSha256: '0'.repeat(64) } } }, /SOURCE_CURRENT_EXPECTATION/],
+      ]) await assert.rejects(reconcileSourcePrivateRuntimeCheckpoint({ ...args, ...change }), pattern);
+      const captured = process.env.OPERATIONAL_ACTION;
+      try {
+        process.env.OPERATIONAL_ACTION = 'candidate-maintenance';
+        await assert.rejects(reconcileSourcePrivateRuntimeCheckpoint(args), /SOURCE_OPERATIONAL_ACTION/);
+      } finally { process.env.OPERATIONAL_ACTION = captured; }
+      assert.equal(calls, 0, 'Every request/identity/old-family denial precedes transport');
+    });
+    assert.deepEqual(backend.documents.get(B), beforeB); assert.deepEqual(backend.documents.get(S), beforeS);
+  });
+
+
   await t.test('normal producer conditions above legacy256MiB use the shared parseable limit and pair unchanged', async () => {
     const sourcePath = path.join(source, 'data/live/conditions.json');
     const sourceBefore = await fs.readFile(sourcePath), savedBefore = saved[1];
@@ -489,7 +601,7 @@ test('ordinary paired publication is genuinely new, exact-invertible and cannot 
   const Sstep = step(raw, 'Publish atomic RavScore checkpoint to protected admin storage');
   const evalIf = (block, action, required, input = {}, assistantRequired = 'false') => runInNewContext(block.match(/^        if: (.+)$/m)[1]
     .replace(/\bsteps\.([a-z][a-z0-9-]*)/g, (_, id) => 'steps[' + JSON.stringify(id) + ']'), {
-      inputs: { weather_state_epoch_bootstrap: false, weather_state_epoch_checkpoint_reentry: false,
+      inputs: { source_normal_producer: false, weather_state_epoch_bootstrap: false, weather_state_epoch_checkpoint_reentry: false,
         native_sampling_identity_original_recovery: false, checkpoint_only: false, quick_confirmation: false,
         completed_private_runtime: false, ...input },
       steps: { preflight: { outputs: { should_run: 'true' } }, 'operational-action': { outputs: { action } },
@@ -505,6 +617,11 @@ test('ordinary paired publication is genuinely new, exact-invertible and cannot 
     for (const name of ['Select current-family paired checkpoint restoration before any S restore',
       'Reconcile only authenticated CURRENT B to its exact protected S before providers'])
       assert.equal(evalIf(step(raw, name), 'integrated', 'true', { [flag]: true }), false);
+  // These legacy ordinary steps require the actual explicit false SOURCE input.
+  for (const sourceNormal of [true, undefined])
+    for (const name of ['Select current-family paired checkpoint restoration before any S restore',
+      'Reconcile only authenticated CURRENT B to its exact protected S before providers'])
+      assert.equal(evalIf(step(raw, name), 'integrated', 'true', { source_normal_producer: sourceNormal }), false);
   const pairedSelector = step(raw, 'Select current-family paired checkpoint restoration before any S restore');
   const pairedReconcile = step(raw, 'Reconcile only authenticated CURRENT B to its exact protected S before providers');
   // select writes required=false normally; a skipped step exposes an empty
@@ -623,8 +740,15 @@ test('both fixed families and separate saved guard reject mixed tuples and colli
     RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP: 'false', RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY: 'false',
     NATIVE_IDENTITY_RECOVERY: 'false', UPGRADE_LAST_MILE_ENCLOSURE: 'false', UPGRADE_ESTABLISHED_NATIVE_CURRENT_ORIGIN: 'false',
     UPGRADE_EXISTING_OWNER_EXPORT: 'false', UPGRADE_ACCOUNT_ASSISTANT: 'false', UPGRADE_STATISTICS_REVISION: 'false',
-    UPGRADE_ACCOUNT_STATISTICS_ASSISTANT: 'false', UPGRADE_NATIVE_ORIGINAL_CONTINUITY: 'false' };
+    UPGRADE_ACCOUNT_STATISTICS_ASSISTANT: 'false' };
   assert.doesNotThrow(() => assertSavedPrivateRuntimeCheckpointReconcileRequest(env));
+  assert.doesNotThrow(() => assertSavedPrivateRuntimeCheckpointReconcileRequest({
+    ...env, UPGRADE_NATIVE_ORIGINAL_CONTINUITY: undefined }));
+  assert.doesNotThrow(() => assertSavedPrivateRuntimeCheckpointReconcileRequest({
+    ...env, UPGRADE_NATIVE_ORIGINAL_CONTINUITY: 'false' }));
+  for (const value of ['true', '', 'FALSE', '0', true, false, null, 0, {}])
+    assert.throws(() => assertSavedPrivateRuntimeCheckpointReconcileRequest({
+      ...env, UPGRADE_NATIVE_ORIGINAL_CONTINUITY: value }), /SAVED_MODE_COLLISION/);
   assert.throws(() => assertOrdinaryPrivateRuntimeCheckpointReconcileRequest(env), /OPERATIONAL_ACTION/);
   for (const key of Object.keys(env)) for (const value of ['', undefined])
     assert.throws(() => assertSavedPrivateRuntimeCheckpointReconcileRequest({ ...env, [key]: value }));
@@ -678,9 +802,14 @@ test('actual readonly ordinary and saved CLI select use one genuine committed so
       const rejected = spawnSync(process.execPath, ['scripts/reconcile-private-runtime-checkpoint.mjs', command],
         { cwd: host, env: { ...env, [key]: value, GITHUB_OUTPUT: rejectedOutput },
           encoding: 'utf8', timeout: 30000 });
+      if (key === 'UPGRADE_NATIVE_ORIGINAL_CONTINUITY' && value === undefined) {
+        assert.equal(rejected.status, 0); assert.equal(rejected.signal, null);
+        assert.equal(await fs.readFile(rejectedOutput, 'utf8'), 'required=true' + String.fromCharCode(10));
+      } else {
       assert.equal(rejected.status, 1); assert.equal(rejected.signal, null);
       assert.match(rejected.stderr, /PRIVATE_B_S_RECONCILE_REFUSED/);
       assert.equal(await fs.readFile(rejectedOutput, 'utf8'), '');
+      }
     }
   }
 });

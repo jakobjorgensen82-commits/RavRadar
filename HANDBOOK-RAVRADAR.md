@@ -28,7 +28,53 @@ Den eksisterende fælles vejrkø holdes yderst og turlagerkøen inderst. Jobbet 
 
 Dette er en lokal kandidat med beståede normale controller- og kalderprøver. Kandidaten kan kvalificeres og leveres selvstændigt på den præcise aktuelle main-baserede kilde; SOURCE 595 er ikke en forudsætning. En senere SOURCE-sammenføring skal normalt bevise endelig importlukning, uændrede modelbindinger og præcist kildebevis. En bestået gammel kørsel må ikke ommærkes til en ny samlet kilde. Der er ikke udført livearkivering eller beskæring som led i kandidaten. Privat lageradgang, backup-/genopretningsafklaring og målt driftsvirkning er fortsat åbne. Kandidaten beviser hverken samlet gratis drift eller grundlag for at opsige Pro.
 
-## 89.294 Reelle datahuller før opgradering af dækkede timer
+## 89.297 Fra kvalificeret kildekode til selvstændig drift
+
+Aktuel lokal udstedelse2.november2026: SOURCE4.0.595 er normalt lokalt udstedt efter integration af den kvalificerede main. Én append-only SQL og normal sync samt alle seks fixedpointkontroller er bestået; alle75 gamle SQL-originaler er byteuændrede. Positiv kalder-, PostgreSQL-, native-, CI-, kapacitets-, installations- og driftsverifikation er fortsat åbne. Den aktuelle offentlige modelgeneration er særskilt4.0.594. Ingen scoreformel, kildeprioritet, administratorpunkter eller geometri ændres.
+
+4.0.595 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=6267f6991e69e2cf29b2dc13f08a88d895e499587694481f7aade60a58552840` over 161 kanonisk normaliserede transitive implementeringsfiler. De normale deklarerede forbrugere er synkroniseret. Inaktiv Candidate G har `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=78ec96cc1fc8e4a5396f0a0d9fc01cdfd624a346f76873ee118b8bf5be7660bd` over 165 transitive filer. FortsættelseskontraktenT12 er `95aba5dd94e2c703263a1c1734c33aeb1b09d75ec09156050d10425598e5207c`. Disse identiteter dokumenterer kildeudstedelse, ikke faktisk SQL-installation eller offentlig595-drift.
+
+### Faktisk hovedkilde og egen kvalifikation
+
+Den kvalificerede faktiske main med den samlede DMI-rettelse er normalt indarbejdet i SOURCE-grenen. Hele SOURCE-træet var uændret ved denne merge. Main-kvalifikation og revisionens egen kvalifikation er forskellige beviser.
+
+Den normale 595-afledning skal begynde med det bevarede NULL-udgangspunkt efter dokumentreview og endelig kodefreeze og gennemføres én gang gennem den eksisterende kæde. Alle 75 gamle SQL-originaler og de hidtidige faglige modeller bevares. Metadataenes aktuelle tilstand og revisionens fase føres i CURRENT_TRUTH og IMPLEMENTATION_STATUS.
+
+### Delingsværten og klienten har hver sin overgang
+
+Pages-kontrollen accepterer kun ravradar-del.pages.dev og præcis del.ravradar.dk. Projektidentitet, uændrede bindinger, kildebevis, fysisk processtop og friske genlæsninger består; 57 normale lokale cases er gennemført. Frontendens legacy-adresse og cachekæde skifter først efter faktisk DNS/TLS og normal accept af den nye vært. En lokal kontrolprøve er ikke en offentlig domænelevering.
+
+### Sikker klargøring til drift uden Codex
+
+Ejeren har godkendt sikker oprydning og gennemgang af den eksisterende opsætning, også hidtil unævnte driftsled, så den kan fungere på Free uden løbende Codex eller en lokal PC. ravradar.dk, vejrhentning, cache, beregning, deploy og genoptagelse skal beskyttes. Planen skal bruge de eksisterende kontrollerede veje og respektere aktive skrivere, databevarelse og kendt skriveudfald.
+
+Klargøring er ikke i sig selv et bevis for færdig selvdrift eller målt Free-kapacitet. Automatisk brugerretention, mailafsender, statistik og SOURCE-G4 aktiveres ikke implicit. Ingen ny betalt plan, skjult pruning eller svækket no-loss følger med.
+
+### Krav fra kode til faktisk drift
+
+Positiv issued62 med ægte 594-forgænger, samme PostgreSQL, SDK/action63/64, fysisk ejerafslutning, hel SOURCE-kvalifikation og faktisk 180-minutterskapacitet skal dokumenteres særskilt. Det samme gælder kontrolleret installation med original-B/S-før-T, beskyttet genoptagelse, offentlig levering og normal accept. Den aktuelle fase står i de to statusdokumenter.
+
+Alle fem hovedmål er fortsat åbne. DEC-0261s gældende DMI-krav, kildeprioritet, administratorpunkter, geometri og scoreformel bevares. Ældre daterede statusafsnit beskriver deres historiske trin.
+
+## Aktuel lokal integration 2. november 2026
+
+SOURCE-koden omfatter faktisk main fra PR791 og den gennemgåede samlede DMI-/statistikkandidat. Det er lokal integration, ikke en udstedt eller aktiveret revision. Version, binding og output er fortsat NULL; den endelige kvalificerede faktiske main skal indarbejdes før én normal595-afledning. Læs [den kanoniske status](docs/rdks/90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02) før ældre status nedenfor.
+
+DMI-kapitlet har i denne sammenføring nummer89.296. SOURCE-kapitlerne89.294 og89.295 samt alle tre stabile web-id'er bevares; samme kapitelnummer må ikke skjule en anden tekst.
+
+## Aktuel SOURCE-status 2. november 2026
+
+SOURCE595 er foreslået, inaktiv og uudstedt. Læs afsnit89.295 og [den kanoniske status](docs/rdks/90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02) før ældre daterede statusfronter.
+
+## 1. november 2026 — lokal sammenføring, endnu ingen udstedt SOURCE 595
+
+SOURCE19 har det lokale substanscheckpoint `24d8f8ee75bb91d2c75afa92e5ccc407cb7c230f` og en uafsluttet normal sammenføring med main `c920d1e2ad0cbbfe351360f594128f0e06bd1f1e`. Main 4.0.594 er den midlertidige normale versionsforgænger; den planlagte isolerede revision er 4.0.595. Normal versionssynk efter sammenføringen er endnu ikke kørt. SOURCE-version, binding og output er NULL; nye C/I/T og SQL er ikke udstedt. Semantiske konflikter og kvalifikation er fortsat åbne. Et checkpoint, et forberedt input eller MERGE_HEAD er ikke faktisk main-ancestry, native/fullRuntime-, ejerafslutnings- eller leveringsbevis.
+
+Main-kronologien og gældende leverede rettelser bevares. Det særskilt mærkede SOURCE-spor nedenfor bevarer den isolerede grens historik; ældre 585/586/040000-resultater og tidligere aktuelle 595-noter er ikke nye produktions- eller bindingsbeviser. SOURCE-kapitlernes tidligere 89.262/89.263 er nu 89.294/89.295, så main-kapitlerne med samme gamle numre bevares. Begge beslutninger identificeres med hele filnavnet: `docs/rdks/10_DECISIONS/DEC-0294-SOURCE-DERIVED-METADATA-BOUNDARY.md` og `docs/rdks/10_DECISIONS/DEC-0294-PAGES-FORECAST-SHARING-AND-SIMPLY-CNAME.md`.
+
+Den ægte 594-forgænger er genuine37 CODE med normal 61→62-kontrakt; kode, aktuelle syntetiske data og SOURCE-eksekutor holdes adskilt. Gamle familier, SQL-originaler, scoreformel, geometri og kildeprioritet bevares. Samme normale 594-central → B før S → SDK/action 63/64 → faktisk ejerafslutning er fortsat en åben kæde. Alle fem hovedmål er åbne til 18. november 2026. ROOT koordinerer produktion; denne isolerede sammenføring ændrer ingen produktion under den aktive writer. ROOTs P0/vejr/FB/header/kildebeviser forbliver særskilte driftsbeviser.
+
+## 89.296 Reelle datahuller før opgradering af dækkede timer
 
 ### Hvorfor gyldige timer og mangler skal skelnes
 
@@ -1338,7 +1384,7 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.594
+**Håndbogsversion:** 4.0.595
 
 **Lokal kildebinding — 29. oktober 2026, RavScore 4.0.591, ikke installeret:** Den integrerede model er offentlig som modeltype under den særskilt leverede 4.0.590. Den nye assistentefterfølger er lokalt udstedt og er endnu ikke samlet kvalificeret, installeret eller offentliggjort.
 
@@ -10813,3 +10859,202 @@ selve JSON-indholdet. 4.0.466 holder de to hashes adskilt. Den offentlige
 rækkefølgekontrol accepterer kun den forseglede forgænger eller målpakke;
 en ældre eller ukendt pakke afvises fortsat. Ingen vejr- eller scoretal
 ændres af denne rettelse.
+
+
+## Bevaret særskilt SOURCE-kronologi før main-sammenføringen
+
+Følgende er de isolerede SOURCE-varianter, som ikke allerede findes ordret i main-kronologien ovenfor. Historiske regler/status læses i deres daterede scope; den aktuelle integrationsfront står øverst.
+
+## 1. november 2026 — isoleret 595-status i kapitel 89.263
+
+4.0.595 er lokal SOURCE-forberedelse, ikke en leveret revision. Nye beregningsbindinger og SQL er endnu ikke afledt; den normale 594-overgang og kvalifikation er åbne. Ældre 586/040000-afsnit er dateret historik, og ROOTs særskilte P0-drift er ikke SOURCE-bevis.
+
+## 89.261 Bevar originalerne i det lager, de faktisk ligger i
+
+Kort fortalt: En programopdatering skal hente de bevarede originaler fra det rigtige private lager. Den må ikke flytte eller ændre dem for at komme videre.
+
+Ved en opdatering følger læsningen det valgte private lager og den samme adgangsklient hele vejen. Programmet må ikke skifte til et andet objektlager alene for at komme videre. Oplysninger om pakken og selve pakkens indhold kan være gemt forskellige steder; begge skal læses gennem deres korrekte, kontrollerede adgang.
+
+De eksisterende originaler kontrolleres før brug og bevares uændret. En rettelse af lageradgangen ændrer ikke de gemte tal, den offentliggjorte historik, beregningsmodellen eller kildekravene. En ukendt eller ændret pakke må ikke få adgang, blot fordi forbindelsen til lageret virker.
+
+Fungerende lagring er ikke det samme som komplette eller aktuelle vejrdata. Datakvalitet, dækning og historikkens længde vurderes særskilt. Manglende data skal fortsat vises ærligt og må ikke udfyldes med gæt. Private data og adgangsoplysninger må ikke følge den offentlige visning.
+
+## 89.260 Gem arbejdet sikkert, også når måneden skifter
+
+Kort fortalt: En afbrudt statistikforberedelse skal kunne fortsætte fra det faktisk gemte arbejde. Det må ikke give adgang til gamle ture eller ændre brugerens valg.
+
+Den forberedte rettelse deler arbejdet op i små, kontrollerede trin. Et allerede gemt job beholder sin oprindelige måned, selv om kalenderen går videre. Systemet skal fortsat kontrollere de aktuelle statistikvalg, slettede konti og det samme datagrundlag. En forsinket kvittering må ikke skjule et nyere fravalg. Brugeren eller en kopieret anmodning kan ikke selv åbne en gammel periode.
+
+Hvis et svar mangler, er arbejdet ikke bekræftet. Systemet skal afklare den gemte tilstand før en senere fortsættelse og må ikke automatisk gentage en ukendt skrivning. En besked om fremdrift er hverken en færdig rapport eller anonym statistik.
+
+Før opdateringen går videre, skal systemet aflæse, at statistik faktisk er slået fra på den nye aktive serverversion, og at den fortsat bruger de samme ti turlagre. En lokal indstilling eller et versionsnummer er ikke bevis nok. Skifter serverversionen under kontrollen, skal leveringen stoppe.
+
+Rettelsen er lokalt sammenført og afgrænset prøvet, men endnu ikke leveret offentligt. Samlet statistik og dens særskilte lagerinstallation er fortsat slået fra. Der loves hverken dokumenteret anonymitet, en fungerende automatisk sletning eller mailvarsling ud fra denne prøve. Den nye måldato er 18. november 2026; ældre frister og leveringsstatus nedenfor er dateret historik.
+
+## 89.251 Kortet kan vises for en valgt prognosetime
+
+**Lokal UI-rettelse 18. oktober — endnu ikke offentligt verificeret:** Klikker du på en zone i forsiden femdøgnsprognose, vælger den afgrænsede rettelse først Nu ved kortet og åbner derefter zonens normale prognose. Nu betyder den aktuelle verificerede time, ikke midnat. Klik på selve kortet beholder fortsat den time, du har valgt med skyderen. Valgt dag og rangering i femdøgnslisten ændres ikke.
+
+Kun den nationale listes zoneklik ændres. Den tidligere foreslåede større adskillelse af kortets og zonens tidskontekst er annulleret. Versionsnummer 4.0.581, vejrdata og scoremodel er uændrede. Lokal test er ikke bevis for offentlig levering; præcis kildekontrol, sikker levering og browseraccept udestår.
+
+Nyeste status 18. oktober — UI-build 4.0.581, endnu ikke offentligt verificeret: Ejerens iPhone viste, at onsdag rykkede ned på en ny dagrække. Alle dagslabels holdes nu på én vandret række. Hver label har kort ugedag og dato på to linjer. Den følger omtrent sin faktiske placering under timerne, mens præcise daggrænser og delvise første og sidste dage bevares. Klik vælger fortsat dagens første eksisterende time.
+
+Dette er en afgrænset visningsrettelse med uændret versionsnummer 4.0.581. Browserens allerede eksisterende UI-adressenøgler skiftes på de ændrede filer, så gamle cachede labels og CSS ikke genbruges. Timevalg, vejrdata, model og RavScore ændres ikke.
+
+Lokale automatiske prøver består. I en lokal Chrome-preview med tydeligt syntetiske timer blev fire dage ved 390 pixels samt fem dage på dansk og seks på tysk ved 320 pixels vist på én dagrække uden vandret rulning. Dagsklikket valgte den forventede time i prøvehorisonten. Det er ikke en kontrol af offentlige vejrdata eller Safari. En fysisk iPhone med Safari, samlet kildekontrol på den præcise nye kode og offentlig effekt af hotfixet er endnu ikke bevist.
+
+Femdagslisten viser højst fem tilgængelige kalenderdage. De genbrugte data har reference 16. oktober kl. 12 dansk tid og rækker til 21. oktober kl. 09. Fra den 18. er derfor kun datoerne 18.–21. tilbage. En femte dag kræver en ny gyldig offentlig generation; appen tilføjer ikke tomme eller falske dage.
+
+**Nyere lokal kildestatus 17. oktober:** Den seneste præcise kildekontrol bestod PostgreSQL, men fejlede i én af 58 normale kommandogrupper ved pakkens B/S-rundtur. Observationen viste en anden gyldig, ikke-almindelig filtype efter lukning; det beviser hverken en konkret mappe eller en læk. Den tidlige isolerede prøve genfandt ikke fejlen. De senere baseline-, kapacitets- og trækontroller blev ikke kørt, og der kom intet leveringsartifact.
+
+Den lokale rettelse kræver stadig en almindelig oprindelig fil. Efterkontrollen må kun godkende filstatistik fra den normale OS-kontrol med samme prototype, egne BigInt-felter for identitet og filtype og en af syv kendte OS-filtyper, når en anden identitet er bevist. Samme identitet, ukendte typer, proxy og falsk lukning afvises; en anden ejer lukkes aldrig. Samme kontrol genbruges ved særskilt epoch-gendannelse, som ikke var årsagen til B/S-fejlen.
+
+De fire tidlige mål omfatter faktisk mappegenbrug på Linux, de to bevarede filprøver og en reel åben/lukket-prøve af den fælles kontrol. De placeres før B/S og PostgreSQL. Linux-tilfældet er ikke kørt på Windows og må ikke kaldes bestået. Lokale mål erstatter ikke ny præcis CI; push, merge og produktion er endnu ikke udført for rettelsen. Version 580, C/I/T, udstedt SQL og geodata er uændrede. Den almindelige strømhistorikfejl er fortsat åben; offentlig 579 genbruger vejrdata med referencetid 16. oktober kl. 12 dansk tid. Cron er slået fra, tilbageholdte leverancer er inaktive, og alle fem mål til 18. oktober er åbne. Ældre statusafsnit bevares som dateret historik.
+
+**Kildestatus 17. oktober, seneste kontrol:** Den fjerde samlede kildekontrol fandt stadig én fejl i pakkelæserens lukningskontrol. Den lokale delrettelse er ikke en færdig løsning. Den normale syntetiske rundtur får en afgrænset observation og køres tidligt på Linux; ingen produktkontrol svækkes. En prøve uden gentagelse af fejlen er ikke bevis for en rettelse. Den almindelige vejropdaterings særskilte beregningsfejl er fortsat åben, og dens krypterede fremgang er gemt. Offentlig 579 bruger genbrugte data; 580 og en ny almindelig offentlig generation er ikke leveret. Ældre pending-udsagn herunder er dateret historik.
+
+Den normale fejlgren får kun en afgrænset, privat rapport over forskelle i gemt og genberegnet strømhistorik. Det oprindelige stop og alle datakontroller bevares. Syv måltilfælde og 26 normale indgangstilfælde består. En særskilt frakoblet kontrol må kun bruge det præcise autentificerede checkpoint i en privat arbejdskopi uden ny vejrhentning eller offentlig levering. Den faktiske checkpoint-diagnose og en rettet almindelig levering er endnu ikke bevist. Tidsskyderen ændrer fortsat kun visningen.
+
+**Kildekontrol 17. oktober:** Den anden kontrol blev afbrudt omkring jobbets 45-minuttersloft med fortsat bestået aktivitet. Kun PR-jobbets loft og den normale tilsvarende forventning hæves til 60 minutter; ingen tests eller vejrfrister fjernes. Den samlede nye kontrol og offentlig 580-effekt mangler fortsat. Offentlig 579 er leveret med genbrugte data; den nye almindelige vejrhentning er ikke færdigverificeret. Ældre pending-udsagn herunder er dateret historik.
+
+**Kort fortalt:** Tidsskyderen ændrer det tidspunkt, du ser på kortet og i den åbne zone. Den ændrer ikke vejret, RavScore eller det aktuelle tidspunkt for resten af appen.
+
+Kontrollen ligger i fuld bredde under kortet og over forklaringen. Den viser hele ugedagen, dato og klokkeslæt efter dansk tidszone på dansk, tysk eller engelsk. Brug Nu, en time tilbage eller frem, dagsmærker, tastatur eller berøring. Du kan kun vælge de eksakte timer, der faktisk er tilbage i det gyldige datasæts 118-timershorisont. Udløbne datoer forlænges ikke.
+
+Kortet og den åbne zones timevisning følger den valgte time og søgemåde. Strømpile bruger den samme times egne data. Aktuelt-listen, ranglisten, den rigtige klokke, ture og Spørg RavRadar beholder deres normale aktuelle grundlag. En fremtidig time får ikke et misvisende femdagespanel; Nu kan igen vise den normale fulde zoneprognose.
+
+Appen henter kun den nødvendige eksisterende timefil, ikke hele horisonten på forhånd. Hurtige valg samles i 200 millisekunder, og kun det seneste ønske får lov til at skifte visningen. Indhold, model, generation og kontrolsum skal stadig passe. Ved manglende eller afvist time bevares sidste verificerede kort med sit korrekte tidspunkt, mens det ønskede tidspunkt og fejlen vises særskilt. En anden eller udløbet generation må ikke blande gamle kortlag ind. Det er ikke en garanti for offline adgang til en time, som endnu ikke er hentet.
+
+4.0.580 er her kun en lokal kildekandidat på den præcise P0-kilde. Den gennemgåede funktionelle tidsskyder er sammenført uden gamle modelbindinger eller migrationsfiler. Normal versionssynk følger den nye lokale version; de to geodatafilers øverste versionsfelt følger med, men kystdele, geometri og land-/vandpunkter ændres ikke. P0's C69/I71/T12, scoreformel, originaler, opvarmningsrettelse og databaseovergang bevares. Installationsfilen får kun den normale opdaterede håndbogskopi, ikke et nyt databaseschema.
+
+Tidligere lokal syntetisk desktop-/mobillayoutkontrol og dansk/tysk/engelsk afprøvning genbruges som afgrænset UI-bevis. Det er hverken offentlig accept, en fysisk telefonprøve eller dokumentation for hastighed på en rigtig forbindelse. Den normale tidsskyderkommando er faktisk bestået én gang på denne sammensætning: 30 tilfælde med 210 zoner og 673 dele, 250 hurtige valg, nul forhåndshentning og netkald samt panelprøven og seks normale generations-/livscyklustilfælde uden udeladelser. Lokale kontroller og ROOT-review erstatter ikke den kommende præcise kildekontrol og sikre levering.
+
+Første præcise PR648-kontrol bestod den native databaseprøve, men fandt tre prøvekalderkonflikter i fem kommandogrupper. Kun prøveprogrammernes versionsinverse, kommandoliste og indlæsning af appens normale kortafhængigheder tilpasses. Hele gamle kontroludsagn, historiske filer og mutationsafslag bevares. De målrettede lokale workflowprøver samt hele normale assistent-/Edge-/UI- og privacy-mål består. Linux-specifikke tilfælde kræver stadig deres normale kildevært, og ny samlet kontrol på rettelsens præcise head er fortsat nødvendig. Produkt, scorebindinger og udstedte databasefiler ændres ikke.
+
+Offentlig version er senest bekræftet 4.0.578; 4.0.580 er ikke offentligt verificeret her. P0-kontrollen på 355ce3b2 er særskilt bestået, og PR647 er faktisk merget som d897 med samme træ som 355ce. 0200 er installeret og genlæst i 39004552563/1 omkring kl. 05.09 UTC. Kode-only-bygning, originalbevarelse, offentligt datagenbrug og lokal tilstandsgemning består. Beskyttet B/S-publicering, tre serverfunktioner, Pages og offentlig 579 er endnu ikke bekræftet. Den automatiske tidsplan er senest bekræftet slået fra og ændres ikke. SOURCE19 og de tilbageholdte assistent-/statistikleverancer aktiveres ikke. Alle fem hovedmål og fristen 18. oktober består; tidligere pending-udsagn er daterede førbilleder, ikke aktuel P0-status.
+
+# RavRadar Håndbog
+
+**Håndbogsversion:** 4.0.595
+
+## Aktuel lokal SOURCE-kildebinding efter kalenderrettelse — 21. oktober 2026, 4.0.586 ikke installeret
+
+Kalenderen genbruger en lille, begrænset samling formatterkonfigurationer, ikke datoer, vejr, scorer eller rangeringer. Den normale dato-, tidszone-, sommertids- og sprogadfærd bevares. En afgrænset lokal prøve har identiske resultater og færre formatterkonstruktioner; der er ikke målt en national tidsgevinst.
+
+Den lokale SOURCE-kandidat til RavScore 4.0.586 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=fddfef8b8955e5a6ab55b4fb273884f43cbf355041727865b2080be9ff3f1400` over 141 kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere. Inaktiv Candidate G har `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=cd24549a1a375d00499699397c0ff44bee70b699906462115f0a4101828649e5` over 145 transitive filer. Fortsættelseskontrakten er `9b9be3ded6a71e1c8d2253d626ac35a6daf172ad3acab6008f10cec9cd8cc231` over 12 normaliserede kildefiler. Autoriteten er `version.json.releaseContract.modelBindings` og ny append-only 040000 fra genuine 585. Alle 66 tidligere migrationsfiler bevares; aldrig installeret 030000 og 020000 er historik, ikke mellemtrin. Fysiske scorekontrakter og formler er uændrede.
+
+Fem normale kontroller af modeller, SQL, syv forbrugere og kalender består på egen LF-kilde. På Windows-kilden består modeller og kalender, men den gamle udstedte SQL-originals rå linjeskift afvises fortsat af den uændrede kontrol. En ren LF-projektion er byteidentisk med Git og LF-værtens original; ingen gammel fil omskrives for at få et bestået resultat. Dette er lokal kildeafledning, ikke samlet kildekontrol, native PostgreSQL, gemning af nye originalpakker, national kapacitet, installation eller offentlig levering. SOURCE er inaktiv, og den almindelige vejrhentning ændres ikke.
+
+## Historisk lokal SOURCE-kildebinding efter importrettelse — 21. oktober 2026, 030000 aldrig installeret
+
+En fejlet kontrol skal bevare det første kontrollerede kildested og den aktuelle fase, før fejlteksten udvælges. Kun faste fejlkoder og kildeidentitet må vises; private fejltekster og værdier holdes private. Afkortet output er ikke et fuldstændigt logbevis. En bedre fejlrapport ændrer ikke beregningen og er ikke bevis for, at den bagvedliggende fejl er rettet eller revisionen leveret.
+
+Hvis et underprogram stopper, skal kontrollen skelne mellem dets faktiske afslutning, en afbrydelse og en tidsgrænse. Det kræver også oplysning om, hvorvidt hele det private output blev bevaret. Et afbrydelsessignal beviser ikke i sig selv årsagen. Kun faste, kontrollerede fejloplysninger må vises; ukendt årsag skal fortsat stå som ukendt. Dette ændrer hverken vejrtal, beregning, tidsgrænser eller godkendelseskrav.
+
+Den korrigerede lokale SOURCE-kandidat har `modelBundleSha256=74285752bdec26f6f08aff5a8773a32f57c33d42c868954d8ff4ff990f77b585` over 141 kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere. Inaktiv Candidate G har `modelBundleSha256=25bb6cdac14d2e3f51b353e6cfd710246a4f664b26b396e4b979a99ca921e3da` over 145 transitive filer. De fysiske `modelContractSha256` er uændrede. Fortsættelseskontrakten er `42a7d8ab0b6fdb2e9eb038a91f9a7b8030d8af98c055d6bef6a88c35c3a762ea` (`42a7d8ab…`) over 12 normaliserede kildefiler. Autoriteten er `version.json.releaseContract.modelBindings` og den nye append-only 030000-migration fra genuine 585. Alle 65 tidligere migrationsfiler bevares; aldrig installeret 020000 vælges ikke som mellemtrin. Normal genberegning af modeller, SQL og syv forbrugere består fixedpoint. Dette er ikke PostgreSQL, installation eller offentlig levering. SOURCE er inaktiv, og den almindelige vejrhentning bevares.
+
+## Historisk lokal SOURCE-kildebinding — 21. oktober 2026, 020000 aldrig installeret
+
+Den lokale SOURCE-kandidat til RavScore 4.0.586 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=995000bd1f77172e36f3d457e48689c5e0ba89e37a49468b874ae0e479123e6c` over 141 kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere. Inaktiv Candidate G har `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=b5dbe2de4f0120912746dfba43fb7db00b41776dc98a594d03e1677a65e7e5c5` over 145 transitive filer. Fortsættelseskontrakten er `36ac8344f986ca3754d51908f76117ad7d0a678bd81081f3e216db2d9db86390`. Autoriteten er `version.json.releaseContract.modelBindings` og append-only 020000-migrationen. Normal genberegning af begge modeller, SQL og alle syv forbrugere består efter synkronisering. Fysiske scorekontrakter og formler er uændrede. Dette er lokal kildeafledning, ikke native PostgreSQL, installation eller offentlig levering af 586. SOURCE er inaktiv; tidligere daterede bindinger nedenfor er bevaret som historik.
+
+## Historisk lokal kildebinding — 20. oktober 2026, 4.0.585 før installation
+
+Den nye lokale kandidat til RavScore 4.0.585 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=31bbb9a98f4df93804a9d4bcdff50fe5e9b1c880e04492d2c596079488a6bfa2` over 93 kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere. Inaktiv Candidate G har `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=2f5f28044ae88fccbcad4a9d21943b986aabcdd8be1ae607d5e79d0a8947925f` over 94 transitive filer. Fortsættelseskontrakten er `a0a5fa40385afb221dcb66e61b815453c11ee8c91f3e2d6581be0670cadc9299` (`a0a5fa40…`) over 12 normaliserede kildefiler. De fysiske scorekontrakter og formler er uændrede. Autoriteten er den normale `version.json.releaseContract.modelBindings` og den nye append-only 100000-migration; lokal generering og målprøver er ikke ny PostgreSQL, installation eller offentlig levering. Den almindelige offentlige 584-levering fra 19. oktober er verificeret særskilt. Se 89.259.
+
+## 89.208 Egne ture, sikker eksport og afgrænsede assistentopfølgninger
+
+Den anden kildekontrol stoppede i en testobservatør: ni native-prøver bestod, og én afviste et procesnavn. Den afviste tekst er ukendt. npm ændrer dokumenteret sit procesnavn under opstart. Testen følger nu kun disse afgrænsede navnetilstande efter dobbelt kontrol af den samme fastholdte procesidentitet og præcise programfil. Alle øvrige ejerskabs-, låse-, luknings- og tidskontroller bevares. En lokal helperprøve med 17 syntetiske delkontroller består; næste præcise Linux- og fulde kildekontrol mangler stadig. Produktfunktioner, bindinger og offentlig drift ændres ikke af denne testrettelse.
+
+Den første kildekontrol fandt to forældede testopstillinger. De følger nu de eksisterende sikkerhedskrav og appens faktiske emnetilstand. De normale målprøver består; gamle kontroller bevares. Produktfunktioner og modelbindinger ændres ikke af denne testrettelse. Ny præcis kildekontrol og offentlig levering mangler stadig.
+
+Den lokale 575-kandidat samler den gennemgåede brugerdatarettelse med fem små assistentrettelser. Den ændrer ikke vejrets fysiske scoreformel, administratorpunkter eller geometri. Gamle originaler og 54 historiske migrationer bevares.
+
+Eksporten skal kun indeholde den aktuelle ejers ture. Den henter sider gennem den normale signerede lagerkæde, uden at sætte et vilkårligt loft på hele eksporten. Kontoskift eller afbrydelse må ikke efterlade en eksport til den forkerte bruger. En gemt tur er ikke automatisk tilladelse til statistisk viderebrug.
+
+En privat, manuel rapport kan have oprindelsen unknown eller synthetic-test; begge er negative oplysninger, som udelukker kalibrering. Historiske ture uden dette valg ommærkes ikke. Den normale målprøve følger faktisk signeret lagring, læsning og eksport gennem ti lokale SQLite-shards, afviser en anden ejer og ugyldige markører og bevarer tur og registrering ved konflikt. Det er ikke et bevis for installeret D1 eller et rigtigt brugerforløb i produktion.
+
+Assistenten kan bruge et snævert, midlertidigt emne til en praktisk opfølgning om strøm langs kysten. Det er ikke generel samtalehukommelse og indeholder ikke den rå samtale eller private oplysninger. Skift i sprog, tilstand eller relevant kontekst rydder emnet. Tyske farveord kontrolleres som hele ord. Kvotefejl får afgrænsede kontrolmarkører, uden at afsløre spørgsmål, tokens eller private svar. Det retter ikke i sig selv den endnu uafklarede hostede AI-fejl.
+
+De normale lokale målprøver for assistent, konto, eksport, privat runtime og hybridlagring består. Gamle sammenligningsfunktioner og assertions bevares. Et grønt lokalt resultat er ikke offentlig levering eller bevis for en fungerende ekstern AI.
+
+Den inaktive Candidate G-kompatibilitet har `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=55fd7dfa5ee36596c729d93225a448ea5b8f1e7142c44b8b1bda5c3d4d84c957` over 66 transitive filer. Fortsættelsens kildeidentitet er a5430dd21e3135d6efc09e22df3dd0cdcafee723f962ff1d3cb52e7765b2aaa0. Bindingerne er beregnet af den normale kilde, ikke kopieret fra en gammel kandidat.
+
+130000-migrationen er endnu ikke installeret. Dens funktionelle SQL er uændret; 20 bindingsfelter følger den faktiske samlede kilde. Præcis godkendelse af den samlede installation afventes. Levering kræver derefter kildekontrol, autentificerede originaler, bevis for databevarelse, ledig writer og faktisk offentlig effekt.
+
+Ejeren har godkendt to års inaktivitet med 30 dages varsel og mulighed for at bevare kontoen ved login samt statistik slået til som udgangspunkt. Disse funktioner er ikke aktiveret her. Standardvalget er ikke samtykke eller anonymitetsbevis. Privat turlog og eksport skal være uafhængige af statistikvalget. Alle fem hovedmål er fortsat åbne.
+
+## Offentlig Om RavRadar-side – 4.0.279
+
+RavRadar har en offentlig **Om RavRadar**-side, som nås fra topmenuen ved konto, **Start ravtur** og **Spørg RavRadar**. Siden præsenterer Jakob Jørgensen, projektets idé, det frivillige arbejde og en direkte mailkontakt.
+
+Siden forklarer, at RavScore vurderer de aktuelle forhold for den enkelte kyststrækning, men ikke hvor meget rav der grundlæggende findes i landsdelen. Derfor kan 95 point i Limfjorden godt være et dårligere fundvalg end 75 point ved Sæby. Den forklarer også, at komplekse vejr-, hav- og kystforhold kræver generaliseringer; noget tilsyneladende forkert kan være en fejl eller en nødvendig forenkling af hensyn til helheden.
+
+Frivillig støtte er samlet med projektets omkostninger. MobilePay Box `4214MX`, den godkendte betalingsadresse og en klikbar QR-kode fører til samme boks. Støtte er valgfri og giver ingen særlige funktioner eller scorer.
+
+De to ejerbilleder leveres som responsive billedvarianter. Layoutet er tospaltet på pc, enspaltet på mobil og indgår i den versionsstyrede offline-appskal. Siden indsamler ingen nye brugerdata. Se [DEC-0076](docs/rdks/10_DECISIONS/DEC-0076-PUBLIC-ABOUT-RAVRADAR.md).
+
+Fra 4.0.320 kan RavRadar installeres som en webapp på telefonens hjemmeskærm med egne ikoner og åbning i et selvstændigt vindue. Den eksisterende **Om RavRadar**-side viser trin for trin iPhone/Safari og Android/Chrome på dansk, tysk og engelsk. Installationen starter på den fælles forside, tilføjer ingen tvungen popup og ændrer ikke kravet om internetforbindelse til friske prognoser.
+
+Releaseversionen er 4.0.279. De to beskyttede geodatafiler ændrer kun deres topversionsfelt fra 4.0.278; score, zoner, geometri og land-/vandpunkter er urørte. Fremtidige rene versionsfeltsynkroniseringer er stående godkendt, men skal altid afvises, hvis den særskilte diff viser anden geodataændring.
+
+PR #148 blev merged som `12db45a8`, og produktion `32881278351` udgav 4.0.279. Den efterfølgende orienteringsfejl i familiebilledet er rettet i 4.0.280.
+
+## Grundbog i ravjagt og almindeligt brugersprog – 4.0.268
+
+> **Historisk revisionsspor:** Dette afsnit bevarer 4.0.268's daværende Candidate G-forklaring. Grundbogens aktive modeltekst følger nu den integrerede kontrakt i kapitel 54 og har ingen 13-timers helscore-gate.
+
+RavRadars offentlige læringsmodul er nu en grundbog i ravjagt for begyndere og øvede. Det starter ikke med appens knapper. Det følger i stedet den fysiske kæde fra ravets egenskaber og mulige lagre gennem mobilisering, transport, kystens sortering, felttegn og selve jagten. Først derefter forklares RavRadar som et værktøj, der omsætter en del af denne viden til en score.
+
+Grundbogens korte huskeregel er: **Bølger kan mobilisere. Strøm transporterer. Kysten sorterer og samler.** Vind påvirker især gennem bølger, overfladelag, vandstand og søgeforhold. Retninger skal altid ses i forhold til den konkrete kyst; der findes ikke én dansk vind- eller strømretning, som altid er bedst.
+
+Modulet forklarer blandt andet, hvorfor det meste rav synker i almindeligt dansk havvand, hvordan størrelse og form ændrer bevægelsen, og hvorfor vinterens storme er en bedre forklaring på vintersæsonen end påstanden om, at kulden får ravet til at flyde. Revler, render, opskyl, høfder, kystknæk og danske kystsystemer beskrives som lokale sorterings- og transportmiljøer.
+
+Felt- og metodeafsnittene dækker frisk opskyl, tang, træ, frø, kul, skaller, strandjagt, vandkant, waders og UV-lys. En ravlygte omkring 395 nm kan få baltisk rav til at fluorescere tydeligt, men lyset er ikke et endeligt ægthedsbevis; varme nåle, ild og andre ødelæggende hjemmetests frarådes.
+
+Candidate G blev forklaret til sidst med den daværende aktive vægtning **20 % søgeforhold, 50 % transport og 30 % rav i bevægelse**. Waders var bedst under 6 m/s og faldt til 0 ved 15 m/s. Kraftig udtransport trak transporten ned fra første time og gav nul efter 13 timer. Disse tal var RavRadars testede arbejdsregler, ikke universelle naturgrænser.
+
+Den samtidige sproggennemgang fjerner tekniske standardord fra normal brugerstatus og fejltekst. Brugeren møder blandt andet **loginforbindelse**, **senest opdateret** og **kyststrækning** i stedet for leverandørnavn, datasæt og databaseudtryk. Admin- og debugværktøjer forbliver bevidst tekniske.
+
+Ændringen er score-neutral. Candidate G, vejrdata, geometri, land-/vandpunkter og private turdata ændres ikke. Se DEC-0067 og `docs/research/PUBLIC_LANGUAGE_REVIEW_4.0.268.md`.
+
+4.0.268 er produktionsverificeret. PR #118 bestod exact-head `32672522334` og blev merged som `3c22e40b`. Produktion `32672578127` udgav `rr-20260823230848-210` på 210 zoner og 673 kystdele efter frisk vejr, fuld validering og releasegate. Den offentlige browseraudit bestod 420 aktuelle visninger, 2.100 femdøgnsvisninger og 673 kystdelsreferencer uden kontrol-, konsol-, side- eller HTTP-fejl.
+
+## 89.294 Beregningskode og genererede kontroloplysninger
+
+Kort fortalt: En kontrolsum skal beskrive programmet, ikke være en del af sit eget beregningsinput.
+
+Beregningskoden og dens normale data- og ejerkontroller skal fortsat kontrolleres samlet. De kontroloplysninger, som afledes af koden, holdes som et særskilt, strengt afgrænset dataoutput. Det giver ikke adgang til at udelade vilkårlig kode, ændre vejrtal eller springe en sikkerhedskontrol over.
+
+En ændret programafhængighed skal afprøves som den pakke, der faktisk skal bruges. En historisk kontrol må bevares med de præcise gamle kilder, men må ikke erstatte kontrollen af den nye pakke eller få en gammel prøve til at ligne ny drift. En lokal importprøve er ikke bevis for gemning, upload eller fysisk processtop på produktionssystemet.
+
+Når kode flyttes mellem moduler, skal hele det flyttede modul fortsat kunne indlæses med sine rigtige afhængigheder. Ubrugte rester må fjernes, men det gør ikke en ændring af beregningskoden til en ren testrettelse. De tilhørende kontroloplysninger skal afledes på ny. En tidligere, aldrig installeret databasekandidat bevares som historik; kun det valgte nye mål må indgå i installationskæden.
+
+Programversion, faktiske kildefiler og alle afledte kontroloplysninger skal passe sammen. En lokal markering eller fil, som ikke findes i den kontrollerede programkilde, er ikke bevis. Gamle originaler og tidligere offentliggjorte tal bevares.
+
+Den isolerede revisions lokale kontrol af denne adskillelse er ikke en offentlig levering. Fuld afledning, normale database- og lagringsforløb, kapacitet og faktisk drift skal fortsat verificeres, før revisionen kan aktiveres. Den almindelige vejrhentning og prioriteringen af vejrkilder ændres ikke af dette forberedelsestrin.
+
+## 89.295 Isoleret SOURCE 4.0.595: status før ny afledning
+
+Aktuel status 2. november 2026:
+
+Den lokale kodeunion omfatter nu også den gennemgåede assistentforståelse: kendt udstyr og en dateret prognose kan besvares samlet med den normale rangering, og et ukendt apparat giver ikke grundlag for en fundgaranti. Admins observationstal og eksport mærkes tydeligt som oplysninger på den aktuelle enhed. De normale syntetiske mål består på den H-baserede kandidat; offentlig genaccept afventer levering.
+
+Revisionen er fortsat inaktiv med NULL-metadata. Faktisk main M2 og endelig DMI-kode skal med før den normale595-afledning og samlede kvalifikation. Den reelle serviceændring er modelinput; gamle kontrolsummer eller tidligere drift må ikke genmærkes som nyt bevis.
+
+Den isolerede SOURCE-kilde er nu normalt sammenført med den faktisk kvalificerede og mergede main-kode fra PR 790. Den lokale programversion er midlertidigt 4.0.594; 4.0.595 er foreslået. Revisionens egne versions-, bindings- og outputfelter er stadig NULL, og ingen nye modelkontrolsummer eller SQL er udstedt.
+
+ROOT har dokumenteret en særskilt vellykket kodelevering med offentlig dansk, tysk og engelsk accept af korte dagopfølgninger og nulstilling. Det er ikke en SOURCE-prøve eller måling af den nye vejrkøs effekt. Den næste kvalificerede kontrolændring, PR 791, skal først følge den normale main-sammenføring, før SOURCEs endelige kodeinput fryses og 595 afledes én gang.
+
+Den rene statiske importinventering lukker de aktuelle kodeafhængigheder, men beviser ikke drift. Samme faktiske database, normal SDK/action til fase 63/64, afsluttet ejer, hele kildekontrollen og 180-minutterskapaciteten er fortsat åbne. Gamle familier og originaler bevares. Ældre statusafsnit nedenfor beskriver deres daterede trin.
+
+Kort fortalt: Programversionen er opdateret lokalt. Det betyder ikke, at revisionen er klar til drift.
+
+Den gennemgåede current594-integration på 24 filer er anvendt i den isolerede kilde. Normal versionssynk til 4.0.595 er udført én gang, og den normale NULL-case er bestået ifølge ROOTs genlæsning. Nye 595-C/I/T og en ny SQL-fil er endnu ikke afledt; bindingsfilens version, binding og output er fortsat NULL. Gamle 586/040000-resultater bevares som historik og er ikke den nye kandidats binding eller installationsvej.
+
+Den ægte 594-kode fra genuine37, aktuelle syntetiske 594-input og SOURCEs egen senere eksekutorkilde har hver sin rolle. Gamle 585/586-prøver bruger egne arkiverede normalfaser. Et forberedt input eller en fanget databaseforespørgsel er ikke bevis for faktisk databasegenlæsning, gemning eller afsluttet ejer.
+
+Det næste normale led skal føre den aktuelle 594-central-/metadataovergang gennem B før S, samme SDK og almindelige action, fase 63/64 og faktisk ejerafslutning. Profilen er PREPARATION_ONLY. Først efter kalderreview og frysning af de reelle kildeinput kan nye kontroloplysninger afledes. Database-, lagrings-, kapacitets- og kildekontroller er åbne. Komplet cache/historik og selvstændig produktion er ikke bevist.
+
+Versionsfasen bevarede gamle migrationer og eksisterende modelbindinger; geodata fik kun topversionen ændret. Staging er uændret. ROOT har accepteret et særskilt lokalt indeksstatcacheforbehold; det er ikke en ændret kilde- eller databinding. Ingen scoreformel, kildeprioritet, geometri eller produktionsopsætning ændres her.
+
+ROOTs særskilte oplysninger om fungerende P0/c920, almindelig 235 og offentlig header/784 kvalificerer ikke SOURCE. Alle fem hovedmål er åbne til 18. november 2026. Delegerede delopgaver har adskilte filejere, ROOT koordinerer produktionen, og ingen produktion ændres under writer.

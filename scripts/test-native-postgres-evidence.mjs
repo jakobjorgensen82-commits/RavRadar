@@ -1,6 +1,24 @@
+
+import {SOURCE_PR_NATIVE_COMMANDS,SOURCE_PR_NATIVE_SCRIPT,SOURCE_PR_NATIVE_PHASE_KIND,
+  verifySourcePrNativeResult,verifySourcePrNativeExecutionReceipt,verifySourcePrNativePhaseReceipt,
+  verifySourcePrNativeJobMetadata,verifySourcePrNativeArtifact,sourcePrNativeReportCollector,
+  readSourcePrNativeUploadedPhase} from './native-postgres-evidence.mjs';
+import {SOURCE_PRODUCER_BEFORE as sourcePrBefore,requireSourceProducerBinding as sourcePrBinding,
+  requireSourceProducerOutput as sourcePrOutput} from './lib/source-producer-successor-source.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import test from 'node:test';
+import {spawnSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
+import {nativePostgresExceptionCode,nativePostgresExceptionDiagnostic,nativePostgresChildFirstFailure,
+  nativePostgresCaptureComplete,nativeProviderProcessFirstFailure}
+  from './lib/checkpoint-cas-native-postgres.mjs';
+import './test-source-native-node24-workflow.mjs';
+import {SOURCE_PRODUCER_COMMANDS,SOURCE_PRODUCER_SCRIPT,
+  SOURCE_PRODUCER_PHASE_KIND,verifySourceProducerNativePhaseReceipt,assertSourceProducerProofHeader}
+  from './native-postgres-evidence.mjs';
+import {SOURCE_PRODUCER_BINDING} from './lib/source-producer-successor-source.mjs';
+
 import {inverseSourceBeforePostgresWorkflow, SOURCE_BEFORE_POSTGRES_BLOCK}
   from './national584-source-evidence.mjs';
 import {projectSourceImpactWorkflowFull} from './lib/source-impact-workflow-review.mjs';
@@ -1718,7 +1736,7 @@ test('594 V2 normal locator transport reuses beyond24 physical hops and safely r
 
 
 test('594 V2 skips only proved non-executed PG rows and keeps later negative or missing-artifact refusals',async()=>{
-  const scenario=({pgConclusion='skipped',pgStatus='completed',differentControls=false,artifactMode='missing',freshRunMutation=null}={})=>{
+  const scenario=({pgConclusion='skipped',pgStatus='completed',differentControls=false,artifactMode='missing',freshRunMutation=null,cancelledAfterNative=false}={})=>{
     const fixture=v2LiveFixture({installed594V2:true}),observed=[];
     const newest={...copy(fixture.origin),id:fixture.origin.id+25,head_sha:'7'.repeat(40),
       head_branch:'synthetic594-targeted-skipped',pull_requests:[],created_at:'2026-10-30T11:00:00Z',conclusion:'success'};
@@ -1730,6 +1748,9 @@ test('594 V2 skips only proved non-executed PG rows and keeps later negative or 
       started_at:pgConclusion==='skipped'?null:'2026-10-30T11:01:00Z',completed_at:pgConclusion==='skipped'?null:'2026-10-30T11:02:00Z'});
     Object.assign(job.steps[16],{conclusion:pgConclusion==='success'?'success':'skipped',
       started_at:pgConclusion==='success'?'2026-10-30T11:02:00Z':null,completed_at:pgConclusion==='success'?'2026-10-30T11:03:00Z':null});
+    if(cancelledAfterNative){
+      newest.conclusion='cancelled';job.conclusion='cancelled';job.completed_at='2026-10-30T11:04:00Z';
+    }
     const originalGet=fixture.options.get,originalReadGit=fixture.options.readGit;
     fixture.options.readGit=args=>differentControls&&args[0]==='cat-file'&&args[2].startsWith(newest.head_sha+':')
       ?'different actual controls':originalReadGit(args);
@@ -1761,6 +1782,37 @@ test('594 V2 skips only proved non-executed PG rows and keeps later negative or 
     'Listing metadata alone cannot authorize passing the skipped run');
   assert(!skipped.observed.some(route=>route.includes('/runs/'+skipped.newest.id+'/artifacts')));
   assert.equal(skipped.observed.filter(route=>route.endsWith('/artifacts/'+(skipped.fixture.origin.id+2000)+'/zip')).length,1);
+  // Same normal shape as the actual786 timeout: the overall job was
+  // cancelled AFTER its independently completed source/PG/upload phase.
+  const cancelled=scenario({pgConclusion:'success',cancelledAfterNative:true});
+  const fromOlder=await decideInstalled593Original591Reuse(cancelled.fixture.options);
+  assert.equal(fromOlder.status,'REUSED','A terminal post-native cancellation must not hide the actual older qualified origin');
+  assert.equal(fromOlder.origin.run,cancelled.fixture.origin.id);
+  assert.notEqual(fromOlder.origin.run,cancelled.newest.id,'Cancelled run must never become a native origin');
+  assert.equal(cancelled.observed.filter(route=>route.endsWith('/runs/'+cancelled.newest.id)).length,1,
+    'Fresh cancelled-run identity is required before looking past it');
+  assert(!cancelled.observed.some(route=>route.includes('/runs/'+cancelled.newest.id+'/artifacts')),
+    'The non-origin phase supplies no artifact/SQL authority');
+  for(const mutate of [
+    v=>v.jobs.jobs[0].steps[14].conclusion='failure',
+    v=>v.jobs.jobs[0].steps[15].conclusion='failure',
+    v=>v.jobs.jobs[0].steps[15].conclusion='cancelled',
+    v=>v.jobs.jobs[0].steps[15].conclusion=null,
+    v=>v.jobs.jobs[0].steps[15].status='in_progress',
+    v=>v.jobs.jobs[0].steps[16].conclusion='skipped',
+    v=>v.jobs.jobs[0].steps[16].conclusion='failure',
+    v=>v.jobs.jobs[0].steps[16].number=18,
+    v=>v.jobs.jobs[0].conclusion='success',
+    v=>v.jobs.jobs[0].completed_at='2026-10-30T11:01:00Z',
+  ]){
+    const invalid=scenario({pgConclusion:'success',cancelledAfterNative:true});mutate(invalid);
+    assert.equal((await decideInstalled593Original591Reuse(invalid.fixture.options)).status,'EXECUTE');
+  }
+  for(const freshRunMutation of [v=>v.head_sha='8'.repeat(40),v=>v.run_attempt=2,
+    v=>v.status='in_progress',v=>v.conclusion='success']){
+    const invalid=scenario({pgConclusion:'success',cancelledAfterNative:true,freshRunMutation});
+    assert.equal((await decideInstalled593Original591Reuse(invalid.fixture.options)).status,'EXECUTE');
+  }
   for(const pgConclusion of ['failure','cancelled',null,'unknown']){
     const later=scenario({pgConclusion,differentControls:true});
     assert.equal((await decideInstalled593Original591Reuse(later.fixture.options)).status,'EXECUTE',String(pgConclusion));
@@ -1789,4 +1841,307 @@ test('594 V2 skips only proved non-executed PG rows and keeps later negative or 
     assert(!moved.observed.some(route=>route.endsWith('/artifacts/'+(moved.fixture.origin.id+2000)+'/zip')),
       'A changed or unknown fresh skipped-run identity must stop before an older origin is used');
   }
+});
+
+// Preserve SOURCE19 pure provider/diagnostic callers in addition to every main legacy test.
+test('provider fixture: normal ledger preserves decoded rows and binds all catalog headers',async()=>{
+  const result=spawnSync(process.env.PYTHON||'python3',['-B',
+    fileURLToPath(new URL('./test-source-current-provider-catalog.py',import.meta.url))],
+    {cwd:fileURLToPath(new URL('../',import.meta.url)),encoding:null,timeout:30000,
+      maxBuffer:1024*1024,windowsHide:true,input:''});
+  const parent=fileURLToPath(new URL('../.cache/',import.meta.url));await fs.mkdir(parent,{recursive:true});
+  const output=await fs.mkdtemp(fileURLToPath(new URL('../.cache/provider-catalog-unit-',import.meta.url)));
+  await fs.writeFile(output+'/whole.stdout',result.stdout??Buffer.alloc(0),{flag:'wx',mode:0o600});
+  await fs.writeFile(output+'/whole.stderr',result.stderr??Buffer.alloc(0),{flag:'wx',mode:0o600});
+  assert.equal(result.error,undefined,'Provider catalog ledger regression must start');
+  assert.equal(result.signal,null,'Provider catalog ledger regression must finish');
+  assert.equal(result.status,0,'Provider catalog ledger regression must pass');
+  assert.match(String(result.stderr),/^Ran 1 test in [^\r\n]+\r?$/m);
+  assert.match(String(result.stderr),/^OK\r?$/m);assert.doesNotMatch(String(result.stderr),/skipped/);
+});
+test('provider evidence: normal caller executes the five pure boundary/process regressions',async()=>{
+  const result=spawnSync(process.env.PYTHON||'python3',['-I','-B',
+    'scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py','--provider-diagnostic-unit'],
+    {cwd:fileURLToPath(new URL('../',import.meta.url)),encoding:null,timeout:30000,
+      maxBuffer:1024*1024,windowsHide:true,input:''});
+  const parent=fileURLToPath(new URL('../.cache/',import.meta.url));await fs.mkdir(parent,{recursive:true});
+  const output=await fs.mkdtemp(fileURLToPath(new URL('../.cache/provider-evidence-unit-',import.meta.url)));
+  await fs.writeFile(output+'/whole.stdout',result.stdout??Buffer.alloc(0),{flag:'wx',mode:0o600});
+  await fs.writeFile(output+'/whole.stderr',result.stderr??Buffer.alloc(0),{flag:'wx',mode:0o600});
+  assert.equal(result.error,undefined,'Fixed provider diagnostic test process must start');
+  assert.equal(result.signal,null,'Fixed provider diagnostic test process must finish');
+  assert.equal(result.status,0,'Fixed provider diagnostic tests must pass');
+  assert.match(String(result.stderr),/^Ran 5 tests in [^\r\n]+\r?$/m);
+  assert.match(String(result.stderr),/^OK\r?$/m);assert.doesNotMatch(String(result.stderr),/skipped/);
+});
+test('provider evidence: exact finite codes, process signals, stream bounds and schemas through normal parser',async()=>{
+  const python=await fs.readFile(new URL('./test-source19-terminal-failure-proof-bank-v17-observer-native.py',import.meta.url),'utf8');
+  const match=/^SOURCE_PROVIDER_NEED_CODES = frozenset\((\[[^\r\n]+\])\)$/m.exec(python);
+  assert(match);const codes=JSON.parse(match[1]);assert.equal(codes.length,36);
+  const stream={bytes:2,sha256:'a'.repeat(64),complete:true};
+  const boundary={kind:'SOURCE_PROVIDER_BOUNDARY_FIRST_FAILURE',exceptionType:'RUNTIME_ERROR',
+    reason:codes[0],helper:'NONE',timeoutSeconds:null,callsite:null,privatePayloadIncluded:false};
+  const fixed={kind:'SOURCE_PROVIDER_PROCESS_FIRST_FAILURE',phase:'PROVIDERS',returncode:1,signal:'NONE',
+    stdout:stream,stderr:stream,boundary,privatePayloadIncluded:false};
+  for(const reason of codes){const value={...fixed,boundary:{...boundary,reason}};
+    assert.deepEqual(nativeProviderProcessFirstFailure(value),value);
+    assert.deepEqual(nativePostgresChildFirstFailure('PRIVATE_RAW\n'+JSON.stringify(value),''),value);}
+  for(const [returncode,signal]of [[-9,'SIGKILL'],[-15,'SIGTERM'],[-127,'UNKNOWN'],[null,'UNKNOWN'],[0,'NONE']]){
+    const value={...fixed,returncode,signal};assert.deepEqual(nativeProviderProcessFirstFailure(value),value);
+    assert(!JSON.stringify(nativeProviderProcessFirstFailure(value)).includes('OOM'));}
+  const timeout={...fixed,boundary:{...boundary,reason:'UNKNOWN',exceptionType:'SUBPROCESS_TIMEOUT',helper:'FORECAST',timeoutSeconds:120}};
+  assert.deepEqual(nativePostgresChildFirstFailure(JSON.stringify(timeout),''),timeout);
+  const incomplete={...fixed,stderr:{bytes:16*1024*1024+1,sha256:null,complete:false},boundary:null};
+  assert.deepEqual(nativeProviderProcessFirstFailure(incomplete),incomplete);
+  for(const value of [{...fixed,raw:'PRIVATE'},{...fixed,signal:'OOM'},{...fixed,returncode:true},
+    {...fixed,stderr:{...stream,private:'PRIVATE'}},{...fixed,stderr:{...stream,bytes:16*1024*1024+1}},
+    {...incomplete,boundary},{...fixed,boundary:{...boundary,reason:'CURRENT_NATIVE_PROVIDER_PRIVATE_SENTINEL'}},
+    {...fixed,boundary:{...boundary,reason:codes[0]+'\nPRIVATE'}},{...fixed,boundary:{...boundary,timeoutSeconds:120}},
+    {...fixed,boundary:{...boundary,rawMessage:'PRIVATE'}},
+    {...fixed,boundary:{...boundary,callsite:{module:'../private.py',sha256:'a'.repeat(64),line:1}}},
+    new Proxy({}, {get(){throw new Error('PRIVATE');}})]){
+      assert.equal(nativeProviderProcessFirstFailure(value),null);}
+});
+test('native diagnostic: normal caller executes the one fixed Python child-phase regression',()=>{
+  const result=spawnSync(process.env.PYTHON||'python3',['-I','-B',
+    'scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py','--legacy-diagnostic-unit'],
+    {cwd:fileURLToPath(new URL('../',import.meta.url)),encoding:'utf8',timeout:30000,
+      maxBuffer:1024*1024,windowsHide:true,stdin:'ignore'});
+  assert.equal(result.error,undefined,'Fixed Python diagnostic process must start');
+  assert.equal(result.signal,null,'Fixed Python diagnostic process must physically finish');
+  assert.equal(result.status,0,'Fixed Python diagnostic regression must pass');
+  assert.match(result.stderr,/^Ran 1 test in [^\r\n]+\r?$/m);
+  assert.match(result.stderr,/^OK\r?$/m);assert.doesNotMatch(result.stderr,/skipped/);
+});
+test('native diagnostic: real assertion suffix keeps fixed code and qualified frame without values',async()=>{
+  let original;
+  try{assert.equal('PRIVATE_ACTUAL','PRIVATE_EXPECTED','NATIVE_POSTGRES_SOURCE_LEGACY_COMPATIBILITY_REFUSED');}
+  catch(error){original=error;}
+  assert.equal(original.code,'ERR_ASSERTION');assert.match(original.message,/PRIVATE_ACTUAL/);
+  assert.equal(nativePostgresExceptionCode(original),'NATIVE_POSTGRES_SOURCE_LEGACY_COMPATIBILITY_REFUSED');
+  const observed=await nativePostgresExceptionDiagnostic(original,'SOURCE_LEGACY_COMPATIBILITY');
+  assert.equal(observed.phase,'SOURCE_LEGACY_COMPATIBILITY');
+  assert.equal(observed.frame.module,'scripts/test-native-postgres-evidence.mjs');
+  assert.match(observed.frame.sha256,/^[a-f0-9]{64}$/);assert(observed.frame.line>0);
+  assert.doesNotMatch(JSON.stringify(observed),/PRIVATE_ACTUAL|PRIVATE_EXPECTED|message|stack|actual|expected/);
+});
+test('native diagnostic: unknown/external frames and throwing getters never replace the original error',async()=>{
+  const hidden=new Error('PRIVATE_SENTINEL');hidden.stack='PRIVATE_SENTINEL\n    at external (file:///outside/private.mjs:1:1)';
+  const unknownCode=await nativePostgresExceptionDiagnostic(new Error('NATIVE_POSTGRES_PRIVATE_SENTINEL'),'NATIVE_SETUP');
+  assert.equal(unknownCode.code,'NATIVE_POSTGRES_UNKNOWN_FAILURE');
+  assert.equal(unknownCode.frame.module,'scripts/test-native-postgres-evidence.mjs');
+  assert.doesNotMatch(JSON.stringify(unknownCode),/PRIVATE_SENTINEL/);
+  const values=[hidden,null,undefined,false,0,new Proxy({}, {get(){throw new Error('PRIVATE_GETTER');}})];
+  for(const error of values){
+    const observed=await nativePostgresExceptionDiagnostic(error,'PRIVATE_PHASE');
+    assert.equal(observed.code,'NATIVE_POSTGRES_UNKNOWN_FAILURE');assert.equal(observed.phase,'UNKNOWN');assert.equal(observed.frame,null);
+    assert.doesNotMatch(JSON.stringify(observed),/PRIVATE|outside|message|stack/);
+  }
+});
+test('native diagnostic: exact three child phases and fixed CURRENT reports survive before exit assertion',()=>{
+  for(const phase of ['BINDINGS','PROVIDERS','FOLLOWER']){
+    const fixed={kind:'SOURCE_LEGACY_CHILD_FIRST_FAILURE',phase,exceptionType:'ASSERTION_ERROR',osError:'NONE',callsite:null,privatePayloadIncluded:false};
+    assert.deepEqual(nativePostgresChildFirstFailure('PRIVATE_RAW\n'+JSON.stringify(fixed),'PRIVATE_STDERR'),fixed);
+    for(const mutation of [{...fixed,phase:'PRIVATE'},{...fixed,raw:'PRIVATE'},
+      {...fixed,callsite:{module:'../../private.py',sha256:'a'.repeat(64),line:1}}])
+      assert.equal(nativePostgresChildFirstFailure(JSON.stringify(mutation),''),null);
+  }
+  const current={kind:'CURRENT_SOURCE_NATIVE_FIRST_FAILURE',phase:'PG_SQL',reason:'SOURCE_CURRENT_PROFILE_ACTUAL_PG_CALL_FAILED',
+    sqlstate:'22023',route:'NONE',privatePayloadIncluded:false};
+  assert.deepEqual(nativePostgresChildFirstFailure(JSON.stringify(current),''),current);
+  assert.equal(nativePostgresChildFirstFailure(JSON.stringify({...current,reason:'PRIVATE'}),''),null);
+  const node={kind:'NATIVE_POSTGRES_FIRST_FAILURE',phase:'SOURCE_LEGACY_FOLLOWER',code:'NATIVE_POSTGRES_ASSERTION_FAILED',frame:null,privatePayloadIncluded:false};
+  assert.deepEqual(nativePostgresChildFirstFailure('',JSON.stringify(node)),node);
+  assert.equal(nativePostgresChildFirstFailure(JSON.stringify({...node,code:'NATIVE_POSTGRES_PRIVATE_SENTINEL'}),''),null);
+  assert.equal(nativePostgresChildFirstFailure(JSON.stringify({...node,frame:{module:'../private.mjs',sha256:'a'.repeat(64),line:1,column:1}}),''),null);
+});
+test('native diagnostic: truncated or killed process capture is never called complete',()=>{
+  assert.equal(nativePostgresCaptureComplete(null),true);
+  assert.equal(nativePostgresCaptureComplete({code:1,killed:false,signal:null}),true);
+  for(const error of [{code:'ERR_CHILD_PROCESS_STDIO_MAXBUFFER'},{code:1,killed:true},
+    {code:null,signal:'SIGTERM'},new Proxy({}, {get(){throw new Error('PRIVATE');}})])
+    assert.equal(nativePostgresCaptureComplete(error),false);
+});
+
+// Preserve the old SOURCE SQL phase independently of main's historical587 chain.
+test('SOURCE old585 SQL command identity stays distinct from every later main phase',()=>{
+  assert.equal(SOURCE_PRODUCER_COMMANDS.length,2);
+  assert.equal(SOURCE_PRODUCER_COMMANDS[0],ACCOUNT_STATISTICS_ASSISTANT_COMMANDS[0]);
+  assert.equal(SOURCE_PRODUCER_COMMANDS[1],ACCOUNT_STATISTICS_ASSISTANT_COMMANDS[1]+' --source-producer');
+  assert.equal(SOURCE_PRODUCER_SCRIPT,'set -euo pipefail\n'+SOURCE_PRODUCER_COMMANDS.join('\n')+'\n');
+  assert.notDeepEqual(SOURCE_PRODUCER_COMMANDS,CURRENT_COMMANDS);
+  assert.notDeepEqual(SOURCE_PRODUCER_COMMANDS,ASSISTANT_LATER_H0_COMMANDS);
+});
+test('SOURCE basic V1 keeps its own false receipt and separate historical implementation',async()=>{
+  assert.equal(SOURCE_PRODUCER_PHASE_KIND,'RAVRADAR_SOURCE_PRODUCER_POSTGRES_PHASE_V1');
+  assert(!SOURCE_PRODUCER_COMMANDS.some(value=>value.includes('--current-source-native-profile')));
+  const source=await fs.readFile(new URL('./native-postgres-evidence.mjs',import.meta.url),'utf8');
+  const start=source.indexOf('async function sourceMain(){');assert(start>=0);
+  const end=source.indexOf('\n}\n',start);assert(end>start);
+  const own=source.slice(start,end+3);
+  assert(own.indexOf('requireSourceProducerOutput()')<own.indexOf('process.argv.length'));
+  assert(own.indexOf('requireSourceProducerOutput()')<own.indexOf('spawnSync('));
+  assert(own.indexOf('requireSourceProducerOutput()')<own.indexOf('fs.readFile('));
+  assert.match(own,/assert\.equal\(process\.argv\.length,2,/);
+  assert.match(own,/result\.error\|\|result\.signal\|\|result\.status!==0/);
+  assert.match(own,/SOURCE_PRODUCER_SCRIPT/);assert.doesNotMatch(own,/decide.*Reuse|github\(/);
+  assert.match(own,/eligibleForReuse:false/);assert.match(own,/currentProfileExecuted:false/);
+  assert.match(own,/verifySourceProducerNativePhaseReceipt\(receipt,current\)/);
+  assert.match(source,/if\(process\.argv\[1\].*\)await sourcePrMain\(\);$/);
+});
+test('SOURCE NULL output stops its receipt and samePG profile before caller operands or host I/O',async t=>{
+  let io=0,operands=0;
+  const poison=new Proxy({}, {get(){operands++;throw Error('UNEXPECTED_CALLER_OPERAND');},ownKeys(){operands++;throw Error('UNEXPECTED_CALLER_KEYS');}});
+  for(const key of ['readFile','lstat','stat','mkdtemp','realpath'])t.mock.method(fs,key,()=>{io++;throw Error('UNEXPECTED_IO');});
+  try{
+    if(SOURCE_PRODUCER_BINDING===null){
+      assert.throws(()=>verifySourceProducerNativePhaseReceipt(poison,poison),/SOURCE_PRODUCER_UNISSUED/);
+      await assert.rejects(runNativeCheckpointSqlComparison({includeSourceProducer:true,includeCurrentSourceNativeProfile:true}),/SOURCE_PRODUCER_UNISSUED/);
+      assert.equal(operands,0);
+    }else{
+      assert.throws(()=>verifySourceProducerNativePhaseReceipt({},{}),{code:'ERR_ASSERTION'});
+      await assert.rejects(runNativeCheckpointSqlComparison({includeSourceProducer:true,includeCurrentSourceNativeProfile:true}),/SOURCE requires the genuine complete585 native phase/);
+    }
+    assert.equal(io,0);
+  }finally{t.mock.restoreAll();}
+});
+
+test('SOURCE proof header accepts the real Git producer prefix and refuses unqualified headers',async()=>{
+  const os=await import('node:os'),path=await import('node:path');
+  const {execFileSync}=await import('node:child_process');
+  const {sourceTreeContentSha256}=await import('./lib/source-tree-content.mjs');
+  const parent=await fs.realpath(os.tmpdir());
+  const root=await fs.mkdtemp(path.join(parent,'rr-source-proof-header-'));
+  const owner=await fs.lstat(root,{bigint:true});
+  const env={...Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','TEMP','TMP','LANG','LC_ALL']
+    .filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]])),
+    GIT_CONFIG_NOSYSTEM:'1',GIT_CONFIG_GLOBAL:path.join(root,'absent-global-gitconfig'),
+    GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_OPTIONAL_LOCKS:'0',GIT_TERMINAL_PROMPT:'0'};
+  const git=(args,options={})=>execFileSync('git',['-c','protocol.allow=never','-C',root,...args],
+    {cwd:root,env,encoding:'buffer',timeout:30000,maxBuffer:8*1024*1024,...options});
+  try{
+    git(['init','--quiet','--initial-branch=main']);
+    await fs.writeFile(path.join(root,'synthetic.txt'),'synthetic proof-header fixture\n',{flag:'wx'});
+    git(['add','--','synthetic.txt']);
+    git(['-c','user.name=RavRadar synthetic','-c','user.email=synthetic@invalid',
+      '-c','commit.gpgsign=false','commit','--quiet','-m','synthetic proof-header fixture']);
+    const head=git(['rev-parse','HEAD']).toString('utf8').trim();
+    const sourceTreeSha256=sourceTreeContentSha256('HEAD',{git});
+    assert.match(sourceTreeSha256,/^sha256:[a-f0-9]{64}$/);
+    const proof={headSha:head,repository:ORIGIN.repository,contractId:'weather-source-gate-content-v2',
+      privatePayloadIncluded:false,sourceTreeSha256};
+    assert.equal(assertSourceProducerProofHeader(proof,head),undefined,'A valid header grants no handle or native authority');
+    const differentHead=(head[0]==='0'?'1':'0')+head.slice(1);
+    for(const changed of [
+      {...proof,sourceTreeSha256:sourceTreeSha256.slice('sha256:'.length)},
+      {...proof,contractId:'changed-contract'},
+      {...proof,privatePayloadIncluded:true},
+      {...proof,headSha:differentHead},
+      {...proof,repository:'synthetic/wrong-repository'},
+    ])assert.throws(()=>assertSourceProducerProofHeader(changed,head),{code:'ERR_ASSERTION'});
+    assert.throws(()=>assertSourceProducerProofHeader(proof,'not-a-head'),{code:'ERR_ASSERTION'});
+  }finally{
+    assert.equal(path.dirname(root),parent);assert(path.basename(root).startsWith('rr-source-proof-header-'));
+    assert.equal(await fs.realpath(root),root);const current=await fs.lstat(root,{bigint:true});
+    assert(current.isDirectory()&&!current.isSymbolicLink());
+    assert.deepEqual([current.dev,current.ino,current.birthtimeNs],[owner.dev,owner.ino,owner.birthtimeNs]);
+    await fs.rm(root,{recursive:true,force:false}); // Only this freshly owned synthetic fixture.
+  }
+});
+
+// Ren normal kommandotype/schema-prøve; disse syntetiske data er ikke PG-/CI-bevis.
+test('SOURCE PR owns one two-flag Node24 invocation while basic V1 stays separate',async()=>{
+  assert.equal(SOURCE_PR_NATIVE_PHASE_KIND,'RAVRADAR_SOURCE_PR_NATIVE_POSTGRES_PHASE_V1');
+  assert.deepEqual(SOURCE_PR_NATIVE_COMMANDS,[SOURCE_PRODUCER_COMMANDS[0],
+    '"$RAVRADAR_SOURCE_NATIVE_NODE24_PATH" scripts/test-protected-ravscore-continuation-checkpoint.mjs'
+    +' --native-statistics-revision --native-sampling-identity --current-memory-warmup'
+    +' --established-native-current-origin --last-mile-enclosure --account-statistics-assistant'
+    +' --source-producer --current-source-native-profile']);
+  assert.equal(SOURCE_PR_NATIVE_SCRIPT,'set -euo pipefail\n'+SOURCE_PR_NATIVE_COMMANDS.join('\n')+'\n');
+  assert.equal(SOURCE_PR_NATIVE_COMMANDS.join('\n').split('--source-producer').length,2);
+  assert.equal(SOURCE_PR_NATIVE_COMMANDS.join('\n').split('--current-source-native-profile').length,2);
+  assert.notDeepEqual(SOURCE_PR_NATIVE_COMMANDS,SOURCE_PRODUCER_COMMANDS);
+  const source=await fs.readFile(new URL('./native-postgres-evidence.mjs',import.meta.url),'utf8');
+  const start=source.indexOf('async function sourcePrMain(){'),end=source.indexOf('\n}\n',start);
+  assert(start>=0&&end>start);const own=source.slice(start,end+3);
+  for(const marker of ['process.argv','git([','fs.readFile(','sourcePrMetadata(','spawn('])
+    assert(own.indexOf('requireSourceProducerOutput()')<own.indexOf(marker),marker);
+  assert.match(own,/result\.error\|\|result\.signal\|\|result\.status!==0/);
+  assert(own.indexOf('collector.finish(current,expected)')<own.indexOf('currentProfileExecuted:true'));
+  assert(own.indexOf("await sourcePrMetadata('NATIVE_RUNNING'")<own.indexOf('spawn('));
+  assert.match(own,/sourceTreeContentSha256\('HEAD'\)/);assert.match(own,/SOURCE_PR_NATIVE_SCRIPT/);
+  assert.doesNotMatch(own,/decide.*Reuse/);
+});
+test('SOURCE PR NULL guard precedes every new caller operand, transport or file access',async t=>{
+  let operands=0,io=0;const poison=new Proxy({}, {get(){operands++;throw Error('UNEXPECTED_OPERAND');},
+    ownKeys(){operands++;throw Error('UNEXPECTED_KEYS');}});
+  for(const key of ['readFile','writeFile','lstat','stat','mkdtemp','realpath'])t.mock.method(fs,key,()=>{io++;throw Error('UNEXPECTED_IO');});
+  t.mock.method(globalThis,'fetch',()=>{io++;throw Error('UNEXPECTED_FETCH');});
+  try{
+    if(SOURCE_PRODUCER_BINDING===null){
+      for(const call of [()=>verifySourcePrNativeResult(poison,poison,poison),
+        ()=>verifySourcePrNativeExecutionReceipt(poison,poison,poison),
+        ()=>verifySourcePrNativePhaseReceipt(poison,poison,poison,poison),
+        ()=>verifySourcePrNativeJobMetadata(poison),
+        ()=>verifySourcePrNativeArtifact(poison,poison,poison,poison,poison,poison),
+        ()=>sourcePrNativeReportCollector()])assert.throws(call,/SOURCE_PRODUCER_UNISSUED/);
+      await assert.rejects(readSourcePrNativeUploadedPhase(poison,poison),/SOURCE_PRODUCER_UNISSUED/);
+      assert.equal(operands,0);
+    }else{
+      assert.throws(()=>verifySourcePrNativeResult({}, {}, {}),{code:'ERR_ASSERTION'});
+      assert.throws(()=>verifySourcePrNativeJobMetadata({}),{code:'ERR_ASSERTION'});
+    }
+    assert.equal(io,0);
+  }finally{t.mock.restoreAll();}
+});
+test('SOURCE PR typed schema and completed-upload boundaries reject fake full flags and old phases',()=>{
+  if(SOURCE_PRODUCER_BINDING===null){assert.throws(()=>verifySourcePrNativeResult({}, {}, {}),/SOURCE_PRODUCER_UNISSUED/);return;}
+  const current={run:1201,attempt:1,head:'b'.repeat(40),pullRequest:1202,branch:'codex/source-pr-synthetic'};
+  const expected={jobId:1203,mainHead:'c'.repeat(40),sourceTreeSha256:'sha256:'+'d'.repeat(64)};
+  const result={kind:'SOURCE_PR_NATIVE_TEST_RESULT_V1',scope:'SOURCE_PR_NATIVE_TEST',current:{...current,jobId:expected.jobId},
+    mainHead:expected.mainHead,sourceTreeSha256:expected.sourceTreeSha256,sameHost:true,actualNativeProcessCompleted:true,
+    physicalClosureBeforeCleanup:true,sourceAdmission:false,productionProof:false};
+  verifySourcePrNativeResult(result,current,expected);
+  for(const mutate of [v=>v.kind='OLD',v=>v.scope='FULL',v=>v.current.jobId++,v=>v.current.run++,
+    v=>v.mainHead=current.head,v=>v.sourceTreeSha256=v.sourceTreeSha256.slice(7),v=>v.sameHost=false,
+    v=>v.actualNativeProcessCompleted=false,v=>v.physicalClosureBeforeCleanup=false,
+    v=>v.sourceAdmission=true,v=>v.productionProof=true,v=>v.unknown=true]){
+    const bad=structuredClone(result);mutate(bad);assert.throws(()=>verifySourcePrNativeResult(bad,current,expected),{code:'ERR_ASSERTION'});
+  }
+  const receipt={schemaVersion:1,kind:SOURCE_PR_NATIVE_PHASE_KIND,phase:'SOURCE_PR_NATIVE_TEST',sourcePhase:'source-producer-pr-native-test',
+    sourceVersion:sourcePrBinding().version,binding:sourcePrBinding(),output:sourcePrOutput(),databaseBefore:sourcePrBefore,
+    currentProfileExecuted:true,status:'EXECUTED',executedInThisRun:true,origin:null,eligibleForReuse:false,
+    current,commands:SOURCE_PR_NATIVE_COMMANDS,nativeResult:result};
+  verifySourcePrNativeExecutionReceipt(receipt,current,expected);
+  for(const delta of [{nativeResult:undefined},{nativeResult:{sameHost:true,actualNativeProcessCompleted:true}},
+    {commands:SOURCE_PRODUCER_COMMANDS},{kind:SOURCE_PRODUCER_PHASE_KIND},{currentProfileExecuted:false},
+    {status:'REUSED'},{executedInThisRun:false},{eligibleForReuse:true},{origin:{run:1}}])
+    assert.throws(()=>verifySourcePrNativeExecutionReceipt({...receipt,...delta},current,expected));
+  const basic={...receipt,kind:SOURCE_PRODUCER_PHASE_KIND,phase:'SOURCE_PRODUCER',sourcePhase:'source-producer',
+    commands:SOURCE_PRODUCER_COMMANDS,currentProfileExecuted:false};delete basic.nativeResult;
+  verifySourceProducerNativePhaseReceipt(basic,current);
+  assert.throws(()=>verifySourceProducerNativePhaseReceipt({...basic,currentProfileExecuted:true},current));
+  assert.throws(()=>verifySourcePrNativeExecutionReceipt(basic,current,expected));
+  const phase={kind:'SOURCE_PR_NATIVE_JOB_METADATA_V1',stage:'UPLOADED',current:result.current,
+    mainHead:expected.mainHead,sourceTreeSha256:expected.sourceTreeSha256,
+    pgStartedAt:'2026-11-01T00:02:00Z',pgCompletedAt:'2026-11-01T00:03:00Z',uploadedAt:'2026-11-01T00:04:00Z'};
+  verifySourcePrNativePhaseReceipt(receipt,current,expected,phase);
+  for(const delta of [{stage:'NATIVE_RUNNING'},{uploadedAt:null},{current:{...result.current,jobId:1204}},
+    {mainHead:current.head},{sourceTreeSha256:'sha256:'+'e'.repeat(64)}])
+    assert.throws(()=>verifySourcePrNativePhaseReceipt(receipt,current,expected,{...phase,...delta}));
+  const report={kind:'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',sqlExecuted:true,migrationExecuted:true,tcpEnabled:false,
+    normalModelPartCount:673,caseCount:1,reports:[{synthetic:true}],sourceProducer:{kind:'SOURCE_CURRENT594_SAME_PG_SCHEMA_PREPARED',
+      sourceMigrationInventory:62,genuine594MigrationInventory:61,genuine594IntegratedRpcParameters:22,genuine594ActualRpcCalls:2,sourceActualRpcCalls:2,
+      sameNativePg:true,normalVerifiers:true,old585RowsPreserved:true,
+      originalSqlBytesPreserved:true,metadataAuthored:false,sourceNativeActionQualified:false,originalBAndSAuthenticated:false,productionProof:false},
+    currentSourceNativeProfile:result};
+  const collector=sourcePrNativeReportCollector();collector.write(JSON.stringify(report)+'\n');
+  assert.deepEqual(collector.finish(current,expected),result);
+  for(const bad of [{...report,currentSourceNativeProfile:{sameHost:true,actualNativeProcessCompleted:true}},
+    {...report,sqlExecuted:false},{...report,reports:[]},
+    {...report,sourceProducer:{...report.sourceProducer,sourceMigrationInventory:55}}]){
+    const refused=sourcePrNativeReportCollector();refused.write(JSON.stringify(bad)+'\n');assert.throws(()=>refused.finish(current,expected));
+  }
+  const duplicate=sourcePrNativeReportCollector();duplicate.write((JSON.stringify(report)+'\n').repeat(2));
+  assert.throws(()=>duplicate.finish(current,expected));
 });

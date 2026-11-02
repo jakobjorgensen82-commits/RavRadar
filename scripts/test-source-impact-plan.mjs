@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import {readIssued594ImpactTextTestInputs} from './lib/assistant594-historical-source-test-input.mjs';
+const historicalTextInputs=await readIssued594ImpactTextTestInputs();
 import {planSourceImpact as plan} from './source-impact-plan.mjs';
 import {buildSourceValidationPlan,expandSourceCommands} from './validate-source-once.mjs';
 const scripts=JSON.parse(fs.readFileSync(new URL('../package.json',import.meta.url),'utf8')).scripts;
@@ -7,9 +9,11 @@ const normal=buildSourceValidationPlan(scripts);
 const full=[...normal.preflight,...normal.remaining,normal.gate];
 const read=path=>fs.readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const row=(path,before,after)=>({path,before,after,beforeMode:'100644',afterMode:'100644'});
-const about=read('js/ui/about-i18n.js'),article=read('js/ui/about-explainer-i18n.js');
-const learn=read('js/ui/learn-i18n-en.js');
-const learnDa=read('js/ui/learn-i18n.js'),learnDe=read('js/ui/learn-i18n-de.js');
+// Positive fixtures retain their genuine reviewed594 frames. The normal
+// current Source commands/protected decisions below still use this checkout.
+const about=historicalTextInputs['js/ui/about-i18n.js'],article=historicalTextInputs['js/ui/about-explainer-i18n.js'];
+const learn=historicalTextInputs['js/ui/learn-i18n-en.js'];
+const learnDa=historicalTextInputs['js/ui/learn-i18n.js'],learnDe=historicalTextInputs['js/ui/learn-i18n-de.js'];
 const currentI18nImport=/from '(\.\.\/i18n\.js\?v=4\.0\.\d+)';/.exec(about)?.[1];
 assert.equal(typeof currentI18nImport,'string','The negative import fixture must bind the actual current import');
 assert.equal(about.split(currentI18nImport).length,2,'Exactly one current main i18n import');
@@ -56,6 +60,21 @@ for(const [path,current,oldText,newText,profile]of [
     const mixed=current.replace('?v=4.0.594','?v=4.0.593');
     assert.notEqual(mixed,current);assert.notEqual(mixed,previous);
     fallback([row(path,mixed,mixed.replace(oldText,newText))]);
+  }
+}
+// A versioned current text frame is not qualified by an old profile. Keep the
+// actual595 source evidence conservative; the planner itself is unchanged.
+for(const[path,oldText,newText]of [
+  ['js/ui/about-i18n.js',"'about.header':'Om projektet'","'about.header':'Om RavRadar'"],
+  ['js/ui/about-explainer-i18n.js','Wo sind die Bedingungen','Wo sind heute die Bedingungen'],
+  ['js/ui/learn-i18n.js',"'learn.header':'Grundbog i ravjagt'","'learn.header':'Ravjagtens grundbog'"],
+  ['js/ui/learn-i18n-de.js',"'learn.header':'Handbuch der Bernsteinsuche'","'learn.header':'Grundwissen zur Bernsteinsuche'"],
+  ['js/ui/learn-i18n-en.js','Learn amber hunting – RavRadar','Learn amber hunting with RavRadar'],
+]){
+  const actual=read(path);
+  if(actual!==historicalTextInputs[path]){
+    const changed=actual.replace(oldText,newText);assert.notEqual(changed,actual);
+    fallback([row(path,actual,changed)]);
   }
 }
 const docs=row('docs/rdks/90_INDEX/CURRENT_TRUTH.md','# Old\n','# New\n');

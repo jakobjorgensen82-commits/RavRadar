@@ -6,6 +6,26 @@ En beskæringsoperation genkontrollerer hele det relevante arkiv og de aktuelle 
 
 Kandidaten kan kvalificeres selvstændigt på aktuel main og behøver ikke vente på SOURCE 595. En senere SOURCE-sammenføring kræver stadig normal endelig import-/bindings- og kildekontrol. En aktiv SOURCE-prøves genbekræftelse af main må ikke forveksles med en funktionel afhængighed af oprydningen. Eksisterende løbende vejrhentning, aktuelle dokumenter, de seneste fem historikversioner pr. nøgle, øvrige beskyttede nøgler og arkivoriginaler skal bevares. Samlet FreeReady og Pro-opsigelse er særskilt åbne. Se håndbog 89.298.
 
+## 2. november — main-afventning lukket; følg revisionens resterende gates
+
+Den kvalificerede faktiske main er normalt indarbejdet. Hele SOURCE-træet var uændret ved denne merge; ældre afventning af main nedenfor er historik. Revisionens aktuelle udstedelsesfase og åbne krav står i CURRENT_TRUTH og IMPLEMENTATION_STATUS. Den normale 595-afledning skal begynde fra det bevarede NULL-udgangspunkt og ske én gang. Gamle SQL og autentiske originaler samt kravene om issued62/samme-PG/SDK/action63/64, ejerafslutning, fuld kvalifikation, 180-minutterskapacitet, installation og offentlig accept bevares.
+
+Pages-controllerens snævre domæneefterfølger har bestået 57 normale lokale cases. Frontendens legacy-adresse må først skifte efter DNS/TLS og normal værtaccept; lokale cases er ikke værtaccept. Sikker oprydning og selvstændig Free-drift kræver deres egne faktiske beviser. Automatisk brugerretention, mail og særskilt SOURCE-G4-/statistikaktivering følger ikke implicit med. Beskyt P0 og alle fem åbne mål. Se [kanonisk status](../90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02) og håndbog 89.297.
+
+## 2. november — lokal SOURCE-integration lukker kodeforskellen, ikke driftskravene
+
+Revisionens egen præ-DMI-indgang og de nye kildekaldere er nu integreret med den gennemgåede DMI-/statistikkandidat. Faktisk main fra PR791 er allerede forfader. De historiske hele kodeinput, gamle SQL og originalbindinger bevares. Endelig kvalificeret main, rent importinventar, én normal595-afledning, positiv samme-PG/SDK/action-kæde, fysisk ejerafslutning, heljobskapacitet og sikker offentlig levering er fortsat åbne. Se [kanonisk status](../90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02).
+
+Voerså-afvigelsen forbliver parkeret efter ejerens prioritering; almindelig datadækning prioriteres fortsat. Nedenstående ældre lokale statuser beskriver deres daterede trin.
+
+## 2. november — tre konkrete assistentfamilier er rettet lokalt
+
+Tabt prognoseled i sammensatte spørgsmål, kendt net-stavevariant og ukendt apparat/garanti har en gennemgået lokal efterfølger. Offentlig genaccept afventer levering; dette lukker ikke assistentområdet. Se [kanonisk status](../90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02). Voerså-afvigelsen er parkeret efter ejerens prioritering.
+
+## 2. november — SOURCE er ikke udstedt eller aktiveret
+
+Den normale main-integration er gennemført, men PR791/senere faktisk main M2 og de nye595-gates er fortsat åbne. Bevar NULL og alle originaler; ingen ny afledning på et mellemtrin. Se [aktuel status og gates](../90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02). Den nye OM-køs faktiske dækningsvirkning mangler stadig.
+
 ## 2. november — de historiske kildeprøver bevarer deres oprindelige input
 
 Den første samlede kontrol af DMI-kandidaten stoppede i to gamle inputkontrakter: den udvidede kommandofortegnelse og den flyttede scalar-kalder i updateren. De 32 afslag er kortlagt til disse to fælles årsager; de er ikke i sig selv bevis for fejl i nye vejrdata.
@@ -16,7 +36,7 @@ Den fælles package-helper er et beskyttet native-kontrolinput. Dens ændring kr
 
 ## 2. november — åben DMI-hale: gyldig reserve er ikke et tomt hul
 
-Den lokale kandidat retter den påviste sammenblanding af native opgraderinger og reelle scalar-mangler samt tab af per-PART- og TREND/T+3-afgrænsning i hentekøen. Normale lokale kaldere består; præcis CI og ny offentlig effekt er åbne. Ingen upstream- eller dækningsgaranti følger af kørettelsen. SOURCE-indgangen er særskilt uafsluttet. Se CURRENT_TRUTH, DEC-0261 og håndbog 89.294.
+Den lokale kandidat retter den påviste sammenblanding af native opgraderinger og reelle scalar-mangler samt tab af per-PART- og TREND/T+3-afgrænsning i hentekøen. Normale lokale kaldere består; præcis CI og ny offentlig effekt er åbne. Ingen upstream- eller dækningsgaranti følger af kørettelsen. SOURCE-indgangen er særskilt uafsluttet. Se CURRENT_TRUTH, DEC-0261 og håndbog 89.296.
 
 ## 2. november — privat rapport gemt, efterfølgende accept og kapacitet åbne
 
@@ -61,6 +81,28 @@ Forløb 236 fik Pages-write SUCCESS, men fuld efterkontrol og terminalstatus FAI
 Lokal kandidat og normal kalderprøve giver RED før og GREEN efter: vent bounded på både præcist manifest og startup, genbrug startup og kontroller storpakke én gang. De eksisterende 121 observationer, tre delte HTTP-genforsøg og samtlige hårde hash-/størrelses-/model-/privatlivsgrænser består. Ingen ukendt afvigelse accepteres som gyldige data.
 
 Resume fandt NONE og gentages ikke. Den almindelige integrated-gren har ingen begin-PENDING før Pages; genoptagelse må kræve en faktisk normal locator og kan ikke udlede den af to små GET. Den korrekte providerfri terminalvej, samlet lokal kontrol, CI og levering skal stadig verificeres. Ingen ny SOURCE/model/SQL/version eller ny vejrhentning er aktiveret.
+
+## 1. november 2026 — main-sammenføring afsluttet som uudstedt kodecheckpoint
+
+Denne komposition afslutter den normale lokale sammenføring med main c920. Mergecommitten bevarer begge faktiske Git-forældre og genuine37/594 som forfader. Det er et isoleret kodecheckpoint: package 4.0.594 er stadig midlertidig, SOURCE 4.0.595 er foreslået, og metadataenes version, binding og output er NULL. Ingen ny C/I/T-, SQL-, native- eller produktionsudstedelse følger af committen.
+
+Nyere faktisk main skal fortsat indarbejdes før normal 595-versionssynk og afledning. De fire lokale mål, det lukkede rene importinventar og RDKS er særskilt evidens; positiv samme-PG/SDK/action, afsluttet FULL-kvalifikation, 180-minutters kapacitet og sikker levering er åbne. Tidligere afsnit om uafsluttet merge beskriver tilstanden før dette kodecheckpoint.
+
+## 1. november 2026 — SOURCE: Git-konflikter lukket, udstedelse og native-kæde åbne
+
+De uløste Git-konflikter er lukket efter anvendelsen af de ni V2-ejere, syv consumer-ejere og tre læser-/prewriteejere. Den normale merge er endnu ikke afsluttet: HEAD 24d8 og MERGE_HEAD c920 består. Package 4.0.594 er midlertidig; SOURCE foreslås som 4.0.595, men metadataenes version, binding og output er NULL.
+
+Fire normale lokale mål består. 61→62-casen beviser alene NULL-afvisningen. Positiv issued/native/PG-, generator-, CI- eller produktionsevidens mangler fortsat, ligesom faktisk Node24/samme-PG/SDK/action-profil, FULL-succes og gennemførelse inden for 180 minutter. Den præcise importregistrering af den gennemgåede source594-CLI er nu rettet lokalt; det normale rene inventar lukker I161/C165, og ukendte helkildebytes afvises fortsat; C/I/T er ikke udstedt. Nyere faktisk main skal indarbejdes før 595-afledningen.
+
+Der påstås ingen aktivering eller installeret revision. Ældre konfliktstatus nedenfor er historik. Vejrhentning og dækning har høj prioritet; Voerså-årsagen er ukendt og lavere prioriteret.
+
+## 1. november 2026 — lokal sammenføring, endnu ingen udstedt SOURCE 595
+
+SOURCE19 har det lokale substanscheckpoint `24d8f8ee75bb91d2c75afa92e5ccc407cb7c230f` og en uafsluttet normal sammenføring med main `c920d1e2ad0cbbfe351360f594128f0e06bd1f1e`. Main 4.0.594 er den midlertidige normale versionsforgænger; den planlagte isolerede revision er 4.0.595. Normal versionssynk efter sammenføringen er endnu ikke kørt. SOURCE-version, binding og output er NULL; nye C/I/T og SQL er ikke udstedt. Semantiske konflikter og kvalifikation er fortsat åbne. Et checkpoint, et forberedt input eller MERGE_HEAD er ikke faktisk main-ancestry, native/fullRuntime-, ejerafslutnings- eller leveringsbevis.
+
+Main-kronologien og gældende leverede rettelser bevares. Det særskilt mærkede SOURCE-spor nedenfor bevarer den isolerede grens historik; ældre 585/586/040000-resultater og tidligere aktuelle 595-noter er ikke nye produktions- eller bindingsbeviser. SOURCE-kapitlernes tidligere 89.262/89.263 er nu 89.294/89.295, så main-kapitlerne med samme gamle numre bevares. Begge beslutninger identificeres med hele filnavnet: `docs/rdks/10_DECISIONS/DEC-0294-SOURCE-DERIVED-METADATA-BOUNDARY.md` og `docs/rdks/10_DECISIONS/DEC-0294-PAGES-FORECAST-SHARING-AND-SIMPLY-CNAME.md`.
+
+Den ægte 594-forgænger er genuine37 CODE med normal 61→62-kontrakt; kode, aktuelle syntetiske data og SOURCE-eksekutor holdes adskilt. Gamle familier, SQL-originaler, scoreformel, geometri og kildeprioritet bevares. Samme normale 594-central → B før S → SDK/action 63/64 → faktisk ejerafslutning er fortsat en åben kæde. Alle fem hovedmål er åbne til 18. november 2026. ROOT koordinerer produktion; denne isolerede sammenføring ændrer ingen produktion under den aktive writer. ROOTs P0/vejr/FB/header/kildebeviser forbliver særskilte driftsbeviser.
 
 ## 1. november — assistentens emnerelevans og svartid er fortsat åbne leveringspunkter
 
@@ -7576,3 +7618,38 @@ DEC-0185. Ingen oneoff eller nye providerkald i reparationsdeployet.
 ## 22. oktober — ÅBEN: ni-blads cost-komposition på c78 er fortsat ukørt
 
 De to tidligere særskilt målprøvede cost-pakker er privat sammenført med den frosne test-only fixture-/inventarkorrektion på faktisk c78b4aec: ni forskellige kode-/teststier og seks additive dokumenthunks. Hele aktuelle førbilleder er målt, mens alle nye P0-fronter og fælles mkdir-/121-timersbank-/RAW-/SAVE-ændringer bevares. Den gamle direkte12PASS/2FAIL-workflowprøve er fortsat historisk rød; en lukket testinverse og ét fuldt kvalificeret privat workflow er forberedt, ikke prøvet. Ægte original-parent/child kræver stadig faktisk rent commit; ingen dirty-waiver eller ny sourceadgang indføres. Gamle8/18/Candidate-G-delbeviser ommærkes ikke, og alle nationale positive kontroller bevares. Første nye nativefase skal udføres og uploades faktisk. Ét relevant normalt workflowmål, fuld ny28-trins kildekvalifikation, ægte senere genbrug/leveringslæser og målt tidsgevinst er åbne. Den normale vejrhentning, originale B/S, kildeprioritet, budgetter og øvrige mål ændres ikke af denne private plan.
+
+
+## Bevaret særskilt SOURCE-kronologi før main-sammenføringen
+
+Følgende er de isolerede SOURCE-varianter, som ikke allerede findes ordret i main-kronologien ovenfor. Historiske regler/status læses i deres daterede scope; den aktuelle integrationsfront står øverst.
+
+## 1. november 2026 — ÅBEN SOURCE 595: normal current594-kalder før ny afledning
+
+Aktuel isoleret SOURCE-version er 4.0.595 efter normal versionssynk og lokal 24-filers current594-integration. Nye 595-C/I/T og SQL er endnu ikke afledt; bindingsfilens version, binding og output er NULL. Den normale 594-central → B før S → samme SDK/action 63/64 → faktisk ejerafslutning er fortsat åben, og profilen er PREPARATION_ONLY. Gamle 586/040000-resultater bevares som dateret historik, ikke den aktuelle binding eller installationsvej.
+
+ROOTs P0/c920, almindelig 235 og offentlig header/784 er separate driftsbeviser, ikke SOURCE-bevis. Ingen ny PostgreSQL-, kapacitets-, komplet cache-/historik- eller leveringssucces påstås. Alle fem mål er åbne til 18. november 2026; delegering har adskilte filejere, ROOT koordinerer produktion, og ingen produktion ændres under writer.
+
+Et normalt syntetisk prefix og en initial RPC-forespørgsel er forberedt, men den faktiske central-/metadataovergang og SDK/action/ejerafslutning mangler. Kalderplan og reelle kildeinput skal fryses før udstedelse. Nul af de 13 computed-filer ligger i den aktuelle C/I/T-closure; det lukker ikke de 31 udtryks egne native-, test- og historiske kvalifikationskrav. Bindingsafhængig håndbogskontrol, nyt fixedpoint, Linux/PostgreSQL, SDK/action og præcis samlet kildekontrol står åbne.
+
+## 21. oktober — ÅBEN kvalifikation: SOURCE-tail og ny afledning
+
+Aktuelt lokalt bindingsmål er nu 040000 efter kalenderens afgrænsede formatter-genbrug. Fem normale fixedpointmål består på egen LF-kilde, og alle 66 gamle migrationer er bytebevaret; 030000 og 020000 er aldrig installeret historik. Windows-kildens C/I-/kalendermål består, men SQL-/sync-check afviser fortsat den gamle udstedte 20261017140000-SQL's rå CRLF-hash. Dens LF-projektion er byteidentisk med Git og LF-værten; det er ikke ekstra SQL-indhold eller en påvist 040000-fejl. Gamle bytes og hashguard bevares. Præcis samlet CI, native PostgreSQL, ægte B/S-overgang, national kapacitet og sikker levering er stadig åbne; lokal formattergevinst er ikke målt national gevinst. SOURCE og almindelig vejrhentning aktiveres eller ændres ikke her. Se DEC-0294 for eksakt evidens og afgrænsning.
+
+Den efterfølgende native databaseprøves konkrete indre fejl er stadig ukendt: den gamle udlæser reducerede også en præcis child-afvisning til en generisk assertion, fordi Node tilføjer faktiske/forventede værdier til fejlbeskeden. Testkæden bevarer nu kun faste koder, første kvalificerede fase/kildested og private hele child-output før filtrering. Afkortet capture er ikke et helt logbevis. Denne diagnostikrettelse må ikke kaldes en produktårsag eller en færdig SOURCE-løsning; ny præcis CI og egentlig årsagsafklaring mangler. C/I/T, SQL og almindelig vejrhentning er uændrede.
+
+Næste præcise kontrol nåede providerbarnets afslag, men bevarede ikke dets numeriske procesudfald eller første indre årsag i den faste rapport. Test-only efterfølgeren tilføjer netop returkode, fast signalnavn, streamstørrelser/kontrolsummer/fuldstændighed og eksisterende 36 AST-bundne providerkoder eller UNKNOWN. Timeout og første kvalificerede kildeframe skelnes uden rå fejltekst. Syv rene lokale mål består; ingen ny native/PG- eller årsagsrettelsessucces følger heraf. Alle oprindelige stop, budgetter, modelbindinger og SQL bevares.
+
+Den præcise Linux-kontrol bestod SDK-/offlinegruppen og fandt derefter en reel importfejl i SOURCE-tail. To ubrugte deklarationer er fjernet efter helmodulernes navne- og importgennemgang; den normale berørte DMI-prøve består lokalt med 34 PASS, otte Linux-skips og ingen fejl. Da tailen faktisk indgår i C/I, er nye bindinger og append-only 030000 afledt og genberegnet med fixedpoint. Alle 65 gamle migrationsfiler bevares byteeksakt. Aldrig installeret 020000 er bevaret som kildehistorik, men vælges ikke som mellemtrin fra genuine 585. Ny præcis samlet CI, PostgreSQL, B/S, national kapacitet og sikker levering er fortsat åbne. Ingen aktivering eller ændring af almindelig vejrhentning, scoreformel, kildeprioritet eller geometri. Se DEC-0294.
+
+## 20. oktober — ÅBEN levering: månedsskifte og begrænset statistikforberedelse
+
+Konkret kontrolfund før installation: 585-workflowets eksplicitte OFF-trin gav bindingskrav til en funktion, som alene kontrollerer aktiv Worker-version og ikke bruger de to bindingsargumenter. Det er ikke bevis for en faktisk aktiv statistikfunktion i produktionen. Den lokale rettelse bruger den allerede eksisterende normale bindingskontrol og afviser live ON, manglende OFF, forkert D1 og deploymentskift. Den normale caller er faktisk reproduceret rød før rettelsen; dens fem nye tilfælde og tretten eksisterende bindingsprøver består efter. Den særskilte workflowprøve stoppede før sit mål på en uændret historisk JSON-kontrols Windows-CRLF-grænse; den må ikke kaldes bestået. Nyt præcist Linux-kildebevis og faktisk installationskontrol skal foreligge før lukning; den almindelige vejrhentning fortsætter uændret.
+
+Den normale private kalder kunne ikke fortsætte et gemt ældre job efter månedsskifte, og monolitisk forberedelse var ikke den aftalte varige trinvise vej. Fem lokale rettelser bruger servervalgt eksisterende job, kvitteret fremdrift og separat senere forberedelse/genlæsning. Den gennemgåede permanente regression består på faktiske moduler med normale syntetiske SQLite/D1-kontrakter. Det beviser ikke installeret 004/005, faktisk Worker-kapacitet, frigivet anonym statistik, mailvarsel eller automatisk retention. Ny præcis samlet kilde-CI og kontrolleret produktion er stadig åbne; den aktuelle almindelige vejrhentning må ikke afbrydes for denne kandidat.
+
+ÅBEN platformgrænse: Normal builder og fire caller-tilfælde stopper på den kendte Windows raw-SQL/CRLF-kontrol. Den normale kæde er ikke bestået lokalt; udstedte SQL-bytes og kontrollen lempes ikke. Præcis Linux-CI er den nødvendige næste prøve. LUKKET lokalt dokumentfund: allerede 029-kildens aktuelle 585-bogtekst havde korrekte, men uetiketterede hashes og manglede den aktuelle fortsættelsesmarkør. De normale labels/filantal og den ene håndbogspayload er nu synkroniseret med uændrede C/I/T; normal håndbogskontrol består. Det er ikke installation eller offentlig effekt.
+
+## 21. oktober – SOURCE-selvbinding: lokal rettelse, udstedelse åben
+
+Den konkrete C/I→egne metadata-cirkel er lokalt fjernet gennem DEC-0294s ene strenge genererede datafil, med fortsat hashbinding af SOURCE-kode og fysiske HEAD-kontroller. Egen Git-LF-afledning af C145/I141/T, 020000-SQL, syv normale forbrugere og fuldt genberegnet fixedpoint består. Det gamle e938-importorakel og nye 0d39-orakel bruger hver sin reelle kilde, uden repin eller tabte assertions. Native PostgreSQL, B/S/efterfølgere, kapacitet, præcis samlet CI og levering mangler; det samlede revisionsissue er åbent. Ingen aktivering eller ændring af almindelig vejrdrift, kildeprioritet, scorer, historik eller gamle originaler.

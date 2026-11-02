@@ -1,8 +1,8 @@
-import {PUBLIC_CONFIG} from '../../config.js?v=4.0.594';
-import {readAdminDocumentNow} from './admin-document-store.js?v=4.0.594';
-import {myAccess,hasPermission} from './permissions-service.js?v=4.0.594';
-import {requireFreshSession,authIdentityEpoch,currentSession,authorizedFetch} from './auth-service.js?v=4.0.594';
-import {isExactCalibrationModelBinding} from './calibration-eligibility.js?v=4.0.594';
+import {PUBLIC_CONFIG} from '../../config.js?v=4.0.595';
+import {readAdminDocumentNow} from './admin-document-store.js?v=4.0.595';
+import {myAccess,hasPermission} from './permissions-service.js?v=4.0.595';
+import {requireFreshSession,authIdentityEpoch,currentSession,authorizedFetch} from './auth-service.js?v=4.0.595';
+import {isExactCalibrationModelBinding} from './calibration-eligibility.js?v=4.0.595';
 const CELLS=['windSpeedMs','waveHeightM','currentSpeedMs','waterLevelTrendM3h']
   .flatMap(metric=>Array.from({length:5},(_,i)=>['find','no-find'].map(outcome=>metric+':'+i+':'+outcome))).flat().sort();
 const CATEGORICAL_CELLS=['windSpeedMs','waveHeightM','currentSpeedMs','waterLevelTrendM3h']

@@ -1,3 +1,33 @@
+## 2. november — SOURCE595 er lokalt udstedt; samlet kvalifikation og drift er åbne
+
+Følg [kanonisk status](docs/rdks/90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02) og det private checkpoint. Binding/output er lokalt afledt én gang, append-only SQL og normal fixedpoint består. Ældre NULL- og main-afventningsudsagn nedenfor er historik. Ingen SOURCE-aktivering eller produktionsændring følger af lokal udstedelse.
+
+## 2. november — faktisk main og gennemgået DMI-kode er indarbejdet lokalt
+
+Den isolerede SOURCE-kodeunion omfatter faktisk PR791-main og den samlede gennemgåede DMI-/statistikkandidat. Den endelige kvalificerede faktiske main skal stadig indarbejdes før én normal595-afledning; version/binding/output er NULL. Følg [kanonisk status](docs/rdks/90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02). Ældre afventning af allerede indarbejdet main nedenfor er dateret historik. Ingen aktivering eller produktionsændring følger af den lokale integration.
+
+## 2. november — lokale assistent- og admininput er sammenført
+
+Den gennemgåede lokale kandidat er nu indarbejdet. Faktisk main M2 og endelig DMI-kode mangler fortsat før én595-afledning. Følg [kanonisk status](docs/rdks/90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02); bevar NULL og produktionsro under aktiv writer.
+
+## 2. november — SOURCE 595 er fortsat uudstedt
+
+Bevar NULL-bindingen, indtil PR791-input og den senere faktiske main M2 er normalt sammenført og endeligt frosset. Følg [den aktuelle SOURCE-status](docs/rdks/90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02) og det private checkpoint. Ingen produktionsændring under aktiv writer.
+
+## 1. november 2026 — main-sammenføring afsluttet som uudstedt kodecheckpoint
+
+Denne komposition afslutter den normale lokale sammenføring med main c920. Mergecommitten bevarer begge faktiske Git-forældre og genuine37/594 som forfader. Det er et isoleret kodecheckpoint: package 4.0.594 er stadig midlertidig, SOURCE 4.0.595 er foreslået, og metadataenes version, binding og output er NULL. Ingen ny C/I/T-, SQL-, native- eller produktionsudstedelse følger af committen.
+
+Nyere faktisk main skal fortsat indarbejdes før normal 595-versionssynk og afledning. De fire lokale mål, det lukkede rene importinventar og RDKS er særskilt evidens; positiv samme-PG/SDK/action, afsluttet FULL-kvalifikation, 180-minutters kapacitet og sikker levering er åbne. Tidligere afsnit om uafsluttet merge beskriver tilstanden før dette kodecheckpoint.
+
+## 1. november 2026 — lokal sammenføring, endnu ingen udstedt SOURCE 595
+
+SOURCE19 har det lokale substanscheckpoint `24d8f8ee75bb91d2c75afa92e5ccc407cb7c230f` og en uafsluttet normal sammenføring med main `c920d1e2ad0cbbfe351360f594128f0e06bd1f1e`. Main 4.0.594 er den midlertidige normale versionsforgænger; den planlagte isolerede revision er 4.0.595. Normal versionssynk efter sammenføringen er endnu ikke kørt. SOURCE-version, binding og output er NULL; nye C/I/T og SQL er ikke udstedt. Semantiske konflikter og kvalifikation er fortsat åbne. Et checkpoint, et forberedt input eller MERGE_HEAD er ikke faktisk main-ancestry, native/fullRuntime-, ejerafslutnings- eller leveringsbevis.
+
+Main-kronologien og gældende leverede rettelser bevares. Det særskilt mærkede SOURCE-spor nedenfor bevarer den isolerede grens historik; ældre 585/586/040000-resultater og tidligere aktuelle 595-noter er ikke nye produktions- eller bindingsbeviser. SOURCE-kapitlernes tidligere 89.262/89.263 er nu 89.294/89.295, så main-kapitlerne med samme gamle numre bevares. Begge beslutninger identificeres med hele filnavnet: `docs/rdks/10_DECISIONS/DEC-0294-SOURCE-DERIVED-METADATA-BOUNDARY.md` og `docs/rdks/10_DECISIONS/DEC-0294-PAGES-FORECAST-SHARING-AND-SIMPLY-CNAME.md`.
+
+Den ægte 594-forgænger er genuine37 CODE med normal 61→62-kontrakt; kode, aktuelle syntetiske data og SOURCE-eksekutor holdes adskilt. Gamle familier, SQL-originaler, scoreformel, geometri og kildeprioritet bevares. Samme normale 594-central → B før S → SDK/action 63/64 → faktisk ejerafslutning er fortsat en åben kæde. Alle fem hovedmål er åbne til 18. november 2026. ROOT koordinerer produktion; denne isolerede sammenføring ændrer ingen produktion under den aktive writer. ROOTs P0/vejr/FB/header/kildebeviser forbliver særskilte driftsbeviser.
+
 ## 30. oktober — ændringsbaseret kontrol og oprydning
 
 Testomfanget skal følge ændringens faktiske påvirkning og relevante afhængigheder. Uændrede, uvedkommende områder skal ikke automatisk udløse dybe prøver. Korte prøver af den normale kæde kommer tidligt; overflødige, gentagne og erstattede kontroller fjernes fra den normale leveringsvej.
@@ -434,3 +464,15 @@ Ved konflikt gælder: brugerens aktuelle instruktion > aktiv RDKS-beslutning > v
 - Før en kilde-PR køres den lille produktkritiske sourcegate målrettet. Den kræver ikke central adminhydrering eller frisk produktionsdata.
 - Sourcegaten erstatter ikke DEC-0184s post-data artifact-, modelbinding-, runtime-, privacy-, Supabase- og deploybevis. Den fulde validate/releasegate bevares til målrettet eller periodisk brug. Kode-only rettelsesdeploy følger DEC-0148 og beviser eksakt genbrug og artifactintegritet.
 - Midlertidige runtime-shims skrives kun i systemets temp-mappe og må ikke stages.
+
+
+## Bevaret særskilt SOURCE-kronologi før main-sammenføringen
+
+Følgende er de isolerede SOURCE-varianter, som ikke allerede findes ordret i main-kronologien ovenfor. Historiske regler/status læses i deres daterede scope; den aktuelle integrationsfront står øverst.
+
+## 1. november 2026 — isoleret SOURCE 4.0.595, stadig inaktiv
+
+Læs den aktuelle 595-front i CODEX_START_HERE, CURRENT_TRUTH og håndbog 89.263 før de daterede noter nedenfor. Aktuel isoleret SOURCE-version er 4.0.595 efter normal versionssynk og lokal 24-filers current594-integration. Nye 595-C/I/T og SQL er endnu ikke afledt; bindingsfilens version, binding og output er NULL. Den normale 594-central → B før S → samme SDK/action 63/64 → faktisk ejerafslutning er fortsat åben, og profilen er PREPARATION_ONLY. Gamle 586/040000-resultater bevares som dateret historik, ikke den aktuelle binding eller installationsvej.
+
+ROOTs P0/c920, almindelig 235 og offentlig header/784 er separate driftsbeviser, ikke SOURCE-bevis. Ingen ny PostgreSQL-, kapacitets-, komplet cache-/historik- eller leveringssucces påstås. Alle fem mål er åbne til 18. november 2026; delegering har adskilte filejere, ROOT koordinerer produktion, og ingen produktion ændres under writer.
+

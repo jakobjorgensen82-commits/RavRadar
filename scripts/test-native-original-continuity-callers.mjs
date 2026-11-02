@@ -1,7 +1,7 @@
 // Narrow normal caller/source/refusal targets. Not a positive B/S origin,
 // installed SQL, national capacity or production claim. No fabricated tuple.
 import assert from 'node:assert/strict';
-import {inverseIssued594HistoricalSource} from './lib/assistant594-historical-source-test-input.mjs';
+import {inverseIssued594HistoricalSource,withIssued594CodeOnlyTestSource} from './lib/assistant594-historical-source-test-input.mjs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
@@ -97,18 +97,27 @@ const installedCodeOnlyCaller=()=>({
     'NATIVE_IDENTITY_RECOVERY'].map(key=>[key,'false'])),
 });
 test('current installed code-only routing leaves both historical source phases inactive',async t=>{
+  // These positive selectors belong to genuine594; SOURCE595 has its own guarded workflow branch.
+  await withIssued594CodeOnlyTestSource(async sourceRoot=>{
+  const load=file=>import(pathToFileURL(path.join(sourceRoot,file)).href);
+  const {selectNativeOriginalContinuityCodeOnlySource}=await load('scripts/select-native-original-continuity-code-only-source.mjs');
   const environment=Object.freeze(installedCodeOnlyCaller());
   await t.test('native586 is not the current588 source',async()=>{
     assert.equal(await selectNativeOriginalContinuityCodeOnlySource(environment),false);
   });
   await t.test('metadata585 is not the current588 source',async()=>{
-    const {selectAccountStatisticsAssistantCodeOnlySource}=await import('./select-account-statistics-assistant-code-only-source.mjs');
+    const {selectAccountStatisticsAssistantCodeOnlySource}=await load('scripts/select-account-statistics-assistant-code-only-source.mjs');
     assert.equal(await selectAccountStatisticsAssistantCodeOnlySource(environment),false);
   });
   assert.deepEqual(environment,installedCodeOnlyCaller(),'Selection never mutates caller authority');
+  });
 });
 
 test('current installed code-only source requires actual active issuance and the complete caller',async()=>{
+  // These positive selectors belong to genuine594; SOURCE595 has its own guarded workflow branch.
+  await withIssued594CodeOnlyTestSource(async sourceRoot=>{
+  const load=file=>import(pathToFileURL(path.join(sourceRoot,file)).href);
+  const {selectCurrentInstalledCodeOnlySource,selectNativeOriginalContinuityCodeOnlySource}=await load('scripts/select-native-original-continuity-code-only-source.mjs');
   const environment=Object.freeze(installedCodeOnlyCaller());
   assert.deepEqual(await selectCurrentInstalledCodeOnlySource(environment),{
     sourcePhase:ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase,
@@ -129,9 +138,10 @@ test('current installed code-only source requires actual active issuance and the
     await assert.rejects(selectCurrentInstalledCodeOnlySource({...environment,[key]:'true'}));
   await assert.rejects(selectNativeOriginalContinuityCodeOnlySource({...environment,
     RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_UPGRADE_OPT_IN:'true',RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_PHASE:'before'}));
-  const {selectAccountStatisticsAssistantCodeOnlySource}=await import('./select-account-statistics-assistant-code-only-source.mjs');
+  const {selectAccountStatisticsAssistantCodeOnlySource}=await load('scripts/select-account-statistics-assistant-code-only-source.mjs');
   await assert.rejects(selectAccountStatisticsAssistantCodeOnlySource({...environment,
     RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_UPGRADE_OPT_IN:'true'}));
+  });
 });
 
 test('current installed code-only actual selection body rejects unknown or partial I C T before admission',async()=>{
@@ -162,6 +172,10 @@ test('current installed code-only actual selection body rejects unknown or parti
 });
 
 test('current installed code-only plan uses the normal active migration contract and refuses every pending write',async()=>{
+  // These positive selectors belong to genuine594; SOURCE595 has its own guarded workflow branch.
+  await withIssued594CodeOnlyTestSource(async sourceRoot=>{
+  const load=file=>import(pathToFileURL(path.join(sourceRoot,file)).href);
+  const {verifyCurrentInstalledCodeOnlyPlan}=await load('scripts/select-native-original-continuity-code-only-source.mjs');
   assert(['assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor'].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase));
   const required=(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-installed593-origin591-successor'
     ?(await import('./integrated-cutover-readiness.mjs')).installed593Original591RequiredMigrations:ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public591-successor'
@@ -183,6 +197,7 @@ test('current installed code-only plan uses the normal active migration contract
     {...options,environment:{...options.environment,RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_UPGRADE_OPT_IN:'true'}},
   ])await assert.rejects(verifyCurrentInstalledCodeOnlyPlan(changed));
   await assert.rejects(verifyCurrentInstalledCodeOnlyPlan({...options,allowPending:true}));
+  });
 });
 
 test('current installed code-only normal workflow keeps read-only SQL, hard current restore and B before S',async()=>{

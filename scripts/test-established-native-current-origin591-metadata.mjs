@@ -3,13 +3,16 @@
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
-import {withAuthenticated591PredecessorSource} from './check-assistant-later-h0-predecessor-source.mjs';
-import {assertFrozen591LaterOriginMetadata} from './lib/established-native-current-origin.mjs';
+import {withAuthenticated591PredecessorSource,withSource594CodeParent} from './check-assistant-later-h0-predecessor-source.mjs';
 import {assertAssistantOriginalRuntimeContracts} from './assistant-later-h0-runtime-transition.mjs';
-import {privateRuntimeContractHashes} from './private-production-runtime-workflow.mjs';
 const fail={code:'ESTABLISHED_CURRENT_ORIGIN_591_METADATA_ONLY'};
 const clone=structuredClone;
 let negatives=0;
+// The entire old591->594 metadata oracle uses its genuine594 CODE host.
+await withSource594CodeParent(async sourceRoot=>{
+const loadCurrent=relative=>import(pathToFileURL(path.join(sourceRoot,relative)).href);
+const {assertFrozen591LaterOriginMetadata}=await loadCurrent('scripts/lib/established-native-current-origin.mjs');
+const {privateRuntimeContractHashes}=await loadCurrent('scripts/private-production-runtime-workflow.mjs');
 await withAuthenticated591PredecessorSource(async root=>{
   const load=relative=>import(pathToFileURL(path.join(root,relative)).href);
   const originalI=(await load('js/core/ravscore-model-contract.js')).ravScoreModelBinding();
@@ -42,4 +45,5 @@ await withAuthenticated591PredecessorSource(async root=>{
   assert.deepEqual({descriptor,checkpoint},before);
   console.log(JSON.stringify({kind:'NORMAL_591_ORIGIN_METADATA_GRAENSE',status:'PASS',negativeCases:negatives,
     originalCodeBindings:'genuine591',productionBS:false,productionProof:false,sqlExecuted:false}));
+});
 });

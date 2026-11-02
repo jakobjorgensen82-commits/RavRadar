@@ -8,11 +8,16 @@ import {projectSourceImpactWorkflowFull,SOURCE_IMPACT_FULL_WORKFLOW_ORIGIN,
   SOURCE_IMPACT_PR_READ_GRANT,inverseSourceImpactPrReadGrant}
   from './lib/source-impact-workflow-review.mjs';
 import {verifyWorkflow,inverseSourceBeforePostgresWorkflow,inverseCandidatePublicSourceRunLine,
-  CURRENT_JOB,AFTER_JOB,verifyReviewed90Workflow} from './national584-source-evidence.mjs';
+  CURRENT_JOB,AFTER_JOB,verifyReviewed90Workflow,inverseSourceNode24Workflow,verifySourcePrWorkflow,
+  SOURCE_NODE24_CAPTURE,SOURCE_NODE24_ENV} from './national584-source-evidence.mjs';
 import {inverseCurrent586PhaseUpload} from './native-postgres-evidence.mjs';
 
 // Read-only normal caller/contract target. No source suite, SQL, API or provider.
-const source=fs.readFileSync(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8').replace(/\r\n/g,'\n');
+const rawSource=fs.readFileSync(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8').replace(/\r\n/g,'\n');
+// Actual SOURCE Node24 wiring is verified first; only its existing exact
+// normal inverse supplies the preserved MAIN workflow-oracle view below.
+verifySourcePrWorkflow(rawSource);
+const source=inverseSourceNode24Workflow(rawSource);
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const git=(ref,file)=>execFileSync('git',['show',ref+':'+file],{maxBuffer:65536,timeout:10000,
   env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0',
@@ -22,6 +27,27 @@ assert.equal(sha(origin),SOURCE_IMPACT_FULL_WORKFLOW_SHA256);
 assert.equal(projectSourceImpactWorkflowFull(source),origin,'WHOLE qualified 334 FULL bytes are preserved');
 assert.equal(projectSourceImpactWorkflowFull(origin),origin);
 verifyWorkflow(source);verifyWorkflow(origin);let passed=1;
+// Both allowed PG headers are closed by the same normal SOURCE verifier.
+// The legacy FULL fixture is the already pinned334 bytes plus the unchanged
+// two observed Node24 operands; it is not a current SOURCE qualification.
+const pgName='      - name: Validate native PostgreSQL checkpoint CAS on artificial data only\n';
+const pgBody='        shell: bash\n        env:\n';
+const fullHeader=pgName+SOURCE_IMPACT_FULL_STEP_CONDITION+pgBody;
+const cohort='          python -B scripts/test-owned-dmi-grib-save-native.py --node24-path "$(command -v node)"\n';
+assert.equal(rawSource.split(fullHeader).length,2);
+assert.equal(origin.split(cohort).length,2);assert.equal(origin.split(pgName+pgBody).length,2);
+const legacy=origin.replace(cohort,cohort+SOURCE_NODE24_CAPTURE)
+  .replace(pgName+pgBody,pgName+pgBody+SOURCE_NODE24_ENV);
+assert.equal(inverseSourceNode24Workflow(legacy),origin);verifySourcePrWorkflow(legacy);passed++;
+for(const condition of ['        if: true\n',
+  SOURCE_IMPACT_FULL_STEP_CONDITION.replace("!= 'TARGETED'","== 'TARGETED'"),
+  SOURCE_IMPACT_FULL_STEP_CONDITION+SOURCE_IMPACT_FULL_STEP_CONDITION,'']){
+  const changed=rawSource.replace(fullHeader,pgName+condition+pgBody);
+  assert.notEqual(changed,rawSource);assert.throws(()=>verifySourcePrWorkflow(changed));passed++;
+}
+for(const changed of [rawSource.replace(SOURCE_NODE24_CAPTURE,''),rawSource.replace(SOURCE_NODE24_ENV,'')]){
+  assert.notEqual(changed,rawSource);assert.throws(()=>verifySourcePrWorkflow(changed));passed++;
+}
 
 // Actual authenticated commit->PR discovery needs the single inherited read grant.
 function assertSourcePrDiscoveryReadGrant(value){
@@ -64,8 +90,8 @@ assert.equal(order.split(begin).length,2);const start=order.indexOf(begin),finis
 assert(finish>start);
 new Function('fs','workflowDirectory','verifyCurrentNationalWorkflow','inverseSourceBeforePostgresWorkflow',
   'CURRENT_SOURCE_JOB','REVIEWED90_SOURCE_JOB','assert',order.slice(start,finish))(
-  fs,fileURLToPath(new URL('../.github/workflows',import.meta.url)),verifyWorkflow,
-  inverseSourceBeforePostgresWorkflow,CURRENT_JOB,AFTER_JOB,assert);
+  fs,fileURLToPath(new URL('../.github/workflows',import.meta.url)),verifySourcePrWorkflow,
+  value=>inverseSourceBeforePostgresWorkflow(inverseSourceNode24Workflow(value)),CURRENT_JOB,AFTER_JOB,assert);
 passed++;
 const parityBegin='let sourceGatePathCount = 0;',parityEnd='assert.equal(sourceGatePathCount, 6,';
 assert.equal(order.split(parityBegin).length,2);const parityStart=order.indexOf(parityBegin);
@@ -75,7 +101,7 @@ const markers=order.slice(order.indexOf('const sourceGateRequirementMarkers = ['
 const parity=new Function('fs','workflowDirectory','sourceGateWorkflowNames','projectSourceImpactWorkflowFull','assert',
   markers+order.slice(parityStart,parityFinish)+'\nreturn sourceGatePathCount;');
 assert.equal(parity(fs,fileURLToPath(new URL('../.github/workflows',import.meta.url)),
-  ['validate-pull-request.yml'],projectSourceImpactWorkflowFull,assert),1);
+  ['validate-pull-request.yml'],value=>projectSourceImpactWorkflowFull(inverseSourceNode24Workflow(value)),assert),1);
 passed++;
 
 const rows=[...source.matchAll(/^      - (?:name|uses):[^\n]*\n/gm)];assert.equal(rows.length,21);

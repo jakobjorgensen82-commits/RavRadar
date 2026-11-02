@@ -77,7 +77,8 @@ export function assertForecastSharePagesRemoteProject(project,expectedId=null){
     &&project.production_branch==='main'&&project.subdomain==='ravradar-del.pages.dev'
     &&(expectedId===null||project.id===expectedId),'REMOTE_PROJECT');
   need(project.source===undefined||project.source===null,'REMOTE_SOURCE');
-  need(Array.isArray(project.domains)&&project.domains.every(x=>x==='ravradar-del.pages.dev')
+  need(Array.isArray(project.domains)&&project.domains.every(x=>x==='ravradar-del.pages.dev'||x==='del.ravradar.dk')
+    &&(project.domains.length===0||project.domains.includes('ravradar-del.pages.dev'))
     &&new Set(project.domains).size===project.domains.length,'REMOTE_DOMAINS');
   need(object(project.deployment_configs)
     &&Object.keys(project.deployment_configs).sort().join(',')==='preview,production','REMOTE_CONFIG');
@@ -115,7 +116,7 @@ export function assertForecastSharePagesDeployment(deployment,projectId,commit){
   // Aliases are optional metadata, not proof that the canonical production root is current.
   need(deployment.aliases===null||(Array.isArray(deployment.aliases)
     &&deployment.aliases.every(x=>typeof x==='string'&&(x===FORECAST_SHARE_PAGES_ORIGIN
-      ||x==='https://main.ravradar-del.pages.dev'
+      ||x==='https://main.ravradar-del.pages.dev'||x==='https://del.ravradar.dk'
       ||/^https:\/\/[a-f0-9]{8}\.ravradar-del\.pages\.dev$/.test(x)))),'DEPLOYMENT_ALIAS');
   return deployment.id;
 }
@@ -208,11 +209,13 @@ export async function deployForecastSharePages({env=process.env,fetchImpl=global
     const projects=await completeForecastSharePagesList(read);
     let alreadyDeployed=false,selected;
     // An update requires the exact owned identity recorded after a successful
-    // first create. Discovery alone never adopts an existing project. This
-    // first update phase intentionally retains the pages.dev-only host guard.
+    // first create. Discovery alone never adopts an existing project. Only
+    // pages.dev and the exact approved custom host may survive every readback.
     const pinnedCurrent=(value,deploymentId,deploymentCommit)=>{
       assertForecastSharePagesRemoteProject(value,ownedId);
-      need(value.domains.length===1,'UPDATE_DOMAINS');
+      need((value.domains.length===1||value.domains.length===2)
+        &&value.domains.includes('ravradar-del.pages.dev'),'UPDATE_DOMAINS');
+      need(JSON.stringify([...value.domains].sort())===JSON.stringify([...selected.domains].sort()),'UPDATE_DOMAINS_CHANGED');
       need(value.uses_functions===true,'FUNCTIONS_UNPROVED');
       need(assertForecastSharePagesDeployment(value.canonical_deployment,ownedId,deploymentCommit)===deploymentId
         &&value.latest_deployment?.id===deploymentId,'PREDECESSOR_CHANGED');
@@ -299,7 +302,8 @@ export async function deployForecastSharePages({env=process.env,fetchImpl=global
       publicModelBinding:ravScoreModelBinding(),createIssued,deployIssued,terminationConfirmed,readback,
       outcome:alreadyDeployed?'ALREADY_DEPLOYED_READBACK_PROVED'
         :deployFailed?'COMMITTED_REPLY_LOST_READBACK_PROVED':'DEPLOYED_READBACK_PROVED',
-      staticInputFiles:3,functionsInputFiles:1,bindings:0,customDomains:0,dnsChanged:false,legacyWorkerChanged:false,
+      staticInputFiles:3,functionsInputFiles:1,bindings:0,customDomains:final.domains.filter(x=>x==='del.ravradar.dk').length,
+      dnsChanged:false,legacyWorkerChanged:false,
       frontendChanged:false,hostedScoreProved:false,freeCapacityProved:false};emit(receipt);return receipt;
   }catch(error){
     lastKind=['GH_MAIN','PUBLIC_MANIFEST','PROJECT_LIST','PROJECT_ABSENCE','PROJECT_CREATE','CREATE_READBACK',

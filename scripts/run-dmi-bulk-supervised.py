@@ -44,6 +44,85 @@ class SupervisedResult:
     timed_out_asset: dict[str, str] | None = None
 
 
+# Only the fixed G4 guardian can supply this process-local cutoff. Ordinary
+# workflow/main callers never issue it from a CLI number, environment or JSON.
+_source_cutoff_ns: int | None = None
+_source_control = None
+_source_parent: int | None = None
+
+
+class _SourceCutoffExpired(RuntimeError):
+    pass
+
+
+def _bind_source_guardian_control() -> None:
+    import socket
+    import struct
+    global _source_cutoff_ns, _source_control, _source_parent
+    if (sys.platform != "linux" or sys.version_info[:2] != (3, 12)
+            or threading.current_thread() is not threading.main_thread()
+            or time.get_clock_info("monotonic").implementation != "clock_gettime(CLOCK_MONOTONIC)"
+            or _source_control is not None or _source_cutoff_ns is not None):
+        raise RuntimeError("SOURCE_SUPERVISOR_CONTROL_UNAVAILABLE")
+    control = socket.socket(fileno=0)
+    _source_control = control  # Retain our actual descriptor even on rejection.
+    if control.family != socket.AF_UNIX or control.type != socket.SOCK_STREAM:
+        raise RuntimeError("SOURCE_SUPERVISOR_CONTROL_INVALID")
+    parent = os.getppid()
+    peer_pid, peer_uid, peer_gid = struct.unpack("3i", control.getsockopt(
+        socket.SOL_SOCKET, socket.SO_PEERCRED, struct.calcsize("3i")))
+    helper = str(ROOT / "scripts/lib/copernicus_component_process.py")
+    expected = [b"-I", b"-B", os.fsencode(helper), b"--source-dmi-cohort"]
+    parent_args = Path(f"/proc/{parent}/cmdline").read_bytes().split(b"\0")
+    if (parent <= 1 or peer_pid != parent or peer_uid != os.getuid() or peer_gid != os.getgid()
+            or len(parent_args) != 6 or parent_args[-1] != b"" or parent_args[1:-1] != expected
+            or Path(f"/proc/{parent}/exe").resolve() != Path(sys.executable).resolve()):
+        raise RuntimeError("SOURCE_SUPERVISOR_PARENT_UNPROVED")
+    # Guardian preloads this entire bounded frame and half-closes BEFORE Popen.
+    # Never wait for untrusted/partial input before a cutoff has been obtained.
+    frame = control.recv(57, socket.MSG_DONTWAIT)
+    if len(frame) != 56 or control.recv(1, socket.MSG_DONTWAIT) != b"":
+        raise RuntimeError("SOURCE_SUPERVISOR_CONTROL_INVALID")
+    magic, sender, run, attempt, cutoff, head = struct.unpack(">8sIQQQ20s", frame)
+    if (magic != b"RRSDG401" or sender != parent or os.getppid() != parent
+            or str(run) != os.environ.get("GITHUB_RUN_ID")
+            or str(attempt) != os.environ.get("GITHUB_RUN_ATTEMPT")
+            or head.hex() != os.environ.get("GITHUB_SHA")
+            or not 0 < cutoff <= 0x7fffffffffffffff):
+        raise RuntimeError("SOURCE_SUPERVISOR_CONTROL_INVALID")
+    _source_parent = parent
+    _source_cutoff_ns = cutoff
+    _check_source_cutoff()
+
+
+def _source_remaining() -> float | None:
+    if _source_cutoff_ns is None:
+        return None
+    return (_source_cutoff_ns - time.monotonic_ns()) / 1_000_000_000
+
+
+def _source_bound(deadline: float) -> float:
+    if _source_cutoff_ns is None:
+        return deadline
+    import math
+    # Python3.12 Linux uses the same CLOCK_MONOTONIC epoch as this guardian.
+    return min(deadline, math.nextafter(_source_cutoff_ns / 1_000_000_000, -math.inf))
+
+
+def _check_source_cutoff() -> None:
+    if _source_cutoff_ns is None:
+        return
+    if os.getppid() != _source_parent:
+        raise RuntimeError("SOURCE_SUPERVISOR_PARENT_LOST")
+    if _source_remaining() <= 0:
+        raise _SourceCutoffExpired("SOURCE_SUPERVISOR_CUTOFF_EXPIRED")
+
+
+def _source_wait_timeout(maximum: float) -> float:
+    remaining = _source_remaining()
+    return maximum if remaining is None else max(0.0, min(maximum, remaining))
+
+
 def bounded_seconds(environment: dict[str, str], name: str, default: int,
                     minimum: int, maximum: int) -> int:
     try:
@@ -144,6 +223,19 @@ _unclosed_supervised_outputs: list[tuple[object, ...]] = []
 
 
 def stop_process(process, *, grace_seconds: float = 10.0) -> None:
+    if _source_cutoff_ns is not None:
+        if process.poll() is not None:
+            return
+        if _source_remaining() > 0:
+            process.terminate()
+            try:
+                process.wait(timeout=_source_wait_timeout(grace_seconds))
+                return
+            except subprocess.TimeoutExpired:
+                pass
+        process.kill()  # Existing unreaped-leader identity, never stale PGID.
+        process.wait(timeout=_source_wait_timeout(grace_seconds))
+        return
     if process.poll() is not None:
         return
     process.terminate()
@@ -205,6 +297,7 @@ def run_supervised(
     def check_interruption() -> None:
         if pending_signal is not None:
             raise SystemExit(128 + pending_signal)
+        _check_source_cutoff()
 
     def check_total_deadline() -> None:
         # Default None preserves the normal asset-watchdog/finalizer contract.
@@ -235,7 +328,7 @@ def run_supervised(
     def join_output_threads(*, cleanup: bool = False) -> None:
         nonlocal teardown_deadline
         if teardown_deadline is None:
-            teardown_deadline = time.monotonic() + 2.0
+            teardown_deadline = _source_bound(time.monotonic() + 2.0)
         for thread in (reader, logger):
             if thread is not None and thread.ident is not None:
                 remaining = teardown_deadline - time.monotonic()
@@ -308,7 +401,7 @@ def run_supervised(
                 stop_process(process)
                 break
             try:
-                event, line = events.get(timeout=0.25)
+                event, line = events.get(timeout=_source_wait_timeout(0.25))
             except queue.Empty:
                 if process.poll() is not None and not reader.is_alive():
                     break
@@ -349,8 +442,8 @@ def run_supervised(
             check_interruption()
             check_total_deadline()
             try:
-                remaining = (0.25 if total_deadline is None
-                             else min(0.25, max(0.0, total_deadline - clock())))
+                remaining = (_source_wait_timeout(0.25) if total_deadline is None
+                             else min(_source_wait_timeout(0.25), max(0.0, total_deadline - clock())))
                 returncode = int(process.wait(timeout=remaining))
                 break
             except subprocess.TimeoutExpired:
@@ -452,6 +545,7 @@ def finalize_checkpoint(
     def check_interruption():
         if pending_signal is not None:
             raise SystemExit(128 + pending_signal)
+        _check_source_cutoff()
 
     try:
         for signum in (signal.SIGTERM, signal.SIGINT):
@@ -461,7 +555,7 @@ def finalize_checkpoint(
         process = subprocess.Popen(command, cwd=ROOT, env=final_env,
                                    start_new_session=os.name == "posix")
         process = _OwnedProcess(process)
-        deadline = time.monotonic() + timeout
+        deadline = _source_bound(time.monotonic() + timeout)
         while True:
             check_interruption()
             remaining = deadline - time.monotonic()
@@ -483,9 +577,12 @@ def finalize_checkpoint(
                     if process.poll() is None:
                         process.kill()
                 finally:
-                    # Preserve the existing unbounded cleanup, now including
-                    # owned group absence. No new finite stop reserve is added.
-                    process.wait()
+                    # Legacy retains its exact kill/reap semantics. SOURCE
+                    # spends only its same already-issued remaining time.
+                    if _source_cutoff_ns is None:
+                        process.wait()
+                    else:
+                        process.wait(timeout=max(0.0, _source_remaining()))
             except BaseException:
                 pass  # Cleanup cannot replace the first actual failure.
             try:
@@ -494,7 +591,8 @@ def finalize_checkpoint(
                 closed = False
             if not closed:
                 _unclosed_finalizer_processes.append(process)
-        if closed and pending_signal is None and isinstance(failure, subprocess.TimeoutExpired):
+        if (closed and pending_signal is None and isinstance(failure, subprocess.TimeoutExpired)
+                and (_source_cutoff_ns is None or _source_remaining() > 0)):
             write_failure_outputs(environment, "DMI_SUPERVISED_FINALIZE_TIMEOUT")
             return 2
         raise
@@ -583,6 +681,7 @@ def restore_exact_originals(environment: dict[str, str]) -> int:
 
 
 def main() -> int:
+    _check_source_cutoff()
     environment = dict(os.environ)
     if "--restore-exact-originals" in sys.argv[1:]:
         if sys.argv[1:] != ["--restore-exact-originals"]:
@@ -619,9 +718,10 @@ def main() -> int:
         print("DMI supervisor budget conflict; no producer work started.",
               file=sys.stderr, flush=True)
         return 2
-    deadline = time.monotonic() + total_runtime
+    deadline = _source_bound(time.monotonic() + total_runtime)
     skipped_assets: list[dict[str, str]] = []
     while True:
+        _check_source_cutoff()
         remaining = int(deadline - time.monotonic())
         if remaining <= finalize_reserve:
             environment["DMI_BULK_SUPERVISOR_SKIPPED_ASSETS"] = json.dumps(
@@ -638,6 +738,7 @@ def main() -> int:
             child_environment,
             watchdog_seconds=min(timeout, max(60, remaining)),
         )
+        _check_source_cutoff()
         if not result.watchdog_timed_out:
             if result.returncode == ONEOFF_FINALIZED_INCOMPLETE_EXIT_CODE:
                 if (
@@ -669,4 +770,6 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    if sys.argv[1:] == ["--source-dmi-issued-cutoff"]:
+        _bind_source_guardian_control()
     raise SystemExit(main())

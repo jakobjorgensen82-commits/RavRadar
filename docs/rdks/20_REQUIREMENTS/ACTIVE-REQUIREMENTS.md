@@ -1,3 +1,11 @@
+## 2. november — faktisk main-integration og sikker selvstændig drift
+
+Den kvalificerede main er normalt indarbejdet i SOURCE-kandidaten. Den normale 595-udstedelse skal begynde med det bevarede NULL-udgangspunkt og ske én gang efter dokumentreview og kodefreeze. Gamle SQL og autentiske originaler bevares. Positiv issued62, samme-PG/SDK/action63/64, ejerafslutning, fuld kvalifikation, kapacitet, installation og offentlig accept skal dokumenteres for revisionen; deres aktuelle fase står i CURRENT_TRUTH og IMPLEMENTATION_STATUS.
+
+Ejeren har godkendt sikker oprydning og klargøring af hele den eksisterende opsætning til Free-drift uden løbende Codex-/PC-afhængighed. Det er en planlægnings- og gennemførelsesopgave, ikke en erklæring om færdig drift. ravradar.dk, vejrhentning, cache, beregning, deploy, genoptagelse og databevarelse har førsteprioritet. Ingen ny betalt plan, skjult pruning, implicit SOURCE-G4-, statistik- eller automatisk brugersletteaktivering følger med.
+
+Pages-kontrollen må bevare præcis den ejede projektvært og del.ravradar.dk med de eksisterende bindings-, kilde-, proces- og readback-grænser. Frontendens legacy-adresse skifter først efter faktisk DNS/TLS og normal værtaccept. Dette erstatter alene de ældre aktuelle udsagn om totalt customdomæneafslag. Se [SOURCE-status](../90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02), DEC-0261 og håndbog 89.297.
+
 ## 1. november — privat Pages-opdatering af det eksakt ejede projekt
 
 P0 har faktisk leveret offentlig 4.0.594, og genoptagelsen er terminalt afsluttet. Denne lokale Pages-efterfølger ændrer ikke vejrdata eller modelbinding og er endnu ikke kilde- eller hostingkvalificeret. Aktuel kørselsstatus føres privat.
