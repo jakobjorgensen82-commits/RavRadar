@@ -1,3 +1,9 @@
+## 3. november — aktuelle jobvalg prøves samlet
+
+Den nye faste metadataoperation ændrer den fælles jobvælger i det eksisterende auditworkflow. Den aktuelle Voersaa-prøve skal derfor kontrollere hele den nye OR-betingelse og begge søskendejobbers negative metadataafgrænsning. Dens øvrige kilde-, original-, arkiv-, credential- og privacykrav samt alle historiske helfilinverser bevares. Produktkode og workflow er uændrede af denne testrettelse.
+
+Når en ændring berører fælles jobvalg eller modeadskillelse, køres hele den eksisterende hurtige workflowmålfil tidligt. Et navnemønster for kun den nye mode dækker ikke de berørte søskendetilstande. Langsomme, uvedkommende datalæserprøver gentages fortsat ikke uden konkret grund. Den normale workflowfil reproducerer det gamle afslag og består med den aktuelle kontrakt; præcis ny kildekvalifikation og faktisk metadataaflæsning er fortsat åbne.
+
 ## 3. november — fast 245 RAW-manifestdiagnose, kun lokal metadataforberedelse
 
 Den særskilte manuelle kandidat læser kun asset-manifest.json fra én eksakt gemt 245-RAW-cache og undersøger 14 faste WAM-identiteter fra de allerede afsluttede 244/245-kørsler. Den genbruger det eksisterende auditjob og dets main-, kilde-, eksklusive vejrkanal- og eksakte cachekontroller. Progress-cache og beskyttet B indgår ikke. Den fælles DKSS-only-capturevalidator, udstedt C/I/T og alle migrations-SQL bevares; kun håndbogens statiske installationskopi følger den opdaterede webhåndbog.

@@ -416,9 +416,9 @@ test('Voersaa fixed water trace workflow: exact additive inverse preserves every
 test('Voersaa fixed water trace workflow: one fixed job is gated before secrets and archives genuine readers only',()=>{
   const job=completeWorkflow.slice(completeWorkflow.indexOf('\n  voersaa-water-trace:'));
   assert.match(completeWorkflow,/water_level_voersaa_trace_20261101:\n[^\n]*\n        required: false\n        default: false\n        type: boolean/);
-  assert.match(completeWorkflow,/audit:\n    if: inputs\.component_summary_only != true && inputs\.water_level_voersaa_trace_20261101 != true/);
-  assert.match(completeWorkflow,/component-summary:\n    if: inputs\.component_summary_only == true && inputs\.water_level_voersaa_trace_20261101 != true/);
-  assert.match(job,/if: inputs\.water_level_voersaa_trace_20261101 == true/);
+  assert.match(completeWorkflow,/^  audit:\n    if: inputs\.wam_raw_manifest_245_only == true \|\| \(inputs\.component_summary_only != true && inputs\.water_level_voersaa_trace_20261101 != true\)$/m);
+  assert.match(completeWorkflow,/^  component-summary:\n    if: inputs\.component_summary_only == true && inputs\.water_level_voersaa_trace_20261101 != true && inputs\.wam_raw_manifest_245_only != true$/m);
+  assert.match(job,/^    if: inputs\.water_level_voersaa_trace_20261101 == true && inputs\.wam_raw_manifest_245_only != true$/m);
   assert.match(completeWorkflow,/group: ravradar-weather-production-v2\n  queue: max\n  cancel-in-progress: false/);
   assert.match(job,/test "\$SOURCE_REQUIRED" = false/);
   assert(job.indexOf('test "$SOURCE_REQUIRED" = false')<job.indexOf(gh('secrets.SUPABASE_URL')));

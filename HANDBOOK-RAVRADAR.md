@@ -578,6 +578,12 @@ Manifestets egen kontrolsum og størrelse kontrolleres. En erklæret kontrolsum 
 
 Lokale afgrænsede læser-, CLI- og workflowprøver er bestået. Kildeplanen kræver normal fuld kontrol uden at udvide registret. Den faktiske metadataaflæsning og en årsag til bølgehullerne er endnu ikke bevist. En senere afkodning kræver først verificerede originalbytes og et autentisk generationsbundet PART-grundlag. Ingen leverandørhentning, beregning, cachegemning eller produktionsændring følger af metadataoperationen.
 
+### Aktuelle jobvalg og den hurtige workflowprøve
+
+Metadatajobbet og den faste vandstandsdiagnose deler samme workflow. Den aktuelle prøve kontrollerer hele valget mellem metadata, komponentopsummering og vandstand samt afvisning af blandede diagnosetilvalg før lager- og masterkredentialer. Den eksisterende skrivefri GitHub-adgang bruges fortsat til den tidlige kildekontrol. Alle tidligere originale, arkiverede og private læsegrænser bevares.
+
+Ved ændringer af fælles jobvalg køres hele den eksisterende hurtige workflowmålfil, ikke kun prøver navngivet efter den nye mode. Det ændrer ingen produktgren, data, modelbinding eller kontrolregister. De historiske helfilinverser bevares, mens en aktuel prøve kontrollerer den faktiske nye betingelse. En bestået lokal prøve er stadig ikke præcis kildekvalifikation eller en udført metadataaflæsning.
+
 ## 89.276 Bedre hjælp til almindelige spørgsmål og korte opfølgninger
 
 **Kort fortalt: Spørg RavRadar skal forstå almindelige spørgsmål om ravjagt og kunne følge en kort opfølgning. Svarene skal være brugbare og ærlige om usikkerhed. Forbedringen ændrer ikke RavScore eller de vejrdata, prognosen bygger på.**
