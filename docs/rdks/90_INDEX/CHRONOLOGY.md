@@ -1,3 +1,7 @@
+## 3. november 2026 — SOURCE 4.0.596 lokalt udstedt, endnu ikke leveret
+
+Faktisk PR795-main er normalt indarbejdet, og den samlede lokale efterfølger er versionssynkroniseret og udstedt gennem de eksisterende byggere. Gamle 595-originaler og alle 76 tidligere migrationer bevares; én ny SQL er tilføjet. De syv forbrugere og normal fastpunktskontrol består. Præcis ny kvalifikation, kapacitet, installation og offentlig drift er fortsat åbne. Ingen aktivering eller produktionshandling følger af den lokale udstedelse; ældre NULL-udsagn nedenfor beskriver deres daterede forberedelsestrin.
+
 ## 1. november 2026 — lokal sammenføring, endnu ingen udstedt SOURCE 595
 
 SOURCE19 har det lokale substanscheckpoint `24d8f8ee75bb91d2c75afa92e5ccc407cb7c230f` og en uafsluttet normal sammenføring med main `c920d1e2ad0cbbfe351360f594128f0e06bd1f1e`. Main 4.0.594 er den midlertidige normale versionsforgænger; den planlagte isolerede revision er 4.0.595. Normal versionssynk efter sammenføringen er endnu ikke kørt. SOURCE-version, binding og output er NULL; nye C/I/T og SQL er ikke udstedt. Semantiske konflikter og kvalifikation er fortsat åbne. Et checkpoint, et forberedt input eller MERGE_HEAD er ikke faktisk main-ancestry, native/fullRuntime-, ejerafslutnings- eller leveringsbevis.

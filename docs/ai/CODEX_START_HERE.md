@@ -1,12 +1,16 @@
-## 3. november — bevaret 595-udstedelse, uudstedt 596 og faktisk main-status
+## 3. november — SOURCE596 er lokalt udstedt; kvalifikation og levering er åbne
 
-595 er lokalt udstedt med bevarede metadata, output og append-only SQL. De efterfølgende kildeændringer er ikke kvalificeret af den gamle udstedelse. Den planlagte efterfølger 596 er UNISSUED: ingen ny tuple, output eller SQL er afledt, og gamle 595-værdier må hverken nulstilles eller ommærkes.
+Den normale sammenføring med faktisk kvalificeret PR795-main og versionssynk til 4.0.596 er gennemført. Den bevarede 595-kilde, dens metadata/output og oprindelige SQL ligger uændret i den faste Git-forfader og den private udstedelsesarkivering. Alle 76 tidligere SQL-filer er byteuændrede; 596 tilføjer én ny append-only migration. Gamle NULL-udsagn er dateret førstegangsforberedelse, aldrig en instruktion om at nulstille en udstedt binding.
 
-PR795 er kildekvalificeret og faktisk merget på main. Før-DMI-selectoren tillader nu de to kendte kontinuitetsformater schema1 og schema2; øvrige bindings-, model- og særforløbsvagter bevares. Det er ikke i sig selv bevis for ny offentlig dækningsvirkning. Den endelige normale main-sammenføring og hele SOURCE-kvalifikationen skal stadig gennemføres før en ny udstedelse eller produktionshandling.
+596 er nu lokalt udstedt gennem de normale C/I-byggeres faktiske input, dataafledning, output, SQL og synkronisering af de syv eksisterende forbrugere. Normal fastpunktskontrol består. Den strenge importkontrol blev lukket med to særskilt helgennemgåede varianter og de uændrede endelige importmængder; ingen gammel variant, guard eller afvisning blev erstattet. Modelkontrakter, scoreformel, indgangspunkter og importinventarets filantal er bevaret. Dette er kildeudstedelse, ikke installation eller drift.
 
-Den særskilte backup-/restorekandidat er fortsat lokal og endnu ikke main eller leveret. Den omfatter fem beskyttede SQL-filer, privat genfinding og eksplicit materialisering uden SQL-eksekvering. De 109 normale lokale backupcases og fem rene restoregrænsecases er kandidatens egne beviser, ikke hosted restore eller samlet SOURCE-kvalifikation. Faktisk adgang, kompatibel Auth/schema/datarestore, Storage-bytes, anti-genoplivning, uafhængig nøglerecovery og varig frekvens/retention er åbne før FreeReady eller Pro-opsigelse.
+Faktisk main fra PR795 og den tidligere udstedte 595-kilde er normale Git-forfædre. Den gennemgåede lokale sammenføring omfatter backup-/restoreforberedelse, ændrede normale genoptagelses- og SOURCE-kaldere, main795, dokumentation og den sammenhængende delingscache. Geodata fik alene ændret topversionen; administratorpunkter og geometri er uændrede.
 
-Se håndbog 89.295/89.297 om SOURCE-fasen, 89.299 om scalarformatet og 89.300 om databasebackup. Ældre NULL- og leveringsudsagn nedenfor beskriver deres daterede forberedelsestrin.
+Den samlede efterfølger skal fortsat kvalificeres på sin præcise kilde: helfilkontrol af de normale workflowkaldere, positiv issued62, samme PostgreSQL, SDK/action63/64, fysisk ejerafslutning, nationale mål, fuld kildekontrol og faktisk 180-minutterskapacitet. Kontrolleret installation med original-B/S-før-T, beskyttet genoptagelse, normal ny generation, offentlig levering og driftsaccept er åbne. Gamle 595-resultater må ikke ommærkes til 596-beviser.
+
+Backup-/restorekilderne er lokalt sammenført, men ikke hostedkvalificeret eller leveret. De 109 normale backupcases og fem rene restoregrænsecases tilhører deres særskilte kandidat. Faktisk adgang, kompatibel Auth/schema/datarestore, Storage-bytes, anti-genoplivning, uafhængig nøglerecovery og varig frekvens/retention er fortsat åbne før FreeReady eller Pro-opsigelse.
+
+Alle fem hovedmål er åbne. Ingen SOURCE-G4, statistik, mail, automatisk sletning, tidsplan eller produktionshandling aktiveres af denne lokale udstedelse. Se CURRENT_TRUTH, IMPLEMENTATION_STATUS, håndbog 89.295/89.297 og privat checkpoint. Ældre daterede afsnit bevares som historik.
 
 ## 2. november — normal scalarplan med begge kendte kontinuitetsformater
 

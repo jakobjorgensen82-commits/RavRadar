@@ -1,3 +1,9 @@
+## Tillæg 3. november — bevaret første udstedelse og normal lokal 596-efterfølger
+
+595 er faktisk lokalt udstedt og bevares som uinstalleret, autentisk kildeoriginal. Tidligere NULL-anvisninger er førstegangsforløbets historik, aldrig en resetinstruks. Efter normal faktisk main-sammenføring og gennemgang af de ændrede kilder er 4.0.596 nu lokalt afledt gennem den særskilte data-only alternative-binding-vej, de normale C/I/T-byggere, output, én ny append-only SQL og syv forbrugeres fastpunkt. Alle 76 tidligere SQL-filer og de gamle 595-metadata/output i den faste Git-forfader bevares.
+
+Den reelle kode-/dataforgænger er fortsat den tilsigtede 594-familie. En uinstalleret 595-kandidat må ikke opfindes som installeret originalgeneration. De to nye hele importvarianter bruger præcis de allerede gennemgåede endelige importmængder og bevarer alle gamle guards og afslag. Ny udstedelse er ikke adgang til SQL, tilstand eller drift. Præcis ny PostgreSQL-/native-, kilde-, kapacitets- og leveringskvalifikation er fortsat åbne; følg CURRENT_TRUTH og IMPLEMENTATION_STATUS.
+
 ## Tillæg 2. november — nye assistentinput kræver den reelle afledning
 
 Den sammenførte klientservice ændrer faktisk C/I-kode. Gamle model- og databasebeviser er derfor ikke ny595-kvalifikation. Bevar NULL indtil faktisk main M2 og endelig DMI-kode er med; følg én normal afledning på den frosne union. [Kanonisk status](../90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02) skelner den lokale målprøve fra native- og driftsevidens.

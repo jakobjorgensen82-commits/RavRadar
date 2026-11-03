@@ -1,3 +1,7 @@
+## 3. november — SOURCE596 er lokalt udstedt; kvalifikation og levering er åbne
+
+4.0.596 er lokalt udstedt efter normal main-sammenføring og versionssynk. Følg [kanonisk status](docs/rdks/90_INDEX/CURRENT_TRUTH.md) og IMPLEMENTATION_STATUS. Gamle 595-metadata/output og alle 76 SQL bevares; én ny SQL er tilføjet. Ingen gammel binding nulstilles eller ommærkes. Ny præcis kvalifikation, installation og faktisk drift er fortsat åbne. Ingen aktivering eller produktionshandling følger af den lokale udstedelse.
+
 ## 2. november — SOURCE595 er lokalt udstedt; samlet kvalifikation og drift er åbne
 
 Følg [kanonisk status](docs/rdks/90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02) og det private checkpoint. Binding/output er lokalt afledt én gang, append-only SQL og normal fixedpoint består. Ældre NULL- og main-afventningsudsagn nedenfor er historik. Ingen SOURCE-aktivering eller produktionsændring følger af lokal udstedelse.

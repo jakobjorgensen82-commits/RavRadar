@@ -1,6 +1,14 @@
-## 3. november — bevaret 595-udstedelse, uudstedt 596 og faktisk main-status
+## 3. november — SOURCE596 er lokalt udstedt; kvalifikation og levering er åbne
 
-Dokumentationen samler den faktisk mergede schema1/2-kalderrettelse fra main og den særskilte lokale backup-/restorekandidat med SOURCEs bevarede 595-historik. 596 er fortsat UNISSUED; ingen ny version, modelbinding, SQL-migration eller produktionslevering følger med. Håndbog 89.299 og 89.300 tilføjes med eksisterende stabile ID’er, mens Source-metadata89.294, Source-status89.295, DMI89.296 og driftsvej89.297 bevares. Gamle forberedelsesudsagn er dateret historik.
+Den normale sammenføring med faktisk kvalificeret PR795-main og versionssynk til 4.0.596 er gennemført. Den bevarede 595-kilde, dens metadata/output og oprindelige SQL ligger uændret i den faste Git-forfader og den private udstedelsesarkivering. Alle 76 tidligere SQL-filer er byteuændrede; 596 tilføjer én ny append-only migration. Gamle NULL-udsagn er dateret førstegangsforberedelse, aldrig en instruktion om at nulstille en udstedt binding.
+
+596 er nu lokalt udstedt gennem de normale C/I-byggeres faktiske input, dataafledning, output, SQL og synkronisering af de syv eksisterende forbrugere. Normal fastpunktskontrol består. Den strenge importkontrol blev lukket med to særskilt helgennemgåede varianter og de uændrede endelige importmængder; ingen gammel variant, guard eller afvisning blev erstattet. Modelkontrakter, scoreformel, indgangspunkter og importinventarets filantal er bevaret. Dette er kildeudstedelse, ikke installation eller drift.
+
+Faktisk main fra PR795 og den tidligere udstedte 595-kilde er normale Git-forfædre. Den gennemgåede lokale sammenføring omfatter backup-/restoreforberedelse, ændrede normale genoptagelses- og SOURCE-kaldere, main795, dokumentation og den sammenhængende delingscache. Geodata fik alene ændret topversionen; administratorpunkter og geometri er uændrede.
+
+Den samlede efterfølger skal fortsat kvalificeres på sin præcise kilde: helfilkontrol af de normale workflowkaldere, positiv issued62, samme PostgreSQL, SDK/action63/64, fysisk ejerafslutning, nationale mål, fuld kildekontrol og faktisk 180-minutterskapacitet. Kontrolleret installation med original-B/S-før-T, beskyttet genoptagelse, normal ny generation, offentlig levering og driftsaccept er åbne. Gamle 595-resultater må ikke ommærkes til 596-beviser.
+
+Alle fem hovedmål er åbne. Ingen SOURCE-G4, statistik, mail, automatisk sletning, tidsplan eller produktionshandling aktiveres af denne lokale udstedelse. Se CURRENT_TRUTH, IMPLEMENTATION_STATUS, håndbog 89.295/89.297 og privat checkpoint. Ældre daterede afsnit bevares som historik.
 
 ## 2. november — normal scalarplan med begge kendte kontinuitetsformater
 

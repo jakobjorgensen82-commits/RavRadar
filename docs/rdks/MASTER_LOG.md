@@ -1,3 +1,9 @@
+## 3. november 2026 — lokal 4.0.596-udstedelse efter faktisk main-sammenføring
+
+Den kvalificerede PR795-main og den gennemgåede lokale kodeunion er normalt sammenført. Normal versionssynk til 4.0.596, to additive hele importvarianter, C/I/T-afledning, genereret output, én ny append-only SQL og synk af syv forbrugere er gennemført; normal fastpunktskontrol består. De to modelkontrakter, indgangspunkter og importinventarernes 161/165 filer er bevaret. Geodataenes separate diff ændrer kun topversionen.
+
+Alle 76 tidligere SQL-filer er byteuændrede. Gamle 595-metadata/output og SQL bevares i den faste Git-forfader og privat arkivering; de nulstilles eller ommærkes ikke. Den faktiske 596-udstedelse er ikke ny PostgreSQL-, native-, fuld kilde-, kapacitets-, installations- eller driftsevidens. Disse krav og alle fem hovedmål er fortsat åbne. Ingen produktionsændring, SOURCE-G4, statistik, sletning, tidsplan eller abonnementsændring er udført. Faktiske bindinger, kontrolresultater og næste trin føres i det private checkpoint.
+
 ## 2. november2026 — lokal595-udstedelse, sikker Free-klargøring fortsat åben
 
 SOURCE4.0.595 er normalt lokalt udstedt efter integration af den kvalificerede main. Én append-only SQL og normal sync samt alle seks fixedpointkontroller er bestået; alle75 gamle SQL-originaler er byteuændrede. Positiv kalder-, PostgreSQL-, native-, CI-, kapacitets-, installations- og driftsverifikation er fortsat åbne. Den aktuelle offentlige modelgeneration er særskilt4.0.594. Ingen scoreformel, kildeprioritet, administratorpunkter eller geometri ændres.

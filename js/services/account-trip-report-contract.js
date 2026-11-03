@@ -2,9 +2,9 @@ import {
   TRIP_SEARCH_COVERAGE,
   TRIP_SEARCH_MODES,
   assertTripEvidencePrivacy
-} from './trip-evidence-contract.js?v=4.0.595';
+} from './trip-evidence-contract.js?v=4.0.596';
 
-import { observationOriginFields } from './calibration-eligibility.js?v=4.0.595';
+import { observationOriginFields } from './calibration-eligibility.js?v=4.0.596';
 
 export const ACCOUNT_TRIP_REPORT_SCHEMA_VERSION = 1;
 export const ACCOUNT_TRIP_REPORT_SOURCE = 'account-manual';

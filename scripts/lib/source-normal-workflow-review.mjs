@@ -1591,6 +1591,7 @@ Object.freeze(SOURCE_NORMAL_INSTALLED_ROUTE_WORKFLOW_REVIEW);
 export function inverseSourceNormalInstalledRouteWorkflow(source,role){
   assert.equal(arguments.length,2,'SOURCE_INSTALLED_ROUTE_INVERSE_ARGUMENTS');
   assert.equal(typeof source,'string','SOURCE_INSTALLED_ROUTE_INVERSE_TYPE');
+  source=inverseSourceNormalFinal596Workflow(source,role);
   const row=SOURCE_NORMAL_INSTALLED_ROUTE_WORKFLOW_REVIEW;
   if(role!=='build'||sha(source)!==row.after.sha256)return source;
   assert.equal(Buffer.byteLength(source),row.after.bytes,'SOURCE_INSTALLED_ROUTE_AFTER_BYTES');
@@ -1600,5 +1601,53 @@ export function inverseSourceNormalInstalledRouteWorkflow(source,role){
   }
   assert.equal(Buffer.byteLength(source),row.before.bytes,'SOURCE_INSTALLED_ROUTE_BEFORE_BYTES');
   assert.equal(sha(source),row.before.sha256,'SOURCE_INSTALLED_ROUTE_WHOLE_BEFORE');
+  return source;
+}
+
+// TEST ONLY: two exact outer layers, final596 -> SOURCE/M6/595 -> old guarded SOURCE.
+// The actual raw workflow keeps schema1/2; no runtime, source or data authority.
+export const SOURCE_NORMAL_FINAL596_WORKFLOW_REVIEW = {
+  "schemaVersion": 1,
+  "kind": "TEST_ONLY_EXACT_SOURCE596_WORKFLOW_INVERSE",
+  "productionAuthority": false,
+  "codeHead": "edbbaa652359055304ab6525f4613406cb26213c",
+  "before": {
+    "bytes": 349331,
+    "sha256": "4d75287c2a8886fda6a843c10f01666fa8e6da21664f8b9aef6f46bbd9ecbb8a"
+  },
+  "m6": {
+    "bytes": 349401,
+    "sha256": "85bae34cdc5c6ce86d4f528d76d720d079f6f7e8e7f985eb9a05847aa49d4f9e"
+  },
+  "after": {
+    "bytes": 349401,
+    "sha256": "63a77eaa77dd1ae696da74ade2eacb3d353ec2e0f75444396ffde9cbd1307b5f"
+  },
+  "previousUserAgent": "          WEATHER_USER_AGENT: \"RavRadar/4.0.595 (${{ github.server_url }}/${{ github.repository }})\"\n",
+  "currentUserAgent": "          WEATHER_USER_AGENT: \"RavRadar/4.0.596 (${{ github.server_url }}/${{ github.repository }})\"\n",
+  "userAgentCount": 5,
+  "previousSchema": "RAVRADAR_RETAINED_SCALAR_CONTEXT: ${{ steps.dmi-part-continuity-donor.outputs.continuity_schema == '1'",
+  "currentSchema": "RAVRADAR_RETAINED_SCALAR_CONTEXT: ${{ (steps.dmi-part-continuity-donor.outputs.continuity_schema == '1' || steps.dmi-part-continuity-donor.outputs.continuity_schema == '2')"
+};
+for(const key of ['before','m6','after'])Object.freeze(SOURCE_NORMAL_FINAL596_WORKFLOW_REVIEW[key]);
+Object.freeze(SOURCE_NORMAL_FINAL596_WORKFLOW_REVIEW);
+export function inverseSourceNormalFinal596Workflow(source,role){
+  assert.equal(arguments.length,2,'SOURCE_FINAL596_WORKFLOW_ARGUMENTS');
+  assert.equal(typeof source,'string','SOURCE_FINAL596_WORKFLOW_TYPE');
+  if(role!=='build')return source;
+  const row=SOURCE_NORMAL_FINAL596_WORKFLOW_REVIEW;
+  if(sha(source)===row.after.sha256){
+    assert.equal(Buffer.byteLength(source),row.after.bytes,'SOURCE_FINAL596_AFTER_BYTES');
+    assert.equal(source.split(row.currentUserAgent).length,row.userAgentCount+1,'SOURCE_FINAL596_EXACT_USER_AGENTS');
+    source=source.split(row.currentUserAgent).join(row.previousUserAgent);
+    assert.equal(Buffer.byteLength(source),row.m6.bytes,'SOURCE_FINAL596_M6_BYTES');
+    assert.equal(sha(source),row.m6.sha256,'SOURCE_FINAL596_WHOLE_M6');
+  }
+  if(sha(source)!==row.m6.sha256)return source;
+  assert.equal(Buffer.byteLength(source),row.m6.bytes,'SOURCE_FINAL596_M6_BYTES');
+  assert.equal(source.split(row.currentSchema).length,2,'SOURCE_FINAL596_EXACT_SCHEMA_HUNK');
+  source=source.replace(row.currentSchema,()=>row.previousSchema);
+  assert.equal(Buffer.byteLength(source),row.before.bytes,'SOURCE_FINAL596_BEFORE_BYTES');
+  assert.equal(sha(source),row.before.sha256,'SOURCE_FINAL596_WHOLE_GUARDED_PREDECESSOR');
   return source;
 }

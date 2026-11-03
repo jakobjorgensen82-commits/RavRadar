@@ -10,7 +10,7 @@ import { sourceGateRecord, decideSourceGate as genericSourceDecision, SOURCE_GAT
 import { isDeepStrictEqual as sameRouteFixture } from 'node:util';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { SOURCE_NORMAL_WORKFLOW_REVIEW as review, inverseSourceNormalWorkflow, SOURCE_NORMAL_MAIN_IMPORT_WORKFLOW_REVIEW as mainImportReview, inverseSourceNormalMainImportWorkflow, SOURCE_NORMAL_SCALAR_WORKFLOW_REVIEW as scalarWorkflowReview, inverseSourceNormalScalarWorkflow, inverseSourceNormalInstalledRouteWorkflow, SOURCE_NORMAL_INSTALLED_ROUTE_WORKFLOW_REVIEW as installedRouteReview } from './lib/source-normal-workflow-review.mjs';
+import { SOURCE_NORMAL_WORKFLOW_REVIEW as review, inverseSourceNormalWorkflow, SOURCE_NORMAL_MAIN_IMPORT_WORKFLOW_REVIEW as mainImportReview, inverseSourceNormalMainImportWorkflow, SOURCE_NORMAL_SCALAR_WORKFLOW_REVIEW as scalarWorkflowReview, inverseSourceNormalScalarWorkflow, inverseSourceNormalInstalledRouteWorkflow, SOURCE_NORMAL_INSTALLED_ROUTE_WORKFLOW_REVIEW as installedRouteReview, inverseSourceNormalFinal596Workflow, SOURCE_NORMAL_FINAL596_WORKFLOW_REVIEW as final596Review } from './lib/source-normal-workflow-review.mjs';
 import { buildWeatherOperationalControlSummary } from './weather-operational-control-summary.mjs';
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
@@ -474,7 +474,7 @@ test('installed SOURCE route refuses unissued/mixed/unknown tuples and retains e
 });
 
 test('installed SOURCE exact outer workflow inverse preserves all old layers and refuses drift',()=>{
-  const raw=read('.github/workflows/reusable-weather-build.yml'),row=installedRouteReview;
+  const raw=inverseSourceNormalFinal596Workflow(read('.github/workflows/reusable-weather-build.yml'),'build'),row=installedRouteReview;
   assert.equal(sha(raw),row.after.sha256);assert.equal(Buffer.byteLength(raw),row.after.bytes);
   const old=inverseSourceNormalInstalledRouteWorkflow(raw,'build');
   assert.equal(sha(old),row.before.sha256);assert.equal(Buffer.byteLength(old),row.before.bytes);
@@ -838,4 +838,36 @@ test('SOURCE backup77 and main backup76 qualify separate whole maps before uncha
   assert.throws(()=>inverse(source76));assert.throws(()=>inverse(main75));
   assert.throws(()=>inverse(actual,{}));assert.throws(()=>inverse(null));
   assert.deepEqual(actual,original,'Actual package DATA and order are not rewritten by either view');
+});
+
+
+test('SOURCE596 exact raw workflow preserves actual M6 schema1/2 and every old whole oracle',()=>{
+  const raw=read('.github/workflows/reusable-weather-build.yml'),row=final596Review;
+  assert.equal(Buffer.byteLength(raw),row.after.bytes);assert.equal(sha(raw),row.after.sha256);
+  assert.equal(raw.split(row.currentUserAgent).length,row.userAgentCount+1);
+  assert.equal(raw.split(row.previousUserAgent).length,1);
+  const m6=execFileSync('git',['show',row.codeHead+':.github/workflows/reusable-weather-build.yml'],
+    {cwd:ROOT,encoding:'utf8',maxBuffer:1024*1024});
+  assert.equal(Buffer.byteLength(m6),row.m6.bytes);assert.equal(sha(m6),row.m6.sha256);
+  assert.equal(raw.split(row.currentUserAgent).join(row.previousUserAgent),m6);
+  const actualMain=execFileSync('git',['show','6fb3fc1682b68bcf51b5ed73c14a84ead7676371:.github/workflows/reusable-weather-build.yml'],
+    {cwd:ROOT,encoding:'utf8',maxBuffer:1024*1024});
+  const selector=value=>value.split('\n').filter(line=>line.startsWith('          RAVRADAR_RETAINED_SCALAR_CONTEXT:'));
+  assert.equal(selector(raw).length,1);assert.deepEqual(selector(raw),selector(actualMain));
+  assert(selector(raw)[0].includes(row.currentSchema),'The actual current selector keeps both known schemas');
+  const guarded=inverseSourceNormalFinal596Workflow(raw,'build');
+  assert.equal(Buffer.byteLength(guarded),row.before.bytes);assert.equal(sha(guarded),row.before.sha256);
+  assert.equal(inverseSourceNormalFinal596Workflow(m6,'build'),guarded);
+  assert.equal(inverseSourceNormalFinal596Workflow(guarded,'build'),guarded);
+  assert.equal(inverseSourceNormalWorkflow(raw,'build'),inverseSourceNormalWorkflow(guarded,'build'));
+  for(const changed of [raw+'\n',raw.replace(row.currentUserAgent,row.previousUserAgent),
+    raw.replace(row.currentSchema,row.currentSchema+' || true'),
+    raw.replace("continuity_schema == '2'","continuity_schema == '3'"),
+    raw.replace('operation: source','operation: UNKNOWN')]){
+    assert.notEqual(changed,raw);assert.equal(inverseSourceNormalFinal596Workflow(changed,'build'),changed);
+    assert.throws(()=>inverseSourceNormalWorkflow(changed,'build'));
+  }
+  for(const role of ['once','other',null,1])assert.equal(inverseSourceNormalFinal596Workflow(raw,role),raw);
+  assert.throws(()=>inverseSourceNormalFinal596Workflow(raw),/SOURCE_FINAL596_WORKFLOW_ARGUMENTS/);
+  assert.throws(()=>inverseSourceNormalFinal596Workflow(null,'build'),/SOURCE_FINAL596_WORKFLOW_TYPE/);
 });

@@ -1,8 +1,10 @@
-## 3. november — bevaret 595-udstedelse, uudstedt 596 og faktisk main-status
+## 3. november — SOURCE596 er lokalt udstedt; kvalifikation og levering er åbne
 
-595 er lokalt udstedt med bevarede metadata, output og append-only SQL. De efterfølgende kildeændringer er ikke kvalificeret af den gamle udstedelse. Den planlagte efterfølger 596 er UNISSUED: ingen ny tuple, output eller SQL er afledt, og gamle 595-værdier må hverken nulstilles eller ommærkes.
+Den normale sammenføring med faktisk kvalificeret PR795-main og versionssynk til 4.0.596 er gennemført. Den bevarede 595-kilde, dens metadata/output og oprindelige SQL ligger uændret i den faste Git-forfader og den private udstedelsesarkivering. Alle 76 tidligere SQL-filer er byteuændrede; 596 tilføjer én ny append-only migration. Gamle NULL-udsagn er dateret førstegangsforberedelse, aldrig en instruktion om at nulstille en udstedt binding.
 
-Følg den nye daterede fase i CURRENT_TRUTH og IMPLEMENTATION_STATUS samt håndbog 89.295/89.297. Ældre anvisninger om førstegangs-NULL gælder den bevarede 595-historik; de er ikke en instruktion om at nulstille en udstedt binding. Normal main-autoritet, alle sikkerheds-/kvalifikationsgates, B før S og no-loss består. Der følger ingen implicit aktivering af SOURCE, statistik, sletning, backup eller en tidsplan af dokumentintegrationen.
+596 er nu lokalt udstedt gennem de normale C/I-byggeres faktiske input, dataafledning, output, SQL og synkronisering af de syv eksisterende forbrugere. Normal fastpunktskontrol består. Den strenge importkontrol blev lukket med to særskilt helgennemgåede varianter og de uændrede endelige importmængder; ingen gammel variant, guard eller afvisning blev erstattet. Modelkontrakter, scoreformel, indgangspunkter og importinventarets filantal er bevaret. Dette er kildeudstedelse, ikke installation eller drift.
+
+Alle fem hovedmål er åbne. Ingen SOURCE-G4, statistik, mail, automatisk sletning, tidsplan eller produktionshandling aktiveres af denne lokale udstedelse. Se CURRENT_TRUTH, IMPLEMENTATION_STATUS, håndbog 89.295/89.297 og privat checkpoint. Ældre daterede afsnit bevares som historik.
 
 ## 2. november — kvalificeret main er faktisk integreret
 

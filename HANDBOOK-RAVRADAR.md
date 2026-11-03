@@ -84,7 +84,11 @@ Dette er en lokal kandidat med beståede normale controller- og kalderprøver. K
 
 ## 89.297 Fra kvalificeret kildekode til selvstændig drift
 
-**Gældende fase 3. november 2026:** 595 er lokalt udstedt med bevarede metadata, output og append-only SQL. De efterfølgende kildeændringer er ikke kvalificeret af den gamle udstedelse. Den planlagte efterfølger 596 er UNISSUED: ingen ny tuple, output eller SQL er afledt, og gamle 595-værdier må hverken nulstilles eller ommærkes. Beskrivelsen nedenfor af 595 fra NULL er førstegangsforløbets historik. Endelig normal main-sammenføring og frisk samlet inputafledning skal stadig ske for efterfølgeren; en lokal kodeport er ikke main-ancestry eller driftsbevis.
+**Aktuel lokal kildebinding — 3. november 2026, RavScore 4.0.596:** Den integrerede model er offentlig under den særskilt leverede 4.0.594; 596 er endnu ikke installeret eller offentligt leveret. 4.0.596 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=0ee33270a7d6a1f3100086c15d006136affc4dd6b090ff55d81b0e3fa16b94ae` over 161 kanonisk normaliserede transitive implementeringsfiler. De syv deklarerede forbrugere er synkroniseret. Inaktiv Candidate G har `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=f819e4c00c8bb1feca8bc1ec7e62b0c1b471183eabb28c4e6a37a4a40ff5d3e2` over 165 transitive filer. Kildeautoriteten er `version.json.releaseContract.modelBindings`. Begge fysiske modelkontrakter, scoreformler og indgangspunkter er bevaret. Normal lokal afledning og fastpunkt er ikke PostgreSQL-, native-, installations- eller driftsbevis. Alle gamle SQL-filer og 595-originaler bevares; tidligere bindinger nedenfor er dateret historik.
+
+**Aktuel lokalt udstedt fortsættelseskontrakt — 3. november 2026:** 596-T12 er `continuationStateContractSha256=3d9f71ce0790e846c23876c01241780158ea97f64d3e5e8a5a328dd9d26cdfc3` (`3d9f71ce…`). Den nye append-only SQL er normalt afledt fra den ægte 594-kode-/dataforgænger. Normal lokal fastpunktskontrol består; faktisk PostgreSQL/native, installation, nye originale B/S og offentlig 596-drift er fortsat åbne. Gamle 595-metadata/output og alle 76 tidligere SQL-filer bevares. Tidligere kontrakter nedenfor er dateret historik.
+
+**Gældende fase 3. november 2026:** Faktisk PR795-main og den gennemgåede kodeunion er normalt sammenført; version 4.0.596 er synkroniseret og lokalt udstedt gennem ny C/I/T-, output- og append-only SQL-afledning. De syv forbrugere og normal fastpunktskontrol består. Gamle 595-metadata/output bevares i den faste Git-forfader og privat arkivering; alle 76 gamle SQL-filer er byteuændrede, og der er nu 77. Geodata fik kun ændret topversion. Præcis helfil-, PostgreSQL-/native-, kilde- og kapacitetskvalifikation, installation og offentlig drift er fortsat åbne. Tidligere NULL- og main-afventningsudsagn er dateret historik, aldrig en resetinstruks. Den løbende fase står i CURRENT_TRUTH og IMPLEMENTATION_STATUS.
 
 Aktuel lokal udstedelse2.november2026: SOURCE4.0.595 er normalt lokalt udstedt efter integration af den kvalificerede main. Én append-only SQL og normal sync samt alle seks fixedpointkontroller er bestået; alle75 gamle SQL-originaler er byteuændrede. Positiv kalder-, PostgreSQL-, native-, CI-, kapacitets-, installations- og driftsverifikation er fortsat åbne. Den aktuelle offentlige modelgeneration er særskilt4.0.594. Ingen scoreformel, kildeprioritet, administratorpunkter eller geometri ændres.
 
@@ -1440,7 +1444,7 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.595
+**Håndbogsversion:** 4.0.596
 
 **Lokal kildebinding — 29. oktober 2026, RavScore 4.0.591, ikke installeret:** Den integrerede model er offentlig som modeltype under den særskilt leverede 4.0.590. Den nye assistentefterfølger er lokalt udstedt og er endnu ikke samlet kvalificeret, installeret eller offentliggjort.
 
@@ -11091,7 +11095,7 @@ Den isolerede revisions lokale kontrol af denne adskillelse er ikke en offentlig
 
 ## 89.295 Isoleret SOURCE 4.0.595: status før ny afledning
 
-**Gældende fase 3. november 2026:** 595 er lokalt udstedt med bevarede metadata, output og append-only SQL. De efterfølgende kildeændringer er ikke kvalificeret af den gamle udstedelse. Den planlagte efterfølger 596 er UNISSUED: ingen ny tuple, output eller SQL er afledt, og gamle 595-værdier må hverken nulstilles eller ommærkes. Ældre NULL-udsagn i dette kapitel er bevaret som historik før førstegangsudstedelsen.
+**Gældende fase 3. november 2026:** Faktisk PR795-main og den gennemgåede kodeunion er normalt sammenført; version 4.0.596 er synkroniseret og lokalt udstedt gennem ny C/I/T-, output- og append-only SQL-afledning. De syv forbrugere og normal fastpunktskontrol består. Gamle 595-metadata/output bevares i den faste Git-forfader og privat arkivering; alle 76 gamle SQL-filer er byteuændrede, og der er nu 77. Geodata fik kun ændret topversion. Præcis helfil-, PostgreSQL-/native-, kilde- og kapacitetskvalifikation, installation og offentlig drift er fortsat åbne. Tidligere NULL- og main-afventningsudsagn er dateret historik, aldrig en resetinstruks. Den løbende fase står i CURRENT_TRUTH og IMPLEMENTATION_STATUS.
 
 Aktuel status 2. november 2026:
 
