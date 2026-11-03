@@ -83,6 +83,25 @@ async function readWorkflowOracleInput(file,encoding){
   }
   return fs.readFile(file,encoding);
 }
+// Fixed test-only MAIN795 subject; the raw SOURCE guards above still run first.
+// No caller-selected input, and genuine585 is never used as MAIN795.
+async function readMain795WorkflowOracleInput(){
+  assert.equal(arguments.length,0);
+  const file=new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url);
+  const absolute=fileURLToPath(file);
+  if(!workflowOracleInputs.has(absolute))return (await fs.readFile(file,'utf8')).replaceAll('\r\n','\n');
+  const previous=workflowOracleInputs.get(absolute);
+  assert.equal(Buffer.byteLength(previous),297829);
+  assert.equal(sha(previous),'674864b0a68ee9bb8da00f835386bbd5aa53e1d329ad9a948939e81ad4bafaf8');
+  const original="RAVRADAR_RETAINED_SCALAR_CONTEXT: ${{ steps.dmi-part-continuity-donor.outputs.continuity_schema == '1'";
+  const current="RAVRADAR_RETAINED_SCALAR_CONTEXT: ${{ (steps.dmi-part-continuity-donor.outputs.continuity_schema == '1' || steps.dmi-part-continuity-donor.outputs.continuity_schema == '2')";
+  assert.equal(previous.split(original).length,2);
+  const actual=previous.replace(original,()=>current);
+  assert.equal(Buffer.byteLength(actual),297899);
+  assert.equal(sha(actual),'451249801b6944d945b193fd95de5065cf057a8b08a6698a675e2192c074100c');
+  assert.equal(inverseQualifiedScalarSchemaWorkflow(actual,'build'),previous);
+  return actual;
+}
 const read = async relative => {
   const source = (await readWorkflowOracleInput(new URL(relative, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
   const role = relative.endsWith('/reusable-weather-build.yml') ? 'build'
@@ -1690,10 +1709,10 @@ test('terminal delivery repair maps only five exact whole sources and its exact 
 });
 
 
-import {inverseQualifiedScalarPlanningWorkflow, qualifiedScalarPlanningWorkflowReview}
+import {inverseQualifiedScalarSchemaWorkflow, inverseQualifiedScalarPlanningWorkflow, qualifiedScalarPlanningWorkflowReview}
   from './lib/completed-private-runtime-workflow-review.mjs';
 test('qualified scalar inverse keeps the entire genuine main workflow and rejects mixed bytes', async () => {
-  const source = (await readWorkflowOracleInput(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+  const source = inverseQualifiedScalarSchemaWorkflow((await readWorkflowOracleInput(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
   const row = qualifiedScalarPlanningWorkflowReview;
   assert.equal(sha(source), row.after.sha256);
   const before = inverseQualifiedScalarPlanningWorkflow(source, 'build');
@@ -1707,4 +1726,25 @@ test('qualified scalar inverse keeps the entire genuine main workflow and reject
     assert.equal(inverseQualifiedScalarPlanningWorkflow(changed, 'build'), changed);
     assert.throws(() => inverseCompletedRuntimeWorkflow(changed, 'build'));
   }
+});
+
+test('scalar schema successor preserves the exact whole predecessor before the unchanged scalar oracle', async () => {
+  const actual = await readMain795WorkflowOracleInput();
+  assert.equal(Buffer.byteLength(actual), 297899);
+  assert.equal(sha(actual), '451249801b6944d945b193fd95de5065cf057a8b08a6698a675e2192c074100c');
+  const previous = inverseQualifiedScalarSchemaWorkflow(actual, 'build');
+  assert.equal(Buffer.byteLength(previous), 297829);
+  assert.equal(sha(previous), qualifiedScalarPlanningWorkflowReview.after.sha256);
+  assert.equal(inverseQualifiedScalarSchemaWorkflow(previous, 'build'), previous);
+  assert.equal(inverseQualifiedScalarPlanningWorkflow(actual, 'build'), inverseQualifiedScalarPlanningWorkflow(previous, 'build'));
+  for (const role of ['once', 'unknown', 'toString', '__proto__', null, 1])
+    assert.equal(inverseQualifiedScalarSchemaWorkflow(actual, role), actual);
+  for (const changed of [actual+'\n', actual.replace("continuity_schema == '2'", "continuity_schema == '3'"),
+      actual.replace('ordinary-restored', 'mixed-context'), actual.replace('DMI_BULK_HOURS: 118', 'DMI_BULK_HOURS: 117')]) {
+    assert.notEqual(changed, actual);
+    assert.equal(inverseQualifiedScalarSchemaWorkflow(changed, 'build'), changed);
+    assert.throws(() => inverseCompletedRuntimeWorkflow(changed, 'build'));
+  }
+  assert.throws(() => inverseQualifiedScalarSchemaWorkflow(actual), /SCALAR_SCHEMA_ARGUMENTS/);
+  assert.throws(() => inverseQualifiedScalarSchemaWorkflow(null, 'build'), /SCALAR_SCHEMA_TYPE/);
 });

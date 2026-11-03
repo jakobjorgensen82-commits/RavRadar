@@ -10,6 +10,16 @@
 
 Ingen metadata, SQL, produktion, mail, scheduler, automatisk sletning eller statistik aktiveres af dokumentintegrationen. Håndbogens 89.299/89.300 har særskilte stabile ID’er; SOURCEs 89.294–89.297 bevares.
 
+## 2. november — normal scalarplan med begge kendte kontinuitetsformater
+
+Den normale producent gemmer native strømhistorik som schema2. Før-DMI-kalderen skal tillade både schema1 og schema2, før den normale læser vurderer de gemte komponenter og planlægger reelle vejrhul.
+
+Den tidligere selector tillod kun schema1, selv om den normale producent allerede udstedte schema2 og den efterfølgende læser accepterede begge. Derfor kunne en almindelig gyldig genlæsning springe den nye plan over. Den afgrænsede rettelse udvider kun denne formatkontrol til de to kendte værdier. Alle øvrige almindelig-genlæsning-, model-, bindings- og særforløbsvagter bevares; ukendte formater giver fortsat ingen adgang.
+
+Den samme normale testcase er rød før og grøn efter rettelsen: producentens faktiske schema2 går gennem workflowets selector, Node-planen, den offline reservekilde og Python-/DMI-læseren. Hele de gamle workfloworakler og afslag på ukendt format eller ændret helfil bevares. Et særskilt, eksakt helfiltrin fører schema1/2-ændringen tilbage til den ægte forgænger, før den gamle scalarprøve læser den. Den nye helfil og ændrede eller ukendte varianter prøves særskilt; gamle forventninger ændres ikke. Det er ikke bevis for, at alle øvrige vagter var opfyldt i en bestemt produktionskørsel, eller at leverandørerne har alle manglende timer.
+
+DMI → Copernicus → Open-Meteo, hentebudgetter, originaler, cache, scoreformel, modelbindinger, administratorpunkter og geometri ændres ikke. Den konkrete ændring bruger den normale fulde kildevej; kontrolregistret udvides ikke for at gøre kandidaten målrettet. Native- og databasegenbrug afgøres fortsat af den normale læser på faktiske uændrede input og runtime. Præcis GitHub-kvalifikation, sikker levering efter writer og faktisk ny offentlig effekt er åbne.
+
 ## 2. november — dokumentarkivets bucket: lokal klargøring
 
 - [x] To lukkede bucketvalg i den nye vedligeholdelseskalder; særskilt Cloudflare-nøgleflade og frisk metadata før archive/publish/prune.

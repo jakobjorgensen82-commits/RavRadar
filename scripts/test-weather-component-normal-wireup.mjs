@@ -647,7 +647,39 @@ test('retained scalar physical CLI preserves original files through offline CP a
     }
     const records = new Map([[part.partId,{point:part.waterPoint,zoneId:identity.entityId,
       generatedAt:H0,hourly}]]);
-    const partContinuity = await packDmiPartContinuity(records,[part],H0);
+    assert.match(source, /packDmiPartContinuity\([\s\S]*?nativeCurrentProofsByPart: coastalPartScoreBuild\.selectedDmiPartNativeProofs/,
+      'The actual normal producer uses the schema2 native-originals option');
+    const partContinuity = await packDmiPartContinuity(records,[part],H0,
+      {nativeCurrentProofsByPart:new Map([[part.partId,null]])});
+    assert.equal(partContinuity.schemaVersion,2,'The normal packer actually produced schema2');
+    const workflow = fs.readFileSync(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')
+      .replaceAll('\r\n','\n');
+    const selector = workflow.match(/RAVRADAR_RETAINED_SCALAR_CONTEXT: \$\{\{ (.+) \}\}/)?.[1];
+    assert.ok(selector,'Use the actual before-DMI work selector');
+    const scalarContext = schema => vm.runInNewContext(selector.replace(/steps\.([a-z][a-z0-9-]*)/g,
+      (_,name) => 'steps['+JSON.stringify(name)+']'), {
+      steps: {
+        'dmi-part-continuity-donor': {outputs:{continuity_schema:schema}},
+        'private-runtime-install': {outcome:'success'},
+        'operational-model': {outputs:{model:'integrated',binding_current:'true'}},
+        'operational-action': {outputs:{action:'integrated'}},
+        'legacy-bootstrap': {outputs:{stateless_integrated_recovery:'false'}},
+      },
+      inputs: {
+        completed_private_runtime:false,completed_private_runtime_pin:'',completed_stage_source:'',
+        checkpoint_only:false,quick_confirmation:false,quick_progress_source:'',
+        current_family_cold_start:false,weather_state_epoch_bootstrap:false,weather_state_epoch_checkpoint_reentry:false,
+        weather_state_epoch_raw_cache_key:'',weather_state_epoch_archive_key:'',weather_state_epoch_archive_catalog_sha256:'',
+        native_sampling_identity_original_recovery:false,ravscore_integrated_weather_handoff_run_id:'',produce_weather_handoff:false,
+        ravscore_integrated_first_cutover:false,ravscore_integrated_return:false,ravscore_candidate_g_rollback_mode:'',
+      },
+    });
+    assert.equal(scalarContext('1'),'ordinary-restored','Keep the existing known schema1 route');
+    const selectedScalarContext = scalarContext(String(partContinuity.schemaVersion));
+    assert.equal(selectedScalarContext,'ordinary-restored','Normal schema2 must reach the actual Node planner');
+    for (const unknown of ['', '0', '3', '2.0', 'unexpected', null, undefined]) {
+      assert.equal(scalarContext(unknown),'','Unknown continuity schemas remain conservative');
+    }
     await writeDmiForecastFileAtomic(path.join(root,'data/live/dmi-forecast-cache.json'),
       {schemaVersion:1,zones:{},partContinuity});
     const station = {sourceKey:'tidewater:SYNTHETIC',stationId:'SYNTHETIC',name:'Syntetisk kilde',
@@ -697,7 +729,7 @@ test('retained scalar physical CLI preserves original files through offline CP a
       return child.stdout;
     };
     run(process.execPath,[fileURLToPath(new URL('./plan-weather-scalar-acquisition.mjs',import.meta.url)),
-      '--cache',dmiPath,'--at',H0],{RAVRADAR_RETAINED_SCALAR_CONTEXT:'ordinary-restored',
+      '--cache',dmiPath,'--at',H0],{RAVRADAR_RETAINED_SCALAR_CONTEXT:selectedScalarContext,
         RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE:'true'});
     const python = process.env.PYTHON ?? 'python';
     run(python,['-B','-X','utf8',fileURLToPath(new URL('./build-weather-acquisition-plan.py',import.meta.url)),
