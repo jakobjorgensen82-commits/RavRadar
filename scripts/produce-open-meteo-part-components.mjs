@@ -1,11 +1,75 @@
 import {
   OPEN_METEO_PART_COMPONENTS, buildOpenMeteoPartRequest, createOpenMeteoPartBankBuilder,
-  readOpenMeteoPartResponse,
+  readOpenMeteoPartResponse, openMeteoPartIdentity, openMeteoPartSha256,
 } from './lib/open-meteo-part-bank.mjs';
 import { pruneUnusableOpenMeteoPartBank } from './lib/open-meteo-usable-part-bank.mjs';
 import { hasValue } from './lib/weather-component-needs.mjs';
 import { assertWeatherTransportSettlement, isWeatherTransportStopUnproved,
   throwWeatherTransportStopUnproved } from './lib/weather-transport-settlement.mjs';
+
+// Advisory progress only: identities/policies still pass the unchanged bank admission.
+function zoneRotation(parts, spatialPolicies, stored, legacyPartId) {
+  const identities = parts.map(openMeteoPartIdentity);
+  const zones = new Map();
+  const parent = new Map();
+  for (let index = 0; index < parts.length; index += 1) {
+    const zoneId = identities[index].parentZoneId;
+    if (!zones.has(zoneId)) zones.set(zoneId, []);
+    zones.get(zoneId).push(parts[index].partId);
+    parent.set(parts[index].partId, zoneId);
+  }
+  const compareIds = (a, b) => a < b ? -1 : a > b ? 1 : 0;
+  for (const ids of zones.values()) ids.sort(compareIds);
+  const orderedZones = new Map([...zones].sort(([a], [b]) => compareIds(a, b)));
+  const domainSha256 = openMeteoPartSha256({ spatialPolicies,
+    identities: [...identities].sort((a, b) => compareIds(a.entityId, b.entityId)) });
+  const invalid = () => { throw new Error('OPEN_METEO_PART_CURSOR_INVALID'); };
+  const exact = (value, keys) => value !== null && typeof value === 'object' && !Array.isArray(value)
+    && Object.keys(value).length === keys.length && keys.every(key => Object.hasOwn(value, key));
+  if (stored !== undefined) {
+    if (!exact(stored, ['schemaVersion', 'domainSha256', 'critical', 'temperature'])
+      || stored.schemaVersion !== 1 || typeof stored.domainSha256 !== 'string'
+      || !/^[a-f0-9]{64}$/.test(stored.domainSha256)) invalid();
+    for (const tier of [stored.critical, stored.temperature]) {
+      if (!exact(tier, ['lastZoneId', 'lastParts']) || !Array.isArray(tier.lastParts)
+        || !(tier.lastZoneId === null || typeof tier.lastZoneId === 'string' && tier.lastZoneId)) invalid();
+      const seen = new Set();
+      for (const entry of tier.lastParts) {
+        if (!Array.isArray(entry) || entry.length !== 2
+          || entry.some(value => typeof value !== 'string' || !value) || seen.has(entry[0])) invalid();
+        seen.add(entry[0]);
+        if (stored.domainSha256 === domainSha256 && parent.get(entry[1]) !== entry[0]) invalid();
+      }
+      if (tier.lastZoneId !== null && !seen.has(tier.lastZoneId)) invalid();
+    }
+    if (stored.domainSha256 === domainSha256) return { state: structuredClone(stored), zones: orderedZones, parent };
+  }
+  // A v1 cursor, or a changed live domain, seeds only ordering from the legacy ID.
+  const zoneId = parent.get(legacyPartId) ?? null;
+  const seed = () => ({ lastZoneId: zoneId, lastParts: zoneId === null ? [] : [[zoneId, legacyPartId]] });
+  return { state: { schemaVersion: 1, domainSha256, critical: seed(), temperature: seed() }, zones: orderedZones, parent };
+}
+
+function zoneOrderedTier(work, rotation, tierName) {
+  const byPart = new Map();
+  for (const item of work) {
+    if (!byPart.has(item.part.partId)) byPart.set(item.part.partId, []);
+    byPart.get(item.part.partId).push(item);
+  }
+  const tier = rotation.state[tierName];
+  const after = (items, id) => {
+    const index = items.indexOf(id);
+    return index < 0 ? items : [...items.slice(index + 1), ...items.slice(0, index + 1)];
+  };
+  const lastParts = new Map(tier.lastParts);
+  const queues = after([...rotation.zones.keys()], tier.lastZoneId).map(zoneId =>
+    after(rotation.zones.get(zoneId), lastParts.get(zoneId)).filter(id => byPart.has(id)));
+  const result = [];
+  for (let round = 0; queues.some(queue => round < queue.length); round += 1) {
+    for (const queue of queues) if (round < queue.length) result.push(...byPart.get(queue[round]));
+  }
+  return result;
+}
 
 // No top-level provider calls or filesystem writes. The normal producer owns
 // transport deadlines/retries, the private cache path and durable checkpoint.
@@ -14,7 +78,7 @@ export async function produceOpenMeteoPartComponents({
   parts, productionReferenceAt, spatialPolicies, previousBank = null,
   fetchResponse, checkpoint = async () => {}, shouldContinue = () => true,
   requiredPairs, retentionStartAt, retentionEndAt,
-  checkpointEveryParts = 10, startAfterPartId = null,
+  checkpointEveryParts = 10, startAfterPartId = null, advisoryZoneRotation,
   transportOwnsRequestStart = false,
 } = {}) {
   assertWeatherTransportSettlement();
@@ -61,10 +125,9 @@ export async function produceOpenMeteoPartComponents({
       allowed.add(key);
     }
   }
-  const priorPosition = parts.findIndex(part => part.partId === startAfterPartId);
-  const orderedParts = priorPosition < 0 ? parts : [...parts.slice(priorPosition + 1), ...parts.slice(0, priorPosition + 1)];
-  const criticalWork = [], temperatureWork = [];
-  for (const part of orderedParts) {
+  const rotation = zoneRotation(parts, spatialPolicies, advisoryZoneRotation, startAfterPartId);
+  const criticalCandidates = [], temperatureCandidates = [];
+  for (const part of parts) {
     const missing = new Set();
     for (let hour = 0; hour <= 120; hour += 1) {
       const validTime = new Date(Date.parse(productionReferenceAt) + hour * 3_600_000).toISOString();
@@ -79,10 +142,13 @@ export async function produceOpenMeteoPartComponents({
       return false;
     });
     for (const component of components) {
-      (component === 'waterTemperature' ? temperatureWork : criticalWork).push({ part, component });
+      (component === 'waterTemperature' ? temperatureCandidates : criticalCandidates).push({ part, component });
     }
   }
-  // Preserve each rotated tier's order while giving temperature one of every
+  const criticalWork = zoneOrderedTier(criticalCandidates, rotation, 'critical');
+  const temperatureWork = zoneOrderedTier(temperatureCandidates, rotation, 'temperature');
+  // Each tier visits one eligible PART per zone per round. Preserve that tier's
+  // order while giving temperature one of every
   // three dispatch opportunities under sustained wind/wave pressure. The
   // existing budget must allow those starts; no upstream value is promised.
   const work = [];
@@ -113,6 +179,12 @@ export async function produceOpenMeteoPartComponents({
           requestStarted = true;
           requests += 1; requestsByComponent[component] += 1;
           lastAttemptedPartId = part.partId;
+          const tier = rotation.state[component === 'waterTemperature' ? 'temperature' : 'critical'];
+          const zoneId = rotation.parent.get(part.partId);
+          tier.lastZoneId = zoneId;
+          const index = tier.lastParts.findIndex(entry => entry[0] === zoneId);
+          if (index < 0) tier.lastParts.push([zoneId, part.partId]);
+          else tier.lastParts[index] = [zoneId, part.partId];
         };
         // Direct transports retain their component-start contract. The normal
         // paced adapter receipts only its first actual HTTP start, so a task
@@ -186,7 +258,7 @@ export async function produceOpenMeteoPartComponents({
     await checkpoint(bank);
   }
   assertWeatherTransportSettlement();
-  return { bank, summary: { requests, deferred, requestsByComponent, deferredByComponent,
+  return { bank, zoneRotation: rotation.state, summary: { requests, deferred, requestsByComponent, deferredByComponent,
     failures, componentWarnings, records: bank.records.length,
     lastAttemptedPartId, componentsNotAdmitted, retired } };
 }

@@ -339,7 +339,31 @@ test('tail capacity: bounded scalar fairness reaches temperature under sustained
     assert.equal(result.summary.failures.length, 515);
     assert.equal(result.bank.records.length, 0, 'request fairness never fabricates provider values');
     assert.equal(active, 0); assert.equal(maximumActive, 2);
-    const rotated = [...parts.slice(7), ...parts.slice(0, 7)].map(row => row.partId);
+    // Current canonical string order replaces the former numeric input-order assertion.
+    const rotated = [
+      'QUEUE-60', 'QUEUE-600', 'QUEUE-601', 'QUEUE-602', 'QUEUE-603', 'QUEUE-604', 'QUEUE-605', 'QUEUE-606',
+      'QUEUE-607', 'QUEUE-608', 'QUEUE-609', 'QUEUE-61', 'QUEUE-610', 'QUEUE-611', 'QUEUE-612', 'QUEUE-613',
+      'QUEUE-614', 'QUEUE-615', 'QUEUE-616', 'QUEUE-617', 'QUEUE-618', 'QUEUE-619', 'QUEUE-62', 'QUEUE-620',
+      'QUEUE-621', 'QUEUE-622', 'QUEUE-623', 'QUEUE-624', 'QUEUE-625', 'QUEUE-626', 'QUEUE-627', 'QUEUE-628',
+      'QUEUE-629', 'QUEUE-63', 'QUEUE-630', 'QUEUE-631', 'QUEUE-632', 'QUEUE-633', 'QUEUE-634', 'QUEUE-635',
+      'QUEUE-636', 'QUEUE-637', 'QUEUE-638', 'QUEUE-639', 'QUEUE-64', 'QUEUE-640', 'QUEUE-641', 'QUEUE-642',
+      'QUEUE-643', 'QUEUE-644', 'QUEUE-645', 'QUEUE-646', 'QUEUE-647', 'QUEUE-648', 'QUEUE-649', 'QUEUE-65',
+      'QUEUE-650', 'QUEUE-651', 'QUEUE-652', 'QUEUE-653', 'QUEUE-654', 'QUEUE-655', 'QUEUE-656', 'QUEUE-657',
+      'QUEUE-658', 'QUEUE-659', 'QUEUE-66', 'QUEUE-660', 'QUEUE-661', 'QUEUE-662', 'QUEUE-663', 'QUEUE-664',
+      'QUEUE-665', 'QUEUE-666', 'QUEUE-667', 'QUEUE-668', 'QUEUE-669', 'QUEUE-67', 'QUEUE-670', 'QUEUE-671',
+      'QUEUE-672', 'QUEUE-68', 'QUEUE-69', 'QUEUE-7', 'QUEUE-70', 'QUEUE-71', 'QUEUE-72', 'QUEUE-73',
+      'QUEUE-74', 'QUEUE-75', 'QUEUE-76', 'QUEUE-77', 'QUEUE-78', 'QUEUE-79', 'QUEUE-8', 'QUEUE-80',
+      'QUEUE-81', 'QUEUE-82', 'QUEUE-83', 'QUEUE-84', 'QUEUE-85', 'QUEUE-86', 'QUEUE-87', 'QUEUE-88',
+      'QUEUE-89', 'QUEUE-9', 'QUEUE-90', 'QUEUE-91', 'QUEUE-92', 'QUEUE-93', 'QUEUE-94', 'QUEUE-95',
+      'QUEUE-96', 'QUEUE-97', 'QUEUE-98', 'QUEUE-99', 'QUEUE-0', 'QUEUE-1', 'QUEUE-10', 'QUEUE-100',
+      'QUEUE-101', 'QUEUE-102', 'QUEUE-103', 'QUEUE-104', 'QUEUE-105', 'QUEUE-106', 'QUEUE-107', 'QUEUE-108',
+      'QUEUE-109', 'QUEUE-11', 'QUEUE-110', 'QUEUE-111', 'QUEUE-112', 'QUEUE-113', 'QUEUE-114', 'QUEUE-115',
+      'QUEUE-116', 'QUEUE-117', 'QUEUE-118', 'QUEUE-119', 'QUEUE-12', 'QUEUE-120', 'QUEUE-121', 'QUEUE-122',
+      'QUEUE-123', 'QUEUE-124', 'QUEUE-125', 'QUEUE-126', 'QUEUE-127', 'QUEUE-128', 'QUEUE-129', 'QUEUE-13',
+      'QUEUE-130', 'QUEUE-131', 'QUEUE-132', 'QUEUE-133', 'QUEUE-134', 'QUEUE-135', 'QUEUE-136', 'QUEUE-137',
+      'QUEUE-138', 'QUEUE-139', 'QUEUE-14', 'QUEUE-140', 'QUEUE-141', 'QUEUE-142', 'QUEUE-143', 'QUEUE-144',
+      'QUEUE-145', 'QUEUE-146', 'QUEUE-147', 'QUEUE-148',
+    ];
     assert.deepEqual(started.filter(row => row.component === 'waterTemperature').map(row => row.partId), rotated.slice(0, 171));
     assert.deepEqual(started.filter(row => row.component !== 'waterTemperature').map(row => [row.partId, row.component]),
       rotated.slice(0, 172).flatMap(id => [[id, 'wave'], [id, 'wind']]));
@@ -408,26 +432,249 @@ test('tail capacity: bounded scalar fairness reaches temperature under sustained
     assert.deepEqual(result.summary.requestsByComponent, { wind: 1, wave: 1, waterTemperature: 1 });
     assert.equal(result.bank.records.length, 0);
   });
+
+  await t.test('national zone breadth precedes repeated PARTs inside each unchanged tier', async () => {
+    const parts = Array.from({ length: 210 }, (_, zone) => Array.from({ length: zone < 43 ? 4 : 3 }, (_, index) =>
+      ({ ...part, zoneId: `ZONE-${zone}`, partId: `PART-${zone}-${index}` }))).flat();
+    assert.equal(parts.length, 673);
+    const requiredPairs = parts.flatMap(row => ['wind', 'wave', 'waterTemperature'].map(component =>
+      ({ partId: row.partId, component, validTime: reference })));
+    const starts = []; let active = 0, maximumActive = 0;
+    const result = await produceOpenMeteoPartComponents({ parts, spatialPolicies, requiredPairs,
+      productionReferenceAt: reference, retentionStartAt: at(-48), retentionEndAt: at(120),
+      shouldContinue: () => starts.length < 678,
+      fetchResponse: async request => {
+        starts.push({ partId: request.identity.entityId.slice(6), zone: request.identity.parentZoneId, component: request.component });
+        maximumActive = Math.max(maximumActive, ++active);
+        try { await Promise.resolve(); throw new Error('synthetic permanent provider refusal'); }
+        finally { active--; }
+      },
+    });
+    assert.deepEqual(result.summary.requestsByComponent, { wind: 226, wave: 226, waterTemperature: 226 });
+    for (const component of ['wind', 'wave', 'waterTemperature']) {
+      const sequence = starts.filter(row => row.component === component);
+      assert.equal(new Set(sequence.slice(0, 210).map(row => row.zone)).size, 210);
+      assert.equal(new Set(sequence.map(row => row.partId)).size, 226);
+    }
+    assert.equal(result.summary.deferred, 1341);
+    assert.equal(result.bank.records.length, 0, 'ordering never creates weather values');
+    assert.equal(active, 0); assert.equal(maximumActive, 2);
+  });
+  await t.test('unequal zones rotate all needy PARTs over runs without resetting at H0 or array reordering', async () => {
+    const parts = [4, 2, 1].flatMap((count, zone) => Array.from({ length: count }, (_, index) =>
+      ({ ...part, zoneId: `ZONE-${zone}`, partId: `PART-${zone}-${index}` })));
+    const seen = new Set(); let cursor, lastPart;
+    for (let run = 0; run < 4; run++) {
+      const starts = [];
+      const result = await produceOpenMeteoPartComponents({ parts, spatialPolicies,
+        productionReferenceAt: at(run), retentionStartAt: at(-48), retentionEndAt: at(120 + run),
+        requiredPairs: parts.map(row => ({ partId: row.partId, component: 'wind', validTime: at(run) })),
+        advisoryZoneRotation: cursor, startAfterPartId: lastPart, shouldContinue: () => starts.length < 3,
+        fetchResponse: async request => { starts.push(request.identity); throw new Error('synthetic permanent provider refusal'); },
+      });
+      assert.equal(new Set(starts.map(row => row.parentZoneId)).size, 3);
+      starts.forEach(row => seen.add(row.entityId));
+      if (cursor) assert.equal(result.zoneRotation.domainSha256, cursor.domainSha256);
+      cursor = result.zoneRotation; lastPart = result.summary.lastAttemptedPartId;
+    }
+    assert.equal(seen.size, 7);
+    const noWork = await produceOpenMeteoPartComponents({ parts: [...parts].reverse(), spatialPolicies,
+      productionReferenceAt: at(4), retentionStartAt: at(-48), retentionEndAt: at(124), requiredPairs: [],
+      advisoryZoneRotation: cursor, startAfterPartId: lastPart,
+      fetchResponse: async () => { assert.fail('no invented work'); },
+    });
+    assert.deepEqual(noWork.zoneRotation, cursor);
+    const changed = parts.map((row, index) => index ? row : { ...row, waterPoint: [10.1, 56] });
+    const reset = await produceOpenMeteoPartComponents({ parts: changed, spatialPolicies,
+      productionReferenceAt: reference, retentionStartAt: at(-48), retentionEndAt: at(120), requiredPairs: [],
+      advisoryZoneRotation: cursor, startAfterPartId: lastPart, fetchResponse: async () => assert.fail('no invented work'),
+    });
+    assert.notEqual(reset.zoneRotation.domainSha256, cursor.domainSha256);
+    assert.equal(reset.summary.lastAttemptedPartId, null);
+    assert.equal(reset.zoneRotation.critical.lastZoneId, parts.find(row => row.partId === lastPart).zoneId);
+  });
+  await t.test('active runs cannot starve a PART by alternating equivalent registry array orders', async () => {
+    const parts = ['A1', 'A2', 'A3'].map(partId => ({ ...part, partId }));
+    let cursor, lastPart; const starts = [];
+    for (let run = 0; run < 6; run++) {
+      const result = await produceOpenMeteoPartComponents({ parts: run % 2 ? [...parts].reverse() : parts,
+        spatialPolicies, productionReferenceAt: reference, retentionStartAt: at(-48), retentionEndAt: at(120),
+        requiredPairs: parts.map(row => ({ partId: row.partId, component: 'wind', validTime: reference })),
+        advisoryZoneRotation: cursor, startAfterPartId: lastPart, shouldContinue: () => starts.length <= run,
+        fetchResponse: async request => { starts.push(request.identity.entityId.slice(6)); throw new Error('synthetic refusal'); },
+      });
+      if (cursor) assert.equal(result.zoneRotation.domainSha256, cursor.domainSha256);
+      cursor = result.zoneRotation; lastPart = result.summary.lastAttemptedPartId;
+    }
+    assert.deepEqual(starts, ['A1', 'A2', 'A3', 'A1', 'A2', 'A3']);
+  });
+  await t.test('skewed tiers retain 2:1 and claim zone breadth within each tier, not across tiers', async () => {
+    const parts = ['A', 'B', 'C'].flatMap(zoneId => [0, 1].map(index => ({ ...part, zoneId, partId: `${zoneId}${index}` })));
+    const requiredPairs = parts.flatMap(row => (row.zoneId === 'A' ? ['wind', 'wave'] : ['waterTemperature'])
+      .map(component => ({ partId: row.partId, component, validTime: reference })));
+    const starts = [];
+    const result = await produceOpenMeteoPartComponents({ parts: [...parts].reverse(), spatialPolicies, requiredPairs,
+      productionReferenceAt: reference, retentionStartAt: at(-48), retentionEndAt: at(120),
+      shouldContinue: () => starts.length < 6,
+      fetchResponse: async request => { starts.push([request.identity.entityId.slice(6), request.component]); throw new Error('synthetic refusal'); },
+    });
+    assert.deepEqual(starts, [['A0', 'wind'], ['A0', 'wave'], ['B0', 'waterTemperature'],
+      ['A1', 'wind'], ['A1', 'wave'], ['C0', 'waterTemperature']]);
+    assert.deepEqual(result.summary.requestsByComponent, { wind: 2, wave: 2, waterTemperature: 2 });
+    assert.equal(result.bank.records.length, 0);
+  });
+  await t.test('only the actually started tier advances, including reversed completion and sparse needs', async t => {
+    const input = await fixture(t);
+    const parts = ['A', 'B', 'C'].flatMap(zoneId => [0, 1].map(index => ({ ...part, zoneId, partId: `${zoneId}-${index}` })));
+    const cursorFile = path.join(input.privateCacheRoot, 'weather-component-fallback-cursor.json');
+    const starts = [];
+    const run = async components => {
+      starts.length = 0;
+      const result = await runOpenMeteoPartRuntime({ ...input, parts, budgetMs: 10_000, maxHttpAttempts: 3,
+        requiredPairs: parts.flatMap(row => components.map(component => ({ partId: row.partId, component, validTime: reference }))),
+        fetchImpl: async raw => { starts.push(new URL(raw).searchParams.get('hourly')); return new Response('synthetic refusal', { status: 400 }); },
+      });
+      return JSON.parse(await fs.readFile(cursorFile, 'utf8'));
+    };
+    const temperature = await run(['waterTemperature']);
+    const critical = await run(['wind']);
+    assert.deepEqual(critical.zoneRotation.temperature, temperature.zoneRotation.temperature);
+    const temperatureAgain = await run(['waterTemperature']);
+    assert.deepEqual(temperatureAgain.zoneRotation.critical, critical.zoneRotation.critical);
+    assert.notDeepEqual(temperatureAgain.zoneRotation.temperature, temperature.zoneRotation.temperature);
+    const sparse = parts.filter(row => row.partId === 'A-1' || row.partId === 'C-0');
+    const sparseStarts = [];
+    let releaseFirst;
+    const first = new Promise(resolve => { releaseFirst = resolve; });
+    const result = await produceOpenMeteoPartComponents({ ...input, parts, advisoryZoneRotation: temperatureAgain.zoneRotation,
+      startAfterPartId: temperatureAgain.openMeteoLastAttemptedPartId,
+      requiredPairs: sparse.map(row => ({ partId: row.partId, component: 'wind', validTime: reference })),
+      fetchResponse: async request => {
+        sparseStarts.push(request.identity);
+        if (sparseStarts.length === 1) await first;
+        else releaseFirst();
+        throw new Error('synthetic refusal');
+      },
+    });
+    assert.equal(sparseStarts.length, 2);
+    assert.deepEqual(new Set(sparseStarts.map(row => row.parentZoneId)), new Set(['A', 'C']));
+    assert.equal(result.zoneRotation.critical.lastZoneId, sparseStarts[1].parentZoneId);
+    assert.deepEqual(result.zoneRotation.temperature, temperatureAgain.zoneRotation.temperature);
+  });
+  await t.test('offline bank recovery ignores malformed optional state, online rejects it, legacy checks remain strict', async t => {
+    const input = await fixture(t);
+    await runOpenMeteoPartRuntime({ ...input, fetchImpl: async () => new Response(responseText) });
+    const cursorFile = path.join(input.privateCacheRoot, 'weather-component-fallback-cursor.json');
+    const valid = JSON.parse(await fs.readFile(cursorFile, 'utf8'));
+    const bankBefore = await fs.readFile(input.bankPath);
+    const invalid = [null, { schemaVersion: 99 }, { ...valid.zoneRotation, extra: true },
+      { ...valid.zoneRotation, critical: { lastZoneId: 'FOREIGN', lastParts: [['FOREIGN', part.partId]] } },
+      { ...valid.zoneRotation, temperature: { lastZoneId: 'ZONE', lastParts: [['ZONE', part.partId], ['ZONE', part.partId]] } }];
+    for (const zoneRotation of invalid) {
+      const bytes = ` ${JSON.stringify({ ...valid, zoneRotation })}\n`;
+      await fs.writeFile(cursorFile, bytes);
+      const offline = await runOpenMeteoPartRuntime({ ...input, budgetMs: 0, fetchImpl: async () => assert.fail('offline HTTP') });
+      assert.equal(selected(offline.index).values.windSpeedMps, 4);
+      assert.equal(await fs.readFile(cursorFile, 'utf8'), bytes);
+      await assert.rejects(runOpenMeteoPartRuntime({ ...input, fetchImpl: async () => assert.fail('invalid advisory HTTP') }),
+        /OPEN_METEO_PART_CURSOR_INVALID/);
+      assert.equal(await fs.readFile(cursorFile, 'utf8'), bytes);
+      assert.deepEqual(await fs.readFile(input.bankPath), bankBefore);
+    }
+    const legacy = ` {"schemaVersion":1,"kind":"WEATHER_COMPONENT_FALLBACK_CURSOR","openMeteoLastAttemptedPartId":"TEST"}\n`;
+    await fs.writeFile(cursorFile, legacy);
+    await runOpenMeteoPartRuntime({ ...input, budgetMs: 0, fetchImpl: async () => assert.fail('offline HTTP') });
+    assert.equal(await fs.readFile(cursorFile, 'utf8'), legacy, 'no start never migrates legacy bytes');
+    for (const bad of [{ ...valid, schemaVersion: 2 }, { ...valid, kind: 'UNKNOWN' }, { ...valid, openMeteoLastAttemptedPartId: '' }]) {
+      const bytes = JSON.stringify(bad); await fs.writeFile(cursorFile, bytes);
+      await assert.rejects(runOpenMeteoPartRuntime({ ...input, budgetMs: 0 }), /OPEN_METEO_PART_CURSOR_INVALID/);
+      assert.equal(await fs.readFile(cursorFile, 'utf8'), bytes);
+    }
+  });
+  await t.test('cursor writes obey the existing 64 KiB read cap and never retry a failed rename', async t => {
+    const input = await fixture(t);
+    const cursorFile = path.join(input.privateCacheRoot, 'weather-component-fallback-cursor.json');
+    const legacy = JSON.stringify({ kind: 'WEATHER_COMPONENT_FALLBACK_CURSOR', schemaVersion: 1, openMeteoLastAttemptedPartId: 'TEST' });
+    await fs.mkdir(input.privateCacheRoot, { recursive: true }); await fs.writeFile(cursorFile, legacy);
+    const huge = { ...part, partId: 'P'.repeat(64 * 1024) };
+    let calls = 0;
+    await assert.rejects(runOpenMeteoPartRuntime({ ...input, parts: [huge],
+      requiredPairs: [{ partId: huge.partId, component: 'wind', validTime: reference }],
+      fetchImpl: async () => { calls++; return new Response('synthetic refusal', { status: 400 }); },
+    }), /OPEN_METEO_PRIVATE_BANK_SIZE_INVALID/);
+    assert.equal(calls, 1); assert.equal(await fs.readFile(cursorFile, 'utf8'), legacy);
+    assert.equal((await fs.readdir(input.privateCacheRoot)).some(name => name.includes('.tmp-')), false);
+    for (const afterRename of [false, true]) {
+      await fs.writeFile(cursorFile, legacy); let cursorRenames = 0;
+      const originalRename = fs.rename;
+      const mock = t.mock.method(fs, 'rename', async (from, to) => {
+        if (to !== cursorFile) return originalRename(from, to);
+        cursorRenames++;
+        if (afterRename) await originalRename(from, to);
+        throw Object.assign(new Error('synthetic cursor save failure'), { code: 'EACCES' });
+      });
+      try {
+        await assert.rejects(runOpenMeteoPartRuntime({ ...input,
+          fetchImpl: async () => new Response('synthetic refusal', { status: 400 }),
+        }), /synthetic cursor save failure/);
+      } finally { mock.mock.restore(); }
+      assert.equal(cursorRenames, 1);
+      const actual = await fs.readFile(cursorFile, 'utf8');
+      if (afterRename) assert.ok(JSON.parse(actual).zoneRotation, 'unknown outcome preserves actual new bytes without rollback');
+      else assert.equal(actual, legacy);
+    }
+  });
+  await t.test('STOP_UNPROVED never persists started advisory progress', async t => {
+    const input = await fixture(t);
+    const cursorFile = path.join(input.privateCacheRoot, 'weather-component-fallback-cursor.json');
+    await runOpenMeteoPartRuntime({ ...input, fetchImpl: async () => new Response('synthetic refusal', { status: 400 }) });
+    const bytes = await fs.readFile(cursorFile, 'utf8');
+    const code = `
+      import assert from 'node:assert/strict';
+      import fs from 'node:fs/promises';
+      import { runOpenMeteoPartRuntime } from './scripts/lib/open-meteo-part-runtime.mjs';
+      import { isWeatherTransportStopUnproved } from './scripts/lib/weather-transport-settlement.mjs';
+      const input = ${JSON.stringify({ ...input, now: undefined })};
+      const cursorFile = ${JSON.stringify(cursorFile)};
+      const before = await fs.readFile(cursorFile, 'utf8');
+      const response = new Response(new ReadableStream({ cancel() { return Promise.reject(new Error('synthetic cleanup failure')); } }));
+      Object.defineProperty(response, 'url', { get() { throw new Error('synthetic first failure'); } });
+      await assert.rejects(runOpenMeteoPartRuntime({ ...input, fetchImpl: async () => response }), isWeatherTransportStopUnproved);
+      assert.equal(await fs.readFile(cursorFile, 'utf8'), before);
+    `;
+    const child = spawnSync(process.execPath, ['--input-type=module', '-e', code], {
+      cwd: new URL('..', import.meta.url), encoding: 'utf8', timeout: 5000, maxBuffer: 64 * 1024,
+    });
+    assert.equal(child.error, undefined); assert.equal(child.status, 0, child.stderr);
+    assert.equal(await fs.readFile(cursorFile, 'utf8'), bytes);
+  });
+
 });
 
 test('tail capacity: HTTP cap includes retries and never advances cursor for a paced task with no HTTP', async t => {
   const input = await fixture(t);
   const second = { ...part, partId: 'SECOND', waterPoint: [11, 56] };
-  let calls = 0;
+  let calls = 0; const startedPartIds = [];
   const result = await runOpenMeteoPartRuntime({ ...input, parts: [part, second], budgetMs: 5_000,
     requiredPairs: [part, second].map(row => ({ partId: row.partId, component: 'wind', validTime: reference })),
-    maxHttpAttempts: 1, fetchImpl: async () => { calls++; return new Response('synthetic retryable', { status: 503 }); },
+    maxHttpAttempts: 1, fetchImpl: async raw => {
+      calls++;
+      const target = [part, second].find(row => String(row.waterPoint[0]) === new URL(raw).searchParams.get('longitude'));
+      assert.ok(target); startedPartIds.push(target.partId);
+      return new Response('synthetic retryable', { status: 503 });
+    },
   });
   assert.equal(calls, 1);
   assert.equal(result.summary.requests, 1);
   assert.equal(result.summary.deferred, 1);
-  assert.equal(result.summary.lastAttemptedPartId, part.partId);
+  assert.deepEqual(startedPartIds, ['SECOND'], 'the canonical first PART actually reached HTTP');
+  assert.equal(result.summary.lastAttemptedPartId, startedPartIds[0]);
   assert.deepEqual(result.summary.requestsByComponent, { wind: 1, wave: 0, waterTemperature: 0 });
   assert.deepEqual(result.summary.deferredByComponent, { wind: 1, wave: 0, waterTemperature: 0 });
   assert.equal(result.summary.transport.httpAttempts, 1);
   assert.equal(result.summary.transport.retries, 0);
   assert.equal(result.summary.transport.httpAttemptLimitReached, 1);
-  assert.equal(JSON.parse(await fs.readFile(path.join(input.privateCacheRoot, 'weather-component-fallback-cursor.json'), 'utf8')).openMeteoLastAttemptedPartId, part.partId);
+  assert.equal(JSON.parse(await fs.readFile(path.join(input.privateCacheRoot, 'weather-component-fallback-cursor.json'), 'utf8')).openMeteoLastAttemptedPartId, startedPartIds[0]);
   let retryCalls = 0;
   const retry = await runOpenMeteoPartRuntime({ ...input, budgetMs: 5_000, maxHttpAttempts: 2,
     fetchImpl: async () => { retryCalls++; return new Response('synthetic retryable', { status: 503 }); },

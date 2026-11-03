@@ -38,3 +38,13 @@ Bevar den eksisterende kildeprioritet DMI → Copernicus → Open-Meteo. Ret kun
 Håndbog 89.281 er kanonisk i Markdown og spejles til webhåndbog og den normale statiske INSTALL-payload. Alle ældre håndbogsafsnit og SQL-migrationer bevares. Hullerne i kapitelnumrene skyldes særskilt reserverede leverancer; de er ikke invitation til at kopiere private kandidater ind.
 
 Pages-delingen efter DEC-0294, assistentens næste efterfølger, den kompakte delingsprojektion og den inaktive SOURCE-revision er uafhængige leverancer. Denne beslutning aktiverer dem ikke. Ingen ny version/C/I/T, numerisk SQL-regel eller installation udstedes her.
+
+## Tillæg 3. november 2026 — bredde inden for hver behovsgruppe
+
+Dette tillæg erstatter den tidligere bullets beskrivelse af alle vind-/bølge-GAP foran alle temperatur-GAP. Den gældende fletning er to kritiske opgaver til én temperaturopgave, når begge grupper har arbejde og budget til starterne. Inden for hver gruppe vælges én nødvendig PART pr. zone pr. omgang; zoner og PARTs har stabil direkte strengorden og roteres videre fra faktisk startkvitteret fremdrift. Absolut zonebredde på tværs af grupperne påstås ikke.
+
+Samme schema1-cursor og legacyfelt bevares med en valgfri, versionsafgrænset zoneRotation. Kritisk arbejde og temperatur har hver sin sidste startede zone og PART pr. zone. Et fejlet startet kald flytter den relevante markør; pacing uden første HTTP-start flytter ingen. En anden gruppe, responsrækkefølge eller genforsøg må ikke låne dens fremskridt. Kun rækkefølge bindes til de stabile fulde målidentiteter og spatialPolicies; H0, inputarrayorden og bankens løbende hash nulstiller ikke rotationen.
+
+Cursorens 64 KiB-læsegrænse gælder også ved skrivning. Ved budget0 ignoreres kun den nye optional-rækkefølgetilstand; de gamle legacychecks består, og der skrives ingen cursor. Online ukendt eller malformed tilstand afvises før HTTP. Normale bankcheckpoints og transportsettlement kommer før cursor-save. STOP_UNPROVED og kendte eller ukendte gemmefejl må ikke udløse ny cursorwrite, blind retry eller tilbagerulning af et ukendt udfald.
+
+To slots, 2:1-andelen, højst800 HTTP-forsøg inklusive retries, fælles pacing/deadline og kilde-/bankadmission bevares. Ingen ny modelbinding, SQL, version, geometri eller originalkassation følger med. Den syntetiske nationale førprøve nåede56 af210 zoner; dette er køevidens, ikke offentlig data. Aktuelle lokale målresultater, eksakt kildekvalifikation og levering føres i de private kvitteringer, og faktisk dækningsgevinst kræver en normal ny generation. Den leverede numeriske strømrettelse genåbnes ikke; SOURCE596 aktiveres ikke her.

@@ -1,3 +1,9 @@
+## 3. november — zonebredde i den afgrænsede komponentreserve
+
+Den lokale kørettelse roterer mellem zoner og nødvendige kystdele særskilt for vind/bølge og temperatur. Hver gruppe tager én nødvendig kystdel pr. zone pr. omgang i fast strengorden. Den eksisterende fletning med to vind-/bølgeopgaver til én temperaturopgave, to transportslots og alle start-, forsøgs- og tidslofter bevares. Zonebredde loves kun inden for hver behovsgruppe og den kapacitet, der faktisk når at starte; ikke på tværs af grupper eller som fuld landedækning i én kørsel.
+
+Fremdrift er alene et privat rækkefølgehint kvitteret ved første HTTP-start. Bankens originale svar, parser, fulde målidentitet, kildeprioritet, score og administratorpunkter ændres ikke. Se DEC-0295s tillæg og håndbog 89.281. Syntetisk køfremdrift er ikke målt offentlig dækning, et fuldt halefix eller aktivering af SOURCE596.
+
 ## 3. november — aktuelle jobvalg prøves samlet
 
 Den nye faste metadataoperation ændrer den fælles jobvælger i det eksisterende auditworkflow. Den aktuelle Voersaa-prøve skal derfor kontrollere hele den nye OR-betingelse og begge søskendejobbers negative metadataafgrænsning. Dens øvrige kilde-, original-, arkiv-, credential- og privacykrav samt alle historiske helfilinverser bevares. Produktkode og workflow er uændrede af denne testrettelse.
