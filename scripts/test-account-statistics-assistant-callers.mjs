@@ -581,7 +581,10 @@ test('historical584 national evidence inverts only the reviewed current90-minute
   assert.equal(git('rev-parse',fixture+'^{tree}').toString().trim(),'b3fe05c0b6356ead06fb91a957113d10553d7631');
   const before=git('show',old.head+':'+WORKFLOW).toString();
   const recorded=git('show',fixture+':'+WORKFLOW).toString();
-  const currentWorkflow=(await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  const rawCurrentWorkflow=(await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  const {verifySourcePrWorkflow,inverseSourceNode24Workflow}=await import('./national584-source-evidence.mjs');
+  verifySourcePrWorkflow(rawCurrentWorkflow);
+  const currentWorkflow=inverseSourceNode24Workflow(rawCurrentWorkflow);
   verifyCurrentWorkflow(currentWorkflow);
   const actual=inverseCurrent586PhaseUpload(inverseSourceBeforePostgresWorkflow(currentWorkflow));
   verifyCurrentWorkflow(actual);
@@ -616,7 +619,10 @@ test('source-PR-only180-minute job preserves genuine120 and90 workflows and reje
   const fixture='b02745d6d2987ed0fd2913623b3809fd0ea02dd6';
   const recorded=execFileSync('git',['show',fixture+':'+WORKFLOW],{maxBuffer:65536,timeout:30000,
     env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1'}}).toString();
-  const currentWorkflow=(await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  const rawCurrentWorkflow=(await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  const {verifySourcePrWorkflow,inverseSourceNode24Workflow}=await import('./national584-source-evidence.mjs');
+  verifySourcePrWorkflow(rawCurrentWorkflow);
+  const currentWorkflow=inverseSourceNode24Workflow(rawCurrentWorkflow);
   verifyWorkflow(currentWorkflow);
   const actual=inverseCurrent586PhaseUpload(inverseSourceBeforePostgresWorkflow(currentWorkflow));
   const predecessorHead='bb8d354e0d889080b5f7182b2962f05fbb8fd2e7';
@@ -734,7 +740,7 @@ test('normal original584 staging forwards the selected R2 storage into the real 
 });
 
 test('current586 source registration preserves exact585 predecessor and distinct current native scope',async()=>{
-  const actualPkg=await reviewed587PackageViewForUnchangedOracles(JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8')));
+  const actualPkg=await reviewed587PackageViewForUnchangedOracles(await historicalMainPackageForLegacyOracles());
   const {verifyPackage,verifyCurrentNativeCommands,CURRENT586_NATIVE_COMMANDS}=await import('./national584-source-evidence.mjs');
   const {inverseReviewedAccountStatisticsAssistantSourceScripts,inverseAssistantLaterH0SourceScripts}=await import('./lib/account-statistics-assistant-package-review.mjs');
   const {ASSISTANT_LATER_H0_BINDING,requireAssistantPublic590SuccessorRelease}=await import('./lib/assistant-later-h0-successor-source.mjs');
@@ -772,7 +778,7 @@ test('current586 source registration preserves exact585 predecessor and distinct
 });
 
 test('assistant later-H0 registration keeps exact older scripts and refuses phase/order mutations',async()=>{
-  const pkg=await reviewed587PackageViewForUnchangedOracles(JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8'))),original=structuredClone(pkg);
+  const pkg=await reviewed587PackageViewForUnchangedOracles(await historicalMainPackageForLegacyOracles()),original=structuredClone(pkg);
   const {ASSISTANT_LATER_H0_BINDING,requireAssistantLaterH0Release,requireAssistantPublic590SuccessorRelease}=await import('./lib/assistant-later-h0-successor-source.mjs');
   const {verifyPackage,verifyCurrentNativeCommands,ASSISTANT_LATER_H0_NATIVE_COMMANDS}=await import('./national584-source-evidence.mjs');
   const {inverseAssistantLaterH0SourceScripts}=await import('./lib/account-statistics-assistant-package-review.mjs');
@@ -1175,7 +1181,7 @@ async function reviewed587PackageViewForUnchangedOracles(pkg){
 }
 
 test('public587 successor source registration dispatches actual588 once before exact whole587 inverse',async()=>{
-  const actual=await reviewed588PackageViewForUnchangedOracles(JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8'))),original=structuredClone(actual);
+  const actual=await reviewed588PackageViewForUnchangedOracles(await historicalMainPackageForLegacyOracles()),original=structuredClone(actual);
   const {ASSISTANT_LATER_H0_SOURCE_COMMAND,ASSISTANT_PUBLIC587_SUCCESSOR_SOURCE_COMMAND,
     verifyAssistantLaterH0Package,verifyAssistantPublic587SuccessorPackage}=await import('./national584-source-evidence.mjs');
   const {ASSISTANT_PUBLIC587_SUCCESSOR_BINDING,requireAssistantLaterH0Release}
@@ -1268,6 +1274,10 @@ test('public587 national entry refuses unissued before I/O and leaves historical
 // TEST ONLY: exact590 package DATA inverse before whole unchanged588/587 oracles.
 // This view is never passed to a runtime/native receipt verifier or installer.
 async function reviewed588PackageViewForUnchangedOracles(pkg){
+  if(Object.hasOwn(pkg.scripts,'test:supabase-backup')){
+    const {inverseReviewedSupabaseBackupSourceScripts}=await import('./lib/account-statistics-assistant-package-review.mjs');
+    return reviewed588PackageViewForUnchangedOracles({...pkg,scripts:inverseReviewedSupabaseBackupSourceScripts(pkg.scripts)});
+  }
   if(crypto.createHash('sha256').update(JSON.stringify(Object.keys(pkg.scripts).sort().map(key=>[key,pkg.scripts[key]]))).digest('hex')==='fd4857146f205c9dc04248c642807456e01cdf47d6087de026ddd5f9c2316663'){
     const {inverseReviewedDmiScalarGapSourceScripts}=await import('./lib/account-statistics-assistant-package-review.mjs');
     return reviewed588PackageViewForUnchangedOracles({...pkg,scripts:inverseReviewedDmiScalarGapSourceScripts(pkg.scripts)});
@@ -1307,7 +1317,7 @@ async function reviewed588PackageViewForUnchangedOracles(pkg){
 
 
 test('compact-sharing registration qualifies actual592 plan once before unchanged whole command oracles',async()=>{
-  const actual=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8')),original=structuredClone(actual);
+  const actual=await historicalMainPackageForLegacyOracles(),original=structuredClone(actual);
   const {inverseReviewedForecastShareProjectionSourceScripts,inverseAssistantPublic588SuccessorSourceScripts}
     =await import('./lib/account-statistics-assistant-package-review.mjs');
   const {verifyAssistantPublic591SuccessorPackage,verifyInstalled593Original591Package}=await import('./national584-source-evidence.mjs');
@@ -1329,7 +1339,7 @@ test('compact-sharing registration qualifies actual592 plan once before unchange
 });
 
 test('active590 national reader validates actual591 before exact whole588 package inverse',async()=>{
-  const actual=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8')),original=structuredClone(actual);
+  const actual=await historicalMainPackageForLegacyOracles(),original=structuredClone(actual);
   const {verifyPackage,verifyInstalled593Original591Package,verifyAssistantPublic591SuccessorPackage,verifyAssistantPublic590SuccessorPackage,verifyAssistantPublic587SuccessorPackage,
     INSTALLED593_ORIGINAL591_SOURCE_COMMAND,ASSISTANT_PUBLIC591_SUCCESSOR_SOURCE_COMMAND,ASSISTANT_PUBLIC590_SUCCESSOR_SOURCE_COMMAND,ASSISTANT_PUBLIC587_SUCCESSOR_SOURCE_COMMAND}
     =await import('./national584-source-evidence.mjs');
@@ -1471,6 +1481,65 @@ test('calendar588 national entry binds its own phase while historical584 reuse r
 });
 
 
+// Own SOURCE scope. Main's frozen585/586/591/594 banks above are unchanged.
+// NULL proves refusal only; an issued branch reads its own actual canonical/model.
+// Neither branch is native/fullRuntime, original admission or a publication grant.
+test('SOURCE own metadata refuses unissued IO or matches its actual issued canonical and model', async () => {
+  const source = await import('./lib/source-producer-successor-source.mjs');
+  const readiness = await import('./integrated-cutover-readiness.mjs');
+  const transition = await import('./source-producer-runtime-transition.mjs');
+  if (source.SOURCE_PRODUCER_BINDING === null) {
+    assert.equal(source.SOURCE_PRODUCER_VERSION, null);
+    assert.equal(source.SOURCE_PRODUCER_OUTPUT, null, 'No partial SOURCE issuance');
+    let accesses = 0;
+    const forbidden = new Proxy({}, {
+      get() { accesses++; throw Error('SOURCE_UNISSUED_INPUT_ACCESS'); },
+      ownKeys() { accesses++; throw Error('SOURCE_UNISSUED_INPUT_ENUMERATION'); },
+      getPrototypeOf() { accesses++; throw Error('SOURCE_UNISSUED_INPUT_PROTOTYPE'); },
+    });
+    for (const refuse of [() => source.requireSourceProducerBinding(),
+      () => source.requireSourceProducerOutput(), () => source.sourceProducerMigration(),
+      () => readiness.sourceProducerRequiredMigrations(),
+      () => readiness.assertSourceProducerMigrationsApplied(forbidden)])
+      assert.throws(refuse, /SOURCE_PRODUCER_UNISSUED/);
+    for (const refuse of [() => source.readSourceProducerCanonicalSource(forbidden),
+      () => transition.prepareSourceProducerRuntimeTransition(forbidden),
+      () => transition.restoreAndPrepareSourceProducerRuntimeTransition(forbidden)])
+      await assert.rejects(refuse, /SOURCE_PRODUCER_UNISSUED/);
+    assert.equal(accesses, 0, 'Refusal precedes all caller operands');
+    return; // This unit branch is not an issued/native SOURCE qualification.
+  }
+  const binding = source.requireSourceProducerBinding();
+  const output = source.requireSourceProducerOutput();
+  const canonical = await source.readSourceProducerCanonicalSource();
+  assert.equal(canonical.admission, 'NO_ADMISSION');
+  assert.equal(canonical.migration.version, binding.version);
+  assert.equal(crypto.createHash('sha256').update(canonical.canonicalSource).digest('hex'), output.canonicalSha256);
+  const integrated = await import('../js/core/ravscore-model-contract.js');
+  const candidate = await import('./rollback-assets/ravscore-model-contract.js');
+  const runtime = await import('./private-production-runtime-workflow.mjs');
+  assert.equal(integrated.ravScoreModelBinding().modelBundleSha256, binding.I);
+  assert.equal(candidate.ravScoreModelBinding().modelBundleSha256, binding.C);
+  assert.equal((await runtime.privateRuntimeContractHashes()).continuationStateContractSha256, binding.T);
+  const required = readiness.sourceProducerRequiredMigrations();
+  assert.equal(required.length, 62, 'Normal genuine594 prefix61 followed by this own SOURCE migration');
+  assert.equal(required.at(-2).version, source.SOURCE_PRODUCER_BEFORE.version);
+  assert.equal(required.at(-1).version, binding.version);
+  for (const key of ['C', 'I', 'T']) assert.notEqual(binding[key], source.SOURCE_PRODUCER_BEFORE[key]);
+  for (const refuse of [() => source.requireSourceProducerBinding({}),
+    () => source.requireSourceProducerOutput({}), () => source.sourceProducerMigration({})])
+    assert.throws(refuse, { code: 'ERR_ASSERTION' });
+});
+
+async function historicalMainPackageForLegacyOracles(){
+  const pkg=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8'));
+  if(!Object.hasOwn(pkg.scripts,'test:source-producer-source'))return pkg;
+  const {verifySourcePrPackage,sourcePrFrozenMainPackage}=await import('./national584-source-evidence.mjs');
+  const before=structuredClone(pkg);verifySourcePrPackage(pkg);
+  const frozen=sourcePrFrozenMainPackage();assert.equal(frozen.version,'4.0.594');
+  assert.deepEqual(pkg,before,'Own SOURCE qualification cannot edit current package bytes');
+  return frozen; // Hele faktiske c920-Gitbytes, aldrig en retagget595-package.
+}
 // BEGIN EXACT PRIVATE STUDY OPERATOR DIAGNOSTIC TEST VIEW
 // Test-only: one whole-source successor; the immutable006 publisher pin and
 // every preceding assertion remain intact. Actual new CLI behavior is tested.
@@ -1487,7 +1556,11 @@ function reviewedPrivateStudyOperatorPublisher(source){
 
 
 test('DMI scalar source registration qualifies75 commands before unchanged72-command oracles',async()=>{
-  const actual=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8')).scripts,original=structuredClone(actual);
+  const raw=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8')).scripts;
+  const {reviewedSourceDmiMainSourceScripts}=await import('./national584-source-evidence.mjs');
+  const observed=Object.hasOwn(raw,'test:source-producer-source')?reviewedSourceDmiMainSourceScripts(raw):raw;
+  const {inverseReviewedSupabaseBackupSourceScripts}=await import('./lib/account-statistics-assistant-package-review.mjs');
+  const actual=Object.hasOwn(observed,'test:supabase-backup')?inverseReviewedSupabaseBackupSourceScripts(observed):observed,original=structuredClone(actual);
   const {inverseReviewedDmiScalarGapSourceScripts:inverse,inverseReviewedForecastShareProjectionSourceScripts:sharing,
     inverseAssistantPublic588SuccessorSourceScripts:later}=await import('./lib/account-statistics-assistant-package-review.mjs');
   const prior=inverse(actual),digest=value=>crypto.createHash('sha256').update(JSON.stringify(Object.keys(value).sort().map(key=>[key,value[key]]))).digest('hex');

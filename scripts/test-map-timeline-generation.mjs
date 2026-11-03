@@ -149,6 +149,11 @@ const retained586=new Map([
  'bootstrap.js?v='+version+'&copy=footer-20261005&ui=account-timeline-now-20261018',
  'app.js?v='+version+'&copy=footer-20261005&ui=account-timeline-now-20261018',
  'js/services/data-service.js?v='+version,
+ // The actually delivered594 full URLs are also retained by the same worker.
+ // A new contract URL inside an old cached data-service response is not enough.
+ 'js/services/data-service.js?v=4.0.594&ui=forecast-share-20261024',
+ 'js/ui/forecast-share.js?v=4.0.594&ui=forecast-share-20261024',
+ 'js/services/forecast-share-contract.js?v=4.0.594&ui=forecast-share-20261024',
 ].map(key=>[new URL(key,root).href,{old:true}]));
 const shareFetches=[],shareCacheContext={CACHE:'synthetic-installed586',caches:{open:async()=>({
  match:async request=>retained586.get(request),put:(request,response)=>retained586.set(request,response),

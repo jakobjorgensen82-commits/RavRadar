@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import {readIssued594ImpactTextTestInputs} from './lib/assistant594-historical-source-test-input.mjs';
+const historicalTextInputs=await readIssued594ImpactTextTestInputs();
 import os from 'node:os';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
@@ -17,7 +19,8 @@ const files=['package.json','scripts/validate-source-once.mjs','scripts/source-i
   'js/ui/learn-i18n-de.js','js/ui/learn-i18n-en.js'];let passed=0;
 try{
   git(['init','-q']);git(['config','user.name','Synthetic targeted test']);git(['config','user.email','fixture@example.invalid']);
-  git(['config','core.autocrlf','false']);for(const file of files)write(file,fs.readFileSync(path.join(SOURCE,file)));
+  git(['config','core.autocrlf','false']);for(const file of files)write(file,
+    Object.hasOwn(historicalTextInputs,file)?historicalTextInputs[file]:fs.readFileSync(path.join(SOURCE,file)));
   const base=commit('synthetic complete baseline');
   const about=fs.readFileSync(path.join(root,'js/ui/about-i18n.js'),'utf8');
   write('js/ui/about-i18n.js',about.replace("'about.header':'Om projektet'","'about.header':'Om RavRadar'"));

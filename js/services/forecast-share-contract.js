@@ -1,8 +1,8 @@
 // Display-only selection. No score, provider, coordinate, account or trip authority.
 export const FORECAST_SHARE_WORKER_BASE_URL = 'https://ravradar-prognosedeling.jakob-jorgensen82.workers.dev/';
 export const FORECAST_SHARE_PAGES_BASE_URL = 'https://ravradar-del.pages.dev/';
-// Frontend stays on the verified legacy host until Pages and DNS/TLS are accepted.
-export const FORECAST_SHARE_BASE_URL = FORECAST_SHARE_WORKER_BASE_URL;
+// Source-bound frontend target; deliver only after owned-domain and TLS acceptance.
+export const FORECAST_SHARE_BASE_URL = 'https://del.ravradar.dk/';
 export const FORECAST_SHARE_TIME_ZONE = 'Europe/Copenhagen';
 export const FORECAST_SHARE_BRAND_PATH = 'assets/icons/ravradar-512.png';
 const MODES = ['waders', 'beach'];

@@ -48,6 +48,7 @@ import {
   TRIP_ACTIVE_ADMISSION_POLICY_ID,
   TRIP_BINDING_POLICY_ID,
   checkIntegratedCutoverReadiness,
+  codeBoundIntegratedReadinessFamily,
   expectedTripActiveAdmissionPolicy,
   expectedTripBindingPolicy,
 } from './integrated-cutover-readiness.mjs';
@@ -1098,6 +1099,9 @@ const INTEGRATED_RETURN_PLAN_FIELDS = Object.freeze([
 ]);
 
 function assertIntegratedReadiness(readiness, sourceHead) {
+  const family=codeBoundIntegratedReadinessFamily();
+  const REQUIRED_CUTOVER_MIGRATIONS=family.requiredMigrations;
+  const EXPECTED_TRIP_BINDING_POLICY={sha256:family.tripBindingPolicySha256};
   if (!exactKeys(readiness, [
     'schemaVersion',
     'sourceHead',
@@ -4580,6 +4584,7 @@ async function checkedIntegratedReadinessForEnvironment(
     throw new Error('Integrated return readiness requires exact Supabase credentials');
   }
   return checkIntegratedCutoverReadiness({
+    sourcePhase:codeBoundIntegratedReadinessFamily().sourcePhase,
     sourceHead,
     publicImplementationClosureSha256,
     url,

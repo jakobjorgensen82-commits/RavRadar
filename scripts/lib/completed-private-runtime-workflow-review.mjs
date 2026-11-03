@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import { inverseSourceNormalWorkflow } from './source-normal-workflow-review.mjs';
 const review = JSON.parse(fs.readFileSync(new URL('./completed-private-runtime-workflow-review.json', import.meta.url), 'utf8'));
 const coldReview = JSON.parse(fs.readFileSync(new URL('./current-family-cold-start-workflow-review.json', import.meta.url), 'utf8'));
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
@@ -204,9 +205,51 @@ export function inverseQualifiedScalarPlanningWorkflow(source, role) {
   assert.equal(sha(source), row.before.sha256, 'QUALIFIED_SCALAR_WHOLE_PREDECESSOR');
   return source;
 }
+// TEST ONLY: the exact three-hunk V4 port over genuine SOURCE a166.
+// Restore its whole beforeimage before the unchanged SOURCE/historical oracles.
+export const sourceQualifiedScalarPlanningWorkflowReview = Object.freeze({
+  "sourceHead": "a166d7267863808ab31e316c15143001d01db78c",
+  "before": {
+    "bytes": 340359,
+    "sha256": "188a04a9c579394c293402634c23ee87fff7eee008165549f634826b2510f28a"
+  },
+  "after": {
+    "bytes": 343543,
+    "sha256": "97ce258a45f474a3f6aa44920a7c3f5bfe5634913156c467c306212bd166bec4"
+  },
+  "hunks": [
+    [
+      "            --github-output \"$GITHUB_OUTPUT\"\n",
+      "            --github-output \"$GITHUB_OUTPUT\"\n          printf 'cache_path=%s\\n' \"$recovery_cache\" >> \"$GITHUB_OUTPUT\"\n"
+    ],
+    [
+      "      - name: Plan global current acquisition before DMI\n        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'))\n        continue-on-error: true\n        shell: bash\n        run: |\n          if ! python scripts/build-weather-acquisition-plan.py \\\n            --at \"$RAVRADAR_PRODUCTION_TARGET_HOUR\" \\\n            --report data/diagnostics/weather-acquisition-plan-before-dmi.json; then\n            rm -f .cache/weather-current-acquisition-plan.json\n            echo \"::warning::Advisory acquisition plan unavailable; DMI uses conservative native coverage.\"\n          fi\n\n",
+      "      - name: Plan global current acquisition before DMI\n        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'))\n        shell: bash\n        env:\n          DMI_PLANNING_SNAPSHOT: ${{ steps.dmi-recovery-budget.outputs.cache_path }}\n          DMI_PART_CONTINUITY_DONOR_PATH: ${{ steps.restored-dmi-part-continuity-donor.outputs.path }}\n          RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE: ${{ steps.private-runtime-install.outcome == 'success' && 'true' || 'false' }}\n          RAVRADAR_RETAINED_SCALAR_CONTEXT: ${{ steps.dmi-part-continuity-donor.outputs.continuity_schema == '1' && steps.private-runtime-install.outcome == 'success' && steps.operational-model.outputs.model == 'integrated' && steps.operational-model.outputs.binding_current == 'true' && steps.operational-action.outputs.action == 'integrated' && steps.legacy-bootstrap.outputs.stateless_integrated_recovery != 'true' && inputs.completed_private_runtime != true && inputs.completed_private_runtime_pin == '' && inputs.completed_stage_source == '' && inputs.checkpoint_only != true && inputs.quick_confirmation != true && inputs.quick_progress_source == '' && inputs.current_family_cold_start != true && inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true && inputs.weather_state_epoch_raw_cache_key == '' && inputs.weather_state_epoch_archive_key == '' && inputs.weather_state_epoch_archive_catalog_sha256 == '' && inputs.native_sampling_identity_original_recovery != true && inputs.ravscore_integrated_weather_handoff_run_id == '' && inputs.produce_weather_handoff != true && inputs.ravscore_integrated_first_cutover != true && inputs.ravscore_integrated_return != true && (inputs.ravscore_candidate_g_rollback_mode == '' || inputs.ravscore_candidate_g_rollback_mode == 'none') && 'ordinary-restored' || '' }}\n        run: |\n          set -euo pipefail\n          rm -f .cache/weather-scalar-needs.json .cache/weather-qualified-acquisition-plan.json\n          scalar_args=(--cache \"$DMI_PLANNING_SNAPSHOT\" --at \"$RAVRADAR_PRODUCTION_TARGET_HOUR\")\n          qualified_args=(--scalar-snapshot \"$DMI_PLANNING_SNAPSHOT\")\n          if test -n \"$DMI_PART_CONTINUITY_DONOR_PATH\"; then\n            scalar_args+=(--historical \"$DMI_PART_CONTINUITY_DONOR_PATH\")\n            qualified_args+=(--scalar-history \"$DMI_PART_CONTINUITY_DONOR_PATH\")\n          fi\n          if test \"$RAVRADAR_RETAINED_SCALAR_CONTEXT\" = ordinary-restored; then\n            scalar_status=0\n            node scripts/plan-weather-scalar-acquisition.mjs \"${scalar_args[@]}\" || scalar_status=$?\n            if test \"$scalar_status\" -eq 2; then\n              echo \"::error::Retained scalar planning did not prove transport termination.\"\n              exit 2\n            elif test \"$scalar_status\" -ne 0; then\n              echo \"::warning::Retained scalar planning unavailable; native priority is preserved.\"\n            fi\n          fi\n          if ! python scripts/build-weather-acquisition-plan.py \\\n            --at \"$RAVRADAR_PRODUCTION_TARGET_HOUR\" \\\n            --report data/diagnostics/weather-acquisition-plan-before-dmi.json \\\n            \"${qualified_args[@]}\"; then\n            rm -f .cache/weather-current-acquisition-plan.json .cache/weather-qualified-acquisition-plan.json\n            echo \"::warning::Advisory acquisition plan unavailable; DMI uses conservative native coverage.\"\n          fi\n\n"
+    ],
+    [
+      "          DMI_BULK_CURRENT_ACQUISITION_PLAN_PATH: .cache/weather-current-acquisition-plan.json\n",
+      "          DMI_BULK_CURRENT_ACQUISITION_PLAN_PATH: .cache/weather-current-acquisition-plan.json\n          DMI_BULK_QUALIFIED_ACQUISITION_PLAN_PATH: .cache/weather-qualified-acquisition-plan.json\n          DMI_BULK_SCALAR_SNAPSHOT_PATH: ${{ steps.dmi-recovery-budget.outputs.cache_path }}\n          DMI_PART_CONTINUITY_DONOR_PATH: ${{ steps.restored-dmi-part-continuity-donor.outputs.path }}\n"
+    ]
+  ]
+});
+export function inverseSourceQualifiedScalarPlanningWorkflow(source, role) {
+  assert.equal(arguments.length, 2, 'SOURCE_QUALIFIED_SCALAR_INVERSE_ARGUMENTS');
+  assert.equal(typeof source, 'string', 'SOURCE_QUALIFIED_SCALAR_INVERSE_TYPE');
+  const row = sourceQualifiedScalarPlanningWorkflowReview;
+  if (role !== 'build' || sha(source) !== row.after.sha256) return source;
+  assert.equal(Buffer.byteLength(source), row.after.bytes, 'SOURCE_QUALIFIED_SCALAR_AFTER_BYTES');
+  for (const [original, actual] of row.hunks) {
+    assert.equal(source.split(actual).length, 2, 'SOURCE_QUALIFIED_SCALAR_EXACT_HUNK');
+    source = source.replace(actual, () => original);
+  }
+  assert.equal(Buffer.byteLength(source), row.before.bytes, 'SOURCE_QUALIFIED_SCALAR_BEFORE_BYTES');
+  assert.equal(sha(source), row.before.sha256, 'SOURCE_QUALIFIED_SCALAR_WHOLE_PREDECESSOR');
+  return source;
+}
 export function inverseTerminalRepair4145Workflow(source, role) {
   assert.equal(arguments.length, 2, 'TERMINAL4145_INVERSE_ARGUMENTS');
   assert.equal(typeof source, 'string', 'TERMINAL4145_INVERSE_TYPE');
+  source = inverseSourceQualifiedScalarPlanningWorkflow(source, role);
   source = inverseQualifiedScalarPlanningWorkflow(source, role);
   const roles = terminalRepair4145WorkflowReview.roles;
   const row = typeof role === 'string' && Object.hasOwn(roles, role) ? roles[role] : null;
@@ -599,6 +642,10 @@ for (const row of Object.values(ordinaryStageWiringReview)) {
 Object.freeze(ordinaryStageWiringReview);
 // Exact586 then585 normal User-Agent inverses; every historical workflow byte remains the oracle.
 export function inverseRelease585WorkflowUserAgents(source, role) {
+  // SOURCE changes the producer and selectors, not just release User-Agents.
+  // Qualify its entire afterimage before any unchanged historical oracle.
+  if ((role === 'build' || role === 'once') && source.includes('      source_normal_producer:\n'))
+    source = inverseSourceNormalWorkflow(source, role);
   source = inverseNativeOriginalSchemaSelectorWorkflow(source, role);
   if (role === 'build' && sha(source) === '8223891e25cfb7fbcf57a536bcc55a1cbf59ed676f02172588192065ae4eccc0') {
     assert.equal(source.split('RavRadar/4.0.586').length, 6, 'Exactly five normal586 User-Agent fields');

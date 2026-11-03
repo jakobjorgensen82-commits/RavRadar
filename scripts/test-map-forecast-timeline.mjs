@@ -211,7 +211,19 @@ try{
   // Actual Worker/Pages -> compact normal reader; only transport is synthetic.
   // No old heavy-reader fallback, new weather or score calculation is allowed.
   const shareBase='https://ravradar-prognosedeling.jakob-jorgensen82.workers.dev/';
-  assert.equal(FORECAST_SHARE_BASE_URL,shareBase);
+  assert.equal(FORECAST_SHARE_BASE_URL,'https://del.ravradar.dk/');
+  assert.equal(FORECAST_SHARE_WORKER_BASE_URL,shareBase,'Legacy Worker origin remains its own unchanged route');
+  const activeShareVersion=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8')).version;
+  assert.match(activeShareVersion,/^\d+\.\d+\.\d+$/);
+  for(const[file,needles]of[
+    ['../index.html',[`bootstrap.js?v=${activeShareVersion}&copy=footer-20261005&ui=zone-panels-20261027&assistant=forecast-followup-20261101&share=custom-domain-20261102`]],
+    ['../bootstrap.js',[`./app.js?v=${activeShareVersion}&copy=footer-20261005&ui=zone-panels-20261027&assistant=forecast-followup-20261101&share=custom-domain-20261102`]],
+    ['../app.js',[`./js/ui/forecast-share.js?v=${activeShareVersion}&ui=forecast-share-20261024&share=custom-domain-20261102`,`./js/services/forecast-share-contract.js?v=${activeShareVersion}&ui=forecast-share-20261024&share=custom-domain-20261102`]],
+    ['../js/ui/forecast-share.js',[`../services/forecast-share-contract.js?v=${activeShareVersion}&ui=forecast-share-20261024&share=custom-domain-20261102`]],
+  ]){
+    const source=await fs.readFile(new URL(file,import.meta.url),'utf8');
+    for(const needle of needles)assert.equal(source.split(needle).length-1,1,'Normal custom-domain module entry must have one fresh, source-owned address');
+  }
   const workerConfig=JSON.parse(await fs.readFile(new URL('./forecast-share/wrangler.jsonc',import.meta.url),'utf8'));
   assert.deepEqual(workerConfig,{name:'ravradar-prognosedeling',main:'worker.mjs',
     compatibility_date:'2026-10-24',workers_dev:true,preview_urls:false},

@@ -764,6 +764,66 @@ assert value is None and diagnostic['valid'] is False
 print('NORMAL_PHYSICAL_DMI_READER_PASS')
 `;
     assert.equal(run(python,['-B','-X','utf8','-c',probe,repository]).trim(),'NORMAL_PHYSICAL_DMI_READER_PASS');
+    const sourceProbe = String.raw`
+import importlib.util, sys, os, json
+from pathlib import Path
+repository=Path(sys.argv[1]);sys.path.insert(0,str(repository/'scripts'))
+spec=importlib.util.spec_from_file_location('actual_source_materializer',repository/'scripts/materialize-dmi-bulk-storage.py')
+materializer=importlib.util.module_from_spec(spec);spec.loader.exec_module(materializer)
+root=Path.cwd();cache=(root/'.cache/recovery-candidate.json').resolve();target='2026-01-01T00:00:00.000Z'
+outputs=['.cache/weather-scalar-needs.json','.cache/weather-current-acquisition-plan.json','.cache/weather-qualified-acquisition-plan.json','data/diagnostics/weather-acquisition-plan-before-dmi.json']
+retained=root/'.cache/source-planning-retained';retained.mkdir()
+def preserve(label):
+    for index,name in enumerate(outputs):
+        path=root/name
+        if path.exists():path.rename(retained/(label+'-'+str(index)))
+preserve('main')
+assert 'RAVRADAR_RETAINED_SCALAR_CONTEXT' not in os.environ
+assert 'RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE' not in os.environ
+assert materializer.source_scalar_acquisition_plan(root,cache,target)==0
+report=json.loads((root/'data/diagnostics/weather-acquisition-plan-before-dmi.json').read_text())
+assert report['scalarPlanning']=={'status':'qualified-retained-advisory','sourceAdmission':False}
+fixture=repository/'scripts/test-dmi-dkss-primary-mode.py'
+source=fixture.read_text(encoding='utf-8');namespace={'__file__':str(fixture),'__name__':'source_physical_dmi_reader'}
+exec(compile(source[:source.index('\ndef classify(')],str(fixture),'exec'),namespace)
+producer=namespace['producer']
+from lib.copernicus_current import load_targets
+from lib.weather_acquisition_plan import read_current_acquisition_plan
+from datetime import datetime
+reference=datetime.fromisoformat('2026-01-01T00:00:00+00:00');targets=load_targets(root/'data/live/coastal-parts-v2.json')
+os.environ.update(DMI_BULK_QUALIFIED_ACQUISITION_PLAN_PATH='.cache/weather-qualified-acquisition-plan.json',DMI_BULK_SCALAR_SNAPSHOT_PATH=str(cache),DMI_BULK_CURRENT_ACQUISITION_PLAN_PATH='.cache/weather-current-acquisition-plan.json')
+current=read_current_acquisition_plan('.cache/weather-current-acquisition-plan.json',production_reference_at=reference,targets=targets)
+compiled,diagnostic=producer.load_qualified_scalar_acquisition_planning(targets,reference,current)
+assert compiled is not None and diagnostic['valid'] is True and diagnostic['sourceAdmission'] is False
+# Real optional-input drift after compilation, before the same normal DMI read.
+drift=root/'.cache/weather-component-selection-history.json';assert not drift.exists()
+try:
+    drift.write_text('{}\n',encoding='utf-8')
+    value,diagnostic=producer.load_qualified_scalar_acquisition_planning(targets,reference,current)
+    assert value is None and diagnostic['valid'] is False
+finally:drift.unlink()
+preserve('source-qualified')
+# Unknown required input cannot create an empty, qualified needs-plan.
+station=root/'data/live/dmi-water-stations.json';held=station.with_name(station.name+'.source-held')
+assert not held.exists();station.rename(held)
+try:
+    assert materializer.source_scalar_acquisition_plan(root,cache,target)==0
+    report=json.loads((root/'data/diagnostics/weather-acquisition-plan-before-dmi.json').read_text())
+    assert report['scalarPlanning']['status']=='unavailable'
+    assert not (root/'.cache/weather-qualified-acquisition-plan.json').exists()
+finally:held.rename(station)
+# The actual closed phase42 decoder accepts only the two observed filenames.
+spec=importlib.util.spec_from_file_location('actual_source_cohort',repository/'scripts/lib/copernicus_component_process.py')
+cohort=importlib.util.module_from_spec(spec);spec.loader.exec_module(cohort)
+for value in ('materialized.json','recovery-candidate.json'):
+    assert cohort._source_normal_outputs(('recovery_snapshot='+value+'\n').encode(),42)=={'recovery_snapshot':value}
+for value in ('../materialized.json','other.json','',str(cache)):
+    try:cohort._source_normal_outputs(('recovery_snapshot='+value+'\n').encode(),42)
+    except RuntimeError as error:assert str(error)=='SOURCE_NORMAL_OUTPUT_INVALID'
+    else:raise AssertionError('unknown snapshot selected')
+print('SOURCE_PHYSICAL_SCALAR_CALLER_PASS')
+`;
+    assert(run(python,['-B','-X','utf8','-c',sourceProbe,repository]).includes('SOURCE_PHYSICAL_SCALAR_CALLER_PASS'));
     await assert.rejects(loadRetainedPartScalarPlanning({root,dmiCachePath:path.join(root,'.cache/invalid-candidate.json'),
       productionReferenceAt:H0}));
     await assert.rejects(loadRetainedWeatherComponentPlanningInputs({privateCacheRoot:path.join(root,'.cache'),

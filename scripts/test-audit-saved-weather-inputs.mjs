@@ -26,6 +26,7 @@ import { packDmiPartContinuity } from './lib/dmi-part-continuity.mjs';
 import { DMI_FORECAST_HOURS, buildDmiForecastHourly, inspectDmiNativeGridSampling, sameNativeIdentity } from './lib/dmi-forecast-store.mjs';
 import { dmiExpectedIdentityForPart, dmiOriginalWireIdentityMatchesCentralIdentity } from './lib/ravscore-production-adapters.mjs';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
+import { assertSource594CodeSourceSelected, withSource594CodeParent } from './check-assistant-later-h0-predecessor-source.mjs';
 import { diagnoseCurrent586SelectedEndpoints, buildRavScoreRawCurrentRetention } from './plan-ravscore-current-history.mjs';
 import { buildIntegratedPartScoreSeries } from './lib/ravscore-integrated-runtime.mjs';
 import { discoverCommittedCoherentOriginalBootstrap } from './lib/coherent-current-original-bootstrap.mjs';
@@ -277,7 +278,11 @@ test('offline subprocess scope removes secrets and restores them even after fail
 async function fixture(t, { corrupt = false, changedAt = Infinity, wrongContracts = false,
   wrongBaseline = false, cipherTamper = false, forecastAbsent = false,
   nativeProofs = false, baselinePackTamper = false, packReaderBank = null, rawCaptures = false,
-  componentSummaryAbsent = false, waterTraceTarget = null, waterTraceFixture = null } = {}) {
+  componentSummaryAbsent = false, waterTraceTarget = null, waterTraceFixture = null, waterTraceCode = null } = {}) {
+  const fixtureModelBinding=waterTraceTarget?waterTraceCode.ravScoreModelBinding():ravScoreModelBinding();
+  const readerCodeRoot=waterTraceTarget?waterTraceCode.root:repositoryRoot;
+  const createFixtureBundle=waterTraceTarget?waterTraceCode.createPrivateProductionRuntimeBundle:createPrivateProductionRuntimeBundle;
+  const buildFixtureArchive=waterTraceTarget?waterTraceCode.buildProtectedPrivateRuntimeArchive:buildProtectedPrivateRuntimeArchive;
   const folder = await temp(t);
   const source = path.join(folder, 'source'), privateRoot = path.join(folder, 'private'),
     buildRoot = path.join(folder, 'build'), predecessorRoot = path.join(folder, 'old-reader'), progressRoot = path.join(folder, 'progress');
@@ -288,7 +293,7 @@ async function fixture(t, { corrupt = false, changedAt = Infinity, wrongContract
       copernicus: { status: 'SECRET_ERROR_CANARY', transportFailure: 'secret-error-canary' },
       arbitraryPrivatePayload: { currentUMps: 52, password: 'secret-error-canary' } } },
     zones: Object.fromEntries(Array.from({ length: 210 }, (_, i) => [`zone-${i}`, {}])),
-    coastalParts: { modelBinding: ravScoreModelBinding(), parts: Object.fromEntries(Array.from({ length: 673 }, (_, i) =>
+    coastalParts: { modelBinding: fixtureModelBinding, parts: Object.fromEntries(Array.from({ length: 673 }, (_, i) =>
       [`part-${i}`, { zoneId: `zone-${i % 210}`, waterPoint: [8, 55], landPoint: [8, 55.01], onshoreDirectionDeg: 0 }])) } };
   if(waterTraceTarget){
     conditions.datasetId=waterTraceTarget.datasetId;conditions.productionReferenceAt=waterTraceTarget.productionReferenceAt;
@@ -346,17 +351,17 @@ async function fixture(t, { corrupt = false, changedAt = Infinity, wrongContract
     await write(progressRoot, PRIVATE_WEATHER_COMPONENT_FILES.openMeteoBank, packReaderBank);
   }
   const bundlePath = path.join(buildRoot, 'bundle');
-  await createPrivateProductionRuntimeBundle({ privateRoot: buildRoot, bundlePath, repositoryRoot: source, files,
+  await createFixtureBundle({ privateRoot: buildRoot, bundlePath, repositoryRoot: source, files,
     metadata: { datasetId: conditions.datasetId, productionReferenceAt: conditions.productionReferenceAt, generatedAt: conditions.generatedAt,
-      generationId: 'synthetic-input-audit', zoneCount: 210, partCount: 673, modelBinding: ravScoreModelBinding(), contractHashes, privacyClass: 'PRIVATE_PRODUCTION_RUNTIME' } });
-  const built = await buildProtectedPrivateRuntimeArchive({ privateRoot: buildRoot, bundlePath, repositoryRoot: source, sourceHead: waterTraceTarget?.sourceHead??'c'.repeat(40) });
+      generationId: 'synthetic-input-audit', zoneCount: 210, partCount: 673, modelBinding: fixtureModelBinding, contractHashes, privacyClass: 'PRIVATE_PRODUCTION_RUNTIME' } });
+  const built = await buildFixtureArchive({ privateRoot: buildRoot, bundlePath, repositoryRoot: source, sourceHead: waterTraceTarget?.sourceHead??'c'.repeat(40) });
   await write(predecessorRoot, 'package.json', { type: 'module' });
-  await write(predecessorRoot, 'scripts/protected-private-production-runtime.mjs', `export * from ${JSON.stringify(pathToFileURL(path.join(repositoryRoot, 'scripts/protected-private-production-runtime.mjs')).href)};`);
+  await write(predecessorRoot, 'scripts/protected-private-production-runtime.mjs', `export * from ${JSON.stringify(pathToFileURL(path.join(readerCodeRoot, 'scripts/protected-private-production-runtime.mjs')).href)};`);
   await write(predecessorRoot, 'scripts/private-production-runtime-workflow.mjs', `export const privateRuntimeContractHashes = async () => (${JSON.stringify(wrongContracts ? { ...contractHashes, fullRuntimeContractSha256: 'd'.repeat(64) } : contractHashes)});`);
-  await write(predecessorRoot, 'js/core/ravscore-model-contract.js', `export const ravScoreModelBinding = () => (${JSON.stringify(ravScoreModelBinding())});`);
-  await write(predecessorRoot,'scripts/staged-private-production-runtime.mjs',`export * from ${JSON.stringify(pathToFileURL(path.join(repositoryRoot,'scripts/staged-private-production-runtime.mjs')).href)};`);
+  await write(predecessorRoot, 'js/core/ravscore-model-contract.js', `export const ravScoreModelBinding = () => (${JSON.stringify(fixtureModelBinding)});`);
+  await write(predecessorRoot,'scripts/staged-private-production-runtime.mjs',`export * from ${JSON.stringify(pathToFileURL(path.join(readerCodeRoot,'scripts/staged-private-production-runtime.mjs')).href)};`);
   for (const file of ['scripts/lib/coastal-point-staging-contract.mjs', 'scripts/lib/ravscore-sampling-context.mjs']) {
-    await write(predecessorRoot, file, `export * from ${JSON.stringify(pathToFileURL(path.join(repositoryRoot, file)).href)};`);
+    await write(predecessorRoot, file, `export * from ${JSON.stringify(pathToFileURL(path.join(readerCodeRoot, file)).href)};`);
   }
   await write(progressRoot, 'data/live/conditions.json', conditions);
   await write(progressRoot, '.cache/dmi-active-complete.json', nativeProofs ? nativeData.donor(nativeData.native.slice(1))
@@ -1928,11 +1933,65 @@ async function waterTraceData(target,{badInner=false,rawRunSpelling=false}={}){
   if(badInner)forecast.waterSourceContinuity.entries[0].compressedSha256='f'.repeat(64);
   return {forecast,stations};
 }
-async function fixedWaterCase(t,{changedAt=Infinity,corrupt=false,badInner=false,missing4145=false,rawRunSpelling=false,mutateTraceData=null,componentSummaryAbsent=false}={}){
+// Keep the normal genuine594 CODE callback alive through fixture construction,
+// both old readers, the actual current audit, and finally the test's cleanup.
+async function fixedWater594CodeUntilTestEnds(t){
+  const digest=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
+  let ready,refuse,release;
+  const loaded=new Promise((resolve,reject)=>{ready=resolve;refuse=reject;});
+  const lifetime=new Promise(resolve=>{release=resolve;});
+  const scope=withSource594CodeParent(async root=>{
+    const row={file:'scripts/staged-private-production-runtime.mjs',
+      blob:'d4eebf789e3b98c7716c0a4129517b8e56468754',bytes:8510,
+      sha256:'d2dc355951de8eeafe717da55e9ac73bd5dc1388abada20d34a50401e6628436'};
+    const file=path.join(root,row.file),profile=assertSource594CodeSourceSelected();
+    const identity=st=>{assert(st.isFile()&&!st.isSymbolicLink()&&st.nlink===1n);return [st.dev,st.ino,st.birthtimeNs,st.size];};
+    let owned=null;
+    try{
+      try{await fs.lstat(file);}catch(error){
+        if(error.code!=='ENOENT')throw error;
+        const git=args=>{
+          const result=spawnSync('git',['-c','protocol.allow=never','-C',repositoryRoot,...args],{
+            env:{...Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','TEMP','TMP','LANG','LC_ALL']
+              .filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]])),
+              GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_OPTIONAL_LOCKS:'0',GIT_TERMINAL_PROMPT:'0'},
+            timeout:30000,maxBuffer:32768});
+          assert.equal(result.error,undefined);assert.equal(result.status,0);return result.stdout;
+        };
+        assert.equal(git(['rev-parse',profile.head+'^{tree}']).toString().trim(),profile.tree);
+        assert.equal(git(['ls-tree',profile.head,'--',row.file]).toString().trim(),'100644 blob '+row.blob+'\t'+row.file);
+        const raw=git(['cat-file','blob',profile.head+':'+row.file]);
+        assert.equal(raw.length,row.bytes);assert.equal(digest(raw),row.sha256);
+        assert.equal(await fs.realpath(path.dirname(file)),path.dirname(file));
+        await fs.writeFile(file,raw,{flag:'wx',mode:0o600});owned=identity(await fs.lstat(file,{bigint:true}));
+      }
+      assert.equal(await fs.realpath(file),file);identity(await fs.lstat(file,{bigint:true}));
+      assert.equal(digest(await fs.readFile(file)),row.sha256);
+      const load=relative=>import(pathToFileURL(path.join(root,relative)).href);
+      const [model,bundle,archive,stage]=await Promise.all([load('js/core/ravscore-model-contract.js'),
+        load('scripts/private-production-runtime-bundle.mjs'),load('scripts/protected-private-production-runtime.mjs'),load(row.file)]);
+      assert.equal(model.ravScoreModelBinding().modelBundleSha256,'08750e3667e5a221374762fccadccf08abf5e9f1ae8814ccc97bfc11880bf36c');
+      assert.notDeepEqual(model.ravScoreModelBinding(),ravScoreModelBinding());
+      ready({root,ravScoreModelBinding:model.ravScoreModelBinding,
+        createPrivateProductionRuntimeBundle:bundle.createPrivateProductionRuntimeBundle,
+        buildProtectedPrivateRuntimeArchive:archive.buildProtectedPrivateRuntimeArchive,
+        sealStagedPrivateProductionRuntime:stage.sealStagedPrivateProductionRuntime});
+      await lifetime;
+    }finally{
+      if(owned){assert.equal(await fs.realpath(file),file);assert.deepEqual(identity(await fs.lstat(file,{bigint:true})),owned);
+        assert.equal(digest(await fs.readFile(file)),row.sha256);await fs.unlink(file);}
+    }
+  });
+  scope.catch(refuse);
+  t.after(async()=>{release();await scope;});
+  return loaded;
+}
+async function fixedWaterCase(t,{changedAt=Infinity,corrupt=false,badInner=false,missing4145=false,rawRunSpelling=false,mutateTraceData=null,componentSummaryAbsent=false,waterTraceCode=null}={}){
+  waterTraceCode??=await fixedWater594CodeUntilTestEnds(t);
   const fixtures=[];
   for(const target of VOERSAA_WATER_TRACE_TARGETS){const data=await waterTraceData(target,{badInner:badInner&&target.key==='original4145',rawRunSpelling});
     if(mutateTraceData)await mutateTraceData(data,target);
-    fixtures.push(await fixture(t,{waterTraceTarget:target,waterTraceFixture:data,componentSummaryAbsent}));}
+    fixtures.push(await fixture(t,{waterTraceTarget:target,waterTraceFixture:data,waterTraceCode,componentSummaryAbsent}));}
   const [old,current]=fixtures,readers=path.join(old.folder,'fixed-readers');await fs.mkdir(readers);
   for(let i=0;i<2;i++)await fs.cp(fixtures[i].options.predecessorRoot,path.join(readers,VOERSAA_WATER_TRACE_TARGETS[i].readerDirectory),{recursive:true,errorOnExist:true});
   const state={pointerReads:0,storageReads:0,calls:[],pointer:{schemaVersion:policy.schemaVersion,kind:policy.pointerKind,
@@ -1953,7 +2012,7 @@ async function fixedWaterCase(t,{changedAt=Infinity,corrupt=false,badInner=false
   const outputPath=path.join(old.privateRoot,'water-safe.json');
   const options={...credentials,...waterContext,privateRoot:old.privateRoot,predecessorRoot:readers,outputPath,fetchImpl:transport};
   options.githubToken='';
-  return {fixtures,old,current,state,options,transport};
+  return {fixtures,old,current,state,options,transport,waterTraceCode};
 }
 test('Voersaa fixed water trace: actual normal B current/previous and strict private envelope',async t=>{
   const f=await fixedWaterCase(t),before=await fs.readFile(path.join(f.old.source,'data/live/conditions.json'));
@@ -2069,9 +2128,9 @@ await import(target);`;
 });
 async function waterStageFixture(f){
   const target=VOERSAA_WATER_TRACE_TARGETS[0],cipher=path.join(f.old.folder,'original-stage.encrypted');
-  await sealStagedPrivateProductionRuntime({privateRoot:path.join(f.old.folder,'build'),bundlePath:path.join(f.old.folder,'build/bundle'),
+  await f.waterTraceCode.sealStagedPrivateProductionRuntime({privateRoot:path.join(f.old.folder,'build'),bundlePath:path.join(f.old.folder,'build/bundle'),
     repositoryRoot:f.old.source,expected:{datasetId:target.datasetId,productionReferenceAt:target.productionReferenceAt,
-      generatedAt:f.old.conditions.generatedAt,modelBinding:ravScoreModelBinding(),contractHashes:VOERSAA_WATER_TRACE_CONTRACTS},
+      generatedAt:f.old.conditions.generatedAt,modelBinding:f.waterTraceCode.ravScoreModelBinding(),contractHashes:VOERSAA_WATER_TRACE_CONTRACTS},
     sourceHead:target.sourceHead,repository,runId:target.runId,runAttempt:target.runAttempt,outputPath:cipher,masterSecret:waterMaster});
   const zipPath=path.join(f.old.folder,'original-stage.zip');
   const python=spawnSync(process.env.PYTHON||'python',['-X','utf8','-c',
@@ -2198,6 +2257,7 @@ test('Voersaa fixed water trace: optional metadata and saved component absence r
 });
 
 test('Voersaa fixed water trace: normal runner temp is separate from system TMPDIR, including original stage',async t=>{
+  const waterTraceCode=await fixedWater594CodeUntilTestEnds(t);
   const own=await temp(t),systemTemp=path.join(own,'system-temp'),runnerTemp=path.join(own,'runner-temp');
   await fs.mkdir(systemTemp);await fs.mkdir(runnerTemp);
   const keys=['TEMP','TMP','TMPDIR','RUNNER_TEMP'],saved=Object.fromEntries(keys.map(k=>[k,process.env[k]]));
@@ -2205,7 +2265,7 @@ test('Voersaa fixed water trace: normal runner temp is separate from system TMPD
     process.env.TEMP=systemTemp;process.env.TMP=systemTemp;process.env.TMPDIR=systemTemp;process.env.RUNNER_TEMP=runnerTemp;
     assert.equal(await fs.realpath(os.tmpdir()),await fs.realpath(systemTemp));
     assert.notEqual(await fs.realpath(os.tmpdir()),await fs.realpath(process.env.RUNNER_TEMP));
-    const f=await fixedWaterCase(t,{missing4145:true}),stage=await waterStageFixture(f);
+    const f=await fixedWaterCase(t,{missing4145:true,waterTraceCode}),stage=await waterStageFixture(f);
     const readers=path.join(runnerTemp,'fixed-readers');await fs.rename(f.options.predecessorRoot,readers);
     const privateRoot=path.join(runnerTemp,'private-trace');await fs.mkdir(privateRoot);
     const outputPath=path.join(privateRoot,'safe.json');

@@ -1,3 +1,15 @@
+## 3. november — den kendte schema1/2-kalder er merget på main
+
+PR795 er kildekvalificeret og faktisk merget på main. Før-DMI-selectoren tillader nu de to kendte kontinuitetsformater schema1 og schema2; øvrige bindings-, model- og særforløbsvagter bevares. Det er ikke i sig selv bevis for ny offentlig dækningsvirkning. Den endelige normale main-sammenføring og hele SOURCE-kvalifikationen skal stadig gennemføres før en ny udstedelse eller produktionshandling.
+
+Det gældende krav om reelle huller før opgradering, samme normale femkomponentfortolkning, per-PART-adgang, central SOURCE-vandstand og T+3 bevares. Ukendte formater eller kontekster giver fortsat den konservative normale vej. Strøm-ledger, native katalogsluttid og offentlig femfamiliedækning er særskilte beviser. Main-kapitlet om den nye selector har nummer 89.299; SOURCEs tidligere DMI-kapitel bevarer sit stabile ID og nummer 89.296.
+
+# DEC-0261 – Samme DMI-prioritet ved Limfjord-omplanlægning
+
+**Dato:** 2026-09-28
+**Status:** Implementeret på main i 4.0.509; produktionskæden bestod,
+men den tilsigtede sen-LF-vandstand er ikke bevist.
+
 ## 2. november — normal scalarplan med begge kendte kontinuitetsformater
 
 Den normale producent gemmer native strømhistorik som schema2. Før-DMI-kalderen skal tillade både schema1 og schema2, før den normale læser vurderer de gemte komponenter og planlægger reelle vejrhul.
@@ -7,12 +19,6 @@ Den tidligere selector tillod kun schema1, selv om den normale producent allered
 Den samme normale testcase er rød før og grøn efter rettelsen: producentens faktiske schema2 går gennem workflowets selector, Node-planen, den offline reservekilde og Python-/DMI-læseren. Hele de gamle workfloworakler og afslag på ukendt format eller ændret helfil bevares. Et særskilt, eksakt helfiltrin fører schema1/2-ændringen tilbage til den ægte forgænger, før den gamle scalarprøve læser den. Den nye helfil og ændrede eller ukendte varianter prøves særskilt; gamle forventninger ændres ikke. Det er ikke bevis for, at alle øvrige vagter var opfyldt i en bestemt produktionskørsel, eller at leverandørerne har alle manglende timer.
 
 DMI → Copernicus → Open-Meteo, hentebudgetter, originaler, cache, scoreformel, modelbindinger, administratorpunkter og geometri ændres ikke. Den konkrete ændring bruger den normale fulde kildevej; kontrolregistret udvides ikke for at gøre kandidaten målrettet. Native- og databasegenbrug afgøres fortsat af den normale læser på faktiske uændrede input og runtime. Præcis GitHub-kvalifikation, sikker levering efter writer og faktisk ny offentlig effekt er åbne.
-
-# DEC-0261 – Samme DMI-prioritet ved Limfjord-omplanlægning
-
-**Dato:** 2026-09-28
-**Status:** Implementeret på main i 4.0.509; produktionskæden bestod,
-men den tilsigtede sen-LF-vandstand er ikke bevist.
 
 ## Måletillæg 2026-10-24
 
@@ -76,4 +82,4 @@ implementering, ikke en ny score- eller vejrmodel.
 
 Den samlede lokale DMI-kandidat skelner reelle mangler fra allerede dækkede timer med manglende native opgradering. Den genbruger den normale bevarede femkomponentfortolkning og centrale SOURCE-vandstandsrouting før DMI. Per-PART-mangler, TREND ved T og privat T+3 bevares, og den eksisterende parameter-/zoneadgang afgrænser hver samlings prioritet og ekstra feltlæsning. Ukendt kontekst beholder den konservative native vej.
 
-Otte relevante normale lokale kaldere består på den faktiske samlede kandidat. De tidligere hele workflow-orakler er bevaret gennem én præcis inverse; de to manglende almindelige kildekalderindgange er tilkoblet uden dobbelt udførelse. Præcis GitHub-kontrol, sikker merge og målt effekt i en ny almindelig generation er åbne. Ingen ny version, C/I/T, SQL, geometri, scoreformel, kildeprioritet eller tidsbudget. SOURCE forbliver særskilt og inaktiv. Aktuelle kørsler og private måletal føres kun i checkpointet. Se DEC-0261 og håndbog 89.294.
+Otte relevante normale lokale kaldere består på den faktiske samlede kandidat. De tidligere hele workflow-orakler er bevaret gennem én præcis inverse; de to manglende almindelige kildekalderindgange er tilkoblet uden dobbelt udførelse. Præcis GitHub-kontrol, sikker merge og målt effekt i en ny almindelig generation er åbne. Ingen ny version, C/I/T, SQL, geometri, scoreformel, kildeprioritet eller tidsbudget. SOURCE forbliver særskilt og inaktiv. Aktuelle kørsler og private måletal føres kun i checkpointet. Se DEC-0261 og håndbog 89.296.

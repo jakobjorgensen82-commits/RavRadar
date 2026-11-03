@@ -12,15 +12,22 @@ import {PRIVATE_CONDITIONS_MAX_BYTES} from './bounded-json-writer.mjs';
 import {withAuthenticated586PredecessorSource,withAuthenticated587PredecessorSource,
   withAuthenticated588PredecessorSource,assertFrozen588CodeSourceSelected,FROZEN588_CODE_SOURCE_PROVENANCE,
   withAuthenticated590PredecessorSource,assertFrozen590CodeSourceSelected,FROZEN590_CODE_SOURCE_PROVENANCE,
-  withAuthenticated591PredecessorSource,assertFrozen591CodeSourceSelected,FROZEN591_CODE_SOURCE_PROVENANCE}
+  withAuthenticated591PredecessorSource,assertFrozen591CodeSourceSelected,FROZEN591_CODE_SOURCE_PROVENANCE,
+  withSource593OriginalDataSource,assertSource593OriginalDataSourceSelected,SOURCE593_CODE_SOURCE_PROVENANCE,
+  withSource594OriginalDataSource,assertSource594OriginalDataSourceSelected,SOURCE594_CODE_SOURCE_PROVENANCE}
   from '../check-assistant-later-h0-predecessor-source.mjs';
+
+import {withAuthenticatedSource588PredecessorSource,assertSourceFrozen588CodeSourceSelected,
+  withSource591OriginalDataSource,assertSource591OriginalDataSourceSelected,SOURCE591_CODE_SOURCE_PROVENANCE}
+  from '../check-assistant-later-h0-predecessor-source.mjs';
+import {requireSourceProducerOutput} from './source-producer-successor-source.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const exec=promisify(callbackExec),failedCloses=new Map();
 // Ukendt fysisk FD-lukning blokerer samme sti på tværs af begge familier.
 // Opaque snapshots og friskhedsfunktioner tilhører derimod kun én fast profil.
 function fixedSnapshot(profile){
-  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588||profile===FROZEN590||profile===FROZEN591,'FROZEN_PREDECESSOR_UNKNOWN_PROFILE');
+  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588||profile===FROZEN590||profile===FROZEN591||profile===SOURCE_FROZEN593||profile===SOURCE_STAGED593||profile===SOURCE_FROZEN594||profile===SOURCE_STAGED594||profile===SOURCE_FROZEN588||profile===SOURCE_STAGED588||profile===SOURCE_FROZEN590||profile===SOURCE_STAGED590||profile===SOURCE_FROZEN591||profile===SOURCE_STAGED591,'FROZEN_PREDECESSOR_UNKNOWN_PROFILE');
   const contexts=new WeakMap(),refreshers=new WeakMap();
   const SOURCE=profile.sourceHead;
 const SHA=/^[a-f0-9]{64}$/, HEAD=/^[a-f0-9]{40}$/, MB=1024*1024;
@@ -38,7 +45,7 @@ const need=(value,code)=>{if(!value)fail(code);};
 const environment=()=>Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','TEMP','TMP','LANG','LC_ALL']
   .filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]]));
 const git=async args=>(await exec('git',['-C',ROOT,...args],
-  {env:environment(),encoding:'utf8',timeout:30000,maxBuffer:16*MB})).stdout.trim();
+  {env:{...environment(),GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_OPTIONAL_LOCKS:'0',GIT_TERMINAL_PROMPT:'0',GIT_CONFIG_COUNT:'1',GIT_CONFIG_KEY_0:'protocol.allow',GIT_CONFIG_VALUE_0:'never'},encoding:'utf8',timeout:30000,maxBuffer:16*MB})).stdout.trim();
 function freeze(value){if(value&&typeof value==='object'){for(const nested of Object.values(value))freeze(nested);Object.freeze(value);}return value;}
 async function noLinks(file){
   let at=path.parse(file).root;const parents=[];
@@ -101,8 +108,9 @@ async function qualifyProducer(producer,frozenRoot){
   return Object.freeze({consumerHead:head,producerHead:producer,sourceFamilyHead:SOURCE,ownerPolicyGitBlob:POLICY_BLOB});
 }
 async function fixedPaths(){
-  const privateRoot=process.env.RAVRADAR_PRIVATE_RUNTIME_ROOT;
-  const bundlePath=process.env.RAVRADAR_PRIVATE_RUNTIME_BUNDLE;
+  const staged=profile===SOURCE_STAGED594||profile===SOURCE_STAGED593||profile===SOURCE_STAGED588||profile===SOURCE_STAGED590||profile===SOURCE_STAGED591;
+  const privateRoot=process.env[staged?'RAVRADAR_PREDECESSOR_PRIVATE_ROOT':'RAVRADAR_PRIVATE_RUNTIME_ROOT'];
+  const bundlePath=process.env[staged?'RAVRADAR_PREDECESSOR_PRIVATE_BUNDLE':'RAVRADAR_PRIVATE_RUNTIME_BUNDLE'];
   need(typeof privateRoot==='string'&&path.isAbsolute(privateRoot)&&typeof bundlePath==='string'
     &&path.isAbsolute(bundlePath),'FIXED_WORKFLOW_PATHS');
   const root=path.resolve(privateRoot),bundle=path.resolve(bundlePath);
@@ -113,7 +121,8 @@ async function fixedPaths(){
 }
 async function readAuthenticatedPredecessor(){
   need(arguments.length===0,'ARGUMENTS');
-  const conditionsMaximum=profile===FROZEN591?PRIVATE_CONDITIONS_MAX_BYTES:256*MB;
+  const conditionsMaximum=profile===FROZEN591||profile===SOURCE_FROZEN593||profile===SOURCE_STAGED593||profile===SOURCE_FROZEN594||profile===SOURCE_STAGED594
+    ?PRIVATE_CONDITIONS_MAX_BYTES:256*MB;
   // These normal workflow paths select already restored immutable B; they are
   // not authority. No consumed 0200/140000 upgrade flag is reused as permission.
   const paths=await fixedPaths();
@@ -324,4 +333,149 @@ export function assertAuthenticatedFrozen591Snapshot(handle){
 }
 export async function assertAuthenticatedFrozen591SnapshotFresh(handle){
   return snapshot591.fresh(...arguments);
+}
+
+// Adskilte CURRENT/STAGED-banker for den faste593-DATA-læser.
+// fixedSnapshot kræver stadig faktisk B/S, originale bytes, attest og friske versioner.
+const SOURCE_FROZEN593=Object.freeze({
+  sourceHead:SOURCE593_CODE_SOURCE_PROVENANCE.head,
+  requiredSha:Object.freeze([SOURCE593_CODE_SOURCE_PROVENANCE.originSha256,
+    SOURCE593_CODE_SOURCE_PROVENANCE.partPipelineSha256]),
+  withSource:withSource593OriginalDataSource,
+  assertionPath:'scripts/lib/established-native-current-origin-593-assertion.mjs',
+  assertionExport:'assertFrozen593OriginSnapshotData',
+  temporaryPrefix:'rr-source593-snapshot-',errorPrefix:'SOURCE593_PREDECESSOR_'});
+const SOURCE_STAGED593=Object.freeze({...SOURCE_FROZEN593,
+  temporaryPrefix:'rr-source-staged593-snapshot-',errorPrefix:'SOURCE_STAGED593_PREDECESSOR_'});
+const sourceSnapshot593=fixedSnapshot(SOURCE_FROZEN593),sourceStaged593=fixedSnapshot(SOURCE_STAGED593);
+export async function readAuthenticatedSource593Predecessor(){
+  assertSource593OriginalDataSourceSelected();return sourceSnapshot593.read(...arguments);
+}
+export function assertAuthenticatedSource593Snapshot(handle){return sourceSnapshot593.snapshot(...arguments);}
+export async function assertAuthenticatedSource593SnapshotFresh(handle){return sourceSnapshot593.fresh(...arguments);}
+export async function readAuthenticatedSourceStaged593Predecessor(){
+  assertSource593OriginalDataSourceSelected();return sourceStaged593.read(...arguments);
+}
+export function assertAuthenticatedSourceStaged593Snapshot(handle){return sourceStaged593.snapshot(...arguments);}
+export async function assertAuthenticatedSourceStaged593SnapshotFresh(handle){return sourceStaged593.fresh(...arguments);}
+
+// Independent594 CURRENT and STAGED instances, requiring authentic B/S.
+const SOURCE_FROZEN594=Object.freeze({
+  sourceHead:SOURCE594_CODE_SOURCE_PROVENANCE.head,
+  requiredSha:Object.freeze([SOURCE594_CODE_SOURCE_PROVENANCE.originSha256,
+    SOURCE594_CODE_SOURCE_PROVENANCE.partPipelineSha256]),
+  withSource:withSource594OriginalDataSource,
+  assertionPath:'scripts/lib/established-native-current-origin-594-assertion.mjs',
+  assertionExport:'assertFrozen594OriginSnapshotData',
+  temporaryPrefix:'rr-source594-snapshot-',errorPrefix:'SOURCE594_PREDECESSOR_'});
+const SOURCE_STAGED594=Object.freeze({...SOURCE_FROZEN594,
+  temporaryPrefix:'rr-source-staged594-snapshot-',errorPrefix:'SOURCE_STAGED594_PREDECESSOR_'});
+const sourceSnapshot594=fixedSnapshot(SOURCE_FROZEN594),sourceStaged594=fixedSnapshot(SOURCE_STAGED594);
+export async function readAuthenticatedSource594Predecessor(){
+  assertSource594OriginalDataSourceSelected();return sourceSnapshot594.read(...arguments);
+}
+export function assertAuthenticatedSource594Snapshot(handle){return sourceSnapshot594.snapshot(...arguments);}
+export async function assertAuthenticatedSource594SnapshotFresh(handle){return sourceSnapshot594.fresh(...arguments);}
+export async function readAuthenticatedSourceStaged594Predecessor(){
+  assertSource594OriginalDataSourceSelected();return sourceStaged594.read(...arguments);
+}
+export function assertAuthenticatedSourceStaged594Snapshot(handle){return sourceStaged594.snapshot(...arguments);}
+export async function assertAuthenticatedSourceStaged594SnapshotFresh(handle){return sourceStaged594.fresh(...arguments);}
+
+// Existing SOURCE4845 CURRENT/STAGED profiles; separate instances and no cross-acceptance.
+const SOURCE_FROZEN588=Object.freeze({
+  sourceHead:'4845e6c6622333ad4e8454b0b43f5f94ae42233e',
+  requiredSha:Object.freeze([
+    '5fa3fe20041a82a7e287e21f4562f6bb82ffab253c69e0754208bb6e5c907b69',
+    '8e979128a682a7324d7defcc3d2d2dfa5edc85ebc22d4ae714810aa085490758']),
+  withSource:withAuthenticatedSource588PredecessorSource,
+  assertionPath:'scripts/lib/established-native-current-origin-588-assertion.mjs',
+  assertionExport:'assertFrozen588OriginSnapshotData',
+  temporaryPrefix:'rr-frozen588-snapshot-',errorPrefix:'FROZEN588_PREDECESSOR_'});
+// Same actual588 code, distinct fixed workflow paths and distinct opaque capability banks.
+const SOURCE_STAGED588=Object.freeze({...SOURCE_FROZEN588,temporaryPrefix:'rr-staged588-snapshot-',errorPrefix:'STAGED588_PREDECESSOR_'});
+// SOURCE deler den ene valgte590 DATA-kilde, men ejer adskilte CURRENT/STAGED-kapabiliteter.
+const SOURCE_FROZEN590=Object.freeze({...FROZEN590,temporaryPrefix:'rr-source590-snapshot-',errorPrefix:'SOURCE590_PREDECESSOR_'});
+const SOURCE_STAGED590=Object.freeze({...FROZEN590,temporaryPrefix:'rr-source-staged590-snapshot-',errorPrefix:'SOURCE_STAGED590_PREDECESSOR_'});
+// Intended a157/591 originals keep their own CURRENT/STAGED banks; no590-handle admission.
+// The existing reader still requires actual authenticated591 B/S, whole original DATA and fresh pointer/S versions.
+const SOURCE_FROZEN591=Object.freeze({
+  sourceHead:SOURCE591_CODE_SOURCE_PROVENANCE.head,
+  requiredSha:Object.freeze([SOURCE591_CODE_SOURCE_PROVENANCE.originSha256,
+    SOURCE591_CODE_SOURCE_PROVENANCE.partPipelineSha256]),
+  withSource:withSource591OriginalDataSource,
+  assertionPath:'scripts/lib/established-native-current-origin-591-assertion.mjs',
+  assertionExport:'assertFrozen591OriginSnapshotData',
+  temporaryPrefix:'rr-source591-snapshot-',errorPrefix:'SOURCE591_PREDECESSOR_'});
+const SOURCE_STAGED591=Object.freeze({...SOURCE_FROZEN591,temporaryPrefix:'rr-source-staged591-snapshot-',errorPrefix:'SOURCE_STAGED591_PREDECESSOR_'});
+const sourceSnapshot591=fixedSnapshot(SOURCE_FROZEN591),sourceStaged591=fixedSnapshot(SOURCE_STAGED591);
+const sourceSnapshot590=fixedSnapshot(SOURCE_FROZEN590),sourceStaged590=fixedSnapshot(SOURCE_STAGED590);
+const sourceSnapshot588=fixedSnapshot(SOURCE_FROZEN588),sourceStaged588=fixedSnapshot(SOURCE_STAGED588);
+// Existing SOURCE CURRENT reader; it cannot consume b574, STAGED or590 opaque handles.
+export async function readAuthenticatedSource588Predecessor(){
+  assertSourceFrozen588CodeSourceSelected();
+  return sourceSnapshot588.read(...arguments);
+}
+export function assertAuthenticatedSource588Snapshot(handle){
+  return sourceSnapshot588.snapshot(...arguments);
+}
+export async function assertAuthenticatedSource588SnapshotFresh(handle){
+  return sourceSnapshot588.fresh(...arguments);
+}
+
+// SOURCE's normal staging owns PREDECESSOR paths; no CURRENT/path fallback.
+export async function readAuthenticatedStaged588Predecessor(){
+  assertSourceFrozen588CodeSourceSelected();
+  return sourceStaged588.read(...arguments);
+}
+export function assertAuthenticatedStaged588Snapshot(handle){
+  return sourceStaged588.snapshot(...arguments);
+}
+export async function assertAuthenticatedStaged588SnapshotFresh(handle){
+  return sourceStaged588.fresh(...arguments);
+}
+
+// Udstedelse og det fælles parentvalg kontrolleres før stier, transport eller calleradgang.
+export async function readAuthenticatedSource590Predecessor(){
+  requireSourceProducerOutput();assertFrozen590CodeSourceSelected();
+  return sourceSnapshot590.read(...arguments);
+}
+export function assertAuthenticatedSource590Snapshot(handle){
+  requireSourceProducerOutput();return sourceSnapshot590.snapshot(...arguments);
+}
+export async function assertAuthenticatedSource590SnapshotFresh(handle){
+  requireSourceProducerOutput();return sourceSnapshot590.fresh(...arguments);
+}
+export async function readAuthenticatedSourceStaged590Predecessor(){
+  requireSourceProducerOutput();assertFrozen590CodeSourceSelected();
+  return sourceStaged590.read(...arguments);
+}
+export function assertAuthenticatedSourceStaged590Snapshot(handle){
+  requireSourceProducerOutput();return sourceStaged590.snapshot(...arguments);
+}
+export async function assertAuthenticatedSourceStaged590SnapshotFresh(handle){
+  requireSourceProducerOutput();return sourceStaged590.fresh(...arguments);
+}
+
+
+export async function readAuthenticatedSource591Predecessor(){
+  requireSourceProducerOutput();assertSource591OriginalDataSourceSelected();
+  return sourceSnapshot591.read(...arguments);
+}
+export function assertAuthenticatedSource591Snapshot(handle){
+  requireSourceProducerOutput();return sourceSnapshot591.snapshot(...arguments);
+}
+export async function assertAuthenticatedSource591SnapshotFresh(handle){
+  requireSourceProducerOutput();return sourceSnapshot591.fresh(...arguments);
+}
+
+export async function readAuthenticatedSourceStaged591Predecessor(){
+  requireSourceProducerOutput();assertSource591OriginalDataSourceSelected();
+  return sourceStaged591.read(...arguments);
+}
+export function assertAuthenticatedSourceStaged591Snapshot(handle){
+  requireSourceProducerOutput();return sourceStaged591.snapshot(...arguments);
+}
+export async function assertAuthenticatedSourceStaged591SnapshotFresh(handle){
+  requireSourceProducerOutput();return sourceStaged591.fresh(...arguments);
 }

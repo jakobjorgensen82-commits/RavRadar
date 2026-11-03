@@ -328,3 +328,6 @@ async function main(){
   console.log('Exact account/statistics/assistant successor source verified; no installation or state admission.');
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url))await main();
+
+// Reused unchanged SQL-preservation primitives; no585 build/admission behavior change.
+export {signature,definitionGuard,schema2Guard,preservationQuery};

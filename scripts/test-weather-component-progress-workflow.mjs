@@ -492,7 +492,7 @@ testOwnedRawCache('owned raw cache: fixed API and physically separate owner rece
       env, platform: 'linux', versions: { node: '24.19.0' }, argv: ['node', ownedRawAction],
       ppid: 12345,
       chdir(value) { events.push(['cwd', value]); },
-      stderr: { write(value) { diagnostics.push(value); } },
+      stderr: { write(value) { if(value!=='')diagnostics.push(value); } },
     });
     if (options.cli) Object.defineProperty(processFixture, 'exitCode', {
       set(value) { cliDone(value); },
@@ -595,7 +595,7 @@ testOwnedRawCache('owned raw cache: fixed API and physically separate owner rece
       assert.deepEqual(value.outputs, []);
       assert.equal(value.events.includes('release'), false);
       await value.finish({ api: { schemaVersion: 1, kind: 'DMI_RAW_DISTRIBUTION_READY',
-        apiVersion: '6.1.0', lockSha256: '9bd935a0c94f605ab28b4cc1ea543173bb06e213ba779e6e9855e31a4dd6a9a5' } });
+        apiVersion: '6.1.0', lockSha256: crypto.createHash('sha256').update(ownedRawLock.replace(/\r\n/g,'\n')).digest('hex') } });
       const result = await operation;
       assert.equal(result.distributionReady, true);
       assert.equal(Object.hasOwn(result, 'saved'), false);
@@ -615,6 +615,17 @@ testOwnedRawCache('owned raw cache: fixed API and physically separate owner rece
       assert.deepEqual(value.outputs, []);
       assert.equal(value.events.includes('release'), true);
       assert.equal(value.events.includes('retain'), false);
+      value.dispose();
+    });
+    await t.test('current SOURCE distribution refuses the genuine old cache-only receipt', async () => {
+      const value = fixture({ distribution: true });
+      const operation = value.runOwnedDistribution();
+      const rejected = assert.rejects(operation, /DMI_RAW_DISTRIBUTION_NOT_READY/);
+      await value.started;
+      await value.finish({ api: { schemaVersion: 1, kind: 'DMI_RAW_DISTRIBUTION_READY', apiVersion: '6.1.0',
+        lockSha256: '9bd935a0c94f605ab28b4cc1ea543173bb06e213ba779e6e9855e31a4dd6a9a5' } });
+      await rejected;
+      assert.deepEqual(value.outputs, []);
       value.dispose();
     });
     await t.test('distribution ready without physical closure retains the same fixture owner', async () => {

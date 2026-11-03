@@ -1,3 +1,15 @@
+## 3. november 2026 — SOURCE 4.0.596 lokalt udstedt, endnu ikke leveret
+
+Faktisk PR795-main er normalt indarbejdet, og den samlede lokale efterfølger er versionssynkroniseret og udstedt gennem de eksisterende byggere. Gamle 595-originaler og alle 76 tidligere migrationer bevares; én ny SQL er tilføjet. De syv forbrugere og normal fastpunktskontrol består. Præcis ny kvalifikation, kapacitet, installation og offentlig drift er fortsat åbne. Ingen aktivering eller produktionshandling følger af den lokale udstedelse; ældre NULL-udsagn nedenfor beskriver deres daterede forberedelsestrin.
+
+## 1. november 2026 — lokal sammenføring, endnu ingen udstedt SOURCE 595
+
+SOURCE19 har det lokale substanscheckpoint `24d8f8ee75bb91d2c75afa92e5ccc407cb7c230f` og en uafsluttet normal sammenføring med main `c920d1e2ad0cbbfe351360f594128f0e06bd1f1e`. Main 4.0.594 er den midlertidige normale versionsforgænger; den planlagte isolerede revision er 4.0.595. Normal versionssynk efter sammenføringen er endnu ikke kørt. SOURCE-version, binding og output er NULL; nye C/I/T og SQL er ikke udstedt. Semantiske konflikter og kvalifikation er fortsat åbne. Et checkpoint, et forberedt input eller MERGE_HEAD er ikke faktisk main-ancestry, native/fullRuntime-, ejerafslutnings- eller leveringsbevis.
+
+Main-kronologien og gældende leverede rettelser bevares. Det særskilt mærkede SOURCE-spor nedenfor bevarer den isolerede grens historik; ældre 585/586/040000-resultater og tidligere aktuelle 595-noter er ikke nye produktions- eller bindingsbeviser. SOURCE-kapitlernes tidligere 89.262/89.263 er nu 89.294/89.295, så main-kapitlerne med samme gamle numre bevares. Begge beslutninger identificeres med hele filnavnet: `docs/rdks/10_DECISIONS/DEC-0294-SOURCE-DERIVED-METADATA-BOUNDARY.md` og `docs/rdks/10_DECISIONS/DEC-0294-PAGES-FORECAST-SHARING-AND-SIMPLY-CNAME.md`.
+
+Den ægte 594-forgænger er genuine37 CODE med normal 61→62-kontrakt; kode, aktuelle syntetiske data og SOURCE-eksekutor holdes adskilt. Gamle familier, SQL-originaler, scoreformel, geometri og kildeprioritet bevares. Samme normale 594-central → B før S → SDK/action 63/64 → faktisk ejerafslutning er fortsat en åben kæde. Alle fem hovedmål er åbne til 18. november 2026. ROOT koordinerer produktion; denne isolerede sammenføring ændrer ingen produktion under den aktive writer. ROOTs P0/vejr/FB/header/kildebeviser forbliver særskilte driftsbeviser.
+
 ## 30. oktober — 4.0.593-kandidat: samme kapacitet i de nødvendige normale læsere
 
 Den faktisk anvendte forgænger er 4.0.591. Den nye 4.0.593-kandidat samler de allerede forberedte forbedringer og den konkrete kapacitetsrettelse; 4.0.592 samt dens udstedte kilder og SQL bevares, men 592 er ikke installeret eller offentligt leveret. Ældre daterede 591-/592-fronter er historik på disse statuspunkter.
@@ -2317,3 +2329,17 @@ uden ny vejr-/scorebyg, exact-head CI og rigtig vejrrun er åbne.
 ## 2026-09-29 – Feggesund forhånds-/slutproof uenige i normalrun
 
 Eksternt 12:19 UTC-slot startede ét normalrun `36567354134` på 4.0.509. De tre leverandørtrin bestod, men central weather-update stoppede på `FEGGESUND_WAVE_RUNTIME_PREFLIGHT_MISMATCH`. En krypteret privat fremdrift blev gemt; ingen fuld pakke/CAS/R2/Pages. Koden viste, at forhåndsbeviset rekonstruerede fra kun den aktive DMI-cache, mens slutbeviset byggede på scorerens beskyttede tidligere DMI-generation og timebevaring. 4.0.510-kandidaten samler inputgrundlaget uden at lempe 3 × 118-beviset; produktionsbevis mangler.
+
+
+## Bevaret særskilt SOURCE-kronologi før main-sammenføringen
+
+Følgende er de isolerede SOURCE-varianter, som ikke allerede findes ordret i main-kronologien ovenfor. Historiske regler/status læses i deres daterede scope; den aktuelle integrationsfront står øverst.
+
+## 1. november 2026 — SOURCE 4.0.595 versionssynkroniseret, stadig u-udstedt
+
+Aktuel isoleret SOURCE-version er 4.0.595 efter normal versionssynk og lokal 24-filers current594-integration. Nye 595-C/I/T og SQL er endnu ikke afledt; bindingsfilens version, binding og output er NULL. Den normale 594-central → B før S → samme SDK/action 63/64 → faktisk ejerafslutning er fortsat åben, og profilen er PREPARATION_ONLY. Gamle 586/040000-resultater bevares som dateret historik, ikke den aktuelle binding eller installationsvej.
+
+ROOTs P0/c920, almindelig 235 og offentlig header/784 er separate driftsbeviser, ikke SOURCE-bevis. Ingen ny PostgreSQL-, kapacitets-, komplet cache-/historik- eller leveringssucces påstås. Alle fem mål er åbne til 18. november 2026; delegering har adskilte filejere, ROOT koordinerer produktion, og ingen produktion ændres under writer.
+
+Versionsfasen bevarede gamle migrations-, C/I-, T12- og NULL-bindingsbytes. ROOT accepterer særskilt 67 mtime-statcacheændringer med byteuændret staging. Ingen ny kvalifikation eller installation følger heraf.
+

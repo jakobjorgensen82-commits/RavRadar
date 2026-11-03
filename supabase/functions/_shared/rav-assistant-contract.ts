@@ -12,7 +12,7 @@ export const RAV_ASSISTANT_RAVSCORE_MODEL_BINDING = Object.freeze({
   bestTimePolicyId: "score-history-water-tie-earliest-v3",
   presentationPolicyId: "score-bands-35-55-75-exceptional90-v1",
   modelContractSha256: "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
-  modelBundleSha256: "08750e3667e5a221374762fccadccf08abf5e9f1ae8814ccc97bfc11880bf36c",
+  modelBundleSha256: "0ee33270a7d6a1f3100086c15d006136affc4dd6b090ff55d81b0e3fa16b94ae",
 });
 
 export const RAV_ASSISTANT_KNOWLEDGE_SCHEMA = "rav-assistant-public-knowledge-v1";
@@ -232,14 +232,64 @@ export function normaliseAssistantLocale(value) {
 export function routeAssistantQuestion(question) {
   const text = String(question || "").trim();
   if (!text || SECURITY_PATTERN.test(text) || PRIVATE_FIND_REQUEST_PATTERN.test(text) || OUT_OF_SCOPE_PATTERN.test(text)) return "fixed-refusal";
-  return AMBER_DOMAIN_PATTERN.test(text) ? "provider" : "fixed-refusal";
+  return AMBER_DOMAIN_PATTERN.test(text)
+    || RAV_ASSISTANT_LOCALES.some(locale=>knownAmberNetDefinitionUseQuestion(text,locale)) ? "provider" : "fixed-refusal";
 }
 
 // A whole question about using an unfamiliar amber-labelled instrument is
 // relevant, but its name supplies no evidence that it exists or how it works.
 // This is not a domain-word bypass: bounded noun slots cannot consume clauses,
 // private requests, extra qualifications or a truncated 600-character prefix.
+function knownAmberNetDefinitionQuestion(question, locale) {
+  if (typeof question !== "string" || question.length > 600) return false;
+  const text=question.trim().normalize("NFKC").replace(/\s+/gu," ").replace(/[?!.]+$/u,"");
+  const forms={
+    da:/^hvad er (?:(?:en|et) )?(?:rav)?kes{1,2}e(?: til ravjagt)?$/iu,
+    de:/^was ist (?:(?:ein|eine|einen|der|die|das) )?(?:(?:bernstein(?:-|\s*)?)?kes(?:c)?her|(?:bernstein(?:-|\s*)?)?kes{1,2}e)(?: für die bernsteinsuche)?$/iu,
+    en:/^what is (?:(?:a|an|the) )?(?:amber|ambr)(?: hunting)? net$/iu,
+  };
+  return forms[locale]?.test(text) ?? false;
+}
+
+function knownAmberNetDefinitionUseQuestion(question, locale) {
+  if (typeof question !== "string" || question.length > 600) return false;
+  const text=question.trim().normalize("NFKC").replace(/\s+/gu," ").replace(/[?!.]+$/u,"");
+  const parts=text.split(/(?:,\s*|\s+)(?:og|und|and)\s+/iu);
+  const use={
+    da:/^(?:hvordan (?:bruger|anvender) (?:man|jeg|vi) den|hvad bruger man den til)$/iu,
+    de:/^(?:wofür benutzt man ihn|wie (?:benutzt|verwendet) man ihn|wie wird er benutzt)$/iu,
+    en:/^(?:how is it used|how (?:do|can) (?:i|we) use it)$/iu,
+  };
+  return parts.length===2 && knownAmberNetDefinitionQuestion(parts[0],locale)
+    && (use[locale]?.test(parts[1]) ?? false);
+}
+
+function unknownAmberEquipmentGuaranteeQuestion(question, locale) {
+  if (typeof question !== "string" || question.length > 600) return false;
+  const text=question.trim().normalize("NFKC").replace(/\s+/gu," ").replace(/[?!.]+$/u,"");
+  const parts=text.split(/(?:,\s*|\s+)(?:og|und|and)\s+/iu);
+  const guarantee={
+    da:/^kan (?:den|det) garantere (?:ravfund|fund)$/iu,
+    de:/^kann (?:er|es|sie) (?:funde|bernsteinfunde) garantieren$/iu,
+    en:/^can it guarantee (?:finds|amber finds)$/iu,
+  };
+  const definition={da:/^hvad er /iu,de:/^was ist /iu,en:/^what is /iu};
+  return parts.length===2 && (definition[locale]?.test(parts[0]) ?? false)
+    && (guarantee[locale]?.test(parts[1]) ?? false)
+    && unknownAmberEquipmentQuestion(parts[0],locale);
+}
+
+function unknownAmberEquipmentGuaranteeAnswer(locale) {
+  return {
+    da:"Jeg kan ikke bekræfte, hvad det nævnte apparat er, eller om det virker. Der er ikke grundlag her for at love ravfund; RavRadar giver heller ingen fundgaranti.",
+    de:"Ich kann nicht bestätigen, was das genannte Gerät ist oder ob es funktioniert. Hier gibt es keine Grundlage für eine Fundgarantie; auch RavRadar garantiert keine Funde.",
+    en:"I cannot confirm what the named device is or whether it works. There is no basis here for a guarantee of finds; RavRadar does not guarantee finds either.",
+  }[locale];
+}
+
+
 function unknownAmberEquipmentQuestion(question, locale) {
+  if (unknownAmberEquipmentGuaranteeQuestion(question, locale)) return true;
   if (typeof question !== "string" || question.length > 600) return false;
   const text = question.trim().normalize("NFKC").replace(/\s+/gu, " ").replace(/[?!.]+$/u, "");
   const token = "[\\p{L}\\p{N}][\\p{L}\\p{N}-]{0,39}";
@@ -276,7 +326,8 @@ function unknownAmberEquipmentQuestion(question, locale) {
     en:`^what is (?:(?:a|an|the) )?(${label})$`,
   };
   const definition = text.match(new RegExp(definitions[locale], "iu"));
-  if (definition && /(?:måler|meter|apparat|instrument|scanner|sensor|messgerät|messer|gauge|detector|device)$/iu.test(definition[1])) {
+  const definitionName = definition?.[1].replace(/ [\p{L}]{1,8}-\d{1,8}$/u, "");
+  if (definition && /(?:måler|meter|apparat|instrument|scanner|sensor|messgerät|messer|gauge|detector|device)$/iu.test(definitionName)) {
     patterns[locale].push(definitions[locale]);
   }
   const known = new Set([
@@ -1023,6 +1074,10 @@ function exactAmberLandingPredictionBoundary(question, locale) {
 
 
 export function assistantQuestionEvidenceCoverage(question, locale, evidenceIds) {
+  if (knownAmberNetDefinitionUseQuestion(question,locale)) {
+    const complete=Array.isArray(evidenceIds)&&evidenceIds.includes("equipment.amber-net");
+    return {complete,missingFacets:complete?[]:["amber-net-definition-and-use"]};
+  }
   const netWrackPractice=netWrackPracticeCoverage(question,locale,evidenceIds);
   if(netWrackPractice)return netWrackPractice;
   const netCapabilities=netCapabilitiesCoverage(question,locale,evidenceIds);
@@ -1119,12 +1174,14 @@ export function validateAssistantResult(value, locale, context = {}, question = 
     return reject("RESULT_EVIDENCE_UNKNOWN");
   const questionCoverage = assistantQuestionEvidenceCoverage(question, locale, evidenceIds);
   const unknownEquipment = routeAssistantQuestion(question) === "provider" && unknownAmberEquipmentQuestion(question, locale);
+  const unknownEquipmentAnswer=unknownAmberEquipmentGuaranteeQuestion(question,locale)
+    ? unknownAmberEquipmentGuaranteeAnswer(locale) : RAV_ASSISTANT_UNCERTAIN_REPLIES[locale];
   const precisionBoundary = exactAmberLandingPredictionBoundary(question, locale);
   if (value.disposition === "out_of_scope") {
     if (evidenceIds.length) return reject("RESULT_OUT_OF_SCOPE_EVIDENCE");
     if (identification) return { answer:assistantIdentificationFocusAnswer(locale), disposition:"uncertain", evidenceIds:[] };
     if (precisionBoundary) return { answer:RAV_ASSISTANT_UNCERTAIN_REPLIES[locale], disposition:"uncertain", evidenceIds:[] };
-    if (unknownEquipment) return { answer:RAV_ASSISTANT_UNCERTAIN_REPLIES[locale], disposition:"uncertain", evidenceIds:[] };
+    if (unknownEquipment) return { answer:unknownEquipmentAnswer, disposition:"uncertain", evidenceIds:[] };
     if (questionCoverage) return { answer:CANONICAL_FOCUS_REPLIES[locale], disposition:"uncertain", evidenceIds:[] };
     return { answer: RAV_ASSISTANT_REFUSALS[locale], disposition: value.disposition, evidenceIds };
   }
@@ -1147,7 +1204,7 @@ export function validateAssistantResult(value, locale, context = {}, question = 
     return { answer:precisionBoundary.endsWith("compound") ? CANONICAL_FOCUS_REPLIES[locale] : RAV_ASSISTANT_UNCERTAIN_REPLIES[locale],
       disposition:"uncertain", evidenceIds:[] };
   }
-  if (unknownEquipment) return { answer:RAV_ASSISTANT_UNCERTAIN_REPLIES[locale], disposition:"uncertain", evidenceIds:[] };
+  if (unknownEquipment) return { answer:unknownEquipmentAnswer, disposition:"uncertain", evidenceIds:[] };
   if (value.disposition === "uncertain" && !evidenceIds.length) {
     // Unsupported prose remains unsupported even when the provider labels it
     // uncertain. Keep the validated schema, locale and security checks above;

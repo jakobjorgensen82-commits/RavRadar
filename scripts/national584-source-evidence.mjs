@@ -8,8 +8,14 @@ import crypto from 'node:crypto';
 import {execFileSync,spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {sourceTreeContentSha256} from './lib/source-tree-content.mjs';
-import {projectSourceImpactWorkflowFull} from './lib/source-impact-workflow-review.mjs';
-import {inverseReviewedForecastShareProjectionSourceScripts} from './lib/account-statistics-assistant-package-review.mjs';
+import {SOURCE_PR_NATIVE_PHASE_KIND,verifySourcePrNativePhaseReceipt,readSourcePrNativeUploadedPhase}
+  from './native-postgres-evidence.mjs';
+import {requireSourceProducerOutput} from './lib/source-producer-successor-source.mjs';
+import {SOURCE_PRODUCER_COMMANDS,verifySourceProducerNativePhaseReceipt,
+  assertSourceProducerProofHeader} from './native-postgres-evidence.mjs';
+import {projectSourceImpactWorkflowFull,SOURCE_IMPACT_FULL_STEP_CONDITION} from './lib/source-impact-workflow-review.mjs';
+import {inverseReviewedForecastShareProjectionSourceScripts,inverseReviewedDmiScalarGapSourceScripts,inverseReviewedSupabaseBackupSourceScripts} from './lib/account-statistics-assistant-package-review.mjs';
+import {expandSourceCommands,buildSourceValidationPlan,runSourceValidation} from './validate-source-once.mjs';
 import {requireAssistantLaterH0Release,requireAssistantPublic587SuccessorRelease,
   requireAssistantPublic588SuccessorRelease,ASSISTANT_PUBLIC588_SUCCESSOR_RELEASE,
   requireAssistantPublic590SuccessorRelease,ASSISTANT_PUBLIC590_SUCCESSOR_RELEASE,
@@ -93,6 +99,32 @@ export const REVIEWED120_JOB=AFTER_JOB.replace('timeout-minutes: 90','timeout-mi
 export const CURRENT_JOB=REVIEWED120_JOB.replace('timeout-minutes: 120','timeout-minutes: 180');
 export const REVIEWED_SOURCE_RUN_LINE='        run: npm run validate:source && node scripts/test-fixed-public-rate-log-20261013.mjs && node scripts/test-fixed-storage-upload-log-20261013.mjs && node scripts/test-fixed-public-rate-console-log-20261015.mjs\n';
 export const CURRENT_SOURCE_RUN_LINE='        run: npm run validate:source && node scripts/test-fixed-public-rate-log-20261013.mjs && node scripts/test-fixed-storage-upload-log-20261013.mjs && node scripts/test-fixed-public-rate-console-log-20261015.mjs && node scripts/test-prepare-candidate-g-operational-rollback.mjs && node scripts/test-candidate-g-rollback-public-stage.mjs\n';
+// Den eksakte eksisterende SOURCE-Node24-projektion bevares i sit eget scope.
+export const SOURCE_NODE24_CAPTURE = [
+  '          # Retain the observed Node24 executable before PATH returns to Node22.',
+  '          # The later SOURCE compatibility child alone requires this runtime.',
+  '          printf \'node24_path=%s\\n\' "$(command -v node)" >> "$GITHUB_OUTPUT"',
+  '        id: source-native-node24', '',
+].join('\n');
+export const SOURCE_NODE24_ENV = '          RAVRADAR_SOURCE_NATIVE_NODE24_PATH: $'+'{{ steps.source-native-node24.outputs.node24_path }}\n';
+export function inverseSourceNode24Workflow(value) {
+  let source=String(value).replace(/\r\n/g,'\n');
+  assert.equal(source.split(SOURCE_NODE24_CAPTURE).length,2,'Exact once-only observed Node24 capture');
+  assert.equal(source.split(SOURCE_NODE24_ENV).length,2,'Exact once-only step-scoped Node24 operand');
+  const cohort='          python -B scripts/test-owned-dmi-grib-save-native.py --node24-path "$(command -v node)"\n';
+  assert(source.includes(cohort+SOURCE_NODE24_CAPTURE),'Capture must follow the actual Node24 cohort');
+  const pgName='      - name: Validate native PostgreSQL checkpoint CAS on artificial data only\n';
+  const pgBody='        shell: bash\n        env:\n';
+  // Preserve the old unconditional FULL header and the existing exact selected
+  // FULL header. Whole workflow verification still follows this data inverse.
+  assert([pgName+pgBody,pgName+SOURCE_IMPACT_FULL_STEP_CONDITION+pgBody]
+    .some(header=>source.includes(header+SOURCE_NODE24_ENV)),
+    'Runtime belongs only to the existing PG step');
+  assert(source.indexOf(SOURCE_NODE24_CAPTURE)<source.indexOf('      - name: Restore Node22 for existing source validation\n'));
+  source=source.replace(SOURCE_NODE24_CAPTURE,'').replace(SOURCE_NODE24_ENV,'');
+  return source;
+}
+
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const sha=raw=>crypto.createHash('sha256').update(raw).digest('hex');
 const lf=value=>String(value).replace(/\r\n/g,'\n');
@@ -708,4 +740,172 @@ async function main(){
   await fs.writeFile(file,JSON.stringify(current)+'\n');
   console.log('Historical584 national '+result.status+'; frozen '+ORIGIN.head+'; CURRENT585 native/source remain separate.');
 }
-if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url))await main();
+// Særskilt SOURCE-basicPG-kontrol. Ingen gammel familiekvittering ommærkes.
+// Dette er kun ren kontrol af proof-header og den faktiske native7-v2-kvittering.
+// Den normale kalder skal selv binde aktuelle Git/event/package/workflow- og
+// kildeindholdsidentiteter. Funktionen giver ingen fullprofile-/SOURCE-autoritet.
+export function verifySourceProducerBasicPostgresContext(proof,current){
+  requireSourceProducerOutput(); // Før operandlæsning og før enhver I/O.
+  assert.equal(arguments.length,2);
+  assertSourceProducerProofHeader(proof,current.head);
+  const receipt=verifySourceProducerNativePhaseReceipt(proof.nativePostgres,current);
+  assert.deepEqual(proof.nativePostgres.commands,SOURCE_PRODUCER_COMMANDS);
+  return receipt;
+}
+
+
+// Nyt SOURCE-package-scope. Den historiske c920-package er et helt Git-original,
+// ikke en 595-package med omskrevet versionsfelt eller en ny udstedelsespin.
+const SOURCE_PR_PACKAGE_ORACLE_HEAD='c920d1e2ad0cbbfe351360f594128f0e06bd1f1e';
+const SOURCE_PR_PACKAGE_ORACLE_SHA256='a5f88d906d950d69f4e616972a8832a795e63fa7e45281666727ba2c930fe799';
+export function sourcePrFrozenMainPackage(){
+  requireSourceProducerOutput();assert.equal(arguments.length,0); // FØR Git/fil-I/O.
+  const raw=git('cat-file','blob',SOURCE_PR_PACKAGE_ORACLE_HEAD+':package.json')+'\n';
+  assert.equal(sha(raw),SOURCE_PR_PACKAGE_ORACLE_SHA256);const pkg=JSON.parse(raw);
+  assert.equal(pkg.version,'4.0.594');return pkg;
+}
+// SOURCE-only source-plan DATA view: exact Source76 -> Main75 and oldSource73.
+// This checks actual raw76 through the normal planner; it is no native/CI proof.
+export const SOURCE_DMI_PACKAGE_SCRIPT_REVIEW=Object.freeze({
+  afterSha256:'88c2c51d0873e0d04349ee4eb8a996ff9f45b26bb4186f7025cc551c1aab4b10',
+  beforeSha256:'c3fdea60999c07b90d06f0e3d11ffcbe08d7ffdbc58365640fb49697af9bb93c',
+  mainAfterSha256:'fd4857146f205c9dc04248c642807456e01cdf47d6087de026ddd5f9c2316663',
+  mainBeforeSha256:'9975859065142d025c5a9a75b5a2045c304aec8a2e109bccb2f27da6d0e7da3b',
+});
+function sourceCommandAdapterInverse(scripts){
+  const previous={...scripts};
+  assert.equal(previous['test:source-producer-source'],'node scripts/build-source-producer-successor.mjs --check');
+  delete previous['test:source-producer-source'];
+  assert.equal(previous['test:assistant-later-h0-source'],'node scripts/check-assistant-later-h0-predecessor-source.mjs source594');
+  previous['test:assistant-later-h0-source']='node scripts/build-assistant-later-h0-successor.mjs --active --check';
+  const actual='npm run test:assistant-later-h0-source && npm run test:source-producer-source && node scripts/sync-ravscore-model-binding.mjs --check';
+  const original='npm run test:assistant-later-h0-source && node scripts/sync-ravscore-model-binding.mjs --check';
+  assert.equal(previous['test:ravscore-source-critical'].split(actual).length,2);
+  previous['test:ravscore-source-critical']=previous['test:ravscore-source-critical'].replace(actual,()=>original);
+  return previous;
+}
+function reviewedSourceDmiScriptViews(scripts){
+  assert(scripts&&Object.getPrototypeOf(scripts)===Object.prototype);
+  assert(Object.values(scripts).every(value=>typeof value==='string'));
+  if(Object.hasOwn(scripts,'test:supabase-backup'))scripts=inverseReviewedSupabaseBackupSourceScripts(scripts);
+  const row=SOURCE_DMI_PACKAGE_SCRIPT_REVIEW;
+  const canonical=value=>JSON.stringify(Object.keys(value).sort().map(key=>[key,value[key]]));
+  assert.equal(sha(canonical(scripts)),row.afterSha256,'SOURCE_DMI_WHOLE_RAW76');
+  const main75=sourceCommandAdapterInverse(scripts);
+  assert.equal(sha(canonical(main75)),row.mainAfterSha256,'SOURCE_DMI_WHOLE_MAIN75');
+  const main72=inverseReviewedDmiScalarGapSourceScripts(main75);
+  const group='npm run test:weather-acquisition',old='node scripts/test-weather-acquisition-workflows.mjs';
+  const added=' && node --test scripts/test-completed-private-runtime-workflow-inverse.mjs';
+  assert.equal(scripts['test:weather-source-critical'].split(group).length,2);
+  assert.equal(scripts['validate:source:checks'].split(added).length,2);
+  const source73={...scripts,
+    'test:weather-source-critical':scripts['test:weather-source-critical'].replace(group,()=>old),
+    'validate:source:checks':scripts['validate:source:checks'].replace(added,()=>''),
+  };
+  assert.equal(sha(canonical(source73)),row.beforeSha256,'SOURCE_DMI_WHOLE_OLD_SOURCE73');
+  assert.deepEqual(sourceCommandAdapterInverse(source73),main72,'The full Source/Main inverse diamond');
+  assert.equal(sha(canonical(main72)),row.mainBeforeSha256);
+  const commands=expandSourceCommands(scripts,'validate:source:checks'),plan=buildSourceValidationPlan(scripts),calls=[];
+  assert.equal(commands.length,76);
+  assert.equal(runSourceValidation(plan,{execute(command){calls.push(command);return 0;},log(){}}),0);
+  assert.deepEqual(calls,[...plan.preflight,...plan.remaining,plan.gate]);
+  const additions=['python -B scripts/test-weather-acquisition-plan.py','python -B scripts/test-open-meteo-donor-bank.py',
+    'node --test scripts/test-completed-private-runtime-workflow-inverse.mjs'];
+  for(const values of [commands,calls])for(const command of [...additions,'node scripts/build-source-producer-successor.mjs --check'])
+    assert.equal(values.filter(value=>value===command).length,1);
+  assert.deepEqual(commands.filter(command=>!additions.includes(command)),expandSourceCommands(source73,'validate:source:checks'));
+  return {main75,source73};
+}
+export function reviewedSourceDmiMainSourceScripts(scripts){
+  assert.equal(arguments.length,1);return reviewedSourceDmiScriptViews(scripts).main75;
+}
+export function inverseReviewedSourceDmiScalarGapSourceScripts(scripts){
+  assert.equal(arguments.length,1);return reviewedSourceDmiScriptViews(scripts).source73;
+}
+
+
+export function verifySourcePrPackage(pkg){
+  requireSourceProducerOutput();assert.equal(arguments.length,1); // FIRST, before pkg operands.
+  assert(pkg&&Object.getPrototypeOf(pkg)===Object.prototype);assert.equal(typeof pkg.version,'string');
+  assert(pkg.scripts&&Object.getPrototypeOf(pkg.scripts)===Object.prototype);
+  const scripts=inverseReviewedSourceDmiScalarGapSourceScripts(pkg.scripts);
+  return verifySourcePrPackageBeforeDmi({...pkg,scripts});
+}
+function verifySourcePrPackageBeforeDmi(pkg){
+  requireSourceProducerOutput();assert.equal(arguments.length,1); // FØR pkg-operander.
+  assert(pkg&&Object.getPrototypeOf(pkg)===Object.prototype);assert.equal(typeof pkg.version,'string');
+  assert(pkg.scripts&&Object.getPrototypeOf(pkg.scripts)===Object.prototype);
+  const base=sourcePrFrozenMainPackage(),scripts=structuredClone(base.scripts);
+  assert.equal(base.scripts['test:assistant-later-h0-source'],
+    'node scripts/build-assistant-later-h0-successor.mjs --active --check');
+  scripts['test:assistant-later-h0-source']='node scripts/check-assistant-later-h0-predecessor-source.mjs source594';
+  assert(!Object.hasOwn(scripts,'test:source-producer-source'));
+  scripts['test:source-producer-source']='node scripts/build-source-producer-successor.mjs --check';
+  const before='npm run test:assistant-later-h0-source && node scripts/sync-ravscore-model-binding.mjs --check';
+  assert.equal(scripts['test:ravscore-source-critical'].split(before).length,2);
+  scripts['test:ravscore-source-critical']=scripts['test:ravscore-source-critical'].replace(before,
+    'npm run test:assistant-later-h0-source && npm run test:source-producer-source && node scripts/sync-ravscore-model-binding.mjs --check');
+  assert.deepEqual(pkg.scripts,scripts,'Whole SOURCE source command plan, including every historical and privacy command');
+  assert.match(pkg.version,/^4\.0\.[1-9][0-9]*$/);assert(Number(pkg.version.split('.').at(-1))>594);
+  // Den nye release/tuple kontrolleres også af dens egen normale builder --check.
+}
+export function verifySourcePrWorkflow(source){
+  requireSourceProducerOutput();assert.equal(arguments.length,1);
+  verifyWorkflow(inverseSourceNode24Workflow(source)); // Begge hele gamle inverser bevares.
+}
+async function sourcePrNationalContext(){
+  requireSourceProducerOutput(); // FØR enhver Git-, event-, package- eller proof-læsning.
+  const env=process.env,head=git('rev-parse','HEAD^{commit}');
+  assert.equal(env.GITHUB_EVENT_NAME,'pull_request');assert.equal(env.GITHUB_REPOSITORY,ORIGIN.repository);
+  assert.equal(env.SOURCE_GATE_HEAD_SHA,head);assert.match(head,/^[a-f0-9]{40}$/);
+  assert.equal(git('status','--porcelain','--untracked-files=no'),'');git('merge-base','--is-ancestor',ORIGIN.head,head);
+  const event=JSON.parse(await fs.readFile(env.GITHUB_EVENT_PATH,'utf8'));
+  assert.equal(event.pull_request?.head?.sha,head);assert.equal(event.pull_request?.head?.repo?.full_name,ORIGIN.repository);
+  assert.equal(event.pull_request?.number,Number(env.PULL_REQUEST_NUMBER));assert.equal(event.pull_request.head.ref,env.GITHUB_HEAD_REF);
+  verifySourcePrWorkflow(await fs.readFile(path.join(ROOT,WORKFLOW),'utf8'));
+  verifySourcePrPackage(JSON.parse(await fs.readFile(path.join(ROOT,'package.json'),'utf8')));
+  const proof=JSON.parse(await fs.readFile(path.join(ROOT,'.cache/source-tree-content-proof.json'),'utf8'));
+  assertSourceProducerProofHeader(proof,head);assert.equal(proof.sourceTreeSha256,content('HEAD'));
+  assert(!Object.hasOwn(proof,'historical584National'));
+  const current={run:Number(env.GITHUB_RUN_ID),attempt:Number(env.GITHUB_RUN_ATTEMPT),head,
+    pullRequest:Number(env.PULL_REQUEST_NUMBER),branch:env.GITHUB_HEAD_REF};
+  const completed=await readSourcePrNativeUploadedPhase(current,proof.sourceTreeSha256);
+  assert.deepEqual(proof.nativePostgres,completed.proof.nativePostgres);
+  const expected={jobId:completed.phase.current.jobId,mainHead:completed.phase.mainHead,sourceTreeSha256:proof.sourceTreeSha256};
+  verifySourcePrNativePhaseReceipt(proof.nativePostgres,current,expected,completed.phase);
+  return {head,current,proof,completed};
+}
+async function sourcePrMain(){
+  requireSourceProducerOutput(); // FIRST: ingen fallback til historisk basic eller gammel release.
+  assert(process.argv.length<=3);const mode=process.argv[2]??'national';assert(['source','national'].includes(mode));
+  await requireSourceEnvironment();const historical=requireHistoricalSource();
+  if(mode==='source'){
+    const head=git('rev-parse','HEAD^{commit}');assert.equal(git('status','--porcelain','--untracked-files=no'),'');
+    git('merge-base','--is-ancestor',ORIGIN.head,head);
+    verifySourcePrWorkflow(await fs.readFile(path.join(ROOT,WORKFLOW),'utf8'));
+    verifySourcePrPackage(JSON.parse(await fs.readFile(path.join(ROOT,'package.json'),'utf8')));
+    await executeHistorical({national:false});
+    assert.equal(git('rev-parse','HEAD'),head);assert.equal(git('status','--porcelain','--untracked-files=no'),'');
+    console.log('SOURCE package checked with genuine historical584 DEFAULT execution; no native/full-job/production proof.');return;
+  }
+  assert.equal(process.platform,'linux');const ctx=await sourcePrNationalContext();
+  // Ny SOURCE-fase genbruger ikke en gammel families native-/FULL-kvittering.
+  // Det hele historiske584-mål udføres af den uændrede normale kalder.
+  const result=await executeHistorical();
+  assert.equal(git('rev-parse','HEAD'),ctx.head);assert.equal(git('status','--porcelain','--untracked-files=no'),'');
+  assert.equal(content('HEAD'),ctx.proof.sourceTreeSha256);
+  const fresh=await readSourcePrNativeUploadedPhase(ctx.current,ctx.proof.sourceTreeSha256);
+  assert.deepEqual(fresh,ctx.completed);
+  const file=path.join(ROOT,'.cache/source-tree-content-proof.json');
+  const current=JSON.parse(await fs.readFile(file,'utf8'));assert.deepEqual(current,ctx.proof);
+  current.historical584National={...result,kind:'SOURCE_PR_NATIVE_HISTORICAL584_V1',historicalInput:historical,
+    current:{...ctx.current,jobId:fresh.phase.current.jobId},
+    currentSourcePrNative:{kind:SOURCE_PR_NATIVE_PHASE_KIND,status:'EXECUTED',executedInThisRun:true,
+      currentProfileExecuted:true,scope:'SOURCE_PR_NATIVE_TEST',mainHead:fresh.phase.mainHead,
+      sourceTreeSha256:ctx.proof.sourceTreeSha256,artifactId:fresh.artifact.id,artifactDigest:fresh.artifact.digest,
+      sourceAdmission:false,productionProof:false},
+    currentSourceNationalExecutionClaimed:false,providerOrProductionProof:false};
+  await fs.writeFile(file,JSON.stringify(current)+'\n');
+  console.log('Genuine historical584 national EXECUTED; separate SOURCE PR-native phase verified after PG/upload; no production proof.');
+}
+if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url))await sourcePrMain();

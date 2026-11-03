@@ -1107,8 +1107,9 @@ async function repairGithubJson(route,fetchImpl=fetch) {
   return response.json();
 }
 async function repairLiveReadiness({sourceHead,publicImplementationClosureSha256,fetchImpl=fetch}={}) {
-  const {checkIntegratedCutoverReadiness}=await import('./integrated-cutover-readiness.mjs');
-  return checkIntegratedCutoverReadiness({sourceHead,publicImplementationClosureSha256,
+  const {checkIntegratedCutoverReadiness,codeBoundIntegratedReadinessFamily}=await import('./integrated-cutover-readiness.mjs');
+  return checkIntegratedCutoverReadiness({sourcePhase:codeBoundIntegratedReadinessFamily().sourcePhase,
+    sourceHead,publicImplementationClosureSha256,
     url:process.env.SUPABASE_URL,serviceRoleKey:process.env.SUPABASE_SERVICE_ROLE_KEY,
     publishableKey:process.env.SUPABASE_PUBLISHABLE_KEY||PUBLIC_CONFIG.supabasePublishableKey,fetchImpl});
 }

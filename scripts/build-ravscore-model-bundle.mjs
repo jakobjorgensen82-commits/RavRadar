@@ -6,11 +6,16 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { RAVSCORE_MODEL_CONTRACT } from '../js/core/ravscore-model-contract.js';
 import { modelSourceRelativeModuleSpecifiers } from './lib/model-source-imports.mjs';
+import { SOURCE_PRODUCER_DERIVED_METADATA_PATH, MODEL_RELEASE_ONLY_DEPENDENCIES,
+  sourceProducerDerivedMetadataFromText } from './lib/source-producer-derived-metadata.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const GENERATED_PATH = 'js/core/ravscore-model-bundle.generated.js';
 export const RAVSCORE_MODEL_BUNDLE_NORMALIZATION_ID =
-  'lexer-esm-relative-import-closure-utf8-lf-static-cachebuster-v2';
+  'lexer-esm-relative-import-closure-utf8-lf-static-cachebuster-derived-data-v3';
+export const RAVSCORE_MODEL_BUNDLE_EXCLUDED_MODULES = Object.freeze([
+  GENERATED_PATH, SOURCE_PRODUCER_DERIVED_METADATA_PATH, ...MODEL_RELEASE_ONLY_DEPENDENCIES,
+]);
 export const RAVSCORE_MODEL_BUNDLE_ENTRYPOINTS = Object.freeze([
   'js/core/best-time-selector.js',
   'js/core/local-zone-score.js',
@@ -86,12 +91,22 @@ export async function computeRavScoreModelBundle({
   sourceOverrides = new Map(),
 } = {}) {
   const normalizedRoot = path.resolve(root);
+  const excluded = new Set(RAVSCORE_MODEL_BUNDLE_EXCLUDED_MODULES);
   const pending = [...new Set(entrypoints.map(value => posix(value)))].sort();
   const visited = new Set();
   const sources = new Map();
   while (pending.length) {
     const relative = pending.shift();
-    if (relative === GENERATED_PATH || visited.has(relative)) continue;
+    if (visited.has(relative)) continue;
+    if (relative === SOURCE_PRODUCER_DERIVED_METADATA_PATH) {
+      if (sourceOverrides.has(relative)) throw new Error('Generated SOURCE metadata override refused');
+      const file = path.join(normalizedRoot, relative);
+      const stat = await fs.lstat(file);
+      if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 8192)
+        throw new Error('Generated SOURCE metadata must be a bounded regular file');
+      sourceProducerDerivedMetadataFromText(await fs.readFile(file, 'utf8'));
+    }
+    if (excluded.has(relative)) continue;
     const absolute = path.resolve(normalizedRoot, relative);
     const relativeCheck = posix(path.relative(normalizedRoot, absolute));
     if (relativeCheck.startsWith('../') || path.isAbsolute(relativeCheck) || !await regularFile(absolute)) {
@@ -105,7 +120,7 @@ export async function computeRavScoreModelBundle({
     sources.set(relative, normalized);
     for (const specifier of modelSourceRelativeModuleSpecifiers(raw, relative)) {
       const dependency = await resolveRelativeImport(normalizedRoot, relative, specifier);
-      if (dependency !== GENERATED_PATH && !visited.has(dependency)) pending.push(dependency);
+      if (!visited.has(dependency)) pending.push(dependency);
     }
     pending.sort();
   }

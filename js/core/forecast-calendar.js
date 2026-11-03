@@ -1,13 +1,35 @@
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
-// The explicit forecast zone is immutable. Reuse its formatter, not date results.
-let copenhagenDateFormatter;
+// Reuse only formatter configuration, never dates, weather or score results.
+// Exact primitive keys preserve Intl's own alias/validation/coercion semantics.
+const FORECAST_FORMATTER_LIMIT = 16;
+const FORECAST_TIME_ZONE_KEY = /^[A-Za-z][A-Za-z0-9_+-]*(?:\/[A-Za-z0-9_+-]+){0,2}$/;
+const forecastFormatters = new Map();
+let forecastFormatterConstructor = null;
+
 function forecastDateFormatter(timeZone) {
-  const create = () => new Intl.DateTimeFormat('en-GB', {
-    timeZone, year:'numeric', month:'2-digit', day:'2-digit'
+  const Constructor = Intl.DateTimeFormat;
+  const reusable = typeof timeZone === 'string' && timeZone.length <= 64
+    && FORECAST_TIME_ZONE_KEY.test(timeZone);
+  if (reusable && forecastFormatterConstructor === Constructor && forecastFormatters.has(timeZone)) {
+    return forecastFormatters.get(timeZone);
+  }
+  const formatter = new Constructor('en-GB', {
+    timeZone,
+    year:'numeric',
+    month:'2-digit',
+    day:'2-digit'
   });
-  return timeZone === 'Europe/Copenhagen'
-    ? (copenhagenDateFormatter ??= create())
-    : create();
+  if (reusable) {
+    if (forecastFormatterConstructor !== Constructor) {
+      forecastFormatters.clear();
+      forecastFormatterConstructor = Constructor;
+    }
+    if (forecastFormatters.size >= FORECAST_FORMATTER_LIMIT) {
+      forecastFormatters.delete(forecastFormatters.keys().next().value);
+    }
+    forecastFormatters.set(timeZone, formatter);
+  }
+  return formatter;
 }
 
 export function forecastDateKeyInTimeZone(now = Date.now(), timeZone = 'Europe/Copenhagen') {

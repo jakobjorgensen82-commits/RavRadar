@@ -728,6 +728,7 @@ export async function auditPagesArtifactPrivacy(siteRoot, {
   return Object.freeze({
     root,
     fileCount: files.length,
+    uncompressedFileBytes: files.reduce((total, file) => total + file.size, 0),
     jsonFileCount: parsed.size,
     liveFileCount: expectedFiles.size,
     privateFingerprintCount: privateFingerprints.size,
@@ -755,6 +756,7 @@ if (isMain) {
   auditPagesArtifactPrivacy(options.site, options)
     .then(result => {
       console.log(`Pages artifact privacy gate: ${result.liveFileCount} allowlisted live files and ${result.fileCount} total files passed.`);
+      console.log(`Pages artifact footprint: uncompressed_regular_file_bytes=${result.uncompressedFileBytes}; regular_files=${result.fileCount}.`);
     })
     .catch(error => {
       console.error(error instanceof PagesArtifactPrivacyError

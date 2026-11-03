@@ -3,6 +3,13 @@
 // Ingen modelimport, runtime-normalisering, original eller adgang ændres.
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {execFile as callbackExec} from 'node:child_process';
+import {promisify} from 'node:util';
+import {withSource594CodeParent,SOURCE594_CODE_SOURCE_PROVENANCE,assertSource594CodeSourceSelected}
+  from '../check-assistant-later-h0-predecessor-source.mjs';
 const reviewed={
   "scripts/lib/established-native-current-origin.mjs": {
     "beforeSha256": "e802e02df74a53bb543d7d0e9107efd3850890a9f2c15e5d7c0c01b5229671cb",
@@ -73,4 +80,82 @@ export function inverseIssued594HistoricalSource(source,file){
   let roundtrip=source;
   for(const [prior,current]of row.hunks){assert.equal(roundtrip.split(prior).length,2);roundtrip=roundtrip.replace(prior,()=>current);}
   assert.equal(roundtrip,original,'Hele594→593→594-testdatainverse');return source;
+}
+
+// TEST ONLY: these two complete selectors are genuine37/594 Git leaves. The
+// existing normal reader still owns/verifies its entire150-leaf CODE host.
+// No source/profile override, original B/S, new model tuple or SQL is created.
+const historical594CodeOnlySelectors=Object.freeze([
+  Object.freeze({file:'scripts/select-native-original-continuity-code-only-source.mjs',
+    blob:'e289ae442028fa8436365964fc9aecb520a8c074',bytes:9222,
+    sha256:'5a80365f7933d02a4e4bac7a386e04e9cb492d30ef83522833ba36341e9667ef'}),
+  Object.freeze({file:'scripts/select-account-statistics-assistant-code-only-source.mjs',
+    blob:'bc7bee8e6e8b3a7ef978e4d71db1554d380547dc',bytes:2433,
+    sha256:'3f6d5877c4266ebf08a1870e138a169fb4979bd216dc97fbe2aa2b841f7c9be5'}),
+]);
+const historical594TestRoot=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
+const historical594Execute=promisify(callbackExec);
+export async function withIssued594CodeOnlyTestSource(callback){
+  assert.equal(arguments.length,1);assert.equal(typeof callback,'function');
+  const head=SOURCE594_CODE_SOURCE_PROVENANCE.head;
+  assert.equal(head,'37a34703d9ae8bfb2c28056f21a7ea73944033ae');
+  const env={...Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','TEMP','TMP','LANG','LC_ALL']
+    .filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]])),
+    GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0',
+    GIT_CONFIG_COUNT:'1',GIT_CONFIG_KEY_0:'protocol.allow',GIT_CONFIG_VALUE_0:'never'};
+  const git=async args=>(await historical594Execute('git',['-C',historical594TestRoot,...args],
+    {env,timeout:30000,maxBuffer:32768})).stdout;
+  return withSource594CodeParent(async root=>{
+    const added=[];let result,first,failed=false;
+    const identity=stat=>{assert(stat.isFile()&&!stat.isSymbolicLink()&&stat.nlink===1n);
+      return [stat.dev,stat.ino,stat.birthtimeNs,stat.size];};
+    try{
+      assert.equal(await fs.realpath(path.join(root,'scripts')),path.join(root,'scripts'));
+      for(const row of historical594CodeOnlySelectors){
+        assert.equal(String(await git(['ls-tree',head,'--',row.file])).trim(),
+          '100644 blob '+row.blob+'\t'+row.file);
+        const raw=Buffer.from(await git(['cat-file','blob',head+':'+row.file]));
+        assert.equal(raw.length,row.bytes);assert.equal(hash(raw),row.sha256);
+        const file=path.join(root,row.file);
+        await fs.writeFile(file,raw,{flag:'wx',mode:0o600});
+        added.push({file,row,identity:identity(await fs.lstat(file,{bigint:true}))});
+      }
+      result=await callback(root);
+    }catch(error){first=error;failed=true;}
+    try{
+      assert.equal(await fs.realpath(path.join(root,'scripts')),path.join(root,'scripts'));
+      for(const item of added){
+        assert.deepEqual(identity(await fs.lstat(item.file,{bigint:true})),item.identity);
+        assert.equal(hash(await fs.readFile(item.file)),item.row.sha256);
+      }
+      for(const item of [...added].reverse())await fs.unlink(item.file);
+    }catch(error){first=failed?new AggregateError([first,error],'Historical594 selector cleanup refused'):error;failed=true;}
+    if(failed)throw first;return result;
+  });
+}
+
+// Closed historical593/594 text-profile DATA for the existing impact tests.
+// No host overlay, source qualification, model identity or runtime admission.
+export async function readIssued594ImpactTextTestInputs(){
+  assert.equal(arguments.length,0,'No caller text paths/head/profile override');
+  const profile=assertSource594CodeSourceSelected();
+  const files=['js/ui/about-i18n.js','js/ui/about-explainer-i18n.js',
+    'js/ui/learn-i18n.js','js/ui/learn-i18n-de.js','js/ui/learn-i18n-en.js'];
+  const env={...Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','TEMP','TMP','LANG','LC_ALL']
+    .filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]])),
+    GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0',
+    GIT_CONFIG_COUNT:'1',GIT_CONFIG_KEY_0:'protocol.allow',GIT_CONFIG_VALUE_0:'never'};
+  const git=async args=>(await historical594Execute('git',['-C',historical594TestRoot,...args],
+    {env,timeout:30000,maxBuffer:256*1024})).stdout;
+  assert.equal(String(await git(['rev-parse',profile.head+'^{tree}'])).trim(),profile.tree);
+  const values={};let bytes=0;
+  for(const file of files){
+    const row=String(await git(['ls-tree',profile.head,'--',file])).trim();
+    assert.match(row,new RegExp('^100644 blob [a-f0-9]{40}\t'+file.replaceAll('.','\\.')+'$'));
+    const raw=Buffer.from(await git(['cat-file','blob',profile.head+':'+file]));
+    bytes+=raw.length;assert(raw.length>0&&bytes<=512*1024,'Closed historical text input budget');
+    const source=raw.toString('utf8');assert(Buffer.from(source).equals(raw)&&!source.includes('\0'));
+    values[file]=source;
+  }
+  assert.deepEqual(Object.keys(values),files);return Object.freeze(values);
 }

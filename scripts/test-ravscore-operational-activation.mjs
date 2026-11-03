@@ -10,7 +10,7 @@ import {
   legacyCandidateGControllerBinding,
   legacyCandidateGSourceIdentity,
 } from './lib/ravscore-legacy-candidate-g-source.mjs';
-import { buildIntegratedCutoverReadiness } from './integrated-cutover-readiness.mjs';
+import { buildIntegratedCutoverReadiness, codeBoundIntegratedReadinessFamily } from './integrated-cutover-readiness.mjs';
 import { assertIntegratedRavScoreSelection } from './lib/ravscore-profile-transition.mjs';
 import { readProtectedAdminRavScoreSelection } from './lib/protected-admin-ravscore-selection.mjs';
 import {
@@ -94,6 +94,7 @@ const integratedProfileRow = Object.freeze({ version: 7, payload: integratedProf
 const candidateProfile = candidateGOperationalProfileDocument(integratedProfile);
 const candidateProfileRow = Object.freeze({ version: 8, payload: candidateProfile });
 const readiness = await buildIntegratedCutoverReadiness(sourceHead, {
+  sourcePhase:codeBoundIntegratedReadinessFamily().sourcePhase,
   publicImplementationClosureSha256: defaultImplementationClosureSha256,
 });
 
@@ -3426,6 +3427,7 @@ assert.throws(() => recoverMissedInitialIntegratedCutover({
 // plus a fresh live readback, then move ACTIVE -> ACTIVE in one atomic write.
 const missedMaintenanceClosureSha256 = 'b'.repeat(64);
 const missedMaintenanceTargetReadiness = await buildIntegratedCutoverReadiness(sourceHead, {
+  sourcePhase:codeBoundIntegratedReadinessFamily().sourcePhase,
   publicImplementationClosureSha256: missedMaintenanceClosureSha256,
 });
 const missedMaintenanceTargetManifest = manifest(

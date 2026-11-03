@@ -1,3 +1,23 @@
+## 3. november 2026 — lokal 4.0.596-udstedelse efter faktisk main-sammenføring
+
+Den kvalificerede PR795-main og den gennemgåede lokale kodeunion er normalt sammenført. Normal versionssynk til 4.0.596, to additive hele importvarianter, C/I/T-afledning, genereret output, én ny append-only SQL og synk af syv forbrugere er gennemført; normal fastpunktskontrol består. De to modelkontrakter, indgangspunkter og importinventarernes 161/165 filer er bevaret. Geodataenes separate diff ændrer kun topversionen.
+
+Alle 76 tidligere SQL-filer er byteuændrede. Gamle 595-metadata/output og SQL bevares i den faste Git-forfader og privat arkivering; de nulstilles eller ommærkes ikke. Den faktiske 596-udstedelse er ikke ny PostgreSQL-, native-, fuld kilde-, kapacitets-, installations- eller driftsevidens. Disse krav og alle fem hovedmål er fortsat åbne. Ingen produktionsændring, SOURCE-G4, statistik, sletning, tidsplan eller abonnementsændring er udført. Faktiske bindinger, kontrolresultater og næste trin føres i det private checkpoint.
+
+## 2. november2026 — lokal595-udstedelse, sikker Free-klargøring fortsat åben
+
+SOURCE4.0.595 er normalt lokalt udstedt efter integration af den kvalificerede main. Én append-only SQL og normal sync samt alle seks fixedpointkontroller er bestået; alle75 gamle SQL-originaler er byteuændrede. Positiv kalder-, PostgreSQL-, native-, CI-, kapacitets-, installations- og driftsverifikation er fortsat åbne. Den aktuelle offentlige modelgeneration er særskilt4.0.594. Ingen scoreformel, kildeprioritet, administratorpunkter eller geometri ændres.
+
+Ejeren har godkendt sikker oprydning og gennemgang af hele opsætningen til selvstændig Free-drift, også vejrhentning, cache, beregning og deploy. Arkiv, faktisk genopretning, kapacitet og dataadgang skal verificeres før sletning eller abonnementsændring. Ingen faktisk oprydning, downgrade eller automatisk sletning er udført. Alle fem mål til18.november er åbne; aktuelle målinger og næste trin føres privat. Ældre modstridende status nedenfor er historik.
+
+## 1. november 2026 — lokal sammenføring, endnu ingen udstedt SOURCE 595
+
+SOURCE19 har det lokale substanscheckpoint `24d8f8ee75bb91d2c75afa92e5ccc407cb7c230f` og en uafsluttet normal sammenføring med main `c920d1e2ad0cbbfe351360f594128f0e06bd1f1e`. Main 4.0.594 er den midlertidige normale versionsforgænger; den planlagte isolerede revision er 4.0.595. Normal versionssynk efter sammenføringen er endnu ikke kørt. SOURCE-version, binding og output er NULL; nye C/I/T og SQL er ikke udstedt. Semantiske konflikter og kvalifikation er fortsat åbne. Et checkpoint, et forberedt input eller MERGE_HEAD er ikke faktisk main-ancestry, native/fullRuntime-, ejerafslutnings- eller leveringsbevis.
+
+Main-kronologien og gældende leverede rettelser bevares. Det særskilt mærkede SOURCE-spor nedenfor bevarer den isolerede grens historik; ældre 585/586/040000-resultater og tidligere aktuelle 595-noter er ikke nye produktions- eller bindingsbeviser. SOURCE-kapitlernes tidligere 89.262/89.263 er nu 89.294/89.295, så main-kapitlerne med samme gamle numre bevares. Begge beslutninger identificeres med hele filnavnet: `docs/rdks/10_DECISIONS/DEC-0294-SOURCE-DERIVED-METADATA-BOUNDARY.md` og `docs/rdks/10_DECISIONS/DEC-0294-PAGES-FORECAST-SHARING-AND-SIMPLY-CNAME.md`.
+
+Den ægte 594-forgænger er genuine37 CODE med normal 61→62-kontrakt; kode, aktuelle syntetiske data og SOURCE-eksekutor holdes adskilt. Gamle familier, SQL-originaler, scoreformel, geometri og kildeprioritet bevares. Samme normale 594-central → B før S → SDK/action 63/64 → faktisk ejerafslutning er fortsat en åben kæde. Alle fem hovedmål er åbne til 18. november 2026. ROOT koordinerer produktion; denne isolerede sammenføring ændrer ingen produktion under den aktive writer. ROOTs P0/vejr/FB/header/kildebeviser forbliver særskilte driftsbeviser.
+
 ## 2026-11-01 — privat Pages-kodeopdatering på uændret 4.0.594
 
 P0 har faktisk leveret offentlig 4.0.594, og genoptagelsen er terminalt afsluttet. Denne lokale Pages-efterfølger ændrer ikke vejrdata eller modelbinding og er endnu ikke kilde- eller hostingkvalificeret. Aktuel kørselsstatus føres privat.
@@ -8802,3 +8822,30 @@ leverandørfordeling er særskilt åbne. Se DEC-0256 og roadmap.
 # 2026-09-29 – Feggesund-stop og beskyttet 4.0.510-kandidat
 
 Normalrun `36567354134` hentede fra DMI, Copernicus og Open-Meteo, men stoppede før central cache/deploy med `FEGGESUND_WAVE_RUNTIME_PREFLIGHT_MISMATCH`. Krypteret fremdrift er bevaret; en færdig privat pakke findes ikke. Feggesund-forhåndskontrollen brugte kun den aktive DMI-cache, slutberegningen også den beskyttede tidligere generation og beholdte timefelter. Lokal 4.0.510 lader begge følge samme beskyttede DMI-udvælger, også ved eksakt ny punktaktivering, og beholder hash-gaten før landsdækkende scoring. Test, exact-head CI, merge og naturligt produktionsbevis er adskilte; kun de målrettede lokale tests er endnu grønne. GitHub-vagten er midlertidigt deaktiveret før næste eksterne firetimersslot; cron-job.org-jobbet er fortsat aktivt.
+
+
+## Bevaret særskilt SOURCE-kronologi før main-sammenføringen
+
+Følgende er de isolerede SOURCE-varianter, som ikke allerede findes ordret i main-kronologien ovenfor. Historiske regler/status læses i deres daterede scope; den aktuelle integrationsfront står øverst.
+
+## 1. november 2026 — lokal 4.0.595-status, ingen udstedelse
+
+Den isolerede SOURCE-kandidat står lokalt på **4.0.595** efter én normal versionssynk. Den gennemgåede semantiske current594-sammenføring på 24 filer er faktisk anvendt lokalt; ROOT har genlæst den normale NULL-cases PASS. Det er ikke en leveret revision. SOURCE-bindingsfilens version, binding og output er fortsat NULL. Nye 595-C/I/T, SQL og fixedpoint er endnu ikke afledt.
+
+Den ægte forgænger er 4.0.594 fra fast genuine37 CODE. Aktuelle syntetiske 594-input skal fremstilles af de normale kaldere; CODE, DATA og SOURCE-eksekutor må ikke ommærkes til hinanden. Gamle 585/586-prøver beholder egne arkiverede normalfaser. Bevarede 586/C145/I141- og 040000-resultater er historiske originaler, ikke den aktuelle 595-binding eller installationsvej.
+
+Næste åbne led er den normale 594-central-/metadataovergang gennem B før S, samme SDK og almindelige action, fase 63/64 og faktisk afslutning af samme ejer. Profilen er PREPARATION_ONLY; et forberedt prefix eller en fanget RPC-forespørgsel er ikke databasegenlæsning eller fullRuntime/actionbevis. ROOT afventer konkret kalderplan og frosne kildeinput før normal C → I → T, binding-only, nyt procesoutput og eventuel ny SQL-kilde.
+
+ROOTs særskilte oplysninger om fungerende P0/c920, almindelig 235 og offentlig header/784 er ikke SOURCE-kvalifikation og er ikke genverificeret af denne SOURCE-fase. PostgreSQL, kapacitet, komplet cache/historik og selvstændig produktion er ikke bevist. Alle fem hovedmål er åbne til **18. november 2026**. Afgrænset delegering bevarer adskilte filejere og ROOT som eneste produktionskoordinator; ingen produktionsændring under aktiv writer.
+
+Versionsfasen ændrede 90 filer inden for 157 normale mål. Begge geodata fik fysisk kun topversionen ændret. Alle 68 eksisterende migrationsfiler, genererede C/I, de 12 T-input og bindingsfilens NULL-indhold blev bevaret. ROOT accepterer særskilt de 67 mtime-statcacheændringer med byteidentisk staging; intet index blev gendannet. Normal versionssynk omfatter også cacheadresser, workflowlabels, statisk releasekontrakt og håndbogens eksisterende installationskopi, men udsteder ikke C/I/T eller en ny migration.
+
+Normal statisk modelimportanalyse fandt C152/I148/T12 som kildeinventarer med nul af de 13 åbne computed-filer i C/I/T. Det er metadataanalyse, ikke afledte 595-bindingsværdier. De 31 computed-udtryk bevares til egne native-, test- og historiske scopes uden generel whitelist. Fuld afledning og bindingsafhængig håndbogskontrol er pending.
+
+## 21. oktober – lokal 4.0.586-afledning, endnu ikke en release
+
+Normal versionssynk er udført én gang på den isolerede revision; geodatadiffen ændrer kun de to øverste versionsfelter. Normal lokal b2-merge bevarer ægte e7-ancestry og allerede gennemgået kildeindhold. Fra en ægte egen Git-LF-worktree er C145/I141/T, den nye append-only 020000-SQL og alle syv normale forbrugere nu afledt. Begge bundlere, SQL-builder og bindingskontrol genberegnes uændret efter synkronisering: fuldt lokalt fixedpoint består. Gamle SQL-/JSON-originaler, numeriske regler og alle gamle orakler bevares. Den samlede normale kalderprøve gav 36 PASS og to testkonflikter mellem ældre og nyere SOURCE-kilde. De to er rettet med eksakt inert e938-førkilde; begge ændrede mål består, mens de 36 uændrede inputresultater genbruges ærligt. Det tidligere raw-LF-blokerede gamle workflow-orakel består nu uden ændret pin. Native PostgreSQL, faktisk B/S og national efterfølgerkapacitet, præcis samlet CI og sikker levering mangler. Ingen installation eller SOURCE-aktivering; almindelig drift og alle fem mål fortsætter efter det private checkpoint.
+
+## 21. oktober – isoleret SOURCE oven på 4.0.585: selvbinding fjernet lokalt
+
+Faktiske modelinventarer har påvist, at kommende C/I/T-/SQL-pins ville indgå i deres eget input gennem normale SOURCE-ejerkald. Den afgrænsede rettelse bruger ét strengt genereret JSON-dataoutput og bevarer SOURCE-implementering, ownerguards, gamle renderere og kilde-/originalkrav. Hele producentfortegnelsen skal være committet. Fire mål og uafhængig gennemgang er gennemført; ingen egen udstedelse, native B/S, kapacitets- eller produktionssucces hævdes. Se DEC-0294 og håndbog 89.262. Ingen ny version eller produktionsændring i dette trin; alle fem mål er åbne til 18. november 2026.

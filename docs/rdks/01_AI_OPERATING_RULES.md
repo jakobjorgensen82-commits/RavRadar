@@ -1,3 +1,35 @@
+## 3. november — SOURCE596 er lokalt udstedt; kvalifikation og levering er åbne
+
+Den normale sammenføring med faktisk kvalificeret PR795-main og versionssynk til 4.0.596 er gennemført. Den bevarede 595-kilde, dens metadata/output og oprindelige SQL ligger uændret i den faste Git-forfader og den private udstedelsesarkivering. Alle 76 tidligere SQL-filer er byteuændrede; 596 tilføjer én ny append-only migration. Gamle NULL-udsagn er dateret førstegangsforberedelse, aldrig en instruktion om at nulstille en udstedt binding.
+
+596 er nu lokalt udstedt gennem de normale C/I-byggeres faktiske input, dataafledning, output, SQL og synkronisering af de syv eksisterende forbrugere. Normal fastpunktskontrol består. Den strenge importkontrol blev lukket med to særskilt helgennemgåede varianter og de uændrede endelige importmængder; ingen gammel variant, guard eller afvisning blev erstattet. Modelkontrakter, scoreformel, indgangspunkter og importinventarets filantal er bevaret. Dette er kildeudstedelse, ikke installation eller drift.
+
+Normal main-autoritet, alle relevante sikkerheds-/kvalifikationsgates, original-B før S, original-B/S før T og hård no-loss består. Ændres faktisk modelkode igen, må den udstedte binding ikke genbruges til de ændrede bytes.
+
+Alle fem hovedmål er åbne. Ingen SOURCE-G4, statistik, mail, automatisk sletning, tidsplan eller produktionshandling aktiveres af denne lokale udstedelse. Se CURRENT_TRUTH, IMPLEMENTATION_STATUS, håndbog 89.295/89.297 og privat checkpoint. Ældre daterede afsnit bevares som historik.
+
+## 2. november — én normal udstedelse efter faktisk main-integration
+
+Kvalificeret main er normalt indarbejdet; hele SOURCE-træet var uændret ved denne merge. Den normale 595-afledning starter med det bevarede NULL-udgangspunkt efter ROOTs dokumentreview og endelig kodefreeze og gennemføres én gang gennem den eksisterende kæde. Den aktuelle fase og metadataenes aktuelle tilstand står i [CURRENT_TRUTH](90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02) og IMPLEMENTATION_STATUS. Gamle SQL, autentiske originaler, kilde- og modelroller bevares. Se DEC-0261 og håndbog 89.297; ældre afventningsudsagn nedenfor er historik.
+
+Sikker oprydning og Free-/Codex-uafhængig klargøring er godkendt som arbejde, ikke som bevis for færdig drift eller generel sletteadgang. Beskyt den aktive writer og normal genoptagelse; ukendt skriveudfald må ikke gentages blindt. Ingen implicit SOURCE-G4-, statistik- eller brugersletteaktivering.
+
+## 2. november — faktisk main og gennemgået DMI-kode er indarbejdet lokalt
+
+Den isolerede SOURCE-kodeunion omfatter faktisk PR791-main og den samlede gennemgåede DMI-/statistikkandidat. Den endelige kvalificerede faktiske main skal stadig indarbejdes før én normal595-afledning; version/binding/output er NULL. Følg [kanonisk status](90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02). Ældre afventning af allerede indarbejdet main nedenfor er dateret historik. Ingen aktivering eller produktionsændring følger af den lokale integration.
+
+## 2. november — skeln lokal kodeunion fra afledning og drift
+
+[Den aktuelle SOURCE-status](90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02) erstatter ældre merge-status nedenfor på de konkret daterede punkter. Assistentens service er C/I-input: ingen gammel binding må genmærkes efter rettelsen.
+
+## 1. november 2026 — lokal sammenføring, endnu ingen udstedt SOURCE 595
+
+SOURCE19 har det lokale substanscheckpoint `24d8f8ee75bb91d2c75afa92e5ccc407cb7c230f` og en uafsluttet normal sammenføring med main `c920d1e2ad0cbbfe351360f594128f0e06bd1f1e`. Main 4.0.594 er den midlertidige normale versionsforgænger; den planlagte isolerede revision er 4.0.595. Normal versionssynk efter sammenføringen er endnu ikke kørt. SOURCE-version, binding og output er NULL; nye C/I/T og SQL er ikke udstedt. Semantiske konflikter og kvalifikation er fortsat åbne. Et checkpoint, et forberedt input eller MERGE_HEAD er ikke faktisk main-ancestry, native/fullRuntime-, ejerafslutnings- eller leveringsbevis.
+
+Main-kronologien og gældende leverede rettelser bevares. Det særskilt mærkede SOURCE-spor nedenfor bevarer den isolerede grens historik; ældre 585/586/040000-resultater og tidligere aktuelle 595-noter er ikke nye produktions- eller bindingsbeviser. SOURCE-kapitlernes tidligere 89.262/89.263 er nu 89.294/89.295, så main-kapitlerne med samme gamle numre bevares. Begge beslutninger identificeres med hele filnavnet: `docs/rdks/10_DECISIONS/DEC-0294-SOURCE-DERIVED-METADATA-BOUNDARY.md` og `docs/rdks/10_DECISIONS/DEC-0294-PAGES-FORECAST-SHARING-AND-SIMPLY-CNAME.md`.
+
+Den ægte 594-forgænger er genuine37 CODE med normal 61→62-kontrakt; kode, aktuelle syntetiske data og SOURCE-eksekutor holdes adskilt. Gamle familier, SQL-originaler, scoreformel, geometri og kildeprioritet bevares. Samme normale 594-central → B før S → SDK/action 63/64 → faktisk ejerafslutning er fortsat en åben kæde. Alle fem hovedmål er åbne til 18. november 2026. ROOT koordinerer produktion; denne isolerede sammenføring ændrer ingen produktion under den aktive writer. ROOTs P0/vejr/FB/header/kildebeviser forbliver særskilte driftsbeviser.
+
 ## 31. oktober — hold databaseforgænger og originalforgænger adskilt
 
 For assistant-installed593-origin591-successor kommer før-databasebindingen fra den faktisk udstedte 593-canonical, mens originalState 591 udelukkende kommer gennem de eksisterende autentificerede591-læsere. En installeret modelversion er ikke bevis for nye B/S-originaler. Ændr ikke historiske profiler, originale attester eller udstedte SQL, og opfind ikke en593-originalvalidator.
@@ -462,3 +494,17 @@ En halvfærdig version må ikke fremstilles som releaseklar. Ucommittede filer, 
 - validate:source erstatter aldrig den fulde npm run validate og npm run release:gate efter central hydrering og frisk vejr; begge er fortsat obligatoriske før hvert nyt deploybart artifact.
 - Fuld 210/673-browserkontrol er hændelsesstyret: ugentligt eller ved ændret UI, score eller offentlig datakontrakt. Se DEC-0045.
 - Midlertidige runtime-shims skrives kun i systemets temp-mappe og må ikke stages.
+
+
+## Bevaret særskilt SOURCE-kronologi før main-sammenføringen
+
+Følgende er de isolerede SOURCE-varianter, som ikke allerede findes ordret i main-kronologien ovenfor. Historiske regler/status læses i deres daterede scope; den aktuelle integrationsfront står øverst.
+
+## 1. november 2026 — frys den reelle 594-kalder før SOURCE-udstedelse
+
+Aktuel isoleret SOURCE-version er 4.0.595 efter normal versionssynk og lokal 24-filers current594-integration. Nye 595-C/I/T og SQL er endnu ikke afledt; bindingsfilens version, binding og output er NULL. Den normale 594-central → B før S → samme SDK/action 63/64 → faktisk ejerafslutning er fortsat åben, og profilen er PREPARATION_ONLY. Gamle 586/040000-resultater bevares som dateret historik, ikke den aktuelle binding eller installationsvej.
+
+ROOTs P0/c920, almindelig 235 og offentlig header/784 er separate driftsbeviser, ikke SOURCE-bevis. Ingen ny PostgreSQL-, kapacitets-, komplet cache-/historik- eller leveringssucces påstås. Alle fem mål er åbne til 18. november 2026; delegering har adskilte filejere, ROOT koordinerer produktion, og ingen produktion ændres under writer.
+
+Færdiggør og gennemgå den normale current594-central-/metadata-/SDK/action-kalder før kildeinput fryses og ny afledning besluttes. Gamle 585/586-normalfaser, originale SQL-/JSON-kilder, scoreformel, geometri, kildeprioritet og strenge afslag bevares. ROOT accepterer versionsfasens binære indeksforbehold: staging var byteuændret, mens 67 mtime-statcacheposter ændredes. Det er ikke en ny kilde-/databinding og giver ingen tilladelse til indexrestore eller guardlempelse.
+

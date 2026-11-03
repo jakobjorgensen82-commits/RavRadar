@@ -8,6 +8,9 @@ import { inverseCompletedRuntimeWorkflow } from './lib/completed-private-runtime
 await import('./test-completed-private-runtime-workflow-inverse.mjs');
 await import('./test-completed-private-runtime-admission.mjs');
 import fs from 'node:fs';
+import {SOURCE_PRODUCER_BINDING,requireSourceProducerBinding,requireSourceProducerOutput,
+  sourceProducerMigration,readSourceProducerCanonicalSource,SOURCE_PRODUCER_BEFORE}
+  from './lib/source-producer-successor-source.mjs';
 import { runInNewContext } from 'node:vm';
 import { nativeIdentityMigration } from './lib/native-sampling-identity-successor-source.mjs';
 import { lastMileEnclosureMigration } from './lib/last-mile-enclosure-successor-source.mjs';
@@ -757,6 +760,41 @@ let casTimeoutSettings = fs.readdirSync(migrationsUrl).filter(name => name.endsW
   )].map(match => ({ migration: name, timeout: match[1] })));
 assert.equal(casTimeoutSettings.at(-1)?.timeout, '55s',
   'the final migration order must retain the established checkpoint-only 55s timeout');
+
+// Verify the real issued SOURCE SQL/canonical before deriving the historical
+// timeout-row view. This is test inventory only, never installed-DB admission.
+if(SOURCE_PRODUCER_BINDING!==null){
+  const binding=requireSourceProducerBinding(),pins=requireSourceProducerOutput();
+  const migration=sourceProducerMigration();
+  const canonical=await readSourceProducerCanonicalSource();
+  assert.equal(canonical.admission,'NO_ADMISSION');assert.deepEqual(canonical.migration,migration);
+  assert.equal(migration.version,binding.version);
+  assert.equal(SOURCE_PRODUCER_BEFORE.version,ACTIVE_TIMEOUT_SUCCESSOR.requireBinding().version);
+  const sql=fs.readFileSync(new URL(migration.filename,migrationsUrl));
+  function inverseSourceTimeoutInventory(inventory,sourceSql){
+    assert.equal(conditions593TestHash('sha256').update(sourceSql).digest('hex'),pins.migrationSha256,
+      'Whole issued SOURCE SQL, not a guessed latest inventory row');
+    const rows=[...sourceSql.toString('utf8').matchAll(
+      /alter function public\.ravradar_ravscore_checkpoint_cas\(bigint,timestamptz,jsonb\)\s+set statement_timeout = '([^']+)';/g)];
+    assert.equal(rows.length,1);assert.equal(rows[0][1],'55s');
+    const last={migration:migration.filename,timeout:'55s'};
+    assert.equal(inventory.filter(row=>row.migration===migration.filename).length,1);
+    assert.deepEqual(inventory.at(-1),last);
+    const historical=inventory.slice(0,-1);
+    assert.deepEqual(historical.at(-1),{migration:ACTIVE_TIMEOUT_SUCCESSOR.migration().filename,timeout:'55s'});
+    assert.deepEqual(inventory,[...historical,last]);return historical;
+  }
+  for(const badSql of [Buffer.concat([sql,Buffer.from('\n')]),
+    Buffer.from(sql.toString('utf8').replace("set statement_timeout = '55s'","set statement_timeout = '54s'"))])
+    assert.throws(()=>inverseSourceTimeoutInventory(casTimeoutSettings,badSql));
+  const last={migration:migration.filename,timeout:'55s'};
+  for(const inventory of [casTimeoutSettings.slice(0,-1),[...casTimeoutSettings,last],
+    [...casTimeoutSettings,{migration:'20990101000000_unknown.sql',timeout:'55s'}],
+    [...casTimeoutSettings.slice(0,-1),{...last,timeout:'54s'}],
+    [...casTimeoutSettings.slice(0,-2),last]])
+    assert.throws(()=>inverseSourceTimeoutInventory(inventory,sql));
+  casTimeoutSettings=inverseSourceTimeoutInventory(casTimeoutSettings,sql);
+}
 
 // Actual594 is a separate issued source profile. Validate its whole normal SQL
 // and canonical reader before a TEST INVENTORY ONLY inverse; never remove a

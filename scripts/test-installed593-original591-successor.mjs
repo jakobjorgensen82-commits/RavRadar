@@ -3,12 +3,12 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import {fileURLToPath} from 'node:url';
+import {fileURLToPath,pathToFileURL} from 'node:url';
+import {withSource594CodeParent} from './check-assistant-later-h0-predecessor-source.mjs';
 import {ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE,ASSISTANT_PUBLIC591_SUCCESSOR_BINDING as DB593,
   ASSISTANT_PUBLIC591_SUCCESSOR_OUTPUT as OUTPUT593,ASSISTANT_PUBLIC591_SUCCESSOR_BEFORE as ORIGINAL591,
   readAssistantPublic591SuccessorCanonicalSource,readInstalled593Original591CanonicalSource}
   from './lib/assistant-later-h0-successor-source.mjs';
-import {buildInstalled593Original591BindingSuccessor} from './build-assistant-later-h0-successor.mjs';
 import {installed593Original591RequiredMigrations,assistantPublic591SuccessorRequiredMigrations,
   assertInstalled593Original591MigrationPlan,assertInstalled593Original591MigrationsApplied,
   assertSupabaseMigrationPlan,expectedCheckpointCasContract,expectedTripBindingPolicy,
@@ -19,7 +19,13 @@ assert.equal(ACTIVE.sourcePhase,'assistant-installed593-origin591-successor');
 assert.equal(ACTIVE.requireRelease(),'4.0.594');
 assert.deepEqual(ACTIVE.before,ORIGINAL591);assert.deepEqual(ACTIVE.databaseBefore,{...DB593,canonicalSha256:OUTPUT593.canonicalSha256});
 const current=ACTIVE.requireBinding(),output=ACTIVE.requireOutput(),migration=ACTIVE.migration();
-const result=await buildInstalled593Original591BindingSuccessor({version:current.version});
+// This named historical594 constructor must use its genuine594 C/I/T CODE.
+// The unchanged current plan/readback/prewrite assertions below keep their own subjects.
+const result=await withSource594CodeParent(async sourceRoot=>{
+  const {buildInstalled593Original591BindingSuccessor}=await import(
+    pathToFileURL(path.join(sourceRoot,'scripts/build-assistant-later-h0-successor.mjs')).href);
+  return buildInstalled593Original591BindingSuccessor({version:current.version});
+});
 assert.deepEqual(result.nextBinding,current);assert.equal(result.aliases.length,0);assert.equal(result.wholeCanonicalInverse,true);
 assert.equal(result.originalStateFamily,'591');assert.equal(result.sameH0Capability,false);assert.equal(result.numericalSqlRulesChanged,false);
 assert.deepEqual(await fs.readFile(path.join(root,'supabase/migrations',migration.filename)),Buffer.from(result.migration));
