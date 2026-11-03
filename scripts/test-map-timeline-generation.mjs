@@ -213,3 +213,18 @@ assert.equal(codecChild.signal, null, 'The normal codec child must finish withou
 assert.equal(codecChild.status, 0, 'The normal codec native/fallback target must pass');
 console.log(JSON.stringify({ status: 'PASS_PUBLIC_JSON_CODEC_NORMAL_PARENT_CHILD', cases: 36,
   node: process.version, sameNode: true, shell: false, timeoutMs: 10000, maxBufferBytes: 1024 * 1024 }));
+
+// Keep the existing cold-start/worker oracle on the actual public module chain.
+// Isolate its worker VM and first-claim probes from the parent's browser globals.
+const coldStartChild = spawnSync(process.execPath, [
+  fileURLToPath(new URL('./test-public-cold-start-4.0.303.mjs', import.meta.url))], {
+  shell: false, windowsHide: true, timeout: 10000, maxBuffer: 1024 * 1024,
+  encoding: 'utf8', cwd: fileURLToPath(new URL('../', import.meta.url)), env: codecChildEnv,
+});
+if (coldStartChild.stdout) process.stdout.write(coldStartChild.stdout);
+if (coldStartChild.stderr) process.stderr.write(coldStartChild.stderr);
+assert.ifError(coldStartChild.error);
+assert.equal(coldStartChild.signal, null, 'The existing cold-start target must finish without signal or timeout');
+assert.equal(coldStartChild.status, 0, 'The existing cold-start and exact same-version worker cache target must pass');
+console.log(JSON.stringify({ status: 'PASS_PUBLIC_COLD_START_NORMAL_PARENT_CHILD',
+  node: process.version, sameNode: true, shell: false, timeoutMs: 10000, maxBufferBytes: 1024 * 1024 }));

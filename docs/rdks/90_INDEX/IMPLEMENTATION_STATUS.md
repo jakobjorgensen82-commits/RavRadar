@@ -4,6 +4,8 @@ Den eksterne firetimerskontrol stoppede ved en faktisk HTTP 502 fra GitHub, før
 
 Begge friske kontroller, det samme firetimersslot, overlapværn, standardvalg og tidsplan bevares. En bestilling af vejrhentning forsøges kun én gang og afbrydes efter tyve sekunder; ukendt skriveudfald må aldrig gentages automatisk. Det er lokal kildeforberedelse, ikke leveret selvstændig genopretning. Den rigtige Linux-kalderprøve og præcis GitHub-kvalifikation mangler endnu; Windowsprøver er ikke Linux-bevis. Ingen model-, score-, kilde-, SQL-, administrator- eller geometriændring. Se DEC-0277 og håndbog 89.127. Alle fem mål består.
 
+Den eksisterende prøve af en helt ny åbning bruger nu også de faktisk allerede leverede adresser til zonepanel, assistent og kort delingsdomæne. Den normale kortprøve kører denne oprindelige prøve i en særskilt, kort underproces. Gamle cacheposter og alle oprindelige assertions bevares; en gammel adresse må hverken skjule den nye kode eller udløse sletning af brugerdata. Dette er rettelse og tilkobling af en forældet prøve, ikke en ny score- eller modelregel.
+
 ## 3. november — PLAIN-klientbro før senere komprimering
 
 **Status: DELVIST IMPLEMENTERET – anvendt lokalt, ikke offentligt leveret.**

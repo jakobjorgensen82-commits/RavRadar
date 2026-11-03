@@ -54,7 +54,10 @@ const releaseVersion = JSON.parse(await fs.readFile(new URL('../package.json', i
 const previousCopySuffix = `?v=${releaseVersion}&copy=footer-20261005`;
 const previousUiSuffix = `${previousCopySuffix}&ui=account-20261006`;
 const previousShareSuffix = `${previousCopySuffix}&ui=forecast-share-20261024`;
-const suffix = `${previousCopySuffix}&ui=zone-panels-20261027`;
+const previousPanelSuffix = `${previousCopySuffix}&ui=zone-panels-20261027`;
+const previousAssistantSuffix = `${previousPanelSuffix}&assistant=forecast-followup-20261101`;
+const previousDomainSuffix = `${previousAssistantSuffix}&share=custom-domain-20261102`;
+const suffix = `${previousDomainSuffix}&transport=public-json-bridge-20261103`;
 assert.ok(index.includes(`src="bootstrap.js${suffix}"`));
 assert.ok(bootstrap.includes(`await import("./app.js${suffix}")`));
 
@@ -73,6 +76,12 @@ const cached = new Map([
   [`${origin}/bootstrap.js${previousShareSuffix}`, new Response('share-bootstrap')],
   [`${origin}/app.js${previousShareSuffix}`, new Response('share-app')],
 ]);
+const previousDeliveredAssets = [
+  [previousPanelSuffix, 'panel'], [previousAssistantSuffix, 'assistant'], [previousDomainSuffix, 'domain'],
+];
+for (const [oldSuffix, label] of previousDeliveredAssets) {
+  for (const file of ['bootstrap.js', 'app.js']) cached.set(`${origin}/${file}${oldSuffix}`, new Response(`${label}-${file}`));
+}
 const fetched = [];
 vm.runInNewContext(worker, {
   URL, Response,
@@ -97,6 +106,10 @@ for (const file of ['bootstrap.js', 'app.js']) {
     file === 'bootstrap.js' ? 'account-bootstrap' : 'account-app');
   assert.equal(await cached.get(`${origin}/${file}${previousShareSuffix}`).clone().text(),
     file === 'bootstrap.js' ? 'share-bootstrap' : 'share-app');
+  for (const [oldSuffix, label] of previousDeliveredAssets) {
+    assert.equal(await cached.get(`${origin}/${file}${oldSuffix}`).clone().text(), `${label}-${file}`,
+      'Already delivered same-version panel/assistant/domain assets stay separate from the new transport cache key.');
+  }
   handlers.get('fetch')({request,respondWith:value => {response=value;}});
   assert.equal(await (await response).text(), `new:${request.url}`,
     'The exact new UI asset must be reusable from its own cache key.');
