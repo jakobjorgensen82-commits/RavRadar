@@ -460,6 +460,27 @@ Det er en lokal, afgrænset leveringskandidat. Den må ikke kaldes en løst prod
 
 Der udstedes ingen ny version, modelbinding eller databaseovergang i denne afgrænsede leverance. DMI-tidsbudgetter, prioriteten DMI → Copernicus → Open-Meteo, historik, administratorpunkter og geometri bevares. De øvrige åbne RavRadar-opgaver består. Se DEC-0295 og den private driftskvittering for den aktuelle leveringsstatus.
 
+### 3. november — bredde inden for hver behovsgruppe
+
+Følgende præcisering erstatter den tidligere beskrivelse af alle vind- og bølgeopgaver foran alle temperaturer. Den gældende kø fletter to kritiske vind-/bølgeopgaver med én temperaturopgave, når begge grupper har arbejde. Inden for hver gruppe vælges én faktisk nødvendig kystdel pr. zone pr. omgang, før gruppen vender tilbage til flere dele i samme zone. Zoner og kystdele har en stabil direkte strengorden og roteres videre fra den seneste faktiske start.
+
+Det er bredde inden for hver behovsgruppe, ikke et løfte om samme zonebredde på tværs af grupperne eller om at nå alle 210 zoner i én kørsel. Manglende opgaver opfindes ikke. Når tid eller forsøgsloft kun tillader få starter, begrænser det også fremdriften; gyldige svar og bedre offentlig dækning er ikke garanteret.
+
+### Privat fremdrift er rækkefølge, ikke kildebevis
+
+Samme schema1-cursor og det gamle globale felt bevares. En valgfri zoneRotation holder særskilt fremdrift for kritiske opgaver og temperatur: sidste startede zone og sidste startede kystdel pr. zone. Kun opgavens første HTTP-start kvitterer fremskridt. Et startet fejlkald tæller, mens pacing uden start, en anden gruppes arbejde eller senere responsrækkefølge ikke flytter dens markør.
+
+Rækkefølgen bindes til de stabile fulde målidentiteter og spatialPolicies. Nyt H0, inputarrayorden og bankens løbende hash ændrer ikke dette domæne. Ændrede faktiske mål eller policy geninitialiserer alene rækkefølgehintet; de gør ikke data gyldige. Cursoren må højst fylde 64 KiB ved læsning og skrivning. Ved budget0 ignoreres kun den nye optional-tilstand, mens legacychecks består, og ingen cursor skrives. Ukendt eller malformed online-tilstand afvises før HTTP.
+
+Der er fortsat to transportslots, global pacing og højst 800 HTTP-forsøg inklusive retries inden for den samme tidsramme. Bankens originale svar, parser, fulde målidentiteter og normale kilde-/værdiadmission ændres ikke. Bankcheckpoints og fysisk transportsettlement kommer før cursor-save. Ved STOP_UNPROVED eller gemmefejl bevares de normale stopgrænser; et ukendt skriveudfald giver hverken blind retry eller tilbagerulning.
+
+### Bevisgrænse og særskilte leverancer
+
+Den nationale syntetiske førprøve nåede 56 af 210 zoner med den gamle kø. Lokale køprøver og deres aktuelle resultater føres i de private kvitteringer; de er ikke dokumentation for gyldige leverandørværdier, offentlig dækningsgevinst, fuldt halefix eller Free-råderum. Den almindelige kildekvalifikation og en faktisk ny generations virkning vurderes særskilt.
+
+Prioriteten DMI → Copernicus → Open-Meteo, scoreformel, administratorpunkter, geometri, originalbank og bevaring ændres ikke. Den allerede leverede nationale numeriske strømrettelse står ved magt; komplet vejr-/modelhistorik og de resterende driftskrav har egne bevisgrænser. SOURCE596 aktiveres ikke af kørettelsen. Der udstedes ingen ny version, C/I/T-binding eller SQL-migration her.
+
+
 ## 89.279 Præcise spørgsmål og tydelige scoretal i Spørg RavRadar
 
 **Kort fortalt: Spørg RavRadar skal genkende almindelige ord og formuleringer, være ærlig om ukendt udstyr og vise tydeligt, hvilket scoretal der menes.**

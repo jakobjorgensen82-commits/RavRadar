@@ -103,7 +103,7 @@ runSourceOracle(legacyWorkflow);
 
 // The new registry has its own exact additive proof. The completed admin
 // fixture remains pinned to its original reviewed 14ade133 CODE and DATA.
-const actualRegistryRaw = reviewedPrivateStudyOperatorBeforeRegistry(await text('scripts/lib/source-impact-domain-owners-594.json'));
+const actualRegistryRaw = reviewedPrivateStudyOperatorBeforeRegistry(reviewedOpenMeteoControlBeforeRegistry(await text('scripts/lib/source-impact-domain-owners-594.json')));
 const registrySuccessor = review.registrySourceProofSuccessor;
 const registryBindingSuccessor = review.registryBindingSuccessor;
 const registryWorkflow066Successor = review.registryWorkflow066Successor;
@@ -628,4 +628,68 @@ function reviewedPrivateStudyOperatorBeforeRegistry(operatorRegistryRaw) {
   }
   assert.throws(() => operatorRegistryInverse(operatorRegistryBefore));
   return operatorRegistryBefore;
+}
+
+
+// Exact additive OM-control registration before the unchanged historical oracles.
+function reviewedOpenMeteoControlBeforeRegistry(omControlRegistryRaw) {
+  const omControlProof = {
+  "beforeSha256": "239dedfb4d8f0f0a5fa70abac1abaa96f46ef75008e1abd90fafb8fdbd73c9af",
+  "afterSha256": "4fa622972052c5613255d27b128f87856eb778c37b30d59bb93b2761919a0a60",
+  "beforeBytes": 938079,
+  "afterBytes": 947287,
+  "edits": [
+    {
+      "beforeOffset": 28248,
+      "afterOffset": 28248,
+      "beforeBase64": "",
+      "afterBytes": 1008,
+      "afterSha256": "da816bd34bf55a0cefb913ed7795d1180fd3956235c9bd690f5df2b569987b5e"
+    },
+    {
+      "beforeOffset": 900771,
+      "afterOffset": 901779,
+      "beforeBase64": "",
+      "afterBytes": 8200,
+      "afterSha256": "403f362a249d4547001effad8b5c469c757f6718aa70408177f71749d6e1d85d"
+    }
+  ]
+};
+  const omControlInverse = omControlInput => {
+    assert.equal(typeof omControlInput, 'string');
+    let omControlBytes = Buffer.from(omControlInput, 'utf8');
+    assert.equal(omControlBytes.length, omControlProof.afterBytes);
+    assert.equal(digest(omControlBytes), omControlProof.afterSha256, 'OM_CONTROL_REGISTRY_UNREVIEWED_BYTES');
+    for (const omControlEdit of [...omControlProof.edits].reverse()) {
+      assert.equal(digest(omControlBytes.subarray(omControlEdit.afterOffset,
+        omControlEdit.afterOffset + omControlEdit.afterBytes)), omControlEdit.afterSha256);
+      omControlBytes = Buffer.concat([omControlBytes.subarray(0, omControlEdit.afterOffset),
+        Buffer.from(omControlEdit.beforeBase64, 'base64'),
+        omControlBytes.subarray(omControlEdit.afterOffset + omControlEdit.afterBytes)]);
+    }
+    assert.equal(omControlBytes.length, omControlProof.beforeBytes);
+    assert.equal(digest(omControlBytes), omControlProof.beforeSha256, 'OM_CONTROL_REGISTRY_WHOLE_M800_INVERSE');
+    return omControlBytes.toString('utf8');
+  };
+  const omControlBefore = omControlInverse(omControlRegistryRaw);
+  let omControlForward = Buffer.from(omControlBefore, 'utf8');
+  const omControlActual = Buffer.from(omControlRegistryRaw, 'utf8');
+  for (const omControlEdit of omControlProof.edits) {
+    const omControlOld = Buffer.from(omControlEdit.beforeBase64, 'base64');
+    assert.deepEqual(omControlForward.subarray(omControlEdit.afterOffset,
+      omControlEdit.afterOffset + omControlOld.length), omControlOld);
+    omControlForward = Buffer.concat([omControlForward.subarray(0, omControlEdit.afterOffset),
+      omControlActual.subarray(omControlEdit.afterOffset, omControlEdit.afterOffset + omControlEdit.afterBytes),
+      omControlForward.subarray(omControlEdit.afterOffset + omControlOld.length)]);
+  }
+  assert.deepEqual(omControlForward, omControlActual, 'OM_CONTROL_REGISTRY_WHOLE_FORWARD');
+  for (const omControlMutation of [omControlRegistryRaw + '\n',
+    omControlRegistryRaw.replace('"path": "scripts/lib/open-meteo-part-runtime.mjs"',
+      '"path": "scripts/lib/unreviewed-open-meteo-runtime.mjs"'),
+    JSON.stringify({...JSON.parse(omControlRegistryRaw), unknownOmControlField: true}, null, 2) + '\n']) {
+    assert.notEqual(omControlMutation, omControlRegistryRaw);
+    assert.throws(() => omControlInverse(omControlMutation));
+  }
+  assert.throws(() => omControlInverse(omControlBefore));
+  return omControlBefore;
 }

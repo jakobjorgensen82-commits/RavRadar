@@ -11,6 +11,7 @@ import { pruneUnusableOpenMeteoPartBank } from './open-meteo-usable-part-bank.mj
 import { assertWeatherTransportSettlement, isWeatherTransportStopUnproved,
   throwWeatherTransportStopUnproved } from './weather-transport-settlement.mjs';
 
+const CURSOR_MAX_BYTES = 64 * 1024;
 const failure = (code, retryable = false, retryAfterMs = 0) =>
   Object.assign(new Error(code), { code, retryable, retryAfterMs });
 const inside = (root, target) => {
@@ -77,11 +78,11 @@ async function readBankFile(paths, maximumBytes = OPEN_METEO_PART_BANK_MAX_BYTES
     throw error;
   } finally { await handle?.close(); }
 }
-async function saveBankFile(paths, bank) {
+async function saveBankFile(paths, bank, maximumBytes = OPEN_METEO_PART_BANK_MAX_BYTES) {
   assertWeatherTransportSettlement();
   await checkedParent(paths, { create: true });
   const bytes = Buffer.from(JSON.stringify(bank));
-  if (bytes.length > OPEN_METEO_PART_BANK_MAX_BYTES) throw failure('OPEN_METEO_PRIVATE_BANK_SIZE_INVALID');
+  if (bytes.length > maximumBytes) throw failure('OPEN_METEO_PRIVATE_BANK_SIZE_INVALID');
   const temporary = `${paths.file}.tmp-${process.pid}-${randomUUID()}`;
   let handle;
   try {
@@ -229,7 +230,7 @@ export async function runOpenMeteoPartRuntime({
   const startedAt = performance.now();
   const deadline = startedAt + budgetMs;
   const previous = await readBankFile(paths);
-  const cursor = await readBankFile(cursorPaths, 64 * 1024);
+  const cursor = await readBankFile(cursorPaths, CURSOR_MAX_BYTES);
   if (cursor !== null && (cursor.kind !== 'WEATHER_COMPONENT_FALLBACK_CURSOR' || cursor.schemaVersion !== 1
     || typeof cursor.openMeteoLastAttemptedPartId !== 'string' || !cursor.openMeteoLastAttemptedPartId)) {
     throw failure('OPEN_METEO_PART_CURSOR_INVALID');
@@ -310,6 +311,8 @@ export async function runOpenMeteoPartRuntime({
   const result = await produceOpenMeteoPartComponents({
     ...options, previousBank: previous, productionReferenceAt, requiredPairs,
     startAfterPartId: cursor?.openMeteoLastAttemptedPartId ?? null,
+    // Offline recovery must not lose a valid bank to malformed advisory state.
+    advisoryZoneRotation: budgetMs === 0 ? undefined : cursor?.zoneRotation,
     shouldContinue: () => remaining() > 0 && stats.httpAttempts < maxHttpAttempts, fetchResponse,
     transportOwnsRequestStart: true,
     // Builder already revalidates original evidence once and each admission.
@@ -324,7 +327,8 @@ export async function runOpenMeteoPartRuntime({
   assertWeatherTransportSettlement();
   if (result.summary.lastAttemptedPartId !== null) {
     await saveBankFile(cursorPaths, { kind: 'WEATHER_COMPONENT_FALLBACK_CURSOR', schemaVersion: 1,
-      openMeteoLastAttemptedPartId: result.summary.lastAttemptedPartId });
+      openMeteoLastAttemptedPartId: result.summary.lastAttemptedPartId,
+      zoneRotation: result.zoneRotation }, CURSOR_MAX_BYTES);
   }
   const index = validateOpenMeteoPartBank(result.bank, options);
   stats.httpAttemptLimitReached = stats.httpAttempts >= maxHttpAttempts ? 1 : stats.httpAttemptLimitReached;

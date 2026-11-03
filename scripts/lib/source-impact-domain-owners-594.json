@@ -1222,6 +1222,51 @@
         "controls"
       ],
       "controlQualification": true
+    },
+    {
+      "path": "scripts/lib/open-meteo-part-runtime.mjs",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node scripts/test-open-meteo-part-runtime.mjs"
+        ]
+      ]
+    },
+    {
+      "path": "scripts/produce-open-meteo-part-components.mjs",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node scripts/test-open-meteo-part-runtime.mjs"
+        ]
+      ]
+    },
+    {
+      "path": "scripts/test-open-meteo-part-runtime.mjs",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node scripts/test-open-meteo-part-runtime.mjs"
+        ]
+      ]
+    },
+    {
+      "path": "docs/rdks/10_DECISIONS/DEC-0295-WEATHER-COMPONENT-RESERVE-QUEUE-CAPACITY.md",
+      "domains": [
+        "documentation"
+      ]
     }
   ],
   "sources": {
@@ -17601,6 +17646,152 @@
         "eaf9caeddbe4219464c06651a1bdb203dec0ecc5ef5cbda10439b1e75e8cdb4c"
       ],
       "computedBoundaries": []
+    },
+    "scripts/test-open-meteo-part-runtime.mjs": {
+      "nodeImports": [
+        "node:assert/strict",
+        "node:child_process",
+        "node:fs/promises",
+        "node:os",
+        "node:path",
+        "node:test"
+      ],
+      "imports": [
+        "scripts/lib/open-meteo-part-bank.mjs",
+        "scripts/lib/open-meteo-part-runtime.mjs",
+        "scripts/produce-open-meteo-part-components.mjs"
+      ],
+      "resources": [],
+      "computedBoundaries": [],
+      "dependencySurfaces": [
+        "0d0e67306d202275b3259b1c2eb83da466c4e5c4ffef1579a9c22696ce212f8a",
+        "3d0fb01632d057d7f19ae8c148834b192a8491f7dfaca25c87a22143aab05d72",
+        "6d2f71db5857f443da66bbf54fdf20dd8b9cbc697b3e3032f5fd01af7ec19c4a",
+        "cf17c3b7936526310efbdb0a7ba7c8f304af2c5acf14721aaf0c530d8568aa73",
+        "dcda089e3f14297d0fe0dfedc8a0be9f84351a311c21809a76e8551543347751",
+        "ed05fcfb7ebe1730cfebcb1190c6f63a0d6caa207c7ba714d19bd2d5dc25e310",
+        "b5bf09790a1584b418364d9f3864e3fe0d91a5d4bf39d974bf86344c3542fd20",
+        "2470ac50b937e23cefa9f298f4cd88663e9cfd1348f237f72a2468c9e6947760",
+        "81802f03c18107f0596fb637ea2be50df9bccc65f800269389a1d2db27001e10",
+        "b2ae057f42a5fb48b7f91ca79a79153525ac5f2a1711957204021ebd5f3b6d5b",
+        "3053abff5b8e437e7db656e789eaa4e6f8efdce405bee23229d415abc4c4845f",
+        "738cff1e6b802b5dd5448f36ff79884dadecdda703248ce601aa4fdc3fc782bf",
+        "7199d15a1b87f2f03e629eee1521025088ac0f4b123ff7db3d5f34671ab08bc3",
+        "7edbb06d5a23b305c7cdd20dfd063d2475d405b2c521bb4d5e768655051cd9e8"
+      ],
+      "bindingSurfaces": [
+        "03d8753abf0916d5216662b4c72e64c163bf35272dfc26ebe5f040256aba3daf",
+        "0449e9a4137fbfa4da51eb277b35e8a4939c851acc7a17fa44de4bd3b7baa50f",
+        "05fa914c4523e9a43a02e9f19a63c66b480aa5484bbcee5eb8912264d839f918",
+        "1645c4e20425af1e2fafad138e2b550480997610095455abd97bcd46f9bdc88b",
+        "5a6fc87a21038d53d558fb004adba4ebdaeaf6536a23f47cb7436a6196b1c676",
+        "5fd5beba47f24cc639c9c33978eec64f5f4e13bda36027f9a9a3896114259023",
+        "70373c72e63f84175f0b992ee443a38d468dfdff07c736093cef16c26d8d9629",
+        "855367998ebc278c2491acbd5f765bc7fb5c302e63ab88d5c9d5d135c0028033",
+        "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+        "9ba162560d8a0f4f99ab9c63884a7ec381b4b92487c7ccb789b7f038d43f9629",
+        "9dd69488a5f83d39b3aa1afc4845a37430a53bc5546ccf3679b2f0f2b3d4f61e",
+        "a46eac6845aa3f9708199c631f9186c68c35b22a70220a30b931da8841fb7322",
+        "abf1225efbb1652b5d6cc93832d38fc229aad1bbcc64e7b1b62d2b156a27f3c1",
+        "ca6d33cc6e28f5f57c6e4ed5b16aa66364f809c0f52ae33d7e5d72f83e0a146b",
+        "d698950cfcd8b0be985300e0e267a585deed2873973ca5aaf2ec19aa6ce2358f",
+        "e0c0913f5d1bf5cb27a5c1a2bd2e598388c21c93db0730f0172a9f72bda9c9bc",
+        "e9e0c33b705fd16df3bd17b14f431555e121ef377b1205d9904810dbe7a3c350",
+        "efc526b44e60757a483ca877762f7c42e1a8e37f107d9a1d56b23c3abe413e30",
+        "f23ba68dfb581da035beea21687be7a620584b07c71398a077c130909ca68aad",
+        "fd06e92cc4368e817aba3f66e3f9901b3795f2e532625996606aedd74c443d47",
+        "fdfdc12e03ff8edff77cfcec3d093d2c41bfd2954ce9ac7275df85cb0eb9e2ab",
+        "312aebbf23cdd64fde46a3601d4e911ae4941141d6eba312b0e105221f49c017",
+        "b9c85d361aa53703d5d9da60408536ae5f2c86415583e1d1ce2bd069ef64dcba",
+        "cdb014155ef8e6bf454a0f98b5bb6a978579c9ea87d7b7d80805b0507f7a6f46",
+        "954cf5eecf18a7af2d9236465f672ffbc49372767e41771a50639015e62e60ee",
+        "8d067980887ce60e0c256d5851641309b549ce5ed8fc7556bae8e2a35c88748c",
+        "dc9bf506d405a179ecb00bce36b8f92d07bd3ce79d2c8cc5672a2848e1feee66",
+        "66cba532396928a1fa166c4aad6ee7f302762f76b503d43110b5b278ca9de504",
+        "e15f9c08130c8f9bbf921bbb411e570e0cc841858dbbc3a180d739ab03e3bd3d",
+        "8bc78dcd14d7460f1cd9894aad4e167fdafe90ba0d82d95675fac5d561c1ee82",
+        "16d205410c1f2e4ca23af1e7e99c805ec94032fd1f8921d08355c4355aa835e1",
+        "437e91054a655d801dd15a197f3b0b86e4b7b4f0a700a9c73db5bbac8adede09",
+        "009526837b0aaf559916354e889ec71b5dc5acfff7e25f3d11adb62e40028c77",
+        "8a1e5d90ef4730dccccf6faf73bb379122b02b88bd7dd9be0e4df3c3711189c1",
+        "96aa751290225f92e8c30c85e6b9c4e7cba6e86e391d841ce7d523b6c29e4cb7",
+        "6448c0fda52bdcbbe0f602d49ef90c24b9369f763b2734ddaa5c287ec5563669",
+        "7359e22a0ff3a25db35adad53012e637b29d4cf7b88879ca669d8b4bb2634410",
+        "e1180c2d90a097ad995b93dea87bc699fe25cf5713b259e3019c7b18c0d868c3",
+        "82cb3c48ce54d96466d184ad0865702cf7fceb1adfb29ff92a77f0f7285515ac",
+        "89f1e9e35cfdc7f7081a6ed48a9ac4c814cb55c9c03d58774ce6fe7d18863991",
+        "40fb43756f7b56cf15c6cb15cf6555c53b70784933bd72d3027076a3c3560c34",
+        "5c0e1450455fc37fd32d98ddb9ad9bd06e4c7a854356098c625fa3292a7b2317"
+      ]
+    },
+    "scripts/produce-open-meteo-part-components.mjs": {
+      "nodeImports": [],
+      "imports": [
+        "scripts/lib/open-meteo-part-bank.mjs",
+        "scripts/lib/open-meteo-usable-part-bank.mjs",
+        "scripts/lib/weather-component-needs.mjs",
+        "scripts/lib/weather-transport-settlement.mjs"
+      ],
+      "resources": [],
+      "computedBoundaries": [],
+      "dependencySurfaces": [],
+      "bindingSurfaces": []
+    },
+    "scripts/lib/weather-transport-settlement.mjs": {
+      "nodeImports": [],
+      "imports": [],
+      "resources": [],
+      "computedBoundaries": [],
+      "dependencySurfaces": [],
+      "bindingSurfaces": []
+    },
+    "scripts/lib/open-meteo-part-runtime.mjs": {
+      "nodeImports": [
+        "node:crypto",
+        "node:fs/promises",
+        "node:path"
+      ],
+      "imports": [
+        "scripts/lib/open-meteo-part-bank.mjs",
+        "scripts/lib/open-meteo-usable-part-bank.mjs",
+        "scripts/lib/weather-transport-settlement.mjs",
+        "scripts/produce-open-meteo-part-components.mjs"
+      ],
+      "resources": [],
+      "computedBoundaries": [],
+      "dependencySurfaces": [
+        "1e5768e65e0e1e6c4a71c7f35ba54d684aeb09fef835ba417d9c5328cb88fec6",
+        "22363b78f070e2ec41fdd6c7421e51b5cac509a4cca62404f8ecec3b026c4a52",
+        "298cc9d966ed13377a7c268ec170f244d3d7ae603bc4bca80112aa4236809204",
+        "4c672c050779387a76dc79d7a9de765b337e0a4cb948ddd19ce8d86ce6787b50",
+        "64e2e23ad113381ca90e912aea3f888f65bcc544b4516163c4b114a51fe637f8",
+        "6cc91d1f647ae334b676e3b978c0f36656bd77f7196b58110a325522452a6b8a",
+        "7abb52e4ed58d5fc50301ef719e8f5c1e8d754f0e43ac39fd52d9ff4d0d01fbb",
+        "8630e22636afaf65571ec1ccb704acf2d0164b475f8005f7215a66b8dd57fdc0",
+        "93a467681b3f2d282ceeff9be7d8216e1384df3d00125536685ff217ae69855f",
+        "de2874e215e8251a1052ad989d861806f392b8c7e39fc5b9079f546a2f399c76",
+        "f07a60543bb8ab902868f663ef717b6acc2002ac369c57c27eea43b2392cd159",
+        "d3f6b1766fcdaca126f71dd8be5297f813e58d4872be94effee35ea7ac4d51e4",
+        "eae4b8c337ce51cff5364e422164aa37219cbc1b89978e3d63ae25282d045138"
+      ],
+      "bindingSurfaces": [
+        "05e37fd1981b5b00fcb46b61b780273e4469d573bad39a56588d91d5642ba6dd",
+        "2460f564e4f47ba28bef0b3aad3176320f2c9eba3cf8735c95fa99deca60ea8a",
+        "6fd95cc34e012e15e781a5bd76edade47cac7bccdf692656f0704a2780d23c97",
+        "70ff6cf36877e6c4b8e4295cfa8a9c2a7c7751634a3749880b9c3b0a3d1c8692",
+        "83d974954fc91c87d1776927580104290f4765168f0ffaa927fd1fa6589ba4a9",
+        "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+        "93c459f3d58dfe5aa47cd83ac2d62d22f970729eb9741a92909dd60d52a4d87e",
+        "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+        "ad96ad602a01fdfbd4ac0eaac341b87544570f7eca59295cef45ad8dc7fddfac",
+        "b7dd53e0382be7d5945446821bff4d0c28496ed1380f0063d7b1abe95a845ef8",
+        "c8c914ea28fe3b7e8f6b04699ba6825099de1c365ad2190a18abe07b8bae8f9d",
+        "cc1b22b8f5ede095ebf98190e970fe04a94fd0ea408f2dd36cf928549e24e66c",
+        "dc067a849dd925757851adc993253653e842689e36202ab1ab73813ce936fa5f",
+        "f99dda84d75e920b49997b35c35d61ea2e785efdb3f8585e3570a97ae896e42a",
+        "ffc5987bad61975d10d92ef4f6edcedb80891d5abca39e2ce4f23a4524933049"
+      ]
     }
   },
   "resourceFiles": [
