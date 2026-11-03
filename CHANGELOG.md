@@ -1,3 +1,9 @@
+## 3. november — afgrænset genlæsning ved GitHub-serverfejl
+
+Den eksterne firetimerskontrol stoppede ved en faktisk HTTP 502 fra GitHub, før nogen vejrhentning blev bestilt. Den lokale rettelse gentager kun kendte, skrivefri GitHub-læsninger ved HTTP 502, 503, 504 eller læserens egen tidsgrænse. Højst tre forsøg pr. læsning, ti sekunder pr. forsøg og pauser på ét og to sekunder holder de fem nødvendige læsninger inden for jobbets eksisterende fem minutter. Forkert adgang, ukendt svar eller modstridende metadata stopper fortsat.
+
+Begge friske kontroller, det samme firetimersslot, overlapværn, standardvalg og tidsplan bevares. En bestilling af vejrhentning forsøges kun én gang og afbrydes efter tyve sekunder; ukendt skriveudfald må aldrig gentages automatisk. Det er lokal kildeforberedelse, ikke leveret selvstændig genopretning. Den rigtige Linux-kalderprøve og præcis GitHub-kvalifikation mangler endnu; Windowsprøver er ikke Linux-bevis. Ingen model-, score-, kilde-, SQL-, administrator- eller geometriændring. Se DEC-0277 og håndbog 89.127. Alle fem mål består.
+
 ## 3. november — PLAIN-klientbro før senere komprimering
 
 Lokal 4.0.594 UI-build, endnu ikke offentlig levering. Almindelig JSON/PLAIN bevares. Klienten forberedes til strengt kontrolleret udpakket transport efter ydre manifestintegritet og før de eksisterende semantik-/modelkontroller. Cachebudgettet bruger udpakkede bytes og bevarer separat ydre byteintegritet samt gamle raw-poster.

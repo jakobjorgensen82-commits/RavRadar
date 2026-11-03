@@ -3842,6 +3842,12 @@ en dublet eller den nye genkørselsgren er ikke observeret i produktion.
 529 leveres først;530 kræver egen GitHub-kildekontrol og senere sikker
 levering. Se DEC-0277. Ingen ny automatisk genkørsel er indført.
 
+### Tillæg 3. november: kortvarige fejl i GitHub-kontrollen
+
+Ved en kortvarig fejl hos GitHub skal systemet kunne forsøge den samme læsning igen. Den afgrænsede kandidat gør det kun ved serverfejl 502, 503 eller 504 og ved læserens egen tidsgrænse. Hver læsning har højst tre forsøg på hver ti sekunder med ét og to sekunders pause. De fem nødvendige læsninger holder sig dermed inden for kontrollens eksisterende fem minutter. Manglende adgang, ukendt svar eller uventede metadata giver fortsat stop.
+
+Der kontrolleres stadig to gange, før en almindelig vejrhentning bestilles. Selve bestillingen forsøges kun én gang med en grænse på tyve sekunder. Hvis det ikke kan afgøres, om GitHub modtog den, må systemet ikke bestille endnu en automatisk. Tidsplan, slotregler, overlapværn, vejrkilder, cache, scoremodel og datakontroller bevares. Kandidaten er lokalt prøvet; faktisk Linux-kontrol, levering og observeret håndtering af en sådan fejl er fortsat åbne.
+
 ## 89.126 4.0.529 – Find RavRadar og læs om ravjagt på dit sprog
 
 Nederst på forsiden, lige over Kilder, kort og licenser, kommer en lille

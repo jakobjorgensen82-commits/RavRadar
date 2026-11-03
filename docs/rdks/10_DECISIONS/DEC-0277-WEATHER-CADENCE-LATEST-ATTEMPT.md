@@ -50,3 +50,11 @@ og resultatkontrol leveres klar529 først, så retarget/kontrol af530 mod main.
 530 kræver egen exact-head CI. Publicering og næste naturlige kontrol skal
 observeres før driftsvirkning påstås. Stor519 har samme lille lokale fix;
 dens OFF-stack, top20 og særskilte afvisninger ændres ikke.
+
+## Tillæg 2026-11-03 — sikre læseforsøg før én bestilling
+
+Ved en kortvarig fejl hos GitHub skal systemet kunne forsøge den samme læsning igen. Den afgrænsede kandidat gør det kun ved serverfejl 502, 503 eller 504 og ved læserens egen tidsgrænse. Hver læsning har højst tre forsøg på hver ti sekunder med ét og to sekunders pause. De fem nødvendige læsninger holder sig dermed inden for kontrollens eksisterende fem minutter. Manglende adgang, ukendt svar eller uventede metadata giver fortsat stop.
+
+Der kontrolleres stadig to gange, før en almindelig vejrhentning bestilles. Selve bestillingen forsøges kun én gang med en grænse på tyve sekunder. Hvis det ikke kan afgøres, om GitHub modtog den, må systemet ikke bestille endnu en automatisk. Tidsplan, slotregler, overlapværn, vejrkilder, cache, scoremodel og datakontroller bevares. Kandidaten er lokalt prøvet; faktisk Linux-kontrol, levering og observeret håndtering af en sådan fejl er fortsat åbne.
+
+Den faktiske fejl var en skrivefri GitHub-læsning med HTTP 502 før dispatch. Kun de tre faste metadataadresser er tilladt i den nye læser. Authentificering genbruger det eksisterende jobtoken; faste fejlkategorier må ikke afsløre rå svar eller credentials. Ukendte netfejl får ikke genforsøg. Det normale Linux-mål skal udføre de faktiske workflowblokke med begge checkers og bestillingens ukendte udfald; manglende Bash på Windows er ikke en bestået Linux-prøve.
