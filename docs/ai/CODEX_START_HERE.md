@@ -1,3 +1,9 @@
+## 3. november — én sammenhængende runtimekontrol i databaseeksporten
+
+Eksportøren bruger nu platform og Node-version fra samme allerede eksisterende processensor. Standardkaldet bruger fortsat den faktiske process og kræver Linux samt Node 24 eller nyere, før midlertidige filer eller CLI startes. Den manuelle backupkalder vælger fortsat den rigtige Node 24-vært; kravet lempes ikke.
+
+Den første kildekontrol kørte de syntetiske transportprøver under Node 22, mens eksportøren blandede den simulerede Linux-proces med værtens Node-version. Det gav ét tidligt runtimeafslag med mange følgefejl. De tre transportfixtures angiver nu deres syntetiske Node 24-miljø eksplicit. Nye negative runtimeprøver og faktisk standardvalg består sammen med de gamle 109 cases, i alt 111. Det er lokal syntetisk evidens, ikke faktisk Linux/CLI-, database-, cloud- eller restoreeksekvering. Præcis ny GitHub-kvalifikation og alle live-, backup-, privatlivs- og Free-gates består som åbne krav.
+
 ## 2. november — privat databasebackup, lokal kandidat før Free
 
 Læs håndbog 89.300 (supabase-private-backup-free-readiness-2026-11-02) og DEC-0272s nye tillæg. Den manuelle backup har skrivefri standard, fem krypterede SQL-filer og verificeret genfinding; eksplicit materialisering er ikke restore. Lokale mål består, men faktisk adgang, isoleret restore og Free/Pro-opsigelse er åbne. Ingen SOURCE-, scheduler- eller produktionsaktivering følger med.

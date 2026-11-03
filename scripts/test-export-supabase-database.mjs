@@ -17,7 +17,7 @@ async function host(t){
 function transport(temp,behavior={}){
   const env={RUNNER_TEMP:temp,PATH:'synthetic-pinned-cli-path',SUPABASE_ACCESS_TOKEN:'synthetic-access-never-real',SUPABASE_DB_PASSWORD:'synthetic-password-never-real',
     SUPABASE_SERVICE_ROLE_KEY:'must-not-reach-dump-process',NODE_OPTIONS:'must-not-reach-child',PGHOST:'must-not-retarget',GITHUB_TOKEN:'must-not-reach-child'};
-  const processImpl=Object.assign(new EventEmitter(),{platform:'linux'}),calls=[],groups=new Map(),signals=[];let time=0,pid=10000;
+  const processImpl=Object.assign(new EventEmitter(),{platform:'linux',versions:{node:'24.19.0'}}),calls=[],groups=new Map(),signals=[];let time=0,pid=10000;
   const stageOf=args=>args[0]==='--version'?'version':args[0]==='link'?'link':path.basename(args[args.indexOf('--file')+1]);
   const spawnImpl=(command,args,options)=>{
     const stage=stageOf(args),child=Object.assign(new EventEmitter(),{pid:++pid,stdout:new PassThrough(),stderr:new PassThrough(),unref(){this.unreferenced=true;}});
@@ -93,6 +93,22 @@ test('missing existing credentials fail before any child or operation root',asyn
 test('actual default execution requires Linux, even though synthetic process seams can be exercised on Windows',async t=>{
   const f=transport(await host(t));f.processImpl.platform='win32';await rejected(f,{},'LINUX_NODE24_REQUIRED');assert.equal(f.calls.length,0);
 });
+test('runtime preflight rejects pre-24 and unknown injected runtimes before temp access or any CLI start',async t=>{
+  for(const versions of [{node:'22.21.1'},{node:'23.11.0'},undefined,null,{}, {node:''},{node:'unknown'},{node:24}]){
+    const dir=await host(t),f=transport(dir);f.processImpl.versions=versions;let tempReads=0;
+    Object.defineProperty(f.env,'RUNNER_TEMP',{get(){tempReads++;return dir;}});
+    const e=await rejected(f,{},'LINUX_NODE24_REQUIRED');assert.equal(e.stage,'PREFLIGHT');assert.equal(e.externalDumpOutcome,'NOT_STARTED');
+    assert.equal(tempReads,0);assert.equal(f.calls.length,0);assert.deepEqual(await fs.readdir(dir),[]);
+  }
+});
+
+test('omitting processImpl keeps the actual host runtime as the production default',async t=>{
+  const dir=await host(t),f=transport(dir),dependencies=f.dependencies();delete dependencies.processImpl;delete f.env.SUPABASE_DB_PASSWORD;
+  const reason=process.platform==='linux'&&Number(process.versions.node.split('.')[0])>=24?'EXISTING_CREDENTIALS_REQUIRED':'LINUX_NODE24_REQUIRED';
+  await assert.rejects(()=>run({},dependencies),e=>e.code==='SUPABASE_DB_EXPORT_FAILED'&&e.reason===reason);
+  assert.equal(f.calls.length,0);assert.deepEqual(await fs.readdir(dir),[]);
+});
+
 test('a different CLI version never reaches link or dump',async t=>{
   const f=transport(await host(t),{version:'2.118.0\n'});await rejected(f,{},'CLI_VERSION');assert.equal(f.calls.length,1);
 });

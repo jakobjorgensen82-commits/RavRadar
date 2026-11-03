@@ -98,7 +98,8 @@ async function fingerprint(file,c){
 }
 export async function exportSupabaseDatabase({fileByteLimit=P.maximumFileBytes,totalByteLimit=P.maximumTotalBytes}={},
   {env=process.env,spawnImpl=spawn,killImpl=process.kill.bind(process),processImpl=process,now=()=>performance.now(),delay=sleep}={}){
-  need(processImpl.platform==='linux'&&Number(process.versions.node.split('.')[0])>=24,'LINUX_NODE24_REQUIRED');
+  const nodeVersion=processImpl.versions?.node;
+  need(processImpl.platform==='linux'&&typeof nodeVersion==='string'&&Number(nodeVersion.split('.')[0])>=24,'LINUX_NODE24_REQUIRED');
   need(typeof env.SUPABASE_ACCESS_TOKEN==='string'&&env.SUPABASE_ACCESS_TOKEN.length>0
     &&typeof env.SUPABASE_DB_PASSWORD==='string'&&env.SUPABASE_DB_PASSWORD.length>0,'EXISTING_CREDENTIALS_REQUIRED');
   need(typeof env.PATH==='string'&&env.PATH.length>0,'CLI_PATH_REQUIRED');

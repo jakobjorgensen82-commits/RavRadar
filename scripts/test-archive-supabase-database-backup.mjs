@@ -25,7 +25,7 @@ function fixture(temp,behavior={}){
     SUPABASE_SERVICE_ROLE_KEY:'synthetic-existing-db-backup-master-never-real',SUPABASE_URL:P.project,GITHUB_ACTIONS:'true',RUNNER_ENVIRONMENT:'github-hosted',RUNNER_OS:'Linux',
     GITHUB_REPOSITORY:'jakobjorgensen82-commits/RavRadar',GITHUB_SHA:'a'.repeat(40),GITHUB_RUN_ID:'12345',GITHUB_RUN_ATTEMPT:'1',
     RAVRADAR_R2_ACCOUNT_ID:'b'.repeat(32),RAVRADAR_R2_ACCESS_KEY_ID:'synthetic-r2-access-never-real',RAVRADAR_R2_SECRET_ACCESS_KEY:'synthetic-r2-secret-never-real'};
-  const calls=[],children=[],objects=new Map(),oldLocators=[],processImpl=Object.assign(new EventEmitter(),{platform:'linux'});let pid=5000,now=0,locator=null;
+  const calls=[],children=[],objects=new Map(),oldLocators=[],processImpl=Object.assign(new EventEmitter(),{platform:'linux',versions:{node:'24.19.0'}});let pid=5000,now=0,locator=null;
   const spawnImpl=(command,args,options)=>{children.push({command,args,options});const child=Object.assign(new EventEmitter(),{pid:++pid,stdout:new PassThrough(),stderr:new PassThrough(),unref(){}});
     children.at(-1).child=child;child.alive=true;queueMicrotask(async()=>{let code=0;try{if(args[0]==='--version')child.stdout.write('2.117.0\n');else if(args[0]==='db'){
       const file=args[args.indexOf('--file')+1],name=path.basename(file);await fs.writeFile(file,behavior.sql?.(name)??sql(name),{mode:0o600,flag:'wx'});if(name===behavior.failDump)code=1;}

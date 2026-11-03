@@ -1,5 +1,7 @@
 ## 89.300 Privat databasebackup før gratis drift
 
+Runtimekontrollen i eksporten bruger samme procesobjekt til både platform og Node-version. Standardkaldet bruger den faktiske vært og kræver fortsat Linux og Node 24 eller nyere før filer eller CLI. Syntetiske transportprøver beskriver deres Node 24-miljø eksplicit; de er ikke bevis for faktisk hosted CLI-/databaseeksekvering. To nye runtimecases og de 109 tidligere backupcases består lokalt. De særskilte Linux-, Auth-, eksport-, restore- og Free-gates skal fortsat bestå.
+
 <a id="supabase-private-backup-free-readiness-2026-11-02"></a>
 
 Kort fortalt: En krypteret eksport, som kan genfindes og verificeres, er ikke i sig selv en afprøvet databasegendannelse eller grundlag for at opsige Pro.

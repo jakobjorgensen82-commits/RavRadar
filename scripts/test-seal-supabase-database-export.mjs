@@ -16,7 +16,7 @@ function normalExportTransport(temp,{failFile=null}={}){
   const env={RUNNER_TEMP:temp,PATH:'synthetic-normal-cli-path',SUPABASE_ACCESS_TOKEN:'synthetic-access-never-real',SUPABASE_DB_PASSWORD:'synthetic-db-password-never-real',
     SUPABASE_SERVICE_ROLE_KEY:'synthetic-existing-db-backup-master-never-real',GITHUB_ACTIONS:'true',RUNNER_ENVIRONMENT:'github-hosted',RUNNER_OS:'Linux',
     GITHUB_REPOSITORY:'jakobjorgensen82-commits/RavRadar',GITHUB_SHA:'a'.repeat(40),GITHUB_RUN_ID:'12345',GITHUB_RUN_ATTEMPT:'1'};
-  const calls=[],alive=new Set(),processImpl=Object.assign(new EventEmitter(),{platform:'linux'});let pid=5000,now=0;
+  const calls=[],alive=new Set(),processImpl=Object.assign(new EventEmitter(),{platform:'linux',versions:{node:'24.19.0'}});let pid=5000,now=0;
   const spawnImpl=(command,args,options)=>{
     calls.push({command,args,options});const child=Object.assign(new EventEmitter(),{pid:++pid,stdout:new PassThrough(),stderr:new PassThrough(),unref(){}});alive.add(pid);
     queueMicrotask(async()=>{let code=0;try{

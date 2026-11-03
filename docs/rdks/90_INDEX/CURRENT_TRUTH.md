@@ -1,3 +1,9 @@
+## 3. november — én sammenhængende runtimekontrol i databaseeksporten
+
+Eksportøren bruger nu platform og Node-version fra samme allerede eksisterende processensor. Standardkaldet bruger fortsat den faktiske process og kræver Linux samt Node 24 eller nyere, før midlertidige filer eller CLI startes. Den manuelle backupkalder vælger fortsat den rigtige Node 24-vært; kravet lempes ikke.
+
+Den første kildekontrol kørte de syntetiske transportprøver under Node 22, mens eksportøren blandede den simulerede Linux-proces med værtens Node-version. Det gav ét tidligt runtimeafslag med mange følgefejl. De tre transportfixtures angiver nu deres syntetiske Node 24-miljø eksplicit. Nye negative runtimeprøver og faktisk standardvalg består sammen med de gamle 109 cases, i alt 111. Det er lokal syntetisk evidens, ikke faktisk Linux/CLI-, database-, cloud- eller restoreeksekvering. Præcis ny GitHub-kvalifikation og alle live-, backup-, privatlivs- og Free-gates består som åbne krav.
+
 ## 2. november — backup til Free: lokalt samlet, endnu ikke leveret
 
 Den særskilte manuelle kalder bevarer skrivefri bucket-readonly, eksisterende vejr→turlager-køer, Linux/Node 24/CLI 2.117.0 og 20 minutters operation/30 minutters job. Fem SQL-filer krypteres og genlæses med GCM/eksakt SHA og autentificeret gruppe; central locator og DB-uafhængigt R2-valg er adskilt fra eksplicit privat SQL-materialisering uden restore. Separate dumps er ikke ét atomisk databasesnapshot.
