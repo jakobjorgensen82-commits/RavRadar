@@ -1,3 +1,9 @@
+## 3. november — ens filkontrol på tværs af runtimeversioner
+
+Den faktiske Node 22-kontrol påviste, at indbygget gzip-udpakning kan acceptere flere sammenkædede medlemmer, selv om Node 24 afviser dem. Den lokale rettelse kontrollerer derfor med den samme medfølgende kode, at filen rummer præcis ét medlem, også efter vellykket indbygget udpakning. De indbyggede outputbytes bevares; valideringschunks kasseres uden endnu en stor outputallokering. Et indbygget fejlforløb gentages stadig aldrig i fallback. Normalparenten består nu med 37 codec-prøver, 19 brocases, de 9 gamle kortcases og den eksisterende særskilte coldstart-prøve på Node 24. Ny præcis Node 22-kvalifikation og offentlig accept er åbne.
+
+To ældre Open-Meteo-bankprøver antog inputarrayets rækkefølge, selv om den leverede producent bruger den krævede faste strengorden. Fixtures er rettet, så drænprøven faktisk starter den langsomme søskende, og rotationsprøven forventer SECOND før TEST. Alle oprindelige stop-, ingen-ny-start-, ingen-ekstra-skrivning- og databevarelseskrav består. Produktkode og budgetter ændres ikke. Den korte kontrolprofil er nu også lokalt udvidet til at vælge den eksisterende bankprøve sammen med runtimeprøven. Ukendte ændringer kræver fortsat fuld kontrol; den samlede kandidats normale GitHub-kontrol er stadig nødvendig.
+
 ## 3. november — afgrænset genlæsning ved GitHub-serverfejl
 
 Den eksterne firetimerskontrol stoppede ved en faktisk HTTP 502 fra GitHub, før nogen vejrhentning blev bestilt. Den lokale rettelse gentager kun kendte, skrivefri GitHub-læsninger ved HTTP 502, 503, 504 eller læserens egen tidsgrænse. Højst tre forsøg pr. læsning, ti sekunder pr. forsøg og pauser på ét og to sekunder holder de fem nødvendige læsninger inden for jobbets eksisterende fem minutter. Forkert adgang, ukendt svar eller modstridende metadata stopper fortsat.

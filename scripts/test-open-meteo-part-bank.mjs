@@ -470,11 +470,14 @@ test('producer preserves successful sibling, checkpoints it and requests actual 
 });
 
 test('producer checkpoint failure drains started transports before returning the original error', async () => {
-  const second = { ...part, partId: 'SECOND' };
+  // Canonical string order must put this sibling after TEST's wind/wave.
+  // The old SECOND fixture instead occupied the second slot with another wind.
+  const second = { ...part, partId: 'ZZZ_SECOND' };
   const parts = [part, second];
   const previous = mergeOpenMeteoPartBank(null, [admit('wind')], { ...options, parts });
   const protectedBytes = JSON.stringify(previous);
   let durable = protectedBytes, checkpoints = 0, started = 0, active = 0, slowClosed = false;
+  const startedRequests = [];
   const primary = new Error('synthetic primary persistence failure');
   const pending = produceOpenMeteoPartComponents({ ...options, parts, previousBank: previous,
     productionReferenceAt: reference, checkpointEveryParts: 1,
@@ -489,6 +492,7 @@ test('producer checkpoint failure drains started transports before returning the
     },
     fetchResponse: async request => {
       started += 1; active += 1;
+      startedRequests.push([request.identity.entityId, request.component]);
       try {
         if (request.component === 'wave') {
           await new Promise(resolve => setTimeout(resolve, 40));
@@ -500,6 +504,8 @@ test('producer checkpoint failure drains started transports before returning the
     },
   });
   await assert.rejects(pending, error => error === primary);
+  assert.deepEqual(startedRequests, [['PART::TEST', 'wind'], ['PART::TEST', 'wave']],
+    'the failed checkpoint must actually have a started slow sibling to drain');
   assert.equal(slowClosed, true); assert.equal(active, 0);
   assert.equal(started, 2, 'no new request after the failed persistence boundary');
   assert.equal(checkpoints, 2, 'no recovery write after a failed checkpoint');
@@ -618,13 +624,14 @@ test('rotation advances after failed attempts so early unavailable PARTs do not 
     shouldContinue: () => attempted.length === 0,
     fetchResponse: req => { attempted.push(req.identity.entityId); throw new Error('synthetic unavailable'); },
   });
-  assert.equal(first.summary.lastAttemptedPartId, 'TEST');
-  assert.deepEqual(attempted, ['PART::TEST']);
+  // The normal producer orders PART identities, independently of input array order.
+  assert.equal(first.summary.lastAttemptedPartId, 'SECOND');
+  assert.deepEqual(attempted, ['PART::SECOND']);
   attempted.length = 0;
   const next = await produceOpenMeteoPartComponents({ ...options, parts, requiredPairs, productionReferenceAt: reference,
     startAfterPartId: first.summary.lastAttemptedPartId, shouldContinue: () => attempted.length === 0,
     fetchResponse: req => { attempted.push(req.identity.entityId); throw new Error('synthetic unavailable'); },
   });
-  assert.equal(next.summary.lastAttemptedPartId, 'SECOND');
-  assert.deepEqual(attempted, ['PART::SECOND']);
+  assert.equal(next.summary.lastAttemptedPartId, 'TEST');
+  assert.deepEqual(attempted, ['PART::TEST']);
 });

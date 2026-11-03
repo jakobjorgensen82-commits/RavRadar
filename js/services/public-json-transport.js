@@ -187,6 +187,22 @@ async function fallbackGunzip(bytes, headerEnd, collector) {
   if (!ended) throw invalid('GZIP_TRUNCATED');
 }
 
+// Native gzip implementations differ on concatenated members. After native
+// success, use the pinned frame cursor to require exactly one member. Discard
+// these validation chunks: native bytes remain the result, with no second
+// decoded allocation and no retry/fallback after any native failure.
+async function verifySingleGzipMember(bytes, headerEnd, expectedBytes) {
+  let length = 0;
+  await fallbackGunzip(bytes, headerEnd, {
+    accept(chunk) {
+      if (!(chunk instanceof Uint8Array)) throw invalid('GZIP_OUTPUT_INVALID');
+      if (chunk.byteLength > expectedBytes - length) throw invalid('DECODED_LIMIT_EXCEEDED');
+      length += chunk.byteLength;
+    },
+  });
+  if (length !== expectedBytes) throw invalid('DECODED_SIZE_MISMATCH');
+}
+
 function rejectNestedEnvelope(value) {
   const pending = [value];
   while (pending.length) {
@@ -230,8 +246,10 @@ export async function decodePublicJsonTransport(document, {
   const headerEnd = gzipHeaderEnd(compressed, decodedBytes);
   const collector = decodedCollector(decodedBytes, compressed);
   try {
-    if (typeof globalThis.DecompressionStream === 'function') await nativeGunzip(compressed, collector);
-    else await fallbackGunzip(compressed, headerEnd, collector);
+    if (typeof globalThis.DecompressionStream === 'function') {
+      await nativeGunzip(compressed, collector);
+      await verifySingleGzipMember(compressed, headerEnd, decodedBytes);
+    } else await fallbackGunzip(compressed, headerEnd, collector);
   } catch (error) {
     if (error instanceof Error && error.message.startsWith('PUBLIC_JSON_')) throw error;
     throw invalid('GZIP_INVALID');

@@ -1233,6 +1233,10 @@
         [
           "controls",
           "node scripts/test-open-meteo-part-runtime.mjs"
+        ],
+        [
+          "controls",
+          "node scripts/test-open-meteo-part-bank.mjs"
         ]
       ]
     },
@@ -1246,6 +1250,10 @@
         [
           "controls",
           "node scripts/test-open-meteo-part-runtime.mjs"
+        ],
+        [
+          "controls",
+          "node scripts/test-open-meteo-part-bank.mjs"
         ]
       ]
     },
@@ -1259,6 +1267,10 @@
         [
           "controls",
           "node scripts/test-open-meteo-part-runtime.mjs"
+        ],
+        [
+          "controls",
+          "node scripts/test-open-meteo-part-bank.mjs"
         ]
       ]
     },
@@ -11645,7 +11657,11 @@
         "scripts/test-source-impact-domain-plan.mjs",
         "scripts/weather-source-gate.mjs",
         ".github/workflows/deploy-forecast-share-pages.yml",
-        "scripts/publish-private-trip-weather-study.mjs"
+        "scripts/publish-private-trip-weather-study.mjs",
+        "scripts/lib/open-meteo-part-runtime.mjs",
+        "scripts/produce-open-meteo-part-components.mjs",
+        "scripts/test-open-meteo-part-bank.mjs",
+        "scripts/test-open-meteo-part-runtime.mjs"
       ],
       "dependencySurfaces": [
         "026eb8c82485db70ce6e81b4bd65b71ff46f0470ad36d9b1a29048d67dba026f",
@@ -11829,7 +11845,72 @@
         "1b72da7e0b2fa5a33785fe256ccbd3bc0db9035c857508395d3c0b1ca8aee676",
         "91c9f2ee9b4365243f81e91214052b7a96999897e7fb767c9ba9d6e87cbbdeb1",
         "97efc1e5b4afe5460b3ffe76b6d19e12ff2ebea67253e8c1d5aa2275c078462d",
-        "d41e6ded6803d8d6b599c54c7d0b8fdd50480746c2f65b24f87cc1798fc910b8"
+        "d41e6ded6803d8d6b599c54c7d0b8fdd50480746c2f65b24f87cc1798fc910b8",
+        "034bcf1eef0962f45515ce07c30bf7f8f01d7819c4943e4aefe35a6106760d7b",
+        "0470b5fffb8777dfef09cb88672852a1b0f43c1ce4f10f935c1204315b04cf68",
+        "07e307ff591f2631ae328082bc8f463de85aad877854d53ad9b9e1f7525c10a8",
+        "0d5dc2882377bfd35b5f6688d37a473e11f58e58bf8ff580bc6dc292898a9797",
+        "0db3ae30f25106f7096a8932025250db75af2303d6af222e06045e8655773eed",
+        "0e5254924bf2be35c023296e1eeba0d26dde2afd2266147e5489b9391e3f6372",
+        "1049e0d2a16829931a7dde6b5b0cd248e49948683f8166672723ac40ed03d65b",
+        "10a277faa67ba52c351eea2ba3e6936226d3eafc461a7fec00acc9c7b180ba57",
+        "11d4f53bfb0e201038ccb91c57c7b61b02dcddd7d89fbaedba311c84a49886ef",
+        "140212b7a4c7ab0a5f26b49a0d4f89f1f5fb80f977f9b766c603cdf44c0f1d83",
+        "15ceebcdd0daf72162239b1b325ca963ec20b8f2626565378a0ecdc5b4a902f2",
+        "16263631b3c1cd3e33964bc0565f55d6170c653e0d69151d6e68cd31599e90e9",
+        "1819d67292a9ca617179d7d91d2bd39c6725f08ad346cbe54d96afe3741be5f1",
+        "18e226f4ab75bd37a271b3956c49e0fd0ea4ac611ce20bdbd2e4aad505022535",
+        "1d66ec6f38284c5140f3fa2fc80a17475a725b0c07862d2e50164e5fd24b2e1c",
+        "2400ae31e2dbf09f04414e34a02120e3cc45a3748b489a3f8185f0ea38c8c1d1",
+        "2b2e33eb859a39f002cdd871ec79702c40818d8e8dad8075a36d0362bcbd137e",
+        "313905a729ba268d1ab8cd4c9cb8414b3cfd18dae00a131bf6e896a70641ad6a",
+        "318097887e18d2f9b53111a03d36c56f6275c601336183054bbd5d764b357fa2",
+        "3e9b521b9940c18a8ddceaa177be0e2e7122d5a3bd3cbb4c0bfe2fb3d13920a2",
+        "435fd6756c3de16f65ba2b3a3821d0165bced72d3ca5720f5cb889453b915537",
+        "48cb5c67e146ac960b672bcabbec89ed890d7b7ea1487e94d1dba826ccfd0f65",
+        "4af938a85d0d9ccc54ab540a5186d1766622e3de395a8a216e52ca93aa371730",
+        "59d9cc95ce8fc9dab62b95268765ffcf248c8a31c00fed4edb03e0d47475d610",
+        "5a4c3680e84d9484991eb34123636f702e785ef00e799e667eaeae2610c45b9d",
+        "5f7405e79e080a5085b67248c545b74846adae27a341ae003bf86e9cdff1613f",
+        "61874011a4ad7b6f2dd0ed05932968e57a4b34eb95809a7c4c8e1e0ad706b00f",
+        "6eb85ec38897f84a4b75fd8f27eac1ad51e0a7537b016b98af3b89b372117965",
+        "7117eff6a7531e03eb612241d10c0161f338b043b0705b84b68015a916f1692f",
+        "72250c37bf69d2e7bd0ed959c43ccc1d5791f913ce3cf0c49a09019dc4c944b9",
+        "7642cec372b7646865683742f4a78e123ab21209e1a6c795500f26b1494e9e6f",
+        "7e8f63a5b05d1fd48c2c7d88280a04f4536c138b7beb20e8402e78d36661e4e0",
+        "7f7f0f1b83e5d4abf8955a951cd1af7f7405edc9739799d77b4d8f37a42d7725",
+        "80dfd635c5daaaea4fb0dd7c22bc0821b61538c7f242a4a76e47ef1f89b23b3f",
+        "87b0d1ec3aede62937181a73c76aabb8983763261472e410a4cb7082425fe670",
+        "8c2676b4c47e840f5bb42f91fd6636b2a2435129ca640d577d197f6f6912b22d",
+        "90847047d80a33badebc1fe24592e16287b43e0506b21be8d228ab75940f60a5",
+        "94bba59fbf56c07d6ba3eae651b29e0e6c1dd7ef184a5d1feb9c26a2e70106b4",
+        "980dffbb5fa7ec22a103644f59e7ef51e99db78751e23d578784dc1cfc7d90aa",
+        "99bd90e82055fc58ff467d2108807f56758e59d5a82a2bfbce8f26db904964c0",
+        "9a7158d9f9b27fa12ad9e7feaad94fd22c3d3cb608872fec3c8dc96649d3fbaa",
+        "a4c59d985b0a8db05b366bcbb2addc326e4e6e6531ea988be95c3422d95f7446",
+        "a765ae1454aabddfea769952c334d961c9225559149c25caa15fa4107ebaa988",
+        "ab9cb6ca337ce1110f3212a57e4335137d0614b617cfc46a4eb837653cce2f13",
+        "aeea2f77b7ab52b7cdbb98f53f3c6f2365f8415c26d79455450178103eeb08a0",
+        "b1d4c7cbd16d059b8f4d4ef22d40d5e1d20857eb105412f87497f4f5602021b2",
+        "b2233746052b7bf7d64878cffd5a8585c3e7d6467f3f24a364169a85c59b7e0a",
+        "b75ddc57fa664a1d3b3287f38910acef2c31f3baa4a4afaf03f995e96b5d6088",
+        "bda2172aec0fff410c43a90ddbac728df58bc057c825042c25d11bd59e9baf24",
+        "c7e9eeecb5ed4ab1ba8c680d6c93af3e7245144113af319f157e97851f419f48",
+        "cb4ec933efd899a0d8bb1540c5fc4ad983668660d19ad84499b64396367b35d9",
+        "cd138981db1d11f35fa14c21c0b47c64dd19709f41f0c60873f46b0d6c137794",
+        "d61705ce7787e4a9ef191010fa1f18946465ceacd50801385d52043b0612edfb",
+        "dbe0e23c2394cf089a76a488125aee988de5e80fb84567fcd49f36bd94a6c695",
+        "e26ec24a134c89f8f0aed8e4672f7a1d69929bf1eeae625d134795676ec5a1af",
+        "ea750c3a167dd6cea35f726738a7be1e90c424f664c3110b0c71153c979e193c",
+        "eca9cd3473e9dbf267a9b800e33d5c2b7d7bc0a0d17dda2fda6cb98568c4ad12",
+        "ee40003b7a839ef01a5d2b4db8a56da85268ffbdda8e2f78ea6b3e2adcb18760",
+        "f0f45f887c10d28057f3d76906554cb8583810694ce972dbadc78239f3465e49",
+        "f253a091945ad3189496e52101a388d051005ac19f2dfc9ac4e04ddf7785b546",
+        "f39ec0c6b447077b93896f67560a4376838cdef53225a17f15813ad139e3f46c",
+        "f3a29ebebf74f216bfb1d5e8a2849faee9e5153beee764b6bd7e05e4c5c8aa49",
+        "f8b685da46b8d04cc26f1c8cefaf5635229396e7b73ef503209c756f85aaf785",
+        "f8f009ec87c9ee87b94ba6b306965a86cfe9dab794b10c90bee2287f8c5a5458",
+        "f9935591505f0d0e4eec76d0eb6d1504715a2d4ba871ff15c5126f5649d77bee"
       ],
       "bindingSurfaces": [
         "0ce6c7a8266174db56f38892cc174113bbb8080b021df2d28c082790eb43b572",
@@ -11866,7 +11947,13 @@
         "bde69a73b0932ad1ff8847f866e97546c93f521c16ca41c7fd7cc81b112f940d",
         "e63f71259c74325116b382e5d8e06d5c793f5ba2e566e506a416e87079fa89ea",
         "e86bd1d7618a997f3e7efd019b437ea5bdc66f68293c60dbb310bf72c1a4a5db",
-        "67e10c61bb32bfef1d835ec7b060ab173769cb37aa8e47e9ceed856ed267fc57"
+        "67e10c61bb32bfef1d835ec7b060ab173769cb37aa8e47e9ceed856ed267fc57",
+        "2712436371e0723e1126d57d6de4800cf6621adbe47c7d45fd6de496a10382f7",
+        "331632191b499c30bb4fca279f849fa44e3c5d370f871f6846c5bf5052936d16",
+        "78495062c57e38d77cdd113df8808c2e09742f893848c36f2c32afca71c89cc8",
+        "a8e2462a44da1120035b73cc6e6c0af70e71d34918af8d3d7e97d177f157fd46",
+        "b8b9aede629328221abb75537df5e85ea1099686209952adb0a52839df7b8dd1",
+        "c64ea190fc5c736e9cd828f88e7618853500fa3594be36085ee0913deeca3b45"
       ],
       "computedBoundaries": [
         "25f38aa23de966019066f1a3ff84647680125117b2fedd0dccacf2992f1c5966",
@@ -17792,6 +17879,25 @@
         "f99dda84d75e920b49997b35c35d61ea2e785efdb3f8585e3570a97ae896e42a",
         "ffc5987bad61975d10d92ef4f6edcedb80891d5abca39e2ce4f23a4524933049"
       ]
+    },
+    "scripts/test-open-meteo-part-bank.mjs": {
+      "nodeImports": [
+        "node:assert/strict",
+        "node:test"
+      ],
+      "imports": [
+        "scripts/lib/open-meteo-part-bank.mjs",
+        "scripts/lib/open-meteo-usable-part-bank.mjs",
+        "scripts/lib/ravscore-production-adapters.mjs",
+        "scripts/lib/verified-open-meteo-generation-union.mjs",
+        "scripts/lib/weather-component-needs.mjs",
+        "scripts/lib/weather-component-selection.mjs",
+        "scripts/produce-open-meteo-part-components.mjs"
+      ],
+      "resources": [],
+      "dependencySurfaces": [],
+      "bindingSurfaces": [],
+      "computedBoundaries": []
     }
   },
   "resourceFiles": [

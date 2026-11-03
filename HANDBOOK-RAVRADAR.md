@@ -30,6 +30,8 @@ Yderligere komprimering og bevis for den samlede hostingpakkes størrelsesgræns
 
 Den eksisterende prøve af en helt ny åbning bruger nu også de faktisk allerede leverede adresser til zonepanel, assistent og kort delingsdomæne. Den normale kortprøve kører denne oprindelige prøve i en særskilt, kort underproces. Gamle cacheposter og alle oprindelige assertions bevares; en gammel adresse må hverken skjule den nye kode eller udløse sletning af brugerdata. Dette er rettelse og tilkobling af en forældet prøve, ikke en ny score- eller modelregel.
 
+Forskellige browser- og programversioner kan læse en komprimeret fil forskelligt. Derfor skal den medfølgende læser selv kontrollere filens afgrænsning, også når den indbyggede udpakning lykkes. En mislykket indbygget udpakning gentages stadig ikke med en anden metode. Dette ændrer ingen vejr- eller scoreværdier; det skal sikre den samme strenge læsning på tværs af versioner. Lokal afprøvning er fortsat ikke offentlig levering.
+
 ## 89.299 Begge kendte kontinuitetsformater i scalarplanen
 
 Kort fortalt: Den normale plan for reelle vejrhul skal også kunne bruge den nyere, originale strømhistorik. Kun de to allerede kendte formater tillades.

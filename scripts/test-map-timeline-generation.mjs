@@ -211,7 +211,7 @@ if (codecChild.stderr) process.stderr.write(codecChild.stderr);
 assert.ifError(codecChild.error);
 assert.equal(codecChild.signal, null, 'The normal codec child must finish without signal or timeout');
 assert.equal(codecChild.status, 0, 'The normal codec native/fallback target must pass');
-console.log(JSON.stringify({ status: 'PASS_PUBLIC_JSON_CODEC_NORMAL_PARENT_CHILD', cases: 36,
+console.log(JSON.stringify({ status: 'PASS_PUBLIC_JSON_CODEC_NORMAL_PARENT_CHILD', cases: 37,
   node: process.version, sameNode: true, shell: false, timeoutMs: 10000, maxBufferBytes: 1024 * 1024 }));
 
 // Keep the existing cold-start/worker oracle on the actual public module chain.

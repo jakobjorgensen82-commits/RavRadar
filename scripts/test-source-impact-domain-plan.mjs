@@ -302,3 +302,74 @@ test('reviewed private-study operator closes frozen793 control plans and keeps u
     fs.rmSync(studyRoot,{recursive:true,force:false});
   }
 });
+
+
+// Real bank caller closure for the three existing OM owners. These synthetic
+// Git trees are planning evidence, never qualification or production authority.
+test('OM owners select actual normal bank and runtime callers and keep unknown inputs FULL',async()=>{
+  const reference='a672412f95f1a32419cdc555df25f508c9c6566d';
+  const currentHead=text(SOURCE,['rev-parse','HEAD']);
+  const registryFile='scripts/lib/source-impact-domain-owners-594.json';
+  const bankFile='scripts/test-open-meteo-part-bank.mjs';
+  const controls=['scripts/source-impact-domain-plan.mjs',registryFile,
+    'scripts/test-source-impact-domain-plan.mjs','scripts/test-fixed-assistant-failure-log-20261101.mjs'];
+  const currentFiles=[...new Set([...files,...controls,bankFile])];
+  const body=file=>git(SOURCE,['cat-file','blob',currentHead+':'+file]);
+  const bank=body(bankFile);
+  const temporary=fs.realpathSync(os.tmpdir()),root=fs.mkdtempSync(path.join(temporary,'rr-om-bank-domain-'));
+  const owned=fs.lstatSync(root,{bigint:true});
+  try{
+    git(root,['init','-q']);git(root,['config','core.autocrlf','false']);
+    const objectDirectory=fs.realpathSync(path.join(text(SOURCE,['rev-parse','--path-format=absolute','--git-common-dir']),'objects'));
+    fs.mkdirSync(path.join(root,'.git/objects/info'),{recursive:true});
+    fs.writeFileSync(path.join(root,'.git/objects/info/alternates'),objectDirectory.replaceAll('\\','/')+'\n');
+    const make=(rows,parent,label)=>{
+      git(root,['read-tree',parent]);
+      for(const [file,bytes]of rows){const blob=text(root,['hash-object','-w','--stdin'],bytes);
+        git(root,['update-index','--add','--cacheinfo','100644',blob,file]);}
+      return text(root,['commit-tree',text(root,['write-tree']),'-p',parent,'-m',label]);
+    };
+    for(const file of files){fs.mkdirSync(path.dirname(path.join(root,file)),{recursive:true});
+      fs.writeFileSync(path.join(root,file),body(file));}
+    const {planSourceDomainImpactFromGit:plan}=await import(pathToFileURL(path.join(root,'scripts/source-impact-domain-plan.mjs')).href);
+    const run=(baseline,candidate)=>{git(root,['update-ref','HEAD',candidate]);
+      return plan({baselineCommit:baseline,candidateCommit:candidate,expectedHead:candidate});};
+    const controlRows=controls.map(file=>[file,body(file)]);
+    const fixtureBase=make([[bankFile,bank]],reference,'synthetic exact corrected bank fixture');
+    const owners=['scripts/lib/open-meteo-part-runtime.mjs','scripts/produce-open-meteo-part-components.mjs',
+      'scripts/test-open-meteo-part-runtime.mjs'];
+    for(const owner of owners){
+      const candidate=make([...controlRows,[owner,Buffer.concat([body(owner),
+        Buffer.from('\n// Synthetic known OM owner selection.\n')])]],fixtureBase,'synthetic exact OM owner');
+      const actual=run(fixtureBase,candidate);
+      assert.equal(actual.status,'PLANNED',JSON.stringify(actual.reasonCodes));
+      assert.equal(actual.selection,'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(actual.reasonCodes));
+      for(const command of ['node scripts/test-open-meteo-part-bank.mjs','node scripts/test-open-meteo-part-runtime.mjs'])
+        assert.equal(actual.commands.filter(value=>value===command).length,1,'Both actual normal callers must be selected exactly once');
+      for(const pair of [['postgresBefore','postgresAfter'],['CBefore','CAfter'],['IBefore','IAfter'],['TBefore','TAfter']])
+        assert.equal(actual.inputDigests[pair[0]],actual.inputDigests[pair[1]]);
+      assert.equal(actual.skipAuthorized,false);assert.equal(actual.productionAuthority,false);
+      assert.equal(actual.domains.postgres.status,'NOT_APPLICABLE');
+      assert.equal(actual.domains.historical584National.status,'NOT_APPLICABLE');
+    }
+    for(const [extra,reason]of [["\nimport 'node:net';\n",'UNDECLARED_NODE_IMPORT:'],
+      ["\nreadFileSync('unreviewed-om-private.json');\n",'UNKNOWN_READ_OR_SUBPROCESS_SURFACE:'],
+      ["\nnew Function('return process')();\n",'UNKNOWN_SENSITIVE_BINDING_OR_REFLECTIVE_SURFACE:']]){
+      const changedBase=make([[bankFile,Buffer.concat([bank,Buffer.from(extra)])]],reference,'synthetic unreviewed bank capability');
+      const candidate=make([...controlRows,[owners[0],Buffer.concat([body(owners[0]),
+        Buffer.from('\n// Synthetic known OM owner selection.\n')])]],changedBase,'synthetic rejected bank closure');
+      assert.deepEqual(run(changedBase,candidate).reasonCodes,[reason+bankFile]);
+    }
+    const pg='scripts/test-protected-ravscore-continuation-checkpoint.mjs';
+    const changedPg=make([...controlRows,[pg,Buffer.concat([body(pg),Buffer.from('\n// Synthetic changed PG input.\n')])]],
+      fixtureBase,'synthetic changed PG domain');
+    assert.deepEqual(run(fixtureBase,changedPg).reasonCodes,['POSTGRES_OR_MODEL_INPUT_CHANGED']);
+    const unknown='scripts/unreviewed-om-bank-input.mjs';
+    const changedUnknown=make([...controlRows,[unknown,Buffer.from('export const unknown=true;\n')]],fixtureBase,'synthetic unknown source');
+    assert.deepEqual(run(fixtureBase,changedUnknown).reasonCodes,['UNCLASSIFIED_OWNER:'+unknown]);
+  }finally{
+    assert.equal(path.dirname(fs.realpathSync(root)),temporary);const current=fs.lstatSync(root,{bigint:true});
+    assert.equal(current.dev,owned.dev);assert.equal(current.ino,owned.ino);assert.equal(current.birthtimeNs,owned.birthtimeNs);
+    fs.rmSync(root,{recursive:true,force:false});
+  }
+});

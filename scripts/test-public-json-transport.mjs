@@ -203,7 +203,7 @@ test('public JSON transport: native and pinned local fallback, no network', asyn
             await rejects(envelope(utf8(nested)), /^PUBLIC_JSON_NESTED_ENVELOPE$/);
           }
         });
-        await sub.test('concatenated gzip members are rejected like native single-member gzip', async () => {
+        await sub.test('concatenated gzip members are rejected on every supported native runtime', async () => {
           const empty = gzipSync(Buffer.alloc(0));
           const last = Buffer.from(good.dataBase64, 'base64');
           const combined = Buffer.concat([empty, last]);
@@ -221,6 +221,21 @@ test('public JSON transport: native and pinned local fallback, no network', asyn
         });
       });
     }
+    await t.test('single-member framing is enforced even when native accepts concatenated gzip', async () => {
+      let successfulNativeFlushes = 0;
+      globalThis.DecompressionStream = class {
+        constructor() {
+          return new TransformStream({
+            transform() {},
+            flush(controller) { successfulNativeFlushes++; controller.enqueue(utf8(value)); },
+          });
+        }
+      };
+      const empty = gzipSync(Buffer.alloc(0));
+      const combined = Buffer.concat([empty, Buffer.from(good.dataBase64, 'base64')]);
+      await rejects(replaceCompressed(good, combined), /^PUBLIC_JSON_GZIP_/);
+      assert.equal(successfulNativeFlushes, 1, 'The native path itself succeeded; the explicit framing guard rejects its multi-member input');
+    });
     await t.test('fallback stops after bounded small input pushes on first overrun', async () => {
       selectBackend('fallback');
       const inflated = Buffer.alloc(2 * 1024 * 1024, 88);
@@ -259,6 +274,8 @@ test('public JSON transport: native and pinned local fallback, no network', asyn
       };
       try {
         assert.deepEqual((await decodePublicJsonTransport(good)).value, value);
+        assert.ok(fallbackCalls > 0, 'Successful native output still needs the pinned single-member framing proof');
+        fallbackCalls = 0; // From here, every native failure must produce zero validation/fallback pushes.
         const compressed = Buffer.from(good.dataBase64, 'base64');
         compressed[compressed.length - 8] ^= 1;
         await rejects(replaceCompressed(good, compressed), /^PUBLIC_JSON_GZIP_INVALID$/);
