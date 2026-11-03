@@ -19,7 +19,21 @@ import {requireLastMileEnclosureBinding} from './lib/last-mile-enclosure-success
 import {ESTABLISHED_NATIVE_CURRENT_ORIGIN_BINDING} from './lib/established-native-current-origin-successor-source.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-const actualTerminalCodeOnly=fs.readFileSync(path.join(ROOT,'.github/workflows/deploy-code-only-repair.yml'),'utf8').replace(/\r\n/g,'\n');
+const actualSourceCodeOnly=fs.readFileSync(path.join(ROOT,'.github/workflows/deploy-code-only-repair.yml'),'utf8').replace(/\r\n/g,'\n');
+const source595HistoricalScope=Object.hasOwn(JSON.parse(fs.readFileSync(path.join(ROOT,'package.json'),'utf8')).scripts,'test:source-producer-source');
+const actualTerminalCodeOnly=source595HistoricalScope?await readGenuine594CodeOnlyWorkflow():actualSourceCodeOnly;
+async function readGenuine594CodeOnlyWorkflow(){
+  const {assertSource594CodeSourceSelected}=await import('./check-assistant-later-h0-predecessor-source.mjs');
+  const profile=assertSource594CodeSourceSelected(),{execFileSync}=await import('node:child_process');
+  const git=args=>execFileSync('git',['-c','protocol.allow=never','-C',ROOT,...args],{env:{...process.env,
+    GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_OPTIONAL_LOCKS:'0',GIT_TERMINAL_PROMPT:'0'},timeout:30000,maxBuffer:512*1024});
+  const file='.github/workflows/deploy-code-only-repair.yml';assert.equal(git(['rev-parse',profile.head+'^{tree}']).toString().trim(),profile.tree);
+  const row=git(['ls-tree',profile.head,'--',file]).toString().trim();assert.match(row,/^100644 blob [a-f0-9]{40}\t/);
+  const raw=git(['cat-file','blob',profile.head+':'+file]);assert.equal(crypto.createHash('sha1').update('blob '+raw.length+'\0').update(raw).digest('hex'),row.split(' ')[2].split('\t')[0]);
+  assert.equal(row.split('\t')[1],file);return raw.toString('utf8');
+}
+// The existing current595 normal semantic cases keep reading the actual workflow.
+if(source595HistoricalScope)await import('./test-source-producer-workflow.mjs');
 const actualCurrentCodeOnly=inverseTerminalRepair4145Workflow(actualTerminalCodeOnly,'repair');
 const nativeCurrent=crypto.createHash('sha256').update(actualCurrentCodeOnly).digest('hex')===CURRENT_INSTALLED_CODE_ONLY_WORKFLOW_SHA256
   ? inverseCurrentInstalledCodeOnlyWorkflow(actualCurrentCodeOnly):actualCurrentCodeOnly;
@@ -678,6 +692,17 @@ test('actual saved584 source selector requires the real issued I and T and the s
     const refused=invoke(next.I,next.T,changes);assert.notEqual(refused.result.status,0);assert.equal(refused.output,null);
   }
 }));
+
+test('current saved-purpose guard accepts explicitfalse and rejects absent or true native continuity before transport',async()=>{
+  const {assertSavedPrivateRuntimeCheckpointReconcileRequest}=await import('./reconcile-private-runtime-checkpoint.mjs');
+  const env=savedEnvironment(path.join(os.tmpdir(),'synthetic-saved-purpose-guard'));
+  assert.doesNotThrow(()=>assertSavedPrivateRuntimeCheckpointReconcileRequest(env));
+  for(const value of [undefined,'true']){
+    const changed={...env,UPGRADE_NATIVE_ORIGINAL_CONTINUITY:value};
+    if(value===undefined)delete changed.UPGRADE_NATIVE_ORIGINAL_CONTINUITY;
+    assert.throws(()=>assertSavedPrivateRuntimeCheckpointReconcileRequest(changed),/SAVED_MODE_COLLISION/);
+  }
+});
 
 test('actual saved584 installed-plan prefix rejects pending or unknown migration without entering database readback',()=>fixture(directory=>{
   const body=nodeBody(actual,'Require already-installed last-mile saved-weather contracts without replay');

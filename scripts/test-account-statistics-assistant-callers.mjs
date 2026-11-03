@@ -581,7 +581,10 @@ test('historical584 national evidence inverts only the reviewed current90-minute
   assert.equal(git('rev-parse',fixture+'^{tree}').toString().trim(),'b3fe05c0b6356ead06fb91a957113d10553d7631');
   const before=git('show',old.head+':'+WORKFLOW).toString();
   const recorded=git('show',fixture+':'+WORKFLOW).toString();
-  const currentWorkflow=(await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  const rawCurrentWorkflow=(await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  const {verifySourcePrWorkflow,inverseSourceNode24Workflow}=await import('./national584-source-evidence.mjs');
+  verifySourcePrWorkflow(rawCurrentWorkflow);
+  const currentWorkflow=inverseSourceNode24Workflow(rawCurrentWorkflow);
   verifyCurrentWorkflow(currentWorkflow);
   const actual=inverseCurrent586PhaseUpload(inverseSourceBeforePostgresWorkflow(currentWorkflow));
   verifyCurrentWorkflow(actual);
@@ -616,7 +619,10 @@ test('source-PR-only180-minute job preserves genuine120 and90 workflows and reje
   const fixture='b02745d6d2987ed0fd2913623b3809fd0ea02dd6';
   const recorded=execFileSync('git',['show',fixture+':'+WORKFLOW],{maxBuffer:65536,timeout:30000,
     env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1'}}).toString();
-  const currentWorkflow=(await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  const rawCurrentWorkflow=(await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  const {verifySourcePrWorkflow,inverseSourceNode24Workflow}=await import('./national584-source-evidence.mjs');
+  verifySourcePrWorkflow(rawCurrentWorkflow);
+  const currentWorkflow=inverseSourceNode24Workflow(rawCurrentWorkflow);
   verifyWorkflow(currentWorkflow);
   const actual=inverseCurrent586PhaseUpload(inverseSourceBeforePostgresWorkflow(currentWorkflow));
   const predecessorHead='bb8d354e0d889080b5f7182b2962f05fbb8fd2e7';
@@ -1268,6 +1274,10 @@ test('public587 national entry refuses unissued before I/O and leaves historical
 // TEST ONLY: exact590 package DATA inverse before whole unchanged588/587 oracles.
 // This view is never passed to a runtime/native receipt verifier or installer.
 async function reviewed588PackageViewForUnchangedOracles(pkg){
+  if(Object.hasOwn(pkg.scripts,'test:supabase-backup')){
+    const {inverseReviewedSupabaseBackupSourceScripts}=await import('./lib/account-statistics-assistant-package-review.mjs');
+    return reviewed588PackageViewForUnchangedOracles({...pkg,scripts:inverseReviewedSupabaseBackupSourceScripts(pkg.scripts)});
+  }
   if(crypto.createHash('sha256').update(JSON.stringify(Object.keys(pkg.scripts).sort().map(key=>[key,pkg.scripts[key]]))).digest('hex')==='fd4857146f205c9dc04248c642807456e01cdf47d6087de026ddd5f9c2316663'){
     const {inverseReviewedDmiScalarGapSourceScripts}=await import('./lib/account-statistics-assistant-package-review.mjs');
     return reviewed588PackageViewForUnchangedOracles({...pkg,scripts:inverseReviewedDmiScalarGapSourceScripts(pkg.scripts)});
@@ -1548,7 +1558,9 @@ function reviewedPrivateStudyOperatorPublisher(source){
 test('DMI scalar source registration qualifies75 commands before unchanged72-command oracles',async()=>{
   const raw=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8')).scripts;
   const {reviewedSourceDmiMainSourceScripts}=await import('./national584-source-evidence.mjs');
-  const actual=Object.hasOwn(raw,'test:source-producer-source')?reviewedSourceDmiMainSourceScripts(raw):raw,original=structuredClone(actual);
+  const observed=Object.hasOwn(raw,'test:source-producer-source')?reviewedSourceDmiMainSourceScripts(raw):raw;
+  const {inverseReviewedSupabaseBackupSourceScripts}=await import('./lib/account-statistics-assistant-package-review.mjs');
+  const actual=Object.hasOwn(observed,'test:supabase-backup')?inverseReviewedSupabaseBackupSourceScripts(observed):observed,original=structuredClone(actual);
   const {inverseReviewedDmiScalarGapSourceScripts:inverse,inverseReviewedForecastShareProjectionSourceScripts:sharing,
     inverseAssistantPublic588SuccessorSourceScripts:later}=await import('./lib/account-statistics-assistant-package-review.mjs');
   const prior=inverse(actual),digest=value=>crypto.createHash('sha256').update(JSON.stringify(Object.keys(value).sort().map(key=>[key,value[key]]))).digest('hex');

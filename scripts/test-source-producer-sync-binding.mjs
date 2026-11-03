@@ -174,3 +174,49 @@ test('normal SOURCE binding synchronizer uses its actual issued canonical source
   assert.throws(()=>sourceProducerCheckpointInspectionView(canonicalSource+'\n'));
   assert.equal(canonicalSource,before);
 });
+
+
+test('SOURCE uninstalled alternative derivation preserves first595 and refuses every premature or caller-selected input',async t=>{
+  const {deriveSourceProducerAlternativeBinding,deriveSourceProducerFirstBinding}=await import('./build-source-producer-successor.mjs');
+  const metadataPath=new URL('../'+SOURCE_PRODUCER_DERIVED_METADATA_PATH,import.meta.url);
+  const sqlPath=new URL('../supabase/migrations/20261102153958_source_producer_original_bound_successor.sql',import.meta.url);
+  const metadataBefore=await fs.readFile(metadataPath),sqlBefore=await fs.readFile(sqlPath);
+  const validLaterTimestamp={version:'20261103000000'}; // Rejection probe, never a reserved issuance.
+  const {createHash}=await import('node:crypto');
+  const originalMetadata=createHash('sha256').update(metadataBefore).digest('hex')
+    ==='73b8acb210c2a66e067170f2b59faafcaa0980e571f97671ee4a02676766153c';
+  const packageVersion=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8')).version;
+  const metadataPhysical=await fs.realpath(metadataPath),sqlPhysical=await fs.realpath(sqlPath);
+  const normalReadFile=fs.readFile;let corruptRead=null;
+  const readMock=t.mock.method(fs,'readFile',async(input,...options)=>{
+    const value=await normalReadFile(input,...options);
+    if((input===metadataPhysical||input===sqlPhysical)&&input===corruptRead)
+      return Buffer.isBuffer(value)?Buffer.concat([value,Buffer.from('\n')]):value+'\n';
+    return value;
+  }); // Only the two verified physical read results; lstat/Git/product stay real.
+  try{
+    for(const options of [undefined,{}, {version:'not-a-timestamp'}, {version:'20261102153958'}, {version:'20261101000000'},
+      {...validLaterTimestamp,source:'caller'}, {...validLaterTimestamp,root:'caller'}, {...validLaterTimestamp,C:'0'.repeat(64)},
+      {...validLaterTimestamp,release:'4.0.596'}])
+      await assert.rejects(()=>deriveSourceProducerAlternativeBinding(options));
+    await assert.rejects(()=>deriveSourceProducerAlternativeBinding(validLaterTimestamp,{}));
+    if(JSON.parse(metadataBefore).binding!==null)
+      await assert.rejects(()=>deriveSourceProducerFirstBinding(validLaterTimestamp)); // Original NULL-only route stays closed.
+    if(!originalMetadata)
+      await assert.rejects(()=>deriveSourceProducerAlternativeBinding(validLaterTimestamp),/SOURCE_ALTERNATIVE_PRESERVED_METADATA_BYTES/);
+    else if(packageVersion==='4.0.595')
+      await assert.rejects(()=>deriveSourceProducerAlternativeBinding(validLaterTimestamp),/SOURCE_ALTERNATIVE_LATER_RELEASE_REQUIRED/);
+    // Original metadata with a later real release may derive successfully.
+    // Never call that positive branch from this rejection-only normal test.
+    corruptRead=metadataPhysical;
+    await assert.rejects(()=>deriveSourceProducerAlternativeBinding(validLaterTimestamp),/SOURCE_ALTERNATIVE_PRESERVED_METADATA_BYTES/);
+    corruptRead=null;
+    if(originalMetadata){
+      corruptRead=sqlPhysical;
+      await assert.rejects(()=>deriveSourceProducerAlternativeBinding(validLaterTimestamp),/SOURCE_ALTERNATIVE_PRESERVED_SQL_BYTES/);
+    } // Otherwise the fixed first-metadata refusal already precedes SQL access.
+  }finally{
+    corruptRead=null;readMock.mock.restore();
+  }
+  assert.deepEqual(await fs.readFile(metadataPath),metadataBefore);assert.deepEqual(await fs.readFile(sqlPath),sqlBefore);
+});

@@ -1195,6 +1195,29 @@ export function integratedReadinessRequiredMigrations(sourcePhase=DEFAULT_CUTOVE
   ACTIVE.requireOutput();return REQUIRED_CUTOVER_MIGRATIONS;
 }
 
+// Lazy expectation selection from this actually loaded code pair only.
+// This returns no SQL/B/S/activation authority and accepts no caller family flag.
+export function codeBoundIntegratedReadinessFamily(){
+  assert.equal(arguments.length,0,'CODE_READINESS_FAMILY_ARGUMENTS');
+  const integrated=ravScoreModelBinding(),candidate=candidateGRollbackModelBinding();
+  assertRavScoreModelBinding(integrated);assertCandidateGRollbackModelBinding(candidate);
+  const before=ACTIVE.requireBinding();
+  const beforeI=integrated.modelBundleSha256===before.I,beforeC=candidate.modelBundleSha256===before.C;
+  assert.equal(beforeI,beforeC,'CODE_READINESS_MIXED_PREDECESSOR_PAIR');
+  if(beforeI){
+    const output=ACTIVE.requireOutput();
+    return Object.freeze({sourcePhase:DEFAULT_CUTOVER_SOURCE_PHASE,
+      requiredMigrations:integratedReadinessRequiredMigrations(DEFAULT_CUTOVER_SOURCE_PHASE),
+      tripBindingPolicySha256:output.tripBindingPolicySha256});
+  }
+  const output=requireSourceProducerOutput(),binding=requireSourceProducerBinding();
+  assert.equal(integrated.modelBundleSha256,binding.I,'CODE_READINESS_UNKNOWN_INTEGRATED_PAIR');
+  assert.equal(candidate.modelBundleSha256,binding.C,'CODE_READINESS_UNKNOWN_CANDIDATE_PAIR');
+  return Object.freeze({sourcePhase:'source-producer',
+    requiredMigrations:integratedReadinessRequiredMigrations('source-producer'),
+    tripBindingPolicySha256:output.tripBindingPolicySha256});
+}
+
 export async function buildIntegratedCutoverReadiness(sourceHeadInput, {
   publicImplementationClosureSha256,sourcePhase=DEFAULT_CUTOVER_SOURCE_PHASE,
 } = {}) {

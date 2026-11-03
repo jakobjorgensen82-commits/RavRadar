@@ -1,3 +1,13 @@
+## 3. november — bevaret 595-udstedelse, uudstedt 596 og faktisk main-status
+
+595 er lokalt udstedt med bevarede metadata, output og append-only SQL. De efterfølgende kildeændringer er ikke kvalificeret af den gamle udstedelse. Den planlagte efterfølger 596 er UNISSUED: ingen ny tuple, output eller SQL er afledt, og gamle 595-værdier må hverken nulstilles eller ommærkes.
+
+PR795 er kildekvalificeret og faktisk merget på main. Før-DMI-selectoren tillader nu de to kendte kontinuitetsformater schema1 og schema2; øvrige bindings-, model- og særforløbsvagter bevares. Det er ikke i sig selv bevis for ny offentlig dækningsvirkning. Den endelige normale main-sammenføring og hele SOURCE-kvalifikationen skal stadig gennemføres før en ny udstedelse eller produktionshandling.
+
+Den særskilte backup-/restorekandidat er fortsat lokal og endnu ikke main eller leveret. Den omfatter fem beskyttede SQL-filer, privat genfinding og eksplicit materialisering uden SQL-eksekvering. De 109 normale lokale backupcases og fem rene restoregrænsecases er kandidatens egne beviser, ikke hosted restore eller samlet SOURCE-kvalifikation. Faktisk adgang, kompatibel Auth/schema/datarestore, Storage-bytes, anti-genoplivning, uafhængig nøglerecovery og varig frekvens/retention er åbne før FreeReady eller Pro-opsigelse.
+
+Se håndbog 89.295/89.297 om SOURCE-fasen, 89.299 om scalarformatet og 89.300 om databasebackup. Ældre NULL- og leveringsudsagn nedenfor beskriver deres daterede forberedelsestrin.
+
 ## 2. november — åben dokumenthistorik: arkiv og backup før beskæring
 
 Den lokale vedligeholdelseskandidat er ikke live- eller safe-delete-kvalificeret. Før muterende brug skal den faktiske private arkivbucket/adgang, backup-/genopretnings- og anti-genoplivningsafklaring samt normal præcis kilde- og leveringskontrol være på plads. En privat gendannet historikfil er ikke en udført produktions-DB-restore eller en fuld databasebackup.

@@ -92,3 +92,9 @@ Astra Ekstra høj er valgt og tilstrækkelig. Færdig lokal rettelse, grøn CI,
 offentlig levering og faktisk fejlvejsvirkning skal beskrives hver for sig.
 Ingen ny privat audit, afvist admissiongate, historisk donoromvej, SOURCE-
 eller sessionaktivering indgår. Den store dirty519-revision bevares separat.
+
+## Tillæg 2026-11-02 — separat databasebackup før Free
+
+Den oprindelige regel om at bevare originale backupfiler ved mislykket rollback består uændret. Den nye lokale databasebackup i håndbog 89.300 er et særskilt formål: fem komprimerede/krypterede SQL-filer, GCM/eksakt SHA, central og DB-uafhængig genfinding samt eksplicit create-only materialisering i privat RUNNER_TEMP. Det er hverken vejrets B/S-backup, ét atomisk databasesnapshot eller en udført produktionsrestore.
+
+Skrivefri standard, eksisterende vejr→turlager-køer og 20 minutters operation/30 minutters job bevares på den midlertidige Linux-runner med Node 24 og CLI 2.117.0. Ukendt udfald giver stop uden automatisk gentagelse. De normale lokale mål består; ny præcis kilde-/nativekvalifikation og levering, faktisk lageradgang, kompatibel Auth/schema/datarestore og anti-genoplivning samt managed-DDL, Storage-bytes og uafhængig nøglerecovery er åbne. FreeReady eller Pro-opsigelse må ikke afledes af lokal byteverifikation alene. Ingen originaler slettes, og ingen SOURCE-, statistik-, scheduler-, model- eller gateaktivering følger med.

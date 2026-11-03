@@ -14,7 +14,7 @@ import {requireSourceProducerOutput} from './lib/source-producer-successor-sourc
 import {SOURCE_PRODUCER_COMMANDS,verifySourceProducerNativePhaseReceipt,
   assertSourceProducerProofHeader} from './native-postgres-evidence.mjs';
 import {projectSourceImpactWorkflowFull,SOURCE_IMPACT_FULL_STEP_CONDITION} from './lib/source-impact-workflow-review.mjs';
-import {inverseReviewedForecastShareProjectionSourceScripts,inverseReviewedDmiScalarGapSourceScripts} from './lib/account-statistics-assistant-package-review.mjs';
+import {inverseReviewedForecastShareProjectionSourceScripts,inverseReviewedDmiScalarGapSourceScripts,inverseReviewedSupabaseBackupSourceScripts} from './lib/account-statistics-assistant-package-review.mjs';
 import {expandSourceCommands,buildSourceValidationPlan,runSourceValidation} from './validate-source-once.mjs';
 import {requireAssistantLaterH0Release,requireAssistantPublic587SuccessorRelease,
   requireAssistantPublic588SuccessorRelease,ASSISTANT_PUBLIC588_SUCCESSOR_RELEASE,
@@ -787,6 +787,7 @@ function sourceCommandAdapterInverse(scripts){
 function reviewedSourceDmiScriptViews(scripts){
   assert(scripts&&Object.getPrototypeOf(scripts)===Object.prototype);
   assert(Object.values(scripts).every(value=>typeof value==='string'));
+  if(Object.hasOwn(scripts,'test:supabase-backup'))scripts=inverseReviewedSupabaseBackupSourceScripts(scripts);
   const row=SOURCE_DMI_PACKAGE_SCRIPT_REVIEW;
   const canonical=value=>JSON.stringify(Object.keys(value).sort().map(key=>[key,value[key]]));
   assert.equal(sha(canonical(scripts)),row.afterSha256,'SOURCE_DMI_WHOLE_RAW76');

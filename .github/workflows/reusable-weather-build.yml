@@ -447,7 +447,17 @@ jobs:
           echo "active_source_head=$(jq -r '.sourceHead // ""' "$RAVRADAR_OPERATIONAL_WORK/current.json")" >> "$GITHUB_OUTPUT"
           echo "active_implementation_closure_sha256=$(jq -r '.activeImplementationClosureSha256 // ""' "$RAVRADAR_OPERATIONAL_WORK/current.json")" >> "$GITHUB_OUTPUT"
           echo "active_deployment_id=$(jq -r '.deploymentId // ""' "$RAVRADAR_OPERATIONAL_WORK/current.json")" >> "$GITHUB_OUTPUT"
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { createSupabaseAdminRequester } from './scripts/lib/supabase-admin-rest.mjs';
+          import { selectInstalledSourceNormalRoute } from './scripts/stage-source-producer-originals.mjs';
+          const operational=JSON.parse(fs.readFileSync(process.env.RAVRADAR_OPERATIONAL_WORK+'/current.json','utf8'));
+          const documentRequest=createSupabaseAdminRequester({endpoint:process.env.SUPABASE_URL.replace(/\/$/,'')+'/rest/v1/admin_documents',key:process.env.SUPABASE_SERVICE_ROLE_KEY});
+          const route=await selectInstalledSourceNormalRoute({request:JSON.parse(process.env.SOURCE_REQUEST),operational,documentRequest});
+          fs.appendFileSync(process.env.GITHUB_OUTPUT,'source_normal_producer='+(route==='source'?'true':'false')+'\n');
+          NODE
         env:
+          SOURCE_REQUEST: ${{ toJSON(inputs) }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
@@ -607,7 +617,7 @@ jobs:
         run: python -m pip install --disable-pip-version-check -r requirements-copernicus.txt
 
       - name: Restore dataminimized weather preflight metadata
-        if: inputs.source_normal_producer == false
+        if: steps.operational-model.outputs.source_normal_producer == 'false'
         id: weather-preflight-cache
         uses: actions/cache/restore@v6
         with:
@@ -617,7 +627,7 @@ jobs:
             weather-preflight-state-v1-${{ runner.os }}-
 
       - name: Fetch only the deployed public manifest for weather preflight
-        if: inputs.source_normal_producer == false
+        if: steps.operational-model.outputs.source_normal_producer == 'false'
         id: public-preflight-manifest
         shell: bash
         run: |
@@ -637,7 +647,7 @@ jobs:
           fi
 
       - name: Decide whether weather needs updating before private runtime download
-        if: inputs.source_normal_producer == false
+        if: steps.operational-model.outputs.source_normal_producer == 'false'
         id: preflight
         shell: bash
         env:
@@ -686,14 +696,14 @@ jobs:
           echo "Weather build required because no matching dataminimized preflight state was available."
 
       - name: Report skipped refresh
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run != 'true')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run != 'true')
         run: |
           echo "RavRadar weather is fresh and no newer DMI model run was found."
           echo "Reason: ${{ steps.preflight.outputs.reason }}"
           echo "Weather age: ${{ steps.preflight.outputs.age_minutes }} minutes"
 
       - name: Restore source-content validation locator
-        if: (inputs.source_normal_producer == true || steps.preflight.outputs.should_run == 'true')
+        if: (steps.operational-model.outputs.source_normal_producer == 'true' || steps.preflight.outputs.should_run == 'true')
         uses: actions/cache/restore@v6
         with:
           path: .cache/weather-source-validation.json
@@ -703,13 +713,13 @@ jobs:
 
       - name: Verify exact-content source validation with GitHub
         id: source-proof
-        if: (inputs.source_normal_producer == true || steps.preflight.outputs.should_run == 'true')
+        if: (steps.operational-model.outputs.source_normal_producer == 'true' || steps.preflight.outputs.should_run == 'true')
         run: node scripts/weather-source-gate.mjs check
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
       - name: Prepare exact pinned Candidate G source before source validation
-        if: (inputs.source_normal_producer == true || steps.preflight.outputs.should_run == 'true') && steps.source-proof.outputs.required != 'false'
+        if: (steps.operational-model.outputs.source_normal_producer == 'true' || steps.preflight.outputs.should_run == 'true') && steps.source-proof.outputs.required != 'false'
         shell: bash
         run: |
           set -euo pipefail
@@ -730,7 +740,7 @@ jobs:
           done
 
       - name: Install source-gate dependencies
-        if: (inputs.source_normal_producer == true || steps.preflight.outputs.should_run == 'true') && steps.source-proof.outputs.required != 'false'
+        if: (steps.operational-model.outputs.source_normal_producer == 'true' || steps.preflight.outputs.should_run == 'true') && steps.source-proof.outputs.required != 'false'
         run: >-
           python -m pip install --disable-pip-version-check
           -r requirements-dmi.txt
@@ -739,7 +749,7 @@ jobs:
 
       - name: Run fast source gate before expensive data refresh
         id: source-gate
-        if: (inputs.source_normal_producer == true || steps.preflight.outputs.should_run == 'true') && steps.source-proof.outputs.required != 'false'
+        if: (steps.operational-model.outputs.source_normal_producer == 'true' || steps.preflight.outputs.should_run == 'true') && steps.source-proof.outputs.required != 'false'
         run: npm run validate:source
 
       - name: Record actual source validation outcome
@@ -758,7 +768,7 @@ jobs:
 
       - name: Select the exact current-grid late Edge publication route
         id: current-grid-edge-route
-        if: inputs.source_normal_producer == true || (steps.preflight.outputs.should_run == 'true')
+        if: steps.operational-model.outputs.source_normal_producer == 'true' || (steps.preflight.outputs.should_run == 'true')
         shell: bash
         env:
           OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}
@@ -774,7 +784,7 @@ jobs:
 
       - name: Require current integrated SOURCE route before admin and owner work
         id: source-route-profile
-        if: inputs.source_normal_producer == true
+        if: steps.operational-model.outputs.source_normal_producer == 'true'
         shell: bash
         env:
           ACTION: ${{ steps.operational-action.outputs.action }}
@@ -796,12 +806,12 @@ jobs:
           NODE
 
       - name: Preflight exact integrated trip binding before provider work
-        if: inputs.source_normal_producer == true || (steps.preflight.outputs.should_run == 'true' && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance' || steps.operational-action.outputs.action == 'integrated-return' || steps.operational-action.outputs.action == 'integrated-cutover'))
+        if: steps.operational-model.outputs.source_normal_producer == 'true' || (steps.preflight.outputs.should_run == 'true' && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance' || steps.operational-action.outputs.action == 'integrated-return' || steps.operational-action.outputs.action == 'integrated-cutover'))
         shell: bash
         run: |
           set -euo pipefail
           source_readiness_args=()
-          if test "${{ inputs.source_normal_producer }}" = true; then
+          if test "${{ steps.operational-model.outputs.source_normal_producer }}" = true; then
             source_readiness_args+=(--source-producer)
           fi
           node scripts/integrated-cutover-readiness.mjs verify-db "${source_readiness_args[@]}"
@@ -810,30 +820,30 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Install production geometry tools
-        if: inputs.source_normal_producer == true || (steps.preflight.outputs.should_run == 'true')
+        if: steps.operational-model.outputs.source_normal_producer == 'true' || (steps.preflight.outputs.should_run == 'true')
         run: python -m pip install --disable-pip-version-check "shapely>=2.0,<3" "pyproj>=3.6,<4"
 
       - name: Build constrained natural zone coastlines
-        if: inputs.source_normal_producer == true || (steps.preflight.outputs.should_run == 'true')
+        if: steps.operational-model.outputs.source_normal_producer == 'true' || (steps.preflight.outputs.should_run == 'true')
         run: python scripts/refine-coastlines-constrained-4.0.48.py
 
       - name: Sync centrally saved admin configuration
-        if: inputs.source_normal_producer == true || (steps.preflight.outputs.should_run == 'true')
+        if: steps.operational-model.outputs.source_normal_producer == 'true' || (steps.preflight.outputs.should_run == 'true')
         run: python scripts/sync-admin-config.py
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Apply centrally approved zone geometry and deletions
-        if: inputs.source_normal_producer == true || (steps.preflight.outputs.should_run == 'true')
+        if: steps.operational-model.outputs.source_normal_producer == 'true' || (steps.preflight.outputs.should_run == 'true')
         run: python scripts/apply-central-zone-reviews.py
 
       - name: Materialize the authoritative active coastal-part registry
-        if: inputs.source_normal_producer == true || (steps.preflight.outputs.should_run == 'true')
+        if: steps.operational-model.outputs.source_normal_producer == 'true' || (steps.preflight.outputs.should_run == 'true')
         run: node scripts/build-public-coastal-parts-v2.mjs
 
       - name: Materialize the exact historical source objects for native identity continuation
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && (inputs.native_sampling_identity_original_recovery == true || inputs.weather_state_epoch_bootstrap == true))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && (inputs.native_sampling_identity_original_recovery == true || inputs.weather_state_epoch_bootstrap == true))
         shell: bash
         run: |
           set -euo pipefail
@@ -846,7 +856,7 @@ jobs:
 
       - name: Restore the exact original cipher for native identity continuation
         id: native-identity-progress-cache
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery == true)
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery == true)
         uses: actions/cache/restore@v6
         with:
           path: .cache/weather-private-progress.encrypted
@@ -855,7 +865,7 @@ jobs:
 
       - name: Authenticate originals and install the native identity working continuation
         id: native-identity-runtime-install
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery == true)
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery == true)
         shell: bash
         env:
           NODE_OPTIONS: --max-old-space-size=6144
@@ -891,7 +901,7 @@ jobs:
 
       - name: Authenticate the epoch archive and install only its verified NEW working baseline
         id: state-epoch-runtime-install
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && inputs.weather_state_epoch_bootstrap == true)
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && inputs.weather_state_epoch_bootstrap == true)
         shell: bash
         env:
           NODE_OPTIONS: --max-old-space-size=6144
@@ -905,7 +915,7 @@ jobs:
 
       - name: Resolve exact verified weather source producer run
         id: weather-source-handoff-resolve
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && inputs.ravscore_integrated_weather_handoff_run_id != '')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && inputs.ravscore_integrated_weather_handoff_run_id != '')
         shell: bash
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -921,7 +931,7 @@ jobs:
           --github-output "$GITHUB_OUTPUT"
 
       - name: Validate and extract only aggregate handoff attestation
-        if: inputs.source_normal_producer == false && (steps.weather-source-handoff-resolve.outcome == 'success')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.weather-source-handoff-resolve.outcome == 'success')
         shell: bash
         run: |
           set -euo pipefail
@@ -935,7 +945,7 @@ jobs:
 
       - name: Restore exact run-bound verified weather source cache
         id: weather-source-handoff-cache
-        if: inputs.source_normal_producer == false && (steps.weather-source-handoff-resolve.outcome == 'success')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.weather-source-handoff-resolve.outcome == 'success')
         uses: actions/cache/restore@v6
         with:
           path: .cache/verified-weather-source-handoff-cache
@@ -944,7 +954,7 @@ jobs:
 
       - name: Install exact verified weather sources atomically
         id: weather-source-handoff
-        if: inputs.source_normal_producer == false && (steps.weather-source-handoff-cache.outcome == 'success')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.weather-source-handoff-cache.outcome == 'success')
         shell: bash
         run: |
           set -euo pipefail
@@ -962,7 +972,7 @@ jobs:
             --github-env "$GITHUB_ENV"
 
       - name: Require the exact successful oneoff for approved legacy first cutover
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true')
         shell: bash
         run: |
           test "${{ steps.weather-source-handoff-resolve.outcome }}" = "success"
@@ -970,7 +980,7 @@ jobs:
           test "${{ steps.weather-source-handoff.outputs.reused }}" = "true"
 
       - name: Build current private-runtime restore expectation
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true')
         run: >-
           node scripts/private-production-runtime-workflow.mjs expected
           --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"
@@ -983,7 +993,7 @@ jobs:
       # from an unrelated or stale cache.
       - name: Describe the exact protected predecessor generation
         id: protected-predecessor-description
-        if: inputs.source_normal_producer == false && (inputs.weather_state_epoch_bootstrap != true && steps.preflight.outputs.should_run == 'true' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.weather_state_epoch_bootstrap != true && steps.preflight.outputs.should_run == 'true' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true'))
         run: >-
           node scripts/protected-private-production-runtime.mjs --describe-current
           --output "$RUNNER_TEMP/private-runtime-current-source.json"
@@ -1019,7 +1029,7 @@ jobs:
 
       - name: Prepare exact old-reader restore for the measured wave transition
         id: historical-wave-predecessor
-        if: inputs.source_normal_producer == false && (steps.assistant-later-h0-source.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.assistant-later-h0-source.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true'))
         run: >-
           node scripts/prepare-historical-wave-predecessor-restore.mjs
           --source-description "$RUNNER_TEMP/private-runtime-current-source.json"
@@ -1031,7 +1041,7 @@ jobs:
       # successor destination/install authority have been closed and reviewed.
       - name: Require a strictly new normal hour for current-grid source succession
         id: current-grid-original-hour
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && steps.historical-wave-predecessor.outputs.transition_kind == 'current-grid-sampling-original')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && steps.historical-wave-predecessor.outputs.transition_kind == 'current-grid-sampling-original')
         shell: bash
         env:
           CURRENT_GRID_ORIGINAL_EXPECTED: ${{ steps.historical-wave-predecessor.outputs.expected_path }}
@@ -1060,7 +1070,7 @@ jobs:
 
       - name: Classify the exact 11Z weather recovery
         id: exact-weather-recovery
-        if: inputs.source_normal_producer == false && (steps.assistant-later-h0-source.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.weather_state_epoch_bootstrap != true && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.assistant-later-h0-source.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.weather_state_epoch_bootstrap != true && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true'))
         shell: bash
         run: |
           set -euo pipefail
@@ -1077,7 +1087,7 @@ jobs:
       # below; restoring the old checkpoint here would reject a valid donor.
       - name: Select current-family paired checkpoint restoration before any S restore
         id: paired-checkpoint-route
-        if: inputs.source_normal_producer == false && (steps.assistant-later-h0-source.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true && inputs.native_sampling_identity_original_recovery != true && inputs.checkpoint_only != true && inputs.quick_confirmation != true && inputs.completed_private_runtime != true && steps.operational-action.outputs.action == 'integrated')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.assistant-later-h0-source.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true && inputs.native_sampling_identity_original_recovery != true && inputs.checkpoint_only != true && inputs.quick_confirmation != true && inputs.completed_private_runtime != true && steps.operational-action.outputs.action == 'integrated')
         shell: bash
         env:
           OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}
@@ -1091,7 +1101,7 @@ jobs:
           node scripts/reconcile-private-runtime-checkpoint.mjs select
 
       - name: Restore the latest atomic schema-6 and Candidate G rollback checkpoint
-        if: inputs.source_normal_producer == false && (steps.assistant-later-h0-source.outputs.required != 'true' && steps.paired-checkpoint-route.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && steps.exact-weather-recovery.outputs.required != 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.historical-wave-predecessor.outputs.transition_kind != 'current-grid-sampling-original')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.assistant-later-h0-source.outputs.required != 'true' && steps.paired-checkpoint-route.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && steps.exact-weather-recovery.outputs.required != 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.historical-wave-predecessor.outputs.transition_kind != 'current-grid-sampling-original')
         id: ravscore-checkpoint-cache
         uses: actions/cache/restore@v6
         with:
@@ -1101,7 +1111,7 @@ jobs:
             ravscore-continuation-schema6-v2-
 
       - name: Restore protected atomic RavScore checkpoint when cache is absent
-        if: inputs.source_normal_producer == false && (steps.assistant-later-h0-source.outputs.required != 'true' && steps.paired-checkpoint-route.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && steps.exact-weather-recovery.outputs.required != 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.ravscore-checkpoint-cache.outputs.cache-matched-key == '' && steps.historical-wave-predecessor.outputs.transition_kind != 'current-grid-sampling-original')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.assistant-later-h0-source.outputs.required != 'true' && steps.paired-checkpoint-route.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && steps.exact-weather-recovery.outputs.required != 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.ravscore-checkpoint-cache.outputs.cache-matched-key == '' && steps.historical-wave-predecessor.outputs.transition_kind != 'current-grid-sampling-original')
         run: >-
           node scripts/protected-ravscore-continuation-checkpoint.mjs
           --restore
@@ -1111,7 +1121,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Materialize exact archived readers for the 11Z and 15Z weather pair
-        if: inputs.source_normal_producer == false && (steps.exact-weather-recovery.outputs.required == 'true')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.exact-weather-recovery.outputs.required == 'true')
         shell: bash
         run: |
           set -euo pipefail
@@ -1126,7 +1136,7 @@ jobs:
           test "$(git -C "$donor_root" rev-parse HEAD)" = "$donor_head"
 
       - name: Materialize the exact audited predecessor reader before old-reader secret use
-        if: inputs.source_normal_producer == false && (steps.historical-wave-predecessor.outputs.required == 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original' && steps.historical-wave-predecessor.outputs.transition_kind != 'current-grid-sampling-original')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.historical-wave-predecessor.outputs.required == 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original' && steps.historical-wave-predecessor.outputs.transition_kind != 'current-grid-sampling-original')
         shell: bash
         env:
           EXPECTED_SOURCE_HEAD: ${{ steps.historical-wave-predecessor.outputs.source_head }}
@@ -1158,7 +1168,7 @@ jobs:
           fi
 
       - name: Restore newest compatible private runtime from protected storage
-        if: inputs.source_normal_producer == false && (steps.assistant-later-h0-source.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.assistant-later-h0-source.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true'))
         shell: bash
         run: |
           set -uo pipefail
@@ -1268,7 +1278,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Inspect private production runtime availability
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true')
         id: private-runtime-state
         shell: bash
         env:
@@ -1299,7 +1309,7 @@ jobs:
           fi
 
       - name: Require full private weather baseline before normal continuation
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover')
         shell: bash
         run: |
           if test "${{ steps.private-runtime-state.outputs.available }}" != 'true'; then
@@ -1308,7 +1318,7 @@ jobs:
           fi
 
       - name: Describe the exact restored private generation
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && steps.private-runtime-state.outputs.available == 'true')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && steps.private-runtime-state.outputs.available == 'true')
         shell: bash
         run: |
           set -euo pipefail
@@ -1325,7 +1335,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Verify and restore the private production runtime bundle
-        if: inputs.source_normal_producer == false && (steps.assistant-later-h0-source.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && steps.private-runtime-state.outputs.available == 'true')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.assistant-later-h0-source.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && steps.private-runtime-state.outputs.available == 'true')
         shell: bash
         env:
           HISTORICAL_WAVE_PREDECESSOR_REQUIRED: ${{ steps.historical-wave-predecessor.outputs.required || 'false' }}
@@ -1387,7 +1397,7 @@ jobs:
 
       - name: Preserve original pairs and rebind metadata before new-hour source reconstruction
         id: owner-current-original-migration
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && steps.private-runtime-state.outputs.available == 'true' && steps.historical-wave-predecessor.outputs.transition_kind == 'owner-current-domain-original')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && steps.private-runtime-state.outputs.available == 'true' && steps.historical-wave-predecessor.outputs.transition_kind == 'owner-current-domain-original')
         shell: bash
         env:
           NODE_OPTIONS: --max-old-space-size=6144
@@ -1408,7 +1418,7 @@ jobs:
 
       - name: Preserve nationwide originals before new-hour current-grid reconstruction
         id: current-grid-original-migration
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && steps.private-runtime-state.outputs.available == 'true' && steps.historical-wave-predecessor.outputs.transition_kind == 'current-grid-sampling-original')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && steps.private-runtime-state.outputs.available == 'true' && steps.historical-wave-predecessor.outputs.transition_kind == 'current-grid-sampling-original')
         shell: bash
         env:
           NODE_OPTIONS: --max-old-space-size=6144
@@ -1442,7 +1452,7 @@ jobs:
 
       - name: Rebind the exact bounded-conditions predecessor before installation
         id: bounded-conditions-predecessor-migration
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && steps.private-runtime-state.outputs.available == 'true' && steps.historical-wave-predecessor.outputs.transition_kind == 'bounded-conditions-writer')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && steps.private-runtime-state.outputs.available == 'true' && steps.historical-wave-predecessor.outputs.transition_kind == 'bounded-conditions-writer')
         shell: bash
         env:
           # The predecessor conditions file is intentionally large. Keep this
@@ -1465,7 +1475,7 @@ jobs:
 
       - name: Rebind exact 11Z private state without changing weather measurements
         id: exact-weather-pair-migration
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.exact-weather-recovery.outputs.required == 'true' && steps.private-runtime-state.outputs.available == 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.exact-weather-recovery.outputs.required == 'true' && steps.private-runtime-state.outputs.available == 'true'))
         shell: bash
         env:
           NODE_OPTIONS: --max-old-space-size=6144
@@ -1485,7 +1495,7 @@ jobs:
 
       - name: Install only the allowlisted restored private runtime files
         id: private-runtime-install
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && steps.private-runtime-state.outputs.available == 'true')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && steps.private-runtime-state.outputs.available == 'true')
         shell: bash
         env:
           OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}
@@ -1539,7 +1549,7 @@ jobs:
       # DMI generation, without installing any older score or cache state.
       - name: Reconcile only authenticated CURRENT B to its exact protected S before providers
         id: paired-checkpoint-reconcile
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true && inputs.native_sampling_identity_original_recovery != true && inputs.checkpoint_only != true && inputs.quick_confirmation != true && inputs.completed_private_runtime != true && steps.operational-action.outputs.action == 'integrated' && steps.paired-checkpoint-route.outputs.required == 'true')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true && inputs.native_sampling_identity_original_recovery != true && inputs.checkpoint_only != true && inputs.quick_confirmation != true && inputs.completed_private_runtime != true && steps.operational-action.outputs.action == 'integrated' && steps.paired-checkpoint-route.outputs.required == 'true')
         shell: bash
         run: |
           set -euo pipefail
@@ -1557,7 +1567,7 @@ jobs:
 
       - name: Classify one-time DMI PART continuity donor
         id: dmi-part-continuity-donor
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap != true && steps.private-runtime-install.outcome == 'success'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap != true && steps.private-runtime-install.outcome == 'success'))
         shell: bash
         run: |
           set -euo pipefail
@@ -1583,7 +1593,7 @@ jobs:
           NODE
 
       - name: Restore exact previous native DMI donor without older score state
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.dmi-part-continuity-donor.outputs.required == 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.dmi-part-continuity-donor.outputs.required == 'true'))
         shell: bash
         run: |
           set -euo pipefail
@@ -1608,7 +1618,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Preserve the paired 15Z public no-loss anchor without installing it
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.exact-weather-recovery.outputs.required == 'true' && steps.private-runtime-install.outcome == 'success'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.exact-weather-recovery.outputs.required == 'true' && steps.private-runtime-install.outcome == 'success'))
         shell: bash
         run: |
           set -euo pipefail
@@ -1633,7 +1643,7 @@ jobs:
           cp "$latest_restored/.cache/public-hour-delivery.pack" "$RUNNER_TEMP/paired-15z-public-hour-delivery.pack"
 
       - name: Preserve exact previous public weather for no-loss comparison
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && steps.private-runtime-install.outcome == 'success' && steps.operational-action.outputs.action != 'integrated-cutover')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && steps.private-runtime-install.outcome == 'success' && steps.operational-action.outputs.action != 'integrated-cutover')
         shell: bash
         run: |
           set -euo pipefail
@@ -1644,7 +1654,7 @@ jobs:
 
       - name: Classify the measured one-time historical wave-input transition
         id: historical-wave-transition
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && steps.private-runtime-install.outcome == 'success' && steps.historical-wave-predecessor.outputs.transition_kind == 'historical-wave-input')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && steps.private-runtime-install.outcome == 'success' && steps.historical-wave-predecessor.outputs.transition_kind == 'historical-wave-input')
         run: >-
           node scripts/classify-historical-wave-input-transition.mjs
           --source-description "$RUNNER_TEMP/private-runtime-current-source.json"
@@ -1655,7 +1665,7 @@ jobs:
           --github-output "$GITHUB_OUTPUT"
 
       - name: Require the separate completed B request and actual restored originals
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime == true)
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime == true)
         shell: bash
         run: |
           set -euo pipefail
@@ -1683,14 +1693,14 @@ jobs:
           PRODUCE_HANDOFF: ${{ inputs.produce_weather_handoff }}
 
       - name: Read actual operational and profile rows for completed B admission
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime == true)
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime == true)
         run: node scripts/ravscore-operational-activation.mjs completed-runtime-source --current-source "$RAVRADAR_OPERATIONAL_WORK/current.json" --output "$RUNNER_TEMP/completed-runtime-active-source.json"
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Restore the actual newest protected checkpoint for completed B admission
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime == true)
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime == true)
         run: node scripts/protected-ravscore-continuation-checkpoint.mjs --restore --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -1698,7 +1708,7 @@ jobs:
 
       - name: Admit only the exact authenticated completed B and matching central S
         id: completed-runtime-admission
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime == true)
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime == true)
         shell: bash
         run: |
           set -euo pipefail
@@ -1714,7 +1724,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Validate provider-free checkpoint continuation request
-        if: inputs.source_normal_producer == false && (inputs.checkpoint_only == true)
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.checkpoint_only == true)
         shell: bash
         env:
           QUICK_CONFIRMATION: ${{ inputs.quick_confirmation }}
@@ -1736,7 +1746,7 @@ jobs:
           test "${{ inputs.produce_weather_handoff }}" != true
 
       - name: Validate requested short-confirmation progress source
-        if: inputs.source_normal_producer == false && (inputs.quick_confirmation == true || inputs.quick_progress_source != '')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.quick_confirmation == true || inputs.quick_progress_source != '')
         shell: bash
         env:
           QUICK_CONFIRMATION: ${{ inputs.quick_confirmation }}
@@ -1756,7 +1766,7 @@ jobs:
         # conditions bytes and bundle hash. This also permits the exact 11Z
         # recovery to resume its own progress after a later no-loss stop;
         # a snapshot from the 15Z anchor is rejected by the binder below.
-        if: inputs.source_normal_producer == false && ((inputs.current_family_cold_start != true || inputs.quick_progress_source == '39886354260-1' || inputs.quick_progress_source == '39933506923-1') && inputs.completed_private_runtime != true && (inputs.native_sampling_identity_original_recovery != true && (inputs.weather_state_epoch_bootstrap != true || inputs.weather_state_epoch_checkpoint_reentry == true) && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && steps.private-runtime-install.outcome == 'success' && steps.weather-source-handoff.outputs.reused != 'true' && !(inputs.quick_confirmation && inputs.quick_progress_source == 'protected-current')))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && ((inputs.current_family_cold_start != true || inputs.quick_progress_source == '39886354260-1' || inputs.quick_progress_source == '39933506923-1') && inputs.completed_private_runtime != true && (inputs.native_sampling_identity_original_recovery != true && (inputs.weather_state_epoch_bootstrap != true || inputs.weather_state_epoch_checkpoint_reentry == true) && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && steps.private-runtime-install.outcome == 'success' && steps.weather-source-handoff.outputs.reused != 'true' && !(inputs.quick_confirmation && inputs.quick_progress_source == 'protected-current')))
         uses: actions/cache/restore@v6
         with:
           path: .cache/weather-private-progress.encrypted
@@ -1765,7 +1775,7 @@ jobs:
 
       - name: Bind optional progress to the exact protected baseline
         id: component-progress-restore
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && steps.private-runtime-install.outcome == 'success' && steps.weather-source-handoff.outputs.reused != 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && steps.private-runtime-install.outcome == 'success' && steps.weather-source-handoff.outputs.reused != 'true'))
         shell: bash
         env:
           RAVRADAR_R2_ACCOUNT_ID: ${{ inputs.weather_state_epoch_bootstrap && secrets.RAVRADAR_R2_ACCOUNT_ID || '' }}
@@ -1854,7 +1864,7 @@ jobs:
           # the next scheduled run begins again from protected storage.
 
       - name: Require recovered progress before short confirmation
-        if: inputs.source_normal_producer == false && (inputs.current_family_cold_start != true && inputs.completed_private_runtime != true && (inputs.quick_confirmation == true || inputs.quick_progress_source != ''))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.current_family_cold_start != true && inputs.completed_private_runtime != true && (inputs.quick_confirmation == true || inputs.quick_progress_source != ''))
         shell: bash
         env:
           QUICK_PROGRESS_SOURCE: ${{ inputs.quick_progress_source }}
@@ -2051,7 +2061,7 @@ jobs:
           test -s .cache/dmi-candidate-progress.json
 
       - name: Require the authenticated original hour before provider-free continuation
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (inputs.checkpoint_only == true))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (inputs.checkpoint_only == true))
         shell: bash
         run: |
           set -euo pipefail
@@ -2070,7 +2080,7 @@ jobs:
           NODE
 
       - name: Reapply exact verified weather sources after private runtime installation
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused == 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused == 'true'))
         shell: bash
         run: >-
           node scripts/verified-weather-source-handoff.mjs install
@@ -2084,7 +2094,7 @@ jobs:
           --runner-os "$RUNNER_OS"
 
       - name: Reconcile the paired 15Z originals with the working weather sources
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.exact-weather-recovery.outputs.required == 'true' && steps.private-runtime-install.outcome == 'success'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.exact-weather-recovery.outputs.required == 'true' && steps.private-runtime-install.outcome == 'success'))
         shell: bash
         env:
           NODE_OPTIONS: --max-old-space-size=6144
@@ -2104,7 +2114,7 @@ jobs:
           echo "DMI_BULK_PUBLISHED_BASELINE_PATH=$donor_root/data/live/dmi-bulk-cache.json" >> "$GITHUB_ENV"
 
       - name: Resolve the one-time Candidate G bootstrap gate
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true')
         id: legacy-bootstrap
         shell: bash
         env:
@@ -2130,7 +2140,7 @@ jobs:
           fi
 
       - name: Import exact public Candidate G runtime only for first integrated bootstrap
-        if: inputs.source_normal_producer == false && (steps.legacy-bootstrap.outputs.required == 'true')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.legacy-bootstrap.outputs.required == 'true')
         run: python scripts/hydrate-deployed-weather.py --legacy-candidate-g-bootstrap
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
@@ -2138,7 +2148,7 @@ jobs:
           WEATHER_USER_AGENT: "RavRadar/4.0.595 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Resolve one aggregate Candidate G wave-bootstrap target
-        if: inputs.source_normal_producer == false && (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true')
         id: ravscore-wave-bootstrap-target
         run: >-
           node scripts/resolve-candidate-g-wave-bootstrap-target.mjs
@@ -2148,7 +2158,7 @@ jobs:
           --production-target "$RAVRADAR_PRODUCTION_TARGET_HOUR"
 
       - name: Import exact legacy Candidate G into an isolated first-cutover source root
-        if: inputs.source_normal_producer == false && (steps.operational-model.outputs.legacy_source_required == 'true' && (steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'candidate-legacy-maintenance'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.operational-model.outputs.legacy_source_required == 'true' && (steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'candidate-legacy-maintenance'))
         shell: bash
         run: |
           rm -rf "$RAVRADAR_LEGACY_SOURCE_ROOT"
@@ -2163,7 +2173,7 @@ jobs:
           WEATHER_USER_AGENT: "RavRadar/4.0.595 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Fetch exact public Candidate G source commit for first cutover attestation
-        if: inputs.source_normal_producer == false && (steps.operational-model.outputs.legacy_source_required == 'true' && (steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'candidate-legacy-maintenance'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.operational-model.outputs.legacy_source_required == 'true' && (steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'candidate-legacy-maintenance'))
         shell: bash
         run: |
           legacy_source_head="$(node --input-type=module -e "import { LEGACY_CANDIDATE_G_SOURCE_HEAD } from './scripts/lib/ravscore-legacy-candidate-g-source.mjs'; process.stdout.write(LEGACY_CANDIDATE_G_SOURCE_HEAD);")"
@@ -2173,7 +2183,7 @@ jobs:
 
       - name: Seal privacy-safe local attestation of the legacy Candidate G source
         id: legacy-source
-        if: inputs.source_normal_producer == false && (steps.operational-model.outputs.legacy_source_required == 'true' && (steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'candidate-legacy-maintenance'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.operational-model.outputs.legacy_source_required == 'true' && (steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'candidate-legacy-maintenance'))
         shell: bash
         run: |
           mkdir -p "$RAVRADAR_OPERATIONAL_WORK"
@@ -2189,7 +2199,7 @@ jobs:
           echo "implementation_closure_sha256=$implementation_closure_sha256" >> "$GITHUB_OUTPUT"
 
       - name: Preserve deployed DMI zone cache as safe fallback
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))
         shell: bash
         run: |
           mkdir -p .cache
@@ -2200,32 +2210,32 @@ jobs:
           fi
 
       - name: Test Supabase persistence roundtrip
-        if: inputs.source_normal_producer == false && ((github.event_name == 'push' || inputs.force == true || steps.operational-action.outputs.action == 'integrated-cutover'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && ((github.event_name == 'push' || inputs.force == true || steps.operational-action.outputs.action == 'integrated-cutover'))
         run: node scripts/test-supabase-persistence.mjs
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Select Node24 for fixed raw-cache distribution preparation
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))
         id: dmi-cache-api-node24
         uses: actions/setup-node@v7
         with:
           node-version: 24
 
       - name: Prepare locked raw-cache API under its actual owned cohort
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))
         id: dmi-cache-api-prepare
         run: node "$GITHUB_WORKSPACE/.github/actions/save-owned-dmi-grib/index.cjs" --prepare-distribution
 
       - name: Restore Node22 for normal weather producers
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (always() && steps.dmi-cache-api-node24.outcome == 'success'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (always() && steps.dmi-cache-api-node24.outcome == 'success'))
         uses: actions/setup-node@v7
         with:
           node-version: 22
 
       - name: Materialize bounded deployed DMI storage before conditional point activation
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && hashFiles('data/live/dmi-bulk-cache.json') != ''))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && hashFiles('data/live/dmi-bulk-cache.json') != ''))
         shell: bash
         run: |
           set -euo pipefail
@@ -2235,30 +2245,30 @@ jobs:
           mv data/live/dmi-bulk-cache.json.tmp data/live/dmi-bulk-cache.json
 
       - name: Prepare only an explicitly requested READY point activation
-        if: inputs.source_normal_producer == false && (inputs.current_family_cold_start != true && inputs.completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap != true && steps.preflight.outputs.should_run == 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.current_family_cold_start != true && inputs.completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap != true && steps.preflight.outputs.should_run == 'true'))
         run: node scripts/prepare-coastal-point-activation.mjs
 
       - name: Rebuild centrally reviewed coastal-part sampling points
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))
         run: node scripts/build-public-coastal-parts-v2.mjs
 
       - name: Refresh DMI water-source registry
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && inputs.checkpoint_only != true))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && inputs.checkpoint_only != true))
         run: node scripts/update-water-source-registry.mjs
         env:
           WEATHER_USER_AGENT: "RavRadar water-source registry (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Install DMI GRIB reader (eccodes)
-        if: inputs.source_normal_producer == true || (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'true' || (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))
         run: python -m pip install --disable-pip-version-check -r requirements-dmi.txt
 
       - name: Smoke-test DMI GRIB reader API
-        if: inputs.source_normal_producer == true || (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'true' || (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))
         run: python scripts/smoke-test-eccodes.py
 
       - name: Run the one explicit owned SOURCE ordinary route
         id: source-normal
-        if: inputs.source_normal_producer == true
+        if: steps.operational-model.outputs.source_normal_producer == 'true'
         uses: ./.github/actions/save-owned-dmi-grib
         with:
           operation: source
@@ -2280,12 +2290,12 @@ jobs:
           RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
 
       - name: Resolve bounded DMI cache generation
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))
         id: dmi-cache-generation
         run: echo "generation=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
 
       - name: Restore bounded DMI GRIB download cache
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'))
         uses: actions/cache/restore@v6
         id: dmi-grib-cache-restore
         with:
@@ -2298,7 +2308,7 @@ jobs:
           fail-on-cache-miss: ${{ inputs.weather_state_epoch_checkpoint_reentry }}
 
       - name: Require exact same-producer RAW cache for epoch checkpoint reuse
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (inputs.weather_state_epoch_checkpoint_reentry == true))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (inputs.weather_state_epoch_checkpoint_reentry == true))
         shell: bash
         env:
           MATCHED_RAW_KEY: ${{ steps.dmi-grib-cache-restore.outputs.cache-matched-key }}
@@ -2310,7 +2320,7 @@ jobs:
 
       - name: Select encrypted active DMI generation when available
         id: dmi-active-restore
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'))
         shell: bash
         run: |
           if test -s .cache/dmi-active-complete.json; then
@@ -2321,7 +2331,7 @@ jobs:
 
       - name: Prepare strict active DMI donor or resumable candidate
         id: dmi-generation-prepare
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'))
         shell: bash
         env:
           RAVRADAR_R2_ACCOUNT_ID: ${{ inputs.current_family_cold_start && secrets.RAVRADAR_R2_ACCOUNT_ID || '' }}
@@ -2407,7 +2417,7 @@ jobs:
 
       - name: Plan bounded current history from the actual selected continuation
         id: current-history-demand
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && steps.historical-wave-transition.outputs.required != 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && steps.historical-wave-transition.outputs.required != 'true'))
         run: |
           if test "${{ steps.assistant-later-h0-source.outputs.required }}" = true; then
             export NODE_OPTIONS=--max-old-space-size=6144
@@ -2425,12 +2435,12 @@ jobs:
 
       - name: Bind causal OLD current reconstruction to the materialized saved inputs
         id: legacy-current-requests
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true && inputs.checkpoint_only == true && steps.current-history-demand.outcome == 'success' && steps.dmi-generation-prepare.outcome == 'success'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true && inputs.checkpoint_only == true && steps.current-history-demand.outcome == 'success' && steps.dmi-generation-prepare.outcome == 'success'))
         run: node scripts/plan-dmi-legacy-current-originals.mjs
 
       - name: Choose DMI budget from retained five-component PART coverage
         id: dmi-recovery-budget
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'))
         shell: bash
         run: |
           set -euo pipefail
@@ -2449,13 +2459,13 @@ jobs:
           printf 'cache_path=%s\n' "$recovery_cache" >> "$GITHUB_OUTPUT"
 
       - name: Plan global current acquisition before DMI
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'))
         shell: bash
         env:
           DMI_PLANNING_SNAPSHOT: ${{ steps.dmi-recovery-budget.outputs.cache_path }}
           DMI_PART_CONTINUITY_DONOR_PATH: ${{ steps.restored-dmi-part-continuity-donor.outputs.path }}
           RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE: ${{ steps.private-runtime-install.outcome == 'success' && 'true' || 'false' }}
-          RAVRADAR_RETAINED_SCALAR_CONTEXT: ${{ steps.dmi-part-continuity-donor.outputs.continuity_schema == '1' && steps.private-runtime-install.outcome == 'success' && steps.operational-model.outputs.model == 'integrated' && steps.operational-model.outputs.binding_current == 'true' && steps.operational-action.outputs.action == 'integrated' && steps.legacy-bootstrap.outputs.stateless_integrated_recovery != 'true' && inputs.completed_private_runtime != true && inputs.completed_private_runtime_pin == '' && inputs.completed_stage_source == '' && inputs.checkpoint_only != true && inputs.quick_confirmation != true && inputs.quick_progress_source == '' && inputs.current_family_cold_start != true && inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true && inputs.weather_state_epoch_raw_cache_key == '' && inputs.weather_state_epoch_archive_key == '' && inputs.weather_state_epoch_archive_catalog_sha256 == '' && inputs.native_sampling_identity_original_recovery != true && inputs.ravscore_integrated_weather_handoff_run_id == '' && inputs.produce_weather_handoff != true && inputs.ravscore_integrated_first_cutover != true && inputs.ravscore_integrated_return != true && (inputs.ravscore_candidate_g_rollback_mode == '' || inputs.ravscore_candidate_g_rollback_mode == 'none') && 'ordinary-restored' || '' }}
+          RAVRADAR_RETAINED_SCALAR_CONTEXT: ${{ (steps.dmi-part-continuity-donor.outputs.continuity_schema == '1' || steps.dmi-part-continuity-donor.outputs.continuity_schema == '2') && steps.private-runtime-install.outcome == 'success' && steps.operational-model.outputs.model == 'integrated' && steps.operational-model.outputs.binding_current == 'true' && steps.operational-action.outputs.action == 'integrated' && steps.legacy-bootstrap.outputs.stateless_integrated_recovery != 'true' && inputs.completed_private_runtime != true && inputs.completed_private_runtime_pin == '' && inputs.completed_stage_source == '' && inputs.checkpoint_only != true && inputs.quick_confirmation != true && inputs.quick_progress_source == '' && inputs.current_family_cold_start != true && inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true && inputs.weather_state_epoch_raw_cache_key == '' && inputs.weather_state_epoch_archive_key == '' && inputs.weather_state_epoch_archive_catalog_sha256 == '' && inputs.native_sampling_identity_original_recovery != true && inputs.ravscore_integrated_weather_handoff_run_id == '' && inputs.produce_weather_handoff != true && inputs.ravscore_integrated_first_cutover != true && inputs.ravscore_integrated_return != true && (inputs.ravscore_candidate_g_rollback_mode == '' || inputs.ravscore_candidate_g_rollback_mode == 'none') && 'ordinary-restored' || '' }}
         run: |
           set -euo pipefail
           rm -f .cache/weather-scalar-needs.json .cache/weather-qualified-acquisition-plan.json
@@ -2484,14 +2494,14 @@ jobs:
           fi
 
       - name: Preserve the fixed epoch post-processing reserve before dmi
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && ((inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true) && steps.preflight.outputs.should_run == 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && ((inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true) && steps.preflight.outputs.should_run == 'true'))
         env:
           QUICK_PROGRESS_SOURCE: ${{ inputs.current_family_cold_start != true && inputs.quick_progress_source || '' }}
           CHECKPOINT_TARGET_HOUR: ${{ inputs.current_family_cold_start != true && inputs.checkpoint_only && inputs.production_target_hour || '' }}
         run: node scripts/weather-state-epoch-budget.mjs dmi
 
       - name: Update DMI bulk model cache
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'))
         id: dmi-bulk
         continue-on-error: ${{ inputs.checkpoint_only != true }}
         timeout-minutes: ${{ inputs.quick_confirmation && 24 || (inputs.extended_provider_bootstrap || steps.historical-wave-transition.outputs.required == 'true' || steps.dmi-recovery-budget.outputs.extended == 'true') && 70 || 55 }}
@@ -2551,7 +2561,7 @@ jobs:
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Require actual cold-start producer cessation before other consumers
-        if: inputs.source_normal_producer == false && (inputs.current_family_cold_start == true && always() && steps.dmi-bulk.outcome != 'skipped' && steps.dmi-bulk.outcome != '')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.current_family_cold_start == true && always() && steps.dmi-bulk.outcome != 'skipped' && steps.dmi-bulk.outcome != '')
         shell: bash
         env:
           PRODUCER_CLOSED: ${{ steps.dmi-bulk.outputs.current_family_cold_producer_closed }}
@@ -2563,13 +2573,13 @@ jobs:
 
       - name: Advance private point-candidate readiness without public score impact
         id: point-candidate-readiness
-        if: inputs.source_normal_producer == false && (inputs.current_family_cold_start != true && inputs.completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap != true && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome == 'success'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.current_family_cold_start != true && inputs.completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap != true && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome == 'success'))
         continue-on-error: true
         run: node scripts/update-coastal-point-staging.mjs
 
       - name: Reconfirm exact main before shared DMI GRIB cache
         id: dmi-progress-write-authority
-        if: inputs.source_normal_producer == false && ((inputs.current_family_cold_start != true || steps.dmi-bulk.outputs.current_family_cold_producer_closed == 'true') && inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled' && steps.dmi-bulk.outcome != 'skipped'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && ((inputs.current_family_cold_start != true || steps.dmi-bulk.outputs.current_family_cold_producer_closed == 'true') && inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled' && steps.dmi-bulk.outcome != 'skipped'))
         shell: bash
         env:
           EXPECTED_HEAD_SHA: ${{ github.sha }}
@@ -2581,7 +2591,7 @@ jobs:
           test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
 
       - name: Save progressed DMI GRIB download cache
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (always() && steps.dmi-progress-write-authority.outcome == 'success' && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled' && steps.dmi-bulk.outcome != 'skipped' && steps.dmi-cache-api-prepare.outcome == 'success' && steps.dmi-cache-api-prepare.outputs.distribution_ready == 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (always() && steps.dmi-progress-write-authority.outcome == 'success' && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled' && steps.dmi-bulk.outcome != 'skipped' && steps.dmi-cache-api-prepare.outcome == 'success' && steps.dmi-cache-api-prepare.outputs.distribution_ready == 'true'))
         uses: ./.github/actions/save-owned-dmi-grib
         with:
           path: .cache/dmi-grib
@@ -2589,7 +2599,7 @@ jobs:
 
       - name: Classify DMI readiness before current supplement
         id: dmi-terminal-gate
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true'))
         shell: bash
         env:
           VERIFIED_HANDOFF_REUSED: ${{ steps.weather-source-handoff.outputs.reused || 'false' }}
@@ -2628,7 +2638,7 @@ jobs:
           fi
 
       - name: Strictly snapshot the maintained READY active DMI generation
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.dmi-terminal-gate.outputs.ready == 'true' && steps.dmi-bulk.outputs.candidate_promoted == 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.dmi-terminal-gate.outputs.ready == 'true' && steps.dmi-bulk.outputs.candidate_promoted == 'true'))
         shell: bash
         run: |
           set -euo pipefail
@@ -2646,7 +2656,7 @@ jobs:
 
       - name: Inspect operational WAM handoff before state initialization
         id: wam-bootstrap-readiness
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true' && ((steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outcome == 'success') || steps.historical-wave-transition.outputs.required == 'true')))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true' && ((steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outcome == 'success') || steps.historical-wave-transition.outputs.required == 'true')))
         continue-on-error: true
         shell: bash
         env:
@@ -2672,7 +2682,7 @@ jobs:
           exit "$validator_status"
 
       - name: Report DMI bulk result
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && always()))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && always()))
         run: |
           echo "DMI bulk status: ${{ steps.dmi-bulk.outputs.status || 'unknown' }}"
           echo "Fresh collections this run: ${{ steps.dmi-bulk.outputs.fresh_collections || '0' }}"
@@ -2687,7 +2697,7 @@ jobs:
           fi
 
       - name: Select exact-hour DMI gaps for targeted Copernicus supplement
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))
         id: copernicus-targets
         run: >-
           python scripts/build-copernicus-target-registry.py
@@ -2697,7 +2707,7 @@ jobs:
           --github-output "$GITHUB_OUTPUT"
 
       - name: Bind production to resolved DMI current hour
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))
         shell: bash
         run: |
           set -euo pipefail
@@ -2713,7 +2723,7 @@ jobs:
           echo "RAVRADAR_PRODUCTION_TARGET_HOUR=$resolved_target" >> "$GITHUB_ENV"
 
       - name: Inspect target-bound Copernicus source stage after fresh DMI
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))
         id: targeted-copernicus-cache
         run: >-
           python scripts/check-copernicus-current-range.py
@@ -2729,11 +2739,11 @@ jobs:
           --github-output "$GITHUB_OUTPUT"
 
       - name: Preserve original Copernicus admission evidence before production rebase
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.targeted-copernicus-cache.outputs.source_stage_reusable != 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.targeted-copernicus-cache.outputs.source_stage_reusable != 'true'))
         run: echo "Preserve original source-stage evidence for validated donor migration before rebase."
 
       - name: Plan global current acquisition before Copernicus
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'))
         continue-on-error: true
         shell: bash
         run: |
@@ -2746,12 +2756,12 @@ jobs:
           fi
 
       - name: Install targeted Copernicus dependencies
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true' && inputs.checkpoint_only != true))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true' && inputs.checkpoint_only != true))
         continue-on-error: true
         run: python -m pip install --disable-pip-version-check -r requirements-copernicus.txt
 
       - name: Verify targeted Copernicus credentials
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true' && inputs.checkpoint_only != true))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true' && inputs.checkpoint_only != true))
         continue-on-error: true
         env:
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
@@ -2763,7 +2773,7 @@ jobs:
           fi
 
       - name: Preserve the fixed epoch post-processing reserve before copernicus
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && ((inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true) && steps.preflight.outputs.should_run == 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && ((inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true) && steps.preflight.outputs.should_run == 'true'))
         env:
           QUICK_PROGRESS_SOURCE: ${{ inputs.current_family_cold_start != true && inputs.quick_progress_source || '' }}
           CHECKPOINT_TARGET_HOUR: ${{ inputs.current_family_cold_start != true && inputs.checkpoint_only && inputs.production_target_hour || '' }}
@@ -2771,7 +2781,7 @@ jobs:
 
       - name: Fill only exact-hour DMI gaps from Copernicus
         id: copernicus-fill
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true' && inputs.checkpoint_only != true))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true' && inputs.checkpoint_only != true))
         continue-on-error: true
         env:
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
@@ -2790,7 +2800,7 @@ jobs:
           --authoritative-targets data/live/coastal-parts-v2.json
 
       - name: Require reusable Copernicus source stage before combined current closure
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))
         run: >-
           python scripts/check-copernicus-current-range.py
           --shadow .cache/copernicus-current-shadow.json
@@ -2803,7 +2813,7 @@ jobs:
           --require-source-stage-reusable
 
       - name: Preserve the fixed epoch post-processing reserve before open-meteo
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && ((inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true) && steps.preflight.outputs.should_run == 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && ((inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true) && steps.preflight.outputs.should_run == 'true'))
         env:
           QUICK_PROGRESS_SOURCE: ${{ inputs.current_family_cold_start != true && inputs.quick_progress_source || '' }}
           CHECKPOINT_TARGET_HOUR: ${{ inputs.current_family_cold_start != true && inputs.checkpoint_only && inputs.production_target_hour || '' }}
@@ -2811,7 +2821,7 @@ jobs:
 
       - name: Fill only the exact remaining current gaps from Open-Meteo
         id: open-meteo-fill
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'))
         continue-on-error: true
         run: >-
           python scripts/fill-open-meteo-current-fallback.py
@@ -2823,7 +2833,7 @@ jobs:
           ${{ inputs.checkpoint_only && '--reuse-only' || '' }}
 
       - name: Preserve safe weather acquisition diagnostics before terminal gates
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.dmi-bulk.outcome != 'skipped' && steps.dmi-bulk.outcome != ''))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.dmi-bulk.outcome != 'skipped' && steps.dmi-bulk.outcome != ''))
         continue-on-error: true
         uses: actions/upload-artifact@v7
         with:
@@ -2837,7 +2847,7 @@ jobs:
             data/diagnostics/open-meteo-current-fetch.json
 
       - name: Require verified Open-Meteo residual checkpoint before closure
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true' && (steps.weather-source-handoff.outputs.reused == 'true' || steps.open-meteo-fill.outcome != 'skipped')))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true' && (steps.weather-source-handoff.outputs.reused == 'true' || steps.open-meteo-fill.outcome != 'skipped')))
         shell: bash
         run: |
           set -euo pipefail
@@ -2856,7 +2866,7 @@ jobs:
           echo "Open-Meteo finished with ${{ steps.open-meteo-fill.outputs.missing_pair_count }} explicit residual gaps; closure will preserve them honestly."
 
       - name: Require complete operational WAM after provider progress for state initialization
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true' && ((steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true') || steps.historical-wave-transition.outputs.required == 'true')))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true' && ((steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true') || steps.historical-wave-transition.outputs.required == 'true')))
         shell: bash
         env:
           WAM_OUTCOME: ${{ steps.wam-bootstrap-readiness.outcome }}
@@ -2867,7 +2877,7 @@ jobs:
           test "$WAM_CODE" = "NONE"
 
       - name: Classify target freshness after the bounded supplier chain
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))
         id: supplier-target-freshness
         run: >-
           node scripts/check-production-target-freshness.mjs
@@ -2876,34 +2886,34 @@ jobs:
           --github-output "$GITHUB_OUTPUT"
 
       - name: Build exact DMI-first current operational closure
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))
         run: >-
           python scripts/build-current-operational-closure.py
           --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
           --dmi .cache/dmi-candidate-progress.json
 
       - name: Verify rebuilt closure exactly matches the run-bound source handoff
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused == 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused == 'true'))
         run: >-
           node scripts/verified-weather-source-handoff.mjs verify-closure
           --attestation "$RUNNER_TEMP/ravradar-weather-source-handoff/artifact/attestation.json"
           --closure data/diagnostics/current-operational-closure.json
 
       - name: Build public seven-day current history and controlled live selection
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))
         run: >-
           python scripts/build-live-current-pilot.py
           --dmi .cache/dmi-candidate-progress.json
 
       - name: Preserve the fixed epoch post-processing reserve before weather
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && ((inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true) && steps.preflight.outputs.should_run == 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && ((inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true) && steps.preflight.outputs.should_run == 'true'))
         env:
           QUICK_PROGRESS_SOURCE: ${{ inputs.current_family_cold_start != true && inputs.quick_progress_source || '' }}
           CHECKPOINT_TARGET_HOUR: ${{ inputs.current_family_cold_start != true && inputs.checkpoint_only && inputs.production_target_hour || '' }}
         run: node scripts/weather-state-epoch-budget.mjs weather
 
       - name: Update central weather cache
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))
         id: weather
         # The score build and the 118-hour public sealing step are one bounded
         # operation. A
@@ -2961,7 +2971,7 @@ jobs:
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Report counts for each weather component after central cache
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && ((steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success'))))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && ((steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success'))))
         continue-on-error: true
         shell: bash
         run: |
@@ -2993,7 +3003,7 @@ jobs:
           NODE
 
       - name: Reclaim a bounded Copernicus quality slice for the next normal run
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && inputs.quick_confirmation != true && inputs.checkpoint_only != true))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && inputs.quick_confirmation != true && inputs.checkpoint_only != true))
         id: copernicus-next-run-refresh
         continue-on-error: true
         timeout-minutes: 7
@@ -3014,7 +3024,7 @@ jobs:
           --authoritative-targets data/live/coastal-parts-v2.json
 
       - name: Recheck reusable Copernicus evidence after optional quality work
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success'))))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success'))))
         run: >-
           python scripts/check-copernicus-current-range.py
           --shadow .cache/copernicus-current-shadow.json
@@ -3030,7 +3040,7 @@ jobs:
         # An early restore/short-confirmation failure must never publish a new
         # run-id checkpoint that is only a copy of older progress. At least the
         # first real supplier step must have been attempted.
-        if: inputs.source_normal_producer == false && ((inputs.current_family_cold_start != true || steps.dmi-bulk.outputs.current_family_cold_producer_closed == 'true') && inputs.completed_private_runtime != true && (always() && github.ref == 'refs/heads/main' && steps.preflight.outputs.should_run == 'true' && steps.component-progress-restore.outcome == 'success' && steps.component-progress-restore.outputs.captured == 'true' && (steps.dmi-bulk.outcome == 'success' || steps.dmi-bulk.outcome == 'failure')))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && ((inputs.current_family_cold_start != true || steps.dmi-bulk.outputs.current_family_cold_producer_closed == 'true') && inputs.completed_private_runtime != true && (always() && github.ref == 'refs/heads/main' && steps.preflight.outputs.should_run == 'true' && steps.component-progress-restore.outcome == 'success' && steps.component-progress-restore.outputs.captured == 'true' && (steps.dmi-bulk.outcome == 'success' || steps.dmi-bulk.outcome == 'failure')))
         continue-on-error: true
         timeout-minutes: 4
         shell: bash
@@ -3044,7 +3054,7 @@ jobs:
           echo "saved=$(jq -r '.saved == true' "$RUNNER_TEMP/weather-progress-save-report.json")" >> "$GITHUB_OUTPUT"
 
       - name: Save only the authenticated encrypted private weather snapshot
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (always() && steps.component-progress-seal.outcome == 'success' && steps.component-progress-seal.outputs.saved == 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (always() && steps.component-progress-seal.outcome == 'success' && steps.component-progress-seal.outputs.saved == 'true'))
         continue-on-error: true
         uses: ./.github/actions/save-owned-dmi-grib
         with:
@@ -3052,7 +3062,7 @@ jobs:
           key: weather-private-progress-encrypted-v2-${{ runner.os }}-main-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Refuse a point activation without a successful exact-point weather rebuild
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))
         shell: bash
         env:
           WEATHER_OUTCOME: ${{ steps.weather.outcome }}
@@ -3063,7 +3073,7 @@ jobs:
           fi
 
       - name: Attach scientific current provenance and exact DMI grid points
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true')
         # update-weather seals provenance before compact persistence. This
         # retained step now proves that the sealed result is byte-idempotent;
         # it must never mutate the paired compact conditions/hour pack.
@@ -3072,11 +3082,11 @@ jobs:
         run: npm run build:current-provenance
 
       - name: Rebuild deterministic public weather runtime before validation and deploy
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true')
         run: node scripts/generate-public-conditions.mjs
 
       - name: Refuse loss of previously valid public weather on identical coastal hours
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover')
         shell: bash
         env:
           EXACT_WEATHER_RECOVERY_REQUIRED: ${{ steps.exact-weather-recovery.outputs.required || 'false' }}
@@ -3100,7 +3110,7 @@ jobs:
         # hard safety boundaries below.
         continue-on-error: true
         id: ravscore-integrated-runtime-audit
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true')
         shell: bash
         env:
           DMI_BULK_CACHE_PATH: .cache/dmi-candidate-progress.json
@@ -3185,7 +3195,7 @@ jobs:
 
       - name: Upload the payload-free runtime audit for every weather build
         continue-on-error: true
-        if: always() && ((inputs.source_normal_producer == false && steps.preflight.outputs.should_run == 'true' && hashFiles('.geometry-v2-work/ravscore-integrated-public-runtime-audit.json', '.geometry-v2-work/ravscore-integrated-public-runtime-audit.json.failure.json', '.geometry-v2-work/ravscore-integrated-public-runtime-audit.json.execution.json') != '') || (inputs.source_normal_producer == true && (steps.source-normal.outputs.source_result_kind == 'PREPARED_WEATHER' || steps.source-normal.outputs.source_operational_control_report == 'observed') && hashFiles('.geometry-v2-work/ravscore-integrated-public-runtime-audit.json', '.geometry-v2-work/ravscore-integrated-public-runtime-audit.json.failure.json', '.geometry-v2-work/ravscore-integrated-public-runtime-audit.json.execution.json') != ''))
+        if: always() && ((steps.operational-model.outputs.source_normal_producer == 'false' && steps.preflight.outputs.should_run == 'true' && hashFiles('.geometry-v2-work/ravscore-integrated-public-runtime-audit.json', '.geometry-v2-work/ravscore-integrated-public-runtime-audit.json.failure.json', '.geometry-v2-work/ravscore-integrated-public-runtime-audit.json.execution.json') != '') || (steps.operational-model.outputs.source_normal_producer == 'true' && (steps.source-normal.outputs.source_result_kind == 'PREPARED_WEATHER' || steps.source-normal.outputs.source_operational_control_report == 'observed') && hashFiles('.geometry-v2-work/ravscore-integrated-public-runtime-audit.json', '.geometry-v2-work/ravscore-integrated-public-runtime-audit.json.failure.json', '.geometry-v2-work/ravscore-integrated-public-runtime-audit.json.execution.json') != ''))
         uses: actions/upload-artifact@v7
         with:
           name: ravscore-runtime-audit-${{ github.run_id }}-${{ github.run_attempt }}
@@ -3198,7 +3208,7 @@ jobs:
 
       - name: Upload the payload-free current input-stage trace for every weather build
         continue-on-error: true
-        if: always() && ((inputs.source_normal_producer == false && (always() && steps.preflight.outputs.should_run == 'true' && hashFiles('data/diagnostics/ravscore-current-input-stage-trace.json') != '')) || (inputs.source_normal_producer == true && (steps.source-normal.outputs.source_result_kind == 'PREPARED_WEATHER' || steps.source-normal.outputs.source_operational_control_report == 'observed') && hashFiles('data/diagnostics/ravscore-current-input-stage-trace.json') != ''))
+        if: always() && ((steps.operational-model.outputs.source_normal_producer == 'false' && (always() && steps.preflight.outputs.should_run == 'true' && hashFiles('data/diagnostics/ravscore-current-input-stage-trace.json') != '')) || (steps.operational-model.outputs.source_normal_producer == 'true' && (steps.source-normal.outputs.source_result_kind == 'PREPARED_WEATHER' || steps.source-normal.outputs.source_operational_control_report == 'observed') && hashFiles('data/diagnostics/ravscore-current-input-stage-trace.json') != ''))
         uses: actions/upload-artifact@v7
         with:
           name: ravscore-current-input-stage-trace-${{ github.run_id }}-${{ github.run_attempt }}
@@ -3207,7 +3217,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload the incremental payload-free full-validation report
-        if: inputs.source_normal_producer == false && (always() && steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action == 'integrated-cutover' && hashFiles('.geometry-v2-work/ravscore-integrated-full-validation-report.json') != '')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (always() && steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action == 'integrated-cutover' && hashFiles('.geometry-v2-work/ravscore-integrated-full-validation-report.json') != '')
         uses: actions/upload-artifact@v7
         with:
           name: ravscore-integrated-full-validation-${{ github.run_id }}-${{ github.run_attempt }}
@@ -3216,7 +3226,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload the payload-free cutover validation summary
-        if: inputs.source_normal_producer == false && (always() && steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action == 'integrated-cutover' && hashFiles('.geometry-v2-work/ravscore-integrated-cutover-validation-report.json') != '')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (always() && steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action == 'integrated-cutover' && hashFiles('.geometry-v2-work/ravscore-integrated-cutover-validation-report.json') != '')
         uses: actions/upload-artifact@v7
         with:
           name: ravscore-integrated-cutover-validation-${{ github.run_id }}-${{ github.run_attempt }}
@@ -3226,7 +3236,7 @@ jobs:
 
       - name: Create and validate exactly one checkpoint disposition before release gate
         id: checkpoint-disposition
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true')
         shell: bash
         run: |
           set -euo pipefail
@@ -3266,7 +3276,7 @@ jobs:
       # private bundle before any late central write can stop this runner.
       - name: Build private production runtime bundle specification
         id: private-runtime-bundle-spec
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')))
         run: >-
           node scripts/private-production-runtime-workflow.mjs create-spec
           --repository-root "$GITHUB_WORKSPACE"
@@ -3275,7 +3285,7 @@ jobs:
 
       - name: Create the next private production runtime bundle atomically
         id: private-runtime-bundle-create
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')))
         shell: bash
         run: |
           mkdir -p "$RAVRADAR_PRIVATE_RUNTIME_ROOT"
@@ -3291,7 +3301,7 @@ jobs:
 
       - name: Encrypt exact completed private build for late-failure recovery
         id: private-build-stage-seal
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED') && steps.operational-action.outputs.action != 'candidate-dry-run')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED') && steps.operational-action.outputs.action != 'candidate-dry-run')
         timeout-minutes: 30
         shell: bash
         run: |
@@ -3318,7 +3328,7 @@ jobs:
 
       - name: Save only encrypted completed private build for one day
         id: private-build-stage-upload
-        if: inputs.source_normal_producer == false && (steps.private-build-stage-seal.outcome == 'success')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.private-build-stage-seal.outcome == 'success')
         uses: actions/upload-artifact@v7
         with:
           name: ravradar-private-build-stage-${{ github.run_id }}-${{ github.run_attempt }}
@@ -3330,13 +3340,13 @@ jobs:
       - name: Generate and strictly validate production reference zones
         continue-on-error: true
         id: production-reference-zones
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && steps.operational-action.outputs.action != 'integrated-cutover')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && steps.operational-action.outputs.action != 'integrated-cutover')
         run: node scripts/generate-state-reference-report-4.0.113.mjs --strict
 
       - name: Ensure exact historical Candidate G source is present for full validation
         continue-on-error: true
         id: historical-source-prepare
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover')
         shell: bash
         run: |
           set -euo pipefail
@@ -3352,7 +3362,7 @@ jobs:
       - name: Validate critical production artifact after fresh weather and current provenance
         continue-on-error: true
         id: full-validation
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover')
         env:
           DMI_BULK_CACHE_PATH: .cache/dmi-candidate-progress.json
         run: >-
@@ -3363,12 +3373,12 @@ jobs:
       - name: Run release governance gate after refreshed data validation
         continue-on-error: true
         id: release-gate
-        if: inputs.source_normal_producer == false && (always() && steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (always() && steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover')
         run: npm run release:gate:production
 
       - name: Upload payload-free production validation reports
         continue-on-error: true
-        if: always() && ((inputs.source_normal_producer == false && (always() && steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover' && hashFiles('.geometry-v2-work/production-artifact-validation-report.json') != '')) || (inputs.source_normal_producer == true && (steps.source-normal.outputs.source_result_kind == 'PREPARED_WEATHER' || steps.source-normal.outputs.source_operational_control_report == 'observed') && hashFiles('.geometry-v2-work/production-artifact-validation-report.json') != ''))
+        if: always() && ((steps.operational-model.outputs.source_normal_producer == 'false' && (always() && steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover' && hashFiles('.geometry-v2-work/production-artifact-validation-report.json') != '')) || (steps.operational-model.outputs.source_normal_producer == 'true' && (steps.source-normal.outputs.source_result_kind == 'PREPARED_WEATHER' || steps.source-normal.outputs.source_operational_control_report == 'observed') && hashFiles('.geometry-v2-work/production-artifact-validation-report.json') != ''))
         uses: actions/upload-artifact@v7
         with:
           name: ravradar-production-validation-${{ github.run_id }}-${{ github.run_attempt }}
@@ -3379,7 +3389,7 @@ jobs:
           if-no-files-found: error
 
       - name: Reconfirm exact main before sealing normal verified weather source handoff
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && inputs.produce_weather_handoff == true)
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && inputs.produce_weather_handoff == true)
         shell: bash
         env:
           EXPECTED_HEAD_SHA: ${{ github.sha }}
@@ -3398,7 +3408,7 @@ jobs:
 
       - name: Seal normal exact run-bound verified weather source handoff
         id: normal-weather-source-handoff-seal
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && inputs.produce_weather_handoff == true)
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && inputs.produce_weather_handoff == true)
         shell: bash
         run: >-
           node scripts/verified-weather-source-handoff.mjs seal
@@ -3414,14 +3424,14 @@ jobs:
           --github-output "$GITHUB_OUTPUT"
 
       - name: Save normal exact run-bound verified weather source cache
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && inputs.produce_weather_handoff == true)
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && inputs.produce_weather_handoff == true)
         uses: actions/cache/save@v6
         with:
           path: .cache/verified-weather-source-handoff-cache
           key: ${{ steps.normal-weather-source-handoff-seal.outputs.cache_key }}
 
       - name: Upload only aggregate normal verified weather source handoff attestation
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && inputs.produce_weather_handoff == true)
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && inputs.produce_weather_handoff == true)
         uses: actions/upload-artifact@v7
         with:
           name: ravradar-weather-source-handoff-${{ github.run_id }}-${{ github.run_attempt }}
@@ -3431,7 +3441,7 @@ jobs:
           path: .cache/verified-weather-source-handoff-cache/attestation.json
 
       - name: Seal exact integrated public implementation closure
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true')
         id: integrated-implementation
         shell: bash
         run: |
@@ -3447,7 +3457,7 @@ jobs:
 
       - name: Require exact integrated backend and Edge readiness before integrated Pages
         id: integrated-backend-readiness
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance' || steps.operational-action.outputs.action == 'integrated-return' || steps.operational-action.outputs.action == 'integrated-cutover') && steps.current-grid-edge-route.outputs.required != 'true')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance' || steps.operational-action.outputs.action == 'integrated-return' || steps.operational-action.outputs.action == 'integrated-cutover') && steps.current-grid-edge-route.outputs.required != 'true')
         shell: bash
         run: |
           set -euo pipefail
@@ -3470,13 +3480,13 @@ jobs:
       - name: Validate updated weather cache
         continue-on-error: true
         id: updated-weather-validation
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && steps.operational-action.outputs.action != 'integrated-cutover')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && steps.operational-action.outputs.action != 'integrated-cutover')
         run: npm run validate:data
 
       - name: Verify active trip-storage Edge and D1 read contracts without creating data
         continue-on-error: true
         id: trip-storage-contract-check
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true')
         run: |
           node scripts/verify-trip-storage-edge.mjs
           node scripts/verify-cloudflare-trip-gateway.mjs
@@ -3488,7 +3498,7 @@ jobs:
           TRIP_GATEWAY_SHARED_SECRET: ${{ secrets.TRIP_GATEWAY_SHARED_SECRET }}
 
       - name: Reclassify target freshness before protected writes and Pages artifact
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true')
         id: prewrite-target-freshness
         run: >-
           node scripts/check-production-target-freshness.mjs
@@ -3498,7 +3508,7 @@ jobs:
 
       - name: Reconfirm current origin/main before protected writes and Pages artifact
         id: prewrite-main-authority
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true')
         shell: bash
         env:
           EXPECTED_HEAD_SHA: ${{ github.sha }}
@@ -3511,7 +3521,7 @@ jobs:
       - name: Atomically promote the validated point candidate in central admin storage
         continue-on-error: true
         id: point-candidate-promotion
-        if: inputs.source_normal_producer == false && (inputs.current_family_cold_start != true && inputs.completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap != true && steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && steps.operational-action.outputs.action != 'candidate-dry-run'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.current_family_cold_start != true && inputs.completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap != true && steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && steps.operational-action.outputs.action != 'candidate-dry-run'))
         run: python scripts/promote-coastal-point-activation.py
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -3519,7 +3529,7 @@ jobs:
 
       - name: Refuse completed-runtime target or calibration mismatch before any new S or B publication
         id: completed-runtime-target
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime == true)
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime == true)
         shell: bash
         run: |
           set -euo pipefail
@@ -3541,7 +3551,7 @@ jobs:
 
       - name: Build atomic schema-6 and Candidate G rollback checkpoint after final gates
         id: checkpoint-build
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED'))
         run: >-
           node scripts/ravscore-continuation-checkpoint.mjs
           --save
@@ -3550,7 +3560,7 @@ jobs:
 
       - name: Save atomic schema-6 and Candidate G rollback checkpoint after final gates
         id: checkpoint-save
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED') && steps.operational-action.outputs.action != 'candidate-dry-run')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED') && steps.operational-action.outputs.action != 'candidate-dry-run')
         uses: actions/cache/save@v6
         with:
           path: .cache/ravscore-continuation-checkpoint
@@ -3559,7 +3569,7 @@ jobs:
       - name: Build dataminimized weather preflight state after final gates
         id: weather-preflight-state-build
         continue-on-error: true
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && steps.operational-action.outputs.action != 'candidate-dry-run')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && steps.operational-action.outputs.action != 'candidate-dry-run')
         run: >-
           node scripts/private-production-runtime-workflow.mjs create-preflight
           --repository-root "$GITHUB_WORKSPACE"
@@ -3569,7 +3579,7 @@ jobs:
       - name: Save dataminimized weather preflight state
         continue-on-error: true
         id: weather-preflight-state-save
-        if: inputs.source_normal_producer == false && (steps.weather-preflight-state-build.outcome == 'success' && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && steps.operational-action.outputs.action != 'candidate-dry-run'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.weather-preflight-state-build.outcome == 'success' && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && steps.operational-action.outputs.action != 'candidate-dry-run'))
         uses: actions/cache/save@v6
         with:
           path: .cache/weather-preflight-state
@@ -3577,7 +3587,7 @@ jobs:
 
       - name: Reconfirm current main before protected private-runtime write
         id: private-runtime-write-authority
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')))
         shell: bash
         run: |
           git fetch --no-tags origin main
@@ -3585,7 +3595,7 @@ jobs:
           test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
 
       - name: Prove the whole recreated B manifest and installed originals are unchanged
-        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime == true)
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime == true)
         shell: bash
         run: |
           set -euo pipefail
@@ -3599,7 +3609,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Refuse current-family B publication without a completable checkpoint disposition
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && steps.operational-action.outputs.action != 'candidate-dry-run')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && steps.operational-action.outputs.action != 'candidate-dry-run')
         shell: bash
         env:
           CHECKPOINT_DISPOSITION: ${{ steps.checkpoint-disposition.outputs.disposition }}
@@ -3615,7 +3625,7 @@ jobs:
 
       - name: Publish bounded private runtime with one protected rollback generation
         id: private-runtime-publish
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && steps.operational-action.outputs.action != 'candidate-dry-run')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && steps.operational-action.outputs.action != 'candidate-dry-run')
         shell: bash
         run: |
           set -euo pipefail
@@ -3638,7 +3648,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Reconfirm current main before protected RavScore write
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED'))
         shell: bash
         run: |
           git fetch --no-tags origin main
@@ -3647,7 +3657,7 @@ jobs:
 
       - name: Publish atomic RavScore checkpoint to protected admin storage
         id: checkpoint-publish
-        if: inputs.source_normal_producer == false && (steps.private-runtime-publish.outcome == 'success' && steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED') && steps.operational-action.outputs.action != 'candidate-dry-run')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.private-runtime-publish.outcome == 'success' && steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED') && steps.operational-action.outputs.action != 'candidate-dry-run')
         run: >-
           node scripts/protected-ravscore-continuation-checkpoint.mjs
           --publish
@@ -3658,7 +3668,7 @@ jobs:
 
       - name: Prove the private runtime object is not anonymously readable
         id: private-runtime-anon-audit
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')))
         run: node scripts/protected-private-production-runtime.mjs --audit-anon
         env:
           RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
@@ -3672,7 +3682,7 @@ jobs:
         if: always()
         shell: bash
         env:
-          SOURCE_SELECTED: ${{ toJSON(inputs.source_normal_producer) }}
+          SOURCE_SELECTED: ${{ steps.operational-model.outputs.source_normal_producer }}
           SOURCE_ACTION_OUTCOME: ${{ steps.source-normal.outcome }}
           SOURCE_OUTPUTS: ${{ toJSON(steps.source-normal.outputs) }}
           LEGACY_PREFLIGHT_SHOULD_RUN: ${{ steps.preflight.outputs.should_run }}
@@ -3772,7 +3782,7 @@ jobs:
           NODE
 
       - name: Seal Candidate G rollback or maintenance plan from the fresh private runtime
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && startsWith(steps.operational-action.outputs.action, 'candidate-'))
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && startsWith(steps.operational-action.outputs.action, 'candidate-'))
         shell: bash
         env:
           RAVRADAR_CANDIDATE_G_ROLLBACK_CONFIRMATION: ${{ inputs.ravscore_candidate_g_rollback_confirmation }}
@@ -3849,7 +3859,7 @@ jobs:
             --expected-dataset-id "$dataset_id")
 
       - name: Seal integrated return, initial cutover or historical maintenance plan after backend and public gates
-        if: (inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && (steps.operational-action.outputs.action == 'integrated-return' || steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && steps.current-grid-edge-route.outputs.required != 'true')) || (inputs.source_normal_producer == true && steps.source-normal.outcome == 'success' && steps.source-normal.outputs.source_result_kind == 'PREPARED_WEATHER' && steps.weather-route-result.outcome == 'success' && steps.weather-route-result.outputs.preflight_should_run == 'true' && steps.weather-route-result.outputs.operational_action == 'integrated-historical-maintenance' && steps.current-grid-edge-route.outputs.required == 'false')
+        if: (steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && (steps.operational-action.outputs.action == 'integrated-return' || steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && steps.current-grid-edge-route.outputs.required != 'true')) || (steps.operational-model.outputs.source_normal_producer == 'true' && steps.source-normal.outcome == 'success' && steps.source-normal.outputs.source_result_kind == 'PREPARED_WEATHER' && steps.weather-route-result.outcome == 'success' && steps.weather-route-result.outputs.preflight_should_run == 'true' && steps.weather-route-result.outputs.operational_action == 'integrated-historical-maintenance' && steps.current-grid-edge-route.outputs.required == 'false')
         shell: bash
         run: |
           action="${{ steps.operational-action.outputs.action }}"
@@ -4509,7 +4519,7 @@ jobs:
 
       - name: Seal privacy-safe operational deploy handoff
         id: operational-handoff-seal
-        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true')
         shell: bash
         run: |
           set -euo pipefail
@@ -4663,7 +4673,7 @@ jobs:
 
       - name: Seal SOURCE through the unchanged normal operational handoff contract
         id: source-operational-handoff-seal
-        if: inputs.source_normal_producer == true && steps.weather-route-result.outputs.source_result_kind == 'PREPARED_WEATHER'
+        if: steps.operational-model.outputs.source_normal_producer == 'true' && steps.weather-route-result.outputs.source_result_kind == 'PREPARED_WEATHER'
         shell: bash
         run: |
           set -euo pipefail
@@ -4818,7 +4828,7 @@ jobs:
       - name: Collect every operational control outcome without blocking valid weather
         continue-on-error: true
         id: operational-control-summary
-        if: inputs.source_normal_producer == false && (always() && steps.preflight.outputs.should_run == 'true')
+        if: steps.operational-model.outputs.source_normal_producer == 'false' && (always() && steps.preflight.outputs.should_run == 'true')
         shell: bash
         run: >-
           node scripts/weather-operational-control-summary.mjs
@@ -4870,7 +4880,7 @@ jobs:
       - name: Collect all 35 actual SOURCE and common outer outcomes
         continue-on-error: true
         id: source-operational-control-summary
-        if: always() && inputs.source_normal_producer == true && steps.weather-route-result.outputs.source_result_kind == 'PREPARED_WEATHER'
+        if: always() && steps.operational-model.outputs.source_normal_producer == 'true' && steps.weather-route-result.outputs.source_result_kind == 'PREPARED_WEATHER'
         shell: bash
         run: >-
           node scripts/weather-operational-control-summary.mjs

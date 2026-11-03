@@ -31,7 +31,7 @@ import { resolveOperationalRavScoreModel, operationalResolvedBindingCurrent,
   RAVSCORE_OPERATIONAL_ACTIVATION_DOCUMENT_KEY as OPERATION,
   RAVSCORE_PROFILE_SELECTION_DOCUMENT_KEY as PROFILE }
   from './ravscore-operational-activation.mjs';
-import { decideSourceGate } from './lib/weather-source-gate.mjs';
+import { decideSourceGate, SOURCE_GATE_CONTRACT, SOURCE_GATE_STEP } from './lib/weather-source-gate.mjs';
 import { sourceTreeContentSha256 } from './lib/source-tree-content.mjs';
 import { ownFileDescriptorIdentity }
   from './lib/private-weather-component-pack.mjs';
@@ -42,9 +42,10 @@ const PRIVATE = '/tmp/ravradar-private-production-runtime';
 const BUNDLE = path.join(PRIVATE, 'bundle'), RESTORED = path.join(PRIVATE, 'restored');
 const CHECKPOINT = '.cache/ravscore-continuation-checkpoint/checkpoint.json';
 const REGISTRY = 'data/live/coastal-parts-v2.json';
-// The external cron and ordinary manual caller both use this current workflow.
-// Its named reusable job is verified from run-current-weather-once.yml:879-892.
-const WORKFLOW = '.github/workflows/run-current-weather-once.yml';
+// The two existing normal main dispatch destinations share the exact reusable job.
+// The actual GitHub run path is rechecked on every qualification.
+const WORKFLOWS = Object.freeze(['.github/workflows/run-current-weather-once.yml',
+  '.github/workflows/update-and-deploy.yml']);
 const JOB = 'Build and prepare weather production through reusable workflow / build-and-prepare';
 const sessions = new WeakMap(), tailSessions = new WeakMap(), retained = new Set();
 let attempted = false;
@@ -340,16 +341,69 @@ async function githubJson(state, route) {
   return { json, response, before, after };
 }
 
+// Direct execution in THIS main job, never reuse of a self-owned cache marker.
+// Fresh run/job/runner evidence is established by qualifyNormalJob before this.
+function assertSourceNormalCurrentSourceExecution({record,identity,run,job,sourceTreeSha256,workflowSource,observedAt}){
+  need(record&&typeof record==='object'&&!Array.isArray(record)
+    &&Object.keys(record).sort().join(',')===['contractId','repository','headSha','sourceTreeSha256','proofKind',
+      'producerHeadSha','runHeadSha','runId','runAttempt','conclusion'].sort().join(','),'CURRENT_SOURCE_RECORD');
+  need(record.contractId===SOURCE_GATE_CONTRACT&&record.repository===identity.GITHUB_REPOSITORY
+    &&record.headSha===identity.GITHUB_SHA&&record.producerHeadSha===identity.GITHUB_SHA
+    &&record.runHeadSha===identity.GITHUB_SHA&&record.sourceTreeSha256===sourceTreeSha256
+    &&record.proofKind==='main'&&record.runId===identity.GITHUB_RUN_ID
+    &&record.runAttempt===Number(identity.GITHUB_RUN_ATTEMPT)&&record.conclusion==='success'
+    &&run.id===Number(record.runId)&&run.run_attempt===record.runAttempt,'CURRENT_SOURCE_RECORD');
+  need(typeof workflowSource==='string'&&Buffer.byteLength(workflowSource)>0
+    &&Buffer.byteLength(workflowSource)<=1024*1024,'CURRENT_SOURCE_COMMAND');
+  const headings=[...workflowSource.matchAll(/^      - (?:name|uses): [^\n]+\n/gm)];
+  const named=id=>{
+    const rows=headings.map((row,index)=>workflowSource.slice(row.index,headings[index+1]?.index??workflowSource.length))
+      .filter(body=>body.includes('        id: '+id+'\n'));
+    need(rows.length===1,'CURRENT_SOURCE_COMMAND');return rows[0];
+  };
+  const gate=named('source-gate'),recordStep=named('source-record'),action=named('source-normal');
+  need(gate.startsWith('      - name: '+SOURCE_GATE_STEP+'\n')
+    &&/^        run: npm run validate:source\n/m.test(gate)
+    &&!/^        (?:continue-on-error|working-directory):/m.test(gate)
+    &&recordStep.startsWith('      - name: Record actual source validation outcome\n')
+    &&/^        run: node scripts\/weather-source-gate\.mjs record\n/m.test(recordStep)
+    &&recordStep.includes('          SOURCE_GATE_OUTCOME: ${{ steps.source-gate.outcome }}\n')
+    &&!/^        (?:continue-on-error|working-directory):/m.test(recordStep)
+    &&action.startsWith('      - name: Run the one explicit owned SOURCE ordinary route\n')
+    &&/^        uses: \.\/\.github\/actions\/save-owned-dmi-grib\n/m.test(action)
+    &&action.includes('          operation: source\n'),'CURRENT_SOURCE_COMMAND');
+  need(Array.isArray(job.steps)&&job.steps.length>0&&job.steps.length<=512,'CURRENT_SOURCE_STEPS');
+  const actual=name=>{
+    const rows=job.steps.filter(step=>step?.name===name);need(rows.length===1,'CURRENT_SOURCE_STEPS');
+    const step=rows[0];need(Number.isSafeInteger(step.number)&&step.number>0,'CURRENT_SOURCE_STEPS');return step;
+  };
+  const executed=actual(SOURCE_GATE_STEP),recorded=actual('Record actual source validation outcome'),
+    active=actual('Run the one explicit owned SOURCE ordinary route');
+  for(const step of [executed,recorded])need(step.status==='completed'&&step.conclusion==='success','CURRENT_SOURCE_STEPS');
+  need(active.status==='in_progress'&&active.conclusion===null&&active.completed_at===null,'CURRENT_SOURCE_STEPS');
+  const stamp=value=>{
+    const time=Date.parse(value??'');need(typeof value==='string'&&Number.isFinite(time)
+      &&new Date(time).toISOString()===value.replace(/(?<!\.\d{3})Z$/,'.000Z'),'CURRENT_SOURCE_ORDER');return time;
+  };
+  const times=[stamp(job.started_at),stamp(executed.started_at),stamp(executed.completed_at),
+    stamp(recorded.started_at),stamp(recorded.completed_at),stamp(active.started_at)];
+  need(executed.number<recorded.number&&recorded.number<active.number
+    &&times.every((value,index)=>index===0||times[index-1]<=value)
+    &&Number.isSafeInteger(observedAt)&&times.at(-1)<=observedAt,'CURRENT_SOURCE_ORDER');
+}
+
 async function qualifyNormalJob(state) {
   if (sourcePrIdentities.has(state.identity)) return qualifyPrNativeJob(state);
   const identity = state.identity, route = '/repos/' + identity.GITHUB_REPOSITORY
     + '/actions/runs/' + identity.GITHUB_RUN_ID + '/attempts/' + identity.GITHUB_RUN_ATTEMPT;
   const { json: run, before } = await githubJson(state, route);
   need(run.id === Number(identity.GITHUB_RUN_ID) && run.run_attempt === Number(identity.GITHUB_RUN_ATTEMPT)
-    && run.head_sha === identity.GITHUB_SHA && run.head_branch === 'main' && run.path === WORKFLOW
+    && run.head_sha === identity.GITHUB_SHA && run.head_branch === 'main' && WORKFLOWS.includes(run.path)
     && run.event === identity.GITHUB_EVENT_NAME && run.status === 'in_progress' && run.conclusion === null
     && run.repository?.full_name === identity.GITHUB_REPOSITORY
     && run.head_repository?.full_name === identity.GITHUB_REPOSITORY, 'RUN');
+  need(state.workflowPath === undefined || state.workflowPath === run.path, 'RUN_PATH_CHANGED');
+  state.workflowPath = run.path;
   const { json: jobs, response } = await githubJson(state, route + '/jobs?per_page=100');
   need(!response.headers.get('link')?.includes('rel="next"') && Array.isArray(jobs.jobs)
     && Number.isSafeInteger(jobs.total_count) && jobs.total_count >= 1 && jobs.total_count <= 100
@@ -370,9 +424,14 @@ async function qualifyNormalJob(state) {
   state.deadline = state.endEpoch - state.clockUpper;
   const record = JSON.parse(await fs.readFile(path.join(ROOT, '.cache/weather-source-validation.json'), 'utf8'));
   const sourceTreeSha256 = sourceTreeContentSha256('HEAD');
-  const decision = await decideSourceGate(record, identity, async route => (await githubJson(state, route)).json,
-    { sourceTreeSha256 });
-  need(decision.required === false, 'EXACT_SOURCE_GATE');
+  if(String(record?.runId)===identity.GITHUB_RUN_ID){
+    assertSourceNormalCurrentSourceExecution({record,identity,run,job,sourceTreeSha256,
+      workflowSource:git(['show','HEAD:.github/workflows/reusable-weather-build.yml']),observedAt:before.wall});
+  }else{
+    const decision = await decideSourceGate(record, identity, async route => (await githubJson(state, route)).json,
+      { sourceTreeSha256 });
+    need(decision.required === false, 'EXACT_SOURCE_GATE');
+  }
   state.sourceTreeSha256 = sourceTreeSha256;
   assertProcess(state);
 }

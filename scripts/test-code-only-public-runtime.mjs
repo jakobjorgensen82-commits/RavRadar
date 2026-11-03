@@ -268,7 +268,31 @@ for (const marker of [
   'kan ikke ugyldiggøre',
 ]) assert.ok(decision.includes(marker), `DEC-0148 mangler ${marker}`);
 
-const workflow = inverseArchivedWeatherRestartWorkflow(fs.readFileSync('.github/workflows/deploy-code-only-repair.yml', 'utf8').replace(/\r\n/g, '\n'));
+// Preserved Main workflow/import oracles use genuine594 CODE on SOURCE.
+// The remaining runtime tests continue to execute the actual current product.
+const actualCodeOnlyWorkflow=fs.readFileSync('.github/workflows/deploy-code-only-repair.yml','utf8').replace(/\r\n/g,'\n');
+const source595WorkflowScope=Object.hasOwn(JSON.parse(fs.readFileSync('package.json','utf8')).scripts,'test:source-producer-source');
+async function genuine594CompatibilitySubject(file){
+  assert.ok(['.github/workflows/deploy-code-only-repair.yml','scripts/protected-private-production-runtime.mjs'].includes(file));
+  const {assertSource594CodeSourceSelected}=await import('./check-assistant-later-h0-predecessor-source.mjs');
+  const profile=assertSource594CodeSourceSelected();
+  const git=args=>execFileSync('git',['-c','protocol.allow=never',...args],{env:{...process.env,
+    GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_OPTIONAL_LOCKS:'0',GIT_TERMINAL_PROMPT:'0'},timeout:30000,maxBuffer:512*1024});
+  assert.equal(git(['rev-parse',profile.head+'^{tree}']).toString().trim(),profile.tree);
+  const row=git(['ls-tree',profile.head,'--',file]).toString().trim();assert.match(row,/^100644 blob [a-f0-9]{40}\t/);
+  const raw=git(['cat-file','blob',profile.head+':'+file]);assert.equal(row.split('\t')[1],file);
+  assert.equal(crypto.createHash('sha1').update('blob '+raw.length+'\0').update(raw).digest('hex'),row.split(' ')[2].split('\t')[0]);
+  assert.equal(Buffer.from(raw.toString('utf8'),'utf8').compare(raw),0);assert.ok(!raw.includes(0));
+  return raw.toString('utf8');
+}
+if(source595WorkflowScope){
+  const {verifySourcePrPackage,verifySourcePrWorkflow}=await import('./national584-source-evidence.mjs');
+  verifySourcePrPackage(JSON.parse(fs.readFileSync('package.json','utf8')));
+  verifySourcePrWorkflow(fs.readFileSync('.github/workflows/validate-pull-request.yml','utf8').replace(/\r\n/g,'\n'));
+}
+const historicalWorkflowInput=source595WorkflowScope
+  ? await genuine594CompatibilitySubject('.github/workflows/deploy-code-only-repair.yml') : actualCodeOnlyWorkflow;
+const workflow = inverseArchivedWeatherRestartWorkflow(historicalWorkflowInput);
 const prewriteOrder = [
   'Rebind saved private runtime to current source without changing measurements',
   'Require exact code-only reuse invariants',
@@ -639,7 +663,9 @@ function relativeModuleSpecifiers(source) {
     ...[...source.matchAll(/\bimport\s*\(\s*['"](\.\.?\/[^'"]+)['"]\s*\)/g)].map(match => match[1]),
   ].sort();
 }
-const protectedRuntimeRelativeImports = relativeModuleSpecifiers(protectedRuntimeSource);
+const actualProtectedRuntimeRelativeImports = relativeModuleSpecifiers(protectedRuntimeSource);
+const protectedRuntimeRelativeImports = relativeModuleSpecifiers(source595WorkflowScope
+  ? await genuine594CompatibilitySubject('scripts/protected-private-production-runtime.mjs') : protectedRuntimeSource);
 assert.deepEqual(protectedRuntimeRelativeImports, [
   '../js/core/ravscore-model-contract.js',
   './lib/bounded-conditions-predecessor-transition.mjs',
@@ -648,6 +674,11 @@ assert.deepEqual(protectedRuntimeRelativeImports, [
   './lib/supabase-admin-rest.mjs',
   './private-production-runtime-bundle.mjs',
 ].sort(), 'Alle relative restore-wrapperimports skal klassificeres i kompatibilitetslukningen');
+if(source595WorkflowScope) assert.deepEqual(actualProtectedRuntimeRelativeImports,[
+  ...protectedRuntimeRelativeImports,
+  './source-normal-producer-entry.mjs',
+  './source-normal-producer-entry.mjs',
+].sort(),'The actual SOURCE wrapper has exactly its two fixed session-entry imports in addition to the preserved594 closure');
 for (const helperPath of [
   'scripts/lib/private-weather-component-inventory.mjs',
   'scripts/lib/r2-private-runtime-storage.mjs',

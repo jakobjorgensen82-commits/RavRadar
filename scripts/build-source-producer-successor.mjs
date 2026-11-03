@@ -5,6 +5,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {execFileSync} from 'node:child_process';
 import {computeCandidateGRollbackBundle,renderCandidateGRollbackGeneratedModule} from './build-candidate-g-rollback-bundle.mjs';
 import {computeRavScoreModelBundle,renderGeneratedBundleModule} from './build-ravscore-model-bundle.mjs';
 import {ravScoreContinuationImplementationSha256} from './lib/ravscore-continuation-implementation-contract.mjs';
@@ -343,6 +344,68 @@ export async function deriveSourceProducerFirstBinding(options){
   assert.equal(await regularSource(SOURCE_PRODUCER_DERIVED_METADATA_PATH),raw,'NULL metadata unchanged');
   return assertSourceProducerDerivedMetadata({schemaVersion:value.schemaVersion,version,binding,output:null});
 }
+// A second, still-uninstalled candidate is an explicit DATA-only branch, not
+// a reset of the first595 issuance or a successor of an installed SOURCE SQL.
+const FIRST_SOURCE_ISSUANCE=Object.freeze({
+  head:'28182da8aab7ca76acbdeea93b9a7d7d1d9e9190',tree:'716268e54f71832a61961033e6caf90588b97c65',
+  metadataSha256:'73b8acb210c2a66e067170f2b59faafcaa0980e571f97671ee4a02676766153c',
+  packageSha256:'3a457162bbbc5211076a275f9509766dff076b84dd7393a316b81372652cd9dc',
+  sql:'supabase/migrations/20261102153958_source_producer_original_bound_successor.sql',
+  sqlSha256:'c74f6e5e970a84fa36fc48df153562ce11ad19716d91937a14102a46b436ab0d',version:'20261102153958',
+});
+async function readPreservedFirstSourceIssuance(){
+  requireSourceProducerCodeParent(); // The SAME genuine594 predecessor, before Git/file reads.
+  for(const key of ['GIT_DIR','GIT_COMMON_DIR','GIT_WORK_TREE','GIT_INDEX_FILE','GIT_OBJECT_DIRECTORY','GIT_ALTERNATE_OBJECT_DIRECTORIES'])
+    assert(!process.env[key],'SOURCE_ALTERNATIVE_GIT_SOURCE_OVERRIDE');
+  const git=args=>execFileSync('git',['-c','protocol.allow=never',...args],{cwd:ROOT,env:{...process.env,
+    GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_OPTIONAL_LOCKS:'0',GIT_TERMINAL_PROMPT:'0'},timeout:30000,maxBuffer:512*1024});
+  const first=FIRST_SOURCE_ISSUANCE;
+  assert.equal(git(['rev-parse',first.head+'^{tree}']).toString().trim(),first.tree,'SOURCE_ALTERNATIVE_FIRST_GIT_TREE');
+  git(['merge-base','--is-ancestor',first.head,'HEAD']);
+  const head=git(['rev-parse','HEAD']).toString().trim();
+  const pinned=(file,digest)=>{const bytes=git(['cat-file','blob',first.head+':'+file]);
+    assert.equal(sha(bytes),digest,'SOURCE_ALTERNATIVE_FIRST_GIT_BYTES');return bytes;};
+  const metadata=pinned(SOURCE_PRODUCER_DERIVED_METADATA_PATH,first.metadataSha256);
+  const sql=pinned(first.sql,first.sqlSha256),release=JSON.parse(pinned('package.json',first.packageSha256).toString('utf8')).version;
+  const physical=async file=>{const target=path.join(ROOT,file),stat=await fs.lstat(target);
+    assert(stat.isFile()&&!stat.isSymbolicLink(),'SOURCE_ALTERNATIVE_PRESERVED_REGULAR_FILE');return fs.readFile(target);};
+  assert.deepEqual(await physical(SOURCE_PRODUCER_DERIVED_METADATA_PATH),metadata,'SOURCE_ALTERNATIVE_PRESERVED_METADATA_BYTES');
+  assert.deepEqual(await physical(first.sql),sql,'SOURCE_ALTERNATIVE_PRESERVED_SQL_BYTES');
+  const state=await readFirstIssuanceMetadata();
+  assert.equal(state.raw,metadata.toString('utf8'));assert.equal(state.value.version,first.version);
+  assert(state.value.binding!==null&&state.value.output!==null,'SOURCE_ALTERNATIVE_FIRST_ISSUANCE_REQUIRED');
+  assert.equal(state.value.output.migrationSha256,first.sqlSha256);
+  return {head,release,raw:state.raw,value:state.value,sql};
+}
+export async function deriveSourceProducerAlternativeBinding(options){
+  assert.equal(arguments.length,1);
+  assert(options&&Object.getPrototypeOf(options)===Object.prototype);
+  assert.deepEqual(Reflect.ownKeys(options),['version'],'Only the normal timestamp; no source, tuple or root override');
+  const {version}=options;assert.match(version,/^[0-9]{14}$/);
+  assert(version>FIRST_SOURCE_ISSUANCE.version,'SOURCE_ALTERNATIVE_LATER_TIMESTAMP_REQUIRED');
+  const previous=await readPreservedFirstSourceIssuance();
+  const release=JSON.parse(await regularSource('package.json')).version;
+  assert.match(release,/^4\.0\.[1-9][0-9]*$/);
+  assert(Number(release.split('.').at(-1))>Number(previous.release.split('.').at(-1)),
+    'SOURCE_ALTERNATIVE_LATER_RELEASE_REQUIRED');
+  if(SOURCE_PRODUCER_PROPOSED_RELEASE!==null)assert.equal(release,SOURCE_PRODUCER_PROPOSED_RELEASE);
+  const prior=await readSourceProducerPredecessorCanonicalSource();
+  assert.equal(sha(prior.canonicalSource),OLD.canonicalSha256);
+  const candidate=await computeCandidateGRollbackBundle();
+  assert.equal(await regularSource('scripts/rollback-assets/ravscore-model-bundle.generated.js'),renderCandidateGRollbackGeneratedModule(candidate));
+  const integrated=await computeRavScoreModelBundle();
+  assert.equal(await regularSource('js/core/ravscore-model-bundle.generated.js'),renderGeneratedBundleModule(integrated));
+  const canonical=value=>Array.isArray(value)?value:value&&typeof value==='object'?Object.fromEntries(Object.keys(value).sort().map(key=>[key,value[key]])):value;
+  const binding={version,C:candidate.modelBundleSha256,I:integrated.modelBundleSha256,T:await ravScoreContinuationImplementationSha256(),
+    candidateManifestSha256:sha(JSON.stringify(candidate.manifest)),
+    integratedManifestSha256:sha(JSON.stringify(integrated.manifest,(_key,value)=>canonical(value)))};
+  assert.equal(binding.C,binding.candidateManifestSha256);assert.equal(binding.I,binding.integratedManifestSha256);
+  assert.equal(new Set(['C','I','T'].flatMap(key=>[OLD[key],binding[key]])).size,6);
+  for(const key of ['C','I'])assert.notEqual(binding[key],previous.value.binding[key],'SOURCE_ALTERNATIVE_ACTUAL_CHANGED_CI_REQUIRED');
+  assert.deepEqual(await readSourceProducerPredecessorCanonicalSource(),prior,'Whole fixed594 predecessor unchanged during alternative derivation');
+  assert.deepEqual(await readPreservedFirstSourceIssuance(),previous,'First595 Git/metadata/SQL preserved throughout alternative derivation');
+  return assertSourceProducerDerivedMetadata({schemaVersion:previous.value.schemaVersion,version,binding,output:null});
+}
 export async function deriveSourceProducerFirstOutput(){
   assert.equal(arguments.length,0);
   const {raw,value}=await readFirstIssuanceMetadata();
@@ -358,6 +421,10 @@ export async function deriveSourceProducerFirstOutput(){
 }
 
 async function main(){
+  if(process.argv[2]==='--derive-alternative-binding'){
+    assert.equal(process.argv.length,4);
+    console.log(JSON.stringify(await deriveSourceProducerAlternativeBinding({version:process.argv[3]}),null,2));return;
+  }
   if(process.argv[2]==='--derive-binding'){
     assert.equal(process.argv.length,4);
     const value=await deriveSourceProducerFirstBinding({version:process.argv[3]});

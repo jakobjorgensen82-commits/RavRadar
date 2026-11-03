@@ -1,3 +1,9 @@
+## 3. november — den kendte schema1/2-kalder er merget på main
+
+PR795 er kildekvalificeret og faktisk merget på main. Før-DMI-selectoren tillader nu de to kendte kontinuitetsformater schema1 og schema2; øvrige bindings-, model- og særforløbsvagter bevares. Det er ikke i sig selv bevis for ny offentlig dækningsvirkning. Den endelige normale main-sammenføring og hele SOURCE-kvalifikationen skal stadig gennemføres før en ny udstedelse eller produktionshandling.
+
+Det gældende krav om reelle huller før opgradering, samme normale femkomponentfortolkning, per-PART-adgang, central SOURCE-vandstand og T+3 bevares. Ukendte formater eller kontekster giver fortsat den konservative normale vej. Strøm-ledger, native katalogsluttid og offentlig femfamiliedækning er særskilte beviser. Main-kapitlet om den nye selector har nummer 89.299; SOURCEs tidligere DMI-kapitel bevarer sit stabile ID og nummer 89.296.
+
 # DEC-0261 – Samme DMI-prioritet ved Limfjord-omplanlægning
 
 **Dato:** 2026-09-28

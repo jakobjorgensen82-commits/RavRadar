@@ -1,3 +1,57 @@
+## 89.300 Privat databasebackup før gratis drift
+
+<a id="supabase-private-backup-free-readiness-2026-11-02"></a>
+
+Kort fortalt: En krypteret eksport, som kan genfindes og verificeres, er ikke i sig selv en afprøvet databasegendannelse eller grundlag for at opsige Pro.
+
+### Manuel normal vej
+
+Den særskilte backupkalder er manuel og bruger bucket-readonly som skrivefri standard. Capture og eventuel bucketoprettelse er særskilte, udtrykkelige valg på præcis kvalificeret main. GitHubs midlertidige Linux-runner bruger Node 24, fast Supabase CLI 2.117.0 og eksisterende adgange; der tilføjes ingen nøgle, tjeneste eller plan. Den eksisterende vejrkø holdes yderst og turlagerkøen inderst. Operationen har 20 minutter og jobbet 30 minutter inklusive klargøring. Ukendt udfald giver stop uden automatisk gentagelse.
+
+### Fem beskyttede filer
+
+Den normale eksport omfatter roles.sql, schema.sql, data.sql, history-schema.sql og history-data.sql. Hver fil komprimeres og krypteres med særskilt databaseformål gennem eksisterende HKDF/AES-GCM. Eksakte SHA-256-værdier, autentificeret kontekst og samlet filgruppe kontrolleres ved genlæsning fra den særskilte private EU-bucket ravradar-supabase-backup. Vejrets originale B/S-pakker er ikke en hel databasebackup.
+
+### Genfinding og eksplicit materialisering
+
+En central privat locator eller DB-uafhængig R2-genfinding med eksplicit indeks-SHA kan vælge det autentificerede arkiv. Genfinding kræver stadig den bevarede dekrypteringskontekst og eksisterende nøgle. Normal verifikation og bootstrap skriver ingen SQL-filer. Kun arkivcontrollerens særskilte, eksplicitte materialize kan efter kontrol af alle fem GCM/SHA-beviser skabe de præcise SQL-bytes i et nyt privat, ejet RUNNER_TEMP-mål. Det udfører ikke SQL og gendanner ikke en produktionsdatabase.
+
+### Gates før gratis drift
+
+De fem separate dumps er ikke ét atomisk databasesnapshot. Faktisk kompatibel Auth-, schema- og datarestore, anti-genoplivning efter sletning, egne managed-DDL, nødvendige projektindstillinger og Storage-objektbytes er fortsat åbne. Det samme gælder uafhængig nøglerecovery, faktisk R2-adgang efter det tidligere Cloudflare-403-afslag og målt hosted eksport/genlæsning. FreeReady og Pro-opsigelse kræver disse faktiske beviser; hemmelighedsnavnes tilstedeværelse er ikke et forbindelsesbevis.
+
+En varig plan for databasebackup med fastlagt frekvens, retention og uafhængig nøglerecovery er fortsat åben. Før selvstændig Free-drift eller Pro-opsigelse skal planen kunne drives og gendannelsen verificeres uden PC/Codex; én manuel backup er ikke tilstrækkelig.
+
+### Særskilt syntetisk genopretningsprøve
+
+En særskilt manuel Linuxprøve er lokalt forberedt med to efterfølgende, syntetiske Supabase-projekter. Den bruger fem normale CLI-dumps, en frisk lokal database og et nyt Auth-login efter gendannelse. Den bruger ingen produktionsadgange og ændrer ikke de normale PostgreSQL-gates. Fem rene grænseprøver består; faktisk Linux-, Docker-, Auth- og genopretningskørsel er endnu ikke udført og beviser derfor ikke projektets backup.
+
+### Lokal status og afgrænsning
+
+De omtalte lokale prøver tilhører den særskilte backupkandidat. De kvalificerer ikke SOURCE-grenen og beviser ikke hosted backup eller restore.
+
+Den samlede lokale kandidat har bestået 109 normale backupcases, kildeplantesten, den gamle DMI75-map-case og privacyprøven. Præcis ny kilde-/native-/GitHub-kvalifikation og levering er ikke afsluttet. Pakken aktiverer ikke SOURCE, statistik, sletning, retention, en tidsplan eller produktionsrestore og ændrer ikke model, SQL, geometri eller gates. Se også 89.298 om den særskilte dokumenthistorik.
+
+### Pages-forbrug
+
+Den eksisterende privacywalker kan nu samtidig tælle ukomprimerede bytes. Der er ingen ekstra gennemgang eller ny kvoteregel. Der foreligger endnu ingen måling af et faktisk _site fra denne kandidat.
+
+## 89.299 Begge kendte kontinuitetsformater i scalarplanen
+
+Kort fortalt: Den normale plan for reelle vejrhul skal også kunne bruge den nyere, originale strømhistorik. Kun de to allerede kendte formater tillades.
+
+### Hvor fejlen lå
+
+Den tidligere selector tillod kun schema1, selv om den normale producent allerede udstedte schema2 og den efterfølgende læser accepterede begge. Derfor kunne en almindelig gyldig genlæsning springe den nye plan over. Den afgrænsede rettelse udvider kun denne formatkontrol til de to kendte værdier. Alle øvrige almindelig-genlæsning-, model-, bindings- og særforløbsvagter bevares; ukendte formater giver fortsat ingen adgang.
+
+### Hvad den normale prøve viser
+
+Den samme normale testcase er rød før og grøn efter rettelsen: producentens faktiske schema2 går gennem workflowets selector, Node-planen, den offline reservekilde og Python-/DMI-læseren. Hele de gamle workfloworakler og afslag på ukendt format eller ændret helfil bevares. Et særskilt, eksakt helfiltrin fører schema1/2-ændringen tilbage til den ægte forgænger, før den gamle scalarprøve læser den. Den nye helfil og ændrede eller ukendte varianter prøves særskilt; gamle forventninger ændres ikke. Det er ikke bevis for, at alle øvrige vagter var opfyldt i en bestemt produktionskørsel, eller at leverandørerne har alle manglende timer.
+
+### Bevarelse og leveringsgrænse
+
+DMI → Copernicus → Open-Meteo, hentebudgetter, originaler, cache, scoreformel, modelbindinger, administratorpunkter og geometri ændres ikke. Den konkrete ændring bruger den normale fulde kildevej; kontrolregistret udvides ikke for at gøre kandidaten målrettet. Native- og databasegenbrug afgøres fortsat af den normale læser på faktiske uændrede input og runtime. Den konkrete kalderrettelse er nu kildekvalificeret og merget på main. Faktisk ny offentlig dækningsvirkning er fortsat åben.
+
 ## 89.298 Sikker vedligeholdelse af dokumenthistorik
 
 Kort fortalt: De aktuelle dokumenter og de nyeste historikversioner bevares. Ældre versioner må først beskæres, når deres præcise originaler er privat arkiveret, verificeret og kan genfindes centralt.
@@ -29,6 +83,8 @@ Den eksisterende fælles vejrkø holdes yderst og turlagerkøen inderst. Jobbet 
 Dette er en lokal kandidat med beståede normale controller- og kalderprøver. Kandidaten kan kvalificeres og leveres selvstændigt på den præcise aktuelle main-baserede kilde; SOURCE 595 er ikke en forudsætning. En senere SOURCE-sammenføring skal normalt bevise endelig importlukning, uændrede modelbindinger og præcist kildebevis. En bestået gammel kørsel må ikke ommærkes til en ny samlet kilde. Der er ikke udført livearkivering eller beskæring som led i kandidaten. Privat lageradgang, backup-/genopretningsafklaring og målt driftsvirkning er fortsat åbne. Kandidaten beviser hverken samlet gratis drift eller grundlag for at opsige Pro.
 
 ## 89.297 Fra kvalificeret kildekode til selvstændig drift
+
+**Gældende fase 3. november 2026:** 595 er lokalt udstedt med bevarede metadata, output og append-only SQL. De efterfølgende kildeændringer er ikke kvalificeret af den gamle udstedelse. Den planlagte efterfølger 596 er UNISSUED: ingen ny tuple, output eller SQL er afledt, og gamle 595-værdier må hverken nulstilles eller ommærkes. Beskrivelsen nedenfor af 595 fra NULL er førstegangsforløbets historik. Endelig normal main-sammenføring og frisk samlet inputafledning skal stadig ske for efterfølgeren; en lokal kodeport er ikke main-ancestry eller driftsbevis.
 
 Aktuel lokal udstedelse2.november2026: SOURCE4.0.595 er normalt lokalt udstedt efter integration af den kvalificerede main. Én append-only SQL og normal sync samt alle seks fixedpointkontroller er bestået; alle75 gamle SQL-originaler er byteuændrede. Positiv kalder-, PostgreSQL-, native-, CI-, kapacitets-, installations- og driftsverifikation er fortsat åbne. Den aktuelle offentlige modelgeneration er særskilt4.0.594. Ingen scoreformel, kildeprioritet, administratorpunkter eller geometri ændres.
 
@@ -11034,6 +11090,8 @@ Programversion, faktiske kildefiler og alle afledte kontroloplysninger skal pass
 Den isolerede revisions lokale kontrol af denne adskillelse er ikke en offentlig levering. Fuld afledning, normale database- og lagringsforløb, kapacitet og faktisk drift skal fortsat verificeres, før revisionen kan aktiveres. Den almindelige vejrhentning og prioriteringen af vejrkilder ændres ikke af dette forberedelsestrin.
 
 ## 89.295 Isoleret SOURCE 4.0.595: status før ny afledning
+
+**Gældende fase 3. november 2026:** 595 er lokalt udstedt med bevarede metadata, output og append-only SQL. De efterfølgende kildeændringer er ikke kvalificeret af den gamle udstedelse. Den planlagte efterfølger 596 er UNISSUED: ingen ny tuple, output eller SQL er afledt, og gamle 595-værdier må hverken nulstilles eller ommærkes. Ældre NULL-udsagn i dette kapitel er bevaret som historik før førstegangsudstedelsen.
 
 Aktuel status 2. november 2026:
 

@@ -33,6 +33,188 @@ import {ravScoreModelBinding as candidateBinding} from './rollback-assets/ravsco
 import {privateRuntimeContractHashes} from './private-production-runtime-workflow.mjs';
 
 const ROOT=fileURLToPath(new URL('../',import.meta.url));
+
+// Historical CODE text only. Current595 subjects are tested separately below.
+const source595HistoricalScope=Object.hasOwn(JSON.parse(await fs.readFile(path.join(ROOT,'package.json'),'utf8')).scripts,'test:source-producer-source');
+const historical594TextPaths=new Set(['.github/workflows/deploy-code-only-repair.yml','package.json',
+  'scripts/lib/authenticated-frozen586-predecessor.mjs','scripts/check-assistant-later-h0-predecessor-source.mjs',
+  'scripts/assistant-later-h0-binding-prewrite.mjs','scripts/lib/established-native-current-origin.mjs',
+  'scripts/build-assistant-later-h0-successor.mjs']);
+const historical594TextCache=new Map();
+async function historical594CallerText(file){
+  assert.equal(arguments.length,1);assert(historical594TextPaths.has(file),'Closed historical594 text leaves only');
+  if(!source595HistoricalScope)return fs.readFile(path.join(ROOT,file),'utf8');
+  if(historical594TextCache.has(file))return historical594TextCache.get(file);
+  const {assertSource594CodeSourceSelected}=await import('./check-assistant-later-h0-predecessor-source.mjs');
+  const profile=assertSource594CodeSourceSelected();
+  const {execFileSync}=await import('node:child_process');
+  const git=args=>execFileSync('git',['-c','protocol.allow=never','-C',ROOT,...args],{
+    env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_OPTIONAL_LOCKS:'0',GIT_TERMINAL_PROMPT:'0'},timeout:30000,maxBuffer:512*1024});
+  assert.equal(git(['rev-parse',profile.head+'^{tree}']).toString().trim(),profile.tree);
+  const row=git(['ls-tree',profile.head,'--',file]).toString().trim();
+  assert.match(row,/^100644 blob [a-f0-9]{40}\t/);assert.equal(row.split('\t')[1],file);
+  const raw=git(['cat-file','blob',profile.head+':'+file]);assert(raw.length>0&&raw.length<=512*1024);
+  const hash=await import('node:crypto');assert.equal(hash.createHash('sha1').update('blob '+raw.length+'\0').update(raw).digest('hex'),row.split(' ')[2].split('\t')[0]);
+  const source=raw.toString('utf8');assert(Buffer.from(source).equals(raw)&&!source.includes('\0'));
+  historical594TextCache.set(file,source);return source;
+}
+
+// TEST ONLY. Fixed genuine37 runtime-callers over the normal150-leaf594 CODE host.
+// No B/S, attestation, SQL, model/profile override or runtime admission is produced.
+const historical594CallerLeaves=Object.freeze([
+  {
+    "file": "scripts/assistant-later-h0-runtime-transition.mjs",
+    "blob": "5faa6b51392b9eb05fb2934545b0acee43391ba7",
+    "bytes": 18643,
+    "sha256": "2d85541fe8466dd01e63f9892a1165b49a77af4037e3160cf1f1b2c7e7c1340c"
+  },
+  {
+    "file": "scripts/audit-ravscore-integrated-public-runtime.mjs",
+    "blob": "34f33333faa47c2899ef9f946bf9abcea4f6b79a",
+    "bytes": 103019,
+    "sha256": "24448c2251647783fd3009c1a80e92f892658e7c775d247d9722e1fef3d3ec79"
+  },
+  {
+    "file": "scripts/check-native-identity-frozen-i71-source.mjs",
+    "blob": "4fda002394cb8932fe1f36841e13267b5b156cd1",
+    "bytes": 22296,
+    "sha256": "21f08e71ee3384b7e5d8a9294d356536ce0d866ffc562f7ecf94a4f547f35e77"
+  },
+  {
+    "file": "scripts/check-production-target-freshness.mjs",
+    "blob": "629f94790599243d0ba73e963584b8226f2fa5b3",
+    "bytes": 3899,
+    "sha256": "a4c3cf8417a761691173ee50970b2764dac8a58d97017da783c1c2aed5dab0c0"
+  },
+  {
+    "file": "scripts/github-pages-attempt-evidence.mjs",
+    "blob": "73b7333ccf939b6cb246e982f0366c9f44c3c774",
+    "bytes": 1662,
+    "sha256": "0e8c3ff293a5a7a5eccb319547de3847573225ab77098279c29cb61fa7678f07"
+  },
+  {
+    "file": "scripts/lib/fur-water-routing-diagnostic.mjs",
+    "blob": "7dba7605b3dcb3c56d5edc6d0f1bc30a25a46be3",
+    "bytes": 10149,
+    "sha256": "e868ecf40fad36a8ab121f8fd57c9c9b625e9d88ba5553bb602ae20976bdf4d7"
+  },
+  {
+    "file": "scripts/lib/production-workflow-sources.mjs",
+    "blob": "298139cdb1db05c7c1230f736b6dddc6975d0dc1",
+    "bytes": 15752,
+    "sha256": "480267d37aa808491c70fb4c8fc2d711ca99b5fbf4318eaa5abda31e48711798"
+  },
+  {
+    "file": "scripts/lib/public-delivery-nested-binding.mjs",
+    "blob": "2d1ca2ec47f6ff3f33ffc937d059adfc6bed46ba",
+    "bytes": 1168,
+    "sha256": "1e954452290922e10b0682abf1a6dd85f26a3d3bd9d520f9712d3bb8661f54b4"
+  },
+  {
+    "file": "scripts/lib/ravscore-known-public-source-repair.mjs",
+    "blob": "2f48a389494fbdddfa5cc9ea342d01243b94795a",
+    "bytes": 1580,
+    "sha256": "f3712cc0890f0a2384f1a56e398993d44c7ce0579233cd7705cda03017a2d044"
+  },
+  {
+    "file": "scripts/lib/ravscore-legacy-candidate-g-source.mjs",
+    "blob": "ba8e7c395201e24bc0e44fe8e6f0150e5ec1c769",
+    "bytes": 10841,
+    "sha256": "ec5fec4cac827a5127d5fd6019580cf4dd6f6deb25eed114066198985533e64c"
+  },
+  {
+    "file": "scripts/lib/ravscore-public-browser-closure.mjs",
+    "blob": "a639931b0e002c00ab38d96fdd5b8254589aa677",
+    "bytes": 10846,
+    "sha256": "fa5dcf0da1096b997a60efb68c20efe35cffbb67f8a7dba84c20390e97ed0555"
+  },
+  {
+    "file": "scripts/lib/rebind-public-hour-pack-exact.mjs",
+    "blob": "8b6e08df5a11b3caa752d3f0dda2a8d402b87cc4",
+    "bytes": 3667,
+    "sha256": "75baa904a9fa466393e5c8889e0590fa7d333b074ba3824b0e94405a7a7dc5e2"
+  },
+  {
+    "file": "scripts/migrate-post-cutover-private-runtime.mjs",
+    "blob": "dd5fe3b432dbcaca9889773c5171e7c0fa6b73b6",
+    "bytes": 110999,
+    "sha256": "1b097d22f4102dc80f8d2c917dbaead896ceb3e7b8f364992d3422c4d010d9f6"
+  },
+  {
+    "file": "scripts/prepare-candidate-g-operational-rollback.mjs",
+    "blob": "e303f9c4ebd4c500a857787248481f21befa9cb5",
+    "bytes": 32652,
+    "sha256": "55f75faf3a4efecbde258de1eb5484f0b22a4d6b7fd858f7b422783b632c85e8"
+  },
+  {
+    "file": "scripts/protected-operational-reentry-evidence.mjs",
+    "blob": "0b4b33b045c7a66746ea22546beb4c651ec1dad8",
+    "bytes": 82470,
+    "sha256": "b1af0186c4b1a39e0b78fec0c50edf4b6a8fc735b61bb0ee31f96965c21ee1c3"
+  },
+  {
+    "file": "scripts/ravscore-operational-activation.mjs",
+    "blob": "28488e4a723ca00b376c316a2463ccf2d695cb12",
+    "bytes": 243026,
+    "sha256": "f93be20b1fd66452569409b9cf35aa4a377f4c27007e5c6c465bcb4a11674750"
+  },
+  {
+    "file": "scripts/ravscore-operational-pages-recovery.mjs",
+    "blob": "1333fa00d6e91464cc4766d1a1a9117ef4a34cee",
+    "bytes": 29196,
+    "sha256": "9e6a1a16156f1ab859607d870c9c4aa2d7ac22598ce3aa617d49a01aa82872a7"
+  },
+  {
+    "file": "scripts/runtime-binding-registry.mjs",
+    "blob": "78777664dcb320beaa07cc608fd6745b5d9b958a",
+    "bytes": 7047,
+    "sha256": "ae0b7a9350774f6328d364ffdadbe8bd25f69b675be19a034830481c850af46c"
+  },
+  {
+    "file": "scripts/verify-legacy-candidate-g-source.mjs",
+    "blob": "f7b63df421f7d56dcedfb5b1b84f2635c2fda7eb",
+    "bytes": 17868,
+    "sha256": "e6f7bc2f185d2985d390af32ba845a3d0a39b07a4310af4b47d23e5bc5eb0186"
+  },
+  {
+    "file": "scripts/verify-ravscore-operational-pages-deployment.mjs",
+    "blob": "f954535da5349d8ed957fe7ffbfe528e8e2098a5",
+    "bytes": 37033,
+    "sha256": "732e836f63e4456ecedad2fa5a2a6186e9da0f278c921a5b892047c4406184ff"
+  }
+]);
+async function withHistorical594CallerCode(use){
+  assert.equal(arguments.length,1);assert.equal(typeof use,'function');
+  if(!source595HistoricalScope)return use({selectAssistantLaterH0Source,ravScoreModelBinding,
+    productionWorkflow:await import('./lib/production-workflow-sources.mjs')});
+  const {withSource594CodeParent,assertSource594CodeSourceSelected}=await import('./check-assistant-later-h0-predecessor-source.mjs');
+  const profile=assertSource594CodeSourceSelected(),{execFileSync}=await import('node:child_process'),{createHash}=await import('node:crypto');
+  const hash=b=>createHash('sha256').update(b).digest('hex');
+  const git=args=>execFileSync('git',['-c','protocol.allow=never','-C',ROOT,...args],{env:{...process.env,
+    GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_OPTIONAL_LOCKS:'0',GIT_TERMINAL_PROMPT:'0'},timeout:30000,maxBuffer:512*1024});
+  assert.equal(git(['rev-parse',profile.head+'^{tree}']).toString().trim(),profile.tree);
+  return withSource594CodeParent(async root=>{
+    const owned=[];const identity=st=>{assert(st.isFile()&&!st.isSymbolicLink()&&st.nlink===1n);return[st.dev,st.ino,st.birthtimeNs,st.size];};
+    try{
+      for(const row of historical594CallerLeaves){
+        assert.equal(git(['ls-tree',profile.head,'--',row.file]).toString().trim(),'100644 blob '+row.blob+'\t'+row.file);
+        const raw=git(['cat-file','blob',profile.head+':'+row.file]);assert.equal(raw.length,row.bytes);assert.equal(hash(raw),row.sha256);
+        const file=path.join(root,row.file);assert.equal(await fs.realpath(path.dirname(file)),path.dirname(file));
+        await fs.writeFile(file,raw,{flag:'wx',mode:0o600});owned.push({file,row,id:identity(await fs.lstat(file,{bigint:true}))});
+      }
+      const load=file=>import(pathToFileURL(path.join(root,file)).href);
+      const runtime=await load('scripts/assistant-later-h0-runtime-transition.mjs'),productionWorkflow=await load('scripts/lib/production-workflow-sources.mjs');
+      const model=await load('js/core/ravscore-model-contract.js');
+      assert.equal(model.ravScoreModelBinding().modelBundleSha256,ACTIVE_ASSISTANT_SUCCESSOR.requireBinding().I);
+      return await use({selectAssistantLaterH0Source:runtime.selectAssistantLaterH0Source,
+        ravScoreModelBinding:model.ravScoreModelBinding,productionWorkflow});
+    }finally{
+      for(const item of owned){assert.equal(await fs.realpath(item.file),item.file);assert.deepEqual(identity(await fs.lstat(item.file,{bigint:true})),item.id);assert.equal(hash(await fs.readFile(item.file)),item.row.sha256);}
+      for(const item of [...owned].reverse())await fs.unlink(item.file);
+    }
+  });
+}
+
 const issued=BINDING!==null;
 if(issued){requireNativeOriginalContinuityBinding();requireNativeOriginalContinuityOutput();}
 else assert.equal(OUTPUT,null,'Partial source issuance is never a valid test state');
@@ -202,7 +384,7 @@ test('current installed code-only plan uses the normal active migration contract
 
 test('current installed code-only normal workflow keeps read-only SQL, hard current restore and B before S',async()=>{
   const {runInNewContext}=await import('node:vm');
-  const source=await fs.readFile(path.join(ROOT,'.github/workflows/deploy-code-only-repair.yml'),'utf8');
+  const source=await historical594CallerText('.github/workflows/deploy-code-only-repair.yml');
   const step=name=>{const heading='      - name: '+name,at=source.indexOf(heading);
     assert(at>=0);assert.equal(source.indexOf(heading,at+heading.length),-1);
     const end=source.indexOf('\n      - name:',at+heading.length);
@@ -1073,7 +1255,7 @@ test('assistant binding original prewrite workflow keeps locks, exact normal cen
 });
 test('assistant binding original prewrite exact source-import variants reject changed bytes and preserve old variants',async()=>{
   for(const file of ['scripts/lib/authenticated-frozen586-predecessor.mjs','scripts/assistant-later-h0-binding-prewrite.mjs']){
-    const source=await fs.readFile(path.join(ROOT,file),'utf8');
+    const source=await historical594CallerText(file);
     for(const view of [historical691AssistantSource(source,file),source]){
       const imports=modelSourceRelativeModuleSpecifiers(view,file);assert(imports.length>0);
       assert.throws(()=>modelSourceRelativeModuleSpecifiers(view+'\n// changed\n',file),/Whole reviewed model import source changed/);
@@ -1518,7 +1700,7 @@ test('assistant public587 import variants bind whole sources and reject every un
     ['scripts/check-assistant-later-h0-predecessor-source.mjs',[]],
     ['scripts/lib/authenticated-frozen586-predecessor.mjs',['../check-assistant-later-h0-predecessor-source.mjs']],
   ]){
-    const actual=await fs.readFile(path.join(ROOT,file),'utf8');
+    const actual=await historical594CallerText(file);
     // Exact DATA views keep the old587/592 import oracles;593 has a real additional edge.
     const source=canonical591AssistantSource(actual,file),issued592=canonical592CapacitySource(actual,file);
     assert.deepEqual([...modelSourceRelativeModuleSpecifiers(source,file)],expected);
@@ -1541,7 +1723,7 @@ test('assistant public587 import variants bind whole sources and reject every un
 test('assistant public587 genuine DATA host keeps fixed family and exact producer ancestor policy seam',async()=>{
   const {runInNewContext}=await import('node:vm'),{createHash}=await import('node:crypto');
   const hash=value=>createHash('sha256').update(value).digest('hex');
-  const actualAuth=canonical591AssistantSource(await fs.readFile(path.join(ROOT,'scripts/lib/authenticated-frozen586-predecessor.mjs'),'utf8'),'scripts/lib/authenticated-frozen586-predecessor.mjs');
+  const actualAuth=canonical591AssistantSource(await historical594CallerText('scripts/lib/authenticated-frozen586-predecessor.mjs'),'scripts/lib/authenticated-frozen586-predecessor.mjs');
   const start=actualAuth.indexOf('const FROZEN587=Object.freeze({'),end=actualAuth.indexOf('const FROZEN588=Object.freeze({',start);
   assert(start>=0&&end>start);const profileSource=actualAuth.slice(start,end);
   assert.equal(hash(profileSource),'5f2b912b83735ba76b6424dd8ed0783604631ade26cf148abf66e97c7361adc1','Den hele historiske587-profil er byteuændret');
@@ -1653,6 +1835,7 @@ import {synchronizeRavScoreModelBinding,assistantPublic587SuccessorCheckpointIns
   from './sync-ravscore-model-binding.mjs';
 
 test('assistant public587 ordinary caller uses real top-level workflow identity before selecting original data',async t=>{
+  return withHistorical594CallerCode(async ({selectAssistantLaterH0Source,ravScoreModelBinding,productionWorkflow})=>{
   const entrypoints=await Promise.all(['update-and-deploy.yml','run-current-weather-once.yml'].map(async file=>{
     const source=await fs.readFile(path.join(ROOT,'.github/workflows',file),'utf8');
     const match=/^name: (.+)$/m.exec(source);assert(match,'Actual top-level caller has a fixed name');
@@ -1706,6 +1889,7 @@ test('assistant public587 ordinary caller uses real top-level workflow identity 
   }finally{
     t.mock.restoreAll();for(const key of keys){if(prior[key]===undefined)delete process.env[key];else process.env[key]=prior[key];}
   }
+  });
 });
 
 test('assistant public587 active facade is fixed and refuses UNISSUED before I/O',async t=>{
@@ -1923,7 +2107,7 @@ test('assistant public587 origin retains whole parent and pair refusals in the a
 test('assistant public587 operative import variants remain whole-source bound',async()=>{
   for(const file of ['scripts/assistant-later-h0-binding-prewrite.mjs','scripts/lib/established-native-current-origin.mjs',
     'scripts/lib/authenticated-frozen586-predecessor.mjs','scripts/check-assistant-later-h0-predecessor-source.mjs']){
-    const source=(await fs.readFile(path.join(ROOT,file),'utf8')).replace(/\r\n?/g,'\n');
+    const source=(await historical594CallerText(file)).replace(/\r\n?/g,'\n');
     for(const view of [historical691AssistantSource(source,file),source]){
       const imports=modelSourceRelativeModuleSpecifiers(view,file);assert(Object.isFrozen(imports));
       for(const changed of [view+'\n',view+"\nimport './unknown.mjs';\n"])
@@ -1934,10 +2118,10 @@ test('assistant public587 operative import variants remain whole-source bound',a
   const prewrite=await fs.readFile(path.join(ROOT,'scripts/assistant-later-h0-binding-prewrite.mjs'),'utf8');
   for(const row of prewrite.matchAll(/FROZEN586_PREDECESSOR_([A-Z_]+):'([A-Z_]+)'/g))
     assert(prewrite.includes("FROZEN587_PREDECESSOR_"+row[1]+":'"+row[2]+"'"));
-  const pkg=JSON.parse(await fs.readFile(path.join(ROOT,'package.json'),'utf8'));
+  const pkg=JSON.parse(await historical594CallerText('package.json'));
   assert.equal(pkg.scripts['test:assistant-later-h0-source'],
     'node scripts/build-assistant-later-h0-successor.mjs --active --check');
-  const builder=canonical591AssistantSource(await fs.readFile(path.join(ROOT,'scripts/build-assistant-later-h0-successor.mjs'),'utf8'),'scripts/build-assistant-later-h0-successor.mjs');
+  const builder=canonical591AssistantSource(await historical594CallerText('scripts/build-assistant-later-h0-successor.mjs'),'scripts/build-assistant-later-h0-successor.mjs');
   const from=builder.indexOf('  const issued=public587?requireAssistantPublic587SuccessorBinding()'),to=builder.indexOf('\n}\nif(process.argv[1]',from);
   assert(from>=0&&to>from);
   assert.equal(successorHash('sha256').update(builder.slice(from,to)).digest('hex'),'a9dae0f55e685015441b8c0d3d528f563f3703a17e72927e3a000e2cabcc6edb',
@@ -1945,8 +2129,9 @@ test('assistant public587 operative import variants remain whole-source bound',a
 });
 
 test('assistant public587 late Edge route preserves exact prior profile and ordinary gates',async()=>{
+  return withHistorical594CallerCode(async ({selectAssistantLaterH0Source,ravScoreModelBinding,productionWorkflow})=>{
   const {deferCurrentGridBindingEdges,currentGridEdgePublicationRequired}=
-    await import('./lib/production-workflow-sources.mjs');
+    productionWorkflow;
   if(ACTIVE_ASSISTANT_SUCCESSOR.binding===null){
     await assert.rejects(currentGridEdgePublicationRequired({},'integrated-historical-maintenance'),
       ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public590-successor'
@@ -1971,6 +2156,7 @@ test('assistant public587 late Edge route preserves exact prior profile and ordi
   for(const action of ['integrated','code-only','unknown'])
     await assert.rejects(currentGridEdgePublicationRequired(old,action));
   assert.equal(deferCurrentGridBindingEdges('20990101000000'),false);
+  });
 });
 
 test('ordinary companion readers use the exact active predecessor before and after providers',async()=>{
@@ -2058,7 +2244,7 @@ test('ordinary companion readers use the exact active predecessor before and aft
 
 test('assistant592 strict source DATA inverse preserves canonical591 and refuses changed bytes',async()=>{
   for(const file of Object.keys(reviewedIssued592Sources)){
-    const raw=await fs.readFile(path.join(ROOT,file),'utf8'),canonical=canonical591AssistantSource(raw,file);
+    const raw=await historical594CallerText(file),canonical=canonical591AssistantSource(raw,file);
     assert.equal(canonical591AssistantSource(canonical,file),canonical);
     for(const changed of [raw+'\n',raw.replace(/./,'X'),canonical+'\n'])
       assert.throws(()=>canonical591AssistantSource(changed,file));
@@ -2089,6 +2275,7 @@ test('assistant593 issued metadata preserves genuine591 canonical source and str
   assert.throws(()=>active.assertTarget({...descriptor,modelBinding:{modelBundleSha256:m.ASSISTANT_PUBLIC590_SUCCESSOR_BEFORE.I}},'2026-10-29T09:00:00.000Z'));
 });
 test('assistant592 ordinary caller selects only genuine591 after normal guards',async t=>{
+  return withHistorical594CallerCode(async ({selectAssistantLaterH0Source,ravScoreModelBinding,productionWorkflow})=>{
   const m=await import('./lib/assistant-later-h0-successor-source.mjs');
   const active=m.ACTIVE_ASSISTANT_SUCCESSOR;
   const descriptor={modelBinding:{modelBundleSha256:active.before.I},contractHashes:{continuationStateContractSha256:active.before.T},productionReferenceAt:'2026-10-29T08:00:00.000Z'};
@@ -2108,12 +2295,13 @@ test('assistant592 ordinary caller selects only genuine591 after normal guards',
     Object.assign(process.env,base);assert.equal(await selectAssistantLaterH0Source(),false);
     assert(reads>=8);
   }finally{t.mock.restoreAll();for(const key of Object.keys(base)){if(prior[key]===undefined)delete process.env[key];else process.env[key]=prior[key];}}
+  });
 });
 test('assistant594 native evidence requires its own new commands and rejects old receipt without PG',async()=>{
   const n=await import('./native-postgres-evidence.mjs');
   const e=await import('./national584-source-evidence.mjs');
   const m=await import('./lib/assistant-later-h0-successor-source.mjs');
-  const pkg=JSON.parse(await fs.readFile(path.join(ROOT,'package.json'),'utf8'));
+  const pkg=JSON.parse(await historical594CallerText('package.json'));
   e.verifyInstalled593Original591Package(pkg);
   assert.deepEqual(n.ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS,[n.ASSISTANT_PUBLIC590_SUCCESSOR_COMMANDS[0],n.ASSISTANT_PUBLIC590_SUCCESSOR_COMMANDS[1]+' --assistant-public591-successor']);
   assert.deepEqual(n.INSTALLED593_ORIGINAL591_COMMANDS,[n.ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS[0],n.ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS[1]+' --assistant-installed593-origin591-successor']);
@@ -2134,7 +2322,7 @@ test('assistant594 native evidence requires its own new commands and rejects old
 // The uninstalled592 source stays in Git; only the closed actual593 plan is eligible.
 test('assistant593 exact outer source DATA and closed direct591 migration plan',async()=>{
   for(const [file,row]of Object.entries(reviewedCapacity593Sources)){
-    const currentRaw=await fs.readFile(path.join(ROOT,file),'utf8');
+    const currentRaw=await historical594CallerText(file);
     const raw=inverseIssued594HistoricalSource(currentRaw,file),old=canonical592CapacitySource(raw,file);
     assert.equal(Buffer.byteLength(old),row.before.bytes);assert.equal(successorHash('sha256').update(old).digest('hex'),row.before.sha256);
     for(const [previous,current]of row.hunks){
@@ -2159,4 +2347,26 @@ test('assistant593 exact outer source DATA and closed direct591 migration plan',
   assert.deepEqual(installed.pendingVersions,[]);assert.equal(installed.alreadyAppliedVersions.length,60);
   for(const extra of ["20261029183010",'20990101000000'])
     await assert.rejects(r.assertAssistantPublic591SuccessorMigrationPlan({migrationListText:list(false)+'\n'+extra+' | '+extra+' | unknown.sql',dryRunText:dry,migrationsDirectory:path.join(ROOT,'supabase/migrations')}));
+});
+
+
+test('SOURCE595 current package, workflow and import subjects stay actual while historical594 inputs remain separate',async t=>{
+  if(!source595HistoricalScope)return;
+  const source=await import('./lib/source-producer-successor-source.mjs'),e=await import('./national584-source-evidence.mjs');
+  const pkg=JSON.parse(await fs.readFile(path.join(ROOT,'package.json'),'utf8'));
+  if(source.SOURCE_PRODUCER_BINDING===null){assert.throws(()=>source.requireSourceProducerOutput(),/SOURCE_PRODUCER_UNISSUED/);return;}
+  const binding=source.requireSourceProducerBinding();source.requireSourceProducerOutput();e.verifySourcePrPackage(pkg);
+  const workflow=await fs.readFile(path.join(ROOT,'.github/workflows/validate-pull-request.yml'),'utf8');e.verifySourcePrWorkflow(workflow);
+  assert.equal(ravScoreModelBinding().modelBundleSha256,binding.I);
+  assert.notEqual(binding.I,ACTIVE_ASSISTANT_SUCCESSOR.requireBinding().I,'Current595 is never relabelled594');
+  for(const file of ['scripts/lib/authenticated-frozen586-predecessor.mjs','scripts/check-assistant-later-h0-predecessor-source.mjs',
+    'scripts/assistant-later-h0-binding-prewrite.mjs','scripts/lib/established-native-current-origin.mjs']){
+    const raw=(await fs.readFile(path.join(ROOT,file),'utf8')).replace(/\r\n?/g,'\n');
+    assert(Object.isFrozen(modelSourceRelativeModuleSpecifiers(raw,file)));
+    assert.throws(()=>modelSourceRelativeModuleSpecifiers(raw+'\n// unknown mutation\n',file),/Whole reviewed model import source changed/);
+  }
+  let io=0;t.mock.method(fs,'readFile',()=>{io++;throw Error('UNEXPECTED_PRIVATE_READ');});
+  t.mock.method(globalThis,'fetch',()=>{io++;throw Error('UNEXPECTED_NETWORK');});
+  try{await assert.rejects(selectAssistantLaterH0Source(),{code:'ERR_ASSERTION'});assert.equal(io,0,
+    'Legacy594 selector cannot use a595 model and must stop before private inputs');}finally{t.mock.restoreAll();}
 });

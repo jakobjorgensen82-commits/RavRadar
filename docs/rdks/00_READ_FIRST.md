@@ -1,3 +1,9 @@
+## 3. november — bevaret 595-udstedelse, uudstedt 596 og faktisk main-status
+
+595 er lokalt udstedt med bevarede metadata, output og append-only SQL. De efterfølgende kildeændringer er ikke kvalificeret af den gamle udstedelse. Den planlagte efterfølger 596 er UNISSUED: ingen ny tuple, output eller SQL er afledt, og gamle 595-værdier må hverken nulstilles eller ommærkes.
+
+Følg den nye daterede fase i CURRENT_TRUTH og IMPLEMENTATION_STATUS samt håndbog 89.295/89.297. Ældre anvisninger om førstegangs-NULL gælder den bevarede 595-historik; de er ikke en instruktion om at nulstille en udstedt binding. Normal main-autoritet, alle sikkerheds-/kvalifikationsgates, B før S og no-loss består. Der følger ingen implicit aktivering af SOURCE, statistik, sletning, backup eller en tidsplan af dokumentintegrationen.
+
 ## 2. november — kvalificeret main er faktisk integreret
 
 Den kvalificerede faktiske main fra PR792 er normalt indarbejdet. Hele SOURCE-træet var uændret ved denne merge. [Kanonisk status](90_INDEX/CURRENT_TRUTH.md#source-595-status-2026-11-02) og IMPLEMENTATION_STATUS angiver revisionens aktuelle fase; håndbog 89.297 beskriver den normale vej fra kode til drift. Ældre main-afventning nedenfor er historik. 595 afledes én gang fra det krævede NULL-udgangspunkt efter dokumentreview og kodefreeze; efterfølgende fasebeviser registreres i de to statusdokumenter. Alle fem mål er åbne.

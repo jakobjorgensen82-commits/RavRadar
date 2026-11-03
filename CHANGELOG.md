@@ -1,3 +1,7 @@
+## 3. november — bevaret 595-udstedelse, uudstedt 596 og faktisk main-status
+
+Dokumentationen samler den faktisk mergede schema1/2-kalderrettelse fra main og den særskilte lokale backup-/restorekandidat med SOURCEs bevarede 595-historik. 596 er fortsat UNISSUED; ingen ny version, modelbinding, SQL-migration eller produktionslevering følger med. Håndbog 89.299 og 89.300 tilføjes med eksisterende stabile ID’er, mens Source-metadata89.294, Source-status89.295, DMI89.296 og driftsvej89.297 bevares. Gamle forberedelsesudsagn er dateret historik.
+
 ## 2026-11-02 — lokal provisionskandidat til privat dokumentarkiv
 
 - Tilføj særskilt bucket-readonly og eksplicit bekræftet bucket-create til den nye vedligeholdelseskalder.

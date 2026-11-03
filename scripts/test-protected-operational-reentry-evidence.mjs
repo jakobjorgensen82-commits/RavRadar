@@ -338,7 +338,7 @@ test('pre-activation terminal takeover retains the same target through runner lo
     clearProtectedPreActivationTarget}=await import('./protected-operational-reentry-evidence.mjs');
   const activation=await import('./ravscore-operational-activation.mjs');
   const {CANDIDATE_G_OPERATIONAL_ROLLBACK_ID}=await import('./lib/ravscore-candidate-g-rollback-runtime.mjs');
-  const {buildIntegratedCutoverReadiness}=await import('./integrated-cutover-readiness.mjs');
+  const {buildIntegratedCutoverReadiness,codeBoundIntegratedReadinessFamily}=await import('./integrated-cutover-readiness.mjs');
   const {assertUploadedOperationalPagesTarget}=await import('./ravscore-operational-pages-recovery.mjs');
   const {classifyProductionTargetFreshness}=await import('./check-production-target-freshness.mjs');
   const work=await fs.mkdtemp(path.join(os.tmpdir(),'rr-operational-evidence-'));
@@ -426,7 +426,7 @@ test('pre-activation terminal takeover retains the same target through runner lo
       const ordinaryDir=path.join(work,'prepared-ordinary');await fs.mkdir(ordinaryDir);
       for(const name of await fs.readdir(targetDir))if(name!=='pre-activation.json')
         await fs.copyFile(path.join(targetDir,name),path.join(ordinaryDir,name));
-      const preparedReadiness=await buildIntegratedCutoverReadiness(sourceHead,{publicImplementationClosureSha256:target.seal.targetImplementationClosureSha256});
+      const preparedReadiness=await buildIntegratedCutoverReadiness(sourceHead,{sourcePhase:codeBoundIntegratedReadinessFamily().sourcePhase,publicImplementationClosureSha256:target.seal.targetImplementationClosureSha256});
       const preparedPlan=activation.prepareIntegratedHistoricalMaintenance({currentRow:central,currentProfileRow:profileRow,sourceHead,
         publicManifest:target.manifest,publicAudit:audit,readiness:preparedReadiness,
         sourceImplementationClosureSha256:source.seal.targetImplementationClosureSha256,
@@ -593,7 +593,7 @@ test('pre-activation terminal takeover retains the same target through runner lo
       implementationClosureSha256:target.seal.targetImplementationClosureSha256}));
     await publishProtectedPreActivationTarget({...common,directory:restored,deploymentId:secondOwner.attemptId});
     const published=clone(server.row());
-    const readiness=await buildIntegratedCutoverReadiness(sourceHead,{publicImplementationClosureSha256:target.seal.targetImplementationClosureSha256});
+    const readiness=await buildIntegratedCutoverReadiness(sourceHead,{sourcePhase:codeBoundIntegratedReadinessFamily().sourcePhase,publicImplementationClosureSha256:target.seal.targetImplementationClosureSha256});
     const plan=activation.prepareIntegratedHistoricalMaintenance({currentRow:central,currentProfileRow:profileRow,sourceHead,
       publicManifest:target.manifest,publicAudit:audit,readiness,sourceImplementationClosureSha256:source.seal.targetImplementationClosureSha256,
       requestedImplementationClosureSha256:target.seal.targetImplementationClosureSha256,eventName:'schedule',ref:'refs/heads/main',githubSha:sourceHead});

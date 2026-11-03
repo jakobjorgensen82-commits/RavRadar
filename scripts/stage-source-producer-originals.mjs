@@ -42,6 +42,45 @@ export function sourceProducerOriginalStageFamily(selected,next){
   return oldI?'predecessor':'current';
 }
 
+// Route selection only: fresh CURRENT metadata is not SQL, B/S or producer admission.
+// The ordinary caller still executes every source, database and owner guard.
+export async function selectInstalledSourceNormalRoute({request,operational,documentRequest}){
+  requireSourceProducerOutput(); // FIRST: no metadata IO before actual issued output.
+  const next=requireSourceProducerBinding();
+  assert.equal(arguments.length,1,'SOURCE_ROUTE_ARGUMENTS');
+  assert(request&&typeof request==='object'&&!Array.isArray(request),'SOURCE_ROUTE_REQUEST_INVALID');
+  const booleans=["current_family_cold_start","completed_private_runtime","quick_confirmation","checkpoint_only","weather_state_epoch_bootstrap","weather_state_epoch_checkpoint_reentry","native_sampling_identity_original_recovery","extended_provider_bootstrap","produce_weather_handoff","ravscore_integrated_first_cutover","ravscore_integrated_return"], strings=["completed_private_runtime_pin","completed_stage_source","quick_progress_source","weather_state_epoch_raw_cache_key","weather_state_epoch_archive_key","weather_state_epoch_archive_catalog_sha256","produce_weather_handoff_confirmation","ravscore_candidate_g_rollback_mode","ravscore_candidate_g_rollback_confirmation","ravscore_integrated_first_cutover_confirmation","ravscore_integrated_weather_handoff_run_id","ravscore_integrated_return_confirmation"];
+  const known=['source_normal_producer',...booleans,...strings,'production_target_hour','force'];
+  assert.deepEqual(Object.keys(request).sort(),known.sort(),'SOURCE_ROUTE_REQUEST_KEYS');
+  assert.equal(typeof request.source_normal_producer,'boolean','SOURCE_ROUTE_SELECTION_UNKNOWN');
+  for(const key of booleans)assert.equal(typeof request[key],'boolean','SOURCE_ROUTE_BOOLEAN_INVALID');
+  for(const key of strings)assert.equal(typeof request[key],'string','SOURCE_ROUTE_LOCATOR_INVALID');
+  assert.equal(typeof request.force,'boolean','SOURCE_ROUTE_FORCE_INVALID');
+  assert(/^\d{4}-\d\d-\d\dT\d\d:00:00(?:\.000)?Z$/.test(request.production_target_hour),'SOURCE_ROUTE_TARGET_INVALID');
+  const time=Date.parse(request.production_target_hour);
+  assert(Number.isFinite(time)&&new Date(time).toISOString()===request.production_target_hour.replace(/(?<!\.000)Z$/,'.000Z'),'SOURCE_ROUTE_TARGET_INVALID');
+  const ordinary=booleans.every(key=>request[key]===false)&&strings.every(key=>key==='ravscore_candidate_g_rollback_mode'
+    ? request[key]===''||request[key]==='none' : request[key]==='');
+  if(request.source_normal_producer)assert(ordinary,'SOURCE_ROUTE_MIXED_REQUEST');
+  assert.equal(typeof documentRequest,'function','SOURCE_ROUTE_REQUESTER_REQUIRED');
+  const selected=await describeCurrentProtectedPrivateProductionRuntime({request:documentRequest});
+  const family=sourceProducerOriginalStageFamily(selected,next);
+  assert(same(selected.modelBinding,operational?.modelBinding),'SOURCE_ROUTE_CENTRAL_BINDING_CHANGED');
+  if(family==='predecessor'){
+    // SOURCE code is not a legacy594 executor during the controlled install.
+    assert(!ordinary&&!request.source_normal_producer,'SOURCE_ROUTE_NOT_INSTALLED');
+    return 'legacy'; // Existing special-flow guards remain authoritative.
+  }
+  assert(ordinary,'SOURCE_ROUTE_INSTALLED_SPECIAL_UNSUPPORTED');
+  assert(operational.model==='integrated'&&operational.status==='INTEGRATED_ACTIVE'
+    &&operational.pending===false&&operational.bindingCurrent===true
+    &&operational.initialCutoverRequired===false&&operational.legacySourceRequired===false
+    &&Number.isSafeInteger(operational.centralVersion)&&operational.centralVersion>0,'SOURCE_ROUTE_OPERATIONAL_NOT_ACTIVE');
+  assert(same(selected.modelBinding,ravScoreModelBinding()),'SOURCE_ROUTE_MODEL_BINDING');
+  assert(same(selected.contractHashes,await privateRuntimeContractHashes()),'SOURCE_ROUTE_CONTRACT_BINDING');
+  return 'source';
+}
+
 export async function stageSourceProducerOriginals(){
   requireSourceProducerOutput(); // FIRST, before arguments, environment, files or clients.
   // Den særskilte594-kildevært skal være valgt; gammel593/591-DATA bruges aldrig som594.

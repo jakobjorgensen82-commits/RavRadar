@@ -1,3 +1,15 @@
+## 3. november — bevaret 595-udstedelse, uudstedt 596 og faktisk main-status
+
+- [x] Den oprindelige lokale 595-udstedelse og dens SQL bevares; tidligere lokale fixedpoint-beviser ommærkes ikke.
+- [x] Main795 er kildekvalificeret og merget; den tilsvarende schema1/2-kalderrettelse er lokalt sammenført med SOURCE-kandidaten.
+- [x] Særskilte lokale backup-/restorekilder og normale kommandokort er forberedt; deres egne lokale mål er ikke SOURCE/fullnative- eller hostedbevis.
+- [ ] Endelig normal faktisk main-sammenføring, kodefreeze og ny normal 596-afledning; 596 er UNISSUED.
+- [ ] Relevante issued-, samme-PG-, native/SDK/action63/64-, ejerafslutnings-, nationale og fulde kildegates samt faktisk kapacitet.
+- [ ] Kontrolleret installation, normal ny generation, gemning, offentlig levering og driftsaccept uden Codex.
+- [ ] Backupens faktiske rettighed/eksport/genlæsning/restore, varige retentionplan og Free-/Pro-afklaring.
+
+Ingen metadata, SQL, produktion, mail, scheduler, automatisk sletning eller statistik aktiveres af dokumentintegrationen. Håndbogens 89.299/89.300 har særskilte stabile ID’er; SOURCEs 89.294–89.297 bevares.
+
 ## 2. november — dokumentarkivets bucket: lokal klargøring
 
 - [x] To lukkede bucketvalg i den nye vedligeholdelseskalder; særskilt Cloudflare-nøgleflade og frisk metadata før archive/publish/prune.

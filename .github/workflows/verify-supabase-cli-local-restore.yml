@@ -1,0 +1,58 @@
+name: Verify standard Supabase CLI local restore
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_head:
+        description: Exact reviewed source SHA for this synthetic local-only fixture
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ravradar-synthetic-standard-local-restore
+  cancel-in-progress: false
+
+jobs:
+  standard-local-restore:
+    if: github.repository == 'jakobjorgensen82-commits/RavRadar'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Require the exact reviewed manual source
+        env:
+          EXPECTED_HEAD_SHA: ${{ inputs.expected_head }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$GITHUB_RUN_ATTEMPT" = 1
+          test "$GITHUB_ACTIONS" = true
+          test "$RUNNER_ENVIRONMENT" = github-hosted
+          test "$RUNNER_OS" = Linux
+          [[ "$EXPECTED_HEAD_SHA" =~ ^[a-f0-9]{40}$ ]]
+          test "$EXPECTED_HEAD_SHA" = "$GITHUB_SHA"
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.expected_head }}
+          persist-credentials: false
+      - name: Require actual checkout identity
+        env:
+          EXPECTED_HEAD_SHA: ${{ inputs.expected_head }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD_SHA"
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Check the pure local fixture boundaries
+        timeout-minutes: 1
+        run: node scripts/test-supabase-cli-local-restore.mjs --self-test
+      - uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf
+        timeout-minutes: 2
+        with:
+          version: 2.117.0
+      - name: Run only the standard synthetic local restore
+        timeout-minutes: 23
+        env:
+          EXPECTED_HEAD_SHA: ${{ inputs.expected_head }}
+        run: node scripts/test-supabase-cli-local-restore.mjs --run-local-fixture

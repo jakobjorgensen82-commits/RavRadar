@@ -1,0 +1,113 @@
+name: Back up RavRadar Supabase database
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_main:
+        description: Exact already qualified current main SHA
+        required: true
+        type: string
+      operation:
+        description: Fixed private backup operation; readonly bucket check by default
+        type: choice
+        default: bucket-readonly
+        options: [bucket-readonly, bucket-create, capture, discover, bootstrap]
+      confirmation:
+        description: Exact bucket-create or capture confirmation; empty for readonly operations
+        type: string
+        default: ''
+      index_sha:
+        description: Optional exact authenticated index wire SHA for bootstrap only
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+# Preserve the qualified weather OUTER -> trip storage INNER lock order.
+concurrency:
+  group: ravradar-weather-production-v2
+  queue: max
+  cancel-in-progress: false
+
+jobs:
+  supabase-database-backup:
+    concurrency:
+      group: ravradar-trip-storage-production
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Require the fixed hosted main invocation
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ inputs.expected_main }}
+        run: |
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$GITHUB_REF" = refs/heads/main
+          test "$GITHUB_RUN_ATTEMPT" = 1
+          test "$GITHUB_REPOSITORY" = jakobjorgensen82-commits/RavRadar
+          test "$GITHUB_ACTIONS" = true
+          test "$RUNNER_ENVIRONMENT" = github-hosted
+          test "$RUNNER_OS" = Linux
+          [[ "$EXPECTED_HEAD_SHA" =~ ^[a-f0-9]{40}$ ]]
+          test "$GITHUB_SHA" = "$EXPECTED_HEAD_SHA"
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Check the fixed caller before any private access
+        timeout-minutes: 2
+        run: node --test scripts/test-supabase-database-backup-workflow.mjs
+      - name: Restore source-content validation locator
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/weather-source-validation.json
+          key: weather-source-proof-v2-${{ runner.os }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}-supabase-backup
+          restore-keys: |
+            weather-source-proof-v2-${{ runner.os }}-${{ github.sha }}-
+      - name: Require the already qualified exact-content source
+        id: source-proof
+        timeout-minutes: 2
+        run: node scripts/weather-source-gate.mjs check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Reject missing source proof before private access
+        run: test "${{ steps.source-proof.outputs.required }}" = false
+      - name: Check private bucket before capture-only CLI setup
+        if: inputs.operation == 'capture'
+        timeout-minutes: 2
+        run: node scripts/run-hosted-supabase-backup.mjs --preflight
+        env:
+          EXPECTED_HEAD_SHA: ${{ inputs.expected_main }}
+          SUPABASE_BACKUP_OPERATION: ${{ inputs.operation }}
+          SUPABASE_BACKUP_CONFIRMATION: ${{ inputs.confirmation }}
+          SUPABASE_BACKUP_INDEX_SHA: ${{ inputs.index_sha }}
+          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      - name: Set up the already used pinned Supabase CLI only for capture
+        if: inputs.operation == 'capture'
+        timeout-minutes: 2
+        uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf
+        with:
+          version: 2.117.0
+      - name: Run only the fixed backup operation
+        timeout-minutes: 21
+        run: node scripts/run-hosted-supabase-backup.mjs --execute
+        env:
+          EXPECTED_HEAD_SHA: ${{ inputs.expected_main }}
+          SUPABASE_BACKUP_OPERATION: ${{ inputs.operation }}
+          SUPABASE_BACKUP_CONFIRMATION: ${{ inputs.confirmation }}
+          SUPABASE_BACKUP_INDEX_SHA: ${{ inputs.index_sha }}
+          SUPABASE_URL: ${{ (inputs.operation == 'capture' || inputs.operation == 'discover') && secrets.SUPABASE_URL || '' }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ (inputs.operation == 'capture' || inputs.operation == 'discover' || inputs.operation == 'bootstrap') && secrets.SUPABASE_SERVICE_ROLE_KEY || '' }}
+          SUPABASE_ACCESS_TOKEN: ${{ (inputs.operation == 'capture' || inputs.operation == 'discover') && secrets.SUPABASE_ACCESS_TOKEN || '' }}
+          SUPABASE_DB_PASSWORD: ${{ inputs.operation == 'capture' && secrets.SUPABASE_DB_PASSWORD || '' }}
+          CLOUDFLARE_API_TOKEN: ${{ inputs.operation != 'bootstrap' && secrets.CLOUDFLARE_API_TOKEN || '' }}
+          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
+          RAVRADAR_R2_ACCESS_KEY_ID: ${{ (inputs.operation == 'capture' || inputs.operation == 'discover' || inputs.operation == 'bootstrap') && secrets.RAVRADAR_R2_ACCESS_KEY_ID || '' }}
+          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ (inputs.operation == 'capture' || inputs.operation == 'discover' || inputs.operation == 'bootstrap') && secrets.RAVRADAR_R2_SECRET_ACCESS_KEY || '' }}

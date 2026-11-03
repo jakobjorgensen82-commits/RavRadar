@@ -635,6 +635,7 @@ Object.freeze(SOURCE_NORMAL_SCALAR_WORKFLOW_REVIEW);
 export function inverseSourceNormalScalarWorkflow(source,role){
   assert.equal(arguments.length,2,'SOURCE_SCALAR_WORKFLOW_ARGUMENTS');
   assert.equal(typeof source,'string','SOURCE_SCALAR_WORKFLOW_TYPE');
+  source=inverseSourceNormalInstalledRouteWorkflow(source,role);
   const row=SOURCE_NORMAL_SCALAR_WORKFLOW_REVIEW;
   if(role!=='build'||sha(source)!==row.after.sha256)return source;
   assert.equal(Buffer.byteLength(source),row.after.bytes,'SOURCE_SCALAR_WORKFLOW_AFTER_BYTES');
@@ -671,4 +672,933 @@ export function inverseSourceNormalWorkflow(source, role) {
   assert.equal(Buffer.byteLength(prior), row.predecessorBytes);
   assert.equal(sha(prior), row.predecessorSha256, 'Whole genuine b2 caller, including its release585 strings');
   return prior;
+}
+
+// TEST ONLY: exact installed-family route successor over the unchanged SOURCE28182 caller.
+export const SOURCE_NORMAL_INSTALLED_ROUTE_WORKFLOW_REVIEW = {
+  "sourceHead": "28182da8aab7ca76acbdeea93b9a7d7d1d9e9190",
+  "before": {
+    "bytes": 343543,
+    "sha256": "97ce258a45f474a3f6aa44920a7c3f5bfe5634913156c467c306212bd166bec4"
+  },
+  "after": {
+    "bytes": 349331,
+    "sha256": "4d75287c2a8886fda6a843c10f01666fa8e6da21664f8b9aef6f46bbd9ecbb8a"
+  },
+  "edits": [
+    {
+      "offset": 337011,
+      "before": "        if: always() && inputs.source_normal_producer == true && steps.weather-route-result.outputs.source_result_kind == 'PREPARED_WEATHER'\n",
+      "after": "        if: always() && steps.operational-model.outputs.source_normal_producer == 'true' && steps.weather-route-result.outputs.source_result_kind == 'PREPARED_WEATHER'\n"
+    },
+    {
+      "offset": 332518,
+      "before": "        if: inputs.source_normal_producer == false && (always() && steps.preflight.outputs.should_run == 'true')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (always() && steps.preflight.outputs.should_run == 'true')\n"
+    },
+    {
+      "offset": 319291,
+      "before": "        if: inputs.source_normal_producer == true && steps.weather-route-result.outputs.source_result_kind == 'PREPARED_WEATHER'\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'true' && steps.weather-route-result.outputs.source_result_kind == 'PREPARED_WEATHER'\n"
+    },
+    {
+      "offset": 306246,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true')\n"
+    },
+    {
+      "offset": 265362,
+      "before": "        if: (inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && (steps.operational-action.outputs.action == 'integrated-return' || steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && steps.current-grid-edge-route.outputs.required != 'true')) || (inputs.source_normal_producer == true && steps.source-normal.outcome == 'success' && steps.source-normal.outputs.source_result_kind == 'PREPARED_WEATHER' && steps.weather-route-result.outcome == 'success' && steps.weather-route-result.outputs.preflight_should_run == 'true' && steps.weather-route-result.outputs.operational_action == 'integrated-historical-maintenance' && steps.current-grid-edge-route.outputs.required == 'false')\n",
+      "after": "        if: (steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && (steps.operational-action.outputs.action == 'integrated-return' || steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && steps.current-grid-edge-route.outputs.required != 'true')) || (steps.operational-model.outputs.source_normal_producer == 'true' && steps.source-normal.outcome == 'success' && steps.source-normal.outputs.source_result_kind == 'PREPARED_WEATHER' && steps.weather-route-result.outcome == 'success' && steps.weather-route-result.outputs.preflight_should_run == 'true' && steps.weather-route-result.outputs.operational_action == 'integrated-historical-maintenance' && steps.current-grid-edge-route.outputs.required == 'false')\n"
+    },
+    {
+      "offset": 260436,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && startsWith(steps.operational-action.outputs.action, 'candidate-'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && startsWith(steps.operational-action.outputs.action, 'candidate-'))\n"
+    },
+    {
+      "offset": 248756,
+      "before": "          SOURCE_SELECTED: ${{ toJSON(inputs.source_normal_producer) }}\n",
+      "after": "          SOURCE_SELECTED: ${{ steps.operational-model.outputs.source_normal_producer }}\n"
+    },
+    {
+      "offset": 247866,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')))\n"
+    },
+    {
+      "offset": 246888,
+      "before": "        if: inputs.source_normal_producer == false && (steps.private-runtime-publish.outcome == 'success' && steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED') && steps.operational-action.outputs.action != 'candidate-dry-run')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.private-runtime-publish.outcome == 'success' && steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED') && steps.operational-action.outputs.action != 'candidate-dry-run')\n"
+    },
+    {
+      "offset": 246152,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED'))\n"
+    },
+    {
+      "offset": 244760,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && steps.operational-action.outputs.action != 'candidate-dry-run')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && steps.operational-action.outputs.action != 'candidate-dry-run')\n"
+    },
+    {
+      "offset": 243652,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && steps.operational-action.outputs.action != 'candidate-dry-run')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && steps.operational-action.outputs.action != 'candidate-dry-run')\n"
+    },
+    {
+      "offset": 242986,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime == true)\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime == true)\n"
+    },
+    {
+      "offset": 242426,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')))\n"
+    },
+    {
+      "offset": 241702,
+      "before": "        if: inputs.source_normal_producer == false && (steps.weather-preflight-state-build.outcome == 'success' && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && steps.operational-action.outputs.action != 'candidate-dry-run'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.weather-preflight-state-build.outcome == 'success' && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && steps.operational-action.outputs.action != 'candidate-dry-run'))\n"
+    },
+    {
+      "offset": 240972,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && steps.operational-action.outputs.action != 'candidate-dry-run')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && steps.operational-action.outputs.action != 'candidate-dry-run')\n"
+    },
+    {
+      "offset": 240124,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED') && steps.operational-action.outputs.action != 'candidate-dry-run')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED') && steps.operational-action.outputs.action != 'candidate-dry-run')\n"
+    },
+    {
+      "offset": 239359,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED'))\n"
+    },
+    {
+      "offset": 238150,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime == true)\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime == true)\n"
+    },
+    {
+      "offset": 237325,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.current_family_cold_start != true && inputs.completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap != true && steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && steps.operational-action.outputs.action != 'candidate-dry-run'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.current_family_cold_start != true && inputs.completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap != true && steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && steps.operational-action.outputs.action != 'candidate-dry-run'))\n"
+    },
+    {
+      "offset": 236679,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true')\n"
+    },
+    {
+      "offset": 236179,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true')\n"
+    },
+    {
+      "offset": 235520,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true')\n"
+    },
+    {
+      "offset": 234983,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && steps.operational-action.outputs.action != 'integrated-cutover')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && steps.operational-action.outputs.action != 'integrated-cutover')\n"
+    },
+    {
+      "offset": 233312,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance' || steps.operational-action.outputs.action == 'integrated-return' || steps.operational-action.outputs.action == 'integrated-cutover') && steps.current-grid-edge-route.outputs.required != 'true')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance' || steps.operational-action.outputs.action == 'integrated-return' || steps.operational-action.outputs.action == 'integrated-cutover') && steps.current-grid-edge-route.outputs.required != 'true')\n"
+    },
+    {
+      "offset": 232380,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true')\n"
+    },
+    {
+      "offset": 231815,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && inputs.produce_weather_handoff == true)\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && inputs.produce_weather_handoff == true)\n"
+    },
+    {
+      "offset": 231365,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && inputs.produce_weather_handoff == true)\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && inputs.produce_weather_handoff == true)\n"
+    },
+    {
+      "offset": 230513,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && inputs.produce_weather_handoff == true)\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && inputs.produce_weather_handoff == true)\n"
+    },
+    {
+      "offset": 229413,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && inputs.produce_weather_handoff == true)\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && inputs.produce_weather_handoff == true)\n"
+    },
+    {
+      "offset": 228335,
+      "before": "        if: always() && ((inputs.source_normal_producer == false && (always() && steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover' && hashFiles('.geometry-v2-work/production-artifact-validation-report.json') != '')) || (inputs.source_normal_producer == true && (steps.source-normal.outputs.source_result_kind == 'PREPARED_WEATHER' || steps.source-normal.outputs.source_operational_control_report == 'observed') && hashFiles('.geometry-v2-work/production-artifact-validation-report.json') != ''))\n",
+      "after": "        if: always() && ((steps.operational-model.outputs.source_normal_producer == 'false' && (always() && steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover' && hashFiles('.geometry-v2-work/production-artifact-validation-report.json') != '')) || (steps.operational-model.outputs.source_normal_producer == 'true' && (steps.source-normal.outputs.source_result_kind == 'PREPARED_WEATHER' || steps.source-normal.outputs.source_operational_control_report == 'observed') && hashFiles('.geometry-v2-work/production-artifact-validation-report.json') != ''))\n"
+    },
+    {
+      "offset": 227986,
+      "before": "        if: inputs.source_normal_producer == false && (always() && steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (always() && steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover')\n"
+    },
+    {
+      "offset": 227383,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover')\n"
+    },
+    {
+      "offset": 226195,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover')\n"
+    },
+    {
+      "offset": 225618,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && steps.operational-action.outputs.action != 'integrated-cutover')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && steps.operational-action.outputs.action != 'integrated-cutover')\n"
+    },
+    {
+      "offset": 225023,
+      "before": "        if: inputs.source_normal_producer == false && (steps.private-build-stage-seal.outcome == 'success')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.private-build-stage-seal.outcome == 'success')\n"
+    },
+    {
+      "offset": 223280,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED') && steps.operational-action.outputs.action != 'candidate-dry-run')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && (steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED') && steps.operational-action.outputs.action != 'candidate-dry-run')\n"
+    },
+    {
+      "offset": 222248,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')))\n"
+    },
+    {
+      "offset": 221593,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')))\n"
+    },
+    {
+      "offset": 217465,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true')\n"
+    },
+    {
+      "offset": 216736,
+      "before": "        if: inputs.source_normal_producer == false && (always() && steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action == 'integrated-cutover' && hashFiles('.geometry-v2-work/ravscore-integrated-cutover-validation-report.json') != '')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (always() && steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action == 'integrated-cutover' && hashFiles('.geometry-v2-work/ravscore-integrated-cutover-validation-report.json') != '')\n"
+    },
+    {
+      "offset": 216075,
+      "before": "        if: inputs.source_normal_producer == false && (always() && steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action == 'integrated-cutover' && hashFiles('.geometry-v2-work/ravscore-integrated-full-validation-report.json') != '')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (always() && steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action == 'integrated-cutover' && hashFiles('.geometry-v2-work/ravscore-integrated-full-validation-report.json') != '')\n"
+    },
+    {
+      "offset": 215174,
+      "before": "        if: always() && ((inputs.source_normal_producer == false && (always() && steps.preflight.outputs.should_run == 'true' && hashFiles('data/diagnostics/ravscore-current-input-stage-trace.json') != '')) || (inputs.source_normal_producer == true && (steps.source-normal.outputs.source_result_kind == 'PREPARED_WEATHER' || steps.source-normal.outputs.source_operational_control_report == 'observed') && hashFiles('data/diagnostics/ravscore-current-input-stage-trace.json') != ''))\n",
+      "after": "        if: always() && ((steps.operational-model.outputs.source_normal_producer == 'false' && (always() && steps.preflight.outputs.should_run == 'true' && hashFiles('data/diagnostics/ravscore-current-input-stage-trace.json') != '')) || (steps.operational-model.outputs.source_normal_producer == 'true' && (steps.source-normal.outputs.source_result_kind == 'PREPARED_WEATHER' || steps.source-normal.outputs.source_operational_control_report == 'observed') && hashFiles('data/diagnostics/ravscore-current-input-stage-trace.json') != ''))\n"
+    },
+    {
+      "offset": 213713,
+      "before": "        if: always() && ((inputs.source_normal_producer == false && steps.preflight.outputs.should_run == 'true' && hashFiles('.geometry-v2-work/ravscore-integrated-public-runtime-audit.json', '.geometry-v2-work/ravscore-integrated-public-runtime-audit.json.failure.json', '.geometry-v2-work/ravscore-integrated-public-runtime-audit.json.execution.json') != '') || (inputs.source_normal_producer == true && (steps.source-normal.outputs.source_result_kind == 'PREPARED_WEATHER' || steps.source-normal.outputs.source_operational_control_report == 'observed') && hashFiles('.geometry-v2-work/ravscore-integrated-public-runtime-audit.json', '.geometry-v2-work/ravscore-integrated-public-runtime-audit.json.failure.json', '.geometry-v2-work/ravscore-integrated-public-runtime-audit.json.execution.json') != ''))\n",
+      "after": "        if: always() && ((steps.operational-model.outputs.source_normal_producer == 'false' && steps.preflight.outputs.should_run == 'true' && hashFiles('.geometry-v2-work/ravscore-integrated-public-runtime-audit.json', '.geometry-v2-work/ravscore-integrated-public-runtime-audit.json.failure.json', '.geometry-v2-work/ravscore-integrated-public-runtime-audit.json.execution.json') != '') || (steps.operational-model.outputs.source_normal_producer == 'true' && (steps.source-normal.outputs.source_result_kind == 'PREPARED_WEATHER' || steps.source-normal.outputs.source_operational_control_report == 'observed') && hashFiles('.geometry-v2-work/ravscore-integrated-public-runtime-audit.json', '.geometry-v2-work/ravscore-integrated-public-runtime-audit.json.failure.json', '.geometry-v2-work/ravscore-integrated-public-runtime-audit.json.execution.json') != ''))\n"
+    },
+    {
+      "offset": 208359,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true')\n"
+    },
+    {
+      "offset": 206949,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover')\n"
+    },
+    {
+      "offset": 206675,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true')\n"
+    },
+    {
+      "offset": 206108,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true')\n"
+    },
+    {
+      "offset": 205499,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))\n"
+    },
+    {
+      "offset": 204893,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (always() && steps.component-progress-seal.outcome == 'success' && steps.component-progress-seal.outputs.saved == 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (always() && steps.component-progress-seal.outcome == 'success' && steps.component-progress-seal.outputs.saved == 'true'))\n"
+    },
+    {
+      "offset": 203713,
+      "before": "        if: inputs.source_normal_producer == false && ((inputs.current_family_cold_start != true || steps.dmi-bulk.outputs.current_family_cold_producer_closed == 'true') && inputs.completed_private_runtime != true && (always() && github.ref == 'refs/heads/main' && steps.preflight.outputs.should_run == 'true' && steps.component-progress-restore.outcome == 'success' && steps.component-progress-restore.outputs.captured == 'true' && (steps.dmi-bulk.outcome == 'success' || steps.dmi-bulk.outcome == 'failure')))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && ((inputs.current_family_cold_start != true || steps.dmi-bulk.outputs.current_family_cold_producer_closed == 'true') && inputs.completed_private_runtime != true && (always() && github.ref == 'refs/heads/main' && steps.preflight.outputs.should_run == 'true' && steps.component-progress-restore.outcome == 'success' && steps.component-progress-restore.outputs.captured == 'true' && (steps.dmi-bulk.outcome == 'success' || steps.dmi-bulk.outcome == 'failure')))\n"
+    },
+    {
+      "offset": 202536,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success'))))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success'))))\n"
+    },
+    {
+      "offset": 201188,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && inputs.quick_confirmation != true && inputs.checkpoint_only != true))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && inputs.quick_confirmation != true && inputs.checkpoint_only != true))\n"
+    },
+    {
+      "offset": 199406,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && ((steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success'))))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && ((steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success'))))\n"
+    },
+    {
+      "offset": 194225,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))\n"
+    },
+    {
+      "offset": 193569,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && ((inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true) && steps.preflight.outputs.should_run == 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && ((inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true) && steps.preflight.outputs.should_run == 'true'))\n"
+    },
+    {
+      "offset": 193196,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))\n"
+    },
+    {
+      "offset": 192624,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused == 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused == 'true'))\n"
+    },
+    {
+      "offset": 192188,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))\n"
+    },
+    {
+      "offset": 191702,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))\n"
+    },
+    {
+      "offset": 190963,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true' && ((steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true') || steps.historical-wave-transition.outputs.required == 'true')))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true' && ((steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true') || steps.historical-wave-transition.outputs.required == 'true')))\n"
+    },
+    {
+      "offset": 189586,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true' && (steps.weather-source-handoff.outputs.reused == 'true' || steps.open-meteo-fill.outcome != 'skipped')))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true' && (steps.weather-source-handoff.outputs.reused == 'true' || steps.open-meteo-fill.outcome != 'skipped')))\n"
+    },
+    {
+      "offset": 188654,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.dmi-bulk.outcome != 'skipped' && steps.dmi-bulk.outcome != ''))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.dmi-bulk.outcome != 'skipped' && steps.dmi-bulk.outcome != ''))\n"
+    },
+    {
+      "offset": 187930,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'))\n"
+    },
+    {
+      "offset": 187213,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && ((inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true) && steps.preflight.outputs.should_run == 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && ((inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true) && steps.preflight.outputs.should_run == 'true'))\n"
+    },
+    {
+      "offset": 186417,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))\n"
+    },
+    {
+      "offset": 185083,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true' && inputs.checkpoint_only != true))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true' && inputs.checkpoint_only != true))\n"
+    },
+    {
+      "offset": 184379,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && ((inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true) && steps.preflight.outputs.should_run == 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && ((inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true) && steps.preflight.outputs.should_run == 'true'))\n"
+    },
+    {
+      "offset": 183443,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true' && inputs.checkpoint_only != true))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true' && inputs.checkpoint_only != true))\n"
+    },
+    {
+      "offset": 182926,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true' && inputs.checkpoint_only != true))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true' && inputs.checkpoint_only != true))\n"
+    },
+    {
+      "offset": 182114,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'))\n"
+    },
+    {
+      "offset": 181638,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.targeted-copernicus-cache.outputs.source_stage_reusable != 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.targeted-copernicus-cache.outputs.source_stage_reusable != 'true'))\n"
+    },
+    {
+      "offset": 180766,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))\n"
+    },
+    {
+      "offset": 179734,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))\n"
+    },
+    {
+      "offset": 179190,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))\n"
+    },
+    {
+      "offset": 177905,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && always()))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && always()))\n"
+    },
+    {
+      "offset": 175899,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true' && ((steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outcome == 'success') || steps.historical-wave-transition.outputs.required == 'true')))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true' && ((steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outcome == 'success') || steps.historical-wave-transition.outputs.required == 'true')))\n"
+    },
+    {
+      "offset": 174797,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.dmi-terminal-gate.outputs.ready == 'true' && steps.dmi-bulk.outputs.candidate_promoted == 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.dmi-terminal-gate.outputs.ready == 'true' && steps.dmi-bulk.outputs.candidate_promoted == 'true'))\n"
+    },
+    {
+      "offset": 172695,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true'))\n"
+    },
+    {
+      "offset": 171914,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (always() && steps.dmi-progress-write-authority.outcome == 'success' && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled' && steps.dmi-bulk.outcome != 'skipped' && steps.dmi-cache-api-prepare.outcome == 'success' && steps.dmi-cache-api-prepare.outputs.distribution_ready == 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (always() && steps.dmi-progress-write-authority.outcome == 'success' && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled' && steps.dmi-bulk.outcome != 'skipped' && steps.dmi-cache-api-prepare.outcome == 'success' && steps.dmi-cache-api-prepare.outputs.distribution_ready == 'true'))\n"
+    },
+    {
+      "offset": 171067,
+      "before": "        if: inputs.source_normal_producer == false && ((inputs.current_family_cold_start != true || steps.dmi-bulk.outputs.current_family_cold_producer_closed == 'true') && inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled' && steps.dmi-bulk.outcome != 'skipped'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && ((inputs.current_family_cold_start != true || steps.dmi-bulk.outputs.current_family_cold_producer_closed == 'true') && inputs.completed_private_runtime != true && (always() && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled' && steps.dmi-bulk.outcome != 'skipped'))\n"
+    },
+    {
+      "offset": 170565,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.current_family_cold_start != true && inputs.completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap != true && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome == 'success'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.current_family_cold_start != true && inputs.completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap != true && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome == 'success'))\n"
+    },
+    {
+      "offset": 169876,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.current_family_cold_start == true && always() && steps.dmi-bulk.outcome != 'skipped' && steps.dmi-bulk.outcome != '')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.current_family_cold_start == true && always() && steps.dmi-bulk.outcome != 'skipped' && steps.dmi-bulk.outcome != '')\n"
+    },
+    {
+      "offset": 162581,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'))\n"
+    },
+    {
+      "offset": 161930,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && ((inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true) && steps.preflight.outputs.should_run == 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && ((inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true) && steps.preflight.outputs.should_run == 'true'))\n"
+    },
+    {
+      "offset": 158352,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'))\n"
+    },
+    {
+      "offset": 157292,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'))\n"
+    },
+    {
+      "offset": 156701,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true && inputs.checkpoint_only == true && steps.current-history-demand.outcome == 'success' && steps.dmi-generation-prepare.outcome == 'success'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true && inputs.checkpoint_only == true && steps.current-history-demand.outcome == 'success' && steps.dmi-generation-prepare.outcome == 'success'))\n"
+    },
+    {
+      "offset": 153119,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && steps.historical-wave-transition.outputs.required != 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && steps.historical-wave-transition.outputs.required != 'true'))\n"
+    },
+    {
+      "offset": 147615,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'))\n"
+    },
+    {
+      "offset": 147048,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'))\n"
+    },
+    {
+      "offset": 146448,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (inputs.weather_state_epoch_checkpoint_reentry == true))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (inputs.weather_state_epoch_checkpoint_reentry == true))\n"
+    },
+    {
+      "offset": 145272,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'))\n"
+    },
+    {
+      "offset": 144940,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))\n"
+    },
+    {
+      "offset": 143661,
+      "before": "        if: inputs.source_normal_producer == true\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'true'\n"
+    },
+    {
+      "offset": 143348,
+      "before": "        if: inputs.source_normal_producer == true || (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'true' || (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))\n"
+    },
+    {
+      "offset": 143042,
+      "before": "        if: inputs.source_normal_producer == true || (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'true' || (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))\n"
+    },
+    {
+      "offset": 142598,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && inputs.checkpoint_only != true))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && inputs.checkpoint_only != true))\n"
+    },
+    {
+      "offset": 142315,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))\n"
+    },
+    {
+      "offset": 141915,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.current_family_cold_start != true && inputs.completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap != true && steps.preflight.outputs.should_run == 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.current_family_cold_start != true && inputs.completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap != true && steps.preflight.outputs.should_run == 'true'))\n"
+    },
+    {
+      "offset": 141222,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && hashFiles('data/live/dmi-bulk-cache.json') != ''))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && hashFiles('data/live/dmi-bulk-cache.json') != ''))\n"
+    },
+    {
+      "offset": 140864,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (always() && steps.dmi-cache-api-node24.outcome == 'success'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (always() && steps.dmi-cache-api-node24.outcome == 'success'))\n"
+    },
+    {
+      "offset": 140490,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))\n"
+    },
+    {
+      "offset": 140132,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))\n"
+    },
+    {
+      "offset": 139655,
+      "before": "        if: inputs.source_normal_producer == false && ((github.event_name == 'push' || inputs.force == true || steps.operational-action.outputs.action == 'integrated-cutover'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && ((github.event_name == 'push' || inputs.force == true || steps.operational-action.outputs.action == 'integrated-cutover'))\n"
+    },
+    {
+      "offset": 139107,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))\n"
+    },
+    {
+      "offset": 137674,
+      "before": "        if: inputs.source_normal_producer == false && (steps.operational-model.outputs.legacy_source_required == 'true' && (steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'candidate-legacy-maintenance'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.operational-model.outputs.legacy_source_required == 'true' && (steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'candidate-legacy-maintenance'))\n"
+    },
+    {
+      "offset": 136820,
+      "before": "        if: inputs.source_normal_producer == false && (steps.operational-model.outputs.legacy_source_required == 'true' && (steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'candidate-legacy-maintenance'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.operational-model.outputs.legacy_source_required == 'true' && (steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'candidate-legacy-maintenance'))\n"
+    },
+    {
+      "offset": 135779,
+      "before": "        if: inputs.source_normal_producer == false && (steps.operational-model.outputs.legacy_source_required == 'true' && (steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'candidate-legacy-maintenance'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.operational-model.outputs.legacy_source_required == 'true' && (steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'candidate-legacy-maintenance'))\n"
+    },
+    {
+      "offset": 135102,
+      "before": "        if: inputs.source_normal_producer == false && (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true')\n"
+    },
+    {
+      "offset": 134524,
+      "before": "        if: inputs.source_normal_producer == false && (steps.legacy-bootstrap.outputs.required == 'true')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.legacy-bootstrap.outputs.required == 'true')\n"
+    },
+    {
+      "offset": 132796,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true')\n"
+    },
+    {
+      "offset": 131534,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.exact-weather-recovery.outputs.required == 'true' && steps.private-runtime-install.outcome == 'success'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.exact-weather-recovery.outputs.required == 'true' && steps.private-runtime-install.outcome == 'success'))\n"
+    },
+    {
+      "offset": 130579,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused == 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused == 'true'))\n"
+    },
+    {
+      "offset": 129496,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (inputs.checkpoint_only == true))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (inputs.checkpoint_only == true))\n"
+    },
+    {
+      "offset": 116850,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.current_family_cold_start != true && inputs.completed_private_runtime != true && (inputs.quick_confirmation == true || inputs.quick_progress_source != ''))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.current_family_cold_start != true && inputs.completed_private_runtime != true && (inputs.quick_confirmation == true || inputs.quick_progress_source != ''))\n"
+    },
+    {
+      "offset": 110980,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && steps.private-runtime-install.outcome == 'success' && steps.weather-source-handoff.outputs.reused != 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && steps.private-runtime-install.outcome == 'success' && steps.weather-source-handoff.outputs.reused != 'true'))\n"
+    },
+    {
+      "offset": 109659,
+      "before": "        if: inputs.source_normal_producer == false && ((inputs.current_family_cold_start != true || inputs.quick_progress_source == '39886354260-1' || inputs.quick_progress_source == '39933506923-1') && inputs.completed_private_runtime != true && (inputs.native_sampling_identity_original_recovery != true && (inputs.weather_state_epoch_bootstrap != true || inputs.weather_state_epoch_checkpoint_reentry == true) && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && steps.private-runtime-install.outcome == 'success' && steps.weather-source-handoff.outputs.reused != 'true' && !(inputs.quick_confirmation && inputs.quick_progress_source == 'protected-current')))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && ((inputs.current_family_cold_start != true || inputs.quick_progress_source == '39886354260-1' || inputs.quick_progress_source == '39933506923-1') && inputs.completed_private_runtime != true && (inputs.native_sampling_identity_original_recovery != true && (inputs.weather_state_epoch_bootstrap != true || inputs.weather_state_epoch_checkpoint_reentry == true) && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event_name != 'pull_request_target' && steps.private-runtime-install.outcome == 'success' && steps.weather-source-handoff.outputs.reused != 'true' && !(inputs.quick_confirmation && inputs.quick_progress_source == 'protected-current')))\n"
+    },
+    {
+      "offset": 108604,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.quick_confirmation == true || inputs.quick_progress_source != '')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.quick_confirmation == true || inputs.quick_progress_source != '')\n"
+    },
+    {
+      "offset": 107381,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.checkpoint_only == true)\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.checkpoint_only == true)\n"
+    },
+    {
+      "offset": 106632,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime == true)\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime == true)\n"
+    },
+    {
+      "offset": 106103,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime == true)\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime == true)\n"
+    },
+    {
+      "offset": 105541,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime == true)\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime == true)\n"
+    },
+    {
+      "offset": 104016,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime == true)\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime == true)\n"
+    },
+    {
+      "offset": 103207,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && steps.private-runtime-install.outcome == 'success' && steps.historical-wave-predecessor.outputs.transition_kind == 'historical-wave-input')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && steps.private-runtime-install.outcome == 'success' && steps.historical-wave-predecessor.outputs.transition_kind == 'historical-wave-input')\n"
+    },
+    {
+      "offset": 102499,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && steps.private-runtime-install.outcome == 'success' && steps.operational-action.outputs.action != 'integrated-cutover')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && steps.private-runtime-install.outcome == 'success' && steps.operational-action.outputs.action != 'integrated-cutover')\n"
+    },
+    {
+      "offset": 100747,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.exact-weather-recovery.outputs.required == 'true' && steps.private-runtime-install.outcome == 'success'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.exact-weather-recovery.outputs.required == 'true' && steps.private-runtime-install.outcome == 'success'))\n"
+    },
+    {
+      "offset": 99294,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.dmi-part-continuity-donor.outputs.required == 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.dmi-part-continuity-donor.outputs.required == 'true'))\n"
+    },
+    {
+      "offset": 97545,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap != true && steps.private-runtime-install.outcome == 'success'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (inputs.weather_state_epoch_bootstrap != true && steps.private-runtime-install.outcome == 'success'))\n"
+    },
+    {
+      "offset": 96190,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true && inputs.native_sampling_identity_original_recovery != true && inputs.checkpoint_only != true && inputs.quick_confirmation != true && inputs.completed_private_runtime != true && steps.operational-action.outputs.action == 'integrated' && steps.paired-checkpoint-route.outputs.required == 'true')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true && inputs.native_sampling_identity_original_recovery != true && inputs.checkpoint_only != true && inputs.quick_confirmation != true && inputs.completed_private_runtime != true && steps.operational-action.outputs.action == 'integrated' && steps.paired-checkpoint-route.outputs.required == 'true')\n"
+    },
+    {
+      "offset": 92387,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && steps.private-runtime-state.outputs.available == 'true')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && steps.private-runtime-state.outputs.available == 'true')\n"
+    },
+    {
+      "offset": 91133,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.completed_private_runtime != true && (steps.exact-weather-recovery.outputs.required == 'true' && steps.private-runtime-state.outputs.available == 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.completed_private_runtime != true && (steps.exact-weather-recovery.outputs.required == 'true' && steps.private-runtime-state.outputs.available == 'true'))\n"
+    },
+    {
+      "offset": 89596,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && steps.private-runtime-state.outputs.available == 'true' && steps.historical-wave-predecessor.outputs.transition_kind == 'bounded-conditions-writer')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && steps.private-runtime-state.outputs.available == 'true' && steps.historical-wave-predecessor.outputs.transition_kind == 'bounded-conditions-writer')\n"
+    },
+    {
+      "offset": 87213,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && steps.private-runtime-state.outputs.available == 'true' && steps.historical-wave-predecessor.outputs.transition_kind == 'current-grid-sampling-original')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && steps.private-runtime-state.outputs.available == 'true' && steps.historical-wave-predecessor.outputs.transition_kind == 'current-grid-sampling-original')\n"
+    },
+    {
+      "offset": 85859,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && steps.private-runtime-state.outputs.available == 'true' && steps.historical-wave-predecessor.outputs.transition_kind == 'owner-current-domain-original')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && steps.private-runtime-state.outputs.available == 'true' && steps.historical-wave-predecessor.outputs.transition_kind == 'owner-current-domain-original')\n"
+    },
+    {
+      "offset": 81115,
+      "before": "        if: inputs.source_normal_producer == false && (steps.assistant-later-h0-source.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && steps.private-runtime-state.outputs.available == 'true')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.assistant-later-h0-source.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && steps.private-runtime-state.outputs.available == 'true')\n"
+    },
+    {
+      "offset": 79899,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && steps.private-runtime-state.outputs.available == 'true')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && steps.private-runtime-state.outputs.available == 'true')\n"
+    },
+    {
+      "offset": 79337,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover')\n"
+    },
+    {
+      "offset": 77465,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true')\n"
+    },
+    {
+      "offset": 70510,
+      "before": "        if: inputs.source_normal_producer == false && (steps.assistant-later-h0-source.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.assistant-later-h0-source.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true'))\n"
+    },
+    {
+      "offset": 68093,
+      "before": "        if: inputs.source_normal_producer == false && (steps.historical-wave-predecessor.outputs.required == 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original' && steps.historical-wave-predecessor.outputs.transition_kind != 'current-grid-sampling-original')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.historical-wave-predecessor.outputs.required == 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original' && steps.historical-wave-predecessor.outputs.transition_kind != 'current-grid-sampling-original')\n"
+    },
+    {
+      "offset": 67182,
+      "before": "        if: inputs.source_normal_producer == false && (steps.exact-weather-recovery.outputs.required == 'true')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.exact-weather-recovery.outputs.required == 'true')\n"
+    },
+    {
+      "offset": 65970,
+      "before": "        if: inputs.source_normal_producer == false && (steps.assistant-later-h0-source.outputs.required != 'true' && steps.paired-checkpoint-route.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && steps.exact-weather-recovery.outputs.required != 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.ravscore-checkpoint-cache.outputs.cache-matched-key == '' && steps.historical-wave-predecessor.outputs.transition_kind != 'current-grid-sampling-original')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.assistant-later-h0-source.outputs.required != 'true' && steps.paired-checkpoint-route.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && steps.exact-weather-recovery.outputs.required != 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.ravscore-checkpoint-cache.outputs.cache-matched-key == '' && steps.historical-wave-predecessor.outputs.transition_kind != 'current-grid-sampling-original')\n"
+    },
+    {
+      "offset": 64826,
+      "before": "        if: inputs.source_normal_producer == false && (steps.assistant-later-h0-source.outputs.required != 'true' && steps.paired-checkpoint-route.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && steps.exact-weather-recovery.outputs.required != 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.historical-wave-predecessor.outputs.transition_kind != 'current-grid-sampling-original')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.assistant-later-h0-source.outputs.required != 'true' && steps.paired-checkpoint-route.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && steps.exact-weather-recovery.outputs.required != 'true' && steps.historical-wave-predecessor.outputs.transition_kind != 'owner-current-domain-original' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true') && steps.historical-wave-predecessor.outputs.transition_kind != 'current-grid-sampling-original')\n"
+    },
+    {
+      "offset": 63685,
+      "before": "        if: inputs.source_normal_producer == false && (steps.assistant-later-h0-source.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true && inputs.native_sampling_identity_original_recovery != true && inputs.checkpoint_only != true && inputs.quick_confirmation != true && inputs.completed_private_runtime != true && steps.operational-action.outputs.action == 'integrated')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.assistant-later-h0-source.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true && inputs.native_sampling_identity_original_recovery != true && inputs.checkpoint_only != true && inputs.quick_confirmation != true && inputs.completed_private_runtime != true && steps.operational-action.outputs.action == 'integrated')\n"
+    },
+    {
+      "offset": 62429,
+      "before": "        if: inputs.source_normal_producer == false && (steps.assistant-later-h0-source.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.weather_state_epoch_bootstrap != true && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.assistant-later-h0-source.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.weather_state_epoch_bootstrap != true && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true'))\n"
+    },
+    {
+      "offset": 60687,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && steps.historical-wave-predecessor.outputs.transition_kind == 'current-grid-sampling-original')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && steps.historical-wave-predecessor.outputs.transition_kind == 'current-grid-sampling-original')\n"
+    },
+    {
+      "offset": 59617,
+      "before": "        if: inputs.source_normal_producer == false && (steps.assistant-later-h0-source.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.assistant-later-h0-source.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery != true && inputs.weather_state_epoch_bootstrap != true && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true'))\n"
+    },
+    {
+      "offset": 57219,
+      "before": "        if: inputs.source_normal_producer == false && (inputs.weather_state_epoch_bootstrap != true && steps.preflight.outputs.should_run == 'true' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (inputs.weather_state_epoch_bootstrap != true && steps.preflight.outputs.should_run == 'true' && !(steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true'))\n"
+    },
+    {
+      "offset": 56413,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true')\n"
+    },
+    {
+      "offset": 55813,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action == 'integrated-cutover' && steps.operational-model.outputs.legacy_source_required == 'true')\n"
+    },
+    {
+      "offset": 54650,
+      "before": "        if: inputs.source_normal_producer == false && (steps.weather-source-handoff-cache.outcome == 'success')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.weather-source-handoff-cache.outcome == 'success')\n"
+    },
+    {
+      "offset": 54183,
+      "before": "        if: inputs.source_normal_producer == false && (steps.weather-source-handoff-resolve.outcome == 'success')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.weather-source-handoff-resolve.outcome == 'success')\n"
+    },
+    {
+      "offset": 53355,
+      "before": "        if: inputs.source_normal_producer == false && (steps.weather-source-handoff-resolve.outcome == 'success')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.weather-source-handoff-resolve.outcome == 'success')\n"
+    },
+    {
+      "offset": 52431,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && inputs.ravscore_integrated_weather_handoff_run_id != '')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && inputs.ravscore_integrated_weather_handoff_run_id != '')\n"
+    },
+    {
+      "offset": 51569,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && inputs.weather_state_epoch_bootstrap == true)\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && inputs.weather_state_epoch_bootstrap == true)\n"
+    },
+    {
+      "offset": 49180,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery == true)\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery == true)\n"
+    },
+    {
+      "offset": 48632,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery == true)\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && inputs.native_sampling_identity_original_recovery == true)\n"
+    },
+    {
+      "offset": 47840,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run == 'true' && (inputs.native_sampling_identity_original_recovery == true || inputs.weather_state_epoch_bootstrap == true))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && (inputs.native_sampling_identity_original_recovery == true || inputs.weather_state_epoch_bootstrap == true))\n"
+    },
+    {
+      "offset": 47557,
+      "before": "        if: inputs.source_normal_producer == true || (steps.preflight.outputs.should_run == 'true')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'true' || (steps.preflight.outputs.should_run == 'true')\n"
+    },
+    {
+      "offset": 47298,
+      "before": "        if: inputs.source_normal_producer == true || (steps.preflight.outputs.should_run == 'true')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'true' || (steps.preflight.outputs.should_run == 'true')\n"
+    },
+    {
+      "offset": 46911,
+      "before": "        if: inputs.source_normal_producer == true || (steps.preflight.outputs.should_run == 'true')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'true' || (steps.preflight.outputs.should_run == 'true')\n"
+    },
+    {
+      "offset": 46660,
+      "before": "        if: inputs.source_normal_producer == true || (steps.preflight.outputs.should_run == 'true')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'true' || (steps.preflight.outputs.should_run == 'true')\n"
+    },
+    {
+      "offset": 46378,
+      "before": "        if: inputs.source_normal_producer == true || (steps.preflight.outputs.should_run == 'true')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'true' || (steps.preflight.outputs.should_run == 'true')\n"
+    },
+    {
+      "offset": 45927,
+      "before": "          if test \"${{ inputs.source_normal_producer }}\" = true; then\n",
+      "after": "          if test \"${{ steps.operational-model.outputs.source_normal_producer }}\" = true; then\n"
+    },
+    {
+      "offset": 45426,
+      "before": "        if: inputs.source_normal_producer == true || (steps.preflight.outputs.should_run == 'true' && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance' || steps.operational-action.outputs.action == 'integrated-return' || steps.operational-action.outputs.action == 'integrated-cutover'))\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'true' || (steps.preflight.outputs.should_run == 'true' && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance' || steps.operational-action.outputs.action == 'integrated-return' || steps.operational-action.outputs.action == 'integrated-cutover'))\n"
+    },
+    {
+      "offset": 44030,
+      "before": "        if: inputs.source_normal_producer == true\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'true'\n"
+    },
+    {
+      "offset": 43112,
+      "before": "        if: inputs.source_normal_producer == true || (steps.preflight.outputs.should_run == 'true')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'true' || (steps.preflight.outputs.should_run == 'true')\n"
+    },
+    {
+      "offset": 41927,
+      "before": "        if: (inputs.source_normal_producer == true || steps.preflight.outputs.should_run == 'true') && steps.source-proof.outputs.required != 'false'\n",
+      "after": "        if: (steps.operational-model.outputs.source_normal_producer == 'true' || steps.preflight.outputs.should_run == 'true') && steps.source-proof.outputs.required != 'false'\n"
+    },
+    {
+      "offset": 41470,
+      "before": "        if: (inputs.source_normal_producer == true || steps.preflight.outputs.should_run == 'true') && steps.source-proof.outputs.required != 'false'\n",
+      "after": "        if: (steps.operational-model.outputs.source_normal_producer == 'true' || steps.preflight.outputs.should_run == 'true') && steps.source-proof.outputs.required != 'false'\n"
+    },
+    {
+      "offset": 39973,
+      "before": "        if: (inputs.source_normal_producer == true || steps.preflight.outputs.should_run == 'true') && steps.source-proof.outputs.required != 'false'\n",
+      "after": "        if: (steps.operational-model.outputs.source_normal_producer == 'true' || steps.preflight.outputs.should_run == 'true') && steps.source-proof.outputs.required != 'false'\n"
+    },
+    {
+      "offset": 39653,
+      "before": "        if: (inputs.source_normal_producer == true || steps.preflight.outputs.should_run == 'true')\n",
+      "after": "        if: (steps.operational-model.outputs.source_normal_producer == 'true' || steps.preflight.outputs.should_run == 'true')\n"
+    },
+    {
+      "offset": 39109,
+      "before": "        if: (inputs.source_normal_producer == true || steps.preflight.outputs.should_run == 'true')\n",
+      "after": "        if: (steps.operational-model.outputs.source_normal_producer == 'true' || steps.preflight.outputs.should_run == 'true')\n"
+    },
+    {
+      "offset": 38684,
+      "before": "        if: inputs.source_normal_producer == false && (steps.preflight.outputs.should_run != 'true')\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run != 'true')\n"
+    },
+    {
+      "offset": 35978,
+      "before": "        if: inputs.source_normal_producer == false\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false'\n"
+    },
+    {
+      "offset": 34981,
+      "before": "        if: inputs.source_normal_producer == false\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false'\n"
+    },
+    {
+      "offset": 34501,
+      "before": "        if: inputs.source_normal_producer == false\n",
+      "after": "        if: steps.operational-model.outputs.source_normal_producer == 'false'\n"
+    },
+    {
+      "offset": 25597,
+      "before": "",
+      "after": "          SOURCE_REQUEST: ${{ toJSON(inputs) }}\n"
+    },
+    {
+      "offset": 24719,
+      "before": "",
+      "after": "          node --input-type=module <<'NODE'\n          import fs from 'node:fs';\n          import { createSupabaseAdminRequester } from './scripts/lib/supabase-admin-rest.mjs';\n          import { selectInstalledSourceNormalRoute } from './scripts/stage-source-producer-originals.mjs';\n          const operational=JSON.parse(fs.readFileSync(process.env.RAVRADAR_OPERATIONAL_WORK+'/current.json','utf8'));\n          const documentRequest=createSupabaseAdminRequester({endpoint:process.env.SUPABASE_URL.replace(/\\/$/,'')+'/rest/v1/admin_documents',key:process.env.SUPABASE_SERVICE_ROLE_KEY});\n          const route=await selectInstalledSourceNormalRoute({request:JSON.parse(process.env.SOURCE_REQUEST),operational,documentRequest});\n          fs.appendFileSync(process.env.GITHUB_OUTPUT,'source_normal_producer='+(route==='source'?'true':'false')+'\\n');\n          NODE\n"
+    }
+  ]
+};
+Object.freeze(SOURCE_NORMAL_INSTALLED_ROUTE_WORKFLOW_REVIEW.before);
+Object.freeze(SOURCE_NORMAL_INSTALLED_ROUTE_WORKFLOW_REVIEW.after);
+SOURCE_NORMAL_INSTALLED_ROUTE_WORKFLOW_REVIEW.edits.forEach(Object.freeze);
+Object.freeze(SOURCE_NORMAL_INSTALLED_ROUTE_WORKFLOW_REVIEW.edits);
+Object.freeze(SOURCE_NORMAL_INSTALLED_ROUTE_WORKFLOW_REVIEW);
+export function inverseSourceNormalInstalledRouteWorkflow(source,role){
+  assert.equal(arguments.length,2,'SOURCE_INSTALLED_ROUTE_INVERSE_ARGUMENTS');
+  assert.equal(typeof source,'string','SOURCE_INSTALLED_ROUTE_INVERSE_TYPE');
+  const row=SOURCE_NORMAL_INSTALLED_ROUTE_WORKFLOW_REVIEW;
+  if(role!=='build'||sha(source)!==row.after.sha256)return source;
+  assert.equal(Buffer.byteLength(source),row.after.bytes,'SOURCE_INSTALLED_ROUTE_AFTER_BYTES');
+  for(const edit of row.edits){
+    assert.equal(source.slice(edit.offset,edit.offset+edit.after.length),edit.after,'SOURCE_INSTALLED_ROUTE_EXACT_EDIT');
+    source=source.slice(0,edit.offset)+edit.before+source.slice(edit.offset+edit.after.length);
+  }
+  assert.equal(Buffer.byteLength(source),row.before.bytes,'SOURCE_INSTALLED_ROUTE_BEFORE_BYTES');
+  assert.equal(sha(source),row.before.sha256,'SOURCE_INSTALLED_ROUTE_WHOLE_BEFORE');
+  return source;
 }

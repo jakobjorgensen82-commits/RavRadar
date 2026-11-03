@@ -22,6 +22,8 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { writeDmiForecastFileAtomic, isDmiForecastCheckpointStopUnproved } from './lib/dmi-forecast-file.mjs';
+import { pathToFileURL } from 'node:url';
+import { withSource594CodeParent } from './check-assistant-later-h0-predecessor-source.mjs';
 import { withFrozenNative0600TestSource } from './run-frozen-native0600-source-targets.mjs';
 import { withFrozenEstablishedNativeCurrentOriginSourceTarget } from './run-frozen-established-native-current-origin-source-targets.mjs';
 
@@ -32,6 +34,8 @@ const sourceText = async file => {
     source = inverseCurrentNativeOriginalProducerTestInput(source, 'scripts/lib/private-dmi-recovery-record.mjs');
   if (file instanceof URL && file.href === new URL('./read-authenticated-dmi-current-companions.mjs', import.meta.url).href)
     source = inverseIssued594RetentionCompanionSource(source, 'scripts/read-authenticated-dmi-current-companions.mjs');
+  if (file instanceof URL && file.href === new URL('./lib/dmi-forecast-file.mjs', import.meta.url).href)
+    source = inverseSourceJournalWriter(source);
   return file === producerPath ? inverseSavedCurrentForwardOriginalPlan(inverseAlternativeCCaller(source, 'scripts/update-weather.mjs')) : source;
 };
 const digest = value => crypto.createHash('sha256').update(value).digest('hex');
@@ -675,8 +679,12 @@ test('shared normal DMI recovery module is import-safe, outside I71, and byte-ex
     'buildPrivateDmiRecoveryRecord', 'mergeHourlyPreferDmi']) assert.equal(typeof normal[name], 'function');
   assert.doesNotMatch(shared, /from ['"]node:|\b(?:process\.|fetch\(|await\s)/);
   assert.doesNotMatch(shared, /from ['"].*update-weather/);
-  const { GENERATED_RAVSCORE_MODEL_BUNDLE_MANIFEST: manifest } =
-    await import('../js/core/ravscore-model-bundle.generated.js');
+  const manifest=await withSource594CodeParent(async root=>
+    (await import(pathToFileURL(path.join(root,'js/core/ravscore-model-bundle.generated.js')).href)).GENERATED_RAVSCORE_MODEL_BUNDLE_MANIFEST);
+  const {GENERATED_RAVSCORE_MODEL_BUNDLE_MANIFEST:currentManifest}=await import('../js/core/ravscore-model-bundle.generated.js');
+  assert.equal(currentManifest.files.some(entry=>entry.path==='scripts/update-weather.mjs'),false);
+  assert.equal(currentManifest.files.some(entry=>entry.path==='scripts/lib/private-dmi-recovery-record.mjs'),true,
+    'actual SOURCE595 includes the shared record while orchestration remains outside');
   for (const file of ['scripts/update-weather.mjs', 'scripts/lib/private-dmi-recovery-record.mjs']) {
     assert.equal(manifest.files.some(entry => entry.path === file), false,
       'normal orchestration extraction must not enter the unchanged model closure');
@@ -692,6 +700,75 @@ test('shared normal DMI recovery module is import-safe, outside I71, and byte-ex
     source.replace('// Shared recovery record: records', '// Shared recovery record: records-mutated'), shared),
     /complete genuine pre-extraction updater/);
 });
+
+// Test-only exact SOURCE journal inverse before the unchanged genuine37 writer oracles.
+// Text preservation does not qualify current journal execution or authority.
+const SOURCE_JOURNAL_WRITER_REVIEW = Object.freeze({
+  "before": {
+    "bytes": 29084,
+    "sha256": "75c10458973f5e3cdf2969b35c76698239e2baf696b4f0ff8fd4b466bdc3c536"
+  },
+  "after": {
+    "bytes": 30187,
+    "sha256": "be9c4caf7fda54d0bfc3cde9fc711a1ab9b8435d58127fb395402ff3fd4fb9e5"
+  },
+  "hunks": [
+    [
+      "import { TextDecoder } from 'node:util';\n",
+      "import { TextDecoder } from 'node:util';\nimport { sourceUnionBirthFileOpened, sourceUnionBirthFileClosed } from './source-union-birth-journal.mjs';\n"
+    ],
+    [
+      "const checkpointWriters = new Map(), checkpointStopErrors = new WeakSet();\n",
+      "const checkpointWriters = new Map(), checkpointStopErrors = new WeakSet();\n// SOURCE failures retain the actual wx handle; never convert uncertainty to unlink/retry.\nconst sourceUnionForecastWriters = new Set();\n"
+    ],
+    [
+      "// transaction owns the eventual baseline replacement. No partial stage escapes.\nexport async function writeDmiForecastRecords(file, index, zoneRecords, metadata = index.metadata) {\n",
+      "// transaction owns the eventual baseline replacement. No partial stage escapes.\nexport async function writeDmiForecastRecords(file, index, zoneRecords, metadata = index.metadata, sourceUnionBirthJournal = null) {\n"
+    ],
+    [
+      "  const handle = await fs.open(file, 'wx', 0o600);\n",
+      "  const handle = await fs.open(file, 'wx', 0o600);\n  const sourceWriter = sourceUnionBirthJournal !== null;\n  if (sourceWriter) sourceUnionForecastWriters.add(handle);\n  const sourceHash = sourceWriter ? crypto.createHash('sha256') : null;\n"
+    ],
+    [
+      "    await handle.writeFile(text);\n",
+      "    await handle.writeFile(text);\n    if (sourceWriter) sourceHash.update(text);\n"
+    ],
+    [
+      "  try {\n",
+      "  try {\n    if (sourceWriter) await sourceUnionBirthFileOpened(sourceUnionBirthJournal, file, handle);\n"
+    ],
+    [
+      "    await handle.sync();\n",
+      "    await handle.sync();\n    const sourceIdentity = sourceWriter ? await handle.stat({ bigint: true }) : null;\n"
+    ],
+    [
+      "    await handle.close();\n",
+      "    await handle.close();\n    // The journal checks the captured numeric FD is physically EBADF and the named inode is unchanged.\n    if (sourceWriter) await sourceUnionBirthFileClosed(sourceUnionBirthJournal, file, handle, sourceIdentity, bytes, sourceHash.digest('hex'));\n"
+    ],
+    [
+      "    await inspectDmiForecastFile(file);\n",
+      "    await inspectDmiForecastFile(file);\n    if (sourceWriter) sourceUnionForecastWriters.delete(handle);\n"
+    ],
+    [
+      "  } catch (error) {\n",
+      "  } catch (error) {\n    if (sourceWriter) throw error; // Preserve the first raw failure and retained output/handle.\n"
+    ]
+  ]
+});
+function inverseSourceJournalWriter(source){
+  const review=SOURCE_JOURNAL_WRITER_REVIEW;
+  assert.equal(typeof source,'string');
+  if(Buffer.byteLength(source)===review.before.bytes&&digest(source)===review.before.sha256)return source;
+  assert.equal(Buffer.byteLength(source),review.after.bytes,'whole SOURCE journal writer size');
+  assert.equal(digest(source),review.after.sha256,'whole SOURCE journal writer SHA');
+  for(const [before,after] of review.hunks){
+    assert.equal(source.split(after).length,2,'unique complete SOURCE journal hunk');
+    source=source.replace(after,()=>before);
+  }
+  assert.equal(Buffer.byteLength(source),review.before.bytes);
+  assert.equal(digest(source),review.before.sha256);
+  return source;
+}
 
 // Exact TEST-ONLY outer inverse of the reviewed recordwise PART replacement.
 // The genuine95 module and every older mechanical-extraction oracle stay fixed.
@@ -771,6 +848,12 @@ test('recordwise PART writer has an exact outer inverse and refuses every change
   }
   assert.throws(() => inverseRecordwisePartWriter(actual + '// unreviewed drift\n'), /whole reviewed recordwise PART writer/);
   assert.throws(() => inverseRecordwisePartWriter(null), /whole recordwise PART writer text/);
+  const raw=(await fs.readFile(new URL('./lib/dmi-forecast-file.mjs',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  assert.equal(inverseSourceJournalWriter(raw),actual);
+  for(const [,after] of SOURCE_JOURNAL_WRITER_REVIEW.hunks)
+    assert.throws(()=>inverseSourceJournalWriter(raw.replace(after,after+'/*unknown*/')),/whole SOURCE journal writer/);
+  assert.throws(()=>inverseSourceJournalWriter(raw+'\n'),/whole SOURCE journal writer/);
+
 });
 
 test('47 baseline commands plus genuine OLD, NEW native, epoch and pure diagnostic checks reach normal checkpoint integration exactly once', async () => {
@@ -813,7 +896,17 @@ test('47 baseline commands plus genuine OLD, NEW native, epoch and pure diagnost
 });
 
 test('current frozen routes and warmup checks reach normal checkpoint integration exactly once', async () => {
-  const actualScripts = inverseReviewedAccountStatisticsAssistantSourceScripts(JSON.parse(await fs.readFile(new URL('../package.json', import.meta.url), 'utf8')).scripts);
+  const actualSourcePackage=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8'));
+  const {verifySourcePrPackage,reviewedSourceDmiMainSourceScripts}=await import('./national584-source-evidence.mjs');
+  verifySourcePrPackage(actualSourcePackage);
+  const sourceBefore=JSON.stringify(actualSourcePackage),sourceMainScripts=reviewedSourceDmiMainSourceScripts(actualSourcePackage.scripts);
+  // Every old assertion below receives the genuine594 historical package view.
+  const actualScripts=await withSource594CodeParent(async root=>inverseReviewedAccountStatisticsAssistantSourceScripts(
+    JSON.parse(await fs.readFile(path.join(root,'package.json'),'utf8')).scripts));
+  assert.deepEqual(inverseReviewedAccountStatisticsAssistantSourceScripts(sourceMainScripts),actualScripts,
+    'Both exact whole-map routes preserve the same old command oracle');
+  assert.equal(JSON.stringify(actualSourcePackage),sourceBefore);
+  assert.throws(()=>reviewedSourceDmiMainSourceScripts({...actualSourcePackage.scripts,'test:unreviewed':'node scripts/UNREVIEWED.mjs'}));
   // Retain the entire genuine140000 command oracle on its real frozen input,
   // then separately qualify how the current source reaches those same targets.
   const scripts = await withFrozenEstablishedNativeCurrentOriginSourceTarget('builder', async sourceRoot =>
@@ -852,6 +945,13 @@ test('current frozen routes and warmup checks reach normal checkpoint integratio
   const grouped = await sourceText(new URL('./test-dmi-forecast-file.mjs', import.meta.url));
   assert.equal(grouped.split("await import('./test-weather-update-entrypoint.mjs');").length, 2);
   const actualCommands=expandSourceCommands(actualScripts,'validate:source:checks');
+  const actualSourceCommands=expandSourceCommands(actualSourcePackage.scripts,'validate:source:checks');
+  for(const command of ['node scripts/build-source-producer-successor.mjs --check',
+    'node scripts/check-assistant-later-h0-predecessor-source.mjs source594',
+    'node --test scripts/test-code-only-public-coastal-registry-stage.mjs'])
+    assert.equal(actualSourceCommands.filter(value=>value===command).length,1,'actual SOURCE commands retain their normal scope');
+  assert.equal(actualSourceCommands.includes('node --test scripts/test-last-mile-enclosure-current-model-imports.mjs scripts/test-code-only-public-coastal-registry-stage.mjs'),false,
+    'The historical combined command is not relabelled as current SOURCE');
   const historicalTargets={
     'model-imports':'scripts/test-model-source-imports.mjs',
     builder:'scripts/build-established-native-current-origin-successor.mjs',
