@@ -1,3 +1,9 @@
+## 3. november — fast metadataaflæsning før videre bølgediagnose
+
+Den lokale kandidat genbruger det eksisterende skrivefri auditjob til én eksakt gemt RAW-cache og 14 faste WAM-identiteter. Kun manifestet læses; den erklærede kontrolsum er ikke verifikation af originalfilens bytes. RAW-filer, decoder, beskyttet B og fremdrift indgår ikke. Ukendt, tvetydig eller ændret metadata giver afslag.
+
+Læs håndbog 89.277s nye afgrænsning. Lokale målprøver er bestået; normalplanen er konservativ FULL uden registerudvidelse. Præcis kildekvalifikation og faktisk metadataaflæsning er åbne. Den fælles DKSS-only-læser, modelbindinger og alle migrationer bevares; håndbogens installationskopi afledes alene af webhåndbogen. Ingen ny version eller produktionshandling følger med.
+
 ## 3. november — faste fejlfaser for den normale scalarplan
 
 Når den normale plan for reelle vejrhul afvises, viser den nu en fast fase, fejlkategori og elapsedMillis sammen med den eksisterende markør. Rå fejltekst, filstier, vejrværdier og underprocessens fejludskrift udleveres ikke. Ukendte fejl forbliver UNKNOWN_FAILURE; et ukendt transportstop bevarer STOP_UNPROVED og exit 2.

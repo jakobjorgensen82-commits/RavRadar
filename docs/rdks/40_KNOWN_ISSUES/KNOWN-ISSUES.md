@@ -1,3 +1,11 @@
+## 3. november — fast 245 RAW-manifestdiagnose, kun lokal metadataforberedelse
+
+Den særskilte manuelle kandidat læser kun asset-manifest.json fra én eksakt gemt 245-RAW-cache og undersøger 14 faste WAM-identiteter fra de allerede afsluttede 244/245-kørsler. Den genbruger det eksisterende auditjob og dets main-, kilde-, eksklusive vejrkanal- og eksakte cachekontroller. Progress-cache og beskyttet B indgår ikke. Den fælles DKSS-only-capturevalidator, udstedt C/I/T og alle migrations-SQL bevares; kun håndbogens statiske installationskopi følger den opdaterede webhåndbog.
+
+Resultatet er deklarerede metadata: manifestets hele SHA/størrelse, fast identitet og erklæret content-SHA/filstørrelse. Manglende, tvetydig, ugyldig eller ændret metadata giver fast afslag. rawBytesVerified=false, decoderExecuted=false og partRegistryAuthenticated=false bevares. Ingen RAW-fil åbnes, hashes eller afkodes; der beregnes ingen score eller tilstand. Ingen provider, bankskrivning, pruning eller produktionshandling følger med.
+
+Dette er ikke bevis for, at alle 14 originaler stadig findes i 245-cachen, eller for bølgehullernes decodedårsag. Metadataresultatet skal først aflæses og reviewes efter normal kvalifikation. En senere offline-decode kræver faktisk verificerede originalbytes og det autentiske 245-bundne PART-grundlag; den implementeres ikke her. Alle fem mål og endelig Source-/driftskvalifikation er fortsat åbne.
+
 ## 3. november — faste fejlfaser for den normale scalarplan
 
 Når den normale plan for reelle vejrhul afvises, viser den nu en fast fase, fejlkategori og elapsedMillis sammen med den eksisterende markør. Rå fejltekst, filstier, vejrværdier og underprocessens fejludskrift udleveres ikke. Ukendte fejl forbliver UNKNOWN_FAILURE; et ukendt transportstop bevarer STOP_UNPROVED og exit 2.
