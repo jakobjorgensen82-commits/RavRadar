@@ -2219,3 +2219,82 @@ test('Voersaa fixed water trace: normal runner temp is separate from system TMPD
     assert(!(await fs.readdir(privateRoot)).some(n=>n.startsWith('voersaa-water-')));
   }finally{for(const k of keys){if(saved[k]===undefined)delete process.env[k];else process.env[k]=saved[k];}}
 });
+
+
+// Metadata-only WAM route; no synthetic result claims a production capture.
+const wamSyntheticCapture = {"collection": "wam_dw", "modelRun": "2026-01-01T00:00:00Z", "validTime": "2026-01-01T03:00:00Z", "itemId": "synthetic-metadata-only", "assetIdentitySha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "assetSizeBytes": null, "itemCreatedAt": null, "itemUpdatedAt": null, "acquiredAt": "2026-01-01T01:00:00.123456Z", "contentLengthBytes": 11, "contentSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "bytes": 11};
+const wamSyntheticRevisionSha256 = "b8cec60a09eaebca1d5e74da4daf6c2a290c800f2614bc5be2d826d3b5368776";
+
+test('WAM245 metadata: pure normal capture projection validates revision and rejects incomplete metadata', async () => {
+  const {projectWamRawMetadataCapture}=await import('./audit-saved-weather-inputs.mjs');
+  const expected={...wamSyntheticCapture,assetRevisionSha256:wamSyntheticRevisionSha256};
+  const result=projectWamRawMetadataCapture(wamSyntheticCapture,expected);
+  assert.equal(result.manifestDeclaredContentLengthBytes,11);
+  assert.equal(result.manifestDeclaredContentSha256,'b'.repeat(64));
+  assert.equal(result.assetRevisionSha256,wamSyntheticRevisionSha256);
+  assert.equal(Object.hasOwn(result,'canonicalHref'),false);
+  for(const change of[{contentSha256:'invalid'},{contentLengthBytes:0},{assetSizeBytes:12},
+    {acquiredAt:'2026-02-30T00:00:00Z'},{modelRun:'2026-01-02T00:00:00Z'},
+    {itemCreatedAt:'2025-12-31T23:00:00Z'}]){
+    assert.throws(()=>projectWamRawMetadataCapture({...wamSyntheticCapture,...change},expected),
+      error=>['WAM_RAW_CAPTURE_IDENTITY_MISMATCH','WAM_RAW_CAPTURE_INVALID','WAM_RAW_CAPTURE_REVISION_MISMATCH'].includes(error.auditCode));
+  }
+});
+
+test('WAM245 metadata: actual fixed reader refuses missing ambiguous invalid and revision drift without RAW open', async t => {
+  const {auditFixedWam245RawManifest,WAM_RAW_MANIFEST_245}=await import('./audit-saved-weather-inputs.mjs');
+  assert.equal(WAM_RAW_MANIFEST_245.targets.length,14);
+  const temporary=await fs.mkdtemp(path.join(os.tmpdir(),'rr-wam245-metadata-'));
+  t.after(()=>fs.rm(temporary,{recursive:true,force:true}));
+  const repository=path.join(temporary,'repository'),privateRoot=path.join(temporary,'private');
+  await fs.mkdir(path.join(repository,'.cache/dmi-grib'),{recursive:true});await fs.mkdir(privateRoot);
+  const manifest=path.join(repository,'.cache/dmi-grib/asset-manifest.json');
+  const canonicalManifest=path.join(await fs.realpath(path.dirname(manifest)),path.basename(manifest));
+  let opened=0;const unexpectedOpens=[];const originalOpen=fs.open;
+  t.mock.method(fs,'open',async function(file,...rest){
+    if(path.resolve(String(file))!==canonicalManifest){unexpectedOpens.push('UNEXPECTED_FILE_OPEN');throw Error('FIXTURE_UNEXPECTED_FILE_OPEN');}
+    opened++;return originalOpen.call(this,file,...rest);
+  });
+  const target=WAM_RAW_MANIFEST_245.targets[0],leaf=target.assetIdentitySha256.slice(0,24)+'.grib';
+  const capture={...wamSyntheticCapture,...target,assetSizeBytes:null,itemCreatedAt:null,itemUpdatedAt:null};
+  delete capture.assetRevisionSha256;
+  await fs.writeFile(path.join(repository,'.cache/dmi-grib',leaf),'NOT_A_GRIB');
+  const faults=[
+    [{},'WAM_RAW_CAPTURE_MISSING'],
+    [{[leaf]:capture,[leaf+'.duplicate']:capture},'WAM_RAW_CAPTURE_AMBIGUOUS'],
+    [{[leaf]:{...capture,contentSha256:'invalid'}},'WAM_RAW_CAPTURE_INVALID'],
+    [{[leaf]:{...capture,modelRun:'2026-01-01T00:00:00Z'}},'WAM_RAW_CAPTURE_IDENTITY_MISMATCH'],
+    [{[leaf]:capture},'WAM_RAW_CAPTURE_REVISION_MISMATCH'],
+  ];
+  for(let i=0;i<faults.length;i++){
+    const [assets,reason]=faults[i];await fs.writeFile(manifest,JSON.stringify({schemaVersion:2,assets}));
+    const result=await auditFixedWam245RawManifest({repositoryRoot:repository,privateRoot,
+      rawCacheKey:WAM_RAW_MANIFEST_245.rawCacheKey,outputPath:path.join(privateRoot,'case-'+i+'.json')});
+    assert.deepEqual(unexpectedOpens,[],'unexpected fixture file routes cannot be swallowed by product refusal');
+    assert.equal(result.status,'WAM_RAW_METADATA_REFUSED');assert.equal(result.reasonCode,reason);
+    assert.equal(result.rawBytesVerified,false);assert.equal(result.decoderExecuted,false);
+    assert.equal(result.protectedBRead,false);assert.equal(result.encryptedProgressRead,false);
+    assert.deepEqual(result.entries,[]);
+  }
+  assert.equal(opened,faults.length);
+  await assert.rejects(auditFixedWam245RawManifest({repositoryRoot:repository,privateRoot,
+    rawCacheKey:WAM_RAW_MANIFEST_245.rawCacheKey+'-wrong',outputPath:path.join(privateRoot,'bad.json')}),
+    {auditCode:'WAM_RAW_SCOPE_INVALID'});
+  assert.equal(opened,faults.length);
+});
+
+test('WAM245 metadata: normal CLI rejects mixed scopes before credentials or local reads',async()=>{
+  const {spawnSync}=await import('node:child_process');
+  const cli=fileURLToPath(new URL('./audit-saved-weather-inputs.mjs',import.meta.url));
+  const candidateBytes=await fs.readFile(cli);
+  assert(candidateBytes.includes(Buffer.from('export async function auditFixedWam245RawManifest')));
+  for(const extra of[['--include-raw-manifest','true'],['--expected-dataset','unknown'],['--descriptor','unavailable']]){
+    const child=spawnSync(process.execPath,[cli,'wam-raw-manifest-245','--private-root','unavailable',
+      '--raw-cache-key','dmi-grib-v4-Linux-2026-W45-41577449483-1','--output','unavailable',...extra],
+      {encoding:'utf8',timeout:10000,maxBuffer:1024*1024,windowsHide:true,
+       env:{PATH:process.env.PATH,...(process.env.SystemRoot?{SystemRoot:process.env.SystemRoot}:{})}});
+    assert.equal(child.error,undefined);assert.equal(child.signal,null);
+    assert.equal(child.status,1);assert.equal(child.stdout,'');
+    assert.equal(child.stderr.trim(),'SAVED_WEATHER_INPUT_AUDIT_FAILED_CLOSED');
+  }
+});

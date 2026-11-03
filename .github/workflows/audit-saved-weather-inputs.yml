@@ -69,6 +69,12 @@ on:
         default: false
         type: boolean
 
+      wam_raw_manifest_245_only:
+        description: "Fixed245 RAW manifest metadata only; no B/progress/RAW open/decode"
+        required: false
+        default: false
+        type: boolean
+
       component_summary_only:
         description: "Read only the authenticated current B component summary; no progress or RAW"
         required: false
@@ -106,7 +112,7 @@ concurrency:
 
 jobs:
   audit:
-    if: inputs.component_summary_only != true && inputs.water_level_voersaa_trace_20261101 != true
+    if: inputs.wam_raw_manifest_245_only == true || (inputs.component_summary_only != true && inputs.water_level_voersaa_trace_20261101 != true)
     name: Authenticate existing packages and report only bounded aggregates
     runs-on: ubuntu-24.04
     timeout-minutes: ${{ inputs.include_current_window_diagnostic && 75 || 30 }}
@@ -128,6 +134,9 @@ jobs:
           EXPECTED_MAIN_HEAD: ${{ inputs.expected_main_head }}
           SOURCE_RUN_ID: ${{ inputs.progress_source_run_id }}
           SOURCE_RUN_ATTEMPT: ${{ inputs.progress_source_attempt }}
+          WAM_RAW_MANIFEST_245_ONLY: ${{ inputs.wam_raw_manifest_245_only }}
+          COMPONENT_SUMMARY_ONLY: ${{ inputs.component_summary_only }}
+          WATER_LEVEL_TRACE: ${{ inputs.water_level_voersaa_trace_20261101 }}
           INCLUDE_RAW_MANIFEST: ${{ inputs.include_raw_manifest }}
           RAW_MANIFEST_CACHE_KEY: ${{ inputs.raw_manifest_cache_key }}
           PROGRESS_BASELINE_TARGET_HOUR: ${{ inputs.progress_baseline_target_hour }}
@@ -147,6 +156,7 @@ jobs:
           [[ "$EXPECTED_MAIN_HEAD" =~ ^[a-f0-9]{40}$ ]]
           [[ "$SOURCE_RUN_ID" =~ ^[1-9][0-9]{0,19}$ ]]
           [[ "$SOURCE_RUN_ATTEMPT" =~ ^[1-9][0-9]{0,3}$ ]]
+          [[ "$WAM_RAW_MANIFEST_245_ONLY" == true || "$WAM_RAW_MANIFEST_245_ONLY" == false ]]
           [[ "$INCLUDE_RAW_MANIFEST" == true || "$INCLUDE_RAW_MANIFEST" == false ]]
           [[ "$INCLUDE_RAW_FILE_PRESENCE" == true || "$INCLUDE_RAW_FILE_PRESENCE" == false ]]
           [[ "$INCLUDE_SELECTED_CURRENT_PREFLIGHT" == true || "$INCLUDE_SELECTED_CURRENT_PREFLIGHT" == false ]]
@@ -212,6 +222,21 @@ jobs:
           if test -n "$PROGRESS_BASELINE_TARGET_HOUR"; then
             [[ "$PROGRESS_BASELINE_TARGET_HOUR" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:00:00\.000Z$ ]]
           fi
+          if test "$WAM_RAW_MANIFEST_245_ONLY" = true; then
+            test "$SOURCE_RUN_ID" = 41577449483
+            test "$SOURCE_RUN_ATTEMPT" = 1
+            test "$RAW_MANIFEST_CACHE_KEY" = dmi-grib-v4-Linux-2026-W45-41577449483-1
+            test "$COMPONENT_SUMMARY_ONLY" = false
+            test "$WATER_LEVEL_TRACE" = false
+            test "$INCLUDE_RAW_MANIFEST" = false
+            test "$INCLUDE_RAW_FILE_PRESENCE" = false
+            test "$INCLUDE_SELECTED_CURRENT_PREFLIGHT" = false
+            test "$INCLUDE_CURRENT_WINDOW_DIAGNOSTIC" = false
+            test "$INCLUDE_CURRENT586_ENDPOINTS" = false
+            test "$INCLUDE_CURRENT586_CACHED_ORIGINALS" = false
+            test -z "$RAW_MANIFEST_SOURCE"
+            test -z "$PROGRESS_BASELINE_TARGET_HOUR"
+          fi
           test "$GITHUB_SHA" = "$EXPECTED_MAIN_HEAD"
           test "$(git rev-parse HEAD^{commit})" = "$GITHUB_SHA"
           test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$GITHUB_SHA"
@@ -226,6 +251,10 @@ jobs:
             and .status == "completed" and (.head_sha | test("^[a-f0-9]{40}$"))
           ' "$RUNNER_TEMP/saved-input-source-run.json" >/dev/null
           source_head="$(jq -er '.head_sha' "$RUNNER_TEMP/saved-input-source-run.json")"
+          if test "$WAM_RAW_MANIFEST_245_ONLY" = true; then
+            test "$source_head" = 6fb3fc1682b68bcf51b5ed73c14a84ead7676371
+            jq -e '.conclusion == "success"' "$RUNNER_TEMP/saved-input-source-run.json" >/dev/null
+          fi
           git merge-base --is-ancestor "$source_head" "$GITHUB_SHA"
           if test "$INCLUDE_CURRENT586_ENDPOINTS" = true; then
             test "$source_head" = 94b2b6173747b9d1f7d261c5110042a657af0cac
@@ -238,7 +267,7 @@ jobs:
               "$RUNNER_TEMP/saved-input-source-run.json" >/dev/null
           fi
           echo "cache_key=weather-private-progress-encrypted-v2-Linux-main-$SOURCE_RUN_ID-$SOURCE_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
-          if test "$INCLUDE_RAW_MANIFEST" = true; then
+          if test "$INCLUDE_RAW_MANIFEST" = true || test "$WAM_RAW_MANIFEST_245_ONLY" = true; then
             if test -z "$RAW_MANIFEST_SOURCE"; then
               [[ "$RAW_MANIFEST_CACHE_KEY" =~ ^dmi-grib-v4-Linux-[0-9]{4}-W(0[1-9]|[1-4][0-9]|5[0-3])-${SOURCE_RUN_ID}-${SOURCE_RUN_ATTEMPT}$ ]]
             else
@@ -308,16 +337,18 @@ jobs:
           test "$SOURCE_REQUIRED" = false
 
       - uses: actions/setup-python@v7
+        if: inputs.wam_raw_manifest_245_only != true
         with:
           python-version: "3.12"
 
       - name: Install only existing offline reader dependencies
+        if: inputs.wam_raw_manifest_245_only != true
         run: >-
           python -m pip install --disable-pip-version-check
           -r requirements-dmi.txt -r requirements-geometry.txt -r requirements-copernicus.txt
 
       - name: Restore only the requested encrypted acquisition snapshot
-        if: inputs.include_current586_endpoints != true && inputs.include_current586_cached_originals != true
+        if: inputs.include_current586_endpoints != true && inputs.include_current586_cached_originals != true && inputs.wam_raw_manifest_245_only != true
         id: progress
         uses: actions/cache/restore@v6
         with:
@@ -326,7 +357,7 @@ jobs:
           fail-on-cache-miss: true
 
       - name: Require exact cache hit before reading any protected data
-        if: inputs.include_current586_endpoints != true && inputs.include_current586_cached_originals != true
+        if: inputs.include_current586_endpoints != true && inputs.include_current586_cached_originals != true && inputs.wam_raw_manifest_245_only != true
         shell: bash
         env:
           EXACT_KEY: ${{ steps.authority.outputs.cache_key }}
@@ -346,7 +377,7 @@ jobs:
       # path/version. The audit opens only asset-manifest.json; explicit optional
       # presence inventory uses lstat, never RAW open/hash/decode or admission.
       - name: Optionally restore the exact same-run RAW cache for manifest counts
-        if: inputs.include_raw_manifest == true
+        if: inputs.include_raw_manifest == true || inputs.wam_raw_manifest_245_only == true
         id: raw-manifest
         uses: actions/cache/restore@v6
         with:
@@ -355,7 +386,7 @@ jobs:
           fail-on-cache-miss: true
 
       - name: Require the exact RAW cache before optional manifest inspection
-        if: inputs.include_raw_manifest == true
+        if: inputs.include_raw_manifest == true || inputs.wam_raw_manifest_245_only == true
         shell: bash
         env:
           EXACT_KEY: ${{ steps.authority.outputs.raw_cache_key }}
@@ -403,7 +434,22 @@ jobs:
         shell: bash
         run: mkdir "$RUNNER_TEMP/ravradar-saved-input-audit"
 
+      - name: Read only the fixed245 RAW manifest metadata
+        if: inputs.wam_raw_manifest_245_only == true
+        id: wam-raw-metadata
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXACT_KEY: ${{ steps.authority.outputs.raw_cache_key }}
+        run: |
+          set -euo pipefail
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$GITHUB_SHA"
+          mkdir "$RUNNER_TEMP/ravradar-saved-input-audit"
+          node scripts/audit-saved-weather-inputs.mjs wam-raw-manifest-245 --private-root "$RUNNER_TEMP/ravradar-saved-input-audit" --raw-cache-key "$EXACT_KEY" --output "$RUNNER_TEMP/ravradar-saved-input-audit/summary-safe.json"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$GITHUB_SHA"
+
       - name: Read the current protected source identity without storage writes
+        if: inputs.wam_raw_manifest_245_only != true
         run: >-
           node scripts/audit-saved-weather-inputs.mjs describe
           --private-root "$RUNNER_TEMP/ravradar-saved-input-audit"
@@ -414,6 +460,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Materialize exact original producer code without running it
+        if: inputs.wam_raw_manifest_245_only != true
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -468,7 +515,7 @@ jobs:
           test -s data/live/coastal-parts-v2.json
 
       - name: Authenticate and measure saved inputs without production rebuild
-        if: inputs.include_current586_endpoints != true && inputs.include_current586_cached_originals != true
+        if: inputs.include_current586_endpoints != true && inputs.include_current586_cached_originals != true && inputs.wam_raw_manifest_245_only != true
         id: input-audit
         run: >-
           node scripts/audit-saved-weather-inputs.mjs audit
@@ -540,7 +587,7 @@ jobs:
           RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
 
       - name: Upload only the fixed-schema payload-free aggregate report
-        if: always() && (steps.input-audit.outcome == 'success' || steps.input-audit.outcome == 'failure' || steps.current586-audit.outcome == 'success' || steps.current586-audit.outcome == 'failure' || steps.current586-cached-originals-audit.outcome == 'success' || steps.current586-cached-originals-audit.outcome == 'failure')
+        if: always() && (steps.wam-raw-metadata.outcome == 'success' || steps.wam-raw-metadata.outcome == 'failure' || steps.input-audit.outcome == 'success' || steps.input-audit.outcome == 'failure' || steps.current586-audit.outcome == 'success' || steps.current586-audit.outcome == 'failure' || steps.current586-cached-originals-audit.outcome == 'success' || steps.current586-cached-originals-audit.outcome == 'failure')
         uses: actions/upload-artifact@v7
         with:
           name: saved-weather-input-audit-safe-${{ github.run_id }}-${{ github.run_attempt }}
@@ -549,7 +596,7 @@ jobs:
           retention-days: 14
 
   component-summary:
-    if: inputs.component_summary_only == true && inputs.water_level_voersaa_trace_20261101 != true
+    if: inputs.component_summary_only == true && inputs.water_level_voersaa_trace_20261101 != true && inputs.wam_raw_manifest_245_only != true
     name: Read only the authenticated protected component summary
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -678,7 +725,7 @@ jobs:
           retention-days: 14
 
   voersaa-water-trace:
-    if: inputs.water_level_voersaa_trace_20261101 == true
+    if: inputs.water_level_voersaa_trace_20261101 == true && inputs.wam_raw_manifest_245_only != true
     name: Read two exact original B water traces privately
     runs-on: ubuntu-24.04
     timeout-minutes: 30

@@ -792,6 +792,213 @@ async function savedRawManifest(repositoryRoot) {
   return indexSavedRawManifest(document);
 }
 
+
+// Fixed metadata projection only. Cache metadata is never RAW-byte/native authority.
+export const WAM_RAW_MANIFEST_245 = Object.freeze({
+  "scope": "WAM_RAW_MANIFEST_245_METADATA_ONLY",
+  "runId": "41577449483",
+  "runAttempt": 1,
+  "dataProducerHead": "6fb3fc1682b68bcf51b5ed73c14a84ead7676371",
+  "datasetId": "rr-20261103055623-210",
+  "productionReferenceAt": "2026-11-03T04:00:00.000Z",
+  "publicManifestSha256": "c6771e445404beef352a783958db9732be7e8d9116b7fe3eb6b6703f734e8e8f",
+  "rawCacheKey": "dmi-grib-v4-Linux-2026-W45-41577449483-1",
+  "targets": [
+    {
+      "collection": "wam_dw",
+      "modelRun": "2026-11-02T18:00:00Z",
+      "validTime": "2026-11-05T15:00:00Z",
+      "itemId": "WAM_DW_SF_2026-11-02T180000Z_2026-11-05T150000Z.grib",
+      "assetIdentitySha256": "730c4a3d739fe7e91748082ebf0f940281bddb291093362d065943320856ca2d",
+      "assetRevisionSha256": "960c944f7635d894446d0b0843197c1c87e1d2ef392146c65cd65f9bde1cc794"
+    },
+    {
+      "collection": "wam_dw",
+      "modelRun": "2026-11-02T18:00:00Z",
+      "validTime": "2026-11-05T18:00:00Z",
+      "itemId": "WAM_DW_SF_2026-11-02T180000Z_2026-11-05T180000Z.grib",
+      "assetIdentitySha256": "2258aa0fb6febcbb35a8ececa0517c6de9664bcd405977d3d3cbb811a1229a10",
+      "assetRevisionSha256": "f8904f99c4e77b8a733d094b9962b0b51125cb20da5adedba4613c34c1c07387"
+    },
+    {
+      "collection": "wam_dw",
+      "modelRun": "2026-11-02T18:00:00Z",
+      "validTime": "2026-11-05T21:00:00Z",
+      "itemId": "WAM_DW_SF_2026-11-02T180000Z_2026-11-05T210000Z.grib",
+      "assetIdentitySha256": "778eb63b1ebdfb048a65f5eeefeb7271b1ef7daf238bf43a90f1a6822db90019",
+      "assetRevisionSha256": "7995a23ad88f96dc4f4f2cd635c1363ea88f855bfdbbb82c480a878b1a33b0e4"
+    },
+    {
+      "collection": "wam_dw",
+      "modelRun": "2026-11-02T18:00:00Z",
+      "validTime": "2026-11-06T09:00:00Z",
+      "itemId": "WAM_DW_SF_2026-11-02T180000Z_2026-11-06T090000Z.grib",
+      "assetIdentitySha256": "5255c2732b1be90255dc77b60141c33914aa64964d7e9b8bc34d510361255d59",
+      "assetRevisionSha256": "6fd13e4f02cbf58c11120b291d0f120eeb9aa6462270a6d3e85dc1b3006d002c"
+    },
+    {
+      "collection": "wam_dw",
+      "modelRun": "2026-11-02T18:00:00Z",
+      "validTime": "2026-11-06T12:00:00Z",
+      "itemId": "WAM_DW_SF_2026-11-02T180000Z_2026-11-06T120000Z.grib",
+      "assetIdentitySha256": "59c0343f4d94426ab9ccc07096e65f3e0f632350b11e90592e1d30a6c6ab098c",
+      "assetRevisionSha256": "b9e7f1dc6fe8664f16ecf1544c5794572bd9c5e8ec54266303a6262fd292ae9c"
+    },
+    {
+      "collection": "wam_dw",
+      "modelRun": "2026-11-03T00:00:00Z",
+      "validTime": "2026-11-04T06:00:00Z",
+      "itemId": "WAM_DW_SF_2026-11-03T000000Z_2026-11-04T060000Z.grib",
+      "assetIdentitySha256": "bd09d7f46bdcb91dd237aa75e9ab088a04090b05a25371133b60e2ccf2bc3dad",
+      "assetRevisionSha256": "071e6cd9f7854296681ee716263a5883267a1980cbe572199252dd7bd358898a"
+    },
+    {
+      "collection": "wam_dw",
+      "modelRun": "2026-11-03T00:00:00Z",
+      "validTime": "2026-11-04T03:00:00Z",
+      "itemId": "WAM_DW_SF_2026-11-03T000000Z_2026-11-04T030000Z.grib",
+      "assetIdentitySha256": "19905b40ce9e541cbf8b8bec3b4028129933dfc750ab112d80e15be564b105d8",
+      "assetRevisionSha256": "a6f6bd4428c3b4585650ef5c8e032cd4cc21ef0cfad44cea5a5def828df896a7"
+    },
+    {
+      "collection": "wam_dw",
+      "modelRun": "2026-11-03T00:00:00Z",
+      "validTime": "2026-11-05T15:00:00Z",
+      "itemId": "WAM_DW_SF_2026-11-03T000000Z_2026-11-05T150000Z.grib",
+      "assetIdentitySha256": "12a1e873c595960b1932e6b5b0a483e393fae7bdeb8d899a0617e321c5dc96c4",
+      "assetRevisionSha256": "fc0953c8ff54389e533c87d1b8a859cd0aa5a50d9dda33711bc0ca889d16e420"
+    },
+    {
+      "collection": "wam_dw",
+      "modelRun": "2026-11-03T00:00:00Z",
+      "validTime": "2026-11-05T18:00:00Z",
+      "itemId": "WAM_DW_SF_2026-11-03T000000Z_2026-11-05T180000Z.grib",
+      "assetIdentitySha256": "865551310d58de90169812c2b89927864e8cd9d0c59d4e2ed8739bc51ad8026a",
+      "assetRevisionSha256": "825c4acb57167e957acd2c43335c544dedbdad104b3a1f927ae9372fe164a5df"
+    },
+    {
+      "collection": "wam_dw",
+      "modelRun": "2026-11-03T00:00:00Z",
+      "validTime": "2026-11-05T21:00:00Z",
+      "itemId": "WAM_DW_SF_2026-11-03T000000Z_2026-11-05T210000Z.grib",
+      "assetIdentitySha256": "94798ad78c14e74f27ab210dfcbad00907dcffa2bbc58d4de4a39d0e4a98c98d",
+      "assetRevisionSha256": "71ea83ebe9bf42913a14116720d79fc450dc0a4e5f627aee5f4fe92045b328a0"
+    },
+    {
+      "collection": "wam_dw",
+      "modelRun": "2026-11-03T00:00:00Z",
+      "validTime": "2026-11-06T09:00:00Z",
+      "itemId": "WAM_DW_SF_2026-11-03T000000Z_2026-11-06T090000Z.grib",
+      "assetIdentitySha256": "a997e2e07896351831b2397cde89d953f22ae04255950d9af003f3c4b9ae4912",
+      "assetRevisionSha256": "85f8229c789e0543245723008b4cbf2f2f7ea8932867167ee8766bb16b7be49d"
+    },
+    {
+      "collection": "wam_dw",
+      "modelRun": "2026-11-03T00:00:00Z",
+      "validTime": "2026-11-06T12:00:00Z",
+      "itemId": "WAM_DW_SF_2026-11-03T000000Z_2026-11-06T120000Z.grib",
+      "assetIdentitySha256": "4c106c362bb8292344ec845e07f5581253aced65a89ae001ccc08ebc187de2a5",
+      "assetRevisionSha256": "3a40f407533d0116aec2405c61a69b9e61120cc3d3f72b3d26baf1f3baae2422"
+    },
+    {
+      "collection": "wam_dw",
+      "modelRun": "2026-11-03T00:00:00Z",
+      "validTime": "2026-11-06T00:00:00Z",
+      "itemId": "WAM_DW_SF_2026-11-03T000000Z_2026-11-06T000000Z.grib",
+      "assetIdentitySha256": "1321d4d47c1f19f49be2932d1f1e8c75ff52bb5c9fe779d90cc1821ff502d4cb",
+      "assetRevisionSha256": "b54016ead726d6d9540ddb5e193a273561034d4a9f3fc7aeb6a4a709118fd672"
+    },
+    {
+      "collection": "wam_dw",
+      "modelRun": "2026-11-03T00:00:00Z",
+      "validTime": "2026-11-06T15:00:00Z",
+      "itemId": "WAM_DW_SF_2026-11-03T000000Z_2026-11-06T150000Z.grib",
+      "assetIdentitySha256": "9d940bd9a80018b08e245b4f60187ea0ebf54d8ebefc69b93f85cdafcf50427c",
+      "assetRevisionSha256": "e95f78ad4a5739325e6b724cacb26df557757020483402a8782d2b6c9077ad0f"
+    }
+  ]
+});
+Object.freeze(WAM_RAW_MANIFEST_245.targets);
+for(const target of WAM_RAW_MANIFEST_245.targets)Object.freeze(target);
+
+// Pure DATA seam. It grants no file, source, decode, native or production authority.
+export function projectWamRawMetadataCapture(row, expected) {
+  if (!object(row) || !object(expected) || !['wam_dw','wam_nsb'].includes(row.collection)
+      || ['collection','modelRun','validTime','itemId','assetIdentitySha256'].some(k=>row[k]!==expected[k]))
+    fail('WAM_RAW_CAPTURE_IDENTITY_MISMATCH');
+  const timestamp=v=>typeof v==='string'&&/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,6})?Z$/.test(v)
+    && Number.isFinite(Date.parse(v)) && new Date(Date.parse(v)).toISOString().slice(0,19)===v.slice(0,19);
+  if (!timestamp(row.acquiredAt) || !integer(row.contentLengthBytes) || row.contentLengthBytes<1
+      || !/^[a-f0-9]{64}$/.test(row.contentSha256??'') || !/^[a-f0-9]{64}$/.test(row.assetIdentitySha256??'')
+      || row.assetSizeBytes!=null&&(!integer(row.assetSizeBytes)||row.assetSizeBytes!==row.contentLengthBytes)
+      || row.itemCreatedAt!=null&&!timestamp(row.itemCreatedAt)
+      || row.itemUpdatedAt!=null&&!timestamp(row.itemUpdatedAt)) fail('WAM_RAW_CAPTURE_INVALID');
+  const revision={collection:row.collection,modelRun:row.modelRun,validTime:row.validTime,itemId:row.itemId,
+    assetIdentitySha256:row.assetIdentitySha256,size:row.assetSizeBytes??null,
+    itemCreatedAt:row.itemCreatedAt??null,itemUpdatedAt:row.itemUpdatedAt??null};
+  const assetRevisionSha256=rawSha(stable(revision));
+  if(assetRevisionSha256!==expected.assetRevisionSha256)fail('WAM_RAW_CAPTURE_REVISION_MISMATCH');
+  return {collection:row.collection,modelRun:row.modelRun,validTime:row.validTime,itemId:row.itemId,
+    assetIdentitySha256:row.assetIdentitySha256,assetRevisionSha256,
+    manifestDeclaredContentSha256:row.contentSha256,manifestDeclaredContentLengthBytes:row.contentLengthBytes};
+}
+
+export async function auditFixedWam245RawManifest(options={}) {
+  const allowed=['privateRoot','outputPath','rawCacheKey','repositoryRoot'];
+  if(!object(options)||Object.keys(options).some(k=>!allowed.includes(k))
+      ||options.rawCacheKey!==WAM_RAW_MANIFEST_245.rawCacheKey)fail('WAM_RAW_SCOPE_INVALID');
+  const ctx=await context(options.privateRoot,options.repositoryRoot??REPOSITORY);
+  // Reuse the normal audit's verified Windows TEMP-alias mapping only.
+  const requestedRoot=path.resolve(options.privateRoot);
+  const requestedOutput=typeof options.outputPath==='string'&&inside(requestedRoot,path.resolve(options.outputPath))
+    ?path.join(ctx.root,path.relative(requestedRoot,path.resolve(options.outputPath))):options.outputPath;
+  const output=await newOutput(ctx.root,requestedOutput);
+  const report={schemaVersion:1,scope:WAM_RAW_MANIFEST_245.scope,status:'WAM_RAW_METADATA_REFUSED',
+    sourceRun:WAM_RAW_MANIFEST_245.runId+'-1',rawCacheKey:WAM_RAW_MANIFEST_245.rawCacheKey,
+    expectedEntries:14,entries:[],rawBytesVerified:false,decoderExecuted:false,
+    protectedBRead:false,encryptedProgressRead:false,partRegistryAuthenticated:false,
+    nativeAdmissionPerformed:false,productionAuthority:false};
+  const known=new Set(['WAM_RAW_MANIFEST_INVALID','WAM_RAW_MANIFEST_CHANGED','WAM_RAW_CAPTURE_MISSING',
+    'WAM_RAW_CAPTURE_AMBIGUOUS','WAM_RAW_CAPTURE_IDENTITY_MISMATCH','WAM_RAW_CAPTURE_INVALID',
+    'WAM_RAW_CAPTURE_REVISION_MISMATCH','WAM_RAW_FILE_NAME_INVALID','WAM_RAW_LOCAL_DEADLINE']);
+  const deadline=Date.now()+30000,checkTime=()=>{if(Date.now()>deadline)fail('WAM_RAW_LOCAL_DEADLINE');};
+  let handle;
+  try {
+    const file=await noSymlinks(ctx.repository,path.join(ctx.repository,RAW_MANIFEST));checkTime();
+    const before=await fs.lstat(file);
+    if(!before.isFile()||before.isSymbolicLink()||before.size<2||before.size>RAW_MANIFEST_MAX_BYTES)
+      fail('WAM_RAW_MANIFEST_INVALID');
+    handle=await fs.open(file,fs.constants.O_RDONLY|(fs.constants.O_NOFOLLOW??0));checkTime();
+    const opened=await handle.stat(),raw=await handle.readFile();checkTime();
+    const readAfter=await handle.stat();await handle.close();handle=null;
+    await noSymlinks(ctx.repository,file);const after=await fs.lstat(file);checkTime();
+    const identity=s=>[s.dev,s.ino,s.size,s.mtimeMs];
+    if(!same(identity(before),identity(opened))||!same(identity(opened),identity(readAfter))
+        ||!same(identity(readAfter),identity(after))||raw.length!==opened.size)fail('WAM_RAW_MANIFEST_CHANGED');
+    let document;try{document=JSON.parse(raw.toString('utf8'));}catch{fail('WAM_RAW_MANIFEST_INVALID');}
+    if(!object(document)||document.schemaVersion!==2||!object(document.assets)
+        ||Object.keys(document.assets).length>RAW_INVENTORY_MAX_FILES)fail('WAM_RAW_MANIFEST_INVALID');
+    const rows=Object.entries(document.assets),entries=[];
+    for(const [index,target]of WAM_RAW_MANIFEST_245.targets.entries()){
+      const matches=rows.filter(([,v])=>object(v)&&v.assetIdentitySha256===target.assetIdentitySha256);
+      if(matches.length===0)fail('WAM_RAW_CAPTURE_MISSING');
+      if(matches.length!==1)fail('WAM_RAW_CAPTURE_AMBIGUOUS');
+      const [name,row]=matches[0];
+      if(typeof name!=='string'||!new RegExp('^'+target.assetIdentitySha256.slice(0,24)+'\\.[^./\\\\?#\\x00]+$').test(name)
+          ||row.bytes!==row.contentLengthBytes)fail('WAM_RAW_FILE_NAME_INVALID');
+      entries.push({index,...projectWamRawMetadataCapture(row,target)});checkTime();
+    }
+    report.status='WAM_RAW_METADATA_COMPLETED';report.entries=entries;
+    report.manifest={sha256:rawSha(raw),bytes:raw.length,stableFileIdentity:true};
+  } catch(error) {
+    const code=Object.getOwnPropertyDescriptor(error??{},'auditCode')?.value;
+    report.reasonCode=known.has(code)?code:'WAM_RAW_METADATA_UNAVAILABLE';
+    report.entries=[];
+  } finally {if(handle)await handle.close().catch(()=>{});}
+  await fs.writeFile(output,JSON.stringify(report)+'\n',{flag:'wx',mode:0o600});
+  return report;
+}
+
 // Filename/size metadata only. A 24-hex prefix is deliberately weaker than
 // the full captured asset identity and can never qualify content or new use.
 export async function inspectSavedRawFileInventory(repositoryRoot) {
@@ -1935,6 +2142,8 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       options[key] = options[key] === 'true';
     }
     const {mode,...readbackOptions}=options;
+    const fixedWamMetadata = mode === 'wam-raw-manifest-245';
+    if(fixedWamMetadata&&!same(Object.keys(readbackOptions).sort(),['privateRoot','outputPath','rawCacheKey'].sort()))fail('MODE_INVALID');
     const fixedWaterTrace = mode === 'water-level-voersaa-20261101';
     if(fixedWaterTrace&&!same(Object.keys(readbackOptions).sort(),['privateRoot','predecessorRoot','outputPath'].sort()))fail('MODE_INVALID');
     const componentSummaryOnly = mode === 'component-summary';
@@ -1944,7 +2153,8 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       || Object.hasOwn(readbackOptions, 'expectedProductionReferenceAt'))) fail('MODE_INVALID');
     if(['verify-current586-plan','verify-current586-closed'].includes(mode)
       &&!same(Object.keys(readbackOptions).sort(),['descriptorPath','outputPath','privateRoot']))fail('MODE_INVALID');
-    const report = fixedWaterTrace ? await auditVoersaaWaterLevelTrace(readbackOptions)
+    const report = fixedWamMetadata ? await auditFixedWam245RawManifest(readbackOptions)
+      : fixedWaterTrace ? await auditVoersaaWaterLevelTrace(readbackOptions)
       : componentSummaryOnly ? await auditProtectedBaselineComponentFallback(readbackOptions)
       : ['verify-current586-plan','verify-current586-closed'].includes(mode)
       ? await verifyCurrent586OriginalPlanRemoteSources({...readbackOptions,completedTransport:mode==='verify-current586-closed'}) : await auditSavedWeatherInputs(options);
@@ -1953,7 +2163,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       await fs.appendFile(process.env.GITHUB_OUTPUT,
         `preparation_status=${plan.status}\nplan_sha256=${plan.planSha256}\noriginal_count=${plan.originalCount}\nplan_bytes=${plan.planBytes}\n`);
     }
-    console.log(JSON.stringify(report));
-    if (report.status === 'AUDIT_FAILED_CLOSED') process.exitCode = 1;
+    console.log(JSON.stringify(fixedWamMetadata?{scope:report.scope,status:report.status,reasonCode:report.reasonCode,entries:report.entries.length,rawBytesVerified:false,decoderExecuted:false}:report));
+    if (report.status === 'AUDIT_FAILED_CLOSED'||report.status==='WAM_RAW_METADATA_REFUSED') process.exitCode = 1;
   } catch { console.error('SAVED_WEATHER_INPUT_AUDIT_FAILED_CLOSED'); process.exitCode = 1; }
 }

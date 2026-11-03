@@ -4,7 +4,21 @@ import fs from 'node:fs';
 import test from 'node:test';
 
 const completeWorkflow = fs.readFileSync('.github/workflows/audit-saved-weather-inputs.yml', 'utf8').replace(/\r\n/g, '\n');
+const wam245WorkflowReview = {"beforeSha256": "d1a80ed4acaea23779fb55e6af54a6a64b526b33b8014c0005e8ec3f829a1c75", "afterSha256": "96c5f679fad34027b162d7abae8b05ed37cccf71db328447dba34a1fef5bf7f8", "hunks": [{"before": "      component_summary_only:\n", "after": "      wam_raw_manifest_245_only:\n        description: \"Fixed245 RAW manifest metadata only; no B/progress/RAW open/decode\"\n        required: false\n        default: false\n        type: boolean\n\n      component_summary_only:\n", "count": 1}, {"before": "    if: inputs.component_summary_only != true && inputs.water_level_voersaa_trace_20261101 != true\n", "after": "    if: inputs.wam_raw_manifest_245_only == true || (inputs.component_summary_only != true && inputs.water_level_voersaa_trace_20261101 != true)\n", "count": 1}, {"before": "          INCLUDE_RAW_MANIFEST: ${{ inputs.include_raw_manifest }}\n          RAW_MANIFEST_CACHE_KEY:", "after": "          WAM_RAW_MANIFEST_245_ONLY: ${{ inputs.wam_raw_manifest_245_only }}\n          COMPONENT_SUMMARY_ONLY: ${{ inputs.component_summary_only }}\n          WATER_LEVEL_TRACE: ${{ inputs.water_level_voersaa_trace_20261101 }}\n          INCLUDE_RAW_MANIFEST: ${{ inputs.include_raw_manifest }}\n          RAW_MANIFEST_CACHE_KEY:", "count": 1}, {"before": "          [[ \"$INCLUDE_RAW_MANIFEST\" == true || \"$INCLUDE_RAW_MANIFEST\" == false ]]\n", "after": "          [[ \"$WAM_RAW_MANIFEST_245_ONLY\" == true || \"$WAM_RAW_MANIFEST_245_ONLY\" == false ]]\n          [[ \"$INCLUDE_RAW_MANIFEST\" == true || \"$INCLUDE_RAW_MANIFEST\" == false ]]\n", "count": 1}, {"before": "          test \"$GITHUB_SHA\" = \"$EXPECTED_MAIN_HEAD\"\n", "after": "          if test \"$WAM_RAW_MANIFEST_245_ONLY\" = true; then\n            test \"$SOURCE_RUN_ID\" = 41577449483\n            test \"$SOURCE_RUN_ATTEMPT\" = 1\n            test \"$RAW_MANIFEST_CACHE_KEY\" = dmi-grib-v4-Linux-2026-W45-41577449483-1\n            test \"$COMPONENT_SUMMARY_ONLY\" = false\n            test \"$WATER_LEVEL_TRACE\" = false\n            test \"$INCLUDE_RAW_MANIFEST\" = false\n            test \"$INCLUDE_RAW_FILE_PRESENCE\" = false\n            test \"$INCLUDE_SELECTED_CURRENT_PREFLIGHT\" = false\n            test \"$INCLUDE_CURRENT_WINDOW_DIAGNOSTIC\" = false\n            test \"$INCLUDE_CURRENT586_ENDPOINTS\" = false\n            test \"$INCLUDE_CURRENT586_CACHED_ORIGINALS\" = false\n            test -z \"$RAW_MANIFEST_SOURCE\"\n            test -z \"$PROGRESS_BASELINE_TARGET_HOUR\"\n          fi\n          test \"$GITHUB_SHA\" = \"$EXPECTED_MAIN_HEAD\"\n", "count": 1}, {"before": "          source_head=\"$(jq -er '.head_sha' \"$RUNNER_TEMP/saved-input-source-run.json\")\"\n", "after": "          source_head=\"$(jq -er '.head_sha' \"$RUNNER_TEMP/saved-input-source-run.json\")\"\n          if test \"$WAM_RAW_MANIFEST_245_ONLY\" = true; then\n            test \"$source_head\" = 6fb3fc1682b68bcf51b5ed73c14a84ead7676371\n            jq -e '.conclusion == \"success\"' \"$RUNNER_TEMP/saved-input-source-run.json\" >/dev/null\n          fi\n", "count": 1}, {"before": "          if test \"$INCLUDE_RAW_MANIFEST\" = true; then\n", "after": "          if test \"$INCLUDE_RAW_MANIFEST\" = true || test \"$WAM_RAW_MANIFEST_245_ONLY\" = true; then\n", "count": 1}, {"before": "      - uses: actions/setup-python@v7\n", "after": "      - uses: actions/setup-python@v7\n        if: inputs.wam_raw_manifest_245_only != true\n", "count": 1}, {"before": "      - name: Install only existing offline reader dependencies\n", "after": "      - name: Install only existing offline reader dependencies\n        if: inputs.wam_raw_manifest_245_only != true\n", "count": 1}, {"before": "        if: inputs.include_current586_endpoints != true && inputs.include_current586_cached_originals != true\n", "after": "        if: inputs.include_current586_endpoints != true && inputs.include_current586_cached_originals != true && inputs.wam_raw_manifest_245_only != true\n", "count": 3}, {"before": "        if: inputs.include_raw_manifest == true\n", "after": "        if: inputs.include_raw_manifest == true || inputs.wam_raw_manifest_245_only == true\n", "count": 2}, {"before": "      - name: Read the current protected source identity without storage writes\n", "after": "      - name: Read the current protected source identity without storage writes\n        if: inputs.wam_raw_manifest_245_only != true\n", "count": 1}, {"before": "      - name: Materialize exact original producer code without running it\n", "after": "      - name: Materialize exact original producer code without running it\n        if: inputs.wam_raw_manifest_245_only != true\n", "count": 1}, {"before": "      - name: Read the current protected source identity without storage writes\n", "after": "      - name: Read only the fixed245 RAW manifest metadata\n        if: inputs.wam_raw_manifest_245_only == true\n        id: wam-raw-metadata\n        shell: bash\n        env:\n          GH_TOKEN: ${{ github.token }}\n          EXACT_KEY: ${{ steps.authority.outputs.raw_cache_key }}\n        run: |\n          set -euo pipefail\n          test \"$(gh api \"repos/$GITHUB_REPOSITORY/git/ref/heads/main\" --jq '.object.sha')\" = \"$GITHUB_SHA\"\n          mkdir \"$RUNNER_TEMP/ravradar-saved-input-audit\"\n          node scripts/audit-saved-weather-inputs.mjs wam-raw-manifest-245 --private-root \"$RUNNER_TEMP/ravradar-saved-input-audit\" --raw-cache-key \"$EXACT_KEY\" --output \"$RUNNER_TEMP/ravradar-saved-input-audit/summary-safe.json\"\n          test \"$(gh api \"repos/$GITHUB_REPOSITORY/git/ref/heads/main\" --jq '.object.sha')\" = \"$GITHUB_SHA\"\n\n      - name: Read the current protected source identity without storage writes\n", "count": 1}, {"before": "        if: always() && (steps.input-audit.outcome == 'success'", "after": "        if: always() && (steps.wam-raw-metadata.outcome == 'success' || steps.wam-raw-metadata.outcome == 'failure' || steps.input-audit.outcome == 'success'", "count": 1}, {"before": "    if: inputs.component_summary_only == true && inputs.water_level_voersaa_trace_20261101 != true\n", "after": "    if: inputs.component_summary_only == true && inputs.water_level_voersaa_trace_20261101 != true && inputs.wam_raw_manifest_245_only != true\n", "count": 1}, {"before": "    if: inputs.water_level_voersaa_trace_20261101 == true\n", "after": "    if: inputs.water_level_voersaa_trace_20261101 == true && inputs.wam_raw_manifest_245_only != true\n", "count": 1}], "wholeInverseExact": true};
+
+function beforeWam245MetadataWorkflow(value){
+  const sha=x=>crypto.createHash('sha256').update(x).digest('hex');
+  if(sha(value)!==wam245WorkflowReview.afterSha256)return value;
+  for(const h of [...wam245WorkflowReview.hunks].reverse()){
+    assert.equal(value.split(h.after).length-1,h.count,'WAM245_WORKFLOW_EXACT_HUNK');
+    value=value.split(h.after).join(h.before);
+  }
+  assert.equal(sha(value),wam245WorkflowReview.beforeSha256,'WAM245_WORKFLOW_WHOLE_INVERSE');
+  return value;
+}
+
 function beforeVoersaaWaterTrace(value){
+  value=beforeWam245MetadataWorkflow(value);
   const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
   if(sha(value)==='d1a80ed4acaea23779fb55e6af54a6a64b526b33b8014c0005e8ec3f829a1c75'){
     const marker='\n  voersaa-water-trace:';
@@ -450,4 +464,40 @@ test('Voersaa fixed water trace workflow: only ciphertext and safe status leave 
   assert.match(helper,/92d0755edecec37a78ee8e0658a79873c17b67e13324711d75fce76270e8d529/);
   assert.match(helper,/padding:crypto\.constants\.RSA_PKCS1_OAEP_PADDING,oaepHash:'sha256'/);
   assert.doesNotMatch(job,/recipient|PUBLIC_KEY|PRIVATE_KEY|secrets\.(?:REPORT|RECIPIENT)/i);
+});
+
+test('WAM245 metadata workflow: exact existing job gates cache and skips B progress and decoder paths',()=>{
+  assert.equal(workflowSha(completeWorkflow),wam245WorkflowReview.afterSha256);
+  assert.equal(workflowSha(beforeWam245MetadataWorkflow(completeWorkflow)),wam245WorkflowReview.beforeSha256);
+  const at=completeWorkflow.indexOf('      wam_raw_manifest_245_only:');
+  assert(at>0);assert(completeWorkflow.slice(at,at+260).includes('default: false'));
+  const step=completeWorkflow.slice(completeWorkflow.indexOf('      - name: Read only the fixed245 RAW manifest metadata'),
+    completeWorkflow.indexOf('      - name: Read the current protected source identity'));
+  assert(step.includes('wam-raw-manifest-245'));
+  for(const bad of['SUPABASE_','RAVRADAR_R2_','WEATHER_PROGRESS_','--progress','--descriptor','python','decode','save-cache'])
+    assert(!step.includes(bad));
+  assert.equal((step.match(/git\/ref\/heads\/main/g)||[]).length,2);
+  for(const pin of['test "$SOURCE_RUN_ID" = 41577449483','test "$SOURCE_RUN_ATTEMPT" = 1',
+    'test "$source_head" = 6fb3fc1682b68bcf51b5ed73c14a84ead7676371',
+    'test "$RAW_MANIFEST_CACHE_KEY" = dmi-grib-v4-Linux-2026-W45-41577449483-1',
+    'test "$COMPONENT_SUMMARY_ONLY" = false','test "$WATER_LEVEL_TRACE" = false'])
+    assert(completeWorkflow.includes(pin));
+  for(const name of['Restore only the requested encrypted acquisition snapshot',
+    'Require exact cache hit before reading any protected data',
+    'Read the current protected source identity without storage writes',
+    'Materialize exact original producer code without running it',
+    'Authenticate and measure saved inputs without production rebuild']){
+    const i=completeWorkflow.indexOf('      - name: '+name);
+    assert(i>0);assert(completeWorkflow.slice(i,i+350).includes('inputs.wam_raw_manifest_245_only != true'));
+  }
+  assert(completeWorkflow.indexOf('Stop unless current source already has live green proof')<
+    completeWorkflow.indexOf('Optionally restore the exact same-run RAW cache'));
+});
+
+test('WAM245 metadata workflow: old whole oracles and unknown mutation refusals survive exact inverse',()=>{
+  assert.equal(beforeVoersaaWaterTrace(completeWorkflow),beforeVoersaaWaterTrace(beforeWam245MetadataWorkflow(completeWorkflow)));
+  for(const altered of[completeWorkflow+'\n',completeWorkflow.replace('test "$SOURCE_RUN_ID" = 41577449483','test "$SOURCE_RUN_ID" = 1'),
+    completeWorkflow.replace('dmi-grib-v4-Linux-2026-W45-41577449483-1','other-cache')]){
+    assert.throws(()=>beforeVoersaaWaterTrace(altered),/VOERSAA_WHOLE_WORKFLOW_INPUT_CHANGED/);
+  }
 });

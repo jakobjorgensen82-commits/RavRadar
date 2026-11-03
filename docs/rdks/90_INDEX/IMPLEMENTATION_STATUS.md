@@ -1,3 +1,11 @@
+## 3. november — fast 245 RAW-manifestdiagnose, kun lokal metadataforberedelse
+
+Den særskilte manuelle kandidat læser kun asset-manifest.json fra én eksakt gemt 245-RAW-cache og undersøger 14 faste WAM-identiteter fra de allerede afsluttede 244/245-kørsler. Den genbruger det eksisterende auditjob og dets main-, kilde-, eksklusive vejrkanal- og eksakte cachekontroller. Progress-cache og beskyttet B indgår ikke. Den fælles DKSS-only-capturevalidator og udstedt C/I/T samt alle SQL bevares.
+
+Resultatet er deklarerede metadata: manifestets hele SHA/størrelse, fast identitet og erklæret content-SHA/filstørrelse. Manglende, tvetydig, ugyldig eller ændret metadata giver fast afslag. rawBytesVerified=false, decoderExecuted=false og partRegistryAuthenticated=false bevares. Ingen RAW-fil åbnes, hashes eller afkodes; der beregnes ingen score eller tilstand. Ingen provider, bankskrivning, pruning eller produktionshandling følger med.
+
+Dette er ikke bevis for, at alle 14 originaler stadig findes i 245-cachen, eller for bølgehullernes decodedårsag. Metadataresultatet skal først aflæses og reviewes efter normal kvalifikation. En senere offline-decode kræver faktisk verificerede originalbytes og det autentiske 245-bundne PART-grundlag; den implementeres ikke her. Alle fem mål og endelig Source-/driftskvalifikation er fortsat åbne.
+
 ## 2. november — normal scalarplan med begge kendte kontinuitetsformater
 
 Den normale producent gemmer native strømhistorik som schema2. Før-DMI-kalderen skal tillade både schema1 og schema2, før den normale læser vurderer de gemte komponenter og planlægger reelle vejrhul.
