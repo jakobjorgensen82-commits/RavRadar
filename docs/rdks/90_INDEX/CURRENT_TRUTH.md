@@ -1,6 +1,6 @@
 ## 3. november — fast 245 RAW-manifestdiagnose, kun lokal metadataforberedelse
 
-Den særskilte manuelle kandidat læser kun asset-manifest.json fra én eksakt gemt 245-RAW-cache og undersøger 14 faste WAM-identiteter fra de allerede afsluttede 244/245-kørsler. Den genbruger det eksisterende auditjob og dets main-, kilde-, eksklusive vejrkanal- og eksakte cachekontroller. Progress-cache og beskyttet B indgår ikke. Den fælles DKSS-only-capturevalidator og udstedt C/I/T samt alle SQL bevares.
+Den særskilte manuelle kandidat læser kun asset-manifest.json fra én eksakt gemt 245-RAW-cache og undersøger 14 faste WAM-identiteter fra de allerede afsluttede 244/245-kørsler. Den genbruger det eksisterende auditjob og dets main-, kilde-, eksklusive vejrkanal- og eksakte cachekontroller. Progress-cache og beskyttet B indgår ikke. Den fælles DKSS-only-capturevalidator, udstedt C/I/T og alle migrations-SQL bevares; kun håndbogens statiske installationskopi følger den opdaterede webhåndbog.
 
 Resultatet er deklarerede metadata: manifestets hele SHA/størrelse, fast identitet og erklæret content-SHA/filstørrelse. Manglende, tvetydig, ugyldig eller ændret metadata giver fast afslag. rawBytesVerified=false, decoderExecuted=false og partRegistryAuthenticated=false bevares. Ingen RAW-fil åbnes, hashes eller afkodes; der beregnes ingen score eller tilstand. Ingen provider, bankskrivning, pruning eller produktionshandling følger med.
 
