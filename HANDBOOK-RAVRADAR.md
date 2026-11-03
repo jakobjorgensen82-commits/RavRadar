@@ -14,6 +14,16 @@ Den samme normale testcase er rød før og grøn efter rettelsen: producentens f
 
 DMI → Copernicus → Open-Meteo, hentebudgetter, originaler, cache, scoreformel, modelbindinger, administratorpunkter og geometri ændres ikke. Den konkrete ændring bruger den normale fulde kildevej; kontrolregistret udvides ikke for at gøre kandidaten målrettet. Native- og databasegenbrug afgøres fortsat af den normale læser på faktiske uændrede input og runtime. Præcis GitHub-kvalifikation, sikker levering efter writer og faktisk ny offentlig effekt er åbne.
 
+### Faste fejltrin uden rå fejldata
+
+Når den normale scalarplan afvises, bevares den eksisterende UNAVAILABLE-markør. Den efterfølgende diagnostik indeholder kun phase, errorCategory og elapsedMillis. Fasen kommer fra den faktisk fejlede læse-, reservekontrol-, kodnings- eller gemmeoperation; tiden måles monotont fra kalderens start.
+
+Fejlkategorierne er en fast, lukket liste. Ukendte fejl bliver UNKNOWN_FAILURE. Rå fejltekst, filstier, vejrværdier og underprocessens fejludskrift udleveres ikke. Et ukendt transportstop bevarer sin oprindelige fejlidentitet, STOP_UNPROVED og exit 2; det må ikke ommærkes til en almindelig fallback.
+
+Den samme normale fysiske testcase afprøver deadline, mislykket offline bytekontrol og privatliv ved ukendt fejl og stop, før den hidtidige CP → Python → DMI-kæde fortsætter. Originalernes hele bytes og filidentiteter bevares. Den samlede loadergrænse er fortsat 120 sekunder; der ændres ingen leverandøradgang, model, score eller udvælgelsesregel.
+
+Rettelsen er lokalt forberedt. Præcis kildekvalifikation, sikker levering og faktisk ny fejlaflæsning er fortsat åbne. Fase og tidsforbrug gør næste afslag forklarligt; de dokumenterer ikke i sig selv leverandørfravær, en bestemt timeoutårsag eller fuld offentlig vejrdækning.
+
 ## 89.298 Sikker vedligeholdelse af dokumenthistorik
 
 Kort fortalt: De aktuelle dokumenter og de nyeste historikversioner bevares. Ældre versioner må først beskæres, når deres præcise originaler er privat arkiveret, verificeret og kan genfindes centralt.

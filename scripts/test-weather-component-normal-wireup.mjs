@@ -728,6 +728,71 @@ test('retained scalar physical CLI preserves original files through offline CP a
       assert.equal(child.status,0,child.stderr);
       return child.stdout;
     };
+    // Exercise the actual CLI catch after failures in its normal loader. The
+    // injected child failures mint no provider data, authority or coverage.
+    const cliUrl = new URL('./plan-weather-scalar-acquisition.mjs',import.meta.url).href;
+    const settlementUrl = new URL('./lib/weather-transport-settlement.mjs',import.meta.url).href;
+    const diagnosticProbe = String.raw`
+import fs from 'node:fs/promises';
+import childProcess from 'node:child_process';
+import {syncBuiltinESMExports} from 'node:module';
+import {EventEmitter} from 'node:events';
+import {fileURLToPath} from 'node:url';
+const [cliUrl,settlementUrl,mode,cache,at]=process.argv.slice(1);
+const readFile=fs.readFile,now=Date.now;
+let offset=0,triggered=false;
+Date.now=()=>now()+offset;
+fs.readFile=async function(file,...args){
+  if(String(file).replaceAll('\\','/').endsWith('/data/live/coastal-parts-v2.json')){
+    if(mode==='timeout'){const result=await readFile.call(this,file,...args);offset=120001;triggered=true;return result;}
+    if(mode==='unknown'){triggered=true;throw Error('PRIVATE_FIXTURE_MESSAGE /private/fixture/source.json secret=NEVER_REPORT');}
+    if(mode==='stop'){
+      triggered=true;
+      const {throwWeatherTransportStopUnproved}=await import(settlementUrl);
+      throwWeatherTransportStopUnproved({fixtureOnly:true},Error('PRIVATE_FIXTURE_MESSAGE /private/fixture/source.json secret=NEVER_REPORT'));
+    }
+  }
+  return readFile.call(this,file,...args);
+};
+if(mode==='cp-failed')childProcess.spawn=(executable,args,options)=>{
+  if(!args.includes('--verify-only')||options.stdio!=='ignore')throw Error('PRIVATE_WRONG_CHILD');
+  triggered=true;
+  const child=new EventEmitter();child.pid=undefined;
+  queueMicrotask(()=>child.emit('close',1,null));return child;
+};
+syncBuiltinESMExports();
+process.argv=[process.execPath,fileURLToPath(cliUrl),'--cache',cache,'--at',at];
+await import(cliUrl);
+if(!triggered)throw Error('PRIVATE_DIAGNOSTIC_INJECTION_NOT_REACHED');
+`;
+    for (const [mode,expectedPhase,errorCategory,status] of [
+      ['timeout','REGISTRY','TIMEOUT',1],
+      ['cp-failed','COPERNICUS_VERIFY','CP_VERIFICATION_FAILED',1],
+      ['unknown','REGISTRY','UNKNOWN_FAILURE',1],
+      ['stop','REGISTRY','TRANSPORT_STOP_UNPROVED',2],
+    ]) {
+      cleanupSafe = false;
+      const child = spawnSync(process.execPath,['--input-type=module','-e',diagnosticProbe,
+        cliUrl,settlementUrl,mode,dmiPath,H0],{cwd:root,
+        env:{...childEnv,RAVRADAR_RETAINED_SCALAR_CONTEXT:selectedScalarContext,
+          RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE:'true'},windowsHide:true,
+        encoding:'utf8',timeout:150000,maxBuffer:2*1024*1024});
+      // These injected processes have no actual transport child; each must close.
+      cleanupSafe = !child.error && child.signal === null && child.status !== null;
+      assert.equal(child.error,undefined);assert.equal(child.signal,null);
+      assert.equal(child.status,status);assert.equal(child.stdout,'');
+      const lines=child.stderr.trim().split(/\r?\n/);
+      assert.equal(lines[0],status===2?'RETAINED_SCALAR_PLAN_STOP_UNPROVED':'RETAINED_SCALAR_PLAN_UNAVAILABLE');
+      assert.equal(lines.length,2,'Only the old fixed marker and closed diagnostic JSON are exposed');
+      const diagnostic=JSON.parse(lines[1]);
+      assert.deepEqual(Object.keys(diagnostic),['phase','errorCategory','elapsedMillis']);
+      assert.equal(diagnostic.phase,expectedPhase);assert.equal(diagnostic.errorCategory,errorCategory);
+      assert(Number.isSafeInteger(diagnostic.elapsedMillis)&&diagnostic.elapsedMillis>=0);
+      for(const privateText of ['PRIVATE_FIXTURE_MESSAGE','/private/fixture','NEVER_REPORT','stack','stderr'])
+        assert(!child.stderr.includes(privateText),'No raw private error, path or child stderr');
+      await assert.rejects(io.lstat(path.join(root,'.cache/weather-scalar-needs.json')),{code:'ENOENT'});
+      assert.deepEqual(await snapshot(),before,'A failed plan changes no original file or identity');
+    }
     run(process.execPath,[fileURLToPath(new URL('./plan-weather-scalar-acquisition.mjs',import.meta.url)),
       '--cache',dmiPath,'--at',H0],{RAVRADAR_RETAINED_SCALAR_CONTEXT:selectedScalarContext,
         RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE:'true'});

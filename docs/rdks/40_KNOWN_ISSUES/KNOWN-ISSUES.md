@@ -1,3 +1,9 @@
+## 3. november — faste fejlfaser for den normale scalarplan
+
+Når den normale plan for reelle vejrhul afvises, viser den nu en fast fase, fejlkategori og elapsedMillis sammen med den eksisterende markør. Rå fejltekst, filstier, vejrværdier og underprocessens fejludskrift udleveres ikke. Ukendte fejl forbliver UNKNOWN_FAILURE; et ukendt transportstop bevarer STOP_UNPROVED og exit 2.
+
+Den eksisterende normale testcase dækker deadline, mislykket offline bytekontrol, ukendt fejl og ukendt stop samt den hidtidige CP → Python → DMI-kæde. Budgetter, adgang, originaler, model, kildeprioritet og konservativ fallback bevares. Dette er lokal kildeforberedelse. Præcis GitHub-kvalifikation, levering og faktisk årsagsafklaring i en almindelig vejrhentning er åbne; bedre diagnostik er ikke bevis for løste vejrhul. Se håndbog 89.299.
+
 ## 3. november — klienten til den korte delingsadresse er særskilt forberedt
 
 Den afgrænsede klientkandidat vælger del.ravradar.dk som delingsadresse og giver index → bootstrap → app → delingsmoduler en ny, sammenhængende cacheadresse. Den oprindelige selection for zone, UTC-time, søgemåde og sprog bevares; ingen score eller data fastfryses. Den gamle Worker beholder sin særskilte, uændrede adresse og allerede delte links.

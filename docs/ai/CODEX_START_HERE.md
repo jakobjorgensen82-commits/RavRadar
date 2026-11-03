@@ -1,3 +1,9 @@
+## 3. november — faste fejlfaser for den normale scalarplan
+
+Når den normale plan for reelle vejrhul afvises, viser den nu en fast fase, fejlkategori og elapsedMillis sammen med den eksisterende markør. Rå fejltekst, filstier, vejrværdier og underprocessens fejludskrift udleveres ikke. Ukendte fejl forbliver UNKNOWN_FAILURE; et ukendt transportstop bevarer STOP_UNPROVED og exit 2.
+
+Den eksisterende normale testcase dækker deadline, mislykket offline bytekontrol, ukendt fejl og ukendt stop samt den hidtidige CP → Python → DMI-kæde. Budgetter, adgang, originaler, model, kildeprioritet og konservativ fallback bevares. Dette er lokal kildeforberedelse. Præcis GitHub-kvalifikation, levering og faktisk årsagsafklaring i en almindelig vejrhentning er åbne; bedre diagnostik er ikke bevis for løste vejrhul. Se håndbog 89.299.
+
 ## 3. november — delingens cacheadresse gennem hele datalæseren
 
 Den fulde klientkontrol påviste, at app og delingsknap brugte den nye kontraktadresse, mens datalæseren stadig importerede den gamle. Den afgrænsede rettelse fører den samme adresse gennem datalæseren og giver appens datalæserimport en frisk cacheadresse. Zone, tidspunkt, søgemåde, sprog, vejrdata, model og scoreformel bevares.
