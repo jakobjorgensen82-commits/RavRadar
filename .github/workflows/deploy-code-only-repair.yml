@@ -1524,6 +1524,10 @@ jobs:
       - name: Rebuild public runtime from saved state without provider acquisition
         if: inputs.restart_archived_weather != true
         shell: bash
+        env:
+          RAVRADAR_PLAIN_MAP_HOURS: 'true'
+          RAVRADAR_PUBLIC_COLD_HOURS: 'true'
+          RAVRADAR_PUBLIC_BULK_ARCHIVE: 'true'
         run: |
           set -euo pipefail
           mode=code-only-reuse
@@ -2460,6 +2464,7 @@ jobs:
             --exclude '.git/' --exclude '.github/' --exclude '_site*/' --exclude '_support/' \
             --exclude '.cache/' --exclude 'node_modules/' --exclude 'scripts/' --exclude 'docs/' \
             --exclude 'data/diagnostics/' --exclude 'data/geometry-v2/' --exclude 'data/admin/' --exclude 'data/live/' \
+            --exclude '/data/jordrav/prototype-0.1.0/' \
             --exclude 'data/kystdata.json' --exclude 'data/zone-plan.json' \
             --exclude 'handbook.html' --exclude 'handbook.css' --exclude 'documentation.html' \
             --exclude 'js/ui/handbook.js' --exclude 'js/ui/admin-app.js' \

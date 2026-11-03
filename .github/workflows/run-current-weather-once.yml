@@ -691,13 +691,26 @@ jobs:
           };
           await read('data/live/manifest.json', 'manifest.json', 1048576);
           const manifest = JSON.parse(await fs.readFile(path.join(root, 'manifest.json'), 'utf8'));
+          const publicBulk = manifest.publicConditionDetailsArchive === undefined ? null
+            : await import('./scripts/lib/public-bulk-details-archive.mjs');
+          const archive = publicBulk?.publicBulkArchiveEntry(manifest) ?? null;
+          const archivedLocal = 'public-condition-details.archive.gz';
           for (const [remote, local, cap] of [
             ['data/live/public-conditions.json', 'public-conditions.json', 33554432],
-            ['data/live/public-condition-details.json', 'public-condition-details.json', manifestBoundedPublicDetailsBytes(manifest.publicConditionDetailsBytes)],
+            archive ? ['data/live/' + archive.path.slice(2), archivedLocal, archive.bytes]
+              : ['data/live/public-condition-details.json', 'public-condition-details.json', manifestBoundedPublicDetailsBytes(manifest.publicConditionDetailsBytes)],
             ['data/live/coastal-parts-v2.json', 'coastal-parts-v2.json', 16777216],
             ['data/zones.geojson', 'zones.geojson', 33554432],
             ['data/water-level-station-routing.json', 'water-level-station-routing.json', 4194304],
           ]) await read(remote, local, cap);
+          if (archive) {
+            const stored = path.join(root, archivedLocal);
+            const file = await fs.lstat(stored);
+            assert(file.isFile() && !file.isSymbolicLink() && file.size === archive.bytes);
+            await publicBulk.restorePublicBulkArchiveFile({ manifest, archiveBytes: await fs.readFile(stored), signal,
+              rawDestination: path.join(root, 'public-condition-details.json') });
+            await fs.unlink(stored);
+          }
           console.log('WEATHER_STATE_EPOCH_SIX_PUBLIC_FILES_CAPTURED_NO_ADMISSION');
           NODE
 

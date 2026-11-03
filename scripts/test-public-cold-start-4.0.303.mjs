@@ -43,7 +43,32 @@ const [app, worker] = await Promise.all([
 ]);
 
 assert.doesNotMatch(app, /const manifestPromise=loadDataManifest\(\)/, 'Den afviste parallelle startgren må ikke være tilbage.');
-assert.match(app, /const manifest=await loadDataManifest\(\)[\s\S]*projectPublicCoastlines\(await loadZones\(\{manifest\}\)\)[\s\S]*const conditions=await loadConditions\(\{manifest\}\)/, 'Starten skal være manifest-først, prioriteret og sekventiel.');
+const startMarker='  const manifest=await loadDataManifest();activeManifest=manifest;';
+const endMarker='  conditionDetailsReady=conditions.detailsAvailable';
+const startAt=app.indexOf(startMarker),endAt=app.indexOf(endMarker,startAt);
+assert(startAt>=0&&endAt>startAt);
+const initialStartup=app.slice(startAt,endAt);
+for(const test of ['marked-valid','marked-invalid','legacy']){
+  const calls=[];
+  const startup=vm.createContext({
+    state:{},activeManifest:null,activeLandingView:null,
+    loadDataManifest:async()=>{calls.push('manifest');return {detailDelivery:test==='legacy'?{}:{mapHoursLandingSchema:1}};},
+    loadPublicLandingView:async()=>{
+      calls.push('compact');
+      if(test==='marked-invalid')throw new Error('exact compact hour absent');
+      return {zones:{verifiedRegistry:true}};
+    },
+    loadZones:async()=>{calls.push('zones');return {verifiedRegistry:true};},
+    loadConditions:async()=>{calls.push('full');return {available:true};},
+    projectPublicCoastlines:zones=>zones,renderZones:()=>({mapLayer:true}),map:{},
+    performance:{mark(){}},dataStatus:{},t:key=>key,console:{warn(){}},
+  });
+  await vm.runInContext('(async()=>{'+initialStartup+'})()',startup);
+  assert(startup.state.zones.verifiedRegistry && startup.state.zoneLayer.mapLayer);
+  assert.deepEqual(calls,test==='marked-valid'?['manifest','compact']
+    :test==='marked-invalid'?['manifest','compact','zones']:['manifest','zones','full']);
+  assert.equal(startup.state.conditions.available,test==='legacy');
+}
 assert.match(worker, /self\.clients\.claim\(\)/, 'Service workeren skal fortsat kunne overtage den første åbne side uden manuel reload.');
 assert.doesNotMatch(worker, /assets\/about\/(?:jakob-|ravjagt-med-boern-)/, 'Store Om-billeder må ikke hentes under første service-worker-installation.');
 assert.equal(worker.includes('`./data/zones.geojson?v=${APP_VERSION}`'), false, 'Kortfilen må ikke hentes igen under første service-worker-installation.');
@@ -57,9 +82,15 @@ const previousShareSuffix = `${previousCopySuffix}&ui=forecast-share-20261024`;
 const previousPanelSuffix = `${previousCopySuffix}&ui=zone-panels-20261027`;
 const previousAssistantSuffix = `${previousPanelSuffix}&assistant=forecast-followup-20261101`;
 const previousDomainSuffix = `${previousAssistantSuffix}&share=custom-domain-20261102`;
-const suffix = `${previousDomainSuffix}&transport=public-json-bridge-20261103`;
+const previousTransportSuffix = `${previousDomainSuffix}&transport=public-json-bridge-20261103`;
+const suffix = `${previousTransportSuffix}&map=plain-map-v3-20261104`;
 assert.ok(index.includes(`src="bootstrap.js${suffix}"`));
 assert.ok(bootstrap.includes(`await import("./app.js${suffix}")`));
+const admin = await fs.readFile(new URL('../admin.html', import.meta.url), 'utf8');
+const dashboard = await fs.readFile(new URL('../js/ui/admin-dashboard.js', import.meta.url), 'utf8');
+const adminSuffix = `?v=${releaseVersion}&ui=admin-model-startup-20261101&map=plain-map-v3-20261104`;
+assert.ok(admin.includes(`src="js/ui/admin-dashboard.js${adminSuffix}"`));
+assert.ok(dashboard.includes(`../services/data-service.js${adminSuffix}`));
 
 // Exercise the existing worker with earlier same-version assets in cache.
 // The mobile UI update must bypass version-only, footer-only and earlier
@@ -78,6 +109,7 @@ const cached = new Map([
 ]);
 const previousDeliveredAssets = [
   [previousPanelSuffix, 'panel'], [previousAssistantSuffix, 'assistant'], [previousDomainSuffix, 'domain'],
+  [previousTransportSuffix, 'transport'],
 ];
 for (const [oldSuffix, label] of previousDeliveredAssets) {
   for (const file of ['bootstrap.js', 'app.js']) cached.set(`${origin}/${file}${oldSuffix}`, new Response(`${label}-${file}`));

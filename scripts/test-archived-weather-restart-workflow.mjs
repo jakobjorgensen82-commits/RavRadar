@@ -9,7 +9,7 @@ import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {inverseArchivedWeatherRestartWorkflow} from './lib/archived-weather-restart-workflow-review.mjs';
 import {inverseArchivedProductionGate} from './lib/archived-production-gate-review.mjs';
-import {inverseTerminalRepair4145Workflow,terminalRepair4145WorkflowReview} from './lib/completed-private-runtime-workflow-review.mjs';
+import {inversePagesPublicProjectionWorkflow,inverseTerminalRepair4145Workflow,terminalRepair4145WorkflowReview} from './lib/completed-private-runtime-workflow-review.mjs';
 import {NATIVE_ORIGINAL_CONTINUITY_WORKFLOW_SHA256,CURRENT_INSTALLED_CODE_ONLY_WORKFLOW_SHA256,
   inverseCurrentInstalledCodeOnlyWorkflow,inverseNativeOriginalContinuityWorkflow} from './lib/native-original-continuity-workflow-review.mjs';
 import {inverseAccountStatisticsAssistantWorkflow,inverseAccountStatisticsAssistantOffAttestation,inverseAccountStatisticsAssistantStorageTransport} from './lib/account-statistics-assistant-workflow-review.mjs';
@@ -19,7 +19,8 @@ import {requireLastMileEnclosureBinding} from './lib/last-mile-enclosure-success
 import {ESTABLISHED_NATIVE_CURRENT_ORIGIN_BINDING} from './lib/established-native-current-origin-successor-source.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-const actualTerminalCodeOnly=fs.readFileSync(path.join(ROOT,'.github/workflows/deploy-code-only-repair.yml'),'utf8').replace(/\r\n/g,'\n');
+const actualPagesCodeOnly=fs.readFileSync(path.join(ROOT,'.github/workflows/deploy-code-only-repair.yml'),'utf8').replace(/\r\n/g,'\n');
+const actualTerminalCodeOnly=inversePagesPublicProjectionWorkflow(actualPagesCodeOnly,'repair');
 const actualCurrentCodeOnly=inverseTerminalRepair4145Workflow(actualTerminalCodeOnly,'repair');
 const nativeCurrent=crypto.createHash('sha256').update(actualCurrentCodeOnly).digest('hex')===CURRENT_INSTALLED_CODE_ONLY_WORKFLOW_SHA256
   ? inverseCurrentInstalledCodeOnlyWorkflow(actualCurrentCodeOnly):actualCurrentCodeOnly;
@@ -948,6 +949,7 @@ test('terminal4145 actual code-only caller preserves complete shared old oracles
   assert.equal(Buffer.byteLength(actualTerminalCodeOnly),row.after.bytes);
   assert.equal(sha(actualCurrentCodeOnly),row.before.sha256);
   assert.equal(Buffer.byteLength(actualCurrentCodeOnly),row.before.bytes);
+  assert.equal(inverseArchivedWeatherRestartWorkflow(actualPagesCodeOnly),historical);
   assert.equal(inverseArchivedWeatherRestartWorkflow(actualTerminalCodeOnly),historical);
   assert.equal(inverseArchivedWeatherRestartWorkflow(actualCurrentCodeOnly),historical);
   const [offset,current,original]=row.edits[0];assert.equal(row.edits.length,1);

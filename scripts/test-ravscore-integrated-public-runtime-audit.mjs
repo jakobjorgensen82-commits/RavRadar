@@ -888,7 +888,20 @@ let national = syntheticFull({
 });
 assert.equal(Object.keys(national.coastalParts.parts).length, 673);
 let nationalPackage = publicPackage(national);
-let nationalReport = audit(national, nationalPackage, 210, 673);
+// The normal integrated audit runs on the raw logical details while the Pages
+// manifest also binds the separately verified physical archive descriptor.
+const nationalBulkSha256 = 'a'.repeat(64);
+const archivedNationalManifest = {
+  ...nationalPackage.manifest,
+  detailDelivery: { schemaVersion: 1 },
+  publicConditionDetailsArchive: {
+    kind: 'gzip-single-v1',
+    path: './public-condition-details-' + nationalBulkSha256 + '.json.gz',
+    bytes: 1024,
+    sha256: nationalBulkSha256,
+  },
+};
+let nationalReport = audit(national, { ...nationalPackage, manifest: archivedNationalManifest }, 210, 673);
 assert.deepEqual(nationalReport.errors, []);
 assert.equal(nationalReport.status, 'passed');
 assert.equal(nationalReport.productionReferenceAt, REFERENCE_AT);

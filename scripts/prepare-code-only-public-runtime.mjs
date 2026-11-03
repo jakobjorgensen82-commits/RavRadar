@@ -466,6 +466,9 @@ export async function prepareCodeOnlyPublicRuntime({
     atomicWrite(path.join(repository, 'data/water-level-station-routing.json'), routingSource.text),
   ]);
 
+  const emitMapHours = process.env.RAVRADAR_PLAIN_MAP_HOURS === 'true';
+  const encodeColdHours = process.env.RAVRADAR_PUBLIC_COLD_HOURS === 'true';
+  if (encodeColdHours && !emitMapHours) throw new Error('PUBLIC_COLD_HOURS_REQUIRES_LANDING');
   const generated = await writePublicRuntimeFromFull(hydratePrivateConditionsHourly(fullSource.value), {
     publicPath: path.join(repository, 'data/live/public-conditions.json'),
     detailsPath: path.join(repository, 'data/live/public-condition-details.json'),
@@ -476,7 +479,20 @@ export async function prepareCodeOnlyPublicRuntime({
       ? path.join(repository, PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE.relativePath)
       : null,
   });
-  await writeForecastShareProjection({ repository });
+  if (emitMapHours) {
+    const { appendPublicMapHours } = await import('./lib/public-map-hour-projection.mjs');
+    await appendPublicMapHours({
+      manifestPath: path.join(repository, 'data/live/manifest.json'), manifest: generated.manifest,
+      zoneRegistryPath: path.join(repository, 'data/zones.geojson'), encodeColdHours,
+    });
+  }
+  if (process.env.RAVRADAR_PUBLIC_BULK_ARCHIVE === 'true') {
+    const { appendPublicBulkArchive } = await import('./lib/public-bulk-details-archive.mjs');
+    await appendPublicBulkArchive({
+      manifestPath: path.join(repository, 'data/live/manifest.json'), manifest: generated.manifest,
+    });
+  }
+  await writeForecastShareProjection({ repository, producerResult: generated });
   assertPublicRuntimePrivacy(generated.publicDocument, 'startup');
   assertPublicRuntimePrivacy(generated.detailsDocument, 'details');
   assertPublicRuntimePrivacy(generated.manifest, 'manifest');
@@ -487,9 +503,11 @@ export async function prepareCodeOnlyPublicRuntime({
       'Code-only detail projection');
     // Delivery files are a new deterministic partition, not changed weather or
     // scores. The complete startup/detail semantic oracle is still compared
-    // immediately above; no other manifest field is exempt from equivalence.
-    const { detailDelivery: _previousDelivery, ...previousManifest } = manifest;
-    const { detailDelivery: _newDelivery, ...nextManifest } = generated.manifest;
+    // immediately above. Only a valid optional physical archive is also
+    // excluded. The logical bytes have already passed their exact digest check.
+    const { publicManifestWithoutBulkArchive } = await import('./lib/public-bulk-details-archive.mjs');
+    const { detailDelivery: _previousDelivery, ...previousManifest } = publicManifestWithoutBulkArchive(manifest);
+    const { detailDelivery: _newDelivery, ...nextManifest } = publicManifestWithoutBulkArchive(generated.manifest);
     assertProjectionEquivalent(previousManifest, nextManifest,
       'Code-only manifest projection');
   } else if (postCutoverRepair) {

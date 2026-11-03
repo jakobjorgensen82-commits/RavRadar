@@ -1,36 +1,30 @@
-## 89.301 Sikker klientopdatering før mindre datafiler
+## 89.301 Kompakt kort, sikker opdatering og mindre Pages-filer
 
 <a id="public-json-plain-reader-upgrader-2026-11-03"></a>
 
-Kort fortalt: Klienten forberedes til mere kompakte filer, mens den offentlige levering fortsætter i det hidtidige format. Opdateringskontrollen starter uafhængigt af langsom vejrindlæsning.
+Den lokale 4.0.594-kandidat indlæser kort og ranglister fra små timefiler. Fulde vejroplysninger og genopretning har særskilte filer og kontroller.
 
-### Det hidtidige format bevares
+### Sådan indlæser browseren kort og prognose
 
-De offentlige filer leveres fortsat som almindelig JSON, kaldet PLAIN. Denne klientbro aktiverer ikke en ny komprimeret udsendelse. Programversionen er fortsat 4.0.594; nye adresser til klientkoden gør det muligt at hente den rette opdatering uden at ændre beregningsmodellen.
+Kandidaten bygger 118 små V3-korttimer som almindelig JSON (PLAIN). De bærer kort, pile, tidsskyder og Top20 på den valgte tid. Når brugeren åbner en zone, giver den almindelige PLAIN-zonefil de detaljerede zoneoplysninger, herunder femdagesprognose og vandstand. Startpakke, kystregister, zoneregister og prognosedeling bruger også PLAIN.
 
-Vejrdata, scorer og modelbindinger ændres ikke. Den isolerede vejrrevision, statistik og automatisk sletning aktiveres ikke af broen.
+De første 12 fulde prognosetimer leveres som PLAIN. De næste 106 fulde timer bruger en strengt kontrolleret gzip-base64-indpakning. Alle 210 zonefiler er PLAIN. En konkret vejrbesvarelse i Spørg RavRadar eller start af en tur kan kræve den fulde, verificerede time. En almindelig visning kan begynde med de små filer.
 
-### Kontrol af fil og indhold
+### Filkontrol og genopretning
 
-Kun filer for en bestemt prognosetime eller zone, som det validerede manifest har godkendt som sådanne, kan senere pakkes ud. Startpakken, samlede detaljer, kystdata, zoneregisteret og kompakte delingsfiler skal være PLAIN, også når deres ydre størrelse og fingeraftryk er gyldige. For en tilladt time-/zonefil kontrolleres størrelse og fingeraftryk før udpakning og derefter format, faste størrelsesgrænser og det udpakkede indholds integritet. Beskadigede eller ukendte formater afvises. De hidtidige kontroller af indhold, model, datasæt og tidspunkt udføres stadig bagefter.
+For de komprimerede timer kontrolleres først den modtagne fils præcise byteantal og SHA-256 og derefter den udpakkede fils byteantal og SHA-256. Læseren kræver ét gyldigt gzip-medlem og fortsætter gennem de eksisterende kontroller af tidspunkt, datasæt, model og indhold. Cachen holder almindelige JSON-filer og udpakkede timefiler adskilt og regner med den udpakkede størrelse i hukommelsen.
 
-Browserens hukommelsesbudget regner med den udpakkede fils størrelse. Ved genbrug kontrolleres fortsat de bytes, der blev modtaget. Gamle cacheposter med almindelig JSON kan stadig bruges; brugerdata og database skal ikke ryddes for at skifte klientkode. Cache og samtidige indlæsninger holder tilladelsen adskilt: et udpakket time-/zonesvar må ikke blive et genbrugssvar i en læser, som kun tillader PLAIN.
+De samlede offentlige detaljer får et separat arkiv med ét gzip-medlem til normal genopretning på serveren. Arkivet genskaber den logiske fils byteantal og SHA-256. Den rå original bevares på runneren, og kun den redundante rå kopi i Pages udelades efter verifikation. Browserens første visning henter sit kortgrundlag fra de små filer. Staging udelader den gamle Jordrav 0.1-pakke og leverer den aktive 0.2.
 
-### Opdatering før ventende vejr
+### Tidlig klientopdatering
 
-Opdateringskontrollen installeres, efter brugerdataenes normale opstart er sikret, og før appen venter på indlæsning af vejr. Den starter straks, når dokumentet er klar, og venter ikke på, at hele appen eller siden melder færdig. Er dokumentet endnu ved at blive læst, bruges dets første klar-signal.
+Opdateringskontrollen starter, når dokumentet er klar, efter normal sikring af brugerdata og før den ventende app-import. Den kan også køre uden service worker. En første overtagelse bevarer visningen, mens en senere opdatering højst kan udløse én genindlæsning. Den nye cacheadresse adskiller kandidatens kode fra tidligere 4.0.594-filer. Allerede åbne faner med ældre kode skal fortsat kontrolleres ved normal opdatering og genåbning.
 
-Versionskontrol kan også virke uden service worker eller ved en mislykket registrering. Den første overtagelse af en side bevarer visningen; senere opdatering kan højst udløse én genindlæsning.
+### Status og hvad der skal måles
 
-### Hvad der stadig skal bevises
+Den tidligere PLAIN-læserbro i PR #803 har bestået kilde-CI. Merge og deploy er endnu ikke verificeret. Den samlede kandidat kræver sin egen kontrol, måling af den faktisk uploadede Pages-pakke mod 1 GB-grænsen og afprøvning af offentlig visning på en rigtig telefon. Lokal afprøvning fastslår hverken indlæsningstid på telefon eller Free-forbrug.
 
-En allerede åben, ukontrolleret gammel fane har hentet sin kode og får ikke automatisk den nye mekanisme. Genåbning, normal opdatering og faktisk udbredelse skal stadig kontrolleres. Der loves ikke automatisk opgradering af alle gamle klienter.
-
-Yderligere komprimering og bevis for den samlede hostingpakkes størrelsesgrænse er særskilte åbne opgaver. Lokal afprøvning af læser og opstart er ikke offentlig levering eller dokumentation for visningen på en rigtig telefon. Den almindelige offentlige levering fortsætter derfor i PLAIN.
-
-Den eksisterende prøve af en helt ny åbning bruger nu også de faktisk allerede leverede adresser til zonepanel, assistent og kort delingsdomæne. Den normale kortprøve kører denne oprindelige prøve i en særskilt, kort underproces. Gamle cacheposter og alle oprindelige assertions bevares; en gammel adresse må hverken skjule den nye kode eller udløse sletning af brugerdata. Dette er rettelse og tilkobling af en forældet prøve, ikke en ny score- eller modelregel.
-
-Forskellige browser- og programversioner kan læse en komprimeret fil forskelligt. Derfor skal den medfølgende læser selv kontrollere filens afgrænsning, også når den indbyggede udpakning lykkes. En mislykket indbygget udpakning gentages stadig ikke med en anden metode. Dette ændrer ingen vejr- eller scoreværdier; det skal sikre den samme strenge læsning på tværs af versioner. Lokal afprøvning er fortsat ikke offentlig levering.
+Kandidaten bruger det eksisterende versionsfelt 4.0.594 og de gældende score-, kilde- og modelbindinger. Den ændrer ingen migrations-SQL. SOURCE-revision, statistik og automatisk sletning har særskilte leveringsforløb.
 
 ## 89.299 Begge kendte kontinuitetsformater i scalarplanen
 

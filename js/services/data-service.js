@@ -1,3 +1,9 @@
+import { displayNationalRankingScore } from '../core/zone-ranking.js?v=4.0.594';
+import { forecastDateKeyInTimeZone } from '../core/forecast-calendar.js?v=4.0.594';
+import { arrowInputs, assertMapHour, landingKind, plainMapHourEntries, readMapHour } from './plain-map-hour.js?v=4.0.594&map=plain-map-v3-20261104';
+import { scoreRating } from '../core/score-presentation.js?v=4.0.594';
+import { assertPublicDeliveryTransportIdentity, inspectPublicDeliveryTransport, publicDeliveryTransportEntries }
+  from './public-delivery-transport-binding.js?v=4.0.594&map=plain-map-v3-20261104';
 import { PUBLIC_JSON_ENVELOPE_KIND, decodePublicJsonTransport } from './public-json-transport.js?v=4.0.594&transport=public-json-bridge-20261103';
 import { assertForecastShareDescriptor, assertForecastShareZoneProjection, forecastShareZoneProjectionSelection,
   FORECAST_SHARE_DESCRIPTOR_PATH, FORECAST_SHARE_INDEX_MAX_BYTES, FORECAST_SHARE_ZONE_MAX_BYTES } from './forecast-share-projection.js?v=4.0.594';
@@ -61,9 +67,10 @@ const SCORE_BOUND_FIELDS = Object.freeze([
 const memory = createBoundedPublicMemory();
 const inFlight = new Map();
 
-async function sha256Text(text) {
+const sha256Text = text => sha256Bytes(new TextEncoder().encode(text));
+async function sha256Bytes(bytes) {
   if (!globalThis.crypto?.subtle) throw new Error('Browseren kan ikke kontrollere runtime-pakkens SHA-256-hash.');
-  const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', bytes);
   return [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, '0')).join('');
 }
 
@@ -88,6 +95,8 @@ async function fetchJson(url, {
   expectedBytes = null,
   timeoutMs = 0,
   publicDeliveryKind = null,
+  publicDeliveryEntry = null,
+  strictPlainDelivery = false,
 } = {}) {
   const deliveryKind = publicDeliveryKind === 'hour' || publicDeliveryKind === 'zone' ? publicDeliveryKind : null;
   const integrityRequired = expectedSha256 !== null || expectedBytes !== null;
@@ -107,9 +116,11 @@ async function fetchJson(url, {
       if (!integrityRequired) throw new Error('PUBLIC_JSON_TRANSPORT_REQUIRES_OUTER_INTEGRITY');
       if (cached.transportKind !== deliveryKind) throw new Error('PUBLIC_JSON_TRANSPORT_REQUIRES_DELIVERY_ENTRY');
     }
+    if (publicDeliveryEntry) assertPublicDeliveryTransportIdentity(cached.transportIdentity, publicDeliveryEntry, strictPlainDelivery);
     return cached.value;
   }
-  const requestKey = `${url}|${expected}|${expectedBytes}|${deliveryKind ?? 'PLAIN'}`;
+  const rawIdentity = publicDeliveryEntry?.rawSha256 ? `${publicDeliveryEntry.rawSha256}|${publicDeliveryEntry.rawBytes}` : '';
+  const requestKey = `${url}|${expected}|${expectedBytes}|${deliveryKind ?? 'PLAIN'}|${rawIdentity}|${strictPlainDelivery}`;
   if (inFlight.has(requestKey)) return inFlight.get(requestKey);
   const pending = (async () => {
   const controller = timeoutMs > 0 ? new AbortController() : null;
@@ -121,11 +132,13 @@ async function fetchJson(url, {
   let actualSha256 = null;
   let actualBytes = null;
   if (integrityRequired) {
-    if (typeof response.text !== 'function') throw new Error(`${url}: svaret kan ikke hashkontrolleres.`);
-    const text = await response.text();
-    actualBytes = utf8Bytes(text);
+    const outer = publicDeliveryEntry?.rawSha256
+      ? await readExactDeliveryResponse(response, expectedBytes, 'PUBLIC_COLD_HOURS') : null;
+    if (!outer && typeof response.text !== 'function') throw new Error(`${url}: svaret kan ikke hashkontrolleres.`);
+    const text = outer ? new TextDecoder('utf-8', { fatal: true }).decode(outer) : await response.text();
+    actualBytes = outer?.byteLength ?? utf8Bytes(text);
     if (actualBytes !== expectedBytes) throw new Error(`${url}: byteantallet matcher ikke manifestet.`);
-    actualSha256 = await sha256Text(text);
+    actualSha256 = outer ? await sha256Bytes(outer) : await sha256Text(text);
     if (actualSha256 !== expected) throw new Error(`${url}: indholdets SHA-256-hash matcher ikke manifestet.`);
     try { value = JSON.parse(text); }
     catch { throw new Error(`${url}: ugyldig JSON.`); }
@@ -140,16 +153,38 @@ async function fetchJson(url, {
   // The manifest authenticates transport bytes; memory eviction charges the
   // decoded JSON bytes. Preserve both so verified cached envelopes stay valid.
   const integrityTransportBytes = actualBytes;
+  const transportIdentity = publicDeliveryEntry ? inspectPublicDeliveryTransport(value, publicDeliveryEntry, strictPlainDelivery) : null;
   const decoded = await decodeVerifiedPublicJson(value, integrityRequired, deliveryKind);
   value = decoded.value;
   actualBytes = decoded.decodedBytes ?? actualBytes;
   if (ttlMs > 0) memory.remember(url, { at: Date.now(), value, sha256: actualSha256,
-    bytes: actualBytes, transportBytes: integrityTransportBytes, transportKind: decoded.encoded ? deliveryKind : null });
+    bytes: actualBytes, transportBytes: integrityTransportBytes, transportKind: decoded.encoded ? deliveryKind : null, transportIdentity });
   return value;
   } finally { if (timer !== null) clearTimeout(timer); }
   })();
   inFlight.set(requestKey, pending);
   try { return await pending; } finally { if (inFlight.get(requestKey) === pending) inFlight.delete(requestKey); }
+}
+
+async function readExactDeliveryResponse(response, bytes, errorPrefix) {
+  if (!response.body?.getReader) throw new Error(errorPrefix + '_RESPONSE');
+  const reader = response.body.getReader();
+  const payload = new Uint8Array(bytes);
+  let offset = 0;
+  try {
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      if (!(value instanceof Uint8Array) || value.byteLength > bytes - offset) {
+        await reader.cancel();
+        throw new Error(errorPrefix + '_RESPONSE_SIZE');
+      }
+      payload.set(value, offset);
+      offset += value.byteLength;
+    }
+  } finally { reader.releaseLock(); }
+  if (offset !== bytes) throw new Error(errorPrefix + '_RESPONSE_SIZE');
+  return payload;
 }
 
 function contentAddressedUrl(base, datasetId, sha256) {
@@ -321,7 +356,7 @@ function assertManifest(manifest) {
     throw new Error('Manifestets scoretilgængelighed dækker ikke de samme 210 zoner.');
   }
   const runtime = manifest.ravScoreRuntime;
-  publicDeliveryEntries(manifest);
+  plainMapHourEntries(manifest, publicDeliveryTransportEntries(manifest));
   assertPublicRuntimeManifest(runtime, {
     modelBinding: manifest.ravScoreModelBinding,
     startup: {
@@ -1167,7 +1202,8 @@ async function loadDelivery(manifest, kind, key, { timeoutMs = 0 } = {}) {
   if (!entry) throw new Error('Den valgte time eller zone findes ikke i denne generation.');
   const url = contentAddressedUrl(`./data/live/${entry.path.slice(2)}`, manifest.datasetId, entry.sha256);
   const data = await fetchJson(url, { ttlMs: 120000, cache: 'force-cache', expectedSha256: entry.sha256,
-    expectedBytes: entry.bytes, timeoutMs, publicDeliveryKind: entry.kind });
+    expectedBytes: entry.bytes, timeoutMs, publicDeliveryKind: entry.kind,
+    publicDeliveryEntry: entry, strictPlainDelivery: manifest.detailDelivery.coldHoursSchema === 1 });
   assertPublicDeliveryDocument(data, manifest, entry);
   assertPublicVerifiedEvidenceTrust(data, 'Den opdelte offentlige pakke');
   assertNestedModelBindings(data, manifest.ravScoreModelBinding);
@@ -1204,6 +1240,203 @@ export function mapForecastTimeline({ manifest, conditions } = {}) {
   return { generation: publicDeliveryGeneration(manifest), times, liveTime: availability.selectedReferenceAt };
 }
 
+
+async function readCompactMapHour(manifest, descriptor, entry, conditions) {
+  const url = contentAddressedUrl('./data/live/' + descriptor.path.slice(2), manifest.datasetId, descriptor.sha256);
+  const key = url + '|map-hour-plain-v2';
+  const scope = { zoneIds: Object.keys(manifest.detailDelivery.zones),
+    partZones: Object.fromEntries(Object.entries(conditions.coastalParts?.parts ?? {}).map(([id, part]) => [id, part.zoneId])),
+    sameModelBinding: sameRavScoreModelBinding, scoreRating };
+  if (Object.keys(scope.partZones).length !== manifest.coastalPartCount) throw new Error('MAP_HOUR_PART_REGISTRY');
+  const binding = { descriptor, manifest, entry, scope };
+  const cached = memory.get(key);
+  if (cached) return assertMapHour(cached.value, binding);
+  let pending = inFlight.get(key);
+  if (!pending) {
+    pending = (async () => {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000);
+      try {
+        const response = await fetch(url, { cache: 'force-cache', signal: controller.signal });
+        if (!response.ok) throw new Error('MAP_HOUR_RESPONSE');
+        const bytes = await readExactDeliveryResponse(response, descriptor.bytes, 'MAP_HOUR');
+        const value = await readMapHour(bytes, binding);
+        memory.remember(key, { bytes: bytes.length, value });
+        return value;
+      } finally { clearTimeout(timeout); }
+    })();
+    inFlight.set(key, pending);
+  }
+  try { return assertMapHour(await pending, binding); }
+  finally { if (inFlight.get(key) === pending) inFlight.delete(key); }
+}
+
+
+const verifiedLandingViews = new WeakSet();
+const rankingModes = ['waders', 'beach'];
+const compactKeys = (value, names) => value !== null && typeof value === 'object' && !Array.isArray(value)
+  && Object.keys(value).length === names.length && names.every(name => Object.hasOwn(value, name));
+const sameCompactValue = (a, b) => canonicalPublicRuntimeJson(a) === canonicalPublicRuntimeJson(b);
+
+export function assertCompactLandingRankings(frame, manifest) {
+  if (frame.kind !== landingKind) throw new Error('MAP_HOUR_LANDING_VERSION');
+  const { currentRankings, nationalForecast } = frame.landing;
+  const validDates = [...new Set(Object.keys(manifest.detailDelivery.hours)
+    .filter(time => time >= frame.time).map(time => forecastDateKeyInTimeZone(time)))].slice(0, 5);
+  if (!compactKeys(currentRankings, rankingModes)
+    || !compactKeys(nationalForecast, ['schemaVersion', 'modelBinding', 'dates', 'modes'])
+    || nationalForecast.schemaVersion !== 2
+    || !sameRavScoreModelBinding(nationalForecast.modelBinding, manifest.ravScoreModelBinding)
+    || !sameCompactValue(nationalForecast.dates, validDates)
+    || !compactKeys(nationalForecast.modes, rankingModes)) throw new Error('MAP_HOUR_LANDING_RANKINGS');
+  for (const mode of rankingModes) {
+    const rows = currentRankings[mode];
+    const days = nationalForecast.modes[mode];
+    if (!Array.isArray(rows) || rows.length > 5 || !Array.isArray(days) || days.length !== validDates.length) {
+      throw new Error('MAP_HOUR_LANDING_RANKINGS');
+    }
+    const zoneIds = new Set();
+    for (const row of rows) {
+      const score = frame.zones[row?.zoneId]?.[mode];
+      if (!compactKeys(row, ['zoneId', 'score', 'scoreQuality', 'scoreBounds', 'rankingScore', 'rankingDisplayScore'])
+        || !score?.available || score.score !== row.score || score.scoreQuality !== row.scoreQuality
+        || !sameCompactValue(score.scoreBounds, row.scoreBounds) || zoneIds.has(row.zoneId)
+        || !Number.isFinite(row.rankingScore) || row.rankingScore > row.score
+        || displayNationalRankingScore(row.rankingScore) !== row.rankingDisplayScore) {
+        throw new Error('MAP_HOUR_LANDING_CURRENT_RANK');
+      }
+      zoneIds.add(row.zoneId);
+    }
+    for (const [index, day] of days.entries()) {
+      if (!compactKeys(day, ['date', 'rows']) || day.date !== validDates[index]
+        || !Array.isArray(day.rows) || day.rows.length > 20) throw new Error('MAP_HOUR_LANDING_DATE');
+      const seen = new Set();
+      for (const row of day.rows) {
+        if (!compactKeys(row, ['zoneId', 'time', 'score', 'scoreBounds', 'rankingScore', 'rankingDisplayScore',
+          'scoreQuality', 'calibrationEligible', 'scoreSemantics', 'conservativeTailResetApplied',
+          'historyCoverageHours', 'historyReasonCodes'])
+          || !Object.hasOwn(frame.zones, row.zoneId) || seen.has(row.zoneId)
+          || !Object.hasOwn(manifest.detailDelivery.hours, row.time) || row.time < frame.time
+          || forecastDateKeyInTimeZone(row.time) !== day.date
+          || !Number.isFinite(row.score) || row.score < 0 || row.score > 100
+          || !Number.isFinite(row.rankingScore) || row.rankingScore > row.score
+          || displayNationalRankingScore(row.rankingScore) !== row.rankingDisplayScore) {
+          throw new Error('MAP_HOUR_LANDING_NATIONAL_RANK');
+        }
+        assertPublicScoreQuality(row, 'Det lille offentlige korts nationale ranglistescore', { ranked: true });
+        seen.add(row.zoneId);
+      }
+    }
+  }
+}
+
+function verifiedLandingView(value) {
+  Object.freeze(value);
+  verifiedLandingViews.add(value);
+  return value;
+}
+
+// Display and actual evidence are different return contracts. Do not assign this
+// view to state.conditions, and do not pass it to trip or assistant runtime.
+export async function loadPublicLandingView({ manifest = null, now } = {}) {
+  assertManifest(manifest);
+  if (manifest.detailDelivery?.mapHoursLandingSchema !== 1) return null;
+  const availability = selectPublicRuntimeAvailability(manifest, { now: now === undefined ? Date.now() : now, modelBinding: ravScoreModelBinding() });
+  const time = availability.selectedReferenceAt;
+  const [startup, zones] = await Promise.all([loadManifestBoundStartup(manifest), loadZones({ manifest })]);
+  const parts = landingParts(zones);
+  const entry = { ...manifest.detailDelivery.hours[time], kind: 'hour', key: time };
+  const descriptor = manifest.detailDelivery.mapHours[time];
+  const compact = await readCompactMapHour(manifest, descriptor, entry, { coastalParts: { parts } });
+  assertCompactLandingRankings(compact, manifest);
+  const latest = selectPublicRuntimeAvailability(manifest, { now: now === undefined ? Date.now() : now, modelBinding: ravScoreModelBinding() });
+  if (latest.selectedReferenceAt !== time) throw new Error("MAP_HOUR_LANDING_EXPIRED");
+  const partZones = Object.fromEntries(Object.entries(parts).map(([id, part]) => [id, part.zoneId]));
+  const arrows = arrowInputs(compact, partZones);
+  for (const zone of Object.values(arrows.zones)) zone.currentReferenceAt = time;
+  const arrowZones = Object.fromEntries(Object.entries(startup.zones).map(([id, zone]) => [id, {
+    currentSource: zone.currentSource,
+    flowPoints: time === manifest.productionReferenceAt ? zone.flowPoints : null,
+    current: compact.landing.parentArrows[id],
+  }]));
+  return verifiedLandingView({
+    kind: 'ravradar-public-landing-view-v1', datasetId: manifest.datasetId, generatedAt: manifest.generatedAt,
+    generation: publicDeliveryGeneration(manifest), time, availability: latest, zones, compact,
+    arrows, arrowZones,
+    zoneHistory: Object.fromEntries(Object.entries(startup.zones).map(([id, zone]) => [id, zone.history])),
+    currentRankings: compact.landing.currentRankings,
+    nationalForecast: compact.landing.nationalForecast,
+  });
+}
+
+export async function reevaluatePublicLandingView({ manifest = null, view = null, now } = {}) {
+  assertManifest(manifest);
+  if (manifest.detailDelivery?.mapHoursLandingSchema !== 1) return null;
+  const availability = selectPublicRuntimeAvailability(manifest, { now: now === undefined ? Date.now() : now, modelBinding: ravScoreModelBinding() });
+  if (verifiedLandingViews.has(view) && view.generation === publicDeliveryGeneration(manifest)
+    && view.time === availability.selectedReferenceAt) {
+    return verifiedLandingView({ ...view, availability });
+  }
+  return loadPublicLandingView({ manifest, now });
+}
+
+function landingParts(zones) {
+  return Object.fromEntries(Object.entries(zones.coastalParts.zones).flatMap(([zoneId, rows]) =>
+    rows.map(part => [part.partId, { zoneId }])));
+}
+
+export function publicLandingTimeline({ manifest, view } = {}) {
+  if (!verifiedLandingViews.has(view) || view.generation !== publicDeliveryGeneration(manifest)) {
+    throw new Error('MAP_HOUR_LANDING_GENERATION');
+  }
+  const availability = selectPublicRuntimeAvailability(manifest, { modelBinding: ravScoreModelBinding() });
+  if (view.time !== availability.selectedReferenceAt) throw new Error('MAP_HOUR_LANDING_EXPIRED');
+  return { generation: view.generation, liveTime: view.time,
+    times: Object.keys(manifest.detailDelivery.hours).filter(time => time >= view.time) };
+}
+
+export async function loadPublicLandingForecastHour({ manifest, view, time } = {}) {
+  const timeline = publicLandingTimeline({ manifest, view });
+  if (!timeline.times.includes(time)) throw new Error('MAP_FORECAST_EXACT_HOUR_UNAVAILABLE');
+  if (time === view.time) return { generation: view.generation, time };
+  const parts = landingParts(view.zones);
+  const entry = { ...manifest.detailDelivery.hours[time], key: time, kind: 'hour' };
+  const compact = await readCompactMapHour(manifest, manifest.detailDelivery.mapHours[time], entry, { coastalParts: { parts } });
+  publicLandingTimeline({ manifest, view });
+  return { generation: view.generation, time, compact,
+    conditions: { coastalParts: arrowInputs(compact, Object.fromEntries(Object.entries(parts).map(([id, part]) => [id, part.zoneId]))),
+      mapForecastTime: time } };
+}
+
+export async function refreshPublicLandingRuntime({ manifest, view, conditions, now } = {}) {
+  let fresh;
+  try { fresh = await loadDataManifest(); } catch { /* The previously verified manifest remains eligible. */ }
+  const oldReference = Date.parse(manifest.productionReferenceAt);
+  const freshReference = Date.parse(fresh?.productionReferenceAt);
+  const newer = fresh && (freshReference > oldReference || (freshReference === oldReference
+    && Date.parse(fresh.generatedAt) >= Date.parse(manifest.generatedAt)));
+  if (newer && publicDeliveryGeneration(fresh) !== publicDeliveryGeneration(manifest)) {
+    try {
+      if (fresh.detailDelivery?.mapHoursLandingSchema === 1) {
+        const landing = await loadPublicLandingView({ manifest: fresh, now });
+        return { manifest: fresh, landing, zones: landing.zones, changed: true };
+      }
+      const [conditions, zones] = await Promise.all([loadConditions({ manifest: fresh, now }), loadZones({ manifest: fresh })]);
+      if (conditions.available) return { manifest: fresh, conditions, landing: null, zones, changed: true };
+    } catch { /* Never replace a usable view with an incomplete generation. */ }
+  }
+  if (manifest.detailDelivery?.mapHoursLandingSchema !== 1) {
+    return { manifest, conditions: await reevaluatePublicConditions({ manifest, conditions, now }), zones: null, changed: false };
+  }
+  let availability;
+  try { availability = selectPublicRuntimeAvailability(manifest, { now: now ?? Date.now(), modelBinding: ravScoreModelBinding() }); }
+  catch { return { manifest, landing: null, changed: false }; }
+  try { return { manifest, landing: await reevaluatePublicLandingView({ manifest, view, now }), changed: false }; }
+  catch {
+    return { manifest, landing: view?.time === availability.selectedReferenceAt ? view : null, changed: false };
+  }
+}
+
 export async function loadMapForecastHour({ manifest, conditions, time } = {}) {
   const timeline = mapForecastTimeline({ manifest, conditions });
   if (!timeline.times.includes(time)) throw new Error('MAP_FORECAST_EXACT_HOUR_UNAVAILABLE');
@@ -1213,6 +1446,16 @@ export async function loadMapForecastHour({ manifest, conditions, time } = {}) {
       || conditions.deliveryManifestIdentity !== timeline.generation) throw new Error('MAP_FORECAST_GENERATION_MISMATCH');
   const retained = time === availability.selectedReferenceAt ? reuseVerifiedPublicHour(conditions, manifest, availability) : null;
   if (retained) return { generation: timeline.generation, time, conditions: retained };
+  const compactDescriptor = manifest.detailDelivery.mapHours?.[time];
+  if (compactDescriptor) {
+    const originalEntry = { ...manifest.detailDelivery.hours[time], key: time, kind: 'hour' };
+    const compact = await readCompactMapHour(manifest, compactDescriptor, originalEntry, conditions);
+    const currentAvailability = selectPublicRuntimeAvailability(manifest, { modelBinding: ravScoreModelBinding() });
+    if (time < currentAvailability.selectedReferenceAt) throw new Error('MAP_FORECAST_EXACT_HOUR_EXPIRED');
+    const partZones = Object.fromEntries(Object.entries(conditions.coastalParts.parts).map(([id, part]) => [id, part.zoneId]));
+    return { generation: timeline.generation, time, compact,
+      conditions: { coastalParts: arrowInputs(compact, partZones), mapForecastTime: time } };
+  }
   const details = await loadDelivery(manifest, 'hour', time, { timeoutMs: 15000 });
   const currentAvailability = selectPublicRuntimeAvailability(manifest, { modelBinding: ravScoreModelBinding() });
   if (time < currentAvailability.selectedReferenceAt) throw new Error('MAP_FORECAST_EXACT_HOUR_EXPIRED');
@@ -1249,7 +1492,7 @@ function mergeDeliveryZone(conditions, details) {
 export async function loadPublicForecastShareSelection(input, { fetchPublic } = {}) {
   const selection = exactForecastShareSelection(input);
   if (!selection || typeof fetchPublic !== 'function') throw new Error('FORECAST_SHARE_READER_INVALID');
-  async function read(path, { bytes = null, sha256 = null, deliveryKind = null } = {}) {
+  async function read(path, { bytes = null, sha256 = null, deliveryKind = null, deliveryEntry = null, strictPlain = false } = {}) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 15000);
     const limit = bytes ?? 512 * 1024;
@@ -1274,7 +1517,9 @@ export async function loadPublicForecastShareSelection(input, { fetchPublic } = 
       if (bytes !== null && (size !== bytes || await sha256Text(text) !== sha256)) {
         throw new Error('FORECAST_SHARE_BINDING_INVALID');
       }
-      return (await decodeVerifiedPublicJson(JSON.parse(text), bytes !== null, deliveryKind)).value;
+      const outer = JSON.parse(text);
+      if (deliveryEntry) inspectPublicDeliveryTransport(outer, deliveryEntry, strictPlain);
+      return (await decodeVerifiedPublicJson(outer, bytes !== null, deliveryKind)).value;
     } finally { clearTimeout(timer); }
   }
   const manifest = assertManifest(await read('./data/live/manifest.json'));
@@ -1283,7 +1528,8 @@ export async function loadPublicForecastShareSelection(input, { fetchPublic } = 
   if (!entry || selection.time < availability.selectedReferenceAt
       || !Object.hasOwn(manifest.detailDelivery.hours, selection.time)) return null;
   const [document, zoneDocument] = await Promise.all([
-    read('./data/live/' + entry.path.slice(2), { bytes: entry.bytes, sha256: entry.sha256, deliveryKind: entry.kind }),
+    read('./data/live/' + entry.path.slice(2), { bytes: entry.bytes, sha256: entry.sha256, deliveryKind: entry.kind,
+      deliveryEntry: entry, strictPlain: manifest.detailDelivery.coldHoursSchema === 1 }),
     read('./data/zones.geojson', { bytes: manifest.zoneRegistryBytes, sha256: manifest.zoneRegistrySha256 }),
   ]);
   assertPublicDeliveryDocument(document, manifest, entry);

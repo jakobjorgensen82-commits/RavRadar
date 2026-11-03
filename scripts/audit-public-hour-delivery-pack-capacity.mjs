@@ -1,56 +1,84 @@
 #!/usr/bin/env node
+import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildPrivatePublicHourDeliveryPack } from './lib/public-hour-delivery-pack.mjs';
-import { PUBLIC_DELIVERY_MAX_BYTES } from '../js/core/public-delivery-contract.js';
+import { assertPublicDeliveryDocument } from '../js/core/public-delivery-contract.js';
+import { publicDeliveryTransportEntries } from '../js/services/public-delivery-transport-binding.js';
+import { readPublicDeliveryJsonBytes } from './lib/public-delivery-json-transport.mjs';
+import { readExactMapResponse } from './lib/public-map-hour-pages.mjs';
 
-async function fetchBytes(url, maximumBytes) {
-  const response = await fetch(url, { headers: { 'Cache-Control': 'no-cache' } });
+async function fetchBytes(fetchImpl, url, maximumBytes, exact = false) {
+  const response = await fetchImpl(url, { headers: { 'Cache-Control': 'no-cache' } });
   if (!response.ok) throw new Error(`PUBLIC_HOUR_CAPACITY_HTTP_${response.status}`);
   const declared = Number(response.headers.get('content-length'));
   if (Number.isFinite(declared) && declared > maximumBytes) {
     throw new Error('PUBLIC_HOUR_CAPACITY_REMOTE_SIZE_LIMIT');
   }
+  if (exact) return readExactMapResponse(response, maximumBytes);
   const bytes = Buffer.from(await response.arrayBuffer());
   if (bytes.length > maximumBytes) throw new Error('PUBLIC_HOUR_CAPACITY_REMOTE_SIZE_LIMIT');
   return bytes;
 }
 
-export async function auditPublicHourDeliveryPackCapacity({ baseUrl } = {}) {
+export async function auditPublicHourDeliveryPackCapacity({ baseUrl, fetchImpl = globalThis.fetch } = {}) {
   const normalizedBase = new URL(baseUrl).toString().replace(/\/$/, '');
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-public-hour-capacity-'));
   try {
     const live = path.join(root, 'data', 'live');
     const forecast = path.join(live, 'forecast');
     await fs.mkdir(forecast, { recursive: true });
-    const manifestBytes = await fetchBytes(`${normalizedBase}/data/live/manifest.json?capacity=${Date.now()}`, 1024 * 1024);
+    const manifestBytes = await fetchBytes(fetchImpl, `${normalizedBase}/data/live/manifest.json?capacity=${Date.now()}`, 1024 * 1024);
     const manifest = JSON.parse(manifestBytes.toString('utf8'));
-    const startupPath = String(manifest.conditionsPath ?? '').replace(/^\.\//, 'data/live/');
-    const startupBytes = await fetchBytes(`${normalizedBase}/${startupPath}?capacity=${Date.now()}-startup`, 8 * 1024 * 1024);
-    if (startupBytes.length !== manifest.publicConditionsBytes) {
-      throw new Error('PUBLIC_HOUR_CAPACITY_STARTUP_SIZE_MISMATCH');
+    if (manifest.conditionsPath !== './public-conditions.json') throw new Error('PUBLIC_HOUR_CAPACITY_STARTUP_PATH');
+    const startupPath = 'data/live/public-conditions.json';
+    const startupBytes = await fetchBytes(fetchImpl, `${normalizedBase}/${startupPath}?capacity=${Date.now()}-startup`, 8 * 1024 * 1024);
+    if (startupBytes.length !== manifest.publicConditionsBytes
+      || createHash('sha256').update(startupBytes).digest('hex') !== manifest.publicConditionsSha256) {
+      throw new Error('PUBLIC_HOUR_CAPACITY_STARTUP_BINDING_MISMATCH');
     }
     const startup = JSON.parse(startupBytes.toString('utf8'));
-    const descriptors = Object.values(manifest?.detailDelivery?.hours ?? {});
+    const descriptors = publicDeliveryTransportEntries(manifest).filter(entry => entry.kind === 'hour');
     if (descriptors.length !== 118) throw new Error('PUBLIC_HOUR_CAPACITY_INVENTORY_INVALID');
-    let cursor = 0;
+    const strictPlain = manifest.detailDelivery.coldHoursSchema === 1;
+    const logicalHours = {};
+    let cursor = 0, failure = null;
     const workers = Array.from({ length: 8 }, async () => {
-      while (cursor < descriptors.length) {
-        const index = cursor;
-        cursor += 1;
-        const descriptor = descriptors[index];
-        const remotePath = String(descriptor.path ?? '').replace(/^\.\//, 'data/live/');
-        const bytes = await fetchBytes(`${normalizedBase}/${remotePath}?capacity=${Date.now()}-${index}`, PUBLIC_DELIVERY_MAX_BYTES);
-        if (bytes.length !== descriptor.bytes) throw new Error('PUBLIC_HOUR_CAPACITY_FILE_SIZE_MISMATCH');
-        await fs.writeFile(path.join(forecast, path.basename(remotePath)), bytes);
+      while (!failure && cursor < descriptors.length) {
+        const index = cursor++;
+        const entry = descriptors[index];
+        const remotePath = 'data/live/' + entry.path.slice(2);
+        try {
+          const bytes = await fetchBytes(fetchImpl, normalizedBase + '/' + remotePath + '?capacity=' + Date.now() + '-' + index,
+            entry.bytes, true);
+          const logical = await readPublicDeliveryJsonBytes(bytes, entry, strictPlain, { includeLogicalPayload: true });
+          assertPublicDeliveryDocument(logical.value, manifest, entry);
+          const file = logical.logicalSha256 + '.json';
+          await fs.writeFile(path.join(forecast, file), logical.logicalPayload, { flag: 'wx' });
+          logicalHours[entry.key] = { path: './forecast/' + file, sha256: logical.logicalSha256, bytes: logical.logicalBytes };
+        } catch (error) { failure ??= error; }
       }
     });
     await Promise.all(workers);
+    if (failure) throw failure;
+    // The private pack contract expects raw logical hour identities. Neither
+    // the public compressed paths nor its additional display metadata belong here.
+    const logicalManifest = {
+      datasetId: manifest.datasetId,
+      productionReferenceAt: manifest.productionReferenceAt,
+      publicConditionDetailsSha256: manifest.publicConditionDetailsSha256,
+      ravScoreModelBinding: manifest.ravScoreModelBinding,
+      detailDelivery: {
+        schemaVersion: manifest.detailDelivery.schemaVersion,
+        sourceDetailsSha256: manifest.detailDelivery.sourceDetailsSha256,
+        hours: Object.fromEntries(descriptors.map(({ key }) => [key, logicalHours[key]])),
+      },
+    };
     const built = await buildPrivatePublicHourDeliveryPack({
       liveDirectory: live,
-      publicManifest: manifest,
+      publicManifest: logicalManifest,
       startupNationalForecast: startup.nationalForecast,
       outputPath: path.join(root, '.cache', 'public-hour-delivery.pack'),
     });

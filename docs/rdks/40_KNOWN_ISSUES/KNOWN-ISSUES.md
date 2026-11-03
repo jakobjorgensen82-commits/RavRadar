@@ -1,3 +1,7 @@
+## 4. november — samlet Pages-størrelse og mobil accept er åbne
+
+Den lokale 4.0.594-kandidat afgrænser browserens første indlæsning til manifestbundne PLAIN-data og bruger et separat arkiv for serverens normale genopretning. Der mangler måling af den faktiske samlede Pages-upload og afprøvning af offentlige time- og zonefiler, opdatering og indlæsning på en rigtig telefon. Den tidligere PR #803-kildekontrol dækker PLAIN-læserbroen. Merge, deploy og den kombinerede kandidats offentlige effekt er særskilte åbne punkter. Se håndbog 89.301.
+
 ## 3. november — ens filkontrol på tværs af runtimeversioner
 
 Den faktiske Node 22-kontrol påviste, at indbygget gzip-udpakning kan acceptere flere sammenkædede medlemmer, selv om Node 24 afviser dem. Den lokale rettelse kontrollerer derfor med den samme medfølgende kode, at filen rummer præcis ét medlem, også efter vellykket indbygget udpakning. De indbyggede outputbytes bevares; valideringschunks kasseres uden endnu en stor outputallokering. Et indbygget fejlforløb gentages stadig aldrig i fallback. Normalparenten består nu med 37 codec-prøver, 19 brocases, de 9 gamle kortcases og den eksisterende særskilte coldstart-prøve på Node 24. Ny præcis Node 22-kvalifikation og offentlig accept er åbne.

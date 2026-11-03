@@ -6,7 +6,9 @@ import { readForecastShareProjectionFiles, auditForecastShareProjectionFiles } f
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PROFILE_BINDING } from '../js/jordrav/profile-examples.js';
-import { publicDeliveryEntries, assertPublicDeliveryDocument } from '../js/core/public-delivery-contract.js';
+import { assertPublicDeliveryDocument } from '../js/core/public-delivery-contract.js';
+import { publicDeliveryTransportEntries } from '../js/services/public-delivery-transport-binding.js';
+import { readPublicDeliveryJsonFile } from './lib/public-delivery-json-transport.mjs';
 import { assertPublicDeliveryNestedBinding } from './lib/public-delivery-nested-binding.mjs';
 import {
   assertRavScoreModelBinding,
@@ -129,7 +131,7 @@ function isPathLikeString(value) {
   return typeof value === 'string' && (/[/\\]/.test(value) || /\.json(?:[?#]|$)/i.test(value));
 }
 
-function isApprovedCoordinatePath(file, tokens, boundPublicProfile = false) {
+function isApprovedCoordinatePath(file, tokens, boundPublicProfile = false, boundMapHour = false) {
   const normalizedFile = normalizedPath(file);
   const last = String(tokens.at(-1) ?? '');
   const previous = String(tokens.at(-2) ?? '');
@@ -141,6 +143,10 @@ function isApprovedCoordinatePath(file, tokens, boundPublicProfile = false) {
     && tokens.length === 3 && tokens[0] === 'profiles'
     && Number.isSafeInteger(tokens[1]) && tokens[1] >= 0 && tokens[1] < 16
     && (last === 'latitude' || last === 'longitude')) return true;
+
+  if (boundMapHour && /^data\/live\/forecast\/[a-f0-9]{64}\.json$/.test(normalizedFile)
+    && tokens.length === 4 && tokens[0] === 'parts'
+    && (previous === 'current' || previous === 'wind') && last === 'point') return true;
 
   if (normalizedFile.endsWith('.geojson') && tokens.includes('coordinates')) return true;
 
@@ -180,14 +186,14 @@ function hasCoordinateShape(value) {
   return value.some(item => Array.isArray(item) && hasCoordinateShape(item));
 }
 
-function scanJsonPrivacy(value, { file, tokens = [], issues, boundPublicProfile = false }) {
+function scanJsonPrivacy(value, { file, tokens = [], issues, boundPublicProfile = false, boundMapHour = false }) {
   if (Array.isArray(value)) {
     if (normalizedPath(file).startsWith('data/live/')
       && isCoordinatePair(value)
-      && !isApprovedCoordinatePath(file, tokens, boundPublicProfile)) {
+      && !isApprovedCoordinatePath(file, tokens, boundPublicProfile, boundMapHour)) {
       issues.push(`unapproved coordinate-like pair at ${displayJsonPath(file, tokens)}`);
     }
-    value.forEach((item, index) => scanJsonPrivacy(item, { file, tokens: [...tokens, index], issues, boundPublicProfile }));
+    value.forEach((item, index) => scanJsonPrivacy(item, { file, tokens: [...tokens, index], issues, boundPublicProfile, boundMapHour }));
     return;
   }
 
@@ -214,10 +220,10 @@ function scanJsonPrivacy(value, { file, tokens = [], issues, boundPublicProfile 
     if (PRIVATE_SAMPLING_FIELD.test(key)) issues.push(`private sampling/grid field at ${fieldPath}`);
     if (COORDINATE_FIELD.test(key)
       && hasCoordinateShape(nested)
-      && !isApprovedCoordinatePath(file, nestedTokens, boundPublicProfile)) {
+      && !isApprovedCoordinatePath(file, nestedTokens, boundPublicProfile, boundMapHour)) {
       issues.push(`unapproved coordinate field at ${fieldPath}`);
     }
-    scanJsonPrivacy(nested, { file, tokens: nestedTokens, issues, boundPublicProfile });
+    scanJsonPrivacy(nested, { file, tokens: nestedTokens, issues, boundPublicProfile, boundMapHour });
   }
 }
 
@@ -609,11 +615,25 @@ export async function auditPagesArtifactPrivacy(siteRoot, {
   const files = entries.filter(entry => entry.kind === 'file');
   let deliveryManifest = null;
   let deliveryEntries = [];
+  let mapEntries = [];
+  let bulkArchive = null;
+  let bulkReader = null;
   try {
     deliveryManifest = JSON.parse(await fs.readFile(path.join(root, 'data/live/manifest.json'), 'utf8'));
-    deliveryEntries = publicDeliveryEntries(deliveryManifest);
+    deliveryEntries = publicDeliveryTransportEntries(deliveryManifest);
+    if (deliveryManifest.publicConditionDetailsArchive !== undefined) {
+      const { publicBulkArchiveEntry, readVerifiedPublicBulkArchive } = await import('./lib/public-bulk-details-archive.mjs');
+      bulkArchive = publicBulkArchiveEntry(deliveryManifest);
+      bulkReader = readVerifiedPublicBulkArchive;
+    }
+    if (deliveryManifest.detailDelivery?.mapHours !== undefined) {
+      const { mapHourPagesInventory } = await import('./lib/public-map-hour-pages.mjs');
+      mapEntries = await mapHourPagesInventory({ liveDirectory: path.join(root, 'data/live'),
+        manifest: deliveryManifest, fullEntries: deliveryEntries });
+    }
   } catch { issues.push('invalid public delivery manifest'); }
   const deliveryFiles = new Map(deliveryEntries.map(entry => [`data/live/${entry.path.slice(2)}`, entry]));
+  const mapFiles = new Map(mapEntries.map(entry => [`data/live/${entry.path.slice(2)}`, entry]));
   // The deployed, closure-bound compact reader requires the index and all210 zone files.
   const shareRequired = files.some(file => file.relative === 'js/services/forecast-share-projection.js');
   let shareFiles = null;
@@ -623,7 +643,13 @@ export async function auditPagesArtifactPrivacy(siteRoot, {
   } catch { issues.push('invalid or missing public forecast sharing projection'); }
   const sharePaths = shareFiles ? ['data/live/forecast-share.json',
     ...shareFiles.descriptor.zones.map(file => 'data/live/' + file.path.slice(2))] : [];
-  const expectedFiles = new Set([...EXPECTED_LIVE_FILES, ...deliveryFiles.keys(), ...sharePaths]);
+  const expectedFiles = new Set([...EXPECTED_LIVE_FILES, ...deliveryFiles.keys(), ...mapFiles.keys(), ...sharePaths]);
+  const bulkLogicalPath = 'data/live/public-condition-details.json';
+  const bulkPhysicalPath = bulkArchive ? 'data/live/' + bulkArchive.path.slice(2) : null;
+  if (bulkPhysicalPath) {
+    expectedFiles.delete(bulkLogicalPath);
+    expectedFiles.add(bulkPhysicalPath);
+  }
   const pathKeys = new Map();
   for (const entry of entries) {
     const key = normalizedPath(entry.relative);
@@ -663,12 +689,50 @@ export async function auditPagesArtifactPrivacy(siteRoot, {
         issues.push(`exact private runtime payload fingerprint at ${safePath(file.relative)}`);
       }
     }
+    if (file.relative === bulkPhysicalPath) {
+      try {
+        if (file.size !== bulkArchive.bytes) throw new Error('size');
+        const bytes = await bulkReader({ manifest: deliveryManifest, archiveBytes: await fs.readFile(file.absolute) });
+        if (privateFingerprints.has(`${bytes.length}:${sha256(bytes)}`)) {
+          issues.push(`exact private runtime payload fingerprint at ${safePath(file.relative)}`);
+        }
+        const text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+        const document = JSON.parse(text);
+        scanJsonPrivacy(document, { file: bulkLogicalPath, issues });
+        parsed.set(bulkLogicalPath, document);
+        texts.set(bulkLogicalPath, text);
+      } catch { issues.push(`invalid public bulk archive at ${safePath(file.relative)}`); }
+      continue;
+    }
+    const mapHour = mapFiles.get(file.relative);
+    if (mapHour) {
+      try {
+        if (file.size !== mapHour.bytes) throw new Error('size');
+        const document = await mapHour.read(await fs.readFile(file.absolute));
+        scanJsonPrivacy(document, { file: file.relative, issues, boundMapHour: true });
+      } catch { issues.push(`invalid compact map binding at ${safePath(file.relative)}`); }
+      continue;
+    }
     if (!/\.(?:json|geojson)$/i.test(file.relative)) continue;
+    const delivery = deliveryFiles.get(file.relative);
+    if (delivery) {
+      try {
+        const loaded = await readPublicDeliveryJsonFile(file.absolute, delivery, deliveryManifest.detailDelivery?.coldHoursSchema === 1);
+        if (loaded.encoded && privateFingerprints.has(`${loaded.logicalBytes}:${loaded.logicalSha256}`)) {
+          issues.push(`exact private runtime payload fingerprint at ${safePath(file.relative)}`);
+        }
+        scanJsonPrivacy(loaded.value, { file: file.relative, issues });
+        assertPublicDeliveryDocument(loaded.value, deliveryManifest, delivery);
+        assertPublicDeliveryNestedBinding(loaded.value, deliveryManifest.ravScoreModelBinding);
+      } catch { issues.push(`invalid public delivery binding at ${safePath(file.relative)}`); }
+      continue;
+    }
     let text;
     let document;
     try {
       text = await fs.readFile(file.absolute, 'utf8');
       document = JSON.parse(text);
+      if (document?.kind === 'ravradar-public-json-gzip-v1') issues.push(`unexpected public transport envelope at ${safePath(file.relative)}`);
     } catch {
       issues.push(`invalid JSON at ${safePath(file.relative)}`);
       continue;
@@ -680,18 +744,8 @@ export async function auditPagesArtifactPrivacy(siteRoot, {
       issues.push(`invalid public Jordrav profile binding at ${safePath(file.relative)}`);
     }
     scanJsonPrivacy(document, { file: file.relative, issues, boundPublicProfile });
-    const delivery = deliveryFiles.get(file.relative);
-    if (delivery) {
-      try {
-        if (Buffer.byteLength(text) !== delivery.bytes || sha256(text) !== delivery.sha256) throw new Error('hash');
-        assertPublicDeliveryDocument(document, deliveryManifest, delivery);
-        assertPublicDeliveryNestedBinding(document, deliveryManifest.ravScoreModelBinding);
-      } catch { issues.push(`invalid public delivery binding at ${safePath(file.relative)}`); }
-      // Do not hold all 328 projections (or duplicate texts) in memory.
-    } else {
-      parsed.set(file.relative, document);
-      texts.set(file.relative, text);
-    }
+    parsed.set(file.relative, document);
+    texts.set(file.relative, text);
   }
 
   if (parsed.has(PUBLIC_VERSION_FILE)) {

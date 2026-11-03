@@ -119,13 +119,25 @@ async function capturePublic(root) {
   };
   await read('data/live/manifest.json', 'manifest.json', 1048576);
   const manifest = JSON.parse(await closedFile(path.join(root, 'manifest.json'), 1048576));
+  const publicBulk = manifest.publicConditionDetailsArchive === undefined ? null
+    : await import('./lib/public-bulk-details-archive.mjs');
+  const archive = publicBulk?.publicBulkArchiveEntry(manifest) ?? null;
+  const archivedLocal = 'public-condition-details.archive.gz';
   for (const [remote, local, maximum] of [
     ['data/live/public-conditions.json', 'public-conditions.json', 33554432],
-    ['data/live/public-condition-details.json', 'public-condition-details.json', manifestBoundedPublicDetailsBytes(manifest.publicConditionDetailsBytes)],
+    archive ? ['data/live/' + archive.path.slice(2), archivedLocal, archive.bytes]
+      : ['data/live/public-condition-details.json', 'public-condition-details.json', manifestBoundedPublicDetailsBytes(manifest.publicConditionDetailsBytes)],
     ['data/live/coastal-parts-v2.json', 'coastal-parts-v2.json', 16777216],
     ['data/zones.geojson', 'zones.geojson', 33554432],
     ['data/water-level-station-routing.json', 'water-level-station-routing.json', 4194304],
   ]) await read(remote, local, maximum);
+  if (archive) {
+    const stored = path.join(root, archivedLocal);
+    const bytes = await closedFile(stored, archive.bytes);
+    await publicBulk.restorePublicBulkArchiveFile({ manifest, archiveBytes: bytes, signal,
+      rawDestination: path.join(root, 'public-condition-details.json') });
+    await fs.unlink(stored);
+  }
 }
 async function appendEnvironment(values) {
   const file = process.env.GITHUB_ENV; requireFlag(path.isAbsolute(file ?? ''), 'GITHUB_ENV');

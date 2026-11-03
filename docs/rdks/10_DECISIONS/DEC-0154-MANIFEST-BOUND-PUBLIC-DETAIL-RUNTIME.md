@@ -39,3 +39,13 @@ Cache-entry.bytes belaster det uændrede memorybudget med decodedBytes, mens tra
 ### Faktisk Node 22-afklaring 3. november
 
 Den faktiske Node 22-kontrol påviste, at indbygget gzip-udpakning kan acceptere flere sammenkædede medlemmer, selv om Node 24 afviser dem. Den lokale rettelse kontrollerer derfor med den samme medfølgende kode, at filen rummer præcis ét medlem, også efter vellykket indbygget udpakning. De indbyggede outputbytes bevares; valideringschunks kasseres uden endnu en stor outputallokering. Et indbygget fejlforløb gentages stadig aldrig i fallback. Normalparenten består nu med 37 codec-prøver, 19 brocases, de 9 gamle kortcases og den eksisterende særskilte coldstart-prøve på Node 24. Ny præcis Node 22-kvalifikation og offentlig accept er åbne.
+
+## Tillæg 2026-11-04 — adskilte browserfiler og recovery-arkiv
+
+Tillægget af 3. november beskriver den tidligere PLAIN-læserbro. Kilde-CI for PR #803 er bestået for broen. Merge, deploy og den samlede senere kandidats kvalifikation afventer særskilt bevis.
+
+Den lokale 4.0.594-kandidat for en markeret generation leverer 118 PLAIN V3-korttimer, de første 12 fulde timer i PLAIN og de følgende 106 fulde timer som streng gzip-base64. De 210 zonefiler, startpakken, kystregisteret, zoneregisteret og delingsprojektionen er PLAIN. Manifestet binder fysisk byteantal og SHA-256 til den leverede fil og logisk byteantal og SHA-256 til den fulde afkodede time. V3-kortets kildehash peger på den logiske fulde time. Eksisterende tids-, datasæt-, model- og indholdskontroller udføres efter afkodning. Ukendte eller afvigende transportformer afvises.
+
+De samlede offentlige detaljer bruger en særskilt gzip-fil med ét medlem til normale recovery-kaldere. Den oprindelige logiske filidentitet og det logiske byteantal bevares. Normale recovery-kaldere verificerer arkivet og genskaber den originale logiske fil før videre behandling. Rå detaljefil og de rå timeoriginaler på runneren bevares. Pages-staging udelader den redundante rå detaljekopi efter verifikation. Arkivet tilhører recovery-ruten, mens browserens koldstart bruger manifestet og PLAIN-korttimerne. Dermed bærer arkivets størrelse ingen data ind i første kortvisning.
+
+Den samlede uploadede Pages-størrelse, offentlig effekt og mobil opstart kræver målt bevis for den faktiske levering. Score-, kilde- og modelbindingerne følger eksisterende kode. Kandidaten udsteder ingen migrations-SQL.

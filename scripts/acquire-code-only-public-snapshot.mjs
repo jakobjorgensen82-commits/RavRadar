@@ -8,6 +8,7 @@ import { performance } from 'node:perf_hooks';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { resolveCodeOnlyPublicSource } from './resolve-code-only-public-source.mjs';
+import { publicBulkArchiveEntry, restorePublicBulkArchiveFile } from './lib/public-bulk-details-archive.mjs';
 import { manifestBoundedPublicDetailsBytes } from './prepare-code-only-public-runtime.mjs';
 import { normalizeArtifactDigestSha256, sha256CanonicalJson,
   RAVSCORE_OPERATIONAL_PAGES_ARTIFACT_SEAL_SCHEMA } from './ravscore-operational-pages-recovery.mjs';
@@ -29,6 +30,20 @@ const FILES = Object.freeze([
   ['data/zones.geojson', 'zones.geojson', 32 * MiB],
   ['data/water-level-station-routing.json', 'water-level-station-routing.json', 4 * MiB],
 ]);
+const rawBulkFile = 'public-condition-details.json';
+const stagedBulkArchive = 'public-condition-details.archive.gz';
+
+export function publicAcquisitionFilePlan(manifest) {
+  const detailCap = manifestBoundedPublicDetailsBytes(manifest.publicConditionDetailsBytes);
+  const original = FILES.map(([remote, local, cap]) => ({ remote, local, cap: cap ?? detailCap }));
+  const archive = publicBulkArchiveEntry(manifest);
+  const files = archive ? original.map(file => file.local === rawBulkFile
+    ? { remote: 'data/live/' + archive.path.slice(2), local: stagedBulkArchive, cap: archive.bytes }
+    : file) : original;
+  return { files, archive, logicalFiles: original,
+    archiveCap: original.reduce((total, file) => total + file.cap, 0) };
+}
+
 const fail = code => { throw new Error(code); };
 const canonical = value => Array.isArray(value) ? value.map(canonical)
   : value && typeof value === 'object'
@@ -117,7 +132,7 @@ async function child(command, args, { deadline, env, input = '', maximumOutput =
       }
       if (command === 'python3') {
         const diagnostic = Buffer.concat(stderr).toString('utf8').trim();
-        if (/^PUBLIC_SELECTED_FILE_BOUND:(manifest\.json|public-conditions\.json|public-condition-details\.json|coastal-parts-v2\.json|zones\.geojson|water-level-station-routing\.json|pages-artifact-seal\.json|handoff\.json|target-binding\.json):[0-9]{1,16}:[0-9]{1,16}$/.test(diagnostic)) {
+        if (/^PUBLIC_SELECTED_FILE_BOUND:(manifest\.json|public-conditions\.json|public-condition-details\.json|public-condition-details\.archive\.gz|coastal-parts-v2\.json|zones\.geojson|water-level-station-routing\.json|pages-artifact-seal\.json|handoff\.json|target-binding\.json):[0-9]{1,16}:[0-9]{1,16}$/.test(diagnostic)) {
           const [, name, cap, declared] = diagnostic.split(':');
           console.error(`Public snapshot file=${name} bound=${cap} declared=${declared} extraction=refused`);
         }
@@ -239,20 +254,19 @@ async function extract(mode, archive, expected, output, manifest, deadline) {
   const result = JSON.parse(await child('python3', args, {
     deadline, env: neutralEnvironment({ PYTHONUTF8: '1' }), maximumOutput: 65536,
   }));
+  const publicManifest = manifest ? await jsonFile(manifest) : null;
+  const filePlan = publicManifest ? publicAcquisitionFilePlan(publicManifest) : null;
   const names = mode === 'handoff'
     ? ['manifest.json', 'pages-artifact-seal.json', 'handoff.json', 'target-binding.json']
-    : FILES.map(file => file[1]);
+    : filePlan.files.map(file => file.local);
   if (result?.schemaVersion !== 1 || result.mode !== mode || result.zipSha256 !== expected.digest
     || result.zipBytes !== expected.bytes || !Array.isArray(result.selectedFiles)
     || result.selectedFiles.length !== names.length
     || !same(result.selectedFiles.map(file => file.name).sort(), [...names].sort())
     || mode === 'public' && (!Number.isSafeInteger(result.tarBytesScanned) || result.tarBytesScanned < 1))
     fail('PUBLIC_EXTRACTION_RECEIPT_INVALID');
-  const publicManifest = manifest ? await jsonFile(manifest) : null;
   for (const selected of result.selectedFiles) {
-    const cap = mode === 'handoff' ? MiB
-      : FILES.find(file => file[1] === selected.name)[2]
-        ?? manifestBoundedPublicDetailsBytes(publicManifest.publicConditionDetailsBytes);
+    const cap = mode === 'handoff' ? MiB : filePlan.files.find(file => file.local === selected.name).cap;
     if (!Number.isSafeInteger(selected.bytes) || selected.bytes < 1 || selected.bytes > cap
       || !SHA.test(selected.sha256)
       || await digestFile(path.join(output, selected.name), selected.bytes, cap, deadline) !== selected.sha256)
@@ -293,13 +307,19 @@ async function acquire() {
   await download(publicUrl(FILES[0][0]), manifestPath, MiB, deadline);
   const manifestBytes = await regularBytes(manifestPath, MiB);
   const manifest = JSON.parse(manifestBytes);
-  const detailCap = manifestBoundedPublicDetailsBytes(manifest.publicConditionDetailsBytes);
-  const files = FILES.map(([remote, local, cap]) => ({ remote, local, cap: cap ?? detailCap }));
+  const { files, archive: bulkArchive, logicalFiles, archiveCap } = publicAcquisitionFilePlan(manifest);
   const selection = selectPublicAcquisition(current, manifest, process.env.RECOVER_PUBLIC_RUN_ID ?? '');
   let artifact = null;
   if (selection.mode === 'existing-public-route') {
-    for (const file of files.slice(1)) await download(publicUrl(file.remote),
-      path.join(snapshot, file.local), file.cap, deadline);
+    for (const file of files.slice(1)) {
+      if (file.local === stagedBulkArchive) {
+        const bulkStage = await fs.mkdtemp(path.join(work, 'bulk-archive-'));
+        const stored = path.join(bulkStage, stagedBulkArchive);
+        await download(publicUrl(file.remote), stored, file.cap, deadline);
+        await restorePublicBulkArchiveFile({ manifest, archiveBytes: await regularBytes(stored, file.cap),
+          rawDestination: path.join(snapshot, rawBulkFile), signal: AbortSignal.timeout(remaining(deadline)) });
+      } else await download(publicUrl(file.remote), path.join(snapshot, file.local), file.cap, deadline);
+    }
   } else {
     const selected = selection.selected;
     if (!/^[a-f0-9]{40}$/.test(selected.sourceHead ?? '')
@@ -365,7 +385,6 @@ async function acquire() {
       || seal.targetImplementationClosureSha256 !== selected.implementationClosureSha256
       || !same(seal.targetModelBinding, binding) || !same(binding, current.modelBinding)
       || !same(binding, manifest.ravScoreModelBinding)) fail('PUBLIC_SEAL_CONTEXT_MISMATCH');
-    const archiveCap = files.reduce((total, file) => total + file.cap, 0);
     const artifactMetadata = await api(`actions/artifacts/${seal.artifactId}`);
     artifact = checkedArtifact(artifactMetadata,
       { id: seal.artifactId, name: 'github-pages', runId, head: selected.sourceHead, cap: archiveCap });
@@ -382,7 +401,12 @@ async function acquire() {
     await extract('public', archive, artifact, extracted, manifestPath, deadline);
     if (!(await regularBytes(path.join(extracted, 'manifest.json'), MiB)).equals(manifestBytes))
       fail('PUBLIC_ARTIFACT_MANIFEST_BYTES_MISMATCH');
-    for (const file of files.slice(1)) {
+    if (bulkArchive) {
+      await restorePublicBulkArchiveFile({ manifest,
+        archiveBytes: await regularBytes(path.join(extracted, stagedBulkArchive), bulkArchive.bytes),
+        rawDestination: path.join(extracted, rawBulkFile), signal: AbortSignal.timeout(remaining(deadline)) });
+    }
+    for (const file of logicalFiles.slice(1)) {
       remaining(deadline);
       const source = path.join(extracted, file.local);
       const stat = await fs.lstat(source);

@@ -12,7 +12,7 @@ import { auditCurrentDirection } from '../core/current-direction-audit.js?v=4.0.
 import { renderCoastlineEditor, destroyCoastlineEditor } from './admin-coastline-editor.js?v=4.0.594';
 import { createDirectionEditor } from './admin-direction-editor.js?v=4.0.594';
 import { runFullPersistenceTest } from '../services/persistence-test-service.js?v=4.0.594';
-import { runFullSiteFunctionTest } from '../services/site-function-test-service.js?v=4.0.594&ui=admin-model-startup-20261101';
+import { runFullSiteFunctionTest } from '../services/site-function-test-service.js?v=4.0.594&ui=admin-model-startup-20261101&map=plain-map-v3-20261104';
 import { submitHandbookReview, listHandbookReviews, updateHandbookReview, exportLocalHandbookDrafts, localHandbookDraftCount, listLocalHandbookDrafts, deleteLocalHandbookDraft, retryLocalHandbookDraft, archiveHandbookReview } from '../services/handbook-review-store.js?v=4.0.594';
 import { loadVisitorReport } from '../services/visitor-report-service.js?v=4.0.594';
 import { decodeRuntimeDiagnosticsEnvelope } from '../services/protected-runtime-envelope.js?v=4.0.594';
@@ -27,7 +27,7 @@ import {
  loadDataManifest,
  loadPublicStartupSnapshot,
  loadZones,
-} from '../services/data-service.js?v=4.0.594&ui=admin-model-startup-20261101';
+} from '../services/data-service.js?v=4.0.594&ui=admin-model-startup-20261101&map=plain-map-v3-20261104';
 
 const VERSION='4.0.594';
 const SITE_TEST_MODE=new URLSearchParams(location.search).has('ravradarAdminSiteTest');

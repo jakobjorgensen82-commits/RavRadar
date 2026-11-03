@@ -1,3 +1,11 @@
+## 4. november — lokal Pages-kandidat til mindre kort- og leveringsfiler
+
+Den kombinerede kandidat bruger 118 små PLAIN V3-korttimer, 12 fulde PLAIN-timer først i prognosen, streng gzip-base64 for de efterfølgende 106 fulde timer og PLAIN for alle 210 zonefiler. Startpakke, kystregister, zoneregister og prognosedeling leveres i PLAIN. Kort, Top20 og zonevisning kan begynde med de mindre filer. En konkret vejrbesvarelse i assistenten eller start af en tur kan kræve én verificeret fuld time.
+
+Samlede offentlige detaljer får et separat gzip-arkiv til normale recovery-kaldere. Den logiske SHA-256 og det logiske byteantal er identiske med de rå detaljer, som bevares på runneren. Pages-staging udelader først den redundante rå kopi efter verifikation. Staging udelader desuden den gamle Jordrav 0.1-pakke og leverer fortsat den aktive 0.2.
+
+Versionsfeltet er 4.0.594. Score, kildevalg, modelbindinger og eksisterende migrations-SQL bevares. SOURCE-revision, statistik og automatisk sletning har særskilte gates. PR #803's tidligere PLAIN-bro er merged efter bestået kilde-CI; dens særskilte rettelsesdeploy følges til faktisk offentlig kontrol. Den samlede kandidat er fortsat lokal: normal kopiering af en autentisk historisk generation med aktuelle statiske filer gav 753.088.914 bytes, uden den historiske generations korrekt afviste prognosedeling. Med delingens særskilte maksimale filbudget bliver den historiske kombination højst 760.101.266 bytes. Det er ikke et størrelsesbevis for næste friske generation. Den friske uploadede størrelse, offentlige data og mobil opstart er fortsat åbne. Se DEC-0154, DEC-0175 og håndbog 89.301.
+
 ## 3. november — ens filkontrol på tværs af runtimeversioner
 
 Den faktiske Node 22-kontrol påviste, at indbygget gzip-udpakning kan acceptere flere sammenkædede medlemmer, selv om Node 24 afviser dem. Den lokale rettelse kontrollerer derfor med den samme medfølgende kode, at filen rummer præcis ét medlem, også efter vellykket indbygget udpakning. De indbyggede outputbytes bevares; valideringschunks kasseres uden endnu en stor outputallokering. Et indbygget fejlforløb gentages stadig aldrig i fallback. Normalparenten består nu med 37 codec-prøver, 19 brocases, de 9 gamle kortcases og den eksisterende særskilte coldstart-prøve på Node 24. Ny præcis Node 22-kvalifikation og offentlig accept er åbne.

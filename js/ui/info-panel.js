@@ -361,10 +361,33 @@ export function bindZoneInfoInteractions(element, zone, mode, history, options =
   }
 }
 
+function zonePanelHeader(zone, result, mode) {
+  const modeName = t(mode === "waders" ? 'mode.waders' : 'mode.beachShort'), score = result.available ? result.score : "–";
+  return `<button type="button" class="back-to-overview" data-close-zone>${t('score.backOverview')}</button><div class="zone-header"><div><h2>${escapeHtml(zone.name)}</h2><p class="zone-meta">${escapeHtml(zone.region)} · ${modeName}</p></div><div class="score-badge ${result.level}"><strong>${score}</strong><span>${escapeHtml(scoreLabel(result))}</span></div></div>`;
+}
+
+function zonePanelMetrics(result, condition) {
+  return result.available ? `<div class="metric-grid weather-grid"><div class="metric"><span>${t('weather.wind')}</span><strong>${directionMetric("wind",condition.windSpeedMps,"m/s",condition.windDirectionDeg)}</strong></div><div class="metric"><span>${t('weather.waves')}</span><strong>${formatMetric(condition.waveHeightM,"m")}</strong></div><div class="metric"><span>${t('weather.waterLevel')}</span><strong>${formatMetric(condition.waterLevelCm,"cm",0)}</strong></div><div class="metric"><span>${t('weather.current')}</span><strong>${directionMetric("current",condition.currentSpeedMps,"m/s",condition.currentDirectionDeg,2)}</strong></div><div class="metric"><span>${t('weather.waterTrend')}</span><strong>${formatMetric(condition.waterLevelTrendCm3h,"cm",0)}</strong></div><div class="metric"><span>${t('weather.waterTemperature')}</span><strong>${formatMetric(condition.waterTemperatureC,"°C")}</strong></div></div>` : "";
+}
+
+export function showZoneMapPreview(element, zone, result, condition, mode, { displayContext, failed = false } = {}) {
+  const detailStatus = failed ? ({
+    da: "Zonedetaljerne kunne ikke hentes. Kortets valgte time vises stadig.",
+    de: "Die Zonendetails konnten nicht geladen werden. Die gewählte Kartenstunde bleibt sichtbar.",
+    en: "Zone details could not be loaded. The selected map hour is still shown.",
+  })[getLanguage()] : t("forecast.loading");
+  element.innerHTML = `${zonePanelHeader(zone, result, mode)}
+    ${displayContextPanel(result, displayContext)}
+    ${historyQualityWarning(result)}
+    ${waveInputWarning(condition)}
+    ${zonePanelMetrics(result, condition)}
+    <p class="muted zone-detail-status" role="status">${escapeHtml(detailStatus)}</p>`;
+}
+
 export function showZoneInfo(element, zone, result, condition, mode, options = {}) {
-  const modeName = t(mode === "waders" ? 'mode.waders' : 'mode.beachShort'), score = result.available ? result.score : "–", days = groupForecastHours(options.forecast);
+  const days = groupForecastHours(options.forecast);
   const componentHtml = result.available ? `<div class="component-list metric-sized">${componentDetails(t('score.huntability'),"huntability",result,t('score.huntabilityDefinition'))}${componentDetails(t('score.transport'),"transport",result,t('score.transportDefinition'))}${componentDetails(t('score.mobilisation'),"release",result,mobilisationDefinition())}</div>` : `<div class="metric-grid"><div class="metric"><span>${t('score.huntability')}</span><strong>–/100</strong></div><div class="metric"><span>${t('score.transport')}</span><strong>–/100</strong></div><div class="metric"><span>${t('score.mobilisation')}</span><strong>–/100</strong></div></div>`;
-  element.innerHTML = `<button type="button" class="back-to-overview" data-close-zone>${t('score.backOverview')}</button><div class="zone-header"><div><h2>${escapeHtml(zone.name)}</h2><p class="zone-meta">${escapeHtml(zone.region)} · ${modeName}</p></div><div class="score-badge ${result.level}"><strong>${score}</strong><span>${escapeHtml(scoreLabel(result))}</span></div></div>
+  element.innerHTML = `${zonePanelHeader(zone, result, mode)}
     ${localCoveragePanel(result)}
     ${displayContextPanel(result,options.displayContext)}
     ${historyQualityWarning(result)}
@@ -372,7 +395,7 @@ export function showZoneInfo(element, zone, result, condition, mode, options = {
     ${componentHtml}
     ${result.available ? integratedExplanationPanel(result) : ""}
     ${result.available ? debugPanel(zone,result,condition) : ""}
-    ${result.available ? `<div class="metric-grid weather-grid"><div class="metric"><span>${t('weather.wind')}</span><strong>${directionMetric("wind",condition.windSpeedMps,"m/s",condition.windDirectionDeg)}</strong></div><div class="metric"><span>${t('weather.waves')}</span><strong>${formatMetric(condition.waveHeightM,"m")}</strong></div><div class="metric"><span>${t('weather.waterLevel')}</span><strong>${formatMetric(condition.waterLevelCm,"cm",0)}</strong></div><div class="metric"><span>${t('weather.current')}</span><strong>${directionMetric("current",condition.currentSpeedMps,"m/s",condition.currentDirectionDeg,2)}</strong></div><div class="metric"><span>${t('weather.waterTrend')}</span><strong>${formatMetric(condition.waterLevelTrendCm3h,"cm",0)}</strong></div><div class="metric"><span>${t('weather.waterTemperature')}</span><strong>${formatMetric(condition.waterTemperatureC,"°C")}</strong></div></div>` : ""}
+    ${zonePanelMetrics(result, condition)}
     ${forecastPanel(days,zone,mode,options.history||{},condition,result,options.bestByDate||{})}${tidePanel(days)}`;
 }
 

@@ -1,3 +1,7 @@
+## 4. november — adskil Pages-størrelse, mobil opstart og recovery
+
+Kontrollér den faktiske, samlede stagingpakke og den uploadede Pages-pakke før en størrelsesgrænse anses for overholdt. Mål almindelig offentlig opstart på mobil og efterprøv, at recovery læser samme logiske detaljer. Kilde-CI for en læserbro gælder dens præcise kode. Følg særskilt dokumentation for den kombinerede kandidat, merge, deploy og offentlig effekt.
+
 ## 31. oktober — hold databaseforgænger og originalforgænger adskilt
 
 For assistant-installed593-origin591-successor kommer før-databasebindingen fra den faktisk udstedte 593-canonical, mens originalState 591 udelukkende kommer gennem de eksisterende autentificerede591-læsere. En installeret modelversion er ikke bevis for nye B/S-originaler. Ændr ikke historiske profiler, originale attester eller udstedte SQL, og opfind ikke en593-originalvalidator.

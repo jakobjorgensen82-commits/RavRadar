@@ -1603,7 +1603,8 @@ test('terminal delivery repair maps only five exact whole sources and its exact 
     inverseTerminalRepair4145WorkflowInventory: inventory } = await import('./lib/completed-private-runtime-workflow-review.mjs');
   assert.deepEqual(Object.keys(review.roles), ['orchestrator', 'once', 'repair', 'recovery', 'deploy']);
   for (const [role, row] of Object.entries(review.roles)) {
-    const actual = (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+    const source = (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+    const actual = inversePagesPublicProjectionWorkflow(source, role);
     assert.equal(Buffer.byteLength(actual), row.after.bytes); assert.equal(sha(actual), row.after.sha256);
     const prior = inverse(actual, role);
     assert.equal(Buffer.byteLength(prior), row.before.bytes); assert.equal(sha(prior), row.before.sha256);
@@ -1629,7 +1630,8 @@ test('terminal delivery repair maps only five exact whole sources and its exact 
 });
 
 
-import {inverseQualifiedScalarSchemaWorkflow, inverseQualifiedScalarPlanningWorkflow, qualifiedScalarPlanningWorkflowReview}
+import {inverseQualifiedScalarSchemaWorkflow, inverseQualifiedScalarPlanningWorkflow, qualifiedScalarPlanningWorkflowReview,
+  inversePagesPublicProjectionWorkflow, pagesPublicProjectionWorkflowReview, inverseTerminalRepair4145Workflow}
   from './lib/completed-private-runtime-workflow-review.mjs';
 test('qualified scalar inverse keeps the entire genuine main workflow and rejects mixed bytes', async () => {
   const source = inverseQualifiedScalarSchemaWorkflow((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
@@ -1649,7 +1651,8 @@ test('qualified scalar inverse keeps the entire genuine main workflow and reject
 });
 
 test('scalar schema successor preserves the exact whole predecessor before the unchanged scalar oracle', async () => {
-  const actual = (await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+  const source = (await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+  const actual = inversePagesPublicProjectionWorkflow(source, 'build');
   assert.equal(Buffer.byteLength(actual), 297899);
   assert.equal(sha(actual), '451249801b6944d945b193fd95de5065cf057a8b08a6698a675e2192c074100c');
   const previous = inverseQualifiedScalarSchemaWorkflow(actual, 'build');
@@ -1667,4 +1670,40 @@ test('scalar schema successor preserves the exact whole predecessor before the u
   }
   assert.throws(() => inverseQualifiedScalarSchemaWorkflow(actual), /SCALAR_SCHEMA_ARGUMENTS/);
   assert.throws(() => inverseQualifiedScalarSchemaWorkflow(null, 'build'), /SCALAR_SCHEMA_TYPE/);
+});
+
+test('Pages projection inverse preserves exact old workflow bytes and rejects missing, changed or duplicate edits', async () => {
+  const inverse = inversePagesPublicProjectionWorkflow;
+  const { roles } = pagesPublicProjectionWorkflowReview;
+  assert.deepEqual(Object.keys(roles), ['build', 'once', 'repair']);
+  for (const [role, row] of Object.entries(roles)) {
+    const actual = (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+    assert.equal(Buffer.byteLength(actual), row.after.bytes);
+    assert.equal(sha(actual), row.after.sha256);
+    const before = inverse(actual, role);
+    assert.equal(Buffer.byteLength(before), row.before.bytes);
+    assert.equal(sha(before), row.before.sha256);
+    assert.equal(inverse(before, role), before);
+    assert.equal(inverseCompletedRuntimeWorkflow(actual, role), inverseCompletedRuntimeWorkflow(before, role));
+    for (const otherRole of [...Object.keys(roles), 'unknown', 'toString', '__proto__', null, 1].filter(name => name !== role)) {
+      assert.equal(inverse(actual, otherRole), actual);
+    }
+    const unrelated = actual + '\n# Unreviewed Pages change\n';
+    assert.equal(inverse(unrelated, role), unrelated);
+    for (const [offset, actualHunk] of row.edits) {
+      assert.equal(actual.slice(offset, offset + actualHunk.length), actualHunk);
+      for (const changedHunk of ['', '?' + actualHunk.slice(1), actualHunk + actualHunk]) {
+        const changed = actual.slice(0, offset) + changedHunk + actual.slice(offset + actualHunk.length);
+        assert.notEqual(changed, actual);
+        assert.equal(inverse(changed, role), changed);
+        if (role === 'repair') {
+          assert.equal(inverseTerminalRepair4145Workflow(changed, role), changed);
+        } else {
+          assert.throws(() => inverseCompletedRuntimeWorkflow(changed, role));
+        }
+      }
+    }
+  }
+  assert.throws(() => inverse(''), /PAGES_PUBLIC_PROJECTION_WORKFLOW_ARGUMENTS/);
+  assert.throws(() => inverse(null, 'build'), /PAGES_PUBLIC_PROJECTION_WORKFLOW_TYPE/);
 });

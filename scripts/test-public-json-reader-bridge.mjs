@@ -9,6 +9,7 @@ import { gzipSync } from 'node:zlib';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const TAG = 'public-json-bridge-20261103';
+const COMPACT_MAP = 'plain-map-v3-20261104';
 const read = relative => fs.readFileSync(path.join(ROOT, relative), 'utf8').replace(/\r\n/g, '\n');
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const tick = () => new Promise(resolve => setImmediate(resolve));
@@ -442,6 +443,8 @@ export async function checkPublicReaderBridge() {
         assert.equal(url.searchParams.get('v'), version);
         assert.equal(url.searchParams.get('transport'), TAG);
       }
+      for (const url of urls.slice(0, 3)) assert.equal(url.searchParams.get('map'), COMPACT_MAP);
+      for (const url of urls.slice(3)) assert.equal(url.searchParams.has('map'), false);
       for (const url of urls.slice(0, 2)) {
         assert.equal(url.searchParams.get('copy'), 'footer-20261005');
         assert.equal(url.searchParams.get('ui'), 'zone-panels-20261027');
@@ -453,6 +456,11 @@ export async function checkPublicReaderBridge() {
       const old = new Map(urls.map(url => {
         const plain = new URL(url); plain.searchParams.delete('transport'); return [plain.href, { old: true }];
       }));
+      const oldMapKeys = urls.slice(0, 3).map(url => {
+        const previous = new URL(url); previous.searchParams.delete('map');
+        old.set(previous.href, { previousTransport: true });
+        return previous.href;
+      });
       const requests = [];
       const cacheContext = { CACHE: 'synthetic-installed-old', caches: { open: async () => ({
         match: async request => old.get(request), put: (request, response) => old.set(request, response),
@@ -467,9 +475,10 @@ export async function checkPublicReaderBridge() {
         assert.equal(old.get(url.href).fresh, true);
       }
       assert.equal(requests.length, 5);
+      for (const key of oldMapKeys) assert.deepEqual(old.get(key), { previousTransport: true });
       const constants = sw.slice(0, sw.indexOf("self.addEventListener('install'"));
       const values = vm.runInNewContext(constants + '\n({cache:CACHE,assets:STATIC});');
-      assert.ok(values.cache.endsWith('-' + TAG));
+      assert.equal(values.cache, 'ravradar-app-' + version.replaceAll('.', '-') + '-' + TAG + '-' + COMPACT_MAP);
       for (const url of urls) assert.ok(values.assets.some(asset => new URL(asset, root).href === url.href));
       assert.ok(values.assets.includes('./js/services/vendor/fflate-0.8.2/browser.js'));
       assert.match(app, /function currentAppVersion\(\)/);

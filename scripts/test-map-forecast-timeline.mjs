@@ -2,6 +2,17 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
 import vm from 'node:vm';
+import os from 'node:os';
+import path from 'node:path';
+import {createMapHourWriter} from './lib/public-map-hour-projection.mjs';
+import {writeColdPublicHour} from './lib/public-cold-hour-transport.mjs';
+import {readPublicDeliveryJsonBytes} from './lib/public-delivery-json-transport.mjs';
+import {publicDeliveryTransportEntries} from '../js/services/public-delivery-transport-binding.js';
+import {sameRavScoreModelBinding} from '../js/core/ravscore-public-runtime-contract.js';
+import {requireExactZone,visibleZonePreview} from '../js/services/zone-hour-preview.js';
+import {showZoneMapPreview} from '../js/ui/info-panel.js';
+import {addNationalRanking,compareNationalRankingRows} from '../js/core/zone-ranking.js';
+import {buildFlowArrowCandidates} from '../js/map/map-view.js';
 import { registerHooks } from 'node:module';
 import { setImmediate as turn } from 'node:timers/promises';
 import { createMapForecastController, exactMapZoneScore, mapCoastalPartsForDisplay } from '../js/services/map-forecast-view.js';
@@ -75,7 +86,7 @@ function register(document,targetManifest=manifest){
   const url=`./data/live/forecast/${sha256}.json?dataset=${targetManifest.datasetId}&sha=${sha256}`;
   documents.set(url,text);return{document,url,text};
 }
-for(const i of selectedIndices){const time=horizonTimes[i];hourDocuments.set(time,register(buildPublicDeliveryDocument(source,details,manifest,'hour',time)));}
+for(const i of [...selectedIndices,12]){const time=horizonTimes[i];hourDocuments.set(time,register(buildPublicDeliveryDocument(source,details,manifest,'hour',time)));}
 const rankedZoneIds=[...new Set(Object.values(startup.nationalForecast.modes).flatMap(days=>days.flatMap(day=>day.rows.slice(0,1).map(row=>row.zoneId))))];
 const zoneDocuments=new Map(rankedZoneIds.map(id=>[id,register(buildPublicDeliveryDocument(source,details,manifest,'zone',id))]));
 const startupUrl=`./data/live/public-conditions.json?dataset=${manifest.datasetId}&sha=${manifest.publicConditionsSha256}`;
@@ -97,7 +108,91 @@ try{
   assert.deepEqual(timeline.times,horizonTimes);assert.equal(requests.length,requestCount);
   const now=await service.loadMapForecastHour({manifest,conditions:live,time:generatedAt});
   assert.equal(now.time,generatedAt);assert.equal(requests.length,requestCount,'Now reuses already verified live view');cases++;
-  const h1=horizonTimes[1],h2=horizonTimes[2],last=horizonTimes[117];
+  const h1=horizonTimes[1],h2=horizonTimes[2],h12=horizonTimes[12],last=horizonTimes[117];
+  const compactManifest=structuredClone(manifest),landingManifest=structuredClone(manifest),coldManifest=structuredClone(manifest);
+  const compactAssets=new Map(),landingAssets=new Map(),coldAssets=new Map();
+  const registry=JSON.parse(zoneRegistryText),coastal=JSON.parse(coastalPartsText);
+  documents.set('./data/live/coastal-parts-v2.json?dataset='+manifest.datasetId+'&sha='+manifest.coastalPartsSha256,coastalPartsText);
+  documents.set('./data/zones.geojson?dataset='+manifest.datasetId+'&sha='+manifest.zoneRegistrySha256,zoneRegistryText);
+  const tempRoot=path.resolve(os.tmpdir());
+  const writerRoot=await fs.mkdtemp(path.join(tempRoot,'ravradar-map-timeline-'));
+  assert.equal(path.dirname(writerRoot),tempRoot);
+  assert.ok(path.basename(writerRoot).startsWith('ravradar-map-timeline-'));
+  try{
+    for(const [target,zoneRegistry,times,assets,directory] of [
+      [compactManifest,null,[h1,h2],compactAssets,'v2'],
+      [landingManifest,registry,[generatedAt,h1,h2],landingAssets,'v3'],
+      [coldManifest,registry,[h12,last],compactAssets,'cold'],
+    ]){
+      const liveDirectory=path.join(writerRoot,directory);
+      await fs.mkdir(path.join(liveDirectory,'forecast'),{recursive:true});
+      if(zoneRegistry)target.detailDelivery.mapHoursLandingSchema=1;
+      target.detailDelivery.mapHours=Object.fromEntries(horizonTimes.map(time=>[time,placeholder('compact:'+time)]));
+      const writer=createMapHourWriter({manifest:target,coastalParts:coastal,zoneIds,liveDirectory,zoneRegistry});
+      for(const time of times){
+        const entry={...manifest.detailDelivery.hours[time],kind:'hour',key:time};
+        if(target===coldManifest){
+          const original=Buffer.from(hourDocuments.get(time).text);
+          const originalPath=path.join(liveDirectory,entry.path);
+          await fs.writeFile(originalPath,original,{flag:'wx'});
+          const verifiedOriginal=await writer.writeRestored(entry);
+          const physical=await writeColdPublicHour({liveDirectory,entry,raw:verifiedOriginal});
+          assert.equal(physical.rawSha256,entry.sha256);
+          assert.equal(physical.rawBytes,entry.bytes);
+          assert.notEqual(physical.sha256,entry.sha256);
+          assert(physical.bytes<physical.rawBytes);
+          assert.deepEqual(await fs.readFile(originalPath),original);
+          const url='./data/live/forecast/'+physical.sha256+'.json?dataset='+manifest.datasetId+'&sha='+physical.sha256;
+          const bytes=await fs.readFile(path.join(liveDirectory,physical.path));
+          const checked=await readPublicDeliveryJsonBytes(bytes,physical,true);
+          assert.equal(checked.encoded,true);
+          assert.equal(checked.logicalSha256,entry.sha256);
+          assert.equal(checked.logicalBytes,original.length);
+          assert.equal(checked.value.delivery.key,time);
+          await assert.rejects(readPublicDeliveryJsonBytes(bytes,{...physical,rawSha256:'0'.repeat(64)},true),/PUBLIC_COLD_HOURS_LOGICAL_BINDING/);
+          target.detailDelivery.hours[time]=physical;
+          coldAssets.set(url,bytes);
+        }else{
+          await writer.write(entry,hourDocuments.get(time).document);
+        }
+        const descriptor=writer.descriptors[time];
+        target.detailDelivery.mapHours[time]=descriptor;
+        const url='./data/live/forecast/'+descriptor.sha256+'.json?dataset='+manifest.datasetId+'&sha='+descriptor.sha256;
+        const bytes=await fs.readFile(path.join(liveDirectory,descriptor.path));
+        assert.equal(bytes.length,descriptor.bytes);
+        assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'),descriptor.sha256);
+        assets.set(url,bytes);compactAssets.set(url,bytes);
+      }
+    }
+  }finally{
+    await fs.rm(writerRoot,{recursive:true,force:true});
+  }
+  coldManifest.detailDelivery.mapHours[generatedAt]=landingManifest.detailDelivery.mapHours[generatedAt];
+  // Only two cold bodies are needed to qualify the actual producer and readers.
+  // Unused descriptors still have the exact nationwide physical/logical shape.
+  for(const time of horizonTimes.slice(12)){
+    if(time===h12||time===last)continue;
+    const raw=manifest.detailDelivery.hours[time];
+    coldManifest.detailDelivery.hours[time]={...placeholder('cold:'+time),rawSha256:raw.sha256,rawBytes:raw.bytes+1};
+  }
+  coldManifest.detailDelivery.coldHoursSchema=1;
+  const entries=publicDeliveryTransportEntries(coldManifest);
+  assert.equal(entries.filter(entry=>entry.kind==='hour'&&Object.hasOwn(entry,'rawSha256')).length,106);
+  assert.equal(entries.filter(entry=>entry.kind==='hour'&&!Object.hasOwn(entry,'rawSha256')).length,12);
+  assert.equal(entries.filter(entry=>entry.kind==='zone'&&!Object.hasOwn(entry,'rawSha256')).length,210);
+  assert.equal(Object.keys(coldManifest.detailDelivery.mapHours).length,118);
+  let advanceOnCompact=null;
+  const ordinaryFetch=globalThis.fetch;
+  globalThis.fetch=async(url,options)=>{
+    if(coldAssets.has(String(url))){
+      requests.push(String(url));
+      return new Response(coldAssets.get(String(url)),{status:200});
+    }
+    if(!compactAssets.has(String(url)))return ordinaryFetch(url,options);
+    requests.push(String(url));
+    if(advanceOnCompact!==null)Date.now=()=>advanceOnCompact;
+    return new Response(compactAssets.get(String(url)),{status:200});
+  };
   const [a,b]=await Promise.all([service.loadMapForecastHour({manifest,conditions:live,time:h1}),service.loadMapForecastHour({manifest,conditions:live,time:h1})]);
   assert.equal(a.generation,timeline.generation);assert.equal(b.time,h1);
   assert.equal(requests.filter(url=>url===hourDocuments.get(h1).url).length,1,'Concurrent consumers share verified in-flight load');
@@ -565,6 +660,83 @@ try{
     const from=appSource.indexOf(start),to=appSource.indexOf(end,from+start.length);
     assert.ok(from>=0&&to>from,'Normal zone caller boundary absent: '+start);return appSource.slice(from,to);
   };
+  // Actual assistant/trip callbacks, with deferred original data and fake UI/transport.
+  {
+    const part={id:'P1',zoneId:'Z1',name:'Testkyst'};
+    const zone={id:'Z1',name:'Testzone'};
+    const time='2026-11-04T08:00:00.000Z';
+    const full={available:true,deliveryManifestIdentity:'g1',publicRuntimeAvailability:{selectedReferenceAt:time},
+      ravScoreRuntime:{modelBinding:{modelId:'only-verified-model'}},coastalParts:{parts:{P1:part}}};
+    const state={conditions:{available:false,zones:{}},selectedZone:zone,mode:'waders',currentScores:new Map(),
+      zones:{features:[{properties:zone}],coastalParts:{zones:{Z1:[{partId:'P1',name:'Testkyst'}]}}}};
+    const observations=[],activity=[];
+    let active=null,weatherReads=0,zoneReads=0,finishFull;
+    const ctx=vm.createContext({
+      state,activeManifest:{detailDelivery:{mapHoursLandingSchema:1}},activeLandingView:{generation:'g1',time,
+        compact:{untrusted:true}},fullEvidencePending:null,runtimeGeneration:1,assistantTurn:0,assistantTopicState:null,
+      t:key=>key,getLanguage:()=> 'da',getLocale:()=> 'da-DK',currentAppVersion:()=> '4.0.594',
+      localZoneScore:()=>state.conditions===full?{available:true,score:73,localPart:true,localPartId:'P1',localWeather:{waterLevelCm:25},time}:null,
+      emergencySnapshotReferenceAt:()=>null,assertRavScoreModelBinding:binding=>assert.equal(binding,full.ravScoreRuntime.modelBinding),
+      zoneCondition:()=>({}),
+      assistantTopicFrame:()=>({}),sameAssistantTopicFrame:()=>false,assistantForecastQuestion:()=>null,
+      assistantLocalFollowupAnswer:()=>null,assistantTopicForQuestion:()=>null,
+      addAssistantMessage:()=>({querySelector:()=>({}),classList:{remove(){}}}),
+      ravQuestionNeedsConditionDetails:q=>q==='bedste tidspunkt',
+      classifyRavQuestion:q=>({'kese':'amber-net','vandstand':'water','bedste tidspunkt':'best-time'})[q],
+      async askRavRadar(q,context){observations.push({q,context});return 'svar';},
+      loadConditions(){weatherReads++;return new Promise(resolve=>{finishFull=()=>resolve(full);});},
+      ensureLandingZoneDetails:async()=>{zoneReads++;return null;},
+      tripButton:{addEventListener(_event,handler){this.click=handler;}},
+      publicTripEvidenceRuntime:{active:()=>active,stop:async()=>{activity.push(['stop',ctx.publicTripEvidenceContext()]);return {status:'submitted'};},
+        resume:async()=>{activity.push(['resume',ctx.publicTripEvidenceContext()]);return {status:'started'};},
+        startWithPrompt:async()=>{activity.push(['start',ctx.publicTripEvidenceContext()]);return {status:'started'};}},
+      updateTripUi:()=>{},
+    });
+    vm.runInContext([
+      fragment('function currentDisplayFor(zone)','function resultFor(zone)'),
+      fragment('function currentScoreFor(zone)','function nationalRankingRow(row)'),
+      fragment('function ensureFullEvidence()','function ensureConditionDetails('),
+      fragment('function assistantContext()','function addAssistantMessage('),
+      fragment('async function submitAssistantQuestion(','const quickBox='),
+      fragment('function staticPublicCoastalParts()','function userDataContext()'),
+      fragment("tripButton.addEventListener('click'",'let logoTaps='),
+    ].join('\n'),ctx,{filename:'actual-app-evidence-calls.js'});
+
+    await ctx.submitAssistantQuestion('kese');
+    assert.equal(weatherReads,0);
+    assert.equal(observations[0].context.conditions,state.conditions);
+    assert.equal(observations[0].context.modelBinding,null);
+    assert.equal(observations[0].context.result.available,false,'Normal score cache starts with no admitted evidence');
+    assert.throws(()=>ctx.publicTripEvidenceContext(),/Kystdelene/);
+    active={tripId:'already-active'};
+    await ctx.tripButton.click();
+    assert.equal(weatherReads,0);
+    assert.equal(activity[0][0],'stop');
+    assert.deepEqual(Object.keys(activity[0][1]).sort(),['coastalParts','zones']);
+    active={tripId:'already-stopped',stoppedAt:time};
+    await ctx.tripButton.click();
+    assert.equal(weatherReads,0);
+    assert.equal(activity.at(-1)[0],'resume');
+    assert.deepEqual(Object.keys(activity.at(-1)[1]).sort(),['coastalParts','zones']);
+    active=null;
+    const question=ctx.submitAssistantQuestion('vandstand');
+    const trip=ctx.tripButton.click();
+    assert.equal(weatherReads,1,'Weather question and starting a trip share original hour admission');
+    assert.equal(observations.length,1,'No contextual assistant answer before verified original evidence');
+    assert.equal(activity.length,2,'No trip start before verified original evidence');
+    finishFull();await Promise.all([question,trip]);
+    assert.equal(observations.at(-1).context.conditions,full);
+    assert.equal(observations.at(-1).context.result.available,true,'Original-hour admission invalidates the earlier unavailable result');
+    assert.equal(observations.at(-1).context.result.score,73);
+    assert.equal(observations.at(-1).context.weather.waterLevelCm,25);
+    assert.equal(observations.at(-1).context.modelBinding,full.ravScoreRuntime.modelBinding);
+    assert.equal(activity.at(-1)[1].conditions,full);
+    assert.equal(zoneReads,0);
+    await ctx.submitAssistantQuestion('bedste tidspunkt');
+    assert.equal(weatherReads,1);
+    assert.equal(zoneReads,1,'Existing zone evidence requested only by a zone horizon question');
+    cases++;
+  }
   class Button {
     constructor(dataset={}){this.dataset=dataset;this.events=new Map();this.classList={toggle(){}};}
     addEventListener(event,callback){this.events.set(event,callback);}
@@ -582,7 +754,7 @@ try{
       set innerHTML(html){this.html=html;this.buttons=[...html.matchAll(/data-zone-id="([^"]+)"/g)].map(row=>new Button({zoneId:row[1]}));}};
     const national={tabs:[],querySelector:()=>list,querySelectorAll:()=>national.tabs,
       set innerHTML(html){this.tabs=[...html.matchAll(/data-day-index="(\d+)"/g)].map(row=>new Button({dayIndex:row[1]}));}};
-    let releaseLate=null,holdLate=false,currentLoad=null,verifiedLoad=null;
+    let releaseLate=null,holdLate=false,currentLoad=null,verifiedLoad=null, activeConditions=live, holdZone=null;
     const uiState={mode,selectedZone:null,currentScores:new Map(),forecastGroups:new Map(),forecastRenderId:0,
       zones:features,zoneLayer:{selectZone(){}},conditions:live,flowArrows:{refresh(){}}};
     const context={state:uiState,Map,Promise,Date,Intl,console:{warn(){},error:error=>errors.push(error)},
@@ -593,16 +765,19 @@ try{
       performance:{mark(){}},mapScores:new Map(),resetAssistantTopic(){},
       document:{baseURI:'https://ravradar.invalid/',querySelector:()=>null,createElement:()=>({}),body:{classList:{add(){},remove(){}}}},
       map:{setView(){},getZoom:()=>7,invalidateSize(){}},requestAnimationFrame:callback=>callback(),
-      refreshZoneStyles(){},showSelectedZoneParts(){},renderRanking(){},yieldToBrowser:async()=>{},
+      refreshZoneStyles(){},showSelectedZoneParts(){},yieldToBrowser:async()=>{},
+      ranking:{innerHTML:'',querySelectorAll:()=>[]},addNationalRanking,compareNationalRankingRows,
+      publicLandingTimeline:service.publicLandingTimeline,loadConditions:service.loadConditions,
+      compactZoneDetail:null,compactZoneFailure:null,activeLandingView:null,fullEvidencePending:null,requireExactZone,visibleZonePreview,showZoneMapPreview,sameRavScoreModelBinding,
       hasNumber:Number.isFinite,isCurrentForecastHour,forecastDateKeyInTimeZone,visibleForecastDays,
       buildLocalZoneScore,selectLocalBestForDay,exactMapZoneScore,getLanguage,getLocale,t,
       mapTimelineDate,formatDateTime:value=>value,scoreRating:()=>({level:'good'}),exceptionalScoreMark:()=>'',scoreQualityMarker:()=>'',
-      loadConditionDetails:async options=>{loaded.push(options.zoneId);return service.loadConditionDetails(options);},
+      loadConditionDetails:async options=>{loaded.push(options.zoneId);const zone=await service.loadConditionDetails(options);await holdZone;return zone;},
       mergeConditionDetails:service.mergeConditionDetails,bindZoneInfoInteractions,
       showZoneInfo:(...args)=>{panelCalls.push(args);return showZoneInfo(...args);}};
     const controller=createMapForecastController({
       loadHour:time=>{
-        verifiedLoad=service.loadMapForecastHour({manifest,conditions:live,time});
+        verifiedLoad=context.activeLandingView?service.loadPublicLandingForecastHour({manifest:context.activeManifest,view:context.activeLandingView,time}):service.loadMapForecastHour({manifest:context.activeManifest,conditions:activeConditions,time});
         currentLoad=verifiedLoad.then(verified=>holdLate
           ?new Promise(resolve=>{releaseLate=()=>resolve(verified);}):verified);
         return currentLoad;
@@ -611,10 +786,11 @@ try{
     vm.createContext(context);
     vm.runInContext([
       fragment('function noteForecastShareUserIntent()','const mapTimelineHost'),
-      fragment('function handleMapForecastCommit(frame)','function configureMapTimeline()'),
+      fragment('function handleMapForecastCommit(frame)','function refreshMapDisplay()'),
       fragment('function refreshMapDisplay()','let publicTripEvidenceRuntime'),
       fragment('function emergencySnapshotReferenceAt()','function resultFor(zone)'),
-      fragment('function currentScoreFor(zone)','function nationalRankingRow(row)'),
+      fragment('function currentScoreFor(zone)','function selectedFeature()'),
+      fragment('function renderRanking()','function groupHoursForZone(zone)'),
       fragment('function renderSelectedZone()','function renderRanking()'),
       fragment('function groupHoursForZone(zone)','const yieldToBrowser='),
       fragment('async function renderNationalForecast()','function ensureConditionDetails('),
@@ -707,6 +883,110 @@ try{
     panel.shareButton.dispatch('click');const closingDialog=globalThis.document.body.children.at(-1);
     assert.equal(closingDialog.open,true);context.closeZone();
     assert.equal(closingDialog.isConnected,false,'Actual closeZone disposes the owned dialog');
+    if(language==='da'&&mode==='waders'){
+      holdLate=false;
+      const beforeCompact=requests.length;
+      activeConditions=await service.loadConditions({manifest:compactManifest});
+      assert(activeConditions.available);
+      assert.equal(requests.length,beforeCompact,'Normal startup reused its existing PLAIN assets and did not fetch map shards');
+      context.activeManifest=compactManifest;context.state.conditions=activeConditions;context.runtimeGeneration++;
+      const nextTimeline=service.mapForecastTimeline({manifest:compactManifest,conditions:activeConditions});
+      controller.configure({generation:nextTimeline.generation,times:nextTimeline.times,live:{time:generatedAt,conditions:activeConditions}});
+      controller.select(h1,{immediate:true});await turn();await currentLoad;await turn();
+      assert.equal(controller.committed.compact.time,h1);
+      assert.equal(requests.filter(url=>compactAssets.has(url)).length,1);
+      let releaseZone;holdZone=new Promise(resolve=>{releaseZone=resolve;});
+      const loadsBefore=loaded.length;
+      mapOpen(zone);
+      assert.match(panel.innerHTML,/zone-detail-status/);
+      assert.match(panel.innerHTML,/weather-grid/);
+      assert.doesNotMatch(panel.innerHTML,/data-forecast-section/);
+      const pendingZone=context.conditionDetailsPromise;
+      controller.select(h2,{immediate:true});await turn();await currentLoad;await turn();
+      assert.equal(controller.committed.compact.time,h2);
+      releaseZone();await pendingZone;holdZone=null;
+      assert.equal(panelCalls.at(-1)[2].time,h2);
+      assert.equal(panelCalls.at(-1)[3].time,h2);
+      assert.match(panel.innerHTML,/data-forecast-section/);assert.match(panel.innerHTML,/data-tide-section/);
+      assert.equal(readPayload(panel.innerHTML,'tide-payload').flatMap(day=>day.hours).length,118);
+      assert.equal(loaded.length,loadsBefore+1,'The actual app shared the normal zone request across selected hours');
+      controller.select(h1,{immediate:true});await turn();await currentLoad;await turn();
+      assert.equal(panelCalls.at(-1)[2].time,h1);
+      assert.equal(loaded.length,loadsBefore+1,'The same verified selected zone is directly reusable');
+      assert.equal(requests.filter(url=>compactAssets.has(url)).length,2);
+      const wrong=structuredClone(compactManifest);
+      delete wrong.detailDelivery.mapHours[h2];
+      assert.throws(()=>service.mapForecastTimeline({manifest:wrong,conditions:activeConditions}),/MAP_HOUR_INVENTORY/);
+      cases++;
+      context.closeZone();
+    }
+    if(language==='en'&&mode==='beach'){
+      holdLate=false;
+      const fullUrls=new Set([...hourDocuments.values()].map(row=>row.url));
+      const countFull=()=>requests.filter(url=>fullUrls.has(url)).length;
+      const countLanding=()=>requests.filter(url=>landingAssets.has(url)).length;
+      service.clearDataMemoryCache();
+      const countBefore=countFull(),landingBefore=countLanding();
+      context.activeManifest=landingManifest;context.state.conditions={available:false,zones:{}};context.runtimeGeneration++;
+      context.activeLandingView=await service.loadPublicLandingView({manifest:landingManifest});
+      context.state.zones=context.activeLandingView.zones;
+      context.configureMapTimeline();
+      assert.equal(controller.snapshot().committedTime,generatedAt);
+      context.renderRanking();
+      assert.match(context.ranking.innerHTML,/data-zone-id/);
+      const rankIds=[...context.ranking.innerHTML.matchAll(/data-zone-id="([^"]+)"/g)].map(match=>match[1]);
+      assert.deepEqual(rankIds,context.activeLandingView.currentRankings[mode].map(row=>row.zoneId));
+      assert.equal(await context.renderNationalForecast(),true);
+      assert.equal(national.tabs.length,5);
+      assert.equal(countFull(),countBefore,'No full hour for compact landing, ranking or Top20');
+      assert.equal(countLanding(),landingBefore+1);
+      assert.deepEqual(Object.keys(context.state.conditions).sort(),['available','zones']);
+      const landMask={classifyPoint:()=> 'water'};
+      assert.deepEqual(buildFlowArrowCandidates(context.state.zones,id=>context.mapConditions().zones[id],
+        context.activeLandingView.arrows,9,landMask),buildFlowArrowCandidates(context.state.zones,id=>live.zones[id],
+        live.coastalParts,9,landMask),'Normal H0 main-zone and local arrows retain all inputs');
+      let releaseLandingZone;holdZone=new Promise(resolve=>{releaseLandingZone=resolve;});
+      const zoneCalls=loaded.length;
+      mapOpen(zone);
+      assert.match(panel.innerHTML,/zone-detail-status/);
+      const pendingLandingZone=context.pendingZoneDetails.get(zone.id);
+      controller.select(h1,{immediate:true});await turn();await currentLoad;await turn();
+      assert.equal(controller.committed.compact.time,h1);
+      assert.equal(countLanding(),landingBefore+2);
+      releaseLandingZone();await pendingLandingZone;holdZone=null;
+      assert.equal(panelCalls.at(-1)[2].time,h1);
+      assert.match(panel.innerHTML,/data-forecast-section/);assert.match(panel.innerHTML,/data-tide-section/);
+      assert.equal(readPayload(panel.innerHTML,'tide-payload').flatMap(day=>day.hours).length,118);
+      controller.now();await turn();
+      assert.equal(panelCalls.at(-1)[2].time,generatedAt);
+      assert.equal(panelCalls.at(-1)[5].mapForecastTime,null);
+      assert.equal(loaded.length,zoneCalls+1);
+      assert.equal(countFull(),countBefore);
+      const demandOne=context.ensureFullEvidence(),demandTwo=context.ensureFullEvidence();
+      assert.equal(demandOne,demandTwo);
+      const full=await demandOne;
+      assert.equal(full.available,true);
+      assert.equal(full.deliveryManifestIdentity,context.activeLandingView.generation);
+      assert(full.ravScoreRuntime&&full.coastalParts);
+      assert.equal(countFull(),countBefore+1);
+      await context.ensureFullEvidence();assert.equal(countFull(),countBefore+1);
+      documents.set('./data/live/manifest.json',compactJson(compactManifest));
+      const downgraded=await service.refreshPublicLandingRuntime({manifest:landingManifest,view:context.activeLandingView,conditions:full});
+      assert.equal(downgraded.changed,true);assert.equal(downgraded.landing,null);assert.equal(downgraded.conditions.available,true);
+      assert.equal(downgraded.conditions.deliveryManifestIdentity,publicDeliveryGeneration(compactManifest));
+      documents.set('./data/live/manifest.json',compactJson(landingManifest));
+      const upgraded=await service.refreshPublicLandingRuntime({manifest:compactManifest,view:null,conditions:downgraded.conditions});
+      assert.equal(upgraded.changed,true);assert.equal(upgraded.conditions,undefined);assert.equal(upgraded.landing.generation,context.activeLandingView.generation);
+      service.clearDataMemoryCache();
+      Date.now=()=>Date.parse(h1);
+      advanceOnCompact=Date.parse(h2);
+      try{
+        const crossed=await service.refreshPublicLandingRuntime({manifest:landingManifest,view:upgraded.landing,conditions:full});
+        assert.equal(crossed.landing,null,'A compact refresh cannot publish an hour that expires during normal I/O');
+      }finally{Date.now=()=>freshNow;advanceOnCompact=null;}
+      cases++;
+      context.closeZone();
+    }
     controller.destroy();cases++;
   }
   globalThis.localStorage={getItem:()=> 'da'};
@@ -743,6 +1023,53 @@ try{
     const ticks=mapTimelineDayTicks(times,'da');assert.equal(ticks.length,times.length);
     if(ticks.length)assert.equal(ticks[0].centre,.5);
   }
+  service.clearDataMemoryCache();
+  const coldRequests=()=>requests.filter(url=>coldAssets.has(url)).length;
+  const initialColdReads=coldRequests();
+  Date.now=()=>freshNow;
+  try{
+    const warm=await service.loadConditions({manifest:coldManifest});
+    assert.equal(warm.available,true);
+    assert.equal(warm.publicRuntimeAvailability.selectedReferenceAt,generatedAt);
+    assert.deepEqual(coldManifest.detailDelivery.hours[generatedAt],manifest.detailDelivery.hours[generatedAt]);
+    assert.deepEqual(coldManifest.detailDelivery.zones,manifest.detailDelivery.zones);
+    const zoneId=rankedZoneIds[0];
+    const plainZone=await service.loadConditionDetails({manifest:coldManifest,zoneId});
+    assert.equal(plainZone.delivery.kind,'zone');
+    assert.equal(plainZone.delivery.key,zoneId);
+    assert.equal(coldRequests(),initialColdReads);
+    for(const [index,time] of [h12,last].entries()){
+      Date.now=()=>Date.parse(time);
+      const reads=coldRequests();
+      const view=await service.loadPublicLandingView({manifest:coldManifest});
+      assert.equal(view.time,time);
+      const original=manifest.detailDelivery.hours[time];
+      const physical=coldManifest.detailDelivery.hours[time];
+      assert.equal(view.compact.sourceHourSha256,original.sha256);
+      assert.notEqual(view.compact.sourceHourSha256,physical.sha256);
+      assert.equal(coldRequests(),reads,'A compact landing must not fetch the packed original');
+      const demand=await service.loadConditions({manifest:coldManifest});
+      assert.equal(demand.available,true);
+      assert.equal(demand.publicRuntimeAvailability.selectedReferenceAt,time);
+      assert.equal(coldRequests(),reads+1);
+      const cached=await service.loadConditions({manifest:coldManifest});
+      assert.equal(cached.available,true);
+      assert.equal(coldRequests(),reads+1);
+      if(index===0){
+        const mismatched=structuredClone(coldManifest);
+        mismatched.detailDelivery.hours[time].rawSha256='0'.repeat(64);
+        await assert.rejects(service.loadPublicLandingView({manifest:mismatched}),/MAP_HOUR_FRAME_BINDING/);
+        const warn=console.warn;
+        try{
+          console.warn=()=>{}; // The normal load path reports this expected refusal.
+          assert.equal((await service.loadConditions({manifest:mismatched})).available,false);
+        }finally{console.warn=warn;}
+        assert.equal(coldRequests(),reads+1,'A physical cache hit cannot bypass a changed logical digest');
+      }
+    }
+    assert.equal(coldRequests(),initialColdReads+2);
+  }finally{Date.now=()=>freshNow;}
+  cases++;
   console.log(JSON.stringify({status:'PASS_MAP_TIMELINE_LOCAL_ONLY',cases,zones:210,parts:673,scrubEvents:250,
     preloadRequests:0,networkCalls:0,browserPaintMeasured:false,hosted:false}));
 }finally{
