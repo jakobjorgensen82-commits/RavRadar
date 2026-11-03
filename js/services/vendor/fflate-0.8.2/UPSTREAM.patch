@@ -1,0 +1,14 @@
+--- npm/fflate-0.8.2/esm/browser.js
++++ vendored/fflate-0.8.2/browser.js
+@@ -255,8 +255,11 @@
+                     if (noSt)
+                         err(0);
+                     break;
+                 }
++                // RavRadar: match native DEFLATE's stored-block LEN/NLEN check.
++                if ((l ^ (dat[s - 2] | dat[s - 1] << 8)) != 65535)
++                    err(6, 'invalid stored block lengths');
+                 // ensure size
+                 if (resize)
+                     cbuf(bt + l);
+                 // Copy over uncompressed data

@@ -1,3 +1,27 @@
+## 3. november — ens filkontrol på tværs af runtimeversioner
+
+Den faktiske Node 22-kontrol påviste, at indbygget gzip-udpakning kan acceptere flere sammenkædede medlemmer, selv om Node 24 afviser dem. Den lokale rettelse kontrollerer derfor med den samme medfølgende kode, at filen rummer præcis ét medlem, også efter vellykket indbygget udpakning. De indbyggede outputbytes bevares; valideringschunks kasseres uden endnu en stor outputallokering. Et indbygget fejlforløb gentages stadig aldrig i fallback. Normalparenten består nu med 37 codec-prøver, 19 brocases, de 9 gamle kortcases og den eksisterende særskilte coldstart-prøve på Node 24. Ny præcis Node 22-kvalifikation og offentlig accept er åbne.
+
+To ældre Open-Meteo-bankprøver antog inputarrayets rækkefølge, selv om den leverede producent bruger den krævede faste strengorden. Fixtures er rettet, så drænprøven faktisk starter den langsomme søskende, og rotationsprøven forventer SECOND før TEST. Alle oprindelige stop-, ingen-ny-start-, ingen-ekstra-skrivning- og databevarelseskrav består. Produktkode og budgetter ændres ikke. Den korte kontrolprofil er nu også lokalt udvidet til at vælge den eksisterende bankprøve sammen med runtimeprøven. Ukendte ændringer kræver fortsat fuld kontrol; den samlede kandidats normale GitHub-kontrol er stadig nødvendig.
+
+## 3. november — afgrænset genlæsning ved GitHub-serverfejl
+
+Den eksterne firetimerskontrol stoppede ved en faktisk HTTP 502 fra GitHub, før nogen vejrhentning blev bestilt. Den lokale rettelse gentager kun kendte, skrivefri GitHub-læsninger ved HTTP 502, 503, 504 eller læserens egen tidsgrænse. Højst tre forsøg pr. læsning, ti sekunder pr. forsøg og pauser på ét og to sekunder holder de fem nødvendige læsninger inden for jobbets eksisterende fem minutter. Forkert adgang, ukendt svar eller modstridende metadata stopper fortsat.
+
+Begge friske kontroller, det samme firetimersslot, overlapværn, standardvalg og tidsplan bevares. En bestilling af vejrhentning forsøges kun én gang og afbrydes efter tyve sekunder; ukendt skriveudfald må aldrig gentages automatisk. Det er lokal kildeforberedelse, ikke leveret selvstændig genopretning. Den rigtige Linux-kalderprøve og præcis GitHub-kvalifikation mangler endnu; Windowsprøver er ikke Linux-bevis. Ingen model-, score-, kilde-, SQL-, administrator- eller geometriændring. Se DEC-0277 og håndbog 89.127. Alle fem mål består.
+
+Den eksisterende prøve af en helt ny åbning bruger nu også de faktisk allerede leverede adresser til zonepanel, assistent og kort delingsdomæne. Den normale kortprøve kører denne oprindelige prøve i en særskilt, kort underproces. Gamle cacheposter og alle oprindelige assertions bevares; en gammel adresse må hverken skjule den nye kode eller udløse sletning af brugerdata. Dette er rettelse og tilkobling af en forældet prøve, ikke en ny score- eller modelregel.
+
+## 3. november — PLAIN-klientbro før senere komprimering
+
+Den afgrænsede klientbro er anvendt lokalt på 4.0.594-kilden efter main-sammenføringen. Offentlige filer udsendes fortsat som almindelig JSON (PLAIN). Den nye læser kontrollerer først manifestets ydre bytes/SHA og derefter transportens egne grænser og integritet; de hidtidige semantik-, model- og generationskontroller består. Cachebudgettet belastes med udpakkede bytes, mens genbrug kontrollerer de oprindeligt modtagne transportbytes og stadig accepterer gamle raw-cacheposter.
+
+Updateren installeres efter storage-safety og før den ventende app-import. interactive/complete starter straks; loading bruger én DOMContentLoaded-listener. Hele currentAppVersion og turens brug bevares. Det er en 4.0.594 UI-build/cacheadresse, ikke ny C/I/T, SQL-migration eller version:set.
+
+Lokal normalparent har 9 gamle kortcases, 19 brocases og 36 isolerede codec-cases på Node 24.19.0. Det er ikke faktisk Node 22-CI eller offentlig browser-/SW-accept. Yderligere komprimering og det samlede 1 GB-bevis er senere åbne; allerede åbne ukontrollerede gamle klienter er ikke universelt opgraderet. SOURCE, statistik og automatisk sletning aktiveres ikke. Alle fem hovedmål er fortsat åbne. Se håndbog 89.301 samt tillæggene til DEC-0154 og DEC-0175.
+
+Transporttilladelsen gælder kun manifestvaliderede time-/zonefiler. Startpakke, samlede detaljer, kystdata, zoneregister og kompakt deling forbliver PLAIN, også ved gyldig ydre integritet. Cache og in-flight må ikke føre et udpakket entrysvar over i en plain-only-læsning.
+
 ## 3. november — zonebredde i den afgrænsede komponentreserve
 
 Den lokale kørettelse roterer mellem zoner og nødvendige kystdele særskilt for vind/bølge og temperatur. Hver gruppe tager én nødvendig kystdel pr. zone pr. omgang i fast strengorden. Den eksisterende fletning med to vind-/bølgeopgaver til én temperaturopgave, to transportslots og alle start-, forsøgs- og tidslofter bevares. Zonebredde loves kun inden for hver behovsgruppe og den kapacitet, der faktisk når at starte; ikke på tværs af grupper eller som fuld landedækning i én kørsel.

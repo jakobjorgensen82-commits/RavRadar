@@ -1,3 +1,37 @@
+## 89.301 Sikker klientopdatering før mindre datafiler
+
+<a id="public-json-plain-reader-upgrader-2026-11-03"></a>
+
+Kort fortalt: Klienten forberedes til mere kompakte filer, mens den offentlige levering fortsætter i det hidtidige format. Opdateringskontrollen starter uafhængigt af langsom vejrindlæsning.
+
+### Det hidtidige format bevares
+
+De offentlige filer leveres fortsat som almindelig JSON, kaldet PLAIN. Denne klientbro aktiverer ikke en ny komprimeret udsendelse. Programversionen er fortsat 4.0.594; nye adresser til klientkoden gør det muligt at hente den rette opdatering uden at ændre beregningsmodellen.
+
+Vejrdata, scorer og modelbindinger ændres ikke. Den isolerede vejrrevision, statistik og automatisk sletning aktiveres ikke af broen.
+
+### Kontrol af fil og indhold
+
+Kun filer for en bestemt prognosetime eller zone, som det validerede manifest har godkendt som sådanne, kan senere pakkes ud. Startpakken, samlede detaljer, kystdata, zoneregisteret og kompakte delingsfiler skal være PLAIN, også når deres ydre størrelse og fingeraftryk er gyldige. For en tilladt time-/zonefil kontrolleres størrelse og fingeraftryk før udpakning og derefter format, faste størrelsesgrænser og det udpakkede indholds integritet. Beskadigede eller ukendte formater afvises. De hidtidige kontroller af indhold, model, datasæt og tidspunkt udføres stadig bagefter.
+
+Browserens hukommelsesbudget regner med den udpakkede fils størrelse. Ved genbrug kontrolleres fortsat de bytes, der blev modtaget. Gamle cacheposter med almindelig JSON kan stadig bruges; brugerdata og database skal ikke ryddes for at skifte klientkode. Cache og samtidige indlæsninger holder tilladelsen adskilt: et udpakket time-/zonesvar må ikke blive et genbrugssvar i en læser, som kun tillader PLAIN.
+
+### Opdatering før ventende vejr
+
+Opdateringskontrollen installeres, efter brugerdataenes normale opstart er sikret, og før appen venter på indlæsning af vejr. Den starter straks, når dokumentet er klar, og venter ikke på, at hele appen eller siden melder færdig. Er dokumentet endnu ved at blive læst, bruges dets første klar-signal.
+
+Versionskontrol kan også virke uden service worker eller ved en mislykket registrering. Den første overtagelse af en side bevarer visningen; senere opdatering kan højst udløse én genindlæsning.
+
+### Hvad der stadig skal bevises
+
+En allerede åben, ukontrolleret gammel fane har hentet sin kode og får ikke automatisk den nye mekanisme. Genåbning, normal opdatering og faktisk udbredelse skal stadig kontrolleres. Der loves ikke automatisk opgradering af alle gamle klienter.
+
+Yderligere komprimering og bevis for den samlede hostingpakkes størrelsesgrænse er særskilte åbne opgaver. Lokal afprøvning af læser og opstart er ikke offentlig levering eller dokumentation for visningen på en rigtig telefon. Den almindelige offentlige levering fortsætter derfor i PLAIN.
+
+Den eksisterende prøve af en helt ny åbning bruger nu også de faktisk allerede leverede adresser til zonepanel, assistent og kort delingsdomæne. Den normale kortprøve kører denne oprindelige prøve i en særskilt, kort underproces. Gamle cacheposter og alle oprindelige assertions bevares; en gammel adresse må hverken skjule den nye kode eller udløse sletning af brugerdata. Dette er rettelse og tilkobling af en forældet prøve, ikke en ny score- eller modelregel.
+
+Forskellige browser- og programversioner kan læse en komprimeret fil forskelligt. Derfor skal den medfølgende læser selv kontrollere filens afgrænsning, også når den indbyggede udpakning lykkes. En mislykket indbygget udpakning gentages stadig ikke med en anden metode. Dette ændrer ingen vejr- eller scoreværdier; det skal sikre den samme strenge læsning på tværs af versioner. Lokal afprøvning er fortsat ikke offentlig levering.
+
 ## 89.299 Begge kendte kontinuitetsformater i scalarplanen
 
 Kort fortalt: Den normale plan for reelle vejrhul skal også kunne bruge den nyere, originale strømhistorik. Kun de to allerede kendte formater tillades.
@@ -3811,6 +3845,12 @@ af runhistorik gav korrekt ingen ny start under den aktive hentning, men
 en dublet eller den nye genkørselsgren er ikke observeret i produktion.
 529 leveres først;530 kræver egen GitHub-kildekontrol og senere sikker
 levering. Se DEC-0277. Ingen ny automatisk genkørsel er indført.
+
+### Tillæg 3. november: kortvarige fejl i GitHub-kontrollen
+
+Ved en kortvarig fejl hos GitHub skal systemet kunne forsøge den samme læsning igen. Den afgrænsede kandidat gør det kun ved serverfejl 502, 503 eller 504 og ved læserens egen tidsgrænse. Hver læsning har højst tre forsøg på hver ti sekunder med ét og to sekunders pause. De fem nødvendige læsninger holder sig dermed inden for kontrollens eksisterende fem minutter. Manglende adgang, ukendt svar eller uventede metadata giver fortsat stop.
+
+Der kontrolleres stadig to gange, før en almindelig vejrhentning bestilles. Selve bestillingen forsøges kun én gang med en grænse på tyve sekunder. Hvis det ikke kan afgøres, om GitHub modtog den, må systemet ikke bestille endnu en automatisk. Tidsplan, slotregler, overlapværn, vejrkilder, cache, scoremodel og datakontroller bevares. Kandidaten er lokalt prøvet; faktisk Linux-kontrol, levering og observeret håndtering af en sådan fejl er fortsat åbne.
 
 ## 89.126 4.0.529 – Find RavRadar og læs om ravjagt på dit sprog
 

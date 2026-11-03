@@ -1,3 +1,25 @@
+## 3. november — ens filkontrol på tværs af runtimeversioner
+
+Den faktiske Node 22-kontrol påviste, at indbygget gzip-udpakning kan acceptere flere sammenkædede medlemmer, selv om Node 24 afviser dem. Den lokale rettelse kontrollerer derfor med den samme medfølgende kode, at filen rummer præcis ét medlem, også efter vellykket indbygget udpakning. De indbyggede outputbytes bevares; valideringschunks kasseres uden endnu en stor outputallokering. Et indbygget fejlforløb gentages stadig aldrig i fallback. Normalparenten består nu med 37 codec-prøver, 19 brocases, de 9 gamle kortcases og den eksisterende særskilte coldstart-prøve på Node 24. Ny præcis Node 22-kvalifikation og offentlig accept er åbne.
+
+To ældre Open-Meteo-bankprøver antog inputarrayets rækkefølge, selv om den leverede producent bruger den krævede faste strengorden. Fixtures er rettet, så drænprøven faktisk starter den langsomme søskende, og rotationsprøven forventer SECOND før TEST. Alle oprindelige stop-, ingen-ny-start-, ingen-ekstra-skrivning- og databevarelseskrav består. Produktkode og budgetter ændres ikke. Den korte kontrolprofil er nu også lokalt udvidet til at vælge den eksisterende bankprøve sammen med runtimeprøven. Ukendte ændringer kræver fortsat fuld kontrol; den samlede kandidats normale GitHub-kontrol er stadig nødvendig.
+
+## 3. november — afgrænset genlæsning ved GitHub-serverfejl
+
+Den eksterne firetimerskontrol stoppede ved en faktisk HTTP 502 fra GitHub, før nogen vejrhentning blev bestilt. Den lokale rettelse gentager kun kendte, skrivefri GitHub-læsninger ved HTTP 502, 503, 504 eller læserens egen tidsgrænse. Højst tre forsøg pr. læsning, ti sekunder pr. forsøg og pauser på ét og to sekunder holder de fem nødvendige læsninger inden for jobbets eksisterende fem minutter. Forkert adgang, ukendt svar eller modstridende metadata stopper fortsat.
+
+Begge friske kontroller, det samme firetimersslot, overlapværn, standardvalg og tidsplan bevares. En bestilling af vejrhentning forsøges kun én gang og afbrydes efter tyve sekunder; ukendt skriveudfald må aldrig gentages automatisk. Det er lokal kildeforberedelse, ikke leveret selvstændig genopretning. Den rigtige Linux-kalderprøve og præcis GitHub-kvalifikation mangler endnu; Windowsprøver er ikke Linux-bevis. Ingen model-, score-, kilde-, SQL-, administrator- eller geometriændring. Se DEC-0277 og håndbog 89.127. Alle fem mål består.
+
+## 3. november — PLAIN-klientbro før senere komprimering
+
+Læs håndbog 89.301 og de daterede tillæg til DEC-0154/DEC-0175 for denne afgrænsede UI-kandidat. Normal offentlig JSON forbliver PLAIN; kode til en senere streng transportlæser er ikke en aktiveret emitter eller et samlet 1 GB-bevis. Opdateringskontrollen skal starte efter storage-safety og før en ventende app-import, også ved interactive uden window.load.
+
+Versionen er fortsat 4.0.594. Der udstedes ingen C/I/T, SQL-migration eller ny releaseversion. Gamle åbne ukontrollerede klienter får ikke automatisk den nye kode. Faktisk Node 22-CI og offentlig browser-/SW-accept er åbne. SOURCE, statistik og automatisk sletning aktiveres ikke; alle fem mål består.
+
+Den lokale normale parent har 9 gamle kortcases, 19 brocases og 36 codec-cases; faktisk CI og offentlig accept er fortsat åbne.
+
+Transporttilladelsen gælder kun manifestvaliderede time-/zonefiler. Startpakke, samlede detaljer, kystdata, zoneregister og kompakt deling forbliver PLAIN, også ved gyldig ydre integritet. Cache og in-flight må ikke føre et udpakket entrysvar over i en plain-only-læsning.
+
 ## 31. oktober — læs den nye 594-afgrænsning før de historiske statusfronter
 
 Den installerede databaseforgænger er 593; autentiske originale B/S og offentlig generation er stadig591. Den nye assistant-installed593-origin591-successor skal bevare denne adskillelse, gamle profiler og alle 71 udstedte SQL-filer. Ingen 593-original eller håndskrevet594-migration må konstrueres. 4.0.594 er lokalt udstedt gennem den normale afledning; samlet kvalifikation, installation og offentlig levering er fortsat åbne.

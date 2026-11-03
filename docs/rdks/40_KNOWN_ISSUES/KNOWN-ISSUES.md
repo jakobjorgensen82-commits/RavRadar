@@ -1,3 +1,23 @@
+## 3. november — ens filkontrol på tværs af runtimeversioner
+
+Den faktiske Node 22-kontrol påviste, at indbygget gzip-udpakning kan acceptere flere sammenkædede medlemmer, selv om Node 24 afviser dem. Den lokale rettelse kontrollerer derfor med den samme medfølgende kode, at filen rummer præcis ét medlem, også efter vellykket indbygget udpakning. De indbyggede outputbytes bevares; valideringschunks kasseres uden endnu en stor outputallokering. Et indbygget fejlforløb gentages stadig aldrig i fallback. Normalparenten består nu med 37 codec-prøver, 19 brocases, de 9 gamle kortcases og den eksisterende særskilte coldstart-prøve på Node 24. Ny præcis Node 22-kvalifikation og offentlig accept er åbne.
+
+To ældre Open-Meteo-bankprøver antog inputarrayets rækkefølge, selv om den leverede producent bruger den krævede faste strengorden. Fixtures er rettet, så drænprøven faktisk starter den langsomme søskende, og rotationsprøven forventer SECOND før TEST. Alle oprindelige stop-, ingen-ny-start-, ingen-ekstra-skrivning- og databevarelseskrav består. Produktkode og budgetter ændres ikke. Den korte kontrolprofil er nu også lokalt udvidet til at vælge den eksisterende bankprøve sammen med runtimeprøven. Ukendte ændringer kræver fortsat fuld kontrol; den samlede kandidats normale GitHub-kontrol er stadig nødvendig.
+
+## 3. november — afgrænset genlæsning ved GitHub-serverfejl
+
+Den eksterne firetimerskontrol stoppede ved en faktisk HTTP 502 fra GitHub, før nogen vejrhentning blev bestilt. Den lokale rettelse gentager kun kendte, skrivefri GitHub-læsninger ved HTTP 502, 503, 504 eller læserens egen tidsgrænse. Højst tre forsøg pr. læsning, ti sekunder pr. forsøg og pauser på ét og to sekunder holder de fem nødvendige læsninger inden for jobbets eksisterende fem minutter. Forkert adgang, ukendt svar eller modstridende metadata stopper fortsat.
+
+Begge friske kontroller, det samme firetimersslot, overlapværn, standardvalg og tidsplan bevares. En bestilling af vejrhentning forsøges kun én gang og afbrydes efter tyve sekunder; ukendt skriveudfald må aldrig gentages automatisk. Det er lokal kildeforberedelse, ikke leveret selvstændig genopretning. Den rigtige Linux-kalderprøve og præcis GitHub-kvalifikation mangler endnu; Windowsprøver er ikke Linux-bevis. Ingen model-, score-, kilde-, SQL-, administrator- eller geometriændring. Se DEC-0277 og håndbog 89.127. Alle fem mål består.
+
+## 3. november — PLAIN-klientbro før senere komprimering
+
+**Åbent: offentlig accept og senere størrelseskodning.** Klientbroen er lokalt anvendt og målprøvet, men offentlig emission er fortsat PLAIN. Senere komprimering og dokumentation for, at den samlede Pages-pakke holder 1 GB-grænsen, er ikke afsluttet af læseren eller dens syntetiske prøver.
+
+Updateren er flyttet foran den ventende app-import og starter ved interactive/complete eller DOMContentLoaded. Det giver ikke en universel opgradering af allerede åbne ukontrollerede gamle faner. Faktisk Node 22-CI, normal offentlig desktop-/mobil-/SW-accept og udbredelse er fortsat åbne. Den lokale Node 24-parent med 9 + 19 + 36 cases er ikke disse beviser. Version594, eksisterende raw-kompatibilitet, modelbindinger og alle fem hovedmåls særskilte gates bevares. Se håndbog 89.301. Ingen SOURCE-, statistik- eller sletteaktivering følger.
+
+Transporttilladelsen gælder kun manifestvaliderede time-/zonefiler. Startpakke, samlede detaljer, kystdata, zoneregister og kompakt deling forbliver PLAIN, også ved gyldig ydre integritet. Cache og in-flight må ikke føre et udpakket entrysvar over i en plain-only-læsning.
+
 ## 3. november — zonebredde i den afgrænsede komponentreserve
 
 Den lokale kørettelse roterer mellem zoner og nødvendige kystdele særskilt for vind/bølge og temperatur. Hver gruppe tager én nødvendig kystdel pr. zone pr. omgang i fast strengorden. Den eksisterende fletning med to vind-/bølgeopgaver til én temperaturopgave, to transportslots og alle start-, forsøgs- og tidslofter bevares. Zonebredde loves kun inden for hver behovsgruppe og den kapacitet, der faktisk når at starte; ikke på tværs af grupper eller som fuld landedækning i én kørsel.

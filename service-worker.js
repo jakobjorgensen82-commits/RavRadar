@@ -1,7 +1,15 @@
 const APP_VERSION = "4.0.594";
 const CACHE_PREFIX = "ravradar-app-";
-const CACHE = `${CACHE_PREFIX}${APP_VERSION.replaceAll('.', '-')}`;
+const PUBLIC_JSON_TRANSPORT = "public-json-bridge-20261103";
+const CACHE = `${CACHE_PREFIX}${APP_VERSION.replaceAll('.', '-')}-${PUBLIC_JSON_TRANSPORT}`;
 const STATIC = [
+  `./bootstrap.js?v=${APP_VERSION}&copy=footer-20261005&ui=zone-panels-20261027&assistant=forecast-followup-20261101&share=custom-domain-20261102&transport=${PUBLIC_JSON_TRANSPORT}`,
+  `./app.js?v=${APP_VERSION}&copy=footer-20261005&ui=zone-panels-20261027&assistant=forecast-followup-20261101&share=custom-domain-20261102&transport=${PUBLIC_JSON_TRANSPORT}`,
+  `./js/services/data-service.js?v=${APP_VERSION}&ui=forecast-share-20261024&share=custom-domain-20261102&transport=${PUBLIC_JSON_TRANSPORT}`,
+  `./js/services/app-update-flow.js?v=${APP_VERSION}&transport=${PUBLIC_JSON_TRANSPORT}`,
+  `./js/services/public-json-transport.js?v=${APP_VERSION}&transport=${PUBLIC_JSON_TRANSPORT}`,
+  `./js/core/public-page-resume.js?v=${APP_VERSION}`,
+  "./js/services/vendor/fflate-0.8.2/browser.js",
   "./","./index.html","./about.html","./learn.html","./admin.html",`./about.css?v=${APP_VERSION}`,`./learn.css?v=${APP_VERSION}`,`./admin.css?v=${APP_VERSION}`,`./js/i18n.js?v=${APP_VERSION}`,`./js/ui/about.js?v=${APP_VERSION}`,`./js/ui/about-i18n.js?v=${APP_VERSION}`,`./js/ui/learn-i18n.js?v=${APP_VERSION}`,`./js/ui/learn-i18n-de.js?v=${APP_VERSION}`,`./js/ui/learn-i18n-en.js?v=${APP_VERSION}`,`./js/ui/admin-dashboard.js?v=${APP_VERSION}`,`./style.css?v=${APP_VERSION}`,`./bootstrap.js?v=${APP_VERSION}`,`./app.js?v=${APP_VERSION}`,
   `./about.css?v=${APP_VERSION}&ui=about-explainer-20261025`,
   `./js/ui/about.js?v=${APP_VERSION}&ui=about-explainer-20261025`,

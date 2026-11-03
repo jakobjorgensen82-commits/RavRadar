@@ -103,7 +103,7 @@ runSourceOracle(legacyWorkflow);
 
 // The new registry has its own exact additive proof. The completed admin
 // fixture remains pinned to its original reviewed 14ade133 CODE and DATA.
-const actualRegistryRaw = reviewedPrivateStudyOperatorBeforeRegistry(reviewedOpenMeteoControlBeforeRegistry(await text('scripts/lib/source-impact-domain-owners-594.json')));
+const actualRegistryRaw = reviewedPrivateStudyOperatorBeforeRegistry(reviewedOpenMeteoControlBeforeRegistry(reviewedOpenMeteoBankCallerBeforeRegistry(await text('scripts/lib/source-impact-domain-owners-594.json'))));
 const registrySuccessor = review.registrySourceProofSuccessor;
 const registryBindingSuccessor = review.registryBindingSuccessor;
 const registryWorkflow066Successor = review.registryWorkflow066Successor;
@@ -692,4 +692,103 @@ function reviewedOpenMeteoControlBeforeRegistry(omControlRegistryRaw) {
   }
   assert.throws(() => omControlInverse(omControlBefore));
   return omControlBefore;
+}
+
+
+// Exact OM bank-caller addition before all unchanged historical registry oracles.
+function reviewedOpenMeteoBankCallerBeforeRegistry(omBankCallerRegistryRaw) {
+  const omBankCallerProof = {
+  "beforeSha256": "4fa622972052c5613255d27b128f87856eb778c37b30d59bb93b2761919a0a60",
+  "afterSha256": "3970bc86fb8afd99d193507b82337c1068aa368f6d62ff728988fc21da9577f4",
+  "beforeBytes": 947287,
+  "afterBytes": 953852,
+  "edits": [
+    {
+      "beforeOffset": 28511,
+      "afterOffset": 28511,
+      "beforeBase64": "",
+      "afterBytes": 98,
+      "afterSha256": "f27319ee940f9dac40ff7acf44851ba621bdcf60fb5a2a75634b11a452deff03"
+    },
+    {
+      "beforeOffset": 28799,
+      "afterOffset": 28897,
+      "beforeBase64": "",
+      "afterBytes": 98,
+      "afterSha256": "f27319ee940f9dac40ff7acf44851ba621bdcf60fb5a2a75634b11a452deff03"
+    },
+    {
+      "beforeOffset": 29081,
+      "afterOffset": 29277,
+      "beforeBase64": "",
+      "afterBytes": 98,
+      "afterSha256": "f27319ee940f9dac40ff7acf44851ba621bdcf60fb5a2a75634b11a452deff03"
+    },
+    {
+      "beforeOffset": 559365,
+      "afterOffset": 559659,
+      "beforeBase64": "ICAgICAgICAic2NyaXB0cy9wdWJsaXNoLXByaXZhdGUtdHJpcC13ZWF0aGVyLXN0dWR5Lm1qcyIK",
+      "afterBytes": 267,
+      "afterSha256": "da6e55ca0d76f7cdd8c78bf0ae70d0fb34d7bca54b8087b6ca5ef48cef044bc7"
+    },
+    {
+      "beforeOffset": 573217,
+      "afterOffset": 573721,
+      "beforeBase64": "ICAgICAgICAiZDQxZTZkZWQ2ODAzZDhkNmI1OTljNTRjN2QwYjhmZGQ1MDQ4MDc0NmMyZjY1YjI0Zjg3Y2MxNzk4ZmM5MTBiOCIK",
+      "afterBytes": 5015,
+      "afterSha256": "42953709329caf339e20358872449ff28616cedbfca760724284b842e1fa6cf2"
+    },
+    {
+      "beforeOffset": 575912,
+      "afterOffset": 581356,
+      "beforeBase64": "ICAgICAgICAiNjdlMTBjNjFiYjMyYmZlZjFkODM1ZWM3YjA2MGFiMTczNzY5Y2IzN2FhOGU0N2U5Y2VlZDg1NmVkMjY3ZmM1NyIK",
+      "afterBytes": 531,
+      "afterSha256": "670159d6f226d999b96469348ce856661a31287865039522acfb7668538d7d50"
+    },
+    {
+      "beforeOffset": 909979,
+      "afterOffset": 915879,
+      "beforeBase64": "",
+      "afterBytes": 665,
+      "afterSha256": "8051359ba5e4518eb27414dba3dfb1afb0287fc51987624a12208068b0881c64"
+    }
+  ]
+};
+  const omBankCallerInverse = omBankCallerInput => {
+    assert.equal(typeof omBankCallerInput, 'string');
+    let omBankCallerBytes = Buffer.from(omBankCallerInput, 'utf8');
+    assert.equal(omBankCallerBytes.length, omBankCallerProof.afterBytes);
+    assert.equal(digest(omBankCallerBytes), omBankCallerProof.afterSha256, 'OM_BANK_CALLER_REGISTRY_UNREVIEWED_BYTES');
+    for (const omBankCallerEdit of [...omBankCallerProof.edits].reverse()) {
+      assert.equal(digest(omBankCallerBytes.subarray(omBankCallerEdit.afterOffset,
+        omBankCallerEdit.afterOffset + omBankCallerEdit.afterBytes)), omBankCallerEdit.afterSha256);
+      omBankCallerBytes = Buffer.concat([omBankCallerBytes.subarray(0, omBankCallerEdit.afterOffset),
+        Buffer.from(omBankCallerEdit.beforeBase64, 'base64'),
+        omBankCallerBytes.subarray(omBankCallerEdit.afterOffset + omBankCallerEdit.afterBytes)]);
+    }
+    assert.equal(omBankCallerBytes.length, omBankCallerProof.beforeBytes);
+    assert.equal(digest(omBankCallerBytes), omBankCallerProof.beforeSha256, 'OM_BANK_CALLER_REGISTRY_WHOLE_M802_INVERSE');
+    return omBankCallerBytes.toString('utf8');
+  };
+  const omBankCallerBefore = omBankCallerInverse(omBankCallerRegistryRaw);
+  let omBankCallerForward = Buffer.from(omBankCallerBefore, 'utf8');
+  const omBankCallerActual = Buffer.from(omBankCallerRegistryRaw, 'utf8');
+  for (const omBankCallerEdit of omBankCallerProof.edits) {
+    const omBankCallerOld = Buffer.from(omBankCallerEdit.beforeBase64, 'base64');
+    assert.deepEqual(omBankCallerForward.subarray(omBankCallerEdit.afterOffset,
+      omBankCallerEdit.afterOffset + omBankCallerOld.length), omBankCallerOld);
+    omBankCallerForward = Buffer.concat([omBankCallerForward.subarray(0, omBankCallerEdit.afterOffset),
+      omBankCallerActual.subarray(omBankCallerEdit.afterOffset, omBankCallerEdit.afterOffset + omBankCallerEdit.afterBytes),
+      omBankCallerForward.subarray(omBankCallerEdit.afterOffset + omBankCallerOld.length)]);
+  }
+  assert.deepEqual(omBankCallerForward, omBankCallerActual, 'OM_BANK_CALLER_REGISTRY_WHOLE_FORWARD');
+  for (const omBankCallerMutation of [omBankCallerRegistryRaw + '\n',
+    omBankCallerRegistryRaw.replace('"path": "scripts/lib/open-meteo-part-runtime.mjs"',
+      '"path": "scripts/lib/unreviewed-open-meteo-runtime.mjs"'),
+    JSON.stringify({...JSON.parse(omBankCallerRegistryRaw), unknownOmControlField: true}, null, 2) + '\n']) {
+    assert.notEqual(omBankCallerMutation, omBankCallerRegistryRaw);
+    assert.throws(() => omBankCallerInverse(omBankCallerMutation));
+  }
+  assert.throws(() => omBankCallerInverse(omBankCallerBefore));
+  return omBankCallerBefore;
 }
