@@ -12,9 +12,9 @@ Vejrdata, scorer og modelbindinger ændres ikke. Den isolerede vejrrevision, sta
 
 ### Kontrol af fil og indhold
 
-Før en fil i det forberedte transportformat kan pakkes ud, kontrolleres dens størrelse og digitale fingeraftryk mod manifestet. Derefter kontrolleres format, faste størrelsesgrænser og det udpakkede indholds integritet. Beskadigede eller ukendte formater afvises. De hidtidige kontroller af indhold, model, datasæt og tidspunkt udføres stadig bagefter.
+Kun filer for en bestemt prognosetime eller zone, som det validerede manifest har godkendt som sådanne, kan senere pakkes ud. Startpakken, samlede detaljer, kystdata, zoneregisteret og kompakte delingsfiler skal være PLAIN, også når deres ydre størrelse og fingeraftryk er gyldige. For en tilladt time-/zonefil kontrolleres størrelse og fingeraftryk før udpakning og derefter format, faste størrelsesgrænser og det udpakkede indholds integritet. Beskadigede eller ukendte formater afvises. De hidtidige kontroller af indhold, model, datasæt og tidspunkt udføres stadig bagefter.
 
-Browserens hukommelsesbudget regner med den udpakkede fils størrelse. Ved genbrug kontrolleres fortsat de bytes, der blev modtaget. Gamle cacheposter med almindelig JSON kan stadig bruges; brugerdata og database skal ikke ryddes for at skifte klientkode.
+Browserens hukommelsesbudget regner med den udpakkede fils størrelse. Ved genbrug kontrolleres fortsat de bytes, der blev modtaget. Gamle cacheposter med almindelig JSON kan stadig bruges; brugerdata og database skal ikke ryddes for at skifte klientkode. Cache og samtidige indlæsninger holder tilladelsen adskilt: et udpakket time-/zonesvar må ikke blive et genbrugssvar i en læser, som kun tillader PLAIN.
 
 ### Opdatering før ventende vejr
 

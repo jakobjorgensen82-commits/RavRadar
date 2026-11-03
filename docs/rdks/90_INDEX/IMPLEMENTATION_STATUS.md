@@ -6,7 +6,9 @@ Den afgrænsede klientbro er anvendt lokalt på 4.0.594-kilden efter main-sammen
 
 Updateren installeres efter storage-safety og før den ventende app-import. interactive/complete starter straks; loading bruger én DOMContentLoaded-listener. Hele currentAppVersion og turens brug bevares. Det er en 4.0.594 UI-build/cacheadresse, ikke ny C/I/T, SQL-migration eller version:set.
 
-Lokal normalparent har 9 gamle kortcases, 14 brocases og 36 isolerede codec-cases på Node 24.19.0. Det er ikke faktisk Node 22-CI eller offentlig browser-/SW-accept. Yderligere komprimering og det samlede 1 GB-bevis er senere åbne; allerede åbne ukontrollerede gamle klienter er ikke universelt opgraderet. SOURCE, statistik og automatisk sletning aktiveres ikke. Alle fem hovedmål er fortsat åbne. Se håndbog 89.301 samt tillæggene til DEC-0154 og DEC-0175.
+Lokal normalparent har 9 gamle kortcases, 19 brocases og 36 isolerede codec-cases på Node 24.19.0. Det er ikke faktisk Node 22-CI eller offentlig browser-/SW-accept. Yderligere komprimering og det samlede 1 GB-bevis er senere åbne; allerede åbne ukontrollerede gamle klienter er ikke universelt opgraderet. SOURCE, statistik og automatisk sletning aktiveres ikke. Alle fem hovedmål er fortsat åbne. Se håndbog 89.301 samt tillæggene til DEC-0154 og DEC-0175.
+
+Transporttilladelsen gælder kun manifestvaliderede time-/zonefiler. Startpakke, samlede detaljer, kystdata, zoneregister og kompakt deling forbliver PLAIN, også ved gyldig ydre integritet. Cache og in-flight må ikke føre et udpakket entrysvar over i en plain-only-læsning.
 
 ## 3. november — zonebredde i den afgrænsede komponentreserve
 

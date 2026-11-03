@@ -4,7 +4,9 @@ Lokal 4.0.594 UI-build, endnu ikke offentlig levering. Almindelig JSON/PLAIN bev
 
 Updateren starter efter storage-safety og før ventende app-import, straks ved interactive/complete og via DOMContentLoaded ved loading. Eksisterende UI-argumenter og turens currentAppVersion bevares; nye transportadresser og en frisk SW-assetcache adskiller klientkoden. Ingen version:set, C/I/T-udstedelse eller SQL-migration.
 
-Den normale parent er lokalt prøvet med 9 gamle, 14 nye bro- og 36 codec-cases i en isoleret sameNode-underproces. Faktisk Node 22-CI og offentlig accept afventer. Mere komprimering, samlet 1 GB-bevis og opgradering af gamle åbne ukontrollerede klienter er særskilt åbne. Håndbog 89.301 tilføjes; Sourcebackup 89.300 forbliver reserveret. Ingen SOURCE, statistik eller automatisk sletning aktiveres.
+Den normale parent er lokalt prøvet med 9 gamle, 19 nye bro- og 36 codec-cases i en isoleret sameNode-underproces. Faktisk Node 22-CI og offentlig accept afventer. Mere komprimering, samlet 1 GB-bevis og opgradering af gamle åbne ukontrollerede klienter er særskilt åbne. Håndbog 89.301 tilføjes; Sourcebackup 89.300 forbliver reserveret. Ingen SOURCE, statistik eller automatisk sletning aktiveres.
+
+Transporttilladelsen gælder kun manifestvaliderede time-/zonefiler. Startpakke, samlede detaljer, kystdata, zoneregister og kompakt deling forbliver PLAIN, også ved gyldig ydre integritet. Cache og in-flight må ikke føre et udpakket entrysvar over i en plain-only-læsning.
 
 ## 3. november — zonebredde i den afgrænsede komponentreserve
 

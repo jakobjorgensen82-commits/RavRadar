@@ -98,49 +98,137 @@ export async function checkPublicReaderBridge() {
     fs.writeFileSync(sourcePath, Buffer.concat([normalSource, Buffer.from(seam)]));
     assert.deepEqual(fs.readFileSync(sourcePath).subarray(0, normalSource.length), normalSource);
     const { bridgeFetchJson, bridgeMemory } = await import(pathToFileURL(sourcePath).href);
-    const { assertPublicDeliveryDocument } = await import(pathToFileURL(path.join(scratch, 'js/core/public-delivery-contract.js')).href);
     const { installPublicAppUpdateFlow } = await import(pathToFileURL(path.join(scratch, 'js/services/app-update-flow.js')).href);
     const respond = body => {
       let calls = 0;
       globalThis.fetch = async () => { calls++; return { ok: true, text: async () => body.text }; };
       return () => calls;
     };
+    const { loadConditionDetails, loadPublicForecastShareSelection,
+      loadCompactPublicForecastShareSelection } = await import(pathToFileURL(sourcePath).href);
+    const { ravScoreModelBinding } = await import(pathToFileURL(path.join(scratch, 'js/core/ravscore-model-contract.js')).href);
+    const { ravScoreVerifiedEvidenceTrust } = await import(pathToFileURL(path.join(scratch, 'js/core/ravscore-evidence-trust-contract.js')).href);
+    const runtime = await import(pathToFileURL(path.join(scratch, 'js/core/ravscore-public-runtime-contract.js')).href);
+    const { resolvePublicRavScoreProfile } = await import(pathToFileURL(path.join(scratch, 'js/core/ravscore-public-model.js')).href);
+    const { RAVSCORE_PUBLIC_SCORE_PROFILE_FIELDS } = await import(pathToFileURL(path.join(scratch, 'js/core/ravscore-public-profile-contract.js')).href);
+    const { buildPublicWeatherSourceAge } = await import(pathToFileURL(path.join(scratch, 'js/core/ravscore-public-weather-source-age.js')).href);
+    const binding = ravScoreModelBinding(), trust = ravScoreVerifiedEvidenceTrust();
     const selected = '2030-01-01T00:00:00.000Z';
-    const manifest = { datasetId: 'synthetic', generatedAt: selected, productionReferenceAt: selected,
-      publicConditionDetailsSha256: 'a'.repeat(64), ravScoreModelBinding: { fixture: true }, coastalPartCount: 1,
-      detailDelivery: { zones: { Z: {} }, hours: { [selected]: {} } } };
-    const entry = { kind: 'hour', key: selected };
-    const document = { datasetId: 'synthetic', generatedAt: selected, productionReferenceAt: selected,
-      delivery: { schemaVersion: 1, kind: 'hour', key: selected,
-        sourceDetailsSha256: manifest.publicConditionDetailsSha256, modelBinding: manifest.ravScoreModelBinding },
-      zones: { Z: { forecast: { hourly: [{ time: selected }] } } },
-      coastalParts: { zones: { Z: { expectedPartCount: 1, hourly: [{ time: selected }] } }, parts: { P: { zoneId: 'Z' } } } };
-    for (const [name, payload] of [['plain', document], ['encoded', envelope(document)]]) {
+    const times = Array.from({ length: 118 }, (_, index) => new Date(Date.parse(selected) + index * 3600000).toISOString());
+    const ids = Array.from({ length: 210 }, (_, index) => 'Z' + String(index).padStart(3, '0'));
+    const parts = [];
+    for (let index = 0; index < ids.length; index++) {
+      for (let local = 0; local < (index < 43 ? 4 : 3); local++) parts.push({
+        id: 'P' + parts.length, zoneId: ids[index], ravScoreEvidenceTrust: trust,
+      });
+    }
+    assert.equal(parts.length, 673);
+    const partCount = id => parts.filter(part => part.zoneId === id).length;
+    const unavailable = id => ({
+      available: false, score: null, scoreQuality: 'UNAVAILABLE', scoreBounds: null,
+      calibrationEligible: false, scoreSemantics: null, conservativeTailResetApplied: false,
+      historyCoverageHours: null, historyReasonCodes: [], modelBinding: binding,
+      status: 'unavailable', validPartCount: 0, expectedPartCount: partCount(id), comparisonPartCount: 0,
+      unavailableParts: [], unavailability: { available: false, code: 'SYNTHETIC_NO_INPUT',
+        messageDa: 'Syntetisk test uden score.', policy: 'integrated-model-local-fail-closed',
+        validPartCount: 0, expectedPartCount: partCount(id) }, reasons: ['Syntetisk test uden score.'],
+    });
+    const row = (id, time) => ({ time, waders: unavailable(id), beach: unavailable(id) });
+    const scoreZones = Object.fromEntries(ids.map(id => [id, { hourly: [row(id, selected)] }]));
+    const resolvedProfile = resolvePublicRavScoreProfile({
+      modelCoverageReady: true, modelMemoryReady: true, modelMigrationReady: true,
+    });
+    const publicProfile = Object.fromEntries(RAVSCORE_PUBLIC_SCORE_PROFILE_FIELDS.map(key => [key, resolvedProfile[key]]));
+    const registry = { type: 'FeatureCollection', features: ids.map(id => ({
+      type: 'Feature', properties: { id, zoneStatus: 'active', name: 'Synthetic ' + id }, geometry: null,
+    })) };
+    const registryBody = outer(registry);
+    const age = buildPublicWeatherSourceAge({ productionReferenceAt: selected,
+      partSourceRows: parts.map(part => {
+        const provenance = { status: 'verified', provider: 'dmi', modelRun: selected };
+        return { partId: part.id, selectedReferenceAt: selected, windProvenance: provenance,
+          waveProvenance: provenance, currentProvenance: provenance, waterLevelProvenance: provenance };
+      }) });
+    const placeholder = key => ({ path: './forecast/' + hash(key) + '.json', sha256: hash(key), bytes: 1 });
+    const baseManifest = {
+      schemaVersion: 4, complete: true, datasetId: 'synthetic-transport-scope',
+      generatedAt: selected, productionReferenceAt: selected, validUntil: runtime.ravScorePublicHorizonValidUntil(selected),
+      zoneCount: 210, coastalPartCount: 673, conditionsPath: './public-conditions.json',
+      conditionDetailsPath: './public-condition-details.json', coastalPartsPath: './coastal-parts-v2.json',
+      zoneRegistryPath: './data/zones.geojson', publicConditionsSha256: hash('plain startup'),
+      publicConditionsBytes: 1, publicConditionDetailsSha256: hash('plain details'), publicConditionDetailsBytes: 1,
+      coastalPartsSha256: hash('plain coast'), coastalPartsBytes: 1,
+      zoneRegistrySha256: registryBody.expectedSha256, zoneRegistryBytes: registryBody.expectedBytes,
+      zoneRegistryFeatureCount: 210, zoneRegistryActiveCount: 210, ravScoreModelBinding: binding,
+      ravScoreEvidenceTrust: trust, ravScoreProfile: publicProfile,
+      ravScoreAvailability: runtime.buildPublicScoreAvailability({
+        policy: publicProfile.publicAvailabilityPolicy, zones: scoreZones, referenceAt: selected,
+        zoneNames: Object.fromEntries(ids.map(id => [id, 'Synthetic ' + id])),
+      }), weatherSourceAge: age,
+      ravScoreRuntime: { schemaVersion: runtime.RAVSCORE_PUBLIC_RUNTIME_SCHEMA_VERSION, modelBinding: binding,
+        startup: { kind: runtime.RAVSCORE_PUBLIC_STARTUP_KIND, payloadBodySha256: hash('startup body'),
+          fileSha256: hash('plain startup'), bytes: 1 },
+        details: { kind: runtime.RAVSCORE_PUBLIC_DETAILS_KIND, payloadBodySha256: hash('details body'),
+          fileSha256: hash('plain details'), bytes: 1 } },
+      detailDelivery: { schemaVersion: 1, forecastHours: 118, sourceDetailsSha256: hash('plain details'),
+        hours: Object.fromEntries(times.map(time => [time, placeholder('hour:' + time)])),
+        zones: Object.fromEntries(ids.map(id => [id, placeholder('zone:' + id)])) },
+    };
+    function documentFor(kind) {
+      const selectedIds = kind === 'zone' ? [ids[0]] : ids;
+      const selectedTimes = kind === 'hour' ? [selected] : times;
+      return { datasetId: baseManifest.datasetId, generatedAt: selected, productionReferenceAt: selected,
+        ravScoreEvidenceTrust: trust,
+        delivery: { schemaVersion: 1, kind, key: kind === 'hour' ? selected : ids[0],
+          sourceDetailsSha256: baseManifest.publicConditionDetailsSha256, modelBinding: binding },
+        zones: Object.fromEntries(selectedIds.map(id => [id, {
+          forecast: { hourly: selectedTimes.map(time => ({ time })) },
+        }])),
+        coastalParts: { schemaVersion: 2, enabled: true, modelBinding: binding, evidenceTrust: trust,
+          zones: Object.fromEntries(selectedIds.map(id => [id, { expectedPartCount: partCount(id),
+            hourly: selectedTimes.map(time => row(id, time)) }])),
+          parts: Object.fromEntries(parts.filter(part => selectedIds.includes(part.zoneId)).map(part =>
+            [part.id, { zoneId: part.zoneId, ravScoreEvidenceTrust: trust }])) },
+      };
+    }
+    function registered(kind, { encoded = true, document = documentFor(kind) } = {}) {
+      const manifest = structuredClone(baseManifest);
+      const body = outer(encoded ? envelope(document) : document);
+      const entry = { path: './forecast/' + body.expectedSha256 + '.json',
+        sha256: body.expectedSha256, bytes: body.expectedBytes };
+      manifest.detailDelivery[kind === 'hour' ? 'hours' : 'zones'][kind === 'hour' ? selected : ids[0]] = entry;
+      const url = './data/live/' + entry.path.slice(2) + '?dataset=' + manifest.datasetId + '&sha=' + entry.sha256;
+      return { kind, manifest, document, body, entry, url };
+    }
+    const loadEntry = item => loadConditionDetails({
+      manifest: item.manifest, ...(item.kind === 'zone' ? { zoneId: ids[0] } : {}),
+    });
+    // Actual loadConditionDetails -> assertManifest -> publicDeliveryEntries ->
+    // loadDelivery -> fetchJson, with no test-supplied delivery hint.
+    for (const kind of ['hour', 'zone']) for (const encoded of [false, true]) {
       bridgeMemory.clear();
-      const body = outer(payload), calls = respond(body);
-      const loaded = await bridgeFetchJson('/synthetic-' + name, { ...body, ttlMs: 120000 });
-      assert.deepEqual(loaded, document);
-      assert.strictEqual(assertPublicDeliveryDocument(loaded, manifest, entry), loaded,
-        'The unchanged normal semantic validator receives the unwrapped value');
-      const again = await bridgeFetchJson('/synthetic-' + name, { ...body, ttlMs: 120000 });
-      assert.strictEqual(again, loaded); assert.equal(calls(), 1);
-      const cached = bridgeMemory.get('/synthetic-' + name);
-      assert.equal(cached.transportBytes, body.expectedBytes);
-      assert.equal(cached.bytes, Buffer.byteLength(JSON.stringify(document)));
+      const item = registered(kind, { encoded }), calls = respond(item.body);
+      const loaded = await loadEntry(item);
+      assert.deepEqual(loaded, item.document);
+      assert.strictEqual(await loadEntry(item), loaded); assert.equal(calls(), 1);
+      const cached = bridgeMemory.get(item.url);
+      assert.equal(cached.transportBytes, item.body.expectedBytes);
+      assert.equal(cached.bytes, Buffer.byteLength(JSON.stringify(item.document)));
+      assert.equal(cached.transportKind, encoded ? kind : null);
       cases++;
     }
-    // Hash-valid transport never excuses a wrong semantic generation.
     {
-      const body = outer(envelope({ ...document, datasetId: 'wrong-generation' })); respond(body);
-      const loaded = await bridgeFetchJson('/synthetic-wrong-generation', body);
-      assert.throws(() => assertPublicDeliveryDocument(loaded, manifest, entry), /different generation/); cases++;
+      const item = registered('hour');
+      item.document.datasetId = 'wrong-generation';
+      const bad = registered('hour', { document: item.document }); respond(bad.body);
+      await assert.rejects(loadEntry(bad), /different generation/); cases++;
     }
     {
       const Native = globalThis.DecompressionStream;
       let decoded = 0;
       globalThis.DecompressionStream = class { constructor(...args) { decoded++; return new Native(...args); } };
       try {
-        const body = outer(envelope(document)); respond(body);
+        const body = registered('hour').body; respond(body);
         await assert.rejects(bridgeFetchJson('/synthetic-wrong-size', { ...body, expectedBytes: body.expectedBytes + 1 }), /byteantallet/);
         await assert.rejects(bridgeFetchJson('/synthetic-wrong-sha', { ...body, expectedSha256: '0'.repeat(64) }), /SHA-256/);
         await assert.rejects(bridgeFetchJson('/synthetic-unbound-envelope'), /REQUIRES_OUTER_INTEGRITY/);
@@ -150,23 +238,35 @@ export async function checkPublicReaderBridge() {
     }
     {
       bridgeMemory.clear();
-      const large = { text: 'x'.repeat(20000) }, body = outer(envelope(large)); const calls = respond(body);
-      const value = await bridgeFetchJson('/synthetic-cache', { ...body, ttlMs: 120000 });
-      const decodedBytes = Buffer.byteLength(JSON.stringify(large));
-      assert.equal(bridgeMemory.size().bytes, decodedBytes);
-      assert.notEqual(decodedBytes, body.expectedBytes);
-      assert.strictEqual(await bridgeFetchJson('/synthetic-cache', { ...body, ttlMs: 120000 }), value);
-      await assert.rejects(bridgeFetchJson('/synthetic-cache', { ...body, ttlMs: 120000,
-        expectedBytes: decodedBytes }), /cachede fil matcher/);
-      assert.equal(calls(), 1);
-      bridgeMemory.remember('/synthetic-legacy-cache', { at: Date.now(), value, sha256: body.expectedSha256,
-        bytes: body.expectedBytes });
-      assert.strictEqual(await bridgeFetchJson('/synthetic-legacy-cache', { ...body, ttlMs: 120000 }), value,
-        'Entries from the old raw cache still use bytes when transportBytes is absent');
+      const body = registered('hour').body; respond(body);
+      for (const url of ['./data/live/public-conditions.json', './data/live/public-condition-details.json',
+        './data/live/coastal-parts-v2.json', './data/zones.geojson', './data/live/share/hash.json',
+        './data/live/forecast/hash.json']) {
+        await assert.rejects(bridgeFetchJson(url, body), /REQUIRES_DELIVERY_ENTRY/,
+          'Outer integrity does not authorize encoded named raw/compact files');
+      }
       cases++;
     }
     {
-      const raw = { oldVersion: true }; const body = outer(raw); respond(body);
+      bridgeMemory.clear();
+      const document = { ...documentFor('hour'), text: 'x'.repeat(20000) };
+      const item = registered('hour', { document }), calls = respond(item.body);
+      const value = await loadEntry(item), decodedBytes = Buffer.byteLength(JSON.stringify(document));
+      assert.equal(bridgeMemory.size().bytes, decodedBytes); assert.notEqual(decodedBytes, item.body.expectedBytes);
+      assert.strictEqual(await loadEntry(item), value);
+      await assert.rejects(bridgeFetchJson(item.url, { ...item.body, ttlMs: 120000 }), /REQUIRES_DELIVERY_ENTRY/,
+        'A cached authorized envelope cannot cross into a plain-only read');
+      await assert.rejects(bridgeFetchJson(item.url, { ...item.body, ttlMs: 120000,
+        expectedBytes: decodedBytes }), /cachede fil matcher/);
+      assert.equal(calls(), 1);
+      const plain = outer(document);
+      bridgeMemory.remember('/synthetic-legacy-cache', { at: Date.now(), value,
+        sha256: plain.expectedSha256, bytes: plain.expectedBytes });
+      assert.strictEqual(await bridgeFetchJson('/synthetic-legacy-cache', { ...plain, ttlMs: 120000 }), value);
+      cases++;
+    }
+    {
+      const raw = { oldVersion: true }, body = outer(raw); respond(body);
       assert.deepEqual(await bridgeFetchJson('/synthetic-old-plain'), raw);
       const waiting = deferred(); let calls = 0;
       globalThis.fetch = async () => { calls++; await waiting.promise; return { ok: true, text: async () => body.text }; };
@@ -174,6 +274,67 @@ export async function checkPublicReaderBridge() {
       const two = bridgeFetchJson('/synthetic-singleflight', body);
       waiting.resolve(); assert.deepEqual(await one, raw); assert.deepEqual(await two, raw);
       assert.equal(calls, 1); cases++;
+    }
+    {
+      const item = registered('zone'), selection = { zoneId: ids[0], time: selected, mode: 'waders', language: 'da' };
+      const savedNow = Date.now; Date.now = () => Date.parse(selected) + 1800000;
+      try {
+        function legacy({ encodedRegistry = false } = {}) {
+          const manifest = structuredClone(item.manifest);
+          const registryResponse = encodedRegistry ? outer(envelope(registry)) : registryBody;
+          manifest.zoneRegistrySha256 = registryResponse.expectedSha256;
+          manifest.zoneRegistryBytes = registryResponse.expectedBytes;
+          const files = new Map([['./data/live/manifest.json', JSON.stringify(manifest)],
+            ['./data/live/' + item.entry.path.slice(2), item.body.text], ['./data/zones.geojson', registryResponse.text]]);
+          const requests = [];
+          return { requests, fetchPublic: async relative => {
+            requests.push(relative); assert.ok(files.has(relative)); return new Response(files.get(relative));
+          } };
+        }
+        const good = legacy();
+        await loadPublicForecastShareSelection(selection, good);
+        assert.equal(good.requests.length, 3, 'Legacy share reaches its encoded zone and raw registry through real admission');
+        await assert.rejects(loadPublicForecastShareSelection(selection, legacy({ encodedRegistry: true })),
+          /REQUIRES_DELIVERY_ENTRY/, 'Legacy share must not authorize its registry envelope');
+      } finally { Date.now = savedNow; }
+      cases++;
+    }
+    {
+      const selection = { zoneId: ids[0], time: selected, mode: 'waders', language: 'da' };
+      const projection = { schemaVersion: 'ravradar-forecast-share-zone-v1',
+        datasetId: baseManifest.datasetId, generatedAt: selected, productionReferenceAt: selected,
+        sourceDetailsSha256: baseManifest.publicConditionDetailsSha256,
+        zoneRegistrySha256: baseManifest.zoneRegistrySha256, modelBinding: binding,
+        axis: { firstHour: selected, count: 118, stepMs: 3600000 },
+        modes: ['beach', 'waders'], qualities: ['FULL_HISTORY', 'HISTORY_INCOMPLETE', 'UNAVAILABLE'],
+        coverageStatuses: [null, 'whole-zone', 'unavailable', 'several-parts', 'only-part', 'partial-zone', 'uncertain'],
+        zone: { id: ids[0], name: 'Synthetic ' + ids[0],
+          rows: times.map(() => [[0, null, 2, 2], [0, null, 2, 2]]) } };
+      function compact({ encoded = false, overrun = false } = {}) {
+        const manifestText = JSON.stringify(baseManifest), target = outer(encoded ? envelope(projection) : projection);
+        const targetEntry = { id: ids[0], path: './share/' + target.expectedSha256 + '.json',
+          sha256: target.expectedSha256, bytes: target.expectedBytes };
+        const descriptor = { schemaVersion: 'ravradar-forecast-share-zone-index-v1',
+          manifestSha256: hash(manifestText), datasetId: baseManifest.datasetId, generatedAt: selected,
+          productionReferenceAt: selected, modelBinding: binding, zoneCount: 210, forecastHours: 118, modeCount: 2,
+          zones: ids.map(id => id === ids[0] ? targetEntry : {
+            id, path: './share/' + hash('compact:' + id) + '.json', sha256: hash('compact:' + id), bytes: 1,
+          }) };
+        const files = new Map([['./data/live/manifest.json', manifestText],
+          ['./data/live/forecast-share.json', JSON.stringify(descriptor)],
+          ['./data/live/' + targetEntry.path.slice(2), overrun ? target.text.padEnd(32769, ' ') : target.text]]);
+        return { fetchPublic: async relative => { assert.ok(files.has(relative)); return new Response(files.get(relative)); } };
+      }
+      const savedNow = Date.now; Date.now = () => Date.parse(selected) + 1800000;
+      try {
+        const plain = await loadCompactPublicForecastShareSelection(selection, compact());
+        assert.equal(plain.result.available, false); assert.equal(plain.result.scoreQuality, 'UNAVAILABLE');
+        await assert.rejects(loadCompactPublicForecastShareSelection(selection, compact({ encoded: true })),
+          /REQUIRES_DELIVERY_ENTRY/, 'Hash-valid compact envelopes remain forbidden');
+        await assert.rejects(loadCompactPublicForecastShareSelection(selection, compact({ overrun: true })),
+          /FORECAST_SHARE_BYTES_INVALID/, 'The original32KiB compact stream budget remains enforced');
+      } finally { Date.now = savedNow; }
+      cases++;
     }
     globalThis.fetch = () => { networkAttempts++; throw new Error('REAL_NETWORK_FORBIDDEN'); };
 
@@ -320,7 +481,7 @@ export async function checkPublicReaderBridge() {
     assert.equal(networkAttempts, 0);
     return { status: 'PASS_PUBLIC_JSON_PLAIN_READER_UPGRADER_BRIDGE', cases,
       node: process.version, rawAndEncodedSyntheticParity: true, oldRawCacheCompatible: true,
-      normalCoreMemoryUnchanged: true, normalBootstrapBeforeAwaitApp: true, realNetworkCalls: 0,
+      normalCoreMemoryUnchanged: true, normalBootstrapBeforeAwaitApp: true, hourZoneOnlyTransport: true, realNetworkCalls: 0,
       providers: 0, productionEmission: 'UNCHANGED_PLAIN', fixtureOnlySeam: 'appended export in owned temp clone' };
   } finally {
     for (const cleanup of cleanups) cleanup();

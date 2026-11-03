@@ -4,6 +4,10 @@ Læs håndbog 89.301 og de daterede tillæg til DEC-0154/DEC-0175 for denne afgr
 
 Versionen er fortsat 4.0.594. Der udstedes ingen C/I/T, SQL-migration eller ny releaseversion. Gamle åbne ukontrollerede klienter får ikke automatisk den nye kode. Faktisk Node 22-CI og offentlig browser-/SW-accept er åbne. SOURCE, statistik og automatisk sletning aktiveres ikke; alle fem mål består.
 
+Den lokale normale parent har 9 gamle kortcases, 19 brocases og 36 codec-cases; faktisk CI og offentlig accept er fortsat åbne.
+
+Transporttilladelsen gælder kun manifestvaliderede time-/zonefiler. Startpakke, samlede detaljer, kystdata, zoneregister og kompakt deling forbliver PLAIN, også ved gyldig ydre integritet. Cache og in-flight må ikke føre et udpakket entrysvar over i en plain-only-læsning.
+
 ## 31. oktober — læs den nye 594-afgrænsning før de historiske statusfronter
 
 Den installerede databaseforgænger er 593; autentiske originale B/S og offentlig generation er stadig591. Den nye assistant-installed593-origin591-successor skal bevare denne adskillelse, gamle profiler og alle 71 udstedte SQL-filer. Ingen 593-original eller håndskrevet594-migration må konstrueres. 4.0.594 er lokalt udstedt gennem den normale afledning; samlet kvalifikation, installation og offentlig levering er fortsat åbne.

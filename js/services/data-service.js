@@ -71,9 +71,12 @@ function utf8Bytes(text) {
   return new TextEncoder().encode(text).byteLength;
 }
 
-async function decodeVerifiedPublicJson(value, integrityRequired) {
+async function decodeVerifiedPublicJson(value, integrityRequired, deliveryKind = null) {
   if (value?.kind === PUBLIC_JSON_ENVELOPE_KIND && !integrityRequired) {
     throw new Error('PUBLIC_JSON_TRANSPORT_REQUIRES_OUTER_INTEGRITY');
+  }
+  if (value?.kind === PUBLIC_JSON_ENVELOPE_KIND && deliveryKind !== 'hour' && deliveryKind !== 'zone') {
+    throw new Error('PUBLIC_JSON_TRANSPORT_REQUIRES_DELIVERY_ENTRY');
   }
   return decodePublicJsonTransport(value);
 }
@@ -84,7 +87,9 @@ async function fetchJson(url, {
   expectedSha256 = null,
   expectedBytes = null,
   timeoutMs = 0,
+  publicDeliveryKind = null,
 } = {}) {
+  const deliveryKind = publicDeliveryKind === 'hour' || publicDeliveryKind === 'zone' ? publicDeliveryKind : null;
   const integrityRequired = expectedSha256 !== null || expectedBytes !== null;
   const expected = integrityRequired ? String(expectedSha256).toLowerCase() : null;
   if (integrityRequired) {
@@ -98,9 +103,13 @@ async function fetchJson(url, {
     if (integrityRequired && (cached.sha256 !== expected || (cached.transportBytes ?? cached.bytes) !== expectedBytes)) {
       throw new Error(`${url}: den cachede fil matcher ikke det aktuelle manifest.`);
     }
+    if (cached.transportKind) {
+      if (!integrityRequired) throw new Error('PUBLIC_JSON_TRANSPORT_REQUIRES_OUTER_INTEGRITY');
+      if (cached.transportKind !== deliveryKind) throw new Error('PUBLIC_JSON_TRANSPORT_REQUIRES_DELIVERY_ENTRY');
+    }
     return cached.value;
   }
-  const requestKey = `${url}|${expected}|${expectedBytes}`;
+  const requestKey = `${url}|${expected}|${expectedBytes}|${deliveryKind ?? 'PLAIN'}`;
   if (inFlight.has(requestKey)) return inFlight.get(requestKey);
   const pending = (async () => {
   const controller = timeoutMs > 0 ? new AbortController() : null;
@@ -131,11 +140,11 @@ async function fetchJson(url, {
   // The manifest authenticates transport bytes; memory eviction charges the
   // decoded JSON bytes. Preserve both so verified cached envelopes stay valid.
   const integrityTransportBytes = actualBytes;
-  const decoded = await decodeVerifiedPublicJson(value, integrityRequired);
+  const decoded = await decodeVerifiedPublicJson(value, integrityRequired, deliveryKind);
   value = decoded.value;
   actualBytes = decoded.decodedBytes ?? actualBytes;
   if (ttlMs > 0) memory.remember(url, { at: Date.now(), value, sha256: actualSha256,
-    bytes: actualBytes, transportBytes: integrityTransportBytes });
+    bytes: actualBytes, transportBytes: integrityTransportBytes, transportKind: decoded.encoded ? deliveryKind : null });
   return value;
   } finally { if (timer !== null) clearTimeout(timer); }
   })();
@@ -1157,7 +1166,8 @@ async function loadDelivery(manifest, kind, key, { timeoutMs = 0 } = {}) {
   const entry = publicDeliveryEntries(manifest).find(entry => entry.kind === kind && entry.key === key);
   if (!entry) throw new Error('Den valgte time eller zone findes ikke i denne generation.');
   const url = contentAddressedUrl(`./data/live/${entry.path.slice(2)}`, manifest.datasetId, entry.sha256);
-  const data = await fetchJson(url, { ttlMs: 120000, cache: 'force-cache', expectedSha256: entry.sha256, expectedBytes: entry.bytes, timeoutMs });
+  const data = await fetchJson(url, { ttlMs: 120000, cache: 'force-cache', expectedSha256: entry.sha256,
+    expectedBytes: entry.bytes, timeoutMs, publicDeliveryKind: entry.kind });
   assertPublicDeliveryDocument(data, manifest, entry);
   assertPublicVerifiedEvidenceTrust(data, 'Den opdelte offentlige pakke');
   assertNestedModelBindings(data, manifest.ravScoreModelBinding);
@@ -1239,7 +1249,7 @@ function mergeDeliveryZone(conditions, details) {
 export async function loadPublicForecastShareSelection(input, { fetchPublic } = {}) {
   const selection = exactForecastShareSelection(input);
   if (!selection || typeof fetchPublic !== 'function') throw new Error('FORECAST_SHARE_READER_INVALID');
-  async function read(path, { bytes = null, sha256 = null } = {}) {
+  async function read(path, { bytes = null, sha256 = null, deliveryKind = null } = {}) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 15000);
     const limit = bytes ?? 512 * 1024;
@@ -1264,7 +1274,7 @@ export async function loadPublicForecastShareSelection(input, { fetchPublic } = 
       if (bytes !== null && (size !== bytes || await sha256Text(text) !== sha256)) {
         throw new Error('FORECAST_SHARE_BINDING_INVALID');
       }
-      return (await decodeVerifiedPublicJson(JSON.parse(text), bytes !== null)).value;
+      return (await decodeVerifiedPublicJson(JSON.parse(text), bytes !== null, deliveryKind)).value;
     } finally { clearTimeout(timer); }
   }
   const manifest = assertManifest(await read('./data/live/manifest.json'));
@@ -1273,7 +1283,7 @@ export async function loadPublicForecastShareSelection(input, { fetchPublic } = 
   if (!entry || selection.time < availability.selectedReferenceAt
       || !Object.hasOwn(manifest.detailDelivery.hours, selection.time)) return null;
   const [document, zoneDocument] = await Promise.all([
-    read('./data/live/' + entry.path.slice(2), { bytes: entry.bytes, sha256: entry.sha256 }),
+    read('./data/live/' + entry.path.slice(2), { bytes: entry.bytes, sha256: entry.sha256, deliveryKind: entry.kind }),
     read('./data/zones.geojson', { bytes: manifest.zoneRegistryBytes, sha256: manifest.zoneRegistrySha256 }),
   ]);
   assertPublicDeliveryDocument(document, manifest, entry);
