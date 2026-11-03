@@ -61,6 +61,12 @@ function project(deployed=false){return{id:projectId,name:'ravradar-del',product
     production:{compatibility_date:'2026-10-24',compatibility_flags:[],env_vars:{}}},
   canonical_deployment:deployed?structuredClone(deployment):null,latest_deployment:deployed?structuredClone(deployment):null};}
 assertForecastSharePagesRemoteProject(project(),projectId);assertForecastSharePagesDeployment(deployment,projectId,commit);
+for(const domains of [['ravradar-del.pages.dev','del.ravradar.dk'],['del.ravradar.dk','ravradar-del.pages.dev']])
+  assert.equal(assertForecastSharePagesRemoteProject({...project(),domains},projectId),projectId);
+for(const domains of [['ravradar-del.pages.dev','ravradar-del.pages.dev'],
+  ['ravradar-del.pages.dev','del.ravradar.dk','del.ravradar.dk'],['ravradar-del.pages.dev','foreign.invalid'],
+  ['ravradar-del.pages.dev','del.ravradar.dk.forged.invalid'],['ravradar-del.pages.dev','https://del.ravradar.dk']])
+  assert.throws(()=>assertForecastSharePagesRemoteProject({...project(),domains},projectId),/REMOTE_DOMAINS/);
 for(const delta of [{name:'other'},{domains:['del.ravradar.dk']},{source:{type:'github'}}])
   assert.throws(()=>assertForecastSharePagesRemoteProject({...project(),...delta},projectId));
 const withSecret=project();withSecret.deployment_configs.production.env_vars={PRIVATE:{type:'secret_text',value:'RAW_PRIVATE'}};
@@ -106,11 +112,13 @@ assert.throws(()=>assertForecastSharePagesRemoteProject(unknownConfig));
 const unknownSecrets=project();delete unknownSecrets.deployment_configs.production.env_vars;
 assert.throws(()=>assertForecastSharePagesRemoteProject(unknownSecrets));
 for(const aliases of [null,[],['https://main.ravradar-del.pages.dev'],['https://abcd1234.ravradar-del.pages.dev'],
-  ['https://ravradar-del.pages.dev','https://main.ravradar-del.pages.dev']])
+  ['https://ravradar-del.pages.dev','https://main.ravradar-del.pages.dev'],
+  ['https://del.ravradar.dk'],['https://ravradar-del.pages.dev','https://del.ravradar.dk']])
   assert.equal(assertForecastSharePagesDeployment({...deployment,aliases,env_vars:null},projectId,commit),deploymentId);
 for(const aliases of [undefined,['https://other.pages.dev'],['https://main.ravradar-del.pages.dev.evil.invalid'],
   ['https://ravradar-del.pages.dev@evil.invalid'],['http://ravradar-del.pages.dev'],
-  ['https://ravradar-del.pages.dev/path'],['https://main.ravradar-del.pages.dev:8443']])
+  ['https://ravradar-del.pages.dev/path'],['https://main.ravradar-del.pages.dev:8443'],['https://del.ravradar.dk.forged.invalid'],
+  ['https://del.ravradar.dk/path'],['http://del.ravradar.dk'],['https://del.ravradar.dk:8443']])
   assert.throws(()=>assertForecastSharePagesDeployment({...deployment,aliases},projectId,commit));
 for(const delta of [{uses_functions:false},{uses_functions:'true'},{env_vars:undefined},
   {deployment_trigger:{type:'ad_hoc',metadata:{branch:'main',commit_hash:commit,commit_dirty:true}}},
@@ -308,6 +316,10 @@ async function updateScenario(kind){
       const value=current();projectReads++;
       if(kind==='foreign-project')value.id='foreign-project';
       if(kind==='custom-domain')value.domains.push('del.ravradar.dk');
+      if(kind==='foreign-domain')value.domains.push('foreign.invalid');
+      if(kind==='duplicate-domain')value.domains.push('ravradar-del.pages.dev');
+      if(kind==='domain-drift-before-write'&&projectReads===2||kind==='domain-drift-final'&&projectReads===4)
+        value.domains.push('del.ravradar.dk');
       if(kind==='missing-domain')value.domains=[];
       if(kind==='secret')value.deployment_configs.production.env_vars={PRIVATE:{type:'secret_text',value:'RAW_PRIVATE'}};
       if(kind==='functions-unproved')value.uses_functions=null;
@@ -338,17 +350,21 @@ assert.equal(updated.result.operation,'update');assert.equal(updated.result.crea
 assert.equal(updated.result.outcome,'DEPLOYED_READBACK_PROVED');assert.equal(updated.result.predecessorDeploymentId,predecessorId);
 assert.equal(updated.result.predecessorCommit,predecessorCommit);assert.equal(updated.result.hostedScoreProved,false);
 assert.equal(updated.result.freeCapacityProved,false);assert.equal(updated.result.dnsChanged,false);cases++;
+const customUpdated=await updateScenario('custom-domain');assert.equal(customUpdated.error,undefined);
+assert.equal(customUpdated.deploys,1);assert.equal(customUpdated.result.customDomains,1);
+assert.equal(customUpdated.result.dnsChanged,false);assert.equal(customUpdated.result.legacyWorkerChanged,false);
+assert.equal(customUpdated.result.hostedScoreProved,false);assert.equal(customUpdated.result.freeCapacityProved,false);cases++;
 const alreadyUpdated=await updateScenario('already-deployed');assert.equal(alreadyUpdated.error,undefined);
 assert.equal(alreadyUpdated.deploys,0);assert.equal(alreadyUpdated.result.deployIssued,false);
 assert.equal(alreadyUpdated.result.terminationConfirmed,null);assert.equal(alreadyUpdated.result.outcome,'ALREADY_DEPLOYED_READBACK_PROVED');cases++;
-for(const kind of ['permission','foreign-list','foreign-project','custom-domain','missing-domain','secret','functions-unproved',
+for(const kind of ['permission','foreign-list','foreign-project','foreign-domain','duplicate-domain','domain-drift-before-write','missing-domain','secret','functions-unproved',
   'wrong-predecessor-commit','wrong-predecessor-id','missing-predecessor','stale-latest','changed-current','drift-before-write','main-moved','wrong-model']){
   const result=await updateScenario(kind);assert(result.error,kind);assert.equal(result.deploys,0,kind);
   assert.equal(result.error.receipt.outcome,'REFUSED_BEFORE_WRITE',kind);cases++;
 }
 const updatedLost=await updateScenario('reply-lost');assert.equal(updatedLost.error,undefined);
 assert.equal(updatedLost.deploys,1);assert.equal(updatedLost.result.outcome,'COMMITTED_REPLY_LOST_READBACK_PROVED');cases++;
-for(const kind of ['stop-unknown','uncommitted-reply-lost','bad-output','drift-final']){
+for(const kind of ['stop-unknown','uncommitted-reply-lost','bad-output','drift-final','domain-drift-final']){
   const result=await updateScenario(kind);assert(result.error,kind);assert.equal(result.deploys,1,kind);
   assert.equal(result.error.receipt.outcome,'UNKNOWN_NO_RETRY',kind);cases++;
 }
