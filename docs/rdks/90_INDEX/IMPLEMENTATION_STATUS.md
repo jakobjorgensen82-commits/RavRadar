@@ -1,3 +1,17 @@
+## 3. november — delingens cacheadresse gennem hele datalæseren
+
+Den fulde klientkontrol påviste, at app og delingsknap brugte den nye kontraktadresse, mens datalæseren stadig importerede den gamle. Den afgrænsede rettelse fører den samme adresse gennem datalæseren og giver appens datalæserimport en frisk cacheadresse. Zone, tidspunkt, søgemåde, sprog, vejrdata, model og scoreformel bevares.
+
+Den eksisterende browsercacheprøve skal indeholde de faktisk allerede leverede adresser. Den samme prøve har afvist både den oprindelige kontraktforskel og genbrug af den gamle datalæser efter kun den første rettelse. Begge nødvendige produktændringer består nu gennem den normale test:map-timeline-indgang. Alle gamle assertions bevares; der tilføjes ingen testgruppe, version, binding, SQL eller produktionsændring. Præcis ny GitHub-kvalifikation og faktisk domæne-/klientlevering er fortsat åbne.
+
+Ved ændringer af appens, bootstrapens eller delingens indlæsnings-/cachekæde bruges den eksisterende normale test:map-timeline-forælder tidligt. Den omfatter delings-/tidsskyderprøven og panel-/generationsprøverne; en enkelt vellykket bladprøve dækker ikke alene modulidentitet og allerede installeret browsercache. Kør ikke samme blad endnu en gang gennem en anden lokal indgang. Dette ændrer ikke kontrolregistret eller kravene til frisk GitHub- og offentlig kvalifikation.
+
+## 3. november — klienten til den korte delingsadresse er særskilt forberedt
+
+Den afgrænsede klientkandidat vælger del.ravradar.dk som delingsadresse og giver index → bootstrap → app → delingsmoduler en ny, sammenhængende cacheadresse. Den oprindelige selection for zone, UTC-time, søgemåde og sprog bevares; ingen score eller data fastfryses. Den gamle Worker beholder sin særskilte, uændrede adresse og allerede delte links.
+
+Den normale lokale delings-/tidsskyderprøve består med 171 cases. Præcis samlet kildekvalifikation er åben. Kandidaten må først merges og offentliggøres efter den leverede controller, faktisk Pagesdomæne, én Simply-CNAME, aktiv TLS og korrekt hosted visning. Formfelter eller en gennemført kildeprøve er ikke domæne-/Facebook-/Free-bevis. Ingen ændring af RavScore, vejrforløb, model, SQL, administratorpunkter eller geometri. Se DEC-0294 og håndbog 89.278; skiftende beviser føres privat.
+
 ## 3. november — delingsprojektet bevarer det præcise korte domæne
 
 Prøveadressen ravradar-del.pages.dev er faktisk oprettet og har vist kontrollerede scorer fra den offentlige 594-prognose. Hjemmesidens delingsknap bruger fortsat den gamle adresse. del.ravradar.dk, DNS/TLS, klientovergang, Facebookaccept og målt CPU-kapacitet er fortsat åbne; en lokal prøve eller de observerede vellykkede svar lukker ikke disse krav.

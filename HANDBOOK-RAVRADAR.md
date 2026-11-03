@@ -532,6 +532,12 @@ Før det korte domæne tilsluttes, skal opdateringsværktøjet kunne bevare neto
 
 Efter denne kode er kvalificeret og leveret, følger tilknytning på Pages, én CNAME hos Simply og kontrol af det aktive certifikat. Først derefter skifter hjemmesidens delingsknap. Navneservere, hovedhjemmeside, mail og den gamle delingstjeneste bevares. Der ændres ingen scoremodel, vejrdata eller database.
 
+### Klientens særskilte overgang
+
+Den særskilte klientkandidat ændrer kun den adresse, som delingsknappen bruger. Den vælger del.ravradar.dk og bevarer zone, det præcise tidspunkt, søgemåde og sprog. Hjemmesidens indlæsningskæde får sammenhængende nye cacheadresser, så en eksisterende browser kan hente den nye knapkode.
+
+Denne klient må først offentliggøres, når projektets opdateringsværktøj er leveret, domænet faktisk er tilknyttet, CNAME-posten findes og certifikatet virker. Den normale lokale prøve med 171 tilfælde er bestået; den er ikke bevis for dette domæne, Facebooks visning eller tilstrækkelig gratis kapacitet. Den gamle delingstjeneste og allerede delte links bevares.
+
 ## 89.277 Undersøg de gemte data, før hentningen ændres
 
 **Kort fortalt: Huller i prognosen skal undersøges i de data, som vejrhentningen faktisk gemte. En afgrænset læsning kan vise, hvor meget de enkelte reservekilder udfyldte, uden at starte en ny vejrhentning.**

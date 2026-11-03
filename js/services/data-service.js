@@ -1,7 +1,7 @@
 import { assertForecastShareDescriptor, assertForecastShareZoneProjection, forecastShareZoneProjectionSelection,
   FORECAST_SHARE_DESCRIPTOR_PATH, FORECAST_SHARE_INDEX_MAX_BYTES, FORECAST_SHARE_ZONE_MAX_BYTES } from './forecast-share-projection.js?v=4.0.594';
 import { normalizeZoneRegistry } from './zone-registry.js?v=4.0.594';
-import { exactForecastShareSelection } from './forecast-share-contract.js?v=4.0.594&ui=forecast-share-20261024';
+import { exactForecastShareSelection } from './forecast-share-contract.js?v=4.0.594&ui=forecast-share-20261024&share=custom-domain-20261102';
 import { exactMapZoneScore } from './map-forecast-view.js?v=4.0.594';
 import { publicDeliveryEntries, assertPublicDeliveryDocument, publicDeliveryGeneration,
   reuseVerifiedPublicHour, refreshVerifiedPublicGeneration, createBoundedPublicMemory } from '../core/public-delivery-contract.js?v=4.0.594';

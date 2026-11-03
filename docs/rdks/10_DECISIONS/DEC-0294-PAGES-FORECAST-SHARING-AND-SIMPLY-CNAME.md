@@ -66,3 +66,9 @@ Prøveadressen ravradar-del.pages.dev er faktisk oprettet og har vist kontroller
 Den afgrænsede controllerkandidat accepterer nu kun pages.dev alene eller sammen med præcis del.ravradar.dk. Projektidentitet, forgænger og den samlede domænemængde skal være uændrede gennem før-/efterkontrollerne. Fremmede værter, dubletter og domæneskift under opdatering afvises. Controlleren ændrer ikke DNS og opretter ikke et eksisterende projekt på ny.
 
 Lever den kildekvalificerede controller før domænet tilknyttes. Derefter følger Pagesbinding, én Simply-CNAME, TLS/hostkontrol og særskilt frontend-/cacheovergang. Navneservere, hovedhjemmeside, mail, gammel Worker og allerede delte links bevares. Ingen ændring af model, version, SQL, vejr, score, administratorpunkter eller geometri. Se DEC-0294 og håndbog 89.278; aktuelle identiteter og detaljeret evidens står i det private checkpoint.
+
+### Særskilt klientovergang, 3. november
+
+Den afgrænsede klientkandidat vælger del.ravradar.dk som delingsadresse og giver index → bootstrap → app → delingsmoduler en ny, sammenhængende cacheadresse. Den oprindelige selection for zone, UTC-time, søgemåde og sprog bevares; ingen score eller data fastfryses. Den gamle Worker beholder sin særskilte, uændrede adresse og allerede delte links.
+
+Den normale lokale delings-/tidsskyderprøve består med 171 cases. Præcis samlet kildekvalifikation er åben. Kandidaten må først merges og offentliggøres efter den leverede controller, faktisk Pagesdomæne, én Simply-CNAME, aktiv TLS og korrekt hosted visning. Formfelter eller en gennemført kildeprøve er ikke domæne-/Facebook-/Free-bevis. Ingen ændring af RavScore, vejrforløb, model, SQL, administratorpunkter eller geometri. Se DEC-0294 og håndbog 89.278; skiftende beviser føres privat.
