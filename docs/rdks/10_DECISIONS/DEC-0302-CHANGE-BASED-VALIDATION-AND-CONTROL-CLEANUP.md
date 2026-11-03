@@ -154,3 +154,11 @@ Samlet gennemgang, den første fulde kildekvalifikation af selve kontrolændring
 ## Placering af hukommelse
 
 RDKS er beslutningskilden; AGENTS og CODEX_START_HERE giver kort obligatorisk indgang. Målet behøver kun et stabilt princip og henvisning, ikke kopier af hele den skiftende testplan. Checkpointet gemmer faktisk leveret/forberedt status og næste konkrete trin. Alle fem hovedmål og fristen 18. november 2026 bevares.
+
+## 3. november — normal forælder for ændret browsercachekæde
+
+Den fulde klientkontrol påviste, at app og delingsknap brugte den nye kontraktadresse, mens datalæseren stadig importerede den gamle. Den afgrænsede rettelse fører den samme adresse gennem datalæseren og giver appens datalæserimport en frisk cacheadresse. Zone, tidspunkt, søgemåde, sprog, vejrdata, model og scoreformel bevares.
+
+Den eksisterende browsercacheprøve skal indeholde de faktisk allerede leverede adresser. Den samme prøve har afvist både den oprindelige kontraktforskel og genbrug af den gamle datalæser efter kun den første rettelse. Begge nødvendige produktændringer består nu gennem den normale test:map-timeline-indgang. Alle gamle assertions bevares; der tilføjes ingen testgruppe, version, binding, SQL eller produktionsændring. Præcis ny GitHub-kvalifikation og faktisk domæne-/klientlevering er fortsat åbne.
+
+Ved ændringer af appens, bootstrapens eller delingens indlæsnings-/cachekæde bruges den eksisterende normale test:map-timeline-forælder tidligt. Den omfatter delings-/tidsskyderprøven og panel-/generationsprøverne; en enkelt vellykket bladprøve dækker ikke alene modulidentitet og allerede installeret browsercache. Kør ikke samme blad endnu en gang gennem en anden lokal indgang. Dette ændrer ikke kontrolregistret eller kravene til frisk GitHub- og offentlig kvalifikation.
