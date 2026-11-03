@@ -1,3 +1,9 @@
+## 3. november — klienten til den korte delingsadresse er særskilt forberedt
+
+Den afgrænsede klientkandidat vælger del.ravradar.dk som delingsadresse og giver index → bootstrap → app → delingsmoduler en ny, sammenhængende cacheadresse. Den oprindelige selection for zone, UTC-time, søgemåde og sprog bevares; ingen score eller data fastfryses. Den gamle Worker beholder sin særskilte, uændrede adresse og allerede delte links.
+
+Den normale lokale delings-/tidsskyderprøve består med 171 cases. Præcis samlet kildekvalifikation er åben. Kandidaten må først merges og offentliggøres efter den leverede controller, faktisk Pagesdomæne, én Simply-CNAME, aktiv TLS og korrekt hosted visning. Formfelter eller en gennemført kildeprøve er ikke domæne-/Facebook-/Free-bevis. Ingen ændring af RavScore, vejrforløb, model, SQL, administratorpunkter eller geometri. Se DEC-0294 og håndbog 89.278; skiftende beviser føres privat.
+
 ## 3. november — delingsprojektet bevarer det præcise korte domæne
 
 Prøveadressen ravradar-del.pages.dev er faktisk oprettet og har vist kontrollerede scorer fra den offentlige 594-prognose. Hjemmesidens delingsknap bruger fortsat den gamle adresse. del.ravradar.dk, DNS/TLS, klientovergang, Facebookaccept og målt CPU-kapacitet er fortsat åbne; en lokal prøve eller de observerede vellykkede svar lukker ikke disse krav.
