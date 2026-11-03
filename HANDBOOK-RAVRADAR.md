@@ -570,6 +570,20 @@ Kun den eksisterende faste talopsummering og nødvendige læse-/kapacitetsoplysn
 
 29. oktober er koden gennemgået og forberedt lokalt. Relevante afgrænsede API- og workflowprøver er bestået på de gennemgåede kodefiler. Den præcise GitHub-kontrol, sikker levering og en virkelig læsning af den valgte originalpakke udestår. En årsag til manglende prognosetimer må ikke udledes af forberedelsen alene. Scoreformel, kildeprioritet DMI → Copernicus → Open-Meteo, administratorpunkter, geometri og almindelige hentetider ændres ikke.
 
+### Fast metadataaflæsning før videre bølgediagnose
+
+Den 3. november er en særskilt lokal kandidat forberedt til én eksakt gemt RAW-cache og 14 faste WAM-identiteter. Den genbruger det eksisterende auditjob, den normale eksklusive vejrkanal og kontrollerne af main, kildebevis og præcist cachehit. Den læser kun manifestet og kræver hver identitet, revision, erklæret kontrolsum og filstørrelse. Manglende, tvetydig eller ændret metadata giver et fast afslag.
+
+Manifestets egen kontrolsum og størrelse kontrolleres. En erklæret kontrolsum er dog ikke bevis for, at den tilhørende originalfil stadig findes eller har de samme bytes. Ingen RAW-fil åbnes eller afkodes; beskyttet originalpakke, fremdrift, koordinater og vejrvektorer indgår ikke. Resultatet markerer derfor stadig originalbytes, afkodning og PART-grundlag som ikke verificeret.
+
+Lokale afgrænsede læser-, CLI- og workflowprøver er bestået. Kildeplanen kræver normal fuld kontrol uden at udvide registret. Den faktiske metadataaflæsning og en årsag til bølgehullerne er endnu ikke bevist. En senere afkodning kræver først verificerede originalbytes og et autentisk generationsbundet PART-grundlag. Ingen leverandørhentning, beregning, cachegemning eller produktionsændring følger af metadataoperationen.
+
+### Aktuelle jobvalg og den hurtige workflowprøve
+
+Metadatajobbet og den faste vandstandsdiagnose deler samme workflow. Den aktuelle prøve kontrollerer hele valget mellem metadata, komponentopsummering og vandstand samt afvisning af blandede diagnosetilvalg før lager- og masterkredentialer. Den eksisterende skrivefri GitHub-adgang bruges fortsat til den tidlige kildekontrol. Alle tidligere originale, arkiverede og private læsegrænser bevares.
+
+Ved ændringer af fælles jobvalg køres hele den eksisterende hurtige workflowmålfil, ikke kun prøver navngivet efter den nye mode. Det ændrer ingen produktgren, data, modelbinding eller kontrolregister. De historiske helfilinverser bevares, mens en aktuel prøve kontrollerer den faktiske nye betingelse. En bestået lokal prøve er stadig ikke præcis kildekvalifikation eller en udført metadataaflæsning.
+
 ## 89.276 Bedre hjælp til almindelige spørgsmål og korte opfølgninger
 
 **Kort fortalt: Spørg RavRadar skal forstå almindelige spørgsmål om ravjagt og kunne følge en kort opfølgning. Svarene skal være brugbare og ærlige om usikkerhed. Forbedringen ændrer ikke RavScore eller de vejrdata, prognosen bygger på.**

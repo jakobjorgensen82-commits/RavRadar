@@ -1,3 +1,15 @@
+## 3. november — aktuelle jobvalg prøves samlet
+
+Den nye faste metadataoperation ændrer den fælles jobvælger i det eksisterende auditworkflow. Den aktuelle Voersaa-prøve skal derfor kontrollere hele den nye OR-betingelse og begge søskendejobbers negative metadataafgrænsning. Dens øvrige kilde-, original-, arkiv-, credential- og privacykrav samt alle historiske helfilinverser bevares. Produktkode og workflow er uændrede af denne testrettelse.
+
+Når en ændring berører fælles jobvalg eller modeadskillelse, køres hele den eksisterende hurtige workflowmålfil tidligt. Et navnemønster for kun den nye mode dækker ikke de berørte søskendetilstande. Langsomme, uvedkommende datalæserprøver gentages fortsat ikke uden konkret grund. Den normale workflowfil reproducerer det gamle afslag og består med den aktuelle kontrakt; præcis ny kildekvalifikation og faktisk metadataaflæsning er fortsat åbne.
+
+## 3. november — fast metadataaflæsning før videre bølgediagnose
+
+Den lokale kandidat genbruger det eksisterende skrivefri auditjob til én eksakt gemt RAW-cache og 14 faste WAM-identiteter. Kun manifestet læses; den erklærede kontrolsum er ikke verifikation af originalfilens bytes. RAW-filer, decoder, beskyttet B og fremdrift indgår ikke. Ukendt, tvetydig eller ændret metadata giver afslag.
+
+Læs håndbog 89.277s nye afgrænsning. Lokale målprøver er bestået; normalplanen er konservativ FULL uden registerudvidelse. Præcis kildekvalifikation og faktisk metadataaflæsning er åbne. Den fælles DKSS-only-læser, modelbindinger og alle migrationer bevares; håndbogens installationskopi afledes alene af webhåndbogen. Ingen ny version eller produktionshandling følger med.
+
 ## 3. november — faste fejlfaser for den normale scalarplan
 
 Når den normale plan for reelle vejrhul afvises, viser den nu en fast fase, fejlkategori og elapsedMillis sammen med den eksisterende markør. Rå fejltekst, filstier, vejrværdier og underprocessens fejludskrift udleveres ikke. Ukendte fejl forbliver UNKNOWN_FAILURE; et ukendt transportstop bevarer STOP_UNPROVED og exit 2.
