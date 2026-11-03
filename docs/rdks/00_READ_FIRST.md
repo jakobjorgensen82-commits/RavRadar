@@ -1,3 +1,9 @@
+## 3. november — PLAIN-klientbro før senere komprimering
+
+Læs håndbog 89.301 og de daterede tillæg til DEC-0154/DEC-0175 for denne afgrænsede UI-kandidat. Normal offentlig JSON forbliver PLAIN; kode til en senere streng transportlæser er ikke en aktiveret emitter eller et samlet 1 GB-bevis. Opdateringskontrollen skal starte efter storage-safety og før en ventende app-import, også ved interactive uden window.load.
+
+Versionen er fortsat 4.0.594. Der udstedes ingen C/I/T, SQL-migration eller ny releaseversion. Gamle åbne ukontrollerede klienter får ikke automatisk den nye kode. Faktisk Node 22-CI og offentlig browser-/SW-accept er åbne. SOURCE, statistik og automatisk sletning aktiveres ikke; alle fem mål består.
+
 ## 31. oktober — læs den nye 594-afgrænsning før de historiske statusfronter
 
 Den installerede databaseforgænger er 593; autentiske originale B/S og offentlig generation er stadig591. Den nye assistant-installed593-origin591-successor skal bevare denne adskillelse, gamle profiler og alle 71 udstedte SQL-filer. Ingen 593-original eller håndskrevet594-migration må konstrueres. 4.0.594 er lokalt udstedt gennem den normale afledning; samlet kvalifikation, installation og offentlig levering er fortsat åbne.

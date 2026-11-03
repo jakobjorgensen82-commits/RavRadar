@@ -191,3 +191,25 @@ cases++;
 
 globalThis.fetch=savedFetch;
 console.log(JSON.stringify({status:'PASS_MAP_TIMELINE_NORMAL_GENERATION_AND_LIFECYCLE',cases,normalAppCallers:true,normalRenderZones:true,networkCalls:0}));
+
+// Add the public transport/updater bridge without changing the older UI oracle.
+const { checkPublicReaderBridge } = await import('./test-public-json-reader-bridge.mjs');
+console.log(JSON.stringify(await checkPublicReaderBridge()));
+
+// Isolate the native/fallback codec probes from this parent's browser globals.
+const { spawnSync } = await import('node:child_process');
+const { fileURLToPath } = await import('node:url');
+const codecChildEnv = { ...process.env };
+delete codecChildEnv.NODE_TEST_CONTEXT;
+const codecChild = spawnSync(process.execPath, ['--test',
+  fileURLToPath(new URL('./test-public-json-transport.mjs', import.meta.url))], {
+  shell: false, windowsHide: true, timeout: 10000, maxBuffer: 1024 * 1024,
+  encoding: 'utf8', cwd: fileURLToPath(new URL('../', import.meta.url)), env: codecChildEnv,
+});
+if (codecChild.stdout) process.stdout.write(codecChild.stdout);
+if (codecChild.stderr) process.stderr.write(codecChild.stderr);
+assert.ifError(codecChild.error);
+assert.equal(codecChild.signal, null, 'The normal codec child must finish without signal or timeout');
+assert.equal(codecChild.status, 0, 'The normal codec native/fallback target must pass');
+console.log(JSON.stringify({ status: 'PASS_PUBLIC_JSON_CODEC_NORMAL_PARENT_CHILD', cases: 36,
+  node: process.version, sameNode: true, shell: false, timeoutMs: 10000, maxBufferBytes: 1024 * 1024 }));

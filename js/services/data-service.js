@@ -1,3 +1,4 @@
+import { PUBLIC_JSON_ENVELOPE_KIND, decodePublicJsonTransport } from './public-json-transport.js?v=4.0.594&transport=public-json-bridge-20261103';
 import { assertForecastShareDescriptor, assertForecastShareZoneProjection, forecastShareZoneProjectionSelection,
   FORECAST_SHARE_DESCRIPTOR_PATH, FORECAST_SHARE_INDEX_MAX_BYTES, FORECAST_SHARE_ZONE_MAX_BYTES } from './forecast-share-projection.js?v=4.0.594';
 import { normalizeZoneRegistry } from './zone-registry.js?v=4.0.594';
@@ -70,6 +71,13 @@ function utf8Bytes(text) {
   return new TextEncoder().encode(text).byteLength;
 }
 
+async function decodeVerifiedPublicJson(value, integrityRequired) {
+  if (value?.kind === PUBLIC_JSON_ENVELOPE_KIND && !integrityRequired) {
+    throw new Error('PUBLIC_JSON_TRANSPORT_REQUIRES_OUTER_INTEGRITY');
+  }
+  return decodePublicJsonTransport(value);
+}
+
 async function fetchJson(url, {
   ttlMs = 0,
   cache = 'default',
@@ -87,7 +95,7 @@ async function fetchJson(url, {
   }
   const cached = memory.get(url);
   if (cached && Date.now() - cached.at < ttlMs) {
-    if (integrityRequired && (cached.sha256 !== expected || cached.bytes !== expectedBytes)) {
+    if (integrityRequired && (cached.sha256 !== expected || (cached.transportBytes ?? cached.bytes) !== expectedBytes)) {
       throw new Error(`${url}: den cachede fil matcher ikke det aktuelle manifest.`);
     }
     return cached.value;
@@ -120,7 +128,14 @@ async function fetchJson(url, {
   } else {
     value = await response.json();
   }
-  if (ttlMs > 0) memory.remember(url, { at: Date.now(), value, sha256: actualSha256, bytes: actualBytes });
+  // The manifest authenticates transport bytes; memory eviction charges the
+  // decoded JSON bytes. Preserve both so verified cached envelopes stay valid.
+  const integrityTransportBytes = actualBytes;
+  const decoded = await decodeVerifiedPublicJson(value, integrityRequired);
+  value = decoded.value;
+  actualBytes = decoded.decodedBytes ?? actualBytes;
+  if (ttlMs > 0) memory.remember(url, { at: Date.now(), value, sha256: actualSha256,
+    bytes: actualBytes, transportBytes: integrityTransportBytes });
   return value;
   } finally { if (timer !== null) clearTimeout(timer); }
   })();
@@ -1249,7 +1264,7 @@ export async function loadPublicForecastShareSelection(input, { fetchPublic } = 
       if (bytes !== null && (size !== bytes || await sha256Text(text) !== sha256)) {
         throw new Error('FORECAST_SHARE_BINDING_INVALID');
       }
-      return JSON.parse(text);
+      return (await decodeVerifiedPublicJson(JSON.parse(text), bytes !== null)).value;
     } finally { clearTimeout(timer); }
   }
   const manifest = assertManifest(await read('./data/live/manifest.json'));
@@ -1328,8 +1343,9 @@ export async function loadCompactPublicForecastShareSelection(input, { fetchPubl
       throw new Error('FORECAST_SHARE_BINDING_INVALID');
     }
     budget();
-    const document = JSON.parse(text);
-    return withText ? { document, text } : document;
+    const decoded = await decodeVerifiedPublicJson(JSON.parse(text), bytes !== null);
+    budget();
+    return withText ? { document: decoded.value, text } : decoded.value;
   }
   try {
     const loaded = await read('./data/live/manifest.json', { withText: true });

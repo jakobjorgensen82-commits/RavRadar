@@ -1,0 +1,47 @@
+{
+  "package": "fflate",
+  "version": "0.8.2",
+  "license": "MIT",
+  "source": "https://github.com/101arrowz/fflate",
+  "repository": {
+    "url": "git+https://github.com/101arrowz/fflate.git",
+    "type": "git"
+  },
+  "metadataUrl": "https://registry.npmjs.org/fflate/0.8.2",
+  "tarballUrl": "https://registry.npmjs.org/fflate/-/fflate-0.8.2.tgz",
+  "npmIntegrity": "sha512-cPJU47OaAoCbg0pBvzsgpTPhmhqI5eJjh/JIu8tPj5q+T7iLvW/JAYUqmE7KOB4R1ZyEhzBaIQpQpardBF5z8A==",
+  "npmShasum": "fc8631f5347812ad6028bbe4a2308b2792aa1dea",
+  "gitHead": "d3243651cb142e3e04f3e4bc037b9e985878f444",
+  "verifiedUtc": "2026-11-03T14:50:26.546168+00:00",
+  "metadata": {
+    "bytes": 3629,
+    "sha256": "7af113aabad77516775b6810b56fa3b92a1e23d8d99c3aff89f4d29b4563d12d"
+  },
+  "tarball": {
+    "bytes": 168507,
+    "sha256": "61fd5061e2fc8e5e3e3129f7f2fec7bd78a313e1bf4becbf1cc1cc9998d141dc"
+  },
+  "npmPackageRepository": "https://github.com/101arrowz/fflate",
+  "npmPackageJsonSha256": "1f39729fc15f568a3aef326e03b3a2b766ad3b6d43705a11bcb66b2979649c89",
+  "vendored": {
+    "browser.js": {
+      "bytes": 89406,
+      "sha256": "3eaf25846fc9ff95f4905ea16d2c33fa74b588da39b9746bc409bb7a44f96d0e",
+      "upstreamSha256": "8cc1f687e0159e977addb6b85e274dbd11e622cf151f4fcb7b85d49622ea43e7"
+    },
+    "LICENSE": {
+      "bytes": 1069,
+      "sha256": "805f6cb28bb8b6d3a0badd83c93bccd9671fa01a3b4b92b7042b0743325ac243"
+    }
+  },
+  "method": "Official npm tarball verified SHA512/SHA1 and repository/version/MIT; exact MIT license retained. Runtime is that browser ESM plus the isolated documented stored-block strictness patch. No installation or runtime CDN.",
+  "preparationNote": "First in-memory package check assumed repository was an object; package.json uses a string. That check stopped before writes and caused one redundant same-package retrieval. No vendor execution or installation.",
+  "localPatch": {
+    "path": "UPSTREAM.patch",
+    "bytes": 560,
+    "sha256": "dbccfc0511bb534622a9c9075e5645a3f158e33e36a55d68c55c7fff35d0d195",
+    "scope": "Only validate stored-block LEN/NLEN complement, after complete stored block is available. Original npm source archived outside source/.",
+    "reason": "Actual normal native rejects, unmodified fflate accepts the same malformed gzip with matching output CRC/ISIZE/SHA.",
+    "upstreamPreservedSha256": "8cc1f687e0159e977addb6b85e274dbd11e622cf151f4fcb7b85d49622ea43e7"
+  }
+}

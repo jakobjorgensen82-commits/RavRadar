@@ -27,3 +27,11 @@ havde et fast 64 MiB-loft. Det levende, hashbundne manifest oplyser eksakt
 
 Næste code-only-run genbruger central version 1, migration 16/17, privacy og
 den gemte cache uden provider. Ingen oneoff eller vejrhentning indgår.
+
+## Tillæg 2026-11-03 — PLAIN-klientbro og adskilte bytegrænser
+
+Den lokale klientkandidat bevarer raw JSON og den hidtidige manifestbundne læsning med dens eksisterende grænser. Offentlig emission er fortsat PLAIN. En senere kendt gzip-base64-transport må kun udpakkes efter kontrol af ydre præcist byteantal og SHA; uden ydre integritetskrav afvises den kendte envelope.
+
+Transporten har præcis kendt struktur, kanonisk base64, positive sikre bytegrænser højst 16 MiB for henholdsvis komprimeret og udpakket indhold, begge SHA-kontroller, gzip-CRC/ISIZE og fatal UTF8/JSON. Native udpakningsfejl må ikke ommærkes til fallback. De eksisterende semantik-, model-, datasæt- og generationsvalidatorer udføres efter afkodning uden lempelse.
+
+Cache-entry.bytes belaster det uændrede memorybudget med decodedBytes, mens transportBytes bevarer den ydre integritet. Genbrug sammenligner cached.transportBytes ?? cached.bytes og bevarer gamle raw-poster. Dette ændrer ikke den historiske plain-læsegrænse eller score-/modelkontrakten. Det er en 594 UI-build, ikke C/I/T-, SQL- eller versionsudstedelse. Senere emitter, komprimering og samlet 1 GB-bevis har egne åbne gates. Se håndbog 89.301.

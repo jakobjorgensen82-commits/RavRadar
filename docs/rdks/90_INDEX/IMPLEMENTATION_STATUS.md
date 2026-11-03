@@ -1,3 +1,13 @@
+## 3. november — PLAIN-klientbro før senere komprimering
+
+**Status: DELVIST IMPLEMENTERET – anvendt lokalt, ikke offentligt leveret.**
+
+Den afgrænsede klientbro er anvendt lokalt på 4.0.594-kilden efter main-sammenføringen. Offentlige filer udsendes fortsat som almindelig JSON (PLAIN). Den nye læser kontrollerer først manifestets ydre bytes/SHA og derefter transportens egne grænser og integritet; de hidtidige semantik-, model- og generationskontroller består. Cachebudgettet belastes med udpakkede bytes, mens genbrug kontrollerer de oprindeligt modtagne transportbytes og stadig accepterer gamle raw-cacheposter.
+
+Updateren installeres efter storage-safety og før den ventende app-import. interactive/complete starter straks; loading bruger én DOMContentLoaded-listener. Hele currentAppVersion og turens brug bevares. Det er en 4.0.594 UI-build/cacheadresse, ikke ny C/I/T, SQL-migration eller version:set.
+
+Lokal normalparent har 9 gamle kortcases, 14 brocases og 36 isolerede codec-cases på Node 24.19.0. Det er ikke faktisk Node 22-CI eller offentlig browser-/SW-accept. Yderligere komprimering og det samlede 1 GB-bevis er senere åbne; allerede åbne ukontrollerede gamle klienter er ikke universelt opgraderet. SOURCE, statistik og automatisk sletning aktiveres ikke. Alle fem hovedmål er fortsat åbne. Se håndbog 89.301 samt tillæggene til DEC-0154 og DEC-0175.
+
 ## 3. november — zonebredde i den afgrænsede komponentreserve
 
 Den lokale kørettelse roterer mellem zoner og nødvendige kystdele særskilt for vind/bølge og temperatur. Hver gruppe tager én nødvendig kystdel pr. zone pr. omgang i fast strengorden. Den eksisterende fletning med to vind-/bølgeopgaver til én temperaturopgave, to transportslots og alle start-, forsøgs- og tidslofter bevares. Zonebredde loves kun inden for hver behovsgruppe og den kapacitet, der faktisk når at starte; ikke på tværs af grupper eller som fuld landedækning i én kørsel.

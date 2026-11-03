@@ -1,5 +1,5 @@
 import { exceptionalScoreMark, scoreRating } from "./js/core/score-presentation.js?v=4.0.594";
-import { loadConditions, loadConditionDetails, mergeConditionDetails, loadZones, loadDataManifest, refreshPublicRuntimeGeneration, mapForecastTimeline, loadMapForecastHour } from "./js/services/data-service.js?v=4.0.594&ui=forecast-share-20261024&share=custom-domain-20261102";
+import { loadConditions, loadConditionDetails, mergeConditionDetails, loadZones, loadDataManifest, refreshPublicRuntimeGeneration, mapForecastTimeline, loadMapForecastHour } from "./js/services/data-service.js?v=4.0.594&ui=forecast-share-20261024&share=custom-domain-20261102&transport=public-json-bridge-20261103";
 import { createMapForecastController, exactMapZoneScore, mapCoastalPartsForDisplay } from './js/services/map-forecast-view.js?v=4.0.594';
 import { bindMapTimeline, mapTimelineDate } from './js/ui/map-timeline.js?v=4.0.594&ui=timeline-days-20261018';
 import { readForecastShare } from './js/services/forecast-share-contract.js?v=4.0.594&ui=forecast-share-20261024&share=custom-domain-20261102';
@@ -16,7 +16,7 @@ import { formatDateTime, formatNumber, getLanguage, getLocale, t, setLanguage, a
 import { buildLocalZoneScore, isCurrentForecastHour, selectLocalBestForDay } from "./js/core/local-zone-score.js?v=4.0.594";
 import { addNationalRanking, compareNationalRankingRows } from "./js/core/zone-ranking.js?v=4.0.594";
 import { createPublicTripEvidenceRuntime } from './js/services/trip-evidence-runtime.js?v=4.0.594';
-import { createPublicPageResumeHandler, createServiceWorkerControllerChangeHandler } from './js/core/public-page-resume.js?v=4.0.594';
+import { createPublicPageResumeHandler } from './js/core/public-page-resume.js?v=4.0.594';
 import { forecastDateKeyInTimeZone, visibleForecastDays } from './js/core/forecast-calendar.js?v=4.0.594';
 import { assertRavScoreModelBinding } from './js/core/ravscore-model-contract.js?v=4.0.594';
 
@@ -699,25 +699,6 @@ function currentAppVersion() {
   if(!/^\d+\.\d+\.\d+$/.test(versionText))throw new Error('RavRadars appversion mangler eller er ugyldig.');
   return versionText;
 }
-function installAppUpdateFlow() {
-  if (!("serviceWorker" in navigator)) return;
-  const banner=document.querySelector("#updateBanner"), updateButton=document.querySelector("#updateAppButton");
-  const version=currentAppVersion(); document.querySelector("#appVersion").textContent=version;
-  let registration=null, waitingWorker=null;
-  const showUpdate=worker=>{waitingWorker=worker||waitingWorker;if(waitingWorker){waitingWorker.postMessage({type:'SKIP_WAITING'});return;}if(!banner||!updateButton)return;banner.hidden=false;updateButton.disabled=false;updateButton.textContent=t('update.now');};
-  const activate=()=>{updateButton.disabled=true;updateButton.textContent=t('update.updating');(waitingWorker||registration?.waiting)?.postMessage({type:"SKIP_WAITING"});};
-  updateButton?.addEventListener("click",activate);
-  const handleControllerChange=createServiceWorkerControllerChangeHandler({
-    isControlled:()=>Boolean(navigator.serviceWorker.controller),
-    reload:()=>location.reload()
-  });
-  navigator.serviceWorker.addEventListener("controllerchange",handleControllerChange);
-  async function checkVersion(){
-    try{const response=await fetch(`./version.json?t=${Date.now()}`,{cache:"no-store"});if(!response.ok)return;const remote=await response.json();if(remote.version&&remote.version!==version){showUpdate(registration?.waiting);await registration?.update();if(registration?.waiting)showUpdate(registration.waiting);}}catch(error){console.debug("Versionskontrol kunne ikke gennemføres",error);}
-  }
-  addEventListener("load",async()=>{try{registration=await navigator.serviceWorker.register(`./service-worker.js?v=${version}`,{updateViaCache:"none"});if(registration.waiting&&navigator.serviceWorker.controller)showUpdate(registration.waiting);registration.addEventListener("updatefound",()=>{const worker=registration.installing;worker?.addEventListener("statechange",()=>{if(worker.state==="installed"&&navigator.serviceWorker.controller)showUpdate(worker);});});await registration.update();await checkVersion();document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){registration?.update();checkVersion();}});setInterval(checkVersion,30*60*1000);}catch(error){console.warn("Service worker kunne ikke registreres",error);}});
-}
-installAppUpdateFlow();
 const TRIP_EVIDENCE_INTEGRATION_V3 = true;
 
 function publicTripEvidenceContext(selection = null) {

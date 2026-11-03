@@ -1,3 +1,9 @@
+## 3. november — PLAIN-klientbro før senere komprimering
+
+**Åbent: offentlig accept og senere størrelseskodning.** Klientbroen er lokalt anvendt og målprøvet, men offentlig emission er fortsat PLAIN. Senere komprimering og dokumentation for, at den samlede Pages-pakke holder 1 GB-grænsen, er ikke afsluttet af læseren eller dens syntetiske prøver.
+
+Updateren er flyttet foran den ventende app-import og starter ved interactive/complete eller DOMContentLoaded. Det giver ikke en universel opgradering af allerede åbne ukontrollerede gamle faner. Faktisk Node 22-CI, normal offentlig desktop-/mobil-/SW-accept og udbredelse er fortsat åbne. Den lokale Node 24-parent med 9 + 14 + 36 cases er ikke disse beviser. Version594, eksisterende raw-kompatibilitet, modelbindinger og alle fem hovedmåls særskilte gates bevares. Se håndbog 89.301. Ingen SOURCE-, statistik- eller sletteaktivering følger.
+
 ## 3. november — zonebredde i den afgrænsede komponentreserve
 
 Den lokale kørettelse roterer mellem zoner og nødvendige kystdele særskilt for vind/bølge og temperatur. Hver gruppe tager én nødvendig kystdel pr. zone pr. omgang i fast strengorden. Den eksisterende fletning med to vind-/bølgeopgaver til én temperaturopgave, to transportslots og alle start-, forsøgs- og tidslofter bevares. Zonebredde loves kun inden for hver behovsgruppe og den kapacitet, der faktisk når at starte; ikke på tværs af grupper eller som fuld landedækning i én kørsel.

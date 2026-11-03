@@ -43,3 +43,11 @@ fulde fire-fils kontrakt.
 produktionsdata. Siden afsluttede opstarten på cirka fem sekunder, hentede
 ikke 118 MB-detaljepakken og rapporterede ingen browserfejl eller advarsler.
 Exact-head, merge og kontrol på den levende iPhone/Safari-side mangler.
+
+## Tillæg 2026-11-03 — PLAIN-klientbro med tidlig updater
+
+De eksisterende mobile startup- og nøddriftsgrænser bevares. Den afgrænsede updater installeres i bootstrap efter initializeUserDataSafety og før await import(app), så en ventende app-/vejrstart ikke spærrer SW-registrering eller versionskontrol. interactive/complete starter straks; loading har én DOMContentLoaded-listener og må ikke vente på window.load.
+
+Installationen er idempotent, og synligheds-/intervalkontrol deler singleflight. Versionskontrol fortsætter uden SW eller ved registreringsfejl. Den eksisterende første-claim-adfærd og højst én senere genindlæsning bevares. currentAppVersion bevares til turens normale brug; brugerlagring, database, score, model og eksisterende UI-argumenter ændres ikke.
+
+Normal offentlig emission forbliver PLAIN. Allerede åbne ukontrollerede gamle klienter får ikke retrospektivt den nye updater. Lokal syntetisk opstart og cachekontrol er ikke faktisk Node 22-CI, mobil-/SW-udbredelse eller automatisk opgradering af alle faner. Offentlig accept og det senere samlede1 GB-/komprimeringsbevis er åbne. Se håndbog 89.301; dette aktiverer ikke den isolerede SOURCE-revision, statistik eller automatisk sletning.

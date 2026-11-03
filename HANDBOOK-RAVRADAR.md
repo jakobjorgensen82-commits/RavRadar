@@ -1,3 +1,33 @@
+## 89.301 Sikker klientopdatering før mindre datafiler
+
+<a id="public-json-plain-reader-upgrader-2026-11-03"></a>
+
+Kort fortalt: Klienten forberedes til mere kompakte filer, mens den offentlige levering fortsætter i det hidtidige format. Opdateringskontrollen starter uafhængigt af langsom vejrindlæsning.
+
+### Det hidtidige format bevares
+
+De offentlige filer leveres fortsat som almindelig JSON, kaldet PLAIN. Denne klientbro aktiverer ikke en ny komprimeret udsendelse. Programversionen er fortsat 4.0.594; nye adresser til klientkoden gør det muligt at hente den rette opdatering uden at ændre beregningsmodellen.
+
+Vejrdata, scorer og modelbindinger ændres ikke. Den isolerede vejrrevision, statistik og automatisk sletning aktiveres ikke af broen.
+
+### Kontrol af fil og indhold
+
+Før en fil i det forberedte transportformat kan pakkes ud, kontrolleres dens størrelse og digitale fingeraftryk mod manifestet. Derefter kontrolleres format, faste størrelsesgrænser og det udpakkede indholds integritet. Beskadigede eller ukendte formater afvises. De hidtidige kontroller af indhold, model, datasæt og tidspunkt udføres stadig bagefter.
+
+Browserens hukommelsesbudget regner med den udpakkede fils størrelse. Ved genbrug kontrolleres fortsat de bytes, der blev modtaget. Gamle cacheposter med almindelig JSON kan stadig bruges; brugerdata og database skal ikke ryddes for at skifte klientkode.
+
+### Opdatering før ventende vejr
+
+Opdateringskontrollen installeres, efter brugerdataenes normale opstart er sikret, og før appen venter på indlæsning af vejr. Den starter straks, når dokumentet er klar, og venter ikke på, at hele appen eller siden melder færdig. Er dokumentet endnu ved at blive læst, bruges dets første klar-signal.
+
+Versionskontrol kan også virke uden service worker eller ved en mislykket registrering. Den første overtagelse af en side bevarer visningen; senere opdatering kan højst udløse én genindlæsning.
+
+### Hvad der stadig skal bevises
+
+En allerede åben, ukontrolleret gammel fane har hentet sin kode og får ikke automatisk den nye mekanisme. Genåbning, normal opdatering og faktisk udbredelse skal stadig kontrolleres. Der loves ikke automatisk opgradering af alle gamle klienter.
+
+Yderligere komprimering og bevis for den samlede hostingpakkes størrelsesgrænse er særskilte åbne opgaver. Lokal afprøvning af læser og opstart er ikke offentlig levering eller dokumentation for visningen på en rigtig telefon. Den almindelige offentlige levering fortsætter derfor i PLAIN.
+
 ## 89.299 Begge kendte kontinuitetsformater i scalarplanen
 
 Kort fortalt: Den normale plan for reelle vejrhul skal også kunne bruge den nyere, originale strømhistorik. Kun de to allerede kendte formater tillades.
