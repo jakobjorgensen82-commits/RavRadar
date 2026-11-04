@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { buildOpenMeteoHourlyComponents, openMeteoUtcTime } from './open-meteo-hourly-components.mjs';
 import { openMeteoO1280GridMatches } from './open-meteo-o1280-grid.mjs';
+import { hasValue } from './weather-component-needs.mjs';
 
 // Private, response-bound PART input. These are native provider candidates,
 // not permission to overwrite DMI. Water level is an exclusively DMI field.
@@ -35,8 +36,14 @@ const checkedIndexes = new WeakMap();
 const finite = value => typeof value === 'number' && Number.isFinite(value);
 const fail = code => { throw new Error(code); };
 const stable = value => JSON.stringify(value, function (_key, item) {
-  return item && typeof item === 'object' && !Array.isArray(item)
-    ? Object.fromEntries(Object.keys(item).sort().map(key => [key, item[key]])) : item;
+  if (!item || typeof item !== 'object' || Array.isArray(item)) return item;
+  const ordered = {};
+  for (const key of Object.keys(item).sort()) {
+    // Preserve JSON's own property when a record contains this literal key.
+    if (key === '__proto__') Object.defineProperty(ordered, key, { value: item[key], enumerable: true });
+    else ordered[key] = item[key];
+  }
+  return ordered;
 });
 export const openMeteoPartSha256 = value => createHash('sha256').update(typeof value === 'string' ? value : stable(value)).digest('hex');
 const same = (a, b) => stable(a) === stable(b);
@@ -74,7 +81,7 @@ function checkedPolicies(policies) {
       fail('OPEN_METEO_PART_SPATIAL_POLICY_REQUIRED');
     }
     result[component] = { policyId: policy.policyId, maximumDistanceKm: policy.maximumDistanceKm };
-    if (policy.cellSelection !== undefined) result[component].cellSelection = policy.cellSelection;
+    if (policy.cellSelection !== undefined) result[component].cellSelection = structuredClone(policy.cellSelection);
   }
   return result;
 }
@@ -212,6 +219,7 @@ export function readOpenMeteoPartResponse({ request, responseText, acquiredAt },
     request.channel === 'marine' ? document : null,
     { onInvalidField: (field, code) => { if (FIELDS[request.component].includes(field)) onInvalid(code); } });
   const records = [];
+  const samplingPoint = [...request.identity.samplingPoint];
   for (const row of rows) {
     if (row.time < request.productionReferenceAt || row.time > request.endAt) continue;
     for (const component of [request.component]) {
@@ -221,7 +229,7 @@ export function readOpenMeteoPartResponse({ request, responseText, acquiredAt },
         onInvalid('OPEN_METEO_PART_RESPONSE_DISTANCE_EXCEEDED');
         continue;
       }
-      const source = { provider: 'open-meteo', fallback: true, ...request.identity,
+      const source = { provider: 'open-meteo', fallback: true, ...request.identity, samplingPoint,
         component, validTime: row.time, acquiredAt, gridPoint, distanceKm: distance,
         spatialPolicy: policies[component], spatialSelection: request.cellSelection === 'nearest'
           ? 'provider-nearest-native-center' : 'provider-sea-cell',
@@ -274,31 +282,54 @@ export function validateOpenMeteoPartBank(bank, { parts, spatialPolicies } = {})
   const targets = partMap(parts);
   checkedPolicies(spatialPolicies);
   validateBankEnvelope(bank);
-  const expectedById = new Map();
-  // Decode each response once, not once for each of its 121 hourly records.
+  return checkedIndexHandle(verifyBankRecords(bank, targets, spatialPolicies));
+}
+
+function verifyBankRecords(bank, targets, spatialPolicies) {
+  const recordsByEvidence = new Map();
+  for (const record of bank.records) {
+    if (record?.component === 'waterLevel'
+      && bank.responses[record.evidenceId]?.request?.component === 'waterLevel') continue;
+    if (!exactHour(record?.validTime) || record.validTime < bank.retention.startAt
+      || record.validTime > bank.retention.endAt) fail('OPEN_METEO_PART_BANK_RETENTION_INVALID');
+    const list = recordsByEvidence.get(record.evidenceId) ?? [];
+    list.push(record);
+    recordsByEvidence.set(record.evidenceId, list);
+  }
+
+  // Prove one response at a time. The response parser makes its own proof
+  // fields, including the sampling point, so the opaque index can keep them
+  // directly. A separate index of all decoded responses would retain two
+  // national banks until the final duplicate and record checks complete.
+  const index = new Map();
   for (const [evidenceId, evidence] of Object.entries(bank.responses)) {
-    // Historical non-admitted level bytes cannot invalidate valid siblings,
-    // nor can they acquire a capability for the runtime index.
     if (evidence?.request?.component === 'waterLevel') continue;
     const entityId = evidence?.request?.identity?.entityId;
     const part = targets.get(typeof entityId === 'string' ? entityId.replace(/^PART::/, '') : '');
     if (!part) fail('OPEN_METEO_PART_BANK_TARGET_INVALID');
     const parsed = readOpenMeteoPartResponse(evidence, { part, spatialPolicies });
     if (parsed.evidenceId !== evidenceId) fail('OPEN_METEO_PART_BANK_EVIDENCE_INVALID');
-    for (const record of parsed.records) expectedById.set(record.recordId, record);
+    const expectedById = new Map(parsed.records.map(record => [record.recordId, record]));
+    for (const record of recordsByEvidence.get(evidenceId) ?? []) {
+      const expected = expectedById.get(record.recordId);
+      if (!expected) fail('OPEN_METEO_PART_BANK_RECORD_INVALID');
+      const stored = storedRecord(expected);
+      // Stored rows normally have the same property order as the writer.
+      // Keep the canonical comparison for equivalent reordered rows.
+      if (JSON.stringify(record) !== JSON.stringify(stored) && !same(record, stored)) {
+        fail('OPEN_METEO_PART_BANK_RECORD_INVALID');
+      }
+      const key = keyOf(expected.source.entityId, expected.validTime, expected.component);
+      if (index.has(key)) fail('OPEN_METEO_PART_BANK_DUPLICATE');
+      index.set(key, expected);
+    }
+    recordsByEvidence.delete(evidenceId);
   }
-  const index = new Map();
-  for (const record of bank.records) {
-    if (record?.component === 'waterLevel'
-      && bank.responses[record.evidenceId]?.request?.component === 'waterLevel') continue;
-    if (!exactHour(record?.validTime) || record.validTime < bank.retention.startAt
-      || record.validTime > bank.retention.endAt) fail('OPEN_METEO_PART_BANK_RETENTION_INVALID');
-    const expected = expectedById.get(record?.recordId);
-    if (!expected || !same(record, storedRecord(expected))) fail('OPEN_METEO_PART_BANK_RECORD_INVALID');
-    const key = keyOf(expected.source.entityId, expected.validTime, expected.component);
-    if (index.has(key)) fail('OPEN_METEO_PART_BANK_DUPLICATE');
-    index.set(key, structuredClone(expected));
-  }
+  if (recordsByEvidence.size) fail('OPEN_METEO_PART_BANK_RECORD_INVALID');
+  return index;
+}
+
+function checkedIndexHandle(index) {
   const handle = Object.freeze({ recordCount: index.size });
   checkedIndexes.set(handle, index);
   return handle;
@@ -313,6 +344,57 @@ export function selectedOpenMeteoPartRecord(index, { part, validTime, component 
   return structuredClone(record);
 }
 
+function rebaseRetainedBank(previous, targets, retention, retired) {
+  if (!previous) return { schemaVersion: 1, kind: OPEN_METEO_PART_BANK_KIND, retention, records: [], responses: {} };
+  validateBankEnvelope(previous);
+  const reusableResponses = Object.fromEntries(Object.entries(previous.responses).filter(([, evidence]) => {
+    if (evidence?.request?.component === 'waterLevel') return false;
+    const identity = evidence?.request?.identity;
+    const part = targets.get(typeof identity?.entityId === 'string' ? identity.entityId.replace(/^PART::/, '') : '');
+    return part && same(identity, openMeteoPartIdentity(part));
+  }));
+  const records = previous.records.filter(record => {
+    if (!exactHour(record?.validTime)) fail('OPEN_METEO_PART_BANK_RECORD_INVALID');
+    if (!Object.hasOwn(previous.responses, record.evidenceId)) fail('OPEN_METEO_PART_BANK_EVIDENCE_INVALID');
+    if (record.component === 'waterLevel'
+      && previous.responses[record.evidenceId]?.request?.component === 'waterLevel') {
+      retired.dmiOnlyWaterLevel += 1;
+      return false;
+    }
+    if (record.validTime < retention.startAt || record.validTime > retention.endAt) {
+      retired.outsideRetention += 1;
+      return false;
+    }
+    if (!Object.hasOwn(reusableResponses, record.evidenceId)) {
+      retired.changedOrRemovedTarget += 1;
+      return false;
+    }
+    return true;
+  });
+  const used = new Set(records.map(record => record.evidenceId));
+  return { schemaVersion: 1, kind: OPEN_METEO_PART_BANK_KIND, retention, records,
+    responses: Object.fromEntries(Object.entries(reusableResponses).filter(([id]) => used.has(id))) };
+}
+
+// Scalar planning only needs the checked index. Rebase the original bank with
+// the ordinary builder's rules and check every retained response once.
+export function readRetainedOpenMeteoPartIndex(previous, {
+  parts, spatialPolicies, retentionStartAt, retentionEndAt,
+} = {}) {
+  const targets = partMap(parts);
+  checkedPolicies(spatialPolicies);
+  const retention = retentionInterval(retentionStartAt, retentionEndAt);
+  const retired = { outsideRetention: 0, changedOrRemovedTarget: 0, dmiOnlyWaterLevel: 0 };
+  const content = rebaseRetainedBank(previous, targets, retention, retired);
+  const index = verifyBankRecords(content, targets, spatialPolicies);
+  // Keep the same fail-closed duplicate and record checks even on an unusable
+  // legacy value. Discard it only after proving the rebased bank.
+  for (const [key, record] of index) {
+    if (!hasValue(record.values, record.component)) index.delete(key);
+  }
+  return checkedIndexHandle(index);
+}
+
 export function createOpenMeteoPartBankBuilder(previous, {
   parts, spatialPolicies, retentionStartAt, retentionEndAt,
 } = {}) {
@@ -321,38 +403,8 @@ export function createOpenMeteoPartBankBuilder(previous, {
   checkedPolicies(spatialPolicies);
   const retention = retentionInterval(retentionStartAt, retentionEndAt);
   const retired = { outsideRetention: 0, changedOrRemovedTarget: 0, dmiOnlyWaterLevel: 0 };
-  let reusable = null;
-  if (previous) {
-    validateBankEnvelope(previous);
-    const reusableResponses = Object.fromEntries(Object.entries(previous.responses).filter(([, evidence]) => {
-      if (evidence?.request?.component === 'waterLevel') return false;
-      const identity = evidence?.request?.identity;
-      const part = targets.get(typeof identity?.entityId === 'string' ? identity.entityId.replace(/^PART::/, '') : '');
-      return part && same(identity, openMeteoPartIdentity(part));
-    }));
-    const records = previous.records.filter(record => {
-      if (!exactHour(record?.validTime)) fail('OPEN_METEO_PART_BANK_RECORD_INVALID');
-      if (!Object.hasOwn(previous.responses, record.evidenceId)) fail('OPEN_METEO_PART_BANK_EVIDENCE_INVALID');
-      if (record.component === 'waterLevel'
-        && previous.responses[record.evidenceId]?.request?.component === 'waterLevel') {
-        retired.dmiOnlyWaterLevel += 1;
-        return false;
-      }
-      if (record.validTime < retention.startAt || record.validTime > retention.endAt) {
-        retired.outsideRetention += 1;
-        return false;
-      }
-      if (!Object.hasOwn(reusableResponses, record.evidenceId)) {
-        retired.changedOrRemovedTarget += 1;
-        return false;
-      }
-      return true;
-    });
-    const used = new Set(records.map(record => record.evidenceId));
-    const content = { schemaVersion: 1, kind: OPEN_METEO_PART_BANK_KIND, retention, records,
-      responses: Object.fromEntries(Object.entries(reusableResponses).filter(([id]) => used.has(id))) };
-    reusable = { ...content, bankSha256: openMeteoPartSha256(content) };
-  }
+  const content = previous ? rebaseRetainedBank(previous, targets, retention, retired) : null;
+  const reusable = content ? { ...content, bankSha256: openMeteoPartSha256(content) } : null;
   const retained = reusable ? checkedIndexes.get(validateOpenMeteoPartBank(reusable, options)) : new Map();
   const responses = structuredClone(reusable?.responses ?? {});
   const add = admission => {

@@ -1631,7 +1631,7 @@ test('terminal delivery repair maps only five exact whole sources and its exact 
 
 
 import {inverseQualifiedScalarSchemaWorkflow, inverseQualifiedScalarPlanningWorkflow, qualifiedScalarPlanningWorkflowReview,
-  inversePagesPublicProjectionWorkflow, pagesPublicProjectionWorkflowReview, inverseTerminalRepair4145Workflow}
+  inversePagesPublicProjectionWorkflow, pagesPublicProjectionWorkflowReview, inverseRelease597WorkflowUserAgents, inverseTerminalRepair4145Workflow}
   from './lib/completed-private-runtime-workflow-review.mjs';
 test('qualified scalar inverse keeps the entire genuine main workflow and rejects mixed bytes', async () => {
   const source = inverseQualifiedScalarSchemaWorkflow((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
@@ -1677,7 +1677,8 @@ test('Pages projection inverse preserves exact old workflow bytes and rejects mi
   const { roles } = pagesPublicProjectionWorkflowReview;
   assert.deepEqual(Object.keys(roles), ['build', 'once', 'repair']);
   for (const [role, row] of Object.entries(roles)) {
-    const actual = (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+    const issued = (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+    const actual = inverseRelease597WorkflowUserAgents(issued, role);
     assert.equal(Buffer.byteLength(actual), row.after.bytes);
     assert.equal(sha(actual), row.after.sha256);
     const before = inverse(actual, role);
@@ -1706,4 +1707,23 @@ test('Pages projection inverse preserves exact old workflow bytes and rejects mi
   }
   assert.throws(() => inverse(''), /PAGES_PUBLIC_PROJECTION_WORKFLOW_ARGUMENTS/);
   assert.throws(() => inverse(null, 'build'), /PAGES_PUBLIC_PROJECTION_WORKFLOW_TYPE/);
+});
+
+test('release597 whole workflow identifies only the five issued User-Agent fields', async () => {
+  const source = (await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+  const historical = inverseRelease597WorkflowUserAgents(source, 'build');
+  const current = source.match(/^          WEATHER_USER_AGENT: "RavRadar\/4\.0\.597 /gm) ?? [];
+  if (!current.length) {
+    assert.equal(historical, source);
+    assert.equal(sha(source), pagesPublicProjectionWorkflowReview.roles.build.after.sha256);
+    return;
+  }
+  assert.equal(current.length, 5);
+  assert.equal(sha(historical), pagesPublicProjectionWorkflowReview.roles.build.after.sha256);
+  assert.equal(inverseCompletedRuntimeWorkflow(source, 'build'), inverseCompletedRuntimeWorkflow(historical, 'build'));
+  assert.equal(inverseRelease597WorkflowUserAgents(source, 'once'), source);
+  for (const changed of [source+'\n', source.replace('RavRadar/4.0.597', 'RavRadar/4.0.594')]) {
+    assert.equal(inverseRelease597WorkflowUserAgents(changed, 'build'), changed);
+    assert.throws(() => inverseCompletedRuntimeWorkflow(changed, 'build'));
+  }
 });

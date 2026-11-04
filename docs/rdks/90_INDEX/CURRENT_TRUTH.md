@@ -1,10 +1,36 @@
+## 4. november — native-prøvens egne dokumenter hører til før baselinen
+
+Den faktiske 597-kildekontrol stoppede i databaseprøvens bevaringssammenligning, efter at prøven selv havde oprettet sine to faste drifts- og profildokumenter efter baseline. Den normale testadapter klargør nu disse fixtures før det samme ufiltrerede bevaringsinventar. Midlertidige aktiveringskontroller udføres i rollback-transaktioner, og hele dokumenter og triggerhistorik genkontrolleres bagefter. Historikkrav, gamle SQL-fingeraftryk, CAS-, original- og adgangskontroller bevares. En lille prøve af den faktiske adapter fanger disse fixturefejl før de store tilstandspakker; den er ikke en rigtig PostgreSQL-prøve. Produktets modelbindinger, migrations-SQL og beregninger ændres ikke af denne kontrolrettelse. Den samlede nøjagtige GitHub- og PostgreSQL-kvalifikation mangler stadig.
+
+## 4. november — afgrænset automatisk vedligeholdelse af dokumenthistorik
+
+Ejerens nye ordre er at gøre oprydningen løbende. Den lokale kandidat genbruger det eksisterende V2-arkiv og genlæsningsforløb: kun gamle versioner af rdks-documentation-center, handbook og handbook-source-baseline kan beskæres. Aktuelle dokumenter og de fem nyeste historikversioner pr. nøgle bevares. En passage vælger internt højst 25 af de ældste berettigede rækker, arkiverer deres præcise originale REST-bytes og verificerer dem gennem den varige private arkivhenvisning før nogen DELETE. Resten genarkiveres ikke ved hver passage.
+
+Automatisk vedligeholdelse er lukket som standard. Først efter faktisk privat bucket/adgang, tabsfrit arkiv, genlæsning og den første afgrænsede passage kan den eksisterende repositories ikke-hemmelige indstilling RAVRADAR_ADMIN_HISTORY_MAINTENANCE sættes til enabled. Derefter følger den en vellykket afslutning af det eksisterende vejrforløb på den præcist kvalificerede aktuelle main. Hændelsen er ikke i sig selv bevis for nye vejrdata: også en vellykket genoptagelse eller et korrekt preflight-skip kan udløse den særskilte oprydning. Den kræver et sikkert vindue før næste uændrede firetimersslot, tager de eksisterende vejr- og turlagerlåse og afviser fremmed kilde, ændret main eller ukendt udfald. Ingen separat GitHub-tidsplan eller keepalive tilføjes. Ukendte writes må kun afklares ved læsning; passagen standser derefter uden blind gentagelse.
+
+Dette er kildeforberedelse, ikke udført oprydning. Faktisk bucket/adgang, fuldt arkiv og genlæsning, friske current/top5/ACL/RLS-kontroller, præcis kildekvalifikation og den første kontrollerede livepassage mangler. Den eksisterende Pro-rollback bevares. En fuld database-/Authbackup er nødvendig før Pro-opsigelse, men er ikke en ekstra forudsætning for den særskilt afgrænsede dokumentoprydning med dens egne bevaringsbeviser. Arkivlofter og faktisk forbrug skal stadig måles; gratis drift erklæres ikke. Vejrdata, originaler, ture, konti, scoremodel, kilder, geometri og version ændres ikke. Se håndbog 89.298.
+
+## 4. november — lokal 4.0.597-kandidat til hurtigere vejrplanlægning
+
+4.0.597 er en lokal kandidat til hurtigere planlægning af, hvor prognosen mangler data. Den bruger de samme kontrollerede kildedata og giver det forventede planoutput byte for byte på den eksisterende syntetiske landsprøve for 210 zoner og 673 kystdele på cirka 81 sekunder. Den samlede frist er fortsat 120 sekunder. DMI er førstevalg, derefter Copernicus og Open-Meteo. RavScore-formlen, administratorpunkter og geometri bevares.
+
+Overgangen bruger den senest gyldige, autentificerede 594-generation og kræver en nyere hel prognosetime. De gemte originale data og scorehistorikken bevares. En kontrolleret arbejdskopi fører de samme tal og den samme historik ind under nye modelbindinger. Den normale arbejdsgang bevarer originaldata før det tilhørende scorecheckpoint og gennemfører de beskyttede kontroller før Edge og Pages.
+
+Den første almindelige kørsel bruger den eksisterende overgang for historisk vedligeholdelse og kører uden den nye scalarplan. Den efterfølgende almindelige integrerede vejrhentning skal vise, om planen holder tidsgrænsen og forbedrer dækningen. Sammenlign alle forventede timer og zoner for hver af de fem vejrfamilier, og opgør prognosehalen og bevarede fælles timer særskilt.
+
+De 118 offentlige prognosetimer understøttes af 121 private timer. De sidste tre bruges til at vurdere vandstandsændringen tre timer frem fra den centralt valgte vandstandskilde. Manglende støtte giver fortsat en manglende værdi. De syv kystzoner kan fortsat bruge dkss_lf til vandstand alene. dkss_lf-strøm, tilhørende strømhukommelse og vandtemperatur er fortsat udelukket i de zoner.
+
+Den offentlige PLAIN-læserbro fra PR #803 er leveret. Den kompakte Pages-kandidat i PR #804 afventer fortsat kontrolleret levering og måling af den faktisk uploadede pakke. De isolerede SOURCE-alternativer 595 og 596 skal tilpasses 597, før de kan vurderes til en senere levering. Ingen af dem installeres med denne kandidat. Alle fem hovedmål er fortsat åbne.
+
+Den samlede kandidat kræver præcis kildekontrol, rigtig PostgreSQL-prøve og kontrol af originalbevarelse, aktiv binding og faktisk offentlig levering. Driftsbeviset skal følge de normale vejrhentninger.
+
 ## 4. november — lokal Pages-kandidat til mindre kort- og leveringsfiler
 
 Den kombinerede kandidat bruger 118 små PLAIN V3-korttimer, 12 fulde PLAIN-timer først i prognosen, streng gzip-base64 for de efterfølgende 106 fulde timer og PLAIN for alle 210 zonefiler. Startpakke, kystregister, zoneregister og prognosedeling leveres i PLAIN. Kort, Top20 og zonevisning kan begynde med de mindre filer. En konkret vejrbesvarelse i assistenten eller start af en tur kan kræve én verificeret fuld time.
 
 Samlede offentlige detaljer får et separat gzip-arkiv til normale recovery-kaldere. Den logiske SHA-256 og det logiske byteantal er identiske med de rå detaljer, som bevares på runneren. Pages-staging udelader først den redundante rå kopi efter verifikation. Staging udelader desuden den gamle Jordrav 0.1-pakke og leverer fortsat den aktive 0.2.
 
-Versionsfeltet er 4.0.594. Score, kildevalg, modelbindinger og eksisterende migrations-SQL bevares. SOURCE-revision, statistik og automatisk sletning har særskilte gates. PR #803's tidligere PLAIN-bro er merged efter bestået kilde-CI; dens særskilte rettelsesdeploy følges til faktisk offentlig kontrol. Den samlede kandidat er fortsat lokal: normal kopiering af en autentisk historisk generation med aktuelle statiske filer gav 753.088.914 bytes, uden den historiske generations korrekt afviste prognosedeling. Med delingens særskilte maksimale filbudget bliver den historiske kombination højst 760.101.266 bytes. Det er ikke et størrelsesbevis for næste friske generation. Den friske uploadede størrelse, offentlige data og mobil opstart er fortsat åbne. Se DEC-0154, DEC-0175 og håndbog 89.301.
+Versionsfeltet er 4.0.594. Score, kildevalg, modelbindinger og eksisterende migrations-SQL bevares. SOURCE-revision, statistik og automatisk sletning har særskilte gates. Den tidligere PLAIN-læserbro fra PR #803 er offentligt leveret. Den særskilte kompakte kandidat i PR #804 afventer sikker levering. Den samlede kandidat er fortsat lokal: normal kopiering af en autentisk historisk generation med aktuelle statiske filer gav 753.088.914 bytes, uden den historiske generations korrekt afviste prognosedeling. Med delingens særskilte maksimale filbudget bliver den historiske kombination højst 760.101.266 bytes. Det er ikke et størrelsesbevis for næste friske generation. Den friske uploadede størrelse, offentlige data og mobil opstart er fortsat åbne. Se DEC-0154, DEC-0175 og håndbog 89.301.
 
 ## 3. november — ens filkontrol på tværs af runtimeversioner
 
@@ -51,6 +77,16 @@ Den særskilte manuelle kandidat læser kun asset-manifest.json fra én eksakt g
 Resultatet er deklarerede metadata: manifestets hele SHA/størrelse, fast identitet og erklæret content-SHA/filstørrelse. Manglende, tvetydig, ugyldig eller ændret metadata giver fast afslag. rawBytesVerified=false, decoderExecuted=false og partRegistryAuthenticated=false bevares. Ingen RAW-fil åbnes, hashes eller afkodes; der beregnes ingen score eller tilstand. Ingen provider, bankskrivning, pruning eller produktionshandling følger med.
 
 Dette er ikke bevis for, at alle 14 originaler stadig findes i 245-cachen, eller for bølgehullernes decodedårsag. Metadataresultatet skal først aflæses og reviewes efter normal kvalifikation. En senere offline-decode kræver faktisk verificerede originalbytes og det autentiske 245-bundne PART-grundlag; den implementeres ikke her. Alle fem mål og endelig Source-/driftskvalifikation er fortsat åbne.
+
+## 4. november — scalarplanens tidsforbrug før DMI
+
+I den almindelige vejrhentning nåede den lokale scalarplan sin fælles 120-sekundersgrænse. Budgetkontrollen opdagede overskridelsen ved indgangen til PART_RETENTION. Loggen målte hele planlæggerens tid, så tallet viser ikke tidsforbruget for kystdelstrinnet alene. Den særskilte CURRENT-plan bestod, mens DMI fortsatte med den konservative prioritering. En senere CURRENT-plan før Copernicus bad kun om strømgrundlaget. Dens melding om manglende scalarplan hører til den separate indgang.
+
+På samme syntetiske landsprøve nåede den stærkere DMI-fil alene alle 673 kystdele, men den samlede plan stoppede efter cirka 195 sekunder da den fælles frist blev kontrolleret ved indgangen til den offline Copernicus-verifikation. De 195 sekunder er hele kalderens tid. Der blev ikke skrevet en plan. Den samlede kandidat med ni produktfiler genbruger de samme kontrollerede tidsakser, undgår overflødigt arbejde og samler behovene efter den normale offline kontrol af reserverne.
+
+Den samlede kandidat gav det forventede planoutput byte for byte på den eksisterende 210/673-prøve på cirka 81 sekunder. De gamle forløb nåede ikke at skrive en plan. Ligheden gælder den gemte forventning for prøvepakken, og faktisk drift skal måles i en almindelig vejrhentning.
+
+Rækkefølgen DMI → Copernicus → Open-Meteo, kildevalg, originalkontrol, scoreformel og de 120 sekunder bevares. Det normale krav om nye sammenhængende kilde- og modelbindinger, autentificeret førskrivning og efterfølgende offentlig kontrol gælder fortsat. Levering og faktisk dækning er åbne.
 
 ## 3. november — faste fejlfaser for den normale scalarplan
 

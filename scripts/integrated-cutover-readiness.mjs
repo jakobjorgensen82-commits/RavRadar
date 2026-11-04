@@ -53,7 +53,9 @@ import {ASSISTANT_LATER_H0_BINDING,ASSISTANT_LATER_H0_BEFORE,assistantLaterH0Mig
   assistantPublic591SuccessorMigration,requireAssistantPublic591SuccessorOutput,
   readAssistantPublic591SuccessorCanonicalSource,assistantPublic591SuccessorCheckpointContractFromBase,
   INSTALLED593_ORIGINAL591_BINDING,INSTALLED593_ORIGINAL591_DATABASE_BEFORE,
-  installed593Original591Migration,requireInstalled593Original591Output,readInstalled593Original591CanonicalSource}
+  installed593Original591Migration,requireInstalled593Original591Output,readInstalled593Original591CanonicalSource,
+  SCALAR597_LATER_H0_BINDING,SCALAR597_LATER_H0_BEFORE,requireScalar597LaterH0Output,
+  scalar597LaterH0Migration,readScalar597LaterH0CanonicalSource,scalar597LaterH0CheckpointContractFromBase}
   from './lib/assistant-later-h0-successor-source.mjs';
 import {STATISTICS_REVISION_MIGRATION,STATISTICS_REVISION_PREDECESSOR,buildStatisticsPreferenceRevision}
   from './build-statistics-preference-revision.mjs';
@@ -341,9 +343,11 @@ export const REQUIRED_CUTOVER_MIGRATIONS = Object.freeze([
   ...(ASSISTANT_PUBLIC590_SUCCESSOR_BINDING === null ? [] : [assistantPublic590SuccessorMigration()]),
   ...(ASSISTANT_PUBLIC591_SUCCESSOR_BINDING === null ? [] : [assistantPublic591SuccessorMigration()]),
   ...(INSTALLED593_ORIGINAL591_BINDING === null ? [] : [installed593Original591Migration()]),
+  ...(SCALAR597_LATER_H0_BINDING === null ? [] : [scalar597LaterH0Migration()]),
 ]);
 function migrationsForSourcePhase(sourcePhase) {
-  assert(['native0600','current-memory-warmup','established-native-current-origin','last-mile-enclosure','account-statistics-assistant','native-original-continuity','assistant-later-h0','assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor'].includes(sourcePhase));
+  assert(['native0600','current-memory-warmup','established-native-current-origin','last-mile-enclosure','account-statistics-assistant','native-original-continuity','assistant-later-h0','assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor','scalar597-later-h0-original594-successor'].includes(sourcePhase));
+  if (sourcePhase === 'scalar597-later-h0-original594-successor') return scalar597LaterH0RequiredMigrations();
   if (sourcePhase === 'assistant-installed593-origin591-successor') return installed593Original591RequiredMigrations();
   if (sourcePhase === 'assistant-public591-successor') return assistantPublic591SuccessorRequiredMigrations();
   if (sourcePhase === 'assistant-public590-successor') return assistantPublic590SuccessorRequiredMigrations();
@@ -362,6 +366,7 @@ function migrationsForSourcePhase(sourcePhase) {
 }
 function canonicalForSourcePhase(sourcePhase,migrationsDirectory) {
   migrationsForSourcePhase(sourcePhase); // Unknown phases fail before filesystem access.
+  if(sourcePhase==='scalar597-later-h0-original594-successor')return readScalar597LaterH0CanonicalSource({migrationsDirectory});
   if(sourcePhase==='assistant-installed593-origin591-successor')return readInstalled593Original591CanonicalSource({migrationsDirectory});
   if(sourcePhase==='assistant-public591-successor')return readAssistantPublic591SuccessorCanonicalSource({migrationsDirectory});
   if(sourcePhase==='assistant-public590-successor')return readAssistantPublic590SuccessorCanonicalSource({migrationsDirectory});
@@ -654,6 +659,11 @@ export function installed593Original591RequiredMigrations(){
   assert.equal(previous.length,60);assert.equal(previous.at(-1).version,INSTALLED593_ORIGINAL591_DATABASE_BEFORE.version);
   return Object.freeze([...previous,installed593Original591Migration()]);
 }
+export function scalar597LaterH0RequiredMigrations(){
+  requireScalar597LaterH0Output();const previous=installed593Original591RequiredMigrations();
+  assert.equal(previous.length,61);assert.equal(previous.at(-1).version,SCALAR597_LATER_H0_BEFORE.version);
+  return Object.freeze([...previous,scalar597LaterH0Migration()]);
+}
 export function nativeOriginalContinuityRequiredMigrations(){
   requireNativeOriginalContinuityOutput(); // Explicit UNISSUED phase refuses before I/O.
   const previous=accountStatisticsAssistantRequiredMigrations();
@@ -722,11 +732,13 @@ const PUBLIC591_SUCCESSOR_ROWS=Object.freeze({
   required:assistantPublic591SuccessorRequiredMigrations,before:ASSISTANT_PUBLIC591_SUCCESSOR_BEFORE});
 const INSTALLED593_ORIGINAL591_ROWS=Object.freeze({
   required:installed593Original591RequiredMigrations,before:INSTALLED593_ORIGINAL591_DATABASE_BEFORE});
+const SCALAR597_LATER_H0_ROWS=Object.freeze({
+  required:scalar597LaterH0RequiredMigrations,before:SCALAR597_LATER_H0_BEFORE});
 function assistantLaterH0Rows(migrationListText){
   return fixedAssistantRows(migrationListText,ISSUED_ASSISTANT587_ROWS);
 }
 function fixedAssistantRows(migrationListText,profile){
-  assert(profile===ISSUED_ASSISTANT587_ROWS||profile===PUBLIC587_SUCCESSOR_ROWS||profile===PUBLIC588_SUCCESSOR_ROWS||profile===PUBLIC590_SUCCESSOR_ROWS||profile===PUBLIC591_SUCCESSOR_ROWS||profile===INSTALLED593_ORIGINAL591_ROWS);
+  assert(profile===ISSUED_ASSISTANT587_ROWS||profile===PUBLIC587_SUCCESSOR_ROWS||profile===PUBLIC588_SUCCESSOR_ROWS||profile===PUBLIC590_SUCCESSOR_ROWS||profile===PUBLIC591_SUCCESSOR_ROWS||profile===INSTALLED593_ORIGINAL591_ROWS||profile===SCALAR597_LATER_H0_ROWS);
   const required=profile.required();
   const rows=parseSupabaseMigrationList(migrationListText);
   const local=uniqueVersions(rows,'local'),remote=uniqueVersions(rows,'remote');
@@ -844,6 +856,22 @@ export async function assertInstalled593Original591MigrationPlan({migrationListT
   assert.deepEqual(parseSupabaseDryRunMigrationFilenames(dryRunText),pending.length?[next.filename]:[]);
   return Object.freeze({pendingVersions:Object.freeze(pending),alreadyAppliedVersions:Object.freeze(required.filter(row=>remote.has(row.version)).map(row=>row.version))});
 }
+export function assertScalar597LaterH0MigrationsApplied(migrationListText){
+  const {required,local,remote}=fixedAssistantRows(migrationListText,SCALAR597_LATER_H0_ROWS);
+  assert(remote.has(required.at(-1).version),'Exact scalar597 later-H0 successor must be installed');
+  assert.deepEqual([...local].filter(version=>!remote.has(version)),[]);
+  return Object.freeze({appliedVersions:Object.freeze(required.map(row=>row.version))});
+}
+export async function assertScalar597LaterH0MigrationPlan({migrationListText,dryRunText,migrationsDirectory=MIGRATIONS_DIRECTORY}={}){
+  requireScalar597LaterH0Output();
+  const {required,local,remote}=fixedAssistantRows(migrationListText,SCALAR597_LATER_H0_ROWS);
+  await inspectMigrationSources({migrationsDirectory,sourcePhase:'scalar597-later-h0-original594-successor'});
+  const next=required.at(-1),pending=[...local].filter(version=>!remote.has(version));
+  assert.deepEqual(pending,remote.has(next.version)?[]:[next.version],'Only the one scalar597 migration may follow installed 594');
+  assert.deepEqual(parseSupabaseDryRunMigrationFilenames(dryRunText),pending.length?[next.filename]:[]);
+  return Object.freeze({pendingVersions:Object.freeze(pending),
+    alreadyAppliedVersions:Object.freeze(required.filter(row=>remote.has(row.version)).map(row=>row.version))});
+}
 export async function prepareAssistantLaterH0CutoverWorkdir({workdir}={}){
   requireAssistantLaterH0Output();await readAssistantLaterH0CanonicalSource();
   const prepared=await prepareTemporarySupabaseCutoverWorkdir({workdir,includeStatisticsPreferenceRevisionSource:true,
@@ -927,7 +955,9 @@ export async function expectedCheckpointCasContract({
 
 export function checkpointCasContractFromCanonicalSource(migration,{sourcePhase=DEFAULT_CUTOVER_SOURCE_PHASE}={}) {
   assert.equal(typeof migration,'string');
-  assert(['native0600','current-memory-warmup','established-native-current-origin','last-mile-enclosure','account-statistics-assistant','native-original-continuity','assistant-later-h0','assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor'].includes(sourcePhase));
+  assert(['native0600','current-memory-warmup','established-native-current-origin','last-mile-enclosure','account-statistics-assistant','native-original-continuity','assistant-later-h0','assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor','scalar597-later-h0-original594-successor'].includes(sourcePhase));
+  if(sourcePhase==='scalar597-later-h0-original594-successor')return scalar597LaterH0CheckpointContractFromBase(migration,
+    checkpointCasContractFromCanonicalSource(migration,{sourcePhase:'native-original-continuity'}));
   if(sourcePhase==='assistant-installed593-origin591-successor')return assistantPublic591SuccessorCheckpointContractFromBase(migration,
     checkpointCasContractFromCanonicalSource(migration,{sourcePhase:'native-original-continuity'}));
   if(sourcePhase==='assistant-public591-successor')return assistantPublic591SuccessorCheckpointContractFromBase(migration,
@@ -1407,6 +1437,10 @@ export async function assertSupabaseMigrationPlan({
     'CURRENT_MEMORY_WARMUP_PREWRITE_ROUTE_REQUIRED');
   assert.ok(remote.has(establishedNativeCurrentOriginMigration().version),
     'ESTABLISHED_NATIVE_CURRENT_ORIGIN_PREWRITE_ROUTE_REQUIRED');
+  if(ACTIVE.sourcePhase==='scalar597-later-h0-original594-successor'){
+    assert.ok(remote.has(scalar597LaterH0Migration().version),'SCALAR597_LATER_H0_PREWRITE_ROUTE_REQUIRED');
+    assertScalar597LaterH0MigrationsApplied(migrationListText);
+  }
   if(ACTIVE.sourcePhase==='assistant-installed593-origin591-successor'){
     assert.ok(remote.has(installed593Original591Migration().version),'INSTALLED593_ORIGINAL591_PREWRITE_ROUTE_REQUIRED');
     assertInstalled593Original591MigrationsApplied(migrationListText);
@@ -1424,7 +1458,7 @@ export async function assertSupabaseMigrationPlan({
     assertAssistantPublic588SuccessorMigrationsApplied(migrationListText);
   }
   assert.ok(remote.has(assistantPublic587SuccessorMigration().version),'ASSISTANT_PUBLIC587_SUCCESSOR_PREWRITE_ROUTE_REQUIRED');
-  if(!['assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor'].includes(ACTIVE.sourcePhase))assertAssistantPublic587SuccessorMigrationsApplied(migrationListText);
+  if(!['assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor','scalar597-later-h0-original594-successor'].includes(ACTIVE.sourcePhase))assertAssistantPublic587SuccessorMigrationsApplied(migrationListText);
   const plannedMigrations = REQUIRED_CUTOVER_MIGRATIONS;
   const requiredVersions = new Set(plannedMigrations.map(item => item.version));
 
@@ -1469,7 +1503,8 @@ export async function assertSupabaseMigrationPlan({
 }
 
 export function assertSupabaseMigrationsApplied(migrationListText) {
-  if(ACTIVE.sourcePhase==='assistant-installed593-origin591-successor')assertInstalled593Original591MigrationsApplied(migrationListText);
+  if(ACTIVE.sourcePhase==='scalar597-later-h0-original594-successor')assertScalar597LaterH0MigrationsApplied(migrationListText);
+  else if(ACTIVE.sourcePhase==='assistant-installed593-origin591-successor')assertInstalled593Original591MigrationsApplied(migrationListText);
   else if(ACTIVE.sourcePhase==='assistant-public591-successor')assertAssistantPublic591SuccessorMigrationsApplied(migrationListText);
   else if(ACTIVE.sourcePhase==='assistant-public590-successor')assertAssistantPublic590SuccessorMigrationsApplied(migrationListText);
   else if(ACTIVE.sourcePhase==='assistant-public588-successor')assertAssistantPublic588SuccessorMigrationsApplied(migrationListText);
@@ -1662,9 +1697,10 @@ export async function verifyIntegratedDatabaseReadback({
   tripBindingPolicy = null,
   tripActiveAdmissionPolicy = null, sourcePhase = DEFAULT_CUTOVER_SOURCE_PHASE,
 } = {}) {
-  assert(['native0600','current-memory-warmup','established-native-current-origin','last-mile-enclosure','account-statistics-assistant','native-original-continuity','assistant-later-h0','assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor'].includes(sourcePhase));
+  assert(['native0600','current-memory-warmup','established-native-current-origin','last-mile-enclosure','account-statistics-assistant','native-original-continuity','assistant-later-h0','assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor','scalar597-later-h0-original594-successor'].includes(sourcePhase));
   if(sourcePhase === 'current-memory-warmup')requireCurrentMemoryWarmupOutput();
   if(sourcePhase === 'established-native-current-origin')requireEstablishedNativeCurrentOriginOutput();
+  if(sourcePhase === 'scalar597-later-h0-original594-successor')requireScalar597LaterH0Output();
   if(sourcePhase === 'assistant-installed593-origin591-successor')requireInstalled593Original591Output();
   if(sourcePhase === 'assistant-public591-successor')requireAssistantPublic591SuccessorOutput();
   if(sourcePhase === 'assistant-public590-successor')requireAssistantPublic590SuccessorOutput();

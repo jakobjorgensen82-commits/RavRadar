@@ -41,7 +41,11 @@ function inverseReviewedForecastShareProjectionRegistration(actualScripts) {
     expandSourceCommands(previous, 'validate:source:checks'), 'Preserve all preceding commands, order and duplicate counts.');
   return previous;
 }
-const actualForecastShareSourceScripts = JSON.parse(fs.readFileSync('package.json', 'utf8')).scripts;
+const activeSourcePackage = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+const historicalSourcePackage = activeSourcePackage.version === '4.0.597'
+  ? (await import('./national584-source-evidence.mjs')).inverseScalar597LaterH0Package(activeSourcePackage)
+  : activeSourcePackage;
+const actualForecastShareSourceScripts = historicalSourcePackage.scripts;
 const precedingForecastShareSourceScripts = inverseReviewedForecastShareProjectionRegistration(actualForecastShareSourceScripts);
 for (const definition of [precedingPrivacySourceDefinition,
   actualForecastShareSourceScripts['test:privacy-source-critical'] + ' && ' + forecastShareProjectionCommand,

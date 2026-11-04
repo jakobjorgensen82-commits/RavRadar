@@ -440,7 +440,9 @@ assert.doesNotMatch(bulkConverter, /\['significant-wave-height','mean-wave-dir',
   'manglende valgfri bølgeretning må ikke længere slette Hs+periode');
 assert.match(bulkConverter, /const waveAvailable = waves\.some\(item => ravScoreNumber\(item\['significant-wave-height'\]\) !== null[\s\S]*?ravScoreNumber\(item\['dominant-wave-period'\]\) !== null\);/,
   'wave completeness skal måle den obligatoriske mobiliseringstuple, ikke det valgfrie retningsfelt');
-assert.match(bulkConverter, /provenance:\s*\{[\s\S]*?current:\s*rowCurrentValid \? provenance\(row\)\.current : null,[\s\S]*?waterLevel:\s*waterLevelSource/,
+assert.match(bulkConverter, /const currentSemanticsValid = bulkCache\?\.currentVectorSemanticsVersion === CURRENT_VECTOR_SEMANTICS_VERSION[\s\S]*?const rowCurrentValid = needsCurrentForTimeAxis[\s\S]*?verifiedBulkCurrent\(/,
+  'normal current must still pass the existing vector and bulk-native verification');
+assert.match(bulkConverter, /const needsCurrentForTimeAxis = !scalarPlanningOnly \|\| \(sea === null && temperature === null\);[\s\S]*?provenance:\s*\{[\s\S]*?current:\s*!scalarPlanningOnly && rowCurrentValid \? rowCurrent : null,[\s\S]*?waterLevel:\s*waterLevelSource/,
   'bulk-konverteringen skal føre komponentproveniens videre til interpolation');
 assert.match(productionAdapter, /export function verifiedBulkCurrent/,
   'bulk-konverteringen skal afvise strøm uden semantik v3, aktuelt samplingpunkt, fælles lag og højst 5 km');

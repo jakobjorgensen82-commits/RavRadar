@@ -10,12 +10,13 @@ import {fileURLToPath,pathToFileURL} from 'node:url';
 import {withAuthenticated586PredecessorSource,withAuthenticated587PredecessorSource,
   withAuthenticated588PredecessorSource,assertFrozen588CodeSourceSelected,FROZEN588_CODE_SOURCE_PROVENANCE,
   withAuthenticated590PredecessorSource,assertFrozen590CodeSourceSelected,FROZEN590_CODE_SOURCE_PROVENANCE,
-  withAuthenticated591PredecessorSource,assertFrozen591CodeSourceSelected,FROZEN591_CODE_SOURCE_PROVENANCE} from './check-assistant-later-h0-predecessor-source.mjs';
+  withAuthenticated591PredecessorSource,assertFrozen591CodeSourceSelected,FROZEN591_CODE_SOURCE_PROVENANCE,
+  withSource594CodeParent,SOURCE594_CODE_SOURCE_PROVENANCE} from './check-assistant-later-h0-predecessor-source.mjs';
 import {FROZEN593_NATIVE_CODE,withInstalled593CodePredecessorSource} from './check-installed593-code-predecessor-source.mjs';
-import {requireInstalled593Original591Output,requireAssistantLaterH0Output,requireAssistantPublic587SuccessorOutput,requireAssistantPublic588SuccessorOutput,requireAssistantPublic590SuccessorOutput,requireAssistantPublic591SuccessorOutput} from './lib/assistant-later-h0-successor-source.mjs';
+import {requireScalar597LaterH0Output,SCALAR597_LATER_H0_BEFORE,requireInstalled593Original591Output,requireAssistantLaterH0Output,requireAssistantPublic587SuccessorOutput,requireAssistantPublic588SuccessorOutput,requireAssistantPublic590SuccessorOutput,requireAssistantPublic591SuccessorOutput} from './lib/assistant-later-h0-successor-source.mjs';
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 function fixedNativeSource(profile){
-  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588||profile===FROZEN590||profile===FROZEN591||profile===FROZEN593,'FROZEN_NATIVE_UNKNOWN_PROFILE');
+  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588||profile===FROZEN590||profile===FROZEN591||profile===FROZEN593||profile===FROZEN594,'FROZEN_NATIVE_UNKNOWN_PROFILE');
   const HEAD=profile.head,TREE=profile.tree;
 const ADAPTER=profile.adapter,FACTORY='scripts/test-protected-ravscore-continuation-checkpoint.mjs';
 // TEST-only extension of the fixed genuine DATA producer host plus its exact native adapter.
@@ -101,7 +102,14 @@ async function withSource(callback){
       phase='ADAPTER_IMPORT';const adapter=await import(pathToFileURL(path.join(sourceRoot,ADAPTER)).href);
       phase='FACTORY_IMPORT';const factory=await frozenFactory(sourceRoot,factorySource);
       phase='NATIVE_CALLBACK';
-      result=await callback({adapter,factory,repositoryRoot:sourceRoot});
+      let originalProfile;
+      if(profile===FROZEN594){
+        const raw=Buffer.from(await git(['cat-file','blob',HEAD+':data/admin/ravscore-profile-selection.json']));
+        assert.equal(raw.length,1633);
+        assert.equal(sha(raw),'0df36f6047901873418226c2107adf625fcd11eedde9cb548f11d4710f2357c4');
+        originalProfile=JSON.parse(raw);
+      }
+      result=await callback({adapter,factory,repositoryRoot:sourceRoot,...(originalProfile?{originalProfile}:{})});
     }catch(error){first=error;hasFirst=true;firstFailureDiagnostic(phase,error);}
     try{
       for(const{target,raw,owned}of [...staged].reverse()){
@@ -166,6 +174,17 @@ const FROZEN591=Object.freeze({
   continuation:'b490f11d14cfe607839d7848bbcdb8e9df7abdfe62c82983e5247fb4ca3dcc0d',
   withSource:withAuthenticated591PredecessorSource,requireOutput:requireAssistantPublic591SuccessorOutput,
   failureKind:'FROZEN591_NATIVE_FIRST_FAILURE'});
+// Exact installed 594 source for the test-only native parent fixtures.
+const FROZEN594=Object.freeze({
+  head:SOURCE594_CODE_SOURCE_PROVENANCE.head,tree:SOURCE594_CODE_SOURCE_PROVENANCE.tree,
+  adapter:'scripts/lib/assistant-later-h0-postgres.mjs',adapterBytes:31841,
+  adapterSha256:'fdeca9eee1e34abb31849abfe1e5937f491c6eeb7910776f8823a256ed726172',
+  factorySourceSha256:'4fd8e91b81159957c2ce84ef67e3e6bd4b651885ac88eb0705b87264d6f58b29',
+  candidate:SCALAR597_LATER_H0_BEFORE.C,integrated:SCALAR597_LATER_H0_BEFORE.I,
+  continuation:SCALAR597_LATER_H0_BEFORE.T,
+  withSource:withSource594CodeParent,requireOutput:requireScalar597LaterH0Output,
+  failureKind:'FROZEN594_NATIVE_FIRST_FAILURE',
+});
 const native586=fixedNativeSource(FROZEN586),native587=fixedNativeSource(FROZEN587),native588=fixedNativeSource(FROZEN588);
 export async function withFrozen586CheckpointPostgresSource(callback){
   return native586(...arguments);
@@ -203,4 +222,9 @@ const FROZEN593=Object.freeze({
 const native593=fixedNativeSource(FROZEN593);
 export async function withFrozen593CheckpointPostgresSource(callback){
   return native593(...arguments);
+}
+
+const native594=fixedNativeSource(FROZEN594);
+export async function withFrozen594CheckpointPostgresSource(callback){
+  return native594(...arguments);
 }

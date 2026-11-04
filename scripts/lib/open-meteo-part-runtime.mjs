@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import {
   OPEN_METEO_PART_BANK_MAX_BYTES, OPEN_METEO_PART_RESPONSE_MAX_BYTES,
   buildOpenMeteoPartRequest, mergeOpenMeteoPartBank, openMeteoPartSha256,
-  validateOpenMeteoPartBank,
+  readRetainedOpenMeteoPartIndex, validateOpenMeteoPartBank,
 } from './open-meteo-part-bank.mjs';
 import { produceOpenMeteoPartComponents } from '../produce-open-meteo-part-components.mjs';
 import { pruneUnusableOpenMeteoPartBank } from './open-meteo-usable-part-bank.mjs';
@@ -112,6 +112,12 @@ export async function loadOpenMeteoPartRuntime(options = {}) {
   const previous = await readBankFile(paths);
   const { bank } = pruneUnusableOpenMeteoPartBank(mergeOpenMeteoPartBank(previous, [], options), options);
   return { bank, index: validateOpenMeteoPartBank(bank, options) };
+}
+
+export async function loadRetainedOpenMeteoPartIndex(options = {}) {
+  assertWeatherTransportSettlement();
+  const previous = await readBankFile(privatePaths(options));
+  return readRetainedOpenMeteoPartIndex(previous, options);
 }
 
 function retryAfter(response, now) {

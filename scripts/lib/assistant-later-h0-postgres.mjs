@@ -22,11 +22,14 @@ import {ASSISTANT_LATER_H0_BEFORE as OLD,ASSISTANT_LATER_H0_ALIASES as ALIASES,
   requireAssistantPublic591SuccessorBinding,requireAssistantPublic591SuccessorOutput,assistantPublic591SuccessorMigration,
   readAssistantPublic591PredecessorCanonicalSource,readAssistantPublic591SuccessorCanonicalSource,
   INSTALLED593_ORIGINAL591_DATABASE_BEFORE,requireInstalled593Original591Binding,
-  requireInstalled593Original591Output,installed593Original591Migration,readInstalled593Original591CanonicalSource}
+  requireInstalled593Original591Output,installed593Original591Migration,readInstalled593Original591CanonicalSource,
+  SCALAR597_LATER_H0_BEFORE,SCALAR597_LATER_H0_ALIASES,requireScalar597LaterH0Binding,requireScalar597LaterH0Output,
+  scalar597LaterH0Migration,readScalar597LaterH0CanonicalSource,assertScalar597LaterH0CheckpointInverse}
   from './assistant-later-h0-successor-source.mjs';
 import {currentMemoryWarmupPreservationInventorySql} from './current-memory-warmup-postgres.mjs';
 import {expectedCheckpointCasContract,expectedTripBindingPolicy,assistantLaterH0RequiredMigrations,
-  assistantPublic587SuccessorRequiredMigrations,assistantPublic588SuccessorRequiredMigrations,assistantPublic590SuccessorRequiredMigrations,assistantPublic591SuccessorRequiredMigrations,installed593Original591RequiredMigrations}
+  assistantPublic587SuccessorRequiredMigrations,assistantPublic588SuccessorRequiredMigrations,assistantPublic590SuccessorRequiredMigrations,assistantPublic591SuccessorRequiredMigrations,installed593Original591RequiredMigrations,
+  accountStatisticsAssistantRequiredMigrations,scalar597LaterH0RequiredMigrations}
   from '../integrated-cutover-readiness.mjs';
 import {statisticsPreferenceRevisionCatalogQuery,verifyStatisticsPreferenceRevisionCatalogMetadata}
   from '../verify-account-assistant-schema.mjs';
@@ -160,11 +163,163 @@ const INSTALLED593_ORIGINAL591=Object.freeze({
     'assistant-public587-successor-current-same','assistant-public588-successor-current-same',
     'assistant-public591-successor-current-same']),
   resultKind:'INSTALLED593_ORIGINAL591_SUCCESSOR',failureKind:'INSTALLED593_ORIGINAL591_NATIVE_FIRST_FAILURE'});
+
+const SCALAR597_LATER_H0=Object.freeze({
+  before:SCALAR597_LATER_H0_BEFORE,databaseBefore:SCALAR597_LATER_H0_BEFORE,aliases:SCALAR597_LATER_H0_ALIASES,
+  prefix:'scalar597-later-h0-current-',oldPrefix:'scalar597-original594-',previousRelease:594,
+  requireBinding:requireScalar597LaterH0Binding,requireOutput:requireScalar597LaterH0Output,
+  requiredMigrations:scalar597LaterH0RequiredMigrations,migration:scalar597LaterH0Migration,
+  readBefore:readInstalled593Original591CanonicalSource,readAfter:readScalar597LaterH0CanonicalSource,
+  sourcePhase:'scalar597-later-h0-original594-successor',migrationCount:62,oidSlots:43,contractBodies:46,
+  fixtureStem:'scalar597-later-h0',olderFixtures:Object.freeze([]),
+  resultKind:'SCALAR597_LATER_H0_SUCCESSOR',failureKind:'SCALAR597_LATER_H0_NATIVE_FIRST_FAILURE',
+});
+
+export async function compareScalar597LaterH0Successor(options){
+  assert.equal(arguments.length,1);
+  requireScalar597LaterH0Output();
+  const {psql,root,atHour}=options;
+  const {withFrozen594CheckpointPostgresSource}=await import('../run-frozen586-assistant-later-h0-postgres-source.mjs');
+  return withFrozen594CheckpointPostgresSource(async({repositoryRoot,factory,originalProfile})=>{
+    const baseline=accountStatisticsAssistantRequiredMigrations(),prior=installed593Original591RequiredMigrations();
+    const next=scalar597LaterH0RequiredMigrations();
+    assert.equal(baseline.length,54);assert.equal(prior.length,61);assert.equal(next.length,62);
+    assert.deepEqual(prior.slice(0,54),baseline);assert.deepEqual(next.slice(0,61),prior);
+    // The genuine constrained native host seeds this version, then executes
+    // the nine predecessor phases. Earlier archive entries are not installed
+    // in that synthetic database. Production keeps its full 54/61/62 inventory.
+    const nativeStart=baseline.findIndex(row=>row.version==='20261010130000');
+    assert.equal(nativeStart,44,'The fixed native seed must retain its exact archive prefix');
+    async function assertHistory(expected){
+      const actual=JSON.parse(await psql('select json_agg(version order by version) from supabase_migrations.schema_migrations;'));
+      const required=expected.slice(nativeStart).map(row=>row.version);
+      assert.deepEqual(actual,required,'Every normally executed native migration must match');
+    }
+    await assertHistory(baseline);
+    for(const row of prior.slice(54)){
+      const archived=await fs.readFile(path.join(repositoryRoot,'supabase/migrations',row.filename));
+      assert.deepEqual(archived,await fs.readFile(path.join(ROOT,'supabase/migrations',row.filename)));
+      await psql(archived.toString('utf8'));
+      await psql('insert into supabase_migrations.schema_migrations values('+literal(row.version)+');');
+    }
+    await assertHistory(prior);
+    for(const [name,hour] of [['same',49],['newer',50]]){
+      const sourcePath=path.join(root,'scalar597-original594-'+name+'-conditions.json');
+      const checkpointPath=path.join(root,'scalar597-original594-'+name+'-checkpoint.json');
+      assert.equal(factory.atHour(hour),atHour(hour));
+      await fs.writeFile(sourcePath,JSON.stringify(factory.sourceDocumentAt(hour,'rr-scalar597-native-original')),{flag:'wx'});
+      await factory.saveRavScoreContinuationCheckpoint({sourcePath,checkpointPath,repositoryRoot});
+      const payload=JSON.parse(await fs.readFile(checkpointPath,'utf8'));
+      const text=JSON.stringify(payload);
+      assert(!text.includes('$scalar_original_fixture$'));
+      await psql("insert into native_checkpoint_payloads values('"+SCALAR597_LATER_H0.oldPrefix+name
+        +"',$scalar_original_fixture$"+text+"$scalar_original_fixture$::jsonb);");
+    }
+    const report=await compareFixedSuccessor(SCALAR597_LATER_H0,{...options,originalProfile});
+    await assertHistory(next);
+    return report;
+  });
+}
+
+async function prepareScalar597TripAndQuotaWindow(psql,oldBinding,newBundle,oldProfile){
+  const admission='public.ravradar_trip_v3_active_binding_admitted';
+  const admissionType=admission+'('+Array(11).fill('text').join(',')+',jsonb,boolean,text,text,text,text)';
+  const quota='public.consume_public_request_limit(text,text,integer,integer)';
+  const archived=await fs.readFile(path.join(ROOT,'supabase/migrations/20260920220000_public_hour_pack_capacity_binding.sql'),'utf8');
+  const quotaSource=await fs.readFile(path.join(ROOT,'supabase/migrations/20260826_security_hardening.sql'),'utf8');
+  assert.equal(sha(archived),'4ab13e16700801ee38cd6a25cc6fe4adcc87cbe188c5f226a61798bede7b2f9f');
+  assert.equal(sha(quotaSource),'b135b8d0fe2a479a50f91e3f3cd70c7cda09362a34eeb2da89236e259edd9283');
+  const admissionSql=definition(archived,admission.slice('public.'.length));
+  if(await psql('select to_regprocedure('+literal(admissionType)+') is null;')==='t'){
+    await psql(admissionSql+'revoke all on function '+admissionType+' from public,anon,authenticated;'
+      +'grant execute on function '+admissionType+' to service_role;');
+  }
+  if(await psql('select to_regprocedure('+literal(quota)+') is null;')==='t'){
+    const start=quotaSource.indexOf('create table if not exists public.public_request_limits (');
+    const stop=quotaSource.indexOf('create or replace function public.save_ravradar_permissions(');
+    assert(start>=0&&stop>start);
+    await psql(quotaSource.slice(start,stop));
+  }
+  const catalog=()=>psql("select jsonb_object_agg(p.oid::regprocedure::text,jsonb_build_object('oid',p.oid,'body',p.prosrc,'acl',p.proacl,'owner',p.proowner,'settings',p.proconfig))::text"
+    +' from pg_proc p where p.oid in ('+literal(admissionType)+'::regprocedure,'+literal(quota)+'::regprocedure);');
+  const beforeCatalog=await catalog();
+  const service="set request.jwt.claim.role='service_role';set role service_role;";
+  const activeExpression=(binding)=>admission+'('+
+    ['modelId','stateSchemaVersion','variantId','profileId','componentSchemaId','explanationSchemaId','rankingPolicyId',
+      'bestTimePolicyId','presentationPolicyId','modelContractSha256','modelBundleSha256'].map(key=>literal(binding[key])).join(',')
+      +",'[\"ravscore-history-incomplete\"]'::jsonb,false,'zone-fixture','part-001','zone-fixture','part-001')";
+  const active=(binding)=>psql(service+'select '+activeExpression(binding)+';');
+  const quotaWorks=()=>psql(service+"select public.consume_public_request_limit('ravradar-assistant:minute','native-scalar597-fixture',6,60);");
+  const nextBinding={...oldBinding,modelBundleSha256:newBundle};
+  assert.equal(oldProfile.modelBundleSha256,oldBinding.modelBundleSha256);
+  // These two synthetic rows exercise the actual admission RPC. The normal
+  // operational document reader/writer is not bypassed in production.
+  const op=Object.fromEntries(('transitionKind sourceHead datasetId productionReferenceAt rollbackId requestedModelBinding sourceModelBinding '
+    +'candidatePlanSha256 candidateFullSha256 privateBundleContentSha256 publicManifestSha256 sourcePublicManifestSha256 requestedPublicManifestSha256 '
+    +'sourceDeploymentId deploymentId requestedAt activatedAt failureCode returnPlanSha256 integratedReadinessSha256 integratedPublicAuditSha256 integratedManifestSha256')
+    .split(' ').map(key=>[key,null]));
+  Object.assign(op,{schemaVersion:'ravscore-operational-model-activation-v4',status:'INTEGRATED_ACTIVE',
+    activeModelBinding:oldBinding,sourceImplementationClosureSha256:'1'.repeat(64),requestedImplementationClosureSha256:'2'.repeat(64),
+    automaticActivationAllowed:false,schedulerActivationAllowed:false,calibrationEligible:false});
+  const opKey='ravscore-operational-model-activation',profileKey='ravscore-profile-selection';
+  const documents=()=>psql('select coalesce(jsonb_agg(to_jsonb(d) order by document_key),\'[]\'::jsonb)::text from admin_documents d where document_key in ('
+    +literal(opKey)+','+literal(profileKey)+');');
+  const history=()=>psql('select coalesce(jsonb_agg(to_jsonb(v) order by to_jsonb(v)::text collate "C"),\'[]\'::jsonb)::text from admin_document_versions v;');
+  const json=value=>{const text=JSON.stringify(value);assert(!text.includes('$scalar_trip$'));return '$scalar_trip$'+text+'$scalar_trip$::jsonb';};
+  const putSql=(key,value)=>'insert into admin_documents(document_key,payload) values('+literal(key)+','+json(value)
+    +') on conflict(document_key) do update set payload=excluded.payload;';
+  const put=(key,value)=>psql(putSql(key,value));
+  // Fixed native fixtures must not overwrite an earlier phase's documents.
+  assert.equal(await documents(),'[]','The two native activation fixture keys must be absent');
+  const beforeHistory=await history();
+  await put(opKey,op);await put(profileKey,oldProfile);
+  assert.equal(await history(),beforeHistory,'Fixture inserts must preserve the whole existing history');
+  const beforeDocuments=await documents();
+  assert.equal(await active(oldBinding),'t');assert.equal(await active(nextBinding),'f');
+  assert.equal(await quotaWorks(),'t');
+  return async()=>{
+    assert.equal(await catalog(),beforeCatalog);
+    assert.equal(await documents(),beforeDocuments);
+    assert.equal(await active(oldBinding),'t');assert.equal(await active(nextBinding),'f');
+    assert.equal(await quotaWorks(),'t');
+    // Each actual RPC probe and its temporary document changes share ONE
+    // transaction. ROLLBACK also restores trigger-created profile history.
+    // No history row is filtered, deleted or accepted as an expected increase.
+    const attempt=async mutations=>JSON.parse(await psql('begin;'+mutations.join('')
+      +"set local request.jwt.claim.role='service_role';set local role service_role;"
+      +"select jsonb_build_object('oldAllowed',"+activeExpression(oldBinding)
+      +",'nextAllowed',"+activeExpression(nextBinding)+');rollback;'));
+    assert.deepEqual(await attempt([putSql(opKey,{...op,status:'INTEGRATED_PENDING'})]),
+      {oldAllowed:false,nextAllowed:false});
+    assert.deepEqual(await attempt([
+      putSql(profileKey,{...oldProfile,sourceVersion:'4.0.597',modelBundleSha256:newBundle}),
+      putSql(opKey,{...op,activeModelBinding:nextBinding}),
+    ]),{oldAllowed:false,nextAllowed:true});
+    assert.equal(await documents(),beforeDocuments,'Rollback must restore the whole fixture documents');
+    assert.equal(await history(),beforeHistory,'Rollback must restore the whole existing history');
+    return {oldActiveAfterSql:true,nextRefusedBeforeActivation:true,pendingBothRefused:true,
+      nextActiveAfterCompletion:true,oldRefusedAfterCompletion:true,activeDocumentsUnchangedBySql:true,
+      quotaFunctionAndAdmissionUnchanged:true,quotaServiceRoleWorking:true};
+  };
+}
+
+// Native TEST adapter only. Prepare its finite documents before the SAME
+// unfiltered full-row inventory used by normal guard/install comparisons.
+// The early source target exercises this seam without creating673-state packs.
+export async function prepareScalar597NativeFixtureWindow({psql,oldBinding,newBundle,oldProfile}){
+  assert.equal(arguments.length,1);assert.equal(typeof psql,'function');
+  assert.equal(oldBinding?.modelBundleSha256,SCALAR597_LATER_H0_BEFORE.I);
+  assert.equal(newBundle,requireScalar597LaterH0Binding().I);
+  const checkIntermediate=await prepareScalar597TripAndQuotaWindow(psql,oldBinding,newBundle,oldProfile);
+  const preservedSql=currentMemoryWarmupPreservationInventorySql('preserved');
+  const preserved=await psql(preservedSql);
+  return Object.freeze({preservedSql,preserved,checkIntermediate});
+}
 export async function compareInstalled593Original591Successor(options){
   return compareFixedSuccessor(INSTALLED593_ORIGINAL591,...arguments);
 }
 async function compareFixedSuccessor(profile,options){
-  assert(profile===LEGACY586||profile===PUBLIC587||profile===PUBLIC588||profile===PUBLIC590||profile===PUBLIC591||profile===INSTALLED593_ORIGINAL591,'ASSISTANT_NATIVE_UNKNOWN_PROFILE');
+  assert(profile===LEGACY586||profile===PUBLIC587||profile===PUBLIC588||profile===PUBLIC590||profile===PUBLIC591||profile===INSTALLED593_ORIGINAL591||profile===SCALAR597_LATER_H0,'ASSISTANT_NATIVE_UNKNOWN_PROFILE');
   const OLD=profile.before,DATABASE_BEFORE=profile.databaseBefore??OLD,ALIASES=profile.aliases,
     ORIGINAL_ALIASES=profile.originalAliases??ALIASES,PREFIX=profile.prefix,OLD_PREFIX=profile.oldPrefix;
   let phase='SOURCE';
@@ -207,7 +362,12 @@ async function compareFixedSuccessor(profile,options){
     for(const name of names)assert.equal(catalogBefore[name].body,sha(body(definition(before.canonicalSource,name))));
     const accountCatalogBefore=await psql(statisticsPreferenceRevisionCatalogQuery);
     assert.equal((await verifyStatisticsPreferenceRevisionCatalogMetadata(JSON.parse(accountCatalogBefore))).schemaVersion,2);
-    phase='BEFORE_INVENTORY';const preservedSql=currentMemoryWarmupPreservationInventorySql('preserved'),preserved=await psql(preservedSql);
+    phase='BEFORE_INVENTORY';
+    const scalarWindow=profile===SCALAR597_LATER_H0?await prepareScalar597NativeFixtureWindow({
+      psql,oldBinding:originals.same.modelBinding,newBundle:NEXT.I,oldProfile:options.originalProfile,
+    }):null;
+    const preservedSql=scalarWindow?.preservedSql??currentMemoryWarmupPreservationInventorySql('preserved');
+    const preserved=scalarWindow?scalarWindow.preserved:await psql(preservedSql);
     const archivePins=new Map(await Promise.all((await fs.readdir(path.join(ROOT,'supabase/migrations')))
       .filter(name=>name.endsWith('.sql')).map(async name=>[name,sha(await fs.readFile(path.join(ROOT,'supabase/migrations',name)))])));
     const guards=[
@@ -223,11 +383,14 @@ async function compareFixedSuccessor(profile,options){
       ...ALIASES.map(row=>['create function public.'+row.name+row.signature+' returns boolean language sql as $$select false$$;',
         'drop function public.'+row.name+row.signature+';']),
     ];
-    for(const[index,[drift,restore]]of guards.entries()){
+    const selectedGuards=profile===SCALAR597_LATER_H0
+      ?[guards[0],guards.at(-1)]:guards;
+    for(const[index,[drift,restore]]of selectedGuards.entries()){
       phase='GUARD_'+index;await psql(drift);assert.notEqual((await runSql(sql)).code,0);await psql(restore);
       assert.equal(await psql(preservedSql),preserved);assert.deepEqual(JSON.parse(await psql(catalogSql(names))),catalogBefore);
       for(const alias of ALIASES)assert.equal(await psql("select to_regprocedure('public."+alias.name+alias.signature+"') is null;"),'t');
     }
+    const checkIntermediate=scalarWindow?.checkIntermediate??null;
     phase='INSTALL';await psql(sql);
     assert.equal(await psql("select current_setting('lock_timeout');"),'0');assert.equal(await psql(preservedSql),preserved);
     assert.equal(await psql(statisticsPreferenceRevisionCatalogQuery),accountCatalogBefore);
@@ -254,6 +417,8 @@ async function compareFixedSuccessor(profile,options){
       +"||E'\\n-- calibration-truth-function --\\n'||(select btrim(prosrc,E' \\r\\n\\t') from pg_proc where oid='public.ravradar_trip_v3_calibration_truth_allowed(text,jsonb,boolean,text,text,text,text)'::regprocedure)"
       +"||E'\\n-- binding-function --\\n'||(select btrim(prosrc,E' \\r\\n\\t') from pg_proc where oid='public.ravradar_trip_v3_binding_allowed(text,jsonb,boolean,text,text,text,text)'::regprocedure);");
     assert.equal(sha(trip),PINS.tripBindingPolicySha256);
+    phase='SCALAR597_INTERMEDIATE_RUNTIME';
+    const intermediateRuntime=checkIntermediate?await checkIntermediate():null;
     phase='CURRENT_FIXTURES';const current={};
     for(const[name,hour,options]of [['same',49,{}],['newer',50,{}],['changed',49,{candidateCurrentSpeedMps:0.18}]]){
       const sourcePath=path.join(root,PREFIX+name+'-source.json'),checkpointPath=path.join(root,PREFIX+name+'-checkpoint.json');
@@ -266,7 +431,10 @@ async function compareFixedSuccessor(profile,options){
       assert.equal(payload.modelBinding.modelBundleSha256,NEXT.I);
       assert.equal(payload.candidateGRollbackCompanion.modelBinding.modelBundleSha256,NEXT.C);
       assert.equal(payload.continuationStateContractSha256,NEXT.T);assert.equal(payload.productionReferenceAt,atHour(hour));
-      if(name!=='changed')assertWholeMetadataInverse(original,payload,NEXT);
+      if(name!=='changed'){
+        if(profile===SCALAR597_LATER_H0)assertScalar597LaterH0CheckpointInverse(original,payload,NEXT);
+        else assertWholeMetadataInverse(original,payload,NEXT);
+      }
       const text=JSON.stringify(payload);assert(!text.includes('$assistant_fixture$'));
       await psql("insert into native_checkpoint_payloads values('"+PREFIX+name+"',$assistant_fixture$"+text+"$assistant_fixture$::jsonb);");
       assert.equal(await psql('select public.'+CP+"payload_valid((select payload from native_checkpoint_payloads where name='"+PREFIX+name+"'),'"+atHour(hour)+"');"),'t');
@@ -294,7 +462,8 @@ async function compareFixedSuccessor(profile,options){
       ['same-H0-newer'+profile.previousRelease+'-refused',OLD_PREFIX+'newer',PREFIX+'newer',1,'22023',null,1],
       ['earlier-'+profile.previousRelease+'-refused',OLD_PREFIX+'newer',PREFIX+'same',1,'22023',null,1],
     ];
-    for(const central of [...profile.olderFixtures,'account-statistics-assistant-current-same','last-mile-584-same','origin-current-same','identity-same','after0600-same',
+    for(const central of profile===SCALAR597_LATER_H0?['account-statistics-assistant-current-same']:
+      [...profile.olderFixtures,'account-statistics-assistant-current-same','last-mile-584-same','origin-current-same','identity-same','after0600-same',
       'grid-current',...['ffc','249','c1ac'].map(family=>'original-'+family)])
       cases.push(['same-older-'+central,central,PREFIX+'same',1,'22023',null,1],
         ['newer-older-'+central,central,PREFIX+'newer',1,'22023',null,1]);
@@ -331,10 +500,10 @@ async function compareFixedSuccessor(profile,options){
         existingOriginalAliasesPreserved:ORIGINAL_ALIASES.length}:{}),
       migrationVersion:migration.version,partCount:673,checkpointOidSlots:profile.oidSlots,contractBodies:profile.contractBodies,
       oldFunctionsAndOidsPreserved:true,allOriginalDefinitionsPreserved:true,privateAliases:ALIASES.length,
-      beforeGuardCases:guards.length,exactCheckpointContract:true,exactTripContract:true,schema2Catalog:true,
+      beforeGuardCases:selectedGuards.length,exactCheckpointContract:true,exactTripContract:true,schema2Catalog:true,
       normalProtectedJsonbRoundtrip:true,originalDigestsPreserved:true,['trueOld'+profile.previousRelease+'Fixtures']:true,currentNormalFixtures:true,
       ['old'+profile.previousRelease+'ModelNotRetagged']:true,wholeMetadataInverse:true,['strictlyLater'+profile.previousRelease+'ToNextOnly']:true,
-      productionSeedAuthenticated:false,sqlIsNotOriginAuthentication:true,reports};
+      productionSeedAuthenticated:false,sqlIsNotOriginAuthentication:true,...(intermediateRuntime?{intermediateRuntime}:{}),reports};
   }catch(error){
     try{console.error(JSON.stringify({kind:profile.failureKind,phase,
       category:error?.code==='ERR_ASSERTION'?'ASSERTION_FAILED':'NATIVE_CALL_FAILED',privatePayloadIncluded:false}));}catch{}

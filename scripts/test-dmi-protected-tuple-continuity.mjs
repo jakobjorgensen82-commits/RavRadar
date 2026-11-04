@@ -367,6 +367,31 @@ const asNative = rows => {
   } };
 };
 const nativeHistorical = asNative([row(0), row(3)]);
+
+const planningActive = asNative([row(0, -6, -5), row(1, -6, -5), row(3, -6, -5), row(6, -6, -5)]);
+const planningCurrentOnly = planningActive.zones[identity.entityId].hourly[time(1)];
+delete planningCurrentOnly['sea-mean-deviation'];
+delete planningCurrentOnly['water-temperature'];
+const planningInputs = { startAt: time(0), expectedIdentity: identity,
+  historicalBulkCache: nativeHistorical, persistedHourly: [original] };
+const planningFeature = { type: "Feature", geometry: { type: "Point", coordinates: part.waterPoint },
+  properties: { id: identity.entityId, dataPoint: part.waterPoint, coastType: "open" } };
+const beforePlanning = structuredClone(planningActive);
+const planningNormal = buildPartDmiForecastWithProtectedRetention(
+  planningFeature, planningActive, nativeHistorical, time(0), planningInputs);
+const planningOnly = buildPartDmiForecastWithProtectedRetention(
+  planningFeature, planningActive, nativeHistorical, time(0), { ...planningInputs, scalarPlanningOnly: true });
+const planningScalars = record => record.hourly.map(hour => ({
+  time: hour.time, windSpeedMps: hour.windSpeedMps, windDirectionDeg: hour.windDirectionDeg,
+  waterLevelCm: hour.waterLevelCm, waterLevelTrendCm3h: hour.waterLevelTrendCm3h,
+  waterTemperatureC: hour.waterTemperatureC, wind: hour.sources.wind,
+  waterLevel: hour.sources.waterLevel, waterTemperature: hour.sources.waterTemperature,
+}));
+assert.equal(planningOnly.hourly.length, 121);
+assert.deepEqual(planningScalars(planningOnly), planningScalars(planningNormal));
+assert.ok(planningOnly.hourly.every(hour => hour.currentUMps == null && hour.currentVMps == null));
+assert.deepEqual(planningActive, beforePlanning);
+
 for (const input of [
   { active: noPartContext, historical: nativeHistorical },
   { active: null, historical: nativeHistorical },

@@ -4,10 +4,10 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { spawnSync } from 'node:child_process';
-import { loadOpenMeteoPartRuntime, runOpenMeteoPartRuntime } from './lib/open-meteo-part-runtime.mjs';
+import { loadOpenMeteoPartRuntime, loadRetainedOpenMeteoPartIndex, runOpenMeteoPartRuntime } from './lib/open-meteo-part-runtime.mjs';
 import { produceOpenMeteoPartComponents } from './produce-open-meteo-part-components.mjs';
 import { OPEN_METEO_PART_RESPONSE_MAX_BYTES, selectedOpenMeteoPartRecord,
-  buildOpenMeteoPartRequest, readOpenMeteoPartResponse, mergeOpenMeteoPartBank } from './lib/open-meteo-part-bank.mjs';
+  buildOpenMeteoPartRequest, readOpenMeteoPartResponse, mergeOpenMeteoPartBank, openMeteoPartSha256 } from './lib/open-meteo-part-bank.mjs';
 
 const reference = '2026-09-19T00:00:00.000Z';
 const at = hour => new Date(Date.parse(reference) + hour * 3_600_000).toISOString();
@@ -52,6 +52,10 @@ test('read-only runtime rejects a legacy false fill without disk mutation; ordin
   const loaded = await loadOpenMeteoPartRuntime(input);
   assert.equal(selectedOpenMeteoPartRecord(loaded.index, { part, component: 'wave', validTime: reference }), null);
   assert.equal(selected(loaded.index).values.windSpeedMps, 4);
+  const retained = await loadRetainedOpenMeteoPartIndex(input);
+  assert.equal(retained.recordCount, loaded.index.recordCount);
+  assert.deepEqual(selected(retained), selected(loaded.index));
+  assert.equal(selectedOpenMeteoPartRecord(retained, { part, component: 'wave', validTime: reference }), null);
   assert.equal(await fs.readFile(input.bankPath, 'utf8'), originalText, 'read-only verification never overwrites production evidence');
   let requests = 0;
   const repaired = await runOpenMeteoPartRuntime({ ...input,
@@ -182,7 +186,40 @@ test('read-only load rebases a legitimate central parent change without silently
   const rebased = await loadOpenMeteoPartRuntime({ ...input, parts: [{ ...part, zoneId: 'NEW-ZONE' }] });
   assert.equal(result.bank.records.length, 1);
   assert.equal(rebased.bank.records.length, 0);
+  for (const rebasedInput of [
+    { ...input, parts: [{ ...part, zoneId: 'NEW-ZONE' }] },
+    { ...input, retentionStartAt: at(1) },
+  ]) {
+    const retained = await loadRetainedOpenMeteoPartIndex(rebasedInput);
+    const regular = await loadOpenMeteoPartRuntime(rebasedInput);
+    assert.equal(retained.recordCount, regular.index.recordCount);
+    assert.equal(selected(retained), null);
+  }
   assert.equal(await fs.readFile(input.bankPath, 'utf8'), before, 'read-only load never overwrites the original bank');
+});
+
+test('planning-only load checks retained source bytes, tuple and duplicate before exposing an index', async t => {
+  const input = await fixture(t);
+  const { bank, index } = await runOpenMeteoPartRuntime({ ...input, fetchImpl: async () => new Response(responseText) });
+  const { bankSha256: _digest, ...reordered } = structuredClone(bank);
+  reordered.records[0] = Object.fromEntries(Object.entries(reordered.records[0]).reverse());
+  await fs.writeFile(input.bankPath, JSON.stringify({ ...reordered, bankSha256: openMeteoPartSha256(reordered) }));
+  assert.deepEqual(selected(await loadRetainedOpenMeteoPartIndex(input)), selected(index));
+  const failures = [
+    [content => { content.records.push(content.records[0]); }, /BANK_DUPLICATE/],
+    [content => { content.records[0].values.windSpeedMps += 1; }, /BANK_RECORD_INVALID/],
+    [content => { content.records[0].extra = 1; }, /BANK_RECORD_INVALID/],
+    [content => { Object.values(content.responses)[0].responseText += ' '; }, /BANK_EVIDENCE_INVALID/],
+    [content => { content.records[0].evidenceId = 'missing'; }, /BANK_EVIDENCE_INVALID/],
+  ];
+  for (const [damage, reason] of failures) {
+    const { bankSha256: _digest, ...content } = structuredClone(bank);
+    damage(content);
+    const bytes = JSON.stringify({ ...content, bankSha256: openMeteoPartSha256(content) });
+    await fs.writeFile(input.bankPath, bytes);
+    await assert.rejects(loadRetainedOpenMeteoPartIndex(input), reason);
+    assert.equal(await fs.readFile(input.bankPath, 'utf8'), bytes);
+  }
 });
 
 const settlementDeferred = () => {

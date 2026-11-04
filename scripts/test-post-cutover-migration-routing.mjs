@@ -10,8 +10,11 @@ import {
 import { validateSameReferencePrivateRuntimeSuccessor } from './protected-private-production-runtime.mjs';
 import { PRIVATE_RUNTIME_FILES,privateRuntimeContractHashes } from './private-production-runtime-workflow.mjs';
 import { assertAssistantOriginalRuntimeContracts } from './assistant-later-h0-runtime-transition.mjs';
-import { ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE } from './lib/assistant-later-h0-successor-source.mjs';
-import { FROZEN591_CODE_SOURCE_PROVENANCE as ORIGINAL591 } from './check-assistant-later-h0-predecessor-source.mjs';
+import {ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE,INACTIVE_INSTALLED593_ORIGINAL591_SUCCESSOR as HISTORICAL,
+  INACTIVE_SCALAR597_LATER_H0_SUCCESSOR as SCALAR} from './lib/assistant-later-h0-successor-source.mjs';
+import {assertFrozen591CompactRuntimeContracts} from './lib/assistant-public591-runtime-contracts.mjs';
+import {FROZEN591_CODE_SOURCE_PROVENANCE as ORIGINAL591,SOURCE594_CODE_SOURCE_PROVENANCE as ORIGINAL594}
+  from './check-assistant-later-h0-predecessor-source.mjs';
 import {
   PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE,
   PRIVATE_WEATHER_COMPONENT_PACK_FILE,
@@ -21,15 +24,32 @@ import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 
 // Actual normal contract computation, not an independently copied guard. This
 // exact genuine591 -> issued593 pair failed before suppliers in production.
-assert.equal(ACTIVE.sourcePhase,'assistant-installed593-origin591-successor');
-assert.equal(ACTIVE.requireRelease(),'4.0.594');
+assert([HISTORICAL,SCALAR].includes(ACTIVE));
+assert.equal(HISTORICAL.requireRelease(),'4.0.594');
 const currentContracts=await privateRuntimeContractHashes();
 const originalContracts={
-  continuationStateContractSha256:ACTIVE.before.T,
+  continuationStateContractSha256:HISTORICAL.before.T,
   fullRuntimeContractSha256:ORIGINAL591.fullRuntimeContractSha256,
   publicProjectionContractSha256:ORIGINAL591.publicProjectionContractSha256,
 };
-assert.notEqual(originalContracts.publicProjectionContractSha256,currentContracts.publicProjectionContractSha256);
+const genuine594={
+  continuationStateContractSha256:HISTORICAL.requireBinding().T,
+  fullRuntimeContractSha256:ORIGINAL594.fullRuntimeContractSha256,
+  publicProjectionContractSha256:ORIGINAL594.publicProjectionContractSha256,
+};
+assert.notEqual(originalContracts.publicProjectionContractSha256,genuine594.publicProjectionContractSha256);
+assert.equal(assertFrozen591CompactRuntimeContracts(originalContracts,genuine594),true);
+if(ACTIVE===SCALAR){
+  assert.equal(ACTIVE.requireRelease(),'4.0.597');
+  assert.equal(ACTIVE.before.T,genuine594.continuationStateContractSha256);
+  assert.notEqual(currentContracts.continuationStateContractSha256,genuine594.continuationStateContractSha256);
+  assert.equal(assertAssistantOriginalRuntimeContracts(genuine594,currentContracts),true);
+  for(const key of Object.keys(genuine594)){
+    assert.throws(()=>assertAssistantOriginalRuntimeContracts({...genuine594,[key]:'0'.repeat(64)},currentContracts));
+    assert.throws(()=>assertAssistantOriginalRuntimeContracts(genuine594,{...currentContracts,[key]:'0'.repeat(64)}));
+  }
+  assert.throws(()=>assertAssistantOriginalRuntimeContracts(originalContracts,currentContracts));
+}else{
 assert.equal(assertAssistantOriginalRuntimeContracts(originalContracts,currentContracts),true);
 for(const key of Object.keys(originalContracts)){
   assert.throws(()=>assertAssistantOriginalRuntimeContracts({...originalContracts,[key]:'0'.repeat(64)},currentContracts));
@@ -40,6 +60,7 @@ for(const key of Object.keys(originalContracts)){
 assert.throws(()=>assertAssistantOriginalRuntimeContracts({...originalContracts,unknown:'x'},currentContracts));
 assert.throws(()=>assertAssistantOriginalRuntimeContracts(originalContracts,{...currentContracts,unknown:'x'}));
 assert.throws(()=>assertAssistantOriginalRuntimeContracts(originalContracts,currentContracts,'override'));
+}
 assert.deepEqual(await privateRuntimeContractHashes(),currentContracts);
 
 const source = { coastalParts: { parts: { p1: {

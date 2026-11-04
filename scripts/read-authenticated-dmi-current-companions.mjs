@@ -19,12 +19,15 @@ import {readAuthenticatedFrozen588Predecessor,assertAuthenticatedFrozen588Snapsh
   from './lib/authenticated-frozen586-predecessor.mjs';
 import {readAuthenticatedFrozen590Predecessor,assertAuthenticatedFrozen590Snapshot}
   from './lib/authenticated-frozen586-predecessor.mjs';
-import {readAuthenticatedFrozen591Predecessor,assertAuthenticatedFrozen591Snapshot}
+import {readAuthenticatedFrozen591Predecessor,assertAuthenticatedFrozen591Snapshot,
+  readAuthenticatedSource594Predecessor,assertAuthenticatedSource594Snapshot}
   from './lib/authenticated-frozen586-predecessor.mjs';
 import {ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE} from './lib/assistant-later-h0-successor-source.mjs';
 import {ravScoreModelBinding} from '../js/core/ravscore-model-contract.js';
 import {readAssistantLaterH0RetentionInput} from './assistant-later-h0-runtime-transition.mjs';
-const ACTIVE_PREDECESSOR=['assistant-public591-successor','assistant-installed593-origin591-successor'].includes(ACTIVE.sourcePhase)?Object.freeze({
+const ACTIVE_PREDECESSOR=ACTIVE.sourcePhase==='scalar597-later-h0-original594-successor'?Object.freeze({
+  read:readAuthenticatedSource594Predecessor,snapshot:assertAuthenticatedSource594Snapshot,
+}):['assistant-public591-successor','assistant-installed593-origin591-successor'].includes(ACTIVE.sourcePhase)?Object.freeze({
   read:readAuthenticatedFrozen591Predecessor,snapshot:assertAuthenticatedFrozen591Snapshot,
 }):ACTIVE.sourcePhase==='assistant-public590-successor'?Object.freeze({
   read:readAuthenticatedFrozen590Predecessor,snapshot:assertAuthenticatedFrozen590Snapshot,

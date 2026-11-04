@@ -22,7 +22,7 @@ Opdateringskontrollen starter, når dokumentet er klar, efter normal sikring af 
 
 ### Status og hvad der skal måles
 
-Den tidligere PLAIN-læserbro i PR #803 har bestået kilde-CI. Merge og deploy er endnu ikke verificeret. Den samlede kandidat kræver sin egen kontrol, måling af den faktisk uploadede Pages-pakke mod 1 GB-grænsen og afprøvning af offentlig visning på en rigtig telefon. Lokal afprøvning fastslår hverken indlæsningstid på telefon eller Free-forbrug.
+Den tidligere PLAIN-læserbro fra PR #803 er offentligt leveret. Den kompakte kandidat i PR #804 afventer sin egen levering. Den samlede kandidat kræver sin egen kontrol, måling af den faktisk uploadede Pages-pakke mod 1 GB-grænsen og afprøvning af offentlig visning på en rigtig telefon. Lokal afprøvning fastslår hverken indlæsningstid på telefon eller Free-forbrug.
 
 Kandidaten bruger det eksisterende versionsfelt 4.0.594 og de gældende score-, kilde- og modelbindinger. Den ændrer ingen migrations-SQL. SOURCE-revision, statistik og automatisk sletning har særskilte leveringsforløb.
 
@@ -44,7 +44,7 @@ DMI → Copernicus → Open-Meteo, hentebudgetter, originaler, cache, scoreforme
 
 ### Faste fejltrin uden rå fejldata
 
-Når den normale scalarplan afvises, bevares den eksisterende UNAVAILABLE-markør. Den efterfølgende diagnostik indeholder kun phase, errorCategory og elapsedMillis. Fasen kommer fra den faktisk fejlede læse-, reservekontrol-, kodnings- eller gemmeoperation; tiden måles monotont fra kalderens start.
+Når den normale scalarplan afvises, bevares den eksisterende UNAVAILABLE-markør. Den efterfølgende diagnostik indeholder kun phase, errorCategory og elapsedMillis. Fasen navngiver trinnet, hvor fejlen blev opdaget, og tiden gælder hele kalderen. Det sidste budget kan være brugt før det trin, der rapporterer overskridelsen.
 
 Fejlkategorierne er en fast, lukket liste. Ukendte fejl bliver UNKNOWN_FAILURE. Rå fejltekst, filstier, vejrværdier og underprocessens fejludskrift udleveres ikke. Et ukendt transportstop bevarer sin oprindelige fejlidentitet, STOP_UNPROVED og exit 2; det må ikke ommærkes til en almindelig fallback.
 
@@ -52,35 +52,57 @@ Den samme normale fysiske testcase afprøver deadline, mislykket offline bytekon
 
 Rettelsen er lokalt forberedt. Præcis kildekvalifikation, sikker levering og faktisk ny fejlaflæsning er fortsat åbne. Fase og tidsforbrug gør næste afslag forklarligt; de dokumenterer ikke i sig selv leverandørfravær, en bestemt timeoutårsag eller fuld offentlig vejrdækning.
 
+### Scalarplanens tidsforbrug før DMI
+
+Den lokale plan bruger allerede gemte data til at finde de timer, der mangler vind, vandstand eller vandtemperatur. Hvis planlæggeren rammer sin tidsgrænse, kan vejrhentningen fortsætte med den konservative prioritering. Den registrerede fase viser, hvor overskridelsen blev opdaget. Det registrerede tidsforbrug gælder hele planlægningen.
+
+Den samlede kandidat undgår at gentage arbejde med de samme tidsakser og gemte kilder. Den eksisterende syntetiske landsprøve for 210 zoner og 673 kystdele gav det forventede planoutput på cirka 81 sekunder. De langsommere prøveforløb nåede ingen færdig plan.
+
+Rækkefølgen DMI → Copernicus → Open-Meteo, kildevalg, originalkontrol, scoreformel og tidsgrænsen på 120 sekunder bevares. Sikker levering og dækningsmåling efter en almindelig vejrhentning er fortsat åbne.
+
+### Den lokale 4.0.597-kandidat
+
+4.0.597 er en lokal kandidat til hurtigere planlægning af, hvor prognosen mangler data. Den bruger de samme kontrollerede kildedata og giver det forventede planoutput byte for byte på den eksisterende syntetiske landsprøve for 210 zoner og 673 kystdele på cirka 81 sekunder. Den samlede frist er fortsat 120 sekunder. DMI er førstevalg, derefter Copernicus og Open-Meteo. RavScore-formlen, administratorpunkter og geometri bevares.
+
+Overgangen bruger den senest gyldige, autentificerede 594-generation og kræver en nyere hel prognosetime. De gemte originale data og scorehistorikken bevares. En kontrolleret arbejdskopi fører de samme tal og den samme historik ind under nye modelbindinger. Den normale arbejdsgang bevarer originaldata før det tilhørende scorecheckpoint og gennemfører de beskyttede kontroller før Edge og Pages.
+
+Den første almindelige kørsel bruger den eksisterende overgang for historisk vedligeholdelse og kører uden den nye scalarplan. Den efterfølgende almindelige integrerede vejrhentning skal vise, om planen holder tidsgrænsen og forbedrer dækningen. Sammenlign alle forventede timer og zoner for hver af de fem vejrfamilier, og opgør prognosehalen og bevarede fælles timer særskilt.
+
 ## 89.298 Sikker vedligeholdelse af dokumenthistorik
 
-Kort fortalt: De aktuelle dokumenter og de nyeste historikversioner bevares. Ældre versioner må først beskæres, når deres præcise originaler er privat arkiveret, verificeret og kan genfindes centralt.
+Kort fortalt: Kun gamle versioner af tre administrationsdokumenter ryddes op. Aktuelle dokumenter og de fem nyeste historikversioner pr. dokument bevares. En gammel række må først fjernes, når dens præcise original er privat arkiveret, genlæst og kan genfindes centralt.
 
-### Hvad der bevares
+### Hvad funktionen omfatter
 
-Vedligeholdelsen omfatter kun historik for rdks-documentation-center, handbook og handbook-source-baseline. De tre aktuelle dokumenter og de fem nyeste historikversioner pr. nøgle bliver stående. Andre dokumentnøgler, vejrdata, originale B/S-pakker, scoremodel og geometri er ikke oprydningsmål.
+De tre faste nøgler er rdks-documentation-center, handbook og handbook-source-baseline. Vejrdata, originale B/S-pakker, scorehistorik, brugerture, konti og andre dokumentnøgler er uden for oprydningen. Det er dokumentversioner fra blandt andet udvikling og håndbogsopdateringer, som begrænses; dette er ikke en ændring af vejrets rullende historik.
 
-### Original først, beskæring bagefter
+### Arkiv før beskæring
 
-Ældre historikrækker arkiveres i en særskilt privat R2-bucket. Arkivet bevarer den præcise REST-respons for hver række, også oprindelig talrepræsentation og formatering. Genlæsning kontrollerer de originale bytes; parsing og ny JSON-serialisering må ikke erstatte en genopretningsoriginal. En central V2-arkivhenvisning gør det muligt at finde og verificere arkivet uden en gammel fil på operatørens PC. Arkivoriginaler slettes ikke af denne funktion.
+Hver række arkiveres med den præcise oprindelige REST-respons, også talrepræsentation og formatering. Private, komprimerede V2-arkiver har faste fingeraftryk og en central arkivhenvisning. Før beskæring genfindes arkivet uafhængigt, alle arkiverede rækker genlæses og sammenlignes med deres originalbytes, og de aktuelle dokumenter samt de fem nyeste historikversioner kontrolleres igen. Parsing og ny JSON-serialisering er ikke en erstatning for originalen. Arkivoriginaler slettes ikke af funktionen.
 
-### Den normale operatørvej
+### Løbende vedligeholdelse i små portioner
 
-Bucketkontrollen har to særskilte valg: bucket-readonly læser kun den faste EU-buckets metadata. bucket-create kræver CREATE-PRIVATE-EU-ADMIN-HISTORY-BUCKET og må kun forsøge én oprettelse efter en fuldstændig autentificeret EU-fortegnelse og direkte fraværskontrol. En eksisterende bucket må ikke ændres. Kun Standard-lager bruges; r2.dev skal være deaktiveret, og listen over egne domæner skal være tom. De samme metadata genlæses før archive, publish-locator og prune. Den eksisterende Cloudflare-nøgle bruges kun af bucket-hjælperen. Manglende adgang eller HTTP 401/403 stopper uden nye rettigheder eller nøgler. Ukendt POST-udfald må kun afklares med bucket-readonly; POST gentages ikke automatisk.
+Den nye lokale maintain-operation vælger internt præcis de højst 25 ældste berettigede rækker fra den normale friske fortegnelse. Samme afgrænsning genkontrolleres før arkivering. Kun denne portion arkiveres og beskæres, så hele restmængden ikke genarkiveres ved hver passage. Hvis ingen rækker er berettigede, sker ingen arkivupload, ændring af henvisningen eller sletning. Resten optælles efter passagen.
 
-Brug kun maintain-admin-document-history.yml på den præcise, allerede kvalificerede aktuelle main og bind expected_main til samme kilde. Standardvalget plan er skrivefrit. archive udfører en frisk plan og arkivering. publish-locator udfører frisk plan, arkivering og derefter publicering af henvisningen i samme private runner, så fortrinnene ikke afhænger af lokale filer fra en tidligere kørsel. discover og restore genfinder og kontrollerer den centrale henvisning; restore laver private genlæsningsfiler og er ikke en produktions-DB-restore.
+Automatisk adgang er lukket som standard. Repository-indstillingen RAVRADAR_ADMIN_HISTORY_MAINTENANCE skal udtrykkeligt have værdien enabled, og må først aktiveres efter faktisk privat lageradgang og en gennemført, kontrolleret første arkiv-/genlæsnings-/beskæringspassage. Den er en almindelig ikke-hemmelig indstilling, ikke en ny nøgle eller tjeneste. De eksisterende manuelle operationer bevares, så første kvalifikation ikke afhænger af den automatiske trigger.
 
-### Beskæring og dataoverførsel
+Når indgangen er aktiveret, følger den en vellykket afslutning af det eksisterende vejrforløb på den kvalificerede aktuelle main. Også en vellykket genoptagelse eller et korrekt preflight-skip kan udløse den særskilte vedligeholdelse; hændelsen er ikke bevis for nye hentede eller offentligt leverede vejrdata. Repository, gren, workflowsti, udløsende hændelse, kildeidentitet og tidsvindue kontrolleres før privat adgang. Der skal fortsat være mindst 30 minutter til det næste firetimersslot, som beregnes fra det udløsende vejrforløbs oprettelsestidspunkt. En sent køsat vedligeholdelse må ikke bruge et senere slot som en ny frist. Der oprettes ingen særskilt daglig schedule eller keepalivecommits.
 
-prune er særskilt, kræver den faste bekræftelse og er aldrig automatisk. Operatøren skal først have lukket de faktiske adgangs-, backup-/genopretnings- og anti-genoplivningsforudsætninger. Standardbatch 25 bruges til den første begrænsede liveprøve. Senere kan 100 eller 600 vælges eksplicit, så en stor rest ikke kræver mange gentagelser af den fulde forudkontrol. Andre operationer kan ikke ændre batchstørrelsen. Samme adgangs-, original-, aktuelle dokument-, top-fem- og tidskontroller gælder for alle størrelser.
+### Operatørvej og adgang
 
-### Samtidighed og stop
+maintain-admin-document-history.yml bruger kun den præcise, allerede kvalificerede aktuelle main. Det manuelle standardvalg plan er skrivefrit. De eksisterende manuelle archive, publish-locator, discover, restore og særskilt bekræftet prune bevares. Manuel prune kan fortsat vælge 25, 100 eller 600; automatisk maintain er fast låst til 25 og sin egen præcise bekræftelse. En privat restore-fil er ikke en udført produktions-DB-restore.
 
-Den eksisterende fælles vejrkø holdes yderst og turlagerkøen inderst. Jobbet har 25 minutter inklusive klargøring; den samlede operation og controller bevarer 20 minutter. Vejrhentningens egne budgetter ændres ikke. Nye kørsler aflyser ikke en aktiv operation. Der tilføjes ingen tidsplan eller automatisk beskæring. Ukendt skriveudfald kræver konkret afklaring ved genlæsning, ikke automatisk gentagelse.
+Kun den faste private EU-bucket ravradar-admin-history-archive med Standard-lager må bruges. r2.dev skal være slået fra, og egne domæner skal være fraværende. Bucketmetadata genlæses før arkivskrivning og beskæring. Den eksisterende Cloudflare-managementnøgle når kun den faste metadata-/oprettelseshjælper, ikke selve arkivcontrolleren. Manglende adgang giver stop; controlleren opretter ikke nøgler eller udvider rettigheder. Eventuel adgangsklargøring er en særskilt kontohandling inden aktivering.
 
-### Status og bevisgrænse
+### Samtidighed, kapacitet og ukendte udfald
 
-Dette er en lokal kandidat med beståede normale controller- og kalderprøver. Kandidaten kan kvalificeres og leveres selvstændigt på den præcise aktuelle main-baserede kilde; SOURCE 595 er ikke en forudsætning. En senere SOURCE-sammenføring skal normalt bevise endelig importlukning, uændrede modelbindinger og præcist kildebevis. En bestået gammel kørsel må ikke ommærkes til en ny samlet kilde. Der er ikke udført livearkivering eller beskæring som led i kandidaten. Privat lageradgang, backup-/genopretningsafklaring og målt driftsvirkning er fortsat åbne. Kandidaten beviser hverken samlet gratis drift eller grundlag for at opsige Pro.
+Den fælles vejrkø holdes yderst og turlagerkøen inderst. Jobbet har 25 minutter inklusive klargøring; operationen bevarer 20 minutter. Vejrhentningens tider og prioritet ændres ikke. Arkivets eksisterende lager- og overførselslofter bevares. Faktiske bytes, tid og pladsvirkning skal måles; komprimerede databasekolonner er ikke det samme som størrelsen af en fuld REST-original.
+
+Ved ukendt skriveudfald blokeres nye writes. Automatisk maintain må kun afklare den sidste præcise mutation ved autentificeret læsning. Også når læsningen afklarer udfaldet, standser passagen uden næste write eller blind gentagelse. Uafklaret udfald forbliver en fejl. De gamle manuelle operationer bevarer deres hidtidige stopsemantik.
+
+### Status og hvad der stadig skal bevises
+
+Kandidaten er lokalt forberedt og målrettet afprøvet. Den er ikke i sig selv kildekvalificeret, installeret eller et bevis for faktisk arkivering og beskæring. Før livebrug kræves privat lageradgang, komplet tabsfrit arkiv og autentificeret genlæsning, den varige arkivhenvisning, friske current/top5/ACL/RLS-kontroller og eksisterende Pro-rollback. Fuld database-/Authbackup er en forudsætning for senere Pro-opsigelse, ikke en ekstra gate for denne særskilt afgrænsede dokumentoprydning. Gratis drift, faktisk pladsgevinst og selvstændig efterfølgende vedligeholdelse er fortsat åbne. Ingen abonnements- eller betalingsoplysning ændres af denne funktion.
 
 ## 89.294 Reelle datahuller før opgradering af dækkede timer
 
@@ -174,7 +196,13 @@ Et krypteret fremskridt kan bevare allerede hentede leverandørdata, selv om ber
 
 En ny modelbinding kan ændre arbejdsfilens metadata. Derfor er uændrede originale vejrdata alene ikke bevis for, at gammelt fremskridt kan bruges direkte efter overgangen. De normale kontroller skal afgøre genbrug; gamle data og fremskridt bevares, mens en afvigelse afklares.
 
-### Aktuelle lokalt udstedte 594-bindinger
+### Aktuelle lokalt udstedte 597-bindinger
+
+Aktuel lokal kildebinding — 4. november 2026, RavScore 4.0.597: Den integrerede model er offentlig i den installerede 4.0.594-generation. 4.0.597 er lokalt udstedt og endnu ikke installeret eller offentligt leveret. 4.0.597 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=68f118fbb07b252fab89f12ed0bf82816cd74b04afc306b00c2b3a8ccfe25c81` over 100 kanonisk normaliserede transitive implementeringsfiler. De syv normale deklarerede forbrugere er synkroniseret. Inaktiv Candidate G-kompatibilitet har `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=23d97454ec9578e441a0482cf028ae347b2da5ee2ed97560246b486ee46364c5` over 101 transitive filer. Autoriteten er `version.json.releaseContract.modelBindings`. Scoreformel, kildeprioritet, administratorpunkter og geometri er uændrede. Den faktiske database- og originalforgænger er nu 594. De følgende ældre daterede bindingsblokke beskriver tidligere trin og erstattes af denne status.
+
+Aktuel lokal fortsættelseskontrakt — 4. november 2026: 597 har `continuationStateContractSha256=67665c10d2bd134fb598af1c36a41c2d53bb2820344c577ada30bcfbd6afe8e1` (`67665c10…`). Den ene nye migration `20261104004400_scalar597_later_h0_original594_bound_successor.sql` er genereret fra den uændrede installerede 594-kilde. Den tillader kun en strengt senere generation med autentificerede 594-originaler, bevaret scorehistorik og præcis metadataovergang. Rigtig PostgreSQL-kontrol, kontrolleret installation og offentlig 597-generation mangler stadig. De gamle migrationer og data bevares.
+
+### Historiske lokalt udstedte 594-bindinger
 
 **Aktuel kildebinding — 31. oktober 2026, RavScore 4.0.594, lokalt udstedt:** Den integrerede model er offentlig som modeltype under den senest leverede 591-version. Den nye 594-kilde er ikke installeret eller offentligt leveret. 4.0.594 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=08750e3667e5a221374762fccadccf08abf5e9f1ae8814ccc97bfc11880bf36c` over 99 kanonisk normaliserede transitive implementeringsfiler. De syv normale deklarerede forbrugere er synkroniseret. Inaktiv Candidate G-kompatibilitet har `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=2d5cde5418270a02396e24a249f0b6bb09527366c1c110d8742a44cfe2ab459b` over 100 transitive filer. Autoriteten er `version.json.releaseContract.modelBindings`. Ingen scoreformel, kildeprioritet, administratorpunkter eller geometri ændres. 593 er fortsat databaseforgængeren, og autentiske B/S samt offentlig generation er fortsat 591. Ældre modstridende status nedenfor er dateret historik på disse konkrete punkter.
 
@@ -789,6 +817,8 @@ Telefonens eller browserens delingsmenu bestemmer de tilgængelige destinationer
 
 Hentetiden fordeles mellem de kritiske vejrmodeller, så hver model kan arbejde, mens der stadig er reserveret tid til de øvrige. Et fast filantal fortæller ikke, hvor lang tid filerne tager. Tiden og den fælles downloadgrænse skal derfor begge respekteres. Flere behandlede filer er heller ikke i sig selv bevis for bedre dækning; det afgøres af de gyldige værdier i hele prognosen.
 
+En lokal rettelse under afprøvning giver den almindelige udvidede vejrhentning mulighed for at genlæse DMI’s filliste én gang ved første tur for en samling. Det kræver, at RavRadar allerede har konstateret en manglende ydertime for en vejrtype, som samlingen må levere. Det kan også være en manglende støttetime til at beregne vandstandens ændring tre timer frem. Den eksisterende tid, prioritering og kontrol af kilder gælder fortsat. En nyere filliste alene er endnu ikke bevis for bedre dækning. De sidste støttetimer kan stadig mangle, selv om listen har alle offentlige prognosetimer.
+
 For at forstå de resterende huller registrerer programmet rækkefølgen, når hver DMI-samling starter sin første tur. Registreringen viser, om køens egen klassifikation angiver manglende input eller opgradering. Det er ikke i sig selv bevis for et hul på tværs af alle leverandører. Registreringen ændrer ikke rækkefølgen og udfylder ikke selv et hul. Senere omplanlægninger og den faktisk offentliggjorte dækning skal vurderes særskilt.
 
 Kort fortalt: En ny gennemgang af en vejrfil behøver ikke ændre en allerede bedre, gyldig strømværdi.
@@ -796,6 +826,8 @@ Kort fortalt: En ny gennemgang af en vejrfil behøver ikke ændre en allerede be
 Programmet skal stadig kunne dokumentere den gennemgåede fil, de rigtige kystdele og den bevarede værdis oprindelse. At en fil er gennemgået er ikke i sig selv bevis for, at en manglende time er blevet udfyldt. De samme krav gælder, når data gemmes og bruges ved næste opdatering.
 
 Dækning opgøres over alle forventede timer og zoner for vind, bølger, strøm, vandstand og vandtemperatur. En brugbar score er ikke det samme som komplette data i alle fem kategorier. Bevarede fælles timer og nye timer sidst i prognosen skal vurderes særskilt; ingen kildeprioritet eller beregningsformel ændres af denne bevaring.
+
+I den lokale 4.0.597-kandidat består de eksisterende vandstandskrav. De 118 offentlige prognosetimer understøttes af 121 private timer. De sidste tre bruges til at vurdere vandstandsændringen tre timer frem fra den centralt valgte vandstandskilde. Manglende støtte giver fortsat en manglende værdi. De syv kystzoner kan fortsat bruge dkss_lf til vandstand alene. dkss_lf-strøm, tilhørende strømhukommelse og vandtemperatur er fortsat udelukket i de zoner.
 
 ## 89.265 Spørg RavRadar: forklaring er ikke en lokal vejrudsigt
 
@@ -1441,7 +1473,7 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.594
+**Håndbogsversion:** 4.0.597
 
 **Lokal kildebinding — 29. oktober 2026, RavScore 4.0.591, ikke installeret:** Den integrerede model er offentlig som modeltype under den særskilt leverede 4.0.590. Den nye assistentefterfølger er lokalt udstedt og er endnu ikke samlet kvalificeret, installeret eller offentliggjort.
 

@@ -2,8 +2,8 @@ import {
   RAVSCORE_BEST_TIME_POLICY,
   compareRavScoreBestTimeCandidates,
   ravScoreBestTimeSelectionReason,
-} from './best-time-policy.js?v=4.0.594';
-import { forecastDateKeyInTimeZone } from './forecast-calendar.js?v=4.0.594';
+} from './best-time-policy.js?v=4.0.597';
+import { forecastDateKeyInTimeZone } from './forecast-calendar.js?v=4.0.597';
 
 const timeMs = value => {
   const parsed = Date.parse(String(value || ''));

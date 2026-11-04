@@ -18,7 +18,7 @@ import {
   eligibleLivePilotSource as verifiedLivePilotSource,
   eligibleStateOnlyCurrentHold as verifiedStateOnlyCurrentHold,
 } from './live-current-pilot.mjs';
-import { selectQualifiedWeatherComponent } from './weather-component-selection.mjs';
+import { dmiWeatherSourcePrecedesReserves, selectQualifiedWeatherComponent } from './weather-component-selection.mjs';
 import { qualifiedWeatherReserveCandidates, selectedWeatherReserveSource } from './weather-reserve-admission.mjs';
 import { retainPreviouslySelectedReserve } from './weather-component-selection-history.mjs';
 import {
@@ -550,26 +550,32 @@ const RESERVE_FIELDS = Object.freeze([
   ['waterTemperature', ['waterTemperatureC'], 'waterTemperatureProvenance'],
 ]);
 export const SCORING_RESERVE_COMPONENTS = Object.freeze(RESERVE_FIELDS.map(([component]) => component));
+const SCALAR_RESERVE_FIELDS = RESERVE_FIELDS.filter(([component]) => component !== 'wave');
 
 function applyVerifiedPartReserves(row, part, {
   productionReferenceAt, openMeteoComponentIndex = null, copernicusComponentIndex = null,
-  componentSelectionHistory = null,
+  componentSelectionHistory = null, scalarPlanningOnly = false,
 } = {}) {
   if (!openMeteoComponentIndex && !copernicusComponentIndex) return row;
   let result = row;
-  for (const [component, fields, provenanceKey] of RESERVE_FIELDS) {
+  const reserveFields = scalarPlanningOnly ? SCALAR_RESERVE_FIELDS : RESERVE_FIELDS;
+  for (const [component, fields, provenanceKey] of reserveFields) {
+    const wholeTuple = fields.every(field => finite(row[field]) !== null
+      || (component === 'wave' && field === 'waveDirectionDeg' && row.waveHeightM === 0));
+    const provenance = row[provenanceKey];
+    const primary = wholeTuple && provenance?.status === 'verified'
+      && provenance.provider === 'dmi' ? { source: provenance, row } : null;
+    // The offline scalar plan needs no lookup when the same source policy
+    // already determines that a reserve cannot replace the verified primary.
+    if (scalarPlanningOnly && primary
+      && dmiWeatherSourcePrecedesReserves(primary.source, productionReferenceAt)) continue;
     const reserves = qualifiedWeatherReserveCandidates({ openMeteoComponentIndex, copernicusComponentIndex }, {
       part, validTime: row.time, component,
     });
     if (!reserves.length) continue;
-    const wholeTuple = fields.every(field => finite(row[field]) !== null
-      || (component === 'wave' && field === 'waveDirectionDeg' && row.waveHeightM === 0));
-    const provenance = row[provenanceKey];
     // The owner-approved neighbour-wave proxy remains a valid retained input.
     // Reserve gap filling is not permission to replace it with unknown-age data.
     if (wholeTuple && provenance?.status === 'verified-derived') continue;
-    const primary = wholeTuple && provenance?.status === 'verified'
-      && provenance.provider === 'dmi' ? { source: provenance, row } : null;
     const candidates = retainPreviouslySelectedReserve([primary, ...reserves].filter(Boolean), componentSelectionHistory,
       { part, time: row.time, component });
     const admitted = new Map(candidates.map(candidate => [candidate, candidate.source]));

@@ -6,10 +6,12 @@ import {ASSISTANT_LATER_H0_BINDING as ISSUED587_FAMILY,
   ASSISTANT_PUBLIC587_SUCCESSOR_BINDING as PUBLIC587_SUCCESSOR_FAMILY,
   ASSISTANT_PUBLIC588_SUCCESSOR_BINDING as PUBLIC588_SUCCESSOR_FAMILY,
   INSTALLED593_ORIGINAL591_BINDING as CURRENT594_FAMILY,ASSISTANT_PUBLIC591_SUCCESSOR_BINDING as DATABASE593_FAMILY,
-  ASSISTANT_PUBLIC590_SUCCESSOR_BINDING as ORIGINAL591_FAMILY}
+  ASSISTANT_PUBLIC590_SUCCESSOR_BINDING as ORIGINAL591_FAMILY,
+  SCALAR597_LATER_H0_BINDING as SCALAR597_FAMILY}
   from './lib/assistant-later-h0-successor-source.mjs';
 import { withFrozenEstablishedNativeCurrentOriginPostgresSource } from './run-frozen-established-native-current-origin-source-targets.mjs';
 import { withFrozen584ReconcileFixture, withFrozen585ReconcileFixture } from './run-frozen584-reconcile-source.mjs';
+import { withFrozen594CheckpointPostgresSource } from './run-frozen586-assistant-later-h0-postgres-source.mjs';
 import { pathToFileURL } from 'node:url';
 import { execFileSync, spawnSync } from 'node:child_process';
 // Synthetic normal B/S transport. No native/origin issuer, SQL simulation claim
@@ -71,7 +73,7 @@ function strictRequests(backend) {
     rpcRequest: createProtectedRavScoreCheckpointRpcRequester(config) };
 }
 
-test('normal CURRENT B/S interruption reconciliation preserves whole pairs and refuses ambiguity', async t => {
+async function pairedFixture(t,{refs,now}){
   const own = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-paired-publication-test-'));
   t.after(() => fs.rm(own, { recursive: true, force: true }));
   const source = path.join(own, 'source'); await fs.mkdir(source);
@@ -79,8 +81,7 @@ test('normal CURRENT B/S interruption reconciliation preserves whole pairs and r
     await fs.mkdir(path.dirname(path.join(source, relative)), { recursive: true });
     await fs.copyFile(path.join(ROOT, relative), path.join(source, relative));
   }
-  const refs = ['2026-10-16T10:00:00.000Z', '2026-10-17T05:00:00.000Z'];
-  const now = '2026-10-17T06:00:00.000Z', sourceHead = 'b'.repeat(40);
+  const sourceHead = 'b'.repeat(40);
   const partFor = partId => ({ partId, zoneId: 'fixture-zone', landPoint: [10, 56], waterPoint: [10.01, 56.01], onshoreDirectionDeg: 90 });
   function conditions(reference, speed = 0.12) {
     // Exact normal 49h factory recipe from the existing normal B/S admission
@@ -161,6 +162,14 @@ test('normal CURRENT B/S interruption reconciliation preserves whole pairs and r
     assert.deepEqual(local, JSON.parse(await fs.readFile(saved[index].checkpointPath)));
     assert.equal(result.storageDownloads, 0); assert.equal(result.nativeAdmissionIssued, false); return result;
   }
+  return {own,source,sourceHead,saved,publishB,publishS,paired,installed,run,conditions};
+}
+
+test('normal CURRENT B/S interruption reconciliation preserves whole pairs and refuses ambiguity', async t => {
+  const refs = ['2026-10-16T10:00:00.000Z', '2026-10-17T05:00:00.000Z'];
+  const now = '2026-10-17T06:00:00.000Z';
+  const {own,source,sourceHead,saved,publishB,publishS,paired,installed,run,conditions}=await pairedFixture(t,{refs,now});
+  let historicS=0;
   await t.test('normal producer conditions above legacy256MiB use the shared parseable limit and pair unchanged', async () => {
     const sourcePath = path.join(source, 'data/live/conditions.json');
     const sourceBefore = await fs.readFile(sourcePath), savedBefore = saved[1];
@@ -356,7 +365,7 @@ test('normal CURRENT B/S interruption reconciliation preserves whole pairs and r
   const { saved, run, publishB, publishS, normalBAndSTransports, withFrozenEstablishedNativeCurrentOriginPostgresSource } = old584;
   async function withOld140000S(use, { publishOldB = true } = {}) {
     return withFrozenEstablishedNativeCurrentOriginPostgresSource(async ({ repositoryRoot: oldRoot, factory }) => {
-      const backend = normalBAndSTransports(), originalPath = path.join(own, 'genuine-old-S-' + n++, 'source.json');
+      const backend = normalBAndSTransports(), originalPath = path.join(own, 'genuine-old-S-' + historicS++, 'source.json');
       const checkpointPath = path.join(path.dirname(originalPath), '.cache/ravscore-continuation-checkpoint/checkpoint.json');
       await write(originalPath, factory.sourceDocumentAt(49, 'rr-reconcile-genuine140000'));
       await factory.saveRavScoreContinuationCheckpoint({ repositoryRoot: oldRoot, sourcePath: originalPath, checkpointPath });
@@ -430,7 +439,7 @@ test('normal CURRENT B/S interruption reconciliation preserves whole pairs and r
   });
   });
   });
-  await t.test('584 version drift after whole S read refuses before CAS without changing payload', async () => {
+  await t.test('CURRENT version drift after whole S read refuses before CAS without changing payload', async () => {
     const backend = await paired(); await publishB(backend, 1);
     const payload = clone(backend.documents.get(S).payload), casBefore = backend.events.filter(x => x === 'S_CAS').length;
     const readers = strictRequests(backend); let changed = false;
@@ -723,3 +732,40 @@ test('actual reconcile CLI retains fixed refusal with one content-free request d
   assert.deepEqual(JSON.parse(lines[1]), { kind: 'PRIVATE_B_S_RECONCILE_DIAGNOSTIC',
     phase: 'CLI_REQUEST', code: 'WORKFLOW', errorClass: 'ASSERTION_ERROR' });
 });
+
+if(ravScoreModelBinding().modelBundleSha256===SCALAR597_FAMILY?.I){
+  test('597 CURRENT B only advances a whole genuine strictly older 594 S through one normal CAS', async t => {
+    await withFrozen594CheckpointPostgresSource(async ({repositoryRoot,factory})=>{
+      // The frozen genuine 594 factory covers hours 0 through 50.
+      const hour=49,reference=factory.atHour(hour);
+      const {own,publishB,run}=await pairedFixture(t,{refs:[reference],now:factory.atHour(hour+1)});
+      for(const offset of [-1,0,1]){
+        const backend=normalBAndSTransports(),sourcePath=path.join(own,'old594-'+offset,'source.json');
+        const checkpointPath=path.join(path.dirname(sourcePath),'.cache/ravscore-continuation-checkpoint/checkpoint.json');
+        await write(sourcePath,factory.sourceDocumentAt(hour+offset,'rr-reconcile-genuine594'));
+        await factory.saveRavScoreContinuationCheckpoint({repositoryRoot,sourcePath,checkpointPath});
+        const original=await fs.readFile(checkpointPath);
+        const publisher=await import(pathToFileURL(path.join(repositoryRoot,'scripts/protected-ravscore-continuation-checkpoint.mjs')).href);
+        await publisher.publishProtectedRavScoreContinuationCheckpoint({checkpointPath,
+          targetReference:factory.atHour(hour+offset),request:backend.documentRequest,rpcRequest:backend.checkpointRpc});
+        const old=clone(backend.documents.get(S));
+        assert.equal(old.payload.modelBinding.modelBundleSha256,CURRENT594_FAMILY.I);
+        assert.equal(old.payload.continuationStateContractSha256,CURRENT594_FAMILY.T);
+        await publishB(backend,0);
+        const Bversion=backend.documents.get(B).version,calls=backend.events.filter(event=>event==='S_CAS').length;
+        if(offset===-1){
+          const result=await run(backend,0);
+          assert.equal(result.outcome,'ADVANCED_READBACK_PROVED');
+          assert.equal(result.checkpointPublishCalls,1);
+          assert.equal(backend.documents.get(S).version,old.version+1);
+        }else{
+          await assert.rejects(run(backend,0),/GENUINE594_STRICTLY_OLDER/);
+          assert.deepEqual(backend.documents.get(S),old);
+        }
+        assert.equal(backend.events.filter(event=>event==='S_CAS').length,calls+(offset===-1?1:0));
+        assert.equal(backend.documents.get(B).version,Bversion);
+        assert.deepEqual(await fs.readFile(checkpointPath),original);
+      }
+    });
+  });
+}

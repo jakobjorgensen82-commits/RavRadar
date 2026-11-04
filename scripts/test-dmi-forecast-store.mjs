@@ -673,3 +673,41 @@ console.log('DMI 120-timers Forecast Store og Water Level Engine bestået.');
   const result = buildDmiForecastHourly({ ocean: oceanRows, generatedAt, hours: 1, sourceCadenceMinutes: 180 });
   assert.equal(result.hourly[0].waterLevelTrendCm3h, null);
 }
+
+// Share only an unchanged input's time ordering within one synchronous build.
+// All source/identity checks and every separate build remain independent.
+{
+  const later = new Date(Date.parse(generatedAt) + 3 * 3600000).toISOString();
+  const rows = [
+    { step: later, 'sea-mean-deviation': 0.3, provenance: native('waterLevel', 'dkss_idw', later) },
+    { step: generatedAt, 'sea-mean-deviation': 0.1, provenance: native('waterLevel', 'dkss_idw', generatedAt) },
+  ];
+  const before = structuredClone(rows);
+  let nativeTimeMaps = 0;
+  const observed = new Proxy(rows, { get(target, key, receiver) {
+    if (key !== 'map') return Reflect.get(target, key, receiver);
+    return (...args) => { nativeTimeMaps++; return Array.prototype.map.apply(target, args); };
+  } });
+  const result = buildDmiForecastHourly({ ocean: observed, generatedAt, hours: 4, sourceCadenceMinutes: 180 });
+  assert.equal(result.hourly[0].waterLevelCm, 10);
+  assert.equal(result.hourly[0].waterLevelTrendCm3h, 20);
+  assert.equal(nativeTimeMaps, 1, 'prepare the same native time axis only once in one forecast build');
+  assert.deepEqual(rows, before, 'do not mutate or reorder original native rows');
+
+  rows[0].provenance.waterLevel.acquiredAt = 'invalid';
+  const invalidated = buildDmiForecastHourly({ ocean: rows, generatedAt, hours: 1, sourceCadenceMinutes: 180 });
+  assert.equal(invalidated.hourly[0].waterLevelTrendCm3h, null,
+    'a separate build revalidates provenance even for the same endpoint object');
+
+  // A later ordinary call must see a new endpoint in the same array. A global
+  // time cache would retain the obsolete three-hour row and invent its trend.
+  const sixHours = new Date(Date.parse(generatedAt) + 6 * 3600000).toISOString();
+  rows[0] = { step: sixHours, 'sea-mean-deviation': 0.6,
+    provenance: native('waterLevel', 'dkss_idw', sixHours) };
+  const changed = buildDmiForecastHourly({ ocean: observed, generatedAt, hours: 1, sourceCadenceMinutes: 180 });
+  assert.equal(nativeTimeMaps, 2, 'a separate build always prepares its current input afresh');
+  assert.equal(changed.hourly[0].waterLevelCm, 10);
+  assert.equal(changed.hourly[0].waterLevelTrendCm3h, null, 'the six-hour gap cannot reuse the old qualified endpoint');
+  const empty = buildDmiForecastHourly({ ocean: null, generatedAt, hours: 1 });
+  assert.equal(empty.hourly[0].waterLevelCm, null, 'preserve existing null-input semantics');
+}

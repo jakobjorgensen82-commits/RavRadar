@@ -88,10 +88,10 @@ function checkDraft(d){
   need(P.keys.every(k=>d.core.kept.filter(r=>r.document_key===k).length===P.keep),'KEEP_FIVE_REQUIRED');
   return d;
 }
-function clients({env,fetchImpl}){
+function clients({env,fetchImpl,resolveUnknownWrites=false}){
   need(env.SUPABASE_URL?.replace(/\/$/,'')===P.project&&typeof env.SUPABASE_SERVICE_ROLE_KEY==='string'
     &&env.SUPABASE_SERVICE_ROLE_KEY.length>0,'EXACT_PROJECT_AND_EXISTING_SERVICE_ROLE_REQUIRED');
-  const state={puts:new Set(),deletes:new Set(),unknownWrite:false,started:Date.now(),wireWrites:0,guardFailure:null,adminDecodedBytes:0,declaredAdminContentLengthBytes:0,adminResponses:0,r2ReadBytes:0};
+  const state={puts:new Set(),deletes:new Set(),unknownWrite:false,started:Date.now(),wireWrites:0,pendingMutation:null,guardFailure:null,adminDecodedBytes:0,declaredAdminContentLengthBytes:0,adminResponses:0,r2ReadBytes:0};
   let exactResponse=null; // Only one bounded full-row response is retained, never all payloads.
   const metadataUrl='https://api.supabase.com/v1/projects/afqhhdrkjfjtpadntdzo/database/query';
   const endpoint=P.project+'/rest/v1/',r2Host=String(env.RAVRADAR_R2_ACCOUNT_ID)+'.eu.r2.cloudflarestorage.com';
@@ -121,7 +121,7 @@ function clients({env,fetchImpl}){
     if(mutation){
       const set=method==='PUT'?state.puts:state.deletes;
       if(state.unknownWrite||set.has(u.href)){state.unknownWrite=true;fail('WRITE_OUTCOME_UNKNOWN');}
-      set.add(u.href);state.wireWrites++;
+      set.add(u.href);state.wireWrites++;state.pendingMutation={method,url:u.href,body:options.body};
     }
     try{
       const response=await fetchImpl(u.href,{...options,signal:AbortSignal.timeout(30_000),redirect:'manual'});
@@ -152,7 +152,45 @@ function clients({env,fetchImpl}){
       return{rows,raw:exactResponse.raw};
     }finally{exactResponse=null;}
   };
-  const safe=async fn=>{try{return await fn();}catch(e){if(state.unknownWrite){const error=new Error('WRITE_OUTCOME_UNKNOWN');error.code='WRITE_OUTCOME_UNKNOWN';error.safeOperation={putPaths:[...state.puts].map(u=>new URL(u).pathname),deleteOrLocatorRequests:[...state.deletes].map(u=>({path:new URL(u).pathname,query:new URL(u).search})),adminDecodedReadBytes:state.adminDecodedBytes,r2ReadBytes:state.r2ReadBytes};throw error;}if(state.guardFailure)fail(state.guardFailure);
+  // Unknown writes are never repeated. The automatic pass may only classify the last
+  // request through authenticated reads; even a verified outcome stops all further writes.
+  const resolveUnknown=async()=>{
+    const pending=state.pendingMutation;if(!pending)return 'UNRESOLVED';
+    try{
+      const u=new URL(pending.url);
+      if(u.origin===P.project){
+        await privacy();
+        if(pending.method==='DELETE'){
+          const q=new URLSearchParams(u.search);q.set('select','*');q.set('limit','2');
+          const found=await exactVersions('?'+q.toString());
+          need(Array.isArray(found.rows)&&found.rows.length<=1,'EXACT_ROW_AMBIGUOUS');
+          if(!found.rows.length)return 'EXACT_ROW_ABSENT';
+          const row=checkRow(found.rows[0]);
+          need(u.searchParams.get('id')==='eq.'+row.id&&u.searchParams.get('document_key')==='eq.'+row.document_key
+            &&u.searchParams.get('version')==='eq.'+row.version,'EXACT_ROW_CHANGED');
+          return 'EXACT_ROW_STILL_PRESENT';
+        }
+        if(['POST','PATCH'].includes(pending.method)){
+          const body=JSON.parse(pending.body),rows=await current(params({document_key:'eq.'+P.locatorKey,select:'document_key,payload,version',limit:'2'}));
+          need(Array.isArray(rows)&&rows.length<=1,'LOCATOR_ROW_INVALID');
+          if(!rows.length)return 'LOCATOR_ABSENT';
+          const row=rows[0];fields(row,['document_key','payload','version'],'LOCATOR_ROW_FIELDS');
+          need(row.document_key===P.locatorKey&&positive(row.version),'LOCATOR_ROW_INVALID');checkLocator(row.payload);
+          return same(row.payload,body.payload)?'LOCATOR_PAYLOAD_PRESENT_VERIFIED':'UNRESOLVED';
+        }
+      }else if(pending.method==='PUT'){
+        const match=u.pathname.match(new RegExp('^/'+P.bucket+'/(bundles/sha256/([a-f0-9]{64})\\.json\\.gz)$'));
+        need(match,'ARCHIVE_OBJECT_DESCRIPTOR');
+        const expected=Buffer.from(pending.body),storage=r2();
+        const actual=await verifiedObject(storage,{path:match[1],sha256:match[2],bytes:expected.length});
+        need(actual.equals(expected),'ARCHIVE_READBACK');return 'IMMUTABLE_ARCHIVE_OBJECT_PRESENT_VERIFIED';
+      }
+    }catch{}
+    return 'UNRESOLVED';
+  };
+  const safe=async fn=>{try{return await fn();}catch(e){if(state.unknownWrite){const resolution=resolveUnknownWrites?await resolveUnknown():'NOT_REQUESTED';
+    const code=resolution==='UNRESOLVED'||resolution==='NOT_REQUESTED'?'WRITE_OUTCOME_UNKNOWN':'WRITE_OUTCOME_RESOLVED_STOPPED';
+    const error=new Error(code);error.code=code;error.safeOperation={putPaths:[...state.puts].map(u=>new URL(u).pathname),deleteOrLocatorRequests:[...state.deletes].map(u=>({path:new URL(u).pathname,query:new URL(u).search})),adminDecodedReadBytes:state.adminDecodedBytes,r2ReadBytes:state.r2ReadBytes,writeOutcome:resolution,resolutionReadOnly:true,furtherWritesPerformed:false};throw error;}if(state.guardFailure)fail(state.guardFailure);
     if(typeof e.code==='string'&&/^[A-Z_]+$/.test(e.code))throw e;fail('ADMIN_OR_ARCHIVE_OPERATION_FAILED');}};
   const r2=()=>createR2PrivateRuntimeStorage({accountId:env.RAVRADAR_R2_ACCOUNT_ID,
     accessKeyId:env.RAVRADAR_R2_ACCESS_KEY_ID,secretAccessKey:env.RAVRADAR_R2_SECRET_ACCESS_KEY,
@@ -227,8 +265,17 @@ async function storeObject(storage,bytes){
   need(bytes.length>0&&bytes.length<=P.maximumObjectBytes,'ARCHIVE_OBJECT_BOUND');
   await storage.uploadImmutable(descriptor.path,bytes);need((await verifiedObject(storage,descriptor)).equals(bytes),'ARCHIVE_READBACK');return descriptor;
 }
-async function archive(c,d){
-  need(same(d,(await buildDraft(c))),'DRAFT_CHANGED');const storage=c.r2();await storage.ensurePrivateBucket();
+// Internal automatic selection only: the normal complete inventory supplies all
+// current/top5 guards and deterministically orders the eligible metadata rows.
+function automaticBatchDraft(full){
+  const checked=checkDraft(full),core={...checked.core,candidates:checked.core.candidates.slice(0,25)};
+  return checkDraft({kind:'ADMIN_HISTORY_DRAFT_V1',core,digest:sha(encode(core))});
+}
+async function archive(c,d,automaticBatch=false){
+  // The private automatic admission is still equality against a FRESH normal full
+  // inventory, followed by the one fixed oldest25 projection; no caller subset.
+  const fresh=await buildDraft(c);
+  need(same(d,automaticBatch?automaticBatchDraft(fresh):fresh),'DRAFT_CHANGED');const storage=c.r2();await storage.ensurePrivateBucket();
   const chunks=[];let parts=[],entries=[],bytes=0,totalRaw=0;
   const flush=async()=>{
     if(!entries.length)return;const raw=Buffer.concat(parts),compressed=gzipSync(raw,{level:9,mtime:0});
@@ -337,7 +384,7 @@ async function prune(c,manifest,limit){
     const archived=restored.rows.get(m.id);
     need(row.raw.length===archived.rowBytes&&sha(row.raw)===archived.rowSha256,'ROW_PAYLOAD_CHANGED');present.push(m);
   }
-  await protect(c,d);let confirmed=0;
+  await c.privacy();await protect(c,d);let confirmed=0;
   for(const m of present.slice(0,limit)){
     await protect(c,d);
     await c.versions(params({id:'eq.'+m.id,document_key:'eq.'+m.document_key,version:'eq.'+m.version}),
@@ -349,12 +396,30 @@ async function prune(c,manifest,limit){
 }
 export async function runAdminDocumentHistoryMaintenance({mode='plan',workdir,limit=25,confirmation=null,indexSha=null}={},
   {env=process.env,fetchImpl=globalThis.fetch}={}){
-  need(['plan','archive','publish-locator','discover','restore','prune'].includes(mode),'MODE');
+  need(['plan','archive','publish-locator','discover','restore','prune','maintain'].includes(mode),'MODE');
   need(indexSha===null||['discover','restore'].includes(mode),'LOCATOR_SELECTOR_MODE');
-  const root=await privateDirectory(workdir),c=clients({env,fetchImpl});
+  if(mode==='maintain')need(limit===25&&confirmation==='MAINTAIN-EXACT-THREE-DOCUMENT-HISTORY','AUTOMATIC_MAINTENANCE_SCOPE');
+  const root=await privateDirectory(workdir),c=clients({env,fetchImpl,resolveUnknownWrites:mode==='maintain'});
   return c.safe(async()=>{
     let result;
-    if(mode==='plan'){
+    if(mode==='maintain'){
+      // This is the existing V2 chain, not a second deletion implementation.
+      await c.privacy();const fullDraft=await buildDraft(c),draft=automaticBatchDraft(fullDraft);
+      await writePrivate(root,'draft.json',draft);
+      if(!draft.core.candidates.length){
+        await protect(c,draft);result={status:'AUTOMATIC_FIXED_DOCUMENT_HISTORY_MAINTAINED',candidateRows:0,
+          confirmedAbsentAfterWrite:0,remainingCandidates:0,archiveRequired:false};
+      }else{
+        const manifest=await archive(c,draft,true);await writePrivate(root,'archive-manifest.json',manifest);
+        const locator=await publishLocator(c,manifest);
+        // prune independently discovers the durable locator, authenticates every archived
+        // original row, and refreshes current/top5/ACL before its first exact DELETE.
+        const pruned=await prune(c,null,25),remaining=await buildDraft(c);
+        result={...pruned,status:'AUTOMATIC_FIXED_DOCUMENT_HISTORY_MAINTAINED',candidateRows:draft.core.candidates.length,
+          eligibleRowsBefore:fullDraft.core.candidates.length,remainingCandidates:remaining.core.candidates.length,
+          locatorVersion:locator.version,indexSha256:locator.payload.indexSha256,archiveRequired:true};
+      }
+    }else if(mode==='plan'){
       const draft=await buildDraft(c);await writePrivate(root,'draft.json',draft);
       result={status:'READ_ONLY_DRAFT',draftDigest:draft.digest,candidateRows:draft.core.candidates.length,keptHistoryRows:draft.core.kept.length};
     }else if(mode==='archive'){
@@ -379,13 +444,13 @@ export async function runAdminDocumentHistoryMaintenance({mode='plan',workdir,li
       need(confirmation==='PRUNE-EXACT-THREE-DOCUMENT-HISTORY','PRUNE_CONFIRMATION');result=await prune(c,null,limit);
     }
     return{...result,mode,wireWrites:c.state.wireWrites,currentDocumentsWritten:false,protectedOtherKeysWritten:false,
-      archiveObjectsDeleted:false,locatorDocumentWritten:mode==='publish-locator'&&c.state.wireWrites>0,adminDecodedReadBytes:c.state.adminDecodedBytes,declaredAdminContentLengthBytes:c.state.declaredAdminContentLengthBytes,adminResponses:c.state.adminResponses,r2ReadBytes:c.state.r2ReadBytes,fullDatabaseBackupVerified:false,productionDbRestoreExecuted:false,freeReady:false,sourceAdmission:false};
+      archiveObjectsDeleted:false,locatorDocumentWritten:['publish-locator','maintain'].includes(mode)&&c.state.wireWrites>0,adminDecodedReadBytes:c.state.adminDecodedBytes,declaredAdminContentLengthBytes:c.state.declaredAdminContentLengthBytes,adminResponses:c.state.adminResponses,r2ReadBytes:c.state.r2ReadBytes,fullDatabaseBackupVerified:false,productionDbRestoreExecuted:false,freeReady:false,sourceAdmission:false};
   });
 }
 async function main(){
   const args=process.argv.slice(2),options={};
   for(let i=0;i<args.length;i++){
-    const a=args[i];if(['--plan','--archive','--publish-locator','--discover','--restore','--prune'].includes(a)){need(!options.mode,'ONE_MODE');options.mode=a.slice(2);}
+    const a=args[i];if(['--plan','--archive','--publish-locator','--discover','--restore','--prune','--maintain'].includes(a)){need(!options.mode,'ONE_MODE');options.mode=a.slice(2);}
     else if(a==='--workdir')options.workdir=args[++i];else if(a==='--limit')options.limit=Number(args[++i]);
     else if(a==='--confirm')options.confirmation=args[++i];else if(a==='--index-sha')options.indexSha=args[++i];else fail('CLI_ARGUMENT');
   }

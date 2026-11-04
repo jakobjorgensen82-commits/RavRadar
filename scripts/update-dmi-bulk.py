@@ -14663,6 +14663,138 @@ def write_failure_summary(error: Exception) -> None:
             handle.write(f"- Opstartsfejl: `{safe_error_message(error)}`\n")
 
 
+DKSS_FIRST_TURN_CATALOGUE_MIN_AGE_SECONDS = 120.0
+DKSS_FIRST_TURN_CATALOGUE_MAX_SECONDS = 25.0
+
+
+def list_operational_marine_assets(
+    collection, previous_run, reference, required_times, *, regional_configured,
+    retain_preferred_run,
+):
+    minimum_valid = reference - timedelta(hours=(
+        REGIONAL_PROXY_MAX_HOLD_HOURS
+        if collection == REGIONAL_PROXY_REQUIRED_COLLECTION and regional_configured
+        else 0
+    ))
+    return list_latest_assets(
+        collection, previous_run,
+        minimum_valid_time=canonical_time(minimum_valid),
+        required_valid_times=required_times,
+        required_horizon_end_time=max(required_times, key=epoch),
+        allow_documented_required_gaps=True,
+        retain_preferred_native_run=retain_preferred_run,
+        private_component_support_end_time=canonical_time(
+            reference + timedelta(hours=PUBLIC_END_OFFSET_HOURS + 3)
+        ),
+    )
+
+
+def marine_catalogue_support_times(assets, required_times):
+    return {
+        asset["valid"] for asset in assets
+        if asset.get("privateComponentSupport") is True
+        and private_component_support_asset(asset, required_times)
+    }
+
+
+def first_marine_tail_gap_times(
+    collection, catalogue, required_times, *, active_zones, current_part_zone_ids,
+    current_target_ids, covered_current_pairs, scalar_plan,
+):
+    _run, assets, stats = catalogue
+    old_public_times = stats.get("officialRequiredValidTimes") or []
+    if not old_public_times:
+        return set()
+    old_public_end = max(map(epoch, old_public_times))
+    public_tail = {hour for hour in required_times if epoch(hour) > old_public_end}
+    eligible_parts = {
+        zone["id"][len("PART::"):]
+        for zone in parameter_zones(collection, "current-u", active_zones)
+        if zone["id"] in current_part_zone_ids
+    }
+    gaps = {
+        hour for hour in public_tail
+        if any((part, hour) not in covered_current_pairs for part in eligible_parts)
+    }
+    if scalar_plan is None:
+        return gaps
+
+    public_end = max(map(epoch, required_times))
+    support_tail = {
+        canonical_time(datetime.fromtimestamp(public_end + offset * 3600, timezone.utc))
+        for offset in (1, 2, 3)
+    } - marine_catalogue_support_times(assets, required_times)
+    for hour in (public_tail - gaps) | support_tail:
+        components = qualified_scalar_gap_components_for_asset(
+            scalar_plan, collection, hour, current_target_ids,
+        )
+        if components and (hour in public_tail or "waterLevel" in components):
+            gaps.add(hour)
+    return gaps
+
+
+def first_marine_tail_catalogue(
+    collection, old_catalogue, *, observed_at, reference, required_times,
+    missing_tail_times, remaining_bytes, known_asset_bytes, checkpoint_controller,
+    pending_reserve, preserves_plan,
+):
+    """Offer a newer catalogue once, before this collection changes any rows."""
+    old_run, old_assets, old_stats = old_catalogue
+    old_times = set(old_stats.get("officialRequiredValidTimes") or ())
+    old_support = marine_catalogue_support_times(old_assets, required_times)
+    old_end = max(map(epoch, old_times), default=0)
+    uncovered_tail = {
+        hour for hour in missing_tail_times - old_support if epoch(hour) > old_end
+    }
+    now = time.monotonic()
+    reserve = DKSS_FIRST_TURN_CATALOGUE_MAX_SECONDS
+    if (
+        collection not in MARINE_COLLECTIONS
+        or not old_run
+        or old_stats.get("catalogInventoryComplete") is not True
+        or old_stats.get("selectedNativeRunComplete") is not True
+        or not old_times
+        or not uncovered_tail
+        or now - observed_at < DKSS_FIRST_TURN_CATALOGUE_MIN_AGE_SECONDS
+        or remaining_bytes <= 0
+        or not checkpoint_controller.can_start_asset(pending_reserve + reserve, cost_family=collection)
+    ):
+        return None
+    try:
+        with asset_download_work_deadline(now + reserve):
+            offer = list_operational_marine_assets(
+                collection, None, reference, required_times,
+                regional_configured=False, retain_preferred_run=False,
+            )
+            run, assets, stats = offer
+            new_times = set(stats.get("officialRequiredValidTimes") or ())
+            new_support = marine_catalogue_support_times(assets, required_times)
+            extra_tail = (new_times | new_support) & uncovered_tail
+            sizes = (
+                asset["size"] if asset.get("size") is not None else known_asset_bytes
+                for asset in assets if asset["valid"] in extra_tail
+            )
+            if (
+                not run or not epoch(old_run) < epoch(run) <= reference.timestamp()
+                or stats.get("catalogInventoryComplete") is not True
+                or stats.get("requiredWindowInventoryComplete") is not True
+                or stats.get("selectedNativeRunComplete") is not True
+                or stats.get("requiredRowsTruncatedByAssetLimit") != 0
+                or not old_times <= new_times or not old_support <= new_support
+                or not extra_tail
+                or not any(type(size) is int and 0 < size <= remaining_bytes for size in sizes)
+                or not preserves_plan(offer)
+            ):
+                return None
+    except AssetDownloadCleanupUnproven:
+        raise
+    except (OSError, RuntimeError, ValueError, TypeError, KeyError):
+        return None
+    if checkpoint_controller.can_start_asset(pending_reserve, cost_family=collection):
+        return offer
+    return None
+
+
 def main() -> int:
     global PRIVATE_WAVE_BOOTSTRAP_RETENTION_START_EPOCH
     if CACHE_ONLY and FINALIZE_ONLY:
@@ -15141,7 +15273,7 @@ def main() -> int:
     required_current_valid_times = set(
         operational_current_valid_times(locked_production_reference)
     )
-    required_current_horizon_end = max(required_current_valid_times, key=epoch)
+    prefetched_marine_at: dict[str, float] = {}
     current_target_ids = sorted(
         str(target.get("partId") or "").strip()
         for target in coastal_part_targets
@@ -15167,28 +15299,13 @@ def main() -> int:
     )):
         try:
             previous_run = (previous.get("runs") or {}).get(collection) or {}
-            collection_minimum_valid_time = canonical_time(
-                locked_production_reference - timedelta(
-                    hours=(
-                        REGIONAL_PROXY_MAX_HOLD_HOURS
-                        if collection == REGIONAL_PROXY_REQUIRED_COLLECTION
-                        and regional_proxy_configuration_status == "CONFIGURED"
-                        else 0
-                    )
-                )
+            run, assets, stac_stats = list_operational_marine_assets(
+                collection, previous_run.get("referenceTime"), locked_production_reference,
+                required_current_valid_times,
+                regional_configured=regional_proxy_configuration_status == "CONFIGURED",
+                retain_preferred_run=RETAIN_PREFERRED_NATIVE_RUN,
             )
-            run, assets, stac_stats = list_latest_assets(
-                collection,
-                previous_run.get("referenceTime"),
-                minimum_valid_time=collection_minimum_valid_time,
-                required_valid_times=required_current_valid_times,
-                required_horizon_end_time=required_current_horizon_end,
-                allow_documented_required_gaps=True,
-                retain_preferred_native_run=RETAIN_PREFERRED_NATIVE_RUN,
-                private_component_support_end_time=canonical_time(
-                    locked_production_reference + timedelta(hours=PUBLIC_END_OFFSET_HOURS + 3)
-                ),
-            )
+            prefetched_marine_at[collection] = time.monotonic()
             prefetched_marine[collection] = (run, assets, stac_stats)
             result["diagnostics"]["stacByCollection"][collection] = stac_stats
             research_replay_catalog[collection] = {"modelRun": run, "assets": assets}
@@ -15705,6 +15822,49 @@ def main() -> int:
             "numericAdmissionIssued": False,
         }
 
+    # Only the existing ordinary extended caller with a usable acquisition
+    # plan may observe a later catalogue. Retried, archived and provider-free
+    # routes keep their original producer semantics.
+    allow_first_turn_catalogue = (
+        os.name == "posix" and DKSS_PRIMARY_MODE and not CACHE_ONLY and not FINALIZE_ONLY
+        and not ONEOFF_CONTINUATION_PROTOCOL and not RETAIN_PREFERRED_NATIVE_RUN
+        and not supervisor_skipped_assets and not cold_strict_current_lead_catch_up
+        and wave_bootstrap_configuration is None and not legacy_current_requests
+        and global_current_planning_pairs is not None
+        and os.getenv("DMI_BULK_REQUIRE_COMMITTED_RAW_RETENTION") == "true"
+        and os.getenv("DMI_BULK_ADAPTIVE_RECOVERY") == "true"
+    )
+
+    def first_turn_preserves_plan(collection, offer):
+        proposed = {**prefetched_marine, collection: offer}
+        before, after = (
+            build_current_operational_ledger_result(
+                result, coastal_part_targets, locked_production_reference,
+                catalogues, retained_current_asset_proofs,
+            )
+            for catalogues in (prefetched_marine, proposed)
+        )
+        if (
+            not before.validated or not after.validated
+            or before.attestation["verifiedPairSources"] != after.attestation["verifiedPairSources"]
+            or any(proof not in after.ledger["retainedCurrentAssetProofs"]
+                   for proof in before.ledger["retainedCurrentAssetProofs"])
+        ):
+            return False
+        if regional_proxy_configuration_status == "CONFIGURED":
+            if not acquisition_plan_diagnostics.get("regionalPlanningValid"):
+                return False
+            return all(
+                planning_regional_covered_pairs(
+                    dmi_ledger=proof.ledger, dmi_attestation=proof.attestation,
+                    targets=coastal_part_targets, regional_shadow=current_shadow,
+                    regional_policy=regional_proxy_policy,
+                    production_reference_at=canonical_time(locked_production_reference),
+                ) == regional_planning_pairs
+                for proof in (before, after)
+            )
+        return True
+
     collection_turns = [] if CACHE_ONLY else operational_collection_turns(
         scheduled, schedule_coverage, result.get("collectionState") or {},
         primary_mode=DKSS_PRIMARY_MODE,
@@ -15781,6 +15941,41 @@ def main() -> int:
                 "failureCode": "RUNTIME_BUDGET_REACHED",
             })
             break
+        if (
+            allow_first_turn_catalogue and collection_turn == "native"
+            and collection in prefetched_marine_at
+            and collection not in result["diagnostics"]["collectionsAttempted"]
+            and not (collection == REGIONAL_PROXY_REQUIRED_COLLECTION
+                     and regional_proxy_configuration_status == "CONFIGURED")
+        ):
+            old_catalogue = prefetched_marine[collection]
+            missing_tail_times = first_marine_tail_gap_times(
+                collection, old_catalogue, required_current_valid_times,
+                active_zones=active_operational_zones, current_part_zone_ids=current_part_zone_ids,
+                current_target_ids=current_target_ids,
+                covered_current_pairs=global_current_planning_pairs | qualified_covered_current_pair_keys,
+                scalar_plan=qualified_scalar_gap_plan,
+            )
+            known_asset_bytes = max((
+                proof["sourceAsset"]["contentLengthBytes"]
+                for proof in retained_current_asset_proofs
+                if proof["sourceAsset"]["collection"] == collection
+            ), default=0)
+            offer = first_marine_tail_catalogue(
+                collection, old_catalogue, observed_at=prefetched_marine_at[collection],
+                reference=locked_production_reference, required_times=required_current_valid_times,
+                missing_tail_times=missing_tail_times,
+                remaining_bytes=MAX_DOWNLOAD_BYTES - budget["bytes"],
+                known_asset_bytes=known_asset_bytes, checkpoint_controller=checkpoint_controller,
+                pending_reserve=reserve_for_pending_critical,
+                preserves_plan=lambda candidate: first_turn_preserves_plan(collection, candidate),
+            )
+            if offer is not None:
+                run, assets, stats = offer
+                stats = {**stats, "firstTurnCatalogueRefreshed": True}
+                prefetched_marine[collection] = (run, assets, stats)
+                result["diagnostics"]["stacByCollection"][collection] = stats
+                research_replay_catalog[collection] = {"modelRun": run, "assets": assets}
         result["diagnostics"]["collectionsAttempted"].append(collection)
         collection_start_bytes = budget["bytes"]
         collection_start_reused = int(result["diagnostics"].get("reusedAssets") or 0)

@@ -60,9 +60,12 @@ export function buildDmiMarineComponentwiseHourly({ ocean = [], expectedIdentity
   const hourly = built.hourly.map(row => ({ ...row, sources: { ...(row.sources ?? {}) } }));
   for (const component of MARINE_COMPONENTS) {
     const native = ocean.filter(row => completeNative(row, component));
-    if (!native.length || hourly.every(row => completeHour(row, component))) continue;
+    // A complete native component already used this exact time axis.
+    // Only a narrower component axis can fill a gap left by the first build.
+    if (!native.length || native.length === ocean.length || hourly.every(row => completeHour(row, component))) continue;
     const componentHourly = buildDmiForecastHourly({
       ...options,
+      wind: [], windTail: [], waves: [],
       ocean: native.map(row => runOnlyRow(row, component)),
     }).hourly;
     for (let index = 0; index < hourly.length; index += 1) {

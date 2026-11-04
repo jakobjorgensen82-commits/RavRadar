@@ -38,7 +38,7 @@ function fixture(){
       const q=u.searchParams,key=q.get('document_key')?.slice(3);
       if(u.pathname==='/rest/v1/admin_documents'&&method==='POST'){
         const body=JSON.parse(options.body);assert.equal(body.document_key,P.locatorKey);assert.equal(body.updated_by,null);
-        if(locators.length)return json([]);locators.push({document_key:P.locatorKey,payload:clone(body.payload),version:1});return json(clone(locators),201);
+        if(locators.length)return json([]);locators.push({document_key:P.locatorKey,payload:clone(body.payload),version:1});if(fault.afterLocator)fault.afterLocator();if(fault.locatorUnknown){fault.locatorUnknown=false;throw Error('PRIVATE-UPSTREAM-BODY-MUST-NOT-ESCAPE');}return json(clone(locators),201);
       }
       if(key===P.locatorKey){
         if(u.pathname==='/rest/v1/admin_documents'){
@@ -59,6 +59,7 @@ function fixture(){
       if(q.has('version'))selected=selected.filter(r=>r.version===Number(q.get('version').slice(3)));
       if(method==='DELETE'){
         assert.equal(selected.length,1,'one exact immutable history row per write');
+        if(fault.deleteBeforeWrite){fault.deleteBeforeWrite=false;throw Error('PRIVATE-UPSTREAM-BODY-MUST-NOT-ESCAPE');}
         rows.splice(rows.indexOf(selected[0]),1);
         if(fault.deleteUnknown){fault.deleteUnknown=false;return json({message:'PRIVATE-UPSTREAM-BODY-MUST-NOT-ESCAPE'},504);}
         return new Response(null,{status:204});
@@ -262,4 +263,124 @@ test('exact REST bytes preserve large integers, high-precision decimals and mult
     f.rawRows.set(id,changed);await assertZeroDeletes(f,()=>call(f,dir,'prune',confirm),'ROW_PAYLOAD_CHANGED');
   }
   f.rawRows.set(id,original);assert.equal((await call(f,dir,'prune',confirm)).confirmedAbsentAfterWrite,6);
+});
+
+const maintainConfirm={confirmation:'MAINTAIN-EXACT-THREE-DOCUMENT-HISTORY'};
+test('automatic pass runs the existing exact V2 archive locator restore fresh-protection prune chain',async t=>{
+  const f=fixture(),dir=await host(t),current=sha(bytes(f.currents)),other=sha(bytes(f.rows.filter(r=>!P.keys.includes(r.document_key))));
+  const r=await call(f,dir,'maintain',maintainConfirm);
+  assert.equal(r.status,'AUTOMATIC_FIXED_DOCUMENT_HISTORY_MAINTAINED');assert.equal(r.candidateRows,6);
+  assert.equal(r.confirmedAbsentAfterWrite,6);assert.equal(r.remainingCandidates,0);assert.equal(r.archiveRequired,true);
+  assert.equal(f.locators.length,1);assert.equal(sha(bytes(f.currents)),current);
+  assert.equal(sha(bytes(f.rows.filter(r=>!P.keys.includes(r.document_key)))),other);
+  for(const key of P.keys)assert.equal(f.rows.filter(r=>r.document_key===key).length,5);
+  const deleted=f.calls.filter(x=>x.method==='DELETE');
+  assert.equal(deleted.length,6);
+  for(const x of deleted){const u=new URL(x.url);assert.equal(u.pathname,'/rest/v1/admin_document_versions');assert(P.keys.includes(u.searchParams.get('document_key').slice(3)));}
+  const first=f.calls.findIndex(x=>x.method==='DELETE');
+  assert(f.calls.slice(0,first).some(x=>x.method==='POST'&&new URL(x.url).origin==='https://api.supabase.com'));
+  assert.equal(r.fullDatabaseBackupVerified,false);assert.equal(r.freeReady,false);
+  // The next ordinary day is a genuine no-op: no new empty archive, locator or history DELETE.
+  const next=await host(t),writes=f.count('PUT')+f.count('DELETE')+f.count('PATCH');
+  const second=await call(f,next,'maintain',maintainConfirm);
+  assert.equal(second.candidateRows,0);assert.equal(second.archiveRequired,false);assert.equal(second.wireWrites,0);
+  assert.equal(f.count('PUT')+f.count('DELETE')+f.count('PATCH'),writes);
+});
+test('automatic pass is fixed to25 and refuses missing confirmation before private requests',async t=>{
+  for(const extra of [{},{...maintainConfirm,limit:26},{...maintainConfirm,limit:100},{...maintainConfirm,indexSha:'a'.repeat(64)}]){
+    const f=fixture(),dir=await host(t);await assert.rejects(()=>call(f,dir,'maintain',extra));
+    assert.equal(f.calls.length,0);
+  }
+  const f=fixture(),dir=await host(t);let nextId=10000;
+  for(const key of P.keys)for(let n=0;n<15;n++)f.rows.push({...clone(f.rows.find(r=>r.document_key===key)),
+    id:nextId++,version:100+n,created_at:'2026-09-01T00:00:00Z'});
+  const eligible=P.keys.flatMap(key=>f.rows.filter(r=>r.document_key===key)
+    .sort((a,b)=>b.version-a.version||b.id-a.id).slice(5))
+    .sort((a,b)=>Date.parse(a.created_at)-Date.parse(b.created_at)||a.id-b.id);
+  const expectedBatch=eligible.slice(0,25),expectedIds=expectedBatch.map(x=>x.id).sort((a,b)=>a-b);
+  const r=await call(f,dir,'maintain',maintainConfirm);
+  assert.equal(r.candidateRows,25);assert.equal(r.eligibleRowsBefore,eligible.length);
+  assert.equal(r.confirmedAbsentAfterWrite,25);assert.equal(f.count('DELETE'),25);
+  assert.equal(r.remainingCandidates,eligible.length-25);
+  const fullGets=f.calls.filter(x=>x.method==='GET'&&new URL(x.url).pathname==='/rest/v1/admin_document_versions'
+    &&new URL(x.url).searchParams.get('select')==='*');
+  const readIds=[...new Set(fullGets.map(x=>Number(new URL(x.url).searchParams.get('id').slice(3))))].sort((a,b)=>a-b);
+  assert.deepEqual(readIds,expectedIds,'only these25 original full rows are read, including exact readback checks');
+  const manifest=JSON.parse(await fs.readFile(path.join(dir,'archive-manifest.json'),'utf8'));
+  const index=JSON.parse(gunzipSync(f.objects.get(manifest.index.path)));
+  assert.deepEqual(index.draft.core.candidates.map(x=>x.id).sort((a,b)=>a-b),expectedIds);
+  assert.deepEqual(index.chunks.flatMap(x=>x.rows.map(r=>r.id)).sort((a,b)=>a-b),expectedIds,
+    'the compressed archive and verified restore contain exactly this batch');
+  const deletedIds=f.calls.filter(x=>x.method==='DELETE').map(x=>Number(new URL(x.url).searchParams.get('id').slice(3))).sort((a,b)=>a-b);
+  assert.deepEqual(deletedIds,expectedIds);
+  for(const key of P.keys)assert(f.rows.filter(r=>r.document_key===key).length>=5);
+});
+test('automatic pass rechecks current top5 and ACL after durable publication before deleting',async t=>{
+  for(const kind of ['current','top5','acl']){
+    const f=fixture(),dir=await host(t);
+    f.fault.afterLocator=()=>{
+      if(kind==='current')f.currents[0].version++;
+      else if(kind==='top5')f.rows.push({...clone(f.rows[0]),id:9999,version:999});
+      else f.fault.acl=true;
+    };
+    await assert.rejects(()=>call(f,dir,'maintain',maintainConfirm));
+    assert.equal(f.count('DELETE'),0);
+  }
+});
+test('automatic unknown writes read-classify then stop: immutable object locator or exact delete, never repeat',async t=>{
+  for(const [fault,outcome,method] of [
+    ['r2Unknown','IMMUTABLE_ARCHIVE_OBJECT_PRESENT_VERIFIED','PUT'],
+    ['locatorUnknown','LOCATOR_PAYLOAD_PRESENT_VERIFIED','POST'],
+    ['deleteUnknown','EXACT_ROW_ABSENT','DELETE'],
+    ['deleteBeforeWrite','EXACT_ROW_STILL_PRESENT','DELETE']
+  ]){
+    const f=fixture(),dir=await host(t);f.fault[fault]=true;
+    let error;try{await call(f,dir,'maintain',maintainConfirm);}catch(e){error=e;}
+    assert.equal(error?.code,'WRITE_OUTCOME_RESOLVED_STOPPED',fault);
+    assert.equal(error.safeOperation.writeOutcome,outcome,fault);
+    assert.equal(error.safeOperation.resolutionReadOnly,true);assert.equal(error.safeOperation.furtherWritesPerformed,false);
+    const selected=f.calls.filter(x=>x.method===method&&(method!=='POST'||new URL(x.url).origin===P.project));
+    assert.equal(selected.length,1,fault);
+    const lastWrite=f.calls.findLastIndex(x=>['PUT','PATCH','DELETE'].includes(x.method)
+      ||x.method==='POST'&&new URL(x.url).origin===P.project);
+    assert(f.calls.slice(lastWrite+1).some(x=>x.method==='GET'),'actual authenticated outcome read after write failure');
+    assert.equal(f.calls.slice(lastWrite+1).filter(x=>['PUT','PATCH','DELETE'].includes(x.method)
+      ||x.method==='POST'&&new URL(x.url).origin===P.project).length,0);
+    if(fault==='r2Unknown'||fault==='locatorUnknown')assert.equal(f.count('DELETE'),0);
+    assert(!JSON.stringify(error.safeOperation).includes('synthetic-document-secret'));
+  }
+});
+
+test('automatic unresolved write outcome stops after read attempts with no second wire mutation',async t=>{
+  const f=fixture(),dir=await host(t),dependencies=f.dependencies(),normal=dependencies.fetchImpl;
+  let unknown=false,putRequests=0;
+  dependencies.fetchImpl=async(url,options={})=>{
+    if(unknown&&String(options.method||'GET').toUpperCase()==='GET')return new Response(null,{status:503});
+    if(String(options.method||'GET').toUpperCase()==='PUT'){
+      putRequests++;await normal(url,options);unknown=true;throw Error('synthetic lost response');
+    }
+    return normal(url,options);
+  };
+  let error;try{await run({workdir:dir,mode:'maintain',...maintainConfirm},dependencies);}catch(e){error=e;}
+  assert.equal(error?.code,'WRITE_OUTCOME_UNKNOWN');
+  assert.equal(error.safeOperation.writeOutcome,'UNRESOLVED');
+  assert.equal(error.safeOperation.resolutionReadOnly,true);assert.equal(error.safeOperation.furtherWritesPerformed,false);
+  assert.equal(putRequests,1);assert.equal(f.count('DELETE'),0);
+});
+
+test('automatic oldest25 batch is re-admitted against a fresh normal inventory before archive I/O',async t=>{
+  const f=fixture(),dir=await host(t),dependencies=f.dependencies(),normal=dependencies.fetchImpl;
+  let currentReads=0;
+  dependencies.fetchImpl=async(url,options={})=>{
+    const u=new URL(url);
+    if(u.origin===P.project&&u.pathname==='/rest/v1/admin_documents'&&P.keys.includes(u.searchParams.get('document_key')?.slice(3))
+      &&String(options.method||'GET').toUpperCase()==='GET'&&++currentReads===7){
+      f.rows.push({...clone(f.rows[0]),id:999999,created_at:'2000-01-01T00:00:00Z'});
+    }
+    return normal(url,options);
+  };
+  await assert.rejects(()=>run({workdir:dir,mode:'maintain',...maintainConfirm},dependencies),{code:'DRAFT_CHANGED'});
+  assert.equal(f.count('PUT')+f.count('DELETE'),0);
+  assert.equal(f.calls.filter(x=>new URL(x.url).pathname==='/rest/v1/admin_document_versions'
+    &&new URL(x.url).searchParams.get('select')==='*').length,0);
 });

@@ -25,7 +25,8 @@ import {ASSISTANT_LATER_H0_BINDING,assistantLaterH0Migration,requireAssistantLat
   ASSISTANT_PUBLIC591_SUCCESSOR_BINDING,assistantPublic591SuccessorMigration,
   requireAssistantPublic591SuccessorOutput,readAssistantPublic591SuccessorCanonicalSource,
   ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE_TIMEOUT_SUCCESSOR,
-  INACTIVE_INSTALLED593_ORIGINAL591_SUCCESSOR as ISSUED594_TIMEOUT_SUCCESSOR}
+  INACTIVE_INSTALLED593_ORIGINAL591_SUCCESSOR as ISSUED594_TIMEOUT_SUCCESSOR,
+  INACTIVE_SCALAR597_LATER_H0_SUCCESSOR as ISSUED597_TIMEOUT_SUCCESSOR}
   from './lib/assistant-later-h0-successor-source.mjs';
 
 // Keep the payload-free operational control report inside this existing cheap
@@ -761,7 +762,28 @@ assert.equal(casTimeoutSettings.at(-1)?.timeout, '55s',
 // Actual594 is a separate issued source profile. Validate its whole normal SQL
 // and canonical reader before a TEST INVENTORY ONLY inverse; never remove a
 // guessed latest row or grant SQL/data admission to historical593 oracles.
-const activeTimeoutMigration=ACTIVE_TIMEOUT_SUCCESSOR.migration();
+const activeTimeoutMigration=ISSUED594_TIMEOUT_SUCCESSOR.migration();
+assert([ISSUED594_TIMEOUT_SUCCESSOR,ISSUED597_TIMEOUT_SUCCESSOR].includes(ACTIVE_TIMEOUT_SUCCESSOR));
+if(ACTIVE_TIMEOUT_SUCCESSOR===ISSUED597_TIMEOUT_SUCCESSOR){
+  const migration=ISSUED597_TIMEOUT_SUCCESSOR.migration();
+  const sql=fs.readFileSync(new URL(migration.filename,migrationsUrl));
+  const canonical=await ISSUED597_TIMEOUT_SUCCESSOR.readCanonicalSource();
+  assert.equal(canonical.admission,'NO_ADMISSION');
+  assert.deepEqual(canonical.migration,migration);
+  function inverse597(inventory,bytes){
+    assert.equal(conditions593TestHash('sha256').update(bytes).digest('hex'),ISSUED597_TIMEOUT_SUCCESSOR.requireOutput().migrationSha256);
+    assert.equal(inventory.filter(row=>row.migration===migration.filename).length,1);
+    assert.deepEqual(inventory.at(-1),{migration:migration.filename,timeout:'55s'});
+    assert.deepEqual(inventory.at(-2),{migration:activeTimeoutMigration.filename,timeout:'55s'});
+    const historical=inventory.slice(0,-1);
+    assert.deepEqual([...historical,{migration:migration.filename,timeout:'55s'}],inventory);
+    return historical;
+  }
+  assert.throws(()=>inverse597(casTimeoutSettings,Buffer.concat([sql,Buffer.from('\n')])));
+  assert.throws(()=>inverse597(casTimeoutSettings.slice(0,-1),sql));
+  assert.throws(()=>inverse597([...casTimeoutSettings,casTimeoutSettings.at(-1)],sql));
+  casTimeoutSettings=inverse597(casTimeoutSettings,sql);
+}
 function inverseIssued594TimeoutInventory(inventory,profile,migration,sql){
   assert.equal(profile,ISSUED594_TIMEOUT_SUCCESSOR,'EXACT_ISSUED594_TIMEOUT_PROFILE_REQUIRED');
   assert.equal(profile.sourcePhase,'assistant-installed593-origin591-successor');
@@ -784,23 +806,23 @@ function inverseIssued594TimeoutInventory(inventory,profile,migration,sql){
   return historical;
 }
 const activeTimeoutSql=fs.readFileSync(new URL(activeTimeoutMigration.filename,migrationsUrl));
-const actual594Canonical=await ACTIVE_TIMEOUT_SUCCESSOR.readCanonicalSource();
+const actual594Canonical=await ISSUED594_TIMEOUT_SUCCESSOR.readCanonicalSource();
 assert.equal(actual594Canonical.admission,'NO_ADMISSION');
 assert.deepEqual(actual594Canonical.migration,activeTimeoutMigration);
 const actual594TimeoutInventory=casTimeoutSettings;
-const inverse594=(inventory=actual594TimeoutInventory,profile=ACTIVE_TIMEOUT_SUCCESSOR,
+const inverse594=(inventory=actual594TimeoutInventory,profile=ISSUED594_TIMEOUT_SUCCESSOR,
   migration=activeTimeoutMigration,sql=activeTimeoutSql)=>inverseIssued594TimeoutInventory(inventory,profile,migration,sql);
-for(const profile of [null,{...ACTIVE_TIMEOUT_SUCCESSOR},
-  {...ACTIVE_TIMEOUT_SUCCESSOR,sourcePhase:'assistant-public591-successor'},
-  {...ACTIVE_TIMEOUT_SUCCESSOR,sourcePhase:'assistant-installed594-origin593-successor'}])
+for(const profile of [null,{...ISSUED594_TIMEOUT_SUCCESSOR},ISSUED597_TIMEOUT_SUCCESSOR,
+  {...ISSUED594_TIMEOUT_SUCCESSOR,sourcePhase:'assistant-public591-successor'},
+  {...ISSUED594_TIMEOUT_SUCCESSOR,sourcePhase:'assistant-installed594-origin593-successor'}])
   assert.throws(()=>inverse594(actual594TimeoutInventory,profile),/EXACT_ISSUED594_TIMEOUT_PROFILE_REQUIRED/);
 for(const migration of [{...activeTimeoutMigration,version:'20261030105202'},
   {...activeTimeoutMigration,id:'unknown_successor'},
   {...activeTimeoutMigration,filename:assistantPublic591SuccessorMigration().filename}])
-  assert.throws(()=>inverse594(actual594TimeoutInventory,ACTIVE_TIMEOUT_SUCCESSOR,migration));
+  assert.throws(()=>inverse594(actual594TimeoutInventory,ISSUED594_TIMEOUT_SUCCESSOR,migration));
 for(const sql of [Buffer.concat([activeTimeoutSql,Buffer.from('\n')]),
   Buffer.from(activeTimeoutSql.toString('utf8').replace("set statement_timeout = '55s'","set statement_timeout = '54s'"))])
-  assert.throws(()=>inverse594(actual594TimeoutInventory,ACTIVE_TIMEOUT_SUCCESSOR,activeTimeoutMigration,sql));
+  assert.throws(()=>inverse594(actual594TimeoutInventory,ISSUED594_TIMEOUT_SUCCESSOR,activeTimeoutMigration,sql));
 const latest594={migration:activeTimeoutMigration.filename,timeout:'55s'};
 for(const inventory of [actual594TimeoutInventory.slice(0,-1),
   [...actual594TimeoutInventory,latest594],

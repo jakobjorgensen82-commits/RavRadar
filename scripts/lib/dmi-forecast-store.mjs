@@ -66,20 +66,29 @@ function closest(items, targetMs, toleranceMs = Number.POSITIVE_INFINITY) {
   return selected && selected.distance <= toleranceMs ? selected.item : null;
 }
 
-function timeBracket(items, targetMs, { maxGapMs = 4 * 3600000, edgeToleranceMs = 95 * 60000 } = {}) {
-  const ordered = (items ?? [])
-    .map(item => ({ item, time: Date.parse(item?.step ?? item?.time) }))
-    .filter(entry => Number.isFinite(entry.time))
-    .sort((a, b) => a.time - b.time);
-  if (!ordered.length) return null;
-  const exact = ordered.find(entry => entry.time === targetMs);
-  if (exact) return { before: exact.item, after: exact.item, ratio: 0, mode: 'exact' };
-  let before = null;
-  let after = null;
-  for (const entry of ordered) {
-    if (entry.time < targetMs) before = entry;
-    else if (entry.time > targetMs) { after = entry; break; }
+function timeBracket(items, targetMs, { maxGapMs = 4 * 3600000, edgeToleranceMs = 95 * 60000, orderedItemsCache = null } = {}) {
+  const cacheable = orderedItemsCache?.has(items) === true;
+  let ordered = cacheable ? orderedItemsCache.get(items) : undefined;
+  if (ordered === undefined) {
+    ordered = (items ?? [])
+      .map(item => ({ item, time: Date.parse(item?.step ?? item?.time) }))
+      .filter(entry => Number.isFinite(entry.time))
+      .sort((a, b) => a.time - b.time);
+    if (cacheable) orderedItemsCache.set(items, ordered);
   }
+  if (!ordered.length) return null;
+  let low = 0;
+  let high = ordered.length;
+  // Lower bound keeps the first exact duplicate and the closest two
+  // surrounding endpoints, in the same stable order as the input index.
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2);
+    if (ordered[middle].time < targetMs) low = middle + 1;
+    else high = middle;
+  }
+  const after = ordered[low] ?? null;
+  if (after?.time === targetMs) return { before: after.item, after: after.item, ratio: 0, mode: 'exact' };
+  const before = ordered[low - 1] ?? null;
   if (before && after && after.time - before.time <= maxGapMs) {
     return { before: before.item, after: after.item, ratio: (targetMs - before.time) / (after.time - before.time), mode: 'interpolated' };
   }
@@ -138,10 +147,21 @@ const COLLECTION_FAMILY = Object.freeze({
   dkss_idw: 'marine', dkss_nsbs: 'marine', dkss_lf: 'marine'
 });
 const SHA256 = /^[0-9a-f]{64}$/;
+// The same exact UTC timestamps recur across every coastal part. This small
+// cache holds only the result of parsing short strings, never a source proof.
+const parsedExplicitTimestamps = new Map();
 const explicitTimestampMs = value => {
-  if (typeof value !== 'string' || !/(?:Z|[+-]\d{2}:\d{2})$/i.test(value)) return Number.NaN;
+  if (typeof value !== 'string') return Number.NaN;
+  const cached = parsedExplicitTimestamps.get(value);
+  if (cached !== undefined) return cached;
+  if (!/(?:Z|[+-]\d{2}:\d{2})$/i.test(value)) return Number.NaN;
   const parsed = Date.parse(value);
-  return Number.isFinite(parsed) ? parsed : Number.NaN;
+  if (!Number.isFinite(parsed)) return Number.NaN;
+  if (value.length <= 40) {
+    if (parsedExplicitTimestamps.size === 1024) parsedExplicitTimestamps.clear();
+    parsedExplicitTimestamps.set(value, parsed);
+  }
+  return parsed;
 };
 const exactStringArray = (value, expected) => Array.isArray(value)
   && value.length === expected.length
@@ -305,12 +325,23 @@ export function verifiedDmiNativeSource(source, component, nativeTime) {
   return source;
 }
 
-function provenanceAt(item, component) {
-  return verifiedDmiNativeSource(
-    item?.provenance?.[sourceKey(component)],
-    component,
-    item?.step ?? item?.time,
-  );
+function createNativeProvenanceReader() {
+  const byComponent = new Map();
+  return (item, component) => {
+    if (item === null || typeof item !== 'object') return null;
+    let entries = byComponent.get(component);
+    if (!entries) {
+      entries = new WeakMap();
+      byComponent.set(component, entries);
+    }
+    const cached = entries.get(item);
+    if (cached !== undefined) return cached;
+    const verified = verifiedDmiNativeSource(
+      item.provenance?.[sourceKey(component)], component, item.step ?? item.time,
+    );
+    entries.set(item, verified);
+    return verified;
+  };
 }
 
 export function sameNativeIdentity(before, after, component) {
@@ -370,16 +401,17 @@ function matchesExpectedIdentity(source, expectedIdentity) {
 }
 
 function reconstructNativeEndpoint(source, step) {
-  const endpoint = {
-    ...source,
-    itemId: step.itemId,
-    assetIdentitySha256: step.assetIdentitySha256,
-    nativeValidTime: step.nativeValidTime,
-    leadTimeHours: step.leadTimeHours,
-    acquiredAt: step.acquiredAt,
-    optionalFieldSet: step.optionalFieldSet,
-  };
-  for (const key of ['nativeValidTimes', 'nativeSteps', 'temporalResolution', 'forecastAgeHours']) delete endpoint[key];
+  const {
+    nativeValidTimes: _times, nativeSteps: _steps, temporalResolution: _resolution,
+    forecastAgeHours: _age, itemCreatedAt: _created, itemUpdatedAt: _updated,
+    wavePeriodSemantics: _period, wavePeriodField: _field, ...endpoint
+  } = source;
+  endpoint.itemId = step.itemId;
+  endpoint.assetIdentitySha256 = step.assetIdentitySha256;
+  endpoint.nativeValidTime = step.nativeValidTime;
+  endpoint.leadTimeHours = step.leadTimeHours;
+  endpoint.acquiredAt = step.acquiredAt;
+  endpoint.optionalFieldSet = step.optionalFieldSet;
   // Only current endpoints carry the new independently inspected record.
   // Legacy non-current endpoint reconstruction remains unchanged.
   if (source.component === 'current') {
@@ -390,7 +422,6 @@ function reconstructNativeEndpoint(source, step) {
   }
   for (const key of ['itemCreatedAt', 'itemUpdatedAt', 'wavePeriodSemantics', 'wavePeriodField']) {
     if (Object.hasOwn(step, key)) endpoint[key] = step[key];
-    else delete endpoint[key];
   }
   return endpoint;
 }
@@ -520,14 +551,14 @@ export function assertDmiForecastGridSamplingApplicable(source, component, rowTi
   return source;
 }
 
-function sameNativeSeries(bracket, component) {
+function sameNativeSeries(bracket, component, provenanceAt) {
   if (!bracket || bracket.before === bracket.after) return true;
   const before = provenanceAt(bracket.before, component);
   const after = provenanceAt(bracket.after, component);
   return sameNativeIdentity(before, after, component);
 }
 
-function safeWaveInterpolation(bracket) {
+function safeWaveInterpolation(bracket, provenanceAt) {
   if (!bracket || bracket.mode !== 'interpolated') return true;
   const directions = [];
   for (const item of [bracket.before, bracket.after]) {
@@ -549,7 +580,7 @@ function safeWaveInterpolation(bracket) {
   return Math.abs(Math.abs(delta) - 180) > 1e-9;
 }
 
-function safeWaveSeriesBracket(items, targetMs, { maxGapMs = 4 * 3600000 } = {}) {
+function safeWaveSeriesBracket(items, targetMs, { maxGapMs = 4 * 3600000, provenanceAt } = {}) {
   const groups = new Map();
   for (const item of items ?? []) {
     const source = provenanceAt(item, 'wave');
@@ -563,8 +594,8 @@ function safeWaveSeriesBracket(items, targetMs, { maxGapMs = 4 * 3600000 } = {})
     // Match the producer: only the nearest endpoints within each native
     // series may resolve this hour; a wider pair cannot skip a bad tuple.
     const bracket = timeBracket(group, targetMs, { maxGapMs, edgeToleranceMs: 0 });
-    if (bracket?.mode !== 'interpolated' || !sameNativeSeries(bracket, 'wave')
-      || !safeWaveInterpolation(bracket)) continue;
+    if (bracket?.mode !== 'interpolated' || !sameNativeSeries(bracket, 'wave', provenanceAt)
+      || !safeWaveInterpolation(bracket, provenanceAt)) continue;
     const beforeSource = provenanceAt(bracket.before, 'wave');
     const beforeTime = Date.parse(bracket.before.step ?? bracket.before.time);
     const afterTime = Date.parse(bracket.after.step ?? bracket.after.time);
@@ -589,6 +620,7 @@ function safeWaveSeriesBracket(items, targetMs, { maxGapMs = 4 * 3600000 } = {})
 }
 
 function safeWindSeriesBracket(items, targetMs, component, options = {}) {
+  const { provenanceAt } = options;
   if (!['wind', 'windTail'].includes(component)) return null;
   const groups = new Map();
   for (const item of items ?? []) {
@@ -609,7 +641,7 @@ function safeWindSeriesBracket(items, targetMs, component, options = {}) {
   let best = null;
   for (const group of groups.values()) {
     const bracket = timeBracket(group, targetMs, options);
-    if (!bracket || !sameNativeSeries(bracket, component)) continue;
+    if (!bracket || !sameNativeSeries(bracket, component, provenanceAt)) continue;
     const source = provenanceAt(bracket.before, component);
     const beforeTime = Date.parse(bracket.before.step ?? bracket.before.time);
     const afterTime = Date.parse(bracket.after.step ?? bracket.after.time);
@@ -645,12 +677,13 @@ function safeWindSeriesBracket(items, targetMs, component, options = {}) {
 }
 
 function componentBracket(items, targetMs, component, options) {
+  const { provenanceAt } = options;
   const componentOptions = component === 'wave'
     ? { ...(options ?? {}), maxGapMs: Math.min(options?.maxGapMs ?? 4 * 3600000, 4 * 3600000) }
     : options;
   const bracket = timeBracket(items, targetMs, componentOptions);
-  if (sameNativeSeries(bracket, component)) {
-    if (component === 'wave' && !safeWaveInterpolation(bracket)) {
+  if (sameNativeSeries(bracket, component, provenanceAt)) {
+    if (component === 'wave' && !safeWaveInterpolation(bracket, provenanceAt)) {
       // Retain the existing partial tuple if no complete alternative exists;
       // missing direction must not masquerade as a wholly absent local wave.
       return safeWaveSeriesBracket(items, targetMs, componentOptions) ?? bracket;
@@ -674,7 +707,7 @@ function componentBracket(items, targetMs, component, options) {
       : null;
 }
 
-function componentSource(bracket, component, targetMs, generatedAt) {
+function componentSource(bracket, component, targetMs, generatedAt, provenanceAt) {
   if (!bracket) return null;
   const before = provenanceAt(bracket.before, component);
   const after = provenanceAt(bracket.after, component);
@@ -895,7 +928,12 @@ export function buildDmiForecastHourly({ wind = [], windTail = [], waves = [], o
   const start = Date.parse(canonicalStart);
   if (!Number.isFinite(start)) throw new Error('generatedAt must be a valid date');
   const cadenceMs = Math.max(60, Number(sourceCadenceMinutes) || 180) * 60000;
-  const bracketOptions = { maxGapMs: Math.max(4 * 3600000, cadenceMs + 15 * 60000), edgeToleranceMs: Math.min(95 * 60000, cadenceMs / 2 + 5 * 60000) };
+  // This synchronous build keeps its native inputs unchanged. Each component
+  // checks every endpoint once in this build, including rejected endpoints.
+  // A new build rechecks its inputs; no cache crosses an admission boundary.
+  const provenanceAt = createNativeProvenanceReader();
+  const bracketOptions = { provenanceAt, maxGapMs: Math.max(4 * 3600000, cadenceMs + 15 * 60000), edgeToleranceMs: Math.min(95 * 60000, cadenceMs / 2 + 5 * 60000), orderedItemsCache: new Map([wind, windTail, waves, ocean]
+    .filter(Array.isArray).map(items => [items, undefined])) };
   const currentOceanBracket = componentBracket(ocean, start, 'waterLevel', bracketOptions);
   const modelCurrentSea = interpolateScalar(currentOceanBracket, 'sea-mean-deviation');
   const modelCurrentCm = modelCurrentSea === null ? null : modelCurrentSea * 100;
@@ -935,11 +973,11 @@ export function buildDmiForecastHourly({ wind = [], windTail = [], waves = [], o
     );
     const sea3 = waterLevelTrendCompatible ? interpolateScalar(waterLevel3Bracket, 'sea-mean-deviation') : null;
     const selectedWindComponent = primaryWindAvailable ? 'wind' : 'windTail';
-    const windProvenance = componentSource(primaryWindAvailable ? windBracket : windTailBracket, selectedWindComponent, validMs, generatedAt);
-    const waveProvenance = componentSource(waveBracket, 'wave', validMs, generatedAt);
-    const currentProvenance = componentSource(currentBracket, 'current', validMs, generatedAt);
-    const waterLevelProvenance = componentSource(waterLevelBracket, 'waterLevel', validMs, generatedAt);
-    const waterTemperatureProvenance = componentSource(waterTemperatureBracket, 'waterTemperature', validMs, generatedAt);
+    const windProvenance = componentSource(primaryWindAvailable ? windBracket : windTailBracket, selectedWindComponent, validMs, generatedAt, provenanceAt);
+    const waveProvenance = componentSource(waveBracket, 'wave', validMs, generatedAt, provenanceAt);
+    const currentProvenance = componentSource(currentBracket, 'current', validMs, generatedAt, provenanceAt);
+    const waterLevelProvenance = componentSource(waterLevelBracket, 'waterLevel', validMs, generatedAt, provenanceAt);
+    const waterTemperatureProvenance = componentSource(waterTemperatureBracket, 'waterTemperature', validMs, generatedAt, provenanceAt);
     hourly.push({
       time: new Date(validMs).toISOString(),
       windSpeedMps: round(selectedWind.speed, 1),

@@ -42,7 +42,7 @@ function execute(overrides = {}, fault = {}) {
     assert.equal(args[0], 'scripts/admin-document-history-maintenance.mjs');
     const mode = args[1].slice(2); calls.push({mode, args, env:options.env});
     if (fault.failMode === mode) {const error = new Error('never log raw child material');
-      if (fault.typedCode) error.stderr = Buffer.from(JSON.stringify({status:'FAILED_CLOSED', code:fault.typedCode, operation:{private:'not printed'}}));
+      if (fault.typedCode) error.stderr = Buffer.from(JSON.stringify({status:'FAILED_CLOSED', code:fault.typedCode, operation:{private:'not printed',writeOutcome:fault.writeOutcome}}));
       throw error;}
     return Buffer.from(JSON.stringify({mode, status:statuses[mode], currentDocumentsWritten:false,
       protectedOtherKeysWritten:false, archiveObjectsDeleted:false}));
@@ -52,20 +52,20 @@ function execute(overrides = {}, fault = {}) {
     if (name === 'node:path') return path.posix;
     if (name === 'node:child_process') return child;
     throw Error('Unexpected import '+name);
-  }, process:proc, console:{log(value) {log.push(JSON.parse(value));}, error(value) {errors.push(JSON.parse(value));}}, Date, Buffer}, {timeout:1000});
+  }, process:proc, console:{log(value) {log.push(JSON.parse(value));}, error(value) {errors.push(JSON.parse(value));}}, Date:class extends Date {static now(){return fault.now===undefined?Date.parse('2026-11-04T03:30:00Z'):Date.parse(fault.now);}}, Buffer}, {timeout:1000});
   return {calls,bucketCalls,gitCalls,log,errors,made,exitCode:proc.exitCode};
 }
 
 test('document history workflow: exact existing weather then trip locks, readonly default and isolated authority', () => {
-  assert.match(workflow,/on:\n  workflow_dispatch:/); assert(!workflow.includes('  schedule:'));
-  assert.match(workflow,/default: plan\n        options: \[plan, archive, publish-locator, discover, restore, prune, bucket-readonly, bucket-create\]/);
+  assert.match(workflow,/on:\n  workflow_run:\n    workflows: \['Run current RavRadar weather once'\]\n    types: \[completed\]\n    branches: \[main\]\n  workflow_dispatch:/); assert(!workflow.includes('  schedule:'));
+  assert.match(workflow,/default: plan\n        options: \[plan, archive, publish-locator, discover, restore, prune, maintain, bucket-readonly, bucket-create\]/);
   const outer=workflow.slice(workflow.indexOf('concurrency:'),workflow.indexOf('jobs:'));
   assert.match(outer,/group: ravradar-weather-production-v2\n  queue: max\n  cancel-in-progress: false/);
-  assert.match(workflow,/admin-document-history:\n    concurrency:\n      group: ravradar-trip-storage-production\n      cancel-in-progress: false/);
+  assert.match(workflow,/admin-document-history:\n    if: github.event_name != 'workflow_run' \|\| \(github.event.workflow_run.conclusion == 'success' && vars.RAVRADAR_ADMIN_HISTORY_MAINTENANCE == 'enabled'\)\n    concurrency:\n      group: ravradar-trip-storage-production\n      cancel-in-progress: false/);
   assert.equal((workflow.match(/cancel-in-progress: false/g)||[]).length,2);
   assert.match(workflow,/timeout-minutes: 25/); assert.match(source,/const deadline = Date\.now\(\) \+ 20 \* 60 \* 1000/);
   assert.match(workflow,/prune_limit:\n[^\n]+\n        type: choice\n        default: '25'\n        options: \['25', '100', '600'\]/);
-  assert.match(workflow,/DOCUMENT_HISTORY_PRUNE_LIMIT: \$\{\{ inputs\.prune_limit \}\}/);
+  assert.match(workflow,/DOCUMENT_HISTORY_PRUNE_LIMIT: \$\{\{ github\.event_name == 'workflow_run' && '25' \|\| inputs\.prune_limit \}\}/);
   assert.match(workflow,/fetch-depth: 0/);
   assert.match(workflow,/contents: read\n  actions: read\n  pull-requests: read/);
   assert.match(workflow,/run: node scripts\/weather-source-gate.mjs check\n        env:\n          GITHUB_TOKEN: \$\{\{ github.token \}\}/);
@@ -172,3 +172,83 @@ test('document history workflow: fresh private metadata dominates archive/publis
 });
 // One existing normal source entry owns both the fixed workflow and the new management helper tests.
 import './test-admin-document-history-bucket.mjs';
+
+function triggered(overrides={}){return{
+  GITHUB_EVENT_NAME:'workflow_run',AUTOMATIC_MAINTENANCE_ENABLED:'enabled',DOCUMENT_HISTORY_OPERATION:'maintain',
+  DOCUMENT_HISTORY_CONFIRMATION:'MAINTAIN-EXACT-THREE-DOCUMENT-HISTORY',
+  TRIGGER_ACTION:'completed',TRIGGER_RUN_ID:'123456789',
+  TRIGGER_RUN_EVENT:'workflow_dispatch',TRIGGER_RUN_NAME:'Run current RavRadar weather once',
+  TRIGGER_RUN_PATH:'.github/workflows/run-current-weather-once.yml',
+  TRIGGER_REPOSITORY:'jakobjorgensen82-commits/RavRadar',TRIGGER_HEAD_REPOSITORY:'jakobjorgensen82-commits/RavRadar',
+  TRIGGER_REPOSITORY_ID:'1306858343',TRIGGER_HEAD_REPOSITORY_ID:'1306858343',
+  TRIGGER_HEAD_BRANCH:'main',TRIGGER_HEAD_SHA:'a'.repeat(40),TRIGGER_STATUS:'completed',TRIGGER_CONCLUSION:'success',
+  TRIGGER_CREATED_AT:'2026-11-04T00:19:15Z',...overrides};}
+test('document history workflow: successful own weather completion runs one fixed pass, manual default unchanged',()=>{
+  const r=execute(triggered());assert.equal(r.exitCode,0);assert.deepEqual(r.calls.map(x=>x.mode),['maintain']);
+  assert.deepEqual(Array.from(r.calls[0].args.slice(-4)),['--confirm','MAINTAIN-EXACT-THREE-DOCUMENT-HISTORY','--limit','25']);
+  assert.deepEqual(r.bucketCalls.map(x=>x.mode),['read-only']);assert.equal(r.log[0].freeReady,false);
+  assert.deepEqual(execute().calls.map(x=>x.mode),['plan']);
+  assert.equal((workflow.match(/if: steps.admission.outputs.proceed == 'true'/g)||[]).length,6);
+  assert.match(workflow,/github.event_name != 'workflow_run' \|\| \(github.event.workflow_run.conclusion == 'success' && vars.RAVRADAR_ADMIN_HISTORY_MAINTENANCE == 'enabled'\)/);
+  assert.match(workflow,/date -u \+%s/);assert.match(workflow,/next=\$\(\( created \/ 14400 \* 14400 \+ 19 \* 60 \)\)/);
+  assert(!workflow.includes('head_sha }}\n        with:')); // checkout always default qualified main.
+  for(const row of [...r.calls,...r.bucketCalls])for(const key of Object.keys(triggered()).filter(k=>k.startsWith('TRIGGER_')))
+    assert(!(key in row.env),'untrusted trigger payload is not passed to privileged child');
+});
+test('document history workflow: untrusted failed foreign or changed completion refuses before private IO',()=>{
+  for(const changed of [
+    {DOCUMENT_HISTORY_OPERATION:'plan'},{DOCUMENT_HISTORY_PRUNE_LIMIT:'100'},
+    {DOCUMENT_HISTORY_INDEX_SHA:'d'.repeat(64)},{DOCUMENT_HISTORY_CONFIRMATION:''},
+    {TRIGGER_ACTION:'requested'},{TRIGGER_RUN_ID:'0'},{TRIGGER_RUN_EVENT:'pull_request'},
+    {TRIGGER_RUN_NAME:'Other workflow'},{TRIGGER_RUN_PATH:'.github/workflows/untrusted.yml'},
+    {TRIGGER_REPOSITORY:'foreign/RavRadar'},{TRIGGER_HEAD_REPOSITORY:'foreign/RavRadar'},
+    {TRIGGER_REPOSITORY_ID:'1'},{TRIGGER_HEAD_REPOSITORY_ID:'1'},
+    {TRIGGER_HEAD_BRANCH:'topic'},{TRIGGER_HEAD_SHA:'b'.repeat(40)},{TRIGGER_STATUS:'in_progress'},
+    {TRIGGER_CONCLUSION:'failure'},{TRIGGER_CONCLUSION:'cancelled'},
+    {TRIGGER_CREATED_AT:'not-a-time'},{TRIGGER_CREATED_AT:'2026-02-30T00:19:15Z'}
+  ]){
+    const r=execute(triggered(changed));assert.equal(r.exitCode,1,JSON.stringify(changed));
+    assert.equal(r.calls.length+r.bucketCalls.length+r.made.length+r.gitCalls.length,0);
+  }
+});
+test('document history workflow: queued completion stays bound to its own next boundary in UTC, not a later cycle',()=>{
+  for(const now of ['2026-11-04T02:30:00Z','2026-11-04T03:30:00Z','2026-11-04T03:49:00Z']){
+    const r=execute(triggered(),{now});assert.equal(r.exitCode,0);assert.equal(r.calls.length,1);
+  }
+  for(const now of ['2026-11-04T00:19:00Z','2026-11-04T03:49:01Z','2026-11-04T03:50:00Z',
+    '2026-11-04T04:20:00Z','2026-11-05T03:30:00Z']){
+    const r=execute(triggered(),{now});assert.equal(r.exitCode,0);assert.equal(r.calls.length+r.bucketCalls.length,0);
+    assert.equal(r.made.length+r.gitCalls.length,0);assert.equal(r.log[0].status,'DOCUMENT_HISTORY_SKIPPED_NO_WEATHER_WINDOW');
+    assert.equal(r.log[0].privateAccessStarted,false);
+  }
+  for(const date of ['2026-07-04','2026-10-25']){
+    assert.equal(execute(triggered({TRIGGER_CREATED_AT:date+'T00:19:15Z'}),{now:date+'T03:30:00Z'}).calls.length,1);
+    assert.equal(execute(triggered({TRIGGER_CREATED_AT:date+'T00:19:15Z'}),{now:date+'T04:20:00Z'}).calls.length,0);
+  }
+  const manual={DOCUMENT_HISTORY_OPERATION:'maintain',DOCUMENT_HISTORY_CONFIRMATION:'MAINTAIN-EXACT-THREE-DOCUMENT-HISTORY'};
+  assert.equal(execute(manual,{now:'2026-11-04T07:30:00Z'}).calls.length,1);
+  assert.equal(execute(manual,{now:'2026-11-04T04:20:00Z'}).calls.length,0);
+});
+test('document history workflow: automatic unknown write stops and discloses only a fixed read-only outcome',()=>{
+  const r=execute(triggered(),{failMode:'maintain',typedCode:'WRITE_OUTCOME_RESOLVED_STOPPED',writeOutcome:'EXACT_ROW_ABSENT'});
+  assert.equal(r.exitCode,1);assert.equal(r.calls.length,1);
+  assert.equal(r.errors[0].code,'WRITE_OUTCOME_RESOLVED_STOPPED');assert.equal(r.errors[0].writeOutcome,'EXACT_ROW_ABSENT');
+  assert(!JSON.stringify(r.errors).includes('private'));assert(!JSON.stringify(r.errors).includes('synthetic'));
+});
+
+test('document history workflow: automatic activation defaults off and only explicit enabled admits private IO',()=>{
+  assert.match(workflow,/if: github.event_name != 'workflow_run' \|\| \(github.event.workflow_run.conclusion == 'success' && vars.RAVRADAR_ADMIN_HISTORY_MAINTENANCE == 'enabled'\)/);
+  assert.equal((workflow.match(/AUTOMATIC_MAINTENANCE_ENABLED: \$\{\{ vars.RAVRADAR_ADMIN_HISTORY_MAINTENANCE \}\}/g)||[]).length,2);
+  for(const value of [undefined,'','false','true','Enabled',' enabled','enabled ']){
+    const r=execute(triggered({AUTOMATIC_MAINTENANCE_ENABLED:value}));
+    assert.equal(r.exitCode,0);assert.equal(r.calls.length+r.bucketCalls.length+r.gitCalls.length+r.made.length,0);
+    assert.equal(r.log.length,1);assert.equal(r.log[0].status,'DOCUMENT_HISTORY_SKIPPED_AUTOMATION_DISABLED');
+    assert.equal(r.log[0].privateAccessStarted,false);
+  }
+  const enabled=execute(triggered({AUTOMATIC_MAINTENANCE_ENABLED:'enabled'}));
+  assert.equal(enabled.exitCode,0);assert.deepEqual(enabled.calls.map(x=>x.mode),['maintain']);
+  for(const flag of [undefined,'disabled','enabled']){
+    const manual=execute({AUTOMATIC_MAINTENANCE_ENABLED:flag});
+    assert.equal(manual.exitCode,0);assert.deepEqual(manual.calls.map(x=>x.mode),['plan']);
+  }
+});

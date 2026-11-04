@@ -6,6 +6,7 @@ are used; only ecCodes/file transport is replaced with in-memory messages.
 from __future__ import annotations
 
 import ast
+from contextlib import nullcontext
 import copy
 import importlib.util
 import io
@@ -30,6 +31,10 @@ producer = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(producer)
 
 from lib.dmi_bulk_storage import read_dmi_bulk_document, write_dmi_bulk_document
+from lib.weather_acquisition_plan import (
+    _SNAPSHOT_RELATIVE_PATHS, build_current_acquisition_plan,
+    build_qualified_acquisition_plan, validate_qualified_acquisition_plan,
+)
 
 RUN = "2026-09-19T00:00:00Z"
 OLD_RUN = "2026-09-18T18:00:00Z"
@@ -88,6 +93,258 @@ def catalog_item(collection, offset):
         "assets": {"data": {"href": f"https://example.invalid/{collection}/{offset}.grib", "type": "application/x-grib", "roles": ["data"]}},
         "properties": {"created": RUN, "modelRun": RUN, "datetime": utc_hour(offset)},
     }
+
+
+class FirstTurnMarineCatalogueTests(unittest.TestCase):
+    def test_actual_first_turn_catalogue_preserves_existing_work_and_proofs(self):
+        # Actual 249 acquisition timing; all data and item identities here are
+        # synthetic. Replay the unmodified main turn/ledger call, no HTTP or GRIB.
+        reference = datetime(2026, 11, 3, 20, tzinfo=timezone.utc)
+        old_model = reference - timedelta(hours=8)
+        next_model = reference - timedelta(hours=2)
+        future_model = reference + timedelta(hours=4)
+        retained_run = producer.canonical_time(old_model - timedelta(hours=6))
+        hours = set(producer.operational_current_valid_times(reference))
+        prefix = sorted(hours)[:113]
+        tail = set(hours) - set(prefix)
+        collection = "dkss_nsbs"
+        proof = producer.native_component_source(
+            collection, retained_run, prefix[0], component="current", zone=ZONE, grid_candidate=POINT,
+            capture={**CAPTURE, "acquiredAt": retained_run},
+            spatial_selection=producer.COMPONENT_SPATIAL_SELECTION["current"],
+            verticalLayer="depthbelowsea:1", verticalLayerRankM=1.0,
+            vectorSelection=producer.CURRENT_VECTOR_SELECTION,
+            vectorSemanticsVersion=producer.CURRENT_VECTOR_SEMANTICS_VERSION,
+        )
+        self.assertIsNotNone(proof)
+        saved = document("current", proof, (.1, .2))
+        saved["zones"][ZONE["id"]]["hourly"][prefix[0]] = {
+            **saved["zones"][ZONE["id"]]["hourly"].pop(VALID), "time": prefix[0],
+        }
+        processing = producer.current_marine_processing_signature("synthetic-registry")
+        saved.update(zoneRegistrySignature="synthetic-registry", runs={
+            name: {"referenceTime": producer.canonical_time(old_model), "processingSignature": processing,
+                   "parserVersion": producer.PARSER_VERSION, "parameterMapVersion": producer.PARAMETER_MAP_VERSION,
+                   "gridLookupVersion": producer.GRID_LOOKUP_VERSION, "processedSteps": {}}
+            for name in producer.MARINE_COLLECTIONS
+        }, diagnostics={"collectionsAttempted": []})
+        targets = [{"partId": "TEST", "parentZoneId": "ZONE", "waterPoint": [2.0, 1.0]}]
+        preserved = [retained(proof)]
+        scheduling_pairs = {("TEST", hour) for hour in prefix}
+
+        def page(name, *runs):
+            features = []
+            for model, count in runs:
+                run = producer.canonical_time(model)
+                for lead in range(count):
+                    valid = producer.canonical_time(model + timedelta(hours=lead))
+                    item_id = f"{name}-{model.hour}-{lead}"
+                    features.append({
+                        "type": "Feature", "collection": name, "id": item_id,
+                        "assets": {"data": {"href": f"https://example.invalid/{item_id}.grib",
+                                            "type": "application/x-grib", "roles": ["data"]}},
+                        "properties": {"created": run, "modelRun": run, "datetime": valid},
+                    })
+            return {"features": features, "links": [], "numberMatched": len(features),
+                    "numberReturned": len(features)}
+
+        with patch.object(producer, "request_json") as metadata:
+            catalogues = {}
+            for name in producer.MARINE_COLLECTIONS:
+                metadata.return_value = page(name, (old_model, 121))
+                catalogues[name] = producer.list_operational_marine_assets(
+                    name, None, reference, hours, regional_configured=False,
+                    retain_preferred_run=False,
+                )
+        self.assertEqual(set(catalogues[collection][2]["officialRequiredValidTimes"]), set(prefix))
+        original_ledger = producer.build_current_operational_ledger_result(
+            saved, targets, reference, catalogues, preserved,
+        )
+        self.assertTrue(original_ledger.validated)
+        self.assertEqual(original_ledger.attestation["verifiedPairCount"], 1)
+
+        main = next(node for node in ast.parse(Path(producer.__file__).read_text(encoding="utf-8")).body
+                    if isinstance(node, ast.FunctionDef) and node.name == "main")
+        plan = next(node for node in main.body if isinstance(node, ast.FunctionDef)
+                    and node.name == "first_turn_preserves_plan")
+        turn = next(node for node in main.body if isinstance(node, ast.For)
+                    and isinstance(node.iter, ast.Name) and node.iter.id == "collection_turns")
+        index = next(i for i, node in enumerate(turn.body) if isinstance(node, ast.If)
+                     and any(isinstance(x, ast.Call) and isinstance(x.func, ast.Name)
+                             and x.func.id == "first_marine_tail_catalogue" for x in ast.walk(node)))
+        real_turn = compile(ast.fix_missing_locations(ast.Module(
+            body=copy.deepcopy([plan, *turn.body[index:index + 2]]), type_ignores=[])),
+            producer.__file__, "exec")
+
+        def execute(*, at=2235.5, name=collection, mode="native", offers=None, error=None,
+                    time_available=True, bytes_left=4096, configuration="NOT_CONFIGURED",
+                    covered=None, previous_attempt=False, scalar_plan=None, initial_catalogues=None):
+            original_catalogues = catalogues if initial_catalogues is None else initial_catalogues
+            context = dict(vars(producer), allow_first_turn_catalogue=True, collection_turn=mode,
+                           collection=name, prefetched_marine=copy.deepcopy(original_catalogues),
+                           research_replay_catalog={
+                               key: {"modelRun": run, "assets": copy.deepcopy(assets)}
+                               for key, (run, assets, _stats) in original_catalogues.items()
+                           }, qualified_scalar_gap_plan=scalar_plan, current_target_ids=["TEST"],
+                           prefetched_marine_at={name: 0.0}, result=copy.deepcopy(saved),
+                           retained_current_asset_proofs=copy.deepcopy(preserved),
+                           locked_production_reference=reference, required_current_valid_times=hours,
+                           current_part_zone_ids={ZONE["id"]}, active_operational_zones=[ZONE],
+                           global_current_planning_pairs=set(scheduling_pairs if covered is None else covered),
+                           qualified_covered_current_pair_keys=set(), coastal_part_targets=targets,
+                           checkpoint_controller=types.SimpleNamespace(can_start_asset=lambda *_args, **_opts: time_available),
+                           regional_proxy_configuration_status=configuration,
+                           reserve_for_pending_critical=90.0, budget={"bytes": producer.MAX_DOWNLOAD_BYTES - bytes_left})
+            diagnostics = context["result"]["diagnostics"]
+            diagnostics["stacByCollection"] = {
+                key: copy.deepcopy(stats) for key, (_run, _assets, stats) in original_catalogues.items()
+            }
+            if previous_attempt:
+                diagnostics["collectionsAttempted"].append(name)
+            before = copy.deepcopy((context["result"]["zones"], context["retained_current_asset_proofs"],
+                                    context["global_current_planning_pairs"], context["budget"]))
+            with (
+                patch.object(producer.time, "monotonic", return_value=at),
+                patch.object(producer, "asset_download_work_deadline", side_effect=lambda deadline: nullcontext()) as limit,
+                patch.object(producer, "request_json", return_value=offers, side_effect=error) as request,
+            ):
+                if isinstance(error, BaseException) and not isinstance(error, Exception):
+                    with self.assertRaises(type(error)):
+                        exec(real_turn, context)
+                else:
+                    exec(real_turn, context)
+            self.assertEqual((context["result"]["zones"], context["retained_current_asset_proofs"],
+                              context["global_current_planning_pairs"], context["budget"]), before)
+            # The normal turn can fail later, before the research queue is
+            # normally assigned. The accepted catalogue must already agree in
+            # all three views, with unchanged views on refusal or interruption.
+            for key, (run, assets, stats) in context["prefetched_marine"].items():
+                self.assertEqual(diagnostics["stacByCollection"][key], stats)
+                self.assertEqual(context["research_replay_catalog"][key], {"modelRun": run, "assets": assets})
+            self.assertEqual(limit.call_count, request.call_count)
+            return context["prefetched_marine"], request.call_count
+
+        new_page = page(collection, (old_model, 121), (next_model, 121))
+        selected, calls = execute(offers=new_page)
+        self.assertEqual(calls, 1)
+        self.assertEqual(selected[collection][0], producer.canonical_time(next_model))
+        self.assertTrue(selected[collection][2]["firstTurnCatalogueRefreshed"])
+        self.assertEqual(set(selected[collection][2]["officialRequiredValidTimes"]), hours)
+        after = producer.build_current_operational_ledger_result(saved, targets, reference, selected, preserved)
+        self.assertTrue(after.validated)
+        self.assertEqual(after.attestation["verifiedPairSources"], original_ledger.attestation["verifiedPairSources"])
+        self.assertEqual(after.ledger["retainedCurrentAssetProofs"], original_ledger.ledger["retainedCurrentAssetProofs"])
+        run, assets, _stats = selected[collection]
+        requirements = {asset["valid"]: producer.classify_dkss_primary_asset(
+            collection=collection, model_run=run, asset=asset, target_ids=["TEST"],
+            covered_pair_keys=set(), cached_zones=saved["zones"], active_zone_ids=[ZONE["id"]],
+            enabled=True, planning_covered_pair_keys=scheduling_pairs, required_valid_times=hours,
+            require_native_grid_sampling=True,
+        ) for asset in assets}
+        ordered = producer.prioritize_dkss_primary_assets(
+            assets, ["TEST"], scheduling_pairs, requirements, direct_valid_times=hours,
+            regional_gap_pairs_by_time={}, verified_reusable_valid_times=set(),
+            critical_cursor_valid_time=None,
+        )
+        self.assertTrue(tail <= {asset["valid"] for asset in ordered})
+        self.assertTrue(all(asset["modelRun"] == run for asset in ordered))
+
+        fully_covered = {("TEST", hour) for hour in hours}
+
+        def v2(*, water=(), wind=(), temperature=(), trend=(), plan_targets=targets):
+            def mask(indices, bits):
+                value = bytearray((bits + 7) // 8)
+                for index in indices:
+                    value[index // 8] |= 1 << (index % 8)
+                return value.hex()
+
+            water_needs = set(water) | set(trend)
+            support = {offset + 3 for offset in water_needs if offset + 3 not in water_needs}
+            snapshot_roles = set(_SNAPSHOT_RELATIVE_PATHS) | {"dmi"}
+            scalar = {"schemaVersion": 1, "kind": "retained-part-scalar-needs-v1",
+                      "productionReferenceAt": producer.canonical_time(reference), "partIds": ["TEST"],
+                      "forecastHourCount": 118, "supportHourCount": 121, "encoding": "hex-lsb0-v1",
+                      "valueGapMasks": {"waterLevel": mask(water, 118), "wind": mask(wind, 118),
+                                        "waterTemperature": mask(temperature, 118)},
+                      "waterTrendGapMask": mask(trend, 118), "waterSupportMask": mask(support, 121),
+                      "snapshotInputHashes": {key: {"bytes": 128, "sha256": "sha256:" + "a" * 64}
+                                              for key in snapshot_roles}}
+            bindings = {"targets": plan_targets, "production_reference_at": reference}
+            current = build_current_acquisition_plan(
+                **bindings, covered_pairs=[{"partId": part, "validTime": hour}
+                                           for part, hour in fully_covered], source_input_hashes={},
+            )
+            envelope = build_qualified_acquisition_plan(current, scalar, **bindings)
+            return validate_qualified_acquisition_plan(envelope, current, **bindings)
+
+        for scalar in (v2(water=(113,)), v2(wind=(113,)), v2(temperature=(113,))):
+            later, attempts = execute(offers=new_page, covered=fully_covered, scalar_plan=scalar)
+            self.assertEqual(attempts, 1)
+            self.assertEqual(later[collection][0], producer.canonical_time(next_model))
+        for scalar in (None, v2(), {**v2(water=(113,)), "parentZoneIds": {}}):
+            unchanged, attempts = execute(offers=new_page, covered=fully_covered, scalar_plan=scalar)
+            self.assertEqual(unchanged, catalogues)
+            self.assertEqual(attempts, 0)
+
+        excluded = [{**targets[0], "parentZoneId": "DK-B01-01"}]
+        scoped = {"active_zones": [{**ZONE, "parentZoneId": "DK-B01-01"}],
+                  "current_part_zone_ids": {ZONE["id"]}, "current_target_ids": ["TEST"],
+                  "covered_current_pairs": fully_covered}
+        lf_catalogue = catalogues["dkss_lf"]
+        self.assertEqual(producer.first_marine_tail_gap_times(
+            "dkss_lf", lf_catalogue, hours, **scoped,
+            scalar_plan=v2(wind=(113,), temperature=(113,), plan_targets=excluded),
+        ), set(), "The water-only exception must not make wind/temperature gaps actionable")
+        self.assertEqual(producer.first_marine_tail_gap_times(
+            "dkss_lf", lf_catalogue, hours, **scoped,
+            scalar_plan=v2(water=(113,), plan_targets=excluded),
+        ), {sorted(hours)[113], sorted(hours)[116]})
+
+        # 18Z already covers all 118 public hours and the first private
+        # support hour. The next ordinary six-hour model is later than H0.
+        # An on-H0 model below is a synthetic capability/contract check.
+        support_only = v2(trend=(116,))
+        with patch.object(producer, "request_json", return_value=page(collection, (next_model, 121))):
+            all_public = producer.list_operational_marine_assets(
+                collection, None, reference, hours, regional_configured=False,
+                retain_preferred_run=False,
+            )
+        self.assertEqual(set(all_public[2]["officialRequiredValidTimes"]), hours)
+        catalogues_with_full_public = {**catalogues, collection: all_public}
+        private_119 = producer.canonical_time(reference + timedelta(hours=119))
+        for model, expected in ((future_model, False), (reference, True)):
+            candidate, attempts = execute(
+                offers=page(collection, (next_model, 121), (model, 121)),
+                covered=fully_covered, scalar_plan=support_only,
+                initial_catalogues=catalogues_with_full_public,
+            )
+            self.assertEqual(attempts, 1)
+            if expected:
+                run, support_assets, stats = candidate[collection]
+                self.assertEqual(run, producer.canonical_time(reference))
+                self.assertIn(private_119, producer.marine_catalogue_support_times(support_assets, hours))
+                self.assertEqual(set(stats["officialRequiredValidTimes"]), hours)
+            else:
+                self.assertEqual(candidate, catalogues_with_full_public)
+
+        for options, expected_calls in (
+            ({"at": 78.7, "name": "dkss_lf"}, 0),  # LF before another useful observation
+            ({"at": 1356.0, "name": "dkss_idw", "offers": page("dkss_idw", (old_model, 121))}, 1),
+            ({"offers": page(collection, (old_model, 121), (next_model, 116))}, 1),
+            ({"offers": page(collection, (old_model, 121), (future_model, 121))}, 1),
+            ({"offers": new_page, "time_available": False}, 0),
+            ({"offers": new_page, "bytes_left": 1}, 1),
+            ({"offers": new_page, "previous_attempt": True}, 0),
+            ({"offers": new_page, "mode": "maintenance"}, 0),
+            ({"name": "dkss_lf", "offers": new_page, "configuration": "CONFIGURED"}, 0),
+            ({"offers": new_page, "covered": {("TEST", hour) for hour in hours}}, 0),
+            ({"error": producer.AssetDownloadRuntimeBudget("synthetic bounded metadata timeout")}, 1),
+            ({"error": KeyboardInterrupt()}, 1),
+        ):
+            with self.subTest(options=tuple(options)):
+                unchanged, calls = execute(**options)
+                self.assertEqual(unchanged, catalogues)
+                self.assertEqual(calls, expected_calls)
 
 
 class ComponentContinuityTests(unittest.TestCase):

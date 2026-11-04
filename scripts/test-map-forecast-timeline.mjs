@@ -307,14 +307,23 @@ try{
   // No old heavy-reader fallback, new weather or score calculation is allowed.
   const shareBase='https://ravradar-prognosedeling.jakob-jorgensen82.workers.dev/';
   assert.equal(FORECAST_SHARE_BASE_URL,'https://del.ravradar.dk/');
+  const {version}=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8'));
+  assert.match(version,/^4\.0\.\d+$/);
+  const bootstrapQuery='?v='+version+'&copy=footer-20261005&ui=zone-panels-20261027'
+    +'&assistant=forecast-followup-20261101&share=custom-domain-20261102'
+    +'&transport=public-json-bridge-20261103&map=plain-map-v3-20261104';
+  const shareQuery='?v='+version+'&ui=forecast-share-20261024&share=custom-domain-20261102';
   for(const[file,needles]of[
-    ['../index.html',['bootstrap.js?v=4.0.594&copy=footer-20261005&ui=zone-panels-20261027&assistant=forecast-followup-20261101&share=custom-domain-20261102']],
-    ['../bootstrap.js',['./app.js?v=4.0.594&copy=footer-20261005&ui=zone-panels-20261027&assistant=forecast-followup-20261101&share=custom-domain-20261102']],
-    ['../app.js',['./js/ui/forecast-share.js?v=4.0.594&ui=forecast-share-20261024&share=custom-domain-20261102','./js/services/forecast-share-contract.js?v=4.0.594&ui=forecast-share-20261024&share=custom-domain-20261102']],
-    ['../js/ui/forecast-share.js',['../services/forecast-share-contract.js?v=4.0.594&ui=forecast-share-20261024&share=custom-domain-20261102']],
+    ['../index.html',['bootstrap.js'+bootstrapQuery]],
+    ['../bootstrap.js',['./app.js'+bootstrapQuery]],
+    ['../app.js',['./js/ui/forecast-share.js'+shareQuery,'./js/services/forecast-share-contract.js'+shareQuery]],
+    ['../js/ui/forecast-share.js',['../services/forecast-share-contract.js'+shareQuery]],
   ]){
     const source=await fs.readFile(new URL(file,import.meta.url),'utf8');
-    for(const needle of needles)assert.equal(source.split(needle).length-1,1,'Normal custom-domain module entry must have one fresh, source-owned address');
+    for(const needle of needles){
+      const count=source.split('"'+needle+'"').length+source.split("'"+needle+"'").length-2;
+      assert.equal(count,1,'Normal custom-domain module entry must have one exact source-owned URL');
+    }
   }
   const workerConfig=JSON.parse(await fs.readFile(new URL('./forecast-share/wrangler.jsonc',import.meta.url),'utf8'));
   assert.deepEqual(workerConfig,{name:'ravradar-prognosedeling',main:'worker.mjs',

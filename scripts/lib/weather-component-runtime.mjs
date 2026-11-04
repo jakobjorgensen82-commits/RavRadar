@@ -1,6 +1,6 @@
 import { createReadStream } from 'node:fs';
 import { readDmiBulkDocument } from './dmi-bulk-storage.mjs';
-import { readDmiForecastFile } from './dmi-forecast-file.mjs';
+import { inspectDmiForecastFile, readDmiForecastRecord, readDmiWaterSourceContinuity } from './dmi-forecast-file.mjs';
 import { unpackDmiPartContinuity } from './dmi-part-continuity.mjs';
 import { buildPartDmiForecastWithProtectedRetention, haversineKm } from './private-dmi-recovery-record.mjs';
 import { dmiExpectedIdentityForPart } from './ravscore-production-adapters.mjs';
@@ -16,7 +16,7 @@ import path from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { buildWeatherComponentNeeds, openMeteoGapPairsFromWeatherNeeds,
   DMI_ONLY_WEATHER_COMPONENTS } from './weather-component-needs.mjs';
-import { loadOpenMeteoPartRuntime, runOpenMeteoPartRuntime } from './open-meteo-part-runtime.mjs';
+import { loadOpenMeteoPartRuntime, loadRetainedOpenMeteoPartIndex, runOpenMeteoPartRuntime } from './open-meteo-part-runtime.mjs';
 import { runCopernicusComponentRuntime } from './copernicus-component-runtime.mjs';
 import { createWeatherComponentSelectionHistory, snapshotWeatherComponentSelectionHistory } from './weather-component-selection-history.mjs';
 import { SCORING_RESERVE_COMPONENTS, verifiedIntegratedPartHourly } from './ravscore-production-adapters.mjs';
@@ -255,13 +255,14 @@ export async function persistWeatherComponentSelections(prepared) {
 // One shared normal scalar applicability boundary; CURRENT keeps its own closure.
 export function verifiedPartScalarPlanningHourly({
   part, parentFeature, record, dmiBulkCache, inputs, liveCurrentPilot = null,
-  waterSourceRoutingContext,
+  waterSourceRoutingContext, scalarPlanningOnly = false,
 }) {
+  const componentInputs = { ...inputs, requireNativeGridSampling: false, liveCurrentPilot };
+  if (scalarPlanningOnly) componentInputs.scalarPlanningOnly = true;
   const routed = applyVerifiedWaterSourceRoutingToPartHourly({
     part, parentFeature,
     hourly: verifiedIntegratedPartHourly(
-      record, dmiBulkCache, `PART::${part.partId}`, part,
-      { ...inputs, requireNativeGridSampling: false, liveCurrentPilot }),
+      record, dmiBulkCache, `PART::${part.partId}`, part, componentInputs),
     ...waterSourceRoutingContext,
   });
   // This plan consumes only wind/wave/waterLevel/waterTemperature, not current.
@@ -318,14 +319,13 @@ export function retainedScalarPlanningFailureDiagnostic(error, fallbackPhase) {
 // CP's existing no-transportBudget arm invokes the fixed --verify-only reader.
 export async function loadRetainedWeatherComponentPlanningInputs({
   privateCacheRoot, parts, productionReferenceAt, retentionStartAt, retentionEndAt,
-  readVerifiedHourly, planningDeadlineAt = Date.now() + 120_000,
+  planningDeadlineAt = Date.now() + 120_000,
 }) {
   let phase = 'TRANSPORT_SETTLEMENT';
   try {
     retainedScalarRemaining(planningDeadlineAt);
     assertWeatherTransportSettlement();
-    if (!path.isAbsolute(privateCacheRoot) || !Array.isArray(parts) || !parts.length
-      || typeof readVerifiedHourly !== 'function') {
+    if (!path.isAbsolute(privateCacheRoot) || !Array.isArray(parts) || !parts.length) {
       throw new Error('RETAINED_SCALAR_INPUTS_INVALID');
     }
     phase = 'SELECTION_HISTORY';
@@ -336,18 +336,17 @@ export async function loadRetainedWeatherComponentPlanningInputs({
       openMeteoComponentIndex: null, copernicusComponentIndex: null };
     const common = { privateCacheRoot, parts, productionReferenceAt, retentionStartAt, retentionEndAt };
     phase = 'OPEN_METEO_RETAINED';
-    const om = await loadOpenMeteoPartRuntime({ ...common,
+    inputs.openMeteoComponentIndex = await loadRetainedOpenMeteoPartIndex({ ...common,
       bankPath: path.join(privateCacheRoot, 'open-meteo-part-component-bank.json'),
       spatialPolicies: OPEN_METEO_NATIVE_NEAREST_POLICIES });
-    inputs.openMeteoComponentIndex = om.index;
-    phase = 'COMPONENT_NEEDS';
-    const needs = buildWeatherComponentNeeds({ parts, productionReferenceAt,
-      readVerifiedHourly: part => readVerifiedHourly(part, inputs) });
+    retainedScalarRemaining(planningDeadlineAt);
+    // Offline verification projects the entire retained Copernicus bank.
+    // Compute the actual needs only after all verified indexes are available.
     phase = 'COPERNICUS_VERIFY';
     const cp = await runCopernicusComponentRuntime({ ...common,
       bankPath: path.join(privateCacheRoot, 'copernicus-component-bank.json'),
       cacheDirectory: path.join(privateCacheRoot, 'copernicus-components'),
-      needs: needs.needs.filter(row => SCORING_RESERVE_COMPONENTS.includes(row.component)),
+      needs: [],
       budgetMs: 0, verificationTimeoutMs: retainedScalarRemaining(planningDeadlineAt) });
     retainedScalarRemaining(planningDeadlineAt);
     inputs.copernicusComponentIndex = cp.index;
@@ -460,7 +459,23 @@ export async function loadRetainedPartScalarPlanning({
     }
     const parentById = new Map(features.map(feature => [feature.properties?.id, feature]));
     phase = 'FORECAST';
-    const forecastStore = await readBudgeted(() => readDmiForecastFile(files.forecast[0]));
+    const forecastStore = await readBudgeted(async () => {
+      // Keep the normal whole-file inspector and both continuity readers.
+      // This planner never consumes the already-inspected zone forecasts.
+      const index = await inspectDmiForecastFile(files.forecast[0]);
+      const store = { ...index.metadata };
+      if (index.continuity) {
+        const entries = [];
+        for (const descriptor of index.continuity.entries) {
+          entries.push(await readDmiForecastRecord(index, descriptor));
+        }
+        store.partContinuity = { ...index.continuity.metadata, entries };
+      }
+      if (index.waterSourceContinuity) {
+        store.waterSourceContinuity = await readDmiWaterSourceContinuity(index);
+      }
+      return store;
+    });
     phase = 'DMI_CURRENT';
     const dmiBulkCache = await readBudgeted(() => readDmiBulkDocument(dmiCachePath));
     phase = 'DMI_DEPLOYED';
@@ -498,22 +513,22 @@ export async function loadRetainedPartScalarPlanning({
         properties: localPartRuntimeProperties(parent.properties, part, bulkId) };
       records.set(part.partId, buildPartDmiForecastWithProtectedRetention(feature, dmiBulkCache,
         pointState?.[part.partId] ? null : deployedDmiBulkCache, productionReferenceAt, {
-          startAt: productionReferenceAt, expectedIdentity,
+          startAt: productionReferenceAt, expectedIdentity, scalarPlanningOnly: true,
           persistedHourly: pointState?.[part.partId] ? [] : persisted.get(part.partId)?.hourly ?? [],
           historicalBulkCache: pointState?.[part.partId] ? null : historicalDmiBulkCache,
         }));
     }
     const readVerifiedHourly = (part, inputs) => verifiedPartScalarPlanningHourly({
       part, parentFeature: parentById.get(part.zoneId), record: records.get(part.partId),
-      dmiBulkCache, inputs, waterSourceRoutingContext,
+      dmiBulkCache, inputs, waterSourceRoutingContext, scalarPlanningOnly: true,
     });
     try {
       const retentionStartAt = new Date(Date.parse(productionReferenceAt) - RESEARCH_HISTORY_HOURS * 3600000).toISOString();
       const retentionEndAt = new Date(Date.parse(productionReferenceAt) + (OPEN_METEO_FUTURE_HOURS - 1) * 3600000).toISOString();
       const { inputs } = await loadRetainedWeatherComponentPlanningInputs({ privateCacheRoot: at('.cache'),
-        parts, productionReferenceAt, retentionStartAt, retentionEndAt, readVerifiedHourly, planningDeadlineAt });
+        parts, productionReferenceAt, retentionStartAt, retentionEndAt, planningDeadlineAt });
       phase = 'SCALAR_NEEDS';
-      const needs = buildWeatherComponentNeeds({ parts, productionReferenceAt,
+      const needs = buildWeatherComponentNeeds({ parts, productionReferenceAt, scalarPlanningOnly: true,
         readVerifiedHourly: part => readVerifiedHourly(part, inputs) });
       phase = 'SNAPSHOT_AFTER';
       const after = await snapshot();

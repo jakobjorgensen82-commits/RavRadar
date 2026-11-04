@@ -1,3 +1,25 @@
+## 4. november — scalarplanens tidsforbrug før DMI
+
+I den almindelige vejrhentning nåede den lokale scalarplan sin fælles 120-sekundersgrænse. Budgetkontrollen opdagede overskridelsen ved indgangen til PART_RETENTION. Loggen målte hele planlæggerens tid, så tallet viser ikke tidsforbruget for kystdelstrinnet alene. Den særskilte CURRENT-plan bestod, mens DMI fortsatte med den konservative prioritering. En senere CURRENT-plan før Copernicus bad kun om strømgrundlaget. Dens melding om manglende scalarplan hører til den separate indgang.
+
+På samme syntetiske landsprøve nåede den stærkere DMI-fil alene alle 673 kystdele, men den samlede plan stoppede efter cirka 195 sekunder da den fælles frist blev kontrolleret ved indgangen til den offline Copernicus-verifikation. De 195 sekunder er hele kalderens tid. Der blev ikke skrevet en plan. Den samlede kandidat med ni produktfiler genbruger de samme kontrollerede tidsakser, undgår overflødigt arbejde og samler behovene efter den normale offline kontrol af reserverne.
+
+Den samlede kandidat gav det forventede planoutput byte for byte på den eksisterende 210/673-prøve på cirka 81 sekunder. De gamle forløb nåede ikke at skrive en plan. Ligheden gælder den gemte forventning for prøvepakken, og faktisk drift skal måles i en almindelig vejrhentning.
+
+Rækkefølgen DMI → Copernicus → Open-Meteo, kildevalg, originalkontrol, scoreformel og de 120 sekunder bevares. Det normale krav om nye sammenhængende kilde- og modelbindinger, autentificeret førskrivning og efterfølgende offentlig kontrol gælder fortsat. Levering og faktisk dækning er åbne.
+
+Den lokale 4.0.597-kandidat bruger normal overgang fra autentificeret 594 ved en nyere hel prognosetime. Den første almindelige kørsel bruger den eksisterende overgang for historisk vedligeholdelse og kører uden den nye scalarplan. Den efterfølgende almindelige integrerede vejrhentning skal vise, om planen holder tidsgrænsen og forbedrer dækningen. Sammenlign alle forventede timer og zoner for hver af de fem vejrfamilier, og opgør prognosehalen og bevarede fælles timer særskilt.
+
+De 118 offentlige prognosetimer understøttes af 121 private timer. De sidste tre bruges til at vurdere vandstandsændringen tre timer frem fra den centralt valgte vandstandskilde. Manglende støtte giver fortsat en manglende værdi. De syv kystzoner kan fortsat bruge dkss_lf til vandstand alene. dkss_lf-strøm, tilhørende strømhukommelse og vandtemperatur er fortsat udelukket i de zoner.
+
+## Lokal kandidat 4. november — komplet DMI-katalog ved samlingens første tur
+
+I en almindelig udvidet vejrhentning kan den første tur for en DKSS-samling kontrollere kataloget én gang mere, hvis der er plads inden for den eksisterende tid og downloadgrænse. Kontrollér kun en faktisk manglende ydertime med V1-strømplanen eller den kvalificerede V2-plan for vind, vandstand og vandtemperatur. En ukendt V2-plan angiver ingen verificerede huller for disse tre komponenter. De eksisterende kilde- og zonegrænser gælder for hver komponent.
+
+Et komplet nyere modelkatalog skal fortsat være kausalt ved det låste starttidspunkt og bevare det tidligere udbud, de eksisterende originale kildebeviser og den regionale plan. Den private vandstandsstøtte til T+3 kan begrunde en katalogkontrol, selv når alle 118 offentlige timer er på listen. Kun faktisk manglende støttetimer optages via den normale private støtterute. Den offentlige prognosehorisont og de eksisterende prioriteter bevares. Med normal sekstimers kadence og +120 timers modelrækkevidde kan en nyere model normalt ikke levere de sidste støttetimer, når den gamle liste allerede dækker alle 118 offentlige timer. Næste model vil da ligge efter den låste starttime og bliver afvist.
+
+Kørsel 249 fastholdt det første katalog. NSBS startede efter det normale udgivelsesvindue for næste model, men kørslen dokumenterede ikke et senere tilbud. Den lokale prøve bruger dette tidsforløb med syntetiske data. Faktisk katalogtilbud, behandling og offentlig dækning skal måles særskilt. Kendte huller inden for den gamle kataloghorisont hører fortsat til den almindelige prioritering.
+
 ## 2. november — normal scalarplan med begge kendte kontinuitetsformater
 
 Den normale producent gemmer native strømhistorik som schema2. Før-DMI-kalderen skal tillade både schema1 og schema2, før den normale læser vurderer de gemte komponenter og planlægger reelle vejrhul.
