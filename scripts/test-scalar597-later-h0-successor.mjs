@@ -15,8 +15,10 @@ import {
   readInstalled593Original591CanonicalSource,
 } from './lib/assistant-later-h0-successor-source.mjs';
 import {buildScalar597LaterH0BindingSuccessor} from './build-assistant-later-h0-successor.mjs';
-import {assertScalar597LaterH0MigrationPlan,installed593Original591RequiredMigrations}
+import {assertScalar597LaterH0MigrationPlan,installed593Original591RequiredMigrations,
+  accountStatisticsAssistantRequiredMigrations,scalar597LaterH0RequiredMigrations}
   from './integrated-cutover-readiness.mjs';
+import {compareScalar597LaterH0Successor} from './lib/assistant-later-h0-postgres.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const load=(root,relative)=>import(pathToFileURL(path.join(root,relative)).href);
@@ -149,6 +151,65 @@ test('ordinary checkpoint writers preserve all 673 original states in the metada
   }finally{
     for(const name of ['old-conditions.json','old-checkpoint.json','working-conditions.json','working-checkpoint.json'])
       await fs.unlink(path.join(work,name)).catch(error=>{if(error.code!=='ENOENT')throw error;});
+    await fs.rmdir(work);
+  }
+});
+
+test('normal native597 callback retains exact seeded history and genuine594 fixtures before its SQL boundary',async t=>{
+  const host=await fs.readFile(path.join(ROOT,'scripts/lib/checkpoint-cas-native-postgres.mjs'),'utf8');
+  assert(host.includes("create table supabase_migrations.schema_migrations(version text primary key);\ninsert into supabase_migrations.schema_migrations values('20261010130000');"));
+  const nativeBefore=['20261010130000','20261012200000','20261013210000','20261013220000','20261013230000',
+    '20261016060000','20261017020000','20261017140000','20261019060000','20261019100000'];
+  const baseline=accountStatisticsAssistantRequiredMigrations(),prior=installed593Original591RequiredMigrations();
+  const next=scalar597LaterH0RequiredMigrations();
+  assert.equal(baseline.length,54);assert.equal(prior.length,61);assert.equal(next.length,62);
+  assert.deepEqual(baseline.slice(44).map(row=>row.version),nativeBefore);
+  const source=await fs.readFile(path.join(ROOT,'scripts/test-protected-ravscore-continuation-checkpoint.mjs'),'utf8');
+  const start=source.indexOf('const samples = Array.from'),end=source.indexOf('const sourceDocument = sourceDocumentAt(',start);
+  assert(start>=0&&end>start);
+  const factory=await fixtureFactory(ROOT,source.slice(start,end));
+  const normal=await load(ROOT,'scripts/ravscore-continuation-checkpoint.mjs');
+  const work=await fs.mkdtemp(path.join(await fs.realpath(os.tmpdir()),'rr597-native-history-'));
+  const stop=Object.freeze({synthetic:'first-real597-native-sql-boundary'});
+  const archived=await Promise.all(prior.slice(54).map(row=>fs.readFile(path.join(ROOT,'supabase/migrations',row.filename),'utf8')));
+  let rows=[...nativeBefore],historyReads=0,archiveCalls=0,originals=0;
+  const options={root:work,atHour:factory.atHour,sourceDocumentAt:factory.sourceDocumentAt,
+    saveCheckpoint:normal.saveRavScoreContinuationCheckpoint,runSql:async()=>{throw Error('No SQL execution');}};
+  t.mock.method(console,'error',()=>{});
+  try{
+    await assert.rejects(compareScalar597LaterH0Successor({...options,psql:async query=>{
+      if(query==='select json_agg(version order by version) from supabase_migrations.schema_migrations;'){
+        historyReads++;assert(historyReads<=2);return JSON.stringify(rows);
+      }
+      if(query==='select max(version) from supabase_migrations.schema_migrations;')throw stop;
+      if(archiveCalls<7&&query===archived[archiveCalls]){archiveCalls++;return '';}
+      const inserted=/^insert into supabase_migrations[.]schema_migrations values\('(\d+)'\);$/.exec(query);
+      if(inserted){assert.equal(inserted[1],prior[53+archiveCalls].version);rows.push(inserted[1]);return '';}
+      const old=/^insert into native_checkpoint_payloads values\('scalar597-original594-(same|newer)',\$scalar_original_fixture\$(.*)\$scalar_original_fixture\$::jsonb\);$/.exec(query);
+      assert(old,'Only the two normal genuine594 fixtures precede the new SQL boundary');
+      const payload=JSON.parse(old[2]);
+      assert.equal(payload.modelBinding.modelBundleSha256,before.I);
+      assert.equal(payload.continuationStateContractSha256,before.T);
+      assert.equal(payload.productionReferenceAt,factory.atHour(old[1]==='same'?49:50));
+      assert.equal(Object.keys(payload.states).length,673);
+      assert.equal(Object.keys(payload.candidateGRollbackCompanion.states).length,673);
+      originals++;return '';
+    }}),error=>error===stop);
+    assert.equal(historyReads,2);assert.equal(archiveCalls,7);assert.equal(originals,2);
+    assert.deepEqual(rows,prior.slice(44).map(row=>row.version));assert.equal(rows.length,17);
+    assert.equal(next.slice(44).length,18);
+    for(const invalid of [nativeBefore.slice(1),[...nativeBefore,'20990101000000'],[...nativeBefore,nativeBefore.at(-1)]]){
+      let calls=0;
+      await assert.rejects(compareScalar597LaterH0Successor({...options,psql:async query=>{
+        calls++;assert.equal(query,'select json_agg(version order by version) from supabase_migrations.schema_migrations;');
+        return JSON.stringify(invalid);
+      }}),{code:'ERR_ASSERTION'});
+      assert.equal(calls,1,'Changed history must stop before any archived SQL or original fixture');
+    }
+  }finally{
+    t.mock.restoreAll();
+    for(const name of ['same','newer'])for(const kind of ['conditions','checkpoint'])
+      await fs.unlink(path.join(work,'scalar597-original594-'+name+'-'+kind+'.json')).catch(error=>{if(error.code!=='ENOENT')throw error;});
     await fs.rmdir(work);
   }
 });

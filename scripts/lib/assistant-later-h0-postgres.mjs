@@ -185,10 +185,15 @@ export async function compareScalar597LaterH0Successor(options){
     const next=scalar597LaterH0RequiredMigrations();
     assert.equal(baseline.length,54);assert.equal(prior.length,61);assert.equal(next.length,62);
     assert.deepEqual(prior.slice(0,54),baseline);assert.deepEqual(next.slice(0,61),prior);
+    // The genuine constrained native host seeds this version, then executes
+    // the nine predecessor phases. Earlier archive entries are not installed
+    // in that synthetic database. Production keeps its full 54/61/62 inventory.
+    const nativeStart=baseline.findIndex(row=>row.version==='20261010130000');
+    assert.equal(nativeStart,44,'The fixed native seed must retain its exact archive prefix');
     async function assertHistory(expected){
       const actual=JSON.parse(await psql('select json_agg(version order by version) from supabase_migrations.schema_migrations;'));
-      const required=expected.map(row=>row.version);
-      assert.deepEqual(actual.filter(version=>version>=required[0]),required);
+      const required=expected.slice(nativeStart).map(row=>row.version);
+      assert.deepEqual(actual,required,'Every normally executed native migration must match');
     }
     await assertHistory(baseline);
     for(const row of prior.slice(54)){
