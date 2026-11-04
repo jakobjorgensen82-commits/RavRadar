@@ -19,13 +19,16 @@ async function checkCaller({changed,referenceAt=h1,available=true}){
  const paints=[],initialScore={available:true,score:8,time:h0},freshScore={available:true,score:79,time:referenceAt};
  const conditions=(datasetId,time,score)=>({available:true,datasetId,publicRuntimeAvailability:{selectedReferenceAt:time,mode:'FRESH'},zones:{Z:{}},syntheticScore:score});
  const old=conditions('A',h0,initialScore),next=available?conditions(changed?'B':'A',referenceAt,freshScore):{available:false,zones:{}};
- const context={Map,Promise,console,performance:{mark(){}},activeManifest:{datasetId:'A'},conditionRuntimePromise:null,
+ const context={Map,Promise,console,performance:{mark(){}},activeManifest:{datasetId:'A'},activeLandingView:null,conditionRuntimePromise:null,
   runtimeGeneration:0,pendingZoneDetails:new Map(),conditionDetailsPromise:null,conditionDetailsReady:false,coreViewReady:true,
   state:{conditions:old,currentScores:new Map([['waders:Z',initialScore]]),forecastGroups:new Map([['old',true]]),forecastRenderId:0,
    mode:'waders',selectedZone:null,zones:{features:[{properties:{id:'Z'}}]},zoneLayer:{destroy(){},selectZone(){}},flowArrows:{refresh(){},destroy(){}}},
   map:{invalidateSize(){}},mapScores:new Map(),selectedZonePartsVisible:false,
   localZoneScore:()=>context.state.conditions.syntheticScore||null,emergencySnapshotReferenceAt:()=>null,
-  refreshPublicRuntimeGeneration:async()=>({changed,manifest:{datasetId:changed?'B':'A'},conditions:next,zones:null}),
+  refreshPublicLandingRuntime:async({view,conditions})=>{
+   assert.equal(view,null);assert.equal(conditions,old);
+   return {changed,manifest:{datasetId:changed?'B':'A'},landing:null,conditions:next,zones:null};
+  },
   mapForecastTimeline:()=>{if(!context.state.conditions.available)throw Error('UNAVAILABLE');return{generation:changed?'B':'A',times:[referenceAt],liveTime:referenceAt};},
   refreshZoneStyles:(layer,scoreFor)=>paints.push(scoreFor('Z').score),renderSelectedZone(){},showSelectedZoneParts(){},
   updatePublicDataStatus(){},updateTripUi(){},scheduleConditionRuntimeGate(){},renderRanking(){},renderNationalForecast:async()=>false,

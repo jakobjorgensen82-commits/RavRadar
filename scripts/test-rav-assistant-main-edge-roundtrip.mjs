@@ -1182,6 +1182,9 @@ try {
       assert.equal(mapForecast.committed, null, 'The genuine unconfigured controller has no future frame.');
       let hold = false, release = null;
       const context = vm.createContext({ state, assistantDialog, mapForecast,
+        activeLandingView: null, runtimeGeneration: 0,
+        classifyRavQuestion: service.classifyRavQuestion,
+        ensureFullEvidence: async () => state.conditions,
         getLanguage: () => browserLanguage,
         t: (key, params) => t(key, params, browserLanguage),
         quickQuestions: service.quickQuestions,
@@ -2080,6 +2083,10 @@ try {
     const messages = [];
     const ui = vm.createContext({
       assistantTopicState: null, assistantTurn: 0,
+      activeLandingView: null, runtimeGeneration: 0,
+      state: { selectedZone: null, mode: 'beach' },
+      classifyRavQuestion: service.classifyRavQuestion,
+      ensureFullEvidence: async () => context.conditions,
       assistantTopicFrame: () => ({ language: browserLanguage }),
       sameAssistantTopicFrame: (a, b) => Boolean(a && b && a.language === b.language),
       assistantTopicForQuestion: service.assistantTopicForQuestion,
