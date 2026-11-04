@@ -18,7 +18,9 @@ import {buildScalar597LaterH0BindingSuccessor} from './build-assistant-later-h0-
 import {assertScalar597LaterH0MigrationPlan,installed593Original591RequiredMigrations,
   accountStatisticsAssistantRequiredMigrations,scalar597LaterH0RequiredMigrations}
   from './integrated-cutover-readiness.mjs';
-import {compareScalar597LaterH0Successor} from './lib/assistant-later-h0-postgres.mjs';
+import {compareScalar597LaterH0Successor,prepareScalar597NativeFixtureWindow} from './lib/assistant-later-h0-postgres.mjs';
+import {currentMemoryWarmupPreservationInventorySql} from './lib/current-memory-warmup-postgres.mjs';
+import {ravScoreModelBinding} from '../js/core/ravscore-model-contract.js';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const load=(root,relative)=>import(pathToFileURL(path.join(root,relative)).href);
@@ -26,6 +28,111 @@ const H0='2026-11-03T20:00:00.000Z';
 const later='2026-11-04T00:00:00.000Z';
 const descriptor={modelBinding:{modelBundleSha256:before.I},productionReferenceAt:H0,
   contractHashes:{continuationStateContractSha256:before.T}};
+
+test('scalar597 fixture-vindue bevarer hele baseline og triggerhistorik før673-pakker',async t=>{
+  // Streng syntetisk transport for den FAKTISKE native-adapters fixturevindue.
+  // Ingen PostgreSQL-/RPC-bevispåstand og ingen original- eller B/S-kapabilitet.
+  const oldBinding={...ravScoreModelBinding(),modelBundleSha256:before.I};
+  const oldProfile={sourceVersion:'4.0.594',modelBundleSha256:before.I,syntheticUnknownField:'bevares'};
+  const opKey='ravscore-operational-model-activation',profileKey='ravscore-profile-selection';
+  const inventory=currentMemoryWarmupPreservationInventorySql('preserved');
+  const prior=await readInstalled593Original591CanonicalSource();
+  const trigger=definition(prior.canonicalSource,'version_admin_document');
+  assert(trigger.includes("'ravscore-operational-model-activation'"));
+  assert(!trigger.includes("'ravscore-profile-selection'"),'Profilændringer danner faktisk historik i den normale trigger');
+  const source=await fs.readFile(path.join(ROOT,'scripts/lib/assistant-later-h0-postgres.mjs'),'utf8');
+  const normalStart=source.indexOf("phase='BEFORE_INVENTORY';");
+  const normalInstall=source.indexOf("phase='INSTALL';",normalStart);
+  assert(normalStart>=0&&normalInstall>normalStart);
+  assert.equal(source.slice(normalStart,normalInstall).split('await prepareScalar597NativeFixtureWindow(').length,2,
+    'Den normale adapter skal bruge det samme prøvede vindue før sin baseline og SQL');
+  const fixture=(fault=null)=>{
+    let documents=new Map([['synthetic-original',{document_key:'synthetic-original',payload:{unknown:17},
+      version:9,extraColumn:'bevares'}]]);
+    let history=[{document_key:'synthetic-original',payload:{unknown:16},version:8,extraColumn:'bevares'}];
+    const initialDocuments=structuredClone(documents),initialHistory=structuredClone(history);
+    const nativeError=new Error('NATIVE_POSTGRES_SQL_COMMAND_FAILED');
+    let puts=0,transactions=0,inventoryReads=0;
+    const selectedDocuments=()=>[...documents].filter(([key])=>[opKey,profileKey].includes(key))
+      .sort(([a],[b])=>a<b?-1:a>b?1:0).map(([,row])=>row);
+    const fingerprint=()=>JSON.stringify({documents:[...documents].sort(([a],[b])=>a<b?-1:a>b?1:0),history,
+      unknownOriginalBankRow:{allFields:'bevares'}});
+    const allowed=bundle=>documents.get(opKey)?.payload.status==='INTEGRATED_ACTIVE'
+      &&documents.get(opKey)?.payload.activeModelBinding.modelBundleSha256===bundle
+      &&documents.get(profileKey)?.payload.modelBundleSha256===bundle;
+    const applyPuts=query=>{
+      const pattern=/insert into admin_documents\(document_key,payload\) values\('([^']+)',\$scalar_trip\$([\s\S]*?)\$scalar_trip\$::jsonb\) on conflict\(document_key\) do update set payload=excluded.payload;/g;
+      let count=0;
+      for(const row of query.matchAll(pattern)){
+        puts++;count++;const key=row[1],payload=JSON.parse(row[2]),old=documents.get(key);
+        if(old&&JSON.stringify(old.payload)===JSON.stringify(payload))continue;
+        if(old&&key!==opKey)history.push({document_key:key,payload:structuredClone(old.payload),version:old.version});
+        documents.set(key,old?{...old,payload,version:old.version+1}:{document_key:key,payload,version:1});
+      }
+      assert(count>0);return count;
+    };
+    if(fault==='existing')documents.set(profileKey,{document_key:profileKey,payload:{modelBundleSha256:before.I},version:4});
+    const psql=async query=>{
+      if(query===inventory){inventoryReads++;return fingerprint();}
+      if(query.startsWith('select to_regprocedure(')&&query.endsWith(' is null;'))return 'f';
+      if(query.startsWith('select jsonb_object_agg(p.oid::regprocedure::text,'))return '{"wholeSyntheticFunctionCatalog":"bevares"}';
+      if(query.startsWith('select coalesce(jsonb_agg(to_jsonb(d) order by document_key)'))return JSON.stringify(selectedDocuments());
+      if(query.startsWith('select coalesce(jsonb_agg(to_jsonb(v)'))return JSON.stringify(history);
+      if(query.startsWith('insert into admin_documents(')){applyPuts(query);return '';}
+      if(query.includes("select public.consume_public_request_limit('ravradar-assistant:minute'"))return 't';
+      if(query.startsWith("set request.jwt.claim.role='service_role';set role service_role;select public.ravradar_trip_v3_active_binding_admitted(")){
+        const bundle=query.includes("'"+before.I+"'")?before.I:profile.binding.I;
+        assert(query.includes("'"+bundle+"'"));return allowed(bundle)?'t':'f';
+      }
+      if(query.startsWith('begin;')){
+        transactions++;assert(query.endsWith('rollback;'));
+        assert(query.includes("set local request.jwt.claim.role='service_role';set local role service_role;"));
+        if(fault==='command')throw nativeError;
+        const oldDocuments=structuredClone(documents),oldHistory=structuredClone(history);
+        applyPuts(query);
+        const observed={oldAllowed:allowed(before.I),nextAllowed:allowed(profile.binding.I)};
+        documents=oldDocuments;history=oldHistory;
+        if(fault==='document')documents.get(opKey).payload.unexpected='afvises';
+        if(fault==='history')history.push({document_key:'synthetic-unrelated-history',payload:{unknown:99},version:1});
+        return JSON.stringify(observed);
+      }
+      throw new Error('Uventet SQL-type i den afgrænsede syntetiske transport');
+    };
+    return {psql,initialDocuments,initialHistory,nativeError,get documents(){return documents;},get history(){return history;},
+      get puts(){return puts;},get transactions(){return transactions;},get inventoryReads(){return inventoryReads;},fingerprint};
+  };
+  await t.test('hele inventaret tages efter fixtureoprettelse og forbliver ens efter rollback',async()=>{
+    const db=fixture();
+    const window=await prepareScalar597NativeFixtureWindow({psql:db.psql,oldBinding,newBundle:profile.binding.I,oldProfile});
+    assert.equal(window.preservedSql,inventory);assert.equal(db.inventoryReads,1);
+    assert.equal(db.documents.size,3);assert.equal(window.preserved,db.fingerprint());
+    assert.deepEqual(db.history,db.initialHistory);
+    assert.deepEqual(db.documents.get('synthetic-original'),db.initialDocuments.get('synthetic-original'));
+    const report=await window.checkIntermediate();
+    assert.equal(report.pendingBothRefused,true);assert.equal(report.nextActiveAfterCompletion,true);
+    assert.equal(report.oldRefusedAfterCompletion,true);assert.equal(report.activeDocumentsUnchangedBySql,true);
+    assert.equal(db.transactions,2);assert.equal(window.preserved,db.fingerprint());
+    assert.deepEqual(db.history,db.initialHistory);
+  });
+  for(const fault of ['document','history'])await t.test('ufuldstændig rollback af '+fault+' afvises uden filtrering',async()=>{
+    const db=fixture(fault);
+    const window=await prepareScalar597NativeFixtureWindow({psql:db.psql,oldBinding,newBundle:profile.binding.I,oldProfile});
+    await assert.rejects(window.checkIntermediate(),{code:'ERR_ASSERTION'});
+  });
+  await t.test('psql-fejl bevares og udløser hverken fallback eller gentagelse',async()=>{
+    const db=fixture('command');
+    const window=await prepareScalar597NativeFixtureWindow({psql:db.psql,oldBinding,newBundle:profile.binding.I,oldProfile});
+    await assert.rejects(window.checkIntermediate(),error=>error===db.nativeError);
+    assert.equal(db.transactions,1);assert.equal(db.puts,2);assert.equal(window.preserved,db.fingerprint());
+  });
+  await t.test('ukendt eksisterende profildokument afvises før nogen fixtureskrivning',async()=>{
+    const db=fixture('existing'),original=structuredClone(db.documents);
+    await assert.rejects(prepareScalar597NativeFixtureWindow({psql:db.psql,oldBinding,newBundle:profile.binding.I,oldProfile}),
+      {code:'ERR_ASSERTION'});
+    assert.equal(db.puts,0);assert.equal(db.inventoryReads,0);assert.deepEqual(db.documents,original);
+    assert.deepEqual(db.history,db.initialHistory);
+  });
+});
 
 test('fixed 594 parent and normal callers require a strictly newer whole hour',()=>{
   assert.equal(profile.assertTarget(descriptor,later),true);

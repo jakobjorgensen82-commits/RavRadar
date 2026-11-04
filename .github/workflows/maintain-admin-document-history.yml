@@ -1,6 +1,10 @@
 name: Maintain RavRadar admin document history
 
 on:
+  workflow_run:
+    workflows: ['Run current RavRadar weather once']
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
     inputs:
       expected_main:
@@ -11,9 +15,9 @@ on:
         description: Fixed private history operation; publish creates and verifies a fresh archive first
         type: choice
         default: plan
-        options: [plan, archive, publish-locator, discover, restore, prune, bucket-readonly, bucket-create]
+        options: [plan, archive, publish-locator, discover, restore, prune, maintain, bucket-readonly, bucket-create]
       confirmation:
-        description: Exact publish-locator, prune or bucket-create confirmation; empty for read-only/archive operations
+        description: Exact publish-locator, prune, maintain or bucket-create confirmation; empty for read-only/archive operations
         type: string
         default: ''
       prune_limit:
@@ -31,7 +35,7 @@ permissions:
   actions: read
   pull-requests: read
 
-# Existing order: weather OUTER, trip storage INNER. No new lock or schedule.
+# Existing weather OUTER and trip INNER locks. Completion-triggered; no new weather or daily schedule.
 concurrency:
   group: ravradar-weather-production-v2
   queue: max
@@ -39,6 +43,7 @@ concurrency:
 
 jobs:
   admin-document-history:
+    if: github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && vars.RAVRADAR_ADMIN_HISTORY_MAINTENANCE == 'enabled')
     concurrency:
       group: ravradar-trip-storage-production
       cancel-in-progress: false
@@ -46,21 +51,89 @@ jobs:
     timeout-minutes: 25
     steps:
       - name: Require the fixed main invocation before any qualified read
+        id: admission
         shell: bash
         env:
-          EXPECTED_HEAD_SHA: ${{ inputs.expected_main }}
+          EXPECTED_HEAD_SHA: ${{ github.event_name == 'workflow_run' && github.sha || inputs.expected_main }}
+          REQUESTED_OPERATION: ${{ inputs.operation }}
+          AUTOMATIC_MAINTENANCE_ENABLED: ${{ vars.RAVRADAR_ADMIN_HISTORY_MAINTENANCE }}
+          TRIGGER_ACTION: ${{ github.event.action }}
+          TRIGGER_RUN_ID: ${{ github.event.workflow_run.id }}
+          TRIGGER_RUN_EVENT: ${{ github.event.workflow_run.event }}
+          TRIGGER_RUN_NAME: ${{ github.event.workflow_run.name }}
+          TRIGGER_RUN_PATH: ${{ github.event.workflow_run.path }}
+          TRIGGER_REPOSITORY: ${{ github.event.workflow_run.repository.full_name }}
+          TRIGGER_REPOSITORY_ID: ${{ github.event.workflow_run.repository.id }}
+          TRIGGER_HEAD_REPOSITORY: ${{ github.event.workflow_run.head_repository.full_name }}
+          TRIGGER_HEAD_REPOSITORY_ID: ${{ github.event.workflow_run.head_repository.id }}
+          TRIGGER_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          TRIGGER_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          TRIGGER_STATUS: ${{ github.event.workflow_run.status }}
+          TRIGGER_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          TRIGGER_CREATED_AT: ${{ github.event.workflow_run.created_at }}
         run: |
-          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          set -euo pipefail
           test "$GITHUB_REF" = refs/heads/main
           test "$GITHUB_RUN_ATTEMPT" = 1
+          test "$GITHUB_REPOSITORY" = jakobjorgensen82-commits/RavRadar
+          [[ "$EXPECTED_HEAD_SHA" =~ ^[a-f0-9]{40}$ ]]
           test "$GITHUB_SHA" = "$EXPECTED_HEAD_SHA"
+          now=$(date -u +%s)
+          case "$GITHUB_EVENT_NAME" in
+            workflow_dispatch)
+              if [[ "$REQUESTED_OPERATION" = maintain ]]; then
+                next=$(( now / 14400 * 14400 + 19 * 60 ))
+                if (( next <= now )); then next=$(( next + 14400 )); fi
+                since=$(( 14400 - (next - now) ))
+                if (( next - now < 30 * 60 || since < 180 * 60 )); then
+                  echo 'proceed=false' >> "$GITHUB_OUTPUT"
+                  echo '{"status":"DOCUMENT_HISTORY_SKIPPED_NO_WEATHER_WINDOW","privateAccessStarted":false}'
+                  exit 0
+                fi
+              fi
+              ;;
+            workflow_run)
+              if [[ "$AUTOMATIC_MAINTENANCE_ENABLED" != enabled ]]; then
+                echo 'proceed=false' >> "$GITHUB_OUTPUT"
+                echo '{"status":"DOCUMENT_HISTORY_SKIPPED_AUTOMATION_DISABLED","privateAccessStarted":false}'
+                exit 0
+              fi
+              test "$TRIGGER_ACTION" = completed
+              [[ "$TRIGGER_RUN_ID" =~ ^[1-9][0-9]*$ ]]
+              test "$TRIGGER_RUN_EVENT" = workflow_dispatch
+              test "$TRIGGER_RUN_NAME" = 'Run current RavRadar weather once'
+              test "$TRIGGER_RUN_PATH" = .github/workflows/run-current-weather-once.yml
+              test "$TRIGGER_REPOSITORY" = jakobjorgensen82-commits/RavRadar
+              test "$TRIGGER_HEAD_REPOSITORY" = jakobjorgensen82-commits/RavRadar
+              test "$TRIGGER_REPOSITORY_ID" = 1306858343
+              test "$TRIGGER_HEAD_REPOSITORY_ID" = 1306858343
+              test "$TRIGGER_HEAD_BRANCH" = main
+              test "$TRIGGER_HEAD_SHA" = "$EXPECTED_HEAD_SHA"
+              test "$TRIGGER_STATUS" = completed
+              test "$TRIGGER_CONCLUSION" = success
+              [[ "$TRIGGER_CREATED_AT" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$ ]]
+              created=$(date -u -d "$TRIGGER_CREATED_AT" +%s)
+              next=$(( created / 14400 * 14400 + 19 * 60 ))
+              if (( next <= created )); then next=$(( next + 14400 )); fi
+              if (( now < created || next - now < 30 * 60 )); then
+                echo 'proceed=false' >> "$GITHUB_OUTPUT"
+                echo '{"status":"DOCUMENT_HISTORY_SKIPPED_NO_WEATHER_WINDOW","privateAccessStarted":false}'
+                exit 0
+              fi
+              ;;
+            *) exit 1 ;;
+          esac
+          echo 'proceed=true' >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v7
+        if: steps.admission.outputs.proceed == 'true'
         with:
           fetch-depth: 0
       - uses: actions/setup-node@v7
+        if: steps.admission.outputs.proceed == 'true'
         with:
           node-version: 22
       - name: Restore source-content validation locator
+        if: steps.admission.outputs.proceed == 'true'
         uses: actions/cache/restore@v6
         with:
           path: .cache/weather-source-validation.json
@@ -68,21 +141,39 @@ jobs:
           restore-keys: |
             weather-source-proof-v2-${{ runner.os }}-${{ github.sha }}-
       - name: Require the already qualified exact-content source
+        if: steps.admission.outputs.proceed == 'true'
         id: source-proof
         timeout-minutes: 2
         run: node scripts/weather-source-gate.mjs check
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - name: Reject missing source proof before private access
+        if: steps.admission.outputs.proceed == 'true'
         run: test "${{ steps.source-proof.outputs.required }}" = false
       - name: Run only the fixed document-history operation
+        if: steps.admission.outputs.proceed == 'true'
         shell: bash
         env:
-          EXPECTED_HEAD_SHA: ${{ inputs.expected_main }}
-          DOCUMENT_HISTORY_OPERATION: ${{ inputs.operation }}
-          DOCUMENT_HISTORY_CONFIRMATION: ${{ inputs.confirmation }}
+          EXPECTED_HEAD_SHA: ${{ github.event_name == 'workflow_run' && github.sha || inputs.expected_main }}
+          DOCUMENT_HISTORY_OPERATION: ${{ github.event_name == 'workflow_run' && 'maintain' || inputs.operation }}
+          DOCUMENT_HISTORY_CONFIRMATION: ${{ github.event_name == 'workflow_run' && 'MAINTAIN-EXACT-THREE-DOCUMENT-HISTORY' || inputs.confirmation }}
           DOCUMENT_HISTORY_INDEX_SHA: ${{ inputs.index_sha }}
-          DOCUMENT_HISTORY_PRUNE_LIMIT: ${{ inputs.prune_limit }}
+          DOCUMENT_HISTORY_PRUNE_LIMIT: ${{ github.event_name == 'workflow_run' && '25' || inputs.prune_limit }}
+          AUTOMATIC_MAINTENANCE_ENABLED: ${{ vars.RAVRADAR_ADMIN_HISTORY_MAINTENANCE }}
+          TRIGGER_ACTION: ${{ github.event.action }}
+          TRIGGER_RUN_ID: ${{ github.event.workflow_run.id }}
+          TRIGGER_RUN_EVENT: ${{ github.event.workflow_run.event }}
+          TRIGGER_RUN_NAME: ${{ github.event.workflow_run.name }}
+          TRIGGER_RUN_PATH: ${{ github.event.workflow_run.path }}
+          TRIGGER_REPOSITORY: ${{ github.event.workflow_run.repository.full_name }}
+          TRIGGER_REPOSITORY_ID: ${{ github.event.workflow_run.repository.id }}
+          TRIGGER_HEAD_REPOSITORY: ${{ github.event.workflow_run.head_repository.full_name }}
+          TRIGGER_HEAD_REPOSITORY_ID: ${{ github.event.workflow_run.head_repository.id }}
+          TRIGGER_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          TRIGGER_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          TRIGGER_STATUS: ${{ github.event.workflow_run.status }}
+          TRIGGER_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          TRIGGER_CREATED_AT: ${{ github.event.workflow_run.created_at }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
@@ -105,9 +196,13 @@ jobs:
             discover: 'DURABLE_PRIVATE_LOCATOR_DISCOVERED_AND_RESTORED',
             restore: 'CENTRAL_DISCOVERY_READONLY_FULL_ROW_RESTORE_VERIFIED',
             prune: 'EXACT_ARCHIVED_ROWS_ABSENT_AFTER_WRITE',
+            maintain: 'AUTOMATIC_FIXED_DOCUMENT_HISTORY_MAINTAINED',
           };
           try {
-            need(env.GITHUB_EVENT_NAME === 'workflow_dispatch' && env.GITHUB_REF === 'refs/heads/main'
+            if (env.GITHUB_EVENT_NAME === 'workflow_run' && env.AUTOMATIC_MAINTENANCE_ENABLED !== 'enabled')
+              console.log(JSON.stringify({status:'DOCUMENT_HISTORY_SKIPPED_AUTOMATION_DISABLED',privateAccessStarted:false}));
+            else {
+            need(['workflow_dispatch','workflow_run'].includes(env.GITHUB_EVENT_NAME) && env.GITHUB_REF === 'refs/heads/main'
               && env.GITHUB_RUN_ATTEMPT === '1' && env.GITHUB_REPOSITORY === 'jakobjorgensen82-commits/RavRadar'
               && env.GITHUB_WORKFLOW === 'Maintain RavRadar admin document history'
               && /^[a-f0-9]{40}$/.test(env.EXPECTED_HEAD_SHA || '') && env.GITHUB_SHA === env.EXPECTED_HEAD_SHA,
@@ -122,10 +217,36 @@ jobs:
             need(operation === 'bucket-create' ? confirmation === 'CREATE-PRIVATE-EU-ADMIN-HISTORY-BUCKET'
               : operation === 'publish-locator' ? confirmation === 'PUBLISH-PRIVATE-ADMIN-HISTORY-LOCATOR'
               : operation === 'prune' ? confirmation === 'PRUNE-EXACT-THREE-DOCUMENT-HISTORY'
+              : operation === 'maintain' ? confirmation === 'MAINTAIN-EXACT-THREE-DOCUMENT-HISTORY'
               : confirmation === '', 'DOCUMENT_HISTORY_CONFIRMATION');
             const selector = env.DOCUMENT_HISTORY_INDEX_SHA || '';
             need(selector === '' || (['discover', 'restore'].includes(operation) && /^[a-f0-9]{64}$/.test(selector)),
               'DOCUMENT_HISTORY_INDEX_SELECTOR');
+            const triggered = env.GITHUB_EVENT_NAME === 'workflow_run', now = Date.now();
+            let nextBase = Math.floor(now / 14400000) * 14400000 + 19 * 60000;
+            let nextWeather = nextBase <= now ? nextBase + 14400000 : nextBase, created = null;
+            if (triggered) {
+              need(operation === 'maintain' && pruneLimit === '25' && !selector, 'DOCUMENT_HISTORY_TRIGGER_SCOPE');
+              need(env.TRIGGER_ACTION === 'completed' && /^[1-9][0-9]*$/.test(env.TRIGGER_RUN_ID || '')
+                && env.TRIGGER_RUN_EVENT === 'workflow_dispatch' && env.TRIGGER_RUN_NAME === 'Run current RavRadar weather once'
+                && env.TRIGGER_RUN_PATH === '.github/workflows/run-current-weather-once.yml'
+                && env.TRIGGER_REPOSITORY === env.GITHUB_REPOSITORY && env.TRIGGER_HEAD_REPOSITORY === env.GITHUB_REPOSITORY
+                && env.TRIGGER_REPOSITORY_ID === '1306858343' && env.TRIGGER_HEAD_REPOSITORY_ID === '1306858343'
+                && env.TRIGGER_HEAD_BRANCH === 'main' && env.TRIGGER_HEAD_SHA === env.EXPECTED_HEAD_SHA
+                && env.TRIGGER_STATUS === 'completed' && env.TRIGGER_CONCLUSION === 'success'
+                && /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$/.test(env.TRIGGER_CREATED_AT || ''),
+                'DOCUMENT_HISTORY_TRIGGER_AUTHORITY');
+              created = Date.parse(env.TRIGGER_CREATED_AT);
+              need(Number.isFinite(created) && new Date(created).toISOString().slice(0,19) === env.TRIGGER_CREATED_AT.slice(0,19),
+                'DOCUMENT_HISTORY_TRIGGER_TIME');
+              // Bind to the triggering weather run, never a later boundary after queueing.
+              nextBase = Math.floor(created / 14400000) * 14400000 + 19 * 60000;
+              nextWeather = nextBase <= created ? nextBase + 14400000 : nextBase;
+            }
+            const noWindow = operation === 'maintain' && (nextWeather - now < 30 * 60000
+              || (triggered ? now < created : 14400000 - (nextWeather - now) < 180 * 60000));
+            if (noWindow) console.log(JSON.stringify({status:'DOCUMENT_HISTORY_SKIPPED_NO_WEATHER_WINDOW',privateAccessStarted:false}));
+            else {
             need(typeof env.RUNNER_TEMP === 'string' && path.isAbsolute(env.RUNNER_TEMP), 'DOCUMENT_HISTORY_TEMP');
             const deadline = Date.now() + 20 * 60 * 1000;
             const remaining = () => { const value = deadline - Date.now(); need(value > 0, 'DOCUMENT_HISTORY_DEADLINE'); return value; };
@@ -178,11 +299,11 @@ jobs:
               completed.push('bucket-' + mode);
             }
             function invoke(mode) {
-              if (['archive', 'publish-locator', 'prune'].includes(mode)) invokeBucket('read-only');
+              if (['archive', 'publish-locator', 'prune', 'maintain'].includes(mode)) invokeBucket('read-only');
               mainHead(); phase = mode;
               const args = ['scripts/admin-document-history-maintenance.mjs', '--' + mode, '--workdir', workdir];
-              if (mode === 'publish-locator' || mode === 'prune') args.push('--confirm', confirmation);
-              if (mode === 'prune') args.push('--limit', pruneLimit);
+              if (mode === 'publish-locator' || mode === 'prune' || mode === 'maintain') args.push('--confirm', confirmation);
+              if (mode === 'prune' || mode === 'maintain') args.push('--limit', pruneLimit);
               if (selector && ['discover', 'restore'].includes(mode)) args.push('--index-sha', selector);
               let result;
               try {
@@ -190,10 +311,14 @@ jobs:
                   timeout: remaining(), maxBuffer: 65536 });
                 result = JSON.parse(output.toString('utf8'));
               } catch (error) {
-                let code = ['archive', 'publish-locator', 'prune'].includes(mode) ? 'WRITE_OUTCOME_UNKNOWN' : 'DOCUMENT_HISTORY_CHILD_FAILED';
+                let code = ['archive', 'publish-locator', 'prune', 'maintain'].includes(mode) ? 'WRITE_OUTCOME_UNKNOWN' : 'DOCUMENT_HISTORY_CHILD_FAILED';
+                let failureOutcome = null;
                 try { const record = JSON.parse(error.stderr.toString('utf8'));
-                  if (record.status === 'FAILED_CLOSED' && /^[A-Z_]{1,96}$/.test(record.code)) code = record.code; } catch {}
-                const failure = new Error(code); failure.code = code; throw failure;
+                  if (record.status === 'FAILED_CLOSED' && /^[A-Z_]{1,96}$/.test(record.code)) code = record.code;
+                  if (['EXACT_ROW_ABSENT','EXACT_ROW_STILL_PRESENT','LOCATOR_ABSENT','LOCATOR_PAYLOAD_PRESENT_VERIFIED',
+                    'IMMUTABLE_ARCHIVE_OBJECT_PRESENT_VERIFIED','UNRESOLVED'].includes(record.operation?.writeOutcome))
+                    failureOutcome = record.operation.writeOutcome; } catch {}
+                const failure = new Error(code); failure.code = code; failure.writeOutcome = failureOutcome; throw failure;
               }
               need(result && result.mode === mode && result.status === expected[mode]
                 && result.currentDocumentsWritten === false && result.protectedOtherKeysWritten === false
@@ -210,10 +335,13 @@ jobs:
             }
             console.log(JSON.stringify({ status: 'DOCUMENT_HISTORY_COMPLETE', operation, completed,
               fullDatabaseBackupVerified: false, productionDatabaseRestoreExecuted: false, freeReady: false }));
+            }
+            }
           } catch (error) {
             console.error(JSON.stringify({ status: 'FAILED_CLOSED', phase,
               code: (/^[A-Z_]{1,96}$/.test(error.code || '') || /^R2_BUCKET_[A-Z_]{1,80}$/.test(error.code || '')) ? error.code : 'DOCUMENT_HISTORY_OPERATOR_FAILED',
-              httpStatus: Number.isInteger(error.httpStatus) ? error.httpStatus : null }));
+              httpStatus: Number.isInteger(error.httpStatus) ? error.httpStatus : null,
+              writeOutcome: error.writeOutcome || null }));
             process.exitCode = 1;
           }
           NODE

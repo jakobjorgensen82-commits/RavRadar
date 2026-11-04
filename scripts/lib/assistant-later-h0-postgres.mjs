@@ -244,10 +244,11 @@ async function prepareScalar597TripAndQuotaWindow(psql,oldBinding,newBundle,oldP
     +' from pg_proc p where p.oid in ('+literal(admissionType)+'::regprocedure,'+literal(quota)+'::regprocedure);');
   const beforeCatalog=await catalog();
   const service="set request.jwt.claim.role='service_role';set role service_role;";
-  const active=(binding)=>psql(service+'select '+admission+'('+
+  const activeExpression=(binding)=>admission+'('+
     ['modelId','stateSchemaVersion','variantId','profileId','componentSchemaId','explanationSchemaId','rankingPolicyId',
       'bestTimePolicyId','presentationPolicyId','modelContractSha256','modelBundleSha256'].map(key=>literal(binding[key])).join(',')
-      +",'[\"ravscore-history-incomplete\"]'::jsonb,false,'zone-fixture','part-001','zone-fixture','part-001');");
+      +",'[\"ravscore-history-incomplete\"]'::jsonb,false,'zone-fixture','part-001','zone-fixture','part-001')";
+  const active=(binding)=>psql(service+'select '+activeExpression(binding)+';');
   const quotaWorks=()=>psql(service+"select public.consume_public_request_limit('ravradar-assistant:minute','native-scalar597-fixture',6,60);");
   const nextBinding={...oldBinding,modelBundleSha256:newBundle};
   assert.equal(oldProfile.modelBundleSha256,oldBinding.modelBundleSha256);
@@ -261,12 +262,18 @@ async function prepareScalar597TripAndQuotaWindow(psql,oldBinding,newBundle,oldP
     activeModelBinding:oldBinding,sourceImplementationClosureSha256:'1'.repeat(64),requestedImplementationClosureSha256:'2'.repeat(64),
     automaticActivationAllowed:false,schedulerActivationAllowed:false,calibrationEligible:false});
   const opKey='ravscore-operational-model-activation',profileKey='ravscore-profile-selection';
-  const documents=()=>psql('select jsonb_agg(to_jsonb(d) order by document_key)::text from admin_documents d where document_key in ('
+  const documents=()=>psql('select coalesce(jsonb_agg(to_jsonb(d) order by document_key),\'[]\'::jsonb)::text from admin_documents d where document_key in ('
     +literal(opKey)+','+literal(profileKey)+');');
+  const history=()=>psql('select coalesce(jsonb_agg(to_jsonb(v) order by to_jsonb(v)::text collate "C"),\'[]\'::jsonb)::text from admin_document_versions v;');
   const json=value=>{const text=JSON.stringify(value);assert(!text.includes('$scalar_trip$'));return '$scalar_trip$'+text+'$scalar_trip$::jsonb';};
-  const put=(key,value)=>psql('insert into admin_documents(document_key,payload) values('+literal(key)+','+json(value)
-    +') on conflict(document_key) do update set payload=excluded.payload;');
+  const putSql=(key,value)=>'insert into admin_documents(document_key,payload) values('+literal(key)+','+json(value)
+    +') on conflict(document_key) do update set payload=excluded.payload;';
+  const put=(key,value)=>psql(putSql(key,value));
+  // Fixed native fixtures must not overwrite an earlier phase's documents.
+  assert.equal(await documents(),'[]','The two native activation fixture keys must be absent');
+  const beforeHistory=await history();
   await put(opKey,op);await put(profileKey,oldProfile);
+  assert.equal(await history(),beforeHistory,'Fixture inserts must preserve the whole existing history');
   const beforeDocuments=await documents();
   assert.equal(await active(oldBinding),'t');assert.equal(await active(nextBinding),'f');
   assert.equal(await quotaWorks(),'t');
@@ -275,15 +282,38 @@ async function prepareScalar597TripAndQuotaWindow(psql,oldBinding,newBundle,oldP
     assert.equal(await documents(),beforeDocuments);
     assert.equal(await active(oldBinding),'t');assert.equal(await active(nextBinding),'f');
     assert.equal(await quotaWorks(),'t');
-    await put(opKey,{...op,status:'INTEGRATED_PENDING'});
-    assert.equal(await active(oldBinding),'f');assert.equal(await active(nextBinding),'f');
-    await put(profileKey,{...oldProfile,sourceVersion:'4.0.597',modelBundleSha256:newBundle});
-    await put(opKey,{...op,activeModelBinding:nextBinding});
-    assert.equal(await active(oldBinding),'f');assert.equal(await active(nextBinding),'t');
+    // Each actual RPC probe and its temporary document changes share ONE
+    // transaction. ROLLBACK also restores trigger-created profile history.
+    // No history row is filtered, deleted or accepted as an expected increase.
+    const attempt=async mutations=>JSON.parse(await psql('begin;'+mutations.join('')
+      +"set local request.jwt.claim.role='service_role';set local role service_role;"
+      +"select jsonb_build_object('oldAllowed',"+activeExpression(oldBinding)
+      +",'nextAllowed',"+activeExpression(nextBinding)+');rollback;'));
+    assert.deepEqual(await attempt([putSql(opKey,{...op,status:'INTEGRATED_PENDING'})]),
+      {oldAllowed:false,nextAllowed:false});
+    assert.deepEqual(await attempt([
+      putSql(profileKey,{...oldProfile,sourceVersion:'4.0.597',modelBundleSha256:newBundle}),
+      putSql(opKey,{...op,activeModelBinding:nextBinding}),
+    ]),{oldAllowed:false,nextAllowed:true});
+    assert.equal(await documents(),beforeDocuments,'Rollback must restore the whole fixture documents');
+    assert.equal(await history(),beforeHistory,'Rollback must restore the whole existing history');
     return {oldActiveAfterSql:true,nextRefusedBeforeActivation:true,pendingBothRefused:true,
       nextActiveAfterCompletion:true,oldRefusedAfterCompletion:true,activeDocumentsUnchangedBySql:true,
       quotaFunctionAndAdmissionUnchanged:true,quotaServiceRoleWorking:true};
   };
+}
+
+// Native TEST adapter only. Prepare its finite documents before the SAME
+// unfiltered full-row inventory used by normal guard/install comparisons.
+// The early source target exercises this seam without creating673-state packs.
+export async function prepareScalar597NativeFixtureWindow({psql,oldBinding,newBundle,oldProfile}){
+  assert.equal(arguments.length,1);assert.equal(typeof psql,'function');
+  assert.equal(oldBinding?.modelBundleSha256,SCALAR597_LATER_H0_BEFORE.I);
+  assert.equal(newBundle,requireScalar597LaterH0Binding().I);
+  const checkIntermediate=await prepareScalar597TripAndQuotaWindow(psql,oldBinding,newBundle,oldProfile);
+  const preservedSql=currentMemoryWarmupPreservationInventorySql('preserved');
+  const preserved=await psql(preservedSql);
+  return Object.freeze({preservedSql,preserved,checkIntermediate});
 }
 export async function compareInstalled593Original591Successor(options){
   return compareFixedSuccessor(INSTALLED593_ORIGINAL591,...arguments);
@@ -332,7 +362,12 @@ async function compareFixedSuccessor(profile,options){
     for(const name of names)assert.equal(catalogBefore[name].body,sha(body(definition(before.canonicalSource,name))));
     const accountCatalogBefore=await psql(statisticsPreferenceRevisionCatalogQuery);
     assert.equal((await verifyStatisticsPreferenceRevisionCatalogMetadata(JSON.parse(accountCatalogBefore))).schemaVersion,2);
-    phase='BEFORE_INVENTORY';const preservedSql=currentMemoryWarmupPreservationInventorySql('preserved'),preserved=await psql(preservedSql);
+    phase='BEFORE_INVENTORY';
+    const scalarWindow=profile===SCALAR597_LATER_H0?await prepareScalar597NativeFixtureWindow({
+      psql,oldBinding:originals.same.modelBinding,newBundle:NEXT.I,oldProfile:options.originalProfile,
+    }):null;
+    const preservedSql=scalarWindow?.preservedSql??currentMemoryWarmupPreservationInventorySql('preserved');
+    const preserved=scalarWindow?scalarWindow.preserved:await psql(preservedSql);
     const archivePins=new Map(await Promise.all((await fs.readdir(path.join(ROOT,'supabase/migrations')))
       .filter(name=>name.endsWith('.sql')).map(async name=>[name,sha(await fs.readFile(path.join(ROOT,'supabase/migrations',name)))])));
     const guards=[
@@ -355,8 +390,7 @@ async function compareFixedSuccessor(profile,options){
       assert.equal(await psql(preservedSql),preserved);assert.deepEqual(JSON.parse(await psql(catalogSql(names))),catalogBefore);
       for(const alias of ALIASES)assert.equal(await psql("select to_regprocedure('public."+alias.name+alias.signature+"') is null;"),'t');
     }
-    const checkIntermediate=profile===SCALAR597_LATER_H0
-      ?await prepareScalar597TripAndQuotaWindow(psql,originals.same.modelBinding,NEXT.I,options.originalProfile):null;
+    const checkIntermediate=scalarWindow?.checkIntermediate??null;
     phase='INSTALL';await psql(sql);
     assert.equal(await psql("select current_setting('lock_timeout');"),'0');assert.equal(await psql(preservedSql),preserved);
     assert.equal(await psql(statisticsPreferenceRevisionCatalogQuery),accountCatalogBefore);

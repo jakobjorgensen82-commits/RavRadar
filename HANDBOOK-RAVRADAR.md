@@ -70,33 +70,39 @@ Den første almindelige kørsel bruger den eksisterende overgang for historisk v
 
 ## 89.298 Sikker vedligeholdelse af dokumenthistorik
 
-Kort fortalt: De aktuelle dokumenter og de nyeste historikversioner bevares. Ældre versioner må først beskæres, når deres præcise originaler er privat arkiveret, verificeret og kan genfindes centralt.
+Kort fortalt: Kun gamle versioner af tre administrationsdokumenter ryddes op. Aktuelle dokumenter og de fem nyeste historikversioner pr. dokument bevares. En gammel række må først fjernes, når dens præcise original er privat arkiveret, genlæst og kan genfindes centralt.
 
-### Hvad der bevares
+### Hvad funktionen omfatter
 
-Vedligeholdelsen omfatter kun historik for rdks-documentation-center, handbook og handbook-source-baseline. De tre aktuelle dokumenter og de fem nyeste historikversioner pr. nøgle bliver stående. Andre dokumentnøgler, vejrdata, originale B/S-pakker, scoremodel og geometri er ikke oprydningsmål.
+De tre faste nøgler er rdks-documentation-center, handbook og handbook-source-baseline. Vejrdata, originale B/S-pakker, scorehistorik, brugerture, konti og andre dokumentnøgler er uden for oprydningen. Det er dokumentversioner fra blandt andet udvikling og håndbogsopdateringer, som begrænses; dette er ikke en ændring af vejrets rullende historik.
 
-### Original først, beskæring bagefter
+### Arkiv før beskæring
 
-Ældre historikrækker arkiveres i en særskilt privat R2-bucket. Arkivet bevarer den præcise REST-respons for hver række, også oprindelig talrepræsentation og formatering. Genlæsning kontrollerer de originale bytes; parsing og ny JSON-serialisering må ikke erstatte en genopretningsoriginal. En central V2-arkivhenvisning gør det muligt at finde og verificere arkivet uden en gammel fil på operatørens PC. Arkivoriginaler slettes ikke af denne funktion.
+Hver række arkiveres med den præcise oprindelige REST-respons, også talrepræsentation og formatering. Private, komprimerede V2-arkiver har faste fingeraftryk og en central arkivhenvisning. Før beskæring genfindes arkivet uafhængigt, alle arkiverede rækker genlæses og sammenlignes med deres originalbytes, og de aktuelle dokumenter samt de fem nyeste historikversioner kontrolleres igen. Parsing og ny JSON-serialisering er ikke en erstatning for originalen. Arkivoriginaler slettes ikke af funktionen.
 
-### Den normale operatørvej
+### Løbende vedligeholdelse i små portioner
 
-Bucketkontrollen har to særskilte valg: bucket-readonly læser kun den faste EU-buckets metadata. bucket-create kræver CREATE-PRIVATE-EU-ADMIN-HISTORY-BUCKET og må kun forsøge én oprettelse efter en fuldstændig autentificeret EU-fortegnelse og direkte fraværskontrol. En eksisterende bucket må ikke ændres. Kun Standard-lager bruges; r2.dev skal være deaktiveret, og listen over egne domæner skal være tom. De samme metadata genlæses før archive, publish-locator og prune. Den eksisterende Cloudflare-nøgle bruges kun af bucket-hjælperen. Manglende adgang eller HTTP 401/403 stopper uden nye rettigheder eller nøgler. Ukendt POST-udfald må kun afklares med bucket-readonly; POST gentages ikke automatisk.
+Den nye lokale maintain-operation vælger internt præcis de højst 25 ældste berettigede rækker fra den normale friske fortegnelse. Samme afgrænsning genkontrolleres før arkivering. Kun denne portion arkiveres og beskæres, så hele restmængden ikke genarkiveres ved hver passage. Hvis ingen rækker er berettigede, sker ingen arkivupload, ændring af henvisningen eller sletning. Resten optælles efter passagen.
 
-Brug kun maintain-admin-document-history.yml på den præcise, allerede kvalificerede aktuelle main og bind expected_main til samme kilde. Standardvalget plan er skrivefrit. archive udfører en frisk plan og arkivering. publish-locator udfører frisk plan, arkivering og derefter publicering af henvisningen i samme private runner, så fortrinnene ikke afhænger af lokale filer fra en tidligere kørsel. discover og restore genfinder og kontrollerer den centrale henvisning; restore laver private genlæsningsfiler og er ikke en produktions-DB-restore.
+Automatisk adgang er lukket som standard. Repository-indstillingen RAVRADAR_ADMIN_HISTORY_MAINTENANCE skal udtrykkeligt have værdien enabled, og må først aktiveres efter faktisk privat lageradgang og en gennemført, kontrolleret første arkiv-/genlæsnings-/beskæringspassage. Den er en almindelig ikke-hemmelig indstilling, ikke en ny nøgle eller tjeneste. De eksisterende manuelle operationer bevares, så første kvalifikation ikke afhænger af den automatiske trigger.
 
-### Beskæring og dataoverførsel
+Når indgangen er aktiveret, følger den en vellykket afslutning af det eksisterende vejrforløb på den kvalificerede aktuelle main. Også en vellykket genoptagelse eller et korrekt preflight-skip kan udløse den særskilte vedligeholdelse; hændelsen er ikke bevis for nye hentede eller offentligt leverede vejrdata. Repository, gren, workflowsti, udløsende hændelse, kildeidentitet og tidsvindue kontrolleres før privat adgang. Der skal fortsat være mindst 30 minutter til det næste firetimersslot, som beregnes fra det udløsende vejrforløbs oprettelsestidspunkt. En sent køsat vedligeholdelse må ikke bruge et senere slot som en ny frist. Der oprettes ingen særskilt daglig schedule eller keepalivecommits.
 
-prune er særskilt, kræver den faste bekræftelse og er aldrig automatisk. Operatøren skal først have lukket de faktiske adgangs-, backup-/genopretnings- og anti-genoplivningsforudsætninger. Standardbatch 25 bruges til den første begrænsede liveprøve. Senere kan 100 eller 600 vælges eksplicit, så en stor rest ikke kræver mange gentagelser af den fulde forudkontrol. Andre operationer kan ikke ændre batchstørrelsen. Samme adgangs-, original-, aktuelle dokument-, top-fem- og tidskontroller gælder for alle størrelser.
+### Operatørvej og adgang
 
-### Samtidighed og stop
+maintain-admin-document-history.yml bruger kun den præcise, allerede kvalificerede aktuelle main. Det manuelle standardvalg plan er skrivefrit. De eksisterende manuelle archive, publish-locator, discover, restore og særskilt bekræftet prune bevares. Manuel prune kan fortsat vælge 25, 100 eller 600; automatisk maintain er fast låst til 25 og sin egen præcise bekræftelse. En privat restore-fil er ikke en udført produktions-DB-restore.
 
-Den eksisterende fælles vejrkø holdes yderst og turlagerkøen inderst. Jobbet har 25 minutter inklusive klargøring; den samlede operation og controller bevarer 20 minutter. Vejrhentningens egne budgetter ændres ikke. Nye kørsler aflyser ikke en aktiv operation. Der tilføjes ingen tidsplan eller automatisk beskæring. Ukendt skriveudfald kræver konkret afklaring ved genlæsning, ikke automatisk gentagelse.
+Kun den faste private EU-bucket ravradar-admin-history-archive med Standard-lager må bruges. r2.dev skal være slået fra, og egne domæner skal være fraværende. Bucketmetadata genlæses før arkivskrivning og beskæring. Den eksisterende Cloudflare-managementnøgle når kun den faste metadata-/oprettelseshjælper, ikke selve arkivcontrolleren. Manglende adgang giver stop; controlleren opretter ikke nøgler eller udvider rettigheder. Eventuel adgangsklargøring er en særskilt kontohandling inden aktivering.
 
-### Status og bevisgrænse
+### Samtidighed, kapacitet og ukendte udfald
 
-Dette er en lokal kandidat med beståede normale controller- og kalderprøver. Kandidaten kan kvalificeres og leveres selvstændigt på den præcise aktuelle main-baserede kilde; SOURCE 595 er ikke en forudsætning. En senere SOURCE-sammenføring skal normalt bevise endelig importlukning, uændrede modelbindinger og præcist kildebevis. En bestået gammel kørsel må ikke ommærkes til en ny samlet kilde. Der er ikke udført livearkivering eller beskæring som led i kandidaten. Privat lageradgang, backup-/genopretningsafklaring og målt driftsvirkning er fortsat åbne. Kandidaten beviser hverken samlet gratis drift eller grundlag for at opsige Pro.
+Den fælles vejrkø holdes yderst og turlagerkøen inderst. Jobbet har 25 minutter inklusive klargøring; operationen bevarer 20 minutter. Vejrhentningens tider og prioritet ændres ikke. Arkivets eksisterende lager- og overførselslofter bevares. Faktiske bytes, tid og pladsvirkning skal måles; komprimerede databasekolonner er ikke det samme som størrelsen af en fuld REST-original.
+
+Ved ukendt skriveudfald blokeres nye writes. Automatisk maintain må kun afklare den sidste præcise mutation ved autentificeret læsning. Også når læsningen afklarer udfaldet, standser passagen uden næste write eller blind gentagelse. Uafklaret udfald forbliver en fejl. De gamle manuelle operationer bevarer deres hidtidige stopsemantik.
+
+### Status og hvad der stadig skal bevises
+
+Kandidaten er lokalt forberedt og målrettet afprøvet. Den er ikke i sig selv kildekvalificeret, installeret eller et bevis for faktisk arkivering og beskæring. Før livebrug kræves privat lageradgang, komplet tabsfrit arkiv og autentificeret genlæsning, den varige arkivhenvisning, friske current/top5/ACL/RLS-kontroller og eksisterende Pro-rollback. Fuld database-/Authbackup er en forudsætning for senere Pro-opsigelse, ikke en ekstra gate for denne særskilt afgrænsede dokumentoprydning. Gratis drift, faktisk pladsgevinst og selvstændig efterfølgende vedligeholdelse er fortsat åbne. Ingen abonnements- eller betalingsoplysning ændres af denne funktion.
 
 ## 89.294 Reelle datahuller før opgradering af dækkede timer
 
