@@ -162,8 +162,10 @@ test('current installed code-only actual selection body rejects unknown or parti
 });
 
 test('current installed code-only plan uses the normal active migration contract and refuses every pending write',async()=>{
-  assert(['assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor'].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase));
-  const required=(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-installed593-origin591-successor'
+  assert(['assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor',
+    'assistant-installed593-origin591-successor','scalar597-later-h0-original594-successor'].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase));
+  const required=(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='scalar597-later-h0-original594-successor'
+    ?(await import('./integrated-cutover-readiness.mjs')).scalar597LaterH0RequiredMigrations:ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-installed593-origin591-successor'
     ?(await import('./integrated-cutover-readiness.mjs')).installed593Original591RequiredMigrations:ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public591-successor'
     ?(await import('./integrated-cutover-readiness.mjs')).assistantPublic591SuccessorRequiredMigrations:ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public590-successor'
     ?assistantPublic590SuccessorRequiredMigrations:ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public588-successor'
@@ -1765,7 +1767,8 @@ test('assistant public587 active facade is fixed and refuses UNISSUED before I/O
   assert(Object.isFrozen(ACTIVE_ASSISTANT_SUCCESSOR));
   assert([ISSUED_ASSISTANT_PUBLIC588_PROFILE,INACTIVE_ASSISTANT_PUBLIC588_SUCCESSOR,
     PUBLIC590.INACTIVE_ASSISTANT_PUBLIC590_SUCCESSOR,PUBLIC590.INACTIVE_ASSISTANT_PUBLIC591_SUCCESSOR,
-    PUBLIC590.INACTIVE_INSTALLED593_ORIGINAL591_SUCCESSOR].includes(ACTIVE_ASSISTANT_SUCCESSOR));
+    PUBLIC590.INACTIVE_INSTALLED593_ORIGINAL591_SUCCESSOR,
+    PUBLIC590.INACTIVE_SCALAR597_LATER_H0_SUCCESSOR].includes(ACTIVE_ASSISTANT_SUCCESSOR));
   assert.equal(DEFAULT_CUTOVER_SOURCE_PHASE,ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase);
   const next=PUBLIC590.INACTIVE_ASSISTANT_PUBLIC590_SUCCESSOR;
   assert.equal(next.sourcePhase,'assistant-public590-successor');
@@ -1920,8 +1923,10 @@ test('assistant public587 operative import variants remain whole-source bound',a
   for(const row of prewrite.matchAll(/FROZEN586_PREDECESSOR_([A-Z_]+):'([A-Z_]+)'/g))
     assert(prewrite.includes("FROZEN587_PREDECESSOR_"+row[1]+":'"+row[2]+"'"));
   const pkg=JSON.parse(await fs.readFile(path.join(ROOT,'package.json'),'utf8'));
+  const historicalCommand='node scripts/build-assistant-later-h0-successor.mjs --active --check';
+  const scalarCommand=historicalCommand+' && node --test scripts/test-scalar597-later-h0-successor.mjs';
   assert.equal(pkg.scripts['test:assistant-later-h0-source'],
-    'node scripts/build-assistant-later-h0-successor.mjs --active --check');
+    ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='scalar597-later-h0-original594-successor'?scalarCommand:historicalCommand);
   const builder=canonical591AssistantSource(await fs.readFile(path.join(ROOT,'scripts/build-assistant-later-h0-successor.mjs'),'utf8'),'scripts/build-assistant-later-h0-successor.mjs');
   const from=builder.indexOf('  const issued=public587?requireAssistantPublic587SuccessorBinding()'),to=builder.indexOf('\n}\nif(process.argv[1]',from);
   assert(from>=0&&to>from);
@@ -1978,11 +1983,13 @@ test('ordinary companion readers use the exact active predecessor before and aft
       'readAuthenticatedFrozen588Predecessor','assertAuthenticatedFrozen588Snapshot',
       'readAuthenticatedFrozen590Predecessor','assertAuthenticatedFrozen590Snapshot',
       'readAuthenticatedFrozen591Predecessor','assertAuthenticatedFrozen591Snapshot',
+      'readAuthenticatedSource594Predecessor','assertAuthenticatedSource594Snapshot',
       'readAuthenticatedCurrentCompanions']);
   const target='2026-10-27T20:00:00.000Z';
   // Routing-only fixtures: no real B/S, opaque authority, model values or I/O.
   for(const profile of [profiles.ACTIVE_ASSISTANT_SUCCESSOR,profiles.INACTIVE_ASSISTANT_PUBLIC590_SUCCESSOR,profiles.ISSUED_ASSISTANT_PUBLIC588_PROFILE]){
-    const expectedFamily=['assistant-public591-successor','assistant-installed593-origin591-successor'].includes(profile.sourcePhase)?'591'
+    const expectedFamily=profile.sourcePhase==='scalar597-later-h0-original594-successor'?'594'
+      :['assistant-public591-successor','assistant-installed593-origin591-successor'].includes(profile.sourcePhase)?'591'
       :profile.sourcePhase==='assistant-public590-successor'?'590'
       :profile.sourcePhase==='assistant-public588-successor'?'588':'587';
     assert(profile.before.I&&profile.binding.I&&profile.before.I!==profile.binding.I);
@@ -2014,6 +2021,7 @@ test('ordinary companion readers use the exact active predecessor before and aft
       async()=>{directReads++;throw Error('SYNTHETIC_STRICT_NORMAL_MODEL_CHECK');},
       readFamily('587'),snapshotFamily('587'),readFamily('588'),snapshotFamily('588'),
       readFamily('590'),snapshotFamily('590'),readFamily('591'),snapshotFamily('591'),
+      readFamily('594'),snapshotFamily('594'),
       async(verified,conditions)=>{companionReads++;assert.equal(verified,snapshot.verified);
         assert.deepEqual(conditions,original);return contexts;});
     assert.equal(await normal.readCurrentPrivateRuntimeCompanionInput(target),view);
@@ -2099,17 +2107,24 @@ test('assistant594 native evidence requires its own new commands and rejects old
   const e=await import('./national584-source-evidence.mjs');
   const m=await import('./lib/assistant-later-h0-successor-source.mjs');
   const pkg=JSON.parse(await fs.readFile(path.join(ROOT,'package.json'),'utf8'));
-  e.verifyInstalled593Original591Package(pkg);
+  const active=m.ACTIVE_ASSISTANT_SUCCESSOR,prior=m.INACTIVE_INSTALLED593_ORIGINAL591_SUCCESSOR;
+  const scalar=active===m.INACTIVE_SCALAR597_LATER_H0_SUCCESSOR;
+  const historicalPackage=scalar?e.inverseScalar597LaterH0Package(pkg):pkg;
+  e.verifyInstalled593Original591Package(historicalPackage);
   assert.deepEqual(n.ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS,[n.ASSISTANT_PUBLIC590_SUCCESSOR_COMMANDS[0],n.ASSISTANT_PUBLIC590_SUCCESSOR_COMMANDS[1]+' --assistant-public591-successor']);
   assert.deepEqual(n.INSTALLED593_ORIGINAL591_COMMANDS,[n.ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS[0],n.ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS[1]+' --assistant-installed593-origin591-successor']);
-  assert.deepEqual(n.ACTIVE_COMMANDS,n.INSTALLED593_ORIGINAL591_COMMANDS);
-  assert.deepEqual(e.INSTALLED593_ORIGINAL591_NATIVE_COMMANDS,n.ACTIVE_COMMANDS);
+  assert.deepEqual(n.ACTIVE_COMMANDS,scalar?n.SCALAR597_LATER_H0_COMMANDS:n.INSTALLED593_ORIGINAL591_COMMANDS);
+  assert.deepEqual(e.INSTALLED593_ORIGINAL591_NATIVE_COMMANDS,n.INSTALLED593_ORIGINAL591_COMMANDS);
   const current={run:1,attempt:1,head:'a'.repeat(40),pullRequest:1,branch:'codex/synthetic594'};
   const receipt={schemaVersion:1,kind:n.INSTALLED593_ORIGINAL591_PHASE_KIND,
-    phase:'INSTALLED593_ORIGINAL591_SUCCESSOR',sourcePhase:m.ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase,
-    releaseVersion:m.ACTIVE_ASSISTANT_SUCCESSOR.requireRelease(),binding:m.ACTIVE_ASSISTANT_SUCCESSOR.requireBinding(),
-    output:m.ACTIVE_ASSISTANT_SUCCESSOR.requireOutput(),databaseBefore:m.INSTALLED593_ORIGINAL591_DATABASE_BEFORE,
-    commands:n.ACTIVE_COMMANDS,current,status:'EXECUTED',executedInThisRun:true,origin:null,eligibleForReuse:false};
+    phase:'INSTALLED593_ORIGINAL591_SUCCESSOR',sourcePhase:prior.sourcePhase,
+    releaseVersion:prior.requireRelease(),binding:prior.requireBinding(),
+    output:prior.requireOutput(),databaseBefore:prior.databaseBefore,
+    commands:n.INSTALLED593_ORIGINAL591_COMMANDS,current,status:'EXECUTED',executedInThisRun:true,origin:null,eligibleForReuse:false};
+  if(scalar){
+    assert.throws(()=>e.verifyScalar597LaterH0NativeContext(receipt,current,active.requireRelease()));
+    assert.throws(()=>e.verifyCurrentNativeCommands(receipt.commands,active.requireRelease()));
+  }
   assert.equal(n.verifyInstalled593Original591PhaseReceipt(receipt,current).status,'EXECUTED');
   assert.throws(()=>n.verifyInstalled593Original591PhaseReceipt({...receipt,phase:'ASSISTANT_PUBLIC591_SUCCESSOR'},current));
   assert.throws(()=>n.verifyInstalled593Original591PhaseReceipt({...receipt,commands:n.ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS},current));

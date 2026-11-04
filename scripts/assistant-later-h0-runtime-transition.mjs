@@ -6,14 +6,15 @@ import {createReadStream} from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {isDeepStrictEqual as equal} from 'node:util';
-import {ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE} from './lib/assistant-later-h0-successor-source.mjs';
+import {ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE,assertScalar597LaterH0CheckpointInverse} from './lib/assistant-later-h0-successor-source.mjs';
 const {before:OLD,requireBinding:requireActiveAssistantBinding,requireOutput:requireActiveAssistantOutput,
   assertTarget:assertActiveAssistantTarget,assertCaller:assertActiveAssistantCaller}=ACTIVE;
-import {withAuthenticated587PredecessorSource,withAuthenticated588PredecessorSource,withAuthenticated590PredecessorSource,withAuthenticated591PredecessorSource,FROZEN591_CODE_SOURCE_PROVENANCE} from './check-assistant-later-h0-predecessor-source.mjs';
+import {withAuthenticated587PredecessorSource,withAuthenticated588PredecessorSource,withAuthenticated590PredecessorSource,withAuthenticated591PredecessorSource,FROZEN591_CODE_SOURCE_PROVENANCE,withSource594OriginalDataSource} from './check-assistant-later-h0-predecessor-source.mjs';
 import {readAuthenticatedFrozen587Predecessor,assertAuthenticatedFrozen587Snapshot,
   readAuthenticatedFrozen588Predecessor,assertAuthenticatedFrozen588Snapshot,
   readAuthenticatedFrozen590Predecessor,assertAuthenticatedFrozen590Snapshot,
-  readAuthenticatedFrozen591Predecessor,assertAuthenticatedFrozen591Snapshot} from './lib/authenticated-frozen586-predecessor.mjs';
+  readAuthenticatedFrozen591Predecessor,assertAuthenticatedFrozen591Snapshot,
+  readAuthenticatedSource594Predecessor,assertAuthenticatedSource594Snapshot} from './lib/authenticated-frozen586-predecessor.mjs';
 import {describeCurrentProtectedPrivateProductionRuntime,describeTargetProtectedPrivateProductionRuntime,createProtectedPrivateRuntimeClients} from './protected-private-production-runtime.mjs';
 import {migratePostCutoverPrivateRuntime,assertMetadataOnlyMigrationResult,assertRestoredOriginalInventory,
   assertExactRuntimeInventory,validatePredecessorIdentity} from './migrate-post-cutover-private-runtime.mjs';
@@ -23,8 +24,11 @@ import {ravScoreModelBinding} from '../js/core/ravscore-model-contract.js';
 import {ravScoreModelBinding as candidateBinding} from './rollback-assets/ravscore-model-contract.js';
 import {assertFrozen591CompactRuntimeContracts} from './lib/assistant-public591-runtime-contracts.mjs';
 // Ingen caller-/miljøvalgt familie. Begge profiler beholder deres egne opaque handles.
-assert(['assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor'].includes(ACTIVE.sourcePhase));
-const ACTIVE_PREDECESSOR=['assistant-public591-successor','assistant-installed593-origin591-successor'].includes(ACTIVE.sourcePhase)?Object.freeze({
+assert(['assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor','scalar597-later-h0-original594-successor'].includes(ACTIVE.sourcePhase));
+const ACTIVE_PREDECESSOR=ACTIVE.sourcePhase==='scalar597-later-h0-original594-successor'?Object.freeze({
+  withSource:withSource594OriginalDataSource,read:readAuthenticatedSource594Predecessor,
+  snapshot:assertAuthenticatedSource594Snapshot
+}):['assistant-public591-successor','assistant-installed593-origin591-successor'].includes(ACTIVE.sourcePhase)?Object.freeze({
   withSource:withAuthenticated591PredecessorSource,read:readAuthenticatedFrozen591Predecessor,
   snapshot:assertAuthenticatedFrozen591Snapshot
 }):ACTIVE.sourcePhase==='assistant-public590-successor'?Object.freeze({  withSource:withAuthenticated590PredecessorSource,read:readAuthenticatedFrozen590Predecessor,
@@ -52,6 +56,10 @@ export function assertAssistantOriginalRuntimeContracts(previous,current){
     assert.equal(previous?.continuationStateContractSha256,OLD.T);
     assert.equal(current?.continuationStateContractSha256,next.T);
     return assertFrozen591CompactRuntimeContracts(previous,current);
+  }
+  if(ACTIVE.sourcePhase==='scalar597-later-h0-original594-successor'){
+    assert.equal(previous?.continuationStateContractSha256,OLD.T);
+    assert.equal(current?.continuationStateContractSha256,next.T);
   }
   same({...previous,continuationStateContractSha256:next.T},current,
     'Only T changes in existing runtime-storage/public projection contracts');
@@ -118,7 +126,10 @@ async function projectOriginal(p,snapshot,frozenRoot,outputRoot,reportPath,check
   // Normal migration has already validated its exact FULL conditions diff,
   // normal hourly/public-pack rebind and exact unchanged other-file inventory.
   await saveRavScoreContinuationCheckpoint({sourcePath:path.join(outputRoot,'data/live/conditions.json'),checkpointPath});
-  const checkpoint=await json(checkpointPath);checkpointInverse(snapshot.checkpoint,checkpoint,next);
+  const checkpoint=await json(checkpointPath);
+  if(ACTIVE.sourcePhase==='scalar597-later-h0-original594-successor')
+    assertScalar597LaterH0CheckpointInverse(snapshot.checkpoint,checkpoint,next);
+  else checkpointInverse(snapshot.checkpoint,checkpoint,next);
   await assertRestoredOriginalInventory(p.sourceRoot,snapshot.verified.manifest);
   return {checkpoint,report,conditions:prepared};
 }

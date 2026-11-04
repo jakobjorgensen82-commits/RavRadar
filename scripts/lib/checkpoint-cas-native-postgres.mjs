@@ -649,7 +649,14 @@ export async function runNativeCheckpointSqlComparison({ repositoryRoot,
   includeNativeOriginalContinuity = false, includeAssistantLaterH0 = false,
   includeAssistantPublic587Successor = false, includeAssistantPublic588Successor = false,
   includeAssistantPublic590Successor = false, includeAssistantPublic591Successor = false,
-  includeInstalled593Original591Successor = false } = {}) {
+  includeInstalled593Original591Successor = false,includeScalar597LaterH0Successor=false } = {}) {
+  assert.equal(typeof includeScalar597LaterH0Successor,'boolean');
+  if(includeScalar597LaterH0Successor){
+    const {requireScalar597LaterH0Release}=await import('./assistant-later-h0-successor-source.mjs');
+    requireScalar597LaterH0Release();
+    assert(includeAccountStatisticsAssistant&&!includeNativeOriginalContinuity,
+      'Scalar native comparison appends exact installed594 SQL to the existing 54-migration baseline');
+  }
   assert.equal(typeof includeInstalled593Original591Successor,'boolean');
   assert(!includeInstalled593Original591Successor||includeAssistantPublic591Successor,
     'Installed593/original591 successor requires the genuine complete593 native phase');
@@ -709,7 +716,8 @@ export async function runNativeCheckpointSqlComparison({ repositoryRoot,
   assert(!includeCurrentMemoryWarmup || (includeNativeIdentity && includeStatisticsRevision), 'CurrentMemoryWarmup requires every unchanged historical native phase');
   assert(!includeNativeIdentity || includeStatisticsRevision, 'NEW requires the unchanged statistics230 phase');
   const programs = await nativePrograms();
-  const nativeProgramsBefore=includeAssistantPublic591Successor?await nativePostgresProgramIdentity(programs):null;
+  const nativeProgramsBefore=includeAssistantPublic591Successor||includeScalar597LaterH0Successor
+    ?await nativePostgresProgramIdentity(programs):null;
   assert.ok(typeof sourceDocumentAt === 'function' && typeof atHour === 'function'
     && typeof saveCheckpoint === 'function', 'normal fixture constructors are required');
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-checkpoint-pg-'));
@@ -1006,7 +1014,7 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
     let accountStatisticsAssistant;
     if(includeAccountStatisticsAssistant){
       nativePhase='ACCOUNT_STATISTICS_ASSISTANT';
-      if(includeNativeOriginalContinuity){
+      if(includeNativeOriginalContinuity||includeScalar597LaterH0Successor){
         const {withFrozen585CheckpointPostgresSource}=await import('../run-frozen585-native-continuity-postgres-source.mjs');
         accountStatisticsAssistant=await withFrozen585CheckpointPostgresSource(async({adapter,factory})=>
           adapter.compareAccountStatisticsAssistantSuccessor({psql,runSql,root,sourceDocumentAt:factory.sourceDocumentAt,
@@ -1100,6 +1108,12 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
       const {compareInstalled593Original591Successor}=await import('./assistant-later-h0-postgres.mjs');
       installed593Original591Successor=await compareInstalled593Original591Successor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
     }
+    let scalar597LaterH0Successor;
+    if(includeScalar597LaterH0Successor){
+      nativePhase='SCALAR597_LATER_H0_SUCCESSOR';
+      const {compareScalar597LaterH0Successor}=await import('./assistant-later-h0-postgres.mjs');
+      scalar597LaterH0Successor=await compareScalar597LaterH0Successor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
+    }
     completedReport={kind:'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',accountAssistant,currentGrid,
       ...(includeStatisticsRevision?{statisticsRevision}:{}),
       ...(includeNativeIdentity?{nativeIdentity}:{}),
@@ -1114,6 +1128,7 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
       ...(includeAssistantPublic590Successor?{assistantPublic590Successor}:{}),
       ...(includeAssistantPublic591Successor?{assistantPublic591Successor}:{}),
       ...(includeInstalled593Original591Successor?{installed593Original591Successor}:{}),
+      ...(includeScalar597LaterH0Successor?{scalar597LaterH0Successor}:{}),
       issuedSource:issued.sourceReceipt,postgresMajorVersion:programs.majorVersion,
       tcpEnabled:false,normalModelPartCount:673,sqlExecuted:true,migrationExecuted:true,
       migrationSQLSha256:hash(newSource),caseCount:reports.length,
@@ -1133,7 +1148,7 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
     const resolved=path.resolve(root), temp=path.resolve(os.tmpdir());
     assert.ok(path.dirname(resolved)===temp && path.basename(resolved).startsWith('rr-checkpoint-pg-'));
     if (cleanupAllowed && (!started || stopped)) await fs.rm(resolved,{recursive:true,force:false});
-    if(completedReport&&includeAssistantPublic591Successor){
+    if(completedReport&&nativeProgramsBefore){
       const after=await nativePostgresProgramIdentity(programs);
       assert.deepEqual(after,nativeProgramsBefore,'Selected native PostgreSQL programs changed during execution');
       completedReport.nativeProgramIdentity=after;

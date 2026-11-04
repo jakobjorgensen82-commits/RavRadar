@@ -112,7 +112,7 @@ export async function readAssistantLaterH0CanonicalSource(options){
   return readFixedCanonicalSource(ISSUED587_SOURCE,options,pins,migration);
 }
 async function readFixedCanonicalSource(profile,options,pins,migration){
-  assert(profile===ISSUED587_SOURCE||profile===PUBLIC587_SUCCESSOR_SOURCE||profile===PUBLIC588_SUCCESSOR_SOURCE||profile===PUBLIC590_SUCCESSOR_SOURCE||profile===PUBLIC591_SUCCESSOR_SOURCE||profile===INSTALLED593_ORIGINAL591_SOURCE,'ASSISTANT_SUCCESSOR_UNKNOWN_SOURCE_PROFILE');
+  assert(profile===ISSUED587_SOURCE||profile===PUBLIC587_SUCCESSOR_SOURCE||profile===PUBLIC588_SUCCESSOR_SOURCE||profile===PUBLIC590_SUCCESSOR_SOURCE||profile===PUBLIC591_SUCCESSOR_SOURCE||profile===INSTALLED593_ORIGINAL591_SOURCE||profile===SCALAR597_LATER_H0_SOURCE,'ASSISTANT_SUCCESSOR_UNKNOWN_SOURCE_PROFILE');
   let migrationsDirectory=path.join(ROOT,'supabase/migrations');
   if(options!==undefined){assert(options&&Object.getPrototypeOf(options)===Object.prototype);
     assert.deepEqual(Object.keys(options),['migrationsDirectory']);assert(path.isAbsolute(options.migrationsDirectory));
@@ -699,4 +699,134 @@ export const INACTIVE_INSTALLED593_ORIGINAL591_SUCCESSOR=Object.freeze({
   readCanonicalSource:readInstalled593Original591CanonicalSource,
   assertTarget:assertAssistantPublic591SuccessorTarget,assertCaller:assertAssistantPublic591SuccessorCaller,
 });
-export const ACTIVE_ASSISTANT_SUCCESSOR=INACTIVE_INSTALLED593_ORIGINAL591_SUCCESSOR;
+
+// The installed 594 code, database and authentic ordinary B/S are the parent.
+// This profile remains inactive until the fixed tuple and migration are issued.
+export const SCALAR597_LATER_H0_BEFORE=Object.freeze({
+  ...INSTALLED593_ORIGINAL591_BINDING,canonicalSha256:INSTALLED593_ORIGINAL591_OUTPUT.canonicalSha256,
+});
+export const SCALAR597_LATER_H0_ALIASES=Object.freeze([
+  Object.freeze({name:'ravradar_ravscore_checkpoint_ask594_state_valid',signature:'(jsonb,text)'}),
+  Object.freeze({name:'ravradar_ravscore_checkpoint_ask594_payload_valid',signature:'(jsonb,timestamptz)'}),
+]);
+export const SCALAR597_LATER_H0_BINDING=Object.freeze({
+  version:'20261104004400',
+  C:'23d97454ec9578e441a0482cf028ae347b2da5ee2ed97560246b486ee46364c5',
+  I:'68f118fbb07b252fab89f12ed0bf82816cd74b04afc306b00c2b3a8ccfe25c81',
+  T:'67665c10d2bd134fb598af1c36a41c2d53bb2820344c577ada30bcfbd6afe8e1',
+});
+export const SCALAR597_LATER_H0_OUTPUT=Object.freeze({
+  migrationSha256:'bc8735d450ed547d2c0116704a319ab8854a47e34bac86974541050260e2174e',
+  canonicalSha256:'ce3ecfa6578abbc8340940cb53365bfc3e576b2d0cf9e831cd1a915e89d03349',
+  checkpointContractSha256:'15421ae45004347dcce0c8f43c03a1067e50759e3f18045709cef8a2e2fd3ae0',
+  tripBindingPolicySha256:'eaed8a03ab5b6e5036cad1afdfcc15eba151d159264cd3c31a58bcccb6b9a897',
+});
+export const SCALAR597_LATER_H0_RELEASE='4.0.597';
+export function requireScalar597LaterH0Binding(){
+  assert.equal(arguments.length,0);
+  const binding=SCALAR597_LATER_H0_BINDING;
+  assert(binding&&Object.isFrozen(binding),'SCALAR597_LATER_H0_UNISSUED');
+  assert.deepEqual(Object.keys(binding).sort(),['C','I','T','version']);
+  assert.match(binding.version,/^[0-9]{14}$/);
+  assert(binding.version>'20261103012633','Scalar migration must follow reserved SOURCE alternatives');
+  for(const key of ['C','I','T'])assert.match(binding[key],/^[a-f0-9]{64}$/);
+  assert.equal(new Set(['C','I','T'].flatMap(key=>[binding[key],SCALAR597_LATER_H0_BEFORE[key]])).size,6);
+  return binding;
+}
+export function requireScalar597LaterH0Output(){
+  assert.equal(arguments.length,0);requireScalar597LaterH0Binding();
+  const output=SCALAR597_LATER_H0_OUTPUT;
+  assert(output&&Object.isFrozen(output),'SCALAR597_LATER_H0_SQL_UNISSUED');
+  assert.deepEqual(Object.keys(output).sort(),['canonicalSha256','checkpointContractSha256','migrationSha256','tripBindingPolicySha256']);
+  for(const value of Object.values(output))assert.match(value,/^[a-f0-9]{64}$/);
+  return output;
+}
+export function requireScalar597LaterH0Release(){
+  assert.equal(arguments.length,0);requireScalar597LaterH0Output();
+  return SCALAR597_LATER_H0_RELEASE;
+}
+export function scalar597LaterH0Migration(){
+  assert.equal(arguments.length,0);
+  const {version}=requireScalar597LaterH0Binding();
+  const id=version+'_scalar597_later_h0_original594_bound_successor';
+  return Object.freeze({version,id,filename:id+'.sql'});
+}
+export function scalar597LaterH0CheckpointContractFromBase(source,base){
+  assert.equal(arguments.length,2);
+  let text=assistantPublic591SuccessorCheckpointContractFromBase(source,base).definition;
+  for(const [index,alias] of SCALAR597_LATER_H0_ALIASES.entries()){
+    const whole=nativeOriginalContinuityDefinition(source,alias.name);
+    text+='\n-- assistant-later-h0-original594-'+(index===0?'state':'payload')+'-validator --\n'
+      +whole.slice(whole.indexOf('as $$')+5,whole.lastIndexOf('$$;')).replace(/\r\n?/g,'\n').trim();
+  }
+  return Object.freeze({id:base.id,definition:text,sha256:sha(text)});
+}
+const SCALAR597_LATER_H0_SOURCE=Object.freeze({
+  readPredecessor:readInstalled593Original591CanonicalSource,aliases:SCALAR597_LATER_H0_ALIASES,previousRelease:594,
+});
+export async function readScalar597LaterH0CanonicalSource(options){
+  assert(arguments.length<=1);
+  return readFixedCanonicalSource(SCALAR597_LATER_H0_SOURCE,options,requireScalar597LaterH0Output(),scalar597LaterH0Migration());
+}
+export function assertScalar597LaterH0Target(descriptor,targetReferenceAt){
+  assert.equal(arguments.length,2);
+  assert.equal(descriptor?.modelBinding?.modelBundleSha256,SCALAR597_LATER_H0_BEFORE.I);
+  assert.equal(descriptor?.contractHashes?.continuationStateContractSha256,SCALAR597_LATER_H0_BEFORE.T);
+  for(const value of [descriptor.productionReferenceAt,targetReferenceAt]){
+    assert.equal(typeof value,'string');assert.match(value,/^\d{4}-\d{2}-\d{2}T\d{2}:00:00\.000Z$/);
+    assert.equal(new Date(value).toISOString(),value);
+  }
+  assert(Date.parse(targetReferenceAt)>Date.parse(descriptor.productionReferenceAt),'SCALAR597_STRICTLY_LATER');
+  return true; // Pure input check. No authenticated handle is issued here.
+}
+
+export function assertScalar597LaterH0CheckpointInverse(old,incoming,next){
+  assert.equal(arguments.length,3);
+  const before=SCALAR597_LATER_H0_BEFORE;
+  assert.equal(old?.modelBinding?.modelBundleSha256,before.I);
+  assert.equal(old?.candidateGRollbackCompanion?.modelBinding?.modelBundleSha256,before.C);
+  assert.equal(old?.continuationStateContractSha256,before.T);
+  for(const key of ['I','C','T']){
+    assert.match(next[key],/^[a-f0-9]{64}$/);assert.notEqual(next[key],before[key]);
+  }
+  assert.equal(incoming?.modelBinding?.modelBundleSha256,next.I);
+  assert.equal(incoming?.candidateGRollbackCompanion?.modelBinding?.modelBundleSha256,next.C);
+  assert.equal(incoming?.continuationStateContractSha256,next.T);
+  const ids=Object.keys(old.states).sort();
+  assert.equal(ids.length,673);
+  assert.deepEqual(Object.keys(old.candidateGRollbackCompanion.states).sort(),ids);
+  assert.deepEqual(Object.keys(incoming.states).sort(),ids);
+  assert.deepEqual(Object.keys(incoming.candidateGRollbackCompanion.states).sort(),ids);
+  const inverse=structuredClone(incoming);
+  inverse.modelBinding.modelBundleSha256=before.I;
+  inverse.candidateGRollbackCompanion.modelBinding.modelBundleSha256=before.C;
+  inverse.continuationStateContractSha256=before.T;
+  for(const id of ids){
+    assert.equal(inverse.states[id].modelBundleSha256,next.I);
+    inverse.states[id].modelBundleSha256=old.states[id].modelBundleSha256;
+    const candidate=inverse.candidateGRollbackCompanion.states[id];
+    if(Object.hasOwn(candidate,'modelBundleSha256')){
+      assert.equal(candidate.modelBundleSha256,next.C);
+      assert(Object.hasOwn(old.candidateGRollbackCompanion.states[id],'modelBundleSha256'));
+      candidate.modelBundleSha256=old.candidateGRollbackCompanion.states[id].modelBundleSha256;
+    }
+  }
+  for(const key of ['generationSha256','stateSha256']){
+    inverse[key]=old[key];
+    if(Object.hasOwn(old.candidateGRollbackCompanion,key))
+      inverse.candidateGRollbackCompanion[key]=old.candidateGRollbackCompanion[key];
+  }
+  assert.deepEqual(inverse,old,'Whole original594 checkpoint inverse');
+  return true;
+}
+
+export const INACTIVE_SCALAR597_LATER_H0_SUCCESSOR=Object.freeze({
+  sourcePhase:'scalar597-later-h0-original594-successor',
+  before:SCALAR597_LATER_H0_BEFORE,databaseBefore:SCALAR597_LATER_H0_BEFORE,originalStateFamily:'594',
+  binding:SCALAR597_LATER_H0_BINDING,output:SCALAR597_LATER_H0_OUTPUT,
+  requireBinding:requireScalar597LaterH0Binding,requireOutput:requireScalar597LaterH0Output,
+  requireRelease:requireScalar597LaterH0Release,migration:scalar597LaterH0Migration,
+  readCanonicalSource:readScalar597LaterH0CanonicalSource,
+  assertTarget:assertScalar597LaterH0Target,assertCaller:assertAssistantPublic591SuccessorCaller,
+});
+export const ACTIVE_ASSISTANT_SUCCESSOR=INACTIVE_SCALAR597_LATER_H0_SUCCESSOR;

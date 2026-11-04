@@ -8,9 +8,11 @@ import {verifyAssistantPublic591SuccessorPhaseReceipt,verifyAssistantPublic591V2
   verifyAssistantPublic591Metadata,ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND,
   ASSISTANT_PUBLIC591_V2_KIND,INSTALLED593_ORIGINAL591_PHASE_KIND,
   verifyInstalled593Original591PhaseReceipt,INSTALLED593_ORIGINAL591_V2_KIND,
-  verifyInstalled593Original591V2PhaseReceipt,sourceImpactEvidenceBudget} from './native-postgres-evidence.mjs';
+  verifyInstalled593Original591V2PhaseReceipt,sourceImpactEvidenceBudget,
+  SCALAR597_LATER_H0_PHASE_KIND,verifyScalar597LaterH0PhaseReceipt} from './native-postgres-evidence.mjs';
 import {ORIGIN as NATIONAL_ORIGIN,COMMAND as NATIONAL_COMMAND,STEP as NATIONAL_STEP,
-  ASSISTANT_PUBLIC591_SUCCESSOR_SOURCE_COMMAND,INSTALLED593_ORIGINAL591_SOURCE_COMMAND,installed593Original591NativeClaims}
+  ASSISTANT_PUBLIC591_SUCCESSOR_SOURCE_COMMAND,INSTALLED593_ORIGINAL591_SOURCE_COMMAND,installed593Original591NativeClaims,
+  scalar597LaterH0NativeClaims}
   from './national584-source-evidence.mjs';
 
 export const SOURCE_IMPACT_FULL_BASELINE_KIND='RAVRADAR_SOURCE_IMPACT_FULL_BASELINE_V1';
@@ -72,16 +74,20 @@ function artifactMetadata(metadata,reference,kind,phase){
   assert(time(metadata.created_at)>=time(start)&&time(metadata.created_at)<=time(end));return metadata;
 }
 
-function nativeProof(proof,reference,current){
+function nativeProof(proof,reference,current,releaseVersion){
+  if(releaseVersion==='4.0.597')assert.equal(proof.kind,SCALAR597_LATER_H0_PHASE_KIND);
+  const scalar597=proof.kind===SCALAR597_LATER_H0_PHASE_KIND;
+  if(scalar597)assert.equal(releaseVersion,'4.0.597');
   assert([1,2].includes(proof.schemaVersion));
   const v2Installed594=proof.kind===INSTALLED593_ORIGINAL591_V2_KIND;
   const installed594=proof.kind===INSTALLED593_ORIGINAL591_PHASE_KIND;
-  assert.equal(proof.kind,v2Installed594?INSTALLED593_ORIGINAL591_V2_KIND:proof.schemaVersion===2?ASSISTANT_PUBLIC591_V2_KIND:
+  assert.equal(proof.kind,scalar597?SCALAR597_LATER_H0_PHASE_KIND:v2Installed594?INSTALLED593_ORIGINAL591_V2_KIND:proof.schemaVersion===2?ASSISTANT_PUBLIC591_V2_KIND:
     installed594?INSTALLED593_ORIGINAL591_PHASE_KIND:ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND);
   assert.equal(proof.repository,reference.repository);assert.equal(proof.headSha,reference.producerHead);
   assert.equal(proof.sourceTreeSha256,reference.sourceTreeSha256);assert.equal(proof.privatePayloadIncluded,false);
   const native=proof.nativePostgres;
-  if(v2Installed594){assert.equal(proof.schemaVersion,2);verifyInstalled593Original591V2PhaseReceipt(native,current);}
+  if(scalar597){assert.equal(proof.schemaVersion,1);verifyScalar597LaterH0PhaseReceipt(native,current);}
+  else if(v2Installed594){assert.equal(proof.schemaVersion,2);verifyInstalled593Original591V2PhaseReceipt(native,current);}
   else if(installed594)verifyInstalled593Original591PhaseReceipt(native,current);
   else if(proof.schemaVersion===2)verifyAssistantPublic591V2PhaseReceipt(native,current);
   else verifyAssistantPublic591SuccessorPhaseReceipt(native,current);
@@ -98,25 +104,30 @@ function historicalNational(proof,current,native){
   assert.equal(national.historicalInput?.head,NATIONAL_ORIGIN.head);
   assert.equal(national.historicalInput?.tree,NATIONAL_ORIGIN.tree);
   assert.equal(national.historicalInput?.content,NATIONAL_ORIGIN.content);
-  for(const key of ['current585NationalExecutionClaimed','current586NationalExecutionClaimed',
-    'currentAssistantLaterH0NationalExecutionClaimed','currentAssistantPublic587SuccessorNationalExecutionClaimed',
-    'currentAssistantPublic588SuccessorNationalExecutionClaimed','currentAssistantPublic591SuccessorNationalExecutionClaimed'])
-    assert.equal(national[key],false);
-  for(const [key,value]of Object.entries(national))if(key.endsWith('NationalExecutionClaimed'))assert.equal(value,false);
-  const installed594=native.phase==='INSTALLED593_ORIGINAL591_SUCCESSOR';
-  const claim=installed594?national.currentInstalled593Original591SuccessorNative:national.currentAssistantPublic591SuccessorNative;
-  assert.equal(claim?.status,native.status);assert.equal(claim.executedInThisRun,native.executedInThisRun);
-  assert.deepEqual(claim.origin,native.origin);assert.equal(claim.separatelyRequired,true);
-  assert.equal(claim.phase,installed594?'assistant-installed593-origin591-successor':'assistant-public591-successor');
-  assert.equal(claim.eligibleForReuse,native.eligibleForReuse);
-  assert.deepEqual(installed594?national.currentInstalled593Original591SuccessorSource:national.currentAssistantPublic591SuccessorSource,
-    {command:'npm run test:assistant-later-h0-source',actualCommand:installed594?INSTALLED593_ORIGINAL591_SOURCE_COMMAND:
-      ASSISTANT_PUBLIC591_SUCCESSOR_SOURCE_COMMAND,separatelyRequired:true});
-  if(installed594){
-    assert.equal(national.currentInstalled593Original591SuccessorNationalExecutionClaimed,false);
-    for(const [key,expected]of Object.entries(installed593Original591NativeClaims(native,current)))
-      assert.deepEqual(national[key],expected,'Every composite594 native claim preserves execution/origin');
+  if(native.kind===SCALAR597_LATER_H0_PHASE_KIND){
+    for(const [key,expected]of Object.entries(scalar597LaterH0NativeClaims(native,current)))
+      assert.deepEqual(national[key],expected,'The current scalar native claim requires actual 597 SQL');
+  }else{
+    for(const key of ['current585NationalExecutionClaimed','current586NationalExecutionClaimed',
+      'currentAssistantLaterH0NationalExecutionClaimed','currentAssistantPublic587SuccessorNationalExecutionClaimed',
+      'currentAssistantPublic588SuccessorNationalExecutionClaimed','currentAssistantPublic591SuccessorNationalExecutionClaimed'])
+      assert.equal(national[key],false);
+    const installed594=native.phase==='INSTALLED593_ORIGINAL591_SUCCESSOR';
+    const claim=installed594?national.currentInstalled593Original591SuccessorNative:national.currentAssistantPublic591SuccessorNative;
+    assert.equal(claim?.status,native.status);assert.equal(claim.executedInThisRun,native.executedInThisRun);
+    assert.deepEqual(claim.origin,native.origin);assert.equal(claim.separatelyRequired,true);
+    assert.equal(claim.phase,installed594?'assistant-installed593-origin591-successor':'assistant-public591-successor');
+    assert.equal(claim.eligibleForReuse,native.eligibleForReuse);
+    assert.deepEqual(installed594?national.currentInstalled593Original591SuccessorSource:national.currentAssistantPublic591SuccessorSource,
+      {command:'npm run test:assistant-later-h0-source',actualCommand:installed594?INSTALLED593_ORIGINAL591_SOURCE_COMMAND:
+        ASSISTANT_PUBLIC591_SUCCESSOR_SOURCE_COMMAND,separatelyRequired:true});
+    if(installed594){
+      assert.equal(national.currentInstalled593Original591SuccessorNationalExecutionClaimed,false);
+      for(const [key,expected]of Object.entries(installed593Original591NativeClaims(native,current)))
+        assert.deepEqual(national[key],expected,'Every composite594 native claim preserves execution/origin');
+    }
   }
+  for(const [key,value]of Object.entries(national))if(key.endsWith('NationalExecutionClaimed'))assert.equal(value,false);
   if(national.status==='EXECUTED'){
     assert.equal(national.sourceScope,'HISTORICAL_584_NATIONAL_ONLY');assert.equal(national.origin,null);
     assert.equal(national.frozenHead,NATIONAL_ORIGIN.head);assert.equal(national.frozenTree,NATIONAL_ORIGIN.tree);
@@ -165,6 +176,13 @@ export async function qualifySourceImpactFullBaseline(input,dependencies){
     const gitTree=text(['rev-parse',reference.mergeCommit+'^{tree}']);assert.match(gitTree,/^[a-f0-9]{40}$/);
     assert.equal(text(['rev-parse',reference.producerHead+'^{tree}']),gitTree);
     assert.equal(sourceTreeContentSha256(reference.mergeCommit,{git}),reference.sourceTreeSha256);
+    // This cheap path inherits a current native phase only from the same release.
+    const version=commit=>{
+      const raw=git(['cat-file','blob',commit+':package.json']);assert(raw.length<=65536);
+      const value=JSON.parse(raw).version;assert.match(value,/^4\.0\.\d+$/);return value;
+    };
+    const releaseVersion=version(input.candidateCommit),baselineVersion=version(reference.producerHead);
+    if(releaseVersion==='4.0.597'||baselineVersion==='4.0.597')assert.equal(releaseVersion,baselineVersion);
     const base='/repos/'+reference.repository+'/actions',seen=new Map();let calls=0;
     const checked=(value,zip)=>{remainingBudget();
       if(zip){assert(Buffer.isBuffer(value)&&value.length<=ZIP_LIMIT);return value;}
@@ -220,7 +238,7 @@ export async function qualifySourceImpactFullBaseline(input,dependencies){
     assert.equal(full.privatePayloadIncluded,false);assert.equal(full.qualification,undefined);
     const current={run:reference.runId,attempt:1,head:reference.producerHead,
       pullRequest:reference.pullRequest,branch:run.head_branch};
-    const native=nativeProof(phaseProof,reference,current);assert.deepEqual(full.nativePostgres,native);
+    const native=nativeProof(phaseProof,reference,current,baselineVersion);assert.deepEqual(full.nativePostgres,native);
     historicalNational(full,current,native);
     assert.deepEqual(await json(runRoute),run);
     for(const kind of ['native','final'])assert.deepEqual(await json(base+'/artifacts/'+metadata[kind].id),metadata[kind]);

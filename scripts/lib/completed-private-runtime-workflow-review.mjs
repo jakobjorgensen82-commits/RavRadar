@@ -275,9 +275,23 @@ for (const row of Object.values(pagesPublicProjectionWorkflowReview.roles)) {
 }
 Object.freeze(pagesPublicProjectionWorkflowReview.roles);
 
+// Test-only release597 identification for the exact PR804 build workflow.
+export function inverseRelease597WorkflowUserAgents(source, role) {
+  const after = '191471c829c87ada40096125b80ae52a004a9b2c48464915ceb5d291ddaf82ba';
+  if (role !== 'build' || sha(source) !== after) return source;
+  assert.equal(Buffer.byteLength(source), 298105);
+  assert.equal(source.split('RavRadar/4.0.597').length, 6, 'Exactly five reviewed597 UA changes');
+  const previous = source.replaceAll('RavRadar/4.0.597', 'RavRadar/4.0.594');
+  assert.equal(sha(previous), pagesPublicProjectionWorkflowReview.roles.build.after.sha256,
+    'Every byte of the reviewed Pages build survives the597 UA inverse');
+  assert.equal(previous.replaceAll('RavRadar/4.0.594', 'RavRadar/4.0.597'), source);
+  return previous;
+}
+
 export function inversePagesPublicProjectionWorkflow(source, role) {
   assert.equal(arguments.length, 2, 'PAGES_PUBLIC_PROJECTION_WORKFLOW_ARGUMENTS');
   assert.equal(typeof source, 'string', 'PAGES_PUBLIC_PROJECTION_WORKFLOW_TYPE');
+  source = inverseRelease597WorkflowUserAgents(source, role);
   const { roles } = pagesPublicProjectionWorkflowReview;
   const row = typeof role === 'string' && Object.hasOwn(roles, role) ? roles[role] : null;
   if (!row || sha(source) !== row.after.sha256) return source;

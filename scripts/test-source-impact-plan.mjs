@@ -1,18 +1,25 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import {execFileSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
 import {planSourceImpact as plan} from './source-impact-plan.mjs';
 import {buildSourceValidationPlan,expandSourceCommands} from './validate-source-once.mjs';
-const scripts=JSON.parse(fs.readFileSync(new URL('../package.json',import.meta.url),'utf8')).scripts;
+const {version,scripts}=JSON.parse(fs.readFileSync(new URL('../package.json',import.meta.url),'utf8'));
 const normal=buildSourceValidationPlan(scripts);
 const full=[...normal.preflight,...normal.remaining,normal.gate];
-const read=path=>fs.readFileSync(new URL('../'+path,import.meta.url),'utf8');
+const root=fileURLToPath(new URL('../',import.meta.url));
+const reviewed594='84051e2d700595837ebf80426410dcbef8e08704';
+const read=path=>execFileSync('git',['-c','protocol.allow=never','-C',root,'cat-file','blob',reviewed594+':'+path],{
+  encoding:'utf8',timeout:10000,maxBuffer:1024*1024,
+  env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0'},
+});
 const row=(path,before,after)=>({path,before,after,beforeMode:'100644',afterMode:'100644'});
 const about=read('js/ui/about-i18n.js'),article=read('js/ui/about-explainer-i18n.js');
 const learn=read('js/ui/learn-i18n-en.js');
 const learnDa=read('js/ui/learn-i18n.js'),learnDe=read('js/ui/learn-i18n-de.js');
 const currentI18nImport=/from '(\.\.\/i18n\.js\?v=4\.0\.\d+)';/.exec(about)?.[1];
-assert.equal(typeof currentI18nImport,'string','The negative import fixture must bind the actual current import');
-assert.equal(about.split(currentI18nImport).length,2,'Exactly one current main i18n import');
+assert.equal(currentI18nImport,'../i18n.js?v=4.0.594','The historical negative fixture must bind the reviewed import');
+assert.equal(about.split(currentI18nImport).length,2,'Exactly one reviewed main i18n import');
 let count=0;
 function targeted(rows,expected){
   const p=plan(rows);assert.equal(p.selection,'TARGETED');assert.deepEqual(p.profiles,expected);
@@ -57,6 +64,13 @@ for(const [path,current,oldText,newText,profile]of [
     assert.notEqual(mixed,current);assert.notEqual(mixed,previous);
     fallback([row(path,mixed,mixed.replace(oldText,newText))]);
   }
+}
+if(version==='4.0.597'){
+  const path='js/ui/about-i18n.js',current=fs.readFileSync(new URL('../'+path,import.meta.url),'utf8');
+  assert(current.includes('../i18n.js?v='+version));
+  const textOnly=current.replace("'about.header':'Om projektet'","'about.header':'Om RavRadar'");
+  assert.notEqual(current,textOnly);
+  fallback([row(path,current,textOnly)]);
 }
 const docs=row('docs/rdks/90_INDEX/CURRENT_TRUTH.md','# Old\n','# New\n');
 targeted([docs],['documentation']);

@@ -51,12 +51,18 @@ export const ASSISTANT_PUBLIC591_SUCCESSOR_SCRIPT='set -euo pipefail\n'+ASSISTAN
 export const INSTALLED593_ORIGINAL591_COMMANDS=Object.freeze([ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS[0],
   ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS[1]+' --assistant-installed593-origin591-successor']);
 export const INSTALLED593_ORIGINAL591_SCRIPT='set -euo pipefail\n'+INSTALLED593_ORIGINAL591_COMMANDS.join('\n')+'\n';
-export const ACTIVE_COMMANDS=ACTIVE.sourcePhase==='assistant-installed593-origin591-successor'
+export const SCALAR597_LATER_H0_PHASE='scalar597-later-h0-original594-successor';
+export const SCALAR597_LATER_H0_PHASE_KIND='RAVRADAR_SCALAR597_LATER_H0_POSTGRES_PHASE_V1';
+export const SCALAR597_LATER_H0_COMMANDS=Object.freeze(['node scripts/test-protected-ravscore-continuation-checkpoint.mjs --scalar597-later-h0']);
+export const SCALAR597_LATER_H0_SCRIPT='set -euo pipefail\n'+SCALAR597_LATER_H0_COMMANDS.join('\n')+'\n';
+export const ACTIVE_COMMANDS=ACTIVE.sourcePhase===SCALAR597_LATER_H0_PHASE
+  ?SCALAR597_LATER_H0_COMMANDS:ACTIVE.sourcePhase==='assistant-installed593-origin591-successor'
   ?INSTALLED593_ORIGINAL591_COMMANDS:ACTIVE.sourcePhase==='assistant-public591-successor'
   ?ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS:ACTIVE.sourcePhase==='assistant-public590-successor'
   ?ASSISTANT_PUBLIC590_SUCCESSOR_COMMANDS:ACTIVE.sourcePhase==='assistant-public588-successor'
   ?ASSISTANT_PUBLIC588_SUCCESSOR_COMMANDS:ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS;
-export const ACTIVE_NATIVE_SCRIPT=ACTIVE.sourcePhase==='assistant-installed593-origin591-successor'
+export const ACTIVE_NATIVE_SCRIPT=ACTIVE.sourcePhase===SCALAR597_LATER_H0_PHASE
+  ?SCALAR597_LATER_H0_SCRIPT:ACTIVE.sourcePhase==='assistant-installed593-origin591-successor'
   ?INSTALLED593_ORIGINAL591_SCRIPT:ACTIVE.sourcePhase==='assistant-public591-successor'
   ?ASSISTANT_PUBLIC591_SUCCESSOR_SCRIPT:ACTIVE.sourcePhase==='assistant-public590-successor'
   ?ASSISTANT_PUBLIC590_SUCCESSOR_SCRIPT:ACTIVE.sourcePhase==='assistant-public588-successor'
@@ -1573,39 +1579,135 @@ export async function completeInstalled593Original591Execution(local,selectedPro
   verifyInstalled593Original591V2PhaseReceipt(receipt,local.current);return receipt;
 }
 
-// Forward all normal output. Retain only a bounded unique fixed runtime line.
-export function nativeProgramMarkerCollector(phase='ASSISTANT_PUBLIC591_SUCCESSOR'){
-  assert(['ASSISTANT_PUBLIC591_SUCCESSOR','INSTALLED593_ORIGINAL591_SUCCESSOR'].includes(phase));
-  let prefix='',body='',matching=null,markers=[],invalid=false;
-  const start='{"kind":"'+PROGRAM_MARKER+'",';
+// Each native completion marker is a single complete bounded stdout line.
+function nativeMarkerCollector(kind,limit){
+  let prefix='',body='',matching=null,marker,invalid=false;
+  const start='{"kind":"'+kind+'",';
   return {write(chunk){
     for(const character of String(chunk)){
       if(character==='\n'){
-        if(matching===true){try{assert(body.length<=8192);markers.push(JSON.parse(body));}catch{invalid=true;}}
+        if(matching===true){
+          try{assert(body.length<=limit&&marker===undefined);marker=JSON.parse(body);}
+          catch{invalid=true;}
+        }
         prefix='';body='';matching=null;continue;
       }
       if(matching===false)continue;
-      if(matching===true){if(body.length<8193)body+=character;else invalid=true;continue;}
+      if(matching===true){if(body.length<limit+1)body+=character;else invalid=true;continue;}
       prefix+=character;
       if(!start.startsWith(prefix)){matching=false;prefix='';}
       else if(prefix===start){matching=true;body=prefix;prefix='';}
     }
   },finish(){
-    assert(!invalid&&matching!==true&&markers.length===1,'Unique complete bounded native program marker required');
-    const marker=markers[0];assert.equal(marker.kind,PROGRAM_MARKER);assert.equal(marker.phase,phase);
+    assert(!invalid&&matching!==true&&marker!==undefined,'Unique complete bounded native program marker required');
+    assert.equal(marker.kind,kind);return marker;
+  }};
+}
+export function nativeProgramMarkerCollector(phase='ASSISTANT_PUBLIC591_SUCCESSOR'){
+  assert(['ASSISTANT_PUBLIC591_SUCCESSOR','INSTALLED593_ORIGINAL591_SUCCESSOR'].includes(phase));
+  const collector=nativeMarkerCollector(PROGRAM_MARKER,8192);
+  return {write:collector.write,finish(){
+    const marker=collector.finish();assert.equal(marker.phase,phase);
     return verifyAssistantPublic591Programs(marker.programs);
   }};
 }
-async function executeAssistantPublic591Native(env,phase='ASSISTANT_PUBLIC591_SUCCESSOR'){
-  const collector=nativeProgramMarkerCollector(phase);
+async function executeMarkedNative(env,script,collector){
   const result=await new Promise(resolve=>{
-    const child=spawn('/usr/bin/bash',['--noprofile','--norc','-e','-o','pipefail','-c',ACTIVE_NATIVE_SCRIPT],
+    const child=spawn('/usr/bin/bash',['--noprofile','--norc','-e','-o','pipefail','-c',script],
       {env,stdio:['inherit','pipe','inherit']});let error=null;
     child.stdout.setEncoding('utf8');child.stdout.on('data',chunk=>{process.stdout.write(chunk);collector.write(chunk);});
     child.on('error',value=>{error=value;});child.on('close',(status,signal)=>resolve({status,signal,error}));
   });
   if(result.error||result.signal||result.status!==0){process.exitCode=result.status||1;return null;}
-  try{return collector.finish();}catch{return null;}
+  return collector.finish();
+}
+async function executeAssistantPublic591Native(env,phase='ASSISTANT_PUBLIC591_SUCCESSOR'){
+  try{return await executeMarkedNative(env,ACTIVE_NATIVE_SCRIPT,nativeProgramMarkerCollector(phase));}
+  catch{return null;}
+}
+
+const SCALAR597_RESULT='SCALAR597_LATER_H0_SUCCESSOR';
+const SCALAR597_REPORT_MARKER='NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON';
+const scalar597ReportTruths=['sqlExecuted','wholeMigrationExecuted','oldFunctionsAndOidsPreserved',
+  'allOriginalDefinitionsPreserved','exactCheckpointContract','exactTripContract','schema2Catalog',
+  'normalProtectedJsonbRoundtrip','originalDigestsPreserved','trueOld594Fixtures','currentNormalFixtures',
+  'old594ModelNotRetagged','wholeMetadataInverse','strictlyLater594ToNextOnly','sqlIsNotOriginAuthentication'];
+const scalar597IntermediateTruths=['oldActiveAfterSql','nextRefusedBeforeActivation','pendingBothRefused',
+  'nextActiveAfterCompletion','oldRefusedAfterCompletion','activeDocumentsUnchangedBySql',
+  'quotaFunctionAndAdmissionUnchanged','quotaServiceRoleWorking'];
+export function scalar597NativeReportProjection(report,{migrationVersion,databaseBeforeVersion,selectedPrograms}){
+  assert.equal(report?.kind,SCALAR597_REPORT_MARKER);
+  assert.equal(report?.sqlExecuted,true);assert.equal(report?.migrationExecuted,true);
+  assert.equal(report?.tcpEnabled,false);assert.equal(report?.normalModelPartCount,673);
+  const {majorVersion:postgresMajorVersion}=verifyAssistantPublic591Programs(selectedPrograms);
+  assert.deepEqual(report.nativeProgramIdentity,selectedPrograms,'Exact executed native PostgreSQL quartet');
+  assert.match(migrationVersion,/^\d{14}$/);assert.match(databaseBeforeVersion,/^\d{14}$/);
+  assert(migrationVersion>databaseBeforeVersion);
+  assert.equal(report.postgresMajorVersion,postgresMajorVersion);
+  for(const arm of ['nativeOriginalContinuity','assistantLaterH0','assistantPublic587Successor',
+    'assistantPublic588Successor','assistantPublic590Successor','assistantPublic591Successor',
+    'installed593Original591Successor'])assert(!Object.hasOwn(report,arm),'Scalar native proof must use the single current arm');
+  const proof=report.scalar597LaterH0Successor;
+  const observed={kind:SCALAR597_RESULT,sourceMigrationInventory:62,databaseBeforeVersion,
+    originalStateRelease:594,migrationVersion,partCount:673,checkpointOidSlots:43,contractBodies:46,
+    productionSeedAuthenticated:false};
+  for(const key of scalar597ReportTruths)observed[key]=true;
+  observed.intermediateRuntime=Object.fromEntries(scalar597IntermediateTruths.map(key=>[key,true]));
+  for(const [key,value]of Object.entries(observed))assert.deepEqual(proof?.[key],value,'Scalar native report: '+key);
+  return {kind:SCALAR597_REPORT_MARKER,sqlExecuted:true,migrationExecuted:true,tcpEnabled:false,
+    normalModelPartCount:673,postgresMajorVersion,nativeProgramIdentity:selectedPrograms,scalar597LaterH0Successor:observed};
+}
+export function scalar597NativeReportCollector(expected){
+  const collector=nativeMarkerCollector(SCALAR597_REPORT_MARKER,65536);
+  return {write:collector.write,finish(){return scalar597NativeReportProjection(collector.finish(),expected);}};
+}
+
+function scalar597PhaseIdentity(){
+  assert.equal(ACTIVE.sourcePhase,SCALAR597_LATER_H0_PHASE);
+  return {releaseVersion:ACTIVE.requireRelease(),binding:ACTIVE.requireBinding(),output:ACTIVE.requireOutput(),
+    databaseBefore:ACTIVE.databaseBefore};
+}
+export function verifyScalar597LaterH0PhaseReceipt(native,current){
+  const identity=scalar597PhaseIdentity();
+  assert.match(current.head,/^[a-f0-9]{40}$/);
+  assert(Number.isSafeInteger(current.run)&&current.run>ORIGIN.run);
+  assert(Number.isSafeInteger(current.attempt)&&current.attempt>0);
+  assert(Number.isSafeInteger(current.pullRequest)&&current.pullRequest>0);
+  assert(typeof current.branch==='string'&&current.branch.length>0&&current.branch.length<=255);
+  const runtime=verifyAssistantPublic591Runtime(native?.runtime);
+  const report=scalar597NativeReportProjection(native.report,{migrationVersion:identity.binding.version,
+    databaseBeforeVersion:identity.databaseBefore.version,selectedPrograms:runtime.selectedPrograms});
+  assert.deepEqual(native,{schemaVersion:1,kind:SCALAR597_LATER_H0_PHASE_KIND,phase:SCALAR597_RESULT,
+    sourcePhase:SCALAR597_LATER_H0_PHASE,...identity,current,commands:SCALAR597_LATER_H0_COMMANDS,
+    status:'EXECUTED',executedInThisRun:true,origin:null,eligibleForReuse:false,runtime,report});
+  return native;
+}
+
+async function executeScalar597LaterH0(){
+  const identity=scalar597PhaseIdentity();
+  const env={...process.env},head=env.SOURCE_GATE_HEAD_SHA;
+  assert.equal(env.GITHUB_EVENT_NAME,'pull_request');assert.equal(env.GITHUB_REPOSITORY,ORIGIN.repository);
+  const verifyCheckout=()=>{
+    assert.match(head,/^[a-f0-9]{40}$/);
+    assert.equal(git(['rev-parse','HEAD^{commit}']).trim(),head);
+    assert.equal(git(['status','--porcelain','--untracked-files=no']).trim(),'');
+    assert.equal(git(['for-each-ref','refs/replace']).trim(),'');
+    assert.equal(git(['rev-parse','--is-shallow-repository']).trim(),'false');
+  };
+  verifyCheckout();
+  const current={run:Number(env.GITHUB_RUN_ID),attempt:Number(env.GITHUB_RUN_ATTEMPT),head,
+    pullRequest:Number(env.PULL_REQUEST_NUMBER),branch:env.GITHUB_HEAD_REF};
+  const runtime=await assistantPublic591Runtime();
+  for(const key of ['GITHUB_TOKEN','SOURCE_GATE_HEAD_SHA','PULL_REQUEST_NUMBER'])delete env[key];
+  const report=await executeMarkedNative(env,SCALAR597_LATER_H0_SCRIPT,scalar597NativeReportCollector({
+    migrationVersion:identity.binding.version,databaseBeforeVersion:identity.databaseBefore.version,
+    selectedPrograms:runtime.selectedPrograms}));
+  if(!report)return;
+  verifyCheckout();
+  verifyAssistantPublic591Runtime(runtime,await assistantPublic591Runtime());
+  await record({schemaVersion:1,kind:SCALAR597_LATER_H0_PHASE_KIND,phase:SCALAR597_RESULT,
+    sourcePhase:SCALAR597_LATER_H0_PHASE,...identity,current,commands:SCALAR597_LATER_H0_COMMANDS,
+    status:'EXECUTED',executedInThisRun:true,origin:null,eligibleForReuse:false,runtime,report});
 }
 
 async function record(receipt) {
@@ -1614,7 +1716,8 @@ async function record(receipt) {
   assert.equal(proof.contractId,'weather-source-gate-content-v2'); assert.equal(proof.privatePayloadIncluded,false);
   const current={run:Number(process.env.GITHUB_RUN_ID),attempt:Number(process.env.GITHUB_RUN_ATTEMPT),
     head:proof.headSha,pullRequest:Number(process.env.PULL_REQUEST_NUMBER),branch:process.env.GITHUB_HEAD_REF};
-  if(receipt.kind===INSTALLED593_ORIGINAL591_V2_KIND)verifyInstalled593Original591V2PhaseReceipt(receipt,current);
+  if(ACTIVE.sourcePhase===SCALAR597_LATER_H0_PHASE)verifyScalar597LaterH0PhaseReceipt(receipt,current);
+  else if(receipt.kind===INSTALLED593_ORIGINAL591_V2_KIND)verifyInstalled593Original591V2PhaseReceipt(receipt,current);
   else if(receipt.phase==='INSTALLED593_ORIGINAL591_SUCCESSOR')verifyInstalled593Original591PhaseReceipt(receipt,current);
   else if(receipt.schemaVersion===2)verifyAssistantPublic591V2PhaseReceipt(receipt,current);
   else if(receipt.phase==='NATIVE_ORIGINAL_CONTINUITY')verifyCurrent586PhaseReceipt(receipt,current);
@@ -1625,7 +1728,9 @@ async function record(receipt) {
   else verifyAssistantLaterH0PhaseReceipt(receipt,current);
   proof.nativePostgres=receipt; await fs.writeFile(file,JSON.stringify(proof)+'\n');
   const phaseProof={
-    schemaVersion:receipt.schemaVersion===2?2:1,kind:receipt.schemaVersion===2?receipt.kind:receipt.phase==='INSTALLED593_ORIGINAL591_SUCCESSOR'?INSTALLED593_ORIGINAL591_PHASE_KIND:
+    schemaVersion:receipt.schemaVersion===2?2:1,
+    kind:receipt.schemaVersion===2||receipt.kind===SCALAR597_LATER_H0_PHASE_KIND?receipt.kind:
+      receipt.phase==='INSTALLED593_ORIGINAL591_SUCCESSOR'?INSTALLED593_ORIGINAL591_PHASE_KIND:
       receipt.phase==='NATIVE_ORIGINAL_CONTINUITY'?CURRENT586_PHASE_KIND:
       receipt.phase==='ASSISTANT_PUBLIC591_SUCCESSOR'?ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND:
       receipt.phase==='ASSISTANT_PUBLIC590_SUCCESSOR'?ASSISTANT_PUBLIC590_SUCCESSOR_PHASE_KIND:
@@ -1634,10 +1739,11 @@ async function record(receipt) {
     repository:proof.repository,headSha:proof.headSha,sourceTreeSha256:proof.sourceTreeSha256,
     privatePayloadIncluded:false,nativePostgres:receipt,
   };
-  const raw=JSON.stringify(phaseProof)+'\n';if(receipt.schemaVersion===2)assert(Buffer.byteLength(raw)<=32768);
+  const raw=JSON.stringify(phaseProof)+'\n';if(receipt.schemaVersion===2||receipt.kind===SCALAR597_LATER_H0_PHASE_KIND)assert(Buffer.byteLength(raw)<=32768);
   await fs.writeFile(CURRENT586_PHASE_FILE,raw,{flag:'wx'});
 }
 async function main() {
+  if(ACTIVE.sourcePhase===SCALAR597_LATER_H0_PHASE)return executeScalar597LaterH0();
   assert(['assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor'].includes(ACTIVE.sourcePhase));
   if(ACTIVE.sourcePhase==='assistant-installed593-origin591-successor')requireInstalled593Original591Release();
   if(ACTIVE.sourcePhase==='assistant-public591-successor')requireAssistantPublic591SuccessorRelease();

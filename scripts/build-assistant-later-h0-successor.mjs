@@ -33,7 +33,10 @@ import {ASSISTANT_LATER_H0_BEFORE as OLD,ASSISTANT_LATER_H0_ALIASES as ALIASES,
   requireAssistantPublic591SuccessorRelease,assistantPublic591SuccessorMigration,
   INSTALLED593_ORIGINAL591_DATABASE_BEFORE,readAssistantPublic591SuccessorCanonicalSource,
   requireInstalled593Original591Binding,requireInstalled593Original591Output,requireInstalled593Original591Release,
-  installed593Original591Migration}
+  installed593Original591Migration,readInstalled593Original591CanonicalSource,
+  SCALAR597_LATER_H0_BEFORE,SCALAR597_LATER_H0_ALIASES,SCALAR597_LATER_H0_RELEASE,
+  scalar597LaterH0CheckpointContractFromBase,requireScalar597LaterH0Binding,
+  requireScalar597LaterH0Output,scalar597LaterH0Migration}
   from './lib/assistant-later-h0-successor-source.mjs';
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),CP='ravradar_ravscore_checkpoint_';
 const sha=v=>crypto.createHash('sha256').update(v).digest('hex');
@@ -83,8 +86,17 @@ const INSTALLED593_ORIGINAL591=Object.freeze({
   kind:'INSTALLED593_ORIGINAL591_SUCCESSOR_STRUCTURE',
 });
 
+const SCALAR597_LATER_H0=Object.freeze({
+  previous:SCALAR597_LATER_H0_BEFORE,aliases:SCALAR597_LATER_H0_ALIASES,
+  previousRelease:594,validatorCount:41,
+  readPredecessor:readInstalled593Original591CanonicalSource,
+  checkpointFromBase:scalar597LaterH0CheckpointContractFromBase,
+  contractTail:"    || E'\\n-- assistant-later-h0-original591-payload-validator --\\n' || v_ask591_payload_definition;",
+  kind:'SCALAR597_LATER_H0_SUCCESSOR_STRUCTURE',
+});
+
 function fixedProfile(profile){
-  assert(profile===LEGACY586||profile===PUBLIC587||profile===PUBLIC588||profile===PUBLIC590||profile===PUBLIC591||profile===INSTALLED593_ORIGINAL591,'ASSISTANT_SUCCESSOR_UNKNOWN_PROFILE');
+  assert(profile===LEGACY586||profile===PUBLIC587||profile===PUBLIC588||profile===PUBLIC590||profile===PUBLIC591||profile===INSTALLED593_ORIGINAL591||profile===SCALAR597_LATER_H0,'ASSISTANT_SUCCESSOR_UNKNOWN_PROFILE');
   return profile;
 }
 function metadata(source,next,inventory,OLD){
@@ -423,8 +435,42 @@ export async function buildInstalled593Original591BindingSuccessor(options){
 }
 
 
+export async function buildScalar597LaterH0BindingSuccessor(options){
+  assert.equal(arguments.length,1);
+  assert(options&&Object.getPrototypeOf(options)===Object.prototype);
+  assert.deepEqual(Object.keys(options),['version']);
+  assert.match(options.version,/^[0-9]{14}$/);
+  assert(options.version>'20261103012633','Scalar migration must follow reserved SOURCE alternatives');
+  const core=await prepareStructure(SCALAR597_LATER_H0,options.version);
+  return wrap(core,await readInstalled593Original591CanonicalSource(),SCALAR597_LATER_H0);
+}
+
+function scalar597Output(result){
+  return {migrationSha256:result.migrationSha256,canonicalSha256:result.afterCanonicalSha256,
+    checkpointContractSha256:result.checkpointContractSha256,tripBindingPolicySha256:result.tripBindingPolicySha256};
+}
+
 async function main(){
   const args=process.argv.slice(2);
+  if(args[0]==='--scalar597-later-h0-derive'){
+    assert.equal(args.length,2);
+    const result=await buildScalar597LaterH0BindingSuccessor({version:args[1]});
+    console.log(JSON.stringify({release:SCALAR597_LATER_H0_RELEASE,binding:result.nextBinding,output:scalar597Output(result)}));
+    return;
+  }
+  if(args[0]==='--active'&&ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='scalar597-later-h0-original594-successor')
+    args[0]='--scalar597-later-h0';
+  if(args[0]==='--scalar597-later-h0'){
+    assert.equal(args.length,2);assert(['--check','--write'].includes(args[1]));
+    const issued=requireScalar597LaterH0Binding(),pins=requireScalar597LaterH0Output();
+    const result=await buildScalar597LaterH0BindingSuccessor({version:issued.version});
+    assert.deepEqual(result.nextBinding,issued);assert.deepEqual(scalar597Output(result),pins);
+    const file=path.join(ROOT,'supabase/migrations',scalar597LaterH0Migration().filename);
+    if(args[1]==='--write')await fs.writeFile(file,result.migration,{flag:'wx'});
+    else assert.deepEqual(await fs.readFile(file),Buffer.from(result.migration));
+    console.log('Exact scalar597/original594 later-H0 source checked; no installation or state admission.');
+    return;
+  }
   if(args[0]==='--active'){
     // Det eksisterende normale source-mål følger kun det kildeejede aktive objekt.
     // De navngivne gamle CLI-indgange bevares til autentiske frozen-banker.

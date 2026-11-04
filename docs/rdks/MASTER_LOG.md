@@ -1,3 +1,7 @@
+## 4. november — lokal 4.0.597-kandidat til hurtigere vejrplanlægning
+
+Den lokale 4.0.597-kandidat forbinder planoptimeringen med den normale overgang fra autentificeret 594 ved en nyere hel prognosetime. Kildeprioritet, scoreformel og gemte originaler bevares. Den første almindelige kørsel bruger den eksisterende overgang for historisk vedligeholdelse og kører uden den nye scalarplan. Den efterfølgende almindelige integrerede vejrhentning skal vise, om planen holder tidsgrænsen og forbedrer dækningen. Sammenlign alle forventede timer og zoner for hver af de fem vejrfamilier, og opgør prognosehalen og bevarede fælles timer særskilt. Den samlede kandidat kræver præcis kildekontrol, rigtig PostgreSQL-prøve og kontrol af originalbevarelse, aktiv binding og faktisk offentlig levering. Driftsbeviset skal følge de normale vejrhentninger. Den offentlige PLAIN-læserbro fra PR #803 er leveret. Den kompakte Pages-kandidat i PR #804 afventer fortsat kontrolleret levering og måling af den faktisk uploadede pakke. De isolerede SOURCE-alternativer 595 og 596 skal tilpasses 597, før de kan vurderes til en senere levering. Ingen af dem installeres med denne kandidat. Alle fem hovedmål er fortsat åbne.
+
 ## 2026-11-01 — privat Pages-kodeopdatering på uændret 4.0.594
 
 P0 har faktisk leveret offentlig 4.0.594, og genoptagelsen er terminalt afsluttet. Denne lokale Pages-efterfølger ændrer ikke vejrdata eller modelbinding og er endnu ikke kilde- eller hostingkvalificeret. Aktuel kørselsstatus føres privat.

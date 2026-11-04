@@ -99,6 +99,16 @@ export function preferQualifiedDmiComponentSource(existing, candidate, component
   return newerOfficialRevision(existing, candidate);
 }
 
+function agedDmiRun(source, referenceMs) {
+  const run = responseBoundModelRun(source);
+  return run !== null && referenceMs - run >= DMI_RESERVE_CHALLENGE_AGE_HOURS * 3_600_000 ? run : null;
+}
+
+export function dmiWeatherSourcePrecedesReserves(source, productionReferenceAt) {
+  const referenceMs = timestamp(productionReferenceAt);
+  return referenceMs !== null && source?.provider === 'dmi' && agedDmiRun(source, referenceMs) === null;
+}
+
 /**
  * A shared selection policy for independently ADMITTED atomic candidates.
  * `previouslySelected` means the actual previous winner, not merely a record
@@ -155,8 +165,8 @@ export function selectQualifiedWeatherComponent(candidates, {
     return { candidate: reserve.candidate,
       reason: replacedOpenMeteo ? 'COPERNICUS_REPLACES_OPEN_METEO' : 'GAP_FILLED_BY_RESERVE' };
   }
-  const dmiRun = responseBoundModelRun(dmi.source);
-  if (dmiRun !== null && referenceMs - dmiRun >= DMI_RESERVE_CHALLENGE_AGE_HOURS * 3_600_000) {
+  const dmiRun = agedDmiRun(dmi.source, referenceMs);
+  if (dmiRun !== null) {
     const newerReserves = reserves.filter(entry => {
       const run = responseBoundModelRun(entry.source);
       return run !== null && run > dmiRun && run <= referenceMs;

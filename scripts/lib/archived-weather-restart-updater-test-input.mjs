@@ -410,9 +410,59 @@ export const CURRENT_NATIVE_ORIGINAL_PRODUCER_TEST_REVIEW = Object.freeze({
   ]
 });
 
+// TEST INPUT ONLY: exact whole scalar-planning delta before the old DMI
+// relocation and native-original oracles. Runtime probes use the physical code.
+export const DMI_SCALAR_PLANNING_RECORD_TEST_REVIEW = Object.freeze({
+  path: 'scripts/lib/private-dmi-recovery-record.mjs',
+  before: Object.freeze({ bytes: 39708, sha256: '7a967fb362304bcaa0590fccc7bab19092a3bcee013aa9682ce0afc3cf3f7e1b' }),
+  after: Object.freeze({ bytes: 40778, sha256: '1669a538b66bddbba2067a4adbd75bb4bf1a4f1c7b5848c70adb428a7845a652' }),
+  // Each edit is anchored to its 1-based line in the complete reviewed after file.
+  edits: Object.freeze([
+    Object.freeze([165, "", "    scalarPlanningOnly = false,"]),
+    Object.freeze([180, "    ? withOnlyVerifiedCurrent(previousRecord, point)", "    ? (scalarPlanningOnly ? previousRecord : withOnlyVerifiedCurrent(previousRecord, point))"]),
+    Object.freeze([195, "  const waves = rows.map(row => {", "  const waves = scalarPlanningOnly ? [] : rows.map(row => {"]),
+    Object.freeze([219, "    const rowCurrent = provenance(row).current;\n    const rowCurrentValid = ravScoreNumber(row['current-u']) !== null\n      && ravScoreNumber(row['current-v']) !== null\n      && Boolean(verifiedBulkCurrent(\n        bulkCache,\n        bulkZone,\n        point,\n        rowCurrent,\n        row.time,\n        dmiIdentity,\n      ));", ""]),
+    Object.freeze([231, "", "    const sea = waterLevelSource ? ravScoreNumber(row['sea-mean-deviation']) : null;\n    const temperature = waterTemperatureSource ? ravScoreNumber(row['water-temperature']) : null;\n    // A verified current-only row can affect scalar time brackets.\n    // Other ocean rows already qualified by their scalar tuple.\n    const needsCurrentForTimeAxis = !scalarPlanningOnly || (sea === null && temperature === null);\n    const rowCurrent = provenance(row).current;\n    const rowCurrentValid = needsCurrentForTimeAxis && ravScoreNumber(row['current-u']) !== null\n      && ravScoreNumber(row['current-v']) !== null\n      && Boolean(verifiedBulkCurrent(\n        bulkCache,\n        bulkZone,\n        point,\n        rowCurrent,\n        row.time,\n        dmiIdentity,\n      ));\n    if (scalarPlanningOnly && sea === null && temperature === null && !rowCurrentValid) return null;"]),
+    Object.freeze([250, "      'sea-mean-deviation': waterLevelSource ? ravScoreNumber(row['sea-mean-deviation']) : null,\n      'current-u': rowCurrentValid ? row['current-u'] : null,\n      'current-v': rowCurrentValid ? row['current-v'] : null,\n      'water-temperature': waterTemperatureSource ? ravScoreNumber(row['water-temperature']) : null,", "      'sea-mean-deviation': sea,\n      'current-u': !scalarPlanningOnly && rowCurrentValid ? row['current-u'] : null,\n      'current-v': !scalarPlanningOnly && rowCurrentValid ? row['current-v'] : null,\n      'water-temperature': temperature,"]),
+    Object.freeze([255, "        current: rowCurrentValid ? provenance(row).current : null,", "        current: !scalarPlanningOnly && rowCurrentValid ? rowCurrent : null,"]),
+    Object.freeze([260, "  }).filter(row => ['sea-mean-deviation','current-u','current-v','water-temperature']\n    .some(key => row[key] !== null));", "  }).filter(row => row && (scalarPlanningOnly || ['sea-mean-deviation','current-u','current-v','water-temperature']\n    .some(key => row[key] !== null)));"]),
+    Object.freeze([287, "    { generatedAt, startAt, expectedIdentity: dmiIdentity, currentDecoderTransition },", "    { generatedAt, startAt, expectedIdentity: dmiIdentity, currentDecoderTransition, scalarPlanningOnly },"]),
+    Object.freeze([406, "    nativeCurrentOriginals = null, protectedCompanionContexts = [] },", "    nativeCurrentOriginals = null, protectedCompanionContexts = [], scalarPlanningOnly = false },"]),
+    Object.freeze([411, "", "  if (scalarPlanningOnly && (!expectedIdentity || protectPreviousDmi || currentDecoderTransitionPart\n    || nativeCurrentOriginals !== null || protectedCompanionContexts.length)) {\n    throw new Error('DMI_SCALAR_PLANNING_SCOPE');\n  }"]),
+    Object.freeze([421, "      startAt, expectedIdentity, materializeMissingHorizon: true,", "      startAt, expectedIdentity, materializeMissingHorizon: true, scalarPlanningOnly,"]),
+    Object.freeze([425, "    startAt, expectedIdentity, materializeMissingHorizon: true, currentDecoderTransition,", "    startAt, expectedIdentity, materializeMissingHorizon: true, scalarPlanningOnly, currentDecoderTransition,"]),
+    Object.freeze([429, "      startAt, expectedIdentity, materializeMissingHorizon: true,", "      startAt, expectedIdentity, materializeMissingHorizon: true, scalarPlanningOnly,"]),
+    Object.freeze([434, "      generatedAt, startAt, expectedIdentity, currentDecoderTransition,", "      generatedAt, startAt, expectedIdentity, currentDecoderTransition, scalarPlanningOnly,"]),
+    Object.freeze([454, "      generatedAt, startAt, expectedIdentity, protectPreviousDmi, currentDecoderTransition,", "      generatedAt, startAt, expectedIdentity, protectPreviousDmi, currentDecoderTransition, scalarPlanningOnly,"]),
+    Object.freeze([688, "    protectPreviousDmi = false, currentDecoderTransition = null } = {},", "    protectPreviousDmi = false, currentDecoderTransition = null, scalarPlanningOnly = false } = {},"]),
+    Object.freeze([752, "    const selectedWave = select('wave');\n    const selectedCurrent = select('current');", "    const selectedWave = scalarPlanningOnly ? null : select('wave');\n    const selectedCurrent = scalarPlanningOnly ? null : select('current');"]),
+  ]),
+});
+
+export function inverseDmiScalarPlanningRecordTestInput(source, relative) {
+  assert.equal(arguments.length, 2, 'DMI_SCALAR_PLANNING_RECORD_ARGUMENTS');
+  assert.equal(typeof source, 'string', 'DMI_SCALAR_PLANNING_RECORD_TYPE');
+  const { path, before, after, edits } = DMI_SCALAR_PLANNING_RECORD_TEST_REVIEW;
+  if (relative !== path || sha(source) !== after.sha256) return source;
+  assert.equal(Buffer.byteLength(source), after.bytes, 'DMI_SCALAR_PLANNING_RECORD_AFTER_SIZE');
+  const lines = source.split('\n');
+  for (const [line, previous, current] of [...edits].reverse()) {
+    const previousLines = previous ? previous.split('\n') : [];
+    const currentLines = current ? current.split('\n') : [];
+    assert.deepEqual(lines.slice(line - 1, line - 1 + currentLines.length), currentLines,
+      'DMI_SCALAR_PLANNING_RECORD_HUNK');
+    lines.splice(line - 1, currentLines.length, ...previousLines);
+  }
+  const original = lines.join('\n');
+  assert.equal(Buffer.byteLength(original), before.bytes, 'DMI_SCALAR_PLANNING_RECORD_BEFORE_SIZE');
+  assert.equal(sha(original), before.sha256, 'DMI_SCALAR_PLANNING_RECORD_WHOLE_INVERSE');
+  return original;
+}
+
 export function inverseCurrentNativeOriginalProducerTestInput(source, relative) {
   assert.equal(arguments.length, 2, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:NATIVE_ORIGINAL_ARGUMENTS');
   assert.equal(typeof source, 'string', 'ALTERNATIVE_C_TEST_INPUT_CHANGED:NATIVE_ORIGINAL_TYPE');
+  source = inverseDmiScalarPlanningRecordTestInput(source, relative);
   if (relative === 'scripts/update-weather.mjs'
     && (source.includes('\n  weatherComponents = null;') || source.includes('\ncoastalPartScoreBuild = null;')))
     source = inverseFinalizedWeatherOwnersTestInput(source, relative);

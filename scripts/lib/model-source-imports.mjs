@@ -179,6 +179,18 @@ const ORIGIN591_METADATA594_REVIEWED=Object.freeze({
   'scripts/assistant-later-h0-binding-prewrite.mjs':Object.freeze({sha256:'d46dc4c2741dc62608e640ca60bd6b18027df6086a71f63c26e879c4495c94e2',
     imports:ASSISTANT_GENUINE591_PARENT_REVIEWED['scripts/assistant-later-h0-binding-prewrite.mjs'].imports})
 });
+// Strictly later 597 normal handoff. The frozen 594 imports and previous
+// bytes remain separately accepted. The issued SQL tuple is outside C/I.
+const SCALAR597_LATER_H0_REVIEWED=Object.freeze({
+  'scripts/check-assistant-later-h0-predecessor-source.mjs':Object.freeze({sha256:'d07922fbe0406f46ed41bf40633d2b6ed02275dd4683acee8f37e99dae48a01a',
+    imports:ASSISTANT_GENUINE591_PARENT_REVIEWED['scripts/check-assistant-later-h0-predecessor-source.mjs'].imports}),
+  'scripts/lib/authenticated-frozen586-predecessor.mjs':Object.freeze({sha256:'d7465a5d3d2abee68ffac57beb2a707db0dcb1c9f39811d6249181b73626b1ac',
+    imports:CONDITIONS_READER_CAPACITY593_REVIEWED['scripts/lib/authenticated-frozen586-predecessor.mjs'].imports}),
+  'scripts/lib/established-native-current-origin.mjs':Object.freeze({sha256:'e4ec3e1656669229b99a2dff0170db114ae31129c5c0584a3806c74ca90b4f42',
+    imports:ORIGIN591_METADATA594_REVIEWED['scripts/lib/established-native-current-origin.mjs'].imports}),
+  'scripts/assistant-later-h0-binding-prewrite.mjs':Object.freeze({sha256:'a87b9960dfcd35ccda2a8de8ce6fea35783fc3a25ef49dde806643d309d05384',
+    imports:ORIGIN591_METADATA594_REVIEWED['scripts/assistant-later-h0-binding-prewrite.mjs'].imports})
+});
 export function modelSourceRelativeModuleSpecifiers(source, file) {
   if (!Object.hasOwn(REVIEWED, file) && !Object.hasOwn(NATIVE_CONTINUITY_REVIEWED, file)
     && !Object.hasOwn(ASSISTANT_LATER_H0_REVIEWED,file) && !Object.hasOwn(ASSISTANT_BINDING_PREWRITE_REVIEWED,file)
@@ -191,12 +203,13 @@ export function modelSourceRelativeModuleSpecifiers(source, file) {
     && !Object.hasOwn(ASSISTANT_GENUINE590_PARENT_REVIEWED,file)
     && !Object.hasOwn(ASSISTANT_GENUINE591_PARENT_REVIEWED,file)
     && !Object.hasOwn(CONDITIONS_READER_CAPACITY593_REVIEWED,file)
-    && !Object.hasOwn(ORIGIN591_METADATA594_REVIEWED,file))
+    && !Object.hasOwn(ORIGIN591_METADATA594_REVIEWED,file)
+    && !Object.hasOwn(SCALAR597_LATER_H0_REVIEWED,file))
     return exactRelativeModuleSpecifiers(source, file);
   if (typeof source !== 'string') throw new Error('Reviewed model source must be a string');
   const normalized = source.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
   const hash = crypto.createHash('sha256').update(normalized).digest('hex');
-  const reviewed = [REVIEWED[file], NATIVE_CONTINUITY_REVIEWED[file],ASSISTANT_LATER_H0_REVIEWED[file],ASSISTANT_BINDING_PREWRITE_REVIEWED[file],ASSISTANT_BINDING_DIAGNOSTIC_REVIEWED[file],ASSISTANT_BINDING_CHECKPOINT_TARGET_REVIEWED[file],ASSISTANT_PUBLIC587_SOURCE_REVIEWED[file],ASSISTANT_PUBLIC587_OPERATIVE_REVIEWED[file],CALENDAR_PUBLIC588_SUCCESSOR_REVIEWED[file],ASSISTANT_PUBLIC590_SUCCESSOR_REVIEWED[file],ASSISTANT_GENUINE590_PARENT_REVIEWED[file],ASSISTANT_GENUINE591_PARENT_REVIEWED[file],CONDITIONS_READER_CAPACITY593_REVIEWED[file],ORIGIN591_METADATA594_REVIEWED[file]].filter(Boolean)
+  const reviewed = [REVIEWED[file], NATIVE_CONTINUITY_REVIEWED[file],ASSISTANT_LATER_H0_REVIEWED[file],ASSISTANT_BINDING_PREWRITE_REVIEWED[file],ASSISTANT_BINDING_DIAGNOSTIC_REVIEWED[file],ASSISTANT_BINDING_CHECKPOINT_TARGET_REVIEWED[file],ASSISTANT_PUBLIC587_SOURCE_REVIEWED[file],ASSISTANT_PUBLIC587_OPERATIVE_REVIEWED[file],CALENDAR_PUBLIC588_SUCCESSOR_REVIEWED[file],ASSISTANT_PUBLIC590_SUCCESSOR_REVIEWED[file],ASSISTANT_GENUINE590_PARENT_REVIEWED[file],ASSISTANT_GENUINE591_PARENT_REVIEWED[file],CONDITIONS_READER_CAPACITY593_REVIEWED[file],ORIGIN591_METADATA594_REVIEWED[file],SCALAR597_LATER_H0_REVIEWED[file]].filter(Boolean)
     .find(variant => variant.sha256 === hash);
   if (!reviewed)
     throw new Error('Whole reviewed model import source changed: ' + file);

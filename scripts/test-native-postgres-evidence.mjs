@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import test from 'node:test';
-import {inverseSourceBeforePostgresWorkflow, SOURCE_BEFORE_POSTGRES_BLOCK}
+import {inverseSourceBeforePostgresWorkflow, SOURCE_BEFORE_POSTGRES_BLOCK,
+  SCALAR597_LATER_H0_SOURCE_COMMAND,inverseScalar597LaterH0Package,verifyScalar597LaterH0NativeContext,
+  scalar597LaterH0NativeClaims}
   from './national584-source-evidence.mjs';
 import {projectSourceImpactWorkflowFull} from './lib/source-impact-workflow-review.mjs';
 import {ORIGIN, WORKFLOW, JOB, STEP, COMMANDS, ACCOUNT_STATISTICS_ASSISTANT_COMMANDS, CURRENT586_COMMANDS as CURRENT_COMMANDS,
@@ -10,6 +12,8 @@ import {ORIGIN, WORKFLOW, JOB, STEP, COMMANDS, ACCOUNT_STATISTICS_ASSISTANT_COMM
   verifyInputTrees, verifyOriginMetadata, verifyOrigin, verifyEnvironment,
   verifyLaterRuns, decideReuse, verifyCurrentPullRequest, FOLLOWUP_INPUTS,
   CURRENT586_PHASE_KIND,CURRENT586_PHASE_UPLOAD,CURRENT586_PHASE_UPLOAD_BLOCK,
+  SCALAR597_LATER_H0_PHASE,SCALAR597_LATER_H0_PHASE_KIND,SCALAR597_LATER_H0_COMMANDS,SCALAR597_LATER_H0_SCRIPT,
+  scalar597NativeReportCollector,verifyScalar597LaterH0PhaseReceipt,
   ASSISTANT_LATER_H0_PHASE_KIND,verifyAssistantLaterH0PhaseReceipt,
   inverseCurrent586PhaseUpload,verifyCurrent586Workflow,verifyCurrent586Runtime,
   verifyCurrent586PhaseReceipt,verifyCurrent586Metadata,verifyCurrent586Artifact,decideCurrent586Reuse} from './native-postgres-evidence.mjs';
@@ -567,7 +571,10 @@ test('public587 successor native commands append588 without retagging whole587 i
   assert.deepEqual(ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS,[ASSISTANT_LATER_H0_COMMANDS[0],
     ASSISTANT_LATER_H0_COMMANDS[1]+' --assistant-public587-successor']);
   assert.equal(ASSISTANT_PUBLIC587_SUCCESSOR_SCRIPT,'set -euo pipefail\n'+ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS.join('\n')+'\n');
-  if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-installed593-origin591-successor'){
+  if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase===SCALAR597_LATER_H0_PHASE){
+    assert.equal(ACTIVE_COMMANDS,SCALAR597_LATER_H0_COMMANDS);
+    assert.equal(ACTIVE_NATIVE_SCRIPT,SCALAR597_LATER_H0_SCRIPT);
+  }else if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-installed593-origin591-successor'){
     assert.equal(ACTIVE_COMMANDS,INSTALLED593_ORIGINAL591_COMMANDS);
     assert.equal(ACTIVE_NATIVE_SCRIPT,INSTALLED593_ORIGINAL591_SCRIPT);
   }else if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public591-successor'){
@@ -808,7 +815,9 @@ test('calendar588 normal native route uses genuine parent factory then current c
   const main=evidence.slice(evidence.indexOf('async function main() {'));
   assert(main.indexOf('requireAssistantPublic588SuccessorRelease()')<main.indexOf('spawnSync('));
   assert(!main.includes('await decideReuse('));assert(!main.includes('await decideCurrent586Reuse('));
-  if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-installed593-origin591-successor')
+  if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase===SCALAR597_LATER_H0_PHASE)
+    assert.equal(ACTIVE_COMMANDS,SCALAR597_LATER_H0_COMMANDS);
+  else if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-installed593-origin591-successor')
     assert.equal(ACTIVE_COMMANDS,INSTALLED593_ORIGINAL591_COMMANDS);
   else if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public591-successor')
     assert.equal(ACTIVE_COMMANDS,ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS);
@@ -822,7 +831,8 @@ test('calendar588 normal native route uses genuine parent factory then current c
 test('calendar588 normal source command follows only its source-owned active profile',async()=>{
   const packageData=JSON.parse(await fs.readFile('package.json','utf8'));
   assert.equal(packageData.scripts['test:assistant-later-h0-source'],
-    'node scripts/build-assistant-later-h0-successor.mjs --active --check');
+    ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase===SCALAR597_LATER_H0_PHASE?SCALAR597_LATER_H0_SOURCE_COMMAND:
+      'node scripts/build-assistant-later-h0-successor.mjs --active --check');
   const builder=await fs.readFile('scripts/build-assistant-later-h0-successor.mjs','utf8');
   assert(builder.includes("if(args[0]==='--active')"));
   assert(builder.includes("ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public588-successor'"));
@@ -1170,7 +1180,7 @@ test('593 V2 input capture closes65 modules/four JSON/all71 SQL and package scop
   const {execFileSync}=await import('node:child_process'),cache=new Map(),requests=[];
   const readGit=args=>{const key=JSON.stringify(args);requests.push(args);
     if(!cache.has(key))cache.set(key,execFileSync('git',
-      ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-installed593-origin591-successor'
+      [SCALAR597_LATER_H0_PHASE,'assistant-installed593-origin591-successor'].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase)
         ?args.map(arg=>arg==='HEAD'?FROZEN593_NATIVE_CODE.head:arg.startsWith('HEAD:')?FROZEN593_NATIVE_CODE.head+arg.slice(4):arg):args,
       {encoding:'utf8',maxBuffer:64*1024*1024,env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0'}}));return cache.get(key);};
   const original=await captureAssistantPublic591Input({root:sourceRoot,readGit});
@@ -1217,7 +1227,7 @@ test('593 V2 input capture closes65 modules/four JSON/all71 SQL and package scop
   await assert.rejects(captureAssistantPublic591Input({physical:false,readGit:args=>
     args[0]==='rev-parse'&&args[1]===ASSISTANT_PUBLIC591_FROZEN.at(-1).head+'^{tree}'?'d'.repeat(40):readGit(args)}));
   };
-  if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-installed593-origin591-successor')
+  if([SCALAR597_LATER_H0_PHASE,'assistant-installed593-origin591-successor'].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase))
     await withInstalled593CodePredecessorSource(check);
   else await check(process.cwd());
 });
@@ -1431,8 +1441,9 @@ import {verifyInstalled593Original591Package,verifyInstalled593Original591Native
 import {compareInstalled593Original591Successor} from './lib/assistant-later-h0-postgres.mjs';
 import {withFrozen593CheckpointPostgresSource} from './run-frozen586-assistant-later-h0-postgres-source.mjs';
 import {FROZEN593_NATIVE_CODE,verifyFrozen593NativeCodeManifest,withInstalled593CodePredecessorSource} from './check-installed593-code-predecessor-source.mjs';
+const FROZEN594_NATIVE_EVIDENCE_HEAD='84051e2d700595837ebf80426410dcbef8e08704';
 async function historical593ImportReviewSource(file){
-  if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-installed593-origin591-successor'
+  if([SCALAR597_LATER_H0_PHASE,'assistant-installed593-origin591-successor'].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase)
     &&Object.hasOwn(reviewedConditions593ImportViews,file)){
     const {execFileSync}=await import('node:child_process');
     return execFileSync('git',['cat-file','blob',FROZEN593_NATIVE_CODE.head+':'+file],{
@@ -1450,8 +1461,14 @@ function installed594Receipt(){return {schemaVersion:1,kind:INSTALLED593_ORIGINA
   commands:[...INSTALLED593_ORIGINAL591_COMMANDS],status:'EXECUTED',executedInThisRun:true,origin:null,eligibleForReuse:false};}
 
 test('installed593 new594 active native commands and receipt refuse predecessor, reused and changed inputs',()=>{
-  assert.equal(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase,'assistant-installed593-origin591-successor');
-  assert.equal(ACTIVE_COMMANDS,INSTALLED593_ORIGINAL591_COMMANDS);assert.equal(ACTIVE_NATIVE_SCRIPT,INSTALLED593_ORIGINAL591_SCRIPT);
+  if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase===SCALAR597_LATER_H0_PHASE){
+    assert.notDeepEqual(ACTIVE_COMMANDS,INSTALLED593_ORIGINAL591_COMMANDS);
+    assert.notEqual(ACTIVE_NATIVE_SCRIPT,INSTALLED593_ORIGINAL591_SCRIPT);
+  }else{
+    assert.equal(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase,'assistant-installed593-origin591-successor');
+    assert.equal(ACTIVE_COMMANDS,INSTALLED593_ORIGINAL591_COMMANDS);
+    assert.equal(ACTIVE_NATIVE_SCRIPT,INSTALLED593_ORIGINAL591_SCRIPT);
+  }
   assert.deepEqual(INSTALLED593_ORIGINAL591_COMMANDS,[ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS[0],
     ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS[1]+' --assistant-installed593-origin591-successor']);
   assert.equal(INSTALLED593_ORIGINAL591_SCRIPT,'set -euo pipefail\n'+INSTALLED593_ORIGINAL591_COMMANDS.join('\n')+'\n');
@@ -1470,7 +1487,9 @@ test('installed593 new594 active native commands and receipt refuse predecessor,
 });
 
 test('installed593 new594 normal national caller preserves package and executed-only native claims',async()=>{
-  const pkg=JSON.parse(await fs.readFile('package.json','utf8')),receipt=installed594Receipt();
+  const activePackage=JSON.parse(await fs.readFile('package.json','utf8')),receipt=installed594Receipt();
+  const pkg=ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase===SCALAR597_LATER_H0_PHASE
+    ?inverseScalar597LaterH0Package(activePackage):activePackage;
   verifyInstalled593Original591Package(pkg);
   verifyInstalled593Original591NativeContext(receipt,receipt.current,pkg.version);
   const claims=installed593Original591NativeClaims(receipt,receipt.current);
@@ -1539,8 +1558,12 @@ function installed594V2Receipt(current=installed594Receipt().current){
 test('594 V2 normal capture binds66 actual modules/five data/all72 SQL, controls, scopes and genuine593 anchor',async()=>{
   const {execFileSync}=await import('node:child_process'),cache=new Map(),selected=new Set();
   const readGit=args=>{const key=JSON.stringify(args);if(args[0]==='cat-file')selected.add(args[2].split(':').slice(1).join(':'));
-    if(!cache.has(key))cache.set(key,execFileSync('git',args,{encoding:'utf8',maxBuffer:64*1024*1024,timeout:30000,
-      env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0'}}));return cache.get(key);};
+    if(!cache.has(key))cache.set(key,execFileSync('git',
+      ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase===SCALAR597_LATER_H0_PHASE
+        ?args.map(arg=>arg==='HEAD'?FROZEN594_NATIVE_EVIDENCE_HEAD:
+          arg.startsWith('HEAD:')?FROZEN594_NATIVE_EVIDENCE_HEAD+arg.slice(4):arg):args,
+      {encoding:'utf8',maxBuffer:64*1024*1024,timeout:30000,
+        env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0'}}));return cache.get(key);};
   const original=await captureInstalled593Original591Input({physical:false,readGit});
   verifyInstalled593Original591Input(original);assert.equal(INSTALLED593_ORIGINAL591_INPUT_MODULES.length,66);
   assert.equal(original.frozenGitTrees.length,13);assert.deepEqual(original.frozenGitTrees.at(-1),
@@ -1788,5 +1811,81 @@ test('594 V2 skips only proved non-executed PG rows and keeps later negative or 
     assert.equal((await decideInstalled593Original591Reuse(moved.fixture.options)).status,'EXECUTE');
     assert(!moved.observed.some(route=>route.endsWith('/artifacts/'+(moved.fixture.origin.id+2000)+'/zip')),
       'A changed or unknown fresh skipped-run identity must stop before an older origin is used');
+  }
+});
+
+
+function scalar597Report(migrationVersion,databaseBeforeVersion){
+  return {kind:'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',sqlExecuted:true,migrationExecuted:true,
+    tcpEnabled:false,normalModelPartCount:673,postgresMajorVersion:16,nativeProgramIdentity:v2Runtime().selectedPrograms,
+    scalar597LaterH0Successor:{kind:'SCALAR597_LATER_H0_SUCCESSOR',sourceMigrationInventory:62,
+      sqlExecuted:true,wholeMigrationExecuted:true,databaseBeforeVersion,originalStateRelease:594,
+      migrationVersion,partCount:673,checkpointOidSlots:43,contractBodies:46,
+      oldFunctionsAndOidsPreserved:true,allOriginalDefinitionsPreserved:true,exactCheckpointContract:true,
+      exactTripContract:true,schema2Catalog:true,normalProtectedJsonbRoundtrip:true,originalDigestsPreserved:true,
+      trueOld594Fixtures:true,currentNormalFixtures:true,old594ModelNotRetagged:true,wholeMetadataInverse:true,
+      strictlyLater594ToNextOnly:true,productionSeedAuthenticated:false,sqlIsNotOriginAuthentication:true,
+      intermediateRuntime:{oldActiveAfterSql:true,nextRefusedBeforeActivation:true,pendingBothRefused:true,
+        nextActiveAfterCompletion:true,oldRefusedAfterCompletion:true,activeDocumentsUnchangedBySql:true,
+        quotaFunctionAndAdmissionUnchanged:true,quotaServiceRoleWorking:true}}};
+}
+
+test('597 normal native command accepts exactly one complete payload-free 597 marker, never 594 or partial proof',()=>{
+  const raw=scalar597Report('20261104004400','20261029233000');
+  const expected={migrationVersion:'20261104004400',databaseBeforeVersion:'20261029233000',
+    selectedPrograms:v2Runtime().selectedPrograms};
+  const line=JSON.stringify({...raw,irrelevant:['synthetic-report-content']})+'\n';
+  const collector=scalar597NativeReportCollector(expected);
+  collector.write('ordinary SQL fixture output\n');
+  for(let i=0;i<line.length;i+=7)collector.write(line.slice(i,i+7));
+  assert.deepEqual(collector.finish(),raw);
+  for(const bad of ['',line+line,line.slice(0,-1),
+    '{"kind":"NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON",'+ ' '.repeat(65536)+'}\n',
+    JSON.stringify({...raw,installed593Original591Successor:{}})+'\n',
+    JSON.stringify({...raw,scalar597LaterH0Successor:null})+'\n']){
+    const refused=scalar597NativeReportCollector(expected);refused.write(bad);
+    assert.throws(()=>refused.finish());
+  }
+  for(const mutation of [v=>v.migrationExecuted=false,v=>v.postgresMajorVersion=17,
+    v=>v.nativeProgramIdentity.files[0].sha256='f'.repeat(64),
+    v=>v.scalar597LaterH0Successor.sourceMigrationInventory=61,
+    v=>v.scalar597LaterH0Successor.migrationVersion='20261029233000',
+    v=>v.scalar597LaterH0Successor.strictlyLater594ToNextOnly=false,
+    v=>v.scalar597LaterH0Successor.intermediateRuntime.quotaServiceRoleWorking=false]){
+    const changed=copy(raw);mutation(changed);
+    const refused=scalar597NativeReportCollector(expected);refused.write(JSON.stringify(changed)+'\n');
+    assert.throws(()=>refused.finish());
+  }
+});
+
+test('597 normal national/native readers refuse old phase, execution retag, run drift and lost new source target',async()=>{
+  const old=installed594Receipt(),current=old.current;
+  const pkg=JSON.parse(await fs.readFile('package.json','utf8'));
+  assert.throws(()=>verifyScalar597LaterH0PhaseReceipt(old,current));
+  if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase!==SCALAR597_LATER_H0_PHASE){
+    assert.throws(()=>verifyScalar597LaterH0NativeContext(old,current,'4.0.597'));
+    return;
+  }
+  const binding=ACTIVE_ASSISTANT_SUCCESSOR.requireBinding(),output=ACTIVE_ASSISTANT_SUCCESSOR.requireOutput();
+  const databaseBefore=ACTIVE_ASSISTANT_SUCCESSOR.databaseBefore,releaseVersion=ACTIVE_ASSISTANT_SUCCESSOR.requireRelease();
+  const receipt={schemaVersion:1,kind:SCALAR597_LATER_H0_PHASE_KIND,phase:'SCALAR597_LATER_H0_SUCCESSOR',
+    sourcePhase:SCALAR597_LATER_H0_PHASE,releaseVersion,binding,output,databaseBefore,current,
+    commands:[...SCALAR597_LATER_H0_COMMANDS],status:'EXECUTED',executedInThisRun:true,origin:null,
+    eligibleForReuse:false,runtime:v2Runtime(),report:scalar597Report(binding.version,databaseBefore.version)};
+  assert.equal(verifyScalar597LaterH0NativeContext(receipt,current,pkg.version),receipt);
+  assert.equal(inverseScalar597LaterH0Package(pkg).version,'4.0.594');
+  const oldSource=copy(pkg);oldSource.scripts['test:assistant-later-h0-source']=SCALAR597_LATER_H0_SOURCE_COMMAND.split(' && ')[0];
+  assert.throws(()=>inverseScalar597LaterH0Package(oldSource));
+  assert.deepEqual(scalar597LaterH0NativeClaims(receipt,current),{
+    currentScalar597LaterH0Native:{status:'EXECUTED',executedInThisRun:true,origin:null,
+      phase:SCALAR597_LATER_H0_PHASE,eligibleForReuse:false,separatelyRequired:true},
+    currentScalar597LaterH0Source:{command:'npm run test:assistant-later-h0-source',
+      actualCommand:SCALAR597_LATER_H0_SOURCE_COMMAND,separatelyRequired:true},
+    currentScalar597LaterH0NationalExecutionClaimed:false});
+  for(const mutate of [v=>v.kind=old.kind,v=>v.commands=old.commands,v=>v.status='REUSED',v=>v.eligibleForReuse=true,
+    v=>v.current.attempt=2,v=>v.current.run++,v=>v.output.migrationSha256='f'.repeat(64),
+    v=>v.runtime.selectedPrograms.files.pop(),v=>v.report.scalar597LaterH0Successor.originalStateRelease=593]){
+    const changed=copy(receipt);mutate(changed);
+    assert.throws(()=>verifyScalar597LaterH0NativeContext(changed,current,pkg.version));
   }
 });

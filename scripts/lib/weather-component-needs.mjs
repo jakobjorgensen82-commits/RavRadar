@@ -5,6 +5,7 @@ export const PLANNED_WEATHER_COMPONENTS = Object.freeze(['wind', 'wave', 'waterL
 export const RESERVE_WEATHER_COMPONENTS = Object.freeze(['wind', 'wave', 'waterTemperature']);
 export const COPERNICUS_UPGRADE_COMPONENTS = Object.freeze(['wave', 'waterTemperature']);
 export const DMI_ONLY_WEATHER_COMPONENTS = Object.freeze(['waterLevel']);
+const SCALAR_PLANNING_COMPONENTS = Object.freeze(['wind', 'waterLevel', 'waterTemperature']);
 const HOUR = 3_600_000;
 const finite = value => typeof value === 'number' && Number.isFinite(value);
 const hour = value => {
@@ -32,14 +33,15 @@ export function hasValue(row, component) {
 // The callback is the production adapter, not a cache's self-declared status.
 // This planner does not grant source admission or overwrite permission. It
 // separates real missing work, optional aged-DMI challenges and DMI upgrades.
-export function buildWeatherComponentNeeds({ parts, productionReferenceAt, readVerifiedHourly } = {}) {
+export function buildWeatherComponentNeeds({ parts, productionReferenceAt, readVerifiedHourly, scalarPlanningOnly = false } = {}) {
   const reference = hour(productionReferenceAt);
   if (!Array.isArray(parts) || !parts.length || typeof readVerifiedHourly !== 'function') {
     throw new Error('WEATHER_COMPONENT_PLAN_INPUT_REQUIRED');
   }
+  const components = scalarPlanningOnly ? SCALAR_PLANNING_COMPONENTS : PLANNED_WEATHER_COMPONENTS;
   const needs = [], dmiUpgradeNeeds = [], copernicusUpgradeNeeds = [];
   const partIds = new Set();
-  const summary = Object.fromEntries(PLANNED_WEATHER_COMPONENTS.map(component => [component,
+  const summary = Object.fromEntries(components.map(component => [component,
     { required: parts.length * RAVSCORE_PUBLIC_FORECAST_HOURS, valid: 0, missing: 0,
       trendMissing: 0, dmi: 0, reserve: 0, agedDmiChallenges: 0 }]));
   for (const part of parts) {
@@ -58,7 +60,7 @@ export function buildWeatherComponentNeeds({ parts, productionReferenceAt, readV
     for (let offset = 0; offset < RAVSCORE_PUBLIC_FORECAST_HOURS; offset += 1) {
       const validTime = new Date(reference + offset * HOUR).toISOString();
       const row = byTime.get(validTime);
-      for (const component of PLANNED_WEATHER_COMPONENTS) {
+      for (const component of components) {
         const key = { partId: part.partId, component, validTime };
         const stats = summary[component];
         const source = row?.[`${component}Provenance`];

@@ -3,7 +3,9 @@
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
-import {withAuthenticated591PredecessorSource} from './check-assistant-later-h0-predecessor-source.mjs';
+import {withAuthenticated591PredecessorSource,withSource594CodeParent} from './check-assistant-later-h0-predecessor-source.mjs';
+import {assertFrozen591CompactRuntimeContracts} from './lib/assistant-public591-runtime-contracts.mjs';
+import {ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE,INACTIVE_SCALAR597_LATER_H0_SUCCESSOR as SCALAR} from './lib/assistant-later-h0-successor-source.mjs';
 import {assertFrozen591LaterOriginMetadata} from './lib/established-native-current-origin.mjs';
 import {assertAssistantOriginalRuntimeContracts} from './assistant-later-h0-runtime-transition.mjs';
 import {privateRuntimeContractHashes} from './private-production-runtime-workflow.mjs';
@@ -18,7 +20,16 @@ await withAuthenticated591PredecessorSource(async root=>{
   const descriptor={contractHashes:originalContracts};
   const checkpoint={modelBinding:originalI,candidateGRollbackCompanion:{modelBinding:originalC}};
   const currentContracts=await privateRuntimeContractHashes();
-  assert.equal(await assertAssistantOriginalRuntimeContracts(originalContracts,currentContracts),true);
+  if (ACTIVE === SCALAR) {
+    await withSource594CodeParent(async root594 => {
+      const original594 = await import(pathToFileURL(path.join(root594,'scripts/private-production-runtime-workflow.mjs')).href);
+      const frozen594Contracts = await original594.privateRuntimeContractHashes({repositoryRoot:root594});
+      assert.equal(assertFrozen591CompactRuntimeContracts(originalContracts,frozen594Contracts),true);
+      assert.equal(assertAssistantOriginalRuntimeContracts(frozen594Contracts,currentContracts),true);
+    });
+  } else {
+    assert.equal(await assertAssistantOriginalRuntimeContracts(originalContracts,currentContracts),true);
+  }
   const before=clone({descriptor,checkpoint});
   assert.equal(await assertFrozen591LaterOriginMetadata(descriptor,checkpoint),true);
   assert.deepEqual({descriptor,checkpoint},before,'Hele metadata er uændrede');

@@ -12,7 +12,8 @@ import {PRIVATE_CONDITIONS_MAX_BYTES} from './bounded-json-writer.mjs';
 import {withAuthenticated586PredecessorSource,withAuthenticated587PredecessorSource,
   withAuthenticated588PredecessorSource,assertFrozen588CodeSourceSelected,FROZEN588_CODE_SOURCE_PROVENANCE,
   withAuthenticated590PredecessorSource,assertFrozen590CodeSourceSelected,FROZEN590_CODE_SOURCE_PROVENANCE,
-  withAuthenticated591PredecessorSource,assertFrozen591CodeSourceSelected,FROZEN591_CODE_SOURCE_PROVENANCE}
+  withAuthenticated591PredecessorSource,assertFrozen591CodeSourceSelected,FROZEN591_CODE_SOURCE_PROVENANCE,
+  withSource594OriginalDataSource,assertSource594OriginalDataSourceSelected,SOURCE594_CODE_SOURCE_PROVENANCE}
   from '../check-assistant-later-h0-predecessor-source.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
@@ -20,7 +21,7 @@ const exec=promisify(callbackExec),failedCloses=new Map();
 // Ukendt fysisk FD-lukning blokerer samme sti på tværs af begge familier.
 // Opaque snapshots og friskhedsfunktioner tilhører derimod kun én fast profil.
 function fixedSnapshot(profile){
-  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588||profile===FROZEN590||profile===FROZEN591,'FROZEN_PREDECESSOR_UNKNOWN_PROFILE');
+  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588||profile===FROZEN590||profile===FROZEN591||profile===SOURCE_FROZEN594,'FROZEN_PREDECESSOR_UNKNOWN_PROFILE');
   const contexts=new WeakMap(),refreshers=new WeakMap();
   const SOURCE=profile.sourceHead;
 const SHA=/^[a-f0-9]{64}$/, HEAD=/^[a-f0-9]{40}$/, MB=1024*1024;
@@ -38,7 +39,7 @@ const need=(value,code)=>{if(!value)fail(code);};
 const environment=()=>Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','TEMP','TMP','LANG','LC_ALL']
   .filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]]));
 const git=async args=>(await exec('git',['-C',ROOT,...args],
-  {env:environment(),encoding:'utf8',timeout:30000,maxBuffer:16*MB})).stdout.trim();
+  {env:{...environment(),GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_OPTIONAL_LOCKS:'0',GIT_TERMINAL_PROMPT:'0',GIT_CONFIG_COUNT:'1',GIT_CONFIG_KEY_0:'protocol.allow',GIT_CONFIG_VALUE_0:'never'},encoding:'utf8',timeout:30000,maxBuffer:16*MB})).stdout.trim();
 function freeze(value){if(value&&typeof value==='object'){for(const nested of Object.values(value))freeze(nested);Object.freeze(value);}return value;}
 async function noLinks(file){
   let at=path.parse(file).root;const parents=[];
@@ -113,7 +114,8 @@ async function fixedPaths(){
 }
 async function readAuthenticatedPredecessor(){
   need(arguments.length===0,'ARGUMENTS');
-  const conditionsMaximum=profile===FROZEN591?PRIVATE_CONDITIONS_MAX_BYTES:256*MB;
+  const conditionsMaximum=profile===FROZEN591||profile===SOURCE_FROZEN594
+    ?PRIVATE_CONDITIONS_MAX_BYTES:256*MB;
   // These normal workflow paths select already restored immutable B; they are
   // not authority. No consumed 0200/140000 upgrade flag is reused as permission.
   const paths=await fixedPaths();
@@ -325,3 +327,19 @@ export function assertAuthenticatedFrozen591Snapshot(handle){
 export async function assertAuthenticatedFrozen591SnapshotFresh(handle){
   return snapshot591.fresh(...arguments);
 }
+
+// CURRENT snapshot of authenticated 594 originals.
+const SOURCE_FROZEN594=Object.freeze({
+  sourceHead:SOURCE594_CODE_SOURCE_PROVENANCE.head,
+  requiredSha:Object.freeze([SOURCE594_CODE_SOURCE_PROVENANCE.originSha256,
+    SOURCE594_CODE_SOURCE_PROVENANCE.partPipelineSha256]),
+  withSource:withSource594OriginalDataSource,
+  assertionPath:'scripts/lib/established-native-current-origin-594-assertion.mjs',
+  assertionExport:'assertFrozen594OriginSnapshotData',
+  temporaryPrefix:'rr-source594-snapshot-',errorPrefix:'SOURCE594_PREDECESSOR_'});
+const sourceSnapshot594=fixedSnapshot(SOURCE_FROZEN594);
+export async function readAuthenticatedSource594Predecessor(){
+  assertSource594OriginalDataSourceSelected();return sourceSnapshot594.read(...arguments);
+}
+export function assertAuthenticatedSource594Snapshot(handle){return sourceSnapshot594.snapshot(...arguments);}
+export async function assertAuthenticatedSource594SnapshotFresh(handle){return sourceSnapshot594.fresh(...arguments);}

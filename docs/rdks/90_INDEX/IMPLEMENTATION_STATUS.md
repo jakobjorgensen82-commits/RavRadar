@@ -1,6 +1,14 @@
+## 4. november — lokal 4.0.597-kandidat til hurtigere vejrplanlægning
+
+- [x] Den syntetiske landsprøve gav det forventede planoutput på cirka 81 sekunder med uændret 120-sekundersgrænse. Den strengt senere 594-overgang er afprøvet lokalt med alle 673 syntetiske tilstande og bevaret scorehistorik.
+- [ ] Kvalificér den endelige 597-kilde og dens SQL i rigtig PostgreSQL. Bevis autentisk 594-original, uændrede tal, nye præcise modelbindinger og korrekt offentlig levering.
+- [ ] Følg første almindelige overgangskørsel uden scalarplan. Mål derefter planens tid og offentlig dækning i næste almindelige integrerede generation, særskilt for prognosehalen, fælles timer og hver af de fem vejrfamilier.
+
+Private 121 timer og T+3-støtte for vandstand, syvzonepolitikken, kildeorden og RavScore-formel bevares. Den offentlige PLAIN-læserbro fra PR #803 er leveret. Den kompakte Pages-kandidat i PR #804 afventer fortsat kontrolleret levering og måling af den faktisk uploadede pakke. De isolerede SOURCE-alternativer 595 og 596 skal tilpasses 597, før de kan vurderes til en senere levering. Ingen af dem installeres med denne kandidat. Alle fem hovedmål er fortsat åbne.
+
 ## 4. november — kompakt Pages-levering i lokal 4.0.594-kandidat
 
-- [x] PR #803's tidligere PLAIN-læserbro har bestået kilde-CI. Merge og deploy er endnu ikke verificeret.
+- [x] Den tidligere PLAIN-læserbro fra PR #803 er offentligt leveret. PR #804 afventer kontrolleret levering.
 
 - [x] Den lokale kortkandidat er prøvet gennem de normale mål for tidsskyder, zonepanel, Top20, evidensgrænse, koldstart og opdateringscache. Kortmålet har 174 cases, herunder 171 tidligere, og transportbroen har 19. Det er syntetiske lokale prøver.
 
@@ -55,6 +63,14 @@ Den særskilte manuelle kandidat læser kun asset-manifest.json fra én eksakt g
 Resultatet er deklarerede metadata: manifestets hele SHA/størrelse, fast identitet og erklæret content-SHA/filstørrelse. Manglende, tvetydig, ugyldig eller ændret metadata giver fast afslag. rawBytesVerified=false, decoderExecuted=false og partRegistryAuthenticated=false bevares. Ingen RAW-fil åbnes, hashes eller afkodes; der beregnes ingen score eller tilstand. Ingen provider, bankskrivning, pruning eller produktionshandling følger med.
 
 Dette er ikke bevis for, at alle 14 originaler stadig findes i 245-cachen, eller for bølgehullernes decodedårsag. Metadataresultatet skal først aflæses og reviewes efter normal kvalifikation. En senere offline-decode kræver faktisk verificerede originalbytes og det autentiske 245-bundne PART-grundlag; den implementeres ikke her. Alle fem mål og endelig Source-/driftskvalifikation er fortsat åbne.
+
+## 4. november — scalarplanens tidsforbrug før DMI
+
+På samme syntetiske landsprøve nåede den stærkere DMI-fil alene alle 673 kystdele, men den samlede plan stoppede efter cirka 195 sekunder da den fælles frist blev kontrolleret ved indgangen til den offline Copernicus-verifikation. De 195 sekunder er hele kalderens tid. Der blev ikke skrevet en plan. Den samlede kandidat med ni produktfiler genbruger de samme kontrollerede tidsakser, undgår overflødigt arbejde og samler behovene efter den normale offline kontrol af reserverne.
+
+Den samlede kandidat gav det forventede planoutput byte for byte på den eksisterende 210/673-prøve på cirka 81 sekunder. De gamle forløb nåede ikke at skrive en plan. Ligheden gælder den gemte forventning for prøvepakken, og faktisk drift skal måles i en almindelig vejrhentning.
+
+Rækkefølgen DMI → Copernicus → Open-Meteo, kildevalg, originalkontrol, scoreformel og de 120 sekunder bevares. Det normale krav om nye sammenhængende kilde- og modelbindinger, autentificeret førskrivning og efterfølgende offentlig kontrol gælder fortsat. Levering og faktisk dækning er åbne.
 
 ## 3. november — faste fejlfaser for den normale scalarplan
 

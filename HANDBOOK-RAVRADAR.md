@@ -22,7 +22,7 @@ Opdateringskontrollen starter, når dokumentet er klar, efter normal sikring af 
 
 ### Status og hvad der skal måles
 
-Den tidligere PLAIN-læserbro i PR #803 har bestået kilde-CI. Merge og deploy er endnu ikke verificeret. Den samlede kandidat kræver sin egen kontrol, måling af den faktisk uploadede Pages-pakke mod 1 GB-grænsen og afprøvning af offentlig visning på en rigtig telefon. Lokal afprøvning fastslår hverken indlæsningstid på telefon eller Free-forbrug.
+Den tidligere PLAIN-læserbro fra PR #803 er offentligt leveret. Den kompakte kandidat i PR #804 afventer sin egen levering. Den samlede kandidat kræver sin egen kontrol, måling af den faktisk uploadede Pages-pakke mod 1 GB-grænsen og afprøvning af offentlig visning på en rigtig telefon. Lokal afprøvning fastslår hverken indlæsningstid på telefon eller Free-forbrug.
 
 Kandidaten bruger det eksisterende versionsfelt 4.0.594 og de gældende score-, kilde- og modelbindinger. Den ændrer ingen migrations-SQL. SOURCE-revision, statistik og automatisk sletning har særskilte leveringsforløb.
 
@@ -44,13 +44,29 @@ DMI → Copernicus → Open-Meteo, hentebudgetter, originaler, cache, scoreforme
 
 ### Faste fejltrin uden rå fejldata
 
-Når den normale scalarplan afvises, bevares den eksisterende UNAVAILABLE-markør. Den efterfølgende diagnostik indeholder kun phase, errorCategory og elapsedMillis. Fasen kommer fra den faktisk fejlede læse-, reservekontrol-, kodnings- eller gemmeoperation; tiden måles monotont fra kalderens start.
+Når den normale scalarplan afvises, bevares den eksisterende UNAVAILABLE-markør. Den efterfølgende diagnostik indeholder kun phase, errorCategory og elapsedMillis. Fasen navngiver trinnet, hvor fejlen blev opdaget, og tiden gælder hele kalderen. Det sidste budget kan være brugt før det trin, der rapporterer overskridelsen.
 
 Fejlkategorierne er en fast, lukket liste. Ukendte fejl bliver UNKNOWN_FAILURE. Rå fejltekst, filstier, vejrværdier og underprocessens fejludskrift udleveres ikke. Et ukendt transportstop bevarer sin oprindelige fejlidentitet, STOP_UNPROVED og exit 2; det må ikke ommærkes til en almindelig fallback.
 
 Den samme normale fysiske testcase afprøver deadline, mislykket offline bytekontrol og privatliv ved ukendt fejl og stop, før den hidtidige CP → Python → DMI-kæde fortsætter. Originalernes hele bytes og filidentiteter bevares. Den samlede loadergrænse er fortsat 120 sekunder; der ændres ingen leverandøradgang, model, score eller udvælgelsesregel.
 
 Rettelsen er lokalt forberedt. Præcis kildekvalifikation, sikker levering og faktisk ny fejlaflæsning er fortsat åbne. Fase og tidsforbrug gør næste afslag forklarligt; de dokumenterer ikke i sig selv leverandørfravær, en bestemt timeoutårsag eller fuld offentlig vejrdækning.
+
+### Scalarplanens tidsforbrug før DMI
+
+Den lokale plan bruger allerede gemte data til at finde de timer, der mangler vind, vandstand eller vandtemperatur. Hvis planlæggeren rammer sin tidsgrænse, kan vejrhentningen fortsætte med den konservative prioritering. Den registrerede fase viser, hvor overskridelsen blev opdaget. Det registrerede tidsforbrug gælder hele planlægningen.
+
+Den samlede kandidat undgår at gentage arbejde med de samme tidsakser og gemte kilder. Den eksisterende syntetiske landsprøve for 210 zoner og 673 kystdele gav det forventede planoutput på cirka 81 sekunder. De langsommere prøveforløb nåede ingen færdig plan.
+
+Rækkefølgen DMI → Copernicus → Open-Meteo, kildevalg, originalkontrol, scoreformel og tidsgrænsen på 120 sekunder bevares. Sikker levering og dækningsmåling efter en almindelig vejrhentning er fortsat åbne.
+
+### Den lokale 4.0.597-kandidat
+
+4.0.597 er en lokal kandidat til hurtigere planlægning af, hvor prognosen mangler data. Den bruger de samme kontrollerede kildedata og giver det forventede planoutput byte for byte på den eksisterende syntetiske landsprøve for 210 zoner og 673 kystdele på cirka 81 sekunder. Den samlede frist er fortsat 120 sekunder. DMI er førstevalg, derefter Copernicus og Open-Meteo. RavScore-formlen, administratorpunkter og geometri bevares.
+
+Overgangen bruger den senest gyldige, autentificerede 594-generation og kræver en nyere hel prognosetime. De gemte originale data og scorehistorikken bevares. En kontrolleret arbejdskopi fører de samme tal og den samme historik ind under nye modelbindinger. Den normale arbejdsgang bevarer originaldata før det tilhørende scorecheckpoint og gennemfører de beskyttede kontroller før Edge og Pages.
+
+Den første almindelige kørsel bruger den eksisterende overgang for historisk vedligeholdelse og kører uden den nye scalarplan. Den efterfølgende almindelige integrerede vejrhentning skal vise, om planen holder tidsgrænsen og forbedrer dækningen. Sammenlign alle forventede timer og zoner for hver af de fem vejrfamilier, og opgør prognosehalen og bevarede fælles timer særskilt.
 
 ## 89.298 Sikker vedligeholdelse af dokumenthistorik
 
@@ -174,7 +190,13 @@ Et krypteret fremskridt kan bevare allerede hentede leverandørdata, selv om ber
 
 En ny modelbinding kan ændre arbejdsfilens metadata. Derfor er uændrede originale vejrdata alene ikke bevis for, at gammelt fremskridt kan bruges direkte efter overgangen. De normale kontroller skal afgøre genbrug; gamle data og fremskridt bevares, mens en afvigelse afklares.
 
-### Aktuelle lokalt udstedte 594-bindinger
+### Aktuelle lokalt udstedte 597-bindinger
+
+Aktuel lokal kildebinding — 4. november 2026, RavScore 4.0.597: Den integrerede model er offentlig i den installerede 4.0.594-generation. 4.0.597 er lokalt udstedt og endnu ikke installeret eller offentligt leveret. 4.0.597 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=68f118fbb07b252fab89f12ed0bf82816cd74b04afc306b00c2b3a8ccfe25c81` over 100 kanonisk normaliserede transitive implementeringsfiler. De syv normale deklarerede forbrugere er synkroniseret. Inaktiv Candidate G-kompatibilitet har `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=23d97454ec9578e441a0482cf028ae347b2da5ee2ed97560246b486ee46364c5` over 101 transitive filer. Autoriteten er `version.json.releaseContract.modelBindings`. Scoreformel, kildeprioritet, administratorpunkter og geometri er uændrede. Den faktiske database- og originalforgænger er nu 594. De følgende ældre daterede bindingsblokke beskriver tidligere trin og erstattes af denne status.
+
+Aktuel lokal fortsættelseskontrakt — 4. november 2026: 597 har `continuationStateContractSha256=67665c10d2bd134fb598af1c36a41c2d53bb2820344c577ada30bcfbd6afe8e1` (`67665c10…`). Den ene nye migration `20261104004400_scalar597_later_h0_original594_bound_successor.sql` er genereret fra den uændrede installerede 594-kilde. Den tillader kun en strengt senere generation med autentificerede 594-originaler, bevaret scorehistorik og præcis metadataovergang. Rigtig PostgreSQL-kontrol, kontrolleret installation og offentlig 597-generation mangler stadig. De gamle migrationer og data bevares.
+
+### Historiske lokalt udstedte 594-bindinger
 
 **Aktuel kildebinding — 31. oktober 2026, RavScore 4.0.594, lokalt udstedt:** Den integrerede model er offentlig som modeltype under den senest leverede 591-version. Den nye 594-kilde er ikke installeret eller offentligt leveret. 4.0.594 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=08750e3667e5a221374762fccadccf08abf5e9f1ae8814ccc97bfc11880bf36c` over 99 kanonisk normaliserede transitive implementeringsfiler. De syv normale deklarerede forbrugere er synkroniseret. Inaktiv Candidate G-kompatibilitet har `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=2d5cde5418270a02396e24a249f0b6bb09527366c1c110d8742a44cfe2ab459b` over 100 transitive filer. Autoriteten er `version.json.releaseContract.modelBindings`. Ingen scoreformel, kildeprioritet, administratorpunkter eller geometri ændres. 593 er fortsat databaseforgængeren, og autentiske B/S samt offentlig generation er fortsat 591. Ældre modstridende status nedenfor er dateret historik på disse konkrete punkter.
 
@@ -789,6 +811,8 @@ Telefonens eller browserens delingsmenu bestemmer de tilgængelige destinationer
 
 Hentetiden fordeles mellem de kritiske vejrmodeller, så hver model kan arbejde, mens der stadig er reserveret tid til de øvrige. Et fast filantal fortæller ikke, hvor lang tid filerne tager. Tiden og den fælles downloadgrænse skal derfor begge respekteres. Flere behandlede filer er heller ikke i sig selv bevis for bedre dækning; det afgøres af de gyldige værdier i hele prognosen.
 
+En lokal rettelse under afprøvning giver den almindelige udvidede vejrhentning mulighed for at genlæse DMI’s filliste én gang ved første tur for en samling. Det kræver, at RavRadar allerede har konstateret en manglende ydertime for en vejrtype, som samlingen må levere. Det kan også være en manglende støttetime til at beregne vandstandens ændring tre timer frem. Den eksisterende tid, prioritering og kontrol af kilder gælder fortsat. En nyere filliste alene er endnu ikke bevis for bedre dækning. De sidste støttetimer kan stadig mangle, selv om listen har alle offentlige prognosetimer.
+
 For at forstå de resterende huller registrerer programmet rækkefølgen, når hver DMI-samling starter sin første tur. Registreringen viser, om køens egen klassifikation angiver manglende input eller opgradering. Det er ikke i sig selv bevis for et hul på tværs af alle leverandører. Registreringen ændrer ikke rækkefølgen og udfylder ikke selv et hul. Senere omplanlægninger og den faktisk offentliggjorte dækning skal vurderes særskilt.
 
 Kort fortalt: En ny gennemgang af en vejrfil behøver ikke ændre en allerede bedre, gyldig strømværdi.
@@ -796,6 +820,8 @@ Kort fortalt: En ny gennemgang af en vejrfil behøver ikke ændre en allerede be
 Programmet skal stadig kunne dokumentere den gennemgåede fil, de rigtige kystdele og den bevarede værdis oprindelse. At en fil er gennemgået er ikke i sig selv bevis for, at en manglende time er blevet udfyldt. De samme krav gælder, når data gemmes og bruges ved næste opdatering.
 
 Dækning opgøres over alle forventede timer og zoner for vind, bølger, strøm, vandstand og vandtemperatur. En brugbar score er ikke det samme som komplette data i alle fem kategorier. Bevarede fælles timer og nye timer sidst i prognosen skal vurderes særskilt; ingen kildeprioritet eller beregningsformel ændres af denne bevaring.
+
+I den lokale 4.0.597-kandidat består de eksisterende vandstandskrav. De 118 offentlige prognosetimer understøttes af 121 private timer. De sidste tre bruges til at vurdere vandstandsændringen tre timer frem fra den centralt valgte vandstandskilde. Manglende støtte giver fortsat en manglende værdi. De syv kystzoner kan fortsat bruge dkss_lf til vandstand alene. dkss_lf-strøm, tilhørende strømhukommelse og vandtemperatur er fortsat udelukket i de zoner.
 
 ## 89.265 Spørg RavRadar: forklaring er ikke en lokal vejrudsigt
 
@@ -1441,7 +1467,7 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.594
+**Håndbogsversion:** 4.0.597
 
 **Lokal kildebinding — 29. oktober 2026, RavScore 4.0.591, ikke installeret:** Den integrerede model er offentlig som modeltype under den særskilt leverede 4.0.590. Den nye assistentefterfølger er lokalt udstedt og er endnu ikke samlet kvalificeret, installeret eller offentliggjort.
 

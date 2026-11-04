@@ -61,9 +61,217 @@ const reviewed={
     ]
   }
 };
+// Test DATA only. Offsets are UTF-16 source indices, checked against both
+// complete reviewed source digests and the exact bytes of each changed slice.
+const reviewed597=Object.freeze({
+  "scripts/check-assistant-later-h0-predecessor-source.mjs": {
+    "before": "00dc5244da4e9fe82b761f7ec2c8c4b394e4b2f97db7c225d99de9c1a9bf83e8",
+    "after": "d07922fbe0406f46ed41bf40633d2b6ed02275dd4683acee8f37e99dae48a01a",
+    "hunks": [
+      [
+        629,
+        629,
+        "  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588||profile===FROZEN590||profile===FROZEN591,'FROZEN_SOURCE_UNKNOWN_PROFILE');\n",
+        "  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588||profile===FROZEN590||profile===FROZEN591||profile===SOURCE594_CODE_PROFILE||profile===SOURCE594_ORIGINAL_DATA_PROFILE,'FROZEN_SOURCE_UNKNOWN_PROFILE');\n"
+      ],
+      [
+        23802,
+        23879,
+        "const ASSERTION_SUFFIX=profile===FROZEN591?ORIGINAL_591_ASSERTION_SUFFIX:profile===FROZEN590?ORIGINAL_590_ASSERTION_SUFFIX:profile===FROZEN588?ORIGINAL_588_ASSERTION_SUFFIX:profile===FROZEN586?ORIGINAL_586_ASSERTION_SUFFIX:\n",
+        "const SOURCE_594_ASSERTION_SUFFIX=ORIGINAL_591_ASSERTION_SUFFIX\n  .replaceAll('591','594')\n  .replace('a157 issued594','37a34703 issued594')\n  .replace('516d9f641bbf8de4fd8933e60a8a76621de4ec72c2d9492c1e43a94c74c9b67c',\n    'b791c803b5d41fd036e01d25bd85f7298e3652abd6d44e49b68b04a0f7cfd4fa');\nconst ASSERTION_SUFFIX=profile===SOURCE594_ORIGINAL_DATA_PROFILE?SOURCE_594_ASSERTION_SUFFIX:profile===FROZEN591?ORIGINAL_591_ASSERTION_SUFFIX:profile===FROZEN590?ORIGINAL_590_ASSERTION_SUFFIX:profile===FROZEN588?ORIGINAL_588_ASSERTION_SUFFIX:profile===FROZEN586?ORIGINAL_586_ASSERTION_SUFFIX:\n"
+      ],
+      [
+        25754,
+        26194,
+        "",
+        "  if(profile===SOURCE594_ORIGINAL_DATA_PROFILE)assertSource594OriginalDataSourceSelected();\n  if(profile===SOURCE594_CODE_PROFILE)assertSource594CodeSourceSelected();\n"
+      ],
+      [
+        26195,
+        26802,
+        "  const index=await inventory(),sourceFiles=await selected(index),files=[...sourceFiles,ASSERTION,GIT_REFERENCE].sort();\n",
+        "  const index=await inventory(),sourceFiles=await selected(index),files=[...sourceFiles,...(ASSERTION===null?[]:[ASSERTION]),GIT_REFERENCE].sort();\n"
+      ],
+      [
+        27571,
+        28205,
+        "    const builderArgs=profile===FROZEN591?['--public590-successor','--check']:\n",
+        "    const builderArgs=(profile===SOURCE594_CODE_PROFILE||profile===SOURCE594_ORIGINAL_DATA_PROFILE)?['--installed593-origin591-successor','--check']:\n      profile===FROZEN591?['--public590-successor','--check']:\n"
+      ],
+      [
+        37627,
+        38395,
+        "",
+        "export const SOURCE594_CODE_SOURCE_PROVENANCE=Object.freeze({\n  \"selected\": true,\n  \"purpose\": \"CODE_ONLY_NO_ORIGINAL_OR_RUNTIME_ADMISSION\",\n  \"head\": \"37a34703d9ae8bfb2c28056f21a7ea73944033ae\",\n  \"tree\": \"09aef7f6f5d965f565fadabea203b50687acc255\",\n  \"candidateFiles\": 100,\n  \"integratedFiles\": 99,\n  \"originSha256\": \"b791c803b5d41fd036e01d25bd85f7298e3652abd6d44e49b68b04a0f7cfd4fa\",\n  \"partPipelineSha256\": \"8e979128a682a7324d7defcc3d2d2dfa5edc85ebc22d4ae714810aa085490758\",\n  \"fullRuntimeContractSha256\": \"ede0b53b8ed0f3fa5d0e505ea7c07d98969dc7a38fe94ae034a85f9c5d5af7ff\",\n  \"publicProjectionContractSha256\": \"24e95d442450769ff233e42aa4b100842c353c8d28735defbbfef5d5457c99ec\"\n});\nconst SOURCE594_CODE_PROFILE=Object.freeze({\n  ...SOURCE594_CODE_SOURCE_PROVENANCE,\n  builder:'scripts/build-assistant-later-h0-successor.mjs',\n  builderChecked:'Exact installed593/original591 later-H0 successor checked; no installation or state admission.',\n  assertion:null,temporaryPrefix:'rr-source-a594-code-',\n  candidate:'2d5cde5418270a02396e24a249f0b6bb09527366c1c110d8742a44cfe2ab459b',integrated:'08750e3667e5a221374762fccadccf08abf5e9f1ae8814ccc97bfc11880bf36c',\n  additionalMigrations:Object.freeze([...FROZEN591.additionalMigrations,\n    Object.freeze({path:'supabase/migrations/20261029183010_assistant_public591_later_h0_original_bound_successor.sql',sha256:'e5c7fb182d9491bd9222cb59dbefd3da4592867522dde805ea17e67c0d023e97'}),\n    Object.freeze({path:'supabase/migrations/20261030105202_assistant_public591_later_h0_original_bound_successor.sql',sha256:'47c51886a58aa1cfbbc244a5469ace67521774499135666c26fccd8c7f291bfd'}),\n    Object.freeze({\n    path:'supabase/migrations/20261031070755_installed593_original591_later_h0_bound_successor.sql',\n    sha256:'0d50a857aebf838c072ee7ccfc846fecd9744f9bb093eb6943b0484eee99c777'})]),\n  runtimeContracts:Object.freeze({continuationStateContractSha256:'a6c0408f76b5de70a90959e254df78317f8282cb93c0edc85a71d36b9ef8dafa',\n    fullRuntimeContractSha256:'ede0b53b8ed0f3fa5d0e505ea7c07d98969dc7a38fe94ae034a85f9c5d5af7ff',\n    publicProjectionContractSha256:'24e95d442450769ff233e42aa4b100842c353c8d28735defbbfef5d5457c99ec'}),\n});\n// This is only an immutable DATA validator host. B/S, original attestations,\n// registry/snapshot and fresh CURRENT/S versions must still be authenticated.\nconst SOURCE594_ORIGINAL_DATA_PROFILE=Object.freeze({...SOURCE594_CODE_PROFILE,\n  purpose:'ORIGINAL_DATA_ASSERTIONS_ONLY_NO_ADMISSION',\n  assertion:'scripts/lib/established-native-current-origin-594-assertion.mjs',temporaryPrefix:'rr-source-a594-data-'});\n\n"
+      ],
+      [
+        41139,
+        44488,
+        "",
+        "\nconst source594Code=fixedSource(SOURCE594_CODE_PROFILE);\nexport function assertSource594CodeSourceSelected(){\n  assert.equal(arguments.length,0,'No caller-selected594 CODE source');\n  const source=SOURCE594_CODE_SOURCE_PROVENANCE;\n  assert.equal(source.selected,true);assert.equal(source.purpose,'CODE_ONLY_NO_ORIGINAL_OR_RUNTIME_ADMISSION');\n  assert.deepEqual(Object.keys(source).sort(),['candidateFiles','fullRuntimeContractSha256','head','integratedFiles',\n    'originSha256','partPipelineSha256','publicProjectionContractSha256','purpose','selected','tree'].sort());\n  for(const key of ['head','tree'])assert.match(source[key],/^[a-f0-9]{40}$/);\n  for(const key of ['candidateFiles','integratedFiles'])assert(Number.isSafeInteger(source[key])&&source[key]>0);\n  for(const key of ['originSha256','partPipelineSha256','fullRuntimeContractSha256','publicProjectionContractSha256'])\n    assert.match(source[key],/^[a-f0-9]{64}$/);\n  return source; // Proposed CODE data only, not qualification or original admission.\n}\nexport async function withSource594CodeParent(callback){\n  assertSource594CodeSourceSelected();return source594Code(...arguments);\n}\n\n\nconst source594OriginalData=fixedSource(SOURCE594_ORIGINAL_DATA_PROFILE);\nexport function assertSource594OriginalDataSourceSelected(){\n  assert.equal(arguments.length,0);assertSource594CodeSourceSelected();\n  assert.equal(SOURCE594_ORIGINAL_DATA_PROFILE.purpose,'ORIGINAL_DATA_ASSERTIONS_ONLY_NO_ADMISSION');\n  assert.equal(SOURCE594_ORIGINAL_DATA_PROFILE.head,SOURCE594_CODE_SOURCE_PROVENANCE.head);\n  assert.equal(SOURCE594_ORIGINAL_DATA_PROFILE.tree,SOURCE594_CODE_SOURCE_PROVENANCE.tree);\n  assert.equal(SOURCE594_ORIGINAL_DATA_PROFILE.assertion,'scripts/lib/established-native-current-origin-594-assertion.mjs');\n}\nexport async function withSource594OriginalDataSource(callback){\n  assertSource594OriginalDataSourceSelected();return source594OriginalData(...arguments);\n}\n"
+      ]
+    ]
+  },
+  "scripts/lib/authenticated-frozen586-predecessor.mjs": {
+    "before": "3f47d6808f563b456d173e63be919e79ec57bff959e8e216aeeeb9096d7b368b",
+    "after": "d7465a5d3d2abee68ffac57beb2a707db0dcb1c9f39811d6249181b73626b1ac",
+    "hunks": [
+      [
+        861,
+        861,
+        "  withAuthenticated591PredecessorSource,assertFrozen591CodeSourceSelected,FROZEN591_CODE_SOURCE_PROVENANCE}\n",
+        "  withAuthenticated591PredecessorSource,assertFrozen591CodeSourceSelected,FROZEN591_CODE_SOURCE_PROVENANCE,\n  withSource594OriginalDataSource,assertSource594OriginalDataSourceSelected,SOURCE594_CODE_SOURCE_PROVENANCE}\n"
+      ],
+      [
+        1357,
+        1467,
+        "  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588||profile===FROZEN590||profile===FROZEN591,'FROZEN_PREDECESSOR_UNKNOWN_PROFILE');\n",
+        "  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588||profile===FROZEN590||profile===FROZEN591||profile===SOURCE_FROZEN594,'FROZEN_PREDECESSOR_UNKNOWN_PROFILE');\n"
+      ],
+      [
+        2540,
+        2678,
+        "  {env:environment(),encoding:'utf8',timeout:30000,maxBuffer:16*MB})).stdout.trim();\n",
+        "  {env:{...environment(),GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_OPTIONAL_LOCKS:'0',GIT_TERMINAL_PROMPT:'0',GIT_CONFIG_COUNT:'1',GIT_CONFIG_KEY_0:'protocol.allow',GIT_CONFIG_VALUE_0:'never'},encoding:'utf8',timeout:30000,maxBuffer:16*MB})).stdout.trim();\n"
+      ],
+      [
+        7398,
+        7719,
+        "  const conditionsMaximum=profile===FROZEN591?PRIVATE_CONDITIONS_MAX_BYTES:256*MB;\n",
+        "  const conditionsMaximum=profile===FROZEN591||profile===SOURCE_FROZEN594\n    ?PRIVATE_CONDITIONS_MAX_BYTES:256*MB;\n"
+      ],
+      [
+        20622,
+        20976,
+        "",
+        "\n// CURRENT snapshot of authenticated 594 originals.\nconst SOURCE_FROZEN594=Object.freeze({\n  sourceHead:SOURCE594_CODE_SOURCE_PROVENANCE.head,\n  requiredSha:Object.freeze([SOURCE594_CODE_SOURCE_PROVENANCE.originSha256,\n    SOURCE594_CODE_SOURCE_PROVENANCE.partPipelineSha256]),\n  withSource:withSource594OriginalDataSource,\n  assertionPath:'scripts/lib/established-native-current-origin-594-assertion.mjs',\n  assertionExport:'assertFrozen594OriginSnapshotData',\n  temporaryPrefix:'rr-source594-snapshot-',errorPrefix:'SOURCE594_PREDECESSOR_'});\nconst sourceSnapshot594=fixedSnapshot(SOURCE_FROZEN594);\nexport async function readAuthenticatedSource594Predecessor(){\n  assertSource594OriginalDataSourceSelected();return sourceSnapshot594.read(...arguments);\n}\nexport function assertAuthenticatedSource594Snapshot(handle){return sourceSnapshot594.snapshot(...arguments);}\nexport async function assertAuthenticatedSource594SnapshotFresh(handle){return sourceSnapshot594.fresh(...arguments);}\n"
+      ]
+    ]
+  },
+  "scripts/lib/established-native-current-origin.mjs": {
+    "before": "b791c803b5d41fd036e01d25bd85f7298e3652abd6d44e49b68b04a0f7cfd4fa",
+    "after": "e4ec3e1656669229b99a2dff0170db114ae31129c5c0584a3806c74ca90b4f42",
+    "hunks": [
+      [
+        3118,
+        3118,
+        "  readAuthenticatedFrozen591Predecessor,assertAuthenticatedFrozen591Snapshot}\n",
+        "  readAuthenticatedFrozen591Predecessor,assertAuthenticatedFrozen591Snapshot,\n  readAuthenticatedSource594Predecessor,assertAuthenticatedSource594Snapshot,assertAuthenticatedSource594SnapshotFresh}\n"
+      ],
+      [
+        3493,
+        3613,
+        "",
+        "const SCALAR597_ORIGINAL594=Object.freeze({\n  I:'08750e3667e5a221374762fccadccf08abf5e9f1ae8814ccc97bfc11880bf36c',\n  C:'2d5cde5418270a02396e24a249f0b6bb09527366c1c110d8742a44cfe2ab459b',\n  T:'a6c0408f76b5de70a90959e254df78317f8282cb93c0edc85a71d36b9ef8dafa',\n});\n"
+      ],
+      [
+        49232,
+        49616,
+        "",
+        "    || isScalar597OriginParentBinding(descriptor.modelBinding)\n"
+      ],
+      [
+        50891,
+        51338,
+        "",
+        "    if(isScalar597OriginParentBinding(descriptor.modelBinding))\n      return readScalarFrozen594LaterOrigin({descriptor,before,request,conditions,central,parts,currentSource});\n"
+      ],
+      [
+        86922,
+        87546,
+        "",
+        "\n// Pure family checks shared with the normal origin reader. They mint no handle.\nexport function isScalar597OriginParentBinding(binding){\n  return binding?.modelBundleSha256===SCALAR597_ORIGINAL594.I;\n}\nexport function assertScalar597OriginParentMetadata(descriptor,checkpoint){\n  need(isScalar597OriginParentBinding(descriptor?.modelBinding)\n    &&descriptor.contractHashes?.continuationStateContractSha256===SCALAR597_ORIGINAL594.T\n    &&checkpoint?.candidateGRollbackCompanion?.modelBinding?.modelBundleSha256===SCALAR597_ORIGINAL594.C,\n    '594_FIXED_ORIGINAL_BINDING');\n  return true;\n}\n\n// The existing ordinary origin handoff, scoped only to a strictly newer scalar597 target.\nasync function readScalarFrozen594LaterOrigin({descriptor,before,request,conditions,central,parts,currentSource}){\n  const target=process.env.RAVRADAR_PRODUCTION_TARGET_HOUR;\n  need(isScalar597OriginParentBinding(descriptor.modelBinding)\n    &&currentSource.integrated!==SCALAR597_ORIGINAL594.I,'594_FAMILY');\n  need(hour(target)&&Date.parse(target)>Date.parse(descriptor.productionReferenceAt),'594_LATER_TARGET');\n  const original594=await readAuthenticatedSource594Predecessor();\n  const snapshot=assertAuthenticatedSource594Snapshot(original594);\n  need(same(snapshot.descriptor,descriptor)&&same(snapshot.centralContract,central),'594_ORIGINAL_CHANGED');\n  const contracts=await privateRuntimeContractHashes(),I=ravScoreModelBinding(),C=candidateBinding();\n  assertScalar597OriginParentMetadata(descriptor,snapshot.checkpoint);\n  need(I.modelBundleSha256===currentSource.integrated&&C.modelBundleSha256===currentSource.candidate\n    &&contracts.continuationStateContractSha256===currentSource.continuation\n    &&C.modelBundleSha256!==snapshot.checkpoint.candidateGRollbackCompanion.modelBinding.modelBundleSha256\n    &&contracts.continuationStateContractSha256!==descriptor.contractHashes.continuationStateContractSha256,\n    '594_ISSUED_CURRENT_SOURCE');\n  need(same({...snapshot.checkpoint.modelBinding,modelBundleSha256:I.modelBundleSha256},I)\n    &&same({...snapshot.checkpoint.candidateGRollbackCompanion.modelBinding,modelBundleSha256:C.modelBundleSha256},C)\n    &&same({...descriptor.contractHashes,continuationStateContractSha256:contracts.continuationStateContractSha256},contracts),\n    '594_METADATA_ONLY');\n  need(conditions.datasetId===descriptor.datasetId&&conditions.productionReferenceAt===descriptor.productionReferenceAt\n    &&same(conditions[ATTEST],snapshot.attestation),'594_WHOLE_PARENT_CHANGED');\n  const pairs=pairsFromConditions(conditions,parts);\n  need(same([...pairs.keys()].sort(),Object.keys(snapshot.checkpoint.states).sort())\n    &&same([...pairs.keys()].sort(),Object.keys(snapshot.checkpoint.candidateGRollbackCompanion.states).sort()),'594_PARTS');\n  for(const[id,pair]of pairs){\n    const originalI=snapshot.checkpoint.states[id],originalG=snapshot.checkpoint.candidateGRollbackCompanion.states[id];\n    const inverseI=structuredClone(pair.integrated),inverseG=structuredClone(pair.candidate);\n    need(inverseI.modelBundleSha256===I.modelBundleSha256,'594_CURRENT_PAIR_BINDING');\n    inverseI.modelBundleSha256=originalI.modelBundleSha256;\n    if(Object.hasOwn(inverseG,'modelBundleSha256')){\n      need(inverseG.modelBundleSha256===C.modelBundleSha256,'594_CURRENT_CANDIDATE_BINDING');\n      inverseG.modelBundleSha256=originalG.modelBundleSha256;\n    }\n    need(same(inverseI,originalI)&&same(inverseG,originalG),'594_WHOLE_PAIR_INVERSE');\n  }\n  need(same(await readPointer(request),before),'SOURCE_CHANGED');\n  need(same(await json(path.join(ROOT,'data/live/coastal-parts-v2.json'),16*MB),central),'REGISTRY_CHANGED');\n  await assertAuthenticatedSource594SnapshotFresh(original594);\n  const handle=Object.freeze({});\n  contexts.set(handle,{seed:false,descriptor:structuredClone(descriptor),generationSha256:snapshot.checkpoint.generationSha256,\n    parentAttestationSha256:snapshot.attestation.attestationSha256,central,parts,pairs,currentSource,\n    consumedParts:new Set(),finalized:false});\n  return handle;\n}\n"
+      ]
+    ]
+  },
+  "scripts/assistant-later-h0-binding-prewrite.mjs": {
+    "before": "d46dc4c2741dc62608e640ca60bd6b18027df6086a71f63c26e879c4495c94e2",
+    "after": "a87b9960dfcd35ccda2a8de8ce6fea35783fc3a25ef49dde806643d309d05384",
+    "hunks": [
+      [
+        602,
+        602,
+        "import {withAuthenticated587PredecessorSource,withAuthenticated588PredecessorSource,withAuthenticated590PredecessorSource,withAuthenticated591PredecessorSource} from './check-assistant-later-h0-predecessor-source.mjs';\n",
+        "import {withAuthenticated587PredecessorSource,withAuthenticated588PredecessorSource,withAuthenticated590PredecessorSource,withAuthenticated591PredecessorSource,withSource594OriginalDataSource} from './check-assistant-later-h0-predecessor-source.mjs';\n"
+      ],
+      [
+        1228,
+        1260,
+        "  assertAuthenticatedFrozen591Snapshot,assertAuthenticatedFrozen591SnapshotFresh} from './lib/authenticated-frozen586-predecessor.mjs';\n",
+        "  assertAuthenticatedFrozen591Snapshot,assertAuthenticatedFrozen591SnapshotFresh,\n  readAuthenticatedSource594Predecessor,assertAuthenticatedSource594Snapshot,assertAuthenticatedSource594SnapshotFresh} from './lib/authenticated-frozen586-predecessor.mjs';\n"
+      ],
+      [
+        1456,
+        1608,
+        "import {assertAssistantPublic587SuccessorMigrationPlan,assertAssistantPublic588SuccessorMigrationPlan,assertAssistantPublic590SuccessorMigrationPlan,assertAssistantPublic591SuccessorMigrationPlan,assertInstalled593Original591MigrationPlan} from './integrated-cutover-readiness.mjs';\n",
+        "import {assertAssistantPublic587SuccessorMigrationPlan,assertAssistantPublic588SuccessorMigrationPlan,assertAssistantPublic590SuccessorMigrationPlan,assertAssistantPublic591SuccessorMigrationPlan,assertInstalled593Original591MigrationPlan,assertScalar597LaterH0MigrationPlan} from './integrated-cutover-readiness.mjs';\n"
+      ],
+      [
+        2678,
+        2866,
+        "assert(['assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor'].includes(ACTIVE.sourcePhase));\nconst ACTIVE_PREDECESSOR=ACTIVE.sourcePhase==='assistant-installed593-origin591-successor'?Object.freeze({\n",
+        "assert(['assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor','scalar597-later-h0-original594-successor'].includes(ACTIVE.sourcePhase));\nconst ACTIVE_PREDECESSOR=ACTIVE.sourcePhase==='scalar597-later-h0-original594-successor'?Object.freeze({\n  withSource:withSource594OriginalDataSource,read:readAuthenticatedSource594Predecessor,\n  snapshot:assertAuthenticatedSource594Snapshot,fresh:assertAuthenticatedSource594SnapshotFresh,\n  plan:assertScalar597LaterH0MigrationPlan\n}):ACTIVE.sourcePhase==='assistant-installed593-origin591-successor'?Object.freeze({\n"
+      ]
+    ]
+  },
+  "scripts/build-assistant-later-h0-successor.mjs": {
+    "before": "b82eebe5524c40c8dd41907ce22a7e09e652ff8b7379b45c29ea4b5841838245",
+    "after": "e789b73ba57efed3ceaab3bd6cc27a31f812aae1cc1088b395576557ac4720d5",
+    "hunks": [
+      [
+        3015,
+        3015,
+        "  installed593Original591Migration}\n",
+        "  installed593Original591Migration,readInstalled593Original591CanonicalSource,\n  SCALAR597_LATER_H0_BEFORE,SCALAR597_LATER_H0_ALIASES,SCALAR597_LATER_H0_RELEASE,\n  scalar597LaterH0CheckpointContractFromBase,requireScalar597LaterH0Binding,\n  requireScalar597LaterH0Output,scalar597LaterH0Migration}\n"
+      ],
+      [
+        6242,
+        6504,
+        "",
+        "const SCALAR597_LATER_H0=Object.freeze({\n  previous:SCALAR597_LATER_H0_BEFORE,aliases:SCALAR597_LATER_H0_ALIASES,\n  previousRelease:594,validatorCount:41,\n  readPredecessor:readInstalled593Original591CanonicalSource,\n  checkpointFromBase:scalar597LaterH0CheckpointContractFromBase,\n  contractTail:\"    || E'\\\\n-- assistant-later-h0-original591-payload-validator --\\\\n' || v_ask591_payload_definition;\",\n  kind:'SCALAR597_LATER_H0_SUCCESSOR_STRUCTURE',\n});\n\n"
+      ],
+      [
+        6274,
+        6993,
+        "  assert(profile===LEGACY586||profile===PUBLIC587||profile===PUBLIC588||profile===PUBLIC590||profile===PUBLIC591||profile===INSTALLED593_ORIGINAL591,'ASSISTANT_SUCCESSOR_UNKNOWN_PROFILE');\n",
+        "  assert(profile===LEGACY586||profile===PUBLIC587||profile===PUBLIC588||profile===PUBLIC590||profile===PUBLIC591||profile===INSTALLED593_ORIGINAL591||profile===SCALAR597_LATER_H0,'ASSISTANT_SUCCESSOR_UNKNOWN_PROFILE');\n"
+      ],
+      [
+        32902,
+        33651,
+        "",
+        "export async function buildScalar597LaterH0BindingSuccessor(options){\n  assert.equal(arguments.length,1);\n  assert(options&&Object.getPrototypeOf(options)===Object.prototype);\n  assert.deepEqual(Object.keys(options),['version']);\n  assert.match(options.version,/^[0-9]{14}$/);\n  assert(options.version>'20261103012633','Scalar migration must follow reserved SOURCE alternatives');\n  const core=await prepareStructure(SCALAR597_LATER_H0,options.version);\n  return wrap(core,await readInstalled593Original591CanonicalSource(),SCALAR597_LATER_H0);\n}\n\nfunction scalar597Output(result){\n  return {migrationSha256:result.migrationSha256,canonicalSha256:result.afterCanonicalSha256,\n    checkpointContractSha256:result.checkpointContractSha256,tripBindingPolicySha256:result.tripBindingPolicySha256};\n}\n\n"
+      ],
+      [
+        32961,
+        34507,
+        "",
+        "  if(args[0]==='--scalar597-later-h0-derive'){\n    assert.equal(args.length,2);\n    const result=await buildScalar597LaterH0BindingSuccessor({version:args[1]});\n    console.log(JSON.stringify({release:SCALAR597_LATER_H0_RELEASE,binding:result.nextBinding,output:scalar597Output(result)}));\n    return;\n  }\n  if(args[0]==='--active'&&ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='scalar597-later-h0-original594-successor')\n    args[0]='--scalar597-later-h0';\n  if(args[0]==='--scalar597-later-h0'){\n    assert.equal(args.length,2);assert(['--check','--write'].includes(args[1]));\n    const issued=requireScalar597LaterH0Binding(),pins=requireScalar597LaterH0Output();\n    const result=await buildScalar597LaterH0BindingSuccessor({version:issued.version});\n    assert.deepEqual(result.nextBinding,issued);assert.deepEqual(scalar597Output(result),pins);\n    const file=path.join(ROOT,'supabase/migrations',scalar597LaterH0Migration().filename);\n    if(args[1]==='--write')await fs.writeFile(file,result.migration,{flag:'wx'});\n    else assert.deepEqual(await fs.readFile(file),Buffer.from(result.migration));\n    console.log('Exact scalar597/original594 later-H0 source checked; no installation or state admission.');\n    return;\n  }\n"
+      ]
+    ]
+  }
+});
+function inverseReviewed597(source,file){
+  const row=reviewed597[file];
+  if(!row||hash(source)!==row.after)return source;
+  const actual=source;
+  for(const [,offset,prior,current] of [...row.hunks].reverse()){
+    assert.equal(source.slice(offset,offset+current.length),current);
+    source=source.slice(0,offset)+prior+source.slice(offset+current.length);
+  }
+  assert.equal(hash(source),row.before);
+  let roundtrip=source;
+  for(const [offset,,prior,current] of [...row.hunks].reverse()){
+    assert.equal(roundtrip.slice(offset,offset+prior.length),prior);
+    roundtrip=roundtrip.slice(0,offset)+current+roundtrip.slice(offset+prior.length);
+  }
+  assert.equal(roundtrip,actual,'Whole 597→594→597 test source inverse');
+  return source;
+}
 const hash=value=>crypto.createHash('sha256').update(value).digest('hex');
 export function inverseIssued594HistoricalSource(source,file){
   assert.equal(typeof source,'string');source=source.replace(/\r\n?/g,'\n');
+  source=inverseReviewed597(source,file);
   const row=reviewed[file];if(!row||hash(source)!==row.afterSha256)return source;
   assert.equal(Buffer.byteLength(source),row.afterBytes);const original=source;
   for(const [prior,current]of [...row.hunks].reverse()){

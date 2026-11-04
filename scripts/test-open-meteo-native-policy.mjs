@@ -3,7 +3,7 @@ import test from 'node:test';
 import { OPEN_METEO_NATIVE_NEAREST_POLICIES as policies, buildOpenMeteoPartRequest,
   openMeteoComponentRequestParts, openMeteoComponentGridMatches, openMeteoMfNearestGridPoint,
   readOpenMeteoPartResponse, mergeOpenMeteoPartBank, validateOpenMeteoPartBank,
-  selectedOpenMeteoPartRecord, openMeteoPartSha256 } from './lib/open-meteo-part-bank.mjs';
+  selectedOpenMeteoPartRecord, readRetainedOpenMeteoPartIndex, openMeteoPartSha256 } from './lib/open-meteo-part-bank.mjs';
 import { openMeteoO1280NearestGridPoint } from './lib/open-meteo-o1280-grid.mjs';
 import { produceOpenMeteoPartComponents } from './produce-open-meteo-part-components.mjs';
 import { verifiedIntegratedPartHourly } from './lib/ravscore-production-adapters.mjs';
@@ -74,6 +74,30 @@ test('native qualified source reaches actual PART adapter; missing level stays m
   assert.equal(row.wavePeriodS, 6);
   assert.equal(row.waterTemperatureC, 15);
   assert.equal(row.waterLevelCm, null);
+  const planningIndex = readRetainedOpenMeteoPartIndex(bank, options);
+  const [scalar] = verifiedIntegratedPartHourly({ hourly: [{ time: reference }] }, {},
+    `PART::${part.partId}`, part, {
+      ...inputs, openMeteoComponentIndex: planningIndex, scalarPlanningOnly: true,
+    });
+  for (const key of ['windSpeedMps', 'windDirectionDeg', 'windProvenance',
+    'waterTemperatureC', 'waterTemperatureProvenance', 'waterLevelCm']) {
+    assert.deepEqual(scalar[key], row[key]);
+  }
+  assert.equal(scalar.waveHeightM, null);
+  const view = { part, component: 'wind', validTime: reference };
+  const expected = selectedOpenMeteoPartRecord(planningIndex, view);
+  selectedOpenMeteoPartRecord(planningIndex, view).source.samplingPoint[0] += 1;
+  const originalWind = Object.values(bank.responses).find(evidence => evidence.request.component === 'wind');
+  originalWind.request.identity.samplingPoint[0] += 1;
+  assert.deepEqual(selectedOpenMeteoPartRecord(planningIndex, view), expected);
+  originalWind.request.identity.samplingPoint[0] = expected.source.samplingPoint[0];
+  for (const component of components) {
+    for (const validTime of [reference, at(120)]) {
+      const query = { part, component, validTime };
+      assert.deepEqual(selectedOpenMeteoPartRecord(planningIndex, query),
+        selectedOpenMeteoPartRecord(inputs.openMeteoComponentIndex, query));
+    }
+  }
   assert.equal(row.windProvenance.model, 'ecmwf_ifs');
   assert.equal(row.waveProvenance.model, 'ecmwf_wam');
   assert.equal(row.waveProvenance.nativeTimeExact, false);
@@ -104,6 +128,7 @@ test('old distance-qualified bank keeps original v2 source and is never relabele
   const oldPolicies = Object.fromEntries(['wind', 'wave', 'waterLevel', 'waterTemperature']
     .map(component => [component, { policyId: 'synthetic-exact-point', maximumDistanceKm: 0,
       ...(component === 'waterTemperature' ? { cellSelection: 'nearest' } : {}) }]));
+  oldPolicies.wind.cellSelection = { legacySelection: 'sea' };
   const req = buildOpenMeteoPartRequest(part, { component: 'wind', productionReferenceAt: reference });
   const document = response('wind');
   [document.longitude, document.latitude] = part.waterPoint;
@@ -117,4 +142,11 @@ test('old distance-qualified bank keeps original v2 source and is never relabele
   assert.throws(() => validateOpenMeteoPartBank(oldBank, options), /POLICY_CONTRACT_MISMATCH/);
   assert.throws(() => mergeOpenMeteoPartBank(oldBank, [], options), /POLICY_CONTRACT_MISMATCH/);
   assert.throws(() => openMeteoComponentRequestParts('waterLevel', { spatialPolicy: policies.waterLevel }), /DMI_ONLY/);
+  const previousIndex = validateOpenMeteoPartBank(oldBank, oldOptions);
+  const planningIndex = readRetainedOpenMeteoPartIndex(oldBank, oldOptions);
+  const lookup = { part, validTime: reference, component: 'wind' };
+  const original = selectedOpenMeteoPartRecord(previousIndex, lookup);
+  oldPolicies.wind.cellSelection.legacySelection = 'caller-edited';
+  assert.deepEqual(selectedOpenMeteoPartRecord(previousIndex, lookup), original);
+  assert.deepEqual(selectedOpenMeteoPartRecord(planningIndex, lookup), original);
 });

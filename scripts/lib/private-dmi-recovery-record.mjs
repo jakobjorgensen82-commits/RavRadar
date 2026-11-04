@@ -162,6 +162,7 @@ function bulkZoneToForecastRecord(
     expectedIdentity = null,
     materializeMissingHorizon = false,
     currentDecoderTransition = null,
+    scalarPlanningOnly = false,
   } = {},
 ) {
   const zoneId = feature.properties?.id;
@@ -176,7 +177,7 @@ function bulkZoneToForecastRecord(
   };
   const sameSamplingPoint = !previousRecord || samePoint(previousRecord.point, point);
   const compatiblePrevious = sameSamplingPoint
-    ? withOnlyVerifiedCurrent(previousRecord, point)
+    ? (scalarPlanningOnly ? previousRecord : withOnlyVerifiedCurrent(previousRecord, point))
     : null;
   const currentSemanticsValid = bulkCache?.currentVectorSemanticsVersion === CURRENT_VECTOR_SEMANTICS_VERSION
     && samePoint(bulkZone?.samplingPoint, point);
@@ -191,7 +192,7 @@ function bulkZoneToForecastRecord(
     && ravScoreNumber(row['wind-tail-dir-10m']) !== null
     && verifiedDmiNativeComponentSource(provenance(row).windTail, row.time, 'windTail', dmiIdentity))
     .map(row => ({ step: row.time, 'wind-speed-10m': row['wind-tail-speed-10m'], 'wind-dir-10m': row['wind-tail-dir-10m'], provenance: { wind: provenance(row).windTail } }));
-  const waves = rows.map(row => {
+  const waves = scalarPlanningOnly ? [] : rows.map(row => {
     const waveSource = verifiedDmiNativeComponentSource(
       provenance(row).wave,
       row.time,
@@ -215,17 +216,6 @@ function bulkZoneToForecastRecord(
     };
   }).filter(Boolean);
   const ocean = rows.map(row => {
-    const rowCurrent = provenance(row).current;
-    const rowCurrentValid = ravScoreNumber(row['current-u']) !== null
-      && ravScoreNumber(row['current-v']) !== null
-      && Boolean(verifiedBulkCurrent(
-        bulkCache,
-        bulkZone,
-        point,
-        rowCurrent,
-        row.time,
-        dmiIdentity,
-      ));
     const waterLevelSource = verifiedDmiNativeComponentSource(
       provenance(row).waterLevel,
       row.time,
@@ -238,20 +228,37 @@ function bulkZoneToForecastRecord(
       'waterTemperature',
       dmiIdentity,
     );
+    const sea = waterLevelSource ? ravScoreNumber(row['sea-mean-deviation']) : null;
+    const temperature = waterTemperatureSource ? ravScoreNumber(row['water-temperature']) : null;
+    // A verified current-only row can affect scalar time brackets.
+    // Other ocean rows already qualified by their scalar tuple.
+    const needsCurrentForTimeAxis = !scalarPlanningOnly || (sea === null && temperature === null);
+    const rowCurrent = provenance(row).current;
+    const rowCurrentValid = needsCurrentForTimeAxis && ravScoreNumber(row['current-u']) !== null
+      && ravScoreNumber(row['current-v']) !== null
+      && Boolean(verifiedBulkCurrent(
+        bulkCache,
+        bulkZone,
+        point,
+        rowCurrent,
+        row.time,
+        dmiIdentity,
+      ));
+    if (scalarPlanningOnly && sea === null && temperature === null && !rowCurrentValid) return null;
     return {
       step: row.time,
-      'sea-mean-deviation': waterLevelSource ? ravScoreNumber(row['sea-mean-deviation']) : null,
-      'current-u': rowCurrentValid ? row['current-u'] : null,
-      'current-v': rowCurrentValid ? row['current-v'] : null,
-      'water-temperature': waterTemperatureSource ? ravScoreNumber(row['water-temperature']) : null,
+      'sea-mean-deviation': sea,
+      'current-u': !scalarPlanningOnly && rowCurrentValid ? row['current-u'] : null,
+      'current-v': !scalarPlanningOnly && rowCurrentValid ? row['current-v'] : null,
+      'water-temperature': temperature,
       provenance: {
-        current: rowCurrentValid ? provenance(row).current : null,
+        current: !scalarPlanningOnly && rowCurrentValid ? rowCurrent : null,
         waterLevel: waterLevelSource,
         waterTemperature: waterTemperatureSource,
       },
     };
-  }).filter(row => ['sea-mean-deviation','current-u','current-v','water-temperature']
-    .some(key => row[key] !== null));
+  }).filter(row => row && (scalarPlanningOnly || ['sea-mean-deviation','current-u','current-v','water-temperature']
+    .some(key => row[key] !== null)));
   const sourceStrideHours = ravScoreNumber(bulkCache?.timeStrideHours);
   const sourceCadenceMinutes = (sourceStrideHours ?? 3) * 60;
   const built = buildDmiMarineComponentwiseHourly({
@@ -277,7 +284,7 @@ function bulkZoneToForecastRecord(
   const mergedDmiHourly = mergeHourlyPreferDmi(
     marineContinuousHourly,
     compatiblePrevious?.hourly ?? [],
-    { generatedAt, startAt, expectedIdentity: dmiIdentity, currentDecoderTransition },
+    { generatedAt, startAt, expectedIdentity: dmiIdentity, currentDecoderTransition, scalarPlanningOnly },
   );
   const mergedHourly = FEGGESUND_WAVE_PROXY_SOURCE_ZONE_IDS.includes(zoneId)
     ? mergedDmiHourly.map(hour => {
@@ -396,10 +403,14 @@ function buildPartDmiForecastWithProtectedRetention(
   feature, activeBulkCache, protectedBulkCache, generatedAt,
   { startAt, expectedIdentity, persistedHourly = [], historicalBulkCache = null,
     protectPreviousDmi = false, currentDecoderTransitionPart = null,
-    nativeCurrentOriginals = null, protectedCompanionContexts = [] },
+    nativeCurrentOriginals = null, protectedCompanionContexts = [], scalarPlanningOnly = false },
 ) {
   if (!Array.isArray(protectedCompanionContexts) || protectedCompanionContexts.length > 2) {
     throw new Error('DMI_PART_NATIVE_ORIGINAL_COMPANION_BOUND');
+  }
+  if (scalarPlanningOnly && (!expectedIdentity || protectPreviousDmi || currentDecoderTransitionPart
+    || nativeCurrentOriginals !== null || protectedCompanionContexts.length)) {
+    throw new Error('DMI_SCALAR_PLANNING_SCOPE');
   }
   const currentDecoderTransition = !protectPreviousDmi && currentDecoderTransitionPart
     ? publicCurrentDecoderTransition(currentDecoderTransitionPart,
@@ -407,20 +418,20 @@ function buildPartDmiForecastWithProtectedRetention(
       nativeCurrentOriginals) : null;
   const retained = protectedBulkCache
     ? bulkZoneToForecastRecord(feature, protectedBulkCache, generatedAt, null, {
-      startAt, expectedIdentity, materializeMissingHorizon: true,
+      startAt, expectedIdentity, materializeMissingHorizon: true, scalarPlanningOnly,
     })
     : null;
   const current = bulkZoneToForecastRecord(feature, activeBulkCache, generatedAt, retained, {
-    startAt, expectedIdentity, materializeMissingHorizon: true, currentDecoderTransition,
+    startAt, expectedIdentity, materializeMissingHorizon: true, scalarPlanningOnly, currentDecoderTransition,
   });
   const historical = historicalBulkCache
     ? bulkZoneToForecastRecord(feature, historicalBulkCache, generatedAt, null, {
-      startAt, expectedIdentity, materializeMissingHorizon: true,
+      startAt, expectedIdentity, materializeMissingHorizon: true, scalarPlanningOnly,
     })
     : null;
   let previousHourly = !protectPreviousDmi && historical
     ? mergeHourlyPreferDmi(persistedHourly, historical.hourly, {
-      generatedAt, startAt, expectedIdentity, currentDecoderTransition,
+      generatedAt, startAt, expectedIdentity, currentDecoderTransition, scalarPlanningOnly,
     })
     : persistedHourly;
   if (protectPreviousDmi) {
@@ -440,7 +451,7 @@ function buildPartDmiForecastWithProtectedRetention(
   return createDmiForecastRecord({
     zoneId: current.zoneId, point: current.point, generatedAt,
     hourly: mergeHourlyPreferDmi(current.hourly, previousHourly, {
-      generatedAt, startAt, expectedIdentity, protectPreviousDmi, currentDecoderTransition,
+      generatedAt, startAt, expectedIdentity, protectPreviousDmi, currentDecoderTransition, scalarPlanningOnly,
     }),
     waterLevelInterpolation: current.waterLevelInterpolation,
     model: current.model,
@@ -674,7 +685,7 @@ function mergeHourlyPreferDmi(
   dmiHourly = [],
   fallbackHourly = [],
   { generatedAt = null, startAt = generatedAt, expectedIdentity = null,
-    protectPreviousDmi = false, currentDecoderTransition = null } = {},
+    protectPreviousDmi = false, currentDecoderTransition = null, scalarPlanningOnly = false } = {},
 ) {
   // Public records keep the exact production +0..+117 axis. Private replay
   // callers deliberately supply an earlier startAt; using generatedAt here
@@ -738,8 +749,8 @@ function mergeHourlyPreferDmi(
       },
     );
     const selectedWind = select('wind');
-    const selectedWave = select('wave');
-    const selectedCurrent = select('current');
+    const selectedWave = scalarPlanningOnly ? null : select('wave');
+    const selectedCurrent = scalarPlanningOnly ? null : select('current');
     const selectedWaterLevel = expectedIdentity ? select('waterLevel') : null;
     const selectedWaterTemperature = expectedIdentity ? select('waterTemperature') : null;
     const selectedCurrentU = ravScoreNumber(selectedCurrent?.row?.currentUMps);

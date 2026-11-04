@@ -3,6 +3,7 @@ import { inverseActiveFamilyRetentionCompanionTestInput, ACTIVE_FAMILY_RETENTION
   inverseAssistant591RetentionCompanionTestInput, ASSISTANT591_RETENTION_COMPANION_TEST_REVIEW,
   inverseConditions593RetentionCompanionTestInput, CONDITIONS593_RETENTION_COMPANION_TEST_REVIEW,
   inverseIssued594RetentionCompanionSource, ISSUED594_RETENTION_COMPANION_TEST_REVIEW as retention594Review,
+  inverseIssued597RetentionCompanionSource, ISSUED597_RETENTION_COMPANION_TEST_REVIEW as retention597Review,
 } from './lib/alternative-c-caller-test-input.mjs';
 import {inverseReviewedAccountStatisticsAssistantSourceScripts} from './lib/account-statistics-assistant-package-review.mjs';
 import { inverseAlternativeCCaller, inverseAssistant587OriginalCompanionTestInput,
@@ -10,6 +11,7 @@ import { inverseAlternativeCCaller, inverseAssistant587OriginalCompanionTestInpu
   inverseAssistant588OriginalCompanionTestInput, ASSISTANT588_ORIGINAL_COMPANION_TEST_REVIEW,
   inverseAssistant587OriginalRawBoundaryTestInput } from './lib/alternative-c-caller-test-input.mjs';
 import { inverseWindTailCapacityUpdaterTestInput, WIND_TAIL_CAPACITY_UPDATER_TEST_REVIEW,
+  inverseDmiScalarPlanningRecordTestInput, DMI_SCALAR_PLANNING_RECORD_TEST_REVIEW,
   inverseCandidateGReadyGapUpdaterTestInput, CANDIDATE_G_READY_GAP_UPDATER_TEST_REVIEW,
   inverseDmiScalarPlanningUpdaterTestInput, DMI_SCALAR_PLANNING_UPDATER_TEST_REVIEW,
   inverseCurrentNativeOriginalProducerTestInput, CURRENT_NATIVE_ORIGINAL_PRODUCER_TEST_REVIEW,
@@ -1191,8 +1193,9 @@ test('native-original producer preserves exact whole archived inputs and rejects
   for (const row of CURRENT_NATIVE_ORIGINAL_PRODUCER_TEST_REVIEW.rows) {
     const raw = (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
     const actual = row.path === 'scripts/update-weather.mjs'
-      ? inverseCurrentFamilyColdTargetTestInput(raw, row.path) : raw;
-    assert.equal(Buffer.byteLength(actual), row.after.bytes, 'Exact native-original predecessor after only the reviewed cold-target inverse');
+      ? inverseCurrentFamilyColdTargetTestInput(raw, row.path)
+      : inverseDmiScalarPlanningRecordTestInput(raw, row.path);
+    assert.equal(Buffer.byteLength(actual), row.after.bytes, 'Exact native-original predecessor after its reviewed outer inverse');
     assert.equal(digest(actual), row.after.sha256);
     const original = inverseCurrentNativeOriginalProducerTestInput(actual, row.path);
     assert.equal(digest(original), row.before.sha256);
@@ -1212,6 +1215,33 @@ test('native-original producer preserves exact whole archived inputs and rejects
   }
   assert.throws(() => inverseCurrentNativeOriginalProducerTestInput({}, 'scripts/update-weather.mjs'),
     /ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+});
+
+test('actual scalar-planning record has one exact historical inverse and rejects mixed scopes', async () => {
+  const { path: file, before, after, edits } = DMI_SCALAR_PLANNING_RECORD_TEST_REVIEW;
+  const active = (await fs.readFile(new URL('../' + file, import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  assert.equal(Buffer.byteLength(active), after.bytes);
+  assert.equal(digest(active), after.sha256);
+  const previous = inverseDmiScalarPlanningRecordTestInput(active, file);
+  assert.equal(Buffer.byteLength(previous), before.bytes);
+  assert.equal(digest(previous), before.sha256);
+  assert.equal(inverseDmiScalarPlanningRecordTestInput(previous, file), previous);
+  assert.equal(inverseDmiScalarPlanningRecordTestInput(active, 'scripts/unknown.mjs'), active);
+  for (const [line, prior, current] of edits) {
+    const lines = active.split('\n');
+    lines.splice(line - 1, current ? current.split('\n').length : 0, ...(prior ? prior.split('\n') : []));
+    const mixed = lines.join('\n');
+    assert.notEqual(mixed, active);
+    assert.equal(inverseDmiScalarPlanningRecordTestInput(mixed, file), mixed);
+    assert.throws(() => inverseCurrentNativeOriginalProducerTestInput(mixed, file), /ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+  }
+  const { buildPartDmiForecastWithProtectedRetention } = await import('./lib/private-dmi-recovery-record.mjs');
+  for (const options of [{ expectedIdentity: null }, { protectPreviousDmi: true },
+    { currentDecoderTransitionPart: {} }, { nativeCurrentOriginals: {} }, { protectedCompanionContexts: [{}] }]) {
+    assert.throws(() => buildPartDmiForecastWithProtectedRetention(null, null, null, null, {
+      expectedIdentity: { entityId: 'PART::TEST' }, scalarPlanningOnly: true, ...options,
+    }), /DMI_SCALAR_PLANNING_SCOPE/);
+  }
 });
 
 test('actual native-original companion caller stays unprojected and declared in producer review', async () => {
@@ -1389,7 +1419,17 @@ test('active-family retention companion has an exact outer inverse before unchan
 
 test('issued594 retention companion has an exact whole inverse and rejects every changed selector input',async()=>{
   const row=retention594Review;
-  const actual=(await fs.readFile(new URL('../'+row.path,import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  const live=(await fs.readFile(new URL('../'+row.path,import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  const actual=inverseIssued597RetentionCompanionSource(live,row.path);
+  if(digest(live)===retention597Review.after.sha256){
+    assert.equal(digest(actual),row.after.sha256);
+    for(const [prior,current] of retention597Review.hunks){
+      assert.equal(live.split(current).length,2);
+      assert.throws(()=>inverseIssued597RetentionCompanionSource(live.replace(current,()=>prior),row.path));
+      assert.throws(()=>inverseIssued597RetentionCompanionSource(live.replace(current,()=>current+current),row.path));
+    }
+    assert.throws(()=>inverseIssued597RetentionCompanionSource(live+'\n',row.path));
+  }
   const before=inverseIssued594RetentionCompanionSource(actual,row.path);
   assert.equal(Buffer.byteLength(before),row.before.bytes);assert.equal(digest(before),row.before.sha256);
   assert.equal(inverseIssued594RetentionCompanionSource(before,row.path),before);
@@ -1416,18 +1456,28 @@ test('issued594 retention companion has an exact whole inverse and rejects every
 
 test('current594 retention companion selects actual original591 while preserving all named historical roles',async()=>{
   const profiles=await import('./lib/assistant-later-h0-successor-source.mjs');
-  const current=profiles.ACTIVE_ASSISTANT_SUCCESSOR;
+  const active=profiles.ACTIVE_ASSISTANT_SUCCESSOR;
+  const current=profiles.INACTIVE_INSTALLED593_ORIGINAL591_SUCCESSOR;
+  const next=profiles.INACTIVE_SCALAR597_LATER_H0_SUCCESSOR;
+  assert([current,next].includes(active));
   assert.equal(current.sourcePhase,'assistant-installed593-origin591-successor');
   assert.equal(current.requireRelease(),'4.0.594');assert.equal(current.originalStateFamily,'591');
   assert.equal(current.before,profiles.ASSISTANT_PUBLIC591_SUCCESSOR_BEFORE);
   assert.deepEqual(current.databaseBefore,{...profiles.ASSISTANT_PUBLIC591_SUCCESSOR_BINDING,
     canonicalSha256:profiles.ASSISTANT_PUBLIC591_SUCCESSOR_OUTPUT.canonicalSha256});
-  const actual=(await fs.readFile(new URL('../'+retention594Review.path,import.meta.url),'utf8')).replace(/\r\n/g,'\n');
-  const markers=Object.fromEntries(['587','588','590','591'].map(family=>[family,
+  const live=(await fs.readFile(new URL('../'+retention594Review.path,import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  const actual=inverseIssued597RetentionCompanionSource(live,retention594Review.path);
+  if(active===next){
+    assert.equal(next.requireRelease(),'4.0.597');assert.equal(next.originalStateFamily,'594');
+    assert.equal(next.before.I,current.requireBinding().I);
+    assert.equal(digest(live),retention597Review.after.sha256);
+  }
+  const markers=Object.fromEntries(['587','588','590','591','594'].map(family=>[family,
     {read:()=>family,snapshot:()=>family}]));
   const parameters=['ACTIVE',...['587','588','590','591'].flatMap(family=>[
-    'readAuthenticatedFrozen'+family+'Predecessor','assertAuthenticatedFrozen'+family+'Snapshot'])];
-  const values=['587','588','590','591'].flatMap(family=>[markers[family].read,markers[family].snapshot]);
+    'readAuthenticatedFrozen'+family+'Predecessor','assertAuthenticatedFrozen'+family+'Snapshot']),
+    'readAuthenticatedSource594Predecessor','assertAuthenticatedSource594Snapshot'];
+  const values=['587','588','590','591','594'].flatMap(family=>[markers[family].read,markers[family].snapshot]);
   const roles=[[current,'591'],[profiles.INACTIVE_ASSISTANT_PUBLIC591_SUCCESSOR,'591'],
     [profiles.INACTIVE_ASSISTANT_PUBLIC590_SUCCESSOR,'590'],[profiles.INACTIVE_ASSISTANT_PUBLIC588_SUCCESSOR,'588'],
     [profiles.ISSUED_ASSISTANT_PUBLIC588_PROFILE,'587']];
@@ -1437,12 +1487,18 @@ test('current594 retention companion selects actual original591 while preserving
     // Den faktiske normale selector udføres; markører læser ingen B/S og
     // fabrikerer hverken autentificering, descriptor eller opaque adgang.
     const factory=new Function(...parameters,source.slice(begin,end)+'\nreturn ACTIVE_PREDECESSOR;');
+    if(source===live&&active===next){
+      const selected=factory(next,...values);
+      assert.equal(selected.read,markers['594'].read);
+      assert.equal(selected.snapshot,markers['594'].snapshot);
+    }
     for(const [profile,family]of roles){const selected=factory(profile,...values);
       assert(Object.isFrozen(selected));assert.deepEqual(Object.keys(selected).sort(),['read','snapshot']);
       assert.equal(selected.read,markers[family].read);assert.equal(selected.snapshot,markers[family].snapshot);
     }
   };
   assertRoles(actual);
+  if(live!==actual)assertRoles(live);
   for(const changed of [
     actual.replace('assistant-installed593-origin591-successor','UNREVIEWED'),
     actual.replace('read:readAuthenticatedFrozen591Predecessor','read:readAuthenticatedFrozen590Predecessor'),

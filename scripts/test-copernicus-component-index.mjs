@@ -65,6 +65,11 @@ try {
   const emptyNeeds = await runCopernicusComponentRuntime({ privateCacheRoot: folder, ...options, ...input, parts: [part], needs: [], budgetMs: 0 });
   assert.equal(emptyNeeds.summary.admittedCandidates, 2);
   assert.equal(emptyNeeds.bankSha256, runtime.bankSha256);
+  for (const { time, component } of result.candidates) {
+    const query = { part, validTime: time, component };
+    assert.deepEqual(selectedCopernicusComponentRecord(emptyNeeds.index, query),
+      selectedCopernicusComponentRecord(runtime.index, query));
+  }
   const reassigned = { ...part, zoneId: 'NEW-CENTRAL' };
   const rebased = await runCopernicusComponentRuntime({ privateCacheRoot: folder, ...options, ...input, parts: [reassigned], budgetMs: 0 });
   assert.equal(rebased.summary.admittedCandidates, 0);

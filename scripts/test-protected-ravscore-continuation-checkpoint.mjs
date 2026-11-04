@@ -40,6 +40,11 @@ import {
 } from './rollback-assets/ravscore-model-contract.js';
 
 // Each new native phase refuses before fixture construction or a PG host.
+const scalar597LaterH0Native=process.argv.includes('--scalar597-later-h0');
+if(scalar597LaterH0Native){
+  const {requireScalar597LaterH0Release}=await import('./lib/assistant-later-h0-successor-source.mjs');
+  requireScalar597LaterH0Release();
+}
 if(process.argv.includes('--assistant-installed593-origin591-successor')){
   const {requireInstalled593Original591Release}=await import('./lib/assistant-later-h0-successor-source.mjs');
   requireInstalled593Original591Release();
@@ -401,7 +406,7 @@ if (!process.argv.includes('--native-postgres') && !process.argv.includes('--nat
     && !process.argv.includes('--assistant-public587-successor') && !process.argv.includes('--assistant-public588-successor')
     && !process.argv.includes('--assistant-public590-successor')
     && !process.argv.includes('--assistant-public591-successor')
-    && !process.argv.includes('--assistant-installed593-origin591-successor')) {
+    && !process.argv.includes('--assistant-installed593-origin591-successor') && !scalar597LaterH0Native) {
   const { nativePostgresFailureDiagnostic: diagnose,
     nativePostgresFailureAnnotation: annotate } =
       await import('./lib/checkpoint-cas-native-postgres.mjs');
@@ -559,7 +564,7 @@ const assistantPublic588SuccessorNative = process.argv.includes('--assistant-pub
 const assistantPublic587SuccessorNative = process.argv.includes('--assistant-public587-successor');
 const assistantLaterH0Native = process.argv.includes('--assistant-later-h0') || assistantPublic587SuccessorNative || assistantPublic588SuccessorNative;
 const nativeOriginalContinuityNative = process.argv.includes('--native-original-continuity') || assistantLaterH0Native;
-const accountStatisticsAssistantNative = process.argv.includes('--account-statistics-assistant') || nativeOriginalContinuityNative;
+const accountStatisticsAssistantNative = process.argv.includes('--account-statistics-assistant') || nativeOriginalContinuityNative || scalar597LaterH0Native;
 // Native PostgreSQL is a separate mandatory Linux source leaf, never a
 // MemoryCentral/Windows representation proof. Reuse these exact 673 builders
 // and the normal checkpoint saver; do not run the simulated RPC tests here.
@@ -588,6 +593,7 @@ if (process.argv.includes('--native-postgres') || process.argv.includes('--nativ
       includeAssistantPublic590Successor: assistantPublic590SuccessorNative,
       includeAssistantPublic591Successor: assistantPublic591SuccessorNative,
       includeInstalled593Original591Successor: installed593Original591SuccessorNative,
+      includeScalar597LaterH0Successor:scalar597LaterH0Native,
     });
     if(assistantPublic591SuccessorNative)console.log(JSON.stringify({
       kind:'RAVRADAR_NATIVE_PROGRAM_IDENTITY_V2',phase:installed593Original591SuccessorNative

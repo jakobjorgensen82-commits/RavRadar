@@ -11,7 +11,7 @@ import {promisify} from 'node:util';
 const execute=promisify(callbackExec);
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 function fixedSource(profile){
-  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588||profile===FROZEN590||profile===FROZEN591,'FROZEN_SOURCE_UNKNOWN_PROFILE');
+  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588||profile===FROZEN590||profile===FROZEN591||profile===SOURCE594_CODE_PROFILE||profile===SOURCE594_ORIGINAL_DATA_PROFILE,'FROZEN_SOURCE_UNKNOWN_PROFILE');
   const HEAD=profile.head,TREE=profile.tree;
 const C='scripts/rollback-assets/ravscore-model-bundle.generated.js';
 const I='js/core/ravscore-model-bundle.generated.js';
@@ -298,7 +298,12 @@ const ORIGINAL_590_ASSERTION_SUFFIX=ORIGINAL_588_ASSERTION_SUFFIX
   .replace('// Removing this suffix restores whole Git SHA-256 5fa3fe20041a82a7e287e21f4562f6bb82ffab253c69e0754208bb6e5c907b69.',
     '// The source-owned selected590 origin SHA and whole inverse are checked by this host.')
   .replaceAll('588','590');
-const ASSERTION_SUFFIX=profile===FROZEN591?ORIGINAL_591_ASSERTION_SUFFIX:profile===FROZEN590?ORIGINAL_590_ASSERTION_SUFFIX:profile===FROZEN588?ORIGINAL_588_ASSERTION_SUFFIX:profile===FROZEN586?ORIGINAL_586_ASSERTION_SUFFIX:
+const SOURCE_594_ASSERTION_SUFFIX=ORIGINAL_591_ASSERTION_SUFFIX
+  .replaceAll('591','594')
+  .replace('a157 issued594','37a34703 issued594')
+  .replace('516d9f641bbf8de4fd8933e60a8a76621de4ec72c2d9492c1e43a94c74c9b67c',
+    'b791c803b5d41fd036e01d25bd85f7298e3652abd6d44e49b68b04a0f7cfd4fa');
+const ASSERTION_SUFFIX=profile===SOURCE594_ORIGINAL_DATA_PROFILE?SOURCE_594_ASSERTION_SUFFIX:profile===FROZEN591?ORIGINAL_591_ASSERTION_SUFFIX:profile===FROZEN590?ORIGINAL_590_ASSERTION_SUFFIX:profile===FROZEN588?ORIGINAL_588_ASSERTION_SUFFIX:profile===FROZEN586?ORIGINAL_586_ASSERTION_SUFFIX:
   assertionNames.reduce((source,[before,after])=>{assert(source.includes(before));return source.replaceAll(before,after);},ORIGINAL_586_ASSERTION_SUFFIX);
 if(profile===FROZEN587)assert.equal([...assertionNames].reverse().reduce(
   (source,[before,after])=>source.replaceAll(after,before),ASSERTION_SUFFIX),ORIGINAL_586_ASSERTION_SUFFIX,'Whole assertion-suffix inverse');
@@ -324,11 +329,13 @@ async function exactTree(root,files,index,gitReference){
   await visit(root);assert.deepEqual([...seen].sort(),files);
 }
 async function withSource(useVerifiedSource){
+  if(profile===SOURCE594_ORIGINAL_DATA_PROFILE)assertSource594OriginalDataSourceSelected();
+  if(profile===SOURCE594_CODE_PROFILE)assertSource594CodeSourceSelected();
   if(profile===FROZEN591)assertFrozen591CodeSourceSelected(); // Fixed genuine591 before Git/temp/I/O.
   if(profile===FROZEN590)assertFrozen590CodeSourceSelected(); // FIRST: no selected parent, no Git/I/O.
   if(profile===FROZEN588)assertFrozen588CodeSourceSelected(); // FIRST: unselected code cannot reach Git/I/O.
   assert.equal(arguments.length,1,'No caller head/root/source override');assert.equal(typeof useVerifiedSource,'function');
-  const index=await inventory(),sourceFiles=await selected(index),files=[...sourceFiles,ASSERTION,GIT_REFERENCE].sort();
+  const index=await inventory(),sourceFiles=await selected(index),files=[...sourceFiles,...(ASSERTION===null?[]:[ASSERTION]),GIT_REFERENCE].sort();
   assert(!index.has(GIT_REFERENCE));
   // Same genuine object-store reference as run-frozen584-reconcile-source.
   // This does NOT claim frozen HEAD/source-clean or create an issuer.
@@ -345,7 +352,8 @@ async function withSource(useVerifiedSource){
     for(const file of files){const output=path.resolve(root,file);assert(inside(root,output));await fs.mkdir(path.dirname(output),{recursive:true});
       await fs.writeFile(output,await materializedBytes(file,index,gitReference),{flag:'wx',mode:0o600});}
     await exactTree(root,files,index,gitReference);
-    const builderArgs=profile===FROZEN591?['--public590-successor','--check']:
+    const builderArgs=(profile===SOURCE594_CODE_PROFILE||profile===SOURCE594_ORIGINAL_DATA_PROFILE)?['--installed593-origin591-successor','--check']:
+      profile===FROZEN591?['--public590-successor','--check']:
       profile===FROZEN590?['--public588-successor','--check']:
       profile===FROZEN588?['--public587-successor','--check']:['--check'];
     const checked=await execute(process.execPath,[path.join(root,BUILDER),...builderArgs],{cwd:root,env:fixedEnv(),timeout:60000,maxBuffer:1024*1024});
@@ -479,6 +487,40 @@ const FROZEN591=Object.freeze({
     publicProjectionContractSha256:FROZEN591_CODE_SOURCE_PROVENANCE.publicProjectionContractSha256}),
 });
 
+export const SOURCE594_CODE_SOURCE_PROVENANCE=Object.freeze({
+  "selected": true,
+  "purpose": "CODE_ONLY_NO_ORIGINAL_OR_RUNTIME_ADMISSION",
+  "head": "37a34703d9ae8bfb2c28056f21a7ea73944033ae",
+  "tree": "09aef7f6f5d965f565fadabea203b50687acc255",
+  "candidateFiles": 100,
+  "integratedFiles": 99,
+  "originSha256": "b791c803b5d41fd036e01d25bd85f7298e3652abd6d44e49b68b04a0f7cfd4fa",
+  "partPipelineSha256": "8e979128a682a7324d7defcc3d2d2dfa5edc85ebc22d4ae714810aa085490758",
+  "fullRuntimeContractSha256": "ede0b53b8ed0f3fa5d0e505ea7c07d98969dc7a38fe94ae034a85f9c5d5af7ff",
+  "publicProjectionContractSha256": "24e95d442450769ff233e42aa4b100842c353c8d28735defbbfef5d5457c99ec"
+});
+const SOURCE594_CODE_PROFILE=Object.freeze({
+  ...SOURCE594_CODE_SOURCE_PROVENANCE,
+  builder:'scripts/build-assistant-later-h0-successor.mjs',
+  builderChecked:'Exact installed593/original591 later-H0 successor checked; no installation or state admission.',
+  assertion:null,temporaryPrefix:'rr-source-a594-code-',
+  candidate:'2d5cde5418270a02396e24a249f0b6bb09527366c1c110d8742a44cfe2ab459b',integrated:'08750e3667e5a221374762fccadccf08abf5e9f1ae8814ccc97bfc11880bf36c',
+  additionalMigrations:Object.freeze([...FROZEN591.additionalMigrations,
+    Object.freeze({path:'supabase/migrations/20261029183010_assistant_public591_later_h0_original_bound_successor.sql',sha256:'e5c7fb182d9491bd9222cb59dbefd3da4592867522dde805ea17e67c0d023e97'}),
+    Object.freeze({path:'supabase/migrations/20261030105202_assistant_public591_later_h0_original_bound_successor.sql',sha256:'47c51886a58aa1cfbbc244a5469ace67521774499135666c26fccd8c7f291bfd'}),
+    Object.freeze({
+    path:'supabase/migrations/20261031070755_installed593_original591_later_h0_bound_successor.sql',
+    sha256:'0d50a857aebf838c072ee7ccfc846fecd9744f9bb093eb6943b0484eee99c777'})]),
+  runtimeContracts:Object.freeze({continuationStateContractSha256:'a6c0408f76b5de70a90959e254df78317f8282cb93c0edc85a71d36b9ef8dafa',
+    fullRuntimeContractSha256:'ede0b53b8ed0f3fa5d0e505ea7c07d98969dc7a38fe94ae034a85f9c5d5af7ff',
+    publicProjectionContractSha256:'24e95d442450769ff233e42aa4b100842c353c8d28735defbbfef5d5457c99ec'}),
+});
+// This is only an immutable DATA validator host. B/S, original attestations,
+// registry/snapshot and fresh CURRENT/S versions must still be authenticated.
+const SOURCE594_ORIGINAL_DATA_PROFILE=Object.freeze({...SOURCE594_CODE_PROFILE,
+  purpose:'ORIGINAL_DATA_ASSERTIONS_ONLY_NO_ADMISSION',
+  assertion:'scripts/lib/established-native-current-origin-594-assertion.mjs',temporaryPrefix:'rr-source-a594-data-'});
+
 // Hver fast profil ejer sin cache; samme relative sti kan aldrig genbruge den anden familie.
 const source586=fixedSource(FROZEN586),source587=fixedSource(FROZEN587),source588=fixedSource(FROZEN588);
 export async function withAuthenticated586PredecessorSource(useVerifiedSource){
@@ -530,4 +572,34 @@ export function assertFrozen591CodeSourceSelected(){
 }
 export async function withAuthenticated591PredecessorSource(callback){
   assertFrozen591CodeSourceSelected();return source591(...arguments);
+}
+
+const source594Code=fixedSource(SOURCE594_CODE_PROFILE);
+export function assertSource594CodeSourceSelected(){
+  assert.equal(arguments.length,0,'No caller-selected594 CODE source');
+  const source=SOURCE594_CODE_SOURCE_PROVENANCE;
+  assert.equal(source.selected,true);assert.equal(source.purpose,'CODE_ONLY_NO_ORIGINAL_OR_RUNTIME_ADMISSION');
+  assert.deepEqual(Object.keys(source).sort(),['candidateFiles','fullRuntimeContractSha256','head','integratedFiles',
+    'originSha256','partPipelineSha256','publicProjectionContractSha256','purpose','selected','tree'].sort());
+  for(const key of ['head','tree'])assert.match(source[key],/^[a-f0-9]{40}$/);
+  for(const key of ['candidateFiles','integratedFiles'])assert(Number.isSafeInteger(source[key])&&source[key]>0);
+  for(const key of ['originSha256','partPipelineSha256','fullRuntimeContractSha256','publicProjectionContractSha256'])
+    assert.match(source[key],/^[a-f0-9]{64}$/);
+  return source; // Proposed CODE data only, not qualification or original admission.
+}
+export async function withSource594CodeParent(callback){
+  assertSource594CodeSourceSelected();return source594Code(...arguments);
+}
+
+
+const source594OriginalData=fixedSource(SOURCE594_ORIGINAL_DATA_PROFILE);
+export function assertSource594OriginalDataSourceSelected(){
+  assert.equal(arguments.length,0);assertSource594CodeSourceSelected();
+  assert.equal(SOURCE594_ORIGINAL_DATA_PROFILE.purpose,'ORIGINAL_DATA_ASSERTIONS_ONLY_NO_ADMISSION');
+  assert.equal(SOURCE594_ORIGINAL_DATA_PROFILE.head,SOURCE594_CODE_SOURCE_PROVENANCE.head);
+  assert.equal(SOURCE594_ORIGINAL_DATA_PROFILE.tree,SOURCE594_CODE_SOURCE_PROVENANCE.tree);
+  assert.equal(SOURCE594_ORIGINAL_DATA_PROFILE.assertion,'scripts/lib/established-native-current-origin-594-assertion.mjs');
+}
+export async function withSource594OriginalDataSource(callback){
+  assertSource594OriginalDataSourceSelected();return source594OriginalData(...arguments);
 }

@@ -4,6 +4,7 @@ import childProcess from 'node:child_process';
 import {execFileSync} from 'node:child_process';
 import {syncBuiltinESMExports} from 'node:module';
 import test from 'node:test';
+import {ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE} from './lib/assistant-later-h0-successor-source.mjs';
 import {qualifySourceImpactFullBaseline,SOURCE_IMPACT_FULL_BASELINE_KIND}
   from './source-impact-full-baseline.mjs';
 import {sourceTreeContentSha256,sourceTreeProofArtifactName} from './lib/source-tree-content.mjs';
@@ -11,9 +12,11 @@ import {PULL_REQUEST_SOURCE_STEPS,PULL_REQUEST_SOURCE_JOB,PULL_REQUEST_SOURCE_WO
   SOURCE_GATE_PRODUCERS,SOURCE_GATE_CONTRACT} from './lib/weather-source-gate.mjs';
 import {ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS,ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND,
   ASSISTANT_PUBLIC591_V2_KIND,ASSISTANT_PUBLIC591_V2_PROFILE,ASSISTANT_PUBLIC591_FROZEN,
-  ASSISTANT_PUBLIC591_REVIEWED_MODULE_SHA256,assistantPublic591RootPackageScopes}
+  ASSISTANT_PUBLIC591_REVIEWED_MODULE_SHA256,assistantPublic591RootPackageScopes,
+  SCALAR597_LATER_H0_PHASE,SCALAR597_LATER_H0_PHASE_KIND,SCALAR597_LATER_H0_COMMANDS}
   from './native-postgres-evidence.mjs';
-import {ORIGIN as NATIONAL,COMMAND as NATIONAL_COMMAND,STEP as NATIONAL_STEP,ASSISTANT_PUBLIC591_SUCCESSOR_SOURCE_COMMAND}
+import {ORIGIN as NATIONAL,COMMAND as NATIONAL_COMMAND,STEP as NATIONAL_STEP,ASSISTANT_PUBLIC591_SUCCESSOR_SOURCE_COMMAND,
+  SCALAR597_LATER_H0_SOURCE_COMMAND}
   from './national584-source-evidence.mjs';
 
 // All run IDs, objects, APIs and Git operands below are synthetic. These tests
@@ -31,6 +34,8 @@ function readGit(args,options){
   if(args[0]==='status'||args[0]==='for-each-ref')return Buffer.alloc(0);
   if(args[0]==='rev-parse'&&args[1].endsWith('^{tree}'))return Buffer.from(tree+'\n');
   if(args[0]==='ls-tree')return Buffer.from('100644 blob '+blob+'\tpackage.json\0');
+  if(args[0]==='cat-file'&&args[1]==='blob'&&args[2].endsWith(':package.json'))
+    return Buffer.from(JSON.stringify({version:'4.0.593'}));
   if(args[0]==='cat-file'){
     assert.equal(options.input.toString(),blob+'\n');return Buffer.from(blob+' blob 2\n{}\n');
   }
@@ -134,7 +139,9 @@ function fixture({v2=false,reused=false,installed594=false,installed594V2=false}
     }
   }
   f.rebuild=rebuild;rebuild();
-  f.dependencies={readGit,getJson:async route=>{f.jsonCalls.push(route);assert(f.json.has(route),route);return copy(f.json.get(route));},
+  f.dependencies={readGit:(args,options)=>args[0]==='cat-file'&&args[1]==='blob'&&args[2].endsWith(':package.json')
+    ?Buffer.from(JSON.stringify({version:installed594||installed594V2?'4.0.594':'4.0.593'}))
+    :readGit(args,options),getJson:async route=>{f.jsonCalls.push(route);assert(f.json.has(route),route);return copy(f.json.get(route));},
     getArtifactZip:async(route,options)=>{f.zipCalls.push(route);assert.equal(options.maxBytes,65536);
       assert(options.signal instanceof AbortSignal);assert(f.zips.has(route),route);return Buffer.from(f.zips.get(route));}};
   f.qualify=()=>qualifySourceImpactFullBaseline({reference:f.reference,candidateCommit:candidate},f.dependencies);
@@ -335,3 +342,65 @@ function v2Synthetic593Input(){return {schemaVersion:1,files:140,modules:65,sqlF
   moduleSha256:ASSISTANT_PUBLIC591_REVIEWED_MODULE_SHA256,inputSha256:'a'.repeat(64),controlsSha256:'b'.repeat(64),
   packageMode:{type:'module',version:'4.0.593'},packageScopes:assistantPublic591RootPackageScopes(),
   frozenGitTrees:copy(ASSISTANT_PUBLIC591_FROZEN)};}
+
+
+function use597Package(f,{candidateVersion='4.0.597',producerVersion='4.0.597'}={}){
+  const ordinary=f.dependencies.readGit;
+  f.dependencies.readGit=(args,options)=>{
+    if(args[0]==='cat-file'&&args[1]==='blob'&&args[2].endsWith(':package.json')){
+      const version=args[2].startsWith(candidate+':')?candidateVersion:producerVersion;
+      return Buffer.from(JSON.stringify({version}));
+    }
+    return ordinary(args,options);
+  };
+}
+test('597 normal FULL baseline refuses old594 after release change and even when old proof is relabelled',async()=>{
+  for(const producerVersion of ['4.0.594','4.0.597']){
+    const f=fixture({installed594V2:true,reused:true});use597Package(f,{producerVersion});
+    const result=await qualifySourceImpactFullBaseline({candidateCommit:candidate,reference:f.reference},f.dependencies);
+    assert.equal(result.status,'REFUSED');
+    assert.equal(result.cheapPlanAvailable,false);
+    if(producerVersion==='4.0.594')assert.deepEqual(f.zipCalls,[]);
+  }
+});
+test('597 normal FULL baseline inherits an exact completed 597 native receipt, with no 597 national claim',async()=>{
+  if(ACTIVE.sourcePhase!==SCALAR597_LATER_H0_PHASE)return;
+  const f=fixture({installed594V2:true}),prior=f.full.nativePostgres;
+  use597Package(f);
+  const binding=ACTIVE.requireBinding(),databaseBefore=ACTIVE.databaseBefore;
+  const receipt={schemaVersion:1,kind:SCALAR597_LATER_H0_PHASE_KIND,phase:'SCALAR597_LATER_H0_SUCCESSOR',
+    sourcePhase:SCALAR597_LATER_H0_PHASE,releaseVersion:ACTIVE.requireRelease(),binding,
+    output:ACTIVE.requireOutput(),databaseBefore,current:copy(prior.current),commands:[...SCALAR597_LATER_H0_COMMANDS],
+    status:'EXECUTED',executedInThisRun:true,origin:null,eligibleForReuse:false,runtime:prior.runtime,
+    report:{kind:'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',sqlExecuted:true,migrationExecuted:true,
+      tcpEnabled:false,normalModelPartCount:673,postgresMajorVersion:16,nativeProgramIdentity:prior.runtime.selectedPrograms,
+      scalar597LaterH0Successor:{kind:'SCALAR597_LATER_H0_SUCCESSOR',sourceMigrationInventory:62,
+        sqlExecuted:true,wholeMigrationExecuted:true,databaseBeforeVersion:databaseBefore.version,
+        originalStateRelease:594,migrationVersion:binding.version,partCount:673,checkpointOidSlots:43,contractBodies:46,
+        oldFunctionsAndOidsPreserved:true,allOriginalDefinitionsPreserved:true,exactCheckpointContract:true,
+        exactTripContract:true,schema2Catalog:true,normalProtectedJsonbRoundtrip:true,originalDigestsPreserved:true,
+        trueOld594Fixtures:true,currentNormalFixtures:true,old594ModelNotRetagged:true,wholeMetadataInverse:true,
+        strictlyLater594ToNextOnly:true,productionSeedAuthenticated:false,sqlIsNotOriginAuthentication:true,
+        intermediateRuntime:{oldActiveAfterSql:true,nextRefusedBeforeActivation:true,pendingBothRefused:true,
+          nextActiveAfterCompletion:true,oldRefusedAfterCompletion:true,activeDocumentsUnchangedBySql:true,
+          quotaFunctionAndAdmissionUnchanged:true,quotaServiceRoleWorking:true}}}};
+  f.full.nativePostgres=receipt;
+  Object.assign(f.phase,{schemaVersion:1,kind:SCALAR597_LATER_H0_PHASE_KIND,nativePostgres:copy(receipt)});
+  const national=f.full.historical584National;
+  for(const key of Object.keys(national).filter(key=>key.startsWith('current')))if(key!=='current')delete national[key];
+  Object.assign(national,{
+    currentScalar597LaterH0Native:{status:'EXECUTED',executedInThisRun:true,origin:null,
+      phase:SCALAR597_LATER_H0_PHASE,eligibleForReuse:false,separatelyRequired:true},
+    currentScalar597LaterH0Source:{command:'npm run test:assistant-later-h0-source',
+      actualCommand:SCALAR597_LATER_H0_SOURCE_COMMAND,separatelyRequired:true},
+    currentScalar597LaterH0NationalExecutionClaimed:false,
+  });
+  f.rebuild();
+  const check=()=>qualifySourceImpactFullBaseline({candidateCommit:candidate,reference:f.reference},f.dependencies);
+  assert.equal((await check()).scope,'FULL_SOURCE');
+  national.currentScalar597LaterH0NationalExecutionClaimed=true;f.rebuild();
+  assert.equal((await check()).status,'REFUSED');
+  national.currentScalar597LaterH0NationalExecutionClaimed=false;
+  national.currentScalar597LaterH0Native.status='REUSED';f.rebuild();
+  assert.equal((await check()).status,'REFUSED');
+});
