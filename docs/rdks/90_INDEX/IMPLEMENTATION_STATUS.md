@@ -1,3 +1,11 @@
+## 4. november — præcis597-profil med bevaret fuld inputlukning
+
+Den separate lokale kontrolkandidat bevarer alle 634 ressourcer og følger hver faktisk import-/læsekant. Kun den nye faste597-profil undlader uudnyttet kilde-preload og har en målt 56 MiB batch-/residentramme;594/48 MiB,8 MiB pr. blob og64 MiB Git-output bevares. Overskridelse, ukendte grænser eller ændrede beskyttede input kræver fortsat FULL. Ingen caller-knob, åben allowlist, producer-/consumer-/workflowændring eller skipautoritet.
+
+Den historiske Open-Meteo-fixture bruger kun sine tre genuine historiske ownerbytes med bevaret bankrettelse. Aktuel597-lukning afprøves særskilt. Normal planner består12/12 på254475,1405ms=254,4751405s, og historisk integration består23scenarier. Samlet597-integration er IKKE PASS: Windowschild nåede180000ms=180s og ETIMEDOUT/statusnull/SIGTERM; hele kaldet sluttedeexit1 efter564868ms=564,868s. Ingen højere timeout eller gentagelse. Komplet privat output og sidste nåede syntetiske mål bevares.
+
+Denne dokumentationsport bygger på201-kandidatens kommende kildebase og bevarer dens15stier samt89.305; den hævder ikke merge eller drift. Den normale Linux-kilde-PR og ægte normal FULL-kvalifikation af det endelige head mangler. Ingen aktiv kort kontrolvej, baselinegenbrug, nativepåstand eller dokumenteret tidsgevinst. Modelbindinger,73migrationer,version,geometri og alle tidligere afgrænsninger bevares; INSTALL ændrer kun håndbogsseed. Se89.306 og privat checkpoint.
+
 ## 4. november — præcis Management-201-kontrakt og adskilt privatlivsstatus
 
 Supabases officielle POST /database/query returnerer 201 ved succes. Kun de to nye historik-/backuphjælpere havde en forkert 200-only-forventning; eksisterende typede Management-kaldere håndterer allerede 201. Den afgrænsede rettelse accepterer kun 200/201 sammen med de uændrede fulde metadata-, ACL-, RLS-, funktions- og policykrav. Ingen generel 2xx-regel eller mutation på ukendt svar. Den fejlede vedligeholdelses faktiske HTTP-status er stadig ukendt; 201 er reproduceret kontraktfejl, ikke målt liveårsag.

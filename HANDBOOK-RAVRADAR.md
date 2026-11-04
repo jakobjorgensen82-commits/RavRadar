@@ -1,3 +1,35 @@
+## 89.306 Præcis597-kontrolprofil med fuld ressource- og afhængighedslukning
+
+597-profilens lokale kontrolplan bevarer alle nødvendige input, mens gamle profiler og fulde afslag fastholdes. En bestået lokal planner er ikke en aktiveret kort kontrolvej.
+
+### Hvorfor den nye profil fik et størrelsesafslag
+
+Den første lokale 597-kandidat blev afvist, fordi den normale læser forudindlæste både hele det konservative ressourceinventar og alle registrerede kildefiler. Den undersøgte samling var 51324616 byte mod den gamle batchgrænse på 50331648 byte. Det var ikke en påvist dublet eller manglende produktionsfil.
+
+71 af de forudindlæste kildefiler blev ikke nået af de valgte kontrolkommandoer og var heller ikke selv konservative ressourcer. Kun den nye 597-profil undlader nu dette uvedkommende eager preload. Alle 634 registrerede ressourcer bevares; hver faktisk import og læsekant følges og bindes fortsat til de fulde committed bytes. En registreret kildefil bliver stadig læst, hvis en valgt normal kalder faktisk når den.
+
+### En fast597-ressourcekontrakt, ingen global grænseforøgelse
+
+Kun den præcise nye profil REVIEWED_597_DOMAIN_INPUTS_C101_I100_T12 har en fast ramme på 56 MiB (58720256 byte) for både batch og samlet resident blobindhold. Den gamle 594-profil bevarer sin 48 MiB-batchgrænse. Grænserne på 8 MiB pr. blob, 4096 objekter pr. batch og 64 MiB Git-output bevares. Der er intet caller-valgt ressourceknob eller nyt verifiedflag.
+
+Rammen er begrundet i det faktisk målte inputinventar og vurderes igen på slutkompositionen, inklusive dokumentation og den separate 201-kandidat. Ingen nødvendig ressource fjernes for at få plads. Overskridelse, ukendt ejer, import, læse- eller procesflade, ændrede beskyttede input og ukendt drift kræver fortsat FULL. Denne lokale forberedelse ændrer ikke producer, consumer, kvitteringsformat eller workflow og giver ingen ny skipautoritet.
+
+### Historisk Open-Meteo og aktuel597 afprøves hver for sig
+
+Den gamle 594-fixture blandede sin historiske registry med nyere Open-Meteo-runtime og runtimeprøve. Kun de tre relevante ejerfiler hentes nu fra det samme genuine, tidligere gennemgåede Git-snapshot: runtime, komponentproducent og runtimeprøve. Den allerede rettede bankfixture bevares. Den historiske katalogfil, dens fingeraftryk og dens gamle afslag omskrives ikke.
+
+Den aktuelle 597-Open-Meteo-lukning har sin særskilte normale positive kontrol. De nødvendige konkrete dependencies registreres præcist i den nye hashbundne 597-flade. Der tilføjes ingen nye eksekverbare ejere, frie kommandoer, wildcards eller scannerundtagelser. Nye ukendte grænser kræver stadig FULL; historiske native- eller databasebeviser retagges ikke.
+
+### Lokal evidens og den endnu åbne Linux-kvalifikation
+
+Den normale plannertest består 12 af 12 uden fejl eller skip på 254475,1405 ms = 254,4751405 sekunder. Den omfatter kendte597-forløb, den aktuelle Open-Meteo-lukning, gyldig ressourcebrug over den gamle 48 MiB-grænse, afvisning over den nye ramme samt ukendte input og beskyttede SQL-/modelændringer. Den historiske integration består sine 23 scenarier.
+
+Det normale integrationsprogram kalder selv den særskilte 597-fixture. Den underproces ramte på Windows sin eksisterende grænse på 180000 ms = 180 sekunder med ETIMEDOUT, status null og SIGTERM. Hele integrationskaldet tog 564868 ms = 564,868 sekunder og sluttede med kode 1. Derfor er den samlede597-integration ikke PASS. Tidsgrænsen er ikke hævet, og hverken child, testvært eller integration er gentaget. Den sidste faktisk nåede syntetiske kommando og komplet stdout/stderr bevares kun i privat evidens.
+
+Ingen fuld lokal suite, PostgreSQL, nativefase eller produktionsprøve er kørt som del af denne dokumentationsport. Den normale Linux-kilde-PR skal kvalificere den samlede597-integration, og det endelige head skal have ægte normal FULL-kvalifikation før en senere aktivering. Den separate201-kandidats kildehead er her kun kommende base, ikke bevis for merge eller drift. Der påstås ingen aktiv kortvej, nativeeksekvering, nativegenbrug, dokumenteret tidsgevinst eller ret til at genbruge en baseline endnu.
+
+C/I/T/F/P, alle 73 migrationer, version, konfiguration, geometri, originaler, vejrkilder og scoremodel bevares. INSTALL ændres kun i den statiske håndbogsseed. Eksisterende sikkerheds-, data-, privacy- og deploykontroller består; ukendt eller rød relevant evidens må ikke omgås.
+
 ## 89.305 Præcis HTTP-kontrakt for privat historik- og backupkontrol
 
 Management-APIets dokumenterede successtatus accepteres kun sammen med de fulde privatlivs- og metadatakrav. Diagnosen skelner katalogkontrollens HTTP-status fra senere driftsfejl.

@@ -10,9 +10,19 @@ import {execFileSync} from 'node:child_process';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 
 const SOURCE=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-const REFERENCE='e8786fabba66bd9184ab08a0c8c83bf97711f807';
-const profile=JSON.parse(fs.readFileSync(path.join(SOURCE,'scripts/lib/source-impact-domain-inputs-594.json')));
+const fixture597=process.argv[2]==='--source597';
+assert(process.argv.length===2||(process.argv.length===3&&fixture597),'Only the two fixed normal fixture profiles');
+const REFERENCE=fixture597?'c340b8d8637407b309d3380ae9221a607a4157ef':'e8786fabba66bd9184ab08a0c8c83bf97711f807';
+const profile=JSON.parse(fs.readFileSync(path.join(SOURCE,fixture597
+  ?'scripts/lib/source-impact-domain-inputs-597.json':'scripts/lib/source-impact-domain-inputs-594.json')));
 const registry=JSON.parse(fs.readFileSync(path.join(SOURCE,'scripts/lib/source-impact-domain-owners-594.json')));
+if(fixture597){
+  // Fixture input inventory only. The actual normal planner independently verifies the fixed delta bytes.
+  const delta=JSON.parse(fs.readFileSync(path.join(SOURCE,'scripts/lib/source-impact-domain-owners-597.json')));
+  registry.owners.push(...delta.owners);
+  for(const [file,row]of Object.entries(delta.sources))registry.sources[file]=row.definition;
+  registry.resourceFiles.push(...delta.resourceFiles);
+}
 const additions=['scripts/source-impact-domain-inputs.mjs','scripts/lib/source-impact-domain-inputs-594.json',
   'scripts/test-source-impact-domain-inputs.mjs','scripts/source-impact-domain-plan.mjs',
   'scripts/lib/source-impact-control-imports.mjs','scripts/lib/source-impact-domain-owners-594.json',
@@ -20,6 +30,12 @@ const additions=['scripts/source-impact-domain-inputs.mjs','scripts/lib/source-i
   'scripts/source-targeted-receipt.mjs','scripts/source-targeted-producer.mjs',
   'scripts/source-targeted-consumer.mjs','scripts/weather-source-gate.mjs',
   'scripts/test-source-targeted-domain-integration.mjs'];
+if(fixture597)additions.push('scripts/lib/source-impact-domain-inputs-597.json','scripts/lib/source-impact-domain-owners-597.json');
+const legacyControlFiles=new Set(['scripts/source-impact-domain-inputs.mjs','scripts/test-source-impact-domain-inputs.mjs',
+  'scripts/source-impact-domain-plan.mjs','scripts/test-source-impact-domain-plan.mjs','scripts/test-source-targeted-domain-integration.mjs']);
+const fixtureControlBytes=file=>!fixture597&&legacyControlFiles.has(file)
+  ?execFileSync('git',['-C',SOURCE,'cat-file','blob','45594e185f087ff02c8e72649d02cb45cf79cf16:'+file],{timeout:10000,maxBuffer:8*1024*1024})
+  :fs.readFileSync(path.join(SOURCE,file));
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const clone=value=>structuredClone(value);
 const originalEnvironment={...process.env},originalFetch=globalThis.fetch,originalLog=console.log;
@@ -203,7 +219,7 @@ try{
   const targetFiles=[...new Set([...registry.commonCommands,...registry.controlSuite].flatMap(command=>command.split(' ').filter(part=>part.endsWith('.mjs'))))];
   assert(targetFiles.length>0);for(const file of targetFiles)assert(!protectedFiles.has(file),'A synthetic target must never replace143/CIT: '+file);
   const tiny=()=>Buffer.from("console.log('SYNTHETIC_DOMAIN_TARGET');\n");
-  const baselineTree=rewrite(protectedTree,[...new Map([...additions.map(file=>[file,fs.readFileSync(path.join(SOURCE,file))]),...targetFiles.map(file=>[file,tiny(file)])])]);
+  const baselineTree=rewrite(protectedTree,[...new Map([...additions.map(file=>[file,fixtureControlBytes(file)]),...targetFiles.map(file=>[file,tiny(file)])])]);
   base=commit(baselineTree,[],'synthetic root with genuine594 protected inputs and synthetic control targets');
   checkout(base);assert.notEqual(base,REFERENCE);assert.deepEqual(text(root,['rev-list','--parents','-n','1',base]).split(' '),[base]);
   native=await moduleAt('scripts/native-postgres-evidence.mjs');
@@ -215,11 +231,18 @@ try{
   const {planSourceDomainImpactFromGit:plan}=await moduleAt('scripts/source-impact-domain-plan.mjs');
   const successor=await moduleAt('scripts/lib/assistant-later-h0-successor-source.mjs');
   const national=await moduleAt('scripts/national584-source-evidence.mjs');
-  const baseNativeInput=await native.captureInstalled593Original591Input({ref:base,readGit:args=>readGit(args).toString('utf8'),physical:false});
-  assert.equal(baseNativeInput.files,143);assert.equal(baseNativeInput.frozenGitTrees.length,13);
+  const baseNativeInput=fixture597?null:await native.captureInstalled593Original591Input({ref:base,readGit:args=>readGit(args).toString('utf8'),physical:false});
+  if(fixture597){
+    const analyzer=await moduleAt('scripts/source-impact-domain-inputs.mjs');
+    const actual=analyzer.analyzeSourceDomainInputs({baselineCommit:base,candidateCommit:base,expectedHead:base});
+    assert.equal(actual.analysis,'COMPLETE',actual.failureCode);assert.equal(actual.actualPostgresInput.before.totalFiles,144);
+    assert.equal(actual.actualPostgresInput.before.sqlFiles,73);assert.equal(actual.models.C.before.files.length,101);
+    assert.equal(actual.models.I.before.files.length,100);assert.equal(actual.frozenGitAnchors.anchors.length,14);
+  }else{assert.equal(baseNativeInput.files,143);assert.equal(baseNativeInput.frozenGitTrees.length,13);}
   baseContent=sourceContent.sourceTreeContentSha256(base,{git:readGit});
   const nativeCurrent={run:fullRun,attempt:1,head:base,pullRequest:fullPr,branch:'codex/synthetic-domain-full'};
-  const nativeReceipt={schemaVersion:2,kind:native.INSTALLED593_ORIGINAL591_V2_KIND,profile:native.INSTALLED593_ORIGINAL591_V2_PROFILE,
+  let nativeReceipt;
+  if(!fixture597)nativeReceipt={schemaVersion:2,kind:native.INSTALLED593_ORIGINAL591_V2_KIND,profile:native.INSTALLED593_ORIGINAL591_V2_PROFILE,
     phase:'INSTALLED593_ORIGINAL591_SUCCESSOR',sourcePhase:'assistant-installed593-origin591-successor',
     releaseVersion:successor.requireInstalled593Original591Release(),binding:successor.requireInstalled593Original591Binding(),
     output:successor.requireInstalled593Original591Output(),databaseBefore:successor.INSTALLED593_ORIGINAL591_DATABASE_BEFORE,
@@ -229,7 +252,33 @@ try{
       ldLibraryPath:'/opt/hostedtoolcache/Python/3.12.15/x64/lib',pgBindir:'/usr/lib/postgresql/16/bin',git:'git version 2.55.0',overrides:[],
       selectedPrograms:{schemaVersion:1,majorVersion:16,files:['initdb','pg_ctl','psql','postgres'].map(name=>({name,path:'/usr/lib/postgresql/16/bin/'+name,
         realpath:'/usr/lib/postgresql/16/bin/'+name,mode:0o755,bytes:100,sha256:'c'.repeat(64),version:name+' (PostgreSQL) 16.10'}))}}};
-  const historical={status:'EXECUTED',executedInThisRun:true,origin:null,command:national.COMMAND,sourceScope:'HISTORICAL_584_NATIONAL_ONLY',
+  if(fixture597){
+    const active=successor.ACTIVE_ASSISTANT_SUCCESSOR,binding=active.requireBinding(),databaseBefore=active.databaseBefore;
+    const fixtureRuntime={platform:'linux',arch:'x64',imageOS:'ubuntu24',imageVersion:'20261012.334.1',
+      node:'v22.23.3',python:'Python 3.12.15',pythonLocation:'/opt/hostedtoolcache/Python/3.12.15/x64',
+      ldLibraryPath:'/opt/hostedtoolcache/Python/3.12.15/x64/lib',pgBindir:'/usr/lib/postgresql/16/bin',git:'git version 2.55.0',overrides:[],
+      selectedPrograms:{schemaVersion:1,majorVersion:16,files:['initdb','pg_ctl','psql','postgres'].map(name=>({name,path:'/usr/lib/postgresql/16/bin/'+name,
+        realpath:'/usr/lib/postgresql/16/bin/'+name,mode:0o755,bytes:100,sha256:'c'.repeat(64),version:name+' (PostgreSQL) 16.10'}))}};
+    // SYNTHETIC report DATA on genuine597 protected source, never SQL execution or a reused594 receipt.
+    nativeReceipt={schemaVersion:1,kind:native.SCALAR597_LATER_H0_PHASE_KIND,phase:'SCALAR597_LATER_H0_SUCCESSOR',
+      sourcePhase:native.SCALAR597_LATER_H0_PHASE,releaseVersion:active.requireRelease(),binding,
+      output:active.requireOutput(),databaseBefore,current:nativeCurrent,commands:[...native.SCALAR597_LATER_H0_COMMANDS],
+      status:'EXECUTED',executedInThisRun:true,origin:null,eligibleForReuse:false,runtime:fixtureRuntime,
+      report:{kind:'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',sqlExecuted:true,migrationExecuted:true,tcpEnabled:false,
+        normalModelPartCount:673,postgresMajorVersion:16,nativeProgramIdentity:fixtureRuntime.selectedPrograms,
+        scalar597LaterH0Successor:{kind:'SCALAR597_LATER_H0_SUCCESSOR',sourceMigrationInventory:62,sqlExecuted:true,
+          wholeMigrationExecuted:true,databaseBeforeVersion:databaseBefore.version,originalStateRelease:594,
+          migrationVersion:binding.version,partCount:673,checkpointOidSlots:43,contractBodies:46,
+          oldFunctionsAndOidsPreserved:true,allOriginalDefinitionsPreserved:true,exactCheckpointContract:true,exactTripContract:true,
+          schema2Catalog:true,normalProtectedJsonbRoundtrip:true,originalDigestsPreserved:true,trueOld594Fixtures:true,
+          currentNormalFixtures:true,old594ModelNotRetagged:true,wholeMetadataInverse:true,strictlyLater594ToNextOnly:true,
+          productionSeedAuthenticated:false,sqlIsNotOriginAuthentication:true,
+          intermediateRuntime:{oldActiveAfterSql:true,nextRefusedBeforeActivation:true,pendingBothRefused:true,
+            nextActiveAfterCompletion:true,oldRefusedAfterCompletion:true,activeDocumentsUnchangedBySql:true,
+            quotaFunctionAndAdmissionUnchanged:true,quotaServiceRoleWorking:true}}}};
+  }
+  let historical;
+  if(!fixture597)historical={status:'EXECUTED',executedInThisRun:true,origin:null,command:national.COMMAND,sourceScope:'HISTORICAL_584_NATIONAL_ONLY',
     frozenHead:national.ORIGIN.head,frozenTree:national.ORIGIN.tree,historicalInput:{head:national.ORIGIN.head,tree:national.ORIGIN.tree,content:national.ORIGIN.content},
     current:{head:base,run:fullRun,attempt:1,pullRequest:fullPr},providerOrProductionProof:false,
     current585NationalExecutionClaimed:false,current586NationalExecutionClaimed:false,currentAssistantLaterH0NationalExecutionClaimed:false,
@@ -237,9 +286,15 @@ try{
     currentAssistantPublic591SuccessorNationalExecutionClaimed:false,currentInstalled593Original591SuccessorNationalExecutionClaimed:false,
     ...national.installed593Original591NativeClaims(nativeReceipt,nativeCurrent),currentInstalled593Original591SuccessorSource:{command:'npm run test:assistant-later-h0-source',
       actualCommand:national.INSTALLED593_ORIGINAL591_SOURCE_COMMAND,separatelyRequired:true}};
+  if(fixture597)historical={status:'EXECUTED',executedInThisRun:true,origin:null,command:national.COMMAND,
+    sourceScope:'HISTORICAL_584_NATIONAL_ONLY',frozenHead:national.ORIGIN.head,frozenTree:national.ORIGIN.tree,
+    historicalInput:{head:national.ORIGIN.head,tree:national.ORIGIN.tree,content:national.ORIGIN.content},
+    current:{head:base,run:fullRun,attempt:1,pullRequest:fullPr},providerOrProductionProof:false,
+    ...national.scalar597LaterH0NativeClaims(nativeReceipt,nativeCurrent),
+    currentScalar597LaterH0Source:{command:'npm run test:assistant-later-h0-source',actualCommand:national.SCALAR597_LATER_H0_SOURCE_COMMAND,separatelyRequired:true}};
   fullBody={schemaVersion:1,contractId:gate.SOURCE_GATE_CONTRACT,repository:native.ORIGIN.repository,pullRequestNumber:fullPr,headSha:base,
     sourceTreeSha256:baseContent,privatePayloadIncluded:false,nativePostgres:nativeReceipt,historical584National:historical};
-  phaseBody={schemaVersion:2,kind:native.INSTALLED593_ORIGINAL591_V2_KIND,repository:native.ORIGIN.repository,headSha:base,
+  phaseBody={schemaVersion:fixture597?1:2,kind:fixture597?native.SCALAR597_LATER_H0_PHASE_KIND:native.INSTALLED593_ORIGINAL591_V2_KIND,repository:native.ORIGIN.repository,headSha:base,
     sourceTreeSha256:baseContent,privatePayloadIncluded:false,nativePostgres:clone(nativeReceipt)};
   const owner='scripts/source-targeted-receipt.mjs',candidateTree=rewrite(baselineTree,[[owner,Buffer.concat([git(root,['cat-file','blob',base+':'+owner]),Buffer.from('\n// synthetic CONTROL-only child delta\n')])]]);
   const positiveHead=commit(candidateTree,[base],'synthetic reviewed CONTROL child');
@@ -385,6 +440,13 @@ try{
   assert.equal(current.dev,owned.dev);assert.equal(current.ino,owned.ino);assert.equal(current.birthtimeNs,owned.birthtimeNs);fs.rmSync(root,{recursive:true,force:false});
 }
 console.log(JSON.stringify({kind:'SYNTHETIC_NORMAL_V2_PRODUCER_CONSUMER_INTEGRATION',cases,passed:cases,failed:0,scenarios,
-  actualTargetProcesses:actualProcesses,syntheticTransportCalls:calls,realIsolatedGit:true,genuineProtected143AndCIT:true,frozenAnchors:13,
+  actualTargetProcesses:actualProcesses,syntheticTransportCalls:calls,realIsolatedGit:true,genuineProtected143AndCIT:!fixture597,genuineProtected144AndCIT:fixture597,frozenAnchors:fixture597?14:13,
   plannerMock:false,productSourceTestsExecuted:false,actualSqlOrSqliteExecuted:false,actualGitHubOrFullQualification:false,
   network:false,production:false,deliveryAuthority:false}));
+
+if(!fixture597){
+  // One ordinary invocation covers both distinct genuine source generations.
+  // The child has the same normal program, a closed fixture selector and synthetic transport only.
+  execFileSync(process.execPath,[fileURLToPath(import.meta.url),'--source597'],{stdio:'inherit',timeout:180000,
+    env:{...process.env}});
+}
