@@ -1,3 +1,9 @@
+## 4. november — lokal Pages-kandidat med kompakte korttimer
+
+Aktuelt arbejdsgrundlag er [håndbog 89.301](../../HANDBOOK-RAVRADAR.md#public-json-plain-reader-upgrader-2026-11-03), [DEC-0154](10_DECISIONS/DEC-0154-MANIFEST-BOUND-PUBLIC-DETAIL-RUNTIME.md) og [DEC-0175](10_DECISIONS/DEC-0175-MOBILE-SAFE-EMERGENCY-STARTUP.md) med tillæggene af 4. november. Tidligere PLAIN-only-udsagn beskriver læserbroen før denne lokale kandidat.
+
+V3-kortet og de almindelige zonepaneler har særskilte PLAIN-filer. De fulde timer og recovery-arkivet har egne integritetskontroller. Fastslå størrelse, levering og mobil effekt hver for sig.
+
 ## 3. november — ens filkontrol på tværs af runtimeversioner
 
 Den faktiske Node 22-kontrol påviste, at indbygget gzip-udpakning kan acceptere flere sammenkædede medlemmer, selv om Node 24 afviser dem. Den lokale rettelse kontrollerer derfor med den samme medfølgende kode, at filen rummer præcis ét medlem, også efter vellykket indbygget udpakning. De indbyggede outputbytes bevares; valideringschunks kasseres uden endnu en stor outputallokering. Et indbygget fejlforløb gentages stadig aldrig i fallback. Normalparenten består nu med 37 codec-prøver, 19 brocases, de 9 gamle kortcases og den eksisterende særskilte coldstart-prøve på Node 24. Ny præcis Node 22-kvalifikation og offentlig accept er åbne.

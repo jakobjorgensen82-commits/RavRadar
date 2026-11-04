@@ -94,6 +94,7 @@ import {
   sha256Text,
 } from './public-conditions-lib.mjs';
 import { hydratePrivateConditionsHourly } from './lib/private-conditions-hourly.mjs';
+import { publicManifestWithoutBulkArchive } from './lib/public-bulk-details-archive.mjs';
 import { validFurWaterRoutingDiagnostic } from './lib/fur-water-routing-diagnostic.mjs';
 
 const DEFAULT_INPUT = 'data/live/conditions.json';
@@ -899,7 +900,10 @@ function addPublicPackageChecks({
       // delivery-pack and privacy audits below. Treating the two phases as one
       // object caused every otherwise valid runtime to report a false
       // PUBLIC_MANIFEST_NOT_CANONICAL failure.
-      const { detailDelivery: _actualDelivery, ...actualStaticManifest } = manifest ?? {};
+      // The bulk archive is another physical representation of the same
+      // verified logical details. Keep their canonical size and digest here.
+      const { detailDelivery: _actualDelivery, ...actualStaticManifest } =
+        publicManifestWithoutBulkArchive(manifest ?? {});
       collector.add(sameCanonical(actualStaticManifest, expectedManifest), 'PUBLIC_MANIFEST_NOT_CANONICAL');
     }
   } catch {

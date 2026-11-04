@@ -9,7 +9,7 @@ const required=[
   'await yieldToBrowser();',
   'if(renderId!==state.forecastRenderId)return false;',
   "t('forecast.calculating',{progress})",
-  'state.conditions?.nationalForecast?.modes?.[state.mode]',
+  '(activeLandingView?.nationalForecast||state.conditions?.nationalForecast)?.modes?.[state.mode]',
 ];
 for(const token of required)if(!app.includes(token))throw new Error(`Manglende nonblocking-prognoseværn: ${token}`);
 if(!/function ensureConditionDetails\s*\([^)]*\)/.test(app))throw new Error('Manglende nonblocking-prognoseværn: fælles behovsstyret detaljeindgang');
@@ -31,7 +31,7 @@ const dates=Array.from({length:6},(_,i)=>`2026-10-${String(i+1).padStart(2,'0')}
 const list={innerHTML:'',style:{setProperty:(name,value)=>{list[name]=value;}},querySelectorAll:()=>[]};
 const node={innerHTML:'',querySelector:()=>list,querySelectorAll:()=>[]};
 const state={mode:'waders',forecastRenderId:0,conditions:{},zones:{features:Array.from({length:25},(_,i)=>({properties:{id:`z${i+1}`,name:`Zone ${i+1}`}}))}};
-const env={state,nationalForecast:node,conditionDetailsReady:true,document:{querySelector:()=>null},getLanguage:()=> 'da',
+const env={state,activeLandingView:null,nationalForecast:node,conditionDetailsReady:true,document:{querySelector:()=>null},getLanguage:()=> 'da',
   visibleForecastDays:value=>value,emergencySnapshotReferenceAt:()=>null,hasNumber:Number.isFinite,isCurrentForecastHour:()=>false,
   groupHoursForZone:()=>dates.map(date=>({date})),yieldToBrowser:async()=>{},
   bestForDay:zone=>({hour:{time:'2026-10-01T12:00:00Z'},result:{available:true,score:70+Number(zone.id.slice(1))}}),

@@ -109,7 +109,10 @@ assert.match(recovery, /TERMINAL_SOURCE_STABLE_AFTER_ARTIFACT_EXPIRY/);
 for (const name of ['reusable-weather-build', 'deploy-code-only-repair']) {
   const source = await read(name);
   assert.match(source, /MEASURED_WARMUP_PUBLISHED/);
-  assert.match(source, /copy-public-delivery-shards.mjs/);
+  const copy = name === 'reusable-weather-build'
+    ? 'node scripts/copy-pages-public-delivery.mjs --source "$pages_source/data/live" --target "$pages_destination/data/live"'
+    : 'node scripts/copy-pages-public-delivery.mjs --source data/live --target _site/data/live';
+  assert.equal(source.split(copy).length, 2, 'Exactly one actual Pages delivery copy per workflow');
   for (const step of ['checkpoint-build', 'checkpoint-save', 'checkpoint-publish']) {
     const at = source.indexOf(`id: ${step}`), end = source.indexOf('\n      - ', at);
     const block = source.slice(at, end);

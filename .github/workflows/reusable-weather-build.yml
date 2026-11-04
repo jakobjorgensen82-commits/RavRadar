@@ -2989,6 +2989,10 @@ jobs:
 
       - name: Rebuild deterministic public weather runtime before validation and deploy
         if: steps.preflight.outputs.should_run == 'true'
+        env:
+          RAVRADAR_PLAIN_MAP_HOURS: 'true'
+          RAVRADAR_PUBLIC_COLD_HOURS: 'true'
+          RAVRADAR_PUBLIC_BULK_ARCHIVE: 'true'
         run: node scripts/generate-public-conditions.mjs
 
       - name: Refuse loss of previously valid public weather on identical coastal hours
@@ -3800,6 +3804,7 @@ jobs:
               --exclude 'data/diagnostics/' \
               --exclude 'data/geometry-v2/' \
               --exclude 'data/admin/' \
+              --exclude '/data/jordrav/prototype-0.1.0/' \
               --exclude 'data/live/' \
               --exclude 'data/kystdata.json' \
               --exclude 'data/zone-plan.json' \
@@ -3833,7 +3838,7 @@ jobs:
             install -m 0644 "$pages_source/data/live/public-conditions.json" "$pages_destination/data/live/public-conditions.json"
             install -m 0644 "$pages_source/data/live/public-condition-details.json" "$pages_destination/data/live/public-condition-details.json"
             install -m 0644 "$pages_source/data/live/coastal-parts-v2.json" "$pages_destination/data/live/coastal-parts-v2.json"
-            node scripts/copy-public-delivery-shards.mjs --source "$pages_source/data/live" --target "$pages_destination/data/live"
+            node scripts/copy-pages-public-delivery.mjs --source "$pages_source/data/live" --target "$pages_destination/data/live"
           }
           pages_source="$GITHUB_WORKSPACE"
           if [[ "${{ steps.operational-action.outputs.action }}" == candidate-* ]]; then

@@ -1,3 +1,9 @@
+## 4. november — kompakt kort og mindre Pages-pakke
+
+Læs håndbog 89.301 og tillæggene af 4. november til DEC-0154 og DEC-0175 før arbejde på offentlig levering. Den lokale 4.0.594-kandidat adskiller browserens PLAIN-korttimer, fulde time-/zonefiler og recovery-arkivet. Bevar de logiske originalers identitet og lad score, modelbindinger og normale datakontroller følge den eksisterende kontrakt.
+
+PR #803's tidligere PLAIN-læserbro har bestået kilde-CI. Merge og deploy er endnu ikke verificeret. Den samlede Pages-kandidat kræver egen normal kontrol, faktisk størrelse på det uploadede artifact samt offentlig og mobil afprøvning.
+
 ## 3. november — ens filkontrol på tværs af runtimeversioner
 
 Den faktiske Node 22-kontrol påviste, at indbygget gzip-udpakning kan acceptere flere sammenkædede medlemmer, selv om Node 24 afviser dem. Den lokale rettelse kontrollerer derfor med den samme medfølgende kode, at filen rummer præcis ét medlem, også efter vellykket indbygget udpakning. De indbyggede outputbytes bevares; valideringschunks kasseres uden endnu en stor outputallokering. Et indbygget fejlforløb gentages stadig aldrig i fallback. Normalparenten består nu med 37 codec-prøver, 19 brocases, de 9 gamle kortcases og den eksisterende særskilte coldstart-prøve på Node 24. Ny præcis Node 22-kvalifikation og offentlig accept er åbne.

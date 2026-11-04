@@ -174,9 +174,126 @@ export const qualifiedScalarPlanningWorkflowReview = Object.freeze({
     ]
   ]
 });
+// TEST ONLY: remove the reviewed public projection changes before the
+// unchanged whole-source weather workflow checks. Mixed bytes stay unknown.
+export const pagesPublicProjectionWorkflowReview = Object.freeze({
+  "base": "84051e2d700595837ebf80426410dcbef8e08704",
+  "tree": "5c7147ffbe31a7a983241d31eca3a8dbbf1df14b",
+  "roles": {
+    "build": {
+      "path": ".github/workflows/reusable-weather-build.yml",
+      "before": {
+        "bytes": 297899,
+        "sha256": "451249801b6944d945b193fd95de5065cf057a8b08a6698a675e2192c074100c"
+      },
+      "after": {
+        "bytes": 298105,
+        "sha256": "5810df1f9a3dce1a76accaab14f9cb9b69133b4783c9e7426443eb5d74b21a3f"
+      },
+      "edits": [
+        [
+          243473,
+          "            node scripts/copy-pages-public-delivery.mjs --source \"$pages_source/data/live\" --target \"$pages_destination/data/live\"\n",
+          "            node scripts/copy-public-delivery-shards.mjs --source \"$pages_source/data/live\" --target \"$pages_destination/data/live\"\n"
+        ],
+        [
+          241489,
+          "              --exclude '/data/jordrav/prototype-0.1.0/' \\\n",
+          ""
+        ],
+        [
+          191432,
+          "        env:\n          RAVRADAR_PLAIN_MAP_HOURS: 'true'\n          RAVRADAR_PUBLIC_COLD_HOURS: 'true'\n          RAVRADAR_PUBLIC_BULK_ARCHIVE: 'true'\n",
+          ""
+        ]
+      ]
+    },
+    "once": {
+      "path": ".github/workflows/run-current-weather-once.yml",
+      "before": {
+        "bytes": 54660,
+        "sha256": "b9301a3e3a2e8a25363df5c7e4eaf2128df017220ab5baefde06364410e8bc3e"
+      },
+      "after": {
+        "bytes": 55548,
+        "sha256": "defc1a6fa360472b27335eccbe6f26f6bbc66d14442a990b873557def2f032af"
+      },
+      "edits": [
+        [
+          34653,
+          "          if (archive) {\n            const stored = path.join(root, archivedLocal);\n            const file = await fs.lstat(stored);\n            assert(file.isFile() && !file.isSymbolicLink() && file.size === archive.bytes);\n            await publicBulk.restorePublicBulkArchiveFile({ manifest, archiveBytes: await fs.readFile(stored), signal,\n              rawDestination: path.join(root, 'public-condition-details.json') });\n            await fs.unlink(stored);\n          }\n",
+          ""
+        ],
+        [
+          34103,
+          "            archive ? ['data/live/' + archive.path.slice(2), archivedLocal, archive.bytes]\n              : ['data/live/public-condition-details.json', 'public-condition-details.json', manifestBoundedPublicDetailsBytes(manifest.publicConditionDetailsBytes)],\n",
+          "            ['data/live/public-condition-details.json', 'public-condition-details.json', manifestBoundedPublicDetailsBytes(manifest.publicConditionDetailsBytes)],\n"
+        ],
+        [
+          33653,
+          "          const publicBulk = manifest.publicConditionDetailsArchive === undefined ? null\n            : await import('./scripts/lib/public-bulk-details-archive.mjs');\n          const archive = publicBulk?.publicBulkArchiveEntry(manifest) ?? null;\n          const archivedLocal = 'public-condition-details.archive.gz';\n",
+          ""
+        ]
+      ]
+    },
+    "repair": {
+      "path": ".github/workflows/deploy-code-only-repair.yml",
+      "before": {
+        "bytes": 225121,
+        "sha256": "1619b09526d8ea1288bc4c94a690b997f5a5b0f05e12b8ecc26da08e984c4c75"
+      },
+      "after": {
+        "bytes": 225325,
+        "sha256": "391628fbcaae106df7a29d5c7caa3a7487af18b025bd4692bc93aaab5d396bf8"
+      },
+      "edits": [
+        [
+          160916,
+          "          node scripts/copy-pages-public-delivery.mjs --source data/live --target _site/data/live\n",
+          "          node scripts/copy-public-delivery-shards.mjs --source data/live --target _site/data/live\n"
+        ],
+        [
+          159440,
+          "            --exclude '/data/jordrav/prototype-0.1.0/' \\\n",
+          ""
+        ],
+        [
+          99500,
+          "        env:\n          RAVRADAR_PLAIN_MAP_HOURS: 'true'\n          RAVRADAR_PUBLIC_COLD_HOURS: 'true'\n          RAVRADAR_PUBLIC_BULK_ARCHIVE: 'true'\n",
+          ""
+        ]
+      ]
+    }
+  }
+});
+for (const row of Object.values(pagesPublicProjectionWorkflowReview.roles)) {
+  for (const edit of row.edits) Object.freeze(edit);
+  Object.freeze(row.edits);
+  Object.freeze(row.before);
+  Object.freeze(row.after);
+  Object.freeze(row);
+}
+Object.freeze(pagesPublicProjectionWorkflowReview.roles);
+
+export function inversePagesPublicProjectionWorkflow(source, role) {
+  assert.equal(arguments.length, 2, 'PAGES_PUBLIC_PROJECTION_WORKFLOW_ARGUMENTS');
+  assert.equal(typeof source, 'string', 'PAGES_PUBLIC_PROJECTION_WORKFLOW_TYPE');
+  const { roles } = pagesPublicProjectionWorkflowReview;
+  const row = typeof role === 'string' && Object.hasOwn(roles, role) ? roles[role] : null;
+  if (!row || sha(source) !== row.after.sha256) return source;
+  assert.equal(Buffer.byteLength(source), row.after.bytes, 'PAGES_PUBLIC_PROJECTION_WORKFLOW_AFTER_BYTES');
+  for (const [offset, actual, original] of row.edits) {
+    assert.equal(source.slice(offset, offset + actual.length), actual, 'PAGES_PUBLIC_PROJECTION_WORKFLOW_EXACT_HUNK');
+    source = source.slice(0, offset) + original + source.slice(offset + actual.length);
+  }
+  assert.equal(Buffer.byteLength(source), row.before.bytes, 'PAGES_PUBLIC_PROJECTION_WORKFLOW_BEFORE_BYTES');
+  assert.equal(sha(source), row.before.sha256, 'PAGES_PUBLIC_PROJECTION_WORKFLOW_WHOLE_PREDECESSOR');
+  return source;
+}
 export function inverseQualifiedScalarSchemaWorkflow(source, role) {
   assert.equal(arguments.length, 2, 'QUALIFIED_SCALAR_SCHEMA_ARGUMENTS');
   assert.equal(typeof source, 'string', 'QUALIFIED_SCALAR_SCHEMA_TYPE');
+  source = inversePagesPublicProjectionWorkflow(source, role);
   // TEST ONLY: the exact schema1/2 work-selector successor, no runtime proof.
   if (role === 'build' && sha(source) === '451249801b6944d945b193fd95de5065cf057a8b08a6698a675e2192c074100c') {
     assert.equal(Buffer.byteLength(source), 297899, 'QUALIFIED_SCALAR_SCHEMA_AFTER_BYTES');

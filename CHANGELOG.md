@@ -1,3 +1,11 @@
+## 4. november — lokal kandidat til kompakt kort og mindre Pages-pakke
+
+4.0.594-kandidaten har 118 PLAIN V3-korttimer til kort, tidsskyder og Top20. De første 12 fulde timer og alle 210 zonefiler bruger almindelig JSON. De næste 106 fulde timer bruger streng gzip-base64. Startpakke, kyst- og zoneregister samt deling bruger fortsat almindelig JSON. Assistentens konkrete vejrgrundlag og turstart kan indlæse den fulde verificerede time efter behov.
+
+Et særskilt single-gzip-arkiv bærer de samlede offentlige detaljer til genopretning med samme logiske byteantal og SHA-256. Den rå runnerfil bevares, og Pages udelader den redundante rå kopi efter kontrol. Staging udelader kun den gamle Jordrav 0.1-pakke og beholder 0.2.
+
+Denne kandidat er lokal. PR #803's tidligere PLAIN-læserbro har bestået kilde-CI. Merge, deploy, faktisk samlet Pages-størrelse samt offentlig og mobil accept er endnu ikke verificeret. Versionsfelt og beregningsbindinger bevares, og SOURCE-revision, statistik og automatisk sletning har særskilte leveringsspor.
+
 ## 3. november — ens filkontrol på tværs af runtimeversioner
 
 Den faktiske Node 22-kontrol påviste, at indbygget gzip-udpakning kan acceptere flere sammenkædede medlemmer, selv om Node 24 afviser dem. Den lokale rettelse kontrollerer derfor med den samme medfølgende kode, at filen rummer præcis ét medlem, også efter vellykket indbygget udpakning. De indbyggede outputbytes bevares; valideringschunks kasseres uden endnu en stor outputallokering. Et indbygget fejlforløb gentages stadig aldrig i fallback. Normalparenten består nu med 37 codec-prøver, 19 brocases, de 9 gamle kortcases og den eksisterende særskilte coldstart-prøve på Node 24. Ny præcis Node 22-kvalifikation og offentlig accept er åbne.

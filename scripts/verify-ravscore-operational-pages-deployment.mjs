@@ -33,9 +33,11 @@ import {
 import { RAVSCORE_KNOWN_PUBLIC_SOURCE_REPAIR_POLICY as SOURCE_REPAIR } from
   './lib/ravscore-known-public-source-repair.mjs';
 import {
-  publicDeliveryEntries,
   assertPublicDeliveryDocument,
 } from '../js/core/public-delivery-contract.js';
+
+import { publicDeliveryTransportEntries } from '../js/services/public-delivery-transport-binding.js';
+import { readPublicDeliveryJsonBytes } from './lib/public-delivery-json-transport.mjs';
 
 export const RAVSCORE_OPERATIONAL_PAGES_VERIFICATION_SCHEMA =
   'ravscore-operational-pages-verification-v1';
@@ -179,16 +181,16 @@ function scanBindings(value, expected, label, pathPrefix = label) {
   }
 }
 
-async function fetchBytes(fetchImpl, url, label, httpRetryBudget) {
+async function fetchBytes(fetchImpl, url, label, httpRetryBudget, readBody = null) {
   // Only a refused transient HTTP response may repeat this exact request.
   // Tokens belong to the whole verification, including manifest observation.
   for (let attempt = 1; ; attempt += 1) {
     const response = await fetchImpl(url, {
       cache: 'no-store',
       headers: { accept: label.endsWith('.json') || label.endsWith('.geojson')
-        ? 'application/json' : 'text/javascript' },
+        ? 'application/json' : label.endsWith('.gz') ? 'application/gzip' : 'text/javascript' },
     });
-    if (response?.ok) return Buffer.from(await response.arrayBuffer());
+    if (response?.ok) return readBody ? await readBody(response) : Buffer.from(await response.arrayBuffer());
     const error = new Error(`${label} returned HTTP ${response?.status ?? 'unknown'}`);
     // Do not abandon an unread response body before a retry or refusal.
     // Failed cleanup, fetch/abort and body-read errors remain immediate failures.
@@ -547,7 +549,16 @@ async function verifyOnce({
   const fetched = { 'data/live/public-conditions.json': sealedStartupBytes };
   for (const relative of PUBLIC_FILES) {
     if (relative === 'data/live/public-conditions.json') continue;
-    fetched[relative] = await fetchBytes(fetchImpl,
+    if (relative === 'data/live/public-condition-details.json' && manifest.publicConditionDetailsArchive !== undefined) {
+      const { publicBulkArchiveEntry, readVerifiedPublicBulkArchive } = await import('./lib/public-bulk-details-archive.mjs');
+      const { readExactMapResponse } = await import('./lib/public-map-hour-pages.mjs');
+      const archive = publicBulkArchiveEntry(manifest);
+      const physical = 'data/live/' + archive.path.slice(2);
+      const archiveBytes = await fetchBytes(fetchImpl,
+        withCacheBuster(baseUrl, physical, sourceHead, observationNonce), physical, httpRetryBudget,
+        response => readExactMapResponse(response, archive.bytes));
+      fetched[relative] = await readVerifiedPublicBulkArchive({ manifest, archiveBytes });
+    } else fetched[relative] = await fetchBytes(fetchImpl,
       withCacheBuster(baseUrl, relative, sourceHead, observationNonce), relative, httpRetryBudget);
   }
   const digestChecks = [
@@ -581,21 +592,32 @@ async function verifyOnce({
   // A manifest can promise bounded detail delivery while the four legacy
   // documents are all valid. Verify the promised files too, without retaining
   // the complete sharded payload in memory or serializing hundreds of requests.
-  const deliveryEntries = publicDeliveryEntries(manifest);
+  const deliveryEntries = publicDeliveryTransportEntries(manifest);
+  const strictPlain = manifest.detailDelivery?.coldHoursSchema === 1;
+  let mapHourEntries = [];
+  if (manifest.detailDelivery?.mapHours !== undefined) {
+    const { mapHourInventoryFromRegistry } = await import('./lib/public-map-hour-pages.mjs');
+    mapHourEntries = mapHourInventoryFromRegistry({ registryBytes: fetched['data/live/coastal-parts-v2.json'],
+      manifest, fullEntries: deliveryEntries });
+  }
+  const exactDeliveryRead = strictPlain ? (await import('./lib/public-map-hour-pages.mjs')).readExactMapResponse : null;
+  const expectedDelivery = [...deliveryEntries, ...mapHourEntries];
   let deliveryIndex = 0;
-  await Promise.all(Array.from({ length: Math.min(8, deliveryEntries.length) }, async () => {
-    while (deliveryIndex < deliveryEntries.length) {
-      const entry = deliveryEntries[deliveryIndex++];
+  await Promise.all(Array.from({ length: Math.min(8, expectedDelivery.length) }, async () => {
+    while (deliveryIndex < expectedDelivery.length) {
+      const position = deliveryIndex++;
+      const entry = expectedDelivery[position];
+      const isCompact = position >= deliveryEntries.length;
       const relative = `data/live/${entry.path.replace(/^\.\//, '')}`;
+      const readBody = isCompact ? entry.readResponse : exactDeliveryRead ? response => exactDeliveryRead(response, entry.bytes) : null;
       const bytes = await fetchBytes(fetchImpl,
-        withCacheBuster(baseUrl, relative, sourceHead, observationNonce), relative, httpRetryBudget);
-      if (bytes.length !== entry.bytes || sha256(bytes) !== entry.sha256) {
-        throw new Error(`Deployed public delivery digest mismatch for ${relative}`);
+        withCacheBuster(baseUrl, relative, sourceHead, observationNonce), relative, httpRetryBudget, readBody);
+      if (isCompact) {
+        await entry.read(bytes);
+        continue;
       }
-      let document;
-      try { document = JSON.parse(bytes.toString('utf8')); }
-      catch { throw new Error(`Deployed public delivery is not JSON: ${relative}`); }
-      assertPublicDeliveryDocument(document, manifest, entry);
+      const loaded = await readPublicDeliveryJsonBytes(bytes, entry, strictPlain);
+      assertPublicDeliveryDocument(loaded.value, manifest, entry);
     }
   }));
 

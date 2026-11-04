@@ -333,7 +333,26 @@ def write_selected(output, name, chunks, declared, cap, deadline, manifest=None)
     return {'name': name, 'bytes': count, 'sha256': digest.hexdigest()}
 
 
-def read_public(member, info, output, manifest, detail_cap, deadline):
+def selected_public_files(manifest):
+    payload = json.loads(manifest)
+    detail_cap = payload['publicConditionDetailsBytes']
+    require(type(detail_cap) is int and 2 <= detail_cap <= 512 * MIB)
+    files = dict(PUBLIC)
+    if 'publicConditionDetailsArchive' in payload:
+        entry = payload['publicConditionDetailsArchive']
+        require(isinstance(entry, dict) and set(entry) == {'kind', 'path', 'bytes', 'sha256'})
+        require(payload.get('detailDelivery', {}).get('schemaVersion') == 1)
+        digest, size = entry['sha256'], entry['bytes']
+        require(isinstance(digest, str) and re.fullmatch('[0-9a-f]{64}', digest))
+        relative = 'public-condition-details-' + digest + '.json.gz'
+        require(entry['kind'] == 'gzip-single-v1' and entry['path'] == './' + relative
+                and type(size) is int and 18 <= size <= 32 * MIB)
+        del files['data/live/public-condition-details.json']
+        files['data/live/' + relative] = ('public-condition-details.archive.gz', size)
+    return files, detail_cap
+
+
+def read_public(member, info, output, manifest, detail_cap, public_files, deadline):
     reader, selected = TarReader(member, info.file_size, deadline), {}
     global_values, pending = {}, {}
     ended = False
@@ -367,11 +386,12 @@ def read_public(member, info, output, manifest, detail_cap, deadline):
         values = {**global_values, **pending}
         name, size = values.get(b'path', base_name), values.get(b'size', size)
         pending = {}
+        require(name not in PUBLIC or name in public_files)
         if kind == b'5':
-            require(size == 0 and name not in PUBLIC)
-        elif name in PUBLIC:
+            require(size == 0 and name not in public_files)
+        elif name in public_files:
             require(name not in selected)
-            local, cap = PUBLIC[name]
+            local, cap = public_files[name]
             selected[name] = write_selected(output, local, reader.chunks(size), size,
                 detail_cap if cap is None else cap, deadline,
                 manifest if local == 'manifest.json' else None)
@@ -385,7 +405,7 @@ def read_public(member, info, output, manifest, detail_cap, deadline):
         if not chunk:
             break
         require(not any(chunk))
-    require(reader.count == info.file_size and set(selected) == set(PUBLIC))
+    require(reader.count == info.file_size and set(selected) == set(public_files))
     return list(selected.values()), reader.count
 
 
@@ -394,9 +414,7 @@ def extract(args, deadline):
     detail_cap = None
     if args.mode == 'public':
         manifest = read_small(args.expected_manifest, MIB, deadline)
-        value = json.loads(manifest)['publicConditionDetailsBytes']
-        require(type(value) is int and 2 <= value <= 512 * MIB)
-        detail_cap = value
+        public_files, detail_cap = selected_public_files(manifest)
         archive_cap = sum(cap if cap is not None else detail_cap for _, cap in PUBLIC.values())
     else:
         archive_cap = HANDOFF_ZIP_LIMIT
@@ -443,7 +461,7 @@ def extract(args, deadline):
                     entry = entries[0]
                     require(entry.filename == 'artifact.tar' and not entry.is_dir())
                     with archive_zip.open(entry, 'r') as member:
-                        selected, tar_bytes = read_public(member, entry, output, manifest, detail_cap, deadline)
+                        selected, tar_bytes = read_public(member, entry, output, manifest, detail_cap, public_files, deadline)
                 else:
                     for entry in entries:
                         normalized = path_view(entry.filename.encode('utf8'))

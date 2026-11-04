@@ -915,7 +915,7 @@ for (const id of ['zone-2','zone-3','zone-4','zone-5']) {
 assert.equal(boundedZones.loadedDetailZones.length, 4);
 assert.equal(boundedZones.zones['zone-1'].forecast.hourly.length, 1, 'Evicted zone forecasts release retained row graphs.');
 assert.match(appSource, /generation!==runtimeGeneration\|\|selectedReferenceAt!==state\.conditions\.publicRuntimeAvailability\?\.selectedReferenceAt/);
-assert.match(appSource, /refreshPublicRuntimeGeneration\(\{manifest:activeManifest/);
+assert.match(appSource, /refreshPublicLandingRuntime\(\{manifest:activeManifest,view:previousLanding,conditions:previous\}\)/);
 assert.match(appSource, /visibilitychange/);
 
 import { runInNewContext } from 'node:vm';

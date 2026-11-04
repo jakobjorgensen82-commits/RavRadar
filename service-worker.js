@@ -1,11 +1,16 @@
 const APP_VERSION = "4.0.594";
 const CACHE_PREFIX = "ravradar-app-";
 const PUBLIC_JSON_TRANSPORT = "public-json-bridge-20261103";
-const CACHE = `${CACHE_PREFIX}${APP_VERSION.replaceAll('.', '-')}-${PUBLIC_JSON_TRANSPORT}`;
+const COMPACT_MAP = "plain-map-v3-20261104";
+const CACHE = `${CACHE_PREFIX}${APP_VERSION.replaceAll('.', '-')}-${PUBLIC_JSON_TRANSPORT}-${COMPACT_MAP}`;
 const STATIC = [
-  `./bootstrap.js?v=${APP_VERSION}&copy=footer-20261005&ui=zone-panels-20261027&assistant=forecast-followup-20261101&share=custom-domain-20261102&transport=${PUBLIC_JSON_TRANSPORT}`,
-  `./app.js?v=${APP_VERSION}&copy=footer-20261005&ui=zone-panels-20261027&assistant=forecast-followup-20261101&share=custom-domain-20261102&transport=${PUBLIC_JSON_TRANSPORT}`,
-  `./js/services/data-service.js?v=${APP_VERSION}&ui=forecast-share-20261024&share=custom-domain-20261102&transport=${PUBLIC_JSON_TRANSPORT}`,
+  `./js/services/public-delivery-transport-binding.js?v=${APP_VERSION}&map=${COMPACT_MAP}`,
+  `./js/services/plain-map-hour.js?v=${APP_VERSION}&map=${COMPACT_MAP}`,
+  `./js/services/zone-hour-preview.js?v=${APP_VERSION}&map=${COMPACT_MAP}`,
+  `./js/ui/info-panel.js?v=${APP_VERSION}&ui=zone-panels-20261027&map=${COMPACT_MAP}`,
+  `./bootstrap.js?v=${APP_VERSION}&copy=footer-20261005&ui=zone-panels-20261027&assistant=forecast-followup-20261101&share=custom-domain-20261102&transport=${PUBLIC_JSON_TRANSPORT}&map=${COMPACT_MAP}`,
+  `./app.js?v=${APP_VERSION}&copy=footer-20261005&ui=zone-panels-20261027&assistant=forecast-followup-20261101&share=custom-domain-20261102&transport=${PUBLIC_JSON_TRANSPORT}&map=${COMPACT_MAP}`,
+  `./js/services/data-service.js?v=${APP_VERSION}&ui=forecast-share-20261024&share=custom-domain-20261102&transport=${PUBLIC_JSON_TRANSPORT}&map=${COMPACT_MAP}`,
   `./js/services/app-update-flow.js?v=${APP_VERSION}&transport=${PUBLIC_JSON_TRANSPORT}`,
   `./js/services/public-json-transport.js?v=${APP_VERSION}&transport=${PUBLIC_JSON_TRANSPORT}`,
   `./js/core/public-page-resume.js?v=${APP_VERSION}`,
@@ -16,9 +21,9 @@ const STATIC = [
   `./js/ui/about-i18n.js?v=${APP_VERSION}&ui=about-explainer-20261025`,
   `./js/ui/about-explainer.js?v=${APP_VERSION}&ui=about-explainer-20261025`,
   `./js/ui/about-explainer-i18n.js?v=${APP_VERSION}&ui=about-explainer-20261025`,
-  `./js/ui/admin-dashboard.js?v=${APP_VERSION}&ui=admin-model-startup-20261101`,
-  `./js/services/data-service.js?v=${APP_VERSION}&ui=admin-model-startup-20261101`,
-  `./js/services/site-function-test-service.js?v=${APP_VERSION}&ui=admin-model-startup-20261101`,
+  `./js/ui/admin-dashboard.js?v=${APP_VERSION}&ui=admin-model-startup-20261101&map=${COMPACT_MAP}`,
+  `./js/services/data-service.js?v=${APP_VERSION}&ui=admin-model-startup-20261101&map=${COMPACT_MAP}`,
+  `./js/services/site-function-test-service.js?v=${APP_VERSION}&ui=admin-model-startup-20261101&map=${COMPACT_MAP}`,
   `./js/services/admin-trip-count.js?v=${APP_VERSION}&ui=admin-current-data-20261028`,
   `./js/services/admin-account-categories.js?v=${APP_VERSION}&ui=admin-current-data-20261028`,
   `./js/core/about-home-return.js?v=${APP_VERSION}`,

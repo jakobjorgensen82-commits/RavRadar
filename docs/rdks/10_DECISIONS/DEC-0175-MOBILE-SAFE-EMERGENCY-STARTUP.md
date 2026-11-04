@@ -53,3 +53,11 @@ Installationen er idempotent, og synligheds-/intervalkontrol deler singleflight.
 Normal offentlig emission forbliver PLAIN. Allerede åbne ukontrollerede gamle klienter får ikke retrospektivt den nye updater. Lokal syntetisk opstart og cachekontrol er ikke faktisk Node 22-CI, mobil-/SW-udbredelse eller automatisk opgradering af alle faner. Offentlig accept og det senere samlede1 GB-/komprimeringsbevis er åbne. Se håndbog 89.301; dette aktiverer ikke den isolerede SOURCE-revision, statistik eller automatisk sletning.
 
 Den eksisterende prøve af en helt ny åbning bruger nu også de faktisk allerede leverede adresser til zonepanel, assistent og kort delingsdomæne. Den normale kortprøve kører denne oprindelige prøve i en særskilt, kort underproces. Gamle cacheposter og alle oprindelige assertions bevares; en gammel adresse må hverken skjule den nye kode eller udløse sletning af brugerdata. Dette er rettelse og tilkobling af en forældet prøve, ikke en ny score- eller modelregel.
+
+## Tillæg 2026-11-04 — koldstart med PLAIN V3
+
+Browseren læser først manifestet. På en markeret V3-generation bruger den det verificerede PLAIN-kortgrundlag til kort, pile, Aktuelt og Top20. Tidsskyderen læser den præcise valgte korttime. Et zonevalg bruger den normale PLAIN-zonefil. Manglende eller afvist V3-time vises som utilgængelig, og ældre generationer følger deres hidtidige fulde opstartsrute.
+
+Assistentens konkrete vejrspørgsmål og start af en tur kan kræve den originale fulde time med verificeret binding til aktiv generation og tidspunkt. De første 12 fulde timer er PLAIN. De næste 106 fulde timer har streng gzip-base64-transport. Recovery-arkivet med de samlede offentlige detaljer betjener den særskilte normale genopretning og ligger uden for browserens første indlæsning. Updateren starter fortsat før ventende vejr, med særskilt cacheadresse for V3.
+
+En lokal opstartsprøve kan vise rækkefølge og indlæsninger. Faktisk mobil-/SW-adfærd, indlæsningstid og Pages-størrelse måles særskilt efter kontrolleret levering. Se DEC-0154 og håndbog 89.301.

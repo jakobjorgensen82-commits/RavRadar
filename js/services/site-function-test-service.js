@@ -85,7 +85,15 @@ async function assetClosure(){
  return`${discovered.size} HTML-, CSS-, script- og modulreferencer kunne hentes. Ingen 404, timeout eller netværksfejl.`;
 }
 async function verifyCriticalResources(){
- const critical=['./bootstrap.js','./app.js','./style.css','./data/live/manifest.json','./data/live/public-conditions.json','./data/live/public-condition-details.json','./data/live/coastal-parts-v2.json','./data/zones.geojson'];const timings=[];
+ const manifest=await loadDataManifest();
+ const archive=manifest?.publicConditionDetailsArchive;
+ let detail='./data/live/public-condition-details.json';
+ if(archive!==undefined){
+  if(!archive||archive.kind!=='gzip-single-v1'||!/^[a-f0-9]{64}$/.test(archive.sha256)
+    ||archive.path!=='./public-condition-details-'+archive.sha256+'.json.gz')throw new Error('Det offentlige vejrarkiv har en ugyldig adresse.');
+  detail='./data/live/'+archive.path.slice(2);
+ }
+ const critical=['./bootstrap.js','./app.js','./style.css','./data/live/manifest.json','./data/live/public-conditions.json',detail,'./data/live/coastal-parts-v2.json','./data/zones.geojson'];const timings=[];
  for(const url of critical){const {ms}=await fetchOk(url);timings.push({url,ms});}
  return timings;
 }

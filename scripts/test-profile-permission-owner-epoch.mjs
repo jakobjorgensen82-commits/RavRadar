@@ -473,7 +473,7 @@ test('account history: rendered and pending views follow their exact owner lifet
       removeEventListener(name, fn) { events.get(name)?.delete(fn); },
       close() { this.open = false; for (const fn of [...events.get('close') ?? []]) fn(); },
       cancel() { for (const fn of [...events.get('cancel') ?? []]) fn(); this.close(); } };
-    const ui = { ...auth, ...observationScope.api, t: key => key, accountDialog: dialog,
+    const ui = { ...auth, ...observationScope.api, t: key => key, accountDialog: dialog, activeLandingView: null,
       document: { querySelector: key => { assert.equal(key, '#accountButton'); return accountButton; } },
       ensureConditionDetails: async () => { detailsCalls++; }, userDataContext: () => ({}),
       formatDateTime: () => 'synthetic-date', formatNumber: String,

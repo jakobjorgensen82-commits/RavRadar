@@ -5,6 +5,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { materializePrivatePublicHourDeliveryPack } from './lib/public-hour-delivery-pack.mjs';
 import { hasValue } from './lib/weather-component-needs.mjs';
+import { publicDeliveryTransportEntries } from '../js/services/public-delivery-transport-binding.js';
+import { readPublicDeliveryJsonFile } from './lib/public-delivery-json-transport.mjs';
 import { FUR_WATER_ROUTING_PART_ID, FUR_DIAGNOSIS_CODES, classifyFurWaterLevelLoss }
   from './lib/fur-water-routing-diagnostic.mjs';
 
@@ -93,6 +95,8 @@ export async function checkPublicWeatherContinuity({
       throw new Error('PUBLIC_WEATHER_CONTINUITY_PREVIOUS_REFERENCE_INVALID');
     }
     const oldTimes = Object.keys(oldDelivery.hours).filter(time => time >= currentReference).sort();
+    const strictPlain = newManifest.detailDelivery.coldHoursSchema !== undefined;
+    if (strictPlain) publicDeliveryTransportEntries(newManifest);
     const newHours = newManifest.detailDelivery.hours;
     const losses = Object.fromEntries(FIELDS.map(key => [key, 0]));
     const gains = Object.fromEntries(FIELDS.map(key => [key, 0]));
@@ -113,8 +117,8 @@ export async function checkPublicWeatherContinuity({
       if (!currentDescriptor?.path || !/^\.\/forecast\/[0-9a-f]{64}\.json$/.test(currentDescriptor.path)) {
         throw new Error('PUBLIC_WEATHER_CONTINUITY_HOUR_LOST');
       }
-      const previous = JSON.parse(await fs.readFile(path.join(temporaryRoot, previousDescriptor.path), 'utf8'));
-      const current = JSON.parse(await fs.readFile(path.join(newLiveDirectory, currentDescriptor.path), 'utf8'));
+      const previous = (await readPublicDeliveryJsonFile(path.join(temporaryRoot, previousDescriptor.path), previousDescriptor, true)).value;
+      const current = (await readPublicDeliveryJsonFile(path.join(newLiveDirectory, currentDescriptor.path), currentDescriptor, strictPlain)).value;
       const compared = comparePublicWeatherHours(previous, current, {
         time,
         previousDatasetId: previousConditions.datasetId,

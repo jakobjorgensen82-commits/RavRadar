@@ -1,5 +1,7 @@
+import { requireExactZone, visibleZonePreview } from './js/services/zone-hour-preview.js?v=4.0.594&map=plain-map-v3-20261104';
+import { sameRavScoreModelBinding } from './js/core/ravscore-public-runtime-contract.js?v=4.0.594';
 import { exceptionalScoreMark, scoreRating } from "./js/core/score-presentation.js?v=4.0.594";
-import { loadConditions, loadConditionDetails, mergeConditionDetails, loadZones, loadDataManifest, refreshPublicRuntimeGeneration, mapForecastTimeline, loadMapForecastHour } from "./js/services/data-service.js?v=4.0.594&ui=forecast-share-20261024&share=custom-domain-20261102&transport=public-json-bridge-20261103";
+import { loadConditions, loadConditionDetails, mergeConditionDetails, loadZones, loadDataManifest, mapForecastTimeline, loadMapForecastHour, loadPublicLandingView, publicLandingTimeline, loadPublicLandingForecastHour, refreshPublicLandingRuntime } from "./js/services/data-service.js?v=4.0.594&ui=forecast-share-20261024&share=custom-domain-20261102&transport=public-json-bridge-20261103&map=plain-map-v3-20261104";
 import { createMapForecastController, exactMapZoneScore, mapCoastalPartsForDisplay } from './js/services/map-forecast-view.js?v=4.0.594';
 import { bindMapTimeline, mapTimelineDate } from './js/ui/map-timeline.js?v=4.0.594&ui=timeline-days-20261018';
 import { readForecastShare } from './js/services/forecast-share-contract.js?v=4.0.594&ui=forecast-share-20261024&share=custom-domain-20261102';
@@ -8,10 +10,10 @@ import { submitTripEvidenceObservation, syncPendingObservations } from "./js/ser
 import { consumeAuthCallback } from "./js/services/auth-service.js?v=4.0.594";
 import { createMap, installFlowArrows, refreshZoneStyles, renderZones } from "./js/map/map-view.js?v=4.0.594";
 import { projectPublicCoastlines } from "./js/map/public-coast-projection.js?v=4.0.594";
-import { bindZoneInfoInteractions, showZoneInfo } from "./js/ui/info-panel.js?v=4.0.594&ui=zone-panels-20261027";
+import { bindZoneInfoInteractions, showZoneInfo, showZoneMapPreview } from "./js/ui/info-panel.js?v=4.0.594&ui=zone-panels-20261027&map=plain-map-v3-20261104";
 import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.594&ui=account-20261006";
 import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.594";
-import { askRavRadar, quickQuestions, ravQuestionNeedsConditionDetails, assistantTopicForQuestion, assistantLocalFollowupAnswer } from "./js/services/rav-assistant.js?v=4.0.594";
+import { askRavRadar, quickQuestions, ravQuestionNeedsConditionDetails, classifyRavQuestion, assistantTopicForQuestion, assistantLocalFollowupAnswer } from "./js/services/rav-assistant.js?v=4.0.594";
 import { formatDateTime, formatNumber, getLanguage, getLocale, t, setLanguage, applyDocumentTranslations } from "./js/i18n.js?v=4.0.594";
 import { buildLocalZoneScore, isCurrentForecastHour, selectLocalBestForDay } from "./js/core/local-zone-score.js?v=4.0.594";
 import { addNationalRanking, compareNationalRankingRows } from "./js/core/zone-ranking.js?v=4.0.594";
@@ -64,12 +66,16 @@ const nationalForecast = document.querySelector("#nationalForecastContent");
 const tripButton = document.querySelector("#tripButton");
 let conditionDetailsPromise=null,conditionRuntimePromise=null,conditionRuntimeTimer=null,activeManifest;
 let runtimeGeneration=0;
+let activeLandingView=null,fullEvidencePending=null;
 const pendingZoneDetails=new Map();
+let compactZoneDetail=null,compactZoneFailure=null;
 let coreViewReady=false,conditionDetailsReady=false;
 let selectedZonePartsVisible=false;
 const mapScores=new Map();
 const mapForecast=createMapForecastController({
-  loadHour:time=>loadMapForecastHour({manifest:activeManifest,conditions:state.conditions,time}),
+  loadHour:time=>activeLandingView
+    ?loadPublicLandingForecastHour({manifest:activeManifest,view:activeLandingView,time})
+    :loadMapForecastHour({manifest:activeManifest,conditions:state.conditions,time}),
   onCommit:handleMapForecastCommit,
 });
 let forecastShareControlCleanup=()=>{},forecastShareUserIntent=0;
@@ -92,29 +98,52 @@ function handleMapForecastCommit(frame){
   if(frame&&state.selectedZone)void ensureConditionDetails().catch(error=>console.warn('Zonens prognose kunne ikke hentes',error));
 }
 function mapFrame(){const frame=mapForecast.committed;return frame?.isNow===false?frame:null;}
-function mapConditions(){return mapFrame()?.conditions||state.conditions;}
-const liveCoastalPartsForMap=()=>state.conditions.coastalParts||null;
+function panelFrame(){return mapFrame()||(activeLandingView?{time:activeLandingView.time,compact:activeLandingView.compact}:null);}
+function mapConditions(){return mapFrame()?.conditions||(activeLandingView?{zones:activeLandingView.arrowZones}:state.conditions);}
+const liveCoastalPartsForMap=()=>activeLandingView?.arrows||state.conditions.coastalParts||null;
 function coastalPartsForMap(){return mapCoastalPartsForDisplay(mapFrame(),liveCoastalPartsForMap());}
 function mapScoreFor(zone){
-  const frame=mapFrame();if(!frame)return currentScoreFor(zone);
+  const frame=panelFrame();if(!frame)return currentScoreFor(zone);
+  if(frame.compact)return frame.compact.zones[zone.id]?.[state.mode]??{available:false,score:null,level:"unavailable",time:frame.time};
   const key=state.mode+':'+zone.id;
   if(!mapScores.has(key))mapScores.set(key,exactMapZoneScore({conditions:frame.conditions,time:frame.time,zoneId:zone.id,mode:state.mode})
     ||{available:false,score:null,level:'unavailable',time:frame.time});
   return mapScores.get(key);
 }
+function compactZoneFor(frame,zoneId){
+  if(!frame?.compact||compactZoneDetail?.runtimeGeneration!==runtimeGeneration
+    ||compactZoneDetail.zoneId!==zoneId)return null;
+  const details=compactZoneDetail.details;
+  try{requireExactZone({frame:frame.compact,zoneId},details,sameRavScoreModelBinding);}
+  catch{return null;}
+  return details;
+}
 function mapDisplayFor(zone){
-  const frame=mapFrame();if(!frame)return currentDisplayFor(zone);
-  const result=mapScoreFor(zone),weather=result.localWeather||{time:frame.time};
+  const frame=panelFrame();if(!frame)return currentDisplayFor(zone);
+  const details=frame.compact?compactZoneFor(frame,zone.id):null;
+  if(frame.compact&&!details){
+    const preview=visibleZonePreview(frame.compact,{zoneId:zone.id,mode:state.mode});
+    return{result:preview.result,weather:preview.weather,context:preview.displayContext,pending:true};
+  }
+  const result=details
+    ?exactMapZoneScore({conditions:{mapForecastTime:frame.time,coastalParts:details.coastalParts},time:frame.time,zoneId:zone.id,mode:state.mode})
+    :mapScoreFor(zone);
+  const weather=result.localWeather||{time:frame.time};
   return{result,weather,context:{scope:result.available?(result.localWeather?'local':'local-weather-missing'):'local-unavailable',
     partId:result.localPartId,partName:result.localPartName,time:frame.time}};
 }
 function flowForecastForMap(){const frame=mapFrame();return frame?{time:frame.time,mode:state.mode}:null;}
+function activeMapTimeline(){
+  return activeLandingView
+    ?publicLandingTimeline({manifest:activeManifest,view:activeLandingView})
+    :mapForecastTimeline({manifest:activeManifest,conditions:state.conditions});
+}
 function configureMapTimeline(){
   try{
-    const timeline=mapForecastTimeline({manifest:activeManifest,conditions:state.conditions});
-    const liveTime=state.conditions.publicRuntimeAvailability?.selectedReferenceAt;
+    const timeline=activeMapTimeline();
+    const liveTime=activeLandingView?.time||state.conditions.publicRuntimeAvailability?.selectedReferenceAt;
     mapForecast.configure({...timeline,live:liveTime===timeline.liveTime
-      ?{time:liveTime,conditions:state.conditions}:null});
+      ?(activeLandingView?{time:liveTime}:{time:liveTime,conditions:state.conditions}):null});
   }catch{mapForecast.configure();}
 }
 function refreshMapDisplay(){
@@ -173,7 +202,10 @@ function nationalRankingRow(row){return addNationalRanking(row,state.zones?.coas
 function selectedFeature() { return state.zones?.features.find(item=>item.properties.id===state.selectedZone?.id); }
 function showSelectedZoneParts({preserveView=false,scroll=true}={}) {
   if(!state.selectedZone)return;
-  const result=mapScoreFor(state.selectedZone);
+  const frame=panelFrame();
+  const display=frame?.compact?mapDisplayFor(state.selectedZone):null;
+  if(display?.pending){state.zoneLayer?.clearLocalParts?.();return;}
+  const result=display?.result??mapScoreFor(state.selectedZone);
   const parts=state.zones?.coastalParts?.zones?.[state.selectedZone.id] || [];
   const highlighted=result?.winningPartUncertain===true
     ?(result.possibleWinningParts||[]).map(part=>part.partId)
@@ -190,7 +222,14 @@ function renderSelectedZone() {
   infoPanel.hidden=false;
   // The header follows the map hour; the two full forecasts keep the normal
   // zone detail envelope and calendar, not the single-hour map projection.
-  const frame=mapFrame(),condition=zoneCondition(state.selectedZone),display=mapDisplayFor(state.selectedZone);
+  const frame=mapFrame(),condition=displayZoneCondition(state.selectedZone),display=mapDisplayFor(state.selectedZone);
+  if(display.pending){
+    const failed=compactZoneFailure?.runtimeGeneration===runtimeGeneration&&compactZoneFailure.zoneId===state.selectedZone.id;
+    showZoneMapPreview(infoPanel,state.selectedZone,display.result,display.weather,state.mode,{displayContext:display.context,failed});
+    if(frame){const label=document.createElement('p');label.className='map-timeline-zone-time';label.textContent=t('map.timeline.shown',{time:mapTimelineDate(frame.time)});infoPanel.prepend(label);}
+    infoPanel.querySelector("[data-close-zone]")?.addEventListener("click",()=>{noteForecastShareUserIntent();closeZone();});
+    return;
+  }
   const bestByDate=Object.fromEntries(groupHoursForZone(state.selectedZone).map(day=>[day.date,bestForDay(state.selectedZone,day.date)]));
   const history=condition.history||{};
   showZoneInfo(infoPanel,state.selectedZone,display.result,display.weather,state.mode,{ forecast:condition.forecast,history,bestByDate,displayContext:display.context,mapForecastTime:frame?.time??null });
@@ -200,7 +239,7 @@ function renderSelectedZone() {
     mode:state.mode,language:getLanguage()},zoneName:state.selectedZone.name,result:display.result,
     pageUrl:new URL('./',document.baseURI).href,isSelectionCurrent:selection=>{
       try{
-        const current=mapForecast.snapshot(),timeline=mapForecastTimeline({manifest:activeManifest,conditions:state.conditions});
+        const current=mapForecast.snapshot(),timeline=activeMapTimeline();
         return current.generation===shareGeneration&&timeline.generation===shareGeneration&&current.committedTime===selection.time
           &&state.selectedZone?.id===selection.zoneId&&state.mode===selection.mode&&getLanguage()===selection.language
           &&timeline.times.includes(selection.time);
@@ -228,6 +267,7 @@ function closeZone() {
   forecastShareControlCleanup();forecastShareControlCleanup=()=>{};
   resetAssistantTopic();
   state.selectedZone=null;
+  compactZoneDetail=null;compactZoneFailure=null;
   selectedZonePartsVisible=false;
   state.zoneLayer?.selectZone?.(null);
   document.body.classList.remove("zone-focus");
@@ -239,7 +279,12 @@ function closeZone() {
 
 function renderRanking() {
   if(!state.zones)return;
-  const rows=state.zones.features.map(feature=>nationalRankingRow({zone:feature.properties,result:currentScoreFor(feature.properties)})).filter(item=>item.result.available).sort(compareNationalRankingRows).slice(0,5);
+  const rows=activeLandingView
+    ?activeLandingView.currentRankings[state.mode].flatMap(row=>{
+      const zone=state.zones.features.find(feature=>feature.properties.id===row.zoneId)?.properties;
+      return zone?[{zone,result:row,rankingDisplayScore:row.rankingDisplayScore}]:[];
+    })
+    :state.zones.features.map(feature=>nationalRankingRow({zone:feature.properties,result:currentScoreFor(feature.properties)})).filter(item=>item.result.available).sort(compareNationalRankingRows).slice(0,5);
   ranking.innerHTML=rows.length?rows.map((item,index)=>`<button class="ranking-item" type="button" data-zone-id="${item.zone.id}"><span class="rank">${index+1}</span><span><strong>${item.zone.name}</strong><small>${item.zone.region}</small><small class="ranking-best-place">${t('ranking.bestPlace')}: ${item.result.score}</small>${scoreQualityMarker(item.result)}</span><b class="rank-score ${scoreRating(item.rankingDisplayScore).level}" title="${t('ranking.areaScore')}">${item.rankingDisplayScore}${exceptionalScoreMark(item.rankingDisplayScore)}</b></button>`).join(""):`<p class="ranking-empty">${t('ranking.waiting')}</p>`;
   const snapshotReference=emergencySnapshotReferenceAt();
   if(snapshotReference)ranking.insertAdjacentHTML('afterbegin',`<p class='ranking-empty runtime-snapshot-note'>${runtimeSnapshotText('ranking',{time:formatDateTime(snapshotReference)})}</p>`);
@@ -249,11 +294,12 @@ function renderRanking() {
 function groupHoursForZone(zone) {
   const cacheKey=`${zone.id}:${forecastDateKeyInTimeZone()}`;
   if(state.forecastGroups.has(cacheKey))return state.forecastGroups.get(cacheKey);
-  const groups=new Map(); for(const hour of zoneCondition(zone).forecast?.hourly||[]){let date;try{date=forecastDateKeyInTimeZone(hour?.time);}catch{continue;}if(!groups.has(date))groups.set(date,[]);groups.get(date).push(hour);}
+  const groups=new Map(); for(const hour of displayZoneCondition(zone).forecast?.hourly||[]){let date;try{date=forecastDateKeyInTimeZone(hour?.time);}catch{continue;}if(!groups.has(date))groups.set(date,[]);groups.get(date).push(hour);}
   const days=visibleForecastDays([...groups.entries()].map(([date,hours])=>({date,hours})));state.forecastGroups.set(cacheKey,days);return days;
 }
 function bestForDay(zone,date) {
-  return selectLocalBestForDay({coastalParts:state.conditions.coastalParts,zoneId:zone.id,mode:state.mode,date});
+  const coastalParts=activeLandingView?compactZoneFor(panelFrame(),zone.id)?.coastalParts:state.conditions.coastalParts;
+  return selectLocalBestForDay({coastalParts,zoneId:zone.id,mode:state.mode,date});
 }
 
 const yieldToBrowser=()=>new Promise(resolve=>requestAnimationFrame(()=>resolve()));
@@ -263,12 +309,12 @@ async function renderNationalForecast() {
   const eyebrow=document.querySelector('#nationalForecastEyebrow');
   if(eyebrow)eyebrow.textContent=({da:'Top 20 zoner dag for dag',de:'Top 20 Zonen Tag für Tag',en:'Top 20 zones day by day'})[getLanguage()]||'Top 20 zoner dag for dag';
   const renderId=++state.forecastRenderId;
-  const prepared=(state.conditions?.nationalForecast?.modes?.[state.mode]||null);
+  const prepared=(activeLandingView?.nationalForecast||state.conditions?.nationalForecast)?.modes?.[state.mode];
   if(!Array.isArray(prepared)&&!conditionDetailsReady){
     nationalForecast.innerHTML=`<p class="ranking-empty">${t('forecast.fetching')}</p>`;
     try{await ensureConditionDetails();}catch(error){console.error('5-dages prognose og kystdelsdetaljer kunne ikke hentes',error);nationalForecast.innerHTML=`<p class="ranking-empty">${t('forecast.loadFailed')}</p>`;return false;}
   }
-  const preparedAfterLoad=state.conditions?.nationalForecast?.modes?.[state.mode];
+  const preparedAfterLoad=(activeLandingView?.nationalForecast||state.conditions?.nationalForecast)?.modes?.[state.mode];
   let visiblePrepared=Array.isArray(preparedAfterLoad)?visibleForecastDays(preparedAfterLoad):null;
   const snapshotReference=emergencySnapshotReferenceAt();
   if(snapshotReference&&Array.isArray(visiblePrepared)){
@@ -347,9 +393,69 @@ async function renderNationalForecast() {
   return true;
 }
 
+function displayZoneCondition(zone){
+  if(!activeLandingView)return zoneCondition(zone);
+  const forecast=compactZoneFor(panelFrame(),zone?.id)?.zones?.[zone.id]?.forecast;
+  if(!forecast)return {};
+  return {history:activeLandingView.zoneHistory[zone.id],forecast:{
+    ...forecast,hourly:forecast.hourly.filter(row=>row.time>=activeLandingView.time)
+  }};
+}
+function ensureLandingZoneDetails(zoneId){
+  if(!zoneId||zoneId!==state.selectedZone?.id)return Promise.resolve(null);
+  const ready=compactZoneFor(panelFrame(),zoneId);
+  if(ready)return Promise.resolve(ready);
+  if(pendingZoneDetails.has(zoneId))return pendingZoneDetails.get(zoneId);
+  const generation=runtimeGeneration,manifest=activeManifest;
+  compactZoneFailure=null;
+  const pending=loadConditionDetails({manifest,zoneId}).then(details=>{
+    if(generation!==runtimeGeneration||zoneId!==state.selectedZone?.id)return;
+    requireExactZone({frame:panelFrame().compact,zoneId},details,sameRavScoreModelBinding);
+    compactZoneDetail={runtimeGeneration:generation,zoneId,details};
+    state.forecastGroups.clear();
+    renderSelectedZone();
+    if(selectedZonePartsVisible)showSelectedZoneParts({preserveView:true,scroll:false});
+    return details;
+  }).catch(error=>{
+    if(generation===runtimeGeneration&&zoneId===state.selectedZone?.id){
+      compactZoneFailure={runtimeGeneration:generation,zoneId};
+      renderSelectedZone();
+    }
+    throw error;
+  }).finally(()=>{
+    if(pendingZoneDetails.get(zoneId)===pending)pendingZoneDetails.delete(zoneId);
+  });
+  pendingZoneDetails.set(zoneId,pending);
+  return pending;
+}
+function ensureFullEvidence(){
+  if(activeManifest?.detailDelivery?.mapHoursLandingSchema!==1)return ensureConditionDetails();
+  const view=activeLandingView;
+  if(!view)return Promise.reject(new Error(t('data.loadError')));
+  if(state.conditions.available&&state.conditions.deliveryManifestIdentity===view.generation
+    &&state.conditions.publicRuntimeAvailability?.selectedReferenceAt===view.time)return Promise.resolve(state.conditions);
+  if(fullEvidencePending?.generation===view.generation&&fullEvidencePending?.time===view.time)return fullEvidencePending.promise;
+  const manifest=activeManifest;
+  const promise=loadConditions({manifest}).then(conditions=>{
+    if(activeLandingView?.generation!==view.generation||activeLandingView?.time!==view.time
+      ||!conditions.available||conditions.deliveryManifestIdentity!==view.generation
+      ||conditions.publicRuntimeAvailability?.selectedReferenceAt!==view.time)throw new Error(t('data.loadError'));
+    state.conditions=conditions;
+    state.currentScores.clear();
+    return conditions;
+  }).finally(()=>{if(fullEvidencePending?.promise===promise)fullEvidencePending=null;});
+  fullEvidencePending={generation:view.generation,time:view.time,promise};
+  return promise;
+}
 function ensureConditionDetails(zoneId=state.selectedZone?.id??null){
+  if(activeManifest?.detailDelivery?.mapHoursLandingSchema===1){
+    return activeLandingView?ensureLandingZoneDetails(zoneId):Promise.resolve();
+  }
   const partitioned=Boolean(activeManifest?.detailDelivery);
-  if(partitioned&&(!zoneId||state.conditions.loadedDetailZones?.includes(zoneId)))return Promise.resolve(state.conditions);
+  const compact=mapFrame()?.compact;
+  const selectedCompact=compact&&zoneId===state.selectedZone?.id;
+  if(partitioned&&(!zoneId||(state.conditions.loadedDetailZones?.includes(zoneId)
+    &&(!selectedCompact||compactZoneFor(mapFrame(),zoneId)))))return Promise.resolve(state.conditions);
   if(!partitioned&&conditionDetailsReady)return Promise.resolve(state.conditions);
   if(state.conditions?.emergencyDetailsDeferred)return Promise.resolve(state.conditions);
   const requestKey=partitioned?zoneId:'legacy';
@@ -357,9 +463,16 @@ function ensureConditionDetails(zoneId=state.selectedZone?.id??null){
   if(activeManifest===undefined)return Promise.reject(new Error('Datamanifestet er ikke klar endnu.'));
   let pending=null;
   const generation=runtimeGeneration;
+  if(selectedCompact)compactZoneFailure=null;
   const selectedReferenceAt=state.conditions.publicRuntimeAvailability?.selectedReferenceAt;
   pending=loadConditionDetails({manifest:activeManifest,conditions:state.conditions,zoneId:partitioned?zoneId:null}).then(details=>{
     if(generation!==runtimeGeneration||selectedReferenceAt!==state.conditions.publicRuntimeAvailability?.selectedReferenceAt)return state.conditions;
+    const currentFrame=mapFrame();
+    if(currentFrame?.compact&&zoneId===state.selectedZone?.id){
+      requireExactZone({frame:currentFrame.compact,zoneId},details,sameRavScoreModelBinding);
+      compactZoneDetail={runtimeGeneration:generation,zoneId,details};
+      compactZoneFailure=null;
+    }
     state.conditions=mergeConditionDetails(state.conditions,details);
     conditionDetailsReady=partitioned?false:true;
     performance.mark?.('ravradar:condition-details-loaded');
@@ -367,8 +480,14 @@ function ensureConditionDetails(zoneId=state.selectedZone?.id??null){
     state.currentScores.clear();state.forecastGroups.clear();
     refreshZoneStyles(state.zoneLayer,id=>mapScoreFor(state.zones.features.find(item=>item.properties.id===id).properties));
     renderRanking();renderSelectedZone();
+    if(currentFrame?.compact&&selectedZonePartsVisible)showSelectedZoneParts({preserveView:true,scroll:false});
     return state.conditions;
   }).catch(error=>{
+    if(generation===runtimeGeneration&&selectedReferenceAt===state.conditions.publicRuntimeAvailability?.selectedReferenceAt
+      &&mapFrame()?.compact&&zoneId===state.selectedZone?.id){
+      compactZoneFailure={runtimeGeneration:generation,zoneId};
+      renderSelectedZone();
+    }
     if(conditionDetailsPromise===pending)conditionDetailsPromise=null;
     throw error;
   }).finally(()=>{
@@ -381,8 +500,8 @@ function ensureConditionDetails(zoneId=state.selectedZone?.id??null){
 }
 
 function nextConditionRuntimeGateAt(conditions){
-  const availability=conditions?.publicRuntimeAvailability;
-  if(!conditions?.available||!availability)return null;
+  const availability=activeLandingView?.availability||conditions?.publicRuntimeAvailability;
+  if((!activeLandingView&&!conditions?.available)||!availability)return null;
   if(availability.mode==='FRESH')return Math.min(
     Date.parse(availability.ageReferenceAt)+3600000+1,
     Date.parse(availability.selectedReferenceAt)+3600000
@@ -394,6 +513,7 @@ function nextConditionRuntimeGateAt(conditions){
   return null;
 }
 function updatePublicDataStatus(conditions){
+  if(activeLandingView)conditions={available:true,publicRuntimeAvailability:activeLandingView.availability};
   const availability=conditions?.publicRuntimeAvailability;
   if(conditions?.available&&conditions?.emergencyDetailsDeferred){
     const snapshotReference=conditions.productionReferenceAt||conditions.generatedAt;
@@ -431,16 +551,18 @@ function scheduleConditionRuntimeGate(){
 async function reevaluateConditionRuntime(){
   if(conditionRuntimePromise)return conditionRuntimePromise;
   if(!activeManifest)return state.conditions;
-  const previous=state.conditions;
-  conditionRuntimePromise=refreshPublicRuntimeGeneration({manifest:activeManifest,conditions:previous,now:Date.now()})
-    .then(async update=>{
-      const next=update.conditions;
+  const previous=state.conditions,previousLanding=activeLandingView;
+  const request=refreshPublicLandingRuntime({manifest:activeManifest,view:previousLanding,conditions:previous});
+  conditionRuntimePromise=request.then(async update=>{
+      const nextLanding=update.landing||null;
+      const landingChanged=previousLanding?.generation!==nextLanding?.generation||previousLanding?.time!==nextLanding?.time;
+      const next=update.conditions||(landingChanged?{available:false,zones:{}}:state.conditions);
       // Prepare the complete replacement before mutating the active runtime.
       const replacementZones=update.zones?projectPublicCoastlines(update.zones):null;
       const replacementLayer=replacementZones
         ?renderZones(map,replacementZones,()=>({available:false,level:'unavailable'}),zone=>{noteForecastShareUserIntent();openZone(zone,{scroll:false});},{fitBounds:false})
         :null;
-      const selectionChanged=update.changed||previous.available!==next.available
+      const selectionChanged=update.changed||landingChanged||previous.available!==next.available
         || previous.publicRuntimeAvailability?.selectedReferenceAt!==next.publicRuntimeAvailability?.selectedReferenceAt;
       if(selectionChanged){runtimeGeneration+=1;pendingZoneDetails.clear();conditionDetailsPromise=null;state.currentScores.clear();state.forecastGroups.clear();state.forecastRenderId+=1;}
       if(update.zones){
@@ -453,17 +575,19 @@ async function reevaluateConditionRuntime(){
         state.zoneLayer?.selectZone?.(state.selectedZone?.id);
       }
       activeManifest=update.manifest;
+      activeLandingView=nextLanding;
       // A same-hour manifest refresh may finish after a zone request. Keep
       // those newly loaded details instead of reinstalling its earlier snapshot.
-      state.conditions=selectionChanged?next:{...state.conditions,publicRuntimeAvailability:next.publicRuntimeAvailability};
+      if(selectionChanged)state.conditions=next;
+      else if(!nextLanding)state.conditions={...state.conditions,publicRuntimeAvailability:next.publicRuntimeAvailability};
       configureMapTimeline();
-      if(next.available&&!next.emergencyDetailsDeferred&&!state.flowArrows)state.flowArrows=installFlowArrows(map,state.zones,id=>mapConditions().zones?.[id]||{},coastalPartsForMap,{forecastForMap:flowForecastForMap});
+      if((activeLandingView||next.available)&&!next.emergencyDetailsDeferred&&!state.flowArrows)state.flowArrows=installFlowArrows(map,state.zones,id=>mapConditions().zones?.[id]||{},coastalPartsForMap,{forecastForMap:flowForecastForMap});
       conditionDetailsReady=state.conditions.detailsAvailable===true;
       updatePublicDataStatus(next);
       updateTripUi();
-      const previousAvailability=previous.publicRuntimeAvailability;
-      const nextAvailability=next.publicRuntimeAvailability;
-      const changed=update.changed||previous.available!==next.available
+      const previousAvailability=previousLanding?.availability||previous.publicRuntimeAvailability;
+      const nextAvailability=nextLanding?.availability||next.publicRuntimeAvailability;
+      const changed=update.changed||landingChanged||previous.available!==next.available
         || previousAvailability?.mode!==nextAvailability?.mode
         || previousAvailability?.selectedReferenceAt!==nextAvailability?.selectedReferenceAt;
       if(changed&&coreViewReady)await resumePublicView();
@@ -567,7 +691,7 @@ function assistantContext(){const zone=state.selectedZone,condition=zoneConditio
 function addAssistantMessage(text,who="assistant",loading=false){const box=document.querySelector("#assistantMessages");const div=document.createElement("div");div.className=`assistant-message ${who}${loading?" loading":""}`;const p=document.createElement("p");p.textContent=text;div.appendChild(p);box.appendChild(div);box.scrollTop=box.scrollHeight;return div;}
 async function submitAssistantQuestion(question){
   const clean=String(question||"").trim();if(!clean)return;
-  const frame=assistantTopicFrame(),turn=++assistantTurn;
+  let frame=assistantTopicFrame();const turn=++assistantTurn;
   const previous=sameAssistantTopicFrame(assistantTopicState?.frame,frame)?assistantTopicState.topic:null;
   assistantTopicState=null;
   addAssistantMessage(clean,"user");
@@ -576,7 +700,23 @@ async function submitAssistantQuestion(question){
     const forecast=assistantForecastQuestion(clean,previous);
     const routedQuestion=forecast?.question??clean;
     const followup=forecast?null:assistantLocalFollowupAnswer(clean,previous,frame.language);
-    if(followup===null&&ravQuestionNeedsConditionDetails(routedQuestion,assistantContext()))await ensureConditionDetails();
+    const assistantIntent=classifyRavQuestion(routedQuestion);
+    const needsDetails=ravQuestionNeedsConditionDetails(routedQuestion,assistantContext());
+    const usesCurrentZone=activeLandingView&&state.selectedZone
+      &&['current','waves','water','model','limitations'].includes(assistantIntent);
+    if(followup===null&&(needsDetails||usesCurrentZone)){
+      const requestZone=state.selectedZone,requestMode=state.mode,requestGeneration=runtimeGeneration;
+      const needsZone=activeLandingView&&requestZone&&needsDetails&&assistantIntent!=='best-place';
+      const [conditions,details]=await Promise.all([
+        ensureFullEvidence(),needsZone?ensureLandingZoneDetails(requestZone.id):null
+      ]);
+      if(requestZone!==state.selectedZone||requestMode!==state.mode||requestGeneration!==runtimeGeneration)throw new Error(t('data.loadError'));
+      if(details&&!conditions.loadedDetailZones?.includes(requestZone.id)){
+        state.conditions=mergeConditionDetails(state.conditions,details);
+        state.currentScores.clear();
+      }
+      frame=assistantTopicFrame();
+    }
     const answer=followup??await askRavRadar(routedQuestion,assistantContext());
     pending.querySelector("p").textContent=answer;pending.classList.remove("loading");
     const topic=forecast?.topic??(followup===null?assistantTopicForQuestion(clean):previous);
@@ -590,13 +730,13 @@ async function submitAssistantQuestion(question){
 const quickBox=document.querySelector("#assistantQuickQuestions");quickBox.innerHTML=quickQuestions().map(q=>`<button type="button">${q}</button>`).join("");quickBox.querySelectorAll("button").forEach(button=>button.addEventListener("click",()=>submitAssistantQuestion(button.textContent)));document.querySelector("#assistantButton").addEventListener("click",()=>{resetAssistantTopic();assistantDialog.showModal();});document.querySelector("#assistantForm").addEventListener("submit",async event=>{event.preventDefault();const field=event.currentTarget.elements.question;const q=field.value;field.value="";await submitAssistantQuestion(q);});
 
 document.querySelectorAll(".mode-button").forEach(button=>button.addEventListener("click",()=>{noteForecastShareUserIntent();setMode(button.dataset.mode);}));
-document.querySelector("#accountButton").addEventListener("click",async()=>{await ensureConditionDetails().catch(()=>{});openAccountDialog(accountDialog,userDataContext());});
+document.querySelector("#accountButton").addEventListener("click",async()=>{if(!activeLandingView)await ensureConditionDetails().catch(()=>{});openAccountDialog(accountDialog,userDataContext());});
 tripButton.addEventListener('click',async()=>{
   if(!publicTripEvidenceRuntime)return;
   tripButton.disabled=true;
   try{
-    await ensureConditionDetails();
     const active=publicTripEvidenceRuntime.active();
+    if(!active||activeManifest?.detailDelivery?.mapHoursLandingSchema!==1)await ensureFullEvidence();
     const result=active?.stoppedAt?await publicTripEvidenceRuntime.resume():active?await publicTripEvidenceRuntime.stop():await publicTripEvidenceRuntime.startWithPrompt({observationOrigin:'self-reported'});
     if(result?.status==='started')updateTripUi(t('trip.status.started'));
     else if(result?.status==='submitted')updateTripUi(t('trip.status.submitted'));
@@ -621,14 +761,21 @@ try {
     dataStatus.textContent=t('data.updatedFetching',{time:formatDateTime(manifestSourceAge.oldestKnownSourceReferenceAt)});
   }
   // 2: zonegrundlag og kystdele indlæses som ét manifestbundet datasæt.
-  const zones=projectPublicCoastlines(await loadZones({manifest}));state.zones=zones;
+  const compactLanding=manifest.detailDelivery?.mapHoursLandingSchema===1;
+  if(compactLanding){
+    activeLandingView=await loadPublicLandingView({manifest}).catch(error=>{
+      console.warn('Aktuelle forhold kunne ikke indlæses',error);
+      return null;
+    });
+  }
+  const zones=projectPublicCoastlines(activeLandingView?.zones||await loadZones({manifest}));state.zones=zones;
   performance.mark?.('ravradar:zones-loaded');
   // De lokale kystdele leverer den præcise synlige geometri, men samles under
   // hovedzonen som ét klikmål, én scorefarve og kun to ydre zonemarkeringer.
   state.zoneLayer=renderZones(map,zones,()=>({available:false,level:'unavailable'}),zone=>{noteForecastShareUserIntent();openZone(zone,{scroll:false});});
   dataStatus.textContent=t('data.checking');
   // 3: samlet landsdatasæt hentes; dataset-id forhindrer blanding.
-  const conditions=await loadConditions({manifest});state.conditions=conditions;
+  const conditions=compactLanding?{available:false,zones:{}}:await loadConditions({manifest});state.conditions=conditions;
   conditionDetailsReady=conditions.detailsAvailable===true;
   scheduleConditionRuntimeGate();
   performance.mark?.('ravradar:conditions-loaded');
@@ -647,7 +794,7 @@ try {
   openForecastShareSelection({incoming:incomingForecastShare,controller:mapForecast,zones:state.zones,
     setMode,openZone,notice:showForecastShareNotice,language:getLanguage(),
     isStillRequested:()=>forecastShareUserIntent===0&&!state.selectedZone});
-  window.dispatchEvent(new CustomEvent('ravradar:ready',{detail:{generatedAt:conditions.generatedAt||null,datasetId:conditions.datasetId||null}}));
+  window.dispatchEvent(new CustomEvent('ravradar:ready',{detail:{generatedAt:activeLandingView?.generatedAt||conditions.generatedAt||null,datasetId:activeLandingView?.datasetId||conditions.datasetId||null}}));
   const forecastCompleted=await renderNationalForecast();
   if(forecastCompleted)performance.mark?.('ravradar:forecast-ready');
   // Vind- og strømpile kommer fortsat efter de centrale prognosevisninger,
@@ -688,7 +835,7 @@ try {
     }
   };
   setTimeout(installArrows,0);
-  map.on('zoomend',()=>{if(map.getZoom()>=9&&!mapFrame())void ensureConditionDetails().catch(error=>console.error('Lokale kortdetaljer kunne ikke hentes',error));});
+  map.on('zoomend',()=>{if(!activeLandingView&&map.getZoom()>=9&&!mapFrame())void ensureConditionDetails().catch(error=>console.error('Lokale kortdetaljer kunne ikke hentes',error));});
   updatePublicDataStatus(conditions);
   syncPendingObservations().catch(()=>{});updateTripUi();
 } catch(error){console.error(error);infoPanel.hidden=false;infoPanel.innerHTML=`<div class="notice">${t('data.couldNotLoad')}</div>`;dataStatus.textContent=t('data.loadError');}
@@ -701,8 +848,14 @@ function currentAppVersion() {
 }
 const TRIP_EVIDENCE_INTEGRATION_V3 = true;
 
+function staticPublicCoastalParts(){
+  return Object.fromEntries(Object.entries(state.zones?.coastalParts?.zones||{}).flatMap(([zoneId,parts])=>
+    parts.map(part=>[part.partId,{zoneId,name:part.name||part.partId}])));
+}
 function publicTripEvidenceContext(selection = null) {
-  const partsById = state.conditions?.coastalParts?.parts || {};
+  const continuing=activeManifest?.detailDelivery?.mapHoursLandingSchema===1
+    &&publicTripEvidenceRuntime?.active()&&!state.conditions.available;
+  const partsById = continuing?staticPublicCoastalParts():state.conditions?.coastalParts?.parts||{};
   const coastalParts = Object.entries(partsById)
     .filter(([, part]) => part?.zoneId)
     .map(([id, part]) => ({ id, zoneId: part.zoneId, name: part.name || id }));
@@ -713,6 +866,7 @@ function publicTripEvidenceContext(selection = null) {
     .map(zone => ({ id: zone.id, name: zone.name || zone.id }))
     .sort((left, right) => left.name.localeCompare(right.name, getLocale()));
   if (!zones.length || !coastalParts.length) throw new Error('Kystdelene er ikke klar endnu.');
+  if(continuing)return {zones,coastalParts};
 
   const selectedZoneId = state.selectedZone?.id;
   const zoneId = selection?.zoneId || (zones.some(zone => zone.id === selectedZoneId) ? selectedZoneId : zones[0].id);
@@ -749,9 +903,10 @@ function publicTripEvidenceContext(selection = null) {
 
 function userDataContext() {
   const zones = (state.zones?.features || []).map(feature => feature?.properties).filter(zone => zone?.id);
-  const coastalParts = Object.entries(state.conditions?.coastalParts?.parts || {}).map(([id, part]) => ({ id, zoneId:part?.zoneId, name:part?.name || id }));
+  const coastalParts = Object.entries(state.conditions?.coastalParts?.parts||(activeLandingView?staticPublicCoastalParts():{})).map(([id, part]) => ({ id, zoneId:part?.zoneId, name:part?.name || id }));
   const selectedPart = state.selectedZone ? buildLocalZoneScore({ coastalParts:state.conditions?.coastalParts, zoneId:state.selectedZone.id, mode:state.mode }) : null;
-  return { mode:state.mode, zoneId:state.selectedZone?.id || zones[0]?.id || null, coastalPartId:selectedPart?.localPartId || null, zones, coastalParts };
+  const selectedPartId=selectedPart?.localPartId||activeLandingView?.compact.zones[state.selectedZone?.id]?.[state.mode]?.winningPartId||null;
+  return { mode:state.mode, zoneId:state.selectedZone?.id || zones[0]?.id || null, coastalPartId:selectedPartId, zones, coastalParts };
 }
 
 publicTripEvidenceRuntime = createPublicTripEvidenceRuntime({

@@ -1,3 +1,13 @@
+## 4. november — kompakt Pages-levering i lokal 4.0.594-kandidat
+
+- [x] PR #803's tidligere PLAIN-læserbro har bestået kilde-CI. Merge og deploy er endnu ikke verificeret.
+
+- [x] Den lokale kortkandidat er prøvet gennem de normale mål for tidsskyder, zonepanel, Top20, evidensgrænse, koldstart og opdateringscache. Kortmålet har 174 cases, herunder 171 tidligere, og transportbroen har 19. Det er syntetiske lokale prøver.
+
+- [ ] Kvalificér den endelige kombination af kort, fulde timefiler, Pages-staging og recovery på normal produktionsruntime. Mål den samlede fysisk uploadede størrelse mod 1 GB-grænsen og verificér offentligt datasæt, mobil-/SW-opstart samt de normale zone- og evidensforløb. Ingen hastigheds- eller Free-garanti følger af lokale størrelser.
+
+Se DEC-0154 og DEC-0175 samt håndbog 89.301. Den isolerede SOURCE-revision, statistik og automatisk sletning har særskilte leveringsspor.
+
 ## 3. november — ens filkontrol på tværs af runtimeversioner
 
 Den faktiske Node 22-kontrol påviste, at indbygget gzip-udpakning kan acceptere flere sammenkædede medlemmer, selv om Node 24 afviser dem. Den lokale rettelse kontrollerer derfor med den samme medfølgende kode, at filen rummer præcis ét medlem, også efter vellykket indbygget udpakning. De indbyggede outputbytes bevares; valideringschunks kasseres uden endnu en stor outputallokering. Et indbygget fejlforløb gentages stadig aldrig i fallback. Normalparenten består nu med 37 codec-prøver, 19 brocases, de 9 gamle kortcases og den eksisterende særskilte coldstart-prøve på Node 24. Ny præcis Node 22-kvalifikation og offentlig accept er åbne.

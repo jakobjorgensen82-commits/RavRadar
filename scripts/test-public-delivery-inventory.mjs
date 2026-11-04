@@ -7,6 +7,8 @@ import { PRIVATE_RUNTIME_CONTRACT_FILES } from './private-production-runtime-wor
 import { computeRavScorePublicBrowserClosure } from './lib/ravscore-public-browser-closure.mjs';
 import { computeRavScoreModelBundle } from './build-ravscore-model-bundle.mjs';
 import { copyPublicDeliveryShards } from './copy-public-delivery-shards.mjs';
+import { copyPagesPublicDelivery } from './copy-pages-public-delivery.mjs';
+import { writePublicBulkArchive } from './lib/public-bulk-details-archive.mjs';
 
 const deliveryModule = 'js/core/public-delivery-contract.js';
 const copyHelper = 'scripts/copy-public-delivery-shards.mjs';
@@ -45,8 +47,11 @@ try {
   await fs.mkdir(path.join(source, 'forecast'), { recursive: true });
   const reference = '2026-09-19T00:00:00.000Z';
   const times = Array.from({ length: 118 }, (_, i) => new Date(Date.parse(reference) + i * 3600000).toISOString());
+  const details = Buffer.from('{"test":"synthetic logical public details"}\n');
+  const detailsName = 'public-condition-details.json';
   const manifest = { datasetId: 'inventory-test', generatedAt: reference, productionReferenceAt: reference,
-    publicConditionDetailsSha256: 'a'.repeat(64), zoneCount: 1, coastalPartCount: 1, ravScoreModelBinding: {} };
+    publicConditionDetailsSha256: crypto.createHash('sha256').update(details).digest('hex'),
+    publicConditionDetailsBytes: details.length, zoneCount: 1, coastalPartCount: 1, ravScoreModelBinding: {} };
   manifest.detailDelivery = { schemaVersion: 1, forecastHours: 118,
     sourceDetailsSha256: manifest.publicConditionDetailsSha256, hours: {}, zones: {} };
   for (const [kind, keys] of [['hour', times], ['zone', ['z1']]]) {
@@ -69,11 +74,37 @@ try {
   assert.deepEqual(await copyPublicDeliveryShards({ source, target }), { files: 119 });
   assert.equal((await fs.readdir(path.join(target, 'forecast'))).length, 119);
   await assert.rejects(fs.access(path.join(target, 'forecast', 'private-cache.json')), /ENOENT/);
+
+  const pages = path.join(temporary, 'pages');
+  assert.deepEqual(await copyPagesPublicDelivery({ source, target: pages }), { files: 119 });
+  assert.deepEqual(await fs.readdir(path.join(pages, 'forecast')), await fs.readdir(path.join(target, 'forecast')));
+  await fs.writeFile(path.join(source, detailsName), details);
+  const archive = await writePublicBulkArchive({ liveDirectory: source, manifest });
+  manifest.detailDelivery.mapHoursLandingSchema = 1;
+  manifest.publicConditionDetailsArchive = archive;
+  await fs.writeFile(path.join(source, 'manifest.json'), JSON.stringify(manifest));
+  const stagedDetails = path.join(pages, detailsName);
+  const wrong = Buffer.from(details);
+  wrong[0] = 0x20;
+  await fs.writeFile(stagedDetails, wrong);
+  await assert.rejects(copyPagesPublicDelivery({ source, target: pages }), /PUBLIC_BULK_LOGICAL_DIGEST/);
+  assert.deepEqual(await fs.readFile(stagedDetails), wrong);
+  await assert.rejects(fs.access(path.join(pages, archive.path)), /ENOENT/);
+  await fs.writeFile(stagedDetails, details);
+  assert.deepEqual(await copyPagesPublicDelivery({ source, target: pages }), { files: 119 });
+  await assert.rejects(fs.access(stagedDetails), /ENOENT/);
+  assert.deepEqual(await fs.readFile(path.join(pages, archive.path)), await fs.readFile(path.join(source, archive.path)));
+  assert.deepEqual(await fs.readFile(path.join(source, detailsName)), details);
+  assert.deepEqual(await fs.readdir(path.join(pages, 'forecast')), await fs.readdir(path.join(target, 'forecast')));
+
   const first = manifest.detailDelivery.hours[times[0]];
   await fs.writeFile(path.join(source, first.path), 'tampered');
   await assert.rejects(copyPublicDeliveryShards({ source, target }), /size\/type|hash mismatch/);
-  await fs.writeFile(path.join(source, 'manifest.json'), JSON.stringify({ ...manifest, detailDelivery: undefined }));
+  await fs.writeFile(path.join(source, 'manifest.json'), JSON.stringify({
+    ...manifest, detailDelivery: undefined, publicConditionDetailsArchive: undefined,
+  }));
   assert.deepEqual(await copyPublicDeliveryShards({ source, target }), { files: 0 }, 'Legacy four-file sources remain readable.');
+  assert.deepEqual(await copyPagesPublicDelivery({ source, target: pages }), { files: 0 });
 } finally {
   await fs.rm(temporary, { recursive: true, force: true });
 }
