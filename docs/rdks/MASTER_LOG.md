@@ -1,3 +1,13 @@
+## 4. november — diskplads før RAW-genlæsning og præcis privat arkivkontrol
+
+Den almindelige vejrhentning stoppede på en fuld runnerdisk under RAW-cachegenlæsning, før nye leverandørkald. Den originalbevarende overgang holdt mindst fem fulde runtimekopier mod tre uden overgangen. Den lokale rettelse fjerner kun kaldets egen overflødige kontrolprojektion efter fuld normal verifikation; fejl bevarer scratch, og original B/S, source, working, installerede filer og cache bevares.
+
+En fast hjælper må kun frigøre det ubrugte Android-SDK på faktisk GitHub-hostet Ubuntu 24.04 efter kontrol af kanonisk sti, mappeidentitet og samme filsystem. Den måler virkelig ledig plads før/efter og lige før RAW. Stop- og tidsgrænser består; ingen fast GB-gevinst eller fuld kapacitet erklæres.
+
+Bucketlisten og oprettelsessvaret må udelade jurisdiction/lagerklasse, men fuld frisk EU/Standard-detailkontrol samt privat r2.dev/domæneafgrænsning er fortsat nødvendig. Den private EU-arkivbucket og eksisterende adgang er klargjort uden at fjerne vejradgangen; normalt arkiv/restore/prune er endnu ikke verificeret, automatisk oprydning er OFF, og Pro beholdes.
+
+Præcis kildekvalifikation og faktisk vejr-/arkivvirkning mangler. Version 4.0.597, model- og lagerbindinger, 73 udstedte migrationer, kilder, administratoropsætning og geometri bevares. INSTALL ændrer kun håndbogens statiske seed. Se håndbog 89.302 og de uændrede krav i 89.298.
+
 ## 4. november — afgrænset automatisk vedligeholdelse af dokumenthistorik
 
 Ejerens nye ordre er at gøre oprydningen løbende. Den lokale kandidat genbruger det eksisterende V2-arkiv og genlæsningsforløb: kun gamle versioner af rdks-documentation-center, handbook og handbook-source-baseline kan beskæres. Aktuelle dokumenter og de fem nyeste historikversioner pr. nøgle bevares. En passage vælger internt højst 25 af de ældste berettigede rækker, arkiverer deres præcise originale REST-bytes og verificerer dem gennem den varige private arkivhenvisning før nogen DELETE. Resten genarkiveres ikke ved hver passage.

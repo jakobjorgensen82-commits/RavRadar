@@ -7,6 +7,7 @@ import {withFrozenNative0600TestSource} from './run-frozen-native0600-source-tar
 import { inverseCompletedRuntimeWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
 await import('./test-completed-private-runtime-workflow-inverse.mjs');
 await import('./test-completed-private-runtime-admission.mjs');
+await import('./test-runner-android-sdk-reclaim.mjs');
 import fs from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import { nativeIdentityMigration } from './lib/native-sampling-identity-successor-source.mjs';

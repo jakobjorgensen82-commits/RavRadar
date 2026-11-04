@@ -1,3 +1,41 @@
+## 89.302 Diskplads til vejrhentning og præcis privat arkivkontrol
+
+<a id="weather-runner-owned-scratch-and-private-archive-metadata-2026-11-04"></a>
+
+### Hvor den faktiske fejl opstod
+
+Den almindelige vejrhentning stoppede, fordi runnerens disk blev fuld under genlæsning af den gemte RAW-cache. Den nåede ikke leverandørernes nye vejrhentning. Fejlen er derfor ikke bevis for ugyldige DMI-data eller en leverandørafvisning.
+
+Den originalbevarende overgang havde mindst fem samtidige fulde runtimekopier mod tre i et almindeligt forløb uden overgangen: originalpakken, dens særskilte originalkopi, den forberedte arbejdskopi, en ny kontrolprojektion og den installerede kopi. Den sidste kontrolprojektion blev også liggende efter en vellykket kontrol. Antal kopier er kildebevis; deres faktiske bytes og runnerens restplads skal måles særskilt.
+
+### Kun den ejede kontrolkopi fjernes efter fuld succes
+
+Den lokale rettelse fjerner alene den midlertidige genprojektion, som det samme kald selv har oprettet. Først skal hele normalforløbet, byteinventaret, installationens paritet og den friske verifikation bestå. Fødested, mappeidentitet, filer og fravær af symlinks og fremmede blade kontrolleres igen før fjernelse.
+
+Ved fejl eller ukendt udfald før oprydningen bevares kontrollens arbejdsfiler. Original B/S, originalkopien, den forberedte arbejdskopi og de installerede filer fjernes ikke. Den verifikationsfunktion, som efterfølgende kald bruger, læser fortsat de bevarede originaler og arbejdskopier. Der foretages ingen beskæring af RAW-cache eller vejrhistorik.
+
+### Ekstra plads på den midlertidige GitHub-runner
+
+RavRadar bruger ikke Androids SDK. Den faste hjælper må kun fjerne det kendte SDK på en midlertidig GitHub-hostet Linux-runner, når den faktisk kørende Ubuntu 24.04, arbejdsmappe, kanoniske SDK-sti og fælles filsystem er bekræftet. Den arbejder ikke på ejerens Windows-computer eller en selvhostet runner.
+
+Hjælperen måler SDK-mappen og den faktisk ledige plads før og efter fjernelsen. Den genbekræfter mappeidentiteten, beviser processtop og måler igen lige før RAW-genlæsning. De faste kommandoer har bevarede tidsgrænser, og workflowtrinnets tre minutter dækker deres samlede stopfrist. Et SDK, som allerede mangler, giver ingen påstået pladsgevinst.
+
+Der loves intet bestemt antal frigivne gigabyte. En vellykket lokal prøve beviser heller ikke nok plads til den rigtige cache, senere beregning eller deploy. Det efterfølgende normale forløb skal dokumentere den faktiske plads og bevare alle originale data.
+
+### Sparsom bucketmetadata er ikke et privatlivsbevis
+
+Cloudflares liste- og oprettelsessvar kan udelade jurisdiction og lagerklasse. Den afgrænsede læserrettelse accepterer, at netop disse metadata mangler dér; et tilstedeværende forkert eller null felt afvises stadig, og det præcise bucketnavn kræves altid.
+
+Et verificeret resultat kræver fortsat en frisk, fuld detailaflæsning med den rigtige EU-placering og Standard-lagerklasse, deaktiveret offentlig r2.dev-adgang og ingen egne domæner. Manglende metadata må aldrig erstattes af en antaget sikker standard. Ingen læsefejl medfører automatisk gentagelse eller udvidelse af rettigheder.
+
+### Aktuel afgrænsning og de resterende livebeviser
+
+Den særskilte private EU-bucket til dokumentarkivet er oprettet på den eksisterende konto. Den eksisterende S3-adgang bevarer vejrarkivet og omfatter nu også dokumentarkivet; den nødvendige generelle læseadgang til bucketmetadata er tilføjet. Dette er kontoklargøring, ikke et bestået normalt arkiv-, genlæsnings- eller beskæringsforløb.
+
+Automatisk dokumentoprydning er fortsat slået fra. Før aktivering kræves den første normale, tabsfri arkivering, autentificeret genlæsning, central arkivhenvisning og afgrænsede beskæring efter håndbog 89.298. Pro beholdes; fuld database-/Authgendannelse og målt egnethed til Free er særskilte åbne krav.
+
+Kandidaten bevarer version 4.0.597, scoremodel, C/I/T- og lagerbindinger, alle udstedte migrationer, kildeprioritet, administratorpunkter og geometri. Den statiske installationskopi ændres kun med denne håndbogstekst. Præcis ny kildekvalifikation og et faktisk normalt vejrforløb med offentlig levering mangler fortsat.
+
 ## 89.301 Kompakt kort, sikker opdatering og mindre Pages-filer
 
 <a id="public-json-plain-reader-upgrader-2026-11-03"></a>

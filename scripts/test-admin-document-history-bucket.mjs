@@ -4,8 +4,12 @@ import {provisionAdminDocumentHistoryBucket as run,ADMIN_HISTORY_BUCKET_PROVISIO
 const env={RAVRADAR_R2_ACCOUNT_ID:'b'.repeat(32),CLOUDFLARE_API_TOKEN:'synthetic-existing-token-never-real'};
 const confirmation='CREATE-PRIVATE-EU-ADMIN-HISTORY-BUCKET';
 function fixture(fault={}){
-  const calls=[];let exists=fault.exists!==false;
-  const properties=()=>({name:P.bucket,jurisdiction:fault.jurisdiction||'eu',storage_class:fault.storageClass||'Standard'});
+  const calls=[];let exists=fault.exists!==false,created=false;
+  const properties=phase=>{
+    const value={name:P.bucket,jurisdiction:fault.jurisdiction||'eu',storage_class:fault.storageClass||'Standard'};
+    for(const key of fault.omit?.[phase]??[])delete value[key];
+    return Object.assign(value,fault.properties?.[phase]);
+  };
   const response=(result,status=200)=>new Response(JSON.stringify({success:status===200,errors:status===200?[]:[{code:1000,message:'raw-error-never-disclose'}],result}),{status});
   const fetchImpl=async(url,init)=>{
     const u=new URL(url),method=init.method;calls.push({url:u.href,method,headers:init.headers,body:init.body});
@@ -15,15 +19,17 @@ function fixture(fault={}){
     if((fault.denied&&calls.length===1)||(fault.postDenied&&method==='POST'))return response(null,403);
     if(method==='POST'){
       assert.equal(u.pathname.split('/').at(-1),'buckets');assert.deepEqual(JSON.parse(init.body),{name:P.bucket,storageClass:'Standard'});
-      exists=true;if(fault.postUnknown)throw Error('raw transport error never disclose');
+      exists=true;created=true;if(fault.postUnknown)throw Error('raw transport error never disclose');
       if(fault.postMalformed)return new Response('not-json',{status:200});
-      return response(properties());
+      return response(properties('create'));
     }
     assert.equal(method,'GET');assert.equal(init.body,undefined);
-    if(u.searchParams.has('name_contains'))return response({buckets:exists?[properties()]:[]},200);
+    if(u.searchParams.has('name_contains'))return response({buckets:exists?[properties('list')]:[]},200);
     if(u.pathname.endsWith('/domains/managed'))return response({bucketId:'a'.repeat(32),domain:'synthetic.r2.dev',enabled:!!fault.public});
     if(u.pathname.endsWith('/domains/custom'))return response({domains:fault.custom?[{domain:'synthetic.invalid',enabled:false}]:[]});
-    return exists?response(properties()):response(null,404);
+    if(created&&fault.detailReadbackTransportFailure)throw Error('synthetic readback failed');
+    if(created&&fault.detailReadbackHttpFailure)return response(null,503);
+    return exists?response(properties('detail')):response(null,404);
   };
   // Keep the API's filtered total metadata independent of result length.
   const transport=async(url,init)=>{
@@ -78,4 +84,68 @@ test('archive bucket: unknown/malformed POST stops and later readonly reconcilia
 });
 test('archive bucket: incomplete/repeating inventory never grants create',async()=>{
   const f=fixture({exists:false,cursor:true});await assert.rejects(()=>run({mode:'create',confirmation},{env,fetchImpl:f.fetchImpl}),/R2_BUCKET_INVENTORY_CURSOR/);assert(f.calls.every(x=>x.method==='GET'));
+});
+
+test('archive bucket: sparse inventory requires fresh exact EU Standard private detail',async()=>{
+  for(const omitted of [['jurisdiction'],['storage_class'],['jurisdiction','storage_class']]){
+    const f=fixture({omit:{list:omitted}});
+    const result=await run({}, {env,fetchImpl:f.fetchImpl});
+    assert.equal(result.status,'PRIVATE_EU_BUCKET_VERIFIED');assert.equal(result.writeOutcome,'NOT_STARTED');
+    assert.equal(result.jurisdiction,'eu');assert.equal(result.storageClass,'Standard');
+    assert.deepEqual(f.calls.map(c=>new URL(c.url).pathname.split('/r2/buckets')[1]),
+      ['', '/'+P.bucket, '/'+P.bucket+'/domains/managed', '/'+P.bucket+'/domains/custom']);
+    assert(f.calls.every(c=>c.method==='GET'));
+  }
+});
+
+test('archive bucket: explicit wrong or null sparse-list properties still reject before detail',async()=>{
+  for(const properties of [{jurisdiction:'default'},{jurisdiction:null},{storage_class:'InfrequentAccess'},{storage_class:null}]){
+    const f=fixture({properties:{list:properties}});
+    await assert.rejects(run({}, {env,fetchImpl:f.fetchImpl}),e=>e.code==='R2_BUCKET_PROPERTIES'&&e.writeOutcome==='NOT_STARTED');
+    assert.equal(f.calls.length,1);assert.equal(f.calls[0].method,'GET');
+  }
+});
+
+test('archive bucket: sparse inventory never substitutes for missing contradictory or public detail',async()=>{
+  const sparse={list:['jurisdiction','storage_class']};
+  for(const fault of [
+    {omit:{...sparse,detail:['jurisdiction']}}, {omit:{...sparse,detail:['storage_class']}},
+    {omit:{...sparse,detail:['name']}},
+    {omit:sparse,properties:{detail:{name:'foreign'}}},
+    {omit:sparse,properties:{detail:{jurisdiction:'default'}}},
+    {omit:sparse,properties:{detail:{storage_class:'InfrequentAccess'}}},
+    {omit:sparse,public:true},{omit:sparse,custom:true},
+  ]){
+    const f=fixture(fault);
+    await assert.rejects(run({mode:'create',confirmation},{env,fetchImpl:f.fetchImpl}),
+      e=>['R2_BUCKET_PROPERTIES','R2_BUCKET_MANAGED_PUBLIC_OR_UNKNOWN','R2_BUCKET_CUSTOM_DOMAINS_PRESENT_OR_UNKNOWN'].includes(e.code));
+    assert(f.calls.length>=2);assert(f.calls.every(c=>c.method==='GET'));
+  }
+});
+
+test('archive bucket: sparse create response is followed by full fresh detail and private-domain checks',async()=>{
+  const f=fixture({exists:false,omit:{list:['jurisdiction','storage_class'],create:['jurisdiction','storage_class']}});
+  const result=await run({mode:'create',confirmation},{env,fetchImpl:f.fetchImpl});
+  assert.equal(result.status,'PRIVATE_EU_BUCKET_CREATED_VERIFIED');assert.equal(result.writeOutcome,'CREATED');
+  assert.equal(result.postCount,1);assert.deepEqual(f.calls.map(c=>c.method),['GET','GET','POST','GET','GET','GET','GET']);
+  assert.equal(f.calls[4].url.endsWith('/'+P.bucket),true);
+  assert.equal(f.calls[5].url.endsWith('/domains/managed'),true);
+  assert.equal(f.calls[6].url.endsWith('/domains/custom'),true);
+});
+
+test('archive bucket: create contradictions and failed fresh readback stop without any retry',async()=>{
+  for(const fault of [
+    {properties:{create:{jurisdiction:'default'}}},
+    {properties:{create:{storage_class:'InfrequentAccess'}}},
+    {properties:{create:{jurisdiction:null}}},
+    {omit:{create:['jurisdiction','storage_class'],detail:['jurisdiction']}},
+    {omit:{create:['jurisdiction','storage_class']},detailReadbackTransportFailure:true},
+    {omit:{create:['jurisdiction','storage_class']},detailReadbackHttpFailure:true},
+  ]){
+    const f=fixture({exists:false,...fault});
+    await assert.rejects(run({mode:'create',confirmation},{env,fetchImpl:f.fetchImpl}),
+      e=>['R2_BUCKET_PROPERTIES','R2_BUCKET_READ_TRANSPORT','R2_BUCKET_API_HTTP'].includes(e.code)&&e.writeOutcome==='CREATED');
+    assert.equal(f.calls.filter(c=>c.method==='POST').length,1);assert(f.calls.length<=5);
+    assert(!f.calls.some(c=>c.url.endsWith('/domains/managed')));
+  }
 });

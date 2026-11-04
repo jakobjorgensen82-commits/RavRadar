@@ -684,6 +684,11 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
+      - name: Reclaim only the unused hosted Android SDK before private restoration
+        if: steps.preflight.outputs.should_run == 'true'
+        timeout-minutes: 3
+        run: node scripts/reclaim-runner-android-sdk.mjs
+
       - name: Install production geometry tools
         if: steps.preflight.outputs.should_run == 'true'
         run: python -m pip install --disable-pip-version-check "shapely>=2.0,<3" "pyproj>=3.6,<4"
@@ -2199,6 +2204,10 @@ jobs:
         if: inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true')
         id: dmi-cache-generation
         run: echo "generation=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+
+      - name: Measure runner storage immediately before RAW cache restoration
+        if: inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true')
+        run: node scripts/reclaim-runner-android-sdk.mjs --observe-raw
 
       - name: Restore bounded DMI GRIB download cache
         if: inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true')
