@@ -2,44 +2,26 @@
 import fs from 'node:fs/promises';
 import { copyForecastShareProjection } from './build-forecast-share-projection.mjs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { assertPublicDeliveryDocument } from '../js/core/public-delivery-contract.js';
-import { publicDeliveryTransportEntries } from '../js/services/public-delivery-transport-binding.js';
-import { readPublicDeliveryJsonFile } from './lib/public-delivery-json-transport.mjs';
+import { publicDeliveryEntries, assertPublicDeliveryDocument } from '../js/core/public-delivery-contract.js';
 
 export async function copyPublicDeliveryShards({ source, target }) {
   const manifest = JSON.parse(await fs.readFile(path.join(source, 'manifest.json'), 'utf8'));
-  const entries = publicDeliveryTransportEntries(manifest);
-  const strictPlain = manifest.detailDelivery?.coldHoursSchema === 1;
+  const entries = publicDeliveryEntries(manifest);
   if (entries.length) await fs.mkdir(path.join(target, 'forecast'), { recursive: true });
   for (const entry of entries) {
     const relative = entry.path.slice(2);
     const sourcePath = path.join(source, relative);
-    const loaded = await readPublicDeliveryJsonFile(sourcePath, entry, strictPlain);
-    assertPublicDeliveryDocument(loaded.value, manifest, entry);
-    await fs.writeFile(path.join(target, relative), loaded.outerBytes);
-  }
-  let mapFiles = 0;
-  if (manifest.detailDelivery?.mapHours !== undefined) {
-    const { mapHourPagesInventory } = await import('./lib/public-map-hour-pages.mjs');
-    const mapHours = await mapHourPagesInventory({ liveDirectory: source, manifest, fullEntries: entries });
-    for (const entry of mapHours) {
-      const relative = entry.path.slice(2);
-      const sourcePath = path.join(source, relative);
-      const stat = await fs.lstat(sourcePath);
-      if (!stat.isFile() || stat.isSymbolicLink() || stat.size !== entry.bytes) throw new Error('Invalid compact map file size/type.');
-      const bytes = await fs.readFile(sourcePath);
-      await entry.read(bytes);
-      await fs.writeFile(path.join(target, relative), bytes);
-      mapFiles++;
-    }
+    const stat = await fs.lstat(sourcePath);
+    if (!stat.isFile() || stat.isSymbolicLink() || stat.size !== entry.bytes) throw new Error('Invalid public delivery file size/type.');
+    const bytes = await fs.readFile(sourcePath);
+    if (crypto.createHash('sha256').update(bytes).digest('hex') !== entry.sha256) throw new Error('Public delivery hash mismatch.');
+    assertPublicDeliveryDocument(JSON.parse(bytes.toString('utf8')), manifest, entry);
+    await fs.writeFile(path.join(target, relative), bytes);
   }
   const share = await copyForecastShareProjection({ source, target });
-  if (manifest.publicConditionDetailsArchive !== undefined) {
-    const { replaceStagedBulkWithArchive } = await import('./lib/public-bulk-details-archive.mjs');
-    await replaceStagedBulkWithArchive({ source, target, manifest });
-  }
-  return { files: entries.length + mapFiles + share.files };
+  return { files: entries.length + share.files };
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

@@ -3838,7 +3838,7 @@ jobs:
             install -m 0644 "$pages_source/data/live/public-conditions.json" "$pages_destination/data/live/public-conditions.json"
             install -m 0644 "$pages_source/data/live/public-condition-details.json" "$pages_destination/data/live/public-condition-details.json"
             install -m 0644 "$pages_source/data/live/coastal-parts-v2.json" "$pages_destination/data/live/coastal-parts-v2.json"
-            node scripts/copy-public-delivery-shards.mjs --source "$pages_source/data/live" --target "$pages_destination/data/live"
+            node scripts/copy-pages-public-delivery.mjs --source "$pages_source/data/live" --target "$pages_destination/data/live"
           }
           pages_source="$GITHUB_WORKSPACE"
           if [[ "${{ steps.operational-action.outputs.action }}" == candidate-* ]]; then

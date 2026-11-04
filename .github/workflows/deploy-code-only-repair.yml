@@ -2481,7 +2481,7 @@ jobs:
           install -m 0644 data/live/public-conditions.json _site/data/live/public-conditions.json
           install -m 0644 data/live/public-condition-details.json _site/data/live/public-condition-details.json
           install -m 0644 data/live/coastal-parts-v2.json _site/data/live/coastal-parts-v2.json
-          node scripts/copy-public-delivery-shards.mjs --source data/live --target _site/data/live
+          node scripts/copy-pages-public-delivery.mjs --source data/live --target _site/data/live
 
       - name: Preflight complete Pages artifact for private runtime material
         id: pages-preflight-privacy

@@ -177,8 +177,8 @@ export const qualifiedScalarPlanningWorkflowReview = Object.freeze({
 // TEST ONLY: remove the reviewed public projection changes before the
 // unchanged whole-source weather workflow checks. Mixed bytes stay unknown.
 export const pagesPublicProjectionWorkflowReview = Object.freeze({
-  "base": "621fa507bd81ae0f73692e3f2cc79210635eff50",
-  "tree": "f09fd873b67e1f6da9431ec85724bd791bbc7d62",
+  "base": "84051e2d700595837ebf80426410dcbef8e08704",
+  "tree": "5c7147ffbe31a7a983241d31eca3a8dbbf1df14b",
   "roles": {
     "build": {
       "path": ".github/workflows/reusable-weather-build.yml",
@@ -187,10 +187,15 @@ export const pagesPublicProjectionWorkflowReview = Object.freeze({
         "sha256": "451249801b6944d945b193fd95de5065cf057a8b08a6698a675e2192c074100c"
       },
       "after": {
-        "bytes": 298106,
-        "sha256": "cb7c7c8bd949f70e053874f13492cc3060b4729d1f65604a238f6358365cd256"
+        "bytes": 298105,
+        "sha256": "5810df1f9a3dce1a76accaab14f9cb9b69133b4783c9e7426443eb5d74b21a3f"
       },
       "edits": [
+        [
+          243473,
+          "            node scripts/copy-pages-public-delivery.mjs --source \"$pages_source/data/live\" --target \"$pages_destination/data/live\"\n",
+          "            node scripts/copy-public-delivery-shards.mjs --source \"$pages_source/data/live\" --target \"$pages_destination/data/live\"\n"
+        ],
         [
           241489,
           "              --exclude '/data/jordrav/prototype-0.1.0/' \\\n",
@@ -238,10 +243,15 @@ export const pagesPublicProjectionWorkflowReview = Object.freeze({
         "sha256": "1619b09526d8ea1288bc4c94a690b997f5a5b0f05e12b8ecc26da08e984c4c75"
       },
       "after": {
-        "bytes": 225326,
-        "sha256": "996b5545333ee83350ddca3fb9f023111948c9330e60189fb5cafe25d79ffde5"
+        "bytes": 225325,
+        "sha256": "391628fbcaae106df7a29d5c7caa3a7487af18b025bd4692bc93aaab5d396bf8"
       },
       "edits": [
+        [
+          160916,
+          "          node scripts/copy-pages-public-delivery.mjs --source data/live --target _site/data/live\n",
+          "          node scripts/copy-public-delivery-shards.mjs --source data/live --target _site/data/live\n"
+        ],
         [
           159440,
           "            --exclude '/data/jordrav/prototype-0.1.0/' \\\n",
