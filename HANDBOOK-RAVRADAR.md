@@ -28,6 +28,12 @@ Cloudflares liste- og oprettelsessvar kan udelade jurisdiction og lagerklasse. D
 
 Et verificeret resultat kræver fortsat en frisk, fuld detailaflæsning med den rigtige EU-placering og Standard-lagerklasse, deaktiveret offentlig r2.dev-adgang og ingen egne domæner. Manglende metadata må aldrig erstattes af en antaget sikker standard. Ingen læsefejl medfører automatisk gentagelse eller udvidelse af rettigheder.
 
+### Den præcise historiske indgang prøves før lang kildekontrol
+
+Når hele workflowets kilde ændres, kan historiske prøver stadig kræve deres oprindelige fil. Den fælles normale adapter skal derfor genkende netop det nye, fulde før-/efterdelta og føre det tilbage til de præcise forgængerbytes, før den uændrede historiske kæde bruges. Ukendte eller ændrede deltaer giver fortsat afslag; en bred accept eller et nyt godkendelsesflag må ikke erstatte helfilkontrollen.
+
+Prøverne af de aktuelle RAW-/CURRENT-grænser og SDK-hjælperens nye adfærd bevares fuldt. Den faktiske tidlige import- og adgangsindgang prøves målrettet, før næste lange kildekontrol startes. Platformskrav som Linux-filbeskrivelser skal fortsat prøves i rigtig Linux-CI; lokale Windows-resultater må ikke fremstilles som et Linux-bevis.
+
 ### Aktuel afgrænsning og de resterende livebeviser
 
 Den særskilte private EU-bucket til dokumentarkivet er oprettet på den eksisterende konto. Den eksisterende S3-adgang bevarer vejrarkivet og omfatter nu også dokumentarkivet; den nødvendige generelle læseadgang til bucketmetadata er tilføjet. Dette er kontoklargøring, ikke et bestået normalt arkiv-, genlæsnings- eller beskæringsforløb.
