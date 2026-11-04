@@ -1,3 +1,25 @@
+## 89.310 Den direkte workflowtest følger den præcise publiceringsport
+
+Test den virkelige normale kalder og hele den gennemgåede workflowkæde. Ukendte ændringer afvises fortsat, og allerede gemt vejr bevares til sikker genlevering.
+
+<a id="workflow-hour-inverse-current-publication-gate-2026-11-05"></a>
+
+### Den normale kalders udgangspunkt skal være den faktiske fil
+
+En eksisterende direkte workflowtest sammenlignede filen med en gammel helfilslængde, før den brugte den allerede gennemgåede inverse for publiceringsporten. Det stoppede kildekontrollen, selv om den præcise inverse var korrekt. Testen følger nu hele kæden: den fulde aktuelle workflowfil med publiceringsporten, den fulde gennemgåede forgænger uden denne port og den fulde tidligere timeforgænger. Hver helfil bindes til både størrelse og SHA-256; der gives ingen fri størrelsestolerance.
+
+### Ukendte og blandede ændringer afvises fortsat
+
+Alle eksisterende afslag på ukendte, delvise og dobbelte ændringer er bevaret. Testen afprøver også en ændret eller dobbelt publiceringsport, ukendte kontrolnavne og en blanding af gammel timekode med den nye port. Den historiske projektion må kun håndtere de nøjagtigt gennemgåede hele filer; den bliver ikke en generel mekanisme til at fjerne kontrolkode.
+
+### Afprøv hele det berørte normale forløb
+
+Når en workflowprojektion eller wrapper ændres, skal det eksisterende normale testmål, som faktisk bruger den, afprøves samlet før levering. En ny afgrænset prøve af helperen alene er ikke tilstrækkelig, hvis den gamle normale kalder stadig kan være forkert. Hele det berørte normale mål er kørt lokalt: 54 beståede, ingen fejl og én uændret Linux-prøve, der ikke kan udføres på Windows. Den nødvendige Linux- og kildekontrol skal stadig bestå på den endelige GitHub-kode.
+
+### Hold den akutte genlevering afgrænset
+
+Denne følgekorrektion ændrer kun en eksisterende testfil og normal projektdokumentation. Workflow, runtime, modelversion 4.0.597, udstedte migrationer, scoreformel, data, punkter og geometri er uændrede. Den særskilte videre forkortelse af kildekontrollen er ikke med i leverancen og er ikke erklæret færdig. Genoptagelse skal fortsat bruge det eksisterende completed_private_runtime-forløb med frisk autentificering af de gemte B/S-data, beståede artifact- og releasekontroller og faktisk offentlig kontrol. Ingen ny leverandørhentning eller genberegning er nødvendig i denne første genlevering.
+
 ## 89.309 Aktuelle UI-kontroller og ens krav før vejrets publicering
 
 Forældede kontrolantagelser må rettes mod den faktiske funktion. Et nyt almindeligt Pages-artifact må kun bygges efter de krævede beståede kontroller; allerede gemt vejr bevares til sikker genoptagelse.

@@ -1,3 +1,15 @@
+## 5. november — direkte normal workflowregression, 4.0.597
+
+En eksisterende direkte workflowtest sammenlignede filen med en gammel helfilslængde, før den brugte den allerede gennemgåede inverse for publiceringsporten. Det stoppede kildekontrollen, selv om den præcise inverse var korrekt. Testen følger nu hele kæden: den fulde aktuelle workflowfil med publiceringsporten, den fulde gennemgåede forgænger uden denne port og den fulde tidligere timeforgænger. Hver helfil bindes til både størrelse og SHA-256; der gives ingen fri størrelsestolerance.
+
+Alle eksisterende afslag på ukendte, delvise og dobbelte ændringer er bevaret. Testen afprøver også en ændret eller dobbelt publiceringsport, ukendte kontrolnavne og en blanding af gammel timekode med den nye port. Den historiske projektion må kun håndtere de nøjagtigt gennemgåede hele filer; den bliver ikke en generel mekanisme til at fjerne kontrolkode.
+
+Når en workflowprojektion eller wrapper ændres, skal det eksisterende normale testmål, som faktisk bruger den, afprøves samlet før levering. En ny afgrænset prøve af helperen alene er ikke tilstrækkelig, hvis den gamle normale kalder stadig kan være forkert. Hele det berørte normale mål er kørt lokalt: 54 beståede, ingen fejl og én uændret Linux-prøve, der ikke kan udføres på Windows. Den nødvendige Linux- og kildekontrol skal stadig bestå på den endelige GitHub-kode.
+
+Denne følgekorrektion ændrer kun en eksisterende testfil og normal projektdokumentation. Workflow, runtime, modelversion 4.0.597, udstedte migrationer, scoreformel, data, punkter og geometri er uændrede. Den særskilte videre forkortelse af kildekontrollen er ikke med i leverancen og er ikke erklæret færdig. Genoptagelse skal fortsat bruge det eksisterende completed_private_runtime-forløb med frisk autentificering af de gemte B/S-data, beståede artifact- og releasekontroller og faktisk offentlig kontrol. Ingen ny leverandørhentning eller genberegning er nødvendig i denne første genlevering.
+
+Se håndbog 89.310. Kildekontrol, sikker levering og faktisk offentlig genlevering er fortsat påkrævet. De øvrige åbne mål og den isolerede revision erklæres ikke færdige.
+
 ## 4. november — kontrolrettelse før genlevering af gemt vejr, 4.0.597
 
 Den almindelige vejrhentning den 4. november gemte nye originaler og checkpoint, men stoppede før Pages. Den sene current-grid-port afviste et fejlet udfald fra artifactkontrollen. Den lille autentificerede rapport viser seks fejl blandt 55 kontroller; releasekontrollen bestod tre af tre. Morgens tidligere offentligt leverede kørsel havde præcis de samme seks fejl. Den gamle almindelige vej havde behandlet denne samling diagnostisk, mens den nye modelovergang krævede et bestået udfald. En grøn tidligere kørsel beviste derfor ikke, at disse kontroller var bestået.

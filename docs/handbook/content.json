@@ -5,6 +5,13 @@
   "updatedAt": "2026-11-04",
   "sections": [
     {
+      "id": "workflow-hour-inverse-current-publication-gate-2026-11-05",
+      "chapter": "89.310",
+      "title": "Den direkte workflowtest følger den præcise publiceringsport",
+      "summary": "Test den virkelige normale kalder og hele den gennemgåede workflowkæde. Ukendte ændringer afvises fortsat, og allerede gemt vejr bevares til sikker genlevering.",
+      "body": "<h3>Den normale kalders udgangspunkt skal være den faktiske fil</h3><p>En eksisterende direkte workflowtest sammenlignede filen med en gammel helfilslængde, før den brugte den allerede gennemgåede inverse for publiceringsporten. Det stoppede kildekontrollen, selv om den præcise inverse var korrekt. Testen følger nu hele kæden: den fulde aktuelle workflowfil med publiceringsporten, den fulde gennemgåede forgænger uden denne port og den fulde tidligere timeforgænger. Hver helfil bindes til både størrelse og SHA-256; der gives ingen fri størrelsestolerance.</p><h3>Ukendte og blandede ændringer afvises fortsat</h3><p>Alle eksisterende afslag på ukendte, delvise og dobbelte ændringer er bevaret. Testen afprøver også en ændret eller dobbelt publiceringsport, ukendte kontrolnavne og en blanding af gammel timekode med den nye port. Den historiske projektion må kun håndtere de nøjagtigt gennemgåede hele filer; den bliver ikke en generel mekanisme til at fjerne kontrolkode.</p><h3>Afprøv hele det berørte normale forløb</h3><p>Når en workflowprojektion eller wrapper ændres, skal det eksisterende normale testmål, som faktisk bruger den, afprøves samlet før levering. En ny afgrænset prøve af helperen alene er ikke tilstrækkelig, hvis den gamle normale kalder stadig kan være forkert. Hele det berørte normale mål er kørt lokalt: 54 beståede, ingen fejl og én uændret Linux-prøve, der ikke kan udføres på Windows. Den nødvendige Linux- og kildekontrol skal stadig bestå på den endelige GitHub-kode.</p><h3>Hold den akutte genlevering afgrænset</h3><p>Denne følgekorrektion ændrer kun en eksisterende testfil og normal projektdokumentation. Workflow, runtime, modelversion 4.0.597, udstedte migrationer, scoreformel, data, punkter og geometri er uændrede. Den særskilte videre forkortelse af kildekontrollen er ikke med i leverancen og er ikke erklæret færdig. Genoptagelse skal fortsat bruge det eksisterende completed_private_runtime-forløb med frisk autentificering af de gemte B/S-data, beståede artifact- og releasekontroller og faktisk offentlig kontrol. Ingen ny leverandørhentning eller genberegning er nødvendig i denne første genlevering.</p>"
+    },
+    {
       "id": "weather-ui-validation-publication-gate-2026-11-04",
       "chapter": "89.309",
       "title": "Aktuelle UI-kontroller og ens krav før vejrets publicering",
