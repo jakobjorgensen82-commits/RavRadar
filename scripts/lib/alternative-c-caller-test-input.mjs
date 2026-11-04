@@ -1162,8 +1162,9 @@ export function inverseAssistant590RetentionCompanionTestInput(source, relative)
   const row = ASSISTANT590_RETENTION_COMPANION_TEST_REVIEW;
   assert.equal(relative, row.path, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ASSISTANT590_RETENTION_PATH');
   source = source.replace(/\r\n/g, '\n');
-  // Exact issued594 TESTDATA view precedes every unchanged593/591/590 oracle.
-  if (Buffer.byteLength(source) === ISSUED594_RETENTION_COMPANION_TEST_REVIEW.after.bytes)
+  // Exact issued597/594 TESTDATA views precede every unchanged593/591/590 oracle.
+  if ([ISSUED597_RETENTION_COMPANION_TEST_REVIEW.after.bytes,
+    ISSUED594_RETENTION_COMPANION_TEST_REVIEW.after.bytes].includes(Buffer.byteLength(source)))
     source = inverseIssued594RetentionCompanionSource(source, relative);
   if (Buffer.byteLength(source) === CONDITIONS593_RETENTION_COMPANION_TEST_REVIEW.after.bytes)
     source = inverseConditions593RetentionCompanionTestInput(source, relative);

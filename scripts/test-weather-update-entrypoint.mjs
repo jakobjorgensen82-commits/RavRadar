@@ -815,7 +815,10 @@ test('47 baseline commands plus genuine OLD, NEW native, epoch and pure diagnost
 });
 
 test('current frozen routes and warmup checks reach normal checkpoint integration exactly once', async () => {
-  const actualScripts = inverseReviewedAccountStatisticsAssistantSourceScripts(JSON.parse(await fs.readFile(new URL('../package.json', import.meta.url), 'utf8')).scripts);
+  const pkg=JSON.parse(await fs.readFile(new URL('../package.json', import.meta.url), 'utf8'));
+  const {inverseScalar597LaterH0Package}=await import('./national584-source-evidence.mjs');
+  const historicalPackage=pkg.version==='4.0.597'?inverseScalar597LaterH0Package(pkg):pkg;
+  const actualScripts=inverseReviewedAccountStatisticsAssistantSourceScripts(historicalPackage.scripts);
   // Retain the entire genuine140000 command oracle on its real frozen input,
   // then separately qualify how the current source reaches those same targets.
   const scripts = await withFrozenEstablishedNativeCurrentOriginSourceTarget('builder', async sourceRoot =>

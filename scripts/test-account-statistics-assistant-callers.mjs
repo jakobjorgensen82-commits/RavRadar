@@ -1525,7 +1525,12 @@ function reviewedPrivateStudyOperatorPublisher(source){
 
 
 test('DMI scalar source registration qualifies75 commands before unchanged72-command oracles',async()=>{
-  const actual=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8')).scripts,original=structuredClone(actual);
+  const live=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8'));
+  const liveOriginal=structuredClone(live);
+  const historical=live.version==='4.0.597'
+    ? (await import('./national584-source-evidence.mjs')).inverseScalar597LaterH0Package(live)
+    : live;
+  const actual=historical.scripts,original=structuredClone(actual);
   const {inverseReviewedDmiScalarGapSourceScripts:inverse,inverseReviewedForecastShareProjectionSourceScripts:sharing,
     inverseAssistantPublic588SuccessorSourceScripts:later}=await import('./lib/account-statistics-assistant-package-review.mjs');
   const prior=inverse(actual),digest=value=>crypto.createHash('sha256').update(JSON.stringify(Object.keys(value).sort().map(key=>[key,value[key]]))).digest('hex');
@@ -1545,6 +1550,7 @@ test('DMI scalar source registration qualifies75 commands before unchanged72-com
   }
   assert.throws(()=>inverse(prior));assert.throws(()=>inverse(actual,{}));
   assert.throws(()=>inverse(null));assert.throws(()=>inverse({...actual,unreviewed:false}));
+  assert.deepEqual(live,liveOriginal,'The active package is unchanged by the historical test view');
 });
 
 // The normal source target also owns the fixed document-history workflow boundary.
