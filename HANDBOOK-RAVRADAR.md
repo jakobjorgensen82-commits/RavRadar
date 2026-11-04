@@ -1,32 +1,38 @@
-## 89.303 SDK-fejl afklares i den tidlige normale Linux-kalder
+## 89.303 Tidlig SDK-kontrol, præcis workflowkalder og én normal oprydning
 
-Den samme normale SDK-kommando køres før den lange kildekontrol. Faste hændelser skelner kommando, exit og fysisk lukning; tidsgrænser og databevarelse består. Det er diagnostik, ikke en påvist timeoutrettelse.
+Den samme normale Linux-kalder prøves før den lange matrix. Den gamle grant-prøve bruger den præcise SDK-inverse; førmåling og én gennemgang giver bedre afgrænsning uden nye model- eller datagates.
 
-### Hvad der er dokumenteret
+### Faktisk kildebevis og den stadig åbne driftsårsag
 
-Den præcise kilde- og native597-kontrol for den forudgående diskrettelse er gennemført, og samme gennemgåede træ er merget. Den historiske584-nationalprøve blev udført; dette er ikke bevis for en aktuel597-nationalprøve, leverandørdækning eller offentlig vejrlevering.
+Den foregående diskrettelse er præcist kilde- og native597-kvalificeret og merget. Den historiske584-nationalprøve blev udført; dette er ikke en aktuel597-national- eller offentlig vejrleveringspåstand. En efterfølgende almindelig vejrhentning stoppede i den daværende SDK-kommandos60-sekundersgrænse før cache og leverandører.
 
-Den efterfølgende almindelige vejrhentning stoppede i SDK-hjælperens eksisterende60-sekunders kommandogrænse før cache og leverandører. Den hidtidige generiske fejl skelnede ikke mellem pladsopmåling, fjernelse eller den fysiske lukning af processen. Årsagen er derfor fortsat åben.
+Den samme normale SDK-kommando er derefter faktisk gennemført i tidlig Linux-CI. Det viser, at forløbet kan gennemføres på den afprøvede host, men forklarer ikke det tidligere stop. Den efterfølgende korte kildekontrol ramte en gammel direkte SHA-forventning i en selvstændig workflowprøve. En testkalderfejl må ikke forveksles med en ny produktions- eller leverandørfejl.
 
-### Samme normale kommando før den lange matrix
+### Samme præcise inverse i alle normale direkte kaldere
 
-SDK-hjælperens normale CLI-kald placeres først i det eksisterende tidlige Linux-trin i den almindelige kildekontrol. Trinnets navn, nummer og øvrige kontrolkæde bevares. Der tilføjes ikke en særskilt diagnosekanal eller en produktionsvejrhentning for at afprøve hjælperen.
+Den eksisterende SHA-bundne SDK-helinverse bruges nu også af den selvstændige normale prøve, før dens gamle PR-læsegrant-orakelkrav. Resten af prøven beholder det rå aktuelle workflow og mutationernes fulde ukendtafvisning. Manglende, ændrede og dobbelte hunks giver stadig afslag; de historiske registry-/fixturefingeraftryk ændres ikke globalt.
 
-Trinnets frist er tre minutter. Hver fast childkommando beholder sin60-sekunders grænse og de eksisterende TERM/KILL- og gruppestopkrav. Den faste sti til det ubrugte Android-SDK, faktisk GitHub-hostet Ubuntu24.04, kanonisk mappeidentitet og samme filsystem kontrolleres fortsat. En større ydre trinfrist ophæver ikke en kommandofejl eller et ukendt stop.
+Den faktiske normale korte kæde for plan, Git-diff, FULL-baseline, TARGETED-kvittering, producer, consumer og workflowkalder er gennemført før ny lang matrix. Der er ikke indført en ny TARGETED-/nativegenbrugsvej eller et manuelt verified-flag. Trin6 beholder navn og nummer; den normale Linux-CLI ligger først i dette eksisterende trin, ikke i en ny diagnosekanal.
 
-### Afgrænsede hændelser og fysisk procesbevis
+### Måling fra allerede udført statfs
 
-Faste START-, CLOSED- og FAILED-hændelser angiver operation, forløbet tid, timeout og exit/signal. De skelner mellem procesexit, faktisk lukning af child og pipes før tvungen standsning samt efterfølgende bekræftet gruppestop. Ukendt eller mislykket stop giver fortsat afslag.
+Det allerede udførte workspace-statfs giver nu faste hændelser med tilgængelige bytes og frie/samlede inoder før SDK og før RAW-genlæsning. Ukendte, manglende eller ugyldige inodetællere er null. Der foretages ikke en ekstra statfs, mappegennemgang eller leverandørlæsning, og der indføres ingen ny minimumspladsgate eller ændring af de gamle returkontrakter.
 
-Der vises aldrig rå child-stdout, child-stderr eller vilkårlige fejltekster. Adgangsnøgler, private payloads, brugerdata og rå strømværdier hører ikke til i disse rapporter. En tom, sen eller manglende hændelse må ikke udlægges som et vellykket SDK-forløb.
+Faste START/CLOSED/FAILED-hændelser skelner operation, forløbet tid, timeout, exit/signal, faktisk child-/pipe-close og bekræftet gruppestop. Rå stdout/stderr, vilkårlige fejltekster, paths, nøgler, brugerdata, private payloads og rå strømværdier indgår ikke i disse faste driftsrapporter.
 
-### Historiske kaldere og resterende gate
+### Én normal oprydning med bevarede identitets- og stopkrav
 
-De to præcise ændringer af workflowet har en SHA-bundet helfil-inverse til den autentiske forgænger før de eksisterende historiske kontrolkaldere. Ændrede, manglende eller dobbelte hunks afvises. Ukendte ændringer må ikke godkendes ved en bredere regel eller et nyt verified-flag.
+Det normale reclaimforløb fjerner den unødvendige du-gennemgang og udfører én fast sudo/rm-kommando. Begge kanoniske SDK-, device- og inodekontroller, faktisk før/efter-statfs, kontrol af SDK-fravær og child-/gruppestop bevares. REMOVED.allocatedBytes er ærligt null, når den værdi ikke er målt; ABSENT beholder0. Ingen ukendt værdi fremstilles som en målt pladsgevinst.
 
-De relevante korte normale mål for rapportering, lukning og workflowkaldere er afprøvet lokalt. Syntetiske Windows-resultater er ikke et bevis for den faktiske Linux-SDK-kommando. Rigtig normal Linux-CI skal nu fastslå opmåling, fjernelse og lukning før den lange matrix. Diagnostikpakken løser ikke endnu60-sekundersfejlen. Før en ny almindelig produktionsvejrhentning skal årsagen og de relevante gates være afklaret.
+Den normale remove-kommando har120 sekunder plus samme højst2+2 sekunders TERM/KILL-lukningsbevis:124 sekunder mod den tidligere normale to-pass-grænse128. Den ydre kilde- og vejrtrinsfrist er fortsat tre minutter, og direkte measure-API beholder60 sekunder. Ukendt stop eller en kommandofejl giver fortsat afslag. Leverandør-, RAW-, beregnings- og heljobbudgetter ændres ikke.
 
-Ingen scoreformel, kilder, model- eller lagerbindinger, migrations-SQL, version, geometri, eksisterende originaler eller vejr-/cachebudgetter ændres. Der aktiveres ingen ny TARGETED-/nativegenbrugsvej. Tidligere databevarelseskrav, herunder håndbog89.298 og89.302, består.
+### Kontrolleret genprøve og resterende accept
+
+Et enkelt almindeligt genforsøg blev startet på den allerede validerede main-kode efter uafhængigt dokumenteret vellykket SDK-Linux-forløb. Det bruger normale standardvalg og de eksisterende reservations-/timelåse, uden force, kortkørsel eller reset. Det er en kontrolleret genprøve af normal drift og må ikke fremstilles som en permanent rettelse eller endelig forklaring på det tidligere stop.
+
+De relevante korte SDK-mål er afprøvet og genbruges i kompositionen. Den nye én-passvariant kræver fortsat sin egen faktiske tidlige Linux-CI; den tidligere Linux-succes ommærkes ikke til et bevis for den nye variant. Normal cache-/RAW-genlæsning, beregning, offentligt deploy og dækning skal vurderes særskilt. Ingen merge eller anden produktionsændring udføres under en aktiv writer.
+
+Scoreformel, kilder, model-/lagerbindinger, migrations-SQL, version, administratoropsætning, geometri og gyldige originaler bevares. Kravene i89.298 og89.302 består. Dette afsnit og de lokale mål er ikke samlet Free-, kapacitets-, nativegenbrugs- eller produktionsfærdiggørelsesbevis.
 
 ## 89.302 Diskplads til vejrhentning og præcis privat arkivkontrol
 

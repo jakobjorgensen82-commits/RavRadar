@@ -18,7 +18,7 @@ const environment = {
 };
 function fixture(changes = {}) {
   const calls = [];
-  let removed = false, measurements = 0;
+  let removed = false, sdkVisits = 0;
   const directory = (dev = 7n, ino = 12n, link = false) => ({
     dev, ino, isDirectory: () => true, isSymbolicLink: () => link,
   });
@@ -31,20 +31,20 @@ function fixture(changes = {}) {
       calls.push(['lstat', target]);
       if (target === WORKSPACE) return directory();
       assert.equal(target, SDK);
+      sdkVisits++;
       if (changes.absent || removed) throw Object.assign(new Error(), { code: 'ENOENT' });
       return directory(changes.otherDevice ? 8n : 7n,
-        changes.changedIdentity && measurements ? 13n : 12n, Boolean(changes.link));
+        changes.changedIdentity && sdkVisits > 1 ? 13n : 12n, Boolean(changes.link));
     },
     async realpath(target) { calls.push(['realpath', target]); return changes.redirect && target === SDK ? '/other/sdk' : target; },
     async statfs(target) {
       assert.equal(target, WORKSPACE); calls.push(['statfs', target]);
-      return { bavail: removed ? 9000n : 1000n, bsize: 1024n };
+      return { bavail: removed ? 9000n : 1000n, bsize: 1024n, ...changes.statfsCounts };
     },
   };
   const command = async operation => {
     calls.push(['command', operation]);
     if (operation === 'measure') {
-      measurements++;
       return { stdout: '8192000\t'+SDK+'\n', terminationConfirmed: true };
     }
     assert.equal(operation, 'remove');
@@ -95,14 +95,16 @@ test('actual OS must be Ubuntu24.04 without a guessed image alias or date', asyn
   }
 });
 
-test('successful fixed SDK removal reports allocated bytes and actual free-space change', async () => {
+test('successful one-pass SDK removal reports unknown allocation and actual free-space change', async () => {
   const f = fixture(), result = await reclaimRunnerAndroidSdk(f.options);
   assert.deepEqual(result, {
-    kind: 'RUNNER_UNUSED_ANDROID_SDK', status: 'REMOVED', allocatedBytes: 8192000,
+    kind: 'RUNNER_UNUSED_ANDROID_SDK', status: 'REMOVED', allocatedBytes: null,
     availableBeforeBytes: 1024000, availableAfterBytes: 9216000, measuredChangeBytes: 8192000,
   });
-  assert.deepEqual(f.calls.filter(([kind]) => kind === 'command'), [['command', 'measure'], ['command', 'remove']]);
+  assert.deepEqual(f.calls.filter(([kind]) => kind === 'command'), [['command', 'remove']]);
   assert.equal(f.calls.filter(([kind]) => kind === 'statfs').length, 2);
+  assert.equal(f.calls.filter(([kind, value]) => kind === 'lstat' && value === SDK).length, 3);
+  assert.equal(f.calls.filter(([kind, value]) => kind === 'realpath' && value === SDK).length, 2);
 });
 
 test('absent SDK reports zero measured gain without running a command', async () => {
@@ -150,6 +152,13 @@ function processFixture(timeout = false, remains = false, completion = {}) {
   child.pid = 1234; child.stdout = new EventEmitter(); child.stderr = new EventEmitter();
   child.stdout.destroy = child.stderr.destroy = child.unref = () => {};
   let gone = false, clock = 0;
+  const finish = () => {
+    gone = true;
+    if (completion.stdout) child.stdout.emit('data', Buffer.from(completion.stdout));
+    if (completion.stderr) child.stderr.emit('data', Buffer.from(completion.stderr));
+    child.stdout.emit('close'); child.stderr.emit('close');
+    child.emit('exit', completion.exitCode ?? 0, null); child.emit('close');
+  };
   host.platform = 'linux';
   host.kill = (pid, signal) => {
     assert.equal(pid, -1234);
@@ -167,17 +176,14 @@ function processFixture(timeout = false, remains = false, completion = {}) {
   };
   return { invocations, signals, reports, options: {
     report: event => reports.push(event),
-    processImpl: host, now: () => clock, delayImpl: async () => { clock += 1000; },
+    processImpl: host, now: () => clock, delayImpl: async () => {
+      clock += 1000;
+      if (!gone && Number.isSafeInteger(completion.completeAtMs) && clock >= completion.completeAtMs) finish();
+    },
     spawnImpl(command, args, options) {
       invocations.push({ command, args, options });
       if (timeout && completion.exitBeforeClose) queueMicrotask(() => child.emit('exit', 0, null));
-      if (!timeout) queueMicrotask(() => {
-        gone = true;
-        if (completion.stdout) child.stdout.emit('data', Buffer.from(completion.stdout));
-        if (completion.stderr) child.stderr.emit('data', Buffer.from(completion.stderr));
-        child.stdout.emit('close'); child.stderr.emit('close');
-        child.emit('exit', completion.exitCode ?? 0, null); child.emit('close');
-      });
+      if (!timeout) queueMicrotask(finish);
       return child;
     },
   } };
@@ -204,11 +210,27 @@ test('fixed command timeout confirms a stopped group or explicitly refuses unpro
     assert.equal(f.reports[0].phase, 'START');
     assert.equal(f.reports[1].operation, 'remove');
     assert.equal(f.reports[1].timedOut, true);
-    assert.equal(f.reports[1].timeoutMs, 60000);
+    assert.equal(f.reports[1].timeoutMs, 120000);
+    assert.equal(f.reports[0].timeoutMs, 120000);
+    assert.equal(f.reports[1].elapsedMs, remains ? 124000 : 120000);
     assert.equal(f.reports[1].terminationConfirmed, !remains);
     assert.equal(f.reports[1].childClosed, !remains);
     assert.equal(f.reports[1].failureReason, remains ? 'STOP_UNPROVED' : 'TIMEOUT');
   }
+});
+
+test('one fixed removal pass can close after sixty seconds within its unchanged total reclaim envelope', async () => {
+  const f = processFixture(true, false, { completeAtMs: 90000 });
+  assert.deepEqual(await runFixedSdkCommand('remove', f.options), { stdout: '', terminationConfirmed: true });
+  assert.equal(f.invocations.length, 1);
+  assert.equal(f.reports[1].operation, 'remove');
+  assert.equal(f.reports[1].elapsedMs, 90000);
+  assert.equal(f.reports[1].timeoutMs, 120000);
+  assert.equal(f.reports[1].timedOut, false);
+  assert.equal(f.reports[1].childClosed, true);
+  assert.equal(f.reports[1].terminationConfirmed, true);
+  assert.deepEqual(f.signals, []);
+  assert(120000 + 2 * 2000 < 2 * (60000 + 2 * 2000));
 });
 
 test('normal fixed measurement reports exact operation and physical closure without child output', async () => {
@@ -220,6 +242,8 @@ test('normal fixed measurement reports exact operation and physical closure with
     { operation: 'measure', phase: 'START' }, { operation: 'measure', phase: 'CLOSED' },
   ]);
   assert.equal(f.reports[1].elapsedMs, 1000);
+  assert.equal(f.reports[0].timeoutMs, 60000);
+  assert.equal(f.reports[1].timeoutMs, 60000);
   assert.equal(f.reports[1].exitObserved, true);
   assert.equal(f.reports[1].exitCode, 0);
   assert.equal(f.reports[1].exitSignal, null);
@@ -259,6 +283,8 @@ test('normal fixed timeout preserves pre-stop exit and pipe state before a prove
   assert.equal(f.reports[1].childClosed, true);
   assert.equal(f.reports[1].stdoutClosed, true);
   assert.equal(f.reports[1].stderrClosed, true);
+  assert.equal(f.reports[1].elapsedMs, 60000);
+  assert.equal(f.reports[1].timeoutMs, 60000);
   assert.deepEqual(f.signals, ['SIGTERM']);
 });
 
@@ -301,4 +327,42 @@ test('early SDK workflow has an exact whole inverse and rejects missing changed 
     source.replace('          node scripts/reclaim-runner-android-sdk.mjs &&\n', '          node scripts/reclaim-runner-android-sdk.mjs --observe-raw &&\n'),
     source.replace(review.after, review.after + review.after),
   ]) assert.throws(() => projectSourceImpactWorkflowFull(changed));
+});
+
+test('existing statfs reports safe byte and inode counts before any SDK command and during RAW observation without changing returns', async () => {
+  for (const [statfsCounts, freeInodes, totalInodes] of [
+    [{ ffree: 8n, files: 20n }, 8, 20],
+    [undefined, null, null],
+    [{ ffree: -1n, files: 1n << 64n }, null, null],
+    [{ ffree: 0, files: 0 }, 0, 0],
+  ]) {
+    const f = fixture({ statfsCounts }), events = [];
+    const report = event => { events.push(event); f.calls.push(['report', event.phase]); };
+    const failure = Object.assign(new Error('fixed synthetic timeout'), { code: 'RUNNER_SDK_COMMAND_FAILED' });
+    await assert.rejects(reclaimRunnerAndroidSdk({ ...f.options, report,
+      command: async operation => {
+        assert.equal(operation, 'remove');
+        assert.equal(events.length, 1);
+        throw failure;
+      },
+    }), error => error === failure);
+    assert.deepEqual(events, [{
+      kind: 'RUNNER_STORAGE_OBSERVATION', phase: 'BEFORE_SDK',
+      availableBytes: 1024000, freeInodes, totalInodes,
+    }]);
+    assert.equal(f.calls.filter(([kind]) => kind === 'statfs').length, 1);
+    const raw = fixture({ statfsCounts }), rawEvents = [];
+    assert.deepEqual(await reclaimRunnerAndroidSdk({ ...raw.options, observeOnly: true,
+      report: event => rawEvents.push(event),
+    }), { kind: 'RUNNER_RAW_RESTORE_STORAGE', availableBytes: 1024000 });
+    assert.deepEqual(rawEvents, [{
+      kind: 'RUNNER_STORAGE_OBSERVATION', phase: 'BEFORE_RAW_RESTORE',
+      availableBytes: 1024000, freeInodes, totalInodes,
+    }]);
+    assert.equal(raw.calls.filter(([kind]) => kind === 'statfs').length, 1);
+    assert.equal(raw.calls.some(([, target]) => target === SDK), false);
+    assert.equal(raw.calls.some(([kind]) => kind === 'command'), false);
+    assert.equal(JSON.stringify(events.concat(rawEvents)).includes(SDK), false);
+    assert.equal(JSON.stringify(events.concat(rawEvents)).includes(WORKSPACE), false);
+  }
 });

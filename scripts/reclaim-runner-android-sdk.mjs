@@ -35,8 +35,11 @@ export async function runFixedSdkCommand(operation, {
     throw refused('RUNNER_SDK_COMMAND_REFUSED');
   }
   const [command, ...args] = COMMANDS[operation];
+  // Normal reclaim is one removal pass (120s + at most 4s stop proof), below
+  // the former two 60s passes with their separate stop proofs (at most 128s).
+  const timeoutMs = operation === 'remove' ? 120000 : 60000;
   const started = now();
-  report({ kind: 'RUNNER_SDK_COMMAND', operation, phase: 'START', timeoutMs: 60000 });
+  report({ kind: 'RUNNER_SDK_COMMAND', operation, phase: 'START', timeoutMs });
   let child;
   try {
     child = spawnImpl(command, args, {
@@ -45,7 +48,7 @@ export async function runFixedSdkCommand(operation, {
   } catch {
     const diagnostic = {
       kind: 'RUNNER_SDK_COMMAND', operation, phase: 'FAILED', failureReason: 'SPAWN_THROW',
-      elapsedMs: Math.max(0, Math.round(now() - started)), timeoutMs: 60000, timedOut: false,
+      elapsedMs: Math.max(0, Math.round(now() - started)), timeoutMs, timedOut: false,
       exitObserved: false, exitCode: null, exitSignal: null, childClosed: false,
       stdoutClosed: false, stderrClosed: false, stdoutBytes: 0, stderrBytes: 0,
       beforeStop: null, terminationConfirmed: true,
@@ -85,7 +88,7 @@ export async function runFixedSdkCommand(operation, {
   };
   let stopped = false;
   try {
-    const deadline = now() + 60000;
+    const deadline = now() + timeoutMs;
     while (!closed && !failed && now() < deadline) await delayImpl(20);
     const timedOut = !closed && !failed && now() >= deadline;
     failureReason ??= timedOut ? 'TIMEOUT' : !closed ? 'NOT_CLOSED'
@@ -109,7 +112,7 @@ export async function runFixedSdkCommand(operation, {
     if (!stopped) failureReason = 'STOP_UNPROVED';
     const diagnostic = {
       kind: 'RUNNER_SDK_COMMAND', operation, phase: failed ? 'FAILED' : 'CLOSED', failureReason,
-      elapsedMs: Math.max(0, Math.round(now() - started)), timeoutMs: 60000, timedOut,
+      elapsedMs: Math.max(0, Math.round(now() - started)), timeoutMs, timedOut,
       exitObserved, exitCode: Number.isInteger(exitCode) ? exitCode : null,
       exitSignal: typeof exitSignal === 'string' && /^SIG[A-Z0-9]{1,12}$/.test(exitSignal) ? exitSignal : null,
       childClosed: closed, stdoutClosed, stderrClosed, stdoutBytes, stderrBytes,
@@ -133,6 +136,14 @@ function availableBytes(stat) {
     throw refused('RUNNER_SDK_STORAGE_REFUSED');
   }
   return Number(value);
+}
+
+// Inode counters are observational only: unavailable/sentinel values remain null.
+function observedInodes(value) {
+  if (typeof value === 'bigint') {
+    return value >= 0n && value <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(value) : null;
+  }
+  return Number.isSafeInteger(value) && value >= 0 ? value : null;
 }
 
 async function absent(fileSystem) {
@@ -165,7 +176,12 @@ export async function reclaimRunnerAndroidSdk({
       || await fileSystem.realpath(workspace) !== workspace) {
     throw refused('RUNNER_SDK_WORKSPACE_REFUSED');
   }
-  const before = availableBytes(await fileSystem.statfs(workspace, { bigint: true }));
+  const beforeStat = await fileSystem.statfs(workspace, { bigint: true });
+  const before = availableBytes(beforeStat);
+  report({
+    kind: 'RUNNER_STORAGE_OBSERVATION', phase: observeOnly ? 'BEFORE_RAW_RESTORE' : 'BEFORE_SDK',
+    availableBytes: before, freeInodes: observedInodes(beforeStat.ffree), totalInodes: observedInodes(beforeStat.files),
+  });
   if (observeOnly) return { kind: 'RUNNER_RAW_RESTORE_STORAGE', availableBytes: before };
   const sdk = await absent(fileSystem);
   if (sdk === null) return {
@@ -176,11 +192,8 @@ export async function reclaimRunnerAndroidSdk({
       || await fileSystem.realpath(SDK) !== SDK) {
     throw refused('RUNNER_SDK_PATH_REFUSED');
   }
-  const measurement = await command('measure', { report });
-  if (measurement.terminationConfirmed !== true) throw refused('RUNNER_SDK_STOP_UNPROVED');
-  const match = /^(\d+)\s+\/usr\/local\/lib\/android\/sdk\n?$/.exec(measurement.stdout);
-  const allocatedBytes = match && Number(match[1]);
-  if (!Number.isSafeInteger(allocatedBytes) || allocatedBytes < 0) throw refused('RUNNER_SDK_MEASUREMENT_REFUSED');
+  // Allocation size is diagnostic only. Avoid a second full SDK traversal;
+  // retain both canonical/device/inode checks and measure actual free space.
   const current = await absent(fileSystem);
   if (!current || current.dev !== sdk.dev || current.ino !== sdk.ino
       || !current.isDirectory() || current.isSymbolicLink()
@@ -192,7 +205,7 @@ export async function reclaimRunnerAndroidSdk({
   if (await absent(fileSystem) !== null) throw refused('RUNNER_SDK_REMOVE_UNPROVED');
   const after = availableBytes(await fileSystem.statfs(workspace, { bigint: true }));
   return {
-    kind: 'RUNNER_UNUSED_ANDROID_SDK', status: 'REMOVED', allocatedBytes,
+    kind: 'RUNNER_UNUSED_ANDROID_SDK', status: 'REMOVED', allocatedBytes: null,
     availableBeforeBytes: before, availableAfterBytes: after, measuredChangeBytes: after - before,
   };
 }

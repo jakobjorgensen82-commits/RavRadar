@@ -5,7 +5,7 @@ import {fileURLToPath} from 'node:url';
 import {execFileSync} from 'node:child_process';
 import {projectSourceImpactWorkflowFull,SOURCE_IMPACT_FULL_WORKFLOW_ORIGIN,
   SOURCE_IMPACT_FULL_WORKFLOW_SHA256,SOURCE_IMPACT_FULL_STEP_CONDITION,SOURCE_IMPACT_CONTROL_TARGETS,
-  SOURCE_IMPACT_PR_READ_GRANT,inverseSourceImpactPrReadGrant}
+  SOURCE_IMPACT_PR_READ_GRANT,inverseSourceImpactPrReadGrant,inverseSourceImpactSdkEarlyLinux}
   from './lib/source-impact-workflow-review.mjs';
 import {verifyWorkflow,inverseSourceBeforePostgresWorkflow,inverseCandidatePublicSourceRunLine,
   CURRENT_JOB,AFTER_JOB,verifyReviewed90Workflow} from './national584-source-evidence.mjs';
@@ -29,12 +29,15 @@ function assertSourcePrDiscoveryReadGrant(value){
     ['permissions:\n  contents: read\n  actions: read\n  pull-requests: read\n']);
   assert.doesNotMatch(value,/^[ \t]+permissions:/m,'No job override may erase the inherited grant');
 }
-assert.equal(sha(source),SOURCE_IMPACT_PR_READ_GRANT.afterSha256);
+// Only the old grant oracle sees the exact SDK predecessor. The raw source
+// above/below still owns the real SDK/full projection and unknown mutations.
+const beforeSdkEarlyLinux=inverseSourceImpactSdkEarlyLinux(source);
+assert.equal(sha(beforeSdkEarlyLinux),SOURCE_IMPACT_PR_READ_GRANT.afterSha256);
 assertSourcePrDiscoveryReadGrant(source);
-const beforePrReadGrant=inverseSourceImpactPrReadGrant(source);
+const beforePrReadGrant=inverseSourceImpactPrReadGrant(beforeSdkEarlyLinux);
 assert.equal(sha(beforePrReadGrant),SOURCE_IMPACT_PR_READ_GRANT.beforeSha256);
 assert.equal(projectSourceImpactWorkflowFull(beforePrReadGrant),origin,'Exact old input remains admitted');
-assert.equal(inverseSourceImpactPrReadGrant(source.replaceAll('\n','\r\n')),beforePrReadGrant);passed++;
+assert.equal(inverseSourceImpactPrReadGrant(inverseSourceImpactSdkEarlyLinux(source.replaceAll('\n','\r\n'))),beforePrReadGrant);passed++;
 for(const changed of [source.replace('  pull-requests: read\n',''),
   source.replace('  pull-requests: read','  pull-requests: write'),
   source.replace('  pull-requests: read\n','  pull-requests: read\n  pull-requests: read\n'),
