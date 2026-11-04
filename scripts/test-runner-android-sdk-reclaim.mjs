@@ -368,3 +368,53 @@ test('existing statfs reports safe byte and inode counts before any SDK command 
     assert.equal(JSON.stringify(events.concat(rawEvents)).includes(WORKSPACE), false);
   }
 });
+
+
+test('capacity-first housekeeping keeps a verified SDK when measured headroom is ample', async () => {
+  const f = fixture({ statfsCounts: { bavail: 91089567744n, bsize: 1n, ffree: 18422396n } });
+  const result = await reclaimRunnerAndroidSdk(f.options);
+  assert.deepEqual(result, {
+    kind: 'RUNNER_UNUSED_ANDROID_SDK', status: 'RETAINED_SUFFICIENT_CAPACITY',
+    allocatedBytes: null, availableBeforeBytes: 91089567744,
+    availableAfterBytes: 91089567744, measuredChangeBytes: 0,
+    minimumRetainedFreeBytes: 68719476736, minimumRetainedFreeInodes: 1000000,
+    observedFreeInodes: 18422396,
+  });
+  assert.equal(f.calls.filter(([kind]) => kind === 'command').length, 0);
+  assert.equal(f.calls.filter(([kind]) => kind === 'statfs').length, 1);
+  assert.equal(f.calls.filter(([kind, target]) => kind === 'lstat' && target === SDK).length, 2);
+  assert.equal(f.calls.filter(([kind, target]) => kind === 'realpath' && target === SDK).length, 2);
+});
+
+test('capacity-first housekeeping uses fixed exact boundaries and preserves removal for low or unknown capacity', async () => {
+  const enough = fixture({ statfsCounts: { bavail: 68719476736n, bsize: 1n, ffree: 1000000n } });
+  assert.equal((await reclaimRunnerAndroidSdk(enough.options)).status, 'RETAINED_SUFFICIENT_CAPACITY');
+  assert.equal(enough.calls.some(([kind]) => kind === 'command'), false);
+  for (const statfsCounts of [
+    { bavail: 68719476735n, bsize: 1n, ffree: 1000000n },
+    { bavail: 68719476736n, bsize: 1n, ffree: 999999n },
+    { bavail: 68719476736n, bsize: 1n },
+    { bavail: 68719476736n, bsize: 1n, ffree: -1n },
+    { bavail: 68719476736n, bsize: 1n, ffree: 1n << 64n },
+  ]) {
+    const f = fixture({ statfsCounts });
+    assert.equal((await reclaimRunnerAndroidSdk(f.options)).status, 'REMOVED');
+    assert.deepEqual(f.calls.filter(([kind]) => kind === 'command'), [['command', 'remove']]);
+  }
+});
+
+test('capacity-first housekeeping cannot hide invalid SDK identity, failed removal or a RAW observation', async () => {
+  const ample = { bavail: 91089567744n, bsize: 1n, ffree: 18422396n };
+  for (const change of [{ link: true }, { redirect: true }, { otherDevice: true }, { changedIdentity: true }]) {
+    const f = fixture({ ...change, statfsCounts: ample });
+    await assert.rejects(reclaimRunnerAndroidSdk(f.options), { code: 'RUNNER_SDK_PATH_REFUSED' });
+    assert.equal(f.calls.some(([kind]) => kind === 'command'), false);
+  }
+  const low = fixture({ failedRemoval: true });
+  await assert.rejects(reclaimRunnerAndroidSdk(low.options));
+  const raw = fixture({ statfsCounts: ample });
+  assert.deepEqual(await reclaimRunnerAndroidSdk({ ...raw.options, observeOnly: true }),
+    { kind: 'RUNNER_RAW_RESTORE_STORAGE', availableBytes: 91089567744 });
+  assert.equal(raw.calls.some(([, target]) => target === SDK), false);
+  assert.equal(raw.calls.some(([kind]) => kind === 'command'), false);
+});

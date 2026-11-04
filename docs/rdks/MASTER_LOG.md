@@ -1,3 +1,15 @@
+## 4. november — diskoprydning efter målt behov, 4.0.597
+
+Den nye samlede kildekontrol stoppede den 4. november i sin indledende oprydning af runnerens forudinstallerede Android SDK. Før sletningen målte den 91.089.567.744 ledige byte og 18.422.396 ledige inoder. Den unødvendige sletning nåede sin faste grænse på 120 sekunder; proceslukningen blev derefter bevist. Det er en konstateret fejl i kontrollens diskoprydning, ikke bevis for fejl i databasegendannelse eller i den aktive vejrhentning.
+
+Den faste helper bevarer nu SDK-mappen, når der allerede er mindst 64 GiB ledigt og mindst 1.000.000 kendte ledige inoder. Den rapporterer ærligt RETAINED_SUFFICIENT_CAPACITY og en målt ændring på nul; den påstår ikke, at noget er slettet. Vært, arbejdsmappe, kanonisk SDK-sti, filsystem og mappeidentitet kontrolleres fortsat, også i denne gren. Den faste tærskel er kun et valg om diskoprydning; den er hverken en reservation af plads eller bevis for hele vejrhentningens kapacitet.
+
+Ved mindre plads, for få inoder eller ukendte inodetal bruges den hidtidige, præcist afgrænsede sletning. Den uændrede grænse er 120 sekunder plus højst fire sekunder til fysisk proceslukning. En fejlet eller ubevist sletning stopper stadig forløbet. Manglende SDK rapporteres fortsat som ABSENT. Den skrivefri måling før RAW-genlæsning besøger eller sletter fortsat ikke SDK-mappen. Ingen caller-valgte stier, nye indstillinger, udvidede tidsgrænser eller svækkede lukningskrav tilføjes.
+
+Den målrettede normale helperprøve består lokalt med 22 af 22 prøver. De nye tilfælde omfatter den faktisk observerede ledige kapacitet, de præcise tærskler, ukendte tal og afvisning af ændret sti, link, filsystem eller mappeidentitet. De eksisterende normale workflowkald kræver kun en vellykket afslutning, så den nye ærlige status kræver ingen workflowændring. De to produktfiler og dokumentationen er forberedt til ny præcis kildekontrol; lokal prøve og denne dokumentation er ikke bevis for bestået Linux-kontrol, installeret kode eller ny offentlig prognose.
+
+Se håndbog 89.308. Kun den faste SDK-helper, dens normale målprøve og dokumentation/statisk håndbogsseed ændres. Alle øvrige kandidatbytes bevares. Ingen ny version, modelbinding, migration, vejrhentning eller produktionsaktivering. Rigtig backup og Free-klargøring er fortsat åbne; Pro beholdes.
+
 ## 4. november — faktisk hosted syntetisk standardrestore, 4.0.597
 
 Den normale syntetiske Supabase-standardprøve er faktisk bestået på Linux gennem det eksisterende workflow og CLI 2.117.0. Fem normale dumps er gendannet i et nyt eget projekt; UTF-8, store tal/decimaler, metadata, roller, migrationshistorik og nyt passwordlogin med samme testpassword er verificeret. De syv Auth-forløb har fem forventede HTTP 200 og to forventede HTTP 400-afslag. Alle 81 processer afsluttede med exit 0 og lukket procesgruppe; egne Dockerressourcer er genlæst som lukkede.

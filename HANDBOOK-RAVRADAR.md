@@ -1,3 +1,29 @@
+## 89.308 Runnerens diskoprydning afhænger af målt behov
+
+Unødvendig sletning af et forudinstalleret Android SDK må ikke stoppe en kildekontrol med rigelig ledig plads. Sikker identitetskontrol og det eksisterende afgrænsede oprydningsforløb bevares.
+
+<a id="runner-sdk-capacity-first-2026-11-04"></a>
+
+### Hvorfor kildekontrollen stoppede
+
+Den nye samlede kildekontrol stoppede den 4. november i sin indledende oprydning af runnerens forudinstallerede Android SDK. Før sletningen målte den 91.089.567.744 ledige byte og 18.422.396 ledige inoder. Den unødvendige sletning nåede sin faste grænse på 120 sekunder; proceslukningen blev derefter bevist. Det er en konstateret fejl i kontrollens diskoprydning, ikke bevis for fejl i databasegendannelse eller i den aktive vejrhentning.
+
+### Mål kapaciteten før valgfri oprydning
+
+Den faste helper bevarer nu SDK-mappen, når der allerede er mindst 64 GiB ledigt og mindst 1.000.000 kendte ledige inoder. Den rapporterer ærligt RETAINED_SUFFICIENT_CAPACITY og en målt ændring på nul; den påstår ikke, at noget er slettet. Vært, arbejdsmappe, kanonisk SDK-sti, filsystem og mappeidentitet kontrolleres fortsat, også i denne gren. Den faste tærskel er kun et valg om diskoprydning; den er hverken en reservation af plads eller bevis for hele vejrhentningens kapacitet.
+
+### Lav eller ukendt plads bruger det eksisterende sikre forløb
+
+Ved mindre plads, for få inoder eller ukendte inodetal bruges den hidtidige, præcist afgrænsede sletning. Den uændrede grænse er 120 sekunder plus højst fire sekunder til fysisk proceslukning. En fejlet eller ubevist sletning stopper stadig forløbet. Manglende SDK rapporteres fortsat som ABSENT. Den skrivefri måling før RAW-genlæsning besøger eller sletter fortsat ikke SDK-mappen. Ingen caller-valgte stier, nye indstillinger, udvidede tidsgrænser eller svækkede lukningskrav tilføjes.
+
+### Afprøvning og leveringsstatus
+
+Den målrettede normale helperprøve består lokalt med 22 af 22 prøver. De nye tilfælde omfatter den faktisk observerede ledige kapacitet, de præcise tærskler, ukendte tal og afvisning af ændret sti, link, filsystem eller mappeidentitet. De eksisterende normale workflowkald kræver kun en vellykket afslutning, så den nye ærlige status kræver ingen workflowændring. De to produktfiler og dokumentationen er forberedt til ny præcis kildekontrol; lokal prøve og denne dokumentation er ikke bevis for bestået Linux-kontrol, installeret kode eller ny offentlig prognose.
+
+### Tidligere leverancer og åbne mål bevares
+
+Rettelsen bygger på den samlede assistent-/konto-, kontrolprofil- og syntetiske backupkandidat. Dens øvrige gennemgåede bytes og tidligere dokumentation bevares. Modelversion 4.0.597, bindingsdata, alle udstedte migrationer, scoreformel, kildeprioritet, administratorpunkter og geometri ændres ikke. Der køres ingen ny restore- eller fuld lokal kildekontrol alene for dokumentationen. Rigtig backup, oprydning i administrationshistorik, målt Free-kapacitet og revisionens resterende integration har fortsat deres egne åbne krav; Supabase Pro beholdes.
+
 ## 89.307 Syntetisk standardgendannelse er afprøvet på Linux
 
 Den normale standardprøve har nu gendannet fem Supabase-dumps på Linux og verificeret et nyt Auth-login med det oprindelige testpassword. Den bruger kun kunstige data; rigtig RavRadar-backup, arkivgendannelse og gratis drift har fortsat egne åbne krav.

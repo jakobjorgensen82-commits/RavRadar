@@ -5,6 +5,10 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 
 const SDK = '/usr/local/lib/android/sdk';
+// Fixed housekeeping trigger, not a provider/cache/artifact budget. With ample
+// measured space/inodes, leave the unused SDK intact rather than deleting it.
+const RECLAIM_BELOW_BYTES = 64 * 1024 ** 3;
+const RECLAIM_BELOW_FREE_INODES = 1000000;
 const CHILD_ENV = Object.freeze({ PATH: '/usr/bin:/bin', LANG: 'C', LC_ALL: 'C' });
 const COMMANDS = Object.freeze({
   measure: Object.freeze(['/usr/bin/du', '-s', '-x', '--block-size=1', '--', SDK]),
@@ -199,6 +203,16 @@ export async function reclaimRunnerAndroidSdk({
       || !current.isDirectory() || current.isSymbolicLink()
       || await fileSystem.realpath(SDK) !== SDK) {
     throw refused('RUNNER_SDK_PATH_REFUSED');
+  }
+  const freeInodes = observedInodes(beforeStat.ffree);
+  if (before >= RECLAIM_BELOW_BYTES && freeInodes !== null
+      && freeInodes >= RECLAIM_BELOW_FREE_INODES) {
+    return {
+      kind: 'RUNNER_UNUSED_ANDROID_SDK', status: 'RETAINED_SUFFICIENT_CAPACITY',
+      allocatedBytes: null, availableBeforeBytes: before, availableAfterBytes: before,
+      measuredChangeBytes: 0, minimumRetainedFreeBytes: RECLAIM_BELOW_BYTES,
+      minimumRetainedFreeInodes: RECLAIM_BELOW_FREE_INODES, observedFreeInodes: freeInodes,
+    };
   }
   const removed = await command('remove', { report });
   if (removed.terminationConfirmed !== true) throw refused('RUNNER_SDK_STOP_UNPROVED');
