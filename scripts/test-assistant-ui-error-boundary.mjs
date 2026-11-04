@@ -21,12 +21,16 @@ const assistant = await import(`../js/services/rav-assistant.js?v=${version}`);
 const i18n = await import(`../js/i18n.js?v=${version}`);
 const data = await import(`../js/services/data-service.js?v=${version}`);
 const app = await fs.readFile(new URL('../app.js', import.meta.url), 'utf8');
-const detailStart = app.indexOf('function ensureConditionDetails(');
+const mapFrameStart = app.indexOf('function mapFrame()');
+const mapFrameEnd = app.indexOf('function panelFrame()', mapFrameStart);
+const detailStart = app.indexOf('function ensureFullEvidence(');
 const detailEnd = app.indexOf('function nextConditionRuntimeGateAt(', detailStart);
 const assistantStart = app.indexOf('let assistantTopicState = null;');
 const assistantEnd = app.indexOf('const quickBox=', assistantStart);
-assert.ok(detailStart >= 0 && detailEnd > detailStart && assistantStart >= 0 && assistantEnd > assistantStart);
-const actualUi = app.slice(detailStart, detailEnd) + app.slice(assistantStart, assistantEnd);
+assert.ok(mapFrameStart >= 0 && mapFrameEnd > mapFrameStart && detailStart >= 0
+  && detailEnd > detailStart && assistantStart >= 0 && assistantEnd > assistantStart);
+const actualUi = app.slice(mapFrameStart, mapFrameEnd) + app.slice(detailStart, detailEnd)
+  + app.slice(assistantStart, assistantEnd);
 for (const definition of ['let assistantTurn = 0;', 'function resetAssistantTopic()',
   'function assistantTopicFrame()', 'function sameAssistantTopicFrame(', 'function assistantContext(){']) {
   assert.ok(actualUi.includes(definition), `Actual UI extraction must include its lexical dependency: ${definition}`);
@@ -49,6 +53,7 @@ function fixture(locale, { manifest, load = data.loadConditionDetails, now } = {
   const context = vm.createContext({
     state, assistantDialog, activeManifest: manifest, runtimeGeneration: 0, conditionDetailsReady: false,
     conditionDetailsPromise: null, pendingZoneDetails: new Map(),
+    activeLandingView: null, mapForecast: { committed: null },
     document: {
       querySelector(selector) {
         if (selector === '#assistantForm') return assistantForm;
@@ -71,6 +76,7 @@ function fixture(locale, { manifest, load = data.loadConditionDetails, now } = {
       asked.push(question);
       return assistant.askRavRadar(question, context, { language: locale, now, localOnly: true });
     },
+    classifyRavQuestion: assistant.classifyRavQuestion,
     assistantTopicForQuestion: assistant.assistantTopicForQuestion,
     assistantLocalFollowupAnswer: assistant.assistantLocalFollowupAnswer,
     ravQuestionNeedsConditionDetails: (question, context) => {
