@@ -53,6 +53,7 @@ jobs:
         if: ${{ steps.source-content.outputs.selection != 'TARGETED' }}
         timeout-minutes: 3
         run: >-
+          node scripts/test-production-hour-lock-4.0.236.mjs &&
           node scripts/reclaim-runner-android-sdk.mjs &&
           node scripts/test-post-cutover-migration-routing.mjs &&
           node --test scripts/test-owned-pack-close-probe.mjs && node

@@ -7,7 +7,7 @@ import crypto from 'node:crypto';
 import { reclaimRunnerAndroidSdk, runFixedSdkCommand } from './reclaim-runner-android-sdk.mjs';
 import {
   SOURCE_IMPACT_SDK_EARLY_LINUX_REVIEW, SOURCE_IMPACT_FULL_WORKFLOW_SHA256,
-  inverseSourceImpactSdkEarlyLinux, projectSourceImpactWorkflowFull,
+  inverseSourceImpactSdkEarlyLinux, projectSourceImpactWorkflowFull, inverseSourceImpactHourEarlyLinux,
 } from './lib/source-impact-workflow-review.mjs';
 
 const SDK = '/usr/local/lib/android/sdk';
@@ -306,14 +306,16 @@ test('early Linux source step runs the actual fixed SDK caller before its unchan
   assert(begin > 0);
   const step = source.slice(begin, source.indexOf('\n      - ', begin + 1));
   assert.match(step, /timeout-minutes: 3\n/);
-  assert.match(step, /run: >-\n          node scripts\/reclaim-runner-android-sdk\.mjs &&\n          node scripts\/test-post-cutover-migration-routing\.mjs &&/);
+  assert.match(step, /run: >-\n          node scripts\/test-production-hour-lock-4\.0\.236\.mjs &&\n          node scripts\/reclaim-runner-android-sdk\.mjs &&\n          node scripts\/test-post-cutover-migration-routing\.mjs &&/);
   assert.equal(source.split('node scripts/reclaim-runner-android-sdk.mjs &&\n').length, 2);
   assert.equal((source.match(/^      - (?:name|uses):/gm) ?? []).length, 21);
   assert.match(step, /steps\.source-content\.outputs\.selection != 'TARGETED'/);
 });
 
 test('early SDK workflow has an exact whole inverse and rejects missing changed or duplicate reviewed hunks', async () => {
-  const source = await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml', import.meta.url), 'utf8');
+  const rawSource = await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml', import.meta.url), 'utf8');
+  const source = inverseSourceImpactHourEarlyLinux(rawSource);
+  assert.equal(projectSourceImpactWorkflowFull(rawSource), projectSourceImpactWorkflowFull(source));
   const review = SOURCE_IMPACT_SDK_EARLY_LINUX_REVIEW;
   const sha = value => crypto.createHash('sha256').update(value).digest('hex');
   const before = inverseSourceImpactSdkEarlyLinux(source);

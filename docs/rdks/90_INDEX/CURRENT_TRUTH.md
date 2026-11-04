@@ -1,3 +1,13 @@
+## 4. november — samme H0-format i den normale vejrproces
+
+Vejrhentning 255 stoppede efter leverandørarbejdet, fordi workflowet gav npm-vejrprocessen H0 med Z, mens den uændrede oprindelseskontrol kræver samme hele UTC-time med .000Z. Den præcise kalder normaliserer nu kun den indre proces gennem den eksisterende resolver og beviser både samme tekstlige time og tidsstempel. Globalt H0, låse, originalbindinger og admissions ændres ikke.
+
+Den lokale time-lock-prøve og helinverse består med deres dokumenterede platformsafgrænsning: 54 beståede og én Linux-skip blandt 55 inverseprøver; faktisk Bash/npm og den rene efterfølgende beskedencoding skal kvalificeres på præcis slut-CI. Ingen fuld suite eller ny SQL/modelversion er kørt/udstedt lokalt. SDK-, backup- og alle tidligere håndbogsafsnit bevares; se 89.304.
+
+Time-lock-prøven var ikke automatisk valgt af sourcepakkens kommandooversigt. Derfor kalder det eksisterende CI-trin 6 nu den præcise scripts/test-production-hour-lock-4.0.236.mjs først, før den normale SDK-kalder og den øvrige korte matrix. Trinnets navn, tre minutter og de 21 deklarerede trin bevares. En ny præcis helinverse fører kun denne kaldertilføjelse tilbage til det allerede gennemgåede SDK-workflow; de direkte SDK-testkaldere bruger samme normale inverse før deres gamle forventninger og kontrollerer fortsat den rå aktuelle rækkefølge. De 37 normale source-impact-assertioner og de to berørte statiske SDK-workflowcases er bestået lokalt uden SDK-kørsel. Faktisk Bash/npm og de endelige bytes kræver fortsat denne valgte Linux-CI.
+
+255 udførte normal RAW-save, men den senere komponent-save gav CACHE_MISS / WEATHER_PACK_SIZE_LIMIT og saved=false. Ingen ny holdbar 597-B/S eller Pages-generation blev skabt; CP/OM-genbrug fra denne kørsel og providerfri checkpointgenoptagelse må ikke påstås. Dette særskilte bevarelsesled er ikke rettet ved tidsformatændringen. Normal præcis kildekontrol, sikker levering og faktisk offentlig effekt mangler fortsat. Version, C/I/T/F/P, 73 migrationer, package, kilder og geometri bevares.
+
 ## 4. november — privat backupport over den aktuelle SDK- og workflowkandidat
 
 Den separate backup- og målerpakke er nu lokalt sammensat med præcis PR810-kilde 45594e185f087ff02c8e72649d02cb45cf79cf16. Alle 21 gennemgåede produkt- og testejere bevarer deres tidligere efterbytes. PR810s SDK-, statfs-, én-pass- og direkte workflowkalderrettelser bevares; gamle dokumentbaser må ikke overskrive dem.

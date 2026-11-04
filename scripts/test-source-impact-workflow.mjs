@@ -5,7 +5,8 @@ import {fileURLToPath} from 'node:url';
 import {execFileSync} from 'node:child_process';
 import {projectSourceImpactWorkflowFull,SOURCE_IMPACT_FULL_WORKFLOW_ORIGIN,
   SOURCE_IMPACT_FULL_WORKFLOW_SHA256,SOURCE_IMPACT_FULL_STEP_CONDITION,SOURCE_IMPACT_CONTROL_TARGETS,
-  SOURCE_IMPACT_PR_READ_GRANT,inverseSourceImpactPrReadGrant,inverseSourceImpactSdkEarlyLinux}
+  SOURCE_IMPACT_PR_READ_GRANT,inverseSourceImpactPrReadGrant,inverseSourceImpactSdkEarlyLinux,
+  SOURCE_IMPACT_HOUR_EARLY_LINUX_REVIEW,inverseSourceImpactHourEarlyLinux}
   from './lib/source-impact-workflow-review.mjs';
 import {verifyWorkflow,inverseSourceBeforePostgresWorkflow,inverseCandidatePublicSourceRunLine,
   CURRENT_JOB,AFTER_JOB,verifyReviewed90Workflow} from './national584-source-evidence.mjs';
@@ -31,13 +32,14 @@ function assertSourcePrDiscoveryReadGrant(value){
 }
 // Only the old grant oracle sees the exact SDK predecessor. The raw source
 // above/below still owns the real SDK/full projection and unknown mutations.
-const beforeSdkEarlyLinux=inverseSourceImpactSdkEarlyLinux(source);
+const beforeHourEarlyLinux=inverseSourceImpactHourEarlyLinux(source);
+const beforeSdkEarlyLinux=inverseSourceImpactSdkEarlyLinux(beforeHourEarlyLinux);
 assert.equal(sha(beforeSdkEarlyLinux),SOURCE_IMPACT_PR_READ_GRANT.afterSha256);
 assertSourcePrDiscoveryReadGrant(source);
 const beforePrReadGrant=inverseSourceImpactPrReadGrant(beforeSdkEarlyLinux);
 assert.equal(sha(beforePrReadGrant),SOURCE_IMPACT_PR_READ_GRANT.beforeSha256);
 assert.equal(projectSourceImpactWorkflowFull(beforePrReadGrant),origin,'Exact old input remains admitted');
-assert.equal(inverseSourceImpactPrReadGrant(inverseSourceImpactSdkEarlyLinux(source.replaceAll('\n','\r\n'))),beforePrReadGrant);passed++;
+assert.equal(inverseSourceImpactPrReadGrant(inverseSourceImpactSdkEarlyLinux(inverseSourceImpactHourEarlyLinux(source.replaceAll('\n','\r\n')))),beforePrReadGrant);passed++;
 for(const changed of [source.replace('  pull-requests: read\n',''),
   source.replace('  pull-requests: read','  pull-requests: write'),
   source.replace('  pull-requests: read\n','  pull-requests: read\n  pull-requests: read\n'),
@@ -47,6 +49,32 @@ for(const changed of [source.replace('  pull-requests: read\n',''),
   if(sha(changed)!==SOURCE_IMPACT_PR_READ_GRANT.beforeSha256){
     assert.throws(()=>projectSourceImpactWorkflowFull(changed));assert.throws(()=>verifyWorkflow(changed));
   }else assert.equal(projectSourceImpactWorkflowFull(changed),origin);
+  passed++;
+}
+
+// The new raw caller runs the hour-format target before SDK and every matrix
+// step; only the exact outer inverse exposes the unchanged65cbe predecessor.
+const hourReview=SOURCE_IMPACT_HOUR_EARLY_LINUX_REVIEW;
+assert.equal(Buffer.byteLength(source),hourReview.afterBytes);assert.equal(sha(source),hourReview.afterSha256);
+assert.equal(sha(beforeHourEarlyLinux),hourReview.beforeSha256);
+assert.equal(beforeHourEarlyLinux.replace(hourReview.before,hourReview.after),source);
+assert.equal(projectSourceImpactWorkflowFull(beforeHourEarlyLinux),origin);
+assert.equal(inverseSourceImpactHourEarlyLinux(beforeHourEarlyLinux),beforeHourEarlyLinux);
+const earlyStart=source.indexOf('      - name: Diagnose normal pack-reader closure on artificial data only\n');
+const earlyEnd=source.indexOf('\n      - ',earlyStart+1),earlyStep=source.slice(earlyStart,earlyEnd);
+assert(earlyStart>=0&&earlyEnd>earlyStart);
+assert(earlyStep.includes('        timeout-minutes: 3\n'));
+assert(earlyStep.includes('        run: >-\n'+hourReview.after));
+assert.equal(source.split('node scripts/test-production-hour-lock-4.0.236.mjs &&\n').length,2);
+const matrixStart=source.indexOf('      - name: Validate source contracts and release governance\n');
+assert(matrixStart>earlyStart);
+passed++;
+for(const changed of [source.replace(hourReview.after,hourReview.before),
+  source.replace(hourReview.after,hourReview.after.replace('4.0.236.mjs','4.0.236.mjs --unknown')),
+  source.replace(hourReview.after,hourReview.after+hourReview.after),
+  source+'\n# UNREVIEWED_HOUR_TARGET_CI\n']){
+  if(changed===beforeHourEarlyLinux){assert.equal(projectSourceImpactWorkflowFull(changed),origin);}
+  else {assert.equal(inverseSourceImpactHourEarlyLinux(changed),changed);assert.throws(()=>projectSourceImpactWorkflowFull(changed));assert.throws(()=>verifyWorkflow(changed));}
   passed++;
 }
 

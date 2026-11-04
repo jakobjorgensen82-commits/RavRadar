@@ -2840,7 +2840,22 @@ jobs:
         # headroom. Short confirmation mode bounds new supplier work but
         # still rebuilds the real score/public artifact and runs every seal.
         timeout-minutes: 80
-        run: npm run update:weather
+        shell: bash
+        run: |
+          set -euo pipefail
+          canonical_target="$(node --input-type=module <<'NODE_WEATHER_TARGET'
+          import assert from 'node:assert/strict';
+          import { resolveProductionReferenceTime } from './scripts/lib/production-reference-time.mjs';
+          const supplied = process.env.RAVRADAR_PRODUCTION_TARGET_HOUR;
+          assert.equal(typeof supplied, 'string', 'WEATHER_PROCESS_TARGET_REQUIRED');
+          assert.match(supplied, /^\d{4}-\d{2}-\d{2}T\d{2}:00:00(?:\.000)?Z$/, 'WEATHER_PROCESS_TARGET_HOUR');
+          const canonical = resolveProductionReferenceTime(supplied);
+          assert.equal(canonical.replace('.000Z', 'Z'), supplied.replace('.000Z', 'Z'), 'WEATHER_PROCESS_TARGET_CHANGED');
+          assert.equal(Date.parse(canonical), Date.parse(supplied), 'WEATHER_PROCESS_TARGET_CHANGED');
+          process.stdout.write(canonical);
+          NODE_WEATHER_TARGET
+          )"
+          RAVRADAR_PRODUCTION_TARGET_HOUR="$canonical_target" npm run update:weather
         env:
           RAVRADAR_R2_ACCOUNT_ID: ${{ (inputs.weather_state_epoch_bootstrap || inputs.current_family_cold_start) && secrets.RAVRADAR_R2_ACCOUNT_ID || '' }}
           RAVRADAR_R2_ACCESS_KEY_ID: ${{ (inputs.weather_state_epoch_bootstrap || inputs.current_family_cold_start) && secrets.RAVRADAR_R2_ACCESS_KEY_ID || '' }}
