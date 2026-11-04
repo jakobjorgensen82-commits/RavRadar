@@ -433,7 +433,7 @@ test('database-query HTTP real CLI emits only fixed status and privacy stages af
   assert(from>=0&&to>from);
   const actualFixture=testSource.slice(from,to);
   for(const [status,kind,expectedStatus,expectedStage] of [
-    [200,'ok',0,'VERIFIED'],[201,'ok',0,'VERIFIED'],[201,'privacy',1,'CURRENT_METADATA'],
+    [200,'private-root',1,null],[200,'ok',0,'VERIFIED'],[201,'ok',0,'VERIFIED'],[201,'privacy',1,'CURRENT_METADATA'],
     [201,'envelope',1,'RESPONSE_JSON'],[401,'ok',1,'HTTP_STATUS'],[201,'archive-failure',1,'VERIFIED'],
   ]){
     const dir=await host(t),observation=path.join(dir,'cli-safe-observation.json');
@@ -450,18 +450,22 @@ test('database-query HTTP real CLI emits only fixed status and privacy stages af
     ].join('\n');
     const f=fixture(),allowed=new Set(['PATH','SYSTEMROOT','WINDIR','COMSPEC','PATHEXT','HOME','USERPROFILE','LANG','LC_ALL']);
     const env={...Object.fromEntries(Object.entries(process.env).filter(([key])=>allowed.has(key.toUpperCase()))),
-      ...f.env,RUNNER_TEMP:os.tmpdir(),TMP:os.tmpdir(),TEMP:os.tmpdir()};
+      ...f.env,RUNNER_TEMP:kind==='private-root'?path.join(dir,'other-runner-root'):dir,TMP:os.tmpdir(),TEMP:os.tmpdir()};
+    assert.notEqual(path.resolve(env.RUNNER_TEMP),path.resolve(env.TEMP),'Private fixture runner and system temporary roots must differ');
     const result=spawnSync(process.execPath,['--import','data:text/javascript,'+encodeURIComponent(support),
       path.resolve('scripts/admin-document-history-maintenance.mjs'),'--maintain','--workdir',path.join(dir,'working'),
       '--confirm',maintainConfirm.confirmation,'--limit','25'],{env,encoding:'utf8',timeout:15000,maxBuffer:65536,windowsHide:true});
     assert.equal(result.error,undefined);assert.equal(result.signal,null);assert.equal(result.status,expectedStatus,result.stderr);
     const record=JSON.parse((expectedStatus?result.stderr:result.stdout).trim());
     assert.equal(record.privacyStage,expectedStage);
-    assert.equal(record.privacyHttpStatus,status);
+    assert.equal(record.privacyHttpStatus,kind==='private-root'?null:status);
     assert.equal(record.httpStatus,undefined,'Metadata201 must never masquerade as an operation failure HTTPstatus');
     if(expectedStatus){
       const observed=JSON.parse(await fs.readFile(observation,'utf8'));
-      if(kind==='archive-failure'){
+      if(kind==='private-root'){
+        assert.equal(record.code,'PRIVATE_TEMP_DIRECTORY_REQUIRED');
+        assert.equal(observed.calls,0);assert.equal(observed.mutations,0);
+      }else if(kind==='archive-failure'){
         assert.equal(record.code,'WRITE_OUTCOME_RESOLVED_STOPPED');
         assert.equal(record.operation.writeOutcome,'IMMUTABLE_ARCHIVE_OBJECT_PRESENT_VERIFIED');
         assert.equal(observed.mutations,1,'Exactly one synthetic immutable upload precedes the resolved-stop');
