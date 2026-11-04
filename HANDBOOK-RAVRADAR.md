@@ -106,6 +106,76 @@ Den tidligere PLAIN-læserbro fra PR #803 er offentligt leveret. Den kompakte ka
 
 Kandidaten bruger det eksisterende versionsfelt 4.0.594 og de gældende score-, kilde- og modelbindinger. Den ændrer ingen migrations-SQL. SOURCE-revision, statistik og automatisk sletning har særskilte leveringsforløb.
 
+## 89.300 Privat databasebackup før gratis drift
+
+Runtimekontrollen i eksporten bruger samme procesobjekt til både platform og Node-version. Standardkaldet bruger den faktiske vært og kræver fortsat Linux og Node 24 eller nyere før filer eller CLI. Syntetiske transportprøver beskriver deres Node 24-miljø eksplicit; de er ikke bevis for faktisk hosted CLI-/databaseeksekvering. To nye runtimecases og de 109 tidligere backupcases består lokalt. De særskilte Linux-, Auth-, eksport-, restore- og Free-gates skal fortsat bestå.
+
+<a id="supabase-private-backup-free-readiness-2026-11-02"></a>
+
+Kort fortalt: En krypteret eksport, som kan genfindes og verificeres, er ikke i sig selv en afprøvet databasegendannelse eller grundlag for at opsige Pro.
+
+### Manuel normal vej
+
+Den særskilte backupkalder er manuel og bruger bucket-readonly som skrivefri standard. Capture og eventuel bucketoprettelse er særskilte, udtrykkelige valg på præcis kvalificeret main. GitHubs midlertidige Linux-runner bruger Node 24, fast Supabase CLI 2.117.0 og eksisterende adgange; der tilføjes ingen nøgle, tjeneste eller plan. Den eksisterende vejrkø holdes yderst og turlagerkøen inderst. Operationen har 20 minutter og jobbet 30 minutter inklusive klargøring. Ukendt udfald giver stop uden automatisk gentagelse.
+
+### Fem beskyttede filer
+
+Den normale eksport omfatter roles.sql, schema.sql, data.sql, history-schema.sql og history-data.sql. Hver fil komprimeres og krypteres med særskilt databaseformål gennem eksisterende HKDF/AES-GCM. Eksakte SHA-256-værdier, autentificeret kontekst og samlet filgruppe kontrolleres ved genlæsning fra den særskilte private EU-bucket ravradar-supabase-backup. Vejrets originale B/S-pakker er ikke en hel databasebackup.
+
+### Genfinding og eksplicit materialisering
+
+En central privat locator eller DB-uafhængig R2-genfinding med eksplicit indeks-SHA kan vælge det autentificerede arkiv. Genfinding kræver stadig den bevarede dekrypteringskontekst og eksisterende nøgle. Normal verifikation og bootstrap skriver ingen SQL-filer. Kun arkivcontrollerens særskilte, eksplicitte materialize kan efter kontrol af alle fem GCM/SHA-beviser skabe de præcise SQL-bytes i et nyt privat, ejet RUNNER_TEMP-mål. Det udfører ikke SQL og gendanner ikke en produktionsdatabase.
+
+### Klargjort adgang og særskilt metadatarettelse
+
+Cloudflare-adgangen til administrationsarkivet er klargjort. Den normale kontrol nåede derefter bucketegenskaberne og stoppede på R2_BUCKET_PROPERTIES; diskrettelsens 808-kandidat omfatter den præcise korrektion af dette metadataformat. Det gamle HTTP 403 beskriver derfor ikke det aktuelle stop. Den særskilte backupbucket er ikke derved oprettet eller verificeret, og dens faktiske adgang, eksport og arkiv er fortsat ubekræftede.
+
+Backuphjælperens separate formatrettelse tillader kun, at jurisdiction og lagerklasse mangler i liste- og oprettelsessvar. Et tilstedeværende forkert eller null felt afvises stadig, og det præcise backupbucketnavn kræves. En frisk fuld detailaflæsning skal fortsat bevise EU, Standard, deaktiveret r2.dev og ingen egne domæner, før resultatet er VERIFIED. Der er ingen import af administrationsbucketens politik, nye credentials eller automatisk gentagelse.
+
+De egne målprøver af denne korrektion er lokal, syntetisk evidens. De erstatter ikke faktisk backupbucketadgang, eksakt kildekvalifikation, autentificeret arkiv, kompatibel Auth-/datagendannelse eller FreeReady. Dokumentoprydningen i 89.298 beholder sine særskilte bevaringsgates; fuld database-/Authbackup er en gate før Pro-opsigelse og må ikke opfindes som en ekstra gate for den allerede afgrænsede tredokumentoprydning.
+
+### Gates før gratis drift
+
+De fem separate dumps er ikke ét atomisk databasesnapshot. Faktisk kompatibel Auth-, schema- og datarestore, anti-genoplivning efter sletning, egne managed-DDL, nødvendige projektindstillinger og Storage-objektbytes er fortsat åbne. Det samme gælder uafhængig nøglerecovery og målt hosted eksport/genlæsning. Cloudflare-adgangen er klargjort; den normale dokumentarkivkontrol nåede derefter bucketegenskaberne og stoppede på det metadataformat, som 808-kandidaten retter. Den særskilte backupbucket og dens faktiske adgang er fortsat ubekræftede. FreeReady og Pro-opsigelse kræver disse faktiske beviser; hemmelighedsnavnes tilstedeværelse er ikke et forbindelsesbevis.
+
+En varig plan for databasebackup med fastlagt frekvens, retention og uafhængig nøglerecovery er fortsat åben. Før selvstændig Free-drift eller Pro-opsigelse skal planen kunne drives og gendannelsen verificeres uden PC/Codex; én manuel backup er ikke tilstrækkelig.
+
+### Særskilt syntetisk genopretningsprøve
+
+En særskilt manuel Linuxprøve er lokalt forberedt med to efterfølgende, syntetiske Supabase-projekter. Den bruger fem normale CLI-dumps, en frisk lokal database og et nyt Auth-login efter gendannelse. Den bruger ingen produktionsadgange og ændrer ikke de normale PostgreSQL-gates. De oprindelige fem grænseprøver er bevaret og suppleret med målrettede arkiv-/strøm-/isolationsprøver. Faktisk Linux-, Docker-, Auth- og genopretningskørsel er endnu ikke udført og beviser derfor ikke projektets backup.
+
+### Udtrykkelig arkivgren i samme standardprøve
+
+Den lokale kandidat har nu en arkivgren i det eksisterende restoreworkflow og den eksisterende standardkalder. Syntetisk prøve er fortsat standard. Den og den almindelige sourcegate bruger egne kunstige filer og læser intet rigtigt arkiv. Kun restore_mode=archive med eksakt autentificeret indeks-SHA vælger den nye gren på kvalificeret, genlæst aktuel main.
+
+Den samme runSupabaseDatabaseArchive materialiserer først de fem GCM-/SHA-verificerede filer. Derefter bruges samme startProject, ownedContainer, localUrl, psql og stopProject som standardprøven. Arkivet beholder sine oprindelige filnavne. Materialisering alene er stadig ikke udført SQL.
+
+Kun et nyt lokalt B-projekt startes. Dets ejede Dockerbridge skal være intern og faktisk vise Internal=true før containerstart; hver container skal ligge på netop den ene bridge. Docker/CLI/psql får et særskilt, rent miljø og alene det lokale projekts forbindelsesoplysninger. Master/R2-adgang når kun arkivlæseren. Produktions-DB-password og øvrige produktionstokens videregives ikke til børnene. Vejrkøen holdes yderst og turlagerkøen inderst.
+
+De originale SQL-filer strømmer i højst 64 KiB ad gangen med backpressure og samme SQL-rækkefølge som den tidligere prøve. Byteantal, fuld SHA, filidentitet og privat filsti kontrolleres igen. Den eksisterende enkelttransaktion og ON_ERROR_STOP bevares; fejlet input giver ingen normal stdin-afslutning eller succes. En delvis stream peger kun på egen isoleret B-database. Oprydningen kræver kendt ophør af egne processer og Dockerressourcer.
+
+Rigtige filer bruger de eksisterende carriergrænser på 1 GB pr. SQL-fil og 2 GB samlet, ikke den syntetiske 8 MiB/32 MiB-buffergrænse. Hele operationen har stadig 20 minutter, oprydning 2 minutter, workflowtrinnet 23 minutter og jobbet 30 minutter. Det eksisterende loft på 90 sekunder pr. psql-kald består. Faktisk kapacitet for det valgte store arkiv er et åbent hosted målepunkt.
+
+Der er målrettet lokal evidens for strømning over den gamle syntetiske filgrænse, byteidentisk rækkefølge, hashafslag før stdin-afslutning, miljøadskillelse og intern netværkskontrol. Det er ikke en rigtig Linux-/Docker-/arkivrestore. Først skal slutkilden kvalificeres og leveres, og de tekniske hosted beviser for standardprøve, adgang, capture og autentificeret arkivvalg dokumenteres. Den private rækkefølge er en arbejdsplan under den stående autoritet, ikke en ny tilladelsesgrænse.
+
+Et gennemført SQL-forløb med sund lokal Auth beviser ikke bevaret brugerlogin eller fuld backup. PG17/managed-DDL-kompatibilitet, række-/schema-/RLS-/sekvensparitet og tværgående snapshotintegritet, rigtige Auth-data/login, Storage-objektbytes, uafhængige slettebarrierer og nøglerecovery samt frekvens, retention og faktisk Free-forbrug er fortsat åbne. authRestoreVerified, fullDatabaseBackupVerified og freeReady bliver ved med at være false i denne afgrænsede prøve. Der aktiveres ingen produktionsrestore, automatisk backup eller Pro-opsigelse.
+
+### Kildeport efter SDK- og workflowrettelsen
+
+Den separate backup- og målerpakke er nu lokalt sammensat med præcis PR810-kilde 45594e185f087ff02c8e72649d02cb45cf79cf16. Alle 21 gennemgåede produkt- og testejere bevarer deres tidligere efterbytes. PR810s SDK-, statfs-, én-pass- og direkte workflowkalderrettelser bevares; gamle dokumentbaser må ikke overskrive dem.
+
+Diskrettelsen fra PR808 er kilde- og nativekvalificeret og merget til main. PR810 og denne backupport har hver deres faktiske leveringsstatus. Denne private komposition ændrer ingen drift og ommærker hverken den tidligere SDK-Linux-prøve, historisk584-nationalprøve eller 597-databasebevis som et nyt resultat.
+
+Backuphjælperens 12 allerede beståede formatmål genbruges kun med præcis samme helper, test, transportafhængighed og Node-version. Samlet ny kildekvalifikation og levering, faktisk særskilt backupbucket- og arkivadgang, fuld database- og Authgendannelse, uafhængig nøglerecovery, varig frekvens/retention samt målt egnethed til Free er fortsat åbne. Pro beholdes; ingen automatisk backup, beskæring, sletning eller FreeReady aktiveres.
+
+### Lokal status og afgrænsning
+
+Den samlede lokale kandidat har bestået 109 normale backupcases, kildeplantesten, den gamle DMI75-map-case og privacyprøven. Præcis ny kilde-/native-/GitHub-kvalifikation og levering er ikke afsluttet. Pakken aktiverer ikke SOURCE, statistik, sletning, retention, en tidsplan eller produktionsrestore og ændrer ikke model, SQL, geometri eller gates. Se også 89.298 om den særskilte dokumenthistorik.
+
+### Pages-forbrug
+
+Den eksisterende privacywalker kan nu samtidig tælle ukomprimerede bytes. Der er ingen ekstra gennemgang eller ny kvoteregel. Der foreligger endnu ingen måling af et faktisk _site fra denne kandidat.
+
 ## 89.299 Begge kendte kontinuitetsformater i scalarplanen
 
 Kort fortalt: Den normale plan for reelle vejrhul skal også kunne bruge den nyere, originale strømhistorik. Kun de to allerede kendte formater tillades.
@@ -179,6 +249,12 @@ Kun den faste private EU-bucket ravradar-admin-history-archive med Standard-lage
 Den fælles vejrkø holdes yderst og turlagerkøen inderst. Jobbet har 25 minutter inklusive klargøring; operationen bevarer 20 minutter. Vejrhentningens tider og prioritet ændres ikke. Arkivets eksisterende lager- og overførselslofter bevares. Faktiske bytes, tid og pladsvirkning skal måles; komprimerede databasekolonner er ikke det samme som størrelsen af en fuld REST-original.
 
 Ved ukendt skriveudfald blokeres nye writes. Automatisk maintain må kun afklare den sidste præcise mutation ved autentificeret læsning. Også når læsningen afklarer udfaldet, standser passagen uden næste write eller blind gentagelse. Uafklaret udfald forbliver en fejl. De gamle manuelle operationer bevarer deres hidtidige stopsemantik.
+
+### Afgrænsede målinger i jobrapporten
+
+Den eksisterende afslutningsrapport DOCUMENT_HISTORY_COMPLETE kan i den lokale kandidat indeholde én measurements-liste med de udførte, faste operationstyper. Kun de aftalte tællere som ikke-negative sikre heltal og arkivindikatoren som sand/falsk må medtages. Et felt, som en ældre operation ikke leverer, vises som null; det er ukendt og må ikke læses som nul.
+
+Rapporten indeholder ingen dokumentindhold, rækkeidentiteter, filstier, fingeraftryk eller brugeroplysninger. Bytefelterne tæller controllerens udpakkede administrationssvar, deklarerede svarlængder og læste R2-bytes; de er ikke en præcis måling af faktureret netværksforbrug. Faktisk lager, faktureringsperiode og leverandørernes forbrugstal skal fortsat kontrolleres særskilt. Rapporten beviser ikke i sig selv fuld databasegendannelse eller egnethed til Free.
 
 ### Status og hvad der stadig skal bevises
 

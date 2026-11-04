@@ -272,7 +272,22 @@ jobs:
             const controllerEnv = Object.fromEntries([...Object.keys(gitEnv), 'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY',
               'SUPABASE_ACCESS_TOKEN', 'RAVRADAR_R2_ACCOUNT_ID', 'RAVRADAR_R2_ACCESS_KEY_ID', 'RAVRADAR_R2_SECRET_ACCESS_KEY']
               .filter(key => typeof env[key] === 'string').map(key => [key, env[key]]));
-            const completed = [];
+            const completed = [], measurements = [];
+            const counterKeys = Object.freeze(['candidateRows','eligibleRowsBefore','confirmedAbsentAfterWrite',
+              'remainingCandidates','previouslyAbsentCandidates','adminDecodedReadBytes',
+              'declaredAdminContentLengthBytes','adminResponses','r2ReadBytes','wireWrites']);
+            function measured(mode, result) {
+              const row = {mode};
+              for (const key of counterKeys) {
+                const value = result[key];
+                need(value === undefined || (Number.isSafeInteger(value) && value >= 0), 'DOCUMENT_HISTORY_MEASUREMENT');
+                row[key] = value === undefined ? null : value;
+              }
+              need(result.archiveRequired === undefined || typeof result.archiveRequired === 'boolean',
+                'DOCUMENT_HISTORY_MEASUREMENT');
+              row.archiveRequired = result.archiveRequired === undefined ? null : result.archiveRequired;
+              return row;
+            }
             // The management token reaches only this fixed metadata/create helper, never the archive controller.
             function invokeBucket(mode, requirePrivate = true) {
               mainHead(); phase = 'BUCKET_' + mode;
@@ -323,6 +338,7 @@ jobs:
               need(result && result.mode === mode && result.status === expected[mode]
                 && result.currentDocumentsWritten === false && result.protectedOtherKeysWritten === false
                 && result.archiveObjectsDeleted === false, 'DOCUMENT_HISTORY_RECEIPT');
+              measurements.push(measured(mode, result));
               completed.push(mode);
             }
             // Fresh private prerequisites remain in one runner, under both existing locks.
@@ -333,7 +349,7 @@ jobs:
               if (operation === 'publish-locator') invoke('archive');
               invoke(operation);
             }
-            console.log(JSON.stringify({ status: 'DOCUMENT_HISTORY_COMPLETE', operation, completed,
+            console.log(JSON.stringify({ status: 'DOCUMENT_HISTORY_COMPLETE', operation, completed, measurements,
               fullDatabaseBackupVerified: false, productionDatabaseRestoreExecuted: false, freeReady: false }));
             }
             }

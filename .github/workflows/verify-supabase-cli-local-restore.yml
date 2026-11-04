@@ -1,0 +1,124 @@
+name: Verify standard Supabase CLI local restore
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_head:
+        description: Exact reviewed source SHA; archive restore also requires current qualified main
+        required: true
+        type: string
+      restore_mode:
+        description: Synthetic by default; archive restores only to an owned isolated local project
+        type: choice
+        default: synthetic
+        options: [synthetic, archive]
+      archive_index_sha:
+        description: Exact already authenticated archive index SHA; archive mode only
+        type: string
+        default: ''
+      archive_confirmation:
+        description: RESTORE-PRIVATE-ARCHIVE-IN-ISOLATED-LOCAL-POSTGRES; archive mode only
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+concurrency:
+  group: ${{ inputs.restore_mode == 'archive' && 'ravradar-weather-production-v2' || 'ravradar-synthetic-standard-local-restore' }}
+  queue: max
+  cancel-in-progress: false
+
+jobs:
+  standard-local-restore:
+    if: github.repository == 'jakobjorgensen82-commits/RavRadar'
+    concurrency:
+      group: ${{ inputs.restore_mode == 'archive' && 'ravradar-trip-storage-production' || format('ravradar-synthetic-standard-local-restore-{0}', github.run_id) }}
+      cancel-in-progress: false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Require the exact reviewed manual source
+        env:
+          EXPECTED_HEAD_SHA: ${{ inputs.expected_head }}
+          RESTORE_MODE: ${{ inputs.restore_mode }}
+          RESTORE_ARCHIVE_INDEX_SHA: ${{ inputs.archive_index_sha }}
+          RESTORE_ARCHIVE_CONFIRMATION: ${{ inputs.archive_confirmation }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$GITHUB_RUN_ATTEMPT" = 1
+          test "$GITHUB_ACTIONS" = true
+          test "$RUNNER_ENVIRONMENT" = github-hosted
+          test "$RUNNER_OS" = Linux
+          [[ "$EXPECTED_HEAD_SHA" =~ ^[a-f0-9]{40}$ ]]
+          test "$EXPECTED_HEAD_SHA" = "$GITHUB_SHA"
+          case "$RESTORE_MODE" in
+            synthetic)
+              test -z "$RESTORE_ARCHIVE_INDEX_SHA"
+              test -z "$RESTORE_ARCHIVE_CONFIRMATION"
+              ;;
+            archive)
+              test "$GITHUB_REF" = refs/heads/main
+              [[ "$RESTORE_ARCHIVE_INDEX_SHA" =~ ^[a-f0-9]{64}$ ]]
+              test "$RESTORE_ARCHIVE_CONFIRMATION" = RESTORE-PRIVATE-ARCHIVE-IN-ISOLATED-LOCAL-POSTGRES
+              ;;
+            *) exit 1 ;;
+          esac
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.expected_head }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Require actual checkout identity
+        env:
+          EXPECTED_HEAD_SHA: ${{ inputs.expected_head }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD_SHA"
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Check the pure local fixture boundaries
+        timeout-minutes: 1
+        run: node scripts/test-supabase-cli-local-restore.mjs --self-test
+      - name: Restore qualified source locator before any archive access
+        if: inputs.restore_mode == 'archive'
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/weather-source-validation.json
+          key: weather-source-proof-v2-${{ runner.os }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}-isolated-db-restore
+          restore-keys: |
+            weather-source-proof-v2-${{ runner.os }}-${{ github.sha }}-
+      - name: Require the already qualified exact source before any archive access
+        if: inputs.restore_mode == 'archive'
+        id: source-proof
+        timeout-minutes: 2
+        run: node scripts/weather-source-gate.mjs check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Refuse missing exact source proof before archive credentials
+        if: inputs.restore_mode == 'archive'
+        run: test "${{ steps.source-proof.outputs.required }}" = false
+      - uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf
+        timeout-minutes: 2
+        with:
+          version: 2.117.0
+      - name: Run only the standard synthetic local restore
+        if: inputs.restore_mode == 'synthetic'
+        timeout-minutes: 23
+        env:
+          EXPECTED_HEAD_SHA: ${{ inputs.expected_head }}
+        run: node scripts/test-supabase-cli-local-restore.mjs --run-local-fixture
+      - name: Materialize the exact authenticated archive and restore only to owned local PostgreSQL
+        if: inputs.restore_mode == 'archive'
+        timeout-minutes: 23
+        env:
+          EXPECTED_HEAD_SHA: ${{ inputs.expected_head }}
+          RESTORE_ARCHIVE_INDEX_SHA: ${{ inputs.archive_index_sha }}
+          RESTORE_ARCHIVE_CONFIRMATION: ${{ inputs.archive_confirmation }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
+          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
+          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
+        run: node scripts/test-supabase-cli-local-restore.mjs --run-archive-restore
