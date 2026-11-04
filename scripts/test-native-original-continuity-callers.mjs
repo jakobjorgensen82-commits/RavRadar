@@ -1273,7 +1273,8 @@ test('assistant later-H0 original RAW boundary preserves working hashes and actu
   const returned=cut(ordinary,'    return snapshot.verified;\n  };\n',
     '\n}\nexport async function readAssistantLaterH0RetentionInput');
   const construct=compileFunction('return (async()=>{'+returned+'})();',
-    ['snapshot','result','conditionsPath','bytes','verify','fs','sha','same','assert','json']);
+    ['snapshot','result','conditionsPath','bytes','verify','fs','sha','same','assert','json',
+      'removeVerifiedAssistantWorkingProjection','parent','work','workIdentity','firstInventory']);
   const boundarySource=cut(planner,
     '    ? await readDmiBulkDocument(process.env.DMI_PART_CONTINUITY_DONOR_PATH) : null;\n',
     '  const liveCurrentPilot = await readLiveCurrentPilot(registry), zones = (await readFixed(\'data/zones.geojson\')).json;');
@@ -1308,7 +1309,8 @@ test('assistant later-H0 original RAW boundary preserves working hashes and actu
   // Inert kaldestedsgrænse, IKKE en falsk autentificeringsfunktion eller opaque handle.
   const verify=async()=>{verifiedCalls++;return verified;};
   const invoke=(view=snapshot,check=verify)=>construct(view,result,conditionsPath,working,check,fs,sha,
-    assert.deepEqual,assert,async file=>JSON.parse(await fs.readFile(file,'utf8')));
+    assert.deepEqual,assert,async file=>JSON.parse(await fs.readFile(file,'utf8')),
+    async()=>{},null,null,null,null); // Cleanup is tested with real owned files below.
   const value=await invoke();
   assert.equal(verifiedCalls,1,'Returen afventer den eksisterende friske fuldkontrol');
   assert.strictEqual(value.verify,verify);assert.strictEqual(value.verified,verified);
@@ -2159,4 +2161,97 @@ test('assistant593 exact outer source DATA and closed direct591 migration plan',
   assert.deepEqual(installed.pendingVersions,[]);assert.equal(installed.alreadyAppliedVersions.length,60);
   for(const extra of ["20261029183010",'20990101000000'])
     await assert.rejects(r.assertAssistantPublic591SuccessorMigrationPlan({migrationListText:list(false)+'\n'+extra+' | '+extra+' | unknown.sql',dryRunText:dry,migrationsDirectory:path.join(ROOT,'supabase/migrations')}));
+});
+
+// Same normal returned-view seam, with the actual owned cleanup and inventory.
+// Synthetic I/O boundaries below do not claim authenticated B/S or production capacity.
+test('assistant later-H0 owned reprojection is released only after full verification',async t=>{
+  const crypto=await import('node:crypto'),{createReadStream}=await import('node:fs');
+  const {compileFunction}=await import('node:vm'),os=await import('node:os');
+  const {assertExactRuntimeInventory}=await import('./migrate-post-cutover-private-runtime.mjs');
+  const {PRIVATE_RUNTIME_BASE_FILES}=await import('./lib/private-weather-component-inventory.mjs');
+  const source=(await fs.readFile(path.join(ROOT,'scripts/assistant-later-h0-runtime-transition.mjs'),'utf8')).replace(/\r\n/g,'\n');
+  const cut=(begin,end)=>{assert.equal(source.split(begin).length,2);assert.equal(source.split(end).length,2);
+    const a=source.indexOf(begin),b=source.indexOf(end,a+begin.length);assert(b>a);return source.slice(a,b);};
+  const noLinksSource=cut('async function noLinks(file){','async function absent(file)');
+  const inventorySource=cut('async function inventory(root){','const identityKeys=');
+  const cleanupSource=cut('async function removeVerifiedAssistantWorkingProjection(','async function readWorking(');
+  const functions=compileFunction(noLinksSource+inventorySource+cleanupSource
+    +'\nreturn {inventory,removeVerifiedAssistantWorkingProjection};',
+    ['fs','path','crypto','createReadStream','assertExactRuntimeInventory','same','assert'])
+    (fs,path,crypto,createReadStream,assertExactRuntimeInventory,assert.deepEqual,assert);
+  const returnedStart=source.indexOf('    return snapshot.verified;\n  };\n')+'    return snapshot.verified;\n  };\n'.length;
+  const returnedEnd=source.indexOf('\n}\nexport async function readAssistantLaterH0RetentionInput',returnedStart);
+  assert(returnedStart>0&&returnedEnd>returnedStart);
+  const returned=source.slice(returnedStart,returnedEnd);
+  assert(returned.indexOf('await verify();')<returned.indexOf('await removeVerifiedAssistantWorkingProjection('));
+  const construct=compileFunction('return (async()=>{'+returned+'})();',
+    ['snapshot','result','conditionsPath','bytes','verify','fs','sha','same','assert',
+      'removeVerifiedAssistantWorkingProjection','parent','work','workIdentity','firstInventory']);
+  const verifyStart=source.indexOf('  const verify=async()=>{',source.indexOf('async function readWorking('));
+  const verifyEnd=source.indexOf('\n  };',verifyStart)+'\n  };'.length;
+  const verifyFactory=compileFunction(source.slice(verifyStart,verifyEnd)+'\nreturn verify;',
+    ['inventory','p','firstInventory','same','fs','descriptorBytes','ACTIVE_PREDECESSOR','snapshot']);
+  const sha=b=>crypto.createHash('sha256').update(b).digest('hex');
+  const tmp=await fs.realpath(os.tmpdir()),root=await fs.mkdtemp(path.join(tmp,'rr-owned-reprojection-test-'));
+  const born=await fs.lstat(root,{bigint:true});let completed=false;
+  t.after(async()=>{assert.equal(await fs.realpath(root),root);const s=await fs.lstat(root,{bigint:true});
+    assert.equal(s.dev,born.dev);assert.equal(s.ino,born.ino);if(completed)await fs.rm(root,{recursive:true});});
+  for(const scenario of ['success','fresh-verification-failed','runtime-changed','foreign-entry','wrong-owner']){
+    await t.test(scenario,async()=>{
+      const parent=path.join(root,scenario);await fs.mkdir(parent);
+      const protectedRoots=['bundle/payload','assistant587-original','assistant587-working','installed'];
+      const protectedBytes=new Map();
+      for(const directory of protectedRoots)for(const row of PRIVATE_RUNTIME_BASE_FILES){
+        const file=path.join(parent,directory,row.relativePath);await fs.mkdir(path.dirname(file),{recursive:true});
+        const bytes=Buffer.from(JSON.stringify({synthetic:row.id,coastalParts:{}})+'\n');
+        await fs.writeFile(file,bytes,{flag:'wx'});protectedBytes.set(file,bytes);
+      }
+      const p={workRoot:path.join(parent,'assistant587-working'),descriptorPath:path.join(parent,'original-descriptor.json')};
+      const descriptorBytes=Buffer.from('{"synthetic":"unchanged descriptor"}\n');
+      await fs.writeFile(p.descriptorPath,descriptorBytes,{flag:'wx'});protectedBytes.set(p.descriptorPath,descriptorBytes);
+      const originalS=path.join(parent,'original-S.json'),installedS=path.join(parent,'installed-S.json');
+      for(const file of [originalS,installedS]){const b=Buffer.from('{"synthetic":"preserved S"}\n');
+        await fs.writeFile(file,b,{flag:'wx'});protectedBytes.set(file,b);}
+      const work=await fs.mkdtemp(path.join(parent,'assistant587-reproject-'));
+      const workIdentity=await fs.lstat(work,{bigint:true}),runtime=path.join(work,'runtime');
+      for(const row of PRIVATE_RUNTIME_BASE_FILES){const file=path.join(runtime,row.relativePath);
+        await fs.mkdir(path.dirname(file),{recursive:true});await fs.copyFile(path.join(p.workRoot,row.relativePath),file,fs.constants?.COPYFILE_EXCL??1);}
+      for(const leaf of ['checkpoint.json','report.json'])await fs.writeFile(path.join(work,leaf),'{}\n',{flag:'wx'});
+      const firstInventory=await functions.inventory(p.workRoot);
+      assert.deepEqual(await functions.inventory(runtime),firstInventory);
+      const originalPath=path.join(parent,'bundle/payload/data/live/conditions.json');
+      const originalBytes=await fs.readFile(originalPath),conditionsPath=path.join(p.workRoot,'data/live/conditions.json');
+      const bytes=await fs.readFile(conditionsPath),snapshot={verified:{files:[{relativePath:'data/live/conditions.json',
+        bytes:originalBytes.length,sha256:sha(originalBytes)}]},conditionsPath:originalPath};
+      const result={conditions:JSON.parse(bytes)},handle={synthetic:true};let freshReads=0;
+      const predecessor={read:async()=>{freshReads++;if(scenario==='fresh-verification-failed')throw new Error('SYNTHETIC_FRESH_GUARD_FAILED');return handle;},
+        snapshot:h=>{assert.equal(h,handle);return snapshot;}};
+      const verify=verifyFactory(functions.inventory,p,firstInventory,assert.deepEqual,fs,descriptorBytes,predecessor,snapshot);
+      if(scenario==='runtime-changed')await fs.appendFile(path.join(runtime,PRIVATE_RUNTIME_BASE_FILES[0].relativePath),' ');
+      if(scenario==='foreign-entry')await fs.writeFile(path.join(work,'foreign.txt'),'preserve',{flag:'wx'});
+      const owned=scenario==='wrong-owner'?await fs.lstat(parent,{bigint:true}):workIdentity;
+      const invoke=()=>construct(snapshot,result,conditionsPath,bytes,verify,fs,sha,assert.deepEqual,assert,
+        functions.removeVerifiedAssistantWorkingProjection,parent,work,owned,firstInventory);
+      if(scenario==='success'){
+        const value=await invoke();assert.equal(freshReads,1);
+        await assert.rejects(fs.access(work),/ENOENT/);
+        assert.equal(value.verify,verify);assert.equal(value.conditionsPath,conditionsPath);
+        assert.equal(value.conditionsSha256,sha(bytes));assert.deepEqual(value.originalConditions,JSON.parse(originalBytes));
+        assert.equal(await value.verify(),snapshot.verified,'Returned normal verify still works after disposable projection removal');
+        assert.equal(freshReads,2);
+      }else{
+        await assert.rejects(invoke(),scenario==='fresh-verification-failed'?/SYNTHETIC_FRESH_GUARD_FAILED/
+          :scenario==='runtime-changed'?/Whole verified assistant reprojection/
+          :scenario==='foreign-entry'?/Only the complete owned assistant reprojection/
+          :/Owned assistant reprojection directory changed/);
+        assert((await fs.lstat(work)).isDirectory(),'Failure retains owned scratch');
+        assert.equal((await fs.lstat(work,{bigint:true})).ino,workIdentity.ino);
+        assert.equal(await fs.readFile(path.join(work,'report.json'),'utf8'),'{}\n');
+        assert.equal(await fs.readFile(path.join(work,'checkpoint.json'),'utf8'),'{}\n');
+      }
+      for(const [file,before]of protectedBytes)assert.deepEqual(await fs.readFile(file),before,'Original/source/working/installed bytes preserved');
+    });
+  }
+  completed=true;
 });

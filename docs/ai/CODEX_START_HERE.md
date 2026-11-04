@@ -1,3 +1,19 @@
+## 4. november — præcis historisk workflowinverse før ny kildekontrol
+
+Den tidlige normale kildeindgang krævede den oprindelige workflowfil efter SDK-ændringen. Den fælles historiske adapter genkender nu alene det nye, præcise hele før-/efterdelta og fører det tilbage til de autentiske forgængerbytes før den uændrede gamle kæde. Ukendte ændringer afvises fortsat. De aktuelle RAW-/CURRENT-grænser, SDK-adfærd og hele de allerede gennemgåede produktrettelser bevares.
+
+Den faktiske tidlige import- og adgangsindgang prøves målrettet før næste lange kildekontrol. Windows-kalderprøver erstatter ikke den rigtige Linux-CI for filbeskrivelser eller andre platformskrav. Ingen falsk native-/genbrugsstatus, bredere allowlist, nye godkendelsesflag, model-, SQL-, lagerbindings- eller versionsændring indføres. Samlet præcis kildekvalifikation og normal produktionsvirkning er fortsat åbne. Se håndbog 89.302.
+
+## 4. november — diskplads før RAW-genlæsning og præcis privat arkivkontrol
+
+Den almindelige vejrhentning stoppede på en fuld runnerdisk under RAW-cachegenlæsning, før nye leverandørkald. Den originalbevarende overgang holdt mindst fem fulde runtimekopier mod tre uden overgangen. Den lokale rettelse fjerner kun kaldets egen overflødige kontrolprojektion efter fuld normal verifikation; fejl bevarer scratch, og original B/S, source, working, installerede filer og cache bevares.
+
+En fast hjælper må kun frigøre det ubrugte Android-SDK på faktisk GitHub-hostet Ubuntu 24.04 efter kontrol af kanonisk sti, mappeidentitet og samme filsystem. Den måler virkelig ledig plads før/efter og lige før RAW. Stop- og tidsgrænser består; ingen fast GB-gevinst eller fuld kapacitet erklæres.
+
+Bucketlisten og oprettelsessvaret må udelade jurisdiction/lagerklasse, men fuld frisk EU/Standard-detailkontrol samt privat r2.dev/domæneafgrænsning er fortsat nødvendig. Den private EU-arkivbucket og eksisterende adgang er klargjort uden at fjerne vejradgangen; normalt arkiv/restore/prune er endnu ikke verificeret, automatisk oprydning er OFF, og Pro beholdes.
+
+Præcis kildekvalifikation og faktisk vejr-/arkivvirkning mangler. Version 4.0.597, model- og lagerbindinger, 73 udstedte migrationer, kilder, administratoropsætning og geometri bevares. INSTALL ændrer kun håndbogens statiske seed. Se håndbog 89.302 og de uændrede krav i 89.298.
+
 ## 4. november — native-prøvens egne dokumenter hører til før baselinen
 
 Den faktiske 597-kildekontrol stoppede i databaseprøvens bevaringssammenligning, efter at prøven selv havde oprettet sine to faste drifts- og profildokumenter efter baseline. Den normale testadapter klargør nu disse fixtures før det samme ufiltrerede bevaringsinventar. Midlertidige aktiveringskontroller udføres i rollback-transaktioner, og hele dokumenter og triggerhistorik genkontrolleres bagefter. Historikkrav, gamle SQL-fingeraftryk, CAS-, original- og adgangskontroller bevares. En lille prøve af den faktiske adapter fanger disse fixturefejl før de store tilstandspakker; den er ikke en rigtig PostgreSQL-prøve. Produktets modelbindinger, migrations-SQL og beregninger ændres ikke af denne kontrolrettelse. Den samlede nøjagtige GitHub- og PostgreSQL-kvalifikation mangler stadig.

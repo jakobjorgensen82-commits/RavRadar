@@ -275,8 +275,51 @@ for (const row of Object.values(pagesPublicProjectionWorkflowReview.roles)) {
 }
 Object.freeze(pagesPublicProjectionWorkflowReview.roles);
 
+// TEST ONLY: two exact hosted-SDK workflow insertions before the unchanged
+// release597, Pages, scalar, completed-runtime and older whole-file oracles.
+export const runnerAndroidSdkWorkflowReview = Object.freeze({
+  "path": ".github/workflows/reusable-weather-build.yml",
+  "before": {
+    "bytes": 298105,
+    "sha256": "191471c829c87ada40096125b80ae52a004a9b2c48464915ceb5d291ddaf82ba"
+  },
+  "after": {
+    "bytes": 298641,
+    "sha256": "b66f049d80698b3d0fe14a08f25eaae01973f6f0991dfbd9eaf7b6243a8c1ae2"
+  },
+  "steps": [
+    [
+      "      - name: Install production geometry tools\n",
+      "      - name: Reclaim only the unused hosted Android SDK before private restoration\n        if: steps.preflight.outputs.should_run == 'true'\n        timeout-minutes: 3\n        run: node scripts/reclaim-runner-android-sdk.mjs\n\n"
+    ],
+    [
+      "      - name: Restore bounded DMI GRIB download cache\n",
+      "      - name: Measure runner storage immediately before RAW cache restoration\n        if: inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true')\n        run: node scripts/reclaim-runner-android-sdk.mjs --observe-raw\n\n"
+    ]
+  ]
+});
+for (const step of runnerAndroidSdkWorkflowReview.steps) Object.freeze(step);
+Object.freeze(runnerAndroidSdkWorkflowReview.steps);
+Object.freeze(runnerAndroidSdkWorkflowReview.before);
+Object.freeze(runnerAndroidSdkWorkflowReview.after);
+export function inverseRunnerAndroidSdkWorkflow(source, role) {
+  assert.equal(arguments.length, 2, 'RUNNER_SDK_WORKFLOW_ARGUMENTS');
+  assert.equal(typeof source, 'string', 'RUNNER_SDK_WORKFLOW_TYPE');
+  const row = runnerAndroidSdkWorkflowReview;
+  if (role !== 'build' || sha(source) !== row.after.sha256) return source;
+  assert.equal(Buffer.byteLength(source), row.after.bytes, 'RUNNER_SDK_WORKFLOW_AFTER_BYTES');
+  for (const [anchor, step] of row.steps) {
+    assert.equal(source.split(step + anchor).length, 2, 'RUNNER_SDK_WORKFLOW_EXACT_STEP');
+    source = source.replace(step + anchor, () => anchor);
+  }
+  assert.equal(Buffer.byteLength(source), row.before.bytes, 'RUNNER_SDK_WORKFLOW_BEFORE_BYTES');
+  assert.equal(sha(source), row.before.sha256, 'RUNNER_SDK_WORKFLOW_WHOLE_PREDECESSOR');
+  return source;
+}
+
 // Test-only release597 identification for the exact PR804 build workflow.
 export function inverseRelease597WorkflowUserAgents(source, role) {
+  source = inverseRunnerAndroidSdkWorkflow(source, role);
   const after = '191471c829c87ada40096125b80ae52a004a9b2c48464915ceb5d291ddaf82ba';
   if (role !== 'build' || sha(source) !== after) return source;
   assert.equal(Buffer.byteLength(source), 298105);

@@ -182,6 +182,32 @@ export async function prepareAssistantLaterH0Runtime(){
   });
   return {prepared:true,admission:'NO_ADMISSION',sameH0Capability:false,originalsPreserved:true};
 }
+async function removeVerifiedAssistantWorkingProjection(parent,work,owned,expectedInventory){
+  // Only this invocation's disposable full reprojection. Original B/S, source,
+  // prepared working view and installed runtime remain outside this target.
+  await noLinks(parent);assert.equal(await fs.realpath(parent),parent);
+  assert.equal(path.dirname(work),parent);assert(path.basename(work).startsWith('assistant587-reproject-'));
+  await noLinks(work);assert.equal(await fs.realpath(work),work);
+  const current=await fs.lstat(work,{bigint:true});
+  assert(current.isDirectory()&&!current.isSymbolicLink()&&current.dev===owned.dev&&current.ino===owned.ino,
+    'Owned assistant reprojection directory changed');
+  same((await fs.readdir(work)).sort(),['checkpoint.json','report.json','runtime'],
+    'Only the complete owned assistant reprojection may be removed');
+  for(const name of ['checkpoint.json','report.json']){
+    const stat=await fs.lstat(path.join(work,name),{bigint:true});
+    assert(stat.isFile()&&!stat.isSymbolicLink()&&stat.nlink===1n,'Owned assistant projection control file changed');
+  }
+  const runtime=path.join(work,'runtime');
+  same(await inventory(runtime),expectedInventory,'Whole verified assistant reprojection before removal');
+  for(const file of expectedInventory){
+    const stat=await fs.lstat(path.join(runtime,file.relativePath),{bigint:true});
+    assert(stat.isFile()&&!stat.isSymbolicLink()&&stat.nlink===1n,'Owned assistant projection runtime file changed');
+  }
+  await noLinks(work);const final=await fs.lstat(work,{bigint:true});
+  assert(final.isDirectory()&&!final.isSymbolicLink()&&final.dev===owned.dev&&final.ino===owned.ino,
+    'Owned assistant reprojection directory changed before removal');
+  await fs.rm(work,{recursive:true,force:false});
+}
 async function readWorking(targetReferenceAt,installing){
   requireActiveAssistantOutput();assertActiveAssistantCaller(process.env);
   const p=paths(),handle=await ACTIVE_PREDECESSOR.read(),snapshot=ACTIVE_PREDECESSOR.snapshot(handle);
@@ -189,6 +215,7 @@ async function readWorking(targetReferenceAt,installing){
   const descriptorBytes=await fs.readFile(p.descriptorPath);const retainedDescriptor=validatePredecessorIdentity(JSON.parse(descriptorBytes),snapshot.descriptor.sourceHead);
   sameIdentity(retainedDescriptor,snapshot.descriptor);
   const parent=await fs.realpath(p.privateRoot),work=await fs.mkdtemp(path.join(parent,'assistant587-reproject-'));
+  const workIdentity=await fs.lstat(work,{bigint:true});
   // Retain private scratch on an unknown failure. No recursive guessed cleanup.
   const firstInventory=await inventory(p.workRoot);
   const result=await ACTIVE_PREDECESSOR.withSource(async frozenRoot=>{
@@ -221,6 +248,8 @@ async function readWorking(targetReferenceAt,installing){
   same({bytes:originalBytes.length,sha256:originalConditionsSha256},
     {bytes:originalEntry.bytes,sha256:originalEntry.sha256},'Original B conditions bytes');
   await verify();
+  // No finally: failed/unknown preparation or verification retains its scratch.
+  await removeVerifiedAssistantWorkingProjection(parent,work,workIdentity,firstInventory);
   return {verified:snapshot.verified,conditions:result.conditions,originalConditions:JSON.parse(originalBytes),
     originalConditionsSha256,conditionsPath,conditionsSha256:sha(bytes),verify};
 }

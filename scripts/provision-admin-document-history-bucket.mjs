@@ -50,8 +50,12 @@ export async function provisionAdminDocumentHistoryBucket(options={}, {env=proce
     }catch(error){fail(create?'R2_BUCKET_CREATE_OUTCOME_UNKNOWN'
       :(['R2_BUCKET_RESPONSE_BOUND','R2_BUCKET_API_ENVELOPE'].includes(error.code)?error.code:'R2_BUCKET_RESPONSE_INVALID'),response.status,writeOutcome);}
   }
-  function properties(value){
-    need(value&&value.name===P.bucket&&value.jurisdiction==='eu'&&value.storage_class==='Standard','R2_BUCKET_PROPERTIES');
+  function properties(value,sparse=false){
+    need(value&&value.name===P.bucket,'R2_BUCKET_PROPERTIES');
+    // List/create may omit these optional fields; present contradictions still fail.
+    // Only the fresh detail response, called without sparse, proves EU/Standard.
+    need((sparse&&!Object.hasOwn(value,'jurisdiction')||value.jurisdiction==='eu')
+      &&(sparse&&!Object.hasOwn(value,'storage_class')||value.storage_class==='Standard'),'R2_BUCKET_PROPERTIES');
   }
   async function inventory(){
     let cursor='',found=false;const cursors=new Set();
@@ -61,7 +65,7 @@ export async function provisionAdminDocumentHistoryBucket(options={}, {env=proce
       need(Array.isArray(rows)&&rows.length<=1000&&body.result_info
         &&Number.isSafeInteger(body.result_info.total_count)&&body.result_info.total_count>=0,'R2_BUCKET_INVENTORY');
       for(const row of rows){need(typeof row?.name==='string','R2_BUCKET_INVENTORY');
-        if(row.name===P.bucket){need(!found,'R2_BUCKET_AMBIGUOUS');properties(row);found=true;}}
+        if(row.name===P.bucket){need(!found,'R2_BUCKET_AMBIGUOUS');properties(row,true);found=true;}}
       const next=body.result_info.cursor;
       need(next===undefined||typeof next==='string','R2_BUCKET_INVENTORY_CURSOR');
       if(!next)return found;
@@ -84,7 +88,7 @@ export async function provisionAdminDocumentHistoryBucket(options={}, {env=proce
     // A 404 alone is not absence: the authenticated complete EU inventory must also omit the exact name.
     need(await request(bucket,{absentAllowed:true})===null,'R2_BUCKET_INVENTORY_CHANGED');
     if(mode==='read-only')return{status:'PRIVATE_EU_BUCKET_ABSENT',bucket:P.bucket,jurisdiction:'eu',writeOutcome,postCount,objectsUploaded:false,settingsChanged:false};
-    const created=await request(base,{create:true});properties(created.result);
+    const created=await request(base,{create:true});properties(created.result,true);
     need(await inventory(),'R2_BUCKET_CREATE_READBACK_MISSING');
     const metadata=await privateMetadata();return{status:'PRIVATE_EU_BUCKET_CREATED_VERIFIED',...metadata,writeOutcome,postCount,objectsUploaded:false,settingsChanged:false};
   }catch(error){

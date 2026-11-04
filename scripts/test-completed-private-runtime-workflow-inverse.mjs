@@ -1727,3 +1727,39 @@ test('release597 whole workflow identifies only the five issued User-Agent field
     assert.throws(() => inverseCompletedRuntimeWorkflow(changed, 'build'));
   }
 });
+
+import { inverseRunnerAndroidSdkWorkflow, runnerAndroidSdkWorkflowReview }
+  from './lib/completed-private-runtime-workflow-review.mjs';
+
+test('hosted Android SDK workflow inverse retains the complete genuine597 predecessor', async () => {
+  const row = runnerAndroidSdkWorkflowReview;
+  const current = (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+  assert.equal(sha(current), row.after.sha256);
+  assert.equal(Buffer.byteLength(current), row.after.bytes);
+  assert.equal(row.steps.length, 2);
+  const before = inverseRunnerAndroidSdkWorkflow(current, 'build');
+  assert.equal(sha(before), '191471c829c87ada40096125b80ae52a004a9b2c48464915ceb5d291ddaf82ba');
+  assert.equal(Buffer.byteLength(before), 298105);
+  let recreated = before;
+  for (const [anchor, step] of row.steps) {
+    assert.equal(recreated.split(anchor).length, 2);
+    recreated = recreated.replace(anchor, () => step + anchor);
+  }
+  assert.equal(recreated, current, 'Both exact new steps reconstruct every current workflow byte');
+  assert.equal(inverseCompletedRuntimeWorkflow(current, 'build'), inverseCompletedRuntimeWorkflow(before, 'build'));
+  assert.equal(inverseRunnerAndroidSdkWorkflow(before, 'build'), before);
+  for (const role of ['once', 'repair', 'unknown']) assert.equal(inverseRunnerAndroidSdkWorkflow(current, role), current);
+  for (const [anchor, step] of row.steps) {
+    for (const changedStep of ['', '?' + step.slice(1), step + step]) {
+      const malformed = current.replace(step + anchor, changedStep + anchor);
+      assert.notEqual(malformed, current);
+      assert.equal(inverseRunnerAndroidSdkWorkflow(malformed, 'build'), malformed);
+      assert.throws(() => inverseCompletedRuntimeWorkflow(malformed, 'build'));
+    }
+  }
+  const unrelated = current + '\n# Unreviewed SDK workflow change\n';
+  assert.equal(inverseRunnerAndroidSdkWorkflow(unrelated, 'build'), unrelated);
+  assert.throws(() => inverseCompletedRuntimeWorkflow(unrelated, 'build'));
+  assert.throws(() => inverseRunnerAndroidSdkWorkflow(current), /RUNNER_SDK_WORKFLOW_ARGUMENTS/);
+  assert.throws(() => inverseRunnerAndroidSdkWorkflow(null, 'build'), /RUNNER_SDK_WORKFLOW_TYPE/);
+});
