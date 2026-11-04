@@ -35,7 +35,7 @@ function fixture(temp,behavior={}){
   const json=(value,status=200)=>response(JSON.stringify(value),status,{'content-type':'application/json'});
   const fetchImpl=async(url,options={})=>{
     const u=new URL(url),method=options.method||'GET',headers=new Headers(options.headers),body=options.body;calls.push({url,method,headers,body,childrenAtRequest:children.length});
-    if(u.hostname==='api.supabase.com'){assert.ok(!behavior.denySupabase,'bootstrap must never contact Supabase');assert.equal(method,'POST');assert.ok(JSON.parse(body).query.includes('has_table_privilege'));return json(behavior.catalogue?.()??catalogue());}
+    if(u.hostname==='api.supabase.com'){assert.ok(!behavior.denySupabase,'bootstrap must never contact Supabase');assert.equal(method,'POST');assert.ok(JSON.parse(body).query.includes('has_table_privilege'));return json(behavior.catalogue?.()??catalogue(),behavior.catalogueStatus??200);}
     if(u.origin===P.project){assert.ok(!behavior.denySupabase,'bootstrap must never contact Supabase');assert.equal(u.pathname,'/rest/v1/admin_documents');assert.equal(headers.get('apikey'),env.SUPABASE_SERVICE_ROLE_KEY);
       if(method==='GET'){assert.equal(u.searchParams.get('document_key'),'eq.'+P.locatorKey);if(behavior.beforeLocatorGet)behavior.beforeLocatorGet(api);return json(locator?[clone(locator)]:[]);}
       const payload=JSON.parse(body);assert.equal(payload.updated_by,null);assert.equal(payload.payload.bucket,P.bucket);
@@ -351,4 +351,35 @@ test('archive materialization: actual CLI rejects incomplete or caller manifest 
     const report=JSON.parse(result.stderr.trim());assert.equal(report.code,'EXPLICIT_BACKUP_MODE');assert.equal(report.freeReady,false);assert.equal(report.automaticRetry,false);
     assert.ok(!result.stderr.includes('INSERT')&&!result.stderr.includes('synthetic-existing'));
   }
+});
+
+test('database-query HTTP201 success passes backup privacy before unchanged missing-locator refusal',async t=>{
+  const f=fixture(await host(t),{catalogueStatus:201});
+  await rejectCode(()=>run({mode:'discover'},f.dependencies()),'LOCATOR_MISSING');
+  assert.equal(f.children.length,0);assert.equal(writeCalls(f).length,0);
+  assert(f.calls.some(c=>new URL(c.url).origin===P.project&&c.method==='GET'));
+});
+test('database-query HTTP status and malformed201 backup privacy stop before CLI archive or locator writes',async t=>{
+  for(const status of [401,403,429,500,204]){
+    const f=fixture(await host(t),{catalogueStatus:status});
+    await rejectCode(()=>run({mode:'discover'},f.dependencies()),'LOCATOR_PRIVACY');
+    assert.equal(f.children.length,0);assert.equal(writeCalls(f).length,0);assert.equal(f.calls.length,1);
+  }
+  for(const change of [r=>r[0].metadata.anonSelect=true,r=>r[0].version_metadata.policies[0].qual='true',
+    r=>r[0].metadata.functions[2].source="select 'synthetic-private-never-log';",r=>r[0].current_access=false]){
+    const f=fixture(await host(t),{catalogueStatus:201,catalogue:()=>{const rows=catalogue();change(rows);return rows;}});
+    await assert.rejects(()=>run({mode:'discover'},f.dependencies()));
+    assert.equal(f.children.length,0);assert.equal(writeCalls(f).length,0);assert.equal(f.calls.length,1);
+  }
+  for(const catalogue of [()=>({data:[]}),()=>[]]){
+    const f=fixture(await host(t),{catalogueStatus:201,catalogue});
+    await rejectCode(()=>run({mode:'discover'},f.dependencies()),'LOCATOR_PRIVACY');
+    assert.equal(f.children.length,0);assert.equal(writeCalls(f).length,0);
+  }
+});
+
+test('database-query HTTP201 wrong RLS remains refused before backup mutations',async t=>{
+  const f=fixture(await host(t),{catalogueStatus:201,catalogue:()=>{const rows=catalogue();rows[0].metadata.rls=false;return rows;}});
+  await rejectCode(()=>run({mode:'discover'},f.dependencies()),'LOCATOR_PRIVACY');
+  assert.equal(f.children.length,0);assert.equal(writeCalls(f).length,0);assert.equal(f.calls.length,1);
 });

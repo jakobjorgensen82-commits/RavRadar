@@ -42,7 +42,7 @@ function execute(overrides = {}, fault = {}) {
     assert.equal(args[0], 'scripts/admin-document-history-maintenance.mjs');
     const mode = args[1].slice(2); calls.push({mode, args, env:options.env});
     if (fault.failMode === mode) {const error = new Error('never log raw child material');
-      if (fault.typedCode) error.stderr = Buffer.from(JSON.stringify({status:'FAILED_CLOSED', code:fault.typedCode, operation:{private:'not printed',writeOutcome:fault.writeOutcome}}));
+      if (fault.typedCode) error.stderr = Buffer.from(JSON.stringify({status:'FAILED_CLOSED', code:fault.typedCode, httpStatus:fault.genericHttpStatus, privacyHttpStatus:fault.privacyHttpStatus, privacyStage:fault.privacyStage, operation:{private:'not printed',writeOutcome:fault.writeOutcome}}));
       throw error;}
     return Buffer.from(JSON.stringify({...fault.controllerResult, mode, status:statuses[mode], currentDocumentsWritten:false,
       protectedOtherKeysWritten:false, archiveObjectsDeleted:false}));
@@ -284,4 +284,30 @@ test('document history workflow: supplied invalid counters or archive flag refus
     assert.equal(result.exitCode,1);assert.equal(result.log.length,0);
     assert.equal(result.errors[0].code,'DOCUMENT_HISTORY_MEASUREMENT');
   }
+});
+
+test('document history workflow: privacy failure exposes only fixed HTTP stage fields and never replays',()=>{
+  const options={DOCUMENT_HISTORY_OPERATION:'maintain',DOCUMENT_HISTORY_CONFIRMATION:'MAINTAIN-EXACT-THREE-DOCUMENT-HISTORY'};
+  for(const [httpStatus,privacyStage,expectedStatus,expectedStage] of [
+    [201,'CURRENT_METADATA',201,'CURRENT_METADATA'],[403,'HTTP_STATUS',403,'HTTP_STATUS'],
+    [777,'synthetic-private-never-log',null,null],
+  ]){
+    const r=execute(options,{failMode:'maintain',typedCode:'LOCATOR_PRIVACY_UNVERIFIED',privacyHttpStatus:httpStatus,privacyStage});
+    assert.equal(r.exitCode,1);assert.deepEqual(r.calls.map(c=>c.mode),['maintain']);
+    assert.equal(r.errors[0].code,'LOCATOR_PRIVACY_UNVERIFIED');
+    assert.equal(r.errors[0].httpStatus,null);assert.equal(r.errors[0].privacyHttpStatus,expectedStatus);assert.equal(r.errors[0].privacyStage,expectedStage);
+    assert(!JSON.stringify(r.errors).includes('private'));assert.equal(r.bucketCalls.length,1);
+  }
+  const later=execute(options,{failMode:'maintain',typedCode:'WRITE_OUTCOME_RESOLVED_STOPPED',
+    writeOutcome:'IMMUTABLE_ARCHIVE_OBJECT_PRESENT_VERIFIED',genericHttpStatus:503,privacyHttpStatus:201,privacyStage:'VERIFIED'});
+  assert.equal(later.exitCode,1);assert.equal(later.errors[0].privacyHttpStatus,201);
+  assert.equal(later.errors[0].privacyStage,'VERIFIED');assert.equal(later.errors[0].httpStatus,null,
+    'Existing child-error generic HTTP behavior is preserved; never substitute successful metadata201');
+  assert.equal(later.errors[0].code,'WRITE_OUTCOME_RESOLVED_STOPPED');
+  const bucket=execute({DOCUMENT_HISTORY_OPERATION:'bucket-readonly'},{bucketFailure:true});
+  assert.equal(bucket.errors[0].httpStatus,403,'The existing real bucket HTTPstatus remains unchanged');
+  assert.equal(bucket.errors[0].privacyHttpStatus,null);assert.equal(bucket.errors[0].privacyStage,null);
+  const good=execute(options,{controllerResult:{privacyHttpStatus:201,privacyStage:'VERIFIED'}});
+  assert.equal(good.exitCode,0);assert.equal(good.log[0].measurements[0].privacyHttpStatus,201);
+  assert.equal(good.log[0].measurements[0].privacyStage,'VERIFIED');
 });

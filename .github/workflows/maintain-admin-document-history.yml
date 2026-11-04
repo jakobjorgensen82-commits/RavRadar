@@ -187,6 +187,7 @@ jobs:
           const path = require('node:path');
           const { execFileSync } = require('node:child_process');
           const env = process.env;
+          const privacyStages = Object.freeze(["NOT_STARTED","CATALOGUE_REQUEST","HTTP_STATUS","RESPONSE_JSON","RESPONSE_FIELDS","SERVICE_ROLE_ACCESS","CURRENT_METADATA","HISTORY_POLICY_NAMES","HISTORY_METADATA","VERIFIED"]);
           let phase = 'AUTHORITY';
           function need(value, code) { if (!value) { const error = new Error(code); error.code = code; throw error; } }
           const expected = {
@@ -286,6 +287,12 @@ jobs:
               need(result.archiveRequired === undefined || typeof result.archiveRequired === 'boolean',
                 'DOCUMENT_HISTORY_MEASUREMENT');
               row.archiveRequired = result.archiveRequired === undefined ? null : result.archiveRequired;
+              if (result.privacyHttpStatus !== undefined || result.privacyStage !== undefined) {
+                need((result.privacyHttpStatus === null || (Number.isInteger(result.privacyHttpStatus)
+                  && result.privacyHttpStatus >= 100 && result.privacyHttpStatus <= 599))
+                  && privacyStages.includes(result.privacyStage), 'DOCUMENT_HISTORY_MEASUREMENT');
+                row.privacyHttpStatus = result.privacyHttpStatus; row.privacyStage = result.privacyStage;
+              }
               return row;
             }
             // The management token reaches only this fixed metadata/create helper, never the archive controller.
@@ -327,13 +334,16 @@ jobs:
                 result = JSON.parse(output.toString('utf8'));
               } catch (error) {
                 let code = ['archive', 'publish-locator', 'prune', 'maintain'].includes(mode) ? 'WRITE_OUTCOME_UNKNOWN' : 'DOCUMENT_HISTORY_CHILD_FAILED';
-                let failureOutcome = null;
+                let failureOutcome = null, privacyHttpStatus = null, privacyStage = null;
                 try { const record = JSON.parse(error.stderr.toString('utf8'));
                   if (record.status === 'FAILED_CLOSED' && /^[A-Z_]{1,96}$/.test(record.code)) code = record.code;
                   if (['EXACT_ROW_ABSENT','EXACT_ROW_STILL_PRESENT','LOCATOR_ABSENT','LOCATOR_PAYLOAD_PRESENT_VERIFIED',
                     'IMMUTABLE_ARCHIVE_OBJECT_PRESENT_VERIFIED','UNRESOLVED'].includes(record.operation?.writeOutcome))
-                    failureOutcome = record.operation.writeOutcome; } catch {}
-                const failure = new Error(code); failure.code = code; failure.writeOutcome = failureOutcome; throw failure;
+                    failureOutcome = record.operation.writeOutcome;
+                  if (record.status === 'FAILED_CLOSED' && Number.isInteger(record.privacyHttpStatus)
+                    && record.privacyHttpStatus >= 100 && record.privacyHttpStatus <= 599) privacyHttpStatus = record.privacyHttpStatus;
+                  if (record.status === 'FAILED_CLOSED' && privacyStages.includes(record.privacyStage)) privacyStage = record.privacyStage; } catch {}
+                const failure = new Error(code); failure.code = code; failure.writeOutcome = failureOutcome; failure.privacyHttpStatus = privacyHttpStatus; failure.privacyStage = privacyStage; throw failure;
               }
               need(result && result.mode === mode && result.status === expected[mode]
                 && result.currentDocumentsWritten === false && result.protectedOtherKeysWritten === false
@@ -357,7 +367,7 @@ jobs:
             console.error(JSON.stringify({ status: 'FAILED_CLOSED', phase,
               code: (/^[A-Z_]{1,96}$/.test(error.code || '') || /^R2_BUCKET_[A-Z_]{1,80}$/.test(error.code || '')) ? error.code : 'DOCUMENT_HISTORY_OPERATOR_FAILED',
               httpStatus: Number.isInteger(error.httpStatus) ? error.httpStatus : null,
-              writeOutcome: error.writeOutcome || null }));
+              writeOutcome: error.writeOutcome || null, privacyHttpStatus: Number.isInteger(error.privacyHttpStatus) && error.privacyHttpStatus >= 100 && error.privacyHttpStatus <= 599 ? error.privacyHttpStatus : null, privacyStage: privacyStages.includes(error.privacyStage) ? error.privacyStage : null }));
             process.exitCode = 1;
           }
           NODE

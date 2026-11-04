@@ -4,6 +4,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
+import {spawnSync} from 'node:child_process';
+import {pathToFileURL} from 'node:url';
 import {gunzipSync} from 'node:zlib';
 import {PRIVATE_STUDY_ADMIN_ACCESS_SQL,PRIVATE_STUDY_ADMIN_FUNCTIONS} from './lib/private-trip-study-admin-transport.mjs';
 import {ADMIN_HISTORY_POLICY as P,runAdminDocumentHistoryMaintenance as run} from './admin-document-history-maintenance.mjs';
@@ -32,7 +34,12 @@ function fixture(){
           {name:'ravradar_admin_documents_read',permissive:'PERMISSIVE',roles:['authenticated'],command:'SELECT',qual:"public.is_ravradar_owner() or public.has_ravradar_permission('full_admin') or public.has_ravradar_permission(public.ravradar_document_permission(document_key))"},
           {name:'ravradar_ravscore_checkpoint_no_direct_read',permissive:'RESTRICTIVE',roles:['authenticated'],command:'SELECT',qual:"document_key <> 'ravscore-continuation-checkpoint'"}],functions:clone(PRIVATE_STUDY_ADMIN_FUNCTIONS)};
       const version_metadata=clone(metadata);version_metadata.anonSelect=fault.historyPrivacy;version_metadata.policies[0].name='ravradar_admin_document_versions_read';version_metadata.policies[1].name='ravradar_ravscore_checkpoint_versions_no_direct_read';
-      return json([{current_access:!fault.acl,history_access:!fault.acl,metadata,version_metadata}]);
+      const report=[{current_access:!fault.acl,history_access:!fault.acl,metadata,version_metadata}];
+      if(fault.catalogueChange)fault.catalogueChange(report);
+      const status=fault.privacyStatus??200;
+      if(status===204)return new Response(null,{status});
+      if(fault.privacyShape==='invalid-json')return new Response('synthetic-private-metadata-never-log',{status});
+      return json(fault.privacyShape==='envelope'?{data:report}:fault.privacyShape==='empty'?[]:report,status);
     }
     if(u.origin===P.project){
       const q=u.searchParams,key=q.get('document_key')?.slice(3);
@@ -383,4 +390,93 @@ test('automatic oldest25 batch is re-admitted against a fresh normal inventory b
   assert.equal(f.count('PUT')+f.count('DELETE'),0);
   assert.equal(f.calls.filter(x=>new URL(x.url).pathname==='/rest/v1/admin_document_versions'
     &&new URL(x.url).searchParams.get('select')==='*').length,0);
+});
+
+test('database-query HTTP201 success keeps the complete normal history privacy and archive chain',async t=>{
+  const f=fixture(),dir=await host(t);f.fault.privacyStatus=201;
+  const result=await call(f,dir,'maintain',maintainConfirm);
+  assert.equal(result.status,'AUTOMATIC_FIXED_DOCUMENT_HISTORY_MAINTAINED');
+  assert.equal(result.privacyHttpStatus,201);assert.equal(result.privacyStage,'VERIFIED');
+  assert.equal(result.confirmedAbsentAfterWrite,6);
+});
+test('database-query HTTP status and malformed201 metadata refuse before any archive locator or DELETE',async t=>{
+  for(const status of [401,403,429,500,204]){
+    const f=fixture(),dir=await host(t);f.fault.privacyStatus=status;
+    await assert.rejects(()=>call(f,dir,'maintain',maintainConfirm),e=>{
+      assert.equal(e.code,'LOCATOR_PRIVACY_UNVERIFIED');assert.equal(e.privacyHttpStatus,status);assert.equal(e.privacyStage,'HTTP_STATUS');return true;
+    });
+    assert.equal(f.calls.length,1);assert.equal(f.objects.size,0);assert.equal(f.locators.length,0);assert.equal(f.count('DELETE'),0);
+  }
+  for(const [change,stage,code] of [
+    [f=>f.fault.privacyShape='invalid-json','RESPONSE_JSON','LOCATOR_PRIVACY_UNVERIFIED'],
+    [f=>f.fault.privacyShape='envelope','RESPONSE_JSON','LOCATOR_PRIVACY_UNVERIFIED'],
+    [f=>f.fault.privacyShape='empty','RESPONSE_JSON','LOCATOR_PRIVACY_UNVERIFIED'],
+    [f=>f.fault.privacy=true,'CURRENT_METADATA','LOCATOR_PRIVACY_UNVERIFIED'],
+    [f=>f.fault.historyPrivacy=true,'HISTORY_METADATA','LOCATOR_PRIVACY_UNVERIFIED'],
+    [f=>f.fault.acl=true,'SERVICE_ROLE_ACCESS','SERVICE_ROLE_HISTORY_ACCESS_UNVERIFIED'],
+    [f=>f.fault.catalogueChange=r=>r[0].metadata.functions[2].source="select 'synthetic-private-never-log';",'CURRENT_METADATA','LOCATOR_PRIVACY_UNVERIFIED'],
+    [f=>f.fault.catalogueChange=r=>r[0].version_metadata.policies[0].name='unreviewed','HISTORY_POLICY_NAMES','LOCATOR_PRIVACY_UNVERIFIED'],
+    [f=>f.fault.catalogueChange=r=>r[0].metadata=JSON.stringify(r[0].metadata),'CURRENT_METADATA','LOCATOR_PRIVACY_UNVERIFIED'],
+  ]){
+    const f=fixture(),dir=await host(t);f.fault.privacyStatus=201;change(f);
+    await assert.rejects(()=>call(f,dir,'maintain',maintainConfirm),e=>{
+      assert.equal(e.code,code);assert.equal(e.privacyHttpStatus,201);assert.equal(e.privacyStage,stage);
+      assert(!JSON.stringify(e).includes('synthetic-private'));return true;
+    });
+    assert.equal(f.calls.length,1);assert.equal(f.objects.size,0);assert.equal(f.locators.length,0);assert.equal(f.count('DELETE'),0);
+  }
+});
+
+test('database-query HTTP real CLI emits only fixed status and privacy stages after complete strict validation',async t=>{
+  const testSource=await fs.readFile(new URL(import.meta.url),'utf8');
+  const from=testSource.indexOf('function fixture(){'),to=testSource.indexOf('\nasync function host(t)',from);
+  assert(from>=0&&to>from);
+  const actualFixture=testSource.slice(from,to);
+  for(const [status,kind,expectedStatus,expectedStage] of [
+    [200,'ok',0,'VERIFIED'],[201,'ok',0,'VERIFIED'],[201,'privacy',1,'CURRENT_METADATA'],
+    [201,'envelope',1,'RESPONSE_JSON'],[401,'ok',1,'HTTP_STATUS'],[201,'archive-failure',1,'VERIFIED'],
+  ]){
+    const dir=await host(t),observation=path.join(dir,'cli-safe-observation.json');
+    const support=[
+      "import crypto from 'node:crypto';","import fs from 'node:fs';","import assert from 'node:assert/strict';",
+      'import {PRIVATE_STUDY_ADMIN_FUNCTIONS,PRIVATE_STUDY_ADMIN_ACCESS_SQL} from '+JSON.stringify(pathToFileURL(path.resolve('scripts/lib/private-trip-study-admin-transport.mjs')).href)+';',
+      'const P='+JSON.stringify(P)+';',
+      "const stable=v=>Array.isArray(v)?v.map(stable):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,stable(v[k])])):v;",
+      "const bytes=v=>Buffer.from(JSON.stringify(stable(v))),sha=b=>crypto.createHash('sha256').update(b).digest('hex'),clone=v=>structuredClone(v);",
+      actualFixture,'const f=fixture();f.fault.privacyStatus='+status+';',
+      kind==='privacy'?'f.fault.privacy=true;':kind==='envelope'?"f.fault.privacyShape='envelope';":kind==='archive-failure'?'f.fault.r2Unknown=true;':'',
+      'globalThis.fetch=f.fetchImpl;',
+      "process.on('exit',()=>fs.writeFileSync("+JSON.stringify(observation)+",JSON.stringify({calls:f.calls.length,mutations:f.calls.filter(c=>new URL(c.url).hostname!=='api.supabase.com'&&['PUT','POST','PATCH','DELETE'].includes(c.method)).length}),{flag:'wx'}));",
+    ].join('\n');
+    const f=fixture(),allowed=new Set(['PATH','SYSTEMROOT','WINDIR','COMSPEC','PATHEXT','HOME','USERPROFILE','LANG','LC_ALL']);
+    const env={...Object.fromEntries(Object.entries(process.env).filter(([key])=>allowed.has(key.toUpperCase()))),
+      ...f.env,RUNNER_TEMP:os.tmpdir(),TMP:os.tmpdir(),TEMP:os.tmpdir()};
+    const result=spawnSync(process.execPath,['--import','data:text/javascript,'+encodeURIComponent(support),
+      path.resolve('scripts/admin-document-history-maintenance.mjs'),'--maintain','--workdir',path.join(dir,'working'),
+      '--confirm',maintainConfirm.confirmation,'--limit','25'],{env,encoding:'utf8',timeout:15000,maxBuffer:65536,windowsHide:true});
+    assert.equal(result.error,undefined);assert.equal(result.signal,null);assert.equal(result.status,expectedStatus,result.stderr);
+    const record=JSON.parse((expectedStatus?result.stderr:result.stdout).trim());
+    assert.equal(record.privacyStage,expectedStage);
+    assert.equal(record.privacyHttpStatus,status);
+    assert.equal(record.httpStatus,undefined,'Metadata201 must never masquerade as an operation failure HTTPstatus');
+    if(expectedStatus){
+      const observed=JSON.parse(await fs.readFile(observation,'utf8'));
+      if(kind==='archive-failure'){
+        assert.equal(record.code,'WRITE_OUTCOME_RESOLVED_STOPPED');
+        assert.equal(record.operation.writeOutcome,'IMMUTABLE_ARCHIVE_OBJECT_PRESENT_VERIFIED');
+        assert.equal(observed.mutations,1,'Exactly one synthetic immutable upload precedes the resolved-stop');
+      }else{assert.equal(record.code,'LOCATOR_PRIVACY_UNVERIFIED');assert.equal(observed.calls,1);assert.equal(observed.mutations,0);}
+    }
+    assert(!result.stdout.includes('synthetic-document-secret')&&!result.stderr.includes('synthetic-document-secret'));
+    assert(!result.stderr.includes('synthetic-service-role')&&!result.stderr.includes('synthetic-existing-metadata-access'));
+  }
+});
+
+test('database-query HTTP201 wrong RLS remains refused before history mutations',async t=>{
+  const f=fixture(),dir=await host(t);f.fault.privacyStatus=201;
+  f.fault.catalogueChange=rows=>{rows[0].metadata.rls=false;};
+  await assert.rejects(()=>call(f,dir,'maintain',maintainConfirm),e=>{
+    assert.equal(e.code,'LOCATOR_PRIVACY_UNVERIFIED');assert.equal(e.privacyHttpStatus,201);assert.equal(e.privacyStage,'CURRENT_METADATA');return true;
+  });
+  assert.equal(f.calls.length,1);assert.equal(f.objects.size,0);assert.equal(f.locators.length,0);assert.equal(f.count('DELETE'),0);
 });

@@ -1,3 +1,37 @@
+## 89.305 Præcis HTTP-kontrakt for privat historik- og backupkontrol
+
+Management-APIets dokumenterede successtatus accepteres kun sammen med de fulde privatlivs- og metadatakrav. Diagnosen skelner katalogkontrollens HTTP-status fra senere driftsfejl.
+
+### Det dokumenterede POST-kald og den afgrænsede kontraktfejl
+
+Supabases officielle Management-reference for POST /v1/projects/{ref}/database/query angiver HTTP 201 ved succes. De to nye hjælpere til administrationshistorikkens katalogkontrol og backupkontrol havde fejlagtigt krævet HTTP 200. De øvrige eksisterende typede Management-kaldere håndterer allerede 201; en forventning fra et andet REST-kald må ikke overføres til dette endpoint.
+
+Rettelsen accepterer præcis HTTP 200 eller 201 for dette query-kald. Den indfører ikke en generel 2xx-regel og ændrer ingen andre APIers statuskrav. En godkendt transportstatus er kun første betingelse: JSON-format, alle forventede metadata, adgangslister, service-role-adgang, RLS, funktioner og policies skal stadig opfylde de oprindelige fulde kontroller. Ukendt svar, forkerte felter eller manglende privatlivsbevis stopper før mutation.
+
+At et læsequery besvares med 201 er ikke tilladelse til at ændre databasen. Den officielle reference findes på https://supabase.com/docs/reference/api/v1-run-a-query. Den fejlede vedligeholdelses faktisk observerede HTTP-status er fortsat ukendt; den reproducerede kontraktfejl må ikke beskrives som en målt live-201-årsag.
+
+### Særskilt status for katalogkontrollen og den senere operation
+
+privacyHttpStatus følger kun den faste katalog-/privatlivskontrol gennem hjælper, workflow og den afgrænsede fejlrapport. privacyStage angiver dens faste trin, eksempelvis forespørgsel, svarkontrol eller VERIFIED. HTTP-status er et valideret heltal fra 100 til 599 eller null, når den ikke er kendt. Ukendt status fremstilles ikke som 200 eller 201.
+
+Det eksisterende generiske httpStatus beholder sin hidtidige betydning for den øvrige operation. En vellykket privatlivskontrol med privacyHttpStatus=201 og privacyStage=VERIFIED må derfor ikke ommærkes til HTTP-status for en senere arkiv- eller uploadfejl. Den eksisterende bucket-403 og generiske fejlkontrakt bevares. Rå svar, SQL-resultater, spørgsmål, brugerdata, nøgler og vilkårlige fejltekster må ikke komme med i disse faste rapporter.
+
+### Reproduktion og normale regressioner
+
+Begge gamle 200-only-fejl er reproduceret lokalt med dokumenterede 201-svar. Den første pakke har 12 forskellige afgrænsede cases, herunder fem faktiske syntetiske CLI-forløb: gyldige 200/201-svar accepteres; forkert privatliv, forkert svarform og 401 afvises før mutation. Tallene er sammensat af dokumenterede mål og er ikke én fuld suite.
+
+Den særskilte opfølgning, som adskiller privacyHttpStatus fra httpStatus, har derefter genkørt kun de to berørte normale mål. Begge består, inklusive seks faktiske syntetiske CLI-forløb. Den ekstra negative case stopper efter VERIFIED under en senere arkivfejl og beviser, at katalogets 201 ikke bliver operationens generiske fejlstatus. Der er ikke udført en liveforespørgsel, virkelig SQL-installation eller faktisk oprydning i disse prøver.
+
+Regressionerne ligger i de eksisterende normale kaldere. Historikprøverne vælges gennem validate:source:checks → test:ravscore-source-critical → test:account-statistics-assistant-source → test-account-statistics-assistant-callers og dets eksisterende imports af historik-/workflowprøverne. Backupprøverne vælges gennem validate:source:checks → test:supabase-backup → test-archive-supabase-database-backup. Der tilføjes ingen ny pakkealias, kontrolkanal eller fuld testmatrix for at få dem valgt.
+
+### Leveringsstatus og fortsatte sikkerhedsgrænser
+
+Dette er en separat, lokalt kvalificeret kildekandidat over den aktuelle vejrrettelse. Den præcise normale kildekontrol, sikker levering og den første faktiske vedligeholdelsesrapport er fortsat nødvendige beviser. En lokal syntetisk CLI-succes er hverken live-HTTP-evidens, installeret kontrol eller udført arkiv/restore/locator/prune.
+
+Automatisk oprydning forbliver slået fra, og Supabase Pro beholdes. Ingen Free-parathed, automatisk sletning, generel ny retry-autoritet eller produktionsaktivering følger med denne statusrettelse. Ved ukendt udfald stopper den eksisterende normale arbejdsgang; ingen mutation må begynde uden dens fulde kontroller.
+
+Vejrrettelsen, kildeprioritet, scoreformel, C/I/T/F/P, originaldata, geometri, version 4.0.597 og alle 73 migrationsfiler bevares. Den normale historik-/arkiv-/locator-/prunekæde og privatlivskravene ændres ikke. INSTALL-kopien får kun det samme kanoniske håndbogsseed. Alle tidligere afsnit, herunder 89.303 og 89.304, og deres historiske kvalifikationsudsagn bevares.
+
 ## 89.304 Samme prognosetime gennem den normale vejrproces
 
 To skrivemåder kan betegne samme UTC-time. Den indre vejrproces får nu det præcise format, som den eksisterende oprindelseskontrol kræver, uden at flytte prognosestarten eller ændre kontrollen.

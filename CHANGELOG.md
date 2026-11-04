@@ -1,3 +1,13 @@
+## 4. november — præcis Management-201-kontrakt og adskilt privatlivsstatus
+
+Supabases officielle POST /database/query returnerer 201 ved succes. Kun de to nye historik-/backuphjælpere havde en forkert 200-only-forventning; eksisterende typede Management-kaldere håndterer allerede 201. Den afgrænsede rettelse accepterer kun 200/201 sammen med de uændrede fulde metadata-, ACL-, RLS-, funktions- og policykrav. Ingen generel 2xx-regel eller mutation på ukendt svar. Den fejlede vedligeholdelses faktiske HTTP-status er stadig ukendt; 201 er reproduceret kontraktfejl, ikke målt liveårsag.
+
+privacyHttpStatus/privacyStage følger kun katalog-/privatlivskontrollen; det eksisterende generiske httpStatus og bucket-403 bevares. Ukendt status er null. En senere arkivfejl må ikke arve den vellykkede katalogkontrols 201 som sin egen fejlstatus. Kun faste status-/trinoplysninger må rapporteres, ingen rå svar, SQL-data, private payloads eller nøgler.
+
+Begge gamle fejl er reproduceret. Den første lokale pakke kvalificerer 12 forskellige målrettede cases og fem faktiske syntetiske CLI-forløb. Diagnoseopfølgningen genkørte kun to berørte normale mål, begge bestået, med seks syntetiske CLI-forløb inklusive senere fejl efter VERIFIED. Ingen liveforespørgsel, virkelig SQL eller faktisk oprydning er udført. De eksisterende historik-/backupkaldere vælger allerede regressionerne i normal kilde-CI; der tilføjes ingen ny kontrolkanal.
+
+Kandidaten er separat fra vejrleveringen og mangler sin præcise normale kildekontrol, sikker levering og faktiske effekt. Automatisk oprydning er fortsat OFF, Pro beholdes, og ingen Free-parathed eller automatisk gentagelse erklæres. Version, model-/kilde-/lagerbindinger, 73 SQL-migrationer, geometri og originaler bevares. INSTALL ændrer kun kanonisk håndbogsseed. Hele den foregående dokumentation, inklusive 89.303–304 og deres historiske kvalifikationsudsagn, bevares. Se 89.305.
+
 ## 4. november — samme H0-format i den normale vejrproces
 
 Vejrhentning 255 stoppede efter leverandørarbejdet, fordi workflowet gav npm-vejrprocessen H0 med Z, mens den uændrede oprindelseskontrol kræver samme hele UTC-time med .000Z. Den præcise kalder normaliserer nu kun den indre proces gennem den eksisterende resolver og beviser både samme tekstlige time og tidsstempel. Globalt H0, låse, originalbindinger og admissions ændres ikke.

@@ -17,6 +17,7 @@ export const ADMIN_HISTORY_POLICY=Object.freeze({
   maximumRowsPerKey:1_000,maximumPruneRows:600,maximumOperationMs:20*60_000,
   maximumAdminDecodedBytes:2_000_000_000,maximumArchiveRawBytes:2_000_000_000,
 });
+const PRIVACY_STAGES=Object.freeze(["NOT_STARTED","CATALOGUE_REQUEST","HTTP_STATUS","RESPONSE_JSON","RESPONSE_FIELDS","SERVICE_ROLE_ACCESS","CURRENT_METADATA","HISTORY_POLICY_NAMES","HISTORY_METADATA","VERIFIED"]);
 const P=ADMIN_HISTORY_POLICY,sha=b=>crypto.createHash('sha256').update(b).digest('hex');
 // The already-used privacy catalogue query is preserved as the inner query.
 // Only fixed service-role ACL metadata is added; never arbitrary SQL or row content.
@@ -91,7 +92,7 @@ function checkDraft(d){
 function clients({env,fetchImpl,resolveUnknownWrites=false}){
   need(env.SUPABASE_URL?.replace(/\/$/,'')===P.project&&typeof env.SUPABASE_SERVICE_ROLE_KEY==='string'
     &&env.SUPABASE_SERVICE_ROLE_KEY.length>0,'EXACT_PROJECT_AND_EXISTING_SERVICE_ROLE_REQUIRED');
-  const state={puts:new Set(),deletes:new Set(),unknownWrite:false,started:Date.now(),wireWrites:0,pendingMutation:null,guardFailure:null,adminDecodedBytes:0,declaredAdminContentLengthBytes:0,adminResponses:0,r2ReadBytes:0};
+  const state={puts:new Set(),deletes:new Set(),unknownWrite:false,started:Date.now(),wireWrites:0,pendingMutation:null,guardFailure:null,adminDecodedBytes:0,declaredAdminContentLengthBytes:0,adminResponses:0,r2ReadBytes:0,privacyHttpStatus:null,privacyStage:'NOT_STARTED'};
   let exactResponse=null; // Only one bounded full-row response is retained, never all payloads.
   const metadataUrl='https://api.supabase.com/v1/projects/afqhhdrkjfjtpadntdzo/database/query';
   const endpoint=P.project+'/rest/v1/',r2Host=String(env.RAVRADAR_R2_ACCOUNT_ID)+'.eu.r2.cloudflarestorage.com';
@@ -188,26 +189,30 @@ function clients({env,fetchImpl,resolveUnknownWrites=false}){
     }catch{}
     return 'UNRESOLVED';
   };
+  const withPrivacy=error=>Object.assign(error,{privacyHttpStatus:state.privacyHttpStatus,privacyStage:state.privacyStage});
   const safe=async fn=>{try{return await fn();}catch(e){if(state.unknownWrite){const resolution=resolveUnknownWrites?await resolveUnknown():'NOT_REQUESTED';
     const code=resolution==='UNRESOLVED'||resolution==='NOT_REQUESTED'?'WRITE_OUTCOME_UNKNOWN':'WRITE_OUTCOME_RESOLVED_STOPPED';
-    const error=new Error(code);error.code=code;error.safeOperation={putPaths:[...state.puts].map(u=>new URL(u).pathname),deleteOrLocatorRequests:[...state.deletes].map(u=>({path:new URL(u).pathname,query:new URL(u).search})),adminDecodedReadBytes:state.adminDecodedBytes,r2ReadBytes:state.r2ReadBytes,writeOutcome:resolution,resolutionReadOnly:true,furtherWritesPerformed:false};throw error;}if(state.guardFailure)fail(state.guardFailure);
-    if(typeof e.code==='string'&&/^[A-Z_]+$/.test(e.code))throw e;fail('ADMIN_OR_ARCHIVE_OPERATION_FAILED');}};
+    const error=new Error(code);error.code=code;error.safeOperation={putPaths:[...state.puts].map(u=>new URL(u).pathname),deleteOrLocatorRequests:[...state.deletes].map(u=>({path:new URL(u).pathname,query:new URL(u).search})),adminDecodedReadBytes:state.adminDecodedBytes,r2ReadBytes:state.r2ReadBytes,writeOutcome:resolution,resolutionReadOnly:true,furtherWritesPerformed:false};throw withPrivacy(error);}if(state.guardFailure)throw withPrivacy(Object.assign(new Error(state.guardFailure),{code:state.guardFailure}));
+    if(typeof e.code==='string'&&/^[A-Z_]+$/.test(e.code))throw withPrivacy(e);throw withPrivacy(Object.assign(new Error('ADMIN_OR_ARCHIVE_OPERATION_FAILED'),{code:'ADMIN_OR_ARCHIVE_OPERATION_FAILED'}));}};
   const r2=()=>createR2PrivateRuntimeStorage({accountId:env.RAVRADAR_R2_ACCOUNT_ID,
     accessKeyId:env.RAVRADAR_R2_ACCESS_KEY_ID,secretAccessKey:env.RAVRADAR_R2_SECRET_ACCESS_KEY,
     bucketId:P.bucket,maximumObjectBytes:P.maximumObjectBytes,bucketCeilingBytes:P.maximumBucketBytes,
     fetchImpl:guardedFetch});
   const privacy=async()=>{
+    state.privacyHttpStatus=null;state.privacyStage='CATALOGUE_REQUEST';
     need(typeof env.SUPABASE_ACCESS_TOKEN==='string'&&env.SUPABASE_ACCESS_TOKEN.length>=20,'EXISTING_CATALOGUE_READ_TOKEN_REQUIRED');
     const response=await guardedFetch(metadataUrl,{method:'POST',headers:{Authorization:'Bearer '+env.SUPABASE_ACCESS_TOKEN,'Content-Type':'application/json'},body:JSON.stringify({query:HISTORY_ACCESS_SQL})});
-    need(response.status===200,'LOCATOR_PRIVACY_UNVERIFIED');
-    try{const rows=await response.json();need(Array.isArray(rows)&&rows.length===1,'LOCATOR_PRIVACY_UNVERIFIED');
-      fields(rows[0],['metadata','version_metadata','current_access','history_access'],'LOCATOR_PRIVACY_FIELDS');
-      need(rows[0].current_access===true&&rows[0].history_access===true,'SERVICE_ROLE_HISTORY_ACCESS_UNVERIFIED');
-      assertPrivateStudyAdminAccess([{metadata:rows[0].metadata}]);
-      const version=rows[0].version_metadata;need(Array.isArray(version?.policies)&&version.policies.length===2,'LOCATOR_PRIVACY_UNVERIFIED');
+    state.privacyHttpStatus=response.status;state.privacyStage='HTTP_STATUS';
+    need(response.status===200||response.status===201,'LOCATOR_PRIVACY_UNVERIFIED');
+    try{state.privacyStage='RESPONSE_JSON';const rows=await response.json();need(Array.isArray(rows)&&rows.length===1,'LOCATOR_PRIVACY_UNVERIFIED');
+      state.privacyStage='RESPONSE_FIELDS';fields(rows[0],['metadata','version_metadata','current_access','history_access'],'LOCATOR_PRIVACY_FIELDS');
+      state.privacyStage='SERVICE_ROLE_ACCESS';need(rows[0].current_access===true&&rows[0].history_access===true,'SERVICE_ROLE_HISTORY_ACCESS_UNVERIFIED');
+      state.privacyStage='CURRENT_METADATA';assertPrivateStudyAdminAccess([{metadata:rows[0].metadata}]);
+      state.privacyStage='HISTORY_POLICY_NAMES';const version=rows[0].version_metadata;need(Array.isArray(version?.policies)&&version.policies.length===2,'LOCATOR_PRIVACY_UNVERIFIED');
       const aliases={'ravradar_admin_document_versions_read':'ravradar_admin_documents_read','ravradar_ravscore_checkpoint_versions_no_direct_read':'ravradar_ravscore_checkpoint_no_direct_read'};
       need(version.policies.every(p=>Object.hasOwn(aliases,p.name)),'LOCATOR_PRIVACY_UNVERIFIED');
-      assertPrivateStudyAdminAccess([{metadata:{...version,policies:version.policies.map(p=>({...p,name:aliases[p.name]}))}}]);
+      state.privacyStage='HISTORY_METADATA';assertPrivateStudyAdminAccess([{metadata:{...version,policies:version.policies.map(p=>({...p,name:aliases[p.name]}))}}]);
+      state.privacyStage='VERIFIED';
     }catch(e){if(e.code==='SERVICE_ROLE_HISTORY_ACCESS_UNVERIFIED')throw e;fail('LOCATOR_PRIVACY_UNVERIFIED');}
   };
   return{current,versions,exactVersions,r2,safe,state,privacy};
@@ -443,7 +448,7 @@ export async function runAdminDocumentHistoryMaintenance({mode='plan',workdir,li
     }else{
       need(confirmation==='PRUNE-EXACT-THREE-DOCUMENT-HISTORY','PRUNE_CONFIRMATION');result=await prune(c,null,limit);
     }
-    return{...result,mode,wireWrites:c.state.wireWrites,currentDocumentsWritten:false,protectedOtherKeysWritten:false,
+    return{...result,mode,privacyHttpStatus:c.state.privacyHttpStatus,privacyStage:c.state.privacyStage,wireWrites:c.state.wireWrites,currentDocumentsWritten:false,protectedOtherKeysWritten:false,
       archiveObjectsDeleted:false,locatorDocumentWritten:['publish-locator','maintain'].includes(mode)&&c.state.wireWrites>0,adminDecodedReadBytes:c.state.adminDecodedBytes,declaredAdminContentLengthBytes:c.state.declaredAdminContentLengthBytes,adminResponses:c.state.adminResponses,r2ReadBytes:c.state.r2ReadBytes,fullDatabaseBackupVerified:false,productionDbRestoreExecuted:false,freeReady:false,sourceAdmission:false};
   });
 }
@@ -457,4 +462,4 @@ async function main(){
   need(options.workdir,'PRIVATE_DIRECTORY_REQUIRED');console.log(JSON.stringify(await runAdminDocumentHistoryMaintenance(options)));
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(path.resolve(process.argv[1])).href)
-  main().catch(e=>{console.error(JSON.stringify({status:'FAILED_CLOSED',code:typeof e.code==='string'&&/^[A-Z_]+$/.test(e.code)?e.code:'OPERATION_FAILED',operation:e.safeOperation??null}));process.exitCode=1;});
+  main().catch(e=>{console.error(JSON.stringify({status:'FAILED_CLOSED',code:typeof e.code==='string'&&/^[A-Z_]+$/.test(e.code)?e.code:'OPERATION_FAILED',operation:e.safeOperation??null,privacyHttpStatus:Number.isInteger(e.privacyHttpStatus)&&e.privacyHttpStatus>=100&&e.privacyHttpStatus<=599?e.privacyHttpStatus:null,privacyStage:PRIVACY_STAGES.includes(e.privacyStage)?e.privacyStage:null}));process.exitCode=1;});
