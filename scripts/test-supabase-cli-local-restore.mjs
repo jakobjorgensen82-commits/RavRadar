@@ -338,12 +338,34 @@ create policy own_probe on public.rr_restore_probe for select to authenticated u
 grant usage on schema public to rr_restore_reader;
 grant select on public.rr_restore_probe to rr_restore_reader;
 `;
+// CLI dump runs inside this exact owned bridge, so its destination is the
+// verified DB container's internal endpoint, never the host's loopback port.
+// The status URL still passes the unchanged strict loopback guard first.
+function ownedDumpArguments(c,p,info){
+  need(arguments.length===3,'OWNED_DUMP_ARGUMENTS');
+  need(c?.archive===false&&/^[1-9][0-9]{0,18}-1$/.test(c?.owner??''),'SYNTHETIC_DUMP_ONLY');
+  const run=c.owner.slice(0,-2);
+  need(p?.side==='A'&&p.id==='rr_restore_'+run+'_1_a'
+    &&p.network==='rr-restore-'+c.owner+'-a','OWNED_DUMP_PROJECT');
+  need(/^[a-f0-9]{64}$/.test(p.db??'')&&/^[a-f0-9]{64}$/.test(p.networkId??''),'OWNED_DUMP_IDENTITY');
+  const local=localUrl(p.dbUrl?.href,'db');
+  need(ownedContainer(info,p,'db')===p.db,'OWNED_DUMP_DB_ID');
+  need(info.NetworkSettings.Networks[p.network]?.NetworkID===p.networkId,'OWNED_DUMP_NETWORK_ID');
+  const target=new URL(local.href);target.hostname=info.Name.slice(1);target.port='5432';
+  need(target.hostname==='supabase_db_'+p.id&&target.port==='5432'
+    &&target.username===local.username&&target.password===local.password
+    &&target.pathname==='/postgres'&&!target.search&&!target.hash,'OWNED_DUMP_TARGET');
+  return Object.freeze(['--network-id',p.network,'db','dump','--db-url',target.href]);
+}
+
 async function dumpFiles(c,p){
+  const info=(await jsonCommand(c,'DUMP_SOURCE_DB',['inspect',p.db]))[0];
+  const dumpArguments=ownedDumpArguments(c,p,info);
   const dir=path.join(c.root,'dumps');await fs.mkdir(dir,{mode:0o700});
   const audit=async()=>{let n=0;for(const name of FILES){const s=await fs.lstat(path.join(dir,name)).catch(e=>{if(e.code==='ENOENT')return null;throw e;});
     if(s){need(s.isFile()&&!s.isSymbolicLink()&&s.nlink===1&&s.size<=P.fileBytes,'DUMP_FILE_BOUND');n+=s.size;}}need(n<=P.totalBytes,'DUMP_TOTAL_BOUND');};
   const flags=[['--role-only'],[],['--data-only','--use-copy'],['--schema','supabase_migrations'],['--schema','supabase_migrations','--data-only','--use-copy']];
-  for(let i=0;i<FILES.length;i++)await command(c,'DUMP_'+i,'supabase',['--network-id',p.network,'db','dump','--local',...flags[i],'--file',path.join(dir,FILES[i])],{cwd:p.dir,audit});
+  for(let i=0;i<FILES.length;i++)await command(c,'DUMP_'+i,'supabase',[...dumpArguments,...flags[i],'--file',path.join(dir,FILES[i])],{cwd:p.dir,audit});
   await audit();const bytes=[];for(const name of FILES){const file=path.join(dir,name),before=await fs.lstat(file,{bigint:true});
     need(before.isFile()&&!before.isSymbolicLink()&&before.nlink===1n&&before.size>0n,'DUMP_FILE');
     const value=await fs.readFile(file),after=await fs.lstat(file,{bigint:true});
@@ -488,11 +510,34 @@ async function selfTest(){
     try{await run({c,source,env,index,materialize,getObserved:()=>observed});}
     finally{await fs.rm(root,{recursive:true,force:false});}
   }
+  const dumpFixture=()=>{
+    const c={owner:'123-1',archive:false},p={side:'A',id:'rr_restore_123_1_a',network:'rr-restore-123-1-a',
+      networkId:'b'.repeat(64),db:'a'.repeat(64),dbUrl:new URL('postgresql://postgres:synthetic%40%3A%2F%3F@127.0.0.1:54322/postgres')};
+    const info={Id:p.db,Name:'/supabase_db_'+p.id,Config:{Labels:{'com.supabase.cli.project':p.id}},
+      NetworkSettings:{Networks:{[p.network]:{NetworkID:p.networkId}},Ports:{'5432/tcp':[{HostIp:'127.0.0.1',HostPort:'54322'}]}},
+      State:{Running:true,Health:{Status:'healthy'}}};
+    return {c,p,info};
+  };
   test('only exact loopback API and database URLs are accepted',()=>{
     assert.equal(localUrl('http://127.0.0.1:54321/','api').host,'127.0.0.1:54321');
     assert.equal(localUrl('postgresql://postgres:synthetic@127.0.0.1:54322/postgres','db').pathname,'/postgres');
     for(const value of ['https://example.com:54321/','http://localhost:54321/','http://127.0.0.1:54321/?token=x','http://u:p@127.0.0.1:54321/','http://127.0.0.1:54325/'])
       assert.throws(()=>localUrl(value,'api'));
+    const {c,p,info}=dumpFixture(),before=p.dbUrl.href;
+    const args=ownedDumpArguments(c,p,info),target=new URL(args.at(-1));
+    assert.deepEqual(args.slice(0,-1),['--network-id',p.network,'db','dump','--db-url']);
+    assert.equal(target.hostname,info.Name.slice(1));assert.equal(target.port,'5432');
+    assert.equal(target.username,p.dbUrl.username);assert.equal(target.password,p.dbUrl.password);
+    assert.equal(target.pathname,'/postgres');assert.equal(p.dbUrl.href,before);
+    assert(Object.isFrozen(args));
+    for(const flag of ['--local','--linked','--project-ref'])assert(!args.includes(flag));
+    let operand=0;const extra=new Proxy({},{get(){operand++;throw new Error('UNEXPECTED_DUMP_OVERRIDE');}});
+    assert.throws(()=>ownedDumpArguments(c,p,info,extra),e=>e.code==='OWNED_DUMP_ARGUMENTS');assert.equal(operand,0);
+    for(const value of ['postgresql://postgres:synthetic@db.project.invalid:5432/postgres',
+      'postgresql://postgres:synthetic@localhost:54322/postgres','postgresql://postgres:synthetic@127.0.0.1:5432/postgres',
+      'postgresql://service_role:synthetic@127.0.0.1:54322/postgres']){
+      const changed={...p,dbUrl:new URL(value)};assert.throws(()=>ownedDumpArguments(c,changed,info));
+    }
   });
   test('container identity, project, network and real loopback health are required',()=>{
     const p={id:'rr_synthetic',network:'rr-net'},x={Id:'a'.repeat(64),Name:'/supabase_auth_rr_synthetic',Config:{Labels:{'com.supabase.cli.project':p.id}},
@@ -502,6 +547,15 @@ async function selfTest(){
       const v=structuredClone(x);edit(v);assert.throws(()=>ownedContainer(v,p,'auth'));}
     const db=structuredClone(x);db.Name='/supabase_db_'+p.id;db.NetworkSettings.Ports={'5432/tcp':[{HostIp:'127.0.0.1',HostPort:'54322'}]};
     assert.equal(ownedContainer(db,p,'db'),db.Id);db.NetworkSettings.Ports['5432/tcp'][0].HostPort='54323';assert.throws(()=>ownedContainer(db,p,'db'));
+    for(const edit of [v=>{v.c.archive=true;},v=>{v.c.owner='other';},v=>{v.p.side='B';},
+      v=>{v.p.id='linked_project_ref';},v=>{v.p.network='foreign-network';},v=>{v.p.db='c'.repeat(64);},
+      v=>{v.info.Name='/foreign';},v=>{v.info.Id='c'.repeat(64);},
+      v=>{v.info.Config.Labels['com.supabase.cli.project']='foreign';},
+      v=>{v.info.NetworkSettings.Networks[v.p.network].NetworkID='c'.repeat(64);},
+      v=>{v.info.NetworkSettings.Networks.extra={NetworkID:'c'.repeat(64)};},
+      v=>{v.info.NetworkSettings.Ports['5432/tcp'][0].HostIp='0.0.0.0';},v=>{v.info.State.Health.Status='starting';}]){
+      const v=dumpFixture();edit(v);assert.throws(()=>ownedDumpArguments(v.c,v.p,v.info));
+    }
   });
   test('restore stream preserves UTF8 and decimal bytes without number conversion',()=>{
     const x=Buffer.from(TEXT+'\n'+DECIMAL),values=[Buffer.from('roles\n'),Buffer.from('schema\n'),x];
