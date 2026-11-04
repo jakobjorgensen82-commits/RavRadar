@@ -1,3 +1,13 @@
+## 4. november — faktisk hosted syntetisk standardrestore, 4.0.597
+
+Den normale syntetiske Supabase-standardprøve er faktisk bestået på Linux gennem det eksisterende workflow og CLI 2.117.0. Fem normale dumps er gendannet i et nyt eget projekt; UTF-8, store tal/decimaler, metadata, roller, migrationshistorik og nyt passwordlogin med samme testpassword er verificeret. De syv Auth-forløb har fem forventede HTTP 200 og to forventede HTTP 400-afslag. Alle 81 processer afsluttede med exit 0 og lukket procesgruppe; egne Dockerressourcer er genlæst som lukkede.
+
+Første forsøg stoppede, fordi --local valgte værtens loopbackport, mens --network-id placerede dumpet i sin egen bridgecontainer. Kun dumpets argumenter er rettet til den allerede verificerede egne DB-container/5432 gennem --db-url. Den strenge loopback-statuskontrol, navn/id/label/projekt/netværk/health, samme credentials, ingen caller-/linked-/prodadresse, netværksisolering, alle fem filvalg, lukning og grænser bevares. Den rå første stderrtekst er ikke bevaret; den understøttede kodeårsag må ikke præsenteres som en citeret rå logadresse.
+
+Dette lukker hosted syntetisk standardrestore, ikke rigtig RavRadar-backup eller Authgendannelse. productionBackupVerified, cryptoR2Verified og productionAuthRestoreVerified er fortsat false. Rigtigt arkiv/capture, krypteret R2-genlæsning og isoleret gendannelse, komplet kompatibilitet, Storage-bytes, slettebarrierer, uafhængig nøglerecovery, målt Free-forbrug og varig frekvens/retention er åbne. Pro beholdes; ingen automatisk backup, beskæring, sletning eller FreeReady aktiveres. Se håndbog 89.307 og de uændrede krav i 89.300/DEC-0272.
+
+Kun dokumentation og normal statisk installationsseed ændres. Helper/workflow og alle produktbytes bevares på den præcist hosted afprøvede kilde. Version 4.0.597, model-/lagerbindinger, migrations-SQL, geometri, score og vejrhentning er uændrede. Ingen restoretest er gentaget i dokumentporten.
+
 ## 4. november — præcis597-profil med bevaret fuld inputlukning
 
 Den separate lokale kontrolkandidat bevarer alle 634 ressourcer og følger hver faktisk import-/læsekant. Kun den nye faste597-profil undlader uudnyttet kilde-preload og har en målt 56 MiB batch-/residentramme;594/48 MiB,8 MiB pr. blob og64 MiB Git-output bevares. Overskridelse, ukendte grænser eller ændrede beskyttede input kræver fortsat FULL. Ingen caller-knob, åben allowlist, producer-/consumer-/workflowændring eller skipautoritet.
