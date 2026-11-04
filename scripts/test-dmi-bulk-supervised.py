@@ -433,6 +433,8 @@ class SupervisorTests(unittest.TestCase):
                 for target in node.targets
             )
 
+        catalogue_calls = ("list_latest_assets", "list_operational_marine_assets",
+                           "first_marine_tail_catalogue")
         forbidden = Mock(side_effect=AssertionError("cache-only acquisition/prune"))
         history_summary = {
             "nativeOriginalCount": 1, "rawAssetCount": 0,
@@ -453,7 +455,7 @@ class SupervisorTests(unittest.TestCase):
             "current_marine_processing_signature": lambda value: value,
             "supervisor_skipped_assets": set(),
             "replay_cached_current_history": replay,
-            "list_latest_assets": forbidden, "download": forbidden,
+            **dict.fromkeys(catalogue_calls, forbidden), "download": forbidden,
             "execute_private_wave_history_bootstrap": forbidden,
             "replay_current_field_shadow_from_cache": forbidden,
             "prune_raw_cache": forbidden, "operational_collection_turns": forbidden,
@@ -461,7 +463,7 @@ class SupervisorTests(unittest.TestCase):
         nodes = [
             node for node in main.body
             if isinstance(node, (ast.For, ast.If, ast.Assign)) and (
-                calls(node, "list_latest_assets")
+                any(calls(node, name) for name in catalogue_calls)
                 or calls(node, "execute_private_wave_history_bootstrap")
                 or calls(node, "replay_current_field_shadow_from_cache")
                 or calls(node, "replay_cached_current_history")
@@ -470,6 +472,13 @@ class SupervisorTests(unittest.TestCase):
             )
         ]
         self.assertEqual(len(nodes), 7, "all actual main acquisition/retention branches")
+        # The marine prefetch now calls its wrapper; the first-turn refresh
+        # is inside the same live-only collection loop. Execute both real
+        # loops below, with either catalogue entry forbidden in cache-only mode.
+        for name in catalogue_calls[1:]:
+            catalogue_nodes = [node for node in nodes if calls(node, name)]
+            self.assertEqual(len(catalogue_nodes), 1, name)
+            self.assertIsInstance(catalogue_nodes[0], ast.For)
         nonlocal_names = {
             name for node in nodes for child in ast.walk(node)
             if isinstance(child, ast.Nonlocal) for name in child.names
