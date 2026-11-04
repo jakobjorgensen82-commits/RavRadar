@@ -292,9 +292,40 @@ export const weatherProcessHourWorkflowReview = Object.freeze({
   "original": "        run: npm run update:weather\n",
   "normalized": "        shell: bash\n        run: |\n          set -euo pipefail\n          canonical_target=\"$(node --input-type=module <<'NODE_WEATHER_TARGET'\n          import assert from 'node:assert/strict';\n          import { resolveProductionReferenceTime } from './scripts/lib/production-reference-time.mjs';\n          const supplied = process.env.RAVRADAR_PRODUCTION_TARGET_HOUR;\n          assert.equal(typeof supplied, 'string', 'WEATHER_PROCESS_TARGET_REQUIRED');\n          assert.match(supplied, /^\\d{4}-\\d{2}-\\d{2}T\\d{2}:00:00(?:\\.000)?Z$/, 'WEATHER_PROCESS_TARGET_HOUR');\n          const canonical = resolveProductionReferenceTime(supplied);\n          assert.equal(canonical.replace('.000Z', 'Z'), supplied.replace('.000Z', 'Z'), 'WEATHER_PROCESS_TARGET_CHANGED');\n          assert.equal(Date.parse(canonical), Date.parse(supplied), 'WEATHER_PROCESS_TARGET_CHANGED');\n          process.stdout.write(canonical);\n          NODE_WEATHER_TARGET\n          )\"\n          RAVRADAR_PRODUCTION_TARGET_HOUR=\"$canonical_target\" npm run update:weather\n"
 });
+// TEST ONLY: the one exact required full-validation/release publication guard.
+// Public-audit diagnostic outcomes and all previous whole-file oracles remain.
+export const requiredPublicationGatesWorkflowReview=Object.freeze({
+  "path": ".github/workflows/reusable-weather-build.yml",
+  "before": {
+    "bytes": 299638,
+    "sha256": "efd7b3ccd447bf59e5070dccaeb157ca971ecd3855db73bce33cc7e2ae79898e"
+  },
+  "after": {
+    "bytes": 300010,
+    "sha256": "2162c9d81e09035f33538f8f0e03e5777af58ed718671e5c7cf3d936a34635d8"
+  },
+  "anchor": "      - name: Build lean GitHub Pages artifact\n        id: pages-build\n        if: steps.preflight.outputs.should_run == 'true'\n        shell: bash\n        run: |\n",
+  "inserted": "          if test \"${{ steps.operational-action.outputs.action }}\" != 'integrated-cutover'; then\n            if test \"${{ steps.full-validation.outcome }}\" != success \\\n              || test \"${{ steps.release-gate.outcome }}\" != success; then\n              echo \"::error::PRODUCTION_PUBLICATION_REQUIRED_GATES_NOT_PASSED\"\n              exit 1\n            fi\n          fi\n"
+});
+export function inverseRequiredPublicationGatesWorkflow(source,role){
+  assert.equal(arguments.length,2,'REQUIRED_PUBLICATION_GATES_WORKFLOW_ARGUMENTS');
+  assert.equal(typeof source,'string','REQUIRED_PUBLICATION_GATES_WORKFLOW_TYPE');
+  const row=requiredPublicationGatesWorkflowReview;
+  if(role!=='build'||sha(source)!==row.after.sha256)return source;
+  assert.equal(Buffer.byteLength(source),row.after.bytes);
+  const selected=row.anchor+row.inserted;
+  assert.equal(source.split(selected).length,2,'Exactly one reviewed common publication guard');
+  const previous=source.replace(selected,()=>row.anchor);
+  assert.equal(Buffer.byteLength(previous),row.before.bytes);
+  assert.equal(sha(previous),row.before.sha256,'Exact whole9425 predecessor');
+  assert.equal(previous.replace(row.anchor,()=>selected),source,'Exact whole publication guard roundtrip');
+  return previous;
+}
+
 export function inverseWeatherProcessHourWorkflow(source, role) {
   assert.equal(arguments.length, 2, 'WEATHER_PROCESS_HOUR_WORKFLOW_ARGUMENTS');
   assert.equal(typeof source, 'string', 'WEATHER_PROCESS_HOUR_WORKFLOW_TYPE');
+  source=inverseRequiredPublicationGatesWorkflow(source,role);
   const row = weatherProcessHourWorkflowReview;
   if (role !== 'build' || sha(source) !== row.after.sha256) return source;
   assert.equal(Buffer.byteLength(source), row.after.bytes, 'WEATHER_PROCESS_HOUR_WORKFLOW_AFTER_BYTES');

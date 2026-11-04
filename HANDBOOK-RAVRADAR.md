@@ -1,3 +1,33 @@
+## 89.309 Aktuelle UI-kontroller og ens krav før vejrets publicering
+
+Forældede kontrolantagelser må rettes mod den faktiske funktion. Et nyt almindeligt Pages-artifact må kun bygges efter de krævede beståede kontroller; allerede gemt vejr bevares til sikker genoptagelse.
+
+<a id="weather-ui-validation-publication-gate-2026-11-04"></a>
+
+### Den faktiske fælles årsag
+
+Den almindelige vejrhentning den 4. november gemte nye originaler og checkpoint, men stoppede før Pages. Den sene current-grid-port afviste et fejlet udfald fra artifactkontrollen. Den lille autentificerede rapport viser seks fejl blandt 55 kontroller; releasekontrollen bestod tre af tre. Morgens tidligere offentligt leverede kørsel havde præcis de samme seks fejl. Den gamle almindelige vej havde behandlet denne samling diagnostisk, mens den nye modelovergang krævede et bestået udfald. En grøn tidligere kørsel beviste derfor ikke, at disse kontroller var bestået.
+
+### Ret kontrollens forventninger til den faktiske brugerfunktion
+
+De seks fejl lå i kontrolkode, som forventede tidligere inline-funktioner, en tidligere adressestruktur eller en ufuldstændig VM-kontekst. Den nuværende forside vælger et gyldigt kompakt landing-view og ellers normale prognosedata; zonevalg og pile bruger deres aktuelle fælles funktioner. Testene følger nu disse reelle forbindelser. De afprøver også forkert eller forældet landing-binding og manglende data uden at opfinde et fallback. Piltesten får den variabel, den virkelige app allerede deklarerer. Adminens faktiske HTML-, import- og service-worker-adresser sammenlignes direkte i stedet for at kræve en forældet UI-tag.
+
+### Fælles krav før en almindelig Pages-pakke
+
+Almindelige og kandidatbaserede vejrbundter kræver nu et faktisk bestået full-validation- og release-gate-udfald, før Pages-pakken bygges. Fejl, manglende, ukendt, annulleret eller sprunget udfald stopper før byggegrænsen. Kun den særskilte eksisterende integrated-cutover-rute beholder sine egne allerede gældende kontroller. B/S gemmes fortsat før den sene publiceringsport, så en visnings- eller kontrolfejl ikke kasserer beregningen. DEC-0193, DEC-0208 og DEC-0209 gælder fortsat for afgrænsede datamangler i den offentlige runtimeaudit med calibration=false; de bruges ikke til at springe de krævede artifact- og releaseudfald over.
+
+### Målprøver og nøjagtig historisk afgrænsning
+
+De seks eksisterende normale UI- og adminkontroller bestod alle i første samlede lokale kørsel. De eksisterende numeriske, geometriske, proveniens-, performance- og sikkerhedskrav er bevaret. Den faktiske Pages-build-kalders shellkode er afprøvet med 16 udfald, og regressionen indgår i et eksisterende normalt testmål. En præcis helinvers over den gennemgåede workflowændring bevarer de historiske orakler; ukendte eller blandede ændringer får ingen generel stripning eller scannerfallback. Lokal bestået prøve er ikke en grøn GitHub-kontrol eller offentlig levering.
+
+### Genbrug den gemte beregning
+
+Det eksisterende completed_private_runtime-forløb er den relevante genoptagelse efter en sikkert leveret rettelse. Det skal frisk autentificere den aktuelle beskyttede B/S-generation, uændret pointer, modelbindinger, tidspunkt og 210 zoner/673 dele. Det springer leverandørhentning og den allerede udførte vejrbearbejdning over. Den fejlede kørsel har ingen uploadet Pages-handoff; et recovery-id for en ikke-eksisterende Pages-pakke må ikke bruges som genvej. Genoptagelse, deploy og faktisk offentlig kontrol er fortsat åbne, indtil de er udført.
+
+### Ingen model- eller dataovergang i rettelsen
+
+Rettelsen ændrer kontrolfiler, den fælles publiceringsport og dokumentation. Den ændrer ingen appfunktion, scoreformel, kildeprioritet, adminpunkter, geometri, originaler, historikværdier, modelversion 4.0.597, udstedte migrationer eller modelbindinger. SQL-installationskopiens ændring er kun håndbogens normale statiske payload. Den isolerede SOURCE-revision aktiveres ikke. Den fulde målspecifikation, reel dækning, Supabase/Cloudflare Free-klargøring og de øvrige åbne leverancer er ikke afsluttet af denne rettelse.
+
 ## 89.308 Runnerens diskoprydning afhænger af målt behov
 
 Unødvendig sletning af et forudinstalleret Android SDK må ikke stoppe en kildekontrol med rigelig ledig plads. Sikker identitetskontrol og det eksisterende afgrænsede oprydningsforløb bevares.

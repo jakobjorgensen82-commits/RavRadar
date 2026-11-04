@@ -128,7 +128,18 @@ const [app, serviceWorker, dataService] = await Promise.all([
   fs.readFile('service-worker.js', 'utf8'),
   fs.readFile('js/services/data-service.js', 'utf8'),
 ]);
-assert.match(app,/state\.conditions\?\.nationalForecast\?\.modes\?\.\[state\.mode\]/);
+const preparedExpression=/const prepared=([^;]+);/.exec(app)?.[1];
+assert.ok(preparedExpression,'Den aktuelle renderer skal vælge et allerede produceret nationalt indeks.');
+const selectPrepared=new Function('activeLandingView','state','return ('+preparedExpression+');');
+const ordinaryState={conditions:startup,mode:'waders'};
+assert.equal(selectPrepared(null,ordinaryState),startup.nationalForecast.modes.waders);
+const landingDays=structuredClone(startup.nationalForecast.modes.waders);
+assert.equal(selectPrepared({nationalForecast:{modes:{waders:landingDays}}},ordinaryState),landingDays,
+  'Den verificerede landing skal have sit eget kompakte indeks frem for en ældre conditionsvisning.');
+assert.equal(selectPrepared({},ordinaryState),startup.nationalForecast.modes.waders,
+  'Den almindelige kompakte prognose skal fortsat virke uden en landing.');
+assert.equal(selectPrepared({nationalForecast:{modes:{waders:landingDays}}},{conditions:{},mode:'waders'}),landingDays);
+assert.equal(selectPrepared(null,{conditions:{},mode:'waders'}),undefined,'Manglende indeks må ikke opfinde prognosedage.');
 assert.match(app,/function ensureConditionDetails\(zoneId=/);
 assert.match(app,/detailsRequired:\(\)=>!activeManifest\?\.detailDelivery&&conditionDetailsPromise!==null/);
 assert.match(app,/map\.getZoom\(\)>=9/);
