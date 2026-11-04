@@ -1,18 +1,12 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {execFileSync} from 'node:child_process';
-import {fileURLToPath} from 'node:url';
+import {readReviewed594ImpactFixture} from './lib/reviewed594-source-impact-test-input.mjs';
 import {planSourceImpact as plan} from './source-impact-plan.mjs';
 import {buildSourceValidationPlan,expandSourceCommands} from './validate-source-once.mjs';
 const {version,scripts}=JSON.parse(fs.readFileSync(new URL('../package.json',import.meta.url),'utf8'));
 const normal=buildSourceValidationPlan(scripts);
 const full=[...normal.preflight,...normal.remaining,normal.gate];
-const root=fileURLToPath(new URL('../',import.meta.url));
-const reviewed594='84051e2d700595837ebf80426410dcbef8e08704';
-const read=path=>execFileSync('git',['-c','protocol.allow=never','-C',root,'cat-file','blob',reviewed594+':'+path],{
-  encoding:'utf8',timeout:10000,maxBuffer:1024*1024,
-  env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0'},
-});
+const read=relative=>readReviewed594ImpactFixture(relative).toString('utf8');
 const row=(path,before,after)=>({path,before,after,beforeMode:'100644',afterMode:'100644'});
 const about=read('js/ui/about-i18n.js'),article=read('js/ui/about-explainer-i18n.js');
 const learn=read('js/ui/learn-i18n-en.js');

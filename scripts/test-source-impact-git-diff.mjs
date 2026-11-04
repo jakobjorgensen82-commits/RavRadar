@@ -1,3 +1,4 @@
+import {readImpactFixtureInput} from './lib/reviewed594-source-impact-test-input.mjs';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -19,7 +20,7 @@ const files=['package.json','scripts/validate-source-once.mjs','scripts/source-i
 try{
   git('init','-q');git('config','user.name','Synthetic impact test');git('config','user.email','fixture@example.invalid');
   git('config','core.autocrlf','false');git('config','core.filemode','true');
-  for(const file of files){const bytes=fs.readFileSync(path.join(SOURCE,file));write(file,bytes);
+  for(const file of files){const bytes=readImpactFixtureInput(SOURCE,file);write(file,bytes);
     pins.push({path:file,sha256:crypto.createHash('sha256').update(bytes).digest('hex')});}
   write('docs/rdks/90_INDEX/CURRENT_TRUTH.md','# Baseline\n');const base=commit('synthetic base');
   const {planSourceImpactFromGit:plan}=await import(pathToFileURL(path.join(root,'scripts/source-impact-git-diff.mjs')).href);
@@ -75,6 +76,18 @@ try{
   git('-c','core.protectNTFS=false','commit','-qm','synthetic unknown BOM path edit');const bomHead=git('rev-parse','HEAD').trim();
   const bom=run(bomBase,bomHead);assert.equal(bom.status,'PLANNED');assert.equal(bom.plan.selection,'FULL');
   assert.equal(bom.blobReads.count,0);assert.equal(Buffer.from(bom.inventory[0].pathUtf8Hex,'hex').toString('utf8'),bomName);passed++;
+  const currentAbout=fs.readFileSync(path.join(SOURCE,'js/ui/about-i18n.js'),'utf8');
+  if(currentAbout!==about){
+    write('js/ui/about-i18n.js',currentAbout);git('add','--','js/ui/about-i18n.js');
+    git('update-index','--chmod=-x','js/ui/about-i18n.js');git('commit','-qm','synthetic current unqualified frame');
+    const currentBase=git('rev-parse','HEAD').trim();
+    const currentText=currentAbout.replace("'about.header':'Om projektet'","'about.header':'Om RavRadar'");
+    assert.notEqual(currentText,currentAbout);write('js/ui/about-i18n.js',currentText);
+    git('add','--','js/ui/about-i18n.js');git('commit','-qm','synthetic current unqualified text edit');
+    const currentHead=git('rev-parse','HEAD').trim(),currentPlan=run(currentBase,currentHead);
+    assert.equal(currentPlan.status,'PLANNED');assert.equal(currentPlan.plan.selection,'FULL');
+    assert.equal(currentPlan.git.changedRows,1);assert.equal(currentPlan.blobReads.count,2);passed++;
+  }
   write('js/ui/about-i18n.js',about.replace("'about.header':'Om projektet'","'about.header':'Missing-object fixture'"));
   git('add','--','js/ui/about-i18n.js');git('update-index','--chmod=-x','js/ui/about-i18n.js');
   git('commit','-qm','synthetic later known blob');const missing=git('rev-parse','HEAD').trim();

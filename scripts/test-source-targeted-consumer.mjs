@@ -1,3 +1,4 @@
+import {readImpactFixtureInput,readReviewed594ImpactPackage} from './lib/reviewed594-source-impact-test-input.mjs';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -132,7 +133,7 @@ try{
   for(const name of ['package.json','scripts/lib/account-statistics-assistant-package-review.json',
     'scripts/sync-admin-config.py','data/water-level-station-routing.json',
     'js/ui/about-i18n.js','js/ui/about-explainer-i18n.js','js/ui/learn-i18n.js','js/ui/learn-i18n-de.js','js/ui/learn-i18n-en.js'])
-    write(name,fs.readFileSync(path.join(SOURCE,name)));
+    write(name,name==='package.json'?readReviewed594ImpactPackage():readImpactFixtureInput(SOURCE,name));
   write('.gitignore','.cache/\n');git(['init','-q']);git(['config','user.name','Synthetic targeted consumer']);
   git(['config','user.email','fixture@example.invalid']);git(['config','core.autocrlf','false']);
   base=commit('synthetic full qualified source');baseContent=sourceTreeContentSha256(base,{git});
