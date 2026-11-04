@@ -3,7 +3,12 @@ import fs from 'node:fs/promises';
 import test from 'node:test';
 import { spawnSync } from 'node:child_process';
 import { EventEmitter } from 'node:events';
+import crypto from 'node:crypto';
 import { reclaimRunnerAndroidSdk, runFixedSdkCommand } from './reclaim-runner-android-sdk.mjs';
+import {
+  SOURCE_IMPACT_SDK_EARLY_LINUX_REVIEW, SOURCE_IMPACT_FULL_WORKFLOW_SHA256,
+  inverseSourceImpactSdkEarlyLinux, projectSourceImpactWorkflowFull,
+} from './lib/source-impact-workflow-review.mjs';
 
 const SDK = '/usr/local/lib/android/sdk';
 const WORKSPACE = '/home/runner/work/RavRadar/RavRadar';
@@ -140,8 +145,8 @@ test('normal workflow reclaims after trip preflight and observes before RAW rest
 });
 
 
-function processFixture(timeout = false, remains = false) {
-  const child = new EventEmitter(), host = new EventEmitter(), invocations = [], signals = [];
+function processFixture(timeout = false, remains = false, completion = {}) {
+  const child = new EventEmitter(), host = new EventEmitter(), invocations = [], signals = [], reports = [];
   child.pid = 1234; child.stdout = new EventEmitter(); child.stderr = new EventEmitter();
   child.stdout.destroy = child.stderr.destroy = child.unref = () => {};
   let gone = false, clock = 0;
@@ -155,15 +160,23 @@ function processFixture(timeout = false, remains = false) {
     signals.push(signal);
     if (!remains) {
       gone = true;
-      child.emit('exit', null, signal); child.emit('close');
+      child.stdout.emit('close'); child.stderr.emit('close');
+      if (!completion.exitBeforeClose) child.emit('exit', null, signal);
+      child.emit('close');
     }
   };
-  return { invocations, signals, options: {
+  return { invocations, signals, reports, options: {
+    report: event => reports.push(event),
     processImpl: host, now: () => clock, delayImpl: async () => { clock += 1000; },
     spawnImpl(command, args, options) {
       invocations.push({ command, args, options });
+      if (timeout && completion.exitBeforeClose) queueMicrotask(() => child.emit('exit', 0, null));
       if (!timeout) queueMicrotask(() => {
-        gone = true; child.emit('exit', 0, null); child.emit('close');
+        gone = true;
+        if (completion.stdout) child.stdout.emit('data', Buffer.from(completion.stdout));
+        if (completion.stderr) child.stderr.emit('data', Buffer.from(completion.stderr));
+        child.stdout.emit('close'); child.stderr.emit('close');
+        child.emit('exit', completion.exitCode ?? 0, null); child.emit('close');
       });
       return child;
     },
@@ -185,7 +198,107 @@ test('fixed command timeout confirms a stopped group or explicitly refuses unpro
     const f = processFixture(true, remains);
     await assert.rejects(runFixedSdkCommand('remove', f.options), error => (
       error.code === 'RUNNER_SDK_COMMAND_FAILED' && error.terminationConfirmed === !remains
+      && error.diagnostic === f.reports[1]
     ));
     assert.deepEqual(f.signals, remains ? ['SIGTERM', 'SIGKILL'] : ['SIGTERM']);
+    assert.equal(f.reports[0].phase, 'START');
+    assert.equal(f.reports[1].operation, 'remove');
+    assert.equal(f.reports[1].timedOut, true);
+    assert.equal(f.reports[1].timeoutMs, 60000);
+    assert.equal(f.reports[1].terminationConfirmed, !remains);
+    assert.equal(f.reports[1].childClosed, !remains);
+    assert.equal(f.reports[1].failureReason, remains ? 'STOP_UNPROVED' : 'TIMEOUT');
   }
+});
+
+test('normal fixed measurement reports exact operation and physical closure without child output', async () => {
+  const secret = 'unprinted synthetic child detail';
+  const f = processFixture(false, false, { stdout: '8192000\t'+SDK+'\n', stderr: secret });
+  assert.equal((await runFixedSdkCommand('measure', f.options)).terminationConfirmed, true);
+  assert.deepEqual(f.invocations[0].args, ['-s', '-x', '--block-size=1', '--', SDK]);
+  assert.deepEqual(f.reports.map(({ operation, phase }) => ({ operation, phase })), [
+    { operation: 'measure', phase: 'START' }, { operation: 'measure', phase: 'CLOSED' },
+  ]);
+  assert.equal(f.reports[1].elapsedMs, 1000);
+  assert.equal(f.reports[1].exitObserved, true);
+  assert.equal(f.reports[1].exitCode, 0);
+  assert.equal(f.reports[1].exitSignal, null);
+  assert.equal(f.reports[1].stdoutClosed, true);
+  assert.equal(f.reports[1].stderrClosed, true);
+  assert.equal(f.reports[1].timedOut, false);
+  assert.equal(f.reports[1].terminationConfirmed, true);
+  assert.equal(f.reports[1].failureReason, null);
+  assert.equal(f.reports[1].stderrBytes, Buffer.byteLength(secret));
+  assert.equal(JSON.stringify(f.reports).includes(secret), false);
+  assert.equal(JSON.stringify(f.reports).includes(SDK), false);
+});
+
+test('normal fixed child distinguishes a closed nonzero exit from timeout without leaking error text', async () => {
+  const secret = 'unprinted synthetic error detail';
+  const f = processFixture(false, false, { exitCode: 1, stderr: secret });
+  await assert.rejects(runFixedSdkCommand('measure', f.options), error => (
+    error.code === 'RUNNER_SDK_COMMAND_FAILED' && error.terminationConfirmed === true
+    && error.diagnostic.failureReason === 'EXIT_NONZERO'
+    && error.diagnostic.exitCode === 1 && error.diagnostic.timedOut === false
+  ));
+  assert.equal(f.reports[1].phase, 'FAILED');
+  assert.deepEqual(f.signals, []);
+  assert.equal(JSON.stringify(f.reports).includes(secret), false);
+});
+
+test('normal fixed timeout preserves pre-stop exit and pipe state before a proved group stop', async () => {
+  const f = processFixture(true, false, { exitBeforeClose: true });
+  await assert.rejects(runFixedSdkCommand('measure', f.options), error => (
+    error.code === 'RUNNER_SDK_COMMAND_FAILED' && error.terminationConfirmed === true
+    && error.diagnostic.timedOut === true
+  ));
+  assert.deepEqual(f.reports[1].beforeStop, {
+    exitObserved: true, exitCode: 0, exitSignal: null,
+    childClosed: false, stdoutClosed: false, stderrClosed: false,
+  });
+  assert.equal(f.reports[1].childClosed, true);
+  assert.equal(f.reports[1].stdoutClosed, true);
+  assert.equal(f.reports[1].stderrClosed, true);
+  assert.deepEqual(f.signals, ['SIGTERM']);
+});
+
+test('fixed spawn failure reports no child and never claims an SDK success', async () => {
+  const f = processFixture();
+  f.options.spawnImpl = () => { throw new Error('unprinted synthetic spawn detail'); };
+  await assert.rejects(runFixedSdkCommand('measure', f.options), error => (
+    error.code === 'RUNNER_SDK_COMMAND_FAILED' && error.terminationConfirmed === true
+    && error.diagnostic.failureReason === 'SPAWN_THROW' && error.diagnostic.beforeStop === null
+  ));
+  assert.deepEqual(f.signals, []);
+  assert.equal(f.reports[1].childClosed, false);
+  assert.equal(JSON.stringify(f.reports).includes('unprinted synthetic spawn detail'), false);
+});
+
+test('early Linux source step runs the actual fixed SDK caller before its unchanged short matrix', async () => {
+  const source = await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml', import.meta.url), 'utf8');
+  const begin = source.indexOf('      - name: Diagnose normal pack-reader closure on artificial data only\n');
+  assert(begin > 0);
+  const step = source.slice(begin, source.indexOf('\n      - ', begin + 1));
+  assert.match(step, /timeout-minutes: 3\n/);
+  assert.match(step, /run: >-\n          node scripts\/reclaim-runner-android-sdk\.mjs &&\n          node scripts\/test-post-cutover-migration-routing\.mjs &&/);
+  assert.equal(source.split('node scripts/reclaim-runner-android-sdk.mjs &&\n').length, 2);
+  assert.equal((source.match(/^      - (?:name|uses):/gm) ?? []).length, 21);
+  assert.match(step, /steps\.source-content\.outputs\.selection != 'TARGETED'/);
+});
+
+test('early SDK workflow has an exact whole inverse and rejects missing changed or duplicate reviewed hunks', async () => {
+  const source = await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml', import.meta.url), 'utf8');
+  const review = SOURCE_IMPACT_SDK_EARLY_LINUX_REVIEW;
+  const sha = value => crypto.createHash('sha256').update(value).digest('hex');
+  const before = inverseSourceImpactSdkEarlyLinux(source);
+  assert.equal(sha(source), review.afterSha256);
+  assert.equal(sha(before), review.beforeSha256);
+  assert.equal(before.replace(review.before, review.after), source);
+  assert.equal(sha(projectSourceImpactWorkflowFull(source)), SOURCE_IMPACT_FULL_WORKFLOW_SHA256);
+  assert.equal(projectSourceImpactWorkflowFull(source), projectSourceImpactWorkflowFull(before));
+  for (const changed of [
+    source.replace('          node scripts/reclaim-runner-android-sdk.mjs &&\n', ''),
+    source.replace('          node scripts/reclaim-runner-android-sdk.mjs &&\n', '          node scripts/reclaim-runner-android-sdk.mjs --observe-raw &&\n'),
+    source.replace(review.after, review.after + review.after),
+  ]) assert.throws(() => projectSourceImpactWorkflowFull(changed));
 });

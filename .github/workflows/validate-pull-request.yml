@@ -51,8 +51,9 @@ jobs:
       # it neither substitutes results nor relaxes the pack's close proof.
       - name: Diagnose normal pack-reader closure on artificial data only
         if: ${{ steps.source-content.outputs.selection != 'TARGETED' }}
-        timeout-minutes: 2
+        timeout-minutes: 3
         run: >-
+          node scripts/reclaim-runner-android-sdk.mjs &&
           node scripts/test-post-cutover-migration-routing.mjs &&
           node --test scripts/test-owned-pack-close-probe.mjs && node
           -e "require('node:assert/strict').equal(process.platform, 'linux')" && node --test

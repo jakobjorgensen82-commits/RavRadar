@@ -1,3 +1,11 @@
+## 4. november — SDK-diagnose i den tidlige normale Linux-kalder
+
+Den foregående diskrettelse har bestået sin præcise kilde- og native597-kontrol og er merget; den historiske584-nationalprøve blev udført uden påstand om aktuel597-national- eller produktionsvirkning. Den efterfølgende almindelige vejrhentning stoppede i SDK-hjælperens60-sekunders grænse før cache og leverandører. Den generiske log beviser endnu ikke, om opmåling, fjernelse eller fysisk lukning gav fejlen.
+
+Den samme normale SDK-CLI placeres nu først i eksisterende tidligt Linux-CI-trin, før den lange matrix, med uændret navn/nummer og tre minutters ydre trinfrist. Faste START/CLOSED/FAILED-felter skelner operation, tid, timeout, exit/signal, child-/pipe-close og faktisk gruppestop uden rå stdout/stderr. De faste60-sekunders childgrænser, TERM/KILL-, host-, canonical-path-, device- og bevaringskrav består. Hele workflowændringen har præcis SHA-bundet inverse før de uændrede historiske kaldere.
+
+Dette er en diagnostisk kildeændring, ikke en løst SDK-fejl. De korte normale lokale mål genbruges; rigtig tidlig Linux-CI skal nu afklare årsagen før den lange matrix og en ny almindelig produktionsvejrhentning. Ingen ny kontrolgenvej, nativegenbrugspåstand, model-/kilde-/lagerbinding, SQL, version, administratoropsætning, geometri eller vejrbudgetændring. INSTALL ændrer kun håndbogens statiske seed. De tidligere krav til originalbevarelse, uaktiveret dokumentvedligeholdelse og backup/Free-kvalifikation består. Se håndbog89.303.
+
 ## 4. november — præcis historisk workflowinverse før ny kildekontrol
 
 Den tidlige normale kildeindgang krævede den oprindelige workflowfil efter SDK-ændringen. Den fælles historiske adapter genkender nu alene det nye, præcise hele før-/efterdelta og fører det tilbage til de autentiske forgængerbytes før den uændrede gamle kæde. Ukendte ændringer afvises fortsat. De aktuelle RAW-/CURRENT-grænser, SDK-adfærd og hele de allerede gennemgåede produktrettelser bevares.

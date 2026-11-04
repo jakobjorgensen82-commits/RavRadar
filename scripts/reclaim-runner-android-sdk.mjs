@@ -28,29 +28,49 @@ function assertHost(environment, platform) {
 // Commands and environment are fixed. Any unproved stop refuses further work.
 export async function runFixedSdkCommand(operation, {
   spawnImpl = spawn, processImpl = process, now = () => performance.now(), delayImpl = delay,
+  report = () => {},
 } = {}) {
   if (processImpl.platform !== 'linux' || !Object.hasOwn(COMMANDS, operation)
-      || (process.platform !== 'linux' && spawnImpl === spawn)) {
+      || (process.platform !== 'linux' && spawnImpl === spawn) || typeof report !== 'function') {
     throw refused('RUNNER_SDK_COMMAND_REFUSED');
   }
   const [command, ...args] = COMMANDS[operation];
-  const child = spawnImpl(command, args, {
-    env: CHILD_ENV, detached: true, stdio: ['ignore', 'pipe', 'pipe'],
-  });
+  const started = now();
+  report({ kind: 'RUNNER_SDK_COMMAND', operation, phase: 'START', timeoutMs: 60000 });
+  let child;
+  try {
+    child = spawnImpl(command, args, {
+      env: CHILD_ENV, detached: true, stdio: ['ignore', 'pipe', 'pipe'],
+    });
+  } catch {
+    const diagnostic = {
+      kind: 'RUNNER_SDK_COMMAND', operation, phase: 'FAILED', failureReason: 'SPAWN_THROW',
+      elapsedMs: Math.max(0, Math.round(now() - started)), timeoutMs: 60000, timedOut: false,
+      exitObserved: false, exitCode: null, exitSignal: null, childClosed: false,
+      stdoutClosed: false, stderrClosed: false, stdoutBytes: 0, stderrBytes: 0,
+      beforeStop: null, terminationConfirmed: true,
+    };
+    report(diagnostic);
+    throw Object.assign(refused('RUNNER_SDK_COMMAND_FAILED'), { terminationConfirmed: true, diagnostic });
+  }
   let closed = false, failed = false, exitCode, exitSignal, stdoutBytes = 0, stderrBytes = 0;
+  let exitObserved = false, stdoutClosed = false, stderrClosed = false, failureReason = null;
   const chunks = [];
-  const interrupted = () => { failed = true; };
-  child.on('error', () => { failed = true; });
-  child.on('exit', (code, signal) => { exitCode = code; exitSignal = signal; });
+  const markFailed = reason => { failed = true; failureReason ??= reason; };
+  const interrupted = () => { markFailed('PARENT_INTERRUPTED'); };
+  child.on('error', () => { markFailed('SPAWN_ERROR'); });
+  child.on('exit', (code, signal) => { exitObserved = true; exitCode = code; exitSignal = signal; });
   child.on('close', () => { closed = true; });
+  child.stdout.on('close', () => { stdoutClosed = true; });
+  child.stderr.on('close', () => { stderrClosed = true; });
   child.stdout.on('data', chunk => {
     stdoutBytes += chunk.length;
-    if (stdoutBytes > 4096) failed = true;
+    if (stdoutBytes > 4096) markFailed('STDOUT_LIMIT');
     else chunks.push(Buffer.from(chunk));
   });
-  child.stderr.on('data', chunk => { stderrBytes += chunk.length; if (stderrBytes > 4096) failed = true; });
-  child.stdout.on('error', interrupted);
-  child.stderr.on('error', interrupted);
+  child.stderr.on('data', chunk => { stderrBytes += chunk.length; if (stderrBytes > 4096) markFailed('STDERR_LIMIT'); });
+  child.stdout.on('error', () => { markFailed('STDOUT_ERROR'); });
+  child.stderr.on('error', () => { markFailed('STDERR_ERROR'); });
   processImpl.on('SIGINT', interrupted);
   processImpl.on('SIGTERM', interrupted);
   const groupGone = () => {
@@ -67,7 +87,15 @@ export async function runFixedSdkCommand(operation, {
   try {
     const deadline = now() + 60000;
     while (!closed && !failed && now() < deadline) await delayImpl(20);
+    const timedOut = !closed && !failed && now() >= deadline;
+    failureReason ??= timedOut ? 'TIMEOUT' : !closed ? 'NOT_CLOSED'
+      : exitSignal !== null ? 'SIGNAL_EXIT' : exitCode !== 0 ? 'EXIT_NONZERO' : null;
     failed ||= !closed || exitCode !== 0 || exitSignal !== null;
+    const beforeStop = {
+      exitObserved, exitCode: Number.isInteger(exitCode) ? exitCode : null,
+      exitSignal: typeof exitSignal === 'string' && /^SIG[A-Z0-9]{1,12}$/.test(exitSignal) ? exitSignal : null,
+      childClosed: closed, stdoutClosed, stderrClosed,
+    };
     stopped = closed && groupGone();
     if (!stopped) {
       failed = true;
@@ -78,7 +106,17 @@ export async function runFixedSdkCommand(operation, {
         if (stopped) break;
       }
     }
-    if (failed) throw Object.assign(refused('RUNNER_SDK_COMMAND_FAILED'), { terminationConfirmed: stopped });
+    if (!stopped) failureReason = 'STOP_UNPROVED';
+    const diagnostic = {
+      kind: 'RUNNER_SDK_COMMAND', operation, phase: failed ? 'FAILED' : 'CLOSED', failureReason,
+      elapsedMs: Math.max(0, Math.round(now() - started)), timeoutMs: 60000, timedOut,
+      exitObserved, exitCode: Number.isInteger(exitCode) ? exitCode : null,
+      exitSignal: typeof exitSignal === 'string' && /^SIG[A-Z0-9]{1,12}$/.test(exitSignal) ? exitSignal : null,
+      childClosed: closed, stdoutClosed, stderrClosed, stdoutBytes, stderrBytes,
+      beforeStop, terminationConfirmed: stopped,
+    };
+    report(diagnostic);
+    if (failed) throw Object.assign(refused('RUNNER_SDK_COMMAND_FAILED'), { terminationConfirmed: stopped, diagnostic });
     return { stdout: Buffer.concat(chunks).toString('utf8'), terminationConfirmed: true };
   } finally {
     processImpl.removeListener('SIGINT', interrupted);
@@ -104,14 +142,14 @@ async function absent(fileSystem) {
 
 export async function reclaimRunnerAndroidSdk({
   environment = process.env, platform = process.platform, fileSystem = fs,
-  command = runFixedSdkCommand, observeOnly = false,
+  command = runFixedSdkCommand, observeOnly = false, report = () => {},
 } = {}) {
   assertHost(environment, platform); // Before any filesystem/child access.
   // Test seams cannot turn native Windows operations into a Linux delete.
   if (platform !== process.platform && (fileSystem === fs || command === runFixedSdkCommand)) {
     throw refused('RUNNER_SDK_HOST_REFUSED');
   }
-  if (typeof observeOnly !== 'boolean') throw refused('RUNNER_SDK_ARGUMENT_REFUSED');
+  if (typeof observeOnly !== 'boolean' || typeof report !== 'function') throw refused('RUNNER_SDK_ARGUMENT_REFUSED');
   // Inspect the running OS, rather than pinning an image date or ImageOS alias.
   const operatingSystem = await fileSystem.readFile('/etc/os-release', 'utf8');
   if (typeof operatingSystem !== 'string' || operatingSystem.length > 16384
@@ -138,7 +176,7 @@ export async function reclaimRunnerAndroidSdk({
       || await fileSystem.realpath(SDK) !== SDK) {
     throw refused('RUNNER_SDK_PATH_REFUSED');
   }
-  const measurement = await command('measure');
+  const measurement = await command('measure', { report });
   if (measurement.terminationConfirmed !== true) throw refused('RUNNER_SDK_STOP_UNPROVED');
   const match = /^(\d+)\s+\/usr\/local\/lib\/android\/sdk\n?$/.exec(measurement.stdout);
   const allocatedBytes = match && Number(match[1]);
@@ -149,7 +187,7 @@ export async function reclaimRunnerAndroidSdk({
       || await fileSystem.realpath(SDK) !== SDK) {
     throw refused('RUNNER_SDK_PATH_REFUSED');
   }
-  const removed = await command('remove');
+  const removed = await command('remove', { report });
   if (removed.terminationConfirmed !== true) throw refused('RUNNER_SDK_STOP_UNPROVED');
   if (await absent(fileSystem) !== null) throw refused('RUNNER_SDK_REMOVE_UNPROVED');
   const after = availableBytes(await fileSystem.statfs(workspace, { bigint: true }));
@@ -164,7 +202,9 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     if (process.argv.length > 3 || (process.argv.length === 3 && process.argv[2] !== '--observe-raw')) {
       throw refused('RUNNER_SDK_ARGUMENT_REFUSED');
     }
-    console.log(JSON.stringify(await reclaimRunnerAndroidSdk({ observeOnly: process.argv[2] === '--observe-raw' })));
+    console.log(JSON.stringify(await reclaimRunnerAndroidSdk({
+      observeOnly: process.argv[2] === '--observe-raw', report: event => console.log(JSON.stringify(event)),
+    })));
   } catch (error) {
     console.error(error.code?.startsWith('RUNNER_SDK_') ? error.code : 'RUNNER_SDK_OPERATION_FAILED');
     process.exitCode = 1;

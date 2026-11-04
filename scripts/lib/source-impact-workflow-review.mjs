@@ -26,6 +26,24 @@ const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const once=(source,from,to)=>{assert.equal(source.split(from).length,2,'Exact once-only reviewed workflow field required');
   return source.replace(from,()=>to);};
 
+// The actual fixed SDK caller runs before the same existing short Linux matrix.
+// Only this exact whole workflow may inverse the reviewed command and timeout.
+export const SOURCE_IMPACT_SDK_EARLY_LINUX_REVIEW=Object.freeze({
+  beforeSha256:'45b1a6f3dba31711b8fa8d4cff8776c3f7daa024acc798c4da76bee4615eced1',
+  afterSha256:'65cbe5b0149c83c73626c759b7eb2404ae326c4c8267a740fb1082d7fcb6685a',
+  before:"        timeout-minutes: 2\n        run: >-\n          node scripts/test-post-cutover-migration-routing.mjs &&\n",
+  after:"        timeout-minutes: 3\n        run: >-\n          node scripts/reclaim-runner-android-sdk.mjs &&\n          node scripts/test-post-cutover-migration-routing.mjs &&\n",
+});
+export function inverseSourceImpactSdkEarlyLinux(value){
+  assert.equal(arguments.length,1);assert.equal(typeof value,'string');
+  const source=value.replace(/\r\n/g,'\n'),review=SOURCE_IMPACT_SDK_EARLY_LINUX_REVIEW;
+  if(sha(source)!==review.afterSha256)return source;
+  const before=once(source,review.after,review.before);
+  assert.equal(sha(before),review.beforeSha256,'Exact whole SDK early-Linux predecessor');
+  assert.equal(once(before,review.before,review.after),source,'Exact SDK early-Linux round trip');
+  return before;
+}
+
 
 export const SOURCE_IMPACT_PR_READ_GRANT=Object.freeze({
   "workflow": ".github/workflows/validate-pull-request.yml",
@@ -46,7 +64,7 @@ export function inverseSourceImpactPrReadGrant(value){
 
 export function projectSourceImpactWorkflowFull(value){
   assert.equal(arguments.length,1);assert.equal(typeof value,'string');
-  let source=inverseSourceImpactPrReadGrant(value);
+  let source=inverseSourceImpactPrReadGrant(inverseSourceImpactSdkEarlyLinux(value));
   if(sha(source)===SOURCE_IMPACT_FULL_WORKFLOW_SHA256)return source;
   const selected=/steps\.source-content\.outputs\.(?:selection|receipt_path)|test-source-(?:impact|targeted)-/.test(source);
   if(selected){
