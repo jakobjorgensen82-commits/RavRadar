@@ -277,6 +277,34 @@ Object.freeze(pagesPublicProjectionWorkflowReview.roles);
 
 // TEST ONLY: two exact hosted-SDK workflow insertions before the unchanged
 // release597, Pages, scalar, completed-runtime and older whole-file oracles.
+// TEST ONLY: the one reviewed weather-process target spelling; global H0 and
+// all origin/admission/model bytes remain unchanged.
+export const weatherProcessHourWorkflowReview = Object.freeze({
+  "path": ".github/workflows/reusable-weather-build.yml",
+  "before": {
+    "bytes": 298641,
+    "sha256": "b66f049d80698b3d0fe14a08f25eaae01973f6f0991dfbd9eaf7b6243a8c1ae2"
+  },
+  "after": {
+    "bytes": 299638,
+    "sha256": "efd7b3ccd447bf59e5070dccaeb157ca971ecd3855db73bce33cc7e2ae79898e"
+  },
+  "original": "        run: npm run update:weather\n",
+  "normalized": "        shell: bash\n        run: |\n          set -euo pipefail\n          canonical_target=\"$(node --input-type=module <<'NODE_WEATHER_TARGET'\n          import assert from 'node:assert/strict';\n          import { resolveProductionReferenceTime } from './scripts/lib/production-reference-time.mjs';\n          const supplied = process.env.RAVRADAR_PRODUCTION_TARGET_HOUR;\n          assert.equal(typeof supplied, 'string', 'WEATHER_PROCESS_TARGET_REQUIRED');\n          assert.match(supplied, /^\\d{4}-\\d{2}-\\d{2}T\\d{2}:00:00(?:\\.000)?Z$/, 'WEATHER_PROCESS_TARGET_HOUR');\n          const canonical = resolveProductionReferenceTime(supplied);\n          assert.equal(canonical.replace('.000Z', 'Z'), supplied.replace('.000Z', 'Z'), 'WEATHER_PROCESS_TARGET_CHANGED');\n          assert.equal(Date.parse(canonical), Date.parse(supplied), 'WEATHER_PROCESS_TARGET_CHANGED');\n          process.stdout.write(canonical);\n          NODE_WEATHER_TARGET\n          )\"\n          RAVRADAR_PRODUCTION_TARGET_HOUR=\"$canonical_target\" npm run update:weather\n"
+});
+export function inverseWeatherProcessHourWorkflow(source, role) {
+  assert.equal(arguments.length, 2, 'WEATHER_PROCESS_HOUR_WORKFLOW_ARGUMENTS');
+  assert.equal(typeof source, 'string', 'WEATHER_PROCESS_HOUR_WORKFLOW_TYPE');
+  const row = weatherProcessHourWorkflowReview;
+  if (role !== 'build' || sha(source) !== row.after.sha256) return source;
+  assert.equal(Buffer.byteLength(source), row.after.bytes, 'WEATHER_PROCESS_HOUR_WORKFLOW_AFTER_BYTES');
+  assert.equal(source.split(row.normalized).length, 2, 'WEATHER_PROCESS_HOUR_WORKFLOW_EXACT_CALLER');
+  const previous = source.replace(row.normalized, () => row.original);
+  assert.equal(Buffer.byteLength(previous), row.before.bytes, 'WEATHER_PROCESS_HOUR_WORKFLOW_BEFORE_BYTES');
+  assert.equal(sha(previous), row.before.sha256, 'WEATHER_PROCESS_HOUR_WORKFLOW_WHOLE_PREDECESSOR');
+  return previous;
+}
+
 export const runnerAndroidSdkWorkflowReview = Object.freeze({
   "path": ".github/workflows/reusable-weather-build.yml",
   "before": {
@@ -305,6 +333,7 @@ Object.freeze(runnerAndroidSdkWorkflowReview.after);
 export function inverseRunnerAndroidSdkWorkflow(source, role) {
   assert.equal(arguments.length, 2, 'RUNNER_SDK_WORKFLOW_ARGUMENTS');
   assert.equal(typeof source, 'string', 'RUNNER_SDK_WORKFLOW_TYPE');
+  source = inverseWeatherProcessHourWorkflow(source, role);
   const row = runnerAndroidSdkWorkflowReview;
   if (role !== 'build' || sha(source) !== row.after.sha256) return source;
   assert.equal(Buffer.byteLength(source), row.after.bytes, 'RUNNER_SDK_WORKFLOW_AFTER_BYTES');

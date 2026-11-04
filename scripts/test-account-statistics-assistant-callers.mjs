@@ -1269,6 +1269,10 @@ test('public587 national entry refuses unissued before I/O and leaves historical
 // TEST ONLY: exact590 package DATA inverse before whole unchanged588/587 oracles.
 // This view is never passed to a runtime/native receipt verifier or installer.
 async function reviewed588PackageViewForUnchangedOracles(pkg){
+  if(!scalar597Current&&Object.hasOwn(pkg.scripts,'test:supabase-backup')){
+    const {inverseReviewedSupabaseBackupSourceScripts}=await import('./lib/account-statistics-assistant-package-review.mjs');
+    return reviewed588PackageViewForUnchangedOracles({...pkg,scripts:inverseReviewedSupabaseBackupSourceScripts(pkg.scripts)});
+  }
   if(crypto.createHash('sha256').update(JSON.stringify(Object.keys(pkg.scripts).sort().map(key=>[key,pkg.scripts[key]]))).digest('hex')==='fd4857146f205c9dc04248c642807456e01cdf47d6087de026ddd5f9c2316663'){
     const {inverseReviewedDmiScalarGapSourceScripts}=await import('./lib/account-statistics-assistant-package-review.mjs');
     return reviewed588PackageViewForUnchangedOracles({...pkg,scripts:inverseReviewedDmiScalarGapSourceScripts(pkg.scripts)});
@@ -1530,7 +1534,9 @@ test('DMI scalar source registration qualifies75 commands before unchanged72-com
   const historical=live.version==='4.0.597'
     ? (await import('./national584-source-evidence.mjs')).inverseScalar597LaterH0Package(live)
     : live;
-  const actual=historical.scripts,original=structuredClone(actual);
+  const observed=historical.scripts;
+  const {inverseReviewedSupabaseBackupSourceScripts}=await import('./lib/account-statistics-assistant-package-review.mjs');
+  const actual=Object.hasOwn(observed,'test:supabase-backup')?inverseReviewedSupabaseBackupSourceScripts(observed):observed,original=structuredClone(actual);
   const {inverseReviewedDmiScalarGapSourceScripts:inverse,inverseReviewedForecastShareProjectionSourceScripts:sharing,
     inverseAssistantPublic588SuccessorSourceScripts:later}=await import('./lib/account-statistics-assistant-package-review.mjs');
   const prior=inverse(actual),digest=value=>crypto.createHash('sha256').update(JSON.stringify(Object.keys(value).sort().map(key=>[key,value[key]]))).digest('hex');

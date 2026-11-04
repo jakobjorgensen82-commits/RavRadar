@@ -92,3 +92,35 @@ Astra Ekstra høj er valgt og tilstrækkelig. Færdig lokal rettelse, grøn CI,
 offentlig levering og faktisk fejlvejsvirkning skal beskrives hver for sig.
 Ingen ny privat audit, afvist admissiongate, historisk donoromvej, SOURCE-
 eller sessionaktivering indgår. Den store dirty519-revision bevares separat.
+
+## Tillæg 2026-11-02 — separat databasebackup før Free
+
+Den oprindelige regel om at bevare originale backupfiler ved mislykket rollback består uændret. Den nye lokale databasebackup i håndbog 89.300 er et særskilt formål: fem komprimerede/krypterede SQL-filer, GCM/eksakt SHA, central og DB-uafhængig genfinding samt eksplicit create-only materialisering i privat RUNNER_TEMP. Det er hverken vejrets B/S-backup, ét atomisk databasesnapshot eller en udført produktionsrestore.
+
+Skrivefri standard, eksisterende vejr→turlager-køer og 20 minutters operation/30 minutters job bevares på den midlertidige Linux-runner med Node 24 og CLI 2.117.0. Ukendt udfald giver stop uden automatisk gentagelse. De normale lokale mål består; ny præcis kilde-/nativekvalifikation og levering, faktisk lageradgang, kompatibel Auth/schema/datarestore og anti-genoplivning samt managed-DDL, Storage-bytes og uafhængig nøglerecovery er åbne. FreeReady eller Pro-opsigelse må ikke afledes af lokal byteverifikation alene. Ingen originaler slettes, og ingen SOURCE-, statistik-, scheduler-, model- eller gateaktivering følger med.
+
+## Tillæg 2026-11-04 — eksisterende arkiv til egen isoleret standardrestore
+
+Den lokale kandidat forbinder kun de to eksisterende restoreejere. Normal syntetisk prøve er fortsat default og henter intet rigtigt arkiv. Den udtrykkelige arkivgren bruger eksakt indeks-SHA, kvalificeret genlæst main og samme autentificerede runSupabaseDatabaseArchive-materialisering. Alle fem oprindelige filnavne, GCM-/SHA-beviser og create-only private SQL-bytes bevares.
+
+SQL udføres alene i det nye lokale B-projekt gennem de eksisterende container-, loopback-, psql-, processtop- og Dockerlukningskontroller. Den ejede bridge skal være intern før containerstart; produktionsnøgler isoleres til arkivlæseren. Strømning i højst 64 KiB med backpressure og fuld fil-/hashkontrol erstatter kun de virkelige filers bufferbehov. Enkelttransaktion, ON_ERROR_STOP, 20 minutters operation, 2 minutters oprydning, 23 minutters trin, 30 minutters job og 90 sekunder pr. psql-kald består. Ingen automatisk gentagelse eller produktionsrestore tilføjes.
+
+Målrettede lokale kunstige prøver har evidens for denne kildegren, ikke for hosted Docker eller et rigtigt arkiv. Kildekvalifikation og levering, den normale hosted standardprøve med egen lukning, faktisk adgang/capture og autentificeret arkivvalg er tekniske forudsætninger før den faktiske arkivprøve. Den private førstehostedplan er en arbejdsrækkefølge under ejerens stående autoritet; den er ikke en ny menneskelig tilladelsesgrænse eller et forbud mod lokal kildeforberedelse.
+
+Sund lokal Auth efter udført SQL er ikke bevaret brugerlogin. PG17/managed-DDL- og projektkompatibilitet, fuld række-/schema-/RLS-/sekvensparitet, snapshotintegritet, Auth-data/login, Storage-bytes, uafhængige slettebarrierer/nøgler, målt forbrug og varig frekvens/retention består åbne. authRestoreVerified, fullDatabaseBackupVerified og freeReady forbliver false. Der udstedes ingen binding, migration, aktivering eller Free-/Pro-konklusion med denne dokumentation.
+
+## 4. november — særskilt backupmetadata efter 808
+
+Cloudflare-adgangen til administrationsarkivet er klargjort. Den normale kontrol nåede derefter bucketegenskaberne og stoppede på R2_BUCKET_PROPERTIES; diskrettelsens 808-kandidat omfatter den præcise korrektion af dette metadataformat. Det gamle HTTP 403 beskriver derfor ikke det aktuelle stop. Den særskilte backupbucket er ikke derved oprettet eller verificeret, og dens faktiske adgang, eksport og arkiv er fortsat ubekræftede.
+
+Backuphjælperens separate formatrettelse tillader kun, at jurisdiction og lagerklasse mangler i liste- og oprettelsessvar. Et tilstedeværende forkert eller null felt afvises stadig, og det præcise backupbucketnavn kræves. En frisk fuld detailaflæsning skal fortsat bevise EU, Standard, deaktiveret r2.dev og ingen egne domæner, før resultatet er VERIFIED. Der er ingen import af administrationsbucketens politik, nye credentials eller automatisk gentagelse.
+
+De egne målprøver af denne korrektion er lokal, syntetisk evidens. De erstatter ikke faktisk backupbucketadgang, eksakt kildekvalifikation, autentificeret arkiv, kompatibel Auth-/datagendannelse eller FreeReady. Dokumentoprydningen i 89.298 beholder sine særskilte bevaringsgates; fuld database-/Authbackup er en gate før Pro-opsigelse og må ikke opfindes som en ekstra gate for den allerede afgrænsede tredokumentoprydning.
+
+## Tillæg 2026-11-04 — kildeport over PR810
+
+Den separate backup- og målerpakke er nu lokalt sammensat med præcis PR810-kilde 45594e185f087ff02c8e72649d02cb45cf79cf16. Alle 21 gennemgåede produkt- og testejere bevarer deres tidligere efterbytes. PR810s SDK-, statfs-, én-pass- og direkte workflowkalderrettelser bevares; gamle dokumentbaser må ikke overskrive dem.
+
+Diskrettelsen fra PR808 er kilde- og nativekvalificeret og merget til main. PR810 og denne backupport har hver deres faktiske leveringsstatus. Denne private komposition ændrer ingen drift og ommærker hverken den tidligere SDK-Linux-prøve, historisk584-nationalprøve eller 597-databasebevis som et nyt resultat.
+
+Backuphjælperens 12 allerede beståede formatmål genbruges kun med præcis samme helper, test, transportafhængighed og Node-version. Samlet ny kildekvalifikation og levering, faktisk særskilt backupbucket- og arkivadgang, fuld database- og Authgendannelse, uafhængig nøglerecovery, varig frekvens/retention samt målt egnethed til Free er fortsat åbne. Pro beholdes; ingen automatisk backup, beskæring, sletning eller FreeReady aktiveres.

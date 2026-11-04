@@ -1733,7 +1733,7 @@ import { inverseRunnerAndroidSdkWorkflow, runnerAndroidSdkWorkflowReview }
 
 test('hosted Android SDK workflow inverse retains the complete genuine597 predecessor', async () => {
   const row = runnerAndroidSdkWorkflowReview;
-  const current = (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+  const current = inverseWeatherProcessHourWorkflow((await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
   assert.equal(sha(current), row.after.sha256);
   assert.equal(Buffer.byteLength(current), row.after.bytes);
   assert.equal(row.steps.length, 2);
@@ -1762,4 +1762,33 @@ test('hosted Android SDK workflow inverse retains the complete genuine597 predec
   assert.throws(() => inverseCompletedRuntimeWorkflow(unrelated, 'build'));
   assert.throws(() => inverseRunnerAndroidSdkWorkflow(current), /RUNNER_SDK_WORKFLOW_ARGUMENTS/);
   assert.throws(() => inverseRunnerAndroidSdkWorkflow(null, 'build'), /RUNNER_SDK_WORKFLOW_TYPE/);
+});
+
+import { inverseWeatherProcessHourWorkflow, weatherProcessHourWorkflowReview }
+  from './lib/completed-private-runtime-workflow-review.mjs';
+
+test('weather-process hour inverse preserves the entire genuine prior workflow and refuses partial or unknown bytes', async () => {
+  const row = weatherProcessHourWorkflowReview;
+  const current = (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+  assert.equal(Buffer.byteLength(current), row.after.bytes); assert.equal(sha(current), row.after.sha256);
+  assert.equal(current.split(row.normalized).length, 2);
+  const before = inverseWeatherProcessHourWorkflow(current, 'build');
+  assert.equal(Buffer.byteLength(before), row.before.bytes); assert.equal(sha(before), row.before.sha256);
+  assert.equal(before.replace(row.original, () => row.normalized), current);
+  assert.equal(inverseCompletedRuntimeWorkflow(current, 'build'), inverseCompletedRuntimeWorkflow(before, 'build'));
+  for (const role of ['once', 'repair', 'unknown']) assert.equal(inverseWeatherProcessHourWorkflow(current, role), current);
+  assert.equal(inverseWeatherProcessHourWorkflow(before, 'build'), before);
+  for (const malformed of [
+    current + '\n# UNREVIEWED_WEATHER_PROCESS_HOUR\n',
+    current.replace(row.normalized, row.normalized.replace('WEATHER_PROCESS_TARGET_REQUIRED', 'UNKNOWN')),
+    current.replace(row.normalized, row.normalized.replace("          assert.match(supplied,", "          // assert.match(supplied,")),
+    current.replace(row.normalized, row.normalized.replace('RAVRADAR_PRODUCTION_TARGET_HOUR="$canonical_target"', 'RAVRADAR_PRODUCTION_TARGET_HOUR="$RAVRADAR_PRODUCTION_TARGET_HOUR"')),
+    current.replace(row.normalized, row.normalized + row.normalized),
+  ]) {
+    assert.notEqual(malformed, current);
+    assert.equal(inverseWeatherProcessHourWorkflow(malformed, 'build'), malformed);
+    assert.throws(() => inverseCompletedRuntimeWorkflow(malformed, 'build'));
+  }
+  assert.throws(() => inverseWeatherProcessHourWorkflow(current), /WEATHER_PROCESS_HOUR_WORKFLOW_ARGUMENTS/);
+  assert.throws(() => inverseWeatherProcessHourWorkflow(null, 'build'), /WEATHER_PROCESS_HOUR_WORKFLOW_TYPE/);
 });

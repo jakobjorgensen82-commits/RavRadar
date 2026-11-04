@@ -233,9 +233,21 @@ try {
   const mapRoot=path.join(cleanRoot,'data','map');
   await fs.mkdir(mapRoot,{recursive:true});
   await fs.copyFile('data/map/current-arrow-land-mask.json',path.join(mapRoot,'current-arrow-land-mask.json'));
+  // Measure the actual regular files, including multibyte text, not a tar/gzip estimate.
+  const text = 'æøå\n';
+  await fs.mkdir(path.join(cleanRoot, 'assets', 'empty'), { recursive: true });
+  await fs.writeFile(path.join(cleanRoot, 'assets', 'size-example.txt'), text);
   const result = await auditPagesArtifactPrivacy(cleanRoot);
   assert.equal(result.liveFileCount, 4);
   assert.equal(result.datasetId, datasetId);
+  const documents = fixtureDocuments();
+  const expectedBytes = Buffer.byteLength('<!doctype html><title>synthetic</title>\n')
+    + Buffer.byteLength(jsonText(publicVersionDocument()))
+    + Object.values(documents).reduce((sum, value) => sum + Buffer.byteLength(jsonText(value)), 0)
+    + (await fs.readFile(path.join(mapRoot, 'current-arrow-land-mask.json'))).length
+    + Buffer.byteLength(text);
+  assert.equal(result.fileCount, 9);
+  assert.equal(result.uncompressedFileBytes, expectedBytes);
 } finally {
   await fs.rm(cleanRoot, { recursive: true, force: true });
 }

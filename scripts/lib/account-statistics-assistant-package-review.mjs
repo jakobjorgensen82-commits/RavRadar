@@ -10,11 +10,33 @@ const review=JSON.parse(bytes);assert.equal(review.schemaVersion,1);
 assert.equal(review.kind,'TEST_ONLY_EXACT_ACCOUNT_STATISTICS_ASSISTANT_PACKAGE_INVERSE');assert.equal(review.edits.length,3);
 const canonical=scripts=>JSON.stringify(Object.keys(scripts).sort().map(key=>[key,scripts[key]]));
 
+// Exact current backup registration before every unchanged historical command oracle.
+export function inverseReviewedSupabaseBackupSourceScripts(scripts){
+  assert.equal(arguments.length,1);assert(scripts&&Object.getPrototypeOf(scripts)===Object.prototype);
+  assert(Object.values(scripts).every(value=>typeof value==='string'));
+  assert.equal(sha(canonical(scripts)),'a18c020a5b54066241dc1e3670bc1472a00a4e75206e3da16bb1e8f8141e7df5','Only the entire reviewed backup76 command map');
+  const command="node --test scripts/test-export-supabase-database.mjs scripts/test-seal-supabase-database-export.mjs scripts/test-archive-supabase-database-backup.mjs scripts/test-supabase-backup-bucket.mjs scripts/test-supabase-database-backup-workflow.mjs",addition=' && npm run test:supabase-backup';
+  assert.equal(scripts['test:supabase-backup'],command);
+  assert.equal(scripts['validate:source:checks'].split(addition).length,2);
+  const previous={...scripts,'validate:source:checks':scripts['validate:source:checks'].replace(addition,()=> '')};
+  delete previous['test:supabase-backup'];
+  assert.equal(sha(canonical(previous)),'fd4857146f205c9dc04248c642807456e01cdf47d6087de026ddd5f9c2316663','Whole genuine M5 scripts before every unchanged old oracle');
+  const commands=expandSourceCommands(scripts,'validate:source:checks'),plan=buildSourceValidationPlan(scripts),calls=[];
+  assert.equal(commands.length,76);
+  assert.equal(runSourceValidation(plan,{execute(value){calls.push(value);return 0;},log(){}}),0);
+  assert.deepEqual(calls,[...plan.preflight,...plan.remaining,plan.gate]);
+  for(const values of [commands,calls])assert.equal(values.filter(value=>value===command).length,1);
+  assert.deepEqual(commands.filter(value=>value!==command),expandSourceCommands(previous,'validate:source:checks'),
+    'All seventy-five preceding commands, order and multiplicities survive');
+  return previous;
+}
+
 // TEST-ONLY command-map view: the exact two-field DMI test registration is
 // qualified through the real planner before every unchanged older oracle.
 export function inverseReviewedDmiScalarGapSourceScripts(scripts){
   assert.equal(arguments.length,1);assert(scripts&&Object.getPrototypeOf(scripts)===Object.prototype);
   assert(Object.values(scripts).every(value=>typeof value==='string'));
+  if(Object.hasOwn(scripts,'test:supabase-backup'))scripts=inverseReviewedSupabaseBackupSourceScripts(scripts);
   assert.equal(sha(canonical(scripts)),'fd4857146f205c9dc04248c642807456e01cdf47d6087de026ddd5f9c2316663',
     'Only the whole reviewed DMI scalar-gap75-command map may enter this view');
   const group='npm run test:weather-acquisition',old='node scripts/test-weather-acquisition-workflows.mjs',
@@ -47,6 +69,7 @@ export function inverseReviewedDmiScalarGapSourceScripts(scripts){
 export function inverseReviewedForecastShareProjectionSourceScripts(scripts){
   assert.equal(arguments.length,1);assert(scripts&&Object.getPrototypeOf(scripts)===Object.prototype);
   assert(Object.values(scripts).every(value=>typeof value==='string'));
+  if(Object.hasOwn(scripts,'test:supabase-backup'))scripts=inverseReviewedSupabaseBackupSourceScripts(scripts);
   if(sha(canonical(scripts))==='fd4857146f205c9dc04248c642807456e01cdf47d6087de026ddd5f9c2316663')scripts=inverseReviewedDmiScalarGapSourceScripts(scripts);
   assert.equal(sha(canonical(scripts)),'9975859065142d025c5a9a75b5a2045c304aec8a2e109bccb2f27da6d0e7da3b',
     'Only the entire reviewed592 command map plus one compact-sharing target');
@@ -106,6 +129,7 @@ function inverseReviewed585AccountStatisticsAssistantSourceScripts(scripts){
 export function inverseAssistantPublic587SuccessorSourceScripts(scripts){
   assert.equal(arguments.length,1);assert(scripts&&Object.getPrototypeOf(scripts)===Object.prototype);
   assert(Object.values(scripts).every(value=>typeof value==='string'));
+  if(Object.hasOwn(scripts,'test:supabase-backup'))scripts=inverseReviewedSupabaseBackupSourceScripts(scripts);
   assert.equal(sha(canonical(scripts)),'fe8e112b4e4e30d948aeecf764db02369bdfc90ba1d0d681af5733b27443b06b','Only the entire reviewed public587 successor command map');
   const current='node scripts/build-assistant-later-h0-successor.mjs --public587-successor --check',
     previous='node scripts/build-assistant-later-h0-successor.mjs --check';
@@ -128,6 +152,7 @@ export function inverseAssistantPublic587SuccessorSourceScripts(scripts){
 export function inverseAssistantPublic588SuccessorSourceScripts(scripts){
   assert.equal(arguments.length,1);assert(scripts&&Object.getPrototypeOf(scripts)===Object.prototype);
   assert(Object.values(scripts).every(value=>typeof value==='string'));
+  if(Object.hasOwn(scripts,'test:supabase-backup'))scripts=inverseReviewedSupabaseBackupSourceScripts(scripts);
   if(sha(canonical(scripts))==='fd4857146f205c9dc04248c642807456e01cdf47d6087de026ddd5f9c2316663')scripts=inverseReviewedDmiScalarGapSourceScripts(scripts);
   if(sha(canonical(scripts))==='9975859065142d025c5a9a75b5a2045c304aec8a2e109bccb2f27da6d0e7da3b')
     scripts=inverseReviewedForecastShareProjectionSourceScripts(scripts);
@@ -154,6 +179,7 @@ export function inverseAssistantPublic588SuccessorSourceScripts(scripts){
 export function inverseAssistantLaterH0SourceScripts(scripts){
   assert.equal(arguments.length,1);assert(scripts&&Object.getPrototypeOf(scripts)===Object.prototype);
   assert(Object.values(scripts).every(value=>typeof value==='string'));
+  if(Object.hasOwn(scripts,'test:supabase-backup'))scripts=inverseReviewedSupabaseBackupSourceScripts(scripts);
   if(scripts['test:assistant-later-h0-source']==='node scripts/build-assistant-later-h0-successor.mjs --active --check')
     scripts=inverseAssistantPublic588SuccessorSourceScripts(scripts);
   if(scripts['test:assistant-later-h0-source']==='node scripts/build-assistant-later-h0-successor.mjs --public587-successor --check')
@@ -184,6 +210,7 @@ export function inverseAssistantLaterH0SourceScripts(scripts){
 export function inverseReviewedAccountStatisticsAssistantSourceScripts(scripts){
   assert.equal(arguments.length,1);assert(scripts&&Object.getPrototypeOf(scripts)===Object.prototype);
   assert(Object.values(scripts).every(value=>typeof value==='string'));
+  if(Object.hasOwn(scripts,'test:supabase-backup'))scripts=inverseReviewedSupabaseBackupSourceScripts(scripts);
   if(Object.hasOwn(scripts,'test:assistant-later-h0-source'))scripts=inverseAssistantLaterH0SourceScripts(scripts);
   if(!Object.hasOwn(scripts,'test:native-original-continuity-source'))
     return inverseReviewed585AccountStatisticsAssistantSourceScripts(scripts);

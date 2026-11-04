@@ -1,3 +1,37 @@
+## 4. november — samme H0-format i den normale vejrproces
+
+Vejrhentning 255 stoppede efter leverandørarbejdet, fordi workflowet gav npm-vejrprocessen H0 med Z, mens den uændrede oprindelseskontrol kræver samme hele UTC-time med .000Z. Den præcise kalder normaliserer nu kun den indre proces gennem den eksisterende resolver og beviser både samme tekstlige time og tidsstempel. Globalt H0, låse, originalbindinger og admissions ændres ikke.
+
+Den lokale time-lock-prøve og helinverse består med deres dokumenterede platformsafgrænsning: 54 beståede og én Linux-skip blandt 55 inverseprøver; faktisk Bash/npm og den rene efterfølgende beskedencoding skal kvalificeres på præcis slut-CI. Ingen fuld suite eller ny SQL/modelversion er kørt/udstedt lokalt. SDK-, backup- og alle tidligere håndbogsafsnit bevares; se 89.304.
+
+Time-lock-prøven var ikke automatisk valgt af sourcepakkens kommandooversigt. Derfor kalder det eksisterende CI-trin 6 nu den præcise scripts/test-production-hour-lock-4.0.236.mjs først, før den normale SDK-kalder og den øvrige korte matrix. Trinnets navn, tre minutter og de 21 deklarerede trin bevares. En ny præcis helinverse fører kun denne kaldertilføjelse tilbage til det allerede gennemgåede SDK-workflow; de direkte SDK-testkaldere bruger samme normale inverse før deres gamle forventninger og kontrollerer fortsat den rå aktuelle rækkefølge. De 37 normale source-impact-assertioner og de to berørte statiske SDK-workflowcases er bestået lokalt uden SDK-kørsel. Faktisk Bash/npm og de endelige bytes kræver fortsat denne valgte Linux-CI.
+
+255 udførte normal RAW-save, men den senere komponent-save gav CACHE_MISS / WEATHER_PACK_SIZE_LIMIT og saved=false. Ingen ny holdbar 597-B/S eller Pages-generation blev skabt; CP/OM-genbrug fra denne kørsel og providerfri checkpointgenoptagelse må ikke påstås. Dette særskilte bevarelsesled er ikke rettet ved tidsformatændringen. Normal præcis kildekontrol, sikker levering og faktisk offentlig effekt mangler fortsat. Version, C/I/T/F/P, 73 migrationer, package, kilder og geometri bevares.
+
+## 4. november — privat backupport over den aktuelle SDK- og workflowkandidat
+
+Den separate backup- og målerpakke er nu lokalt sammensat med præcis PR810-kilde 45594e185f087ff02c8e72649d02cb45cf79cf16. Alle 21 gennemgåede produkt- og testejere bevarer deres tidligere efterbytes. PR810s SDK-, statfs-, én-pass- og direkte workflowkalderrettelser bevares; gamle dokumentbaser må ikke overskrive dem.
+
+Diskrettelsen fra PR808 er kilde- og nativekvalificeret og merget til main. PR810 og denne backupport har hver deres faktiske leveringsstatus. Denne private komposition ændrer ingen drift og ommærker hverken den tidligere SDK-Linux-prøve, historisk584-nationalprøve eller 597-databasebevis som et nyt resultat.
+
+Backuphjælperens 12 allerede beståede formatmål genbruges kun med præcis samme helper, test, transportafhængighed og Node-version. Samlet ny kildekvalifikation og levering, faktisk særskilt backupbucket- og arkivadgang, fuld database- og Authgendannelse, uafhængig nøglerecovery, varig frekvens/retention samt målt egnethed til Free er fortsat åbne. Pro beholdes; ingen automatisk backup, beskæring, sletning eller FreeReady aktiveres.
+
+## 4. november — én normal SDK-gennemgang og den manglende direkte workflowkalder
+
+Den faktiske SDK-kommando bestod i tidlig Linux-CI, men det forklarer ikke den tidligere60-sekundersfejl. Den efterfølgende korte kontrol stoppede i en overset selvstændig prøve af rå workflow-SHA. Netop den gamle grant-orakelkalder bruger nu den eksisterende præcise SDK-helinverse, mens rå workflowkontrol, ukendtafvisning og gamle fixturefingeraftryk bevares. Hele den faktiske korte syvkommanders kæde er gennemført; den lange matrix og PostgreSQL gentages ikke lokalt.
+
+De allerede udførte statfs-resultater logger nu tilgængelige bytes og frie/samlede inoder før SDK og RAW; ukendt er null, uden nye kald, gates eller returændring. Normal reclaim springer unødvendig du over og bruger én fast rm med120 sekunder samt samme højst2+2 sekunders lukningsbevis:124 mod tidligere128 sekunders normal kommandogrænse, inden for uændret ydre tre minutter. Begge canonical/device/inodekontroller og faktisk SDK-fravær/stop bevares. allocatedBytes er null uden måling, mens ABSENT bevarer0. Den direkte measure-API beholder60 sekunder.
+
+Et enkelt begrundet normalt genforsøg er startet på den allerede validerede main efter uafhængig SDK-Linux-succes, med standardvalg og normale låse. Det er hverken et permanent fejlbevis eller tilladelse til ukendt write/retry, force, reset eller overlappende produktionsændring. Den nye én-passvariant afventer egen faktisk Linux-kvalifikation; tidligere succes ommærkes ikke. Model-/kilde-/lagerbindinger, SQL, version, geometri og databevarelse er uændrede. INSTALL ændrer kun håndbogsseed. Alle tidligere frosne pakker bevares; ingen merge under aktiv writer. Se håndbog89.303.
+
+## 4. november — backupkandidat efter diskrettelsen og klargjort arkivadgang
+
+Den særskilte lokale backup-/metricskandidat er ført frem over den samlede 808-diskrettelse uden at ændre dens produktfiler, hele workflowinverse eller læren i håndbog 89.302. Den eksisterende generelle og administrative Cloudflare-adgang er klargjort; den normale dokumentarkivkontrol stoppede senere på R2_BUCKET_PROPERTIES, som 808-kandidaten retter. Det tidligere HTTP 403 er ikke det aktuelle stop.
+
+Den separate backupbucket-hjælper får samme præcise korrektion for sparsomme liste-/oprettelsesmetadata. Fuld frisk EU/Standard-detailaflæsning, privat r2.dev/domæneafgrænsning og alle oprindelige afslag består. De øvrige 17 backup-produkt-/testejere og begge gennemgåede metricsfiler bevares byteidentisk. Den særskilte backupbucket, arkiv, Auth-restore og FreeReady er fortsat ubekræftede.
+
+Denne kildeport aktiverer ingen backup, dokumentbeskæring, tidsplan, SOURCE, statistik eller sletning. Tre dokumentnøglers tabsfri vedligeholdelse har egne arkiv-/restore-/prunegates; fuld database-/Authbackup og gendannelse kræves før en senere Pro-opsigelse. Pro og den nuværende tilbagevej bevares. Version 4.0.597, C/I/T/F/P, de 73 migrationer, kilder og geometri er uændrede. Normal præcis kildekvalifikation og faktisk levering mangler; et 597-bevis ommærkes ikke som ny nativeeksekvering eller genbrug. Se håndbog 89.298, 89.300 og 89.302.
+
 ## 4. november — præcis historisk workflowinverse før ny kildekontrol
 
 Den tidlige normale kildeindgang krævede den oprindelige workflowfil efter SDK-ændringen. Den fælles historiske adapter genkender nu alene det nye, præcise hele før-/efterdelta og fører det tilbage til de autentiske forgængerbytes før den uændrede gamle kæde. Ukendte ændringer afvises fortsat. De aktuelle RAW-/CURRENT-grænser, SDK-adfærd og hele de allerede gennemgåede produktrettelser bevares.
@@ -13,6 +47,18 @@ En fast hjælper må kun frigøre det ubrugte Android-SDK på faktisk GitHub-hos
 Bucketlisten og oprettelsessvaret må udelade jurisdiction/lagerklasse, men fuld frisk EU/Standard-detailkontrol samt privat r2.dev/domæneafgrænsning er fortsat nødvendig. Den private EU-arkivbucket og eksisterende adgang er klargjort uden at fjerne vejradgangen; normalt arkiv/restore/prune er endnu ikke verificeret, automatisk oprydning er OFF, og Pro beholdes.
 
 Præcis kildekvalifikation og faktisk vejr-/arkivvirkning mangler. Version 4.0.597, model- og lagerbindinger, 73 udstedte migrationer, kilder, administratoropsætning og geometri bevares. INSTALL ændrer kun håndbogens statiske seed. Se håndbog 89.302 og de uændrede krav i 89.298.
+
+## 4. november — afgrænset målerapport for dokumentoprydning
+
+Den lokale backup-/driftskandidat udvider kun den eksisterende DOCUMENT_HISTORY_COMPLETE-rapport med én fast measurements-liste. Operationstypen er fast afgrænset, tællere skal være ikke-negative sikre heltal, og arkivindikatoren skal være boolesk. Manglende felter fra ældre operationer rapporteres som null, aldrig som et målt nul. Dokumentindhold, rækkeidentiteter, filstier, fingeraftryk og brugeroplysninger er udelukket.
+
+Bytefelterne er controllerens læste administrations- og R2-svar samt deklarerede svarlængder, ikke præcist faktureret egress. Tilsætningen ændrer hverken arkivcontroller, mutationer, ukendte udfald, låse eller aktiveringskrav. Lokal måltest genbruges; samlet kildekvalifikation, faktisk arkiv/oprydning og Free-vurdering er fortsat særskilte åbne beviser. Ingen ny modelversion eller påstand om genbrug af 597-databasebevis. Se håndbog 89.298.
+
+## 4. november — lokal arkivgren til isoleret databasegendannelse
+
+Læs håndbog 89.300 og DEC-0272 ved arbejde på backup. Den lokale kandidat forbinder nu det eksisterende autentificerede arkivs materialisering med den samme isolerede standardrestore. Syntetisk prøve er fortsat standard og læser intet rigtigt arkiv. Den udtrykkelige arkivgren bruger egen intern Dockerbridge, strømmer de fem oprindelige SQL-filer og giver ingen produktionsadgange til Docker/psql.
+
+Lokal kildeforberedelse er ikke faktisk Linux-, Docker-, arkiv-, Auth- eller fuld gendannelse. Kvalificér slutkilden og dokumentér de tekniske hosted forudsætninger før den faktiske arkivprøve. Den private rækkefølge er en arbejdsplan under ejerens stående autoritet, ikke et krav om nye tilladelser til allerede godkendte trin. Ingen produktionsrestore, retention, automatisk backup eller FreeReady er aktiveret.
 
 ## 4. november — native-prøvens egne dokumenter hører til før baselinen
 
@@ -31,6 +77,16 @@ Dette er kildeforberedelse, ikke udført oprydning. Faktisk bucket/adgang, fuldt
 Læs håndbog 89.301 og tillæggene af 4. november til DEC-0154 og DEC-0175 før arbejde på offentlig levering. Den lokale 4.0.594-kandidat adskiller browserens PLAIN-korttimer, fulde time-/zonefiler og recovery-arkivet. Bevar de logiske originalers identitet og lad score, modelbindinger og normale datakontroller følge den eksisterende kontrakt.
 
 PR #803's tidligere PLAIN-læserbro har bestået kilde-CI. Merge og deploy er endnu ikke verificeret. Den samlede Pages-kandidat kræver egen normal kontrol, faktisk størrelse på det uploadede artifact samt offentlig og mobil afprøvning.
+
+## 3. november — én sammenhængende runtimekontrol i databaseeksporten
+
+Eksportøren bruger nu platform og Node-version fra samme allerede eksisterende processensor. Standardkaldet bruger fortsat den faktiske process og kræver Linux samt Node 24 eller nyere, før midlertidige filer eller CLI startes. Den manuelle backupkalder vælger fortsat den rigtige Node 24-vært; kravet lempes ikke.
+
+Den første kildekontrol kørte de syntetiske transportprøver under Node 22, mens eksportøren blandede den simulerede Linux-proces med værtens Node-version. Det gav ét tidligt runtimeafslag med mange følgefejl. De tre transportfixtures angiver nu deres syntetiske Node 24-miljø eksplicit. Nye negative runtimeprøver og faktisk standardvalg består sammen med de gamle 109 cases, i alt 111. Det er lokal syntetisk evidens, ikke faktisk Linux/CLI-, database-, cloud- eller restoreeksekvering. Præcis ny GitHub-kvalifikation og alle live-, backup-, privatlivs- og Free-gates består som åbne krav.
+
+## 2. november — privat databasebackup, lokal kandidat før Free
+
+Læs håndbog 89.300 (supabase-private-backup-free-readiness-2026-11-02) og DEC-0272s nye tillæg. Den manuelle backup har skrivefri standard, fem krypterede SQL-filer og verificeret genfinding; eksplicit materialisering er ikke restore. Lokale mål består, men faktisk adgang, isoleret restore og Free/Pro-opsigelse er åbne. Ingen SOURCE-, scheduler- eller produktionsaktivering følger med.
 
 ## 3. november — ens filkontrol på tværs af runtimeversioner
 

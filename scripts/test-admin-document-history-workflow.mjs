@@ -44,7 +44,7 @@ function execute(overrides = {}, fault = {}) {
     if (fault.failMode === mode) {const error = new Error('never log raw child material');
       if (fault.typedCode) error.stderr = Buffer.from(JSON.stringify({status:'FAILED_CLOSED', code:fault.typedCode, operation:{private:'not printed',writeOutcome:fault.writeOutcome}}));
       throw error;}
-    return Buffer.from(JSON.stringify({mode, status:statuses[mode], currentDocumentsWritten:false,
+    return Buffer.from(JSON.stringify({...fault.controllerResult, mode, status:statuses[mode], currentDocumentsWritten:false,
       protectedOtherKeysWritten:false, archiveObjectsDeleted:false}));
   }};
   vm.runInNewContext(source, {require(name) {
@@ -250,5 +250,38 @@ test('document history workflow: automatic activation defaults off and only expl
   for(const flag of [undefined,'disabled','enabled']){
     const manual=execute({AUTOMATIC_MAINTENANCE_ENABLED:flag});
     assert.equal(manual.exitCode,0);assert.deepEqual(manual.calls.map(x=>x.mode),['plan']);
+  }
+});
+
+test('document history workflow: one final report keeps only fixed safe counters, old missing fields become null',()=>{
+  const counters={candidateRows:25,eligibleRowsBefore:51,confirmedAbsentAfterWrite:25,remainingCandidates:26,
+    previouslyAbsentCandidates:0,adminDecodedReadBytes:123456,declaredAdminContentLengthBytes:123456,
+    adminResponses:111,r2ReadBytes:67890,wireWrites:28};
+  const result=execute(triggered(),{controllerResult:{...counters,archiveRequired:true,
+    indexSha256:'a'.repeat(64),paths:['PRIVATE-PATH-MUST-NOT-APPEAR'],rowIDs:[12345],
+    payload:{private:'PRIVATE-DOCUMENT-MUST-NOT-APPEAR'},email:'private-user@example.invalid'}});
+  assert.equal(result.exitCode,0);assert.equal(result.log.length,1);
+  assert.equal(result.log[0].status,'DOCUMENT_HISTORY_COMPLETE');
+  assert.deepEqual(result.log[0].measurements,[{mode:'maintain',...counters,archiveRequired:true}]);
+  assert.deepEqual(Object.keys(result.log[0].measurements[0]),['mode',...Object.keys(counters),'archiveRequired']);
+  const text=JSON.stringify(result.log);
+  for(const forbidden of ['indexSha256','paths','rowIDs','payload','PRIVATE-','private-user@example.invalid'])assert(!text.includes(forbidden));
+  const old=execute();assert.equal(old.exitCode,0);assert.equal(old.log.length,1);
+  assert.deepEqual(old.log[0].measurements,[{mode:'plan',...Object.fromEntries(Object.keys(counters).map(key=>[key,null])),archiveRequired:null}]);
+  const zero=execute(triggered(),{controllerResult:{candidateRows:0,confirmedAbsentAfterWrite:0,remainingCandidates:0,archiveRequired:false}});
+  assert.equal(zero.exitCode,0);assert.equal(zero.log[0].measurements[0].archiveRequired,false);
+});
+test('document history workflow: supplied invalid counters or archive flag refuse without free payload reporting',()=>{
+  const keys=['candidateRows','eligibleRowsBefore','confirmedAbsentAfterWrite','remainingCandidates','previouslyAbsentCandidates',
+    'adminDecodedReadBytes','declaredAdminContentLengthBytes','adminResponses','r2ReadBytes','wireWrites'];
+  for(const key of keys)for(const value of [-1,0.5,Number.MAX_SAFE_INTEGER+1,'1',null,true]){
+    const result=execute(triggered(),{controllerResult:{[key]:value}});
+    assert.equal(result.exitCode,1,key);assert.equal(result.log.length,0);
+    assert.equal(result.errors[0].code,'DOCUMENT_HISTORY_MEASUREMENT');assert.equal(result.calls.length,1);
+  }
+  for(const value of [null,0,1,'true',{},[]]){
+    const result=execute(triggered(),{controllerResult:{archiveRequired:value}});
+    assert.equal(result.exitCode,1);assert.equal(result.log.length,0);
+    assert.equal(result.errors[0].code,'DOCUMENT_HISTORY_MEASUREMENT');
   }
 });

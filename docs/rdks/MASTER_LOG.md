@@ -1,3 +1,21 @@
+## 4. november — samme H0-format i den normale vejrproces
+
+Vejrhentning 255 stoppede efter leverandørarbejdet, fordi workflowet gav npm-vejrprocessen H0 med Z, mens den uændrede oprindelseskontrol kræver samme hele UTC-time med .000Z. Den præcise kalder normaliserer nu kun den indre proces gennem den eksisterende resolver og beviser både samme tekstlige time og tidsstempel. Globalt H0, låse, originalbindinger og admissions ændres ikke.
+
+Den lokale time-lock-prøve og helinverse består med deres dokumenterede platformsafgrænsning: 54 beståede og én Linux-skip blandt 55 inverseprøver; faktisk Bash/npm og den rene efterfølgende beskedencoding skal kvalificeres på præcis slut-CI. Ingen fuld suite eller ny SQL/modelversion er kørt/udstedt lokalt. SDK-, backup- og alle tidligere håndbogsafsnit bevares; se 89.304.
+
+Time-lock-prøven var ikke automatisk valgt af sourcepakkens kommandooversigt. Derfor kalder det eksisterende CI-trin 6 nu den præcise scripts/test-production-hour-lock-4.0.236.mjs først, før den normale SDK-kalder og den øvrige korte matrix. Trinnets navn, tre minutter og de 21 deklarerede trin bevares. En ny præcis helinverse fører kun denne kaldertilføjelse tilbage til det allerede gennemgåede SDK-workflow; de direkte SDK-testkaldere bruger samme normale inverse før deres gamle forventninger og kontrollerer fortsat den rå aktuelle rækkefølge. De 37 normale source-impact-assertioner og de to berørte statiske SDK-workflowcases er bestået lokalt uden SDK-kørsel. Faktisk Bash/npm og de endelige bytes kræver fortsat denne valgte Linux-CI.
+
+255 udførte normal RAW-save, men den senere komponent-save gav CACHE_MISS / WEATHER_PACK_SIZE_LIMIT og saved=false. Ingen ny holdbar 597-B/S eller Pages-generation blev skabt; CP/OM-genbrug fra denne kørsel og providerfri checkpointgenoptagelse må ikke påstås. Dette særskilte bevarelsesled er ikke rettet ved tidsformatændringen. Normal præcis kildekontrol, sikker levering og faktisk offentlig effekt mangler fortsat. Version, C/I/T/F/P, 73 migrationer, package, kilder og geometri bevares.
+
+## 4. november — én normal SDK-gennemgang og den manglende direkte workflowkalder
+
+Den faktiske SDK-kommando bestod i tidlig Linux-CI, men det forklarer ikke den tidligere60-sekundersfejl. Den efterfølgende korte kontrol stoppede i en overset selvstændig prøve af rå workflow-SHA. Netop den gamle grant-orakelkalder bruger nu den eksisterende præcise SDK-helinverse, mens rå workflowkontrol, ukendtafvisning og gamle fixturefingeraftryk bevares. Hele den faktiske korte syvkommanders kæde er gennemført; den lange matrix og PostgreSQL gentages ikke lokalt.
+
+De allerede udførte statfs-resultater logger nu tilgængelige bytes og frie/samlede inoder før SDK og RAW; ukendt er null, uden nye kald, gates eller returændring. Normal reclaim springer unødvendig du over og bruger én fast rm med120 sekunder samt samme højst2+2 sekunders lukningsbevis:124 mod tidligere128 sekunders normal kommandogrænse, inden for uændret ydre tre minutter. Begge canonical/device/inodekontroller og faktisk SDK-fravær/stop bevares. allocatedBytes er null uden måling, mens ABSENT bevarer0. Den direkte measure-API beholder60 sekunder.
+
+Et enkelt begrundet normalt genforsøg er startet på den allerede validerede main efter uafhængig SDK-Linux-succes, med standardvalg og normale låse. Det er hverken et permanent fejlbevis eller tilladelse til ukendt write/retry, force, reset eller overlappende produktionsændring. Den nye én-passvariant afventer egen faktisk Linux-kvalifikation; tidligere succes ommærkes ikke. Model-/kilde-/lagerbindinger, SQL, version, geometri og databevarelse er uændrede. INSTALL ændrer kun håndbogsseed. Alle tidligere frosne pakker bevares; ingen merge under aktiv writer. Se håndbog89.303.
+
 ## 4. november — præcis historisk workflowinverse før ny kildekontrol
 
 Den tidlige normale kildeindgang krævede den oprindelige workflowfil efter SDK-ændringen. Den fælles historiske adapter genkender nu alene det nye, præcise hele før-/efterdelta og fører det tilbage til de autentiske forgængerbytes før den uændrede gamle kæde. Ukendte ændringer afvises fortsat. De aktuelle RAW-/CURRENT-grænser, SDK-adfærd og hele de allerede gennemgåede produktrettelser bevares.
