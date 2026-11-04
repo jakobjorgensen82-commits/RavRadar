@@ -1406,7 +1406,10 @@ test('593 V2 merged origin requires independent artifact-bound PR identity befor
 });
 
 test('593 quartet observation remains conditional and follows proved cleanup without changing older profile reports',async()=>{
-  const source=await fs.readFile('scripts/lib/checkpoint-cas-native-postgres.mjs','utf8');
+  // Keep this whole593 oracle on its genuine pinned source. Current597 has its
+  // own additive observation guard, checked below without changing this oracle.
+  const source=await withInstalled593CodePredecessorSource(root=>
+    fs.readFile(root+'/scripts/lib/checkpoint-cas-native-postgres.mjs','utf8'));
   assert(source.includes('const nativeProgramsBefore=includeAssistantPublic591Successor?await nativePostgresProgramIdentity(programs):null;'));
   const guard=source.indexOf('if(completedReport&&includeAssistantPublic591Successor){');
   const cleanup=source.indexOf('if (cleanupAllowed && (!started || stopped)) await fs.rm(');
@@ -1414,6 +1417,28 @@ test('593 quartet observation remains conditional and follows proved cleanup wit
   const end=source.indexOf('} catch (cleanupError)',guard);
   assert(cleanup>=0&&guard>cleanup&&property>guard&&end>property);
   assert.equal((source.match(/await nativePostgresProgramIdentity\(programs\)/g)??[]).length,2);
+});
+
+
+test('597 quartet observation is conditional and follows proved stop and cleanup before the completed report',async()=>{
+  const source=await fs.readFile('scripts/lib/checkpoint-cas-native-postgres.mjs','utf8');
+  const before=source.indexOf('const nativeProgramsBefore=includeAssistantPublic591Successor||includeScalar597LaterH0Successor\n    ?await nativePostgresProgramIdentity(programs):null;');
+  const setup=source.indexOf("const root = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-checkpoint-pg-'))",before);
+  const stop=source.indexOf("assert.equal(stop.code,0,'native server stop was not proved; preserve directory');",setup);
+  const terminal=source.indexOf("assert.equal(status.code,3,'native server is not physically terminal; preserve directory');",stop);
+  const stopped=source.indexOf('stopped=true;',terminal),allowed=source.indexOf('cleanupAllowed=true;',stopped);
+  const cleanup=source.indexOf('if (cleanupAllowed && (!started || stopped)) await fs.rm(',allowed);
+  const guard=source.indexOf('if(completedReport&&nativeProgramsBefore){',cleanup);
+  const after=source.indexOf('const after=await nativePostgresProgramIdentity(programs);',guard);
+  const exact=source.indexOf("assert.deepEqual(after,nativeProgramsBefore,'Selected native PostgreSQL programs changed during execution');",after);
+  const property=source.indexOf('completedReport.nativeProgramIdentity=after;',exact);
+  const end=source.indexOf('} catch (cleanupError)',property);
+  assert(before>=0&&setup>before&&stop>setup&&terminal>stop&&stopped>terminal&&allowed>stopped
+    &&cleanup>allowed&&guard>cleanup&&after>guard&&exact>after&&property>exact&&end>property);
+  assert.equal((source.match(/await nativePostgresProgramIdentity\(programs\)/g)??[]).length,2);
+  const caller=await fs.readFile('scripts/test-protected-ravscore-continuation-checkpoint.mjs','utf8');
+  assert(caller.includes('includeScalar597LaterH0Successor:scalar597LaterH0Native'));
+  assert(caller.indexOf("kind:'RAVRADAR_NATIVE_PROGRAM_IDENTITY_V2'")>caller.indexOf('const report = await runNativeCheckpointSqlComparison('));
 });
 
 test('593 V2 rejects invalid artifact metadata before every ZIP call while preserving valid complete download verification',async()=>{
