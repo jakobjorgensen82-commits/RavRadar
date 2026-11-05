@@ -1,3 +1,7 @@
+> **Separat INAKTIV Linux-kvalifikation på 4.0.597 — 2026-11-05.** Ingen merge eller aktivering er tilladt. Hele guardianen er produktkode; aktuel main har ingen kalder. De to endnu ukørte Linux-kernelcases skal bevise, at en escaped setsid-child stoppes og reapes før successor, eller at actual TimeoutExpired bevarer den præcise fejl og lås samt afviser successor.
+>
+> SourceCLI-grenene mangler selvstændig named issued-/CIT-guard og nås eller kvalificeres ikke af disse cases. Der følger intet bevis for normal Sourcecaller, heljob, fireminuttersgrænse, SAVE, B/S/T-kæde, runnerloss eller produktion. C/I/T, alle 73 historiske SQL-migrationer, geodata, workflows, pakke og releaseversion ændres ikke. Markdown- og webhåndbogen samt assistentviden bevares byteuændrede.
+
 ## 5. november — forseglet offentlig kilde og streng normalstandard, 4.0.597
 
 En offentlig pakke fra 4.0.594 kan være den reelle aktive kilde, mens den lokale kode er 4.0.597. Serverens skrivefri kildeverifikation har allerede den gamle kildes præcise modelbinding, kontrakt, bundle og browserforsegling. Prognosedelingens fælles læsekontrol brugte alligevel den lokale modelbinding og afviste derfor en anden bundlehash, før en ny aktivering kunne begynde. Det er en fejl i valg af kontrolforventning; den gemte vejrpakke og dens beskyttede checkpoint skal bevares.
