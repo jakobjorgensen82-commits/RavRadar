@@ -2137,7 +2137,7 @@ test('after597 actual source-package CLI checks issued source only or refuses NU
 // synthetic origin/native receipt, or replacement model/capability is supplied.
 test('after597 real frozen597 native export links complete genuine companions and nested594 without PostgreSQL',async()=>{
   const {pathToFileURL}=await import('node:url'),path=await import('node:path'),crypto=await import('node:crypto');
-  const {withFrozen597CheckpointPostgresSource,FROZEN597_NATIVE_SOURCE}=
+  const {withFrozen597CheckpointPostgresSource,FROZEN597_NATIVE_SOURCE,FROZEN597_NATIVE_READSET}=
     await import('./run-frozen586-assistant-later-h0-postgres-source.mjs');
   const {SCALAR597_LATER_H0_BEFORE}=await import('./lib/assistant-later-h0-successor-source.mjs');
   let callbacks=0,outerRoot,nestedRoot;
@@ -2145,11 +2145,52 @@ test('after597 real frozen597 native export links complete genuine companions an
     await assert.rejects(()=>withFrozen597CheckpointPostgresSource(()=>{callbacks++;}),/ASSISTANT_AFTER597_UNISSUED/);
     assert.equal(callbacks,0);return;
   }
+  const {execFile}=await import('node:child_process'),{promisify}=await import('node:util'),{fileURLToPath}=await import('node:url');
+  const execute=promisify(execFile),repo=fileURLToPath(new URL('..',import.meta.url));
+  const git=async args=>(await execute('git',['-c','protocol.allow=never','-C',repo,...args],{
+    timeout:30000,maxBuffer:2*1024*1024,encoding:null,
+    env:{...Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','TEMP','TMP','LANG','LC_ALL']
+      .filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]])),
+      GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0'}})).stdout;
+  const parse=raw=>new Map(raw.toString('utf8').split('\0').filter(Boolean).map(line=>{
+    const m=/^(\d{6}) (blob|commit) ([a-f0-9]{40})\t([\s\S]+)$/.exec(line);assert(m);
+    return[m[4],{mode:m[1],type:m[2],blob:m[3]}];}));
+  const genuineCode=parse(await git(['ls-tree','-rz','--full-tree',FROZEN597_NATIVE_SOURCE.codeHead]));
+  const genuineNative=parse(await git(['ls-tree','-z',FROZEN597_NATIVE_SOURCE.nativeHead,'--','scripts/lib/assistant-later-h0-postgres.mjs']));
+  assert.equal(FROZEN597_NATIVE_READSET.length,229);assert(Object.isFrozen(FROZEN597_NATIVE_READSET));
+  assert(FROZEN597_NATIVE_READSET.every(Object.isFrozen));
+  assert.equal(crypto.createHash('sha256').update(JSON.stringify(FROZEN597_NATIVE_READSET)).digest('hex'),'9988a3392e70bc26d83aa7615451f2185d7b4a33835f6b7030acb9e1a4622cf4');
+  const sqlNames=[...genuineCode.keys()].filter(file=>file.startsWith('supabase/migrations/')).sort();
+  assert.equal(sqlNames.length,73);assert(sqlNames.every(file=>file.endsWith('.sql')));
+  let preflightReadbackMs=0,readbackBytes=0;const fixtureStarted=performance.now();
   await withFrozen597CheckpointPostgresSource(async source=>{
     callbacks++;outerRoot=source.repositoryRoot;
     assert.equal(source.nativeSourceHead,FROZEN597_NATIVE_SOURCE.nativeHead);
     assert.equal(source.factory.sourceHead,FROZEN597_NATIVE_SOURCE.codeHead);
     assert.equal(source.factory.sourceTree,FROZEN597_NATIVE_SOURCE.codeTree);
+    const readbackStarted=performance.now(),physical=[];
+    const walk=async(dir,prefix='')=>{for(const entry of await fs.readdir(dir,{withFileTypes:true})){
+      assert(!entry.isSymbolicLink());const file=prefix+entry.name;
+      if(entry.isDirectory())await walk(path.join(dir,entry.name),file+'/');else{assert(entry.isFile());physical.push(file);}}};
+    await walk(outerRoot);assert.deepEqual(physical.sort(),['.git',...FROZEN597_NATIVE_READSET.map(row=>row.file)].sort());
+    const bridge=await fs.lstat(path.join(outerRoot,'.git'),{bigint:true});assert(bridge.isFile()&&!bridge.isSymbolicLink()&&bridge.nlink===1n);
+    let nativeLeaves=0;
+    for(const row of FROZEN597_NATIVE_READSET){
+      const isAdapter=row.file==='scripts/lib/assistant-later-h0-postgres.mjs';
+      assert.equal(row.sourceHead,isAdapter?FROZEN597_NATIVE_SOURCE.nativeHead:FROZEN597_NATIVE_SOURCE.codeHead);
+      if(isAdapter)nativeLeaves++;
+      const committed=(isAdapter?genuineNative:genuineCode).get(row.file);
+      assert.deepEqual(committed,{mode:'100644',type:'blob',blob:row.blob});
+      const stat=await fs.lstat(path.join(outerRoot,row.file),{bigint:true});
+      assert(stat.isFile()&&!stat.isSymbolicLink()&&stat.nlink===1n);assert.equal(stat.size,BigInt(row.bytes));
+      assert.equal(stat.mode&0o111n,0n);assert(row.bytes<=2*1024*1024);
+      const bytes=await fs.readFile(path.join(outerRoot,row.file));readbackBytes+=bytes.length;
+      assert.equal(bytes.length,row.bytes);assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'),row.sha256);
+      assert.equal(crypto.createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex'),committed.blob);
+    }
+    assert.equal(nativeLeaves,1);assert.equal(readbackBytes,12669245);
+    assert.deepEqual((await fs.readdir(path.join(outerRoot,'supabase/migrations'))).map(name=>'supabase/migrations/'+name).sort(),sqlNames);
+    preflightReadbackMs=performance.now()-readbackStarted;
     for(const row of [
       {file:'scripts/run-frozen586-assistant-later-h0-postgres-source.mjs',bytes:16249,sha256:'0459a227114aaeaa830cd95afe3c5f2e06baa1b968eabfdd354ef52b3c794d63'},
       {file:'scripts/check-installed593-code-predecessor-source.mjs',bytes:6929,sha256:'b53be91b486ff6fd5a1d0048f85e75ac2777ebf11756c6a2dc30be436361142b'},
@@ -2169,4 +2210,7 @@ test('after597 real frozen597 native export links complete genuine companions an
     await assert.rejects(fs.lstat(nestedRoot),{code:'ENOENT'});
   });
   assert.equal(callbacks,2);await assert.rejects(fs.lstat(outerRoot),{code:'ENOENT'});
+  console.log(JSON.stringify({kind:'GENUINE_FROZEN597_COMPLETE_SOURCE_HOST_PRE_PG',staticFiles:229,SQLFiles:73,readbackBytes,
+    preflightReadbackMs,fixtureElapsedMs:performance.now()-fixtureStarted,wholeWrapperAndNested594Factory:true,ownedRootsRemoved:true,
+    SQLExecuted:false,all69ModulesImported:false,SourceCapabilityCreated:false}));
 });
