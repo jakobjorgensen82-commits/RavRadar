@@ -1,3 +1,15 @@
+## 5. november — 4.0.598: præcis afvisning af anonym arkivadgang
+
+Den private arkivkontrol skelner mellem faktisk læseadgang og en afvist usigneret forespørgsel. R2 kan afvise den normale GET/Range-metode med HTTP400 og den præcise XML-fejl InvalidArgument/Authorization. Kun denne begrænsede fejlkuvert med korrekt indholdstype og højst 4.096 accepterede byte giver den afgrænsede fortolkning. Friske private EU-bucketegenskaber og autentificeret objektlæsning med nøjagtigt byteantal og SHA-256 kræves fortsat. HTTP401/403/404 bevares; succes, redirect, ukendt400, serverfejl, for stor eller forkert XML afvises. Anonyme successvar annulleres uden objektlæsning.
+
+Den oprindelige fælles R2-transport og dens historiske kaldere bevares bytepræcist. En separat privat adapter bruges kun af dokumenthistorik og databasebackup. De eksisterende autentificerede læse- og bytebudgetkontroller bevares; kun den præcise usignerede probe føres ulæst frem til den afgrænsede fejlkontrol eller annullering. Et klassificeret læseafslag er ikke selv bevis for private bucketindstillinger, locator, fuld backup eller databasegendannelse.
+
+Et gyldigt målt HTTP-statusfelt fra en senere childfejl bevares i workflowets fejlrapport. Det erstatter den tidligere udeladelse af operationsstatus, men må ikke blandes sammen med Supabases særskilte privacyHttpStatus og privacyStage. Manglende eller ugyldige målinger forbliver ukendte. Arkivering kan have gemt et uændrligt objekt før et senere afslag; det giver ingen automatisk genkørsel eller adgang til locator-publicering eller prune.
+
+Den afgrænsede rettelse bevarer 4.0.598-kandidatens C/I/T og version, alle gamle migrationsbytes og den nye598-migration, scoreformel, kildeprioritet, originale vejr- og scoredata, administratorpunkter og geometri. Den normale håndbogssynkronisering ændrer kun dokumentations-JSON i INSTALL, aldrig DDL. De samlede eksisterende R2-, dokumenthistorik-, databasebackup- og workflowmål er de relevante kontrolindgange. Præcis slut-head-kildekontrol, sikker levering og faktisk gendannelses-/FreeReady-bevis er fortsat selvstændige krav.
+
+Se håndbog 89.313. Private statusaflæsninger, kørselspins og konkrete prøvekvitteringer føres i privat evidens; løbende kørselstilstande hører ikke til i denne dokumentation.
+
 ## 5. november — 4.0.598: sammensatte ravspørgsmål og bevarede originaler
 
 4.0.598 er den selvstændige efterfølger til den installerede 4.0.597 for Spørg RavRadar. Den samler de allerede gennemgåede rettelser til kombinerede spørgsmål om ravudstyr og prognose, relevante ukendte udtryk og afvisning af fundgarantier. Dansk, tysk og engelsk følger samme afgrænsning. Den offentlige faktabanks faglige indhold bevares; interne driftsfejl, private forhold og turdata må ikke blive assistentviden. Tidspunkt og konkret prognose skal fortsat komme fra gyldige lokale data, aldrig fra opdigtede AI-tal.

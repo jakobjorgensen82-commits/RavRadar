@@ -28,6 +28,13 @@ const TEST_CLOSURE=Object.freeze([
   Object.freeze({file:ADAPTER,bytes:profile.adapterBytes,sha256:profile.adapterSha256}),
   Object.freeze({file:'scripts/lib/current-memory-warmup-postgres.mjs',bytes:21181,sha256:'2e1498b7603a6625d415a1aed8c042c73d747ddd408f4222bdb0e3aa6046e091'}),
   Object.freeze({file:'scripts/check-current-memory-warmup-predecessor-source.mjs',bytes:10404,sha256:'a201e4afb0da382623004d7717ca867d9a9b881ff107e7a30dd052a5b2a68989'}),
+  // Native597's real scalar callback imports the genuine historical PG wrapper.
+  // Only this test host adds its complete eager companion closure from CODE803f;
+  // the corrected adapter remains the sole leaf read from native97d.
+  ...(profile===FROZEN597?[
+    Object.freeze({file:'scripts/run-frozen586-assistant-later-h0-postgres-source.mjs',bytes:16249,sha256:'0459a227114aaeaa830cd95afe3c5f2e06baa1b968eabfdd354ef52b3c794d63'}),
+    Object.freeze({file:'scripts/check-installed593-code-predecessor-source.mjs',bytes:6929,sha256:'b53be91b486ff6fd5a1d0048f85e75ac2777ebf11756c6a2dc30be436361142b'}),
+  ]:[]),
 ]);
 const FAILURE_PHASES=new Set(['TEST_CLOSURE','ADAPTER_IMPORT','FACTORY_IMPORT','NATIVE_CALLBACK','CLEANUP']);
 const FAILURE_CODES=new Set(['ERR_MODULE_NOT_FOUND','ENOENT','EACCES','EPERM','ERR_ASSERTION']);

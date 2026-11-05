@@ -2131,3 +2131,42 @@ test('after597 actual source-package CLI checks issued source only or refuses NU
   }
 });
 
+
+
+// Actual whole normal exports and imports only: no PostgreSQL, SQL transport,
+// synthetic origin/native receipt, or replacement model/capability is supplied.
+test('after597 real frozen597 native export links complete genuine companions and nested594 without PostgreSQL',async()=>{
+  const {pathToFileURL}=await import('node:url'),path=await import('node:path'),crypto=await import('node:crypto');
+  const {withFrozen597CheckpointPostgresSource,FROZEN597_NATIVE_SOURCE}=
+    await import('./run-frozen586-assistant-later-h0-postgres-source.mjs');
+  const {SCALAR597_LATER_H0_BEFORE}=await import('./lib/assistant-later-h0-successor-source.mjs');
+  let callbacks=0,outerRoot,nestedRoot;
+  if(!AFTER597_ISSUED){
+    await assert.rejects(()=>withFrozen597CheckpointPostgresSource(()=>{callbacks++;}),/ASSISTANT_AFTER597_UNISSUED/);
+    assert.equal(callbacks,0);return;
+  }
+  await withFrozen597CheckpointPostgresSource(async source=>{
+    callbacks++;outerRoot=source.repositoryRoot;
+    assert.equal(source.nativeSourceHead,FROZEN597_NATIVE_SOURCE.nativeHead);
+    assert.equal(source.factory.sourceHead,FROZEN597_NATIVE_SOURCE.codeHead);
+    assert.equal(source.factory.sourceTree,FROZEN597_NATIVE_SOURCE.codeTree);
+    for(const row of [
+      {file:'scripts/run-frozen586-assistant-later-h0-postgres-source.mjs',bytes:16249,sha256:'0459a227114aaeaa830cd95afe3c5f2e06baa1b968eabfdd354ef52b3c794d63'},
+      {file:'scripts/check-installed593-code-predecessor-source.mjs',bytes:6929,sha256:'b53be91b486ff6fd5a1d0048f85e75ac2777ebf11756c6a2dc30be436361142b'},
+    ]){
+      const bytes=await fs.readFile(path.join(outerRoot,row.file));
+      assert.equal(bytes.length,row.bytes);assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'),row.sha256);
+    }
+    // This is the exact real module missing in native16, loaded as a whole ESM.
+    const native=await import(pathToFileURL(path.join(outerRoot,'scripts/run-frozen586-assistant-later-h0-postgres-source.mjs')).href);
+    assert.equal(typeof native.withFrozen594CheckpointPostgresSource,'function');
+    await native.withFrozen594CheckpointPostgresSource(async original=>{
+      callbacks++;nestedRoot=original.repositoryRoot;assert.notEqual(nestedRoot,outerRoot);
+      assert.equal(original.factory.ravScoreModelBinding().modelBundleSha256,SCALAR597_LATER_H0_BEFORE.I);
+      assert.equal(original.factory.candidateGRollbackModelBinding().modelBundleSha256,SCALAR597_LATER_H0_BEFORE.C);
+      assert.equal(original.factory.CURRENT_CONTINUATION_IMPLEMENTATION_SHA256,SCALAR597_LATER_H0_BEFORE.T);
+    });
+    await assert.rejects(fs.lstat(nestedRoot),{code:'ENOENT'});
+  });
+  assert.equal(callbacks,2);await assert.rejects(fs.lstat(outerRoot),{code:'ENOENT'});
+});

@@ -334,16 +334,18 @@ jobs:
                 result = JSON.parse(output.toString('utf8'));
               } catch (error) {
                 let code = ['archive', 'publish-locator', 'prune', 'maintain'].includes(mode) ? 'WRITE_OUTCOME_UNKNOWN' : 'DOCUMENT_HISTORY_CHILD_FAILED';
-                let failureOutcome = null, privacyHttpStatus = null, privacyStage = null;
+                let failureOutcome = null, httpStatus = null, privacyHttpStatus = null, privacyStage = null;
                 try { const record = JSON.parse(error.stderr.toString('utf8'));
                   if (record.status === 'FAILED_CLOSED' && /^[A-Z_]{1,96}$/.test(record.code)) code = record.code;
+                  if (record.status === 'FAILED_CLOSED' && Number.isInteger(record.httpStatus)
+                    && record.httpStatus >= 100 && record.httpStatus <= 599) httpStatus = record.httpStatus;
                   if (['EXACT_ROW_ABSENT','EXACT_ROW_STILL_PRESENT','LOCATOR_ABSENT','LOCATOR_PAYLOAD_PRESENT_VERIFIED',
                     'IMMUTABLE_ARCHIVE_OBJECT_PRESENT_VERIFIED','UNRESOLVED'].includes(record.operation?.writeOutcome))
                     failureOutcome = record.operation.writeOutcome;
                   if (record.status === 'FAILED_CLOSED' && Number.isInteger(record.privacyHttpStatus)
                     && record.privacyHttpStatus >= 100 && record.privacyHttpStatus <= 599) privacyHttpStatus = record.privacyHttpStatus;
                   if (record.status === 'FAILED_CLOSED' && privacyStages.includes(record.privacyStage)) privacyStage = record.privacyStage; } catch {}
-                const failure = new Error(code); failure.code = code; failure.writeOutcome = failureOutcome; failure.privacyHttpStatus = privacyHttpStatus; failure.privacyStage = privacyStage; throw failure;
+                const failure = new Error(code); failure.code = code; failure.httpStatus = httpStatus; failure.writeOutcome = failureOutcome; failure.privacyHttpStatus = privacyHttpStatus; failure.privacyStage = privacyStage; throw failure;
               }
               need(result && result.mode === mode && result.status === expected[mode]
                 && result.currentDocumentsWritten === false && result.protectedOtherKeysWritten === false

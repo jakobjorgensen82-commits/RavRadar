@@ -301,9 +301,17 @@ test('document history workflow: privacy failure exposes only fixed HTTP stage f
   const later=execute(options,{failMode:'maintain',typedCode:'WRITE_OUTCOME_RESOLVED_STOPPED',
     writeOutcome:'IMMUTABLE_ARCHIVE_OBJECT_PRESENT_VERIFIED',genericHttpStatus:503,privacyHttpStatus:201,privacyStage:'VERIFIED'});
   assert.equal(later.exitCode,1);assert.equal(later.errors[0].privacyHttpStatus,201);
-  assert.equal(later.errors[0].privacyStage,'VERIFIED');assert.equal(later.errors[0].httpStatus,null,
-    'Existing child-error generic HTTP behavior is preserved; never substitute successful metadata201');
+  assert.equal(later.errors[0].privacyStage,'VERIFIED');assert.equal(later.errors[0].httpStatus,503,
+    'The actual child failure HTTPstatus remains distinct from successful metadata201');
   assert.equal(later.errors[0].code,'WRITE_OUTCOME_RESOLVED_STOPPED');
+  for(const [genericHttpStatus,expected] of [[400,400],[302,302],[503,503],[99,null],[600,null],['400',null]]){
+    const denied=execute(options,{failMode:'maintain',typedCode:'ARCHIVE_NOT_PRIVATE',genericHttpStatus,
+      privacyHttpStatus:201,privacyStage:'VERIFIED'});
+    assert.equal(denied.exitCode,1);assert.deepEqual(denied.calls.map(c=>c.mode),['maintain']);
+    assert.equal(denied.errors[0].code,'ARCHIVE_NOT_PRIVATE');assert.equal(denied.errors[0].httpStatus,expected);
+    assert.equal(denied.errors[0].privacyHttpStatus,201);assert.equal(denied.errors[0].privacyStage,'VERIFIED');
+    assert.equal(denied.bucketCalls.length,1);assert(!JSON.stringify(denied.errors).includes('private'));
+  }
   const bucket=execute({DOCUMENT_HISTORY_OPERATION:'bucket-readonly'},{bucketFailure:true});
   assert.equal(bucket.errors[0].httpStatus,403,'The existing real bucket HTTPstatus remains unchanged');
   assert.equal(bucket.errors[0].privacyHttpStatus,null);assert.equal(bucket.errors[0].privacyStage,null);

@@ -5,7 +5,7 @@ import crypto from 'node:crypto';
 import {gzipSync,gunzipSync} from 'node:zlib';
 import {pathToFileURL} from 'node:url';
 import {createSupabaseAdminRequester} from './lib/supabase-admin-rest.mjs';
-import {createR2PrivateRuntimeStorage} from './lib/r2-private-runtime-storage.mjs';
+import {createR2PrivateReadDenialStorage} from './lib/r2-private-read-denial-storage.mjs';
 import {PRIVATE_STUDY_ADMIN_ACCESS_SQL,assertPrivateStudyAdminAccess} from './lib/private-trip-study-admin-transport.mjs';
 
 export const ADMIN_HISTORY_POLICY=Object.freeze({
@@ -138,6 +138,10 @@ function clients({env,fetchImpl,resolveUnknownWrites=false}){
           exactResponse=response.status===200?{url:u.href,raw}:null;
         return new Response([204,205,304].includes(response.status)?null:raw,{status:response.status,headers:response.headers});
       }
+      const anonymousRange=r2&&method==='GET'&&u.search===''
+        &&new RegExp('^/'+P.bucket+'/bundles/sha256/[0-9a-f]{64}\\.json\\.gz$').test(u.pathname)
+        &&!new Headers(options.headers).has('authorization')&&new Headers(options.headers).get('range')==='bytes=0-0';
+      if(anonymousRange)return response; // Typed adapter owns the error bound and non-400 cancellation.
       if(method==='GET'&&response.body){const body=response.body.pipeThrough(new TransformStream({transform(chunk,controller){state.r2ReadBytes+=chunk.length;if(state.r2ReadBytes>P.maximumBucketBytes){state.guardFailure='R2_READ_OPERATION_BOUND';fail(state.guardFailure);}controller.enqueue(chunk);}}));return new Response(body,{status:response.status,headers:response.headers});}
       return response;
     }catch(error){if(mutation)state.unknownWrite=true;
@@ -194,7 +198,7 @@ function clients({env,fetchImpl,resolveUnknownWrites=false}){
     const code=resolution==='UNRESOLVED'||resolution==='NOT_REQUESTED'?'WRITE_OUTCOME_UNKNOWN':'WRITE_OUTCOME_RESOLVED_STOPPED';
     const error=new Error(code);error.code=code;error.safeOperation={putPaths:[...state.puts].map(u=>new URL(u).pathname),deleteOrLocatorRequests:[...state.deletes].map(u=>({path:new URL(u).pathname,query:new URL(u).search})),adminDecodedReadBytes:state.adminDecodedBytes,r2ReadBytes:state.r2ReadBytes,writeOutcome:resolution,resolutionReadOnly:true,furtherWritesPerformed:false};throw withPrivacy(error);}if(state.guardFailure)throw withPrivacy(Object.assign(new Error(state.guardFailure),{code:state.guardFailure}));
     if(typeof e.code==='string'&&/^[A-Z_]+$/.test(e.code))throw withPrivacy(e);throw withPrivacy(Object.assign(new Error('ADMIN_OR_ARCHIVE_OPERATION_FAILED'),{code:'ADMIN_OR_ARCHIVE_OPERATION_FAILED'}));}};
-  const r2=()=>createR2PrivateRuntimeStorage({accountId:env.RAVRADAR_R2_ACCOUNT_ID,
+  const r2=()=>createR2PrivateReadDenialStorage({accountId:env.RAVRADAR_R2_ACCOUNT_ID,
     accessKeyId:env.RAVRADAR_R2_ACCESS_KEY_ID,secretAccessKey:env.RAVRADAR_R2_SECRET_ACCESS_KEY,
     bucketId:P.bucket,maximumObjectBytes:P.maximumObjectBytes,bucketCeilingBytes:P.maximumBucketBytes,
     fetchImpl:guardedFetch});
@@ -263,7 +267,8 @@ async function verifiedObject(storage,descriptor){
   need(hash(descriptor.sha256)&&descriptor.path===objectPath(descriptor.sha256)&&positive(descriptor.bytes)
     &&descriptor.bytes<=P.maximumObjectBytes,'ARCHIVE_OBJECT_DESCRIPTOR');
   const b=await storage.download(descriptor.path);need(Buffer.isBuffer(b)&&b.length===descriptor.bytes&&sha(b)===descriptor.sha256,'ARCHIVE_OBJECT_SHA');
-  need([401,403,404].includes(await storage.anonymousStatus(descriptor.path)),'ARCHIVE_NOT_PRIVATE');return b;
+  const denial=await storage.anonymousReadDenial(descriptor.path);
+  if(!denial.denied)throw Object.assign(new Error('ARCHIVE_NOT_PRIVATE'),{code:'ARCHIVE_NOT_PRIVATE',httpStatus:denial.httpStatus});return b;
 }
 async function storeObject(storage,bytes){
   const descriptor={path:objectPath(sha(bytes)),sha256:sha(bytes),bytes:bytes.length};
@@ -462,4 +467,4 @@ async function main(){
   need(options.workdir,'PRIVATE_DIRECTORY_REQUIRED');console.log(JSON.stringify(await runAdminDocumentHistoryMaintenance(options)));
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(path.resolve(process.argv[1])).href)
-  main().catch(e=>{console.error(JSON.stringify({status:'FAILED_CLOSED',code:typeof e.code==='string'&&/^[A-Z_]+$/.test(e.code)?e.code:'OPERATION_FAILED',operation:e.safeOperation??null,privacyHttpStatus:Number.isInteger(e.privacyHttpStatus)&&e.privacyHttpStatus>=100&&e.privacyHttpStatus<=599?e.privacyHttpStatus:null,privacyStage:PRIVACY_STAGES.includes(e.privacyStage)?e.privacyStage:null}));process.exitCode=1;});
+  main().catch(e=>{console.error(JSON.stringify({status:'FAILED_CLOSED',code:typeof e.code==='string'&&/^[A-Z_]+$/.test(e.code)?e.code:'OPERATION_FAILED',operation:e.safeOperation??null,...(Number.isInteger(e.httpStatus)&&e.httpStatus>=100&&e.httpStatus<=599?{httpStatus:e.httpStatus}:{}),privacyHttpStatus:Number.isInteger(e.privacyHttpStatus)&&e.privacyHttpStatus>=100&&e.privacyHttpStatus<=599?e.privacyHttpStatus:null,privacyStage:PRIVACY_STAGES.includes(e.privacyStage)?e.privacyStage:null}));process.exitCode=1;});
