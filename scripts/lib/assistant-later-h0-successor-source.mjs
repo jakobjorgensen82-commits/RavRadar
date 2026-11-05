@@ -6,7 +6,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {FROZEN590_CODE_SOURCE_PROVENANCE,assertFrozen590CodeSourceSelected,
-  FROZEN591_CODE_SOURCE_PROVENANCE,assertFrozen591CodeSourceSelected}
+  FROZEN591_CODE_SOURCE_PROVENANCE,assertFrozen591CodeSourceSelected,assertSource597CodeSourceSelected}
   from '../check-assistant-later-h0-predecessor-source.mjs';
 import {NATIVE_ORIGINAL_CONTINUITY_BINDING,NATIVE_ORIGINAL_CONTINUITY_OUTPUT,
   readNativeOriginalContinuityCanonicalSource,nativeOriginalContinuityDefinition}
@@ -112,7 +112,7 @@ export async function readAssistantLaterH0CanonicalSource(options){
   return readFixedCanonicalSource(ISSUED587_SOURCE,options,pins,migration);
 }
 async function readFixedCanonicalSource(profile,options,pins,migration){
-  assert(profile===ISSUED587_SOURCE||profile===PUBLIC587_SUCCESSOR_SOURCE||profile===PUBLIC588_SUCCESSOR_SOURCE||profile===PUBLIC590_SUCCESSOR_SOURCE||profile===PUBLIC591_SUCCESSOR_SOURCE||profile===INSTALLED593_ORIGINAL591_SOURCE||profile===SCALAR597_LATER_H0_SOURCE,'ASSISTANT_SUCCESSOR_UNKNOWN_SOURCE_PROFILE');
+  assert(profile===ISSUED587_SOURCE||profile===PUBLIC587_SUCCESSOR_SOURCE||profile===PUBLIC588_SUCCESSOR_SOURCE||profile===PUBLIC590_SUCCESSOR_SOURCE||profile===PUBLIC591_SUCCESSOR_SOURCE||profile===INSTALLED593_ORIGINAL591_SOURCE||profile===SCALAR597_LATER_H0_SOURCE||profile===ASSISTANT_AFTER597_SOURCE,'ASSISTANT_SUCCESSOR_UNKNOWN_SOURCE_PROFILE');
   let migrationsDirectory=path.join(ROOT,'supabase/migrations');
   if(options!==undefined){assert(options&&Object.getPrototypeOf(options)===Object.prototype);
     assert.deepEqual(Object.keys(options),['migrationsDirectory']);assert(path.isAbsolute(options.migrationsDirectory));
@@ -829,4 +829,132 @@ export const INACTIVE_SCALAR597_LATER_H0_SUCCESSOR=Object.freeze({
   readCanonicalSource:readScalar597LaterH0CanonicalSource,
   assertTarget:assertScalar597LaterH0Target,assertCaller:assertAssistantPublic591SuccessorCaller,
 });
-export const ACTIVE_ASSISTANT_SUCCESSOR=INACTIVE_SCALAR597_LATER_H0_SUCCESSOR;
+
+// Normal generator-emitted local4.0.598 metadata over genuine597.
+// Installation and original-data admission remain separate normal gates.
+export const ASSISTANT_AFTER597_BEFORE=Object.freeze({...SCALAR597_LATER_H0_BINDING,
+  canonicalSha256:SCALAR597_LATER_H0_OUTPUT.canonicalSha256});
+export const ASSISTANT_AFTER597_BINDING=Object.freeze({
+  "version": "20261105064515",
+  "C": "1727dac192ae780fe33de70c6bb7c3e3d4490ed312adc8999675513eb595141a",
+  "I": "64172bb51ce1226277ec1eeed7e56ebebc46057e3ee9e88c8d405dae20b2ab54",
+  "T": "0c4c2c61395a381be6c684a71e795a8389af728b00cf29d5ea6a515eaf4dd375"
+});
+export const ASSISTANT_AFTER597_OUTPUT=Object.freeze({
+  "migrationSha256": "cc4b7f5fc94f912718eabdbf802ce462eb60318f4f4eb641aa13ed04526aec5d",
+  "canonicalSha256": "253f2ad2150cb356a06254d627695624926f98686e0c78f22f68f33ac81ce4b9",
+  "checkpointContractSha256": "886ad1d68912d0fb576666ab145b384ef45826adc22d59ab9d035b0efa3b552b",
+  "tripBindingPolicySha256": "1f2a269d582597f078eae9add9a3a50087c7426b0463111c8317fb6f9112c4bb"
+});
+export const ASSISTANT_AFTER597_RELEASE="4.0.598";
+export const ASSISTANT_AFTER597_ALIASES=Object.freeze([
+  Object.freeze({name:'ravradar_ravscore_checkpoint_ask597_state_valid',signature:'(jsonb,text)'}),
+  Object.freeze({name:'ravradar_ravscore_checkpoint_ask597_payload_valid',signature:'(jsonb,timestamptz)'}),
+]);
+export function requireAssistantAfter597Binding(){
+  assert.equal(arguments.length,0,'No caller-selected assistant binding');
+  assert(ASSISTANT_AFTER597_BINDING&&Object.isFrozen(ASSISTANT_AFTER597_BINDING),'ASSISTANT_AFTER597_UNISSUED');
+  const binding=ASSISTANT_AFTER597_BINDING;
+  assert.deepEqual(Object.keys(binding).sort(),['C','I','T','version']);
+  assert.match(binding.version,/^[0-9]{14}$/);assert(binding.version>ASSISTANT_AFTER597_BEFORE.version);
+  for(const key of ['C','I','T'])assert.match(binding[key],/^[a-f0-9]{64}$/);
+  assert.equal(new Set(['C','I','T'].flatMap(key=>[binding[key],ASSISTANT_AFTER597_BEFORE[key]])).size,6);
+  assertSource597CodeSourceSelected();
+  return binding;
+}
+export function requireAssistantAfter597Output(){
+  assert.equal(arguments.length,0);requireAssistantAfter597Binding();
+  assert(ASSISTANT_AFTER597_OUTPUT&&Object.isFrozen(ASSISTANT_AFTER597_OUTPUT),'ASSISTANT_AFTER597_SQL_UNISSUED');
+  const output=ASSISTANT_AFTER597_OUTPUT;
+  assert.deepEqual(Object.keys(output).sort(),['canonicalSha256','checkpointContractSha256','migrationSha256','tripBindingPolicySha256']);
+  for(const value of Object.values(output))assert.match(value,/^[a-f0-9]{64}$/);
+  return output;
+}
+export function requireAssistantAfter597Release(){
+  assert.equal(arguments.length,0);requireAssistantAfter597Output();
+  assert.equal(typeof ASSISTANT_AFTER597_RELEASE,'string');
+  assert.match(ASSISTANT_AFTER597_RELEASE,/^4\.0\.[0-9]+$/);
+  assert(Number(ASSISTANT_AFTER597_RELEASE.split('.').at(-1))>597);
+  return ASSISTANT_AFTER597_RELEASE;
+}
+export function assistantAfter597Migration(){
+  assert.equal(arguments.length,0);const{version}=requireAssistantAfter597Binding();
+  const id=version+'_assistant_after597_original597_bound_successor';
+  return Object.freeze({version,id,filename:id+'.sql'});
+}
+export function assistantAfter597CheckpointContractFromBase(source,base){
+  assert.equal(arguments.length,2);
+  let text=scalar597LaterH0CheckpointContractFromBase(source,base).definition;
+  for(const[index,alias]of ASSISTANT_AFTER597_ALIASES.entries()){
+    const whole=nativeOriginalContinuityDefinition(source,alias.name);
+    text+='\n-- assistant-later-h0-original597-'+(index===0?'state':'payload')+'-validator --\n'
+      +whole.slice(whole.indexOf('as $$')+5,whole.lastIndexOf('$$;')).replace(/\r\n?/g,'\n').trim();
+  }
+  return Object.freeze({id:base.id,definition:text,sha256:sha(text)});
+}
+const ASSISTANT_AFTER597_SOURCE=Object.freeze({
+  readPredecessor:readScalar597LaterH0CanonicalSource,aliases:ASSISTANT_AFTER597_ALIASES,previousRelease:597,
+});
+export async function readAssistantAfter597CanonicalSource(options){
+  assert(arguments.length<=1);const output=requireAssistantAfter597Output();
+  return readFixedCanonicalSource(ASSISTANT_AFTER597_SOURCE,options,output,assistantAfter597Migration());
+}
+// Hele den ægte597-S skal kunne genskabes; kun udstedte metadata må ændres.
+// Værdisammenligning alene giver ingen original-, SQL- eller runtimeautoritet.
+export function assertAssistantAfter597CheckpointInverse(old,incoming,next){
+  assert.equal(arguments.length,3);requireAssistantAfter597Output();
+  assert.deepEqual(next,requireAssistantAfter597Binding());
+  const before=ASSISTANT_AFTER597_BEFORE;
+  assert.equal(old?.modelBinding?.modelBundleSha256,before.I);
+  assert.equal(old?.candidateGRollbackCompanion?.modelBinding?.modelBundleSha256,before.C);
+  assert.equal(old?.continuationStateContractSha256,before.T);
+  assert.equal(incoming?.modelBinding?.modelBundleSha256,next.I);
+  assert.equal(incoming?.candidateGRollbackCompanion?.modelBinding?.modelBundleSha256,next.C);
+  assert.equal(incoming?.continuationStateContractSha256,next.T);
+  const ids=Object.keys(old.states).sort();assert.equal(ids.length,673);
+  assert.deepEqual(Object.keys(old.candidateGRollbackCompanion.states).sort(),ids);
+  assert.deepEqual(Object.keys(incoming.states).sort(),ids);
+  assert.deepEqual(Object.keys(incoming.candidateGRollbackCompanion.states).sort(),ids);
+  const inverse=structuredClone(incoming);
+  inverse.modelBinding.modelBundleSha256=before.I;
+  inverse.candidateGRollbackCompanion.modelBinding.modelBundleSha256=before.C;
+  inverse.continuationStateContractSha256=before.T;
+  for(const id of ids){
+    assert.equal(inverse.states[id].modelBundleSha256,next.I);
+    inverse.states[id].modelBundleSha256=old.states[id].modelBundleSha256;
+    const candidate=inverse.candidateGRollbackCompanion.states[id];
+    if(Object.hasOwn(candidate,'modelBundleSha256')){
+      assert.equal(candidate.modelBundleSha256,next.C);
+      assert(Object.hasOwn(old.candidateGRollbackCompanion.states[id],'modelBundleSha256'));
+      candidate.modelBundleSha256=old.candidateGRollbackCompanion.states[id].modelBundleSha256;
+    }
+  }
+  for(const key of ['generationSha256','stateSha256']){
+    inverse[key]=old[key];
+    if(Object.hasOwn(old.candidateGRollbackCompanion,key))inverse.candidateGRollbackCompanion[key]=old.candidateGRollbackCompanion[key];
+  }
+  assert.deepEqual(inverse,old,'Hele den originale597-checkpoint skal genskabes');return true;
+}
+export function assertAssistantAfter597Target(descriptor,targetReferenceAt){
+  assert.equal(arguments.length,2);
+  assert.equal(descriptor?.modelBinding?.modelBundleSha256,ASSISTANT_AFTER597_BEFORE.I);
+  assert.equal(descriptor?.contractHashes?.continuationStateContractSha256,ASSISTANT_AFTER597_BEFORE.T);
+  for(const value of [descriptor.productionReferenceAt,targetReferenceAt]){
+    assert.equal(typeof value,'string');assert.match(value,/^\d{4}-\d{2}-\d{2}T\d{2}:00:00\.000Z$/);
+    assert.equal(new Date(value).toISOString(),value);
+  }
+  assert(Date.parse(targetReferenceAt)>Date.parse(descriptor.productionReferenceAt),'ASSISTANT_AFTER597_STRICTLY_LATER');
+  return true; // Input constraint only, no original authentication or SQL authority.
+}
+export const UNISSUED_ASSISTANT_AFTER597_SUCCESSOR=Object.freeze({
+  sourcePhase:'assistant-mixed-after597-successor',
+  before:ASSISTANT_AFTER597_BEFORE,databaseBefore:ASSISTANT_AFTER597_BEFORE,originalStateFamily:'597',
+  binding:ASSISTANT_AFTER597_BINDING,output:ASSISTANT_AFTER597_OUTPUT,
+  requireBinding:requireAssistantAfter597Binding,requireOutput:requireAssistantAfter597Output,
+  requireRelease:requireAssistantAfter597Release,migration:assistantAfter597Migration,
+  readCanonicalSource:readAssistantAfter597CanonicalSource,
+  readPredecessorCanonicalSource:readScalar597LaterH0CanonicalSource,
+  assertTarget:assertAssistantAfter597Target,assertCaller:assertAssistantPublic591SuccessorCaller,
+});
+
+export const ACTIVE_ASSISTANT_SUCCESSOR=UNISSUED_ASSISTANT_AFTER597_SUCCESSOR;

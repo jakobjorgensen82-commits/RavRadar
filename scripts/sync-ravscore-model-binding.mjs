@@ -16,7 +16,8 @@ import {ASSISTANT_LATER_H0_BINDING,ASSISTANT_LATER_H0_ALIASES,assistantLaterH0Mi
   ASSISTANT_PUBLIC588_SUCCESSOR_ALIASES,requireAssistantPublic588SuccessorOutput,requireAssistantPublic587SuccessorOutput,
   ASSISTANT_PUBLIC590_SUCCESSOR_ALIASES,requireAssistantPublic590SuccessorOutput,
   ASSISTANT_PUBLIC591_SUCCESSOR_ALIASES,requireAssistantPublic591SuccessorOutput,requireInstalled593Original591Output,
-  SCALAR597_LATER_H0_ALIASES,requireScalar597LaterH0Output}
+  SCALAR597_LATER_H0_ALIASES,requireScalar597LaterH0Output,
+  ASSISTANT_AFTER597_ALIASES,requireAssistantAfter597Output}
   from './lib/assistant-later-h0-successor-source.mjs';
 import {
   assertRavScoreModelBinding,
@@ -238,15 +239,39 @@ export function scalar597LaterH0CheckpointInspectionView(source){
   return view;
 }
 
+// Kun den navngivne efter597-kilde. Uudstedt output afvises før input læses.
+// Aliasdefinitioner fjernes alene fra kontrolvisningen efter hel kildehashkontrol;
+// synkroniseret SQL beholder hele den uændrede kanoniske kilde.
+export function assistantAfter597CheckpointInspectionView(source){
+  const pins=requireAssistantAfter597Output();
+  assert.equal(arguments.length,1);assert.equal(typeof source,'string');
+  assert.equal(crypto.createHash('sha256').update(source).digest('hex'),pins.canonicalSha256,
+    'Assistant after597 inspection requires the entire issued canonical source');
+  let view=source;
+  for(const row of [...ASSISTANT_AFTER597_ALIASES,...SCALAR597_LATER_H0_ALIASES,
+    ...ASSISTANT_PUBLIC591_SUCCESSOR_ALIASES,...ASSISTANT_PUBLIC590_SUCCESSOR_ALIASES,
+    ...ASSISTANT_PUBLIC588_SUCCESSOR_ALIASES,...ASSISTANT_PUBLIC587_SUCCESSOR_ALIASES,
+    ...ASSISTANT_LATER_H0_ALIASES,...NATIVE_ORIGINAL_CONTINUITY_ALIASES.slice(0,2)]){
+    const original=exactFunctionDefinition(view,'public.'+row.name,'Exact preserved after597 predecessor alias');
+    view=view.slice(0,original.start)+view.slice(original.end);
+  }
+  return view;
+}
+
 export function checkpointMetadataCasBlock(source, binding, candidateBinding, continuationHash) {
   ACTIVE.requireOutput();
+  assert(['assistant-public587-successor','assistant-public588-successor','assistant-public590-successor',
+    'assistant-public591-successor','assistant-installed593-origin591-successor',
+    'scalar597-later-h0-original594-successor','assistant-mixed-after597-successor'].includes(ACTIVE.sourcePhase),
+  'ASSISTANT_SYNC_UNKNOWN_SOURCE_PHASE');
   const label = `${CHECKPOINT_METADATA_CAS_MIGRATION_PATH} checkpoint metadata CAS`;
   const outer = exactGeneratedBlock(source, CHECKPOINT_METADATA_CAS_MARKER, label);
   // Frozen0200 aliases deliberately preserve their ORIGINAL generated-marker
   // comments too. Validate both complete immutable definitions before removing
   // them from this current-binding-only inspection view. The returned SQL still
   // contains every original byte; no alias is rebound, hidden or rewritten.
-  let currentView=ACTIVE.sourcePhase==='scalar597-later-h0-original594-successor'
+  let currentView=ACTIVE.sourcePhase==='assistant-mixed-after597-successor'
+    ?assistantAfter597CheckpointInspectionView(source):ACTIVE.sourcePhase==='scalar597-later-h0-original594-successor'
     ?scalar597LaterH0CheckpointInspectionView(source):ACTIVE.sourcePhase==='assistant-installed593-origin591-successor'
     ?installed593Original591CheckpointInspectionView(source):ACTIVE.sourcePhase==='assistant-public591-successor'
     ?assistantPublic591SuccessorCheckpointInspectionView(source):ACTIVE.sourcePhase==='assistant-public590-successor'

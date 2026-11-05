@@ -1,3 +1,11 @@
+## 89.312 Sammensatte ravspørgsmål og sikker assistentopdatering
+
+Besvar alle relevante dele, behold ærlig usikkerhed og bevar model, originale data og normale brugerfunktioner ved opdatering.
+
+<a id="assistant-mixed-after597-original-preservation-2026-11-05"></a>
+
+<div class="reader-guide"><p><strong>Kort fortalt: Et spørgsmål kan både handle om udstyr og om en kommende ravtur. Assistenten skal behandle begge dele og være tydelig om det, den ikke ved.</strong></p></div><h3>Flere emner i samme spørgsmål</h3><p>Et spørgsmål om en ravkese kan også spørge til den bedste dag eller zone. Den kendte udstyrsdel må ikke gå tabt, fordi resten kræver prognosedata. Mangler der gyldige data til en rangering, skal assistenten sige det og stadig besvare den del, der har fagligt grundlag.</p><h3>Ukendte ord og fundgarantier</h3><p>Et ukendt ravrelateret udtryk er grund til at udtrykke usikkerhed eller bede om en præcisering. Det er ikke i sig selv et uvedkommende spørgsmål. Ingen vindretning, farve eller score garanterer ravfund. Dansk, tysk og engelsk skal bevare de samme forbehold, og assistenten må ikke opfinde tal eller oplysninger om brugere.</p><h3>Opdateringen bevarer beregning og originaler</h3><p>Spørg RavRadars kode indgår i den eksisterende versionsbinding. En opdatering kan derfor kræve en ny teknisk binding, selv om selve scoreformlen er uændret. Den normale overgang skal bevare de gamle originaler og offentliggjorte scorer og først bruge den nye binding ved en senere gyldig vejrgeneration. Kildeprioritet, administratorpunkter, geometri, ture og øvrige brugerfunktioner ændres ikke af assistentrettelsen.</p><h3>Afprøvning og leveringsstatus</h3><p>De berørte lokale spørgsmål, leveringskaldere og UI-fejlgrænser er afprøvet i 4.0.598-kandidaten. Dette beviser ikke offentlig levering eller et fungerende eksternt AI-svar efter opdateringen. Før afslutning kræves de relevante kilde- og databasekontroller, databevarelse, sikker levering og faktisk afprøvning gennem brugerfunktionen på alle tre sprog. Den separate vejrhentningsrevision aktiveres ikke for at levere denne rettelse.</p>
+
 ## 89.311 Offentlig kilde verificeres med sin forseglede modelbinding
 
 <div class="reader-guide"><p><strong>Kort fortalt: En gammel offentlig vejrpakke skal kontrolleres mod sin egen verificerede modelbinding. Den nye pakke skal passe til sin egen model og forsegling; ingen af dem må ommærkes.</strong></p></div>
@@ -1901,7 +1909,7 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.597
+**Håndbogsversion:** 4.0.598
 
 **Lokal kildebinding — 29. oktober 2026, RavScore 4.0.591, ikke installeret:** Den integrerede model er offentlig som modeltype under den særskilt leverede 4.0.590. Den nye assistentefterfølger er lokalt udstedt og er endnu ikke samlet kvalificeret, installeret eller offentliggjort.
 

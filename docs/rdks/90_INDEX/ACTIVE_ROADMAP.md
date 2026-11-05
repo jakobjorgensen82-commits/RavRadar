@@ -1,3 +1,9 @@
+## 5. november — 4.0.598: sammensatte ravspørgsmål og bevarede originaler
+
+1. Afslut den almindelige vejrhentning og verificér faktisk gemning, genbrug, offentlig levering og alle fem felters dækning over hele den forventede horisont.
+2. Færdiggør assistentens normale udstedte metadata og fastpoint på 4.0.598, dokumentation og én relevant præcis GitHub-kontrol inklusive den nye nødvendige native-fase.
+3. Efter terminal vejrhentning og frisk kontrol af ledig skriver: brug den normale originalbevarende installationsvej. Kontrollér en strengt senere generation, de eksisterende Edge-/Pages-/delingsforbrugere og reel offentlig AI-effekt.
+4. Fortsæt parallelt den isolerede SOURCE-revision og øvrige brugerdata-/Free-/backupopgaver. Revisionen må ikke aktiveres som en genvej til assistentleveringen.
 ## 30. oktober — 4.0.593-kandidat: samme kapacitet i de nødvendige normale læsere
 
 Den faktisk anvendte forgænger er 4.0.591. Den nye 4.0.593-kandidat samler de allerede forberedte forbedringer og den konkrete kapacitetsrettelse; 4.0.592 samt dens udstedte kilder og SQL bevares, men 592 er ikke installeret eller offentligt leveret. Ældre daterede 591-/592-fronter er historik på disse statuspunkter.

@@ -1,3 +1,10 @@
+## 5. november — 4.0.598: sammensatte ravspørgsmål og bevarede originaler
+
+- Sammensatte ravspørgsmål må ikke miste en relevant del alene fordi spørgsmålet også handler om udstyr, dato eller prognose. Et ukendt ravrelateret udtryk skal give ærlig usikkerhed eller afklaring; det er ikke automatisk et uvedkommende emne.
+- Ingen fundgaranti eller opdigtet vejr, rangering, score eller privat oplysning. De eksisterende sprog-, privatlivs-, kvote- og sikkerhedsgrænser består.
+- Den nye modelbinding skal afledes af de faktiske normale fysiske C/I/T-filer. Hele den oprindelige 597-kæde, de autentiske B/S-originaler og alle anvendte migrationsfiler bevares. Ingen same-H0-undtagelse eller SOURCE-aktivering må indføres for at få assistenten leveret.
+- Levering kræver slut-head-kildekontrol og faktisk ny native SQL-prøve, når de ændrede kontrakter kræver det. Genbrug gyldig evidens for uændrede flader; gentag ikke hele historiske suites lokalt uden konkret grund.
+- Offentlig accept skal gentage de konkrete tidligere fejlede spørgsmål gennem den normale brugerfunktion på dansk, tysk og engelsk. Et lokalt svar eller HTTP 200 er ikke bevis for ekstern AI.
 ## 1. november — privat Pages-opdatering af det eksakt ejede projekt
 
 P0 har faktisk leveret offentlig 4.0.594, og genoptagelsen er terminalt afsluttet. Denne lokale Pages-efterfølger ændrer ikke vejrdata eller modelbinding og er endnu ikke kilde- eller hostingkvalificeret. Aktuel kørselsstatus føres privat.

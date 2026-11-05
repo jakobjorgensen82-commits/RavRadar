@@ -36,7 +36,10 @@ import {ASSISTANT_LATER_H0_BEFORE as OLD,ASSISTANT_LATER_H0_ALIASES as ALIASES,
   installed593Original591Migration,readInstalled593Original591CanonicalSource,
   SCALAR597_LATER_H0_BEFORE,SCALAR597_LATER_H0_ALIASES,SCALAR597_LATER_H0_RELEASE,
   scalar597LaterH0CheckpointContractFromBase,requireScalar597LaterH0Binding,
-  requireScalar597LaterH0Output,scalar597LaterH0Migration}
+  requireScalar597LaterH0Output,scalar597LaterH0Migration,
+  ASSISTANT_AFTER597_BEFORE,ASSISTANT_AFTER597_ALIASES,readScalar597LaterH0CanonicalSource,
+  assistantAfter597CheckpointContractFromBase,requireAssistantAfter597Binding,
+  requireAssistantAfter597Output,requireAssistantAfter597Release,assistantAfter597Migration}
   from './lib/assistant-later-h0-successor-source.mjs';
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),CP='ravradar_ravscore_checkpoint_';
 const sha=v=>crypto.createHash('sha256').update(v).digest('hex');
@@ -94,9 +97,17 @@ const SCALAR597_LATER_H0=Object.freeze({
   contractTail:"    || E'\\n-- assistant-later-h0-original591-payload-validator --\\n' || v_ask591_payload_definition;",
   kind:'SCALAR597_LATER_H0_SUCCESSOR_STRUCTURE',
 });
+const ASSISTANT_AFTER597=Object.freeze({
+  previous:ASSISTANT_AFTER597_BEFORE,aliases:ASSISTANT_AFTER597_ALIASES,
+  previousRelease:597,validatorCount:43,
+  readPredecessor:readScalar597LaterH0CanonicalSource,
+  checkpointFromBase:assistantAfter597CheckpointContractFromBase,
+  contractTail:"    || E'\\n-- assistant-later-h0-original594-payload-validator --\\n' || v_ask594_payload_definition;",
+  kind:'ASSISTANT_AFTER597_SUCCESSOR_STRUCTURE',
+});
 
 function fixedProfile(profile){
-  assert(profile===LEGACY586||profile===PUBLIC587||profile===PUBLIC588||profile===PUBLIC590||profile===PUBLIC591||profile===INSTALLED593_ORIGINAL591||profile===SCALAR597_LATER_H0,'ASSISTANT_SUCCESSOR_UNKNOWN_PROFILE');
+  assert(profile===LEGACY586||profile===PUBLIC587||profile===PUBLIC588||profile===PUBLIC590||profile===PUBLIC591||profile===INSTALLED593_ORIGINAL591||profile===SCALAR597_LATER_H0||profile===ASSISTANT_AFTER597,'ASSISTANT_SUCCESSOR_UNKNOWN_PROFILE');
   return profile;
 }
 function metadata(source,next,inventory,OLD){
@@ -139,6 +150,46 @@ export async function prepareAssistantPublic591SuccessorStructure(options){
   return prepareStructure(PUBLIC591,options.version);
 }
 
+// Samme normale aliaskonstruktion som prepareStructure. Kun ægte597-kildedata;
+// ingen ny tuple, version, migrationsfil, udstedelse eller installationsautoritet.
+export async function prepareAssistantAfter597PredecessorAliases(){
+  assert.equal(arguments.length,0,'Ingen caller-valgt familie, kilde eller version');
+  const prior=await ASSISTANT_AFTER597.readPredecessor();
+  const prepared=predecessorAliases(ASSISTANT_AFTER597,prior);
+  const contract=definition(prior.canonicalSource,CP+'contract');
+  const oid=/  v_validator_oids oid\[\] := array\[([\s\S]*?)\n  \];/.exec(contract);assert(oid);
+  assert.equal([...oid[1].matchAll(/pg_catalog\.to_regprocedure\(/g)].length,ASSISTANT_AFTER597.validatorCount);
+  assert.equal(contract.split(ASSISTANT_AFTER597.contractTail).length,2);
+  return Object.freeze({kind:'ASSISTANT_AFTER597_PREDECESSOR_ALIASES_ONLY',admission:'NO_ADMISSION',
+    aliases:prepared.aliases,originalCanonicalSha256:sha(prior.canonicalSource),
+    originalCanonicalUnchanged:true,validatorCount:ASSISTANT_AFTER597.validatorCount,
+    nextBinding:null,migration:null,migrationIssued:false,installationPerformed:false,sameH0Capability:false});
+}
+// Den eksisterende DATA-konstruktør får først et reelt tidsstempel ved særskilt
+// normal udstedelse. Den skriver intet og giver aldrig produktionsautoritet.
+// Den normale CLI nedenfor kræver allerede udstedte bindinger før ethvert I/O.
+export async function prepareAssistantAfter597SuccessorStructure(options){
+  assert.equal(arguments.length,1);assert(options&&Object.getPrototypeOf(options)===Object.prototype);
+  assert.deepEqual(Object.keys(options),['version'],'Kun normalt tidsstempel; ingen caller-valgt profil eller tuple');
+  assert.equal(typeof options.version,'string');assert.match(options.version,/^[0-9]{14}$/);
+  assert(options.version>ASSISTANT_AFTER597_BEFORE.version);
+  return prepareStructure(ASSISTANT_AFTER597,options.version);
+}
+function predecessorAliases(profile,prior){
+  fixedProfile(profile);const OLD=profile.previous,ALIASES=profile.aliases,before=prior.canonicalSource;
+  assert.equal(sha(before),OLD.canonicalSha256);
+  const [stateAlias,payloadAlias]=ALIASES.map(r=>r.name);
+  for(const row of ALIASES)assert(!before.includes('function public.'+row.name+'('));
+  const stateBefore=definition(before,CP+'integrated_state_valid'),payloadBefore=definition(before,CP+'payload_valid');
+  const state=once(stateBefore,'function public.'+CP+'integrated_state_valid(','function public.'+stateAlias+'(');
+  const payload=once(once(payloadBefore,'function public.'+CP+'payload_valid(','function public.'+payloadAlias+'('),
+    'public.'+CP+'integrated_state_valid(','public.'+stateAlias+'(');
+  assert.equal(once(state,'function public.'+stateAlias+'(','function public.'+CP+'integrated_state_valid('),stateBefore);
+  assert.equal(once(once(payload,'function public.'+payloadAlias+'(','function public.'+CP+'payload_valid('),
+    'public.'+stateAlias+'(','public.'+CP+'integrated_state_valid('),payloadBefore);
+  return Object.freeze({stateAlias,payloadAlias,aliases:[{...ALIASES[0],definition:state},{...ALIASES[1],definition:payload}]});
+}
+
 async function prepareStructure(profile,version){
   fixedProfile(profile);
   const OLD=profile.previous,ALIASES=profile.aliases;
@@ -154,17 +205,7 @@ async function prepareStructure(profile,version){
   const next={version,C:C.modelBundleSha256,I:I.modelBundleSha256,T:await ravScoreContinuationImplementationSha256()};
   assert.equal(new Set(['C','I','T'].flatMap(k=>[OLD[k],next[k]])).size,6);
   const prior=await profile.readPredecessor(),before=prior.canonicalSource;
-  assert.equal(sha(before),OLD.canonicalSha256);
-  const [stateAlias,payloadAlias]=ALIASES.map(r=>r.name);
-  for(const row of ALIASES)assert(!before.includes('function public.'+row.name+'('));
-  const stateBefore=definition(before,CP+'integrated_state_valid'),payloadBefore=definition(before,CP+'payload_valid');
-  const state=once(stateBefore,'function public.'+CP+'integrated_state_valid(','function public.'+stateAlias+'(');
-  const payload=once(once(payloadBefore,'function public.'+CP+'payload_valid(','function public.'+payloadAlias+'('),
-    'public.'+CP+'integrated_state_valid(','public.'+stateAlias+'(');
-  assert.equal(once(state,'function public.'+stateAlias+'(','function public.'+CP+'integrated_state_valid('),stateBefore);
-  assert.equal(once(once(payload,'function public.'+payloadAlias+'(','function public.'+CP+'payload_valid('),
-    'public.'+stateAlias+'(','public.'+CP+'integrated_state_valid('),payloadBefore);
-  const aliases=[{...ALIASES[0],definition:state},{...ALIASES[1],definition:payload}];
+  const {stateAlias,payloadAlias,aliases}=predecessorAliases(profile,prior);
   const changes=[],add=(name,after)=>changes.push({name,before:definition(before,name),after});
   for(const [suffix,inventory] of [['integrated_state_valid',{I:1}],['payload_valid',{I:1,C:1,T:1}],
     ['integrated_state_reason',{I:1}],['payload_reason',{I:1,C:1,T:1}]])
@@ -444,6 +485,11 @@ export async function buildScalar597LaterH0BindingSuccessor(options){
   const core=await prepareStructure(SCALAR597_LATER_H0,options.version);
   return wrap(core,await readInstalled593Original591CanonicalSource(),SCALAR597_LATER_H0);
 }
+export async function buildAssistantAfter597BindingSuccessor(options){
+  assert.equal(arguments.length,1);
+  const core=await prepareAssistantAfter597SuccessorStructure(options);
+  return wrap(core,await readScalar597LaterH0CanonicalSource(),ASSISTANT_AFTER597);
+}
 
 function scalar597Output(result){
   return {migrationSha256:result.migrationSha256,canonicalSha256:result.afterCanonicalSha256,
@@ -452,6 +498,20 @@ function scalar597Output(result){
 
 async function main(){
   const args=process.argv.slice(2);
+  if(args[0]==='--active'&&ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-mixed-after597-successor')
+    args[0]='--assistant-after597';
+  if(args[0]==='--assistant-after597'){
+    const issued=requireAssistantAfter597Binding(),pins=requireAssistantAfter597Output();
+    requireAssistantAfter597Release();
+    assert.equal(args.length,2);assert(['--check','--write'].includes(args[1]));
+    const result=await buildAssistantAfter597BindingSuccessor({version:issued.version});
+    assert.deepEqual(result.nextBinding,issued);assert.deepEqual(scalar597Output(result),pins);
+    const file=path.join(ROOT,'supabase/migrations',assistantAfter597Migration().filename);
+    if(args[1]==='--write')await fs.writeFile(file,result.migration,{flag:'wx'});
+    else assert.deepEqual(await fs.readFile(file),Buffer.from(result.migration));
+    console.log('Præcis assistentkilde efter597 kontrolleret; ingen installation eller tilstandsoptagelse.');
+    return;
+  }
   if(args[0]==='--scalar597-later-h0-derive'){
     assert.equal(args.length,2);
     const result=await buildScalar597LaterH0BindingSuccessor({version:args[1]});

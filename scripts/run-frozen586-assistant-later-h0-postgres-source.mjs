@@ -11,13 +11,15 @@ import {withAuthenticated586PredecessorSource,withAuthenticated587PredecessorSou
   withAuthenticated588PredecessorSource,assertFrozen588CodeSourceSelected,FROZEN588_CODE_SOURCE_PROVENANCE,
   withAuthenticated590PredecessorSource,assertFrozen590CodeSourceSelected,FROZEN590_CODE_SOURCE_PROVENANCE,
   withAuthenticated591PredecessorSource,assertFrozen591CodeSourceSelected,FROZEN591_CODE_SOURCE_PROVENANCE,
-  withSource594CodeParent,SOURCE594_CODE_SOURCE_PROVENANCE} from './check-assistant-later-h0-predecessor-source.mjs';
+  withSource594CodeParent,SOURCE594_CODE_SOURCE_PROVENANCE,withSource597CodeParent,SOURCE597_CODE_SOURCE_PROVENANCE} from './check-assistant-later-h0-predecessor-source.mjs';
 import {FROZEN593_NATIVE_CODE,withInstalled593CodePredecessorSource} from './check-installed593-code-predecessor-source.mjs';
-import {requireScalar597LaterH0Output,SCALAR597_LATER_H0_BEFORE,requireInstalled593Original591Output,requireAssistantLaterH0Output,requireAssistantPublic587SuccessorOutput,requireAssistantPublic588SuccessorOutput,requireAssistantPublic590SuccessorOutput,requireAssistantPublic591SuccessorOutput} from './lib/assistant-later-h0-successor-source.mjs';
+import {requireAssistantAfter597Output,ASSISTANT_AFTER597_BEFORE,requireScalar597LaterH0Output,SCALAR597_LATER_H0_BEFORE,requireInstalled593Original591Output,requireAssistantLaterH0Output,requireAssistantPublic587SuccessorOutput,requireAssistantPublic588SuccessorOutput,requireAssistantPublic590SuccessorOutput,requireAssistantPublic591SuccessorOutput} from './lib/assistant-later-h0-successor-source.mjs';
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 function fixedNativeSource(profile){
-  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588||profile===FROZEN590||profile===FROZEN591||profile===FROZEN593||profile===FROZEN594,'FROZEN_NATIVE_UNKNOWN_PROFILE');
+  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588||profile===FROZEN590||profile===FROZEN591||profile===FROZEN593||profile===FROZEN594||profile===FROZEN597,'FROZEN_NATIVE_UNKNOWN_PROFILE');
   const HEAD=profile.head,TREE=profile.tree;
+  // Only597 separates unchanged genuine CODE from its later corrected native adapter.
+  const nativeRef=file=>profile===FROZEN597&&file===profile.adapter?profile.nativeHead:HEAD;
 const ADAPTER=profile.adapter,FACTORY='scripts/test-protected-ravscore-continuation-checkpoint.mjs';
 // TEST-only extension of the fixed genuine DATA producer host plus its exact native adapter.
 // The native factory is separately whole-source/factory-hash bound. Every byte is
@@ -79,10 +81,11 @@ async function withSource(callback){
   if(profile===FROZEN588)assertFrozen588CodeSourceSelected();
   assert.equal(arguments.length,1);assert.equal(typeof callback,'function');
   assert.equal(String(await git(['rev-parse',HEAD+'^{tree}'],'utf8')).trim(),TREE);
+  if(profile===FROZEN597)assert.equal(String(await git(['rev-parse',profile.nativeHead+'^{tree}'],'utf8')).trim(),profile.nativeTree);
   for(const file of [...TEST_CLOSURE.map(row=>row.file),FACTORY])
-    assert.match(String(await git(['ls-tree',HEAD,'--',file],'utf8')),/^100(?:644|755) blob [a-f0-9]{40}\t/);
+    assert.match(String(await git(['ls-tree',nativeRef(file),'--',file],'utf8')),/^100(?:644|755) blob [a-f0-9]{40}\t/);
   const leaves=await Promise.all(TEST_CLOSURE.map(async row=>{
-    const raw=Buffer.from(await git(['cat-file','blob',HEAD+':'+row.file]));
+    const raw=Buffer.from(await git(['cat-file','blob',nativeRef(row.file)+':'+row.file]));
     assert.equal(raw.length,row.bytes);assert.equal(sha(raw),row.sha256);return{...row,raw};
   }));
   const factorySource=String(await git(['cat-file','blob',HEAD+':'+FACTORY],'utf8'));
@@ -103,13 +106,15 @@ async function withSource(callback){
       phase='FACTORY_IMPORT';const factory=await frozenFactory(sourceRoot,factorySource);
       phase='NATIVE_CALLBACK';
       let originalProfile;
-      if(profile===FROZEN594){
+      if(profile===FROZEN594||profile===FROZEN597){
         const raw=Buffer.from(await git(['cat-file','blob',HEAD+':data/admin/ravscore-profile-selection.json']));
         assert.equal(raw.length,1633);
-        assert.equal(sha(raw),'0df36f6047901873418226c2107adf625fcd11eedde9cb548f11d4710f2357c4');
+        assert.equal(sha(raw),profile===FROZEN597?'6d6a8e26d41d4c0a5898ae05b4fbf99d3ea8c523abdee39ff63bb8260f07761a'
+          :'0df36f6047901873418226c2107adf625fcd11eedde9cb548f11d4710f2357c4');
         originalProfile=JSON.parse(raw);
       }
-      result=await callback({adapter,factory,repositoryRoot:sourceRoot,...(originalProfile?{originalProfile}:{})});
+      result=await callback({adapter,factory,repositoryRoot:sourceRoot,...(originalProfile?{originalProfile}:{}),
+        ...(profile===FROZEN597?{nativeSourceHead:profile.nativeHead,nativeSourceTree:profile.nativeTree}:{})});
     }catch(error){first=error;hasFirst=true;firstFailureDiagnostic(phase,error);}
     try{
       for(const{target,raw,owned}of [...staged].reverse()){
@@ -185,6 +190,28 @@ const FROZEN594=Object.freeze({
   withSource:withSource594CodeParent,requireOutput:requireScalar597LaterH0Output,
   failureKind:'FROZEN594_NATIVE_FIRST_FAILURE',
 });
+// Test-only boundary for the still-unissued after597 successor. Genuine597
+// model CODE remains803f; only the corrected PG adapter is taken byte-exactly
+// from97. Neither identifier is production/original admission or a PG receipt.
+export const FROZEN597_NATIVE_SOURCE=Object.freeze({
+  codeHead:SOURCE597_CODE_SOURCE_PROVENANCE.head,codeTree:SOURCE597_CODE_SOURCE_PROVENANCE.tree,
+  nativeHead:'97d189e4a99fdab1b2764db1bfe59f96e92c3f02',nativeTree:'b804a9d766e1828cfed6ef6927ddf6582d2dc326',
+  adapterBytes:44475,adapterSha256:'4798450acb08f9078377424f7de12a9b9e7317eb703754024a6b16b4e37bc963',
+  factorySourceSha256:'7e953c0fb1ef424d40a85396bafe506076ab642229a735800a34376b0f2f7960',
+  candidate:ASSISTANT_AFTER597_BEFORE.C,integrated:ASSISTANT_AFTER597_BEFORE.I,
+  continuation:ASSISTANT_AFTER597_BEFORE.T,
+});
+const FROZEN597=Object.freeze({
+  head:FROZEN597_NATIVE_SOURCE.codeHead,tree:FROZEN597_NATIVE_SOURCE.codeTree,
+  nativeHead:FROZEN597_NATIVE_SOURCE.nativeHead,nativeTree:FROZEN597_NATIVE_SOURCE.nativeTree,
+  adapter:'scripts/lib/assistant-later-h0-postgres.mjs',
+  adapterBytes:FROZEN597_NATIVE_SOURCE.adapterBytes,adapterSha256:FROZEN597_NATIVE_SOURCE.adapterSha256,
+  factorySourceSha256:FROZEN597_NATIVE_SOURCE.factorySourceSha256,
+  candidate:FROZEN597_NATIVE_SOURCE.candidate,integrated:FROZEN597_NATIVE_SOURCE.integrated,
+  continuation:FROZEN597_NATIVE_SOURCE.continuation,
+  withSource:withSource597CodeParent,requireOutput:requireAssistantAfter597Output,
+  failureKind:'FROZEN597_NATIVE_FIRST_FAILURE',
+});
 const native586=fixedNativeSource(FROZEN586),native587=fixedNativeSource(FROZEN587),native588=fixedNativeSource(FROZEN588);
 export async function withFrozen586CheckpointPostgresSource(callback){
   return native586(...arguments);
@@ -227,4 +254,9 @@ export async function withFrozen593CheckpointPostgresSource(callback){
 const native594=fixedNativeSource(FROZEN594);
 export async function withFrozen594CheckpointPostgresSource(callback){
   return native594(...arguments);
+}
+
+const native597=fixedNativeSource(FROZEN597);
+export async function withFrozen597CheckpointPostgresSource(callback){
+  return native597(...arguments);
 }
