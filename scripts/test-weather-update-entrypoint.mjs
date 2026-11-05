@@ -4,6 +4,7 @@ import { inverseActiveFamilyRetentionCompanionTestInput, ACTIVE_FAMILY_RETENTION
   inverseConditions593RetentionCompanionTestInput, CONDITIONS593_RETENTION_COMPANION_TEST_REVIEW,
   inverseIssued594RetentionCompanionSource, ISSUED594_RETENTION_COMPANION_TEST_REVIEW as retention594Review,
   inverseIssued597RetentionCompanionSource, ISSUED597_RETENTION_COMPANION_TEST_REVIEW as retention597Review,
+  inverseAssistantAfter597RetentionCompanionSource, ASSISTANT_AFTER597_RETENTION_COMPANION_TEST_REVIEW as after597RetentionReview,
 } from './lib/alternative-c-caller-test-input.mjs';
 import {inverseReviewedAccountStatisticsAssistantSourceScripts} from './lib/account-statistics-assistant-package-review.mjs';
 import { inverseAlternativeCCaller, inverseAssistant587OriginalCompanionTestInput,
@@ -816,8 +817,10 @@ test('47 baseline commands plus genuine OLD, NEW native, epoch and pure diagnost
 
 test('current frozen routes and warmup checks reach normal checkpoint integration exactly once', async () => {
   const pkg=JSON.parse(await fs.readFile(new URL('../package.json', import.meta.url), 'utf8'));
-  const {inverseScalar597LaterH0Package}=await import('./national584-source-evidence.mjs');
-  const historicalPackage=pkg.version==='4.0.597'?inverseScalar597LaterH0Package(pkg):pkg;
+  const {inverseScalar597LaterH0Package,inverseAssistantAfter597Package}=await import('./national584-source-evidence.mjs');
+  const {ACTIVE_ASSISTANT_SUCCESSOR}=await import('./lib/assistant-later-h0-successor-source.mjs');
+  const scalarPackage=ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-mixed-after597-successor'?inverseAssistantAfter597Package(pkg):pkg;
+  const historicalPackage=scalarPackage.version==='4.0.597'?inverseScalar597LaterH0Package(scalarPackage):scalarPackage;
   const actualScripts=inverseReviewedAccountStatisticsAssistantSourceScripts(historicalPackage.scripts);
   // Retain the entire genuine140000 command oracle on its real frozen input,
   // then separately qualify how the current source reaches those same targets.
@@ -1462,7 +1465,8 @@ test('current594 retention companion selects actual original591 while preserving
   const active=profiles.ACTIVE_ASSISTANT_SUCCESSOR;
   const current=profiles.INACTIVE_INSTALLED593_ORIGINAL591_SUCCESSOR;
   const next=profiles.INACTIVE_SCALAR597_LATER_H0_SUCCESSOR;
-  assert([current,next].includes(active));
+  const after597=profiles.UNISSUED_ASSISTANT_AFTER597_SUCCESSOR;
+  assert([current,next,after597].includes(active));
   assert.equal(current.sourcePhase,'assistant-installed593-origin591-successor');
   assert.equal(current.requireRelease(),'4.0.594');assert.equal(current.originalStateFamily,'591');
   assert.equal(current.before,profiles.ASSISTANT_PUBLIC591_SUCCESSOR_BEFORE);
@@ -1475,12 +1479,22 @@ test('current594 retention companion selects actual original591 while preserving
     assert.equal(next.before.I,current.requireBinding().I);
     assert.equal(digest(live),retention597Review.after.sha256);
   }
-  const markers=Object.fromEntries(['587','588','590','591','594'].map(family=>[family,
+  if(active===after597){
+    assert.equal(after597.originalStateFamily,'597');
+    assert.equal(after597.before.I,next.requireBinding().I);
+    assert.equal(digest(live),after597RetentionReview.after.sha256);
+    const prior=inverseAssistantAfter597RetentionCompanionSource(live,after597RetentionReview.path);
+    assert.equal(digest(prior),retention597Review.after.sha256);
+    for(const changed of [live+'\n',live.replace('assistantAfter597RuntimePredecessor():','assistantAfter597RuntimePredecessor(1):')])
+      assert.throws(()=>inverseAssistantAfter597RetentionCompanionSource(changed,after597RetentionReview.path));
+  }
+  const markers=Object.fromEntries(['587','588','590','591','594','597'].map(family=>[family,
     {read:()=>family,snapshot:()=>family}]));
   const parameters=['ACTIVE',...['587','588','590','591'].flatMap(family=>[
     'readAuthenticatedFrozen'+family+'Predecessor','assertAuthenticatedFrozen'+family+'Snapshot']),
-    'readAuthenticatedSource594Predecessor','assertAuthenticatedSource594Snapshot'];
-  const values=['587','588','590','591','594'].flatMap(family=>[markers[family].read,markers[family].snapshot]);
+    'readAuthenticatedSource594Predecessor','assertAuthenticatedSource594Snapshot','assistantAfter597RuntimePredecessor'];
+  const values=[...['587','588','590','591','594'].flatMap(family=>[markers[family].read,markers[family].snapshot]),
+    ()=>Object.freeze({read:markers['597'].read,snapshot:markers['597'].snapshot})];
   const roles=[[current,'591'],[profiles.INACTIVE_ASSISTANT_PUBLIC591_SUCCESSOR,'591'],
     [profiles.INACTIVE_ASSISTANT_PUBLIC590_SUCCESSOR,'590'],[profiles.INACTIVE_ASSISTANT_PUBLIC588_SUCCESSOR,'588'],
     [profiles.ISSUED_ASSISTANT_PUBLIC588_PROFILE,'587']];
@@ -1490,6 +1504,10 @@ test('current594 retention companion selects actual original591 while preserving
     // Den faktiske normale selector udføres; markører læser ingen B/S og
     // fabrikerer hverken autentificering, descriptor eller opaque adgang.
     const factory=new Function(...parameters,source.slice(begin,end)+'\nreturn ACTIVE_PREDECESSOR;');
+    if(source===live&&active===after597){
+      const selected=factory(after597,...values);
+      assert.equal(selected.read,markers['597'].read);assert.equal(selected.snapshot,markers['597'].snapshot);
+    }
     if(source===live&&active===next){
       const selected=factory(next,...values);
       assert.equal(selected.read,markers['594'].read);

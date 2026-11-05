@@ -5,7 +5,7 @@ import crypto from 'node:crypto';
 import {gzipSync,gunzipSync} from 'node:zlib';
 import {pathToFileURL} from 'node:url';
 import {captureLocalDatabaseBackup,verifyLocalDatabaseBackup,materializeLocalDatabaseBackup,DB_LOCAL_CARRIER_POLICY as LOCAL} from './seal-supabase-database-export.mjs';
-import {createR2PrivateRuntimeStorage} from './lib/r2-private-runtime-storage.mjs';
+import {createR2PrivateReadDenialStorage} from './lib/r2-private-read-denial-storage.mjs';
 import {createSupabaseAdminRequester} from './lib/supabase-admin-rest.mjs';
 import {PRIVATE_STUDY_ADMIN_ACCESS_SQL,assertPrivateStudyAdminAccess} from './lib/private-trip-study-admin-transport.mjs';
 
@@ -98,6 +98,13 @@ function clients(env,fetchImpl,{bootstrap=false,readOnly=false}={}){
       if(write&&![200,201,204,412].includes(response.status))state.unknown=true;
       if(write&&response.ok){if(r2)state.archiveCreates++;else if(admin)state.locatorWrites++;}
       const list=bootstrap&&r2&&method==='GET'&&u.pathname==='/'+P.bucket&&u.searchParams.get('list-type')==='2';
+      // Only the exact unsigned one-byte probe stays unread for the adapter's
+      // typed 400/XML bound or immediate non-400 cancellation. Authenticated
+      // object/list reads retain every existing byte and operation guard.
+      const anonymousRange=r2&&method==='GET'&&u.search===''
+        &&new RegExp('^/'+P.bucket+'/bundles/sha256/[0-9a-f]{64}\\.json\\.gz$').test(u.pathname)
+        &&!new Headers(options.headers).has('authorization')&&new Headers(options.headers).get('range')==='bytes=0-0';
+      if(anonymousRange)return response;
       const maximum=list?B.maximumListBytes:r2?state.objectReadBound:2_000_000,declared=response.headers.get('content-length');
       if(declared!==null)need(/^[0-9]+$/.test(declared)&&Number.isSafeInteger(Number(declared))&&Number(declared)<=maximum,'RESPONSE_BOUND');
       const chunks=[];let bytes=0;for await(const b of response.body||[]){bytes+=b.length;state.readBytes+=b.length;need(bytes<=maximum&&state.readBytes<=P.maximumBucketBytes,'RESPONSE_BOUND');if(list){state.listing.bytes+=b.length;need(state.listing.bytes<=B.maximumListBytes,'RESPONSE_BOUND');}if(bootstrap&&r2&&method==='GET'&&!list&&state.searchDeadline){state.candidateReadBytes+=b.length;need(state.candidateReadBytes<=B.maximumCandidateBytes,'RESPONSE_BOUND');}chunks.push(b);}
@@ -106,7 +113,7 @@ function clients(env,fetchImpl,{bootstrap=false,readOnly=false}={}){
     }catch(e){if(write)state.unknown=true;if(e.code==='RESPONSE_BOUND'||/^BOOTSTRAP_LIST_/.test(e.code||''))state.fatal=e.code;throw e;}
   };
   const admin=createSupabaseAdminRequester({endpoint:P.project+'/rest/v1/admin_documents',key:env.SUPABASE_SERVICE_ROLE_KEY,fetchImpl:guarded,logger:()=>{}});
-  const r2=createR2PrivateRuntimeStorage({accountId:env.RAVRADAR_R2_ACCOUNT_ID,accessKeyId:env.RAVRADAR_R2_ACCESS_KEY_ID,secretAccessKey:env.RAVRADAR_R2_SECRET_ACCESS_KEY,
+  const r2=createR2PrivateReadDenialStorage({accountId:env.RAVRADAR_R2_ACCOUNT_ID,accessKeyId:env.RAVRADAR_R2_ACCESS_KEY_ID,secretAccessKey:env.RAVRADAR_R2_SECRET_ACCESS_KEY,
     bucketId:P.bucket,maximumObjectBytes:P.maximumObjectBytes,bucketCeilingBytes:P.maximumBucketBytes,fetchImpl:guarded});
   return{env,state,fetch:guarded,admin,r2};
 }
@@ -157,7 +164,8 @@ async function store(c,body){
   const descriptor={path:objectPath(sha(body)),sha256:sha(body),bytes:body.length};checkObject(descriptor);
   await c.r2.uploadImmutable(descriptor.path,body);const readback=await c.r2.download(descriptor.path);
   need(readback.length===body.length&&readback.equals(body),'R2_EXACT_READBACK');
-  need([401,403,404].includes(await c.r2.anonymousStatus(descriptor.path)),'R2_ANONYMOUS_ACCESS');return descriptor;
+  const denial=await c.r2.anonymousReadDenial(descriptor.path);
+  if(!denial.denied)throw Object.assign(new Error('R2_ANONYMOUS_ACCESS'),{code:'R2_ANONYMOUS_ACCESS',httpStatus:denial.httpStatus});return descriptor;
 }
 async function remoteBody(c,descriptor){checkObject(descriptor);const b=await c.r2.download(descriptor.path);need(b.length===descriptor.bytes&&sha(b)===descriptor.sha256,'REMOTE_OBJECT_SHA');return b;}
 async function capture(c,options,dependencies){
@@ -291,6 +299,7 @@ export async function runSupabaseDatabaseArchive(options={},dependencies={}){
       ?await bootstrap(c,indexSha256,materialization):await discover(c,materialization);
   }catch(e){const error=new Error(c?.state.unknown?'DB_BACKUP_WRITE_OUTCOME_UNKNOWN':c?.state.fatal??(typeof e.code==='string'&&/^[A-Z][A-Z0-9_]*$/.test(e.code)?e.code:'DATABASE_ARCHIVE_FAILED_CLOSED'));
     error.code=error.message;error.automaticRetry=false;error.externalDumpOutcome=['UNKNOWN','NOT_STARTED'].includes(e.externalDumpOutcome)?e.externalDumpOutcome:null;
+    if(Number.isInteger(e.httpStatus)&&e.httpStatus>=100&&e.httpStatus<=599)error.httpStatus=e.httpStatus;
     error.authRestoreVerified=false;error.fullDatabaseBackupVerified=false;error.freeReady=false;throw error;}
 }
 async function main(){const args=process.argv.slice(2);
@@ -303,4 +312,4 @@ async function main(){const args=process.argv.slice(2);
   console.log(JSON.stringify(await runSupabaseDatabaseArchive({mode:args[0]==='--capture'?'capture':args[0]==='--bootstrap'?'bootstrap':'discover',indexSha256:args[1]??null})));}
 if(process.argv[1]&&import.meta.url===pathToFileURL(path.resolve(process.argv[1])).href)
   main().catch(e=>{console.error(JSON.stringify({status:'FAILED_CLOSED',code:e.code??'DATABASE_ARCHIVE_FAILED_CLOSED',externalDumpOutcome:e.externalDumpOutcome??null,
-    automaticRetry:false,authRestoreVerified:false,fullDatabaseBackupVerified:false,freeReady:false}));process.exitCode=1;});
+    ...(Number.isInteger(e.httpStatus)&&e.httpStatus>=100&&e.httpStatus<=599?{httpStatus:e.httpStatus}:{}),automaticRetry:false,authRestoreVerified:false,fullDatabaseBackupVerified:false,freeReady:false}));process.exitCode=1;});

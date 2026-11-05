@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import './test-established-native-current-origin591-metadata.mjs';
 import './test-installed593-original591-successor.mjs';
 import fs from 'node:fs/promises';
+import path from 'node:path';
+import {pathToFileURL} from 'node:url';
 import { classifyVerifiedRuntimeMigration } from './migrate-post-cutover-private-runtime.mjs';
 import {
   assertPostCutoverRepairProjection,
@@ -11,9 +13,10 @@ import { validateSameReferencePrivateRuntimeSuccessor } from './protected-privat
 import { PRIVATE_RUNTIME_FILES,privateRuntimeContractHashes } from './private-production-runtime-workflow.mjs';
 import { assertAssistantOriginalRuntimeContracts } from './assistant-later-h0-runtime-transition.mjs';
 import {ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE,INACTIVE_INSTALLED593_ORIGINAL591_SUCCESSOR as HISTORICAL,
-  INACTIVE_SCALAR597_LATER_H0_SUCCESSOR as SCALAR} from './lib/assistant-later-h0-successor-source.mjs';
+  INACTIVE_SCALAR597_LATER_H0_SUCCESSOR as SCALAR,
+  UNISSUED_ASSISTANT_AFTER597_SUCCESSOR as AFTER597} from './lib/assistant-later-h0-successor-source.mjs';
 import {assertFrozen591CompactRuntimeContracts} from './lib/assistant-public591-runtime-contracts.mjs';
-import {FROZEN591_CODE_SOURCE_PROVENANCE as ORIGINAL591,SOURCE594_CODE_SOURCE_PROVENANCE as ORIGINAL594}
+import {FROZEN591_CODE_SOURCE_PROVENANCE as ORIGINAL591,SOURCE594_CODE_SOURCE_PROVENANCE as ORIGINAL594,withSource597CodeParent}
   from './check-assistant-later-h0-predecessor-source.mjs';
 import {
   PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE,
@@ -24,7 +27,7 @@ import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 
 // Actual normal contract computation, not an independently copied guard. This
 // exact genuine591 -> issued593 pair failed before suppliers in production.
-assert([HISTORICAL,SCALAR].includes(ACTIVE));
+assert([HISTORICAL,SCALAR,AFTER597].includes(ACTIVE));
 assert.equal(HISTORICAL.requireRelease(),'4.0.594');
 const currentContracts=await privateRuntimeContractHashes();
 const originalContracts={
@@ -39,7 +42,29 @@ const genuine594={
 };
 assert.notEqual(originalContracts.publicProjectionContractSha256,genuine594.publicProjectionContractSha256);
 assert.equal(assertFrozen591CompactRuntimeContracts(originalContracts,genuine594),true);
-if(ACTIVE===SCALAR){
+if(ACTIVE===AFTER597){
+  await withSource597CodeParent(async frozen=>{
+    const original597=await import(pathToFileURL(path.join(frozen,'scripts/private-production-runtime-workflow.mjs')).href);
+    const genuine597=await original597.privateRuntimeContractHashes({repositoryRoot:frozen});
+    assert.equal(genuine597.continuationStateContractSha256,SCALAR.requireBinding().T);
+    assert.equal(ACTIVE.before.T,genuine597.continuationStateContractSha256);
+    assert.deepEqual({...genuine594,continuationStateContractSha256:genuine597.continuationStateContractSha256},genuine597,
+      'Whole genuine594/597 persisted ABI retains the scalar597 metadata transition');
+    assert.notEqual(currentContracts.continuationStateContractSha256,genuine597.continuationStateContractSha256);
+    assert.equal(assertAssistantOriginalRuntimeContracts(genuine597,currentContracts),true);
+    for(const key of Object.keys(genuine597)){
+      assert.throws(()=>assertAssistantOriginalRuntimeContracts({...genuine597,[key]:'0'.repeat(64)},currentContracts));
+      assert.throws(()=>assertAssistantOriginalRuntimeContracts(genuine597,{...currentContracts,[key]:'0'.repeat(64)}));
+      const missing={...currentContracts};delete missing[key];
+      assert.throws(()=>assertAssistantOriginalRuntimeContracts(genuine597,missing));
+    }
+    assert.throws(()=>assertAssistantOriginalRuntimeContracts(originalContracts,currentContracts));
+    assert.throws(()=>assertAssistantOriginalRuntimeContracts(genuine594,currentContracts));
+    assert.throws(()=>assertAssistantOriginalRuntimeContracts({...genuine597,unknown:'x'},currentContracts));
+    assert.throws(()=>assertAssistantOriginalRuntimeContracts(genuine597,{...currentContracts,unknown:'x'}));
+    assert.throws(()=>assertAssistantOriginalRuntimeContracts(genuine597,currentContracts,'override'));
+  });
+}else if(ACTIVE===SCALAR){
   assert.equal(ACTIVE.requireRelease(),'4.0.597');
   assert.equal(ACTIVE.before.T,genuine594.continuationStateContractSha256);
   assert.notEqual(currentContracts.continuationStateContractSha256,genuine594.continuationStateContractSha256);

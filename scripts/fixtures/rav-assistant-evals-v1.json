@@ -1,7 +1,7 @@
 {
   "schemaVersion": "rav-assistant-evals-v1",
   "knowledgeVersion": "rav-assistant-public-knowledge-v1",
-  "releaseVersion": "4.0.597",
+  "releaseVersion": "4.0.598",
   "ravScoreModelBinding": {
     "modelId": "RRS-COASTAL-PROCESS-INTEGRATED-1.1.0",
     "stateSchemaVersion": "6.0.0",
@@ -13,7 +13,7 @@
     "bestTimePolicyId": "score-history-water-tie-earliest-v3",
     "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
     "modelContractSha256": "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
-    "modelBundleSha256": "68f118fbb07b252fab89f12ed0bf82816cd74b04afc306b00c2b3a8ccfe25c81"
+    "modelBundleSha256": "f8d8befa7ecda82f8194c0ca04142bd89f5c39e92ed37cda70afca8dded108d1"
   },
   "cases": [
     {

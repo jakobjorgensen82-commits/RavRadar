@@ -40,6 +40,11 @@ import {
 } from './rollback-assets/ravscore-model-contract.js';
 
 // Each new native phase refuses before fixture construction or a PG host.
+const assistantAfter597Native=process.argv.includes('--assistant-after597-successor');
+if(assistantAfter597Native){
+  const {requireAssistantAfter597Output}=await import('./lib/assistant-later-h0-successor-source.mjs');
+  requireAssistantAfter597Output(); // Before PART_COUNT, fixture hashing, programs or a host.
+}
 const scalar597LaterH0Native=process.argv.includes('--scalar597-later-h0');
 if(scalar597LaterH0Native){
   const {requireScalar597LaterH0Release}=await import('./lib/assistant-later-h0-successor-source.mjs');
@@ -406,7 +411,7 @@ if (!process.argv.includes('--native-postgres') && !process.argv.includes('--nat
     && !process.argv.includes('--assistant-public587-successor') && !process.argv.includes('--assistant-public588-successor')
     && !process.argv.includes('--assistant-public590-successor')
     && !process.argv.includes('--assistant-public591-successor')
-    && !process.argv.includes('--assistant-installed593-origin591-successor') && !scalar597LaterH0Native) {
+    && !process.argv.includes('--assistant-installed593-origin591-successor') && !scalar597LaterH0Native && !assistantAfter597Native) {
   const { nativePostgresFailureDiagnostic: diagnose,
     nativePostgresFailureAnnotation: annotate } =
       await import('./lib/checkpoint-cas-native-postgres.mjs');
@@ -554,6 +559,15 @@ if (process.argv.includes('--native-identity-source-only')) {
   console.log(JSON.stringify({ kind: 'NATIVE_IDENTITY_SOURCE_FIXTURES', oldPartCount: 673,
     newPartCount: 673, genuineFixed37: true, normalSavers: true, oldSqlPreserved: true,
     sourceUnchanged: true, ownedCleanup: true, sqlExecuted: false, nativePostgres: 'UNRUN' }));
+  process.exit(0);
+}
+
+if(assistantAfter597Native){
+  const {runAssistantAfter597NativeCheckpointSqlComparison}=await import('./lib/checkpoint-cas-native-postgres.mjs');
+  const report=await runAssistantAfter597NativeCheckpointSqlComparison({
+    repositoryRoot:path.resolve('.'),sourceDocumentAt,atHour,saveCheckpoint:saveRavScoreContinuationCheckpoint,
+  });
+  console.log(JSON.stringify(report));
   process.exit(0);
 }
 

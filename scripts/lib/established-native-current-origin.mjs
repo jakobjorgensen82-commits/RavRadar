@@ -36,7 +36,8 @@ import {readAuthenticatedFrozen586Predecessor,assertAuthenticatedFrozen586Snapsh
   readAuthenticatedFrozen588Predecessor,assertAuthenticatedFrozen588Snapshot,
   readAuthenticatedFrozen590Predecessor,assertAuthenticatedFrozen590Snapshot,
   readAuthenticatedFrozen591Predecessor,assertAuthenticatedFrozen591Snapshot,
-  readAuthenticatedSource594Predecessor,assertAuthenticatedSource594Snapshot,assertAuthenticatedSource594SnapshotFresh}
+  readAuthenticatedSource594Predecessor,assertAuthenticatedSource594Snapshot,assertAuthenticatedSource594SnapshotFresh,
+  readAuthenticatedSource597Predecessor,assertAuthenticatedSource597Snapshot,assertAuthenticatedSource597SnapshotFresh}
   from './authenticated-frozen586-predecessor.mjs';
 
 export const ESTABLISHED_NATIVE_CURRENT_SEMANTIC_CONTRACT = 'established-native-current-continuation-v1';
@@ -46,6 +47,13 @@ const SCALAR597_ORIGINAL594=Object.freeze({
   I:'08750e3667e5a221374762fccadccf08abf5e9f1ae8814ccc97bfc11880bf36c',
   C:'2d5cde5418270a02396e24a249f0b6bb09527366c1c110d8742a44cfe2ab459b',
   T:'a6c0408f76b5de70a90959e254df78317f8282cb93c0edc85a71d36b9ef8dafa',
+});
+// Kun den allerede ægte udstedte597-forælder. Ny C/I/T kommer senere fra den
+// normale genererede model; controller-/SQL-profiler må ikke importeres i C/I.
+const ASSISTANT_AFTER597_ORIGINAL597=Object.freeze({
+  I:'68f118fbb07b252fab89f12ed0bf82816cd74b04afc306b00c2b3a8ccfe25c81',
+  C:'23d97454ec9578e441a0482cf028ae347b2da5ee2ed97560246b486ee46364c5',
+  T:'67665c10d2bd134fb598af1c36a41c2d53bb2820344c577ada30bcfbd6afe8e1',
 });
 const KIND = 'PRIVATE_ESTABLISHED_NATIVE_CURRENT_ORIGIN';
 const SHA = /^[a-f0-9]{64}$/, HEAD = /^[a-f0-9]{40}$/;
@@ -647,6 +655,7 @@ async function readOrigin(centralContract, seedOnly) {
   if (seedOnly) need(seed, 'SEED_CONTENT_CHANGED');
   const conditionsMaximum = !seed && (descriptor.modelBinding.modelBundleSha256 === currentSource.integrated
     || isScalar597OriginParentBinding(descriptor.modelBinding)
+    || isAssistantAfter597OriginParentBinding(descriptor.modelBinding)
     || descriptor.modelBinding.modelBundleSha256 === 'ebd5ac3dac09b7afb51e46d18920f6932b478b7ef15bdd31190c128273cb6a54')
     ? PRIVATE_CONDITIONS_MAX_BYTES : MAX_CONDITIONS;
   let conditions = seedOnly ? null : await json(path.join(ROOT, 'data/live/conditions.json'), conditionsMaximum);
@@ -665,6 +674,8 @@ async function readOrigin(centralContract, seedOnly) {
       return readFrozen591LaterOrigin({descriptor,before,request,conditions,central,parts,currentSource});
     if(isScalar597OriginParentBinding(descriptor.modelBinding))
       return readScalarFrozen594LaterOrigin({descriptor,before,request,conditions,central,parts,currentSource});
+    if(isAssistantAfter597OriginParentBinding(descriptor.modelBinding))
+      return readAssistantFrozen597LaterOrigin({descriptor,before,request,conditions,central,parts,currentSource});
     need(conditions[ATTEST] === undefined, 'UNSUPPORTED_ATTESTED_FAMILY');
     need(!(descriptor.datasetId === SEED.datasetId && descriptor.productionReferenceAt === SEED.referenceAt
       && descriptor.modelBinding.modelBundleSha256 === SEED.I), 'SEED_CONTENT_CHANGED');
@@ -1184,6 +1195,68 @@ async function readScalarFrozen594LaterOrigin({descriptor,before,request,conditi
   need(same(await readPointer(request),before),'SOURCE_CHANGED');
   need(same(await json(path.join(ROOT,'data/live/coastal-parts-v2.json'),16*MB),central),'REGISTRY_CHANGED');
   await assertAuthenticatedSource594SnapshotFresh(original594);
+  const handle=Object.freeze({});
+  contexts.set(handle,{seed:false,descriptor:structuredClone(descriptor),generationSha256:snapshot.checkpoint.generationSha256,
+    parentAttestationSha256:snapshot.attestation.attestationSha256,central,parts,pairs,currentSource,
+    consumedParts:new Set(),finalized:false});
+  return handle;
+}
+
+// Rene597-værdikontroller; de skaber ingen kapabilitet eller installationsbevis.
+export function isAssistantAfter597OriginParentBinding(binding){
+  return binding?.modelBundleSha256===ASSISTANT_AFTER597_ORIGINAL597.I;
+}
+export function assertAssistantAfter597OriginParentMetadata(descriptor,checkpoint){
+  need(isAssistantAfter597OriginParentBinding(descriptor?.modelBinding)
+    &&descriptor.contractHashes?.continuationStateContractSha256===ASSISTANT_AFTER597_ORIGINAL597.T
+    &&checkpoint?.candidateGRollbackCompanion?.modelBinding?.modelBundleSha256===ASSISTANT_AFTER597_ORIGINAL597.C,
+    '597_FIXED_ORIGINAL_BINDING');return true;
+}
+export function assertAssistantAfter597OriginTarget(descriptor,target){
+  need(arguments.length===2&&isAssistantAfter597OriginParentBinding(descriptor?.modelBinding)
+    &&descriptor.contractHashes?.continuationStateContractSha256===ASSISTANT_AFTER597_ORIGINAL597.T,'597_FIXED_ORIGINAL_BINDING');
+  need(hour(target)&&hour(descriptor.productionReferenceAt)
+    &&Date.parse(target)>Date.parse(descriptor.productionReferenceAt),'597_LATER_TARGET');return true;
+}
+async function readAssistantFrozen597LaterOrigin({descriptor,before,request,conditions,central,parts,currentSource}){
+  // En uændret597-model kan ikke aktivere overgangen. Den normale controller
+  // kræver desuden udstedt output før arbejdsfiler og autentificerede læsere.
+  need(isAssistantAfter597OriginParentBinding(descriptor.modelBinding)
+    &&currentSource.integrated!==ASSISTANT_AFTER597_ORIGINAL597.I,'597_FAMILY');
+  assertAssistantAfter597OriginTarget(descriptor,process.env.RAVRADAR_PRODUCTION_TARGET_HOUR);
+  const original597=await readAuthenticatedSource597Predecessor();
+  const snapshot=assertAuthenticatedSource597Snapshot(original597);
+  need(same(snapshot.descriptor,descriptor)&&same(snapshot.centralContract,central),'597_ORIGINAL_CHANGED');
+  const contracts=await privateRuntimeContractHashes(),I=ravScoreModelBinding(),C=candidateBinding();
+  assertAssistantAfter597OriginParentMetadata(descriptor,snapshot.checkpoint);
+  need(I.modelBundleSha256===currentSource.integrated&&C.modelBundleSha256===currentSource.candidate
+    &&contracts.continuationStateContractSha256===currentSource.continuation
+    &&C.modelBundleSha256!==snapshot.checkpoint.candidateGRollbackCompanion.modelBinding.modelBundleSha256
+    &&contracts.continuationStateContractSha256!==descriptor.contractHashes.continuationStateContractSha256,
+    '597_ISSUED_CURRENT_SOURCE');
+  need(same({...snapshot.checkpoint.modelBinding,modelBundleSha256:I.modelBundleSha256},I)
+    &&same({...snapshot.checkpoint.candidateGRollbackCompanion.modelBinding,modelBundleSha256:C.modelBundleSha256},C)
+    &&same({...descriptor.contractHashes,continuationStateContractSha256:contracts.continuationStateContractSha256},contracts),
+    '597_METADATA_ONLY');
+  need(conditions.datasetId===descriptor.datasetId&&conditions.productionReferenceAt===descriptor.productionReferenceAt
+    &&same(conditions[ATTEST],snapshot.attestation),'597_WHOLE_PARENT_CHANGED');
+  const pairs=pairsFromConditions(conditions,parts);
+  need(same([...pairs.keys()].sort(),Object.keys(snapshot.checkpoint.states).sort())
+    &&same([...pairs.keys()].sort(),Object.keys(snapshot.checkpoint.candidateGRollbackCompanion.states).sort()),'597_PARTS');
+  for(const[id,pair]of pairs){
+    const originalI=snapshot.checkpoint.states[id],originalG=snapshot.checkpoint.candidateGRollbackCompanion.states[id];
+    const inverseI=structuredClone(pair.integrated),inverseG=structuredClone(pair.candidate);
+    need(inverseI.modelBundleSha256===I.modelBundleSha256,'597_CURRENT_PAIR_BINDING');
+    inverseI.modelBundleSha256=originalI.modelBundleSha256;
+    if(Object.hasOwn(inverseG,'modelBundleSha256')){
+      need(inverseG.modelBundleSha256===C.modelBundleSha256,'597_CURRENT_CANDIDATE_BINDING');
+      inverseG.modelBundleSha256=originalG.modelBundleSha256;
+    }
+    need(same(inverseI,originalI)&&same(inverseG,originalG),'597_WHOLE_PAIR_INVERSE');
+  }
+  need(same(await readPointer(request),before),'SOURCE_CHANGED');
+  need(same(await json(path.join(ROOT,'data/live/coastal-parts-v2.json'),16*MB),central),'REGISTRY_CHANGED');
+  await assertAuthenticatedSource597SnapshotFresh(original597);
   const handle=Object.freeze({});
   contexts.set(handle,{seed:false,descriptor:structuredClone(descriptor),generationSha256:snapshot.checkpoint.generationSha256,
     parentAttestationSha256:snapshot.attestation.attestationSha256,central,parts,pairs,currentSource,

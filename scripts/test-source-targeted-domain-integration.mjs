@@ -253,7 +253,7 @@ try{
       selectedPrograms:{schemaVersion:1,majorVersion:16,files:['initdb','pg_ctl','psql','postgres'].map(name=>({name,path:'/usr/lib/postgresql/16/bin/'+name,
         realpath:'/usr/lib/postgresql/16/bin/'+name,mode:0o755,bytes:100,sha256:'c'.repeat(64),version:name+' (PostgreSQL) 16.10'}))}}};
   if(fixture597){
-    const active=successor.ACTIVE_ASSISTANT_SUCCESSOR,binding=active.requireBinding(),databaseBefore=active.databaseBefore;
+    const active=successor.INACTIVE_SCALAR597_LATER_H0_SUCCESSOR,binding=active.requireBinding(),databaseBefore=active.databaseBefore;
     const fixtureRuntime={platform:'linux',arch:'x64',imageOS:'ubuntu24',imageVersion:'20261012.334.1',
       node:'v22.23.3',python:'Python 3.12.15',pythonLocation:'/opt/hostedtoolcache/Python/3.12.15/x64',
       ldLibraryPath:'/opt/hostedtoolcache/Python/3.12.15/x64/lib',pgBindir:'/usr/lib/postgresql/16/bin',git:'git version 2.55.0',overrides:[],

@@ -48,7 +48,9 @@ function fixture(temp,behavior={}){
     }
     assert.equal(u.hostname,env.RAVRADAR_R2_ACCOUNT_ID+'.eu.r2.cloudflarestorage.com');assert.ok(u.pathname.startsWith('/'+P.bucket));
     const key=u.pathname.slice(P.bucket.length+2),authenticated=headers.has('authorization');
-    if(!authenticated){assert.equal(method,'GET');assert.equal(headers.get('range'),'bytes=0-0');return response('',behavior.anonymousStatus??403);}
+    if(!authenticated){assert.equal(method,'GET');assert.equal(headers.get('range'),'bytes=0-0');assert.equal(options.redirect,'manual');
+      if(behavior.anonymousResponse)return behavior.anonymousResponse();
+      return response(behavior.anonymousBody??'',behavior.anonymousStatus??403,behavior.anonymousHeaders??{});}
     if(!key){if(method==='HEAD')return response('',behavior.bucketHeadStatus??200);assert.equal(method,'GET');assert.equal(u.searchParams.get('list-type'),'2');
       if(behavior.listXml)return response(behavior.listXml(api,u.searchParams),200);
       const entries=[...objects].map(([key,b])=>'<Contents><Key>'+key+'</Key><Size>'+b.length+'</Size></Contents>').join('')
@@ -111,6 +113,23 @@ test('default discovery cannot create a locator or qualify an absent backup',asy
 });
 test('public anonymous object response prevents locator publication',async t=>{
   const f=fixture(await host(t),{anonymousStatus:200});await rejectCode(()=>run({mode:'capture'},f.dependencies()),'R2_ANONYMOUS_ACCESS');assert.equal(f.locator,null);
+});
+test('normal encrypted backup admits exact bounded Authorization400 and rejects other denials with actual HTTPstatus',async t=>{
+  const xml='<?xml version="1.0" encoding="UTF-8"?><Error><Code>InvalidArgument</Code><Message>Authorization</Message></Error>';
+  const {result}=await captured(t,{anonymousStatus:400,anonymousBody:xml,anonymousHeaders:{'content-type':'application/xml'}});
+  assert.equal(result.remoteArchiveVerified,true);assert.equal(result.centralLocatorVerified,true);assert.equal(result.fullDatabaseBackupVerified,false);
+  for(const status of [400,302,503]){
+    const f=fixture(await host(t),{anonymousStatus:status,anonymousBody:'<Error><Code>Other</Code></Error>',anonymousHeaders:{'content-type':'application/xml'}});
+    await assert.rejects(()=>run({mode:'capture'},f.dependencies()),e=>e.code==='R2_ANONYMOUS_ACCESS'&&e.httpStatus===status);
+    assert.equal(f.locator,null);assert.equal(f.calls.filter(c=>c.method==='PUT').length,1);
+  }
+  const huge=fixture(await host(t),{anonymousStatus:400,anonymousBody:' '.repeat(4097),anonymousHeaders:{'content-type':'application/xml','content-length':'4097'}});
+  await assert.rejects(()=>run({mode:'capture'},huge.dependencies()),e=>e.code==='R2_ANONYMOUS_ACCESS'&&e.httpStatus===400);assert.equal(huge.locator,null);assert.equal(huge.calls.filter(c=>c.method==='PUT').length,1);
+});
+test('normal backup cancels anonymous200 before guarded transport consumes any object bytes',async t=>{
+  let pulls=0,cancels=0;const f=fixture(await host(t),{anonymousResponse:()=>new Response(new ReadableStream({pull(){pulls++;throw Error('anonymous object bytes must not be read');},cancel(){cancels++;}},{highWaterMark:0}),{status:200})});
+  await assert.rejects(()=>run({mode:'capture'},f.dependencies()),e=>e.code==='R2_ANONYMOUS_ACCESS'&&e.httpStatus===200);
+  assert.equal(pulls,0);assert.equal(cancels,1);assert.equal(f.locator,null);assert.equal(f.calls.filter(c=>c.method==='PUT').length,1);
 });
 test('PUT transport uncertainty or retryable HTTP produces one actual PUT and stops, with no locator',async t=>{
   for(const behavior of [{putUnknown:true},{putStatus:503}]){const f=fixture(await host(t),behavior);await rejectCode(()=>run({mode:'capture'},f.dependencies()),'DB_BACKUP_WRITE_OUTCOME_UNKNOWN');

@@ -44,9 +44,13 @@ function inverseReviewedForecastShareProjectionRegistration(actualScripts) {
   return previous;
 }
 const activeSourcePackage = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-const historicalSourcePackage = activeSourcePackage.version === '4.0.597'
-  ? (await import('./national584-source-evidence.mjs')).inverseScalar597LaterH0Package(activeSourcePackage)
+const {ACTIVE_ASSISTANT_SUCCESSOR} = await import('./lib/assistant-later-h0-successor-source.mjs');
+const beforeScalarSourcePackage = ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase === 'assistant-mixed-after597-successor'
+  ? (await import('./national584-source-evidence.mjs')).inverseAssistantAfter597Package(activeSourcePackage)
   : activeSourcePackage;
+const historicalSourcePackage = beforeScalarSourcePackage.version === '4.0.597'
+  ? (await import('./national584-source-evidence.mjs')).inverseScalar597LaterH0Package(beforeScalarSourcePackage)
+  : beforeScalarSourcePackage;
 const actualForecastShareSourceScripts = historicalSourcePackage.scripts;
 // Actual backup tests have their own visible normal group; old cases below keep their complete M5 map.
 const backupActualScripts=activeSourcePackage.scripts;
@@ -64,7 +68,7 @@ for(const list of [backupDeclared,backupDispatched]){
   assert.equal(list.filter(command=>command===backupCommand).length,1);
   for(const file of backupFamilies)assert.equal(list.flatMap(command=>command.split(' ')).filter(value=>value===file).length,1);
 }
-const activeBeforeBackup=activeSourcePackage.version==='4.0.597'
+const activeBeforeBackup=beforeScalarSourcePackage.version==='4.0.597'
   ? {...backupPrevious,'test:assistant-later-h0-source':backupActualScripts['test:assistant-later-h0-source']}
   : backupPrevious;
 assert.deepEqual(backupDeclared.filter(command=>command!==backupCommand),expandSourceCommands(activeBeforeBackup,'validate:source:checks'));

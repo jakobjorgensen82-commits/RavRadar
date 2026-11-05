@@ -14,14 +14,18 @@ import {requireAssistantLaterH0Release,requireAssistantPublic587SuccessorRelease
   requireAssistantPublic588SuccessorRelease,ASSISTANT_PUBLIC588_SUCCESSOR_RELEASE,
   requireAssistantPublic590SuccessorRelease,ASSISTANT_PUBLIC590_SUCCESSOR_RELEASE,
   requireAssistantPublic591SuccessorRelease,ASSISTANT_PUBLIC591_SUCCESSOR_RELEASE,
-  requireInstalled593Original591Release,ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE} from './lib/assistant-later-h0-successor-source.mjs';
+  requireInstalled593Original591Release,ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE,
+  INACTIVE_SCALAR597_LATER_H0_SUCCESSOR as SCALAR597_PARENT,
+  requireAssistantAfter597Output,requireAssistantAfter597Release,readAssistantAfter597CanonicalSource}
+  from './lib/assistant-later-h0-successor-source.mjs';
 import {CURRENT586_PHASE_UPLOAD,inverseCurrent586PhaseUpload,verifyCurrent586PhaseReceipt,
   verifyAssistantLaterH0PhaseReceipt,verifyAssistantPublic587SuccessorPhaseReceipt,
   verifyAssistantPublic588SuccessorPhaseReceipt,verifyAssistantPublic590SuccessorPhaseReceipt,verifyAssistantPublic591SuccessorPhaseReceipt,
   verifyAssistantPublic591V2PhaseReceipt,verifyInstalled593Original591PhaseReceipt,
   INSTALLED593_ORIGINAL591_V2_KIND,verifyInstalled593Original591V2PhaseReceipt,
   INSTALLED593_ORIGINAL591_COMMANDS,SCALAR597_LATER_H0_PHASE,SCALAR597_LATER_H0_COMMANDS,
-  verifyScalar597LaterH0PhaseReceipt} from './native-postgres-evidence.mjs';
+  verifyScalar597LaterH0PhaseReceipt,ASSISTANT_AFTER597_PHASE,ASSISTANT_AFTER597_COMMANDS,
+  verifyAssistantAfter597PhaseReceipt} from './native-postgres-evidence.mjs';
 
 export const ORIGIN=Object.freeze({
   repository:'jakobjorgensen82-commits/RavRadar',pullRequest:671,
@@ -78,6 +82,8 @@ export const INSTALLED593_ORIGINAL591_SOURCE_COMMAND='node scripts/build-assista
 export const INSTALLED593_ORIGINAL591_NATIVE_COMMANDS=INSTALLED593_ORIGINAL591_COMMANDS;
 export const SCALAR597_LATER_H0_SOURCE_COMMAND=INSTALLED593_ORIGINAL591_SOURCE_COMMAND+
   ' && node --test scripts/test-scalar597-later-h0-successor.mjs';
+export const ASSISTANT_AFTER597_SOURCE_COMMAND=INSTALLED593_ORIGINAL591_SOURCE_COMMAND+
+  ' && node scripts/national584-source-evidence.mjs assistant-after597-source';
 
 export const BEFORE_BLOCK='      - name: '+STEP+'\n        run: '+COMMAND+'\n';
 export const AFTER_BLOCK=[
@@ -301,7 +307,37 @@ export function inverseScalar597LaterH0Package(pkg){
 export function verifyScalar597LaterH0Package(pkg){
   inverseScalar597LaterH0Package(pkg);
 }
+export function inverseAssistantAfter597Package(pkg){
+  requireAssistantAfter597Output(); // Before inspecting a package or another family.
+  assert.equal(arguments.length,1);
+  assert.equal(pkg.version,requireAssistantAfter597Release());
+  assert.equal(pkg.scripts?.['test:assistant-later-h0-source'],ASSISTANT_AFTER597_SOURCE_COMMAND);
+  // Exact package DATA inverse only. Never retag a native or national receipt.
+  const previous={...pkg,version:SCALAR597_PARENT.requireRelease(),
+    scripts:{...pkg.scripts,'test:assistant-later-h0-source':SCALAR597_LATER_H0_SOURCE_COMMAND}};
+  verifyScalar597LaterH0Package(previous);
+  return previous;
+}
+export function verifyAssistantAfter597Package(pkg){
+  return inverseAssistantAfter597Package(pkg);
+}
+export async function verifyAssistantAfter597SourceTarget(){
+  const output=requireAssistantAfter597Output(); // FIRST: NULL never reads files.
+  assert.equal(arguments.length,0);
+  assert.equal(ACTIVE.sourcePhase,ASSISTANT_AFTER597_PHASE);
+  const release=requireAssistantAfter597Release();
+  const pkg=JSON.parse(await fs.readFile(path.join(ROOT,'package.json'),'utf8'));
+  verifyAssistantAfter597Package(pkg);
+  // The preceding normal builder --active --check owns exact C/I/T/SQL bytes.
+  // This target adds the full package inverse and genuine canonical reader.
+  const canonical=await readAssistantAfter597CanonicalSource();
+  assert.equal(sha(canonical.canonicalSource),output.canonicalSha256);
+  return Object.freeze({kind:'ASSISTANT_AFTER597_SOURCE_TARGET',sourcePhase:ASSISTANT_AFTER597_PHASE,
+    release,canonicalSha256:output.canonicalSha256,sourceOnly:true,sqlExecuted:false,
+    originalsAuthenticated:false,nationalExecutionClaimed:false,productionProof:false});
+}
 export function verifyPackage(pkg){
+  if(ACTIVE.sourcePhase===ASSISTANT_AFTER597_PHASE)return verifyAssistantAfter597Package(pkg);
   if(ACTIVE.sourcePhase===SCALAR597_LATER_H0_PHASE)return verifyScalar597LaterH0Package(pkg);
   if(ACTIVE.sourcePhase==='assistant-installed593-origin591-successor')return verifyInstalled593Original591Package(pkg);
   if(ACTIVE.sourcePhase==='assistant-public591-successor')return verifyAssistantPublic591SuccessorPackage(pkg);
@@ -395,7 +431,32 @@ export function scalar597LaterH0NativeClaims(native,current){
     currentScalar597LaterH0NationalExecutionClaimed:false,
   };
 }
+export function verifyAssistantAfter597NativeCommands(commands,version){
+  requireAssistantAfter597Output();
+  assert.equal(ACTIVE.sourcePhase,ASSISTANT_AFTER597_PHASE);
+  assert.equal(version,requireAssistantAfter597Release());
+  assert.deepEqual(commands,ASSISTANT_AFTER597_COMMANDS);
+}
+export async function verifyAssistantAfter597NativeContext(native,current,version){
+  requireAssistantAfter597Output(); // FIRST: no receipt/options read when unissued.
+  assert.equal(ACTIVE.sourcePhase,ASSISTANT_AFTER597_PHASE);
+  assert.equal(version,requireAssistantAfter597Release());
+  verifyAssistantAfter597NativeCommands(native.commands,version);
+  return verifyAssistantAfter597PhaseReceipt(native,current);
+}
+export async function assistantAfter597NativeClaims(native,current){
+  requireAssistantAfter597Output();
+  await verifyAssistantAfter597NativeContext(native,current,requireAssistantAfter597Release());
+  return {
+    currentAssistantAfter597Native:{status:native.status,executedInThisRun:native.executedInThisRun,
+      origin:native.origin,phase:native.sourcePhase,eligibleForReuse:native.eligibleForReuse,separatelyRequired:true},
+    currentAssistantAfter597Source:{command:'npm run test:assistant-later-h0-source',
+      actualCommand:ASSISTANT_AFTER597_SOURCE_COMMAND,separatelyRequired:true},
+    currentAssistantAfter597NationalExecutionClaimed:false,
+  };
+}
 export function verifyCurrentNativeCommands(commands,version){
+  if(ACTIVE.sourcePhase===ASSISTANT_AFTER597_PHASE)return verifyAssistantAfter597NativeCommands(commands,version);
   if(ACTIVE.sourcePhase===SCALAR597_LATER_H0_PHASE){
     assert.equal(version,ACTIVE.requireRelease());
     assert.deepEqual(commands,SCALAR597_LATER_H0_COMMANDS);return;
@@ -442,7 +503,10 @@ async function currentContext() {
   assert.equal(proof.contractId,'weather-source-gate-content-v2');assert.equal(proof.privatePayloadIncluded,false);
   assert.equal(proof.sourceTreeSha256,content('HEAD'));
   const native=proof.nativePostgres;
-  if(ACTIVE.sourcePhase===SCALAR597_LATER_H0_PHASE)verifyScalar597LaterH0NativeContext(native,
+  if(ACTIVE.sourcePhase===ASSISTANT_AFTER597_PHASE)await verifyAssistantAfter597NativeContext(native,
+    {run:Number(env.GITHUB_RUN_ID),attempt:Number(env.GITHUB_RUN_ATTEMPT),head,
+      pullRequest:Number(env.PULL_REQUEST_NUMBER),branch:event.pull_request.head.ref},pkg.version);
+  else if(ACTIVE.sourcePhase===SCALAR597_LATER_H0_PHASE)verifyScalar597LaterH0NativeContext(native,
     {run:Number(env.GITHUB_RUN_ID),attempt:Number(env.GITHUB_RUN_ATTEMPT),head,
       pullRequest:Number(env.PULL_REQUEST_NUMBER),branch:event.pull_request.head.ref},pkg.version);
   else if(ACTIVE.sourcePhase==='assistant-installed593-origin591-successor')verifyInstalled593Original591NativeContext(native,
@@ -586,6 +650,12 @@ async function executeHistorical({national=true}={}) {
     sourceScope:national?'HISTORICAL_584_NATIONAL_ONLY':'HISTORICAL_584_DEFAULT_ONLY',frozenHead:ORIGIN.head,frozenTree:ORIGIN.tree};
 }
 async function main(){
+  if(process.argv[2]==='assistant-after597-source'){
+    requireAssistantAfter597Output(); // Before environment, Git, files or launch.
+    assert.equal(process.argv.length,3);
+    console.log(JSON.stringify(await verifyAssistantAfter597SourceTarget()));return;
+  }
+  if(ACTIVE.sourcePhase===ASSISTANT_AFTER597_PHASE)requireAssistantAfter597Output();
   if(ACTIVE.sourcePhase===SCALAR597_LATER_H0_PHASE)ACTIVE.requireRelease();
   if(ACTIVE.sourcePhase==='assistant-installed593-origin591-successor')requireInstalled593Original591Release();
   if(ACTIVE.sourcePhase==='assistant-public591-successor')requireAssistantPublic591SuccessorRelease();
@@ -644,6 +714,12 @@ async function main(){
         actualCommand:ASSISTANT_LATER_H0_SOURCE_COMMAND,separatelyRequired:true},
       current585NationalExecutionClaimed:false,current586NationalExecutionClaimed:false,
       currentAssistantLaterH0NationalExecutionClaimed:false,providerOrProductionProof:false};
+  }else if(ACTIVE.sourcePhase===ASSISTANT_AFTER597_PHASE){
+    assert.equal(ctx.releaseVersion,requireAssistantAfter597Release());
+    current.historical584National={...result,historicalInput:historical,
+      current:{head:ctx.head,run:ctx.run,attempt:ctx.attempt,pullRequest:ctx.pullRequest},
+      ...await assistantAfter597NativeClaims(ctx.proof.nativePostgres,ctx.proof.nativePostgres.current),
+      providerOrProductionProof:false};
   }else if(ACTIVE.sourcePhase===SCALAR597_LATER_H0_PHASE){
     assert.equal(ctx.releaseVersion,ACTIVE.requireRelease());
     current.historical584National={...result,historicalInput:historical,
