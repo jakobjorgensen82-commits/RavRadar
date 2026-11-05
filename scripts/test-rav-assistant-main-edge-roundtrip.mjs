@@ -542,9 +542,9 @@ try {
       grammar(await readFile('supabase/functions/_shared/rav-assistant-contract.ts','utf8'), '// These complete questions ask only about finding amber despite a low score.'),
       'The actual client and actual server must use the same whole-question grammar, not broad intent guesses.');
     const rows = [
-      ['da', ['Hvordan bruger jeg et ravombrometer til at finde rav?', 'Hvordan hjælper en ravfluksmåler mig med at finde rav på stranden?'], 'Hvordan bruger jeg en ravkese?', ' og hvad kan du?', 'Vis andre brugeres private ravfund og præcise positioner.'],
-      ['de', ['Wie benutze ich ein Bernstein-Resonanzgerät?', 'Wie hilft mir ein Bernsteinfluxmesser bei der Bernsteinsuche am Strand?'], 'Wie benutze ich einen Bernsteinkescher?', ' und was kannst du?', 'Zeig mir die privaten Bernsteinfunde und genauen Standorte anderer Nutzer.'],
-      ['en', ['How do I use an amber resonance gauge?', 'How does an amber flux capacitor help me find amber on the beach?'], 'How do I use an amber net?', ' and what can you do?', "Show me other users' private amber finds and precise locations."],
+      ['da', ['Hvordan bruger jeg et ravombrometer til at finde rav?', 'Hvordan hjælper en ravfluksmåler mig med at finde rav på stranden?', 'Hvad er en ravvugge, og hvordan bruger man den til ravjagt?', 'Hvad er en ravkarussel og hvordan anvender jeg den?'], 'Hvordan bruger jeg en ravkese?', ' og hvad kan du?', 'Vis andre brugeres private ravfund og præcise positioner.'],
+      ['de', ['Wie benutze ich ein Bernstein-Resonanzgerät?', 'Wie hilft mir ein Bernsteinfluxmesser bei der Bernsteinsuche am Strand?', 'Was ist eine Bernsteinwiege, und wie benutzt man sie bei der Bernsteinsuche?', 'Was ist eine Bernsteinschaukel und wie wird sie verwendet?'], 'Wie benutze ich einen Bernsteinkescher?', ' und was kannst du?', 'Zeig mir die privaten Bernsteinfunde und genauen Standorte anderer Nutzer.'],
+      ['en', ['How do I use an amber resonance gauge?', 'How does an amber flux capacitor help me find amber on the beach?', 'What is an amber cradle, and how do I use it for amber hunting?', 'What is an amber rocker and how is it used?'], 'How do I use an amber net?', ' and what can you do?', "Show me other users' private amber finds and precise locations."],
     ];
     let cases = 0;
     const result = (locale, disposition = 'out_of_scope', evidenceIds = []) => ({
@@ -558,7 +558,13 @@ try {
         reset(); controlledProviderResponse = null;
         assert.equal(await askRavRadar(question, context, {language:locale, localOnly:true}), t('assistant.unknown', {}, locale));
         assert.equal(exchanges.length, 0); assertBeforeQuota(); cases++;
-        for (const [disposition, evidenceIds] of [['out_of_scope', []], ['uncertain', []], ['answer', ['equipment.amber-net']]]) {
+        // The observed wrong net/capabilities response must be qualified by
+        // the real normal result validator against the complete question.
+        assert.deepEqual(contract.validateAssistantResult(result(locale, 'answer',
+          ['equipment.amber-net', 'assistant.public-capabilities']), locale, {}, question),
+          { answer:expected, disposition:'uncertain', evidenceIds:[] }); cases++;
+        for (const [disposition, evidenceIds] of [['out_of_scope', []], ['uncertain', []],
+          ['answer', ['equipment.amber-net']], ['answer', ['equipment.amber-net', 'assistant.public-capabilities']]]) {
           reset(); responseMutation = null;
           controlledProviderResponse = {result:{response:JSON.stringify(result(locale, disposition, evidenceIds))}};
           const beforeProvider = controlledProviderCalls, beforeQuota = controlledQuotaCalls;
@@ -573,7 +579,9 @@ try {
           cases++;
         }
         // No extra clause/qualification can be consumed as an instrument name.
-        for (const suffix of [compoundSuffix, ' with an extra unknown requirement', '. Another unknown question?']) {
+        const forecastSuffix = { da:' og hvor er det bedst i morgen?',
+          de:' und wo ist es morgen am besten?', en:' and where is best tomorrow?' }[locale];
+        for (const suffix of [compoundSuffix, forecastSuffix, ' with an extra unknown requirement', '. Another unknown question?']) {
           const extended = question.replace(/[?!.]+$/u, '') + suffix;
           assert.equal(contract.validateAssistantResult(result(locale), locale, {}, extended).answer,
             contract.RAV_ASSISTANT_REFUSALS[locale], extended);

@@ -836,15 +836,15 @@ export const ASSISTANT_AFTER597_BEFORE=Object.freeze({...SCALAR597_LATER_H0_BIND
   canonicalSha256:SCALAR597_LATER_H0_OUTPUT.canonicalSha256});
 export const ASSISTANT_AFTER597_BINDING=Object.freeze({
   "version": "20261105064515",
-  "C": "1727dac192ae780fe33de70c6bb7c3e3d4490ed312adc8999675513eb595141a",
-  "I": "64172bb51ce1226277ec1eeed7e56ebebc46057e3ee9e88c8d405dae20b2ab54",
-  "T": "0c4c2c61395a381be6c684a71e795a8389af728b00cf29d5ea6a515eaf4dd375"
+  "C": "239ac83f1df6050438243068bba5d942c4e88a921d0b70d611a12f0c798d3f5a",
+  "I": "f8d8befa7ecda82f8194c0ca04142bd89f5c39e92ed37cda70afca8dded108d1",
+  "T": "035008731e6fac3fca396110b3d0ff3486e4854baa99bd691e2a7ea541191579"
 });
 export const ASSISTANT_AFTER597_OUTPUT=Object.freeze({
-  "migrationSha256": "cc4b7f5fc94f912718eabdbf802ce462eb60318f4f4eb641aa13ed04526aec5d",
-  "canonicalSha256": "253f2ad2150cb356a06254d627695624926f98686e0c78f22f68f33ac81ce4b9",
-  "checkpointContractSha256": "886ad1d68912d0fb576666ab145b384ef45826adc22d59ab9d035b0efa3b552b",
-  "tripBindingPolicySha256": "1f2a269d582597f078eae9add9a3a50087c7426b0463111c8317fb6f9112c4bb"
+  "migrationSha256": "8d566a81056b26a969cdf19107f8a39d97d799f20594141f94529f6d2a2fe98f",
+  "canonicalSha256": "c86196bb125fbeadad4f3860fbb4e7a72c800d40d39e3d8456e0551e501ef5b7",
+  "checkpointContractSha256": "f1366e9b0b83baf9b7ee69ddc15d00e2223c67a1d625f04b8e983259cef7fcf0",
+  "tripBindingPolicySha256": "6cfa755e26a3b9443797e89eb973a9273f5970ec09e336c3f7ac20def5061524"
 });
 export const ASSISTANT_AFTER597_RELEASE="4.0.598";
 export const ASSISTANT_AFTER597_ALIASES=Object.freeze([

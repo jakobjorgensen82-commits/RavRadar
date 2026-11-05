@@ -12,7 +12,7 @@ export const RAV_ASSISTANT_RAVSCORE_MODEL_BINDING = Object.freeze({
   bestTimePolicyId: "score-history-water-tie-earliest-v3",
   presentationPolicyId: "score-bands-35-55-75-exceptional90-v1",
   modelContractSha256: "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
-  modelBundleSha256: "64172bb51ce1226277ec1eeed7e56ebebc46057e3ee9e88c8d405dae20b2ab54",
+  modelBundleSha256: "f8d8befa7ecda82f8194c0ca04142bd89f5c39e92ed37cda70afca8dded108d1",
 });
 
 export const RAV_ASSISTANT_KNOWLEDGE_SCHEMA = "rav-assistant-public-knowledge-v1";
@@ -299,18 +299,21 @@ function unknownAmberEquipmentQuestion(question, locale) {
   if (!label) return false;
   const patterns = {
     da: [
+      `^hvad er (?:(?:en|et|den|det) )?(${label}),? og hvordan (?:bruger|anvender) (?:man|jeg|vi) (?:den|det)(?: til (?:ravjagt|at (?:finde rav|lede efter rav)))?$`,
       `^er (?:(?:en|et|den|det) )?(${label}) (?:(?:vel)?egnet|god|sikker|brugbar) (?:til|i|på) (?:lavt vand|vadejagt|ravjagt|stranden)$`,
       `^(?:(?:og|så|men) )?hvis (?:jeg|vi) (?:leder|søger)(?: efter rav)? (?:i vandet|med waders|på stranden) med (?:(?:en|et|den|det) )?(${label})$`,
       `^hvordan (?:bruger|anvender) (?:jeg|vi) (?:en|et|den|det) (${label})(?: til at (?:finde rav|lede efter rav)(?: på stranden)?)?$`,
       `^hvordan hjælper (?:en|et|den|det) (${label}) (?:mig|os) med at (?:finde rav|lede efter rav)(?: på stranden)?$`,
     ],
     de: [
+      `^was ist (?:(?:ein|eine|einen|der|die|das) )?(${label}),? und (?:wie (?:benutzt|verwendet) man (?:ihn|es|sie)|wie (?:benutze|verwende) ich (?:ihn|es|sie)|wie wird (?:er|es|sie) (?:benutzt|verwendet))(?: (?:bei der bernsteinsuche|um bernstein zu finden))?$`,
       `^ist (?:(?:ein|eine|einen|der|die|das) )?(${label}) für (?:flaches wasser|das waten|die bernsteinsuche|den strand) (?:geeignet|sicher|nützlich)$`,
       `^(?:(?:und|also|aber) )?wenn (?:ich|wir) (?:im wasser|beim waten|am strand) mit (?:(?:einem|einer|dem|der) )?(${label}) (?:suche|suchen)$`,
       `^wie (?:benutze|verwende) ich (?:ein|eine|einen|den|das|die) (${label})(?: (?:bei der bernsteinsuche|um bernstein zu finden))?$`,
       `^wie hilft (?:mir|uns) (?:ein|eine|der|das|die) (${label}) bei der bernsteinsuche(?: am strand)?$`,
     ],
     en: [
+      `^what is (?:(?:a|an|the) )?(${label}),? and (?:how (?:do|can) (?:i|we|you) use it|how is it used)(?: (?:for amber hunting|to find amber))?$`,
       `^is (?:(?:a|an|the) )?(${label}) (?:suitable|appropriate|safe|useful) (?:for|in|on) (?:shallow water|wading|amber hunting|the beach)$`,
       `^(?:(?:and|so|but) )?if (?:i|we) (?:search|look)(?: for amber)? (?:in the water|while wading|on the beach) with (?:(?:a|an|the) )?(${label})$`,
       `^how (?:do|can) (?:i|we) use (?:a|an|the) (${label})(?: (?:to find amber|for amber hunting)(?: on (?:a|the) beach)?)?$`,

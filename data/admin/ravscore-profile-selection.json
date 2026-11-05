@@ -13,7 +13,7 @@
   "bestTimePolicyId": "score-history-water-tie-earliest-v3",
   "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
   "modelContractSha256": "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
-  "modelBundleSha256": "64172bb51ce1226277ec1eeed7e56ebebc46057e3ee9e88c8d405dae20b2ab54",
+  "modelBundleSha256": "f8d8befa7ecda82f8194c0ca04142bd89f5c39e92ed37cda70afca8dded108d1",
   "rollbackModelId": "RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3",
   "runtimeFallbackModelId": null,
   "modelActivationEnabled": true,
