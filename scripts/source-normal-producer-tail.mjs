@@ -1,7 +1,7 @@
 // Private current SOURCE tail. The session is minted only by the actual normal
 // entry. Installation ownership is I/O-only until that same session is admitted.
 import crypto from 'node:crypto';
-import { requireSourceProducerOutput, requireSourceProducerBinding } from './lib/source-producer-after597-runtime-family.mjs';
+import { requireSourceProducerOutput, requireSourceProducerBinding, assertSourceProducerAfter597StaticCode } from './lib/source-producer-after597-runtime-family.mjs';
 import fs from 'node:fs/promises';
 import { fstat as sourcePreludeFstat, fstatSync, lstatSync, Stats as SourceActualStats, constants as sourceOriginalFsConstants } from 'node:fs';
 import path from 'node:path';
@@ -562,6 +562,10 @@ async function runSourceCpInventoryProgram(holder, invocation) {
     const environment = Object.freeze({ ...offline, INPUT_OPERATION: 'source',
       GITHUB_RUN_ID: issued.identity.GITHUB_RUN_ID, GITHUB_RUN_ATTEMPT: issued.identity.GITHUB_RUN_ATTEMPT,
       GITHUB_SHA: issued.identity.GITHUB_SHA });
+    assertSourceProducerAfter597StaticCode(() => {
+      const currentCodeClock = assertPrivateSourceJobDeadline(holder);
+      if (!(Math.min(parentCutoff, currentCodeClock.deadline) > performance.now())) sourceOriginalFailure('CHILD_CLOCK_EXPIRED');
+    }); // Same actual holder and unrenewed phase/first-failure cutoff, checked per bounded read.
     const child = sourceCohortSpawn('python', ['-I', '-B',
       path.join(PRIVATE_RUNTIME_REPOSITORY_ROOT, 'scripts/lib/copernicus_component_process.py'),
       '--source-normal-program-cohort'], { cwd: PRIVATE_RUNTIME_REPOSITORY_ROOT, env: environment,
@@ -1796,6 +1800,10 @@ async function runSourceDmiCohort(holder, operation) {
     challenge.writeBigUInt64BE(BigInt(issued.identity.GITHUB_RUN_ID), 44);
     challenge.writeBigUInt64BE(BigInt(issued.identity.GITHUB_RUN_ATTEMPT), 52);
     Buffer.from(issued.identity.GITHUB_SHA, 'hex').copy(challenge, 60);
+    assertSourceProducerAfter597StaticCode(() => {
+      const currentCodeClock = assertPrivateSourceJobDeadline(holder);
+      if (!(Math.min(parentCutoff, currentCodeClock.deadline) > performance.now())) sourceOriginalFailure('CHILD_CLOCK_EXPIRED');
+    }); // Same actual holder and unrenewed phase/first-failure cutoff, checked per bounded read.
     const child = sourceCohortSpawn('python', ['-I', '-B',
       path.join(PRIVATE_RUNTIME_REPOSITORY_ROOT, 'scripts/lib/copernicus_component_process.py'),
       '--source-dmi-cohort'], { cwd: PRIVATE_RUNTIME_REPOSITORY_ROOT,
@@ -3044,6 +3052,10 @@ async function runSourceNormalProgram(holder, operation, name) {
         : prelude ? sourcePreludeEnvironment(holder, name)
           : name === 'weather' ? sourceNormalWeatherEnvironment(holder)
           : name === 'rawCache' ? { INPUT_KEY: `dmi-grib-v4-Linux-${issued.normalCacheGeneration}-${issued.identity.GITHUB_RUN_ID}-${issued.identity.GITHUB_RUN_ATTEMPT}` } : {}) });
+    assertSourceProducerAfter597StaticCode(() => {
+      const currentCodeClock = assertPrivateSourceJobDeadline(holder);
+      if (!(Math.min(parentCutoff, currentCodeClock.deadline) > performance.now())) sourceOriginalFailure('CHILD_CLOCK_EXPIRED');
+    }); // Same actual holder and unrenewed phase/first-failure cutoff, checked per bounded read.
     const child = sourceCohortSpawn('python', ['-I', '-B',
       path.join(PRIVATE_RUNTIME_REPOSITORY_ROOT, 'scripts/lib/copernicus_component_process.py'),
       '--source-normal-program-cohort'], { cwd: PRIVATE_RUNTIME_REPOSITORY_ROOT,
@@ -4473,6 +4485,10 @@ async function runSourceSaveCohort(holder, operation, selection) {
     challenge.writeBigUInt64BE(BigInt(issued.identity.GITHUB_RUN_ID), 44);
     challenge.writeBigUInt64BE(BigInt(issued.identity.GITHUB_RUN_ATTEMPT), 52);
     Buffer.from(issued.identity.GITHUB_SHA, 'hex').copy(challenge, 60);
+    assertSourceProducerAfter597StaticCode(() => {
+      const currentCodeClock = assertPrivateSourceJobDeadline(holder);
+      if (!(Math.min(parentCutoff, currentCodeClock.deadline) > performance.now())) sourceOriginalFailure('CHILD_CLOCK_EXPIRED');
+    }); // Same actual holder and unrenewed phase/first-failure cutoff, checked per bounded read.
     const child = sourceCohortSpawn('python', ['-I', '-B',
       path.join(PRIVATE_RUNTIME_REPOSITORY_ROOT, 'scripts/lib/copernicus_component_process.py'),
       '--source-normal-phase-cohort'], { cwd: PRIVATE_RUNTIME_REPOSITORY_ROOT,

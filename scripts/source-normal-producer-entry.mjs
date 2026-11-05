@@ -5,7 +5,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import { lstatSync, realpathSync, readFileSync } from 'node:fs';
-import { requireSourceProducerOutput, requireSourceProducerBinding } from './lib/source-producer-after597-runtime-family.mjs';
+import { requireSourceProducerOutput, requireSourceProducerBinding, assertSourceProducerAfter597StaticCode } from './lib/source-producer-after597-runtime-family.mjs';
 import path from 'node:path';
 import os from 'node:os';
 import { performance } from 'node:perf_hooks';
@@ -48,6 +48,7 @@ const WORKFLOWS = Object.freeze(['.github/workflows/run-current-weather-once.yml
   '.github/workflows/update-and-deploy.yml']);
 const JOB = 'Build and prepare weather production through reusable workflow / build-and-prepare';
 const sessions = new WeakMap(), tailSessions = new WeakMap(), retained = new Set();
+const sourceCodeClocks = new WeakMap(); // Only actual qualified entry states register these callbacks.
 let attempted = false;
 const fail = code => { throw Object.assign(new Error('SOURCE_ENTRY_' + code), { code: 'SOURCE_ENTRY_' + code }); };
 const need = (condition, code) => { if (!condition) fail(code); };
@@ -287,6 +288,8 @@ function captureRequest() {
 }
 
 function assertCommittedSource(identity) {
+  const codeClock = sourceCodeClocks.get(identity);
+  if (codeClock) assertSourceProducerAfter597StaticCode(codeClock);
   if (sourcePrIdentities.has(identity)) return assertCommittedPrNativeSource(identity);
   need(git(['rev-parse', 'HEAD']) === identity.GITHUB_SHA
     && git(['rev-parse', 'origin/main']) === identity.GITHUB_SHA, 'MAIN');
@@ -559,6 +562,7 @@ async function beginSourceNormalProducerSession(state) {
 export async function prepareSourceNormalProducerSession() {
   const sourceOutput = requireSourceProducerOutput(); // FIRST: no options, environment, paths, Git or client before issued output.
   const sourceBinding = requireSourceProducerBinding();
+  assertSourceProducerAfter597StaticCode(); // Bounded CODE bootstrap only; no child, session or provider authority.
   need(arguments.length === 0 && !attempted, 'ONE_FIXED_ENTRY'); attempted = true;
   const { identity, target } = process.env.GITHUB_EVENT_NAME === 'pull_request'
     ? capturePrNativeRequest() : captureRequest();
@@ -571,6 +575,8 @@ export async function prepareSourceNormalProducerSession() {
   retained.add(state); // no cleanup/release on an unknown read/install outcome
   try {
     await qualifyNormalJob(state);
+    sourceCodeClocks.set(state.identity, () => assertProcess(state));
+    assertSourceProducerAfter597StaticCode(sourceCodeClocks.get(state.identity));
     need(await fs.realpath(ROOT) === ROOT && await fs.realpath(PRIVATE) === PRIVATE, 'ROOT');
     await checkedParents(path.join(PRIVATE, 'unused'));
     for (const file of [BUNDLE, RESTORED, path.join(ROOT, CHECKPOINT)]) {

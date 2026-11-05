@@ -31,6 +31,8 @@ import {SOURCE_PRODUCER_AFTER597_PARENT,requireSourceProducerAfter597CodeParent,
 import {SOURCE_PRODUCER_AFTER597_DERIVED_METADATA_PATH,sourceProducerAfter597DerivedMetadataFromText,
   assertSourceProducerAfter597DerivedMetadata,assertSourceProducerAfter597Release}
   from './lib/source-producer-after597-derived-metadata.mjs';
+import {computeSourceProducerAfter597CodePins,assertSourceProducerAfter597CodePinsPrepared,assertSourceProducerAfter597CodeData}
+  from './lib/source-producer-after597-runtime-family.mjs';
 // SOURCE_AFTER597_COMPILER_IMPORT_END
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),CP='ravradar_ravscore_checkpoint_';
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
@@ -664,6 +666,7 @@ export function compileSourceProducerAfter597Template(before){
 export async function prepareSourceProducerAfter597SuccessorStructure(){
   requireSourceProducerAfter597Binding();
   assert.equal(arguments.length,0,'No caller-selected SOURCE597 build input');
+  assertSourceProducerAfter597CodePinsPrepared(); // Fresh physical compiler-derived DATA, never an import-cached NULL.
   const issued=SOURCE_PRODUCER_AFTER597_PARENT.binding;
   const release=await sourceAfter597ReadRelease();
   assert.equal(release,SOURCE_PRODUCER_AFTER597_PARENT.nextRelease);
@@ -671,6 +674,10 @@ export async function prepareSourceProducerAfter597SuccessorStructure(){
   assert.deepEqual(await sourceAfter597RegularSourceBytes('scripts/rollback-assets/ravscore-model-bundle.generated.js'),Buffer.from(renderCandidateGRollbackGeneratedModule(candidate)));
   const integrated=await computeRavScoreModelBundle();
   assert.deepEqual(await sourceAfter597RegularSourceBytes('js/core/ravscore-model-bundle.generated.js'),Buffer.from(renderGeneratedBundleModule(integrated)));
+  assertSourceProducerAfter597CodeData({C:candidate.modelBundleSha256,I:integrated.modelBundleSha256,
+    metadataText:JSON.stringify({schemaVersion:'source-producer-after597-derived-metadata-v1',
+      release:SOURCE_PRODUCER_AFTER597_PARENT.nextRelease,version:issued.version,binding:issued,
+      output:SOURCE_PRODUCER_AFTER597_PARENT.output},null,2)+'\n'});
   const next={version:issued.version,C:candidate.modelBundleSha256,I:integrated.modelBundleSha256,
     T:await ravScoreContinuationImplementationSha256()};
   assert.deepEqual(next,{version:issued.version,C:issued.C,I:issued.I,T:issued.T},'Only actual physical issued SOURCE597 C/I/T');
@@ -771,6 +778,14 @@ async function sourceAfter597ReadRelease(){
   const pkg=JSON.parse((await sourceAfter597RegularSourceBytes('package.json')).toString('utf8'));
   return assertSourceProducerAfter597Release(pkg.version);
 }
+// Pure fixed CODE DATA preparation; no model binding/output/SQL is issued here.
+export async function deriveSourceProducerAfter597CodePins(){
+  requireSourceProducerAfter597CodeParent();assert.equal(arguments.length,0);
+  const {value}=await readSourceProducerAfter597FirstIssuanceMetadata();
+  assert.equal(value.binding,null);assert.equal(value.output,null);assert.equal(value.release,null);assert.equal(value.version,null);
+  await sourceAfter597ReadRelease(); // Same real later-package requirement as first binding.
+  return computeSourceProducerAfter597CodePins();
+}
 export async function deriveSourceProducerAfter597FirstBinding(version){
   assert.equal(arguments.length,1,'SOURCE_AFTER597_TIMESTAMP_ONLY');
   assert.equal(typeof version,'string','SOURCE_AFTER597_TIMESTAMP_ONLY');
@@ -783,12 +798,14 @@ export async function deriveSourceProducerAfter597FirstBinding(version){
   const release=await sourceAfter597ReadRelease(); // Real later package, before builders.
   const prior=await readSourceProducerAfter597PredecessorCanonicalSource();
   assert.equal(sha(prior.canonicalSource),before.canonicalSha256);
+  assertSourceProducerAfter597CodePinsPrepared(); // Before deriving the real I/binding.
   const candidate=await computeCandidateGRollbackBundle();
   assert.deepEqual(await sourceAfter597RegularSourceBytes('scripts/rollback-assets/ravscore-model-bundle.generated.js'),
     Buffer.from(renderCandidateGRollbackGeneratedModule(candidate)),'SOURCE_AFTER597_PHYSICAL_C_MODULE');
   const integrated=await computeRavScoreModelBundle();
   assert.deepEqual(await sourceAfter597RegularSourceBytes('js/core/ravscore-model-bundle.generated.js'),
     Buffer.from(renderGeneratedBundleModule(integrated)),'SOURCE_AFTER597_PHYSICAL_I_MODULE');
+  assertSourceProducerAfter597CodeData({C:candidate.modelBundleSha256,I:integrated.modelBundleSha256,metadataText:raw});
   const canonical=value=>Array.isArray(value)?value:value&&typeof value==='object'
     ?Object.fromEntries(Object.keys(value).sort().map(key=>[key,value[key]])):value;
   const binding={version,C:candidate.modelBundleSha256,I:integrated.modelBundleSha256,

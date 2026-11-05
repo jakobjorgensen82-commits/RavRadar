@@ -93,7 +93,9 @@ function sourceFailureDiagnosticLine(error) {
 function requireCurrentSourceOutput() {
   // Family/output refusal only. The actual guardian/FD/owner checks below remain mandatory.
   const current = require('../../../scripts/lib/source-producer-after597-runtime-family.mjs');
-  return current.requireSourceProducerOutput();
+  const output = current.requireSourceProducerOutput(); // NULL first, before static CODE I/O.
+  current.assertSourceProducerAfter597StaticCode();
+  return output;
 }
 
 function fixedInputs() {

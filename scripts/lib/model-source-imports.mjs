@@ -208,6 +208,27 @@ const SOURCE_PRODUCER_AFTER597_RUNTIME_REVIEWED=Object.freeze({
     imports:Object.freeze([...SCALAR597_LATER_H0_REVIEWED['scripts/lib/established-native-current-origin.mjs'].imports,
       '../check-assistant-later-h0-predecessor-source.mjs','./source-producer-after597-runtime-family.mjs'])})
 });
+// Additive exact final51 CODE-reader and restored-runtime witness bodies.
+// Current literal inventories and separately sealed historical hosts are fixed.
+// Historical variants stay whole; no scanner fallback or grammar relaxation.
+const SOURCE_PRODUCER_AFTER597_FINAL51_REVIEWED=Object.freeze({
+  'scripts/check-assistant-later-h0-predecessor-source.mjs':Object.freeze({sha256:'9f45d5b1c978eb6deaabc0118ae7663705b05cf033bd362a606c644383bedd94',
+    imports:SOURCE_PRODUCER_AFTER597_RUNTIME_REVIEWED['scripts/check-assistant-later-h0-predecessor-source.mjs'].imports}),
+  'scripts/protected-private-production-runtime.mjs':Object.freeze({sha256:'07be758050a350c687cfaba4bbe7721176eda973220abbcce6bbb2596220ab58',
+    imports:REVIEWED['scripts/protected-private-production-runtime.mjs'].imports}),
+  'scripts/account-statistics-assistant-prewrite.mjs':Object.freeze({sha256:'44c1ef4edaab1d446cf7696eb5dcacfd49a618ee8788997ce88c740fe59a7761',
+    imports:Object.freeze(["./account-statistics-assistant-runtime-transition.mjs","./migrate-post-cutover-private-runtime.mjs","./check-account-statistics-assistant-predecessor-source.mjs","./lib/account-statistics-assistant-successor-source.mjs","../js/core/ravscore-model-contract.js","./rollback-assets/ravscore-model-contract.js","./private-production-runtime-workflow.mjs","./protected-private-production-runtime.mjs","./protected-ravscore-continuation-checkpoint.mjs"])}),
+  'scripts/account-statistics-assistant-runtime-transition.mjs':Object.freeze({sha256:'f3101b3d5d6c7df7dd42d560d2a9d99c6dbee6cc6904397c95c6256f8144d8fd',
+    imports:Object.freeze(["./lib/bounded-json-writer.mjs","./lib/established-native-current-origin.mjs","./lib/authenticated-frozen584-predecessor.mjs","./check-account-statistics-assistant-predecessor-source.mjs","./lib/account-statistics-assistant-successor-source.mjs","../js/core/ravscore-model-contract.js","./rollback-assets/ravscore-model-contract.js","./private-production-runtime-workflow.mjs","./ravscore-continuation-checkpoint.mjs","./migrate-post-cutover-private-runtime.mjs","./protected-private-production-runtime.mjs"])}),
+  'scripts/check-last-mile-enclosure-predecessor-source.mjs':Object.freeze({sha256:'ab211de90959b87ca342a7db803a43f4ed90fe97d6a37ea648314c75c53337c3',
+    imports:Object.freeze([])}),
+  'scripts/check-native-identity-frozen-i71-source.mjs':Object.freeze({sha256:'21f08e71ee3384b7e5d8a9294d356536ce0d866ffc562f7ecf94a4f547f35e77',
+    imports:Object.freeze([])}),
+  'scripts/migrate-post-cutover-private-runtime.mjs':Object.freeze({sha256:'1b097d22f4102dc80f8d2c917dbaead896ceb3e7b8f364992d3422c4d010d9f6',
+    imports:Object.freeze(["./private-production-runtime-workflow.mjs","./lib/private-weather-component-inventory.mjs","./lib/public-hour-delivery-pack.mjs","./lib/rebind-public-hour-pack-exact.mjs","./lib/private-conditions-hourly.mjs","./public-conditions-lib.mjs","../js/core/ravscore-public-runtime-contract.js","./lib/coastal-point-staging-contract.mjs","../js/core/ravscore-model-contract.js","../js/core/ravscore-public-profile-contract.js","../js/core/ravscore-integrated-state-pipeline.js","../js/core/ravscore-integrated.js","../js/core/ravscore-public-model.js","./lib/ravscore-production-adapters.mjs","./lib/ravscore-integrated-runtime.mjs","./audit-ravscore-integrated-public-runtime.mjs","./rollback-assets/ravscore-model-contract.js","./runtime-binding-registry.mjs","./lib/bounded-json-writer.mjs","./lib/ravscore-production-part-pipeline.mjs","./lib/dmi-marine-zone-exclusions.mjs","./lib/bounded-conditions-predecessor-transition.mjs","./private-production-runtime-bundle.mjs","./protected-private-production-runtime.mjs","./check-native-identity-frozen-i71-source.mjs"])}),
+  'scripts/reconcile-private-runtime-checkpoint.mjs':Object.freeze({sha256:'9984989214a47d8884bac94068d852d0a8e06447eb02e3047d069ce0fc9b6097',
+    imports:Object.freeze(["./protected-private-production-runtime.mjs","./private-production-runtime-bundle.mjs","./private-production-runtime-workflow.mjs","./ravscore-continuation-checkpoint.mjs","./protected-ravscore-continuation-checkpoint.mjs","./lib/established-native-current-origin-successor-source.mjs","./lib/last-mile-enclosure-successor-source.mjs","./check-last-mile-enclosure-predecessor-source.mjs","./lib/account-statistics-assistant-successor-source.mjs","./check-account-statistics-assistant-predecessor-source.mjs","./lib/established-native-current-origin.mjs","./account-statistics-assistant-prewrite.mjs","./lib/native-original-continuity-successor-source.mjs","./check-native-original-continuity-predecessor-source.mjs","./select-native-original-continuity-code-only-source.mjs","./lib/private-weather-component-pack.mjs","./check-production-target-freshness.mjs","./lib/bounded-json-writer.mjs","./check-assistant-later-h0-predecessor-source.mjs","./lib/assistant-later-h0-successor-source.mjs","./lib/source-producer-after597-parent.mjs","./lib/source-producer-after597-runtime-family.mjs","./select-source-producer-code-only-source.mjs","./integrated-cutover-readiness.mjs"])}),
+});
 export function modelSourceRelativeModuleSpecifiers(source, file) {
   if (!Object.hasOwn(REVIEWED, file) && !Object.hasOwn(NATIVE_CONTINUITY_REVIEWED, file)
     && !Object.hasOwn(ASSISTANT_LATER_H0_REVIEWED,file) && !Object.hasOwn(ASSISTANT_BINDING_PREWRITE_REVIEWED,file)
@@ -223,12 +244,13 @@ export function modelSourceRelativeModuleSpecifiers(source, file) {
     && !Object.hasOwn(ORIGIN591_METADATA594_REVIEWED,file)
     && !Object.hasOwn(SCALAR597_LATER_H0_REVIEWED,file)
     && !Object.hasOwn(SOURCE_PRODUCER_AFTER597_FIRST_ISSUANCE_REVIEWED,file)
-    && !Object.hasOwn(SOURCE_PRODUCER_AFTER597_RUNTIME_REVIEWED,file))
+    && !Object.hasOwn(SOURCE_PRODUCER_AFTER597_RUNTIME_REVIEWED,file)
+    && !Object.hasOwn(SOURCE_PRODUCER_AFTER597_FINAL51_REVIEWED,file))
     return exactRelativeModuleSpecifiers(source, file);
   if (typeof source !== 'string') throw new Error('Reviewed model source must be a string');
   const normalized = source.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
   const hash = crypto.createHash('sha256').update(normalized).digest('hex');
-  const reviewed = [REVIEWED[file], NATIVE_CONTINUITY_REVIEWED[file],ASSISTANT_LATER_H0_REVIEWED[file],ASSISTANT_BINDING_PREWRITE_REVIEWED[file],ASSISTANT_BINDING_DIAGNOSTIC_REVIEWED[file],ASSISTANT_BINDING_CHECKPOINT_TARGET_REVIEWED[file],ASSISTANT_PUBLIC587_SOURCE_REVIEWED[file],ASSISTANT_PUBLIC587_OPERATIVE_REVIEWED[file],CALENDAR_PUBLIC588_SUCCESSOR_REVIEWED[file],ASSISTANT_PUBLIC590_SUCCESSOR_REVIEWED[file],ASSISTANT_GENUINE590_PARENT_REVIEWED[file],ASSISTANT_GENUINE591_PARENT_REVIEWED[file],CONDITIONS_READER_CAPACITY593_REVIEWED[file],ORIGIN591_METADATA594_REVIEWED[file],SCALAR597_LATER_H0_REVIEWED[file],SOURCE_PRODUCER_AFTER597_FIRST_ISSUANCE_REVIEWED[file],SOURCE_PRODUCER_AFTER597_RUNTIME_REVIEWED[file]].filter(Boolean)
+  const reviewed = [REVIEWED[file], NATIVE_CONTINUITY_REVIEWED[file],ASSISTANT_LATER_H0_REVIEWED[file],ASSISTANT_BINDING_PREWRITE_REVIEWED[file],ASSISTANT_BINDING_DIAGNOSTIC_REVIEWED[file],ASSISTANT_BINDING_CHECKPOINT_TARGET_REVIEWED[file],ASSISTANT_PUBLIC587_SOURCE_REVIEWED[file],ASSISTANT_PUBLIC587_OPERATIVE_REVIEWED[file],CALENDAR_PUBLIC588_SUCCESSOR_REVIEWED[file],ASSISTANT_PUBLIC590_SUCCESSOR_REVIEWED[file],ASSISTANT_GENUINE590_PARENT_REVIEWED[file],ASSISTANT_GENUINE591_PARENT_REVIEWED[file],CONDITIONS_READER_CAPACITY593_REVIEWED[file],ORIGIN591_METADATA594_REVIEWED[file],SCALAR597_LATER_H0_REVIEWED[file],SOURCE_PRODUCER_AFTER597_FIRST_ISSUANCE_REVIEWED[file],SOURCE_PRODUCER_AFTER597_RUNTIME_REVIEWED[file],SOURCE_PRODUCER_AFTER597_FINAL51_REVIEWED[file]].filter(Boolean)
     .find(variant => variant.sha256 === hash);
   if (!reviewed)
     throw new Error('Whole reviewed model import source changed: ' + file);
