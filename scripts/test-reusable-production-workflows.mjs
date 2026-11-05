@@ -27,7 +27,8 @@ import {ASSISTANT_LATER_H0_BINDING,assistantLaterH0Migration,requireAssistantLat
   requireAssistantPublic591SuccessorOutput,readAssistantPublic591SuccessorCanonicalSource,
   ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE_TIMEOUT_SUCCESSOR,
   INACTIVE_INSTALLED593_ORIGINAL591_SUCCESSOR as ISSUED594_TIMEOUT_SUCCESSOR,
-  INACTIVE_SCALAR597_LATER_H0_SUCCESSOR as ISSUED597_TIMEOUT_SUCCESSOR}
+  INACTIVE_SCALAR597_LATER_H0_SUCCESSOR as ISSUED597_TIMEOUT_SUCCESSOR,
+  UNISSUED_ASSISTANT_AFTER597_SUCCESSOR as AFTER597_TIMEOUT_SUCCESSOR}
   from './lib/assistant-later-h0-successor-source.mjs';
 
 // Keep the payload-free operational control report inside this existing cheap
@@ -764,8 +765,24 @@ assert.equal(casTimeoutSettings.at(-1)?.timeout, '55s',
 // and canonical reader before a TEST INVENTORY ONLY inverse; never remove a
 // guessed latest row or grant SQL/data admission to historical593 oracles.
 const activeTimeoutMigration=ISSUED594_TIMEOUT_SUCCESSOR.migration();
-assert([ISSUED594_TIMEOUT_SUCCESSOR,ISSUED597_TIMEOUT_SUCCESSOR].includes(ACTIVE_TIMEOUT_SUCCESSOR));
-if(ACTIVE_TIMEOUT_SUCCESSOR===ISSUED597_TIMEOUT_SUCCESSOR){
+assert([ISSUED594_TIMEOUT_SUCCESSOR,ISSUED597_TIMEOUT_SUCCESSOR,AFTER597_TIMEOUT_SUCCESSOR].includes(ACTIVE_TIMEOUT_SUCCESSOR));
+if(ACTIVE_TIMEOUT_SUCCESSOR===AFTER597_TIMEOUT_SUCCESSOR){
+  const profile=AFTER597_TIMEOUT_SUCCESSOR,migration=profile.migration();
+  const sql=fs.readFileSync(new URL(migration.filename,migrationsUrl));
+  const canonical=await profile.readCanonicalSource();
+  assert.equal(canonical.admission,'NO_ADMISSION');assert.deepEqual(canonical.migration,migration);
+  const inverse=inventory=>{
+    assert.equal(conditions593TestHash('sha256').update(sql).digest('hex'),profile.requireOutput().migrationSha256);
+    assert.equal(inventory.filter(row=>row.migration===migration.filename).length,1);
+    assert.deepEqual(inventory.at(-1),{migration:migration.filename,timeout:'55s'});
+    assert.deepEqual(inventory.at(-2),{migration:ISSUED597_TIMEOUT_SUCCESSOR.migration().filename,timeout:'55s'});
+    const old=inventory.slice(0,-1);assert.deepEqual([...old,{migration:migration.filename,timeout:'55s'}],inventory);return old;
+  };
+  assert.throws(()=>inverse(casTimeoutSettings.slice(0,-1)));
+  assert.throws(()=>inverse([...casTimeoutSettings,casTimeoutSettings.at(-1)]));
+  casTimeoutSettings=inverse(casTimeoutSettings);
+}
+if([ISSUED597_TIMEOUT_SUCCESSOR,AFTER597_TIMEOUT_SUCCESSOR].includes(ACTIVE_TIMEOUT_SUCCESSOR)){
   const migration=ISSUED597_TIMEOUT_SUCCESSOR.migration();
   const sql=fs.readFileSync(new URL(migration.filename,migrationsUrl));
   const canonical=await ISSUED597_TIMEOUT_SUCCESSOR.readCanonicalSource();

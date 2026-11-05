@@ -1710,7 +1710,7 @@ test('Pages projection inverse preserves exact old workflow bytes and rejects mi
 });
 
 test('release597 whole workflow identifies only the five issued User-Agent fields', async () => {
-  const source = (await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+  const source = inverseRelease598WorkflowUserAgents((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'),'build');
   const historical = inverseRelease597WorkflowUserAgents(source, 'build');
   const current = source.match(/^          WEATHER_USER_AGENT: "RavRadar\/4\.0\.597 /gm) ?? [];
   if (!current.length) {
@@ -1770,7 +1770,7 @@ import { inverseWeatherProcessHourWorkflow, weatherProcessHourWorkflowReview,
 
 test('weather-process hour inverse preserves the entire genuine prior workflow and refuses partial or unknown bytes', async () => {
   const row = weatherProcessHourWorkflowReview, gates = requiredPublicationGatesWorkflowReview;
-  const issued = (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+  const issued = inverseRelease598WorkflowUserAgents((await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replaceAll('\r\n', '\n'),'build');
   assert.equal(gates.path, row.path); assert.deepEqual(gates.before, row.after);
   assert.equal(Buffer.byteLength(issued), gates.after.bytes); assert.equal(sha(issued), gates.after.sha256);
   const current = inverseRequiredPublicationGatesWorkflow(issued, 'build');
@@ -1816,4 +1816,32 @@ test('weather-process hour inverse preserves the entire genuine prior workflow a
   }
   assert.throws(() => inverseWeatherProcessHourWorkflow(current), /WEATHER_PROCESS_HOUR_WORKFLOW_ARGUMENTS/);
   assert.throws(() => inverseWeatherProcessHourWorkflow(null, 'build'), /WEATHER_PROCESS_HOUR_WORKFLOW_TYPE/);
+});
+
+import {inverseRelease598WorkflowUserAgents,release598WorkflowUserAgentReview}
+  from './lib/completed-private-runtime-workflow-review.mjs';
+test('release598 UA inverse preserves whole main1684 and rejects unknown same-size partial or wrong-role bytes',async()=>{
+  const row=release598WorkflowUserAgentReview;
+  const source=(await fs.readFile(new URL('../'+row.path,import.meta.url),'utf8')).replaceAll('\r\n','\n');
+  assert.equal(Buffer.byteLength(source),row.after.bytes);assert.equal(sha(source),row.after.sha256);
+  const previous=inverseRelease598WorkflowUserAgents(source,'build');
+  assert.equal(Buffer.byteLength(previous),row.before.bytes);assert.equal(sha(previous),row.before.sha256);
+  assert.equal(previous.replaceAll(row.original,row.issued),source,'Whole reviewed workflow roundtrip');
+  assert.equal(inverseRelease598WorkflowUserAgents(previous,'build'),previous);
+  assert.equal(inverseRequiredPublicationGatesWorkflow(source,'build'),inverseRequiredPublicationGatesWorkflow(previous,'build'));
+  assert.equal(inverseCompletedRuntimeWorkflow(source,'build'),inverseCompletedRuntimeWorkflow(previous,'build'));
+  for(const role of ['orchestrator','once','repair','recovery','deploy','unknown','toString','__proto__'])
+    assert.equal(inverseRelease598WorkflowUserAgents(source,role),source);
+  const sameSize=source.replace('steps.full-validation.outcome','steps.FAKE-validation.outcome');
+  assert.notEqual(sameSize,source);assert.equal(Buffer.byteLength(sameSize),row.after.bytes);
+  assert.equal(sameSize.split(row.issued).length,row.count+1);
+  for(const changed of [source+'\n',sameSize,source.replace(row.issued,row.original),
+    source.replace(row.issued,'RavRadar/4.0.599'),source.replace(row.issued,row.issued+row.issued)]){
+    assert.notEqual(changed,source);
+    assert.equal(inverseRelease598WorkflowUserAgents(changed,'build'),changed);
+    assert.throws(()=>inverseCompletedRuntimeWorkflow(changed,'build'));
+  }
+  assert.throws(()=>inverseRelease598WorkflowUserAgents(source),/RELEASE598_WORKFLOW_ARGUMENTS/);
+  assert.throws(()=>inverseRelease598WorkflowUserAgents(source,'build',true),/RELEASE598_WORKFLOW_ARGUMENTS/);
+  assert.throws(()=>inverseRelease598WorkflowUserAgents(null,'build'),/RELEASE598_WORKFLOW_TYPE/);
 });
