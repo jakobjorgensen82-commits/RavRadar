@@ -8,7 +8,7 @@ import {copyPublicDeliveryShards} from './copy-public-delivery-shards.mjs';
 import {buildPublicConditions,buildPublicConditionDetails,buildPublicManifest,buildPublicDeliveryDocument,compactJson} from './public-conditions-lib.mjs';
 import {auditPagesArtifactPrivacy,PagesArtifactPrivacyError} from './audit-pages-artifact-privacy.mjs';
 import {writeForecastShareProjection,readForecastShareProjectionFiles,copyForecastShareProjection} from './build-forecast-share-projection.mjs';
-import {assertForecastShareDescriptor,assertForecastShareProjection,assertForecastShareProjectionParity} from '../js/services/forecast-share-projection.js';
+import {assertForecastShareDescriptor,assertForecastShareProjection,assertForecastShareZoneProjection,assembleForecastShareProjection,assertForecastShareProjectionParity} from '../js/services/forecast-share-projection.js';
 import {loadCompactPublicForecastShareSelection,loadPublicForecastShareSelection} from '../js/services/data-service.js';
 import {exactMapZoneScore} from '../js/services/map-forecast-view.js';
 import {buildReleaseContractMetadata} from './lib/release-contract-metadata.mjs';
@@ -99,6 +99,22 @@ try{
   const files=await readForecastShareProjectionFiles({liveDirectory:live,manifestText:manifestBytes.toString('utf8'),required:true});
   assertForecastShareDescriptor(files.descriptor,manifest,sha(manifestBytes));
   assert.equal(assertForecastShareProjectionParity({projection:files.projection,descriptor:files.descriptor,manifest,details,registry}).comparisons,49560);cases++;
+  // The normal active-model path and the explicit sealed-binding path must
+  // agree for current data. The whole verifier target separately uses genuine594.
+  const explicitBinding=manifest.ravScoreModelBinding;
+  assertForecastShareDescriptor(files.descriptor,manifest,sha(manifestBytes),explicitBinding);
+  assertForecastShareProjection(files.projection,files.descriptor,manifest,explicitBinding);
+  assertForecastShareZoneProjection(files.zoneFiles[0].payload,files.descriptor,manifest,files.descriptor.zones[0],explicitBinding);
+  assembleForecastShareProjection(files.zoneFiles.map(file=>file.payload),files.descriptor,manifest,explicitBinding);
+  assert.equal(assertForecastShareProjectionParity({projection:files.projection,descriptor:files.descriptor,manifest,details,registry},explicitBinding).comparisons,49560);cases++;
+  const wrongBinding={...explicitBinding,modelBundleSha256:'0'.repeat(64)};
+  for(const invalidExpected of [wrongBinding,{...explicitBinding,unexpected:true},Object.fromEntries(Object.entries(explicitBinding).filter(([key])=>key!=='modelBundleSha256'))]){
+    assert.throws(()=>assertForecastShareDescriptor(files.descriptor,manifest,sha(manifestBytes),invalidExpected),/binding/i);
+    assert.throws(()=>assertForecastShareProjection(files.projection,files.descriptor,manifest,invalidExpected),/binding/i);
+    assert.throws(()=>assertForecastShareZoneProjection(files.zoneFiles[0].payload,files.descriptor,manifest,files.descriptor.zones[0],invalidExpected),/binding/i);
+    assert.throws(()=>assembleForecastShareProjection(files.zoneFiles.map(file=>file.payload),files.descriptor,manifest,invalidExpected),/binding/i);
+    assert.throws(()=>assertForecastShareProjectionParity({projection:files.projection,descriptor:files.descriptor,manifest,details,registry},invalidExpected),/binding/i);cases++;
+  }
   const copy=await copyPublicDeliveryShards({source:live,target});assert.equal(copy.files,539);
   for(const name of ['manifest.json','public-conditions.json','public-condition-details.json','coastal-parts-v2.json'])await fs.copyFile(path.join(live,name),path.join(target,name));
   await fs.copyFile(path.join(workspace,'data/zones.geojson'),path.join(artifact,'data/zones.geojson'));

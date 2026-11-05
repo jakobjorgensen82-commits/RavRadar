@@ -1,4 +1,34 @@
+## 89.311 Offentlig kilde verificeres med sin forseglede modelbinding
+
+<div class="reader-guide"><p><strong>Kort fortalt: En gammel offentlig vejrpakke skal kontrolleres mod sin egen verificerede modelbinding. Den nye pakke skal passe til sin egen model og forsegling; ingen af dem må ommærkes.</strong></p></div>
+
+Kontrollér den gamle kilde mod dens reelle forsegling og det nye target mod dets egen. Den almindelige kontrol kræver fortsat den aktuelle binding.
+
+<a id="sealed-public-source-share-binding-verification-2026-11-05"></a>
+
+### Den gamle kilde er ikke den nye lokale model
+
+En offentlig pakke fra 4.0.594 kan være den reelle aktive kilde, mens den lokale kode er 4.0.597. Serverens skrivefri kildeverifikation har allerede den gamle kildes præcise modelbinding, kontrakt, bundle og browserforsegling. Prognosedelingens fælles læsekontrol brugte alligevel den lokale modelbinding og afviste derfor en anden bundlehash, før en ny aktivering kunne begynde. Det er en fejl i valg af kontrolforventning; den gemte vejrpakke og dens beskyttede checkpoint skal bevares.
+
+### Én præcis forventning gennem hele delingskontrollen
+
+Kontrolrettelsen fører den eksternt forseglede forventning gennem delingsdescriptor, alle zonefiler, den samlede projektion og paritetskontrollen. Alle elleve modelbindingsfelter skal stemme præcist. Manifestets identitet, filstørrelser, SHA-256, generation, tidsakse og hele sammenligningen af 210 zoner, 118 timer og to tilstande bevares: 49.560 sammenligninger. Den fulde kontrol af kontrakt, bundle og browserkode skal stadig bestå, før verifieren må aflevere et godkendt resultat. En forventet binding er ikke i sig selv en forsegling eller skriveadgang.
+
+### Streng normalstandard og to forskellige endepunkter
+
+Almindelig opstart og produktion bruger fortsat den strenge aktuelle modelbinding som standard. Den gamle binding må hverken omstemples til den lokale version, ignoreres eller udledes som en undtagelse fra det payload, der kontrolleres. Den samme rettelse skal dække kildeverifikationen før den sene backendlevering, deploy-jobbets gentagne kildeverifikation før beginCAS og den endelige kontrol af det nye target. Den gamle kilde bevarer sin gamle forsegling; det nye target skal passe til sin egen aktuelle binding og nye browserforsegling.
+
+### Model, beregning og gemte originaler bevares
+
+Rettelsen ændrer ingen C/I/T-input, udstedte SQL-funktioner, RavScore-formel, scorer, vejrdata, kildeprioritet, administratorpunkter eller geometri. En ændret offentlig helper skal indgå i den normale nye browserforsegling uden at blive en ny modelbinding. Installerens håndbogskopi synkroniseres kun som dokumentations-JSON; SQL- og DDL-rammen er uændret. Afgrænsede diagnostiske public-audit-fund følger fortsat de eksisterende beslutninger. Forkert modelbinding, forsegling eller paritet er fortsat et hårdt stop.
+
+### Syntetisk prøve er ikke offentlig verifikation
+
+Den relevante normale regression skal bruge reelle historiske C-/I-kildefiler og kunstige vejrfixtures. Den kombination er syntetisk og er ikke bevis for den levende offentlige kilde, nye leverandørdata eller en leveret generation. Et nyt bestået prøveudfald må først registreres, når den faktiske normale prøve er afsluttet. Kildekontrol på den endelige kode, sikker genoptagelse med frisk autentificering af gemt B/S, de relevante artifact- og releasekontroller samt offentlig slutverifikation er fortsat åbne krav. SOURCE-revisionen forbliver adskilt og inaktiv, og de øvrige åbne mål erklæres ikke afsluttet.
+
 ## 89.310 Den direkte workflowtest følger den præcise publiceringsport
+
+<div class="reader-guide"><p><strong>Kort fortalt: Historiske workflowprøver skal genkende de præcist gennemgåede hele filer og afvise andre ændringer. Hele den berørte normale prøve skal bestå før levering.</strong></p></div>
 
 Test den virkelige normale kalder og hele den gennemgåede workflowkæde. Ukendte ændringer afvises fortsat, og allerede gemt vejr bevares til sikker genlevering.
 
@@ -21,6 +51,8 @@ Når en workflowprojektion eller wrapper ændres, skal det eksisterende normale 
 Denne følgekorrektion ændrer kun en eksisterende testfil og normal projektdokumentation. Workflow, runtime, modelversion 4.0.597, udstedte migrationer, scoreformel, data, punkter og geometri er uændrede. Den særskilte videre forkortelse af kildekontrollen er ikke med i leverancen og er ikke erklæret færdig. Genoptagelse skal fortsat bruge det eksisterende completed_private_runtime-forløb med frisk autentificering af de gemte B/S-data, beståede artifact- og releasekontroller og faktisk offentlig kontrol. Ingen ny leverandørhentning eller genberegning er nødvendig i denne første genlevering.
 
 ## 89.309 Aktuelle UI-kontroller og ens krav før vejrets publicering
+
+<div class="reader-guide"><p><strong>Kort fortalt: Den almindelige publicering kræver bestået fuld validering og releasekontrol. En kontrolfejl stopper den nye Pages-pakke, mens den gemte beregning bevares til sikker genoptagelse.</strong></p></div>
 
 Forældede kontrolantagelser må rettes mod den faktiske funktion. Et nyt almindeligt Pages-artifact må kun bygges efter de krævede beståede kontroller; allerede gemt vejr bevares til sikker genoptagelse.
 
@@ -52,6 +84,8 @@ Rettelsen ændrer kontrolfiler, den fælles publiceringsport og dokumentation. D
 
 ## 89.308 Runnerens diskoprydning afhænger af målt behov
 
+<div class="reader-guide"><p><strong>Kort fortalt: Runnerens ledige plads måles før valgfri SDK-oprydning. Er der allerede tilstrækkelig kapacitet, bevares mappen; ellers gælder de samme strenge identitets- og stopkrav.</strong></p></div>
+
 Unødvendig sletning af et forudinstalleret Android SDK må ikke stoppe en kildekontrol med rigelig ledig plads. Sikker identitetskontrol og det eksisterende afgrænsede oprydningsforløb bevares.
 
 <a id="runner-sdk-capacity-first-2026-11-04"></a>
@@ -77,6 +111,8 @@ Den målrettede normale helperprøve består lokalt med 22 af 22 prøver. De nye
 Rettelsen bygger på den samlede assistent-/konto-, kontrolprofil- og syntetiske backupkandidat. Dens øvrige gennemgåede bytes og tidligere dokumentation bevares. Modelversion 4.0.597, bindingsdata, alle udstedte migrationer, scoreformel, kildeprioritet, administratorpunkter og geometri ændres ikke. Der køres ingen ny restore- eller fuld lokal kildekontrol alene for dokumentationen. Rigtig backup, oprydning i administrationshistorik, målt Free-kapacitet og revisionens resterende integration har fortsat deres egne åbne krav; Supabase Pro beholdes.
 
 ## 89.307 Syntetisk standardgendannelse er afprøvet på Linux
+
+<div class="reader-guide"><p><strong>Kort fortalt: Den syntetiske Linux-prøve har gendannet testdata og bekræftet et nyt login. Rigtig databasebackup, arkivgendannelse og grundlaget for at opsige Pro skal stadig bevises særskilt.</strong></p></div>
 
 Den normale standardprøve har nu gendannet fem Supabase-dumps på Linux og verificeret et nyt Auth-login med det oprindelige testpassword. Den bruger kun kunstige data; rigtig RavRadar-backup, arkivgendannelse og gratis drift har fortsat egne åbne krav.
 
@@ -118,6 +154,8 @@ Afsnittet beskriver den faktisk udførte standardprøve på den gennemgåede hel
 
 ## 89.306 Præcis597-kontrolprofil med fuld ressource- og afhængighedslukning
 
+<div class="reader-guide"><p><strong>Kort fortalt: Kontrolprofilen skal medtage alle input, som de valgte normale kontroller faktisk bruger. En lokal plan er ikke en bestået samlet kontrol eller tilladelse til at springe andre krav over.</strong></p></div>
+
 597-profilens lokale kontrolplan bevarer alle nødvendige input, mens gamle profiler og fulde afslag fastholdes. En bestået lokal planner er ikke en aktiveret kort kontrolvej.
 
 ### Hvorfor den nye profil fik et størrelsesafslag
@@ -149,6 +187,8 @@ Ingen fuld lokal suite, PostgreSQL, nativefase eller produktionsprøve er kørt 
 C/I/T/F/P, alle 73 migrationer, version, konfiguration, geometri, originaler, vejrkilder og scoremodel bevares. INSTALL ændres kun i den statiske håndbogsseed. Eksisterende sikkerheds-, data-, privacy- og deploykontroller består; ukendt eller rød relevant evidens må ikke omgås.
 
 ## 89.305 Præcis HTTP-kontrakt for privat historik- og backupkontrol
+
+<div class="reader-guide"><p><strong>Kort fortalt: Et gyldigt HTTP-svar er kun første led i privatlivskontrollen. Alle krævede metadata og adgangsgrænser skal stadig bestå, og en senere driftsfejl må ikke få katalogkontrollens status.</strong></p></div>
 
 Management-APIets dokumenterede successtatus accepteres kun sammen med de fulde privatlivs- og metadatakrav. Diagnosen skelner katalogkontrollens HTTP-status fra senere driftsfejl.
 
@@ -183,6 +223,8 @@ Automatisk oprydning forbliver slået fra, og Supabase Pro beholdes. Ingen Free-
 Vejrrettelsen, kildeprioritet, scoreformel, C/I/T/F/P, originaldata, geometri, version 4.0.597 og alle 73 migrationsfiler bevares. Den normale historik-/arkiv-/locator-/prunekæde og privatlivskravene ændres ikke. INSTALL-kopien får kun det samme kanoniske håndbogsseed. Alle tidligere afsnit, herunder 89.303 og 89.304, og deres historiske kvalifikationsudsagn bevares.
 
 ## 89.304 Samme prognosetime gennem den normale vejrproces
+
+<div class="reader-guide"><p><strong>Kort fortalt: To skrivemåder kan betegne samme hele UTC-time. Kalderen bruger det krævede præcise format uden at flytte prognosetidspunktet eller lempe kontrollen af de oprindelige data.</strong></p></div>
 
 To skrivemåder kan betegne samme UTC-time. Den indre vejrproces får nu det præcise format, som den eksisterende oprindelseskontrol kræver, uden at flytte prognosestarten eller ændre kontrollen.
 
@@ -224,6 +266,8 @@ Rettelsen er lokal kildeforberedelse, indtil dens faktiske normale kildekontrol 
 
 ## 89.303 Tidlig SDK-kontrol, præcis workflowkalder og én normal oprydning
 
+<div class="reader-guide"><p><strong>Kort fortalt: Den normale SDK-kalder prøves tidligt på Linux, og oprydningen udføres i én afgrænset gennemgang. Målinger og bevis for processtop bevares; en tidligere succes forklarer ikke alene et senere stop.</strong></p></div>
+
 Den samme normale Linux-kalder prøves før den lange matrix. Den gamle grant-prøve bruger den præcise SDK-inverse; førmåling og én gennemgang giver bedre afgrænsning uden nye model- eller datagates.
 
 ### Faktisk kildebevis og den stadig åbne driftsårsag
@@ -259,6 +303,8 @@ De relevante korte SDK-mål er afprøvet og genbruges i kompositionen. Den nye �
 Scoreformel, kilder, model-/lagerbindinger, migrations-SQL, version, administratoropsætning, geometri og gyldige originaler bevares. Kravene i89.298 og89.302 består. Dette afsnit og de lokale mål er ikke samlet Free-, kapacitets-, nativegenbrugs- eller produktionsfærdiggørelsesbevis.
 
 ## 89.302 Diskplads til vejrhentning og præcis privat arkivkontrol
+
+<div class="reader-guide"><p><strong>Kort fortalt: Kun en egen midlertidig kontrolkopi må fjernes efter fuld succes. Originaler og vejrhistorik bevares, og et privat arkivs placering og lukkede adgang skal verificeres med fulde metadata.</strong></p></div>
 
 <a id="weather-runner-owned-scratch-and-private-archive-metadata-2026-11-04"></a>
 
@@ -443,6 +489,8 @@ Overgangen bruger den senest gyldige, autentificerede 594-generation og kræver 
 Den første almindelige kørsel bruger den eksisterende overgang for historisk vedligeholdelse og kører uden den nye scalarplan. Den efterfølgende almindelige integrerede vejrhentning skal vise, om planen holder tidsgrænsen og forbedrer dækningen. Sammenlign alle forventede timer og zoner for hver af de fem vejrfamilier, og opgør prognosehalen og bevarede fælles timer særskilt.
 
 ## 89.298 Sikker vedligeholdelse af dokumenthistorik
+
+<div class="reader-guide"><p><strong>Kort fortalt: Gamle dokumentversioner må først beskæres efter tabsfri arkivering og genlæsning. Aktuelle dokumenter og de fem nyeste versioner bevares; automatisk vedligeholdelse forbliver lukket indtil dens krav er opfyldt.</strong></p></div>
 
 Kort fortalt: Kun gamle versioner af tre administrationsdokumenter ryddes op. Aktuelle dokumenter og de fem nyeste historikversioner pr. dokument bevares. En gammel række må først fjernes, når dens præcise original er privat arkiveret, genlæst og kan genfindes centralt.
 

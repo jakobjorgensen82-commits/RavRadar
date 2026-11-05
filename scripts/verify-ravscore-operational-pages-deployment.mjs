@@ -622,10 +622,20 @@ async function verifyOnce({
   }));
 
   if (expectedPublicClosure.files.some(item => item.path === 'js/services/forecast-share-projection.js')) {
+    // Shape alone does not qualify a historical binding. Check the sealed
+    // contract/bundle/browser-closure identity before using it for sharing.
+    // The complete deployed-byte/readback verification below remains required.
+    computeSealedPublicImplementationClosureIdentity({
+      expectedModel,
+      expectedBinding,
+      expectedContractText,
+      expectedBundleText,
+      expectedPublicClosure,
+    });
     const descriptorBytes = await fetchBytes(fetchImpl, withCacheBuster(baseUrl,
       'data/live/forecast-share.json', sourceHead, observationNonce), 'forecast-share.json', httpRetryBudget);
     if (descriptorBytes.length > FORECAST_SHARE_INDEX_MAX_BYTES) throw new Error('Deployed forecast sharing descriptor is too large');
-    const descriptor = assertForecastShareDescriptor(JSON.parse(descriptorBytes.toString('utf8')), manifest, manifestFileSha256);
+    const descriptor = assertForecastShareDescriptor(JSON.parse(descriptorBytes.toString('utf8')), manifest, manifestFileSha256, expectedBinding);
     const payloads = [];
     for (const entry of descriptor.zones) {
       const relative = 'data/live/' + entry.path.slice(2);
@@ -635,9 +645,9 @@ async function verifyOnce({
       }
       payloads.push(JSON.parse(bytes.toString('utf8')));
     }
-    const projection = assembleForecastShareProjection(payloads, descriptor, manifest);
+    const projection = assembleForecastShareProjection(payloads, descriptor, manifest, expectedBinding);
     assertForecastShareProjectionParity({projection,descriptor,manifest,
-      details: parsed['data/live/public-condition-details.json'], registry: parsed['data/zones.geojson']});
+      details: parsed['data/live/public-condition-details.json'], registry: parsed['data/zones.geojson']}, expectedBinding);
   }
   const closureVerification = await verifyPublicImplementationClosure({
     baseUrl,
