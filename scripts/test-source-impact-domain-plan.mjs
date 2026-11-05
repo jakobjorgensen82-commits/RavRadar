@@ -401,7 +401,9 @@ test('normal597 registry keeps genuine144 inputs and closes only known normal co
     const objects=fs.realpathSync(path.join(text(SOURCE,['rev-parse','--path-format=absolute','--git-common-dir']),'objects'));
     fs.mkdirSync(path.join(root597,'.git/objects/info'),{recursive:true});
     fs.writeFileSync(path.join(root597,'.git/objects/info/alternates'),objects.replaceAll('\\','/')+'\n');
-    const rows=controls.map(file=>[file,fs.readFileSync(path.join(SOURCE,file))]);
+    // Preserve the whole genuine pre598 control CODE for this historical597 registry oracle.
+    const priorControl=file=>git(SOURCE,['cat-file','blob','fad617a60b9830869b03e26ffa629b6e3d0fcb08:'+file]);
+    const rows=controls.map(file=>[file,priorControl(file)]);
     const make597=(parent,changes,label)=>{
       git(root597,['read-tree',parent]);
       for(const [file,bytes]of changes)git(root597,['update-index','--add','--cacheinfo','100644',
@@ -412,7 +414,7 @@ test('normal597 registry keeps genuine144 inputs and closes only known normal co
     for(const file of [...controls,'scripts/lib/source-impact-domain-inputs-594.json','scripts/lib/source-impact-domain-owners-594.json',
       'scripts/lib/source-impact-control-imports.mjs']){
       const target=path.join(root597,file);fs.mkdirSync(path.dirname(target),{recursive:true});
-      fs.writeFileSync(target,controls.includes(file)?fs.readFileSync(path.join(SOURCE,file)):
+      fs.writeFileSync(target,controls.includes(file)?priorControl(file):
         git(SOURCE,['cat-file','blob',reference+':'+file]));
     }
     const {planSourceDomainImpactFromGit:plan597}=await import(pathToFileURL(path.join(root597,'scripts/source-impact-domain-plan.mjs')).href);
@@ -488,5 +490,142 @@ test('normal597 registry keeps genuine144 inputs and closes only known normal co
     assert.equal(path.dirname(fs.realpathSync(root597)),temporary597);const current=fs.lstatSync(root597,{bigint:true});
     assert.equal(current.dev,owned597.dev);assert.equal(current.ino,owned597.ino);assert.equal(current.birthtimeNs,owned597.birthtimeNs);
     fs.rmSync(root597,{recursive:true,force:false});
+  }
+});
+
+// Separate598normal plan: genuine current protected inputs, synthetic Git children only.
+test('normal598 registry keeps genuine148 inputs and closes only known normal control capabilities',async t=>{
+  const reference='bd9cf518fe798ddea45d2b835f324f6e2bea06fc';
+  const controls=['scripts/source-impact-domain-inputs.mjs','scripts/lib/source-impact-domain-inputs-598.json',
+    'scripts/test-source-impact-domain-inputs.mjs','scripts/source-impact-domain-plan.mjs',
+    'scripts/lib/source-impact-domain-owners-598.json','scripts/test-source-impact-domain-plan.mjs',
+    'scripts/test-source-targeted-domain-integration.mjs'];
+  const root598=fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()),'rr-domain597-plan-'));
+  const owned598=fs.lstatSync(root598,{bigint:true}),temporary598=path.dirname(root598);
+  try{
+    git(root598,['init','-q']);git(root598,['config','core.autocrlf','false']);
+    const objects=fs.realpathSync(path.join(text(SOURCE,['rev-parse','--path-format=absolute','--git-common-dir']),'objects'));
+    fs.mkdirSync(path.join(root598,'.git/objects/info'),{recursive:true});
+    fs.writeFileSync(path.join(root598,'.git/objects/info/alternates'),objects.replaceAll('\\','/')+'\n');
+    const rows=controls.map(file=>[file,fs.readFileSync(path.join(SOURCE,file))]);
+    const make598=(parent,changes,label)=>{
+      git(root598,['read-tree',parent]);
+      for(const [file,bytes]of changes)git(root598,['update-index','--add','--cacheinfo','100644',
+        text(root598,['hash-object','-w','--stdin'],bytes),file]);
+      return text(root598,['commit-tree',text(root598,['write-tree']),'-p',parent,'-m',label]);
+    };
+    const baseline598=make598(reference,rows,'synthetic597 catalog fixture with genuine protected inputs');
+    for(const file of [...controls,'scripts/lib/source-impact-domain-inputs-594.json','scripts/lib/source-impact-domain-owners-594.json','scripts/lib/source-impact-domain-inputs-597.json',
+      'scripts/lib/source-impact-domain-owners-597.json','scripts/lib/source-impact-control-imports.mjs']){
+      const target=path.join(root598,file);fs.mkdirSync(path.dirname(target),{recursive:true});
+      fs.writeFileSync(target,controls.includes(file)?fs.readFileSync(path.join(SOURCE,file)):
+        git(SOURCE,['cat-file','blob',reference+':'+file]));
+    }
+    const {planSourceDomainImpactFromGit:plan598}=await import(pathToFileURL(path.join(root598,'scripts/source-impact-domain-plan.mjs')).href);
+    const run598=(candidate,baseline=baseline598)=>{git(root598,['update-ref','HEAD',candidate]);
+      return plan598({baselineCommit:baseline,candidateCommit:candidate,expectedHead:candidate});};
+    const owner598='scripts/source-targeted-receipt.mjs',before598=git(root598,['cat-file','blob',baseline598+':'+owner598]);
+    const candidate598=make598(baseline598,[[owner598,Buffer.concat([before598,Buffer.from('\n// Synthetic known597 control edit.\n')])]],'synthetic597 known control');
+    await t.test('known control uses actual normal commands with no PG or national execution claim',()=>{
+      const plan=run598(candidate598);
+      assert.equal(plan.status,'PLANNED',JSON.stringify(plan.reasonCodes));
+      assert.equal(plan.selection,'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(plan.reasonCodes));
+      for(const family of ['postgres','C','I','T'])assert.equal(plan.inputDigests[family+'Before'],plan.inputDigests[family+'After']);
+      assert.equal(plan.domains.postgres.status,'NOT_APPLICABLE');assert.equal(plan.domains.historical584National.status,'NOT_APPLICABLE');
+      assert.equal(plan.baselineQualified,false);assert.equal(plan.skipAuthorized,false);assert.equal(plan.productionAuthority,false);
+      for(const command of ['node --test scripts/test-source-impact-full-baseline.mjs','node --test scripts/test-native-postgres-evidence.mjs',
+        'node --test scripts/test-source-impact-domain-inputs.mjs','node --test scripts/test-source-impact-domain-plan.mjs'])
+        assert.equal(plan.commands.filter(value=>value===command).length,1);
+      assert(!plan.commands.includes('node scripts/reclaim-runner-android-sdk.mjs'),'Unregistered native SDK CLI is not silently selected or proven');
+    });
+    await t.test('current597 OM owners retain the complete actual runtime and bank caller closure',()=>{
+      for(const owner of ['scripts/lib/open-meteo-part-runtime.mjs','scripts/produce-open-meteo-part-components.mjs',
+        'scripts/test-open-meteo-part-runtime.mjs']){
+        const original=git(root598,['cat-file','blob',baseline598+':'+owner]);
+        const actual=run598(make598(baseline598,[[owner,Buffer.concat([original,Buffer.from('\n// Synthetic actual597 OM owner.\n')])]],
+          'synthetic current597 OM owner closure'));
+        assert.equal(actual.status,'PLANNED',JSON.stringify(actual.reasonCodes));
+        assert.equal(actual.selection,'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(actual.reasonCodes));
+        for(const command of ['node scripts/test-open-meteo-part-bank.mjs','node scripts/test-open-meteo-part-runtime.mjs'])
+          assert.equal(actual.commands.filter(value=>value===command).length,1);
+        assert.equal(actual.skipAuthorized,false);assert.equal(actual.productionAuthority,false);
+      }
+    });
+    await t.test('597 resource budget includes every committed resource and refuses a bounded overflow',()=>{
+      const document='docs/rdks/MASTER_LOG.md',bytes=git(root598,['cat-file','blob',baseline598+':'+document]);
+      const within=make598(baseline598,[[owner598,Buffer.concat([before598,Buffer.from('\n// Synthetic597 budget owner.\n')])],
+        [document,Buffer.concat([bytes,Buffer.alloc(1024*1024,32)])]],'synthetic597 resources above historical48MiB');
+      const accepted=run598(within);
+      assert.equal(accepted.status,'PLANNED',JSON.stringify(accepted.reasonCodes));
+      assert.equal(accepted.selection,'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(accepted.reasonCodes));
+      const documents=['docs/rdks/MASTER_LOG.md','docs/rdks/90_INDEX/CURRENT_TRUTH.md','docs/rdks/90_INDEX/IMPLEMENTATION_STATUS.md'];
+      const oversized=documents.map(file=>[file,Buffer.concat([git(root598,['cat-file','blob',baseline598+':'+file]),
+        Buffer.alloc(4*1024*1024,32)])]);
+      const rejected=run598(make598(baseline598,oversized,'synthetic597 complete resource inventory exceeds56MiB'));
+      assert.equal(rejected.status,'REFUSED');assert.equal(rejected.selection,'FULL');
+      assert.deepEqual(rejected.reasonCodes,['DOMAIN_COMMITTED_BLOB_BUDGET_EXCEEDED']);
+    });
+    await t.test('new node/import/read/subprocess/reflection surfaces remain FULL',()=>{
+      for(const extra of ["\nimport 'node:net';\n","\nimport 'unregistered-package';\n",'\nimport(unregisteredSpecifier);\n',
+        "\nfs.readFileSync('unregistered-private.json');\n","\nspawn('unregistered-program',[]);\n","\nnew Function('return process')();\n"]){
+        const changed=make598(baseline598,[[owner598,Buffer.concat([before598,Buffer.from(extra)])]],'synthetic597 unknown capability');
+        assert.equal(run598(changed).selection,'FULL',extra);
+      }
+    });
+    await t.test('unknown owner, SDK owner and protected PostgreSQL/model inputs remain FULL',()=>{
+      for(const file of ['scripts/unregistered597-control.mjs','scripts/reclaim-runner-android-sdk.mjs',
+        'scripts/test-protected-ravscore-continuation-checkpoint.mjs','config.js']){
+        let bytes;try{bytes=git(root598,['cat-file','blob',baseline598+':'+file]);}catch{bytes=Buffer.alloc(0);}
+        const changed=make598(baseline598,[[file,Buffer.concat([bytes,Buffer.from('\n// synthetic597 input drift\n')])]],'synthetic597 protected or unknown edit');
+        assert.equal(run598(changed).selection,'FULL',file);
+      }
+    });
+    await t.test('changed SQL, mixed generation and corrupt registry bytes cannot qualify',()=>{
+      const migration='supabase/migrations/20261013220000_current_grid_original_bound_successor.sql';
+      const sql=git(root598,['cat-file','blob',baseline598+':'+migration]);
+      assert.equal(run598(make598(baseline598,[[migration,Buffer.concat([sql,Buffer.from('\n-- synthetic drift\n')])]],'synthetic597 SQL drift')).selection,'FULL');
+      const pkg=JSON.parse(git(root598,['cat-file','blob',baseline598+':package.json']));pkg.version='4.0.594';
+      assert.equal(run598(make598(baseline598,[['package.json',Buffer.from(JSON.stringify(pkg))]],'synthetic mixed generation')).selection,'FULL');
+      const registryFile=path.join(root598,'scripts/lib/source-impact-domain-owners-598.json'),bytes=fs.readFileSync(registryFile);
+      try{fs.writeFileSync(registryFile,Buffer.concat([bytes,Buffer.from('\n')]));assert.equal(run598(candidate598).selection,'FULL');}
+      finally{fs.writeFileSync(registryFile,bytes);}
+    });
+    await t.test('only reviewed598 non-model R2 owners select four real targets and unknown R2/workflow bytes stay FULL',()=>{
+      const targets=["node scripts/test-r2-private-runtime-storage.mjs", "node --test scripts/test-admin-document-history-maintenance.mjs", "node --test scripts/test-archive-supabase-database-backup.mjs", "node --test scripts/test-admin-document-history-workflow.mjs"];
+      const owners=["scripts/admin-document-history-maintenance.mjs", "scripts/archive-supabase-database-backup.mjs", "scripts/lib/r2-private-read-denial-storage.mjs", "scripts/test-admin-document-history-maintenance.mjs", "scripts/test-admin-document-history-workflow.mjs", "scripts/test-archive-supabase-database-backup.mjs", "scripts/test-r2-private-runtime-storage.mjs"];
+      for(const file of owners){
+        const before=git(root598,['cat-file','blob',baseline598+':'+file]);
+        const candidate=make598(baseline598,[[file,Buffer.concat([before,Buffer.from('\n// Synthetic reviewed R2 owner delta.\n')])]],'synthetic non-model R2 owner');
+        const actual=run598(candidate);assert.equal(actual.status,'PLANNED',JSON.stringify(actual.reasonCodes));
+        assert.equal(actual.selection,'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(actual.reasonCodes));
+        for(const target of targets)assert.equal(actual.commands.filter(value=>value===target).length,1);
+        for(const family of ['postgres','C','I','T'])assert.equal(actual.inputDigests[family+'Before'],actual.inputDigests[family+'After']);
+        assert.equal(actual.domains.postgres.status,'NOT_APPLICABLE');assert.equal(actual.skipAuthorized,false);
+      }
+      const workflow='.github/workflows/maintain-admin-document-history.yml';
+      const before=git(SOURCE,['cat-file','blob','b6a1a7d42f933b3b29d2ad56a17d7a0eb2de40ef:'+workflow]);
+      const after=git(root598,['cat-file','blob',baseline598+':'+workflow]);
+      const old=make598(baseline598,[[workflow,before]],'synthetic exact pre-R2 workflow');
+      const reviewed=make598(old,[[workflow,after]],'synthetic reviewed whole R2 workflow pair');
+      const exact=run598(reviewed,old);assert.equal(exact.selection,'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(exact.reasonCodes));
+      for(const target of targets)assert.equal(exact.commands.filter(value=>value===target).length,1);
+      const unknown=make598(baseline598,[[workflow,Buffer.concat([after,Buffer.from('\n# Synthetic unknown workflow bytes.\n')])]],'synthetic unknown R2 workflow');
+      assert.deepEqual(run598(unknown).reasonCodes,['UNKNOWN_EXACT_SOURCE_TRANSITION:'+workflow]);
+      const helper='scripts/lib/r2-private-read-denial-storage.mjs',body=git(root598,['cat-file','blob',baseline598+':'+helper]);
+      const injected=make598(baseline598,[[helper,Buffer.concat([body,Buffer.from("\nimport 'node:net';\n")])]],'synthetic unknown R2 capability');
+      assert.deepEqual(run598(injected).reasonCodes,['UNDECLARED_NODE_IMPORT:'+helper]);
+      const unknownOwner='scripts/lib/unreviewed-r2-owner.mjs';
+      assert.deepEqual(run598(make598(baseline598,[[unknownOwner,Buffer.from('export const x=1;\n')]],'synthetic unreviewed R2 owner')).reasonCodes,
+        ['UNCLASSIFIED_OWNER:'+unknownOwner]);
+      for(const file of ['scripts/lib/r2-private-runtime-storage.mjs','scripts/protected-private-production-runtime.mjs']){
+        const bound=git(root598,['cat-file','blob',baseline598+':'+file]);
+        assert.deepEqual(run598(make598(baseline598,[[file,Buffer.concat([bound,Buffer.from('\n// Synthetic model-bound R2 mutation.\n')])]],'synthetic model-bound R2 change')).reasonCodes,
+          ['POSTGRES_OR_MODEL_INPUT_CHANGED']);
+      }
+    });
+  }finally{
+    assert.equal(path.dirname(fs.realpathSync(root598)),temporary598);const current=fs.lstatSync(root598,{bigint:true});
+    assert.equal(current.dev,owned598.dev);assert.equal(current.ino,owned598.ino);assert.equal(current.birthtimeNs,owned598.birthtimeNs);
+    fs.rmSync(root598,{recursive:true,force:false});
   }
 });

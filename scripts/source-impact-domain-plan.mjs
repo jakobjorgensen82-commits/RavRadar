@@ -10,6 +10,7 @@ import {scanAllSourceDependencies,dependencySourceLiterals} from './lib/source-i
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const REGISTRY_SHA256='3970bc86fb8afd99d193507b82337c1068aa368f6d62ff728988fc21da9577f4';
 const REGISTRY597_SHA256='a7ccfba2b2f631ccc358342e2c3b87e1cb1edbd54311148c94822fddaa6dbcfa';
+const REGISTRY598_SHA256='e598cb9fd3a4a9e4dd134e9c790fc2eaf80145501b17837310893eec9ab99dbe';
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const oid=value=>typeof value==='string'&&/^[a-f0-9]{40}$/.test(value);
 const relative=value=>typeof value==='string'&&/^[A-Za-z0-9_./-]+$/.test(value)&&!value.startsWith('/')
@@ -70,6 +71,36 @@ function registry597(legacyBytes){
   for(const file of delta.resourceFiles){assert(relative(file)&&!registry.resourceFiles.includes(file));registry.resourceFiles.push(file);}
   return {value:registry,digest:sha(Buffer.concat([legacyBytes,bytes])),blobBudgetBytes:56*1024*1024};
 }
+// Additive exact598 CODE definitions over the unchanged594+597 registry.
+function registry598(legacyBytes){
+  const previous=registry597(legacyBytes);
+  const bytes=fs.readFileSync(new URL('./lib/source-impact-domain-owners-598.json',import.meta.url));
+  assert.equal(sha(bytes),REGISTRY598_SHA256,'DOMAIN_REGISTRY_BYTES');
+  const delta=JSON.parse(bytes),registry=previous.value;
+  assert.equal(delta.schemaVersion,1);assert.equal(delta.id,'CLOSED_REVIEWED_598_DOMAIN_DELTA');
+  assert.equal(delta.baseRegistrySha256,previous.digest);
+  assert.equal(delta.sourceReference.head,'bd9cf518fe798ddea45d2b835f324f6e2bea06fc');
+  assert.equal(delta.sourceReference.tree,'2f71c562eea774ca03996802f83bdad7cccd43cc');
+  for(const owner of delta.owners){
+    assert(relative(owner.path)&&!registry.owners.some(row=>row.path===owner.path));registry.owners.push(owner);
+  }
+  for(const [file,row]of Object.entries(delta.sources)){
+    assert(relative(file));const before=registry.sources[file];
+    assert.equal(before?sha(JSON.stringify(before)):null,row.beforeDefinitionSha256);
+    if(before)for(const [key,values]of Object.entries(before))for(const value of values)
+      assert(row.definition[key].includes(value),'DOMAIN_PRIOR_SOURCE_BOUNDARY_REQUIRED');
+    registry.sources[file]=row.definition;
+  }
+  for(const file of delta.resourceFiles){assert(relative(file)&&!registry.resourceFiles.includes(file));registry.resourceFiles.push(file);}
+  // The pre-existing exact whole-source transition grammar applies to this one reviewed workflow pair only.
+  for(const [file,pairs]of Object.entries(delta.exactSourceTransitions)){
+    assert.equal(file,'.github/workflows/maintain-admin-document-history.yml');
+    const previousPairs=registry.exactSourceTransitions[file]??[];
+    for(const pair of pairs){assert(/^[a-f0-9]{64}\/[a-f0-9]{64}$/.test(pair));assert(!previousPairs.includes(pair));previousPairs.push(pair);}
+    registry.exactSourceTransitions[file]=previousPairs;
+  }
+  return {value:registry,digest:sha(Buffer.concat([Buffer.from(previous.digest,'hex'),bytes])),blobBudgetBytes:previous.blobBudgetBytes};
+}
 export function planSourceDomainImpactFromGit(input){
   const out=base();
   const full=reason=>{out.selection='FULL';out.commands=[];out.reasonCodes=[reason];
@@ -91,7 +122,8 @@ export function planSourceDomainImpactFromGit(input){
     if(!out.changedRows)return full('EMPTY_DIFF_REQUIRES_NO_NEW_SHORT_PROOF');
     const registryBytes=fs.readFileSync(new URL('./lib/source-impact-domain-owners-594.json',import.meta.url));
     assert.equal(sha(registryBytes),REGISTRY_SHA256,'DOMAIN_REGISTRY_BYTES');
-    const selectedRegistry=analysis.profile?.id==='REVIEWED_597_DOMAIN_INPUTS_C101_I100_T12'
+    const is598=analysis.profile?.id==='REVIEWED_598_DOMAIN_INPUTS_C101_I100_T12';
+    const selectedRegistry=is598?registry598(registryBytes):analysis.profile?.id==='REVIEWED_597_DOMAIN_INPUTS_C101_I100_T12'
       ?registry597(registryBytes):{value:JSON.parse(registryBytes),digest:REGISTRY_SHA256,blobBudgetBytes:48*1024*1024};
     const registry=selectedRegistry.value,registrySha256=selectedRegistry.digest;
     const owners=new Map(registry.owners.map(row=>[row.path,row])),selected=new Set(['controls']);
@@ -119,7 +151,7 @@ export function planSourceDomainImpactFromGit(input){
         const m=/^([a-f0-9]{40}) blob ([0-9]+)$/.exec(meta[i]);assert(m&&m[1]===wanted[i]);
         assert(Number(m[2])<=8*1024*1024);total+=Number(m[2]);
       }assert(total<=selectedRegistry.blobBudgetBytes,'DOMAIN_COMMITTED_BLOB_BUDGET_EXCEEDED');
-      if(analysis.profile?.id==='REVIEWED_597_DOMAIN_INPUTS_C101_I100_T12')
+      if(is598||analysis.profile?.id==='REVIEWED_597_DOMAIN_INPUTS_C101_I100_T12')
         assert(total+[...blobs.values()].reduce((sum,body)=>sum+body.length,0)<=selectedRegistry.blobBudgetBytes,
           'DOMAIN_COMMITTED_BLOB_BUDGET_EXCEEDED');
       const raw=git(['cat-file','--batch'],{input:wanted.join('\n')+'\n'});let offset=0;
@@ -139,7 +171,7 @@ export function planSourceDomainImpactFromGit(input){
     // All reads below are committed blobs. Current runtime hydration is not reset.
     //597 keeps every conservative resource, then loads executable sources only when
     //actually reached. Unvisited definitions were never closure members.594 is unchanged.
-    const eagerSources=analysis.profile?.id==='REVIEWED_597_DOMAIN_INPUTS_C101_I100_T12'?[]:Object.keys(registry.sources);
+    const eagerSources=is598||analysis.profile?.id==='REVIEWED_597_DOMAIN_INPUTS_C101_I100_T12'?[]:Object.keys(registry.sources);
     load([...new Set([...eagerSources,...registry.resourceFiles,...entries,
       ...changes.map(row=>row.file)])].flatMap(file=>index.has(file)?[index.get(file).oid]:[]));
     const get=file=>{const row=index.get(file);if(!row||row.type!=='blob'||!['100644','100755'].includes(row.mode))throw Error('CLOSURE_SOURCE_MISSING:'+file);

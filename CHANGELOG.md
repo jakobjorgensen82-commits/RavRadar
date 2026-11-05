@@ -1,3 +1,15 @@
+## 5. november — 4.0.598: afgrænset kildekontrol med ægte normalbaseline
+
+Den fulde normale kilde-PR for 4.0.598 er faktisk kvalificeret, inklusive dens PostgreSQL-kontrol. Den skrivefri standardkontrol på den indholdslige mergede main har derefter godkendt det eksisterende kildebevis før privat adgang. Producentcommitten og mergecommitten er forskellige identiteter. Den normale toforældre-merge må kun knyttes til producentens bevis gennem det verificerede PR-forhold, samme hele kildetræ og de oprindelige kørsels-, forsøgs- og artifactidentiteter. Et andet commitnavn kræver ikke i sig selv en ommærket profil eller et nyt PostgreSQL-bevis.
+
+En senere afgrænset kontrol skal bruge hele den faktiske kumulative ændring og præcise, gennemgåede ejere, imports, ressourcer og målprøver. Model-, SQL- og nativeinput samt bevisernes friskhed, filtype, byteidentitet og normalforløb skal stadig kontrolleres. Ukendte ejere, ændrede beskyttede input eller brudt beviskæde kræver FULL. En mappes navn eller generel R2-tilknytning giver ingen undtagelse; de ældre 594-/597-profiler og deres afslag bevares.
+
+Det oprindelige udførte PostgreSQL-bevis forbliver knyttet til sin producent. eligibleForReuse=false bevares. Hvis den normale inputkontrakt beviser, at PostgreSQL ikke er relevant for netop en senere ændring, er det en afgrænsning af den nye kontrol — ikke en ny kørt eller genbrugt native-kvittering på det nye head. Fuld kildekvalifikation er heller ikke i sig selv offentlig levering eller gendannelsesbevis.
+
+Den forberedte V4-kontrolport er endnu ikke Linux-kvalificeret eller leveret. Lokalt bestod 24 inputprøver og 20 planprøver. Baselineprøvens første 13 cases bestod, men case 14 overskred den eksisterende indre procesgrænse på 180 sekunder på Windows; hele dette mål er derfor ikke bestået. Den uændrede case skal gennem den normale Linux-kilde-PR. Frister forhøjes ikke, cases udelades ikke, og de beståede delprøver må ikke beskrives som en samlet grøn kontrol eller ny FULL-baseline.
+
+Kontrolporten ændrer ingen releaseversion, C/I/T, SQL, score, vejrdata, geodata eller runtimeadgang. Den separate SOURCE-revision forbliver privat og inaktiv. Konkrete commit-, kørsels- og prøvepins samt næste sikre leveringsvindue føres i privat evidens; de ovenstående regler erstatter ikke de øvrige krævede gates.
+
 ## 5. november — 4.0.598: egne aktiveringsfixturer efter forgængerens CAS-prøver
 
 Den frosne 597-forgængers normale CAS-prøver tømmer deres syntetiske admin_documents og genopretter kun checkpointet før hver case. Den tidligere antagelse om, at to aktiveringsdokumenter med 594-binding overlevede hele forgængerprøven, er derfor erstattet. Dette er prøvens livscyklus, ikke dokumentation for tab af produktionsdata.
