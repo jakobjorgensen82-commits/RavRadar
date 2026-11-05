@@ -1,3 +1,9 @@
+> **Isoleret SOURCE-kilde — 2026-11-05, fortsat ikke udstedt eller aktiveret.** Den normale opstart afviser først den faktiske NULL-profil, før CODE-læsning, guardian, leverandørarbejde eller SDK. Den kendte afvisning får nu sin præcise faste fejlkode i den eksisterende lukkede diagnostik; rå fejltekst og kontrolrækkefølge ændres ikke.
+>
+> En ny prøve starter den rigtige, uændrede Node24-opstart med to inputvarianter og de faktiske NULL-metadata. Den skal kræve det præcise afslag, fysisk child-lukning og uændrede kilde-/outputbytes. Prøven er endnu ikke udført. Den beviser ikke positiv SOURCE-adgang, FD3/clock, fireminuttersgrænse, SAVE, B/S/T, runner-tab eller national kapacitet. Dens NULL-præmis må ikke genskabes kunstigt på et senere udstedt head.
+>
+> Opstartsfilen indgår i SOURCEs CODE-fingeraftryk; den normale genberegning af fingeraftrykket og alle relevante udstedelses-/leveringskontroller er fortsat nødvendige før aktivering. Den separate Linux-kvalifikationskladde og dens to kernelprøver ændres ikke. Ingen produktionskode, binding, SQL, vejrdata, kildeprioritet, scoreformel, geometri eller administratorpunkter er ændret i driften. Offentlig Markdown-/webhåndbog og assistentviden bevares.
+
 ## 5. november — forseglet offentlig kilde og streng normalstandard, 4.0.597
 
 En offentlig pakke fra 4.0.594 kan være den reelle aktive kilde, mens den lokale kode er 4.0.597. Serverens skrivefri kildeverifikation har allerede den gamle kildes præcise modelbinding, kontrakt, bundle og browserforsegling. Prognosedelingens fælles læsekontrol brugte alligevel den lokale modelbinding og afviste derfor en anden bundlehash, før en ny aktivering kunne begynde. Det er en fejl i valg af kontrolforventning; den gemte vejrpakke og dens beskyttede checkpoint skal bevares.

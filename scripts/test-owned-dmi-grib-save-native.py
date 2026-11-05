@@ -485,6 +485,165 @@ def runtime_environment():
 
 
 class OwnedRawSaveNative(unittest.TestCase):
+
+    def test_actual_source_null_action_refuses_before_guardian_provider_or_sdk(self):
+        # Real Node24 and complete unchanged product modules, never a patched
+        # output, synthetic capability, preload, process interceptor or SDK.
+        # The existing default native bridge selects this case automatically.
+        import hashlib
+
+        self.assertEqual(sys.platform, 'linux', 'NATIVE_LINUX_REQUIRED; not a skip')
+        for name in ('pidfd_open', 'waitid', 'P_PIDFD', 'WNOWAIT'):
+            self.assertTrue(hasattr(os, name), f'NATIVE_LINUX_API_REQUIRED:{name}')
+        self.assertTrue(hasattr(signal, 'pidfd_send_signal'))
+        self.assertEqual(signal.getsignal(signal.SIGCHLD), signal.SIG_DFL)
+        self.assertEqual(signal.getitimer(signal.ITIMER_REAL), (0.0, 0.0))
+        no_children()
+        self.assertIsInstance(NODE24, Path)
+        self.assertEqual(NODE24.name, 'node')
+        metadata_paths = {
+            'scripts/lib/source-producer-binding.generated.json': {
+                'schemaVersion': 'source-producer-derived-metadata-v1',
+                'version': None, 'binding': None, 'output': None},
+            'scripts/lib/source-producer-after597-binding.generated.json': {
+                'schemaVersion': 'source-producer-after597-derived-metadata-v1',
+                'release': None, 'version': None, 'binding': None, 'output': None},
+        }
+        for name, expected in metadata_paths.items():
+            self.assertEqual((ROOT / name).read_bytes(),
+                (json.dumps(expected, indent=2) + '\n').encode('utf-8'),
+                'Only the real current NULL profile is a premise of this case')
+        # This existing catalog is literal JSON DATA, not evaluated JavaScript
+        # or a caller-root override. Copy its genuine fixed source closure once.
+        family = (ROOT / 'scripts/lib/source-producer-after597-runtime-family.mjs').read_text(encoding='utf-8')
+        marker = 'export const SOURCE_PRODUCER_AFTER597_CODE_FILES = Object.freeze('
+        self.assertEqual(family.count(marker), 1)
+        start = family.index(marker) + len(marker)
+        files = json.loads(family[start:family.index(');', start)])
+        self.assertIsInstance(files, list)
+        self.assertEqual(len(files), len(set(files)))
+        for name in [ENTRY.as_posix(), 'scripts/lib/copernicus_component_process.py', *metadata_paths]:
+            self.assertIn(name, files)
+        temp_parent = Path(tempfile.gettempdir()).resolve()
+        root = Path(tempfile.mkdtemp(prefix='rr-source-null-action-', dir=temp_parent)).resolve()
+        libc = ctypes.CDLL(None, use_errno=True)
+        libc.prctl.argtypes = [ctypes.c_int, ctypes.c_ulong, ctypes.c_ulong,
+                              ctypes.c_ulong, ctypes.c_ulong]
+        libc.prctl.restype = ctypes.c_int
+        previous = ctypes.c_int()
+        self.assertEqual(libc.prctl(37, ctypes.addressof(previous), 0, 0, 0), 0)
+        self.assertEqual(libc.prctl(36, 1, 0, 0, 0), 0)
+        children, fds, logs = [], [], []
+        old_alarm = signal.getsignal(signal.SIGALRM)
+
+        def deadline(_number, _frame):
+            raise TimeoutError('OWN_SOURCE_NULL_ACTION_DEADLINE')
+
+        signal.signal(signal.SIGALRM, deadline)
+        signal.setitimer(signal.ITIMER_REAL, BODY_SECONDS)
+        try:
+            originals = {}
+            for name in files:
+                relative = Path(name)
+                self.assertFalse(relative.is_absolute())
+                self.assertNotIn('..', relative.parts)
+                self.assertNotIn('node_modules', relative.parts)
+                source = ROOT / relative
+                self.assertEqual(source.resolve(strict=True), source)
+                self.assertTrue(stat.S_ISREG(source.lstat().st_mode))
+                self.assertFalse(source.is_symlink())
+                raw = source.read_bytes()
+                target = root / relative
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(raw)
+                self.assertEqual(target.read_bytes(), raw)
+                originals[name] = hashlib.sha256(raw).hexdigest()
+            self.assertFalse((root / '.git').exists())
+            self.assertFalse((root / '.cache').exists())
+            self.assertFalse((root / ENTRY.parent / 'node_modules').exists())
+            output = root / 'action-output'
+            output.write_bytes(b'')
+            expected_stderr = (b'DMI_RAW_SAVE_REFUSED\n'
+                b'DMI_RAW_SAVE_DIAGNOSTIC stage=INPUT reason=SOURCE_PRODUCER_AFTER597_UNISSUED\n'
+                b'SOURCE_RUN_DIAGNOSTIC stage=UNKNOWN reason=UNKNOWN node_class=UNKNOWN rejection=UNKNOWN\n')
+            for legacy_inputs in (False, True):
+                with self.subTest(ordinary_save_inputs=legacy_inputs):
+                    environment = runtime_environment()
+                    environment.update({'INPUT_OPERATION': 'source',
+                        'GITHUB_REF': 'refs/heads/main', 'GITHUB_EVENT_NAME': 'workflow_dispatch',
+                        'GITHUB_RUN_ID': '17', 'GITHUB_RUN_ATTEMPT': '1', 'RUNNER_OS': 'Linux',
+                        'GITHUB_SERVER_URL': 'https://github.com', 'GITHUB_OUTPUT': str(output)})
+                    if legacy_inputs:
+                        # Valid ordinary SAVE-shaped inputs cannot select that
+                        # branch when the actual requested operation is source.
+                        generation = time.strftime('%G-W%V', time.gmtime())
+                        environment.update({'INPUT_PATH': '.cache/dmi-grib',
+                            'INPUT_KEY': f'dmi-grib-v4-Linux-{generation}-17-1',
+                            'ACTIONS_CACHE_SERVICE_V2': '1'})
+                    self.assertNotIn('NODE_OPTIONS', environment)
+                    self.assertNotIn('NODE_PATH', environment)
+                    stdout = root / ('stdout-' + str(int(legacy_inputs)))
+                    stderr = root / ('stderr-' + str(int(legacy_inputs)))
+                    out, err = stdout.open('wb'), stderr.open('wb')
+                    logs.extend((out, err))
+                    child = subprocess.Popen([str(NODE24), str(root / ENTRY)], cwd=root,
+                        env=environment, stdin=subprocess.DEVNULL, stdout=out, stderr=err)
+                    children.append(child)
+                    # Popen still owns its unreaped direct child even if this
+                    # fast negative has already exited. Do not demand liveness.
+                    fd = os.pidfd_open(child.pid, 0)
+                    fds.append(fd)
+                    info = small(f'/proc/self/fdinfo/{fd}').decode('ascii')
+                    self.assertEqual([int(line.split(':', 1)[1]) for line in info.splitlines()
+                                      if line.startswith('Pid:')], [child.pid])
+                    observed = os.waitid(os.P_PIDFD, fd, os.WEXITED | os.WNOHANG | os.WNOWAIT)
+                    if observed is not None:
+                        self.assertEqual(observed.si_pid, child.pid)
+                    self.assertEqual(child.wait(timeout=CLEANUP_SECONDS), 1)
+                    self.assertTrue(exited(fd))
+                    no_children()  # Any adopted child prevents a false pass.
+                    self.assertEqual(small(stdout), b'')
+                    self.assertEqual(small(stderr), expected_stderr,
+                        'UNKNOWN, a loader error, or generic exit1 is not named NULL evidence')
+                    self.assertEqual(output.read_bytes(), b'')
+                    self.assertFalse((root / '.cache').exists(), 'No claim, guardian work or SDK cache may start')
+                    self.assertFalse((root / ENTRY.parent / 'node_modules').exists())
+                    for name, digest in originals.items():
+                        self.assertEqual(hashlib.sha256((root / name).read_bytes()).hexdigest(), digest)
+                        self.assertEqual(hashlib.sha256((ROOT / name).read_bytes()).hexdigest(), digest)
+        finally:
+            primary = sys.exc_info()[1]
+            signal.setitimer(signal.ITIMER_REAL, CLEANUP_SECONDS)
+            try:
+                if len(children) != len(fds):
+                    raise RuntimeError('OWN_SOURCE_NULL_ACTION_IDENTITY_UNPROVED; fixture retained')
+                for fd in fds:
+                    if not exited(fd):
+                        signal.pidfd_send_signal(fd, signal.SIGKILL)
+                for child in children:
+                    child.wait(timeout=1.0)
+                no_children()
+                for fd in fds:
+                    self.assertTrue(exited(fd))
+                    os.close(fd)
+                    with self.assertRaises(OSError) as closed:
+                        os.fstat(fd)
+                    self.assertEqual(closed.exception.errno, errno.EBADF)
+                for handle in logs:
+                    handle.close()
+                    self.assertTrue(handle.closed)
+                self.assertEqual(libc.prctl(36, previous.value, 0, 0, 0), 0)
+                self.assertEqual(root.parent, temp_parent)
+                self.assertTrue(root.name.startswith('rr-source-null-action-'))
+                shutil.rmtree(root)
+            except BaseException as cleanup_error:
+                if primary is None:
+                    raise
+                primary.add_note(f'OWN_SOURCE_NULL_CLEANUP_UNPROVED:{type(cleanup_error).__name__}; fixture retained')
+            finally:
+                signal.setitimer(signal.ITIMER_REAL, 0)
+                signal.signal(signal.SIGALRM, old_alarm)
+
     def test_healthy_actual_action_cohort_and_claim_close_before_saved(self):
         self.actual_chain(interrupt=False)
 
