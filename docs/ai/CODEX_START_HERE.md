@@ -1,3 +1,13 @@
+## 5. november — 4.0.598: egne aktiveringsfixturer efter forgængerens CAS-prøver
+
+Den frosne 597-forgængers normale CAS-prøver tømmer deres syntetiske admin_documents og genopretter kun checkpointet før hver case. Den tidligere antagelse om, at to aktiveringsdokumenter med 594-binding overlevede hele forgængerprøven, er derfor erstattet. Dette er prøvens livscyklus, ikke dokumentation for tab af produktionsdata.
+
+Efter597-prøven skal kræve begge faste aktiverings-/profilnøgler fraværende og oprette præcis to kendte 597-fixturer før den fulde bevaringsbaseline. Den allerede validerede 594-originalbank og dens C/I/T-kontrol bevares. Eksisterende uvedkommende adminrækker sammenlignes som hele rækker før og efter opsætningen; historik, kontodata, originalbank og funktionskatalog bevares også. Den efterfølgende fulde baseline må ikke filtreres eller indsnævres.
+
+Den faktiske native-historiktrigger udløses kun ved UPDATE. De to nye INSERTs skal derfor bevare hele den eksisterende historik nøjagtigt. Præcis genlæsning af begge nye payloads samt de eksisterende kontroller af kvote, afventende aktivering, gammel/ny binding og rollback består fortsat. Ukendte eksisterende aktiveringsrækker skal afvises uden overskrivning.
+
+Den korte prøve bruger den normale eksporterede fixtureforberedelse med en strengt afgrænset syntetisk SQL-transport. Den erstatter ikke PostgreSQL-prøven, native-bevis, slut-head-kildekontrol eller faktisk levering. Rettelsen ændrer ingen produktionsfunktion, scoreformel, kildeprioritet, geometri, C/I/T-binding eller migrationsfil. Den allerede forberedte, endnu ikke leverede version er fortsat 4.0.598.
+
 ## 5. november — 4.0.598: præcis afvisning af anonym arkivadgang
 
 Den private arkivkontrol skelner mellem faktisk læseadgang og en afvist usigneret forespørgsel. R2 kan afvise den normale GET/Range-metode med HTTP400 og den præcise XML-fejl InvalidArgument/Authorization. Kun denne begrænsede fejlkuvert med korrekt indholdstype og højst 4.096 accepterede byte giver den afgrænsede fortolkning. Friske private EU-bucketegenskaber og autentificeret objektlæsning med nøjagtigt byteantal og SHA-256 kræves fortsat. HTTP401/403/404 bevares; succes, redirect, ukendt400, serverfejl, for stor eller forkert XML afvises. Anonyme successvar annulleres uden objektlæsning.

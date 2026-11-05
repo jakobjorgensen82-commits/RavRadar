@@ -2214,3 +2214,181 @@ test('after597 real frozen597 native export links complete genuine companions an
     preflightReadbackMs,fixtureElapsedMs:performance.now()-fixtureStarted,wholeWrapperAndNested594Factory:true,ownedRootsRemoved:true,
     SQLExecuted:false,all69ModulesImported:false,SourceCapabilityCreated:false}));
 });
+
+test('after597 native fixture lifecycle starts after genuine97 CAS reset and preserves whole rows',async t=>{
+  const {prepareAssistantAfter597NativeFixtureWindow:prepare}=await import('./lib/assistant-later-h0-postgres.mjs');
+  if(!AFTER597_ISSUED){
+    const poison=new Proxy({},{get(){throw Error('UNEXPECTED_UNISSUED_OPTION_READ');}});
+    await assert.rejects(prepare(poison),/ASSISTANT_AFTER597_UNISSUED/);
+    t.diagnostic('NULL output refusal only; issued fixture lifecycle was not executed.');return;
+  }
+  // Exercise the actual exported adapter through strict synthetic SQL transport.
+  // This is fixture-protocol evidence, not PostgreSQL/RPC or SOURCE authority.
+  const source=await import('./lib/assistant-later-h0-successor-source.mjs');
+  const {ravScoreModelBinding}=await import('../js/core/ravscore-model-contract.js');
+  const {createHash}=await import('node:crypto');
+  const {currentMemoryWarmupPreservationInventorySql:inventorySql}=await import('./lib/current-memory-warmup-postgres.mjs');
+  const before=source.ASSISTANT_AFTER597_BEFORE,next=source.requireAssistantAfter597Binding();
+  const oldBinding={...ravScoreModelBinding(),modelBundleSha256:before.I};
+  const oldProfile={sourceVersion:'4.0.597',modelBundleSha256:before.I,syntheticUnknownField:{whole:'retained'}};
+  const trigger=source.assistantLaterH0Definition((await source.readScalar597LaterH0CanonicalSource()).canonicalSource,'version_admin_document');
+  assert.match(trigger,/if tg_op='UPDATE' and old\.document_key not in/);
+  assert(trigger.includes("'ravscore-operational-model-activation'"));
+  assert(!trigger.includes("'ravscore-profile-selection'"));
+  const opKey='ravscore-operational-model-activation',profileKey='ravscore-profile-selection';
+  const preservedSql=inventorySql('preserved'),bankSql=inventorySql('original-bank');
+  const fixture=(fault=null)=>{
+    // Genuine97's CAS reset has removed both activation keys. Other complete
+    // checkpoint/admin rows and old history remain and must not be replaced.
+    let documents=new Map([['ravscore-continuation-checkpoint',{document_key:'ravscore-continuation-checkpoint',
+      payload:{syntheticCheckpoint:'whole'},version:7,extraColumn:{unknown:17}}],
+      ['synthetic-unrelated',{document_key:'synthetic-unrelated',payload:{unknown:[1,2,3]},version:9,extraColumn:'retained'}]]);
+    let history=[{document_key:'synthetic-unrelated',payload:{unknown:16},version:8,extraColumn:'retained'}];
+    if(fault==='existing-operation'||fault==='existing-profile'){
+      const key=fault==='existing-operation'?opKey:profileKey;
+      documents.set(key,{document_key:key,payload:{unknownExisting:true},version:11,unknownColumn:'retained'});
+    }
+    const initialDocuments=structuredClone(documents),initialHistory=structuredClone(history);
+    const original594=source.SCALAR597_LATER_H0_BEFORE;
+    const bank=Buffer.from(JSON.stringify({modelBinding:{modelBundleSha256:original594.I},
+      candidateGRollbackCompanion:{modelBinding:{modelBundleSha256:original594.C}},
+      continuationStateContractSha256:fault==='wrong-bank'?'e'.repeat(64):original594.T}));
+    const nativeError=new Error('NATIVE_POSTGRES_SQL_COMMAND_FAILED');
+    let inserts=0,updates=0,setupTransactions=0,rollbackTransactions=0,inventoryReads=0,queries=0,quotaCalls=0;
+    const selected=()=>[...documents].filter(([key])=>[opKey,profileKey].includes(key))
+      .sort(([a],[b])=>a<b?-1:a>b?1:0).map(([,row])=>row);
+    const fingerprint=()=>JSON.stringify({documents:[...documents].sort(([a],[b])=>a<b?-1:a>b?1:0),history,
+      originalBank:{unknownWholeRow:'retained'},account:{unknownWholeRow:'retained'},catalog:{unknownProperty:'retained'}});
+    const unrelatedFingerprint=()=>{
+      const groups=new Map();let count=0,totalBytes=0;
+      for(const[key,row]of documents){
+        if([opKey,profileKey].includes(key))continue;
+        const bytes=Buffer.from(JSON.stringify(row)),hash=createHash('sha256').update(bytes).digest('hex');
+        const groupKey=hash+':'+bytes.length,group=groups.get(groupKey)??{hash,bytes:bytes.length,count:0};
+        group.count++;groups.set(groupKey,group);count++;totalBytes+=bytes.length;
+      }
+      return [JSON.stringify(['checkpoint',0,'',0,count,totalBytes]),...[...groups.values()]
+        .sort((a,b)=>a.hash<b.hash?-1:a.hash>b.hash?1:a.bytes-b.bytes)
+        .map(row=>JSON.stringify(['checkpoint',1,row.hash,row.bytes,row.count,0]))].join('\n');
+    };
+    const allowed=bundle=>documents.get(opKey)?.payload.status==='INTEGRATED_ACTIVE'
+      &&documents.get(opKey)?.payload.activeModelBinding.modelBundleSha256===bundle
+      &&documents.get(profileKey)?.payload.modelBundleSha256===bundle;
+    const apply=(query,insert)=>{
+      const pattern=insert
+        ?/insert into admin_documents\(document_key,payload\) values\('([^']+)',\$after597_trip\$([\s\S]*?)\$after597_trip\$::jsonb\);/g
+        :/update admin_documents set payload=\$after597_trip\$([\s\S]*?)\$after597_trip\$::jsonb where document_key='([^']+)';/g;
+      let count=0;
+      for(const row of query.matchAll(pattern)){
+        count++;const key=insert?row[1]:row[2],payload=JSON.parse(insert?row[2]:row[1]);
+        assert([opKey,profileKey].includes(key),'Only the two fixed fixture keys may be written');
+        const old=documents.get(key);
+        if(insert){
+          inserts++;assert.equal(old,undefined,'INSERT cannot overwrite an existing document');
+          if(fault==='missing-insert'&&key===profileKey)continue;
+          documents.set(key,{document_key:key,payload,version:1});
+          if(fault==='setup-payload'&&key===profileKey)documents.get(key).payload.unknownDrift=true;
+        }else{
+          updates++;assert(old);
+          if(JSON.stringify(old.payload)===JSON.stringify(payload))continue;
+          if(key!==opKey)history.push({document_key:key,payload:structuredClone(old.payload),version:old.version});
+          documents.set(key,{...old,payload,version:old.version+1});
+        }
+      }
+      assert.equal(count,insert?2:query.includes('"status":"INTEGRATED_PENDING"')?1:2);
+      return count;
+    };
+    const psql=async query=>{
+      queries++;
+      if(query===preservedSql){inventoryReads++;return fingerprint();}
+      if(query===bankSql)return '{"wholeOriginalBank":"retained"}';
+      if(query.startsWith('with row_fingerprints as materialized (\n')){
+        assert(query.includes("where t.document_key not in ('"+opKey+"','"+profileKey+"')"));
+        assert(query.includes("convert_to(to_jsonb(t)::text,'UTF8')"));
+        assert(query.includes("octet_length(row_bytes)::bigint"));assert(query.includes("extensions.digest(row_bytes,'sha256')"));
+        assert(query.includes('count(f.row_sha256)'));assert(query.includes('coalesce(sum(f.row_bytes),0)'));
+        assert(query.includes('group by table_name,row_sha256,row_bytes'));assert(!query.includes('jsonb_agg'));
+        return unrelatedFingerprint();
+      }
+      if(query.startsWith("with rows as (select 'activity'"))return '{"wholeAccountRows":"retained"}';
+      if(query.startsWith('select to_regprocedure(')&&query.endsWith(' is not null;'))return 't';
+      if(query.startsWith('select jsonb_object_agg(p.oid::regprocedure::text,'))return '{"wholeCatalog":"retained"}';
+      if(query.startsWith('select coalesce(jsonb_agg(to_jsonb(d) order by document_key)'))return JSON.stringify(selected());
+      if(query.startsWith('select coalesce(jsonb_agg(to_jsonb(v)'))return JSON.stringify(history);
+      if(query==="select octet_length(convert_to(payload::text,'UTF8')) from native_checkpoint_payloads where name='scalar597-original594-same';")return String(bank.length);
+      if(query==="select encode(substring(convert_to(payload::text,'UTF8') from 1 for 262144),'base64') from native_checkpoint_payloads where name='scalar597-original594-same';")return bank.toString('base64');
+      if(query.includes("select public.consume_public_request_limit('ravradar-assistant:minute','native-assistant-after597-fixture',6,60);")){
+        quotaCalls++;return 't';
+      }
+      if(query.startsWith("set request.jwt.claim.role='service_role';set role service_role;select public.ravradar_trip_v3_active_binding_admitted(")){
+        const bundle=query.includes("'"+before.I+"'")?before.I:next.I;assert(query.includes("'"+bundle+"'"));return allowed(bundle)?'t':'f';
+      }
+      if(query.startsWith('begin;')&&query.endsWith('commit;')){
+        setupTransactions++;assert(!query.includes('on conflict'));assert(!query.includes('update admin_documents'));
+        apply(query,true);
+        if(fault==='setup-history')history.push({document_key:'unknown-history-append',payload:{all:'retained'},version:1});
+        if(fault==='setup-unrelated-change')documents.get('synthetic-unrelated').payload.unknown.push('drift');
+        if(fault==='setup-unrelated-add')documents.set('synthetic-added',{document_key:'synthetic-added',payload:{unknown:'drift'},version:1});
+        if(fault==='setup-unrelated-delete')documents.delete('synthetic-unrelated');
+        return '';
+      }
+      if(query.startsWith('begin;')&&query.endsWith('rollback;')){
+        rollbackTransactions++;assert(query.includes("set local request.jwt.claim.role='service_role';set local role service_role;"));
+        if(fault==='command')throw nativeError;
+        const oldDocuments=structuredClone(documents),oldHistory=structuredClone(history);
+        apply(query,false);const observed={oldAllowed:allowed(before.I),nextAllowed:allowed(next.I)};
+        documents=oldDocuments;history=oldHistory;
+        if(fault==='rollback-document')documents.get(opKey).payload.unknownDrift=true;
+        if(fault==='rollback-history')history.push({document_key:'unknown-history-append',payload:{all:'retained'},version:1});
+        return JSON.stringify(observed);
+      }
+      throw Error('Unexpected SQL in the strict after597 synthetic fixture transport');
+    };
+    return {psql,initialDocuments,initialHistory,nativeError,fingerprint,get documents(){return documents;},get history(){return history;},
+      get inserts(){return inserts;},get updates(){return updates;},get setupTransactions(){return setupTransactions;},
+      get rollbackTransactions(){return rollbackTransactions;},get inventoryReads(){return inventoryReads;},get queries(){return queries;},get quotaCalls(){return quotaCalls;}};
+  };
+  const options=db=>({psql:db.psql,oldBinding,newBundle:next.I,oldProfile});
+  await t.test('completed97 absent keys become exactly two597 fixtures before the whole baseline',async()=>{
+    const db=fixture(),window=await prepare(options(db));
+    assert.equal(db.inserts,2);assert.equal(db.updates,0);assert.equal(db.setupTransactions,1);assert.equal(db.inventoryReads,1);
+    assert.equal(db.documents.size,db.initialDocuments.size+2);assert.deepEqual(db.documents.get(profileKey).payload,oldProfile);
+    assert.deepEqual(db.documents.get(opKey).payload.activeModelBinding,oldBinding);
+    for(const[key,row]of db.initialDocuments)assert.deepEqual(db.documents.get(key),row);
+    assert.deepEqual(db.history,db.initialHistory);assert.equal(window.preserved,db.fingerprint());
+    assert.equal(window.preservedSql,preservedSql);
+    const report=await window.checkIntermediate();
+    assert.equal(report.old597ActiveAfterSql,true);assert.equal(report.nextRefusedBeforeActivation,true);
+    assert.equal(report.pendingBothRefused,true);assert.equal(report.nextActiveAfterCompletion,true);assert.equal(report.old597RefusedAfterCompletion,true);
+    assert.equal(report.wholeHistoryAndDocumentsPreserved,true);assert.equal(report.quotaFunctionAndAdmissionUnchanged,true);assert.equal(report.quotaServiceRoleWorking,true);
+    assert.equal(db.rollbackTransactions,2);assert.equal(db.quotaCalls,2);assert.equal(window.preserved,db.fingerprint());
+  });
+  for(const fault of ['existing-operation','existing-profile','wrong-bank'])await t.test(fault+' refuses before fixture writes',async()=>{
+    const db=fixture(fault);await assert.rejects(prepare(options(db)),{code:'ERR_ASSERTION'});
+    assert.equal(db.inserts,0);assert.equal(db.updates,0);assert.equal(db.setupTransactions,0);assert.equal(db.inventoryReads,0);
+    assert.deepEqual(db.documents,db.initialDocuments);assert.deepEqual(db.history,db.initialHistory);
+  });
+  for(const field of ['oldBinding','newBundle','oldProfile'])await t.test('unknown '+field+' is refused without writes',async()=>{
+    const db=fixture(),input=options(db);
+    if(field==='oldBinding')input.oldBinding={...oldBinding,modelBundleSha256:'f'.repeat(64)};
+    if(field==='newBundle')input.newBundle='f'.repeat(64);
+    if(field==='oldProfile')input.oldProfile={...oldProfile,sourceVersion:'4.0.594'};
+    await assert.rejects(prepare(input),{code:'ERR_ASSERTION'});assert.equal(db.inserts,0);assert.equal(db.updates,0);assert.equal(db.inventoryReads,0);
+    assert.deepEqual(db.documents,db.initialDocuments);assert.deepEqual(db.history,db.initialHistory);
+  });
+  for(const fault of ['missing-insert','setup-payload','setup-history'])await t.test(fault+' cannot establish a partial or changed baseline',async()=>{
+    const db=fixture(fault);await assert.rejects(prepare(options(db)),{code:'ERR_ASSERTION'});assert.equal(db.inventoryReads,0);
+  });
+  for(const fault of ['setup-unrelated-change','setup-unrelated-add','setup-unrelated-delete'])await t.test(fault+' is refused before the unfiltered baseline',async()=>{
+    const db=fixture(fault);await assert.rejects(prepare(options(db)),{code:'ERR_ASSERTION'});assert.equal(db.inventoryReads,0);
+  });
+  for(const fault of ['rollback-document','rollback-history'])await t.test(fault+' is refused without filtering',async()=>{
+    const db=fixture(fault),window=await prepare(options(db));await assert.rejects(window.checkIntermediate(),{code:'ERR_ASSERTION'});
+  });
+  await t.test('first psql error is preserved without retry or alternate fixture',async()=>{
+    const db=fixture('command'),window=await prepare(options(db));
+    await assert.rejects(window.checkIntermediate(),error=>error===db.nativeError);
+    assert.equal(db.rollbackTransactions,1);assert.equal(db.inserts,2);assert.equal(window.preserved,db.fingerprint());
+  });
+  t.diagnostic('Strict synthetic transport only; whole normal helper, no PostgreSQL/SQL execution, native receipt, model issue or SOURCE capability.');
+});

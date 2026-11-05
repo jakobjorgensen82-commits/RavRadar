@@ -408,6 +408,23 @@ async function prepareAssistantAfter597TripAndQuotaWindow(psql,oldBinding,newBun
   const opKey='ravscore-operational-model-activation',profileKey='ravscore-profile-selection';
   const documents=()=>psql('select coalesce(jsonb_agg(to_jsonb(d) order by document_key),\'[]\'::jsonb)::text from admin_documents d where document_key in ('
     +literal(opKey)+','+literal(profileKey)+');');
+  // The same bounded whole-row hash/count/byte inventory as normal preservation,
+  // excluding ONLY the two fixed keys that this fixture is about to insert.
+  const unrelatedSql='with row_fingerprints as materialized (\n'
+    +"select 'checkpoint'::text as table_name,octet_length(row_bytes)::bigint as row_bytes,"
+    +"encode(extensions.digest(row_bytes,'sha256'),'hex') as row_sha256 "
+    +"from (select convert_to(to_jsonb(t)::text,'UTF8') as row_bytes from public.admin_documents t"
+    +' where t.document_key not in ('+literal(opKey)+','+literal(profileKey)+')) as whole_rows\n),\n'
+    +"table_names(table_name) as (values ('checkpoint')),\n"
+    +'inventory as (\n'
+    +"select n.table_name,0 as kind,''::text as row_sha256,0::bigint as row_bytes,"
+    +'count(f.row_sha256) as row_count,coalesce(sum(f.row_bytes),0) as total_bytes '
+    +'from table_names n left join row_fingerprints f using(table_name) group by n.table_name\n'
+    +'union all\n'
+    +'select table_name,1,row_sha256,row_bytes,count(*),0::numeric '
+    +'from row_fingerprints group by table_name,row_sha256,row_bytes\n)\n'
+    +'select jsonb_build_array(table_name,kind,row_sha256,row_bytes,row_count,total_bytes)::text '
+    +'from inventory order by table_name collate "C",kind,row_sha256 collate "C",row_bytes;';
   const historySql='select coalesce(jsonb_agg(to_jsonb(v) order by to_jsonb(v)::text collate "C"),\'[]\'::jsonb)::text from admin_document_versions v;';
   const history=()=>psql(historySql);
   const operation=binding=>{
@@ -421,30 +438,28 @@ async function prepareAssistantAfter597TripAndQuotaWindow(psql,oldBinding,newBun
   };
   const json=value=>{const text=JSON.stringify(value);assert(!text.includes('$after597_trip$'));return '$after597_trip$'+text+'$after597_trip$::jsonb';};
   const putSql=(key,value)=>'update admin_documents set payload='+json(value)+' where document_key='+literal(key)+';';
-  // Genuine97's completed predecessor leaves exactly these two fixed native
-  // activation fixtures on594. Admit only their WHOLE known payloads, then
-  // establish597 BEFORE the new unfiltered preservation baseline.
+  const insertSql=(key,value)=>'insert into admin_documents(document_key,payload) values('+literal(key)+','+json(value)+');';
+  // Genuine97's completed CAS cases reset admin_documents to checkpoint-only.
+  // Its genuine594 bank remains intact, but neither activation fixture survives.
+  // Create exactly two597 TEST fixtures BEFORE the unfiltered preservation baseline.
   const old594=(await readFixture(psql,SCALAR597_LATER_H0.oldPrefix+'same')).payload;
   assert.equal(old594.modelBinding.modelBundleSha256,SCALAR597_LATER_H0_BEFORE.I);
   assert.equal(old594.candidateGRollbackCompanion.modelBinding.modelBundleSha256,SCALAR597_LATER_H0_BEFORE.C);
   assert.equal(old594.continuationStateContractSha256,SCALAR597_LATER_H0_BEFORE.T);
-  const priorRows=JSON.parse(await documents());assert.equal(priorRows.length,2);
-  const byKey=new Map(priorRows.map(row=>[row.document_key,row]));assert.equal(byKey.size,2);
-  assert.deepEqual(byKey.get(opKey)?.payload,operation(old594.modelBinding));
-  assert.deepEqual(byKey.get(profileKey)?.payload,{...oldProfile,sourceVersion:'4.0.594',modelBundleSha256:old594.modelBinding.modelBundleSha256});
+  assert.deepEqual(JSON.parse(await documents()),[],'The two after597 native activation fixture keys must be absent');
+  const unrelatedBefore=await psql(unrelatedSql);
   const historyBefore=JSON.parse(await history()),bankBefore=await psql(currentMemoryWarmupPreservationInventorySql('original-bank'));
   const accountBefore=await psql(accountRowsSql()),catalogBefore=await catalog(),op=operation(oldBinding);
-  await psql('begin;'+putSql(opKey,op)+putSql(profileKey,oldProfile)+'commit;');
+  await psql('begin;'+insertSql(opKey,op)+insertSql(profileKey,oldProfile)+'commit;');
+  assert.equal(await psql(unrelatedSql),unrelatedBefore,'Fixture INSERTs preserve every WHOLE unrelated admin row');
   assert.equal(await psql(currentMemoryWarmupPreservationInventorySql('original-bank')),bankBefore);
   assert.equal(await psql(accountRowsSql()),accountBefore);assert.equal(await catalog(),catalogBefore);
   const preparedRows=JSON.parse(await documents());assert.equal(preparedRows.length,2);
   const prepared=new Map(preparedRows.map(row=>[row.document_key,row]));
   assert.deepEqual(prepared.get(opKey)?.payload,op);assert.deepEqual(prepared.get(profileKey)?.payload,oldProfile);
-  // Native fixture setup may append its two previous rows through a genuine
-  // history trigger. Every complete old history row must still occur; nothing
-  // is filtered/deleted. All subsequent probes require exact WHOLE equality.
-  const historyAfter=JSON.parse(await history()),remaining=historyAfter.map(row=>JSON.stringify(row));
-  for(const row of historyBefore){const text=JSON.stringify(row),at=remaining.indexOf(text);assert(at>=0,'Whole predecessor history retained');remaining.splice(at,1);}
+  // The genuine native version_admin_document trigger is BEFORE UPDATE only.
+  // These INSERTs append no history; preserve every complete preexisting row.
+  assert.deepEqual(JSON.parse(await history()),historyBefore,'Fixture INSERTs preserve WHOLE predecessor history');
   const beforeDocuments=await documents(),beforeHistory=await history();
   assert.equal(await active(oldBinding),'t');assert.equal(await active(nextBinding),'f');assert.equal(await quotaWorks(),'t');
   const checkIntermediate=async()=>{
