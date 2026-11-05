@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {buildLocalZoneScore,localCoverageSummary} from '../js/core/local-zone-score.js';
+import vm from 'node:vm';
+import {buildLocalZoneScore,localCoverageSummary,selectLocalBestForDay} from '../js/core/local-zone-score.js';
+import {requireExactZone} from '../js/services/zone-hour-preview.js';
+import {sameRavScoreModelBinding} from '../js/core/ravscore-public-runtime-contract.js';
+import {ravScoreModelBinding} from '../js/core/ravscore-model-contract.js';
 
 const exact={score:78,components:{huntability:72,transport:84,release:79},componentReasons:{huntability:['Rolige forhold.'],transport:['Strømmen fører materiale ind.'],release:['Materiale kan genmobiliseres.']},explanation:{weights:{huntability:.4,transport:.35,release:.25},contributions:{huntability:29,transport:29,release:20},transportDiagnostics:{currentClassification:'onshore'}}};
 const exactBounds={lower:78,upper:78,modelUncertaintyPoints:0,rawLower:78,rawUpper:78};
@@ -59,6 +63,37 @@ assert.match(productionAdapter,/componentReasons: winner\.detail\?\.componentRea
 assert.match(productionAdapter,/const explanation = winner\.detail\?\.explanation \?\? \{\}/,'Hele den tekniske forklaring skal følge med til offentlig runtime.');
 assert.match(app,/const local=localZoneScore\(zone,emergencySnapshotReferenceAt\(\)\);const result=local\|\|\{available:false,score:null/,'Den store detaljepakke skal kunne erstattes af den tidsmærkede, verificerede startscore uden at bruge en anden model.');
 assert.match(app,/tripButton\.disabled=snapshotOnly[\s\S]{0,180}runtimeSnapshotText\('trip'\)/,'En ældre nødvisning må ikke kunne starte en tur som om scoretiden var aktuel.');
-assert.match(app,/return selectLocalBestForDay\(\{coastalParts:state\.conditions\.coastalParts,zoneId:zone\.id,mode:state\.mode,date\}\);/,'En lokalt utilgængelig zone må ikke falde tilbage til en gammel femdøgnsscore.');
+// Execute the current app selector and its real compact-zone binding guard.
+// The PLAIN landing path and ordinary path must use their own local evidence;
+// neither may recover a missing local score from an old national day score.
+const appBody=(start,end)=>{
+  const at=app.indexOf(start),until=app.indexOf(end,at);
+  assert(at>=0&&until>at,'Den faktiske lokale selector og dens afhængigheder skal være til stede.');
+  return app.slice(at,until);
+};
+const binding=ravScoreModelBinding(),time='2026-08-12T08:00:00Z';
+const compactFrame={time,datasetId:'unit-local-zone',generatedAt:time,productionReferenceAt:time,
+  sourceDetailsSha256:'a'.repeat(64),modelBinding:binding};
+const compactDetails={...compactFrame,delivery:{kind:'zone',key:'Z',sourceDetailsSha256:compactFrame.sourceDetailsSha256,
+  modelBinding:binding},coastalParts,zones:{Z:{forecast:{hourly:[{time}]}}}};
+const localContext={state:{mode:'waders',conditions:{coastalParts,nationalForecast:{oldScore:99}}},
+  activeLandingView:null,compactZoneDetail:null,runtimeGeneration:7,mapForecast:{committed:null},
+  selectLocalBestForDay,requireExactZone,sameRavScoreModelBinding};
+vm.createContext(localContext);
+vm.runInContext(appBody('function mapFrame(){','function mapScoreFor(')
+  +appBody('function compactZoneFor(','function mapDisplayFor(')
+  +appBody('function bestForDay(','const yieldToBrowser')+'\nglobalThis.actualBestForDay=bestForDay;',localContext);
+assert.equal(localContext.actualBestForDay({id:'Z'},'2026-08-12').result.score,78);
+const unavailableLocal=structuredClone(coastalParts);
+unavailableLocal.zones.Z.hourly[0].waders.available=false;
+localContext.state.conditions.coastalParts=unavailableLocal;
+assert.equal(localContext.actualBestForDay({id:'Z'},'2026-08-12'),null,'En utilgængelig lokal zone må ikke bruge gammel national score.');
+localContext.activeLandingView={time,compact:compactFrame};
+localContext.compactZoneDetail={runtimeGeneration:7,zoneId:'Z',details:compactDetails};
+assert.equal(localContext.actualBestForDay({id:'Z'},'2026-08-12').result.score,78,'Landing skal bruge den faktisk bundne lokale zonefil.');
+localContext.compactZoneDetail.runtimeGeneration=6;
+assert.equal(localContext.actualBestForDay({id:'Z'},'2026-08-12'),null,'En gammel zonefil må ikke bruge landingens eller den almindelige zonescore som fallback.');
+localContext.compactZoneDetail={runtimeGeneration:7,zoneId:'Z',details:{...compactDetails,datasetId:'old-generation'}};
+assert.equal(localContext.actualBestForDay({id:'Z'},'2026-08-12'),null,'Forkert zonebinding må ikke genbruge en gammel lokal score.');
 assert.doesNotMatch(app,/calculateRavScore|selectBestTimeForDay|scoreFor\(/,'Den offentlige app må ikke indeholde en vej tilbage til den gamle scoremotor.');
 console.log('OK: Lokal zonescore viser korrekt kystdel, 7-point-grænse og tidsmærket samme-model nødvisning.');

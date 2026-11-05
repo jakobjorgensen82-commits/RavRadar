@@ -3810,6 +3810,13 @@ jobs:
         if: steps.preflight.outputs.should_run == 'true'
         shell: bash
         run: |
+          if test "${{ steps.operational-action.outputs.action }}" != 'integrated-cutover'; then
+            if test "${{ steps.full-validation.outcome }}" != success \
+              || test "${{ steps.release-gate.outcome }}" != success; then
+              echo "::error::PRODUCTION_PUBLICATION_REQUIRED_GATES_NOT_PASSED"
+              exit 1
+            fi
+          fi
           build_pages_site() {
             local pages_source="$1"
             local pages_destination="$2"

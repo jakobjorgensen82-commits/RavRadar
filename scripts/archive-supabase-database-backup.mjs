@@ -72,7 +72,7 @@ select current_privacy.metadata,version_privacy.metadata as version_metadata,
 from current_privacy,version_privacy`;
 async function privacy(c){need(typeof c.env.SUPABASE_ACCESS_TOKEN==='string'&&c.env.SUPABASE_ACCESS_TOKEN.length>=20,'CATALOGUE_TOKEN_REQUIRED');
   const response=await c.fetch('https://api.supabase.com/v1/projects/afqhhdrkjfjtpadntdzo/database/query',{method:'POST',headers:{Authorization:'Bearer '+c.env.SUPABASE_ACCESS_TOKEN,'Content-Type':'application/json'},body:JSON.stringify({query:ACCESS_SQL})});
-  need(response.status===200,'LOCATOR_PRIVACY');const rows=parse(Buffer.from(await response.arrayBuffer()),'LOCATOR_PRIVACY');need(Array.isArray(rows)&&rows.length===1,'LOCATOR_PRIVACY');
+  need(response.status===200||response.status===201,'LOCATOR_PRIVACY');const rows=parse(Buffer.from(await response.arrayBuffer()),'LOCATOR_PRIVACY');need(Array.isArray(rows)&&rows.length===1,'LOCATOR_PRIVACY');
   fields(rows[0],['metadata','version_metadata','current_access'],'LOCATOR_PRIVACY');need(rows[0].current_access===true,'LOCATOR_SERVICE_ACCESS');
   try{assertPrivateStudyAdminAccess([{metadata:rows[0].metadata}]);const version=rows[0].version_metadata,aliases={'ravradar_admin_document_versions_read':'ravradar_admin_documents_read','ravradar_ravscore_checkpoint_versions_no_direct_read':'ravradar_ravscore_checkpoint_no_direct_read'};
     need(Array.isArray(version?.policies)&&version.policies.length===2&&version.policies.every(p=>Object.hasOwn(aliases,p.name)),'LOCATOR_PRIVACY');

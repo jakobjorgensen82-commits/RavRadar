@@ -368,3 +368,219 @@ test('existing statfs reports safe byte and inode counts before any SDK command 
     assert.equal(JSON.stringify(events.concat(rawEvents)).includes(WORKSPACE), false);
   }
 });
+
+
+test('capacity-first housekeeping keeps a verified SDK when measured headroom is ample', async () => {
+  const f = fixture({ statfsCounts: { bavail: 91089567744n, bsize: 1n, ffree: 18422396n } });
+  const result = await reclaimRunnerAndroidSdk(f.options);
+  assert.deepEqual(result, {
+    kind: 'RUNNER_UNUSED_ANDROID_SDK', status: 'RETAINED_SUFFICIENT_CAPACITY',
+    allocatedBytes: null, availableBeforeBytes: 91089567744,
+    availableAfterBytes: 91089567744, measuredChangeBytes: 0,
+    minimumRetainedFreeBytes: 68719476736, minimumRetainedFreeInodes: 1000000,
+    observedFreeInodes: 18422396,
+  });
+  assert.equal(f.calls.filter(([kind]) => kind === 'command').length, 0);
+  assert.equal(f.calls.filter(([kind]) => kind === 'statfs').length, 1);
+  assert.equal(f.calls.filter(([kind, target]) => kind === 'lstat' && target === SDK).length, 2);
+  assert.equal(f.calls.filter(([kind, target]) => kind === 'realpath' && target === SDK).length, 2);
+});
+
+test('capacity-first housekeeping uses fixed exact boundaries and preserves removal for low or unknown capacity', async () => {
+  const enough = fixture({ statfsCounts: { bavail: 68719476736n, bsize: 1n, ffree: 1000000n } });
+  assert.equal((await reclaimRunnerAndroidSdk(enough.options)).status, 'RETAINED_SUFFICIENT_CAPACITY');
+  assert.equal(enough.calls.some(([kind]) => kind === 'command'), false);
+  for (const statfsCounts of [
+    { bavail: 68719476735n, bsize: 1n, ffree: 1000000n },
+    { bavail: 68719476736n, bsize: 1n, ffree: 999999n },
+    { bavail: 68719476736n, bsize: 1n },
+    { bavail: 68719476736n, bsize: 1n, ffree: -1n },
+    { bavail: 68719476736n, bsize: 1n, ffree: 1n << 64n },
+  ]) {
+    const f = fixture({ statfsCounts });
+    assert.equal((await reclaimRunnerAndroidSdk(f.options)).status, 'REMOVED');
+    assert.deepEqual(f.calls.filter(([kind]) => kind === 'command'), [['command', 'remove']]);
+  }
+});
+
+test('capacity-first housekeeping cannot hide invalid SDK identity, failed removal or a RAW observation', async () => {
+  const ample = { bavail: 91089567744n, bsize: 1n, ffree: 18422396n };
+  for (const change of [{ link: true }, { redirect: true }, { otherDevice: true }, { changedIdentity: true }]) {
+    const f = fixture({ ...change, statfsCounts: ample });
+    await assert.rejects(reclaimRunnerAndroidSdk(f.options), { code: 'RUNNER_SDK_PATH_REFUSED' });
+    assert.equal(f.calls.some(([kind]) => kind === 'command'), false);
+  }
+  const low = fixture({ failedRemoval: true });
+  await assert.rejects(reclaimRunnerAndroidSdk(low.options));
+  const raw = fixture({ statfsCounts: ample });
+  assert.deepEqual(await reclaimRunnerAndroidSdk({ ...raw.options, observeOnly: true }),
+    { kind: 'RUNNER_RAW_RESTORE_STORAGE', availableBytes: 91089567744 });
+  assert.equal(raw.calls.some(([, target]) => target === SDK), false);
+  assert.equal(raw.calls.some(([kind]) => kind === 'command'), false);
+});
+
+
+// Raw caller regression: historical workflow projections must never erase this
+// publication assertion. No real build command or weather/provider work runs.
+test('ordinary Pages publication executes required gate outcomes before any build', async t => {
+  const {default:path}=await import('node:path');
+  const {default:os}=await import('node:os');
+  let shell='/bin/bash';
+  if(process.platform==='win32'){
+    const git=spawnSync('git',['--exec-path'],{encoding:'utf8',windowsHide:true,timeout:5000});
+    assert.equal(git.status,0,'Existing native Git is required to locate Windows Bash');
+    shell=path.resolve(git.stdout.trim(),'../../../usr/bin/sh.exe');
+  }
+  const version=spawnSync(shell,['--version'],{encoding:'utf8',windowsHide:true,timeout:5000});
+  assert.equal(version.status,0,'Actual Bash is required; missing runtime is no positive proof');
+  assert.match(version.stdout,/^GNU bash,/);
+  const raw=await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8');
+  const name='      - name: Build lean GitHub Pages artifact\n';
+  const begin=raw.indexOf(name);assert(begin>=0&&raw.indexOf(name,begin+1)===-1);
+  const end=raw.indexOf('\n      - ',begin+1),step=raw.slice(begin,end<0?raw.length:end);
+  assert(step.includes("        if: steps.preflight.outputs.should_run == 'true'\n"));
+  const run=step.split('        run: |\n');assert.equal(run.length,2);
+  const body=run[1].split('\n').map(line=>{assert(!line||line.startsWith('          '));return line.slice(10);}).join('\n')+'\n';
+  const stubs='rm(){ printf "rm\n" >> "$TRACE"; }\nmkdir(){ printf "mkdir\n" >> "$TRACE"; }\nrsync(){ printf "rsync:%s:%s\n" "$2" "$3" >> "$TRACE"; }\ninstall(){ printf "install\n" >> "$TRACE"; }\nnode(){ printf "node:%s\n" "$1" >> "$TRACE"; }\n';
+  const scenarios=[
+  [
+    "ordinary-pass",
+    "integrated",
+    "success",
+    "success",
+    true
+  ],
+  [
+    "ordinary-full-failed-even-continued",
+    "integrated",
+    "failure",
+    "success",
+    false
+  ],
+  [
+    "ordinary-release-failed-even-continued",
+    "integrated",
+    "success",
+    "failure",
+    false
+  ],
+  [
+    "ordinary-both-failed",
+    "integrated",
+    "failure",
+    "failure",
+    false
+  ],
+  [
+    "ordinary-full-skipped",
+    "integrated",
+    "skipped",
+    "success",
+    false
+  ],
+  [
+    "ordinary-release-skipped",
+    "integrated",
+    "success",
+    "skipped",
+    false
+  ],
+  [
+    "ordinary-full-cancelled",
+    "integrated",
+    "cancelled",
+    "success",
+    false
+  ],
+  [
+    "ordinary-release-cancelled",
+    "integrated",
+    "success",
+    "cancelled",
+    false
+  ],
+  [
+    "ordinary-full-unknown",
+    "integrated",
+    "",
+    "success",
+    false
+  ],
+  [
+    "ordinary-release-unknown",
+    "integrated",
+    "success",
+    "",
+    false
+  ],
+  [
+    "candidate-pass",
+    "candidate-shadow",
+    "success",
+    "success",
+    true
+  ],
+  [
+    "candidate-full-failed",
+    "candidate-shadow",
+    "failure",
+    "success",
+    false
+  ],
+  [
+    "candidate-release-failed",
+    "candidate-shadow",
+    "success",
+    "failure",
+    false
+  ],
+  [
+    "unknown-action-does-not-exempt",
+    "unknown",
+    "failure",
+    "success",
+    false
+  ],
+  [
+    "permitted-public-audit-diagnostic-independent",
+    "integrated",
+    "success",
+    "success",
+    true
+  ],
+  [
+    "integrated-cutover-outer-gates-intentionally-skipped",
+    "integrated-cutover",
+    "skipped",
+    "skipped",
+    true
+  ]
+];
+  const root=await fs.mkdtemp(path.join(os.tmpdir(),'rr-required-publication-'));
+  try{
+    for(const [name,action,full,release,allowed] of scenarios){
+      const directory=path.join(root,name);await fs.mkdir(directory);
+      const script=path.join(directory,'caller.sh'),trace=path.join(directory,'trace'),output=path.join(directory,'output');
+      let selected=body;
+      for(const [expression,value] of [['${{ steps.operational-action.outputs.action }}',action],['${{ steps.full-validation.outcome }}',full],['${{ steps.release-gate.outcome }}',release]])selected=selected.split(expression).join(value);
+      assert(!selected.includes('${{'));
+      await fs.writeFile(script,stubs+selected);await fs.writeFile(trace,'');await fs.writeFile(output,'');
+      const result=spawnSync(shell,['--noprofile','--norc','-e','-o','pipefail',script.split(path.sep).join('/')],{cwd:directory,encoding:'utf8',windowsHide:true,timeout:5000,
+        env:{...process.env,TRACE:trace.split(path.sep).join('/'),GITHUB_OUTPUT:output.split(path.sep).join('/'),GITHUB_WORKSPACE:'/workspace',RAVRADAR_CANDIDATE_STAGE:'/candidate'}});
+      assert.equal(result.status===0,allowed,'Required publication gate scenario: '+name);
+      const observed=await fs.readFile(trace,'utf8'),marker=await fs.readFile(output,'utf8');
+      if(allowed){
+        assert.equal(marker,'built=true\n');
+        assert(observed.includes('node:scripts/copy-pages-public-delivery.mjs\n'));
+        assert(observed.includes('rsync:'+(action.startsWith('candidate-')?'/candidate/':'/workspace/')+':_site/\n'));
+      }else{
+        assert.equal(observed,'');assert.equal(marker,'');
+        assert.equal(result.stdout.trim(),'::error::PRODUCTION_PUBLICATION_REQUIRED_GATES_NOT_PASSED');
+      }
+    }
+    t.diagnostic('16 actual emitted publication-gate scenarios passed; no provider or build commands executed.');
+  }finally{
+    assert.equal(path.dirname(root),path.resolve(os.tmpdir()));assert(path.basename(root).startsWith('rr-required-publication-'));
+    await fs.rm(root,{recursive:true});
+  }
+});

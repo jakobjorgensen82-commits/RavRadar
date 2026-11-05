@@ -43,12 +43,27 @@ assert.equal(fs.existsSync('scripts/generate-public-admin-rules.mjs'), false, 'E
 const serviceWorker = fs.readFileSync('service-worker.js', 'utf8');
 const release=JSON.parse(fs.readFileSync('package.json','utf8')).version;
 const adminUi='admin-current-data-20261028';
-const dashboardUi='admin-data-quality-20261028';
-assert(admin.includes(`admin-dashboard.js?v=${release}&ui=${dashboardUi}`));
+const dashboardSource=/<script\b[^>]*\bsrc="([^"]*js\/ui\/admin-dashboard\.js\?[^"]+)"/.exec(admin)?.[1];
+assert.ok(dashboardSource,'Admin skal have den faktiske modulindgang.');
+const dashboardUrl=new URL(dashboardSource,'https://ravradar.invalid/');
+assert.equal(dashboardUrl.searchParams.get('v'),release,'Admin-HTML må ikke indlæse en anden release.');
+assert.match(dashboardUrl.searchParams.get('ui')||'',/^admin-[a-z-]+-\d{8}$/,'Admin skal bruge en særskilt versionsbundet UI-adresse.');
+const workerRelease=/const APP_VERSION\s*=\s*["']([^"']+)["']/.exec(serviceWorker)?.[1];
+const compactMap=/const COMPACT_MAP\s*=\s*["']([^"']+)["']/.exec(serviceWorker)?.[1];
+assert.equal(workerRelease,release,'Serviceworker og admin-HTML skal følge samme aktuelle release.');
+assert.ok(compactMap,'Den faktiske korttransportbinding skal være til stede.');
+const expandedWorker=serviceWorker.replaceAll('${APP_VERSION}',release).replaceAll('${COMPACT_MAP}',compactMap);
+assert.ok(expandedWorker.includes('.'+dashboardUrl.pathname+dashboardUrl.search),
+  'Serviceworker skal cache præcis admin-HTMLs moduladresse inklusive alle UI-/kortparametre.');
 for(const file of ['admin-trip-count.js','admin-account-categories.js'])
   assert(dashboard.includes(`${file}?v=${release}&ui=${adminUi}`));
-for(const file of ['js/ui/admin-dashboard.js','js/services/admin-trip-count.js','js/services/admin-account-categories.js'])
-  assert(serviceWorker.includes('./'+file+'?v=${APP_VERSION}&ui='+(file==='js/ui/admin-dashboard.js'?dashboardUi:adminUi)),'Normal offline list must follow the exact current admin URL');
+for(const file of ['admin-trip-count.js','admin-account-categories.js']){
+  const source=new RegExp("from ['\"]([^'\"]*"+file.replaceAll('.','\\.')+"\\?[^'\"]+)['\"]").exec(dashboard)?.[1];
+  assert.ok(source,'Den normale administratorservice skal importeres direkte.');
+  const url=new URL(source,dashboardUrl);
+  assert.equal(url.searchParams.get('v'),release);
+  assert.ok(expandedWorker.includes('.'+url.pathname+url.search),'Normal offline-liste skal følge den præcise faktiske serviceadresse.');
+}
 assert.doesNotMatch(serviceWorker, /rule-engine|rule-service|(?:national|local|experimental)-rules\.json/, 'Regelværkstedets gamle motor og regelsæt må ikke ligge i den offentlige offlinepakke');
 
 console.log('Admin-kontrakt bestået: Regelværkstedet er pensioneret, Candidate G ændres kun gennem kode, tests og versionsstyring, og eksisterende regeldata slettes ikke.');

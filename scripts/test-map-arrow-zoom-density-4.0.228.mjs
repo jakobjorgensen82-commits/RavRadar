@@ -1,4 +1,7 @@
 import fs from 'node:fs/promises';
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import {mapCoastalPartsForDisplay} from '../js/services/map-forecast-view.js';
 import { buildFlowArrowCandidates as buildWithLandMask, installFlowArrows } from '../js/map/map-view.js';
 import { createCurrentArrowLandMask } from '../js/map/current-arrow-land-mask.js';
 import { buildPublicConditions, buildPublicConditionDetails } from './public-conditions-lib.mjs';
@@ -169,7 +172,28 @@ need(sharedDmiRecord.includes('function withOnlyVerifiedCurrent')&&updateWeather
 const directDmiBlock=updateWeather.slice(updateWeather.indexOf('async function fromDmi('),updateWeather.indexOf('// Shared recovery record: selection'));
 need(directDmiBlock.includes("['sea-mean-deviation', 'water-temperature']")&&!directDmiBlock.includes("['sea-mean-deviation', 'current-u'"),'Direkte ForecastEDR må ikke levere strøm uden dokumenteret fælles vandkolonne og dybdelag.');
 need(directDmiBlock.includes('withoutCurrent(createDmiForecastRecord('),'Direkte ForecastEDR-strøm lukkes ikke fail-closed før scoring.');
-need(app.includes('()=>state.conditions.coastalParts||null')&&app.includes('state.flowArrows?.refresh?.()'),'Pilelaget opdateres ikke med den fulde detaljepakke.');
+need(app.includes('state.flowArrows?.refresh?.()'),'Pilelaget opdateres ikke efter nye verificerede kortdata.');
+const mapStateStart=app.indexOf('function mapFrame(){'),mapStateEnd=app.indexOf('function mapScoreFor(',mapStateStart);
+assert.ok(mapStateStart>=0&&mapStateEnd>mapStateStart,'Kortets faktiske datakaldere skal være til stede.');
+const ordinaryParts={parts:{ordinary:{}}},updatedParts={parts:{updated:{}}},landingParts={parts:{landing:{}}},futureParts={parts:{future:{}}};
+const arrowContext={state:{conditions:{zones:{ordinary:{}},coastalParts:ordinaryParts}},activeLandingView:null,
+  mapForecast:{committed:null},mapCoastalPartsForDisplay};
+vm.createContext(arrowContext);
+vm.runInContext(app.slice(mapStateStart,mapStateEnd)
+  +'\nglobalThis.readArrowConditions=mapConditions;globalThis.readArrowParts=coastalPartsForMap;',arrowContext);
+assert.equal(arrowContext.readArrowParts(),ordinaryParts);
+arrowContext.state.conditions={zones:{updated:{}},coastalParts:updatedParts};
+assert.equal(arrowContext.readArrowConditions(),arrowContext.state.conditions);
+assert.equal(arrowContext.readArrowParts(),updatedParts,'Fuld detaljeopdatering skal læses ved kaldet og ikke fastholdes i en gammel closure.');
+arrowContext.activeLandingView={arrowZones:{landing:{}},arrows:landingParts};
+assert.equal(arrowContext.readArrowConditions().zones,arrowContext.activeLandingView.arrowZones);
+assert.equal(arrowContext.readArrowParts(),landingParts,'Den aktuelle landing skal levere sine verificerede piledata.');
+const selectedFuture={isNow:false,conditions:{zones:{future:{}},coastalParts:futureParts}};
+arrowContext.mapForecast.committed=selectedFuture;
+assert.equal(arrowContext.readArrowConditions(),selectedFuture.conditions);
+assert.equal(arrowContext.readArrowParts(),futureParts,'Et valgt fremtidigt kort må ikke bruge live-/landingens piledata.');
+arrowContext.mapForecast.committed={isNow:true};
+assert.equal(arrowContext.readArrowParts(),landingParts,'Nu-valg skal genlæse den aktuelle landing.');
 
 if(failures.length){console.error('Zoomtæthed for kortpile fejlede:\n- '+failures.join('\n- '));process.exit(1);}
 console.log('OK: Zoom viser flere selvstændige DMI-gitterpile uden kunstige kopier eller ændring af hovedzonens oversigt.');

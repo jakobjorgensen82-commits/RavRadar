@@ -1,3 +1,67 @@
+## 5. november — direkte normal workflowregression, 4.0.597
+
+En eksisterende direkte workflowtest sammenlignede filen med en gammel helfilslængde, før den brugte den allerede gennemgåede inverse for publiceringsporten. Det stoppede kildekontrollen, selv om den præcise inverse var korrekt. Testen følger nu hele kæden: den fulde aktuelle workflowfil med publiceringsporten, den fulde gennemgåede forgænger uden denne port og den fulde tidligere timeforgænger. Hver helfil bindes til både størrelse og SHA-256; der gives ingen fri størrelsestolerance.
+
+Alle eksisterende afslag på ukendte, delvise og dobbelte ændringer er bevaret. Testen afprøver også en ændret eller dobbelt publiceringsport, ukendte kontrolnavne og en blanding af gammel timekode med den nye port. Den historiske projektion må kun håndtere de nøjagtigt gennemgåede hele filer; den bliver ikke en generel mekanisme til at fjerne kontrolkode.
+
+Når en workflowprojektion eller wrapper ændres, skal det eksisterende normale testmål, som faktisk bruger den, afprøves samlet før levering. En ny afgrænset prøve af helperen alene er ikke tilstrækkelig, hvis den gamle normale kalder stadig kan være forkert. Hele det berørte normale mål er kørt lokalt: 54 beståede, ingen fejl og én uændret Linux-prøve, der ikke kan udføres på Windows. Den nødvendige Linux- og kildekontrol skal stadig bestå på den endelige GitHub-kode.
+
+Denne følgekorrektion ændrer kun en eksisterende testfil og normal projektdokumentation. Workflow, runtime, modelversion 4.0.597, udstedte migrationer, scoreformel, data, punkter og geometri er uændrede. Den særskilte videre forkortelse af kildekontrollen er ikke med i leverancen og er ikke erklæret færdig. Genoptagelse skal fortsat bruge det eksisterende completed_private_runtime-forløb med frisk autentificering af de gemte B/S-data, beståede artifact- og releasekontroller og faktisk offentlig kontrol. Ingen ny leverandørhentning eller genberegning er nødvendig i denne første genlevering.
+
+Se håndbog 89.310. Kildekontrol, sikker levering og faktisk offentlig genlevering er fortsat påkrævet. De øvrige åbne mål og den isolerede revision erklæres ikke færdige.
+
+## 4. november — kontrolrettelse før genlevering af gemt vejr, 4.0.597
+
+Den almindelige vejrhentning den 4. november gemte nye originaler og checkpoint, men stoppede før Pages. Den sene current-grid-port afviste et fejlet udfald fra artifactkontrollen. Den lille autentificerede rapport viser seks fejl blandt 55 kontroller; releasekontrollen bestod tre af tre. Morgens tidligere offentligt leverede kørsel havde præcis de samme seks fejl. Den gamle almindelige vej havde behandlet denne samling diagnostisk, mens den nye modelovergang krævede et bestået udfald. En grøn tidligere kørsel beviste derfor ikke, at disse kontroller var bestået.
+
+De seks fejl lå i kontrolkode, som forventede tidligere inline-funktioner, en tidligere adressestruktur eller en ufuldstændig VM-kontekst. Den nuværende forside vælger et gyldigt kompakt landing-view og ellers normale prognosedata; zonevalg og pile bruger deres aktuelle fælles funktioner. Testene følger nu disse reelle forbindelser. De afprøver også forkert eller forældet landing-binding og manglende data uden at opfinde et fallback. Piltesten får den variabel, den virkelige app allerede deklarerer. Adminens faktiske HTML-, import- og service-worker-adresser sammenlignes direkte i stedet for at kræve en forældet UI-tag.
+
+Almindelige og kandidatbaserede vejrbundter kræver nu et faktisk bestået full-validation- og release-gate-udfald, før Pages-pakken bygges. Fejl, manglende, ukendt, annulleret eller sprunget udfald stopper før byggegrænsen. Kun den særskilte eksisterende integrated-cutover-rute beholder sine egne allerede gældende kontroller. B/S gemmes fortsat før den sene publiceringsport, så en visnings- eller kontrolfejl ikke kasserer beregningen. DEC-0193, DEC-0208 og DEC-0209 gælder fortsat for afgrænsede datamangler i den offentlige runtimeaudit med calibration=false; de bruges ikke til at springe de krævede artifact- og releaseudfald over.
+
+De seks eksisterende normale UI- og adminkontroller bestod alle i første samlede lokale kørsel. De eksisterende numeriske, geometriske, proveniens-, performance- og sikkerhedskrav er bevaret. Den faktiske Pages-build-kalders shellkode er afprøvet med 16 udfald, og regressionen indgår i et eksisterende normalt testmål. En præcis helinvers over den gennemgåede workflowændring bevarer de historiske orakler; ukendte eller blandede ændringer får ingen generel stripning eller scannerfallback. Lokal bestået prøve er ikke en grøn GitHub-kontrol eller offentlig levering.
+
+Se håndbog 89.309. Seks UI-/admintestfiler og en fælles almindelig publiceringsport rettes uden at ændre brugerfunktion, numerik eller gemte data. Model-/lagerbindinger og udstedte migrationer bevares. Normal sourcekontrol, sikker levering, frisk autentificeret completed-private-runtime-genoptagelse og faktisk offentlig effekt er endnu påkrævet. Den isolerede SOURCE-revision og øvrige mål erklæres ikke færdige.
+
+## 4. november — diskoprydning efter målt behov, 4.0.597
+
+Den nye samlede kildekontrol stoppede den 4. november i sin indledende oprydning af runnerens forudinstallerede Android SDK. Før sletningen målte den 91.089.567.744 ledige byte og 18.422.396 ledige inoder. Den unødvendige sletning nåede sin faste grænse på 120 sekunder; proceslukningen blev derefter bevist. Det er en konstateret fejl i kontrollens diskoprydning, ikke bevis for fejl i databasegendannelse eller i den aktive vejrhentning.
+
+Den faste helper bevarer nu SDK-mappen, når der allerede er mindst 64 GiB ledigt og mindst 1.000.000 kendte ledige inoder. Den rapporterer ærligt RETAINED_SUFFICIENT_CAPACITY og en målt ændring på nul; den påstår ikke, at noget er slettet. Vært, arbejdsmappe, kanonisk SDK-sti, filsystem og mappeidentitet kontrolleres fortsat, også i denne gren. Den faste tærskel er kun et valg om diskoprydning; den er hverken en reservation af plads eller bevis for hele vejrhentningens kapacitet.
+
+Ved mindre plads, for få inoder eller ukendte inodetal bruges den hidtidige, præcist afgrænsede sletning. Den uændrede grænse er 120 sekunder plus højst fire sekunder til fysisk proceslukning. En fejlet eller ubevist sletning stopper stadig forløbet. Manglende SDK rapporteres fortsat som ABSENT. Den skrivefri måling før RAW-genlæsning besøger eller sletter fortsat ikke SDK-mappen. Ingen caller-valgte stier, nye indstillinger, udvidede tidsgrænser eller svækkede lukningskrav tilføjes.
+
+Den målrettede normale helperprøve består lokalt med 22 af 22 prøver. De nye tilfælde omfatter den faktisk observerede ledige kapacitet, de præcise tærskler, ukendte tal og afvisning af ændret sti, link, filsystem eller mappeidentitet. De eksisterende normale workflowkald kræver kun en vellykket afslutning, så den nye ærlige status kræver ingen workflowændring. De to produktfiler og dokumentationen er forberedt til ny præcis kildekontrol; lokal prøve og denne dokumentation er ikke bevis for bestået Linux-kontrol, installeret kode eller ny offentlig prognose.
+
+Se håndbog 89.308. Kun den faste SDK-helper, dens normale målprøve og dokumentation/statisk håndbogsseed ændres. Alle øvrige kandidatbytes bevares. Ingen ny version, modelbinding, migration, vejrhentning eller produktionsaktivering. Rigtig backup og Free-klargøring er fortsat åbne; Pro beholdes.
+
+## 4. november — faktisk hosted syntetisk standardrestore, 4.0.597
+
+Den normale syntetiske Supabase-standardprøve er faktisk bestået på Linux gennem det eksisterende workflow og CLI 2.117.0. Fem normale dumps er gendannet i et nyt eget projekt; UTF-8, store tal/decimaler, metadata, roller, migrationshistorik og nyt passwordlogin med samme testpassword er verificeret. De syv Auth-forløb har fem forventede HTTP 200 og to forventede HTTP 400-afslag. Alle 81 processer afsluttede med exit 0 og lukket procesgruppe; egne Dockerressourcer er genlæst som lukkede.
+
+Første forsøg stoppede, fordi --local valgte værtens loopbackport, mens --network-id placerede dumpet i sin egen bridgecontainer. Kun dumpets argumenter er rettet til den allerede verificerede egne DB-container/5432 gennem --db-url. Den strenge loopback-statuskontrol, navn/id/label/projekt/netværk/health, samme credentials, ingen caller-/linked-/prodadresse, netværksisolering, alle fem filvalg, lukning og grænser bevares. Den rå første stderrtekst er ikke bevaret; den understøttede kodeårsag må ikke præsenteres som en citeret rå logadresse.
+
+Dette lukker hosted syntetisk standardrestore, ikke rigtig RavRadar-backup eller Authgendannelse. productionBackupVerified, cryptoR2Verified og productionAuthRestoreVerified er fortsat false. Rigtigt arkiv/capture, krypteret R2-genlæsning og isoleret gendannelse, komplet kompatibilitet, Storage-bytes, slettebarrierer, uafhængig nøglerecovery, målt Free-forbrug og varig frekvens/retention er åbne. Pro beholdes; ingen automatisk backup, beskæring, sletning eller FreeReady aktiveres. Se håndbog 89.307 og de uændrede krav i 89.300/DEC-0272.
+
+Kun dokumentation og normal statisk installationsseed ændres. Helper/workflow og alle produktbytes bevares på den præcist hosted afprøvede kilde. Version 4.0.597, model-/lagerbindinger, migrations-SQL, geometri, score og vejrhentning er uændrede. Ingen restoretest er gentaget i dokumentporten.
+
+## 4. november — præcis597-profil med bevaret fuld inputlukning
+
+Den separate lokale kontrolkandidat bevarer alle 634 ressourcer og følger hver faktisk import-/læsekant. Kun den nye faste597-profil undlader uudnyttet kilde-preload og har en målt 56 MiB batch-/residentramme;594/48 MiB,8 MiB pr. blob og64 MiB Git-output bevares. Overskridelse, ukendte grænser eller ændrede beskyttede input kræver fortsat FULL. Ingen caller-knob, åben allowlist, producer-/consumer-/workflowændring eller skipautoritet.
+
+Den historiske Open-Meteo-fixture bruger kun sine tre genuine historiske ownerbytes med bevaret bankrettelse. Aktuel597-lukning afprøves særskilt. Normal planner består12/12 på254475,1405ms=254,4751405s, og historisk integration består23scenarier. Samlet597-integration er IKKE PASS: Windowschild nåede180000ms=180s og ETIMEDOUT/statusnull/SIGTERM; hele kaldet sluttedeexit1 efter564868ms=564,868s. Ingen højere timeout eller gentagelse. Komplet privat output og sidste nåede syntetiske mål bevares.
+
+Denne dokumentationsport bygger på201-kandidatens kommende kildebase og bevarer dens15stier samt89.305; den hævder ikke merge eller drift. Den normale Linux-kilde-PR og ægte normal FULL-kvalifikation af det endelige head mangler. Ingen aktiv kort kontrolvej, baselinegenbrug, nativepåstand eller dokumenteret tidsgevinst. Modelbindinger,73migrationer,version,geometri og alle tidligere afgrænsninger bevares; INSTALL ændrer kun håndbogsseed. Se89.306 og privat checkpoint.
+
+## 4. november — præcis Management-201-kontrakt og adskilt privatlivsstatus
+
+Supabases officielle POST /database/query returnerer 201 ved succes. Kun de to nye historik-/backuphjælpere havde en forkert 200-only-forventning; eksisterende typede Management-kaldere håndterer allerede 201. Den afgrænsede rettelse accepterer kun 200/201 sammen med de uændrede fulde metadata-, ACL-, RLS-, funktions- og policykrav. Ingen generel 2xx-regel eller mutation på ukendt svar. Den fejlede vedligeholdelses faktiske HTTP-status er stadig ukendt; 201 er reproduceret kontraktfejl, ikke målt liveårsag.
+
+privacyHttpStatus/privacyStage følger kun katalog-/privatlivskontrollen; det eksisterende generiske httpStatus og bucket-403 bevares. Ukendt status er null. En senere arkivfejl må ikke arve den vellykkede katalogkontrols 201 som sin egen fejlstatus. Kun faste status-/trinoplysninger må rapporteres, ingen rå svar, SQL-data, private payloads eller nøgler.
+
+Begge gamle fejl er reproduceret. Den første lokale pakke kvalificerer 12 forskellige målrettede cases og fem faktiske syntetiske CLI-forløb. Diagnoseopfølgningen genkørte kun to berørte normale mål, begge bestået, med seks syntetiske CLI-forløb inklusive senere fejl efter VERIFIED. Ingen liveforespørgsel, virkelig SQL eller faktisk oprydning er udført. De eksisterende historik-/backupkaldere vælger allerede regressionerne i normal kilde-CI; der tilføjes ingen ny kontrolkanal.
+
+Kandidaten er separat fra vejrleveringen og mangler sin præcise normale kildekontrol, sikker levering og faktiske effekt. Automatisk oprydning er fortsat OFF, Pro beholdes, og ingen Free-parathed eller automatisk gentagelse erklæres. Version, model-/kilde-/lagerbindinger, 73 SQL-migrationer, geometri og originaler bevares. INSTALL ændrer kun kanonisk håndbogsseed. Hele den foregående dokumentation, inklusive 89.303–304 og deres historiske kvalifikationsudsagn, bevares. Se 89.305.
+
 ## 4. november — samme H0-format i den normale vejrproces
 
 Vejrhentning 255 stoppede efter leverandørarbejdet, fordi workflowet gav npm-vejrprocessen H0 med Z, mens den uændrede oprindelseskontrol kræver samme hele UTC-time med .000Z. Den præcise kalder normaliserer nu kun den indre proces gennem den eksisterende resolver og beviser både samme tekstlige time og tidsstempel. Globalt H0, låse, originalbindinger og admissions ændres ikke.

@@ -1,3 +1,187 @@
+## 89.310 Den direkte workflowtest følger den præcise publiceringsport
+
+Test den virkelige normale kalder og hele den gennemgåede workflowkæde. Ukendte ændringer afvises fortsat, og allerede gemt vejr bevares til sikker genlevering.
+
+<a id="workflow-hour-inverse-current-publication-gate-2026-11-05"></a>
+
+### Den normale kalders udgangspunkt skal være den faktiske fil
+
+En eksisterende direkte workflowtest sammenlignede filen med en gammel helfilslængde, før den brugte den allerede gennemgåede inverse for publiceringsporten. Det stoppede kildekontrollen, selv om den præcise inverse var korrekt. Testen følger nu hele kæden: den fulde aktuelle workflowfil med publiceringsporten, den fulde gennemgåede forgænger uden denne port og den fulde tidligere timeforgænger. Hver helfil bindes til både størrelse og SHA-256; der gives ingen fri størrelsestolerance.
+
+### Ukendte og blandede ændringer afvises fortsat
+
+Alle eksisterende afslag på ukendte, delvise og dobbelte ændringer er bevaret. Testen afprøver også en ændret eller dobbelt publiceringsport, ukendte kontrolnavne og en blanding af gammel timekode med den nye port. Den historiske projektion må kun håndtere de nøjagtigt gennemgåede hele filer; den bliver ikke en generel mekanisme til at fjerne kontrolkode.
+
+### Afprøv hele det berørte normale forløb
+
+Når en workflowprojektion eller wrapper ændres, skal det eksisterende normale testmål, som faktisk bruger den, afprøves samlet før levering. En ny afgrænset prøve af helperen alene er ikke tilstrækkelig, hvis den gamle normale kalder stadig kan være forkert. Hele det berørte normale mål er kørt lokalt: 54 beståede, ingen fejl og én uændret Linux-prøve, der ikke kan udføres på Windows. Den nødvendige Linux- og kildekontrol skal stadig bestå på den endelige GitHub-kode.
+
+### Hold den akutte genlevering afgrænset
+
+Denne følgekorrektion ændrer kun en eksisterende testfil og normal projektdokumentation. Workflow, runtime, modelversion 4.0.597, udstedte migrationer, scoreformel, data, punkter og geometri er uændrede. Den særskilte videre forkortelse af kildekontrollen er ikke med i leverancen og er ikke erklæret færdig. Genoptagelse skal fortsat bruge det eksisterende completed_private_runtime-forløb med frisk autentificering af de gemte B/S-data, beståede artifact- og releasekontroller og faktisk offentlig kontrol. Ingen ny leverandørhentning eller genberegning er nødvendig i denne første genlevering.
+
+## 89.309 Aktuelle UI-kontroller og ens krav før vejrets publicering
+
+Forældede kontrolantagelser må rettes mod den faktiske funktion. Et nyt almindeligt Pages-artifact må kun bygges efter de krævede beståede kontroller; allerede gemt vejr bevares til sikker genoptagelse.
+
+<a id="weather-ui-validation-publication-gate-2026-11-04"></a>
+
+### Den faktiske fælles årsag
+
+Den almindelige vejrhentning den 4. november gemte nye originaler og checkpoint, men stoppede før Pages. Den sene current-grid-port afviste et fejlet udfald fra artifactkontrollen. Den lille autentificerede rapport viser seks fejl blandt 55 kontroller; releasekontrollen bestod tre af tre. Morgens tidligere offentligt leverede kørsel havde præcis de samme seks fejl. Den gamle almindelige vej havde behandlet denne samling diagnostisk, mens den nye modelovergang krævede et bestået udfald. En grøn tidligere kørsel beviste derfor ikke, at disse kontroller var bestået.
+
+### Ret kontrollens forventninger til den faktiske brugerfunktion
+
+De seks fejl lå i kontrolkode, som forventede tidligere inline-funktioner, en tidligere adressestruktur eller en ufuldstændig VM-kontekst. Den nuværende forside vælger et gyldigt kompakt landing-view og ellers normale prognosedata; zonevalg og pile bruger deres aktuelle fælles funktioner. Testene følger nu disse reelle forbindelser. De afprøver også forkert eller forældet landing-binding og manglende data uden at opfinde et fallback. Piltesten får den variabel, den virkelige app allerede deklarerer. Adminens faktiske HTML-, import- og service-worker-adresser sammenlignes direkte i stedet for at kræve en forældet UI-tag.
+
+### Fælles krav før en almindelig Pages-pakke
+
+Almindelige og kandidatbaserede vejrbundter kræver nu et faktisk bestået full-validation- og release-gate-udfald, før Pages-pakken bygges. Fejl, manglende, ukendt, annulleret eller sprunget udfald stopper før byggegrænsen. Kun den særskilte eksisterende integrated-cutover-rute beholder sine egne allerede gældende kontroller. B/S gemmes fortsat før den sene publiceringsport, så en visnings- eller kontrolfejl ikke kasserer beregningen. DEC-0193, DEC-0208 og DEC-0209 gælder fortsat for afgrænsede datamangler i den offentlige runtimeaudit med calibration=false; de bruges ikke til at springe de krævede artifact- og releaseudfald over.
+
+### Målprøver og nøjagtig historisk afgrænsning
+
+De seks eksisterende normale UI- og adminkontroller bestod alle i første samlede lokale kørsel. De eksisterende numeriske, geometriske, proveniens-, performance- og sikkerhedskrav er bevaret. Den faktiske Pages-build-kalders shellkode er afprøvet med 16 udfald, og regressionen indgår i et eksisterende normalt testmål. En præcis helinvers over den gennemgåede workflowændring bevarer de historiske orakler; ukendte eller blandede ændringer får ingen generel stripning eller scannerfallback. Lokal bestået prøve er ikke en grøn GitHub-kontrol eller offentlig levering.
+
+### Genbrug den gemte beregning
+
+Det eksisterende completed_private_runtime-forløb er den relevante genoptagelse efter en sikkert leveret rettelse. Det skal frisk autentificere den aktuelle beskyttede B/S-generation, uændret pointer, modelbindinger, tidspunkt og 210 zoner/673 dele. Det springer leverandørhentning og den allerede udførte vejrbearbejdning over. Den fejlede kørsel har ingen uploadet Pages-handoff; et recovery-id for en ikke-eksisterende Pages-pakke må ikke bruges som genvej. Genoptagelse, deploy og faktisk offentlig kontrol er fortsat åbne, indtil de er udført.
+
+### Ingen model- eller dataovergang i rettelsen
+
+Rettelsen ændrer kontrolfiler, den fælles publiceringsport og dokumentation. Den ændrer ingen appfunktion, scoreformel, kildeprioritet, adminpunkter, geometri, originaler, historikværdier, modelversion 4.0.597, udstedte migrationer eller modelbindinger. SQL-installationskopiens ændring er kun håndbogens normale statiske payload. Den isolerede SOURCE-revision aktiveres ikke. Den fulde målspecifikation, reel dækning, Supabase/Cloudflare Free-klargøring og de øvrige åbne leverancer er ikke afsluttet af denne rettelse.
+
+## 89.308 Runnerens diskoprydning afhænger af målt behov
+
+Unødvendig sletning af et forudinstalleret Android SDK må ikke stoppe en kildekontrol med rigelig ledig plads. Sikker identitetskontrol og det eksisterende afgrænsede oprydningsforløb bevares.
+
+<a id="runner-sdk-capacity-first-2026-11-04"></a>
+
+### Hvorfor kildekontrollen stoppede
+
+Den nye samlede kildekontrol stoppede den 4. november i sin indledende oprydning af runnerens forudinstallerede Android SDK. Før sletningen målte den 91.089.567.744 ledige byte og 18.422.396 ledige inoder. Den unødvendige sletning nåede sin faste grænse på 120 sekunder; proceslukningen blev derefter bevist. Det er en konstateret fejl i kontrollens diskoprydning, ikke bevis for fejl i databasegendannelse eller i den aktive vejrhentning.
+
+### Mål kapaciteten før valgfri oprydning
+
+Den faste helper bevarer nu SDK-mappen, når der allerede er mindst 64 GiB ledigt og mindst 1.000.000 kendte ledige inoder. Den rapporterer ærligt RETAINED_SUFFICIENT_CAPACITY og en målt ændring på nul; den påstår ikke, at noget er slettet. Vært, arbejdsmappe, kanonisk SDK-sti, filsystem og mappeidentitet kontrolleres fortsat, også i denne gren. Den faste tærskel er kun et valg om diskoprydning; den er hverken en reservation af plads eller bevis for hele vejrhentningens kapacitet.
+
+### Lav eller ukendt plads bruger det eksisterende sikre forløb
+
+Ved mindre plads, for få inoder eller ukendte inodetal bruges den hidtidige, præcist afgrænsede sletning. Den uændrede grænse er 120 sekunder plus højst fire sekunder til fysisk proceslukning. En fejlet eller ubevist sletning stopper stadig forløbet. Manglende SDK rapporteres fortsat som ABSENT. Den skrivefri måling før RAW-genlæsning besøger eller sletter fortsat ikke SDK-mappen. Ingen caller-valgte stier, nye indstillinger, udvidede tidsgrænser eller svækkede lukningskrav tilføjes.
+
+### Afprøvning og leveringsstatus
+
+Den målrettede normale helperprøve består lokalt med 22 af 22 prøver. De nye tilfælde omfatter den faktisk observerede ledige kapacitet, de præcise tærskler, ukendte tal og afvisning af ændret sti, link, filsystem eller mappeidentitet. De eksisterende normale workflowkald kræver kun en vellykket afslutning, så den nye ærlige status kræver ingen workflowændring. De to produktfiler og dokumentationen er forberedt til ny præcis kildekontrol; lokal prøve og denne dokumentation er ikke bevis for bestået Linux-kontrol, installeret kode eller ny offentlig prognose.
+
+### Tidligere leverancer og åbne mål bevares
+
+Rettelsen bygger på den samlede assistent-/konto-, kontrolprofil- og syntetiske backupkandidat. Dens øvrige gennemgåede bytes og tidligere dokumentation bevares. Modelversion 4.0.597, bindingsdata, alle udstedte migrationer, scoreformel, kildeprioritet, administratorpunkter og geometri ændres ikke. Der køres ingen ny restore- eller fuld lokal kildekontrol alene for dokumentationen. Rigtig backup, oprydning i administrationshistorik, målt Free-kapacitet og revisionens resterende integration har fortsat deres egne åbne krav; Supabase Pro beholdes.
+
+## 89.307 Syntetisk standardgendannelse er afprøvet på Linux
+
+Den normale standardprøve har nu gendannet fem Supabase-dumps på Linux og verificeret et nyt Auth-login med det oprindelige testpassword. Den bruger kun kunstige data; rigtig RavRadar-backup, arkivgendannelse og gratis drift har fortsat egne åbne krav.
+
+<a id="supabase-owned-bridge-hosted-synthetic-restore-2026-11-04"></a>
+
+### Hvad den faktiske prøve viser
+
+Den hosted syntetiske standardprøve blev gennemført med succes den 4. november 2026 kl. 20.52 dansk tid gennem det eksisterende workflow og Supabase CLI 2.117.0. Et eget testprojekt leverede fem normale dumps: roller, skema, data samt migrationshistoriens skema og data. Filerne blev derefter gendannet i et andet, nyt lokalt projekt. Ingen produktionsdata, produktionsdatabase eller produktionsadgange indgik.
+
+Prøven bekræftede UTF-8-tekst, store heltal og decimalpræcision, metadata, roller og migrationshistorik. Det nye projekt afviste login før gendannelsen. Efter gendannelsen lykkedes et nyt passwordlogin med den oprindelige testbruger og det samme testpassword, og brugeroplysningerne kunne læses. Et forkert password blev stadig afvist.
+
+De syv Auth-kald omfatter fem forventede HTTP 200-svar og to forventede HTTP 400-afslag: login før gendannelse og login med forkert password. De to afslag er en del af beviset. Alle 81 ejede processer afsluttede med exit 0 og lukket procesgruppe, og afsluttende readback bekræftede, at de egne Dockerressourcer var lukket. Fem dumpfiler blev faktisk brugt; der er ikke startet en ny prøve alene for at skrive dette afsnit.
+
+### Hvorfor det første forsøg stoppede
+
+Første hosted forsøg nåede testdatabasen og Auth, men stoppede ved det første dump. Kalderen kombinerede en egen navngiven Dockerbridge med CLI-valget --local. CLI opløser dette valg til værtens 127.0.0.1:54322, mens dumpet køres i en anden container på bridgen. Inde i denne container betegner loopback containeren selv. Derfor brugte kalderen et mål fra det forkerte netværksrum.
+
+Den faste rapport viste LOOPBACK_CONNECTION_REFUSED og bevist oprydning. Den oprindelige rå fejltekst fra dumpets stderr blev ikke gemt; årsagsforklaringen bygger på den præcise kalder og den officielle versionsbestemte CLI-kode. Det er en afgrænset fejl i prøvens forbindelsesvalg, ikke et observeret problem med RavRadars produktionsdatabase.
+
+### Den snævre rettelse bevarer det egne netværk
+
+Status-URLen skal fortsat bestå den uændrede strenge kontrol af 127.0.0.1 og port 54322. Før dumpet genlæses den egne databasecontainers metadata. Navn, container-id, projektlabel, netværksnavn og netværks-id, loopbackbinding samt faktisk health skal passe. Kun derefter afledes dumpets mål til netop denne egne container på dens interne port 5432 og databasen postgres, med samme lokale credentials.
+
+StandardCLI får --db-url i stedet for det gensidigt udelukkende --local. Den samme egne bridge og alle fem dumpvalg bevares; der åbnes hverken en caller-valgt databaseadresse, linked projekt eller hostnetwork. CLI kan kalde et eksplicit db-url-mål remote i sin diagnosticering. Det ændrer ikke det verificerede egne containermål.
+
+Arkivgrenens interne Dockerbridge og afgrænsning af produktionsadgange til arkivlæseren er uændrede. Den syntetiske dumpfunktion må ikke bruges som arkiveksport. Hele proceslukningen, den faste egen oprydning og de eksisterende tids- og størrelsesgrænser bevares.
+
+### Hvad der stadig mangler før Pro kan opsiges
+
+Dette lukker den tidligere åbne hosted syntetiske standardprøve i afsnit 89.300. Det er stadig nødvendigt at gennemføre og verificere en rigtig RavRadar-eksport, dens krypterede R2-arkiv og autentificerede genlæsning samt en isoleret gendannelse af de virkelige database- og Auth-data. Den beståede syntetiske rapport fastholder productionBackupVerified, cryptoR2Verified og productionAuthRestoreVerified som false.
+
+Fuld kompatibilitet for schema, rækker, RLS, roller, sekvenser og migrationshistorik, projektindstillinger og managed-DDL, Storage-objektbytes, konsistens på tværs af de fem dumps samt slettebarrierer og anti-genoplivning skal afklares på den rigtige tilbagevej. Ét syntetisk login erstatter ikke de virkelige kontiers gendannelsesbevis.
+
+Der skal også være en uafhængig brugbar recovery af nøgler og dekrypteringskontekst, målt plads og forbrug inden for de aftalte Free-grænser samt en varig plan for backupfrekvens og retention, som kan drives uden PC eller Codex. Pro beholdes, indtil disse krav faktisk er opfyldt. Der aktiveres ingen automatisk backup, beskæring, sletning eller FreeReady med denne dokumentation.
+
+### Dokumentation uden ny model eller driftændring
+
+Afsnittet beskriver den faktisk udførte standardprøve på den gennemgåede helper- og workflowkilde. De tidligere udsagn i 89.300 om, at hosted syntetisk restore endnu ikke var kørt, er historik på netop dette punkt; de øvrige backup- og Free-krav består. Dokumentporten ændrer ingen helper, workflow, scoremodel, vejrhentning, administratoropsætning, version 4.0.597 eller binding. Installationsfilens ændring er kun håndbogens normale statiske seed og er ikke ny migrations-SQL.
+
+## 89.306 Præcis597-kontrolprofil med fuld ressource- og afhængighedslukning
+
+597-profilens lokale kontrolplan bevarer alle nødvendige input, mens gamle profiler og fulde afslag fastholdes. En bestået lokal planner er ikke en aktiveret kort kontrolvej.
+
+### Hvorfor den nye profil fik et størrelsesafslag
+
+Den første lokale 597-kandidat blev afvist, fordi den normale læser forudindlæste både hele det konservative ressourceinventar og alle registrerede kildefiler. Den undersøgte samling var 51324616 byte mod den gamle batchgrænse på 50331648 byte. Det var ikke en påvist dublet eller manglende produktionsfil.
+
+71 af de forudindlæste kildefiler blev ikke nået af de valgte kontrolkommandoer og var heller ikke selv konservative ressourcer. Kun den nye 597-profil undlader nu dette uvedkommende eager preload. Alle 634 registrerede ressourcer bevares; hver faktisk import og læsekant følges og bindes fortsat til de fulde committed bytes. En registreret kildefil bliver stadig læst, hvis en valgt normal kalder faktisk når den.
+
+### En fast597-ressourcekontrakt, ingen global grænseforøgelse
+
+Kun den præcise nye profil REVIEWED_597_DOMAIN_INPUTS_C101_I100_T12 har en fast ramme på 56 MiB (58720256 byte) for både batch og samlet resident blobindhold. Den gamle 594-profil bevarer sin 48 MiB-batchgrænse. Grænserne på 8 MiB pr. blob, 4096 objekter pr. batch og 64 MiB Git-output bevares. Der er intet caller-valgt ressourceknob eller nyt verifiedflag.
+
+Rammen er begrundet i det faktisk målte inputinventar og vurderes igen på slutkompositionen, inklusive dokumentation og den separate 201-kandidat. Ingen nødvendig ressource fjernes for at få plads. Overskridelse, ukendt ejer, import, læse- eller procesflade, ændrede beskyttede input og ukendt drift kræver fortsat FULL. Denne lokale forberedelse ændrer ikke producer, consumer, kvitteringsformat eller workflow og giver ingen ny skipautoritet.
+
+### Historisk Open-Meteo og aktuel597 afprøves hver for sig
+
+Den gamle 594-fixture blandede sin historiske registry med nyere Open-Meteo-runtime og runtimeprøve. Kun de tre relevante ejerfiler hentes nu fra det samme genuine, tidligere gennemgåede Git-snapshot: runtime, komponentproducent og runtimeprøve. Den allerede rettede bankfixture bevares. Den historiske katalogfil, dens fingeraftryk og dens gamle afslag omskrives ikke.
+
+Den aktuelle 597-Open-Meteo-lukning har sin særskilte normale positive kontrol. De nødvendige konkrete dependencies registreres præcist i den nye hashbundne 597-flade. Der tilføjes ingen nye eksekverbare ejere, frie kommandoer, wildcards eller scannerundtagelser. Nye ukendte grænser kræver stadig FULL; historiske native- eller databasebeviser retagges ikke.
+
+### Lokal evidens og den endnu åbne Linux-kvalifikation
+
+Den normale plannertest består 12 af 12 uden fejl eller skip på 254475,1405 ms = 254,4751405 sekunder. Den omfatter kendte597-forløb, den aktuelle Open-Meteo-lukning, gyldig ressourcebrug over den gamle 48 MiB-grænse, afvisning over den nye ramme samt ukendte input og beskyttede SQL-/modelændringer. Den historiske integration består sine 23 scenarier.
+
+Det normale integrationsprogram kalder selv den særskilte 597-fixture. Den underproces ramte på Windows sin eksisterende grænse på 180000 ms = 180 sekunder med ETIMEDOUT, status null og SIGTERM. Hele integrationskaldet tog 564868 ms = 564,868 sekunder og sluttede med kode 1. Derfor er den samlede597-integration ikke PASS. Tidsgrænsen er ikke hævet, og hverken child, testvært eller integration er gentaget. Den sidste faktisk nåede syntetiske kommando og komplet stdout/stderr bevares kun i privat evidens.
+
+Ingen fuld lokal suite, PostgreSQL, nativefase eller produktionsprøve er kørt som del af denne dokumentationsport. Den normale Linux-kilde-PR skal kvalificere den samlede597-integration, og det endelige head skal have ægte normal FULL-kvalifikation før en senere aktivering. Den separate201-kandidats kildehead er her kun kommende base, ikke bevis for merge eller drift. Der påstås ingen aktiv kortvej, nativeeksekvering, nativegenbrug, dokumenteret tidsgevinst eller ret til at genbruge en baseline endnu.
+
+C/I/T/F/P, alle 73 migrationer, version, konfiguration, geometri, originaler, vejrkilder og scoremodel bevares. INSTALL ændres kun i den statiske håndbogsseed. Eksisterende sikkerheds-, data-, privacy- og deploykontroller består; ukendt eller rød relevant evidens må ikke omgås.
+
+## 89.305 Præcis HTTP-kontrakt for privat historik- og backupkontrol
+
+Management-APIets dokumenterede successtatus accepteres kun sammen med de fulde privatlivs- og metadatakrav. Diagnosen skelner katalogkontrollens HTTP-status fra senere driftsfejl.
+
+### Det dokumenterede POST-kald og den afgrænsede kontraktfejl
+
+Supabases officielle Management-reference for POST /v1/projects/{ref}/database/query angiver HTTP 201 ved succes. De to nye hjælpere til administrationshistorikkens katalogkontrol og backupkontrol havde fejlagtigt krævet HTTP 200. De øvrige eksisterende typede Management-kaldere håndterer allerede 201; en forventning fra et andet REST-kald må ikke overføres til dette endpoint.
+
+Rettelsen accepterer præcis HTTP 200 eller 201 for dette query-kald. Den indfører ikke en generel 2xx-regel og ændrer ingen andre APIers statuskrav. En godkendt transportstatus er kun første betingelse: JSON-format, alle forventede metadata, adgangslister, service-role-adgang, RLS, funktioner og policies skal stadig opfylde de oprindelige fulde kontroller. Ukendt svar, forkerte felter eller manglende privatlivsbevis stopper før mutation.
+
+At et læsequery besvares med 201 er ikke tilladelse til at ændre databasen. Den officielle reference findes på https://supabase.com/docs/reference/api/v1-run-a-query. Den fejlede vedligeholdelses faktisk observerede HTTP-status er fortsat ukendt; den reproducerede kontraktfejl må ikke beskrives som en målt live-201-årsag.
+
+### Særskilt status for katalogkontrollen og den senere operation
+
+privacyHttpStatus følger kun den faste katalog-/privatlivskontrol gennem hjælper, workflow og den afgrænsede fejlrapport. privacyStage angiver dens faste trin, eksempelvis forespørgsel, svarkontrol eller VERIFIED. HTTP-status er et valideret heltal fra 100 til 599 eller null, når den ikke er kendt. Ukendt status fremstilles ikke som 200 eller 201.
+
+Det eksisterende generiske httpStatus beholder sin hidtidige betydning for den øvrige operation. En vellykket privatlivskontrol med privacyHttpStatus=201 og privacyStage=VERIFIED må derfor ikke ommærkes til HTTP-status for en senere arkiv- eller uploadfejl. Den eksisterende bucket-403 og generiske fejlkontrakt bevares. Rå svar, SQL-resultater, spørgsmål, brugerdata, nøgler og vilkårlige fejltekster må ikke komme med i disse faste rapporter.
+
+### Reproduktion og normale regressioner
+
+Begge gamle 200-only-fejl er reproduceret lokalt med dokumenterede 201-svar. Den første pakke har 12 forskellige afgrænsede cases, herunder fem faktiske syntetiske CLI-forløb: gyldige 200/201-svar accepteres; forkert privatliv, forkert svarform og 401 afvises før mutation. Tallene er sammensat af dokumenterede mål og er ikke én fuld suite.
+
+Den særskilte opfølgning, som adskiller privacyHttpStatus fra httpStatus, har derefter genkørt kun de to berørte normale mål. Begge består, inklusive seks faktiske syntetiske CLI-forløb. Den ekstra negative case stopper efter VERIFIED under en senere arkivfejl og beviser, at katalogets 201 ikke bliver operationens generiske fejlstatus. Der er ikke udført en liveforespørgsel, virkelig SQL-installation eller faktisk oprydning i disse prøver.
+
+Regressionerne ligger i de eksisterende normale kaldere. Historikprøverne vælges gennem validate:source:checks → test:ravscore-source-critical → test:account-statistics-assistant-source → test-account-statistics-assistant-callers og dets eksisterende imports af historik-/workflowprøverne. Backupprøverne vælges gennem validate:source:checks → test:supabase-backup → test-archive-supabase-database-backup. Der tilføjes ingen ny pakkealias, kontrolkanal eller fuld testmatrix for at få dem valgt.
+
+### Leveringsstatus og fortsatte sikkerhedsgrænser
+
+Dette er en separat, lokalt kvalificeret kildekandidat over den aktuelle vejrrettelse. Den præcise normale kildekontrol, sikker levering og den første faktiske vedligeholdelsesrapport er fortsat nødvendige beviser. En lokal syntetisk CLI-succes er hverken live-HTTP-evidens, installeret kontrol eller udført arkiv/restore/locator/prune.
+
+Automatisk oprydning forbliver slået fra, og Supabase Pro beholdes. Ingen Free-parathed, automatisk sletning, generel ny retry-autoritet eller produktionsaktivering følger med denne statusrettelse. Ved ukendt udfald stopper den eksisterende normale arbejdsgang; ingen mutation må begynde uden dens fulde kontroller.
+
+Vejrrettelsen, kildeprioritet, scoreformel, C/I/T/F/P, originaldata, geometri, version 4.0.597 og alle 73 migrationsfiler bevares. Den normale historik-/arkiv-/locator-/prunekæde og privatlivskravene ændres ikke. INSTALL-kopien får kun det samme kanoniske håndbogsseed. Alle tidligere afsnit, herunder 89.303 og 89.304, og deres historiske kvalifikationsudsagn bevares.
+
 ## 89.304 Samme prognosetime gennem den normale vejrproces
 
 To skrivemåder kan betegne samme UTC-time. Den indre vejrproces får nu det præcise format, som den eksisterende oprindelseskontrol kræver, uden at flytte prognosestarten eller ændre kontrollen.

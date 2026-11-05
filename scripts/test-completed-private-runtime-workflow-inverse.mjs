@@ -1764,19 +1764,44 @@ test('hosted Android SDK workflow inverse retains the complete genuine597 predec
   assert.throws(() => inverseRunnerAndroidSdkWorkflow(null, 'build'), /RUNNER_SDK_WORKFLOW_TYPE/);
 });
 
-import { inverseWeatherProcessHourWorkflow, weatherProcessHourWorkflowReview }
+import { inverseWeatherProcessHourWorkflow, weatherProcessHourWorkflowReview,
+  inverseRequiredPublicationGatesWorkflow, requiredPublicationGatesWorkflowReview }
   from './lib/completed-private-runtime-workflow-review.mjs';
 
 test('weather-process hour inverse preserves the entire genuine prior workflow and refuses partial or unknown bytes', async () => {
-  const row = weatherProcessHourWorkflowReview;
-  const current = (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+  const row = weatherProcessHourWorkflowReview, gates = requiredPublicationGatesWorkflowReview;
+  const issued = (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+  assert.equal(gates.path, row.path); assert.deepEqual(gates.before, row.after);
+  assert.equal(Buffer.byteLength(issued), gates.after.bytes); assert.equal(sha(issued), gates.after.sha256);
+  const current = inverseRequiredPublicationGatesWorkflow(issued, 'build');
   assert.equal(Buffer.byteLength(current), row.after.bytes); assert.equal(sha(current), row.after.sha256);
+  assert.equal(current.replace(gates.anchor, () => gates.anchor + gates.inserted), issued,
+    'Exact whole current workflow includes the reviewed publication gate');
+  assert.equal(inverseRequiredPublicationGatesWorkflow(current, 'build'), current);
   assert.equal(current.split(row.normalized).length, 2);
   const before = inverseWeatherProcessHourWorkflow(current, 'build');
   assert.equal(Buffer.byteLength(before), row.before.bytes); assert.equal(sha(before), row.before.sha256);
   assert.equal(before.replace(row.original, () => row.normalized), current);
+  assert.equal(inverseWeatherProcessHourWorkflow(issued, 'build'), before);
+  assert.equal(inverseCompletedRuntimeWorkflow(issued, 'build'), inverseCompletedRuntimeWorkflow(before, 'build'));
   assert.equal(inverseCompletedRuntimeWorkflow(current, 'build'), inverseCompletedRuntimeWorkflow(before, 'build'));
-  for (const role of ['once', 'repair', 'unknown']) assert.equal(inverseWeatherProcessHourWorkflow(current, role), current);
+  for (const role of ['once', 'repair', 'unknown']) {
+    assert.equal(inverseWeatherProcessHourWorkflow(current, role), current);
+    assert.equal(inverseWeatherProcessHourWorkflow(issued, role), issued);
+  }
+  for (const malformed of [
+    issued + '\n# UNREVIEWED_REQUIRED_PUBLICATION_GATE\n',
+    issued.replace(gates.inserted, gates.inserted.slice(1)),
+    issued.replace(gates.inserted, gates.inserted + gates.inserted),
+    issued.replace(gates.inserted, gates.inserted.replace('steps.full-validation.outcome', 'steps.UNKNOWN.outcome')),
+    issued.replace(gates.inserted, gates.inserted.replace('steps.release-gate.outcome', 'steps.UNKNOWN.outcome')),
+    issued.replace(row.normalized, row.original),
+  ]) {
+    assert.notEqual(malformed, issued);
+    assert.equal(inverseRequiredPublicationGatesWorkflow(malformed, 'build'), malformed);
+    assert.equal(inverseWeatherProcessHourWorkflow(malformed, 'build'), malformed);
+    assert.throws(() => inverseCompletedRuntimeWorkflow(malformed, 'build'));
+  }
   assert.equal(inverseWeatherProcessHourWorkflow(before, 'build'), before);
   for (const malformed of [
     current + '\n# UNREVIEWED_WEATHER_PROCESS_HOUR\n',

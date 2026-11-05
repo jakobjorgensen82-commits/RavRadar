@@ -9,6 +9,7 @@ import {analyzeSourceDomainInputs} from './source-impact-domain-inputs.mjs';
 import {scanAllSourceDependencies,dependencySourceLiterals} from './lib/source-impact-control-imports.mjs';
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const REGISTRY_SHA256='3970bc86fb8afd99d193507b82337c1068aa368f6d62ff728988fc21da9577f4';
+const REGISTRY597_SHA256='c84ede0661d4e54b8fb68377cfd3a51dba6d9889bb57b961904645ab00b5cf85';
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const oid=value=>typeof value==='string'&&/^[a-f0-9]{40}$/.test(value);
 const relative=value=>typeof value==='string'&&/^[A-Za-z0-9_./-]+$/.test(value)&&!value.startsWith('/')
@@ -47,6 +48,28 @@ function sourceReferences(file,scan,index){
   }
   return {imports:[...new Set(imports)].sort(),resources:[...new Set(resources)].sort()};
 }
+// The fixed597 overlay preserves the genuine594 registry as historical data.
+// Its complete bytes are pinned here; callers cannot supply owners or capabilities.
+function registry597(legacyBytes){
+  const bytes=fs.readFileSync(new URL('./lib/source-impact-domain-owners-597.json',import.meta.url));
+  assert.equal(sha(bytes),REGISTRY597_SHA256,'DOMAIN_REGISTRY_BYTES');
+  const delta=JSON.parse(bytes),registry=JSON.parse(legacyBytes);
+  assert.equal(delta.schemaVersion,1);assert.equal(delta.id,'CLOSED_REVIEWED_597_DOMAIN_DELTA');
+  assert.equal(delta.baseRegistrySha256,REGISTRY_SHA256);
+  assert.equal(delta.sourceReference.head,'45594e185f087ff02c8e72649d02cb45cf79cf16');
+  assert.equal(delta.sourceReference.tree,'20fd7b1a49dbb07edf9157658ddb38bb1ec75656');
+  for(const owner of delta.owners){
+    assert(relative(owner.path)&&!registry.owners.some(row=>row.path===owner.path));
+    registry.owners.push(owner);
+  }
+  for(const [file,row]of Object.entries(delta.sources)){
+    assert(relative(file));
+    assert.equal(registry.sources[file]?sha(JSON.stringify(registry.sources[file])):null,row.beforeDefinitionSha256);
+    registry.sources[file]=row.definition;
+  }
+  for(const file of delta.resourceFiles){assert(relative(file)&&!registry.resourceFiles.includes(file));registry.resourceFiles.push(file);}
+  return {value:registry,digest:sha(Buffer.concat([legacyBytes,bytes])),blobBudgetBytes:56*1024*1024};
+}
 export function planSourceDomainImpactFromGit(input){
   const out=base();
   const full=reason=>{out.selection='FULL';out.commands=[];out.reasonCodes=[reason];
@@ -67,7 +90,10 @@ export function planSourceDomainImpactFromGit(input){
       return full('POSTGRES_OR_MODEL_INPUT_CHANGED');
     if(!out.changedRows)return full('EMPTY_DIFF_REQUIRES_NO_NEW_SHORT_PROOF');
     const registryBytes=fs.readFileSync(new URL('./lib/source-impact-domain-owners-594.json',import.meta.url));
-    assert.equal(sha(registryBytes),REGISTRY_SHA256,'DOMAIN_REGISTRY_BYTES');const registry=JSON.parse(registryBytes);
+    assert.equal(sha(registryBytes),REGISTRY_SHA256,'DOMAIN_REGISTRY_BYTES');
+    const selectedRegistry=analysis.profile?.id==='REVIEWED_597_DOMAIN_INPUTS_C101_I100_T12'
+      ?registry597(registryBytes):{value:JSON.parse(registryBytes),digest:REGISTRY_SHA256,blobBudgetBytes:48*1024*1024};
+    const registry=selectedRegistry.value,registrySha256=selectedRegistry.digest;
     const owners=new Map(registry.owners.map(row=>[row.path,row])),selected=new Set(['controls']);
     const git=(args,options={})=>execFileSync('git',['-C',ROOT,...args],{env:environment(),timeout:10000,
       maxBuffer:64*1024*1024,stdio:['pipe','pipe','pipe'],...options});
@@ -92,7 +118,10 @@ export function planSourceDomainImpactFromGit(input){
       let total=0;for(let i=0;i<wanted.length;i++){
         const m=/^([a-f0-9]{40}) blob ([0-9]+)$/.exec(meta[i]);assert(m&&m[1]===wanted[i]);
         assert(Number(m[2])<=8*1024*1024);total+=Number(m[2]);
-      }assert(total<=48*1024*1024);
+      }assert(total<=selectedRegistry.blobBudgetBytes,'DOMAIN_COMMITTED_BLOB_BUDGET_EXCEEDED');
+      if(analysis.profile?.id==='REVIEWED_597_DOMAIN_INPUTS_C101_I100_T12')
+        assert(total+[...blobs.values()].reduce((sum,body)=>sum+body.length,0)<=selectedRegistry.blobBudgetBytes,
+          'DOMAIN_COMMITTED_BLOB_BUDGET_EXCEEDED');
       const raw=git(['cat-file','--batch'],{input:wanted.join('\n')+'\n'});let offset=0;
       for(const id of wanted){const end=raw.indexOf(10,offset),m=/^([a-f0-9]{40}) blob ([0-9]+)$/.exec(raw.subarray(offset,end).toString('ascii'));
         assert(m&&m[1]===id);const size=Number(m[2]),body=raw.subarray(end+1,end+1+size);assert.equal(raw[end+1+size],10);
@@ -108,7 +137,10 @@ export function planSourceDomainImpactFromGit(input){
       && !row.owner.exactSourceTransition).map(row=>row.file),...entries];
     const visited=new Set(),edges=[],closureRows=[];
     // All reads below are committed blobs. Current runtime hydration is not reset.
-    load([...new Set([...Object.keys(registry.sources),...registry.resourceFiles,...entries,
+    //597 keeps every conservative resource, then loads executable sources only when
+    //actually reached. Unvisited definitions were never closure members.594 is unchanged.
+    const eagerSources=analysis.profile?.id==='REVIEWED_597_DOMAIN_INPUTS_C101_I100_T12'?[]:Object.keys(registry.sources);
+    load([...new Set([...eagerSources,...registry.resourceFiles,...entries,
       ...changes.map(row=>row.file)])].flatMap(file=>index.has(file)?[index.get(file).oid]:[]));
     const get=file=>{const row=index.get(file);if(!row||row.type!=='blob'||!['100644','100755'].includes(row.mode))throw Error('CLOSURE_SOURCE_MISSING:'+file);
       load([row.oid]);return blobs.get(row.oid);};
@@ -173,7 +205,7 @@ export function planSourceDomainImpactFromGit(input){
     out.reasonCodes=qualification?['UNCHANGED_POSTGRES_AND_MODEL_INPUTS','CONTROL_QUALIFICATION_REQUIRED']:['UNCHANGED_POSTGRES_AND_MODEL_INPUTS','CLOSED_REGISTERED_DOMAIN_IMPACT'];
     const uniqueRows=[...new Map(closureRows.map(row=>[row.file,row])).values()].sort((a,b)=>a.file.localeCompare(b.file,'en'));
     out.closureSha256=sha(JSON.stringify({rows:uniqueRows,edges:[...new Set(edges.map(JSON.stringify))].sort(),
-      prerequisites:registry.runtimePrerequisites,registrySha256:REGISTRY_SHA256}));
+      prerequisites:registry.runtimePrerequisites,registrySha256}));
     assert.equal(git(['rev-parse','HEAD']).toString('utf8').trim(),input.expectedHead);
     return out;
   }catch(error){out.status='REFUSED';return full(/^DOMAIN_[A-Z_]+$/.test(error?.message??'')?error.message:'DOMAIN_PLAN_REFUSED');}

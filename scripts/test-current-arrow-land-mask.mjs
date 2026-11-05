@@ -172,7 +172,7 @@ try {
   const mapForecast=createMapForecastController({loadHour:()=>assert.fail('Current-only mask admission must not fetch a forecast hour')});
   mapForecast.configure({generation:'synthetic-land-mask-current-only',times:[at],live:{time:at,conditions:state.conditions}});
   vm.runInNewContext(mapStateSource+'\n'+appSource.slice(callerStart,callerEnd)+'\nsetTimeout(installArrows,0);',{
-    installFlowArrows,map:currentOnlyMap,state,mapForecast,mapCoastalPartsForDisplay,
+    installFlowArrows,map:currentOnlyMap,state,mapForecast,mapCoastalPartsForDisplay,activeLandingView:null,
     performance:{mark(){}},console:{error(_message,error){callerErrors.push(error);}},
     window:{dispatchEvent(event){events.push(event);}},
     CustomEvent:class {constructor(type,options){this.type=type;this.detail=options.detail;}},

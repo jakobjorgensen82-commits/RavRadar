@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import assert from 'node:assert/strict';
 const app = await fs.readFile('app.js', 'utf8');
 const i18n = await fs.readFile('js/i18n.js', 'utf8');
 const ranking = app.indexOf("renderRanking();performance.mark?.('ravradar:ranking-ready')");
@@ -14,7 +15,25 @@ if(!/function ensureConditionDetails\s*\([^)]*\)/.test(app)
 const startupBlock=app.slice(app.indexOf('try {',app.indexOf('let logoTaps')),app.indexOf('// Vind- og strømpile'));
 if(startupBlock.includes('loadConditionDetails('))throw new Error('Normal opstart må ikke hente den store detaljepakke.');
 if (app.includes('requestIdleCallback(installArrows')) throw new Error('Pileinstallationen må ikke igen afhænge af requestIdleCallback.');
-if (!app.includes('state.conditions?.nationalForecast?.modes?.[state.mode]') || !app.includes('async function renderNationalForecast()') || !app.includes('index%2===1')) throw new Error('Kompakt femdøgnsindeks eller browservenlig kompatibilitetsberegning mangler.');
+if (!app.includes('async function renderNationalForecast()') || !app.includes('index%2===1')) throw new Error('Kompakt femdøgnsindeks eller browservenlig kompatibilitetsberegning mangler.');
+// Run the real renderer through its first detail-load decision. A prepared
+// ordinary or landing index must not start the full detail download; a missing
+// index still follows the existing needs-based loader.
+const rendererAt=app.indexOf('async function renderNationalForecast()');
+const decisionEnd=app.indexOf('  const preparedAfterLoad=',rendererAt);
+assert.ok(rendererAt>=0&&decisionEnd>rendererAt);
+const runStartupDecision=new Function('state','activeLandingView','conditionDetailsReady','ensureConditionDetails',
+  'document','getLanguage','nationalForecast','t','console',
+  'return ('+app.slice(rendererAt,decisionEnd)+'return true;\n})();');
+for(const view of ['ordinary','landing','missing']){
+  let detailLoads=0;
+  const days=[{date:'2026-08-28',rows:[]}];
+  const conditions=view==='ordinary'?{nationalForecast:{modes:{waders:days}}}:{};
+  const landing=view==='landing'?{nationalForecast:{modes:{waders:days}}}:null;
+  assert.equal(await runStartupDecision({zones:{},conditions,mode:'waders',forecastRenderId:0},landing,false,
+    async()=>{detailLoads++;},{querySelector:()=>null},()=> 'da',{innerHTML:''},key=>key,console),true);
+  assert.equal(detailLoads,view==='missing'?1:0,'Kun et faktisk manglende kompakt indeks må starte detaljelæsningen.');
+}
 if (!i18n.includes("'forecast.calculating'") || !i18n.includes('Beregner 5-dages prognose… {progress} %')) throw new Error('Den danske status for 5-dages beregningen mangler i i18n-kontrakten.');
 const mapView = await fs.readFile('js/map/map-view.js', 'utf8');
 if (!mapView.includes('if (wasVisible) map.removeLayer(layer)') || !mapView.includes('layer.addTo(map);')) throw new Error('Pilelaget bygges ikke afkoblet fra kortet.');

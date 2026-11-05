@@ -314,7 +314,14 @@ test('OM owners select actual normal bank and runtime callers and keep unknown i
   const controls=['scripts/source-impact-domain-plan.mjs',registryFile,
     'scripts/test-source-impact-domain-plan.mjs','scripts/test-fixed-assistant-failure-log-20261101.mjs'];
   const currentFiles=[...new Set([...files,...controls,bankFile])];
-  const body=file=>git(SOURCE,['cat-file','blob',currentHead+':'+file]);
+  const legacyControls=new Set(['scripts/source-impact-domain-inputs.mjs','scripts/test-source-impact-domain-inputs.mjs',
+    'scripts/source-impact-domain-plan.mjs','scripts/test-source-impact-domain-plan.mjs','scripts/test-source-targeted-domain-integration.mjs']);
+  // Genuine before597-catalog CODE for this historical594 fixture; no oracle is retagged.
+  const body=file=>git(SOURCE,['cat-file','blob',(legacyControls.has(file)
+    ?'45594e185f087ff02c8e72649d02cb45cf79cf16':currentHead)+':'+file]);
+  const historicalOMOwners=new Set(['scripts/lib/open-meteo-part-runtime.mjs',
+    'scripts/produce-open-meteo-part-components.mjs','scripts/test-open-meteo-part-runtime.mjs']);
+  const ownerBody=file=>historicalOMOwners.has(file)?git(SOURCE,['cat-file','blob',reference+':'+file]):body(file);
   const bank=body(bankFile);
   const temporary=fs.realpathSync(os.tmpdir()),root=fs.mkdtempSync(path.join(temporary,'rr-om-bank-domain-'));
   const owned=fs.lstatSync(root,{bigint:true});
@@ -339,7 +346,7 @@ test('OM owners select actual normal bank and runtime callers and keep unknown i
     const owners=['scripts/lib/open-meteo-part-runtime.mjs','scripts/produce-open-meteo-part-components.mjs',
       'scripts/test-open-meteo-part-runtime.mjs'];
     for(const owner of owners){
-      const candidate=make([...controlRows,[owner,Buffer.concat([body(owner),
+      const candidate=make([...controlRows,[owner,Buffer.concat([ownerBody(owner),
         Buffer.from('\n// Synthetic known OM owner selection.\n')])]],fixtureBase,'synthetic exact OM owner');
       const actual=run(fixtureBase,candidate);
       assert.equal(actual.status,'PLANNED',JSON.stringify(actual.reasonCodes));
@@ -356,10 +363,15 @@ test('OM owners select actual normal bank and runtime callers and keep unknown i
       ["\nreadFileSync('unreviewed-om-private.json');\n",'UNKNOWN_READ_OR_SUBPROCESS_SURFACE:'],
       ["\nnew Function('return process')();\n",'UNKNOWN_SENSITIVE_BINDING_OR_REFLECTIVE_SURFACE:']]){
       const changedBase=make([[bankFile,Buffer.concat([bank,Buffer.from(extra)])]],reference,'synthetic unreviewed bank capability');
-      const candidate=make([...controlRows,[owners[0],Buffer.concat([body(owners[0]),
+      const candidate=make([...controlRows,[owners[0],Buffer.concat([ownerBody(owners[0]),
         Buffer.from('\n// Synthetic known OM owner selection.\n')])]],changedBase,'synthetic rejected bank closure');
       assert.deepEqual(run(changedBase,candidate).reasonCodes,[reason+bankFile]);
     }
+    const legacyOversized=['docs/rdks/MASTER_LOG.md','docs/rdks/90_INDEX/CURRENT_TRUTH.md','docs/rdks/90_INDEX/IMPLEMENTATION_STATUS.md']
+      .map(file=>[file,Buffer.concat([git(SOURCE,['cat-file','blob',reference+':'+file]),Buffer.alloc(4*1024*1024,32)])]);
+    const legacyRefused=run(fixtureBase,make([...controlRows,...legacyOversized],fixtureBase,'synthetic old59448MiB remains bounded'));
+    assert.equal(legacyRefused.status,'REFUSED');assert.equal(legacyRefused.selection,'FULL');
+    assert.deepEqual(legacyRefused.reasonCodes,['DOMAIN_PLAN_REFUSED']);
     const pg='scripts/test-protected-ravscore-continuation-checkpoint.mjs';
     const changedPg=make([...controlRows,[pg,Buffer.concat([body(pg),Buffer.from('\n// Synthetic changed PG input.\n')])]],
       fixtureBase,'synthetic changed PG domain');
@@ -371,5 +383,110 @@ test('OM owners select actual normal bank and runtime callers and keep unknown i
     assert.equal(path.dirname(fs.realpathSync(root)),temporary);const current=fs.lstatSync(root,{bigint:true});
     assert.equal(current.dev,owned.dev);assert.equal(current.ino,owned.ino);assert.equal(current.birthtimeNs,owned.birthtimeNs);
     fs.rmSync(root,{recursive:true,force:false});
+  }
+});
+
+
+// Genuine597 input/closure planning. This runs no PostgreSQL, provider or source suite.
+test('normal597 registry keeps genuine144 inputs and closes only known normal control capabilities',async t=>{
+  const reference='45594e185f087ff02c8e72649d02cb45cf79cf16';
+  const controls=['scripts/source-impact-domain-inputs.mjs','scripts/lib/source-impact-domain-inputs-597.json',
+    'scripts/test-source-impact-domain-inputs.mjs','scripts/source-impact-domain-plan.mjs',
+    'scripts/lib/source-impact-domain-owners-597.json','scripts/test-source-impact-domain-plan.mjs',
+    'scripts/test-source-targeted-domain-integration.mjs'];
+  const root597=fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()),'rr-domain597-plan-'));
+  const owned597=fs.lstatSync(root597,{bigint:true}),temporary597=path.dirname(root597);
+  try{
+    git(root597,['init','-q']);git(root597,['config','core.autocrlf','false']);
+    const objects=fs.realpathSync(path.join(text(SOURCE,['rev-parse','--path-format=absolute','--git-common-dir']),'objects'));
+    fs.mkdirSync(path.join(root597,'.git/objects/info'),{recursive:true});
+    fs.writeFileSync(path.join(root597,'.git/objects/info/alternates'),objects.replaceAll('\\','/')+'\n');
+    const rows=controls.map(file=>[file,fs.readFileSync(path.join(SOURCE,file))]);
+    const make597=(parent,changes,label)=>{
+      git(root597,['read-tree',parent]);
+      for(const [file,bytes]of changes)git(root597,['update-index','--add','--cacheinfo','100644',
+        text(root597,['hash-object','-w','--stdin'],bytes),file]);
+      return text(root597,['commit-tree',text(root597,['write-tree']),'-p',parent,'-m',label]);
+    };
+    const baseline597=make597(reference,rows,'synthetic597 catalog fixture with genuine protected inputs');
+    for(const file of [...controls,'scripts/lib/source-impact-domain-inputs-594.json','scripts/lib/source-impact-domain-owners-594.json',
+      'scripts/lib/source-impact-control-imports.mjs']){
+      const target=path.join(root597,file);fs.mkdirSync(path.dirname(target),{recursive:true});
+      fs.writeFileSync(target,controls.includes(file)?fs.readFileSync(path.join(SOURCE,file)):
+        git(SOURCE,['cat-file','blob',reference+':'+file]));
+    }
+    const {planSourceDomainImpactFromGit:plan597}=await import(pathToFileURL(path.join(root597,'scripts/source-impact-domain-plan.mjs')).href);
+    const run597=(candidate,baseline=baseline597)=>{git(root597,['update-ref','HEAD',candidate]);
+      return plan597({baselineCommit:baseline,candidateCommit:candidate,expectedHead:candidate});};
+    const owner597='scripts/source-targeted-receipt.mjs',before597=git(root597,['cat-file','blob',baseline597+':'+owner597]);
+    const candidate597=make597(baseline597,[[owner597,Buffer.concat([before597,Buffer.from('\n// Synthetic known597 control edit.\n')])]],'synthetic597 known control');
+    await t.test('known control uses actual normal commands with no PG or national execution claim',()=>{
+      const plan=run597(candidate597);
+      assert.equal(plan.status,'PLANNED',JSON.stringify(plan.reasonCodes));
+      assert.equal(plan.selection,'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(plan.reasonCodes));
+      for(const family of ['postgres','C','I','T'])assert.equal(plan.inputDigests[family+'Before'],plan.inputDigests[family+'After']);
+      assert.equal(plan.domains.postgres.status,'NOT_APPLICABLE');assert.equal(plan.domains.historical584National.status,'NOT_APPLICABLE');
+      assert.equal(plan.baselineQualified,false);assert.equal(plan.skipAuthorized,false);assert.equal(plan.productionAuthority,false);
+      for(const command of ['node --test scripts/test-source-impact-full-baseline.mjs','node --test scripts/test-native-postgres-evidence.mjs',
+        'node --test scripts/test-source-impact-domain-inputs.mjs','node --test scripts/test-source-impact-domain-plan.mjs'])
+        assert.equal(plan.commands.filter(value=>value===command).length,1);
+      assert(!plan.commands.includes('node scripts/reclaim-runner-android-sdk.mjs'),'Unregistered native SDK CLI is not silently selected or proven');
+    });
+    await t.test('current597 OM owners retain the complete actual runtime and bank caller closure',()=>{
+      for(const owner of ['scripts/lib/open-meteo-part-runtime.mjs','scripts/produce-open-meteo-part-components.mjs',
+        'scripts/test-open-meteo-part-runtime.mjs']){
+        const original=git(root597,['cat-file','blob',baseline597+':'+owner]);
+        const actual=run597(make597(baseline597,[[owner,Buffer.concat([original,Buffer.from('\n// Synthetic actual597 OM owner.\n')])]],
+          'synthetic current597 OM owner closure'));
+        assert.equal(actual.status,'PLANNED',JSON.stringify(actual.reasonCodes));
+        assert.equal(actual.selection,'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(actual.reasonCodes));
+        for(const command of ['node scripts/test-open-meteo-part-bank.mjs','node scripts/test-open-meteo-part-runtime.mjs'])
+          assert.equal(actual.commands.filter(value=>value===command).length,1);
+        assert.equal(actual.skipAuthorized,false);assert.equal(actual.productionAuthority,false);
+      }
+    });
+    await t.test('597 resource budget includes every committed resource and refuses a bounded overflow',()=>{
+      const document='docs/rdks/MASTER_LOG.md',bytes=git(root597,['cat-file','blob',baseline597+':'+document]);
+      const within=make597(baseline597,[[owner597,Buffer.concat([before597,Buffer.from('\n// Synthetic597 budget owner.\n')])],
+        [document,Buffer.concat([bytes,Buffer.alloc(1024*1024,32)])]],'synthetic597 resources above historical48MiB');
+      const accepted=run597(within);
+      assert.equal(accepted.status,'PLANNED',JSON.stringify(accepted.reasonCodes));
+      assert.equal(accepted.selection,'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(accepted.reasonCodes));
+      const documents=['docs/rdks/MASTER_LOG.md','docs/rdks/90_INDEX/CURRENT_TRUTH.md','docs/rdks/90_INDEX/IMPLEMENTATION_STATUS.md'];
+      const oversized=documents.map(file=>[file,Buffer.concat([git(root597,['cat-file','blob',baseline597+':'+file]),
+        Buffer.alloc(4*1024*1024,32)])]);
+      const rejected=run597(make597(baseline597,oversized,'synthetic597 complete resource inventory exceeds56MiB'));
+      assert.equal(rejected.status,'REFUSED');assert.equal(rejected.selection,'FULL');
+      assert.deepEqual(rejected.reasonCodes,['DOMAIN_COMMITTED_BLOB_BUDGET_EXCEEDED']);
+    });
+    await t.test('new node/import/read/subprocess/reflection surfaces remain FULL',()=>{
+      for(const extra of ["\nimport 'node:net';\n","\nimport 'unregistered-package';\n",'\nimport(unregisteredSpecifier);\n',
+        "\nfs.readFileSync('unregistered-private.json');\n","\nspawn('unregistered-program',[]);\n","\nnew Function('return process')();\n"]){
+        const changed=make597(baseline597,[[owner597,Buffer.concat([before597,Buffer.from(extra)])]],'synthetic597 unknown capability');
+        assert.equal(run597(changed).selection,'FULL',extra);
+      }
+    });
+    await t.test('unknown owner, SDK owner and protected PostgreSQL/model inputs remain FULL',()=>{
+      for(const file of ['scripts/unregistered597-control.mjs','scripts/reclaim-runner-android-sdk.mjs',
+        'scripts/test-protected-ravscore-continuation-checkpoint.mjs','config.js']){
+        let bytes;try{bytes=git(root597,['cat-file','blob',baseline597+':'+file]);}catch{bytes=Buffer.alloc(0);}
+        const changed=make597(baseline597,[[file,Buffer.concat([bytes,Buffer.from('\n// synthetic597 input drift\n')])]],'synthetic597 protected or unknown edit');
+        assert.equal(run597(changed).selection,'FULL',file);
+      }
+    });
+    await t.test('changed SQL, mixed generation and corrupt registry bytes cannot qualify',()=>{
+      const migration='supabase/migrations/20261013220000_current_grid_original_bound_successor.sql';
+      const sql=git(root597,['cat-file','blob',baseline597+':'+migration]);
+      assert.equal(run597(make597(baseline597,[[migration,Buffer.concat([sql,Buffer.from('\n-- synthetic drift\n')])]],'synthetic597 SQL drift')).selection,'FULL');
+      const pkg=JSON.parse(git(root597,['cat-file','blob',baseline597+':package.json']));pkg.version='4.0.594';
+      assert.equal(run597(make597(baseline597,[['package.json',Buffer.from(JSON.stringify(pkg))]],'synthetic mixed generation')).selection,'FULL');
+      const registryFile=path.join(root597,'scripts/lib/source-impact-domain-owners-597.json'),bytes=fs.readFileSync(registryFile);
+      try{fs.writeFileSync(registryFile,Buffer.concat([bytes,Buffer.from('\n')]));assert.equal(run597(candidate597).selection,'FULL');}
+      finally{fs.writeFileSync(registryFile,bytes);}
+    });
+  }finally{
+    assert.equal(path.dirname(fs.realpathSync(root597)),temporary597);const current=fs.lstatSync(root597,{bigint:true});
+    assert.equal(current.dev,owned597.dev);assert.equal(current.ino,owned597.ino);assert.equal(current.birthtimeNs,owned597.birthtimeNs);
+    fs.rmSync(root597,{recursive:true,force:false});
   }
 });
