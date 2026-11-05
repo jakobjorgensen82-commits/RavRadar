@@ -38,9 +38,18 @@ const currentJob=50000000004,finalId=50000000005,nativeId=50000000006,pr=999,bas
 const repo='/repos/'+ORIGIN.repository,actions=repo+'/actions';
 const state={missing:false,badNational:false,badJob:false,movedPull:false,laterInspections:false,transportRoutes:false,postFailure:false};
 function copyModule(name,seen=new Set()){
-  if(seen.has(name))return;seen.add(name);const bytes=fs.readFileSync(path.join(SOURCE,name));write(name,bytes);
+  // ESM resolves relative specifiers as URLs; query/fragment identify a module,
+  // while fileURLToPath supplies the underlying local filename for byte copying.
+  const url=new URL(name,pathToFileURL(SOURCE+path.sep));
+  assert.equal(url.protocol,'file:','FIXTURE_LOCAL_MODULE_ONLY');
+  assert.equal(url.host,'','FIXTURE_LOCAL_MODULE_ONLY');
+  const sourceFile=fileURLToPath(url),relative=path.relative(SOURCE,sourceFile);
+  assert(relative&&!path.isAbsolute(relative)&&relative!=='..'&&!relative.startsWith('..'+path.sep),
+    'FIXTURE_MODULE_OUTSIDE_REPOSITORY');
+  const key=relative.split(path.sep).join('/');
+  if(seen.has(key))return;seen.add(key);const bytes=fs.readFileSync(sourceFile);write(key,bytes);
   for(const m of bytes.toString('utf8').matchAll(/^import\b[^;]*?\bfrom\s*['"](\.[^'"]+)['"]/gm))
-    copyModule(path.posix.normalize(path.posix.join(path.posix.dirname(name),m[1])),seen);
+    copyModule(new URL(m[1],url).href,seen);
 }
 function rebuild(){
   const rawFinal=Buffer.from(JSON.stringify(full)+'\n'),rawNative=Buffer.from(JSON.stringify(phase)+'\n');
@@ -168,6 +177,11 @@ function reset(){
 try{
   git(['init','-q']);git(['config','user.name','Synthetic source producer']);git(['config','user.email','fixture@example.invalid']);
   git(['config','core.autocrlf','false']);
+  for(const name of ['https://fixture.invalid/module.mjs','file://fixture.invalid/module.mjs'])
+    assert.throws(()=>copyModule(name),/FIXTURE_LOCAL_MODULE_ONLY/);
+  assert.throws(()=>copyModule('../outside-fixture.mjs'),/FIXTURE_MODULE_OUTSIDE_REPOSITORY/);
+  assert.throws(()=>copyModule('scripts/__missing_targeted_fixture__.mjs?fixture=1#fragment'),
+    error=>error.code==='ENOENT'&&error.path===path.join(SOURCE,'scripts/__missing_targeted_fixture__.mjs'));
   copyModule('scripts/source-targeted-producer.mjs');
   copyModule('scripts/weather-source-gate.mjs');
   for(const name of ['package.json','scripts/lib/account-statistics-assistant-package-review.json','js/ui/about-i18n.js',
