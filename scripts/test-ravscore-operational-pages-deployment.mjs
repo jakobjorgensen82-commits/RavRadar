@@ -38,6 +38,1102 @@ const MODEL_CLOSURE = Object.freeze([
   'js/services/rav-assistant.js',
   'js/services/trip-evidence-public-adapter.js',
 ]);
+// Genuine immutable implementation; every weather/score cell below is synthetic.
+// The normal viewer and all product modules are imported whole and never hooked.
+const FROZEN_594_FIXTURE_REF = '6ea7c72bbf15c2ff79179b13d69d4b7bf0cb2e55';
+const FROZEN_594_FIXTURE_TREE = '51515275e13c281bddd72a903bcac47878198b95';
+const FROZEN_594_FIXTURE_SOURCES = Object.freeze([
+  {
+    "path": "admin.html",
+    "bytes": 2865,
+    "gitBlob": "6358f6eadbcd0897333945c57a9b20b7103f89ee",
+    "sha256": "37f4436cd2fc974d2434641f149039b1a7c0cce28d125b5930d163ff07a6b9b4"
+  },
+  {
+    "path": "app.js",
+    "bytes": 61191,
+    "gitBlob": "23f748ecc8b0a82a9fdfc4e4146812b7918efc41",
+    "sha256": "5a051b50c66c055c0e9e3af918266d68c42279fd7c994bf237e2e2e5fa643c82"
+  },
+  {
+    "path": "bootstrap.js",
+    "bytes": 1576,
+    "gitBlob": "7dc752dcd8b1d59f3733cb26f2ae28eeb0831e70",
+    "sha256": "bc8c51748dada81b3783937eef861043deb5339c5b280591cf5f900f25172304"
+  },
+  {
+    "path": "config.js",
+    "bytes": 379,
+    "gitBlob": "1d8989418d4e85eacde80137b807d2723c49e188",
+    "sha256": "7cb635a4fbfad6693774ecc776dd5df6bef024d59aba51c50eeab380fdc4ed0d"
+  },
+  {
+    "path": "data/jordrav/context-20261006/profiles.json",
+    "bytes": 19372,
+    "gitBlob": "58aa3b581fef42537d1c4a7850313b66f779f504",
+    "sha256": "bdfee755c5be9f0e80e0b4ecb2614ead6fd91980a5882250d01efdf563afe4a6"
+  },
+  {
+    "path": "index.html",
+    "bytes": 15262,
+    "gitBlob": "f9e7e00f3f530db12ee327818b03098cf8b5579f",
+    "sha256": "4744445e4aa348ba9e6177fcac15bdb271a33c9121557bd3b9b02271fa5e7e47"
+  },
+  {
+    "path": "js/core/about-home-return.js",
+    "bytes": 1061,
+    "gitBlob": "9ff0473650b0d2aa9ce20fac0af106f62e715791",
+    "sha256": "5c51be78cff4173df9edddcfb65175dd6291fb9598369b2b7d976d0d331fa403"
+  },
+  {
+    "path": "js/core/adaptive-model.js",
+    "bytes": 5870,
+    "gitBlob": "99edd21ff047adc8ae33d7b12cb38fb121af0b40",
+    "sha256": "9dfe107a9a35c8ba6459d2c1103c97054e7593f1efdb44136c771385c7a69faf"
+  },
+  {
+    "path": "js/core/best-time-policy.js",
+    "bytes": 6392,
+    "gitBlob": "2cd94a73f89848a694b28ef776ced58db343b6ff",
+    "sha256": "81c45d1b7d1da0c635c66c2f1bd39236ea42fd37d43fe9f72fc0f1d29850f899"
+  },
+  {
+    "path": "js/core/best-time-selector.js",
+    "bytes": 2611,
+    "gitBlob": "510ee370b79b529da2122f170edd26e3250ba203",
+    "sha256": "c8c3caec6d61abad48410e39021c6a11b1f90945436848b4b6c996532631f618"
+  },
+  {
+    "path": "js/core/coastal-process-model.js",
+    "bytes": 8758,
+    "gitBlob": "70bdb22b0212c9ff089f81a8e66aee4c73e26a7f",
+    "sha256": "dd04f8f1184b26336b66aab07badd2ee5606ea0c67242df19b40162a275d1687"
+  },
+  {
+    "path": "js/core/coastline-editor-model.js",
+    "bytes": 8017,
+    "gitBlob": "f809be07da8fdc13f6873efc24a2fcd7d3546a23",
+    "sha256": "e870114e43d83565e28f9a577bf9593d7ab876afb10caafd6016dd95930ab3b5"
+  },
+  {
+    "path": "js/core/current-direction-audit.js",
+    "bytes": 1729,
+    "gitBlob": "5c642d5dc7f14267023c6ec4af737f821638ffc6",
+    "sha256": "668d18b108e7bce448d928662b64eaaaac876d667949ebdb8dc25f9468650f59"
+  },
+  {
+    "path": "js/core/debug-trace.js",
+    "bytes": 892,
+    "gitBlob": "7cce81d7c6b65b652d3c6447b67e85a149bf39c1",
+    "sha256": "bed68c5a2031ec30b4acf2f9bc5fea20ec5ee21e206d7cfee7b0124caab8ad8e"
+  },
+  {
+    "path": "js/core/direction-anchors.js",
+    "bytes": 4429,
+    "gitBlob": "daca276fb12429d384e8ea6a3d1d5c0870581db0",
+    "sha256": "0003c0e5c5f13c344384f0bb5956a3b2f083b3f0d05f1e32e99eccc1426d6c85"
+  },
+  {
+    "path": "js/core/forecast-calendar.js",
+    "bytes": 2181,
+    "gitBlob": "27156866e4404736d9b76e82c1853440147c4c25",
+    "sha256": "7d1cb4e9dec2c072cf51fd08537aa5b870605f83345c341d92651e1a11f89658"
+  },
+  {
+    "path": "js/core/free-text-rule-assistant.js",
+    "bytes": 2728,
+    "gitBlob": "82f41f6edc9924d553bb564e96b36f8eab4bb4d4",
+    "sha256": "de23bfc3bffcc255476b0441c0daddfb368c701e9ac569e6b2abc366f3baee13"
+  },
+  {
+    "path": "js/core/geographic-areas.js",
+    "bytes": 4102,
+    "gitBlob": "0fdc2235ec9c06fd07e45dfff586dc9e06723d1d",
+    "sha256": "d022ce15f40c7d541c9c68021abe8517149407c88b754b284296bfcd1fcacd68"
+  },
+  {
+    "path": "js/core/local-zone-score.js",
+    "bytes": 19425,
+    "gitBlob": "6d069b068de42ad85925c370ef9c29eaa319f7c5",
+    "sha256": "07aa29f351766546a967867bb1873cd1bd55d197d13c02c8a1efa3b9c1135f27"
+  },
+  {
+    "path": "js/core/phase-d-process-candidate.js",
+    "bytes": 14109,
+    "gitBlob": "db9d082b051ab5af1bcbc404610c69f8bd1ba800",
+    "sha256": "d745f8ead7554bb0c63bd2f3740efff243ee761c99f86e93fc7276883a64fcfa"
+  },
+  {
+    "path": "js/core/phase-d-wave-process-candidate.js",
+    "bytes": 5223,
+    "gitBlob": "c968fb74b00b7d568f0d2fed889345d2cb258d41",
+    "sha256": "d5674b191d309c3b5f92b761b0c54a181057dadde54b6246633a47bae9d9a7fa"
+  },
+  {
+    "path": "js/core/prediction-engine.js",
+    "bytes": 3960,
+    "gitBlob": "e0ade28fb998d7d1f9f9aba3cac925994dd1e28c",
+    "sha256": "8a43cb50ce68a393e1b1de129fde39db41f6d4b974c2a74709ec97587e6eb928"
+  },
+  {
+    "path": "js/core/public-delivery-contract.js",
+    "bytes": 9266,
+    "gitBlob": "af956d7bc66ecdd6d52a4d0d4ce3b287b1cf0618",
+    "sha256": "0571025b79e74cf5c0c71d2356146da4a4c5159ee2571de7d45448361b85692d"
+  },
+  {
+    "path": "js/core/public-page-resume.js",
+    "bytes": 1914,
+    "gitBlob": "c5e657b3e4e4499d4710c6e7e9474a2d636bdce1",
+    "sha256": "5f10b77c43aaf4e3691970d0ad0c131c5b92295a4c46220222f11e03be9c5374"
+  },
+  {
+    "path": "js/core/ravscore-candidate-g-state-pipeline.js",
+    "bytes": 16255,
+    "gitBlob": "57084ac2f486a67017a845bb7da5c414c3734625",
+    "sha256": "fe4b7e7e8e4a07dcd74d1da0c3e566971df33e3ef418fd7f2fc3f1028008c3e7"
+  },
+  {
+    "path": "js/core/ravscore-candidate-g.js",
+    "bytes": 25702,
+    "gitBlob": "9b33b4b228ce11fe761532b4d253203bcf611359",
+    "sha256": "85fa35b8286386f2917a541b8d0c42b639d8117e67e00333201793da2f590e9f"
+  },
+  {
+    "path": "js/core/ravscore-current-supply-memory.js",
+    "bytes": 32847,
+    "gitBlob": "86f1d369d02df60abe6368c7dd297fca890170fe",
+    "sha256": "7e462b10982724d121ab1566a5fe497beb62f49b0f821bf768165af29e5401da"
+  },
+  {
+    "path": "js/core/ravscore-evidence-trust-contract.js",
+    "bytes": 3477,
+    "gitBlob": "45f1cc37807498bef6b11c9d828071b7e5761e1f",
+    "sha256": "81a8560d2c9e7b372a7e6608da80dab993b7249ca7ef1c573378e6e9303e9157"
+  },
+  {
+    "path": "js/core/ravscore-huntability.js",
+    "bytes": 4005,
+    "gitBlob": "5a95211058b36b0ff871b3a408991e1909451b32",
+    "sha256": "eabc93f7bf66d8daab6f29221d759c01ede4f3832a828da383cc864169d608d7"
+  },
+  {
+    "path": "js/core/ravscore-integrated-explanation-presenter.js",
+    "bytes": 37066,
+    "gitBlob": "aa56cf5d7cb7552b2396bb9d9588567c15f7daf9",
+    "sha256": "eec81708bf0db842c55811383126fb4f54e5e1578b2b9b9f8ff1a7fcc739dab9"
+  },
+  {
+    "path": "js/core/ravscore-integrated-state-pipeline.js",
+    "bytes": 99166,
+    "gitBlob": "de16f3f32d10f5ce8e8ae1c2257edc47372bc331",
+    "sha256": "b81dcc45ea939f54aaedffe60af90cf1709239941129057fe2007c12d1e27f2a"
+  },
+  {
+    "path": "js/core/ravscore-integrated.js",
+    "bytes": 27487,
+    "gitBlob": "a91493211d7830ecd39fff9bef355c5deed617b6",
+    "sha256": "ba041c23de74829cade71b679dc8a566befeb41140bf1ee3fa1ceefc6e803317"
+  },
+  {
+    "path": "js/core/ravscore-mobilisation-memory.js",
+    "bytes": 6749,
+    "gitBlob": "4c4e4e4d1c62d5fd26fa63d05b5b3cc7cb3ee403",
+    "sha256": "fdb8c104f6df2e31eba05ea1e31d844e5a376a9b754784793a79398843231031"
+  },
+  {
+    "path": "js/core/ravscore-mode-huntability-research.js",
+    "bytes": 3722,
+    "gitBlob": "82342b6378da0143e7411fd1bb24d41ff050acf6",
+    "sha256": "f40ef10d0ccf6ec8a4b22af5c33b87332bdff93ceb8ceba094807cfc6b04dc7c"
+  },
+  {
+    "path": "js/core/ravscore-model-bundle.generated.js",
+    "bytes": 16920,
+    "gitBlob": "0b336df4fee5c2541e5ceebe6fe3acdf8dd14e05",
+    "sha256": "37d27d1f5a199ef371124e2d06da1d8142b0734aafb6b8416242cf9d423cfa02"
+  },
+  {
+    "path": "js/core/ravscore-model-contract.js",
+    "bytes": 13790,
+    "gitBlob": "251e476c24a278cdf24fcca37a8bac4f86e5c9c7",
+    "sha256": "6edf369edf09b50005a0d04ce0ec892cf6455ddcea02ab4a7f2e51b644b8baab"
+  },
+  {
+    "path": "js/core/ravscore-profile-switch.js",
+    "bytes": 24065,
+    "gitBlob": "bf918082c7862193d9df8c98bed625bfa7a65d42",
+    "sha256": "446e6ba22f5d9c2b1aefc300890c950cdd95f158750f99cea3aa224df879c36b"
+  },
+  {
+    "path": "js/core/ravscore-public-model.js",
+    "bytes": 33663,
+    "gitBlob": "b7c2d37cd0d9661c23aeafbe4e21baad10f9693b",
+    "sha256": "08180f603fbc738bbc12201a10d043f4319c5008947ad90099cf63fddebbc983"
+  },
+  {
+    "path": "js/core/ravscore-public-profile-contract.js",
+    "bytes": 5565,
+    "gitBlob": "99c90a387e825a2ee9dd1cbd5620710065d44010",
+    "sha256": "ac011932b79b2ff5adf228e71882cdbea228b6fbc528887ccaa645d318dd86b4"
+  },
+  {
+    "path": "js/core/ravscore-public-runtime-contract.js",
+    "bytes": 34644,
+    "gitBlob": "4caebd3c42b5e63168b6763e8aeffa5efc22348b",
+    "sha256": "d1040e1fdd958584416b45fae6c5aa725db822a441b2b927d34858f2e089da5d"
+  },
+  {
+    "path": "js/core/ravscore-public-weather-source-age.js",
+    "bytes": 7151,
+    "gitBlob": "841303a80ce361a27f29727e7ba09ec9cd42a11b",
+    "sha256": "e06902c660ad0337be478c5d9140c59cc0477164caa50efb5c9dc3b9f3faca26"
+  },
+  {
+    "path": "js/core/ravscore-regime-memory.js",
+    "bytes": 36237,
+    "gitBlob": "90e9a19af406e5d4755e227f0814f44b87a325b3",
+    "sha256": "fd361b0b0d5cbb6bf7d7af632aad070be7c3e49dd4870837476bc96fe3f1cb22"
+  },
+  {
+    "path": "js/core/ravscore-time.js",
+    "bytes": 1550,
+    "gitBlob": "65786c3044d3b5ce0a024d368eda286a058853db",
+    "sha256": "b2311b8f2426968da59b387096522c29a191c4640afe39913ec0ae0c5b0272fa"
+  },
+  {
+    "path": "js/core/ravscore-wave-approach-state.js",
+    "bytes": 15550,
+    "gitBlob": "0d60b888931800eb0249f44e17c7e983398b37f0",
+    "sha256": "6900c089a30e3036dcb05ef1c985b71299c2c408257deea37f18fdbcbcba4e2c"
+  },
+  {
+    "path": "js/core/ravscore-wave-mobilisation-state.js",
+    "bytes": 22009,
+    "gitBlob": "3794d40770ec15d411eeb748ba7ff5bf47d1d209",
+    "sha256": "f845fdaa95733b1b57fd7b53b085e3b9d5e60ea431ac84072b442d07aa89fb35"
+  },
+  {
+    "path": "js/core/rule-engine.js",
+    "bytes": 4305,
+    "gitBlob": "8d3215c3dea4dc1368822331575d963c635a5404",
+    "sha256": "e7ca43742abd156f586d367081c8975352bc8a1ee084fd12173ba5ac889ab1e3"
+  },
+  {
+    "path": "js/core/score-candidates.js",
+    "bytes": 4524,
+    "gitBlob": "324bf310c1816cb3cbd0a1d037bae1e1579ff332",
+    "sha256": "12c880bdd952599e6e70df756b1f8d275148b2060ecfc1e281a6cc26cf42ff7b"
+  },
+  {
+    "path": "js/core/score-engine.js",
+    "bytes": 19093,
+    "gitBlob": "da52b07033df6922a95bd43f2e4f8b501ec52aab",
+    "sha256": "ef6691c1347511d39efde65d0c198c2d12cf83e81bcbb4689f23147d79126a90"
+  },
+  {
+    "path": "js/core/score-presentation.js",
+    "bytes": 746,
+    "gitBlob": "1c76f74b1c4379198776764ffcb61ed7d1b4a261",
+    "sha256": "b8d8fe611b42eb1114e2d42a6cf5e8cc32fef8e6de59ae86baf10b15c15ef75f"
+  },
+  {
+    "path": "js/core/water-station-routing.js",
+    "bytes": 6653,
+    "gitBlob": "2517c9586c2966659304d6956de12ed3e26775af",
+    "sha256": "46a0930e382fcbefb08c4e1f66868cc54f91396b7bbaa6243c1ca88ba6e7434b"
+  },
+  {
+    "path": "js/core/wave-approach.js",
+    "bytes": 3626,
+    "gitBlob": "ee2431f7c3edc95dfe2e3eca4229c414a322cfa2",
+    "sha256": "1dda08cdd8e8e0eedbd5e426237372e2dba3c076af4da26f757066fb91d5076c"
+  },
+  {
+    "path": "js/core/zone-ranking.js",
+    "bytes": 5240,
+    "gitBlob": "949e7e29505bea3a47cac4e5e4896f0b3fc92f24",
+    "sha256": "6a672a90255894357ec0b5985da474d314b502f21b4e5f0b7bea1e1c1c0ea464"
+  },
+  {
+    "path": "js/i18n.js",
+    "bytes": 127262,
+    "gitBlob": "02c2cdd3a7e293b42804970887cf02e7533233b9",
+    "sha256": "d0ac1b3e3e3874fd88e828aa1805364b7f47023a0b527165ad8f59bd26acefe8"
+  },
+  {
+    "path": "js/jordrav/accessibility.js",
+    "bytes": 1188,
+    "gitBlob": "b6e7c8dbeaa5e11e7825904e678bff8badf79be0",
+    "sha256": "af2e405f37735c53f8770f8466d4ca2f9a8d6be060523ec4539f53a6f32a8b7e"
+  },
+  {
+    "path": "js/jordrav/context-messages.js",
+    "bytes": 26741,
+    "gitBlob": "805ea1dc5938d7158ab8a616f4b9734554fc022a",
+    "sha256": "faafadbf833e66a3ee7af0234d03d48e919bed66568da66adb77439cae1a2e15"
+  },
+  {
+    "path": "js/jordrav/data-service.js",
+    "bytes": 6307,
+    "gitBlob": "08d235e3656678c3ff5e1938c1121ec9846e7c74",
+    "sha256": "81ecb4ecf74e3c5fa50f202597f2e19bb7308c352d61572798340d556b76fa45"
+  },
+  {
+    "path": "js/jordrav/dataset-binding.js",
+    "bytes": 322,
+    "gitBlob": "0c03c70e491ab8c97089cc73fc15d5c6f41db8ed",
+    "sha256": "8b1a5c73fbd94ce9d075ed6dd64712a12d696ee86e62ff6b476c8b2b9fb611a4"
+  },
+  {
+    "path": "js/jordrav/evidence-chain.js",
+    "bytes": 1614,
+    "gitBlob": "c6e2d18923823f7dbe54665bd3e1cd366937bad7",
+    "sha256": "ff9c0e9f01670b4756b407d18c08715a26fc4616b4e969b4586de7b93eb2ba44"
+  },
+  {
+    "path": "js/jordrav/field-context.js",
+    "bytes": 2317,
+    "gitBlob": "c64d74e5b2c419582b82bfecc83dc0b15c094e90",
+    "sha256": "5b06eb84d0bf0f6c1c69c1388e2ddf01186b4c0d8d8a0ab57f6504d11c9f4ba9"
+  },
+  {
+    "path": "js/jordrav/landscape-context.js",
+    "bytes": 3551,
+    "gitBlob": "6e669d35db3d06f7b4b2b2d4636069eceb8dc15e",
+    "sha256": "c400aabbfdc909da087e96037b481113debb94dc96a47ef7655c77929210114b"
+  },
+  {
+    "path": "js/jordrav/layer-access.js",
+    "bytes": 1812,
+    "gitBlob": "b762c7076c6ec034b56f0618b8395e215c3012e6",
+    "sha256": "2a9d689aaf887aabbb8546dc6137a0c4052b3cc6929346dfad3b9113e9c57224"
+  },
+  {
+    "path": "js/jordrav/map.js",
+    "bytes": 35112,
+    "gitBlob": "1287491da972cb923d51642ab25dcd76ac408182",
+    "sha256": "42364fe193efbaef1bc66fa943b4600f94b5623a91b787fcde05deb94b820981"
+  },
+  {
+    "path": "js/jordrav/messages.js",
+    "bytes": 110123,
+    "gitBlob": "c5d6c0b6ff5f959a123700b39ade5643cac19349",
+    "sha256": "1369dc726407674c6544ab0a5fac8b37fcb9f9535d85bee794a53df3703f3946"
+  },
+  {
+    "path": "js/jordrav/profile-examples.js",
+    "bytes": 2266,
+    "gitBlob": "8b01f19374ccc76605bfd21d4515c4d4eae53ffa",
+    "sha256": "ce910aebf4182b1186c3d212541672ca9c5fb394838734164c3739dbdada1db5"
+  },
+  {
+    "path": "js/jordrav/public-context.js",
+    "bytes": 9264,
+    "gitBlob": "9ac731b69d93c23ff432c4123b5966ab60a81407",
+    "sha256": "efacbc9315bdb02df3ec2c33bda9f389550628186b7a438f5cf5259a6a28b155"
+  },
+  {
+    "path": "js/jordrav/regional-hypotheses.js",
+    "bytes": 23929,
+    "gitBlob": "29a8f5691d385424831f02661f2484b69fd1f6f5",
+    "sha256": "ec9da8c58ac068ea8cc9b632a98348ae889eb000063f26abb871dd8658d2628d"
+  },
+  {
+    "path": "js/jordrav/search-context.js",
+    "bytes": 2385,
+    "gitBlob": "727ab64256701d81057d41b9c99967a3ed588a9d",
+    "sha256": "06672b010b88bdd96ee5d828079b26990b2b1b1edef962d04eb070607efdb212"
+  },
+  {
+    "path": "js/jordrav/view-state.js",
+    "bytes": 3555,
+    "gitBlob": "d4194bf148f2cbfb8f3e9b32dd8edaf97ce69e17",
+    "sha256": "271a8f71eb42ebb89d19a25aee90cdd73e72985d1526710548f56aeaa0f2ffc3"
+  },
+  {
+    "path": "js/map/current-arrow-land-mask.js",
+    "bytes": 6900,
+    "gitBlob": "bf4c818d08da8256911b8fdd484c7c523f4fcabd",
+    "sha256": "d35060c6e4ee4a72a3ba38082cc22428fc0d8f9769339f8f7be1e4b99320644e"
+  },
+  {
+    "path": "js/map/map-view.js",
+    "bytes": 27242,
+    "gitBlob": "3fc63ed0ce0324f04da04382983fff1caf1766ad",
+    "sha256": "e3a91cd91bc376e59e4e4691ff6449f6c84a193761417c3cfdba0253603dbd8f"
+  },
+  {
+    "path": "js/map/public-coast-projection.js",
+    "bytes": 1604,
+    "gitBlob": "3f57990fc671dc747b7465a08dcfc8b203c9150b",
+    "sha256": "491a6d2598a5ddd086c589eae78118a503e1b079d32cd1da8eef58382f507f69"
+  },
+  {
+    "path": "js/services/account-trip-report-contract.js",
+    "bytes": 5067,
+    "gitBlob": "443f08fe8c887492c3300606fb96d81378be26da",
+    "sha256": "785d526ed22152240e52fbea46ec75fab0761f6a017eb2d81c7ec14799242bfa"
+  },
+  {
+    "path": "js/services/admin-account-categories.js",
+    "bytes": 2625,
+    "gitBlob": "52e6224468dd8240875b108135db3bc9026f92cf",
+    "sha256": "9067ad39e04bbc6ed3d7cfcefe54d231db82a2a1e1f757aaf61e508afeacd1a3"
+  },
+  {
+    "path": "js/services/admin-document-store.js",
+    "bytes": 5303,
+    "gitBlob": "2179b927661f1296dfbf0420d3cb02b62b3b158d",
+    "sha256": "aa72b1b3b36a9016a5ba6bf96af96a0160bcf372790d4d569a6bfd06420fc931"
+  },
+  {
+    "path": "js/services/admin-trip-count.js",
+    "bytes": 1874,
+    "gitBlob": "2ff49333989c7567b646503b4d965bfc81c1aa00",
+    "sha256": "c2f4ed0c1f51c9c6b4c0a4e37e450f8b12f258d47a2fa4360e072273877d85f2"
+  },
+  {
+    "path": "js/services/app-update-flow.js",
+    "bytes": 5380,
+    "gitBlob": "c7aa78ee5333f6aa78d0a1c42dc585b041517453",
+    "sha256": "6392f0d00f313adeb287e557c9ec812b01957d33351ce19c68646c96550c37c7"
+  },
+  {
+    "path": "js/services/auth-service.js",
+    "bytes": 17277,
+    "gitBlob": "4edb6f34b06d5cb27cd8330c215a11b56c32c377",
+    "sha256": "e5a24622da00da63d4f4e7015faac67727e151ff5301b09ff835f7749c91b78f"
+  },
+  {
+    "path": "js/services/calibration-eligibility.js",
+    "bytes": 36418,
+    "gitBlob": "9c34d0820f40654337ec7577a658b7f52c9047e2",
+    "sha256": "30c37a9a4ea6dee8b16312cf7509e30064b6087bfcf9ceeca366201f1b292b72"
+  },
+  {
+    "path": "js/services/data-service.js",
+    "bytes": 80875,
+    "gitBlob": "7718e65f7c2e13e944789d0a33b0fb3c2d90e4ce",
+    "sha256": "d8ecd7709b01ea6d6bb3fcd06235acab50e68b6f4c119341e3624af195863145"
+  },
+  {
+    "path": "js/services/forecast-share-contract.js",
+    "bytes": 7580,
+    "gitBlob": "9f14a99b1dd20e53ddf4857c406a636790eea526",
+    "sha256": "8e56531098a165ef7e8eb63f1683b2b660ddf4c4db026b33d3860acd1852d373"
+  },
+  {
+    "path": "js/services/forecast-share-projection.js",
+    "bytes": 12084,
+    "gitBlob": "27a6f8972d0e9fb5cf145b43fd1eea61fb14b754",
+    "sha256": "ab8b6ab2d6e59d93e3834e4cbc2683dc716d2147c9c3847b75741df1339b7155"
+  },
+  {
+    "path": "js/services/handbook-review-store.js",
+    "bytes": 8610,
+    "gitBlob": "fa91a4acd062e6cddf2a3412409ff81cb3c522a9",
+    "sha256": "0bda47c3e744fd9135af7ba534900fdada39139ac26dfd7e56331e8dbac98ff9"
+  },
+  {
+    "path": "js/services/historical-analysis.js",
+    "bytes": 2020,
+    "gitBlob": "8a30366430720223486cc40c56b35d966b1304c9",
+    "sha256": "62da45b1351c90be41a3201c86a4a994f5fa5d760e4f542dea96bb7a04207622"
+  },
+  {
+    "path": "js/services/html-sanitizer.js",
+    "bytes": 1906,
+    "gitBlob": "e92cffa7bcfc5c8dafd8dd9f2bc1cf543e86b7c0",
+    "sha256": "b19e49b9a67497749447669b3da4709645d9cafe6b91f92234c2dee399be42a7"
+  },
+  {
+    "path": "js/services/learning-analysis.js",
+    "bytes": 3842,
+    "gitBlob": "7dc154efe506bcf2e8f5b9df3e05c34e6d4af79c",
+    "sha256": "4764f48af0792d94ed9c3516476245ba008c08def7ee78be735cdddbce4b3f91"
+  },
+  {
+    "path": "js/services/map-forecast-view.js",
+    "bytes": 4672,
+    "gitBlob": "f3728238d5bec1fb39430d916868c1c815a1db70",
+    "sha256": "b77c363c14019b583e8227c907de7d612f4fd4c8defc506b65520b4f1da54767"
+  },
+  {
+    "path": "js/services/observation-service.js",
+    "bytes": 32141,
+    "gitBlob": "f0cb615aeb6d37b28d244de69ec3fd2df67386e3",
+    "sha256": "84a881ca4c5deb4e23dd3b2fc2cce93707b5ed94669dfc978536917b6932d15c"
+  },
+  {
+    "path": "js/services/own-trip-export.js",
+    "bytes": 3164,
+    "gitBlob": "992e69fd99b0a9e70f47ce6964608f2578483fa6",
+    "sha256": "6add028836a5fef4bd5adbe314e9251a47221af604da112953ed08e3ca74fdd9"
+  },
+  {
+    "path": "js/services/permissions-service.js",
+    "bytes": 6716,
+    "gitBlob": "287e4f755bf416ed3d1cdef298168ed968eaa177",
+    "sha256": "9d0af1b42fa784583ae6505ee6b31394c21672915ef2c7100069cf82ad8bfe21"
+  },
+  {
+    "path": "js/services/persistence-test-service.js",
+    "bytes": 2929,
+    "gitBlob": "b4f3f073bf7e2b89597b44a12b6183cb6cd7682f",
+    "sha256": "8c01d3a19e3a1f1fbe2d07052ece5bdc80e14eddd4bb60a92d87f901523cd986"
+  },
+  {
+    "path": "js/services/plain-map-hour.js",
+    "bytes": 9834,
+    "gitBlob": "f6f798f3776a07c86a46763bf8dbcd1a3471b1a0",
+    "sha256": "02d1d1752784e9936c7da67a0983469b8e4f2e1ad0b3fe021b276a23a7076a5d"
+  },
+  {
+    "path": "js/services/private-trip-study.js",
+    "bytes": 5908,
+    "gitBlob": "4cc481c2982ca1baf5d03de224e79eadfdb7a921",
+    "sha256": "b3f72f6447a3c802d90814db4c843ac21f3b29f56096c31c8b9e11ce28500e67"
+  },
+  {
+    "path": "js/services/protected-runtime-envelope.js",
+    "bytes": 2446,
+    "gitBlob": "a457c76ae092a5e16585b31d1b209c0d58ea052c",
+    "sha256": "2627d6fa8d35619ce05bf621e92e6408296f31052f9b60074d9f1d0b8fcef79e"
+  },
+  {
+    "path": "js/services/public-delivery-transport-binding.js",
+    "bytes": 2762,
+    "gitBlob": "ea3806be8e1fd80fd85fc681f8b095ba60743be2",
+    "sha256": "854429582b1f6a0c69b4ff776e19566dd741d79557a6f23268f6d7eaecc78f23"
+  },
+  {
+    "path": "js/services/public-json-transport.js",
+    "bytes": 11002,
+    "gitBlob": "e0e78ac3f6a5b7560429d30bb8cfefc6e9dbdd45",
+    "sha256": "03a8808adfb8db9517aec7213baae2dc4b5d877fca2b2434bae316decedd6721"
+  },
+  {
+    "path": "js/services/rav-assistant.js",
+    "bytes": 85634,
+    "gitBlob": "2f79a3e19143f1fc143c7234a1112cdf308f3a74",
+    "sha256": "a5d02562f128fe0091e6371ae73cfb94f385b834165759646e41fe2e8553a1e0"
+  },
+  {
+    "path": "js/services/rule-service.js",
+    "bytes": 1096,
+    "gitBlob": "ebeca920644914786a1b05cfbb45c9a9059ae2ac",
+    "sha256": "885bc07d88152634ee8dddb75ba28c949e64deca684d941308bd4ba6ed6f8e7c"
+  },
+  {
+    "path": "js/services/site-function-test-service.js",
+    "bytes": 27715,
+    "gitBlob": "c3c6125ff60c75a0981ff1ad746c387743efd8c3",
+    "sha256": "5f43cc9723da10284f9bdc60fc671f729913b411f94a5fc463dcf1852abd027a"
+  },
+  {
+    "path": "js/services/storage-safety.js",
+    "bytes": 3630,
+    "gitBlob": "26a4ebb55bea191e9f88e10dc2f3b6d33de66930",
+    "sha256": "44df9c7fdb8df977fc269dcd2fdb20df8a79773502465f7d155c92e9bbd12038"
+  },
+  {
+    "path": "js/services/trip-evidence-contract.js",
+    "bytes": 28009,
+    "gitBlob": "268f04c4e23ba0cf641fafe8352bdf70962ea514",
+    "sha256": "0a2bdf43501ad88cc9817c47c8ec3f29cc1ff76403bb6acde81d30a365ad0d0b"
+  },
+  {
+    "path": "js/services/trip-evidence-controller.js",
+    "bytes": 2929,
+    "gitBlob": "96b15c4c36b865b0921a4d0b6682badd378a77f5",
+    "sha256": "49484fdb4b4163299bc18c80bed10e372fc590ece45a40fe3ef481c1eeabc478"
+  },
+  {
+    "path": "js/services/trip-evidence-legacy-bridge.js",
+    "bytes": 1862,
+    "gitBlob": "e34036d7cb7a64fbce48aa70f4a6e8f2224252da",
+    "sha256": "acb37c4f9d2cc910af281ef8107270d9d8bde528d9e9c74ed7b938deb96db754"
+  },
+  {
+    "path": "js/services/trip-evidence-public-adapter.js",
+    "bytes": 11414,
+    "gitBlob": "09c9477eb3cfd63475329db364252a50d817fb5e",
+    "sha256": "cdfb3e0c5d250b21a2fbd983184079d0da7b0f40e8455f2f9ca582be351bf4db"
+  },
+  {
+    "path": "js/services/trip-evidence-runtime.js",
+    "bytes": 3793,
+    "gitBlob": "25426693fe4ae64db1e4edc5eec57a38a739dd17",
+    "sha256": "9139d8cbf90c1c9d2041b7791566e5a4c7aab1f70b4fc07fd405ac528452f079"
+  },
+  {
+    "path": "js/services/trip-evidence-store.js",
+    "bytes": 5829,
+    "gitBlob": "9487d0d2c5011876985285f105e2485d0a5e7d51",
+    "sha256": "353440f3206beb90762fc85d7fed98e1f0eea535d626ae3ac71d69fabbd8ac1b"
+  },
+  {
+    "path": "js/services/trip-evidence-upload.js",
+    "bytes": 3052,
+    "gitBlob": "0e25e5f398f983dd113c565f4868937f9a41a132",
+    "sha256": "47522c5cee11d36aec9dd2ced168918590f96b1e5822126cb06a9275a906670f"
+  },
+  {
+    "path": "js/services/trip-service.js",
+    "bytes": 3267,
+    "gitBlob": "94828e6b4e615f6203867785ce0f6d14b9d1bea6",
+    "sha256": "2c6cd0b2970911ec4288d47a5ee202d2377d3c3977fc5face3d2da7c410174a7"
+  },
+  {
+    "path": "js/services/vendor/fflate-0.8.2/browser.js",
+    "bytes": 89406,
+    "gitBlob": "43152c4581b4c5e941fcc2198598a6114c97db89",
+    "sha256": "3eaf25846fc9ff95f4905ea16d2c33fa74b588da39b9746bc409bb7a44f96d0e"
+  },
+  {
+    "path": "js/services/vendor/fflate-0.8.2/LICENSE",
+    "bytes": 1069,
+    "gitBlob": "e84f0d6caca033c62946025c0237a499459af698",
+    "sha256": "805f6cb28bb8b6d3a0badd83c93bccd9671fa01a3b4b92b7042b0743325ac243"
+  },
+  {
+    "path": "js/services/vendor/fflate-0.8.2/PROVENANCE.json",
+    "bytes": 2414,
+    "gitBlob": "511e2b9a0cb137053a5ece88c76090346900fff0",
+    "sha256": "76481886ad9ec38dcffc526329cefbcd623b3c19ec6ac38f27a04ce7789b3fe1"
+  },
+  {
+    "path": "js/services/vendor/fflate-0.8.2/UPSTREAM.patch",
+    "bytes": 560,
+    "gitBlob": "148b1edf5210442fbb01bea671a3251df4ca499c",
+    "sha256": "dbccfc0511bb534622a9c9075e5645a3f158e33e36a55d68c55c7fff35d0d195"
+  },
+  {
+    "path": "js/services/visit-counter.js",
+    "bytes": 1505,
+    "gitBlob": "2e85076203b607d0a6b1c61ce030081c7069e036",
+    "sha256": "ee95fbafc913e7f89c664b70a6e106527b1cbbd3d5378f5a47c5199be6aebf98"
+  },
+  {
+    "path": "js/services/visitor-report-service.js",
+    "bytes": 771,
+    "gitBlob": "b5c557b52f71aa8cf82f1688f29538dee5075965",
+    "sha256": "a61e0f54405886aed40cf83d47521d36f72219e301475503d8dd6e3260acf225"
+  },
+  {
+    "path": "js/services/zone-hour-preview.js",
+    "bytes": 3929,
+    "gitBlob": "0d21eece806c3aaa63484e802f4ab2e009898a1e",
+    "sha256": "0c09ca433aafcbef18a91a90648e325e491a2c61af12dfa9936a4ac2bc9e1289"
+  },
+  {
+    "path": "js/services/zone-registry.js",
+    "bytes": 1722,
+    "gitBlob": "7862e22af933fdd762a720dc36f2bc99f6391170",
+    "sha256": "5935f86e229373c309bc620d372c459c0731c05681a007f608b1782687ed26e0"
+  },
+  {
+    "path": "js/ui/about-explainer-i18n.js",
+    "bytes": 64073,
+    "gitBlob": "0fa0872dd075d8f2ea2ffdb6dfc4a827660d11e1",
+    "sha256": "7d0e315e7d015787ae8068e16556fe3469243b208ecfd213ac7234e600549dab"
+  },
+  {
+    "path": "js/ui/about-explainer.js",
+    "bytes": 8550,
+    "gitBlob": "db7932f78d81575b5f5ae3f770ce339cb95f0583",
+    "sha256": "36720860cb3c011f9e030dff82277c044b8b528143a1b78f85f0ffcaf15a8a01"
+  },
+  {
+    "path": "js/ui/about-i18n.js",
+    "bytes": 19337,
+    "gitBlob": "d7ef7672f2a0208beb4c361bd3dea351f9941ba1",
+    "sha256": "6586ba3b2af47fe19e0dea3e475d16b4b5647d02eaa1d22aae994babb3804e21"
+  },
+  {
+    "path": "js/ui/about.js",
+    "bytes": 841,
+    "gitBlob": "9ae2e943a51406080962aded4344453a105398f3",
+    "sha256": "3e081b84aa55a4996014156417106341911a5c16a16b588b130261dd95ecd1da"
+  },
+  {
+    "path": "js/ui/account-panel.js",
+    "bytes": 17433,
+    "gitBlob": "455cbee5013de3198373b17094f8cb4c73459456",
+    "sha256": "633b12abf772dc3dd0da1a16895946d9b84ee98a2d17b8b83f1fd4f024e865cd"
+  },
+  {
+    "path": "js/ui/admin-active-ravscore.js",
+    "bytes": 11230,
+    "gitBlob": "0de5fa408c63436ed597f92fc6b1c2f90fb57e4c",
+    "sha256": "7feeb4c48972dc8c7fdd8e84ff925e1bb8003575dae61f85b3bd7c189786f9f8"
+  },
+  {
+    "path": "js/ui/admin-app.js",
+    "bytes": 99723,
+    "gitBlob": "642c7613e799e57b97a0fdba27daeccaff22371c",
+    "sha256": "d91d6dfc4eeddd0fda7a76472768237be3281cdd330bf866e77b3ab9f26987c3"
+  },
+  {
+    "path": "js/ui/admin-coastline-editor.js",
+    "bytes": 29443,
+    "gitBlob": "89b958b88d6a372d6da9f5870d73ec111caefc4d",
+    "sha256": "bbe36f921f473fededdc57d7352e499b0d221c515d5066e7ee984aa6787d8f2b"
+  },
+  {
+    "path": "js/ui/admin-dashboard.js",
+    "bytes": 150371,
+    "gitBlob": "4fb5464698739daf7eb563ed6acd90270edfb267",
+    "sha256": "f2bbd07fc3d923dcbc5fa4b3edc1371a774df4021de5af6cc27cff91b77db133"
+  },
+  {
+    "path": "js/ui/admin-direction-editor.js",
+    "bytes": 21604,
+    "gitBlob": "dc45faba687ade521b41ea1fa9b349e1869123c9",
+    "sha256": "09eb2b49aeccfef76e1f04b47c626441b4272b06c4f91010d395356d47a663d0"
+  },
+  {
+    "path": "js/ui/admin-gate.js",
+    "bytes": 2256,
+    "gitBlob": "ca46ab423ee5a915371c33ab96f2065dfeb5c000",
+    "sha256": "8debb0d3aee8adb701fbca37feb5b0d275ba7a3ab950194cf925b4b0a085047f"
+  },
+  {
+    "path": "js/ui/admin-private-trip-study.js",
+    "bytes": 7229,
+    "gitBlob": "e4d7116af53c76a8d09ba91b038987d817c3366b",
+    "sha256": "2af3197515f4cb04687377d4b2ca20ef1c7908990d418710b3be92dde2ca6e12"
+  },
+  {
+    "path": "js/ui/developer-panel.js",
+    "bytes": 4148,
+    "gitBlob": "c48c34395b78f451830991e9c89addc883e917c0",
+    "sha256": "35e89fb9aaf05df495e0c7501d561ce7df2eca6a6b84be562819d236defb9b18"
+  },
+  {
+    "path": "js/ui/documentation.js",
+    "bytes": 607,
+    "gitBlob": "6dc21f9b36fd0350a8bcdb342bfb2b3f3b943725",
+    "sha256": "1f806adb4f4a7b27233895bd9242347cfc04246d613aa29c4e015cfa6d5f14f3"
+  },
+  {
+    "path": "js/ui/forecast-share.js",
+    "bytes": 6245,
+    "gitBlob": "0ee5ce9619d2147d3b2f6c301f03516fac268e45",
+    "sha256": "fccb589c385b5bd56a4da5baa9aa7c20c2e858bcf6946f030e0a1f762c57d72b"
+  },
+  {
+    "path": "js/ui/handbook.js",
+    "bytes": 6014,
+    "gitBlob": "5fe61a59e0f774f8f6f5a701504a198d48c003c2",
+    "sha256": "9b3ad3388327de5ca1e2c6a9b287cb32517e6b6bcbc14235bce3c2b6f974e574"
+  },
+  {
+    "path": "js/ui/info-panel.js",
+    "bytes": 32933,
+    "gitBlob": "e60f3413656fa81f1ebae20e18dc4371decefaff",
+    "sha256": "ed0494cea8c48218b511124ded92e23bb44d0df65242e10957b8253b3eae8a08"
+  },
+  {
+    "path": "js/ui/learn-i18n-de.js",
+    "bytes": 29487,
+    "gitBlob": "db30839e2981b63642187d28e20736be971b9e17",
+    "sha256": "1fc66067568d8d4e14583047da483e4883156c8e316cfdfa7ede04cd7091523a"
+  },
+  {
+    "path": "js/ui/learn-i18n-en.js",
+    "bytes": 27027,
+    "gitBlob": "13d4198f98f60fd91473fd78c07e4408a5936112",
+    "sha256": "d2fc547025a210eda3c2c700ec76e19b861ce47cb076c0fcb64d0b1a1cb5fe26"
+  },
+  {
+    "path": "js/ui/learn-i18n.js",
+    "bytes": 8688,
+    "gitBlob": "5ec07cda9ad7b823f476027c1c25ce898e0a50b5",
+    "sha256": "d002ba4a0766b0b6d17632816a61c7b251a24a750b0d25c2b48431e6ebf3dd21"
+  },
+  {
+    "path": "js/ui/map-tab-copy.js",
+    "bytes": 417,
+    "gitBlob": "07d7dc1e8a5c7e8221f657c31b2447110431d18d",
+    "sha256": "33b9ce4de17e6de44df8f167b34e4ec7d78e96766a69b3b3820a37748663387a"
+  },
+  {
+    "path": "js/ui/map-timeline-copy.js",
+    "bytes": 2887,
+    "gitBlob": "cc41a6c57ab29194f59d3d5fb125db7c8db6ce69",
+    "sha256": "900e8d3f0e6e54474ca3d6c518ecbcc342eff58ad0c0fedf7330fbecb37833fe"
+  },
+  {
+    "path": "js/ui/map-timeline.js",
+    "bytes": 7504,
+    "gitBlob": "f3ce19668537db50e56dc71335025ad63937a626",
+    "sha256": "d48314d2ee148a6385af9a60d336b555ce97ac81443179be7fba3f64e8f5d00f"
+  },
+  {
+    "path": "js/ui/ranking-copy.js",
+    "bytes": 1657,
+    "gitBlob": "580320aecfeb1e22be080481720b0ce8eb0e332c",
+    "sha256": "0b6d07372cbad15bee0a02b2142bf20acd7fd9a8d26ee0ca1b829e0b1ac69431"
+  },
+  {
+    "path": "js/ui/score-prognosis-copy.js",
+    "bytes": 18496,
+    "gitBlob": "5210596f6e7b76cc294b0e98cdfb19c1a9bd34f2",
+    "sha256": "985b8c1aef5be5cb9dab546a18d5e621adbb25d95e48408c4e6b7f985347a7f9"
+  },
+  {
+    "path": "js/ui/site-search-copy.js",
+    "bytes": 1729,
+    "gitBlob": "dc0373cd20852e7f4be5b2a3f277188cb3d72fad",
+    "sha256": "b3711cf3e51d333e8f53944c5080c9338adcc32a1c1cccdb258e76f5851dbd5f"
+  },
+  {
+    "path": "js/ui/supabase-setup.js",
+    "bytes": 3396,
+    "gitBlob": "c1d0395783114bbb0ceb73687973f2c94a63e9a3",
+    "sha256": "af81793b79127a5152cad8d7a605a162c834e8cda5381776866ebf0d970a0d68"
+  },
+  {
+    "path": "js/ui/trip-evidence-dialog.js",
+    "bytes": 19872,
+    "gitBlob": "72ab477abb4aaa0458f5772c299b358ddb747504",
+    "sha256": "6d96602ea2482be3d8a9aaa2b336703fd11a2aeaa0f5b3e086d32f36be9d5f2c"
+  },
+  {
+    "path": "knowledge/rav-assistant-local-v2.js",
+    "bytes": 48676,
+    "gitBlob": "7ea79bf0974e4e446e2cff8fa8e9a1d14532a317",
+    "sha256": "e6cb2451eac50bcf3e4959d4b571aad6e9422c5f025edac2bc65a0e8f6aec754"
+  },
+  {
+    "path": "knowledge/rav-assistant-research-coast-v1.js",
+    "bytes": 52235,
+    "gitBlob": "c3ba153a1550fd64c4080fc57d86769e3c34a553",
+    "sha256": "2e86a4ab2c01638bc7297153d81caf0be6040571f8fcd4be11d6132d820ff0de"
+  },
+  {
+    "path": "knowledge/rav-assistant-research-material-v1.js",
+    "bytes": 54877,
+    "gitBlob": "4bb593b212bdd82c5f2d6da2e6e6b19aedfffaf2",
+    "sha256": "28d298b173064e00d12cbe1bbc44d54db23b4f2cd7f412ea9862d28186712b59"
+  },
+  {
+    "path": "knowledge/rav-assistant-research-v1.js",
+    "bytes": 479,
+    "gitBlob": "ba052cfd98b0ebcd289e04421f46c9c593b376ae",
+    "sha256": "bebd5a709e5505b1d958e6424056b196385f2ca7a9f607348919e32f95079df2"
+  },
+  {
+    "path": "knowledge/rav-assistant-sources-v1.js",
+    "bytes": 8912,
+    "gitBlob": "a82e1172e2381ef9a74ddbcd02811031b5bc09be",
+    "sha256": "c9a387ca9ed30d4c5a9932eb1b1133a99ae651c23c822b7d0ad1c8adbd8c43a6"
+  },
+  {
+    "path": "package.json",
+    "bytes": 50765,
+    "gitBlob": "4e33ca75bf692216c119b1317e26c646d0e18d08",
+    "sha256": "5d303a5f5b07198d74c681cbac93afed13417ed2ec88640d0a14666c0e0b8347"
+  },
+  {
+    "path": "scripts/build-forecast-share-projection.mjs",
+    "bytes": 8967,
+    "gitBlob": "9bab818c29c9d1ce5d0a28a3ce5a00e8ebb757f3",
+    "sha256": "efac1953b6de6b86c2da1260c168a82ea3751246c4480adb952f1050be04e2fb"
+  },
+  {
+    "path": "scripts/lib/local-current-reference.mjs",
+    "bytes": 2253,
+    "gitBlob": "e6e24d9d46ca53e4f9e7b10134826a8b1461f027",
+    "sha256": "6e1c6a28cb3cf704d760e5c6f52dade2e0c81112e1299a1264b3a9502851a75b"
+  },
+  {
+    "path": "scripts/lib/private-weather-component-inventory.mjs",
+    "bytes": 5021,
+    "gitBlob": "74165842787c0e802c090f873ce1c4837ccd97bb",
+    "sha256": "125e1a2acee5bff8d16ac549e96004dc8c80bbcea684782c45b3cfc666edba3c"
+  },
+  {
+    "path": "scripts/lib/public-hour-delivery-pack.mjs",
+    "bytes": 25913,
+    "gitBlob": "3c37c6755b54f44bbcd34eb5071b4e1f2ff9e43a",
+    "sha256": "10a1bab2155b7eedd791045209a514f41bda08e3dc9470840729b87967fb7f6d"
+  },
+  {
+    "path": "scripts/public-conditions-lib.mjs",
+    "bytes": 65524,
+    "gitBlob": "197115e9d933877e7a7e0b95f5d6f0f89d9ceed5",
+    "sha256": "e5a921d2a818694cfa13d5fcb30392cad972dc3b7038e929bc1d659a95f8017d"
+  },
+  {
+    "path": "scripts/test-ravscore-public-data-service-binding.mjs",
+    "bytes": 52794,
+    "gitBlob": "50c8cd35750af2e7149770579a69e0ff47d77968",
+    "sha256": "95f0225a1433f854364264b4297faf8e71ff35a92a313dd5e3a5dae39e1be84a"
+  },
+  {
+    "path": "service-worker.js",
+    "bytes": 6971,
+    "gitBlob": "e1d8fc2fec85d6ba1bf742652c5387eac97df23c",
+    "sha256": "14ce684b294874004e64132dcb21dc628ba41fb762ddbbf5befdf3590a11bd35"
+  }
+]);
+
+async function verifySealed594CompactShareRegression({ reproduceOnly = false } = {}) {
+  const path = await import('node:path');
+  const os = await import('node:os');
+  const {execFileSync} = await import('node:child_process');
+  const {fileURLToPath,pathToFileURL} = await import('node:url');
+  const {registerHooks} = await import('node:module');
+  const repository = fileURLToPath(new URL('..',import.meta.url));
+  const gitRoot=execFileSync('git',['rev-parse','--show-toplevel'],{cwd:repository,windowsHide:true}).toString().trim();
+  const git = (args,input) => execFileSync('git',args,{cwd:gitRoot,windowsHide:true,maxBuffer:64*1024*1024,...(input?{input}:{})});
+  assert.equal(git(['rev-parse',FROZEN_594_FIXTURE_REF+'^{tree}']).toString().trim(),FROZEN_594_FIXTURE_TREE);
+  const work = await fs.mkdtemp(path.join(os.tmpdir(),'ravradar-sealed594-sharing-'));
+  try {
+    const legacy = path.join(work,'source'), workspace = path.join(work,'synthetic');
+    await fs.mkdir(legacy);await fs.mkdir(workspace);
+    // cat-file emits immutable raw blobs. git archive on Windows may apply
+    // checkout CRLF conversion before tar sees a member; no text roundtrip is
+    // permitted for these genuine sealed implementation bytes.
+    const request=Buffer.from(FROZEN_594_FIXTURE_SOURCES.map(file=>file.gitBlob).join('\n')+'\n');
+    const raw=git(['cat-file','--batch'],request);let offset=0;
+    for(const file of FROZEN_594_FIXTURE_SOURCES){
+      assert(!file.path.startsWith('/')&&!file.path.includes('\\')&&!file.path.split('/').includes('..'));
+      const end=raw.indexOf(10,offset);assert(end>=offset);
+      assert.deepEqual(raw.subarray(offset,end).toString('ascii').split(' '),[file.gitBlob,'blob',String(file.bytes)]);
+      const bytes=raw.subarray(end+1,end+1+file.bytes);assert.equal(bytes.length,file.bytes);
+      assert.equal(sha256(bytes),file.sha256);assert.equal(raw[end+1+file.bytes],10);
+      const destination=path.join(legacy,file.path);await fs.mkdir(path.dirname(destination),{recursive:true});
+      await fs.writeFile(destination,bytes,{flag:'wx'});assert.deepEqual(await fs.readFile(destination),bytes);
+      offset=end+file.bytes+2;
+    }
+    assert.equal(offset,raw.length);
+    const contractText=await fs.readFile(path.join(legacy,'js/core/ravscore-model-contract.js'),'utf8');
+    const bundleText=await fs.readFile(path.join(legacy,'js/core/ravscore-model-bundle.generated.js'),'utf8');
+    assert.equal(sha256(Buffer.from(contractText)),'6edf369edf09b50005a0d04ce0ec892cf6455ddcea02ab4a7f2e51b644b8baab');
+    assert.equal(sha256(Buffer.from(bundleText)),'37d27d1f5a199ef371124e2d06da1d8142b0734aafb6b8416242cf9d423cfa02');
+    const load=relative=>import(pathToFileURL(path.join(legacy,relative)).href);
+    const binding=(await load('js/core/ravscore-model-contract.js')).ravScoreModelBinding();
+    assert.notEqual(binding.modelBundleSha256,integratedModelBinding().modelBundleSha256);
+    const {computeRavScorePublicBrowserClosure}=await import('./lib/ravscore-public-browser-closure.mjs');
+    const publicClosure=(await computeRavScorePublicBrowserClosure({root:legacy})).manifest;
+    assert(publicClosure.files.some(item=>item.path==='js/services/forecast-share-projection.js'));
+    computeSealedPublicImplementationClosureIdentity({expectedModel:'integrated',expectedBinding:binding,
+      expectedContractText:contractText,expectedBundleText:bundleText,expectedPublicClosure:publicClosure});
+    const factoryPath=path.join(legacy,'scripts/test-ravscore-public-data-service-binding.mjs');
+    const factoryUrl=pathToFileURL(factoryPath).href+'?sealed594CompactShareFixture';
+    const factorySource=(await fs.readFile(factoryPath,'utf8')).replace(/\r\n/g,'\n');
+    const sentinel="const primary = bundle('primary-integrated', 61);";
+    assert.equal(factorySource.split(sentinel).length,2);
+    const prefix=factorySource.split(sentinel)[0];
+    assert.equal(sha256(prefix),'091f68c8be579ab7f555a0a4caeefe5159f0a2027bdd0300438b1e64d0c90014');
+    // This is the existing pure TEST fixture factory, not a product projection.
+    const fixtureModule=prefix+'\nexport {full,horizonTimes,coastalPartsText,zoneRegistryText};\n';
+    const hook=registerHooks({load(url,context,next){return url===factoryUrl?
+      {format:'module',source:fixtureModule,shortCircuit:true}:next(url,context);}});
+    let factory;try{factory=await import(factoryUrl);}finally{hook.deregister();}
+    const {full,horizonTimes,coastalPartsText,zoneRegistryText}=factory;
+    const source=full('rr-synthetic-sealed594-sharing-210',42),availableIndex=2;
+    for(const zone of Object.values(source.coastalParts.zones))for(let i=0;i<zone.hourly.length;i++){
+      if(i===0||i===availableIndex)continue;
+      for(const mode of ['waders','beach'])zone.hourly[i][mode]={
+        available:false,score:null,scoreQuality:'UNAVAILABLE',scoreBounds:null,calibrationEligible:false,
+        scoreSemantics:null,conservativeTailResetApplied:false,historyCoverageHours:null,historyReasonCodes:[],
+        modelBinding:binding,status:'unavailable',validPartCount:0,expectedPartCount:zone.expectedPartCount,
+        comparisonPartCount:0,unavailableParts:[],unavailability:{available:false,code:'SYNTHETIC_NO_EXACT_INPUT',
+          messageDa:'Syntetisk prøvetime uden data.',policy:'integrated-model-local-fail-closed',
+          validPartCount:0,expectedPartCount:zone.expectedPartCount},reasons:['Syntetisk prøvetime uden data.']};
+    }
+    for(const part of Object.values(source.coastalParts.parts))part.hourly=[];
+    const lib=await load('scripts/public-conditions-lib.mjs');
+    const share=await load('scripts/build-forecast-share-projection.mjs');
+    const live=path.join(workspace,'data/live');await fs.mkdir(live,{recursive:true});
+    const startup=lib.buildPublicConditions(source),details=lib.buildPublicConditionDetails(source);
+    const startupText=lib.compactJson(startup),detailsText=lib.compactJson(details);
+    const manifest=lib.buildPublicManifest(source,startupText,detailsText,coastalPartsText,zoneRegistryText);
+    manifest.detailDelivery={schemaVersion:1,forecastHours:118,sourceDetailsSha256:manifest.publicConditionDetailsSha256,hours:{},zones:{}};
+    const files=new Map([['/data/live/public-conditions.json',Buffer.from(startupText)],
+      ['/data/live/public-condition-details.json',Buffer.from(detailsText)],
+      ['/data/live/coastal-parts-v2.json',Buffer.from(coastalPartsText)],['/data/zones.geojson',Buffer.from(zoneRegistryText)]]);
+    async function delivery(document){const bytes=Buffer.from(lib.compactJson(document)),hash=sha256(bytes);
+      manifest.detailDelivery[document.delivery.kind==='hour'?'hours':'zones'][document.delivery.key]={path:'./forecast/'+hash+'.json',sha256:hash,bytes:bytes.length};
+      files.set('/data/live/forecast/'+hash+'.json',bytes);}
+    // Same complete schema fixture as the existing normal projection target.
+    // No invented national ranking or future current is added to hour files.
+    const {ravScoreRuntime:_envelope,...detailBody}=details;
+    for(const time of horizonTimes){
+      const parts=Object.fromEntries(Object.entries(details.coastalParts.parts).map(([id,part])=>{
+        const {current,flowPoints,...metadata}=part;return[id,current?.time===time?part:metadata];}));
+      await delivery({...detailBody,delivery:{schemaVersion:1,kind:'hour',key:time,sourceDetailsSha256:manifest.publicConditionDetailsSha256,modelBinding:binding},
+        zones:Object.fromEntries(Object.entries(details.zones).map(([id,zone])=>[id,{...zone,forecast:{...zone.forecast,hourly:zone.forecast.hourly.filter(row=>row.time===time)}}])),
+        coastalParts:{...details.coastalParts,parts,zones:Object.fromEntries(Object.entries(details.coastalParts.zones).map(([id,zone])=>[id,{...zone,currentReferenceAt:time,hourly:zone.hourly.filter(row=>row.time===time)}]))}});
+    }
+    for(const id of Object.keys(details.zones))await delivery(lib.buildPublicDeliveryDocument(source,details,manifest,'zone',id));
+    const manifestBytes=jsonBytes(manifest);files.set('/data/live/manifest.json',manifestBytes);
+    await fs.writeFile(path.join(live,'manifest.json'),manifestBytes);
+    await fs.writeFile(path.join(live,'public-condition-details.json'),detailsText);
+    await fs.writeFile(path.join(workspace,'data/zones.geojson'),zoneRegistryText);
+    await share.writeForecastShareProjection({repository:workspace,producerResult:{publicDocument:startup,
+      detailsDocument:details,manifest,publicText:startupText,detailsText}});
+    const shared=await share.readForecastShareProjectionFiles({liveDirectory:live,manifestText:manifestBytes.toString('utf8'),required:true});
+    files.set('/data/live/forecast-share.json',shared.descriptorBytes);
+    for(const item of shared.zoneFiles)files.set('/data/live/'+item.entry.path.slice(2),item.bytes);
+    for(const item of publicClosure.files)files.set('/'+item.path,await fs.readFile(path.join(legacy,item.path)));
+    for(const item of publicClosure.htmlEntrypoints)files.set('/'+item.path,await fs.readFile(path.join(legacy,item.path)));
+    files.set('/js/core/ravscore-model-contract.js',Buffer.from(contractText));
+    files.set('/js/core/ravscore-model-bundle.generated.js',Buffer.from(bundleText));
+    const common={baseUrl:'https://ravradar.example.test/',sourceHead:FROZEN_594_FIXTURE_REF,
+      expectedManifest:manifest,expectedModel:'integrated',expectedBinding:binding,
+      expectedContractText:contractText,expectedBundleText:bundleText,expectedPublicClosure:publicClosure,
+      observationNonce:'synthetic-real-sealed594-sharing',attempts:1};
+    const result=await verifyRavScoreOperationalPagesDeployment({...common,fetchImpl:mockFetch(files)});
+    assert.equal(result.status,'passed');assert.deepEqual(result.modelBinding,binding);
+    if(reproduceOnly)return;
+    const currentShare=await import('../js/services/forecast-share-projection.js');
+    const direct=()=>currentShare.assertForecastShareProjectionParity({projection:shared.projection,
+      descriptor:shared.descriptor,manifest,details,registry:JSON.parse(zoneRegistryText)},binding);
+    assert.equal(direct().comparisons,49560);
+    const defaults=[()=>currentShare.assertForecastShareDescriptor(shared.descriptor,manifest,sha256(manifestBytes)),
+      ()=>currentShare.assertForecastShareProjection(shared.projection,shared.descriptor,manifest),
+      ()=>currentShare.assertForecastShareZoneProjection(shared.zoneFiles[0].payload,shared.descriptor,manifest,shared.descriptor.zones[0]),
+      ()=>currentShare.assembleForecastShareProjection(shared.zoneFiles.map(f=>f.payload),shared.descriptor,manifest),
+      ()=>currentShare.assertForecastShareProjectionParity({projection:shared.projection,descriptor:shared.descriptor,manifest,details,registry:JSON.parse(zoneRegistryText)})];
+    for(const check of defaults)assert.throws(check,/incompatible modelBundleSha256/);
+    const mutate=async(label,change,pattern)=>{const altered=new Map(files);change(altered);
+      await assert.rejects(()=>verifyRavScoreOperationalPagesDeployment({...common,fetchImpl:mockFetch(altered)}),pattern,label);};
+    const descriptorPath='/data/live/forecast-share.json';
+    await mutate('descriptor manifest mismatch',m=>{const d=structuredClone(shared.descriptor);d.manifestSha256='0'.repeat(64);m.set(descriptorPath,jsonBytes(d));},/FORECAST_SHARE_DESCRIPTOR_BINDING/);
+    await mutate('descriptor model mismatch',m=>{const d=structuredClone(shared.descriptor);d.modelBinding={...binding,modelBundleSha256:'0'.repeat(64)};m.set(descriptorPath,jsonBytes(d));},/FORECAST_SHARE_PROJECTION_GENERATION/);
+    const first=shared.zoneFiles[0];
+    await mutate('payload byte mismatch',m=>m.set('/data/live/'+first.entry.path.slice(2),Buffer.from(first.bytes.toString()+' ')),/projection digest mismatch/);
+    const coherent=change=>m=>{const payload=structuredClone(first.payload);change(payload);const bytes=jsonBytes(payload),hash=sha256(bytes),d=structuredClone(shared.descriptor);
+      d.zones[0]={id:first.entry.id,path:'./share/'+hash+'.json',sha256:hash,bytes:bytes.length};m.delete('/data/live/'+first.entry.path.slice(2));
+      m.set('/data/live/share/'+hash+'.json',bytes);m.set(descriptorPath,jsonBytes(d));};
+    await mutate('coherent payload model mismatch',coherent(p=>p.modelBinding={...binding,modelBundleSha256:'0'.repeat(64)}),/FORECAST_SHARE_PROJECTION_GENERATION/);
+    await mutate('coherent score mismatch',coherent(p=>p.zone.rows[availableIndex][0][1]+=1),/FORECAST_SHARE_PARITY_MISMATCH/);
+    await mutate('later final browser seal still required',m=>m.set('/app.js',Buffer.from('/* changed genuine sealed browser bytes */')),/public browser implementation closure drifted/);
+    let descriptorReads=0;await assert.rejects(()=>verifyRavScoreOperationalPagesDeployment({...common,
+      expectedBinding:{...binding,modelBundleSha256:'0'.repeat(64)},fetchImpl:async(...args)=>{
+        if(new URL(args[0]).pathname==='/data/live/forecast-share.json')descriptorReads++;return mockFetch(files)(...args);
+      }}),/not exact|incompatible|differs/);assert.equal(descriptorReads,0);
+    console.log('Genuine594 sealed implementation + synthetic210/673 share fixture: complete current verifier,49,560 parity, strict default, coherent model/score tamper and final browser seal: passed.');
+  } finally {
+    const resolved=path.resolve(work),parent=path.resolve(os.tmpdir());
+    assert(resolved.startsWith(parent+path.sep)&&path.basename(resolved).startsWith('ravradar-sealed594-sharing-'));
+    await fs.rm(resolved,{recursive:true,force:true});
+  }
+}
+
+
+
+if(process.argv.includes('--sealed594-share-regression-only')){
+  await verifySealed594CompactShareRegression({reproduceOnly:true});
+  process.exit(0);
+}
+
 const completeSourceRepair = Object.freeze({
   expectedPublicFileCount: 79,
   knownMissingPublicFile: null,
@@ -892,6 +1988,7 @@ async function verifySealedStartupPropagationContract() {
   console.log('Sealed manifest/startup pair: delayed200 then exact, permanent corruption, changed manifest, no large refetch and hard failures: passed.');
 }
 
+await verifySealed594CompactShareRegression();
 await verifySealedStartupPropagationContract();
 await verifyManifestOnlyPropagationContract();
 await verifyBoundedTransientHttpContract();

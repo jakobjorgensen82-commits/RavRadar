@@ -1,3 +1,29 @@
+## 89.311 Offentlig kilde verificeres med sin forseglede modelbinding
+
+Kontrollér den gamle kilde mod dens reelle forsegling og det nye target mod dets egen. Den almindelige kontrol kræver fortsat den aktuelle binding.
+
+<a id="sealed-public-source-share-binding-verification-2026-11-05"></a>
+
+### Den gamle kilde er ikke den nye lokale model
+
+En offentlig pakke fra 4.0.594 kan være den reelle aktive kilde, mens den lokale kode er 4.0.597. Serverens skrivefri kildeverifikation har allerede den gamle kildes præcise modelbinding, kontrakt, bundle og browserforsegling. Prognosedelingens fælles læsekontrol brugte alligevel den lokale modelbinding og afviste derfor en anden bundlehash, før en ny aktivering kunne begynde. Det er en fejl i valg af kontrolforventning; den gemte vejrpakke og dens beskyttede checkpoint skal bevares.
+
+### Én præcis forventning gennem hele delingskontrollen
+
+Kontrolrettelsen fører den eksternt forseglede forventning gennem delingsdescriptor, alle zonefiler, den samlede projektion og paritetskontrollen. Alle elleve modelbindingsfelter skal stemme præcist. Manifestets identitet, filstørrelser, SHA-256, generation, tidsakse og hele sammenligningen af 210 zoner, 118 timer og to tilstande bevares: 49.560 sammenligninger. Den fulde kontrol af kontrakt, bundle og browserkode skal stadig bestå, før verifieren må aflevere et godkendt resultat. En forventet binding er ikke i sig selv en forsegling eller skriveadgang.
+
+### Streng normalstandard og to forskellige endepunkter
+
+Almindelig opstart og produktion bruger fortsat den strenge aktuelle modelbinding som standard. Den gamle binding må hverken omstemples til den lokale version, ignoreres eller udledes som en undtagelse fra det payload, der kontrolleres. Den samme rettelse skal dække kildeverifikationen før den sene backendlevering, deploy-jobbets gentagne kildeverifikation før beginCAS og den endelige kontrol af det nye target. Den gamle kilde bevarer sin gamle forsegling; det nye target skal passe til sin egen aktuelle binding og nye browserforsegling.
+
+### Model, beregning og gemte originaler bevares
+
+Rettelsen ændrer ingen C/I/T-input, udstedte SQL-funktioner, RavScore-formel, scorer, vejrdata, kildeprioritet, administratorpunkter eller geometri. En ændret offentlig helper skal indgå i den normale nye browserforsegling uden at blive en ny modelbinding. Installerens håndbogskopi synkroniseres kun som dokumentations-JSON; SQL- og DDL-rammen er uændret. Afgrænsede diagnostiske public-audit-fund følger fortsat de eksisterende beslutninger. Forkert modelbinding, forsegling eller paritet er fortsat et hårdt stop.
+
+### Syntetisk prøve er ikke offentlig verifikation
+
+Den relevante normale regression skal bruge reelle historiske C-/I-kildefiler og kunstige vejrfixtures. Den kombination er syntetisk og er ikke bevis for den levende offentlige kilde, nye leverandørdata eller en leveret generation. Et nyt bestået prøveudfald må først registreres, når den faktiske normale prøve er afsluttet. Kildekontrol på den endelige kode, sikker genoptagelse med frisk autentificering af gemt B/S, de relevante artifact- og releasekontroller samt offentlig slutverifikation er fortsat åbne krav. SOURCE-revisionen forbliver adskilt og inaktiv, og de øvrige åbne mål erklæres ikke afsluttet.
+
 ## 89.310 Den direkte workflowtest følger den præcise publiceringsport
 
 Test den virkelige normale kalder og hele den gennemgåede workflowkæde. Ukendte ændringer afvises fortsat, og allerede gemt vejr bevares til sikker genlevering.

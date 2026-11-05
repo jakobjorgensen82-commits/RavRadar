@@ -1,6 +1,8 @@
 // Detached display-only projection of already computed public scores.
 import { exactMapZoneScore } from './map-forecast-view.js?v=4.0.597';
 import { assertRavScoreModelBinding } from '../core/ravscore-model-contract.js?v=4.0.597';
+import { RAVSCORE_PUBLIC_MODEL_BINDING_FIELDS, assertExactPublicRavScoreModelBindingShape }
+  from '../core/ravscore-public-profile-contract.js?v=4.0.597';
 
 export const FORECAST_SHARE_DESCRIPTOR_PATH = './data/live/forecast-share.json';
 export const FORECAST_SHARE_DESCRIPTOR_SCHEMA = 'ravradar-forecast-share-zone-index-v1';
@@ -20,13 +22,24 @@ function keys(value, expected) {
   need(value && !Array.isArray(value) && typeof value === 'object'
     && same(Object.keys(value).sort(), [...expected].sort()), 'FORECAST_SHARE_PROJECTION_FIELDS');
 }
-function generation(value, manifest) {
+function assertProjectionModelBinding(value, expectedBinding) {
+  if (expectedBinding === null) return assertRavScoreModelBinding(value);
+  assertExactPublicRavScoreModelBindingShape(expectedBinding, 'Forecast share expected sealed model binding');
+  assertExactPublicRavScoreModelBindingShape(value, 'Forecast share model binding');
+  for (const binding of [expectedBinding, value]) {
+    const prototype = Object.getPrototypeOf(binding);
+    need(prototype === Object.prototype || prototype === null, 'FORECAST_SHARE_PROJECTION_MODEL_BINDING');
+  }
+  need(RAVSCORE_PUBLIC_MODEL_BINDING_FIELDS.every(field => value[field] === expectedBinding[field]),
+    'FORECAST_SHARE_PROJECTION_MODEL_BINDING');
+}
+function generation(value, manifest, expectedBinding) {
   need(value.datasetId === manifest.datasetId && value.generatedAt === manifest.generatedAt
     && value.productionReferenceAt === manifest.productionReferenceAt
     && same(value.modelBinding, manifest.ravScoreModelBinding), 'FORECAST_SHARE_PROJECTION_GENERATION');
-  assertRavScoreModelBinding(value.modelBinding);
+  assertProjectionModelBinding(value.modelBinding, expectedBinding);
 }
-function sourceAxis(manifest) {
+function sourceAxis(manifest, expectedBinding = null) {
   need(manifest?.schemaVersion === 4 && manifest.complete === true && manifest.zoneCount === ZONES
     && manifest.coastalPartCount === 673 && HASH.test(manifest.publicConditionDetailsSha256 ?? '')
     && HASH.test(manifest.zoneRegistrySha256 ?? ''), 'FORECAST_SHARE_PROJECTION_MANIFEST');
@@ -36,16 +49,16 @@ function sourceAxis(manifest) {
   need(Number.isFinite(start) && start % HOUR === 0 && times.length === HOURS && ids.length === ZONES
     && times.every((time,index) => time === new Date(start + index * HOUR).toISOString())
     && ids.every(id => /^[a-zA-Z0-9_-]+$/.test(id)), 'FORECAST_SHARE_PROJECTION_AXIS');
-  assertRavScoreModelBinding(manifest.ravScoreModelBinding);
+  assertProjectionModelBinding(manifest.ravScoreModelBinding, expectedBinding);
   return {times, ids};
 }
-export function assertForecastShareDescriptor(descriptor, manifest, manifestSha256) {
-  const {ids} = sourceAxis(manifest);
+export function assertForecastShareDescriptor(descriptor, manifest, manifestSha256, expectedBinding = null) {
+  const {ids} = sourceAxis(manifest, expectedBinding);
   keys(descriptor, ['schemaVersion','manifestSha256','datasetId','generatedAt','productionReferenceAt','modelBinding','zoneCount','forecastHours','modeCount','zones']);
   need(descriptor.schemaVersion === FORECAST_SHARE_DESCRIPTOR_SCHEMA && HASH.test(manifestSha256 ?? '')
     && descriptor.manifestSha256 === manifestSha256 && descriptor.zoneCount === ZONES
     && descriptor.forecastHours === HOURS && descriptor.modeCount === MODES.length, 'FORECAST_SHARE_DESCRIPTOR_BINDING');
-  generation(descriptor, manifest);
+  generation(descriptor, manifest, expectedBinding);
   need(Array.isArray(descriptor.zones) && descriptor.zones.length === ZONES, 'FORECAST_SHARE_DESCRIPTOR_INVENTORY');
   const paths = new Set();
   descriptor.zones.forEach((file,index) => {
@@ -57,10 +70,10 @@ export function assertForecastShareDescriptor(descriptor, manifest, manifestSha2
   });
   return descriptor;
 }
-export function assertForecastShareProjection(projection, descriptor, manifest) {
-  const {times,ids} = sourceAxis(manifest);
+export function assertForecastShareProjection(projection, descriptor, manifest, expectedBinding = null) {
+  const {times,ids} = sourceAxis(manifest, expectedBinding);
   keys(projection, ['schemaVersion','datasetId','generatedAt','productionReferenceAt','sourceDetailsSha256','zoneRegistrySha256','modelBinding','axis','modes','qualities','coverageStatuses','zones']);
-  generation(projection, manifest);
+  generation(projection, manifest, expectedBinding);
   need(projection.schemaVersion === FORECAST_SHARE_PROJECTION_SCHEMA
     && projection.sourceDetailsSha256 === manifest.publicConditionDetailsSha256
     && projection.zoneRegistrySha256 === manifest.zoneRegistrySha256
@@ -97,10 +110,10 @@ export function buildForecastShareZoneProjection(projection, zone) {
   const {zones, ...common} = projection;
   return {...common, schemaVersion: FORECAST_SHARE_ZONE_SCHEMA, zone};
 }
-export function assertForecastShareZoneProjection(payload, descriptor, manifest, entry) {
-  const {times} = sourceAxis(manifest);
+export function assertForecastShareZoneProjection(payload, descriptor, manifest, entry, expectedBinding = null) {
+  const {times} = sourceAxis(manifest, expectedBinding);
   keys(payload, ['schemaVersion','datasetId','generatedAt','productionReferenceAt','sourceDetailsSha256','zoneRegistrySha256','modelBinding','axis','modes','qualities','coverageStatuses','zone']);
-  generation(payload, manifest);
+  generation(payload, manifest, expectedBinding);
   need(payload.schemaVersion === FORECAST_SHARE_ZONE_SCHEMA
     && payload.sourceDetailsSha256 === manifest.publicConditionDetailsSha256
     && payload.zoneRegistrySha256 === manifest.zoneRegistrySha256
@@ -113,12 +126,12 @@ export function assertForecastShareZoneProjection(payload, descriptor, manifest,
   assertZone(payload.zone, entry.id);
   return payload;
 }
-export function assembleForecastShareProjection(zonePayloads, descriptor, manifest) {
+export function assembleForecastShareProjection(zonePayloads, descriptor, manifest, expectedBinding = null) {
   need(Array.isArray(zonePayloads) && zonePayloads.length === ZONES, 'FORECAST_SHARE_PROJECTION_INVENTORY');
   const zones = zonePayloads.map((payload,index) =>
-    assertForecastShareZoneProjection(payload,descriptor,manifest,descriptor.zones[index]).zone);
+    assertForecastShareZoneProjection(payload,descriptor,manifest,descriptor.zones[index],expectedBinding).zone);
   const {zone, ...common} = zonePayloads[0];
-  return assertForecastShareProjection({...common,schemaVersion:FORECAST_SHARE_PROJECTION_SCHEMA,zones},descriptor,manifest);
+  return assertForecastShareProjection({...common,schemaVersion:FORECAST_SHARE_PROJECTION_SCHEMA,zones},descriptor,manifest,expectedBinding);
 }
 export function forecastShareZoneProjectionSelection(payload, selection) {
   return forecastShareProjectionSelection({...payload,zones:[payload.zone]},selection);
@@ -161,9 +174,9 @@ export function buildForecastShareProjection({manifest,details,registry}) {
     zoneRegistrySha256:manifest.zoneRegistrySha256,modelBinding:manifest.ravScoreModelBinding,
     axis:{firstHour:times[0],count:HOURS,stepMs:HOUR},modes:[...MODES],qualities:[...QUALITIES],coverageStatuses:[...COVERAGES],zones};
 }
-export function assertForecastShareProjectionParity({projection,descriptor,manifest,details,registry}) {
-  assertForecastShareProjection(projection,descriptor,manifest);
-  const {times,ids}=sourceAxis(manifest);
+export function assertForecastShareProjectionParity({projection,descriptor,manifest,details,registry}, expectedBinding = null) {
+  assertForecastShareProjection(projection,descriptor,manifest,expectedBinding);
+  const {times,ids}=sourceAxis(manifest,expectedBinding);
   const active=(registry?.features ?? []).filter(item => item.properties?.zoneStatus === 'active');
   const names=new Map(active.map(item => [item.properties.id,item.properties.name]));
   need(active.length === ZONES && names.size === ZONES && same([...names.keys()].sort(),ids), 'FORECAST_SHARE_PARITY_REGISTRY');
