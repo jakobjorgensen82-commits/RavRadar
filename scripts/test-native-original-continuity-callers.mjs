@@ -163,13 +163,15 @@ test('current installed code-only actual selection body rejects unknown or parti
 
 test('current installed code-only plan uses the normal active migration contract and refuses every pending write',async()=>{
   assert(['assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor',
-    'assistant-installed593-origin591-successor','scalar597-later-h0-original594-successor'].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase));
-  const required=(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='scalar597-later-h0-original594-successor'
+    'assistant-installed593-origin591-successor','scalar597-later-h0-original594-successor','assistant-mixed-after597-successor'].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase));
+  const required=(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-mixed-after597-successor'
+    ?(await import('./integrated-cutover-readiness.mjs')).assistantAfter597RequiredMigrations:ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='scalar597-later-h0-original594-successor'
     ?(await import('./integrated-cutover-readiness.mjs')).scalar597LaterH0RequiredMigrations:ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-installed593-origin591-successor'
     ?(await import('./integrated-cutover-readiness.mjs')).installed593Original591RequiredMigrations:ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public591-successor'
     ?(await import('./integrated-cutover-readiness.mjs')).assistantPublic591SuccessorRequiredMigrations:ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public590-successor'
     ?assistantPublic590SuccessorRequiredMigrations:ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-public588-successor'
       ?assistantPublic588SuccessorRequiredMigrations:assistantPublic587SuccessorRequiredMigrations)(),next=required.at(-1);
+  assert.deepEqual(next,ACTIVE_ASSISTANT_SUCCESSOR.migration(),'Actual active migration, never a historical fallback');
   const full='Local | Remote | Time (UTC)\n'+required.map(row=>`${row.version} | ${row.version} | synthetic-plan-response`).join('\n');
   const noop='DRY RUN: migrations will *not* be pushed to the database.\nRemote database is up to date.';
   const options={environment:installedCodeOnlyCaller(),migrationListText:full,dryRunText:noop,
@@ -1153,6 +1155,17 @@ test('assistant binding prewrite fixed diagnostics preserve prepare order and fi
       const start=source.indexOf('// Ingen caller-/miljøvalgt familie.');
       const end=source.indexOf('const ROOT=',start);assert(start>=0&&end>start);route=source.slice(start,end);
       assert(route.includes('const ACTIVE_PREDECESSOR='));
+      // Whole source was authenticated by historical691AssistantSource above.
+      // Adapt only this exact ESM declaration for the existing Script fixture;
+      // keep its complete function body, selector and all diagnostic code.
+      const esm='export function assistantAfter597PrewritePredecessor(){',
+        script='function assistantAfter597PrewritePredecessor(){';
+      if(route.includes(esm)){
+        const originalRoute=route;assert.equal(route.split(esm).length,2);
+        route=route.replace(esm,()=>script);
+        assert.equal(route.split(script).length,2);
+        assert.equal(route.replace(script,()=>esm),originalRoute,'Exact ESM-to-Script roundtrip only');
+      }
     }
     const api=runInNewContext(route+'\n'+diagnostic+'\n'+executablePrepare+
       '\n({prepare,prewriteAt,prewriteDiagnostic,emitPrewriteRefusal});',context,{filename:'actual-assistant-binding-prepare-diagnostic.js'});
