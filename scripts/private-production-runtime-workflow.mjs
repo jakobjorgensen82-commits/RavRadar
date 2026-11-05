@@ -1528,13 +1528,39 @@ async function assertNoSymlinkComponents(root, candidate, label) {
   }
 }
 
+// Exact lexical result association, not a caller-written install receipt.
+const privateRuntimeInstallationResults = new WeakMap();
+const privateRuntimeInstallationPacks = new WeakMap();
+export function privateRuntimeInstallationFiles(result) {
+  const files = privateRuntimeInstallationResults.get(result);
+  if (!files) throw new Error('PRIVATE_RUNTIME_NORMAL_INSTALL_RESULT_REQUIRED');
+  return files;
+}
+// The actual normal factory invocation, never a serialized completion receipt.
+export function privateRuntimeInstallationPack(result) {
+  const pack = privateRuntimeInstallationPacks.get(result);
+  if (!pack) throw new Error('PRIVATE_RUNTIME_NORMAL_INSTALL_RESULT_REQUIRED');
+  return pack;
+}
+
 export async function installRestoredPrivateRuntime({
   restoredRoot,
   repositoryRoot = PRIVATE_RUNTIME_REPOSITORY_ROOT,
   renameImpl = fs.rename,
   removeImpl = fs.rm,
   stateEpochInputView = null,
+  sourceInventoryContext = null,
 } = {}) {
+  let sourceOwner = null;
+  if (sourceInventoryContext !== null) {
+    sourceOwner = await import('./source-normal-producer-tail.mjs');
+    const sourceInstall = sourceOwner.assertSourceNormalInstallationContext(sourceInventoryContext);
+    if (sourceInstall.repositoryRoot !== path.resolve(repositoryRoot)
+      || sourceInstall.restoredRoot !== path.resolve(restoredRoot)) {
+      throw new Error('PRIVATE_RUNTIME_SOURCE_INSTALL_ROOT_CHANGED');
+    }
+    sourceOwner.beginSourceNormalInstallation(sourceInventoryContext);
+  }
   const requestedSourceRoot = path.resolve(restoredRoot);
   const requestedRepository = path.resolve(repositoryRoot);
   const sourceRootStat = await fs.lstat(requestedSourceRoot).catch(() => null);
@@ -1590,11 +1616,15 @@ export async function installRestoredPrivateRuntime({
   let componentInvocation = null;
   if (hasExtension) {
     componentInvocation = unpackPrivateWeatherComponentPack({ restoredRoot: sourceRoot, outputRoot: componentStage, conditions,
-      ...(stateEpochInputView === null ? {} : { stateEpochInputView }) });
+      ...(stateEpochInputView === null ? {} : { stateEpochInputView }),
+      ...(sourceInventoryContext === null ? {} : { sourceInventoryContext }) });
+    if (sourceOwner !== null) {
+      sourceOwner.attachSourceNormalInstallationInvocation(sourceInventoryContext, componentInvocation);
+    }
     try { componentFiles = await componentInvocation; }
     catch (error) {
       // Cleanup must not replace the original unpack/integrity failure.
-      if (privateWeatherPackJsonReadsClosed(componentInvocation)) {
+      if (sourceInventoryContext === null && privateWeatherPackJsonReadsClosed(componentInvocation)) {
         await fs.rm(componentStage, { recursive: true, force: true }).catch(() => {});
       }
       throw error;
@@ -1672,7 +1702,7 @@ export async function installRestoredPrivateRuntime({
     }
     throw error;
   } finally {
-    if (componentStage && privateWeatherPackJsonReadsClosed(componentInvocation)) {
+    if (sourceInventoryContext === null && componentStage && privateWeatherPackJsonReadsClosed(componentInvocation)) {
       try { await fs.rm(componentStage, { recursive: true, force: true }); }
       catch (error) {
         // A failed install/rollback is primary. Cleanup alone stays fatal.
@@ -1680,7 +1710,7 @@ export async function installRestoredPrivateRuntime({
       }
     }
   }
-  return {
+  const result = {
     installed: true,
     fileCount: descriptors.length + installedComponentFiles.length,
     ...(stateEpochInputView === null ? {} : {
@@ -1689,6 +1719,17 @@ export async function installRestoredPrivateRuntime({
     }),
     privateDataLogged: false,
   };
+  // Base hashes remain the authenticated B manifest's responsibility. The
+  // expanded rows retain the exact normal pack-validator output hashes.
+  privateRuntimeInstallationResults.set(result, Object.freeze([
+    ...descriptors.map(({ relativePath }) => Object.freeze({ relativePath })),
+    ...installedComponentFiles.map(({ relativePath, bytes, sha256 }) =>
+      Object.freeze({ relativePath, bytes, sha256 })),
+  ]));
+  privateRuntimeInstallationPacks.set(result, Object.freeze({
+    invocation: componentInvocation, sourceInventoryContext, componentStage,
+  }));
+  return result;
 }
 
 function argument(argv, name, required = true) {

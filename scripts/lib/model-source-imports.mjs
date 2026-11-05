@@ -191,6 +191,23 @@ const SCALAR597_LATER_H0_REVIEWED=Object.freeze({
   'scripts/assistant-later-h0-binding-prewrite.mjs':Object.freeze({sha256:'a87b9960dfcd35ccda2a8de8ce6fea35783fc3a25ef49dde806643d309d05384',
     imports:ORIGIN591_METADATA594_REVIEWED['scripts/assistant-later-h0-binding-prewrite.mjs'].imports})
 });
+// Exact post597 parent code. Only the fixed generated JSON is DATA, never code.
+const SOURCE_PRODUCER_AFTER597_FIRST_ISSUANCE_REVIEWED=Object.freeze({
+  'scripts/lib/source-producer-after597-parent.mjs':Object.freeze({sha256:'1751a3a38256c1863fe4e1710dd40e870db078683fe7d8aadaf037a197198cc0',
+    imports:Object.freeze(["./assistant-later-h0-successor-source.mjs","../check-assistant-later-h0-predecessor-source.mjs","./source-producer-after597-derived-metadata.mjs"])})
+});
+// Exact integrated SOURCE597 callers. Every existing whole-source variant stays.
+// Fixed original-source hosts remain distinct from the current model closure.
+const SOURCE_PRODUCER_AFTER597_RUNTIME_REVIEWED=Object.freeze({
+  'scripts/check-assistant-later-h0-predecessor-source.mjs':Object.freeze({sha256:'39687a5d93a1d2fc2c541c916fce6fa700729ff19fc88c01a3c2f5ffb3650e7f',
+    imports:Object.freeze([])}),
+  'scripts/lib/authenticated-frozen586-predecessor.mjs':Object.freeze({sha256:'bcb974deb5370995c70d547f738e222e131a25465fe5307bfc5432ede940509b',
+    imports:Object.freeze([...SCALAR597_LATER_H0_REVIEWED['scripts/lib/authenticated-frozen586-predecessor.mjs'].imports,
+      './source-producer-after597-parent.mjs'])}),
+  'scripts/lib/established-native-current-origin.mjs':Object.freeze({sha256:'2756c1b0d192fba998921f5e04865e26f872ce35fcc6ab8a1b4d2263c78f9e32',
+    imports:Object.freeze([...SCALAR597_LATER_H0_REVIEWED['scripts/lib/established-native-current-origin.mjs'].imports,
+      '../check-assistant-later-h0-predecessor-source.mjs','./source-producer-after597-runtime-family.mjs'])})
+});
 export function modelSourceRelativeModuleSpecifiers(source, file) {
   if (!Object.hasOwn(REVIEWED, file) && !Object.hasOwn(NATIVE_CONTINUITY_REVIEWED, file)
     && !Object.hasOwn(ASSISTANT_LATER_H0_REVIEWED,file) && !Object.hasOwn(ASSISTANT_BINDING_PREWRITE_REVIEWED,file)
@@ -204,12 +221,14 @@ export function modelSourceRelativeModuleSpecifiers(source, file) {
     && !Object.hasOwn(ASSISTANT_GENUINE591_PARENT_REVIEWED,file)
     && !Object.hasOwn(CONDITIONS_READER_CAPACITY593_REVIEWED,file)
     && !Object.hasOwn(ORIGIN591_METADATA594_REVIEWED,file)
-    && !Object.hasOwn(SCALAR597_LATER_H0_REVIEWED,file))
+    && !Object.hasOwn(SCALAR597_LATER_H0_REVIEWED,file)
+    && !Object.hasOwn(SOURCE_PRODUCER_AFTER597_FIRST_ISSUANCE_REVIEWED,file)
+    && !Object.hasOwn(SOURCE_PRODUCER_AFTER597_RUNTIME_REVIEWED,file))
     return exactRelativeModuleSpecifiers(source, file);
   if (typeof source !== 'string') throw new Error('Reviewed model source must be a string');
   const normalized = source.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
   const hash = crypto.createHash('sha256').update(normalized).digest('hex');
-  const reviewed = [REVIEWED[file], NATIVE_CONTINUITY_REVIEWED[file],ASSISTANT_LATER_H0_REVIEWED[file],ASSISTANT_BINDING_PREWRITE_REVIEWED[file],ASSISTANT_BINDING_DIAGNOSTIC_REVIEWED[file],ASSISTANT_BINDING_CHECKPOINT_TARGET_REVIEWED[file],ASSISTANT_PUBLIC587_SOURCE_REVIEWED[file],ASSISTANT_PUBLIC587_OPERATIVE_REVIEWED[file],CALENDAR_PUBLIC588_SUCCESSOR_REVIEWED[file],ASSISTANT_PUBLIC590_SUCCESSOR_REVIEWED[file],ASSISTANT_GENUINE590_PARENT_REVIEWED[file],ASSISTANT_GENUINE591_PARENT_REVIEWED[file],CONDITIONS_READER_CAPACITY593_REVIEWED[file],ORIGIN591_METADATA594_REVIEWED[file],SCALAR597_LATER_H0_REVIEWED[file]].filter(Boolean)
+  const reviewed = [REVIEWED[file], NATIVE_CONTINUITY_REVIEWED[file],ASSISTANT_LATER_H0_REVIEWED[file],ASSISTANT_BINDING_PREWRITE_REVIEWED[file],ASSISTANT_BINDING_DIAGNOSTIC_REVIEWED[file],ASSISTANT_BINDING_CHECKPOINT_TARGET_REVIEWED[file],ASSISTANT_PUBLIC587_SOURCE_REVIEWED[file],ASSISTANT_PUBLIC587_OPERATIVE_REVIEWED[file],CALENDAR_PUBLIC588_SUCCESSOR_REVIEWED[file],ASSISTANT_PUBLIC590_SUCCESSOR_REVIEWED[file],ASSISTANT_GENUINE590_PARENT_REVIEWED[file],ASSISTANT_GENUINE591_PARENT_REVIEWED[file],CONDITIONS_READER_CAPACITY593_REVIEWED[file],ORIGIN591_METADATA594_REVIEWED[file],SCALAR597_LATER_H0_REVIEWED[file],SOURCE_PRODUCER_AFTER597_FIRST_ISSUANCE_REVIEWED[file],SOURCE_PRODUCER_AFTER597_RUNTIME_REVIEWED[file]].filter(Boolean)
     .find(variant => variant.sha256 === hash);
   if (!reviewed)
     throw new Error('Whole reviewed model import source changed: ' + file);

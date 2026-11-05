@@ -830,3 +830,39 @@ export const INACTIVE_SCALAR597_LATER_H0_SUCCESSOR=Object.freeze({
   assertTarget:assertScalar597LaterH0Target,assertCaller:assertAssistantPublic591SuccessorCaller,
 });
 export const ACTIVE_ASSISTANT_SUCCESSOR=INACTIVE_SCALAR597_LATER_H0_SUCCESSOR;
+
+// First, deliberately unissued preparation for the reviewed assistant changes.
+// No release/version/SQL/C/I/T is assigned, and ACTIVE above remains unchanged.
+export const ASSISTANT_AFTER597_BEFORE=Object.freeze({...SCALAR597_LATER_H0_BINDING,
+  canonicalSha256:SCALAR597_LATER_H0_OUTPUT.canonicalSha256});
+export const ASSISTANT_AFTER597_BINDING=null;
+export const ASSISTANT_AFTER597_OUTPUT=null;
+export function requireAssistantAfter597Binding(){
+  assert.equal(arguments.length,0,'No caller-selected assistant binding');
+  assert(ASSISTANT_AFTER597_BINDING&&Object.isFrozen(ASSISTANT_AFTER597_BINDING),'ASSISTANT_AFTER597_UNISSUED');
+  return ASSISTANT_AFTER597_BINDING;
+}
+export function requireAssistantAfter597Output(){
+  assert.equal(arguments.length,0);requireAssistantAfter597Binding();
+  assert(ASSISTANT_AFTER597_OUTPUT&&Object.isFrozen(ASSISTANT_AFTER597_OUTPUT),'ASSISTANT_AFTER597_SQL_UNISSUED');
+  return ASSISTANT_AFTER597_OUTPUT;
+}
+export function assertAssistantAfter597Target(descriptor,targetReferenceAt){
+  assert.equal(arguments.length,2);
+  assert.equal(descriptor?.modelBinding?.modelBundleSha256,ASSISTANT_AFTER597_BEFORE.I);
+  assert.equal(descriptor?.contractHashes?.continuationStateContractSha256,ASSISTANT_AFTER597_BEFORE.T);
+  for(const value of [descriptor.productionReferenceAt,targetReferenceAt]){
+    assert.equal(typeof value,'string');assert.match(value,/^\d{4}-\d{2}-\d{2}T\d{2}:00:00\.000Z$/);
+    assert.equal(new Date(value).toISOString(),value);
+  }
+  assert(Date.parse(targetReferenceAt)>Date.parse(descriptor.productionReferenceAt),'ASSISTANT_AFTER597_STRICTLY_LATER');
+  return true; // Input constraint only, no original authentication or SQL authority.
+}
+export const UNISSUED_ASSISTANT_AFTER597_SUCCESSOR=Object.freeze({
+  sourcePhase:'assistant-mixed-after597-successor',
+  before:ASSISTANT_AFTER597_BEFORE,databaseBefore:ASSISTANT_AFTER597_BEFORE,originalStateFamily:'597',
+  binding:ASSISTANT_AFTER597_BINDING,output:ASSISTANT_AFTER597_OUTPUT,
+  requireBinding:requireAssistantAfter597Binding,requireOutput:requireAssistantAfter597Output,
+  readPredecessorCanonicalSource:readScalar597LaterH0CanonicalSource,
+  assertTarget:assertAssistantAfter597Target,assertCaller:assertAssistantPublic591SuccessorCaller,
+});

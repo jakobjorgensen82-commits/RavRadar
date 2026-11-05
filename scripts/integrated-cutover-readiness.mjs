@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+import {SOURCE_PRODUCER_BEFORE as SOURCE597_BEFORE,requireSourceProducerOutput,requireSourceProducerBinding,
+  sourceProducerMigration,readSourceProducerCanonicalSource,sourceProducerCheckpointContractFromBase}
+  from './lib/source-producer-after597-runtime-family.mjs';
 
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
@@ -346,7 +349,8 @@ export const REQUIRED_CUTOVER_MIGRATIONS = Object.freeze([
   ...(SCALAR597_LATER_H0_BINDING === null ? [] : [scalar597LaterH0Migration()]),
 ]);
 function migrationsForSourcePhase(sourcePhase) {
-  assert(['native0600','current-memory-warmup','established-native-current-origin','last-mile-enclosure','account-statistics-assistant','native-original-continuity','assistant-later-h0','assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor','scalar597-later-h0-original594-successor'].includes(sourcePhase));
+  assert(['native0600','current-memory-warmup','established-native-current-origin','last-mile-enclosure','account-statistics-assistant','native-original-continuity','assistant-later-h0','assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor','scalar597-later-h0-original594-successor','source-producer-after597'].includes(sourcePhase));
+  if (sourcePhase === 'source-producer-after597') return sourceProducerRequiredMigrations();
   if (sourcePhase === 'scalar597-later-h0-original594-successor') return scalar597LaterH0RequiredMigrations();
   if (sourcePhase === 'assistant-installed593-origin591-successor') return installed593Original591RequiredMigrations();
   if (sourcePhase === 'assistant-public591-successor') return assistantPublic591SuccessorRequiredMigrations();
@@ -366,6 +370,7 @@ function migrationsForSourcePhase(sourcePhase) {
 }
 function canonicalForSourcePhase(sourcePhase,migrationsDirectory) {
   migrationsForSourcePhase(sourcePhase); // Unknown phases fail before filesystem access.
+  if(sourcePhase==='source-producer-after597')return readSourceProducerCanonicalSource({migrationsDirectory});
   if(sourcePhase==='scalar597-later-h0-original594-successor')return readScalar597LaterH0CanonicalSource({migrationsDirectory});
   if(sourcePhase==='assistant-installed593-origin591-successor')return readInstalled593Original591CanonicalSource({migrationsDirectory});
   if(sourcePhase==='assistant-public591-successor')return readAssistantPublic591SuccessorCanonicalSource({migrationsDirectory});
@@ -738,7 +743,7 @@ function assistantLaterH0Rows(migrationListText){
   return fixedAssistantRows(migrationListText,ISSUED_ASSISTANT587_ROWS);
 }
 function fixedAssistantRows(migrationListText,profile){
-  assert(profile===ISSUED_ASSISTANT587_ROWS||profile===PUBLIC587_SUCCESSOR_ROWS||profile===PUBLIC588_SUCCESSOR_ROWS||profile===PUBLIC590_SUCCESSOR_ROWS||profile===PUBLIC591_SUCCESSOR_ROWS||profile===INSTALLED593_ORIGINAL591_ROWS||profile===SCALAR597_LATER_H0_ROWS);
+  assert(profile===ISSUED_ASSISTANT587_ROWS||profile===PUBLIC587_SUCCESSOR_ROWS||profile===PUBLIC588_SUCCESSOR_ROWS||profile===PUBLIC590_SUCCESSOR_ROWS||profile===PUBLIC591_SUCCESSOR_ROWS||profile===INSTALLED593_ORIGINAL591_ROWS||profile===SCALAR597_LATER_H0_ROWS||profile===SOURCE597_ROWS);
   const required=profile.required();
   const rows=parseSupabaseMigrationList(migrationListText);
   const local=uniqueVersions(rows,'local'),remote=uniqueVersions(rows,'remote');
@@ -955,7 +960,9 @@ export async function expectedCheckpointCasContract({
 
 export function checkpointCasContractFromCanonicalSource(migration,{sourcePhase=DEFAULT_CUTOVER_SOURCE_PHASE}={}) {
   assert.equal(typeof migration,'string');
-  assert(['native0600','current-memory-warmup','established-native-current-origin','last-mile-enclosure','account-statistics-assistant','native-original-continuity','assistant-later-h0','assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor','scalar597-later-h0-original594-successor'].includes(sourcePhase));
+  assert(['native0600','current-memory-warmup','established-native-current-origin','last-mile-enclosure','account-statistics-assistant','native-original-continuity','assistant-later-h0','assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor','scalar597-later-h0-original594-successor','source-producer-after597'].includes(sourcePhase));
+  if(sourcePhase==='source-producer-after597')return sourceProducerCheckpointContractFromBase(migration,
+    checkpointCasContractFromCanonicalSource(migration,{sourcePhase:'scalar597-later-h0-original594-successor'}));
   if(sourcePhase==='scalar597-later-h0-original594-successor')return scalar597LaterH0CheckpointContractFromBase(migration,
     checkpointCasContractFromCanonicalSource(migration,{sourcePhase:'native-original-continuity'}));
   if(sourcePhase==='assistant-installed593-origin591-successor')return assistantPublic591SuccessorCheckpointContractFromBase(migration,
@@ -1138,10 +1145,19 @@ export async function expectedAssistantBinding() {
   });
 }
 
+// SOURCE readiness uses its own issued inventory; it cannot inherit native597.
+export function integratedReadinessRequiredMigrations(sourcePhase = DEFAULT_CUTOVER_SOURCE_PHASE) {
+  if (sourcePhase === 'source-producer-after597') return sourceProducerRequiredMigrations();
+  assert.equal(sourcePhase, DEFAULT_CUTOVER_SOURCE_PHASE, 'Unknown current readiness phase');
+  ACTIVE.requireOutput();
+  return REQUIRED_CUTOVER_MIGRATIONS;
+}
+
 export async function buildIntegratedCutoverReadiness(sourceHeadInput, {
   publicImplementationClosureSha256,
+  sourcePhase = DEFAULT_CUTOVER_SOURCE_PHASE,
 } = {}) {
-  ACTIVE.requireOutput(); // Fast aktiv familie før readiness/input.
+  const requiredMigrations = integratedReadinessRequiredMigrations(sourcePhase); // Before input/I/O.
   const sourceHead = normaliseSourceHead(sourceHeadInput);
   assert.match(String(publicImplementationClosureSha256 ?? ''), SHA256_PATTERN,
     'public implementation closure must be an exact SHA-256');
@@ -1149,11 +1165,16 @@ export async function buildIntegratedCutoverReadiness(sourceHeadInput, {
   assertRavScoreModelBinding(modelBinding);
   const candidateBinding = candidateGRollbackModelBinding();
   assertCandidateGRollbackModelBinding(candidateBinding);
+  if (sourcePhase === 'source-producer-after597') {
+    const issued = requireSourceProducerBinding();
+    assert.equal(modelBinding.modelBundleSha256, issued.I, 'SOURCE readiness integrated source');
+    assert.equal(candidateBinding.modelBundleSha256, issued.C, 'SOURCE readiness Candidate source');
+  }
   const centralProfile = JSON.parse(await fs.readFile(CENTRAL_PROFILE_PATH, 'utf8'));
   assertIntegratedRavScoreSelection(centralProfile,
     'Integrated cutover readiness central profile');
   const assistantBinding = await expectedAssistantBinding();
-  const tripBindingPolicy = await expectedTripBindingPolicy();
+  const tripBindingPolicy = await expectedTripBindingPolicy({ sourcePhase });
   const tripActiveAdmissionPolicy = await expectedTripActiveAdmissionPolicy();
   return Object.freeze({
     schemaVersion: READINESS_SCHEMA,
@@ -1161,7 +1182,7 @@ export async function buildIntegratedCutoverReadiness(sourceHeadInput, {
     modelContractSha256: modelBinding.modelContractSha256,
     modelBundleSha256: modelBinding.modelBundleSha256,
     publicImplementationClosureSha256,
-    migrationIds: Object.freeze(REQUIRED_CUTOVER_MIGRATIONS.map(item => item.id)),
+    migrationIds: Object.freeze(requiredMigrations.map(item => item.id)),
     tripSchemaVersion: 3,
     tripBindingPolicyId: tripBindingPolicy.id,
     tripBindingPolicySha256: tripBindingPolicy.sha256,
@@ -1418,7 +1439,19 @@ export async function assertSupabaseMigrationPlan({
   migrationsDirectory = MIGRATIONS_DIRECTORY,
   allowAccountAssistantPrewritePlan = false,
   allowStatisticsPreferenceRevisionPlan = false,
+  sourcePhase = DEFAULT_CUTOVER_SOURCE_PHASE,
 } = {}) {
+  if (sourcePhase === 'source-producer-after597') {
+    requireSourceProducerOutput(); // No first-install or statistics authority in a generic plan.
+    assert.equal(allowAccountAssistantPrewritePlan, false);
+    assert.equal(allowStatisticsPreferenceRevisionPlan, false);
+    await readSourceProducerCanonicalSource({ migrationsDirectory });
+    await inspectMigrationSources({ migrationsDirectory, sourcePhase });
+    const applied = assertSourceProducerMigrationsApplied(migrationListText);
+    assert.deepEqual(parseSupabaseDryRunMigrationFilenames(dryRunText), []);
+    return Object.freeze({ pendingVersions: Object.freeze([]), alreadyAppliedVersions: applied.appliedVersions });
+  }
+  assert.equal(sourcePhase, DEFAULT_CUTOVER_SOURCE_PHASE, 'Unknown generic migration phase');
   ACTIVE.requireOutput(); // Fast aktiv familie; UNISSUED må ikke falde tilbage.
   assert.equal(typeof allowStatisticsPreferenceRevisionPlan,'boolean');
   await inspectMigrationSources({ migrationsDirectory });
@@ -1502,7 +1535,9 @@ export async function assertSupabaseMigrationPlan({
   });
 }
 
-export function assertSupabaseMigrationsApplied(migrationListText) {
+export function assertSupabaseMigrationsApplied(migrationListText, { sourcePhase = DEFAULT_CUTOVER_SOURCE_PHASE } = {}) {
+  if (sourcePhase === 'source-producer-after597') return assertSourceProducerMigrationsApplied(migrationListText);
+  assert.equal(sourcePhase, DEFAULT_CUTOVER_SOURCE_PHASE);
   if(ACTIVE.sourcePhase==='scalar597-later-h0-original594-successor')assertScalar597LaterH0MigrationsApplied(migrationListText);
   else if(ACTIVE.sourcePhase==='assistant-installed593-origin591-successor')assertInstalled593Original591MigrationsApplied(migrationListText);
   else if(ACTIVE.sourcePhase==='assistant-public591-successor')assertAssistantPublic591SuccessorMigrationsApplied(migrationListText);
@@ -1697,9 +1732,10 @@ export async function verifyIntegratedDatabaseReadback({
   tripBindingPolicy = null,
   tripActiveAdmissionPolicy = null, sourcePhase = DEFAULT_CUTOVER_SOURCE_PHASE,
 } = {}) {
-  assert(['native0600','current-memory-warmup','established-native-current-origin','last-mile-enclosure','account-statistics-assistant','native-original-continuity','assistant-later-h0','assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor','scalar597-later-h0-original594-successor'].includes(sourcePhase));
+  assert(['native0600','current-memory-warmup','established-native-current-origin','last-mile-enclosure','account-statistics-assistant','native-original-continuity','assistant-later-h0','assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor','scalar597-later-h0-original594-successor','source-producer-after597'].includes(sourcePhase));
   if(sourcePhase === 'current-memory-warmup')requireCurrentMemoryWarmupOutput();
   if(sourcePhase === 'established-native-current-origin')requireEstablishedNativeCurrentOriginOutput();
+  if(sourcePhase === 'source-producer-after597')requireSourceProducerOutput();
   if(sourcePhase === 'scalar597-later-h0-original594-successor')requireScalar597LaterH0Output();
   if(sourcePhase === 'assistant-installed593-origin591-successor')requireInstalled593Original591Output();
   if(sourcePhase === 'assistant-public591-successor')requireAssistantPublic591SuccessorOutput();
@@ -1716,6 +1752,15 @@ export async function verifyIntegratedDatabaseReadback({
   const candidate = candidateModelBinding ?? candidateGRollbackModelBinding();
   assertExactKeys(binding, MODEL_BINDING_FIELDS, 'database expected integrated binding');
   assertExactKeys(candidate, MODEL_BINDING_FIELDS, 'database expected Candidate binding');
+  if (sourcePhase === 'source-producer-after597') {
+    const issued = requireSourceProducerBinding();
+    assert.equal(binding.modelBundleSha256, issued.I, 'SOURCE readback integrated source');
+    assert.equal(candidate.modelBundleSha256, issued.C, 'SOURCE readback Candidate source');
+    if (tripBindingPolicy !== null) {
+      assert.equal(tripBindingPolicy.id, TRIP_BINDING_POLICY_ID);
+      assert.equal(tripBindingPolicy.sha256, requireSourceProducerOutput().tripBindingPolicySha256);
+    }
+  }
   const baseUrl = String(url).replace(/\/$/, '');
   const response = await fetchImpl(`${baseUrl}/rest/v1/rpc/ravradar_integrated_cutover_contract`, {
     method: 'POST',
@@ -1974,7 +2019,10 @@ function assertSealedCentralProfile(profile, binding) {
   });
 }
 
-export function assertSealedIntegratedCutoverReadiness(value) {
+export function assertSealedIntegratedCutoverReadiness(value, { sourcePhase = DEFAULT_CUTOVER_SOURCE_PHASE } = {}) {
+  // Preserve the ordinary sealed shape-only contract; SOURCE must be issued first.
+  const requiredMigrations = sourcePhase === DEFAULT_CUTOVER_SOURCE_PHASE
+    ? REQUIRED_CUTOVER_MIGRATIONS : integratedReadinessRequiredMigrations(sourcePhase);
   assertExactKeys(value, [
     'schemaVersion', 'sourceHead', 'modelContractSha256', 'modelBundleSha256',
     'publicImplementationClosureSha256',
@@ -1991,10 +2039,16 @@ export function assertSealedIntegratedCutoverReadiness(value) {
   assert.equal(value.modelContractSha256, value.modelBinding.modelContractSha256);
   assert.equal(value.modelBundleSha256, value.modelBinding.modelBundleSha256);
   assert.match(String(value.publicImplementationClosureSha256 ?? ''), SHA256_PATTERN);
-  assert.deepEqual(value.migrationIds, REQUIRED_CUTOVER_MIGRATIONS.map(item => item.id));
+  assert.deepEqual(value.migrationIds, requiredMigrations.map(item => item.id));
   assert.equal(value.tripSchemaVersion, 3);
   assert.equal(value.tripBindingPolicyId, TRIP_BINDING_POLICY_ID);
   assert.match(String(value.tripBindingPolicySha256 ?? ''), SHA256_PATTERN);
+  if (sourcePhase === 'source-producer-after597') {
+    const issued = requireSourceProducerBinding();
+    assert.equal(value.modelBinding.modelBundleSha256, issued.I, 'SOURCE sealed integrated source');
+    assert.equal(value.candidateModelBinding.modelBundleSha256, issued.C, 'SOURCE sealed Candidate source');
+    assert.equal(value.tripBindingPolicySha256, requireSourceProducerOutput().tripBindingPolicySha256);
+  }
   assert.equal(value.tripActiveAdmissionPolicyId, TRIP_ACTIVE_ADMISSION_POLICY_ID);
   assert.match(String(value.tripActiveAdmissionPolicySha256 ?? ''), SHA256_PATTERN);
   assertSealedCentralProfile(value.centralProfile, value.modelBinding);
@@ -2019,11 +2073,13 @@ export async function checkSealedIntegratedCutoverReadiness({
   serviceRoleKey,
   publishableKey,
   fetchImpl = globalThis.fetch,
+  sourcePhase = DEFAULT_CUTOVER_SOURCE_PHASE,
 } = {}) {
-  assertSealedIntegratedCutoverReadiness(expected);
+  assertSealedIntegratedCutoverReadiness(expected, { sourcePhase });
   const actual = await readReadinessDocument({ url, serviceRoleKey, fetchImpl });
   assertReadinessDocument(actual, expected);
   await verifyIntegratedDatabaseReadback({
+    sourcePhase,
     url,
     serviceRoleKey,
     fetchImpl,
@@ -2057,14 +2113,16 @@ export async function publishIntegratedCutoverReadiness({
   serviceRoleKey,
   publishableKey,
   fetchImpl = globalThis.fetch,
+  sourcePhase = DEFAULT_CUTOVER_SOURCE_PHASE,
 } = {}) {
   const expected = await buildIntegratedCutoverReadiness(sourceHead, {
+    sourcePhase,
     publicImplementationClosureSha256,
   });
 
   // All calls before the upsert are read-only. A marker is never written for a
   // source head whose committed DB or deployed assistant contract is stale.
-  await verifyIntegratedDatabaseReadback({ url, serviceRoleKey, fetchImpl });
+  await verifyIntegratedDatabaseReadback({ url, serviceRoleKey, fetchImpl, sourcePhase });
   await verifyTripStorageEdgeBoundaries({ url, publishableKey, fetchImpl });
   await verifyIntegratedAssistantEdge({ url, publishableKey, fetchImpl, requireBinding: true });
 
@@ -2095,13 +2153,15 @@ export async function checkIntegratedCutoverReadiness({
   serviceRoleKey,
   publishableKey,
   fetchImpl = globalThis.fetch,
+  sourcePhase = DEFAULT_CUTOVER_SOURCE_PHASE,
 } = {}) {
   const expected = await buildIntegratedCutoverReadiness(sourceHead, {
+    sourcePhase,
     publicImplementationClosureSha256,
   });
   const actual = await readReadinessDocument({ url, serviceRoleKey, fetchImpl });
   assertReadinessDocument(actual, expected);
-  await verifyIntegratedDatabaseReadback({ url, serviceRoleKey, fetchImpl });
+  await verifyIntegratedDatabaseReadback({ url, serviceRoleKey, fetchImpl, sourcePhase });
   await verifyTripStorageEdgeBoundaries({ url, publishableKey, fetchImpl });
   await verifyIntegratedAssistantEdge({ url, publishableKey, fetchImpl, requireBinding: true });
   return expected;
@@ -2130,12 +2190,17 @@ function optionalArgumentValue(name) {
 }
 
 async function runCli() {
-  ACTIVE.requireOutput(); // Fast aktiv familie før CLI/input.
+  const sourceFlags = process.argv.slice(2).filter(argument => argument.startsWith('--source-producer'));
+  assert.ok(sourceFlags.every(argument => argument === '--source-producer'),
+    'SOURCE readiness requires exact --source-producer flags');
+  const sourcePhase = sourceFlags.length > 0 ? 'source-producer-after597' : DEFAULT_CUTOVER_SOURCE_PHASE;
+  const requiredMigrations = integratedReadinessRequiredMigrations(sourcePhase); // Before CLI input, config or I/O.
   const command = process.argv[2];
   if (command === 'assert-source') {
     const sourceHead = sourceHeadFromEnvironment();
-    await inspectMigrationSources();
+    await inspectMigrationSources({ sourcePhase });
     const expected = await buildIntegratedCutoverReadiness(sourceHead, {
+      sourcePhase,
       publicImplementationClosureSha256:
         argumentValue('--public-implementation-closure-sha256'),
     });
@@ -2144,14 +2209,15 @@ async function runCli() {
   }
   if (command === 'prepare-workdir') {
     const prepared = await prepareTemporarySupabaseCutoverWorkdir({ workdir: argumentValue('--output'),
-      includeStatisticsPreferenceRevisionSource:process.argv.includes('--statistics-preference-revision-source') });
-    console.log(`Temporary Supabase cutover view prepared with ${REQUIRED_CUTOVER_MIGRATIONS.length} exact source migrations.`);
+      includeStatisticsPreferenceRevisionSource:process.argv.includes('--statistics-preference-revision-source'), sourcePhase });
+    console.log(`Temporary Supabase cutover view prepared with ${requiredMigrations.length} exact source migrations.`);
     assert.ok(prepared.migrationsDirectory);
     return;
   }
   if (command === 'hydrate-history') {
     const migrationListText = await fs.readFile(argumentValue('--migration-list'), 'utf8');
     const result = await hydrateTemporaryRemoteMigrationHistory({
+      sourcePhase,
       workdir: argumentValue('--workdir'),
       migrationListText,
     });
@@ -2162,13 +2228,13 @@ async function runCli() {
     const migrationListText = await fs.readFile(argumentValue('--migration-list'), 'utf8');
     const dryRunText = await fs.readFile(argumentValue('--dry-run'), 'utf8');
     const migrationsDirectory = optionalArgumentValue('--migrations-directory') || MIGRATIONS_DIRECTORY;
-    const plan = await assertSupabaseMigrationPlan({ migrationListText, dryRunText, migrationsDirectory });
+    const plan = await assertSupabaseMigrationPlan({ migrationListText, dryRunText, migrationsDirectory, sourcePhase });
     console.log(`Supabase dry-run accepted: ${plan.pendingVersions.length} required migration(s) pending; no unexpected writes.`);
     return;
   }
   if (command === 'applied') {
     const migrationListText = await fs.readFile(argumentValue('--migration-list'), 'utf8');
-    const result = assertSupabaseMigrationsApplied(migrationListText);
+    const result = assertSupabaseMigrationsApplied(migrationListText, { sourcePhase });
     console.log(`Supabase migration metadata readback is complete: ${result.appliedVersions.join(', ')}.`);
     return;
   }
@@ -2179,6 +2245,7 @@ async function runCli() {
     if (process.env.GITHUB_SHA) normaliseSourceHead(process.env.GITHUB_SHA, 'GITHUB_SHA');
     const expected = JSON.parse(await fs.readFile(argumentValue('--document'), 'utf8'));
     const payload = await checkSealedIntegratedCutoverReadiness({
+      sourcePhase,
       expected,
       url,
       serviceRoleKey,
@@ -2191,7 +2258,7 @@ async function runCli() {
   }
   const sourceHead = sourceHeadFromEnvironment();
   if (command === 'verify-db') {
-    await verifyIntegratedDatabaseReadback({ url, serviceRoleKey });
+    await verifyIntegratedDatabaseReadback({ url, serviceRoleKey, sourcePhase });
     console.log('Integrated trip schema metadata readback is exact and reads no observation rows.');
     return;
   }
@@ -2201,6 +2268,7 @@ async function runCli() {
     const publicImplementationClosureSha256 =
       argumentValue('--public-implementation-closure-sha256');
     const payload = await publishIntegratedCutoverReadiness({
+      sourcePhase,
       sourceHead,
       publicImplementationClosureSha256,
       url,
@@ -2216,6 +2284,7 @@ async function runCli() {
     const publicImplementationClosureSha256 =
       argumentValue('--public-implementation-closure-sha256');
     const payload = await checkIntegratedCutoverReadiness({
+      sourcePhase,
       sourceHead,
       publicImplementationClosureSha256,
       url,
@@ -2235,4 +2304,54 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     console.error(error instanceof Error ? error.message : 'Integrated cutover readiness failed');
     process.exitCode = 1;
   });
+}
+
+// Separate future SOURCE597 phase, never a retagged594 migration list.
+const SOURCE597_ROWS=Object.freeze({required:sourceProducerRequiredMigrations,before:SOURCE597_BEFORE});
+export function sourceProducerRequiredMigrations(){
+  requireSourceProducerOutput();assert.equal(arguments.length,0);
+  const previous=scalar597LaterH0RequiredMigrations();
+  assert.equal(previous.at(-1).version,SOURCE597_BEFORE.version);
+  return Object.freeze([...previous,sourceProducerMigration()]);
+}
+export function assertSourceProducerMigrationsApplied(migrationListText){
+  requireSourceProducerOutput();assert.equal(arguments.length,1);
+  const {required,local,remote}=fixedAssistantRows(migrationListText,SOURCE597_ROWS);
+  assert(remote.has(required.at(-1).version),'The exact SOURCE597 successor must be installed');
+  assert.deepEqual([...local].filter(version=>!remote.has(version)),[]);
+  return Object.freeze({appliedVersions:Object.freeze(required.map(row=>row.version))});
+}
+export async function assertSourceProducerMigrationPlan(options){
+  requireSourceProducerOutput(); // FIRST before options or filesystem reads.
+  assert.equal(arguments.length,1);assert(options&&Object.getPrototypeOf(options)===Object.prototype);
+  assert.deepEqual(Object.keys(options).sort(),['dryRunText','migrationListText','migrationsDirectory']);
+  const {migrationListText,dryRunText,migrationsDirectory}=options;
+  const {required,local,remote}=fixedAssistantRows(migrationListText,SOURCE597_ROWS);
+  await inspectMigrationSources({migrationsDirectory,sourcePhase:'source-producer-after597'});
+  await readSourceProducerCanonicalSource({migrationsDirectory});
+  const next=required.at(-1),pending=[...local].filter(version=>!remote.has(version));
+  assert.deepEqual(pending,remote.has(next.version)?[]:[next.version],'Only the one issued SOURCE597 successor may follow installed597');
+  assert.deepEqual(parseSupabaseDryRunMigrationFilenames(dryRunText),pending.length?[next.filename]:[]);
+  return Object.freeze({pendingVersions:Object.freeze(pending),
+    alreadyAppliedVersions:Object.freeze(required.filter(row=>remote.has(row.version)).map(row=>row.version))});
+}
+
+export async function prepareSourceProducerCutoverWorkdir(options={}){
+  requireSourceProducerOutput(); // Before inspecting a caller workdir or filesystem.
+  assert(arguments.length<=1);const {workdir}=options;
+  await readSourceProducerCanonicalSource();
+  const prepared=await prepareTemporarySupabaseCutoverWorkdir({workdir,includeStatisticsPreferenceRevisionSource:true,
+    sourcePhase:'source-producer-after597'});
+  const staged=await fs.readdir(prepared.migrationsDirectory);
+  for(const version of ['20261014140000','20261015030000','20261016030000'])
+    assert(!staged.some(filename=>filename.startsWith(version+'_')));
+  await readSourceProducerCanonicalSource({migrationsDirectory:prepared.migrationsDirectory});return prepared;
+}
+export async function hydrateSourceProducerRemoteMigrationHistory(options){
+  requireSourceProducerOutput(); // Before inspecting paths/history; phase cannot be caller-selected.
+  assert.equal(arguments.length,1);
+  const directory=path.join(assertTemporaryCutoverWorkdir(options.workdir),'supabase','migrations');
+  fixedAssistantRows(options.migrationListText,SOURCE597_ROWS);
+  await readSourceProducerCanonicalSource({migrationsDirectory:directory});
+  return hydrateTemporaryRemoteMigrationHistory({...options,sourcePhase:'source-producer-after597'});
 }
