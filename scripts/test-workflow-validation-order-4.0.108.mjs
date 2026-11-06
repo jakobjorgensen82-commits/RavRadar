@@ -149,11 +149,58 @@ const productionWorkflowNames = new Set(
 );
 productionWorkflowNames.add('deploy-code-only-repair.yml');
 productionWorkflowNames.add('run-current-weather-once.yml');
-const physicalWorkflowFiles = inverseForecastSharePagesWorkflowInventory(inverseTerminalRepair4145WorkflowInventory(
+const currentPhysicalWorkflowFiles = inverseForecastSharePagesWorkflowInventory(inverseTerminalRepair4145WorkflowInventory(
   fs.readdirSync(workflowDirectory).filter((name) => /\.ya?ml$/i.test(name)).sort(),
   fs.readFileSync(`${workflowDirectory}/resume-operational-checkpoint.yml`, 'utf8').replaceAll('\r\n', '\n')),
   fs.readFileSync(`${workflowDirectory}/deploy-forecast-share-pages.yml`, 'utf8'));
 const expectedWorkflowFiles = ['apply-weather-model-binding-only.yml', 'audit-native-current-grid.yml', 'audit-saved-weather-inputs.yml', 'audit-sealed-current-source.yml', 'build-ravscore-historical-wave-pilot.yml', 'deploy-code-only-repair.yml', 'deploy-trip-storage.yml', 'extract-private-geodanmark-layer.yml', 'migrate-private-runtime-to-r2.yml', 'monitor-trip-storage.yml', 'notify-weather-failure.yml', 'preserve-copernicus-current-shadow.yml', 'recover-live-ravscore-central.yml', 'recover-saved-dmi-originals.yml', 'recover-sealed-weather-36396834072.yml', 'retry-national-admin-roundtrip.yml', 'reusable-operational-reentry.yml', 'reusable-pages-deploy.yml', 'reusable-weather-build.yml', 'run-current-weather-once.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-local-part-system-candidate.yml', 'validate-pull-request.yml', 'validate-six-zone-recovery.yml', 'watch-missed-weather-schedule.yml'];
+// Test-only: qualify exactly the three existing maintenance workflows before
+// the unchanged older inventory oracles. Unknown names or changed bytes fail.
+const reviewedMaintenanceWorkflows = Object.freeze({
+  'backup-supabase-database.yml': Object.freeze({ bytes: 5259, sha256: 'acf4e5b3a624649bb2dc43264443bea0c041ac98c79a032f81950da29acdab04' }),
+  'maintain-admin-document-history.yml': Object.freeze({ bytes: 25067, sha256: 'e1a30ce2979f259e66db4cdf24700de223e987858a0286ec690de3ddf07d877b' }),
+  'verify-supabase-cli-local-restore.yml': Object.freeze({ bytes: 5305, sha256: '9d89e9c0c0d8713703d3d62043552bd0f6ee5a76e327afc4fbe1f47a268cf012' }),
+});
+function inverseReviewedMaintenanceWorkflowInventory(names, sources) {
+  assert.deepEqual(names, [...expectedWorkflowFiles, 'private-trip-weather-study.yml',
+    'deploy-forecast-share.yml', ...Object.keys(reviewedMaintenanceWorkflows)].sort(),
+  'Only the exact historical inventory plus the three reviewed maintenance workflows');
+  assert.deepEqual(Object.keys(sources).sort(), Object.keys(reviewedMaintenanceWorkflows).sort());
+  for (const [name, pin] of Object.entries(reviewedMaintenanceWorkflows)) {
+    const bytes = sources[name];
+    assert.ok(Buffer.isBuffer(bytes), 'Whole original workflow bytes are required');
+    assert.equal(bytes.length, pin.bytes, 'Exact reviewed maintenance workflow size');
+    assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'), pin.sha256,
+      'Exact reviewed maintenance workflow content');
+  }
+  return names.filter(name => !Object.hasOwn(reviewedMaintenanceWorkflows, name));
+}
+const reviewedMaintenanceSources = Object.fromEntries(Object.keys(reviewedMaintenanceWorkflows)
+  .map(name => [name, fs.readFileSync(`${workflowDirectory}/${name}`)]));
+const physicalWorkflowFiles = inverseReviewedMaintenanceWorkflowInventory(
+  currentPhysicalWorkflowFiles, reviewedMaintenanceSources);
+for (const names of [
+  [...currentPhysicalWorkflowFiles, 'unreviewed-maintenance.yml'].sort(),
+  currentPhysicalWorkflowFiles.filter(name => name !== expectedWorkflowFiles[0]),
+  [...currentPhysicalWorkflowFiles, expectedWorkflowFiles[0]].sort(),
+  ...Object.keys(reviewedMaintenanceWorkflows).flatMap(name => [
+    currentPhysicalWorkflowFiles.filter(value => value !== name),
+    [...currentPhysicalWorkflowFiles, name].sort(),
+  ]),
+]) assert.throws(() => inverseReviewedMaintenanceWorkflowInventory(names, reviewedMaintenanceSources));
+for (const name of Object.keys(reviewedMaintenanceWorkflows)) {
+  assert.throws(() => inverseReviewedMaintenanceWorkflowInventory(currentPhysicalWorkflowFiles,
+    Object.fromEntries(Object.entries(reviewedMaintenanceSources).filter(([file]) => file !== name))));
+  for (const bytes of [
+    Buffer.concat([reviewedMaintenanceSources[name], Buffer.from('\n')]),
+    Buffer.from(reviewedMaintenanceSources[name]),
+  ]) {
+    if (bytes.length === reviewedMaintenanceSources[name].length) bytes[0] ^= 1;
+    assert.throws(() => inverseReviewedMaintenanceWorkflowInventory(currentPhysicalWorkflowFiles,
+      { ...reviewedMaintenanceSources, [name]: bytes }));
+  }
+}
+
 // Exact outer inventory for the separately dispatched public share Worker.
 const forecastShareName = 'deploy-forecast-share.yml';
 const forecastShareSource = fs.readFileSync(`${workflowDirectory}/${forecastShareName}`, 'utf8').replace(/\r\n/g, '\n');
@@ -680,7 +727,20 @@ function privateStudyPre007Workflow(source) {
   assert.equal(sha(source), 'bdde67e93ae059a520e21305af42c1566080faa0da786fc670d7f28dc0285949');
   return source;
 }
-const privateStudyActualSource = privateStudyPre007Workflow(fs.readFileSync(`${workflowDirectory}/${privateStudyName}`, 'utf8').replace(/\r\n/g, '\n'));
+// Test-only: remove only the reviewed frozen-replay workflow delta before old whole-file oracles.
+function reviewedFrozenReplayWorkflow(source){
+  assert.equal(typeof source,'string');
+  const digest=value=>crypto.createHash('sha256').update(value).digest('hex');
+  if(digest(source)!=='435d5e5e2276e83e0502ae4fcc4230447db590b8341a41e5850a6e896f25c1f8')return source;
+  assert.equal(Buffer.byteLength(source),7704);
+  for(const [before,after]of [["      enable_confirmation:\n        description: Skriv ENABLE_PRIVATE_UNISSUED_STUDY_ONLY for kun at \u00e5bne eksisterende signerede private ruter; ingen rapport eller kvalifikationsp\u00e5stand\n        type: string\n        default: ''\n","      enable_confirmation:\n        description: Skriv ENABLE_PRIVATE_UNISSUED_STUDY_ONLY for kun at \u00e5bne eksisterende signerede private ruter; ingen rapport eller kvalifikationsp\u00e5stand\n        type: string\n        default: ''\n      export_mode:\n        description: Almindelig eksport eller kun genl\u00e6sning af en allerede frossen rapport; ingen forberedelse ved frozen-replay\n        type: choice\n        default: ordinary\n        options: [ordinary, frozen-replay]\n      frozen_month:\n        description: P\u00e5kr\u00e6vet YYYY-MM ved frozen-replay; skal v\u00e6re den normale senest afsluttede UTC-m\u00e5ned\n        type: string\n        default: ''\n      frozen_binding_sha256:\n        description: P\u00e5kr\u00e6vet oprindelig fuld modelbindings SHA256 ved frozen-replay\n        type: string\n        default: ''\n      frozen_report_sha256:\n        description: P\u00e5kr\u00e6vet u\u00e6ndret frossen rapports SHA256 ved frozen-replay\n        type: string\n        default: ''\n"],["      PRIVATE_STUDY_OPERATION: ${{ inputs.operation }}\n      PRIVATE_STUDY_ENABLE_CONFIRMATION: ${{ inputs.enable_confirmation }}\n    steps:\n      - name: Validate fixed private study operation\n","      PRIVATE_STUDY_OPERATION: ${{ inputs.operation }}\n      PRIVATE_STUDY_ENABLE_CONFIRMATION: ${{ inputs.enable_confirmation }}\n      PRIVATE_STUDY_EXPORT_MODE: ${{ inputs.export_mode }}\n      PRIVATE_STUDY_FROZEN_MONTH: ${{ inputs.frozen_month }}\n      PRIVATE_STUDY_FROZEN_BINDING_SHA256: ${{ inputs.frozen_binding_sha256 }}\n      PRIVATE_STUDY_FROZEN_REPORT_SHA256: ${{ inputs.frozen_report_sha256 }}\n    steps:\n      - name: Validate fixed private study operation\n"],["            *) echo 'PRIVATE_STUDY_OPERATION_INVALID' >&2; exit 1 ;;\n          esac\n\n  private-study-upgrade:\n","            *) echo 'PRIVATE_STUDY_OPERATION_INVALID' >&2; exit 1 ;;\n          esac\n          if [[ \"${PRIVATE_STUDY_EXPORT_MODE:-ordinary}\" != ordinary || -n \"$PRIVATE_STUDY_FROZEN_MONTH$PRIVATE_STUDY_FROZEN_BINDING_SHA256$PRIVATE_STUDY_FROZEN_REPORT_SHA256\" ]]; then\n            test \"$PRIVATE_STUDY_OPERATION\" = export\n            test \"$PRIVATE_STUDY_EXPORT_MODE\" = frozen-replay\n            [[ \"$PRIVATE_STUDY_FROZEN_MONTH\" =~ ^[0-9]{4}-(0[1-9]|1[0-2])$ ]]\n            [[ \"$PRIVATE_STUDY_FROZEN_BINDING_SHA256\" =~ ^[a-f0-9]{64}$ ]]\n            [[ \"$PRIVATE_STUDY_FROZEN_REPORT_SHA256\" =~ ^[a-f0-9]{64}$ ]]\n          fi\n\n  private-study-upgrade:\n"],["      GITHUB_TOKEN: ${{ github.token }}\n      TRIP_STORAGE_OPERATION: private-study-export\n      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}\n      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n","      GITHUB_TOKEN: ${{ github.token }}\n      TRIP_STORAGE_OPERATION: private-study-export\n      PRIVATE_STUDY_EXPORT_MODE: ${{ inputs.export_mode }}\n      PRIVATE_STUDY_FROZEN_MONTH: ${{ inputs.frozen_month }}\n      PRIVATE_STUDY_FROZEN_BINDING_SHA256: ${{ inputs.frozen_binding_sha256 }}\n      PRIVATE_STUDY_FROZEN_REPORT_SHA256: ${{ inputs.frozen_report_sha256 }}\n      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}\n      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n"]].reverse()){
+    assert.equal(source.split(after).length,2);source=source.replace(after,()=>before);
+  }
+  assert.equal(Buffer.byteLength(source),5891);assert.equal(digest(source),'fa53edb8171551aa4ee5a3a0244e81e6c55ff3936508f7ff2ffbc93ca002a2a2');
+  return source;
+}
+
+const privateStudyActualSource = privateStudyPre007Workflow(reviewedFrozenReplayWorkflow(fs.readFileSync(`${workflowDirectory}/${privateStudyName}`, 'utf8').replace(/\r\n/g, '\n')));
 function inversePrivateStudy006ExportWorkflow(source) {
   const sha = value => crypto.createHash('sha256').update(value).digest('hex');
   assert.equal(sha(source), 'bdde67e93ae059a520e21305af42c1566080faa0da786fc670d7f28dc0285949',

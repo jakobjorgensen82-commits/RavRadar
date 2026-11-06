@@ -160,6 +160,7 @@ test('private-study005: the normal workflow stays OFF and DDL remains outside Wo
 
 async function privateStudyPre007Workflow(){
   let source=(await fs.readFile(new URL('../.github/workflows/private-trip-weather-study.yml',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  source=reviewedFrozenReplayWorkflow(source);
   const review=JSON.parse(await fs.readFile(new URL('./lib/private-trip-study-categorical-review.json',import.meta.url),'utf8')).workflow;
   const hash=value=>crypto.createHash('sha256').update(value).digest('hex');
   assert.equal(review.file,'.github/workflows/private-trip-weather-study.yml');
@@ -210,6 +211,30 @@ async function privateStudyPre007Controller(){
   }
   assert.equal(hash(source),review.beforeSha256);
   assert.equal(hash(source),'1dc1101146afbda2ff242cc759b0dfb1e7b172a93ab430a041778ef1e36a01f8');
+  return source;
+}
+
+// Test-only: remove only the reviewed frozen-replay workflow delta before old whole-file oracles.
+// Test-only: the separately tested exact cache-address successor precedes this unchanged mount/access oracle.
+function reviewedFrozenStudyDashboard(source){
+  const digest=value=>crypto.createHash('sha256').update(value).digest('hex');
+  if(digest(source)!=='2b1c2b1ffdd497979fed251df700c32bb2832063471d891d8646702dd89ae791')return source;
+  assert.equal(Buffer.byteLength(source),150490);
+  const current='./admin-private-trip-study.js?v=4.0.598&study=frozen-replay-noise-20261106';
+  assert.equal(source.split(current).length,2);source=source.replace(current,'./admin-private-trip-study.js?v=4.0.598');
+  assert.equal(Buffer.byteLength(source),150455);assert.equal(digest(source),'20fa84de16de4d3e97f6f63c4b7173ff4d0c38300287b7aedff09814b5228bb7');
+  return source;
+}
+
+function reviewedFrozenReplayWorkflow(source){
+  assert.equal(typeof source,'string');
+  const digest=value=>crypto.createHash('sha256').update(value).digest('hex');
+  if(digest(source)!=='435d5e5e2276e83e0502ae4fcc4230447db590b8341a41e5850a6e896f25c1f8')return source;
+  assert.equal(Buffer.byteLength(source),7704);
+  for(const [before,after]of [["      enable_confirmation:\n        description: Skriv ENABLE_PRIVATE_UNISSUED_STUDY_ONLY for kun at \u00e5bne eksisterende signerede private ruter; ingen rapport eller kvalifikationsp\u00e5stand\n        type: string\n        default: ''\n","      enable_confirmation:\n        description: Skriv ENABLE_PRIVATE_UNISSUED_STUDY_ONLY for kun at \u00e5bne eksisterende signerede private ruter; ingen rapport eller kvalifikationsp\u00e5stand\n        type: string\n        default: ''\n      export_mode:\n        description: Almindelig eksport eller kun genl\u00e6sning af en allerede frossen rapport; ingen forberedelse ved frozen-replay\n        type: choice\n        default: ordinary\n        options: [ordinary, frozen-replay]\n      frozen_month:\n        description: P\u00e5kr\u00e6vet YYYY-MM ved frozen-replay; skal v\u00e6re den normale senest afsluttede UTC-m\u00e5ned\n        type: string\n        default: ''\n      frozen_binding_sha256:\n        description: P\u00e5kr\u00e6vet oprindelig fuld modelbindings SHA256 ved frozen-replay\n        type: string\n        default: ''\n      frozen_report_sha256:\n        description: P\u00e5kr\u00e6vet u\u00e6ndret frossen rapports SHA256 ved frozen-replay\n        type: string\n        default: ''\n"],["      PRIVATE_STUDY_OPERATION: ${{ inputs.operation }}\n      PRIVATE_STUDY_ENABLE_CONFIRMATION: ${{ inputs.enable_confirmation }}\n    steps:\n      - name: Validate fixed private study operation\n","      PRIVATE_STUDY_OPERATION: ${{ inputs.operation }}\n      PRIVATE_STUDY_ENABLE_CONFIRMATION: ${{ inputs.enable_confirmation }}\n      PRIVATE_STUDY_EXPORT_MODE: ${{ inputs.export_mode }}\n      PRIVATE_STUDY_FROZEN_MONTH: ${{ inputs.frozen_month }}\n      PRIVATE_STUDY_FROZEN_BINDING_SHA256: ${{ inputs.frozen_binding_sha256 }}\n      PRIVATE_STUDY_FROZEN_REPORT_SHA256: ${{ inputs.frozen_report_sha256 }}\n    steps:\n      - name: Validate fixed private study operation\n"],["            *) echo 'PRIVATE_STUDY_OPERATION_INVALID' >&2; exit 1 ;;\n          esac\n\n  private-study-upgrade:\n","            *) echo 'PRIVATE_STUDY_OPERATION_INVALID' >&2; exit 1 ;;\n          esac\n          if [[ \"${PRIVATE_STUDY_EXPORT_MODE:-ordinary}\" != ordinary || -n \"$PRIVATE_STUDY_FROZEN_MONTH$PRIVATE_STUDY_FROZEN_BINDING_SHA256$PRIVATE_STUDY_FROZEN_REPORT_SHA256\" ]]; then\n            test \"$PRIVATE_STUDY_OPERATION\" = export\n            test \"$PRIVATE_STUDY_EXPORT_MODE\" = frozen-replay\n            [[ \"$PRIVATE_STUDY_FROZEN_MONTH\" =~ ^[0-9]{4}-(0[1-9]|1[0-2])$ ]]\n            [[ \"$PRIVATE_STUDY_FROZEN_BINDING_SHA256\" =~ ^[a-f0-9]{64}$ ]]\n            [[ \"$PRIVATE_STUDY_FROZEN_REPORT_SHA256\" =~ ^[a-f0-9]{64}$ ]]\n          fi\n\n  private-study-upgrade:\n"],["      GITHUB_TOKEN: ${{ github.token }}\n      TRIP_STORAGE_OPERATION: private-study-export\n      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}\n      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n","      GITHUB_TOKEN: ${{ github.token }}\n      TRIP_STORAGE_OPERATION: private-study-export\n      PRIVATE_STUDY_EXPORT_MODE: ${{ inputs.export_mode }}\n      PRIVATE_STUDY_FROZEN_MONTH: ${{ inputs.frozen_month }}\n      PRIVATE_STUDY_FROZEN_BINDING_SHA256: ${{ inputs.frozen_binding_sha256 }}\n      PRIVATE_STUDY_FROZEN_REPORT_SHA256: ${{ inputs.frozen_report_sha256 }}\n      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}\n      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n"]].reverse()){
+    assert.equal(source.split(after).length,2);source=source.replace(after,()=>before);
+  }
+  assert.equal(Buffer.byteLength(source),5891);assert.equal(digest(source),'fa53edb8171551aa4ee5a3a0244e81e6c55ff3936508f7ff2ffbc93ca002a2a2');
   return source;
 }
 
@@ -893,7 +918,7 @@ test('private-study006: privat eksport bevarer hele installationsarm og normale 
     ["inputs.operation == 'export'","inputs.operation != 'deliver'"],['node scripts/publish-private-trip-weather-study.mjs','node scripts/deploy-private-trip-study.mjs']]){
     assert(workflow.includes(before));assert.throws(()=>validate(workflow.replace(before,after)));
   }
-  const publisher=reviewedPrivateStudyOperatorPublisher(await read('scripts/publish-private-trip-weather-study.mjs'));
+  const publisher=reviewedPrivateStudyOperatorPublisher(reviewedFrozenReplayPublisher(await read('scripts/publish-private-trip-weather-study.mjs')));
   assert.equal(sha(publisher),'5b087741711e31ad64401be9a8bbfc4ffb0bfe53bd7e68a50a9fe08cd947d6dc');
   // TEST DATA only: the exact normal594 versioned dashboard precedes every
   // unchanged593 and older whole-file oracle. No UI behavior is ported here.
@@ -1101,7 +1126,7 @@ test('private-study006: privat eksport bevarer hele installationsarm og normale 
   {
   // This test owns the current private-study import/render/access seam, not
   // historical complete dashboard bytes, labels or public weather readiness.
-  const dashboard=await read('js/ui/admin-dashboard.js');
+  const dashboard=reviewedFrozenStudyDashboard(await read('js/ui/admin-dashboard.js'));
   const currentVersion=JSON.parse(await read('package.json')).version;
   const checkDashboardCoupling=source=>{
     const imports=[...source.matchAll(/^\s*import\s*\{\s*mountPrivateTripStudyCard\s*\}\s*from\s*['"]([^'"]+)['"]\s*;/gm)];
@@ -1553,6 +1578,17 @@ test('calendar588 national entry binds its own phase while historical584 reuse r
 // BEGIN EXACT PRIVATE STUDY OPERATOR DIAGNOSTIC TEST VIEW
 // Test-only: one whole-source successor; the immutable006 publisher pin and
 // every preceding assertion remain intact. Actual new CLI behavior is tested.
+// Test-only: accept exactly the reviewed frozen-replay publisher successor.
+// The preceding diagnostic view and every immutable publisher oracle stay whole.
+function reviewedFrozenReplayPublisher(source){
+  assert.equal(typeof source,'string');
+  const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
+  if(sha(source)!=='9f1079b022eae294d8bbbb8577c0352a90aa0a997fea82327f50ea5d6b18bff9')return source;
+  assert.equal(Buffer.byteLength(source),6025);
+  const previous="// Fixed existing GitHub operator operation -> existing protected admin document.\nimport {execFileSync} from 'node:child_process';\nimport path from 'node:path';\nimport {pathToFileURL} from 'node:url';\nimport {readTripWeatherAggregate} from './lib/trip-weather-aggregate-client.mjs';\nimport {publishPrivateTripStudyAdmin} from './lib/private-trip-study-admin-transport.mjs';\n\n// Fixed diagnostic vocabulary only. Never retain child output, headers, causes,\n// report rows, credentials or arbitrary provider error strings in this receipt.\nconst OPERATOR_PHASES = new Set(['AUTHORITY','MAIN_FETCH','MAIN_IDENTITY','SOURCE_PROOF',\n  'AGGREGATE','ADMIN_PUBLISH','UNKNOWN']);\nconst COMMAND_PHASES = new Set(['MAIN_FETCH','MAIN_IDENTITY','SOURCE_PROOF']);\nconst OPERATOR_ERROR_CODES = new Set([\n  'PRIVATE_STUDY_OPERATOR_AUTHORITY','PRIVATE_STUDY_OPERATOR_SOURCE',\n  'AGGREGATE_CONFIGURATION_INVALID','AGGREGATE_READ_TIMEOUT','AGGREGATE_READ_REJECTED',\n  'AGGREGATE_RESPONSE_TOO_LARGE','AGGREGATE_RESPONSE_INVALID','AGGREGATE_ACCOUNT_INVENTORY_INCOMPLETE',\n  'AGGREGATE_ACCOUNT_CAP_REACHED','AGGREGATE_ACCOUNT_METADATA_INVALID','AGGREGATE_PREFERENCE_METADATA_INVALID',\n  'AGGREGATE_PREFERENCES_CHANGED','AGGREGATE_JOB_SELECTION_CHANGED','AGGREGATE_PROGRESS_NOT_ADVANCED',\n  'AGGREGATE_PROGRESS_INCOMPLETE','AGGREGATE_CALLER_TIMEOUT',\n  'PRIVATE_STUDY_ACCESS_UNVERIFIED','PRIVATE_STUDY_TRANSPORT_REJECTED','PRIVATE_STUDY_TRANSPORT_INVALID',\n  'PRIVATE_STUDY_TRANSPORT_BOUND','PRIVATE_STUDY_TRANSPORT_TIMEOUT','PRIVATE_STUDY_CONFIGURATION',\n  'PRIVATE_STUDY_DOCUMENT_INVALID','PRIVATE_STUDY_DOCUMENT_CONFLICT','PRIVATE_STUDY_DOCUMENT_WRITE_OUTCOME_UNKNOWN',\n]);\nfunction operatorFailureReport(error, phase = 'UNKNOWN') {\n  phase = OPERATOR_PHASES.has(phase) ? phase : 'UNKNOWN';\n  let message, code;\n  try { message = error?.message; code = error?.code; } catch { /* Unknown getters are not diagnostics. */ }\n  let errorCode = OPERATOR_ERROR_CODES.has(message) ? message : 'PRIVATE_STUDY_OPERATOR_UNCLASSIFIED';\n  if (errorCode === 'PRIVATE_STUDY_OPERATOR_UNCLASSIFIED' && COMMAND_PHASES.has(phase)) {\n    errorCode = code === 'ETIMEDOUT' ? 'PRIVATE_STUDY_OPERATOR_COMMAND_TIMEOUT'\n      : code === 'ENOBUFS' ? 'PRIVATE_STUDY_OPERATOR_COMMAND_OUTPUT_LIMIT'\n      : code === 'ENOENT' ? 'PRIVATE_STUDY_OPERATOR_PROGRAM_UNAVAILABLE'\n      : 'PRIVATE_STUDY_OPERATOR_COMMAND_FAILED';\n  }\n  return Object.freeze({kind:'PRIVATE_STUDY_OPERATOR_FAILED', phase, errorCode,\n    writeOutcome:['AUTHORITY','MAIN_FETCH','MAIN_IDENTITY','SOURCE_PROOF'].includes(phase)\n      ? 'NOT_STARTED' : 'UNKNOWN_NO_RETRY'});\n}\nclass PrivateStudyOperatorFailure extends Error {\n  constructor(error, phase) {\n    super('PRIVATE_STUDY_OPERATOR_FAILED');\n    this.report = operatorFailureReport(error, phase);\n  }\n}\nexport async function publishOwnerPrivateTripStudy(){\n  let phase = 'AUTHORITY';\n  try {\n  const env=process.env;\n  if(process.argv.length!==2||env.GITHUB_EVENT_NAME!=='workflow_dispatch'||env.GITHUB_WORKFLOW!=='Private RavRadar trip weather study'\n    ||env.GITHUB_REF!=='refs/heads/main'||env.GITHUB_RUN_ATTEMPT!=='1'||env.TRIP_STORAGE_OPERATION!=='private-study-export'\n    ||!/^[a-f0-9]{40}$/.test(env.GITHUB_SHA||''))throw Error('PRIVATE_STUDY_OPERATOR_AUTHORITY');\n  const childEnv={...env};for(const key of ['SUPABASE_ACCESS_TOKEN','SUPABASE_SERVICE_ROLE_KEY','TRIP_GATEWAY_SHARED_SECRET','TRIP_PSEUDONYM_SECRET_V1','CLOUDFLARE_API_TOKEN'])delete childEnv[key];\n  const read=(command,args)=>execFileSync(command,args,{env:childEnv,encoding:'utf8',stdio:['ignore','pipe','pipe'],timeout:60000,maxBuffer:65536});\n  phase = 'MAIN_FETCH';\n  read('git',['fetch','--no-tags','origin','+refs/heads/main:refs/remotes/origin/main']);\n  phase = 'MAIN_IDENTITY';\n  for(const ref of ['HEAD^{commit}','origin/main^{commit}'])if(read('git',['rev-parse',ref]).trim()!==env.GITHUB_SHA)throw Error('PRIVATE_STUDY_OPERATOR_SOURCE');\n  phase = 'SOURCE_PROOF';\n  if(!/^Source gate: required=false; reason=[^\\r\\n]+$/m.test(read('node',['scripts/weather-source-gate.mjs','check'])))throw Error('PRIVATE_STUDY_OPERATOR_SOURCE');\n  phase = 'AGGREGATE';\n  const report=await readTripWeatherAggregate({supabaseUrl:'https://afqhhdrkjfjtpadntdzo.supabase.co',\n    serviceRoleKey:env.SUPABASE_SERVICE_ROLE_KEY,gatewayUrl:env.CLOUDFLARE_TRIP_GATEWAY_URL,\n    sharedSecret:env.TRIP_GATEWAY_SHARED_SECRET,pseudonymSecret:env.TRIP_PSEUDONYM_SECRET_V1});\n  phase = 'ADMIN_PUBLISH';\n  return await publishPrivateTripStudyAdmin(report,{serviceRoleKey:env.SUPABASE_SERVICE_ROLE_KEY,accessToken:env.SUPABASE_ACCESS_TOKEN});\n  } catch (error) {\n    throw new PrivateStudyOperatorFailure(error, phase);\n  }\n}\nif(process.argv[1]&&pathToFileURL(path.resolve(process.argv[1])).href===import.meta.url){\n  publishOwnerPrivateTripStudy().then(receipt=>console.log(JSON.stringify(receipt))).catch(error=>{\n    let failure=operatorFailureReport(null);\n    try { if(error instanceof PrivateStudyOperatorFailure)failure=error.report; } catch { /* Unknown error objects stay redacted. */ }\n    console.error(JSON.stringify(failure));process.exitCode=1;\n  });\n}\n";
+  assert.equal(sha(previous),'33e65c0438d72619097b5b2fe9aa48dc3c29144da745f5352b41b953461bdfbd');
+  return previous;
+}
 function reviewedPrivateStudyOperatorPublisher(source){
   assert.equal(typeof source,'string');
   const sha=value=>crypto.createHash('sha256').update(value).digest('hex');

@@ -12,6 +12,23 @@ on:
         description: Skriv ENABLE_PRIVATE_UNISSUED_STUDY_ONLY for kun at åbne eksisterende signerede private ruter; ingen rapport eller kvalifikationspåstand
         type: string
         default: ''
+      export_mode:
+        description: Almindelig eksport eller kun genlæsning af en allerede frossen rapport; ingen forberedelse ved frozen-replay
+        type: choice
+        default: ordinary
+        options: [ordinary, frozen-replay]
+      frozen_month:
+        description: Påkrævet YYYY-MM ved frozen-replay; skal være den normale senest afsluttede UTC-måned
+        type: string
+        default: ''
+      frozen_binding_sha256:
+        description: Påkrævet oprindelig fuld modelbindings SHA256 ved frozen-replay
+        type: string
+        default: ''
+      frozen_report_sha256:
+        description: Påkrævet uændret frossen rapports SHA256 ved frozen-replay
+        type: string
+        default: ''
       allow_004:
         description: Allow one exact control0-only004 attempt when absent
         type: boolean
@@ -46,6 +63,10 @@ jobs:
     env:
       PRIVATE_STUDY_OPERATION: ${{ inputs.operation }}
       PRIVATE_STUDY_ENABLE_CONFIRMATION: ${{ inputs.enable_confirmation }}
+      PRIVATE_STUDY_EXPORT_MODE: ${{ inputs.export_mode }}
+      PRIVATE_STUDY_FROZEN_MONTH: ${{ inputs.frozen_month }}
+      PRIVATE_STUDY_FROZEN_BINDING_SHA256: ${{ inputs.frozen_binding_sha256 }}
+      PRIVATE_STUDY_FROZEN_REPORT_SHA256: ${{ inputs.frozen_report_sha256 }}
     steps:
       - name: Validate fixed private study operation
         shell: bash
@@ -55,6 +76,13 @@ jobs:
             enable) test "$PRIVATE_STUDY_ENABLE_CONFIRMATION" = ENABLE_PRIVATE_UNISSUED_STUDY_ONLY ;;
             *) echo 'PRIVATE_STUDY_OPERATION_INVALID' >&2; exit 1 ;;
           esac
+          if [[ "${PRIVATE_STUDY_EXPORT_MODE:-ordinary}" != ordinary || -n "$PRIVATE_STUDY_FROZEN_MONTH$PRIVATE_STUDY_FROZEN_BINDING_SHA256$PRIVATE_STUDY_FROZEN_REPORT_SHA256" ]]; then
+            test "$PRIVATE_STUDY_OPERATION" = export
+            test "$PRIVATE_STUDY_EXPORT_MODE" = frozen-replay
+            [[ "$PRIVATE_STUDY_FROZEN_MONTH" =~ ^[0-9]{4}-(0[1-9]|1[0-2])$ ]]
+            [[ "$PRIVATE_STUDY_FROZEN_BINDING_SHA256" =~ ^[a-f0-9]{64}$ ]]
+            [[ "$PRIVATE_STUDY_FROZEN_REPORT_SHA256" =~ ^[a-f0-9]{64}$ ]]
+          fi
 
   private-study-upgrade:
     needs: validate-operation
@@ -115,6 +143,10 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ github.token }}
       TRIP_STORAGE_OPERATION: private-study-export
+      PRIVATE_STUDY_EXPORT_MODE: ${{ inputs.export_mode }}
+      PRIVATE_STUDY_FROZEN_MONTH: ${{ inputs.frozen_month }}
+      PRIVATE_STUDY_FROZEN_BINDING_SHA256: ${{ inputs.frozen_binding_sha256 }}
+      PRIVATE_STUDY_FROZEN_REPORT_SHA256: ${{ inputs.frozen_report_sha256 }}
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       CLOUDFLARE_TRIP_GATEWAY_URL: ${{ secrets.CLOUDFLARE_TRIP_GATEWAY_URL }}

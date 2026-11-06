@@ -41,7 +41,7 @@ export function mountPrivateTripStudyCard(host,access){
  const card=document.createElement('article');card.className='admin-card';card.dataset.privateTripStudy='';
  const title=document.createElement('h2');title.textContent='Samlet tur-/vejrstatistik · privat';
  const explanation=document.createElement('p');explanation.className='muted';
- explanation.textContent='Støjede gruppetal fra selvrapporterede ture. Fund/ikke-fund er ikke en vurdering af en god eller dårlig tur. Tallene kan ikke bruges som præcise turantal eller lægges sammen på tværs af grupper. Ingen enkeltpersoner eller enkelte ture vises. Rapporten ændrer ikke RavScore og er ikke offentliggjort statistik.';
+ explanation.textContent='Støjede gruppetal fra selvrapporterede ture. Fund/ikke-fund er ikke en vurdering af en god eller dårlig tur. Tallene kan ikke bruges som præcise turantal eller lægges sammen på tværs af grupper. Ingen enkeltpersoner eller enkelte ture vises. Rapporten ændrer ikke RavScore og er ikke offentliggjort statistik. Støj kan give positive tal, også uden ture i en gruppe. Små forskelle kan derfor skyldes støj.';
  const month=document.createElement('p');month.textContent='Den faktisk gemte rapportmåned vises efter adgangskontrollen.';
  const button=document.createElement('button');button.type='button';button.className='admin-button';button.textContent='Vis månedsrapport';
  const download=document.createElement('button');download.type='button';download.className='admin-button';download.textContent='Hent rapport som JSON';
@@ -68,7 +68,7 @@ export function mountPrivateTripStudyCard(host,access){
    const report=await readPrivateTripStudyForOwner();current();await permitted();
    assertPrivateTripStudyDisplayReport(report,report.period);current();
    // Ingen await mellem sidste adgangskontrol og visning/eksport.
-   if(report.schemaVersion===3)explanation.textContent='Støjede gruppetal for de fire selvrapporterede fundkategorier, adskilt mellem strand og waders. Alle kvalificerede ture indgår i den samme udvælgelse: højst én tur pr. konto og måned. Søgetid og grundighed er bevaret i grundlaget; der filtreres eller korrigeres ikke efter indsats. Tallene er beskrivende, ikke præcise turantal eller bevis for årsag, og kan ikke lægges sammen på tværs af grupper. Intet fund er ikke det samme som en dårlig tur. Ingen enkeltpersoner eller enkelte ture vises. Rapporten ændrer ikke RavScore og er ikke offentliggjort statistik.';
+   if(report.schemaVersion===3)explanation.textContent='Støjede gruppetal for de fire selvrapporterede fundkategorier, adskilt mellem strand og waders. Alle kvalificerede ture indgår i den samme udvælgelse: højst én tur pr. konto og måned. Søgetid og grundighed er bevaret i grundlaget; der filtreres eller korrigeres ikke efter indsats. Tallene er beskrivende, ikke præcise turantal eller bevis for årsag, og kan ikke lægges sammen på tværs af grupper. Intet fund er ikke det samme som en dårlig tur. Ingen enkeltpersoner eller enkelte ture vises. Rapporten ændrer ikke RavScore og er ikke offentliggjort statistik. Støj kan give positive tal, også uden ture i en gruppe. Små forskelle kan derfor skyldes støj.';
    const table=reportTable(report);output.replaceChildren(table);
    month.textContent='Rapportmåned: '+new Intl.DateTimeFormat('da-DK',{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(report.period.start))+' (UTC).';
    if(exportJson){
