@@ -1,3 +1,13 @@
+## 2026-11-06 – Admincache-adressens mismatch stoppede artifactbygningen
+
+Den normale tidlige 598-kildeudvælgelse kobler ændringer i præcis admin.html eller service-worker.js til de samme to eksisterende mål for kold start og admin-kontrakt, også uden en ændret testfil; ældre profiler og alle øvrige kontroller bevares.
+
+Rodårsagen er påvist i de normale kontroller: adminsidens ekstra observations-markør var ikke ført videre til service-workerens eksakte cacheadresse og cold-start-prøvens faste forventning; den uændrede admin-kontrakt påviste uoverensstemmelsen. Den lille rettelse af de eksisterende adresser/assertions er accepteret til kildeklargøring. Det er ikke en konstateret ændring af vejrdata eller RavScore og ikke en påvist Pages-størrelsesfejl.
+
+Fremgangscachen meldte særskilt, at den ikke blev gemt ved sin størrelsesgrænse. Den færdige beregningspakke var derimod faktisk forseglet og uploadet; beskyttet runtime og centralt scorecheckpoint havde deres egne positive kvitteringer, med rollback og uden retentionsfejl. Disse delresultater er ikke et offentligt deploy.
+
+ÅBENT: normal kildekvalifikation, kontrolleret genoptagelse uden ny leverandørhentning, fulde relevante artifact-/releasekontroller, deploy og faktisk offentlig effekt. Den senest verificerede offentlige generation bevares. Cron er pauset med sin eksisterende UTC-tidsplan bevaret; genaktivering sker først efter verificeret korrekt forløb. SOURCE599 forbliver privat/inaktiv. Ingen nye private kørsels- eller originaldata indføres i håndbogen. Se 89.319; DMI89.318 og al dateret historik bevares.
+
 ## 2026-11-06 – DMI-V2: faktisk haleeffekt er endnu ikke lukket
 
 Den gamle sortering satte unik validtid før hulomfang, så et bredt senere hul ikke kunne passere et mindre tidligere hul i samme kritiske klasse. Den gennemgåede kandidat bruger kun normalt kvalificerede PART-komponenthuller; nyeste models originalunderskud alene tæller ikke. Ingen blind budgetforhøjelse eller ekstra resume-runde.

@@ -599,6 +599,24 @@ test('normal598 registry keeps genuine148 inputs and closes only known normal co
       assert.deepEqual(run598(make598(baseline598,[[owner,Buffer.concat([body,Buffer.from('\n')])]],'synthetic unreviewed SDK oracle port')).reasonCodes,
         ['UNKNOWN_EXACT_SOURCE_TRANSITION:'+owner]);
     });
+    await t.test('exact598 admin cache publication closes both actual production contracts and refuses owner drift',()=>{
+      const owners=['service-worker.js','scripts/test-public-cold-start-4.0.303.mjs'];
+      const changes=owners.map(file=>[file,fs.readFileSync(path.join(SOURCE,file))]);
+      for(const [owner,body]of changes){
+        const actual=run598(make598(baseline598,[[owner,body]],'synthetic exact admin cache publication owner'));
+        assert.equal(actual.selection,owner==='service-worker.js'?'TARGETED_DOMAINS':'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(actual.reasonCodes));
+        for(const command of ['node scripts/test-public-cold-start-4.0.303.mjs','node scripts/test-admin-config-production-contract-4.0.94.mjs'])
+          assert.equal(actual.commands.filter(value=>value===command).length,1);
+        for(const family of ['postgres','C','I','T'])assert.equal(actual.inputDigests[family+'Before'],actual.inputDigests[family+'After']);
+        assert.equal(actual.domains.postgres.status,'NOT_APPLICABLE');assert.equal(actual.domains.historical584National.status,'NOT_APPLICABLE');
+        assert.equal(actual.baselineQualified,false);assert.equal(actual.skipAuthorized,false);assert.equal(actual.productionAuthority,false);
+      }
+      for(const owner of owners){
+        const variant=changes.map(([file,body])=>[file,file===owner?Buffer.concat([body,Buffer.from('\n')]):body]);
+        assert.deepEqual(run598(make598(baseline598,variant,'synthetic unreviewed admin cache publication bytes')).reasonCodes,
+          ['UNKNOWN_EXACT_SOURCE_TRANSITION:'+owner]);
+      }
+    });
     await t.test('exact598 admin cache address admits only the reviewed whole HTML pair',()=>{
       const cacheOwner='admin.html',cacheBefore=git(root598,['cat-file','blob',baseline598+':admin.html']);
       const cacheAddress='js/ui/admin-dashboard.js?v=4.0.598&ui=admin-model-startup-20261101&map=plain-map-v3-20261104';
@@ -609,6 +627,9 @@ test('normal598 registry keeps genuine148 inputs and closes only known normal co
       const cacheCandidate=make598(baseline598,[[cacheOwner,cacheAfter]],'synthetic reviewed598 admin cache address');
       const cachePlan=run598(cacheCandidate);
       assert.equal(cachePlan.selection,'TARGETED_DOMAINS',JSON.stringify(cachePlan.reasonCodes));
+      for(const command of ['node scripts/test-public-cold-start-4.0.303.mjs','node scripts/test-admin-config-production-contract-4.0.94.mjs'])
+        assert.equal(cachePlan.commands.filter(value=>value===command).length,1);
+      assert.equal(cachePlan.baselineQualified,false);
       for(const cacheFamily of ['postgres','C','I','T'])assert.equal(cachePlan.inputDigests[cacheFamily+'Before'],cachePlan.inputDigests[cacheFamily+'After']);
       assert.equal(cachePlan.domains.adminUI.status,'SELECTED');assert.equal(cachePlan.domains.postgres.status,'NOT_APPLICABLE');
       assert.equal(cachePlan.domains.historical584National.status,'NOT_APPLICABLE');

@@ -1,3 +1,11 @@
+## 2026-11-06 – Samme adminmoduladresse i side, offlinecache og kontrol
+
+Den normale tidlige 598-kildeudvælgelse kobler ændringer i præcis admin.html eller service-worker.js til de samme to eksisterende mål for kold start og admin-kontrakt, også uden en ændret testfil; ældre profiler og alle øvrige kontroller bevares.
+
+- Rodårsagen til den seneste artifactafbrydelse er påvist: adminsidens ekstra observations-markør manglede i service-workerens præcise cacheadresse og cold-start-prøvens faste forventning; den uændrede admin-kontrakt påviste uoverensstemmelsen. Den afgrænsede rettelse synkroniserer de eksisterende adresser; ingen score-, vejr-, rettigheds- eller modelændring.
+- Ingen Pages-størrelsesfejl er påvist. Den særskilte komponentcache nåede sin grænse, mens færdig beregningspakke, beskyttet runtime og centralt scorecheckpoint faktisk blev gemt/publiceret gennem deres normale, forskellige trin.
+- Seneste offentlige generation bevares; ny genoptagelse, artifactkontrol, deploy og offentlig effekt afventer. Cron er pauset med UTC-tidsplanen uændret; SOURCE599 er fortsat privat og inaktiv. Se håndbog 89.319.
+
 ## 2026-11-06 – Kvalificeret DMI-hulomfang og normalt CI-miljø
 
 - Gennemgået kandidat: reelle brede PART-komponenthuller sorteres før små huller efter tid/cursor inden samme kritiske klasse; first3, regionalt genbrug og ukendt-plan-adfærd bevares.

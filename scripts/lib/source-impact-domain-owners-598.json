@@ -389,6 +389,24 @@
           "node --test scripts/test-runner-android-sdk-reclaim.mjs"
         ]
       ]
+    },
+    {
+      "path": "scripts/test-public-cold-start-4.0.303.mjs",
+      "domains": [
+        "adminUI"
+      ],
+      "controlQualification": true,
+      "exactSourceTransition": true,
+      "commands": [
+        [
+          "adminUI",
+          "node scripts/test-public-cold-start-4.0.303.mjs"
+        ],
+        [
+          "adminUI",
+          "node scripts/test-admin-config-production-contract-4.0.94.mjs"
+        ]
+      ]
     }
   ],
   "exactSourceTransitions": {
@@ -438,6 +456,12 @@
     ],
     "scripts/test-runner-android-sdk-reclaim.mjs": [
       "95549ea3fc6fdba7e72002f72b958fba48c38742dab29d769c1b1cab001b3ff5/0d1aa8b12ff4a7e9533e2b05d91e14e412cf34f1756e31de603448a071ba17c4"
+    ],
+    "service-worker.js": [
+      "31bf5e002427b245976c4ee973e5d5bed3ea3b1e5f20c7d6a71eacc9ef2bfe92/fdcbe18836832db462910837a8958478d153567ecd55481b99a5f1635fefd9ac"
+    ],
+    "scripts/test-public-cold-start-4.0.303.mjs": [
+      "c7caee8a00836d92c29a979292eabc383a12034d6e9e1f67a22f19a68724acad/f7b278b11082c9b2b9865cd119881337269916ad3b588150b02044f3488a5097"
     ]
   },
   "sources": {
@@ -4657,7 +4681,9 @@
           "scripts/test-current-operational-python-contracts.mjs",
           "scripts/test-dmi-dkss-primary-mode.py",
           "scripts/update-dmi-bulk.py",
-          "scripts/test-runner-android-sdk-reclaim.mjs"
+          "scripts/test-runner-android-sdk-reclaim.mjs",
+          "scripts/test-public-cold-start-4.0.303.mjs",
+          "service-worker.js"
         ],
         "dependencySurfaces": [
           "013346532675b5d7e14a4bf1852ce6ece984bf586be74b8dbf4bd9fb7fb27e01",
@@ -5083,7 +5109,48 @@
           "ebad9aad1387833d71580150d0180adc3eb0a1878cce5e17bbade4da477d9d6e",
           "ec62333c28ddc8dd0c2c980d86756d71784d84e4054661509efe2e05713794a8",
           "f2d29010dec86197a1323784cb7c6e18b200298fc44a0a908208114dccef8d3c",
-          "f31ae4aaf954c46dd03b1c9c7bb32d6d7e04976bf88abe3333d6fbcf29eae416"
+          "f31ae4aaf954c46dd03b1c9c7bb32d6d7e04976bf88abe3333d6fbcf29eae416",
+          "06e0c18bd7303f41d4d2b4caa6471a2991950a8a14e7f1a91bd181f3c87aa0c6",
+          "0dcee82b20708b474a327592ca5dcfa748d61e5fae233302c7de008d5700b8a1",
+          "16f73806318e6c6605d0680f09d65e38e074fd7834e068cd0309a5312c3a3381",
+          "18afad2eef3a19ac40dbc86fb0d9c1dea719d3908c2ba14b8808c6e0ac9b356f",
+          "2167b8db93015b6c284c551905ed8d201d49a1427db52c03fa25b20563c8636c",
+          "2765babeec39c41add41665441016e28f12b91b89fc0ffb45aeeab6f203d715e",
+          "2efbae863434415e5f259db38bccbc462bfdc7b7eccc2b11e45a2cb13f7cdf8c",
+          "38c138ca9e9cc1d854ee6e8ada458629663cfdbf9e65f205c33d12d962b0c88b",
+          "3a507ba4e77f781b45b58a40a2c6c243f37f7aae40970740cccb7382192564a3",
+          "420aae6ec8d08b99a9a6425860097bdca6c6aaf496f29d11079de990c7bf1085",
+          "4bfae01abbafbcc87620226495218ad064f9fb9966887b7a8367fd0aa50f82f0",
+          "4d2abaa18020a0fe40b911658814ed01984ac616c067a29e3d0b424997771b26",
+          "54f914144b808723e919d6654236aaaad08d553df2a94ddf915eb3002bb59184",
+          "559be798f2705d2646ca6773a12faa4e090026d2da3dd2b2a6fd10b69a10f0d3",
+          "5ddf78f8a6a840bce0960e67104b0bca82c4e89c3b0efff017dd870c7138993c",
+          "700bbc393c36da787351e206735b278f1f92cae4fa9088d682edf13cbe886bea",
+          "724b6c9c70f5b93368276a9a9063fc7da3b1adee1487eea7745b17e1616ab341",
+          "727fd855dc9e1a3fc5b9078d03d2ed54d94a837c33d553e60bd6fb4351384f60",
+          "9948034a27c566c2bc005e46b4be3c25f45d7f39fa7d258cd99aa9f07e644e94",
+          "9952974f952de4f40fa7034f34ad39f59d5887067c43478f626779c69f9621c4",
+          "a0cd650e97b4a9006ebd213336986add1b5ea7d25f5dbe4ab4522febfe175ebb",
+          "a5ce56e0d50fb22c333b9e93fbb02703ea4cfb3a4ca663dac2489e01bdcdcd83",
+          "a85703386723561b9b5732678fe58ef91a0cca45704669b4e55d37623d0bef77",
+          "bf74d36f874a6ea58a13b152805e31b0523e6ada7d6f5f528a336bbc85c64f79",
+          "bfeecc1b148a3444a8d250d1ee9d441d2ede1ac69d8bb2ba783607eb2ae89592",
+          "c6bb7e0be88dd4ed9064ac7ad5cf8214361de064528ae8099e72d7bd649c845e",
+          "cd6fc61eef3fccd1088c99e419a02f5491238f24b7465cd423d8cc0a76f03f14",
+          "cf71b99924d2d190cb2ded78dca23db26324d20f33bf672e43cc892c015b1884",
+          "cf7cc78d536d54a8c8a888658fe8f6f0689741cdd3aca01982a1139fc12cd881",
+          "d4d7cc7848293102c7f668f7c9787458282dea229a965a9217505aa9e633442d",
+          "db7312a52ba1d26099d4be06b16f0901f47b5c4a8e028a7abaeb4b0889772c27",
+          "e72ccda9397f201a2c19f02fdd596d08009fccf636b679f7df4fa0b740ea2bbf",
+          "e78035961d53c098e5b0dcd01f1e30d5cae19f94fb0e29aab7aee8d1c94a5478",
+          "e9e10fd6335434e66f667fc64affba3771e5bf25e6a2ca5f9c6d7f28a81205ec",
+          "ec1c081aed48b8535077e7e7cf13b887c57fda51bd79bd3400d27d4e615ee1ed",
+          "f0be308aeda5278f245e24102f465a823e5c5a7b4bc419f627278b8b5c14fbbd",
+          "f58d17e66f0563ca40efb806a4861355c995c38920ddbf9b5e20f1c16b8cbf59",
+          "f5be7d84355401367eb1fc26266e4130d61ebaa4f56499b580bcc39ab649e070",
+          "f7cf2474052931867b509e7d75e606119834de5eb17000eafc59c355312028e5",
+          "1d2bb0ba55eb588bfb03236c698fec7383aeeaa7a4935d0057dd74de9b2e637d",
+          "5e9a2c36169e875c1af860348eb213a1517547e42a0a6eae0f7d423000159357"
         ],
         "bindingSurfaces": [
           "02c33649fd6159328912f082d680d4e2a468cbadea47ecd614fcaf9affe1dd95",
@@ -6527,6 +6594,114 @@
         ],
         "computedBoundaries": []
       }
+    },
+    "scripts/test-public-cold-start-4.0.303.mjs": {
+      "beforeDefinitionSha256": null,
+      "definition": {
+        "nodeImports": [
+          "node:assert/strict",
+          "node:fs/promises",
+          "node:vm"
+        ],
+        "imports": [
+          "js/core/public-page-resume.js"
+        ],
+        "resources": [
+          "admin.html",
+          "app.js",
+          "bootstrap.js",
+          "index.html",
+          "js/ui/admin-dashboard.js",
+          "package.json",
+          "service-worker.js"
+        ],
+        "dependencySurfaces": [
+          "65d1c9dc94274c109ae70e2d076840e95b9da7837f9435a4af07166ca48d9ee7",
+          "7ebfde3e78df67e4992cabda59692b70cd81da5fdb5aea90c3315889b8c2e3e5",
+          "c54dc752d85fcf6ccd3b267fb75523f23147cdadebc0c67ec2734a0612d9a89c",
+          "d0fb792befe7e2e48a61fe5bb9e55999ebe3d05b707a69d4f709d71f4894777f",
+          "d2381e54ce6ec73b5eddcb3616756647e9eb85793c0d1ec1bc6816147556d8f3",
+          "d599a662665dabd08c5dd6964a9f90db218ce58057c4f839738548dacc7a8a47",
+          "e113a1949acaa10f55889b95bef21b7ff1ab2399c31d36eb5f3516478e3b7d77"
+        ],
+        "bindingSurfaces": [
+          "1f33e600d9f6a9288a9611808c0f26617bf36dbd6513cb77a02aa37781bc3497",
+          "2ac8ecda8e4be31d89974379292a613edb10cfc2635098ca2110b1910c618653",
+          "3db9b9f1f48760273d2ef4be2e923677e45265d953ac7e6853d00062d2e8ced4",
+          "3e29a74be5c209cf74a200f4233241b227cc1949c7387401a4a210ca689c0fee",
+          "74ce3a2dd5c3603e51edda0842ef7cb0701bcc17ad7926d830a5e16b9935e7e8",
+          "7b55e857c942a1440cb7212cf2d8ceec1b02f666b58b80ef3e62fba8dadc9885",
+          "81358085dff76c77d18ac4fbe1634116ec0c224664ed7c9138846f34a7d6547a",
+          "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+          "902e3a777008c1f7cea1b3626ab23a74b0c97a2a3945455bb3c96a1a78f501af",
+          "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+          "be5d29d59a849b2dce6e074bc7659051ff670bf5f6d92b5739551f12a6841b99",
+          "be8ff06443d3a4caed1be00379a5ec5f64480e2851b28782d6ac53d3ab01696e",
+          "c9a91c9ab834aa3e25a41713402bf8a7820cd5ce2bd986c06f879c5bc668f049",
+          "e4941080033aed6b41671287201783c388879f9a7b61a86663649180fe27a1d2"
+        ],
+        "computedBoundaries": []
+      }
+    },
+    "scripts/test-admin-config-production-contract-4.0.94.mjs": {
+      "beforeDefinitionSha256": null,
+      "definition": {
+        "nodeImports": [
+          "node:assert/strict",
+          "node:fs"
+        ],
+        "imports": [
+          "scripts/lib/production-workflow-sources.mjs"
+        ],
+        "resources": [
+          "admin.html",
+          "js/services/permissions-service.js",
+          "js/services/rule-service.js",
+          "js/services/site-function-test-service.js",
+          "js/ui/admin-dashboard.js",
+          "package.json",
+          "service-worker.js"
+        ],
+        "dependencySurfaces": [
+          "0fcb28f5cbe208ac05f10c7d5ab5b05fdd78c637582f052f6b1b1190c062572b",
+          "3238a0b530efbf15967c76f2e105a21e9c0c3783dc6e35efd1d902a28358d153",
+          "3fa70578a924999b6b512db4e3f31c9487923f32c85a71ee096946e3d955c313",
+          "61eb7523e52119020033d54c7496641d3bd4220b597c0d6afa46646c5b5a13c4",
+          "621e6ed64895bae857e5a92bd7264cea8ac72fc0c15f541995846bacb1498d07",
+          "7a3d529e21722b25dc1d4ddbb0f3826fc37ca644b202a88df1b965f7b4f8bd90",
+          "87c3855b4f5963dcde03dac9e4544daa5662bab6ce2af1512d869b7bfb7c0221",
+          "976fc797b5d48503e1d40fa42b2c46dddb19fe6708407e9219e41aa17971418d",
+          "e4b2d2621f5dc2bc91a2a8701fe01f82471573d54ac866be643ae8ed284f693a",
+          "f124d629a2175122cc43e38f639873684dd4c647424208daed11dc9383e5ad21"
+        ],
+        "bindingSurfaces": [
+          "05fd1e70db9a724257451e5a4ef4b42881ea780ed45ff85bf2b75a44bcc62fdf",
+          "07a6126441cd300e61367cfb0f40a29d7c278870f265e80c757240dce0ab7ca2",
+          "3f6620b4a054ecb2551ee709f8be5a1820b2c313c3269b38b426f59f378f8b6f",
+          "4f5309227b9935d32f2c2b69e253ad5e61cd369ac5a358cd5f46f1a1cb14032b",
+          "5193ca852a68475d140a771402a4fa03aae098c6694625269ec7835683d9e75a",
+          "53ca85430b7f3f3f820a9040bf2f0bbb8b11883c7bb29ef018a1b07c7351ad62",
+          "9247cbd16721ea1ee1ba34eb410e1d0cf280f9b4cc747a44af0d04b6c2a627aa",
+          "a9c7b83aaf6f6c97836337c7e92a33da615632358ba620f540936a7fef002043",
+          "d3c7c0b6948622d54638729de889bded01734fa308421ec6df79cb2295a1d7ba",
+          "de78adbd922eed8c2d4d4c88d79d5ccf34600a6f5e85775b1d3e28717a967d5a"
+        ],
+        "computedBoundaries": []
+      }
+    },
+    "js/core/public-page-resume.js": {
+      "beforeDefinitionSha256": null,
+      "definition": {
+        "nodeImports": [],
+        "imports": [],
+        "resources": [],
+        "dependencySurfaces": [],
+        "bindingSurfaces": [
+          "438809409e3145a2955274629bd02a9afbc93d8d0b26ba9d009e881c953e4930",
+          "5fb9f650800c09113f48363cfd288dcc80f2e163393c43ba0b5d4c972592fc97"
+        ],
+        "computedBoundaries": []
+      }
     }
   },
   "resourceFiles": [
@@ -6559,6 +6734,8 @@
     "scripts/test-regional-current-operational.py",
     "scripts/test-runner-android-sdk-reclaim.mjs",
     "scripts/test-weather-acquisition-plan.py",
-    "supabase/migrations/20261104004400_scalar597_later_h0_original594_bound_successor.sql"
+    "supabase/migrations/20261104004400_scalar597_later_h0_original594_bound_successor.sql",
+    "js/services/rule-service.js",
+    "scripts/test-public-cold-start-4.0.303.mjs"
   ]
 }

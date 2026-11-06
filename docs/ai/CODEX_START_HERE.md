@@ -1,3 +1,15 @@
+## 2026-11-06 – Adminens moduladresse i offlinecache og artifactkontrol
+
+Den normale tidlige 598-kildeudvælgelse kobler ændringer i præcis admin.html eller service-worker.js til de samme to eksisterende mål for kold start og admin-kontrakt, også uden en ændret testfil; ældre profiler og alle øvrige kontroller bevares.
+
+Den seneste artifactbygning blev stoppet af de normale kontroller for kold start og admin. Årsagen er afgrænset: adminsidens moduladresse fik den særskilte observations-markør, men service-workerens præcise cacheadresse og cold-start-prøvens faste forventning fulgte ikke med. Den uændrede admin-kontrakt påviste uoverensstemmelsen. Den lille rettelse synkroniserer disse eksisterende adresser og cold-start-prøvens faste assertion; den ændrer ikke rettigheder, observationsindhold eller score.
+
+Der er ikke påvist en Pages-størrelsesfejl i dette forløb. Komponentfremgangens særskilte cache blev ikke gemt ved sin størrelsesgrænse; det er ikke det samme som manglende beregningscheckpoint. Den færdige beregningspakke blev faktisk forseglet og uploadet, den beskyttede runtime blev publiceret med tilgængelig rollback og uden retentionsfejl, og det centrale scorecheckpoint blev kvitteret. Disse forskellige udfald skal fortsat beskrives hver for sig.
+
+Den nye offentlige generation er ikke leveret; den senest verificerede offentlige generation bevares. Det eksisterende cron-job er faktisk pauset med sin faste UTC-tidsplan uændret, mens det kontrollerede genoptagelsesforløb afklares. Ny kildekvalifikation, faktisk genoptagelse, artifactkontroller, deploy og offentlig effekt skal bestå, før driftsfejlen lukkes og cron genaktiveres. En lokal rettelse eller en grøn delkontrol er ikke leveringsbevis.
+
+Version 4.0.598, C/I/T, model, kilder, originaler, geometri og SQL-regler bevares. SOURCE599 er fortsat privat og inaktiv. Håndbog 89.319 forklarer afgrænsningen; kørselsidentiteter, checkpointbindinger og rå diagnoseoplysninger bliver i det private checkpoint. Ældre daterede afsnit, herunder 89.318 om DMI-hullernes omfang, bevares.
+
 ## 2026-11-06 – DMI-V2: kvalificerede komponenthullers omfang før tid/cursor (kandidat; produktion ÅBEN)
 
 Den gennemgåede afgrænsede rettelse tæller reelle PART/komponenthuller fra den normale kvalificerede retained-plan og current-union. Inden for samme kritiske klasse får hulomfang betydning før tid/cursor; manglende nyere originaler er ikke i sig selv vejrhuller. First3, verificeret regionalt genbrug, parameter_zones, LF7-vandstandsafgrænsning og T+3 bevares. Ukendt plan beholder den gamle konservative behandling. DMI > Copernicus > Open-Meteo samt nyere gyldige datas overtagelse bevares. Ingen budget-, score-, admin-, geometri-, original- eller no-loss-ændring og ingen ekstra resume-runde.

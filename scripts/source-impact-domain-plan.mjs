@@ -10,7 +10,7 @@ import {scanAllSourceDependencies,dependencySourceLiterals} from './lib/source-i
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const REGISTRY_SHA256='3970bc86fb8afd99d193507b82337c1068aa368f6d62ff728988fc21da9577f4';
 const REGISTRY597_SHA256='a7ccfba2b2f631ccc358342e2c3b87e1cb1edbd54311148c94822fddaa6dbcfa';
-const REGISTRY598_SHA256='406e93c871a5b163a392356e11b97d6dbe7fef909a6568da943cfab3893fe356';
+const REGISTRY598_SHA256='815c3818603abed41971af3c401864c4c56100b2796d95847bd4125a8737c985';
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const oid=value=>typeof value==='string'&&/^[a-f0-9]{40}$/.test(value);
 const relative=value=>typeof value==='string'&&/^[A-Za-z0-9_./-]+$/.test(value)&&!value.startsWith('/')
@@ -101,10 +101,24 @@ function registry598(legacyBytes){
       'js/services/forecast-share-contract.js','scripts/forecast-share/handler.mjs',
       'scripts/test-map-forecast-panel.mjs','.github/workflows/validate-pull-request.yml',
       'scripts/update-dmi-bulk.py','scripts/test-dmi-dkss-primary-mode.py',
-      'scripts/test-current-operational-python-contracts.mjs','scripts/test-runner-android-sdk-reclaim.mjs'].includes(file));
+      'scripts/test-current-operational-python-contracts.mjs','scripts/test-runner-android-sdk-reclaim.mjs',
+      'service-worker.js','scripts/test-public-cold-start-4.0.303.mjs'].includes(file));
     const previousPairs=registry.exactSourceTransitions[file]??[];
     for(const pair of pairs){assert(/^[a-f0-9]{64}\/[a-f0-9]{64}$/.test(pair));assert(!previousPairs.includes(pair));previousPairs.push(pair);}
     registry.exactSourceTransitions[file]=previousPairs;
+  }
+  // These two existing adminUI address owners must each close the actual cache contracts.
+  // This fixed598 loop cannot admit caller-supplied owner or command overrides.
+  for(const file of ['admin.html','service-worker.js']){
+    const matches=registry.owners.filter(row=>row.path===file);assert.equal(matches.length,1);
+    const owner=matches[0];
+    assert.deepEqual(owner,{path:file,domains:['adminUI'],exactSourceTransition:true,commands:[
+      ['adminUI','node scripts/test-ravscore-public-data-service-binding.mjs'],
+      ['adminUI','node scripts/test-admin-active-ravscore-runtime.mjs'],
+      ['adminUI','node scripts/test-ravscore-public-browser-closure.mjs']]});
+    for(const command of ['node scripts/test-public-cold-start-4.0.303.mjs','node scripts/test-admin-config-production-contract-4.0.94.mjs']){
+      assert(!owner.commands.some(row=>row[1]===command));owner.commands.push(['adminUI',command]);
+    }
   }
   return {value:registry,digest:sha(Buffer.concat([Buffer.from(previous.digest,'hex'),bytes])),blobBudgetBytes:previous.blobBudgetBytes};
 }
