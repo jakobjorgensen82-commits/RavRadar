@@ -16,7 +16,7 @@ import {ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE,INACTIVE_INSTALLED593_ORIGINAL591_S
   INACTIVE_SCALAR597_LATER_H0_SUCCESSOR as SCALAR,
   UNISSUED_ASSISTANT_AFTER597_SUCCESSOR as AFTER597} from './lib/assistant-later-h0-successor-source.mjs';
 import {assertFrozen591CompactRuntimeContracts} from './lib/assistant-public591-runtime-contracts.mjs';
-import {FROZEN591_CODE_SOURCE_PROVENANCE as ORIGINAL591,SOURCE594_CODE_SOURCE_PROVENANCE as ORIGINAL594,withSource597CodeParent}
+import {FROZEN591_CODE_SOURCE_PROVENANCE as ORIGINAL591,SOURCE594_CODE_SOURCE_PROVENANCE as ORIGINAL594,withSource597CodeParent,withSource598CodeParent}
   from './check-assistant-later-h0-predecessor-source.mjs';
 import {
   PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE,
@@ -25,11 +25,32 @@ import {
 import { PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY, privateRuntimeBundleContentSha256 } from './private-production-runtime-bundle.mjs';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 
+import {SOURCE_PRODUCER_AFTER597_PARENT as SOURCE}
+  from './lib/source-producer-after597-parent.mjs';
+import {requireSourceProducerOutput}
+  from './lib/source-producer-after597-runtime-family.mjs';
+
+// Historical assistant598 CODE contracts only. No original/data/session admission.
+// The current Source profile has its own normal native/PG/national gates.
+async function historicalAssistantRuntimeContracts() {
+  if (SOURCE.binding === null && SOURCE.output === null && SOURCE.nextRelease === null) {
+    return privateRuntimeContractHashes(); // Existing ordinary/pre-issue behavior.
+  }
+  requireSourceProducerOutput(); // Actual current output FIRST, never a fixture/old proof.
+  return withSource598CodeParent(async root598 => {
+    const code598 = await import(pathToFileURL(path.join(root598,
+      'scripts/private-production-runtime-workflow.mjs')).href);
+    const contracts = await code598.privateRuntimeContractHashes({repositoryRoot: root598});
+    assert.equal(contracts.continuationStateContractSha256,AFTER597.requireBinding().T);
+    return contracts; // Plain hashes only; never an authenticated original or handle.
+  });
+}
+
 // Actual normal contract computation, not an independently copied guard. This
 // exact genuine591 -> issued593 pair failed before suppliers in production.
 assert([HISTORICAL,SCALAR,AFTER597].includes(ACTIVE));
 assert.equal(HISTORICAL.requireRelease(),'4.0.594');
-const currentContracts=await privateRuntimeContractHashes();
+const currentContracts=await historicalAssistantRuntimeContracts();
 const originalContracts={
   continuationStateContractSha256:HISTORICAL.before.T,
   fullRuntimeContractSha256:ORIGINAL591.fullRuntimeContractSha256,
@@ -86,7 +107,7 @@ assert.throws(()=>assertAssistantOriginalRuntimeContracts({...originalContracts,
 assert.throws(()=>assertAssistantOriginalRuntimeContracts(originalContracts,{...currentContracts,unknown:'x'}));
 assert.throws(()=>assertAssistantOriginalRuntimeContracts(originalContracts,currentContracts,'override'));
 }
-assert.deepEqual(await privateRuntimeContractHashes(),currentContracts);
+assert.deepEqual(await historicalAssistantRuntimeContracts(),currentContracts);
 
 const source = { coastalParts: { parts: { p1: {
   current: { weather: { wavePeriodS: 5 }, waders: { score: 20 } },

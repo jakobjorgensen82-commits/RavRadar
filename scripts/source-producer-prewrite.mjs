@@ -12,8 +12,10 @@ import {assertSourceProducerCodeOnlyCaller} from './select-source-producer-code-
 import {prepareSourceProducerRuntimeTransition,assertSourceProducerRuntimeTransitionPrepared}
   from './source-producer-runtime-transition.mjs';
 import {assertExactRuntimeInventory} from './migrate-post-cutover-private-runtime.mjs';
-import {createProtectedPrivateRuntimeClients} from './protected-private-production-runtime.mjs';
+import {createProtectedPrivateRuntimeClients,buildProtectedPrivateRuntimeArchive}
+  from './protected-private-production-runtime.mjs';
 import {createProtectedRavScoreCheckpointRequester} from './protected-ravscore-continuation-checkpoint.mjs';
+import {withR2PrivateRuntimeCapacityDeadline} from './lib/r2-private-runtime-storage.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 async function assertExactPrepared598(token){
@@ -108,6 +110,33 @@ export async function runSourceProducerPrewrite(){
       +'RAVRADAR_SOURCE_PRODUCER_NOLOSS_VERIFIED=true\n'
       +'RAVRADAR_SOURCE_PRODUCER_PREWRITE_VERIFIED=true\n');
     console.log('Præcis original598 B/S-metadataovergang forberedt; ingen eksterne skrivninger.');return;
+  }
+  // The exact same normal bundle is packed again by the later publisher.
+  // Read-only preflight runs BEFORE the unchanged final B/S freshness check,
+  // while this normal workflow already owns the exclusive production lock.
+  // It is a timed observation, not an atomic R2 reservation or publication.
+  try {
+    assert.equal(process.env.RAVRADAR_PRIVATE_RUNTIME_STORAGE_BACKEND,'r2');
+    await withR2PrivateRuntimeCapacityDeadline(async phase => {
+      phase.assertWithinDeadline();
+      const built=await buildProtectedPrivateRuntimeArchive({
+        privateRoot:absoluteEnvironmentPath('RAVRADAR_PRIVATE_RUNTIME_ROOT'),
+        bundlePath:absoluteEnvironmentPath('RAVRADAR_PRIVATE_RUNTIME_BUNDLE'),
+        repositoryRoot:ROOT,
+        expected:JSON.parse(await fs.readFile(path.join(ROOT,'.cache/private-production-runtime-expected.json'),'utf8')),
+        sourceHead:process.env.GITHUB_SHA,
+      });
+      phase.assertWithinDeadline(); // Includes elapsed local packing, even delayed synchronous work.
+      const {storage}=createProtectedPrivateRuntimeClients({fetchImpl:phase.fetchImpl,delayImpl:phase.delayImpl});
+      assert.equal(typeof storage.inspectImmutableCapacity,'function');
+      const capacity=await storage.inspectImmutableCapacity(built.descriptor.objects);
+      phase.assertWithinDeadline();
+      console.log(JSON.stringify(capacity)); // Fixed aggregates only; no object keys/private payload.
+    });
+  } catch (error) {
+    console.error(error?.code==='R2_PRIVATE_RUNTIME_CAPACITY_TIMEOUT'
+      ? 'SOURCE_PRODUCER_R2_CAPACITY_TIMEOUT' : 'SOURCE_PRODUCER_R2_CAPACITY_PREFLIGHT_REFUSED');
+    throw error; // No SQL, PUT, pointer/CAS, retention or automatic retry here.
   }
   // Exactly one fresh final comparison after artifact gates. Do not add a
   // duplicate middle proof of the same unchanged preparation.
