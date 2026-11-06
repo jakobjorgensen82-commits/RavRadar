@@ -250,6 +250,7 @@ export const SOURCE_PRODUCER_AFTER597_CODE_FILES = Object.freeze([
   "scripts/lib/historical-wave-input-transition.mjs",
   "scripts/lib/last-mile-enclosure-predecessor-source-inventory.json",
   "scripts/lib/last-mile-enclosure-successor-source.mjs",
+  "scripts/lib/lf7-fur-consumer-observation.mjs",
   "scripts/lib/live-current-pilot.mjs",
   "scripts/lib/local-current-reference.mjs",
   "scripts/lib/local-part-runtime.mjs",

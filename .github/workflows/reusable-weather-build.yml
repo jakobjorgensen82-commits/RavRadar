@@ -3243,6 +3243,7 @@ jobs:
             .geometry-v2-work/ravscore-integrated-public-runtime-audit.json
             .geometry-v2-work/ravscore-integrated-public-runtime-audit.json.failure.json
             .geometry-v2-work/ravscore-integrated-public-runtime-audit.json.execution.json
+            .geometry-v2-work/lf7-fur-consumer-observation-v1.json
           retention-days: 30
           if-no-files-found: error
 
