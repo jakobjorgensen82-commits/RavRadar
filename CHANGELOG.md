@@ -1,3 +1,9 @@
+## 2026-11-06 – Bevar begge gennemgåede koldstartgrænser i registret
+
+- Eksisterende isolerede HTML-/service-worker-tilfælde påviste før merge, at den gamle koldstartvariants præcise bindingsflade manglede, selv om den nye variants flade var registreret. Den strenge ukendt-flade-afvisning virkede korrekt; ingen produkt- eller timeoutfejl er påvist af dette fund.
+- Den minimale rettelse registrerer begge præcist gennemgåede flader og synkroniserer plannerens pin. Produkt, testkroppe, normale kaldere, gamle profiler, tidsgrænser, ægte 598 og PostgreSQL/C/I/T-værn bevares.
+- Ny præcis kildekontrol og offentlig effekt er fortsat åbne. Ingen ny suite, produktionsændring eller aktivering af SOURCE599. Se håndbog 89.320.
+
 ## 2026-11-06 – Samme adminmoduladresse i side, offlinecache og kontrol
 
 Den normale tidlige 598-kildeudvælgelse kobler ændringer i præcis admin.html eller service-worker.js til de samme to eksisterende mål for kold start og admin-kontrakt, også uden en ændret testfil; ældre profiler og alle øvrige kontroller bevares.

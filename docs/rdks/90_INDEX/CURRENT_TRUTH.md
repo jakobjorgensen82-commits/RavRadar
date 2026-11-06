@@ -1,3 +1,11 @@
+## 2026-11-06 – Præcise gamle og nye koldstartbindinger i kildeudvælgelsen
+
+Den normale kildekontrol har påvist et afgrænset registerhul før merge: den nye koldstartprøves gennemgåede VM-grænse var registreret, men de eksisterende isolerede HTML-/service-worker-kaldere bruger fortsat den gennemgåede gamle prøvevariant. Dens præcise ældre bindingsflade manglede i registret. Den strenge forbruger afviste derfor korrekt en ukendt følsom flade; dette er ikke en påvist produktfejl eller et timeoutproblem.
+
+Den minimale registerrettelse bevarer både den præcise gamle og den præcise nye gennemgåede flade og synkroniserer den normale planners registerpin. Produkt, testkroppe, normale kaldere, gamle profiler og afslag ved andre ukendte flader ændres ikke. Den ægte 598-kæde samt PostgreSQL- og C/I/T-kontroller bevares. Der tilføjes ingen ny fuld testbank eller ændret tidsgrænse.
+
+De allerede eksisterende isolerede UI-tilfælde fangede manglen før merge. Ny præcis kildekvalifikation og faktisk offentlig effekt er fortsat åbne. Dette ændrer ikke vejrhentning, budgetter, databevarelse, scoremodel, geometri, rettigheder eller produktion. SOURCE599 forbliver privat/inaktiv; dens tidligere dokumentforberedelse mod c670 er kun historisk forhåndsarbejde og skal genafstemmes mod den reelle endelige main. Se håndbog 89.320; tidligere afsnit 89.319/89.318 og al historik bevares.
+
 ## 2026-11-06 – Adminens moduladresse i offlinecache og artifactkontrol
 
 Den normale tidlige 598-kildeudvælgelse kobler ændringer i præcis admin.html eller service-worker.js til de samme to eksisterende mål for kold start og admin-kontrakt, også uden en ændret testfil; ældre profiler og alle øvrige kontroller bevares.

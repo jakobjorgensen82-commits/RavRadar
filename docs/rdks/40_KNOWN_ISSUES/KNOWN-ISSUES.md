@@ -1,3 +1,11 @@
+## 2026-11-06 – Gammel koldstartbindingsflade mangler i registerkandidaten
+
+Den normale isolerede HTML-/service-worker-kontrol nåede det forventede strenge afslag ved en ukendt følsom bindingsflade. Den nye koldstartvariants gennemgåede VM-grænse var registreret, mens den gennemgåede gamle variant, som de eksisterende isolerede kaldere bevarer, manglede. Dette forklarer den konkrete kildekontrolfejl; der er ikke påvist et timeoutproblem eller en ny produktfejl her.
+
+Den minimale registerrettelse bevarer præcis begge gennemgåede flader og synkroniserer plannerens pin. Gamle prøve-/produktkroppe, normale kaldere, gamle profiler, ægte 598, PostgreSQL/C/I/T, øvrige strenge afslag og alle tids- og produktionskontroller bevares. Ingen ny testbank, større budget eller kontrolomgåelse indføres.
+
+ÅBENT: ny præcis samlet kildekvalifikation, sikker levering og faktisk offentlig effekt. SOURCE599 er fortsat privat/inaktiv; tidligere c670-dokumentforberedelse er en historisk kandidat, som skal genafstemmes mod endelig faktisk main. P0-vejret har forrang. Kapitel 89.320 tilføjes uden ændring af de tidligere 568 sektioner.
+
 ## 2026-11-06 – Admincache-adressens mismatch stoppede artifactbygningen
 
 Den normale tidlige 598-kildeudvælgelse kobler ændringer i præcis admin.html eller service-worker.js til de samme to eksisterende mål for kold start og admin-kontrakt, også uden en ændret testfil; ældre profiler og alle øvrige kontroller bevares.

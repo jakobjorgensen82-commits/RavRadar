@@ -5,6 +5,13 @@
   "updatedAt": "2026-11-06",
   "sections": [
     {
+      "id": "coldstart-exact-legacy-current-binding-registry-2026-11-06",
+      "chapter": "89.320",
+      "title": "Gamle og nye gennemgåede koldstartgrænser i samme register",
+      "summary": "Bevar de præcise kendte flader, når en eksisterende isoleret kalder fortsat bruger den gamle prøvevariant.",
+      "body": "<div class=\"reader-guide\"><p><strong>Kort fortalt: En præcis kildekontrol skal kende både den nye prøvevariant og den gamle variant, som en eksisterende isoleret kalder stadig bruger. Ukendte følsomme flader skal fortsat afvises.</strong></p></div><h3>Hvad blev påvist?</h3><p>Den nye koldstartprøves gennemgåede VM-grænse var registreret, men de normale isolerede HTML- og service-worker-kaldere bevarer den gamle gennemgåede prøvevariant. Dens præcise ældre bindingsflade manglede i registret. De allerede eksisterende isolerede UI-tilfælde fangede dette før merge: den strenge forbruger afviste den ukendte følsomme flade. Det er ikke i sig selv en produktfejl eller et timeoutproblem.</p><h3>Den afgrænsede rettelse</h3><p>Registret skal bevare både den præcise gamle og den præcise nye gennemgåede grænse, og den normale planners registerpin skal følge de faktiske bytes. Der åbnes ingen generel undtagelse for VM-brug eller andre ukendte flader. Produktfiler, gamle prøve-/testkroppe og normale kaldere ændres ikke.</p><h3>Hvilke kontroller bevares?</h3><p>Den ægte 598-kæde, PostgreSQL- og C/I/T-kontroller, gamle profiler og de normale afslag ved andre ukendte følsomme flader bevares. Der tilføjes ingen ny testbank, større tidsgrænse, ændret hente- eller kørselsbudget eller produktionshandling. De eksisterende kontroller skal bruges på den reelle endelige kode.</p><h3>Hvad mangler stadig?</h3><p>Ny præcis kildekvalifikation, sikker levering og faktisk offentlig virkning er fortsat åbne. En lokal registerrettelse eller et tidligere grønt delresultat er ikke leveringsbevis. SOURCE599 er fortsat privat og inaktiv, og tidligere dokumentforberedelse skal genafstemmes mod den faktisk endelige main. Kapitel 89.319 om adminens cacheadresse, 89.318 om DMI-hullernes omfang og al tidligere historik bevares.</p>"
+    },
+    {
       "id": "admin-observations-cache-address-contract-2026-11-06",
       "chapter": "89.319",
       "title": "Samme adminmoduladresse i side, offlinecache og kontrol",
