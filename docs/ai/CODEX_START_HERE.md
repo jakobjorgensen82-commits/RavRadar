@@ -1,3 +1,7 @@
+## 7. november — eksisterende vedligeholdelsesforløb før historisk workflowliste
+
+Den normale workflowprøve verificerer de tre eksisterende backup-, historik- og CLI-restore-workflows med fuldt byteantal og SHA før den uændrede ældre inventarliste bruges. Ukendte, manglende, dobbelte eller ændrede filer afvises fortsat. Alle gamle assertions og indholds-/sourcegates bevares; ingen produktionsworkflow ændres. Den komplette normale prøve skal faktisk bestå på den rigtige, rene kandidat før ny afsendelse.
+
 ## 6. november — kontroller begge normale kildeplaner før push
 
 Ved nye parametre eller cacheadresser skal gamle, præcise helfil-prøver få en særskilt gennemgået testvisning før deres uændrede historiske orakler. Afklar hele den direkte kalderkæde før ny CI. Testvisningen må kun invertere fuldt kendte nye bytes til de kendte gamle bytes; ukendte ændringer møder fortsat de oprindelige afslag. Den normale aktuelle produktkæde testes særskilt.

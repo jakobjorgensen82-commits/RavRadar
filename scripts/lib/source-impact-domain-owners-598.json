@@ -7273,7 +7273,8 @@
           "e79fdc8070938882a243830e77cadaff341be1784a9efae1051ea75b5c272199",
           "ef4590822bdaa83dd6ded5035ae1a8c0bc368a444ab74a82270b3ac9758eed7e",
           "f3c62f66e06942a3bac1eb4a839ed180ddd72150be839656268dc74a2a2cd8e1",
-          "1481a3e488f82d0493903628d2ee361e3a8db2cb5c46e69463f605e49b660bac"
+          "1481a3e488f82d0493903628d2ee361e3a8db2cb5c46e69463f605e49b660bac",
+          "a6444059c168f54a575918afbdfd409df0ed7981a796f84a809f4a5443a87385"
         ],
         "bindingSurfaces": [
           "09e257dec4079cd370b9d80aa6cc99a1c249be5ad841f523db0c230972a123a8",
@@ -7303,7 +7304,8 @@
           "df833ef052a6556e9c22f88c10a14070371bda2511fd9f21c48a0e2330026dcc",
           "f6ff1634de4ea23b172f526d9be480363f8e72afe00b083c9a6a6105c967863a",
           "f7c96228c77f9b6d267538f5c172d11c994f5b4ac0e79b5534fcf648067124e4",
-          "fc2f1ec6276df947ff53545b572b732718e7330b89be598f98f0378129438f7f"
+          "fc2f1ec6276df947ff53545b572b732718e7330b89be598f98f0378129438f7f",
+          "12b4331b53faa61f634ffc18e478f18d6b779d6f682118a1310847178fc0c137"
         ],
         "computedBoundaries": []
       }
@@ -7341,6 +7343,8 @@
     "scripts/test-weather-acquisition-plan.py",
     "supabase/migrations/20261104004400_scalar597_later_h0_original594_bound_successor.sql",
     "js/services/rule-service.js",
-    "scripts/test-public-cold-start-4.0.303.mjs"
+    "scripts/test-public-cold-start-4.0.303.mjs",
+    ".github/workflows/backup-supabase-database.yml",
+    ".github/workflows/verify-supabase-cli-local-restore.yml"
   ]
 }
