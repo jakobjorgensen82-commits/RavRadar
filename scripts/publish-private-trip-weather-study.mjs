@@ -12,6 +12,7 @@ const OPERATOR_PHASES = new Set(['AUTHORITY','MAIN_FETCH','MAIN_IDENTITY','SOURC
 const COMMAND_PHASES = new Set(['MAIN_FETCH','MAIN_IDENTITY','SOURCE_PROOF']);
 const OPERATOR_ERROR_CODES = new Set([
   'PRIVATE_STUDY_OPERATOR_AUTHORITY','PRIVATE_STUDY_OPERATOR_SOURCE',
+  'PRIVATE_STUDY_EXPORT_MODE_INVALID','AGGREGATE_FROZEN_REPLAY_INVALID','AGGREGATE_FROZEN_IDENTITY_MISMATCH',
   'AGGREGATE_CONFIGURATION_INVALID','AGGREGATE_READ_TIMEOUT','AGGREGATE_READ_REJECTED',
   'AGGREGATE_RESPONSE_TOO_LARGE','AGGREGATE_RESPONSE_INVALID','AGGREGATE_ACCOUNT_INVENTORY_INCOMPLETE',
   'AGGREGATE_ACCOUNT_CAP_REACHED','AGGREGATE_ACCOUNT_METADATA_INVALID','AGGREGATE_PREFERENCE_METADATA_INVALID',
@@ -49,6 +50,13 @@ export async function publishOwnerPrivateTripStudy(){
   if(process.argv.length!==2||env.GITHUB_EVENT_NAME!=='workflow_dispatch'||env.GITHUB_WORKFLOW!=='Private RavRadar trip weather study'
     ||env.GITHUB_REF!=='refs/heads/main'||env.GITHUB_RUN_ATTEMPT!=='1'||env.TRIP_STORAGE_OPERATION!=='private-study-export'
     ||!/^[a-f0-9]{40}$/.test(env.GITHUB_SHA||''))throw Error('PRIVATE_STUDY_OPERATOR_AUTHORITY');
+  const exportMode = env.PRIVATE_STUDY_EXPORT_MODE || 'ordinary';
+  const frozenValues = [env.PRIVATE_STUDY_FROZEN_MONTH, env.PRIVATE_STUDY_FROZEN_BINDING_SHA256, env.PRIVATE_STUDY_FROZEN_REPORT_SHA256];
+  if (!['ordinary','frozen-replay'].includes(exportMode)
+    || exportMode === 'ordinary' && frozenValues.some(value => value !== undefined && value !== '')
+    || exportMode === 'frozen-replay' && (!/^\d{4}-(0[1-9]|1[0-2])$/.test(frozenValues[0] || '')
+      || !frozenValues.slice(1).every(value => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value)))) throw Error('PRIVATE_STUDY_EXPORT_MODE_INVALID');
+  const frozenReplay = exportMode === 'frozen-replay' ? {month:frozenValues[0], modelBindingSha256:frozenValues[1], reportSha256:frozenValues[2]} : undefined;
   const childEnv={...env};for(const key of ['SUPABASE_ACCESS_TOKEN','SUPABASE_SERVICE_ROLE_KEY','TRIP_GATEWAY_SHARED_SECRET','TRIP_PSEUDONYM_SECRET_V1','CLOUDFLARE_API_TOKEN'])delete childEnv[key];
   const read=(command,args)=>execFileSync(command,args,{env:childEnv,encoding:'utf8',stdio:['ignore','pipe','pipe'],timeout:60000,maxBuffer:65536});
   phase = 'MAIN_FETCH';
@@ -60,7 +68,8 @@ export async function publishOwnerPrivateTripStudy(){
   phase = 'AGGREGATE';
   const report=await readTripWeatherAggregate({supabaseUrl:'https://afqhhdrkjfjtpadntdzo.supabase.co',
     serviceRoleKey:env.SUPABASE_SERVICE_ROLE_KEY,gatewayUrl:env.CLOUDFLARE_TRIP_GATEWAY_URL,
-    sharedSecret:env.TRIP_GATEWAY_SHARED_SECRET,pseudonymSecret:env.TRIP_PSEUDONYM_SECRET_V1});
+    sharedSecret:env.TRIP_GATEWAY_SHARED_SECRET,pseudonymSecret:env.TRIP_PSEUDONYM_SECRET_V1,
+    ...(frozenReplay ? {frozenReplay} : {})});
   phase = 'ADMIN_PUBLISH';
   return await publishPrivateTripStudyAdmin(report,{serviceRoleKey:env.SUPABASE_SERVICE_ROLE_KEY,accessToken:env.SUPABASE_ACCESS_TOKEN});
   } catch (error) {

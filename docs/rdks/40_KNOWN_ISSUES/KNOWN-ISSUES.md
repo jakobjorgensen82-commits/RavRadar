@@ -14,6 +14,16 @@ Assistentens engelske vindspørgsmål bevarer nu det lokale emne til den efterf�
 >
 > Opstartsfilen indgår i SOURCEs CODE-fingeraftryk; den normale genberegning af fingeraftrykket og alle relevante udstedelses-/leveringskontroller er fortsat nødvendige før aktivering. Den separate Linux-kvalifikationskladde og dens to kernelprøver ændres ikke. Ingen produktionskode, binding, SQL, vejrdata, kildeprioritet, scoreformel, geometri eller administratorpunkter er ændret i driften. Offentlig Markdown-/webhåndbog og assistentviden bevares.
 
+## 2026-11-06 – Statistikrapportens kontrollerede genlæsning og accept er fortsat åben
+
+Frossen genlæsning kræver normal senest afsluttede UTC-måned og fuldt match af oprindelig rapport-/modelbindingshash. Den eksisterende signerede verify læser den gemte rapport; replay foretager ingen prepare, resampling, retagging eller automatisk gentagelse. Ordinary-standardforløbet, komplette præferenceoversigter før/efter, erasure-barriere og insert-only beskyttet admintransport bevares.
+
+En lokal kombination af sortering/UI-forklaring og frozen replay foreligger med tre beståede normale tilfælde. De præcist nye gennemgåede læse-/prøveflader kan registreres additivt gennem den eksisterende ændringsbaserede kontrol; alle gamle grænser og afslag skal bevares. En klargjort afgrænset kontrolvej må ikke beskrives som bestået CI, installeret Worker, gennemført replay, fungerende privat admin eller Free-bevis.
+
+Én normal lokal målprøve bestod tre tilfælde (fast sortering, eksisterende kategorisk rapport og frozen replay). Den normale ændringsbaserede 598-vej er forberedt med strengt bevarede gamle flader og afslag. Den faktiske kumulative plan skal beregnes på slutkoden fra den ægte kvalificerede fulde baseline; en tidligere målrettet rettelse er ikke en ny fuld baseline. Plan og lokale prøver er ikke faktisk CI eller levering. Fortsat ÅBENT: endelig head-bundet CI; faktisk Worker-adgang/tilstand; kontrolleret frossen genlæsning; beskyttet adminindsættelse og efterlæst identitet; UI/adgang/privacy og målt Free-kapacitet.
+
+Statistik OFF forbliver OFF. Ingen aktivering, automatisk konto-/inaktivitetssletning, mailafsender, ny plan, database-/SQL-installation eller ændring af vejr, RavScore, administratorpunkter og geometri. Ingen garanti om anonymitet eller godkendt minimumsgrænse for små bidrag. Private rapport-/bindingshashes, brugeroplysninger og driftsdiagnostik hører ikke til i offentlig dokumentation. Kapitel 89.321 tilføjes uden at ændre de tidligere 569 sektioner eller metadata 4.0.598. Den særskilte revisionskandidat er uden for denne levering.
+
 ## 2026-11-06 – Gammel koldstartbindingsflade mangler i registerkandidaten
 
 Den normale isolerede HTML-/service-worker-kontrol nåede det forventede strenge afslag ved en ukendt følsom bindingsflade. Den nye koldstartvariants gennemgåede VM-grænse var registreret, mens den gennemgåede gamle variant, som de eksisterende isolerede kaldere bevarer, manglede. Dette forklarer den konkrete kildekontrolfejl; der er ikke påvist et timeoutproblem eller en ny produktfejl her.

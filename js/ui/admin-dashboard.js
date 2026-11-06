@@ -1,4 +1,4 @@
-import { mountPrivateTripStudyCard } from './admin-private-trip-study.js?v=4.0.598';
+import { mountPrivateTripStudyCard } from './admin-private-trip-study.js?v=4.0.598&study=frozen-replay-noise-20261106';
 import { analyzeObservations } from '../services/learning-analysis.js?v=4.0.598';
 import { historicalSummary } from '../services/historical-analysis.js?v=4.0.598';
 import { loadZoneRegistry } from '../services/zone-registry.js?v=4.0.598';

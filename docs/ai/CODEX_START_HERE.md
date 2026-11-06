@@ -22,6 +22,20 @@ Assistentens engelske vindspørgsmål bevarer nu det lokale emne til den efterf�
 >
 > Opstartsfilen indgår i SOURCEs CODE-fingeraftryk; den normale genberegning af fingeraftrykket og alle relevante udstedelses-/leveringskontroller er fortsat nødvendige før aktivering. Den separate Linux-kvalifikationskladde og dens to kernelprøver ændres ikke. Ingen produktionskode, binding, SQL, vejrdata, kildeprioritet, scoreformel, geometri eller administratorpunkter er ændret i driften. Offentlig Markdown-/webhåndbog og assistentviden bevares.
 
+## 6. november — kontroller begge normale kildeplaner før push
+
+Ved nye parametre eller cacheadresser skal gamle, præcise helfil-prøver få en særskilt gennemgået testvisning før deres uændrede historiske orakler. Afklar hele den direkte kalderkæde før ny CI. Testvisningen må kun invertere fuldt kendte nye bytes til de kendte gamle bytes; ukendte ændringer møder fortsat de oprindelige afslag. Den normale aktuelle produktkæde testes særskilt.
+
+Før en ændringsbaseret kilde-PR skal den uændrede normale planner først evaluere den faktiske PR-merge-base mod den præcise slutkode og derefter den kumulative ændring fra den ægte kvalificerede FULL-baseline. Producenten udfører den første kontrol før baselineopslag og kontrolreview. En godkendelig kumulativ plan alene beviser derfor ikke, at den normale kortere vej kan vælges. Begge planer skal bevare alle relevante mål, historiske afslag og uændrede beskyttede input; ukendt påvirkning vælger fortsat FULL. Det er en før-push-kontrol af leveringsvejen, ikke tilladelse til at springe faktisk head-bundet CI eller produktionsgates over.
+
+## 2026-11-06 – Afgrænset statistik598-levering, ikke aktivering
+
+Frossen genlæsning kræver normal senest afsluttede UTC-måned og fuldt match af oprindelig rapport-/modelbindingshash. Den eksisterende signerede verify læser den gemte rapport; replay foretager ingen prepare, resampling, retagging eller automatisk gentagelse. Ordinary-standardforløbet, komplette præferenceoversigter før/efter, erasure-barriere og insert-only beskyttet admintransport bevares.
+
+Én normal lokal målprøve bestod tre tilfælde (fast sortering, eksisterende kategorisk rapport og frozen replay). Den normale ændringsbaserede 598-vej er forberedt med strengt bevarede gamle flader og afslag. Den faktiske kumulative plan skal beregnes på slutkoden fra den ægte kvalificerede fulde baseline; en tidligere målrettet rettelse er ikke en ny fuld baseline. Plan og lokale prøver er ikke faktisk CI eller levering. Fortsat ÅBENT: endelig head-bundet CI; faktisk Worker-adgang/tilstand; kontrolleret frossen genlæsning; beskyttet adminindsættelse og efterlæst identitet; UI/adgang/privacy og målt Free-kapacitet.
+
+Statistik OFF forbliver OFF. Ingen aktivering, automatisk konto-/inaktivitetssletning, mailafsender, ny plan, database-/SQL-installation eller ændring af vejr, RavScore, administratorpunkter og geometri. Ingen garanti om anonymitet eller godkendt minimumsgrænse for små bidrag. Private rapport-/bindingshashes, brugeroplysninger og driftsdiagnostik hører ikke til i offentlig dokumentation. Den særskilte revisionskandidat må ikke bruges som genvej eller som leveringsbevis. Håndbog 89.321 og alle tidligere 569 websektioner bevares; aktuelle driftskvitteringer føres fortsat privat.
+
 ## 2026-11-06 – Præcise gamle og nye koldstartbindinger i kildeudvælgelsen
 
 Den normale kildekontrol har påvist et afgrænset registerhul før merge: den nye koldstartprøves gennemgåede VM-grænse var registreret, men de eksisterende isolerede HTML-/service-worker-kaldere bruger fortsat den gennemgåede gamle prøvevariant. Dens præcise ældre bindingsflade manglede i registret. Den strenge forbruger afviste derfor korrekt en ukendt følsom flade; dette er ikke en påvist produktfejl eller et timeoutproblem.

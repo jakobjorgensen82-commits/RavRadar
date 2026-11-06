@@ -514,6 +514,29 @@ test('normal598 registry keeps genuine148 inputs and closes only known normal co
     assert.equal(createHash('sha256').update(bytes).digest('hex'),pin.sha256,'Whole ordinary598 fixture SHA256');
     return bytes;
   };
+  // Frosne ordinary598 CODE-filer fra b78-kandidaten, ikke et native-/originalbevis.
+  // Kilde-CI og faktisk merge kvalificeres særskilt; den historiske c670-bank bevares.
+  const statistics598Head='b78c0542cac84c29513d9bf014a849c0ea0f7f0e';
+  const statistics598Owners=Object.freeze({
+    '.github/workflows/private-trip-weather-study.yml':Object.freeze({bytes:7704,sha256:'435d5e5e2276e83e0502ae4fcc4230447db590b8341a41e5850a6e896f25c1f8'}),
+    'cloudflare/trip-gateway/trip-aggregate.js':Object.freeze({bytes:10491,sha256:'a2b506b9f9cf56fe88a89d727c5c4f481f6d2dc46339f00a3dac361d9213a6d4'}),
+    'js/ui/admin-private-trip-study.js':Object.freeze({bytes:7427,sha256:'d89dfe5d2dda2f9e022b3ce68d0e8462adde9c1875b16d90b7cad98c36460bfa'}),
+    'scripts/lib/trip-weather-aggregate-client.mjs':Object.freeze({bytes:13201,sha256:'79bf3852cbf4abce3a04743f039cf9cd30a8374055c966957de8d8acb5b7a6d9'}),
+    'scripts/publish-private-trip-weather-study.mjs':Object.freeze({bytes:6025,sha256:'9f1079b022eae294d8bbbb8577c0352a90aa0a997fea82327f50ea5d6b18bff9'}),
+    'scripts/test-account-statistics-assistant-callers.mjs':Object.freeze({bytes:195213,sha256:'63dd9e79a6dce0be4921e8d98648ccafb5644af32e20492c27b050c1b4dbbb62'}),
+    'scripts/test-trip-aggregate-month-rollover.mjs':Object.freeze({bytes:101101,sha256:'e042868f6a049277360d492609a53d40ac041e65a35981f09a37735a44a4c11f'}),
+    'admin.html':Object.freeze({bytes:2934,sha256:'f40856afe86820a77f08cb92ff6a8208207575f38cc1d218532f3e5672abe5cf'}),
+    'service-worker.js':Object.freeze({bytes:7133,sha256:'8d668ce191ee60edc269294894ce2e5d2eb85641b1c9ab4c454dd35f446dbfd1'}),
+    'scripts/test-public-cold-start-4.0.303.mjs':Object.freeze({bytes:12801,sha256:'897e72fd0c8729cf0f592b57a600a94016209ddff852f06badacce67b647eff7'}),
+  });
+  const readStatistics598Owner=file=>{
+    assert(Object.hasOwn(statistics598Owners,file),'Only the ten fixed ordinary598 statistics/cache CODE owners');
+    const pin=statistics598Owners[file],bytes=git(SOURCE,['cat-file','blob',statistics598Head+':'+file]);
+    assert.equal(bytes.length,pin.bytes,'Whole statistics598 CODE byte length');
+    assert.equal(createHash('sha256').update(bytes).digest('hex'),pin.sha256,'Whole statistics598 CODE SHA256');
+    return bytes;
+  };
+
   const controls=['scripts/source-impact-domain-inputs.mjs','scripts/lib/source-impact-domain-inputs-598.json',
     'scripts/test-source-impact-domain-inputs.mjs','scripts/source-impact-domain-plan.mjs',
     'scripts/lib/source-impact-domain-owners-598.json','scripts/test-source-impact-domain-plan.mjs',
@@ -617,12 +640,64 @@ test('normal598 registry keeps genuine148 inputs and closes only known normal co
       assert.deepEqual(run598(make598(baseline598,[[owner,Buffer.concat([body,Buffer.from('\n')])]],'synthetic unreviewed SDK oracle port')).reasonCodes,
         ['UNKNOWN_EXACT_SOURCE_TRANSITION:'+owner]);
     });
+    await t.test('exact598 reviewed statistics replay keeps normal account privacy and refuses new capabilities',()=>{
+      const files=['.github/workflows/private-trip-weather-study.yml','cloudflare/trip-gateway/trip-aggregate.js',
+        'js/ui/admin-private-trip-study.js','scripts/lib/trip-weather-aggregate-client.mjs',
+        'scripts/publish-private-trip-weather-study.mjs','scripts/test-account-statistics-assistant-callers.mjs',
+        'scripts/test-trip-aggregate-month-rollover.mjs'];
+      const changes=files.map(file=>[file,readStatistics598Owner(file)]);
+      const actual=run598(make598(baseline598,changes,'synthetic reviewed statistics replay sources'));
+      assert.equal(actual.selection,'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(actual.reasonCodes));
+      assert.equal(actual.commands.filter(c=>c==='node --test scripts/test-account-statistics-assistant-callers.mjs').length,1);
+      for(const family of ['postgres','C','I','T'])assert.equal(actual.inputDigests[family+'Before'],actual.inputDigests[family+'After']);
+      for(const domain of ['adminUI','d1','controls'])assert.equal(actual.domains[domain].status,'SELECTED');
+      assert.equal(actual.domains.postgres.status,'NOT_APPLICABLE');assert.equal(actual.domains.historical584National.status,'NOT_APPLICABLE');
+      assert.equal(actual.baselineQualified,false);assert.equal(actual.skipAuthorized,false);assert.equal(actual.productionAuthority,false);
+      const client='scripts/lib/trip-weather-aggregate-client.mjs';
+      const mutation=changes.map(([file,body])=>[file,file===client?Buffer.concat([body,Buffer.from("\nexport const privateStudyUnreviewedCapability=Reflect.get(globalThis,'UNREVIEWED_PRIVATE_STUDY_CAPABILITY');\n")]):body]);
+      const refused=run598(make598(baseline598,mutation,'synthetic unreviewed statistics capability'));
+      assert.equal(refused.selection,'FULL');
+      assert.deepEqual(refused.reasonCodes,['UNKNOWN_SENSITIVE_BINDING_OR_REFLECTIVE_SURFACE:'+client]);
+    });
     await t.test('exact598 admin cache publication closes both actual production contracts and refuses owner drift',()=>{
       const owners=['service-worker.js','scripts/test-public-cold-start-4.0.303.mjs'];
       const changes=owners.map(file=>[file,file==='service-worker.js'?readOrdinary598Owner(file):fs.readFileSync(path.join(SOURCE,file))]);
       for(const [owner,body]of changes){
         const actual=run598(make598(baseline598,[[owner,body]],'synthetic exact admin cache publication owner'));
         assert.equal(actual.selection,owner==='service-worker.js'?'TARGETED_DOMAINS':'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(actual.reasonCodes));
+        for(const command of ['node scripts/test-public-cold-start-4.0.303.mjs','node scripts/test-admin-config-production-contract-4.0.94.mjs'])
+          assert.equal(actual.commands.filter(value=>value===command).length,1);
+        for(const family of ['postgres','C','I','T'])assert.equal(actual.inputDigests[family+'Before'],actual.inputDigests[family+'After']);
+        assert.equal(actual.domains.postgres.status,'NOT_APPLICABLE');assert.equal(actual.domains.historical584National.status,'NOT_APPLICABLE');
+        assert.equal(actual.baselineQualified,false);assert.equal(actual.skipAuthorized,false);assert.equal(actual.productionAuthority,false);
+      }
+      for(const owner of owners){
+        const variant=changes.map(([file,body])=>[file,file===owner?Buffer.concat([body,Buffer.from('\n')]):body]);
+        assert.deepEqual(run598(make598(baseline598,variant,'synthetic unreviewed admin cache publication bytes')).reasonCodes,
+          ['UNKNOWN_EXACT_SOURCE_TRANSITION:'+owner]);
+      }
+    });
+    await t.test('exact598 statistics cache and fresh head plan keep their reviewed ordinary CODE context',()=>{
+      const owners=['admin.html','service-worker.js','scripts/test-public-cold-start-4.0.303.mjs'];
+      const changes=owners.map(file=>[file,readStatistics598Owner(file)]);
+      for(const [owner,body]of changes){
+        const actual=run598(make598(baseline598,[[owner,body]],'synthetic exact admin cache publication owner'));
+        assert.equal(actual.selection,owner==='scripts/test-public-cold-start-4.0.303.mjs'?'CONTROL_QUALIFICATION_REQUIRED':'TARGETED_DOMAINS',JSON.stringify(actual.reasonCodes));
+        for(const command of ['node scripts/test-public-cold-start-4.0.303.mjs','node scripts/test-admin-config-production-contract-4.0.94.mjs'])
+          assert.equal(actual.commands.filter(value=>value===command).length,1);
+        for(const family of ['postgres','C','I','T'])assert.equal(actual.inputDigests[family+'Before'],actual.inputDigests[family+'After']);
+        assert.equal(actual.domains.postgres.status,'NOT_APPLICABLE');assert.equal(actual.domains.historical584National.status,'NOT_APPLICABLE');
+        assert.equal(actual.baselineQualified,false);assert.equal(actual.skipAuthorized,false);assert.equal(actual.productionAuthority,false);
+      }
+      // The producer checks its actual merge-base before discovering the cumulative qualified FULL parent.
+      const ordinaryParent='d10d94b70d96e9a75775ac4b4647011f3883258d';
+      const qualifiedFullParent='89ca7f3af17dbc86232a20adff3129edddfe0b3d';
+      const ordinaryMergeBase=make598(ordinaryParent,rows,'synthetic current ordinary merge-base with current controls');
+      const ordinaryCandidate=make598(ordinaryMergeBase,changes,'synthetic reviewed current admin cache publication');
+      for(const ordinaryBaseline of [ordinaryMergeBase,qualifiedFullParent]){
+        const actual=run598(ordinaryCandidate,ordinaryBaseline);
+        assert.equal(actual.status,'PLANNED',JSON.stringify(actual.reasonCodes));
+        assert.equal(actual.selection,'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(actual.reasonCodes));
         for(const command of ['node scripts/test-public-cold-start-4.0.303.mjs','node scripts/test-admin-config-production-contract-4.0.94.mjs'])
           assert.equal(actual.commands.filter(value=>value===command).length,1);
         for(const family of ['postgres','C','I','T'])assert.equal(actual.inputDigests[family+'Before'],actual.inputDigests[family+'After']);

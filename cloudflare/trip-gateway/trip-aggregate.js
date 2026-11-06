@@ -154,7 +154,7 @@ async function finishTripWeatherAggregate(databaseList, query, selected, rowStat
     verifiedCalibrationContributors: 0,
     releaseBlockers: ['RELEASE_POLICY_UNISSUED', 'TRIP_ORIGIN_NOT_ATTESTED', 'FORECAST_NOT_SERVER_ATTESTED'],
     normalCalibrationEligibleContributors: [...selected.values()].filter(({ calibrationEligible }) => calibrationEligible).length,
-    exclusions, cells: [...cells].sort(([a], [b]) => a.localeCompare(b)).map(([cell, count]) => ({ cell, count })),
+    exclusions, cells: [...cells].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([cell, count]) => ({ cell, count })),
     releasePolicyIssued: false, ...(categorical ? { effortStatus: CATEGORICAL_POLICY.effort } : {}) });
   contributionSubjects.set(candidate,Object.freeze([...selected.keys()].sort()));
   return candidate;
