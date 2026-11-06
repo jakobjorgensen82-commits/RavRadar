@@ -404,3 +404,59 @@ test('597 normal FULL baseline inherits an exact completed 597 native receipt, w
   national.currentScalar597LaterH0Native.status='REUSED';f.rebuild();
   assert.equal((await check()).status,'REFUSED');
 });
+
+// Protocol-only598 evidence DATA. These fixtures do not execute PostgreSQL or qualify a live run.
+async function synthetic598FullFixture(){
+  assert.equal(ACTIVE.sourcePhase,'assistant-mixed-after597-successor');
+  const native=await import('./native-postgres-evidence.mjs'),national=await import('./national584-source-evidence.mjs');
+  const f=fixture({installed594V2:true}),prior=f.full.nativePostgres;
+  use597Package(f,{candidateVersion:'4.0.598',producerVersion:'4.0.598'});
+  const binding=ACTIVE.requireBinding(),databaseBefore=ACTIVE.databaseBefore;
+  const observed={kind:'ASSISTANT_AFTER597_SUCCESSOR',sourceMigrationInventory:63,
+    databaseBeforeVersion:databaseBefore.version,originalStateRelease:597,migrationVersion:binding.version,
+    partCount:673,checkpointOidSlots:45,contractBodies:48,productionSeedAuthenticated:false,
+    parentCodeHead:'803f2c7c61237cef5c5f6b39ce0eaac5e090fb84',parentNativeHead:'97d189e4a99fdab1b2764db1bfe59f96e92c3f02'};
+  for(const key of ['sqlExecuted','wholeMigrationExecuted','oldFunctionsAndOidsPreserved','allOriginalDefinitionsPreserved',
+    'exactCheckpointContract','exactTripContract','schema2Catalog','normalProtectedJsonbRoundtrip','originalDigestsPreserved',
+    'trueOld597Fixtures','currentNormalFixtures','old597ModelNotRetagged','wholeMetadataInverse',
+    'strictlyLater597ToNextOnly','sqlIsNotOriginAuthentication','predecessorExecutedInSameHost'])observed[key]=true;
+  observed.intermediateRuntime=Object.fromEntries(['old597ActiveAfterSql','nextRefusedBeforeActivation','pendingBothRefused',
+    'nextActiveAfterCompletion','old597RefusedAfterCompletion','wholeHistoryAndDocumentsPreserved',
+    'quotaFunctionAndAdmissionUnchanged','quotaServiceRoleWorking'].map(key=>[key,true]));
+  const receipt={schemaVersion:1,kind:native.ASSISTANT_AFTER597_PHASE_KIND,phase:'ASSISTANT_AFTER597_SUCCESSOR',
+    sourcePhase:native.ASSISTANT_AFTER597_PHASE,releaseVersion:ACTIVE.requireRelease(),binding,output:ACTIVE.requireOutput(),
+    databaseBefore,current:copy(prior.current),commands:[...native.ASSISTANT_AFTER597_COMMANDS],
+    status:'EXECUTED',executedInThisRun:true,origin:null,eligibleForReuse:false,runtime:prior.runtime,
+    report:{kind:'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',sqlExecuted:true,migrationExecuted:true,tcpEnabled:false,
+      normalModelPartCount:673,postgresMajorVersion:16,nativeProgramIdentity:prior.runtime.selectedPrograms,
+      assistantAfter597Successor:observed}};
+  f.full.nativePostgres=receipt;Object.assign(f.phase,{schemaVersion:1,kind:native.ASSISTANT_AFTER597_PHASE_KIND,nativePostgres:copy(receipt)});
+  for(const key of Object.keys(f.full.historical584National).filter(key=>key.startsWith('current')))if(key!=='current')delete f.full.historical584National[key];
+  Object.assign(f.full.historical584National,await national.assistantAfter597NativeClaims(receipt,receipt.current));
+  f.rebuild();return f;
+}
+test('598 FULL baseline binds its genuine async native and national shapes without reexecuting or retagging proof',async()=>{
+  const f=await synthetic598FullFixture(),result=await f.qualify();
+  assert.equal(result.kind,SOURCE_IMPACT_FULL_BASELINE_KIND);assert.equal(result.scope,'FULL_SOURCE');
+  assert.equal(result.producerHead,f.reference.producerHead);assert.equal(f.full.nativePostgres.eligibleForReuse,false);
+  const mutations=[
+    f=>f.full.nativePostgres.eligibleForReuse=true,
+    f=>{f.full.nativePostgres.status='REUSED';f.full.nativePostgres.executedInThisRun=false;},
+    f=>f.full.nativePostgres.report.assistantAfter597Successor.parentCodeHead=f.full.nativePostgres.report.assistantAfter597Successor.parentNativeHead,
+    f=>f.full.nativePostgres.report.assistantAfter597Successor.sourceMigrationInventory=73,
+    f=>f.full.historical584National.currentAssistantAfter597NationalExecutionClaimed=true,
+    f=>f.full.historical584National.currentAssistantAfter597Native.status='REUSED',
+    f=>f.full.historical584National.currentAssistantAfter597Source.actualCommand+=' --unknown',
+    f=>f.full.historical584National.currentScalar597LaterH0Native={status:'EXECUTED'},
+    f=>f.phase.kind='UNKNOWN_598_PHASE',
+  ];
+  for(const mutate of mutations){const bad=await synthetic598FullFixture();mutate(bad);bad.phase.nativePostgres=copy(bad.full.nativePostgres);bad.rebuild();assert.equal((await bad.qualify()).status,'REFUSED');}
+  for(const version of ['4.0.594','4.0.597','4.0.599']){
+    const bad=await synthetic598FullFixture();use597Package(bad,{candidateVersion:version,producerVersion:'4.0.598'});
+    assert.equal((await bad.qualify()).status,'REFUSED');assert.deepEqual(bad.zipCalls,[]);
+  }
+});
+test('598 normal V2 producer and consumer use real protected closure with synthetic evidence transport only',()=>{
+  execFileSync(process.execPath,['scripts/test-source-targeted-domain-integration.mjs','--source598'],{
+    timeout:180000,maxBuffer:4*1024*1024,stdio:['pipe','pipe','pipe'],env:{...process.env}});
+});

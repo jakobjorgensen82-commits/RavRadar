@@ -251,3 +251,93 @@ test('normal597 input profile uses genuine source bytes without qualifying a bas
   }
 });
 
+
+// Distinct actual598 protected source, never a retagged597 FULL proof.
+test('normal598 input profile uses genuine source bytes without qualifying a baseline or hiding bound R2 changes',async t=>{
+  const p=JSON.parse(fs.readFileSync(path.join(SOURCE,'scripts/lib/source-impact-domain-inputs-598.json')));
+  assert.equal(p.referenceCommit,'bd9cf518fe798ddea45d2b835f324f6e2bea06fc');
+  const source=file=>command(SOURCE,['cat-file','blob',p.referenceCommit+':'+file]);
+  const temporary=fs.realpathSync(os.tmpdir()),root=fs.mkdtempSync(path.join(temporary,'rr-domain598-inputs-'));
+  const owned=fs.lstatSync(root,{bigint:true});
+  try{
+    command(root,['init','-q']);command(root,['config','core.autocrlf','false']);
+    const entries=command(SOURCE,['ls-tree','-rz','-t','--full-tree',p.referenceCommit]).toString('utf8').split('\0').filter(Boolean)
+      .map(line=>{const m=/^(\d{6}) (blob|tree|commit) ([a-f0-9]{40})\t(.+)$/.exec(line);assert(m);
+        return{file:m[4],mode:m[1],type:m[2],oid:m[3]};});
+    const modelFiles=Object.values(p.models).flatMap(def=>{
+      const raw=source(def.file).toString('utf8'),m=JSON.parse(raw.slice(raw.indexOf('Object.freeze(')+14,raw.lastIndexOf(');')));
+      return[def.file,...m.files.map(row=>row[def.rowKey])];
+    });
+    const selected=new Set([...p.postgresModules,...p.postgresData,...p.nativeEvidenceControls,...p.setupInputs,
+      ...p.plannerTrustChain,...p.continuation.files,p.continuation.file,...modelFiles,'package.json',
+      ...entries.filter(row=>row.file.startsWith('supabase/migrations/')&&row.file.endsWith('.sql')).map(row=>row.file)]);
+    const rootTree=text(SOURCE,['rev-parse',p.referenceCommit+'^{tree}']);
+    const objects=[...new Set([p.referenceCommit,rootTree,...entries.filter(row=>row.type==='tree'||selected.has(row.file)).map(row=>row.oid),
+      ...p.frozenGitAnchors.flatMap(row=>[row.head,row.tree])])];
+    command(root,['unpack-objects','-q'],command(SOURCE,['pack-objects','--stdout'],objects.join('\n')+'\n'));
+    const baseline=text(root,['commit-tree',rootTree,'-m','synthetic root with genuine598 tree; not FULL qualification']);
+    command(root,['update-ref','HEAD',baseline]);
+    for(const file of ['scripts/source-impact-domain-inputs.mjs','scripts/lib/source-impact-domain-inputs-594.json','scripts/lib/source-impact-domain-inputs-597.json','scripts/lib/source-impact-domain-inputs-598.json']){
+      const target=path.join(root,file);fs.mkdirSync(path.dirname(target),{recursive:true});fs.copyFileSync(path.join(SOURCE,file),target);
+    }
+    const {analyzeSourceDomainInputs:analyze}=await import(pathToFileURL(path.join(root,'scripts/source-impact-domain-inputs.mjs')).href);
+    const treeRows=id=>command(root,['ls-tree','-z',id]).toString('utf8').split('\0').filter(Boolean).map(line=>{
+      const m=/^(\d{6}) (blob|tree) ([a-f0-9]{40})\t(.+)$/.exec(line);assert(m);return{mode:m[1],type:m[2],oid:m[3],name:m[4]};});
+    const replace=(tree,parts,oid,mode='100644')=>{
+      const rows=tree?treeRows(tree):[],name=parts[0],prior=rows.find(row=>row.name===name);
+      const row=parts.length===1?{name,mode,type:'blob',oid}:
+        {name,mode:'040000',type:'tree',oid:replace(prior?.oid,parts.slice(1),oid,mode)};
+      return command(root,['mktree','--missing','-z'],[...rows.filter(row=>row.name!==name),row]
+        .map(row=>`${row.mode} ${row.type} ${row.oid}\t${row.name}\0`).join('')).toString('utf8').trim();
+    };
+    const change=(file,body)=>{
+      const oid=command(root,['hash-object','-w','--stdin'],body).toString('utf8').trim(),tree=replace(rootTree,file.split('/'),oid);
+      const candidate=text(root,['commit-tree',tree,'-p',baseline,'-m','synthetic598 source input mutation']);
+      command(root,['update-ref','HEAD',candidate]);return candidate;
+    };
+    const run=candidate=>{
+      const result=analyze({baselineCommit:baseline,candidateCommit:candidate,expectedHead:candidate});noAuthority(result);return result;
+    };
+    const original=run(baseline);assert.equal(original.analysis,'COMPLETE',original.failureCode);
+    await t.test('unchanged598 keeps148 PG inputs, C101 I100 T12,74 migrations and16 genuine anchors with no gate authority',()=>{
+      assert.notEqual(baseline,p.referenceCommit);assert.equal(original.profile.id,p.id);
+      assert.equal(original.profile.scope,'REVIEWED_598_INPUT_INVENTORY_ONLY');
+      assert.equal(original.actualPostgresInput.before.totalFiles,148);assert.equal(original.actualPostgresInput.before.sqlFiles,74);
+      assert.equal(original.actualPostgresInput.unchanged,true);assert.equal(original.models.C.before.files.length,101);
+      assert.equal(original.models.I.before.files.length,100);assert.equal(original.models.T.before.files.length,12);
+      assert.equal(original.frozenGitAnchors.anchors.length,16);
+      for(const family of Object.values(original.models))assert.equal(family.unchanged,true);
+    });
+    await t.test('unbound text is separate from PostgreSQL and model input',()=>{
+      const result=run(change('CHANGELOG.md','Synthetic unbound prose only.\n'));assert.equal(result.analysis,'COMPLETE');
+      assert.equal(result.actualPostgresInput.unchanged,true);for(const family of Object.values(result.models))assert.equal(family.unchanged,true);
+      assert.equal(result.completeGitDiff.changedRows,1);
+    });
+    await t.test('the actual74th SQL is included and any new75th SQL changes the protected input',()=>{
+      const sql=entries.filter(row=>row.file.startsWith('supabase/migrations/')&&row.file.endsWith('.sql')).at(-1).file;
+      const changed=run(change(sql,Buffer.concat([source(sql),Buffer.from('\n-- synthetic archived SQL mutation\n')])));
+      assert.equal(changed.analysis,'COMPLETE');assert.equal(changed.actualPostgresInput.unchanged,false);
+      const added=run(change('supabase/migrations/20990101000000_synthetic598_only.sql','-- synthetic75th input\n'));
+      assert.equal(added.analysis,'COMPLETE');assert.equal(added.actualPostgresInput.after.sqlFiles,75);
+      assert.equal(added.actualPostgresInput.unchanged,false);
+    });
+    await t.test('both actual R2 IO owners are C/I-bound and must never be classified as model-unchanged',()=>{
+      for(const file of ['scripts/lib/r2-private-runtime-storage.mjs','scripts/protected-private-production-runtime.mjs']){
+        assert(original.models.C.before.files.some(row=>row.file===file));assert(original.models.I.before.files.some(row=>row.file===file));
+        const result=run(change(file,Buffer.concat([source(file),Buffer.from('\n// synthetic bound IO change\n')])));
+        assert.equal(result.analysis,'COMPLETE');assert.equal(result.models.C.unchanged,false);assert.equal(result.models.I.unchanged,false);
+      }
+    });
+    await t.test('mixed598 and594 release refuses instead of selecting an old profile',()=>{
+      const pkg=JSON.parse(source('package.json'));pkg.version='4.0.594';
+      const result=run(change('package.json',JSON.stringify(pkg)+'\n'));
+      assert.equal(result.analysis,'REFUSED');assert.equal(result.failureCode,'DOMAIN_RELEASE_PROFILE_MISMATCH');
+    });
+  }finally{
+    const current=fs.lstatSync(root,{bigint:true}),resolved=path.resolve(root);
+    assert.equal(path.dirname(resolved),temporary);assert(path.basename(resolved).startsWith('rr-domain598-inputs-'));
+    assert.equal(current.dev,owned.dev);assert.equal(current.ino,owned.ino);assert(!current.isSymbolicLink());
+    fs.rmSync(resolved,{recursive:true,force:false});
+  }
+});
+

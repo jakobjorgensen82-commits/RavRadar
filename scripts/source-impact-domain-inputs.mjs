@@ -58,8 +58,26 @@ function profile597(){
     &&anchor.tree==='09aef7f6f5d965f565fadabea203b50687acc255'),'DOMAIN_GENUINE_594_PARENT_REQUIRED');
   return value;
 }
+// Fixed598 inventory for its own genuine FULL baseline. No native execution is inferred here.
+function profile598(){
+  const raw=fs.readFileSync(new URL('./lib/source-impact-domain-inputs-598.json',import.meta.url));
+  assert.equal(sha(raw),'6bb15e67912b919beecf26eea50c89c227425bf79bf0e4cbf7c65bd6904afed0','DOMAIN_PROFILE_BYTES');const value=JSON.parse(raw);
+  assert.equal(value.schemaVersion,1);assert.equal(value.id,'REVIEWED_598_DOMAIN_INPUTS_C101_I100_T12');
+  assert(oid(value.referenceCommit));assert.equal(list(value.postgresModules).length,69);
+  assert.equal(list(value.postgresData).length,5);list(value.nativeEvidenceControls);list(value.setupInputs);list(value.plannerTrustChain);
+  assert.equal(list(value.continuation.files).length,12);assert(relative(value.continuation.file));
+  assert.equal(value.frozenGitAnchors.length,16);
+  for(const anchor of value.frozenGitAnchors){keys(anchor,['head','tree']);assert(oid(anchor.head)&&oid(anchor.tree));}
+  for(const [head,tree]of [['803f2c7c61237cef5c5f6b39ce0eaac5e090fb84','a5df6f32aac090c948be97a4a5532bb07482a31d'],
+    ['97d189e4a99fdab1b2764db1bfe59f96e92c3f02','b804a9d766e1828cfed6ef6927ddf6582d2dc326']])
+    assert(value.frozenGitAnchors.some(anchor=>anchor.head===head&&anchor.tree===tree),'DOMAIN_GENUINE_597_CODE_AND_NATIVE_REQUIRED');
+  return value;
+}
 function fixedProfileForReleases(before,after){
   assert.match(before,/^4\.0\.[0-9]+$/);assert.match(after,/^4\.0\.[0-9]+$/);
+  if(before==='4.0.598'||after==='4.0.598'){
+    assert(before===after,'DOMAIN_RELEASE_PROFILE_MISMATCH');return profile598();
+  }
   if(before==='4.0.597'||after==='4.0.597'){
     assert(before===after,'DOMAIN_RELEASE_PROFILE_MISMATCH');return profile597();
   }
@@ -136,6 +154,7 @@ export function analyzeSourceDomainInputs(input){
       assert(raw.length>0&&raw.length<=65536,'DOMAIN_PACKAGE_SCOPE_BOUND');return JSON.parse(raw).version;};
     const p=fixedProfileForReleases(release(input.baselineCommit),release(input.candidateCommit)),refs=[input.baselineCommit,input.candidateCommit];
     const is597=p.id==='REVIEWED_597_DOMAIN_INPUTS_C101_I100_T12';
+    const is598=p.id==='REVIEWED_598_DOMAIN_INPUTS_C101_I100_T12';
     const trees=new Map(refs.map(ref=>[ref,parseTree(git(['ls-tree','-rz','--full-tree',ref]))]));
     const objects=new Map();let selectedBytes=0;
     const load=(ids,phase)=>{
@@ -178,8 +197,8 @@ export function analyzeSourceDomainInputs(input){
     for(const module of p.postgresModules)for(let directory=path.posix.dirname(module);directory!=='.';directory=path.posix.dirname(directory))
       scopePaths.add(directory+'/package.json');
     const sql=ref=>[...trees.get(ref).keys()].filter(file=>file.startsWith('supabase/migrations/')&&file.endsWith('.sql')).sort();
-    assert.equal(sql(input.baselineCommit).length,is597?73:72,'DOMAIN_BASELINE_PROFILE_SQL_COUNT');
-    if(is597){assert.equal(modelData.get(input.baselineCommit).C.manifest.files.length,101,'DOMAIN_BASELINE_MODEL_MEMBERSHIP');
+    assert.equal(sql(input.baselineCommit).length,is598?74:is597?73:72,'DOMAIN_BASELINE_PROFILE_SQL_COUNT');
+    if(is597||is598){assert.equal(modelData.get(input.baselineCommit).C.manifest.files.length,101,'DOMAIN_BASELINE_MODEL_MEMBERSHIP');
       assert.equal(modelData.get(input.baselineCommit).I.manifest.files.length,100,'DOMAIN_BASELINE_MODEL_MEMBERSHIP');}
     const selected=ref=>[...new Set([...p.postgresModules,...p.postgresData,...sql(ref),...p.nativeEvidenceControls,
       ...p.setupInputs,...p.plannerTrustChain,...scopePaths,...p.continuation.files,p.continuation.file,
@@ -232,8 +251,8 @@ export function analyzeSourceDomainInputs(input){
     const inventory=diffInventory(inventoryRaw);
     exactHead();assert.equal(text(['for-each-ref','refs/replace']),'');
     return freeze({schemaVersion:1,status:SOURCE_DOMAIN_ANALYSIS_STATUS,analysis:'COMPLETE',...authority,
-      profile:{id:p.id,sha256:is597?'5e25fbfe6f8d08f65fcf5885f7a4be4b6387bd1e3affb012b5ad08e75ed4036f':PROFILE_SHA256,
-        scope:is597?'REVIEWED_597_INPUT_INVENTORY_ONLY':'REVIEWED_594_INPUT_INVENTORY_ONLY'},
+      profile:{id:p.id,sha256:is598?'6bb15e67912b919beecf26eea50c89c227425bf79bf0e4cbf7c65bd6904afed0':is597?'5e25fbfe6f8d08f65fcf5885f7a4be4b6387bd1e3affb012b5ad08e75ed4036f':PROFILE_SHA256,
+        scope:is598?'REVIEWED_598_INPUT_INVENTORY_ONLY':is597?'REVIEWED_597_INPUT_INVENTORY_ONLY':'REVIEWED_594_INPUT_INVENTORY_ONLY'},
       identity:{...input,actualHead:input.expectedHead,ancestorVerified:true,
         baselineTree:text(['rev-parse',input.baselineCommit+'^{tree}']),candidateTree:text(['rev-parse',input.candidateCommit+'^{tree}'])},
       completeGitDiff:{inventory,rawInventorySha256:sha(inventoryRaw),changedRows:inventory.length},
