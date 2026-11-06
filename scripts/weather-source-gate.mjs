@@ -51,7 +51,7 @@ async function verifiedTargetedSourceProof(record, context, sourceTreeSha256) {
     });
     let locator = ['weather-source-targeted-impact-v1', 'weather-source-targeted-domains-v2'].includes(record?.contractId) ? record : null;
     if (!locator) {
-      const found = await discoverTargetedSourceGate(context, sourceTreeSha256, access);
+      const found = await discoverTargetedSourceGate(context, sourceTreeSha256, { ...access, readGit });
       if (!found.locator || found.requiresVerification !== true) return null;
       locator = found.locator;
     }

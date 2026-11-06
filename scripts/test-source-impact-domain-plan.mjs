@@ -572,6 +572,33 @@ test('normal598 registry keeps genuine148 inputs and closes only known normal co
           ['UNKNOWN_EXACT_SOURCE_TRANSITION:'+followChanged]);
       }
     });
+    await t.test('exact598 DMI scheduler and normal Python caller pairs preserve PG/CIT and refuse byte drift',()=>{
+      const owners=['scripts/update-dmi-bulk.py','scripts/test-dmi-dkss-primary-mode.py','scripts/test-current-operational-python-contracts.mjs'];
+      const changes=owners.map(file=>[file,fs.readFileSync(path.join(SOURCE,file))]);
+      const actual=run598(make598(baseline598,changes,'synthetic exact reviewed DMI scheduler pairs'));
+      assert.equal(actual.selection,'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(actual.reasonCodes));
+      assert.equal(actual.commands.filter(value=>value==='node --test scripts/test-current-operational-python-contracts.mjs').length,1);
+      for(const family of ['postgres','C','I','T'])assert.equal(actual.inputDigests[family+'Before'],actual.inputDigests[family+'After']);
+      assert.equal(actual.domains.postgres.status,'NOT_APPLICABLE');assert.equal(actual.domains.historical584National.status,'NOT_APPLICABLE');
+      assert.equal(actual.skipAuthorized,false);assert.equal(actual.productionAuthority,false);
+      for(const changed of owners){
+        const variant=changes.map(([file,body])=>[file,file===changed?Buffer.concat([body,Buffer.from('\n')]):body]);
+        assert.deepEqual(run598(make598(baseline598,variant,'synthetic unreviewed DMI owner bytes')).reasonCodes,
+          ['UNKNOWN_EXACT_SOURCE_TRANSITION:'+changed]);
+      }
+    });
+    await t.test('exact598 ordinary SDK workflow oracle port selects its real target and refuses byte drift',()=>{
+      const owner='scripts/test-runner-android-sdk-reclaim.mjs',body=fs.readFileSync(path.join(SOURCE,owner));
+      const actual=run598(make598(baseline598,[[owner,body]],'synthetic exact reviewed ordinary SDK oracle port'));
+      assert.equal(actual.selection,'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(actual.reasonCodes));
+      assert.equal(actual.commands.filter(value=>value==='node --test scripts/test-runner-android-sdk-reclaim.mjs').length,1);
+      assert(!actual.commands.includes('node scripts/reclaim-runner-android-sdk.mjs'));
+      for(const family of ['postgres','C','I','T'])assert.equal(actual.inputDigests[family+'Before'],actual.inputDigests[family+'After']);
+      assert.equal(actual.domains.postgres.status,'NOT_APPLICABLE');assert.equal(actual.domains.historical584National.status,'NOT_APPLICABLE');
+      assert.equal(actual.skipAuthorized,false);assert.equal(actual.productionAuthority,false);
+      assert.deepEqual(run598(make598(baseline598,[[owner,Buffer.concat([body,Buffer.from('\n')])]],'synthetic unreviewed SDK oracle port')).reasonCodes,
+        ['UNKNOWN_EXACT_SOURCE_TRANSITION:'+owner]);
+    });
     await t.test('exact598 admin cache address admits only the reviewed whole HTML pair',()=>{
       const cacheOwner='admin.html',cacheBefore=git(root598,['cat-file','blob',baseline598+':admin.html']);
       const cacheAddress='js/ui/admin-dashboard.js?v=4.0.598&ui=admin-model-startup-20261101&map=plain-map-v3-20261104';

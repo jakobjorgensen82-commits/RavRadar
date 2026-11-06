@@ -1,3 +1,9 @@
+## 2026-11-06 – DMI-V2: kvalificerede komponenthullers omfang før tid/cursor (kandidat; produktion ÅBEN)
+
+Den gennemgåede afgrænsede rettelse tæller reelle PART/komponenthuller fra den normale kvalificerede retained-plan og current-union. Inden for samme kritiske klasse får hulomfang betydning før tid/cursor; manglende nyere originaler er ikke i sig selv vejrhuller. First3, verificeret regionalt genbrug, parameter_zones, LF7-vandstandsafgrænsning og T+3 bevares. Ukendt plan beholder den gamle konservative behandling. DMI > Copernicus > Open-Meteo samt nyere gyldige datas overtagelse bevares. Ingen budget-, score-, admin-, geometri-, original- eller no-loss-ændring og ingen ekstra resume-runde.
+
+Normal før/efter-målprøve og syntetisk 673×115×3-planlægning er dokumenteret; merprisen var ca. 3,566 s for en ren fuld tre-familie-plan, ikke en heljobskapacitetsprøve. Den enkle kilde-CI klargør Python3.12 og eksisterende requests/urllib3 før den uændrede producent; den præcise 23-trinsconsumer skal bevare de gamle 22/FULL-kontroller gennem de faktiske normale kaldere. Kildeprøver er ikke produktionsbevis. Ny almindelig generation, faktisk haleoptagelse, databevarelse og offentlig deployeffekt er fortsat ÅBNE. Se håndbog 89.318; detaljeret kørsels-/cacheevidens bliver i det private checkpoint.
+
 ## 6. november — privat følgepakke til backupbyteantal og delingsopstart
 
 Backupkandidaten fører kun de allerede producerede SQL- og ciphertext-byteantal videre i den faste capture-rapport. Fem sikre, positive filtal skal passe til SQL-totalen og de eksisterende eksport-/arkivgrænser. Filnavne, indhold og nøgler udleveres ikke. Tallene er ikke målt netværk eller egress: komprimering sker først på runneren efter eksporten. Ingen cadence, retention, abonnement eller FreeReady aktiveres.

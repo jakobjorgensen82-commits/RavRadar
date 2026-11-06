@@ -1,3 +1,9 @@
+## 2026-11-06 – DMI-V2-leveringsstatus
+
+- Kildekandidat gennemgået: kvalificeret hulomfang før tid/cursor; eksisterende sikre førsterækkefølge, fallback, maskvalidering og T+3 bevares.
+- Normalt før/efter-mål og syntetisk 673×115×3-planlægningspris foreligger; ingen nye budgetter eller ekstra resume-runde.
+- Kontrolleret levering og faktisk nygenerations-/hale-/no-loss-/deployeffekt er ÅBNE. Den normale CI-miljøport giver ingen produktionsautoritet eller bestået PG/national-evidens. Se 89.318 og privat checkpoint.
+
 ## 6. november — privat følgepakke til backupbyteantal og delingsopstart
 
 Backupkandidaten fører kun de allerede producerede SQL- og ciphertext-byteantal videre i den faste capture-rapport. Fem sikre, positive filtal skal passe til SQL-totalen og de eksisterende eksport-/arkivgrænser. Filnavne, indhold og nøgler udleveres ikke. Tallene er ikke målt netværk eller egress: komprimering sker først på runneren efter eksporten. Ingen cadence, retention, abonnement eller FreeReady aktiveres.

@@ -1,3 +1,9 @@
+## 2026-11-06 – DMI-V2: faktisk haleeffekt er endnu ikke lukket
+
+Den gamle sortering satte unik validtid før hulomfang, så et bredt senere hul ikke kunne passere et mindre tidligere hul i samme kritiske klasse. Den gennemgåede kandidat bruger kun normalt kvalificerede PART-komponenthuller; nyeste models originalunderskud alene tæller ikke. Ingen blind budgetforhøjelse eller ekstra resume-runde.
+
+Fortsat ÅBENT: kontrolleret levering, næste almindelige generations faktiske kø/optagelse, RAW-/tids-/downloadadmission, fuld databevarelse og offentlig effekt. Tre officielt fraværende ydertimer i den analyserede kørsel må ikke opfindes. Den særskilte fejlagtige runtime-etiket på et download-byte-stop er et separat fund og er ikke rettet af denne kandidat. Håndbog 89.318; rå evidence forbliver privat.
+
 ## 6. november — backuptelemetri og delingens Free-bevis er fortsat særskilte
 
 Den private wrapperrettelse bevarer producentens kendte SQL-/cipherbyteantal uden rå data og består sin normale syntetiske controllerprøve. En faktisk kopi, gendannelse og konservativ før-/efter-egressmåling mangler; daglige fulddumps er ikke dokumenteret Free-sikre. Ingen cadence eller sletning aktiveres af rapporteringen.

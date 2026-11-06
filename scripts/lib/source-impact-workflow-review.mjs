@@ -84,9 +84,30 @@ export function inverseSourceImpactPrReadGrant(value){
   return source;
 }
 
+export const SOURCE_IMPACT_DMI_PYTHON_REVIEW=Object.freeze({
+  "beforeSha256": "407a84f9a0159fff736b04624d029208451ef27e241a078eb8a0b4d16406469e",
+  "afterSha256": "742835aa72adb58c50f6f404f5c3c1308a7c11b0038a528a9b5a1ac6253b3cff",
+  "beforeBytes": 9408,
+  "afterBytes": 9822,
+  "oldPythonStep": "      - uses: actions/setup-python@v7\n        if: ${{ steps.source-content.outputs.selection != 'TARGETED' }}\n        with:\n          python-version: \"3.12\"\n\n",
+  "buildStepHeader": "      - name: Build deterministic source-tree content identity\n",
+  "earlyEnvironment": "      # Environment only: the unchanged producer still verifies the whole\n      # real plan and ROOT review before any target or source receipt.\n      - uses: actions/setup-python@v7\n        with:\n          python-version: \"3.12\"\n\n      - name: Install declared requests dependency before source planning\n        timeout-minutes: 2\n        run: >-\n          python -m pip install --disable-pip-version-check --no-input\n          --timeout 15 --retries 0 --only-binary=:all: 'requests>=2.32,<3'\n          && python -c \"import requests.adapters; import urllib3.util.retry\"\n\n"
+});
+export function inverseSourceImpactDmiPython(value){
+  assert.equal(arguments.length,1);assert.equal(typeof value,'string');
+  let source=value.replace(/\r\n/g,'\n');const review=SOURCE_IMPACT_DMI_PYTHON_REVIEW;
+  if(sha(source)!==review.afterSha256)return source;
+  assert.equal(Buffer.byteLength(source),review.afterBytes);
+  source=once(source,review.earlyEnvironment+review.buildStepHeader,review.buildStepHeader);
+  const anchor='      - name: Install source-gate dependencies\n';
+  source=once(source,anchor,review.oldPythonStep+anchor);
+  assert.equal(Buffer.byteLength(source),review.beforeBytes);assert.equal(sha(source),review.beforeSha256);
+  return source;
+}
+
 export function projectSourceImpactWorkflowFull(value){
   assert.equal(arguments.length,1);assert.equal(typeof value,'string');
-  let source=inverseSourceImpactPrReadGrant(inverseSourceImpactSdkEarlyLinux(inverseSourceImpactHourEarlyLinux(value)));
+  let source=inverseSourceImpactPrReadGrant(inverseSourceImpactSdkEarlyLinux(inverseSourceImpactHourEarlyLinux(inverseSourceImpactDmiPython(value))));
   if(sha(source)===SOURCE_IMPACT_FULL_WORKFLOW_SHA256)return source;
   const selected=/steps\.source-content\.outputs\.(?:selection|receipt_path)|test-source-(?:impact|targeted)-/.test(source);
   if(selected){

@@ -68,7 +68,7 @@ let native,namespace,sourceContent,fullBody,phaseBody,fullJobBody,selectedJobBod
 let immutableFullZip,immutablePhaseZip;
 let maps,zips,selectedReceipt,selectedZip,selectedMetadata,rows=[],cases=0,actualProcesses=0,calls=0;
 const state={movedReview:false,missingReview:false,wrongPlan:false,merged:false,
-  baseTip:null,hintOverride:null,duplicateReview:false,malformedReview:false,headMismatch:false,expiredFull:false,laterNegative:false};
+  baseTip:null,hintOverride:null,duplicateReview:false,malformedReview:false,headMismatch:false,expiredFull:false,laterNegative:false,modernWorkflow:false};
 const fallbackOnlyCommits=new Set();let observedRoutes=[],unexpectedRoutes=[],fixtureFailures=[],fallbackDiscoveries=[];
 const scenarios=[];
 const moduleAt=async file=>import(pathToFileURL(path.join(root,file)).href);
@@ -108,11 +108,12 @@ function run(selected){return {id:selected?selectedRun:fullRun,run_attempt:1,hea
   conclusion:selected&&!state.merged?null:'success',repository:{full_name:native.ORIGIN.repository},
   head_repository:{full_name:native.ORIGIN.repository},pull_requests:[]};}
 function jobs(selected){
-  const names=namespace.TARGETED_SOURCE_STEP_NAMES;
+  const modern=selected&&state.modernWorkflow;
+  const names=modern?namespace.TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES:namespace.TARGETED_SOURCE_STEP_NAMES;
   return {id:selected?selectedJob:fullJob,run_id:selected?selectedRun:fullRun,run_attempt:1,head_sha:selected?head:base,
     name:namespace.PULL_REQUEST_SOURCE_JOB,status:selected&&!state.merged?'in_progress':'completed',
     conclusion:selected&&!state.merged?null:'success',steps:names.map((name,index)=>({name,number:index+1,status:'completed',
-      conclusion:selected&&index>=5&&index<=19?'skipped':'success',started_at:stamp(index),completed_at:stamp(index+1)}))};
+      conclusion:selected&&(modern?(index>=7&&index<=20):(index>=5&&index<=19))?'skipped':'success',started_at:stamp(index),completed_at:stamp(index+1)}))};
 }
 function meta(id,name,body,runId,producer,n){return{id,name,digest:'sha256:'+sha(body),expired:false,size_in_bytes:body.length,
   workflow_run:{id:runId,head_sha:producer},created_at:stamp(n)};}
@@ -230,7 +231,8 @@ try{
   checkout(base);assert.notEqual(base,REFERENCE);assert.deepEqual(text(root,['rev-list','--parents','-n','1',base]).split(' '),[base]);
   native=await moduleAt('scripts/native-postgres-evidence.mjs');
   const gate=await moduleAt('scripts/lib/weather-source-gate.mjs'),consumer=await moduleAt('scripts/source-targeted-consumer.mjs');
-  namespace={...gate,TARGETED_SOURCE_STEP_NAMES:consumer.TARGETED_SOURCE_STEP_NAMES};
+  namespace={...gate,TARGETED_SOURCE_STEP_NAMES:consumer.TARGETED_SOURCE_STEP_NAMES,
+    TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES:consumer.TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES};
   sourceContent=await moduleAt('scripts/lib/source-tree-content.mjs');
   ({coordinateTargetedSourceProducer:coordinate}=await moduleAt('scripts/source-targeted-producer.mjs'));
   ({decideTargetedSourceGate:decide,discoverTargetedSourceGate:discover}=consumer);accessFactory=native.sourceImpactEvidenceAccess;
@@ -445,6 +447,31 @@ try{
     assert.equal(calls-before,positivePhysicalCalls-2,'Same normal FULL qualification; RED precedes two post-target reads');
     assert.equal(rows.length,0);assert.deepEqual(unexpectedRoutes,[]);assert.deepEqual(fixtureFailures,[]);assert.deepEqual(fallbackDiscoveries,[]);
     cases++;scenarios.push('legacy-window '+flag+' preserves complete CONTROL RED with zero commands');
+  }
+  if(fixture598){
+    // Same real producer -> discovery -> consumer path, genuine148/C101/I100/T12
+    // fixture inputs and synthetic API/target bodies; both ROOT-review reads run.
+    const modernWorkflow='.github/workflows/validate-pull-request.yml';
+    const modernTree=rewrite(candidateTree,[[modernWorkflow,fs.readFileSync(path.join(SOURCE,modernWorkflow))]]);
+    configure(commit(modernTree,[base],'synthetic exact modern Python environment workflow'));
+    state.modernWorkflow=true;baselinePlan=plan({baselineCommit:base,candidateCommit:head,expectedHead:head});
+    assert.equal(baselinePlan.selection,'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(baselinePlan.reasonCodes));rebuildMaps();
+    const modernProduction=await coordinate();assert.equal(modernProduction.selection,'TARGETED');
+    selectedReceipt=modernProduction.receipt;
+    main=commit(modernTree,[base,head],'synthetic modern same-tree reviewed main');checkout(main);state.merged=true;
+    selectedZip=zip(Buffer.from(JSON.stringify(selectedReceipt)+'\n'),'source-targeted-impact-proof.json');
+    selectedMetadata=meta(selectedArtifactId,selectedReceipt.artifactName,selectedZip,selectedRun,head,22);rebuildMaps();
+    const modernContext={...context,GITHUB_SHA:main};let workflowReads=0;
+    const modernGit=(args,options={})=>{if(args[0]==='cat-file'&&args[1]==='blob'&&args[2]===head+':'+modernWorkflow)workflowReads++;return readGit(args,options);};
+    const modernAccess=accessFactory({env:{GITHUB_TOKEN:'synthetic-never-live'}});
+    const modernFound=await discover(modernContext,content,{...modernAccess,readGit:modernGit});
+    assert.equal(modernFound.requiresVerification,true);assert.equal(modernFound.locator.contractId,'weather-source-targeted-domains-v2');
+    const modernDecision=await decide(modernFound.locator,modernContext,{...modernAccess,readGit:modernGit});
+    assert.equal(modernDecision.required,false);assert.equal(workflowReads,2,'Both discovery and decide bind the actual producer workflow blob');
+    assert.equal(modernDecision.scope,'TARGETED_DOMAIN_COMMAND_RESULTS_ONLY');
+    assert.equal(modernDecision.independentControlReview,'VERIFIED_EXACT_ROOT_PR_REVIEW');
+    cases++;scenarios.push('actual modern23 discovery -> decide -> fresh ROOT CONTROL review uses genuine workflow bytes');
+    configure(positiveHead);state.modernWorkflow=false;baselinePlan=plan({baselineCommit:base,candidateCommit:head,expectedHead:head});rebuildMaps();
   }
   for(const flag of ['missingReview','wrongPlan','movedReview']){
     configure(positiveHead);baselinePlan=plan({baselineCommit:base,candidateCommit:head,expectedHead:head});state[flag]=true;rebuildMaps();
