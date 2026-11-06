@@ -619,11 +619,11 @@ test('normal598 registry keeps genuine148 inputs and closes only known normal co
       assert.deepEqual(refused.reasonCodes,['UNKNOWN_SENSITIVE_BINDING_OR_REFLECTIVE_SURFACE:'+client]);
     });
     await t.test('exact598 admin cache publication closes both actual production contracts and refuses owner drift',()=>{
-      const owners=['service-worker.js','scripts/test-public-cold-start-4.0.303.mjs'];
+      const owners=['admin.html','service-worker.js','scripts/test-public-cold-start-4.0.303.mjs'];
       const changes=owners.map(file=>[file,fs.readFileSync(path.join(SOURCE,file))]);
       for(const [owner,body]of changes){
         const actual=run598(make598(baseline598,[[owner,body]],'synthetic exact admin cache publication owner'));
-        assert.equal(actual.selection,owner==='service-worker.js'?'TARGETED_DOMAINS':'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(actual.reasonCodes));
+        assert.equal(actual.selection,owner==='scripts/test-public-cold-start-4.0.303.mjs'?'CONTROL_QUALIFICATION_REQUIRED':'TARGETED_DOMAINS',JSON.stringify(actual.reasonCodes));
         for(const command of ['node scripts/test-public-cold-start-4.0.303.mjs','node scripts/test-admin-config-production-contract-4.0.94.mjs'])
           assert.equal(actual.commands.filter(value=>value===command).length,1);
         for(const family of ['postgres','C','I','T'])assert.equal(actual.inputDigests[family+'Before'],actual.inputDigests[family+'After']);

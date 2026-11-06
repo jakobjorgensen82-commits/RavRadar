@@ -89,9 +89,14 @@ assert.ok(bootstrap.includes(`await import("./app.js${suffix}")`));
 const admin = await fs.readFile(new URL('../admin.html', import.meta.url), 'utf8');
 const dashboard = await fs.readFile(new URL('../js/ui/admin-dashboard.js', import.meta.url), 'utf8');
 const adminDependencySuffix = `?v=${releaseVersion}&ui=admin-model-startup-20261101&map=plain-map-v3-20261104`;
-const adminEntrypointSuffix = `${adminDependencySuffix}&observations=local-scope-20261106`;
+const previousAdminEntrypointSuffix = `${adminDependencySuffix}&observations=local-scope-20261106`;
+const adminStudySuffix = `?v=${releaseVersion}&study=frozen-replay-noise-20261106`;
+const adminEntrypointSuffix = `${previousAdminEntrypointSuffix}&study=frozen-replay-noise-20261106`;
 assert.ok(admin.includes(`src="js/ui/admin-dashboard.js${adminEntrypointSuffix}"`));
 assert.ok(dashboard.includes(`../services/data-service.js${adminDependencySuffix}`));
+assert.ok(dashboard.includes(`./admin-private-trip-study.js${adminStudySuffix}`));
+assert.ok(worker.replaceAll('${APP_VERSION}',releaseVersion).includes(`./js/ui/admin-private-trip-study.js${adminStudySuffix}`),
+  'Offline-listen skal følge den præcise nye statistikimportadresse.');
 
 // Exercise the existing worker with earlier same-version assets in cache.
 // The mobile UI update must bypass version-only, footer-only and earlier
@@ -108,6 +113,8 @@ const cached = new Map([
   [`${origin}/bootstrap.js${previousShareSuffix}`, new Response('share-bootstrap')],
   [`${origin}/app.js${previousShareSuffix}`, new Response('share-app')],
   [`${origin}/js/ui/admin-dashboard.js${adminDependencySuffix}`, new Response('old-admin')],
+  [`${origin}/js/ui/admin-dashboard.js${previousAdminEntrypointSuffix}`, new Response('old-observations-admin')],
+  [`${origin}/js/ui/admin-private-trip-study.js?v=${releaseVersion}`, new Response('old-private-study')],
   [`${origin}/js/services/data-service.js${adminDependencySuffix}`, new Response('current-admin-data')],
 ]);
 const previousDeliveredAssets = [
@@ -161,6 +168,8 @@ for(let pass=0;pass<2;pass++){
     'The new admin entry must bypass an old same-version URL and then reuse its own cached response.');
   assert.equal(await cached.get(`${origin}/js/ui/admin-dashboard.js${adminDependencySuffix}`).clone().text(),'old-admin',
     'An admin entry update must not delete an older cached asset.');
+  assert.equal(await cached.get(`${origin}/js/ui/admin-dashboard.js${previousAdminEntrypointSuffix}`).clone().text(),'old-observations-admin',
+    'Den tidligere leverede observationsadresse bevares som særskilt gammel kode.');
 }
 const adminDataRequest={method:'GET',mode:'cors',url:`${origin}/js/services/data-service.js${adminDependencySuffix}`};
 let adminDataResponse;
@@ -168,6 +177,19 @@ handlers.get('fetch')({request:adminDataRequest,respondWith:value=>{adminDataRes
 assert.equal(await (await adminDataResponse).text(),'current-admin-data',
   'The unchanged admin data-service address must remain reusable without a network request.');
 assert.deepEqual(fetched,[`${origin}/bootstrap.js${suffix}`,`${origin}/app.js${suffix}`,adminRequest.url]);
+
+// A fresh dashboard address must lead to a fresh child address, even when the
+// old worker already cached both previous same-version modules.
+const studyRequest={method:'GET',mode:'cors',url:`${origin}/js/ui/admin-private-trip-study.js${adminStudySuffix}`};
+for(let pass=0;pass<2;pass++){
+  let response;
+  handlers.get('fetch')({request:studyRequest,respondWith:value=>{response=value;}});
+  assert.equal(await (await response).text(),`new:${studyRequest.url}`);
+  assert.equal(await cached.get(`${origin}/js/ui/admin-private-trip-study.js?v=${releaseVersion}`).clone().text(),'old-private-study',
+    'Den nye statistikadresse må ikke genbruge eller slette den gamle v-only-kopi.');
+}
+assert.deepEqual(fetched,[`${origin}/bootstrap.js${suffix}`,`${origin}/app.js${suffix}`,adminRequest.url,studyRequest.url]);
+
 
 
 const maskSha='a'.repeat(64);
