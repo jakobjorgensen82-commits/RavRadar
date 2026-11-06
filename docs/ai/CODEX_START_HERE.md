@@ -1,3 +1,10 @@
+## 7. november — præcis SOURCE-inventarliste før ældre workflowprøve
+
+Den særskilte Source-kandidat har ét yderligere eksisterende native-kildeworkflow. Den normale workflowprøve må kun fjerne netop dette navn fra sin historiske testvisning efter den normale fulde Source-output-/C/I/RAW-kontrol og hele filens præcise byteantal og SHA. NULL eller delvis udstedelse giver ingen adgang. Den almindelige 598-liste, de tre vedligeholdelsesfiler, alle gamle assertions og øvrige afslag bevares. Positiv målprøve køres først på normalt udstedt output; dette er en lokal kontrolrettelse og ingen aktivering.
+
+## 7. november — eksisterende vedligeholdelsesforløb før historisk workflowliste
+
+Den normale workflowprøve verificerer de tre eksisterende backup-, historik- og CLI-restore-workflows med fuldt byteantal og SHA før den uændrede ældre inventarliste bruges. Ukendte, manglende, dobbelte eller ændrede filer afvises fortsat. Alle gamle assertions og indholds-/sourcegates bevares; ingen produktionsworkflow ændres. Den komplette normale prøve skal faktisk bestå på den rigtige, rene kandidat før ny afsendelse.
 ## 7. november — privat tidsmåling før ny SOURCE-afledning
 
 Den eksisterende scalarplanlægning får kun afgrænsede fase-/snapshotmål og tællere for startede/færdige kystdele. Encoder, værdimasker, originale filer, to-minuttersfrist og transportstop bevares. Den eksisterende fysiske CLI-målprøve er bestået lokalt; faktisk årsagsmåling kræver en senere almindelig kørsel efter levering. Ingen tidsgevinst eller lukket timeoutfejl påstås.
