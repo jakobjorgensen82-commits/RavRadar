@@ -1,3 +1,11 @@
+## 6. november — 4.0.599: gennemgået SOURCE-kandidat, fortsat inaktiv
+
+Kandidat 4.0.599 samler SOURCEs normale original-/checkpoint-/runtime-/førskrivnings-/readiness-kaldere med den ægte 4.0.598-forgænger. Den bevarer hele historiske funktioner, migrationer, originaldata og offentliggjorte scorer. Den nye native-kæde adskiller genuine598-forgængerens request fra den aktuelle SOURCE-databasekontrol og bruger samme ejede PostgreSQL-instans. Historiske NULL-/598-pakkeprøver er afgrænset til deres faktiske fase med normal outputkontrol før et eventuelt ikke-relevant resultat.
+
+Det er gennemgået lokal kode og afgrænsede førudstedelsesprøver. Den samlede revision er ikke færdig eller aktiveret. Normal versions-/CODE-/C/I/T-/bindings-/outputudstedelse, rigtig Linux/native/national-/runner-tab-kvalifikation, sikker installation og en ny normal vejrgenerations private/offentlige effekt er fortsat nødvendige. Scoreformel, kildeprioritet, adminpunkter og geometri ændres ikke. Den normale topversionssynk af kystdata og zoner må kun ændre deres versionsfelter.
+
+Assistentens engelske vindspørgsmål bevarer nu det lokale emne til den efterfølgende samtale om at søge i vandet. Førstesvaret og de kanoniske waders-svar bevares; et ukendt ekstra spørgsmål må ikke opsluges af et delvist match. Den normale lokale regression kører altid, også uden et særskilt prøveflag. Klientændringen er et reelt modelinput og skal indgå før den nye normale C/I/T-udstedelse; den må ikke leveres som en ubundet598-rettelse.
+
 > **Isoleret SOURCE-kilde — 2026-11-05, fortsat ikke udstedt eller aktiveret.** Den normale opstart afviser først den faktiske NULL-profil, før CODE-læsning, guardian, leverandørarbejde eller SDK. Den kendte afvisning får nu sin præcise faste fejlkode i den eksisterende lukkede diagnostik; rå fejltekst og kontrolrækkefølge ændres ikke.
 >
 > En ny prøve starter den rigtige, uændrede Node24-opstart med to inputvarianter og de faktiske NULL-metadata. Den skal kræve det præcise afslag, fysisk child-lukning og uændrede kilde-/outputbytes. Prøven er endnu ikke udført. Den beviser ikke positiv SOURCE-adgang, FD3/clock, fireminuttersgrænse, SAVE, B/S/T, runner-tab eller national kapacitet. Dens NULL-præmis må ikke genskabes kunstigt på et senere udstedt head.

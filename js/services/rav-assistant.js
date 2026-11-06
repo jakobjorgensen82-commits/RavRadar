@@ -193,7 +193,7 @@ function generalLocalIntent(question) {
   const text = normalizeLocalQuestion(question);
   if (/^(?:hvad kan (?:du|ravradar)(?: hjælpe (?:(?:mig|os) )?med)?|hvad kan jeg spørge (?:dig|ravradar) om|hvilke spørgsmål kan du svare på|was (?:kannst du|kann ravradar)(?: für mich tun)?|wobei (?:kannst du|kann ravradar) (?:(?:mir|uns) )?helfen|what can (?:you|ravradar) (?:do|help (?:(?:me|us) )?with)|what can i ask you)[?!.]*$/iu.test(text)) return 'capabilities';
   if (/^(?:hvad er (?:er )?(?:(?:en|et) )?kesse(?: til ravjagt)?|(?:hvad bruger (?:man|jeg|vi)|hvordan bruger (?:jeg|vi|man)) (?:en )?kesse(?: til ravjagt)?|was ist (?:(?:ein|eine|einen|der|die|das) )?(?:(?:bernstein(?:-|\s*)?)?kescher|(?:bernstein(?:-|\s*)?)?kes{1,2}e)(?: für die bernsteinsuche)?|what is (?:(?:a|an|the) )?amber(?: hunting)? net)[?!.]*$/iu.test(text)) return 'amber-net';
-  if (/^(?:(?:hvad er (?:en )?god vind|hvilken (?:vind|vindretning) er (?:god|bedst))(?: til (?:rav|ravjagt))?|hvad betyder vinden for ravjagt|(?:was ist (?:ein )?guter wind|welcher wind ist (?:gut|am besten))(?: (?:für die bernsteinsuche|für bernstein))?|(?:what is (?:a )?good wind|which wind is best)(?: for (?:amber|amber hunting))?)[?!.]*$/iu.test(text)) return 'wind';
+  if (/^(?:(?:hvad er (?:en )?god vind|hvilken (?:vind|vindretning) er (?:god|bedst))(?: til (?:rav|ravjagt))?|hvad betyder vinden for ravjagt|(?:was ist (?:ein )?guter wind|welcher wind ist (?:gut|am besten))(?: (?:für die bernsteinsuche|für bernstein))?|(?:what is (?:a )?good wind|which wind is best|what wind direction is good)(?: for (?:amber|amber hunting))?)[?!.]*$/iu.test(text)) return 'wind';
   return null;
 }
 
