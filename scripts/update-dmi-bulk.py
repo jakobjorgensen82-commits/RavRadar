@@ -2345,6 +2345,7 @@ def prioritize_marine_assets_for_current_gaps(
     *,
     critical_by_time: dict[str, bool] | None = None,
     critical_priority_by_time: dict[str, int] | None = None,
+    qualified_gap_pair_counts_by_time: dict[str, int] | None = None,
     direct_valid_times: set[str] | None = None,
     regional_gap_pairs_by_time: dict[
         str, set[tuple[str, str]]
@@ -2364,7 +2365,7 @@ def prioritize_marine_assets_for_current_gaps(
         (epoch(value) for value in direct_valid_times), default=None,
     ) if direct_valid_times else None
 
-    def priority(asset: dict[str, Any]) -> tuple[int, int, int, int, float, int, int, str, str]:
+    def priority(asset: dict[str, Any]) -> tuple[int, int, int, int, int, float, int, int, str, str]:
         valid_time = str(canonical_time(asset.get("valid")) or "")
         valid_epoch = epoch(valid_time)
         direct_missing_pairs = (
@@ -2385,6 +2386,12 @@ def prioritize_marine_assets_for_current_gaps(
         if configured_priority not in (0, 1, 2):
             configured_priority = 0 if (critical_by_time or {}).get(valid_time) else 2
         critical_priority = 0 if real_gap_count else configured_priority
+        qualified_count = (qualified_gap_pair_counts_by_time or {}).get(valid_time)
+        qualified_count = (qualified_count if type(qualified_count) is int
+                           and qualified_count >= 0 else 0)
+        # Latest-native inventory deficits are NOT weather holes. Only the
+        # normal qualified retained scalar masks/current union give a count.
+        gap_work_count = qualified_count
         return (
             # A fallback current gap must not outrank every missing DMI-only
             # water-level hour for the whole 118-hour window. Both are real
@@ -2393,10 +2400,13 @@ def prioritize_marine_assets_for_current_gaps(
             0 if regional_gap_count
                 and valid_time in (verified_reusable_valid_times or set())
                 else 1,
-            0 if cursor_epoch is None or (
+            0 if (
                 target_start_epoch is not None
                 and target_start_epoch <= valid_epoch < target_start_epoch + 3 * 3600
             ) else 1,
+            # Distinct valid times previously sorted before gap count, so a
+            # broad real tail hole could never outrank a sparse front hole.
+            -gap_work_count if critical_priority == 0 else 0,
             0 if cursor_epoch is None or valid_epoch > cursor_epoch else 1,
             valid_epoch,
             -real_gap_count,
@@ -2431,6 +2441,11 @@ def prioritize_dkss_primary_assets(
         critical_priority_by_time={
             valid_time: int(row["criticalPriority"])
             for valid_time, row in requirements.items()
+        },
+        qualified_gap_pair_counts_by_time={
+            valid_time: int(row["criticalGapPairCount"])
+            for valid_time, row in requirements.items()
+            if row.get("retainedScalarPlanQualified") is True
         },
         direct_valid_times=direct_valid_times,
         regional_gap_pairs_by_time=regional_gap_pairs_by_time,
@@ -2483,6 +2498,11 @@ def dkss_first_turn_order_diagnostic(
             "currentMissingPairCount": current_missing,
             "currentUpgradePairCount": current_upgrade,
             "regionalCurrentPotentialPairCount": regional_missing,
+            "retainedScalarPlanQualified": row.get("retainedScalarPlanQualified") is True,
+            "retainedScalarGapPairCount": (row.get("retainedScalarGapPairCount")
+                if type(row.get("retainedScalarGapPairCount")) is int and row["retainedScalarGapPairCount"] >= 0 else None),
+            "criticalGapPairCount": (row.get("criticalGapPairCount")
+                if type(row.get("criticalGapPairCount")) is int and row["criticalGapPairCount"] >= 0 else None),
         })
     return {
         "schemaVersion": 1, "available": True,
@@ -2537,10 +2557,10 @@ DKSS_PRIMARY_STRIDE_REQUIRED_COMPONENTS = {
 }
 
 
-def qualified_scalar_gap_components_for_asset(
+def qualified_scalar_gap_part_pairs_for_asset(
     plan: dict[str, Any] | None, collection: str, valid_time: str,
     target_ids: list[str],
-) -> frozenset[str] | None:
+) -> frozenset[tuple[str, str]] | None:
     """Scope retained demand through normal parameter-zone admission only.
 
     Public PART parent identities come from the exact validated target registry.
@@ -2565,16 +2585,25 @@ def qualified_scalar_gap_components_for_asset(
             "waterLevel": DKSS_PRIMARY_ALWAYS_REQUIRED_COMPONENTS["waterLevel"],
             "waterTemperature": DKSS_PRIMARY_STRIDE_REQUIRED_COMPONENTS["waterTemperature"],
         }
-        result: set[str] = set()
+        result: set[tuple[str, str]] = set()
         for component, fields in component_fields.items():
             eligible = {zone["id"] for zone in parameter_zones(collection, fields[0], zones)}
             part_ids = [part_id for part_id in target_ids if f"PART::{part_id}" in eligible]
-            if component in scalar_gap_components_at(plan, valid_time, part_ids=part_ids):
-                result.add(component)
+            for part_id in part_ids:
+                if component in scalar_gap_components_at(plan, valid_time, part_ids=(part_id,)):
+                    result.add((part_id, component))
         return frozenset(result)
     except (KeyError, TypeError, ValueError):
         # Unknown context preserves the old conservative native classification.
         return None
+
+
+def qualified_scalar_gap_components_for_asset(
+    plan: dict[str, Any] | None, collection: str, valid_time: str,
+    target_ids: list[str],
+) -> frozenset[str] | None:
+    pairs = qualified_scalar_gap_part_pairs_for_asset(plan, collection, valid_time, target_ids)
+    return None if pairs is None else frozenset(component for _, component in pairs)
 
 
 def _exact_validated_dmi_component_present(
@@ -2696,11 +2725,11 @@ def classify_dkss_primary_asset(
     normalized_targets = sorted({str(value or "").strip() for value in target_ids if str(value or "").strip()})
     normalized_zones = sorted({str(value or "").strip() for value in active_zone_ids if str(value or "").strip()})
     missing_components: set[str] = set()
-    scoped_scalar_gaps = (qualified_scalar_gap_components_for_asset(
+    scoped_scalar_gap_pairs = (qualified_scalar_gap_part_pairs_for_asset(
         scalar_gap_plan, collection, valid_time, normalized_targets,
     ) if valid_time else None)
-    scalar_domain_qualified = scoped_scalar_gaps is not None
-    retained_scalar_gaps = scoped_scalar_gaps or frozenset()
+    scalar_domain_qualified = scoped_scalar_gap_pairs is not None
+    retained_scalar_gaps = frozenset(component for _, component in (scoped_scalar_gap_pairs or ()))
     scalar_native_kinds = {"wind": "windTail", "waterLevel": "waterLevel",
                            "waterTemperature": "waterTemperature"}
     valid_regional_gap_count = (
@@ -2814,6 +2843,13 @@ def classify_dkss_primary_asset(
         "regionalCurrentPotentialPairCount": valid_regional_gap_count,
         "missingComponentKinds": sorted(missing_components),
     }
+    if scalar_domain_qualified:
+        result.update({
+            "retainedScalarPlanQualified": True,
+            "retainedScalarGapPairCount": len(scoped_scalar_gap_pairs),
+            "criticalGapPairCount": (len(scoped_scalar_gap_pairs)
+                                     + current_missing_pair_count + valid_regional_gap_count),
+        })
     if planning_covered_pair_keys is not None or parent_current_zone_ids:
         result["optionalParentCurrentCount"] = len(parent_current_zone_ids)
         result["optionalParentCurrentMissingCount"] = parent_current_missing_count

@@ -88,9 +88,10 @@ assert.ok(index.includes(`src="bootstrap.js${suffix}"`));
 assert.ok(bootstrap.includes(`await import("./app.js${suffix}")`));
 const admin = await fs.readFile(new URL('../admin.html', import.meta.url), 'utf8');
 const dashboard = await fs.readFile(new URL('../js/ui/admin-dashboard.js', import.meta.url), 'utf8');
-const adminSuffix = `?v=${releaseVersion}&ui=admin-model-startup-20261101&map=plain-map-v3-20261104`;
-assert.ok(admin.includes(`src="js/ui/admin-dashboard.js${adminSuffix}"`));
-assert.ok(dashboard.includes(`../services/data-service.js${adminSuffix}`));
+const adminDependencySuffix = `?v=${releaseVersion}&ui=admin-model-startup-20261101&map=plain-map-v3-20261104`;
+const adminEntrypointSuffix = `${adminDependencySuffix}&observations=local-scope-20261106`;
+assert.ok(admin.includes(`src="js/ui/admin-dashboard.js${adminEntrypointSuffix}"`));
+assert.ok(dashboard.includes(`../services/data-service.js${adminDependencySuffix}`));
 
 // Exercise the existing worker with earlier same-version assets in cache.
 // The mobile UI update must bypass version-only, footer-only and earlier
@@ -106,6 +107,8 @@ const cached = new Map([
   [`${origin}/app.js${previousUiSuffix}`, new Response('account-app')],
   [`${origin}/bootstrap.js${previousShareSuffix}`, new Response('share-bootstrap')],
   [`${origin}/app.js${previousShareSuffix}`, new Response('share-app')],
+  [`${origin}/js/ui/admin-dashboard.js${adminDependencySuffix}`, new Response('old-admin')],
+  [`${origin}/js/services/data-service.js${adminDependencySuffix}`, new Response('current-admin-data')],
 ]);
 const previousDeliveredAssets = [
   [previousPanelSuffix, 'panel'], [previousAssistantSuffix, 'assistant'], [previousDomainSuffix, 'domain'],
@@ -147,6 +150,25 @@ for (const file of ['bootstrap.js', 'app.js']) {
     'The exact new UI asset must be reusable from its own cache key.');
 }
 assert.deepEqual(fetched,[`${origin}/bootstrap.js${suffix}`,`${origin}/app.js${suffix}`]);
+
+// The admin-only copy update gets a new exact key; its unchanged data import
+// must still reuse its existing key. Exercise the real service-worker handler.
+const adminRequest={method:'GET',mode:'cors',url:`${origin}/js/ui/admin-dashboard.js${adminEntrypointSuffix}`};
+for(let pass=0;pass<2;pass++){
+  let response;
+  handlers.get('fetch')({request:adminRequest,respondWith:value=>{response=value;}});
+  assert.equal(await (await response).text(),`new:${adminRequest.url}`,
+    'The new admin entry must bypass an old same-version URL and then reuse its own cached response.');
+  assert.equal(await cached.get(`${origin}/js/ui/admin-dashboard.js${adminDependencySuffix}`).clone().text(),'old-admin',
+    'An admin entry update must not delete an older cached asset.');
+}
+const adminDataRequest={method:'GET',mode:'cors',url:`${origin}/js/services/data-service.js${adminDependencySuffix}`};
+let adminDataResponse;
+handlers.get('fetch')({request:adminDataRequest,respondWith:value=>{adminDataResponse=value;}});
+assert.equal(await (await adminDataResponse).text(),'current-admin-data',
+  'The unchanged admin data-service address must remain reusable without a network request.');
+assert.deepEqual(fetched,[`${origin}/bootstrap.js${suffix}`,`${origin}/app.js${suffix}`,adminRequest.url]);
+
 
 const maskSha='a'.repeat(64);
 const maskRequest={method:'GET',mode:'cors',url:`${origin}/data/map/current-arrow-land-mask.json?sha256=${maskSha}`};

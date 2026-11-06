@@ -1,4 +1,4 @@
-// Exact normal Source PR script/workflow adaptation over actual main876.
+// Exact Source PR adaptation: genuine876 package, reviewed ordinary DMI environment and fixed Source bridge.
 // Pure validation only; no native result, source session or production claim.
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
@@ -15,6 +15,34 @@ function original(relative,pin){
 }
 const PACKAGE_SHA256="4280d63bde98249b01123a05e49fbffb2614615390a4ff68531ec853e579d3b0";
 const WORKFLOW_SHA256="407a84f9a0159fff736b04624d029208451ef27e241a078eb8a0b4d16406469e";
+const ORDINARY_DMI_WORKFLOW_SHA256="742835aa72adb58c50f6f404f5c3c1308a7c11b0038a528a9b5a1ac6253b3cff";
+const ORDINARY_DMI_REQUIREMENTS_WORKFLOW_SHA256="2947d429c6df45cfc415ace970f4e5efc89410ca60d277de19529dde73882843";
+const SOURCE_DMI_BRIDGED_WORKFLOW_SHA256="6c97fc06dc1bf683479d7e83895b439573ab743b533c61c7edab220d0e796fc7";
+const SOURCE_DMI_REQUIREMENTS_BRIDGED_WORKFLOW_SHA256="d57308187a396d86f32ea080f16bb9a16c8b21d910b0d450e2a5636670fca9d1";
+const DMI_ENVIRONMENT_HUNKS=[
+  {
+    "before": "      - uses: actions/setup-python@v7\n        if: ${{ steps.source-content.outputs.selection != 'TARGETED' }}\n        with:\n          python-version: \"3.12\"\n\n",
+    "after": ""
+  },
+  {
+    "before": "      - name: Build deterministic source-tree content identity\n",
+    "after": "      # Environment only: the unchanged producer still verifies the whole\n      # real plan and ROOT review before any target or source receipt.\n      - uses: actions/setup-python@v7\n        with:\n          python-version: \"3.12\"\n\n      - name: Install declared requests dependency before source planning\n        timeout-minutes: 2\n        run: >-\n          python -m pip install --disable-pip-version-check --no-input\n          --timeout 15 --retries 0 --only-binary=:all: 'requests>=2.32,<3'\n          && python -c \"import requests.adapters; import urllib3.util.retry\"\n\n      - name: Build deterministic source-tree content identity\n"
+  }
+];
+const DMI_REQUIREMENTS_HUNKS=[
+  {
+    "before": "Install declared requests dependency before source planning",
+    "after": "Install declared DMI dependencies before source planning"
+  },
+  {
+    "before": "--timeout 15 --retries 0 --only-binary=:all: 'requests>=2.32,<3'",
+    "after": "--timeout 15 --retries 0 --only-binary=:all: -r requirements-dmi.txt"
+  },
+  {
+    "before": "&& python -c \"import requests.adapters; import urllib3.util.retry\"",
+    "after": "&& python -c \"import requests.adapters; import urllib3.util.retry; import eccodes; assert eccodes.codes_get_api_version() == '2.48.2'\""
+  }
+];
 const ASSISTANT_BEFORE="node scripts/build-assistant-later-h0-successor.mjs --active --check && node scripts/national584-source-evidence.mjs assistant-after597-source";
 const ASSISTANT_AFTER="node --input-type=module -e \"import {withSource598CodeParent} from './scripts/check-assistant-later-h0-predecessor-source.mjs'; await withSource598CodeParent(()=>{});\" && npm run test:source-producer-source && node scripts/national584-source-evidence.mjs source";
 const WORKFLOW_HUNKS=[
@@ -51,6 +79,27 @@ export function sourcePrHistoricalPackageInspection(pkg){
 export function verifySourcePrWorkflow(source){
   requireSourceProducerOutput();assert.equal(arguments.length,1);assert.equal(typeof source,'string');
   let expected=original('.github/workflows/validate-pull-request.yml',WORKFLOW_SHA256);
+  for(const row of DMI_ENVIRONMENT_HUNKS){assert.equal(expected.split(row.before).length,2);expected=expected.replace(row.before,()=>row.after);}
+  assert.equal(sha(expected),ORDINARY_DMI_WORKFLOW_SHA256,'Exact historical7428 DMI environment successor, not a relabelled876 workflow');
+  let historicalSource=expected;
+  for(const row of WORKFLOW_HUNKS){assert.equal(historicalSource.split(row.before).length,2);historicalSource=historicalSource.replace(row.before,()=>row.after);}
+  assert.equal(sha(historicalSource),SOURCE_DMI_BRIDGED_WORKFLOW_SHA256,'Preserve the exact reviewed7428 Source bridge as history, not current qualification');
+  for(const row of DMI_REQUIREMENTS_HUNKS){assert.equal(expected.split(row.before).length,2);expected=expected.replace(row.before,()=>row.after);}
+  assert.equal(sha(expected),ORDINARY_DMI_REQUIREMENTS_WORKFLOW_SHA256,'Exact corrected2947 native requirements successor; historical7428 remains separate');
   for(const row of WORKFLOW_HUNKS){assert.equal(expected.split(row.before).length,2);expected=expected.replace(row.before,()=>row.after);}
-  assert.equal(source,expected,'Only the fixed Node24 output and native env bridge are permitted;180m is unchanged');
+  assert.equal(sha(expected),SOURCE_DMI_REQUIREMENTS_BRIDGED_WORKFLOW_SHA256);
+  assert.equal(source,expected,'Only the exact corrected DMI environment and fixed Node24 output/native bridge are permitted;180m is unchanged');
+}
+
+// Ordinary assertion view only, never a historical source or installed proof.
+// The real Source output guard precedes every caller field or Git inspection.
+export function sourcePrOrdinaryWorkflowInspection(source){
+  requireSourceProducerOutput(); // FIRST, including hostile/unknown operands.
+  assert.equal(arguments.length,1);verifySourcePrWorkflow(source);
+  let ordinary=source;
+  for(const row of [...WORKFLOW_HUNKS].reverse()){
+    assert.equal(ordinary.split(row.after).length,2);ordinary=ordinary.replace(row.after,()=>row.before);
+  }
+  assert.equal(sha(ordinary),ORDINARY_DMI_REQUIREMENTS_WORKFLOW_SHA256);
+  return ordinary;
 }

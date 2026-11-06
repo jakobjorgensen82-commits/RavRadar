@@ -16,6 +16,34 @@ Assistentens engelske vindspørgsmål bevarer nu det lokale emne til den efterf�
 >
 > Opstartsfilen indgår i SOURCEs CODE-fingeraftryk; den normale genberegning af fingeraftrykket og alle relevante udstedelses-/leveringskontroller er fortsat nødvendige før aktivering. Den separate Linux-kvalifikationskladde og dens to kernelprøver ændres ikke. Ingen produktionskode, binding, SQL, vejrdata, kildeprioritet, scoreformel, geometri eller administratorpunkter er ændret i driften. Offentlig Markdown-/webhåndbog og assistentviden bevares.
 
+## 2026-11-06 – Præcise gamle og nye koldstartbindinger i kildeudvælgelsen
+
+Den normale kildekontrol har påvist et afgrænset registerhul før merge: den nye koldstartprøves gennemgåede VM-grænse var registreret, men de eksisterende isolerede HTML-/service-worker-kaldere bruger fortsat den gennemgåede gamle prøvevariant. Dens præcise ældre bindingsflade manglede i registret. Den strenge forbruger afviste derfor korrekt en ukendt følsom flade; dette er ikke en påvist produktfejl eller et timeoutproblem.
+
+Den minimale registerrettelse bevarer både den præcise gamle og den præcise nye gennemgåede flade og synkroniserer den normale planners registerpin. Produkt, testkroppe, normale kaldere, gamle profiler og afslag ved andre ukendte flader ændres ikke. Den ægte 598-kæde samt PostgreSQL- og C/I/T-kontroller bevares. Der tilføjes ingen ny fuld testbank eller ændret tidsgrænse.
+
+De allerede eksisterende isolerede UI-tilfælde fangede manglen før merge. Ny præcis kildekvalifikation og faktisk offentlig effekt er fortsat åbne. Dette ændrer ikke vejrhentning, budgetter, databevarelse, scoremodel, geometri, rettigheder eller produktion. SOURCE599 forbliver privat/inaktiv; dens tidligere dokumentforberedelse mod c670 er kun historisk forhåndsarbejde og skal genafstemmes mod den reelle endelige main. Se håndbog 89.320; tidligere afsnit 89.319/89.318 og al historik bevares.
+
+## 2026-11-06 – Adminens moduladresse i offlinecache og artifactkontrol
+
+Den normale tidlige 598-kildeudvælgelse kobler ændringer i præcis admin.html eller service-worker.js til de samme to eksisterende mål for kold start og admin-kontrakt, også uden en ændret testfil; ældre profiler og alle øvrige kontroller bevares.
+
+Den seneste artifactbygning blev stoppet af de normale kontroller for kold start og admin. Årsagen er afgrænset: adminsidens moduladresse fik den særskilte observations-markør, men service-workerens præcise cacheadresse og cold-start-prøvens faste forventning fulgte ikke med. Den uændrede admin-kontrakt påviste uoverensstemmelsen. Den lille rettelse synkroniserer disse eksisterende adresser og cold-start-prøvens faste assertion; den ændrer ikke rettigheder, observationsindhold eller score.
+
+Der er ikke påvist en Pages-størrelsesfejl i dette forløb. Komponentfremgangens særskilte cache blev ikke gemt ved sin størrelsesgrænse; det er ikke det samme som manglende beregningscheckpoint. Den færdige beregningspakke blev faktisk forseglet og uploadet, den beskyttede runtime blev publiceret med tilgængelig rollback og uden retentionsfejl, og det centrale scorecheckpoint blev kvitteret. Disse forskellige udfald skal fortsat beskrives hver for sig.
+
+Den nye offentlige generation er ikke leveret; den senest verificerede offentlige generation bevares. Det eksisterende cron-job er faktisk pauset med sin faste UTC-tidsplan uændret, mens det kontrollerede genoptagelsesforløb afklares. Ny kildekvalifikation, faktisk genoptagelse, artifactkontroller, deploy og offentlig effekt skal bestå, før driftsfejlen lukkes og cron genaktiveres. En lokal rettelse eller en grøn delkontrol er ikke leveringsbevis.
+
+Version 4.0.598, C/I/T, model, kilder, originaler, geometri og SQL-regler bevares. SOURCE599 er fortsat privat og inaktiv. Håndbog 89.319 forklarer afgrænsningen; kørselsidentiteter, checkpointbindinger og rå diagnoseoplysninger bliver i det private checkpoint. Ældre daterede afsnit, herunder 89.318 om DMI-hullernes omfang, bevares.
+
+## 2026-11-06 – DMI-V2-leveringsstatus
+
+- Kildekandidat gennemgået: kvalificeret hulomfang før tid/cursor; eksisterende sikre førsterækkefølge, fallback, maskvalidering og T+3 bevares.
+- Normalt før/efter-mål og syntetisk 673×115×3-planlægningspris foreligger; ingen nye budgetter eller ekstra resume-runde.
+- CI-miljøet skal før uændret producent have Python3.12 og hele eksisterende requirements-dmi (requests, låste eccodes/ecCodeslib); parentens Linux-barn bruger rigtig native API2.48.2, ikke kun den øvre stub. Ingen geometry-/Copernicus-SDK- eller Node24-udvidelse følger af dette miljøkrav.
+- Kildekontrollens ekstra 598-profil beholder ni aktuelle scenarier samt ægte 148/74/C101/I100/T12-input og 16 frosne ankre. De 15 generiske marker-/fallback-/format-/childfejl-kombinationer bevares fuldt i begge ældre 143/144-inputprofiler; kun en tredje gentagelse undlades. Aktuel native/FULL-/nationalform, frisk review, PostgreSQL/C/I/T-drift, alle gamle assertions og tidsgrænser bevares. Afgrænsningen er ikke en bestået CI- eller produktionskontrol.
+- Kontrolleret levering og faktisk nygenerations-/hale-/no-loss-/deployeffekt er ÅBNE. Den normale CI-miljøport giver ingen produktionsautoritet eller bestået PG/national-evidens. Se 89.318 og privat checkpoint.
+
 ## 6. november — privat følgepakke til backupbyteantal og delingsopstart
 
 Backupkandidaten fører kun de allerede producerede SQL- og ciphertext-byteantal videre i den faste capture-rapport. Fem sikre, positive filtal skal passe til SQL-totalen og de eksisterende eksport-/arkivgrænser. Filnavne, indhold og nøgler udleveres ikke. Tallene er ikke målt netværk eller egress: komprimering sker først på runneren efter eksporten. Ingen cadence, retention, abonnement eller FreeReady aktiveres.

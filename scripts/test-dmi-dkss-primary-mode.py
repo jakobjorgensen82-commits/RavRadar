@@ -1313,3 +1313,52 @@ def check_qualified_production_gaps_precede_native_only_deficits():
     print("DMI qualified scalar priority OK: normal PART/SOURCE needs, optional hourly decode, old fallback preserved")
 
 check_qualified_production_gaps_precede_native_only_deficits()
+
+def check_qualified_broad_tail_holes_precede_sparse_front_and_native_takeovers():
+    from lib.weather_acquisition_plan import validate_scalar_needs
+    fixture = runpy.run_path(str(ROOT / "scripts/test-weather-acquisition-plan.py"))
+    with tempfile.TemporaryDirectory() as root:
+        # These are normal scalar-needs-file fixtures with exact snapshot
+        # hashes/target registry and normal T+3 support masks.
+        scalar, _ = fixture["QualifiedScalarPlanTests"]().make_scalar(root,
+            value_gaps=[(0, 0, "waterLevel"), (0, 1, "waterLevel"), (0, 2, "waterLevel"),
+                        (0, 4, "waterLevel"), (0, 96, "waterLevel"), (1, 96, "waterLevel")])
+        targets = fixture["TARGETS"]
+        reference = fixture["BASE"]
+        plan = validate_scalar_needs(scalar, targets=targets, production_reference_at=reference)
+        times = [fixture["at"](i) for i in (0, 1, 2, 4, 96, 97)]
+        assets = [{"valid": valid, "id": str(index)} for index, valid in enumerate(times)]
+        ids = [row["partId"] for row in targets]
+        covered = {(part_id, valid) for part_id in ids for valid in times}
+        requirements = {valid: producer.classify_dkss_primary_asset(
+            collection="dkss_idw", model_run=fixture["at"](), asset={"valid":valid},
+            target_ids=ids, covered_pair_keys=covered, cached_zones={},
+            active_zone_ids=[f"PART::{part_id}" for part_id in ids], enabled=True,
+            planning_covered_pair_keys=covered, required_valid_times=set(times),
+            require_native_grid_sampling=True, scalar_gap_plan=plan) for valid in times}
+        sparse, broad, upgrade = fixture["at"](4), fixture["at"](96), fixture["at"](97)
+        assert requirements[sparse]["criticalPriority"] == requirements[broad]["criticalPriority"] == 0
+        ordered = producer.prioritize_dkss_primary_assets(assets, ids, covered, requirements,
+            direct_valid_times=set(times), regional_gap_pairs_by_time={},
+            verified_reusable_valid_times=set(), critical_cursor_valid_time=fixture["at"](3))
+        order = [row["valid"] for row in ordered]
+        assert order[:3] == times[:3], "FIRST_THREE_REAL_HOLE_HOURS_MUST_KEEP_THEIR_FOUNDATION_ORDER"
+        assert order.index(broad) < order.index(sparse), "BROAD_REAL_TAIL_HOLE_STARVED_BY_UNIQUE_TIME_BEFORE_GAP_COUNT"
+        assert order.index(sparse) < order.index(upgrade), "NATIVE_TAKEOVER_PRECEDED_RETAINED_WEATHER_HOLE"
+        assert requirements[sparse]["retainedScalarGapPairCount"] == 1
+        assert requirements[broad]["retainedScalarGapPairCount"] == 2
+        assert requirements[upgrade]["retainedScalarGapPairCount"] == 0
+        assert requirements[upgrade]["criticalPriority"] == 1
+        assert requirements[broad]["currentMissingPairCount"] == 0
+        # Neither newer original inventory nor unknown plan creates a count.
+        unknown = producer.classify_dkss_primary_asset(collection="dkss_idw",
+            model_run=fixture["at"](), asset={"valid":broad}, target_ids=ids,
+            covered_pair_keys=covered, cached_zones={}, active_zone_ids=[f"PART::{p}" for p in ids],
+            enabled=True, planning_covered_pair_keys=covered, required_valid_times=set(times),
+            require_native_grid_sampling=True, scalar_gap_plan=None)
+        assert unknown.get("retainedScalarPlanQualified") is not True
+        assert unknown.get("retainedScalarGapPairCount") is None
+    print("DMI broad qualified tail priority OK: real retained masks, sparse front, native takeover, unknown plan")
+
+
+check_qualified_broad_tail_holes_precede_sparse_front_and_native_takeovers()

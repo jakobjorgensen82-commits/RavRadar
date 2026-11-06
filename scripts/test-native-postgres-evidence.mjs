@@ -2437,7 +2437,7 @@ sourceAfter598PreissuanceTest('Source598 full PR native and fixed qualification 
     ()=>native.verifySourcePrNativeJobMetadata(untouched),
     ()=>native.verifySourcePrNativePhaseReceipt(untouched,untouched,untouched,untouched),
     ()=>native.verifySourcePrNativeArtifact(untouched,untouched,untouched,untouched,untouched,untouched),
-    ()=>scope.verifySourcePrPackage(untouched),()=>scope.sourcePrHistoricalPackageInspection(untouched),()=>scope.verifySourcePrWorkflow(untouched)])
+    ()=>scope.verifySourcePrPackage(untouched),()=>scope.sourcePrHistoricalPackageInspection(untouched),()=>scope.verifySourcePrWorkflow(untouched),()=>scope.sourcePrOrdinaryWorkflowInspection(untouched)])
     assert.throws(fn,/SOURCE_PRODUCER_AFTER597_UNISSUED/);
   await assert.rejects(native.readSourcePrNativeUploadedPhase(untouched,untouched),/SOURCE_PRODUCER_AFTER597_UNISSUED/);
   await assert.rejects(native.executeSourceAfter598PrNative(),/SOURCE_PRODUCER_AFTER597_UNISSUED/);

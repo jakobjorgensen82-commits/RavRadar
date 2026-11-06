@@ -71,6 +71,7 @@ test('DMI ordinary/cold lead turns retain fair time and per-asset reserves (4 ca
     'The scheduling cases must finish without skipped tests.');
 });
 for (const file of [
+  'test-dmi-dkss-primary-mode.py',
   'test-copernicus-bounded-retry-4.0.289.py',
   'test-regional-current-operational.py',
   'test-current-operational-closure.py',

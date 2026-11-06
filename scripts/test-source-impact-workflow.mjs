@@ -8,17 +8,37 @@ import {projectSourceImpactWorkflowFull,SOURCE_IMPACT_FULL_WORKFLOW_ORIGIN,
   SOURCE_IMPACT_PR_READ_GRANT,inverseSourceImpactPrReadGrant,inverseSourceImpactSdkEarlyLinux,
   SOURCE_IMPACT_HOUR_EARLY_LINUX_REVIEW,inverseSourceImpactHourEarlyLinux}
   from './lib/source-impact-workflow-review.mjs';
+import {inverseSourceImpactDmiPython,SOURCE_IMPACT_DMI_PYTHON_REVIEW,SOURCE_IMPACT_DMI_REQUIREMENTS_REVIEW,reviewedSourcePrWorkflowOrdinaryView} from './lib/source-impact-workflow-review.mjs';
 import {verifyWorkflow,inverseSourceBeforePostgresWorkflow,inverseCandidatePublicSourceRunLine,
   CURRENT_JOB,AFTER_JOB,verifyReviewed90Workflow} from './national584-source-evidence.mjs';
 import {inverseCurrent586PhaseUpload} from './native-postgres-evidence.mjs';
 
 // Read-only normal caller/contract target. No source suite, SQL, API or provider.
-const source=fs.readFileSync(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8').replace(/\r\n/g,'\n');
+const actualSource=reviewedSourcePrWorkflowOrdinaryView(fs.readFileSync(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8').replace(/\r\n/g,'\n'));
+const source=inverseSourceImpactDmiPython(actualSource);
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const git=(ref,file)=>execFileSync('git',['show',ref+':'+file],{maxBuffer:65536,timeout:10000,
   env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0',
     GIT_CONFIG_COUNT:'1',GIT_CONFIG_KEY_0:'protocol.allow',GIT_CONFIG_VALUE_0:'never'},stdio:['ignore','pipe','pipe']}).toString();
 const workflow='.github/workflows/validate-pull-request.yml',origin=git(SOURCE_IMPACT_FULL_WORKFLOW_ORIGIN,workflow);
+assert.equal(sha(actualSource),SOURCE_IMPACT_DMI_REQUIREMENTS_REVIEW.afterSha256);
+assert.equal(sha(source),SOURCE_IMPACT_DMI_PYTHON_REVIEW.beforeSha256);
+assert.equal(Buffer.byteLength(actualSource),SOURCE_IMPACT_DMI_REQUIREMENTS_REVIEW.afterBytes);
+assert(actualSource.indexOf('uses: actions/setup-python@v7')<actualSource.indexOf('Build deterministic source-tree content identity'));
+assert(actualSource.indexOf('Install declared DMI dependencies')<actualSource.indexOf('Build deterministic source-tree content identity'));
+assert.equal(actualSource.split("--timeout 15 --retries 0 --only-binary=:all: -r requirements-dmi.txt").length,2);
+assert.equal(actualSource.split("import requests.adapters; import urllib3.util.retry; import eccodes; assert eccodes.codes_get_api_version() == '2.48.2'").length,2);
+const failedRequestsOnly=SOURCE_IMPACT_DMI_REQUIREMENTS_REVIEW.hunks.reduce((value,hunk)=>value.replace(hunk.after,hunk.before),actualSource);
+assert.equal(sha(failedRequestsOnly),SOURCE_IMPACT_DMI_PYTHON_REVIEW.afterSha256);
+assert.equal(inverseSourceImpactDmiPython(failedRequestsOnly),source,'The genuine7428 historical bytes still have their exact whole407a inverse');
+for(const mutation of [actualSource+'\n# UNKNOWN_DMI_ENVIRONMENT_VARIANT\n',
+  actualSource.replace('python-version: "3.12"','python-version: "3.11"'),
+  actualSource.replace("-r requirements-dmi.txt","-r requirements.txt"),
+  actualSource.replace("codes_get_api_version() == '2.48.2'","codes_get_api_version() == '2.48.0'"),
+  actualSource.replace('timeout-minutes: 2','timeout-minutes: 3')]){
+  assert.equal(inverseSourceImpactDmiPython(mutation),mutation);assert.throws(()=>projectSourceImpactWorkflowFull(mutation));
+}
+
 assert.equal(sha(origin),SOURCE_IMPACT_FULL_WORKFLOW_SHA256);
 assert.equal(projectSourceImpactWorkflowFull(source),origin,'WHOLE qualified 334 FULL bytes are preserved');
 assert.equal(projectSourceImpactWorkflowFull(origin),origin);

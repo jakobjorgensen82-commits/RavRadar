@@ -21,7 +21,7 @@ const STATIC = [
   `./js/ui/about-i18n.js?v=${APP_VERSION}&ui=about-explainer-20261025`,
   `./js/ui/about-explainer.js?v=${APP_VERSION}&ui=about-explainer-20261025`,
   `./js/ui/about-explainer-i18n.js?v=${APP_VERSION}&ui=about-explainer-20261025`,
-  `./js/ui/admin-dashboard.js?v=${APP_VERSION}&ui=admin-model-startup-20261101&map=${COMPACT_MAP}`,
+  `./js/ui/admin-dashboard.js?v=${APP_VERSION}&ui=admin-model-startup-20261101&map=${COMPACT_MAP}&observations=local-scope-20261106`,
   `./js/services/data-service.js?v=${APP_VERSION}&ui=admin-model-startup-20261101&map=${COMPACT_MAP}`,
   `./js/services/site-function-test-service.js?v=${APP_VERSION}&ui=admin-model-startup-20261101&map=${COMPACT_MAP}`,
   `./js/services/admin-trip-count.js?v=${APP_VERSION}&ui=admin-current-data-20261028`,

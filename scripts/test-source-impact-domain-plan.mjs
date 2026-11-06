@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
 import test from 'node:test';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -496,6 +497,23 @@ test('normal597 registry keeps genuine144 inputs and closes only known normal co
 // Separate598normal plan: genuine current protected inputs, synthetic Git children only.
 test('normal598 registry keeps genuine148 inputs and closes only known normal control capabilities',async t=>{
   const reference='bd9cf518fe798ddea45d2b835f324f6e2bea06fc';
+  // These are exact ordinary598 CODE-resource oracles, not a FULL/native proof.
+  // A later Source release must not copy its599 SW, Source-only SDK port
+  // or this outer fixture into the genuine598 Git fixture. Full checkout keeps the
+  // reviewed ordinary ancestor; a missing/changed blob fails without fetching.
+  const ordinary598Head='c67060e2fb70c6a408e332b2b1d97e9a47934dad';
+  const ordinary598Owners=Object.freeze({
+    'scripts/test-runner-android-sdk-reclaim.mjs':Object.freeze({bytes:28133,sha256:'0d1aa8b12ff4a7e9533e2b05d91e14e412cf34f1756e31de603448a071ba17c4'}),
+    'service-worker.js':Object.freeze({bytes:7005,sha256:'fdcbe18836832db462910837a8958478d153567ecd55481b99a5f1635fefd9ac'}),
+    'scripts/test-source-impact-domain-plan.mjs':Object.freeze({bytes:64102,sha256:'864815ce98c976eaf937d4ff7cbb71db5a21c033b83d822bcc3d06f02132bea8'}),
+  });
+  const readOrdinary598Owner=file=>{
+    assert(Object.hasOwn(ordinary598Owners,file),'Only the three exact ordinary598 fixture owners');
+    const pin=ordinary598Owners[file],bytes=git(SOURCE,['cat-file','blob',ordinary598Head+':'+file]);
+    assert.equal(bytes.length,pin.bytes,'Whole ordinary598 fixture byte length');
+    assert.equal(createHash('sha256').update(bytes).digest('hex'),pin.sha256,'Whole ordinary598 fixture SHA256');
+    return bytes;
+  };
   const controls=['scripts/source-impact-domain-inputs.mjs','scripts/lib/source-impact-domain-inputs-598.json',
     'scripts/test-source-impact-domain-inputs.mjs','scripts/source-impact-domain-plan.mjs',
     'scripts/lib/source-impact-domain-owners-598.json','scripts/test-source-impact-domain-plan.mjs',
@@ -507,7 +525,7 @@ test('normal598 registry keeps genuine148 inputs and closes only known normal co
     const objects=fs.realpathSync(path.join(text(SOURCE,['rev-parse','--path-format=absolute','--git-common-dir']),'objects'));
     fs.mkdirSync(path.join(root598,'.git/objects/info'),{recursive:true});
     fs.writeFileSync(path.join(root598,'.git/objects/info/alternates'),objects.replaceAll('\\','/')+'\n');
-    const rows=controls.map(file=>[file,fs.readFileSync(path.join(SOURCE,file))]);
+    const rows=controls.map(file=>[file,file==='scripts/test-source-impact-domain-plan.mjs'?readOrdinary598Owner(file):fs.readFileSync(path.join(SOURCE,file))]);
     const make598=(parent,changes,label)=>{
       git(root598,['read-tree',parent]);
       for(const [file,bytes]of changes)git(root598,['update-index','--add','--cacheinfo','100644',
@@ -518,7 +536,7 @@ test('normal598 registry keeps genuine148 inputs and closes only known normal co
     for(const file of [...controls,'scripts/lib/source-impact-domain-inputs-594.json','scripts/lib/source-impact-domain-owners-594.json','scripts/lib/source-impact-domain-inputs-597.json',
       'scripts/lib/source-impact-domain-owners-597.json','scripts/lib/source-impact-control-imports.mjs']){
       const target=path.join(root598,file);fs.mkdirSync(path.dirname(target),{recursive:true});
-      fs.writeFileSync(target,controls.includes(file)?fs.readFileSync(path.join(SOURCE,file)):
+      fs.writeFileSync(target,controls.includes(file)?(file==='scripts/test-source-impact-domain-plan.mjs'?readOrdinary598Owner(file):fs.readFileSync(path.join(SOURCE,file))):
         git(SOURCE,['cat-file','blob',reference+':'+file]));
     }
     const {planSourceDomainImpactFromGit:plan598}=await import(pathToFileURL(path.join(root598,'scripts/source-impact-domain-plan.mjs')).href);
@@ -572,6 +590,51 @@ test('normal598 registry keeps genuine148 inputs and closes only known normal co
           ['UNKNOWN_EXACT_SOURCE_TRANSITION:'+followChanged]);
       }
     });
+    await t.test('exact598 DMI scheduler and normal Python caller pairs preserve PG/CIT and refuse byte drift',()=>{
+      const owners=['scripts/update-dmi-bulk.py','scripts/test-dmi-dkss-primary-mode.py','scripts/test-current-operational-python-contracts.mjs'];
+      const changes=owners.map(file=>[file,fs.readFileSync(path.join(SOURCE,file))]);
+      const actual=run598(make598(baseline598,changes,'synthetic exact reviewed DMI scheduler pairs'));
+      assert.equal(actual.selection,'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(actual.reasonCodes));
+      assert.equal(actual.commands.filter(value=>value==='node --test scripts/test-current-operational-python-contracts.mjs').length,1);
+      for(const family of ['postgres','C','I','T'])assert.equal(actual.inputDigests[family+'Before'],actual.inputDigests[family+'After']);
+      assert.equal(actual.domains.postgres.status,'NOT_APPLICABLE');assert.equal(actual.domains.historical584National.status,'NOT_APPLICABLE');
+      assert.equal(actual.skipAuthorized,false);assert.equal(actual.productionAuthority,false);
+      for(const changed of owners){
+        const variant=changes.map(([file,body])=>[file,file===changed?Buffer.concat([body,Buffer.from('\n')]):body]);
+        assert.deepEqual(run598(make598(baseline598,variant,'synthetic unreviewed DMI owner bytes')).reasonCodes,
+          ['UNKNOWN_EXACT_SOURCE_TRANSITION:'+changed]);
+      }
+    });
+    await t.test('exact598 ordinary SDK workflow oracle port selects its real target and refuses byte drift',()=>{
+      const owner='scripts/test-runner-android-sdk-reclaim.mjs',body=readOrdinary598Owner(owner);
+      const actual=run598(make598(baseline598,[[owner,body]],'synthetic exact reviewed ordinary SDK oracle port'));
+      assert.equal(actual.selection,'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(actual.reasonCodes));
+      assert.equal(actual.commands.filter(value=>value==='node --test scripts/test-runner-android-sdk-reclaim.mjs').length,1);
+      assert(!actual.commands.includes('node scripts/reclaim-runner-android-sdk.mjs'));
+      for(const family of ['postgres','C','I','T'])assert.equal(actual.inputDigests[family+'Before'],actual.inputDigests[family+'After']);
+      assert.equal(actual.domains.postgres.status,'NOT_APPLICABLE');assert.equal(actual.domains.historical584National.status,'NOT_APPLICABLE');
+      assert.equal(actual.skipAuthorized,false);assert.equal(actual.productionAuthority,false);
+      assert.deepEqual(run598(make598(baseline598,[[owner,Buffer.concat([body,Buffer.from('\n')])]],'synthetic unreviewed SDK oracle port')).reasonCodes,
+        ['UNKNOWN_EXACT_SOURCE_TRANSITION:'+owner]);
+    });
+    await t.test('exact598 admin cache publication closes both actual production contracts and refuses owner drift',()=>{
+      const owners=['service-worker.js','scripts/test-public-cold-start-4.0.303.mjs'];
+      const changes=owners.map(file=>[file,file==='service-worker.js'?readOrdinary598Owner(file):fs.readFileSync(path.join(SOURCE,file))]);
+      for(const [owner,body]of changes){
+        const actual=run598(make598(baseline598,[[owner,body]],'synthetic exact admin cache publication owner'));
+        assert.equal(actual.selection,owner==='service-worker.js'?'TARGETED_DOMAINS':'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(actual.reasonCodes));
+        for(const command of ['node scripts/test-public-cold-start-4.0.303.mjs','node scripts/test-admin-config-production-contract-4.0.94.mjs'])
+          assert.equal(actual.commands.filter(value=>value===command).length,1);
+        for(const family of ['postgres','C','I','T'])assert.equal(actual.inputDigests[family+'Before'],actual.inputDigests[family+'After']);
+        assert.equal(actual.domains.postgres.status,'NOT_APPLICABLE');assert.equal(actual.domains.historical584National.status,'NOT_APPLICABLE');
+        assert.equal(actual.baselineQualified,false);assert.equal(actual.skipAuthorized,false);assert.equal(actual.productionAuthority,false);
+      }
+      for(const owner of owners){
+        const variant=changes.map(([file,body])=>[file,file===owner?Buffer.concat([body,Buffer.from('\n')]):body]);
+        assert.deepEqual(run598(make598(baseline598,variant,'synthetic unreviewed admin cache publication bytes')).reasonCodes,
+          ['UNKNOWN_EXACT_SOURCE_TRANSITION:'+owner]);
+      }
+    });
     await t.test('exact598 admin cache address admits only the reviewed whole HTML pair',()=>{
       const cacheOwner='admin.html',cacheBefore=git(root598,['cat-file','blob',baseline598+':admin.html']);
       const cacheAddress='js/ui/admin-dashboard.js?v=4.0.598&ui=admin-model-startup-20261101&map=plain-map-v3-20261104';
@@ -582,6 +645,9 @@ test('normal598 registry keeps genuine148 inputs and closes only known normal co
       const cacheCandidate=make598(baseline598,[[cacheOwner,cacheAfter]],'synthetic reviewed598 admin cache address');
       const cachePlan=run598(cacheCandidate);
       assert.equal(cachePlan.selection,'TARGETED_DOMAINS',JSON.stringify(cachePlan.reasonCodes));
+      for(const command of ['node scripts/test-public-cold-start-4.0.303.mjs','node scripts/test-admin-config-production-contract-4.0.94.mjs'])
+        assert.equal(cachePlan.commands.filter(value=>value===command).length,1);
+      assert.equal(cachePlan.baselineQualified,false);
       for(const cacheFamily of ['postgres','C','I','T'])assert.equal(cachePlan.inputDigests[cacheFamily+'Before'],cachePlan.inputDigests[cacheFamily+'After']);
       assert.equal(cachePlan.domains.adminUI.status,'SELECTED');assert.equal(cachePlan.domains.postgres.status,'NOT_APPLICABLE');
       assert.equal(cachePlan.domains.historical584National.status,'NOT_APPLICABLE');
