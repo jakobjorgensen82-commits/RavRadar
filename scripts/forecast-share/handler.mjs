@@ -3,7 +3,10 @@
 // Activation requires a separately reviewed public host and exact route binding.
 import { loadCompactPublicForecastShareSelection } from '../../js/services/data-service.js?v=4.0.587';
 import { readForecastShare, forecastShareUrl, forecastShareCopy, forecastShareDate,
-  forecastShareScoreText, FORECAST_SHARE_BRAND_PATH } from '../../js/services/forecast-share-contract.js?v=4.0.587';
+  forecastShareScoreText, initializeForecastShareDateFormatters, FORECAST_SHARE_BRAND_PATH } from '../../js/services/forecast-share-contract.js?v=4.0.587';
+
+// Three immutable-locale formatter instances only; no request/data work here.
+initializeForecastShareDateFormatters();
 
 const PUBLIC_PAGE = 'https://ravradar.dk/';
 const escape = value => String(value).replace(/[&<>"']/g, char => ({

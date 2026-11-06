@@ -555,6 +555,23 @@ test('normal598 registry keeps genuine148 inputs and closes only known normal co
           ['UNKNOWN_EXACT_SOURCE_TRANSITION:'+edgeChangedOwner]);
       }
     });
+    await t.test('exact598 backup-byte and host-formatting pairs use normal targets and refuse owner drift',()=>{
+      const followOwners=['scripts/run-hosted-supabase-backup.mjs','scripts/test-supabase-database-backup-workflow.mjs',
+        'js/services/forecast-share-contract.js','scripts/forecast-share/handler.mjs','scripts/test-map-forecast-panel.mjs'];
+      const followChanges=followOwners.map(followFile=>[followFile,fs.readFileSync(path.join(SOURCE,followFile))]);
+      const followPlan=run598(make598(baseline598,followChanges,'synthetic reviewed598 bounded followup owners'));
+      assert.equal(followPlan.selection,'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(followPlan.reasonCodes));
+      for(const followCommand of ['node --test scripts/test-supabase-database-backup-workflow.mjs',
+        'node --test scripts/test-map-forecast-panel.mjs'])assert.equal(followPlan.commands.filter(followValue=>followValue===followCommand).length,1);
+      for(const followFamily of ['postgres','C','I','T'])assert.equal(followPlan.inputDigests[followFamily+'Before'],followPlan.inputDigests[followFamily+'After']);
+      assert.equal(followPlan.domains.postgres.status,'NOT_APPLICABLE');assert.equal(followPlan.domains.historical584National.status,'NOT_APPLICABLE');
+      assert.equal(followPlan.skipAuthorized,false);assert.equal(followPlan.productionAuthority,false);
+      for(const followChanged of followOwners){
+        const followVariant=followChanges.map(([followPath,followBody])=>[followPath,followPath===followChanged?Buffer.concat([followBody,Buffer.from('\n')]):followBody]);
+        assert.deepEqual(run598(make598(baseline598,followVariant,'synthetic unreviewed followup owner bytes')).reasonCodes,
+          ['UNKNOWN_EXACT_SOURCE_TRANSITION:'+followChanged]);
+      }
+    });
     await t.test('exact598 admin cache address admits only the reviewed whole HTML pair',()=>{
       const cacheOwner='admin.html',cacheBefore=git(root598,['cat-file','blob',baseline598+':admin.html']);
       const cacheAddress='js/ui/admin-dashboard.js?v=4.0.598&ui=admin-model-startup-20261101&map=plain-map-v3-20261104';

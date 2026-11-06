@@ -85,6 +85,32 @@ test('forecast share keeps exact UTC, safe URL selection, zero score and suffix-
   assert.equal(readForecastShare('https://ravradar.invalid/').status,'absent');
 });
 
+
+test('forecast share exact authored date labels retain DST and midnight boundaries',()=>{
+  const examples=[
+    ["da","2026-03-29T00:00:00.000Z","Søndag 29. marts · kl. 01.00"],
+    ["da","2026-03-29T01:00:00.000Z","Søndag 29. marts · kl. 03.00"],
+    ["da","2026-10-25T00:00:00.000Z","Søndag 25. oktober · kl. 02.00"],
+    ["da","2026-10-25T01:00:00.000Z","Søndag 25. oktober · kl. 02.00"],
+    ["da","2026-11-06T23:00:00.000Z","Lørdag 7. november · kl. 00.00"],
+    ["da","2026-12-31T23:00:00.000Z","Fredag 1. januar · kl. 00.00"],
+    ["de","2026-03-29T00:00:00.000Z","Sonntag, 29. März · 01:00 Uhr"],
+    ["de","2026-03-29T01:00:00.000Z","Sonntag, 29. März · 03:00 Uhr"],
+    ["de","2026-10-25T00:00:00.000Z","Sonntag, 25. Oktober · 02:00 Uhr"],
+    ["de","2026-10-25T01:00:00.000Z","Sonntag, 25. Oktober · 02:00 Uhr"],
+    ["de","2026-11-06T23:00:00.000Z","Samstag, 7. November · 00:00 Uhr"],
+    ["de","2026-12-31T23:00:00.000Z","Freitag, 1. Januar · 00:00 Uhr"],
+    ["en","2026-03-29T00:00:00.000Z","Sunday 29 March · 01:00"],
+    ["en","2026-03-29T01:00:00.000Z","Sunday 29 March · 03:00"],
+    ["en","2026-10-25T00:00:00.000Z","Sunday 25 October · 02:00"],
+    ["en","2026-10-25T01:00:00.000Z","Sunday 25 October · 02:00"],
+    ["en","2026-11-06T23:00:00.000Z","Saturday 7 November · 00:00"],
+    ["en","2026-12-31T23:00:00.000Z","Friday 1 January · 00:00"]
+  ];
+  for(const [language,time,label]of examples)assert.equal(forecastShareDate(time,language),label);
+  assert.equal(forecastShareDate('not a date','da'),'');
+});
+
 test('real share control uses committed time and URL only; native abort never copies, explicit fallback remains usable',async t=>{
   const savedDocument=Object.getOwnPropertyDescriptor(globalThis,'document');
   const savedNavigator=Object.getOwnPropertyDescriptor(globalThis,'navigator');

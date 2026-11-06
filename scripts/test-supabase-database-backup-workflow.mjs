@@ -43,6 +43,7 @@ function fixture(changed={},fault={}){
     assert.ok(realController.includes("'"+status+"'"),'receipt type exists in the exact unchanged real V3 caller');
     return Buffer.from(JSON.stringify({status,remoteArchiveVerified:mode!=='--bootstrap'||selected,centralLocatorVerified:mode!=='--bootstrap',archiveWrittenThisOperation:mode==='--capture',centralLocatorWrittenThisOperation:mode==='--capture',
       fullDatabaseBackupVerified:fault.falseAuthority??false,authRestoreVerified:false,freeReady:false,sourceAdmission:false,automaticRetry:false,
+      ...(mode==='--capture'?{totalSqlBytes:5120,files:Array.from({length:5},()=>({sqlBytes:1024,cipherBytes:128,file:'never-log-file'}))}:{}),...(fault.captureBytes??{}),
       diagnostics:{listedObjects:6,unsupportedNamespaceObjects:0,objectsAboveIndexLimit:0,emptyObjects:0,eligibleNotInspected:0,nonIndexSqlFrames:5,legacyRequiresDbPointer:0,invalidOrUnsupported:fault.badDiagnostics?{'private-payload':1}:{}},
       indexSha256:fault.missingIndex||mode==='--bootstrap'&&!selected?undefined:'d'.repeat(64),candidates:mode==='--bootstrap'&&!selected?[{indexSha256:'d'.repeat(64),completedAt:'2026-11-02T12:00:00.000Z',privatePayload:'never-log-payload'}]:undefined,
       payload:'never-log-payload'}));
@@ -80,6 +81,40 @@ test('hosted backup caller: preflight is readonly and execute repeats private bu
   assert.equal(f.bucketCalls.length,2);assert.equal(f.controllerCalls.length,1);assert.deepEqual(f.controllerCalls[0].args,['scripts/archive-supabase-database-backup.mjs','--capture']);
   f.fault.bucketDenied=true;code(()=>f.invoke(),'R2_BUCKET_API_DENIED');assert.equal(f.controllerCalls.length,1,'no controller replay after later failed prerequisites');
 });
+test('hosted backup caller: capture preserves only bounded SQL and cipher byte totals, never wire or egress claims',()=>{
+  const basic=fixture(captureEnv()),reply=basic.invoke();
+  assert.equal(reply.totalSqlBytes,5120);assert.equal(reply.totalCipherBytes,640);
+  assert(!/never-log|files|sqlSha|cipherSha|wireBytes|egressBytes/.test(JSON.stringify(reply)));
+  const maximum=fixture(captureEnv(),{captureBytes:{totalSqlBytes:2_000_000_000,
+    files:Array.from({length:5},()=>({sqlBytes:400_000_000,cipherBytes:36_000_000}))}}).invoke();
+  assert.equal(maximum.totalSqlBytes,2_000_000_000);assert.equal(maximum.totalCipherBytes,180_000_000);
+  const minimum=fixture(captureEnv(),{captureBytes:{totalSqlBytes:5,
+    files:Array.from({length:5},()=>({sqlBytes:1,cipherBytes:1}))}}).invoke();
+  assert.equal(minimum.totalSqlBytes,5);assert.equal(minimum.totalCipherBytes,5);
+  for(const mode of ['discover','bootstrap']){
+    const other=fixture({SUPABASE_BACKUP_OPERATION:mode},{captureBytes:{totalSqlBytes:'never-log-bytes',files:['never-log-file']}}).invoke();
+    assert.equal(Object.hasOwn(other,'totalSqlBytes'),false);assert.equal(Object.hasOwn(other,'totalCipherBytes'),false);
+    assert(!JSON.stringify(other).includes('never-log'));
+  }
+});
+
+test('hosted backup caller: malformed capture byte counts stop after one child without a replay or raw disclosure',()=>{
+  const five=()=>Array.from({length:5},()=>({sqlBytes:1024,cipherBytes:128}));
+  const invalid=[{totalSqlBytes:undefined},{totalSqlBytes:null},{totalSqlBytes:'5120'},{totalSqlBytes:0},
+    {totalSqlBytes:-1},{totalSqlBytes:1.5},{totalSqlBytes:Number.MAX_SAFE_INTEGER+1},{totalSqlBytes:2_000_000_001},
+    {totalSqlBytes:5121},{files:null},{files:{}},{files:five().slice(1)},{files:[...five(),five()[0]]},{files:[null,...five().slice(1)]}];
+  for(const key of ['sqlBytes','cipherBytes'])for(const value of [null,'128',0,-1,1.5,Number.MAX_SAFE_INTEGER+1,
+    key==='sqlBytes'?1_000_000_001:36_000_001]){
+    const broken=five();broken[0][key]=value;invalid.push({files:broken});
+  }
+  for(const captureBytes of invalid){
+    const once=fixture(captureEnv(),{captureBytes});
+    assert.throws(()=>once.invoke(),error=>error.code==='SUPABASE_BACKUP_CAPTURE_BYTES'&&error.automaticRetry===false
+      &&!/never-log|raw-private/.test(JSON.stringify(error)));
+    assert.equal(once.controllerCalls.length,1);assert.equal(once.bucketCalls.length,1);
+  }
+});
+
 test('hosted backup caller: fixed scope, host, Node24, attempt and confirmations refuse before private subprocess or filesystem work',()=>{
   for(const changed of [{GITHUB_REF:'refs/heads/topic'},{GITHUB_RUN_ATTEMPT:'2'},{GITHUB_EVENT_NAME:'schedule'},{GITHUB_REPOSITORY:'foreign/repo'},
     {GITHUB_WORKFLOW:'other'},{EXPECTED_HEAD_SHA:'c'.repeat(40)},{GITHUB_RUN_ID:'0'},{GITHUB_ACTIONS:'false'},{RUNNER_ENVIRONMENT:'self-hosted'},{RUNNER_OS:'Windows'},

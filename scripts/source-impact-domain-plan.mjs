@@ -10,7 +10,7 @@ import {scanAllSourceDependencies,dependencySourceLiterals} from './lib/source-i
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const REGISTRY_SHA256='3970bc86fb8afd99d193507b82337c1068aa368f6d62ff728988fc21da9577f4';
 const REGISTRY597_SHA256='a7ccfba2b2f631ccc358342e2c3b87e1cb1edbd54311148c94822fddaa6dbcfa';
-const REGISTRY598_SHA256='9ac4eeb3727cf3c63e81a2675a88b442b8f103928d367ed18dc60c05a5b64db8';
+const REGISTRY598_SHA256='eaf6df47c9cda897bfa858a6911d43db54f9d901f2ee3ef7e29bfd8a4cc036f4';
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const oid=value=>typeof value==='string'&&/^[a-f0-9]{40}$/.test(value);
 const relative=value=>typeof value==='string'&&/^[A-Za-z0-9_./-]+$/.test(value)&&!value.startsWith('/')
@@ -96,7 +96,10 @@ function registry598(legacyBytes){
   for(const [file,pairs]of Object.entries(delta.exactSourceTransitions)){
     assert(['.github/workflows/maintain-admin-document-history.yml','admin.html',
       'supabase/functions/_shared/rav-assistant-contract.ts','supabase/functions/ravradar-assistant/index.ts',
-      'scripts/test-rav-assistant-main-edge-roundtrip.mjs'].includes(file));
+      'scripts/test-rav-assistant-main-edge-roundtrip.mjs',
+      'scripts/run-hosted-supabase-backup.mjs','scripts/test-supabase-database-backup-workflow.mjs',
+      'js/services/forecast-share-contract.js','scripts/forecast-share/handler.mjs',
+      'scripts/test-map-forecast-panel.mjs'].includes(file));
     const previousPairs=registry.exactSourceTransitions[file]??[];
     for(const pair of pairs){assert(/^[a-f0-9]{64}\/[a-f0-9]{64}$/.test(pair));assert(!previousPairs.includes(pair));previousPairs.push(pair);}
     registry.exactSourceTransitions[file]=previousPairs;

@@ -1,3 +1,11 @@
+## 6. november — privat følgepakke til backupbyteantal og delingsopstart
+
+Backupkandidaten fører kun de allerede producerede SQL- og ciphertext-byteantal videre i den faste capture-rapport. Fem sikre, positive filtal skal passe til SQL-totalen og de eksisterende eksport-/arkivgrænser. Filnavne, indhold og nøgler udleveres ikke. Tallene er ikke målt netværk eller egress: komprimering sker først på runneren efter eksporten. Ingen cadence, retention, abonnement eller FreeReady aktiveres.
+
+Delingskandidaten bruger én datoformaterer pr. sprog og forbereder kun de tre faste sprogobjekter ved handlerens modulopstart. Forespørgsel, tidspunkt, zone, score og data flyttes ikke til fælles tilstand. Browserens behovsstyrede brug, læsninger, datoer og sikkerhed bevares. De identiske lokale controller-, dato-/DST- og HTML-paritetsbeviser genbruges. Lokal Node-CPU er ikke en Cloudflare-måling eller Free-kvalifikation. Se håndbog 89.316/89.317.
+
+Dette er privat forberedelse over den gennemgåede forgænger, ikke integration eller offentlig levering. Den reelle samlede headplan laves først efter forgængerens faktiske merge. Ukendt påvirkning kræver FULL; kun præcise gennemgåede ejere og normal importlukning må udvide kildekontrakten. Version, C/I/T, SQL, nativebeviser og historiske profiler ommærkes ikke. Commit-, prøve- og leveringsstatus føres privat.
+
 ## 6. november — kendt assistentsvar før unødvendig AI-behandling
 
 Et helt spørgsmål om et ukendt ravudstyr og en fundgaranti har allerede ét kontrolleret svar i den eksisterende serverkontrakt. Den lokale efterfølger bruger præcis samme matcher og svar før kvote og AI-leverandør. Origin-, body-, model-, sprog- og sikkerhedskontrol samt de seks bindingsheaders bevares. Andre ukendte udtryk går fortsat gennem deres normale validerede AI-forløb; nye endelser må ikke ignoreres. Et fast svar får ikke mærket for et valideret eksternt AI-svar.
