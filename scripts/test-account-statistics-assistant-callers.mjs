@@ -160,6 +160,7 @@ test('private-study005: the normal workflow stays OFF and DDL remains outside Wo
 
 async function privateStudyPre007Workflow(){
   let source=(await fs.readFile(new URL('../.github/workflows/private-trip-weather-study.yml',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  source=reviewedFrozenReplayWorkflow(source);
   const review=JSON.parse(await fs.readFile(new URL('./lib/private-trip-study-categorical-review.json',import.meta.url),'utf8')).workflow;
   const hash=value=>crypto.createHash('sha256').update(value).digest('hex');
   assert.equal(review.file,'.github/workflows/private-trip-weather-study.yml');
@@ -210,6 +211,30 @@ async function privateStudyPre007Controller(){
   }
   assert.equal(hash(source),review.beforeSha256);
   assert.equal(hash(source),'1dc1101146afbda2ff242cc759b0dfb1e7b172a93ab430a041778ef1e36a01f8');
+  return source;
+}
+
+// Test-only: remove only the reviewed frozen-replay workflow delta before old whole-file oracles.
+// Test-only: the separately tested exact cache-address successor precedes this unchanged mount/access oracle.
+function reviewedFrozenStudyDashboard(source){
+  const digest=value=>crypto.createHash('sha256').update(value).digest('hex');
+  if(digest(source)!=='2b1c2b1ffdd497979fed251df700c32bb2832063471d891d8646702dd89ae791')return source;
+  assert.equal(Buffer.byteLength(source),150490);
+  const current='./admin-private-trip-study.js?v=4.0.598&study=frozen-replay-noise-20261106';
+  assert.equal(source.split(current).length,2);source=source.replace(current,'./admin-private-trip-study.js?v=4.0.598');
+  assert.equal(Buffer.byteLength(source),150455);assert.equal(digest(source),'20fa84de16de4d3e97f6f63c4b7173ff4d0c38300287b7aedff09814b5228bb7');
+  return source;
+}
+
+function reviewedFrozenReplayWorkflow(source){
+  assert.equal(typeof source,'string');
+  const digest=value=>crypto.createHash('sha256').update(value).digest('hex');
+  if(digest(source)!=='435d5e5e2276e83e0502ae4fcc4230447db590b8341a41e5850a6e896f25c1f8')return source;
+  assert.equal(Buffer.byteLength(source),7704);
+  for(const [before,after]of [["      enable_confirmation:\n        description: Skriv ENABLE_PRIVATE_UNISSUED_STUDY_ONLY for kun at \u00e5bne eksisterende signerede private ruter; ingen rapport eller kvalifikationsp\u00e5stand\n        type: string\n        default: ''\n","      enable_confirmation:\n        description: Skriv ENABLE_PRIVATE_UNISSUED_STUDY_ONLY for kun at \u00e5bne eksisterende signerede private ruter; ingen rapport eller kvalifikationsp\u00e5stand\n        type: string\n        default: ''\n      export_mode:\n        description: Almindelig eksport eller kun genl\u00e6sning af en allerede frossen rapport; ingen forberedelse ved frozen-replay\n        type: choice\n        default: ordinary\n        options: [ordinary, frozen-replay]\n      frozen_month:\n        description: P\u00e5kr\u00e6vet YYYY-MM ved frozen-replay; skal v\u00e6re den normale senest afsluttede UTC-m\u00e5ned\n        type: string\n        default: ''\n      frozen_binding_sha256:\n        description: P\u00e5kr\u00e6vet oprindelig fuld modelbindings SHA256 ved frozen-replay\n        type: string\n        default: ''\n      frozen_report_sha256:\n        description: P\u00e5kr\u00e6vet u\u00e6ndret frossen rapports SHA256 ved frozen-replay\n        type: string\n        default: ''\n"],["      PRIVATE_STUDY_OPERATION: ${{ inputs.operation }}\n      PRIVATE_STUDY_ENABLE_CONFIRMATION: ${{ inputs.enable_confirmation }}\n    steps:\n      - name: Validate fixed private study operation\n","      PRIVATE_STUDY_OPERATION: ${{ inputs.operation }}\n      PRIVATE_STUDY_ENABLE_CONFIRMATION: ${{ inputs.enable_confirmation }}\n      PRIVATE_STUDY_EXPORT_MODE: ${{ inputs.export_mode }}\n      PRIVATE_STUDY_FROZEN_MONTH: ${{ inputs.frozen_month }}\n      PRIVATE_STUDY_FROZEN_BINDING_SHA256: ${{ inputs.frozen_binding_sha256 }}\n      PRIVATE_STUDY_FROZEN_REPORT_SHA256: ${{ inputs.frozen_report_sha256 }}\n    steps:\n      - name: Validate fixed private study operation\n"],["            *) echo 'PRIVATE_STUDY_OPERATION_INVALID' >&2; exit 1 ;;\n          esac\n\n  private-study-upgrade:\n","            *) echo 'PRIVATE_STUDY_OPERATION_INVALID' >&2; exit 1 ;;\n          esac\n          if [[ \"${PRIVATE_STUDY_EXPORT_MODE:-ordinary}\" != ordinary || -n \"$PRIVATE_STUDY_FROZEN_MONTH$PRIVATE_STUDY_FROZEN_BINDING_SHA256$PRIVATE_STUDY_FROZEN_REPORT_SHA256\" ]]; then\n            test \"$PRIVATE_STUDY_OPERATION\" = export\n            test \"$PRIVATE_STUDY_EXPORT_MODE\" = frozen-replay\n            [[ \"$PRIVATE_STUDY_FROZEN_MONTH\" =~ ^[0-9]{4}-(0[1-9]|1[0-2])$ ]]\n            [[ \"$PRIVATE_STUDY_FROZEN_BINDING_SHA256\" =~ ^[a-f0-9]{64}$ ]]\n            [[ \"$PRIVATE_STUDY_FROZEN_REPORT_SHA256\" =~ ^[a-f0-9]{64}$ ]]\n          fi\n\n  private-study-upgrade:\n"],["      GITHUB_TOKEN: ${{ github.token }}\n      TRIP_STORAGE_OPERATION: private-study-export\n      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}\n      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n","      GITHUB_TOKEN: ${{ github.token }}\n      TRIP_STORAGE_OPERATION: private-study-export\n      PRIVATE_STUDY_EXPORT_MODE: ${{ inputs.export_mode }}\n      PRIVATE_STUDY_FROZEN_MONTH: ${{ inputs.frozen_month }}\n      PRIVATE_STUDY_FROZEN_BINDING_SHA256: ${{ inputs.frozen_binding_sha256 }}\n      PRIVATE_STUDY_FROZEN_REPORT_SHA256: ${{ inputs.frozen_report_sha256 }}\n      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}\n      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n"]].reverse()){
+    assert.equal(source.split(after).length,2);source=source.replace(after,()=>before);
+  }
+  assert.equal(Buffer.byteLength(source),5891);assert.equal(digest(source),'fa53edb8171551aa4ee5a3a0244e81e6c55ff3936508f7ff2ffbc93ca002a2a2');
   return source;
 }
 
@@ -1101,7 +1126,7 @@ test('private-study006: privat eksport bevarer hele installationsarm og normale 
   {
   // This test owns the current private-study import/render/access seam, not
   // historical complete dashboard bytes, labels or public weather readiness.
-  const dashboard=await read('js/ui/admin-dashboard.js');
+  const dashboard=reviewedFrozenStudyDashboard(await read('js/ui/admin-dashboard.js'));
   const currentVersion=JSON.parse(await read('package.json')).version;
   const checkDashboardCoupling=source=>{
     const imports=[...source.matchAll(/^\s*import\s*\{\s*mountPrivateTripStudyCard\s*\}\s*from\s*['"]([^'"]+)['"]\s*;/gm)];

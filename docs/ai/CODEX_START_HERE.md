@@ -1,5 +1,7 @@
 ## 6. november — kontroller begge normale kildeplaner før push
 
+Ved nye parametre eller cacheadresser skal gamle, præcise helfil-prøver få en særskilt gennemgået testvisning før deres uændrede historiske orakler. Afklar hele den direkte kalderkæde før ny CI. Testvisningen må kun invertere fuldt kendte nye bytes til de kendte gamle bytes; ukendte ændringer møder fortsat de oprindelige afslag. Den normale aktuelle produktkæde testes særskilt.
+
 Før en ændringsbaseret kilde-PR skal den uændrede normale planner først evaluere den faktiske PR-merge-base mod den præcise slutkode og derefter den kumulative ændring fra den ægte kvalificerede FULL-baseline. Producenten udfører den første kontrol før baselineopslag og kontrolreview. En godkendelig kumulativ plan alene beviser derfor ikke, at den normale kortere vej kan vælges. Begge planer skal bevare alle relevante mål, historiske afslag og uændrede beskyttede input; ukendt påvirkning vælger fortsat FULL. Det er en før-push-kontrol af leveringsvejen, ikke tilladelse til at springe faktisk head-bundet CI eller produktionsgates over.
 
 ## 2026-11-06 – Afgrænset statistik598-levering, ikke aktivering
