@@ -630,6 +630,21 @@ test('normal598 registry keeps genuine148 inputs and closes only known normal co
         assert.equal(actual.domains.postgres.status,'NOT_APPLICABLE');assert.equal(actual.domains.historical584National.status,'NOT_APPLICABLE');
         assert.equal(actual.baselineQualified,false);assert.equal(actual.skipAuthorized,false);assert.equal(actual.productionAuthority,false);
       }
+      // The producer checks its actual merge-base before discovering the cumulative qualified FULL parent.
+      const ordinaryParent='d10d94b70d96e9a75775ac4b4647011f3883258d';
+      const qualifiedFullParent='89ca7f3af17dbc86232a20adff3129edddfe0b3d';
+      const ordinaryMergeBase=make598(ordinaryParent,rows,'synthetic current ordinary merge-base with current controls');
+      const ordinaryCandidate=make598(ordinaryMergeBase,changes,'synthetic reviewed current admin cache publication');
+      for(const ordinaryBaseline of [ordinaryMergeBase,qualifiedFullParent]){
+        const actual=run598(ordinaryCandidate,ordinaryBaseline);
+        assert.equal(actual.status,'PLANNED',JSON.stringify(actual.reasonCodes));
+        assert.equal(actual.selection,'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(actual.reasonCodes));
+        for(const command of ['node scripts/test-public-cold-start-4.0.303.mjs','node scripts/test-admin-config-production-contract-4.0.94.mjs'])
+          assert.equal(actual.commands.filter(value=>value===command).length,1);
+        for(const family of ['postgres','C','I','T'])assert.equal(actual.inputDigests[family+'Before'],actual.inputDigests[family+'After']);
+        assert.equal(actual.domains.postgres.status,'NOT_APPLICABLE');assert.equal(actual.domains.historical584National.status,'NOT_APPLICABLE');
+        assert.equal(actual.baselineQualified,false);assert.equal(actual.skipAuthorized,false);assert.equal(actual.productionAuthority,false);
+      }
       for(const owner of owners){
         const variant=changes.map(([file,body])=>[file,file===owner?Buffer.concat([body,Buffer.from('\n')]):body]);
         assert.deepEqual(run598(make598(baseline598,variant,'synthetic unreviewed admin cache publication bytes')).reasonCodes,

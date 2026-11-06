@@ -1,3 +1,7 @@
+## 6. november — kontroller begge normale kildeplaner før push
+
+Før en ændringsbaseret kilde-PR skal den uændrede normale planner først evaluere den faktiske PR-merge-base mod den præcise slutkode og derefter den kumulative ændring fra den ægte kvalificerede FULL-baseline. Producenten udfører den første kontrol før baselineopslag og kontrolreview. En godkendelig kumulativ plan alene beviser derfor ikke, at den normale kortere vej kan vælges. Begge planer skal bevare alle relevante mål, historiske afslag og uændrede beskyttede input; ukendt påvirkning vælger fortsat FULL. Det er en før-push-kontrol af leveringsvejen, ikke tilladelse til at springe faktisk head-bundet CI eller produktionsgates over.
+
 ## 2026-11-06 – Afgrænset statistik598-levering, ikke aktivering
 
 Frossen genlæsning kræver normal senest afsluttede UTC-måned og fuldt match af oprindelig rapport-/modelbindingshash. Den eksisterende signerede verify læser den gemte rapport; replay foretager ingen prepare, resampling, retagging eller automatisk gentagelse. Ordinary-standardforløbet, komplette præferenceoversigter før/efter, erasure-barriere og insert-only beskyttet admintransport bevares.
