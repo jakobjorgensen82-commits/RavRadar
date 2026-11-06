@@ -1,3 +1,10 @@
+## 2026-11-06 – Privat statistik: frossen genlæsning, fast sortering og støjforklaring
+
+- Frossen genlæsning kræver normal senest afsluttede UTC-måned og fuldt match af oprindelig rapport-/modelbindingshash. Den eksisterende signerede verify læser den gemte rapport; replay foretager ingen prepare, resampling, retagging eller automatisk gentagelse. Ordinary-standardforløbet, komplette præferenceoversigter før/efter, erasure-barriere og insert-only beskyttet admintransport bevares.
+- De lukkede gruppenøgler får fast binær sortering; udvælgelse, grupper, støjkald, originaler og forbrugsregistreringer bevares. Adminforklaringen gør tydeligt, at 0/1 og små forskelle ikke er præcise turantal; positivt støjtal kan forekomme uden ture.
+- Én normal lokal målprøve bestod tre tilfælde (fast sortering, eksisterende kategorisk rapport og frozen replay). Den normale ændringsbaserede 598-vej er forberedt med strengt bevarede gamle flader og afslag. Den faktiske kumulative plan skal beregnes på slutkoden fra den ægte kvalificerede fulde baseline; en tidligere målrettet rettelse er ikke en ny fuld baseline. Plan og lokale prøver er ikke faktisk CI eller levering. Fortsat ÅBENT: endelig head-bundet CI; faktisk Worker-adgang/tilstand; kontrolleret frossen genlæsning; beskyttet adminindsættelse og efterlæst identitet; UI/adgang/privacy og målt Free-kapacitet.
+- Statistik OFF forbliver OFF. Ingen aktivering, automatisk konto-/inaktivitetssletning, mailafsender, ny plan, database-/SQL-installation eller ændring af vejr, RavScore, administratorpunkter og geometri. Ingen garanti om anonymitet eller godkendt minimumsgrænse for små bidrag. Private rapport-/bindingshashes, brugeroplysninger og driftsdiagnostik hører ikke til i offentlig dokumentation. Se håndbog 89.321.
+
 ## 2026-11-06 – Bevar begge gennemgåede koldstartgrænser i registret
 
 - Eksisterende isolerede HTML-/service-worker-tilfælde påviste før merge, at den gamle koldstartvariants præcise bindingsflade manglede, selv om den nye variants flade var registreret. Den strenge ukendt-flade-afvisning virkede korrekt; ingen produkt- eller timeoutfejl er påvist af dette fund.

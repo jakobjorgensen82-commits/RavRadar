@@ -599,6 +599,25 @@ test('normal598 registry keeps genuine148 inputs and closes only known normal co
       assert.deepEqual(run598(make598(baseline598,[[owner,Buffer.concat([body,Buffer.from('\n')])]],'synthetic unreviewed SDK oracle port')).reasonCodes,
         ['UNKNOWN_EXACT_SOURCE_TRANSITION:'+owner]);
     });
+    await t.test('exact598 reviewed statistics replay keeps normal account privacy and refuses new capabilities',()=>{
+      const files=['.github/workflows/private-trip-weather-study.yml','cloudflare/trip-gateway/trip-aggregate.js',
+        'js/ui/admin-private-trip-study.js','scripts/lib/trip-weather-aggregate-client.mjs',
+        'scripts/publish-private-trip-weather-study.mjs','scripts/test-account-statistics-assistant-callers.mjs',
+        'scripts/test-trip-aggregate-month-rollover.mjs'];
+      const changes=files.map(file=>[file,fs.readFileSync(path.join(SOURCE,file))]);
+      const actual=run598(make598(baseline598,changes,'synthetic reviewed statistics replay sources'));
+      assert.equal(actual.selection,'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(actual.reasonCodes));
+      assert.equal(actual.commands.filter(c=>c==='node --test scripts/test-account-statistics-assistant-callers.mjs').length,1);
+      for(const family of ['postgres','C','I','T'])assert.equal(actual.inputDigests[family+'Before'],actual.inputDigests[family+'After']);
+      for(const domain of ['adminUI','d1','controls'])assert.equal(actual.domains[domain].status,'SELECTED');
+      assert.equal(actual.domains.postgres.status,'NOT_APPLICABLE');assert.equal(actual.domains.historical584National.status,'NOT_APPLICABLE');
+      assert.equal(actual.baselineQualified,false);assert.equal(actual.skipAuthorized,false);assert.equal(actual.productionAuthority,false);
+      const client='scripts/lib/trip-weather-aggregate-client.mjs';
+      const mutation=changes.map(([file,body])=>[file,file===client?Buffer.concat([body,Buffer.from("\nexport const privateStudyUnreviewedCapability=Reflect.get(globalThis,'UNREVIEWED_PRIVATE_STUDY_CAPABILITY');\n")]):body]);
+      const refused=run598(make598(baseline598,mutation,'synthetic unreviewed statistics capability'));
+      assert.equal(refused.selection,'FULL');
+      assert.deepEqual(refused.reasonCodes,['UNKNOWN_SENSITIVE_BINDING_OR_REFLECTIVE_SURFACE:'+client]);
+    });
     await t.test('exact598 admin cache publication closes both actual production contracts and refuses owner drift',()=>{
       const owners=['service-worker.js','scripts/test-public-cold-start-4.0.303.mjs'];
       const changes=owners.map(file=>[file,fs.readFileSync(path.join(SOURCE,file))]);

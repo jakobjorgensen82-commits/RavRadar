@@ -1,4 +1,4 @@
-import { canonicalJson, externalOwnerSubject, normalizeCloudflareGatewayUrl, tripGatewaySignature }
+import { canonicalJson, sha256Hex, externalOwnerSubject, normalizeCloudflareGatewayUrl, tripGatewaySignature }
   from '../../supabase/functions/_shared/trip-storage.js';
 import { ravScoreModelBinding } from '../../js/core/ravscore-model-contract.js';
 import { assertPrivateTripStudyReport as assertPrivateNoisyProposal } from '../../cloudflare/trip-gateway/trip-aggregate-categorical.js';
@@ -60,7 +60,17 @@ async function boundedJson(input, init, fetchImpl, callerSignal, completeInvento
 // Private curator study seam. Account metadata/diagnostics stay out of the returned blob and stdout.
 // No token, owner, SQL, time range, binding override or arbitrary URL from UI.
 export async function readTripWeatherAggregate({ supabaseUrl, serviceRoleKey,
-  gatewayUrl, sharedSecret, pseudonymSecret, fetchImpl = fetch, now = Date.now() } = {}) {
+  gatewayUrl, sharedSecret, pseudonymSecret, frozenReplay, fetchImpl = fetch, now = Date.now() } = {}) {
+  let frozen;
+  if (frozenReplay !== undefined) {
+    aggregateExact(frozenReplay, ['month', 'modelBindingSha256', 'reportSha256'], 'AGGREGATE_FROZEN_REPLAY_INVALID');
+    if (typeof frozenReplay.month !== 'string' || !/^\d{4}-(0[1-9]|1[0-2])$/.test(frozenReplay.month)
+      || frozenReplay.month !== previousClosedAggregateMonth(now).start.slice(0, 7)
+      || ![frozenReplay.modelBindingSha256, frozenReplay.reportSha256].every(value => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value))) {
+      aggregateFail('AGGREGATE_FROZEN_REPLAY_INVALID');
+    }
+    frozen = Object.freeze({ ...frozenReplay });
+  }
   const base = new URL(supabaseUrl);
   if (base.protocol !== 'https:' || !/^[a-z0-9]+\.supabase\.co$/.test(base.hostname)
       || base.pathname !== '/' || base.search || base.hash || base.username || base.password
@@ -132,12 +142,25 @@ export async function readTripWeatherAggregate({ supabaseUrl, serviceRoleKey,
       }
       else{
         await assertPrivateNoisyProposal(answer.report);
-        if(answer.report.period.start!==bodyRequest.period.start||answer.report.period.end!==bodyRequest.period.end
-          || expectedResponseBinding===null || canonicalJson(answer.report.modelBinding)!==canonicalJson(expectedResponseBinding))
+        if(answer.report.period.start!==bodyRequest.period.start||answer.report.period.end!==bodyRequest.period.end)
           aggregateFail('AGGREGATE_RESPONSE_INVALID');
+        if (frozen) {
+          if (answer.report.period.start.slice(0, 7) !== frozen.month
+            || await sha256Hex(canonicalJson(answer.report.modelBinding)) !== frozen.modelBindingSha256
+            || await sha256Hex(canonicalJson(answer.report)) !== frozen.reportSha256) aggregateFail('AGGREGATE_FROZEN_IDENTITY_MISMATCH');
+        } else if (expectedResponseBinding===null || canonicalJson(answer.report.modelBinding)!==canonicalJson(expectedResponseBinding)) {
+          aggregateFail('AGGREGATE_RESPONSE_INVALID');
+        }
       }
       return answer;
     };
+    // Only the existing signed verifier may admit the original stored period/binding.
+    // No preparation, alternate-period retry, sampling or fallback in frozen replay.
+    if (frozen) {
+      const verified = await send(AGGREGATE_VERIFY_PATH, request);
+      if (canonicalJson(before) !== canonicalJson(await snapshot())) aggregateFail('AGGREGATE_PREFERENCES_CHANGED');
+      return verified.report;
+    }
     let after=before, priorRevision=-1, prepared=false, selectedPeriod=null, selectedBinding=null;
     // Only an authenticated, strictly newer pending ACK permits another step.
     // A timeout/unknown write/rejection is NEVER retried here. The durable job
