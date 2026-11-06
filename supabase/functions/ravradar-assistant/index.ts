@@ -5,6 +5,7 @@ import {
   assistantIdentificationPolicy,
   assistantIdentificationFocusAnswer,
   assistantScoreFindAnswer,
+  assistantUnknownEquipmentGuaranteeReply,
   assistantSystemInstruction,
   extractCloudflareAssistantResult,
   normaliseAssistantLocale,
@@ -175,6 +176,9 @@ Deno.serve(async (request) => {
     // Do not swallow private, compound or unknown suffixes in the provider prefix.
     const scoreFindAnswer = assistantScoreFindAnswer(rawQuestion, locale);
     if (scoreFindAnswer) return assistantJsonResponse(request, { answer: scoreFindAnswer });
+
+    const equipmentGuaranteeReply = assistantUnknownEquipmentGuaranteeReply(rawQuestion, locale);
+    if (equipmentGuaranteeReply) return assistantJsonResponse(request, { answer: equipmentGuaranteeReply });
 
     const identification = assistantIdentificationPolicy(rawQuestion, locale);
     // A raw overlong family never sends a clipped, falsely complete question.

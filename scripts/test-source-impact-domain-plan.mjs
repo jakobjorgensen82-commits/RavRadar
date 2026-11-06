@@ -538,6 +538,44 @@ test('normal598 registry keeps genuine148 inputs and closes only known normal co
         assert.equal(plan.commands.filter(value=>value===command).length,1);
       assert(!plan.commands.includes('node scripts/reclaim-runner-android-sdk.mjs'),'Unregistered native SDK CLI is not silently selected or proven');
     });
+    await t.test('exact598 fixed assistant order uses normal roundtrip and refuses every unreviewed owner byte',()=>{
+      const edgeOwners=['supabase/functions/_shared/rav-assistant-contract.ts',
+        'supabase/functions/ravradar-assistant/index.ts','scripts/test-rav-assistant-main-edge-roundtrip.mjs'];
+      const edgeChanges=edgeOwners.map(edgeFile=>[edgeFile,fs.readFileSync(path.join(SOURCE,edgeFile))]);
+      const edgeCandidate=make598(baseline598,edgeChanges,'synthetic reviewed598 fixed assistant reply order');
+      const edgePlan=run598(edgeCandidate);
+      assert.equal(edgePlan.selection,'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(edgePlan.reasonCodes));
+      assert.equal(edgePlan.commands.filter(edgeCommand=>edgeCommand==='node scripts/test-rav-assistant-main-edge-roundtrip.mjs').length,1);
+      for(const edgeFamily of ['postgres','C','I','T'])assert.equal(edgePlan.inputDigests[edgeFamily+'Before'],edgePlan.inputDigests[edgeFamily+'After']);
+      assert.equal(edgePlan.domains.postgres.status,'NOT_APPLICABLE');assert.equal(edgePlan.domains.historical584National.status,'NOT_APPLICABLE');
+      assert.equal(edgePlan.skipAuthorized,false);assert.equal(edgePlan.productionAuthority,false);
+      for(const edgeChangedOwner of edgeOwners){
+        const edgeVariant=edgeChanges.map(([edgePath,edgeBody])=>[edgePath,edgePath===edgeChangedOwner?Buffer.concat([edgeBody,Buffer.from('\n')]):edgeBody]);
+        assert.deepEqual(run598(make598(baseline598,edgeVariant,'synthetic unreviewed assistant owner bytes')).reasonCodes,
+          ['UNKNOWN_EXACT_SOURCE_TRANSITION:'+edgeChangedOwner]);
+      }
+    });
+    await t.test('exact598 admin cache address admits only the reviewed whole HTML pair',()=>{
+      const cacheOwner='admin.html',cacheBefore=git(root598,['cat-file','blob',baseline598+':admin.html']);
+      const cacheAddress='js/ui/admin-dashboard.js?v=4.0.598&ui=admin-model-startup-20261101&map=plain-map-v3-20261104';
+      assert.equal(cacheBefore.toString().split(cacheAddress).length,2);
+      const cacheAfter=Buffer.from(cacheBefore.toString().replace(cacheAddress,cacheAddress+'&observations=local-scope-20261106'));
+      assert.equal(cacheAfter.length,cacheBefore.length+34);
+      assert.equal(cacheAfter.toString().replace('&observations=local-scope-20261106',''),cacheBefore.toString());
+      const cacheCandidate=make598(baseline598,[[cacheOwner,cacheAfter]],'synthetic reviewed598 admin cache address');
+      const cachePlan=run598(cacheCandidate);
+      assert.equal(cachePlan.selection,'TARGETED_DOMAINS',JSON.stringify(cachePlan.reasonCodes));
+      for(const cacheFamily of ['postgres','C','I','T'])assert.equal(cachePlan.inputDigests[cacheFamily+'Before'],cachePlan.inputDigests[cacheFamily+'After']);
+      assert.equal(cachePlan.domains.adminUI.status,'SELECTED');assert.equal(cachePlan.domains.postgres.status,'NOT_APPLICABLE');
+      assert.equal(cachePlan.domains.historical584National.status,'NOT_APPLICABLE');
+      assert.equal(cachePlan.skipAuthorized,false);assert.equal(cachePlan.productionAuthority,false);
+      for(const cacheVariant of [Buffer.concat([cacheAfter,Buffer.from('\n')]),
+        Buffer.from(cacheAfter.toString().replace('local-scope-20261106','local-scope-20261107')),
+        Buffer.from(cacheAfter.toString().replace('map=plain-map-v3-20261104','map=changed'))]){
+        assert.deepEqual(run598(make598(baseline598,[[cacheOwner,cacheVariant]],'synthetic unreviewed admin HTML bytes')).reasonCodes,
+          ['UNKNOWN_EXACT_SOURCE_TRANSITION:'+cacheOwner]);
+      }
+    });
     await t.test('current597 OM owners retain the complete actual runtime and bank caller closure',()=>{
       for(const owner of ['scripts/lib/open-meteo-part-runtime.mjs','scripts/produce-open-meteo-part-components.mjs',
         'scripts/test-open-meteo-part-runtime.mjs']){

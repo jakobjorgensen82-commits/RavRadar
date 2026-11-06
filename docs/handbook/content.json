@@ -5,6 +5,13 @@
   "updatedAt": "2026-11-06",
   "sections": [
     {
+      "id": "assistant-fixed-server-answer-order-2026-11-06",
+      "chapter": "89.315",
+      "title": "Kontrollerede assistentsvar uden unødvendige AI-kald",
+      "summary": "Brug den kendte hele forklaring, bevar usikkerhed og kontrollér stadig sikkerhed, sprog og model.",
+      "body": "<div class=\"reader-guide\"><p><strong>Kort fortalt: Når et helt spørgsmål allerede har en fagligt kontrolleret forklaring, kan Spørg RavRadar bruge den direkte. Den skal stadig være ærlig om det, den ikke ved.</strong></p></div><h3>Ukendt udstyr og fundgarantier</h3><p>Spørger du både til et ukendt stykke ravudstyr og til en garanti for fund, skal svaret tydeligt sige, at udstyret ikke kan bekræftes, og at der ikke gives nogen fundgaranti. Assistenten må ikke gætte på produktets egenskaber eller erstatte dit spørgsmål med en forklaring om andet udstyr.</p><h3>Et allerede kontrolleret svar</h3><p>Den afgrænsede serverrettelse bruger den samme eksisterende forklaring, før det ellers unødvendige AI-kald. Spørgsmålet læses stadig som en helhed. Tilføjer du et andet spørgsmål, må den første genkendte del ikke skjule resten. Øvrige ukendte udtryk beholder deres normale behandling og ærlige usikkerhed.</p><h3>Sikkerhed, sprog og prognose bevares</h3><p>Kontrol af tilladt hjemmeside, gyldigt input, aktiv model, sprog og sikkerhed ligger fortsat før svaret. Dansk, tysk og engelsk skal have samme betydning og forbehold. Et fast svar må ikke præsenteres som et nyt svar fra den eksterne AI. Ændringen opfinder ingen vejrtal og ændrer ikke RavScore, leverandørprioritet, administratorpunkter, geometri eller gemte ture.</p><h3>Klargøring og offentlig brug</h3><p>Den lokale normale prøve bruger syntetiske svar og kan afprøve både et direkte svar og fejl hos AI-leverandøren. Det er ikke bevis for fungerende ekstern AI på hjemmesiden. Den endelige kildekontrol, kontrollerede levering og afprøvning gennem den offentlige brugerfunktion skal fortsat dokumenteres særskilt.</p>"
+    },
+    {
       "id": "admin-local-observation-scope-2026-11-06",
       "chapter": "89.314",
       "title": "Samlet turtæller og lokale observationer i admin",

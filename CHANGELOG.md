@@ -1,3 +1,9 @@
+## 6. november — samme kontrollerede assistentsvar før AI-kaldet
+
+- Klargjort den eksisterende forklaring om ukendt ravudstyr og manglende fundgaranti som et fast serversvar før unødvendig kvote- og leverandørbehandling.
+- Bevarer hele spørgsmålet, sikkerhed, sprog, bindinger, ukendte udstyrs normale AI-forløb og alle vejr-, score- og brugerdata. Klientkode, 4.0.598, C/I/T og migrationsfiler ændres ikke.
+- Lokal transportprøve er ikke offentlig AI-accept; præcis samlet kildekvalifikation, levering og browseraccept dokumenteres særskilt. Ingen generel URL- eller Edge-undtagelse indføres i den afgrænsede kontrol.
+
 ## 6. november — admin: tydelig kilde for lokale observationer
 
 - Klargjort en præcis forklaring af, at tallene og eksporten på Observationer gælder denne enhed; den samlede D1-tæller på Overblik er uændret.
