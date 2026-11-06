@@ -1,3 +1,9 @@
+## 6. november — lokalt observationsudsnit i administrationen
+
+Fanen Observationer og dens dataminimerede eksport bruger observationer fra denne enheds lokale lager. Overblikkets særskilte D1-tæller omfatter alle gemte rækker i de aktive lagerdele. De to mål kan derfor være forskellige uden datatab. Den afgrænsede kildekandidat tilføjer kun en tydelig lokal kildehenvisning før observationsfelterne og en særskilt cacheadresse for det eksisterende adminmodul.
+
+Ingen optælling, eksportallowlist, rettighed, modelbinding, score, vejrdata, SQL-DDL eller administratoropsætning ændres. De allerede accepterede tællere, kontokategorier og modelkontrol genåbnes ikke. Ukendt er fortsat ikke nul, og et umarkeret bidrag er ikke bevis for en virkelig tur. Relevant normal kildekontrol, sikker levering og faktisk offentlig adminvisning er separate krav; lokal klargøring er ikke offentlig effekt. Se håndbog 89.314. Skiftende prøve-, commit- og leveringsstatus føres privat.
+
 ## 5. november — 4.0.598: afgrænset kildekontrol med ægte normalbaseline
 
 Den fulde normale kilde-PR for 4.0.598 er faktisk kvalificeret, inklusive dens PostgreSQL-kontrol. Den skrivefri standardkontrol på den indholdslige mergede main har derefter godkendt det eksisterende kildebevis før privat adgang. Producentcommitten og mergecommitten er forskellige identiteter. Den normale toforældre-merge må kun knyttes til producentens bevis gennem det verificerede PR-forhold, samme hele kildetræ og de oprindelige kørsels-, forsøgs- og artifactidentiteter. Et andet commitnavn kræver ikke i sig selv en ommærket profil eller et nyt PostgreSQL-bevis.

@@ -1,3 +1,11 @@
+## 89.314 Samlet turtæller og lokale observationer i admin
+
+Skeln overblikkets gemte D1-rækker fra observationer og eksport på denne enhed.
+
+<a id="admin-local-observation-scope-2026-11-06"></a>
+
+<div class="reader-guide"><p><strong>Kort fortalt: Administrationen har både en samlet turtæller og et lokalt observationsudsnit. De beskriver forskellige data og behøver ikke vise samme antal.</strong></p></div><h3>Overblik tæller de gemte ture</h3><p>Den særskilte turtæller på Overblik læser alle gemte rækker i de aktive D1-lagerdele. Det omfatter også ældre, anonyme og markerede testposter. Testtallet tæller kun udtrykkeligt markerede tests; øvrige rækker er ikke dermed dokumenteret som virkelige ture. Aflæsningen har sit eget tidsinterval og er ikke ét atomisk snapshot af alle lagerdele.</p><h3>Observationer gælder denne enhed</h3><p>Fanen Observationer bruger observationerne i denne browsers lokale lager. Dens antal, registrerede fund, bundne snapshots og dataminimerede eksport gælder det samme lokale udsnit. Derfor kan fanen vise nul, selv om Overblik viser gemte ture fra andre enheder. Det er ikke i sig selv tegn på tab eller en forkert samlet optælling.</p><p>Før tallene står nu den fælles forklaring: <strong>Tallene og eksporten gælder kun observationer på denne enhed.</strong> Den eksisterende eksport beholder sin faste liste af tilladte felter og kontrollen mod den aktive model.</p><h3>Samme funktioner og rettigheder</h3><p>Præciseringen henter ingen yderligere bruger- eller turdata og ændrer ikke optælling, rettigheder, RavScore eller vejrbehandling. Adminmodulets eksisterende indgang får en særskilt cacheadresse, så den nye tekst kan indlæses uden at ændre de øvrige funktioner.</p><h3>Klargøring og faktisk levering</h3><p>Afsnittet beskriver den afgrænsede kildekandidat. Relevante normale prøver, sikker levering og synlig offentlig adminvirkning skal stadig dokumenteres hver for sig. Tidligere accepterede tællere, kontofiltre og modelkontroller skal ikke gentages alene for at få en ny status.</p>
+
 ## 89.313 Privat arkivkontrol ved afvist anonym adgang
 
 Kræv privat lager og præcis autentificeret genlæsning, og fortolk den anonyme fejl uden at læse arkivets indhold.
