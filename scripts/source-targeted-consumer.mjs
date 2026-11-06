@@ -31,7 +31,10 @@ export const TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES=Object.freeze([
   ...TARGETED_SOURCE_STEP_NAMES.slice(0,4),'Run actions/setup-python@v7',
   'Install declared requests dependency before source planning',
   ...TARGETED_SOURCE_STEP_NAMES.slice(4,6),...TARGETED_SOURCE_STEP_NAMES.slice(7)]);
+export const TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES=Object.freeze(
+  TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES.map((name,index)=>index===5?'Install declared DMI dependencies before source planning':name));
 const DMI_PYTHON_WORKFLOW_SHA256='742835aa72adb58c50f6f404f5c3c1308a7c11b0038a528a9b5a1ac6253b3cff';
+const DMI_REQUIREMENTS_WORKFLOW_SHA256='2947d429c6df45cfc415ace970f4e5efc89410ca60d277de19529dde73882843';
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const one=rows=>{assert.equal(rows.length,1);return rows[0];};
 const positive=value=>Number.isSafeInteger(value)&&value>0;
@@ -58,8 +61,9 @@ function locatorIdentity(record,env){
 export function verifyTargetedSourceStepShape(job,workflowText){
   assert.equal(arguments.length,2);assert(Array.isArray(job.steps));
   const modern=workflowText!==undefined;
-  if(modern)assert.equal(sha(workflowText),DMI_PYTHON_WORKFLOW_SHA256,'EXACT_DMI_PYTHON_WORKFLOW_REQUIRED');
-  const names=modern?TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES:TARGETED_SOURCE_STEP_NAMES;
+  const workflowHash=modern?sha(workflowText):null;
+  if(modern)assert([DMI_PYTHON_WORKFLOW_SHA256,DMI_REQUIREMENTS_WORKFLOW_SHA256].includes(workflowHash),'EXACT_DMI_PYTHON_WORKFLOW_REQUIRED');
+  const names=modern?(workflowHash===DMI_PYTHON_WORKFLOW_SHA256?TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES:TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES):TARGETED_SOURCE_STEP_NAMES;
   assert.deepEqual(job.steps.filter(value=>value.number<=names.length).map(value=>value.number),Array.from({length:names.length},(_,i)=>i+1));
   for(let i=0;i<names.length;i++){
     const step=one(job.steps.filter(value=>value.number===i+1));assert.equal(step.name,names[i]);assert.equal(step.status,'completed');

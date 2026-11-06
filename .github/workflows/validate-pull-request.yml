@@ -44,12 +44,12 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install declared requests dependency before source planning
+      - name: Install declared DMI dependencies before source planning
         timeout-minutes: 2
         run: >-
           python -m pip install --disable-pip-version-check --no-input
-          --timeout 15 --retries 0 --only-binary=:all: 'requests>=2.32,<3'
-          && python -c "import requests.adapters; import urllib3.util.retry"
+          --timeout 15 --retries 0 --only-binary=:all: -r requirements-dmi.txt
+          && python -c "import requests.adapters; import urllib3.util.retry; import eccodes; assert eccodes.codes_get_api_version() == '2.48.2'"
 
       - name: Build deterministic source-tree content identity
         id: source-content

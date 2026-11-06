@@ -2,6 +2,8 @@
 
 Den gamle sortering satte unik validtid før hulomfang, så et bredt senere hul ikke kunne passere et mindre tidligere hul i samme kritiske klasse. Den gennemgåede kandidat bruger kun normalt kvalificerede PART-komponenthuller; nyeste models originalunderskud alene tæller ikke. Ingen blind budgetforhøjelse eller ekstra resume-runde.
 
+Miljøpræmissen gælder den fulde normale parent: Linux-barnet importerer rigtig ecCodes og kræver native API2.48.2, selv om den øvre provenance-del bruger en stub. Derfor klargøres hele det eksisterende requirements-dmi-sæt (requests, eccodes==2.48.0, eccodeslib==2.48.2.27) før uændret producent; requests/urllib3 alene er ikke tilstrækkeligt. Ingen test springes over, og kilde-CI er ikke produktionsbevis.
+
 Fortsat ÅBENT: kontrolleret levering, næste almindelige generations faktiske kø/optagelse, RAW-/tids-/downloadadmission, fuld databevarelse og offentlig effekt. Tre officielt fraværende ydertimer i den analyserede kørsel må ikke opfindes. Den særskilte fejlagtige runtime-etiket på et download-byte-stop er et separat fund og er ikke rettet af denne kandidat. Håndbog 89.318; rå evidence forbliver privat.
 
 ## 6. november — backuptelemetri og delingens Free-bevis er fortsat særskilte

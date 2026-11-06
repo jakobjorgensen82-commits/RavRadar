@@ -10,7 +10,7 @@ import {scanAllSourceDependencies,dependencySourceLiterals} from './lib/source-i
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const REGISTRY_SHA256='3970bc86fb8afd99d193507b82337c1068aa368f6d62ff728988fc21da9577f4';
 const REGISTRY597_SHA256='a7ccfba2b2f631ccc358342e2c3b87e1cb1edbd54311148c94822fddaa6dbcfa';
-const REGISTRY598_SHA256='ed553a051a195ea4493910fd54c76cececf39136630910e7aacda23b60712a41';
+const REGISTRY598_SHA256='406e93c871a5b163a392356e11b97d6dbe7fef909a6568da943cfab3893fe356';
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const oid=value=>typeof value==='string'&&/^[a-f0-9]{40}$/.test(value);
 const relative=value=>typeof value==='string'&&/^[A-Za-z0-9_./-]+$/.test(value)&&!value.startsWith('/')
@@ -251,7 +251,8 @@ export function planSourceDomainImpactFromGit(input){
     const uniqueRows=[...new Map(closureRows.map(row=>[row.file,row])).values()].sort((a,b)=>a.file.localeCompare(b.file,'en'));
     out.closureSha256=sha(JSON.stringify({rows:uniqueRows,edges:[...new Set(edges.map(JSON.stringify))].sort(),
       prerequisites:is598&&out.commands.includes('node --test scripts/test-current-operational-python-contracts.mjs')
-        ?{...registry.runtimePrerequisites,pythonStdlibOnly:false,thirdPartyImports:['requests','requests.adapters','urllib3.util.retry'],pipInstallation:true}
+        ?{...registry.runtimePrerequisites,pythonStdlibOnly:false,thirdPartyImports:['requests','requests.adapters','urllib3.util.retry','eccodes'],
+          pythonRequirements:['requirements-dmi.txt'],expectedEcCodesApiVersion:'2.48.2',pipInstallation:true}
         :registry.runtimePrerequisites,registrySha256}));
     assert.equal(git(['rev-parse','HEAD']).toString('utf8').trim(),input.expectedHead);
     return out;

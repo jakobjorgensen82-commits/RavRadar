@@ -109,7 +109,7 @@ function run(selected){return {id:selected?selectedRun:fullRun,run_attempt:1,hea
   head_repository:{full_name:native.ORIGIN.repository},pull_requests:[]};}
 function jobs(selected){
   const modern=selected&&state.modernWorkflow;
-  const names=modern?namespace.TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES:namespace.TARGETED_SOURCE_STEP_NAMES;
+  const names=modern?namespace.TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES:namespace.TARGETED_SOURCE_STEP_NAMES;
   return {id:selected?selectedJob:fullJob,run_id:selected?selectedRun:fullRun,run_attempt:1,head_sha:selected?head:base,
     name:namespace.PULL_REQUEST_SOURCE_JOB,status:selected&&!state.merged?'in_progress':'completed',
     conclusion:selected&&!state.merged?null:'success',steps:names.map((name,index)=>({name,number:index+1,status:'completed',
@@ -232,7 +232,8 @@ try{
   native=await moduleAt('scripts/native-postgres-evidence.mjs');
   const gate=await moduleAt('scripts/lib/weather-source-gate.mjs'),consumer=await moduleAt('scripts/source-targeted-consumer.mjs');
   namespace={...gate,TARGETED_SOURCE_STEP_NAMES:consumer.TARGETED_SOURCE_STEP_NAMES,
-    TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES:consumer.TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES};
+    TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES:consumer.TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES,
+    TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES:consumer.TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES};
   sourceContent=await moduleAt('scripts/lib/source-tree-content.mjs');
   ({coordinateTargetedSourceProducer:coordinate}=await moduleAt('scripts/source-targeted-producer.mjs'));
   ({decideTargetedSourceGate:decide,discoverTargetedSourceGate:discover}=consumer);accessFactory=native.sourceImpactEvidenceAccess;

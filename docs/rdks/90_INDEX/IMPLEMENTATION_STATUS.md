@@ -2,6 +2,7 @@
 
 - Kildekandidat gennemgået: kvalificeret hulomfang før tid/cursor; eksisterende sikre førsterækkefølge, fallback, maskvalidering og T+3 bevares.
 - Normalt før/efter-mål og syntetisk 673×115×3-planlægningspris foreligger; ingen nye budgetter eller ekstra resume-runde.
+- CI-miljøet skal før uændret producent have Python3.12 og hele eksisterende requirements-dmi (requests, låste eccodes/ecCodeslib); parentens Linux-barn bruger rigtig native API2.48.2, ikke kun den øvre stub. Ingen geometry-/Copernicus-SDK- eller Node24-udvidelse følger af dette miljøkrav.
 - Kontrolleret levering og faktisk nygenerations-/hale-/no-loss-/deployeffekt er ÅBNE. Den normale CI-miljøport giver ingen produktionsautoritet eller bestået PG/national-evidens. Se 89.318 og privat checkpoint.
 
 ## 6. november — privat følgepakke til backupbyteantal og delingsopstart

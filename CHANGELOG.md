@@ -1,7 +1,7 @@
 ## 2026-11-06 – Kvalificeret DMI-hulomfang og normalt CI-miljø
 
 - Gennemgået kandidat: reelle brede PART-komponenthuller sorteres før små huller efter tid/cursor inden samme kritiske klasse; first3, regionalt genbrug og ukendt-plan-adfærd bevares.
-- Samme budgetter, DMI > Copernicus > Open-Meteo, databevarelse og score/admin/geometri. Enkel Python/requests-opsætning før uændret kildeproducent; præcis 23-trinsconsumer og historiske 22/FULL-kontroller.
+- Samme budgetter, DMI > Copernicus > Open-Meteo, databevarelse og score/admin/geometri. Python 3.12 og hele det eksisterende requirements-dmi-sæt (requests samt låste ecCodes/ecCodeslib) før uændret kildeproducent; den normale Linux-prøve kræver rigtig decoder frem for Windows-stub; præcis 23-trinsconsumer og historiske 22/FULL-kontroller.
 - Normale målprøver og syntetisk national planlægningspris er dokumenteret. Ny vejrgeneration og offentlig effekt er fortsat åbne; lokal/kilde-CI er ikke produktionsbevis. Se 89.318.
 
 ## 6. november — privat følgepakke: backupbyteantal og delingsformatering

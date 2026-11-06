@@ -432,7 +432,9 @@
       "c56ce878f12d19c903178da35b8a15d123588f88615959e4fa5348a948cb8b2a/5eb9e0d94aa7cdbeecd7d2b93ad37a2883daa18bea1fa41c4f613274592aff0e"
     ],
     ".github/workflows/validate-pull-request.yml": [
-      "407a84f9a0159fff736b04624d029208451ef27e241a078eb8a0b4d16406469e/742835aa72adb58c50f6f404f5c3c1308a7c11b0038a528a9b5a1ac6253b3cff"
+      "407a84f9a0159fff736b04624d029208451ef27e241a078eb8a0b4d16406469e/742835aa72adb58c50f6f404f5c3c1308a7c11b0038a528a9b5a1ac6253b3cff",
+      "407a84f9a0159fff736b04624d029208451ef27e241a078eb8a0b4d16406469e/2947d429c6df45cfc415ace970f4e5efc89410ca60d277de19529dde73882843",
+      "742835aa72adb58c50f6f404f5c3c1308a7c11b0038a528a9b5a1ac6253b3cff/2947d429c6df45cfc415ace970f4e5efc89410ca60d277de19529dde73882843"
     ],
     "scripts/test-runner-android-sdk-reclaim.mjs": [
       "95549ea3fc6fdba7e72002f72b958fba48c38742dab29d769c1b1cab001b3ff5/0d1aa8b12ff4a7e9533e2b05d91e14e412cf34f1756e31de603448a071ba17c4"
@@ -5228,7 +5230,8 @@
           "scripts/national584-source-evidence.mjs",
           "scripts/native-postgres-evidence.mjs",
           "scripts/source-targeted-consumer.mjs",
-          "scripts/test-source-targeted-domain-integration.mjs"
+          "scripts/test-source-targeted-domain-integration.mjs",
+          "scripts/lib/source-impact-workflow-review.mjs"
         ],
         "resources": [
           ".github/workflows/update-and-deploy.yml",

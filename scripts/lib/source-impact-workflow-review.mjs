@@ -93,9 +93,34 @@ export const SOURCE_IMPACT_DMI_PYTHON_REVIEW=Object.freeze({
   "buildStepHeader": "      - name: Build deterministic source-tree content identity\n",
   "earlyEnvironment": "      # Environment only: the unchanged producer still verifies the whole\n      # real plan and ROOT review before any target or source receipt.\n      - uses: actions/setup-python@v7\n        with:\n          python-version: \"3.12\"\n\n      - name: Install declared requests dependency before source planning\n        timeout-minutes: 2\n        run: >-\n          python -m pip install --disable-pip-version-check --no-input\n          --timeout 15 --retries 0 --only-binary=:all: 'requests>=2.32,<3'\n          && python -c \"import requests.adapters; import urllib3.util.retry\"\n\n"
 });
+export const SOURCE_IMPACT_DMI_REQUIREMENTS_REVIEW=Object.freeze({
+  "beforeSha256": "742835aa72adb58c50f6f404f5c3c1308a7c11b0038a528a9b5a1ac6253b3cff",
+  "afterSha256": "2947d429c6df45cfc415ace970f4e5efc89410ca60d277de19529dde73882843",
+  "beforeBytes": 9822,
+  "afterBytes": 9891,
+  "hunks": [
+    {
+      "before": "Install declared requests dependency before source planning",
+      "after": "Install declared DMI dependencies before source planning"
+    },
+    {
+      "before": "--timeout 15 --retries 0 --only-binary=:all: 'requests>=2.32,<3'",
+      "after": "--timeout 15 --retries 0 --only-binary=:all: -r requirements-dmi.txt"
+    },
+    {
+      "before": "&& python -c \"import requests.adapters; import urllib3.util.retry\"",
+      "after": "&& python -c \"import requests.adapters; import urllib3.util.retry; import eccodes; assert eccodes.codes_get_api_version() == '2.48.2'\""
+    }
+  ]
+});
 export function inverseSourceImpactDmiPython(value){
   assert.equal(arguments.length,1);assert.equal(typeof value,'string');
   let source=value.replace(/\r\n/g,'\n');const review=SOURCE_IMPACT_DMI_PYTHON_REVIEW;
+  if(sha(source)===SOURCE_IMPACT_DMI_REQUIREMENTS_REVIEW.afterSha256){
+    const correction=SOURCE_IMPACT_DMI_REQUIREMENTS_REVIEW;assert.equal(Buffer.byteLength(source),correction.afterBytes);
+    for(const hunk of correction.hunks)source=once(source,hunk.after,hunk.before);
+    assert.equal(Buffer.byteLength(source),correction.beforeBytes);assert.equal(sha(source),correction.beforeSha256);
+  }
   if(sha(source)!==review.afterSha256)return source;
   assert.equal(Buffer.byteLength(source),review.afterBytes);
   source=once(source,review.earlyEnvironment+review.buildStepHeader,review.buildStepHeader);
