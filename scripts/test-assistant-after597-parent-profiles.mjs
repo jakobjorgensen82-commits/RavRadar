@@ -7,6 +7,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {pathToFileURL,fileURLToPath} from 'node:url';
 import {test} from 'node:test';
+import {sourceAfter598PreissuanceTest} from './lib/source598-test-phase.mjs';
 import {ACTIVE_ASSISTANT_SUCCESSOR,INACTIVE_SCALAR597_LATER_H0_SUCCESSOR,
   UNISSUED_ASSISTANT_AFTER597_SUCCESSOR as next,SCALAR597_LATER_H0_BINDING,
   SCALAR597_LATER_H0_OUTPUT,readScalar597LaterH0CanonicalSource,ASSISTANT_AFTER597_BINDING,ASSISTANT_AFTER597_OUTPUT}
@@ -146,7 +147,7 @@ import {SOURCE_PRODUCER_AFTER597_PARENT,requireSourceProducerAfter597CodeParent,
   assertSourceProducerAfter597UnissuedMetadata,sourceProducerAfter597PredecessorCompilationLayout,
   readSourceProducerAfter597PredecessorCanonicalSource} from './lib/source-producer-after597-parent.mjs';
 
-test('SOURCE after597 parent/compiler uses the genuine fixed CODE host and exact new checkpoint tail',async()=>{
+sourceAfter598PreissuanceTest('SOURCE after597 parent/compiler uses the genuine fixed CODE host and exact new checkpoint tail',async()=>{
   assert.equal(SOURCE_PRODUCER_AFTER597_PARENT.code,SOURCE598_CODE_SOURCE_PROVENANCE);
   assert.equal(assertSource598CodeSourceSelected(),SOURCE598_CODE_SOURCE_PROVENANCE);
   assert.throws(()=>assertSource598CodeSourceSelected({head:SOURCE597_CODE_SOURCE_PROVENANCE.head}));
@@ -163,7 +164,7 @@ test('SOURCE after597 parent/compiler uses the genuine fixed CODE host and exact
   assert.throws(()=>sourceProducerAfter597PredecessorCompilationLayout(source.canonicalSource+'\n'));
 });
 
-test('SOURCE after597 NULL metadata and pre-issuance boundary reject borrowed and mixed families before I/O',async t=>{
+sourceAfter598PreissuanceTest('SOURCE after597 NULL metadata and pre-issuance boundary reject borrowed and mixed families before I/O',async t=>{
   let calls=0;const hostile=new Proxy({},{get(){calls++;throw new Error('UNEXPECTED_OPERAND');},
     ownKeys(){calls++;throw new Error('UNEXPECTED_OPERAND');},getPrototypeOf(){calls++;throw new Error('UNEXPECTED_OPERAND');}});
   for(const key of ['readFile','writeFile','appendFile','mkdir','lstat','realpath'])
@@ -294,7 +295,7 @@ test('SOURCE after597 compiler transforms genuine canonical CODE and proves enti
 
 });
 
-test('SOURCE after597 compiler refuses changed source, caller tuples and real build before operands or I/O',async()=>{
+sourceAfter598PreissuanceTest('SOURCE after597 compiler refuses changed source, caller tuples and real build before operands or I/O',async()=>{
   const api=await normalSource597Compiler();let operands=0;
   const hostile=new Proxy({},{get(){operands++;throw new Error('UNEXPECTED_OPERAND');},
     ownKeys(){operands++;throw new Error('UNEXPECTED_OPERAND');},getPrototypeOf(){operands++;throw new Error('UNEXPECTED_OPERAND');}});
@@ -340,7 +341,7 @@ test('SOURCE after597 first issuance canonical NULL DATA rejects ambiguous and e
     assert.throws(()=>assertSourceProducerAfter597Release(release));
 });
 
-test('SOURCE after597 first issuance normal issuer rejects caller options and unissued output before I/O',async t=>{
+sourceAfter598PreissuanceTest('SOURCE after597 first issuance normal issuer rejects caller options and unissued output before I/O',async t=>{
   const api=await normalSource597Compiler();let calls=0;
   const hostile=new Proxy({},{get(){calls++;throw Error('OPERAND');},ownKeys(){calls++;throw Error('OPERAND');},getPrototypeOf(){calls++;throw Error('OPERAND');}});
   for(const key of ['readFile','writeFile','appendFile','mkdir','lstat','realpath'])
@@ -354,7 +355,7 @@ test('SOURCE after597 first issuance normal issuer rejects caller options and un
   assert.equal(calls,0);
 });
 
-test('SOURCE after597 first issuance actual package598 and physical NULL refuse later-release requirement before builders',async()=>{
+sourceAfter598PreissuanceTest('SOURCE after597 first issuance actual package598 and physical NULL refuse later-release requirement before builders',async()=>{
   const api=await normalSource597Compiler();
   const root=fileURLToPath(new URL('../',import.meta.url));
   const file=path.join(root,SOURCE_PRODUCER_AFTER597_DERIVED_METADATA_PATH),before=await fs.readFile(file);
@@ -366,7 +367,7 @@ test('SOURCE after597 first issuance actual package598 and physical NULL refuse 
   assert.equal(SOURCE_PRODUCER_AFTER597_PARENT.binding,null);assert.equal(SOURCE_PRODUCER_AFTER597_PARENT.output,null);
 });
 
-test('SOURCE after597 staged original reader remains unissued before operands, filesystem or transport',async t=>{
+sourceAfter598PreissuanceTest('SOURCE after597 staged original reader remains unissued before operands, filesystem or transport',async t=>{
   const staged=await import('./lib/authenticated-frozen586-predecessor.mjs');
   const source=await import('./lib/source-producer-after597-parent.mjs');
   assert.equal(source.SOURCE_PRODUCER_AFTER597_PARENT.binding,null);
@@ -383,7 +384,7 @@ test('SOURCE after597 staged original reader remains unissued before operands, f
   assert.equal(operands,0);assert.equal(io,0);
 });
 
-test('SOURCE after597 normal caller chain refuses unissued metadata before operands, Git, files or transport',async t=>{
+sourceAfter598PreissuanceTest('SOURCE after597 normal caller chain refuses unissued metadata before operands, Git, files or transport',async t=>{
   const family=await import('./lib/source-producer-after597-runtime-family.mjs');
   const stage=await import('./stage-source-producer-originals.mjs');
   const runtime=await import('./source-producer-runtime-transition.mjs');
@@ -485,7 +486,7 @@ test('SOURCE after597 normal caller request guards preserve ordinary saved and s
     contractHashes:{continuationStateContractSha256:SCALAR597_LATER_H0_BINDING.T}}),true);
 });
 
-test('SOURCE after597 normal caller code-only pure policy rejects mixed grants and leaves unissued false selector inert',async()=>{
+sourceAfter598PreissuanceTest('SOURCE after597 normal caller code-only pure policy rejects mixed grants and leaves unissued false selector inert',async()=>{
   const selector=await import('./select-source-producer-code-only-source.mjs');
   const environment={GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_REF:'refs/heads/main',GITHUB_RUN_ATTEMPT:'1',
     GITHUB_RUN_ID:'1',GITHUB_SHA:SOURCE597_CODE_SOURCE_PROVENANCE.head,GITHUB_WORKFLOW:'Deploy RavRadar code-only repair',
@@ -516,7 +517,7 @@ test('SOURCE after597 normal caller same H0 relation rejects older and later ori
 
 // Permanent real CLI regression. A body extraction cannot prove ESM linking;
 // missing modules/exports and generic exit1 must never count as the NULL guard.
-test('SOURCE after597 full normal compiler CLI links real modules and refuses NULL before application I/O',async t=>{
+sourceAfter598PreissuanceTest('SOURCE after597 full normal compiler CLI links real modules and refuses NULL before application I/O',async t=>{
   const root=fileURLToPath(new URL('../',import.meta.url));
   const legacyPath=path.join(root,'scripts/lib/source-producer-binding.generated.json');
   const after597Path=path.join(root,'scripts/lib/source-producer-after597-binding.generated.json');
@@ -551,7 +552,7 @@ test('SOURCE after597 full normal compiler CLI links real modules and refuses NU
 
 // Whole-module CODE/DATA regression. Both Source metadata files stay NULL;
 // fixture fingerprints and real normal C/I renders are not Source capabilities.
-test('SOURCE after597 normal CODE DATA fingerprints preserve NULL and enforce physical I and cutoff',{timeout:60000},async t=>{
+sourceAfter598PreissuanceTest('SOURCE after597 normal CODE DATA fingerprints preserve NULL and enforce physical I and cutoff',{timeout:60000},async t=>{
   const root=fileURLToPath(new URL('../',import.meta.url));
   const {execFileSync}=await import('node:child_process');
   const {performance}=await import('node:perf_hooks');

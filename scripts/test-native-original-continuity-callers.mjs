@@ -6,6 +6,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import test from 'node:test';
+import {sourceAfter598PreissuanceTest} from './lib/source598-test-phase.mjs';
 import {NATIVE_ORIGINAL_CONTINUITY_BINDING as BINDING,NATIVE_ORIGINAL_CONTINUITY_OUTPUT as OUTPUT,
   NATIVE_ORIGINAL_CONTINUITY_BEFORE as OLD,requireNativeOriginalContinuityBinding,
   requireNativeOriginalContinuityOutput,nativeOriginalContinuityMigration,
@@ -1924,7 +1925,7 @@ test('assistant public587 origin retains whole parent and pair refusals in the a
   }
 });
 
-test('assistant public587 operative import variants remain whole-source bound',async()=>{
+sourceAfter598PreissuanceTest('assistant public587 operative import variants remain whole-source bound',async()=>{
   for(const file of ['scripts/assistant-later-h0-binding-prewrite.mjs','scripts/lib/established-native-current-origin.mjs',
     'scripts/lib/authenticated-frozen586-predecessor.mjs','scripts/check-assistant-later-h0-predecessor-source.mjs']){
     const source=(await fs.readFile(path.join(ROOT,file),'utf8')).replace(/\r\n?/g,'\n');
@@ -2125,7 +2126,7 @@ test('assistant592 ordinary caller selects only genuine591 after normal guards',
     assert(reads>=8);
   }finally{t.mock.restoreAll();for(const key of Object.keys(base)){if(prior[key]===undefined)delete process.env[key];else process.env[key]=prior[key];}}
 });
-test('assistant594 native evidence requires its own new commands and rejects old receipt without PG',async()=>{
+sourceAfter598PreissuanceTest('assistant594 native evidence requires its own new commands and rejects old receipt without PG',async()=>{
   const n=await import('./native-postgres-evidence.mjs');
   const e=await import('./national584-source-evidence.mjs');
   const m=await import('./lib/assistant-later-h0-successor-source.mjs');

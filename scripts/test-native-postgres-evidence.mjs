@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import test from 'node:test';
+import {sourceAfter598PreissuanceTest} from './lib/source598-test-phase.mjs';
 import {inverseSourceBeforePostgresWorkflow, SOURCE_BEFORE_POSTGRES_BLOCK,
   SCALAR597_LATER_H0_SOURCE_COMMAND,inverseScalar597LaterH0Package,verifyScalar597LaterH0NativeContext,
   scalar597LaterH0NativeClaims,ASSISTANT_AFTER597_SOURCE_COMMAND,inverseAssistantAfter597Package}
@@ -836,7 +837,7 @@ test('calendar588 normal native route uses genuine parent factory then current c
   else assert.equal(ACTIVE_COMMANDS,ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS);
 });
 
-test('calendar588 normal source command follows only its source-owned active profile',async()=>{
+sourceAfter598PreissuanceTest('calendar588 normal source command follows only its source-owned active profile',async()=>{
   const packageData=JSON.parse(await fs.readFile('package.json','utf8'));
   assert.equal(packageData.scripts['test:assistant-later-h0-source'],
     ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase===ASSISTANT_AFTER597_PHASE?ASSISTANT_AFTER597_SOURCE_COMMAND:
@@ -1520,7 +1521,7 @@ test('installed593 new594 active native commands and receipt refuse predecessor,
   assert.throws(()=>verifyAssistantPublic591V2PhaseReceipt(receipt,current));
 });
 
-test('installed593 new594 normal national caller preserves package and executed-only native claims',async()=>{
+sourceAfter598PreissuanceTest('installed593 new594 normal national caller preserves package and executed-only native claims',async()=>{
   const activePackage=JSON.parse(await fs.readFile('package.json','utf8')),receipt=installed594Receipt();
   const scalarPackage=ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase===ASSISTANT_AFTER597_PHASE
     ?inverseAssistantAfter597Package(activePackage):activePackage;
@@ -1960,7 +1961,7 @@ test('after597 frozen native boundary preserves CODE/native identities and check
   assert.equal(callbacks,0);assert.equal(filesystem,0);
 });
 
-test('after597 fixed native profile keeps genuine597 CODE/native identities and real metadata',async()=>{
+sourceAfter598PreissuanceTest('after597 fixed native profile keeps genuine597 CODE/native identities and real metadata',async()=>{
   const native=await import('./lib/assistant-later-h0-postgres.mjs');
   const source=await import('./lib/assistant-later-h0-successor-source.mjs');
   const frozen=await import('./run-frozen586-assistant-later-h0-postgres-source.mjs');
@@ -2042,7 +2043,7 @@ test('after597 normal PG entry and report collector enforce real admission befor
   }
 });
 
-test('after597 actual normal CLI checks issued source or refuses unissued before PostgreSQL',async()=>{
+sourceAfter598PreissuanceTest('after597 actual normal CLI checks issued source or refuses unissued before PostgreSQL',async()=>{
   const {execFile}=await import('node:child_process');
   const result=await new Promise(resolve=>execFile(process.execPath,
     AFTER597_ISSUED?['scripts/build-assistant-later-h0-successor.mjs','--assistant-after597','--check']
@@ -2060,7 +2061,7 @@ test('after597 actual normal CLI checks issued source or refuses unissued before
 });
 
 
-test('after597 nationalreader keeps exact issued source and old unissued input boundary',async t=>{
+sourceAfter598PreissuanceTest('after597 nationalreader keeps exact issued source and old unissued input boundary',async t=>{
   const normal=await import('./national584-source-evidence.mjs');
   const profile=await import('./lib/assistant-later-h0-successor-source.mjs');
   if(AFTER597_ISSUED){
@@ -2109,7 +2110,7 @@ test('after597 nationalreader keeps exact issued source and old unissued input b
   }
 });
 
-test('after597 actual source-package CLI checks issued source only or refuses NULL',async()=>{
+sourceAfter598PreissuanceTest('after597 actual source-package CLI checks issued source only or refuses NULL',async()=>{
   const {spawnSync}=await import('node:child_process');
   const {fileURLToPath}=await import('node:url');
   const script=fileURLToPath(new URL('./national584-source-evidence.mjs',import.meta.url));
@@ -2391,4 +2392,54 @@ test('after597 native fixture lifecycle starts after genuine97 CAS reset and pre
     assert.equal(db.rollbackTransactions,1);assert.equal(db.inserts,2);assert.equal(window.preserved,db.fingerprint());
   });
   t.diagnostic('Strict synthetic transport only; whole normal helper, no PostgreSQL/SQL execution, native receipt, model issue or SOURCE capability.');
+});
+
+sourceAfter598PreissuanceTest('Source598 basic schema native callees refuse NULL before hostile options or PG work',async()=>{
+  const adapter=await import('./lib/source-producer-after598-postgres.mjs');
+  const host=await import('./lib/checkpoint-cas-native-postgres.mjs');
+  const bootstrap=await import('./lib/source-current-full-postgres-bootstrap.mjs');
+  let reads=0;
+  const untouched=new Proxy({}, {get(){reads++;throw new Error('HOSTILE_SOURCE_OPTIONS_TOUCHED');},
+    ownKeys(){reads++;throw new Error('HOSTILE_SOURCE_OPTIONS_ENUMERATED');}});
+  for(const fn of [adapter.compareSourceProducerAfter598Successor,
+    host.runSourceProducerAfter598NativeCheckpointSqlComparison,
+    host.runSourceProducerAfter598CurrentNativeCheckpointSqlComparison,
+    bootstrap.bootstrapSourceCurrentFullPostgres,
+    bootstrap.verifySourceCurrentFullPostgres])
+    await assert.rejects(fn(untouched),/SOURCE_PRODUCER_AFTER597_UNISSUED/);
+  assert.equal(reads,0);
+});
+
+sourceAfter598PreissuanceTest('Source598 basic receipt and national consumer refuse NULL before hostile evidence',async()=>{
+  const native=await import('./native-postgres-evidence.mjs');
+  const national=await import('./national584-source-evidence.mjs');
+  let reads=0;
+  const untouched=new Proxy({}, {get(){reads++;throw new Error('HOSTILE_SOURCE_EVIDENCE_TOUCHED');},
+    ownKeys(){reads++;throw new Error('HOSTILE_SOURCE_EVIDENCE_ENUMERATED');}});
+  for(const fn of [()=>native.sourceAfter598BasicNativeReportProjection(untouched,untouched),
+    ()=>native.sourceAfter598BasicNativeReportCollector(untouched),
+    ()=>native.verifySourceAfter598BasicPhaseReceipt(untouched,untouched),
+    ()=>national.verifySourceProducerBasicPostgresContext(untouched,untouched)])
+    assert.throws(fn,/SOURCE_PRODUCER_AFTER597_UNISSUED/);
+  await assert.rejects(native.executeSourceAfter598BasicNative(),/SOURCE_PRODUCER_AFTER597_UNISSUED/);
+  assert.equal(reads,0);
+});
+
+sourceAfter598PreissuanceTest('Source598 full PR native and fixed qualification scope refuse NULL before hostile evidence',async()=>{
+  const native=await import('./native-postgres-evidence.mjs');
+  const scope=await import('./lib/source598-pr-qualification-scope.mjs');
+  let reads=0;
+  const untouched=new Proxy({}, {get(){reads++;throw new Error('HOSTILE_SOURCE_PR_EVIDENCE');},
+    ownKeys(){reads++;throw new Error('HOSTILE_SOURCE_PR_ENUMERATION');}});
+  for(const fn of [()=>native.sourcePrNativeReportCollector(),
+    ()=>native.verifySourcePrNativeResult(untouched,untouched,untouched),
+    ()=>native.verifySourcePrNativeExecutionReceipt(untouched,untouched,untouched),
+    ()=>native.verifySourcePrNativeJobMetadata(untouched),
+    ()=>native.verifySourcePrNativePhaseReceipt(untouched,untouched,untouched,untouched),
+    ()=>native.verifySourcePrNativeArtifact(untouched,untouched,untouched,untouched,untouched,untouched),
+    ()=>scope.verifySourcePrPackage(untouched),()=>scope.sourcePrHistoricalPackageInspection(untouched),()=>scope.verifySourcePrWorkflow(untouched)])
+    assert.throws(fn,/SOURCE_PRODUCER_AFTER597_UNISSUED/);
+  await assert.rejects(native.readSourcePrNativeUploadedPhase(untouched,untouched),/SOURCE_PRODUCER_AFTER597_UNISSUED/);
+  await assert.rejects(native.executeSourceAfter598PrNative(),/SOURCE_PRODUCER_AFTER597_UNISSUED/);
+  assert.equal(reads,0);
 });

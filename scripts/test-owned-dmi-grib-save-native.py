@@ -509,6 +509,23 @@ class OwnedRawSaveNative(unittest.TestCase):
                 'schemaVersion': 'source-producer-after597-derived-metadata-v1',
                 'release': None, 'version': None, 'binding': None, 'output': None},
         }
+        actual_null = all((ROOT / name).read_bytes() ==
+            (json.dumps(expected, indent=2) + '\n').encode('utf-8')
+            for name, expected in metadata_paths.items())
+        if not actual_null:
+            # A real issued profile cannot assert a historical physical-NULL
+            # premise. The normal output guard must succeed first; a partial,
+            # altered or unissued profile fails instead of becoming a skip.
+            code = ("import {requireSourceProducerOutput} from "
+                    "'./scripts/lib/source-producer-after597-runtime-family.mjs';"
+                    "requireSourceProducerOutput();"
+                    "process.stdout.write('SOURCE_NORMAL_OUTPUT_GUARD_PASSED\\n');")
+            checked = subprocess.run([str(NODE24), '--input-type=module', '-e', code],
+                cwd=str(ROOT), env=runtime_environment(), capture_output=True, timeout=20)
+            self.assertEqual(checked.returncode, 0, 'NORMAL_SOURCE_OUTPUT_REQUIRED_BEFORE_NULL_NA')
+            self.assertEqual(checked.stdout, b'SOURCE_NORMAL_OUTPUT_GUARD_PASSED\n')
+            self.assertEqual(checked.stderr, b'')
+            self.skipTest('Historical actual-NULL action premise is not applicable after normal Source output guard; actual current/native physical-stop gates remain required')
         for name, expected in metadata_paths.items():
             self.assertEqual((ROOT / name).read_bytes(),
                 (json.dumps(expected, indent=2) + '\n').encode('utf-8'),
