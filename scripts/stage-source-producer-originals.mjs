@@ -1,4 +1,4 @@
-// Fixed597 -> SOURCE original staging, not SQL/state/origin admission. The
+// Fixed598 -> SOURCE original staging, not SQL/state/origin admission. The
 // legacy585 staging caller remains unchanged. Use normal selected storage,
 // including the already delivered R2 forwarding; metadata still uses request.
 import assert from 'node:assert/strict';
@@ -10,7 +10,7 @@ import {fileURLToPath,pathToFileURL} from 'node:url';
 import {SOURCE_PRODUCER_BEFORE as OLD,requireSourceProducerBinding,requireSourceProducerOutput,sourceProducerReferenceHour}
   from './lib/source-producer-after597-runtime-family.mjs';
 import {assertSourceProducerCodeOnlyCaller} from './select-source-producer-code-only-source.mjs';
-import {withSource597OriginalDataSource,assertSource597OriginalDataSourceSelected} from './check-assistant-later-h0-predecessor-source.mjs';
+import {withSource598CodeParent,assertSource598CodeSourceSelected} from './check-assistant-later-h0-predecessor-source.mjs';
 import {createProtectedPrivateRuntimeClients,describeCurrentProtectedPrivateProductionRuntime,
   describeTargetProtectedPrivateProductionRuntime} from './protected-private-production-runtime.mjs';
 import {ravScoreModelBinding} from '../js/core/ravscore-model-contract.js';
@@ -38,7 +38,7 @@ export function sourceProducerOriginalStageFamily(selected,next){
   const newI=selected?.modelBinding?.modelBundleSha256===next.I;
   const newT=selected?.contractHashes?.continuationStateContractSha256===next.T;
   assert.equal(oldI,oldT);assert.equal(newI,newT);
-  assert(oldI!==newI,'Exactly genuine597 or already-current SOURCE family');
+  assert(oldI!==newI,'Exactly genuine598 or already-current SOURCE family');
   return oldI?'predecessor':'current';
 }
 
@@ -70,7 +70,7 @@ export async function selectInstalledSourceNormalRoute(options){
   const family=sourceProducerOriginalStageFamily(selected,next);
   assert(same(selected.modelBinding,operational?.modelBinding),'SOURCE_ROUTE_CENTRAL_BINDING_CHANGED');
   if(family==='predecessor'){
-    // SOURCE code is not a legacy597 executor during the controlled install.
+    // SOURCE code is not a legacy598 executor during the controlled install.
     assert(!ordinary&&!request.source_normal_producer,'SOURCE_ROUTE_NOT_INSTALLED');
     return 'legacy'; // Existing special-flow guards remain authoritative.
   }
@@ -86,9 +86,9 @@ export async function selectInstalledSourceNormalRoute(options){
 
 export async function stageSourceProducerOriginals(){
   requireSourceProducerOutput(); // FIRST, before arguments, environment, files or clients.
-  // Den særskilte597-kildevært skal være valgt; gammel593/591-DATA bruges aldrig som594.
-  failureStage='PARENT_SOURCE';assertSource597OriginalDataSourceSelected();
-  assert.equal(OLD.version,'20261104004400','SOURCE_ORIGINAL_DATA_PARENT_UNAVAILABLE');
+  // Den særskilte598-CODE-kildevært skal være valgt; gammel593/591-DATA bruges aldrig som594.
+  failureStage='PARENT_SOURCE';assertSource598CodeSourceSelected();
+  assert.equal(OLD.version,'20261105064515','SOURCE_ORIGINAL_DATA_PARENT_UNAVAILABLE');
   assert.equal(arguments.length,0);
   failureStage='CALLER';assertSourceProducerCodeOnlyCaller(process.env);
   assert.equal(process.env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE,'true');
@@ -131,7 +131,7 @@ export async function stageSourceProducerOriginals(){
   const descriptorPath=path.join(operationRoot,'target-private-runtime-source.json');await absent(descriptorPath);
   await absent(privateRoot);await noLinks(path.dirname(privateRoot));await fs.mkdir(privateRoot);
   failureStage='FROZEN_SOURCE';
-  await withSource597OriginalDataSource(async frozenRoot=>{
+  await withSource598CodeParent(async frozenRoot=>{
     failureStage='FROZEN_CONTRACT';
     const load=file=>import(pathToFileURL(path.join(frozenRoot,file)).href);
     const [protectedB,bundle,workflow,model]=await Promise.all([load('scripts/protected-private-production-runtime.mjs'),
@@ -159,7 +159,7 @@ export async function stageSourceProducerOriginals(){
   });
   failureStage='SELECTED_FAMILY_SAVE';
   await fs.appendFile(envPath,'RAVRADAR_SOURCE_PRODUCER_CURRENT_FAMILY=predecessor\n');
-  console.log('Den præcise CURRENT597-original er gendannet gennem den faste597-kilde; ingen origin eller ekstern skrivning.');
+  console.log('Den præcise CURRENT598-original er gendannet gennem den faste598-CODE-kilde; ingen origin eller ekstern skrivning.');
 }
 
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){

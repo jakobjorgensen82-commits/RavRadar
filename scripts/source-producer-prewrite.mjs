@@ -1,4 +1,4 @@
-// Fixed authenticated597 -> SOURCE SAME_H0 preparation and final preservation
+// Fixed authenticated598 -> SOURCE SAME_H0 preparation and final preservation
 // proof. Never SQL/publication authority. Existing ordinary callers remain unchanged.
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -16,9 +16,9 @@ import {createProtectedPrivateRuntimeClients} from './protected-private-producti
 import {createProtectedRavScoreCheckpointRequester} from './protected-ravscore-continuation-checkpoint.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-async function assertExactPrepared597(token){
+async function assertExactPrepared598(token){
   await assertSourceProducerRuntimeTransitionPrepared(token);
-  assert.equal(token.kind,'SOURCE_PRODUCER_597_PREPARED_RUNTIME');
+  assert.equal(token.kind,'SOURCE_PRODUCER_598_PREPARED_RUNTIME');
   assert.equal(token.admission,'NO_ADMISSION');assert.equal(token.installationPerformed,false);
   assert.equal(token.privatePayloadIncluded,false);assert.equal(token.partCount,673);
   for(const field of ['numericalChanges','repairedContinuationCount','recomputedModeCount','recomputedZoneCount'])assert.equal(token[field],0);
@@ -40,7 +40,7 @@ export async function verifySourceProducerPrewritePreservation(options){
   // Fresh normal authenticated B/S preparation supplies the only authority.
   // Saved JSON, flags and a previously emitted report cannot mint this token.
   const token=await prepareSourceProducerRuntimeTransition(source);
-  await assertExactPrepared597(token);
+  await assertExactPrepared598(token);
   const resolved=path.resolve(preparedRuntimeRoot),prepared=await fs.realpath(resolved);
   assert.equal(prepared,resolved);
   const expected=await assertExactRuntimeInventory(token.outputRoot);
@@ -58,7 +58,7 @@ export async function verifySourceProducerPrewritePreservation(options){
       'Whole combined normal metadata/origin report, not selected hashes');
   }
   await compareActualPrepared();
-  await assertExactPrepared597(token);
+  await assertExactPrepared598(token);
   // The final awaited B/S check is not an exclusive lock on the other copy.
   // Re-read its actual inventory, paths, every byte AND report afterwards;
   // hashing only the earlier list would miss an added file or aliased report.
@@ -97,7 +97,7 @@ export async function runSourceProducerPrewrite(){
   const envPath=absoluteEnvironmentPath('GITHUB_ENV');
   if(slot==='prepare'){
     const token=await prepareSourceProducerRuntimeTransition(options);
-    await assertExactPrepared597(token);
+    await assertExactPrepared598(token);
     assert.equal(token.originalReferenceAt,token.targetReferenceAt,'Exact authenticated SAME_H0');
     await fs.mkdir(path.dirname(reportPath),{recursive:true});
     await fs.writeFile(reportPath,await fs.readFile(token.normalBReportPath),{flag:'wx',mode:0o600});
@@ -107,7 +107,7 @@ export async function runSourceProducerPrewrite(){
       +'RAVRADAR_SOURCE_PRODUCER_ORIGINALS_VERIFIED=true\n'
       +'RAVRADAR_SOURCE_PRODUCER_NOLOSS_VERIFIED=true\n'
       +'RAVRADAR_SOURCE_PRODUCER_PREWRITE_VERIFIED=true\n');
-    console.log('Præcis original597 B/S-metadataovergang forberedt; ingen eksterne skrivninger.');return;
+    console.log('Præcis original598 B/S-metadataovergang forberedt; ingen eksterne skrivninger.');return;
   }
   // Exactly one fresh final comparison after artifact gates. Do not add a
   // duplicate middle proof of the same unchanged preparation.
@@ -117,7 +117,7 @@ export async function runSourceProducerPrewrite(){
   await fs.appendFile(envPath,'RAVRADAR_SOURCE_PRODUCER_ORIGINALS_VERIFIED=true\n'
     +'RAVRADAR_SOURCE_PRODUCER_NOLOSS_VERIFIED=true\n'
     +'RAVRADAR_SOURCE_PRODUCER_PREWRITE_VERIFIED=true\n');
-  console.log('Præcise original597 B/S og alle forberedte SOURCE-metadata genkontrolleret; ingen SQL eller eksterne skrivninger.');
+  console.log('Præcise original598 B/S og alle forberedte SOURCE-metadata genkontrolleret; ingen SQL eller eksterne skrivninger.');
 }
 
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url))await runSourceProducerPrewrite().catch(()=>{

@@ -501,15 +501,15 @@ export async function deriveSourceProducerFirstOutput(){
 // Separate inactive597 arm. Old594/595/596 compiler/issuance functions above
 // remain whole. The template markers are deliberately invalid identities.
 const SOURCE_AFTER597_COMPILER_ALIASES=Object.freeze([
-  Object.freeze({name:CP+'source597_state_valid',signature:'(jsonb,text)'}),
-  Object.freeze({name:CP+'source597_payload_valid',signature:'(jsonb,timestamptz)'}),
-  Object.freeze({name:CP+'source597_same_h0_projection',signature:'(jsonb,timestamptz)'}),
+  Object.freeze({name:CP+'source598_state_valid',signature:'(jsonb,text)'}),
+  Object.freeze({name:CP+'source598_payload_valid',signature:'(jsonb,timestamptz)'}),
+  Object.freeze({name:CP+'source598_same_h0_projection',signature:'(jsonb,timestamptz)'}),
 ]);
 const SOURCE_AFTER597_COMPILER_REPLACEMENTS=Object.freeze([
   CP+'integrated_state_valid',CP+'payload_valid',CP+'integrated_state_reason',CP+'payload_reason',
   CP+'predecessor_payload_valid','ravradar_trip_v3_binding_allowed',CP+'cas',CP+'contract']);
 const SOURCE_AFTER597_COMPILER_LABELS=Object.freeze([
-  'source-original597-state-validator','source-original597-payload-validator','source597-same-h0-projection']);
+  'source-original598-state-validator','source-original598-payload-validator','source598-same-h0-projection']);
 const SOURCE_AFTER597_UNISSUED_MARKERS=Object.freeze({
   version:'UNISSUED_SOURCE_AFTER597_VERSION',
   C:'UNISSUED_SOURCE_AFTER597_C'.padEnd(64,'_'),
@@ -560,11 +560,11 @@ function compileSourceProducerAfter597(before,next,symbolic){
   for(const[suffix,inventory]of[['integrated_state_valid',{I:1}],['payload_valid',{I:1,C:1,T:1}],
     ['integrated_state_reason',{I:1}],['payload_reason',{I:1,C:1,T:1}]])add(CP+suffix,sourceAfter597CurrentMetadata(definition(before,CP+suffix),next,inventory));
   // Preserve the entire genuine NOC585->586 projection as an exact template.
-  // Its585 INPUT moves to genuine597; its586 OUTPUT moves to new SOURCE-unissued.
+  // Its585 INPUT moves to genuine598; its586 OUTPUT moves to new SOURCE-unissued.
   // These are separate maps; every original projection remains byte-identical.
   const oldProjection=definition(before,NATIVE_ORIGINAL_CONTINUITY_PROJECTION),map=new Map(),inverseMap=new Map();
   for(const key of ['C','I','T']){assert.equal(count(oldProjection,ANCIENT[key]),key==='I'?2:1);assert.equal(count(oldProjection,PROJECTION_OUTPUT[key]),key==='I'?2:1);
-    assert.equal(count(oldProjection,OLD[key]),0,'The frozen template is not the current597 input');
+    assert.equal(count(oldProjection,OLD[key]),0,'The frozen template is not the current598 input');
     map.set(ANCIENT[key],OLD[key]);map.set(PROJECTION_OUTPUT[key],next[key]);inverseMap.set(OLD[key],ANCIENT[key]);inverseMap.set(next[key],PROJECTION_OUTPUT[key]);}
   let projection=once(oldProjection,'function public.'+NATIVE_ORIGINAL_CONTINUITY_PROJECTION+'(','function public.'+PROJECTION+'(');
   projection=once(projection,'public.'+CP+'noc585_payload_valid(','public.'+FROZEN_PAYLOAD+'(');
@@ -584,17 +584,17 @@ function compileSourceProducerAfter597(before,next,symbolic){
   add('ravradar_trip_v3_binding_allowed',trip);
   const casBefore=definition(before,CP+'cas');
   let cas=once(casBefore,'  v_noc_same_h0_predecessor_payload jsonb;',
-    '  v_noc_same_h0_predecessor_payload jsonb;\n  v_source597_same_h0_predecessor_payload jsonb;');
+    '  v_noc_same_h0_predecessor_payload jsonb;\n  v_source598_same_h0_predecessor_payload jsonb;');
   const dispatch="    if p_payload ->> 'continuationStateContractSha256' = '"+PROJECTION_OUTPUT.T+"'\n";
   cas=once(cas,dispatch,"    if p_payload ->> 'continuationStateContractSha256' = '"+next.T+"'\n"
     +"      and v_payload #>> '{modelBinding,modelBundleSha256}' = '"+OLD.I+"'\n    then\n"
-    +'      v_source597_same_h0_predecessor_payload := public.'+PROJECTION+'(v_payload,v_central_reference);\n    end if;\n'+dispatch);
+    +'      v_source598_same_h0_predecessor_payload := public.'+PROJECTION+'(v_payload,v_central_reference);\n    end if;\n'+dispatch);
   cas=once(cas,'    if v_noc_same_h0_predecessor_payload is not null',
-    '    if v_source597_same_h0_predecessor_payload is not null\n      or v_noc_same_h0_predecessor_payload is not null');
+    '    if v_source598_same_h0_predecessor_payload is not null\n      or v_noc_same_h0_predecessor_payload is not null');
   const comparison='    if v_central_is_compatible_predecessor and v_noc_same_h0_predecessor_payload is not null then';
-  cas=once(cas,comparison,'    if v_central_is_compatible_predecessor and v_source597_same_h0_predecessor_payload is not null then\n'
+  cas=once(cas,comparison,'    if v_central_is_compatible_predecessor and v_source598_same_h0_predecessor_payload is not null then\n'
     +'      v_exact_predecessor_same_target_transition := v_central_reference = p_target_reference\n'
-    +"        and (v_source597_same_h0_predecessor_payload #- '{generationSha256}' #- '{stateSha256}'\n"
+    +"        and (v_source598_same_h0_predecessor_payload #- '{generationSha256}' #- '{stateSha256}'\n"
     +"          #- '{candidateGRollbackCompanion,generationSha256}')\n"
     +"        = (p_payload #- '{generationSha256}' #- '{stateSha256}'\n"
     +"          #- '{candidateGRollbackCompanion,generationSha256}');\n"+comparison.replace('    if ','    elsif '));
@@ -609,12 +609,12 @@ function compileSourceProducerAfter597(before,next,symbolic){
   assert(tail>=0&&cas.endsWith(casBefore.slice(tail)),'Whole retry/version/write/refusal tail unchanged');add(CP+'cas',cas);
   const contractBefore=definition(before,CP+'contract');
   let contract=once(contractBefore,'  v_noc_same_h0_projection_definition text;',
-    '  v_noc_same_h0_projection_definition text;\n  v_source597_state_definition text;\n  v_source597_payload_definition text;\n  v_source597_same_h0_projection_definition text;');
+    '  v_noc_same_h0_projection_definition text;\n  v_source598_state_definition text;\n  v_source598_payload_definition text;\n  v_source598_same_h0_projection_definition text;');
   const prefix=layout.prefix;
   const oldOids=prefix.validators,oid=[prefix.oid],oldDefinition=[prefix.checkpoint];
   const newOids=aliases.map(row=>"    pg_catalog.to_regprocedure('public."+row.name+row.signature+"')").join(',\n');
   contract=once(contract,oid[0],oid[0].slice(0,-5)+',\n'+newOids+'\n  ];');
-  const variables=['v_source597_state_definition','v_source597_payload_definition','v_source597_same_h0_projection_definition'];
+  const variables=['v_source598_state_definition','v_source598_payload_definition','v_source598_same_h0_projection_definition'];
   const bodies=variables.map((variable,index)=>"  select pg_catalog.btrim(p.prosrc, E' \\n\\r\\t') into "+variable+'\n'
     +'  from pg_catalog.pg_proc p where p.oid = v_validator_oids['+(oldOids.length+index+1)+'];\n').join('\n');
   contract=once(contract,'  v_checkpoint_definition := v_canonical_time_definition',bodies+'\n  v_checkpoint_definition := v_canonical_time_definition');
@@ -625,22 +625,22 @@ function compileSourceProducerAfter597(before,next,symbolic){
   const afterOid=/  v_validator_oids oid\[\] := array\[([\s\S]*?)\n  \];/.exec(contract);assert(afterOid);
   const afterOids=[...afterOid[1].matchAll(/pg_catalog\.to_regprocedure\(\s*'([^']+)'\s*\)/g)].map(m=>m[1]);
   assert.deepEqual(afterOids,[...oldOids,...aliases.map(row=>'public.'+row.name+row.signature)],
-    'Entire genuine597 validator prefix followed only by the three SOURCE aliases');
+    'Entire genuine598 validator prefix followed only by the three SOURCE aliases');
   assert.equal(afterOids.length,layout.successorValidatorCount);
   const afterDefinition=/  v_checkpoint_definition := v_canonical_time_definition[\s\S]*?;/.exec(contract);assert(afterDefinition);
   assert(afterDefinition[0].startsWith(oldDefinition[0].slice(0,-1)),
-    'Entire genuine597 checkpoint definition prefix is preserved');
+    'Entire genuine598 checkpoint definition prefix is preserved');
   assert.equal((contract.match(/\|\| v_[a-z0-9_]+_definition/g)??[]).length+1,layout.successorDefinitionCount);add(CP+'contract',contract);
   assert.deepEqual(changes.map(row=>row.name),SOURCE_PRODUCER_REPLACEMENTS);
   const insertion=aliases.map(row=>row.definition+'\nrevoke all on function public.'+row.name+row.signature+' from public, anon, authenticated;\n\n').join('');
   let canonicalSource=before;for(const row of changes)canonicalSource=once(canonicalSource,row.before,row.after);
   canonicalSource=once(canonicalSource,changes[0].after,insertion+changes[0].after);
   let inverse=once(canonicalSource,insertion,'');for(const row of [...changes].reverse())inverse=once(inverse,row.after,row.before);
-  assert.equal(inverse,before,'Whole issued597 canonical inverse');
+  assert.equal(inverse,before,'Whole issued598 canonical inverse');
   const replaced=new Set(changes.map(row=>row.name));
   for(const match of before.matchAll(/^create or replace function public\.([a-z0-9_]+)\(/gm))
     if(!replaced.has(match[1]))assert.equal(definition(canonicalSource,match[1]),definition(before,match[1]),
-      'Every untouched genuine597/historical function remains whole');
+      'Every untouched genuine598/historical function remains whole');
   for(const name of [CP+'native_origin_projection',ACCOUNT_STATISTICS_ASSISTANT_PROJECTION,NATIVE_ORIGINAL_CONTINUITY_PROJECTION])
     assert.equal(definition(canonicalSource,name),definition(before,name),'All existing projections unchanged');
   return Object.freeze({aliases,changes,canonicalSource,nextBinding:next,wholeCanonicalInverse:true,
@@ -649,7 +649,7 @@ function compileSourceProducerAfter597(before,next,symbolic){
 
 
 // Pure CODE transformer, not binding derivation or a SQL emitter. The only
-// accepted input is the exact genuine597 canonical source. No caller tuple.
+// accepted input is the exact genuine598 canonical source. No caller tuple.
 export function compileSourceProducerAfter597Template(before){
   assert.equal(arguments.length,1,'No caller-selected SOURCE597 template tuple');
   const core=compileSourceProducerAfter597(before,SOURCE_AFTER597_UNISSUED_MARKERS,true);
@@ -705,7 +705,7 @@ function sourceAfter597Wrap(core,prior){
   const snapshot=preservationQuery(signatures);
   const prefix=['do $source_producer_successor$',
     'declare original_catalog jsonb; after_catalog jsonb; account_observed jsonb; function_name text;','begin',
-    "  if (select max(version::text) from supabase_migrations.schema_migrations) is distinct from '"+OLD.version+"' then raise exception 'SOURCE_PRODUCER_EXACT_INSTALLED597_REQUIRED'; end if;",
+    "  if (select max(version::text) from supabase_migrations.schema_migrations) is distinct from '"+OLD.version+"' then raise exception 'SOURCE_PRODUCER_EXACT_INSTALLED598_REQUIRED'; end if;",
     "  if exists(select 1 from supabase_migrations.schema_migrations where version::text=any(array['20261014140000','20261015030000','20261016030000'])) then raise exception 'SOURCE_PRODUCER_ARCHIVED_PHASE_MUST_BE_ABSENT'; end if;",
     "  if not exists(select 1 from supabase_migrations.schema_migrations where version::text='20261013230000') then raise exception 'SOURCE_PRODUCER_INSTALLED230_REQUIRED'; end if;",
     '  lock table public.account_activity_journal,public.account_statistics_preferences in access share mode;'].join('\n');
@@ -752,7 +752,7 @@ export async function buildSourceProducerAfter597BindingSuccessor(){
   for(const original of prior.originalDefinitions)
     assert.equal(definition(result.canonicalSource,original.name),original.definition,'Every inherited original definition whole');
   const contract=sourceAfter597CheckpointContractFromBase(result.canonicalSource,
-    checkpointCasContractFromCanonicalSource(result.canonicalSource,{sourcePhase:'scalar597-later-h0-original594-successor'}));
+    checkpointCasContractFromCanonicalSource(result.canonicalSource,{sourcePhase:'assistant-mixed-after597-successor'}));
   return Object.freeze({...result,checkpointContractSha256:contract.sha256,
     tripBindingPolicySha256:tripBindingPolicyFromCanonicalSource(result.canonicalSource).sha256});
 }
@@ -814,7 +814,7 @@ export async function deriveSourceProducerAfter597FirstBinding(version){
     integratedManifestSha256:sha(JSON.stringify(integrated.manifest,(_key,value)=>canonical(value)))};
   assert.equal(binding.C,binding.candidateManifestSha256);assert.equal(binding.I,binding.integratedManifestSha256);
   assert.equal(new Set(['C','I','T'].flatMap(key=>[before[key],binding[key]])).size,6);
-  assert.deepEqual(await readSourceProducerAfter597PredecessorCanonicalSource(),prior,'Whole fixed597 prior unchanged during first derivation');
+  assert.deepEqual(await readSourceProducerAfter597PredecessorCanonicalSource(),prior,'Whole fixed598 prior unchanged during first derivation');
   assert.deepEqual(await sourceAfter597RegularSourceBytes(SOURCE_PRODUCER_AFTER597_DERIVED_METADATA_PATH),
     Buffer.from(raw,'utf8'),'SOURCE_AFTER597_NULL_METADATA_UNCHANGED');
   return assertSourceProducerAfter597DerivedMetadata({schemaVersion:value.schemaVersion,release,version,binding,output:null});

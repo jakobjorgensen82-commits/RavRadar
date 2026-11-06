@@ -46,13 +46,14 @@ import {ASSISTANT_LATER_H0_BINDING as ASSISTANT_LATER_FAMILY,
   ASSISTANT_PUBLIC590_SUCCESSOR_BINDING as ASSISTANT_PUBLIC590_FAMILY,
   ASSISTANT_PUBLIC591_SUCCESSOR_BINDING as ASSISTANT_PUBLIC591_FAMILY,
   INSTALLED593_ORIGINAL591_BINDING as INSTALLED593_ORIGINAL591_FAMILY,
-  SCALAR597_LATER_H0_BINDING as SCALAR597_FAMILY}
+  SCALAR597_LATER_H0_BINDING as SCALAR597_FAMILY,
+  ASSISTANT_AFTER597_BINDING as ASSISTANT_AFTER597_FAMILY,requireAssistantAfter597Output}
   from './lib/assistant-later-h0-successor-source.mjs';
 import {SOURCE_PRODUCER_AFTER597_PARENT} from './lib/source-producer-after597-parent.mjs';
 import {requireSourceProducerOutput} from './lib/source-producer-after597-runtime-family.mjs';
 import {assertSourceProducerCodeOnlyCaller} from './select-source-producer-code-only-source.mjs';
-import {withSource597OriginalDataSource} from './check-assistant-later-h0-predecessor-source.mjs';
-import {assertEstablishedNativeCurrent597MetadataCheckpoint} from './lib/established-native-current-origin.mjs';
+import {withSource597OriginalDataSource,withSource598CodeParent} from './check-assistant-later-h0-predecessor-source.mjs';
+import {assertEstablishedNativeCurrent597MetadataCheckpoint,assertEstablishedNativeCurrent598MetadataCheckpoint} from './lib/established-native-current-origin.mjs';
 import {verifyIntegratedDatabaseReadback} from './integrated-cutover-readiness.mjs';
 const SOURCE_FAMILY=SOURCE_PRODUCER_AFTER597_PARENT.binding;
 
@@ -64,6 +65,8 @@ const DIRECT_RECONCILE_CLI = Boolean(process.argv[1]
   && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url));
 const RECONCILE_DIAGNOSTIC_PHASES = new Set(["UNCLASSIFIED","CLI_REQUEST","CLI_MAIN_IDENTITY","CLI_COMMAND","CLI_SOURCE_SELECTION","CLI_OUTPUT","CURRENT_POINTER","CURRENT_IDENTITY","B_PATH","B_VERIFY","INSTALLED_SOURCE","LOCAL_S_ABSENT","DERIVE_S","RESTORE_S","S_RELATION_GUARD","CAS_STABILITY","CAS_PUBLISH","CAS_READBACK","FINAL_STABILITY","LOCAL_S_INSTALL","TEMP_CLEANUP"]);
 const RECONCILE_DIAGNOSTIC_MESSAGES = new Map([["PAIRED_PUBLICATION_B_IDENTITY","B_IDENTITY"],["PAIRED_PUBLICATION_B_PATH","B_PATH"],["PAIRED_PUBLICATION_B_S_DIFFER","B_S_DIFFER"],["PAIRED_PUBLICATION_CLOSE_UNPROVED","CLOSE_UNPROVED"],["PAIRED_PUBLICATION_COMMAND","COMMAND"],["PAIRED_PUBLICATION_CURRENT_IDENTITY","CURRENT_IDENTITY"],["PAIRED_PUBLICATION_DERIVED_REFERENCE","DERIVED_REFERENCE"],["PAIRED_PUBLICATION_FILE","FILE"],["PAIRED_PUBLICATION_FILE_CHANGED","FILE_CHANGED"],["PAIRED_PUBLICATION_GENUINE591_STRICTLY_OLDER","GENUINE591_STRICTLY_OLDER"],["PAIRED_PUBLICATION_GENUINE594_STRICTLY_OLDER","GENUINE594_STRICTLY_OLDER"],["PAIRED_PUBLICATION_INSTALLED_B_CHANGED","INSTALLED_B_CHANGED"],["PAIRED_PUBLICATION_INSTALLED_SOURCE_CHANGED","INSTALLED_SOURCE_CHANGED"],["PAIRED_PUBLICATION_LINK","LINK"],["PAIRED_PUBLICATION_MAIN","MAIN"],["PAIRED_PUBLICATION_METADATA_CURRENT_FAMILY","METADATA_CURRENT_FAMILY"],["PAIRED_PUBLICATION_METADATA_INSTALLED_CURRENT_REQUEST","METADATA_INSTALLED_CURRENT_REQUEST"],["PAIRED_PUBLICATION_METADATA_OPERATIONAL_ACTION","METADATA_OPERATIONAL_ACTION"],["PAIRED_PUBLICATION_NATIVE_METADATA_CURRENT_FAMILY","NATIVE_METADATA_CURRENT_FAMILY"],["PAIRED_PUBLICATION_NATIVE_METADATA_INSTALLED_CURRENT_REQUEST","NATIVE_METADATA_INSTALLED_CURRENT_REQUEST"],["PAIRED_PUBLICATION_NATIVE_METADATA_OPERATIONAL_ACTION","NATIVE_METADATA_OPERATIONAL_ACTION"],["PAIRED_PUBLICATION_NON_ORDINARY_REQUEST","NON_ORDINARY_REQUEST"],["PAIRED_PUBLICATION_OPERATIONAL_ACTION","OPERATIONAL_ACTION"],["PAIRED_PUBLICATION_PARENT","PARENT"],["PAIRED_PUBLICATION_PARENT_CHANGED","PARENT_CHANGED"],["PAIRED_PUBLICATION_POINTER","POINTER"],["PAIRED_PUBLICATION_POINTER_CHANGED","POINTER_CHANGED"],["PAIRED_PUBLICATION_SAME_H0_METADATA_ORIGINALS","SAME_H0_METADATA_ORIGINALS"],["PAIRED_PUBLICATION_SAME_H0_NATIVE_METADATA_ORIGINALS","SAME_H0_NATIVE_METADATA_ORIGINALS"],["PAIRED_PUBLICATION_SAVED_MODE_COLLISION","SAVED_MODE_COLLISION"],["PAIRED_PUBLICATION_SAVED_OPERATIONAL_ACTION","SAVED_OPERATIONAL_ACTION"],["PAIRED_PUBLICATION_SAVED_REQUEST","SAVED_REQUEST"],["PAIRED_PUBLICATION_SAVED_WORK_PATH","SAVED_WORK_PATH"],["PAIRED_PUBLICATION_S_CHANGED_BEFORE_PUBLISH","S_CHANGED_BEFORE_PUBLISH"],["PAIRED_PUBLICATION_S_CHANGED_BEFORE_READ","S_CHANGED_BEFORE_READ"],["PAIRED_PUBLICATION_S_DISPOSITION","S_DISPOSITION"],["PAIRED_PUBLICATION_S_NOT_BEHIND","S_NOT_BEHIND"],["PAIRED_PUBLICATION_S_READBACK_DIFFER","S_READBACK_DIFFER"],["PAIRED_PUBLICATION_S_READBACK_MISSING","S_READBACK_MISSING"],["PAIRED_PUBLICATION_S_ROW","S_ROW"],["PAIRED_PUBLICATION_S_VERSION_CHANGED_BEFORE_PUBLISH","S_VERSION_CHANGED_BEFORE_PUBLISH"],["PAIRED_PUBLICATION_UNSUPPORTED_FAMILY","UNSUPPORTED_FAMILY"],["PAIRED_PUBLICATION_WORKFLOW","WORKFLOW"],["PAIRED_PUBLICATION_WORK_CHANGED","WORK_CHANGED"]]);
+RECONCILE_DIAGNOSTIC_MESSAGES.set('PAIRED_PUBLICATION_GENUINE597_STRICTLY_OLDER','GENUINE597_STRICTLY_OLDER');
+RECONCILE_DIAGNOSTIC_MESSAGES.set('PAIRED_PUBLICATION_SAME_H0_SOURCE598_METADATA_ORIGINALS','SAME_H0_SOURCE598_METADATA_ORIGINALS');
 const RECONCILE_DIAGNOSTIC_FIXED_ERRORS = new Map([
   ['PRODUCTION_TARGET_TIME_INVALID', 'TARGET_TIME_INVALID'],
   ['PRODUCTION_TARGET_HORIZON_INVALID', 'TARGET_HORIZON_INVALID'],
@@ -122,7 +125,7 @@ function reconcileFamily(descriptor) {
   return [FAMILY, NEXT_FAMILY, METADATA_FAMILY, NATIVE_METADATA_FAMILY,
     ASSISTANT_LATER_FAMILY, ASSISTANT_PUBLIC587_FAMILY,
     ASSISTANT_PUBLIC588_FAMILY,ASSISTANT_PUBLIC590_FAMILY,ASSISTANT_PUBLIC591_FAMILY,
-    INSTALLED593_ORIGINAL591_FAMILY,SCALAR597_FAMILY,SOURCE_FAMILY].filter(Boolean).find(family =>
+    INSTALLED593_ORIGINAL591_FAMILY,SCALAR597_FAMILY,ASSISTANT_AFTER597_FAMILY,SOURCE_FAMILY].filter(Boolean).find(family =>
     descriptor?.modelBinding?.modelBundleSha256 === family.I
     && descriptor?.contractHashes?.continuationStateContractSha256 === family.T) ?? null;
 }
@@ -212,6 +215,22 @@ async function readCheckpointRows(request) {
     && row.payload && typeof row.payload === 'object'), 'S_ROW');
   return rows;
 }
+// Fast værdiklassifikation alene; normal ægte597-læser og CAS skal stadig
+// kontrollere hele S. Uudstedt afvises før rækker, target eller transport læses.
+export function assistantAfter597ReconcileParent(rows,targetReference){
+  requireAssistantAfter597Output();assert.equal(arguments.length,2);
+  const old=Array.isArray(rows)&&rows.length===1
+    &&rows[0].payload?.modelBinding?.modelBundleSha256===SCALAR597_FAMILY.I
+    &&rows[0].payload?.continuationStateContractSha256===SCALAR597_FAMILY.T;
+  if(old){
+    const earlier=rows[0].payload.productionReferenceAt;
+    for(const value of [earlier,targetReference])need(typeof value==='string'
+      &&/^\d{4}-\d{2}-\d{2}T\d{2}:00:00\.000Z$/.test(value)&&Number.isFinite(Date.parse(value))
+      &&new Date(value).toISOString()===value,'GENUINE597_STRICTLY_OLDER');
+    need(Date.parse(earlier)<Date.parse(targetReference),'GENUINE597_STRICTLY_OLDER');
+  }
+  return old;
+}
 // Pure reference relation only, never S/family/origin admission. The normal
 // caller already authenticated exact current B and selected the fixed597 S reader.
 export function assertSourceProducerSameH0CheckpointReference(previousReference,targetReference){
@@ -224,10 +243,12 @@ async function restoreReconcilePredecessor({ family, checkpointPath, targetRefer
   // Reader selection is NOT numerical admission. Normal current validation
   // remains unchanged. A 597 CURRENT B can advance strictly older genuine
   // 594 S, but can neither install that S nor perform a same-H0 transition.
-  const old597 = SOURCE_FAMILY!==null && family===SOURCE_FAMILY && rows.length===1
-    &&rows[0].payload.modelBinding?.modelBundleSha256===SCALAR597_FAMILY.I
-    &&rows[0].payload.continuationStateContractSha256===SCALAR597_FAMILY.T;
-  if(old597)assertSourceProducerSameH0CheckpointReference(rows[0].payload.productionReferenceAt,targetReference);
+  const old598 = SOURCE_FAMILY!==null && family===SOURCE_FAMILY && rows.length===1
+    &&rows[0].payload.modelBinding?.modelBundleSha256===ASSISTANT_AFTER597_FAMILY.I
+    &&rows[0].payload.continuationStateContractSha256===ASSISTANT_AFTER597_FAMILY.T;
+  if(old598)assertSourceProducerSameH0CheckpointReference(rows[0].payload.productionReferenceAt,targetReference);
+  const old597 = ASSISTANT_AFTER597_FAMILY!==null&&family===ASSISTANT_AFTER597_FAMILY
+    &&assistantAfter597ReconcileParent(rows,targetReference);
   const old594 = family === SCALAR597_FAMILY && rows.length === 1
     && rows[0].payload.modelBinding?.modelBundleSha256 === INSTALLED593_ORIGINAL591_FAMILY.I
     && rows[0].payload.continuationStateContractSha256 === INSTALLED593_ORIGINAL591_FAMILY.T;
@@ -252,7 +273,11 @@ async function restoreReconcilePredecessor({ family, checkpointPath, targetRefer
   };
   const options = { checkpointPath, targetReference, request: checkedRequest };
   let restored;
-  if(old597) restored = await withSource597OriginalDataSource(async sourceRoot=>{
+  if(old598) restored = await withSource598CodeParent(async sourceRoot=>{
+    const reader=await import(pathToFileURL(path.join(sourceRoot,'scripts/protected-ravscore-continuation-checkpoint.mjs')).href);
+    return reader.restoreProtectedRavScoreContinuationCheckpoint(options);
+  });
+  else if(old597) restored = await withSource597OriginalDataSource(async sourceRoot=>{
     const reader=await import(pathToFileURL(path.join(sourceRoot,'scripts/protected-ravscore-continuation-checkpoint.mjs')).href);
     return reader.restoreProtectedRavScoreContinuationCheckpoint(options);
   });
@@ -278,7 +303,7 @@ async function restoreReconcilePredecessor({ family, checkpointPath, targetRefer
     return reader.restoreProtectedRavScoreContinuationCheckpoint(options);
   });
   else restored = await restoreProtectedRavScoreContinuationCheckpoint(options);
-  return { restored, rows, predecessorFamily: old597 ? SCALAR597_FAMILY : old594 ? INSTALLED593_ORIGINAL591_FAMILY :
+  return { restored, rows, predecessorFamily: old598 ? ASSISTANT_AFTER597_FAMILY : old597 ? SCALAR597_FAMILY : old594 ? INSTALLED593_ORIGINAL591_FAMILY :
     old591 ? ASSISTANT_PUBLIC590_FAMILY : old585 ? METADATA_FAMILY : old584 ? NEXT_FAMILY : old ? FAMILY : family };
 }
 async function readPointer(request) {
@@ -589,15 +614,15 @@ async function reconcileAuthenticatedPrivateRuntimeCheckpointObserved({ reposito
           centralContract:JSON.parse(registry.raw.toString('utf8')),previousCheckpoint:saved,incomingCheckpoint:derived});
         need(exact585MetadataOnly === true,'SAME_H0_NATIVE_METADATA_ORIGINALS');
       }
-      let exact597MetadataOnly=false;
+      let exact598MetadataOnly=false;
       if(SOURCE_FAMILY!==null&&family===SOURCE_FAMILY&&saved!==null
-        &&predecessor.predecessorFamily===SCALAR597_FAMILY&&saved.productionReferenceAt===current.productionReferenceAt){
-        exact597MetadataOnly=await assertEstablishedNativeCurrent597MetadataCheckpoint({descriptor:current,
+        &&predecessor.predecessorFamily===ASSISTANT_AFTER597_FAMILY&&saved.productionReferenceAt===current.productionReferenceAt){
+        exact598MetadataOnly=await assertEstablishedNativeCurrent598MetadataCheckpoint({descriptor:current,
           conditions:await originalMetadataConditions(),centralContract:JSON.parse(registry.raw.toString('utf8')),
           previousCheckpoint:saved,incomingCheckpoint:derived});
-        need(exact597MetadataOnly===true,'SAME_H0_SOURCE597_METADATA_ORIGINALS');
+        need(exact598MetadataOnly===true,'SAME_H0_SOURCE598_METADATA_ORIGINALS');
       }
-      need(exact597MetadataOnly || exact584MetadataOnly || exact585MetadataOnly || saved === null || (saved.modelBinding.modelBundleSha256 === predecessor.predecessorFamily.I
+      need(exact598MetadataOnly || exact584MetadataOnly || exact585MetadataOnly || saved === null || (saved.modelBinding.modelBundleSha256 === predecessor.predecessorFamily.I
         && saved.continuationStateContractSha256 === predecessor.predecessorFamily.T
         && Date.parse(saved.productionReferenceAt) < Date.parse(current.productionReferenceAt)), 'S_NOT_BEHIND');
       markReconcilePhase('CAS_STABILITY');

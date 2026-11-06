@@ -1,9 +1,9 @@
 // Generated DATA parser only. No builder, caller-selected root or issuance.
 import assert from 'node:assert/strict';
-import {SCALAR597_LATER_H0_BINDING} from './assistant-later-h0-successor-source.mjs';
+import {ASSISTANT_AFTER597_BINDING} from './assistant-later-h0-successor-source.mjs';
 export const SOURCE_PRODUCER_AFTER597_DERIVED_METADATA_PATH=
   'scripts/lib/source-producer-after597-binding.generated.json';
-export const SOURCE_PRODUCER_AFTER597_PREDECESSOR_VERSION=SCALAR597_LATER_H0_BINDING.version;
+export const SOURCE_PRODUCER_AFTER597_PREDECESSOR_VERSION=ASSISTANT_AFTER597_BINDING.version;
 const exact=(value,keys)=>{
   assert(value&&Object.getPrototypeOf(value)===Object.prototype,'SOURCE_AFTER597_METADATA_OBJECT');
   const own=Reflect.ownKeys(value);
@@ -18,7 +18,7 @@ export function assertSourceProducerAfter597Release(value){
   assert.equal(typeof value,'string','SOURCE_AFTER597_LATER_RELEASE_REQUIRED');
   assert.match(value,/^4\.0\.[1-9][0-9]*$/,'SOURCE_AFTER597_LATER_RELEASE_REQUIRED');
   const patch=Number(value.slice(4));
-  assert(Number.isSafeInteger(patch)&&patch>597,'SOURCE_AFTER597_LATER_RELEASE_REQUIRED');
+  assert(Number.isSafeInteger(patch)&&patch>598,'SOURCE_AFTER597_LATER_RELEASE_REQUIRED');
   return value;
 }
 export function assertSourceProducerAfter597DerivedMetadata(value){
@@ -38,7 +38,7 @@ export function assertSourceProducerAfter597DerivedMetadata(value){
     assert.equal(value.binding.C,value.binding.candidateManifestSha256);
     assert.equal(value.binding.I,value.binding.integratedManifestSha256);
     assert.equal(new Set(['C','I','T'].map(key=>value.binding[key])).size,3);
-    assert.equal(new Set(['C','I','T'].flatMap(key=>[SCALAR597_LATER_H0_BINDING[key],value.binding[key]])).size,6,
+    assert.equal(new Set(['C','I','T'].flatMap(key=>[ASSISTANT_AFTER597_BINDING[key],value.binding[key]])).size,6,
       'SOURCE_AFTER597_SIX_DISTINCT_METADATA_HASHES');
     Object.freeze(value.binding);
     if(value.output!==null){

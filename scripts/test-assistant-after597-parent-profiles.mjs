@@ -9,7 +9,7 @@ import {pathToFileURL,fileURLToPath} from 'node:url';
 import {test} from 'node:test';
 import {ACTIVE_ASSISTANT_SUCCESSOR,INACTIVE_SCALAR597_LATER_H0_SUCCESSOR,
   UNISSUED_ASSISTANT_AFTER597_SUCCESSOR as next,SCALAR597_LATER_H0_BINDING,
-  SCALAR597_LATER_H0_OUTPUT,readScalar597LaterH0CanonicalSource}
+  SCALAR597_LATER_H0_OUTPUT,readScalar597LaterH0CanonicalSource,ASSISTANT_AFTER597_BINDING,ASSISTANT_AFTER597_OUTPUT}
   from './lib/assistant-later-h0-successor-source.mjs';
 import {SOURCE597_CODE_SOURCE_PROVENANCE,assertSource597CodeSourceSelected,
   assertSource597OriginalDataSourceSelected,withSource597OriginalDataSource}
@@ -23,17 +23,16 @@ const canonical=value=>JSON.stringify(value,(_key,nested)=>nested&&typeof nested
 const digest=value=>crypto.createHash('sha256').update(canonical(value)).digest('hex');
 const H0='2026-11-04T04:00:00.000Z',later='2026-11-04T05:00:00.000Z';
 
-test('named unissued assistant parent reads genuine597 canonical SQL without changing ACTIVE or issuing a tuple',async()=>{
-  assert.equal(ACTIVE_ASSISTANT_SUCCESSOR,INACTIVE_SCALAR597_LATER_H0_SUCCESSOR);
+test('issued assistant598 retains genuine597 canonical parent without granting Source authority',async()=>{
+  assert.equal(ACTIVE_ASSISTANT_SUCCESSOR,next);
   assert.deepEqual(next.before,{...SCALAR597_LATER_H0_BINDING,canonicalSha256:SCALAR597_LATER_H0_OUTPUT.canonicalSha256});
   assert.equal(next.originalStateFamily,'597');assert.equal(next.databaseBefore,next.before);
-  assert.equal(next.binding,null);assert.equal(next.output,null);
+  assert.deepEqual(next.requireBinding(),ASSISTANT_AFTER597_BINDING);assert.deepEqual(next.requireOutput(),ASSISTANT_AFTER597_OUTPUT);
   assert.equal(next.readPredecessorCanonicalSource,readScalar597LaterH0CanonicalSource);
   const canonical597=await next.readPredecessorCanonicalSource();
   assert.equal(crypto.createHash('sha256').update(canonical597.canonicalSource).digest('hex'),next.before.canonicalSha256);
   assert.equal(canonical597.admission,'NO_ADMISSION');
-  assert.throws(()=>next.requireBinding(),/ASSISTANT_AFTER597_UNISSUED/);
-  assert.throws(()=>next.requireOutput(),/ASSISTANT_AFTER597_UNISSUED/);
+  assert.equal(next.requireRelease(),'4.0.598');
   assert.throws(()=>next.requireBinding({C:'a'.repeat(64)}),/No caller-selected/);
   const descriptor={modelBinding:{modelBundleSha256:next.before.I},
     contractHashes:{continuationStateContractSha256:next.before.T},productionReferenceAt:H0};
@@ -139,7 +138,8 @@ test('normal fixed597 DATA host validates673 actual model pairs and refuses meta
 });
 
 
-// SOURCE uses the existing genuine597 CODE/DATA host; no old SOURCE issuance
+import {SOURCE598_CODE_SOURCE_PROVENANCE,assertSource598CodeSourceSelected} from './check-assistant-later-h0-predecessor-source.mjs';
+// SOURCE uses the fixed genuine598 CODE parent; historical597 DATA remains separate. no old SOURCE issuance
 // is imported and no positive original/prewrite capability is fabricated.
 import {SOURCE_PRODUCER_AFTER597_PARENT,requireSourceProducerAfter597CodeParent,
   requireSourceProducerAfter597Binding,requireSourceProducerAfter597Output,
@@ -147,16 +147,18 @@ import {SOURCE_PRODUCER_AFTER597_PARENT,requireSourceProducerAfter597CodeParent,
   readSourceProducerAfter597PredecessorCanonicalSource} from './lib/source-producer-after597-parent.mjs';
 
 test('SOURCE after597 parent/compiler uses the genuine fixed CODE host and exact new checkpoint tail',async()=>{
-  assert.equal(SOURCE_PRODUCER_AFTER597_PARENT.code,SOURCE597_CODE_SOURCE_PROVENANCE);
-  assert.equal(requireSourceProducerAfter597CodeParent().version,'20261104004400');
-  assert.equal(SOURCE_PRODUCER_AFTER597_PARENT.code.head,'803f2c7c61237cef5c5f6b39ce0eaac5e090fb84');
+  assert.equal(SOURCE_PRODUCER_AFTER597_PARENT.code,SOURCE598_CODE_SOURCE_PROVENANCE);
+  assert.equal(assertSource598CodeSourceSelected(),SOURCE598_CODE_SOURCE_PROVENANCE);
+  assert.throws(()=>assertSource598CodeSourceSelected({head:SOURCE597_CODE_SOURCE_PROVENANCE.head}));
+  assert.equal(requireSourceProducerAfter597CodeParent().version,'20261105064515');
+  assert.equal(SOURCE_PRODUCER_AFTER597_PARENT.code.head,'bd9cf518fe798ddea45d2b835f324f6e2bea06fc');
   assert.equal(SOURCE_PRODUCER_AFTER597_PARENT.binding,null);
   assert.equal(SOURCE_PRODUCER_AFTER597_PARENT.output,null);
   assert.equal(SOURCE_PRODUCER_AFTER597_PARENT.nextRelease,null);
   const source=await readSourceProducerAfter597PredecessorCanonicalSource();
   const layout=sourceProducerAfter597PredecessorCompilationLayout(source.canonicalSource);
-  assert.equal(layout.validatorCount,43);assert.equal(layout.definitionCount,46);
-  assert(layout.oldTail.includes('original594'));assert.equal(layout.admission,'NO_ADMISSION');
+  assert.equal(layout.validatorCount,45);assert.equal(layout.definitionCount,48);
+  assert(layout.oldTail.includes('original597'));assert.equal(layout.admission,'NO_ADMISSION');
   assert.equal(source.admission,'NO_ADMISSION');
   assert.throws(()=>sourceProducerAfter597PredecessorCompilationLayout(source.canonicalSource+'\n'));
 });
@@ -194,9 +196,18 @@ const SOURCE_AFTER597_FIRST_ISSUER_REVIEW={"beforeSha256":"0545668b140cb31b7e93c
 
 const SOURCE_CODE_PINS_COMPILER_REVIEW={"beforeSha256":"0a62fa7114a2e739207305fe90f58f1acbe69cde3db5e502a4262e9eaec4f26b","afterSha256":"7e5ff79432e9f4953126fcfd95d2e634f61905ac77cc4e7cabcf443b42b69800","hunks":[{"before":"import {SOURCE_PRODUCER_AFTER597_DERIVED_METADATA_PATH,sourceProducerAfter597DerivedMetadataFromText,\n  assertSourceProducerAfter597DerivedMetadata,assertSourceProducerAfter597Release}\n  from './lib/source-producer-after597-derived-metadata.mjs';\n// SOURCE_AFTER597_COMPILER_IMPORT_END\nconst ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),CP='ravradar_ravscore_checkpoint_';\nconst sha=value=>crypto.createHash('sha256').update(value).digest('hex');\n","after":"import {SOURCE_PRODUCER_AFTER597_DERIVED_METADATA_PATH,sourceProducerAfter597DerivedMetadataFromText,\n  assertSourceProducerAfter597DerivedMetadata,assertSourceProducerAfter597Release}\n  from './lib/source-producer-after597-derived-metadata.mjs';\nimport {computeSourceProducerAfter597CodePins,assertSourceProducerAfter597CodePinsPrepared,assertSourceProducerAfter597CodeData}\n  from './lib/source-producer-after597-runtime-family.mjs';\n// SOURCE_AFTER597_COMPILER_IMPORT_END\nconst ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),CP='ravradar_ravscore_checkpoint_';\nconst sha=value=>crypto.createHash('sha256').update(value).digest('hex');\n"},{"before":"export async function prepareSourceProducerAfter597SuccessorStructure(){\n  requireSourceProducerAfter597Binding();\n  assert.equal(arguments.length,0,'No caller-selected SOURCE597 build input');\n  const issued=SOURCE_PRODUCER_AFTER597_PARENT.binding;\n  const release=await sourceAfter597ReadRelease();\n  assert.equal(release,SOURCE_PRODUCER_AFTER597_PARENT.nextRelease);\n","after":"export async function prepareSourceProducerAfter597SuccessorStructure(){\n  requireSourceProducerAfter597Binding();\n  assert.equal(arguments.length,0,'No caller-selected SOURCE597 build input');\n  assertSourceProducerAfter597CodePinsPrepared(); // Fresh physical compiler-derived DATA, never an import-cached NULL.\n  const issued=SOURCE_PRODUCER_AFTER597_PARENT.binding;\n  const release=await sourceAfter597ReadRelease();\n  assert.equal(release,SOURCE_PRODUCER_AFTER597_PARENT.nextRelease);\n"},{"before":"  assert.deepEqual(await sourceAfter597RegularSourceBytes('scripts/rollback-assets/ravscore-model-bundle.generated.js'),Buffer.from(renderCandidateGRollbackGeneratedModule(candidate)));\n  const integrated=await computeRavScoreModelBundle();\n  assert.deepEqual(await sourceAfter597RegularSourceBytes('js/core/ravscore-model-bundle.generated.js'),Buffer.from(renderGeneratedBundleModule(integrated)));\n  const next={version:issued.version,C:candidate.modelBundleSha256,I:integrated.modelBundleSha256,\n    T:await ravScoreContinuationImplementationSha256()};\n  assert.deepEqual(next,{version:issued.version,C:issued.C,I:issued.I,T:issued.T},'Only actual physical issued SOURCE597 C/I/T');\n","after":"  assert.deepEqual(await sourceAfter597RegularSourceBytes('scripts/rollback-assets/ravscore-model-bundle.generated.js'),Buffer.from(renderCandidateGRollbackGeneratedModule(candidate)));\n  const integrated=await computeRavScoreModelBundle();\n  assert.deepEqual(await sourceAfter597RegularSourceBytes('js/core/ravscore-model-bundle.generated.js'),Buffer.from(renderGeneratedBundleModule(integrated)));\n  assertSourceProducerAfter597CodeData({C:candidate.modelBundleSha256,I:integrated.modelBundleSha256,\n    metadataText:JSON.stringify({schemaVersion:'source-producer-after597-derived-metadata-v1',\n      release:SOURCE_PRODUCER_AFTER597_PARENT.nextRelease,version:issued.version,binding:issued,\n      output:SOURCE_PRODUCER_AFTER597_PARENT.output},null,2)+'\\n'});\n  const next={version:issued.version,C:candidate.modelBundleSha256,I:integrated.modelBundleSha256,\n    T:await ravScoreContinuationImplementationSha256()};\n  assert.deepEqual(next,{version:issued.version,C:issued.C,I:issued.I,T:issued.T},'Only actual physical issued SOURCE597 C/I/T');\n"},{"before":"  const pkg=JSON.parse((await sourceAfter597RegularSourceBytes('package.json')).toString('utf8'));\n  return assertSourceProducerAfter597Release(pkg.version);\n}\nexport async function deriveSourceProducerAfter597FirstBinding(version){\n  assert.equal(arguments.length,1,'SOURCE_AFTER597_TIMESTAMP_ONLY');\n  assert.equal(typeof version,'string','SOURCE_AFTER597_TIMESTAMP_ONLY');\n","after":"  const pkg=JSON.parse((await sourceAfter597RegularSourceBytes('package.json')).toString('utf8'));\n  return assertSourceProducerAfter597Release(pkg.version);\n}\n// Pure fixed CODE DATA preparation; no model binding/output/SQL is issued here.\nexport async function deriveSourceProducerAfter597CodePins(){\n  requireSourceProducerAfter597CodeParent();assert.equal(arguments.length,0);\n  const {value}=await readSourceProducerAfter597FirstIssuanceMetadata();\n  assert.equal(value.binding,null);assert.equal(value.output,null);assert.equal(value.release,null);assert.equal(value.version,null);\n  await sourceAfter597ReadRelease(); // Same real later-package requirement as first binding.\n  return computeSourceProducerAfter597CodePins();\n}\nexport async function deriveSourceProducerAfter597FirstBinding(version){\n  assert.equal(arguments.length,1,'SOURCE_AFTER597_TIMESTAMP_ONLY');\n  assert.equal(typeof version,'string','SOURCE_AFTER597_TIMESTAMP_ONLY');\n"},{"before":"  const release=await sourceAfter597ReadRelease(); // Real later package, before builders.\n  const prior=await readSourceProducerAfter597PredecessorCanonicalSource();\n  assert.equal(sha(prior.canonicalSource),before.canonicalSha256);\n  const candidate=await computeCandidateGRollbackBundle();\n  assert.deepEqual(await sourceAfter597RegularSourceBytes('scripts/rollback-assets/ravscore-model-bundle.generated.js'),\n    Buffer.from(renderCandidateGRollbackGeneratedModule(candidate)),'SOURCE_AFTER597_PHYSICAL_C_MODULE');\n  const integrated=await computeRavScoreModelBundle();\n  assert.deepEqual(await sourceAfter597RegularSourceBytes('js/core/ravscore-model-bundle.generated.js'),\n    Buffer.from(renderGeneratedBundleModule(integrated)),'SOURCE_AFTER597_PHYSICAL_I_MODULE');\n  const canonical=value=>Array.isArray(value)?value:value&&typeof value==='object'\n    ?Object.fromEntries(Object.keys(value).sort().map(key=>[key,value[key]])):value;\n  const binding={version,C:candidate.modelBundleSha256,I:integrated.modelBundleSha256,\n","after":"  const release=await sourceAfter597ReadRelease(); // Real later package, before builders.\n  const prior=await readSourceProducerAfter597PredecessorCanonicalSource();\n  assert.equal(sha(prior.canonicalSource),before.canonicalSha256);\n  assertSourceProducerAfter597CodePinsPrepared(); // Before deriving the real I/binding.\n  const candidate=await computeCandidateGRollbackBundle();\n  assert.deepEqual(await sourceAfter597RegularSourceBytes('scripts/rollback-assets/ravscore-model-bundle.generated.js'),\n    Buffer.from(renderCandidateGRollbackGeneratedModule(candidate)),'SOURCE_AFTER597_PHYSICAL_C_MODULE');\n  const integrated=await computeRavScoreModelBundle();\n  assert.deepEqual(await sourceAfter597RegularSourceBytes('js/core/ravscore-model-bundle.generated.js'),\n    Buffer.from(renderGeneratedBundleModule(integrated)),'SOURCE_AFTER597_PHYSICAL_I_MODULE');\n  assertSourceProducerAfter597CodeData({C:candidate.modelBundleSha256,I:integrated.modelBundleSha256,metadataText:raw});\n  const canonical=value=>Array.isArray(value)?value:value&&typeof value==='object'\n    ?Object.fromEntries(Object.keys(value).sort().map(key=>[key,value[key]])):value;\n  const binding={version,C:candidate.modelBundleSha256,I:integrated.modelBundleSha256,\n"}]};
 
+const SOURCE_AFTER598_PARENT_COMPILER_REVIEW={"beforeSha256":"7e5ff79432e9f4953126fcfd95d2e634f61905ac77cc4e7cabcf443b42b69800","afterSha256":"ebf2ca26b0d480069e18d98bf3b658b8bae68bece29814c095ce5a72c281c4be","hunks":[{"before":"// Separate inactive597 arm. Old594/595/596 compiler/issuance functions above\n// remain whole. The template markers are deliberately invalid identities.\nconst SOURCE_AFTER597_COMPILER_ALIASES=Object.freeze([\n  Object.freeze({name:CP+'source597_state_valid',signature:'(jsonb,text)'}),\n  Object.freeze({name:CP+'source597_payload_valid',signature:'(jsonb,timestamptz)'}),\n  Object.freeze({name:CP+'source597_same_h0_projection',signature:'(jsonb,timestamptz)'}),\n]);\nconst SOURCE_AFTER597_COMPILER_REPLACEMENTS=Object.freeze([\n  CP+'integrated_state_valid',CP+'payload_valid',CP+'integrated_state_reason',CP+'payload_reason',\n  CP+'predecessor_payload_valid','ravradar_trip_v3_binding_allowed',CP+'cas',CP+'contract']);\nconst SOURCE_AFTER597_COMPILER_LABELS=Object.freeze([\n  'source-original597-state-validator','source-original597-payload-validator','source597-same-h0-projection']);\nconst SOURCE_AFTER597_UNISSUED_MARKERS=Object.freeze({\n  version:'UNISSUED_SOURCE_AFTER597_VERSION',\n  C:'UNISSUED_SOURCE_AFTER597_C'.padEnd(64,'_'),\n","after":"// Separate inactive597 arm. Old594/595/596 compiler/issuance functions above\n// remain whole. The template markers are deliberately invalid identities.\nconst SOURCE_AFTER597_COMPILER_ALIASES=Object.freeze([\n  Object.freeze({name:CP+'source598_state_valid',signature:'(jsonb,text)'}),\n  Object.freeze({name:CP+'source598_payload_valid',signature:'(jsonb,timestamptz)'}),\n  Object.freeze({name:CP+'source598_same_h0_projection',signature:'(jsonb,timestamptz)'}),\n]);\nconst SOURCE_AFTER597_COMPILER_REPLACEMENTS=Object.freeze([\n  CP+'integrated_state_valid',CP+'payload_valid',CP+'integrated_state_reason',CP+'payload_reason',\n  CP+'predecessor_payload_valid','ravradar_trip_v3_binding_allowed',CP+'cas',CP+'contract']);\nconst SOURCE_AFTER597_COMPILER_LABELS=Object.freeze([\n  'source-original598-state-validator','source-original598-payload-validator','source598-same-h0-projection']);\nconst SOURCE_AFTER597_UNISSUED_MARKERS=Object.freeze({\n  version:'UNISSUED_SOURCE_AFTER597_VERSION',\n  C:'UNISSUED_SOURCE_AFTER597_C'.padEnd(64,'_'),\n"},{"before":"  for(const[suffix,inventory]of[['integrated_state_valid',{I:1}],['payload_valid',{I:1,C:1,T:1}],\n    ['integrated_state_reason',{I:1}],['payload_reason',{I:1,C:1,T:1}]])add(CP+suffix,sourceAfter597CurrentMetadata(definition(before,CP+suffix),next,inventory));\n  // Preserve the entire genuine NOC585->586 projection as an exact template.\n  // Its585 INPUT moves to genuine597; its586 OUTPUT moves to new SOURCE-unissued.\n  // These are separate maps; every original projection remains byte-identical.\n  const oldProjection=definition(before,NATIVE_ORIGINAL_CONTINUITY_PROJECTION),map=new Map(),inverseMap=new Map();\n  for(const key of ['C','I','T']){assert.equal(count(oldProjection,ANCIENT[key]),key==='I'?2:1);assert.equal(count(oldProjection,PROJECTION_OUTPUT[key]),key==='I'?2:1);\n    assert.equal(count(oldProjection,OLD[key]),0,'The frozen template is not the current597 input');\n    map.set(ANCIENT[key],OLD[key]);map.set(PROJECTION_OUTPUT[key],next[key]);inverseMap.set(OLD[key],ANCIENT[key]);inverseMap.set(next[key],PROJECTION_OUTPUT[key]);}\n  let projection=once(oldProjection,'function public.'+NATIVE_ORIGINAL_CONTINUITY_PROJECTION+'(','function public.'+PROJECTION+'(');\n  projection=once(projection,'public.'+CP+'noc585_payload_valid(','public.'+FROZEN_PAYLOAD+'(');\n","after":"  for(const[suffix,inventory]of[['integrated_state_valid',{I:1}],['payload_valid',{I:1,C:1,T:1}],\n    ['integrated_state_reason',{I:1}],['payload_reason',{I:1,C:1,T:1}]])add(CP+suffix,sourceAfter597CurrentMetadata(definition(before,CP+suffix),next,inventory));\n  // Preserve the entire genuine NOC585->586 projection as an exact template.\n  // Its585 INPUT moves to genuine598; its586 OUTPUT moves to new SOURCE-unissued.\n  // These are separate maps; every original projection remains byte-identical.\n  const oldProjection=definition(before,NATIVE_ORIGINAL_CONTINUITY_PROJECTION),map=new Map(),inverseMap=new Map();\n  for(const key of ['C','I','T']){assert.equal(count(oldProjection,ANCIENT[key]),key==='I'?2:1);assert.equal(count(oldProjection,PROJECTION_OUTPUT[key]),key==='I'?2:1);\n    assert.equal(count(oldProjection,OLD[key]),0,'The frozen template is not the current598 input');\n    map.set(ANCIENT[key],OLD[key]);map.set(PROJECTION_OUTPUT[key],next[key]);inverseMap.set(OLD[key],ANCIENT[key]);inverseMap.set(next[key],PROJECTION_OUTPUT[key]);}\n  let projection=once(oldProjection,'function public.'+NATIVE_ORIGINAL_CONTINUITY_PROJECTION+'(','function public.'+PROJECTION+'(');\n  projection=once(projection,'public.'+CP+'noc585_payload_valid(','public.'+FROZEN_PAYLOAD+'(');\n"},{"before":"  add('ravradar_trip_v3_binding_allowed',trip);\n  const casBefore=definition(before,CP+'cas');\n  let cas=once(casBefore,'  v_noc_same_h0_predecessor_payload jsonb;',\n    '  v_noc_same_h0_predecessor_payload jsonb;\\n  v_source597_same_h0_predecessor_payload jsonb;');\n  const dispatch=\"    if p_payload ->> 'continuationStateContractSha256' = '\"+PROJECTION_OUTPUT.T+\"'\\n\";\n  cas=once(cas,dispatch,\"    if p_payload ->> 'continuationStateContractSha256' = '\"+next.T+\"'\\n\"\n    +\"      and v_payload #>> '{modelBinding,modelBundleSha256}' = '\"+OLD.I+\"'\\n    then\\n\"\n    +'      v_source597_same_h0_predecessor_payload := public.'+PROJECTION+'(v_payload,v_central_reference);\\n    end if;\\n'+dispatch);\n  cas=once(cas,'    if v_noc_same_h0_predecessor_payload is not null',\n    '    if v_source597_same_h0_predecessor_payload is not null\\n      or v_noc_same_h0_predecessor_payload is not null');\n  const comparison='    if v_central_is_compatible_predecessor and v_noc_same_h0_predecessor_payload is not null then';\n  cas=once(cas,comparison,'    if v_central_is_compatible_predecessor and v_source597_same_h0_predecessor_payload is not null then\\n'\n    +'      v_exact_predecessor_same_target_transition := v_central_reference = p_target_reference\\n'\n    +\"        and (v_source597_same_h0_predecessor_payload #- '{generationSha256}' #- '{stateSha256}'\\n\"\n    +\"          #- '{candidateGRollbackCompanion,generationSha256}')\\n\"\n    +\"        = (p_payload #- '{generationSha256}' #- '{stateSha256}'\\n\"\n    +\"          #- '{candidateGRollbackCompanion,generationSha256}');\\n\"+comparison.replace('    if ','    elsif '));\n","after":"  add('ravradar_trip_v3_binding_allowed',trip);\n  const casBefore=definition(before,CP+'cas');\n  let cas=once(casBefore,'  v_noc_same_h0_predecessor_payload jsonb;',\n    '  v_noc_same_h0_predecessor_payload jsonb;\\n  v_source598_same_h0_predecessor_payload jsonb;');\n  const dispatch=\"    if p_payload ->> 'continuationStateContractSha256' = '\"+PROJECTION_OUTPUT.T+\"'\\n\";\n  cas=once(cas,dispatch,\"    if p_payload ->> 'continuationStateContractSha256' = '\"+next.T+\"'\\n\"\n    +\"      and v_payload #>> '{modelBinding,modelBundleSha256}' = '\"+OLD.I+\"'\\n    then\\n\"\n    +'      v_source598_same_h0_predecessor_payload := public.'+PROJECTION+'(v_payload,v_central_reference);\\n    end if;\\n'+dispatch);\n  cas=once(cas,'    if v_noc_same_h0_predecessor_payload is not null',\n    '    if v_source598_same_h0_predecessor_payload is not null\\n      or v_noc_same_h0_predecessor_payload is not null');\n  const comparison='    if v_central_is_compatible_predecessor and v_noc_same_h0_predecessor_payload is not null then';\n  cas=once(cas,comparison,'    if v_central_is_compatible_predecessor and v_source598_same_h0_predecessor_payload is not null then\\n'\n    +'      v_exact_predecessor_same_target_transition := v_central_reference = p_target_reference\\n'\n    +\"        and (v_source598_same_h0_predecessor_payload #- '{generationSha256}' #- '{stateSha256}'\\n\"\n    +\"          #- '{candidateGRollbackCompanion,generationSha256}')\\n\"\n    +\"        = (p_payload #- '{generationSha256}' #- '{stateSha256}'\\n\"\n    +\"          #- '{candidateGRollbackCompanion,generationSha256}');\\n\"+comparison.replace('    if ','    elsif '));\n"},{"before":"  assert(tail>=0&&cas.endsWith(casBefore.slice(tail)),'Whole retry/version/write/refusal tail unchanged');add(CP+'cas',cas);\n  const contractBefore=definition(before,CP+'contract');\n  let contract=once(contractBefore,'  v_noc_same_h0_projection_definition text;',\n    '  v_noc_same_h0_projection_definition text;\\n  v_source597_state_definition text;\\n  v_source597_payload_definition text;\\n  v_source597_same_h0_projection_definition text;');\n  const prefix=layout.prefix;\n  const oldOids=prefix.validators,oid=[prefix.oid],oldDefinition=[prefix.checkpoint];\n  const newOids=aliases.map(row=>\"    pg_catalog.to_regprocedure('public.\"+row.name+row.signature+\"')\").join(',\\n');\n  contract=once(contract,oid[0],oid[0].slice(0,-5)+',\\n'+newOids+'\\n  ];');\n  const variables=['v_source597_state_definition','v_source597_payload_definition','v_source597_same_h0_projection_definition'];\n  const bodies=variables.map((variable,index)=>\"  select pg_catalog.btrim(p.prosrc, E' \\\\n\\\\r\\\\t') into \"+variable+'\\n'\n    +'  from pg_catalog.pg_proc p where p.oid = v_validator_oids['+(oldOids.length+index+1)+'];\\n').join('\\n');\n  contract=once(contract,'  v_checkpoint_definition := v_canonical_time_definition',bodies+'\\n  v_checkpoint_definition := v_canonical_time_definition');\n","after":"  assert(tail>=0&&cas.endsWith(casBefore.slice(tail)),'Whole retry/version/write/refusal tail unchanged');add(CP+'cas',cas);\n  const contractBefore=definition(before,CP+'contract');\n  let contract=once(contractBefore,'  v_noc_same_h0_projection_definition text;',\n    '  v_noc_same_h0_projection_definition text;\\n  v_source598_state_definition text;\\n  v_source598_payload_definition text;\\n  v_source598_same_h0_projection_definition text;');\n  const prefix=layout.prefix;\n  const oldOids=prefix.validators,oid=[prefix.oid],oldDefinition=[prefix.checkpoint];\n  const newOids=aliases.map(row=>\"    pg_catalog.to_regprocedure('public.\"+row.name+row.signature+\"')\").join(',\\n');\n  contract=once(contract,oid[0],oid[0].slice(0,-5)+',\\n'+newOids+'\\n  ];');\n  const variables=['v_source598_state_definition','v_source598_payload_definition','v_source598_same_h0_projection_definition'];\n  const bodies=variables.map((variable,index)=>\"  select pg_catalog.btrim(p.prosrc, E' \\\\n\\\\r\\\\t') into \"+variable+'\\n'\n    +'  from pg_catalog.pg_proc p where p.oid = v_validator_oids['+(oldOids.length+index+1)+'];\\n').join('\\n');\n  contract=once(contract,'  v_checkpoint_definition := v_canonical_time_definition',bodies+'\\n  v_checkpoint_definition := v_canonical_time_definition');\n"},{"before":"  const afterOid=/  v_validator_oids oid\\[\\] := array\\[([\\s\\S]*?)\\n  \\];/.exec(contract);assert(afterOid);\n  const afterOids=[...afterOid[1].matchAll(/pg_catalog\\.to_regprocedure\\(\\s*'([^']+)'\\s*\\)/g)].map(m=>m[1]);\n  assert.deepEqual(afterOids,[...oldOids,...aliases.map(row=>'public.'+row.name+row.signature)],\n    'Entire genuine597 validator prefix followed only by the three SOURCE aliases');\n  assert.equal(afterOids.length,layout.successorValidatorCount);\n  const afterDefinition=/  v_checkpoint_definition := v_canonical_time_definition[\\s\\S]*?;/.exec(contract);assert(afterDefinition);\n  assert(afterDefinition[0].startsWith(oldDefinition[0].slice(0,-1)),\n    'Entire genuine597 checkpoint definition prefix is preserved');\n  assert.equal((contract.match(/\\|\\| v_[a-z0-9_]+_definition/g)??[]).length+1,layout.successorDefinitionCount);add(CP+'contract',contract);\n  assert.deepEqual(changes.map(row=>row.name),SOURCE_PRODUCER_REPLACEMENTS);\n  const insertion=aliases.map(row=>row.definition+'\\nrevoke all on function public.'+row.name+row.signature+' from public, anon, authenticated;\\n\\n').join('');\n  let canonicalSource=before;for(const row of changes)canonicalSource=once(canonicalSource,row.before,row.after);\n  canonicalSource=once(canonicalSource,changes[0].after,insertion+changes[0].after);\n  let inverse=once(canonicalSource,insertion,'');for(const row of [...changes].reverse())inverse=once(inverse,row.after,row.before);\n  assert.equal(inverse,before,'Whole issued597 canonical inverse');\n  const replaced=new Set(changes.map(row=>row.name));\n  for(const match of before.matchAll(/^create or replace function public\\.([a-z0-9_]+)\\(/gm))\n    if(!replaced.has(match[1]))assert.equal(definition(canonicalSource,match[1]),definition(before,match[1]),\n      'Every untouched genuine597/historical function remains whole');\n  for(const name of [CP+'native_origin_projection',ACCOUNT_STATISTICS_ASSISTANT_PROJECTION,NATIVE_ORIGINAL_CONTINUITY_PROJECTION])\n    assert.equal(definition(canonicalSource,name),definition(before,name),'All existing projections unchanged');\n  return Object.freeze({aliases,changes,canonicalSource,nextBinding:next,wholeCanonicalInverse:true,\n","after":"  const afterOid=/  v_validator_oids oid\\[\\] := array\\[([\\s\\S]*?)\\n  \\];/.exec(contract);assert(afterOid);\n  const afterOids=[...afterOid[1].matchAll(/pg_catalog\\.to_regprocedure\\(\\s*'([^']+)'\\s*\\)/g)].map(m=>m[1]);\n  assert.deepEqual(afterOids,[...oldOids,...aliases.map(row=>'public.'+row.name+row.signature)],\n    'Entire genuine598 validator prefix followed only by the three SOURCE aliases');\n  assert.equal(afterOids.length,layout.successorValidatorCount);\n  const afterDefinition=/  v_checkpoint_definition := v_canonical_time_definition[\\s\\S]*?;/.exec(contract);assert(afterDefinition);\n  assert(afterDefinition[0].startsWith(oldDefinition[0].slice(0,-1)),\n    'Entire genuine598 checkpoint definition prefix is preserved');\n  assert.equal((contract.match(/\\|\\| v_[a-z0-9_]+_definition/g)??[]).length+1,layout.successorDefinitionCount);add(CP+'contract',contract);\n  assert.deepEqual(changes.map(row=>row.name),SOURCE_PRODUCER_REPLACEMENTS);\n  const insertion=aliases.map(row=>row.definition+'\\nrevoke all on function public.'+row.name+row.signature+' from public, anon, authenticated;\\n\\n').join('');\n  let canonicalSource=before;for(const row of changes)canonicalSource=once(canonicalSource,row.before,row.after);\n  canonicalSource=once(canonicalSource,changes[0].after,insertion+changes[0].after);\n  let inverse=once(canonicalSource,insertion,'');for(const row of [...changes].reverse())inverse=once(inverse,row.after,row.before);\n  assert.equal(inverse,before,'Whole issued598 canonical inverse');\n  const replaced=new Set(changes.map(row=>row.name));\n  for(const match of before.matchAll(/^create or replace function public\\.([a-z0-9_]+)\\(/gm))\n    if(!replaced.has(match[1]))assert.equal(definition(canonicalSource,match[1]),definition(before,match[1]),\n      'Every untouched genuine598/historical function remains whole');\n  for(const name of [CP+'native_origin_projection',ACCOUNT_STATISTICS_ASSISTANT_PROJECTION,NATIVE_ORIGINAL_CONTINUITY_PROJECTION])\n    assert.equal(definition(canonicalSource,name),definition(before,name),'All existing projections unchanged');\n  return Object.freeze({aliases,changes,canonicalSource,nextBinding:next,wholeCanonicalInverse:true,\n"},{"before":"\n\n// Pure CODE transformer, not binding derivation or a SQL emitter. The only\n// accepted input is the exact genuine597 canonical source. No caller tuple.\nexport function compileSourceProducerAfter597Template(before){\n  assert.equal(arguments.length,1,'No caller-selected SOURCE597 template tuple');\n  const core=compileSourceProducerAfter597(before,SOURCE_AFTER597_UNISSUED_MARKERS,true);\n","after":"\n\n// Pure CODE transformer, not binding derivation or a SQL emitter. The only\n// accepted input is the exact genuine598 canonical source. No caller tuple.\nexport function compileSourceProducerAfter597Template(before){\n  assert.equal(arguments.length,1,'No caller-selected SOURCE597 template tuple');\n  const core=compileSourceProducerAfter597(before,SOURCE_AFTER597_UNISSUED_MARKERS,true);\n"},{"before":"  const snapshot=preservationQuery(signatures);\n  const prefix=['do $source_producer_successor$',\n    'declare original_catalog jsonb; after_catalog jsonb; account_observed jsonb; function_name text;','begin',\n    \"  if (select max(version::text) from supabase_migrations.schema_migrations) is distinct from '\"+OLD.version+\"' then raise exception 'SOURCE_PRODUCER_EXACT_INSTALLED597_REQUIRED'; end if;\",\n    \"  if exists(select 1 from supabase_migrations.schema_migrations where version::text=any(array['20261014140000','20261015030000','20261016030000'])) then raise exception 'SOURCE_PRODUCER_ARCHIVED_PHASE_MUST_BE_ABSENT'; end if;\",\n    \"  if not exists(select 1 from supabase_migrations.schema_migrations where version::text='20261013230000') then raise exception 'SOURCE_PRODUCER_INSTALLED230_REQUIRED'; end if;\",\n    '  lock table public.account_activity_journal,public.account_statistics_preferences in access share mode;'].join('\\n');\n","after":"  const snapshot=preservationQuery(signatures);\n  const prefix=['do $source_producer_successor$',\n    'declare original_catalog jsonb; after_catalog jsonb; account_observed jsonb; function_name text;','begin',\n    \"  if (select max(version::text) from supabase_migrations.schema_migrations) is distinct from '\"+OLD.version+\"' then raise exception 'SOURCE_PRODUCER_EXACT_INSTALLED598_REQUIRED'; end if;\",\n    \"  if exists(select 1 from supabase_migrations.schema_migrations where version::text=any(array['20261014140000','20261015030000','20261016030000'])) then raise exception 'SOURCE_PRODUCER_ARCHIVED_PHASE_MUST_BE_ABSENT'; end if;\",\n    \"  if not exists(select 1 from supabase_migrations.schema_migrations where version::text='20261013230000') then raise exception 'SOURCE_PRODUCER_INSTALLED230_REQUIRED'; end if;\",\n    '  lock table public.account_activity_journal,public.account_statistics_preferences in access share mode;'].join('\\n');\n"},{"before":"  for(const original of prior.originalDefinitions)\n    assert.equal(definition(result.canonicalSource,original.name),original.definition,'Every inherited original definition whole');\n  const contract=sourceAfter597CheckpointContractFromBase(result.canonicalSource,\n    checkpointCasContractFromCanonicalSource(result.canonicalSource,{sourcePhase:'scalar597-later-h0-original594-successor'}));\n  return Object.freeze({...result,checkpointContractSha256:contract.sha256,\n    tripBindingPolicySha256:tripBindingPolicyFromCanonicalSource(result.canonicalSource).sha256});\n}\n","after":"  for(const original of prior.originalDefinitions)\n    assert.equal(definition(result.canonicalSource,original.name),original.definition,'Every inherited original definition whole');\n  const contract=sourceAfter597CheckpointContractFromBase(result.canonicalSource,\n    checkpointCasContractFromCanonicalSource(result.canonicalSource,{sourcePhase:'assistant-mixed-after597-successor'}));\n  return Object.freeze({...result,checkpointContractSha256:contract.sha256,\n    tripBindingPolicySha256:tripBindingPolicyFromCanonicalSource(result.canonicalSource).sha256});\n}\n"},{"before":"    integratedManifestSha256:sha(JSON.stringify(integrated.manifest,(_key,value)=>canonical(value)))};\n  assert.equal(binding.C,binding.candidateManifestSha256);assert.equal(binding.I,binding.integratedManifestSha256);\n  assert.equal(new Set(['C','I','T'].flatMap(key=>[before[key],binding[key]])).size,6);\n  assert.deepEqual(await readSourceProducerAfter597PredecessorCanonicalSource(),prior,'Whole fixed597 prior unchanged during first derivation');\n  assert.deepEqual(await sourceAfter597RegularSourceBytes(SOURCE_PRODUCER_AFTER597_DERIVED_METADATA_PATH),\n    Buffer.from(raw,'utf8'),'SOURCE_AFTER597_NULL_METADATA_UNCHANGED');\n  return assertSourceProducerAfter597DerivedMetadata({schemaVersion:value.schemaVersion,release,version,binding,output:null});\n","after":"    integratedManifestSha256:sha(JSON.stringify(integrated.manifest,(_key,value)=>canonical(value)))};\n  assert.equal(binding.C,binding.candidateManifestSha256);assert.equal(binding.I,binding.integratedManifestSha256);\n  assert.equal(new Set(['C','I','T'].flatMap(key=>[before[key],binding[key]])).size,6);\n  assert.deepEqual(await readSourceProducerAfter597PredecessorCanonicalSource(),prior,'Whole fixed598 prior unchanged during first derivation');\n  assert.deepEqual(await sourceAfter597RegularSourceBytes(SOURCE_PRODUCER_AFTER597_DERIVED_METADATA_PATH),\n    Buffer.from(raw,'utf8'),'SOURCE_AFTER597_NULL_METADATA_UNCHANGED');\n  return assertSourceProducerAfter597DerivedMetadata({schemaVersion:value.schemaVersion,release,version,binding,output:null});\n"}]};
+
 function sourceCodePinsHistoricalCompiler(source){
   assert.equal(typeof source,'string');
   const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
+  if(sha(source)===SOURCE_AFTER598_PARENT_COMPILER_REVIEW.afterSha256){
+    for(const row of [...SOURCE_AFTER598_PARENT_COMPILER_REVIEW.hunks].reverse()){
+      assert.equal(source.split(row.after).length,2,'SOURCE_AFTER598_COMPILER_EXACT_INVERSE');
+      source=source.replace(row.after,()=>row.before);
+    }
+    assert.equal(sha(source),SOURCE_AFTER598_PARENT_COMPILER_REVIEW.beforeSha256,'SOURCE_AFTER598_COMPILER_WHOLE_INVERSE');
+  }
   if(sha(source)===SOURCE_CODE_PINS_COMPILER_REVIEW.beforeSha256)return source;
   assert.equal(sha(source),SOURCE_CODE_PINS_COMPILER_REVIEW.afterSha256,'SOURCE_CODE_PINS_COMPILER_UNREVIEWED');
   let previous=source;
@@ -208,10 +219,10 @@ function sourceCodePinsHistoricalCompiler(source){
   return previous;
 }
 
-// Same normal CODE-body technique as the existing SOURCE public-projection
-// target: execute the actual compiler bodies without importing old596 output.
-async function normalSource597Compiler(){
-  const raw=sourceCodePinsHistoricalCompiler(await fs.readFile(new URL('./build-source-producer-successor.mjs',import.meta.url),'utf8'));
+// The current parent arm is exercised through its entire real normal module.
+// Every existing historical compiler inverse/hash remains a DATA-only assertion.
+function assertWholeCompilerHistory(current){
+  const raw=sourceCodePinsHistoricalCompiler(current);
   assert.equal(crypto.createHash('sha256').update(raw).digest('hex'),SOURCE_AFTER597_FIRST_ISSUER_REVIEW.afterSha256);
   let oldCompiler=raw;for(const row of [...SOURCE_AFTER597_FIRST_ISSUER_REVIEW.hunks].reverse()){
     assert.equal(oldCompiler.split(row.after).length,2);oldCompiler=oldCompiler.replace(row.after,()=>row.before);
@@ -231,30 +242,13 @@ async function normalSource597Compiler(){
   assert.equal(crypto.createHash('sha256').update(original).digest('hex'),
     '6eb36e879331c87ff52b91d97eb379beb149c9dd02738edfe8b6ec6eca770e85',
     'Whole original SOURCE compiler, old41/44 arm, wrappers and every historical issuer retained');
-  const p=raw.indexOf('const sha=value=>'),q=raw.indexOf('\nfunction body(source)',p);
-  assert(p>0&&q>p);const primitives=raw.slice(p,q);
-  const names=['assert','crypto','CP','definition','ANCIENT','PROJECTION_OUTPUT',
-    'NATIVE_ORIGINAL_CONTINUITY_PROJECTION','ACCOUNT_STATISTICS_ASSISTANT_PROJECTION',
-    'SOURCE_PRODUCER_AFTER597_PARENT','requireSourceProducerAfter597CodeParent',
-    'requireSourceProducerAfter597Binding','requireSourceProducerAfter597Output','sourceProducerAfter597PredecessorCompilationLayout',
-    'readSourceProducerAfter597PredecessorCanonicalSource','regularSource',
-    'computeCandidateGRollbackBundle','renderCandidateGRollbackGeneratedModule',
-    'computeRavScoreModelBundle','renderGeneratedBundleModule','ravScoreContinuationImplementationSha256',
-    'statisticsPreferenceRevisionCatalogQuery','checkpointCasContractFromCanonicalSource','tripBindingPolicyFromCanonicalSource',
-    'fs','path','ROOT','SOURCE_PRODUCER_AFTER597_DERIVED_METADATA_PATH','sourceProducerAfter597DerivedMetadataFromText',
-    'assertSourceProducerAfter597DerivedMetadata','assertSourceProducerAfter597Release'];
-  assert.equal((block.match(/^export /gm)??[]).length,7);
-  const factory=new Function(...names,primitives+'\n'+raw.slice(raw.indexOf('function body(source)'),raw.indexOf('function currentMetadata(source,next,expected)'))+'\n'+block.replace(/^export /gm,'')
-    +'\nreturn {compileSourceProducerAfter597Template,prepareSourceProducerAfter597SuccessorStructure,prepareSourceProducerAfter597CompilerTemplate,buildSourceProducerAfter597BindingSuccessor,runSourceProducerAfter597Compiler,deriveSourceProducerAfter597FirstBinding,deriveSourceProducerAfter597FirstOutput};');
-  let io=0;const unexpected=()=>{io++;throw new Error('UNEXPECTED_COMPILER_IO');};
-  const args=[assert,crypto,'ravradar_ravscore_checkpoint_',source597Definition,source597Ancient,source597ProjectionOutput,
-    source597Projection,source597AccountProjection,SOURCE_PRODUCER_AFTER597_PARENT,
-    requireSourceProducerAfter597CodeParent,requireSourceProducerAfter597Binding,requireSourceProducerAfter597Output,
-    sourceProducerAfter597PredecessorCompilationLayout,readSourceProducerAfter597PredecessorCanonicalSource,
-    unexpected,unexpected,unexpected,unexpected,unexpected,unexpected,source597StatisticsQuery,unexpected,unexpected,
-    fs,path,fileURLToPath(new URL('../',import.meta.url)),SOURCE_PRODUCER_AFTER597_DERIVED_METADATA_PATH,
-    sourceProducerAfter597DerivedMetadataFromText,assertSourceProducerAfter597DerivedMetadata,assertSourceProducerAfter597Release];
-  return {...factory(...args),io:()=>io};
+}
+
+async function normalSource597Compiler(){
+  const raw=await fs.readFile(new URL('./build-source-producer-successor.mjs',import.meta.url),'utf8');
+  assert.equal(crypto.createHash('sha256').update(raw).digest('hex'),SOURCE_AFTER598_PARENT_COMPILER_REVIEW.afterSha256);
+  assertWholeCompilerHistory(raw);
+  return import('./build-source-producer-successor.mjs');
 }
 
 test('SOURCE after597 compiler transforms genuine canonical CODE and proves entire metadata/numerical inverse',async()=>{
@@ -265,7 +259,7 @@ test('SOURCE after597 compiler transforms genuine canonical CODE and proves enti
   before=before.replace(insertionForBefore,'');for(const row of [...core.changes].reverse())before=before.replace(row.after,()=>row.before);
   assert.equal(crypto.createHash('sha256').update(before).digest('hex'),SOURCE_PRODUCER_AFTER597_PARENT.before.canonicalSha256);
   assert.equal(core.transactionalWrapperPrepared,true);assert.equal(core.migrationIssued,false);
-  assert(core.migrationTemplate.includes('SOURCE_PRODUCER_EXACT_INSTALLED597_REQUIRED'));
+  assert(core.migrationTemplate.includes('SOURCE_PRODUCER_EXACT_INSTALLED598_REQUIRED'));
   assert(core.migrationTemplate.includes(core.unissuedMarkers.version));
   for(const key of ['C','I','T'])assert(core.migrationTemplate.includes(core.unissuedMarkers[key]));
   assert.equal(core.postgresRun,false);
@@ -278,10 +272,10 @@ test('SOURCE after597 compiler transforms genuine canonical CODE and proves enti
   assert.equal(core.aliases.length,3);assert.equal(core.changes.length,8);
   const contract=source597Definition(core.canonicalTemplate,'ravradar_ravscore_checkpoint_contract');
   const oid=/  v_validator_oids oid\[\] := array\[([\s\S]*?)\n  \];/.exec(contract);
-  assert(oid);assert.equal((oid[1].match(/pg_catalog\.to_regprocedure/g)??[]).length,46);
-  assert.equal((contract.match(/\|\| v_[a-z0-9_]+_definition/g)??[]).length+1,49);
+  assert(oid);assert.equal((oid[1].match(/pg_catalog\.to_regprocedure/g)??[]).length,48);
+  assert.equal((contract.match(/\|\| v_[a-z0-9_]+_definition/g)??[]).length+1,51);
   const original=sourceProducerAfter597PredecessorCompilationLayout(before);
-  assert(contract.includes(original.checkpoint.slice(0,-1)),'Whole43/46/ask594 prefix retained');
+  assert(contract.includes(original.checkpoint.slice(0,-1)),'Whole45/48/ask597 prefix retained');
   const insertion=core.aliases.map(row=>row.definition+'\nrevoke all on function public.'+row.name+row.signature+' from public, anon, authenticated;\n\n').join('');
   let inverse=core.canonicalTemplate;assert.equal(inverse.split(insertion).length,2);inverse=inverse.replace(insertion,'');
   for(const row of [...core.changes].reverse()){
@@ -297,7 +291,7 @@ test('SOURCE after597 compiler transforms genuine canonical CODE and proves enti
     for(const key of ['C','I','T'])unmapped=unmapped.split(core.unissuedMarkers[key]).join(SOURCE_PRODUCER_AFTER597_PARENT.before[key]);
     assert.equal(unmapped,row.before,'Numerical validator body is byte-identical after exact metadata inverse');
   }
-  assert.equal(api.io(),0);
+
 });
 
 test('SOURCE after597 compiler refuses changed source, caller tuples and real build before operands or I/O',async()=>{
@@ -311,7 +305,7 @@ test('SOURCE after597 compiler refuses changed source, caller tuples and real bu
   for(const args of [[],[hostile]])for(const invoke of [api.prepareSourceProducerAfter597SuccessorStructure,api.buildSourceProducerAfter597BindingSuccessor,api.runSourceProducerAfter597Compiler])
     await assert.rejects(invoke(...args),/SOURCE_PRODUCER_AFTER597_UNISSUED/);
   await assert.rejects(api.prepareSourceProducerAfter597CompilerTemplate(hostile),/No caller-selected/);
-  assert.equal(operands,0);assert.equal(api.io(),0);
+  assert.equal(operands,0);
   assert.equal(SOURCE_PRODUCER_AFTER597_PARENT.binding,null);
   assert.equal(SOURCE_PRODUCER_AFTER597_PARENT.output,null);
   assert.equal(SOURCE_PRODUCER_AFTER597_PARENT.nextRelease,null);
@@ -342,7 +336,7 @@ test('SOURCE after597 first issuance canonical NULL DATA rejects ambiguous and e
     {...empty(),release:'4.0.597',version:SCALAR597_LATER_H0_BINDING.version,binding:SCALAR597_LATER_H0_BINDING}])
     assert.throws(()=>assertSourceProducerAfter597DerivedMetadata(value));
   assert.equal(invoked,0);
-  for(const release of ['4.0.597','4.0.0598','4.0.598-dev','5.0.1',null,{},'4.0.9007199254740992'])
+  for(const release of ['4.0.597','4.0.598','4.0.0598','4.0.598-dev','5.0.1',null,{},'4.0.9007199254740992'])
     assert.throws(()=>assertSourceProducerAfter597Release(release));
 });
 
@@ -357,18 +351,18 @@ test('SOURCE after597 first issuance normal issuer rejects caller options and un
   await assert.rejects(api.deriveSourceProducerAfter597FirstBinding(SCALAR597_LATER_H0_BINDING.version),/SOURCE_AFTER597_LATER_VERSION_REQUIRED/);
   await assert.rejects(api.deriveSourceProducerAfter597FirstOutput(),/SOURCE_PRODUCER_AFTER597_UNISSUED/);
   await assert.rejects(api.deriveSourceProducerAfter597FirstOutput(hostile),/SOURCE_AFTER597_NO_OUTPUT_OPTIONS/);
-  assert.equal(calls,0);assert.equal(api.io(),0);
+  assert.equal(calls,0);
 });
 
-test('SOURCE after597 first issuance actual package597 and physical NULL refuse later-release requirement before builders',async()=>{
+test('SOURCE after597 first issuance actual package598 and physical NULL refuse later-release requirement before builders',async()=>{
   const api=await normalSource597Compiler();
   const root=fileURLToPath(new URL('../',import.meta.url));
   const file=path.join(root,SOURCE_PRODUCER_AFTER597_DERIVED_METADATA_PATH),before=await fs.readFile(file);
-  assert.equal(JSON.parse(await fs.readFile(path.join(root,'package.json'),'utf8')).version,'4.0.597');
+  assert.equal(JSON.parse(await fs.readFile(path.join(root,'package.json'),'utf8')).version,'4.0.598');
   const empty=sourceProducerAfter597DerivedMetadataFromText(before.toString('utf8'));
   assert.equal(empty.release,null);assert.equal(empty.version,null);assert.equal(empty.binding,null);assert.equal(empty.output,null);
-  await assert.rejects(api.deriveSourceProducerAfter597FirstBinding('20261105000000'),/SOURCE_AFTER597_LATER_RELEASE_REQUIRED/);
-  assert.deepEqual(await fs.readFile(file),before);assert.equal(api.io(),0);
+  await assert.rejects(api.deriveSourceProducerAfter597FirstBinding('20261106000000'),/SOURCE_AFTER597_LATER_RELEASE_REQUIRED/);
+  assert.deepEqual(await fs.readFile(file),before);
   assert.equal(SOURCE_PRODUCER_AFTER597_PARENT.binding,null);assert.equal(SOURCE_PRODUCER_AFTER597_PARENT.output,null);
 });
 
@@ -399,6 +393,8 @@ test('SOURCE after597 normal caller chain refuses unissued metadata before opera
   const reconcile=await import('./reconcile-private-runtime-checkpoint.mjs');
   const code=await import('./reconcile-source-producer-code-only.mjs');
   const origin=await import('./lib/established-native-current-origin.mjs');
+  const snapshots=await import('./lib/authenticated-frozen586-predecessor.mjs');
+  const view=await import('./check-assistant-later-h0-predecessor-source.mjs');
   let operands=0,io=0;
   const untouched=new Proxy({}, {get(){operands++;throw Error('UNEXPECTED_OPERAND');},
     ownKeys(){operands++;throw Error('UNEXPECTED_OPERAND');},getPrototypeOf(){operands++;throw Error('UNEXPECTED_OPERAND');}});
@@ -407,7 +403,9 @@ test('SOURCE after597 normal caller chain refuses unissued metadata before opera
   t.mock.method(globalThis,'fetch',()=>{io++;throw Error('UNEXPECTED_FETCH');});
   for(const call of [()=>family.requireSourceProducerBinding(untouched),()=>family.requireSourceProducerOutput(untouched),
     ()=>family.sourceProducerMigration(untouched),()=>readiness.sourceProducerRequiredMigrations(untouched),
-    ()=>readiness.assertSourceProducerMigrationsApplied(untouched)])
+    ()=>readiness.assertSourceProducerMigrationsApplied(untouched),
+    ()=>snapshots.assertAuthenticatedSource598Snapshot(untouched),
+    ()=>snapshots.assertAuthenticatedSourceStaged598Snapshot(untouched)])
     assert.throws(call,/SOURCE_PRODUCER_AFTER597_UNISSUED/);
   const calls=[()=>family.readSourceProducerCanonicalSource(untouched),
     ()=>stage.selectInstalledSourceNormalRoute(untouched),()=>stage.stageSourceProducerOriginals(untouched),
@@ -419,20 +417,30 @@ test('SOURCE after597 normal caller chain refuses unissued metadata before opera
     ()=>reconcile.reconcileSourcePrivateBootstrapRuntimeCheckpoint(untouched),
     ()=>reconcile.reconcileSourcePrivateRuntimeCheckpoint(untouched),()=>code.reconcileSourceProducerCodeOnly(untouched),
     ()=>origin.buildEstablishedNativeCurrent597MetadataAttestation(untouched,untouched),
-    ()=>origin.assertEstablishedNativeCurrent597MetadataCheckpoint(untouched)];
+    ()=>origin.assertEstablishedNativeCurrent597MetadataCheckpoint(untouched),
+    ()=>origin.buildEstablishedNativeCurrent598MetadataAttestation(untouched,untouched),
+    ()=>origin.assertEstablishedNativeCurrent598MetadataCheckpoint(untouched),
+    ()=>snapshots.readAuthenticatedSource598Predecessor(untouched),
+    ()=>snapshots.assertAuthenticatedSource598SnapshotFresh(untouched),
+    ()=>snapshots.readAuthenticatedSourceStaged598Predecessor(untouched),
+    ()=>snapshots.assertAuthenticatedSourceStaged598SnapshotFresh(untouched),
+    ()=>view.withSource598OriginAssertionView(untouched)];
   for(const call of calls)await assert.rejects(call,/SOURCE_PRODUCER_AFTER597_UNISSUED/);
   assert.equal(operands,0);assert.equal(io,0);
-  assert.equal(ACTIVE_ASSISTANT_SUCCESSOR,INACTIVE_SCALAR597_LATER_H0_SUCCESSOR);
+  assert.equal(ACTIVE_ASSISTANT_SUCCESSOR,next);
 });
 
-test('SOURCE after597 normal caller pure classification retains genuine597 and rejects mixed historical families',async()=>{
+test('SOURCE after597 normal caller pure classification retains genuine598 and rejects mixed historical families',async()=>{
   const family=await import('./lib/source-producer-after597-runtime-family.mjs');
   const stage=await import('./stage-source-producer-originals.mjs');
   const runtime=await import('./source-producer-runtime-transition.mjs');
   const old=family.SOURCE_PRODUCER_BEFORE;
-  assert.deepEqual(old,{...SCALAR597_LATER_H0_BINDING,...SCALAR597_LATER_H0_OUTPUT});
+  assert.deepEqual(old,{...ASSISTANT_AFTER597_BINDING,...ASSISTANT_AFTER597_OUTPUT});
   const descriptor={modelBinding:{modelBundleSha256:old.I},contractHashes:{continuationStateContractSha256:old.T}};
-  assert.equal(runtime.sourceProducerRuntimePredecessorFamily(descriptor),'597');
+  assert.equal(runtime.sourceProducerRuntimePredecessorFamily(descriptor),'598');
+  assert.throws(()=>runtime.sourceProducerRuntimePredecessorFamily({
+    modelBinding:{modelBundleSha256:SCALAR597_LATER_H0_BINDING.I},
+    contractHashes:{continuationStateContractSha256:SCALAR597_LATER_H0_BINDING.T}}));
   // Two actual historical identities exercise only the pure classifier. This
   // is no issued successor, validator, opaque handle or positive B/S evidence.
   const {SCALAR597_LATER_H0_BEFORE:historical}=await import('./lib/assistant-later-h0-successor-source.mjs');
@@ -555,6 +563,7 @@ test('SOURCE after597 normal CODE DATA fingerprints preserve NULL and enforce ph
   const sha=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
   const actualCompiler=await fs.readFile(path.join(root,'scripts/build-source-producer-successor.mjs'),'utf8');
   await t.test('exact whole compiler history inverse retains old oracles and refuses unknown or partial bodies',()=>{
+    assert.equal(assertWholeCompilerHistory(actualCompiler),undefined);
     assert.equal(sha(sourceCodePinsHistoricalCompiler(actualCompiler)),SOURCE_CODE_PINS_COMPILER_REVIEW.beforeSha256);
     assert.equal(sourceCodePinsHistoricalCompiler(sourceCodePinsHistoricalCompiler(actualCompiler)),sourceCodePinsHistoricalCompiler(actualCompiler));
     assert.throws(()=>sourceCodePinsHistoricalCompiler(actualCompiler.slice(0,-1)),/SOURCE_CODE_PINS_COMPILER_UNREVIEWED/);

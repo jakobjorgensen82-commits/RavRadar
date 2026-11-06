@@ -16,13 +16,13 @@ const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..'),CP
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const once=(source,before,after)=>{assert.equal(source.split(before).length,2);return source.replace(before,()=>after);};
 export const SOURCE_PRODUCER_ALIASES=Object.freeze([
-  Object.freeze({name:CP+'source597_state_valid',signature:'(jsonb,text)'}),
-  Object.freeze({name:CP+'source597_payload_valid',signature:'(jsonb,timestamptz)'}),
-  Object.freeze({name:CP+'source597_same_h0_projection',signature:'(jsonb,timestamptz)'}),
+  Object.freeze({name:CP+'source598_state_valid',signature:'(jsonb,text)'}),
+  Object.freeze({name:CP+'source598_payload_valid',signature:'(jsonb,timestamptz)'}),
+  Object.freeze({name:CP+'source598_same_h0_projection',signature:'(jsonb,timestamptz)'}),
 ]);
 const replacements=Object.freeze([CP+'integrated_state_valid',CP+'payload_valid',CP+'integrated_state_reason',CP+'payload_reason',
   CP+'predecessor_payload_valid','ravradar_trip_v3_binding_allowed',CP+'cas',CP+'contract']);
-const labels=Object.freeze(['source-original597-state-validator','source-original597-payload-validator','source597-same-h0-projection']);
+const labels=Object.freeze(['source-original598-state-validator','source-original598-payload-validator','source598-same-h0-projection']);
 export const SOURCE_PRODUCER_AFTER597_CODE_FILES = Object.freeze([
   ".github/actions/save-owned-dmi-grib/action.yml",
   ".github/actions/save-owned-dmi-grib/index.cjs",
@@ -711,7 +711,7 @@ export async function readSourceProducerCanonicalSource(options){
   assert.equal(sha(canonicalSource),pins.canonicalSha256);
   let inverse=once(canonicalSource,insertion,'');
   for(const name of [...replacements].reverse())inverse=once(inverse,definition(inverse,name),definition(prior.canonicalSource,name));
-  assert.equal(inverse,prior.canonicalSource,'Whole genuine597 canonical inverse');
+  assert.equal(inverse,prior.canonicalSource,'Whole genuine598 canonical inverse');
   for(const row of prior.originalDefinitions)assert.equal(definition(canonicalSource,row.name),row.definition);
   assert.deepEqual(await fs.readFile(file),raw);
   return Object.freeze({...prior,canonicalSource,migration,sourcePhase:'source-producer-after597',admission:'NO_ADMISSION'});

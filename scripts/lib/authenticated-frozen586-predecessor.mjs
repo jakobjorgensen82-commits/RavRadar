@@ -14,7 +14,8 @@ import {withAuthenticated586PredecessorSource,withAuthenticated587PredecessorSou
   withAuthenticated590PredecessorSource,assertFrozen590CodeSourceSelected,FROZEN590_CODE_SOURCE_PROVENANCE,
   withAuthenticated591PredecessorSource,assertFrozen591CodeSourceSelected,FROZEN591_CODE_SOURCE_PROVENANCE,
   withSource594OriginalDataSource,assertSource594OriginalDataSourceSelected,SOURCE594_CODE_SOURCE_PROVENANCE,
-  withSource597OriginalDataSource,assertSource597OriginalDataSourceSelected,SOURCE597_CODE_SOURCE_PROVENANCE}
+  withSource597OriginalDataSource,assertSource597OriginalDataSourceSelected,SOURCE597_CODE_SOURCE_PROVENANCE,
+  withSource598OriginAssertionView,assertSource598CodeSourceSelected,SOURCE598_CODE_SOURCE_PROVENANCE}
   from '../check-assistant-later-h0-predecessor-source.mjs';
 
 import {requireSourceProducerAfter597Output} from './source-producer-after597-parent.mjs';
@@ -24,7 +25,7 @@ const exec=promisify(callbackExec),failedCloses=new Map();
 // Ukendt fysisk FD-lukning blokerer samme sti på tværs af begge familier.
 // Opaque snapshots og friskhedsfunktioner tilhører derimod kun én fast profil.
 function fixedSnapshot(profile){
-  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588||profile===FROZEN590||profile===FROZEN591||profile===SOURCE_FROZEN594||profile===SOURCE_FROZEN597||profile===SOURCE_STAGED597,'FROZEN_PREDECESSOR_UNKNOWN_PROFILE');
+  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588||profile===FROZEN590||profile===FROZEN591||profile===SOURCE_FROZEN594||profile===SOURCE_FROZEN597||profile===SOURCE_STAGED597||profile===SOURCE_FROZEN598||profile===SOURCE_STAGED598,'FROZEN_PREDECESSOR_UNKNOWN_PROFILE');
   const contexts=new WeakMap(),refreshers=new WeakMap();
   const SOURCE=profile.sourceHead;
 const SHA=/^[a-f0-9]{64}$/, HEAD=/^[a-f0-9]{40}$/, MB=1024*1024;
@@ -105,7 +106,7 @@ async function qualifyProducer(producer,frozenRoot){
   return Object.freeze({consumerHead:head,producerHead:producer,sourceFamilyHead:SOURCE,ownerPolicyGitBlob:POLICY_BLOB});
 }
 async function fixedPaths(){
-  const staged597=profile===SOURCE_STAGED597;
+  const staged597=profile===SOURCE_STAGED597||profile===SOURCE_STAGED598;
   const privateRoot=process.env[staged597?'RAVRADAR_PREDECESSOR_PRIVATE_ROOT':'RAVRADAR_PRIVATE_RUNTIME_ROOT'];
   const bundlePath=process.env[staged597?'RAVRADAR_PREDECESSOR_PRIVATE_BUNDLE':'RAVRADAR_PRIVATE_RUNTIME_BUNDLE'];
   need(typeof privateRoot==='string'&&path.isAbsolute(privateRoot)&&typeof bundlePath==='string'
@@ -119,6 +120,7 @@ async function fixedPaths(){
 async function readAuthenticatedPredecessor(){
   need(arguments.length===0,'ARGUMENTS');
   const conditionsMaximum=profile===FROZEN591||profile===SOURCE_FROZEN594||profile===SOURCE_FROZEN597||profile===SOURCE_STAGED597
+    ||profile===SOURCE_FROZEN598||profile===SOURCE_STAGED598
     ?PRIVATE_CONDITIONS_MAX_BYTES:256*MB;
   // These normal workflow paths select already restored immutable B; they are
   // not authority. No consumed 0200/140000 upgrade flag is reused as permission.
@@ -179,7 +181,8 @@ async function readAuthenticatedPredecessor(){
       need(same(derived,saved),'B_S_DIFFER');
       // Normal loader validated original state/companion/generation digests.
       // The frozen data assertions do not substitute for that protected load.
-      await dataAssertions[profile.assertionExport]({descriptor,conditions,centralContract:central,checkpoint:saved});
+      const asserted=await dataAssertions[profile.assertionExport]({descriptor,conditions,centralContract:central,checkpoint:saved});
+      if(profile===SOURCE_FROZEN598||profile===SOURCE_STAGED598)need(asserted===undefined,'ASSERTION_RESULT');
       need(same(await pointer(),before),'SOURCE_CHANGED');
       need(same(await checkpointRequest('?document_key=eq.'+encodeURIComponent(SKey)
         +'&select=document_key,payload,version&limit=2',{},'read'),SRows),'S_CHANGED');
@@ -380,4 +383,41 @@ export function assertAuthenticatedSourceStaged597Snapshot(handle){
 }
 export async function assertAuthenticatedSourceStaged597SnapshotFresh(handle){
   requireSourceProducerAfter597Output();return sourceStagedSnapshot597.fresh(...arguments);
+}
+
+// Separate Source-owned598 snapshot family. Its assertion is a newly derived
+// view, not an export in immutable bd9 and not a new DATA/NATIVE Git role.
+// Real protected B/S, whole673 pairs, actual producer/consumer split, pointer/S
+// versions and refreshers remain in fixedSnapshot; this view grants no clock.
+const SOURCE_FROZEN598=Object.freeze({
+  sourceHead:SOURCE598_CODE_SOURCE_PROVENANCE.head,
+  requiredSha:Object.freeze([SOURCE598_CODE_SOURCE_PROVENANCE.originSha256,
+    SOURCE598_CODE_SOURCE_PROVENANCE.partPipelineSha256]),
+  withSource:withSource598OriginAssertionView,
+  assertionPath:'scripts/lib/established-native-current-origin-source598-snapshot-view.mjs',
+  assertionExport:'assertSource598OriginSnapshotData',
+  temporaryPrefix:'rr-source598-snapshot-',errorPrefix:'SOURCE598_PREDECESSOR_'});
+const sourceSnapshot598=fixedSnapshot(SOURCE_FROZEN598);
+export async function readAuthenticatedSource598Predecessor(){
+  requireSourceProducerAfter597Output(); // FIRST before arguments, paths or transport.
+  assertSource598CodeSourceSelected();return sourceSnapshot598.read(...arguments);
+}
+export function assertAuthenticatedSource598Snapshot(handle){
+  requireSourceProducerAfter597Output();return sourceSnapshot598.snapshot(...arguments);
+}
+export async function assertAuthenticatedSource598SnapshotFresh(handle){
+  requireSourceProducerAfter597Output();return sourceSnapshot598.fresh(...arguments);
+}
+const SOURCE_STAGED598=Object.freeze({...SOURCE_FROZEN598,
+  temporaryPrefix:'rr-source598-staged-snapshot-',errorPrefix:'SOURCE598_STAGED_PREDECESSOR_'});
+const sourceStagedSnapshot598=fixedSnapshot(SOURCE_STAGED598);
+export async function readAuthenticatedSourceStaged598Predecessor(){
+  requireSourceProducerAfter597Output(); // FIRST before arguments, paths or transport.
+  assertSource598CodeSourceSelected();return sourceStagedSnapshot598.read(...arguments);
+}
+export function assertAuthenticatedSourceStaged598Snapshot(handle){
+  requireSourceProducerAfter597Output();return sourceStagedSnapshot598.snapshot(...arguments);
+}
+export async function assertAuthenticatedSourceStaged598SnapshotFresh(handle){
+  requireSourceProducerAfter597Output();return sourceStagedSnapshot598.fresh(...arguments);
 }

@@ -11,7 +11,8 @@ import {promisify} from 'node:util';
 const execute=promisify(callbackExec);
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 function fixedSource(profile){
-  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588||profile===FROZEN590||profile===FROZEN591||profile===SOURCE591_CODE_PROFILE||profile===SOURCE592_CODE_PROFILE||profile===SOURCE593_CODE_PROFILE||profile===SOURCE594_CODE_PROFILE||profile===SOURCE594_ORIGINAL_DATA_PROFILE||profile===SOURCE597_CODE_PROFILE||profile===SOURCE597_ORIGINAL_DATA_PROFILE,'FROZEN_SOURCE_UNKNOWN_PROFILE');
+  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588||profile===FROZEN590||profile===FROZEN591||profile===SOURCE591_CODE_PROFILE||profile===SOURCE592_CODE_PROFILE||profile===SOURCE593_CODE_PROFILE||profile===SOURCE594_CODE_PROFILE||profile===SOURCE594_ORIGINAL_DATA_PROFILE||profile===SOURCE597_CODE_PROFILE||profile===SOURCE597_ORIGINAL_DATA_PROFILE||profile===SOURCE598_CODE_PROFILE||profile===SOURCE598_ORIGIN_SNAPSHOT_VIEW_PROFILE,'FROZEN_SOURCE_UNKNOWN_PROFILE');
+  const source598SnapshotView=profile.purpose==='SOURCE_OWNED_NEW_598_ORIGIN_ASSERTION_VIEW_NO_ADMISSION';
   const HEAD=profile.head,TREE=profile.tree;
 const C='scripts/rollback-assets/ravscore-model-bundle.generated.js';
 const I='js/core/ravscore-model-bundle.generated.js';
@@ -337,7 +338,62 @@ export async function assertSource597OriginSnapshotData(options) {
     &&same(pair.candidate,checkpoint.candidateGRollbackCompanion.states[id]),'B_S_DIFFER');
 }
 `;
-const ASSERTION_SUFFIX=profile===SOURCE597_ORIGINAL_DATA_PROFILE?SOURCE_597_ASSERTION_SUFFIX:profile===SOURCE594_ORIGINAL_DATA_PROFILE?SOURCE_594_ASSERTION_SUFFIX:profile===FROZEN591?ORIGINAL_591_ASSERTION_SUFFIX:profile===FROZEN590?ORIGINAL_590_ASSERTION_SUFFIX:profile===FROZEN588?ORIGINAL_588_ASSERTION_SUFFIX:profile===FROZEN586?ORIGINAL_586_ASSERTION_SUFFIX:
+const SOURCE_598_ORIGIN_SNAPSHOT_VIEW_SUFFIX=String.raw`
+// NEW SOURCE-OWNED derived assertion VIEW over the WHOLE immutable bd9 origin.
+// This export did not exist in bd9. Exact prefix/suffix/output hashes are
+// enforced by the separate view materializer; the CODE598 host stays unchanged.
+// Undefined result only: no origin/ForPart/finalizer or metadata capability.
+export async function assertSource598OriginSnapshotData(options) {
+  need(arguments.length===1&&exact(options,['descriptor','conditions','centralContract','checkpoint']),'ARGUMENTS');
+  const {descriptor,conditions,centralContract,checkpoint}=options;
+  const {validateProtectedPrivateRuntimeDescriptor} = await import('../protected-private-production-runtime.mjs');
+  need(same(validateProtectedPrivateRuntimeDescriptor(descriptor),descriptor),'SOURCE_598_DESCRIPTOR');
+  const binding=ravScoreModelBinding(),candidate=candidateBinding(),contracts=await privateRuntimeContractHashes();
+  need(same(descriptor.modelBinding,binding)&&same(descriptor.contractHashes,contracts),'SOURCE_598_FAMILY');
+  const parts=registryParts(centralContract),pairs=pairsFromConditions(conditions,parts);
+  // The outer Source snapshot has already authenticated this actual producer
+  // against the consumer ancestry, exact two parent semantic blobs and policy.
+  // This pure assertion does not execute readOrigin's separate HEAD/ROOT pass.
+  const currentSource=Object.freeze({sourceHead:descriptor.sourceHead,
+    semanticContract:ESTABLISHED_NATIVE_CURRENT_SEMANTIC_CONTRACT,
+    integrated:binding.modelBundleSha256,candidate:candidate.modelBundleSha256,
+    continuation:contracts.continuationStateContractSha256,ownerPolicyGitBlob:SEED.ownerPolicyGitBlob});
+  need(conditions[ATTEST]?.kind===KIND&&conditions[ATTEST]?.transition==='NORMAL_STRICT_CONTINUATION','SOURCE_598_NORMAL_GENERATION_REQUIRED');
+  validateAttestation(conditions[ATTEST],{descriptor,conditions,central:centralContract,pairs,currentSource});
+  need(conditions[ATTEST].registrySha256===digest(centralContract),'METADATA_REGISTRY_CHANGED');
+  need(same(checkpoint.modelBinding,binding)&&same(checkpoint.candidateGRollbackCompanion?.modelBinding,candidate)
+    &&checkpoint.continuationStateContractSha256===contracts.continuationStateContractSha256
+    &&checkpoint.datasetId===conditions.datasetId&&checkpoint.productionReferenceAt===conditions.productionReferenceAt
+    &&SHA.test(checkpoint.generationSha256),'SOURCE_598_CHECKPOINT');
+  need(same(Object.keys(checkpoint.states??{}).sort(),[...pairs.keys()].sort())
+    &&same(Object.keys(checkpoint.candidateGRollbackCompanion?.states??{}).sort(),[...pairs.keys()].sort()),'PARTS');
+  for(const[id,pair]of pairs)need(same(pair.integrated,checkpoint.states[id])
+    &&same(pair.candidate,checkpoint.candidateGRollbackCompanion.states[id]),'B_S_DIFFER');
+  // Normal protected B/S authentication, physical closure and freshness remain
+  // the outer snapshot owner's obligations. No new clock or budget is issued.
+}
+// Pure new Source598 metadata relation over inverse original pairs. This
+// does not restore B/S or mint a snapshot; the real Source owner did that.
+export async function assertSource598MetadataOriginData(options){
+  need(arguments.length===1&&exact(options,['descriptor','conditions','centralContract']),'ARGUMENTS');
+  const {descriptor,conditions,centralContract}=options;
+  const {validateProtectedPrivateRuntimeDescriptor}=await import('../protected-private-production-runtime.mjs');
+  need(same(validateProtectedPrivateRuntimeDescriptor(descriptor),descriptor),'SOURCE598_METADATA_DESCRIPTOR');
+  const binding=ravScoreModelBinding(),contracts=await privateRuntimeContractHashes();
+  need(same(descriptor.modelBinding,binding)&&same(descriptor.contractHashes,contracts),'SOURCE598_METADATA_FAMILY');
+  const parts=registryParts(centralContract),pairs=pairsFromConditions(conditions,parts);
+  const currentSource=Object.freeze({sourceHead:descriptor.sourceHead,
+    semanticContract:ESTABLISHED_NATIVE_CURRENT_SEMANTIC_CONTRACT,
+    integrated:binding.modelBundleSha256,candidate:candidateBinding().modelBundleSha256,
+    continuation:contracts.continuationStateContractSha256,ownerPolicyGitBlob:SEED.ownerPolicyGitBlob});
+  need(conditions[ATTEST]?.kind===KIND&&conditions[ATTEST]?.transition==='NORMAL_STRICT_CONTINUATION','SOURCE598_METADATA_NORMAL_GENERATION');
+  validateAttestation(conditions[ATTEST],{descriptor,conditions,central:centralContract,pairs,currentSource});
+  need(conditions[ATTEST].registrySha256===digest(centralContract),'METADATA_REGISTRY_CHANGED');
+  need(conditions.datasetId===descriptor.datasetId&&conditions.productionReferenceAt===descriptor.productionReferenceAt,
+    'SOURCE598_METADATA_IDENTITY');
+}
+`;
+const ASSERTION_SUFFIX=source598SnapshotView?SOURCE_598_ORIGIN_SNAPSHOT_VIEW_SUFFIX:profile===SOURCE597_ORIGINAL_DATA_PROFILE?SOURCE_597_ASSERTION_SUFFIX:profile===SOURCE594_ORIGINAL_DATA_PROFILE?SOURCE_594_ASSERTION_SUFFIX:profile===FROZEN591?ORIGINAL_591_ASSERTION_SUFFIX:profile===FROZEN590?ORIGINAL_590_ASSERTION_SUFFIX:profile===FROZEN588?ORIGINAL_588_ASSERTION_SUFFIX:profile===FROZEN586?ORIGINAL_586_ASSERTION_SUFFIX:
   assertionNames.reduce((source,[before,after])=>{assert(source.includes(before));return source.replaceAll(before,after);},ORIGINAL_586_ASSERTION_SUFFIX);
 if(profile===FROZEN587)assert.equal([...assertionNames].reverse().reduce(
   (source,[before,after])=>source.replaceAll(after,before),ASSERTION_SUFFIX),ORIGINAL_586_ASSERTION_SUFFIX,'Whole assertion-suffix inverse');
@@ -364,6 +420,13 @@ async function materializedBytes(file,index,gitReference){
   const original=await bytes(ORIGIN,index),suffix=ASSERTION_SUFFIX+METADATA_ASSERTION_SUFFIX;
   const derived=Buffer.concat([original,Buffer.from(suffix)]);
   assert.deepEqual(derived.subarray(0,derived.length-Buffer.byteLength(suffix)),original,'Whole old origin-module inverse');
+  if(source598SnapshotView){
+    const identity=profile.derivedAssertion;
+    assert.equal(original.length,identity.inputBytes);assert.equal(sha(original),identity.inputSha256);
+    assert.equal(Buffer.byteLength(suffix),identity.suffixBytes);assert.equal(sha(Buffer.from(suffix)),identity.suffixSha256);
+    assert.equal(derived.length,identity.outputBytes);assert.equal(sha(derived),identity.outputSha256);
+    assert.deepEqual(derived.subarray(original.length),Buffer.from(suffix),'Whole new Source assertion suffix');
+  }
   return derived;
 }
 async function exactTree(root,files,index,gitReference){
@@ -379,6 +442,13 @@ async function exactTree(root,files,index,gitReference){
   await visit(root);assert.deepEqual([...seen].sort(),files);
 }
 async function withSource(useVerifiedSource){
+  if(source598SnapshotView){
+    // Dynamic fixed import avoids a static parent/checker initialization cycle.
+    // Require the same real Source output before arguments, Git, temp or view IO.
+    const {requireSourceProducerAfter597Output}=await import('./lib/source-producer-after597-parent.mjs');
+    requireSourceProducerAfter597Output();assertSource598CodeSourceSelected();
+  }
+  if(profile===SOURCE598_CODE_PROFILE)assertSource598CodeSourceSelected();
   if(profile===SOURCE591_CODE_PROFILE)assertSource591CodeSourceSelected(); // Historical CODE only, before Git/temp/I/O.
   if(profile===SOURCE592_CODE_PROFILE)assertSource592CodeSourceSelected();
   if(profile===SOURCE593_CODE_PROFILE)assertSource593CodeSourceSelected();
@@ -407,7 +477,8 @@ async function withSource(useVerifiedSource){
     for(const file of files){const output=path.resolve(root,file);assert(inside(root,output));await fs.mkdir(path.dirname(output),{recursive:true});
       await fs.writeFile(output,await materializedBytes(file,index,gitReference),{flag:'wx',mode:0o600});}
     await exactTree(root,files,index,gitReference);
-    const builderArgs=(profile===SOURCE597_CODE_PROFILE||profile===SOURCE597_ORIGINAL_DATA_PROFILE)?['--scalar597-later-h0','--check']:
+    const builderArgs=(profile===SOURCE598_CODE_PROFILE||source598SnapshotView)?['--assistant-after597','--check']:
+      (profile===SOURCE597_CODE_PROFILE||profile===SOURCE597_ORIGINAL_DATA_PROFILE)?['--scalar597-later-h0','--check']:
       (profile===SOURCE594_CODE_PROFILE||profile===SOURCE594_ORIGINAL_DATA_PROFILE)?['--installed593-origin591-successor','--check']:
       (profile===SOURCE592_CODE_PROFILE||profile===SOURCE593_CODE_PROFILE)?['--public591-successor','--check']:
       (profile===SOURCE591_CODE_PROFILE||profile===FROZEN591)?['--public590-successor','--check']:
@@ -859,4 +930,61 @@ export function assertSource597OriginalDataSourceSelected(){
 }
 export async function withSource597OriginalDataSource(callback){
   assertSource597OriginalDataSourceSelected();return source597OriginalData(...arguments);
+}
+
+// Qualified598 CODE only. No installed SQL, original B/S or runtime authority.
+// bd9 is the immutable qualified tree also merged as89ca; the roles stay typed.
+export const SOURCE598_CODE_SOURCE_PROVENANCE=Object.freeze({
+  selected:true,purpose:'CODE_ONLY_NO_ORIGINAL_OR_RUNTIME_ADMISSION',
+  head:'bd9cf518fe798ddea45d2b835f324f6e2bea06fc',tree:'2f71c562eea774ca03996802f83bdad7cccd43cc',
+  candidateFiles:101,integratedFiles:100,
+  originSha256:'fe1dad972fc236c42ebb3c9457d9c192f81ede06dd6e85a2978bdf6aa8407916',
+  partPipelineSha256:'8e979128a682a7324d7defcc3d2d2dfa5edc85ebc22d4ae714810aa085490758',
+  fullRuntimeContractSha256:'ede0b53b8ed0f3fa5d0e505ea7c07d98969dc7a38fe94ae034a85f9c5d5af7ff',
+  publicProjectionContractSha256:'24e95d442450769ff233e42aa4b100842c353c8d28735defbbfef5d5457c99ec',
+});
+const SOURCE598_CODE_PROFILE=Object.freeze({...SOURCE598_CODE_SOURCE_PROVENANCE,
+  builder:'scripts/build-assistant-later-h0-successor.mjs',
+  builderChecked:'Præcis assistentkilde efter597 kontrolleret; ingen installation eller tilstandsoptagelse.',
+  assertion:null,temporaryPrefix:'rr-source-a598-code-',
+  candidate:'239ac83f1df6050438243068bba5d942c4e88a921d0b70d611a12f0c798d3f5a',
+  integrated:'f8d8befa7ecda82f8194c0ca04142bd89f5c39e92ed37cda70afca8dded108d1',
+  additionalMigrations:Object.freeze([...SOURCE597_CODE_PROFILE.additionalMigrations,
+    Object.freeze({path:'supabase/migrations/20261105064515_assistant_after597_original597_bound_successor.sql',
+      sha256:'8d566a81056b26a969cdf19107f8a39d97d799f20594141f94529f6d2a2fe98f'})]),
+  runtimeContracts:Object.freeze({continuationStateContractSha256:'035008731e6fac3fca396110b3d0ff3486e4854baa99bd691e2a7ea541191579',
+    fullRuntimeContractSha256:SOURCE598_CODE_SOURCE_PROVENANCE.fullRuntimeContractSha256,
+    publicProjectionContractSha256:SOURCE598_CODE_SOURCE_PROVENANCE.publicProjectionContractSha256}),
+});
+const source598Code=fixedSource(SOURCE598_CODE_PROFILE);
+export function assertSource598CodeSourceSelected(){
+  assert.equal(arguments.length,0,'No caller-selected598 CODE source');
+  const source=SOURCE598_CODE_SOURCE_PROVENANCE;
+  assert.equal(source.selected,true);assert.equal(source.purpose,'CODE_ONLY_NO_ORIGINAL_OR_RUNTIME_ADMISSION');
+  assert.deepEqual(Object.keys(source).sort(),['candidateFiles','fullRuntimeContractSha256','head','integratedFiles',
+    'originSha256','partPipelineSha256','publicProjectionContractSha256','purpose','selected','tree'].sort());
+  for(const key of ['head','tree'])assert.match(source[key],/^[a-f0-9]{40}$/);
+  for(const key of ['candidateFiles','integratedFiles'])assert(Number.isSafeInteger(source[key])&&source[key]>0);
+  for(const key of ['originSha256','partPipelineSha256','fullRuntimeContractSha256','publicProjectionContractSha256'])
+    assert.match(source[key],/^[a-f0-9]{64}$/);
+  return source; // CODE identity only; no DATA/original/session capability.
+}
+export async function withSource598CodeParent(callback){
+  assertSource598CodeSourceSelected();return source598Code(...arguments);
+}
+
+// New Source code VIEW, not a DATA/NATIVE Git role or a historical bd9 export.
+// The same finite source materializer owns its full prefix, imports/resources,
+// exactTree, exclusive temp lifetime and unchanged first-error cleanup.
+// SOURCE598_CODE_PROFILE above remains byte-identical with assertion:null.
+const SOURCE598_ORIGIN_SNAPSHOT_VIEW_PROFILE=Object.freeze({...SOURCE598_CODE_PROFILE,
+  purpose:'SOURCE_OWNED_NEW_598_ORIGIN_ASSERTION_VIEW_NO_ADMISSION',
+  assertion:'scripts/lib/established-native-current-origin-source598-snapshot-view.mjs',
+  temporaryPrefix:'rr-source598-origin-snapshot-view-',
+  derivedAssertion:Object.freeze({"inputBytes":96994,"inputSha256":"fe1dad972fc236c42ebb3c9457d9c192f81ede06dd6e85a2978bdf6aa8407916","suffixBytes":4680,"suffixSha256":"08915ad679eee925f7be74ac1ef135f8b2b26581d812c7a2e9eb413aff616e37","outputBytes":101674,"outputSha256":"d3ed29bc275f1589abda665f7a015a93d6e175dea26d78670d87727118ece538"}),
+});
+const source598OriginSnapshotView=fixedSource(SOURCE598_ORIGIN_SNAPSHOT_VIEW_PROFILE);
+export async function withSource598OriginAssertionView(callback){
+  // fixedSource enforces real output first; no caller profile/root/head/hash.
+  return source598OriginSnapshotView(...arguments);
 }

@@ -1,4 +1,4 @@
-// Normal authenticated597 -> SOURCE SAME_H0 preparation; UNISSUED until the complete next source is frozen.
+// Normal authenticated598 -> SOURCE SAME_H0 preparation; UNISSUED until the complete next source is frozen.
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
@@ -6,12 +6,12 @@ import {createReadStream} from 'node:fs';
 import path from 'node:path';
 import {isDeepStrictEqual} from 'node:util';
 import {writeBoundedJsonAtomic} from './lib/bounded-json-writer.mjs';
-import {buildEstablishedNativeCurrent597MetadataAttestation,assertSource597MetadataCheckpointInverse}
+import {buildEstablishedNativeCurrent598MetadataAttestation,assertSource598MetadataCheckpointInverse}
   from './lib/established-native-current-origin.mjs';
-import {readAuthenticatedSourceStaged597Predecessor,assertAuthenticatedSourceStaged597Snapshot,assertAuthenticatedSourceStaged597SnapshotFresh}
+import {readAuthenticatedSourceStaged598Predecessor,assertAuthenticatedSourceStaged598Snapshot,assertAuthenticatedSourceStaged598SnapshotFresh}
   from './lib/authenticated-frozen586-predecessor.mjs';
 import {fileURLToPath,pathToFileURL} from 'node:url';
-import {withSource597OriginalDataSource} from './check-assistant-later-h0-predecessor-source.mjs';
+import {withSource598CodeParent} from './check-assistant-later-h0-predecessor-source.mjs';
 import {SOURCE_PRODUCER_BEFORE,requireSourceProducerBinding,requireSourceProducerOutput}
   from './lib/source-producer-after597-runtime-family.mjs';
 import {ravScoreModelBinding as integratedBinding} from '../js/core/ravscore-model-contract.js';
@@ -30,15 +30,15 @@ const contexts=new WeakMap();
 // Closed genuine original domains. A descriptor chooses its own exact reader;
 // no supplied tuple, callback or old handle can rename a590 original as591.
 const predecessors=Object.freeze([
-  Object.freeze({label:'597',binding:SOURCE_PRODUCER_BEFORE,
-    withSource:withSource597OriginalDataSource,readOriginal:readAuthenticatedSourceStaged597Predecessor,
-    snapshot:assertAuthenticatedSourceStaged597Snapshot,fresh:assertAuthenticatedSourceStaged597SnapshotFresh,
-    metadata:buildEstablishedNativeCurrent597MetadataAttestation})
+  Object.freeze({label:'598',binding:SOURCE_PRODUCER_BEFORE,
+    withSource:withSource598CodeParent,readOriginal:readAuthenticatedSourceStaged598Predecessor,
+    snapshot:assertAuthenticatedSourceStaged598Snapshot,fresh:assertAuthenticatedSourceStaged598SnapshotFresh,
+    metadata:buildEstablishedNativeCurrent598MetadataAttestation})
 ]);
 function predecessorFor(descriptor){
   const matches=predecessors.filter(value=>descriptor.modelBinding?.modelBundleSha256===value.binding.I
     &&descriptor.contractHashes?.continuationStateContractSha256===value.binding.T);
-  assert.equal(matches.length,1,'Exactly the genuine597 SOURCE predecessor original domain');
+  assert.equal(matches.length,1,'Exactly the genuine598 SOURCE predecessor original domain');
   // Historiske rækker beholder egne domæner; kun den præcise tilsigtede forgænger vælges.
   assert.deepEqual(matches[0].binding,SOURCE_PRODUCER_BEFORE,'SOURCE_ORIGINAL_DATA_PARENT_UNAVAILABLE');
   return matches[0];
@@ -72,7 +72,7 @@ async function noLinks(file){let at=path.parse(file).root;for(const p of path.re
 async function absent(file){try{await fs.lstat(file);return false;}catch(e){if(e.code==='ENOENT')return true;throw e;}}
 function equalExceptMetadata(original,prepared){
   const next=requireSourceProducerBinding();
-  assertSource597MetadataCheckpointInverse({previousCheckpoint:original,incomingCheckpoint:prepared,
+  assertSource598MetadataCheckpointInverse({previousCheckpoint:original,incomingCheckpoint:prepared,
     currentSource:{integrated:next.I,candidate:next.C,continuation:next.T}});
 }
 async function readIdentity({request,identity}){
@@ -169,7 +169,7 @@ export async function prepareSourceProducerRuntimeTransition(options){
     // Current c340 Pages/PLAIN/public projection and storage ABI must be retained.
     // This metadata-only arm permits ONLY the newly derived T to differ.
     same({...oldContracts,continuationStateContractSha256:contracts.continuationStateContractSha256},contracts,
-      'SOURCE597_EXACT_RUNTIME_CONTRACTS');
+      'SOURCE598_EXACT_RUNTIME_CONTRACTS');
 
     const bundlePath=path.dirname(bundleManifestPath),privateRoot=path.dirname(bundlePath);
     const expected={modelBinding:identity.modelBinding,contractHashes:identity.contractHashes,datasetId:identity.datasetId,
