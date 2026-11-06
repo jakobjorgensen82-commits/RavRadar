@@ -1,3 +1,19 @@
+## 89.317 Delingsdatoer og faste sprogobjekter ved hostens opstart
+
+Bevar samme dato, klokkeslæt og indhold med mindre gentaget formateringsarbejde.
+
+<a id="forecast-share-fixed-locale-startup-2026-11-06"></a>
+
+<div class="reader-guide"><p><strong>Kort fortalt: Delingshandleren kan forberede sine tre faste sprogobjekter én gang. Det flytter ingen person-, zone- eller vejrdata til fælles tilstand.</strong></p></div><h3>Samme labels på alle tre sprog</h3><p>Den præcise kandidat bruger én datoformaterer pr. understøttet sprog. Dansk, tysk og engelsk skal fortsat vise de samme datoer og klokkeslæt ved midnat, årsskifte og sommer-/vintertid. Link, valgt tidspunkt og scorefortolkning bevares.</p><h3>Kun faste objekter forberedes</h3><p>Worker-/Pages-handleren forbereder de tre faste sprogobjekter ved modulopstart. Forespørgsel, dato, zone, score og data læses fortsat normalt. Browseren beholder sin eksisterende behovsstyrede brug; der tilføjes ingen ekstra opstartsindlæsning på hjemmesiden.</p><h3>Lokal sammenligning og faktisk kapacitet</h3><p>De normale lokale prøver sammenligner hele HTML-svaret, HTTP-status, sikkerhedsheaders og læseantal, blandt andet på de tre sprog, begge kendte hosts, ugyldige eller udløbne tidspunkter, usikre zonenavne og HEAD-kald. Lokale CPU-/tidsmålinger er kun støtte. Præcis kildekontrol, sikker levering, faktisk Cloudflare-måling og offentlig accept kræves før Free-kapacitet kan erklæres. Ingen ny tjeneste, database, billedlager eller betalt plan indføres.</p>
+
+## 89.316 SQL- og arkivstørrelse i databasekopiens rapport
+
+Skeln kendte byteantal fra databaseplads og leverandørens målte netværksforbrug.
+
+<a id="database-backup-sql-cipher-byte-report-2026-11-06"></a>
+
+<div class="reader-guide"><p><strong>Kort fortalt: Databaseplads, SQL-eksport og krypteret arkiv har forskellige størrelser. Rapporten skal holde dem adskilt fra målt egress.</strong></p></div><h3>Komprimering sker efter eksporten</h3><p>Det eksisterende forløb eksporterer fem SQL-filer til en privat GitHub-runner. Først derefter komprimeres og krypteres filerne. Et lille arkiv betyder derfor ikke, at overførslen fra Supabase til runneren var lige så lille.</p><h3>Kun kendte, kontrollerede antal</h3><p>Den præcise rapportrettelse bevarer SQL-totalen og summen af de fem krypterede filers byteantal. Hvert tal skal være et positivt, sikkert heltal inden for de eksisterende grænser, og SQL-totalen skal passe til filernes sum. Filnavne, SQL-indhold, brugeroplysninger og nøgler medtages ikke.</p><h3>Forbrug og opbevaring kræver egne beviser</h3><p>Tallene må ikke kaldes målte netværksbyte. En faktisk kopi og en konservativ før-/eftermåling af Supabase-forbruget skal vurderes før en fast cadence vælges, også med baggrundsforbrug og forsinket måling. Rettelsen starter ingen kopi og ændrer ingen tidsplan, retention, abonnement, vejrdata eller scorer. En lokal syntetisk prøve beviser ikke hosted gendannelse eller, at daglige kopier er Free-sikre.</p>
+
 ## 89.315 Kontrollerede assistentsvar uden unødvendige AI-kald
 
 Brug den kendte hele forklaring, bevar usikkerhed og kontrollér stadig sikkerhed, sprog og model.

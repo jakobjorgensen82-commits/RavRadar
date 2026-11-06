@@ -263,6 +263,76 @@
           "node scripts/test-rav-assistant-main-edge-roundtrip.mjs"
         ]
       ]
+    },
+    {
+      "path": "scripts/run-hosted-supabase-backup.mjs",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "exactSourceTransition": true,
+      "commands": [
+        [
+          "controls",
+          "node --test scripts/test-supabase-database-backup-workflow.mjs"
+        ]
+      ]
+    },
+    {
+      "path": "scripts/test-supabase-database-backup-workflow.mjs",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "exactSourceTransition": true,
+      "commands": [
+        [
+          "controls",
+          "node --test scripts/test-supabase-database-backup-workflow.mjs"
+        ]
+      ]
+    },
+    {
+      "path": "js/services/forecast-share-contract.js",
+      "domains": [
+        "sharing"
+      ],
+      "controlQualification": true,
+      "exactSourceTransition": true,
+      "commands": [
+        [
+          "sharing",
+          "node --test scripts/test-map-forecast-panel.mjs"
+        ]
+      ]
+    },
+    {
+      "path": "scripts/forecast-share/handler.mjs",
+      "domains": [
+        "sharing"
+      ],
+      "controlQualification": true,
+      "exactSourceTransition": true,
+      "commands": [
+        [
+          "sharing",
+          "node --test scripts/test-map-forecast-panel.mjs"
+        ]
+      ]
+    },
+    {
+      "path": "scripts/test-map-forecast-panel.mjs",
+      "domains": [
+        "sharing"
+      ],
+      "controlQualification": true,
+      "exactSourceTransition": true,
+      "commands": [
+        [
+          "sharing",
+          "node --test scripts/test-map-forecast-panel.mjs"
+        ]
+      ]
     }
   ],
   "exactSourceTransitions": {
@@ -280,6 +350,21 @@
     ],
     "scripts/test-rav-assistant-main-edge-roundtrip.mjs": [
       "57dbd1e9e6f234e137b4046b12b7ecaa9796bd38bdae50ba480507c24c858b14/0621cd8b56f96951fbb2f06c5da399c7ee3a98bbcb4a382430373e8aa80ffa65"
+    ],
+    "scripts/run-hosted-supabase-backup.mjs": [
+      "590f5c3a9ac06f4e7b56c79608de9cb15e8567d90f477aab2d1359bef9a2fb12/4bc65f714ce827d6563529da945a3e36e38e4487ee51c1947800e22b2619b903"
+    ],
+    "scripts/test-supabase-database-backup-workflow.mjs": [
+      "7ac47190f24040f615b6157c6192771e9e866942927aceb78cefb707daf19a85/d034c3743ff09a6502fbdba8e444ade8767a26aa1e876af2275493bb845bf85f"
+    ],
+    "js/services/forecast-share-contract.js": [
+      "8e56531098a165ef7e8eb63f1683b2b660ddf4c4db026b33d3860acd1852d373/22d6a708821f0bea303d1be6d5651ad4fc54a587890138ccd0f9dc5e945e0d04"
+    ],
+    "scripts/forecast-share/handler.mjs": [
+      "ea1872613378cb4c68a533998c9c8e3430a3a5f44b5ec49723733f4cd7dfa7d7/e24b7491660dbb358c4381419eb15ed68b05ab4fae9340cef21cdd48080f0c8f"
+    ],
+    "scripts/test-map-forecast-panel.mjs": [
+      "38425f5c277384105eed090da0241c99b1a4e368e745e9696faebcfded4d31eb/f85653eb0761d7223bdcd11e8c4dc96001fde2a22d5de8049c7d1a0ee2136780"
     ]
   },
   "sources": {
@@ -4602,6 +4687,7 @@
           "4fadd2091d1bf8e8d76157f64595e4c4f74adb2caae6856d2aa1eb4ca245afda",
           "500271fe67485e042ba202eacb6b96ff165665f043ae8fa8205b554e1cb641cf",
           "5097b139b6aa371fe89f736bc609ad0896995d9fd55abc58b6a6a810a838d1f9",
+          "5136c70969029c5621bbd36e6a3b0db20a31dfb33e8d53f342706d417a07dd02",
           "516f7168ab822a3365dd53c64d24683faa875a28dd472c815989942f4c68d640",
           "51742979bf4610c349f5f4e389dd359d34af18229489c61df6ad44aaef03a9d4",
           "519ebad3b8c10a1be077a8b6cb132c06e28e2784ae3b9e8dcb871a793103b770",
@@ -4622,6 +4708,7 @@
           "5fcc45ab563c142e4bc8e4c55310d7ad5d31166f4bbcda4dfebae3f4b5e935c5",
           "5fe1fb8d185ddc319e8527d12581c01970c863cf93b324aaf380b0d5931d7eba",
           "60545b93ce941c45a874b4389b9e509efbd331441786f0ff3aaf983db6d93681",
+          "614088d09d1ca80b63fdb724bc986de20a04ff16da280e85800165251ef96f7d",
           "616f2544a0e90c506a6c4e207f8cf64a1822e4370ad32074226951087156505f",
           "624176c45167ae87eea67674c99e037cfdc9736971b98acbd683de83a05efb95",
           "628416d208885e7339c5665cedd18a6955713f843c041036c903a94187c085cb",
@@ -4648,6 +4735,7 @@
           "72878f49f4414ed3e4bc88ce2e225561a728390485ab38f327b7889dcd7af877",
           "730fa09466b3375610ba4c0d5241c9bdc2bd02d3e04db6ec57fc881c367a952c",
           "75297f7b69b59d298134d3948c0dc289add66c725d78c225cdc3450dc1907fb6",
+          "7668e9d1ca2bfbcacd801e9eab583e495733de30bd91d6ebab570f7cf40a3e37",
           "7787ae4b66cd3a1af8fada01de106dec5f4499eef961733532fc459bb4ffce42",
           "780d90da037a2ea7c4090987b277f618101b94a4c8281ecdadedca2abf2336cc",
           "78bc3a330cf57fbcea6d259f0173dc5cbd3be52e10cb28c086200fdf33d0520a",
@@ -4668,6 +4756,7 @@
           "87113e4dca7e488829ce1f6f213a5bceea65d951e24be147b54c3435b89af707",
           "89a117b69d370b581a5956ae4eb0dda26751b3295fbfc5791b9b296261ea657a",
           "8a02a37181891e05581a4a55f5f2cf81b127aad3722d548730028ca71b52970f",
+          "8b769f3fb43c20c1ad28e835711ce7a89dd35997d2051b0a37ff36953e98baf8",
           "8ba538fc5f6fbc817db0bd8184afbff8999435c327bb2d51e4927ae4bb400f27",
           "8c662187e4fc601641b3a941c85e3db87569bf98c0e489e85fe9699baa52e84b",
           "8e4fa2ec2feb65a351ce750abfff4b15692435e6b6f4c3d2e5a77910852811e5",
@@ -4755,6 +4844,7 @@
           "c5c08ebb352d5a86536d3b3762b86046d89743c76086ff456dfa0fe21a9f34c8",
           "c67e39ee941d7346317ced6423f72c6a6e9751065a09d12ba8ac521e6e329fde",
           "c7e9eeecb5ed4ab1ba8c680d6c93af3e7245144113af319f157e97851f419f48",
+          "c9dbeef4b7676c6cb9df74d8bfb9711b0ab82cf84105b0144244628c1b5537a5",
           "cab852cfd938dd2545cf938be5a755d428517248c1517b7d7a868f7836d62902",
           "cd4ebbf8de28f5d9e8bfa40cffd9631c7be8a015b97703712ca6c02fdbc3dfb4",
           "cd786de9127ed7020a0bc7bbfe1f589ad098f09ff407c825de2ca65f18d0d6bc",
@@ -4867,6 +4957,7 @@
           "a8e2462a44da1120035b73cc6e6c0af70e71d34918af8d3d7e97d177f157fd46",
           "ac1300637b68a936cc457deb37f1b6d5d76942810318fc12d6dc82dbc09f932e",
           "b20e4fc1a6e3b8f962bf9309a44c15c049dc99b467e4a49717f46aafd915084c",
+          "b315f45081cde56aca1264a65d2803db4cb613812329cdb4ea0860c3f3070df8",
           "b54f34e8765cb52ff9d39a9b7ece1cdc8faf1dd7d231430b110855e97efa1e17",
           "b8b9aede629328221abb75537df5e85ea1099686209952adb0a52839df7b8dd1",
           "ba5cffdf82f2a9f6267b7e83433776c7f0ca1b6b4e3a53458ced485c0e71ea4c",
@@ -5710,6 +5801,144 @@
         "resources": [],
         "dependencySurfaces": [],
         "bindingSurfaces": [],
+        "computedBoundaries": []
+      }
+    },
+    "scripts/test-map-forecast-panel.mjs": {
+      "beforeDefinitionSha256": null,
+      "definition": {
+        "nodeImports": [
+          "node:assert/strict",
+          "node:test"
+        ],
+        "imports": [
+          "js/services/forecast-share-contract.js",
+          "js/ui/forecast-share.js",
+          "js/ui/info-panel.js",
+          "js/ui/map-timeline-copy.js"
+        ],
+        "resources": [],
+        "dependencySurfaces": [
+          "4523ed940560cb1e2c6165b6cc160cbf53c80072140ede5db7fed9f87f13ac80"
+        ],
+        "bindingSurfaces": [
+          "33a4388bcf973cd4c11d434fb2e240dae56f80709efd68e468519139b31fa4d8",
+          "48f4f1101af22be186d73b391d61b5b290bf25bb123f26401545a87daa2ffc11",
+          "8e08d675f077ce6bc16814102f9af6c341666d40f6be4b5c6b60d24883f57d00",
+          "986febade2b2ec230ab4d482c9a007142bd22075d062c96497e098cde90a63aa",
+          "a09e47e18b0e0c6280b8df6df4975f7c698dbe4b019e1ffc91c53c85b35e43b6",
+          "ee1b0005ce434ed66b5f142d2b5d8b2e4fcca4a1f3c58be0b06f8848d10ba482",
+          "f0f72d3fca55b69b28a2f4607be38e77a7381dc6b64d3da0693c13e68b3377d5"
+        ],
+        "computedBoundaries": []
+      }
+    },
+    "scripts/test-supabase-database-backup-workflow.mjs": {
+      "beforeDefinitionSha256": null,
+      "definition": {
+        "nodeImports": [
+          "node:assert/strict",
+          "node:fs",
+          "node:path",
+          "node:test"
+        ],
+        "imports": [
+          "scripts/run-hosted-supabase-backup.mjs",
+          "scripts/test-supabase-backup-bucket.mjs"
+        ],
+        "resources": [
+          ".github/workflows/backup-supabase-database.yml",
+          "scripts/archive-supabase-database-backup.mjs"
+        ],
+        "dependencySurfaces": [
+          "aa0b939a92fb651b2c8d04a98f45a021a555d6966be74849ebc48e44ade20948",
+          "ec7098e1a7336feac2ba8e530ea62cd549a0cfdf666c611eb661e218cea55117"
+        ],
+        "bindingSurfaces": [
+          "4f3f5e4ec0870ee1d1d3559dc59a944ac77195c85f136e63196085f2960f69cf",
+          "5193ca852a68475d140a771402a4fa03aae098c6694625269ec7835683d9e75a",
+          "6a8195790d9257953e41900b8cf337a200be94270d06a0371ac11d09923d8c16",
+          "d3c7c0b6948622d54638729de889bded01734fa308421ec6df79cb2295a1d7ba"
+        ],
+        "computedBoundaries": []
+      }
+    },
+    "scripts/test-supabase-backup-bucket.mjs": {
+      "beforeDefinitionSha256": null,
+      "definition": {
+        "nodeImports": [
+          "node:assert/strict",
+          "node:test"
+        ],
+        "imports": [
+          "scripts/provision-supabase-backup-bucket.mjs"
+        ],
+        "resources": [],
+        "dependencySurfaces": [],
+        "bindingSurfaces": [],
+        "computedBoundaries": []
+      }
+    },
+    "scripts/provision-supabase-backup-bucket.mjs": {
+      "beforeDefinitionSha256": null,
+      "definition": {
+        "nodeImports": [
+          "node:path",
+          "node:url"
+        ],
+        "imports": [
+          "scripts/lib/bounded-fetch.mjs"
+        ],
+        "resources": [],
+        "dependencySurfaces": [],
+        "bindingSurfaces": [
+          "ed9b697c25be60d461802c51444a6e0962ba5c6eaef41c7ca206c132d2e9c86b"
+        ],
+        "computedBoundaries": []
+      }
+    },
+    "scripts/run-hosted-supabase-backup.mjs": {
+      "beforeDefinitionSha256": null,
+      "definition": {
+        "nodeImports": [
+          "node:child_process",
+          "node:fs",
+          "node:path",
+          "node:url"
+        ],
+        "imports": [],
+        "resources": [
+          "scripts/archive-supabase-database-backup.mjs",
+          "scripts/provision-supabase-backup-bucket.mjs"
+        ],
+        "dependencySurfaces": [
+          "0054ed3843193bac9986d7c7af6c4465a57c5dc44865e42749c0891eb39a17b8",
+          "12098933a4a1896dc3a2af6dafafab54af8ff6b8d2e73f51f488e4ce6103832c",
+          "15728bedeebd806e835fc700f4cd69b743332dbc213ec18c8d4618bfe8856ea9",
+          "198e2535b5ed7fc8fc469ba57023571ae2f698e8342e8a493d9209de39b03eea",
+          "25535225f7c3c42e50194d7e7a689a12641e8c55b77b9af471ffb4392688477c",
+          "39c18c20ed70fafe66368f72df7f7d06338371ca9d5996e12d8051714a10080b",
+          "432fe9920dbe7ac4d2b3fd2663bc9686b40e00d209f73b1f10f3333a779ff138",
+          "4c8d0021afcde367a02cf7e585b371b0afad532b43929500c798d282e3b9ddbc",
+          "59fb5757191ac51e140ae32a18e0241a6de9d2bf34ecc53e7406a5ea72e55c1f",
+          "69d09a831763b1f4531d848066bcdf8e484ee64b61ee5ba04f55aa4aaa71b6ac",
+          "773b8d72121ca3621d71900e7919ef672f2c962cb4ce5f60fff17b3b943dc68b",
+          "7fd37b1d5c47fc09e1825500e4d6e9b3f5787d521f97503d5a0e931fdd5a6855",
+          "802baa4e803994f8706043d8e31ac4364dd52615b80e73f5b82f87ddbdacea1c",
+          "831b05ddc956f057a7f46806619c266f746641515fb652a17569961fc86eccef",
+          "9a0ec65584a281485ffc5058723d81471a33c3871f1f5c3502cb43ee6d24f96d",
+          "adab0da79523106917d176e5f71bb2e5b59ef56cfc62b4df150c480db375136d",
+          "b1ac3a1ee98c8d718a0c7f05b26063c3cb1a2391459464f7378cd28fbfc7c896",
+          "bf06e9cd9cbac47eb104911a76f309635223d9627bf22f08fa9c186ffe3f70da",
+          "cbc3a68bf05645ed5a0610c3fabd0af1dc8a014a13cb3b594e127b230032d5ba"
+        ],
+        "bindingSurfaces": [
+          "214afbef8e3f459ae6d1a2ee91be28d30dbf6b022eb6c8a1d024b9b113df44e7",
+          "5193ca852a68475d140a771402a4fa03aae098c6694625269ec7835683d9e75a",
+          "95ee7137162b11f5f47ac9bef62b50c71d622276af3790054890310d5b2481b3",
+          "d3c7c0b6948622d54638729de889bded01734fa308421ec6df79cb2295a1d7ba",
+          "dfb0eabd1d5749ae6fd5019d191a47be71ee965c69fac3921c502cabe571d79c"
+        ],
         "computedBoundaries": []
       }
     }

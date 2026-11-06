@@ -1,3 +1,9 @@
+## 6. november — privat følgepakke: backupbyteantal og delingsformatering
+
+- Klargjort videreførsel af kontrollerede SQL-/cipherbyteantal i den faste backup-capture-rapport. Ingen rå data eller målt egress påstås; cadence og retention bevares.
+- Klargjort én datoformaterer pr. sprog og tre faste objekter ved delingshandlerens opstart. Datoer, browseropstart, læsninger, score og sikkerhed bevares.
+- Identiske lokale målbeviser genbruges; ny samlet kildekvalifikation, faktisk hostkapacitet og offentlig effekt er åbne. Ingen ændring af 4.0.598, C/I/T, migrationsfiler eller abonnementer.
+
 ## 6. november — samme kontrollerede assistentsvar før AI-kaldet
 
 - Klargjort den eksisterende forklaring om ukendt ravudstyr og manglende fundgaranti som et fast serversvar før unødvendig kvote- og leverandørbehandling.

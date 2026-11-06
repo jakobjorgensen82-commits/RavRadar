@@ -1,3 +1,9 @@
+## 6. november — backuptelemetri og delingens Free-bevis er fortsat særskilte
+
+Den private wrapperrettelse bevarer producentens kendte SQL-/cipherbyteantal uden rå data og består sin normale syntetiske controllerprøve. En faktisk kopi, gendannelse og konservativ før-/efter-egressmåling mangler; daglige fulddumps er ikke dokumenteret Free-sikre. Ingen cadence eller sletning aktiveres af rapporteringen.
+
+Den præcise delingskandidat bevarer datoer, HTML, status, headers og læseantal i de eksisterende lokale prøver. Kun tre faste sprogobjekter flyttes til hostens opstart. Lokal støttemåling lukker ikke Cloudflare-CPU eller Free-kapacitet. Normal kildekvalifikation, sikker levering og faktisk host-/browseraccept er åbne. Håndbog 89.316/89.317 beskriver afgrænsningen.
+
 ## 6. november — fast assistentsvar og faktisk offentlig accept
 
 Den eksisterende kanoniske forklaring om ukendt ravudstyr og manglende fundgaranti var afhængig af et AI-kald, selv om svaret allerede var fastlagt. Den præcise lokale serverrettelse flytter kun samme hele matcher og svar frem i den normale rækkefølge. Kontroller af sikkerhed, sprog, modelbinding og hele spørgsmålet bevares. Normal lokal klient→Edge→validator-prøve dækker leverandørfejl uden nye netkald; det er ikke offentlig AI-accept eller bevis for fasen i den tidligere offentlige fejl. Endelig kildekvalifikation, sikker levering og faktisk normal browseraccept er åbne. Se håndbog 89.315.
