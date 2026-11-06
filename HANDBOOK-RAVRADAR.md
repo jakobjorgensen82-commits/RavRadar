@@ -1,3 +1,19 @@
+## 89.313 Privat arkivkontrol ved afvist anonym adgang
+
+Kræv privat lager og præcis autentificeret genlæsning, og fortolk den anonyme fejl uden at læse arkivets indhold.
+
+<a id="private-r2-authorization-read-denial-2026-11-05"></a>
+
+<div class="reader-guide"><p><strong>Kort fortalt: En fejl fra et anonymt arkivkald er ikke i sig selv bevis for offentlig adgang. Sikkerhedskontrollen skal kende det præcise svar og bevare alle øvrige krav til privat lager og genlæsning.</strong></p></div><h3>Privat lager og korrekte originaler er fortsat krav</h3><p>Dokumenthistorik og databasebackup skal fortsat bruge hver sin private EU-bucket. Friske lageroplysninger skal bekræfte, at administreret offentlig adgang er slået fra, og at der ikke er offentlige brugerdefinerede domæner. Objektets autentificerede læsning skal passe præcist til det forventede byteantal og SHA-256, før den anonyme kontrol kan godkendes.</p><h3>Kun én præcis afvisning får den afgrænsede fortolkning</h3><p>Den normale usignerede GET/Range-kontrol kan blive afvist med HTTP400 og R2-fejlen InvalidArgument med meddelelsen Authorization. Kun denne lukkede XML-fejlkuvert med korrekt indholdstype og højst 4.096 accepterede byte må behandles som afvist læseadgang. HTTP401, 403 og 404 beholder deres eksisterende betydning. Succes, viderestilling, ukendt400, serverfejl, forkert XML og for stor fejlkuvert stopper fortsat kontrollen. Et anonymt successvar annulleres uden at læse objektdata.</p><h3>Rapportér den faktiske fejl og stop før yderligere ændringer</h3><p>En senere operationsfejls gyldige HTTP-status bevares fra child til workflowrapport. Den holdes adskilt fra Supabases katalogstatus og privatlivstrin; et vellykket katalogsvar må ikke erstatte arkivfejlens status. En afbrudt arkivering kan allerede have gemt et uændrligt objekt. Det er ikke en godkendt locator eller tilladelse til sletning, og fejlen må ikke udløse en blind gentagelse.</p><h3>Afgrænsning og afsluttende kontrol</h3><p>Den fælles historiske R2-transport bevares. Kun dokumenthistorikkens og databasebackuppens private kaldere bruger den nye fortolkning, og deres normale samlede prøver samt workflowprøven skal kontrollere både godkendelse og afslag. Rettelsen ændrer ikke 4.0.598-kandidatens modelbinding, gamle migrationsfiler, scoreformel, kildeprioritet, vejr- og scoreoriginaler, punkter eller geometri. Fuld databasegendannelse, offentlig levering og FreeReady kræver fortsat deres egne faktiske beviser.</p>
+
+## 89.312 Sammensatte ravspørgsmål og sikker assistentopdatering
+
+Besvar alle relevante dele, behold ærlig usikkerhed og bevar model, originale data og normale brugerfunktioner ved opdatering.
+
+<a id="assistant-mixed-after597-original-preservation-2026-11-05"></a>
+
+<div class="reader-guide"><p><strong>Kort fortalt: Et spørgsmål kan både handle om udstyr og om en kommende ravtur. Assistenten skal behandle begge dele og være tydelig om det, den ikke ved.</strong></p></div><h3>Flere emner i samme spørgsmål</h3><p>Et spørgsmål om en ravkese kan også spørge til den bedste dag eller zone. Den kendte udstyrsdel må ikke gå tabt, fordi resten kræver prognosedata. Mangler der gyldige data til en rangering, skal assistenten sige det og stadig besvare den del, der har fagligt grundlag.</p><h3>Ukendte ord og fundgarantier</h3><p>Et ukendt ravrelateret udtryk er grund til at udtrykke usikkerhed eller bede om en præcisering. Det er ikke i sig selv et uvedkommende spørgsmål. Når et ukendt udstyrsnavn kombineres med et spørgsmål om brug, skal assistenten sige, at den ikke kan bekræfte udstyret eller dets brug. Den må ikke erstatte det nævnte udstyr med en ravkese eller svare med sine generelle funktioner. Ingen vindretning, farve eller score garanterer ravfund. Dansk, tysk og engelsk skal bevare de samme forbehold, og assistenten må ikke opfinde tal eller oplysninger om brugere.</p><h3>Opdateringen bevarer beregning og originaler</h3><p>Spørg RavRadars kode indgår i den eksisterende versionsbinding. En opdatering kan derfor kræve en ny teknisk binding, selv om selve scoreformlen er uændret. Den normale overgang skal bevare de gamle originaler og offentliggjorte scorer og først bruge den nye binding ved en senere gyldig vejrgeneration. Kildeprioritet, administratorpunkter, geometri, ture og øvrige brugerfunktioner ændres ikke af assistentrettelsen.</p><h3>Afprøvning og leveringsstatus</h3><p>De berørte lokale spørgsmål, leveringskaldere og UI-fejlgrænser er afprøvet i 4.0.598-kandidaten. Dette beviser ikke offentlig levering eller et fungerende eksternt AI-svar efter opdateringen. Før afslutning kræves de relevante kilde- og databasekontroller, databevarelse, sikker levering og faktisk afprøvning gennem brugerfunktionen på alle tre sprog. Den separate vejrhentningsrevision aktiveres ikke for at levere denne rettelse.</p>
+
 ## 89.311 Offentlig kilde verificeres med sin forseglede modelbinding
 
 <div class="reader-guide"><p><strong>Kort fortalt: En gammel offentlig vejrpakke skal kontrolleres mod sin egen verificerede modelbinding. Den nye pakke skal passe til sin egen model og forsegling; ingen af dem må ommærkes.</strong></p></div>
@@ -623,6 +639,12 @@ Nyt offentligt vejr kræver en faktisk strengt senere generation gennem den norm
 Et krypteret fremskridt kan bevare allerede hentede leverandørdata, selv om beregningen endnu ikke er færdig. Det må ikke kaldes et færdigt beregningscheckpoint. Ved genbrug skal indholdet autentificeres og passe til de præcise bevarede originaler og den krævede baseline.
 
 En ny modelbinding kan ændre arbejdsfilens metadata. Derfor er uændrede originale vejrdata alene ikke bevis for, at gammelt fremskridt kan bruges direkte efter overgangen. De normale kontroller skal afgøre genbrug; gamle data og fremskridt bevares, mens en afvigelse afklares.
+
+### Aktuelle 598-kildebindinger — 5. november 2026
+
+Aktuel kildebinding — 5. november 2026, RavScore 4.0.598: Den integrerede model er offentlig som modeltype. 4.0.598 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=f8d8befa7ecda82f8194c0ca04142bd89f5c39e92ed37cda70afca8dded108d1` over 100 kanonisk normaliserede transitive implementeringsfiler. De syv normale deklarerede forbrugere er synkroniseret. Inaktiv Candidate G-kompatibilitet har `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=239ac83f1df6050438243068bba5d942c4e88a921d0b70d611a12f0c798d3f5a` over 101 transitive filer. Autoriteten er `version.json.releaseContract.modelBindings`. Databasebindingen 598 blev installeret den 5. november 2026. Offentlig levering og originale vejrpakker skal verificeres særskilt gennem det normale forløb. Denne kildebindingsblok er ikke bevis for offentlig levering af 598 eller nye originale vejrpakker. Scoreformel, kildeprioritet, administratorpunkter og geometri er uændrede. De følgende daterede bindingsblokke bevares som historik og er erstattet på de konkrete bindings- og statuspunkter ovenfor.
+
+Aktuel fortsættelseskontrakt — 5. november 2026, RavScore 4.0.598: Den udstedte 598-kildes normale 12-filsbinding er `continuationStateContractSha256=035008731e6fac3fca396110b3d0ff3486e4854baa99bd691e2a7ea541191579` (`03500873…`) med normalisering `utf8-bomless-lf-v2`. Bindingen beskriver fortsættelsens implementering; den er ikke i sig selv bevis for nye 598-originaler eller en offentlig 598-generation. De følgende daterede fortsættelsesbindinger bevares som historik.
 
 ### Aktuelle lokalt udstedte 597-bindinger
 
@@ -1901,7 +1923,7 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.597
+**Håndbogsversion:** 4.0.598
 
 **Lokal kildebinding — 29. oktober 2026, RavScore 4.0.591, ikke installeret:** Den integrerede model er offentlig som modeltype under den særskilt leverede 4.0.590. Den nye assistentefterfølger er lokalt udstedt og er endnu ikke samlet kvalificeret, installeret eller offentliggjort.
 

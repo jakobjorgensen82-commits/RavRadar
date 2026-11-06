@@ -21,6 +21,33 @@ const originalFetch = globalThis.fetch;
 globalThis.fetch = async () => { fetchCalls += 1; throw new Error('Lokale videnssvar må ikke bruge netværket.'); };
 
 try {
+  // Whole unfamiliar definition + pronoun use is not a known net definition.
+  // Exercise the exported normal caller; the transport target separately
+  // checks real validateAssistantResult on net/capabilities model evidence.
+  {
+    const rows = [
+      { language:'da', unknown:['Hvad er en ravvugge, og hvordan bruger man den til ravjagt?',
+          'Hvad er en ravkarussel og hvordan anvender jeg den?'],
+        known:['Hvad er en ravkese, og hvordan bruger man den?', 'Hvordan bruger jeg en ravUVlygte?', 'Hvilke farver kan rav have?'] },
+      { language:'de', unknown:['Was ist eine Bernsteinwiege, und wie benutzt man sie bei der Bernsteinsuche?',
+          'Was ist eine Bernsteinschaukel und wie wird sie verwendet?'],
+        known:['Was ist ein Bernsteinkescher und wofür benutzt man ihn?', 'Wie benutze ich eine Bernstein-UV-Lampe?', 'Welche Farben kann Bernstein haben?'] },
+      { language:'en', unknown:['What is an amber cradle, and how do I use it for amber hunting?',
+          'What is an amber rocker and how is it used?'],
+        known:['What is an amber net and how is it used?', 'How do I use an amber UV lamp?', 'What colours can amber have?'] },
+    ];
+    for (const {language, unknown, known} of rows) {
+      for (const question of unknown) {
+        assert.equal(assistant.routeRavQuestion(question), 'remote-candidate', question);
+        assert.equal(await assistant.askRavRadar(question, {}, {language, localOnly:true}),
+          i18n.t('assistant.unknown', {}, language), question);
+      }
+      for (const question of known) assert.notEqual(
+        await assistant.askRavRadar(question, {}, {language, localOnly:true}),
+        i18n.t('assistant.unknown', {}, language), question);
+    }
+    assert.equal(fetchCalls, 0);
+  }
   // Same failure class, normal retrieval and all three locales; no real network.
   {
     const cases={"da":{"compound":["Hvad er en ravkese, og hvad kan du?","hvad er er en kese? hvad kan RavRadar hjælpe mig med?","Hvad kan du? Hvad er en kesse til ravjagt?"],"simple":["Hvad er en ravkese?","Hvad er en kese?"],"unknown":"Kan en ravmåler forudsige det præcise landingssted for næste ravstykke?"},"de":{"compound":["Was ist eine Bernsteinkescher und was kannst du?","Was ist ein Bernstein-Kescher? Wobei kannst du mir helfen?","Was kannst du für mich tun? Was ist der Kescher für die Bernsteinsuche?"],"simple":["Was ist eine Bernsteinkescher?","Was ist ein Bernstein-Kescher?"],"unknown":"Kann ein Bernsteinmessgerät den genauen Landeort des nächsten Bernsteinstücks vorhersagen?"},"en":{"compound":["What is an amber net and what can you do?","What is the amber hunting net? What can I ask you?","What can you help me with? What is an amber net?"],"simple":["What is the amber net?","What is an amber hunting net?"],"unknown":"Can an amber meter predict the exact landing place of the next piece of amber?"}};

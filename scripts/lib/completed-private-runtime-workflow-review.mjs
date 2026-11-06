@@ -292,6 +292,29 @@ export const weatherProcessHourWorkflowReview = Object.freeze({
   "original": "        run: npm run update:weather\n",
   "normalized": "        shell: bash\n        run: |\n          set -euo pipefail\n          canonical_target=\"$(node --input-type=module <<'NODE_WEATHER_TARGET'\n          import assert from 'node:assert/strict';\n          import { resolveProductionReferenceTime } from './scripts/lib/production-reference-time.mjs';\n          const supplied = process.env.RAVRADAR_PRODUCTION_TARGET_HOUR;\n          assert.equal(typeof supplied, 'string', 'WEATHER_PROCESS_TARGET_REQUIRED');\n          assert.match(supplied, /^\\d{4}-\\d{2}-\\d{2}T\\d{2}:00:00(?:\\.000)?Z$/, 'WEATHER_PROCESS_TARGET_HOUR');\n          const canonical = resolveProductionReferenceTime(supplied);\n          assert.equal(canonical.replace('.000Z', 'Z'), supplied.replace('.000Z', 'Z'), 'WEATHER_PROCESS_TARGET_CHANGED');\n          assert.equal(Date.parse(canonical), Date.parse(supplied), 'WEATHER_PROCESS_TARGET_CHANGED');\n          process.stdout.write(canonical);\n          NODE_WEATHER_TARGET\n          )\"\n          RAVRADAR_PRODUCTION_TARGET_HOUR=\"$canonical_target\" npm run update:weather\n"
 });
+// TEST ONLY: exact ordinary4.0.598 User-Agent delta over actual main1684.
+// Unknown, mixed, wrong-role or same-size drift stays outside every inverse.
+export const release598WorkflowUserAgentReview=Object.freeze({
+  path:'.github/workflows/reusable-weather-build.yml',
+  before:Object.freeze({bytes:300010,sha256:'2162c9d81e09035f33538f8f0e03e5777af58ed718671e5c7cf3d936a34635d8'}),
+  after:Object.freeze({bytes:300010,sha256:'2f7917b26a994d4d33dd7445cdc992e571a9dcc3245867564dda85ebda145c61'}),
+  original:'RavRadar/4.0.597',issued:'RavRadar/4.0.598',count:5,
+});
+export function inverseRelease598WorkflowUserAgents(source,role){
+  assert.equal(arguments.length,2,'RELEASE598_WORKFLOW_ARGUMENTS');
+  assert.equal(typeof source,'string','RELEASE598_WORKFLOW_TYPE');
+  const row=release598WorkflowUserAgentReview;
+  if(role!=='build'||sha(source)!==row.after.sha256)return source;
+  assert.equal(Buffer.byteLength(source),row.after.bytes);
+  assert.equal(source.split(row.issued).length,row.count+1,'Exactly five reviewed598 UA fields');
+  const previous=source.replaceAll(row.issued,row.original);
+  assert.equal(Buffer.byteLength(previous),row.before.bytes);
+  assert.equal(sha(previous),row.before.sha256,'Every actualmain1684 byte survives the598 UA inverse');
+  assert.equal(previous.split(row.original).length,row.count+1);
+  assert.equal(previous.replaceAll(row.original,row.issued),source,'Whole exact598 UA roundtrip');
+  return previous;
+}
+
 // TEST ONLY: the one exact required full-validation/release publication guard.
 // Public-audit diagnostic outcomes and all previous whole-file oracles remain.
 export const requiredPublicationGatesWorkflowReview=Object.freeze({
@@ -310,6 +333,7 @@ export const requiredPublicationGatesWorkflowReview=Object.freeze({
 export function inverseRequiredPublicationGatesWorkflow(source,role){
   assert.equal(arguments.length,2,'REQUIRED_PUBLICATION_GATES_WORKFLOW_ARGUMENTS');
   assert.equal(typeof source,'string','REQUIRED_PUBLICATION_GATES_WORKFLOW_TYPE');
+  source=inverseRelease598WorkflowUserAgents(source,role);
   const row=requiredPublicationGatesWorkflowReview;
   if(role!=='build'||sha(source)!==row.after.sha256)return source;
   assert.equal(Buffer.byteLength(source),row.after.bytes);

@@ -89,7 +89,11 @@ function fixture(){
       return new Response(`<ListBucketResult><KeyCount>${objects.size}</KeyCount><IsTruncated>false</IsTruncated>${entries}</ListBucketResult>`);
     }
     const authenticated=new Headers(options.headers).has('authorization');
-    if(!authenticated)return new Response(null,{status:fault.public?200:403});
+    if(!authenticated){
+      assert.equal(method,'GET');assert.equal(new Headers(options.headers).get('range'),'bytes=0-0');assert.equal(options.redirect,'manual');
+      if(fault.anonymousResponse)return fault.anonymousResponse();
+      return new Response(fault.anonymousBody??null,{status:fault.anonymousStatus??(fault.public?200:403),headers:fault.anonymousHeaders??{}});
+    }
     if(method==='HEAD')return new Response(null,{status:objects.has(key)?200:404});
     if(method==='GET')return objects.has(key)?new Response(objects.get(key)):new Response(null,{status:404});
     assert.equal(method,'PUT','the maintenance caller never deletes an archive object');
@@ -166,6 +170,25 @@ test('changed manifest evidence gives zero deletes',async t=>{
 });
 test('anonymous readable object is rejected before archive qualification',async t=>{
   const f=fixture(),dir=await host(t);await call(f,dir,'plan');f.fault.public=true;await assertZeroDeletes(f,()=>call(f,dir,'archive'),'ARCHIVE_NOT_PRIVATE');
+});
+test('normal archive admits only the exact bounded R2 Authorization denial and preserves later failure HTTPstatus',async t=>{
+  const xml='<?xml version="1.0" encoding="UTF-8"?><Error><Code>InvalidArgument</Code><Message>Authorization</Message></Error>';
+  const f=fixture(),dir=await host(t);await call(f,dir,'plan');
+  Object.assign(f.fault,{anonymousStatus:400,anonymousBody:xml,anonymousHeaders:{'content-type':'application/xml'}});
+  assert.match((await call(f,dir,'archive')).status,/ARCHIVE.*VERIFIED/);assert.equal(f.count('DELETE'),0);assert.equal(f.locators.length,0);
+  for(const status of [400,302,503]){
+    const bad=fixture(),work=await host(t);await call(bad,work,'plan');Object.assign(bad.fault,{anonymousStatus:status,anonymousBody:'<Error><Code>Other</Code></Error>',anonymousHeaders:{'content-type':'application/xml'}});
+    await assert.rejects(()=>call(bad,work,'archive'),e=>e.code==='ARCHIVE_NOT_PRIVATE'&&e.httpStatus===status&&e.privacyHttpStatus===null&&e.privacyStage==='NOT_STARTED');
+    assert.equal(bad.count('DELETE'),0);assert.equal(bad.locators.length,0);
+  }
+  const huge=fixture(),hugeWork=await host(t);await call(huge,hugeWork,'plan');Object.assign(huge.fault,{anonymousStatus:400,anonymousBody:' '.repeat(4097),anonymousHeaders:{'content-type':'application/xml','content-length':'4097'}});
+  await assert.rejects(()=>call(huge,hugeWork,'archive'),e=>e.code==='ARCHIVE_NOT_PRIVATE'&&e.httpStatus===400);assert.equal(huge.count('DELETE'),0);assert.equal(huge.locators.length,0);
+});
+test('normal history archive cancels anonymous200 without consuming object bytes',async t=>{
+  const f=fixture(),dir=await host(t);await call(f,dir,'plan');let pulls=0,cancels=0;
+  f.fault.anonymousResponse=()=>new Response(new ReadableStream({pull(){pulls++;throw Error('anonymous object bytes must not be read');},cancel(){cancels++;}},{highWaterMark:0}),{status:200});
+  await assert.rejects(()=>call(f,dir,'archive'),e=>e.code==='ARCHIVE_NOT_PRIVATE'&&e.httpStatus===200);
+  assert.equal(pulls,0);assert.equal(cancels,1);assert.equal(f.count('DELETE'),0);assert.equal(f.locators.length,0);
 });
 test('existing bucket permissions are required; no bucket creation is attempted',async t=>{
   const f=fixture(),dir=await host(t);await call(f,dir,'plan');f.fault.bucketDenied=true;await assertZeroDeletes(f,()=>call(f,dir,'archive'),'ADMIN_OR_ARCHIVE_OPERATION_FAILED');assert.equal(f.count('PUT'),0);
@@ -434,7 +457,7 @@ test('database-query HTTP real CLI emits only fixed status and privacy stages af
   const actualFixture=testSource.slice(from,to);
   for(const [status,kind,expectedStatus,expectedStage] of [
     [200,'private-root',1,null],[200,'ok',0,'VERIFIED'],[201,'ok',0,'VERIFIED'],[201,'privacy',1,'CURRENT_METADATA'],
-    [201,'envelope',1,'RESPONSE_JSON'],[401,'ok',1,'HTTP_STATUS'],[201,'archive-failure',1,'VERIFIED'],
+    [201,'envelope',1,'RESPONSE_JSON'],[401,'ok',1,'HTTP_STATUS'],[201,'archive-failure',1,'VERIFIED'],[201,'archive-denial',1,'VERIFIED'],
   ]){
     const dir=await host(t),observation=path.join(dir,'cli-safe-observation.json');
     const support=[
@@ -444,7 +467,7 @@ test('database-query HTTP real CLI emits only fixed status and privacy stages af
       "const stable=v=>Array.isArray(v)?v.map(stable):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,stable(v[k])])):v;",
       "const bytes=v=>Buffer.from(JSON.stringify(stable(v))),sha=b=>crypto.createHash('sha256').update(b).digest('hex'),clone=v=>structuredClone(v);",
       actualFixture,'const f=fixture();f.fault.privacyStatus='+status+';',
-      kind==='privacy'?'f.fault.privacy=true;':kind==='envelope'?"f.fault.privacyShape='envelope';":kind==='archive-failure'?'f.fault.r2Unknown=true;':'',
+      kind==='privacy'?'f.fault.privacy=true;':kind==='envelope'?"f.fault.privacyShape='envelope';":kind==='archive-failure'?'f.fault.r2Unknown=true;':kind==='archive-denial'?"f.fault.anonymousStatus=400;f.fault.anonymousBody='<Error><Code>Other</Code></Error>';f.fault.anonymousHeaders={'content-type':'application/xml'};":'',
       'globalThis.fetch=f.fetchImpl;',
       "process.on('exit',()=>fs.writeFileSync("+JSON.stringify(observation)+",JSON.stringify({calls:f.calls.length,mutations:f.calls.filter(c=>new URL(c.url).hostname!=='api.supabase.com'&&['PUT','POST','PATCH','DELETE'].includes(c.method)).length}),{flag:'wx'}));",
     ].join('\n');
@@ -459,7 +482,7 @@ test('database-query HTTP real CLI emits only fixed status and privacy stages af
     const record=JSON.parse((expectedStatus?result.stderr:result.stdout).trim());
     assert.equal(record.privacyStage,expectedStage);
     assert.equal(record.privacyHttpStatus,kind==='private-root'?null:status);
-    assert.equal(record.httpStatus,undefined,'Metadata201 must never masquerade as an operation failure HTTPstatus');
+    assert.equal(record.httpStatus,kind==='archive-denial'?400:undefined,'Operation HTTPstatus remains distinct from metadata privacyHttpStatus');
     if(expectedStatus){
       const observed=JSON.parse(await fs.readFile(observation,'utf8'));
       if(kind==='private-root'){
@@ -469,6 +492,8 @@ test('database-query HTTP real CLI emits only fixed status and privacy stages af
         assert.equal(record.code,'WRITE_OUTCOME_RESOLVED_STOPPED');
         assert.equal(record.operation.writeOutcome,'IMMUTABLE_ARCHIVE_OBJECT_PRESENT_VERIFIED');
         assert.equal(observed.mutations,1,'Exactly one synthetic immutable upload precedes the resolved-stop');
+      }else if(kind==='archive-denial'){
+        assert.equal(record.code,'ARCHIVE_NOT_PRIVATE');assert.equal(observed.mutations,1);
       }else{assert.equal(record.code,'LOCATOR_PRIVACY_UNVERIFIED');assert.equal(observed.calls,1);assert.equal(observed.mutations,0);}
     }
     assert(!result.stdout.includes('synthetic-document-secret')&&!result.stderr.includes('synthetic-document-secret'));

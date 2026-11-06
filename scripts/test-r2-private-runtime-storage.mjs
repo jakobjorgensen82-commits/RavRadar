@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import { createR2PrivateRuntimeStorage } from './lib/r2-private-runtime-storage.mjs';
+import { createR2PrivateReadDenialStorage } from './lib/r2-private-read-denial-storage.mjs';
 
 const sha256 = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const objects = new Map();
@@ -134,4 +135,32 @@ const interruptedClient = createR2PrivateRuntimeStorage({
 });
 assert.equal((await interruptedClient.download(objectPath)).equals(object), true);
 assert.equal(interruptedReadCount, 2);
-console.log('Private EU R2 object, immutability, anonymous denial and quota ceiling: passed.');
+// Actual bounded R2 error-envelope shape; contains no object bytes or account data.
+const authorizationXml = '<?xml version="1.0" encoding="UTF-8"?><Error><Code>InvalidArgument</Code><Message>Authorization</Message></Error>';
+async function probeDenial({status=400,body=Buffer.from(authorizationXml),headers={'content-type':'application/xml'},legacy=false}={}) {
+  let requests=0,pulls=0,cancels=0,delays=0;
+  const storage=createR2PrivateReadDenialStorage({accountId,accessKeyId:'synthetic-id',secretAccessKey:'synthetic-secret',bucketId,
+    maximumObjectBytes:50,bucketCeilingBytes:100,delayImpl:async()=>{delays++;},fetchImpl:async(url,options)=>{
+      requests++;assert.equal(options.method,'GET');assert.equal(options.redirect,'manual');
+      assert.equal(new Headers(options.headers).get('range'),'bytes=0-0');assert.equal(new Headers(options.headers).has('authorization'),false);
+      assert.equal(new URL(url).pathname,`/${bucketId}/${objectPath}`);
+      let sent=false;const stream=new ReadableStream({pull(controller){pulls++;if(!sent){sent=true;controller.enqueue(body);}else controller.close();},cancel(){cancels++;}},{highWaterMark:0});
+      return new Response(stream,{status,headers});
+    }});
+  const result=legacy?await storage.anonymousStatus(objectPath):await storage.anonymousReadDenial(objectPath);
+  return{result,requests,pulls,cancels,delays};
+}
+assert.equal(Buffer.byteLength(authorizationXml),113);
+const qualified=await probeDenial();assert.deepEqual(qualified.result,{kind:'R2_ANONYMOUS_READ_DENIAL_V1',httpStatus:400,denied:true,reason:'R2_S3_AUTHORIZATION_REQUIRED'});
+const legacy400=await probeDenial({legacy:true});assert.equal(legacy400.result,400);assert.equal(legacy400.pulls,0);assert.equal(legacy400.cancels,1);
+for(const status of [401,403,404]){const p=await probeDenial({status});assert.equal(p.result.denied,true);assert.equal(p.result.httpStatus,status);assert.equal(p.pulls,0);assert.equal(p.cancels,1);}
+for(const status of [200,206,302,500,503]){const p=await probeDenial({status});assert.equal(p.result.denied,false);assert.equal(p.result.httpStatus,status);assert.equal(p.pulls,0);assert.equal(p.cancels,status===503?2:1);assert.equal(p.requests,status===503?2:1);assert.equal(p.delays,status===503?1:0);}
+for(const body of [
+  authorizationXml.replace('Authorization','Other'),authorizationXml.replace('</Error>','<Extra/></Error>'),
+  authorizationXml.replace('<Message>','<Code>InvalidArgument</Code><Message>'),
+  '<!DOCTYPE Error [<!ENTITY x "Authorization">]><Error><Code>InvalidArgument</Code><Message>&x;</Message></Error>',
+  authorizationXml+'garbage',Buffer.from([0xff]),Buffer.alloc(4097,32),
+  '\ufeff'+authorizationXml,authorizationXml.replace('<Code>','\u00a0<Code>'),
+]){const p=await probeDenial({body:Buffer.isBuffer(body)?body:Buffer.from(body)});assert.equal(p.result.denied,false);assert.equal(p.result.httpStatus,400);}
+for(const headers of [{'content-type':'text/plain'},{'content-type':'application/xml','content-length':'4097'}]){const p=await probeDenial({headers});assert.equal(p.result.denied,false);assert.equal(p.pulls,0);assert.equal(p.cancels,1);}
+console.log('Private EU R2 object, immutability, typed bounded read denial, legacy status and quota ceiling: passed.');

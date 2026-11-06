@@ -124,11 +124,25 @@ function physicalTransport(options={}){
   return {access,dependencies:{...access,readGit:git},seen};
 }
 function copyModule(name,seen=new Set()){
-  if(seen.has(name))return;seen.add(name);const bytes=fs.readFileSync(path.join(SOURCE,name));write(name,bytes);
+  // ESM resolves relative specifiers as URLs; query/fragment identify a module,
+  // while fileURLToPath supplies the underlying local filename for byte copying.
+  const url=new URL(name,pathToFileURL(SOURCE+path.sep));
+  assert.equal(url.protocol,'file:','FIXTURE_LOCAL_MODULE_ONLY');
+  assert.equal(url.host,'','FIXTURE_LOCAL_MODULE_ONLY');
+  const sourceFile=fileURLToPath(url),relative=path.relative(SOURCE,sourceFile);
+  assert(relative&&!path.isAbsolute(relative)&&relative!=='..'&&!relative.startsWith('..'+path.sep),
+    'FIXTURE_MODULE_OUTSIDE_REPOSITORY');
+  const key=relative.split(path.sep).join('/');
+  if(seen.has(key))return;seen.add(key);const bytes=fs.readFileSync(sourceFile);write(key,bytes);
   for(const match of bytes.toString('utf8').matchAll(/^import\b[^;]*?\bfrom\s*['"](\.[^'"]+)['"]/gm))
-    copyModule(path.posix.normalize(path.posix.join(path.posix.dirname(name),match[1])),seen);
+    copyModule(new URL(match[1],url).href,seen);
 }
 try{
+  for(const name of ['https://fixture.invalid/module.mjs','file://fixture.invalid/module.mjs'])
+    assert.throws(()=>copyModule(name),/FIXTURE_LOCAL_MODULE_ONLY/);
+  assert.throws(()=>copyModule('../outside-fixture.mjs'),/FIXTURE_MODULE_OUTSIDE_REPOSITORY/);
+  assert.throws(()=>copyModule('scripts/__missing_targeted_fixture__.mjs?fixture=1#fragment'),
+    error=>error.code==='ENOENT'&&error.path===path.join(SOURCE,'scripts/__missing_targeted_fixture__.mjs'));
   copyModule('scripts/source-targeted-consumer.mjs');
   for(const name of ['package.json','scripts/lib/account-statistics-assistant-package-review.json',
     'scripts/sync-admin-config.py','data/water-level-station-routing.json',

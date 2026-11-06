@@ -24,17 +24,22 @@ import {ASSISTANT_LATER_H0_BEFORE as OLD,ASSISTANT_LATER_H0_ALIASES as ALIASES,
   INSTALLED593_ORIGINAL591_DATABASE_BEFORE,requireInstalled593Original591Binding,
   requireInstalled593Original591Output,installed593Original591Migration,readInstalled593Original591CanonicalSource,
   SCALAR597_LATER_H0_BEFORE,SCALAR597_LATER_H0_ALIASES,requireScalar597LaterH0Binding,requireScalar597LaterH0Output,
-  scalar597LaterH0Migration,readScalar597LaterH0CanonicalSource,assertScalar597LaterH0CheckpointInverse}
+  scalar597LaterH0Migration,readScalar597LaterH0CanonicalSource,assertScalar597LaterH0CheckpointInverse,
+  ASSISTANT_AFTER597_BEFORE,ASSISTANT_AFTER597_ALIASES,UNISSUED_ASSISTANT_AFTER597_SUCCESSOR,
+  requireAssistantAfter597Binding,requireAssistantAfter597Output,requireAssistantAfter597Release,
+  assistantAfter597Migration,readAssistantAfter597CanonicalSource,assertAssistantAfter597CheckpointInverse}
   from './assistant-later-h0-successor-source.mjs';
 import {currentMemoryWarmupPreservationInventorySql} from './current-memory-warmup-postgres.mjs';
 import {expectedCheckpointCasContract,expectedTripBindingPolicy,assistantLaterH0RequiredMigrations,
   assistantPublic587SuccessorRequiredMigrations,assistantPublic588SuccessorRequiredMigrations,assistantPublic590SuccessorRequiredMigrations,assistantPublic591SuccessorRequiredMigrations,installed593Original591RequiredMigrations,
-  accountStatisticsAssistantRequiredMigrations,scalar597LaterH0RequiredMigrations}
+  accountStatisticsAssistantRequiredMigrations,scalar597LaterH0RequiredMigrations,assistantAfter597RequiredMigrations}
   from '../integrated-cutover-readiness.mjs';
 import {statisticsPreferenceRevisionCatalogQuery,verifyStatisticsPreferenceRevisionCatalogMetadata}
   from '../verify-account-assistant-schema.mjs';
 import {restoreProtectedRavScoreContinuationCheckpoint} from '../protected-ravscore-continuation-checkpoint.mjs';
 import {RAVSCORE_CONTINUATION_CHECKPOINT_POLICY} from '../ravscore-continuation-checkpoint.mjs';
+import {FROZEN597_NATIVE_SOURCE,withFrozen597CheckpointPostgresSource}
+  from '../run-frozen586-assistant-later-h0-postgres-source.mjs';
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const CP='ravradar_ravscore_checkpoint_',CAS='public.'+CP+'cas',KEY='ravscore-continuation-checkpoint';
 const PREFIX='assistant-later-h0-current-',OLD_PREFIX='native-original-continuity-current-';
@@ -318,8 +323,175 @@ export async function prepareScalar597NativeFixtureWindow({psql,oldBinding,newBu
 export async function compareInstalled593Original591Successor(options){
   return compareFixedSuccessor(INSTALLED593_ORIGINAL591,...arguments);
 }
+
+// Fixed TEST-only successor. Nothing here issues or selects a model/output.
+export const ASSISTANT_AFTER597_NATIVE_PROFILE=Object.freeze({
+  before:ASSISTANT_AFTER597_BEFORE,databaseBefore:ASSISTANT_AFTER597_BEFORE,
+  aliases:ASSISTANT_AFTER597_ALIASES,parent:FROZEN597_NATIVE_SOURCE,
+  prefix:'assistant-after597-current-',oldPrefix:'scalar597-later-h0-current-',previousRelease:597,
+  requireBinding:requireAssistantAfter597Binding,requireOutput:requireAssistantAfter597Output,
+  requiredMigrations:assistantAfter597RequiredMigrations,migration:assistantAfter597Migration,
+  readBefore:readScalar597LaterH0CanonicalSource,readAfter:readAssistantAfter597CanonicalSource,
+  sourcePhase:UNISSUED_ASSISTANT_AFTER597_SUCCESSOR.sourcePhase,migrationCount:63,
+  deriveContractShapeFromCanonical:true,fixtureStem:'assistant-after597',olderFixtures:Object.freeze([]),
+  resultKind:'ASSISTANT_AFTER597_SUCCESSOR',failureKind:'ASSISTANT_AFTER597_NATIVE_FIRST_FAILURE',
+});
+
+export async function compareAssistantAfter597Successor(options){
+  requireAssistantAfter597Output(); // FIRST: null refuses before options/Git/factory/SQL.
+  assert.equal(arguments.length,1);
+  const {psql,runSql,root,atHour}=options;
+  for(const fn of [psql,runSql,atHour])assert.equal(typeof fn,'function');
+  return withFrozen597CheckpointPostgresSource(async({adapter,factory,repositoryRoot,originalProfile,
+    nativeSourceHead,nativeSourceTree})=>{
+    assert.equal(nativeSourceHead,FROZEN597_NATIVE_SOURCE.nativeHead);
+    assert.equal(nativeSourceTree,FROZEN597_NATIVE_SOURCE.nativeTree);
+    assert.equal(factory.ravScoreModelBinding().modelBundleSha256,ASSISTANT_AFTER597_BEFORE.I);
+    assert.equal(factory.candidateGRollbackModelBinding().modelBundleSha256,ASSISTANT_AFTER597_BEFORE.C);
+    assert.equal(factory.CURRENT_CONTINUATION_IMPLEMENTATION_SHA256,ASSISTANT_AFTER597_BEFORE.T);
+    const baseline=accountStatisticsAssistantRequiredMigrations(),prior=scalar597LaterH0RequiredMigrations();
+    const next=assistantAfter597RequiredMigrations();
+    assert.equal(baseline.length,54);assert.equal(prior.length,62);assert.equal(next.length,63);
+    assert.deepEqual(prior.slice(0,54),baseline);assert.deepEqual(next.slice(0,62),prior);
+    const nativeStart=baseline.findIndex(row=>row.version==='20261010130000');assert.equal(nativeStart,44);
+    const assertHistory=async inventory=>assert.deepEqual(JSON.parse(await psql(
+      'select json_agg(version order by version) from supabase_migrations.schema_migrations;')),
+      inventory.slice(nativeStart).map(row=>row.version),'Every executed migration in the same native host');
+    await assertHistory(baseline);
+    // This genuine97 adapter actually builds/validates its old594 bank and runs
+    // 54→61→62, then creates genuine597 outputs with the genuine803f factory.
+    const predecessor=await adapter.compareScalar597LaterH0Successor({psql,runSql,root,
+      sourceDocumentAt:factory.sourceDocumentAt,atHour:factory.atHour,
+      saveCheckpoint:factory.saveRavScoreContinuationCheckpoint});
+    assert.equal(predecessor.kind,'SCALAR597_LATER_H0_SUCCESSOR');assert.equal(predecessor.sqlExecuted,true);
+    assert.equal(predecessor.sourceMigrationInventory,62);assert.equal(predecessor.wholeMetadataInverse,true);
+    await assertHistory(prior);assert.equal(factory.atHour(49),atHour(49));
+    // The fixed oldPrefix names the actual597 bank just produced above. It is
+    // neither a relabelled594 object nor a caller-provided fixture/receipt.
+    const report=await compareFixedSuccessor(ASSISTANT_AFTER597_NATIVE_PROFILE,{...options,originalProfile});
+    await assertHistory(next);
+    return {...report,predecessorExecutedInSameHost:true,parentCodeHead:FROZEN597_NATIVE_SOURCE.codeHead,
+      parentNativeHead:nativeSourceHead};
+  });
+}
+
+function after597CanonicalShape(before,after,aliases){
+  requireAssistantAfter597Output();
+  const shape=source=>{
+    const contract=definition(source,CP+'contract');
+    const array=/v_validator_oids oid\[\] := array\[([\s\S]+?)\n  \];/.exec(contract);assert(array);
+    return {oidSlots:(array[1].match(/pg_catalog\.to_regprocedure\(/g)??[]).length,
+      contractBodies:(contract.match(/\|\| v_[a-z0-9_]+_definition/g)??[]).length+1};
+  };
+  const old=shape(before.canonicalSource),next=shape(after.canonicalSource);
+  assert.equal(next.oidSlots,old.oidSlots+aliases.length);
+  assert.equal(next.contractBodies,old.contractBodies+aliases.length);
+  return next; // Derived only after legitimate output and whole canonical/SQL hashes.
+}
+
+async function prepareAssistantAfter597TripAndQuotaWindow(psql,oldBinding,newBundle,oldProfile){
+  const admission='public.ravradar_trip_v3_active_binding_admitted';
+  const admissionType=admission+'('+Array(11).fill('text').join(',')+',jsonb,boolean,text,text,text,text)';
+  const quota='public.consume_public_request_limit(text,text,integer,integer)';
+  for(const signature of [admissionType,quota])assert.equal(await psql('select to_regprocedure('+literal(signature)+') is not null;'),'t');
+  const catalog=()=>psql("select jsonb_object_agg(p.oid::regprocedure::text,jsonb_build_object('oid',p.oid,'body',p.prosrc,'acl',p.proacl,'owner',p.proowner,'settings',p.proconfig))::text"
+    +' from pg_proc p where p.oid in ('+literal(admissionType)+'::regprocedure,'+literal(quota)+'::regprocedure);');
+  const service="set request.jwt.claim.role='service_role';set role service_role;";
+  const activeExpression=binding=>admission+'('+['modelId','stateSchemaVersion','variantId','profileId',
+    'componentSchemaId','explanationSchemaId','rankingPolicyId','bestTimePolicyId','presentationPolicyId',
+    'modelContractSha256','modelBundleSha256'].map(key=>literal(binding[key])).join(',')
+    +",'[\"ravscore-history-incomplete\"]'::jsonb,false,'zone-fixture','part-001','zone-fixture','part-001')";
+  const active=binding=>psql(service+'select '+activeExpression(binding)+';');
+  const quotaWorks=()=>psql(service+"select public.consume_public_request_limit('ravradar-assistant:minute','native-assistant-after597-fixture',6,60);");
+  const nextBinding={...oldBinding,modelBundleSha256:newBundle};
+  assert.equal(oldProfile.modelBundleSha256,oldBinding.modelBundleSha256);assert.equal(oldProfile.sourceVersion,'4.0.597');
+  const opKey='ravscore-operational-model-activation',profileKey='ravscore-profile-selection';
+  const documents=()=>psql('select coalesce(jsonb_agg(to_jsonb(d) order by document_key),\'[]\'::jsonb)::text from admin_documents d where document_key in ('
+    +literal(opKey)+','+literal(profileKey)+');');
+  // The same bounded whole-row hash/count/byte inventory as normal preservation,
+  // excluding ONLY the two fixed keys that this fixture is about to insert.
+  const unrelatedSql='with row_fingerprints as materialized (\n'
+    +"select 'checkpoint'::text as table_name,octet_length(row_bytes)::bigint as row_bytes,"
+    +"encode(extensions.digest(row_bytes,'sha256'),'hex') as row_sha256 "
+    +"from (select convert_to(to_jsonb(t)::text,'UTF8') as row_bytes from public.admin_documents t"
+    +' where t.document_key not in ('+literal(opKey)+','+literal(profileKey)+')) as whole_rows\n),\n'
+    +"table_names(table_name) as (values ('checkpoint')),\n"
+    +'inventory as (\n'
+    +"select n.table_name,0 as kind,''::text as row_sha256,0::bigint as row_bytes,"
+    +'count(f.row_sha256) as row_count,coalesce(sum(f.row_bytes),0) as total_bytes '
+    +'from table_names n left join row_fingerprints f using(table_name) group by n.table_name\n'
+    +'union all\n'
+    +'select table_name,1,row_sha256,row_bytes,count(*),0::numeric '
+    +'from row_fingerprints group by table_name,row_sha256,row_bytes\n)\n'
+    +'select jsonb_build_array(table_name,kind,row_sha256,row_bytes,row_count,total_bytes)::text '
+    +'from inventory order by table_name collate "C",kind,row_sha256 collate "C",row_bytes;';
+  const historySql='select coalesce(jsonb_agg(to_jsonb(v) order by to_jsonb(v)::text collate "C"),\'[]\'::jsonb)::text from admin_document_versions v;';
+  const history=()=>psql(historySql);
+  const operation=binding=>{
+    const op=Object.fromEntries(('transitionKind sourceHead datasetId productionReferenceAt rollbackId requestedModelBinding sourceModelBinding '
+      +'candidatePlanSha256 candidateFullSha256 privateBundleContentSha256 publicManifestSha256 sourcePublicManifestSha256 requestedPublicManifestSha256 '
+      +'sourceDeploymentId deploymentId requestedAt activatedAt failureCode returnPlanSha256 integratedReadinessSha256 integratedPublicAuditSha256 integratedManifestSha256')
+      .split(' ').map(key=>[key,null]));
+    return Object.assign(op,{schemaVersion:'ravscore-operational-model-activation-v4',status:'INTEGRATED_ACTIVE',
+      activeModelBinding:binding,sourceImplementationClosureSha256:'1'.repeat(64),requestedImplementationClosureSha256:'2'.repeat(64),
+      automaticActivationAllowed:false,schedulerActivationAllowed:false,calibrationEligible:false});
+  };
+  const json=value=>{const text=JSON.stringify(value);assert(!text.includes('$after597_trip$'));return '$after597_trip$'+text+'$after597_trip$::jsonb';};
+  const putSql=(key,value)=>'update admin_documents set payload='+json(value)+' where document_key='+literal(key)+';';
+  const insertSql=(key,value)=>'insert into admin_documents(document_key,payload) values('+literal(key)+','+json(value)+');';
+  // Genuine97's completed CAS cases reset admin_documents to checkpoint-only.
+  // Its genuine594 bank remains intact, but neither activation fixture survives.
+  // Create exactly two597 TEST fixtures BEFORE the unfiltered preservation baseline.
+  const old594=(await readFixture(psql,SCALAR597_LATER_H0.oldPrefix+'same')).payload;
+  assert.equal(old594.modelBinding.modelBundleSha256,SCALAR597_LATER_H0_BEFORE.I);
+  assert.equal(old594.candidateGRollbackCompanion.modelBinding.modelBundleSha256,SCALAR597_LATER_H0_BEFORE.C);
+  assert.equal(old594.continuationStateContractSha256,SCALAR597_LATER_H0_BEFORE.T);
+  assert.deepEqual(JSON.parse(await documents()),[],'The two after597 native activation fixture keys must be absent');
+  const unrelatedBefore=await psql(unrelatedSql);
+  const historyBefore=JSON.parse(await history()),bankBefore=await psql(currentMemoryWarmupPreservationInventorySql('original-bank'));
+  const accountBefore=await psql(accountRowsSql()),catalogBefore=await catalog(),op=operation(oldBinding);
+  await psql('begin;'+insertSql(opKey,op)+insertSql(profileKey,oldProfile)+'commit;');
+  assert.equal(await psql(unrelatedSql),unrelatedBefore,'Fixture INSERTs preserve every WHOLE unrelated admin row');
+  assert.equal(await psql(currentMemoryWarmupPreservationInventorySql('original-bank')),bankBefore);
+  assert.equal(await psql(accountRowsSql()),accountBefore);assert.equal(await catalog(),catalogBefore);
+  const preparedRows=JSON.parse(await documents());assert.equal(preparedRows.length,2);
+  const prepared=new Map(preparedRows.map(row=>[row.document_key,row]));
+  assert.deepEqual(prepared.get(opKey)?.payload,op);assert.deepEqual(prepared.get(profileKey)?.payload,oldProfile);
+  // The genuine native version_admin_document trigger is BEFORE UPDATE only.
+  // These INSERTs append no history; preserve every complete preexisting row.
+  assert.deepEqual(JSON.parse(await history()),historyBefore,'Fixture INSERTs preserve WHOLE predecessor history');
+  const beforeDocuments=await documents(),beforeHistory=await history();
+  assert.equal(await active(oldBinding),'t');assert.equal(await active(nextBinding),'f');assert.equal(await quotaWorks(),'t');
+  const checkIntermediate=async()=>{
+    assert.equal(await catalog(),catalogBefore);assert.equal(await documents(),beforeDocuments);assert.equal(await history(),beforeHistory);
+    assert.equal(await active(oldBinding),'t');assert.equal(await active(nextBinding),'f');assert.equal(await quotaWorks(),'t');
+    const attempt=async mutations=>JSON.parse(await psql('begin;'+mutations.join('')
+      +"set local request.jwt.claim.role='service_role';set local role service_role;"
+      +"select jsonb_build_object('oldAllowed',"+activeExpression(oldBinding)+",'nextAllowed',"+activeExpression(nextBinding)+');rollback;'));
+    assert.deepEqual(await attempt([putSql(opKey,{...op,status:'INTEGRATED_PENDING'})]),{oldAllowed:false,nextAllowed:false});
+    assert.deepEqual(await attempt([putSql(profileKey,{...oldProfile,sourceVersion:requireAssistantAfter597Release(),modelBundleSha256:newBundle}),
+      putSql(opKey,{...op,activeModelBinding:nextBinding})]),{oldAllowed:false,nextAllowed:true});
+    assert.equal(await documents(),beforeDocuments,'Rollback restores whole597 activation documents');
+    assert.equal(await history(),beforeHistory,'Rollback restores WHOLE history, including preexisting rows');
+    return {old597ActiveAfterSql:true,nextRefusedBeforeActivation:true,pendingBothRefused:true,nextActiveAfterCompletion:true,
+      old597RefusedAfterCompletion:true,wholeHistoryAndDocumentsPreserved:true,quotaFunctionAndAdmissionUnchanged:true,quotaServiceRoleWorking:true};
+  };
+  return {checkIntermediate,historySql,beforeHistory};
+}
+
+export async function prepareAssistantAfter597NativeFixtureWindow(options){
+  requireAssistantAfter597Output(); // FIRST: even option getters are forbidden while UNISSUED.
+  assert.equal(arguments.length,1);
+  const {psql,oldBinding,newBundle,oldProfile}=options;
+  assert.equal(typeof psql,'function');assert.equal(oldBinding?.modelBundleSha256,ASSISTANT_AFTER597_BEFORE.I);
+  assert.equal(newBundle,requireAssistantAfter597Binding().I);
+  const window=await prepareAssistantAfter597TripAndQuotaWindow(psql,oldBinding,newBundle,oldProfile);
+  const preservedSql=currentMemoryWarmupPreservationInventorySql('preserved'),preserved=await psql(preservedSql);
+  return Object.freeze({...window,preservedSql,preserved});
+}
+
 async function compareFixedSuccessor(profile,options){
-  assert(profile===LEGACY586||profile===PUBLIC587||profile===PUBLIC588||profile===PUBLIC590||profile===PUBLIC591||profile===INSTALLED593_ORIGINAL591||profile===SCALAR597_LATER_H0,'ASSISTANT_NATIVE_UNKNOWN_PROFILE');
+  assert(profile===LEGACY586||profile===PUBLIC587||profile===PUBLIC588||profile===PUBLIC590||profile===PUBLIC591||profile===INSTALLED593_ORIGINAL591||profile===SCALAR597_LATER_H0||profile===ASSISTANT_AFTER597_NATIVE_PROFILE,'ASSISTANT_NATIVE_UNKNOWN_PROFILE');
   const OLD=profile.before,DATABASE_BEFORE=profile.databaseBefore??OLD,ALIASES=profile.aliases,
     ORIGINAL_ALIASES=profile.originalAliases??ALIASES,PREFIX=profile.prefix,OLD_PREFIX=profile.oldPrefix;
   let phase='SOURCE';
@@ -355,8 +527,9 @@ async function compareFixedSuccessor(profile,options){
     const allNames=[...names,...ALIASES.map(row=>row.name)];assert.equal(new Set(allNames).size,names.length+ALIASES.length);
     const contractSource=definition(after.canonicalSource,CP+'contract');
     const validatorArray=/v_validator_oids oid\[\] := array\[([\s\S]+?)\n  \];/.exec(contractSource);assert(validatorArray);
-    assert.equal((validatorArray[1].match(/pg_catalog\.to_regprocedure\(/g)??[]).length,profile.oidSlots);
-    assert.equal((contractSource.match(/\|\| v_[a-z0-9_]+_definition/g)??[]).length+1,profile.contractBodies);
+    const after597Shape=profile===ASSISTANT_AFTER597_NATIVE_PROFILE?after597CanonicalShape(before,after,ALIASES):null;
+    assert.equal((validatorArray[1].match(/pg_catalog\.to_regprocedure\(/g)??[]).length,after597Shape?.oidSlots??profile.oidSlots);
+    assert.equal((contractSource.match(/\|\| v_[a-z0-9_]+_definition/g)??[]).length+1,after597Shape?.contractBodies??profile.contractBodies);
     phase='BEFORE_CATALOG';const catalogBefore=JSON.parse(await psql(catalogSql(names)));
     assert.deepEqual(Object.keys(catalogBefore).sort(),[...names].sort());
     for(const name of names)assert.equal(catalogBefore[name].body,sha(body(definition(before.canonicalSource,name))));
@@ -366,8 +539,11 @@ async function compareFixedSuccessor(profile,options){
     const scalarWindow=profile===SCALAR597_LATER_H0?await prepareScalar597NativeFixtureWindow({
       psql,oldBinding:originals.same.modelBinding,newBundle:NEXT.I,oldProfile:options.originalProfile,
     }):null;
-    const preservedSql=scalarWindow?.preservedSql??currentMemoryWarmupPreservationInventorySql('preserved');
-    const preserved=scalarWindow?scalarWindow.preserved:await psql(preservedSql);
+    const after597Window=profile===ASSISTANT_AFTER597_NATIVE_PROFILE?await prepareAssistantAfter597NativeFixtureWindow({
+      psql,oldBinding:originals.same.modelBinding,newBundle:NEXT.I,oldProfile:options.originalProfile,
+    }):null;
+    const preservedSql=after597Window?.preservedSql??scalarWindow?.preservedSql??currentMemoryWarmupPreservationInventorySql('preserved');
+    const preserved=after597Window?after597Window.preserved:scalarWindow?scalarWindow.preserved:await psql(preservedSql);
     const archivePins=new Map(await Promise.all((await fs.readdir(path.join(ROOT,'supabase/migrations')))
       .filter(name=>name.endsWith('.sql')).map(async name=>[name,sha(await fs.readFile(path.join(ROOT,'supabase/migrations',name)))])));
     const guards=[
@@ -390,7 +566,7 @@ async function compareFixedSuccessor(profile,options){
       assert.equal(await psql(preservedSql),preserved);assert.deepEqual(JSON.parse(await psql(catalogSql(names))),catalogBefore);
       for(const alias of ALIASES)assert.equal(await psql("select to_regprocedure('public."+alias.name+alias.signature+"') is null;"),'t');
     }
-    const checkIntermediate=scalarWindow?.checkIntermediate??null;
+    const checkIntermediate=after597Window?.checkIntermediate??scalarWindow?.checkIntermediate??null;
     phase='INSTALL';await psql(sql);
     assert.equal(await psql("select current_setting('lock_timeout');"),'0');assert.equal(await psql(preservedSql),preserved);
     assert.equal(await psql(statisticsPreferenceRevisionCatalogQuery),accountCatalogBefore);
@@ -417,7 +593,7 @@ async function compareFixedSuccessor(profile,options){
       +"||E'\\n-- calibration-truth-function --\\n'||(select btrim(prosrc,E' \\r\\n\\t') from pg_proc where oid='public.ravradar_trip_v3_calibration_truth_allowed(text,jsonb,boolean,text,text,text,text)'::regprocedure)"
       +"||E'\\n-- binding-function --\\n'||(select btrim(prosrc,E' \\r\\n\\t') from pg_proc where oid='public.ravradar_trip_v3_binding_allowed(text,jsonb,boolean,text,text,text,text)'::regprocedure);");
     assert.equal(sha(trip),PINS.tripBindingPolicySha256);
-    phase='SCALAR597_INTERMEDIATE_RUNTIME';
+    phase=profile===ASSISTANT_AFTER597_NATIVE_PROFILE?'ASSISTANT_AFTER597_INTERMEDIATE_RUNTIME':'SCALAR597_INTERMEDIATE_RUNTIME';
     const intermediateRuntime=checkIntermediate?await checkIntermediate():null;
     phase='CURRENT_FIXTURES';const current={};
     for(const[name,hour,options]of [['same',49,{}],['newer',50,{}],['changed',49,{candidateCurrentSpeedMps:0.18}]]){
@@ -432,7 +608,8 @@ async function compareFixedSuccessor(profile,options){
       assert.equal(payload.candidateGRollbackCompanion.modelBinding.modelBundleSha256,NEXT.C);
       assert.equal(payload.continuationStateContractSha256,NEXT.T);assert.equal(payload.productionReferenceAt,atHour(hour));
       if(name!=='changed'){
-        if(profile===SCALAR597_LATER_H0)assertScalar597LaterH0CheckpointInverse(original,payload,NEXT);
+        if(profile===ASSISTANT_AFTER597_NATIVE_PROFILE)assertAssistantAfter597CheckpointInverse(original,payload,NEXT);
+        else if(profile===SCALAR597_LATER_H0)assertScalar597LaterH0CheckpointInverse(original,payload,NEXT);
         else assertWholeMetadataInverse(original,payload,NEXT);
       }
       const text=JSON.stringify(payload);assert(!text.includes('$assistant_fixture$'));
@@ -463,6 +640,7 @@ async function compareFixedSuccessor(profile,options){
       ['earlier-'+profile.previousRelease+'-refused',OLD_PREFIX+'newer',PREFIX+'same',1,'22023',null,1],
     ];
     for(const central of profile===SCALAR597_LATER_H0?['account-statistics-assistant-current-same']:
+      profile===ASSISTANT_AFTER597_NATIVE_PROFILE?['account-statistics-assistant-current-same','scalar597-original594-same']:
       [...profile.olderFixtures,'account-statistics-assistant-current-same','last-mile-584-same','origin-current-same','identity-same','after0600-same',
       'grid-current',...['ffc','249','c1ac'].map(family=>'original-'+family)])
       cases.push(['same-older-'+central,central,PREFIX+'same',1,'22023',null,1],
@@ -492,13 +670,15 @@ async function compareFixedSuccessor(profile,options){
     }
     phase='PRESERVED';assert.equal(await psql(currentMemoryWarmupPreservationInventorySql('original-bank')),bank);
     assert.equal(await psql(accountRowsSql()),account);assert.equal(await psql(statisticsPreferenceRevisionCatalogQuery),accountCatalogBefore);
-    assert.equal(await psql('select count(*) from admin_document_versions;'),'0');
+    if(profile===ASSISTANT_AFTER597_NATIVE_PROFILE){
+      assert(after597Window);assert.equal(await psql(after597Window.historySql),after597Window.beforeHistory,'WHOLE597→NEXT history preserved');
+    }else assert.equal(await psql('select count(*) from admin_document_versions;'),'0');
     assert.deepEqual(JSON.parse(await psql(catalogSql(allNames))),catalogAfter);
     for(const[file,pin]of archivePins)assert.equal(sha(await fs.readFile(path.join(ROOT,'supabase/migrations',file))),pin);
     return {kind:profile.resultKind,sourceMigrationInventory:profile.migrationCount,sqlExecuted:true,wholeMigrationExecuted:true,
       ...(profile.databaseBefore?{databaseBeforeVersion:DATABASE_BEFORE.version,originalStateRelease:profile.previousRelease,
         existingOriginalAliasesPreserved:ORIGINAL_ALIASES.length}:{}),
-      migrationVersion:migration.version,partCount:673,checkpointOidSlots:profile.oidSlots,contractBodies:profile.contractBodies,
+      migrationVersion:migration.version,partCount:673,checkpointOidSlots:after597Shape?.oidSlots??profile.oidSlots,contractBodies:after597Shape?.contractBodies??profile.contractBodies,
       oldFunctionsAndOidsPreserved:true,allOriginalDefinitionsPreserved:true,privateAliases:ALIASES.length,
       beforeGuardCases:selectedGuards.length,exactCheckpointContract:true,exactTripContract:true,schema2Catalog:true,
       normalProtectedJsonbRoundtrip:true,originalDigestsPreserved:true,['trueOld'+profile.previousRelease+'Fixtures']:true,currentNormalFixtures:true,

@@ -6,7 +6,8 @@ import path from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {withSource594CodeParent} from './check-assistant-later-h0-predecessor-source.mjs';
 import {ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE,INACTIVE_INSTALLED593_ORIGINAL591_SUCCESSOR as HISTORICAL,
-  INACTIVE_SCALAR597_LATER_H0_SUCCESSOR as SCALAR,ASSISTANT_PUBLIC591_SUCCESSOR_BINDING as DB593,
+  INACTIVE_SCALAR597_LATER_H0_SUCCESSOR as SCALAR,UNISSUED_ASSISTANT_AFTER597_SUCCESSOR as AFTER597,
+  ASSISTANT_PUBLIC591_SUCCESSOR_BINDING as DB593,
   ASSISTANT_PUBLIC591_SUCCESSOR_OUTPUT as OUTPUT593,ASSISTANT_PUBLIC591_SUCCESSOR_BEFORE as ORIGINAL591,
   readAssistantPublic591SuccessorCanonicalSource,readInstalled593Original591CanonicalSource}
   from './lib/assistant-later-h0-successor-source.mjs';
@@ -17,14 +18,14 @@ import {installed593Original591RequiredMigrations,assistantPublic591SuccessorReq
   prepareTemporarySupabaseCutoverWorkdir} from './integrated-cutover-readiness.mjs';
 import {assertAssistantBindingPrewriteCaller} from './assistant-later-h0-binding-prewrite.mjs';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-assert([HISTORICAL,SCALAR].includes(ACTIVE));
+assert([HISTORICAL,SCALAR,AFTER597].includes(ACTIVE));
 assert.equal(HISTORICAL.sourcePhase,'assistant-installed593-origin591-successor');
 assert.equal(HISTORICAL.requireRelease(),'4.0.594');
 assert.deepEqual(HISTORICAL.before,ORIGINAL591);
 assert.deepEqual(HISTORICAL.databaseBefore,{...DB593,canonicalSha256:OUTPUT593.canonicalSha256});
 const current=HISTORICAL.requireBinding(),output=HISTORICAL.requireOutput(),migration=HISTORICAL.migration();
-const scalar=ACTIVE===SCALAR;
-const result=scalar?await withSource594CodeParent(async frozen=>{
+const laterThan594=[SCALAR,AFTER597].includes(ACTIVE);
+const result=laterThan594?await withSource594CodeParent(async frozen=>{
   const historical=await import(pathToFileURL(path.join(frozen,'scripts/build-assistant-later-h0-successor.mjs')).href);
   return historical.buildInstalled593Original591BindingSuccessor({version:current.version});
 }):await buildInstalled593Original591BindingSuccessor({version:current.version});
@@ -52,7 +53,7 @@ await assert.rejects(assertSupabaseMigrationPlan({migrationListText:list(),dryRu
 const parent=await fs.realpath(os.tmpdir()),work=await fs.mkdtemp(path.join(parent,'rr594-normal-plan-'));
 const prepared=await prepareTemporarySupabaseCutoverWorkdir({workdir:work,includeStatisticsPreferenceRevisionSource:true,sourcePhase:HISTORICAL.sourcePhase});
 assert.equal((await fs.readdir(prepared.migrationsDirectory)).filter(name=>name.endsWith('.sql')).length,61);
-if(scalar){
+if(laterThan594){
   await assert.rejects(assertSupabaseMigrationPlan({migrationListText:list(true),dryRunText:noop}));
   await withSource594CodeParent(async frozen=>{
     const historical=await import(pathToFileURL(path.join(frozen,'scripts/integrated-cutover-readiness.mjs')).href);
