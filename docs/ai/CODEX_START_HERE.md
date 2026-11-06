@@ -1,3 +1,9 @@
+## 7. november — privat tidsmåling før ny SOURCE-afledning
+
+Den eksisterende scalarplanlægning får kun afgrænsede fase-/snapshotmål og tællere for startede/færdige kystdele. Encoder, værdimasker, originale filer, to-minuttersfrist og transportstop bevares. Den eksisterende fysiske CLI-målprøve er bestået lokalt; faktisk årsagsmåling kræver en senere almindelig kørsel efter levering. Ingen tidsgevinst eller lukket timeoutfejl påstås.
+
+De tre gennemgåede filer indgår før nye SOURCE-pins. Revisionens eksisterende fulde kildevej installerer allerede Copernicus-forudsætninger før den normale parent. Der oprettes derfor ingen ekstra ordinary598-kontrolprofil eller setup-/oracledelta alene til denne diagnostik. Denne kandidat er fortsat privat og inaktiv; faktisk main-kvalifikation, normal afledning, hele den relevante native-/kildekæde og sikker levering er fortsat åbne.
+
 ## 6. november — 4.0.599: gennemgået SOURCE-kandidat, fortsat inaktiv
 
 Den lokale kandidat føjer en afgrænset privat observation til de eksisterende normale kaldere for syvzonernes strømhukommelse og SOURCE-vandstand inklusive T+3 samt Fur. Den bruger kun allerede udførte grene og de præcise resultatobjekter efter den normale all-parts-finalizer; den udsteder ingen ny adgang og genforbruger ingen one-use-handle. Egen observationsfejl må ikke påvirke normal beregning. Den nye helper indgår i den normale CODE/RAW-liste, og kun den lille rapport føjes til det eksisterende private audit-artifact. Per-bidragsproveniens, donorbankmedlemskab og den historiske Fur-årsag forbliver ukendte, hvor de ikke kan udledes. Faktisk rapportgemning, upload og observation i en ny normal generation er åbne krav.
