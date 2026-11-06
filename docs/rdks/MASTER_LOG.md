@@ -1,3 +1,11 @@
+## 6. november — 4.0.599: lokal SOURCE-udstedelse, endnu ikke drift
+
+Den isolerede SOURCE-revision er samlet med den faktisk leverede almindelige kode, inklusive DMI-hulprioritering og adminens præcise offlinecacheadresse. Normal versionssynk, CODE-fingeraftryk, C/I/T, første binding/output, én append-only migration og syv forbrugeres binding er afledt gennem de eksisterende byggere. Alle 74 tidligere migrationer bevares bytepræcist, og geodataenes særskilte diff ændrer kun topversionen. Den aktive bindingsforklaring og begge håndbøger følger den faktisk udstedte lokale kandidat.
+
+En kort normal prøve fangede også en konkret kontrolkalderfejl: den allerede gennemgåede faste CODE-parentkommando var ikke understøttet af kildekontrolrunnerens argumentlæser. Netop denne ene kommando håndteres nu som en præcis argumentliste med hele programmet i ét argument. Ukendt programtekst og shellsyntaks afvises fortsat; miljøfiltrering og den genuine CODE-only-kontrol bevares. Kontrolfilerne ændrer ingen udstedte modelinput eller migrationer.
+
+Lokal udstedelse og målprøver er ikke PostgreSQL-kvalifikation, installation eller offentlig effekt. Den endelige præcise kilde skal gennem den normale Linux-/Node24-/samme-PostgreSQL-kæde til trin 64, processtop, eksklusiv skrivning, fireminutters fejlforløb, holdbar gemning/genbrug, runner-tab, national heljobskapacitet og de private/offentlige kontroller. Før installation kræves autentiske originaler, friske pointer-/checkpointidentiteter, kapacitetsmargin, original-B før S og T samt hård no-loss. Ingen scoreformel, kildeprioritet, administratorpunkter eller geometri ændres. SOURCE forbliver inaktiv; den almindelige vejrhentning har førsteprioritet. Alle fem hovedmål til 18. november består.
+
 ## 5. november — 4.0.598: sammensatte ravspørgsmål og bevarede originaler
 
 4.0.598 er den selvstændige efterfølger til den installerede 4.0.597 for Spørg RavRadar. Den samler de allerede gennemgåede rettelser til kombinerede spørgsmål om ravudstyr og prognose, relevante ukendte udtryk og afvisning af fundgarantier. Dansk, tysk og engelsk følger samme afgrænsning. Den offentlige faktabanks faglige indhold bevares; interne driftsfejl, private forhold og turdata må ikke blive assistentviden. Tidspunkt og konkret prognose skal fortsat komme fra gyldige lokale data, aldrig fra opdigtede AI-tal.

@@ -1,3 +1,9 @@
+## 89.321 SOURCE 4.0.599 er udstedt lokalt, men ikke installeret
+
+<a id="source599-actual-local-issuance-not-installation-2026-11-06"></a>
+
+<div class="reader-guide"><p><strong>SOURCE 4.0.599 er faktisk udstedt lokalt gennem de normale byggere. Den er ikke installeret eller aktiveret, og den store revision er endnu ikke færdig.</strong></p></div><h3>Hvad er gennemført?</h3><p>Den sammenførte kode indeholder den nyere almindelige DMI-hulprioritering, adminens præcise cacheadresse og begge gennemgåede koldstartgrænser samt assistentens engelske vindopfølgning og den lille private LF7/Fur-observation. De normale 13 builder-, synkroniserings- og kontroltrin har afledt C/I/T, én ny SOURCE-binding og én append-only migration. De syv normale forbrugere er synkroniseret. Alle 74 gamle migrationer, originaler og offentliggjorte scorer bevares; kystdata og zoner har alene fået normal topversionssynkronisering.</p><h3>Hvad beviser de lokale trin ikke?</h3><p>De beviser ikke rigtig Linux-/Node24-kørsel, kørt SQL eller korrekt drift i produktionen. Den normale nativekæde skal bruge samme PostgreSQL-instans gennem trin 64. Samlet fysisk processtop, eksklusiv skrivning, fireminutters fejlbehandling, holdbar gemning, upload og genbrug efter timeout eller afbrydelse samt tab af en hel runner skal stadig kvalificeres. Et lukket underjob er ikke bevis for tab af runner. National kapacitet skal måles for hele jobbet med 210 zoner og 673 kystdele.</p><h3>Før sikker levering</h3><p>Autentificerede originaler, frisk pointer og checkpointversion, ABA-kontrol, fælles ydre ur og hård no-loss bevares. Originalpakke B skal gemmes før beregningstilstand S og den offentlige target-generation T. Den præcise endelige kilde, relevante artifact-/releasekontroller, kapacitet og en strengt nyere almindelig vejrgenerations private og offentlige effekt skal bestå. Lokal udstedelse dokumenterer hverken Free-kapacitet eller selvstændig drift uden Codex.</p><h3>Faglig model og gamle forklaringer bevares</h3><p>Scoreformel, kildeprioritet DMI → Copernicus → Open-Meteo, administratorpunkter og geometri ændres ikke. De syv kystzoner må fortsat bruge dkss_lf kun til vandstand, med den centrale SOURCE/T+3-afgrænsning; strøm, tilhørende strømhukommelse og vandtemperatur er fortsat udelukket dér. Den private observation ændrer ingen score eller adgang og må ikke fremstille ukendt oprindelse som bevist. Daterede forberedelsesafsnit og tidligere bindingsblokke bevares som historik; den nyeste lokale binding beskrives i det eksisterende bindingsafsnit.</p><h3>Den normale kildekontrol</h3><p>Den korte normale kalderprøve påviste desuden, at kildekontrolrunneren ikke kunne læse den allerede gennemgåede faste CODE-parentkommando. Runneren håndterer nu netop denne ene kommando som en præcis argumentliste med hele programmet i ét argument; generel shell-/programtekst og ændrede kommandoer afvises fortsat. Miljøfiltrering, den genuine CODE-only-kontrol og gamle fejludfald bevares. De to berørte kontrolfiler ligger uden for de udstedte modelinput; bindinger og den nye migrationsfil er uændrede.</p>
+
 ## SOURCE 4.0.599: gennemgået kandidat og krav før aktivering
 
 <a id="source599-reviewed-normal-callers-candidate-2026-11-06"></a>
@@ -701,6 +707,14 @@ Nyt offentligt vejr kræver en faktisk strengt senere generation gennem den norm
 Et krypteret fremskridt kan bevare allerede hentede leverandørdata, selv om beregningen endnu ikke er færdig. Det må ikke kaldes et færdigt beregningscheckpoint. Ved genbrug skal indholdet autentificeres og passe til de præcise bevarede originaler og den krævede baseline.
 
 En ny modelbinding kan ændre arbejdsfilens metadata. Derfor er uændrede originale vejrdata alene ikke bevis for, at gammelt fremskridt kan bruges direkte efter overgangen. De normale kontroller skal afgøre genbrug; gamle data og fremskridt bevares, mens en afvigelse afklares.
+
+### Aktuelle lokalt udstedte 599-bindinger — 6. november 2026
+
+Aktuel lokal kildebinding — 6. november 2026, RavScore 4.0.599: 4.0.599 er udstedt lokalt og er ikke installeret eller aktiveret. Den integrerede model har modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b og modelBundleSha256=cb799e6461f30b4e36829fc4c895b8303368dca67415614a32cbf697c11f9c71. Inaktiv Candidate G-kompatibilitet har modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8 og modelBundleSha256=ed85aad054a0a162b75de5cdcf39d43857f659880df5f3cc9a1dd335321e5c8d. Autoriteten er version.json.releaseContract.modelBindings; de syv normale forbrugere er synkroniseret.
+
+Aktuel lokal fortsættelses- og SOURCE-binding — 6. november 2026: Den normale 12-filsbinding er continuationStateContractSha256=787692263fd23e5c4f055ab07a8e0d853a83e816558262988ad87d2809aa9eb8 med normalisering utf8-bomless-lf-v2. SOURCE-bindingens versionsstempel er 20261106205305; det er et teknisk bindingsstempel, ikke en vejrgenerations starttime. Den nye normale migration er supabase/migrations/20261106205305_source_producer_original_bound_successor.sql med SHA-256 80ccb3ea72eda9ca9329cc7e18ff7416afd13e5444db80f6142ba270637562c5. Alle 74 tidligere migrationer er bytebevaret.
+
+Afgrænsning: De 13 normale lokale builder-, synkroniserings- og kontroltrin er ikke Linux-/Node24-/PostgreSQL-kvalifikation, SQL-installation, offentlig levering eller bevis for nye originale vejrpakker. De følgende daterede 598-, 597- og ældre bindingsblokke bevares som historik; deres samtidige status må ikke bruges som aktuel 599-status. Se håndbog 89.321 for de åbne krav.
 
 ### Aktuelle 598-kildebindinger — 5. november 2026
 
@@ -1985,7 +1999,7 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.598
+**Håndbogsversion:** 4.0.599
 
 **Lokal kildebinding — 29. oktober 2026, RavScore 4.0.591, ikke installeret:** Den integrerede model er offentlig som modeltype under den særskilt leverede 4.0.590. Den nye assistentefterfølger er lokalt udstedt og er endnu ikke samlet kvalificeret, installeret eller offentliggjort.
 
