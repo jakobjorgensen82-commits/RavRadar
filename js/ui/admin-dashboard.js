@@ -629,7 +629,7 @@ function renderObservations(){
  const exportCard=active.ok
   ? `<article class="admin-card"><h2>Eksport og databeskyttelse</h2><p>Eksporten er en fast allowlist uden bruger-id, GPS, rute eller råt vejrsnapshot. Hver række klassificeres mod den verificerede aktive binding for ${esc(active.value.labelDa)}; eksportens topniveau bærer samme eksakte binding.</p><button id="exportObs" class="admin-button">Eksportér dataminimeret JSON</button></article>`
   : activeModelUnavailableCard(active,{title:'Observationseksport blokeret'});
- content.innerHTML=`<div class="admin-grid"><article class="admin-card"><h2>Observationer</h2><div class="metric">${obs.length}</div></article><article class="admin-card"><h2>Registrerede fund</h2><div class="metric">${finds}</div></article><article class="admin-card"><h2>Bundne snapshots</h2><div class="metric">${obs.filter(x=>x.forecast_snapshot_id).length}</div><p class="muted">Eksporteres kun som sikker snapshotreference</p></article></div>${exportCard}`;
+ content.innerHTML=`<p class="muted">Tallene og eksporten gælder kun observationer på denne enhed.</p><div class="admin-grid"><article class="admin-card"><h2>Observationer</h2><div class="metric">${obs.length}</div></article><article class="admin-card"><h2>Registrerede fund</h2><div class="metric">${finds}</div></article><article class="admin-card"><h2>Bundne snapshots</h2><div class="metric">${obs.filter(x=>x.forecast_snapshot_id).length}</div><p class="muted">Eksporteres kun som sikker snapshotreference</p></article></div>${exportCard}`;
  if(!active.ok)return;
  document.querySelector('#exportObs').onclick=()=>{
   const rows=obs.map(row=>activeAdminObservationDto(row,active.value));

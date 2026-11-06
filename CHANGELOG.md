@@ -1,3 +1,15 @@
+## 6. november — samme kontrollerede assistentsvar før AI-kaldet
+
+- Klargjort den eksisterende forklaring om ukendt ravudstyr og manglende fundgaranti som et fast serversvar før unødvendig kvote- og leverandørbehandling.
+- Bevarer hele spørgsmålet, sikkerhed, sprog, bindinger, ukendte udstyrs normale AI-forløb og alle vejr-, score- og brugerdata. Klientkode, 4.0.598, C/I/T og migrationsfiler ændres ikke.
+- Lokal transportprøve er ikke offentlig AI-accept; præcis samlet kildekvalifikation, levering og browseraccept dokumenteres særskilt. Ingen generel URL- eller Edge-undtagelse indføres i den afgrænsede kontrol.
+
+## 6. november — admin: tydelig kilde for lokale observationer
+
+- Klargjort en præcis forklaring af, at tallene og eksporten på Observationer gælder denne enhed; den samlede D1-tæller på Overblik er uændret.
+- Bevarer eksisterende adminfunktioner og tilføjer kun en særskilt adresse til modulcachen. Ingen ændring af version 4.0.598, C/I/T, SQL-DDL, vejr, score, geodata eller rettigheder.
+- Håndbog og RDKS er ajourført; faktisk kvalifikation og offentlig effekt dokumenteres særskilt.
+
 ## 5. november — 4.0.598: afgrænset kildekontrol med ægte normalbaseline
 
 Den fulde normale kilde-PR for 4.0.598 er faktisk kvalificeret, inklusive dens PostgreSQL-kontrol. Den skrivefri standardkontrol på den indholdslige mergede main har derefter godkendt det eksisterende kildebevis før privat adgang. Producentcommitten og mergecommitten er forskellige identiteter. Den normale toforældre-merge må kun knyttes til producentens bevis gennem det verificerede PR-forhold, samme hele kildetræ og de oprindelige kørsels-, forsøgs- og artifactidentiteter. Et andet commitnavn kræver ikke i sig selv en ommærket profil eller et nyt PostgreSQL-bevis.

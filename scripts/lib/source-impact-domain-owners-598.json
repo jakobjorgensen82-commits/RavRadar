@@ -221,11 +221,65 @@
           "node --test scripts/test-admin-document-history-workflow.mjs"
         ]
       ]
+    },
+    {
+      "path": "supabase/functions/_shared/rav-assistant-contract.ts",
+      "domains": [
+        "adminUI"
+      ],
+      "controlQualification": true,
+      "exactSourceTransition": true,
+      "commands": [
+        [
+          "adminUI",
+          "node scripts/test-rav-assistant-main-edge-roundtrip.mjs"
+        ]
+      ]
+    },
+    {
+      "path": "supabase/functions/ravradar-assistant/index.ts",
+      "domains": [
+        "adminUI"
+      ],
+      "controlQualification": true,
+      "exactSourceTransition": true,
+      "commands": [
+        [
+          "adminUI",
+          "node scripts/test-rav-assistant-main-edge-roundtrip.mjs"
+        ]
+      ]
+    },
+    {
+      "path": "scripts/test-rav-assistant-main-edge-roundtrip.mjs",
+      "domains": [
+        "adminUI"
+      ],
+      "controlQualification": true,
+      "exactSourceTransition": true,
+      "commands": [
+        [
+          "adminUI",
+          "node scripts/test-rav-assistant-main-edge-roundtrip.mjs"
+        ]
+      ]
     }
   ],
   "exactSourceTransitions": {
     ".github/workflows/maintain-admin-document-history.yml": [
       "f8b3515cba597f51dfefd75b04c1bc03d28f2173fa0c01d90ad6cf401a8b0a00/e1a30ce2979f259e66db4cdf24700de223e987858a0286ec690de3ddf07d877b"
+    ],
+    "admin.html": [
+      "6c026318618e2c49722a1168aa610d330b6b6bf8aa8f6a6bb2eb9f0c0c3cea26/fc52544b46f4bdfa3a4833c3de4e7fce541b9763cc6ccc1c5d8fbe9bf29ee980"
+    ],
+    "supabase/functions/_shared/rav-assistant-contract.ts": [
+      "94cd33ae5d51522e558b3639769e7a86e5da078d8b6b47c3e758d771708b55d0/5b1e5b5116a6d89dc874d8707b13582ac8747d92b2b6baa251412e95a67b4ca1"
+    ],
+    "supabase/functions/ravradar-assistant/index.ts": [
+      "caaf30883b33c0ef551f336b6bc59d9fba710b8a0d60bd5c03afd42ba2753d62/8c8cb9a9448e06c172525c1cea017c43d7ea34bf08dc921538e128cba089511e"
+    ],
+    "scripts/test-rav-assistant-main-edge-roundtrip.mjs": [
+      "57dbd1e9e6f234e137b4046b12b7ecaa9796bd38bdae50ba480507c24c858b14/0621cd8b56f96951fbb2f06c5da399c7ee3a98bbcb4a382430373e8aa80ffa65"
     ]
   },
   "sources": {
@@ -4409,6 +4463,7 @@
           ".github/workflows/deploy-forecast-share-pages.yml",
           ".github/workflows/maintain-admin-document-history.yml",
           ".github/workflows/reusable-pages-deploy.yml",
+          "admin.html",
           "cloudflare/trip-gateway/trip-aggregate-job.js",
           "docs/rdks/MASTER_LOG.md",
           "js/ui/admin-private-trip-study.js",
@@ -4463,6 +4518,7 @@
           "08d7d398ebcf6b1b8a383c13c32a4ccf733190e048c6727934393118aa0fd5e7",
           "0a1b37d9584d61721bafd3ec6e823fbcd0546d379c4b0cb5631de23774e13772",
           "0d6db1d5ef707b22b7e5f9a832615dcfc0784fccc966c5aac9191ff0442b09e5",
+          "0d9177e2bafa527c18cdd9f3d9ae7a6fe33cf10a7b34b4fa812b33e0f08b0aba",
           "108a5d1fe4e1b5ca7ccf83dcb7a89d4ecf1de80517074e4b96b81b167f573670",
           "11d4f53bfb0e201038ccb91c57c7b61b02dcddd7d89fbaedba311c84a49886ef",
           "12274caf8b0bbcc145029b6bc6c9b2a7a0e4e6c850a5ffd5def6b68c4e08f6fd",
@@ -4500,6 +4556,7 @@
           "25d9d1e12130eafe32b5d0867d1e4928b4c4341eb70c1bac72b4c72bd6cf2095",
           "29adc7d684bc09d3e5ee3a5e45b509f9c24af399a786479b586c46a07b3342d7",
           "2a404467982e0d0561a6eda8af335490e40bcbc60a17e279f3b169ad03175b21",
+          "2a7b5c9ea5ceb07447479f02dd55ed9fb20e645977890acefbc5b0f61b104d84",
           "2f52e37ee7024e6b5e2346cc72a93bbade161487579e315f2c41a64c1a48f079",
           "30b67db133b966035b9b90f3b28b731f33602c7a2607153b30eae7f17bca6a02",
           "31252e11c7ecfd86b03cf6731c2ebd3d3fcdeedc69052dcc95689b73da0b09f1",
@@ -4549,6 +4606,7 @@
           "51742979bf4610c349f5f4e389dd359d34af18229489c61df6ad44aaef03a9d4",
           "519ebad3b8c10a1be077a8b6cb132c06e28e2784ae3b9e8dcb871a793103b770",
           "526c4b865240a1f4447e13dc0c9736e4f786567b4b3258efb6e1f859b5cb131c",
+          "52ec65d21e1f577a431c1c9b0a8d54ac4e45f7ab9ca7cfce4a3323ed09a10156",
           "535ccf1335b74847a39db53a455f0dca5e16c77b1b75961ade7b440deb280c18",
           "53b61e5bada755a3ff73c0fb61994e9b3274369ea1c99b56fcd555fe2a33e14f",
           "54801776fb007b188f8ad08e6fe2514e38e5c706e91268dc8da789ea052f62a8",
@@ -4574,6 +4632,7 @@
           "65e9f550d4c2a4eb291b2cee43eab0c8c5918835a007a2f432b1f430c556bb12",
           "662e239949114d037f153f03209d06131672a7629d208de7d017ca77e6c8c9b5",
           "66c23c9fb56ae45e8e6ac3f77a1c849c676ff671653cb235c66d8308b02d2f26",
+          "66d1827c8977a5cbe1748f789b43a65caca706b3e103d64bbc8ae6d5b7a5b4eb",
           "691e0e11fc9ab9d7e20398cec5e0bbb7e3dffe067c18b3d6930905136fb4877d",
           "6a41cca1ae1ea0b92aefe17364df70a60ef2f971fde7b1cdb62a6181b1edd54c",
           "6afb27a3133a42f9dc060013beaf4c1897397090403a84a28b549e7007cd9f10",
@@ -4618,9 +4677,11 @@
           "90ef3f4e3710b38fbed05e92e3ee05fd36a892a6933daf806dbafba877fd7996",
           "91c9f2ee9b4365243f81e91214052b7a96999897e7fb767c9ba9d6e87cbbdeb1",
           "91d03fa769742dd5f1827bdba8636a6f7e5769ebe01494e0c64d09f0b1493f54",
+          "9268e5d544106d996568c967aba2265cf117f50171de39ba38702072c7ca11a1",
           "9386d7ce1ada83193647a4180a77edede3535856696b0e735221e52c9bbdd9e6",
           "93958b5b6bcfa270d62a54532e662b87b53c72979d54ec551ac627b4034b0494",
           "940be85aab24b3457d5135c3b8b96e9d81ebdfa5cac0a292ff8d2fc084d70768",
+          "94886acdb24b2060d937ffebbd0dd7318e821430fafef70623d4440d57bc4a0d",
           "954d85b9bcc488ad974d53b44cc35539372c7ee33cd0839f1ee3447912e53f40",
           "959e25bcf0422eb21a922e51b86e6fcbb8b29e3579749be603a0e8ea72ee1ee2",
           "95cd9b6b48e63c67b652852482a3a2de04e8cef0da9dbeae3a16b9d2f9ae261e",
@@ -4663,6 +4724,7 @@
           "b2fc82189c33a728bd191d8a6a3197bbf341475d2b4d9717a9e0af568d7b20f4",
           "b37ef330292878d8ff04f88736e91994fa96ceb03d3efdd08b91945b737a188f",
           "b5660e6f8af3cac51e0d393fb31e492c5f8f2264650f6a37a306816d165d6fb4",
+          "b62b64606f1a6c4c22aa61dfe511b87d33230658de6db6af517272ecc692f873",
           "b64b2229c516d53c466ffa16e7cb921ffe5bfa95d97a53580ccb71041767c79d",
           "b75b85649c4c93de2d4c93d7c64d13f87a92790d1b33130310fa36a9b73bd23d",
           "b7b8a2bf1f6831d3b4f33cd3ff81d8069cc68a57ab892e46089087651e29947e",
@@ -4691,6 +4753,7 @@
           "c440e7960868263d1e3875af44c6f2ab19c2134c2aeb0466b11a3f74366b605b",
           "c4b671cda62a5edf6684534fadd896d6a6b85cb6368ae2d616840ebe4ec8d2c8",
           "c5c08ebb352d5a86536d3b3762b86046d89743c76086ff456dfa0fe21a9f34c8",
+          "c67e39ee941d7346317ced6423f72c6a6e9751065a09d12ba8ac521e6e329fde",
           "c7e9eeecb5ed4ab1ba8c680d6c93af3e7245144113af319f157e97851f419f48",
           "cab852cfd938dd2545cf938be5a755d428517248c1517b7d7a868f7836d62902",
           "cd4ebbf8de28f5d9e8bfa40cffd9631c7be8a015b97703712ca6c02fdbc3dfb4",
@@ -4730,6 +4793,7 @@
           "e03330e6431efedf608d59c0642b1c2b1a4d9f62bc13c8edfe5c44babfd7be73",
           "e09c2f79f2565f3362f2e2d9c35d1775e9e352d5b84f85b442d5c54dd537768d",
           "e1d8c0c2f804080a2cd387b2326f5137b4c42938fc4ae39e776436590b294f81",
+          "e2930354ee9e2fb1219538f04509118061ec5ead79806051a038360c067bf9ea",
           "e3bab818891c2713fa16e6a7ce21382748647edbcc82663ca68a35e9b65ece5a",
           "e4e1ec07b4d7e6a1011a45003ca900e2043bc5b4244c85290d00de06d1233fda",
           "e4e21ace3471faf98606d66d32e917f8dd494c76f2f40ce1c47b56a37ee66e37",
@@ -4747,6 +4811,7 @@
           "ede18736481f267170e0943ce3c64e31a16965f097a9c54a0b4b233c623614a7",
           "eebda88f568b978f05b5d175a651f6f64b155ff788576d528ae0e3da2399ed43",
           "ef6b229081db8b1d8e5ca11663bca29fef5985e15a25d3b1ba23e9eae0cd40a8",
+          "ef827114a45df8aefb28537d3ce9c0e8d278cf9bfb2dccf0418c2da74f08b33c",
           "f035f3e401bfbc77a9252079acd83459de8e7881b8e22ab9ce38925e4f1593ac",
           "f0f45f887c10d28057f3d76906554cb8583810694ce972dbadc78239f3465e49",
           "f2620b4029975b5ad90ad52ecf48edfa9b342e246142f2f2dcbab078507edf2c",
@@ -4814,6 +4879,7 @@
           "c726a09aedaef4ad2768b82db2cddc9f15305ad06400cd89b8f62f5bd72df3ba",
           "d1126aac8ee733b1924facbe6523ea5eb45318a0fd2e2f54e66bb82475457f2e",
           "d3c7c0b6948622d54638729de889bded01734fa308421ec6df79cb2295a1d7ba",
+          "dd0e6fb7b74c1fc73fd68bfef3e8744e04db8cbb09e0cfb5f1de9f0120b246be",
           "df0ea258197ee044a190d64c62ac32fff7249c88382553818ca7e86cfd6c5138",
           "dfb0eabd1d5749ae6fd5019d191a47be71ee965c69fac3921c502cabe571d79c",
           "e2c102c94178aba9ef9512d78edcc986ab8528aba82bc9b1f1385ff3f205ac75",
@@ -5502,6 +5568,148 @@
           "e9ad84230c6f900de7b1aa23c37e7454a99efe478ae23589dfe81a703add259d",
           "f2e05c66bf2f4fa56bb393eb8cf8951bedfcbd415ea7a01859f9c6b3ef03063e"
         ],
+        "computedBoundaries": []
+      }
+    },
+    "scripts/test-rav-assistant-main-edge-roundtrip.mjs": {
+      "beforeDefinitionSha256": null,
+      "definition": {
+        "nodeImports": [
+          "node:assert/strict",
+          "node:crypto",
+          "node:fs",
+          "node:fs/promises",
+          "node:module",
+          "node:vm"
+        ],
+        "imports": [
+          "config.js",
+          "js/core/ravscore-public-runtime-contract.js",
+          "js/i18n.js",
+          "js/services/map-forecast-view.js",
+          "js/services/rav-assistant.js",
+          "js/ui/score-prognosis-copy.js",
+          "knowledge/rav-assistant-local-v2.js",
+          "supabase/functions/_shared/rav-assistant-contract.ts",
+          "supabase/functions/ravradar-assistant/index.ts"
+        ],
+        "resources": [
+          "app.js",
+          "js/core/ravscore-public-runtime-contract.js",
+          "js/services/rav-assistant.js",
+          "knowledge/rav-assistant-local-v2.js",
+          "knowledge/rav-assistant-public-v1.json",
+          "scripts/fixtures/rav-assistant-evals-v1.json",
+          "supabase/functions/_shared/rav-assistant-contract.ts"
+        ],
+        "dependencySurfaces": [
+          "007603883309371bc11886a3b709e5825071a240df21d35df53ffe037601d03c",
+          "075a81777f1c642830cbf1a5390c573f4c8890685fcf89e96add79874d9f569c",
+          "09218a80b008b40125cdf7dd8b92893d18d2c4a808b37b1da51432b09792f860",
+          "09f0cb1ce11633b836d67f49e49f1bb8422a86f45cacd0e17c1dd83830ed901d",
+          "21a5798414f4a2123a44f9c0abd5cb5fdf2e5c0cc75402e708ec4386cdbe428d",
+          "220275faa38aa6218549af4978486637c1e7dbd76b06e8bb4673fdea916ec710",
+          "25eb86a5ffdfca38ec25f6397d8614fbcd37eb9416d764dd4adaca067685bb2f",
+          "3c5845c4a376db7e7c5b4872ba84253d2f4ef1e0f4192d58f2527d8b55593fac",
+          "6d477df387708127655e659ba3dd6b57eeda874ad8a9c370a96a00351935f7cd",
+          "8af2cf05fcb4b335879f18792afd1dab4b632b4c88cbdbfdd921ad302db0fdd2",
+          "8d16d10aec4168e930827e3eeeb5600e563dfa03b1e3bf74190816beb204edf1",
+          "903c3b5fb4b69216b3eb188b4b61763e4823b65121188071a7bf8d2ff93cb454",
+          "a98e724db15fae90cb95dd6b6071a6860125151e8a78a2469c4885a249c1075b",
+          "e20ac1344ef553698b29df8e8e5408210710bda1b4b1d19822c6cdd9b04c35fd",
+          "e3626c878bfcac155f3d097e21bb8cfd0bf853db2e2ee8723e054be7efa05132",
+          "e5b327d0c1410dbaf60f51feb105865789a8835d188af64f16972ee276573001",
+          "ee874bf6334298e8163ab28669c8c437db9294473bd7baa81d34e470106fb2a3",
+          "fc58581dea350f2f54377b3360f0446dc414b1308d01c4ae7c4e3e34caa94763"
+        ],
+        "bindingSurfaces": [
+          "1a053c7d0bb3584ef8c7bfb625e4958d004acb4d55cd21afc196b73142b57255",
+          "21f5ea3374350a5b7b9a21ccdce48bf5936e5e0e68fd46ee3d5534e2c2826565",
+          "240b9c8b95cb9b5181ed3ffe0ef694c5bb75daac7707aea1f07a561d55c587c4",
+          "2d204e37069b383528760f9c126113fb73a07ad25a5bc051b3fb079b9d6aa91e",
+          "2d7e5947635196fcff71b21f575f978d61fd9da816190292549041742a6f09bd",
+          "3669712d9df615bca7f04ad05f020bb5e73af89a351efb90ed5d49109fd2cf14",
+          "3793018e01d5652f9eec3f9cc7ccb617d9a782dd2c46fdc1409d4e4d745f864a",
+          "3c0064bf5a9d581c2ce114e4d0d25ca9316eb832365ecef51f6ffa7a0836bdd3",
+          "3dd268ffe84a16a17e65db70f82c581b9ba5258a713a2791654563a095a754e4",
+          "3fe96c0a43440fba85441c5bcb9e4b877b8a07871cdb8101c13fe850aaefcf1a",
+          "41a18e607b763b02b3ca43d88e58dcbc658801b76c2dff84be7a58644d6ab728",
+          "4c57dfa4b3c0203536612f4489dbd8eaab700d3c88fa317f3f8537b67a76103c",
+          "5587213cc51fc774846f4814d71a12bb28f153b5b02b87afb619c664ac8e3cc0",
+          "5a3250c0f0c64e787996d4e171f9bb0255d497abb6d1d956acbe8c7a11fc17f1",
+          "6525a2a741cca2ef6fd002fddcb8f7e7a2a32baaabcebf71e67463681401e463",
+          "694e955a894014514ef26c7da0223a19ef055d8315195d1c082238cc7713d206",
+          "704eb06dbcdcbefd4c16d143741f293bab125dcf70e0966ac7f3cdd4879fb3bb",
+          "7aa5d254a649cb227784ed3e16d6f14e0735a6e3861ae5f3cffa02f3367743fe",
+          "8474416f06e64e4d4fffa4b9158c1914a6893243216436eefd41e73e3fde9b9a",
+          "84c07bea1c8a40019faac26da8653e77f19c7d61cbe0e9db06f84fc43a220f9f",
+          "86238531a60105cc817f089a01cb92a3c355dda8e274c230ffc6461d98d54c63",
+          "8fed5108a843dc1fa81f85ae746006db7bc5ef6d938c708e3ea3e2f26790c838",
+          "96e4d162463bb7d8111cc581c2c345e32b8aa38903b60a99a146f16f3d503b12",
+          "97d575b59f3f30b2c0eea37c462472ae58765acdeb083b23cdc5fa2984e728d9",
+          "99fc48d8910ed29882718533003bb12567824d94a55ac546d233e7d06c4abc6b",
+          "9b41d98a9e7ab4a8f49a847da7051c20d2d0e008de87f9871d9637c774c775f6",
+          "9fafe9fdc04fc314adced365131631b476ec4100cced97c9f22e3be42aef46d4",
+          "a1b88da1cc7adbbf4f7ba0cbc6cce04f33e7073efc641874ea4957e2693d13ed",
+          "b7e727ad8b1c835d90b256617b2d88282474906f72d4ad0c50ca3b92353053b9",
+          "bcb7fc00a406041e2340aefd9f3b679959febf117dddc9f1c2b2061a5e793338",
+          "c410cab436ec1b03caeccdc58dddef0213771164880aa8a87e85b7ef26f999a0",
+          "db6d7e833ab9bc58306f3f71f7e8bb22fde62aeafd67bedc1861e324a35652a6",
+          "de87f1c2371ba1d7ad08ad78fb1825092fb5b7f090ee6b9988a46464312df8a9",
+          "e26dafdd2a6e9cfd4e4dcda9f5319bbeed126c59da79d4f88001d5e7494652ff",
+          "e60d158f925d4215a2728107d642b89e496f8a054f0ef492f5ee77a637039367"
+        ],
+        "computedBoundaries": []
+      }
+    },
+    "supabase/functions/ravradar-assistant/index.ts": {
+      "beforeDefinitionSha256": null,
+      "definition": {
+        "nodeImports": [],
+        "imports": [
+          "supabase/functions/_shared/public-gateway.ts",
+          "supabase/functions/_shared/rav-assistant-contract.ts"
+        ],
+        "resources": [],
+        "dependencySurfaces": [],
+        "bindingSurfaces": [],
+        "computedBoundaries": []
+      }
+    },
+    "supabase/functions/_shared/public-gateway.ts": {
+      "beforeDefinitionSha256": null,
+      "definition": {
+        "nodeImports": [],
+        "imports": [
+          "supabase/functions/_shared/trip-storage-contract-probe.js"
+        ],
+        "resources": [],
+        "dependencySurfaces": [
+          "3633eb8a392903421e463972ba70c77bafab332530900876e0b25d587ded8fae",
+          "38e02155e3b3f69a4d073c1496334142bfe849ed4dc391109a8b805a84e93b93",
+          "4a79cc94a525fc56ae502ab678559db2f8697c156ed786e2491facf9bcfe5e36",
+          "7306c1fae44cc06d54cd34acc2f7198962e8d1599eefc9682150a4ae5ad1205d",
+          "7dac68ae04284c4cbb32143e41469eecf94a7281a24ea86ec44ff6a50ffe01d2",
+          "83c7259e9f1f013e913cb4f629f3b8b2ebe9760926c3c1911519f7fd7b9ceeb9",
+          "88e97678395d50a7e6f7f70b77710dc06c72e9dd791962181e003cbfcc40b4cd",
+          "dede8333604ad5eb19b339901fb13a11e5be3550c34463a87f40142a07764d81"
+        ],
+        "bindingSurfaces": [
+          "5dc1c867d366e95556bfd43aac90f5eeb15da8454a30808e8b19b55ac3da1013"
+        ],
+        "computedBoundaries": []
+      }
+    },
+    "js/ui/score-prognosis-copy.js": {
+      "beforeDefinitionSha256": null,
+      "definition": {
+        "nodeImports": [],
+        "imports": [
+          "js/i18n.js"
+        ],
+        "resources": [],
+        "dependencySurfaces": [],
+        "bindingSurfaces": [],
         "computedBoundaries": []
       }
     }

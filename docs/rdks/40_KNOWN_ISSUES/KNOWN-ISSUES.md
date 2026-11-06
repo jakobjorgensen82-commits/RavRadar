@@ -1,3 +1,11 @@
+## 6. november — fast assistentsvar og faktisk offentlig accept
+
+Den eksisterende kanoniske forklaring om ukendt ravudstyr og manglende fundgaranti var afhængig af et AI-kald, selv om svaret allerede var fastlagt. Den præcise lokale serverrettelse flytter kun samme hele matcher og svar frem i den normale rækkefølge. Kontroller af sikkerhed, sprog, modelbinding og hele spørgsmålet bevares. Normal lokal klient→Edge→validator-prøve dækker leverandørfejl uden nye netkald; det er ikke offentlig AI-accept eller bevis for fasen i den tidligere offentlige fejl. Endelig kildekvalifikation, sikker levering og faktisk normal browseraccept er åbne. Se håndbog 89.315.
+
+## 6. november — lokal kildeafgrænsning i Observationer
+
+Den eksisterende adminfane viser lokale observationsfelter og eksporterer det samme enhedsudsnit, men mangler overblikkets tydelige kildeafgrænsning. En kort tekst og normal modulcacheadresse er klargjort. Det er en visningsuklarhed, ikke dokumenteret tab af centrale ture eller en ændring af D1-tælleren. Kildekvalifikation og faktisk offentlig browseraccept er fortsat nødvendige før punktet lukkes. Håndbog 89.314 beskriver afgrænsningen.
+
 ## 5. november — 4.0.598: afgrænset kildekontrol med ægte normalbaseline
 
 Den fulde normale kilde-PR for 4.0.598 er faktisk kvalificeret, inklusive dens PostgreSQL-kontrol. Den skrivefri standardkontrol på den indholdslige mergede main har derefter godkendt det eksisterende kildebevis før privat adgang. Producentcommitten og mergecommitten er forskellige identiteter. Den normale toforældre-merge må kun knyttes til producentens bevis gennem det verificerede PR-forhold, samme hele kildetræ og de oprindelige kørsels-, forsøgs- og artifactidentiteter. Et andet commitnavn kræver ikke i sig selv en ommærket profil eller et nyt PostgreSQL-bevis.

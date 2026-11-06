@@ -10,7 +10,7 @@ import {scanAllSourceDependencies,dependencySourceLiterals} from './lib/source-i
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const REGISTRY_SHA256='3970bc86fb8afd99d193507b82337c1068aa368f6d62ff728988fc21da9577f4';
 const REGISTRY597_SHA256='a7ccfba2b2f631ccc358342e2c3b87e1cb1edbd54311148c94822fddaa6dbcfa';
-const REGISTRY598_SHA256='e598cb9fd3a4a9e4dd134e9c790fc2eaf80145501b17837310893eec9ab99dbe';
+const REGISTRY598_SHA256='9ac4eeb3727cf3c63e81a2675a88b442b8f103928d367ed18dc60c05a5b64db8';
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const oid=value=>typeof value==='string'&&/^[a-f0-9]{40}$/.test(value);
 const relative=value=>typeof value==='string'&&/^[A-Za-z0-9_./-]+$/.test(value)&&!value.startsWith('/')
@@ -92,9 +92,11 @@ function registry598(legacyBytes){
     registry.sources[file]=row.definition;
   }
   for(const file of delta.resourceFiles){assert(relative(file)&&!registry.resourceFiles.includes(file));registry.resourceFiles.push(file);}
-  // The pre-existing exact whole-source transition grammar applies to this one reviewed workflow pair only.
+  // Only the fixed whole-source pairs reviewed in this598 overlay may extend the historical grammar.
   for(const [file,pairs]of Object.entries(delta.exactSourceTransitions)){
-    assert.equal(file,'.github/workflows/maintain-admin-document-history.yml');
+    assert(['.github/workflows/maintain-admin-document-history.yml','admin.html',
+      'supabase/functions/_shared/rav-assistant-contract.ts','supabase/functions/ravradar-assistant/index.ts',
+      'scripts/test-rav-assistant-main-edge-roundtrip.mjs'].includes(file));
     const previousPairs=registry.exactSourceTransitions[file]??[];
     for(const pair of pairs){assert(/^[a-f0-9]{64}\/[a-f0-9]{64}$/.test(pair));assert(!previousPairs.includes(pair));previousPairs.push(pair);}
     registry.exactSourceTransitions[file]=previousPairs;
@@ -191,7 +193,13 @@ export function planSourceDomainImpactFromGit(input){
           if(!known.computedBoundaries.includes(sha(JSON.stringify(boundary))))return full('UNKNOWN_COMPUTED_IMPORT:'+file);
         }else if(item.specifier.startsWith('node:')){
           if(!known.nodeImports.includes(item.specifier))return full('UNDECLARED_NODE_IMPORT:'+file);
-        }else if(!item.specifier.startsWith('./')&&!item.specifier.startsWith('../'))return full('BARE_DATA_OR_URL_IMPORT:'+file);
+        }else if(!item.specifier.startsWith('./')&&!item.specifier.startsWith('../')){
+          // Only the unchanged type declaration in this exact reviewed Edge body is permitted.
+          if(!(is598&&file==='supabase/functions/ravradar-assistant/index.ts'
+            &&sha(bytes)==='8c8cb9a9448e06c172525c1cea017c43d7ea34bf08dc921538e128cba089511e'
+            &&item.kind==='static'&&item.specifier==='jsr:@supabase/functions-js/edge-runtime.d.ts'))
+            return full('BARE_DATA_OR_URL_IMPORT:'+file);
+        }
       }
       for(const surface of scan.dependencySurfaces)if(!known.dependencySurfaces.includes(sha(JSON.stringify(surface))))
         return full('UNKNOWN_READ_OR_SUBPROCESS_SURFACE:'+file);
