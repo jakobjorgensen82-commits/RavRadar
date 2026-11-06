@@ -1,3 +1,31 @@
+## 2026-11-06 – Præcise gamle og nye koldstartbindinger i kildeudvælgelsen
+
+Den normale kildekontrol har påvist et afgrænset registerhul før merge: den nye koldstartprøves gennemgåede VM-grænse var registreret, men de eksisterende isolerede HTML-/service-worker-kaldere bruger fortsat den gennemgåede gamle prøvevariant. Dens præcise ældre bindingsflade manglede i registret. Den strenge forbruger afviste derfor korrekt en ukendt følsom flade; dette er ikke en påvist produktfejl eller et timeoutproblem.
+
+Den minimale registerrettelse bevarer både den præcise gamle og den præcise nye gennemgåede flade og synkroniserer den normale planners registerpin. Produkt, testkroppe, normale kaldere, gamle profiler og afslag ved andre ukendte flader ændres ikke. Den ægte 598-kæde samt PostgreSQL- og C/I/T-kontroller bevares. Der tilføjes ingen ny fuld testbank eller ændret tidsgrænse.
+
+De allerede eksisterende isolerede UI-tilfælde fangede manglen før merge. Ny præcis kildekvalifikation og faktisk offentlig effekt er fortsat åbne. Dette ændrer ikke vejrhentning, budgetter, databevarelse, scoremodel, geometri, rettigheder eller produktion. SOURCE599 forbliver privat/inaktiv; dens tidligere dokumentforberedelse mod c670 er kun historisk forhåndsarbejde og skal genafstemmes mod den reelle endelige main. Se håndbog 89.320; tidligere afsnit 89.319/89.318 og al historik bevares.
+
+## 2026-11-06 – Adminens moduladresse i offlinecache og artifactkontrol
+
+Den normale tidlige 598-kildeudvælgelse kobler ændringer i præcis admin.html eller service-worker.js til de samme to eksisterende mål for kold start og admin-kontrakt, også uden en ændret testfil; ældre profiler og alle øvrige kontroller bevares.
+
+Den seneste artifactbygning blev stoppet af de normale kontroller for kold start og admin. Årsagen er afgrænset: adminsidens moduladresse fik den særskilte observations-markør, men service-workerens præcise cacheadresse og cold-start-prøvens faste forventning fulgte ikke med. Den uændrede admin-kontrakt påviste uoverensstemmelsen. Den lille rettelse synkroniserer disse eksisterende adresser og cold-start-prøvens faste assertion; den ændrer ikke rettigheder, observationsindhold eller score.
+
+Der er ikke påvist en Pages-størrelsesfejl i dette forløb. Komponentfremgangens særskilte cache blev ikke gemt ved sin størrelsesgrænse; det er ikke det samme som manglende beregningscheckpoint. Den færdige beregningspakke blev faktisk forseglet og uploadet, den beskyttede runtime blev publiceret med tilgængelig rollback og uden retentionsfejl, og det centrale scorecheckpoint blev kvitteret. Disse forskellige udfald skal fortsat beskrives hver for sig.
+
+Den nye offentlige generation er ikke leveret; den senest verificerede offentlige generation bevares. Det eksisterende cron-job er faktisk pauset med sin faste UTC-tidsplan uændret, mens det kontrollerede genoptagelsesforløb afklares. Ny kildekvalifikation, faktisk genoptagelse, artifactkontroller, deploy og offentlig effekt skal bestå, før driftsfejlen lukkes og cron genaktiveres. En lokal rettelse eller en grøn delkontrol er ikke leveringsbevis.
+
+Version 4.0.598, C/I/T, model, kilder, originaler, geometri og SQL-regler bevares. SOURCE599 er fortsat privat og inaktiv. Håndbog 89.319 forklarer afgrænsningen; kørselsidentiteter, checkpointbindinger og rå diagnoseoplysninger bliver i det private checkpoint. Ældre daterede afsnit, herunder 89.318 om DMI-hullernes omfang, bevares.
+
+## 2026-11-06 – DMI-V2: kvalificerede komponenthullers omfang før tid/cursor (kandidat; produktion ÅBEN)
+
+Den gennemgåede afgrænsede rettelse tæller reelle PART/komponenthuller fra den normale kvalificerede retained-plan og current-union. Inden for samme kritiske klasse får hulomfang betydning før tid/cursor; manglende nyere originaler er ikke i sig selv vejrhuller. First3, verificeret regionalt genbrug, parameter_zones, LF7-vandstandsafgrænsning og T+3 bevares. Ukendt plan beholder den gamle konservative behandling. DMI > Copernicus > Open-Meteo samt nyere gyldige datas overtagelse bevares. Ingen budget-, score-, admin-, geometri-, original- eller no-loss-ændring og ingen ekstra resume-runde.
+
+Normal før/efter-målprøve og syntetisk 673×115×3-planlægning er dokumenteret; merprisen var ca. 3,566 s for en ren fuld tre-familie-plan, ikke en heljobskapacitetsprøve. Den enkle kilde-CI klargør Python3.12 og hele det eksisterende requirements-dmi-sæt: requests/urllib3 samt låste eccodes==2.48.0 og eccodeslib==2.48.2.27 før den uændrede producent. Parentens normale Linux-barn kræver den rigtige decoder med native API2.48.2; den øvre provenance-stub og Windows-forløbet erstatter ikke denne forudsætning; den præcise 23-trinsconsumer skal bevare de gamle 22/FULL-kontroller gennem de faktiske normale kaldere. Kildeprøver er ikke produktionsbevis. Ny almindelig generation, faktisk haleoptagelse, databevarelse og offentlig deployeffekt er fortsat ÅBNE. Se håndbog 89.318; detaljeret kørsels-/cacheevidens bliver i det private checkpoint.
+
+Kildekontrollens ekstra 598-profil afgrænses til ni aktuelle integrationsscenarier efter den uændrede analyse af 148 beskyttede input, heraf 74 SQL-filer, C101/I100/T12 og 16 frosne ankre. Positiv producent/forbruger, normal CLI, den præcise 23-trinskalder med begge workflowlæsninger og frisk kontrolreview, ændret review samt PostgreSQL/C/I/T-drift bevares. De 15 generiske marker-, fallback-, format- og childfejl-kombinationer køres fortsat fuldt i begge ældre profiler med 143/144 beskyttede input; kun en tredje gentagelse undlades. Den særskilte aktuelle native/FULL-/nationalformskontrol og alle tids-, databevarelses- og produktionsgates bevares. Afgrænsningen er ikke i sig selv bestået kildekontrol eller offentlig effekt.
+
 ## 6. november — privat følgepakke til backupbyteantal og delingsopstart
 
 Backupkandidaten fører kun de allerede producerede SQL- og ciphertext-byteantal videre i den faste capture-rapport. Fem sikre, positive filtal skal passe til SQL-totalen og de eksisterende eksport-/arkivgrænser. Filnavne, indhold og nøgler udleveres ikke. Tallene er ikke målt netværk eller egress: komprimering sker først på runneren efter eksporten. Ingen cadence, retention, abonnement eller FreeReady aktiveres.

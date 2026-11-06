@@ -1,3 +1,31 @@
+## 2026-11-06 – Gammel koldstartbindingsflade mangler i registerkandidaten
+
+Den normale isolerede HTML-/service-worker-kontrol nåede det forventede strenge afslag ved en ukendt følsom bindingsflade. Den nye koldstartvariants gennemgåede VM-grænse var registreret, mens den gennemgåede gamle variant, som de eksisterende isolerede kaldere bevarer, manglede. Dette forklarer den konkrete kildekontrolfejl; der er ikke påvist et timeoutproblem eller en ny produktfejl her.
+
+Den minimale registerrettelse bevarer præcis begge gennemgåede flader og synkroniserer plannerens pin. Gamle prøve-/produktkroppe, normale kaldere, gamle profiler, ægte 598, PostgreSQL/C/I/T, øvrige strenge afslag og alle tids- og produktionskontroller bevares. Ingen ny testbank, større budget eller kontrolomgåelse indføres.
+
+ÅBENT: ny præcis samlet kildekvalifikation, sikker levering og faktisk offentlig effekt. SOURCE599 er fortsat privat/inaktiv; tidligere c670-dokumentforberedelse er en historisk kandidat, som skal genafstemmes mod endelig faktisk main. P0-vejret har forrang. Kapitel 89.320 tilføjes uden ændring af de tidligere 568 sektioner.
+
+## 2026-11-06 – Admincache-adressens mismatch stoppede artifactbygningen
+
+Den normale tidlige 598-kildeudvælgelse kobler ændringer i præcis admin.html eller service-worker.js til de samme to eksisterende mål for kold start og admin-kontrakt, også uden en ændret testfil; ældre profiler og alle øvrige kontroller bevares.
+
+Rodårsagen er påvist i de normale kontroller: adminsidens ekstra observations-markør var ikke ført videre til service-workerens eksakte cacheadresse og cold-start-prøvens faste forventning; den uændrede admin-kontrakt påviste uoverensstemmelsen. Den lille rettelse af de eksisterende adresser/assertions er accepteret til kildeklargøring. Det er ikke en konstateret ændring af vejrdata eller RavScore og ikke en påvist Pages-størrelsesfejl.
+
+Fremgangscachen meldte særskilt, at den ikke blev gemt ved sin størrelsesgrænse. Den færdige beregningspakke var derimod faktisk forseglet og uploadet; beskyttet runtime og centralt scorecheckpoint havde deres egne positive kvitteringer, med rollback og uden retentionsfejl. Disse delresultater er ikke et offentligt deploy.
+
+ÅBENT: normal kildekvalifikation, kontrolleret genoptagelse uden ny leverandørhentning, fulde relevante artifact-/releasekontroller, deploy og faktisk offentlig effekt. Den senest verificerede offentlige generation bevares. Cron er pauset med sin eksisterende UTC-tidsplan bevaret; genaktivering sker først efter verificeret korrekt forløb. SOURCE599 forbliver privat/inaktiv. Ingen nye private kørsels- eller originaldata indføres i håndbogen. Se 89.319; DMI89.318 og al dateret historik bevares.
+
+## 2026-11-06 – DMI-V2: faktisk haleeffekt er endnu ikke lukket
+
+Den gamle sortering satte unik validtid før hulomfang, så et bredt senere hul ikke kunne passere et mindre tidligere hul i samme kritiske klasse. Den gennemgåede kandidat bruger kun normalt kvalificerede PART-komponenthuller; nyeste models originalunderskud alene tæller ikke. Ingen blind budgetforhøjelse eller ekstra resume-runde.
+
+Miljøpræmissen gælder den fulde normale parent: Linux-barnet importerer rigtig ecCodes og kræver native API2.48.2, selv om den øvre provenance-del bruger en stub. Derfor klargøres hele det eksisterende requirements-dmi-sæt (requests, eccodes==2.48.0, eccodeslib==2.48.2.27) før uændret producent; requests/urllib3 alene er ikke tilstrækkeligt. Alle gamle assertions bevares, og kilde-CI er ikke produktionsbevis.
+
+Fortsat ÅBENT: kontrolleret levering, næste almindelige generations faktiske kø/optagelse, RAW-/tids-/downloadadmission, fuld databevarelse og offentlig effekt. Tre officielt fraværende ydertimer i den analyserede kørsel må ikke opfindes. Den særskilte fejlagtige runtime-etiket på et download-byte-stop er et separat fund og er ikke rettet af denne kandidat. Håndbog 89.318; rå evidence forbliver privat.
+
+Kildekontrollens ekstra 598-profil afgrænses til ni aktuelle integrationsscenarier efter den uændrede analyse af 148 beskyttede input, heraf 74 SQL-filer, C101/I100/T12 og 16 frosne ankre. Positiv producent/forbruger, normal CLI, den præcise 23-trinskalder med begge workflowlæsninger og frisk kontrolreview, ændret review samt PostgreSQL/C/I/T-drift bevares. De 15 generiske marker-, fallback-, format- og childfejl-kombinationer køres fortsat fuldt i begge ældre profiler med 143/144 beskyttede input; kun en tredje gentagelse undlades. Den særskilte aktuelle native/FULL-/nationalformskontrol og alle tids-, databevarelses- og produktionsgates bevares. Afgrænsningen er ikke i sig selv bestået kildekontrol eller offentlig effekt.
+
 ## 6. november — backuptelemetri og delingens Free-bevis er fortsat særskilte
 
 Den private wrapperrettelse bevarer producentens kendte SQL-/cipherbyteantal uden rå data og består sin normale syntetiske controllerprøve. En faktisk kopi, gendannelse og konservativ før-/efter-egressmåling mangler; daglige fulddumps er ikke dokumenteret Free-sikre. Ingen cadence eller sletning aktiveres af rapporteringen.

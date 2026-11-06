@@ -27,6 +27,14 @@ export const TARGETED_SOURCE_STEP_NAMES=Object.freeze(['Set up job','Run actions
   'Validate durable Copernicus current-reference baseline on artificial data only',
   'Validate download-inclusive DMI capacity on artificial data only','Require validated source tree to remain unchanged',
   'Upload tree-content source validation proof']);
+export const TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES=Object.freeze([
+  ...TARGETED_SOURCE_STEP_NAMES.slice(0,4),'Run actions/setup-python@v7',
+  'Install declared requests dependency before source planning',
+  ...TARGETED_SOURCE_STEP_NAMES.slice(4,6),...TARGETED_SOURCE_STEP_NAMES.slice(7)]);
+export const TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES=Object.freeze(
+  TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES.map((name,index)=>index===5?'Install declared DMI dependencies before source planning':name));
+const DMI_PYTHON_WORKFLOW_SHA256='742835aa72adb58c50f6f404f5c3c1308a7c11b0038a528a9b5a1ac6253b3cff';
+const DMI_REQUIREMENTS_WORKFLOW_SHA256='2947d429c6df45cfc415ace970f4e5efc89410ca60d277de19529dde73882843';
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const one=rows=>{assert.equal(rows.length,1);return rows[0];};
 const positive=value=>Number.isSafeInteger(value)&&value>0;
@@ -50,7 +58,24 @@ function locatorIdentity(record,env){
   assert.equal(record.runAttempt,1);
 }
 
-function runIdentity(run,pull,jobs,record){
+export function verifyTargetedSourceStepShape(job,workflowText){
+  assert.equal(arguments.length,2);assert(Array.isArray(job.steps));
+  const modern=workflowText!==undefined;
+  const workflowHash=modern?sha(workflowText):null;
+  if(modern)assert([DMI_PYTHON_WORKFLOW_SHA256,DMI_REQUIREMENTS_WORKFLOW_SHA256].includes(workflowHash),'EXACT_DMI_PYTHON_WORKFLOW_REQUIRED');
+  const names=modern?(workflowHash===DMI_PYTHON_WORKFLOW_SHA256?TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES:TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES):TARGETED_SOURCE_STEP_NAMES;
+  assert.deepEqual(job.steps.filter(value=>value.number<=names.length).map(value=>value.number),Array.from({length:names.length},(_,i)=>i+1));
+  for(let i=0;i<names.length;i++){
+    const step=one(job.steps.filter(value=>value.number===i+1));assert.equal(step.name,names[i]);assert.equal(step.status,'completed');
+    assert.equal(step.conclusion,modern?(i>=7&&i<=20?'skipped':'success'):(i>=5&&i<=19?'skipped':'success'));
+  }
+  const selected=job.steps[modern?6:4],unchanged=job.steps[modern?21:20],uploaded=job.steps[modern?22:21];
+  assert(time(selected.started_at)<=time(selected.completed_at));assert(time(selected.completed_at)<=time(unchanged.started_at));
+  assert(time(unchanged.started_at)<=time(unchanged.completed_at));assert(time(unchanged.completed_at)<=time(uploaded.started_at));assert(time(uploaded.started_at)<=time(uploaded.completed_at));
+  return {proofTime:time(selected.completed_at),earliestArtifact:time(selected.started_at),latestArtifact:time(uploaded.completed_at)};
+}
+
+function runIdentity(run,pull,jobs,record,workflowText){
   assert.equal(run.id,Number(record.runId));assert.equal(run.run_attempt,record.runAttempt);
   assert.equal(run.head_sha,record.producerHeadSha);assert.equal(run.event,'pull_request');
   assert.equal(run.path,PULL_REQUEST_SOURCE_WORKFLOW);assert(success(run));
@@ -63,18 +88,7 @@ function runIdentity(run,pull,jobs,record){
   const job=one(jobs.jobs.filter(value=>value.name===PULL_REQUEST_SOURCE_JOB));
   assert.equal(job.id,record.jobId);assert.equal(job.run_id,run.id);assert.equal(job.run_attempt,record.runAttempt);
   assert.equal(job.head_sha,record.producerHeadSha);assert(success(job));assert(Array.isArray(job.steps));
-  assert.deepEqual(job.steps.filter(value=>value.number<=22).map(value=>value.number),Array.from({length:22},(_,i)=>i+1));
-  for(let i=0;i<TARGETED_SOURCE_STEP_NAMES.length;i++){
-    const step=one(job.steps.filter(value=>value.number===i+1));assert.equal(step.name,TARGETED_SOURCE_STEP_NAMES[i]);
-    assert.equal(step.status,'completed');assert.equal(step.conclusion,i>=5&&i<=19?'skipped':'success');
-  }
-  const selected=job.steps[4],unchanged=job.steps[20],uploaded=job.steps[21];
-  assert(time(selected.started_at)<=time(selected.completed_at));
-  assert(time(selected.completed_at)<=time(unchanged.started_at));
-  assert(time(unchanged.started_at)<=time(unchanged.completed_at));
-  assert(time(unchanged.completed_at)<=time(uploaded.started_at));
-  assert(time(uploaded.started_at)<=time(uploaded.completed_at));
-  return {proofTime:time(selected.completed_at),earliestArtifact:time(selected.started_at),latestArtifact:time(uploaded.completed_at)};
+  return verifyTargetedSourceStepShape(job,workflowText);
 }
 
 function artifactNameFor(record,current){
@@ -148,7 +162,11 @@ export async function decideTargetedSourceGate(record,env,dependencies){
     const json=route=>bounded(getJson,route),zip=route=>bounded(getArtifactZip,route,true);
     const repo='/repos/'+record.repository,runRoute=repo+'/actions/runs/'+record.runId;
     const run=await json(runRoute),pull=await json(repo+'/pulls/'+record.pullRequestNumber);
-    const jobs=await json(runRoute+'/attempts/1/jobs?per_page=100');const phase=runIdentity(run,pull,jobs,record);
+    const jobs=await json(runRoute+'/attempts/1/jobs?per_page=100');
+    const selectedJob=one(jobs.jobs.filter(value=>value.name===PULL_REQUEST_SOURCE_JOB));
+    const usesDmiPythonShape=selectedJob.steps?.some(value=>value.number===5&&value.name==='Run actions/setup-python@v7');
+    const workflowText=usesDmiPythonShape?git(['cat-file','blob',record.producerHeadSha+':'+PULL_REQUEST_SOURCE_WORKFLOW]).toString('utf8'):undefined;
+    const phase=runIdentity(run,pull,jobs,record,workflowText);
     const artifactRoute=repo+'/actions/artifacts/'+record.artifactId,metadata=await json(artifactRoute);
     verifyArtifact(metadata,record,phase);
     const bytes=await zip(artifactRoute+'/zip');assert.equal(bytes.length,metadata.size_in_bytes);
@@ -185,7 +203,7 @@ export async function decideTargetedSourceGate(record,env,dependencies){
     assert.deepEqual(await json(runRoute),run);assert.deepEqual(await json(artifactRoute),metadata);
     if(isDomain&&domainPlan.selection==='CONTROL_QUALIFICATION_REQUIRED'){
       const freshPull=await json(repo+'/pulls/'+record.pullRequestNumber);
-      runIdentity(run,freshPull,jobs,record);
+      runIdentity(run,freshPull,jobs,record,workflowText);
       assert.deepEqual(readDomainControlReview(freshPull,{current,fullBaseline:full,domainPlan}),controlReview);
     }
     assertCommittedHead();assert.equal(sourceTreeContentSha256(record.headSha,{git}),record.sourceTreeSha256);remaining();
@@ -210,9 +228,12 @@ export async function discoverTargetedSourceGate(env,sourceTreeSha256,dependenci
   try{
     assert.equal(arguments.length,3);assert.equal(env.GITHUB_REPOSITORY,ORIGIN.repository);
     assert.equal(env.GITHUB_REF,'refs/heads/main');assert(oid(env.GITHUB_SHA)&&digest(sourceTreeSha256));
-    assert.deepEqual(Object.keys(dependencies).sort(),['getArtifactZip','getJson']);
-    const {getJson,getArtifactZip}=dependencies;
+    const dependencyKeys=Object.keys(dependencies).sort();
+    assert(isDeepStrictEqual(dependencyKeys,['getArtifactZip','getJson'])
+      ||isDeepStrictEqual(dependencyKeys,['getArtifactZip','getJson','readGit']));
+    const {getJson,getArtifactZip,readGit}=dependencies;
     for(const reader of [getJson,getArtifactZip])assert.equal(typeof reader,'function');
+    if(readGit!==undefined)assert.equal(typeof readGit,'function');
     sharedBudget=sourceImpactEvidenceBudget(getJson,getArtifactZip);
     let calls=0;
     const checked=(value,zip)=>{remaining();
@@ -259,7 +280,14 @@ export async function discoverTargetedSourceGate(env,sourceTreeSha256,dependenci
         headSha:env.GITHUB_SHA,producerHeadSha:pull.head.sha,sourceTreeSha256,pullRequestNumber:pull.number,
         runId:String(run.id),runAttempt:run.run_attempt,jobId:job.id,artifactId:artifact.id,
         artifactDigest:artifact.digest};
-      const phase=runIdentity(run,pull,jobs,locator);verifyArtifact(artifact,locator,phase);
+      const usesDmiPythonShape=job.steps?.some(value=>value.number===5&&value.name==='Run actions/setup-python@v7');
+      let workflowText;
+      if(usesDmiPythonShape){
+        assert.equal(typeof readGit,'function');const timeout=Math.min(10000,Math.max(1,Math.floor(remaining())));
+        const workflowBytes=readGit(['cat-file','blob',pull.head.sha+':'+PULL_REQUEST_SOURCE_WORKFLOW],{timeout});remaining();
+        assert(Buffer.isBuffer(workflowBytes)&&workflowBytes.length<=65536);workflowText=workflowBytes.toString('utf8');
+      }
+      const phase=runIdentity(run,pull,jobs,locator,workflowText);verifyArtifact(artifact,locator,phase);
       const bytes=await bounded(getArtifactZip,repo+'/actions/artifacts/'+artifact.id+'/zip',true);
       assert.equal(bytes.length,artifact.size_in_bytes);assert.equal('sha256:'+sha(bytes),artifact.digest);
       const raw=decodeReceipt(bytes,remaining),receipt=JSON.parse(raw);locator.proofSha256=sha(raw);

@@ -38,6 +38,19 @@ jobs:
         with:
           node-version: 22
 
+      # Environment only: the unchanged producer still verifies the whole
+      # real plan and ROOT review before any target or source receipt.
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Install declared DMI dependencies before source planning
+        timeout-minutes: 2
+        run: >-
+          python -m pip install --disable-pip-version-check --no-input
+          --timeout 15 --retries 0 --only-binary=:all: -r requirements-dmi.txt
+          && python -c "import requests.adapters; import urllib3.util.retry; import eccodes; assert eccodes.codes_get_api_version() == '2.48.2'"
+
       - name: Build deterministic source-tree content identity
         id: source-content
         run: node scripts/weather-source-gate.mjs impact-digest
@@ -62,11 +75,6 @@ jobs:
           scripts/test-private-weather-component-pack.mjs && node --test
           --test-name-pattern='^actual normal B/S admission'
           scripts/test-completed-private-runtime-admission.mjs
-
-      - uses: actions/setup-python@v7
-        if: ${{ steps.source-content.outputs.selection != 'TARGETED' }}
-        with:
-          python-version: "3.12"
 
       - name: Install source-gate dependencies
         if: ${{ steps.source-content.outputs.selection != 'TARGETED' }}

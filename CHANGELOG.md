@@ -1,3 +1,24 @@
+## 2026-11-06 – Bevar begge gennemgåede koldstartgrænser i registret
+
+- Eksisterende isolerede HTML-/service-worker-tilfælde påviste før merge, at den gamle koldstartvariants præcise bindingsflade manglede, selv om den nye variants flade var registreret. Den strenge ukendt-flade-afvisning virkede korrekt; ingen produkt- eller timeoutfejl er påvist af dette fund.
+- Den minimale rettelse registrerer begge præcist gennemgåede flader og synkroniserer plannerens pin. Produkt, testkroppe, normale kaldere, gamle profiler, tidsgrænser, ægte 598 og PostgreSQL/C/I/T-værn bevares.
+- Ny præcis kildekontrol og offentlig effekt er fortsat åbne. Ingen ny suite, produktionsændring eller aktivering af SOURCE599. Se håndbog 89.320.
+
+## 2026-11-06 – Samme adminmoduladresse i side, offlinecache og kontrol
+
+Den normale tidlige 598-kildeudvælgelse kobler ændringer i præcis admin.html eller service-worker.js til de samme to eksisterende mål for kold start og admin-kontrakt, også uden en ændret testfil; ældre profiler og alle øvrige kontroller bevares.
+
+- Rodårsagen til den seneste artifactafbrydelse er påvist: adminsidens ekstra observations-markør manglede i service-workerens præcise cacheadresse og cold-start-prøvens faste forventning; den uændrede admin-kontrakt påviste uoverensstemmelsen. Den afgrænsede rettelse synkroniserer de eksisterende adresser; ingen score-, vejr-, rettigheds- eller modelændring.
+- Ingen Pages-størrelsesfejl er påvist. Den særskilte komponentcache nåede sin grænse, mens færdig beregningspakke, beskyttet runtime og centralt scorecheckpoint faktisk blev gemt/publiceret gennem deres normale, forskellige trin.
+- Seneste offentlige generation bevares; ny genoptagelse, artifactkontrol, deploy og offentlig effekt afventer. Cron er pauset med UTC-tidsplanen uændret; SOURCE599 er fortsat privat og inaktiv. Se håndbog 89.319.
+
+## 2026-11-06 – Kvalificeret DMI-hulomfang og normalt CI-miljø
+
+- Gennemgået kandidat: reelle brede PART-komponenthuller sorteres før små huller efter tid/cursor inden samme kritiske klasse; first3, regionalt genbrug og ukendt-plan-adfærd bevares.
+- Samme budgetter, DMI > Copernicus > Open-Meteo, databevarelse og score/admin/geometri. Python 3.12 og hele det eksisterende requirements-dmi-sæt (requests samt låste ecCodes/ecCodeslib) før uændret kildeproducent; den normale Linux-prøve kræver rigtig decoder frem for Windows-stub; præcis 23-trinsconsumer og historiske 22/FULL-kontroller.
+- Kildekontrollens ekstra 598-profil beholder ni aktuelle scenarier samt ægte 148/74/C101/I100/T12-input og 16 frosne ankre. De 15 generiske marker-/fallback-/format-/childfejl-kombinationer bevares fuldt i begge ældre 143/144-inputprofiler; kun en tredje gentagelse undlades. Aktuel native/FULL-/nationalform, frisk review, PostgreSQL/C/I/T-drift, alle gamle assertions og tidsgrænser bevares. Afgrænsningen er ikke en bestået CI- eller produktionskontrol.
+- Normale målprøver og syntetisk national planlægningspris er dokumenteret. Ny vejrgeneration og offentlig effekt er fortsat åbne; lokal/kilde-CI er ikke produktionsbevis. Se 89.318.
+
 ## 6. november — privat følgepakke: backupbyteantal og delingsformatering
 
 - Klargjort videreførsel af kontrollerede SQL-/cipherbyteantal i den faste backup-capture-rapport. Ingen rå data eller målt egress påstås; cadence og retention bevares.
