@@ -95,15 +95,18 @@ const shareDateFormatters = new Map();
 function forecastShareDateFormatters(locale) {
   const fixed = locale === 'da-DK' || locale === 'de-DE' || locale === 'en-GB';
   if (fixed && shareDateFormatters.has(locale)) return shareDateFormatters.get(locale);
-  const formatters = {
-    day: new Intl.DateTimeFormat(locale, {
-      timeZone: FORECAST_SHARE_TIME_ZONE, weekday: 'long', day: 'numeric', month: 'long',
-    }),
-    clock: new Intl.DateTimeFormat(locale, { timeZone: FORECAST_SHARE_TIME_ZONE,
-      hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }),
-  };
+  const formatters = new Intl.DateTimeFormat(locale, {
+    timeZone: FORECAST_SHARE_TIME_ZONE, weekday: 'long', day: 'numeric', month: 'long',
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  });
   if (fixed) shareDateFormatters.set(locale, formatters);
   return formatters;
+}
+
+// Only pure source-fixed locale objects: no request, time, zone or score.
+// Hosts may initialize these before fetch; browsers keep the existing lazy use.
+export function initializeForecastShareDateFormatters() {
+  for (const locale of Object.values(LOCALES)) forecastShareDateFormatters(locale);
 }
 
 export function forecastShareDate(time, language = 'da') {
@@ -111,8 +114,12 @@ export function forecastShareDate(time, language = 'da') {
   const date = new Date(time);
   if (!Number.isFinite(date.getTime())) return '';
   const formatters = forecastShareDateFormatters(locale);
-  const day = formatters.day.format(date);
-  const parts = formatters.clock.formatToParts(date);
+  const parts = formatters.formatToParts(date);
+  let dateEnd = 0;
+  for (let index = 0; index < parts.length; index += 1) {
+    if (['weekday', 'day', 'month'].includes(parts[index].type)) dateEnd = index + 1;
+  }
+  const day = parts.slice(0, dateEnd).map(part => part.value).join('');
   const hour = parts.find(part => part.type === 'hour').value;
   const minute = parts.find(part => part.type === 'minute').value;
   const clock = hour + (language === 'da' ? '.' : ':') + minute;

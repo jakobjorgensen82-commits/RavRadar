@@ -2,8 +2,36 @@
   "schemaVersion": "2.0",
   "handbookVersion": "4.0.598",
   "title": "RavRadar Håndbog",
-  "updatedAt": "2026-11-05",
+  "updatedAt": "2026-11-06",
   "sections": [
+    {
+      "id": "forecast-share-fixed-locale-startup-2026-11-06",
+      "chapter": "89.317",
+      "title": "Delingsdatoer og faste sprogobjekter ved hostens opstart",
+      "summary": "Bevar samme dato, klokkeslæt og indhold med mindre gentaget formateringsarbejde.",
+      "body": "<div class=\"reader-guide\"><p><strong>Kort fortalt: Delingshandleren kan forberede sine tre faste sprogobjekter én gang. Det flytter ingen person-, zone- eller vejrdata til fælles tilstand.</strong></p></div><h3>Samme labels på alle tre sprog</h3><p>Den præcise kandidat bruger én datoformaterer pr. understøttet sprog. Dansk, tysk og engelsk skal fortsat vise de samme datoer og klokkeslæt ved midnat, årsskifte og sommer-/vintertid. Link, valgt tidspunkt og scorefortolkning bevares.</p><h3>Kun faste objekter forberedes</h3><p>Worker-/Pages-handleren forbereder de tre faste sprogobjekter ved modulopstart. Forespørgsel, dato, zone, score og data læses fortsat normalt. Browseren beholder sin eksisterende behovsstyrede brug; der tilføjes ingen ekstra opstartsindlæsning på hjemmesiden.</p><h3>Lokal sammenligning og faktisk kapacitet</h3><p>De normale lokale prøver sammenligner hele HTML-svaret, HTTP-status, sikkerhedsheaders og læseantal, blandt andet på de tre sprog, begge kendte hosts, ugyldige eller udløbne tidspunkter, usikre zonenavne og HEAD-kald. Lokale CPU-/tidsmålinger er kun støtte. Præcis kildekontrol, sikker levering, faktisk Cloudflare-måling og offentlig accept kræves før Free-kapacitet kan erklæres. Ingen ny tjeneste, database, billedlager eller betalt plan indføres.</p>"
+    },
+    {
+      "id": "database-backup-sql-cipher-byte-report-2026-11-06",
+      "chapter": "89.316",
+      "title": "SQL- og arkivstørrelse i databasekopiens rapport",
+      "summary": "Skeln kendte byteantal fra databaseplads og leverandørens målte netværksforbrug.",
+      "body": "<div class=\"reader-guide\"><p><strong>Kort fortalt: Databaseplads, SQL-eksport og krypteret arkiv har forskellige størrelser. Rapporten skal holde dem adskilt fra målt egress.</strong></p></div><h3>Komprimering sker efter eksporten</h3><p>Det eksisterende forløb eksporterer fem SQL-filer til en privat GitHub-runner. Først derefter komprimeres og krypteres filerne. Et lille arkiv betyder derfor ikke, at overførslen fra Supabase til runneren var lige så lille.</p><h3>Kun kendte, kontrollerede antal</h3><p>Den præcise rapportrettelse bevarer SQL-totalen og summen af de fem krypterede filers byteantal. Hvert tal skal være et positivt, sikkert heltal inden for de eksisterende grænser, og SQL-totalen skal passe til filernes sum. Filnavne, SQL-indhold, brugeroplysninger og nøgler medtages ikke.</p><h3>Forbrug og opbevaring kræver egne beviser</h3><p>Tallene må ikke kaldes målte netværksbyte. En faktisk kopi og en konservativ før-/eftermåling af Supabase-forbruget skal vurderes før en fast cadence vælges, også med baggrundsforbrug og forsinket måling. Rettelsen starter ingen kopi og ændrer ingen tidsplan, retention, abonnement, vejrdata eller scorer. En lokal syntetisk prøve beviser ikke hosted gendannelse eller, at daglige kopier er Free-sikre.</p>"
+    },
+    {
+      "id": "assistant-fixed-server-answer-order-2026-11-06",
+      "chapter": "89.315",
+      "title": "Kontrollerede assistentsvar uden unødvendige AI-kald",
+      "summary": "Brug den kendte hele forklaring, bevar usikkerhed og kontrollér stadig sikkerhed, sprog og model.",
+      "body": "<div class=\"reader-guide\"><p><strong>Kort fortalt: Når et helt spørgsmål allerede har en fagligt kontrolleret forklaring, kan Spørg RavRadar bruge den direkte. Den skal stadig være ærlig om det, den ikke ved.</strong></p></div><h3>Ukendt udstyr og fundgarantier</h3><p>Spørger du både til et ukendt stykke ravudstyr og til en garanti for fund, skal svaret tydeligt sige, at udstyret ikke kan bekræftes, og at der ikke gives nogen fundgaranti. Assistenten må ikke gætte på produktets egenskaber eller erstatte dit spørgsmål med en forklaring om andet udstyr.</p><h3>Et allerede kontrolleret svar</h3><p>Den afgrænsede serverrettelse bruger den samme eksisterende forklaring, før det ellers unødvendige AI-kald. Spørgsmålet læses stadig som en helhed. Tilføjer du et andet spørgsmål, må den første genkendte del ikke skjule resten. Øvrige ukendte udtryk beholder deres normale behandling og ærlige usikkerhed.</p><h3>Sikkerhed, sprog og prognose bevares</h3><p>Kontrol af tilladt hjemmeside, gyldigt input, aktiv model, sprog og sikkerhed ligger fortsat før svaret. Dansk, tysk og engelsk skal have samme betydning og forbehold. Et fast svar må ikke præsenteres som et nyt svar fra den eksterne AI. Ændringen opfinder ingen vejrtal og ændrer ikke RavScore, leverandørprioritet, administratorpunkter, geometri eller gemte ture.</p><h3>Klargøring og offentlig brug</h3><p>Den lokale normale prøve bruger syntetiske svar og kan afprøve både et direkte svar og fejl hos AI-leverandøren. Det er ikke bevis for fungerende ekstern AI på hjemmesiden. Den endelige kildekontrol, kontrollerede levering og afprøvning gennem den offentlige brugerfunktion skal fortsat dokumenteres særskilt.</p>"
+    },
+    {
+      "id": "admin-local-observation-scope-2026-11-06",
+      "chapter": "89.314",
+      "title": "Samlet turtæller og lokale observationer i admin",
+      "summary": "Skeln overblikkets gemte D1-rækker fra observationer og eksport på denne enhed.",
+      "body": "<div class=\"reader-guide\"><p><strong>Kort fortalt: Administrationen har både en samlet turtæller og et lokalt observationsudsnit. De beskriver forskellige data og behøver ikke vise samme antal.</strong></p></div><h3>Overblik tæller de gemte ture</h3><p>Den særskilte turtæller på Overblik læser alle gemte rækker i de aktive D1-lagerdele. Det omfatter også ældre, anonyme og markerede testposter. Testtallet tæller kun udtrykkeligt markerede tests; øvrige rækker er ikke dermed dokumenteret som virkelige ture. Aflæsningen har sit eget tidsinterval og er ikke ét atomisk snapshot af alle lagerdele.</p><h3>Observationer gælder denne enhed</h3><p>Fanen Observationer bruger observationerne i denne browsers lokale lager. Dens antal, registrerede fund, bundne snapshots og dataminimerede eksport gælder det samme lokale udsnit. Derfor kan fanen vise nul, selv om Overblik viser gemte ture fra andre enheder. Det er ikke i sig selv tegn på tab eller en forkert samlet optælling.</p><p>Før tallene står nu den fælles forklaring: <strong>Tallene og eksporten gælder kun observationer på denne enhed.</strong> Den eksisterende eksport beholder sin faste liste af tilladte felter og kontrollen mod den aktive model.</p><h3>Samme funktioner og rettigheder</h3><p>Præciseringen henter ingen yderligere bruger- eller turdata og ændrer ikke optælling, rettigheder, RavScore eller vejrbehandling. Adminmodulets eksisterende indgang får en særskilt cacheadresse, så den nye tekst kan indlæses uden at ændre de øvrige funktioner.</p><h3>Klargøring og faktisk levering</h3><p>Afsnittet beskriver den afgrænsede kildekandidat. Relevante normale prøver, sikker levering og synlig offentlig adminvirkning skal stadig dokumenteres hver for sig. Tidligere accepterede tællere, kontofiltre og modelkontroller skal ikke gentages alene for at få en ny status.</p>"
+    },
     {
       "id": "private-r2-authorization-read-denial-2026-11-05",
       "chapter": "89.313",

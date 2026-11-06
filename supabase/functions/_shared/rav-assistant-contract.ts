@@ -396,6 +396,15 @@ export function assistantScoreFindAnswer(question, locale) {
   return SCORE_FIND_QUESTIONS[locale].includes(text) ? SCORE_FIND_ANSWERS[locale] : null;
 }
 
+// This complete question already has one fixed authored result below.
+// Answer it before quota/provider just like the existing fixed score reply;
+// ordinary unknown equipment still needs its normal validated AI branch.
+export function assistantUnknownEquipmentGuaranteeReply(question, locale) {
+  if (!normaliseAssistantLocale(locale) || routeAssistantQuestion(question) !== "provider") return null;
+  return unknownAmberEquipmentGuaranteeQuestion(question, locale)
+    ? unknownAmberEquipmentGuaranteeAnswer(locale) : null;
+}
+
 export function publicAssistantContext(value, locale) {
   const context = value && typeof value === "object" && !Array.isArray(value) ? value : {};
   const zone = context.zone && typeof context.zone === "object" && !Array.isArray(context.zone) ? context.zone : {};

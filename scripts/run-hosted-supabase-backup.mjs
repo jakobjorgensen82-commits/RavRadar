@@ -74,6 +74,21 @@ export function runHostedSupabaseBackup({phase='preflight'}={},dependencies={}){
       &&r.remoteArchiveVerified===(operation!=='bootstrap'||selector!=='')&&r.centralLocatorVerified===(operation!=='bootstrap')
       &&typeof r.archiveWrittenThisOperation==='boolean'&&typeof r.centralLocatorWrittenThisOperation==='boolean'
       &&(operation==='capture'?r.centralLocatorWrittenThisOperation===true:r.archiveWrittenThisOperation===false&&r.centralLocatorWrittenThisOperation===false),'SUPABASE_BACKUP_CHILD_RECEIPT');
+    let captureBytes={};
+    if(operation==='capture'){
+      // Logical SQL and stored ciphertext counts; neither is metered network egress.
+      need(Number.isSafeInteger(r.totalSqlBytes)&&r.totalSqlBytes>0&&r.totalSqlBytes<=2_000_000_000
+        &&Array.isArray(r.files)&&r.files.length===5,'SUPABASE_BACKUP_CAPTURE_BYTES');
+      let totalSqlBytes=0,totalCipherBytes=0;
+      for(const file of r.files){
+        need(file&&typeof file==='object'&&!Array.isArray(file)
+          &&Number.isSafeInteger(file.sqlBytes)&&file.sqlBytes>0&&file.sqlBytes<=1_000_000_000
+          &&Number.isSafeInteger(file.cipherBytes)&&file.cipherBytes>0&&file.cipherBytes<=36_000_000,'SUPABASE_BACKUP_CAPTURE_BYTES');
+        totalSqlBytes+=file.sqlBytes;totalCipherBytes+=file.cipherBytes;
+      }
+      need(totalSqlBytes===r.totalSqlBytes&&totalSqlBytes<=2_000_000_000&&totalCipherBytes<=180_000_000,'SUPABASE_BACKUP_CAPTURE_BYTES');
+      captureBytes={totalSqlBytes,totalCipherBytes};
+    }
     let candidates=[],diagnostics=null;if(operation==='bootstrap'){const d=r.diagnostics,keys=['listedObjects','unsupportedNamespaceObjects','objectsAboveIndexLimit','emptyObjects','eligibleNotInspected','nonIndexSqlFrames','legacyRequiresDbPointer'];
       need(d&&keys.every(k=>Number.isSafeInteger(d[k])&&d[k]>=0&&d[k]<=512)&&d.invalidOrUnsupported&&typeof d.invalidOrUnsupported==='object'&&!Array.isArray(d.invalidOrUnsupported)
         &&Object.keys(d.invalidOrUnsupported).length<=64&&Object.entries(d.invalidOrUnsupported).every(([k,v])=>/^[A-Z][A-Z0-9_]{0,95}$/.test(k)&&Number.isSafeInteger(v)&&v>0&&v<=512),'SUPABASE_BACKUP_DIAGNOSTICS');
@@ -82,7 +97,7 @@ export function runHostedSupabaseBackup({phase='preflight'}={},dependencies={}){
       need(hash(x.indexSha256)&&typeof x.completedAt==='string'&&/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(x.completedAt),'SUPABASE_BACKUP_CANDIDATES');return{indexSha256:x.indexSha256,completedAt:x.completedAt};});}
     need(operation==='bootstrap'&&!selector?r.indexSha256===undefined:hash(r.indexSha256),'SUPABASE_BACKUP_CHILD_RECEIPT');completed.push(operation);
     return{status:'SUPABASE_BACKUP_OPERATION_COMPLETE',phase,operation,completed,remoteArchiveVerified:r.remoteArchiveVerified,centralLocatorVerified:r.centralLocatorVerified,
-      archiveWrittenThisOperation:r.archiveWrittenThisOperation,centralLocatorWrittenThisOperation:r.centralLocatorWrittenThisOperation,indexSha256:r.indexSha256??null,candidates,diagnostics,
+      archiveWrittenThisOperation:r.archiveWrittenThisOperation,centralLocatorWrittenThisOperation:r.centralLocatorWrittenThisOperation,indexSha256:r.indexSha256??null,candidates,diagnostics,...captureBytes,
       fullDatabaseBackupVerified:false,authRestoreVerified:false,productionDatabaseRestoreExecuted:false,freeReady:false,sourceAdmission:false};
   }catch(e){const error=new Error(/^[A-Z][A-Z0-9_]{0,95}$/.test(e.code||'')?e.code:'SUPABASE_BACKUP_OPERATOR_FAILED');
     Object.assign(error,{code:error.message,stage,httpStatus:Number.isInteger(e.httpStatus)?e.httpStatus:null,

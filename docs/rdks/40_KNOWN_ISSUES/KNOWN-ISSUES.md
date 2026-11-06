@@ -4,6 +4,20 @@
 >
 > Opstartsfilen indgår i SOURCEs CODE-fingeraftryk; den normale genberegning af fingeraftrykket og alle relevante udstedelses-/leveringskontroller er fortsat nødvendige før aktivering. Den separate Linux-kvalifikationskladde og dens to kernelprøver ændres ikke. Ingen produktionskode, binding, SQL, vejrdata, kildeprioritet, scoreformel, geometri eller administratorpunkter er ændret i driften. Offentlig Markdown-/webhåndbog og assistentviden bevares.
 
+## 6. november — backuptelemetri og delingens Free-bevis er fortsat særskilte
+
+Den private wrapperrettelse bevarer producentens kendte SQL-/cipherbyteantal uden rå data og består sin normale syntetiske controllerprøve. En faktisk kopi, gendannelse og konservativ før-/efter-egressmåling mangler; daglige fulddumps er ikke dokumenteret Free-sikre. Ingen cadence eller sletning aktiveres af rapporteringen.
+
+Den præcise delingskandidat bevarer datoer, HTML, status, headers og læseantal i de eksisterende lokale prøver. Kun tre faste sprogobjekter flyttes til hostens opstart. Lokal støttemåling lukker ikke Cloudflare-CPU eller Free-kapacitet. Normal kildekvalifikation, sikker levering og faktisk host-/browseraccept er åbne. Håndbog 89.316/89.317 beskriver afgrænsningen.
+
+## 6. november — fast assistentsvar og faktisk offentlig accept
+
+Den eksisterende kanoniske forklaring om ukendt ravudstyr og manglende fundgaranti var afhængig af et AI-kald, selv om svaret allerede var fastlagt. Den præcise lokale serverrettelse flytter kun samme hele matcher og svar frem i den normale rækkefølge. Kontroller af sikkerhed, sprog, modelbinding og hele spørgsmålet bevares. Normal lokal klient→Edge→validator-prøve dækker leverandørfejl uden nye netkald; det er ikke offentlig AI-accept eller bevis for fasen i den tidligere offentlige fejl. Endelig kildekvalifikation, sikker levering og faktisk normal browseraccept er åbne. Se håndbog 89.315.
+
+## 6. november — lokal kildeafgrænsning i Observationer
+
+Den eksisterende adminfane viser lokale observationsfelter og eksporterer det samme enhedsudsnit, men mangler overblikkets tydelige kildeafgrænsning. En kort tekst og normal modulcacheadresse er klargjort. Det er en visningsuklarhed, ikke dokumenteret tab af centrale ture eller en ændring af D1-tælleren. Kildekvalifikation og faktisk offentlig browseraccept er fortsat nødvendige før punktet lukkes. Håndbog 89.314 beskriver afgrænsningen.
+
 ## 5. november — 4.0.598: afgrænset kildekontrol med ægte normalbaseline
 
 Den fulde normale kilde-PR for 4.0.598 er faktisk kvalificeret, inklusive dens PostgreSQL-kontrol. Den skrivefri standardkontrol på den indholdslige mergede main har derefter godkendt det eksisterende kildebevis før privat adgang. Producentcommitten og mergecommitten er forskellige identiteter. Den normale toforældre-merge må kun knyttes til producentens bevis gennem det verificerede PR-forhold, samme hele kildetræ og de oprindelige kørsels-, forsøgs- og artifactidentiteter. Et andet commitnavn kræver ikke i sig selv en ommærket profil eller et nyt PostgreSQL-bevis.

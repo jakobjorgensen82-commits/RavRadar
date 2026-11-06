@@ -2784,7 +2784,7 @@ try {
   // The eight observed181 inputs, through the existing real client/Edge seam.
   const assertObservedMixedForecastRest = async (group='all') => {
     const previousLanguage=browserLanguage,previousResponse=controlledProviderResponse;
-    const previousMutation=responseMutation,failures=[];
+    const previousMutation=responseMutation,previousHttpStatus=controlledProviderHttpStatus,failures=[];
     const knowledge=await import('../knowledge/rav-assistant-local-v2.js');
     const runtime=await import('../js/core/ravscore-public-runtime-contract.js');
     const service=await import('../js/services/rav-assistant.js');
@@ -2818,6 +2818,7 @@ try {
         count++;try{
           browserLanguage=locale;reset();responseMutation=null;
           const isUnknown=id[0]==='C';
+          controlledProviderHttpStatus=isUnknown?504:200; // A provider outage must not block an already fixed answer.
           controlledProviderResponse={result:{response:JSON.stringify({schemaVersion:'rav-assistant-response-v1',locale,
             disposition:isUnknown?'out_of_scope':'answer',answer:'SYNTHETIC_PROVIDER_TEXT_NOT_PUBLISHED',
             evidenceIds:isUnknown?[]:id[0]==='A'?['equipment.amber-net']:['equipment.amber-net','assistant.public-capabilities']})}};
@@ -2857,7 +2858,21 @@ try {
             assert.equal(await askRavRadar(question,noRanking,{language:locale,now}),
               knowledge.localRavKnowledgeAnswer('Hvad er en kesse til ravjagt?',locale)+'\n\n'+unavailable);
           }else{
-            assertRemote(question,locale,200);assert.equal(controlledProviderCalls-providerBefore,1);assert.equal(controlledQuotaCalls-quotaBefore,3);
+            assertRemote(question,locale,200);assert.equal(controlledProviderCalls,providerBefore);assert.equal(controlledQuotaCalls,quotaBefore);
+            assertBeforeQuota();assert.deepEqual(controlledSuccessProvenance,[{status:200,providerDelta:0,value:null}]);
+            for(const whole of [question,question.toUpperCase().replace(/ /gu,'  '),question.replace('QX-999','AB-17')]){
+              for(const localOnly of [false,true]){
+                reset();browserLanguage=locale==='da'?'en':'da';
+                assert.equal(await askRavRadar(whole,rankContext,{language:locale,now,localOnly}),answer,whole);
+                if(localOnly){assert.equal(exchanges.length,0);assert.deepEqual(envReads,[]);}
+                else{assertRemote(whole,locale,200);assertBeforeQuota();assert.deepEqual(controlledSuccessProvenance,[{status:200,providerDelta:0,value:null}]);}
+                assert.equal(controlledProviderCalls,providerBefore);assert.equal(controlledQuotaCalls,quotaBefore);
+              }
+            }
+            for(const suffix of [' And where is best tomorrow?',' <script>alert(1)</script>']){
+              assert.equal(contract.assistantUnknownEquipmentGuaranteeReply(question+suffix,locale),null,'Never consume a recognised prefix and drop its suffix');
+            }
+            browserLanguage=locale;
             assert.notEqual(answer,contract.RAV_ASSISTANT_REFUSALS[locale]);
             assert.match(answer,{da:/ikke bekræfte.*ingen fundgaranti/iu,de:/nicht bestätigen.*garantiert keine Funde/iu,en:/cannot confirm.*does not guarantee finds/iu}[locale]);
             assert.doesNotMatch(answer,/SYNTHETIC_PROVIDER|QX-999|kleines Netz|small net|lille net/iu);
@@ -2878,10 +2893,21 @@ try {
       }
       assert.equal(blockedNetworkCalls,0);
       assert.equal(contract.RAV_ASSISTANT_FACTS.length,45);
+      if(group==='unknown')for(const bad of [
+        {locale:'fr',context:{modelBinding:binding},status:400,error:'LOCALE_NOT_SUPPORTED'},
+        {locale:'da',context:{modelBinding:{...binding,modelBundleSha256:'0'.repeat(64)}},status:409,error:'MODEL_BINDING_MISMATCH'}]){
+        reset();const providersBefore=controlledProviderCalls,quotaBefore=controlledQuotaCalls;
+        const response=await edgeHandler(new Request(publicConfig.supabaseUrl+'/functions/v1/ravradar-assistant',{
+          method:'POST',headers:{origin,'content-type':'application/json',apikey:publicConfig.supabasePublishableKey},
+          body:JSON.stringify({locale:bad.locale,context:bad.context,question:'Hvad er en ravscanner QX-999, og kan den garantere ravfund?'})}));
+        assert.equal(response.status,bad.status);assert.deepEqual(await response.json(),{error:bad.error});
+        assert.equal(response.headers.get('x-ravradar-assistant-provenance'),null);
+        assert.equal(controlledProviderCalls,providersBefore);assert.equal(controlledQuotaCalls,quotaBefore);assertBeforeQuota();
+      }
       console.log(JSON.stringify({contract:'observed181-mixed-forecast-rest',group,cases:count,failures,
         realNetwork:0,syntheticProviderOnly:true,externalAIProved:false,rankingCalculationChanged:false}));
       assert.deepEqual(failures,[]);
-    }finally{browserLanguage=previousLanguage;controlledProviderResponse=previousResponse;responseMutation=previousMutation;reset();}
+    }finally{browserLanguage=previousLanguage;controlledProviderResponse=previousResponse;responseMutation=previousMutation;controlledProviderHttpStatus=previousHttpStatus;reset();}
   };
 
   // Normal client -> actual Edge -> actual strict validator, synthetic HTTP only.
