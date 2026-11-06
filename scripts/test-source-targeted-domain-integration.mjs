@@ -381,6 +381,9 @@ try{
     process.chdir(cliCwd);process.argv=cliArgv;
     for(const key of Object.keys(process.env))if(!Object.hasOwn(cliEnvironment,key))delete process.env[key];Object.assign(process.env,cliEnvironment);
   }
+  // The complete generic marker/fallback matrix remains in BOTH legacy profiles.
+  //598 keeps its own actual148/CIT/native/FULL/modern23 chain below.
+  if(!fixture598){
   // A genuine synthetic FULL baseline beyond the unchanged six-entry fallback
   // is located only through the existing marker, then qualified normally.
   let deepTip=base;
@@ -449,6 +452,7 @@ try{
     assert.equal(rows.length,0);assert.deepEqual(unexpectedRoutes,[]);assert.deepEqual(fixtureFailures,[]);assert.deepEqual(fallbackDiscoveries,[]);
     cases++;scenarios.push('legacy-window '+flag+' preserves complete CONTROL RED with zero commands');
   }
+  }
   if(fixture598){
     // Same real producer -> discovery -> consumer path, genuine148/C101/I100/T12
     // fixture inputs and synthetic API/target bodies; both ROOT-review reads run.
@@ -474,17 +478,20 @@ try{
     cases++;scenarios.push('actual modern23 discovery -> decide -> fresh ROOT CONTROL review uses genuine workflow bytes');
     configure(positiveHead);state.modernWorkflow=false;baselinePlan=plan({baselineCommit:base,candidateCommit:head,expectedHead:head});rebuildMaps();
   }
-  for(const flag of ['missingReview','wrongPlan','movedReview']){
+  for(const flag of (fixture598?['movedReview']:['missingReview','wrongPlan','movedReview'])){
     configure(positiveHead);baselinePlan=plan({baselineCommit:base,candidateCommit:head,expectedHead:head});state[flag]=true;rebuildMaps();
     await assert.rejects(coordinate(),/CONTROL_REVIEW/);assert.equal(rows.length,flag==='movedReview'?baselinePlan.commands.length:0);
     cases++;scenarios.push(flag);
   }
+  // Actual selected-child RED is profile-independent and remains in both legacy runs.
+  if(!fixture598){
   const target='scripts/test-source-targeted-receipt.mjs';assert(targetFiles.includes(target));
   assert(baselinePlan.commands.some(command=>command.split(' ').at(-1)===target));
   const failTree=rewrite(candidateTree,[[target,Buffer.from("throw new Error('SYNTHETIC_SELECTED_TARGET_FAILURE');\n")]]);
   configure(commit(failTree,[positiveHead],'synthetic selected target fails'));baselinePlan=plan({baselineCommit:base,candidateCommit:head,expectedHead:head});
   assert.equal(baselinePlan.selection,'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(baselinePlan.reasonCodes));rebuildMaps();
   await assert.rejects(coordinate(),/COMMAND_FAILED/);assert.equal(rows.at(-1).outcome,'FAIL');cases++;scenarios.push('actual selected child failure stays RED');
+  }
   const nativeFile=profile.postgresModules[0],nativeTree=rewrite(candidateTree,[[nativeFile,Buffer.concat([git(root,['cat-file','blob',positiveHead+':'+nativeFile]),Buffer.from('\n// synthetic protected input drift\n')])]]);
   configure(commit(nativeTree,[positiveHead],'synthetic actual PostgreSQL input changes'));baselinePlan=plan({baselineCommit:base,candidateCommit:head,expectedHead:head});rebuildMaps();
   assert.equal(baselinePlan.selection,'FULL');const refused=await coordinate();assert.equal(refused.selection,'FULL');assert.equal(rows.length,0);
