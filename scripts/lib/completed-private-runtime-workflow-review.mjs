@@ -3,6 +3,10 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import {requireSourceProducerOutput, assertSourceProducerAfter597StaticCode}
+  from './source-producer-after597-runtime-family.mjs';
 const review = JSON.parse(fs.readFileSync(new URL('./completed-private-runtime-workflow-review.json', import.meta.url), 'utf8'));
 const coldReview = JSON.parse(fs.readFileSync(new URL('./current-family-cold-start-workflow-review.json', import.meta.url), 'utf8'));
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
@@ -856,7 +860,61 @@ for (const row of Object.values(ordinaryStageWiringReview)) {
 }
 Object.freeze(ordinaryStageWiringReview);
 // Exact586 then585 normal User-Agent inverses; every historical workflow byte remains the oracle.
+// Kun testvisning: de to præcise Source-workflows kan læses som hele,
+// gennemgåede ordinary598-kodebytes. Ingen original- eller runtimeadgang.
+const reviewedSourceWorkflowInspection = Object.freeze({
+  "ordinaryHead": "52d10aa7494597c3f9c5b4885f26abb4c00953c7",
+  "roles": {
+    "once": {
+      "path": ".github/workflows/run-current-weather-once.yml",
+      "after": {
+        "bytes": 57845,
+        "sha256": "b64147bbdb304160834dd080249ab05043f0ab73bdb35f015c282821d4486b7f"
+      },
+      "before": {
+        "bytes": 55548,
+        "sha256": "defc1a6fa360472b27335eccbe6f26f6bbc66d14442a990b873557def2f032af"
+      }
+    },
+    "build": {
+      "path": ".github/workflows/reusable-weather-build.yml",
+      "after": {
+        "bytes": 351841,
+        "sha256": "efb442807d3a9e5b17fb7c231dffbc56459d2dfa1fd84f0eb4b208fea0f75977"
+      },
+      "before": {
+        "bytes": 300010,
+        "sha256": "2f7917b26a994d4d33dd7445cdc992e571a9dcc3245867564dda85ebda145c61"
+      }
+    }
+  }
+});
+for (const row of Object.values(reviewedSourceWorkflowInspection.roles)) {
+  Object.freeze(row.after); Object.freeze(row.before); Object.freeze(row);
+}
+Object.freeze(reviewedSourceWorkflowInspection.roles);
+function inverseReviewedSourceWorkflowInspection(source, role) {
+  const rows = reviewedSourceWorkflowInspection.roles;
+  const row = typeof role === 'string' && Object.hasOwn(rows, role) ? rows[role] : null;
+  // Gamle/ukendte input får ingen ny adgang og går videre til gamle orakler.
+  if (!row || typeof source !== 'string' || Buffer.byteLength(source) !== row.after.bytes
+      || sha(source) !== row.after.sha256) return source;
+  requireSourceProducerOutput();
+  assertSourceProducerAfter597StaticCode();
+  const previous = execFileSync('git', [
+    '-c', 'protocol.allow=never', '-C', fileURLToPath(new URL('../../', import.meta.url)),
+    'cat-file', 'blob', reviewedSourceWorkflowInspection.ordinaryHead + ':' + row.path,
+  ], {encoding:'utf8', timeout:30_000, maxBuffer:512 * 1024,
+    env:{...process.env, GIT_NO_LAZY_FETCH:'1', GIT_NO_REPLACE_OBJECTS:'1', GIT_TERMINAL_PROMPT:'0'}});
+  assert.equal(Buffer.byteLength(previous), row.before.bytes,
+    'Hele den gennemgåede ordinary598-workflowstørrelse');
+  assert.equal(sha(previous), row.before.sha256,
+    'Hele den genuine ordinary598-kildevisning før alle gamle orakler');
+  return previous; // Kun tekst til de uændrede historiske testassertions.
+}
+
 export function inverseRelease585WorkflowUserAgents(source, role) {
+  source = inverseReviewedSourceWorkflowInspection(source, role);
   source = inverseNativeOriginalSchemaSelectorWorkflow(source, role);
   if (role === 'build' && sha(source) === '8223891e25cfb7fbcf57a536bcc55a1cbf59ed676f02172588192065ae4eccc0') {
     assert.equal(source.split('RavRadar/4.0.586').length, 6, 'Exactly five normal586 User-Agent fields');

@@ -1,3 +1,9 @@
+## 7. november — fælles historisk workflowvisning og normale lokale testforudsætninger
+
+Den Source-specifikke testvisning ligger ved den fælles 585-indgang, så de normale epoch-, workflow- og gemt-kildekaldere læser samme hele, kvalificerede forgænger. Kun de to præcise Source-helidentiteter kan efter normal output-/C/I/RAW-kontrol læse de faste lokale Git-blobs; alle gamle orakler, afslag og testbodies bevares. Helperen ligger uden for de udstedte modelinput, og bindinger må ikke nulstilles eller ommærkes.
+
+En ekstra global Git-transportafvisning i den lokale testopsætning blokerede den normale genuine-fixtures lokale shared clone. Det var en testforudsætning, ikke en modelrettelse. Bevar den normale lokale kloning og den eksisterende Python på PATH; Git-læsernes egne præcise transport-, lazyfetch-, replace- og promptværn består. Næste hele normalparent køres først efter samlet kalderrettelse på en ren faktisk kandidat.
+
 ## 7. november — læs den faktiske lokale 600-udstedelse før ældre forberedelsesfronter
 
 SOURCE 4.0.600 er faktisk udstedt lokalt gennem de 13 normale builder-, synkroniserings- og kontroltrin. Den bygger på den faktisk nyeste sammenførte hovedgren, som fortsat er 4.0.598; 600 er ikke installeret eller aktiveret. Den tidligere udstedte 599-gren, dens migration og dens evidens bevares særskilt. Ingen udstedt familie er nulstillet eller ommærket.
