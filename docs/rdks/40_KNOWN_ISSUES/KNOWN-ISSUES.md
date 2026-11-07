@@ -7969,3 +7969,14 @@ DEC-0185. Ingen oneoff eller nye providerkald i reparationsdeployet.
 ## 22. oktober — ÅBEN: ni-blads cost-komposition på c78 er fortsat ukørt
 
 De to tidligere særskilt målprøvede cost-pakker er privat sammenført med den frosne test-only fixture-/inventarkorrektion på faktisk c78b4aec: ni forskellige kode-/teststier og seks additive dokumenthunks. Hele aktuelle førbilleder er målt, mens alle nye P0-fronter og fælles mkdir-/121-timersbank-/RAW-/SAVE-ændringer bevares. Den gamle direkte12PASS/2FAIL-workflowprøve er fortsat historisk rød; en lukket testinverse og ét fuldt kvalificeret privat workflow er forberedt, ikke prøvet. Ægte original-parent/child kræver stadig faktisk rent commit; ingen dirty-waiver eller ny sourceadgang indføres. Gamle8/18/Candidate-G-delbeviser ommærkes ikke, og alle nationale positive kontroller bevares. Første nye nativefase skal udføres og uploades faktisk. Ét relevant normalt workflowmål, fuld ny28-trins kildekvalifikation, ægte senere genbrug/leveringslæser og målt tidsgevinst er åbne. Den normale vejrhentning, originale B/S, kildeprioritet, budgetter og øvrige mål ændres ikke af denne private plan.
+
+
+## 7. november 2026 — afgrænset læsning af gemt vandstandsgrundlag
+
+Den eksisterende skrivefri vejrdiagnose får et særskilt, lukket tilvalg til ét allerede gemt, autentificeret originalgrundlag. Den bruger det normale arkiverede værktøj fra pakkens egen kilde til at kontrollere og åbne den forseglede pakke. De andre diagnoser kan ikke vælges samtidig. Tilvalget er slået fra som udgangspunkt og kræver aktuel kvalificeret hovedgren samt den eksisterende eksklusive vejrkanal.
+
+Kun optællinger og vandstandens gemte samlings-, modelkørsels- og tidsevidens må komme ud. Rapporten skelner direkte kystdele, gemte SOURCE-serier og zonernes gemte resultat efter valg af kilde. Pakkerne beholder deres egne referencetider; den fælles sammenligningsakse er særskilt. T+3-understøttelsen ligger uden for de 118 offentlige prognosetimer. Sammensatte eller manglende tidsoplysninger forbliver ukendte. Rapporten kan ikke vise, hvilke nye filer en leverandør nu tilbyder.
+
+Der hentes ikke nyt vejr, genberegnes ikke scorer og skrives ikke til den aktive vejrpakke, database eller hjemmeside. Ingen rå vejrvektorer, punkter eller private dokumenter udgives. Dette er en undersøgelse af årsagen til huller i vandstandshalen, ikke en rettelse af huller eller en ny dækningsmåling. Det hidtidige kildevalg, de syv zoners afgrænsning og alle produktionsbindinger bevares.
+
+Den almindelige målprøve for den berørte diagnose består lokalt. Den komplette lokale prøve af kontrolplanlæggeren nåede sin tidsgrænse uden resultat og tæller ikke som bestået. De nye præcise læseflader følger den eksisterende relevante kontrolprofil med ukendte flader fortsat afvist. Der kræves den normale GitHub-kvalifikation, et ledigt skrivevindue og faktisk autentificeret læsning før en årsag kan fastslås.

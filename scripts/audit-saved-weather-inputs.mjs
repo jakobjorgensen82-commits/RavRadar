@@ -2118,6 +2118,259 @@ export async function verifyCurrent586OriginalPlanRemoteSources({privateRoot,des
   }
 }
 
+// Fixed B272 observation only. No CURRENT, provider, scorer or remote writer.
+export const B272_WATER_LEVEL_AUDIT = Object.freeze({
+  runId:'42318718471',runAttempt:'1',sourceHead:'52d10aa7494597c3f9c5b4885f26abb4c00953c7',
+  repository:'jakobjorgensen82-commits/RavRadar',datasetId:'rr-20261107014849-210',
+  productionReferenceAt:'2026-11-07T00:00:00.000Z',artifactId:13557835271,artifactBytes:243844063,
+  artifactDigest:'sha256:33412b37120a89a306a96420b1b167c9ffb5ea02fc216c2810363a8d3e53cbc8',
+});
+const b272Fail=code=>{throw Object.assign(new Error(code),{b272Code:code});};
+const b272Need=(value,code)=>{if(!value)b272Fail(code);};
+// Fixed DATA pins supplement the normal downloader's unchanged run/job/expiry checks.
+export function assertB272WaterLevelArtifactPins(document){
+  b272Need(object(document)&&Number.isSafeInteger(document.total_count)&&document.total_count>=0&&document.total_count<=100
+    &&Array.isArray(document.artifacts)&&document.artifacts.length===document.total_count,'ARTIFACT_PIN');
+  const rows=document.artifacts.filter(a=>a?.name==='ravradar-private-build-stage-42318718471-1');
+  b272Need(rows.length===1&&rows[0].id===B272_WATER_LEVEL_AUDIT.artifactId
+    &&rows[0].size_in_bytes===B272_WATER_LEVEL_AUDIT.artifactBytes&&rows[0].digest===B272_WATER_LEVEL_AUDIT.artifactDigest,'ARTIFACT_PIN');
+}
+const b272Finite=value=>typeof value==='number'&&Number.isFinite(value);
+const b272Instant=value=>typeof value==='string'&&value.length<=30
+  &&/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{3})?Z$/.test(value)&&Number.isFinite(Date.parse(value));
+const b272At=h=>new Date(Date.parse(B272_WATER_LEVEL_AUDIT.productionReferenceAt)+h*3600000).toISOString();
+function b272Meta(row){
+  const s=row?.sources?.waterLevel;
+  if(!object(s)||s.provider!=='dmi')return null;
+  const collections=Array.isArray(s.collections)?s.collections:[s.collection];
+  const runs=Array.isArray(s.modelRuns)?s.modelRuns:[s.modelRun];
+  const times=s.nativeValidTimes;
+  if(!collections.length||collections.length>2||collections.some(x=>!['dkss_lf','dkss_nsbs'].includes(x))
+    ||new Set(collections).size!==collections.length||!runs.length||runs.length>16||runs.some(x=>!b272Instant(x))
+    ||new Set(runs).size!==runs.length||!Array.isArray(times)||!times.length||times.length>64||times.some(x=>!b272Instant(x)))return null;
+  return {collection:[...collections].sort().join('+'),runs:[...runs].sort(),times:[...new Set(times)].sort()};
+}
+function b272SameSeries(a,b){
+  const l=a?.sources?.waterLevel,r=b?.sources?.waterLevel;
+  if(!b272Meta(a)||!b272Meta(b))return null;
+  if(Object.hasOwn(l,'__b272SeriesSha256')||Object.hasOwn(r,'__b272SeriesSha256'))return (
+    /^[a-f0-9]{64}$/.test(l.__b272SeriesSha256??'')&&/^[a-f0-9]{64}$/.test(r.__b272SeriesSha256??'')
+      ?l.__b272SeriesSha256===r.__b272SeriesSha256:null);
+  if(l.routing==='dmi-water-source-interpolation'||r.routing==='dmi-water-source-interpolation'){
+    if(l.routing!==r.routing||!Array.isArray(l.sourceKeys)||!Array.isArray(r.sourceKeys)
+      ||!l.sourceKeys.length||l.sourceKeys.length>16||l.sourceKeys.some(x=>typeof x!=='string'||!x||x.length>256)
+      ||r.sourceKeys.some(x=>typeof x!=='string'||!x||x.length>256))return null;
+    return same(l.sourceKeys,r.sourceKeys)&&same(l.collections,r.collections)&&same(l.modelRuns,r.modelRuns)
+      &&l.routingMethod===r.routingMethod;
+  }
+  if(typeof l.entityId!=='string'||typeof r.entityId!=='string'
+    ||!/^[a-f0-9]{64}$/.test(l.gridDefinitionSha256??'')||!/^[a-f0-9]{64}$/.test(r.gridDefinitionSha256??'')
+    ||![l.gridPoint,r.gridPoint].every(x=>Array.isArray(x)&&x.length===2&&x.every(b272Finite)))return null;
+  return l.entityId===r.entityId&&l.collection===r.collection&&l.modelRun===r.modelRun
+    &&l.gridDefinitionSha256===r.gridDefinitionSha256&&same(l.gridPoint,r.gridPoint);
+}
+function b272ProjectionRecord(record){
+  b272Need(object(record)&&Array.isArray(record.hourly)&&record.hourly.length<=121,'PROJECTION_RECORD');
+  return {hourly:record.hourly.filter(row=>{
+    b272Need(typeof row?.time==='string'&&Number.isFinite(Date.parse(row.time))
+      &&new Date(row.time).toISOString()===row.time&&Date.parse(row.time)%3600000===0,'PROJECTION_HOUR');
+    return Date.parse(row.time)>=Date.parse(b272At(0))&&Date.parse(row.time)<=Date.parse(b272At(120));
+  }).map(row=>{
+    const s=row?.sources?.waterLevel,meta=b272Meta(row);let series=null;
+    if(meta&&b272SameSeries(row,row)===true){
+      series=s.routing==='dmi-water-source-interpolation'
+        ?[s.routing,s.sourceKeys,s.collections,s.modelRuns,s.routingMethod]
+        :[s.entityId,s.collection,s.modelRun,s.gridDefinitionSha256,s.gridPoint];
+    }
+    return {time:row?.time,waterLevelCm:b272Finite(row?.waterLevelCm)?1:null,
+      waterLevelTrendCm3h:b272Finite(row?.waterLevelTrendCm3h)?1:null,
+      sources:{waterLevel:meta?{provider:'dmi',collection:meta.collection,collections:meta.collection.split('+'),
+        modelRun:meta.runs[0],modelRuns:meta.runs,nativeValidTimes:meta.times,
+        __b272SeriesSha256:series===null?null:rawSha(stable(series))}:null}};
+  })};
+}
+// Pure bounded projection: inputs are DATA, never an admission or provenance repair.
+export function projectB272WaterLevelSeries(records,scope,storedReferenceAt=null){
+  b272Need(Array.isArray(records)&&records.length<=673&&typeof scope==='string'
+    &&/^(PART_DIRECT_STORED|SOURCE_CONTINUITY_NORMAL_QUALIFIED|ZONE_CACHE_AFTER_ROUTING):(NATIONAL|FUR|BLAVAND)$/.test(scope),'PROJECTION_INPUT');
+  b272Need(storedReferenceAt===null||b272Instant(storedReferenceAt)&&new Date(storedReferenceAt).toISOString()===storedReferenceAt
+    &&Date.parse(storedReferenceAt)%3600000===0&&Date.parse(storedReferenceAt)<=Date.parse(b272At(0)),'PROJECTION_REFERENCE');
+  const hours=Array.from({length:121},(_,h)=>({time:b272At(h),expectedRecordCount:records.length,basisPresent:0,basisMissing:0,
+    storedTrendPresent:0,storedTrendMissing:0,futureBasisPresent:0,futureBasisMissing:0,
+    sameStoredSeriesEndpointCount:0,seriesMismatchCount:0,metadataUnknownCount:0}));
+  const runs=new Map();let metadataMissingCount=0;
+  for(const rec of records){
+    b272Need(object(rec)&&Array.isArray(rec.hourly)&&rec.hourly.length<=121,'PROJECTION_RECORD');
+    const rows=new Map();
+    for(const row of rec.hourly){const h=(Date.parse(row?.time)-Date.parse(b272At(0)))/3600000;
+      b272Need(Number.isInteger(h)&&h>=0&&h<121&&row.time===b272At(h)&&!rows.has(h),'PROJECTION_HOUR');rows.set(h,row);}
+    for(let h=0;h<121;h++){
+      const out=hours[h],row=rows.get(h),future=rows.get(h+3),basis=b272Finite(row?.waterLevelCm),trend=b272Finite(row?.waterLevelTrendCm3h);
+      out[basis?'basisPresent':'basisMissing']++;out[trend?'storedTrendPresent':'storedTrendMissing']++;
+      out[b272Finite(future?.waterLevelCm)?'futureBasisPresent':'futureBasisMissing']++;
+      if(basis&&b272Finite(future?.waterLevelCm)){const matched=b272SameSeries(row,future);
+        out[matched===null?'metadataUnknownCount':matched?'sameStoredSeriesEndpointCount':'seriesMismatchCount']++;}
+      if(!basis)continue;
+      const meta=b272Meta(row);if(!meta){metadataMissingCount++;continue;}
+      if(meta.runs.length>1)metadataMissingCount++; // Joined endpoints cannot be assigned to an individual run.
+      for(const modelRun of meta.runs){const key=meta.collection+'|'+modelRun;
+        if(!runs.has(key))runs.set(key,{collection:meta.collection,modelRun,selectedRowCount:0,selectedValidTimeStart:null,
+          selectedValidTimeEnd:null,nativeValidTimeStart:null,nativeValidTimeEnd:null,nativeEndpointCount:0,basisCount:0,storedTrendCount:0});
+        const run=runs.get(key);run.selectedRowCount++;run.basisCount++;if(trend)run.storedTrendCount++;
+        if(meta.runs.length>1){run.nativeEndpointCount=null;run.nativeValidTimeStart=null;run.nativeValidTimeEnd=null;}
+        for(const [value,lo,hi]of [[row.time,'selectedValidTimeStart','selectedValidTimeEnd'],
+          ...(run.nativeEndpointCount===null?[]:meta.times.map(time=>[time,'nativeValidTimeStart','nativeValidTimeEnd']))]){
+          if(run[lo]===null||Date.parse(value)<Date.parse(run[lo]))run[lo]=value;
+          if(run[hi]===null||Date.parse(value)>Date.parse(run[hi]))run[hi]=value;}
+        if(run.nativeEndpointCount!==null)run.nativeEndpointCount+=meta.times.length;
+      }
+    }
+  }
+  const complete=hours.filter(h=>records.length>0&&h.basisPresent===records.length),partial=hours.filter(h=>h.basisPresent>0&&h.basisMissing>0);
+  return {scope,storedReferenceAt,recordCount:records.length,horizonStart:b272At(0),horizonEnd:b272At(120),publicHours:118,privateSupportHours:3,
+    completeBasisFirst:complete[0]?.time??null,completeBasisLast:complete.at(-1)?.time??null,partialBasisLast:partial.at(-1)?.time??null,
+    missingBasisFirst:hours.find(h=>h.basisMissing>0)?.time??null,modelRuns:[...runs].sort(([a],[b])=>a<b?-1:a>b?1:0).map(([,v])=>v),
+    tailHours:hours.slice(106),metadataMissingCount};
+}
+export async function auditB272WaterLevelBasis(options={}){
+  let phase='SETUP',safeOutput=null,ctx;const owned=[];
+  const report={kind:'PRIVATE_B272_WATERLEVEL_PROVENANCE_ONLY',sourceRun:B272_WATER_LEVEL_AUDIT.runId,sourceAttempt:'1',
+    sourceHead:B272_WATER_LEVEL_AUDIT.sourceHead,datasetId:B272_WATER_LEVEL_AUDIT.datasetId,
+    productionReferenceAt:b272At(0),privatePayloadLogged:false,reportComplete:false,scopes:[],unknowns:[]};
+  async function own(directory,artifact=false){const real=await fs.realpath(directory),stat=await fs.lstat(directory,{bigint:true});
+    b272Need(real===path.resolve(directory)&&stat.isDirectory()&&!stat.isSymbolicLink()
+      &&(artifact?path.dirname(real)===await fs.realpath(os.tmpdir())&&path.basename(real).startsWith('rr-ordinary-completed-stage-')
+        :inside(ctx.root,real)&&real!==ctx.root),'SCRATCH_OWNER');owned.push({real,dev:stat.dev,ino:stat.ino,birthtimeNs:stat.birthtimeNs});return real;}
+  async function cleanup(){while(owned.length){const row=owned.at(-1),st=await fs.lstat(row.real,{bigint:true});
+    b272Need(st.isDirectory()&&!st.isSymbolicLink()&&await fs.realpath(row.real)===row.real
+      &&st.dev===row.dev&&st.ino===row.ino&&st.birthtimeNs===row.birthtimeNs,'CLEANUP_OWNER');
+    await fs.rm(row.real,{recursive:true,force:false});owned.pop();}}
+  try{
+    b272Need(object(options)&&Object.keys(options).every(k=>['privateRoot','predecessorRoot','outputPath','repositoryRoot','fetchImpl','githubToken','masterSecret'].includes(k)),'MODE_INVALID');
+    const {privateRoot,predecessorRoot,outputPath,repositoryRoot=REPOSITORY,fetchImpl=globalThis.fetch,
+      githubToken=process.env.GITHUB_TOKEN,masterSecret=process.env.STAGED_PRIVATE_BUILD_MASTER_SECRET}=options;
+    b272Need(typeof masterSecret==='string'&&masterSecret.length>=32&&typeof githubToken==='string'&&githubToken.length>0,'CREDENTIALS_REQUIRED');
+    ctx=await context(privateRoot,repositoryRoot);safeOutput=await newOutput(ctx.root,outputPath);
+    const requested=path.resolve(predecessorRoot),predecessor=await fs.realpath(requested),stat=await fs.lstat(requested);
+    const temp=await fs.realpath(process.env.RUNNER_TEMP??os.tmpdir());
+    b272Need(stat.isDirectory()&&!stat.isSymbolicLink()&&inside(temp,predecessor)&&predecessor!==temp
+      &&!inside(ctx.root,predecessor)&&!inside(predecessor,ctx.root)&&!inside(ctx.repository,predecessor),'ARCHIVED_SOURCE_ROOT');
+    await noSymlinks(temp,predecessor);
+    phase='GENUINE_52D_READER';
+    const fixedReaders=[['scripts/staged-private-production-runtime.mjs','d2dc355951de8eeafe717da55e9ac73bd5dc1388abada20d34a50401e6628436'],
+      ['scripts/private-production-runtime-workflow.mjs','f2dbd4219c61b4f936acdf0baa3f553cf9dd699c221af250df9cbed64a7138fa'],
+      ['scripts/private-production-runtime-bundle.mjs','2eeff25c6d6e769c7a5d9b414bfed574e0105e7cb24d0bd1578e7700781d5529']];
+    for(const [file,hash]of fixedReaders){const p=await noSymlinks(predecessor,path.join(predecessor,file));
+      b272Need(rawSha(await fs.readFile(p))===hash,'ARCHIVED_SOURCE_IDENTITY');}
+    const load=async rel=>import(pathToFileURL(await noSymlinks(predecessor,path.join(predecessor,rel))).href);
+    const [workflow,stage,bundle,forecast,water]=await Promise.all([load(fixedReaders[1][0]),load(fixedReaders[0][0]),load(fixedReaders[2][0]),
+      load('scripts/lib/dmi-forecast-file.mjs'),load('scripts/lib/water-source-forecast-routing.mjs')]);
+    const expected={...await workflow.buildPrivateRuntimeExpectation({repositoryRoot:predecessor,targetReferenceAt:b272At(0)}),
+      datasetId:report.datasetId,productionReferenceAt:b272At(0),minimumReferenceAt:b272At(0)};
+    const work=await own(await fs.mkdtemp(path.join(ctx.root,'b272-water-'))),bundlePath=path.join(work,'bundle');
+    phase='FIXED_ARTIFACT';
+    const base='https://api.github.com/repos/'+B272_WATER_LEVEL_AUDIT.repository,seen=new Set();let signed=null,metadataPinned=false;
+    const exactMeta=new Set([base+'/actions/runs/42318718471/attempts/1',base+'/actions/runs/42318718471/attempts/1/jobs?per_page=100',
+      base+'/actions/runs/42318718471/artifacts?per_page=100']);
+    const fixedFetch=async(url,init)=>{
+      const href=String(url);b272Need(!seen.has(href)&&init?.redirect==='manual','TRANSPORT_SCOPE');seen.add(href);
+      const zip=href===base+'/actions/artifacts/13557835271/zip';
+      b272Need(exactMeta.has(href)||(zip&&metadataPinned)||(signed!==null&&href===signed&&Object.keys(init.headers??{}).length===0),'TRANSPORT_SCOPE');
+      const response=await fetchImpl(url,init);
+      if(zip&&response.status===302)signed=response.headers.get('location');
+      if(href.endsWith('/artifacts?per_page=100')&&response.status===200){
+        const reader=response.body.getReader(),chunks=[];let count=0;
+        try{for(;;){const p=await reader.read();if(p.done)break;count+=p.value.byteLength;b272Need(count<=4*1024*1024,'METADATA_BOUND');chunks.push(Buffer.from(p.value));}}
+        finally{await reader.cancel().catch(()=>{});reader.releaseLock();}
+        const bytes=Buffer.concat(chunks);assertB272WaterLevelArtifactPins(JSON.parse(bytes));
+        metadataPinned=true;const headers=new Headers(response.headers);headers.delete('content-encoding');
+        headers.set('content-length',String(bytes.length));return new Response(bytes,{status:response.status,headers});
+      }return response;
+    };
+    const {downloadOrdinaryCompletedStageArtifact}=await import('./ordinary-completed-stage-artifact.mjs');
+    const artifact=await downloadOrdinaryCompletedStageArtifact({repository:B272_WATER_LEVEL_AUDIT.repository,
+      runId:B272_WATER_LEVEL_AUDIT.runId,runAttempt:'1',sourceHead:B272_WATER_LEVEL_AUDIT.sourceHead,token:githubToken,fetchImpl:fixedFetch});
+    await own(artifact.privateDirectory,true);
+    b272Need(artifact.producer.conclusion==='success'&&artifact.artifact.id===B272_WATER_LEVEL_AUDIT.artifactId&&artifact.artifact.bytes===B272_WATER_LEVEL_AUDIT.artifactBytes
+      &&artifact.artifact.digest===B272_WATER_LEVEL_AUDIT.artifactDigest,'ARTIFACT_PIN');
+    phase='AUTHENTICATED_52D_OPEN';
+    const restored=await withoutSavedAuditSecrets(()=>stage.openStagedPrivateProductionRuntime({inputPath:artifact.sealedPath,
+      privateRoot:work,bundlePath,repositoryRoot:predecessor,expected,repository:B272_WATER_LEVEL_AUDIT.repository,
+      runId:B272_WATER_LEVEL_AUDIT.runId,runAttempt:'1',sourceHead:B272_WATER_LEVEL_AUDIT.sourceHead,masterSecret}));
+    b272Need(restored.restored===true&&restored.productionPointerUnchanged===true,'NORMAL_OPEN_REQUIRED');
+    const verify=()=>bundle.verifyPrivateProductionRuntimeBundle({privateRoot:work,bundlePath,repositoryRoot:predecessor,expected});
+    const verified=await verify(),file=verified.files.filter(x=>x.relativePath==='data/live/dmi-forecast-cache.json');
+    b272Need(verified.verified===true&&verified.zoneCount===210&&verified.partCount===673&&file.length===1,'BUNDLE_IDENTITY');
+    const forecastPath=await noSymlinks(bundlePath,path.join(bundlePath,'payload',file[0].relativePath));
+    const index=await forecast.inspectDmiForecastFile(forecastPath);
+    phase='WATER_METADATA';
+    const zones=[],parts=[],localKeys={FUR:new Set(),BLAVAND:new Set()},partGroups={FUR:[],BLAVAND:[]},zoneGroups={FUR:[],BLAVAND:[]};
+    b272Need(index.zones.size===210&&index.continuity?.metadata?.partCount===673&&index.continuity.entries.length===673,'FORECAST_INVENTORY');
+    for(const [id,descriptor]of index.zones){const rec=await forecast.readDmiForecastRecord(index,descriptor),projection=b272ProjectionRecord(rec);zones.push(projection);
+      const group=['DK-B05-16','DK-B05-17'].includes(id)?'FUR':id==='DK-B03-13'?'BLAVAND':null;
+      if(group){zoneGroups[group].push(projection);for(const row of rec.hourly??[])for(const key of row?.sources?.waterLevel?.sourceKeys??[])
+        if(typeof key==='string'&&key.length<=256)localKeys[group].add(key);}}
+    let rawTotal=0,compressedTotal=0,lastId=null;const pack=index.continuity.metadata;
+    b272Need(same(Object.keys(pack).sort(),['schemaVersion','kind','productionReferenceAt','partCount','rawBytes','compressedBytes'].sort())
+      &&[1,2].includes(pack.schemaVersion)&&pack.kind==='PRIVATE_DMI_PART_HOURLY_CONTINUITY'
+      &&b272Instant(pack.productionReferenceAt)&&new Date(pack.productionReferenceAt).toISOString()===pack.productionReferenceAt
+      &&Date.parse(pack.productionReferenceAt)%3600000===0&&Date.parse(pack.productionReferenceAt)<=Date.parse(b272At(0)),'PART_MARKER');
+    const {gunzip}=await import('node:zlib'),unzip=promisify(gunzip);
+    for(const descriptor of index.continuity.entries){const entry=await forecast.readDmiForecastRecord(index,descriptor);
+      b272Need(object(entry)&&same(Object.keys(entry).sort(),['partId','point','rawBytes','rawSha256','compressedBytes','compressedSha256','gzipBase64'].sort())
+        &&Array.isArray(entry.point)&&entry.point.length===2&&entry.point.every(b272Finite)
+        &&typeof entry.partId==='string'&&(lastId===null||entry.partId.localeCompare(lastId)>0)
+        &&Number.isSafeInteger(entry.rawBytes)&&entry.rawBytes>=2&&entry.rawBytes<=8388608
+        &&Number.isSafeInteger(entry.compressedBytes)&&entry.compressedBytes>=2&&entry.compressedBytes<=2097152
+        &&/^[a-f0-9]{64}$/.test(entry.rawSha256??'')&&/^[a-f0-9]{64}$/.test(entry.compressedSha256??'')
+        &&typeof entry.gzipBase64==='string'&&entry.gzipBase64.length<=Math.ceil(2097152/3)*4,'PART_ENTRY');
+      lastId=entry.partId;rawTotal+=entry.rawBytes;compressedTotal+=entry.compressedBytes;assertDmiPartContinuityTotalSize(rawTotal,compressedTotal);
+      const compressed=Buffer.from(entry.gzipBase64,'base64');b272Need(compressed.toString('base64')===entry.gzipBase64
+        &&compressed.length===entry.compressedBytes&&rawSha(compressed)===entry.compressedSha256,'PART_COMPRESSED');
+      const raw=await unzip(compressed,{maxOutputLength:8388608});b272Need(raw.length===entry.rawBytes&&rawSha(raw)===entry.rawSha256,'PART_RAW');
+      const rec=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(raw));
+      b272Need(same(Object.keys(rec).sort(),['schemaVersion','partId','point','hourly',...(pack.schemaVersion===2?['nativeCurrentOriginals']:[])].sort())
+        &&rec.schemaVersion===pack.schemaVersion&&rec.partId===entry.partId&&same(rec.point,entry.point)
+        &&Array.isArray(rec.hourly)&&rec.hourly.length===121&&rec.hourly.every((r,h)=>r?.time===new Date(Date.parse(pack.productionReferenceAt)+h*3600000).toISOString()),'PART_DOCUMENT');
+      const projection=b272ProjectionRecord(rec);parts.push(projection);
+      if(/^dk-b05-(16|17)-national-part-\d{2}$/.test(entry.partId))partGroups.FUR.push(projection);
+      if(/^dk-b03-13-national-part-\d{2}$/.test(entry.partId))partGroups.BLAVAND.push(projection);
+    }
+    b272Need(rawTotal===pack.rawBytes&&compressedTotal===pack.compressedBytes,'PART_TOTAL');
+    const sourcePack=await forecast.readDmiWaterSourceContinuity(index);
+    const sourceMap=await water.unpackWaterSourceForecastContinuity(sourcePack,sourcePack?.productionReferenceAt??b272At(0));
+    const sourceRows=[...sourceMap.values()],sources=sourceRows.map(b272ProjectionRecord);
+    const sourceGroups=Object.fromEntries(Object.entries(localKeys).map(([k,keys])=>[k,sourceRows.flatMap((r,i)=>keys.has(r.sourceKey)?[sources[i]]:[])]));
+    sourceMap.clear();
+    for(const [scope,national,groups,storedReferenceAt]of [['PART_DIRECT_STORED',parts,partGroups,pack.productionReferenceAt],
+      ['SOURCE_CONTINUITY_NORMAL_QUALIFIED',sources,sourceGroups,sourcePack?.productionReferenceAt??null],['ZONE_CACHE_AFTER_ROUTING',zones,zoneGroups,null]]){
+      report.scopes.push(projectB272WaterLevelSeries(national,scope+':NATIONAL',storedReferenceAt));
+      for(const target of ['FUR','BLAVAND'])report.scopes.push(projectB272WaterLevelSeries(groups[target],scope+':'+target,storedReferenceAt));
+    }
+    report.unknowns=['LOCAL_SOURCE scopes count the union of stored routed sourceKeys over121hours, not a newly routed zone.',
+      'Missing or composite-unpairable metadata stays unknown; direct stored presence is not native-original admission.',
+      'Joined multi-run native endpoints are not assigned across runs: native range and count stay null for that run group.',
+      'Continuity is validated at its original stored H0; only unchanged timestamps on the fixed B272 axis are counted.',
+      'Native endpoint count counts stored row endpoint occurrences, not unique downloaded assets.',
+      'H118-H120 are private T+3 support; only H0-H117 are public forecast hours.'];
+    if(sourcePack===null)report.unknowns.push('SOURCE_CONTINUITY_ABSENT');
+    for(const target of ['FUR','BLAVAND'])if(localKeys[target].size===0)report.unknowns.push(target+'_STORED_SOURCE_SELECTION_UNAVAILABLE');
+    phase='FINAL_BUNDLE_READBACK';const after=await verify();
+    b272Need(after.bundleContentSha256===verified.bundleContentSha256&&same(after.files,verified.files),'BUNDLE_CHANGED');
+    report.bundleContentSha256=verified.bundleContentSha256;report.fileSha256=file[0].sha256;report.fileBytes=file[0].bytes;
+    report.limits={maximumHours:121,publicHours:118,privateSupportHours:3,reportMaximumBytes:131072};
+    phase='OWNED_CLEANUP';await cleanup();report.reportComplete=true;
+    b272Need(Buffer.byteLength(JSON.stringify(report))<=131072,'REPORT_BOUND');
+    await fs.writeFile(safeOutput,JSON.stringify(report)+'\n',{flag:'wx',mode:0o600});return report;
+  }catch(error){
+    try{await cleanup();}catch{phase='OWNED_CLEANUP';}
+    const refused={kind:'PRIVATE_B272_WATERLEVEL_PROVENANCE_REFUSED',reportComplete:false,privatePayloadLogged:false,
+      scopes:[],unknowns:[phase,/^[A-Z0-9_]+$/.test(error?.b272Code??'')?error.b272Code:'READ_REFUSED']};
+    if(safeOutput!==null)await fs.writeFile(safeOutput,JSON.stringify(refused)+'\n',{flag:'wx',mode:0o600});return refused;
+  }
+}
+
+
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     const args = process.argv.slice(2), options = { mode: args.shift() };
@@ -2144,6 +2397,8 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     const {mode,...readbackOptions}=options;
     const fixedWamMetadata = mode === 'wam-raw-manifest-245';
     if(fixedWamMetadata&&!same(Object.keys(readbackOptions).sort(),['privateRoot','outputPath','rawCacheKey'].sort()))fail('MODE_INVALID');
+    const fixedB272 = mode === 'water-level-basis-272';
+    if(fixedB272&&!same(Object.keys(readbackOptions).sort(),['privateRoot','predecessorRoot','outputPath'].sort()))fail('MODE_INVALID');
     const fixedWaterTrace = mode === 'water-level-voersaa-20261101';
     if(fixedWaterTrace&&!same(Object.keys(readbackOptions).sort(),['privateRoot','predecessorRoot','outputPath'].sort()))fail('MODE_INVALID');
     const componentSummaryOnly = mode === 'component-summary';
@@ -2153,7 +2408,8 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       || Object.hasOwn(readbackOptions, 'expectedProductionReferenceAt'))) fail('MODE_INVALID');
     if(['verify-current586-plan','verify-current586-closed'].includes(mode)
       &&!same(Object.keys(readbackOptions).sort(),['descriptorPath','outputPath','privateRoot']))fail('MODE_INVALID');
-    const report = fixedWamMetadata ? await auditFixedWam245RawManifest(readbackOptions)
+    const report = fixedB272 ? await auditB272WaterLevelBasis(readbackOptions)
+      : fixedWamMetadata ? await auditFixedWam245RawManifest(readbackOptions)
       : fixedWaterTrace ? await auditVoersaaWaterLevelTrace(readbackOptions)
       : componentSummaryOnly ? await auditProtectedBaselineComponentFallback(readbackOptions)
       : ['verify-current586-plan','verify-current586-closed'].includes(mode)
@@ -2163,7 +2419,8 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       await fs.appendFile(process.env.GITHUB_OUTPUT,
         `preparation_status=${plan.status}\nplan_sha256=${plan.planSha256}\noriginal_count=${plan.originalCount}\nplan_bytes=${plan.planBytes}\n`);
     }
-    console.log(JSON.stringify(fixedWamMetadata?{scope:report.scope,status:report.status,reasonCode:report.reasonCode,entries:report.entries.length,rawBytesVerified:false,decoderExecuted:false}:report));
+    console.log(JSON.stringify(fixedB272?{kind:report.kind,reportComplete:report.reportComplete,privatePayloadLogged:false}:fixedWamMetadata?{scope:report.scope,status:report.status,reasonCode:report.reasonCode,entries:report.entries.length,rawBytesVerified:false,decoderExecuted:false}:report));
+    if(fixedB272&&report.reportComplete!==true)process.exitCode=1;
     if (report.status === 'AUDIT_FAILED_CLOSED'||report.status==='WAM_RAW_METADATA_REFUSED') process.exitCode = 1;
   } catch { console.error('SAVED_WEATHER_INPUT_AUDIT_FAILED_CLOSED'); process.exitCode = 1; }
 }

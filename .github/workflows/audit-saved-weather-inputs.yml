@@ -97,6 +97,12 @@ on:
         default: false
         type: boolean
 
+      water_level_basis_272_only:
+        description: "Fixed B272 WL provenance metadata only; one archived artifact, no providers or production"
+        required: false
+        default: false
+        type: boolean
+
 permissions:
   contents: read
   actions: read
@@ -112,7 +118,7 @@ concurrency:
 
 jobs:
   audit:
-    if: inputs.wam_raw_manifest_245_only == true || (inputs.component_summary_only != true && inputs.water_level_voersaa_trace_20261101 != true)
+    if: inputs.water_level_basis_272_only != true && (inputs.wam_raw_manifest_245_only == true || (inputs.component_summary_only != true && inputs.water_level_voersaa_trace_20261101 != true))
     name: Authenticate existing packages and report only bounded aggregates
     runs-on: ubuntu-24.04
     timeout-minutes: ${{ inputs.include_current_window_diagnostic && 75 || 30 }}
@@ -596,7 +602,7 @@ jobs:
           retention-days: 14
 
   component-summary:
-    if: inputs.component_summary_only == true && inputs.water_level_voersaa_trace_20261101 != true && inputs.wam_raw_manifest_245_only != true
+    if: inputs.water_level_basis_272_only != true && (inputs.component_summary_only == true && inputs.water_level_voersaa_trace_20261101 != true && inputs.wam_raw_manifest_245_only != true)
     name: Read only the authenticated protected component summary
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -725,7 +731,7 @@ jobs:
           retention-days: 14
 
   voersaa-water-trace:
-    if: inputs.water_level_voersaa_trace_20261101 == true && inputs.wam_raw_manifest_245_only != true
+    if: inputs.water_level_basis_272_only != true && (inputs.water_level_voersaa_trace_20261101 == true && inputs.wam_raw_manifest_245_only != true)
     name: Read two exact original B water traces privately
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -824,5 +830,85 @@ jobs:
           path: |
             ${{ runner.temp }}/ravradar-voersaa-water-trace/status-safe.json.encrypted
             ${{ runner.temp }}/ravradar-voersaa-water-trace/status-safe.json
+          if-no-files-found: error
+          retention-days: 1
+
+  water-level-basis-272:
+    if: inputs.water_level_basis_272_only == true
+    name: Read only the fixed authenticated B272 water-level metadata
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      NODE_OPTIONS: --max-old-space-size=6144
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Require the exact separate B272 metadata request on current main
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ALL_INPUTS: ${{ toJSON(inputs) }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$GITHUB_REF" = refs/heads/main
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          const input=JSON.parse(process.env.ALL_INPUTS);
+          const allowed=['confirmation','expected_main_head','progress_source_run_id','progress_source_attempt','water_level_basis_272_only'];
+          const other=['include_raw_manifest','raw_manifest_cache_key','progress_baseline_target_hour','raw_manifest_source',
+            'include_raw_file_presence','include_selected_current_preflight','include_current_window_diagnostic',
+            'include_current586_endpoints','include_current586_cached_originals','wam_raw_manifest_245_only',
+            'component_summary_only','component_summary_dataset_id','component_summary_reference_at','water_level_voersaa_trace_20261101'];
+          assert.deepEqual(Object.keys(input).sort(),[...allowed,...other].sort());
+          assert.equal(input.confirmation,'READ-B272-WATERLEVEL-PROVENANCE-ONLY');
+          assert.equal(input.progress_source_run_id,'42318718471');assert.equal(input.progress_source_attempt,'1');
+          assert.equal(input.water_level_basis_272_only,true);
+          assert.match(input.expected_main_head,/^[a-f0-9]{40}$/);assert.equal(input.expected_main_head,process.env.GITHUB_SHA);
+          for(const key of other)assert(input[key]===false||input[key]==='','B272_MIXED_AUDIT_REQUEST');
+          NODE
+          test "$(git rev-parse --verify 'HEAD^{commit}')" = "$GITHUB_SHA"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$GITHUB_SHA"
+          git merge-base --is-ancestor 52d10aa7494597c3f9c5b4885f26abb4c00953c7 "$GITHUB_SHA"
+      - name: Verify live exact-content source proof for this read-only callback
+        id: source-proof
+        run: node scripts/weather-source-gate.mjs check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Stop unless the exact main source proof is already green
+        env:
+          SOURCE_REQUIRED: ${{ steps.source-proof.outputs.required }}
+        run: test "$SOURCE_REQUIRED" = false
+      - name: Materialize only the genuine52d archived normal reader
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          export GIT_NO_LAZY_FETCH=1 GIT_NO_REPLACE_OBJECTS=1 GIT_OPTIONAL_LOCKS=0
+          mkdir "$RUNNER_TEMP/ravradar-b272-wl-audit" "$RUNNER_TEMP/ravradar-b272-reader52d"
+          git -c protocol.allow=never archive 52d10aa7494597c3f9c5b4885f26abb4c00953c7 | tar -x -C "$RUNNER_TEMP/ravradar-b272-reader52d"
+      - name: Open the one fixed B272 artifact and project WL metadata only
+        id: b272-water-level
+        run: >-
+          node scripts/audit-saved-weather-inputs.mjs water-level-basis-272
+          --private-root "${{ runner.temp }}/ravradar-b272-wl-audit"
+          --predecessor-root "${{ runner.temp }}/ravradar-b272-reader52d"
+          --output "${{ runner.temp }}/ravradar-b272-wl-audit/water-level-metadata-safe.json"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          STAGED_PRIVATE_BUILD_MASTER_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      - name: Keep only bounded B272 WL metadata for one day
+        if: always() && (steps.b272-water-level.outcome == 'success' || steps.b272-water-level.outcome == 'failure')
+        uses: actions/upload-artifact@v7
+        with:
+          name: b272-water-level-metadata-safe-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ravradar-b272-wl-audit/water-level-metadata-safe.json
           if-no-files-found: error
           retention-days: 1

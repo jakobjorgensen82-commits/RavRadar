@@ -579,6 +579,23 @@ test('normal598 registry keeps genuine148 inputs and closes only known normal co
         assert.equal(plan.commands.filter(value=>value===command).length,1);
       assert(!plan.commands.includes('node scripts/reclaim-runner-android-sdk.mjs'),'Unregistered native SDK CLI is not silently selected or proven');
     });
+    await t.test('reviewed B272 audit read branch keeps its real targets and refuses an unknown read capability',()=>{
+      const files=['scripts/audit-saved-weather-inputs.mjs','.github/workflows/audit-saved-weather-inputs.yml',
+        'scripts/test-saved-weather-audit-workflow.mjs'];
+      const changes=files.map(file=>[file,fs.readFileSync(path.join(SOURCE,file))]);
+      const actual=run598(make598(baseline598,changes,'synthetic exact B272 audit read footprint'));
+      assert.equal(actual.status,'PLANNED',JSON.stringify(actual.reasonCodes));
+      assert.equal(actual.selection,'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(actual.reasonCodes));
+      for(const command of ['node --test scripts/test-audit-saved-weather-inputs.mjs','node --test scripts/test-saved-weather-audit-workflow.mjs'])
+        assert.equal(actual.commands.filter(value=>value===command).length,1);
+      for(const family of ['postgres','C','I','T'])assert.equal(actual.inputDigests[family+'Before'],actual.inputDigests[family+'After']);
+      assert.equal(actual.domains.postgres.status,'NOT_APPLICABLE');assert.equal(actual.domains.historical584National.status,'NOT_APPLICABLE');
+      assert.equal(actual.baselineQualified,false);assert.equal(actual.skipAuthorized,false);assert.equal(actual.productionAuthority,false);
+      const drift=changes.map(([file,body])=>[file,file==='scripts/audit-saved-weather-inputs.mjs'
+        ?Buffer.concat([body,Buffer.from("\nawait fs.readFile('/unreviewed-b272-resource');\n")]):body]);
+      assert.deepEqual(run598(make598(baseline598,drift,'synthetic unknown B272 read capability')).reasonCodes,
+        ['UNKNOWN_READ_OR_SUBPROCESS_SURFACE:scripts/audit-saved-weather-inputs.mjs']);
+    });
     await t.test('exact598 fixed assistant order uses normal roundtrip and refuses every unreviewed owner byte',()=>{
       const edgeOwners=['supabase/functions/_shared/rav-assistant-contract.ts',
         'supabase/functions/ravradar-assistant/index.ts','scripts/test-rav-assistant-main-edge-roundtrip.mjs'];
