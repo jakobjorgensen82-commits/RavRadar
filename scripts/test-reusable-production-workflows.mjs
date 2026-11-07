@@ -30,6 +30,13 @@ import {ASSISTANT_LATER_H0_BINDING,assistantLaterH0Migration,requireAssistantLat
   INACTIVE_SCALAR597_LATER_H0_SUCCESSOR as ISSUED597_TIMEOUT_SUCCESSOR,
   UNISSUED_ASSISTANT_AFTER597_SUCCESSOR as AFTER597_TIMEOUT_SUCCESSOR}
   from './lib/assistant-later-h0-successor-source.mjs';
+import {SOURCE_PRODUCER_AFTER597_PARENT} from './lib/source-producer-after597-parent.mjs';
+import {
+  assertSourceProducerAfter597StaticCode,
+  readSourceProducerCanonicalSource,
+  requireSourceProducerOutput,
+  sourceProducerMigration,
+} from './lib/source-producer-after597-runtime-family.mjs';
 
 // Keep the payload-free operational control report inside this existing cheap
 // workflow command so the source gate does not grow another process.
@@ -760,6 +767,33 @@ let casTimeoutSettings = fs.readdirSync(migrationsUrl).filter(name => name.endsW
   )].map(match => ({ migration: name, timeout: match[1] })));
 assert.equal(casTimeoutSettings.at(-1)?.timeout, '55s',
   'the final migration order must retain the established checkpoint-only 55s timeout');
+
+ const source = SOURCE_PRODUCER_AFTER597_PARENT;
+ if (source.binding !== null || source.output !== null || source.nextRelease !== null) {
+   const output = requireSourceProducerOutput();
+   assertSourceProducerAfter597StaticCode();
+   const migration = sourceProducerMigration();
+   const canonical = await readSourceProducerCanonicalSource();
+   assert.equal(canonical.sourcePhase, 'source-producer-after597');
+   assert.equal(canonical.admission, 'NO_ADMISSION');
+   assert.deepEqual(canonical.migration, migration);
+   const sql = fs.readFileSync(new URL(migration.filename, migrationsUrl));
+   const currentRow = {migration: migration.filename, timeout: '55s'};
+   const predecessorRow = {migration: AFTER597_TIMEOUT_SUCCESSOR.migration().filename, timeout: '55s'};
+   const inverseSource = (inventory, bytes) => {
+     assert.equal(conditions593TestHash('sha256').update(bytes).digest('hex'), output.migrationSha256);
+     assert.equal(inventory.filter(row => row.migration === migration.filename).length, 1);
+     assert.deepEqual(inventory.at(-1), currentRow);
+     assert.deepEqual(inventory.at(-2), predecessorRow);
+     const historical = inventory.slice(0, -1);
+     assert.deepEqual([...historical, currentRow], inventory);
+     return historical;
+   };
+   assert.throws(() => inverseSource(casTimeoutSettings, Buffer.concat([sql, Buffer.from('\n')])));
+   assert.throws(() => inverseSource(casTimeoutSettings.slice(0, -1), sql));
+   assert.throws(() => inverseSource([...casTimeoutSettings, currentRow], sql));
+   casTimeoutSettings = inverseSource(casTimeoutSettings, sql);
+ }
 
 // Actual594 is a separate issued source profile. Validate its whole normal SQL
 // and canonical reader before a TEST INVENTORY ONLY inverse; never remove a

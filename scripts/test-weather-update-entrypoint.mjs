@@ -687,9 +687,43 @@ test('shared normal DMI recovery module is import-safe, outside I71, and byte-ex
   assert.doesNotMatch(shared, /from ['"].*update-weather/);
   const { GENERATED_RAVSCORE_MODEL_BUNDLE_MANIFEST: manifest } =
     await import('../js/core/ravscore-model-bundle.generated.js');
+  const {SOURCE_PRODUCER_AFTER597_PARENT:sourcePhase}=await import('./lib/source-producer-after597-parent.mjs');
+  if(sourcePhase.binding===null&&sourcePhase.output===null&&sourcePhase.nextRelease===null){
   for (const file of ['scripts/update-weather.mjs', 'scripts/lib/private-dmi-recovery-record.mjs']) {
     assert.equal(manifest.files.some(entry => entry.path === file), false,
       'normal orchestration extraction must not enter the unchanged model closure');
+  }
+  }else{
+    const family=await import('./lib/source-producer-after597-runtime-family.mjs');
+    family.requireSourceProducerOutput();family.assertSourceProducerAfter597StaticCode();
+    const {GENERATED_RAVSCORE_MODEL_BUNDLE_SHA256:actualI}=
+      await import('../js/core/ravscore-model-bundle.generated.js');
+    assert.equal(actualI,family.requireSourceProducerBinding().I);
+    const pinsText=await fs.readFile(new URL('./lib/source-producer-after597-code-pins.generated.json',import.meta.url),'utf8');
+    const pins=JSON.parse(pinsText),pinFile=family.SOURCE_PRODUCER_AFTER597_CODE_PIN_PATH;
+    const pinManifest=manifest.files.find(entry=>entry.path===pinFile);
+    assert(pinManifest,'The actual Source I manifest must bind the complete normal RAW pin file');
+    assert.equal(pinManifest.sha256,digest(pinsText));
+    for(const file of ['scripts/update-weather.mjs','scripts/lib/private-dmi-recovery-record.mjs']){
+      assert(family.SOURCE_PRODUCER_AFTER597_CODE_FILES.includes(file));
+      const row=pins.files.find(entry=>entry.path===file);assert(row);
+      const physical=await fs.readFile(new URL('../'+file,import.meta.url));
+      assert.equal(physical.length,row.bytes);assert.equal(digest(physical),row.sha256);
+      const direct=manifest.files.find(entry=>entry.path===file);
+      if(file==='scripts/update-weather.mjs'){
+        assert.equal(direct,undefined,'The updater is bound through the whole RAW pin file, not a fabricated direct I entry');
+        assert.match(physical.toString('utf8'),/from ['"]\.\/lib\/private-dmi-recovery-record\.mjs['"]/);
+      }else{
+        assert(direct,'The normal shared recovery module is also in the actual import closure');
+        assert.equal(direct.sha256,digest(physical));
+      }
+    }
+    const coldPath='scripts/current-family-cold-start.mjs';
+    const cold=await fs.readFile(new URL('../'+coldPath,import.meta.url),'utf8');
+    const coldEntry=manifest.files.find(entry=>entry.path===coldPath);assert(coldEntry);
+    assert.equal(coldEntry.sha256,digest(cold));
+    assert(cold.includes("import { withoutCurrent } from './lib/private-dmi-recovery-record.mjs';"),
+      'The actual I-bound normal cold-start caller imports the shared recovery module');
   }
   await inverseSharedRecoveryRecordExtraction(source, shared);
   await assert.rejects(inverseSharedRecoveryRecordExtraction(source,
@@ -1220,7 +1254,7 @@ test('native-original producer preserves exact whole archived inputs and rejects
   for (const row of CURRENT_NATIVE_ORIGINAL_PRODUCER_TEST_REVIEW.rows) {
     const raw = (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
     const actual = row.path === 'scripts/update-weather.mjs'
-      ? inverseCurrentFamilyColdTargetTestInput(raw, row.path)
+      ? inverseCurrentFamilyColdTargetTestInput(inverseReviewedSource601HistoricalCodeInput(raw, 'scripts/update-weather.mjs'), row.path)
       : inverseDmiScalarPlanningRecordTestInput(raw, row.path);
     assert.equal(Buffer.byteLength(actual), row.after.bytes, 'Exact native-original predecessor after its reviewed outer inverse');
     assert.equal(digest(actual), row.after.sha256);

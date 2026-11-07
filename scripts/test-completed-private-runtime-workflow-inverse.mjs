@@ -882,7 +882,7 @@ test('assistant587 plus cold budget: actual combined whole source retains both p
 // predecessor. All existing historical test bodies and pins stay unchanged.
 const latestColdProgressActual = Object.fromEntries(await Promise.all(
   Object.entries(currentFamilyColdCheckpointWorkflowReview.roles).map(async ([role, row]) =>
-    [role, inverseAssistant587LatestColdCombinedTo2bWorkflow((await fs.readFile(new URL('../' + row.relativePath, import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), role)])));
+    [role, inverseAssistant587LatestColdCombinedTo2bWorkflow(inverseReviewedSource601HistoricalCodeInput((await fs.readFile(new URL('../' + row.relativePath, import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), row.relativePath), role)])));
 const coldCheckpointActual = Object.fromEntries(Object.entries(latestColdProgressActual).map(([role,source]) =>
   [role,inverseLatestColdProgressWorkflow(source,role)]));
 
@@ -1609,7 +1609,7 @@ test('terminal delivery repair maps only five exact whole sources and its exact 
     inverseTerminalRepair4145WorkflowInventory: inventory } = await import('./lib/completed-private-runtime-workflow-review.mjs');
   assert.deepEqual(Object.keys(review.roles), ['orchestrator', 'once', 'repair', 'recovery', 'deploy']);
   for (const [role, row] of Object.entries(review.roles)) {
-    const source = (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+    const source = inverseReviewedSource601HistoricalCodeInput((await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), row.path);
     const actual = inversePagesPublicProjectionWorkflow(source, role);
     assert.equal(Buffer.byteLength(actual), row.after.bytes); assert.equal(sha(actual), row.after.sha256);
     const prior = inverse(actual, role);
@@ -1683,7 +1683,7 @@ test('Pages projection inverse preserves exact old workflow bytes and rejects mi
   const { roles } = pagesPublicProjectionWorkflowReview;
   assert.deepEqual(Object.keys(roles), ['build', 'once', 'repair']);
   for (const [role, row] of Object.entries(roles)) {
-    const issued = (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+    const issued = inverseReviewedSource601HistoricalCodeInput((await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), row.path);
     const actual = inverseRelease597WorkflowUserAgents(issued, role);
     assert.equal(Buffer.byteLength(actual), row.after.bytes);
     assert.equal(sha(actual), row.after.sha256);
@@ -1739,7 +1739,7 @@ import { inverseRunnerAndroidSdkWorkflow, runnerAndroidSdkWorkflowReview }
 
 test('hosted Android SDK workflow inverse retains the complete genuine597 predecessor', async () => {
   const row = runnerAndroidSdkWorkflowReview;
-  const current = inverseWeatherProcessHourWorkflow((await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
+  const current = inverseWeatherProcessHourWorkflow(inverseReviewedSource601HistoricalCodeInput((await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), row.path), 'build');
   assert.equal(sha(current), row.after.sha256);
   assert.equal(Buffer.byteLength(current), row.after.bytes);
   assert.equal(row.steps.length, 2);
@@ -1776,7 +1776,7 @@ import { inverseWeatherProcessHourWorkflow, weatherProcessHourWorkflowReview,
 
 test('weather-process hour inverse preserves the entire genuine prior workflow and refuses partial or unknown bytes', async () => {
   const row = weatherProcessHourWorkflowReview, gates = requiredPublicationGatesWorkflowReview;
-  const issued = inverseRelease598WorkflowUserAgents((await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replaceAll('\r\n', '\n'),'build');
+  const issued = inverseRelease598WorkflowUserAgents(inverseReviewedSource601HistoricalCodeInput((await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), row.path),'build');
   assert.equal(gates.path, row.path); assert.deepEqual(gates.before, row.after);
   assert.equal(Buffer.byteLength(issued), gates.after.bytes); assert.equal(sha(issued), gates.after.sha256);
   const current = inverseRequiredPublicationGatesWorkflow(issued, 'build');
@@ -1828,7 +1828,7 @@ import {inverseRelease598WorkflowUserAgents,release598WorkflowUserAgentReview}
   from './lib/completed-private-runtime-workflow-review.mjs';
 test('release598 UA inverse preserves whole main1684 and rejects unknown same-size partial or wrong-role bytes',async()=>{
   const row=release598WorkflowUserAgentReview;
-  const source=(await fs.readFile(new URL('../'+row.path,import.meta.url),'utf8')).replaceAll('\r\n','\n');
+  const source=inverseReviewedSource601HistoricalCodeInput((await fs.readFile(new URL('../'+row.path,import.meta.url),'utf8')).replaceAll('\r\n','\n'),row.path);
   assert.equal(Buffer.byteLength(source),row.after.bytes);assert.equal(sha(source),row.after.sha256);
   const previous=inverseRelease598WorkflowUserAgents(source,'build');
   assert.equal(Buffer.byteLength(previous),row.before.bytes);assert.equal(sha(previous),row.before.sha256);
@@ -1856,6 +1856,7 @@ test('release598 UA inverse preserves whole main1684 and rejects unknown same-si
 test('issued Source historical code views preserve exact predecessors and unknown-input refusals', async () => {
   for (const relative of ['.github/workflows/reusable-weather-build.yml',
     '.github/workflows/run-current-weather-once.yml', '.github/workflows/deploy-code-only-repair.yml',
+    '.github/workflows/reusable-pages-deploy.yml', '.github/workflows/reusable-operational-reentry.yml',
     'scripts/update-weather.mjs', 'scripts/lib/dmi-forecast-file.mjs']) {
     const source = (await fs.readFile(new URL('../' + relative, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
     const previous = inverseReviewedSource601HistoricalCodeInput(source, relative);

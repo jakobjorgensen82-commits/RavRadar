@@ -42,11 +42,6 @@ on:
         required: false
         default: false
         type: boolean
-      upgrade_native_original_continuity:
-        description: "Installer kun den eksakte native-original-continuity efter autentisk585 B/S; ingen ny vejrhentning"
-        required: false
-        default: false
-        type: boolean
       restart_archived_weather:
         description: "Ny fremadrettet familie fra særskilt arkiverede originaler og gemte PART-input; ingen leverandørhentning"
         required: false
