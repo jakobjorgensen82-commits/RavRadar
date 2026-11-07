@@ -35,6 +35,7 @@ import {ASSISTANT_LATER_H0_BINDING,assistantLaterH0Migration,requireAssistantLat
 // workflow command so the source gate does not grow another process.
 await import('./test-weather-operational-control-summary.mjs');
 await import('./test-pages-generation-and-reentry.mjs');
+await import('./test-pages-artifact-metadata.mjs');
 
 import {
   PRODUCTION_WORKFLOW_INTERFACES,

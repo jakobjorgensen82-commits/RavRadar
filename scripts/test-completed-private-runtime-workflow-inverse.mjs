@@ -1818,11 +1818,21 @@ test('weather-process hour inverse preserves the entire genuine prior workflow a
   assert.throws(() => inverseWeatherProcessHourWorkflow(null, 'build'), /WEATHER_PROCESS_HOUR_WORKFLOW_TYPE/);
 });
 
-import {inverseRelease598WorkflowUserAgents,release598WorkflowUserAgentReview}
+import {inverseRelease598WorkflowUserAgents,release598WorkflowUserAgentReview,
+  inversePagesArtifactVisibilityWorkflow,pagesArtifactVisibilityWorkflowReview}
   from './lib/completed-private-runtime-workflow-review.mjs';
 test('release598 UA inverse preserves whole main1684 and rejects unknown same-size partial or wrong-role bytes',async()=>{
   const row=release598WorkflowUserAgentReview;
-  const source=(await fs.readFile(new URL('../'+row.path,import.meta.url),'utf8')).replaceAll('\r\n','\n');
+  const raw=(await fs.readFile(new URL('../'+row.path,import.meta.url),'utf8')).replaceAll('\r\n','\n');
+  const visibility=pagesArtifactVisibilityWorkflowReview;
+  assert.equal(Buffer.byteLength(raw),visibility.after.bytes);
+  assert.equal(sha(raw),visibility.after.sha256);
+  assert.equal(inversePagesArtifactVisibilityWorkflow(raw,'recovery'),raw);
+  const changed=raw.replace('steps.full-validation.outcome','steps.FAKE-validation.outcome');
+  assert.notEqual(changed,raw);
+  assert.equal(inversePagesArtifactVisibilityWorkflow(changed,'build'),changed);
+  const source=inversePagesArtifactVisibilityWorkflow(raw,'build');
+  assert.equal(inverseRelease598WorkflowUserAgents(raw,'build'),inverseRelease598WorkflowUserAgents(source,'build'));
   assert.equal(Buffer.byteLength(source),row.after.bytes);assert.equal(sha(source),row.after.sha256);
   const previous=inverseRelease598WorkflowUserAgents(source,'build');
   assert.equal(Buffer.byteLength(previous),row.before.bytes);assert.equal(sha(previous),row.before.sha256);

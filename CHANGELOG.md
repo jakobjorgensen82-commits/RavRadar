@@ -1,3 +1,7 @@
+## 7. november — vent kort på synlig Pages-pakke efter upload
+
+En ordinær vejrkørsel gemte både vejr og scorecheckpoint. GitHub kvitterede for upload, men det umiddelbare opslag af pakkens metadata svarede HTTP 404. Det samme pakkes ID, digest og kilde var efterfølgende tilgængelige. Den afgrænsede rettelse giver den ordinære metadataaflæsning en kort, fast genforsøgsgrænse ved HTTP 404. Et andet svar, timeout eller udløbet grænse stopper. Den eksisterende kontrol af eksakt kørsel, pakke, kilde, digest og offentlig leveringsidentitet bevares. Målrettede lokale prøver er bestået. GitHub-kvalifikation og offentlig virkning er fortsat åbne.
+
 ## 2026-11-07 – GitHub-input til vandstandskontrol af gemt vejr
 
 GitHub leverer de inaktive tomme tekstindstillinger som fraværende i jobkonteksten. Den afgrænsede vandstandskontrol blev derfor afvist før den gemte pakke blev åbnet. Kontrollen accepterer nu fraværende, inaktive indstillinger og afviser fortsat ukendte felter, aktive sidevalg og afvigende kørsel, forsøg eller main. Den normale målprøve bruger selve jobbets indgangskontrol med den observerede inputform. Den gemte pakke og aflæsningens effekt skal stadig verificeres.

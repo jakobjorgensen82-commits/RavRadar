@@ -1,3 +1,7 @@
+## 7. november — vent kort på synlig Pages-pakke efter upload
+
+En ordinær vejrkørsel gemte både vejr og scorecheckpoint. GitHub kvitterede for upload, men det umiddelbare opslag af pakkens metadata svarede HTTP 404. Det samme pakkes ID, digest og kilde var efterfølgende tilgængelige. Den afgrænsede rettelse giver den ordinære metadataaflæsning en kort, fast genforsøgsgrænse ved HTTP 404. Et andet svar, timeout eller udløbet grænse stopper. Den eksisterende kontrol af eksakt kørsel, pakke, kilde, digest og offentlig leveringsidentitet bevares. Målrettede lokale prøver er bestået. GitHub-kvalifikation og offentlig virkning er fortsat åbne.
+
 ## 2026-11-06 – Statistik: gennemgået frossen genlæsning og fast rækkefølge
 
 Frossen genlæsning kræver normal senest afsluttede UTC-måned og fuldt match af oprindelig rapport-/modelbindingshash. Den eksisterende signerede verify læser den gemte rapport; replay foretager ingen prepare, resampling, retagging eller automatisk gentagelse. Ordinary-standardforløbet, komplette præferenceoversigter før/efter, erasure-barriere og insert-only beskyttet admintransport bevares.
