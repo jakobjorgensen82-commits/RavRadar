@@ -720,13 +720,18 @@ jobs:
         shell: bash
         env:
           OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}
+          SOURCE_NORMAL_PRODUCER: ${{ steps.operational-model.outputs.source_normal_producer }}
         run: |
           set -euo pipefail
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
           import { currentGridEdgePublicationRequired } from './scripts/lib/production-workflow-sources.mjs';
           const current = JSON.parse(fs.readFileSync(process.env.RAVRADAR_OPERATIONAL_WORK + '/current.json', 'utf8'));
-          const required = await currentGridEdgePublicationRequired(current, process.env.OPERATIONAL_ACTION);
+          if(!['true','false'].includes(process.env.SOURCE_NORMAL_PRODUCER))
+            throw new Error('SOURCE_EDGE_ROUTE_UNKNOWN');
+          const options=process.env.SOURCE_NORMAL_PRODUCER==='true'
+            ? {sourcePhase:'source-producer-after597'} : undefined;
+          const required = await currentGridEdgePublicationRequired(current, process.env.OPERATIONAL_ACTION, options);
           fs.appendFileSync(process.env.GITHUB_OUTPUT, 'required=' + required + '\n');
           NODE
 
@@ -4021,9 +4026,9 @@ jobs:
         if: steps.weather-route-result.outputs.preflight_should_run == 'true'
         shell: bash
         run: |
-          if test "${{ steps.operational-action.outputs.action }}" != 'integrated-cutover'; then
-            if test "${{ steps.full-validation.outcome }}" != success \
-              || test "${{ steps.release-gate.outcome }}" != success; then
+          if test "${{ steps.weather-route-result.outputs.operational_action }}" != 'integrated-cutover'; then
+            if test "${{ steps.weather-route-result.outputs.full_validation_outcome }}" != success \
+              || test "${{ steps.weather-route-result.outputs.release_gate_outcome }}" != success; then
               echo "::error::PRODUCTION_PUBLICATION_REQUIRED_GATES_NOT_PASSED"
               exit 1
             fi

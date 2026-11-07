@@ -740,3 +740,58 @@ sourceAfter598PreissuanceTest('SOURCE after597 normal CODE DATA fingerprints pre
       'Product DATA/metadata/generated models remain byte-identical');
   }
 });
+
+
+test('issued SOURCE CodeOnly selector and installed64 plan use genuine current bindings and refuse pending SQL',async t=>{
+  const {SOURCE_PRODUCER_AFTER597_PARENT:source}=await import('./lib/source-producer-after597-parent.mjs');
+  const family=await import('./lib/source-producer-after597-runtime-family.mjs');
+  if(source.binding===null&&source.output===null&&source.nextRelease===null){
+    assert.throws(()=>family.requireSourceProducerOutput(),/SOURCE_PRODUCER_AFTER597_UNISSUED/);
+    t.skip('No issued SOURCE candidate; this is not positive Source selection or SQL-plan evidence.');return;
+  }
+  family.requireSourceProducerOutput();family.assertSourceProducerAfter597StaticCode();
+  const next=family.requireSourceProducerBinding();
+  const {selectSourceProducerCodeOnlySource}=await import('./select-source-producer-code-only-source.mjs');
+  const {verifySourceProducerPlan}=await import('./verify-source-producer-plan.mjs');
+  const {sourceProducerRequiredMigrations}=await import('./integrated-cutover-readiness.mjs');
+  const environment={GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_REF:'refs/heads/main',GITHUB_RUN_ATTEMPT:'1',
+    GITHUB_RUN_ID:'60101',GITHUB_SHA:SOURCE_PRODUCER_AFTER597_PARENT.code.head,GITHUB_WORKFLOW:'Deploy RavRadar code-only repair',
+    RAVRADAR_SOURCE_PRODUCER_UPGRADE_OPT_IN:'false',RAVRADAR_SOURCE_PRODUCER_PHASE:'installed',
+    RAVRADAR_SOURCE_PRODUCER_CONFIRMATION:'DEPLOY-CODE-ONLY-REPAIR',RAVRADAR_SOURCE_PRODUCER_WRITER_ACTIVE:'false',
+    RAVRADAR_SOURCE_PRODUCER_RECOVERY_GATE_RESULT:'success',RAVRADAR_SOURCE_PRODUCER_SAVED_WEATHER:'false',
+    RAVRADAR_SOURCE_PRODUCER_RECOVERY_RUN_ID:'',RAVRADAR_SOURCE_NORMAL_PRODUCER:'false',
+    RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_UPGRADE_OPT_IN:'false',RAVRADAR_SOURCE_PRODUCER_CURRENT_FAMILY:'current'};
+  const original=structuredClone(environment);
+  assert.equal(await selectSourceProducerCodeOnlySource(Object.freeze({...environment})),true,
+    'The real normal selector validates physical issued C/I/T; no profile or metadata is substituted');
+  assert.equal(await selectSourceProducerCodeOnlySource({...environment,
+    RAVRADAR_SOURCE_PRODUCER_UPGRADE_OPT_IN:'true',RAVRADAR_SOURCE_PRODUCER_PHASE:'before'}),true,
+    'Phase-data selection itself does not grant an installation or original capability');
+  for(const [key,value]of Object.entries(environment)){
+    if(key==='RAVRADAR_SOURCE_PRODUCER_CURRENT_FAMILY')continue;
+    await assert.rejects(selectSourceProducerCodeOnlySource({...environment,[key]:'INVALID'}),key);
+    const missing={...environment};delete missing[key];await assert.rejects(selectSourceProducerCodeOnlySource(missing),'missing '+key);
+  }
+  for(const key of ['RAVRADAR_NEW_UNKNOWN_UPGRADE_OPT_IN','PUBLISH_NEWEST_SAVED_WEATHER',
+    'RESTART_ARCHIVED_WEATHER','COMPLETED_PRIVATE_RUNTIME','CHECKPOINT_ONLY','QUICK_CONFIRMATION'])
+    await assert.rejects(selectSourceProducerCodeOnlySource({...environment,[key]:'true'}),key);
+  assert.deepEqual(environment,original);
+  const required=sourceProducerRequiredMigrations();assert.equal(required.length,64);
+  assert.equal(required.at(-1).version,next.version);
+  const migrationListText='Local | Remote | Time (UTC)\n'+required.map(row=>row.version+' | '+row.version+' | synthetic-plan-response').join('\n');
+  const dryRunText='DRY RUN: migrations will *not* be pushed to the database.\nRemote database is up to date.';
+  const options={environment,phase:'installed',migrationListText,dryRunText,
+    migrationsDirectory:fileURLToPath(new URL('../supabase/migrations',import.meta.url))};
+  const verified=await verifySourceProducerPlan(options);
+  assert.deepEqual(verified.pendingVersions,[]);assert.equal(verified.sqlWriteRequired,false);
+  for(const changed of [
+    {...options,migrationListText:migrationListText.replace(next.version+' | '+next.version,next.version+' | ')},
+    {...options,migrationListText:migrationListText+'\n'+next.version+' | '+next.version+' | duplicate'},
+    {...options,migrationListText:migrationListText+'\n20990101000000 | 20990101000000 | unknown'},
+    {...options,migrationListText:migrationListText.replace(required[0].version+' | '+required[0].version,required[0].version+' | ')},
+    {...options,dryRunText:'DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n • '+required.at(-1).filename+'\nFinished supabase db push.'},
+    {...options,phase:'before'}, {...options,phase:'unknown'}, {...options,allowPending:true},
+    {...options,environment:{...environment,RAVRADAR_SOURCE_PRODUCER_UPGRADE_OPT_IN:'true'}}])
+    await assert.rejects(verifySourceProducerPlan(changed));
+  t.diagnostic('Real issued Source C/I/T and canonical64-source plan checked; no SQL, B/S, native or production operation executed.');
+});

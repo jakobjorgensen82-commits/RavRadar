@@ -650,6 +650,7 @@ test('pre-activation terminal takeover retains the same target through runner lo
           await publishProtectedOperationalEvidence({ ...sourceCommon, directory: sourceDirectory, deploymentId: targetId,
             retainPublicManifestSha256: sha256CanonicalJson(observedSourceManifest), requireRetained: true });
           const sourcePointer = clone(sourceServer.row());
+          const sourceRemovedBeforeReentry = [...sourceServer.removed];
           const sourceAtomicRequest = async (_suffix, options) => {
             sourceAtomicCount += 1;
             const body = JSON.parse(options.body);
@@ -661,7 +662,7 @@ test('pre-activation terminal takeover retains the same target through runner lo
           const sourceReadinessCalls = [];
           const sourceArgs = { ...args, ...sourceCommon, directory: sourceDirectory,
             sourcePhase, atomicRequest: sourceAtomicRequest, checkReadiness: async options => {
-              sourceReadinessCalls.push(clone(options));
+              sourceReadinessCalls.push({ sourcePhase: options.sourcePhase });
               return sourceReadiness;
             } };
           await assert.rejects(beginTerminalPreparedPreActivation({ ...sourceArgs, sourcePhase: undefined }));
@@ -685,7 +686,7 @@ test('pre-activation terminal takeover retains the same target through runner lo
             sourceHead: executor.headSha, attempt: terminal(producer) })).action, 'PENDING_PRE_ACTIVATION');
           assert.equal(sourceAtomicCount, 1);
           assert.deepEqual(sourceServer.row(), sourcePointer);
-          assert.equal(sourceServer.removed.length, 0);
+          assert.deepEqual(sourceServer.removed, sourceRemovedBeforeReentry);
         }
       }
     }

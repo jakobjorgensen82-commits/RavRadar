@@ -422,6 +422,7 @@ export function inverseRelease597WorkflowUserAgents(source, role) {
 export function inversePagesPublicProjectionWorkflow(source, role) {
   assert.equal(arguments.length, 2, 'PAGES_PUBLIC_PROJECTION_WORKFLOW_ARGUMENTS');
   assert.equal(typeof source, 'string', 'PAGES_PUBLIC_PROJECTION_WORKFLOW_TYPE');
+  if (role === 'repair') source = inverseReviewedSource601HistoricalCodeInput(source, '.github/workflows/deploy-code-only-repair.yml');
   source = inverseRelease597WorkflowUserAgents(source, role);
   const { roles } = pagesPublicProjectionWorkflowReview;
   const row = typeof role === 'string' && Object.hasOwn(roles, role) ? roles[role] : null;
@@ -469,6 +470,8 @@ export function inverseQualifiedScalarPlanningWorkflow(source, role) {
 export function inverseTerminalRepair4145Workflow(source, role) {
   assert.equal(arguments.length, 2, 'TERMINAL4145_INVERSE_ARGUMENTS');
   assert.equal(typeof source, 'string', 'TERMINAL4145_INVERSE_TYPE');
+  if (role === 'repair') source = inverseReviewedSource601HistoricalCodeInput(source, '.github/workflows/deploy-code-only-repair.yml');
+  source = inverseReviewedSource601OperationalWorkflowInspection(source, role);
   source = inverseQualifiedScalarPlanningWorkflow(source, role);
   const roles = terminalRepair4145WorkflowReview.roles;
   const row = typeof role === 'string' && Object.hasOwn(roles, role) ? roles[role] : null;
@@ -913,7 +916,146 @@ function inverseReviewedSourceWorkflowInspection(source, role) {
   return previous; // Kun tekst til de uændrede historiske testassertions.
 }
 
+
+// Kun601-buildets nye hele identitet. Once er byteidentisk med den bevarede
+//600-række ovenfor; begge visninger kræver de samme normale Source-guards.
+const reviewedSource601BuildWorkflowInspection = Object.freeze({
+  path: '.github/workflows/reusable-weather-build.yml',
+  after: Object.freeze({bytes: 351841,
+    sha256: '18e980e980b50b2de3654c2a435f4b3273e60d8dde88d5a0afe4473c703fc785'}),
+  before: Object.freeze({bytes: 300010,
+    sha256: '2f7917b26a994d4d33dd7445cdc992e571a9dcc3245867564dda85ebda145c61'}),
+});
+function inverseReviewedSource601BuildWorkflowInspection(source, role) {
+  const row = reviewedSource601BuildWorkflowInspection;
+  if (role !== 'build' || typeof source !== 'string'
+      || Buffer.byteLength(source) !== row.after.bytes || sha(source) !== row.after.sha256) return source;
+  requireSourceProducerOutput();
+  assertSourceProducerAfter597StaticCode();
+  const previous = execFileSync('git', [
+    '-c', 'protocol.allow=never', '-C', fileURLToPath(new URL('../../', import.meta.url)),
+    'cat-file', 'blob', reviewedSourceWorkflowInspection.ordinaryHead + ':' + row.path,
+  ], {encoding:'utf8', timeout:30_000, maxBuffer:512 * 1024,
+    env:{...process.env, GIT_NO_LAZY_FETCH:'1', GIT_NO_REPLACE_OBJECTS:'1', GIT_TERMINAL_PROMPT:'0'}});
+  assert.equal(Buffer.byteLength(previous), row.before.bytes,
+    'Hele den gennemgåede ordinary598-workflowstørrelse før601');
+  assert.equal(sha(previous), row.before.sha256,
+    'Hele den genuine ordinary598-kildevisning før601 og alle gamle orakler');
+  return previous; // Kun tekst til de uændrede historiske testassertions.
+}
+
+
+// Kun de to præcise601-fasekaldere før den uændrede historiske4145-inverse.
+// De frosne e81-preimages er byteidentiske med den genuine52d-forgænger,
+// som allerede er en normal lokal Git-forudsætning; ingen ny fetch kræves.
+const reviewedSource601OperationalWorkflowInspection = Object.freeze({
+  "deploy": {
+    "path": ".github/workflows/reusable-pages-deploy.yml",
+    "after": {
+      "bytes": 67398,
+      "sha256": "4dc3b299efdad4424024edc637df61143d2a19e576668d52ba7dfa4d2673f8c0"
+    },
+    "before": {
+      "bytes": 66486,
+      "sha256": "260c06d3fbc08e7bf80563b803eed758251805f55cf4a0c147526d70c3e4b8f1"
+    }
+  },
+  "recovery": {
+    "path": ".github/workflows/reusable-operational-reentry.yml",
+    "after": {
+      "bytes": 105501,
+      "sha256": "888fb3ad38cd83bd06d713c14587bbeeb68390bf7a88715b03c22e0bf7421b5f"
+    },
+    "before": {
+      "bytes": 102685,
+      "sha256": "6228ec52b4901aa26f6fa29cda81826a5f8c3536441aba8d28e5c78473f19370"
+    }
+  }
+});
+for (const row of Object.values(reviewedSource601OperationalWorkflowInspection)) {
+  Object.freeze(row.after); Object.freeze(row.before); Object.freeze(row);
+}
+function inverseReviewedSource601OperationalWorkflowInspection(source, role) {
+  const rows = reviewedSource601OperationalWorkflowInspection;
+  const row = typeof role === 'string' && Object.hasOwn(rows, role) ? rows[role] : null;
+  if (!row || typeof source !== 'string' || Buffer.byteLength(source) !== row.after.bytes
+      || sha(source) !== row.after.sha256) return source;
+  requireSourceProducerOutput();
+  assertSourceProducerAfter597StaticCode();
+  const previous = execFileSync('git', [
+    '-c', 'protocol.allow=never', '-C', fileURLToPath(new URL('../../', import.meta.url)),
+    'cat-file', 'blob', reviewedSourceWorkflowInspection.ordinaryHead + ':' + row.path,
+  ], {encoding:'utf8', timeout:30_000, maxBuffer:512 * 1024,
+    env:{...process.env, GIT_NO_LAZY_FETCH:'1', GIT_NO_REPLACE_OBJECTS:'1', GIT_TERMINAL_PROMPT:'0'}});
+  assert.equal(Buffer.byteLength(previous), row.before.bytes,
+    'Hele e81/ordinary598 Pages-/reentry-workflowstørrelsen før601');
+  assert.equal(sha(previous), row.before.sha256,
+    'Hele den genuine e81/ordinary598 Pages-/reentry-visning før gamle orakler');
+  return previous; // Kun historisk testtekst, aldrig produktions- eller DATA-adgang.
+}
+
+// Kun de tre hele601-kodeinput før de bevarede historiske testorakler.
+// Dette er tekstinspektion; ingen original-, plan-, SQL- eller READY-adgang.
+const reviewedSource601HistoricalCodeInputs = Object.freeze({
+  ".github/workflows/deploy-code-only-repair.yml": {
+    "after": {
+      "bytes": 244449,
+      "sha256": "cfe08b1283fe9bbf732b99d1d847114826f38fdc1254cfe5b429185e33cc7473"
+    },
+    "before": {
+      "bytes": 225325,
+      "sha256": "391628fbcaae106df7a29d5c7caa3a7487af18b025bd4692bc93aaab5d396bf8"
+    }
+  },
+  "scripts/update-weather.mjs": {
+    "after": {
+      "bytes": 251786,
+      "sha256": "ad45fb06d06345258590936d880dad21aa708226976aec31086726fe5e889907"
+    },
+    "before": {
+      "bytes": 250461,
+      "sha256": "e4f7f442c4ad655c533adebe7470144c5aa55bcbd136c4d891a37cd7ea8b9693"
+    }
+  },
+  "scripts/lib/dmi-forecast-file.mjs": {
+    "after": {
+      "bytes": 30378,
+      "sha256": "bf4615d3361a5b6fddb66aa8f12c01fd4f699c724089222a1985bb2224e392ac"
+    },
+    "before": {
+      "bytes": 29084,
+      "sha256": "75c10458973f5e3cdf2969b35c76698239e2baf696b4f0ff8fd4b466bdc3c536"
+    }
+  }
+});
+for (const row of Object.values(reviewedSource601HistoricalCodeInputs)) {
+  Object.freeze(row.after); Object.freeze(row.before); Object.freeze(row);
+}
+export function inverseReviewedSource601HistoricalCodeInput(source, relative) {
+  assert.equal(arguments.length, 2, 'SOURCE601_HISTORICAL_INPUT_ARGUMENTS');
+  assert.equal(typeof source, 'string', 'SOURCE601_HISTORICAL_INPUT_TYPE');
+  if (relative === '.github/workflows/reusable-weather-build.yml')
+    return inverseReviewedSource601BuildWorkflowInspection(source, 'build');
+  if (relative === '.github/workflows/run-current-weather-once.yml')
+    return inverseReviewedSourceWorkflowInspection(source, 'once');
+  const rows = reviewedSource601HistoricalCodeInputs;
+  const row = typeof relative === 'string' && Object.hasOwn(rows, relative) ? rows[relative] : null;
+  if (!row || Buffer.byteLength(source) !== row.after.bytes || sha(source) !== row.after.sha256)
+    return source; // Ukendt/ændret input beholder de eksisterende strenge afslag.
+  requireSourceProducerOutput();
+  assertSourceProducerAfter597StaticCode();
+  const previous = execFileSync('git', [
+    '-c', 'protocol.allow=never', '-C', fileURLToPath(new URL('../../', import.meta.url)),
+    'cat-file', 'blob', reviewedSourceWorkflowInspection.ordinaryHead + ':' + relative,
+  ], {encoding:'utf8', timeout:30_000, maxBuffer:512 * 1024,
+    env:{...process.env, GIT_NO_LAZY_FETCH:'1', GIT_NO_REPLACE_OBJECTS:'1', GIT_TERMINAL_PROMPT:'0'}});
+  assert.equal(Buffer.byteLength(previous), row.before.bytes, 'SOURCE601_HISTORICAL_WHOLE_BEFORE_BYTES');
+  assert.equal(sha(previous), row.before.sha256, 'SOURCE601_HISTORICAL_WHOLE_BEFORE_SHA');
+  return previous;
+}
+
 export function inverseRelease585WorkflowUserAgents(source, role) {
+  source = inverseReviewedSource601BuildWorkflowInspection(source, role);
   source = inverseReviewedSourceWorkflowInspection(source, role);
   source = inverseNativeOriginalSchemaSelectorWorkflow(source, role);
   if (role === 'build' && sha(source) === '8223891e25cfb7fbcf57a536bcc55a1cbf59ed676f02172588192065ae4eccc0') {

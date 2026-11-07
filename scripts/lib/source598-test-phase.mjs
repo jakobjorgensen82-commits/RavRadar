@@ -4,7 +4,8 @@ import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {SOURCE_PRODUCER_AFTER597_PARENT as source}
   from './source-producer-after597-parent.mjs';
-import {requireSourceProducerOutput} from './source-producer-after597-runtime-family.mjs';
+import {requireSourceProducerOutput,assertSourceProducerAfter597StaticCode}
+  from './source-producer-after597-runtime-family.mjs';
 import {ACTIVE_ASSISTANT_SUCCESSOR as active,INACTIVE_SCALAR597_LATER_H0_SUCCESSOR as old597,
   UNISSUED_ASSISTANT_AFTER597_SUCCESSOR as genuine598}
   from './assistant-later-h0-successor-source.mjs';
@@ -17,6 +18,7 @@ export function sourceAfter598PreissuanceTest(name,optionsOrBody,optionalBody){
   return test(name,options,async context=>{
     if(source.binding===null&&source.output===null&&source.nextRelease===null)return body(context);
     requireSourceProducerOutput(); // Binding-only/invalid issued state MUST fail.
+    assertSourceProducerAfter597StaticCode(); // Real current CODE before historical N/A.
     context.skip('Historical pre-issuance NULL/package598 premise: not applicable after normal Source output guard. Current native, clock and national gates remain required.');
   });
 }
