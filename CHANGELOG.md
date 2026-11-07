@@ -10,6 +10,8 @@ Samlet kildekontrol mod den faktiske hovedgren, Linux/native, samme PostgreSQL-i
 
 Merge og første installation hører til samme vejrfri periode. Derefter skal en nyere almindelig generation gennem fuld levering, originalbevarelse og genlæsning. De to eksisterende delingstjenester følger den faktiske offentlige binding i det kontrollerede leveringsvindue.
 
+Delingsværterne kontrollerer fortsat adresse, metode og forespørgsel for HEAD. De kan derefter svare med de eksisterende headers uden at læse tre prognosefiler. Den normale lokale delingsprøve på 603 dækker begge værter, tre sprog og almindelige GET-svar med score. Kildekontrol og faktisk opdatering af begge værter følger samme planlagte leveringsvindue.
+
 ## 7. november — SOURCE 4.0.602: forberedte produktrettelser og relevant kontrol
 
 SOURCE 4.0.602 er en privat forberedelse, ikke en udstedt, installeret eller aktiveret version. Den almindelige hovedgren er fortsat 4.0.598. Den tidligere private 601-kildekontrol stoppede før den samlede native-/database-/nationalkvalifikation; dens udstedte metadata, migration og evidens bevares på dens egen gren sammen med 600-historikken. Ingen udstedt familie nulstilles eller ommærkes. De ældre daterede afsnit nedenfor bevares; denne front afløser deres ventestatus på de konkret nævnte punkter.
