@@ -1,3 +1,13 @@
+## 7. november — planlagt genoptagelse efter udtømte Pages-opslag
+
+Den nye kandidat registrerer et særskilt udfald, når alle seks afgrænsede opslag af en allerede uploadet Pages-pakke svarer HTTP 404, og en læsning af samme kørsels artifactliste med samme GitHub-adgang faktisk lykkes. Den næste ordinære cron kan vælge den eksisterende genoptagelse fra gemt vejr og scorehistorik efter verifikation af den afsluttede producent på samme main og første forsøg, den efterfølgende synlige pakkeidentitet og den uændrede offentlige forgænger samt centrale bindinger. Ved godkendt genbrug bygger den normale vej en ny, forseglet Pages-pakke fra de gemte data og kræver de sædvanlige bevarings-, release- og udgivelseskontroller. Adgangsfejl og ukendte udfald giver ingen genoptagelsesmarkør. Afvigende pakkeidentitet eller ugyldig kontrolhash ved næste kørsel afviser genoptagelsen.
+
+Den konkrete uploadfejl blev fulgt af en verificeret offentlig genoptagelse via den eksisterende vej. Den nye automatiske gren er en særskilt kandidat. Elleve målrettede lokale prøver og den præcise hele workflow-invers bestod på det kumulative kildegrundlag. Integreret GitHub-kvalifikation og faktisk automatisk offentlig virkning er åbne. Se håndbog 89.322.
+
+## 7. november — ordinær genoptagelse efter en annulleret Pages-udgivelse
+
+Den afgrænsede kandidat undersøger kun Pages-udfaldet fra den forrige ordinære kørsel. Ved en bekræftet annullering og et eksakt match med den nyeste beskyttede generation kan næste planlagte kørsel bruge den eksisterende vej til genoptagelse fra de gemte data. Den genlæser den offentlige forgænger og de centrale bindinger, og bevarelses-, release- og Pages-kontrollerne består som hidtil. Et ukendt udfald eller ændrede data giver ingen genoptagelsesautoritet. En bestået foregående kørsel går videre til almindelig vejrhentning. Kildekvalifikation og faktisk automatisk offentlig effekt er åbne.
+
 ## 7. november — eksisterende vedligeholdelsesforløb før historisk workflowliste
 
 Den normale workflowprøve verificerer de tre eksisterende backup-, historik- og CLI-restore-workflows med fuldt byteantal og SHA før den uændrede ældre inventarliste bruges. Ukendte, manglende, dobbelte eller ændrede filer afvises fortsat. Alle gamle assertions og indholds-/sourcegates bevares; ingen produktionsworkflow ændres. Den komplette normale prøve skal faktisk bestå på den rigtige, rene kandidat før ny afsendelse.

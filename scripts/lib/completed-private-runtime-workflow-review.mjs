@@ -308,7 +308,32 @@ export const pagesArtifactVisibilityWorkflowReview = Object.freeze({
   beforeLine: '          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id" ',
   afterLine: '          node scripts/read-pages-artifact-metadata.mjs "$artifact_id" ',
 });
+export const pagesArtifactVisibilityExhaustionWorkflowReview = Object.freeze({
+  before: pagesArtifactVisibilityWorkflowReview.after,
+  after: Object.freeze({bytes:302000,sha256:'d21fad73693dc5d5c8db69535efdfc5cae27c78897422d4fc9ab731d6440295f'}),
+  sealStart: '          if node scripts/read-pages-artifact-metadata.mjs "$artifact_id" ',
+  markerStart: '      - name: Confirm exhausted exact Pages artifact metadata visibility\n',
+  markerEnd: '      - name: Upload privacy-safe operational handoff evidence after Pages artifact seal\n',
+});
+export function inversePagesArtifactVisibilityExhaustionWorkflow(source,role) {
+  const row=pagesArtifactVisibilityExhaustionWorkflowReview;
+  if(role!=='build'||sha(source)!==row.after.sha256)return source;
+  assert.equal(Buffer.byteLength(source),row.after.bytes);
+  for(const anchor of [row.sealStart,row.markerStart,row.markerEnd])assert.equal(source.split(anchor).length,2);
+  const start=source.indexOf(row.sealStart);
+  const end=source.indexOf('          jq -e ',start);
+  const marker=source.indexOf(row.markerStart);
+  const next=source.indexOf(row.markerEnd);
+  assert(start>=0&&start<end&&end<marker&&marker<next);
+  const read=pagesArtifactVisibilityWorkflowReview.afterLine+'\\\n'
+    +'            > "$RAVRADAR_OPERATIONAL_HANDOFF/pages-artifact-rest.json"\n';
+  const previous=source.slice(0,start)+read+source.slice(end,marker)+source.slice(next);
+  assert.equal(Buffer.byteLength(previous),row.before.bytes);
+  assert.equal(sha(previous),row.before.sha256);
+  return previous;
+}
 export function inversePagesArtifactVisibilityWorkflow(source,role) {
+  source=inversePagesArtifactVisibilityExhaustionWorkflow(source,role);
   const row=pagesArtifactVisibilityWorkflowReview;
   if(role!=='build'||sha(source)!==row.after.sha256)return source;
   assert.equal(Buffer.byteLength(source),row.after.bytes);
@@ -1059,7 +1084,24 @@ export function inversePairedPrivateRuntimePublication(source, role) {
   assert.equal(sha(source), '861fad7501e32d4b63c72caa598825b15fb5fb2758961a1187ed57858e5c01ce', 'Whole previous ordinary workflow survives');
   return source;
 }
+const automaticCompletedPagesReview = JSON.parse(fs.readFileSync(
+  new URL('./automatic-completed-pages-workflow-review.json', import.meta.url), 'utf8'));
+
+export function inverseAutomaticCompletedPagesWorkflow(source, role) {
+  const { before, after, applyInThisOrder } = automaticCompletedPagesReview;
+  if (role !== 'once' || typeof source !== 'string'
+    || Buffer.byteLength(source) !== after.bytes || sha(source) !== after.sha256) return source;
+  for (const [actual, original] of applyInThisOrder) {
+    assert.equal(source.split(actual).length, 2, 'One exact automatic completed Pages hunk');
+    source = source.replace(actual, () => original);
+  }
+  assert.equal(Buffer.byteLength(source), before.bytes);
+  assert.equal(sha(source), before.sha256);
+  return source;
+}
+
 export function inverseCompletedRuntimeWorkflow(source, role) {
+  source = inverseAutomaticCompletedPagesWorkflow(source, role);
   source = inverseTerminalRepair4145Workflow(source, role);
   source = inverseOrdinaryCompletedStageWorkflowWiring(source, role);
   source = inverseEarlyCompletedRuntimeStage(source, role);

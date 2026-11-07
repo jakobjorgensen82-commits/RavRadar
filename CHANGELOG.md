@@ -1,6 +1,14 @@
+## 7. november — planlagt genoptagelse efter udtømte Pages-opslag
+
+Når alle seks metadataopslag giver 404 efter en kvitteret Pages-upload, kan næste planlagte kørsel genbruge den gemte prognose efter positiv adgangskontrol og eksakt verifikation af den afsluttede kørsel og pakkens metadata. Den bygger og forsegler en ny Pages-pakke gennem de normale kontroller. Målrettede lokale prøver er bestået. Den nye automatiske virkning er endnu ikke verificeret i drift. Se håndbog 89.322.
+
 ## 7. november — vent kort på synlig Pages-pakke efter upload
 
 En ordinær vejrkørsel gemte både vejr og scorecheckpoint. GitHub kvitterede for upload, men det umiddelbare opslag af pakkens metadata svarede HTTP 404. Det samme pakkes ID, digest og kilde var efterfølgende tilgængelige. Den afgrænsede rettelse giver den ordinære metadataaflæsning en kort, fast genforsøgsgrænse ved HTTP 404. Et andet svar, timeout eller udløbet grænse stopper. Den eksisterende kontrol af eksakt kørsel, pakke, kilde, digest og offentlig leveringsidentitet bevares. Målrettede lokale prøver er bestået. GitHub-kvalifikation og offentlig virkning er fortsat åbne.
+
+## 7. november — ordinær genoptagelse efter en annulleret Pages-udgivelse
+
+Den afgrænsede kandidat undersøger kun Pages-udfaldet fra den forrige ordinære kørsel. Ved en bekræftet annullering og et eksakt match med den nyeste beskyttede generation kan næste planlagte kørsel bruge den eksisterende vej til genoptagelse fra de gemte data. Den genlæser den offentlige forgænger og de centrale bindinger, og bevarelses-, release- og Pages-kontrollerne består som hidtil. Et ukendt udfald eller ændrede data giver ingen genoptagelsesautoritet. En bestået foregående kørsel går videre til almindelig vejrhentning. Kildekvalifikation og faktisk automatisk offentlig effekt er åbne.
 
 ## 2026-11-07 – GitHub-input til vandstandskontrol af gemt vejr
 

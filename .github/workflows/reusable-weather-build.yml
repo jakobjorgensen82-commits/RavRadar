@@ -4606,8 +4606,16 @@ jobs:
           set -euo pipefail
           artifact_id="${{ steps.pages-upload.outputs.artifact_id }}"
           [[ "$artifact_id" =~ ^[1-9][0-9]*$ ]]
-          node scripts/read-pages-artifact-metadata.mjs "$artifact_id" \
-            > "$RAVRADAR_OPERATIONAL_HANDOFF/pages-artifact-rest.json"
+          if node scripts/read-pages-artifact-metadata.mjs "$artifact_id" \
+            > "$RAVRADAR_OPERATIONAL_HANDOFF/pages-artifact-rest.json"; then
+            :
+          else
+            status=$?
+            if [[ "$status" == 42 ]]; then
+              echo 'metadata_visibility_exhausted=true' >> "$GITHUB_OUTPUT"
+            fi
+            exit "$status"
+          fi
           jq -e \
             --argjson artifactId "$artifact_id" \
             --argjson runId "$GITHUB_RUN_ID" \
@@ -4650,6 +4658,33 @@ jobs:
             echo "Operational deploy handoff contains forbidden private fields after artifact sealing." >&2
             exit 1
           fi
+
+      - name: Confirm exhausted exact Pages artifact metadata visibility
+        if: >-
+          failure() && github.workflow == 'Run current RavRadar weather once' &&
+          github.actor == 'github-actions[bot]' && github.triggering_actor == 'github-actions[bot]' &&
+          github.run_attempt == 1 && github.ref == 'refs/heads/main' &&
+          inputs.completed_private_runtime != true && inputs.quick_confirmation != true &&
+          inputs.checkpoint_only != true && inputs.current_family_cold_start != true &&
+          inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true &&
+          steps.operational-action.outputs.action == 'integrated' &&
+          steps.private-runtime-publish.outcome == 'success' && steps.checkpoint-publish.outcome == 'success' &&
+          steps.pages-upload.outcome == 'success' && steps.pages-artifact-seal.outcome == 'failure' &&
+          steps.pages-artifact-seal.outputs.metadata_visibility_exhausted == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_ID: ${{ steps.pages-upload.outputs.artifact_id }}
+        run: |
+          set -euo pipefail
+          [[ "$ARTIFACT_ID" =~ ^[1-9][0-9]*$ && "$GITHUB_RUN_ID" =~ ^[1-9][0-9]*$ ]]
+          gh api --method GET "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?per_page=100" \
+            --header 'Cache-Control: no-cache' 2>/dev/null |
+            jq -e --argjson artifactId "$ARTIFACT_ID" '
+              (.artifacts | type == "array") and .total_count == (.artifacts | length) and
+              ([.artifacts[] | select(.name == "github-pages")] |
+                length == 0 or (length == 1 and .[0].id == $artifactId))
+            ' >/dev/null
 
       - name: Upload privacy-safe operational handoff evidence after Pages artifact seal
         id: handoff-upload

@@ -1,3 +1,7 @@
+## 7. november — planlagt genoptagelse efter udtømte Pages-opslag
+
+**ÅBEN.** En beskyttet, færdig prognose kunne afvente offentlig udgivelse, fordi metadata efter kvitteret upload gav 404 og deployet aldrig blev startet. Den konkrete prognose blev senere leveret gennem den eksisterende genoptagelse. Den nye afgrænsede gren for seks udtømte opslag og positiv adgangskontrol er prøvet lokalt. Eksakt integreret kildekontrol og faktisk automatisk offentlig effekt skal stadig dokumenteres. Adgangsfejl, hashafvigelser og uafklarede udfald er uden for denne gren. Se håndbog 89.322.
+
 ## 2026-11-06 – Statistikrapportens kontrollerede genlæsning og accept er fortsat åben
 
 Frossen genlæsning kræver normal senest afsluttede UTC-måned og fuldt match af oprindelig rapport-/modelbindingshash. Den eksisterende signerede verify læser den gemte rapport; replay foretager ingen prepare, resampling, retagging eller automatisk gentagelse. Ordinary-standardforløbet, komplette præferenceoversigter før/efter, erasure-barriere og insert-only beskyttet admintransport bevares.

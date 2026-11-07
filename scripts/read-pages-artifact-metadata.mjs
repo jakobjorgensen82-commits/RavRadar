@@ -5,6 +5,13 @@ import { fileURLToPath } from 'node:url';
 import { readBoundedPublicManifest } from './lib/pages-generation-order.mjs';
 
 const retryDelaysMs = [0, 1000, 2000, 4000, 8000, 16000];
+export const PAGES_ARTIFACT_VISIBILITY_EXIT = 42;
+
+export class PagesArtifactVisibilityExhausted extends Error {
+  constructor() {
+    super('PAGES_ARTIFACT_METADATA_NOT_VISIBLE');
+  }
+}
 
 export async function readPagesArtifactMetadata({
   repository, artifactId, token, fetchImpl = fetch, pause = wait,
@@ -28,7 +35,7 @@ export async function readPagesArtifactMetadata({
     await response.body?.cancel();
     if (response.status !== 404) throw new Error('PAGES_ARTIFACT_METADATA_HTTP_' + response.status);
   }
-  throw new Error('PAGES_ARTIFACT_METADATA_NOT_VISIBLE');
+  throw new PagesArtifactVisibilityExhausted();
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
@@ -38,6 +45,6 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     const code = typeof error?.message === 'string' && /^PAGES_ARTIFACT_[A-Z0-9_]+$/.test(error.message)
       ? error.message : 'PAGES_ARTIFACT_METADATA_READ_FAILED';
     console.error(code);
-    process.exitCode = 1;
+    process.exitCode = error instanceof PagesArtifactVisibilityExhausted ? PAGES_ARTIFACT_VISIBILITY_EXIT : 1;
   });
 }
