@@ -5,6 +5,7 @@ import { inverseAutomaticCompletedPagesWorkflow, inverseFullGitPinnedSourcePrepa
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import test from 'node:test';
+await import('./test-ordinary-pages-cancellation.mjs');
 import { inverseRelease585WorkflowUserAgents, ordinaryStageWiringReview, inverseOrdinaryCompletedStageWorkflowWiring, assertEarlyCompletedRuntimeStageOrder, inverseEarlyCompletedRuntimeStage, inverseCompletedRuntimeWorkflow, inverseOrdinaryFullHistoryCheckout, inversePairedPrivateRuntimePublication, inverseOriginWeatherReadCredentials, assertCurrentHistoryRawRetentionOrder, inverseCurrentHistoryRawRetentionOrder, inverseCurrentFamilyColdStartWorkflow, inverseRelease584WorkflowUserAgents } from './lib/completed-private-runtime-workflow-review.mjs';
 import { runInNewContext } from 'node:vm';
 import { inverseNativeOriginalSchemaSelectorWorkflow, nativeOriginalSchemaSelectorWorkflowReview,
