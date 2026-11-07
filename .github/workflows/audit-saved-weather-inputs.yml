@@ -867,12 +867,13 @@ jobs:
             'include_raw_file_presence','include_selected_current_preflight','include_current_window_diagnostic',
             'include_current586_endpoints','include_current586_cached_originals','wam_raw_manifest_245_only',
             'component_summary_only','component_summary_dataset_id','component_summary_reference_at','water_level_voersaa_trace_20261101'];
-          assert.deepEqual(Object.keys(input).sort(),[...allowed,...other].sort());
+          // GitHub omits inactive empty strings from the hosted inputs context.
+          assert(Object.keys(input).every(key=>allowed.includes(key)||other.includes(key)),'B272_UNKNOWN_AUDIT_INPUT');
           assert.equal(input.confirmation,'READ-B272-WATERLEVEL-PROVENANCE-ONLY');
           assert.equal(input.progress_source_run_id,'42318718471');assert.equal(input.progress_source_attempt,'1');
           assert.equal(input.water_level_basis_272_only,true);
           assert.match(input.expected_main_head,/^[a-f0-9]{40}$/);assert.equal(input.expected_main_head,process.env.GITHUB_SHA);
-          for(const key of other)assert(input[key]===false||input[key]==='','B272_MIXED_AUDIT_REQUEST');
+          for(const key of other)assert(!Object.hasOwn(input,key)||input[key]===false||input[key]==='','B272_MIXED_AUDIT_REQUEST');
           NODE
           test "$(git rev-parse --verify 'HEAD^{commit}')" = "$GITHUB_SHA"
           test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$GITHUB_SHA"

@@ -1,10 +1,11 @@
 import { B272_WATER_LEVEL_AUDIT, projectB272WaterLevelSeries, assertB272WaterLevelArtifactPins, auditB272WaterLevelBasis } from './audit-saved-weather-inputs.mjs';
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import test from 'node:test';
 
-const b272WorkflowReview = Object.freeze({"after":{"bytes":50451,"sha256":"cc75feda5293a30958b18f36658532747fe69dfa0852cf29d88699506e6d243a"},"before":{"bytes":45655,"sha256":"96c5f679fad34027b162d7abae8b05ed37cccf71db328447dba34a1fef5bf7f8"},"input":"      water_level_basis_272_only:\n        description: \"Fixed B272 WL provenance metadata only; one archived artifact, no providers or production\"\n        required: false\n        default: false\n        type: boolean\n\n","job":{"bytes":4438,"sha256":"751105587b8557f8f5c3ba785cf0e4cdea897f14f81dbebae0f5ef187c0609cd"},"ifPairs":[["    if: inputs.wam_raw_manifest_245_only == true || (inputs.component_summary_only != true && inputs.water_level_voersaa_trace_20261101 != true)","    if: inputs.water_level_basis_272_only != true && (inputs.wam_raw_manifest_245_only == true || (inputs.component_summary_only != true && inputs.water_level_voersaa_trace_20261101 != true))"],["    if: inputs.component_summary_only == true && inputs.water_level_voersaa_trace_20261101 != true && inputs.wam_raw_manifest_245_only != true","    if: inputs.water_level_basis_272_only != true && (inputs.component_summary_only == true && inputs.water_level_voersaa_trace_20261101 != true && inputs.wam_raw_manifest_245_only != true)"],["    if: inputs.water_level_voersaa_trace_20261101 == true && inputs.wam_raw_manifest_245_only != true","    if: inputs.water_level_basis_272_only != true && (inputs.water_level_voersaa_trace_20261101 == true && inputs.wam_raw_manifest_245_only != true)"]]});
+const b272WorkflowReview = Object.freeze({"after":{"bytes":50595,"sha256":"27199a1f676e48c458ba3540d84172b0d381aa7045b9973a73e7bcf4f3786e8b"},"before":{"bytes":45655,"sha256":"96c5f679fad34027b162d7abae8b05ed37cccf71db328447dba34a1fef5bf7f8"},"input":"      water_level_basis_272_only:\n        description: \"Fixed B272 WL provenance metadata only; one archived artifact, no providers or production\"\n        required: false\n        default: false\n        type: boolean\n\n","job":{"bytes":4582,"sha256":"924dc719b9cbfefc9916e532c3ec58a4ec9eb74906d1c9a29bac450ef773197c"},"ifPairs":[["    if: inputs.wam_raw_manifest_245_only == true || (inputs.component_summary_only != true && inputs.water_level_voersaa_trace_20261101 != true)","    if: inputs.water_level_basis_272_only != true && (inputs.wam_raw_manifest_245_only == true || (inputs.component_summary_only != true && inputs.water_level_voersaa_trace_20261101 != true))"],["    if: inputs.component_summary_only == true && inputs.water_level_voersaa_trace_20261101 != true && inputs.wam_raw_manifest_245_only != true","    if: inputs.water_level_basis_272_only != true && (inputs.component_summary_only == true && inputs.water_level_voersaa_trace_20261101 != true && inputs.wam_raw_manifest_245_only != true)"],["    if: inputs.water_level_voersaa_trace_20261101 == true && inputs.wam_raw_manifest_245_only != true","    if: inputs.water_level_basis_272_only != true && (inputs.water_level_voersaa_trace_20261101 == true && inputs.wam_raw_manifest_245_only != true)"]]});
 function beforeB272WaterLevelWorkflow(value){
   const sha=value=>crypto.createHash('sha256').update(value).digest('hex'),r=b272WorkflowReview;
   if(sha(value)!==r.after.sha256)return value; // Unknown bytes keep every old strict refusal.
@@ -558,6 +559,36 @@ test('fixed B272 artifact pins and read-only callback reject changes before down
   const refused=await auditB272WaterLevelBasis({artifactId:1,fetchImpl});
   assert.equal(refused.reportComplete,false);assert.equal(refused.privatePayloadLogged,false);assert.deepEqual(refused.scopes,[]);
   assert(refused.unknowns.includes('MODE_INVALID'));assert.equal(fetches,0);
+});
+
+test('B272 workflow accepts the hosted omission of empty inputs and rejects any other active request',()=>{
+  const y=fs.readFileSync(new URL('../.github/workflows/audit-saved-weather-inputs.yml',import.meta.url),'utf8');
+  const block=y.slice(y.indexOf('  water-level-basis-272:'));
+  const match=block.match(/node --input-type=module <<'NODE'\n([\s\S]*?)\n          NODE\n/);
+  assert(match,'B272 hosted input control');
+  const script=match[1];
+  const head='a'.repeat(40);
+  const exact={
+    confirmation:'READ-B272-WATERLEVEL-PROVENANCE-ONLY',expected_main_head:head,
+    progress_source_run_id:'42318718471',progress_source_attempt:'1',water_level_basis_272_only:true,
+    include_raw_manifest:false,include_raw_file_presence:false,include_selected_current_preflight:false,
+    include_current_window_diagnostic:false,include_current586_endpoints:false,
+    include_current586_cached_originals:false,wam_raw_manifest_245_only:false,
+    component_summary_only:false,water_level_voersaa_trace_20261101:false,
+  };
+  const full={...exact,raw_manifest_cache_key:'',progress_baseline_target_hour:'',raw_manifest_source:'',
+    component_summary_dataset_id:'',component_summary_reference_at:''};
+  const cases=[
+    [exact,0],[full,0],[{...exact,unknown_input:''},1],[{...exact,include_raw_manifest:true},1],
+    [{...exact,raw_manifest_cache_key:'unexpected'},1],[{...exact,progress_source_attempt:'2'},1],
+    [{...exact,progress_source_run_id:undefined},1],[{...exact,expected_main_head:'b'.repeat(40)},1],
+  ];
+  for(const [input,status] of cases){
+    const result=spawnSync(process.execPath,['--input-type=module','-e',script],{
+      encoding:'utf8',env:{GITHUB_SHA:head,ALL_INPUTS:JSON.stringify(input)},timeout:5000,
+    });
+    assert.equal(result.status,status,result.stderr||result.error?.message);
+  }
 });
 
 test('B272 workflow keeps its archived52d reader, original audit jobs and only the bounded metadata artifact',async()=>{

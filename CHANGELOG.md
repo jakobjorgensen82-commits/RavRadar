@@ -1,3 +1,7 @@
+## 2026-11-07 – GitHub-input til vandstandskontrol af gemt vejr
+
+GitHub leverer de inaktive tomme tekstindstillinger som fraværende i jobkonteksten. Den afgrænsede vandstandskontrol blev derfor afvist før den gemte pakke blev åbnet. Kontrollen accepterer nu fraværende, inaktive indstillinger og afviser fortsat ukendte felter, aktive sidevalg og afvigende kørsel, forsøg eller main. Den normale målprøve bruger selve jobbets indgangskontrol med den observerede inputform. Den gemte pakke og aflæsningens effekt skal stadig verificeres.
+
 ## 7. november — SOURCE 4.0.603 retter installationsworkflowets input
 
 4.0.603 er lokalt udstedt gennem de normale byggere fra den gennemgåede uudstedte 598-basis. Den offentlige driftsversion er 4.0.598. 603 afløser 602 som kandidat til næste kildekontrol. Den tidligere udstedelse og dens testresultater er bevaret på 602-grenen.

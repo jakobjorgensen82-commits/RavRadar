@@ -7411,6 +7411,7 @@
       "definition": {
         "nodeImports": [
           "node:assert/strict",
+          "node:child_process",
           "node:crypto",
           "node:fs",
           "node:test"
@@ -7426,6 +7427,8 @@
           "scripts/lib/voersaa-water-level-trace.mjs"
         ],
         "dependencySurfaces": [
+          "1234079c40fac793077ef14cb8b8f8ec51b9220836d4552e3c36b1d9a53b97e2",
+          "33d2cd2579e95ae9f8899ec426590281a6872fc1bb71bae66c5a5f4c9568a492",
           "63f525f70939e3a1d6872eef8388b70547c782546f76e33edef072d139119932",
           "6909fb699e59637d2b2813d592c85d727d705d03dc79b640ae4ebc6cc8e62239",
           "9c9721c924fd720e7f6a8d7c94226dd9ccc87ea64bdbf0c9488cf002f3c47aa3",
@@ -7434,14 +7437,18 @@
           "f7a302d1b5ff39a9df7fd24723252a006bc692c96b5666caf7f31feda7b52616"
         ],
         "bindingSurfaces": [
+          "03f55d10184a11f1bebf9f350f37db48c867b1b14c5b8fba3d1f905b0ae9c881",
           "2a24a223bc030bc46fcc2bc952e85a9ffe85b1a602e57c2acb6f79d6ce9dd69b",
           "4a7f54bac065eec6d20fd18ccd280f48fe33cadfe7e6b4ca31c9f459bd29bf60",
           "5193ca852a68475d140a771402a4fa03aae098c6694625269ec7835683d9e75a",
           "62127ddf3cbea37837135e73f16fc7cab226865e0f3305458965e9dea887e05c",
           "711a487b495cd69bc35a539df0d367bb758a4d0591eb3992392b06b3fb9dbca1",
           "9ac20678e90c814a9a79b634839be2a089a5c06ccf62727b27ca2a3ec6450961",
-          "e688335d141dcbbc2054f8496b63b3a69b1bfea6bc2cd075a05d37b199ef2d02",
-          "03f55d10184a11f1bebf9f350f37db48c867b1b14c5b8fba3d1f905b0ae9c881"
+          "9dd69488a5f83d39b3aa1afc4845a37430a53bc5546ccf3679b2f0f2b3d4f61e",
+          "b95696bf4086acee071be952f6364986ce346fa7d9ca09f20a95afa9299e3a4f",
+          "b9901b10a10310aa93c699261f5d8cebe936289141512f3a32a737bc111b12a9",
+          "ca6d33cc6e28f5f57c6e4ed5b16aa66364f809c0f52ae33d7e5d72f83e0a146b",
+          "e688335d141dcbbc2054f8496b63b3a69b1bfea6bc2cd075a05d37b199ef2d02"
         ],
         "computedBoundaries": []
       }
