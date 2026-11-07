@@ -1040,7 +1040,24 @@ export function inversePairedPrivateRuntimePublication(source, role) {
   assert.equal(sha(source), '861fad7501e32d4b63c72caa598825b15fb5fb2758961a1187ed57858e5c01ce', 'Whole previous ordinary workflow survives');
   return source;
 }
+const automaticCompletedPagesReview = JSON.parse(fs.readFileSync(
+  new URL('./automatic-completed-pages-workflow-review.json', import.meta.url), 'utf8'));
+
+export function inverseAutomaticCompletedPagesWorkflow(source, role) {
+  const { before, after, applyInThisOrder } = automaticCompletedPagesReview;
+  if (role !== 'once' || typeof source !== 'string'
+    || Buffer.byteLength(source) !== after.bytes || sha(source) !== after.sha256) return source;
+  for (const [actual, original] of applyInThisOrder) {
+    assert.equal(source.split(actual).length, 2, 'One exact automatic completed Pages hunk');
+    source = source.replace(actual, () => original);
+  }
+  assert.equal(Buffer.byteLength(source), before.bytes);
+  assert.equal(sha(source), before.sha256);
+  return source;
+}
+
 export function inverseCompletedRuntimeWorkflow(source, role) {
+  source = inverseAutomaticCompletedPagesWorkflow(source, role);
   source = inverseTerminalRepair4145Workflow(source, role);
   source = inverseOrdinaryCompletedStageWorkflowWiring(source, role);
   source = inverseEarlyCompletedRuntimeStage(source, role);

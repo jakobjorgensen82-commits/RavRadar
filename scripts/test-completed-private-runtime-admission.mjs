@@ -58,10 +58,15 @@ const providerNames = ['Update DMI bulk model cache', 'Fill only exact-hour DMI 
   'Restore encrypted private weather progress only', 'Bind optional progress to the exact protected baseline'];
 
 export function assertCompletedRuntimeWorkflow(actualBuild, actualOnce) {
-  assert.equal((actualOnce.match(/^      completed_private_runtime:/gm) ?? []).length, 2,
-    'One optional manual declaration and one actual build forwarding');
-  assert(actualOnce.includes('target_hour: ${{ steps.completed-target.outputs.target_hour ||'));
-  assert(actualOnce.includes("if: inputs.checkpoint_target_hour == '' && inputs.completed_private_runtime != true"));
+  assert.equal((actualOnce.match(/^      completed_private_runtime:/gm) ?? []).length, 3,
+    'One manual declaration, one checked job output and one actual build forwarding');
+  assert(actualOnce.includes('target_hour: ${{ steps.target-selection.outputs.target_hour }}'));
+  assert(actualOnce.includes('completed_private_runtime: ${{ steps.target-selection.outputs.completed_private_runtime }}'));
+  assert(actualOnce.includes("completed_private_runtime: ${{ needs.current-main-target.outputs.completed_private_runtime == 'true' }}"));
+  const cacheLock = step(actualOnce, 'Lock the canonical UTC production hour');
+  assert(cacheLock.includes("inputs.checkpoint_target_hour == '' && inputs.completed_private_runtime != true &&"));
+  assert(cacheLock.includes("steps.automatic-completed-target.outcome == 'skipped' ||"));
+  assert(cacheLock.includes("steps.automatic-completed-target.outputs.completed_private_runtime == 'false'"));
   assert(actualOnce.includes('COMPLETED_RUNTIME_OUTCOME: ${{ needs.build-and-prepare.outputs.completed_runtime_outcome }}'));
   assert(actualBuild.includes('weather_outcome: ${{ steps.weather.outcome }}'));
   assert(actualBuild.includes('completed_runtime_outcome: ${{ steps.completed-runtime-target.outcome }}'));

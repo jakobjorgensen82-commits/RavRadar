@@ -1,3 +1,7 @@
+## 7. november — ordinær genoptagelse efter en annulleret Pages-udgivelse
+
+Den afgrænsede kandidat undersøger kun Pages-udfaldet fra den forrige ordinære kørsel. Ved en bekræftet annullering og et eksakt match med den nyeste beskyttede generation kan næste planlagte kørsel bruge den eksisterende vej til genoptagelse fra de gemte data. Den genlæser den offentlige forgænger og de centrale bindinger, og bevarelses-, release- og Pages-kontrollerne består som hidtil. Et ukendt udfald eller ændrede data giver ingen genoptagelsesautoritet. En bestået foregående kørsel går videre til almindelig vejrhentning. Kildekvalifikation og faktisk automatisk offentlig effekt er åbne.
+
 ## 2026-11-07 – GitHub-input til vandstandskontrol af gemt vejr
 
 GitHub leverer de inaktive tomme tekstindstillinger som fraværende i jobkonteksten. Den afgrænsede vandstandskontrol blev derfor afvist før den gemte pakke blev åbnet. Kontrollen accepterer nu fraværende, inaktive indstillinger og afviser fortsat ukendte felter, aktive sidevalg og afvigende kørsel, forsøg eller main. Den normale målprøve bruger selve jobbets indgangskontrol med den observerede inputform. Den gemte pakke og aflæsningens effekt skal stadig verificeres.

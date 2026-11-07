@@ -1,3 +1,7 @@
+## 7. november — ordinær genoptagelse efter en annulleret Pages-udgivelse
+
+Den afgrænsede kandidat undersøger kun Pages-udfaldet fra den forrige ordinære kørsel. Ved en bekræftet annullering og et eksakt match med den nyeste beskyttede generation kan næste planlagte kørsel bruge den eksisterende vej til genoptagelse fra de gemte data. Den genlæser den offentlige forgænger og de centrale bindinger, og bevarelses-, release- og Pages-kontrollerne består som hidtil. Et ukendt udfald eller ændrede data giver ingen genoptagelsesautoritet. En bestået foregående kørsel går videre til almindelig vejrhentning. Kildekvalifikation og faktisk automatisk offentlig effekt er åbne.
+
 ## 2026-11-06 – Statistik: gennemgået frossen genlæsning og fast rækkefølge
 
 Frossen genlæsning kræver normal senest afsluttede UTC-måned og fuldt match af oprindelig rapport-/modelbindingshash. Den eksisterende signerede verify læser den gemte rapport; replay foretager ingen prepare, resampling, retagging eller automatisk gentagelse. Ordinary-standardforløbet, komplette præferenceoversigter før/efter, erasure-barriere og insert-only beskyttet admintransport bevares.

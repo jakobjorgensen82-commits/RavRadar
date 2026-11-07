@@ -7,7 +7,7 @@ import { execFileSync } from 'node:child_process';
 import test from 'node:test';
 import { assertOrdinaryCompletedStageSource, assertOrdinaryCompletedStageCommittedSource, ordinaryStageCalculationWorkflow }
   from './ordinary-completed-stage-source.mjs';
-import { inverseRelease585WorkflowUserAgents } from './lib/completed-private-runtime-workflow-review.mjs';
+import { inverseAutomaticCompletedPagesWorkflow, inverseRelease585WorkflowUserAgents } from './lib/completed-private-runtime-workflow-review.mjs';
 
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
 
@@ -42,7 +42,7 @@ test('committed source reuse compares all calculation objects and only exact sto
   const previous = ordinaryStageCalculationWorkflow(actual);
   const currentOnce = Buffer.from((await fs.readFile(new URL('../.github/workflows/run-current-weather-once.yml', import.meta.url), 'utf8'))
     .replaceAll('\r\n', '\n'));
-  const actualOnce = Buffer.from(inverseRelease585WorkflowUserAgents(currentOnce.toString('utf8'), 'once'));
+  const actualOnce = Buffer.from(inverseRelease585WorkflowUserAgents(inverseAutomaticCompletedPagesWorkflow(currentOnce.toString('utf8'), 'once'), 'once'));
   const previousOnce = ordinaryStageCalculationWorkflow(actualOnce);
   assert.equal(sha(previous), 'f0254a092c0baa188370c207b218e15ad7c9e616138d15234e6f323f101178c6');
   assert.equal(sha(previousOnce), '445964fbbc697ec86848744a9413897d3418b011c4218fb10336734b5e5055a2');

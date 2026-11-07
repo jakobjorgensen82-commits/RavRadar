@@ -1,0 +1,38 @@
+{
+  "role": "once",
+  "path": ".github/workflows/run-current-weather-once.yml",
+  "before": {
+    "bytes": 55548,
+    "sha256": "defc1a6fa360472b27335eccbe6f26f6bbc66d14442a990b873557def2f032af"
+  },
+  "after": {
+    "bytes": 59252,
+    "sha256": "87b1401f437d30e57ba144bdf52820447b5a83eda7b53165ab8592375e7ef911"
+  },
+  "applyInThisOrder": [
+    [
+      "          COMPLETED_PRIVATE_RUNTIME: ${{ needs.current-main-target.outputs.completed_private_runtime }}\n          COMPLETED_RUNTIME_OUTCOME: ${{ needs.build-and-prepare.outputs.completed_runtime_outcome }}\n",
+      "          COMPLETED_PRIVATE_RUNTIME: ${{ inputs.completed_private_runtime }}\n          COMPLETED_RUNTIME_OUTCOME: ${{ needs.build-and-prepare.outputs.completed_runtime_outcome }}\n"
+    ],
+    [
+      "      completed_private_runtime: ${{ needs.current-main-target.outputs.completed_private_runtime == 'true' }}\n      completed_private_runtime_pin: ${{ needs.current-main-target.outputs.completed_private_runtime_pin }}\n",
+      "      completed_private_runtime: ${{ inputs.completed_private_runtime }}\n      completed_private_runtime_pin: ${{ needs.current-main-target.outputs.completed_private_runtime_pin }}\n"
+    ],
+    [
+      "      - name: Require one canonical target hour and completed-runtime decision\n        id: target-selection\n        shell: bash\n        env:\n          REQUESTED_COMPLETED: ${{ inputs.completed_private_runtime }}\n          MANUAL_TARGET: ${{ steps.completed-target.outputs.target_hour }}\n          MANUAL_PIN: ${{ steps.completed-target.outputs.completed_private_runtime_pin }}\n          AUTO_OUTCOME: ${{ steps.automatic-completed-target.outcome }}\n          AUTO_COMPLETED: ${{ steps.automatic-completed-target.outputs.completed_private_runtime }}\n          AUTO_TARGET: ${{ steps.automatic-completed-target.outputs.target_hour }}\n          AUTO_PIN: ${{ steps.automatic-completed-target.outputs.completed_private_runtime_pin }}\n          CHECKPOINT_TARGET: ${{ steps.checkpoint-target.outputs.target_hour }}\n          CACHE_TARGET: ${{ steps.cache-state.outputs.target_hour }}\n        run: |\n          set -euo pipefail\n          case \"$AUTO_OUTCOME:$AUTO_COMPLETED\" in\n            success:true)\n              test \"$REQUESTED_COMPLETED\" = false\n              test -z \"$MANUAL_TARGET$MANUAL_PIN$CHECKPOINT_TARGET$CACHE_TARGET\"\n              completed=true\n              target=\"$AUTO_TARGET\"\n              pin=\"$AUTO_PIN\"\n              ;;\n            skipped:|success:false)\n              test -z \"$AUTO_TARGET$AUTO_PIN\"\n              completed=\"$REQUESTED_COMPLETED\"\n              if test \"$completed\" = true; then\n                test \"$AUTO_OUTCOME\" = skipped\n                test -z \"$CHECKPOINT_TARGET$CACHE_TARGET\"\n                target=\"$MANUAL_TARGET\"\n                pin=\"$MANUAL_PIN\"\n              else\n                test \"$completed\" = false\n                test -z \"$MANUAL_TARGET$MANUAL_PIN\"\n                target=\"${CHECKPOINT_TARGET:-$CACHE_TARGET}\"\n                pin=''\n              fi\n              ;;\n            *) exit 1 ;;\n          esac\n          [[ \"$target\" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:00:00Z$ ]]\n          if test \"$completed\" = true; then [[ \"$pin\" =~ ^[a-f0-9]{64}$ ]]; fi\n          printf 'completed_private_runtime=%s\\ntarget_hour=%s\\ncompleted_private_runtime_pin=%s\\n' \\\n            \"$completed\" \"$target\" \"$pin\" >> \"$GITHUB_OUTPUT\"\n",
+      "      - name: Require one canonical target hour\n        shell: bash\n        env:\n          TARGET_HOUR: ${{ steps.completed-target.outputs.target_hour || steps.checkpoint-target.outputs.target_hour || steps.cache-state.outputs.target_hour }}\n        run: |\n          set -euo pipefail\n          [[ \"$TARGET_HOUR\" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:00:00Z$ ]]\n"
+    ],
+    [
+      "      - name: Select provider-free continuation for the default scheduled caller\n        id: automatic-completed-target\n        if: steps.automatic-completed-scope.outputs.eligible == 'true'\n        env:\n          GITHUB_TOKEN: ${{ github.token }}\n          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}\n          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n          RAVRADAR_AUTOMATIC_COMPLETED_INPUTS: ${{ toJSON(inputs) }}\n          RAVRADAR_AUTOMATIC_COMPLETED_REENTRY_ACTION: ${{ needs.operational-recovery-gate.outputs.recovery_action }}\n        run: node scripts/select-automatic-completed-private-runtime.mjs\n\n      - name: Lock the canonical UTC production hour\n        id: cache-state\n        if: >-\n          inputs.checkpoint_target_hour == '' && inputs.completed_private_runtime != true &&\n          (steps.automatic-completed-target.outcome == 'skipped' ||\n           steps.automatic-completed-target.outputs.completed_private_runtime == 'false')\n",
+      "      - name: Lock the canonical UTC production hour\n        id: cache-state\n        if: inputs.checkpoint_target_hour == '' && inputs.completed_private_runtime != true\n"
+    ],
+    [
+      "      - name: Identify the default scheduled weather caller\n        id: automatic-completed-scope\n        if: >-\n          github.actor == 'github-actions[bot]' && github.triggering_actor == 'github-actions[bot]' &&\n          github.run_attempt == 1 && inputs.completed_private_runtime == false &&\n          inputs.current_family_cold_start == false && inputs.quick_confirmation == false &&\n          inputs.weather_state_epoch_bootstrap == false && inputs.weather_state_epoch_checkpoint_reentry == false &&\n          inputs.native_sampling_identity_original_recovery == false &&\n          inputs.completed_stage_source == '' && inputs.quick_progress_source == '' && inputs.checkpoint_target_hour == '' &&\n          inputs.weather_state_epoch_archive_key == '' && inputs.weather_state_epoch_archive_catalog_sha256 == '' &&\n          inputs.weather_state_epoch_raw_cache_key == ''\n        run: echo 'eligible=true' >> \"$GITHUB_OUTPUT\"\n\n      - uses: actions/setup-node@v7\n        if: inputs.completed_private_runtime == true || steps.automatic-completed-scope.outputs.eligible == 'true'\n        with:\n          node-version: 22\n",
+      "      - uses: actions/setup-node@v7\n        if: inputs.completed_private_runtime == true\n        with:\n          node-version: 22\n"
+    ],
+    [
+      "      target_hour: ${{ steps.target-selection.outputs.target_hour }}\n      completed_private_runtime: ${{ steps.target-selection.outputs.completed_private_runtime }}\n      completed_private_runtime_pin: ${{ steps.target-selection.outputs.completed_private_runtime_pin }}\n",
+      "      target_hour: ${{ steps.completed-target.outputs.target_hour || steps.checkpoint-target.outputs.target_hour || steps.cache-state.outputs.target_hour }}\n      completed_private_runtime_pin: ${{ steps.completed-target.outputs.completed_private_runtime_pin }}\n"
+    ]
+  ]
+}
