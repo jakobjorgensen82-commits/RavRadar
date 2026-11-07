@@ -1,3 +1,11 @@
+## 8. november — mindre gentaget arbejde i vejrplanlægningen
+
+To almindelige vejrhentninger ramte den fælles tidsgrænse, da RavRadar gennemgik gemte værdier for kystdelene. RavRadar fortsatte efter den normale reservevej. Den målte tid gælder hele planlægningen.
+
+Rettelsen undgår at kontrollere en strengt ældre DMI-kilde en ekstra gang, når den nyere værdi for samme time allerede er kontrolleret. Mulige vindere, huller og kilder fra samme modelkørsel går stadig gennem den eksisterende kontrol. Det gælder kun den interne plan for vind, vandstand og vandtemperatur.
+
+Den normale prøve med kunstige data for 673 kystdele gav samme plan byte for byte på cirka 72 sekunder med den gældende grænse på 120 sekunder. Kildekontrol, levering og virkningen i en ny almindelig vejrhentning er fortsat åbne. Årsagen til manglende vandstand sidst i prognosen skal undersøges særskilt.
+
 ## 7. november — planlagt genoptagelse efter udtømte Pages-opslag
 
 **ÅBEN.** En beskyttet, færdig prognose kunne afvente offentlig udgivelse, fordi metadata efter kvitteret upload gav 404 og deployet aldrig blev startet. Den konkrete prognose blev senere leveret gennem den eksisterende genoptagelse. Den nye afgrænsede gren for seks udtømte opslag og positiv adgangskontrol er prøvet lokalt. Eksakt integreret kildekontrol og faktisk automatisk offentlig effekt skal stadig dokumenteres. Adgangsfejl, hashafvigelser og uafklarede udfald er uden for denne gren. Se håndbog 89.322.

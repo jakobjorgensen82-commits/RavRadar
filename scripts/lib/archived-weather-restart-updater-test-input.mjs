@@ -439,9 +439,47 @@ export const DMI_SCALAR_PLANNING_RECORD_TEST_REVIEW = Object.freeze({
   ]),
 });
 
+// TEST INPUT ONLY: the reviewed scalar work reduction, projected to exact df9
+// before the unchanged historical scalar and native-original oracles.
+export const DMI_SCALAR_RETENTION_WORK_TEST_REVIEW = Object.freeze({
+  path: DMI_SCALAR_PLANNING_RECORD_TEST_REVIEW.path,
+  before: DMI_SCALAR_PLANNING_RECORD_TEST_REVIEW.after,
+  after: Object.freeze({ bytes: 41950, sha256: '251af179efe8fa1a9ac7694d14fabe6374658a81c22b4410e8094d44000d2ac5' }),
+  edits: Object.freeze([
+    Object.freeze([4, "", "import { isProxy } from 'node:util/types';"]),
+    Object.freeze([24, "import { preferQualifiedDmiComponentSource } from './weather-component-selection.mjs';", "import { preferQualifiedDmiComponentSource, responseBoundModelRun } from './weather-component-selection.mjs';"]),
+    Object.freeze([590, "", "function ownDmiModelRun(source) {\n  if (!source || typeof source !== 'object' || isProxy(source)\n    || Object.getOwnPropertyDescriptor(source, 'provider')?.value !== 'dmi') return null;\n  const modelRun = Object.getOwnPropertyDescriptor(source, 'modelRun')?.value;\n  return responseBoundModelRun({ provider: 'dmi', modelRun });\n}\n"]),
+    Object.freeze([601, "  { attest = () => true, protectPreviousDmi = false, currentDecoderTransition = null } = {},", "  { attest = () => true, protectPreviousDmi = false, currentDecoderTransition = null,\n    skipOlderScalarDonor = false } = {},"]),
+    Object.freeze([613, "", "    if (skipOlderScalarDonor && selected && candidate.retained) {\n      // A strictly older DMI run cannot replace an admitted newer scalar.\n      // This never admits a contender or suppresses verification of a possible winner.\n      const oldRun = ownDmiModelRun(candidate.row?.sources?.[component]);\n      const newRun = ownDmiModelRun(selected.attestation);\n      if (oldRun !== null && newRun !== null && oldRun < newRun) continue;\n    }"]),
+    Object.freeze([760, "", "        skipOlderScalarDonor: scalarPlanningOnly && Boolean(expectedIdentity)\n          && !protectPreviousDmi && !currentDecoderTransition\n          && (component === 'wind' || component === 'waterLevel' || component === 'waterTemperature'),"]),
+    Object.freeze([839, "  return normalizeForecastHourly(merged, { limit: times.length });", "  return scalarPlanningOnly && expectedIdentity\n    ? merged : normalizeForecastHourly(merged, { limit: times.length });"]),
+  ]),
+});
+
+export function inverseDmiScalarRetentionWorkTestInput(source, relative) {
+  assert.equal(arguments.length, 2, 'DMI_SCALAR_RETENTION_WORK_ARGUMENTS');
+  assert.equal(typeof source, 'string', 'DMI_SCALAR_RETENTION_WORK_TYPE');
+  const { path, before, after, edits } = DMI_SCALAR_RETENTION_WORK_TEST_REVIEW;
+  if (relative !== path || sha(source) !== after.sha256) return source;
+  assert.equal(Buffer.byteLength(source), after.bytes, 'DMI_SCALAR_RETENTION_WORK_AFTER_SIZE');
+  const lines = source.split('\n');
+  for (const [line, previous, current] of [...edits].reverse()) {
+    const previousLines = previous ? previous.split('\n') : [];
+    const currentLines = current ? current.split('\n') : [];
+    assert.deepEqual(lines.slice(line - 1, line - 1 + currentLines.length), currentLines,
+      'DMI_SCALAR_RETENTION_WORK_HUNK');
+    lines.splice(line - 1, currentLines.length, ...previousLines);
+  }
+  const original = lines.join('\n');
+  assert.equal(Buffer.byteLength(original), before.bytes, 'DMI_SCALAR_RETENTION_WORK_BEFORE_SIZE');
+  assert.equal(sha(original), before.sha256, 'DMI_SCALAR_RETENTION_WORK_WHOLE_INVERSE');
+  return original;
+}
+
 export function inverseDmiScalarPlanningRecordTestInput(source, relative) {
   assert.equal(arguments.length, 2, 'DMI_SCALAR_PLANNING_RECORD_ARGUMENTS');
   assert.equal(typeof source, 'string', 'DMI_SCALAR_PLANNING_RECORD_TYPE');
+  source = inverseDmiScalarRetentionWorkTestInput(source, relative);
   const { path, before, after, edits } = DMI_SCALAR_PLANNING_RECORD_TEST_REVIEW;
   if (relative !== path || sha(source) !== after.sha256) return source;
   assert.equal(Buffer.byteLength(source), after.bytes, 'DMI_SCALAR_PLANNING_RECORD_AFTER_SIZE');

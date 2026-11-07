@@ -1,6 +1,7 @@
 // Import-safe normal DMI record construction. These are the producer's actual
 // pure functions, shared with saved-original dependency planning; no acquisition,
 // filesystem work, source-policy override or caller-provided admission seam.
+import { isProxy } from 'node:util/types';
 import { RAVSCORE_PUBLIC_FORECAST_HOURS } from '../../js/core/ravscore-model-contract.js';
 import {
   DMI_FORECAST_HOURS, createDmiForecastRecord, normalizeForecastHourly,
@@ -20,7 +21,7 @@ import {
 } from './ravscore-production-adapters.mjs';
 import { FEGGESUND_WAVE_PROXY_SOURCE_ZONE_IDS, bindVerifiedFeggesundWaveSource }
   from './feggesund-wave-proxy.mjs';
-import { preferQualifiedDmiComponentSource } from './weather-component-selection.mjs';
+import { preferQualifiedDmiComponentSource, responseBoundModelRun } from './weather-component-selection.mjs';
 import { RAVSCORE_RECOVERY_REPLAY_MAXIMUM_AGE_HOURS } from './ravscore-recovery-replay.mjs';
 
 // BEGIN normal-record constants
@@ -586,11 +587,19 @@ function atomicComponentTupleValues(row, component) {
   return values;
 }
 
+function ownDmiModelRun(source) {
+  if (!source || typeof source !== 'object' || isProxy(source)
+    || Object.getOwnPropertyDescriptor(source, 'provider')?.value !== 'dmi') return null;
+  const modelRun = Object.getOwnPropertyDescriptor(source, 'modelRun')?.value;
+  return responseBoundModelRun({ provider: 'dmi', modelRun });
+}
+
 function selectAtomicComponentTuple(
   primary,
   fallback,
   component,
-  { attest = () => true, protectPreviousDmi = false, currentDecoderTransition = null } = {},
+  { attest = () => true, protectPreviousDmi = false, currentDecoderTransition = null,
+    skipOlderScalarDonor = false } = {},
 ) {
   let selected = null;
   const candidates = [
@@ -601,6 +610,13 @@ function selectAtomicComponentTuple(
   for (const candidate of candidates) {
     const values = atomicComponentTupleValues(candidate.row, component);
     if (!values) continue;
+    if (skipOlderScalarDonor && selected && candidate.retained) {
+      // A strictly older DMI run cannot replace an admitted newer scalar.
+      // This never admits a contender or suppresses verification of a possible winner.
+      const oldRun = ownDmiModelRun(candidate.row?.sources?.[component]);
+      const newRun = ownDmiModelRun(selected.attestation);
+      if (oldRun !== null && newRun !== null && oldRun < newRun) continue;
+    }
     const attestation = attest(candidate.row, {
       component,
       retained: candidate.retained,
@@ -741,6 +757,9 @@ function mergeHourlyPreferDmi(
         // winner. Legacy parent display fallback keeps its DMI-first order.
         protectPreviousDmi: Boolean(expectedIdentity && protectPreviousDmi),
         currentDecoderTransition,
+        skipOlderScalarDonor: scalarPlanningOnly && Boolean(expectedIdentity)
+          && !protectPreviousDmi && !currentDecoderTransition
+          && (component === 'wind' || component === 'waterLevel' || component === 'waterTemperature'),
         attest: (row, candidate) => tupleSource(
           row,
           component,
@@ -817,7 +836,8 @@ function mergeHourlyPreferDmi(
     ? { status: 'exact-qualified-components-no-datum-adjustment' }
     : repairWaterLevelContinuity(merged, dmiByTime, fallbackByTime, { shortDmiGapHours: SHORT_DMI_WATER_GAP_HOURS, jumpWarningCm: WATER_LEVEL_JUMP_WARN_CM });
   for (const row of merged) row.waterLevelContinuity = waterLevelContinuity;
-  return normalizeForecastHourly(merged, { limit: times.length });
+  return scalarPlanningOnly && expectedIdentity
+    ? merged : normalizeForecastHourly(merged, { limit: times.length });
 }
 
 // END normal-record selection
