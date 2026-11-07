@@ -469,6 +469,7 @@ export function inverseQualifiedScalarPlanningWorkflow(source, role) {
 export function inverseTerminalRepair4145Workflow(source, role) {
   assert.equal(arguments.length, 2, 'TERMINAL4145_INVERSE_ARGUMENTS');
   assert.equal(typeof source, 'string', 'TERMINAL4145_INVERSE_TYPE');
+  source = inverseReviewedSource601OperationalWorkflowInspection(source, role);
   source = inverseQualifiedScalarPlanningWorkflow(source, role);
   const roles = terminalRepair4145WorkflowReview.roles;
   const row = typeof role === 'string' && Object.hasOwn(roles, role) ? roles[role] : null;
@@ -939,6 +940,56 @@ function inverseReviewedSource601BuildWorkflowInspection(source, role) {
   assert.equal(sha(previous), row.before.sha256,
     'Hele den genuine ordinary598-kildevisning før601 og alle gamle orakler');
   return previous; // Kun tekst til de uændrede historiske testassertions.
+}
+
+
+// Kun de to præcise601-fasekaldere før den uændrede historiske4145-inverse.
+// De frosne e81-preimages er byteidentiske med den genuine52d-forgænger,
+// som allerede er en normal lokal Git-forudsætning; ingen ny fetch kræves.
+const reviewedSource601OperationalWorkflowInspection = Object.freeze({
+  "deploy": {
+    "path": ".github/workflows/reusable-pages-deploy.yml",
+    "after": {
+      "bytes": 67398,
+      "sha256": "4dc3b299efdad4424024edc637df61143d2a19e576668d52ba7dfa4d2673f8c0"
+    },
+    "before": {
+      "bytes": 66486,
+      "sha256": "260c06d3fbc08e7bf80563b803eed758251805f55cf4a0c147526d70c3e4b8f1"
+    }
+  },
+  "recovery": {
+    "path": ".github/workflows/reusable-operational-reentry.yml",
+    "after": {
+      "bytes": 105501,
+      "sha256": "888fb3ad38cd83bd06d713c14587bbeeb68390bf7a88715b03c22e0bf7421b5f"
+    },
+    "before": {
+      "bytes": 102685,
+      "sha256": "6228ec52b4901aa26f6fa29cda81826a5f8c3536441aba8d28e5c78473f19370"
+    }
+  }
+});
+for (const row of Object.values(reviewedSource601OperationalWorkflowInspection)) {
+  Object.freeze(row.after); Object.freeze(row.before); Object.freeze(row);
+}
+function inverseReviewedSource601OperationalWorkflowInspection(source, role) {
+  const rows = reviewedSource601OperationalWorkflowInspection;
+  const row = typeof role === 'string' && Object.hasOwn(rows, role) ? rows[role] : null;
+  if (!row || typeof source !== 'string' || Buffer.byteLength(source) !== row.after.bytes
+      || sha(source) !== row.after.sha256) return source;
+  requireSourceProducerOutput();
+  assertSourceProducerAfter597StaticCode();
+  const previous = execFileSync('git', [
+    '-c', 'protocol.allow=never', '-C', fileURLToPath(new URL('../../', import.meta.url)),
+    'cat-file', 'blob', reviewedSourceWorkflowInspection.ordinaryHead + ':' + row.path,
+  ], {encoding:'utf8', timeout:30_000, maxBuffer:512 * 1024,
+    env:{...process.env, GIT_NO_LAZY_FETCH:'1', GIT_NO_REPLACE_OBJECTS:'1', GIT_TERMINAL_PROMPT:'0'}});
+  assert.equal(Buffer.byteLength(previous), row.before.bytes,
+    'Hele e81/ordinary598 Pages-/reentry-workflowstørrelsen før601');
+  assert.equal(sha(previous), row.before.sha256,
+    'Hele den genuine e81/ordinary598 Pages-/reentry-visning før gamle orakler');
+  return previous; // Kun historisk testtekst, aldrig produktions- eller DATA-adgang.
 }
 
 export function inverseRelease585WorkflowUserAgents(source, role) {
