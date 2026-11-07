@@ -1,3 +1,7 @@
+## 7. november — lokal backuprettelse for store SQL-filer
+
+Den første faktiske eksport stoppede ved den lokale grænse på 50 MB for én krypteret fil, før nogen R2-upload. Den lokale rettelse kan dele én af de fem krypterede filer over flere objekter i den samme private bucket. Delene er højst 36 MB hver, med højst ni dele og 180 MB krypteret indhold for hele gruppen. Transportgrænserne på 50 MB pr. objekt, 300 MB pr. gruppe og 2 GB for bucketen består. Første upload kræver plads til hele gruppen. Det autentificerede indeks binder delene til de fem originale filer, og gamle arkiver kan stadig læses. Eksakt materialisering er lokalt prøvet med syntetisk transport. Faktisk capture, isoleret Auth- og datagendannelse, Storage, målt forbrug og Free er fortsat åbne. Se håndbog 89.300.
+
 ## 2026-11-07 – GitHub-input til vandstandskontrol af gemt vejr
 
 GitHub leverer de inaktive tomme tekstindstillinger som fraværende i jobkonteksten. Den afgrænsede vandstandskontrol blev derfor afvist før den gemte pakke blev åbnet. Kontrollen accepterer nu fraværende, inaktive indstillinger og afviser fortsat ukendte felter, aktive sidevalg og afvigende kørsel, forsøg eller main. Den normale målprøve bruger selve jobbets indgangskontrol med den observerede inputform. Den gemte pakke og aflæsningens effekt skal stadig verificeres.

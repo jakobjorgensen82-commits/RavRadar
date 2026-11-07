@@ -8,6 +8,7 @@ import {pipeline} from 'node:stream/promises';
 import {pathToFileURL} from 'node:url';
 import {exportSupabaseDatabase} from './export-supabase-database.mjs';
 
+export const DB_BACKUP_CIPHER_LIMITS=Object.freeze({partBytes:36_000_000,totalBytes:180_000_000,wireBytes:300_000_000,parts:9});
 export const DB_LOCAL_CARRIER_POLICY=Object.freeze({repository:'jakobjorgensen82-commits/RavRadar',project:'afqhhdrkjfjtpadntdzo',
   purpose:'SUPABASE_DATABASE_BACKUP/v1',maximumCipherBytes:50_000_000,maximumSqlBytes:1_000_000_000,
   maximumTotalSqlBytes:2_000_000_000,maximumManifestBytes:32*1024,maximumHeaderBytes:4096,maximumMs:20*60_000});
@@ -67,7 +68,7 @@ function checkExport(r){
     &&typeof f.dev==='string'&&typeof f.ino==='string'&&typeof f.mtimeNs==='string'&&typeof f.ctimeNs==='string','EXPORT_FILE');bytes+=f.bytes;}
   need(bytes===r.totalBytes&&bytes<=P.maximumTotalSqlBytes,'EXPORT_TOTAL');return r;
 }
-async function sealFile(source,destination,entry,c,env,deadline){
+async function sealFile(source,destination,entry,c,env,deadline,remainingCipherBytes){
   const named=await fs.lstat(source,{bigint:true});checkFile(named);need(sameFile(snap(named),entry),'SOURCE_IDENTITY');
   const input=await fs.open(source,constants.O_RDONLY|(constants.O_NOFOLLOW||0));let output;
   try{
@@ -78,7 +79,7 @@ async function sealFile(source,destination,entry,c,env,deadline){
     const salt=crypto.randomBytes(16),nonce=crypto.randomBytes(12),prefix=Buffer.concat([MAGIC,length,header,salt,nonce]);
     const cipher=crypto.createCipheriv('aes-256-gcm',key(env,salt),nonce);cipher.setAAD(prefix);
     const rawHash=crypto.createHash('sha256'),cipherHash=crypto.createHash('sha256');let sqlBytes=0,cipherBytes=0;
-    const append=async b=>{cipherBytes+=b.length;need(cipherBytes<=P.maximumCipherBytes,'CIPHERTEXT_OBJECT_BOUND');cipherHash.update(b);await writeAll(output,b);};
+    const append=async b=>{cipherBytes+=b.length;need(cipherBytes<=remainingCipherBytes,'CIPHERTEXT_GROUP_BOUND');cipherHash.update(b);await writeAll(output,b);};
     await append(prefix);
     const count=new Transform({transform(b,_encoding,callback){try{need(Date.now()<deadline,'CARRIER_DEADLINE');sqlBytes+=b.length;need(sqlBytes<=entry.bytes,'SOURCE_LENGTH');rawHash.update(b);callback(null,b);}catch(e){callback(e);}}});
     const sink=new Writable({write(b,_encoding,callback){append(b).then(()=>callback(),callback);}});
@@ -89,10 +90,60 @@ async function sealFile(source,destination,entry,c,env,deadline){
     return{file:entry.file,sqlBytes,sqlSha256:entry.sha256,cipherFile:path.basename(destination),cipherBytes,cipherSha256:cipherHash.digest('hex')};
   }finally{await input.close();if(output)await output.close();}
 }
-async function verifyFile(root,entry,c,env,deadline,onSqlChunk=null){
+// The legacy single-file path retains its original allocation and validation.
+// Large logical files are read from one pinned handle in bounded passes.
+async function verifyLargeFile(file,entry,c,env,deadline,onSqlChunk){
+  const named=await fs.lstat(file,{bigint:true});checkFile(named);
+  need(named.size===BigInt(entry.cipherBytes),'CIPHERTEXT_SHA');
+  const handle=await fs.open(file,constants.O_RDONLY|(constants.O_NOFOLLOW||0));
+  try{
+    const initial=await handle.stat({bigint:true});checkFile(initial);need(sameFile(snap(named),snap(initial)),'PRIVATE_FILE_IDENTITY');
+    const unchanged=async()=>{
+      const open=await handle.stat({bigint:true}),fresh=await fs.lstat(file,{bigint:true});checkFile(fresh);
+      need(sameFile(snap(initial),snap(open))&&sameFile(snap(open),snap(fresh)),'PRIVATE_FILE_CHANGED');
+    };
+    async function readAt(offset,length){
+      need(Date.now()<deadline,'CARRIER_DEADLINE');const bytes=Buffer.allocUnsafe(length);
+      for(let at=0;at<length;){const {bytesRead}=await handle.read(bytes,at,length-at,offset+at);need(bytesRead>0,'CIPHERTEXT_SHA');at+=bytesRead;}
+      return bytes;
+    }
+    const prefixStart=await readAt(0,MAGIC.length+4);
+    need(prefixStart.subarray(0,MAGIC.length).equals(MAGIC),'DB_MAGIC');
+    const size=prefixStart.readUInt32BE(MAGIC.length),start=prefixStart.length,saltAt=start+size,bodyAt=saltAt+28,bodyEnd=entry.cipherBytes-16;
+    need(size>0&&size<=P.maximumHeaderBytes&&bodyEnd>bodyAt,'HEADER_BOUND');
+    const prefix=Buffer.concat([prefixStart,await readAt(start,size+28)]),tag=await readAt(bodyEnd,16);
+    const header=parse(prefix.subarray(start,saltAt),'DB_HEADER_JSON');
+    need(same(header,{kind:'SUPABASE_DB_GZIP_FILE_V1',context:c,file:entry.file,sqlBytes:entry.sqlBytes,sqlSha256:entry.sqlSha256}),'DB_AAD_CONTEXT');
+    const secret=key(env,prefix.subarray(saltAt,saltAt+16));
+    const decipher=()=>{
+      const reader=crypto.createDecipheriv('aes-256-gcm',secret,prefix.subarray(saltAt+16,bodyAt));
+      reader.setAAD(prefix);reader.setAuthTag(tag);return reader;
+    };
+    function final(reader){try{return reader.final();}catch{fail('DB_GCM_AUTHENTICATION');}}
+    const digest=crypto.createHash('sha256');digest.update(prefix);const first=decipher();
+    for(let at=bodyAt;at<bodyEnd;){const bytes=await readAt(at,Math.min(64*1024,bodyEnd-at));at+=bytes.length;digest.update(bytes);first.update(bytes).fill(0);}
+    digest.update(tag);need(digest.digest('hex')===entry.cipherSha256,'CIPHERTEXT_SHA');final(first).fill(0);await unchanged();
+    const outputHash=crypto.createHash('sha256');let sqlBytes=0;
+    async function* authenticatedCompressed(){
+      const second=decipher();
+      for(let at=bodyAt;at<bodyEnd;){const bytes=await readAt(at,Math.min(64*1024,bodyEnd-at));at+=bytes.length;yield second.update(bytes);}
+      yield final(second);
+    }
+    await pipeline(Readable.from(authenticatedCompressed()),createGunzip(),new Writable({write(bytes,_encoding,callback){
+      Promise.resolve().then(async()=>{
+        need(Date.now()<deadline,'CARRIER_DEADLINE');sqlBytes+=bytes.length;need(sqlBytes<=entry.sqlBytes,'RESTORE_SQL_BOUND');
+        outputHash.update(bytes);if(onSqlChunk)await onSqlChunk(bytes);
+      }).then(()=>callback(),callback);
+    }}));
+    await unchanged();need(sqlBytes===entry.sqlBytes&&outputHash.digest('hex')===entry.sqlSha256,'RESTORE_SQL_SHA');
+    return{file:entry.file,sqlBytes,sqlSha256:entry.sqlSha256,cipherSha256:entry.cipherSha256};
+  }finally{await handle.close();}
+}
+async function verifyFile(root,entry,c,env,deadline,onSqlChunk=null,maximumCipherBytes=P.maximumCipherBytes){
   fields(entry,['file','sqlBytes','sqlSha256','cipherFile','cipherBytes','cipherSha256'],'CIPHER_DESCRIPTOR_FIELDS');
   need(NAMES.includes(entry.file)&&entry.cipherFile===entry.file+'.gz.enc'&&positive(entry.sqlBytes)&&entry.sqlBytes<=P.maximumSqlBytes
-    &&hash(entry.sqlSha256)&&positive(entry.cipherBytes)&&entry.cipherBytes<=P.maximumCipherBytes&&hash(entry.cipherSha256),'CIPHER_DESCRIPTOR');
+    &&hash(entry.sqlSha256)&&positive(entry.cipherBytes)&&entry.cipherBytes<=maximumCipherBytes&&hash(entry.cipherSha256),'CIPHER_DESCRIPTOR');
+  if(entry.cipherBytes>P.maximumCipherBytes)return verifyLargeFile(path.join(root,entry.cipherFile),entry,c,env,deadline,onSqlChunk);
   const bytes=await readSmall(path.join(root,entry.cipherFile),P.maximumCipherBytes);need(bytes.length===entry.cipherBytes&&sha(bytes)===entry.cipherSha256,'CIPHERTEXT_SHA');
   need(bytes.subarray(0,MAGIC.length).equals(MAGIC)&&bytes.length>MAGIC.length+4+44,'DB_MAGIC');
   const size=bytes.readUInt32BE(MAGIC.length),start=MAGIC.length+4;need(size>0&&size<=P.maximumHeaderBytes&&bytes.length>start+size+44,'HEADER_BOUND');
@@ -112,12 +163,15 @@ async function verifyFile(root,entry,c,env,deadline,onSqlChunk=null){
 async function verifyAt(directory,env,deadline){
   const root=await privatePath(directory,env),raw=await readSmall(path.join(root,'manifest.json'),P.maximumManifestBytes),m=parse(raw,'LOCAL_MANIFEST_JSON');
   fields(m,['kind','context','exportReceiptSha256','files','authRestoreVerified','fullDatabaseBackupVerified','archiveUploaded','centralLocatorPublished','freeReady'],'LOCAL_MANIFEST_FIELDS');
-  need(m.kind==='SUPABASE_LOCAL_DB_CARRIER_V1'&&hash(m.exportReceiptSha256)&&m.authRestoreVerified===false&&m.fullDatabaseBackupVerified===false
+  const chunked=m.kind==='SUPABASE_LOCAL_DB_CARRIER_V2';
+  need((chunked||m.kind==='SUPABASE_LOCAL_DB_CARRIER_V1')&&hash(m.exportReceiptSha256)&&m.authRestoreVerified===false&&m.fullDatabaseBackupVerified===false
     &&m.archiveUploaded===false&&m.centralLocatorPublished===false&&m.freeReady===false,'LOCAL_MANIFEST');const c=context(m.context);
   need(Array.isArray(m.files)&&m.files.length===5&&m.files.every((f,i)=>f.file===NAMES[i]),'FIVE_FILES_REQUIRED');
   const names=await fs.readdir(root);need(names.length===6&&names.every(n=>n==='manifest.json'||NAMES.some(f=>n===f+'.gz.enc')),'LOCAL_NAMESPACE');
   need(m.files.reduce((n,f)=>n+(positive(f.sqlBytes)?f.sqlBytes:P.maximumTotalSqlBytes+1),0)<=P.maximumTotalSqlBytes,'RESTORE_TOTAL_BOUND');
-  const files=[];for(const f of m.files)files.push(await verifyFile(root,f,c,env,deadline));
+  if(chunked)need(m.files.every(f=>positive(f.cipherBytes))&&m.files.reduce((n,f)=>n+f.cipherBytes,0)<=DB_BACKUP_CIPHER_LIMITS.totalBytes,'CIPHERTEXT_GROUP_BOUND');
+  const maximum=chunked?DB_BACKUP_CIPHER_LIMITS.totalBytes:P.maximumCipherBytes;
+  const files=[];for(const f of m.files)files.push(await verifyFile(root,f,c,env,deadline,null,maximum));
   return{status:'LOCAL_AUTHENTICATED_SQL_BYTE_ROUNDTRIP_ONLY',manifestSha256:sha(raw),files,totalSqlBytes:files.reduce((n,f)=>n+f.sqlBytes,0),
     authRestoreVerified:false,fullDatabaseBackupVerified:false,archiveUploaded:false,centralLocatorPublished:false,freeReady:false};
 }
@@ -176,7 +230,7 @@ export async function materializeLocalDatabaseBackup(options={}, {env=process.en
       const handle=await fs.open(path.join(destination,entry.file),constants.O_WRONLY|constants.O_CREAT|constants.O_EXCL|(constants.O_NOFOLLOW||0),0o600);
       const record={file:entry.file,handle,last:null};created.push(record);const initial=await handle.stat({bigint:true});checkFile(initial);record.last=snap(initial);
       await verifyFile(source,entry,c,env,deadline,async b=>{checkpoint();await ownDirectories();await writeAll(handle,b);const st=await handle.stat({bigint:true});checkFile(st);
-        need(same(id(st),{dev:record.last.dev,ino:record.last.ino}),'MATERIALIZATION_FILE_CHANGED');record.last=snap(st);checkpoint();});
+        need(same(id(st),{dev:record.last.dev,ino:record.last.ino}),'MATERIALIZATION_FILE_CHANGED');record.last=snap(st);checkpoint();},m.kind==='SUPABASE_LOCAL_DB_CARRIER_V2'?DB_BACKUP_CIPHER_LIMITS.totalBytes:P.maximumCipherBytes);
       await handle.sync();const st=await handle.stat({bigint:true});checkFile(st);need(st.size===BigInt(entry.sqlBytes),'MATERIALIZATION_LENGTH');record.last=snap(st);
       files.push(await readBack(record,entry));await handle.close();record.handle=null;
     }
@@ -192,9 +246,13 @@ export async function sealCompletedDatabaseExport({workdir}={}, {env=process.env
   need(!(await fs.lstat(path.join(root,'failure-receipt.json')).catch(e=>{if(e.code==='ENOENT')return null;throw e;})),'FAILED_EXPORT_REJECTED');
   const c=fromEnv(env);key(env,Buffer.alloc(16));await privatePath(path.join(root,'exports'),env);
   const directory=await fs.mkdtemp(path.join(root,'sealed-db-export-'));await fs.chmod(directory,0o700);const files=[],deadline=Date.now()+P.maximumMs;
-  for(const f of receipt.files)files.push(await sealFile(path.join(root,'exports',f.file),path.join(directory,f.file+'.gz.enc'),f,c,env,deadline));
+  let remaining=DB_BACKUP_CIPHER_LIMITS.totalBytes;
+  for(const f of receipt.files){
+    const sealed=await sealFile(path.join(root,'exports',f.file),path.join(directory,f.file+'.gz.enc'),f,c,env,deadline,remaining);
+    remaining-=sealed.cipherBytes;files.push(sealed);
+  }
   for(const f of receipt.files){const st=await fs.lstat(path.join(root,'exports',f.file),{bigint:true});checkFile(st);need(sameFile(snap(st),f),'SOURCE_CHANGED');}
-  const manifest={kind:'SUPABASE_LOCAL_DB_CARRIER_V1',context:c,exportReceiptSha256:sha(receiptBytes),files,
+  const manifest={kind:files.some(f=>f.cipherBytes>P.maximumCipherBytes)?'SUPABASE_LOCAL_DB_CARRIER_V2':'SUPABASE_LOCAL_DB_CARRIER_V1',context:c,exportReceiptSha256:sha(receiptBytes),files,
     authRestoreVerified:false,fullDatabaseBackupVerified:false,archiveUploaded:false,centralLocatorPublished:false,freeReady:false};
   const bytes=encode(manifest);need(bytes.length<=P.maximumManifestBytes,'MANIFEST_BOUND');await fs.writeFile(path.join(directory,'manifest.json'),bytes,{flag:'wx',mode:0o600});
   const verified=await verifyAt(directory,env,deadline);return{...verified,directory};

@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {pathToFileURL} from 'node:url';
+import {DB_BACKUP_CIPHER_LIMITS as CIPHER} from './seal-supabase-database-export.mjs';
 const WORKFLOW='Back up RavRadar Supabase database',REPOSITORY='jakobjorgensen82-commits/RavRadar',BUCKET='ravradar-supabase-backup';
 const need=(ok,code)=>{if(!ok){const e=new Error(code);e.code=code;throw e;}},hash=x=>typeof x==='string'&&/^[a-f0-9]{64}$/.test(x);
 const BASE_ENV=['PATH','Path','HOME','USERPROFILE','SystemRoot','WINDIR','TEMP','TMP','RUNNER_TEMP','LANG','LC_ALL'];
@@ -83,10 +84,15 @@ export function runHostedSupabaseBackup({phase='preflight'}={},dependencies={}){
       for(const file of r.files){
         need(file&&typeof file==='object'&&!Array.isArray(file)
           &&Number.isSafeInteger(file.sqlBytes)&&file.sqlBytes>0&&file.sqlBytes<=1_000_000_000
-          &&Number.isSafeInteger(file.cipherBytes)&&file.cipherBytes>0&&file.cipherBytes<=36_000_000,'SUPABASE_BACKUP_CAPTURE_BYTES');
+          &&Number.isSafeInteger(file.cipherBytes)&&file.cipherBytes>0&&file.cipherBytes<=CIPHER.totalBytes,'SUPABASE_BACKUP_CAPTURE_BYTES');
         totalSqlBytes+=file.sqlBytes;totalCipherBytes+=file.cipherBytes;
       }
-      need(totalSqlBytes===r.totalSqlBytes&&totalSqlBytes<=2_000_000_000&&totalCipherBytes<=180_000_000,'SUPABASE_BACKUP_CAPTURE_BYTES');
+      need(totalSqlBytes===r.totalSqlBytes&&totalSqlBytes<=2_000_000_000&&totalCipherBytes<=CIPHER.totalBytes,'SUPABASE_BACKUP_CAPTURE_BYTES');
+      if(r.files.some(file=>file.cipherBytes>CIPHER.partBytes)){
+        const expectedParts=r.files.reduce((n,file)=>n+Math.ceil(file.cipherBytes/CIPHER.partBytes),0);
+        need(r.cipherPartCount===expectedParts&&expectedParts<=CIPHER.parts&&Number.isSafeInteger(r.archiveWireBytes)
+          &&r.archiveWireBytes>=totalCipherBytes&&r.archiveWireBytes<=CIPHER.wireBytes,'SUPABASE_BACKUP_CAPTURE_BYTES');
+      }
       captureBytes={totalSqlBytes,totalCipherBytes};
     }
     let candidates=[],diagnostics=null;if(operation==='bootstrap'){const d=r.diagnostics,keys=['listedObjects','unsupportedNamespaceObjects','objectsAboveIndexLimit','emptyObjects','eligibleNotInspected','nonIndexSqlFrames','legacyRequiresDbPointer'];
