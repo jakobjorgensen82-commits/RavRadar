@@ -35,6 +35,20 @@ import { assertOwnerCurrentOriginalExpectation, assertCurrentGridSamplingOrigina
   OWNER_CURRENT_DOMAIN_PREDECESSOR, OWNER_CURRENT_DOMAIN_SUCCESSOR }
   from './lib/bounded-conditions-predecessor-transition.mjs';
 
+const protectedRuntimeRestoreVerifications = new WeakMap();
+export function protectedPrivateRuntimeRestoreVerification(result) {
+  const verified = protectedRuntimeRestoreVerifications.get(result);
+  if (!verified) throw new Error('PRIVATE_RUNTIME_NORMAL_RESTORE_RESULT_REQUIRED');
+  return verified;
+}
+function freezeRestoreVerification(value) {
+  if (value && typeof value === 'object') {
+    for (const nested of Object.values(value)) freezeRestoreVerification(nested);
+    Object.freeze(value);
+  }
+  return value;
+}
+
 const gzipAsync = promisify(gzip);
 const gunzipAsync = promisify(gunzip);
 
@@ -1951,7 +1965,7 @@ export async function restoreProtectedPrivateProductionRuntime({
     if (selectedIndex >= 0) temporaryDirectories.splice(selectedIndex, 1);
     const rollbackSelected = selected.descriptor.objectSha256
       !== row.payload.current.objectSha256;
-    return {
+    const result = {
       restored: true,
       reason: rollbackSelected
         ? 'protected-private-runtime-rollback-restored'
@@ -1967,6 +1981,11 @@ export async function restoreProtectedPrivateProductionRuntime({
       exactDmiPredecessor: selected.exactDmiPredecessor,
       privatePayloadLogged: false,
     };
+    // Preserve the actual normal verification behind its real result identity.
+    // The candidate was atomically renamed; expose its genuine final path.
+    protectedRuntimeRestoreVerifications.set(result, freezeRestoreVerification(
+      { ...structuredClone(selected.verified), bundlePath: finalBundle }));
+    return result;
   } finally {
     await Promise.all(temporaryDirectories.map(directory => {
       assertInside(context.root, directory, 'Private runtime cleanup target');

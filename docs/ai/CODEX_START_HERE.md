@@ -1,6 +1,93 @@
+## 7. november — SOURCE 4.0.603 retter installationsworkflowets input
+
+4.0.603 er lokalt udstedt gennem de normale byggere fra den gennemgåede uudstedte 598-basis. Den offentlige driftsversion er 4.0.598. 603 afløser 602 som kandidat til næste kildekontrol. Den tidligere udstedelse og dens testresultater er bevaret på 602-grenen.
+
+Installationsworkflowet deklarerede det samme native-original-continuity-input to gange. Det korrigerede workflow deklarerer native-valget og SOURCE-valget én gang hver. Den normale målprøve kontrollerer de faktiske input og den præcise adgang til det historiske kontrolgrundlag.
+
+Normal udstedelse afledte aktuelle CODE-, C-, I- og T-bindinger og én ny migration. De 74 tidligere migrationer er bytebevaret. Versionssynkroniseringen ændrede alene geodataenes topversionsfelter. Stemplet 20261107061142 identificerer udstedelsen.
+
+Samlet kildekontrol mod den faktiske hovedgren, Linux/native, samme PostgreSQL-instans gennem fase 64 og national kapacitet skal kvalificeres. Før installation kræves matchende prognosetime i offentlig T og autentiske CURRENT B/S, hele grundlaget for 673 kystdele, friske pointer- og versionskontroller og tilstrækkelig privat lagerplads.
+
+Merge og første installation hører til samme vejrfri periode. Derefter skal en nyere almindelig generation gennem fuld levering, originalbevarelse og genlæsning. De to eksisterende delingstjenester følger den faktiske offentlige binding i det kontrollerede leveringsvindue.
+
+## 7. november — Source-kandidaters normale opstart og fase gennem hele leveringen
+
+Den tidligere private Source-kandidat er ikke produktionskvalificeret. Bevar dens udstedte metadata og SQL på dens egen gren; nye bundne produktrettelser klargøres fra en ægte uudstedt forberedelsesgren og udstedes på ny gennem de normale byggere. Nulstil eller ommærk aldrig en allerede udstedt kandidat.
+
+Prøv den rigtige CLI-opstart tidligt med et fast ikke-understøttet argument, før dyre nativeforløb: manglende initialisering skal fanges før GitHub. Afgræns værtsfejl fra produktfejl; Windows kræver systemets eksisterende SystemRoot for Node-kryptoinitialisering, mens leverandør-, preload- og autentificeringsmiljø ikke skal arves af opstartsprøven. En lokal opstartsprøve erstatter ikke Linux/Node24 eller fysisk proceslukning.
+
+Source-readiness skal følges gennem normale plan-, aktiverings-, Pages- og genoptagelseskaldere med samme præcise migrationer og policy. Et fasevalg er ikke B/S-, SQL- eller READY-adgang. Bevar gamle standardkald. Læs det normale autentificerede CURRENT-grundlag i det job, der faktisk bruger valget; GITHUB_ENV ændrer ikke samme shell, og senere jobs arver ikke værdien. Brug et lukket enum og argument-array, aldrig eval eller indlæsning af en hel miljøfil.
+
+Kontrollér YAML-syntaks og korte normale modulkald på de faktisk ændrede filer før ny udstedelse/PR. Ved Source-modelskifte skal de eksisterende særskilte prognosedelingstjenesters kompilerede binding også følge den faktisk leverede offentlige model i samme kontrollerede leveringsvindue; det giver ikke tilladelse til at svække læsernes bindinger. Den kørende almindelige vejrhentning bevares under lokal forberedelse.
+
+## 7. november — læs 602-forberedelsen før ny udstedelse
+
+SOURCE 4.0.602 er en privat forberedelse, ikke en udstedt, installeret eller aktiveret version. Den almindelige hovedgren er fortsat 4.0.598. Den tidligere private 601-kildekontrol stoppede før den samlede native-/database-/nationalkvalifikation; dens udstedte metadata, migration og evidens bevares på dens egen gren sammen med 600-historikken. Ingen udstedt familie nulstilles eller ommærkes. De ældre daterede afsnit nedenfor bevares; denne front afløser deres ventestatus på de konkret nævnte punkter.
+
+De to konkrete produktrettelser klargøres før en ny normal udstedelse: Pages-bygningens eksisterende guard skal læse action og de faktiske validerings-/releaseudfald fra den centrale typed route, som allerede adskiller SOURCE og den gamle rute. Cutover-undtagelsen og de øvrige gates bevares. Den almindelige allerede installerede SOURCE-rute skal desuden bruge sin lukkede current-policy ved valg af sen Edge-publicering. Den kræver udstedt SOURCE-output, fysisk aktuel modelbinding og hele den aktive integrerede current-tilstand. Gammel, blandet eller ukendt binding afvises; den får hverken legacy-fallback eller ny installationsret. De gamle to-argumenters standardkald bevares.
+
+601-kildekontrollen påviste fem forskellige kalder-/prøvegrupper: hele aktuelle workflow- og updaterfiler nåede gamle faste inverser; historiske pakke-, versions-, UI-import- og installerede bindingspræmisser blev anvendt på den nye familie; en isoleret post-H0-CLI-fixture manglede en faktisk importeret genereret afhængighed; RAW-distributionsfixturen blandede den gamle action-lås med SOURCEs eksisterende artifact-lås; og den kritiske workflowkontrol forventede den gamle bogstavelige releasebetingelse. Disse fund skal afgrænses ved deres faktiske kaldere. Et fixtureafslag er ikke i sig selv bevis for en produktionsfejl hos en vejrleverandør.
+
+Kontrollen opdeles efter reel relevans: gamle hele assertions og faste afslag bevares i deres ægte historiske CODE-kontekst; aktuelle SOURCE-kaldere skal have egne normale positive og negative prøver med fysisk udstedt output. Et historisk NULL-/forgængerforløb, som først efter normal output- og kildekontrol er ikke-relevant, tæller ikke som positiv SOURCE-kvalifikation. Den aktuelle rå workflowguard skal stadig prøves; en historisk læsevisning må ikke skjule den. Der indføres hverken en generisk hashunion, falsk originaladgang, frie faseværdier eller en ny genvej til grøn kontrol.
+
+Først efter alle bundne produktrettelser er sammenført må de 13 normale builder-, synkroniserings- og kontroltrin aflede faktiske nye CODE-/C/I/T-bindinger og én append-only migration fra en ægte uudstedt forberedelsesgren. Der er endnu ingen 602-stamp, hash eller SQL-output at dokumentere. Præcis slutkodekontrol, rigtig Linux/Node24 med samme PostgreSQL-instans gennem trin 64, aktuel native-/ur-/nationalkvalifikation, fysisk processtop, eksklusiv skrivning, fireminutters fejlforløb, tab af runner og holdbar gemning/upload/genbrug er åbne krav. Friske autentificerede B/S-originaler, pointer-/versions- og ABA-kontrol, fælles ydre ur, hård no-loss og B før S før offentlig T består. Installation, efterlæsning og faktisk effekt i en strengt nyere almindelig generation mangler fortsat.
+
+Begge eksisterende prognosedelingstjenester skal følge den faktisk leverede offentlige model gennem deres normale særskilte deployforløb og efterkontrol før cron genåbnes. Det er en leveringsafhængighed, ikke en ny readerrettelse. Den forberedte R2-førskrivningskontrol er ikke målt kapacitet, og skalar-timing er ikke en bevist rettelse af en timeout.
+
+Den eksisterende automatiske administrationsoprydning er aktiveret efter verificeret arkivering og den første kontrollerede oprydning. Den er afgrænset til de tre allerede godkendte administrationsdokumenttyper. Første naturlige tidsplanlagte drift skal stadig bevises; dette er hverken fuld databasebackup, gendannelsesbevis eller en generel Free-garanti.
+
+De 74 tidligere migrationer, originale vejrdata, offentliggjorte scorer, den numeriske scoreformel, administratorpunkter og geometri bevares. Kildeprioriteten er fortsat DMI → Copernicus → Open-Meteo; normal geodatasynk ændrer alene topversionsfelterne. Syvzonernes dkss_lf-undtagelse gælder kun vandstand, også gennem SOURCE/T+3; strøm, tilhørende strømhukommelse og vandtemperatur er fortsat udelukket. Se håndbog 89.325. Aktuelle kørsler, forbrugstal og privat evidens bliver i checkpointet.
+
+## 7. november — læs den faktiske lokale 601-udstedelse og de åbne leveringskrav
+
+SOURCE 4.0.601 er faktisk udstedt lokalt gennem de 13 normale builder-, synkroniserings- og kontroltrin fra en ægte uudstedt forberedelsesgren. Den almindelige hovedgren er fortsat 4.0.598. 601 er ikke installeret eller aktiveret, og de korte relevante mål er under særskilt kvalifikation. Kildekvalifikationen af den tidligere private 600-kandidat stoppede med fejl; den blev ikke merget, installeret eller aktiveret. Dens udstedte metadata, migration og evidens bevares på dens egen gren. Ingen udstedt familie er nulstillet eller ommærket.
+
+601 fører den præcise SOURCE-fase, de krævede 64 migrationer og den udstedte policy gennem normale readiness-, plan-, aktiverings-, Pages- og genoptagelseskaldere. Gamle 598-standardkald bevares. Det faktiske autentificerede CURRENT-grundlag vælger kun et lukket fase-enum i det job, som bruger det; det giver ikke original-, SQL- eller READY-adgang. Samme shell bruger en typet argument-array, fordi GITHUB_ENV først påvirker senere trin. Et senere job foretager sit eget normale fasevalg. Der læses hverken readiness-JSON som autoritet eller en hel miljøfil som shellkode.
+
+Den manglende initialisering i den normale CJS-opstart er rettet før ny udstedelse. Den korte opstartsprøve starter den virkelige CLI med ét fast ikke-understøttet argument og kræver det eksisterende afslag før SDK-, guardian- eller leverandørarbejde. Windows' nødvendige SystemRoot er en værtsforudsætning; leverandør-, preload- og autentificeringsmiljø arves ikke. De konkrete YAML- og fasetimingfejl blev fanget før merge. Lokale opstarts- og syntakskontroller er ikke Linux-, database- eller driftsbevis.
+
+Fortsat åbent er præcis kildekontrol på slutkoden, rigtig Linux/Node24 og samme PostgreSQL-instans gennem kæden til trin 64, aktuel native-/ur-/nationalkvalifikation, fysisk processtop, eksklusiv skrivning, fireminutters fejlforløb, tab af runner og holdbar gemning, upload og genbrug. Friske autentificerede B/S-originaler, pointer-/versions- og ABA-kontrol, fælles ydre ur, hård no-loss og B før S før offentlig T består. Sikker installation, efterlæsning og faktisk effekt i en strengt nyere almindelig generation mangler fortsat.
+
+De to eksisterende prognosedelingstjenester skal i samme kontrollerede leveringsvindue følge den faktisk leverede offentlige model, før cron genåbnes. Det er en leveringsafhængighed, ikke en ny readerrettelse eller en svækkelse af bindingerne. R2-kapacitetskontrol og skalar-timing er fortsat lokale forberedelser, ikke målt kapacitet eller bevist timeoutrettelse.
+
+Originaler, offentliggjorte scorer, de 74 tidligere migrationer, numerisk scoreformel, kildeprioritet DMI → Copernicus → Open-Meteo, administratorpunkter og geometri bevares. Normal geodatasynk ændrer kun topversionsfelterne. De syv kystzoners dkss_lf-undtagelse gælder kun vandstand, også gennem SOURCE/T+3; strøm, tilhørende strømhukommelse og vandtemperatur er fortsat udelukket dér. Se håndbog 89.324. Ældre afsnit bevares som dateret historik på de konkret afløste punkter; skiftende kørselsstatus og privat evidens bliver i checkpointet.
+
+## 7. november — præcis SOURCE-inventarliste før ældre workflowprøve
+
+Den særskilte Source-kandidat har ét yderligere eksisterende native-kildeworkflow. Den normale workflowprøve må kun fjerne netop dette navn fra sin historiske testvisning efter den normale fulde Source-output-/C/I/RAW-kontrol og hele filens præcise byteantal og SHA. NULL eller delvis udstedelse giver ingen adgang. Den almindelige 598-liste, de tre vedligeholdelsesfiler, alle gamle assertions og øvrige afslag bevares. Positiv målprøve køres først på normalt udstedt output; dette er en lokal kontrolrettelse og ingen aktivering.
+
 ## 7. november — eksisterende vedligeholdelsesforløb før historisk workflowliste
 
 Den normale workflowprøve verificerer de tre eksisterende backup-, historik- og CLI-restore-workflows med fuldt byteantal og SHA før den uændrede ældre inventarliste bruges. Ukendte, manglende, dobbelte eller ændrede filer afvises fortsat. Alle gamle assertions og indholds-/sourcegates bevares; ingen produktionsworkflow ændres. Den komplette normale prøve skal faktisk bestå på den rigtige, rene kandidat før ny afsendelse.
+## 7. november — privat tidsmåling før ny SOURCE-afledning
+
+Den eksisterende scalarplanlægning får kun afgrænsede fase-/snapshotmål og tællere for startede/færdige kystdele. Encoder, værdimasker, originale filer, to-minuttersfrist og transportstop bevares. Den eksisterende fysiske CLI-målprøve er bestået lokalt; faktisk årsagsmåling kræver en senere almindelig kørsel efter levering. Ingen tidsgevinst eller lukket timeoutfejl påstås.
+
+De tre gennemgåede filer indgår før nye SOURCE-pins. Revisionens eksisterende fulde kildevej installerer allerede Copernicus-forudsætninger før den normale parent. Der oprettes derfor ingen ekstra ordinary598-kontrolprofil eller setup-/oracledelta alene til denne diagnostik. Denne kandidat er fortsat privat og inaktiv; faktisk main-kvalifikation, normal afledning, hele den relevante native-/kildekæde og sikker levering er fortsat åbne.
+
+## 6. november — 4.0.599: gennemgået SOURCE-kandidat, fortsat inaktiv
+
+Den lokale kandidat føjer en afgrænset privat observation til de eksisterende normale kaldere for syvzonernes strømhukommelse og SOURCE-vandstand inklusive T+3 samt Fur. Den bruger kun allerede udførte grene og de præcise resultatobjekter efter den normale all-parts-finalizer; den udsteder ingen ny adgang og genforbruger ingen one-use-handle. Egen observationsfejl må ikke påvirke normal beregning. Den nye helper indgår i den normale CODE/RAW-liste, og kun den lille rapport føjes til det eksisterende private audit-artifact. Per-bidragsproveniens, donorbankmedlemskab og den historiske Fur-årsag forbliver ukendte, hvor de ikke kan udledes. Faktisk rapportgemning, upload og observation i en ny normal generation er åbne krav.
+
+4.0.599 er den gennemgåede, isolerede SOURCE-kandidat oven på den ægte 4.0.598-forgænger og den nyere almindelige kode. Den er ikke aktiveret i produktionen, og den samlede vejrhentningsrevision er ikke afsluttet. Forberedelse, udstedelse, rigtig native-kvalifikation, installation og faktisk offentlig effekt er særskilte trin.
+
+De normale kaldere til originalpakke, beregningscheckpoint, klargøring, førskrivningskontrol og installationsklarhed er samlet med den eksisterende 598-linje. Den oprindelige 598-kilde, gamle migrationsfiler og offentliggjorte scorer bevares. Hele forgængerfunktioner og kanoniske SQL-bodies bevares ved præcis inverse. Gamle JSON-kvitteringer, en omdøbt profil eller en syntetisk fixture giver aldrig adgang som en autentificeret original eller en frisk kapabilitet.
+
+De nye afgrænsede NULL-kaldere er prøvet på det faktiske integrerede træ. Det er førudstedelsesbevis, ikke positiv SOURCE-adgang eller bevis for kørt SQL. Historiske prøver, som forudsætter fysisk NULL eller en aktuel 598-pakke, beholder deres bodies. På et senere korrekt udstedt SOURCE-head må de kun angives som ikke relevante efter den normale outputkontrol; metadata må ikke nulstilles for at genskabe deres gamle præmis. Rene parser-, transport-, kvitterings- og frosne kildeprøver samt aktuelle native-, ur- og nationale kontroller bevares.
+
+Før udstedelse skal den faktisk nyeste main-kode, herunder de leverede almindelige rettelser og CPU-målingerne, være samlet uden at overskrive deres ejere. Den normale versionssynkronisering og dokumentation skal være færdig før nye CODE-fingeraftryk. C/I/T, den nye SOURCE-binding og output skal derefter afledes gennem de normale byggere og den normale compiler; gamle bindinger må ikke ommærkes. Aktive bindingsafsnit og installerens dokumentationskopi ajourføres først fra det faktisk udstedte output.
+
+Åbne krav er den rigtige Linux-/Node24-kæde med samme PostgreSQL-instans, aktuel strøm-/originalkæde, fireminutters fejlforløb, fysisk processtop, eksklusiv skrivning, holdbar gemning og genbrug, national heljobskapacitet og tab af runner. Lokal proceslukning eller et afsluttet underjob er ikke i sig selv bevis for tab af en hel runner. Før installation kræves autentificerede originaler, frisk pointer og checkpointversion, ABA-kontrol, fælles ydre ur og hård no-loss. Endelig kræves sikker levering og en strengt nyere normal vejrgeneration med faktisk privat og offentlig effekt.
+
+Kildeprioritet, scoreformel, administratorens land-/vandpunkter og geometri ændres ikke. De syv kystzoners præcise undtagelse for dkss_lf gælder fortsat kun vandstand; strøm, tilhørende strømhukommelse og vandtemperatur følger deres eksisterende udelukkelse. Ingen ny manuel vejrhentning, ændret cron, automatisk gentagelse, udvidet SQL-installation eller produktionsaktivering gives af denne dokumentation. Skiftende kørsels-, forbrugs- og testpins føres i privat checkpoint.
+
+Assistentens engelske vindspørgsmål bevarer nu det lokale emne til den efterfølgende samtale om at søge i vandet. Førstesvaret og de kanoniske waders-svar bevares; et ukendt ekstra spørgsmål må ikke opsluges af et delvist match. Den normale lokale regression kører altid, også uden et særskilt prøveflag. Klientændringen er et reelt modelinput og skal indgå før den nye normale C/I/T-udstedelse; den må ikke leveres som en ubundet598-rettelse.
+
+> **Isoleret SOURCE-kilde — 2026-11-05, fortsat ikke udstedt eller aktiveret.** Den normale opstart afviser først den faktiske NULL-profil, før CODE-læsning, guardian, leverandørarbejde eller SDK. Den kendte afvisning får nu sin præcise faste fejlkode i den eksisterende lukkede diagnostik; rå fejltekst og kontrolrækkefølge ændres ikke.
+>
+> En ny prøve starter den rigtige, uændrede Node24-opstart med to inputvarianter og de faktiske NULL-metadata. Den skal kræve det præcise afslag, fysisk child-lukning og uændrede kilde-/outputbytes. Prøven er endnu ikke udført. Den beviser ikke positiv SOURCE-adgang, FD3/clock, fireminuttersgrænse, SAVE, B/S/T, runner-tab eller national kapacitet. Dens NULL-præmis må ikke genskabes kunstigt på et senere udstedt head.
+>
+> Opstartsfilen indgår i SOURCEs CODE-fingeraftryk; den normale genberegning af fingeraftrykket og alle relevante udstedelses-/leveringskontroller er fortsat nødvendige før aktivering. Den separate Linux-kvalifikationskladde og dens to kernelprøver ændres ikke. Ingen produktionskode, binding, SQL, vejrdata, kildeprioritet, scoreformel, geometri eller administratorpunkter er ændret i driften. Offentlig Markdown-/webhåndbog og assistentviden bevares.
 
 ## 6. november — kontroller begge normale kildeplaner før push
 

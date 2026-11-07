@@ -1,3 +1,4 @@
+import { inverseReviewedSource601HistoricalCodeInput } from './lib/completed-private-runtime-workflow-review.mjs';
 // Test-only source inverse. No native B/S fixture, providers or production calls.
 import assert from 'node:assert/strict';
 import { inverseFullGitPinnedSourcePreparationWorkflow, fullGitPinnedSourcePreparationWorkflowReview }
@@ -22,8 +23,13 @@ import { inverseRelease594WorkflowUserAgents, release594WorkflowUserAgentReview,
   from './lib/completed-private-runtime-workflow-review.mjs';
 import { spawnSync } from 'node:child_process';
 const sha = source => crypto.createHash('sha256').update(source).digest('hex');
+const readSource601HistoricalBuild = async () => inverseReviewedSource601HistoricalCodeInput(
+  (await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'),
+  '.github/workflows/reusable-weather-build.yml');
 const read = async relative => {
-  const source = (await fs.readFile(new URL(relative, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+  const source = inverseReviewedSource601HistoricalCodeInput(
+    (await fs.readFile(new URL(relative, import.meta.url), 'utf8')).replaceAll('\r\n', '\n'),
+    relative.startsWith('../') ? relative.slice(3) : relative);
   const role = relative.endsWith('/reusable-weather-build.yml') ? 'build'
     : relative.endsWith('/run-current-weather-once.yml') ? 'once' : null;
   return role ? inverseCurrentFamilyColdStartWorkflow(source, role) : source;
@@ -431,7 +437,7 @@ test('actual RAW caller refuses missing duplicate misplaced changed and unrelate
 // Actual584 is qualified separately; all581/580/C/checkout/RAW cases above
 // continue to receive only the exact whole predecessor, never a partial view.
 test('release584 actual five User-Agent fields preserve the whole581 current-family-C source', async () => {
-  const source = inverseEarlyCompletedRuntimeStage((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
+  const source = inverseEarlyCompletedRuntimeStage((await readSource601HistoricalBuild()).replaceAll('\r\n', '\n'), 'build');
   assert.equal(sha(source), 'f0254a092c0baa188370c207b218e15ad7c9e616138d15234e6f323f101178c6');
   assert.equal((source.match(/^          WEATHER_USER_AGENT: "RavRadar\/4\.0\.584 /gm) ?? []).length, 5);
   const previous = inverseRelease584WorkflowUserAgents(source, 'build');
@@ -448,7 +454,7 @@ test('release584 actual five User-Agent fields preserve the whole581 current-fam
   assert.throws(() => inverseCompletedRuntimeWorkflow(source, 'once'));
 });
 test('release584 rejects every partial UA conversion deletion duplication and unrelated whole-source change', async () => {
-  const source = inverseEarlyCompletedRuntimeStage((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
+  const source = inverseEarlyCompletedRuntimeStage((await readSource601HistoricalBuild()).replaceAll('\r\n', '\n'), 'build');
   const current = 'RavRadar/4.0.584', pieces = source.split(current);
   assert.equal(pieces.length, 6);
   const mutations = Array.from({ length: 5 }, (_, changedAt) => pieces.reduce((text, piece, index) =>
@@ -469,7 +475,7 @@ test('release584 rejects every partial UA conversion deletion duplication and un
 });
 
 test('actual encrypted completed B stage precedes final gates with whole c72 and protected B/S order preserved', async () => {
-  const source = inverseOrdinaryCompletedStageWorkflowWiring((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
+  const source = inverseOrdinaryCompletedStageWorkflowWiring((await readSource601HistoricalBuild()).replaceAll('\r\n', '\n'), 'build');
   const block = assertEarlyCompletedRuntimeStageOrder(source);
   assert.equal(Buffer.byteLength(block), 3399);
   const previous = inverseEarlyCompletedRuntimeStage(source, 'build');
@@ -484,7 +490,7 @@ test('actual encrypted completed B stage precedes final gates with whole c72 and
 });
 
 test('early stage rejects changed missing duplicated relocated or unrelated whole-workflow bytes', async () => {
-  const source = inverseOrdinaryCompletedStageWorkflowWiring((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
+  const source = inverseOrdinaryCompletedStageWorkflowWiring((await readSource601HistoricalBuild()).replaceAll('\r\n', '\n'), 'build');
   const block = assertEarlyCompletedRuntimeStageOrder(source);
   const without = source.replace(block, '');
   const oldNext = '      - name: Build dataminimized weather preflight state after final gates\n';
@@ -637,7 +643,7 @@ test('actual optional wiring refuses every partial hunk, wrong role and changed 
 });
 
 test('current585 release inverse keeps every genuine584 workflow byte and refuses partial UA or unrelated drift', async () => {
-  const current586 = inverseNativeOriginalSchemaSelectorWorkflow((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
+  const current586 = inverseNativeOriginalSchemaSelectorWorkflow((await readSource601HistoricalBuild()).replaceAll('\r\n', '\n'), 'build');
   assert.equal(sha(current586), '8223891e25cfb7fbcf57a536bcc55a1cbf59ed676f02172588192065ae4eccc0');
   assert.equal(current586.split('RavRadar/4.0.586').length, 6, 'Exactly five genuine current586 User-Agent fields');
   assertEarlyCompletedRuntimeStageOrder(current586);
@@ -665,7 +671,7 @@ test('current585 release inverse keeps every genuine584 workflow byte and refuse
 
 test('native original schema selector: actual installed schema1 alone selects ordinary preparation; all old routes stay old',async()=>{
   // Remove only the exact combined parent layers before the unchanged586 oracle.
-  const actual=inverseAssistant587ColdCheckpointCombinedToF83Workflow(inverseAssistant587LatestColdCombinedTo664aWorkflow((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n'),'build'),'build');
+  const actual=inverseAssistant587ColdCheckpointCombinedToF83Workflow(inverseAssistant587LatestColdCombinedTo664aWorkflow((await readSource601HistoricalBuild()).replaceAll('\r\n','\n'),'build'),'build');
   const source=inverseCurrentFamilyColdBudgetWorkflow(inverseAssistant587CompletedWorkflow(
     inverseAssistant587ColdBudgetCombinedTo707Workflow(actual,'build'),'build'),'build');
   const donor=coldStep(source,'Classify one-time DMI PART continuity donor');
@@ -758,7 +764,7 @@ test('native original schema selector: actual installed schema1 alone selects or
 import {assistant587CompletedWorkflowReview,inverseAssistant587CompletedWorkflow}
   from './lib/completed-private-runtime-workflow-review.mjs';
 test('assistant587 exact workflow inverse retains genuine586 and every historical mutation refusal',async()=>{
-  const actual=inverseAssistant587ColdBudgetCombinedTo587Workflow(inverseAssistant587ColdCheckpointCombinedToF83Workflow(inverseAssistant587LatestColdCombinedTo664aWorkflow((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n'),'build'),'build'),'build');
+  const actual=inverseAssistant587ColdBudgetCombinedTo587Workflow(inverseAssistant587ColdCheckpointCombinedToF83Workflow(inverseAssistant587LatestColdCombinedTo664aWorkflow((await readSource601HistoricalBuild()).replaceAll('\r\n','\n'),'build'),'build'),'build');
   const review=assistant587CompletedWorkflowReview;
   assert.equal(Buffer.byteLength(actual),review.after.bytes);assert.equal(sha(actual),review.after.sha256);
   const previous=inverseAssistant587CompletedWorkflow(actual,'build');
@@ -810,7 +816,7 @@ test('assistant587 exact workflow inverse retains genuine586 and every historica
 });
 
 test('cold budget inverse: exact five conditions preserve all native and earlier workflow oracles',async()=>{
-  const source=inverseAssistant587ColdBudgetCombinedTo707Workflow(inverseAssistant587ColdCheckpointCombinedToF83Workflow(inverseAssistant587LatestColdCombinedTo664aWorkflow((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n'),'build'),'build'),'build');
+  const source=inverseAssistant587ColdBudgetCombinedTo707Workflow(inverseAssistant587ColdCheckpointCombinedToF83Workflow(inverseAssistant587LatestColdCombinedTo664aWorkflow((await readSource601HistoricalBuild()).replaceAll('\r\n','\n'),'build'),'build'),'build');
   const row=currentFamilyColdBudgetWorkflowReview;
   assert.equal(Buffer.byteLength(source),row.after.bytes);assert.equal(sha(source),row.after.sha256);
   assert.equal(row.hunks.length,5);
@@ -834,7 +840,7 @@ test('cold budget inverse: exact five conditions preserve all native and earlier
 });
 
 test('assistant587 plus cold budget: actual combined whole source retains both parents and every older oracle',async()=>{
-  const actual=inverseAssistant587ColdCheckpointCombinedToF83Workflow(inverseAssistant587LatestColdCombinedTo664aWorkflow((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n'),'build'),'build');
+  const actual=inverseAssistant587ColdCheckpointCombinedToF83Workflow(inverseAssistant587LatestColdCombinedTo664aWorkflow((await readSource601HistoricalBuild()).replaceAll('\r\n','\n'),'build'),'build');
   const row=assistant587ColdBudgetCombinedWorkflowReview;
   assert.equal(Buffer.byteLength(actual),row.combined.bytes);assert.equal(sha(actual),row.combined.sha256);
   const p0707=inverseAssistant587ColdBudgetCombinedTo707Workflow(actual,'build');
@@ -876,7 +882,7 @@ test('assistant587 plus cold budget: actual combined whole source retains both p
 // predecessor. All existing historical test bodies and pins stay unchanged.
 const latestColdProgressActual = Object.fromEntries(await Promise.all(
   Object.entries(currentFamilyColdCheckpointWorkflowReview.roles).map(async ([role, row]) =>
-    [role, inverseAssistant587LatestColdCombinedTo2bWorkflow((await fs.readFile(new URL('../' + row.relativePath, import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), role)])));
+    [role, inverseAssistant587LatestColdCombinedTo2bWorkflow(inverseReviewedSource601HistoricalCodeInput((await fs.readFile(new URL('../' + row.relativePath, import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), row.relativePath), role)])));
 const coldCheckpointActual = Object.fromEntries(Object.entries(latestColdProgressActual).map(([role,source]) =>
   [role,inverseLatestColdProgressWorkflow(source,role)]));
 
@@ -1086,7 +1092,7 @@ test('same-archive actual scope and prepare/resolve seams bind source and target
 });
 
 test('assistant587 plus PR710 checkpoint: actual whole composition preserves both exact parents and every oracle', async () => {
-  const actual = inverseAssistant587LatestColdCombinedTo664aWorkflow((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
+  const actual = inverseAssistant587LatestColdCombinedTo664aWorkflow((await readSource601HistoricalBuild()).replaceAll('\r\n', '\n'), 'build');
   const row = assistant587ColdCheckpointCombinedWorkflowReview;
   assert.equal(row.p0Parent.commit, 'd5d2f5e95c55c3096fa7b03890289c7d2cba307a');
   assert.equal(row.assistantParent.commit, 'f83da62fc5a90d65190dfb715539eb30070beb22');
@@ -1115,7 +1121,7 @@ test('assistant587 plus PR710 checkpoint: actual whole composition preserves bot
 });
 
 test('assistant587 plus PR710 checkpoint: partial cross-parent mutations never enter a historical inverse', async () => {
-  const actual = inverseAssistant587LatestColdCombinedTo664aWorkflow((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
+  const actual = inverseAssistant587LatestColdCombinedTo664aWorkflow((await readSource601HistoricalBuild()).replaceAll('\r\n', '\n'), 'build');
   const row = assistant587ColdCheckpointCombinedWorkflowReview;
   assert.equal(sha(actual), row.combined.sha256);
   const changed = [
@@ -1239,7 +1245,7 @@ test('actual latest progress cache selects the requested exact ID and keeps orig
 });
 
 test('assistant587 plus PR712 latest progress: actual whole composition preserves both exact Git parents', async () => {
-  const actual = inverseRelease588WorkflowUserAgents((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
+  const actual = inverseRelease588WorkflowUserAgents((await readSource601HistoricalBuild()).replaceAll('\r\n', '\n'), 'build');
   const row = assistant587LatestColdCombinedWorkflowReview;
   assert.equal(row.p0Parent.commit, '2b1d7a95d4201ef39e10cc9d7e52cd0f4d6243aa');
   assert.equal(row.assistantParent.commit, '664aeb46966cd0ec182599a90bcaacc6c4b609ab');
@@ -1277,7 +1283,7 @@ test('assistant587 plus PR712 latest progress: actual whole composition preserve
 });
 
 test('assistant587 plus PR712 latest progress: partial parent mutations never enter any historical inverse', async () => {
-  const actual = inverseRelease588WorkflowUserAgents((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
+  const actual = inverseRelease588WorkflowUserAgents((await readSource601HistoricalBuild()).replaceAll('\r\n', '\n'), 'build');
   const row = assistant587LatestColdCombinedWorkflowReview;
   assert.equal(sha(actual), row.combined.sha256);
   const changed = [
@@ -1312,7 +1318,7 @@ test('assistant587 plus PR712 latest progress: partial parent mutations never en
 });
 
 test('release588 exact five UA fields preserve whole587 and every historical refusal',async()=>{
-  const actual=inverseRelease590WorkflowUserAgents((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n'),'build');
+  const actual=inverseRelease590WorkflowUserAgents((await readSource601HistoricalBuild()).replaceAll('\r\n','\n'),'build');
   assert.equal(Buffer.byteLength(actual),292886);
   assert.equal(sha(actual),'998d3a8e11a1088363a84bfd4a0d64f7117eacc059a3cf5c0ca895f7a85e22b3');
   assert.equal(actual.split('RavRadar/4.0.588').length,6);
@@ -1345,7 +1351,7 @@ test('release588 exact five UA fields preserve whole587 and every historical ref
 });
 
 test('release590 five UA inverse reaches genuine588 then the existing19-hunk cold-progress adapter',async()=>{
-  const actual=inverseRelease591WorkflowUserAgents((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n'),'build');
+  const actual=inverseRelease591WorkflowUserAgents((await readSource601HistoricalBuild()).replaceAll('\r\n','\n'),'build');
   assert.equal(Buffer.byteLength(actual),292886);
   assert.equal(sha(actual),'bf9f27721718511cf345505416230b10c863a963bbb49ee774e4fdea8a7adfa6');
   assert.equal(actual.split('RavRadar/4.0.590').length,6);
@@ -1365,7 +1371,7 @@ test('release590 five UA inverse reaches genuine588 then the existing19-hunk col
 });
 
 test('release590 UA view rejects mixed,duplicated,unknown or non-UA drift through unchanged whole oracles',async()=>{
-  const actual=inverseRelease591WorkflowUserAgents((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n'),'build');
+  const actual=inverseRelease591WorkflowUserAgents((await readSource601HistoricalBuild()).replaceAll('\r\n','\n'),'build');
   for(const role of ['once','unknown','toString'])assert.equal(inverseRelease590WorkflowUserAgents(actual,role),actual);
   const mutations=[actual+'\n# UNREVIEWED590\n',
     actual.replace('RavRadar/4.0.590','RavRadar/4.0.588'),
@@ -1384,7 +1390,7 @@ test('release590 UA view rejects mixed,duplicated,unknown or non-UA drift throug
 });
 
 test('release591 actual normal workflow preserves genuine590 and historical refusals',async()=>{
-  const actual=inverseWindTailCapacityWorkflow(inverseRelease592WorkflowUserAgents((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n'),'build'),'build');
+  const actual=inverseWindTailCapacityWorkflow(inverseRelease592WorkflowUserAgents((await readSource601HistoricalBuild()).replaceAll('\r\n','\n'),'build'),'build');
   assert.equal(Buffer.byteLength(actual),292886);
   assert.equal(sha(actual),'bfb4d382c36d713328e8d68f7a04801a16f35b3bcecffb3c1e9813cc578338c7');
   assert.equal(actual.split('RavRadar/4.0.591').length,6);
@@ -1419,7 +1425,7 @@ test('release591 actual normal workflow preserves genuine590 and historical refu
 
 
 test('wind-tail capacity whole inverse preserves every591 byte and refuses budget or surrounding drift', async () => {
-  const actual = inverseRelease592WorkflowUserAgents((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
+  const actual = inverseRelease592WorkflowUserAgents((await readSource601HistoricalBuild()).replaceAll('\r\n', '\n'), 'build');
   const row = windTailCapacityWorkflowReview;
   assert.equal(Buffer.byteLength(actual), row.after.bytes);
   assert.equal(sha(actual), row.after.sha256);
@@ -1454,7 +1460,7 @@ test('wind-tail capacity whole inverse preserves every591 byte and refuses budge
 
 
 test('release592 actual capacity workflow preserves whole591 tail and historical refusals', async () => {
-  const actual = inverseRuntimeAuditExecutionWorkflow((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
+  const actual = inverseRuntimeAuditExecutionWorkflow((await readSource601HistoricalBuild()).replaceAll('\r\n', '\n'), 'build');
   const row = release592WorkflowUserAgentReview;
   assert.equal(Buffer.byteLength(actual), row.after.bytes);
   assert.equal(sha(actual), row.after.sha256);
@@ -1488,7 +1494,7 @@ test('release592 actual capacity workflow preserves whole591 tail and historical
 });
 
 test('runtime audit592 observation whole inverse preserves issued592 and exact591753 parents',async()=>{
-  const actual=inverseRelease593WorkflowUserAgents(inverseRelease594WorkflowUserAgents((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n'),'build'),'build');
+  const actual=inverseRelease593WorkflowUserAgents(inverseRelease594WorkflowUserAgents((await readSource601HistoricalBuild()).replaceAll('\r\n','\n'),'build'),'build');
   const row=runtimeAuditExecution592WorkflowReview;
   assert.equal(Buffer.byteLength(actual),row.after.bytes);assert.equal(sha(actual),row.after.sha256);
   const previous=inverseRuntimeAuditExecutionWorkflow(actual,'build');
@@ -1521,7 +1527,7 @@ test('runtime audit592 observation whole inverse preserves issued592 and exact59
 
 
 test('release593 actual workflow preserves the immutable592 body and all older whole oracles',async()=>{
-  const actual=inverseRelease594WorkflowUserAgents((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n'),'build');
+  const actual=inverseRelease594WorkflowUserAgents((await readSource601HistoricalBuild()).replaceAll('\r\n','\n'),'build');
   const row=release593WorkflowUserAgentReview;
   assert.equal(Buffer.byteLength(actual),row.after.bytes);assert.equal(sha(actual),row.after.sha256);
   assert.equal(actual.split('RavRadar/4.0.593').length,6);
@@ -1548,7 +1554,7 @@ test('release593 actual workflow preserves the immutable592 body and all older w
 });
 
 test('full Git pin preparation has an exact outer inverse before every unchanged workflow oracle',async()=>{
-  const actual=inverseQualifiedScalarPlanningWorkflow((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n'),'build');
+  const actual=inverseQualifiedScalarPlanningWorkflow((await readSource601HistoricalBuild()).replaceAll('\r\n','\n'),'build');
   const row=fullGitPinnedSourcePreparationWorkflowReview;
   assert.equal(Buffer.byteLength(actual),row.after.bytes);assert.equal(sha(actual),row.after.sha256);
   const previous=inverseFullGitPinnedSourcePreparationWorkflow(actual,'build');
@@ -1574,7 +1580,7 @@ test('full Git pin preparation has an exact outer inverse before every unchanged
 
 test('release594 actual workflow preserves whole593 and refuses unrelated changes',async()=>{
   const actual=inverseFullGitPinnedSourcePreparationWorkflow(
-    (await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8')).replaceAll('\r\n','\n'),'build');
+    (await readSource601HistoricalBuild()).replaceAll('\r\n','\n'),'build');
   const row=release594WorkflowUserAgentReview;
   assert.equal(Buffer.byteLength(actual),row.after.bytes);assert.equal(sha(actual),row.after.sha256);
   assert.equal(actual.split('RavRadar/4.0.594').length,6);
@@ -1603,7 +1609,7 @@ test('terminal delivery repair maps only five exact whole sources and its exact 
     inverseTerminalRepair4145WorkflowInventory: inventory } = await import('./lib/completed-private-runtime-workflow-review.mjs');
   assert.deepEqual(Object.keys(review.roles), ['orchestrator', 'once', 'repair', 'recovery', 'deploy']);
   for (const [role, row] of Object.entries(review.roles)) {
-    const source = (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+    const source = inverseReviewedSource601HistoricalCodeInput((await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), row.path);
     const actual = inversePagesPublicProjectionWorkflow(source, role);
     assert.equal(Buffer.byteLength(actual), row.after.bytes); assert.equal(sha(actual), row.after.sha256);
     const prior = inverse(actual, role);
@@ -1634,7 +1640,7 @@ import {inverseQualifiedScalarSchemaWorkflow, inverseQualifiedScalarPlanningWork
   inversePagesPublicProjectionWorkflow, pagesPublicProjectionWorkflowReview, inverseRelease597WorkflowUserAgents, inverseTerminalRepair4145Workflow}
   from './lib/completed-private-runtime-workflow-review.mjs';
 test('qualified scalar inverse keeps the entire genuine main workflow and rejects mixed bytes', async () => {
-  const source = inverseQualifiedScalarSchemaWorkflow((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
+  const source = inverseQualifiedScalarSchemaWorkflow((await readSource601HistoricalBuild()).replaceAll('\r\n', '\n'), 'build');
   const row = qualifiedScalarPlanningWorkflowReview;
   assert.equal(sha(source), row.after.sha256);
   const before = inverseQualifiedScalarPlanningWorkflow(source, 'build');
@@ -1651,7 +1657,7 @@ test('qualified scalar inverse keeps the entire genuine main workflow and reject
 });
 
 test('scalar schema successor preserves the exact whole predecessor before the unchanged scalar oracle', async () => {
-  const source = (await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+  const source = (await readSource601HistoricalBuild()).replaceAll('\r\n', '\n');
   const actual = inversePagesPublicProjectionWorkflow(source, 'build');
   assert.equal(Buffer.byteLength(actual), 297899);
   assert.equal(sha(actual), '451249801b6944d945b193fd95de5065cf057a8b08a6698a675e2192c074100c');
@@ -1677,7 +1683,7 @@ test('Pages projection inverse preserves exact old workflow bytes and rejects mi
   const { roles } = pagesPublicProjectionWorkflowReview;
   assert.deepEqual(Object.keys(roles), ['build', 'once', 'repair']);
   for (const [role, row] of Object.entries(roles)) {
-    const issued = (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+    const issued = inverseReviewedSource601HistoricalCodeInput((await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), row.path);
     const actual = inverseRelease597WorkflowUserAgents(issued, role);
     assert.equal(Buffer.byteLength(actual), row.after.bytes);
     assert.equal(sha(actual), row.after.sha256);
@@ -1710,7 +1716,7 @@ test('Pages projection inverse preserves exact old workflow bytes and rejects mi
 });
 
 test('release597 whole workflow identifies only the five issued User-Agent fields', async () => {
-  const source = inverseRelease598WorkflowUserAgents((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'),'build');
+  const source = inverseRelease598WorkflowUserAgents((await readSource601HistoricalBuild()).replaceAll('\r\n', '\n'),'build');
   const historical = inverseRelease597WorkflowUserAgents(source, 'build');
   const current = source.match(/^          WEATHER_USER_AGENT: "RavRadar\/4\.0\.597 /gm) ?? [];
   if (!current.length) {
@@ -1733,7 +1739,7 @@ import { inverseRunnerAndroidSdkWorkflow, runnerAndroidSdkWorkflowReview }
 
 test('hosted Android SDK workflow inverse retains the complete genuine597 predecessor', async () => {
   const row = runnerAndroidSdkWorkflowReview;
-  const current = inverseWeatherProcessHourWorkflow((await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
+  const current = inverseWeatherProcessHourWorkflow(inverseReviewedSource601HistoricalCodeInput((await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), row.path), 'build');
   assert.equal(sha(current), row.after.sha256);
   assert.equal(Buffer.byteLength(current), row.after.bytes);
   assert.equal(row.steps.length, 2);
@@ -1770,7 +1776,7 @@ import { inverseWeatherProcessHourWorkflow, weatherProcessHourWorkflowReview,
 
 test('weather-process hour inverse preserves the entire genuine prior workflow and refuses partial or unknown bytes', async () => {
   const row = weatherProcessHourWorkflowReview, gates = requiredPublicationGatesWorkflowReview;
-  const issued = inverseRelease598WorkflowUserAgents((await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replaceAll('\r\n', '\n'),'build');
+  const issued = inverseRelease598WorkflowUserAgents(inverseReviewedSource601HistoricalCodeInput((await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), row.path),'build');
   assert.equal(gates.path, row.path); assert.deepEqual(gates.before, row.after);
   assert.equal(Buffer.byteLength(issued), gates.after.bytes); assert.equal(sha(issued), gates.after.sha256);
   const current = inverseRequiredPublicationGatesWorkflow(issued, 'build');
@@ -1822,7 +1828,7 @@ import {inverseRelease598WorkflowUserAgents,release598WorkflowUserAgentReview}
   from './lib/completed-private-runtime-workflow-review.mjs';
 test('release598 UA inverse preserves whole main1684 and rejects unknown same-size partial or wrong-role bytes',async()=>{
   const row=release598WorkflowUserAgentReview;
-  const source=(await fs.readFile(new URL('../'+row.path,import.meta.url),'utf8')).replaceAll('\r\n','\n');
+  const source=inverseReviewedSource601HistoricalCodeInput((await fs.readFile(new URL('../'+row.path,import.meta.url),'utf8')).replaceAll('\r\n','\n'),row.path);
   assert.equal(Buffer.byteLength(source),row.after.bytes);assert.equal(sha(source),row.after.sha256);
   const previous=inverseRelease598WorkflowUserAgents(source,'build');
   assert.equal(Buffer.byteLength(previous),row.before.bytes);assert.equal(sha(previous),row.before.sha256);
@@ -1844,4 +1850,37 @@ test('release598 UA inverse preserves whole main1684 and rejects unknown same-si
   assert.throws(()=>inverseRelease598WorkflowUserAgents(source),/RELEASE598_WORKFLOW_ARGUMENTS/);
   assert.throws(()=>inverseRelease598WorkflowUserAgents(source,'build',true),/RELEASE598_WORKFLOW_ARGUMENTS/);
   assert.throws(()=>inverseRelease598WorkflowUserAgents(null,'build'),/RELEASE598_WORKFLOW_TYPE/);
+});
+
+
+test('issued Source historical code views preserve exact predecessors and unknown-input refusals', async () => {
+  for (const relative of ['.github/workflows/reusable-weather-build.yml',
+    '.github/workflows/run-current-weather-once.yml', '.github/workflows/deploy-code-only-repair.yml',
+    '.github/workflows/reusable-pages-deploy.yml', '.github/workflows/reusable-operational-reentry.yml',
+    'scripts/update-weather.mjs', 'scripts/lib/dmi-forecast-file.mjs']) {
+    const source = (await fs.readFile(new URL('../' + relative, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+    if (relative === '.github/workflows/deploy-code-only-repair.yml') {
+      const inputStart = source.indexOf('  workflow_dispatch:\n    inputs:\n');
+      const inputEnd = source.indexOf('\npermissions:', inputStart);
+      assert.ok(inputStart >= 0 && inputEnd > inputStart, 'Actual repair workflow declares manual inputs');
+      const keys = [...source.slice(inputStart, inputEnd).matchAll(/^      ([a-z_]+):$/gm)]
+        .map(match => match[1]);
+      assert.equal(new Set(keys).size, keys.length, 'Every repair dispatch input must be unique');
+      for (const key of ['upgrade_native_original_continuity', 'upgrade_source_producer']) {
+        assert.equal(keys.filter(name => name === key).length, 1, 'Required repair input: ' + key);
+      }
+    }
+    const previous = inverseReviewedSource601HistoricalCodeInput(source, relative);
+    assert.notEqual(previous, source, 'Only the whole issued Source input obtains its genuine historical text');
+    assert.equal(inverseReviewedSource601HistoricalCodeInput(previous, relative), previous);
+    for (const changed of [source + '\n', '!' + source.slice(1), source.slice(1)]) {
+      assert.equal(inverseReviewedSource601HistoricalCodeInput(changed, relative), changed,
+        'A changed Source input cannot be normalized into an old passing oracle');
+    }
+    for (const unknown of ['', 'scripts/unknown.mjs', 'toString'])
+      assert.equal(inverseReviewedSource601HistoricalCodeInput(source, unknown), source);
+  }
+  assert.throws(() => inverseReviewedSource601HistoricalCodeInput({}, 'scripts/update-weather.mjs'),
+    /SOURCE601_HISTORICAL_INPUT_TYPE/);
+  assert.throws(() => inverseReviewedSource601HistoricalCodeInput(''), /SOURCE601_HISTORICAL_INPUT_ARGUMENTS/);
 });

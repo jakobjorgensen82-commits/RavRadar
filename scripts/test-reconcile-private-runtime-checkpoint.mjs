@@ -496,12 +496,13 @@ test('ordinary paired publication is genuinely new, exact-invertible and cannot 
   assert.equal(inverseCompletedRuntimeWorkflow(raw, 'build'), inverseCompletedRuntimeWorkflow(previous, 'build'));
   const step = (text, name) => text.split(/(?=^      - name:)/m).find(block => block.startsWith('      - name: ' + name + '\n'));
   const Sstep = step(raw, 'Publish atomic RavScore checkpoint to protected admin storage');
-  const evalIf = (block, action, required, input = {}, assistantRequired = 'false') => runInNewContext(block.match(/^        if: (.+)$/m)[1]
+  const evalIf = (block, action, required, input = {}, assistantRequired = 'false', sourceNormalProducer = 'false') => runInNewContext(block.match(/^        if: (.+)$/m)[1]
     .replace(/\bsteps\.([a-z][a-z0-9-]*)/g, (_, id) => 'steps[' + JSON.stringify(id) + ']'), {
       inputs: { weather_state_epoch_bootstrap: false, weather_state_epoch_checkpoint_reentry: false,
         native_sampling_identity_original_recovery: false, checkpoint_only: false, quick_confirmation: false,
         completed_private_runtime: false, ...input },
       steps: { preflight: { outputs: { should_run: 'true' } }, 'operational-action': { outputs: { action } },
+        'operational-model': { outputs: { source_normal_producer: sourceNormalProducer } },
         'paired-checkpoint-route': { outputs: { required } },
         'assistant-later-h0-source': { outputs: { required: assistantRequired } } } });
   for (const action of ['candidate-dry-run', 'candidate-maintenance', 'integrated-historical-maintenance', 'UNKNOWN']) {
@@ -516,6 +517,10 @@ test('ordinary paired publication is genuinely new, exact-invertible and cannot 
       assert.equal(evalIf(step(raw, name), 'integrated', 'true', { [flag]: true }), false);
   const pairedSelector = step(raw, 'Select current-family paired checkpoint restoration before any S restore');
   const pairedReconcile = step(raw, 'Reconcile only authenticated CURRENT B to its exact protected S before providers');
+  for (const sourceNormalProducer of ['true', '']) {
+    assert.equal(evalIf(pairedSelector, 'integrated', '', {}, 'false', sourceNormalProducer), false);
+    assert.equal(evalIf(pairedReconcile, 'integrated', 'true', {}, 'false', sourceNormalProducer), false);
+  }
   // select writes required=false normally; a skipped step exposes an empty
   // output. The later-assistant route must skip paired select and leave its
   // required output empty, so the downstream paired reconciliation cannot run.

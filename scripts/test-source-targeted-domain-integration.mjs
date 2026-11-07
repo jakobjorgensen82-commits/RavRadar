@@ -8,6 +8,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {fileURLToPath,pathToFileURL} from 'node:url';
+import {reviewedSourcePrWorkflowOrdinaryView} from './lib/source-impact-workflow-review.mjs';
 
 const SOURCE=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const fixture597=process.argv[2]==='--source597',fixture598=process.argv[2]==='--source598';
@@ -457,7 +458,7 @@ try{
     // Same real producer -> discovery -> consumer path, genuine148/C101/I100/T12
     // fixture inputs and synthetic API/target bodies; both ROOT-review reads run.
     const modernWorkflow='.github/workflows/validate-pull-request.yml';
-    const modernTree=rewrite(candidateTree,[[modernWorkflow,fs.readFileSync(path.join(SOURCE,modernWorkflow))]]);
+    const modernTree=rewrite(candidateTree,[[modernWorkflow,Buffer.from(reviewedSourcePrWorkflowOrdinaryView(fs.readFileSync(path.join(SOURCE,modernWorkflow),'utf8')))]]);
     configure(commit(modernTree,[base],'synthetic exact modern Python environment workflow'));
     state.modernWorkflow=true;baselinePlan=plan({baselineCommit:base,candidateCommit:head,expectedHead:head});
     assert.equal(baselinePlan.selection,'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(baselinePlan.reasonCodes));rebuildMaps();

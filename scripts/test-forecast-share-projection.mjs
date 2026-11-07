@@ -12,6 +12,9 @@ import {assertForecastShareDescriptor,assertForecastShareProjection,assertForeca
 import {loadCompactPublicForecastShareSelection,loadPublicForecastShareSelection} from '../js/services/data-service.js';
 import {exactMapZoneScore} from '../js/services/map-forecast-view.js';
 import {buildReleaseContractMetadata} from './lib/release-contract-metadata.mjs';
+import {handleForecastShare} from './forecast-share/handler.mjs';
+import {forecastShareUrl, FORECAST_SHARE_PAGES_BASE_URL, FORECAST_SHARE_WORKER_BASE_URL}
+  from '../js/services/forecast-share-contract.js';
 
 const sha=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 const text=value=>JSON.stringify(value)+'\n';
@@ -140,6 +143,34 @@ try{
   assert.deepEqual(compact,legacy);
   const normal=exactMapZoneScore({conditions:{coastalParts:details.coastalParts,mapForecastTime:time},zoneId,time,mode});
   assert.equal(compact.result.score,normal.score);assert.equal(compact.result.scoreQuality,normal.scoreQuality);cases++;
+  // Samme normale210/673-artifact og normale tre læsninger; ingen eksterne kald.
+  for(const host of [FORECAST_SHARE_PAGES_BASE_URL, FORECAST_SHARE_WORKER_BASE_URL]){
+    const transport=async url=>fetchPublic('./'+new URL(url).pathname.slice(1));
+    for(const language of ['da','de','en']){
+      const link=forecastShareUrl(host,{...selection,language});
+      const start=requests.length;
+      const get=await handleForecastShare(new Request(link),{shareBaseUrl:host,fetchPublic:transport});
+      assert.equal(get.status,200);assert.equal(requests.length-start,3);
+      const body=await get.text();assert(body.includes(String(normal.score)+'/100'));
+      const beforeHead=requests.length;
+      const head=await handleForecastShare(new Request(link,{method:'HEAD'}),{shareBaseUrl:host,fetchPublic:transport});
+      assert.equal(head.status,get.status);assert.deepEqual([...head.headers],[...get.headers]);
+      assert.equal(await head.text(),'');assert.equal(requests.length,beforeHead,
+        'HEAD må ikke hente manifest, descriptor eller scorefil');cases++;
+    }
+    const invalid=host+'?share=forecast&zone=bad&time=not-a-time&mode=beach&lang=da';
+    const get=await handleForecastShare(new Request(invalid),{shareBaseUrl:host,fetchPublic:transport});
+    const beforeHead=requests.length;
+    const head=await handleForecastShare(new Request(invalid,{method:'HEAD'}),{shareBaseUrl:host,fetchPublic:transport});
+    assert.equal(get.status,400);assert.equal(head.status,get.status);
+    assert.deepEqual([...head.headers],[...get.headers]);assert.equal(await head.text(),'');
+    assert.equal(requests.length,beforeHead);cases++;
+    const unbound=await handleForecastShare(new Request('https://unbound.invalid/',{method:'HEAD'}),
+      {shareBaseUrl:host,fetchPublic:transport});
+    assert.equal(unbound.status,503);assert.equal(requests.length,beforeHead);
+    const post=await handleForecastShare(new Request(host,{method:'POST'}),{shareBaseUrl:host,fetchPublic:transport});
+    assert.equal(post.status,405);assert.equal(post.headers.get('Allow'),'GET, HEAD');cases++;
+  }
   offline='./data/live/forecast-share.json';await assert.rejects(()=>loadCompactPublicForecastShareSelection(selection,{fetchPublic}),/SYNTHETIC_OFFLINE/);
   offline='./data/live/'+zoneEntry.path.slice(2);await assert.rejects(()=>loadPublicForecastShareSelection(selection,{fetchPublic}),/SYNTHETIC_OFFLINE/);offline=null;cases++;
   const missingHour={...selection,time:new Date(Date.parse(horizonTimes[117])+3600000).toISOString()};

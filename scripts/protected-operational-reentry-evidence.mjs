@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+import {DEFAULT_CUTOVER_SOURCE_PHASE} from './integrated-cutover-readiness.mjs';
+import {SOURCE_PRODUCER_AFTER597_PARENT} from './lib/source-producer-after597-parent.mjs';
+import {requireSourceProducerOutput,requireSourceProducerBinding} from './lib/source-producer-after597-runtime-family.mjs';
+import {sourceProducerOriginalStageFamily} from './stage-source-producer-originals.mjs';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -15,6 +19,7 @@ import { sha256CanonicalJson, assertUploadedOperationalPagesTarget } from './rav
 import {
   PROTECTED_PRIVATE_RUNTIME_POLICY,
   createProtectedPrivateRuntimeClients,
+  describeCurrentProtectedPrivateProductionRuntime,
 } from './protected-private-production-runtime.mjs';
 
 const execFileAsync = promisify(execFile);
@@ -862,13 +867,13 @@ export function classifyProtectedPreActivationReentry({evidence,current,attempt,
   if(d.sourceHead!==sourceHead||!phaseSourceMatches(current,phase,d)||current.pending!==false) throw new Error('Pre-activation source state changed');
   return 'PRE_ACTIVATION_RESUME';
 }
-export async function classifyProtectedPreActivationCurrent({request,storage,repository,sourceHead,attempt}={}) {
+export async function classifyProtectedPreActivationCurrent({request,storage,repository,sourceHead,attempt,sourcePhase=DEFAULT_CUTOVER_SOURCE_PHASE}={}) {
   const evidence=await inspectProtectedPreActivationTarget({request,storage,repository});
   if(evidence.action==='NONE')return {action:'NONE'};
   const current=await phaseCurrent(request);
   if(current.pending&&current.sourcePublicManifestSha256!==evidence.phase.sourceCurrent.publicManifestSha256) {
     const ordinary=await protectedFilesBy({request,storage,repository,deploymentId:evidence.slot.target.deploymentId});
-    await admitAuthenticPreparedPendingSource({current,evidence,ordinary});
+    await admitAuthenticPreparedPendingSource({sourcePhase,current,evidence,ordinary});
   }
   return {action:classifyProtectedPreActivationReentry({evidence,current,attempt,repository,sourceHead})};
 }
@@ -940,7 +945,7 @@ export async function restoreProtectedPreActivationTarget({directory,request,sto
   }catch(first){await fs.rm(stage,{recursive:true,force:true}).catch(()=>{});throw first;}
   return {restored:true,slot:evidence.slot,privatePayloadIncluded:false};
 }
-export async function prepareProtectedPreActivationHandoff({directory,request,storage,repository,owner,readiness,plan}={}) {
+export async function prepareProtectedPreActivationHandoff({directory,request,storage,repository,owner,readiness,plan,sourcePhase=DEFAULT_CUTOVER_SOURCE_PHASE}={}) {
   const evidence=await inspectProtectedPreActivationTarget({request,storage,repository});
   if(evidence.action==='NONE'||!same(evidence.slot.owner,phaseOwner(owner)))throw new Error('Handoff requires current recovery owner');
   const files=await collectFiles(directory,phasePolicy());
@@ -952,7 +957,7 @@ export async function prepareProtectedPreActivationHandoff({directory,request,st
   const current=await phaseCurrent(request);
   if(!phaseSourceMatches(current,phase,evidence.slot.target)||current.pending)throw new Error('Recovery source changed before handoff');
   const {assertIntegratedHistoricalMaintenancePlan}=await import('./ravscore-operational-activation.mjs');
-  assertIntegratedHistoricalMaintenancePlan(plan,{expectedSourceHead:owner.headSha,
+  assertIntegratedHistoricalMaintenancePlan(plan,{sourcePhase,expectedSourceHead:owner.headSha,
     currentRow:phaseDocumentRows.get(current).operational,currentProfileRow:phaseDocumentRows.get(current).profile,
     expectedCentralVersion:current.centralVersion,publicManifest:manifest,
     publicAudit:phaseJson(files,'public-audit.json'),readiness});
@@ -1106,14 +1111,14 @@ async function repairGithubJson(route,fetchImpl=fetch) {
     (Number.isInteger(response.status)?response.status:'unknown')+').');
   return response.json();
 }
-async function repairLiveReadiness({sourceHead,publicImplementationClosureSha256,fetchImpl=fetch}={}) {
+async function repairLiveReadiness({sourceHead,publicImplementationClosureSha256,fetchImpl=fetch,sourcePhase=DEFAULT_CUTOVER_SOURCE_PHASE}={}) {
   const {checkIntegratedCutoverReadiness}=await import('./integrated-cutover-readiness.mjs');
-  return checkIntegratedCutoverReadiness({sourceHead,publicImplementationClosureSha256,
+  return checkIntegratedCutoverReadiness({sourcePhase,sourceHead,publicImplementationClosureSha256,
     url:process.env.SUPABASE_URL,serviceRoleKey:process.env.SUPABASE_SERVICE_ROLE_KEY,
     publishableKey:process.env.SUPABASE_PUBLISHABLE_KEY||PUBLIC_CONFIG.supabasePublishableKey,fetchImpl});
 }
 async function preparedPhaseTarget({request,storage,repository,executor,attempt,directory,
-  verifyExecutor=assertTerminalRepairExecutor,checkReadiness=repairLiveReadiness,fetchImpl=fetch}={}) {
+  verifyExecutor=assertTerminalRepairExecutor,checkReadiness=repairLiveReadiness,fetchImpl=fetch,sourcePhase=DEFAULT_CUTOVER_SOURCE_PHASE}={}) {
   const evidence=await inspectProtectedPreActivationTarget({request,storage,repository});
   if(evidence.action!=='PRE_ACTIVATION_PRESENT')throw new Error('Prepared recovery requires its authentic phase');
   const slot=validatePhaseSlot(evidence.slot),d=slot.target;
@@ -1144,11 +1149,11 @@ async function preparedPhaseTarget({request,storage,repository,executor,attempt,
   const driver=await verifyExecutor({producerHead:d.sourceHead,executor,directory});
   if(!same(driver.publicClosure,phaseJson(phase,'target-public-closure.json')))
     throw new Error('Prepared repair public implementation changed');
-  const freshReadiness=await checkReadiness({sourceHead:d.sourceHead,
+  const freshReadiness=await checkReadiness({...(sourcePhase===DEFAULT_CUTOVER_SOURCE_PHASE?{}:{sourcePhase}),sourceHead:d.sourceHead,
     publicImplementationClosureSha256:d.implementationClosureSha256,fetchImpl});
   if(!same(freshReadiness,readiness))throw new Error('Prepared repair readiness or installed Edge binding changed');
   const activation=await import('./ravscore-operational-activation.mjs');
-  activation.assertIntegratedHistoricalMaintenancePlan(plan,{expectedSourceHead:d.sourceHead,
+  activation.assertIntegratedHistoricalMaintenancePlan(plan,{sourcePhase,expectedSourceHead:d.sourceHead,
     expectedCentralVersion:handoff.centralVersion,readiness: freshReadiness,publicManifest:manifest,publicAudit:audit});
   const artifact=await repairGithubJson(repository+'/actions/artifacts/'+seal.artifactId,fetchImpl);
   const {normalizeArtifactDigestSha256}=await import('./ravscore-operational-pages-recovery.mjs');
@@ -1159,7 +1164,7 @@ async function preparedPhaseTarget({request,storage,repository,executor,attempt,
   return {evidence,slot,d,phase,ordinary,plan,readiness,manifest,audit,seal,driver};
 }
 
-async function admitAuthenticPreparedPendingSource({current,evidence,ordinary}={}) {
+async function admitAuthenticPreparedPendingSource({current,evidence,ordinary,sourcePhase=DEFAULT_CUTOVER_SOURCE_PHASE}={}) {
   // A real historical BEGIN can legitimately observe a newer public source
   // generation under the same old binding. Keep the captured CENTRAL source
   // immutable; only the actual central rows plus the authenticated issued plan
@@ -1167,7 +1172,7 @@ async function admitAuthenticPreparedPendingSource({current,evidence,ordinary}={
   const rows=phaseDocumentRows.get(current),d=validatePhaseSlot(evidence.slot).target;
   const plan=phaseJson(ordinary.files,'plan.json'),readiness=phaseJson(ordinary.files,'integrated-readiness.json');
   const activation=await import('./ravscore-operational-activation.mjs');
-  activation.assertIntegratedHistoricalMaintenancePlan(plan,{expectedSourceHead:d.sourceHead,
+  activation.assertIntegratedHistoricalMaintenancePlan(plan,{sourcePhase,expectedSourceHead:d.sourceHead,
     expectedCentralVersion:current.centralVersion-1,readiness,
     publicManifest:phaseJson(ordinary.files,'manifest.json'),publicAudit:phaseJson(ordinary.files,'public-audit.json')});
   const row=rows?.operational?.payload;
@@ -1206,8 +1211,8 @@ export async function verifyPreparedSource({request,storage,repository,sourceMan
     observationNonce:'prepared-source-'+crypto.randomBytes(12).toString('hex'),attempts:1,fetchImpl});
 }
 export async function beginTerminalPreparedPreActivation({request,atomicRequest,storage,repository,executor,attempt,
-  directory,baseUrl,fetchImpl=fetch,verifyExecutor,checkReadiness,verifySource=verifyPreparedSource}={}) {
-  const p=await preparedPhaseTarget({request,storage,repository,executor,attempt,directory,fetchImpl,verifyExecutor,checkReadiness});
+  directory,baseUrl,fetchImpl=fetch,verifyExecutor,checkReadiness,verifySource=verifyPreparedSource,sourcePhase=DEFAULT_CUTOVER_SOURCE_PHASE}={}) {
+  const p=await preparedPhaseTarget({sourcePhase,request,storage,repository,executor,attempt,directory,fetchImpl,verifyExecutor,checkReadiness});
   const {evidence,d,ordinary,plan,readiness,manifest,audit}=p;
   // The GitHub handoff contributes the originally observed public source only;
   // every durable target byte must independently match authenticated storage.
@@ -1221,7 +1226,7 @@ export async function beginTerminalPreparedPreActivation({request,atomicRequest,
   const current=await phaseCurrent(request);
   if(current.pending||!phaseSourceMatches(current,evidence.phase,d))throw new Error('Prepared source changed before real BEGIN');
   const rows=phaseDocumentRows.get(current),activation=await import('./ravscore-operational-activation.mjs');
-  const transition=activation.operationalIntegratedHistoricalMaintenanceTransition({action:'integrated-historical-maintenance-begin',
+  const transition=activation.operationalIntegratedHistoricalMaintenanceTransition({sourcePhase,action:'integrated-historical-maintenance-begin',
     currentRow:rows.operational,currentProfileRow:rows.profile,expectedVersion:current.centralVersion,plan,readiness,
     publicManifest:manifest,publicAudit:audit,sourceManifest,sourceVerification,observedSourceDeploymentId:sourceId,
     deploymentId:d.deploymentId});
@@ -1234,13 +1239,13 @@ export async function beginTerminalPreparedPreActivation({request,atomicRequest,
     publicManifestSha256:d.publicManifestSha256,privatePayloadIncluded:false};
 }
 export async function readProtectedPreparedTargetAdmission({request,storage,repository,pending,artifactSeal,
-  terminalEvidence,executor,directory,baseUrl,fetchImpl=fetch,verifyExecutor,checkReadiness,verifySource=verifyPreparedSource}={}) {
+  terminalEvidence,executor,directory,baseUrl,fetchImpl=fetch,verifyExecutor,checkReadiness,verifySource=verifyPreparedSource,sourcePhase=DEFAULT_CUTOVER_SOURCE_PHASE}={}) {
   const state=await inspectProtectedPreActivationTarget({request,storage,repository});
   if(state.action==='NONE'||state.slot.target.sourceHead===executor.headSha)return null;
   const attempt=await repairGithubJson(repository+'/actions/runs/'+state.slot.owner.runId+'/attempts/'+state.slot.owner.runAttempt,fetchImpl);
-  const p=await preparedPhaseTarget({request,storage,repository,executor,attempt,directory,fetchImpl,verifyExecutor,checkReadiness});
+  const p=await preparedPhaseTarget({sourcePhase,request,storage,repository,executor,attempt,directory,fetchImpl,verifyExecutor,checkReadiness});
   const current=await phaseCurrent(request),rows=phaseDocumentRows.get(current),{d,plan}=p;
-  await admitAuthenticPreparedPendingSource({current,evidence:p.evidence,ordinary:p.ordinary});
+  await admitAuthenticPreparedPendingSource({sourcePhase,current,evidence:p.evidence,ordinary:p.ordinary});
   if(classifyProtectedPreActivationReentry({evidence:p.evidence,current,attempt,repository,sourceHead:d.sourceHead})!=='PENDING_PRE_ACTIVATION'
     ||current.centralVersion!==plan.centralExpectedVersion+1||rows.operational.payload.returnPlanSha256!==plan.planSha256
     ||sha256CanonicalJson(rows.profile.payload)!==plan.sourceProfileSha256
@@ -1333,6 +1338,22 @@ async function writeJsonAtomic(file, value) {
   }
 }
 
+// Kun et kvalificeret fasevalg til den normale controller. Det er ingen
+// original-/B/S-/SQL-/READY-kapabilitet, og readiness-JSON læses ikke her.
+export async function selectProtectedReentryReadinessSourcePhase(options) {
+  const parent=SOURCE_PRODUCER_AFTER597_PARENT;
+  if(parent.binding===null&&parent.output===null&&parent.nextRelease===null)
+    return DEFAULT_CUTOVER_SOURCE_PHASE;
+  requireSourceProducerOutput();
+  const next=requireSourceProducerBinding();
+  if(arguments.length!==1||!options||Object.getPrototypeOf(options)!==Object.prototype
+    ||JSON.stringify(Object.keys(options).sort())!==JSON.stringify(['request'])
+    ||typeof options.request!=='function')throw new Error('Invalid normal Source readiness selector');
+  const selected=await describeCurrentProtectedPrivateProductionRuntime({request:options.request});
+  return sourceProducerOriginalStageFamily(selected,next)==='current'
+    ?'source-producer-after597':DEFAULT_CUTOVER_SOURCE_PHASE;
+}
+
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   // Operational evidence is a separate, small Supabase object family. The
@@ -1341,7 +1362,8 @@ async function main() {
   const own = () => phaseOwner({repository:process.env.GITHUB_REPOSITORY,runId:Number(process.env.GITHUB_RUN_ID),
     runAttempt:Number(process.env.GITHUB_RUN_ATTEMPT),headSha:process.env.GITHUB_SHA,
     attemptId:options.deploymentId??('pages-recovery-'+process.env.GITHUB_RUN_ID+'-'+process.env.GITHUB_RUN_ATTEMPT)});
-  const common={request:clients.documentRequest,storage:clients.storage,repository:options.repository};
+  const sourcePhase=await selectProtectedReentryReadinessSourcePhase({request:clients.documentRequest});
+  const common={request:clients.documentRequest,storage:clients.storage,repository:options.repository,sourcePhase};
   const read=async name=>JSON.parse(await fs.readFile(options[name],'utf8'));
   let result;
   if(options.mode==='publish-pre-activation'){
@@ -1385,6 +1407,12 @@ async function main() {
       request: clients.documentRequest,
       storage: clients.storage,
     });
+  if(process.env.GITHUB_ENV){
+    if(!path.isAbsolute(process.env.GITHUB_ENV)||/[\r\n\0]/.test(process.env.GITHUB_ENV))throw new Error('Invalid normal GITHUB_ENV path');
+    const environmentFile=await fs.lstat(process.env.GITHUB_ENV);
+    if(!environmentFile.isFile()||environmentFile.isSymbolicLink())throw new Error('Invalid normal GITHUB_ENV file');
+    await fs.appendFile(process.env.GITHUB_ENV,'RAVRADAR_OPERATIONAL_READINESS_SOURCE_PHASE='+sourcePhase+'\n');
+  }
   await writeJsonAtomic(options.output, result);
   if(options.mode==='begin-terminal-pre-activation')console.log('Resumed the prepared historical BEGIN with its original target and actual repair executor.');
   else console.log(`${options.mode === 'publish' ? 'Published' : 'Restored'} protected operational evidence.`);
