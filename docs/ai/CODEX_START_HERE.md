@@ -1,3 +1,13 @@
+## 7. november — Source-kandidaters normale opstart og fase gennem hele leveringen
+
+Den tidligere private Source-kandidat er ikke produktionskvalificeret. Bevar dens udstedte metadata og SQL på dens egen gren; nye bundne produktrettelser klargøres fra en ægte uudstedt forberedelsesgren og udstedes på ny gennem de normale byggere. Nulstil eller ommærk aldrig en allerede udstedt kandidat.
+
+Prøv den rigtige CLI-opstart tidligt med et fast ikke-understøttet argument, før dyre nativeforløb: manglende initialisering skal fanges før GitHub. Afgræns værtsfejl fra produktfejl; Windows kræver systemets eksisterende SystemRoot for Node-kryptoinitialisering, mens leverandør-, preload- og autentificeringsmiljø ikke skal arves af opstartsprøven. En lokal opstartsprøve erstatter ikke Linux/Node24 eller fysisk proceslukning.
+
+Source-readiness skal følges gennem normale plan-, aktiverings-, Pages- og genoptagelseskaldere med samme præcise migrationer og policy. Et fasevalg er ikke B/S-, SQL- eller READY-adgang. Bevar gamle standardkald. Læs det normale autentificerede CURRENT-grundlag i det job, der faktisk bruger valget; GITHUB_ENV ændrer ikke samme shell, og senere jobs arver ikke værdien. Brug et lukket enum og argument-array, aldrig eval eller indlæsning af en hel miljøfil.
+
+Kontrollér YAML-syntaks og korte normale modulkald på de faktisk ændrede filer før ny udstedelse/PR. Ved Source-modelskifte skal de eksisterende særskilte prognosedelingstjenesters kompilerede binding også følge den faktisk leverede offentlige model i samme kontrollerede leveringsvindue; det giver ikke tilladelse til at svække læsernes bindinger. Den kørende almindelige vejrhentning bevares under lokal forberedelse.
+
 ## 7. november — præcis SOURCE-inventarliste før ældre workflowprøve
 
 Den særskilte Source-kandidat har ét yderligere eksisterende native-kildeworkflow. Den normale workflowprøve må kun fjerne netop dette navn fra sin historiske testvisning efter den normale fulde Source-output-/C/I/RAW-kontrol og hele filens præcise byteantal og SHA. NULL eller delvis udstedelse giver ingen adgang. Den almindelige 598-liste, de tre vedligeholdelsesfiler, alle gamle assertions og øvrige afslag bevares. Positiv målprøve køres først på normalt udstedt output; dette er en lokal kontrolrettelse og ingen aktivering.

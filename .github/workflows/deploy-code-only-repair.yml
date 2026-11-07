@@ -3539,7 +3539,7 @@ jobs:
           fi
           node scripts/integrated-cutover-readiness.mjs publish "${source_readiness_args[@]}" \
             --public-implementation-closure-sha256 "${{ steps.integrated-implementation.outputs.closure_sha256 }}" \
-+            --output "$RAVRADAR_OPERATIONAL_WORK/integrated-readiness.json"
+            --output "$RAVRADAR_OPERATIONAL_WORK/integrated-readiness.json"
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -3548,9 +3548,9 @@ jobs:
 
       - name: Seal historical-to-current integrated maintenance plan when required
         if: steps.operational-action.outputs.action == 'integrated-historical-maintenance'
-        continue-on-error: ${{ inputs.restart_archived_weather != true && steps.saved-last-mile-source.outputs.required != 'true' && env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true' && env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE != 'true' }}
+        continue-on-error: ${{ inputs.restart_archived_weather != true && steps.saved-last-mile-source.outputs.required != 'true' && env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE != 'true' && env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE != 'true' && env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE != 'true' }}
         run: >-
-          node scripts/ravscore-operational-activation.mjs prepare-integrated-historical-maintenance
+          node scripts/ravscore-operational-activation.mjs prepare-integrated-historical-maintenance ${{ env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE == 'true' && '--source-producer' || '' }}
           --manifest data/live/manifest.json
           --audit .geometry-v2-work/ravscore-integrated-public-runtime-audit.json
           --source-implementation-closure-sha256 "${{ steps.operational-model.outputs.active_implementation_closure_sha256 }}"

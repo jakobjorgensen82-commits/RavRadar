@@ -123,6 +123,95 @@ function remote() {
   return { request, storage, objects, removed, row: () => clone(row) };
 }
 
+
+// Reuse the ordinary private-runtime packer/archive/publisher in a small local
+// transport fixture. Its CURRENT identity selects a phase, never B/S authority.
+async function sourceReadinessPhaseFromNormalCurrent(directory) {
+  const { requireSourceProducerOutput, requireSourceProducerBinding, SOURCE_PRODUCER_BEFORE } =
+    await import('./lib/source-producer-after597-runtime-family.mjs');
+  requireSourceProducerOutput();
+  const issued = requireSourceProducerBinding();
+  const { selectProtectedReentryReadinessSourcePhase } =
+    await import('./protected-operational-reentry-evidence.mjs');
+  const { PRIVATE_RUNTIME_FILES, PRIVATE_RUNTIME_CONTRACT_FILES,
+    buildPrivateRuntimeCreateSpec, buildPrivateRuntimeExpectation } =
+    await import('./private-production-runtime-workflow.mjs');
+  const { createPrivateProductionRuntimeBundle } = await import('./private-production-runtime-bundle.mjs');
+  const { publishProtectedPrivateProductionRuntime, PROTECTED_PRIVATE_RUNTIME_POLICY } =
+    await import('./protected-private-production-runtime.mjs');
+  const repositoryRoot = path.join(directory, 'repository');
+  const privateRoot = path.join(directory, 'private');
+  const bundlePath = path.join(privateRoot, 'bundle');
+  await fs.mkdir(repositoryRoot, { recursive: true });
+  await fs.mkdir(privateRoot, { recursive: true });
+  for (const relative of new Set(Object.values(PRIVATE_RUNTIME_CONTRACT_FILES).flat())) {
+    const destination = path.join(repositoryRoot, relative);
+    await fs.mkdir(path.dirname(destination), { recursive: true });
+    await fs.copyFile(path.join(root, relative), destination);
+  }
+  const conditions = {
+    datasetId: 'rr-source-readiness-selector-210',
+    generatedAt: '2026-08-29T10:05:00.000Z',
+    productionReferenceAt: '2026-08-29T10:00:00.000Z',
+    zones: Object.fromEntries(Array.from({ length: 210 }, (_, index) => [`z-${index}`, {}])),
+    coastalParts: { modelBinding: ravScoreModelBinding(),
+      parts: Object.fromEntries(Array.from({ length: 673 }, (_, index) => [`p-${index}`, {}])) },
+  };
+  for (const descriptor of PRIVATE_RUNTIME_FILES) {
+    const destination = path.join(repositoryRoot, descriptor.relativePath);
+    await fs.mkdir(path.dirname(destination), { recursive: true });
+    await fs.writeFile(destination, descriptor.id === 'full-conditions'
+      ? JSON.stringify(conditions) : `synthetic-selector-${descriptor.id}\n`);
+  }
+  const spec = await buildPrivateRuntimeCreateSpec({ repositoryRoot });
+  assert.equal(spec.metadata.modelBinding.modelBundleSha256, issued.I);
+  assert.equal(spec.metadata.contractHashes.continuationStateContractSha256, issued.T);
+  await createPrivateProductionRuntimeBundle({ privateRoot, bundlePath, repositoryRoot, ...spec });
+  const expected = await buildPrivateRuntimeExpectation({ repositoryRoot,
+    targetReferenceAt: '2026-08-29T11:00:00.000Z', now: '2026-08-29T11:05:00.000Z' });
+  const server = remote();
+  let row = null;
+  const request = async (_suffix, options = {}) => {
+    const method = options.method ?? 'GET';
+    if (method === 'GET') return row ? [clone(row)] : [];
+    assert.equal(method, 'POST');
+    assert.equal(row, null);
+    const body = JSON.parse(options.body);
+    row = { document_key: body.document_key, payload: body.payload, version: 1 };
+    return [clone(row)];
+  };
+  const publication = await publishProtectedPrivateProductionRuntime({ privateRoot, bundlePath,
+    repositoryRoot, expected, now: '2026-08-29T11:05:00.000Z', sourceHead: 'a'.repeat(40),
+    request, storage: server.storage });
+  assert.equal(publication.published, true);
+  const published = clone(row);
+  const objects = new Map(server.objects);
+  let reads = 0;
+  const readCurrent = async (suffix, options = {}) => {
+    reads += 1;
+    assert.equal(options.method ?? 'GET', 'GET');
+    assert.equal(suffix, `?document_key=eq.${PROTECTED_PRIVATE_RUNTIME_POLICY.documentKey}&select=document_key,payload,version&limit=2`);
+    return [clone(row)];
+  };
+  const selected = await selectProtectedReentryReadinessSourcePhase({ request: readCurrent });
+  assert.equal(selected, 'source-producer-after597');
+  assert.equal(reads, 1);
+  for (const mutation of [
+    value => { value.payload.current.contractHashes.continuationStateContractSha256 = SOURCE_PRODUCER_BEFORE.T; },
+    value => { value.payload.current.modelBinding.modelBundleSha256 = SOURCE_PRODUCER_BEFORE.I; },
+    value => { value.payload.current.modelBinding.modelBundleSha256 = '6'.repeat(64);
+      value.payload.current.contractHashes.continuationStateContractSha256 = '7'.repeat(64); },
+  ]) {
+    row = clone(published); mutation(row);
+    await assert.rejects(selectProtectedReentryReadinessSourcePhase({ request: readCurrent }));
+  }
+  row = clone(published);
+  assert.equal(await selectProtectedReentryReadinessSourcePhase({ request: readCurrent }), selected);
+  assert.deepEqual(row, published);
+  assert.deepEqual(server.objects, objects);
+  assert.equal(server.removed.length, 0);
+  return selected;
+}
 test('builds a bounded payload-free exact archive and rejects private or unknown input', async () => {
   const work = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-operational-evidence-'));
   try {
@@ -526,6 +615,79 @@ test('pre-activation terminal takeover retains the same target through runner lo
         {publicManifestSha256:'0'.repeat(64)},{sourceHead:executor.headSha},{privatePayloadRead:true}])
         await assert.rejects(readProtectedPreparedTargetAdmission({...admissionArgs,verifySource:async()=>({...sourceVerification,...mutation})}),/source verification differs/);
       assert.equal(atomicCount,1);assert.deepEqual(recoveryServer.row(),protectedBefore);
+
+      // Exercise the same normal executor/reentry APIs with a Source phase
+      // selected from an independently normal-published CURRENT fixture.
+      {
+        const { SOURCE_PRODUCER_AFTER597_PARENT: family } =
+          await import('./lib/source-producer-after597-parent.mjs');
+        if (!(family.binding === null && family.output === null && family.nextRelease === null)) {
+          const sourcePhase = await sourceReadinessPhaseFromNormalCurrent(path.join(work, 'source-reentry-runtime'));
+          const sourceReadiness = await buildIntegratedCutoverReadiness(sourceHead, {
+            publicImplementationClosureSha256: target.seal.targetImplementationClosureSha256, sourcePhase,
+          });
+          const sourcePlan = activation.prepareIntegratedHistoricalMaintenance({
+            currentRow: central, currentProfileRow: profileRow, sourceHead,
+            publicManifest: target.manifest, publicAudit: audit, readiness: sourceReadiness,
+            sourceImplementationClosureSha256: source.seal.targetImplementationClosureSha256,
+            requestedImplementationClosureSha256: target.seal.targetImplementationClosureSha256,
+            eventName: 'schedule', ref: 'refs/heads/main', githubSha: sourceHead, sourcePhase,
+          });
+          const sourceDirectory = path.join(work, 'prepared-source-phase');
+          await fs.mkdir(sourceDirectory);
+          for (const name of await fs.readdir(ordinaryDir))
+            await fs.copyFile(path.join(ordinaryDir, name), path.join(sourceDirectory, name));
+          await write(sourceDirectory, 'integrated-readiness.json', sourceReadiness);
+          await write(sourceDirectory, 'plan.json', sourcePlan);
+          const sourceServer = remote();
+          let sourceCentral = clone(central), sourceAtomicCount = 0;
+          const sourceRequest = async (suffix, options = {}) => suffix.includes('document_key=in.')
+            ? clone([sourceCentral, profileRow]) : sourceServer.request(suffix, options);
+          const sourceCommon = { request: sourceRequest, storage: sourceServer.storage, repository };
+          await publishProtectedOperationalEvidence({ ...sourceCommon, directory: sourceDir, deploymentId: sourceId });
+          await publishProtectedPreActivationTarget({ ...sourceCommon, directory: targetDir, deploymentId: targetId });
+          await publishProtectedOperationalEvidence({ ...sourceCommon, directory: freshSourceDir, deploymentId: 'pages-43008-1' });
+          await publishProtectedOperationalEvidence({ ...sourceCommon, directory: sourceDirectory, deploymentId: targetId,
+            retainPublicManifestSha256: sha256CanonicalJson(observedSourceManifest), requireRetained: true });
+          const sourcePointer = clone(sourceServer.row());
+          const sourceAtomicRequest = async (_suffix, options) => {
+            sourceAtomicCount += 1;
+            const body = JSON.parse(options.body);
+            assert.equal(body.p_expected_operational_version, sourceCentral.version);
+            assert.deepEqual(body.p_profile_payload, profileRow.payload);
+            sourceCentral = { ...sourceCentral, version: sourceCentral.version + 1, payload: body.p_operational_payload };
+            throw new Error('synthetic Source CAS reply lost after commit');
+          };
+          const sourceReadinessCalls = [];
+          const sourceArgs = { ...args, ...sourceCommon, directory: sourceDirectory,
+            sourcePhase, atomicRequest: sourceAtomicRequest, checkReadiness: async options => {
+              sourceReadinessCalls.push(clone(options));
+              return sourceReadiness;
+            } };
+          await assert.rejects(beginTerminalPreparedPreActivation({ ...sourceArgs, sourcePhase: undefined }));
+          await assert.rejects(beginTerminalPreparedPreActivation({ ...sourceArgs, sourcePhase: 'source-producer-unknown' }));
+          assert.equal(sourceAtomicCount, 0);
+          const sourceResult = await beginTerminalPreparedPreActivation(sourceArgs);
+          assert.equal(sourceResult.action, 'PENDING_PRE_ACTIVATION');
+          assert.equal(sourceReadinessCalls.at(-1).sourcePhase, sourcePhase);
+          assert.equal(sourceResult.producerHead, sourceHead);
+          assert.deepEqual(sourceResult.actualExecutor, executor);
+          assert.equal(sourceAtomicCount, 1, 'the Source CAS is also read back without replay');
+          const sourceResolved = activation.resolveOperationalRavScoreModel(sourceCentral, { profileRow, allowPending: true });
+          const sourcePending = { ...pending, requestedAt: sourceResolved.requestedAt };
+          const sourceAdmissionArgs = { ...sourceArgs, pending: sourcePending, artifactSeal: target.seal, terminalEvidence };
+          await assert.rejects(readProtectedPreparedTargetAdmission({ ...sourceAdmissionArgs, sourcePhase: undefined }));
+          const sourceAdmission = await readProtectedPreparedTargetAdmission(sourceAdmissionArgs);
+          assert.equal(sourceAdmission.pendingSha256, sha256CanonicalJson(sourcePending));
+          assert.equal(sourceAdmission.originalAttemptId, targetId);
+          assert.deepEqual(await readProtectedPreparedTargetAdmission(sourceAdmissionArgs), sourceAdmission);
+          assert.equal((await classifyProtectedPreActivationCurrent({ ...sourceCommon, sourcePhase,
+            sourceHead: executor.headSha, attempt: terminal(producer) })).action, 'PENDING_PRE_ACTIVATION');
+          assert.equal(sourceAtomicCount, 1);
+          assert.deepEqual(sourceServer.row(), sourcePointer);
+          assert.equal(sourceServer.removed.length, 0);
+        }
+      }
     }
 
     const firstOwner=owner(targetId),secondOwner=owner('pages-recovery-43003-1');
@@ -605,6 +767,51 @@ test('pre-activation terminal takeover retains the same target through runner lo
     assert.equal(prepared.handoff.action,'integrated-historical-maintenance');
     assert.equal(prepared.handoff.centralVersion,central.version);assert.deepEqual(server.row(),published);
     await buildProtectedOperationalEvidenceArchive({directory:restored,deploymentId:secondOwner.attemptId,repository});
+
+    // Reuse this exact authenticated phase/owner through the normal restore.
+    // It remains a metadata/transport oracle, not a B/S or SQL admission proof.
+    {
+      const { SOURCE_PRODUCER_AFTER597_PARENT: family } =
+        await import('./lib/source-producer-after597-parent.mjs');
+      if (!(family.binding === null && family.output === null && family.nextRelease === null)) {
+        const { requireSourceProducerOutput } =
+          await import('./lib/source-producer-after597-runtime-family.mjs');
+        requireSourceProducerOutput();
+        const sourcePhase = await sourceReadinessPhaseFromNormalCurrent(path.join(work, 'source-phase-runtime'));
+        const sourceReadiness = await buildIntegratedCutoverReadiness(sourceHead, {
+          publicImplementationClosureSha256: target.seal.targetImplementationClosureSha256, sourcePhase,
+        });
+        assert.equal(sourceReadiness.migrationIds.length, 64);
+        const sourcePlan = activation.prepareIntegratedHistoricalMaintenance({
+          currentRow: central, currentProfileRow: profileRow, sourceHead,
+          publicManifest: target.manifest, publicAudit: audit, readiness: sourceReadiness,
+          sourceImplementationClosureSha256: source.seal.targetImplementationClosureSha256,
+          requestedImplementationClosureSha256: target.seal.targetImplementationClosureSha256,
+          eventName: 'schedule', ref: 'refs/heads/main', githubSha: sourceHead, sourcePhase,
+        });
+        const sourceRestored = path.join(work, 'restored-source-readiness');
+        await restoreProtectedPreActivationTarget({ ...common, directory: sourceRestored, owner: secondOwner });
+        const handoffOptions = { ...common, directory: sourceRestored, owner: secondOwner,
+          readiness: sourceReadiness, plan: sourcePlan, sourcePhase };
+        await assert.rejects(prepareProtectedPreActivationHandoff({ ...handoffOptions, sourcePhase: undefined }));
+        await assert.rejects(prepareProtectedPreActivationHandoff({ ...handoffOptions, readiness, plan }));
+        await assert.rejects(prepareProtectedPreActivationHandoff({ ...handoffOptions, sourcePhase: 'source-producer-unknown' }));
+        await assert.rejects(prepareProtectedPreActivationHandoff({ ...handoffOptions,
+          readiness: { ...sourceReadiness, migrationIds: sourceReadiness.migrationIds.slice(0, -1) } }));
+        assert.deepEqual(server.row(), published);
+        await assert.rejects(fs.stat(path.join(sourceRestored, 'handoff.json')), { code: 'ENOENT' });
+        const sourcePrepared = await prepareProtectedPreActivationHandoff(handoffOptions);
+        assert.equal(sourcePrepared.prepared, true);
+        assert.equal(sourcePrepared.handoff.action, prepared.handoff.action);
+        assert.equal(sourcePrepared.handoff.checkpointPublishOutcome, 'success');
+        assert.deepEqual(await read(sourceRestored, 'integrated-readiness.json'), sourceReadiness);
+        assert.deepEqual(await read(sourceRestored, 'plan.json'), sourcePlan);
+        await buildProtectedOperationalEvidenceArchive({ directory: sourceRestored,
+          deploymentId: secondOwner.attemptId, repository });
+        assert.deepEqual(server.row(), published);
+        assert.equal(server.removed.length, 0);
+      }
+    }
     await assert.rejects(clearProtectedPreActivationTarget({...common,sourceHead,baseUrl:'https://synthetic.invalid/',
       fetchImpl:()=>{throw new Error('must reject before any public request');}}),/not actually active/);
     const sourceVerification={schemaVersion:'ravscore-operational-pages-verification-v1',status:'passed',sourceHead,

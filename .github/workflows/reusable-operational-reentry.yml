@@ -501,6 +501,25 @@ jobs:
           fi
           git fetch --no-tags origin main
           test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
+          # Fasen læses i dette job; GITHUB_ENV ændrer ikke den aktuelle shell.
+          # Kun den autentificerede CURRENT-selector må vælge Source-kontrakten.
+          source_phase_args=()
+          if [ "$model" = "integrated" ]; then
+            readiness_source_phase="$(node --input-type=module -e '
+              import { createProtectedPrivateRuntimeClients } from "./scripts/protected-private-production-runtime.mjs";
+              import { selectProtectedReentryReadinessSourcePhase } from "./scripts/protected-operational-reentry-evidence.mjs";
+              const clients = createProtectedPrivateRuntimeClients({ storageBackend: "supabase" });
+              const phase = await selectProtectedReentryReadinessSourcePhase({ request: clients.documentRequest });
+              if (phase !== "source-producer-after597" && phase !== "assistant-mixed-after597-successor") throw new Error("Ukendt readinessfase");
+              process.stdout.write(phase);
+            ')"
+            case "$readiness_source_phase" in
+              source-producer-after597) source_phase_args=(--source-producer) ;;
+              assistant-mixed-after597-successor) ;;
+              *) echo "Ukendt readinessfase." >&2; exit 1 ;;
+            esac
+          fi
+
           if [ "$recovery_action" = "TARGET_RECONCILE" ]; then
             test "$activation_action" = "complete"
             node scripts/verify-ravscore-operational-pages-deployment.mjs \
@@ -529,7 +548,7 @@ jobs:
                 --plan "$RAVRADAR_OPERATIONAL_WORK/handoff/plan.json"
               )
             fi
-            node scripts/ravscore-operational-activation.mjs reconcile \
+            node scripts/ravscore-operational-activation.mjs reconcile "${source_phase_args[@]}" \
               --expected-version "$pending_version" \
               --manifest "$RAVRADAR_OPERATIONAL_WORK/public-manifest.json" \
               --observations "$RAVRADAR_OPERATIONAL_WORK/activation-observations.json" \
@@ -600,7 +619,7 @@ jobs:
               && [ "$(jq -r '.bindingCurrent' "$RAVRADAR_OPERATIONAL_WORK/current.json")" != "true" ]; then
               source_args+=(--plan "$RAVRADAR_OPERATIONAL_WORK/handoff/plan.json")
             fi
-            node scripts/ravscore-operational-activation.mjs reconcile \
+            node scripts/ravscore-operational-activation.mjs reconcile "${source_phase_args[@]}" \
               --expected-version "$pending_version" \
               --manifest "$RAVRADAR_OPERATIONAL_WORK/public-manifest.json" \
               --observations "$RAVRADAR_OPERATIONAL_WORK/activation-observations.json" \
@@ -1164,7 +1183,26 @@ jobs:
             echo "Recovered target has an unsupported model." >&2
             exit 1
           fi
-          node scripts/ravscore-operational-activation.mjs reconcile \
+          # Fasen læses i dette job; GITHUB_ENV ændrer ikke den aktuelle shell.
+          # Kun den autentificerede CURRENT-selector må vælge Source-kontrakten.
+          source_phase_args=()
+          if [ "$model" = "integrated" ]; then
+            readiness_source_phase="$(node --input-type=module -e '
+              import { createProtectedPrivateRuntimeClients } from "./scripts/protected-private-production-runtime.mjs";
+              import { selectProtectedReentryReadinessSourcePhase } from "./scripts/protected-operational-reentry-evidence.mjs";
+              const clients = createProtectedPrivateRuntimeClients({ storageBackend: "supabase" });
+              const phase = await selectProtectedReentryReadinessSourcePhase({ request: clients.documentRequest });
+              if (phase !== "source-producer-after597" && phase !== "assistant-mixed-after597-successor") throw new Error("Ukendt readinessfase");
+              process.stdout.write(phase);
+            ')"
+            case "$readiness_source_phase" in
+              source-producer-after597) source_phase_args=(--source-producer) ;;
+              assistant-mixed-after597-successor) ;;
+              *) echo "Ukendt readinessfase." >&2; exit 1 ;;
+            esac
+          fi
+
+          node scripts/ravscore-operational-activation.mjs reconcile "${source_phase_args[@]}" \
             --expected-version "$pending_version" \
             --manifest "$RAVRADAR_OPERATIONAL_WORK/public-manifest.json" \
             --observations "$RAVRADAR_OPERATIONAL_WORK/activation-observations.json" \
@@ -1358,9 +1396,9 @@ jobs:
           set -euo pipefail
           closure="$(jq -er '.targetImplementationClosureSha256' "$RAVRADAR_OPERATIONAL_HANDOFF/pages-artifact-seal.json")"
           source_closure="$(jq -er '.sourceCurrent.activeImplementationClosureSha256' "$RAVRADAR_OPERATIONAL_HANDOFF/pre-activation.json")"
-          node scripts/integrated-cutover-readiness.mjs publish \
+          node scripts/integrated-cutover-readiness.mjs publish ${{ env.RAVRADAR_OPERATIONAL_READINESS_SOURCE_PHASE == 'source-producer-after597' && '--source-producer' || '' }} \
             --public-implementation-closure-sha256 "$closure" --output "$RAVRADAR_OPERATIONAL_WORK/integrated-readiness.json"
-          node scripts/ravscore-operational-activation.mjs prepare-integrated-historical-maintenance \
+          node scripts/ravscore-operational-activation.mjs prepare-integrated-historical-maintenance ${{ env.RAVRADAR_OPERATIONAL_READINESS_SOURCE_PHASE == 'source-producer-after597' && '--source-producer' || '' }} \
             --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json" --audit "$RAVRADAR_OPERATIONAL_HANDOFF/public-audit.json" \
             --source-implementation-closure-sha256 "$source_closure" --requested-implementation-closure-sha256 "$closure" \
             --output "$RAVRADAR_OPERATIONAL_WORK/plan.json"

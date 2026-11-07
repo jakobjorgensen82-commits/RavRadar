@@ -510,7 +510,7 @@ jobs:
               "$RAVRADAR_OPERATIONAL_HANDOFF/legacy-source-attestation.json"
             )
           fi
-          node scripts/ravscore-operational-activation.mjs return-begin \
+          node scripts/ravscore-operational-activation.mjs return-begin ${{ env.RAVRADAR_OPERATIONAL_READINESS_SOURCE_PHASE == 'source-producer-after597' && '--source-producer' || '' }} \
             --plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json" \
             --expected-version "${{ inputs.central_version }}" \
             --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json" \
@@ -530,7 +530,7 @@ jobs:
         id: integrated-historical-maintenance-begin
         if: inputs.operational_action == 'integrated-historical-maintenance' && inputs.code_only_repair != true
         run: >-
-          node scripts/ravscore-operational-activation.mjs integrated-historical-maintenance-begin
+          node scripts/ravscore-operational-activation.mjs integrated-historical-maintenance-begin ${{ env.RAVRADAR_OPERATIONAL_READINESS_SOURCE_PHASE == 'source-producer-after597' && '--source-producer' || '' }}
           --plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json"
           --expected-version "${{ inputs.central_version }}"
           --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json"
@@ -549,7 +549,7 @@ jobs:
         id: code-only-integrated-historical-maintenance-begin
         if: inputs.code_only_repair == true && inputs.operational_action == 'integrated-historical-maintenance'
         run: >-
-          node scripts/ravscore-operational-activation.mjs integrated-historical-maintenance-begin
+          node scripts/ravscore-operational-activation.mjs integrated-historical-maintenance-begin ${{ env.RAVRADAR_OPERATIONAL_READINESS_SOURCE_PHASE == 'source-producer-after597' && '--source-producer' || '' }}
           --plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json"
           --expected-version "${{ inputs.central_version }}"
           --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json"
@@ -767,7 +767,7 @@ jobs:
         shell: bash
         run: |
           pending_version="$(jq -r '.centralVersion' "$RAVRADAR_OPERATIONAL_HANDOFF/begin.json")"
-          node scripts/ravscore-operational-activation.mjs return-complete \
+          node scripts/ravscore-operational-activation.mjs return-complete ${{ env.RAVRADAR_OPERATIONAL_READINESS_SOURCE_PHASE == 'source-producer-after597' && '--source-producer' || '' }} \
             --plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json" \
             --expected-version "$pending_version" \
             --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json" \
@@ -786,7 +786,7 @@ jobs:
         shell: bash
         run: |
           pending_version="$(jq -r '.centralVersion' "$RAVRADAR_OPERATIONAL_HANDOFF/begin.json")"
-          node scripts/ravscore-operational-activation.mjs integrated-historical-maintenance-complete \
+          node scripts/ravscore-operational-activation.mjs integrated-historical-maintenance-complete ${{ env.RAVRADAR_OPERATIONAL_READINESS_SOURCE_PHASE == 'source-producer-after597' && '--source-producer' || '' }} \
             --plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json" \
             --expected-version "$pending_version" \
             --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json" \
@@ -803,7 +803,7 @@ jobs:
         id: integrated-maintenance-complete
         if: inputs.operational_action == 'integrated'
         run: >-
-          node scripts/ravscore-operational-activation.mjs integrated-maintenance
+          node scripts/ravscore-operational-activation.mjs integrated-maintenance ${{ env.RAVRADAR_OPERATIONAL_READINESS_SOURCE_PHASE == 'source-producer-after597' && '--source-producer' || '' }}
           --expected-version "${{ inputs.central_version }}"
           --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json"
           --audit "$RAVRADAR_OPERATIONAL_HANDOFF/public-audit.json"
@@ -953,7 +953,7 @@ jobs:
             fail('unsupported disposition');
           }
           NODE
-            node scripts/ravscore-operational-activation.mjs reconcile \
+            node scripts/ravscore-operational-activation.mjs reconcile ${{ env.RAVRADAR_OPERATIONAL_READINESS_SOURCE_PHASE == 'source-producer-after597' && '--source-producer' || '' }} \
               --expected-version "$pending_version" \
               --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/observed-manifest.json" \
               --observations "$RAVRADAR_OPERATIONAL_HANDOFF/failure-observations.json" \
@@ -974,7 +974,7 @@ jobs:
               && [ "$(jq -r '.bindingCurrent' "$RAVRADAR_OPERATIONAL_HANDOFF/failure-current.json")" != "true" ]; then
               source_args+=(--plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json")
             fi
-            node scripts/ravscore-operational-activation.mjs reconcile \
+            node scripts/ravscore-operational-activation.mjs reconcile ${{ env.RAVRADAR_OPERATIONAL_READINESS_SOURCE_PHASE == 'source-producer-after597' && '--source-producer' || '' }} \
               --expected-version "$pending_version" \
               --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/observed-manifest.json" \
               --observations "$RAVRADAR_OPERATIONAL_HANDOFF/failure-observations.json" \

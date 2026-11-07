@@ -1,11 +1,11 @@
-// Source-CI distribution proof only. Import the official module in a clean
-// child, NEVER call isFeatureAvailable/saveCache or the production action.
+// Source-CI distribution proof. Official SDK APIs are imported only. A fixed
+// real CLI argument-refusal probe exits before SDK, guardian or provider work.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import os from 'node:os';
 import { createRequire } from 'node:module';
 import { inverseSourceArtifactDistribution, SOURCE_ARTIFACT_DISTRIBUTION_REVIEW as distributionReview }
@@ -13,6 +13,28 @@ import { inverseSourceArtifactDistribution, SOURCE_ARTIFACT_DISTRIBUTION_REVIEW 
 
 assert.equal(process.versions.node.split('.')[0], '24', 'Actual Node24 is required');
 const action = fileURLToPath(new URL('../.github/actions/save-owned-dmi-grib/', import.meta.url));
+// Exercise the actual CJS CLI before its native cohort: module/startup errors
+// must fail here, while an unsupported fixed argument uses the normal caught
+// refusal. Only Windows OS SystemRoot is retained for native CSPRNG startup;
+// no action, preload, auth, cache or provider environment is inherited.
+const cliStartupEnvironment = process.platform === 'win32' ? { SystemRoot: process.env.SystemRoot } : {};
+if (process.platform === 'win32') {
+  assert.equal(typeof cliStartupEnvironment.SystemRoot, 'string', 'Windows startup requires OS SystemRoot');
+  assert.ok(cliStartupEnvironment.SystemRoot.length > 0, 'Windows startup requires nonempty SystemRoot');
+}
+const cliStartup = spawnSync(process.execPath, [path.join(action, 'index.cjs'),
+  '--source-startup-argument-refusal-probe'], {
+  cwd: action, env: cliStartupEnvironment, stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8',
+  timeout: 5000, maxBuffer: 4096, windowsHide: true,
+});
+assert.equal(cliStartup.error, undefined, 'Actual action CLI startup must finish');
+assert.equal(cliStartup.signal, null, 'Actual action CLI startup must not be killed');
+assert.equal(cliStartup.status, 1, 'Unsupported actual CLI argument must refuse');
+assert.equal(cliStartup.stdout, '');
+assert.equal(cliStartup.stderr, 'DMI_RAW_SAVE_REFUSED\n'
+  + 'DMI_RAW_SAVE_DIAGNOSTIC stage=INPUT reason=DMI_RAW_SAVE_ARGUMENT_REFUSED\n',
+  'Actual action startup must reach its normal caught refusal');
+
 const sri = 'sha512-LVqybSbzhBp2uAETOQ3HnVjXA4AcjavgMH+LCr+cjgO+PZfciv/1QAgoW+esXBaAhvDid+vXeV70GGJpAh4V5Q==';
 const current = Object.fromEntries(['package.json', 'package-lock.json'].map(name => [name,
   fs.readFileSync(path.join(action, name), 'utf8').replaceAll('\r\n', '\n')]));
