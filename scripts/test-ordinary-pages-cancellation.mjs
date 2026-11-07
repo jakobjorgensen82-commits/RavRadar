@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { previousOrdinaryHadPagesFailure } from './select-automatic-completed-private-runtime.mjs';
 import { parseOrdinaryPagesCancellation, readOrdinaryPagesCancellation } from './lib/ordinary-pages-cancellation.mjs';
 
 const repo = 'owner/forecast';
@@ -178,4 +179,52 @@ test('refuses active, successful, ambiguous, expired or moved identities and unt
     await assert.rejects(() => readOrdinaryPagesCancellation(options(state, calls)), error(code));
     assert.equal(calls.length, maximum, code);
   }
+});
+
+const ordinaryRepo = { id: 1306858343, full_name: 'jakobjorgensen82-commits/RavRadar' };
+const ordinaryRun = id => ({
+  id, run_attempt: 1, repository: ordinaryRepo, head_repository: ordinaryRepo,
+  head_sha: head, head_branch: 'main', event: 'workflow_dispatch',
+  path: '.github/workflows/run-current-weather-once.yml', actor: { login: 'github-actions[bot]' },
+  status: 'completed', conclusion: 'failure',
+});
+const ordinaryPages = (id, conclusion) => ({
+  id, name: jobName, status: 'completed', conclusion,
+  steps: [{ name: 'Deploy to GitHub Pages', status: 'completed', conclusion }],
+});
+const ordinaryContext = { head, consumerRunId: 500 };
+const runList = (...workflow_runs) => ({ total_count: workflow_runs.length, workflow_runs });
+const jobList = (...jobs) => ({ total_count: jobs.length, jobs });
+
+test('a failed or skipped preflight does not hide the most recent attempted Pages deploy', async () => {
+  const calls = [];
+  const read = async route => {
+    calls.push(route);
+    if (calls.length === 1) return runList(ordinaryRun(101), ordinaryRun(103), ordinaryRun(102));
+    if (route.includes('/103/')) return jobList();
+    if (route.includes('/102/')) return jobList(ordinaryPages(202, 'skipped'));
+    assert.match(route, /\/101\/attempts\/1\/jobs/);
+    return jobList(ordinaryPages(201, 'failure'));
+  };
+  assert.equal(await previousOrdinaryHadPagesFailure(read, ordinaryContext), true);
+  assert.equal(calls.length, 4);
+});
+
+test('a later completed Pages deploy takes precedence over an older failure', async () => {
+  let calls = 0;
+  const read = async route => {
+    if (++calls === 1) return runList(ordinaryRun(101), { ...ordinaryRun(102), conclusion: 'success' });
+    assert.match(route, /\/102\/attempts\/1\/jobs/);
+    return jobList(ordinaryPages(202, 'success'));
+  };
+  assert.equal(await previousOrdinaryHadPagesFailure(read, ordinaryContext), false);
+  assert.equal(calls, 2);
+});
+
+test('an unknown outcome at the Pages deploy step stops instead of treating it as a skipped run', async () => {
+  let calls = 0;
+  const read = async () => ++calls === 1
+    ? runList({ ...ordinaryRun(102), conclusion: 'cancelled' })
+    : jobList(ordinaryPages(202, 'cancelled'));
+  await assert.rejects(previousOrdinaryHadPagesFailure(read, ordinaryContext), /PAGES_AUTO_PRIOR_DEPLOY_UNKNOWN/);
 });

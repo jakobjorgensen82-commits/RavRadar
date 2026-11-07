@@ -133,25 +133,35 @@ async function readExactHandoffArchive({ run, read, token }) {
   }
 }
 
-export function latestOrdinaryPredecessor(runs, { consumerRunId, head }) {
+function ordinaryPredecessors(runs, { consumerRunId, head }) {
   return runs.filter(run => positive(run.id) && run.id < consumerRunId && run.run_attempt === 1
     && run.repository?.full_name === repo && run.head_repository?.full_name === repo
     && run.repository.id === run.head_repository.id && run.head_sha === head && run.head_branch === 'main'
     && run.event === 'workflow_dispatch' && run.path === '.github/workflows/' + workflow
     && run.actor?.login === 'github-actions[bot]' && run.status === 'completed')
-    .sort((left, right) => right.id - left.id)[0] ?? null;
+    .sort((left, right) => right.id - left.id);
 }
 
 export async function previousOrdinaryHadPagesFailure(read, context) {
   const created = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const route = '/actions/workflows/' + workflow + '/runs?branch=main&event=workflow_dispatch&status=completed&head_sha='
     + context.head + '&per_page=12&created=' + encodeURIComponent('>=' + created);
-  const previous = latestOrdinaryPredecessor(list(await read(route), 'workflow_runs', 12), context);
-  if (previous?.conclusion !== 'failure') return false;
-  const jobs = list(await read('/actions/runs/' + previous.id + '/attempts/1/jobs?per_page=100'), 'jobs');
-  const pages = jobs.filter(job => job.name === pagesJob);
-  assert(pages.length <= 1, 'PAGES_AUTO_PRIOR_JOB_AMBIGUOUS');
-  return pages[0]?.conclusion === 'failure';
+  const predecessors = ordinaryPredecessors(list(await read(route), 'workflow_runs', 12), context);
+  for (const previous of predecessors) {
+    const jobs = list(await read('/actions/runs/' + previous.id + '/attempts/1/jobs?per_page=100'), 'jobs');
+    const pages = jobs.filter(job => job.name === pagesJob);
+    assert(pages.length <= 1, 'PAGES_AUTO_PRIOR_JOB_AMBIGUOUS');
+    const job = pages[0];
+    if (!job || job.conclusion === 'skipped') continue;
+    const deploy = one(job.steps?.filter(step => step.name === 'Deploy to GitHub Pages'), 'PAGES_AUTO_PRIOR_DEPLOY_STEP');
+    assert(job.status === 'completed' && deploy.status === 'completed', 'PAGES_AUTO_PRIOR_DEPLOY_INCOMPLETE');
+    if (deploy.conclusion === 'skipped') continue;
+    if (deploy.conclusion === 'success') return false;
+    assert(previous.conclusion === 'failure' && job.conclusion === 'failure'
+      && deploy.conclusion === 'failure', 'PAGES_AUTO_PRIOR_DEPLOY_UNKNOWN');
+    return true;
+  }
+  return false;
 }
 
 async function findCancellation({ read, token, saved, context }) {
