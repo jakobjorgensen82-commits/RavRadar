@@ -300,9 +300,53 @@ export const release598WorkflowUserAgentReview=Object.freeze({
   after:Object.freeze({bytes:300010,sha256:'2f7917b26a994d4d33dd7445cdc992e571a9dcc3245867564dda85ebda145c61'}),
   original:'RavRadar/4.0.597',issued:'RavRadar/4.0.598',count:5,
 });
+// TEST ONLY: exact ordinary artifact-metadata readback, before all older workflow oracles.
+export const pagesArtifactVisibilityWorkflowReview = Object.freeze({
+  path: release598WorkflowUserAgentReview.path,
+  before: release598WorkflowUserAgentReview.after,
+  after: Object.freeze({bytes:300006,sha256:'f5ef7759abffa78506638a327c0fe9c5ef9555f1be7d982606428974c94e9f1c'}),
+  beforeLine: '          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id" ',
+  afterLine: '          node scripts/read-pages-artifact-metadata.mjs "$artifact_id" ',
+});
+export const pagesArtifactVisibilityExhaustionWorkflowReview = Object.freeze({
+  before: pagesArtifactVisibilityWorkflowReview.after,
+  after: Object.freeze({bytes:302000,sha256:'d21fad73693dc5d5c8db69535efdfc5cae27c78897422d4fc9ab731d6440295f'}),
+  sealStart: '          if node scripts/read-pages-artifact-metadata.mjs "$artifact_id" ',
+  markerStart: '      - name: Confirm exhausted exact Pages artifact metadata visibility\n',
+  markerEnd: '      - name: Upload privacy-safe operational handoff evidence after Pages artifact seal\n',
+});
+export function inversePagesArtifactVisibilityExhaustionWorkflow(source,role) {
+  const row=pagesArtifactVisibilityExhaustionWorkflowReview;
+  if(role!=='build'||sha(source)!==row.after.sha256)return source;
+  assert.equal(Buffer.byteLength(source),row.after.bytes);
+  for(const anchor of [row.sealStart,row.markerStart,row.markerEnd])assert.equal(source.split(anchor).length,2);
+  const start=source.indexOf(row.sealStart);
+  const end=source.indexOf('          jq -e ',start);
+  const marker=source.indexOf(row.markerStart);
+  const next=source.indexOf(row.markerEnd);
+  assert(start>=0&&start<end&&end<marker&&marker<next);
+  const read=pagesArtifactVisibilityWorkflowReview.afterLine+'\\\n'
+    +'            > "$RAVRADAR_OPERATIONAL_HANDOFF/pages-artifact-rest.json"\n';
+  const previous=source.slice(0,start)+read+source.slice(end,marker)+source.slice(next);
+  assert.equal(Buffer.byteLength(previous),row.before.bytes);
+  assert.equal(sha(previous),row.before.sha256);
+  return previous;
+}
+export function inversePagesArtifactVisibilityWorkflow(source,role) {
+  source=inversePagesArtifactVisibilityExhaustionWorkflow(source,role);
+  const row=pagesArtifactVisibilityWorkflowReview;
+  if(role!=='build'||sha(source)!==row.after.sha256)return source;
+  assert.equal(Buffer.byteLength(source),row.after.bytes);
+  assert.equal(source.split(row.afterLine).length,2);
+  const previous=source.replace(row.afterLine,row.beforeLine);
+  assert.equal(Buffer.byteLength(previous),row.before.bytes);
+  assert.equal(sha(previous),row.before.sha256);
+  return previous;
+}
 export function inverseRelease598WorkflowUserAgents(source,role){
   assert.equal(arguments.length,2,'RELEASE598_WORKFLOW_ARGUMENTS');
   assert.equal(typeof source,'string','RELEASE598_WORKFLOW_TYPE');
+  source=inversePagesArtifactVisibilityWorkflow(source,role);
   const row=release598WorkflowUserAgentReview;
   if(role!=='build'||sha(source)!==row.after.sha256)return source;
   assert.equal(Buffer.byteLength(source),row.after.bytes);
@@ -1040,7 +1084,24 @@ export function inversePairedPrivateRuntimePublication(source, role) {
   assert.equal(sha(source), '861fad7501e32d4b63c72caa598825b15fb5fb2758961a1187ed57858e5c01ce', 'Whole previous ordinary workflow survives');
   return source;
 }
+const automaticCompletedPagesReview = JSON.parse(fs.readFileSync(
+  new URL('./automatic-completed-pages-workflow-review.json', import.meta.url), 'utf8'));
+
+export function inverseAutomaticCompletedPagesWorkflow(source, role) {
+  const { before, after, applyInThisOrder } = automaticCompletedPagesReview;
+  if (role !== 'once' || typeof source !== 'string'
+    || Buffer.byteLength(source) !== after.bytes || sha(source) !== after.sha256) return source;
+  for (const [actual, original] of applyInThisOrder) {
+    assert.equal(source.split(actual).length, 2, 'One exact automatic completed Pages hunk');
+    source = source.replace(actual, () => original);
+  }
+  assert.equal(Buffer.byteLength(source), before.bytes);
+  assert.equal(sha(source), before.sha256);
+  return source;
+}
+
 export function inverseCompletedRuntimeWorkflow(source, role) {
+  source = inverseAutomaticCompletedPagesWorkflow(source, role);
   source = inverseTerminalRepair4145Workflow(source, role);
   source = inverseOrdinaryCompletedStageWorkflowWiring(source, role);
   source = inverseEarlyCompletedRuntimeStage(source, role);

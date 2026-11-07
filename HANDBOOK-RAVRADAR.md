@@ -1,3 +1,11 @@
+## 89.322 Genoptagelse når Pages-pakken endnu ikke er synlig
+
+Brug en gemt prognose igen, når GitHub har kvitteret for upload, men pakkens metadata først bliver synlige senere.
+
+<a id="ordinary-pages-exhausted-visibility-recovery-2026-11-07"></a>
+
+<div class="reader-guide"><p><strong>Kort fortalt: En vejrprognose kan være færdig og gemt, selv om GitHub endnu ikke kan vise oplysninger om den uploadede pakke. Ved et præcist bekræftet tilfælde kan den næste planlagte kørsel bygge videre på den gemte prognose.</strong></p></div><h3>Sådan skelnes fejlen</h3><p>GitHub kan kvittere for en upload, inden pakkens metadata kan læses. RavRadar prøver et begrænset antal gange. Hvis alle seks opslag giver 404, og den samme GitHub-adgang samtidig kan læse kørslens pakkeliste, registreres det særlige udfald. Adgangsfejl og uafklarede svar får ingen sådan markør. Afvigende pakkeidentitet eller ugyldig kontrolhash ved næste kørsel afviser genoptagelsen.</p><h3>Det skal stemme ved næste kørsel</h3><p>Den næste almindelige planlagte kørsel kontrollerer den afsluttede kørsel, den uploadede pakkes metadata og den gemte vejr- og scorehistorik. Det skal være den samme kode og den samme beskyttede prognose. Kontrollen læser også den offentlige forgænger igen. Hvis alt stemmer, genbruges de gemte data til at bygge og forsegle en ny offentlig pakke. Den går gennem de normale kontroller for databevarelse og udgivelse.</p><h3>Hvad er afprøvet?</h3><p>Den konkrete hændelse blev genoprettet med den eksisterende genoptagelse. Den nye automatiske vej er afprøvet lokalt. Dens virkning skal stadig ses i en faktisk planlagt kørsel og verificeres på RavRadar.</p>
+
 ## 89.321 Frossen månedsrapport, fast rækkefølge og forståelig støj
 
 Genlæs den samme private rapport med dens oprindelige binding og tydelig forklaring af støjede gruppetal.
