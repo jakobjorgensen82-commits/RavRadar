@@ -945,6 +945,33 @@ function inverseReviewedSource601BuildWorkflowInspection(source, role) {
 }
 
 
+// Kun den faktisk udstedte602-buildfil før hele genuine52d-oraklet.
+// Gamle600/601-rækker og ukendte input bevarer deres egne afslag.
+const reviewedSource602BuildWorkflowInspection = Object.freeze({
+  path: '.github/workflows/reusable-weather-build.yml',
+  after: Object.freeze({bytes: 352289,
+    sha256: 'e0fff915c2e4e9a6d3182ca41b46877d2082304f950a8bc3e4480d5ffafd5eaa'}),
+  before: Object.freeze({bytes: 300010,
+    sha256: '2f7917b26a994d4d33dd7445cdc992e571a9dcc3245867564dda85ebda145c61'}),
+});
+function inverseReviewedSource602BuildWorkflowInspection(source, role) {
+  const row = reviewedSource602BuildWorkflowInspection;
+  if (role !== 'build' || typeof source !== 'string'
+      || Buffer.byteLength(source) !== row.after.bytes || sha(source) !== row.after.sha256) return source;
+  requireSourceProducerOutput();
+  assertSourceProducerAfter597StaticCode();
+  const previous = execFileSync('git', [
+    '-c', 'protocol.allow=never', '-C', fileURLToPath(new URL('../../', import.meta.url)),
+    'cat-file', 'blob', reviewedSourceWorkflowInspection.ordinaryHead + ':' + row.path,
+  ], {encoding:'utf8', timeout:30_000, maxBuffer:512 * 1024,
+    env:{...process.env, GIT_NO_LAZY_FETCH:'1', GIT_NO_REPLACE_OBJECTS:'1', GIT_TERMINAL_PROMPT:'0'}});
+  assert.equal(Buffer.byteLength(previous), row.before.bytes,
+    'Hele den gennemgåede ordinary598-workflowstørrelse før602');
+  assert.equal(sha(previous), row.before.sha256,
+    'Hele den genuine ordinary598-kildevisning før602 og alle gamle orakler');
+  return previous; // Kun tekst til de uændrede historiske testassertions.
+}
+
 // Kun de to præcise601-fasekaldere før den uændrede historiske4145-inverse.
 // De frosne e81-preimages er byteidentiske med den genuine52d-forgænger,
 // som allerede er en normal lokal Git-forudsætning; ingen ny fetch kræves.
@@ -1035,7 +1062,8 @@ export function inverseReviewedSource601HistoricalCodeInput(source, relative) {
   assert.equal(arguments.length, 2, 'SOURCE601_HISTORICAL_INPUT_ARGUMENTS');
   assert.equal(typeof source, 'string', 'SOURCE601_HISTORICAL_INPUT_TYPE');
   if (relative === '.github/workflows/reusable-weather-build.yml')
-    return inverseReviewedSource601BuildWorkflowInspection(source, 'build');
+    return inverseReviewedSource601BuildWorkflowInspection(
+      inverseReviewedSource602BuildWorkflowInspection(source, 'build'), 'build');
   if (relative === '.github/workflows/run-current-weather-once.yml')
     return inverseReviewedSourceWorkflowInspection(source, 'once');
   const rows = reviewedSource601HistoricalCodeInputs;
@@ -1055,6 +1083,7 @@ export function inverseReviewedSource601HistoricalCodeInput(source, relative) {
 }
 
 export function inverseRelease585WorkflowUserAgents(source, role) {
+  source = inverseReviewedSource602BuildWorkflowInspection(source, role);
   source = inverseReviewedSource601BuildWorkflowInspection(source, role);
   source = inverseReviewedSourceWorkflowInspection(source, role);
   source = inverseNativeOriginalSchemaSelectorWorkflow(source, role);

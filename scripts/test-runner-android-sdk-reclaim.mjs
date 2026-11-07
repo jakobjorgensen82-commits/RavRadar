@@ -132,6 +132,8 @@ test('RAW observation reads current free bytes without visiting or removing the 
 
 test('normal workflow reclaims after trip preflight and observes before RAW restore', async () => {
   const source = await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8');
+  const normalized=source.replaceAll('\r\n','\n');
+  const sourceRoute=inverseReviewedSource601HistoricalCodeInput(normalized, '.github/workflows/reusable-weather-build.yml')!==normalized;
   const preflight = source.indexOf('- name: Preflight exact integrated trip binding before provider work');
   const reclaim = source.indexOf('- name: Reclaim only the unused hosted Android SDK before private restoration');
   const restore = source.indexOf('- name: Restore newest compatible private runtime from protected storage');
@@ -141,7 +143,12 @@ test('normal workflow reclaims after trip preflight and observes before RAW rest
   assert.equal(source.split('run: node scripts/reclaim-runner-android-sdk.mjs\n').length, 2);
   assert.equal(source.split('run: node scripts/reclaim-runner-android-sdk.mjs --observe-raw\n').length, 2);
   const reclaimStep = source.slice(reclaim, source.indexOf('\n      - ', reclaim + 1));
+  if(!sourceRoute){
   assert.match(reclaimStep, /if: steps\.preflight\.outputs\.should_run == 'true'/);
+  }else{
+    assert.deepEqual(reclaimStep.split('\n').filter(line=>line.trimStart().startsWith('if:')),
+      ["        if: steps.operational-model.outputs.source_normal_producer == 'true' || (steps.preflight.outputs.should_run == 'true')"]);
+  }
   const observationStep = source.slice(observation, raw);
   assert.match(observationStep, /inputs\.completed_private_runtime != true/);
   assert.match(observationStep, /steps\.weather-source-handoff\.outputs\.reused != 'true'/);
