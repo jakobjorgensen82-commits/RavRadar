@@ -6719,3 +6719,8 @@ sikkert. Målrettede tests består lokalt, men den præcise årsag til de
   tilladelse til at springe friskhed, validering, centrale CAS-værn eller
   privat R2/Pages-kontrol over. En fuld, sikker genoptagelsesvej for
   sen fejl er fortsat åben; ingen ny tung vejrkørsel før den er afklaret.
+
+
+## 7. november 2026 — intern vedligeholdelse på 4.0.598
+
+Den eksisterende vejrdiagnose får en lukket læsevej til vandstandsmetadata fra én tidligere, autentificeret pakke. Den hjælper med at skelne manglende gemte endepunkter fra tab senere i behandlingen. Den ændrer ingen vejrdata, scorer, brugerfunktioner eller modelbindinger. Årsag og faktisk driftseffekt afventer den normale kvalifikation og den afgrænsede læsning. Se RDKS' afsnit om gemt vandstandsgrundlag.
