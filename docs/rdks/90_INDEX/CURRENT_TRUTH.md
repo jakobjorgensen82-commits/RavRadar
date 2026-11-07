@@ -11512,3 +11512,14 @@ historiske 34 temperaturfelter og Free-budget er stadig åbne.
 # NYESTE SANDHED – 2026-09-29 – Feggesund-stop i normalt 12:19 UTC-run
 
 Run `36567354134` på 4.0.509 gennemførte alle tre leverandører, men stoppede i `FEGGESUND_WAVE_RUNTIME_PREFLIGHT_MISMATCH` under cache-/scorebygning. Ingen færdig produktionspakke, fuld artifactgate, central CAS, privat R2 eller Pages. Krypteret leverandørfremdrift blev gemt; den er ikke i sig selv et deploybart artifact. Offentlig 4.0.509 er uændret. 4.0.510-kandidaten retter det påviste forskellige Feggesund-inputgrundlag; den er ikke merged eller produktionsbevist. Ekstern firetimersplan er gemt aktiv, men GitHub-vagten er midlertidigt deaktiveret mod overlap til rettelsen er sikker. De tidligere femfeltsresthuller og tre delvise zoner er fortsat åbne.
+
+
+## 7. november 2026 — afgrænset læsning af gemt vandstandsgrundlag
+
+Den eksisterende skrivefri vejrdiagnose får et særskilt, lukket tilvalg til ét allerede gemt, autentificeret originalgrundlag. Den bruger det normale arkiverede værktøj fra pakkens egen kilde til at kontrollere og åbne den forseglede pakke. De andre diagnoser kan ikke vælges samtidig. Tilvalget er slået fra som udgangspunkt og kræver aktuel kvalificeret hovedgren samt den eksisterende eksklusive vejrkanal.
+
+Kun optællinger og vandstandens gemte samlings-, modelkørsels- og tidsevidens må komme ud. Rapporten skelner direkte kystdele, gemte SOURCE-serier og zonernes gemte resultat efter valg af kilde. Pakkerne beholder deres egne referencetider; den fælles sammenligningsakse er særskilt. T+3-understøttelsen ligger uden for de 118 offentlige prognosetimer. Sammensatte eller manglende tidsoplysninger forbliver ukendte. Rapporten kan ikke vise, hvilke nye filer en leverandør nu tilbyder.
+
+Der hentes ikke nyt vejr, genberegnes ikke scorer og skrives ikke til den aktive vejrpakke, database eller hjemmeside. Ingen rå vejrvektorer, punkter eller private dokumenter udgives. Dette er en undersøgelse af årsagen til huller i vandstandshalen, ikke en rettelse af huller eller en ny dækningsmåling. Det hidtidige kildevalg, de syv zoners afgrænsning og alle produktionsbindinger bevares.
+
+Den almindelige målprøve for den berørte diagnose består lokalt. Den komplette lokale prøve af kontrolplanlæggeren nåede sin tidsgrænse uden resultat og tæller ikke som bestået. De nye præcise læseflader følger den eksisterende relevante kontrolprofil med ukendte flader fortsat afvist. Der kræves den normale GitHub-kvalifikation, et ledigt skrivevindue og faktisk autentificeret læsning før en årsag kan fastslås.

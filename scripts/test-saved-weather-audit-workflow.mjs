@@ -1,9 +1,24 @@
+import { B272_WATER_LEVEL_AUDIT, projectB272WaterLevelSeries, assertB272WaterLevelArtifactPins, auditB272WaterLevelBasis } from './audit-saved-weather-inputs.mjs';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import test from 'node:test';
 
-const completeWorkflow = fs.readFileSync('.github/workflows/audit-saved-weather-inputs.yml', 'utf8').replace(/\r\n/g, '\n');
+const b272WorkflowReview = Object.freeze({"after":{"bytes":50451,"sha256":"cc75feda5293a30958b18f36658532747fe69dfa0852cf29d88699506e6d243a"},"before":{"bytes":45655,"sha256":"96c5f679fad34027b162d7abae8b05ed37cccf71db328447dba34a1fef5bf7f8"},"input":"      water_level_basis_272_only:\n        description: \"Fixed B272 WL provenance metadata only; one archived artifact, no providers or production\"\n        required: false\n        default: false\n        type: boolean\n\n","job":{"bytes":4438,"sha256":"751105587b8557f8f5c3ba785cf0e4cdea897f14f81dbebae0f5ef187c0609cd"},"ifPairs":[["    if: inputs.wam_raw_manifest_245_only == true || (inputs.component_summary_only != true && inputs.water_level_voersaa_trace_20261101 != true)","    if: inputs.water_level_basis_272_only != true && (inputs.wam_raw_manifest_245_only == true || (inputs.component_summary_only != true && inputs.water_level_voersaa_trace_20261101 != true))"],["    if: inputs.component_summary_only == true && inputs.water_level_voersaa_trace_20261101 != true && inputs.wam_raw_manifest_245_only != true","    if: inputs.water_level_basis_272_only != true && (inputs.component_summary_only == true && inputs.water_level_voersaa_trace_20261101 != true && inputs.wam_raw_manifest_245_only != true)"],["    if: inputs.water_level_voersaa_trace_20261101 == true && inputs.wam_raw_manifest_245_only != true","    if: inputs.water_level_basis_272_only != true && (inputs.water_level_voersaa_trace_20261101 == true && inputs.wam_raw_manifest_245_only != true)"]]});
+function beforeB272WaterLevelWorkflow(value){
+  const sha=value=>crypto.createHash('sha256').update(value).digest('hex'),r=b272WorkflowReview;
+  if(sha(value)!==r.after.sha256)return value; // Unknown bytes keep every old strict refusal.
+  assert.equal(Buffer.byteLength(value),r.after.bytes,'B272_WORKFLOW_WHOLE_AFTER');
+  const marker='\n  water-level-basis-272:';assert.equal(value.split(marker).length,2,'B272_WORKFLOW_SINGLE_JOB');
+  const at=value.indexOf(marker),job=value.slice(at);assert.equal(Buffer.byteLength(job),r.job.bytes,'B272_WORKFLOW_JOB_SIZE');
+  assert.equal(sha(job),r.job.sha256,'B272_WORKFLOW_JOB_SHA');value=value.slice(0,at);
+  assert.equal(value.split(r.input).length,2,'B272_WORKFLOW_SINGLE_INPUT');value=value.replace(r.input,'');
+  for(const [before,after]of r.ifPairs){assert.equal(value.split(after).length,2,'B272_WORKFLOW_EXACT_IF');value=value.replace(after,before);}
+  assert.equal(Buffer.byteLength(value),r.before.bytes,'B272_WORKFLOW_WHOLE_BEFORE_SIZE');
+  assert.equal(sha(value),r.before.sha256,'B272_WORKFLOW_GENUINE_52D_BEFORE');return value;
+}
+
+const completeWorkflow = beforeB272WaterLevelWorkflow(fs.readFileSync('.github/workflows/audit-saved-weather-inputs.yml', 'utf8').replace(/\r\n/g, '\n'));
 const wam245WorkflowReview = {"beforeSha256": "d1a80ed4acaea23779fb55e6af54a6a64b526b33b8014c0005e8ec3f829a1c75", "afterSha256": "96c5f679fad34027b162d7abae8b05ed37cccf71db328447dba34a1fef5bf7f8", "hunks": [{"before": "      component_summary_only:\n", "after": "      wam_raw_manifest_245_only:\n        description: \"Fixed245 RAW manifest metadata only; no B/progress/RAW open/decode\"\n        required: false\n        default: false\n        type: boolean\n\n      component_summary_only:\n", "count": 1}, {"before": "    if: inputs.component_summary_only != true && inputs.water_level_voersaa_trace_20261101 != true\n", "after": "    if: inputs.wam_raw_manifest_245_only == true || (inputs.component_summary_only != true && inputs.water_level_voersaa_trace_20261101 != true)\n", "count": 1}, {"before": "          INCLUDE_RAW_MANIFEST: ${{ inputs.include_raw_manifest }}\n          RAW_MANIFEST_CACHE_KEY:", "after": "          WAM_RAW_MANIFEST_245_ONLY: ${{ inputs.wam_raw_manifest_245_only }}\n          COMPONENT_SUMMARY_ONLY: ${{ inputs.component_summary_only }}\n          WATER_LEVEL_TRACE: ${{ inputs.water_level_voersaa_trace_20261101 }}\n          INCLUDE_RAW_MANIFEST: ${{ inputs.include_raw_manifest }}\n          RAW_MANIFEST_CACHE_KEY:", "count": 1}, {"before": "          [[ \"$INCLUDE_RAW_MANIFEST\" == true || \"$INCLUDE_RAW_MANIFEST\" == false ]]\n", "after": "          [[ \"$WAM_RAW_MANIFEST_245_ONLY\" == true || \"$WAM_RAW_MANIFEST_245_ONLY\" == false ]]\n          [[ \"$INCLUDE_RAW_MANIFEST\" == true || \"$INCLUDE_RAW_MANIFEST\" == false ]]\n", "count": 1}, {"before": "          test \"$GITHUB_SHA\" = \"$EXPECTED_MAIN_HEAD\"\n", "after": "          if test \"$WAM_RAW_MANIFEST_245_ONLY\" = true; then\n            test \"$SOURCE_RUN_ID\" = 41577449483\n            test \"$SOURCE_RUN_ATTEMPT\" = 1\n            test \"$RAW_MANIFEST_CACHE_KEY\" = dmi-grib-v4-Linux-2026-W45-41577449483-1\n            test \"$COMPONENT_SUMMARY_ONLY\" = false\n            test \"$WATER_LEVEL_TRACE\" = false\n            test \"$INCLUDE_RAW_MANIFEST\" = false\n            test \"$INCLUDE_RAW_FILE_PRESENCE\" = false\n            test \"$INCLUDE_SELECTED_CURRENT_PREFLIGHT\" = false\n            test \"$INCLUDE_CURRENT_WINDOW_DIAGNOSTIC\" = false\n            test \"$INCLUDE_CURRENT586_ENDPOINTS\" = false\n            test \"$INCLUDE_CURRENT586_CACHED_ORIGINALS\" = false\n            test -z \"$RAW_MANIFEST_SOURCE\"\n            test -z \"$PROGRESS_BASELINE_TARGET_HOUR\"\n          fi\n          test \"$GITHUB_SHA\" = \"$EXPECTED_MAIN_HEAD\"\n", "count": 1}, {"before": "          source_head=\"$(jq -er '.head_sha' \"$RUNNER_TEMP/saved-input-source-run.json\")\"\n", "after": "          source_head=\"$(jq -er '.head_sha' \"$RUNNER_TEMP/saved-input-source-run.json\")\"\n          if test \"$WAM_RAW_MANIFEST_245_ONLY\" = true; then\n            test \"$source_head\" = 6fb3fc1682b68bcf51b5ed73c14a84ead7676371\n            jq -e '.conclusion == \"success\"' \"$RUNNER_TEMP/saved-input-source-run.json\" >/dev/null\n          fi\n", "count": 1}, {"before": "          if test \"$INCLUDE_RAW_MANIFEST\" = true; then\n", "after": "          if test \"$INCLUDE_RAW_MANIFEST\" = true || test \"$WAM_RAW_MANIFEST_245_ONLY\" = true; then\n", "count": 1}, {"before": "      - uses: actions/setup-python@v7\n", "after": "      - uses: actions/setup-python@v7\n        if: inputs.wam_raw_manifest_245_only != true\n", "count": 1}, {"before": "      - name: Install only existing offline reader dependencies\n", "after": "      - name: Install only existing offline reader dependencies\n        if: inputs.wam_raw_manifest_245_only != true\n", "count": 1}, {"before": "        if: inputs.include_current586_endpoints != true && inputs.include_current586_cached_originals != true\n", "after": "        if: inputs.include_current586_endpoints != true && inputs.include_current586_cached_originals != true && inputs.wam_raw_manifest_245_only != true\n", "count": 3}, {"before": "        if: inputs.include_raw_manifest == true\n", "after": "        if: inputs.include_raw_manifest == true || inputs.wam_raw_manifest_245_only == true\n", "count": 2}, {"before": "      - name: Read the current protected source identity without storage writes\n", "after": "      - name: Read the current protected source identity without storage writes\n        if: inputs.wam_raw_manifest_245_only != true\n", "count": 1}, {"before": "      - name: Materialize exact original producer code without running it\n", "after": "      - name: Materialize exact original producer code without running it\n        if: inputs.wam_raw_manifest_245_only != true\n", "count": 1}, {"before": "      - name: Read the current protected source identity without storage writes\n", "after": "      - name: Read only the fixed245 RAW manifest metadata\n        if: inputs.wam_raw_manifest_245_only == true\n        id: wam-raw-metadata\n        shell: bash\n        env:\n          GH_TOKEN: ${{ github.token }}\n          EXACT_KEY: ${{ steps.authority.outputs.raw_cache_key }}\n        run: |\n          set -euo pipefail\n          test \"$(gh api \"repos/$GITHUB_REPOSITORY/git/ref/heads/main\" --jq '.object.sha')\" = \"$GITHUB_SHA\"\n          mkdir \"$RUNNER_TEMP/ravradar-saved-input-audit\"\n          node scripts/audit-saved-weather-inputs.mjs wam-raw-manifest-245 --private-root \"$RUNNER_TEMP/ravradar-saved-input-audit\" --raw-cache-key \"$EXACT_KEY\" --output \"$RUNNER_TEMP/ravradar-saved-input-audit/summary-safe.json\"\n          test \"$(gh api \"repos/$GITHUB_REPOSITORY/git/ref/heads/main\" --jq '.object.sha')\" = \"$GITHUB_SHA\"\n\n      - name: Read the current protected source identity without storage writes\n", "count": 1}, {"before": "        if: always() && (steps.input-audit.outcome == 'success'", "after": "        if: always() && (steps.wam-raw-metadata.outcome == 'success' || steps.wam-raw-metadata.outcome == 'failure' || steps.input-audit.outcome == 'success'", "count": 1}, {"before": "    if: inputs.component_summary_only == true && inputs.water_level_voersaa_trace_20261101 != true\n", "after": "    if: inputs.component_summary_only == true && inputs.water_level_voersaa_trace_20261101 != true && inputs.wam_raw_manifest_245_only != true\n", "count": 1}, {"before": "    if: inputs.water_level_voersaa_trace_20261101 == true\n", "after": "    if: inputs.water_level_voersaa_trace_20261101 == true && inputs.wam_raw_manifest_245_only != true\n", "count": 1}], "wholeInverseExact": true};
 
 function beforeWam245MetadataWorkflow(value){
@@ -499,5 +514,66 @@ test('WAM245 metadata workflow: old whole oracles and unknown mutation refusals 
   for(const altered of[completeWorkflow+'\n',completeWorkflow.replace('test "$SOURCE_RUN_ID" = 41577449483','test "$SOURCE_RUN_ID" = 1'),
     completeWorkflow.replace('dmi-grib-v4-Linux-2026-W45-41577449483-1','other-cache')]){
     assert.throws(()=>beforeVoersaaWaterTrace(altered),/VOERSAA_WHOLE_WORKFLOW_INPUT_CHANGED/);
+  }
+});
+
+test('fixed B272 WL metadata separates stored basis, T+3 support and model-run mismatches without private values',()=>{
+  const h=n=>new Date(Date.parse(B272_WATER_LEVEL_AUDIT.productionReferenceAt)+n*3600000).toISOString();
+  const record={hourly:Array.from({length:121},(_,n)=>({time:h(n),waterLevelCm:987654,waterLevelTrendCm3h:n===117?321:null,
+    currentUMps:'private-vector-canary',sources:{waterLevel:{provider:'dmi',collection:'dkss_lf',modelRun:h(-6),
+      entityId:'private-source-canary',gridDefinitionSha256:'a'.repeat(64),gridPoint:[123.456,54.321],nativeValidTimes:[h(n)]}}}))};
+  record.hourly[120].waterLevelCm=null;
+  record.hourly[116].sources.waterLevel.modelRun=h(-3);
+  const storedReferenceAt=h(-4);
+  const r=projectB272WaterLevelSeries([record],'PART_DIRECT_STORED:NATIONAL',storedReferenceAt);
+  assert.equal(r.storedReferenceAt,storedReferenceAt);assert.equal(r.horizonStart,h(0));
+  assert.equal(r.publicHours,118);assert.equal(r.privateSupportHours,3);assert.equal(r.horizonEnd,h(120));
+  assert.equal(r.tailHours.length,15);assert.equal(r.tailHours[0].time,h(106));
+  const last=r.tailHours.find(x=>x.time===h(117));assert.equal(last.basisPresent,1);assert.equal(last.storedTrendPresent,1);
+  assert.equal(last.futureBasisMissing,1);assert.equal(last.sameStoredSeriesEndpointCount,0);
+  assert.equal(r.tailHours.find(x=>x.time===h(113)).seriesMismatchCount,1);
+  assert.equal(r.completeBasisLast,h(119));assert.equal(r.missingBasisFirst,h(120));
+  assert.deepEqual(r.modelRuns.map(x=>x.modelRun).sort(),[h(-6),h(-3)].sort());
+  const text=JSON.stringify(r);
+  for(const forbidden of ['987654','321','private-vector-canary','private-source-canary','123.456','54.321','gridPoint','entityId','currentUMps'])
+    assert.equal(text.includes(forbidden),false,forbidden);
+  const mixed=structuredClone(record);Object.assign(mixed.hourly[110].sources.waterLevel,{collections:['dkss_lf','dkss_nsbs'],modelRuns:[h(-6),h(-3)]});
+  const m=projectB272WaterLevelSeries([mixed],'ZONE_CACHE_AFTER_ROUTING:BLAVAND');
+  const joined=m.modelRuns.filter(x=>x.collection==='dkss_lf+dkss_nsbs');assert.equal(joined.length,2);
+  assert(joined.every(x=>x.nativeEndpointCount===null&&x.nativeValidTimeStart===null&&x.nativeValidTimeEnd===null));
+  assert(m.metadataMissingCount>0);assert.equal(m.storedReferenceAt,null);
+  assert.throws(()=>projectB272WaterLevelSeries([record],'PART_DIRECT_STORED:FUR',h(1)),/PROJECTION_REFERENCE/);
+  assert.throws(()=>projectB272WaterLevelSeries([record],'private-source-canary'),/PROJECTION_INPUT/);
+  assert.throws(()=>projectB272WaterLevelSeries([{hourly:[record.hourly[0],record.hourly[0]]}],'PART_DIRECT_STORED:FUR'),/PROJECTION_HOUR/);
+});
+
+test('fixed B272 artifact pins and read-only callback reject changes before downloads or credential use',async()=>{
+  const good={total_count:1,artifacts:[{name:'ravradar-private-build-stage-42318718471-1',id:13557835271,
+    size_in_bytes:243844063,digest:'sha256:33412b37120a89a306a96420b1b167c9ffb5ea02fc216c2810363a8d3e53cbc8'}]};
+  assert.doesNotThrow(()=>assertB272WaterLevelArtifactPins(good));
+  for(const changed of [({...good,total_count:2}),({...good,artifacts:[good.artifacts[0],good.artifacts[0]],total_count:2}),
+    ...['id','size_in_bytes','digest','name'].map(k=>{const x=structuredClone(good);x.artifacts[0][k]=k==='digest'?'sha256:'+'0'.repeat(64):'unknown';return x;})])
+    assert.throws(()=>assertB272WaterLevelArtifactPins(changed),/ARTIFACT_PIN/);
+  let fetches=0;const fetchImpl=async()=>{fetches++;throw Error('must-never-fetch');};
+  const refused=await auditB272WaterLevelBasis({artifactId:1,fetchImpl});
+  assert.equal(refused.reportComplete,false);assert.equal(refused.privatePayloadLogged,false);assert.deepEqual(refused.scopes,[]);
+  assert(refused.unknowns.includes('MODE_INVALID'));assert.equal(fetches,0);
+});
+
+test('B272 workflow keeps its archived52d reader, original audit jobs and only the bounded metadata artifact',async()=>{
+  const y=await fs.promises.readFile(new URL('../.github/workflows/audit-saved-weather-inputs.yml',import.meta.url),'utf8');
+  assert.equal(workflowSha(beforeB272WaterLevelWorkflow(y)),wam245WorkflowReview.afterSha256);
+  for(const changed of [y+'\n# unknown drift\n',y.replace('READ-B272-WATERLEVEL-PROVENANCE-ONLY','WRONG-B272-CONFIRMATION')])
+    assert.throws(()=>beforeVoersaaWaterTrace(changed),/VOERSAA_WHOLE_WORKFLOW_INPUT_CHANGED/);
+  const block=y.slice(y.indexOf('  water-level-basis-272:'));
+  assert(block.includes('READ-B272-WATERLEVEL-PROVENANCE-ONLY'));
+  assert(block.includes('git -c protocol.allow=never archive 52d10aa7494597c3f9c5b4885f26abb4c00953c7'));
+  assert(block.includes('run: test "$SOURCE_REQUIRED" = false'));
+  assert(block.includes('STAGED_PRIVATE_BUILD_MASTER_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}'));
+  assert(block.includes('water-level-metadata-safe.json'));assert(block.includes('retention-days: 1'));
+  for(const forbidden of ['secrets.DMI_API_KEY','secrets.RAVRADAR_R2_','SUPABASE_URL:','update:weather','run-current-weather-once.yml','deploy-code-only-repair.yml'])
+    assert.equal(block.includes(forbidden),false,forbidden);
+  for(const job of ['audit:','component-summary:','voersaa-water-trace:']){
+    const before=y.slice(y.indexOf('  '+job));assert.match(before.split('\n')[1],/water_level_basis_272_only != true/);
   }
 });
