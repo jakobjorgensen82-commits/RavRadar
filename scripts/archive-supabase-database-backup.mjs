@@ -4,13 +4,13 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import {gzipSync,gunzipSync} from 'node:zlib';
 import {pathToFileURL} from 'node:url';
-import {captureLocalDatabaseBackup,verifyLocalDatabaseBackup,materializeLocalDatabaseBackup,DB_LOCAL_CARRIER_POLICY as LOCAL} from './seal-supabase-database-export.mjs';
+import {captureLocalDatabaseBackup,verifyLocalDatabaseBackup,materializeLocalDatabaseBackup,DB_LOCAL_CARRIER_POLICY as LOCAL,DB_BACKUP_CIPHER_LIMITS as CIPHER} from './seal-supabase-database-export.mjs';
 import {createR2PrivateReadDenialStorage} from './lib/r2-private-read-denial-storage.mjs';
 import {createSupabaseAdminRequester} from './lib/supabase-admin-rest.mjs';
 import {PRIVATE_STUDY_ADMIN_ACCESS_SQL,assertPrivateStudyAdminAccess} from './lib/private-trip-study-admin-transport.mjs';
 
 export const DB_REMOTE_BACKUP_POLICY=Object.freeze({project:'https://afqhhdrkjfjtpadntdzo.supabase.co',bucket:'ravradar-supabase-backup',
-  locatorKey:'supabase-database-backup-locator',maximumObjectBytes:50_000_000,maximumCipherBytes:36_000_000,
+  locatorKey:'supabase-database-backup-locator',maximumObjectBytes:50_000_000,maximumCipherBytes:CIPHER.partBytes,
   maximumFrameJsonBytes:48_100_000,maximumBucketBytes:2_000_000_000,maximumMetadataBytes:64*1024,maximumMs:20*60_000});
 export const DB_BOOTSTRAP_POLICY=Object.freeze({maximumListedObjects:512,maximumListBytes:2*1024*1024,maximumCandidates:64,maximumIndexWireBytes:128*1024,maximumCandidateBytes:8*1024*1024,maximumSearchMs:120_000});
 const B=DB_BOOTSTRAP_POLICY,P=DB_REMOTE_BACKUP_POLICY,INDEX_PURPOSE=LOCAL.purpose+'/INDEX',INDEX_MAGIC=Buffer.from('RR-SUPABASE-DB-INDEX-1\n'),SELF_INDEX_MAGIC=Buffer.from('RR-SUPABASE-DB-INDEX-2\n');
@@ -20,10 +20,14 @@ const fail=code=>{const e=new Error(code);e.code=code;throw e;},need=(v,c)=>{if(
 const parse=(b,c)=>{try{return JSON.parse(b.toString('utf8'));}catch{fail(c);}};
 function fields(x,names,c){need(x&&typeof x==='object'&&!Array.isArray(x)&&same(Object.keys(x).sort(),[...names].sort()),c);}
 const objectPath=h=>'bundles/sha256/'+h+'.json.gz';
+const partPath=(manifest,index,digest)=>`bundles/sha256/${manifest}/part-${String(index).padStart(3,'0')}-${digest}.json.gz.part`;
+const objectName=/^bundles\/sha256\/[0-9a-f]{64}\.json\.gz$/;
+const partName=/^bundles\/sha256\/[0-9a-f]{64}\/part-[0-9]{3}-[0-9a-f]{64}\.json\.gz\.part$/;
+const describeObject=(body,pickPath=objectPath)=>{const digest=sha(body);return{path:pickPath(digest),sha256:digest,bytes:body.length};};
 function checkContext(c){fields(c,['purpose','project','repository','sourceHead','runId','runAttempt'],'DB_CONTEXT_FIELDS');
   need(c.purpose===LOCAL.purpose&&c.project===LOCAL.project&&c.repository===LOCAL.repository&&typeof c.sourceHead==='string'&&/^[0-9a-f]{40}$/.test(c.sourceHead)
     &&typeof c.runId==='string'&&/^[1-9][0-9]*$/.test(c.runId)&&typeof c.runAttempt==='string'&&/^[1-9][0-9]*$/.test(c.runAttempt),'DB_CONTEXT');return c;}
-function checkObject(x){fields(x,['path','sha256','bytes'],'OBJECT_FIELDS');need(hash(x.sha256)&&x.path===objectPath(x.sha256)&&positive(x.bytes)&&x.bytes<=P.maximumObjectBytes,'OBJECT_DESCRIPTOR');return x;}
+function checkObject(x,pickPath=objectPath){fields(x,['path','sha256','bytes'],'OBJECT_FIELDS');need(hash(x.sha256)&&x.path===pickPath(x.sha256)&&positive(x.bytes)&&x.bytes<=P.maximumObjectBytes,'OBJECT_DESCRIPTOR');return x;}
 function checkPointer(x){fields(x,['kind','bucket','index','context','exportReceiptSha256','manifestSha256'],'LOCATOR_FIELDS');
   need(x.kind==='SUPABASE_DB_BACKUP_LOCATOR_V1'&&x.bucket===P.bucket&&hash(x.exportReceiptSha256)&&hash(x.manifestSha256),'LOCATOR_INVALID');checkObject(x.index);checkContext(x.context);return x;}
 function frame(kind,bytes){need(Buffer.isBuffer(bytes)&&bytes.length>0,'FRAME_INPUT');
@@ -101,8 +105,9 @@ function clients(env,fetchImpl,{bootstrap=false,readOnly=false}={}){
       // Only the exact unsigned one-byte probe stays unread for the adapter's
       // typed 400/XML bound or immediate non-400 cancellation. Authenticated
       // object/list reads retain every existing byte and operation guard.
+      const objectKey=u.pathname.slice(P.bucket.length+2);
       const anonymousRange=r2&&method==='GET'&&u.search===''
-        &&new RegExp('^/'+P.bucket+'/bundles/sha256/[0-9a-f]{64}\\.json\\.gz$').test(u.pathname)
+        &&(objectName.test(objectKey)||partName.test(objectKey))
         &&!new Headers(options.headers).has('authorization')&&new Headers(options.headers).get('range')==='bytes=0-0';
       if(anonymousRange)return response;
       const maximum=list?B.maximumListBytes:r2?state.objectReadBound:2_000_000,declared=response.headers.get('content-length');
@@ -118,15 +123,18 @@ function clients(env,fetchImpl,{bootstrap=false,readOnly=false}={}){
   return{env,state,fetch:guarded,admin,r2};
 }
 
-function validateManifest(raw,pointer){
+function validateManifest(raw,pointer,{chunked=false}={}){
   need(raw.length<=LOCAL.maximumManifestBytes&&sha(raw)===pointer.manifestSha256,'MANIFEST_SHA');const m=parse(raw,'MANIFEST_JSON');
   fields(m,['kind','context','exportReceiptSha256','files','authRestoreVerified','fullDatabaseBackupVerified','archiveUploaded','centralLocatorPublished','freeReady'],'MANIFEST_FIELDS');
-  need(m.kind==='SUPABASE_LOCAL_DB_CARRIER_V1'&&same(m.context,pointer.context)&&m.exportReceiptSha256===pointer.exportReceiptSha256
+  const large=m.kind==='SUPABASE_LOCAL_DB_CARRIER_V2';
+  need((m.kind==='SUPABASE_LOCAL_DB_CARRIER_V1'||chunked&&large)&&same(m.context,pointer.context)&&m.exportReceiptSha256===pointer.exportReceiptSha256
     &&['authRestoreVerified','fullDatabaseBackupVerified','archiveUploaded','centralLocatorPublished','freeReady'].every(k=>m[k]===false),'MANIFEST_GROUP');
-  need(Array.isArray(m.files)&&m.files.length===5,'FIVE_FILES_REQUIRED');let total=0;
+  need(Array.isArray(m.files)&&m.files.length===5,'FIVE_FILES_REQUIRED');let total=0,totalCipher=0;
+  const cipherLimit=chunked?(large?CIPHER.totalBytes:LOCAL.maximumCipherBytes):P.maximumCipherBytes;
   for(let i=0;i<5;i++){const x=m.files[i];fields(x,['file','sqlBytes','sqlSha256','cipherFile','cipherBytes','cipherSha256'],'FILE_FIELDS');
     need(x.file===NAMES[i]&&x.cipherFile===x.file+'.gz.enc'&&positive(x.sqlBytes)&&x.sqlBytes<=LOCAL.maximumSqlBytes&&hash(x.sqlSha256)
-      &&positive(x.cipherBytes)&&x.cipherBytes<=P.maximumCipherBytes&&hash(x.cipherSha256),'FILE_BOUND');total+=x.sqlBytes;}
+      &&positive(x.cipherBytes)&&x.cipherBytes<=cipherLimit&&hash(x.cipherSha256),'FILE_BOUND');total+=x.sqlBytes;totalCipher+=x.cipherBytes;}
+  need(totalCipher<=CIPHER.totalBytes,'CIPHERTEXT_GROUP_BOUND');
   need(Number.isSafeInteger(total)&&total<=LOCAL.maximumTotalSqlBytes,'TOTAL_SQL_BOUND');return m;
 }
 function decodedBase64(value,max,code){need(typeof value==='string'&&value.length<=4*Math.ceil(max/3),'INDEX_BOUND');const b=Buffer.from(value,'base64');
@@ -134,18 +142,37 @@ function decodedBase64(value,max,code){need(typeof value==='string'&&value.lengt
 function validateIndex(raw,pointer){
   need(raw.length<=P.maximumMetadataBytes-128,'INDEX_BOUND');const x=parse(raw,'INDEX_JSON');
   fields(x,['kind','exportReceiptSha256','manifestSha256','manifestBase64','exportReceiptBase64','objects'],'INDEX_FIELDS');
-  need(x.kind==='SUPABASE_DB_BACKUP_INDEX_V1'&&x.exportReceiptSha256===pointer.exportReceiptSha256&&x.manifestSha256===pointer.manifestSha256,'INDEX_GROUP');
-  const manifestBytes=decodedBase64(x.manifestBase64,LOCAL.maximumManifestBytes,'MANIFEST_BASE64'),m=validateManifest(manifestBytes,pointer);
+  const chunked=x.kind==='SUPABASE_DB_BACKUP_INDEX_V2';
+  need((chunked||x.kind==='SUPABASE_DB_BACKUP_INDEX_V1')&&x.exportReceiptSha256===pointer.exportReceiptSha256&&x.manifestSha256===pointer.manifestSha256,'INDEX_GROUP');
+  const manifestBytes=decodedBase64(x.manifestBase64,LOCAL.maximumManifestBytes,'MANIFEST_BASE64'),m=validateManifest(manifestBytes,pointer,{chunked});
   const receiptBytes=decodedBase64(x.exportReceiptBase64,LOCAL.maximumManifestBytes,'RECEIPT_BASE64');need(sha(receiptBytes)===pointer.exportReceiptSha256,'EXPORT_RECEIPT_SHA');
   const receipt=parse(receiptBytes,'EXPORT_RECEIPT_JSON');need(receipt.kind==='SUPABASE_FIVE_FILE_EXPORT_V1'&&receipt.project===LOCAL.project&&receipt.exportPhaseCompleted===true
     &&receipt.authRestoreVerified===false&&receipt.fullDatabaseBackupVerified===false&&Array.isArray(receipt.files)&&receipt.files.length===5,'EXPORT_RECEIPT_GROUP');
   need([receipt.startedAt,receipt.completedAt].every(t=>typeof t==='string'&&/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(t)&&Number.isFinite(Date.parse(t))&&new Date(t).toISOString()===t)
     &&Date.parse(receipt.startedAt)<=Date.parse(receipt.completedAt),'EXPORT_RECEIPT_TIME');
-  need(Array.isArray(x.objects)&&x.objects.length===5,'FIVE_OBJECTS_REQUIRED');const paths=new Set();
-  for(let i=0;i<5;i++){const entry=x.objects[i],r=receipt.files[i],f=m.files[i];fields(entry,['file','object'],'INDEX_OBJECT_FIELDS');
-    need(entry.file===NAMES[i]&&r.file===f.file&&r.bytes===f.sqlBytes&&r.sha256===f.sqlSha256,'EXPORT_FILE_GROUP');checkObject(entry.object);
-    need(!paths.has(entry.object.path),'DUPLICATE_OBJECT');paths.add(entry.object.path);}
-  return{index:x,manifest:m,manifestBytes,receiptBytes,completedAt:receipt.completedAt};
+  need(Array.isArray(x.objects)&&x.objects.length===5,'FIVE_OBJECTS_REQUIRED');
+  const paths=new Set();let ordinal=0,wireBytes=pointer.index?.bytes??0;
+  for(let i=0;i<5;i++){
+    const entry=x.objects[i],r=receipt.files[i],f=m.files[i];
+    fields(entry,chunked?['file','parts']:['file','object'],'INDEX_OBJECT_FIELDS');
+    need(entry.file===NAMES[i]&&r.file===f.file&&r.bytes===f.sqlBytes&&r.sha256===f.sqlSha256,'EXPORT_FILE_GROUP');
+    if(!chunked){
+      checkObject(entry.object);need(!paths.has(entry.object.path),'DUPLICATE_OBJECT');paths.add(entry.object.path);continue;
+    }
+    need(Array.isArray(entry.parts)&&entry.parts.length===Math.ceil(f.cipherBytes/CIPHER.partBytes),'CHUNK_COUNT');
+    let offset=0;
+    for(const part of entry.parts){
+      fields(part,['offset','cipherBytes','cipherSha256','object'],'CHUNK_FIELDS');
+      need(part.offset===offset&&part.cipherBytes===Math.min(CIPHER.partBytes,f.cipherBytes-offset)&&hash(part.cipherSha256),'CHUNK_ORDER_OR_LENGTH');
+      const partNumber=ordinal++;
+      checkObject(part.object,digest=>partPath(pointer.manifestSha256,partNumber,digest));
+      need(part.object.bytes>=part.cipherBytes&&!paths.has(part.object.path),'CHUNK_OBJECT');
+      paths.add(part.object.path);offset+=part.cipherBytes;wireBytes+=part.object.bytes;
+    }
+    need(offset===f.cipherBytes,'CHUNK_LENGTH');
+  }
+  if(chunked)need(ordinal<=CIPHER.parts&&wireBytes<=CIPHER.wireBytes,'R2_CAPTURE_HEADROOM');
+  return{index:x,manifest:m,manifestBytes,receiptBytes,completedAt:receipt.completedAt,chunked,cipherPartCount:ordinal,wireBytes};
 }
 const GET_SUFFIX='?document_key=eq.'+P.locatorKey+'&select=document_key,payload,version&limit=2';
 function locatorRows(rows){need(Array.isArray(rows)&&rows.length<=1,'LOCATOR_ROWS');if(!rows.length)return null;const r=rows[0];
@@ -160,14 +187,58 @@ async function publishLocator(c,before,pointer){
   const written=locatorRows(rows);need(written&&written.version===(before?before.version+1:1)&&same(written.payload,pointer),'LOCATOR_CAS_REJECTED');
   const readback=await readLocator(c);need(same(readback,written),'LOCATOR_READBACK');return readback;
 }
-async function store(c,body){
-  const descriptor={path:objectPath(sha(body)),sha256:sha(body),bytes:body.length};checkObject(descriptor);
+async function store(c,body,pickPath=objectPath){
+  const descriptor=describeObject(body,pickPath);checkObject(descriptor,pickPath);
   await c.r2.uploadImmutable(descriptor.path,body);const readback=await c.r2.download(descriptor.path);
   need(readback.length===body.length&&readback.equals(body),'R2_EXACT_READBACK');
   const denial=await c.r2.anonymousReadDenial(descriptor.path);
   if(!denial.denied)throw Object.assign(new Error('R2_ANONYMOUS_ACCESS'),{code:'R2_ANONYMOUS_ACCESS',httpStatus:denial.httpStatus});return descriptor;
 }
-async function remoteBody(c,descriptor){checkObject(descriptor);const b=await c.r2.download(descriptor.path);need(b.length===descriptor.bytes&&sha(b)===descriptor.sha256,'REMOTE_OBJECT_SHA');return b;}
+async function remoteBody(c,descriptor,pickPath=objectPath){checkObject(descriptor,pickPath);const b=await c.r2.download(descriptor.path);need(b.length===descriptor.bytes&&sha(b)===descriptor.sha256,'REMOTE_OBJECT_SHA');return b;}
+async function stageParts(c,source,entry,directory,pointer,staged){
+  const named=await fs.lstat(source,{bigint:true});
+  need(named.isFile()&&!named.isSymbolicLink()&&named.nlink===1n&&named.size===BigInt(entry.cipherBytes),'LOCAL_FILE_BOUND');
+  const handle=await fs.open(source,constants.O_RDONLY|(constants.O_NOFOLLOW||0));
+  const sameFile=(a,b)=>['dev','ino','size','mtimeNs','ctimeNs'].every(k=>a[k]===b[k]);
+  try{
+    need(sameFile(named,await handle.stat({bigint:true})),'LOCAL_FILE_IDENTITY');
+    const parts=[],digest=crypto.createHash('sha256');
+    for(let offset=0;offset<entry.cipherBytes;){
+      need(Date.now()-c.state.started<P.maximumMs&&staged.length<CIPHER.parts,'CHUNK_COUNT_OR_DEADLINE');
+      const raw=Buffer.allocUnsafe(Math.min(CIPHER.partBytes,entry.cipherBytes-offset));
+      for(let at=0;at<raw.length;){const {bytesRead}=await handle.read(raw,at,raw.length-at,offset+at);need(bytesRead>0,'CAPTURE_CIPHER_CHANGED');at+=bytesRead;}
+      digest.update(raw);const ordinal=staged.length,body=gzipSync(raw,{level:0});
+      need(gunzipSync(body,{maxOutputLength:raw.length}).equals(raw),'CHUNK_ROUNDTRIP');
+      const pickPath=hash=>partPath(pointer.manifestSha256,ordinal,hash),object=describeObject(body,pickPath);
+      checkObject(object,pickPath);
+      const file=path.join(directory,`part-${ordinal}.gz`);await fs.writeFile(file,body,{flag:'wx',mode:0o600});
+      parts.push({offset,cipherBytes:raw.length,cipherSha256:sha(raw),object});
+      staged.push({file,ordinal,object});offset+=raw.length;
+    }
+    const fresh=await fs.lstat(source,{bigint:true});
+    need(fresh.isFile()&&!fresh.isSymbolicLink()&&fresh.nlink===1n&&sameFile(named,fresh)&&sameFile(named,await handle.stat({bigint:true}))
+      &&digest.digest('hex')===entry.cipherSha256,'CAPTURE_CIPHER_CHANGED');
+    return{file:entry.file,parts};
+  }finally{await handle.close();}
+}
+async function storeChunked(c,local,manifest,pointer,index,before){
+  const staged=[],directory=await privateDirectory(c.env);index.kind='SUPABASE_DB_BACKUP_INDEX_V2';index.objects=[];
+  for(const entry of manifest.files)index.objects.push(await stageParts(c,path.join(local.directory,entry.cipherFile),entry,directory,pointer,staged));
+  const indexBytes=encode(index);validateIndex(indexBytes,pointer);
+  const wire=frame('ENCRYPTED_INDEX',sealIndex(indexBytes,pointer,c.env));pointer.index=describeObject(wire);
+  const checked=validateIndex(indexBytes,pointer);const fresh=await readLocator(c);
+  need(same(fresh,before),'LOCATOR_CHANGED');await c.r2.ensurePrivateBucket();const usage=await c.r2.bucketUsage();
+  need(usage.usedBytes+checked.wireBytes<=P.maximumBucketBytes,'R2_CAPTURE_HEADROOM');
+  // All object paths, bytes and the full index were closed before first PUT.
+  for(const {file,ordinal,object} of staged){
+    const bytes=await readLocal(file,P.maximumObjectBytes);
+    need(bytes.length===object.bytes&&sha(bytes)===object.sha256,'CAPTURE_CHUNK_CHANGED');
+    const stored=await store(c,bytes,digest=>partPath(pointer.manifestSha256,ordinal,digest));
+    need(same(stored,object),'CAPTURE_CHUNK_CHANGED');
+  }
+  need(same(await store(c,wire),pointer.index)&&openIndex(unframe('ENCRYPTED_INDEX',wire),pointer,c.env).equals(indexBytes),'INDEX_ROUNDTRIP');
+  return{cipherPartCount:checked.cipherPartCount,archiveWireBytes:checked.wireBytes};
+}
 async function capture(c,options,dependencies){
   need(c.env.GITHUB_ACTIONS==='true'&&c.env.RUNNER_ENVIRONMENT==='github-hosted'&&c.env.RUNNER_OS==='Linux'
     &&(dependencies.processImpl??process).platform==='linux','HOSTED_VM_REQUIRED');
@@ -175,36 +246,61 @@ async function capture(c,options,dependencies){
     sourceHead:c.env.GITHUB_SHA,runId:c.env.GITHUB_RUN_ID,runAttempt:c.env.GITHUB_RUN_ATTEMPT});
   // Read-only admission before any DB export, SQL/cipher file or upload.
   await privacy(c);const preflightLocator=await readLocator(c);await c.r2.ensurePrivateBucket();const usage=await c.r2.bucketUsage();
-  need(usage.usedBytes+(NAMES.length+1)*P.maximumObjectBytes<=P.maximumBucketBytes,'R2_CAPTURE_HEADROOM');
+  need(usage.usedBytes+CIPHER.wireBytes<=P.maximumBucketBytes,'R2_CAPTURE_HEADROOM');
   // The normal fixed export + local verifier is the only capture admission.
   // A supplied local directory, receipt or boolean cannot qualify a remote backup.
   const local=await captureLocalDatabaseBackup(options,dependencies),manifestBytes=await readLocal(path.join(local.directory,'manifest.json'),LOCAL.maximumManifestBytes);
   need(sha(manifestBytes)===local.manifestSha256,'CAPTURE_MANIFEST_CHANGED');const initial=parse(manifestBytes,'MANIFEST_JSON');
   const pointer={kind:'SUPABASE_DB_BACKUP_LOCATOR_V1',bucket:P.bucket,index:null,context:initial.context,
     exportReceiptSha256:initial.exportReceiptSha256,manifestSha256:local.manifestSha256};checkContext(pointer.context);need(same(pointer.context,expectedContext),'CAPTURE_CONTEXT_CHANGED');
-  const m=validateManifest(manifestBytes,pointer),receiptBytes=await readLocal(path.join(path.dirname(local.directory),'export-receipt.json'),LOCAL.maximumManifestBytes);
+  const chunked=Array.isArray(initial.files)&&initial.files.some(f=>f?.cipherBytes>P.maximumCipherBytes);
+  const m=validateManifest(manifestBytes,pointer,{chunked}),receiptBytes=await readLocal(path.join(path.dirname(local.directory),'export-receipt.json'),LOCAL.maximumManifestBytes);
   need(sha(receiptBytes)===pointer.exportReceiptSha256,'EXPORT_RECEIPT_SHA');
   const index={kind:'SUPABASE_DB_BACKUP_INDEX_V1',exportReceiptSha256:pointer.exportReceiptSha256,manifestSha256:pointer.manifestSha256,
     manifestBase64:manifestBytes.toString('base64'),exportReceiptBase64:receiptBytes.toString('base64'),objects:NAMES.map(file=>({file,object:{path:objectPath('0'.repeat(64)),sha256:'0'.repeat(64),bytes:P.maximumObjectBytes}}))};
   // Check every file and worst-case index framing before the first upload.
   need(envelopeSize(encode(index),pointer)<=P.maximumMetadataBytes,'INDEX_BOUND');
-  await privacy(c);const before=await readLocator(c);need(same(before,preflightLocator),'LOCATOR_CHANGED');await c.r2.ensurePrivateBucket();await c.r2.bucketUsage();index.objects=[];
-  for(const f of m.files){const cipher=await readLocal(path.join(local.directory,f.cipherFile),P.maximumCipherBytes);
-    need(cipher.length===f.cipherBytes&&sha(cipher)===f.cipherSha256,'CAPTURE_CIPHER_CHANGED');
-    const body=frame('SQL_CIPHERTEXT',cipher),object=await store(c,body);need(unframe('SQL_CIPHERTEXT',body).equals(cipher),'FRAME_ROUNDTRIP');index.objects.push({file:f.file,object});}
-  const indexBytes=encode(index);validateIndex(indexBytes,pointer);const encrypted=sealIndex(indexBytes,pointer,c.env),wire=frame('ENCRYPTED_INDEX',encrypted);
-  pointer.index=await store(c,wire);checkPointer(pointer);need(openIndex(unframe('ENCRYPTED_INDEX',wire),pointer,c.env).equals(indexBytes),'INDEX_ROUNDTRIP');
+  await privacy(c);const before=await readLocator(c);need(same(before,preflightLocator),'LOCATOR_CHANGED');await c.r2.ensurePrivateBucket();await c.r2.bucketUsage();
+  let chunkedMetrics={};
+  if(chunked)chunkedMetrics=await storeChunked(c,local,m,pointer,index,before);
+  else{
+    index.objects=[];
+    for(const f of m.files){const cipher=await readLocal(path.join(local.directory,f.cipherFile),P.maximumCipherBytes);
+      need(cipher.length===f.cipherBytes&&sha(cipher)===f.cipherSha256,'CAPTURE_CIPHER_CHANGED');
+      const body=frame('SQL_CIPHERTEXT',cipher),object=await store(c,body);need(unframe('SQL_CIPHERTEXT',body).equals(cipher),'FRAME_ROUNDTRIP');index.objects.push({file:f.file,object});}
+    const indexBytes=encode(index);validateIndex(indexBytes,pointer);const encrypted=sealIndex(indexBytes,pointer,c.env),wire=frame('ENCRYPTED_INDEX',encrypted);
+    pointer.index=await store(c,wire);checkPointer(pointer);need(openIndex(unframe('ENCRYPTED_INDEX',wire),pointer,c.env).equals(indexBytes),'INDEX_ROUNDTRIP');
+  }
   const locator=await publishLocator(c,before,pointer);
   return{status:'REMOTE_AUTHENTICATED_SQL_BYTE_ROUNDTRIP_ONLY',locatorVersion:locator.version,indexSha256:pointer.index.sha256,
-    files:local.files,totalSqlBytes:local.totalSqlBytes,remoteArchiveVerified:true,centralLocatorVerified:true,archiveWrittenThisOperation:c.state.archiveCreates>0,centralLocatorWrittenThisOperation:c.state.locatorWrites>0,
+    files:local.files.map((file,i)=>({...file,cipherBytes:m.files[i].cipherBytes})),totalSqlBytes:local.totalSqlBytes,...chunkedMetrics,remoteArchiveVerified:true,centralLocatorVerified:true,archiveWrittenThisOperation:c.state.archiveCreates>0,centralLocatorWrittenThisOperation:c.state.locatorWrites>0,
     authRestoreVerified:false,fullDatabaseBackupVerified:false,atomicDatabaseSnapshot:false,freeReady:false,sourceAdmission:false,automaticRetry:false};
 }
 async function verifyRemoteGroup(c,pointer,opened){
-  const {index,manifest,manifestBytes}=validateIndex(opened,pointer),directory=await privateDirectory(c.env);
+  const {index,manifest,manifestBytes,chunked}=validateIndex(opened,pointer),directory=await privateDirectory(c.env);
   // Only authenticated, centrally pinned names reach this private create-only root.
-  for(let i=0;i<5;i++){const f=manifest.files[i],cipher=unframe('SQL_CIPHERTEXT',await remoteBody(c,index.objects[i].object));
-    need(cipher.length===f.cipherBytes&&sha(cipher)===f.cipherSha256,'REMOTE_CIPHER_GROUP');
-    await fs.writeFile(path.join(directory,f.cipherFile),cipher,{flag:'wx',mode:0o600});}
+  let ordinal=0;
+  for(let i=0;i<5;i++){
+    const f=manifest.files[i],entry=index.objects[i],file=path.join(directory,f.cipherFile);
+    if(!chunked){
+      const cipher=unframe('SQL_CIPHERTEXT',await remoteBody(c,entry.object));
+      need(cipher.length===f.cipherBytes&&sha(cipher)===f.cipherSha256,'REMOTE_CIPHER_GROUP');
+      await fs.writeFile(file,cipher,{flag:'wx',mode:0o600});continue;
+    }
+    const handle=await fs.open(file,constants.O_WRONLY|constants.O_CREAT|constants.O_EXCL|(constants.O_NOFOLLOW||0),0o600);
+    try{
+      const digest=crypto.createHash('sha256');let offset=0;
+      for(const part of entry.parts){
+        const partNumber=ordinal++;
+        const body=await remoteBody(c,part.object,hash=>partPath(pointer.manifestSha256,partNumber,hash));
+        let raw;try{raw=gunzipSync(body,{maxOutputLength:part.cipherBytes});}catch{fail('REMOTE_CHUNK_GZIP');}
+        need(raw.length===part.cipherBytes&&sha(raw)===part.cipherSha256,'REMOTE_CHUNK_SHA');digest.update(raw);
+        for(let at=0;at<raw.length;){const {bytesWritten}=await handle.write(raw,at,raw.length-at,offset+at);need(bytesWritten>0,'LOCAL_WRITE');at+=bytesWritten;}
+        offset+=raw.length;
+      }
+      need(offset===f.cipherBytes&&digest.digest('hex')===f.cipherSha256,'REMOTE_CIPHER_GROUP');await handle.sync();
+    }finally{await handle.close();}
+  }
   await fs.writeFile(path.join(directory,'manifest.json'),manifestBytes,{flag:'wx',mode:0o600});
   const verified=await verifyLocalDatabaseBackup({directory},{env:c.env});need(verified.manifestSha256===pointer.manifestSha256,'RESTORED_MANIFEST_SHA');
   return{verified,directory};
@@ -231,14 +327,15 @@ function collectListing(inventory,body){need(inventory.bytes<=B.maximumListBytes
     need(keys.length===1&&sizes.length===1&&/^(0|[1-9][0-9]*)$/.test(sizes[0][1])&&Number.isSafeInteger(Number(sizes[0][1])),'BOOTSTRAP_LIST_ENTRY');
     inventory.count++;need(inventory.count<=B.maximumListedObjects,'BOOTSTRAP_LIST_COUNT');const bytes=Number(sizes[0][1]);inventory.total+=bytes;
     need(Number.isSafeInteger(inventory.total),'BOOTSTRAP_LIST_ENTRY');const key=keys[0][1];
-    if(!/^bundles\/sha256\/[0-9a-f]{64}\.json\.gz$/.test(key)){inventory.unsupported++;continue;}
+    if(partName.test(key)){need(!inventory.parts.has(key),'BOOTSTRAP_LIST_DUPLICATE');inventory.parts.add(key);continue;}
+    if(!objectName.test(key)){inventory.unsupported++;continue;}
     need(!inventory.objects.has(key),'BOOTSTRAP_LIST_DUPLICATE');inventory.objects.set(key,{path:key,bytes,sha256:key.slice(15,79)});
   }
 }
 function candidateSummary(pointer,group){return{indexSha256:pointer.index.sha256,indexBytes:pointer.index.bytes,completedAt:group.completedAt,context:pointer.context};}
 async function bootstrap(c,indexSha256,materialization=null){
   c.state.searchDeadline=Date.now()+B.maximumSearchMs;c.state.objectReadBound=B.maximumIndexWireBytes;
-  await c.r2.ensurePrivateBucket();const inventory={bytes:0,count:0,total:0,unsupported:0,objects:new Map()};c.state.listing=inventory;
+  await c.r2.ensurePrivateBucket();const inventory={bytes:0,count:0,total:0,unsupported:0,objects:new Map(),parts:new Set()};c.state.listing=inventory;
   const usage=await c.r2.bucketUsage();c.state.listing=null;
   need(usage.objectCount===inventory.count&&usage.usedBytes===inventory.total,'BOOTSTRAP_LIST_PARITY');
   const all=[...inventory.objects.values()],eligible=all.filter(x=>positive(x.bytes)&&x.bytes<=B.maximumIndexWireBytes);
