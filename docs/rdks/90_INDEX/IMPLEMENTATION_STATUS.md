@@ -1,3 +1,7 @@
+## 2026-11-07 – GitHub-input til vandstandskontrol af gemt vejr
+
+GitHub leverer de inaktive tomme tekstindstillinger som fraværende i jobkonteksten. Den afgrænsede vandstandskontrol blev derfor afvist før den gemte pakke blev åbnet. Kontrollen accepterer nu fraværende, inaktive indstillinger og afviser fortsat ukendte felter, aktive sidevalg og afvigende kørsel, forsøg eller main. Den normale målprøve bruger selve jobbets indgangskontrol med den observerede inputform. Den gemte pakke og aflæsningens effekt skal stadig verificeres.
+
 ## 2026-11-06 – Statistik598: kode- og kontrolkandidat
 
 - GENNEMGÅET/LOKALT: syv sammensatte produktejere; de oprindelige prøveblokke og den præcise historiske publisher-view bevares. Frossen genlæsning kræver normal senest afsluttede UTC-måned og fuldt match af oprindelig rapport-/modelbindingshash. Den eksisterende signerede verify læser den gemte rapport; replay foretager ingen prepare, resampling, retagging eller automatisk gentagelse. Ordinary-standardforløbet, komplette præferenceoversigter før/efter, erasure-barriere og insert-only beskyttet admintransport bevares.
