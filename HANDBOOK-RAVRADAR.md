@@ -1,3 +1,10 @@
+
+## 89.326 SOURCE 4.0.603 retter installationsworkflowets input
+
+<a id="source603-unique-install-workflow-input-2026-11-07"></a>
+
+<div class="reader-guide"><p><strong>4.0.603 er lokalt udstedt gennem de normale byggere fra den gennemgåede uudstedte 598-basis. Den offentlige driftsversion er 4.0.598. 603 afløser 602 som kandidat til næste kildekontrol. Den tidligere udstedelse og dens testresultater er bevaret på 602-grenen.</strong></p></div><p>Installationsworkflowet deklarerede det samme native-original-continuity-input to gange. Det korrigerede workflow deklarerer native-valget og SOURCE-valget én gang hver. Den normale målprøve kontrollerer de faktiske input og den præcise adgang til det historiske kontrolgrundlag.</p><p>Normal udstedelse afledte aktuelle CODE-, C-, I- og T-bindinger og én ny migration. De 74 tidligere migrationer er bytebevaret. Versionssynkroniseringen ændrede alene geodataenes topversionsfelter. Stemplet 20261107061142 identificerer udstedelsen.</p><p>Samlet kildekontrol mod den faktiske hovedgren, Linux/native, samme PostgreSQL-instans gennem fase 64 og national kapacitet skal kvalificeres. Før installation kræves matchende prognosetime i offentlig T og autentiske CURRENT B/S, hele grundlaget for 673 kystdele, friske pointer- og versionskontroller og tilstrækkelig privat lagerplads.</p><p>Merge og første installation hører til samme vejrfri periode. Derefter skal en nyere almindelig generation gennem fuld levering, originalbevarelse og genlæsning. De to eksisterende delingstjenester følger den faktiske offentlige binding i det kontrollerede leveringsvindue.</p>
+
 ## 89.325 SOURCE 4.0.602 er forberedt med præcise ruter og relevant kontrol
 
 <a id="source602-preissuance-current-route-and-relevant-control-2026-11-07"></a>
@@ -2019,7 +2026,7 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.601
+**Håndbogsversion:** 4.0.603
 
 **Lokal kildebinding — 29. oktober 2026, RavScore 4.0.591, ikke installeret:** Den integrerede model er offentlig som modeltype under den særskilt leverede 4.0.590. Den nye assistentefterfølger er lokalt udstedt og er endnu ikke samlet kvalificeret, installeret eller offentliggjort.
 

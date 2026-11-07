@@ -1,3 +1,15 @@
+## 7. november — SOURCE 4.0.603 retter installationsworkflowets input
+
+4.0.603 er lokalt udstedt gennem de normale byggere fra den gennemgåede uudstedte 598-basis. Den offentlige driftsversion er 4.0.598. 603 afløser 602 som kandidat til næste kildekontrol. Den tidligere udstedelse og dens testresultater er bevaret på 602-grenen.
+
+Installationsworkflowet deklarerede det samme native-original-continuity-input to gange. Det korrigerede workflow deklarerer native-valget og SOURCE-valget én gang hver. Den normale målprøve kontrollerer de faktiske input og den præcise adgang til det historiske kontrolgrundlag.
+
+Normal udstedelse afledte aktuelle CODE-, C-, I- og T-bindinger og én ny migration. De 74 tidligere migrationer er bytebevaret. Versionssynkroniseringen ændrede alene geodataenes topversionsfelter. Stemplet 20261107061142 identificerer udstedelsen.
+
+Samlet kildekontrol mod den faktiske hovedgren, Linux/native, samme PostgreSQL-instans gennem fase 64 og national kapacitet skal kvalificeres. Før installation kræves matchende prognosetime i offentlig T og autentiske CURRENT B/S, hele grundlaget for 673 kystdele, friske pointer- og versionskontroller og tilstrækkelig privat lagerplads.
+
+Merge og første installation hører til samme vejrfri periode. Derefter skal en nyere almindelig generation gennem fuld levering, originalbevarelse og genlæsning. De to eksisterende delingstjenester følger den faktiske offentlige binding i det kontrollerede leveringsvindue.
+
 ## 7. november — Source-kandidaters normale opstart og fase gennem hele leveringen
 
 Den tidligere private Source-kandidat er ikke produktionskvalificeret. Bevar dens udstedte metadata og SQL på dens egen gren; nye bundne produktrettelser klargøres fra en ægte uudstedt forberedelsesgren og udstedes på ny gennem de normale byggere. Nulstil eller ommærk aldrig en allerede udstedt kandidat.

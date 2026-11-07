@@ -1,4 +1,4 @@
-import { createServiceWorkerControllerChangeHandler } from '../core/public-page-resume.js?v=4.0.598';
+import { createServiceWorkerControllerChangeHandler } from '../core/public-page-resume.js?v=4.0.603';
 
 const installed = new WeakMap();
 

@@ -945,19 +945,25 @@ function inverseReviewedSource601BuildWorkflowInspection(source, role) {
 }
 
 
-// Kun den faktisk udstedte602-buildfil før hele genuine52d-oraklet.
+// Kun de to faktisk udstedte buildfiler før det uændrede genuine52d-orakel.
 // Gamle600/601-rækker og ukendte input bevarer deres egne afslag.
 const reviewedSource602BuildWorkflowInspection = Object.freeze({
   path: '.github/workflows/reusable-weather-build.yml',
-  after: Object.freeze({bytes: 352289,
-    sha256: 'e0fff915c2e4e9a6d3182ca41b46877d2082304f950a8bc3e4480d5ffafd5eaa'}),
+  after: Object.freeze([
+    Object.freeze({bytes: 352289,
+      sha256: 'e0fff915c2e4e9a6d3182ca41b46877d2082304f950a8bc3e4480d5ffafd5eaa'}),
+    Object.freeze({bytes: 352289,
+      sha256: '9b11306a1272bcf59e836bb2abdffc15018120dc452529889fcf5097e3e5798d'}),
+  ]),
   before: Object.freeze({bytes: 300010,
     sha256: '2f7917b26a994d4d33dd7445cdc992e571a9dcc3245867564dda85ebda145c61'}),
 });
 function inverseReviewedSource602BuildWorkflowInspection(source, role) {
   const row = reviewedSource602BuildWorkflowInspection;
-  if (role !== 'build' || typeof source !== 'string'
-      || Buffer.byteLength(source) !== row.after.bytes || sha(source) !== row.after.sha256) return source;
+  if (role !== 'build' || typeof source !== 'string') return source;
+  const bytes = Buffer.byteLength(source);
+  const sourceSha256 = sha(source);
+  if (!row.after.some(entry => entry.bytes === bytes && entry.sha256 === sourceSha256)) return source;
   requireSourceProducerOutput();
   assertSourceProducerAfter597StaticCode();
   const previous = execFileSync('git', [
@@ -1021,7 +1027,7 @@ function inverseReviewedSource601OperationalWorkflowInspection(source, role) {
   return previous; // Kun historisk testtekst, aldrig produktions- eller DATA-adgang.
 }
 
-// Kun de tre hele601-kodeinput før de bevarede historiske testorakler.
+// Hele kendte Source-kodeinput før de bevarede historiske testorakler.
 // Dette er tekstinspektion; ingen original-, plan-, SQL- eller READY-adgang.
 const reviewedSource601HistoricalCodeInputs = Object.freeze({
   ".github/workflows/deploy-code-only-repair.yml": {
@@ -1029,6 +1035,10 @@ const reviewedSource601HistoricalCodeInputs = Object.freeze({
       "bytes": 244449,
       "sha256": "cfe08b1283fe9bbf732b99d1d847114826f38fdc1254cfe5b429185e33cc7473"
     },
+    "correctedAfter": Object.freeze({
+      "bytes": 244216,
+      "sha256": "d1a1a824e7e4ec118820815f73134810c9bc19a2e54811d808aad04cae4c0a6c"
+    }),
     "before": {
       "bytes": 225325,
       "sha256": "391628fbcaae106df7a29d5c7caa3a7487af18b025bd4692bc93aaab5d396bf8"
@@ -1072,7 +1082,11 @@ export function inverseReviewedSource601HistoricalCodeInput(source, relative) {
     return inverseReviewedSource601OperationalWorkflowInspection(source, 'recovery');
   const rows = reviewedSource601HistoricalCodeInputs;
   const row = typeof relative === 'string' && Object.hasOwn(rows, relative) ? rows[relative] : null;
-  if (!row || Buffer.byteLength(source) !== row.after.bytes || sha(source) !== row.after.sha256)
+  if (!row) return source;
+  const bytes = Buffer.byteLength(source);
+  const sourceSha256 = sha(source);
+  const matches = entry => entry?.bytes === bytes && entry.sha256 === sourceSha256;
+  if (!matches(row.after) && !matches(row.correctedAfter))
     return source; // Ukendt/ændret input beholder de eksisterende strenge afslag.
   requireSourceProducerOutput();
   assertSourceProducerAfter597StaticCode();

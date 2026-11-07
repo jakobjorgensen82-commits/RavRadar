@@ -1,23 +1,23 @@
-import { displayNationalRankingScore } from '../core/zone-ranking.js?v=4.0.598';
-import { forecastDateKeyInTimeZone } from '../core/forecast-calendar.js?v=4.0.598';
-import { arrowInputs, assertMapHour, landingKind, plainMapHourEntries, readMapHour } from './plain-map-hour.js?v=4.0.598&map=plain-map-v3-20261104';
-import { scoreRating } from '../core/score-presentation.js?v=4.0.598';
+import { displayNationalRankingScore } from '../core/zone-ranking.js?v=4.0.603';
+import { forecastDateKeyInTimeZone } from '../core/forecast-calendar.js?v=4.0.603';
+import { arrowInputs, assertMapHour, landingKind, plainMapHourEntries, readMapHour } from './plain-map-hour.js?v=4.0.603&map=plain-map-v3-20261104';
+import { scoreRating } from '../core/score-presentation.js?v=4.0.603';
 import { assertPublicDeliveryTransportIdentity, inspectPublicDeliveryTransport, publicDeliveryTransportEntries }
-  from './public-delivery-transport-binding.js?v=4.0.598&map=plain-map-v3-20261104';
-import { PUBLIC_JSON_ENVELOPE_KIND, decodePublicJsonTransport } from './public-json-transport.js?v=4.0.598&transport=public-json-bridge-20261103';
+  from './public-delivery-transport-binding.js?v=4.0.603&map=plain-map-v3-20261104';
+import { PUBLIC_JSON_ENVELOPE_KIND, decodePublicJsonTransport } from './public-json-transport.js?v=4.0.603&transport=public-json-bridge-20261103';
 import { assertForecastShareDescriptor, assertForecastShareZoneProjection, forecastShareZoneProjectionSelection,
-  FORECAST_SHARE_DESCRIPTOR_PATH, FORECAST_SHARE_INDEX_MAX_BYTES, FORECAST_SHARE_ZONE_MAX_BYTES } from './forecast-share-projection.js?v=4.0.598';
-import { normalizeZoneRegistry } from './zone-registry.js?v=4.0.598';
-import { exactForecastShareSelection } from './forecast-share-contract.js?v=4.0.598&ui=forecast-share-20261024&share=custom-domain-20261102';
-import { exactMapZoneScore } from './map-forecast-view.js?v=4.0.598';
+  FORECAST_SHARE_DESCRIPTOR_PATH, FORECAST_SHARE_INDEX_MAX_BYTES, FORECAST_SHARE_ZONE_MAX_BYTES } from './forecast-share-projection.js?v=4.0.603';
+import { normalizeZoneRegistry } from './zone-registry.js?v=4.0.603';
+import { exactForecastShareSelection } from './forecast-share-contract.js?v=4.0.603&ui=forecast-share-20261024&share=custom-domain-20261102';
+import { exactMapZoneScore } from './map-forecast-view.js?v=4.0.603';
 import { publicDeliveryEntries, assertPublicDeliveryDocument, publicDeliveryGeneration,
-  reuseVerifiedPublicHour, refreshVerifiedPublicGeneration, createBoundedPublicMemory } from '../core/public-delivery-contract.js?v=4.0.598';
+  reuseVerifiedPublicHour, refreshVerifiedPublicGeneration, createBoundedPublicMemory } from '../core/public-delivery-contract.js?v=4.0.603';
 import {
   RAVSCORE_CALIBRATION_ELIGIBLE,
   RAVSCORE_CURRENT_SUPPLY_POLICY,
   assertRavScoreModelBinding,
   ravScoreModelBinding,
-} from '../core/ravscore-model-contract.js?v=4.0.598';
+} from '../core/ravscore-model-contract.js?v=4.0.603';
 import {
   RAVSCORE_PUBLIC_COASTAL_PART_COUNT,
   RAVSCORE_PUBLIC_DETAILS_KIND,
@@ -37,18 +37,18 @@ import {
   ravScorePublicHorizonValidUntil,
   selectPublicRuntimeAvailability,
   sameRavScoreModelBinding,
-} from '../core/ravscore-public-runtime-contract.js?v=4.0.598';
+} from '../core/ravscore-public-runtime-contract.js?v=4.0.603';
 import {
   assertExactPublicRavScoreProfile,
-} from '../core/ravscore-public-profile-contract.js?v=4.0.598';
+} from '../core/ravscore-public-profile-contract.js?v=4.0.603';
 import {
   assertRavScoreVerifiedEvidenceTrust,
-} from '../core/ravscore-evidence-trust-contract.js?v=4.0.598';
+} from '../core/ravscore-evidence-trust-contract.js?v=4.0.603';
 import {
   assertPublicWeatherSourceAge,
-} from '../core/ravscore-public-weather-source-age.js?v=4.0.598';
+} from '../core/ravscore-public-weather-source-age.js?v=4.0.603';
 
-export { createForecastSnapshotReference } from './trip-evidence-contract.js?v=4.0.598';
+export { createForecastSnapshotReference } from './trip-evidence-contract.js?v=4.0.603';
 
 const DEFAULT_PUBLIC_CONDITIONS_URL = './data/live/public-conditions.json';
 const DEFAULT_PUBLIC_DETAILS_URL = './data/live/public-condition-details.json';

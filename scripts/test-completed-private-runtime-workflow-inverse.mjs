@@ -1859,6 +1859,17 @@ test('issued Source historical code views preserve exact predecessors and unknow
     '.github/workflows/reusable-pages-deploy.yml', '.github/workflows/reusable-operational-reentry.yml',
     'scripts/update-weather.mjs', 'scripts/lib/dmi-forecast-file.mjs']) {
     const source = (await fs.readFile(new URL('../' + relative, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+    if (relative === '.github/workflows/deploy-code-only-repair.yml') {
+      const inputStart = source.indexOf('  workflow_dispatch:\n    inputs:\n');
+      const inputEnd = source.indexOf('\npermissions:', inputStart);
+      assert.ok(inputStart >= 0 && inputEnd > inputStart, 'Actual repair workflow declares manual inputs');
+      const keys = [...source.slice(inputStart, inputEnd).matchAll(/^      ([a-z_]+):$/gm)]
+        .map(match => match[1]);
+      assert.equal(new Set(keys).size, keys.length, 'Every repair dispatch input must be unique');
+      for (const key of ['upgrade_native_original_continuity', 'upgrade_source_producer']) {
+        assert.equal(keys.filter(name => name === key).length, 1, 'Required repair input: ' + key);
+      }
+    }
     const previous = inverseReviewedSource601HistoricalCodeInput(source, relative);
     assert.notEqual(previous, source, 'Only the whole issued Source input obtains its genuine historical text');
     assert.equal(inverseReviewedSource601HistoricalCodeInput(previous, relative), previous);
