@@ -437,7 +437,9 @@
       "8e56531098a165ef7e8eb63f1683b2b660ddf4c4db026b33d3860acd1852d373/22d6a708821f0bea303d1be6d5651ad4fc54a587890138ccd0f9dc5e945e0d04"
     ],
     "scripts/forecast-share/handler.mjs": [
-      "ea1872613378cb4c68a533998c9c8e3430a3a5f44b5ec49723733f4cd7dfa7d7/e24b7491660dbb358c4381419eb15ed68b05ab4fae9340cef21cdd48080f0c8f"
+      "ea1872613378cb4c68a533998c9c8e3430a3a5f44b5ec49723733f4cd7dfa7d7/e24b7491660dbb358c4381419eb15ed68b05ab4fae9340cef21cdd48080f0c8f",
+      "e24b7491660dbb358c4381419eb15ed68b05ab4fae9340cef21cdd48080f0c8f/d83ea6feee1d9a4e0bce822ca2b9f8928a3642e9f14891e09b5068ed61a1c169",
+      "ea1872613378cb4c68a533998c9c8e3430a3a5f44b5ec49723733f4cd7dfa7d7/d83ea6feee1d9a4e0bce822ca2b9f8928a3642e9f14891e09b5068ed61a1c169"
     ],
     "scripts/test-map-forecast-panel.mjs": [
       "38425f5c277384105eed090da0241c99b1a4e368e745e9696faebcfded4d31eb/f85653eb0761d7223bdcd11e8c4dc96001fde2a22d5de8049c7d1a0ee2136780"
@@ -471,6 +473,100 @@
     ]
   },
   "sources": {
+    "scripts/test-forecast-share-projection.mjs": {
+      "beforeDefinitionSha256": "504e2b33129faed3147aebd1caf28fb1d8b6750b57a63d273a7a137d073547e0",
+      "definition": {
+        "nodeImports": [
+          "node:assert/strict",
+          "node:crypto",
+          "node:fs/promises",
+          "node:module",
+          "node:os",
+          "node:path"
+        ],
+        "imports": [
+          "js/services/data-service.js",
+          "js/services/forecast-share-contract.js",
+          "js/services/forecast-share-projection.js",
+          "js/services/map-forecast-view.js",
+          "scripts/audit-pages-artifact-privacy.mjs",
+          "scripts/build-forecast-share-projection.mjs",
+          "scripts/copy-public-delivery-shards.mjs",
+          "scripts/forecast-share/handler.mjs",
+          "scripts/lib/release-contract-metadata.mjs",
+          "scripts/public-conditions-lib.mjs"
+        ],
+        "resources": [
+          "index.html",
+          "js/services/data-service.js",
+          "js/services/forecast-share-projection.js",
+          "js/services/map-forecast-view.js",
+          "scripts/audit-pages-artifact-privacy.mjs",
+          "scripts/build-forecast-share-projection.mjs",
+          "scripts/copy-public-delivery-shards.mjs",
+          "scripts/lib/release-contract-metadata.mjs",
+          "scripts/public-conditions-lib.mjs",
+          "scripts/test-ravscore-public-data-service-binding.mjs",
+          "version.json"
+        ],
+        "dependencySurfaces": [
+          "0b6e832db7c67e60e32038dbb2ef10b6f90087f15ab06c5d50a640735a4496a6",
+          "69dce976f97310b2fbdc14443d6899f20233cc31e78d923841126170656f1465",
+          "78cf6aad3f797219f1a3effec257d5764133df49408fdcb983e519ecc3abd905",
+          "7bbc408f87fba80781271829bfee6103fe655ceed49602474b89b3fcc981c91b",
+          "aa2135bc553e56923e7ccdfc9fb258372d6cb914d2eac03edd4b6cc67f0b31fb",
+          "b871420d7f8aa6bce892fdaf53386b727bcbcda42e2d51c076968193397266f4",
+          "f9b4d8fd6f766bc8243968c95179e84f0420883dcc90c8ba4064455eb478802e"
+        ],
+        "bindingSurfaces": [
+          "04e6f041d930a5e44d4284eb14d9c90abfde0ca9e6ec6581b7c44048ab9990e1",
+          "0bc40e334d506533da907cb9ad57018912afa830792ccf60ea0f659c5522c087",
+          "191664b95e6cf9714812125de0fa619c5a487c09aca03e8d0aea521e8c964a18",
+          "1a7d3bcebc44f4c5e4846478bb80e598bda106bedd3762dddf92e5636baccb8d",
+          "1dc3b0213de6303d74f3c18696012b5c4151f64122428248fcd81825d9322fb9",
+          "1ea6b37c87e9d8eac50ea3d411557d133a7796d104b87e3e12900ac8a23d3f71",
+          "2393718d46db6f72cba8382307af6cffeb8ae4048daa174f160759ca2ff78621",
+          "263a2dea771525cf4b5522a12a465e3233727642530d507f78be048bb36ca9ea",
+          "33e9c3946cde3b7f47d44cf8acd8ad31f137a2b11ddc53d41c7e82a6c431e63f",
+          "3c0064bf5a9d581c2ce114e4d0d25ca9316eb832365ecef51f6ffa7a0836bdd3",
+          "3cf39006322adeecab92b55289f4c8c1a9aec6cb0890cba9ffe8097bca562c2c",
+          "42ef2d5630c5479708c4869a9c3417a3c010be25785f76e6d8d4107723f60693",
+          "52c3e8b3a1e1fd6c75bdc157ab1d91977194f2aca4d32a044f8e36b2bd96b8a4",
+          "5c2d0dc863ec53ad1ca8b62badd39d6b87a4c5456c7ba2805f9134509f609380",
+          "6591a8251319da5b9118039f3448a71fdfb48f3f46a659249ce688de3ed81ad3",
+          "6a2611bbeac661ee212df468227224bd5384295fc1125ee5783de00df6ab68cb",
+          "6c5026c6962807e502ba0829ac9476025723d37146410f36ceb8e2086846f978",
+          "740e44e4564cbd196fdef8efd520e4e62d5b9598b63a72fba87d5e7e1ac9a5c5",
+          "8a45faa72ae7069518a76d076f15c0041b3e7629dd6d73ca6311e6bad8d4fe77",
+          "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+          "8f6e7b5f69b554a698b334c33278a0fbb5e98c67108eeeb55a06de968924d1cf",
+          "974ad89e943c3be148fce808272bf6dddca7dab8481aed121180dcbda02af60f",
+          "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+          "a086a87b8124aec26780bebe7acf5e8cab407ef28bb49ca53c7e52e4cc89aacd",
+          "aa93760568b6dcdc63453bccf4df9ce02a7921b879ba4fd581c6d0c617428983",
+          "af53b8bda0c2452a32547802c4ca7c793aaf8c7a6fc6550cf83a420fd9bc9ed1",
+          "b0b1c599f3b74e59a2ca51895afdeb6d586b81b40f2e3ea4226f543fdc7748b7",
+          "b7e727ad8b1c835d90b256617b2d88282474906f72d4ad0c50ca3b92353053b9",
+          "bcff7c50f25e065effdbe5c317dd220644194689a9860525ec53922e972ca7b4",
+          "bd4076622df8e5f5b89b83f9621760963bb2f9baa6bf438dd6580ce8bea74e6f",
+          "c3a12d57fb88de0d0d142c041c3d97fd1963f57c34f54eaa7fc87140a49c40ff",
+          "cb1b81e15e7d6b715ea683d0202fe705f7e22c4049c7be1faf98c9bc167e3448",
+          "cc744a57442102451b96a9f3006cbc01ef3155e037a998d486dfe6b47db357df",
+          "d38fb8020eaa9c122495697bd3d486ed698a983589dd866d1fa2afeb001595b5",
+          "d3c6690c84b229ac57814253a4a47bdb5824cf95c1b6ffff0601fb26ac1f5319",
+          "d3c995b91a8889889c94b2911ffc9ad4d37b43ac56d6558f6184b95b5c0fee52",
+          "d83a46c4d978d94186a5cc8e41338132d8a7594a1223f15be11fb1888a4f0785",
+          "e0209117eae68e79b0fd24e9b24c36e35973225059a1e7244895a357b2fbdb25",
+          "e4aaf4c98546d9e455792748e16208c9f9d4fdb3a0a860b1a1b6b6aea245cec9",
+          "eb60d0054278281252edc43df1173e2ebc375281a842b7415f6304fda80cdc03",
+          "f6c3d37e213ebe7fe77cbf5035d5bc1eb60ef2d9639afcbaf4d191091d0bc69d",
+          "f7b33ff5f07bb0a445d53f59acbac4b3f8f7aaab4d55d3e5517788eeef3baa26"
+        ],
+        "computedBoundaries": [
+          "963fb357adf0c6212b69db664a4925eff16e783e817f6c5d9759d1075931cbbf"
+        ]
+      }
+    },
     "js/ui/admin-dashboard.js": {
       "beforeDefinitionSha256": "ab76c52adc7c6ac68d77799e247a0731dd2888ac4e8719e7e29297a537974236",
       "definition": {
