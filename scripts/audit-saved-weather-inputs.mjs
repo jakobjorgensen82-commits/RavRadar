@@ -2190,9 +2190,11 @@ function b272ProjectionRecord(record){
   })};
 }
 // Pure bounded projection: inputs are DATA, never an admission or provenance repair.
-export function projectB272WaterLevelSeries(records,scope){
+export function projectB272WaterLevelSeries(records,scope,storedReferenceAt=null){
   b272Need(Array.isArray(records)&&records.length<=673&&typeof scope==='string'
     &&/^(PART_DIRECT_STORED|SOURCE_CONTINUITY_NORMAL_QUALIFIED|ZONE_CACHE_AFTER_ROUTING):(NATIONAL|FUR|BLAVAND)$/.test(scope),'PROJECTION_INPUT');
+  b272Need(storedReferenceAt===null||b272Instant(storedReferenceAt)&&new Date(storedReferenceAt).toISOString()===storedReferenceAt
+    &&Date.parse(storedReferenceAt)%3600000===0&&Date.parse(storedReferenceAt)<=Date.parse(b272At(0)),'PROJECTION_REFERENCE');
   const hours=Array.from({length:121},(_,h)=>({time:b272At(h),expectedRecordCount:records.length,basisPresent:0,basisMissing:0,
     storedTrendPresent:0,storedTrendMissing:0,futureBasisPresent:0,futureBasisMissing:0,
     sameStoredSeriesEndpointCount:0,seriesMismatchCount:0,metadataUnknownCount:0}));
@@ -2225,7 +2227,7 @@ export function projectB272WaterLevelSeries(records,scope){
     }
   }
   const complete=hours.filter(h=>records.length>0&&h.basisPresent===records.length),partial=hours.filter(h=>h.basisPresent>0&&h.basisMissing>0);
-  return {scope,recordCount:records.length,horizonStart:b272At(0),horizonEnd:b272At(120),publicHours:118,privateSupportHours:3,
+  return {scope,storedReferenceAt,recordCount:records.length,horizonStart:b272At(0),horizonEnd:b272At(120),publicHours:118,privateSupportHours:3,
     completeBasisFirst:complete[0]?.time??null,completeBasisLast:complete.at(-1)?.time??null,partialBasisLast:partial.at(-1)?.time??null,
     missingBasisFirst:hours.find(h=>h.basisMissing>0)?.time??null,modelRuns:[...runs].sort(([a],[b])=>a<b?-1:a>b?1:0).map(([,v])=>v),
     tailHours:hours.slice(106),metadataMissingCount};
@@ -2340,9 +2342,10 @@ export async function auditB272WaterLevelBasis(options={}){
     const sourceRows=[...sourceMap.values()],sources=sourceRows.map(b272ProjectionRecord);
     const sourceGroups=Object.fromEntries(Object.entries(localKeys).map(([k,keys])=>[k,sourceRows.flatMap((r,i)=>keys.has(r.sourceKey)?[sources[i]]:[])]));
     sourceMap.clear();
-    for(const [scope,national,groups]of [['PART_DIRECT_STORED',parts,partGroups],['SOURCE_CONTINUITY_NORMAL_QUALIFIED',sources,sourceGroups],['ZONE_CACHE_AFTER_ROUTING',zones,zoneGroups]]){
-      report.scopes.push(projectB272WaterLevelSeries(national,scope+':NATIONAL'));
-      for(const target of ['FUR','BLAVAND'])report.scopes.push(projectB272WaterLevelSeries(groups[target],scope+':'+target));
+    for(const [scope,national,groups,storedReferenceAt]of [['PART_DIRECT_STORED',parts,partGroups,pack.productionReferenceAt],
+      ['SOURCE_CONTINUITY_NORMAL_QUALIFIED',sources,sourceGroups,sourcePack?.productionReferenceAt??null],['ZONE_CACHE_AFTER_ROUTING',zones,zoneGroups,null]]){
+      report.scopes.push(projectB272WaterLevelSeries(national,scope+':NATIONAL',storedReferenceAt));
+      for(const target of ['FUR','BLAVAND'])report.scopes.push(projectB272WaterLevelSeries(groups[target],scope+':'+target,storedReferenceAt));
     }
     report.unknowns=['LOCAL_SOURCE scopes count the union of stored routed sourceKeys over121hours, not a newly routed zone.',
       'Missing or composite-unpairable metadata stays unknown; direct stored presence is not native-original admission.',

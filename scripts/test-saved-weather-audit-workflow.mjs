@@ -524,7 +524,9 @@ test('fixed B272 WL metadata separates stored basis, T+3 support and model-run m
       entityId:'private-source-canary',gridDefinitionSha256:'a'.repeat(64),gridPoint:[123.456,54.321],nativeValidTimes:[h(n)]}}}))};
   record.hourly[120].waterLevelCm=null;
   record.hourly[116].sources.waterLevel.modelRun=h(-3);
-  const r=projectB272WaterLevelSeries([record],'PART_DIRECT_STORED:NATIONAL');
+  const storedReferenceAt=h(-4);
+  const r=projectB272WaterLevelSeries([record],'PART_DIRECT_STORED:NATIONAL',storedReferenceAt);
+  assert.equal(r.storedReferenceAt,storedReferenceAt);assert.equal(r.horizonStart,h(0));
   assert.equal(r.publicHours,118);assert.equal(r.privateSupportHours,3);assert.equal(r.horizonEnd,h(120));
   assert.equal(r.tailHours.length,15);assert.equal(r.tailHours[0].time,h(106));
   const last=r.tailHours.find(x=>x.time===h(117));assert.equal(last.basisPresent,1);assert.equal(last.storedTrendPresent,1);
@@ -539,7 +541,8 @@ test('fixed B272 WL metadata separates stored basis, T+3 support and model-run m
   const m=projectB272WaterLevelSeries([mixed],'ZONE_CACHE_AFTER_ROUTING:BLAVAND');
   const joined=m.modelRuns.filter(x=>x.collection==='dkss_lf+dkss_nsbs');assert.equal(joined.length,2);
   assert(joined.every(x=>x.nativeEndpointCount===null&&x.nativeValidTimeStart===null&&x.nativeValidTimeEnd===null));
-  assert(m.metadataMissingCount>0);
+  assert(m.metadataMissingCount>0);assert.equal(m.storedReferenceAt,null);
+  assert.throws(()=>projectB272WaterLevelSeries([record],'PART_DIRECT_STORED:FUR',h(1)),/PROJECTION_REFERENCE/);
   assert.throws(()=>projectB272WaterLevelSeries([record],'private-source-canary'),/PROJECTION_INPUT/);
   assert.throws(()=>projectB272WaterLevelSeries([{hourly:[record.hourly[0],record.hourly[0]]}],'PART_DIRECT_STORED:FUR'),/PROJECTION_HOUR/);
 });
