@@ -1066,6 +1066,10 @@ export function inverseReviewedSource601HistoricalCodeInput(source, relative) {
       inverseReviewedSource602BuildWorkflowInspection(source, 'build'), 'build');
   if (relative === '.github/workflows/run-current-weather-once.yml')
     return inverseReviewedSourceWorkflowInspection(source, 'once');
+  if (relative === '.github/workflows/reusable-pages-deploy.yml')
+    return inverseReviewedSource601OperationalWorkflowInspection(source, 'deploy');
+  if (relative === '.github/workflows/reusable-operational-reentry.yml')
+    return inverseReviewedSource601OperationalWorkflowInspection(source, 'recovery');
   const rows = reviewedSource601HistoricalCodeInputs;
   const row = typeof relative === 'string' && Object.hasOwn(rows, relative) ? rows[relative] : null;
   if (!row || Buffer.byteLength(source) !== row.after.bytes || sha(source) !== row.after.sha256)

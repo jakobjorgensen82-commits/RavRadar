@@ -1856,6 +1856,7 @@ test('release598 UA inverse preserves whole main1684 and rejects unknown same-si
 test('issued Source historical code views preserve exact predecessors and unknown-input refusals', async () => {
   for (const relative of ['.github/workflows/reusable-weather-build.yml',
     '.github/workflows/run-current-weather-once.yml', '.github/workflows/deploy-code-only-repair.yml',
+    '.github/workflows/reusable-pages-deploy.yml', '.github/workflows/reusable-operational-reentry.yml',
     'scripts/update-weather.mjs', 'scripts/lib/dmi-forecast-file.mjs']) {
     const source = (await fs.readFile(new URL('../' + relative, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
     const previous = inverseReviewedSource601HistoricalCodeInput(source, relative);
