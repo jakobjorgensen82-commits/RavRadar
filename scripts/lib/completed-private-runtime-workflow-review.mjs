@@ -913,7 +913,36 @@ function inverseReviewedSourceWorkflowInspection(source, role) {
   return previous; // Kun tekst til de uændrede historiske testassertions.
 }
 
+
+// Kun601-buildets nye hele identitet. Once er byteidentisk med den bevarede
+//600-række ovenfor; begge visninger kræver de samme normale Source-guards.
+const reviewedSource601BuildWorkflowInspection = Object.freeze({
+  path: '.github/workflows/reusable-weather-build.yml',
+  after: Object.freeze({bytes: 351841,
+    sha256: '18e980e980b50b2de3654c2a435f4b3273e60d8dde88d5a0afe4473c703fc785'}),
+  before: Object.freeze({bytes: 300010,
+    sha256: '2f7917b26a994d4d33dd7445cdc992e571a9dcc3245867564dda85ebda145c61'}),
+});
+function inverseReviewedSource601BuildWorkflowInspection(source, role) {
+  const row = reviewedSource601BuildWorkflowInspection;
+  if (role !== 'build' || typeof source !== 'string'
+      || Buffer.byteLength(source) !== row.after.bytes || sha(source) !== row.after.sha256) return source;
+  requireSourceProducerOutput();
+  assertSourceProducerAfter597StaticCode();
+  const previous = execFileSync('git', [
+    '-c', 'protocol.allow=never', '-C', fileURLToPath(new URL('../../', import.meta.url)),
+    'cat-file', 'blob', reviewedSourceWorkflowInspection.ordinaryHead + ':' + row.path,
+  ], {encoding:'utf8', timeout:30_000, maxBuffer:512 * 1024,
+    env:{...process.env, GIT_NO_LAZY_FETCH:'1', GIT_NO_REPLACE_OBJECTS:'1', GIT_TERMINAL_PROMPT:'0'}});
+  assert.equal(Buffer.byteLength(previous), row.before.bytes,
+    'Hele den gennemgåede ordinary598-workflowstørrelse før601');
+  assert.equal(sha(previous), row.before.sha256,
+    'Hele den genuine ordinary598-kildevisning før601 og alle gamle orakler');
+  return previous; // Kun tekst til de uændrede historiske testassertions.
+}
+
 export function inverseRelease585WorkflowUserAgents(source, role) {
+  source = inverseReviewedSource601BuildWorkflowInspection(source, role);
   source = inverseReviewedSourceWorkflowInspection(source, role);
   source = inverseNativeOriginalSchemaSelectorWorkflow(source, role);
   if (role === 'build' && sha(source) === '8223891e25cfb7fbcf57a536bcc55a1cbf59ed676f02172588192065ae4eccc0') {

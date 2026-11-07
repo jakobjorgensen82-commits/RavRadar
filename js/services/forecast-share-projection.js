@@ -1,8 +1,8 @@
 // Detached display-only projection of already computed public scores.
-import { exactMapZoneScore } from './map-forecast-view.js?v=4.0.598';
-import { assertRavScoreModelBinding } from '../core/ravscore-model-contract.js?v=4.0.598';
+import { exactMapZoneScore } from './map-forecast-view.js?v=4.0.601';
+import { assertRavScoreModelBinding } from '../core/ravscore-model-contract.js?v=4.0.601';
 import { RAVSCORE_PUBLIC_MODEL_BINDING_FIELDS, assertExactPublicRavScoreModelBindingShape }
-  from '../core/ravscore-public-profile-contract.js?v=4.0.598';
+  from '../core/ravscore-public-profile-contract.js?v=4.0.601';
 
 export const FORECAST_SHARE_DESCRIPTOR_PATH = './data/live/forecast-share.json';
 export const FORECAST_SHARE_DESCRIPTOR_SCHEMA = 'ravradar-forecast-share-zone-index-v1';

@@ -1,7 +1,19 @@
 {
   "schemaVersion": "source-producer-after597-derived-metadata-v1",
-  "release": null,
-  "version": null,
-  "binding": null,
-  "output": null
+  "release": "4.0.601",
+  "version": "20261107020952",
+  "binding": {
+    "version": "20261107020952",
+    "C": "3762a75c007b42671679a2148a55f6a64f95b1097d0019959841af6a47582a6d",
+    "I": "dfa3a7772b63b5661c8e13bf21f845c933256686f5c04bd57620b9fc6e2b248e",
+    "T": "4e88d26c34314b996c89bf1f3c2cb632b8f5ee2ba2ebef1610d517e4506c0042",
+    "candidateManifestSha256": "3762a75c007b42671679a2148a55f6a64f95b1097d0019959841af6a47582a6d",
+    "integratedManifestSha256": "dfa3a7772b63b5661c8e13bf21f845c933256686f5c04bd57620b9fc6e2b248e"
+  },
+  "output": {
+    "migrationSha256": "4f39ebcf75d6ef9cfca600c7e5d379afc98229f23e8bc3fbabbae10a11aa2dca",
+    "canonicalSha256": "3c7e201e9df29ece3e866f74b1c58203c5d38e61bd293dbcb319da738aff3852",
+    "checkpointContractSha256": "9ce894698aecfebfa9eb39496d8874ce01260d9d0815b2c4981bdfb6f1ff5fc1",
+    "tripBindingPolicySha256": "e233b6f9805a0f4ca71c7c6ffd6683a83e6eef4b6a0db60cdee50a9d6223a75a"
+  }
 }
