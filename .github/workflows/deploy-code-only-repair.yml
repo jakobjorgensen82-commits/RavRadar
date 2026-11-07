@@ -237,6 +237,7 @@ jobs:
       integrated_implementation_closure_sha256: ${{ steps.integrated-implementation.outputs.closure_sha256 }}
       operational_action: ${{ steps.operational-action.outputs.action }}
       source_repair_id: ${{ steps.public-source.outputs.repair_id }}
+      source_saved_pair_readback: ${{ steps.saved-source-upload-gate.outputs.verified }}
     env:
       # Rebuilding the public 210/673/118 runtime temporarily retains the
       # restored private conditions, the current public comparison oracle and
@@ -395,6 +396,10 @@ jobs:
           test "${{ steps.source-proof.outputs.required }}" = "false"
           echo "Exact source tree already passed the PR source gate; it is not run again."
 
+      - name: Select issued SOURCE for saved weather before any legacy recovery
+        if: inputs.publish_newest_saved_weather == true
+        run: node scripts/select-source-producer-code-only-source.mjs
+
       - name: Preserve the protected 11Z and 15Z pair for the next normal weather run
         if: inputs.restart_archived_weather != true
         shell: bash
@@ -459,6 +464,10 @@ jobs:
           node scripts/ravscore-operational-activation.mjs read --output "$RAVRADAR_OPERATIONAL_WORK/before-missed-cutover-recovery.json"
           current="$RAVRADAR_OPERATIONAL_WORK/before-missed-cutover-recovery.json"
           public_manifest="$RAVRADAR_CODE_ONLY_PUBLIC_SNAPSHOT/manifest.json"
+          if test "${RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE:-false}" = true \
+              && test "$PUBLISH_NEWEST_SAVED_WEATHER" = true; then
+            jq -e '.model == "integrated" and .status == "INTEGRATED_ACTIVE" and .pending == false and .bindingCurrent == true and .initialCutoverRequired == false and .legacySourceRequired == false' "$current" >/dev/null
+          fi
           if test "$(jq -r '.model' "$current")" = "legacy-candidate-g" && test "$(jq -r '.status' "$current")" = "CANDIDATE_G_ACTIVE" && test "$(jq -r '.centralVersion' "$current")" = "0" && test "$(jq -r '.initialCutoverRequired' "$current")" = "true" && test "$(jq -r '.legacySourceRequired' "$current")" = "true"; then
             node --input-type=module -e "import { LATEST_REQUIRED_CUTOVER_MIGRATION as m } from './scripts/integrated-cutover-readiness.mjs'; if (m.version === '20261010120000') throw new Error('Assistant successor cannot recover a historical cutover');"
             manifest_sha256="$(TARGET_MANIFEST="$public_manifest" node --input-type=module -e "import fs from 'node:fs'; import { sha256CanonicalJson } from './scripts/ravscore-operational-pages-recovery.mjs'; process.stdout.write(sha256CanonicalJson(JSON.parse(fs.readFileSync(process.env.TARGET_MANIFEST, 'utf8'))));")"
@@ -624,6 +633,7 @@ jobs:
           echo "action=$action" >> "$GITHUB_OUTPUT"
 
       - name: Select the issued SOURCE source phase without admission
+        if: ${{ inputs.publish_newest_saved_weather != true }}
         run: node scripts/select-source-producer-code-only-source.mjs
 
       - name: Select the issued native-original-continuity phase without admission
@@ -856,6 +866,8 @@ jobs:
               --migration-list "$RUNNER_TEMP/code-only-migrations-before.txt"
           fi
 
+      # The normal installed plan verifier must use the saved-weather caller guard
+      # in that scope and continue requiring a whole, empty migration plan.
       - name: Require actually installed SOURCE contracts before installed reentry
         if: env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE == 'true' && env.RAVRADAR_SOURCE_PRODUCER_PHASE == 'installed'
         shell: bash
@@ -995,7 +1007,7 @@ jobs:
 
 
       - name: Require unchanged central-public authority before saved checkpoint reconciliation
-        if: (steps.saved-last-mile-source.outputs.required == 'true') || (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true' && inputs.publish_newest_saved_weather == true)
+        if: (env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE == 'true' && inputs.publish_newest_saved_weather == true) || ((steps.saved-last-mile-source.outputs.required == 'true') || (env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true' && inputs.publish_newest_saved_weather == true))
         shell: bash
         env:
           OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}
@@ -1010,7 +1022,13 @@ jobs:
           import { ravScoreSamplingContextKey } from './scripts/lib/ravscore-sampling-context.mjs';
           import { sha256Text } from './scripts/public-conditions-lib.mjs';
           import { assertSavedPrivateRuntimeCheckpointReconcileRequest } from './scripts/reconcile-private-runtime-checkpoint.mjs';
-          assertSavedPrivateRuntimeCheckpointReconcileRequest();
+          import { assertSourceProducerSavedWeatherCaller } from './scripts/select-source-producer-code-only-source.mjs';
+          if (process.env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE === 'true') {
+            assertSourceProducerSavedWeatherCaller(process.env);
+            assert.equal(process.env.OPERATIONAL_ACTION, 'integrated');
+          } else {
+            assertSavedPrivateRuntimeCheckpointReconcileRequest();
+          }
           assert(path.isAbsolute(process.env.GITHUB_WORKSPACE ?? ''));
           assert(path.isAbsolute(process.env.RAVRADAR_CODE_ONLY_PUBLIC_SNAPSHOT ?? ''));
           const read = async (file, maximum) => {
@@ -1142,6 +1160,8 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$RAVRADAR_PRIVATE_RUNTIME_ROOT"
+          # Saved-weather staging authenticates the whole CURRENT pointer and
+          # records its private pin; the predecessor branch is inaccessible.
           node scripts/stage-source-producer-originals.mjs
 
       - name: Select actual CURRENT family and restore only genuine original585 when required
@@ -1193,6 +1213,12 @@ jobs:
           restore_root="$RAVRADAR_PRIVATE_RUNTIME_ROOT"
           restore_bundle="$RAVRADAR_PRIVATE_RUNTIME_BUNDLE"
           restore_expected=.cache/private-production-runtime-expected.json
+          if test "${RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE:-false}" = true \
+              && test "$PUBLISH_NEWEST_SAVED_WEATHER" = true; then
+            test "$RAVRADAR_SOURCE_PRODUCER_CURRENT_FAMILY" = current || exit 1
+            node scripts/reconcile-source-producer-code-only.mjs --saved-current-restore
+            exit $?
+          fi
           if test "${{ steps.owner-current-original.outputs.transition_kind }}" = "owner-current-domain-original"; then
             restore_root="$RAVRADAR_PREDECESSOR_PRIVATE_ROOT"
             restore_bundle="$RAVRADAR_PREDECESSOR_PRIVATE_BUNDLE"
@@ -1656,6 +1682,11 @@ jobs:
           set -euo pipefail
           mode=code-only-reuse
           if test "${{ inputs.publish_newest_saved_weather }}" = "true"; then
+            if test "${RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE:-false}" = true; then
+              test "${{ steps.source-producer-checkpoint-paired.outcome }}" = success
+              test "${{ steps.source-producer-checkpoint-paired.outputs.paired }}" = true
+              test -z "${{ inputs.recover_public_run_id }}"
+            fi
             mode=saved-weather-continuation
           elif test "${{ steps.migrated-private-install.outcome }}" = "success"; then
             case "$(jq -er '.transitionKind' .geometry-v2-work/post-cutover-private-runtime-migration.json)" in
@@ -1771,7 +1802,7 @@ jobs:
       - name: Validate critical production artifact on the actual newly calculated forecast
         id: archived-weather-validation
         continue-on-error: true
-        if: inputs.restart_archived_weather == true && steps.archived-weather-build.outcome == 'success'
+        if: (env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE == 'true' && inputs.publish_newest_saved_weather == true) || (inputs.restart_archived_weather == true && steps.archived-weather-build.outcome == 'success')
         env:
           DMI_BULK_CACHE_PATH: .cache/dmi-candidate-progress.json
         run: >-
@@ -1782,7 +1813,7 @@ jobs:
       - name: Run production release gate on the actual newly calculated forecast
         id: archived-weather-release-gate
         continue-on-error: true
-        if: always() && inputs.restart_archived_weather == true && steps.archived-weather-build.outcome == 'success'
+        if: always() && ((!cancelled() && (env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE == 'true' && inputs.publish_newest_saved_weather == true) && steps.archived-weather-validation.outcome == 'success') || (inputs.restart_archived_weather == true && steps.archived-weather-build.outcome == 'success'))
         run: npm run release:gate:production
 
       - name: Upload payload-free archived production validation reports
@@ -1804,6 +1835,15 @@ jobs:
         run: |
           set -euo pipefail
           test "${{ steps.archived-weather-build.outcome }}" = success
+          test "${{ steps.archived-weather-validation.outcome }}" = success
+          test "${{ steps.archived-weather-release-gate.outcome }}" = success
+
+      - name: Require actual SOURCE saved-weather artifact and release gates
+        if: ${{ always() && (env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE == 'true' && inputs.publish_newest_saved_weather == true) }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ steps.source-producer-checkpoint-paired.outcome }}" = success
           test "${{ steps.archived-weather-validation.outcome }}" = success
           test "${{ steps.archived-weather-release-gate.outcome }}" = success
 
@@ -2515,6 +2555,33 @@ jobs:
             --argjson checkpointRequired "$checkpoint_required" \
             '{schemaVersion:"ravscore-continuation-checkpoint-disposition-v1",disposition:$disposition,sourceHead:$sourceHead,datasetId:$datasetId,runtimeAuditSha256:$runtimeAuditSha256,rollbackStatus:$rollbackStatus,rollbackActivationReady:$rollbackActivationReady,checkpointRequired:$checkpointRequired,privatePayloadIncluded:false}' \
             > "$base_path"
+          if test "${RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE:-false}" = true \
+              && test "$PUBLISH_NEWEST_SAVED_WEATHER" = true; then
+            test "${{ steps.source-producer-checkpoint-paired.outcome }}" = success
+            test "${{ steps.source-producer-checkpoint-paired.outputs.paired }}" = true
+            test "${{ steps.operational-action.outputs.action }}" = integrated
+            DISPOSITION_BASE="$base_path" node --input-type=module <<'NODE'
+            import assert from 'node:assert/strict';
+            import fs from 'node:fs';
+            import path from 'node:path';
+            import { sha256CanonicalJson } from './scripts/ravscore-operational-pages-recovery.mjs';
+            const base=process.env.DISPOSITION_BASE;
+            const read=file=>JSON.parse(fs.readFileSync(file,'utf8'));
+            const existing=read(base);
+            const manifest=read('data/live/manifest.json');
+            const pair=read(path.join(process.env.RAVRADAR_OPERATIONAL_WORK,'source-saved-pair.json'));
+            assert.equal(pair.datasetId,existing.datasetId);
+            assert.equal(pair.productionReferenceAt,manifest.productionReferenceAt);
+            assert.equal(process.env.GITHUB_RUN_ATTEMPT,'1');
+            const runId=Number(process.env.GITHUB_RUN_ID);
+            assert(Number.isSafeInteger(runId)&&runId>0);
+            existing.disposition='SAVED_PAIR_READBACK_VERIFIED';
+            existing.savedPairReadback={...pair,sourceHead:process.env.GITHUB_SHA,
+              runId,runAttempt:1,targetManifestSha256:sha256CanonicalJson(manifest)};
+            fs.writeFileSync(base,JSON.stringify(existing)+'\n',{mode:0o600});
+          NODE
+            disposition=SAVED_PAIR_READBACK_VERIFIED
+          fi
           disposition_sha256="$(DISPOSITION_PATH="$base_path" node --input-type=module -e "import fs from 'node:fs'; import { sha256CanonicalJson } from './scripts/ravscore-operational-pages-recovery.mjs'; process.stdout.write(sha256CanonicalJson(JSON.parse(fs.readFileSync(process.env.DISPOSITION_PATH, 'utf8'))));")"
           jq --arg bindingSha256 "$disposition_sha256" '. + {bindingSha256:$bindingSha256}' "$base_path" > "$disposition_path"
           rm "$base_path"
@@ -2884,6 +2951,7 @@ jobs:
 
       - name: Publish current bounded private runtime
         id: current-private-publish
+        if: ${{ !(env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE == 'true' && inputs.publish_newest_saved_weather == true) }}
         shell: bash
         run: |
           set -euo pipefail
@@ -2920,7 +2988,7 @@ jobs:
       # then restore current B normally instead of requiring the replaced old S.
       - name: Publish measured continuation only after verified warmup private runtime
         id: established-native-current-origin-checkpoint-publish
-        if: env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE == 'true' || ((steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED') && (env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_EDGE_REQUIRED == 'true' || inputs.restart_archived_weather == true || steps.saved-last-mile-source.outputs.required == 'true' || env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true' || env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE == 'true' || env.RAVRADAR_CURRENT_INSTALLED_CODE_ONLY_SOURCE_ACTIVE == 'true') && steps.current-private-publish.outcome == 'success')
+        if: ${{ !(env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE == 'true' && inputs.publish_newest_saved_weather == true) && (env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE == 'true' || ((steps.checkpoint-disposition.outputs.disposition == 'READY_PUBLISHED' || steps.checkpoint-disposition.outputs.disposition == 'MEASURED_WARMUP_PUBLISHED') && (env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_EDGE_REQUIRED == 'true' || inputs.restart_archived_weather == true || steps.saved-last-mile-source.outputs.required == 'true' || env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true' || env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE == 'true' || env.RAVRADAR_CURRENT_INSTALLED_CODE_ONLY_SOURCE_ACTIVE == 'true') && steps.current-private-publish.outcome == 'success')) }}
         run: >-
           node scripts/protected-ravscore-continuation-checkpoint.mjs
           --publish
@@ -2941,6 +3009,15 @@ jobs:
           test "$RAVRADAR_SOURCE_PRODUCER_PHASE" = installed
           test "$RAVRADAR_SOURCE_PRODUCER_UPGRADE_OPT_IN" = false
           test "$RAVRADAR_SOURCE_NORMAL_PRODUCER" = false
+          if test "$PUBLISH_NEWEST_SAVED_WEATHER" = true; then
+            test "${{ steps.checkpoint-disposition.outputs.disposition }}" = SAVED_PAIR_READBACK_VERIFIED
+            test "${{ steps.current-private-publish.outcome }}" = skipped
+            test "${{ steps.checkpoint-save.outcome }}" = skipped
+            test "${{ steps.established-native-current-origin-checkpoint-publish.outcome }}" = skipped
+            node scripts/reconcile-source-producer-code-only.mjs --saved-pair-verify-rebuilt
+            echo 'equivalent=true' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           test "${{ steps.current-private-publish.outcome }}" = success
           test "${{ steps.established-native-current-origin-checkpoint-publish.outcome }}" = success
           # Reconciliation is intentionally NOT used here: local S now exists.
@@ -2950,18 +3027,20 @@ jobs:
           import assert from 'node:assert/strict';
           import fs from 'node:fs/promises';
           import { requireSourceProducerOutput, sourceProducerReferenceHour } from './scripts/lib/source-producer-after597-runtime-family.mjs';
-          import { assertSourceProducerCodeOnlyCaller } from './scripts/select-source-producer-code-only-source.mjs';
+          import { assertSourceProducerCodeOnlyCaller, assertSourceProducerSavedWeatherCaller } from './scripts/select-source-producer-code-only-source.mjs';
           import { restoreProtectedRavScoreContinuationCheckpoint } from './scripts/protected-ravscore-continuation-checkpoint.mjs';
           try {
             requireSourceProducerOutput();
-            assertSourceProducerCodeOnlyCaller(process.env);
+            const assertCaller = process.env.RAVRADAR_SOURCE_PRODUCER_SAVED_WEATHER === 'true'
+              ? assertSourceProducerSavedWeatherCaller : assertSourceProducerCodeOnlyCaller;
+            assertCaller(process.env);
             const result = await restoreProtectedRavScoreContinuationCheckpoint({
               targetReference:sourceProducerReferenceHour(process.env.RAVRADAR_PRODUCTION_TARGET_HOUR),
             });
             assert.equal(result.reason,'protected-checkpoint-equivalent');
             assert.equal(result.restored,false);
             assert.equal(result.targetUnchanged,true);
-            assertSourceProducerCodeOnlyCaller(process.env);
+            assertCaller(process.env);
             console.log('SOURCE whole central S read back and equivalent to the normally saved local S; original checksums verified.');
             await fs.appendFile(process.env.GITHUB_OUTPUT,'equivalent=true\n');
           } catch {
@@ -3436,7 +3515,7 @@ jobs:
           OFF_ATTEST_NODE
 
       - name: Deploy exact rebound trip Edges without Worker or D1 replay
-        if: env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE == 'true' || (env.RAVRADAR_ACCOUNT_ASSISTANT_FINAL_REQUIRED == 'true' || env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_EDGE_REQUIRED == 'true' || inputs.restart_archived_weather == true || steps.saved-last-mile-source.outputs.required == 'true' || env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true' || env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE == 'true')
+        if: ${{ !(env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE == 'true' && inputs.publish_newest_saved_weather == true) && (env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE == 'true' || (env.RAVRADAR_ACCOUNT_ASSISTANT_FINAL_REQUIRED == 'true' || env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_EDGE_REQUIRED == 'true' || inputs.restart_archived_weather == true || steps.saved-last-mile-source.outputs.required == 'true' || env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true' || env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE == 'true')) }}
         timeout-minutes: 7
         shell: bash
         env:
@@ -3486,6 +3565,7 @@ jobs:
           node scripts/verify-trip-storage-edge.mjs
 
       - name: Deploy only the exact RavRadar assistant Edge function
+        if: ${{ !(env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE == 'true' && inputs.publish_newest_saved_weather == true) }}
         timeout-minutes: 5
         shell: bash
         run: |
@@ -3532,7 +3612,14 @@ jobs:
           if test "${RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE:-false}" = true; then
             source_readiness_args+=(--source-producer)
           fi
-          node scripts/integrated-cutover-readiness.mjs publish "${source_readiness_args[@]}" \
+          readiness_operation=publish
+          if test "${RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE:-false}" = true \
+              && test "$PUBLISH_NEWEST_SAVED_WEATHER" = true; then
+            test "${{ steps.source-producer-checkpoint-readback.outcome }}" = success
+            test "${{ steps.source-producer-checkpoint-readback.outputs.equivalent }}" = true
+            readiness_operation=check
+          fi
+          node scripts/integrated-cutover-readiness.mjs "$readiness_operation" "${source_readiness_args[@]}" \
             --public-implementation-closure-sha256 "${{ steps.integrated-implementation.outputs.closure_sha256 }}" \
             --output "$RAVRADAR_OPERATIONAL_WORK/integrated-readiness.json"
         env:
@@ -3589,7 +3676,7 @@ jobs:
             --arg checkpointDispositionSha256 "${{ steps.checkpoint-disposition.outputs.disposition_sha256 }}" \
             --arg checkpointDatasetId "${{ steps.checkpoint-disposition.outputs.dataset_id }}" \
             --arg checkpointRuntimeAuditSha256 "${{ steps.checkpoint-disposition.outputs.runtime_audit_sha256 }}" \
-            --arg checkpointBuildOutcome "${{ steps.checkpoint-build.outcome }}" \
+            --arg checkpointBuildOutcome "${{ steps.checkpoint-disposition.outputs.disposition == 'SAVED_PAIR_READBACK_VERIFIED' && steps.source-producer-checkpoint-paired.outcome || steps.checkpoint-build.outcome }}" \
             --arg checkpointSaveOutcome "${{ steps.checkpoint-save.outcome }}" \
             --arg checkpointPublishOutcome "${{ (env.RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_EDGE_REQUIRED == 'true' || inputs.restart_archived_weather == true || steps.saved-last-mile-source.outputs.required == 'true' || env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE == 'true' || env.RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SOURCE_ACTIVE == 'true' || env.RAVRADAR_CURRENT_INSTALLED_CODE_ONLY_SOURCE_ACTIVE == 'true' || env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE == 'true') && steps.established-native-current-origin-checkpoint-publish.outcome || steps.checkpoint-publish.outcome }}" \
             --arg codeOnlyReuseReportSha256 "$code_only_sha256" \
@@ -3602,6 +3689,26 @@ jobs:
             echo "Operational handoff contains forbidden private fields." >&2
             exit 1
           fi
+
+      - name: Recheck saved SOURCE authority and originals before Pages upload
+        id: saved-source-upload-gate
+        if: env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE == 'true' && inputs.publish_newest_saved_weather == true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+          current_main="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$GITHUB_SHA"
+          test "$current_main" = "$GITHUB_SHA"
+          test "${{ steps.source-producer-checkpoint-readback.outputs.equivalent }}" = true
+          node scripts/acquire-code-only-public-snapshot.mjs assert-saved-current
+          node scripts/reconcile-source-producer-code-only.mjs --saved-pair-verify-handoff
+          echo 'verified=true' >> "$GITHUB_OUTPUT"
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v6
@@ -3672,6 +3779,7 @@ jobs:
       operational_action: ${{ needs.build-code-only.outputs.operational_action }}
       source_repair_id: ${{ needs.build-code-only.outputs.source_repair_id }}
       exact_public_recovery: ${{ inputs.recover_public_run_id != '' }}
+      source_saved_pair_readback: ${{ needs.build-code-only.outputs.source_saved_pair_readback == 'true' }}
     secrets:
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}

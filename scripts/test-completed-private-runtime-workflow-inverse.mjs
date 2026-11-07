@@ -1884,3 +1884,45 @@ test('issued Source historical code views preserve exact predecessors and unknow
     /SOURCE601_HISTORICAL_INPUT_TYPE/);
   assert.throws(() => inverseReviewedSource601HistoricalCodeInput(''), /SOURCE601_HISTORICAL_INPUT_ARGUMENTS/);
 });
+
+
+test('saved and post-Pages routing keeps genuine #832 whole workflow oracles separate from actual gates', async () => {
+  const { inverseReviewedSource603SavedWorkflow } = await import('./lib/completed-private-runtime-workflow-review.mjs');
+  const names = ['reusable-weather-build', 'run-current-weather-once', 'deploy-code-only-repair',
+    'reusable-pages-deploy', 'reusable-operational-reentry'];
+  const sources = new Map();
+  for (const name of names) {
+    const relative = '.github/workflows/' + name + '.yml';
+    const source = (await fs.readFile(new URL('../' + relative, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+    const prior = inverseReviewedSource603SavedWorkflow(source, relative);
+    assert.notEqual(prior, source);
+    assert.equal(inverseReviewedSource603SavedWorkflow(prior, relative), prior);
+    assert.equal(inverseReviewedSource603SavedWorkflow(source, 'toString'), source);
+    for (const changed of [source + '\n', '!' + source.slice(1), source.slice(1)]) {
+      assert.equal(inverseReviewedSource603SavedWorkflow(changed, relative), changed,
+        'An unreviewed workflow cannot enter the issued #832 view');
+      assert.equal(inverseReviewedSource601HistoricalCodeInput(changed, relative), changed,
+        'An unreviewed workflow cannot enter an older view either');
+    }
+    sources.set(name, source);
+  }
+  const actualBuild = sources.get('reusable-weather-build');
+  const ordered = ['source-saved-pair-admission', 'source-normal', 'source-saved-pair-target',
+    'source-saved-pair-no-loss', 'full-validation', 'release-gate', 'source-saved-pair-upload-authority',
+    'pages-artifact-seal', 'source-saved-pair-artifact-proof', 'handoff-upload'];
+  let previous = -1;
+  for (const step of ordered) {
+    const token = '        id: ' + step + '\n';
+    const at = actualBuild.indexOf(token);
+    assert(at > previous && actualBuild.indexOf(token, at + token.length) === -1, step);
+    previous = at;
+  }
+  assert.match(actualBuild, /id: source-normal\n        if: [^\n]*source_saved_pair != 'true'/);
+  const once = sources.get('run-current-weather-once');
+  assert.match(once, /source_saved_pair_readback: [^\n]*source_saved_pair_outcome == 'success'/);
+  const recovery = sources.get('reusable-operational-reentry');
+  const noPending = recovery.indexOf("jq -r '.pending'");
+  const reseal = recovery.indexOf('node scripts/source-post-pages-integrated-reentry.mjs');
+  const pendingHead = recovery.indexOf('pending_head=');
+  assert(noPending >= 0 && noPending < reseal && reseal < pendingHead);
+});

@@ -1,6 +1,6 @@
-import { PUBLIC_CONFIG } from '../../config.js?v=4.0.603';
-import { requireFreshSession, authIdentityEpoch, currentSession, authorizedFetch } from './auth-service.js?v=4.0.603';
-import { myAccess, hasPermission } from './permissions-service.js?v=4.0.603';
+import { PUBLIC_CONFIG } from '../../config.js?v=4.0.604';
+import { requireFreshSession, authIdentityEpoch, currentSession, authorizedFetch } from './auth-service.js?v=4.0.604';
+import { myAccess, hasPermission } from './permissions-service.js?v=4.0.604';
 
 const SCOPE='active-d1-all-stored-rows-including-test-legacy-anonymous';
 const unavailable=()=>{throw Error('ADMIN_TRIP_COUNT_UNAVAILABLE');};

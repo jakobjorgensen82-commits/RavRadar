@@ -11,9 +11,9 @@ import { isDeepStrictEqual as same } from 'node:util';
 import { createProtectedPrivateRuntimeClients, validateProtectedPrivateRuntimePointer,
   PROTECTED_PRIVATE_RUNTIME_POLICY, describeCurrentProtectedPrivateProductionRuntime,
   describeTargetProtectedPrivateProductionRuntime } from './protected-private-production-runtime.mjs';
-import { verifyPrivateProductionRuntimeBundle } from './private-production-runtime-bundle.mjs';
+import { canonicalPrivateRuntimeJson, verifyPrivateProductionRuntimeBundle } from './private-production-runtime-bundle.mjs';
 import { buildPrivateRuntimeExpectation } from './private-production-runtime-workflow.mjs';
-import { saveRavScoreContinuationCheckpoint } from './ravscore-continuation-checkpoint.mjs';
+import { RAVSCORE_CONTINUATION_CHECKPOINT_POLICY, saveRavScoreContinuationCheckpoint } from './ravscore-continuation-checkpoint.mjs';
 import { createProtectedRavScoreCheckpointRequester, createProtectedRavScoreCheckpointVersionRequester,
   createProtectedRavScoreCheckpointRpcRequester,
   publishProtectedRavScoreContinuationCheckpoint, restoreProtectedRavScoreContinuationCheckpoint }
@@ -51,7 +51,8 @@ import {ASSISTANT_LATER_H0_BINDING as ASSISTANT_LATER_FAMILY,
   from './lib/assistant-later-h0-successor-source.mjs';
 import {SOURCE_PRODUCER_AFTER597_PARENT} from './lib/source-producer-after597-parent.mjs';
 import {requireSourceProducerOutput} from './lib/source-producer-after597-runtime-family.mjs';
-import {assertSourceProducerCodeOnlyCaller} from './select-source-producer-code-only-source.mjs';
+import {assertSourceProducerCodeOnlyCaller,assertSourceProducerSavedWeatherCaller}
+  from './select-source-producer-code-only-source.mjs';
 import {withSource597OriginalDataSource,withSource598CodeParent} from './check-assistant-later-h0-predecessor-source.mjs';
 import {assertEstablishedNativeCurrent597MetadataCheckpoint,assertEstablishedNativeCurrent598MetadataCheckpoint} from './lib/established-native-current-origin.mjs';
 import {verifyIntegratedDatabaseReadback} from './integrated-cutover-readiness.mjs';
@@ -207,6 +208,7 @@ export async function reconcileSourcePrivateRuntimeCheckpoint(options = {}) {
 }
 
 const checkpointQuery = '?document_key=eq.ravscore-continuation-checkpoint&select=document_key,payload,version&limit=2';
+const checkpointVersionQuery = checkpointQuery.replace('document_key,payload,version','document_key,version');
 async function readCheckpointRows(request) {
   const rows = await request(checkpointQuery, {}, 'read');
   need(Array.isArray(rows) && rows.length <= 1 && rows.every(row =>
@@ -450,8 +452,12 @@ export async function reconcileNativeOriginalContinuityPrivateRuntimeCheckpoint(
 export async function reconcileSourceCodeOnlyPrivateRuntimeCheckpoint(options){
   requireSourceProducerOutput(); // FIRST, before options, environment or clients.
   assert.equal(arguments.length,1);assert(options&&Object.getPrototypeOf(options)===Object.prototype);
-  assert.deepEqual(Object.keys(options).sort(),['bundlePath','privateRoot']);
-  assertSourceProducerCodeOnlyCaller(process.env);
+  const savedWeather=process.env.RAVRADAR_SOURCE_PRODUCER_SAVED_WEATHER==='true';
+  assert.deepEqual(Object.keys(options).sort(),savedWeather
+    ?['bundlePath','currentPin','privateRoot']:['bundlePath','privateRoot']);
+  const {currentPin,...paths}=options;
+  const assertCaller=savedWeather?assertSourceProducerSavedWeatherCaller:assertSourceProducerCodeOnlyCaller;
+  assertCaller(process.env);
   need(process.env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE==='true'
     &&process.env.RAVRADAR_SOURCE_PRODUCER_PHASE==='installed'
     &&process.env.RAVRADAR_SOURCE_PRODUCER_UPGRADE_OPT_IN==='false','SOURCE_CODE_ONLY_INSTALLED');
@@ -473,9 +479,60 @@ export async function reconcileSourceCodeOnlyPrivateRuntimeCheckpoint(options){
   need(typeof target==='string'&&/^\d{4}-\d\d-\d\dT\d\d:00:00(?:\.000)?Z$/.test(target)
     &&Number.isFinite(Date.parse(target))&&selected.productionReferenceAt===new Date(target).toISOString(),
     'SOURCE_CODE_ONLY_EXACT_TARGET');
-  assertSourceProducerCodeOnlyCaller(process.env);
-  return reconcileAuthenticatedPrivateRuntimeCheckpoint({...options,repositoryRoot:ROOT,request,
-    expectedCurrentIdentity:selected});
+  assertCaller(process.env);
+  if(savedWeather)need(same(currentPin?.descriptor,selected),'SOURCE_SAVED_DESCRIPTOR_CHANGED');
+  return reconcileAuthenticatedPrivateRuntimeCheckpoint({...paths,repositoryRoot:ROOT,request,
+    expectedCurrentIdentity:selected,expectedCurrentPin:currentPin,requireAlreadyPaired:savedWeather});
+}
+
+// Consumers call this only after validating the actual producer, exact
+// handoff/artifact and the initial full S readback sealed by that producer.
+export async function verifySavedSourcePairPublishedPins(options){
+  requireSourceProducerOutput();
+  const {savedPair,request=createProtectedPrivateRuntimeClients({storageBackend:'supabase'}).documentRequest,
+    checkpointVersionRequest=createProtectedRavScoreCheckpointVersionRequester()}=options;
+  const {pointerVersion,pointerSha256,checkpointVersion,datasetId,productionReferenceAt,bundleContentSha256}=savedPair;
+  need(Number.isSafeInteger(pointerVersion)&&pointerVersion>0
+    &&Number.isSafeInteger(checkpointVersion)&&checkpointVersion>0
+    &&/^[a-f0-9]{64}$/.test(pointerSha256)&&/^[a-f0-9]{64}$/.test(bundleContentSha256),'SOURCE_SAVED_PAIR_PIN');
+  const versionRows=await checkpointVersionRequest(checkpointVersionQuery);
+  need(Array.isArray(versionRows)&&versionRows.length===1
+    &&versionRows[0].document_key==='ravscore-continuation-checkpoint'
+    &&Number(versionRows[0].version)===checkpointVersion,'SOURCE_SAVED_CENTRAL_S_CHANGED');
+  const fresh=await readPointer(request);
+  need(fresh.version===pointerVersion&&sha(canonicalPrivateRuntimeJson(fresh.pointer))===pointerSha256,
+    'SOURCE_SAVED_POINTER_CHANGED');
+  const current=fresh.pointer.current;
+  need(SOURCE_FAMILY!==null&&current.modelBinding?.modelBundleSha256===SOURCE_FAMILY.I
+    &&current.contractHashes?.continuationStateContractSha256===SOURCE_FAMILY.T
+    &&current.datasetId===datasetId&&current.productionReferenceAt===productionReferenceAt
+    &&current.bundleContentSha256===bundleContentSha256,'SOURCE_SAVED_PAIR_BINDING');
+  return true;
+}
+
+// The S version is an immutable CAS identity; after the first full readback a
+// second download of its whole payload is not needed.
+export async function verifySavedSourcePairReadback(options){
+  requireSourceProducerOutput();
+  const {repositoryRoot=ROOT,privateRoot,bundlePath,currentPin,savedPair,
+    request,checkpointVersionRequest,now=new Date().toISOString()}=options;
+  const {descriptor,pointerVersion,pointerSha256}=currentPin;
+  const {datasetId,productionReferenceAt,generatedAt,bundleContentSha256,modelBinding,contractHashes}=descriptor;
+  const sourceBinding = SOURCE_FAMILY;
+  need(sourceBinding!==null&&modelBinding?.modelBundleSha256===sourceBinding.I
+    &&contractHashes?.continuationStateContractSha256===sourceBinding.T,'SOURCE_SAVED_PAIR_BINDING');
+  need(savedPair.pointerVersion===pointerVersion&&savedPair.pointerSha256===pointerSha256
+    &&savedPair.datasetId===datasetId&&savedPair.productionReferenceAt===productionReferenceAt
+    &&savedPair.bundleContentSha256===bundleContentSha256,'SOURCE_SAVED_PAIR_IDENTITY');
+  const verified=await verifyPrivateProductionRuntimeBundle({repositoryRoot,privateRoot,bundlePath,now,
+    expected:{datasetId,productionReferenceAt,generatedAt,bundleContentSha256,modelBinding,contractHashes}});
+  need(sha(canonicalPrivateRuntimeJson(verified.manifest))===savedPair.bundleManifestSha256,'SOURCE_SAVED_B_MANIFEST_CHANGED');
+  const checkpoint=await stableFile(path.join(repositoryRoot,'.cache/ravscore-continuation-checkpoint/checkpoint.json'),
+    RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.maximumSerializedBytes,{retainRaw:false});
+  need(checkpoint.pin.sha256===savedPair.checkpointSha256,'SOURCE_SAVED_LOCAL_S_CHANGED');
+  const registry=await stableFile(path.join(repositoryRoot,'data/live/coastal-parts-v2.json'),16*1024*1024,{retainRaw:false});
+  need(registry.pin.sha256===savedPair.registrySha256,'SOURCE_SAVED_REGISTRY_CHANGED');
+  return verifySavedSourcePairPublishedPins({savedPair,request,checkpointVersionRequest});
 }
 
 // First PRIVATE metadata handoff only. Keep the original before/opt-in request;
@@ -520,19 +577,23 @@ async function reconcileAuthenticatedPrivateRuntimeCheckpoint(options = {}) {
 }
 async function reconcileAuthenticatedPrivateRuntimeCheckpointObserved({ repositoryRoot = ROOT, privateRoot, bundlePath,
   checkpointPath = path.join(repositoryRoot, '.cache/ravscore-continuation-checkpoint/checkpoint.json'),
-  expected, expectedCurrentIdentity, now = new Date().toISOString(), operationalAction = process.env.OPERATIONAL_ACTION,
-  request, checkpointRequest, checkpointVersionRequest, rpcRequest } = {}) {
+  expected, expectedCurrentIdentity, expectedCurrentPin, now = new Date().toISOString(),
+  operationalAction = process.env.OPERATIONAL_ACTION,
+  request, checkpointRequest, checkpointVersionRequest, rpcRequest, requireAlreadyPaired = false } = {}) {
   // Both public entry points have their distinct fixed request guard above.
   request ??= createProtectedPrivateRuntimeClients({ storageBackend: 'supabase' }).documentRequest;
   checkpointRequest ??= createProtectedRavScoreCheckpointRequester();
   checkpointVersionRequest ??= createProtectedRavScoreCheckpointVersionRequester();
-  rpcRequest ??= createProtectedRavScoreCheckpointRpcRequester();
+  if (!requireAlreadyPaired) rpcRequest ??= createProtectedRavScoreCheckpointRpcRequester();
   const counts = { pointerReads: 0, checkpointReads: 0, checkpointVersionReads: 0, checkpointPublishCalls: 0, storageDownloads: 0 };
   const pointerRequest = (...args) => { counts.pointerReads++; return request(...args); };
   const Srequest = (...args) => { counts.checkpointReads++; return checkpointRequest(...args); };
   const Sversion = (...args) => { counts.checkpointVersionReads++; return checkpointVersionRequest(...args); };
   markReconcilePhase('CURRENT_POINTER');
   const before = await readPointer(pointerRequest), current = before.pointer.current;
+  const pointerSha256 = requireAlreadyPaired ? sha(canonicalPrivateRuntimeJson(before.pointer)) : null;
+  if (requireAlreadyPaired) need(expectedCurrentPin?.pointerVersion === before.version
+    && expectedCurrentPin.pointerSha256 === pointerSha256, 'SOURCE_SAVED_POINTER_CHANGED');
   if(expectedCurrentIdentity!==undefined)for(const key of identityKeys)
     need(same(current[key],expectedCurrentIdentity[key]),'SOURCE_CODE_ONLY_CURRENT_CHANGED');
   const family = reconcileFamily(current); need(family !== null, 'UNSUPPORTED_FAMILY');
@@ -595,7 +656,9 @@ async function reconcileAuthenticatedPrivateRuntimeCheckpointObserved({ reposito
     let saved = predecessor.restored.restored ? await json(restoredPath) : null;
     let publishError = null;
     markReconcilePhase('S_RELATION_GUARD');
-    if (!same(derived, saved)) {
+    const alreadyPaired = same(derived, saved);
+    if (requireAlreadyPaired) need(alreadyPaired, 'B_S_DIFFER');
+    if (!alreadyPaired) {
       // Missing/older SAME-family S alone can advance. Same-time conflict and
       // S-ahead-B are hard stops. A newer S may already be refused by restore.
       let exact584MetadataOnly = false;
@@ -649,16 +712,36 @@ async function reconcileAuthenticatedPrivateRuntimeCheckpointObserved({ reposito
     } else outcome = 'ALREADY_PAIRED_READBACK_PROVED';
     need(same(derived, saved), 'B_S_DIFFER');
     markReconcilePhase('FINAL_STABILITY');
-    await stable(); await verify();
-    // Publish only the NORMAL, freshly validated remote representation locally.
+    await stable();
+    const finalB = await verify();
+    // Install only the NORMAL, freshly validated remote representation locally.
     const localSource = path.join(work, outcome === 'ALREADY_PAIRED_READBACK_PROVED' ? 'before' : 'after',
       '.cache/ravscore-continuation-checkpoint/checkpoint.json');
+    let savedPair;
+    if (requireAlreadyPaired) {
+      const versions = predecessor.rows.map(({document_key,version}) => ({document_key,version}));
+      need(versions.length === 1 && same(await Sversion(checkpointVersionQuery), versions), 'S_CHANGED_BEFORE_READ');
+      need(outcome === 'ALREADY_PAIRED_READBACK_PROVED' && counts.checkpointPublishCalls === 0, 'S_DISPOSITION');
+      const checkpoint = await stableFile(localSource,
+        RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.maximumSerializedBytes, { retainRaw: false });
+      savedPair = {
+        pointerVersion: before.version,
+        pointerSha256,
+        datasetId: current.datasetId,
+        productionReferenceAt: current.productionReferenceAt,
+        bundleContentSha256: current.bundleContentSha256,
+        bundleManifestSha256: sha(canonicalPrivateRuntimeJson(finalB.manifest)),
+        checkpointVersion: Number(versions[0].version),
+        checkpointSha256: checkpoint.pin.sha256,
+        registrySha256: registry.pin.sha256,
+      };
+    }
     markReconcilePhase('LOCAL_S_INSTALL');
     await fs.mkdir(path.dirname(checkpointPath), { recursive: true });
     await assert.rejects(fs.lstat(checkpointPath), { code: 'ENOENT' });
     await fs.rename(localSource, checkpointPath);
     return { paired: true, outcome, ...counts, requestCountsAreLogicalCalls: true,
-      nativeAdmissionIssued: false, payloadLogged: false };
+      nativeAdmissionIssued: false, payloadLogged: false, ...(savedPair ? { savedPair } : {}) };
   } catch (error) { rememberReconcileFailure(error); first = error; throw error; }
   finally {
     if (!first) markReconcilePhase('TEMP_CLEANUP');

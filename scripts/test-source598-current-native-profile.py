@@ -1838,6 +1838,9 @@ class CurrentSourceSdkProtocolFixture(TerminalProtocolFixture):
         self.current_result_id = 16
         self.current_transport_drained = False
 
+    def expected_artifact_name(self):
+        return self.ARTIFACT_NAME
+
     @staticmethod
     def _identity(info):
         return (info.st_dev, info.st_ino, info.st_mode, info.st_nlink,
@@ -2076,8 +2079,8 @@ class CurrentSourceSdkProtocolFixture(TerminalProtocolFixture):
                     raise AssertionError('CURRENT_SDK_ARTIFACT_BACKEND_SCOPE')
                 if method == 'CreateArtifact':
                     if (set(value) != {*self.BACKEND, 'name', 'mime_type', 'version', 'expires_at'}
-                            or value['name'] != self.ARTIFACT_NAME or value['version'] != 7
-                            or value['mime_type'] != 'application/zip' or self.current_artifact is not None):
+                            or value['version'] != 7 or value['mime_type'] != 'application/zip'
+                            or self.current_artifact is not None or value['name'] != self.expected_artifact_name()):
                         raise AssertionError('CURRENT_SDK_ARTIFACT_CREATE_IDENTITY')
                     from datetime import datetime, timezone
                     expires = datetime.fromisoformat(value['expires_at'].replace('Z', '+00:00'))
@@ -3132,6 +3135,31 @@ def current_native_json_literal(value):
 class CurrentSourceNormalProtocolFixture(CurrentSourceSdkProtocolFixture):
     HOSTS = TerminalProtocolFixture.HOSTS | frozenset({'current-source-native.invalid'})
 
+    def expected_artifact_name(self):
+        identity = self.github_capture['current'] if self.pr_native_test else {'run': 200, 'attempt': 2}
+        manifest_path = FIXED / 'bundle-source-successor/manifest.json'
+        if manifest_path.resolve(strict=True) != manifest_path:
+            raise AssertionError('CURRENT_SDK_ARTIFACT_CREATE_IDENTITY')
+        manifest = strict_json(manifest_path, 256 * 1024)
+        if manifest.get('productionReferenceAt') != self.protocol['target']:
+            raise AssertionError('CURRENT_SDK_ARTIFACT_CREATE_IDENTITY')
+        generation = {key: manifest[key] for key in (
+            'datasetId', 'productionReferenceAt', 'generatedAt', 'bundleContentSha256')}
+        context = {'repository': self.github_capture['repository'], 'sourceHead': self.protocol['head'],
+            'runId': str(identity['run']), 'runAttempt': str(identity['attempt']), 'generation': generation}
+        program = (
+            "import fs from 'node:fs'; "
+            "import {sourceCompletedStageArtifactName} from './scripts/lib/source-completed-stage-artifact-identity.mjs'; "
+            "process.stdout.write(sourceCompletedStageArtifactName(JSON.parse(fs.readFileSync(0,'utf8'))));"
+        )
+        result = subprocess.run([str(NODE), '--input-type=module', '-e', program],
+            cwd=self.working_root, env=clean_environment(), input=json.dumps(context), encoding='utf-8',
+            capture_output=True, timeout=5)
+        prefix = 'ravradar-private-build-stage-' + context['runId'] + '-' + context['runAttempt'] + '-source-'
+        if result.returncode != 0 or not re.fullmatch(re.escape(prefix) + r'[a-f0-9]{64}', result.stdout):
+            raise AssertionError('CURRENT_SDK_ARTIFACT_CREATE_IDENTITY')
+        return result.stdout
+
     def __init__(self, root, protocol, certificate, private_key, context, github):
         self.pg_context, self.github_capture = context, github
         self.pr_native_test = github.get('kind') == 'SOURCE_PR_NATIVE_TEST_CAPTURE_V1'
@@ -3143,7 +3171,6 @@ class CurrentSourceNormalProtocolFixture(CurrentSourceSdkProtocolFixture):
                     or github['sourceAdmission'] is not False or github['productionProof'] is not False):
                 raise ValueError('SOURCE_PR_NATIVE_CAPTURE_CONTEXT')
             self.BACKEND = {'workflow_run_backend_id': str(c['run']), 'workflow_job_run_backend_id': str(c['jobId'])}
-            self.ARTIFACT_NAME = f"ravradar-private-build-stage-{c['run']}-1"
             payload = __import__('base64').urlsafe_b64encode(json.dumps(
                 {'scp': f"Actions.Results:{c['run']}:{c['jobId']}"}, separators=(',', ':')).encode()).decode().rstrip('=')
             self.RUNTIME_TOKEN = 'eyJhbGciOiJub25lIn0.' + payload + '.'

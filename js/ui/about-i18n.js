@@ -1,5 +1,5 @@
-import './about-explainer-i18n.js?v=4.0.603&ui=about-explainer-20261025';
-import { initialiseI18n, registerI18nMessages } from '../i18n.js?v=4.0.603';
+import './about-explainer-i18n.js?v=4.0.604&ui=about-explainer-20261025';
+import { initialiseI18n, registerI18nMessages } from '../i18n.js?v=4.0.604';
 
 registerI18nMessages({
   da:{

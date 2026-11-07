@@ -17,6 +17,11 @@ import {
   validateProtectedOperationalEvidencePointer,
 } from './protected-operational-reentry-evidence.mjs';
 import { sha256CanonicalJson } from './ravscore-operational-pages-recovery.mjs';
+import { assertSourceIntegratedPublicationPin as assertSourcePublicationPin,
+  sourceIntegratedPublicationPin } from './lib/source-integrated-publication-receipt.mjs';
+import { classifySourcePostPagesCurrent, assertSourcePostPagesResult }
+  from './source-post-pages-integrated-reentry.mjs';
+import './test-source-completed-public-pages-occurrence.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const repository = 'ravradar/RavRadar';
@@ -212,6 +217,44 @@ async function sourceReadinessPhaseFromNormalCurrent(directory) {
   assert.equal(server.removed.length, 0);
   return selected;
 }
+test('normal protected archive binds a saved pair to the actual artifact and refuses mixed outcomes', async t => {
+  const directory=await fs.mkdtemp(path.join(os.tmpdir(),'rr-saved-pair-evidence-'));
+  t.after(()=>fs.rm(directory,{recursive:true,force:true}));
+  const deploymentId='pages-12345-1';
+  const {manifest,seal,binding}=await fixture(directory,{deploymentId});
+  const write=(name,data)=>fs.writeFile(path.join(directory,name),JSON.stringify(data));
+  const runtimeAudit={schemaVersion:1,status:'passed',datasetId:manifest.datasetId,
+    productionReferenceAt:manifest.productionReferenceAt,model:binding,coverage:{zoneCount:210,partCount:673},
+    payload:{privacyContractPassed:true},rollback:{status:'READY',activationReady:true}};
+  const savedPairReadback={pointerVersion:12,pointerSha256:'a'.repeat(64),datasetId:manifest.datasetId,
+    productionReferenceAt:manifest.productionReferenceAt,bundleContentSha256:'b'.repeat(64),
+    bundleManifestSha256:'c'.repeat(64),checkpointVersion:34,checkpointSha256:'d'.repeat(64),
+    registrySha256:'e'.repeat(64),sourceHead:seal.headSha,runId:seal.runId,runAttempt:seal.runAttempt,
+    targetManifestSha256:seal.targetPublicManifestSha256};
+  const body={schemaVersion:'ravscore-continuation-checkpoint-disposition-v1',
+    disposition:'SAVED_PAIR_READBACK_VERIFIED',checkpointRequired:true,datasetId:manifest.datasetId,
+    privatePayloadIncluded:false,rollbackActivationReady:true,rollbackStatus:'READY',
+    runtimeAuditSha256:sha256CanonicalJson(runtimeAudit),sourceHead:seal.headSha,savedPairReadback};
+  const handoff=JSON.parse(await fs.readFile(path.join(directory,'handoff.json'),'utf8'));
+  const options={directory,deploymentId,repository};
+  async function sealPair(current,outcome='skipped'){
+    const bindingSha256=sha256CanonicalJson(current);
+    await write('checkpoint-runtime-audit.json',runtimeAudit);
+    await write('checkpoint-disposition.json',{...current,bindingSha256});
+    await write('handoff.json',{...handoff,codeOnlyRepair:false,savedWeatherContinuation:true,sourceRepairId:null,
+      checkpointSaveOutcome:'skipped',checkpointPublishOutcome:outcome,
+      checkpointDisposition:current.disposition,checkpointDispositionSha256:bindingSha256,
+      checkpointRuntimeAuditSha256:current.runtimeAuditSha256});
+  }
+  await sealPair(body);
+  const result=await buildProtectedOperationalEvidenceArchive(options);
+  assert.equal(result.descriptor.publicManifestSha256,savedPairReadback.targetManifestSha256);
+  await sealPair({...body,savedPairReadback:{...savedPairReadback,runAttempt:2}});
+  await assert.rejects(buildProtectedOperationalEvidenceArchive(options),/SOURCE_SAVED_PAIR_PRODUCER/);
+  await sealPair(body,'success');
+  await assert.rejects(buildProtectedOperationalEvidenceArchive(options),/SOURCE_SAVED_PAIR_OUTCOMES/);
+});
+
 test('builds a bounded payload-free exact archive and rejects private or unknown input', async () => {
   const work = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-operational-evidence-'));
   try {
@@ -271,6 +314,83 @@ test('retains the exact active source across repeated failed target publications
   } finally {
     await fs.rm(work, { recursive: true, force: true });
   }
+});
+
+test('ordinary SOURCE publication binds the public target and exact B/S before central reseal', () => {
+  const hash=sha256CanonicalJson, assertPin=assertSourcePublicationPin, mint=sourceIntegratedPublicationPin,
+    classify=classifySourcePostPagesCurrent, resealed=assertSourcePostPagesResult;
+  const head='a'.repeat(40), binding={modelId:'integrated',stateSchemaVersion:6},
+    target={schemaVersion:4,complete:true,zoneCount:210,coastalPartCount:673,datasetId:'rr-new',
+      productionReferenceAt:'2026-11-07T08:00:00.000Z',generatedAt:'2026-11-07T09:05:00.111Z',ravScoreModelBinding:binding},
+    old={...target,datasetId:'rr-old',productionReferenceAt:'2026-11-07T04:00:00.000Z'},
+    seal={headSha:head,runId:812,runAttempt:1,attemptId:'pages-812-1',targetImplementationClosureSha256:'c'.repeat(64),
+      targetPublicManifestSha256:hash(target),targetModelBinding:binding},
+    audit={datasetId:target.datasetId,productionReferenceAt:target.productionReferenceAt},
+    disposition={schemaVersion:'ravscore-continuation-checkpoint-disposition-v1',privatePayloadIncluded:false,checkpointRequired:true,
+      sourceHead:head,datasetId:target.datasetId,disposition:'READY_PUBLISHED',runtimeAuditSha256:hash(audit)},
+    livePin={pin:'b'.repeat(64),pointerVersion:44,checkpointVersion:55,
+      descriptor:{...target,sourceHead:head,modelBinding:binding}};
+  disposition.bindingSha256=hash(disposition);
+  const handoff={schemaVersion:'ravscore-operational-deploy-handoff-v2',action:'integrated',legacySourceRequired:false,
+    privatePayloadIncluded:false,centralVersion:8,sourceHead:head,checkpointDatasetId:target.datasetId,
+    checkpointDisposition:disposition.disposition,checkpointDispositionSha256:disposition.bindingSha256,
+    checkpointRuntimeAuditSha256:hash(audit),checkpointBuildOutcome:'success',checkpointSaveOutcome:'success',
+    checkpointPublishOutcome:'success'};
+  const evidence={handoff,manifest:target,seal,disposition,audit,livePin};
+  handoff.sourceContinuationPin=mint(evidence);
+  const current={status:'INTEGRATED_ACTIVE',model:'integrated',pending:false,bindingCurrent:true,
+    modelBinding:binding,centralVersion:8,datasetId:old.datasetId,productionReferenceAt:old.productionReferenceAt,
+    publicManifestSha256:hash(old)};
+  const after={...current,centralVersion:9,datasetId:target.datasetId,
+    productionReferenceAt:target.productionReferenceAt,publicManifestSha256:hash(target),
+    activeImplementationClosureSha256:seal.targetImplementationClosureSha256,sourceHead:head,deploymentId:seal.attemptId};
+  assert.equal(classify(current,old),'NONE');
+  assert.equal(classify(current,target),'CANDIDATE');
+  assertPin(evidence);
+  resealed({before:current,after,evidence,expectedHead:head});
+  for(const changed of [{...target,productionReferenceAt:old.productionReferenceAt},
+    {...target,datasetId:old.datasetId},{...target,ravScoreModelBinding:{modelId:'other'}},
+    {...target,complete:false}])assert.throws(()=>classify(current,changed));
+  for(const changed of [{...evidence,livePin:{...livePin,pin:'d'.repeat(64)}},
+    {...evidence,livePin:{...livePin,descriptor:{...livePin.descriptor,sourceHead:'e'.repeat(40)}}},
+    {...evidence,audit:{...audit,unexpected:true}}, {...evidence,handoff:{...handoff,codeOnlyRepair:true}},
+    {...evidence,handoff:{...handoff,checkpointPublishOutcome:'skipped'}}])assert.throws(()=>assertPin(changed));
+  for(const changed of [{...after,centralVersion:8},{...after,deploymentId:'pages-900-1'},
+    {...after,sourceHead:'d'.repeat(40)},{...after,publicManifestSha256:hash(old)}]) {
+    assert.throws(()=>resealed({before:current,after:changed,evidence,expectedHead:head}));
+  }
+});
+
+test('strict public operational evidence refuses duplicate manifest matches before storage access', async t => {
+  const work = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-operational-unique-public-'));
+  t.after(() => fs.rm(work, { recursive: true, force: true }));
+  const state = remote();
+  const archive = async deploymentId => {
+    const directory = path.join(work, deploymentId);
+    await fixture(directory, { deploymentId });
+    return publishProtectedOperationalEvidence({
+      directory, deploymentId, repository, request: state.request, storage: state.storage,
+      retainDeploymentId: deploymentId === 'pages-901-1' ? 'pages-900-1' : null,
+    });
+  };
+  await archive('pages-900-1');
+  const digest = state.row().payload.current.publicManifestSha256;
+  const result = await restoreProtectedOperationalEvidence({
+    directory: path.join(work, 'exact'), publicManifestSha256: digest, requireUniquePublicManifest: true,
+    repository, request: state.request, storage: state.storage,
+  });
+  assert.equal(result.deploymentId, 'pages-900-1');
+  await archive('pages-901-1');
+  assert.equal(state.row().payload.previous.publicManifestSha256, digest);
+  await assert.rejects(restoreProtectedOperationalEvidence({
+    directory: path.join(work, 'ambiguous'), publicManifestSha256: digest, requireUniquePublicManifest: true,
+    repository, request: state.request, storage: { ensurePrivateBucket() { assert.fail('unexpected storage access'); } },
+  }), /public operational evidence is ambiguous/);
+  const legacy = await restoreProtectedOperationalEvidence({
+    directory: path.join(work, 'legacy'), publicManifestSha256: digest,
+    repository, request: state.request, storage: state.storage,
+  });
+  assert.equal(legacy.deploymentId, 'pages-901-1');
 });
 
 test('restores one exact deployment atomically and refuses an unavailable generation', async () => {

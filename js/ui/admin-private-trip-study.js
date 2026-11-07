@@ -1,6 +1,6 @@
-import {readPrivateTripStudyForOwner,assertPrivateTripStudyDisplayReport} from '../services/private-trip-study.js?v=4.0.603';
-import {myAccess,hasPermission} from '../services/permissions-service.js?v=4.0.603';
-import {requireFreshSession,authIdentityEpoch,currentSession,onAuthChange} from '../services/auth-service.js?v=4.0.603';
+import {readPrivateTripStudyForOwner,assertPrivateTripStudyDisplayReport} from '../services/private-trip-study.js?v=4.0.604';
+import {myAccess,hasPermission} from '../services/permissions-service.js?v=4.0.604';
+import {requireFreshSession,authIdentityEpoch,currentSession,onAuthChange} from '../services/auth-service.js?v=4.0.604';
 
 const allowed=access=>access?.profile?.is_active===true&&hasPermission(access,'full_admin');
 const unavailable='Månedsrapporten er ikke tilgængelig, eller din adgang kunne ikke bekræftes. Intet er eksporteret.';

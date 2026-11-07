@@ -1,3 +1,13 @@
+## 7. november – SOURCE 4.0.604 genoptager fra den senest beviste fase
+
+Den lokale kandidat kan genbruge en færdig beregning, når de beskyttede originaler og scorecheckpunktet er gemt og kan læses tilbage. Før en ny prognose må udgives, kontrollerer forløbet de overlappende offentlige timer for tab af gyldige værdier og kører de normale udgivelseskontroller.
+
+Hvis hjemmesiden allerede viser det eksakte mål, kan næste almindelige kørsel færdiggøre den centrale driftskvittering med samme kodeversion. Forløbet kontrollerer det oprindelige GitHub-forsøg, genlæser den offentlige prognose og verificerer de gemte originaler igen. Det genbruger den eksisterende versionskontrol ved skrivning og genlæser kvitteringen efterfølgende.
+
+Et tvetydigt arkivopslag, ændrede data, ændret main eller ukendt deployudfald stopper genoptagelsen. En korrekt eksisterende kvittering udløser ingen ny skrivning. Genoptagelsen efter offentliggørelse starter hverken en ny vejrhentning, beregning eller udgivelse.
+
+4.0.604 er en afgrænset kandidat til kontrolleret levering. Lokale prøver og kildekontrol er separate fra installation og offentlig effekt. Den almindelige landsdækkende kvalifikation og den faktiske dokumentation af vandstand, Fur og de syv kystzoner følger deres egne krav.
+
 ## 7. november — SOURCE 4.0.603 retter installationsworkflowets input
 
 4.0.603 er lokalt udstedt gennem de normale byggere fra den gennemgåede uudstedte 598-basis. Den offentlige driftsversion er 4.0.598. 603 afløser 602 som kandidat til næste kildekontrol. Den tidligere udstedelse og dens testresultater er bevaret på 602-grenen.

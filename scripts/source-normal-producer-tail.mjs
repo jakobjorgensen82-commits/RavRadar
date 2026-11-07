@@ -11,6 +11,7 @@ import { types as sourcePreludeTypes, isDeepStrictEqual as same } from 'node:uti
 import { PRIVATE_RUNTIME_REPOSITORY_ROOT, PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY,
   verifyPrivateProductionRuntimeBundle } from './private-production-runtime-bundle.mjs';
 import { PROTECTED_PRIVATE_RUNTIME_POLICY } from './protected-private-production-runtime.mjs';
+import { sourceCompletedStageArtifactName } from './lib/source-completed-stage-artifact-identity.mjs';
 import { constants as bufferConstants } from 'node:buffer';
 import { assertRavScoreModelBinding, ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 import { PRIVATE_RUNTIME_BASE_FILES, PRIVATE_WEATHER_COMPONENT_FILES, PRIVATE_WEATHER_COMPONENT_PACK_FILE,
@@ -5318,11 +5319,15 @@ async function publishSourceNormalArtifact(holder, operation, mode) {
     const issued = await recheck();
     if (mode === 'early-upload') publication.upload = await runSourceRequiredProgram(holder, operation, 'artifactUpload');
     const uploaded = closed(publication.upload);
+    const identity = issued.identity;
+    const expectedArtifactName = sourceCompletedStageArtifactName({repository:identity.GITHUB_REPOSITORY,
+      sourceHead:identity.GITHUB_SHA,runId:identity.GITHUB_RUN_ID,runAttempt:identity.GITHUB_RUN_ATTEMPT,
+      generation:artifact.verified});
     if (JSON.stringify(Object.keys(uploaded).sort()) !== JSON.stringify([
       'archive_bytes', 'archive_sha', 'artifact_id', 'artifact_name', 'sealed_bytes', 'sealed_sha'])
       || !integer(uploaded.artifact_id) || !integer(uploaded.archive_bytes)
       || !/^[0-9a-f]{64}$/.test(uploaded.archive_sha || '')
-      || uploaded.artifact_name !== `ravradar-private-build-stage-${issued.identity.GITHUB_RUN_ID}-${issued.identity.GITHUB_RUN_ATTEMPT}`
+      || uploaded.artifact_name !== expectedArtifactName
       || uploaded.sealed_bytes !== String(staging.outputRow.bytes)
       || uploaded.sealed_sha !== staging.outputRow.sha256) sourceOriginalFailure('ARTIFACT_UPLOAD_ACK_INVALID');
     const actualWriteAuthority = await recheck();

@@ -7,6 +7,23 @@ on:
         required: false
         type: boolean
         default: false
+      # Internal saved-pair selection from the ordinary caller under its writer lock.
+      source_saved_pair:
+        required: false
+        type: boolean
+        default: false
+      source_saved_pair_pin:
+        required: false
+        type: string
+        default: ''
+      source_saved_pair_occurrence:
+        required: false
+        type: string
+        default: ''
+      source_saved_pair_public_manifest_sha256:
+        required: false
+        type: string
+        default: ''
       current_family_cold_start:
         required: false
         type: boolean
@@ -155,6 +172,9 @@ on:
       completed_runtime_outcome:
         description: "Actual completed-runtime target admission; never fresh weather success"
         value: ${{ jobs.build-and-prepare.outputs.completed_runtime_outcome }}
+      source_saved_pair_outcome:
+        description: "Actual saved SOURCE upload authority outcome"
+        value: ${{ jobs.build-and-prepare.outputs.source_saved_pair_outcome }}
       weather_outcome:
         description: "Forwarded build-and-prepare weather_outcome contract"
         value: ${{ jobs.build-and-prepare.outputs.weather_outcome }}
@@ -274,7 +294,8 @@ jobs:
       integrated_implementation_closure_sha256: ${{ steps.weather-route-result.outputs.integrated_implementation_closure_sha256 }}
       active_deployment_id: ${{ steps.weather-route-result.outputs.active_deployment_id }}
       weather_outcome: ${{ steps.weather-route-result.outputs.weather_outcome }}
-      completed_runtime_outcome: ${{ steps.completed-runtime-target.outcome }}
+      completed_runtime_outcome: ${{ steps.source-route.outputs.source_saved_pair == 'true' && steps.source-saved-pair-target.outcome || steps.completed-runtime-target.outcome }}
+      source_saved_pair_outcome: ${{ steps.source-saved-pair-upload-authority.outcome }}
       full_validation_outcome: ${{ steps.weather-route-result.outputs.operational_action == 'integrated-cutover' && steps.ravscore-integrated-runtime-audit.outputs.full_validation_outcome || steps.weather-route-result.outputs.full_validation_outcome }}
       release_gate_outcome: ${{ steps.weather-route-result.outputs.operational_action == 'integrated-cutover' && steps.ravscore-integrated-runtime-audit.outputs.release_gate_outcome || steps.weather-route-result.outputs.release_gate_outcome }}
       pages_build_outcome: ${{ steps.pages-build.outcome }}
@@ -332,19 +353,39 @@ jobs:
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
           import assert from 'node:assert/strict';
-          const request=JSON.parse(process.env.SOURCE_REQUEST);
-          assert(request && typeof request==='object' && !Array.isArray(request),'SOURCE_ROUTE_REQUEST_INVALID');
+          const allInputs=JSON.parse(process.env.SOURCE_REQUEST);
+          assert(allInputs && typeof allInputs==='object' && !Array.isArray(allInputs),'SOURCE_ROUTE_REQUEST_INVALID');
+          const {source_saved_pair=false,source_saved_pair_pin='',source_saved_pair_occurrence='',
+            source_saved_pair_public_manifest_sha256='',...request}=allInputs;
+          assert.equal(typeof source_saved_pair,'boolean','SOURCE_SAVED_PAIR_SELECTION_INVALID');
+          if(source_saved_pair){
+            assert.equal(process.env.GITHUB_WORKFLOW,'Run current RavRadar weather once','SOURCE_SAVED_PAIR_WORKFLOW_INVALID');
+            assert.equal(process.env.GITHUB_EVENT_NAME,'workflow_dispatch','SOURCE_SAVED_PAIR_EVENT_INVALID');
+            assert.equal(process.env.GITHUB_REF,'refs/heads/main','SOURCE_SAVED_PAIR_REF_INVALID');
+            assert.equal(process.env.GITHUB_RUN_ATTEMPT,'1','SOURCE_SAVED_PAIR_ATTEMPT_INVALID');
+            assert.equal(request.force,true,'SOURCE_SAVED_PAIR_FORCE_REQUIRED');
+            const hash=/^[a-f0-9]{64}$/;
+            assert(typeof source_saved_pair_pin==='string'&&hash.test(source_saved_pair_pin),'SOURCE_SAVED_PAIR_PIN_INVALID');
+            assert(typeof source_saved_pair_public_manifest_sha256==='string'&&hash.test(source_saved_pair_public_manifest_sha256),'SOURCE_SAVED_PAIR_PUBLIC_PIN_INVALID');
+            const occurrence=typeof source_saved_pair_occurrence==='string'
+              && /^([1-9][0-9]{0,15})-([1-9][0-9]{0,15})-[a-f0-9]{40}-([1-9][0-9]{0,15})$/.exec(source_saved_pair_occurrence);
+            assert(occurrence&&occurrence.slice(1).every(id=>Number.isSafeInteger(Number(id))),'SOURCE_SAVED_PAIR_OCCURRENCE_INVALID');
+          }else{
+            assert([source_saved_pair_pin,source_saved_pair_occurrence,source_saved_pair_public_manifest_sha256]
+              .every(value=>value===''),'SOURCE_SAVED_PAIR_LOCATOR_WITHOUT_SELECTION');
+          }
           const booleans=["current_family_cold_start","completed_private_runtime","quick_confirmation","checkpoint_only","weather_state_epoch_bootstrap","weather_state_epoch_checkpoint_reentry","native_sampling_identity_original_recovery","extended_provider_bootstrap","produce_weather_handoff","ravscore_integrated_first_cutover","ravscore_integrated_return"], strings=["completed_private_runtime_pin","completed_stage_source","quick_progress_source","weather_state_epoch_raw_cache_key","weather_state_epoch_archive_key","weather_state_epoch_archive_catalog_sha256","produce_weather_handoff_confirmation","ravscore_candidate_g_rollback_mode","ravscore_candidate_g_rollback_confirmation","ravscore_integrated_first_cutover_confirmation","ravscore_integrated_weather_handoff_run_id","ravscore_integrated_return_confirmation"];
           const known=new Set(['source_normal_producer',...booleans,...strings,'production_target_hour','force']);
           assert(Object.keys(request).every(key=>known.has(key)),'SOURCE_ROUTE_REQUEST_UNKNOWN');
           assert.equal(typeof request.source_normal_producer,'boolean','SOURCE_ROUTE_SELECTION_UNKNOWN');
-          if(request.source_normal_producer===true){
+          if(request.source_normal_producer===true||source_saved_pair){
             for(const key of booleans)assert.equal(request[key],false,'SOURCE_ROUTE_MIXED_BOOLEAN');
             for(const key of strings)assert.equal(request[key],'','SOURCE_ROUTE_MIXED_LOCATOR');
             assert.equal(typeof request.force,'boolean','SOURCE_ROUTE_FORCE_INVALID');
             assert(/^\d{4}-\d\d-\d\dT\d\d:00:00(?:\.000)?Z$/.test(request.production_target_hour),'SOURCE_ROUTE_TARGET_INVALID');
           }
-          fs.appendFileSync(process.env.GITHUB_OUTPUT,'route='+(request.source_normal_producer===true?'source':'legacy')+'\n');
+          fs.appendFileSync(process.env.GITHUB_OUTPUT,'route='+(request.source_normal_producer===true||source_saved_pair?'source':'legacy')+'\n');
+          fs.appendFileSync(process.env.GITHUB_OUTPUT,'source_saved_pair='+source_saved_pair+'\n');
           NODE
 
       - name: Verify the original ordinary-stage source before any hydration
@@ -451,9 +492,13 @@ jobs:
           import fs from 'node:fs';
           import assert from 'node:assert/strict';
           import { SOURCE_PRODUCER_AFTER597_PARENT } from './scripts/lib/source-producer-after597-parent.mjs';
-          const request=JSON.parse(process.env.SOURCE_REQUEST);
+          const {source_saved_pair,source_saved_pair_pin,source_saved_pair_occurrence,
+            source_saved_pair_public_manifest_sha256,...request}=JSON.parse(process.env.SOURCE_REQUEST);
+          const saved=process.env.SOURCE_SAVED_PAIR==='true';
+          assert.equal(saved,source_saved_pair===true,'SOURCE_SAVED_PAIR_PREFLIGHT_CHANGED');
           let route;
           if(SOURCE_PRODUCER_AFTER597_PARENT.binding===null&&SOURCE_PRODUCER_AFTER597_PARENT.output===null){
+            assert(!saved,'SOURCE_SAVED_PAIR_REQUIRES_INSTALLED_SOURCE');
             assert.equal(request.source_normal_producer,false,'SOURCE_ROUTE_UNISSUED');
             route='legacy';
           }else{
@@ -466,10 +511,12 @@ jobs:
             route=await selectInstalledSourceNormalRoute({request,operational,documentRequest});
           }
           assert(['legacy','source'].includes(route),'SOURCE_ROUTE_UNKNOWN');
+          if(saved)assert.equal(route,'source','SOURCE_SAVED_PAIR_REQUIRES_INSTALLED_SOURCE');
           fs.appendFileSync(process.env.GITHUB_OUTPUT,'source_normal_producer='+(route==='source'?'true':'false')+'\n');
           NODE
         env:
           SOURCE_REQUEST: ${{ toJSON(inputs) }}
+          SOURCE_SAVED_PAIR: ${{ steps.source-route.outputs.source_saved_pair }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
@@ -659,18 +706,30 @@ jobs:
           fi
 
       - name: Decide whether weather needs updating before private runtime download
-        if: steps.operational-model.outputs.source_normal_producer == 'false' && (true)
+        if: steps.operational-model.outputs.source_normal_producer == 'false' || (steps.operational-model.outputs.source_normal_producer == 'true' && steps.source-route.outputs.source_saved_pair == 'true')
         id: preflight
         shell: bash
         env:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true || steps.operational-action.outputs.action != 'integrated' }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.603 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.604 (${{ github.server_url }}/${{ github.repository }})"
           PREFLIGHT_CACHE_KEY: ${{ steps.weather-preflight-cache.outputs.cache-matched-key }}
           PUBLIC_MANIFEST_AVAILABLE: ${{ steps.public-preflight-manifest.outputs.available }}
+          SOURCE_SAVED_PAIR: ${{ steps.source-route.outputs.source_saved_pair }}
+          SOURCE_SAVED_PAIR_PIN: ${{ inputs.source_saved_pair_pin }}
+          SOURCE_SAVED_PAIR_OCCURRENCE: ${{ inputs.source_saved_pair_occurrence }}
+          SOURCE_SAVED_PAIR_PUBLIC_MANIFEST_SHA256: ${{ inputs.source_saved_pair_public_manifest_sha256 }}
         run: |
           set -uo pipefail
+          if test "$SOURCE_SAVED_PAIR" = true; then
+            node scripts/completed-private-runtime-admission.mjs source-request || exit 1
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+            echo "dmi_changed=false" >> "$GITHUB_OUTPUT"
+            echo "reason=source-saved-pair" >> "$GITHUB_OUTPUT"
+            echo "age_minutes=unknown" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           if test "${COMPLETED_PRIVATE_RUNTIME:-false}" = true; then
             echo "should_run=true" >> "$GITHUB_OUTPUT"
             echo "dmi_changed=false" >> "$GITHUB_OUTPUT"
@@ -746,11 +805,13 @@ jobs:
           INITIAL: ${{ steps.operational-model.outputs.initial_cutover_required }}
           LEGACY: ${{ steps.operational-model.outputs.legacy_source_required }}
           GRID: ${{ steps.current-grid-edge-route.outputs.required }}
+          SOURCE_SAVED_PAIR: ${{ steps.source-route.outputs.source_saved_pair }}
         run: |
           set -euo pipefail
           node --input-type=module <<'NODE'
           import assert from 'node:assert/strict';
           assert(['integrated','integrated-historical-maintenance'].includes(process.env.ACTION),'SOURCE_OPERATIONAL_ROUTE_UNINTEGRATED');
+          if(process.env.SOURCE_SAVED_PAIR==='true')assert.equal(process.env.ACTION,'integrated','SOURCE_SAVED_PAIR_CURRENT_ACTION_REQUIRED');
           assert.equal(process.env.MODEL,'integrated','SOURCE_OPERATIONAL_MODEL_UNINTEGRATED');
           assert.equal(process.env.BINDING,process.env.ACTION==='integrated'?'true':'false','SOURCE_BINDING_ACTION_MISMATCH');
           assert.equal(process.env.INITIAL,'false','SOURCE_INITIAL_CUTOVER_NOT_ORDINARY');
@@ -799,6 +860,55 @@ jobs:
       - name: Materialize the authoritative active coastal-part registry
         if: steps.operational-model.outputs.source_normal_producer == 'true' || (steps.preflight.outputs.should_run == 'true')
         run: node scripts/build-public-coastal-parts-v2.mjs
+
+      - name: Verify and locally restore the exact saved CURRENT SOURCE B and S
+        id: source-saved-pair-admission
+        if: steps.source-route.outputs.source_saved_pair == 'true' && steps.operational-model.outputs.source_normal_producer == 'true' && steps.source-route-profile.outcome == 'success' && steps.preflight.outputs.should_run == 'true'
+        shell: bash
+        env:
+          SOURCE_SAVED_PAIR: ${{ steps.source-route.outputs.source_saved_pair }}
+          SOURCE_SAVED_PAIR_PIN: ${{ inputs.source_saved_pair_pin }}
+          SOURCE_SAVED_PAIR_OCCURRENCE: ${{ inputs.source_saved_pair_occurrence }}
+          SOURCE_SAVED_PAIR_PUBLIC_MANIFEST_SHA256: ${{ inputs.source_saved_pair_public_manifest_sha256 }}
+          GITHUB_TOKEN: ${{ github.token }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          STAGED_PRIVATE_BUILD_MASTER_SECRET: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
+          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
+          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RAVRADAR_PRIVATE_RUNTIME_ROOT"
+          expected=.cache/private-production-runtime-expected.json
+          current="$RUNNER_TEMP/private-runtime-current-source.json"
+          restored="$RUNNER_TEMP/private-runtime-restored-source.json"
+          local_expected="$RUNNER_TEMP/private-runtime-second-restore-expected.json"
+          node scripts/private-production-runtime-workflow.mjs expected \
+            --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR" --output "$expected"
+          node scripts/protected-private-production-runtime.mjs --describe-current --output "$current"
+          node scripts/completed-private-runtime-admission.mjs source-restore
+          manifest="$RAVRADAR_PRIVATE_RUNTIME_BUNDLE/manifest.json"
+          restored_reference="$(jq -er '.productionReferenceAt' "$manifest")"
+          restored_dataset="$(jq -er '.datasetId' "$manifest")"
+          restored_digest="$(jq -er '.bundleContentSha256' "$manifest")"
+          node scripts/protected-private-production-runtime.mjs --describe-target \
+            --target-reference "$restored_reference" --dataset-id "$restored_dataset" \
+            --bundle-content-sha256 "$restored_digest" --output "$restored"
+          node scripts/private-runtime-second-restore-expectation.mjs \
+            --expected "$expected" --source-description "$restored" --bundle-manifest "$manifest" \
+            --output "$local_expected"
+          node scripts/private-production-runtime-bundle.mjs restore \
+            --private-root "$RAVRADAR_PRIVATE_RUNTIME_ROOT" --bundle "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE" \
+            --repository-root "$GITHUB_WORKSPACE" --expected "$local_expected" \
+            --output "$RAVRADAR_PRIVATE_RUNTIME_RESTORE"
+          node scripts/private-production-runtime-workflow.mjs install \
+            --restored "$RAVRADAR_PRIVATE_RUNTIME_RESTORE" --repository-root "$GITHUB_WORKSPACE"
+          node scripts/ravscore-operational-activation.mjs completed-runtime-source --source-producer \
+            --current-source "$RAVRADAR_OPERATIONAL_WORK/current.json" \
+            --output "$RUNNER_TEMP/completed-runtime-active-source.json"
+          node scripts/completed-private-runtime-admission.mjs source-restore-s
+          node scripts/completed-private-runtime-admission.mjs source-admit
 
       - name: Materialize the exact historical source objects for native identity continuation
         if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && (inputs.native_sampling_identity_original_recovery == true || inputs.weather_state_epoch_bootstrap == true))
@@ -2103,7 +2213,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.603 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.604 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Resolve one aggregate Candidate G wave-bootstrap target
         if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true')
@@ -2128,7 +2238,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.603 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.604 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Fetch exact public Candidate G source commit for first cutover attestation
         if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.operational-model.outputs.legacy_source_required == 'true' && (steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'candidate-legacy-maintenance'))
@@ -2281,16 +2391,16 @@ jobs:
           WEATHER_USER_AGENT: "RavRadar water-source registry (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Install DMI GRIB reader (eccodes)
-        if: steps.operational-model.outputs.source_normal_producer == 'true' || (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))
+        if: steps.source-route.outputs.source_saved_pair != 'true' && (steps.operational-model.outputs.source_normal_producer == 'true' || (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true')))
         run: python -m pip install --disable-pip-version-check -r requirements-dmi.txt
 
       - name: Smoke-test DMI GRIB reader API
-        if: steps.operational-model.outputs.source_normal_producer == 'true' || (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true'))
+        if: steps.source-route.outputs.source_saved_pair != 'true' && (steps.operational-model.outputs.source_normal_producer == 'true' || (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true')))
         run: python scripts/smoke-test-eccodes.py
 
       - name: Run the one explicit owned SOURCE ordinary route
         id: source-normal
-        if: steps.operational-model.outputs.source_normal_producer == 'true'
+        if: steps.operational-model.outputs.source_normal_producer == 'true' && steps.source-route.outputs.source_saved_pair != 'true'
         uses: ./.github/actions/save-owned-dmi-grib
         with:
           operation: source
@@ -2317,7 +2427,7 @@ jobs:
         run: echo "generation=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
 
       - name: Measure runner storage immediately before RAW cache restoration
-        if: steps.operational-model.outputs.source_normal_producer == 'true' || (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'))
+        if: steps.source-route.outputs.source_saved_pair != 'true' && (steps.operational-model.outputs.source_normal_producer == 'true' || (inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true')))
         run: node scripts/reclaim-runner-android-sdk.mjs --observe-raw
 
       - name: Restore bounded DMI GRIB download cache
@@ -2583,7 +2693,7 @@ jobs:
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
           CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
           CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
-          WEATHER_USER_AGENT: "RavRadar/4.0.603 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.604 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Require actual cold-start producer cessation before other consumers
@@ -3008,7 +3118,7 @@ jobs:
           RAVRADAR_COMPONENT_OPEN_METEO_BUDGET_MS: ${{ inputs.quick_confirmation && '60000' || '600000' }}
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
-          WEATHER_USER_AGENT: "RavRadar/4.0.603 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.604 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Report counts for each weather component after central cache
@@ -3123,7 +3233,7 @@ jobs:
         run: npm run build:current-provenance
 
       - name: Rebuild deterministic public weather runtime before validation and deploy
-        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true')
+        if: (steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true')) || (steps.source-route.outputs.source_saved_pair == 'true' && steps.source-saved-pair-admission.outcome == 'success')
         env:
           RAVRADAR_PLAIN_MAP_HOURS: 'true'
           RAVRADAR_PUBLIC_COLD_HOURS: 'true'
@@ -3155,7 +3265,7 @@ jobs:
         # hard safety boundaries below.
         continue-on-error: true
         id: ravscore-integrated-runtime-audit
-        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true')
+        if: (steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true')) || (steps.source-route.outputs.source_saved_pair == 'true' && steps.source-saved-pair-admission.outcome == 'success')
         shell: bash
         env:
           DMI_BULK_CACHE_PATH: .cache/dmi-candidate-progress.json
@@ -3383,10 +3493,57 @@ jobs:
           compression-level: 0
           if-no-files-found: error
 
+      - name: Verify the exact saved SOURCE target before validating the reconstructed public artifact
+        id: source-saved-pair-target
+        if: steps.source-route.outputs.source_saved_pair == 'true' && steps.source-saved-pair-admission.outcome == 'success'
+        shell: bash
+        env:
+          SOURCE_SAVED_PAIR: ${{ steps.source-route.outputs.source_saved_pair }}
+          SOURCE_SAVED_PAIR_PIN: ${{ inputs.source_saved_pair_pin }}
+          SOURCE_SAVED_PAIR_OCCURRENCE: ${{ inputs.source_saved_pair_occurrence }}
+          SOURCE_SAVED_PAIR_PUBLIC_MANIFEST_SHA256: ${{ inputs.source_saved_pair_public_manifest_sha256 }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
+          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
+          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
+        run: |
+          set -euo pipefail
+          test "${{ steps.ravscore-integrated-runtime-audit.outcome }}" = success
+          test "${{ steps.ravscore-integrated-runtime-audit.outputs.runtime_audit_outcome }}" = success
+          node scripts/ravscore-operational-activation.mjs validate-completed-runtime-target             --completed-source "$RUNNER_TEMP/completed-runtime-active-source.json"             --manifest data/live/manifest.json             --audit .geometry-v2-work/ravscore-integrated-public-runtime-audit.json             --source-head "$GITHUB_SHA"
+          node scripts/completed-private-runtime-admission.mjs source-target
+          node scripts/check-production-target-freshness.mjs \
+            --target "$RAVRADAR_PRODUCTION_TARGET_HOUR" --maximum-age-minutes 240 --github-output "$GITHUB_OUTPUT"
+
+      - name: Refuse loss of the exact published predecessor during saved SOURCE reconstruction
+        id: source-saved-pair-no-loss
+        if: steps.source-route.outputs.source_saved_pair == 'true' && steps.source-saved-pair-admission.outcome == 'success' && steps.source-saved-pair-target.outcome == 'success'
+        shell: bash
+        timeout-minutes: 8
+        env:
+          SOURCE_SAVED_PAIR_PUBLIC_MANIFEST_SHA256: ${{ inputs.source_saved_pair_public_manifest_sha256 }}
+        run: |
+          set -euo pipefail
+          baseline="$RUNNER_TEMP/source-saved-public-predecessor.json"
+          SOURCE_SAVED_PUBLIC_PREDECESSOR="$baseline" node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs/promises';
+          import { readAutomaticSourcePublicManifest } from './scripts/select-automatic-source-saved-weather.mjs';
+          import { sha256CanonicalJson } from './scripts/ravscore-operational-pages-recovery.mjs';
+          const manifest=await readAutomaticSourcePublicManifest(process.env);
+          assert.equal(sha256CanonicalJson(manifest),process.env.SOURCE_SAVED_PAIR_PUBLIC_MANIFEST_SHA256,
+            'SOURCE_SAVED_PUBLIC_PREDECESSOR_MOVED');
+          await fs.writeFile(process.env.SOURCE_SAVED_PUBLIC_PREDECESSOR,
+            JSON.stringify(manifest)+'\n',{flag:'wx',mode:0o600});
+          NODE
+          node scripts/check-public-weather-continuity.mjs --saved-current-public-predecessor "$baseline" \
+            --public-manifest-sha256 "$SOURCE_SAVED_PAIR_PUBLIC_MANIFEST_SHA256" --new-live data/live
+
       - name: Generate and strictly validate production reference zones
         continue-on-error: true
         id: production-reference-zones
-        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && steps.operational-action.outputs.action != 'integrated-cutover')
+        if: (steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && (steps.weather.outcome == 'success' || (inputs.completed_private_runtime == true && steps.completed-runtime-admission.outcome == 'success')) && steps.operational-action.outputs.action != 'integrated-cutover')) || (steps.source-route.outputs.source_saved_pair == 'true' && steps.source-saved-pair-admission.outcome == 'success' && steps.source-saved-pair-target.outcome == 'success' && steps.source-saved-pair-no-loss.outcome == 'success')
         run: node scripts/generate-state-reference-report-4.0.113.mjs --strict
 
       - name: Ensure exact historical Candidate G source is present for full validation
@@ -3408,7 +3565,7 @@ jobs:
       - name: Validate critical production artifact after fresh weather and current provenance
         continue-on-error: true
         id: full-validation
-        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover')
+        if: (steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover')) || (steps.source-route.outputs.source_saved_pair == 'true' && steps.source-saved-pair-admission.outcome == 'success' && steps.source-saved-pair-target.outcome == 'success' && steps.production-reference-zones.outcome == 'success')
         env:
           DMI_BULK_CACHE_PATH: .cache/dmi-candidate-progress.json
         run: >-
@@ -3419,7 +3576,7 @@ jobs:
       - name: Run release governance gate after refreshed data validation
         continue-on-error: true
         id: release-gate
-        if: steps.operational-model.outputs.source_normal_producer == 'false' && (always() && steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover')
+        if: (steps.operational-model.outputs.source_normal_producer == 'false' && (always() && steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover')) || (steps.source-route.outputs.source_saved_pair == 'true' && steps.source-saved-pair-admission.outcome == 'success' && steps.source-saved-pair-target.outcome == 'success' && steps.full-validation.outcome == 'success')
         run: npm run release:gate:production
 
       - name: Upload payload-free production validation reports
@@ -3487,7 +3644,7 @@ jobs:
           path: .cache/verified-weather-source-handoff-cache/attestation.json
 
       - name: Seal exact integrated public implementation closure
-        if: steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true')
+        if: (steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true')) || (steps.source-route.outputs.source_saved_pair == 'true' && steps.source-saved-pair-admission.outcome == 'success' && steps.source-saved-pair-target.outcome == 'success' && steps.full-validation.outcome == 'success' && steps.release-gate.outcome == 'success')
         id: integrated-implementation
         shell: bash
         run: |
@@ -3723,6 +3880,46 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
+      - name: Bind exact saved SOURCE checkpoint disposition to the reconstructed public target
+        id: source-saved-pair-disposition
+        if: steps.source-route.outputs.source_saved_pair == 'true' && steps.source-saved-pair-target.outcome == 'success' && steps.integrated-implementation.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import { sha256CanonicalJson } from './scripts/ravscore-operational-pages-recovery.mjs';
+          const read=file=>JSON.parse(fs.readFileSync(file,'utf8'));
+          const manifest=read('data/live/manifest.json');
+          const audit=read('.geometry-v2-work/ravscore-integrated-public-runtime-audit.json');
+          const pair=read(path.join(process.env.RAVRADAR_OPERATIONAL_WORK,'source-saved-pair.json'));
+          const sourceHead=process.env.GITHUB_SHA, runId=Number(process.env.GITHUB_RUN_ID);
+          assert(/^[a-f0-9]{40}$/.test(sourceHead) && Number.isSafeInteger(runId) && runId>0);
+          assert.equal(process.env.GITHUB_RUN_ATTEMPT,'1');
+          assert.equal(audit.status,'passed');
+          assert.equal(audit.datasetId,manifest.datasetId);
+          assert.equal(audit.productionReferenceAt,manifest.productionReferenceAt);
+          assert.equal(pair.datasetId,manifest.datasetId);
+          assert.equal(pair.productionReferenceAt,manifest.productionReferenceAt);
+          const {status:rollbackStatus,activationReady:rollbackActivationReady}=audit.rollback;
+          assert(rollbackStatus==='READY' && rollbackActivationReady===true
+            || rollbackStatus==='BUILDING_MEASURED_ONLY' && rollbackActivationReady===false);
+          const value={schemaVersion:'ravscore-continuation-checkpoint-disposition-v1',
+            disposition:'SAVED_PAIR_READBACK_VERIFIED',sourceHead,datasetId:manifest.datasetId,
+            runtimeAuditSha256:sha256CanonicalJson(audit),rollbackStatus,rollbackActivationReady,
+            checkpointRequired:true,privatePayloadIncluded:false,
+            savedPairReadback:{...pair,sourceHead,runId,runAttempt:1,
+              targetManifestSha256:sha256CanonicalJson(manifest)}};
+          value.bindingSha256=sha256CanonicalJson(value);
+          fs.writeFileSync('.geometry-v2-work/ravscore-continuation-checkpoint-disposition.json',
+            JSON.stringify(value)+'\n',{flag:'wx',mode:0o600});
+          const outputs={disposition:value.disposition,disposition_sha256:value.bindingSha256,
+            dataset_id:value.datasetId,runtime_audit_sha256:value.runtimeAuditSha256};
+          fs.appendFileSync(process.env.GITHUB_OUTPUT,Object.entries(outputs).map(([k,v])=>k+'='+v+'\n').join(''));
+          NODE
+
       - name: Select actual route observations without legacy fallback
         id: weather-route-result
         if: always()
@@ -3731,6 +3928,19 @@ jobs:
           SOURCE_SELECTED: ${{ steps.operational-model.outputs.source_normal_producer }}
           SOURCE_ACTION_OUTCOME: ${{ steps.source-normal.outcome }}
           SOURCE_OUTPUTS: ${{ toJSON(steps.source-normal.outputs) }}
+          SOURCE_SAVED_PAIR: ${{ steps.source-route.outputs.source_saved_pair }}
+          SAVED_ADMISSION: ${{ steps.source-saved-pair-admission.outcome }}
+          SAVED_NO_LOSS: ${{ steps.source-saved-pair-no-loss.outcome }}
+          SAVED_TARGET: ${{ steps.source-saved-pair-target.outcome }}
+          SAVED_DISPOSITION: ${{ steps.source-saved-pair-disposition.outcome }}
+          SAVED_DISPOSITION_KIND: ${{ steps.source-saved-pair-disposition.outputs.disposition }}
+          SAVED_DISPOSITION_DIGEST: ${{ steps.source-saved-pair-disposition.outputs.disposition_sha256 }}
+          SAVED_DATASET: ${{ steps.source-saved-pair-disposition.outputs.dataset_id }}
+          SAVED_AUDIT_DIGEST: ${{ steps.source-saved-pair-disposition.outputs.runtime_audit_sha256 }}
+          SAVED_CHECKPOINT_BUILD: ${{ steps.checkpoint-build.outcome }}
+          SAVED_CHECKPOINT_SAVE: ${{ steps.checkpoint-save.outcome }}
+          SAVED_CHECKPOINT_PUBLISH: ${{ steps.checkpoint-publish.outcome }}
+          SAVED_B_PUBLISH: ${{ steps.private-runtime-publish.outcome }}
           LEGACY_PREFLIGHT_SHOULD_RUN: ${{ steps.preflight.outputs.should_run }}
           LEGACY_OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}
           LEGACY_OPERATIONAL_MODEL: ${{ steps.operational-model.outputs.model }}
@@ -3760,7 +3970,37 @@ jobs:
           assert.equal(typeof selected,'boolean','SOURCE_ROUTE_SELECTION_UNKNOWN');
           const names=["preflight_should_run","operational_action","operational_model","operational_binding_current","central_version","initial_cutover_required","legacy_source_required","integrated_implementation_closure_sha256","active_deployment_id","weather_outcome","full_validation_outcome","release_gate_outcome","checkpoint_disposition","checkpoint_disposition_sha256","checkpoint_dataset_id","checkpoint_runtime_audit_sha256","checkpoint_build_outcome","checkpoint_save_outcome","checkpoint_publish_outcome"];
           const outputs={};
-          if(selected===false){
+          if(process.env.SOURCE_SAVED_PAIR==='true'){
+            assert.equal(selected,true,'SOURCE_SAVED_PAIR_NOT_SELECTED');
+            assert.equal(process.env.SOURCE_ACTION_OUTCOME,'skipped','SOURCE_SAVED_PAIR_FRESH_ACTION');
+            for(const k of ['ADMISSION','TARGET','NO_LOSS','DISPOSITION'])
+              assert.equal(process.env['SAVED_'+k],'success','SOURCE_SAVED_PAIR_REQUIRED_'+k);
+            for(const k of ['CHECKPOINT_BUILD','CHECKPOINT_SAVE','CHECKPOINT_PUBLISH','B_PUBLISH'])
+              assert.equal(process.env['SAVED_'+k],'skipped','SOURCE_SAVED_PAIR_UNEXPECTED_'+k);
+            for(const key of names)outputs[key]=process.env['LEGACY_'+key.toUpperCase()];
+            assert.equal(outputs.preflight_should_run,'true');
+            assert.equal(outputs.operational_action,'integrated');
+            assert.equal(outputs.operational_model,'integrated');
+            assert.equal(outputs.operational_binding_current,'true');
+            assert.equal(outputs.initial_cutover_required,'false');
+            assert.equal(outputs.legacy_source_required,'false');
+            assert.equal(outputs.weather_outcome,'skipped');
+            assert.equal(outputs.full_validation_outcome,'success');
+            assert.equal(outputs.release_gate_outcome,'success');
+            assert(/^[a-f0-9]{64}$/.test(outputs.integrated_implementation_closure_sha256));
+            assert.equal(process.env.SAVED_DISPOSITION_KIND,'SAVED_PAIR_READBACK_VERIFIED');
+            assert(/^[a-f0-9]{64}$/.test(process.env.SAVED_DISPOSITION_DIGEST));
+            assert(/^[a-f0-9]{64}$/.test(process.env.SAVED_AUDIT_DIGEST));
+            assert(/^[a-z0-9][a-z0-9._-]{0,127}$/.test(process.env.SAVED_DATASET));
+            outputs.source_result_kind='SAVED_PAIR';
+            outputs.checkpoint_disposition=process.env.SAVED_DISPOSITION_KIND;
+            outputs.checkpoint_disposition_sha256=process.env.SAVED_DISPOSITION_DIGEST;
+            outputs.checkpoint_dataset_id=process.env.SAVED_DATASET;
+            outputs.checkpoint_runtime_audit_sha256=process.env.SAVED_AUDIT_DIGEST;
+            outputs.checkpoint_build_outcome=process.env.SAVED_ADMISSION;
+            outputs.checkpoint_save_outcome=process.env.SAVED_CHECKPOINT_SAVE;
+            outputs.checkpoint_publish_outcome=process.env.SAVED_CHECKPOINT_PUBLISH;
+          }else if(selected===false){
             for(const key of names)outputs[key]=process.env['LEGACY_'+key.toUpperCase()];
             outputs.private_runtime_bundle=process.env.RAVRADAR_PRIVATE_RUNTIME_BUNDLE;
           }else{
@@ -3962,7 +4202,7 @@ jobs:
 
       - name: Build RavRadar support package
         continue-on-error: true
-        if: always()
+        if: always() && steps.source-route.outputs.source_saved_pair != 'true'
         run: |
           rm -rf _support
           mkdir -p _support/project _support/run-metadata
@@ -3986,7 +4226,7 @@ jobs:
 
       - name: Upload RavRadar support package
         continue-on-error: true
-        if: always()
+        if: always() && steps.source-route.outputs.source_saved_pair != 'true'
         uses: actions/upload-artifact@v7
         with:
           name: RavRadar-support-${{ github.run_number }}
@@ -4009,7 +4249,7 @@ jobs:
       - name: Sync protected admin data to Supabase
         continue-on-error: true
         id: protected-admin-sync
-        if: steps.weather-route-result.outputs.preflight_should_run == 'true' && steps.weather-route-result.outputs.operational_action != 'candidate-dry-run'
+        if: steps.source-route.outputs.source_saved_pair != 'true' && steps.weather-route-result.outputs.preflight_should_run == 'true' && steps.weather-route-result.outputs.operational_action != 'candidate-dry-run'
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -4725,7 +4965,7 @@ jobs:
 
       - name: Seal SOURCE through the unchanged normal operational handoff contract
         id: source-operational-handoff-seal
-        if: steps.operational-model.outputs.source_normal_producer == 'true' && steps.weather-route-result.outputs.source_result_kind == 'PREPARED_WEATHER'
+        if: steps.operational-model.outputs.source_normal_producer == 'true' && (steps.weather-route-result.outputs.source_result_kind == 'PREPARED_WEATHER' || steps.weather-route-result.outputs.source_result_kind == 'SAVED_PAIR')
         shell: bash
         run: |
           set -euo pipefail
@@ -4831,6 +5071,13 @@ jobs:
                 test "$checkpoint_publish_outcome" = "success"
               fi
               ;;
+            SAVED_PAIR_READBACK_VERIFIED)
+              test "${{ steps.weather-route-result.outputs.source_result_kind }}" = SAVED_PAIR
+              test "$checkpoint_build_outcome" = "success"
+              test "$checkpoint_save_outcome" = "skipped"
+              test "$checkpoint_publish_outcome" = "skipped"
+              test "$(jq -er '.checkpointRequired' "$disposition_path")" = true
+              ;;
             NOT_APPLICABLE_DURING_MEASURED_WARMUP)
               test "$(jq -er '.rollbackStatus' "$disposition_path")" = "BUILDING_MEASURED_ONLY"
               test "$(jq -er '.rollbackActivationReady' "$disposition_path")" = "false"
@@ -4844,7 +5091,7 @@ jobs:
               exit 1
               ;;
           esac
-          jq -n --arg action "${{ steps.operational-action.outputs.action }}" --arg sourceHead "$GITHUB_SHA" --arg centralVersion "${{ steps.operational-model.outputs.central_version }}" --arg legacySourceRequired "${{ steps.operational-model.outputs.legacy_source_required }}" --arg checkpointDisposition "$checkpoint_disposition" --arg checkpointDispositionSha256 "$checkpoint_disposition_sha256" --arg checkpointDatasetId "$checkpoint_dataset_id" --arg checkpointRuntimeAuditSha256 "$checkpoint_runtime_audit_sha256" --arg checkpointBuildOutcome "$checkpoint_build_outcome" --arg checkpointSaveOutcome "$checkpoint_save_outcome" --arg checkpointPublishOutcome "$checkpoint_publish_outcome" '{schemaVersion:"ravscore-operational-deploy-handoff-v2",action:$action,sourceHead:$sourceHead,centralVersion:($centralVersion|tonumber),legacySourceRequired:($legacySourceRequired == "true"),checkpointDisposition:$checkpointDisposition,checkpointDispositionSha256:$checkpointDispositionSha256,checkpointDatasetId:$checkpointDatasetId,checkpointRuntimeAuditSha256:$checkpointRuntimeAuditSha256,checkpointBuildOutcome:$checkpointBuildOutcome,checkpointSaveOutcome:$checkpointSaveOutcome,checkpointPublishOutcome:$checkpointPublishOutcome,privatePayloadIncluded:false}' > "$RAVRADAR_OPERATIONAL_HANDOFF/handoff.json"
+          jq -n --argjson savedPair '${{ steps.weather-route-result.outputs.source_result_kind == 'SAVED_PAIR' }}' --arg action "${{ steps.operational-action.outputs.action }}" --arg sourceHead "$GITHUB_SHA" --arg centralVersion "${{ steps.operational-model.outputs.central_version }}" --arg legacySourceRequired "${{ steps.operational-model.outputs.legacy_source_required }}" --arg checkpointDisposition "$checkpoint_disposition" --arg checkpointDispositionSha256 "$checkpoint_disposition_sha256" --arg checkpointDatasetId "$checkpoint_dataset_id" --arg checkpointRuntimeAuditSha256 "$checkpoint_runtime_audit_sha256" --arg checkpointBuildOutcome "$checkpoint_build_outcome" --arg checkpointSaveOutcome "$checkpoint_save_outcome" --arg checkpointPublishOutcome "$checkpoint_publish_outcome" '{schemaVersion:"ravscore-operational-deploy-handoff-v2",action:$action,sourceHead:$sourceHead,centralVersion:($centralVersion|tonumber),legacySourceRequired:($legacySourceRequired == "true"),checkpointDisposition:$checkpointDisposition,checkpointDispositionSha256:$checkpointDispositionSha256,checkpointDatasetId:$checkpointDatasetId,checkpointRuntimeAuditSha256:$checkpointRuntimeAuditSha256,checkpointBuildOutcome:$checkpointBuildOutcome,checkpointSaveOutcome:$checkpointSaveOutcome,checkpointPublishOutcome:$checkpointPublishOutcome,privatePayloadIncluded:false} + (if $savedPair then {savedWeatherContinuation:true,codeOnlyRepair:false} else {} end)' > "$RAVRADAR_OPERATIONAL_HANDOFF/handoff.json"
           if test "${{ steps.current-grid-edge-route.outputs.required }}" = true; then
             node --input-type=module <<'NODE'
           import assert from 'node:assert/strict';
@@ -4996,12 +5243,50 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
+      - name: Recheck exact saved SOURCE originals and public predecessor before Pages upload
+        id: source-saved-pair-upload-authority
+        if: steps.weather-route-result.outputs.source_result_kind == 'SAVED_PAIR'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SAVED_PAIR: ${{ steps.source-route.outputs.source_saved_pair }}
+          SOURCE_SAVED_PAIR_PIN: ${{ inputs.source_saved_pair_pin }}
+          SOURCE_SAVED_PAIR_OCCURRENCE: ${{ inputs.source_saved_pair_occurrence }}
+          SOURCE_SAVED_PAIR_PUBLIC_MANIFEST_SHA256: ${{ inputs.source_saved_pair_public_manifest_sha256 }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+          RAVADAR_REQUIRE_INTEGRATED_BINDING: true
+          IMPLEMENTATION_CLOSURE: ${{ steps.weather-route-result.outputs.integrated_implementation_closure_sha256 }}
+          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
+          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
+          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
+        run: |
+          set -euo pipefail
+          test "${{ steps.pages-build.outcome }}" = success
+          test "${{ steps.pages-privacy.outcome }}" = success
+          test "${{ steps.source-operational-handoff-seal.outcome }}" = success
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')" = "$GITHUB_SHA"
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$GITHUB_SHA"
+          cmp _site/data/live/manifest.json "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json"
+          node scripts/completed-private-runtime-admission.mjs source-before-publish
+          node scripts/integrated-cutover-readiness.mjs publish --source-producer \
+            --public-implementation-closure-sha256 "$IMPLEMENTATION_CLOSURE" \
+            --output "$RAVRADAR_OPERATIONAL_WORK/integrated-readiness.json"
+          test -s "$RAVRADAR_OPERATIONAL_WORK/integrated-readiness.json"
+          cp "$RAVRADAR_OPERATIONAL_WORK/integrated-readiness.json" "$RAVRADAR_OPERATIONAL_HANDOFF/integrated-readiness.json"
+
       - name: Decide whether this sealed artifact may deploy
         if: steps.weather-route-result.outputs.preflight_should_run == 'true'
         id: deployment-decision
         shell: bash
         run: |
           action="${{ steps.weather-route-result.outputs.operational_action }}"
+          if test "${{ steps.weather-route-result.outputs.source_result_kind }}" = SAVED_PAIR; then
+            test "${{ steps.source-saved-pair-upload-authority.outcome }}" = success
+          fi
           if [ "$action" = "candidate-dry-run" ]; then
             echo "should_deploy=false" >> "$GITHUB_OUTPUT"
             echo "deployment_model=candidate-g" >> "$GITHUB_OUTPUT"
@@ -5082,6 +5367,60 @@ jobs:
             echo "Operational deploy handoff contains forbidden private fields after artifact sealing." >&2
             exit 1
           fi
+
+      - name: Verify the saved SOURCE handoff against the actual Pages artifact seal
+        id: source-saved-pair-artifact-proof
+        if: steps.weather-route-result.outputs.source_result_kind == 'SAVED_PAIR'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import { assertSourceSavedPairPagesProof } from './scripts/lib/source-saved-pair-pages-proof.mjs';
+          const read=name=>JSON.parse(fs.readFileSync(path.join(process.env.RAVRADAR_OPERATIONAL_HANDOFF,name),'utf8'));
+          assertSourceSavedPairPagesProof({
+            handoff:read('handoff.json'),manifest:read('manifest.json'),
+            runtimeAudit:read('checkpoint-runtime-audit.json'),disposition:read('checkpoint-disposition.json'),
+            artifactSeal:read('pages-artifact-seal.json'),expectedIdentity:{
+              repository:process.env.GITHUB_REPOSITORY,sourceHead:process.env.GITHUB_SHA,
+              runId:Number(process.env.GITHUB_RUN_ID),runAttempt:Number(process.env.GITHUB_RUN_ATTEMPT),
+            },
+          });
+          NODE
+
+      - name: Bind the current protected SOURCE pair to this exact integrated Pages handoff
+        id: source-integrated-publication-pin
+        if: steps.operational-model.outputs.source_normal_producer == 'true' && steps.weather-route-result.outputs.operational_action == 'integrated' && steps.deployment-decision.outputs.should_deploy == 'true'
+        shell: bash
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs/promises';
+          import path from 'node:path';
+          import { readSourceCompletedPrivateRuntimePin } from './scripts/completed-private-runtime-admission.mjs';
+          import { sourceIntegratedPublicationPin } from './scripts/lib/source-integrated-publication-receipt.mjs';
+          const root=process.env.RAVRADAR_OPERATIONAL_HANDOFF;
+          const handoffPath=path.join(root,'handoff.json');
+          const read=async file=>JSON.parse(await fs.readFile(path.join(root,file),'utf8'));
+          const handoff=await read('handoff.json'), seal=await read('pages-artifact-seal.json');
+          assert(!Object.hasOwn(handoff,'sourceContinuationPin'));
+          assert.equal(seal.repository,process.env.GITHUB_REPOSITORY);
+          assert.equal(seal.headSha,process.env.GITHUB_SHA);
+          assert.equal(seal.runId,Number(process.env.GITHUB_RUN_ID));
+          assert.equal(seal.runAttempt,Number(process.env.GITHUB_RUN_ATTEMPT));
+          handoff.sourceContinuationPin=sourceIntegratedPublicationPin({
+            handoff,seal,manifest:await read('manifest.json'),disposition:await read('checkpoint-disposition.json'),
+            audit:await read('checkpoint-runtime-audit.json'),livePin:await readSourceCompletedPrivateRuntimePin(),
+          });
+          const temporary=handoffPath+'.source-pin';
+          await fs.writeFile(temporary,JSON.stringify(handoff)+'\n',{flag:'wx',mode:0o600});
+          await fs.rename(temporary,handoffPath);
+          NODE
 
       - name: Upload privacy-safe operational handoff evidence after Pages artifact seal
         id: handoff-upload

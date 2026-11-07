@@ -1001,8 +1001,12 @@ test('calendar588 computed source inventories retain exact finite edges and refu
     assert.deepEqual([...modelSourceRelativeModuleSpecifiers(source,file)],[...expected],file);
     const actualExpected=Object.hasOwn(reviewedConditions593ImportViews,file)?[...expected,'./bounded-json-writer.mjs']:[...expected];
     assert.deepEqual([...modelSourceRelativeModuleSpecifiers(actual,file)],actualExpected,file);
-    for(const changed of [actual+'\n',actual+"\nimport './unreviewed-source.mjs';\n"])
-      assert.throws(()=>modelSourceRelativeModuleSpecifiers(changed,file),/Whole reviewed model import source changed/,file);
+    const current=await fs.readFile(file,'utf8');
+    modelSourceRelativeModuleSpecifiers(current,file);
+    for(const reviewed of new Set([actual,current])){
+      for(const changed of [reviewed+'\n',reviewed+"\nimport './unreviewed-source.mjs';\n"])
+        assert.throws(()=>modelSourceRelativeModuleSpecifiers(changed,file),/Whole reviewed model import source changed/,file);
+    }
     assert.throws(()=>modelSourceRelativeModuleSpecifiers(source+'\n// unknown changed input\n',file),
       /Whole reviewed model import source changed/,file);
   }
@@ -1478,15 +1482,13 @@ import {withFrozen593CheckpointPostgresSource} from './run-frozen586-assistant-l
 import {FROZEN593_NATIVE_CODE,verifyFrozen593NativeCodeManifest,withInstalled593CodePredecessorSource} from './check-installed593-code-predecessor-source.mjs';
 const FROZEN594_NATIVE_EVIDENCE_HEAD='84051e2d700595837ebf80426410dcbef8e08704';
 async function historical593ImportReviewSource(file){
-  if([ASSISTANT_AFTER597_PHASE,SCALAR597_LATER_H0_PHASE,'assistant-installed593-origin591-successor'].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase)
-    &&Object.hasOwn(reviewedConditions593ImportViews,file)){
-    const {execFileSync}=await import('node:child_process');
-    return execFileSync('git',['cat-file','blob',FROZEN593_NATIVE_CODE.head+':'+file],{
-      encoding:'utf8',maxBuffer:1024*1024,timeout:30000,
-      env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0'},
-    });
-  }
-  return fs.readFile(file,'utf8');
+  // The historical inventory is anchored to the reviewed 593 tree. The
+  // current modules can have different, independently reviewed edges.
+  const {execFileSync}=await import('node:child_process');
+  return execFileSync('git',['cat-file','blob',FROZEN593_NATIVE_CODE.head+':'+file],{
+    encoding:'utf8',maxBuffer:1024*1024,timeout:30000,
+    env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0'},
+  });
 }
 function installed594Receipt(){return {schemaVersion:1,kind:INSTALLED593_ORIGINAL591_PHASE_KIND,phase:'INSTALLED593_ORIGINAL591_SUCCESSOR',
   sourcePhase:'assistant-installed593-origin591-successor',releaseVersion:requireInstalled593Original591Release(),

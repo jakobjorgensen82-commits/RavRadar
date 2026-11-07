@@ -8,8 +8,8 @@
     },
     {
       "path": ".github/actions/save-owned-dmi-grib/index.cjs",
-      "bytes": 86442,
-      "sha256": "20927e553ec6c5d62b6806700888cb9136364f01e731f647f87c122032d78983"
+      "bytes": 88279,
+      "sha256": "34838fa2ee9cf1b2cc6c5d1919958d5d7863b48ec6cc4b15d7a580f12aa53f7a"
     },
     {
       "path": ".github/actions/save-owned-dmi-grib/package-lock.json",
@@ -23,18 +23,28 @@
     },
     {
       "path": ".github/workflows/deploy-code-only-repair.yml",
-      "bytes": 244216,
-      "sha256": "d1a1a824e7e4ec118820815f73134810c9bc19a2e54811d808aad04cae4c0a6c"
+      "bytes": 252067,
+      "sha256": "bd5861018d8cae0821bdd7db88f9b80813f06513c371b51b7fbb326a80874779"
+    },
+    {
+      "path": ".github/workflows/reusable-operational-reentry.yml",
+      "bytes": 117498,
+      "sha256": "019d6b5dd43f911635261784e83743fd53a6a03f20f28b9aa69c5856dbb17d9d"
+    },
+    {
+      "path": ".github/workflows/reusable-pages-deploy.yml",
+      "bytes": 72981,
+      "sha256": "655d8d08bc86303bb91dfbf8037000d52a5c710582e84dfec1f2b6f6bcdc5284"
     },
     {
       "path": ".github/workflows/reusable-weather-build.yml",
-      "bytes": 352289,
-      "sha256": "9b11306a1272bcf59e836bb2abdffc15018120dc452529889fcf5097e3e5798d"
+      "bytes": 378140,
+      "sha256": "f5a82ec42da4e37dfc16dd7892e098382efb0848c357d791d51efb68234b3ad6"
     },
     {
       "path": ".github/workflows/run-current-weather-once.yml",
-      "bytes": 57845,
-      "sha256": "b64147bbdb304160834dd080249ab05043f0ab73bdb35f015c282821d4486b7f"
+      "bytes": 60814,
+      "sha256": "a0e4163981068540fa62f5d7015756286ef606f05c504294469d39c64029867e"
     },
     {
       "path": ".github/workflows/update-and-deploy.yml",
@@ -44,12 +54,12 @@
     {
       "path": "app.js",
       "bytes": 61191,
-      "sha256": "334ad6c236344baef23d1d81aa510100eb0d61d77347b70e6690b34211c8b8fa"
+      "sha256": "f63c91ae4068c09de49f04305fa1f72cb4068bce8ab519d243e0668ca4dd04da"
     },
     {
       "path": "bootstrap.js",
       "bytes": 1576,
-      "sha256": "040c7d082f7eee77cf755e0832cad0037986c7fb691a486a2e88478d42d6ffb2"
+      "sha256": "4e8a3a57000443d5ef75f445f0f2b859022228a28be7d7f3102b7e0f41a1bb39"
     },
     {
       "path": "config.js",
@@ -69,12 +79,12 @@
     {
       "path": "js/core/best-time-policy.js",
       "bytes": 6392,
-      "sha256": "dbb312870c875c0feeaa297ebe2b261fa6c433bdba1931c8cf20efc4d73fc9f9"
+      "sha256": "8206ee80eada9851e57349700bfb9df6b6b25ced3451bf18a3ff69bc3262dba0"
     },
     {
       "path": "js/core/best-time-selector.js",
       "bytes": 2611,
-      "sha256": "be1980fa3cd118fe0425bc512fae1635191ac848067a08f7f80346155abbe35d"
+      "sha256": "bcdfba81d93deffa458761800b5f5bec74a0e77404c6ebc1393fa7ac719ec417"
     },
     {
       "path": "js/core/coastal-process-model.js",
@@ -89,7 +99,7 @@
     {
       "path": "js/core/current-direction-audit.js",
       "bytes": 1729,
-      "sha256": "e2e164113d1fa2f96255a2264d075901b5c7623a43f3f129f002170539ad371d"
+      "sha256": "53d95fde0d8848bf8505821b1ba6a3c0e1bb7b074ec6802a54d3674721a1a431"
     },
     {
       "path": "js/core/debug-trace.js",
@@ -109,7 +119,7 @@
     {
       "path": "js/core/local-zone-score.js",
       "bytes": 19425,
-      "sha256": "060466d8d33913991b22dcfa483dcff55ff37dc58f4f866abd554b493dfc2036"
+      "sha256": "d0fa0ec01e24f9648aad201dd2bb9524c77816a08fff190f877ddda821068551"
     },
     {
       "path": "js/core/phase-d-process-candidate.js",
@@ -119,7 +129,7 @@
     {
       "path": "js/core/phase-d-wave-process-candidate.js",
       "bytes": 5223,
-      "sha256": "8a4200bd167d8a47af60c1c9feccc7bd234cb168c36dbf36cbb0ae411117a561"
+      "sha256": "62d6e46805e900fbc1fcdca99fa7fcb359cb69e67a33785739656f46b7a526bf"
     },
     {
       "path": "js/core/public-delivery-contract.js",
@@ -139,7 +149,7 @@
     {
       "path": "js/core/ravscore-candidate-g.js",
       "bytes": 25702,
-      "sha256": "a4bcd93580dcdd03fe98cf6e4dce2406945f6d7ba70b0b9022a58ef940d1661c"
+      "sha256": "392a6e675177b57b6f94f53251633bd631accc36c2fa135d3145ae90fe770873"
     },
     {
       "path": "js/core/ravscore-current-supply-memory.js",
@@ -159,7 +169,7 @@
     {
       "path": "js/core/ravscore-integrated-explanation-presenter.js",
       "bytes": 37066,
-      "sha256": "d396e69b8abda091f071516512b90995601852336ddbda041796dd866f64dcf6"
+      "sha256": "7d0d3b641f95b275cd632bb7e1ec6ec6e91689be04489a26f2ed87cf4ed5ea7c"
     },
     {
       "path": "js/core/ravscore-integrated-state-pipeline.js",
@@ -234,12 +244,12 @@
     {
       "path": "js/core/score-engine.js",
       "bytes": 19093,
-      "sha256": "a3ad7fa44993af9a600994cced21c25fbeb1c51d9337baaf1cdc876c04057f1f"
+      "sha256": "78960a30051c8caa75bfdfa80a061eca639ffebad03495b8b7153a2b204653ff"
     },
     {
       "path": "js/core/score-presentation.js",
       "bytes": 746,
-      "sha256": "3ca54183c67b5c029ef272e762fb60e55e80fcebfdb14f3f983ee574d561d23d"
+      "sha256": "6e5aa990f4874bc6b4ccb702a33db934346bfb59a9f43cd479bdd47c2ce01c11"
     },
     {
       "path": "js/core/water-station-routing.js",
@@ -269,7 +279,7 @@
     {
       "path": "js/map/map-view.js",
       "bytes": 27242,
-      "sha256": "109a10b81bae959038cd97ba1245bd1b37ea92ab7f5727db47049ecd6d4e1be7"
+      "sha256": "4f74f385b1b7ddcfdce161580016bb3d7ae123a52ce651daf744e62932ff7dbc"
     },
     {
       "path": "js/map/public-coast-projection.js",
@@ -279,32 +289,32 @@
     {
       "path": "js/services/account-trip-report-contract.js",
       "bytes": 5067,
-      "sha256": "8b3c91a409e21550866061b890a56d000838727736e299fc4b6a48cb7ba72237"
+      "sha256": "b061b5baf497c43a953cd7122d7ff962d449e5679a4636003a872ac313af2fa3"
     },
     {
       "path": "js/services/admin-account-categories.js",
       "bytes": 2625,
-      "sha256": "9d2f11563ab4a3393e52775acf77cf66295dca0e773e958c7472d3325bdb35f4"
+      "sha256": "040fe8a681b80d8c2510270a6f2efb91b8da3fb45937acab06027000519038e4"
     },
     {
       "path": "js/services/admin-document-store.js",
       "bytes": 5303,
-      "sha256": "f7257b8774fbcd6636ece6849a9cb12fc8364acc19c00a5f675d6812a7c83d02"
+      "sha256": "987deb7b7bf1801813b0a205137024777c30383a929e45c7597384b83f3eeb4a"
     },
     {
       "path": "js/services/admin-trip-count.js",
       "bytes": 1874,
-      "sha256": "3126df22ca048abc11f5e7c0cf8b4b64df482f5f8a09976283c7ec0abc1fe6d3"
+      "sha256": "71b566d364a71690243fa1a1b7e73fd8d3f01f8387c4a00ac48ee9a45fcf7b82"
     },
     {
       "path": "js/services/app-update-flow.js",
       "bytes": 5380,
-      "sha256": "7441eb70ec296f2c50c5ea27424193c4d0db6578663a3af92fad3ea7a7453cf4"
+      "sha256": "d3f935e0008e5ce8a136898ac03a11d44b01057a165c6c9e2885ae57668005d8"
     },
     {
       "path": "js/services/auth-service.js",
       "bytes": 17277,
-      "sha256": "198a0049b1453ffb8df8ebe8eef2978fb6d726710c29a9a150177eaa1b7346ee"
+      "sha256": "ab516d7cd51674558802bd720cdc674c03bf333ca13f00d08a41d0f22df2ff5a"
     },
     {
       "path": "js/services/calibration-eligibility.js",
@@ -314,7 +324,7 @@
     {
       "path": "js/services/data-service.js",
       "bytes": 80875,
-      "sha256": "9fb1a3dccfe8b3ca3aca99573d22e5321a6b7e92b5b7412aa88e526c051c902d"
+      "sha256": "36653e35ec64e31a8dedce48c88e422e44f4a745d132bc0dad42d02b5f26d34a"
     },
     {
       "path": "js/services/forecast-share-contract.js",
@@ -324,17 +334,17 @@
     {
       "path": "js/services/forecast-share-projection.js",
       "bytes": 13307,
-      "sha256": "13a1af2f921fc41732c1addf2d98edad07805bfdca8fbf2de4629c7ab6f5b631"
+      "sha256": "baf6636c121a40710922112efa1131dab4c33f855870787883244fb2486ab34b"
     },
     {
       "path": "js/services/handbook-review-store.js",
       "bytes": 8610,
-      "sha256": "a967a9a187137c8579db740bfc29048110c3eab0db211971438049b80cd826aa"
+      "sha256": "d110343ae366a20006baa54df8114d43af46529048bc53fa6cc9ff4fc94c6abd"
     },
     {
       "path": "js/services/historical-analysis.js",
       "bytes": 2020,
-      "sha256": "d799224b6b6a54b2a91b0ba14075918b7a9d238fc3440a057eba8349d500d0d5"
+      "sha256": "7a9e8eb58d13933a5615e71e5f41937d71473be0323ac9869463f5d143d6db75"
     },
     {
       "path": "js/services/html-sanitizer.js",
@@ -344,17 +354,17 @@
     {
       "path": "js/services/learning-analysis.js",
       "bytes": 3842,
-      "sha256": "dd08c91db0e3787dabfd49a7a008c909579ff95cb4b4de0f762269fb2bc826a7"
+      "sha256": "7181d58fb8a2659952d874e339e94f68ab8e99421fa00062f2d233c8ce7d5a74"
     },
     {
       "path": "js/services/map-forecast-view.js",
       "bytes": 4672,
-      "sha256": "55cd27661fd55ce1e41c420e4847b780a001a196a9e61b27dc1981afa51a3002"
+      "sha256": "8fd2e0a4ae6e006ebc880d7ee0f1c074f8699300a1fffe535030e9a8d98095b5"
     },
     {
       "path": "js/services/observation-service.js",
       "bytes": 32141,
-      "sha256": "c0bb76ce5c82d2a54b628eb549204a97f56ee0b44a72c1a25329497f0c9ef5a0"
+      "sha256": "0c32bbe5652c8e157a700f1f11c8add0e0eee56eb8b496e8829c4dfb25fccd36"
     },
     {
       "path": "js/services/own-trip-export.js",
@@ -364,22 +374,22 @@
     {
       "path": "js/services/permissions-service.js",
       "bytes": 6716,
-      "sha256": "c6ec3b23618b3e892f51f07714178bf7b0352f5d789d1dbe6c731830aadf0d17"
+      "sha256": "656df514e5ba72ae72a1fa0a04b8fea58790b438bdd37e1119f65e6c8a1570e0"
     },
     {
       "path": "js/services/persistence-test-service.js",
       "bytes": 2929,
-      "sha256": "d38ecb5dece0185319fe1102003c86b0a5702bbe98d46fae6e2c0fcb8fd622c2"
+      "sha256": "28681136493970b53c171b2fb7769f373718f8192b319f0745802f6b23f7b158"
     },
     {
       "path": "js/services/plain-map-hour.js",
       "bytes": 9834,
-      "sha256": "2cc8e34b0e628374539b229364eba40053c5e1b2bd29591252b9db665edf361a"
+      "sha256": "f3f887715229d452714ace8539f1b2fc01dd30942bcf68a2ef690fc897ed5bff"
     },
     {
       "path": "js/services/private-trip-study.js",
       "bytes": 5908,
-      "sha256": "5ff39f2dec6b7eafc3a8c45445a29f351c5d8df42519681f0be8d4483acbf4c5"
+      "sha256": "733c244408191a89e88a35d0ac8cd84fe286825257d19f6eaa8e349c6d7d2cf8"
     },
     {
       "path": "js/services/protected-runtime-envelope.js",
@@ -389,7 +399,7 @@
     {
       "path": "js/services/public-delivery-transport-binding.js",
       "bytes": 2762,
-      "sha256": "0ec8f139833cb7ac76c2cc906dc9dba806112b003604f9cb874cae9a9c4a0391"
+      "sha256": "449c93f2fd64722e65f093baf1eae7e88b3ff9aa7bdf185c3ca2f6faed4926ac"
     },
     {
       "path": "js/services/public-json-transport.js",
@@ -399,12 +409,12 @@
     {
       "path": "js/services/rav-assistant.js",
       "bytes": 91404,
-      "sha256": "6292c3990df46768e61d38d6869ac06b8e497e0697b48a595379b98d3010fc66"
+      "sha256": "3a988bc24123bb147a285dd62a66c81085e0fc5da369e84467a3613c204b13c2"
     },
     {
       "path": "js/services/site-function-test-service.js",
       "bytes": 27715,
-      "sha256": "536424770c9a000a3517f3546e7e7543e56babdf1b3cffc338967251b4ac573b"
+      "sha256": "055a329a27496fa76ff0285021d49bfef635b9fa2bce8de095852bc452d45e3f"
     },
     {
       "path": "js/services/storage-safety.js",
@@ -414,32 +424,32 @@
     {
       "path": "js/services/trip-evidence-contract.js",
       "bytes": 28009,
-      "sha256": "6c01118409d3c79b5a6b96cc5962a7a90f848760ed2e1a1be3e88ce21151d0db"
+      "sha256": "5cb02061c64249f4a4161aa3a3bcb1e4c1dd56e649c22087f4e70ccf2582522c"
     },
     {
       "path": "js/services/trip-evidence-controller.js",
       "bytes": 2929,
-      "sha256": "f6c01364d8b82fb46fe219bb354123659b6b7f5a0664b53404970ed11525d0c6"
+      "sha256": "d65b24fab823b6772487e5e8c8f99b87c3c9e73350a3a8c32d15c937e8db7967"
     },
     {
       "path": "js/services/trip-evidence-public-adapter.js",
       "bytes": 11414,
-      "sha256": "87b6cbc534b19353c73823508c9a94e6250ef085c5f176322c6c08e1e59ad2ca"
+      "sha256": "e6f2fb5986d36222a83dce4721f31222bfe00107532118473c463bc8e45f3421"
     },
     {
       "path": "js/services/trip-evidence-runtime.js",
       "bytes": 3793,
-      "sha256": "e8dd994be2e9a6853dfdb182863859053a1155b16e6dba8fb3ca1802ef6b3b1f"
+      "sha256": "c759b1fac05ee40983ffde09183ad89d6ed84751d882dfee8155deb0fac05937"
     },
     {
       "path": "js/services/trip-evidence-store.js",
       "bytes": 5829,
-      "sha256": "3c426f4d1e68810e49e6bf034306f0f624f65fd1d00e3d347894c75d14c5f1e2"
+      "sha256": "eb7eb38d660e32354c30c32d3f1b36ff61c435d8f3364b8d391b014965466f25"
     },
     {
       "path": "js/services/trip-evidence-upload.js",
       "bytes": 3052,
-      "sha256": "53eedebebc1416e995d426c786f735ab340799ab7833d1e7db0c0c55a8409f67"
+      "sha256": "113dd05af9eeef991677bb22baa9a01f841998a4a0a35de9dac159a3ef8ad0b9"
     },
     {
       "path": "js/services/vendor/fflate-0.8.2/browser.js",
@@ -449,12 +459,12 @@
     {
       "path": "js/services/visit-counter.js",
       "bytes": 1505,
-      "sha256": "a4e4432c6b6911930cbe7835de0bbedcc972d254ac81839c4240c888eb5ebc6f"
+      "sha256": "717923793a8006534a1f80bab65d259de185edf7ec4daee2f8b311e60f25fce9"
     },
     {
       "path": "js/services/visitor-report-service.js",
       "bytes": 771,
-      "sha256": "aa145cc3c830cd7afe4e81947b4aeca0c4f5a0ea44dcb48a30e75c8e2214332d"
+      "sha256": "c49c0f1f91bce1477eec330bbdb7e620e277494aa0e3f564c2d58e0a37f943d2"
     },
     {
       "path": "js/services/zone-hour-preview.js",
@@ -469,22 +479,22 @@
     {
       "path": "js/ui/account-panel.js",
       "bytes": 17433,
-      "sha256": "57d97362073a955d1be3724c872531fd64e7a1f18010b79a123eeec6ff09eb25"
+      "sha256": "b233df009aef20ff5ad0e167256fafa1932019bb66332d99e56d9e1c09c7900e"
     },
     {
       "path": "js/ui/admin-active-ravscore.js",
       "bytes": 11230,
-      "sha256": "c77d38e47e9c97798c7e6a149c7aad04f15a0e99e2e0a80131bf8d1240b539da"
+      "sha256": "b3689b37d50c04b00dfe40d3c0dd8ec2c7a7d2ab7134255e9a7db30ae488f028"
     },
     {
       "path": "js/ui/admin-coastline-editor.js",
       "bytes": 29443,
-      "sha256": "bf4e0f4710ee52217593e2683b3e8cc0b33ee5c7b372e6bac1fc1b9f5c7cf3d5"
+      "sha256": "d2976329987079b948b8796f163d776e33592ccb8d7c59e08554cb4aa1721ff5"
     },
     {
       "path": "js/ui/admin-dashboard.js",
       "bytes": 150490,
-      "sha256": "d9f7f99a6205ba673026526ea502626acddce726d74cfc606047112a2d4c6a0e"
+      "sha256": "47a193f3508c5d6ebcf5d778a2599a5f478571efa6a4bc632e919b91ff73e1d2"
     },
     {
       "path": "js/ui/admin-direction-editor.js",
@@ -494,57 +504,57 @@
     {
       "path": "js/ui/admin-private-trip-study.js",
       "bytes": 7427,
-      "sha256": "b97b2d9f93072de33dcf1aa7593651c13abce01bc922aa6a908cd3f02e4ca12f"
+      "sha256": "88e24d2de54f6a63a6fcfe99900e2391ab75c01cae0faec3cf488dcaca3fe834"
     },
     {
       "path": "js/ui/developer-panel.js",
       "bytes": 4148,
-      "sha256": "0b05096a5aeb940cc9dc259c7eafe93d913ad0da415039495f92fb72651ff95b"
+      "sha256": "4ab277e33cf49e2ae314f9b29f6ba4600d0745b9183acfbed40f086c182dd6ef"
     },
     {
       "path": "js/ui/forecast-share.js",
       "bytes": 6245,
-      "sha256": "da46f0e09d1ed5ae3c54ffd80a95033e40552ac441a7c3e5a76ac29df20e29be"
+      "sha256": "9446317854c50d84439612f8c3b1621671d3761a3b439a12d7497017ded23a28"
     },
     {
       "path": "js/ui/info-panel.js",
       "bytes": 32933,
-      "sha256": "b134b26f4cd79b3827685f36de65a92cc6b42c2653a54096d58487f6ced7e852"
+      "sha256": "41b85daff077f20128091fd12361817afd925eec90c4b523cbbdeff275a68a3b"
     },
     {
       "path": "js/ui/map-tab-copy.js",
       "bytes": 417,
-      "sha256": "5334971c6e499c4f545cc8557c790a223b3b29e25b5971c7a4c95c4f8dca3fdd"
+      "sha256": "d954e6abbe7b020defc9fa22c5024236cf0a8abe148d8a1f42ced91a6552d8ac"
     },
     {
       "path": "js/ui/map-timeline-copy.js",
       "bytes": 2887,
-      "sha256": "78cfcabc4a0953799d5cfa4b425fb94ad10354afd0cbd7a9438fda2853a8b8ab"
+      "sha256": "3fc44b29d22712a907b2f956ac817f83a11e0630ab9f298cefae682a7511b6b6"
     },
     {
       "path": "js/ui/map-timeline.js",
       "bytes": 7504,
-      "sha256": "d1f1fb81ba1b083a7e1f2a27fe271c007829ea3cf61f3e3ae77f203aa0bf04b5"
+      "sha256": "bd2f12d7c60ff6db8402aa948ca2648fe8846b298c56575e6e80d43e0564e976"
     },
     {
       "path": "js/ui/ranking-copy.js",
       "bytes": 1657,
-      "sha256": "09b7a2980150f2c855443a438cd3fdb5307f8a1078250768aaf761d8b6995f37"
+      "sha256": "cf301ecfb92ea2b5bc34b0fa5c9ceee1ad084005686144d09ba6c2af7209fe3a"
     },
     {
       "path": "js/ui/score-prognosis-copy.js",
       "bytes": 18496,
-      "sha256": "9ffbb7b8b05ec3e9735f613b9757ece857c8f127ad7db032de53c8fed7ee8c3d"
+      "sha256": "580432d6b15b1699edb8415689508c942ff9b5e8a74f4ee489763d8dd84cfb92"
     },
     {
       "path": "js/ui/site-search-copy.js",
       "bytes": 1729,
-      "sha256": "de59d18d9371f49e5b6ff9fc04d0c09625cd56a40d457eb90a6c326aa0aa06cd"
+      "sha256": "9f702d5c75d075d306d1eedc044a1c2a08b3d41935caf263374df44b6632676d"
     },
     {
       "path": "js/ui/trip-evidence-dialog.js",
       "bytes": 19872,
-      "sha256": "c7e6a5eb6c3fef072eac97f46bb1d0a7b960c3dfecc8276a35ae2b90f5375828"
+      "sha256": "228d28c6ebd80960eea828ed8ef7c3cbbe571a5a43d67b32b5de20c5029944b5"
     },
     {
       "path": "knowledge/rav-assistant-local-v2.js",
@@ -574,7 +584,7 @@
     {
       "path": "package.json",
       "bytes": 51360,
-      "sha256": "8893a055e425e0c1a3a16db685eca4931c4ec9b39ad8c1c557c1ddd3379c5543"
+      "sha256": "303ff8bbbb099bd555b506892cd90110205dd7555e22d9a7c57b0f6389738a1b"
     },
     {
       "path": "scripts/account-statistics-assistant-prewrite.mjs",
@@ -585,6 +595,11 @@
       "path": "scripts/account-statistics-assistant-runtime-transition.mjs",
       "bytes": 26131,
       "sha256": "f3101b3d5d6c7df7dd42d560d2a9d99c6dbee6cc6904397c95c6256f8144d8fd"
+    },
+    {
+      "path": "scripts/acquire-code-only-public-snapshot.mjs",
+      "bytes": 28204,
+      "sha256": "eb3cf5dcbe98a664a9bccdff947472143e7fc3701ef508d6fec9f01b3773cbf3"
     },
     {
       "path": "scripts/apply-central-zone-reviews.py",
@@ -723,13 +738,18 @@
     },
     {
       "path": "scripts/check-public-weather-continuity.mjs",
-      "bytes": 9238,
-      "sha256": "5a8738078a6a89daf89022a0cd80aae161b1357610d93d8436b1d3f565996488"
+      "bytes": 17013,
+      "sha256": "e1e1b29cbd2117ba3e24a947d76cc42f5f24801805785f36819252101cec70ec"
     },
     {
       "path": "scripts/check-weather-update.py",
       "bytes": 8046,
       "sha256": "4c5360244e3aca2a857962bbb7fe874701c6639d3b8f15323cd01671c87240bf"
+    },
+    {
+      "path": "scripts/completed-private-runtime-admission.mjs",
+      "bytes": 21992,
+      "sha256": "8b2449c32bf96887de74c12a7ca5ac30a139869f5d6443d15cd3eaa7cd153411"
     },
     {
       "path": "scripts/current-family-cold-start.mjs",
@@ -1148,8 +1168,8 @@
     },
     {
       "path": "scripts/lib/model-source-imports.mjs",
-      "bytes": 209336,
-      "sha256": "931ad0db13180be99326ec9a5185d5161c788a2b75b12b12cda9d813564128a6"
+      "bytes": 210445,
+      "sha256": "68208330e8734d2b9450e8c776be1cdd2eef7bbec22c66aada9f122b337ab292"
     },
     {
       "path": "scripts/lib/native-identity-staging-working-copy.mjs",
@@ -1432,6 +1452,26 @@
       "sha256": "c2861b4e141d797d34fe7bbf1868b57c1518c11ae66584f5f6bb459fa4a28f55"
     },
     {
+      "path": "scripts/lib/source-completed-public-pages-occurrence.mjs",
+      "bytes": 10815,
+      "sha256": "f0cbfbb4f40c84818264a3c771b89fcfd6e2c20c220ffa8819ec8920c415971f"
+    },
+    {
+      "path": "scripts/lib/source-completed-stage-artifact-identity.mjs",
+      "bytes": 1406,
+      "sha256": "9d4ca81b0c430cbca02f1b4451ef132d5a517007689bc464687f2b05eb0d80d8"
+    },
+    {
+      "path": "scripts/lib/source-completed-stage-occurrence.mjs",
+      "bytes": 12181,
+      "sha256": "f9a3f34612e29ed05dbf467991ec6f5c31ae46130b5acf740cb6c7986fc6f2da"
+    },
+    {
+      "path": "scripts/lib/source-integrated-publication-receipt.mjs",
+      "bytes": 4635,
+      "sha256": "e6565626403336900f91d4dcd9841b184323464653acb0420618e86d4d01dc0f"
+    },
+    {
       "path": "scripts/lib/source-producer-after597-derived-metadata.mjs",
       "bytes": 3485,
       "sha256": "8a22a644437a0105345e440ce6c73de5c6d8750b927177841c857806b0a3cf0f"
@@ -1443,8 +1483,8 @@
     },
     {
       "path": "scripts/lib/source-producer-after597-runtime-family.mjs",
-      "bytes": 38858,
-      "sha256": "20d24d6892a19a42f7eab1fe8957f8555a6b79d3eb3366e237378b8b938a5284"
+      "bytes": 39465,
+      "sha256": "3db89f8a26bdb4329eb50f78afd20e0774780366a87c6e7040bbae4b7ef50140"
     },
     {
       "path": "scripts/lib/source-producer-binding.generated.json",
@@ -1460,6 +1500,11 @@
       "path": "scripts/lib/source-producer-successor-source.mjs",
       "bytes": 29453,
       "sha256": "746dddb8457bac994fbe24046dfb0ba2d60949bb72c15362502ca6784dbabf50"
+    },
+    {
+      "path": "scripts/lib/source-saved-pair-pages-proof.mjs",
+      "bytes": 6588,
+      "sha256": "69624a1742143b729bc03ccba74e7f82b081cfe06658133cf8f0bc603074cd09"
     },
     {
       "path": "scripts/lib/source-tree-content.mjs",
@@ -1508,8 +1553,8 @@
     },
     {
       "path": "scripts/lib/verified-weather-deployment-terminal.mjs",
-      "bytes": 4626,
-      "sha256": "e2c2d3495b949233efdf4381bfe9fed2bad36d85ad6e5ee96afc21c4af4ae68b"
+      "bytes": 5151,
+      "sha256": "5efdcb9b6f40c89812437cf13f777a209f6cfd6f41a5bae1071b9d7cfd858cf4"
     },
     {
       "path": "scripts/lib/water-level-continuity.mjs",
@@ -1659,7 +1704,7 @@
     {
       "path": "scripts/private-production-runtime-workflow.mjs",
       "bytes": 81418,
-      "sha256": "b543e5f66639b54fb8895c7495e2c92481a7f0266211e0414fc60796f33d88ee"
+      "sha256": "1fdce1f320c3f6711d0a6364479ba111c9605585bd04b63463977058069ddcf3"
     },
     {
       "path": "scripts/private-runtime-second-restore-expectation.mjs",
@@ -1683,13 +1728,13 @@
     },
     {
       "path": "scripts/protected-operational-reentry-evidence.mjs",
-      "bytes": 84930,
-      "sha256": "f048ec4d664d547cef0fbf682187596f2a8e063dd2d513616447b3b477ad5c2b"
+      "bytes": 86379,
+      "sha256": "ff43c523dd379a9ab02d247fcce81e9597a385bbee1cdb80df7ced142702d3bf"
     },
     {
       "path": "scripts/protected-private-production-runtime.mjs",
-      "bytes": 115683,
-      "sha256": "07be758050a350c687cfaba4bbe7721176eda973220abbcce6bbb2596220ab58"
+      "bytes": 117296,
+      "sha256": "7dade6f0b6cb2256b70818646d6965965ea28177cabe0a25021a471eb199d767"
     },
     {
       "path": "scripts/protected-ravscore-continuation-checkpoint.mjs",
@@ -1723,13 +1768,13 @@
     },
     {
       "path": "scripts/reconcile-private-runtime-checkpoint.mjs",
-      "bytes": 53273,
-      "sha256": "b56607362cd522b569fcf64a8739d254cd64aa36afddd186bc3c72e4a163b2b5"
+      "bytes": 59135,
+      "sha256": "c9bcafd2c6c8591cdaed454577926a06bc491c499f60da04c352138fec47445d"
     },
     {
       "path": "scripts/reconcile-source-producer-code-only.mjs",
-      "bytes": 1770,
-      "sha256": "48193af2c8e66516369a271a2b5aeecbbaffa65e26027279f5d9a28752953942"
+      "bytes": 8780,
+      "sha256": "90c64f8b9297fb3ff02aaf0fcb5c67e17c67d8b9d66246dae18dcb6bb4ce606d"
     },
     {
       "path": "scripts/refine-coastlines-constrained-4.0.48.py",
@@ -1782,14 +1827,19 @@
       "sha256": "b41a2e06c34f70efef32572f396f7a09c899b19ec578b333f1814832df78b4b6"
     },
     {
+      "path": "scripts/select-automatic-source-saved-weather.mjs",
+      "bytes": 9668,
+      "sha256": "17dd88f6ede55c5823a307c1503fe2a5d3fd29f1cd847feefb751770d7525baa"
+    },
+    {
       "path": "scripts/select-native-original-continuity-code-only-source.mjs",
       "bytes": 9222,
       "sha256": "5a80365f7933d02a4e4bac7a386e04e9cb492d30ef83522833ba36341e9667ef"
     },
     {
       "path": "scripts/select-source-producer-code-only-source.mjs",
-      "bytes": 4735,
-      "sha256": "45690a6698a4c9bca2577156ce2bb7bd22b0716790044a0566239ddf6b0bb6c4"
+      "bytes": 5458,
+      "sha256": "049f0cb8c1bc873576d4f48cf65ecd62a1fc35f4815e8a6d0b2e5deb7332c03f"
     },
     {
       "path": "scripts/source-normal-producer-entry.mjs",
@@ -1798,8 +1848,13 @@
     },
     {
       "path": "scripts/source-normal-producer-tail.mjs",
-      "bytes": 390954,
-      "sha256": "5e8caf5080018265e344bc902f7dd86063636593b00f8275dea4defdc205db71"
+      "bytes": 391264,
+      "sha256": "f8e8621d40af8d5c704e60837194611f4f9e952f5a1296443c6d211cbcb84def"
+    },
+    {
+      "path": "scripts/source-post-pages-integrated-reentry.mjs",
+      "bytes": 8956,
+      "sha256": "00da42b599819d3506afe597659a431bd8d7dea6aa0c11260d922ee7e076fd1b"
     },
     {
       "path": "scripts/source-producer-prewrite.mjs",
@@ -1818,8 +1873,8 @@
     },
     {
       "path": "scripts/stage-source-producer-originals.mjs",
-      "bytes": 13577,
-      "sha256": "0bcdd04560aa805f13038b71cece99d592cd2196e1949440a49a0797920c631a"
+      "bytes": 15184,
+      "sha256": "0f76e4182eb4fca0294018417b923ff5e0bc2a3d7239a6ed1e8488f53f685a20"
     },
     {
       "path": "scripts/staged-private-production-runtime.mjs",
@@ -2173,8 +2228,8 @@
     },
     {
       "path": "scripts/verify-source-producer-plan.mjs",
-      "bytes": 4303,
-      "sha256": "3f15eaa734c5b5e8a41a2dca7650fa2798f62aec8ed4c4c4639b89423b32a179"
+      "bytes": 4708,
+      "sha256": "71e144a1a85bbccc58f30acae6c5f071eea5e972b7afe257595282fa095f8a94"
     },
     {
       "path": "scripts/verify-trip-storage-edge.mjs",
@@ -2209,7 +2264,7 @@
     {
       "path": "service-worker.js",
       "bytes": 7133,
-      "sha256": "04562b891581780b1da532bfd4fdbe390daf5163427df0cd4e7efe4dc87ba517"
+      "sha256": "151ed97052f281febf21dfea9619c1d89b6b9fa28de0585fd2ec8e02066d60e4"
     },
     {
       "path": "supabase/functions/_shared/trip-storage-contract-probe.js",

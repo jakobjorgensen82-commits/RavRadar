@@ -9,10 +9,12 @@ import {isDeepStrictEqual as same} from 'node:util';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {SOURCE_PRODUCER_BEFORE as OLD,requireSourceProducerBinding,requireSourceProducerOutput,sourceProducerReferenceHour}
   from './lib/source-producer-after597-runtime-family.mjs';
-import {assertSourceProducerCodeOnlyCaller} from './select-source-producer-code-only-source.mjs';
+import {assertSourceProducerCodeOnlyCaller,assertSourceProducerSavedWeatherCaller}
+  from './select-source-producer-code-only-source.mjs';
 import {withSource598CodeParent,assertSource598CodeSourceSelected} from './check-assistant-later-h0-predecessor-source.mjs';
 import {createProtectedPrivateRuntimeClients,describeCurrentProtectedPrivateProductionRuntime,
-  describeTargetProtectedPrivateProductionRuntime} from './protected-private-production-runtime.mjs';
+  describeTargetProtectedPrivateProductionRuntime,pinCurrentProtectedPrivateProductionRuntime}
+  from './protected-private-production-runtime.mjs';
 import {ravScoreModelBinding} from '../js/core/ravscore-model-contract.js';
 import {privateRuntimeContractHashes} from './private-production-runtime-workflow.mjs';
 
@@ -86,11 +88,16 @@ export async function selectInstalledSourceNormalRoute(options){
 
 export async function stageSourceProducerOriginals(){
   requireSourceProducerOutput(); // FIRST, before arguments, environment, files or clients.
-  // Den særskilte598-CODE-kildevært skal være valgt; gammel593/591-DATA bruges aldrig som594.
-  failureStage='PARENT_SOURCE';assertSource598CodeSourceSelected();
-  assert.equal(OLD.version,'20261105064515','SOURCE_ORIGINAL_DATA_PARENT_UNAVAILABLE');
+  const savedWeather=process.env.RAVRADAR_SOURCE_PRODUCER_SAVED_WEATHER==='true';
+  if(!savedWeather){
+    // Den særskilte598-CODE-kildevært skal være valgt; gammel593/591-DATA bruges aldrig som594.
+    failureStage='PARENT_SOURCE';assertSource598CodeSourceSelected();
+    assert.equal(OLD.version,'20261105064515','SOURCE_ORIGINAL_DATA_PARENT_UNAVAILABLE');
+  }
   assert.equal(arguments.length,0);
-  failureStage='CALLER';assertSourceProducerCodeOnlyCaller(process.env);
+  failureStage='CALLER';
+  const assertCaller=savedWeather?assertSourceProducerSavedWeatherCaller:assertSourceProducerCodeOnlyCaller;
+  assertCaller(process.env);
   assert.equal(process.env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE,'true');
   const next=requireSourceProducerBinding();
   failureStage='SOURCE_HEAD';
@@ -103,11 +110,30 @@ export async function stageSourceProducerOriginals(){
   failureStage='CLIENTS';
   const {documentRequest:request,storage}=createProtectedPrivateRuntimeClients();
   failureStage='CURRENT_DESCRIPTOR';
-  const selected=await describeCurrentProtectedPrivateProductionRuntime({request});
+  const savedPin=savedWeather?await pinCurrentProtectedPrivateProductionRuntime({request}):null;
+  const selected=savedPin?.descriptor??await describeCurrentProtectedPrivateProductionRuntime({request});
   assert.equal(selected.productionReferenceAt,sourceProducerReferenceHour(process.env.RAVRADAR_PRODUCTION_TARGET_HOUR),
-    'Metadata code-only delivery retains the exact CURRENT original H0');
+    'Provider-free delivery requires the exact CURRENT original H0');
   failureStage='CURRENT_FAMILY';
   const selectedFamily=sourceProducerOriginalStageFamily(selected,next);
+  if(savedWeather){
+    failureStage='SAVED_CURRENT_PIN';
+    assert.equal(selectedFamily,'current','SOURCE_SAVED_WEATHER_REQUIRES_CURRENT_FAMILY');
+    assert(same(selected.modelBinding,ravScoreModelBinding()));
+    assert(same(selected.contractHashes,await privateRuntimeContractHashes()));
+    const operationRoot=absoluteEnvironmentPath('RAVRADAR_OPERATIONAL_WORK');
+    const described=path.join(operationRoot,'current-private-runtime-source.json');
+    await noLinks(described);
+    const describedStat=await fs.lstat(described);
+    assert(describedStat.isFile()&&describedStat.size<=16*1024,'SOURCE_SAVED_WEATHER_DESCRIPTOR_FILE');
+    assert(same(JSON.parse(await fs.readFile(described,'utf8')),selected),'SOURCE_SAVED_WEATHER_DESCRIPTOR_CHANGED');
+    read(['merge-base','--is-ancestor',selected.sourceHead,head]);
+    const pinPath=path.join(operationRoot,'source-saved-current-pin.json');
+    assertCaller(process.env);
+    await fs.writeFile(pinPath,JSON.stringify(savedPin)+'\n',{flag:'wx',mode:0o600});
+    await fs.appendFile(envPath,'RAVRADAR_SOURCE_PRODUCER_CURRENT_FAMILY=current\n');
+    console.log('Authenticated SOURCE CURRENT pin saved for provider-free recovery.');return;
+  }
   if(selectedFamily==='current'){
     failureStage='CURRENT_REENTRY';
     assert.equal(process.env.RAVRADAR_SOURCE_PRODUCER_PHASE,'installed');

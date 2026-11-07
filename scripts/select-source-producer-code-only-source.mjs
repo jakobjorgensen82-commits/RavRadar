@@ -12,8 +12,7 @@ import {ravScoreContinuationImplementationSha256} from './lib/ravscore-continuat
 
 // Pure caller checks, deliberately not an issued-source or data-admission proof.
 // Stage/prewrite must independently require their own issued SOURCE output first.
-export function assertSourceProducerCodeOnlyCaller(environment){
-  assert.equal(arguments.length,1);
+function assertSourceProducerProviderFreeCaller(environment,savedWeather){
   assert(environment&&typeof environment==='object'&&!Array.isArray(environment));
   assert.equal(environment.GITHUB_EVENT_NAME,'workflow_dispatch');
   assert.equal(environment.GITHUB_REF,'refs/heads/main');
@@ -24,10 +23,15 @@ export function assertSourceProducerCodeOnlyCaller(environment){
   const opted=environment.RAVRADAR_SOURCE_PRODUCER_UPGRADE_OPT_IN;
   assert(['true','false'].includes(opted));
   assert.equal(environment.RAVRADAR_SOURCE_PRODUCER_PHASE,opted==='true'?'before':'installed');
-  assert.equal(environment.RAVRADAR_SOURCE_PRODUCER_CONFIRMATION,'DEPLOY-CODE-ONLY-REPAIR');
+  assert.equal(environment.RAVRADAR_SOURCE_PRODUCER_CONFIRMATION,savedWeather
+    ?'DEPLOY-SAVED-WEATHER-REPAIR':'DEPLOY-CODE-ONLY-REPAIR');
   assert.equal(environment.RAVRADAR_SOURCE_PRODUCER_WRITER_ACTIVE,'false');
   assert.equal(environment.RAVRADAR_SOURCE_PRODUCER_RECOVERY_GATE_RESULT,'success');
-  assert.equal(environment.RAVRADAR_SOURCE_PRODUCER_SAVED_WEATHER,'false');
+  assert.equal(environment.RAVRADAR_SOURCE_PRODUCER_SAVED_WEATHER,savedWeather?'true':'false');
+  if(savedWeather){
+    assert.equal(opted,'false','SOURCE_SAVED_WEATHER_INSTALLED_ONLY');
+    assert.equal(environment.PUBLISH_NEWEST_SAVED_WEATHER,'true','SOURCE_SAVED_WEATHER_REQUEST');
+  }else assert.notEqual(environment.PUBLISH_NEWEST_SAVED_WEATHER,'true');
   assert.equal(environment.RAVRADAR_SOURCE_PRODUCER_RECOVERY_RUN_ID,'');
   assert.equal(environment.RAVRADAR_SOURCE_NORMAL_PRODUCER,'false');
   assert.equal(environment.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_UPGRADE_OPT_IN,'false');
@@ -42,11 +46,20 @@ export function assertSourceProducerCodeOnlyCaller(environment){
   ];
   for(const key of new Set(historical))assert.notEqual(environment[key],'true',
     'SOURCE code-only selection cannot combine historical upgrade grants');
-  for(const key of ['RESTART_ARCHIVED_WEATHER','PUBLISH_NEWEST_SAVED_WEATHER',
+  for(const key of ['RESTART_ARCHIVED_WEATHER',
     'COMPLETED_PRIVATE_RUNTIME','CHECKPOINT_ONLY','QUICK_CONFIRMATION',
     'RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP','RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY',
     'NATIVE_IDENTITY_RECOVERY'])assert.notEqual(environment[key],'true',
       'SOURCE code-only selection cannot combine alternative weather/recovery modes');
+}
+
+export function assertSourceProducerCodeOnlyCaller(environment){
+  assert.equal(arguments.length,1);
+  assertSourceProducerProviderFreeCaller(environment,false);
+}
+export function assertSourceProducerSavedWeatherCaller(environment){
+  assert.equal(arguments.length,1);
+  assertSourceProducerProviderFreeCaller(environment,true);
 }
 
 export async function selectSourceProducerCodeOnlySource(environment=process.env){
@@ -56,11 +69,13 @@ export async function selectSourceProducerCodeOnlySource(environment=process.env
   if(SOURCE_PRODUCER_AFTER597_PARENT.binding===null&&opted==='false')return false;
   requireSourceProducerOutput(); // FIRST before branch I/O or caller authority.
   const next=requireSourceProducerBinding();
-  assertSourceProducerCodeOnlyCaller(environment);
+  const assertCaller=environment.RAVRADAR_SOURCE_PRODUCER_SAVED_WEATHER==='true'
+    ?assertSourceProducerSavedWeatherCaller:assertSourceProducerCodeOnlyCaller;
+  assertCaller(environment);
   assert.equal(ravScoreModelBinding().modelBundleSha256,next.I);
   assert.equal(candidateBinding().modelBundleSha256,next.C);
   assert.equal(await ravScoreContinuationImplementationSha256(),next.T);
-  assertSourceProducerCodeOnlyCaller(environment);
+  assertCaller(environment);
   return true;
 }
 

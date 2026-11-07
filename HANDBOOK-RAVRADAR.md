@@ -1,4 +1,12 @@
 
+
+## 89.327 SOURCE 4.0.604 genoptager fra den senest beviste fase
+
+<a id="source604-saved-weather-and-public-receipt-2026-11-07"></a>
+
+<div class="reader-guide"><p><strong>Den lokale kandidat kan genbruge en færdig beregning, når de beskyttede originaler og scorecheckpunktet er gemt og kan læses tilbage. Før en ny prognose må udgives, kontrollerer forløbet de overlappende offentlige timer for tab af gyldige værdier og kører de normale udgivelseskontroller.</strong></p></div><p>Hvis hjemmesiden allerede viser det eksakte mål, kan næste almindelige kørsel færdiggøre den centrale driftskvittering med samme kodeversion. Forløbet kontrollerer det oprindelige GitHub-forsøg, genlæser den offentlige prognose og verificerer de gemte originaler igen. Det genbruger den eksisterende versionskontrol ved skrivning og genlæser kvitteringen efterfølgende.</p><p>Et tvetydigt arkivopslag, ændrede data, ændret main eller ukendt deployudfald stopper genoptagelsen. En korrekt eksisterende kvittering udløser ingen ny skrivning. Genoptagelsen efter offentliggørelse starter hverken en ny vejrhentning, beregning eller udgivelse.</p><p>4.0.604 er en afgrænset kandidat til kontrolleret levering. Lokale prøver og kildekontrol er separate fra installation og offentlig effekt. Den almindelige landsdækkende kvalifikation og den faktiske dokumentation af vandstand, Fur og de syv kystzoner følger deres egne krav.</p>
+
+
 ## 89.326 SOURCE 4.0.603 retter installationsworkflowets input
 
 <a id="source603-unique-install-workflow-input-2026-11-07"></a>
@@ -2026,7 +2034,7 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.603
+**Håndbogsversion:** 4.0.604
 
 **Lokal kildebinding — 29. oktober 2026, RavScore 4.0.591, ikke installeret:** Den integrerede model er offentlig som modeltype under den særskilt leverede 4.0.590. Den nye assistentefterfølger er lokalt udstedt og er endnu ikke samlet kvalificeret, installeret eller offentliggjort.
 

@@ -1440,8 +1440,37 @@ async function runSourceArtifactUpload() {
     const normal = await import('@actions/artifact');
     if (typeof normal.DefaultArtifactClient !== 'function') throw refused('SOURCE_ARTIFACT_SDK_UNAVAILABLE');
     const client = new normal.DefaultArtifactClient();
-    const name = `ravradar-private-build-stage-${context.runId}-${context.attempt}`;
-    // Exactly one normal upload invocation, ZIP mode and existing artifact name.
+    // The parent owns the verified bundle and checks its bytes again before B.
+    // Read only fixed, bounded metadata to name the existing encrypted artifact.
+    const manifestPath = '/tmp/ravradar-private-production-runtime/bundle-source-successor/manifest.json';
+    if (fs.realpathSync(manifestPath) !== manifestPath) throw refused('SOURCE_ARTIFACT_GENERATION_UNPROVED');
+    const manifestFd = fs.openSync(manifestPath, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW);
+    let generation;
+    try {
+      const manifestStat = fs.fstatSync(manifestFd);
+      if (!manifestStat.isFile() || manifestStat.nlink !== 1 || manifestStat.size < 1
+        || manifestStat.size > 256 * 1024) throw refused('SOURCE_ARTIFACT_GENERATION_UNPROVED');
+      const raw = Buffer.alloc(manifestStat.size + 1);
+      let count = 0;
+      while (count < raw.length) {
+        const bytes = fs.readSync(manifestFd, raw, count, raw.length - count, count);
+        if (bytes === 0) break;
+        count += bytes;
+      }
+      const fields = ['dev', 'ino', 'mode', 'nlink', 'size', 'mtimeMs', 'ctimeMs'];
+      if (count !== manifestStat.size
+        || ![fs.fstatSync(manifestFd), fs.lstatSync(manifestPath)].every(stat =>
+          stat.isFile() && fields.every(key => stat[key] === manifestStat[key]))) {
+        throw refused('SOURCE_ARTIFACT_GENERATION_UNPROVED');
+      }
+      generation = JSON.parse(raw.subarray(0,count).toString('utf8'));
+    } finally { fs.closeSync(manifestFd); }
+    if (generation.productionReferenceAt !== context.target) throw refused('SOURCE_ARTIFACT_GENERATION_UNPROVED');
+    const {sourceCompletedStageArtifactName}=await import(pathToFileURL(path.join(ROOT,
+      'scripts/lib/source-completed-stage-artifact-identity.mjs')).href);
+    const name=sourceCompletedStageArtifactName({repository:context.repository,sourceHead:context.head,
+      runId:context.runId,runAttempt:context.attempt,generation});
+    // Exactly one normal upload invocation, ZIP mode and retention unchanged.
     // A failed/ambiguous finalize is not retried/adopted by this wrapper.
     row.uploaded = await client.uploadArtifact(name, [file], directory,
       { retentionDays: 1, compressionLevel: 0 });

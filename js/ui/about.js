@@ -1,6 +1,6 @@
-import './about-i18n.js?v=4.0.603&ui=about-explainer-20261025';
-import { installAboutExplainer } from './about-explainer.js?v=4.0.603&ui=about-explainer-20261025';
-import { installAboutHomeReturn } from '../core/about-home-return.js?v=4.0.603';
+import './about-i18n.js?v=4.0.604&ui=about-explainer-20261025';
+import { installAboutExplainer } from './about-explainer.js?v=4.0.604&ui=about-explainer-20261025';
+import { installAboutHomeReturn } from '../core/about-home-return.js?v=4.0.604';
 
 installAboutHomeReturn({
   link:document.querySelector('.back-link'),

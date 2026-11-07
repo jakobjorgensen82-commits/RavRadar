@@ -16,6 +16,7 @@ import { gzip, gunzip } from 'node:zlib';
 
 import { assertExactPublicRavScoreModelBindingShape } from '../js/core/ravscore-public-profile-contract.js';
 import { sha256CanonicalJson, assertUploadedOperationalPagesTarget } from './ravscore-operational-pages-recovery.mjs';
+import { SOURCE_SAVED_PAIR_DISPOSITION, assertSourceSavedPairPagesProof } from './lib/source-saved-pair-pages-proof.mjs';
 import {
   PROTECTED_PRIVATE_RUNTIME_POLICY,
   createProtectedPrivateRuntimeClients,
@@ -241,6 +242,13 @@ function descriptorFromFiles(files, { deploymentId, repository, policy, objectSh
   assertExactPublicRavScoreModelBindingShape(binding, {
     label: 'Operational evidence target binding',
   });
+  if (!preActivation && handoff.checkpointDisposition === SOURCE_SAVED_PAIR_DISPOSITION) {
+    assertSourceSavedPairPagesProof({
+      handoff, manifest, disposition:parseJson('checkpoint-disposition.json'),
+      runtimeAudit:parseJson('checkpoint-runtime-audit.json'), artifactSeal:seal,
+      expectedIdentity:{repository,sourceHead:seal.headSha,runId:identity.runId,runAttempt:identity.runAttempt},
+    });
+  }
   if (preActivation) {
     exactKeys(phase, ['schemaVersion','sourceHead','sourceCurrent','sourceCurrentSha256','checkpointOutcomes','privatePayloadIncluded'], 'Pre-activation phase');
     if (phase.schemaVersion !== 'ravradar-current-grid-pre-activation-v1'
@@ -662,6 +670,7 @@ export async function restoreProtectedOperationalEvidence({
   directory,
   deploymentId = null,
   publicManifestSha256 = null,
+  requireUniquePublicManifest = false,
   repository = null,
   request,
   storage,
@@ -675,12 +684,20 @@ export async function restoreProtectedOperationalEvidence({
     && !SHA256_PATTERN.test(String(publicManifestSha256))) {
     throw new Error('Operational evidence public manifest hash is invalid');
   }
+  if (typeof requireUniquePublicManifest !== 'boolean'
+    || (requireUniquePublicManifest && publicManifestSha256 === null)) {
+    throw new Error('Unique operational evidence requires a public manifest identity');
+  }
   const row = await readPointer(request, { allowMissing: false, policy });
-  const descriptor = descriptors(row.payload).find(
+  const candidates = descriptors(row.payload).filter(
     item => deploymentId !== null
       ? item.deploymentId === deploymentId
       : item.publicManifestSha256 === publicManifestSha256,
   );
+  if (requireUniquePublicManifest && candidates.length > 1) {
+    throw new Error('Exact protected public operational evidence is ambiguous');
+  }
+  const [descriptor] = candidates;
   if (!descriptor) throw new Error('Exact protected operational evidence is unavailable');
   if (repository !== null && descriptor.repository !== repository) {
     throw new Error('Protected operational evidence belongs to another repository');
@@ -1294,6 +1311,10 @@ function parseArgs(argv) {
       result.mode = argument.slice(2);
       continue;
     }
+    if (argument === '--require-unique-public-manifest') {
+      result.requireUniquePublicManifest = true;
+      continue;
+    }
     if (argument === '--require-retained') {
       result.requireRetained = true;
       continue;
@@ -1319,6 +1340,10 @@ function parseArgs(argv) {
   if (result.mode === 'restore'
     && (Boolean(result.deploymentId) === Boolean(result.publicManifestSha256))) {
     throw new Error('Operational evidence restore requires exactly one identity');
+  }
+  if (result.requireUniquePublicManifest
+    && (result.mode !== 'restore' || !result.publicManifestSha256 || !result.repository || result.deploymentId)) {
+    throw new Error('Unique public manifest is reserved for exact operational evidence restore');
   }
   return result;
 }
@@ -1400,6 +1425,7 @@ async function main() {
       storage: clients.storage,
     })
     : await restoreProtectedOperationalEvidence({
+      requireUniquePublicManifest: options.requireUniquePublicManifest ?? false,
       directory: options.directory,
       deploymentId: options.deploymentId ?? null,
       publicManifestSha256: options.publicManifestSha256 ?? null,

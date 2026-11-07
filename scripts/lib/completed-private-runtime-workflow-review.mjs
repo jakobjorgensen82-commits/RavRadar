@@ -470,6 +470,7 @@ export function inverseQualifiedScalarPlanningWorkflow(source, role) {
 export function inverseTerminalRepair4145Workflow(source, role) {
   assert.equal(arguments.length, 2, 'TERMINAL4145_INVERSE_ARGUMENTS');
   assert.equal(typeof source, 'string', 'TERMINAL4145_INVERSE_TYPE');
+  source = inverseSource603SavedWorkflowRole(source, role);
   if (role === 'repair') source = inverseReviewedSource601HistoricalCodeInput(source, '.github/workflows/deploy-code-only-repair.yml');
   source = inverseReviewedSource601OperationalWorkflowInspection(source, role);
   source = inverseQualifiedScalarPlanningWorkflow(source, role);
@@ -1068,9 +1069,50 @@ const reviewedSource601HistoricalCodeInputs = Object.freeze({
 for (const row of Object.values(reviewedSource601HistoricalCodeInputs)) {
   Object.freeze(row.after); Object.freeze(row.before); Object.freeze(row);
 }
+// Test-only outer layer for the exact saved-weather and post-Pages composition.
+// Each admitted file becomes its genuine issued #832 blob before older views.
+const reviewedSource603SavedWorkflowHead = '58917a42c8dfd030062c8f97a5223f35790ab15f';
+const reviewedSource603SavedWorkflows = Object.freeze({
+  build:Object.freeze({path:'.github/workflows/reusable-weather-build.yml',
+    after:Object.freeze({bytes:378140,sha256:'f5a82ec42da4e37dfc16dd7892e098382efb0848c357d791d51efb68234b3ad6'}),
+    before:Object.freeze({bytes:352289,sha256:'9b11306a1272bcf59e836bb2abdffc15018120dc452529889fcf5097e3e5798d'})}),
+  once:Object.freeze({path:'.github/workflows/run-current-weather-once.yml',
+    after:Object.freeze({bytes:60814,sha256:'a0e4163981068540fa62f5d7015756286ef606f05c504294469d39c64029867e'}),
+    before:Object.freeze({bytes:57845,sha256:'b64147bbdb304160834dd080249ab05043f0ab73bdb35f015c282821d4486b7f'})}),
+  repair:Object.freeze({path:'.github/workflows/deploy-code-only-repair.yml',
+    after:Object.freeze({bytes:252067,sha256:'bd5861018d8cae0821bdd7db88f9b80813f06513c371b51b7fbb326a80874779'}),
+    before:Object.freeze({bytes:244216,sha256:'d1a1a824e7e4ec118820815f73134810c9bc19a2e54811d808aad04cae4c0a6c'})}),
+  deploy:Object.freeze({path:'.github/workflows/reusable-pages-deploy.yml',
+    after:Object.freeze({bytes:72981,sha256:'655d8d08bc86303bb91dfbf8037000d52a5c710582e84dfec1f2b6f6bcdc5284'}),
+    before:Object.freeze({bytes:67398,sha256:'4dc3b299efdad4424024edc637df61143d2a19e576668d52ba7dfa4d2673f8c0'})}),
+  recovery:Object.freeze({path:'.github/workflows/reusable-operational-reentry.yml',
+    after:Object.freeze({bytes:117498,sha256:'019d6b5dd43f911635261784e83743fd53a6a03f20f28b9aa69c5856dbb17d9d'}),
+    before:Object.freeze({bytes:105501,sha256:'888fb3ad38cd83bd06d713c14587bbeeb68390bf7a88715b03c22e0bf7421b5f'})}),
+});
+export function inverseReviewedSource603SavedWorkflow(source, relative) {
+  assert.equal(arguments.length, 2, 'SOURCE603_SAVED_WORKFLOW_ARGUMENTS');
+  assert.equal(typeof source, 'string', 'SOURCE603_SAVED_WORKFLOW_TYPE');
+  const row = Object.values(reviewedSource603SavedWorkflows).find(entry => entry.path === relative);
+  if (!row || Buffer.byteLength(source) !== row.after.bytes || sha(source) !== row.after.sha256) return source;
+  const previous = execFileSync('git', [
+    '-c', 'protocol.allow=never', '-C', fileURLToPath(new URL('../../', import.meta.url)),
+    'cat-file', 'blob', reviewedSource603SavedWorkflowHead + ':' + row.path,
+  ], {encoding:'utf8', timeout:30_000, maxBuffer:512 * 1024,
+    env:{...process.env, GIT_NO_LAZY_FETCH:'1', GIT_NO_REPLACE_OBJECTS:'1', GIT_TERMINAL_PROMPT:'0'}});
+  assert.equal(Buffer.byteLength(previous), row.before.bytes, 'SOURCE603_SAVED_WORKFLOW_BEFORE_BYTES');
+  assert.equal(sha(previous), row.before.sha256, 'SOURCE603_SAVED_WORKFLOW_BEFORE_SHA');
+  return previous;
+}
+
+function inverseSource603SavedWorkflowRole(source, role) {
+  if (!Object.hasOwn(reviewedSource603SavedWorkflows, role)) return source;
+  return inverseReviewedSource603SavedWorkflow(source, reviewedSource603SavedWorkflows[role].path);
+}
+
 export function inverseReviewedSource601HistoricalCodeInput(source, relative) {
   assert.equal(arguments.length, 2, 'SOURCE601_HISTORICAL_INPUT_ARGUMENTS');
   assert.equal(typeof source, 'string', 'SOURCE601_HISTORICAL_INPUT_TYPE');
+  source = inverseReviewedSource603SavedWorkflow(source, relative);
   if (relative === '.github/workflows/reusable-weather-build.yml')
     return inverseReviewedSource601BuildWorkflowInspection(
       inverseReviewedSource602BuildWorkflowInspection(source, 'build'), 'build');
@@ -1101,6 +1143,7 @@ export function inverseReviewedSource601HistoricalCodeInput(source, relative) {
 }
 
 export function inverseRelease585WorkflowUserAgents(source, role) {
+  source = inverseSource603SavedWorkflowRole(source, role);
   source = inverseReviewedSource602BuildWorkflowInspection(source, role);
   source = inverseReviewedSource601BuildWorkflowInspection(source, role);
   source = inverseReviewedSourceWorkflowInspection(source, role);

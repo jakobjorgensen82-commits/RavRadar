@@ -1,6 +1,6 @@
-import { PUBLIC_CONFIG } from '../../config.js?v=4.0.603';
-import { requireFreshSession, authIdentityEpoch, currentSession, authorizedFetch } from './auth-service.js?v=4.0.603';
-import { myAccess, hasPermission } from './permissions-service.js?v=4.0.603';
+import { PUBLIC_CONFIG } from '../../config.js?v=4.0.604';
+import { requireFreshSession, authIdentityEpoch, currentSession, authorizedFetch } from './auth-service.js?v=4.0.604';
+import { myAccess, hasPermission } from './permissions-service.js?v=4.0.604';
 
 const UUID=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 const CATEGORIES=['owner','expert','ordinary','unknown'];

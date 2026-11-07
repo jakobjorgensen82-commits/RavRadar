@@ -874,6 +874,17 @@ const SOURCE598_NORMAL_CALLERS_REVIEWED=Object.freeze(Object.fromEntries(
 }).map(([file,row])=>[file,Object.freeze({...row,
     imports:Object.freeze(row.imports),hunks:Object.freeze(row.hunks.map(Object.freeze)),
   })])));
+// The saved-CURRENT recovery only extends the normal reviewed import inventory.
+// Historical whole-file variants remain available to their fixed readers.
+const SOURCE604_SAVED_CURRENT_REVIEWED=Object.freeze({
+  'scripts/protected-private-production-runtime.mjs':Object.freeze({sha256:'7dade6f0b6cb2256b70818646d6965965ea28177cabe0a25021a471eb199d767',
+    imports:Object.freeze([...REVIEWED['scripts/protected-private-production-runtime.mjs'].imports,
+        './private-production-runtime-workflow.mjs'])}),
+  'scripts/reconcile-private-runtime-checkpoint.mjs':Object.freeze({sha256:'c9bcafd2c6c8591cdaed454577926a06bc491c499f60da04c352138fec47445d',
+    imports:SOURCE598_NORMAL_CALLERS_REVIEWED['scripts/reconcile-private-runtime-checkpoint.mjs'].imports}),
+  'scripts/stage-source-producer-originals.mjs':Object.freeze({sha256:'0f76e4182eb4fca0294018417b923ff5e0bc2a3d7239a6ed1e8488f53f685a20',
+    imports:SOURCE598_NORMAL_CALLERS_REVIEWED['scripts/stage-source-producer-originals.mjs'].imports}),
+});
 export function modelSourceRelativeModuleSpecifiers(source, file) {
   if (!Object.hasOwn(REVIEWED, file) && !Object.hasOwn(NATIVE_CONTINUITY_REVIEWED, file)
     && !Object.hasOwn(ASSISTANT_LATER_H0_REVIEWED,file) && !Object.hasOwn(ASSISTANT_BINDING_PREWRITE_REVIEWED,file)
@@ -895,12 +906,13 @@ export function modelSourceRelativeModuleSpecifiers(source, file) {
     && !Object.hasOwn(SOURCE_AFTER598_PARENT_REVIEWED,file)
     && !Object.hasOwn(SOURCE598_ORIGINAL_CODE_REVIEWED,file)
     && !Object.hasOwn(SOURCE598_ASSERTION_VIEW_REVIEWED,file)
-    && !Object.hasOwn(SOURCE598_NORMAL_CALLERS_REVIEWED,file))
+    && !Object.hasOwn(SOURCE598_NORMAL_CALLERS_REVIEWED,file)
+    && !Object.hasOwn(SOURCE604_SAVED_CURRENT_REVIEWED,file))
     return exactRelativeModuleSpecifiers(source, file);
   if (typeof source !== 'string') throw new Error('Reviewed model source must be a string');
   const normalized = source.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
   const hash = crypto.createHash('sha256').update(normalized).digest('hex');
-  const reviewed = [REVIEWED[file], NATIVE_CONTINUITY_REVIEWED[file],ASSISTANT_LATER_H0_REVIEWED[file],ASSISTANT_BINDING_PREWRITE_REVIEWED[file],ASSISTANT_BINDING_DIAGNOSTIC_REVIEWED[file],ASSISTANT_BINDING_CHECKPOINT_TARGET_REVIEWED[file],ASSISTANT_PUBLIC587_SOURCE_REVIEWED[file],ASSISTANT_PUBLIC587_OPERATIVE_REVIEWED[file],CALENDAR_PUBLIC588_SUCCESSOR_REVIEWED[file],ASSISTANT_PUBLIC590_SUCCESSOR_REVIEWED[file],ASSISTANT_GENUINE590_PARENT_REVIEWED[file],ASSISTANT_GENUINE591_PARENT_REVIEWED[file],CONDITIONS_READER_CAPACITY593_REVIEWED[file],ORIGIN591_METADATA594_REVIEWED[file],SCALAR597_LATER_H0_REVIEWED[file],SOURCE_PRODUCER_AFTER597_FIRST_ISSUANCE_REVIEWED[file],SOURCE_PRODUCER_AFTER597_RUNTIME_REVIEWED[file],SOURCE_PRODUCER_AFTER597_FINAL51_REVIEWED[file],ASSISTANT_AFTER597_REVIEWED[file],SOURCE_AFTER598_PARENT_REVIEWED[file],SOURCE598_ORIGINAL_CODE_REVIEWED[file],SOURCE598_ASSERTION_VIEW_REVIEWED[file],SOURCE598_NORMAL_CALLERS_REVIEWED[file]].filter(Boolean)
+  const reviewed = [REVIEWED[file], NATIVE_CONTINUITY_REVIEWED[file],ASSISTANT_LATER_H0_REVIEWED[file],ASSISTANT_BINDING_PREWRITE_REVIEWED[file],ASSISTANT_BINDING_DIAGNOSTIC_REVIEWED[file],ASSISTANT_BINDING_CHECKPOINT_TARGET_REVIEWED[file],ASSISTANT_PUBLIC587_SOURCE_REVIEWED[file],ASSISTANT_PUBLIC587_OPERATIVE_REVIEWED[file],CALENDAR_PUBLIC588_SUCCESSOR_REVIEWED[file],ASSISTANT_PUBLIC590_SUCCESSOR_REVIEWED[file],ASSISTANT_GENUINE590_PARENT_REVIEWED[file],ASSISTANT_GENUINE591_PARENT_REVIEWED[file],CONDITIONS_READER_CAPACITY593_REVIEWED[file],ORIGIN591_METADATA594_REVIEWED[file],SCALAR597_LATER_H0_REVIEWED[file],SOURCE_PRODUCER_AFTER597_FIRST_ISSUANCE_REVIEWED[file],SOURCE_PRODUCER_AFTER597_RUNTIME_REVIEWED[file],SOURCE_PRODUCER_AFTER597_FINAL51_REVIEWED[file],ASSISTANT_AFTER597_REVIEWED[file],SOURCE_AFTER598_PARENT_REVIEWED[file],SOURCE598_ORIGINAL_CODE_REVIEWED[file],SOURCE598_ASSERTION_VIEW_REVIEWED[file],SOURCE598_NORMAL_CALLERS_REVIEWED[file],SOURCE604_SAVED_CURRENT_REVIEWED[file]].filter(Boolean)
     .find(variant => variant.sha256 === hash);
   if (!reviewed)
     throw new Error('Whole reviewed model import source changed: ' + file);

@@ -5,7 +5,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {requireSourceProducerOutput,sourceProducerMigration} from './lib/source-producer-after597-runtime-family.mjs';
-import {assertSourceProducerCodeOnlyCaller} from './select-source-producer-code-only-source.mjs';
+import {assertSourceProducerCodeOnlyCaller,assertSourceProducerSavedWeatherCaller}
+  from './select-source-producer-code-only-source.mjs';
 import {assertSourceProducerMigrationPlan,assertSourceProducerMigrationsApplied}
   from './integrated-cutover-readiness.mjs';
 
@@ -21,13 +22,19 @@ export function sourceProducerSqlWriteRequired(phase,pendingVersions,version){
   assert.deepEqual(pendingVersions,[]);return false;
 }
 
+function sourceProducerPlanCaller(environment){
+  return environment.RAVRADAR_SOURCE_PRODUCER_SAVED_WEATHER==='true'
+    ?assertSourceProducerSavedWeatherCaller:assertSourceProducerCodeOnlyCaller;
+}
+
 export async function verifySourceProducerPlan(options){
   requireSourceProducerOutput(); // FIRST, before options, environment or files.
   assert.equal(arguments.length,1);assert(options&&Object.getPrototypeOf(options)===Object.prototype);
   const keys=Object.keys(options).sort(),required=['dryRunText','migrationListText','migrationsDirectory','phase'];
   assert.deepEqual(keys,options.environment===undefined?required:['dryRunText','environment','migrationListText','migrationsDirectory','phase']);
   const {phase,migrationListText,dryRunText,migrationsDirectory}=options,environment=options.environment??process.env;
-  assertSourceProducerCodeOnlyCaller(environment);
+  const assertCaller=sourceProducerPlanCaller(environment);
+  assertCaller(environment);
   assert(['before','installed'].includes(phase));assert.equal(environment.RAVRADAR_SOURCE_PRODUCER_PHASE,phase);
   assert.equal(environment.RAVRADAR_SOURCE_PRODUCER_UPGRADE_OPT_IN,phase==='before'?'true':'false');
   const result=await assertSourceProducerMigrationPlan({migrationListText,dryRunText,migrationsDirectory});
@@ -44,17 +51,21 @@ export async function verifySourceProducerPlan(options){
   const sqlWriteRequired=sourceProducerSqlWriteRequired(phase,result.pendingVersions,sourceProducerMigration().version);
   if(!sqlWriteRequired)assertSourceProducerMigrationsApplied(migrationListText);
   // Revalidate the fixed caller after the awaited canonical-source checks.
-  assertSourceProducerCodeOnlyCaller(environment);return Object.freeze({...result,sqlWriteRequired});
+  assertCaller(environment);return Object.freeze({...result,sqlWriteRequired});
 }
 
 async function main(){
-  requireSourceProducerOutput();assertSourceProducerCodeOnlyCaller(process.env);
+  requireSourceProducerOutput();
+  const assertCaller=sourceProducerPlanCaller(process.env);
+  assertCaller(process.env);
   const args=process.argv.slice(2),keys=['--phase','--migration-list','--dry-run','--migrations-directory'];
   assert.equal(args.length,8);const values=new Map();
   for(let index=0;index<args.length;index+=2){
     assert(keys.includes(args[index])&&!values.has(args[index])&&args[index+1]);values.set(args[index],args[index+1]);
   }
-  const result=await verifySourceProducerPlan({phase:values.get('--phase'),
+  const phase=values.get('--phase');
+  if(assertCaller===assertSourceProducerSavedWeatherCaller)assert.equal(phase,'installed');
+  const result=await verifySourceProducerPlan({phase,
     migrationListText:await fs.readFile(values.get('--migration-list'),'utf8'),
     dryRunText:await fs.readFile(values.get('--dry-run'),'utf8'),
     migrationsDirectory:path.resolve(values.get('--migrations-directory'))});
