@@ -104,9 +104,13 @@ test('hosted backup caller: segmented counts and exact grouped bounds stay on th
   const result=fixture(captureEnv(),{captureBytes}).invoke();
   assert.equal(result.totalSqlBytes,5120);assert.equal(result.totalCipherBytes,50_000_513);
   assert(!/files|wireBytes|egressBytes/.test(JSON.stringify(result)));
-  for(const change of [{cipherPartCount:5},{archiveWireBytes:50_000_512},{archiveWireBytes:300_000_001},
-    {files:files.map((file,i)=>i===0?{...file,cipherBytes:180_000_000}:file)}]){
-    const f=fixture(captureEnv(),{captureBytes:{...captureBytes,...change}});
+  // Five nonempty logical files can use all twelve parts at exactly 288 MB.
+  const maximumFiles=files.map((file,i)=>({...file,cipherBytes:i===0?287_999_996:1}));
+  const maximum={...captureBytes,files:maximumFiles,cipherPartCount:12,archiveWireBytes:300_000_000};
+  assert.equal(fixture(captureEnv(),{captureBytes:maximum}).invoke().totalCipherBytes,288_000_000);
+  for(const change of [{cipherPartCount:11},{cipherPartCount:13},{archiveWireBytes:287_999_999},{archiveWireBytes:300_000_001},
+    {files:maximumFiles.map((file,i)=>i===0?{...file,cipherBytes:287_999_997}:file)}]){
+    const f=fixture(captureEnv(),{captureBytes:{...maximum,...change}});
     code(()=>f.invoke(),'SUPABASE_BACKUP_CAPTURE_BYTES');assert.equal(f.controllerCalls.length,1);
   }
 });
