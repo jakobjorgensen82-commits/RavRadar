@@ -1146,7 +1146,7 @@ test('private-study006: privat eksport bevarer hele installationsarm og normale 
         calls.push({host:actualHost,access});
       }};
     for(const name of new Set([...render.matchAll(/(?:\:|\|\|)(render\w+)/g)].map(x=>x[1])))context[name]=()=>{};
-    const declarations=['adminTripCountRenderEpoch','disposeAdminTripCount','adminUserRenderEpoch','disposeAdminUserCategories']
+    const declarations=['adminTripCountRenderEpoch','disposeAdminTripCount','adminUserRenderEpoch','disposeAdminUserCategories','disposeOwnerNoticeProbe']
       .map(name=>{const actual=source.match(new RegExp('^let '+name+'=[^;]+;','m'))?.[0];assert(actual,name);return actual;}).join('\n');
     const guards=['invalidateAdminTripCount','invalidateAdminUserCategories']
       .map(name=>{const actual=source.match(new RegExp('^function '+name+'\\(\\)\\{[^\\n]+\\}','m'))?.[0];assert(actual,name);return actual;}).join('\n');
