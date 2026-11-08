@@ -13,6 +13,7 @@ import { inverseAlternativeCCaller, inverseAssistant587OriginalCompanionTestInpu
   inverseAssistant587OriginalRawBoundaryTestInput } from './lib/alternative-c-caller-test-input.mjs';
 import { inverseWindTailCapacityUpdaterTestInput, WIND_TAIL_CAPACITY_UPDATER_TEST_REVIEW,
   inverseDmiScalarPlanningRecordTestInput, DMI_SCALAR_PLANNING_RECORD_TEST_REVIEW,
+  inverseDmiScalarRetentionWorkTestInput, DMI_SCALAR_RETENTION_WORK_TEST_REVIEW,
   inverseCandidateGReadyGapUpdaterTestInput, CANDIDATE_G_READY_GAP_UPDATER_TEST_REVIEW,
   inverseDmiScalarPlanningUpdaterTestInput, DMI_SCALAR_PLANNING_UPDATER_TEST_REVIEW,
   inverseCurrentNativeOriginalProducerTestInput, CURRENT_NATIVE_ORIGINAL_PRODUCER_TEST_REVIEW,
@@ -1225,10 +1226,26 @@ test('native-original producer preserves exact whole archived inputs and rejects
 
 test('actual scalar-planning record has one exact historical inverse and rejects mixed scopes', async () => {
   const { path: file, before, after, edits } = DMI_SCALAR_PLANNING_RECORD_TEST_REVIEW;
-  const active = (await fs.readFile(new URL('../' + file, import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  const raw = (await fs.readFile(new URL('../' + file, import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  const work = DMI_SCALAR_RETENTION_WORK_TEST_REVIEW;
+  assert.equal(Buffer.byteLength(raw), work.after.bytes);
+  assert.equal(digest(raw), work.after.sha256);
+  const active = inverseDmiScalarRetentionWorkTestInput(raw, file);
+  assert.equal(inverseDmiScalarRetentionWorkTestInput(active, file), active);
+  assert.equal(inverseDmiScalarRetentionWorkTestInput(raw, 'scripts/unknown.mjs'), raw);
+  for (const [line, prior, current] of work.edits) {
+    const lines = raw.split('\n');
+    lines.splice(line - 1, current ? current.split('\n').length : 0, ...(prior ? prior.split('\n') : []));
+    const mixed = lines.join('\n');
+    assert.notEqual(mixed, raw);
+    assert.equal(inverseDmiScalarRetentionWorkTestInput(mixed, file), mixed);
+    assert.throws(() => inverseCurrentNativeOriginalProducerTestInput(mixed, file), /ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+  }
+  assert.throws(() => inverseCurrentNativeOriginalProducerTestInput(raw + '\n', file), /ALTERNATIVE_C_TEST_INPUT_CHANGED/);
   assert.equal(Buffer.byteLength(active), after.bytes);
   assert.equal(digest(active), after.sha256);
   const previous = inverseDmiScalarPlanningRecordTestInput(active, file);
+  assert.equal(inverseDmiScalarPlanningRecordTestInput(raw, file), previous);
   assert.equal(Buffer.byteLength(previous), before.bytes);
   assert.equal(digest(previous), before.sha256);
   assert.equal(inverseDmiScalarPlanningRecordTestInput(previous, file), previous);

@@ -1,3 +1,11 @@
+## 8. november — mindre gentaget arbejde i vejrplanlægningen
+
+To almindelige vejrhentninger ramte den fælles tidsgrænse, da RavRadar gennemgik gemte værdier for kystdelene. RavRadar fortsatte efter den normale reservevej. Den målte tid gælder hele planlægningen.
+
+Rettelsen undgår at kontrollere en strengt ældre DMI-kilde en ekstra gang, når den nyere værdi for samme time allerede er kontrolleret. Mulige vindere, huller og kilder fra samme modelkørsel går stadig gennem den eksisterende kontrol. Det gælder kun den interne plan for vind, vandstand og vandtemperatur.
+
+Den normale prøve med kunstige data for 673 kystdele gav samme plan byte for byte på cirka 72 sekunder med den gældende grænse på 120 sekunder. Kildekontrol, levering og virkningen i en ny almindelig vejrhentning er fortsat åbne. Årsagen til manglende vandstand sidst i prognosen skal undersøges særskilt.
+
 ## 7. november — planlagt genoptagelse efter udtømte Pages-opslag
 
 Den nye kandidat registrerer et særskilt udfald, når alle seks afgrænsede opslag af en allerede uploadet Pages-pakke svarer HTTP 404, og en læsning af samme kørsels artifactliste med samme GitHub-adgang faktisk lykkes. Den næste ordinære cron kan vælge den eksisterende genoptagelse fra gemt vejr og scorehistorik efter verifikation af den afsluttede producent på samme main og første forsøg, den efterfølgende synlige pakkeidentitet og den uændrede offentlige forgænger samt centrale bindinger. Ved godkendt genbrug bygger den normale vej en ny, forseglet Pages-pakke fra de gemte data og kræver de sædvanlige bevarings-, release- og udgivelseskontroller. Adgangsfejl og ukendte udfald giver ingen genoptagelsesmarkør. Afvigende pakkeidentitet eller ugyldig kontrolhash ved næste kørsel afviser genoptagelsen.
