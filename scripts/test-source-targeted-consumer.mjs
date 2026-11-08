@@ -10,7 +10,7 @@ import {sourceTreeContentSha256,sourceTreeProofArtifactName} from './lib/source-
 import {SOURCE_GATE_CONTRACT,PULL_REQUEST_SOURCE_JOB,PULL_REQUEST_SOURCE_WORKFLOW,SOURCE_GATE_PRODUCERS}
   from './lib/weather-source-gate.mjs';
 import {TARGETED_SOURCE_STEP_NAMES,TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES,TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES,verifyTargetedSourceStepShape} from './source-targeted-consumer.mjs';
-import {SOURCE_IMPACT_DMI_REQUIREMENTS_REVIEW} from './lib/source-impact-workflow-review.mjs';
+import {SOURCE_IMPACT_DMI_REQUIREMENTS_REVIEW,reviewedSourcePrWorkflowOrdinaryView} from './lib/source-impact-workflow-review.mjs';
 import {ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS,ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND,ORIGIN}
   from './native-postgres-evidence.mjs';
 import {ORIGIN as NATIONAL,COMMAND as NATIONAL_COMMAND,ASSISTANT_PUBLIC591_SUCCESSOR_SOURCE_COMMAND}
@@ -197,7 +197,7 @@ try{
   const canonicalReceipt=copy(receipt);rebuildTarget();maps();
   const check=async mutate=>{receipt=copy(canonicalReceipt);rebuildTarget();maps();const deps=dependencies();mutate?.(deps);
     const result=await decide(locator,env,d(deps));cases++;return {result,deps};};
-  const dmiWorkflow=fs.readFileSync(path.join(SOURCE,'.github/workflows/validate-pull-request.yml'),'utf8');
+  const dmiWorkflow=reviewedSourcePrWorkflowOrdinaryView(fs.readFileSync(path.join(SOURCE,'.github/workflows/validate-pull-request.yml'),'utf8'));
   const dmiSteps=TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES.map((name,index)=>({name,number:index+1,status:'completed',
     conclusion:index>=7&&index<=20?'skipped':'success',started_at:stamp(index),completed_at:stamp(index+1)}));
   assert.equal(verifyTargetedSourceStepShape({steps:dmiSteps},dmiWorkflow).proofTime,Date.parse(stamp(7)));cases++;
