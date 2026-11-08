@@ -75,8 +75,11 @@ function restoreBytes(buffers,history=false){
   return history?Buffer.concat(buffers.flatMap(b=>[b,Buffer.from('\n')])):
     Buffer.concat([buffers[0],Buffer.from('\n'),buffers[1],Buffer.from('\nSET session_replication_role = replica;\n'),buffers[2],Buffer.from('\n')]);
 }
-function restoreChildEnvironment(env,home,root){
-  return {PATH:env.PATH,HOME:home,TMPDIR:root,LANG:'C.UTF-8',LC_ALL:'C.UTF-8',CI:'true',SUPABASE_TELEMETRY_DISABLED:'true'};
+function restoreChildEnvironment(env,home,root,bin){
+  const child={PATH:env.PATH,HOME:home,TMPDIR:root,LANG:'C.UTF-8',LC_ALL:'C.UTF-8',CI:'true',SUPABASE_TELEMETRY_DISABLED:'true'};
+  // The pinned setup action selects this public registry for CLI 2.117.0.
+  if(bin==='supabase'&&env.SUPABASE_INTERNAL_IMAGE_REGISTRY==='ghcr.io')child.SUPABASE_INTERNAL_IMAGE_REGISTRY='ghcr.io';
+  return child;
 }
 function archiveSelection(env){
   need(/^[a-f0-9]{64}$/.test(env.RESTORE_ARCHIVE_INDEX_SHA??'')
@@ -157,7 +160,7 @@ async function command(c,stage,bin,args,{cwd=c.root,input=null,maxMs=P.childMs,a
   const fail=code=>{first??=Object.assign(new Error('LOCAL_RESTORE_FAILED_CLOSED'),{code});};
   const interrupted=()=>fail('INTERRUPTED');
   try{
-    child=spawn(bin,args,{cwd,env:c.env,shell:false,detached:true,stdio:['pipe','pipe','pipe']});
+    child=spawn(bin,args,{cwd,env:restoreChildEnvironment(process.env,c.home,c.root,bin),shell:false,detached:true,stdio:['pipe','pipe','pipe']});
     child.on('error',()=>fail('SPAWN_FAILED'));
     child.on('exit',(v,s)=>{exit=v;signal=s;if(v!==0||s!==null)fail('CHILD_EXIT');});
     child.on('close',()=>{closed=true;});
@@ -375,9 +378,9 @@ async function dumpFiles(c,p){
 }
 
 async function restoreArchive(c,b,indexSha256){
-  const archive=await materializeArchiveInputs(c,indexSha256);c.dumps=archive.files;
   await startProject(c,b);
   need((await query(c,b,'ARCHIVE_TARGET_EMPTY','select to_jsonb((select count(*) from auth.users)=0);'))===true,'ARCHIVE_TARGET_NOT_EMPTY');
+  const archive=await materializeArchiveInputs(c,indexSha256);c.dumps=archive.files;
   await command(c,'QUIESCE_B_AUTH','docker',['stop','--time','10',b.auth],{maxMs:30_000});
   await psql(c,b,'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA',materializedRestoreBytes(c,archive));
   await psql(c,b,'RESTORE_ARCHIVE_HISTORY',materializedRestoreBytes(c,archive,true));
@@ -413,8 +416,7 @@ async function fixture({archive=false}={}){
   const root=await fs.mkdtemp(path.join(temp,'rr-standard-restore-'));need(inside(temp,root),'OWNED_ROOT');await fs.chmod(root,0o700);
   const rootIdentity=await fs.lstat(root,{bigint:true});
   const home=path.join(root,'home');await fs.mkdir(home,{mode:0o700});const owner=run+'-1';
-  const c={root,owner,archive,stage:'PREFLIGHT',deadline:Date.now()+P.operationMs,processes:[],authRequests:[],dumps:[],images:null,
-    env:restoreChildEnvironment(process.env,home,root)};
+  const c={root,home,owner,archive,stage:'PREFLIGHT',deadline:Date.now()+P.operationMs,processes:[],authRequests:[],dumps:[],images:null};
   const projects=['A','B'].map(side=>({side,id:'rr_restore_'+run+'_1_'+side.toLowerCase(),dir:path.join(root,side),network:'rr-restore-'+owner+'-'+side.toLowerCase()}));
   let result,error=null;
   try{
@@ -585,6 +587,18 @@ async function selfTest(){
       assert.deepEqual(Object.keys(child).sort(),['PATH','HOME','TMPDIR','LANG','LC_ALL','CI','SUPABASE_TELEMETRY_DISABLED'].sort());
       for(const key of Object.keys(env).filter(k=>k!=='RUNNER_TEMP'))assert(!Object.hasOwn(child,key));
     });
+  });
+  test('only the pinned setup registry reaches the Supabase CLI without archive or registry credentials',()=>{
+    const env={PATH:'synthetic-path',SUPABASE_INTERNAL_IMAGE_REGISTRY:'ghcr.io',
+      SUPABASE_SERVICE_ROLE_KEY:'synthetic-archive-key',RAVRADAR_R2_SECRET_ACCESS_KEY:'synthetic-r2-key',
+      GH_TOKEN:'synthetic-registry-token',DOCKER_AUTH_CONFIG:'synthetic-registry-config'};
+    const generic=restoreChildEnvironment(env,'owned-home','owned-root','docker');
+    assert.deepEqual(Object.keys(generic).sort(),['PATH','HOME','TMPDIR','LANG','LC_ALL','CI','SUPABASE_TELEMETRY_DISABLED'].sort());
+    assert.deepEqual(restoreChildEnvironment(env,'owned-home','owned-root','git'),generic);
+    assert.deepEqual(restoreChildEnvironment(env,'owned-home','owned-root','supabase'),
+      {...generic,SUPABASE_INTERNAL_IMAGE_REGISTRY:'ghcr.io'});
+    for(const value of [undefined,'public.ecr.aws','ghcr.io/private',' ghcr.io','https://ghcr.io'])
+      assert.deepEqual(restoreChildEnvironment({...env,SUPABASE_INTERNAL_IMAGE_REGISTRY:value},'owned-home','owned-root','supabase'),generic);
   });
   test('archive receipt cannot admit incomplete, writing or upgraded evidence',async()=>{
     for(const receiptEdit of [r=>{r.remoteArchiveVerified=false;},r=>{r.databaseRestoreExecuted=true;},

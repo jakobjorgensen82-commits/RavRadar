@@ -466,6 +466,8 @@ Kandidaten bruger det eksisterende versionsfelt 4.0.594 og de gældende score-, 
 
 ## 89.300 Privat databasebackup før gratis drift
 
+Den isolerede gendannelsesprøve kunne læse og autentificere de fem gemte SQL-filer. Opstarten af testdatabasen stoppede ved hentning af et containerbillede. Prøven bruger nu det offentlige billedlager, som den eksisterende CLI-installation allerede vælger, og kontrollerer den tomme, isolerede testdatabase, før den læser arkivet. Det samme arkiv kan bruges igen. Gennemført import og fungerende lokal Auth skal stadig verificeres.
+
 Den første krypterede databasebackup blev gemt og genlæst fra det private lager. Databasen gemte også henvisningen, men backupkontrollen meldte fejl, fordi databasen returnerede felterne i en anden rækkefølge. Rettelsen sammenligner den validerede henvisning i den oprindelige rækkefølge og bevarer de præcise værdier, versionskontrollen og det eksisterende krypterede arkiv.
 
 En isoleret gendannelse kan bruge det allerede gemte arkiv. Kontrol af gendannelse, særskilt fillager, løbende backup og samlet forbrug er fortsat åbne krav før overgang til Free.

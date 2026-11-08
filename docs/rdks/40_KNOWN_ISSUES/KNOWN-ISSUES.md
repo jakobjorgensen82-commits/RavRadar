@@ -4,6 +4,8 @@ Den første krypterede databasebackup blev gemt og genlæst fra det private lage
 
 En isoleret gendannelse kan bruge det allerede gemte arkiv. Kontrol af gendannelse, særskilt fillager, løbende backup og samlet forbrug er fortsat åbne krav før overgang til Free.
 
+Den isolerede gendannelsesprøve kunne læse og autentificere de fem gemte SQL-filer. Opstarten af testdatabasen stoppede ved hentning af et containerbillede. Prøven bruger nu det offentlige billedlager, som den eksisterende CLI-installation allerede vælger, og kontrollerer den tomme, isolerede testdatabase, før den læser arkivet. Det samme arkiv kan bruges igen. Gennemført import og fungerende lokal Auth skal stadig verificeres.
+
 ## 8. november — plads til den samlede private databasebackup
 
 Den seneste almindelige backupkørsel passerede adgangskontrollerne, men stoppede før upload, da den komprimerede og krypterede eksport oversteg den samlede grænse på 180 MB. Den gennemgåede rettelse tillader 288 MB fordelt på højst 12 dele. Der reserveres fortsat plads til hele transporten før første upload. Grænserne er fortsat 36 MB krypteret indhold pr. del, 50 MB pr. lagerobjekt, 300 MB pr. samlet transport og 2 GB i det private backup-lager.
