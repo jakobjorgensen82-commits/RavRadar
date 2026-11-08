@@ -537,6 +537,11 @@ if (process.argv.includes('--native-identity-source-only')) {
   assert.equal((catalog.match(/^revoke all on function/gm) ?? []).length, 15);
   assert.equal((catalog.match(/^grant execute on function/gm) ?? []).length, 2);
   assert.equal((catalog.match(/^create policy/gm) ?? []).length, 2);
+  const policyPairs = /^drop policy if exists ([a-z_]+)\n  on public\.(admin_document(?:s|_versions));\ncreate policy \1\non public\.\2 as restrictive for select to authenticated\nusing \(document_key <> 'ravscore-continuation-checkpoint'\);$/gm;
+  assert.deepEqual([...catalog.matchAll(policyPairs)].map(match => match.slice(1)), [
+    ['ravradar_ravscore_checkpoint_no_direct_read', 'admin_documents'],
+    ['ravradar_ravscore_checkpoint_versions_no_direct_read', 'admin_document_versions'],
+  ]);
   assert.throws(() => nativeIdentityHistoricalCatalogSetup(oldSql.replace('from public, anon, authenticated;', 'from public, anon;')));
   assert.throws(() => nativeIdentityHistoricalCatalogSetup(oldSql + '\n'));
   const canonical = await readNativeIdentityCanonicalSource();
