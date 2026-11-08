@@ -79,6 +79,22 @@ function diagnosticClass(bytes,stage){
   ])if(expression.test(text))return code;
   return 'CHILD_EXIT';
 }
+// The cold synthetic target passes no archive/provider credentials. Expose only
+// fixed upstream phase markers and closed dictionary words, never stderr text.
+function startupFailureEvidence(bytes){
+  const text=bytes.toString('utf8').replace(/\x1B\[[0-?]*[ -/]*[@-~]/g,'');
+  const phase=text.includes('Waiting for health checks...')?'SERVICE_HEALTH'
+    :text.includes('Starting containers...')?'SERVICE_START_AFTER_POSTGRES'
+    :text.includes('Starting database...')?'POSTGRES_BOOTSTRAP':'BEFORE_KNOWN_START_MARKER';
+  const safeWords=new Set(('error failed failure fatal unable unsupported invalid missing not found panic timeout timed out expired denied unauthorized forbidden certificate tls handshake http https bad request status response internal server unknown unexpected malformed failed to pull download resolve registry image manifest ref reference blob layer inspect setup start starting waiting checks check health unhealthy readiness docker daemon network bridge internal subnet gateway ipv4 loopback bind port allocated address in use container containers endpoint sandbox create service postgres postgresql auth gotrue kong db pooler database localhost permission access transport request connection reset refused closed dial tcp lookup dns no such host unreachable proxy read write file volume mount path does exist environment configuration config toml parse startup postgres database role migration sql syntax system too many requests quota exceeded storage space device schema init bootstrap rollback shutdown retry oci runtime network driver host failed error code exec exit terminated ghcr io public ecr aws docker connection 400 401 403 404 429 500 502 503 504').split(' '));
+  const lines=text.split(/\r\n?|\n/).map(x=>x.trim()).filter(Boolean);
+  const failures=lines.filter(x=>/error|failed|fatal|unhealthy|denied|refused|unreachable|timed out|panic|not found|cannot|could not/i.test(x));
+  const shapes=(failures.length?failures:lines).slice(-5).map(line=>{
+    const words=(line.toLowerCase().match(/[a-z0-9]+/g)??[]).slice(0,48);
+    return words.map(word=>safeWords.has(word)?word:'_').join(' ').replace(/(?:_ )+_/g,'_');
+  }).filter(Boolean);
+  return {phase,shapes};
+}
 function restoreBytes(buffers,history=false){
   need(Array.isArray(buffers)&&buffers.length===(history?2:3)&&buffers.every(Buffer.isBuffer),'RESTORE_BYTES');
   return history?Buffer.concat(buffers.flatMap(b=>[b,Buffer.from('\n')])):
@@ -200,9 +216,16 @@ async function command(c,stage,bin,args,{cwd=c.root,input=null,maxMs=P.childMs,a
       const end=Date.now()+grace;while(!(closed&&gone())&&Date.now()<end)await sleep(40);
     }
     const processClosed=closed&&gone();
-    c.processes.push({stage,exit,stdoutBytes:outBytes,stderrBytes:errBytes,processGroupClosed:processClosed});
+    const processReport={stage,exit,stdoutBytes:outBytes,stderrBytes:errBytes,processGroupClosed:processClosed};
+    c.processes.push(processReport);
     if(!processClosed)fail('PROCESS_GROUP_UNCLOSED');
-    if(first){if(first.code==='CHILD_EXIT')first.code=diagnosticClass(Buffer.concat(err),stage);first.exit=exit;throw first;}
+    if(first){
+      const stderr=Buffer.concat(err);
+      if(c.startup&&stage==='START_B')processReport.startupEvidence=startupFailureEvidence(stderr);
+      if(first.code==='CHILD_EXIT')first.code=diagnosticClass(stderr,stage);
+      first.exit=exit;
+      throw first;
+    }
     return Buffer.concat(out);
   }finally{
     process.removeListener('SIGINT',interrupted);process.removeListener('SIGTERM',interrupted);
@@ -427,7 +450,7 @@ async function fixture(mode='synthetic'){
   const root=await fs.mkdtemp(path.join(temp,'rr-standard-restore-'));need(inside(temp,root),'OWNED_ROOT');await fs.chmod(root,0o700);
   const rootIdentity=await fs.lstat(root,{bigint:true});
   const home=path.join(root,'home');await fs.mkdir(home,{mode:0o700});const owner=run+'-1';
-  const c={root,home,owner,archive,stage:'PREFLIGHT',deadline:Date.now()+P.operationMs,processes:[],authRequests:[],dumps:[],images:null};
+  const c={root,home,owner,archive,startup,stage:'PREFLIGHT',deadline:Date.now()+P.operationMs,processes:[],authRequests:[],dumps:[],images:null};
   const projects=['A','B'].map(side=>({side,id:'rr_restore_'+run+'_1_'+side.toLowerCase(),dir:path.join(root,side),network:'rr-restore-'+owner+'-'+side.toLowerCase()}));
   let result,error=null;
   try{
@@ -595,6 +618,10 @@ async function selfTest(){
     assert.equal(start('write layer: no space left on device'),'DOCKER_STORAGE_LIMIT');
     assert.equal(start('token=must-not-appear'),'CHILD_EXIT');
     assert.equal(diagnosticClass(Buffer.from('container example is unhealthy'),'RESTORE_HISTORY'),'CHILD_EXIT');
+    const startupEvidence=startupFailureEvidence(Buffer.from('Starting containers...\nWaiting for health checks...\nError: container synthetic-secret failed health check token=synthetic-key\n'));
+    assert.equal(startupEvidence.phase,'SERVICE_HEALTH');
+    assert.match(startupEvidence.shapes[0],/container _ failed health check/);
+    assert.doesNotMatch(JSON.stringify(startupEvidence),/synthetic|secret|token|key/);
   });
   test('archive choice requires one authenticated SHA, explicit isolated confirmation and main',()=>{
     const valid={GITHUB_REF:'refs/heads/main',RESTORE_ARCHIVE_INDEX_SHA:'a'.repeat(64),RESTORE_ARCHIVE_CONFIRMATION:ARCHIVE_CONFIRMATION};
