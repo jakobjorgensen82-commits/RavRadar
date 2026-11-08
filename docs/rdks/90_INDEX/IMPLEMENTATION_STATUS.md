@@ -1,3 +1,9 @@
+## 8. november — plads til den samlede private databasebackup
+
+Den seneste almindelige backupkørsel passerede adgangskontrollerne, men stoppede før upload, da den komprimerede og krypterede eksport oversteg den samlede grænse på 180 MB. Den gennemgåede rettelse tillader 288 MB fordelt på højst 12 dele. Der reserveres fortsat plads til hele transporten før første upload. Grænserne er fortsat 36 MB krypteret indhold pr. del, 50 MB pr. lagerobjekt, 300 MB pr. samlet transport og 2 GB i det private backup-lager.
+
+Den samlede størrelse af den afbrudte eksport er ukendt. En rigtig arkivering med autentificeret genlæsning og en særskilt isoleret gendannelse skal stadig gennemføres, før backuppen kan bruges som grundlag for at ændre abonnement. Se håndbog 89.300.
+
 ## 8. november — mindre gentaget arbejde i vejrplanlægningen
 
 To almindelige vejrhentninger ramte den fælles tidsgrænse, da RavRadar gennemgik gemte værdier for kystdelene. RavRadar fortsatte efter den normale reservevej. Den målte tid gælder hele planlægningen.

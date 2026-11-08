@@ -8,7 +8,7 @@ import {pipeline} from 'node:stream/promises';
 import {pathToFileURL} from 'node:url';
 import {exportSupabaseDatabase} from './export-supabase-database.mjs';
 
-export const DB_BACKUP_CIPHER_LIMITS=Object.freeze({partBytes:36_000_000,totalBytes:180_000_000,wireBytes:300_000_000,parts:9});
+export const DB_BACKUP_CIPHER_LIMITS=Object.freeze({partBytes:36_000_000,totalBytes:288_000_000,wireBytes:300_000_000,parts:12});
 export const DB_LOCAL_CARRIER_POLICY=Object.freeze({repository:'jakobjorgensen82-commits/RavRadar',project:'afqhhdrkjfjtpadntdzo',
   purpose:'SUPABASE_DATABASE_BACKUP/v1',maximumCipherBytes:50_000_000,maximumSqlBytes:1_000_000_000,
   maximumTotalSqlBytes:2_000_000_000,maximumManifestBytes:32*1024,maximumHeaderBytes:4096,maximumMs:20*60_000});

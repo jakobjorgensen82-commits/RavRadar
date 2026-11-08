@@ -468,6 +468,10 @@ Kandidaten bruger det eksisterende versionsfelt 4.0.594 og de gældende score-, 
 
 Den første faktiske eksport stoppede ved den lokale grænse på 50 MB for én krypteret fil, før nogen R2-upload. Den lokale rettelse kan dele én af de fem krypterede filer over flere objekter i den samme private bucket. Delene er højst 36 MB hver, med højst ni dele og 180 MB krypteret indhold for hele gruppen. Transportgrænserne på 50 MB pr. objekt, 300 MB pr. gruppe og 2 GB for bucketen består. Første upload kræver plads til hele gruppen. Det autentificerede indeks binder delene til de fem originale filer, og gamle arkiver kan stadig læses. Eksakt materialisering er lokalt prøvet med syntetisk transport. Faktisk capture, isoleret Auth- og datagendannelse, Storage, målt forbrug og Free er fortsat åbne.
 
+Den seneste almindelige backupkørsel passerede adgangskontrollerne, men stoppede før upload, da den komprimerede og krypterede eksport oversteg den samlede grænse på 180 MB. Den gennemgåede rettelse tillader 288 MB fordelt på højst 12 dele. Der reserveres fortsat plads til hele transporten før første upload. Grænserne er fortsat 36 MB krypteret indhold pr. del, 50 MB pr. lagerobjekt, 300 MB pr. samlet transport og 2 GB i det private backup-lager.
+
+Den samlede størrelse af den afbrudte eksport er ukendt. En rigtig arkivering med autentificeret genlæsning og en særskilt isoleret gendannelse skal stadig gennemføres, før backuppen kan bruges som grundlag for at ændre abonnement.
+
 Runtimekontrollen i eksporten bruger samme procesobjekt til både platform og Node-version. Standardkaldet bruger den faktiske vært og kræver fortsat Linux og Node 24 eller nyere før filer eller CLI. Syntetiske transportprøver beskriver deres Node 24-miljø eksplicit; de er ikke bevis for faktisk hosted CLI-/databaseeksekvering. To nye runtimecases og de 109 tidligere backupcases består lokalt. De særskilte Linux-, Auth-, eksport-, restore- og Free-gates skal fortsat bestå.
 
 <a id="supabase-private-backup-free-readiness-2026-11-02"></a>
