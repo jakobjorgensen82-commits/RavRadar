@@ -12,6 +12,14 @@ import {PRIVATE_STUDY_ADMIN_FUNCTIONS} from './lib/private-trip-study-admin-tran
 const sha=b=>crypto.createHash('sha256').update(b).digest('hex'),clone=x=>JSON.parse(JSON.stringify(x));
 const names=['roles.sql','schema.sql','data.sql','history-schema.sql','history-data.sql'];
 const sql=name=>Buffer.from('-- synthetic '+name+'\nINSERT INTO synthetic VALUES (9007199254740993,0.12345678901234567890123456789);\n');
+// PostgreSQL JSONB emits object keys by UTF-8 byte length, then binary order.
+function postgresJsonbOrder(value){
+  if(Array.isArray(value))return value.map(postgresJsonbOrder);
+  if(!value||typeof value!=='object')return value;
+  return Object.fromEntries(Object.entries(value).sort(([a],[b])=>
+    Buffer.byteLength(a)-Buffer.byteLength(b)||Buffer.compare(Buffer.from(a),Buffer.from(b)))
+    .map(([key,item])=>[key,postgresJsonbOrder(item)]));
+}
 async function host(t){const temp=path.resolve(os.tmpdir()),dir=await fs.mkdtemp(path.join(temp,'ravradar-db-remote-test-'));
   t.after(async()=>{assert.ok(path.resolve(dir).startsWith(temp+path.sep+'ravradar-db-remote-test-'));assert.equal((await fs.lstat(dir)).isSymbolicLink(),false);await fs.rm(dir,{recursive:true,force:false});});return dir;}
 function catalogue(){const metadata={rls:true,ownerRestricted:true,anonSelect:false,authenticatedSelect:true,unsafeRoles:false,publicSelect:false,
@@ -33,18 +41,25 @@ function fixture(temp,behavior={}){
   const killImpl=(negativePid,signal)=>{assert.ok(negativePid<0);const c=children.find(x=>x.child?.pid===-negativePid);if(!c?.child?.alive){const e=new Error('gone');e.code='ESRCH';throw e;}assert.equal(signal,0);};
   const response=(body,status=200,headers={})=>new Response([204,205,304].includes(status)?null:body,{status,headers});
   const json=(value,status=200)=>response(JSON.stringify(value),status,{'content-type':'application/json'});
+  const locatorRepresentation=method=>{
+    if(!locator)return [];
+    const row=clone(locator);
+    if(behavior.reorderLocatorJsonb)row.payload=postgresJsonbOrder(row.payload);
+    behavior.mutateLocatorResponse?.(row,method);
+    return [row];
+  };
   const fetchImpl=async(url,options={})=>{
     const u=new URL(url),method=options.method||'GET',headers=new Headers(options.headers),body=options.body;calls.push({url,method,headers,body,childrenAtRequest:children.length});
     if(u.hostname==='api.supabase.com'){assert.ok(!behavior.denySupabase,'bootstrap must never contact Supabase');assert.equal(method,'POST');assert.ok(JSON.parse(body).query.includes('has_table_privilege'));return json(behavior.catalogue?.()??catalogue(),behavior.catalogueStatus??200);}
     if(u.origin===P.project){assert.ok(!behavior.denySupabase,'bootstrap must never contact Supabase');assert.equal(u.pathname,'/rest/v1/admin_documents');assert.equal(headers.get('apikey'),env.SUPABASE_SERVICE_ROLE_KEY);
-      if(method==='GET'){assert.equal(u.searchParams.get('document_key'),'eq.'+P.locatorKey);if(behavior.beforeLocatorGet)behavior.beforeLocatorGet(api);return json(locator?[clone(locator)]:[]);}
+      if(method==='GET'){assert.equal(u.searchParams.get('document_key'),'eq.'+P.locatorKey);if(behavior.beforeLocatorGet)behavior.beforeLocatorGet(api);return json(locatorRepresentation(method));}
       const payload=JSON.parse(body);assert.equal(payload.updated_by,null);assert.equal(payload.payload.bucket,P.bucket);
       if(behavior.locatorUnknown)throw new Error('synthetic private response never returned');
       if(behavior.casConflict)return json([]);
       if(method==='POST'){assert.equal(u.searchParams.get('on_conflict'),'document_key');if(locator)return json([]);locator={document_key:P.locatorKey,payload:payload.payload,version:1};}
       else{assert.equal(method,'PATCH');assert.equal(u.searchParams.get('document_key'),'eq.'+P.locatorKey);if(u.searchParams.get('version')!=='eq.'+locator.version)return json([]);
         oldLocators.push(clone(locator));locator={...locator,payload:payload.payload,version:locator.version+1};}
-      return json([clone(locator)]);
+      return json(locatorRepresentation(method));
     }
     assert.equal(u.hostname,env.RAVRADAR_R2_ACCOUNT_ID+'.eu.r2.cloudflarestorage.com');assert.ok(u.pathname.startsWith('/'+P.bucket));
     const key=u.pathname.slice(P.bucket.length+2),authenticated=headers.has('authorization');
@@ -103,6 +118,36 @@ test('fixed normal five dumps -> honest gzip frames -> R2 exact readback -> cent
 test('second capture uses guarded new version; original six archive objects and previous locator remain',async t=>{
   const {f}=await captured(t),old=clone(f.locator),objects=new Map(f.objects);const r=await run({mode:'capture'},f.dependencies());
   assert.equal(r.locatorVersion,2);assert.deepEqual(f.oldLocators,[old]);assert.equal(f.objects.size,12);for(const [key,b] of objects)assert.ok(f.objects.get(key).equals(b));
+});
+test('PostgreSQL JSONB locator order preserves exact capture CAS and current and legacy readback',async t=>{
+  const {f,result:first}=await captured(t,{reorderLocatorJsonb:true});
+  assert.equal(first.locatorVersion,1);
+  assert.notEqual(JSON.stringify(postgresJsonbOrder(f.locator.payload)),JSON.stringify(f.locator.payload));
+  const firstObjects=new Map(f.objects);
+  const discovered=await run({},f.dependencies());
+  assert.equal(discovered.indexSha256,first.indexSha256);
+  assert.deepEqual(discovered.files.map(x=>x.sqlSha256),names.map(n=>sha(sql(n))));
+  assert.equal(writeCalls(f).filter(x=>new URL(x.url).origin===P.project).length,1);
+  const second=await run({mode:'capture'},f.dependencies());
+  assert.equal(second.locatorVersion,2);
+  const patch=writeCalls(f).find(x=>x.method==='PATCH');
+  assert.equal(new URL(patch.url).searchParams.get('version'),'eq.1');
+  assert.equal(writeCalls(f).filter(x=>new URL(x.url).origin===P.project).length,2);
+  for(const [key,bytes] of firstObjects)assert.ok(f.objects.get(key).equals(bytes));
+  const legacy=legacyIndexFixture(f);f.locator.payload.index=legacy;
+  const legacyRead=await run({},f.dependencies());
+  assert.equal(legacyRead.indexSha256,legacy.sha256);
+  assert.deepEqual(legacyRead.files.map(x=>x.sqlSha256),names.map(n=>sha(sql(n))));
+  const thirdFixture=fixture(await host(t),{reorderLocatorJsonb:true,mutateLocatorResponse:(row,method)=>{
+    if(method==='POST')row.version++;
+  }});
+  await rejectCode(()=>run({mode:'capture'},thirdFixture.dependencies()),'LOCATOR_CAS_REJECTED');
+  assert.equal(writeCalls(thirdFixture).filter(x=>new URL(x.url).origin===P.project).length,1);
+  const mismatchFixture=fixture(await host(t),{reorderLocatorJsonb:true,mutateLocatorResponse:(row,method)=>{
+    if(method==='POST')row.payload.context.sourceHead='b'.repeat(40);
+  }});
+  await rejectCode(()=>run({mode:'capture'},mismatchFixture.dependencies()),'LOCATOR_CAS_REJECTED');
+  assert.equal(writeCalls(mismatchFixture).filter(x=>new URL(x.url).origin===P.project).length,1);
 });
 test('normal dump failure has UNKNOWN external outcome and only read-only preflight, no archive mutation',async t=>{
   const f=fixture(await host(t),{failDump:'roles.sql'});await assert.rejects(()=>run({mode:'capture'},f.dependencies()),e=>e.externalDumpOutcome==='UNKNOWN');

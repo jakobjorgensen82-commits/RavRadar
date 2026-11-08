@@ -28,8 +28,17 @@ function checkContext(c){fields(c,['purpose','project','repository','sourceHead'
   need(c.purpose===LOCAL.purpose&&c.project===LOCAL.project&&c.repository===LOCAL.repository&&typeof c.sourceHead==='string'&&/^[0-9a-f]{40}$/.test(c.sourceHead)
     &&typeof c.runId==='string'&&/^[1-9][0-9]*$/.test(c.runId)&&typeof c.runAttempt==='string'&&/^[1-9][0-9]*$/.test(c.runAttempt),'DB_CONTEXT');return c;}
 function checkObject(x,pickPath=objectPath){fields(x,['path','sha256','bytes'],'OBJECT_FIELDS');need(hash(x.sha256)&&x.path===pickPath(x.sha256)&&positive(x.bytes)&&x.bytes<=P.maximumObjectBytes,'OBJECT_DESCRIPTOR');return x;}
-function checkPointer(x){fields(x,['kind','bucket','index','context','exportReceiptSha256','manifestSha256'],'LOCATOR_FIELDS');
-  need(x.kind==='SUPABASE_DB_BACKUP_LOCATOR_V1'&&x.bucket===P.bucket&&hash(x.exportReceiptSha256)&&hash(x.manifestSha256),'LOCATOR_INVALID');checkObject(x.index);checkContext(x.context);return x;}
+function checkPointer(x){
+  fields(x,['kind','bucket','index','context','exportReceiptSha256','manifestSha256'],'LOCATOR_FIELDS');
+  need(x.kind==='SUPABASE_DB_BACKUP_LOCATOR_V1'&&x.bucket===P.bucket&&hash(x.exportReceiptSha256)&&hash(x.manifestSha256),'LOCATOR_INVALID');
+  const {path,sha256,bytes}=checkObject(x.index);
+  const {purpose,project,repository,sourceHead,runId,runAttempt}=checkContext(x.context);
+  // JSONB does not preserve key order. Rebuild the original capture shape,
+  // including the historical context order used in the index AAD.
+  return {kind:x.kind,bucket:x.bucket,index:{path,sha256,bytes},
+    context:{purpose,project,repository,sourceHead,runId,runAttempt},
+    exportReceiptSha256:x.exportReceiptSha256,manifestSha256:x.manifestSha256};
+}
 function frame(kind,bytes){need(Buffer.isBuffer(bytes)&&bytes.length>0,'FRAME_INPUT');
   const maximum=kind==='SQL_CIPHERTEXT'?P.maximumCipherBytes:P.maximumMetadataBytes;
   need(bytes.length<=maximum&&4*Math.ceil(bytes.length/3)+512<=P.maximumFrameJsonBytes,'FRAME_INPUT_BOUND');
@@ -176,7 +185,8 @@ function validateIndex(raw,pointer){
 }
 const GET_SUFFIX='?document_key=eq.'+P.locatorKey+'&select=document_key,payload,version&limit=2';
 function locatorRows(rows){need(Array.isArray(rows)&&rows.length<=1,'LOCATOR_ROWS');if(!rows.length)return null;const r=rows[0];
-  fields(r,['document_key','payload','version'],'LOCATOR_ROW');need(r.document_key===P.locatorKey&&positive(r.version),'LOCATOR_IDENTITY');checkPointer(r.payload);return r;}
+  fields(r,['document_key','payload','version'],'LOCATOR_ROW');need(r.document_key===P.locatorKey&&positive(r.version),'LOCATOR_IDENTITY');
+  return {document_key:r.document_key,payload:checkPointer(r.payload),version:r.version};}
 async function readLocator(c){return locatorRows(await c.admin(GET_SUFFIX,{},'backup locator read'));}
 async function publishLocator(c,before,pointer){
   const fresh=await readLocator(c);need(same(fresh,before),'LOCATOR_CHANGED');let rows;
