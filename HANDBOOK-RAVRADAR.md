@@ -466,6 +466,12 @@ Kandidaten bruger det eksisterende versionsfelt 4.0.594 og de gældende score-, 
 
 ## 89.300 Privat databasebackup før gratis drift
 
+Den isolerede gendannelsesprøve kunne læse og autentificere de fem gemte SQL-filer. Opstarten af testdatabasen stoppede ved hentning af et containerbillede. Prøven bruger nu det offentlige billedlager, som den eksisterende CLI-installation allerede vælger, og kontrollerer den tomme, isolerede testdatabase, før den læser arkivet. Det samme arkiv kan bruges igen. Gennemført import og fungerende lokal Auth skal stadig verificeres.
+
+Den første krypterede databasebackup blev gemt og genlæst fra det private lager. Databasen gemte også henvisningen, men backupkontrollen meldte fejl, fordi databasen returnerede felterne i en anden rækkefølge. Rettelsen sammenligner den validerede henvisning i den oprindelige rækkefølge og bevarer de præcise værdier, versionskontrollen og det eksisterende krypterede arkiv.
+
+En isoleret gendannelse kan bruge det allerede gemte arkiv. Kontrol af gendannelse, særskilt fillager, løbende backup og samlet forbrug er fortsat åbne krav før overgang til Free.
+
 Den første faktiske eksport stoppede ved den lokale grænse på 50 MB for én krypteret fil, før nogen R2-upload. Den lokale rettelse kan dele én af de fem krypterede filer over flere objekter i den samme private bucket. Delene er højst 36 MB hver, med højst ni dele og 180 MB krypteret indhold for hele gruppen. Transportgrænserne på 50 MB pr. objekt, 300 MB pr. gruppe og 2 GB for bucketen består. Første upload kræver plads til hele gruppen. Det autentificerede indeks binder delene til de fem originale filer, og gamle arkiver kan stadig læses. Eksakt materialisering er lokalt prøvet med syntetisk transport. Faktisk capture, isoleret Auth- og datagendannelse, Storage, målt forbrug og Free er fortsat åbne.
 
 Den seneste almindelige backupkørsel passerede adgangskontrollerne, men stoppede før upload, da den komprimerede og krypterede eksport oversteg den samlede grænse på 180 MB. Den gennemgåede rettelse tillader 288 MB fordelt på højst 12 dele. Der reserveres fortsat plads til hele transporten før første upload. Grænserne er fortsat 36 MB krypteret indhold pr. del, 50 MB pr. lagerobjekt, 300 MB pr. samlet transport og 2 GB i det private backup-lager.
