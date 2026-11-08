@@ -35,6 +35,7 @@ import {
   createProtectedPrivateRuntimeClients,
   describeCurrentProtectedPrivateProductionRuntime,
   describeTargetProtectedPrivateProductionRuntime,
+  pinCurrentProtectedPrivateProductionRuntime,
   publishProtectedPrivateProductionRuntime,
   restoreExactProtectedPrivateWeatherPair,
   restoreExactPreviousDmiBulkDonor,
@@ -1744,6 +1745,134 @@ try {
   assert.equal(realPrevious.productionReferenceAt, first.conditions.productionReferenceAt);
   assert.equal(storage.downloads() - downloadsBeforeRealPrevious, 2,
     'two real different archives must select previous only after current is incompatible');
+
+  await test('pinned protected restore keeps CURRENT through final pointer readback', async () => {
+    const pointer = documents.row();
+    const currentPaths = pointer.payload.current.objects.map(row => row.objectPath);
+    const previousPaths = pointer.payload.previous.objects.map(row => row.objectPath);
+    assert.ok(currentPaths.every(objectPath => !previousPaths.includes(objectPath)));
+    assert.ok(previousPaths.every(objectPath => storage.objects.has(objectPath)));
+    const now = '2026-08-29T12:05:00.000Z';
+    const setup = (label, rows, { corruptCurrent = false, pinned = true } = {}) => {
+      const bundlePath = path.join(restoreRoot, `current-pointer-${label}`);
+      const calls = { pointers: 0, buckets: 0, downloads: [] };
+      const restore = restoreProtectedPrivateProductionRuntime({
+        privateRoot: restoreRoot, bundlePath, repositoryRoot: repository,
+        expected: second.expected, now,
+        ...(pinned ? { expectedCurrentPointerVersion: pointer.version } : {}),
+        request: async (_suffix, options) => {
+          assert.equal(options.method ?? 'GET', 'GET');
+          assert.ok(calls.pointers < rows.length, 'no extra pointer read');
+          const row = rows[calls.pointers++];
+          return row ? [clone(row)] : [];
+        },
+        storage: {
+          ...storage.client,
+          ensurePrivateBucket: async options => {
+            assert.deepEqual(options, { allowCreate: false });
+            calls.buckets += 1;
+          },
+          download: async objectPath => {
+            calls.downloads.push(objectPath);
+            const bytes = await storage.client.download(objectPath);
+            if (corruptCurrent && currentPaths.includes(objectPath)) bytes[0] ^= 1;
+            return bytes;
+          },
+          uploadImmutable: async () => assert.fail('restore must not upload'),
+          removeExact: async () => assert.fail('restore must not remove remote objects'),
+        },
+      });
+      return { bundlePath, calls, restore };
+    };
+    const stable = setup('stable', [pointer, pointer]);
+    const restored = await stable.restore;
+    assert.equal(restored.restored, true);
+    assert.equal(restored.rollbackSelected, false);
+    assert.equal(restored.centralVersion, pointer.version);
+    assert.equal(restored.bundleContentSha256, pointer.payload.current.bundleContentSha256);
+    assert.deepEqual(stable.calls, { pointers: 2, buckets: 1, downloads: currentPaths });
+    await verifyPrivateProductionRuntimeBundle({
+      privateRoot: restoreRoot, bundlePath: stable.bundlePath, repositoryRoot: repository,
+      expected: second.expected, now,
+    });
+
+    const rejected = async (probe, error, calls) => {
+      await assert.rejects(probe.restore, error);
+      assert.deepEqual(probe.calls, calls);
+      await assert.rejects(fs.lstat(probe.bundlePath), { code: 'ENOENT' });
+    };
+    const next = { ...pointer, version: pointer.version + 1 };
+    const prior = { ...pointer, version: pointer.version - 1 };
+    const emptyCalls = { pointers: 1, buckets: 0, downloads: [] };
+    await rejected(setup('before-missing', [null]), /pointer readback is missing/, emptyCalls);
+    await rejected(setup('before-drift', [next]), /pointer version changed before restore/, emptyCalls);
+    const sameVersionDrift = { ...pointer, payload: { ...pointer.payload, previous: null } };
+    for (const [label, latest] of [['advanced', next], ['regressed', prior], ['rewritten', sameVersionDrift]]) {
+      await rejected(setup(label, [pointer, latest]), /pointer changed during restore/,
+        { pointers: 2, buckets: 1, downloads: currentPaths });
+    }
+    await rejected(setup('corrupt', [pointer], { corruptCurrent: true }),
+      { code: 'PROTECTED_PRIVATE_RUNTIME_NO_COMPATIBLE_GENERATION' },
+      { pointers: 1, buckets: 1, downloads: [currentPaths[0]] });
+    const legacy = setup('default-fallback', [pointer], { corruptCurrent: true, pinned: false });
+    const fallback = await legacy.restore;
+    assert.equal(fallback.restored, true);
+    assert.equal(fallback.rollbackSelected, true);
+    assert.equal(fallback.bundleContentSha256, pointer.payload.previous.bundleContentSha256);
+    assert.deepEqual(legacy.calls, { pointers: 1, buckets: 1, downloads: [currentPaths[0], ...previousPaths] });
+  });
+
+  await test('CURRENT pointer pin binds one document read to current contracts', async () => {
+    const row = documents.row();
+    const downloads = storage.downloads();
+    const pin = async (candidate, expectedError) => {
+      let reads = 0;
+      const result = pinCurrentProtectedPrivateProductionRuntime({
+        request: async (suffix, options) => {
+          assert.equal(++reads, 1);
+          assert.equal(options.method ?? 'GET', 'GET');
+          assert.match(suffix, /select=document_key,payload,version&limit=2$/);
+          return [clone(candidate)];
+        },
+      });
+      try {
+        if (expectedError) return await assert.rejects(result, expectedError);
+        return await result;
+      } finally {
+        assert.equal(reads, 1);
+        assert.equal(storage.downloads(), downloads);
+      }
+    };
+    const stable = await pin(row);
+    assert.deepEqual(await pin(row), stable);
+    assert.ok(Object.isFrozen(stable));
+    assert.deepEqual(Object.keys(stable).sort(), ['descriptor', 'pointerSha256', 'pointerVersion']);
+    assert.equal(stable.pointerVersion, row.version);
+    assert.equal(stable.pointerSha256, crypto.createHash('sha256')
+      .update(canonicalPrivateRuntimeJson(row.payload)).digest('hex'));
+    assert.deepEqual(stable.descriptor,
+      await describeCurrentProtectedPrivateProductionRuntime({ request: documents.request }));
+    assert.doesNotMatch(JSON.stringify(stable.descriptor), /objectPath|objects|privacyClass|bucketId/);
+
+    const advanced = await pin({ ...row, version: row.version + 1 });
+    assert.equal(advanced.pointerVersion, stable.pointerVersion + 1);
+    assert.equal(advanced.pointerSha256, stable.pointerSha256);
+    const changed = await pin({ ...row, payload: { ...row.payload, previous: null } });
+    assert.equal(changed.pointerVersion, stable.pointerVersion);
+    assert.notEqual(changed.pointerSha256, stable.pointerSha256);
+    assert.deepEqual(changed.descriptor, stable.descriptor);
+
+    await pin({ ...row, version: 0 }, /pointer row is invalid/);
+    const invalid = clone(row);
+    invalid.payload.current.objectSha256 = 'invalid';
+    await pin(invalid, /object part descriptor is invalid/);
+    const historical = clone(row);
+    historical.payload.current.modelBinding.modelBundleSha256 = 'e'.repeat(64);
+    await pin(historical, /incompatible modelBundleSha256/);
+    const otherContract = clone(row);
+    otherContract.payload.current.contractHashes.continuationStateContractSha256 = 'f'.repeat(64);
+    await pin(otherContract, /incompatible contract hashes/);
+  });
 
   const currentAndHistoricalPrevious = documents.row();
   currentAndHistoricalPrevious.payload.previous.modelBinding = {

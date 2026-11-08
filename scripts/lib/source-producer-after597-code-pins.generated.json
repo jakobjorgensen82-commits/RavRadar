@@ -1,0 +1,2280 @@
+{
+  "schemaVersion": "source-producer-after597-code-pins-v1",
+  "files": [
+    {
+      "path": ".github/actions/save-owned-dmi-grib/action.yml",
+      "bytes": 6366,
+      "sha256": "2148e3c6b0ff1cc6627e661e52c1edebfb286aa628f90c86bec15409cec761a5"
+    },
+    {
+      "path": ".github/actions/save-owned-dmi-grib/index.cjs",
+      "bytes": 88279,
+      "sha256": "34838fa2ee9cf1b2cc6c5d1919958d5d7863b48ec6cc4b15d7a580f12aa53f7a"
+    },
+    {
+      "path": ".github/actions/save-owned-dmi-grib/package-lock.json",
+      "bytes": 126301,
+      "sha256": "920ad50fc3b7084879c1257d5b11e0e3ce52367b42f05871ffc68f8a66f66c47"
+    },
+    {
+      "path": ".github/actions/save-owned-dmi-grib/package.json",
+      "bytes": 290,
+      "sha256": "27ec4c37add8a4fb54de05e6ceb797b42c95ff15dd84526b4aa326f64c073d99"
+    },
+    {
+      "path": ".github/workflows/deploy-code-only-repair.yml",
+      "bytes": 252067,
+      "sha256": "bd5861018d8cae0821bdd7db88f9b80813f06513c371b51b7fbb326a80874779"
+    },
+    {
+      "path": ".github/workflows/reusable-operational-reentry.yml",
+      "bytes": 117498,
+      "sha256": "019d6b5dd43f911635261784e83743fd53a6a03f20f28b9aa69c5856dbb17d9d"
+    },
+    {
+      "path": ".github/workflows/reusable-pages-deploy.yml",
+      "bytes": 72981,
+      "sha256": "655d8d08bc86303bb91dfbf8037000d52a5c710582e84dfec1f2b6f6bcdc5284"
+    },
+    {
+      "path": ".github/workflows/reusable-weather-build.yml",
+      "bytes": 383395,
+      "sha256": "7bd483b5c15eace61c8c25a3f36cf9bc319607665db9b21c51b59b9697ed3c62"
+    },
+    {
+      "path": ".github/workflows/run-current-weather-once.yml",
+      "bytes": 68822,
+      "sha256": "b91412cbb38aacef7555b984472f0cac95f3167199e5e3a9ab17cbe234c96e2f"
+    },
+    {
+      "path": ".github/workflows/update-and-deploy.yml",
+      "bytes": 67790,
+      "sha256": "2d178154177472a2b469b1c4bb063364dd443ff7122f5de062fc8c0f76940b0c"
+    },
+    {
+      "path": "app.js",
+      "bytes": 61191,
+      "sha256": "b276a07c9783e77bf895f508f5d08bc076895aaf0aca0d4fbbc43410bcfb9421"
+    },
+    {
+      "path": "bootstrap.js",
+      "bytes": 1576,
+      "sha256": "25715fdff3d3f481f767681f79ac9d31ce462dbabd3be26bc8d76cf287ea24b8"
+    },
+    {
+      "path": "config.js",
+      "bytes": 379,
+      "sha256": "7cb635a4fbfad6693774ecc776dd5df6bef024d59aba51c50eeab380fdc4ed0d"
+    },
+    {
+      "path": "js/core/about-home-return.js",
+      "bytes": 1061,
+      "sha256": "5c51be78cff4173df9edddcfb65175dd6291fb9598369b2b7d976d0d331fa403"
+    },
+    {
+      "path": "js/core/adaptive-model.js",
+      "bytes": 5870,
+      "sha256": "9dfe107a9a35c8ba6459d2c1103c97054e7593f1efdb44136c771385c7a69faf"
+    },
+    {
+      "path": "js/core/best-time-policy.js",
+      "bytes": 6392,
+      "sha256": "7719ff871936ee09d8fb3371b111e7b36ad2fcebf71cddfceda4b732707dd479"
+    },
+    {
+      "path": "js/core/best-time-selector.js",
+      "bytes": 2611,
+      "sha256": "fbb1fb6867e5baef2c2f30663a71f47aa038374d4ca61a46c7dcaa55a3adccad"
+    },
+    {
+      "path": "js/core/coastal-process-model.js",
+      "bytes": 8758,
+      "sha256": "dd04f8f1184b26336b66aab07badd2ee5606ea0c67242df19b40162a275d1687"
+    },
+    {
+      "path": "js/core/coastline-editor-model.js",
+      "bytes": 8017,
+      "sha256": "e870114e43d83565e28f9a577bf9593d7ab876afb10caafd6016dd95930ab3b5"
+    },
+    {
+      "path": "js/core/current-direction-audit.js",
+      "bytes": 1729,
+      "sha256": "9fae07d7153b5b7b915236531b675a7ee9ef4d5405351a489336f15e58aa8b5f"
+    },
+    {
+      "path": "js/core/debug-trace.js",
+      "bytes": 892,
+      "sha256": "bed68c5a2031ec30b4acf2f9bc5fea20ec5ee21e206d7cfee7b0124caab8ad8e"
+    },
+    {
+      "path": "js/core/direction-anchors.js",
+      "bytes": 4429,
+      "sha256": "0003c0e5c5f13c344384f0bb5956a3b2f083b3f0d05f1e32e99eccc1426d6c85"
+    },
+    {
+      "path": "js/core/forecast-calendar.js",
+      "bytes": 2181,
+      "sha256": "7d1cb4e9dec2c072cf51fd08537aa5b870605f83345c341d92651e1a11f89658"
+    },
+    {
+      "path": "js/core/local-zone-score.js",
+      "bytes": 19425,
+      "sha256": "461331615600156aea9fc8d26554956237f5f909031a7bc12c59a185451db3d4"
+    },
+    {
+      "path": "js/core/phase-d-process-candidate.js",
+      "bytes": 14109,
+      "sha256": "d745f8ead7554bb0c63bd2f3740efff243ee761c99f86e93fc7276883a64fcfa"
+    },
+    {
+      "path": "js/core/phase-d-wave-process-candidate.js",
+      "bytes": 5223,
+      "sha256": "0c1e34dea69a740a9301b202c2248ec84ff68b5bd345bdfc86072beb4dcc7267"
+    },
+    {
+      "path": "js/core/public-delivery-contract.js",
+      "bytes": 9266,
+      "sha256": "0571025b79e74cf5c0c71d2356146da4a4c5159ee2571de7d45448361b85692d"
+    },
+    {
+      "path": "js/core/public-page-resume.js",
+      "bytes": 1914,
+      "sha256": "5f10b77c43aaf4e3691970d0ad0c131c5b92295a4c46220222f11e03be9c5374"
+    },
+    {
+      "path": "js/core/ravscore-candidate-g-state-pipeline.js",
+      "bytes": 16255,
+      "sha256": "fe4b7e7e8e4a07dcd74d1da0c3e566971df33e3ef418fd7f2fc3f1028008c3e7"
+    },
+    {
+      "path": "js/core/ravscore-candidate-g.js",
+      "bytes": 25702,
+      "sha256": "04ce7ffd9d01b41f933b67c22fbeefb50450b9b203712546d54aa123fe5d9d0f"
+    },
+    {
+      "path": "js/core/ravscore-current-supply-memory.js",
+      "bytes": 32847,
+      "sha256": "7e462b10982724d121ab1566a5fe497beb62f49b0f821bf768165af29e5401da"
+    },
+    {
+      "path": "js/core/ravscore-evidence-trust-contract.js",
+      "bytes": 3477,
+      "sha256": "81a8560d2c9e7b372a7e6608da80dab993b7249ca7ef1c573378e6e9303e9157"
+    },
+    {
+      "path": "js/core/ravscore-huntability.js",
+      "bytes": 4005,
+      "sha256": "eabc93f7bf66d8daab6f29221d759c01ede4f3832a828da383cc864169d608d7"
+    },
+    {
+      "path": "js/core/ravscore-integrated-explanation-presenter.js",
+      "bytes": 37066,
+      "sha256": "5d27110de28a84800b45f7372757b1a583664227734f645dbcc3bb1f46d95e51"
+    },
+    {
+      "path": "js/core/ravscore-integrated-state-pipeline.js",
+      "bytes": 99166,
+      "sha256": "b81dcc45ea939f54aaedffe60af90cf1709239941129057fe2007c12d1e27f2a"
+    },
+    {
+      "path": "js/core/ravscore-integrated.js",
+      "bytes": 27487,
+      "sha256": "ba041c23de74829cade71b679dc8a566befeb41140bf1ee3fa1ceefc6e803317"
+    },
+    {
+      "path": "js/core/ravscore-mobilisation-memory.js",
+      "bytes": 6749,
+      "sha256": "fdb8c104f6df2e31eba05ea1e31d844e5a376a9b754784793a79398843231031"
+    },
+    {
+      "path": "js/core/ravscore-model-contract.js",
+      "bytes": 13790,
+      "sha256": "6edf369edf09b50005a0d04ce0ec892cf6455ddcea02ab4a7f2e51b644b8baab"
+    },
+    {
+      "path": "js/core/ravscore-profile-switch.js",
+      "bytes": 24065,
+      "sha256": "446e6ba22f5d9c2b1aefc300890c950cdd95f158750f99cea3aa224df879c36b"
+    },
+    {
+      "path": "js/core/ravscore-public-model.js",
+      "bytes": 33663,
+      "sha256": "08180f603fbc738bbc12201a10d043f4319c5008947ad90099cf63fddebbc983"
+    },
+    {
+      "path": "js/core/ravscore-public-profile-contract.js",
+      "bytes": 5565,
+      "sha256": "ac011932b79b2ff5adf228e71882cdbea228b6fbc528887ccaa645d318dd86b4"
+    },
+    {
+      "path": "js/core/ravscore-public-runtime-contract.js",
+      "bytes": 34644,
+      "sha256": "d1040e1fdd958584416b45fae6c5aa725db822a441b2b927d34858f2e089da5d"
+    },
+    {
+      "path": "js/core/ravscore-public-weather-source-age.js",
+      "bytes": 7151,
+      "sha256": "e06902c660ad0337be478c5d9140c59cc0477164caa50efb5c9dc3b9f3faca26"
+    },
+    {
+      "path": "js/core/ravscore-regime-memory.js",
+      "bytes": 36237,
+      "sha256": "fd361b0b0d5cbb6bf7d7af632aad070be7c3e49dd4870837476bc96fe3f1cb22"
+    },
+    {
+      "path": "js/core/ravscore-time.js",
+      "bytes": 1550,
+      "sha256": "b2311b8f2426968da59b387096522c29a191c4640afe39913ec0ae0c5b0272fa"
+    },
+    {
+      "path": "js/core/ravscore-wave-approach-state.js",
+      "bytes": 15550,
+      "sha256": "6900c089a30e3036dcb05ef1c985b71299c2c408257deea37f18fdbcbcba4e2c"
+    },
+    {
+      "path": "js/core/ravscore-wave-mobilisation-state.js",
+      "bytes": 22009,
+      "sha256": "f845fdaa95733b1b57fd7b53b085e3b9d5e60ea431ac84072b442d07aa89fb35"
+    },
+    {
+      "path": "js/core/rule-engine.js",
+      "bytes": 4305,
+      "sha256": "e7ca43742abd156f586d367081c8975352bc8a1ee084fd12173ba5ac889ab1e3"
+    },
+    {
+      "path": "js/core/score-engine.js",
+      "bytes": 19093,
+      "sha256": "0bad4187be050e7d170a917e87b945bc2de858c9eb4fa1320779c884c06e1b26"
+    },
+    {
+      "path": "js/core/score-presentation.js",
+      "bytes": 746,
+      "sha256": "11b5a015fb3716c1f7470435ba048341ec75f834d46a7792104571a46a204894"
+    },
+    {
+      "path": "js/core/water-station-routing.js",
+      "bytes": 6653,
+      "sha256": "46a0930e382fcbefb08c4e1f66868cc54f91396b7bbaa6243c1ca88ba6e7434b"
+    },
+    {
+      "path": "js/core/wave-approach.js",
+      "bytes": 3626,
+      "sha256": "1dda08cdd8e8e0eedbd5e426237372e2dba3c076af4da26f757066fb91d5076c"
+    },
+    {
+      "path": "js/core/zone-ranking.js",
+      "bytes": 5240,
+      "sha256": "6a672a90255894357ec0b5985da474d314b502f21b4e5f0b7bea1e1c1c0ea464"
+    },
+    {
+      "path": "js/i18n.js",
+      "bytes": 127262,
+      "sha256": "d0ac1b3e3e3874fd88e828aa1805364b7f47023a0b527165ad8f59bd26acefe8"
+    },
+    {
+      "path": "js/map/current-arrow-land-mask.js",
+      "bytes": 6900,
+      "sha256": "d35060c6e4ee4a72a3ba38082cc22428fc0d8f9769339f8f7be1e4b99320644e"
+    },
+    {
+      "path": "js/map/map-view.js",
+      "bytes": 27242,
+      "sha256": "24102afab711362431e41311a60f48572add64b7a7bcddb5f77a8150dc83a349"
+    },
+    {
+      "path": "js/map/public-coast-projection.js",
+      "bytes": 1604,
+      "sha256": "491a6d2598a5ddd086c589eae78118a503e1b079d32cd1da8eef58382f507f69"
+    },
+    {
+      "path": "js/services/account-trip-report-contract.js",
+      "bytes": 5067,
+      "sha256": "56dd2ce146dbd22202b07ff6493480c0b38dbbc514d1253ded36db4b111f0081"
+    },
+    {
+      "path": "js/services/admin-account-categories.js",
+      "bytes": 2625,
+      "sha256": "0b25f7f1cea210aff37db30d1151a4d6b5a8067f4afd6599b91ed3d0ae8d16e8"
+    },
+    {
+      "path": "js/services/admin-document-store.js",
+      "bytes": 5303,
+      "sha256": "7a56f11a15a33e572e5d302319524f5873478d0aecf5551dbf26f15829b61a43"
+    },
+    {
+      "path": "js/services/admin-trip-count.js",
+      "bytes": 1874,
+      "sha256": "42f0c2493e1773598ff5d379063a6357b3bfde63b8cf4a6057cd1552f935b8eb"
+    },
+    {
+      "path": "js/services/app-update-flow.js",
+      "bytes": 5380,
+      "sha256": "e29adeb1ba5bd866462f07e2622ee2acefdd11dfd3db6614e9c44840c34d52f1"
+    },
+    {
+      "path": "js/services/auth-service.js",
+      "bytes": 17277,
+      "sha256": "4ff4ab9fe21fd97764d51a85de29d26155728f09dd44f299fe90565fa911b53f"
+    },
+    {
+      "path": "js/services/calibration-eligibility.js",
+      "bytes": 36418,
+      "sha256": "30c37a9a4ea6dee8b16312cf7509e30064b6087bfcf9ceeca366201f1b292b72"
+    },
+    {
+      "path": "js/services/data-service.js",
+      "bytes": 80875,
+      "sha256": "6a955e74d9de8d3fe100c97a3ba586e67124e588bb2e0bc34a7cdbdde1eef424"
+    },
+    {
+      "path": "js/services/forecast-share-contract.js",
+      "bytes": 7965,
+      "sha256": "22d6a708821f0bea303d1be6d5651ad4fc54a587890138ccd0f9dc5e945e0d04"
+    },
+    {
+      "path": "js/services/forecast-share-projection.js",
+      "bytes": 13307,
+      "sha256": "06ab308b487a0d810b415be03183ed093bea63cdf43610672f746ffd680223aa"
+    },
+    {
+      "path": "js/services/handbook-review-store.js",
+      "bytes": 8610,
+      "sha256": "77a5aa352e205b2674a4479d8e4a27b539fbc671069540f1ecf5737b892287c6"
+    },
+    {
+      "path": "js/services/historical-analysis.js",
+      "bytes": 2020,
+      "sha256": "a4b48893e8ab5a6bdb1c7fe773a3898f014cc823dd33c0a10f9b6d2ef4b616a7"
+    },
+    {
+      "path": "js/services/html-sanitizer.js",
+      "bytes": 1906,
+      "sha256": "b19e49b9a67497749447669b3da4709645d9cafe6b91f92234c2dee399be42a7"
+    },
+    {
+      "path": "js/services/learning-analysis.js",
+      "bytes": 3842,
+      "sha256": "d9c561bea97b6773748f20be92157a2769d582cd0fea0ef89ec122598bcbc548"
+    },
+    {
+      "path": "js/services/map-forecast-view.js",
+      "bytes": 4672,
+      "sha256": "c1b7b729f4b6e6d3fe7c493e6bef3594d1cbab6739d00da00e934877d2f5f647"
+    },
+    {
+      "path": "js/services/observation-service.js",
+      "bytes": 32141,
+      "sha256": "79a477ec15c30a30074cab66636c954dfb905849261a8ae87338d4da50f13bf1"
+    },
+    {
+      "path": "js/services/own-trip-export.js",
+      "bytes": 3164,
+      "sha256": "6add028836a5fef4bd5adbe314e9251a47221af604da112953ed08e3ca74fdd9"
+    },
+    {
+      "path": "js/services/permissions-service.js",
+      "bytes": 6716,
+      "sha256": "cc835b9613435d9e83ab70681b2ad6b7d8432d266cb72c4c8b88a65016110d3b"
+    },
+    {
+      "path": "js/services/persistence-test-service.js",
+      "bytes": 2929,
+      "sha256": "dc1d4065d178b25ece2626433e8e37873edaea9ba5d9c5b3b1742ba91400787f"
+    },
+    {
+      "path": "js/services/plain-map-hour.js",
+      "bytes": 9834,
+      "sha256": "15d13e67ab900d65d40f65438259299a03618eed70ddcccc2f1d28568a3b8be4"
+    },
+    {
+      "path": "js/services/private-trip-study.js",
+      "bytes": 5908,
+      "sha256": "3f1ee1a4956a07f4116ff077d73e5124991e63ead3d57eae97a41822f21c4f69"
+    },
+    {
+      "path": "js/services/protected-runtime-envelope.js",
+      "bytes": 2446,
+      "sha256": "2627d6fa8d35619ce05bf621e92e6408296f31052f9b60074d9f1d0b8fcef79e"
+    },
+    {
+      "path": "js/services/public-delivery-transport-binding.js",
+      "bytes": 2762,
+      "sha256": "1452db78a6216d17ef6012205b40d7400e861b6fc0642ea9b9e9de91549c902f"
+    },
+    {
+      "path": "js/services/public-json-transport.js",
+      "bytes": 11002,
+      "sha256": "03a8808adfb8db9517aec7213baae2dc4b5d877fca2b2434bae316decedd6721"
+    },
+    {
+      "path": "js/services/rav-assistant.js",
+      "bytes": 91404,
+      "sha256": "2dfa4e21d73f71f7e80cf45f942ef6da4116d664f6bda8e526f62669158fcad0"
+    },
+    {
+      "path": "js/services/site-function-test-service.js",
+      "bytes": 27715,
+      "sha256": "c90767cbad77857a555652561a415300263d80bd204e315d8d834f77f229217a"
+    },
+    {
+      "path": "js/services/storage-safety.js",
+      "bytes": 3630,
+      "sha256": "44df9c7fdb8df977fc269dcd2fdb20df8a79773502465f7d155c92e9bbd12038"
+    },
+    {
+      "path": "js/services/trip-evidence-contract.js",
+      "bytes": 28009,
+      "sha256": "484243396f0c1c76cb554e7b7bf7b065026a922fac32208966b5999a07444ec0"
+    },
+    {
+      "path": "js/services/trip-evidence-controller.js",
+      "bytes": 2929,
+      "sha256": "8563d42febb1d0caa9a8c91f5c9944f88b54ea122a1af42094aff24a843f6d75"
+    },
+    {
+      "path": "js/services/trip-evidence-public-adapter.js",
+      "bytes": 11414,
+      "sha256": "b8cbe80a2d54c509e8ed74307bd49d9a9763ec66dffad6a99e1d63757e1be393"
+    },
+    {
+      "path": "js/services/trip-evidence-runtime.js",
+      "bytes": 3793,
+      "sha256": "2ef89fd84e0203685c10988d58e1e932e3bde07a8d80426b8e3cfec15374fa38"
+    },
+    {
+      "path": "js/services/trip-evidence-store.js",
+      "bytes": 5829,
+      "sha256": "879fde04ed1e778642e5c3ae261c4f7ed3b01766e6aec6de425eed0dfd68d6b6"
+    },
+    {
+      "path": "js/services/trip-evidence-upload.js",
+      "bytes": 3052,
+      "sha256": "7cfab8369795dc987821ae9c5a7968832bac134fdf2ad62085dc11be54d30ab3"
+    },
+    {
+      "path": "js/services/vendor/fflate-0.8.2/browser.js",
+      "bytes": 89406,
+      "sha256": "3eaf25846fc9ff95f4905ea16d2c33fa74b588da39b9746bc409bb7a44f96d0e"
+    },
+    {
+      "path": "js/services/visit-counter.js",
+      "bytes": 1505,
+      "sha256": "075af4ab6aa20a48174a32f119fa241e7c98926fd5a00c57aa3b5cbe47f935eb"
+    },
+    {
+      "path": "js/services/visitor-report-service.js",
+      "bytes": 771,
+      "sha256": "78e71a2683da33c2f61ee179aeb66fa014cebbb407acacd5970824999b396280"
+    },
+    {
+      "path": "js/services/zone-hour-preview.js",
+      "bytes": 3929,
+      "sha256": "0c09ca433aafcbef18a91a90648e325e491a2c61af12dfa9936a4ac2bc9e1289"
+    },
+    {
+      "path": "js/services/zone-registry.js",
+      "bytes": 1722,
+      "sha256": "5935f86e229373c309bc620d372c459c0731c05681a007f608b1782687ed26e0"
+    },
+    {
+      "path": "js/ui/account-panel.js",
+      "bytes": 17433,
+      "sha256": "e2a8ca4298927ef42f060dbf216c676693f863483829dbdbdd25d2eaceb1ebc0"
+    },
+    {
+      "path": "js/ui/admin-active-ravscore.js",
+      "bytes": 11230,
+      "sha256": "f6439c55108d2639f865946c92d266a09aa3193ac27cbaddfd17e525774ccda0"
+    },
+    {
+      "path": "js/ui/admin-coastline-editor.js",
+      "bytes": 29443,
+      "sha256": "2fe2f8436a6de67bf5793cd27e0125e441a98cedae177b5193f7fad53434d680"
+    },
+    {
+      "path": "js/ui/admin-dashboard.js",
+      "bytes": 150490,
+      "sha256": "1c3a6aeb53baa005977b38799baac0cf0f6fbaa90dc95fbde7f4a8f9d9be5d81"
+    },
+    {
+      "path": "js/ui/admin-direction-editor.js",
+      "bytes": 21604,
+      "sha256": "09eb2b49aeccfef76e1f04b47c626441b4272b06c4f91010d395356d47a663d0"
+    },
+    {
+      "path": "js/ui/admin-private-trip-study.js",
+      "bytes": 7427,
+      "sha256": "f9458725945fd6c0f09d165d2f8063a4ff310020b81c86de6cab9ed6e0394207"
+    },
+    {
+      "path": "js/ui/developer-panel.js",
+      "bytes": 4148,
+      "sha256": "f3740469c17a5877bdf88c6be7928c0b50d342f939c8e74e8557c2f084ce6530"
+    },
+    {
+      "path": "js/ui/forecast-share.js",
+      "bytes": 6245,
+      "sha256": "1d7ef1e2eace61a3cc936efe36f94d8afdb06d5f26d8354f8060c9c77896d168"
+    },
+    {
+      "path": "js/ui/info-panel.js",
+      "bytes": 32933,
+      "sha256": "b2f907d0e90d8334663607b6bbd8ae7e9a038fffa9248647637e8337334cc483"
+    },
+    {
+      "path": "js/ui/map-tab-copy.js",
+      "bytes": 417,
+      "sha256": "1320710e8b19cc7145675906efdb8071528619496381a042943eed56cb380901"
+    },
+    {
+      "path": "js/ui/map-timeline-copy.js",
+      "bytes": 2887,
+      "sha256": "0937cad1504cc0e3c5ee39183db017ae7da974cd054fc1ca58cc37d98f694810"
+    },
+    {
+      "path": "js/ui/map-timeline.js",
+      "bytes": 7504,
+      "sha256": "a9c16ab0f3ac87c0b0b9c9bb8a6b8e9acd775e84886724808212b560bcc5a2bd"
+    },
+    {
+      "path": "js/ui/ranking-copy.js",
+      "bytes": 1657,
+      "sha256": "a1cfe2e7754bf27b05a61e094536693e7f1ff2871a951d492b5ad1ba780ad73d"
+    },
+    {
+      "path": "js/ui/score-prognosis-copy.js",
+      "bytes": 18496,
+      "sha256": "30f158b17c317d47cf23a82fbb3c95000a339e6bc2b57b3188a54ed49e3c40f6"
+    },
+    {
+      "path": "js/ui/site-search-copy.js",
+      "bytes": 1729,
+      "sha256": "40e9037f80fd299401d7cd4e1fbd17908c34123bbc9c5621a6e47c51d84d628b"
+    },
+    {
+      "path": "js/ui/trip-evidence-dialog.js",
+      "bytes": 19872,
+      "sha256": "b3153c39528e8c8ae0d153a8978fe703612ad000b45700086376546bda1db35d"
+    },
+    {
+      "path": "knowledge/rav-assistant-local-v2.js",
+      "bytes": 48676,
+      "sha256": "e6cb2451eac50bcf3e4959d4b571aad6e9422c5f025edac2bc65a0e8f6aec754"
+    },
+    {
+      "path": "knowledge/rav-assistant-research-coast-v1.js",
+      "bytes": 52235,
+      "sha256": "2e86a4ab2c01638bc7297153d81caf0be6040571f8fcd4be11d6132d820ff0de"
+    },
+    {
+      "path": "knowledge/rav-assistant-research-material-v1.js",
+      "bytes": 54877,
+      "sha256": "28d298b173064e00d12cbe1bbc44d54db23b4f2cd7f412ea9862d28186712b59"
+    },
+    {
+      "path": "knowledge/rav-assistant-research-v1.js",
+      "bytes": 479,
+      "sha256": "bebd5a709e5505b1d958e6424056b196385f2ca7a9f607348919e32f95079df2"
+    },
+    {
+      "path": "knowledge/rav-assistant-sources-v1.js",
+      "bytes": 8912,
+      "sha256": "c9a387ca9ed30d4c5a9932eb1b1133a99ae651c23c822b7d0ad1c8adbd8c43a6"
+    },
+    {
+      "path": "package.json",
+      "bytes": 51360,
+      "sha256": "4178fe84cb1e71d5096539f923c0ef5ee446be4cc7b8f1c293a83a424787f7af"
+    },
+    {
+      "path": "scripts/account-statistics-assistant-prewrite.mjs",
+      "bytes": 16019,
+      "sha256": "44c1ef4edaab1d446cf7696eb5dcacfd49a618ee8788997ce88c740fe59a7761"
+    },
+    {
+      "path": "scripts/account-statistics-assistant-runtime-transition.mjs",
+      "bytes": 26131,
+      "sha256": "f3101b3d5d6c7df7dd42d560d2a9d99c6dbee6cc6904397c95c6256f8144d8fd"
+    },
+    {
+      "path": "scripts/acquire-code-only-public-snapshot.mjs",
+      "bytes": 28204,
+      "sha256": "eb3cf5dcbe98a664a9bccdff947472143e7fc3701ef508d6fec9f01b3773cbf3"
+    },
+    {
+      "path": "scripts/apply-central-zone-reviews.py",
+      "bytes": 3291,
+      "sha256": "bd4a01662893614d0751c40ea782d0e370a26bdb8bbb9c91870720ce897be850"
+    },
+    {
+      "path": "scripts/archived-weather-restart.mjs",
+      "bytes": 19628,
+      "sha256": "9183a63bb35431c18a8a85e9d20619f6b76c81d69d24256018efe27243ebdd8d"
+    },
+    {
+      "path": "scripts/assistant-later-h0-runtime-transition.mjs",
+      "bytes": 22308,
+      "sha256": "5bff5747e3fe8dce504102c3a125dc4d483845f0b6ed6cc041d6e4bc6f362de4"
+    },
+    {
+      "path": "scripts/audit-online-browser-4.0.238.py",
+      "bytes": 16447,
+      "sha256": "8752826b8f9d4dbda9e89c6ae2369bb9e7d7fa5fc8f1c9af9ac93767c7f5909f"
+    },
+    {
+      "path": "scripts/audit-p1-component-matrix.py",
+      "bytes": 15681,
+      "sha256": "51b3b9dbbea8d0d5472a06642975cafbed80148c7021b1e8f4e41a6da5bb7a04"
+    },
+    {
+      "path": "scripts/audit-ravscore-integrated-public-runtime.mjs",
+      "bytes": 103302,
+      "sha256": "32746e93278de2ccd2068d070f58aca44b60dc14587633ce971199cb810fb913"
+    },
+    {
+      "path": "scripts/audit-zone-geometry-4.0.33.mjs",
+      "bytes": 1617,
+      "sha256": "2aa6a0b791fe90c2711f2d22470d4f2f9a8e435f7d61abaeef226a13ffdbe561"
+    },
+    {
+      "path": "scripts/build-candidate-g-rollback-bundle.mjs",
+      "bytes": 6548,
+      "sha256": "79e030daafc41f56c20d343c1a246ad79b82fce2cd27a3f636a762f8f687dbf0"
+    },
+    {
+      "path": "scripts/build-copernicus-target-registry.py",
+      "bytes": 13956,
+      "sha256": "75f26d7d2b2b6440868b8fced8f5ab97da46e191e4c70991f5a22898f917bf18"
+    },
+    {
+      "path": "scripts/build-current-arrow-land-mask.mjs",
+      "bytes": 11014,
+      "sha256": "66389ebebbbc124e5ab4b0ec847c10c0bfe8d8508324e7156639f356ba1236ff"
+    },
+    {
+      "path": "scripts/build-current-operational-closure.py",
+      "bytes": 11169,
+      "sha256": "c3ee3ff49abbeedb1b735022057861fee73021187d19886f69595d8fb9f3ea85"
+    },
+    {
+      "path": "scripts/build-forecast-share-projection.mjs",
+      "bytes": 8967,
+      "sha256": "efac1953b6de6b86c2da1260c168a82ea3751246c4480adb952f1050be04e2fb"
+    },
+    {
+      "path": "scripts/build-live-current-pilot.py",
+      "bytes": 58762,
+      "sha256": "6e4c0acc24555e0f13d01ea9cba6e7985f43bf82ec0d6b3dea59299a460af7b1"
+    },
+    {
+      "path": "scripts/build-public-coastal-parts-v2.mjs",
+      "bytes": 8168,
+      "sha256": "ad4dcfb1158639be600b1740453841f130539cf34f3f8e73158e3ad53fb99105"
+    },
+    {
+      "path": "scripts/build-ravscore-model-bundle.mjs",
+      "bytes": 6803,
+      "sha256": "5dd01e2284c3bd5eb02cbc4804cbca6a22217e160c0abf97b2dd425bdafd4f8e"
+    },
+    {
+      "path": "scripts/build-source-producer-successor.mjs",
+      "bytes": 76419,
+      "sha256": "ebf2ca26b0d480069e18d98bf3b658b8bae68bece29814c095ce5a72c281c4be"
+    },
+    {
+      "path": "scripts/build-statistics-preference-revision.mjs",
+      "bytes": 11350,
+      "sha256": "2196c4362615f6ea0541578553984fb280769ec650cd3319de6feadd52cba00e"
+    },
+    {
+      "path": "scripts/build-weather-acquisition-plan.py",
+      "bytes": 15741,
+      "sha256": "744c67cc0d98d12db11559e0f3bb117e8fb94fd3946af37c7bc63b68960d54e6"
+    },
+    {
+      "path": "scripts/check-account-statistics-assistant-predecessor-source.mjs",
+      "bytes": 19091,
+      "sha256": "10ccdee12b112bcc323689c331a7bb068b7f47ae1ac60d535caf2d4523f465c1"
+    },
+    {
+      "path": "scripts/check-assistant-later-h0-predecessor-source.mjs",
+      "bytes": 75826,
+      "sha256": "c60e2561249b6782c677b15714fe6cfd2cc245307a5aad0e73d5ca2e7a9e487f"
+    },
+    {
+      "path": "scripts/check-copernicus-current-range.py",
+      "bytes": 26635,
+      "sha256": "5ce910f50b6e17882858e3088e4e9dd2852500b6059269f346d888abad1d415b"
+    },
+    {
+      "path": "scripts/check-dmi-bulk-operational-ready.py",
+      "bytes": 1154,
+      "sha256": "0b8387364f936bf686f22806d3cf2fb88d61972cde7dcf73de265fceb95d68c4"
+    },
+    {
+      "path": "scripts/check-last-mile-enclosure-predecessor-source.mjs",
+      "bytes": 13644,
+      "sha256": "ab211de90959b87ca342a7db803a43f4ed90fe97d6a37ea648314c75c53337c3"
+    },
+    {
+      "path": "scripts/check-native-current-reanalysis-predecessor-source.mjs",
+      "bytes": 12971,
+      "sha256": "1c08778a28bc3931b42430eaa94d9659dd279f42528c5306631b971c4405928d"
+    },
+    {
+      "path": "scripts/check-native-identity-frozen-i71-source.mjs",
+      "bytes": 22296,
+      "sha256": "21f08e71ee3384b7e5d8a9294d356536ce0d866ffc562f7ecf94a4f547f35e77"
+    },
+    {
+      "path": "scripts/check-native-original-continuity-predecessor-source.mjs",
+      "bytes": 20131,
+      "sha256": "17b3ce539b1f296fb75bf592fcd7393569f0dd3614974e6d7d06a836a0020922"
+    },
+    {
+      "path": "scripts/check-production-target-freshness.mjs",
+      "bytes": 3899,
+      "sha256": "a4c3cf8417a761691173ee50970b2764dac8a58d97017da783c1c2aed5dab0c0"
+    },
+    {
+      "path": "scripts/check-public-weather-continuity.mjs",
+      "bytes": 17013,
+      "sha256": "e1e1b29cbd2117ba3e24a947d76cc42f5f24801805785f36819252101cec70ec"
+    },
+    {
+      "path": "scripts/check-weather-update.py",
+      "bytes": 8046,
+      "sha256": "4c5360244e3aca2a857962bbb7fe874701c6639d3b8f15323cd01671c87240bf"
+    },
+    {
+      "path": "scripts/completed-private-runtime-admission.mjs",
+      "bytes": 22395,
+      "sha256": "dd72ff6e1ca9e5dfd41a3f077dce96a0473972f9b31e90241cc603119cbf0729"
+    },
+    {
+      "path": "scripts/current-family-cold-start.mjs",
+      "bytes": 56458,
+      "sha256": "f32c547f80f8c79844371edb9698b32b144ca1d2f914ab67f485f2abcf8215b5"
+    },
+    {
+      "path": "scripts/enrich-current-provenance.mjs",
+      "bytes": 12500,
+      "sha256": "fcfe4562e15112dc8fa279f01b6b0037b53244bbba57c6bf447c0dff0e805344"
+    },
+    {
+      "path": "scripts/fill-open-meteo-current-fallback.py",
+      "bytes": 73286,
+      "sha256": "af02574afe9715d12cb14d4efcbd46a680ca0c7659671c8f60c5789bb2ba635e"
+    },
+    {
+      "path": "scripts/generate-public-conditions.mjs",
+      "bytes": 1890,
+      "sha256": "489cfc40a399afd2f6fcf66bab003095fe6a297d099e4c6c449639dee408e5c8"
+    },
+    {
+      "path": "scripts/generate-state-reference-report-4.0.113.mjs",
+      "bytes": 4686,
+      "sha256": "5cf314fc8b1dde40e04565bb185d36e99b547015fe5815d80c78df0ce5fbaf19"
+    },
+    {
+      "path": "scripts/github-pages-attempt-evidence.mjs",
+      "bytes": 1662,
+      "sha256": "0e8c3ff293a5a7a5eccb319547de3847573225ab77098279c29cb61fa7678f07"
+    },
+    {
+      "path": "scripts/integrated-cutover-readiness.mjs",
+      "bytes": 140132,
+      "sha256": "268b034f864880d4955940760e21de3dbf31494ed23c7aa6769450b9283bcba0"
+    },
+    {
+      "path": "scripts/lib/account-assistant-successor-source.mjs",
+      "bytes": 4462,
+      "sha256": "eb35dc46cc6792da5ddff026de0bd61258f240a6b037565c29869873afb08bc5"
+    },
+    {
+      "path": "scripts/lib/account-statistics-assistant-successor-source.mjs",
+      "bytes": 8780,
+      "sha256": "f063a7481b4ea604dc8fc6ebf32fc1d990ad8ebc01eb96bb9cdd474ee90a36b1"
+    },
+    {
+      "path": "scripts/lib/archived-weather-restart-input-view.mjs",
+      "bytes": 5365,
+      "sha256": "2a74f1cecb5b45c5f05a640b656dc3820d150ed51c4ba4f20e5b9d1b7831d46b"
+    },
+    {
+      "path": "scripts/lib/archived-weather-restart-updater-test-input.json",
+      "bytes": 16628,
+      "sha256": "8c2b48b2e89e01012bdc9c11ebf9bd171dcd46c84613ea8378f7db5bee370937"
+    },
+    {
+      "path": "scripts/lib/archived-weather-restart-updater-test-input.mjs",
+      "bytes": 48028,
+      "sha256": "8be33da06513afc9ae1cb0a2a9c619834e561a68b67d0a002d24df12d582d24f"
+    },
+    {
+      "path": "scripts/lib/assistant-later-h0-successor-source.mjs",
+      "bytes": 64150,
+      "sha256": "17107dc304d97fd386a71fafac670e108d90a50bb6d58066888ab0ffb3b618f5"
+    },
+    {
+      "path": "scripts/lib/assistant-public591-runtime-contracts.mjs",
+      "bytes": 1484,
+      "sha256": "a6245b6efc9efe2727c37d793b511b019d0072813932bd517756da1fd20a28de"
+    },
+    {
+      "path": "scripts/lib/authenticated-frozen584-predecessor.mjs",
+      "bytes": 13082,
+      "sha256": "900e9452cdf7cb4ed2ec73cebfd451510a1ae71dc55402fb06a66c4b256c1792"
+    },
+    {
+      "path": "scripts/lib/authenticated-frozen585-predecessor.mjs",
+      "bytes": 13234,
+      "sha256": "b62351eb51f1871d970295957f6d4882f9a996db95ee8e7ff10b638306acc65a"
+    },
+    {
+      "path": "scripts/lib/authenticated-frozen586-predecessor.mjs",
+      "bytes": 27175,
+      "sha256": "673a6860e37e7b74bcb20187ff87159ef7230a56fa49304ab50c3617102466bb"
+    },
+    {
+      "path": "scripts/lib/bounded-conditions-predecessor-transition.mjs",
+      "bytes": 31863,
+      "sha256": "5783e5aa4a0c0f9b794a7ff196d64119359d9b30372e1dce4aa481f2c4219425"
+    },
+    {
+      "path": "scripts/lib/bounded-fetch.mjs",
+      "bytes": 1683,
+      "sha256": "b1b356f1060559b997a091152ecc4a81eba32f8c52d346ff0cf9af5f055a8401"
+    },
+    {
+      "path": "scripts/lib/bounded-json-writer.mjs",
+      "bytes": 4989,
+      "sha256": "d25c6199a18e7227e5160b58d56454abc4c9eaed52a678a55b8bb0dd00369583"
+    },
+    {
+      "path": "scripts/lib/coastal-point-stage-dmi-adapter.mjs",
+      "bytes": 5659,
+      "sha256": "f4dd1e46e70b5c39de014940c8451617c10541f4b5d27e7743387a6c2cd5e8e7"
+    },
+    {
+      "path": "scripts/lib/coastal-point-staging-contract.mjs",
+      "bytes": 27848,
+      "sha256": "c2abd8fb7f03a0d84628a4af9b734a5f648dd5e250fdd96ccace3d7bc5d2f851"
+    },
+    {
+      "path": "scripts/lib/coastal_point_staging.py",
+      "bytes": 9565,
+      "sha256": "c74e3149778a4d88aeaab3f652d53835307c69f6d658d06477b933213f99e517"
+    },
+    {
+      "path": "scripts/lib/coherent-current-original-bootstrap.mjs",
+      "bytes": 15034,
+      "sha256": "10b2b0035b28fab0054528a3bb3f74d72c0d39084d80419f13581661bd7924ae"
+    },
+    {
+      "path": "scripts/lib/coherent-original-source-views.mjs",
+      "bytes": 4365,
+      "sha256": "1538cfb081ad5be832e4519010d699e74a847ae849ad5b2e48efebfefe362931"
+    },
+    {
+      "path": "scripts/lib/copernicus-component-index.mjs",
+      "bytes": 13504,
+      "sha256": "cfdfdab9bbd9fe286d8ab6899845263fe031e2d2e933838f99901145ca15f48f"
+    },
+    {
+      "path": "scripts/lib/copernicus-component-projection.mjs",
+      "bytes": 2660,
+      "sha256": "08a8109dc4e1df58743a4400d3c508076e6f8ca057a82fe5e38f5d900b2686ac"
+    },
+    {
+      "path": "scripts/lib/copernicus-component-runtime.mjs",
+      "bytes": 4288,
+      "sha256": "02ac21430aeb1e381703b5e391a7da004e1690103c3fbd2a2a247d20c3392fd5"
+    },
+    {
+      "path": "scripts/lib/copernicus-component-spatial-policy.json",
+      "bytes": 2011,
+      "sha256": "6463a4b47c9375659ac73b13cb24bdf358da4ab621acab49ba58c0d281ef2177"
+    },
+    {
+      "path": "scripts/lib/copernicus-offline-environment.mjs",
+      "bytes": 886,
+      "sha256": "a19a2de9102560936f3ed380fd843475dc125799bf9b3be948eaef0b425d9ea0"
+    },
+    {
+      "path": "scripts/lib/copernicus_component_process.py",
+      "bytes": 105464,
+      "sha256": "573e01740ccbb95ae08bcf163bb36de79aefe2e3d9d6d1a6f2fa9d6f89035583"
+    },
+    {
+      "path": "scripts/lib/copernicus_component_spatial.py",
+      "bytes": 11304,
+      "sha256": "8ac6a060a799a8099bba70a529513ec3f1e8b23fbcb16eaa5048d76ea0d54e0a"
+    },
+    {
+      "path": "scripts/lib/copernicus_component_transport.py",
+      "bytes": 20266,
+      "sha256": "70191e578902b036c0591fb0ccb9ccb495451c1397ed287099d309a5ae2b9a95"
+    },
+    {
+      "path": "scripts/lib/copernicus_current.py",
+      "bytes": 113783,
+      "sha256": "c8e16757ee06ad31bfda803f3b20a6c866d072ac8d40c59d95be5be3792ddcdf"
+    },
+    {
+      "path": "scripts/lib/copernicus_current_donor_bank.py",
+      "bytes": 28713,
+      "sha256": "bc54c2f6be6d09a8268f1d0b2062555ee7f27b6a20777c100d061548610f3bb8"
+    },
+    {
+      "path": "scripts/lib/copernicus_current_segment_journal.py",
+      "bytes": 12455,
+      "sha256": "9bb5fed2bd85907b783b37db9866253e73111b9d462ce18e170e882c54e06ba8"
+    },
+    {
+      "path": "scripts/lib/copernicus_current_source_stage.py",
+      "bytes": 85106,
+      "sha256": "91bbca862d8e7d8b5da851081643b788aad299e5b5e0edf3b861a233c16aead0"
+    },
+    {
+      "path": "scripts/lib/copernicus_target_identity.py",
+      "bytes": 3237,
+      "sha256": "3546da912a7a1777532c282f202f513862b06965bf407da5c2809ea6314351f4"
+    },
+    {
+      "path": "scripts/lib/copernicus_weather_component_bank.py",
+      "bytes": 47363,
+      "sha256": "7ecb7e62b99ced092414839fa7cdefe20a934da0de35f9391b3149f1d1569042"
+    },
+    {
+      "path": "scripts/lib/copernicus_weather_components.py",
+      "bytes": 20626,
+      "sha256": "5ae12b41f9b347253429a5c5366fa8764518d4d732589386fb5dca3168310e0b"
+    },
+    {
+      "path": "scripts/lib/current-grid-successor-source.mjs",
+      "bytes": 4303,
+      "sha256": "f86aa7b2df9500942c5b4218f7cf777c6e32391722c091d3beabe4ef9f12636c"
+    },
+    {
+      "path": "scripts/lib/current-memory-warmup-successor-source.mjs",
+      "bytes": 10489,
+      "sha256": "399e7e4690513b1db64a010c03b041d529caccfc0785fb34ab4c1b68ea5894b6"
+    },
+    {
+      "path": "scripts/lib/current-spatial-runtime-proof.mjs",
+      "bytes": 17490,
+      "sha256": "2f0a3d3d265a86ca5f1c577fd001c21d6bc39da9ee2bd32b9c690229b31fc0b5"
+    },
+    {
+      "path": "scripts/lib/current-transport-history.mjs",
+      "bytes": 4967,
+      "sha256": "c7d5b4226aee7846e307d5d314fa336ef6143cfa6c0eca966b0f567b97c1ce9d"
+    },
+    {
+      "path": "scripts/lib/current_aged_dmi_challenge.py",
+      "bytes": 4999,
+      "sha256": "1b995f06bd691b7a234669b4a92b48ad268879ba5b62fdde208f8a8b26d762d2"
+    },
+    {
+      "path": "scripts/lib/current_field_shadow.py",
+      "bytes": 44011,
+      "sha256": "7f819b5d56f55e2795eaaa5e02843ea81fe3671d6c201d6091ea5e6dfd4c568e"
+    },
+    {
+      "path": "scripts/lib/current_model_reference.py",
+      "bytes": 6081,
+      "sha256": "7f3638b787bbb91bcbe885da74fbb037121b202004cf970e79db41743a19622d"
+    },
+    {
+      "path": "scripts/lib/current_operational_closure.py",
+      "bytes": 64683,
+      "sha256": "1d4c7241ac1be6baf4116896e9988bdc176b5e057dbaf08a06b2eaf525c7d406"
+    },
+    {
+      "path": "scripts/lib/data-quality.mjs",
+      "bytes": 4359,
+      "sha256": "33c5d1fb328e4d0e6cba032fa0e60d97115a4c72d30baba764ee70063fa3b0b0"
+    },
+    {
+      "path": "scripts/lib/dmi-acquisition-state.mjs",
+      "bytes": 3046,
+      "sha256": "c0a7e7dc121dceb70e50f822b8fc719134c1ae11c7556bd5a7ecb42e0926a83b"
+    },
+    {
+      "path": "scripts/lib/dmi-bulk-storage.mjs",
+      "bytes": 11401,
+      "sha256": "fe51cae3131bc7e91022fc3ede69bc4587409b720bb8c1226d87cee2bff46f1d"
+    },
+    {
+      "path": "scripts/lib/dmi-forecast-file.mjs",
+      "bytes": 30378,
+      "sha256": "bf4615d3361a5b6fddb66aa8f12c01fd4f699c724089222a1985bb2224e392ac"
+    },
+    {
+      "path": "scripts/lib/dmi-forecast-store.mjs",
+      "bytes": 60832,
+      "sha256": "ad46c38f47e77822a8160d67d565763fe4390bd92828ef797a1c652b9e723a3a"
+    },
+    {
+      "path": "scripts/lib/dmi-legacy-current-originals.mjs",
+      "bytes": 30517,
+      "sha256": "38b0e397a10aeab2fb75eb4c12540619ce83f4c8915f011ec1a1b777400ec129"
+    },
+    {
+      "path": "scripts/lib/dmi-marine-run-seam-recovery.mjs",
+      "bytes": 7106,
+      "sha256": "4c925a9e7ef06331a35929226257aa5d0299c3a7b7a92a3a3cd858307db4de56"
+    },
+    {
+      "path": "scripts/lib/dmi-marine-zone-exclusions.json",
+      "bytes": 416,
+      "sha256": "b959dee7b87cfebe9fdc7311ffd62b835c96d5c4a263bbcff5c0485f6660ef16"
+    },
+    {
+      "path": "scripts/lib/dmi-marine-zone-exclusions.mjs",
+      "bytes": 1353,
+      "sha256": "d560dda981a8f0bdec49bbca05abb60cc6a26699784b345b1b258e7f1668ac28"
+    },
+    {
+      "path": "scripts/lib/dmi-native-current-runtime-projection.mjs",
+      "bytes": 1941,
+      "sha256": "4ba7ec15e497871711cc9850aca67090d99f1d057f9ddd9a9c35c390bef23790"
+    },
+    {
+      "path": "scripts/lib/dmi-part-continuity.mjs",
+      "bytes": 22804,
+      "sha256": "9270a0946e80091321e57c5ae22881090ea8018b548b9255557ffede987ae671"
+    },
+    {
+      "path": "scripts/lib/dmi-wave-tuple-proof.mjs",
+      "bytes": 912,
+      "sha256": "81a65c28673bc3ef3e30ff1ab001ecd8b14c8f3af285acab48c60b84e7b3362e"
+    },
+    {
+      "path": "scripts/lib/dmi_adaptive_recovery.py",
+      "bytes": 2296,
+      "sha256": "7cdafc3f520f5c70b0601f6f098a552e117fdc9daf5795fb8539b83a0540790d"
+    },
+    {
+      "path": "scripts/lib/dmi_bulk_storage.py",
+      "bytes": 14898,
+      "sha256": "2321f386f648f8eb190b0b45d42b02d61b1dd7d70fd10c84d02d3362a9e3dd84"
+    },
+    {
+      "path": "scripts/lib/dmi_cache_migration.py",
+      "bytes": 1296,
+      "sha256": "8b16a8498cba74db9d9c66f6e1bbe10d3fcda8346eef2dcb32173a58fc4072fd"
+    },
+    {
+      "path": "scripts/lib/dmi_current_processing_compatibility.py",
+      "bytes": 1451,
+      "sha256": "1f6033decdcbcc8c02b37270751a4e4c55a890921969f16d94704c81882e3853"
+    },
+    {
+      "path": "scripts/lib/dmi_grid_vector.py",
+      "bytes": 4854,
+      "sha256": "c503fb793c95ff2d42950f75febb119770e986b10376bf91205837e124c4aa21"
+    },
+    {
+      "path": "scripts/lib/dmi_legacy_current_originals.py",
+      "bytes": 15858,
+      "sha256": "45408d5c11f08831915730026cb21919e366bbe08466b49fe5aba43c45e1a5b6"
+    },
+    {
+      "path": "scripts/lib/dmi_legacy_current_recovery.py",
+      "bytes": 25075,
+      "sha256": "5c3ebb0abe942dfbab4f1e1593694d8552fe831189ab0bdc6152e866cc7b87dc"
+    },
+    {
+      "path": "scripts/lib/dmi_native_provenance.py",
+      "bytes": 106736,
+      "sha256": "355a03ba9098e8d21b8cdb53feefb2434ceb96b70d08a5c42eb2bb3943da204f"
+    },
+    {
+      "path": "scripts/lib/dmi_wave_history_bootstrap.py",
+      "bytes": 62561,
+      "sha256": "6713fe7bff06e56a01b822f5e95e54593d3977bbd7dabcd74d66e8c53031c014"
+    },
+    {
+      "path": "scripts/lib/dmi_wave_owner.py",
+      "bytes": 2988,
+      "sha256": "ac448e14308188c22ef583d68c1b0e3e5cbdc8231889c851d84bd5f666cde1df"
+    },
+    {
+      "path": "scripts/lib/dmi_wind_reference.py",
+      "bytes": 3784,
+      "sha256": "3cb86ab5bc7c8dfa14053d54c639a200ce1e0afb5101e48c39170da0db38d08c"
+    },
+    {
+      "path": "scripts/lib/established-native-current-origin-successor-source.mjs",
+      "bytes": 7945,
+      "sha256": "9f985630a0985af396d1510d9387b76596e81ca57774fbb6c0d8789598333f9b"
+    },
+    {
+      "path": "scripts/lib/established-native-current-origin.mjs",
+      "bytes": 128014,
+      "sha256": "549aa4668a8eed8e9571d065d08d5eee86e81ca6e37ae4088681b80f2760e4e2"
+    },
+    {
+      "path": "scripts/lib/feggesund-wave-proxy.mjs",
+      "bytes": 22546,
+      "sha256": "fcc6c9af2c8d58c85514d5ac8e7af9645392fe7816187d08e18bf78cbef55292"
+    },
+    {
+      "path": "scripts/lib/flow-points-from-forecast-record.mjs",
+      "bytes": 7527,
+      "sha256": "50909c906eb842bec16f5e47de9316ae7c8a801d4bd01530429d09d67156d8b2"
+    },
+    {
+      "path": "scripts/lib/fur-water-routing-diagnostic.mjs",
+      "bytes": 10149,
+      "sha256": "e868ecf40fad36a8ab121f8fd57c9c9b625e9d88ba5553bb602ae20976bdf4d7"
+    },
+    {
+      "path": "scripts/lib/historical-wave-input-transition.mjs",
+      "bytes": 20255,
+      "sha256": "fcc199d299c5173dae8fcb7ea8726e6717c2f3aeaaf038f5588a010fcc0460ef"
+    },
+    {
+      "path": "scripts/lib/last-mile-enclosure-predecessor-source-inventory.json",
+      "bytes": 46197,
+      "sha256": "8a35db217041ddfb2f14fb2da76b09af427367989ec67bad7a4fef72d34c0e45"
+    },
+    {
+      "path": "scripts/lib/last-mile-enclosure-successor-source.mjs",
+      "bytes": 8720,
+      "sha256": "0e09687c7541493fe10fe9c21f95cf42c9423732f2665664674e629d9825625d"
+    },
+    {
+      "path": "scripts/lib/lf7-fur-consumer-observation.mjs",
+      "bytes": 12851,
+      "sha256": "d47ad770c32a68dedf64b10d348d9ff0077c97066c7b1f7fc2d2042b968343e5"
+    },
+    {
+      "path": "scripts/lib/live-current-pilot.mjs",
+      "bytes": 110378,
+      "sha256": "552a709d34b828086061f148841245b32f6f4d25c3d1e8249681bda83ad45ad9"
+    },
+    {
+      "path": "scripts/lib/local-current-reference.mjs",
+      "bytes": 2253,
+      "sha256": "6e1c6a28cb3cf704d760e5c6f52dade2e0c81112e1299a1264b3a9502851a75b"
+    },
+    {
+      "path": "scripts/lib/local-part-runtime.mjs",
+      "bytes": 1322,
+      "sha256": "ab06910b6dfdf221eff1322d38ee5e26fa6f369e9db23dc265a2af0e3f1a150b"
+    },
+    {
+      "path": "scripts/lib/model-source-imports.mjs",
+      "bytes": 210445,
+      "sha256": "68208330e8734d2b9450e8c776be1cdd2eef7bbec22c66aada9f122b337ab292"
+    },
+    {
+      "path": "scripts/lib/native-identity-staging-working-copy.mjs",
+      "bytes": 18147,
+      "sha256": "beaaaec7fd499dc884c36cc3f941e7667a5bcc8c214c84c77fa394690663a874"
+    },
+    {
+      "path": "scripts/lib/native-original-continuity-successor-source.mjs",
+      "bytes": 9638,
+      "sha256": "52c04b86be994c50ec7485b5d0b79231c78e5a2eb63cec8c812df5ff5250345c"
+    },
+    {
+      "path": "scripts/lib/native-sampling-identity-successor-source.mjs",
+      "bytes": 9042,
+      "sha256": "a7b77c586e72e0c67be225c7fa773152d5dc3c41b5f5ea47e55504eee495d5ba"
+    },
+    {
+      "path": "scripts/lib/native0600-original-successor-source.mjs",
+      "bytes": 7442,
+      "sha256": "bcc2ac876cafcd61ea434bc9658302224e8f061ca048905d5682222eccf348c3"
+    },
+    {
+      "path": "scripts/lib/open-meteo-forecast-window.mjs",
+      "bytes": 831,
+      "sha256": "a286cc97ce6bc7dbee19eb986fdeef4c64809357ee99b571573768ae86ce2d79"
+    },
+    {
+      "path": "scripts/lib/open-meteo-hourly-components.mjs",
+      "bytes": 8408,
+      "sha256": "79518ec13546c78ff4ecbacc16d80c06d091b4c45f7d529e0ea2fef8af70b07f"
+    },
+    {
+      "path": "scripts/lib/open-meteo-o1280-grid.mjs",
+      "bytes": 3226,
+      "sha256": "1a4ac015264521fcd62fb326868608738056d918acfcc2da3157f05996e4112d"
+    },
+    {
+      "path": "scripts/lib/open-meteo-part-bank.mjs",
+      "bytes": 27164,
+      "sha256": "bbce6b16fda0649c258ed727319f5e1505d68e11961ae3aa52df48533dccd665"
+    },
+    {
+      "path": "scripts/lib/open-meteo-part-runtime.mjs",
+      "bytes": 17533,
+      "sha256": "119787d9dea6ba3a1239c9f1f1b8d22c10f0798f005b492912a0b48b09cd8592"
+    },
+    {
+      "path": "scripts/lib/open-meteo-usable-part-bank.mjs",
+      "bytes": 2075,
+      "sha256": "4ce9a6b07382cd89d592ecdf4974d439edfaece18b16e749fee07a43ea58e32d"
+    },
+    {
+      "path": "scripts/lib/open_meteo_current_fallback.py",
+      "bytes": 60341,
+      "sha256": "050df8aeea083f906f55b8981f72f1b3027f38df494dec6e97f3a363dfa451d4"
+    },
+    {
+      "path": "scripts/lib/post-h0-dmi-original-dependencies.mjs",
+      "bytes": 15554,
+      "sha256": "a49ea641f76af721c43a13a091aa102e0904a3730803859d7c5f5e29e7c516bc"
+    },
+    {
+      "path": "scripts/lib/private-conditions-hourly.mjs",
+      "bytes": 8465,
+      "sha256": "ea5fe3d5b801edd1cf8670b7d2bc3d7dbb870be70f26c56a01a8a21b2755dc0e"
+    },
+    {
+      "path": "scripts/lib/private-dmi-recovery-record.mjs",
+      "bytes": 41950,
+      "sha256": "251af179efe8fa1a9ac7694d14fabe6374658a81c22b4410e8094d44000d2ac5"
+    },
+    {
+      "path": "scripts/lib/private-weather-component-inventory.mjs",
+      "bytes": 5021,
+      "sha256": "125e1a2acee5bff8d16ac549e96004dc8c80bbcea684782c45b3cfc666edba3c"
+    },
+    {
+      "path": "scripts/lib/private-weather-component-pack.mjs",
+      "bytes": 45806,
+      "sha256": "bd4535d74ef99facc17bffd6b35b66235ce870aa3e9ee211f93ff11b26abe652"
+    },
+    {
+      "path": "scripts/lib/private-weather-progress-files.mjs",
+      "bytes": 336,
+      "sha256": "441a086ab2b0aff8c259433322d85733ef65fb785e1ceca0fdd88894e2b5d5f3"
+    },
+    {
+      "path": "scripts/lib/private-weather-storage-abi.json",
+      "bytes": 672,
+      "sha256": "0d445cc7823602e1a5cab51b20dbdabef59d52c7e929df9bf415f1bc6293d3b3"
+    },
+    {
+      "path": "scripts/lib/production-reference-time.mjs",
+      "bytes": 641,
+      "sha256": "df4ed8caec1ccdfa1bf8dc3f23b40829ffc7db941d56defb903a90aa4b0bbf01"
+    },
+    {
+      "path": "scripts/lib/production-workflow-sources.mjs",
+      "bytes": 17429,
+      "sha256": "36b0ce984220873add15763f65673293a767197ee853fd02f2c5a31d9eae798d"
+    },
+    {
+      "path": "scripts/lib/protected-dmi-current-context.mjs",
+      "bytes": 3482,
+      "sha256": "993a9227b37dc9e6bdf40f8eaf220d007c80a21bfa6448e4ebc628528d183b0f"
+    },
+    {
+      "path": "scripts/lib/protected-dmi-native-current-proofs.mjs",
+      "bytes": 28459,
+      "sha256": "3fedc43197cc655721c6e5ade0271f00e7be73216d3c515dedb0e2a57400028d"
+    },
+    {
+      "path": "scripts/lib/protected-live-current-assembly.mjs",
+      "bytes": 7542,
+      "sha256": "da8f5b1f2c65cdd7d72394112239d189bf33f6df5443803a615aff295d1d5a56"
+    },
+    {
+      "path": "scripts/lib/prove-cached-coherent-current-originals.mjs",
+      "bytes": 14876,
+      "sha256": "eea3a889a2ae3140a406735b5e7fe4a174c62b7ee72ab425834c1baf2588e26f"
+    },
+    {
+      "path": "scripts/lib/public-bulk-details-archive.mjs",
+      "bytes": 11560,
+      "sha256": "e6601a724be10e98df61519c42e28666202e887a1d4193ff15259a34576a63af"
+    },
+    {
+      "path": "scripts/lib/public-cold-hour-transport.mjs",
+      "bytes": 2019,
+      "sha256": "c9cb3e42a99533842966f7706f1d9a5b194588d2eb512ea33ebea233b3a9154c"
+    },
+    {
+      "path": "scripts/lib/public-delivery-json-transport.mjs",
+      "bytes": 2533,
+      "sha256": "7618e9beda54633c97f987660401f9faf64ea2ad565e0e9f2718854267c1174c"
+    },
+    {
+      "path": "scripts/lib/public-delivery-nested-binding.mjs",
+      "bytes": 1168,
+      "sha256": "1e954452290922e10b0682abf1a6dd85f26a3d3bd9d520f9712d3bb8661f54b4"
+    },
+    {
+      "path": "scripts/lib/public-hour-delivery-pack.mjs",
+      "bytes": 25913,
+      "sha256": "10a1bab2155b7eedd791045209a514f41bda08e3dc9470840729b87967fb7f6d"
+    },
+    {
+      "path": "scripts/lib/public-map-hour-pages.mjs",
+      "bytes": 4002,
+      "sha256": "a0bab474abbf30f6aeaa42e2d69f4e595dd3cfd8901c5572e945f37d7e4f6bea"
+    },
+    {
+      "path": "scripts/lib/public-map-hour-projection.mjs",
+      "bytes": 14621,
+      "sha256": "cb503788e31cbc46ef55b953123d4676774bf905efe2ea667dec2b53b22b11b2"
+    },
+    {
+      "path": "scripts/lib/r2-private-runtime-storage.mjs",
+      "bytes": 19425,
+      "sha256": "75fa86add9c79308ab89b830dba2695f24d935f6fafa73366c97be48960c50fb"
+    },
+    {
+      "path": "scripts/lib/ravscore-candidate-g-rollback-runtime.mjs",
+      "bytes": 36594,
+      "sha256": "920f790b5459a945525565498ad014c51b9d7d0a0f32360948ead9c54424adb6"
+    },
+    {
+      "path": "scripts/lib/ravscore-continuation-implementation-contract.mjs",
+      "bytes": 2316,
+      "sha256": "09a4f9a4b07717bdaed81742db94f1c22d9968adae30bdafbb5927c3dd2780b3"
+    },
+    {
+      "path": "scripts/lib/ravscore-initial-current-window-audit.mjs",
+      "bytes": 9943,
+      "sha256": "7b97794d85cb632fbe4c49e4bb54a8d3bfb79be1827934abe4118ff64d1abe18"
+    },
+    {
+      "path": "scripts/lib/ravscore-integrated-runtime.mjs",
+      "bytes": 18515,
+      "sha256": "a75dc5f45df6db6cc97b0cfc17d5c7cd9834c017fd213ed4f7dc699f527b27c8"
+    },
+    {
+      "path": "scripts/lib/ravscore-known-public-source-repair.mjs",
+      "bytes": 1580,
+      "sha256": "f3712cc0890f0a2384f1a56e398993d44c7ce0579233cd7705cda03017a2d044"
+    },
+    {
+      "path": "scripts/lib/ravscore-legacy-candidate-g-source.mjs",
+      "bytes": 10841,
+      "sha256": "ec5fec4cac827a5127d5fd6019580cf4dd6f6deb25eed114066198985533e64c"
+    },
+    {
+      "path": "scripts/lib/ravscore-operational-state-readiness.mjs",
+      "bytes": 2650,
+      "sha256": "52965a989944add07b8aee88a114fd006c5985094f4d74c45e3b934d01b3caaf"
+    },
+    {
+      "path": "scripts/lib/ravscore-production-adapters.mjs",
+      "bytes": 48028,
+      "sha256": "4803973bf5863862c9cc52ef8998f7afeeb732340a37066c4a895c2b8ca9a394"
+    },
+    {
+      "path": "scripts/lib/ravscore-production-part-pipeline.mjs",
+      "bytes": 40434,
+      "sha256": "8e979128a682a7324d7defcc3d2d2dfa5edc85ebc22d4ae714810aa085490758"
+    },
+    {
+      "path": "scripts/lib/ravscore-profile-transition.mjs",
+      "bytes": 9199,
+      "sha256": "d82449cfb267802b79fdf77581494cabcde9385614fe9ef47fa96490f5b41320"
+    },
+    {
+      "path": "scripts/lib/ravscore-public-browser-closure.mjs",
+      "bytes": 10846,
+      "sha256": "fa5dcf0da1096b997a60efb68c20efe35cffbb67f8a7dba84c20390e97ed0555"
+    },
+    {
+      "path": "scripts/lib/ravscore-recovery-replay.mjs",
+      "bytes": 49200,
+      "sha256": "b7459a5d821800a9c58c303fc1fb166610b73d98a68523a8830ef29eb4e70223"
+    },
+    {
+      "path": "scripts/lib/ravscore-recovery-source-priority.mjs",
+      "bytes": 51270,
+      "sha256": "4bbfd4b6ec900cf1ba63e28b225bf8c4707b0744b23f5e0da4981bf892f4d82d"
+    },
+    {
+      "path": "scripts/lib/ravscore-sampling-context.mjs",
+      "bytes": 979,
+      "sha256": "5e3465826e7dc7caac4cc8b0da1d1117a3b51dac157973d09aa7c2b7baa44cf4"
+    },
+    {
+      "path": "scripts/lib/rebind-public-hour-pack-exact.mjs",
+      "bytes": 3667,
+      "sha256": "75baa904a9fa466393e5c8889e0590fa7d333b074ba3824b0e94405a7a7dc5e2"
+    },
+    {
+      "path": "scripts/lib/regional_current_operational.py",
+      "bytes": 50678,
+      "sha256": "3d126081b22ad9cf38431acc594d02381aff568b52f3e776fd2976bdd80f0f9d"
+    },
+    {
+      "path": "scripts/lib/regional_source_proofs.py",
+      "bytes": 21561,
+      "sha256": "1cee014e9d8bcc44197f9ef18c0f1a2ef46770f9724c5de12b58c3289dc5ede1"
+    },
+    {
+      "path": "scripts/lib/release-contract-metadata.mjs",
+      "bytes": 5493,
+      "sha256": "20c97f833f3d65d499574283ee9022ccb0dd1bbbd09585eebb7c841f30bd8fcd"
+    },
+    {
+      "path": "scripts/lib/reproject-coherent-current-originals.mjs",
+      "bytes": 16737,
+      "sha256": "616d5fae83eefe561b52b0b5ecb8e0b0691beda356f8819d7bfab283cc77cb65"
+    },
+    {
+      "path": "scripts/lib/saved-current-forward-original-plan.mjs",
+      "bytes": 8768,
+      "sha256": "accbf699fbb9fdd1dc33d640c3d2a14d3d9c21c062e9e049ace5d950adbd18cb"
+    },
+    {
+      "path": "scripts/lib/saved-current-replay-grid-audit.mjs",
+      "bytes": 16221,
+      "sha256": "584c42959668e734df86f057d8933d57677569252514e5ff90421c593f0511dc"
+    },
+    {
+      "path": "scripts/lib/saved-dmi-original-capture.mjs",
+      "bytes": 2958,
+      "sha256": "b46ba3c64599e0b18c808fe6b027dca4e55a9c5e6aaf095681ca0374808a6921"
+    },
+    {
+      "path": "scripts/lib/saved-dmi-original-dependencies.mjs",
+      "bytes": 8026,
+      "sha256": "b1425855dcc2b9d6eb0e2748a1375f85460987ae54e02f66f12bfd17fe76eb24"
+    },
+    {
+      "path": "scripts/lib/source-artifact-distribution-review.mjs",
+      "bytes": 4697,
+      "sha256": "c2861b4e141d797d34fe7bbf1868b57c1518c11ae66584f5f6bb459fa4a28f55"
+    },
+    {
+      "path": "scripts/lib/source-completed-public-pages-occurrence.mjs",
+      "bytes": 10815,
+      "sha256": "f0cbfbb4f40c84818264a3c771b89fcfd6e2c20c220ffa8819ec8920c415971f"
+    },
+    {
+      "path": "scripts/lib/source-completed-stage-artifact-identity.mjs",
+      "bytes": 1406,
+      "sha256": "9d4ca81b0c430cbca02f1b4451ef132d5a517007689bc464687f2b05eb0d80d8"
+    },
+    {
+      "path": "scripts/lib/source-completed-stage-occurrence.mjs",
+      "bytes": 15816,
+      "sha256": "eb856bb8f788deb3c212b7b11529cf4349de9be7164c9d791f3db78118ccc279"
+    },
+    {
+      "path": "scripts/lib/source-integrated-publication-receipt.mjs",
+      "bytes": 4635,
+      "sha256": "e6565626403336900f91d4dcd9841b184323464653acb0420618e86d4d01dc0f"
+    },
+    {
+      "path": "scripts/lib/source-producer-after597-derived-metadata.mjs",
+      "bytes": 3485,
+      "sha256": "8a22a644437a0105345e440ce6c73de5c6d8750b927177841c857806b0a3cf0f"
+    },
+    {
+      "path": "scripts/lib/source-producer-after597-parent.mjs",
+      "bytes": 5916,
+      "sha256": "e8cbcbcf79671a63ba001860023122db462e01fc7dff0b33e663d46abd4977c0"
+    },
+    {
+      "path": "scripts/lib/source-producer-after597-runtime-family.mjs",
+      "bytes": 39465,
+      "sha256": "3db89f8a26bdb4329eb50f78afd20e0774780366a87c6e7040bbae4b7ef50140"
+    },
+    {
+      "path": "scripts/lib/source-producer-binding.generated.json",
+      "bytes": 117,
+      "sha256": "6a41abe630ad31f957e9a4ccfabd5dd346edf22bb22fd2c1e6b4279450128927"
+    },
+    {
+      "path": "scripts/lib/source-producer-derived-metadata.mjs",
+      "bytes": 2953,
+      "sha256": "2456268795bd500c679661dce20b4a654adb9109f520f38eb77c129d46cb95ad"
+    },
+    {
+      "path": "scripts/lib/source-producer-successor-source.mjs",
+      "bytes": 29453,
+      "sha256": "746dddb8457bac994fbe24046dfb0ba2d60949bb72c15362502ca6784dbabf50"
+    },
+    {
+      "path": "scripts/lib/source-saved-pair-pages-proof.mjs",
+      "bytes": 6588,
+      "sha256": "69624a1742143b729bc03ccba74e7f82b081cfe06658133cf8f0bc603074cd09"
+    },
+    {
+      "path": "scripts/lib/source-tree-content.mjs",
+      "bytes": 3422,
+      "sha256": "ebf2c31976600c9c72ee87465791c683b88bb9980f5cf0262a05d977cc8c87c3"
+    },
+    {
+      "path": "scripts/lib/source-union-birth-journal.mjs",
+      "bytes": 9166,
+      "sha256": "c829e3d7be2eff86d79615b766630e51dcf95a803f9c3174d8d085ba8501fb38"
+    },
+    {
+      "path": "scripts/lib/source_union_birth_journal.py",
+      "bytes": 7961,
+      "sha256": "7545f87600011bdd8c5b15946edc9020a28bcdb36c03e24731e959cea45efc0c"
+    },
+    {
+      "path": "scripts/lib/static-module-closure.mjs",
+      "bytes": 7115,
+      "sha256": "bb64f60e1a700897f6dd982b8fe9c3ed85fbb48fd3dfd0b2f46f65e3dc91b17e"
+    },
+    {
+      "path": "scripts/lib/supabase-admin-rest.mjs",
+      "bytes": 4576,
+      "sha256": "ce6213930e27ceec1c125f98ac4706aa92df14b228d055a20c37a864d84f8724"
+    },
+    {
+      "path": "scripts/lib/trip-storage-edge-readiness.mjs",
+      "bytes": 10975,
+      "sha256": "525d3aede4d57cfbb4f554b9acf61e7692724e9691a1aa6c23bd89911e62acdf"
+    },
+    {
+      "path": "scripts/lib/verified-dmi-progress-inputs.mjs",
+      "bytes": 25237,
+      "sha256": "572cd6405de47f948be65a1d2dec5bd2daa46fd0ed1b23406645b8efed809317"
+    },
+    {
+      "path": "scripts/lib/verified-open-meteo-generation-union.mjs",
+      "bytes": 3236,
+      "sha256": "c6ddb28d0bdc0dd8362a47f153e07a410ebb2a0ccdb046fe4355a3304cfd6106"
+    },
+    {
+      "path": "scripts/lib/verified-protected-progress-components.mjs",
+      "bytes": 37579,
+      "sha256": "cdefa33ad6cd37c6d83407b3e2c64cd1539f0bd804e6e4a17b5a800381414913"
+    },
+    {
+      "path": "scripts/lib/verified-weather-deployment-terminal.mjs",
+      "bytes": 5151,
+      "sha256": "5efdcb9b6f40c89812437cf13f777a209f6cfd6f41a5bae1071b9d7cfd858cf4"
+    },
+    {
+      "path": "scripts/lib/water-level-continuity.mjs",
+      "bytes": 10692,
+      "sha256": "263c3cce062d2231a537a127840b3fa05bdd2f0912b0d04a25595b554e467f99"
+    },
+    {
+      "path": "scripts/lib/water-source-continuity-contract.mjs",
+      "bytes": 369,
+      "sha256": "eec22865cae71ed0c2613272b899adb9b4713166cc3c82522712accb4fcfb180"
+    },
+    {
+      "path": "scripts/lib/water-source-forecast-routing.mjs",
+      "bytes": 31454,
+      "sha256": "3a538c16c18a5e81516179f43591247a342c60ec100758470c3303eb0c94963d"
+    },
+    {
+      "path": "scripts/lib/water-station-routing-alerts.mjs",
+      "bytes": 5101,
+      "sha256": "7a50b8c3012d537e21433541ffcf67546ea765f523dd58418467abb7e7ef9e05"
+    },
+    {
+      "path": "scripts/lib/weather-acquisition-writer.mjs",
+      "bytes": 6436,
+      "sha256": "6de2e28acc0df9440627bdcf7d97f2807ebdf2676bc27684787896961679450a"
+    },
+    {
+      "path": "scripts/lib/weather-component-needs.mjs",
+      "bytes": 6681,
+      "sha256": "a94fa5a46acbb52300aba4d7472776b03cdec4f0675611f404f95adc279d42b4"
+    },
+    {
+      "path": "scripts/lib/weather-component-runtime.mjs",
+      "bytes": 33838,
+      "sha256": "91f9bbd3ab6eff78e25db1cc5d84fd428a922966a4bc5230ad20974b83a6f22e"
+    },
+    {
+      "path": "scripts/lib/weather-component-safe-summary.mjs",
+      "bytes": 7406,
+      "sha256": "b1142599e7b210cd00c2123fa4112c9e1c5407347150fa9d7dad6808aca70af1"
+    },
+    {
+      "path": "scripts/lib/weather-component-selection-history.mjs",
+      "bytes": 6634,
+      "sha256": "eaf41bd0fc8e72b80e291745ea8049f06170bb9f06892721bbdccb434e00c8cd"
+    },
+    {
+      "path": "scripts/lib/weather-component-selection.mjs",
+      "bytes": 9365,
+      "sha256": "587905b8a0453d46418e0be4ecb12cbb023e94ee3c6e861d8b638c6e08e5e35f"
+    },
+    {
+      "path": "scripts/lib/weather-history-retention.mjs",
+      "bytes": 3026,
+      "sha256": "105fd5cf75a22e7c0d520f3faa95f07e97870df5b2e3769b8bde9fb98c222fb5"
+    },
+    {
+      "path": "scripts/lib/weather-reserve-admission.mjs",
+      "bytes": 1637,
+      "sha256": "c847fadb22e02e92a872726f97a4e5ea648ce08fb171f36558e6727110439c24"
+    },
+    {
+      "path": "scripts/lib/weather-source-gate.mjs",
+      "bytes": 16933,
+      "sha256": "5ec2f1a4569ad69b8f89140ce26205fe265a9d4d89a377c9c080ada10c0dc90b"
+    },
+    {
+      "path": "scripts/lib/weather-state-epoch-archive.mjs",
+      "bytes": 59855,
+      "sha256": "e3ee3638edd722723442feb41fee751184e9c943aba89b06922fde738febfc1a"
+    },
+    {
+      "path": "scripts/lib/weather-state-epoch-input-view.mjs",
+      "bytes": 11064,
+      "sha256": "26b0831e60dcb438d9e3d7647a775825d1472d962a622d0089a2e3306e1f0cf2"
+    },
+    {
+      "path": "scripts/lib/weather-transport-settlement.mjs",
+      "bytes": 987,
+      "sha256": "c08b688a191ac3d2e95f565fd9dddd5e51cb3d5f75861f81daf0a079f4dbba9d"
+    },
+    {
+      "path": "scripts/lib/weather_acquisition_plan.py",
+      "bytes": 21052,
+      "sha256": "cc4eabc74f65b2cc3bfc1ea1100670cd5aa01dfd49a16c401c3c015a935ec198"
+    },
+    {
+      "path": "scripts/local-weather-snapshot-status.mjs",
+      "bytes": 3222,
+      "sha256": "3ce3b60bfe4264a27c54975ca4d74361fa0da1bd5b82fb215fd77a5d0d1c7955"
+    },
+    {
+      "path": "scripts/materialize-dmi-bulk-storage.py",
+      "bytes": 15823,
+      "sha256": "16dd551032dd1dd1d10466ddac7222ff4c523af30eee6d55b742e4ae25dc6806"
+    },
+    {
+      "path": "scripts/merge-verified-current-donor-banks.py",
+      "bytes": 4186,
+      "sha256": "f5f5dfd6ddb0c5d41ecb33652c5047b8825906a61de8c1f836ae564e31ae4671"
+    },
+    {
+      "path": "scripts/migrate-post-cutover-private-runtime.mjs",
+      "bytes": 110999,
+      "sha256": "1b097d22f4102dc80f8d2c917dbaead896ceb3e7b8f364992d3422c4d010d9f6"
+    },
+    {
+      "path": "scripts/native-sampling-identity-successor-readiness.mjs",
+      "bytes": 10540,
+      "sha256": "78e3622c96defa966997809b6ccb989ace4d768eff06af12f719ca874e93f875"
+    },
+    {
+      "path": "scripts/plan-dmi-legacy-current-originals.mjs",
+      "bytes": 10608,
+      "sha256": "bab6a8710126366dc14bf5f68dbb4df7c9e437c1aa95f78e609eba4fc27bbe80"
+    },
+    {
+      "path": "scripts/plan-dmi-recovery.py",
+      "bytes": 9665,
+      "sha256": "ac0f3ca00339e0e7a95a0f6583c369bc4c1f67a4b3786fcfa9028f9017ac4b7b"
+    },
+    {
+      "path": "scripts/plan-ravscore-current-history.mjs",
+      "bytes": 82634,
+      "sha256": "62ae03e2627d92afceff607bbee91d69252b486f4a7b0a7b7d53cedeb5f05142"
+    },
+    {
+      "path": "scripts/prepare-cached-coherent-current-work.mjs",
+      "bytes": 25838,
+      "sha256": "1bdab356610e089958d1408f7d68acc1518005f27c1012116c05dd1c857cab9b"
+    },
+    {
+      "path": "scripts/prepare-candidate-g-operational-rollback.mjs",
+      "bytes": 32652,
+      "sha256": "55f75faf3a4efecbde258de1eb5484f0b22a4d6b7fd858f7b422783b632c85e8"
+    },
+    {
+      "path": "scripts/prepare-coastal-point-activation.mjs",
+      "bytes": 11622,
+      "sha256": "2683dabdaa820669e25025608729ceebf37eeddcbd159df28060c7c3490d62aa"
+    },
+    {
+      "path": "scripts/private-production-runtime-bundle.mjs",
+      "bytes": 34235,
+      "sha256": "2eeff25c6d6e769c7a5d9b414bfed574e0105e7cb24d0bd1578e7700781d5529"
+    },
+    {
+      "path": "scripts/private-production-runtime-workflow.mjs",
+      "bytes": 81418,
+      "sha256": "d421520af4cfb40e14e6da2bc7bf701cd841131ed936fb63ff07d559fd9167e3"
+    },
+    {
+      "path": "scripts/private-runtime-second-restore-expectation.mjs",
+      "bytes": 6028,
+      "sha256": "08dee89aaebe0c0cafbfe12b864eff006ce3a780f7fdb81c237f75e39a1d7cdc"
+    },
+    {
+      "path": "scripts/produce-open-meteo-part-components.mjs",
+      "bytes": 14629,
+      "sha256": "a916f56c5ff32006928c155807e6c3f32c244c7af03371aec1f4a515327dac0e"
+    },
+    {
+      "path": "scripts/production-workflow-outcome.mjs",
+      "bytes": 30192,
+      "sha256": "21d2064c00a20456715aec8def43ee95ef89961f39a56dca9cde570246e51e2a"
+    },
+    {
+      "path": "scripts/promote-coastal-point-activation.py",
+      "bytes": 4233,
+      "sha256": "dcce091be7704303c8b598ebbcbe4a148fb843542dde0cde1036e45f232a69aa"
+    },
+    {
+      "path": "scripts/protected-operational-reentry-evidence.mjs",
+      "bytes": 86379,
+      "sha256": "ff43c523dd379a9ab02d247fcce81e9597a385bbee1cdb80df7ced142702d3bf"
+    },
+    {
+      "path": "scripts/protected-private-production-runtime.mjs",
+      "bytes": 117296,
+      "sha256": "7dade6f0b6cb2256b70818646d6965965ea28177cabe0a25021a471eb199d767"
+    },
+    {
+      "path": "scripts/protected-ravscore-continuation-checkpoint.mjs",
+      "bytes": 49091,
+      "sha256": "d9e9e4facb7005cdcbdd353241bcc84de8ef3d4ede28aaba91e5c00a5aaab030"
+    },
+    {
+      "path": "scripts/public-conditions-lib.mjs",
+      "bytes": 65524,
+      "sha256": "e5a921d2a818694cfa13d5fcb30392cad972dc3b7038e929bc1d659a95f8017d"
+    },
+    {
+      "path": "scripts/ravscore-continuation-checkpoint.mjs",
+      "bytes": 54290,
+      "sha256": "e5c20048add873a1fcf890c23f922b4ea5394ab88b867cf8d4914cde215d88bf"
+    },
+    {
+      "path": "scripts/ravscore-operational-activation.mjs",
+      "bytes": 246016,
+      "sha256": "2d309552061ad9ab2e2aadcb4531ed71d7e5420d9a3a9c816d8b37c520269c66"
+    },
+    {
+      "path": "scripts/ravscore-operational-pages-recovery.mjs",
+      "bytes": 29360,
+      "sha256": "ebe80224c182038a81c828303969e8cbeed31ceb80e9d19d7226467394980294"
+    },
+    {
+      "path": "scripts/read-authenticated-dmi-current-companions.mjs",
+      "bytes": 13676,
+      "sha256": "5cad4a98b40e50df6a512d9c0724b850b7a43211d9f42d0e2d6dc11d92d26714"
+    },
+    {
+      "path": "scripts/reconcile-private-runtime-checkpoint.mjs",
+      "bytes": 59135,
+      "sha256": "c9bcafd2c6c8591cdaed454577926a06bc491c499f60da04c352138fec47445d"
+    },
+    {
+      "path": "scripts/reconcile-source-producer-code-only.mjs",
+      "bytes": 8780,
+      "sha256": "90c64f8b9297fb3ff02aaf0fcb5c67e17c67d8b9d66246dae18dcb6bb4ce606d"
+    },
+    {
+      "path": "scripts/refine-coastlines-constrained-4.0.48.py",
+      "bytes": 7647,
+      "sha256": "f8f4b2a1274fe6ccffec655e04b32ec6521bcf02eec9cf3c95a809e4c3bf7a6d"
+    },
+    {
+      "path": "scripts/rollback-assets/ravscore-model-contract.js",
+      "bytes": 7249,
+      "sha256": "ba1c670fb3aaf30ff01b6c04583296c0a5da395866f28f03569285f7b0a2c135"
+    },
+    {
+      "path": "scripts/run-copernicus-current-pilot-with-retry.py",
+      "bytes": 16228,
+      "sha256": "46e731d20b87e8c96ae81de0693a54a752fb860c688f33d2e10e4d52316c4814"
+    },
+    {
+      "path": "scripts/run-copernicus-current-pilot.py",
+      "bytes": 147482,
+      "sha256": "3c1a9efc5bfae599fbf28793650d3dd7917cd46df467b2e137e767485da83e0f"
+    },
+    {
+      "path": "scripts/run-copernicus-weather-components.py",
+      "bytes": 31343,
+      "sha256": "3b50b0807552b81124ee10405ea29f82cd2952f372b899036d273f10e1d38d1b"
+    },
+    {
+      "path": "scripts/run-dmi-bulk-supervised.py",
+      "bytes": 32732,
+      "sha256": "52a9870892ec3951608dbaeeaf382733a5fe1ad865e2b04e2593abdd74178c66"
+    },
+    {
+      "path": "scripts/run-owned-dmi-grib-save.py",
+      "bytes": 8156,
+      "sha256": "9c7a20f75e3dd5cce6ee35241a01aaf2c20d0d3db437191ba7749ed6a9b8dbd8"
+    },
+    {
+      "path": "scripts/run-validation-collection.mjs",
+      "bytes": 10399,
+      "sha256": "36c80d7f46f33693a14d2e2611a3ba3423707d3c21a75e6080c1ebf6ab5f804c"
+    },
+    {
+      "path": "scripts/runtime-binding-registry.mjs",
+      "bytes": 7047,
+      "sha256": "ae0b7a9350774f6328d364ffdadbe8bd25f69b675be19a034830481c850af46c"
+    },
+    {
+      "path": "scripts/seal-ravscore-public-browser-closure.mjs",
+      "bytes": 3424,
+      "sha256": "b41a2e06c34f70efef32572f396f7a09c899b19ec578b333f1814832df78b4b6"
+    },
+    {
+      "path": "scripts/select-automatic-source-saved-weather.mjs",
+      "bytes": 10621,
+      "sha256": "c38c002f9430f3f49732fbf2589f634edc60fcfdbcf4f8b91775961da9d372aa"
+    },
+    {
+      "path": "scripts/select-native-original-continuity-code-only-source.mjs",
+      "bytes": 9222,
+      "sha256": "5a80365f7933d02a4e4bac7a386e04e9cb492d30ef83522833ba36341e9667ef"
+    },
+    {
+      "path": "scripts/select-source-producer-code-only-source.mjs",
+      "bytes": 5458,
+      "sha256": "049f0cb8c1bc873576d4f48cf65ecd62a1fc35f4815e8a6d0b2e5deb7332c03f"
+    },
+    {
+      "path": "scripts/source-normal-producer-entry.mjs",
+      "bytes": 54917,
+      "sha256": "75aef638b027f148cfe93cc398f2adc81788307701589a08cd7603f091c1388d"
+    },
+    {
+      "path": "scripts/source-normal-producer-tail.mjs",
+      "bytes": 391400,
+      "sha256": "04ce89f5e9b883caf42be068bb8af72b2080d3415e460f63e30da391b76b5474"
+    },
+    {
+      "path": "scripts/source-post-pages-integrated-reentry.mjs",
+      "bytes": 8956,
+      "sha256": "00da42b599819d3506afe597659a431bd8d7dea6aa0c11260d922ee7e076fd1b"
+    },
+    {
+      "path": "scripts/source-producer-prewrite.mjs",
+      "bytes": 11175,
+      "sha256": "30bbb14d0ecccdbb143216f8afecbc2c0f1c69e208a0f566b06cb5adcbb98842"
+    },
+    {
+      "path": "scripts/source-producer-runtime-transition.mjs",
+      "bytes": 30835,
+      "sha256": "2ac9ca96a338d8eef2dfdd1ebc089ae9a9d0776f00bb9d9cf4e6264ba82d85e6"
+    },
+    {
+      "path": "scripts/source-progress-union-consumer.mjs",
+      "bytes": 13439,
+      "sha256": "5fb9ce8fba71ac73b8de7d2bc7955198accd9e77b618aa78a14bea8df80abf3c"
+    },
+    {
+      "path": "scripts/stage-source-producer-originals.mjs",
+      "bytes": 15184,
+      "sha256": "0f76e4182eb4fca0294018417b923ff5e0bc2a3d7239a6ed1e8488f53f685a20"
+    },
+    {
+      "path": "scripts/staged-private-production-runtime.mjs",
+      "bytes": 8510,
+      "sha256": "d2dc355951de8eeafe717da55e9ac73bd5dc1388abada20d34a50401e6628436"
+    },
+    {
+      "path": "scripts/sync-admin-config.py",
+      "bytes": 35844,
+      "sha256": "26a07f4dd9a3e78dc78d8cf6e4f15e1ed2236382a33100e44e1cc430db6f1970"
+    },
+    {
+      "path": "scripts/sync-ravscore-model-binding.mjs",
+      "bytes": 32411,
+      "sha256": "54d750c272ffa81f677b0d52db9970a37f11b88586199c1b457a0e6a2f9a2ebd"
+    },
+    {
+      "path": "scripts/sync-release-contract-metadata.mjs",
+      "bytes": 1756,
+      "sha256": "8b5bbdf11dcc090c1fc2b0bcbfe78b62aaf0fdb7d25c0336adeaaa0be161b194"
+    },
+    {
+      "path": "scripts/test-admin-config-production-contract-4.0.94.mjs",
+      "bytes": 6230,
+      "sha256": "5ff71d213773138c9944c5b2a1c08aee497ae83fc78037fa25e9d494a3583479"
+    },
+    {
+      "path": "scripts/test-best-time-consistency-4.0.72.mjs",
+      "bytes": 7219,
+      "sha256": "3d3dd1164c167473f4512bd67624fc35ff70df46858ae3c921b758ab25e63e94"
+    },
+    {
+      "path": "scripts/test-current-arrow-land-mask.mjs",
+      "bytes": 16578,
+      "sha256": "ada89645208d4b724c1eae6d02e85c3ce6b5ef26568e05a57583367f956eb07d"
+    },
+    {
+      "path": "scripts/test-current-direction-audit-4.0.66.mjs",
+      "bytes": 558,
+      "sha256": "49086f73bda9983a987708645645429321c208eb3c58865660c693b59c95f7a5"
+    },
+    {
+      "path": "scripts/test-current-full-coverage-gate-4.0.232.mjs",
+      "bytes": 1706,
+      "sha256": "99334231ea6f1986bf851a089522cfe2864e0a91d55c3634bd82b202968b1975"
+    },
+    {
+      "path": "scripts/test-current-history-provenance-retention-4.0.217.mjs",
+      "bytes": 2812,
+      "sha256": "a0b79db2578e22060d392f46131ca2731f8332db70a36c170a2db9f73d9d56b5"
+    },
+    {
+      "path": "scripts/test-current-provenance-null-safety-4.0.78.mjs",
+      "bytes": 1702,
+      "sha256": "3db3eba3356a6a06ba22cd130a09b37c14afc8e22f50e29debfafa2d23189e36"
+    },
+    {
+      "path": "scripts/test-current-provenance-sealing.mjs",
+      "bytes": 3308,
+      "sha256": "d0d0707ea9efdecdf6c8619298ca738ce520dfeb0d63f4be11aedfa286f34e2b"
+    },
+    {
+      "path": "scripts/test-current-provenance-vector-consistency-4.0.85.mjs",
+      "bytes": 821,
+      "sha256": "60094cd470866db447f5a3b139a51fa6419a91cc0d85c84bdde5662b857b1e2a"
+    },
+    {
+      "path": "scripts/test-current-spatial-scientific-audit-4.0.76.mjs",
+      "bytes": 16626,
+      "sha256": "1d019b03549561626e98b9bec69007268364971e9f48ce412a8fefc8a871acd4"
+    },
+    {
+      "path": "scripts/test-current-transport-history-4.0.115.mjs",
+      "bytes": 4138,
+      "sha256": "3ae3b6b937099f8f1af26e98732ed81612c11c8ad701efeaa28ae62222761fd9"
+    },
+    {
+      "path": "scripts/test-data-quality.mjs",
+      "bytes": 1497,
+      "sha256": "fde6ee0cf14cd7f5e84155111248329eb752ded4378e7967658c79e8fdba0623"
+    },
+    {
+      "path": "scripts/test-dmi-vector-grid-integrity-4.0.116.py",
+      "bytes": 5775,
+      "sha256": "923cb111aca91a22fd41da05fab2cbe491a1b97779fe397e8d349e6ad09f5de0"
+    },
+    {
+      "path": "scripts/test-flow-arrow-runtime-4.0.87.mjs",
+      "bytes": 2085,
+      "sha256": "794186d80143768248033e14d03c308121ef4dd65c94ec890b35b637dd15f00d"
+    },
+    {
+      "path": "scripts/test-forecast-integrity-4.0.17.mjs",
+      "bytes": 3841,
+      "sha256": "3915deec22f36608f8a31dd1fb36dfa3290838d65a40d0b5b58dbb4e17bd28b6"
+    },
+    {
+      "path": "scripts/test-fresh-startup-4.0.66.mjs",
+      "bytes": 1823,
+      "sha256": "0d73f76f8d939b428c76617448ca3a51306da662df777100b06571c4fd746fb5"
+    },
+    {
+      "path": "scripts/test-helpers/dmi-water-source-fixture.mjs",
+      "bytes": 1478,
+      "sha256": "cc85470fc2dc48292088e3c6787292cd9aea37107d5dc849f190ed42d3920aab"
+    },
+    {
+      "path": "scripts/test-hydrated-retired-zone-pruning-4.0.65.mjs",
+      "bytes": 857,
+      "sha256": "5547db5959efc2879d5331b348de9868e7a774cc103494c8c37b0e76e350071b"
+    },
+    {
+      "path": "scripts/test-ios-about-history-return-4.0.301.mjs",
+      "bytes": 2629,
+      "sha256": "7aa041cd94f6f1284e68ff63ed45128b9d518e8ef75e4e89ca68349e9c9a08cb"
+    },
+    {
+      "path": "scripts/test-local-part-direction-isolation-4.0.233.mjs",
+      "bytes": 4006,
+      "sha256": "52178b68d0896b6e515bb4738973c6bf8637a767d15e4787d857e15cf9cc4025"
+    },
+    {
+      "path": "scripts/test-local-part-map-4.0.185.mjs",
+      "bytes": 985,
+      "sha256": "6b011e11bb148d9034122ee22cce441ba7c6c86b09e8f40f5638c11319c2e994"
+    },
+    {
+      "path": "scripts/test-local-weather-snapshot-status-4.0.208.mjs",
+      "bytes": 1912,
+      "sha256": "ab96a8aae74e9f82f774a425530401131e849371101f1f85b42e6b2a9c0ce9b7"
+    },
+    {
+      "path": "scripts/test-local-zone-explanation-4.0.184.mjs",
+      "bytes": 9736,
+      "sha256": "fc1492ee07ddb0986bb08cd7c3ed28601cb9c3699e981248b5bee6db6065f07a"
+    },
+    {
+      "path": "scripts/test-main-zone-boundaries-4.0.183.mjs",
+      "bytes": 1346,
+      "sha256": "f664eae1c99b25a11126be6a20db62069b1eb101b41b5e9e645da524b2216b85"
+    },
+    {
+      "path": "scripts/test-map-arrow-zoom-density-4.0.228.mjs",
+      "bytes": 17910,
+      "sha256": "845a3b8665dbb45333e29f6c34c1029439a86d248dbf7b811f0af2170b092751"
+    },
+    {
+      "path": "scripts/test-map-tile-seams-4.0.305.mjs",
+      "bytes": 1603,
+      "sha256": "76138756fa6a115464445085da12f2ebd8e51760a6fc6c844cdefbf5cfead7fd"
+    },
+    {
+      "path": "scripts/test-map-zoom-refresh-4.0.88.mjs",
+      "bytes": 5314,
+      "sha256": "3f45c92e884aa9999b035b083155e645ed543f8ae23ad41a5a4cd8a266e0da60"
+    },
+    {
+      "path": "scripts/test-missing-weather-null-safety-4.0.116.mjs",
+      "bytes": 3424,
+      "sha256": "b2f4b3190a2633be9aa53f55a8f1f864e7b2b5a266c8025ea825d4619e85ef1a"
+    },
+    {
+      "path": "scripts/test-mobile-start-and-live-cache-4.0.74.mjs",
+      "bytes": 4756,
+      "sha256": "bdf733cea0754fbf7d5d530de6336231f8b8e060f1c498059774912872290e41"
+    },
+    {
+      "path": "scripts/test-progressive-public-conditions-4.0.216.mjs",
+      "bytes": 10820,
+      "sha256": "537a1eeafcfe0efdb9d3c1caaae340bea7a15dd66a885ad4686c56dced36412c"
+    },
+    {
+      "path": "scripts/test-public-cold-start-4.0.303.mjs",
+      "bytes": 12801,
+      "sha256": "897e72fd0c8729cf0f592b57a600a94016209ddff852f06badacce67b647eff7"
+    },
+    {
+      "path": "scripts/test-public-fallback-startup-4.0.296.mjs",
+      "bytes": 12175,
+      "sha256": "134f158fa7a1bdaa7a87d8c7fe6b44a79423a8ae4e17610a75d6e4e64ee4e9e0"
+    },
+    {
+      "path": "scripts/test-public-hour-delivery-pack.mjs",
+      "bytes": 12959,
+      "sha256": "e7379a1696c23c67dc6638d065cc2bd88398ee809bab7dd85de64c1fd853eb07"
+    },
+    {
+      "path": "scripts/test-public-load-performance-4.0.295.mjs",
+      "bytes": 8637,
+      "sha256": "a3a40ccbb617ec7e1cff3dd6539b9abc1ab1b1d34c245a1d39545fe334d14dd2"
+    },
+    {
+      "path": "scripts/test-public-local-display-consistency-4.0.235.mjs",
+      "bytes": 11140,
+      "sha256": "972cd1008bb8bbfc4d79a7b35c82298a490ed6a06991977a0b88d3b8bbada20a"
+    },
+    {
+      "path": "scripts/test-public-nonblocking-forecast-4.0.83.mjs",
+      "bytes": 5847,
+      "sha256": "72fb17b48691c249230d20f5db8c795ca92252caa58df5c8fd59a5bc9ef5fed0"
+    },
+    {
+      "path": "scripts/test-public-page-resume-4.0.292.mjs",
+      "bytes": 19992,
+      "sha256": "3f9cf8cb89ca8aa4090b6079c611a98067746baeac67157c61d65886a020558d"
+    },
+    {
+      "path": "scripts/test-public-runtime-4.0.74.mjs",
+      "bytes": 4477,
+      "sha256": "5dc2fc7f603d48589f17a40e43f9ea02ef03c422fd038612dd831786625952fb"
+    },
+    {
+      "path": "scripts/test-public-runtime-pipeline-4.0.75.mjs",
+      "bytes": 3592,
+      "sha256": "c45d3fa4760f2aef955769722dc1c74a60b6748b9b1ba66affafcc90fc6fa0d0"
+    },
+    {
+      "path": "scripts/test-public-score-explanations-4.0.269.mjs",
+      "bytes": 7958,
+      "sha256": "0a110b7bb250d9e19e5b2a754f670c57350e2cf3a60b427eff1710a23e95b406"
+    },
+    {
+      "path": "scripts/test-public-search-pages.mjs",
+      "bytes": 5985,
+      "sha256": "b6b4d8d0890c44fbcd3fa619eb31e2fb5dcbf259681e08b2a6dd712a4f25ea13"
+    },
+    {
+      "path": "scripts/test-public-startup-order-4.0.80.mjs",
+      "bytes": 3755,
+      "sha256": "1da562219ecf57b6cb470c38c6c083a56b71f6dd126238ec6efabdddc045470f"
+    },
+    {
+      "path": "scripts/test-release-integrity-4.0.73.mjs",
+      "bytes": 1238,
+      "sha256": "45573c92cf893608703f8637cacf713d3bb845bdbf2c9baac2ee6841190c27a7"
+    },
+    {
+      "path": "scripts/test-score-presentation-4.0.45.mjs",
+      "bytes": 1819,
+      "sha256": "0144929a5dcaf13e039251f2b5e8bb5f105a004201e058015c31c517eac1638b"
+    },
+    {
+      "path": "scripts/test-site-function-suite-4.0.70.mjs",
+      "bytes": 3512,
+      "sha256": "e7a761315a45d6737290753a32ecd0a53c3233b774af7110bb161da486bf7320"
+    },
+    {
+      "path": "scripts/test-state-reference-report-4.0.113.mjs",
+      "bytes": 1192,
+      "sha256": "bed1e79e8e0725c748376e8dcd40e2a0e616a5548766ba38ba538e858ef2f865"
+    },
+    {
+      "path": "scripts/test-water-source-production-chain-4.0.103.mjs",
+      "bytes": 20695,
+      "sha256": "b22b562bcaa76782ac3a079cee1b5dbefcb670dba47a43f54cac2869dd02f321"
+    },
+    {
+      "path": "scripts/test-water-station-active-routing-display-4.0.102.mjs",
+      "bytes": 1467,
+      "sha256": "0138a0acb1371910f846b080133933d2165b8c934eed738b85e206dc204d3335"
+    },
+    {
+      "path": "scripts/test-weather-history-retention-4.0.209.mjs",
+      "bytes": 11870,
+      "sha256": "4ada154a008660deea6d953bb7e7a0acf3f199ea246740d37fbdd3a899bcf8ab"
+    },
+    {
+      "path": "scripts/test-zone-admin-propagation-4.0.89.mjs",
+      "bytes": 4463,
+      "sha256": "d2ddc4975f0e89ad1919e35a9f53d9e76ef490c39d7a80a3df7946353ff891af"
+    },
+    {
+      "path": "scripts/test-zone-deletion-runtime-4.0.91.mjs",
+      "bytes": 1863,
+      "sha256": "dad3c95c10bd394028172981fbe0150d1845b68905b068f7a3e09ed8612a9be1"
+    },
+    {
+      "path": "scripts/update-coastal-point-staging.mjs",
+      "bytes": 24629,
+      "sha256": "3309bf95a6937521692cc7a5601053ff951b4f5cab9c49f3a31803a2f6cbadb5"
+    },
+    {
+      "path": "scripts/update-dmi-bulk.py",
+      "bytes": 855185,
+      "sha256": "2f265cf429be9c05a1d571cd461dda35357206d4174cede8a3bcd9a675589fb7"
+    },
+    {
+      "path": "scripts/update-water-source-registry.mjs",
+      "bytes": 5653,
+      "sha256": "8531d303de8fb7cb96021e899b27c5855f4a0c5a0479d0865d4c09c80569a150"
+    },
+    {
+      "path": "scripts/update-weather.mjs",
+      "bytes": 251786,
+      "sha256": "ad45fb06d06345258590936d880dad21aa708226976aec31086726fe5e889907"
+    },
+    {
+      "path": "scripts/validate-coastlines.mjs",
+      "bytes": 1671,
+      "sha256": "2adf857ef8ffbd4c517284af9e0dc241ed0ac18972633a48f297133ffb9b98f6"
+    },
+    {
+      "path": "scripts/validate-data.mjs",
+      "bytes": 3158,
+      "sha256": "10e06921aee830c61e55d1e6ae5a678c6ee2f3d411eafa9254f9fd1e2beecc76"
+    },
+    {
+      "path": "scripts/validate-release-version.mjs",
+      "bytes": 4701,
+      "sha256": "806d58c9b76b110296ede3cd2f9f96a3bec9e41e1c024ea08c1c477c4b4f881c"
+    },
+    {
+      "path": "scripts/validate-weather-health.mjs",
+      "bytes": 1822,
+      "sha256": "adda3540a3ff80ef39e12f431dd270bbbf5174ffe8fc5ef11bba153168856ac2"
+    },
+    {
+      "path": "scripts/validate-zone-plan.mjs",
+      "bytes": 660,
+      "sha256": "d7647931a4d5d63a1c3fb04425a850d849d9a3a45f49e925f58f0eec6aad6377"
+    },
+    {
+      "path": "scripts/verified-weather-source-handoff.mjs",
+      "bytes": 29694,
+      "sha256": "a000ac8d8f444ebbd09bb04602853e1f1dedc4efb31fdd551871c42376077f54"
+    },
+    {
+      "path": "scripts/verify-account-assistant-schema.mjs",
+      "bytes": 25513,
+      "sha256": "8bc595c8d1bef55d71cba5234c78256ff5797a0f33d17fe6a0146c9b08bddccd"
+    },
+    {
+      "path": "scripts/verify-cloudflare-trip-gateway.mjs",
+      "bytes": 17962,
+      "sha256": "61c2df0ef69a95ff8cdfb52b3b62f37a70168eadf8bf5665d79dff7c53b0c182"
+    },
+    {
+      "path": "scripts/verify-legacy-candidate-g-source.mjs",
+      "bytes": 17868,
+      "sha256": "e6f7bc2f185d2985d390af32ba845a3d0a39b07a4310af4b47d23e5bc5eb0186"
+    },
+    {
+      "path": "scripts/verify-native-sampling-identity-successor-plan.mjs",
+      "bytes": 6070,
+      "sha256": "8151479f339eff8f8b1e2a0d96cc01e5f40c9ccd4327844215ef33790c73729b"
+    },
+    {
+      "path": "scripts/verify-ravscore-operational-pages-deployment.mjs",
+      "bytes": 40621,
+      "sha256": "4bee4b6a1797efd74708b00503162d11d9acf21ff6c0517fb303651efab548b7"
+    },
+    {
+      "path": "scripts/verify-source-producer-plan.mjs",
+      "bytes": 4708,
+      "sha256": "71e144a1a85bbccc58f30acae6c5f071eea5e972b7afe257595282fa095f8a94"
+    },
+    {
+      "path": "scripts/verify-trip-storage-edge.mjs",
+      "bytes": 7388,
+      "sha256": "d2157333c5746b5d654db102898587feef7efece306728e3162b646c2e18f741"
+    },
+    {
+      "path": "scripts/weather-component-progress-cache.mjs",
+      "bytes": 120948,
+      "sha256": "5e5ab43b3e240f6619ce589b69af1a1c097d35d5b0d1c1ebb7b0753fb59e07a8"
+    },
+    {
+      "path": "scripts/weather-operational-control-summary.mjs",
+      "bytes": 3330,
+      "sha256": "2b5fbc630ca494c35c28bc6b06a80188b04b82424245569914210b1d32a7d03a"
+    },
+    {
+      "path": "scripts/weather-state-epoch-budget.mjs",
+      "bytes": 8370,
+      "sha256": "487b156c7a596b7ff09dde99e02016329b9f3410fb20582b0fec00c678d230c0"
+    },
+    {
+      "path": "scripts/weather-state-epoch.mjs",
+      "bytes": 39781,
+      "sha256": "719eb76d333a342708d587d064b37b59d126b4002e065a7f334d38260ccbef72"
+    },
+    {
+      "path": "scripts/zone-registry-integrity.mjs",
+      "bytes": 2305,
+      "sha256": "74ab4fc567bd6890f5be480d512a530669eba7d3506a7f00af721f191eade08d"
+    },
+    {
+      "path": "service-worker.js",
+      "bytes": 7133,
+      "sha256": "8b1901dbd8fb4189243ce86020b73409bacb746122ee13ad4733a9b230f8084e"
+    },
+    {
+      "path": "supabase/functions/_shared/trip-storage-contract-probe.js",
+      "bytes": 1223,
+      "sha256": "71103934af8d5623b743c2c3866e7f80778a8f296a8125aeb1d87e44bc2bc5b8"
+    },
+    {
+      "path": "supabase/functions/_shared/trip-storage.js",
+      "bytes": 49098,
+      "sha256": "8c56f1ab467adf936df72220e6984cac03d681fb5e208f84da33a5710009e1aa"
+    }
+  ]
+}

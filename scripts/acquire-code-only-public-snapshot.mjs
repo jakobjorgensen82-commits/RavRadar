@@ -13,6 +13,8 @@ import { manifestBoundedPublicDetailsBytes } from './prepare-code-only-public-ru
 import { normalizeArtifactDigestSha256, sha256CanonicalJson,
   RAVSCORE_OPERATIONAL_PAGES_ARTIFACT_SEAL_SCHEMA } from './ravscore-operational-pages-recovery.mjs';
 import { assertExactPublicRavScoreModelBindingShape } from '../js/core/ravscore-public-profile-contract.js';
+import { requireSourceProducerOutput } from './lib/source-producer-after597-runtime-family.mjs';
+import { assertSourceProducerSavedWeatherCaller } from './select-source-producer-code-only-source.mjs';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const EXTRACTOR = fileURLToPath(new URL('./extract-code-only-public-source.py', import.meta.url));
@@ -441,6 +443,43 @@ async function assertCurrent() {
     fail('PUBLIC_SOURCE_IDENTITY_CHANGED_AFTER_ACQUISITION');
 }
 
+async function assertSavedCurrent(){
+  requireSourceProducerOutput();
+  assertSourceProducerSavedWeatherCaller(process.env);
+  const {snapshot,work}=await stageRoots();
+  const deadline=performance.now()+60_000;
+  const receipt=await jsonFile(path.join(work,'public-acquisition.json'));
+  if (receipt.schemaVersion!=='ravradar-code-only-public-acquisition-v1'
+    || !['existing-public-route','sealed-active-artifact'].includes(receipt.mode))
+    fail('PUBLIC_ACQUISITION_RECEIPT_INVALID');
+  const baseline=await regularBytes(path.join(snapshot,'manifest.json'),MiB);
+  const prior=await jsonFile(path.join(work,'current.json'));
+  if (hash(baseline)!==receipt.manifestSha256||canonicalHash(prior)!==receipt.centralSha256
+    || prior.model!=='integrated'||prior.status!=='INTEGRATED_ACTIVE'||prior.pending!==false||prior.bindingCurrent!==true
+    || !Number.isSafeInteger(prior.centralVersion)||prior.centralVersion<=0)
+    fail('PUBLIC_SAVED_RECOVERY_BASELINE_INVALID');
+  const freshPath=path.join(work,'saved-handoff-current.json');
+  const manifestPath=path.join(work,'saved-handoff-live-manifest.json');
+  for (const file of [freshPath,manifestPath]) {
+    try { await fs.lstat(file); fail('PUBLIC_SAVED_RECOVERY_TARGET_EXISTS'); }
+    catch (error) { if(error?.code!=='ENOENT')throw error; }
+  }
+  await child(process.execPath,[fileURLToPath(new URL('./ravscore-operational-activation.mjs',import.meta.url)),
+    'read','--output',freshPath],{deadline,env:neutralEnvironment({
+    SUPABASE_URL:process.env.SUPABASE_URL,SUPABASE_SERVICE_ROLE_KEY:process.env.SUPABASE_SERVICE_ROLE_KEY,
+  })});
+  const fresh=await jsonFile(freshPath);
+  if(!same(prior,fresh))fail('PUBLIC_SAVED_RECOVERY_CENTRAL_CHANGED');
+  const base=new URL(process.env.RAVRADAR_PUBLIC_BASE_URL);
+  if(base.protocol!=='https:'||base.username||base.password||base.search||base.hash)
+    fail('PUBLIC_SOURCE_URL_INVALID');
+  const nonce=process.env.GITHUB_RUN_ID+'-'+process.env.GITHUB_RUN_ATTEMPT;
+  await download(base.href.replace(/\/$/,'')+'/'+FILES[0][0]+'?saved-handoff='+nonce,manifestPath,MiB,deadline);
+  if(!(await regularBytes(manifestPath,MiB)).equals(baseline))
+    fail('PUBLIC_SAVED_RECOVERY_MANIFEST_CHANGED');
+  assertSourceProducerSavedWeatherCaller(process.env);
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const action = process.argv[2];
   Promise.resolve().then(() => {
@@ -448,6 +487,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     if (process.argv.length !== 3) fail('PUBLIC_ACQUISITION_ARGUMENTS_INVALID');
     if (action === 'acquire') return acquire();
     if (action === 'assert-current') return assertCurrent();
+    if (action === 'assert-saved-current') return assertSavedCurrent();
     fail('PUBLIC_ACQUISITION_ACTION_INVALID');
   }).catch(error => {
     const reason = /^PUBLIC_[A-Z0-9_]+$/.test(error?.message ?? '')

@@ -3,6 +3,11 @@ name: Run current RavRadar weather once
 on:
   workflow_dispatch:
     inputs:
+      source_normal_producer:
+        description: 'Private prepared SOURCE ordinary route; default off, never mixed with special modes'
+        required: false
+        type: boolean
+        default: false
       current_family_cold_start:
         description: 'Archive authenticated current-family B/S for a fresh cold start, or reopen only fixed 39886354260-1 or 39933506923-1 progress without another reset'
         required: false
@@ -79,8 +84,44 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  source-route-request:
+    name: Validate the explicit SOURCE request before any operational reentry
+    outputs:
+      ordinary_source_reentry: ${{ steps.source-route-request.outputs.ordinary_source_reentry }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    permissions:
+      contents: read
+    steps:
+      - name: Reject unknown or mixed SOURCE request before any operational reentry
+        id: source-route-request
+        shell: bash
+        env:
+          SOURCE_REQUEST: ${{ toJSON(inputs) }}
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import assert from 'node:assert/strict';
+          const request=JSON.parse(process.env.SOURCE_REQUEST);
+          assert(request && typeof request==='object' && !Array.isArray(request),'SOURCE_ROUTE_REQUEST_INVALID');
+          const booleans=["current_family_cold_start","completed_private_runtime","quick_confirmation","weather_state_epoch_bootstrap","weather_state_epoch_checkpoint_reentry","native_sampling_identity_original_recovery"], strings=["completed_stage_source","quick_progress_source","checkpoint_target_hour","weather_state_epoch_archive_key","weather_state_epoch_archive_catalog_sha256","weather_state_epoch_raw_cache_key"];
+          const known=new Set(['source_normal_producer',...booleans,...strings]);
+          assert(Object.keys(request).every(key=>known.has(key)),'SOURCE_ROUTE_REQUEST_UNKNOWN');
+          assert.equal(typeof request.source_normal_producer,'boolean','SOURCE_ROUTE_SELECTION_UNKNOWN');
+          if(request.source_normal_producer===true){
+            for(const key of booleans)assert.equal(request[key],false,'SOURCE_ROUTE_MIXED_BOOLEAN');
+            for(const key of strings)assert.equal(request[key],'','SOURCE_ROUTE_MIXED_LOCATOR');
+          }
+          fs.appendFileSync(process.env.GITHUB_OUTPUT,'route='+(request.source_normal_producer===true?'source':'legacy')+'\n');
+          const ordinary=booleans.every(key=>(request[key]??false)===false)
+            &&strings.every(key=>(request[key]??'')==='');
+          fs.appendFileSync(process.env.GITHUB_OUTPUT,'ordinary_source_reentry='+ordinary+'\n');
+          NODE
+
   operational-recovery-gate:
-    if: inputs.current_family_cold_start != true
+    needs: source-route-request
+    if: needs.source-route-request.result == 'success' && (inputs.current_family_cold_start != true)
     name: Finish an interrupted generation before new work
     permissions:
       contents: read
@@ -89,14 +130,16 @@ jobs:
       pages: write
       id-token: write
     uses: ./.github/workflows/reusable-operational-reentry.yml
+    with:
+      source_normal_finalize: ${{ needs.source-route-request.outputs.ordinary_source_reentry == 'true' }}
     secrets:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
 
   current-main-target:
-    needs: operational-recovery-gate
-    if: ${{ !cancelled() && ((inputs.current_family_cold_start == true && needs.operational-recovery-gate.result == 'skipped') || (inputs.current_family_cold_start != true && needs.operational-recovery-gate.result == 'success')) }}
+    needs: [source-route-request, operational-recovery-gate]
+    if: ${{ !cancelled() && needs.source-route-request.result == 'success' && ((inputs.current_family_cold_start == true && needs.operational-recovery-gate.result == 'skipped') || (inputs.current_family_cold_start != true && needs.operational-recovery-gate.result == 'success')) }}
     name: Lock one normal run to exact current main and UTC hour
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -107,6 +150,11 @@ jobs:
       target_hour: ${{ steps.target-selection.outputs.target_hour }}
       completed_private_runtime: ${{ steps.target-selection.outputs.completed_private_runtime }}
       completed_private_runtime_pin: ${{ steps.target-selection.outputs.completed_private_runtime_pin }}
+      source_saved_pair: ${{ steps.source-saved-target.outputs.selected }}
+      source_saved_pair_pin: ${{ steps.source-saved-target.outputs.pair_pin }}
+      source_saved_pair_occurrence: ${{ steps.source-saved-target.outputs.occurrence }}
+      source_saved_pair_pages_proof: ${{ steps.source-saved-target.outputs.pages_proof }}
+      source_saved_pair_public_manifest_sha256: ${{ steps.source-saved-target.outputs.public_manifest_sha256 }}
     steps:
       - uses: actions/checkout@v7
 
@@ -289,9 +337,20 @@ jobs:
           assert.equal(process.env.CHECKPOINT_TARGET_HOUR, NATIVE_IDENTITY_ORIGINAL_PROGRESS.target.replace('.000Z', 'Z'));
           NODE
 
+      - name: Select verified saved SOURCE weather before locking a new hour
+        id: source-saved-target
+        if: inputs.completed_private_runtime != true && inputs.checkpoint_target_hour == '' && inputs.current_family_cold_start != true && inputs.quick_confirmation != true && inputs.quick_progress_source == '' && inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true && inputs.native_sampling_identity_original_recovery != true
+        run: node scripts/select-automatic-source-saved-weather.mjs
+        env:
+          SOURCE_REQUEST: ${{ toJSON(inputs) }}
+          SOURCE_SAVED_REENTRY_ACTION: ${{ needs.operational-recovery-gate.outputs.recovery_action }}
+          GITHUB_TOKEN: ${{ github.token }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
       - name: Select provider-free continuation for the default scheduled caller
         id: automatic-completed-target
-        if: steps.automatic-completed-scope.outputs.eligible == 'true'
+        if: steps.automatic-completed-scope.outputs.eligible == 'true' && steps.source-saved-target.outputs.recovery_family == 'ordinary'
         env:
           GITHUB_TOKEN: ${{ github.token }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -304,6 +363,7 @@ jobs:
         id: cache-state
         if: >-
           inputs.checkpoint_target_hour == '' && inputs.completed_private_runtime != true &&
+          steps.source-saved-target.outputs.selected != 'true' &&
           (steps.automatic-completed-target.outcome == 'skipped' ||
            steps.automatic-completed-target.outputs.completed_private_runtime == 'false')
         run: python3 scripts/check-copernicus-current-hour.py --invalid-cache-is-absent --github-output "$GITHUB_OUTPUT"
@@ -321,8 +381,27 @@ jobs:
           AUTO_PIN: ${{ steps.automatic-completed-target.outputs.completed_private_runtime_pin }}
           CHECKPOINT_TARGET: ${{ steps.checkpoint-target.outputs.target_hour }}
           CACHE_TARGET: ${{ steps.cache-state.outputs.target_hour }}
+          SOURCE_FAMILY: ${{ steps.source-saved-target.outputs.recovery_family }}
+          SOURCE_SELECTED: ${{ steps.source-saved-target.outputs.selected }}
+          SOURCE_TARGET: ${{ steps.source-saved-target.outputs.target_hour }}
+          DEFAULT_SCHEDULED_SCOPE: ${{ steps.automatic-completed-scope.outputs.eligible }}
         run: |
           set -euo pipefail
+          if test "$DEFAULT_SCHEDULED_SCOPE" = true; then
+            [[ "$SOURCE_FAMILY" == ordinary || "$SOURCE_FAMILY" == source ]]
+          fi
+          if test "$SOURCE_SELECTED" = true; then
+            test "$SOURCE_FAMILY" = source
+            test "$REQUESTED_COMPLETED" = false
+            test "$AUTO_OUTCOME" = skipped
+            test -z "$AUTO_COMPLETED$AUTO_TARGET$AUTO_PIN$MANUAL_TARGET$MANUAL_PIN$CHECKPOINT_TARGET$CACHE_TARGET"
+            [[ "$SOURCE_TARGET" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:00:00Z$ ]]
+            printf 'completed_private_runtime=false\ntarget_hour=%s\ncompleted_private_runtime_pin=\n' \
+              "$SOURCE_TARGET" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          test -z "$SOURCE_SELECTED$SOURCE_TARGET"
+          if test "$SOURCE_FAMILY" = source; then test "$AUTO_OUTCOME" = skipped; fi
           case "$AUTO_OUTCOME:$AUTO_COMPLETED" in
             success:true)
               test "$REQUESTED_COMPLETED" = false
@@ -974,9 +1053,15 @@ jobs:
       pull-requests: read
     uses: ./.github/workflows/reusable-weather-build.yml
     with:
+      source_normal_producer: ${{ inputs.source_normal_producer }}
       production_target_hour: ${{ needs.current-main-target.outputs.target_hour }}
       completed_private_runtime: ${{ needs.current-main-target.outputs.completed_private_runtime == 'true' }}
       completed_private_runtime_pin: ${{ needs.current-main-target.outputs.completed_private_runtime_pin }}
+      source_saved_pair: ${{ needs.current-main-target.outputs.source_saved_pair == 'true' }}
+      source_saved_pair_pin: ${{ needs.current-main-target.outputs.source_saved_pair_pin }}
+      source_saved_pair_occurrence: ${{ needs.current-main-target.outputs.source_saved_pair_occurrence }}
+      source_saved_pair_pages_proof: ${{ needs.current-main-target.outputs.source_saved_pair_pages_proof }}
+      source_saved_pair_public_manifest_sha256: ${{ needs.current-main-target.outputs.source_saved_pair_public_manifest_sha256 }}
       completed_stage_source: ${{ inputs.completed_stage_source }}
       force: true
       extended_provider_bootstrap: ${{ inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true }}
@@ -1014,8 +1099,8 @@ jobs:
 
   deploy-pages:
     name: Deploy prepared Pages artifact through reusable workflow
-    needs: build-and-prepare
-    if: ${{ !cancelled() && github.ref == 'refs/heads/main' && needs.build-and-prepare.result == 'success' && needs.build-and-prepare.outputs.should_deploy == 'true' }}
+    needs: [current-main-target, build-and-prepare]
+    if: ${{ !cancelled() && github.ref == 'refs/heads/main' && needs.build-and-prepare.result == 'success' && needs.build-and-prepare.outputs.should_deploy == 'true' && (needs.current-main-target.outputs.source_saved_pair != 'true' || needs.build-and-prepare.outputs.source_saved_pair_outcome == 'success') }}
     permissions:
       contents: read
       actions: read
@@ -1032,6 +1117,7 @@ jobs:
       operational_action: ${{ needs.build-and-prepare.outputs.operational_action }}
       source_repair_id: ''
       exact_public_recovery: false
+      source_saved_pair_readback: ${{ needs.current-main-target.outputs.source_saved_pair == 'true' && needs.build-and-prepare.outputs.source_saved_pair_outcome == 'success' }}
     secrets:
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -1060,6 +1146,8 @@ jobs:
           WEATHER_OUTCOME: ${{ needs.build-and-prepare.outputs.weather_outcome }}
           COMPLETED_PRIVATE_RUNTIME: ${{ needs.current-main-target.outputs.completed_private_runtime }}
           COMPLETED_RUNTIME_OUTCOME: ${{ needs.build-and-prepare.outputs.completed_runtime_outcome }}
+          SOURCE_SAVED_PAIR: ${{ needs.current-main-target.outputs.source_saved_pair == 'true' }}
+          SOURCE_SAVED_PAIR_OUTCOME: ${{ needs.build-and-prepare.outputs.source_saved_pair_outcome }}
           FULL_VALIDATION_OUTCOME: ${{ needs.build-and-prepare.outputs.full_validation_outcome }}
           RELEASE_GATE_OUTCOME: ${{ needs.build-and-prepare.outputs.release_gate_outcome }}
           PAGES_BUILD_OUTCOME: ${{ needs.build-and-prepare.outputs.pages_build_outcome }}
@@ -1077,6 +1165,9 @@ jobs:
             echo ""
             echo "- Target lock: $TARGET_RESULT"
             echo "- Weather build: $BUILD_RESULT / $WEATHER_OUTCOME"
+            if test "$SOURCE_SAVED_PAIR" = true; then
+              echo "- Saved forecast verification: $SOURCE_SAVED_PAIR_OUTCOME"
+            fi
             echo "- Full validation: $FULL_VALIDATION_OUTCOME"
             echo "- Release gate: $RELEASE_GATE_OUTCOME"
             echo "- Artifact: $ARTIFACT_BUILT / $PAGES_BUILD_OUTCOME / $PAGES_PRIVACY_OUTCOME / $PAGES_ARTIFACT_SEAL_OUTCOME"
@@ -1093,6 +1184,60 @@ jobs:
             test "$EPOCH_PREWRITE_RESULT" = skipped
           fi
           node scripts/lib/verified-weather-deployment-terminal.mjs
+
+  handoff-admin-document-history:
+    name: Hand off verified ordinary weather to admin document history
+    needs: [terminal-outcome, current-main-target]
+    if: >-
+      !cancelled() && needs.terminal-outcome.result == 'success' &&
+      needs.current-main-target.result == 'success' &&
+      needs.current-main-target.outputs.completed_private_runtime == 'false' &&
+      needs.current-main-target.outputs.source_saved_pair == '' &&
+      github.repository == 'jakobjorgensen82-commits/RavRadar' &&
+      github.ref == 'refs/heads/main' && github.run_attempt == '1' &&
+      github.actor == 'github-actions[bot]' &&
+      vars.RAVRADAR_ADMIN_HISTORY_MAINTENANCE == 'enabled' &&
+      inputs.current_family_cold_start != true && inputs.completed_private_runtime != true &&
+      inputs.completed_stage_source == '' && inputs.quick_confirmation != true &&
+      inputs.quick_progress_source == '' && inputs.checkpoint_target_hour == '' &&
+      inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true &&
+      inputs.weather_state_epoch_archive_key == '' && inputs.weather_state_epoch_archive_catalog_sha256 == '' &&
+      inputs.weather_state_epoch_raw_cache_key == '' && inputs.native_sampling_identity_original_recovery != true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    continue-on-error: true
+    permissions:
+      actions: write
+    steps:
+      - name: Dispatch the existing document-history workflow once
+        id: dispatch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = jakobjorgensen82-commits/RavRadar
+          test "$GITHUB_REF" = refs/heads/main
+          test "$GITHUB_RUN_ATTEMPT" = 1
+          [[ "$GITHUB_SHA" =~ ^[a-f0-9]{40}$ ]]
+          [[ "$GITHUB_RUN_ID" =~ ^[1-9][0-9]*$ ]]
+          if ! ack="$(timeout --signal=KILL 20s gh api --method POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2026-03-10" \
+            "repos/$GITHUB_REPOSITORY/actions/workflows/maintain-admin-document-history.yml/dispatches" \
+            -f ref=main -f "inputs[expected_main]=$GITHUB_SHA" \
+            -f "inputs[source_weather_run_id]=$GITHUB_RUN_ID" 2>/dev/null)" ||
+            ! recipient="$(jq -er '.workflow_run_id | numbers | tostring | select(test("^[1-9][0-9]{0,14}$"))' <<< "$ack" 2>/dev/null)" ||
+            [[ "$recipient" = "$GITHUB_RUN_ID" ]]; then
+            echo '::warning::DOCUMENT_HISTORY_DISPATCH_OUTCOME_UNKNOWN_DO_NOT_RETRY'
+            exit 1
+          fi
+          echo "recipient_run_id=$recipient" >> "$GITHUB_OUTPUT"
+
+      # The recipient reads this exact successful step from this run attempt.
+      # A second dispatch with the same source cannot present its own run ID here.
+      - name: Bind document history recipient ${{ steps.dispatch.outputs.recipient_run_id }}
+        run: ':'
 
   notify-owner-failure:
     name: Hand off one bot-started ordinary failure to the existing owner alert

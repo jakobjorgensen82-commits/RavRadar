@@ -170,6 +170,158 @@ export async function checkPublicWeatherContinuity({
   }
 }
 
+const SAVED_PUBLIC_ORIGIN = 'https://ravradar.dk/data/live/';
+const SAVED_MAX_MANIFEST_BYTES = 1024 * 1024;
+const SAVED_MAX_PHYSICAL_HOUR_BYTES = 512 * 1024 * 1024;
+const SAVED_CONTINUITY_TIMEOUT_MS = 5 * 60_000;
+
+function savedContinuityFailure(code) {
+  return new Error('SAVED_PUBLIC_CONTINUITY_' + code);
+}
+
+async function readSavedPublicManifest(file) {
+  const expected = await fs.lstat(file);
+  if (!expected.isFile()) throw savedContinuityFailure('MANIFEST_FILE');
+  const handle = await fs.open(file, 'r');
+  try {
+    const stat = await handle.stat();
+    if (!stat.isFile() || stat.dev !== expected.dev || stat.ino !== expected.ino
+      || stat.size < 2 || stat.size > SAVED_MAX_MANIFEST_BYTES) {
+      throw savedContinuityFailure('MANIFEST_FILE');
+    }
+    const bytes = Buffer.alloc(stat.size + 1);
+    let length = 0;
+    while (length < bytes.length) {
+      const result = await handle.read(bytes, length, bytes.length - length, length);
+      if (result.bytesRead === 0) break;
+      length += result.bytesRead;
+    }
+    if (length !== stat.size) throw savedContinuityFailure('MANIFEST_FILE');
+    return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes.subarray(0, length)));
+  } finally {
+    await handle.close();
+  }
+}
+
+function savedPublicHourEntries(manifest) {
+  if (manifest?.schemaVersion !== 4 || manifest.complete !== true || manifest.zoneCount !== 210
+    || manifest.coastalPartCount !== 673 || !exactHour(manifest.productionReferenceAt)
+    || typeof manifest.datasetId !== 'string' || !manifest.datasetId
+    || typeof manifest.generatedAt !== 'string' || !Number.isFinite(Date.parse(manifest.generatedAt))
+    || !manifest.ravScoreModelBinding || !manifest.detailDelivery) {
+    throw savedContinuityFailure('MANIFEST_SHAPE');
+  }
+  let hours;
+  try { hours = publicDeliveryTransportEntries(manifest).filter(entry => entry.kind === 'hour'); }
+  catch { throw savedContinuityFailure('DESCRIPTOR'); }
+  if (hours.length !== 118) throw savedContinuityFailure('HOUR_INVENTORY');
+  return hours;
+}
+
+export async function checkSavedCurrentPublicWeatherContinuity({
+  previousManifestPath,
+  expectedPublicManifestSha256,
+  newLiveDirectory,
+  fetchImpl = globalThis.fetch,
+} = {}) {
+  if (!/^[a-f0-9]{64}$/.test(expectedPublicManifestSha256 ?? '')) {
+    throw savedContinuityFailure('PREDECESSOR_PIN');
+  }
+  const deadline = AbortSignal.timeout(SAVED_CONTINUITY_TIMEOUT_MS);
+  const expires = performance.now() + SAVED_CONTINUITY_TIMEOUT_MS;
+  const checkDeadline = () => {
+    if (deadline.aborted || performance.now() >= expires) throw savedContinuityFailure('DEADLINE');
+  };
+  const { sha256CanonicalJson } = await import('./ravscore-operational-pages-recovery.mjs');
+  const { readExactMapResponse } = await import('./lib/public-map-hour-pages.mjs');
+  const { assertPublicDeliveryDocument } = await import('../js/core/public-delivery-contract.js');
+  const { readPublicDeliveryJsonBytes } = await import('./lib/public-delivery-json-transport.mjs');
+  const previous = await readSavedPublicManifest(previousManifestPath);
+  if (sha256CanonicalJson(previous) !== expectedPublicManifestSha256) {
+    throw savedContinuityFailure('PREDECESSOR_PIN');
+  }
+  const currentPath = path.join(newLiveDirectory, 'manifest.json');
+  const current = await readSavedPublicManifest(currentPath);
+  const currentManifestSha256 = sha256CanonicalJson(current);
+  const oldHours = savedPublicHourEntries(previous);
+  const newHours = new Map(savedPublicHourEntries(current).map(entry => [entry.key, entry]));
+  if (current.productionReferenceAt <= previous.productionReferenceAt
+    || current.datasetId === previous.datasetId
+    || sha256CanonicalJson(current.ravScoreModelBinding) !== sha256CanonicalJson(previous.ravScoreModelBinding)) {
+    throw savedContinuityFailure('GENERATION');
+  }
+  const overlap = oldHours.filter(entry => entry.key >= current.productionReferenceAt);
+  if (!overlap.length || overlap.some(entry => !newHours.has(entry.key))) {
+    throw savedContinuityFailure('OVERLAP');
+  }
+  // publicDeliveryTransportEntries has already checked the content-addressed
+  // physical path, byte bounds and complete 118-hour axis of both manifests.
+  const plannedBytes = overlap.reduce((bytes, entry) => bytes + entry.bytes, 0);
+  if (plannedBytes > SAVED_MAX_PHYSICAL_HOUR_BYTES) throw savedContinuityFailure('PHYSICAL_BYTES');
+  const losses = Object.fromEntries(FIELDS.map(key => [key, 0]));
+  const gains = Object.fromEntries(FIELDS.map(key => [key, 0]));
+  let changedIdentities = 0;
+  for (const oldEntry of overlap) {
+    checkDeadline();
+    const newEntry = newHours.get(oldEntry.key);
+    const signal = AbortSignal.any([deadline, AbortSignal.timeout(30_000)]);
+    let oldHour, newHour;
+    try {
+      const response = await fetchImpl(new URL(oldEntry.path, SAVED_PUBLIC_ORIGIN), {
+        redirect: 'error', credentials: 'omit', cache: 'no-store', signal,
+      });
+      if (response.status !== 200) {
+        await response.body?.cancel();
+        throw savedContinuityFailure('HOUR_HTTP');
+      }
+      const oldBytes = await readExactMapResponse(response, oldEntry.bytes);
+      oldHour = (await readPublicDeliveryJsonBytes(oldBytes, oldEntry,
+        previous.detailDelivery.coldHoursSchema === 1)).value;
+      assertPublicDeliveryDocument(oldHour, previous, oldEntry);
+    } catch (error) {
+      checkDeadline();
+      if (error?.message === 'SAVED_PUBLIC_CONTINUITY_HOUR_HTTP') throw error;
+      throw savedContinuityFailure('PREDECESSOR_HOUR');
+    }
+    try {
+      newHour = (await readPublicDeliveryJsonFile(path.join(newLiveDirectory, newEntry.path),
+        newEntry, current.detailDelivery.coldHoursSchema === 1)).value;
+      assertPublicDeliveryDocument(newHour, current, newEntry);
+    } catch {
+      checkDeadline();
+      throw savedContinuityFailure('CANDIDATE_HOUR');
+    }
+    const compared = comparePublicWeatherHours(oldHour, newHour, {
+      time: oldEntry.key,
+      previousDatasetId: previous.datasetId,
+      currentDatasetId: current.datasetId,
+      partCount: current.coastalPartCount,
+    });
+    changedIdentities += compared.changedIdentities;
+    for (const component of FIELDS) {
+      losses[component] += compared.losses[component];
+      gains[component] += compared.gains[component];
+    }
+  }
+  if (sha256CanonicalJson(await readSavedPublicManifest(currentPath)) !== currentManifestSha256) {
+    throw savedContinuityFailure('CANDIDATE_DRIFT');
+  }
+  checkDeadline();
+  return {
+    kind: 'SAVED_CURRENT_PUBLIC_WEATHER_CONTINUITY',
+    previousManifestSha256: expectedPublicManifestSha256,
+    currentManifestSha256,
+    comparedHours: overlap.length,
+    comparedPartHours: overlap.length * current.coastalPartCount,
+    predecessorHourBytes: plannedBytes,
+    changedIdentities,
+    losses,
+    gains,
+    privatePayloadIncluded: false,
+    passed: changedIdentities === 0 && Object.values(losses).every(count => count === 0),
+  };
+}
+
 function parseArgs(argv) {
   const result = {};
   for (let index = 0; index < argv.length; index += 2) {
@@ -187,16 +339,34 @@ function parseArgs(argv) {
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const args = parseArgs(process.argv.slice(2));
-  checkPublicWeatherContinuity({
-    previousConditionsPath: args['--previous-conditions'],
-    previousPackPath: args['--previous-pack'],
-    newLiveDirectory: args['--new-live'],
-  }).then(result => {
-    console.log(JSON.stringify(result));
-    if (!result.passed) process.exitCode = 1;
-  }).catch(error => {
-    console.error(`Public weather continuity failed closed: ${error.message}`);
-    process.exitCode = 1;
-  });
+  const argv = process.argv.slice(2);
+  if (argv[0] === '--saved-current-public-predecessor') {
+    try {
+      if (argv.length !== 6 || argv[2] !== '--public-manifest-sha256' || argv[4] !== '--new-live'
+        || !argv[1] || !argv[5]) throw savedContinuityFailure('ARGUMENTS');
+      const result = await checkSavedCurrentPublicWeatherContinuity({
+        previousManifestPath: argv[1], expectedPublicManifestSha256: argv[3], newLiveDirectory: argv[5],
+      });
+      console.log(JSON.stringify(result));
+      if (!result.passed) process.exitCode = 1;
+    } catch (error) {
+      const code = error?.message;
+      console.error(typeof code === 'string' && /^SAVED_PUBLIC_CONTINUITY_[A-Z_]+$/.test(code)
+        ? code : 'SAVED_PUBLIC_CONTINUITY_READBACK_REFUSED');
+      process.exitCode = 1;
+    }
+  } else {
+    const args = parseArgs(argv);
+    checkPublicWeatherContinuity({
+      previousConditionsPath: args['--previous-conditions'],
+      previousPackPath: args['--previous-pack'],
+      newLiveDirectory: args['--new-live'],
+    }).then(result => {
+      console.log(JSON.stringify(result));
+      if (!result.passed) process.exitCode = 1;
+    }).catch(error => {
+      console.error(`Public weather continuity failed closed: ${error.message}`);
+      process.exitCode = 1;
+    });
+  }
 }

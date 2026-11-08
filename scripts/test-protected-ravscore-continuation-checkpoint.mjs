@@ -40,6 +40,27 @@ import {
 } from './rollback-assets/ravscore-model-contract.js';
 
 // Each new native phase refuses before fixture construction or a PG host.
+const currentSourceNativeProfile=process.argv.includes('--current-source-native-profile');
+const sourceProducerAfter598Native=process.argv.includes('--source-producer')||currentSourceNativeProfile;
+let sourceCurrentNativeTestContext=null;
+if(sourceProducerAfter598Native){
+  const {requireSourceProducerOutput}=await import('./lib/source-producer-after597-runtime-family.mjs');
+  requireSourceProducerOutput(); // Before fixture construction, operands or native host.
+  const args=process.argv.slice(2),full=['--native-statistics-revision','--native-sampling-identity',
+    '--current-memory-warmup','--established-native-current-origin','--last-mile-enclosure',
+    '--account-statistics-assistant','--source-producer','--current-source-native-profile'];
+  const commands=currentSourceNativeProfile
+    ?[['--current-source-native-profile'],['--source-producer','--current-source-native-profile'],full]
+    :[['--source-producer']];
+  assert(commands.some(row=>JSON.stringify(row)===JSON.stringify(args)),'Exact Source native command required');
+  if(process.env.SOURCE_CURRENT_NATIVE_PR_TEST_CONTEXT!==undefined){
+    assert(currentSourceNativeProfile,'SOURCE_PR_NATIVE_CONTEXT_REQUIRES_EXPLICIT_CURRENT_PROFILE');
+    const raw=process.env.SOURCE_CURRENT_NATIVE_PR_TEST_CONTEXT;
+    assert(Buffer.byteLength(raw)>0&&Buffer.byteLength(raw)<=16384,'SOURCE_PR_NATIVE_CONTEXT_BOUND');
+    sourceCurrentNativeTestContext=JSON.parse(raw);assert(sourceCurrentNativeTestContext!==null);
+  }
+} else assert.equal(process.env.SOURCE_CURRENT_NATIVE_PR_TEST_CONTEXT,undefined,
+  'SOURCE_PR_NATIVE_CONTEXT_REQUIRES_EXPLICIT_CURRENT_PROFILE');
 const assistantAfter597Native=process.argv.includes('--assistant-after597-successor');
 if(assistantAfter597Native){
   const {requireAssistantAfter597Output}=await import('./lib/assistant-later-h0-successor-source.mjs');
@@ -411,7 +432,7 @@ if (!process.argv.includes('--native-postgres') && !process.argv.includes('--nat
     && !process.argv.includes('--assistant-public587-successor') && !process.argv.includes('--assistant-public588-successor')
     && !process.argv.includes('--assistant-public590-successor')
     && !process.argv.includes('--assistant-public591-successor')
-    && !process.argv.includes('--assistant-installed593-origin591-successor') && !scalar597LaterH0Native && !assistantAfter597Native) {
+    && !process.argv.includes('--assistant-installed593-origin591-successor') && !scalar597LaterH0Native && !assistantAfter597Native && !sourceProducerAfter598Native) {
   const { nativePostgresFailureDiagnostic: diagnose,
     nativePostgresFailureAnnotation: annotate } =
       await import('./lib/checkpoint-cas-native-postgres.mjs');
@@ -559,6 +580,16 @@ if (process.argv.includes('--native-identity-source-only')) {
   console.log(JSON.stringify({ kind: 'NATIVE_IDENTITY_SOURCE_FIXTURES', oldPartCount: 673,
     newPartCount: 673, genuineFixed37: true, normalSavers: true, oldSqlPreserved: true,
     sourceUnchanged: true, ownedCleanup: true, sqlExecuted: false, nativePostgres: 'UNRUN' }));
+  process.exit(0);
+}
+
+if(sourceProducerAfter598Native){
+  const native=await import('./lib/checkpoint-cas-native-postgres.mjs');
+  const run=currentSourceNativeProfile?native.runSourceProducerAfter598CurrentNativeCheckpointSqlComparison
+    :native.runSourceProducerAfter598NativeCheckpointSqlComparison;
+  const report=await run({repositoryRoot:path.resolve('.'),sourceDocumentAt,atHour,
+    saveCheckpoint:saveRavScoreContinuationCheckpoint,sourceCurrentNativeTestContext});
+  console.log(JSON.stringify(report));
   process.exit(0);
 }
 

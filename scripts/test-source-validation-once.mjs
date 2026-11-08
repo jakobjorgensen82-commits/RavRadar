@@ -7,6 +7,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { withFrozenNative0600TestSource } from './run-frozen-native0600-source-targets.mjs';
+import {SOURCE_PRODUCER_AFTER597_PARENT as sourceParent} from './lib/source-producer-after597-parent.mjs';
+import {sourcePrHistoricalPackageInspection} from './lib/source598-pr-qualification-scope.mjs';
 import {
   buildSourceValidationPlan,
   expandSourceCommands,
@@ -43,7 +45,22 @@ function inverseReviewedForecastShareProjectionRegistration(actualScripts) {
     expandSourceCommands(previous, 'validate:source:checks'), 'Preserve all preceding commands, order and duplicate counts.');
   return previous;
 }
-const activeSourcePackage = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+const actualSourcePackage = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+// Qualify the actual Source scripts/whole allowed inverse before any old
+// package oracle. Only those historical inspection tests receive genuine876;
+// the real current Source command/dispatch plan is also tested here below.
+const activeSourcePackage = sourceParent.binding!==null
+  ? sourcePrHistoricalPackageInspection(actualSourcePackage) : actualSourcePackage;
+if(sourceParent.binding!==null){
+  const currentPlan=buildSourceValidationPlan(actualSourcePackage.scripts),currentCalls=[];
+  assert.deepEqual(currentPlan.preflight,[...SOURCE_BINDING_PREFLIGHT]);
+  assert.equal(currentPlan.gate,'node scripts/source-critical-gate.mjs');
+  assert.equal(runSourceValidation(currentPlan,{execute(command){currentCalls.push(command);return 0;},log(){}}),0);
+  assert.deepEqual(currentCalls,[...currentPlan.preflight,...currentPlan.remaining,currentPlan.gate]);
+  const declared=expandSourceCommands(actualSourcePackage.scripts,'validate:source:checks');
+  assert(declared.includes('node scripts/build-source-producer-successor.mjs --check'));
+}
+
 const {ACTIVE_ASSISTANT_SUCCESSOR} = await import('./lib/assistant-later-h0-successor-source.mjs');
 const beforeScalarSourcePackage = ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase === 'assistant-mixed-after597-successor'
   ? (await import('./national584-source-evidence.mjs')).inverseAssistantAfter597Package(activeSourcePackage)
