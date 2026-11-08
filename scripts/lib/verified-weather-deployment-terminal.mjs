@@ -19,13 +19,18 @@ function normalized(value) {
  */
 export function classifyVerifiedWeatherDeployment(input = {}) {
   const completed = input.completedPrivateRuntime === true || input.completedPrivateRuntime === 'true';
-  if (completed && normalized(input.weatherOutcome) !== 'skipped') return Object.freeze({
+  const sourceSaved = input.sourceSavedPair === true || input.sourceSavedPair === 'true';
+  if (completed && sourceSaved) return Object.freeze({
+    status: 'FAILED', reasonCode: 'SOURCE_SAVED_RUNTIME_REQUEST_CONFLICT',
+    failedBoundary: 'sourceSavedPair', diagnosticFindings: false });
+  if ((completed || sourceSaved) && normalized(input.weatherOutcome) !== 'skipped') return Object.freeze({
     status: 'FAILED', reasonCode: 'COMPLETED_RUNTIME_WEATHER_WAS_NOT_SKIPPED',
     failedBoundary: 'weatherOutcome', diagnosticFindings: false });
   const requiredSuccess = [
     'targetOutcome',
     'buildOutcome',
-    completed ? 'completedRuntimeOutcome' : 'weatherOutcome',
+    completed || sourceSaved ? 'completedRuntimeOutcome' : 'weatherOutcome',
+    ...(sourceSaved ? ['sourceSavedPairOutcome','fullValidationOutcome','releaseGateOutcome'] : []),
     'pagesBuildOutcome',
     'pagesPrivacyOutcome',
     'pagesArtifactSealOutcome',
@@ -97,6 +102,8 @@ function cliInput(env) {
     weatherOutcome: env.WEATHER_OUTCOME,
     completedPrivateRuntime: env.COMPLETED_PRIVATE_RUNTIME,
     completedRuntimeOutcome: env.COMPLETED_RUNTIME_OUTCOME,
+    sourceSavedPair: env.SOURCE_SAVED_PAIR,
+    sourceSavedPairOutcome: env.SOURCE_SAVED_PAIR_OUTCOME,
     fullValidationOutcome: env.FULL_VALIDATION_OUTCOME,
     releaseGateOutcome: env.RELEASE_GATE_OUTCOME,
     pagesBuildOutcome: env.PAGES_BUILD_OUTCOME,

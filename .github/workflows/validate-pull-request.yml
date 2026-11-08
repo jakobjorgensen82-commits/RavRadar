@@ -118,6 +118,8 @@ jobs:
           node --test scripts/test-weather-acquisition-writer.mjs
           python -B scripts/test-weather-acquisition-writer.py
           python -B scripts/test-owned-dmi-grib-save-native.py --node24-path "$(command -v node)"
+          printf 'node24_path=%s\n' "$(command -v node)" >> "$GITHUB_OUTPUT"
+        id: source-native-node24
 
       - name: Restore Node22 for existing source validation
         if: ${{ steps.source-content.outputs.selection != 'TARGETED' }}
@@ -147,6 +149,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           SOURCE_GATE_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
+          RAVRADAR_SOURCE_NATIVE_NODE24_PATH: ${{ steps.source-native-node24.outputs.node24_path }}
         run: |
           set -euo pipefail
           node --test scripts/test-native-postgres-evidence.mjs
