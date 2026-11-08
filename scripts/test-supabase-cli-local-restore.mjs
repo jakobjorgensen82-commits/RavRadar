@@ -249,29 +249,45 @@ async function* materializedRestoreBytes(c,archive,history=false){
 
 // Same owned process-group timeout shape as export-supabase-database.mjs.
 // Process closure never claims that a Docker daemon-side operation has stopped.
-async function command(c,stage,bin,args,{cwd=c.root,input=null,maxMs=P.childMs,audit=null}={}){
+async function command(c,stage,bin,args,{cwd=c.root,input=null,maxMs=P.childMs,audit=null,archivePsql=false}={}){
   c.stage=stage;need(Date.now()<c.deadline,'OPERATION_DEADLINE');
   need(input===null||Buffer.isBuffer(input)||typeof input?.[Symbol.asyncIterator]==='function','RESTORE_INPUT_STREAM');
-  let child,closed=false,exit=null,signal=null,first=null,outBytes=0,errBytes=0,inputStream=null,inputPump=null,inputDone=false;
+  let child,closed=false,exit=null,signal=null,first=null,outBytes=0,errBytes=0,inputStream=null,inputPump=null,inputDone=false,stdinClosed=false;
   const out=[],err=[],started=Date.now();
   const fail=code=>{first??=Object.assign(new Error('LOCAL_RESTORE_FAILED_CLOSED'),{code});};
   const interrupted=()=>fail('INTERRUPTED');
+  const stdinFailure=e=>{
+    const closedPipe=e?.code==='EPIPE'||e?.code==='ERR_STREAM_PREMATURE_CLOSE'
+      ||(process.platform==='win32'&&e?.code==='EOF');
+    if(archivePsql&&closedPipe)stdinClosed=true;
+    else fail('STDIN_TRANSPORT');
+  };
+  const inputFailure=e=>fail(/^ARCHIVE_SQL_|^OPERATION_DEADLINE$/.test(e?.code??'')?e.code:'STDIN_TRANSPORT');
   try{
     child=spawn(bin,args,{cwd,env:restoreChildEnvironment(process.env,c.home,c.root,bin),shell:false,detached:true,stdio:['pipe','pipe','pipe']});
     child.on('error',()=>fail('SPAWN_FAILED'));
-    child.on('exit',(v,s)=>{exit=v;signal=s;if(v!==0||s!==null)fail('CHILD_EXIT');});
+    child.on('exit',(v,s)=>{
+      exit=v;signal=s;
+      if((v!==0||s!==null)&&!(archivePsql&&v===3&&s===null))fail('CHILD_EXIT');
+    });
     child.on('close',()=>{closed=true;});
     child.stdout.on('data',b=>{outBytes+=b.length;if(outBytes>P.diagnosticBytes)fail('STDOUT_BOUND');else out.push(Buffer.from(b));});
     child.stderr.on('data',b=>{errBytes+=b.length;if(errBytes>P.diagnosticBytes)fail('STDERR_BOUND');else err.push(Buffer.from(b));});
     child.stdout.on('error',()=>fail('STDOUT_TRANSPORT'));child.stderr.on('error',()=>fail('STDERR_TRANSPORT'));
-    child.stdin.on('error',()=>fail('STDIN_TRANSPORT'));
+    child.stdin.on('error',stdinFailure);
     if(input!==null&&!Buffer.isBuffer(input)){
-      inputStream=Readable.from(input,{objectMode:false});
-      const inputFailure=e=>{first??=Object.assign(new Error('LOCAL_RESTORE_FAILED_CLOSED'),
-        {code:/^ARCHIVE_SQL_|^OPERATION_DEADLINE$/.test(e.code??'')?e.code:'STDIN_TRANSPORT'});};
-      inputStream.on('error',inputFailure);
+      // Readable.from can propagate a sink error back into its source. Record failures of
+      // the actual archive iterator first, and do not inject sink errors into that iterator.
+      const iterator=archivePsql?input[Symbol.asyncIterator]():null;
+      const checked=async read=>{try{return await read();}catch(e){inputFailure(e);throw e;}};
+      inputStream=Readable.from(iterator?{
+        [Symbol.asyncIterator](){return this;},
+        next:()=>checked(()=>iterator.next()),
+        return:()=>checked(()=>iterator.return?.()??{done:true}),
+      }:input,{objectMode:false});
+      if(!archivePsql)inputStream.on('error',inputFailure);
       inputPump=pipeline(inputStream,child.stdin).then(()=>{inputDone=true;},e=>{
-        inputFailure(e);inputDone=true;});
+        (archivePsql?stdinFailure:inputFailure)(e);inputDone=true;});
     }else{child.stdin.end(input??undefined);inputDone=true;}
     process.on('SIGINT',interrupted);process.on('SIGTERM',interrupted);
     while(!closed&&!first){
@@ -279,7 +295,7 @@ async function command(c,stage,bin,args,{cwd=c.root,input=null,maxMs=P.childMs,a
       if(audit)try{await audit();}catch(e){first??=e;}
       if(!first)await sleep(40);
     }
-    if(!inputDone)fail('STDIN_INCOMPLETE');
+    if(!archivePsql&&!inputDone)fail('STDIN_INCOMPLETE');
     const gone=()=>{if(!Number.isSafeInteger(child.pid))return closed;
       try{process.kill(-child.pid,0);return false;}catch(e){return e.code==='ESRCH';}};
     for(const [why,grace]of [['SIGTERM',2000],['SIGKILL',3000]]){
@@ -290,6 +306,16 @@ async function command(c,stage,bin,args,{cwd=c.root,input=null,maxMs=P.childMs,a
     const processClosed=closed&&gone();
     c.processes.push({stage,exit,stdoutBytes:outBytes,stderrBytes:errBytes,processGroupClosed:processClosed});
     if(!processClosed)fail('PROCESS_GROUP_UNCLOSED');
+    if(archivePsql){
+      if(!inputDone)inputStream?.destroy();
+      await inputPump;
+      if(!first&&exit===3&&signal===null){
+        const diagnostic=diagnosticClass(Buffer.concat(err));
+        fail(diagnostic.startsWith('SQLSTATE_')?diagnostic:'PSQL_SCRIPT_ERROR');
+      }
+      if(stdinClosed)fail('STDIN_TRANSPORT');
+      if(!inputDone)fail('STDIN_INCOMPLETE');
+    }
     if(first){if(first.code==='CHILD_EXIT')first.code=diagnosticClass(Buffer.concat(err));first.exit=exit;throw first;}
     return Buffer.concat(out);
   }finally{
@@ -401,7 +427,8 @@ async function startProject(c,p){
 async function psql(c,p,stage,bytes){
   return command(c,stage,'docker',['exec','-i','-e','PGPASSWORD='+decodeURIComponent(p.dbUrl.password),p.db,'psql','-X',
     '--host=127.0.0.1','--port=5432','--username=postgres','--dbname=postgres','--quiet','--single-transaction','--variable=ON_ERROR_STOP=1',
-    '--set=VERBOSITY=sqlstate','--tuples-only','--no-align'],{input:bytes,maxMs:90_000});
+    '--set=VERBOSITY=sqlstate','--tuples-only','--no-align'],{input:bytes,maxMs:90_000,
+    archivePsql:c.archive===true&&!Buffer.isBuffer(bytes)});
 }
 async function query(c,p,stage,sql){return JSON.parse((await psql(c,p,stage,Buffer.from(sql+'\n'))).toString().trim());}
 async function auth(c,p,route,{body=null,token=null,status=200}={}){
@@ -675,6 +702,24 @@ async function selfTest(){
     assert.equal(diagnosticClass(Buffer.from('ERROR: 23505 private synthetic detail')),'SQLSTATE_23505');
     assert.equal(diagnosticClass(Buffer.from('Cannot connect to the Docker daemon')),'DOCKER_UNAVAILABLE');
     assert.equal(diagnosticClass(Buffer.from('token=must-not-appear')),'CHILD_EXIT');
+  });
+  test('archive psql exit 3 retains only the SQLSTATE across early stdin closure',async()=>{
+    const c={root:os.tmpdir(),home:os.tmpdir(),deadline:Date.now()+15_000,processes:[]};
+    const child=(diagnostic,exit=3)=>['-e','process.stderr.write('+JSON.stringify(diagnostic)+',()=>process.exit('+exit+'))'];
+    async function* pending(){const chunk=Buffer.alloc(128*1024);for(let i=0;i<64;i++)yield chunk;}
+    for(const [diagnostic,exit,code]of [['psql:<stdin>:7: ERROR: 23505 synthetic private detail',3,'SQLSTATE_23505'],
+      ['synthetic private detail',3,'PSQL_SCRIPT_ERROR'],['synthetic private detail',0,'STDIN_TRANSPORT']]){
+      await assert.rejects(command(c,'ARCHIVE_SQL_TEST',process.execPath,child(diagnostic,exit),{input:pending(),archivePsql:true}),
+        error=>error.code===code&&error.exit===exit&&!error.message.includes(diagnostic));
+    }
+    async function* broken(code){throw Object.assign(new Error('synthetic iterator detail'),{code});}
+    for(const [source,code]of [['ARCHIVE_SQL_SHA','ARCHIVE_SQL_SHA'],['EPIPE','STDIN_TRANSPORT'],['OPERATION_DEADLINE','OPERATION_DEADLINE']]){
+      await assert.rejects(command(c,'ARCHIVE_SQL_TEST',process.execPath,child('ERROR: 23505 synthetic private detail'),
+        {input:broken(source),archivePsql:true}),error=>error.code===code);
+    }
+    await assert.rejects(command(c,'ARCHIVE_SQL_TEST',process.execPath,['-e','setTimeout(()=>process.exit(3),350)'],
+      {input:pending(),archivePsql:true,maxMs:100}),error=>error.code==='CHILD_TIMEOUT');
+    assert(c.processes.every(p=>p.processGroupClosed));
   });
   test('archive choice requires one authenticated SHA, explicit isolated confirmation and main',()=>{
     const valid={GITHUB_REF:'refs/heads/main',RESTORE_ARCHIVE_INDEX_SHA:'a'.repeat(64),RESTORE_ARCHIVE_CONFIRMATION:ARCHIVE_CONFIRMATION};
