@@ -4,6 +4,8 @@
 
 Den isolerede kandidat samler genoptagelse, vandstandskontrol og de aktuelle almindelige leveringsrettelser.
 
+4.0.605 er udstedt lokalt gennem de normale byggere. Den almindelige drift fortsætter på 4.0.598. De lokale bindings-, versions- og dokumentationskontroller er bestået. Den målrettede workflowprøve bestod på Windows, mens den Linux-specifikke shellprøve afventer. Endelig kildekontrol, installation og offentlig aktivering af revisionen afventer.
+
 <a id="source605-controlled-weather-continuation-2026-11-08"></a>
 
 Ved en afbrudt vejrhentning kan kandidaten fortsætte fra den senest gemte og verificerede fase. Den kontrollerer originalpakke, beregningstilstand og den offentlige prognose som særskilte led. Før en ny prognose udgives, kontrolleres gyldige værdier i de timer, der overlapper den forrige prognose.
@@ -787,6 +789,10 @@ Nyt offentligt vejr kræver en faktisk strengt senere generation gennem den norm
 Et krypteret fremskridt kan bevare allerede hentede leverandørdata, selv om beregningen endnu ikke er færdig. Det må ikke kaldes et færdigt beregningscheckpoint. Ved genbrug skal indholdet autentificeres og passe til de præcise bevarede originaler og den krævede baseline.
 
 En ny modelbinding kan ændre arbejdsfilens metadata. Derfor er uændrede originale vejrdata alene ikke bevis for, at gammelt fremskridt kan bruges direkte efter overgangen. De normale kontroller skal afgøre genbrug; gamle data og fremskridt bevares, mens en afvigelse afklares.
+
+### Aktuelle lokalt udstedte 605-bindinger — 8. november 2026
+
+Aktuel lokal 4.0.605-binding, 8. november 2026. Den udstedte integrerede model har modelBundleSha256=79c044501daf108c6737932970c4a9e845d5d3b7f48d5a93588335b74bd1f316. Den inaktive Candidate G-kompatibilitet har modelBundleSha256=031403a7715d572d94127d1192769cb7be710d23ec50c2d45093a9c7a7197b4c. Fortsættelseskontraktens continuationStateContractSha256 er f72a2d23c8f325737f567216646477a5aac616b27348c43274a4366cbb71223f. De normale bindingsfelter står i version.json. De daterede afsnit nedenfor beskriver tidligere kandidater.
 
 ### Aktuelle lokalt udstedte 601-bindinger — 7. november 2026
 
@@ -2079,7 +2085,7 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.604
+**Håndbogsversion:** 4.0.605
 
 **Lokal kildebinding — 29. oktober 2026, RavScore 4.0.591, ikke installeret:** Den integrerede model er offentlig som modeltype under den særskilt leverede 4.0.590. Den nye assistentefterfølger er lokalt udstedt og er endnu ikke samlet kvalificeret, installeret eller offentliggjort.
 

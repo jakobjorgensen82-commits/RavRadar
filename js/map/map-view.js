@@ -1,5 +1,5 @@
-import { t } from "../i18n.js?v=4.0.604";
-import { loadCurrentArrowLandMask } from "./current-arrow-land-mask.js?v=4.0.604";
+import { t } from "../i18n.js?v=4.0.605";
+import { loadCurrentArrowLandMask } from "./current-arrow-land-mask.js?v=4.0.605";
 
 const palette = { good: "#168653", fair: "#e6a700", weak: "#d9822b", poor: "#d34a3a", unavailable: "#30383c" };
 

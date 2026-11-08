@@ -2,6 +2,8 @@
 
 Den isolerede kandidat samler genoptagelse, vandstandskontrol og de aktuelle almindelige leveringsrettelser.
 
+4.0.605 er udstedt lokalt gennem de normale byggere. Den almindelige drift fortsætter på 4.0.598. De lokale bindings-, versions- og dokumentationskontroller er bestået. Den målrettede workflowprøve bestod på Windows, mens den Linux-specifikke shellprøve afventer. Endelig kildekontrol, installation og offentlig aktivering af revisionen afventer.
+
 Ved en afbrudt vejrhentning kan kandidaten fortsætte fra den senest gemte og verificerede fase. Den kontrollerer originalpakke, beregningstilstand og den offentlige prognose som særskilte led. Før en ny prognose udgives, kontrolleres gyldige værdier i de timer, der overlapper den forrige prognose.
 
 Prognosen har 118 offentlige timer og tre private støttetimer til beregning af vandstandsændring. I de syv afgrænsede kystzoner kan Limfjordsmodellen bruges til vandstand. Strøm, strømhukommelse og vandtemperatur følger deres eksisterende særskilte kildegrænse. Fur-kontrollen skelner mistet vandstand fra manglende strømhistorik.
