@@ -296,6 +296,38 @@ export async function nativePostgresProgramIdentity(programs) {
 
 // Same native server/owner, after all thirteen old130000/200000 comparisons.
 // This is a source fixture, not an installed account or production checkpoint.
+// The synthetic ACL attempt must remain SECURITY INVOKER. In the full
+// bootstrap anon cannot see the row, so bracket only that call with fixture
+// owner reads in the same psql session. Never grant a new read or CAS right.
+async function observeNativeCheckpointAttempt(psql, reset, attempt, role, incoming) {
+  if (role !== 'anon') return JSON.parse(await psql(reset + attempt));
+  assert.match(incoming, /^[a-z0-9-]+$/);
+  const witness = extra => `select coalesce((
+    select pg_catalog.jsonb_build_object('version',version,'reference',payload->>'productionReferenceAt',
+      'payloadMd5',pg_catalog.md5(payload::text),'ownerIsNull',updated_by is null${extra})
+    from public.admin_documents where document_key='${KEY}'), 'null'::jsonb);
+`;
+  const matchesIncoming = `,'storedPayloadMatchesIncoming',payload=(
+    select payload from public.native_checkpoint_payloads where name='${incoming}')`;
+  const rows = (await psql(reset + '\n' + witness('') + attempt + `
+select pg_catalog.jsonb_build_object('role',current_user,
+  'rls',pg_catalog.row_security_active('public.admin_documents'::pg_catalog.regclass));
+reset role;
+` + witness(matchesIncoming))).split('\n');
+  assert.equal(rows.length,4,'Exact owner/invoker/visibility/owner fixture reads');
+  const [previous, observed, visibility, stored] = rows.map(line => JSON.parse(line));
+  assert.equal(visibility.role,'anon');
+  assert.equal(typeof visibility.rls,'boolean');
+  if (visibility.rls) {
+    assert.equal(observed.previous,null,'RLS hides the original checkpoint from anon');
+    assert.equal(observed.stored,null,'RLS hides the retained checkpoint from anon');
+  } else {
+    assert.deepEqual(observed.previous,previous,'Historical fixture owner and invoker read the same original');
+    assert.deepEqual(observed.stored,stored,'Historical fixture owner and invoker read the same retained row');
+  }
+  return {...observed,previous,stored};
+}
+
 async function compareAccountAssistantSuccessor({ psql, runSql, source, oldSource,
   oldFixtures, currentFixtures, cases, atHour, oldCas, newCas }) {
   assert.equal(hash(source), '80ad179bc896e9fcd62b8af103d70a2d086d3626395dd97f03e4184e52bcae5d');
@@ -375,9 +407,9 @@ async function compareAccountAssistantSuccessor({ psql, runSql, source, oldSourc
     const reset="truncate public.admin_documents;" + (central
       ? "insert into public.admin_documents(document_key,payload,version,updated_by) select '" + KEY
         + "',payload,1,'00000000-0000-0000-0000-000000000001' from native_checkpoint_payloads where name='" + central + "';" : '');
-    const observed=JSON.parse(await psql(reset + "\nset statement_timeout='55s';"
+    const observed=await observeNativeCheckpointAttempt(psql,reset,"\nset statement_timeout='55s';"
       + " do $$ begin perform set_config('request.jwt.claim.role','" + claimRole + "',false); end $$; set role " + role + ";"
-      + " select public.native_checkpoint_attempt(false," + version + ",(select payload from native_checkpoint_payloads where name='" + incoming + "'));"));
+      + " select public.native_checkpoint_attempt(false," + version + ",(select payload from native_checkpoint_payloads where name='" + incoming + "'));",role,incoming);
     assert.equal(observed.sqlstate,expectedCode,'new full-migration case ' + name);
     if (disposition) { assert.equal(observed.result.disposition,disposition); assert.equal(observed.result.centralVersion,storedVersion); }
     assert.equal(observed.stored?.version,storedVersion);
@@ -634,9 +666,9 @@ async function compareCurrentGridSuccessor({ psql, runSql, source, accountSource
     const reset = 'truncate public.admin_documents;' + (central
       ? "insert into public.admin_documents(document_key,payload,version,updated_by) select '" + KEY
         + "',payload,1,'00000000-0000-0000-0000-000000000001' from native_checkpoint_payloads where name='" + central + "';" : '');
-    const observed = JSON.parse(await psql(reset + " set statement_timeout='55s'; do $$ begin perform set_config('request.jwt.claim.role','"
+    const observed = await observeNativeCheckpointAttempt(psql,reset," set statement_timeout='55s'; do $$ begin perform set_config('request.jwt.claim.role','"
       + claimRole + "',false); end $$; set role " + role + '; select public.native_checkpoint_attempt(false,'
-      + version + ",(select payload from native_checkpoint_payloads where name='" + incoming + "'));"));
+      + version + ",(select payload from native_checkpoint_payloads where name='" + incoming + "'));",role,incoming);
     assert.equal(observed.sqlstate, expectedCode, 'native220 case ' + name);
     assert.equal(observed.stored?.version, storedVersion);
     if (disposition) { assert.equal(observed.result.disposition, disposition); assert.equal(observed.result.centralVersion, storedVersion); }
@@ -1017,9 +1049,9 @@ grant execute on function public.native_checkpoint_attempt(boolean,bigint,jsonb)
       const observations=[];
       for (const baseline of [true,false]) {
         const reset = `truncate public.admin_documents;${central ? `insert into public.admin_documents(document_key,payload,version,updated_by) select '${KEY}',payload,1,'00000000-0000-0000-0000-000000000001' from native_checkpoint_payloads where name='${central}';` : ''}`;
-        const observed=JSON.parse(await psql(`${reset}
+        const observed=await observeNativeCheckpointAttempt(psql,reset,`
 set statement_timeout='55s'; do $$ begin perform set_config('request.jwt.claim.role','${claimRole}',false); end $$; set role ${role};
-select public.native_checkpoint_attempt(${baseline},${version},(select payload from native_checkpoint_payloads where name='${incoming}'));`));
+select public.native_checkpoint_attempt(${baseline},${version},(select payload from native_checkpoint_payloads where name='${incoming}'));`,role,incoming);
         if (observed.sqlstate!==expectedCode) {
           throw new Error(`NATIVE_POSTGRES_CASE_${name.replace(/-/g,'_').toUpperCase()}_SQLSTATE_${observed.sqlstate??'OK'}`);
         }
