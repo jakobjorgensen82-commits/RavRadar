@@ -6,6 +6,9 @@ import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import {spawn} from 'node:child_process';
+import {once} from 'node:events';
+import {get as httpGet} from 'node:http';
+import {BlockList,createConnection,createServer,isIPv4} from 'node:net';
 import {setTimeout as sleep} from 'node:timers/promises';
 import {fileURLToPath} from 'node:url';
 import {Readable,Writable} from 'node:stream';
@@ -35,7 +38,7 @@ function localUrl(raw,kind){
     &&u.pathname==='/postgres','LOCAL_DATABASE_URL');
   need(u.port===(kind==='api'?'54321':'54322'),'LOCAL_PORT_REQUIRED');return u;
 }
-function ownedContainer(info,project,service){
+function ownedContainer(info,project,service,archive=false){
   need(/^[a-f0-9]{64}$/.test(info?.Id??''),'CONTAINER_ID');
   need(info.Name==='/supabase_'+service+'_'+project.id,'CONTAINER_NAME');
   need(info.Config?.Labels?.['com.supabase.cli.project']===project.id,'CONTAINER_PROJECT_LABEL');
@@ -46,13 +49,107 @@ function ownedContainer(info,project,service){
     need(v.HostIp==='127.0.0.1','CONTAINER_NOT_LOOPBACK_BOUND');
     need(service!=='auth'&&v.HostPort===(service==='db'?'54322':'54321'),'CONTAINER_UNEXPECTED_HOST_PORT');published++;
   }
-  need(published===(service==='auth'?0:1),'CONTAINER_PORT_COUNT');
+  need(published===(archive||service==='auth'?0:1),'CONTAINER_PORT_COUNT');
+  if(archive)need(info.NetworkSettings.Networks[project.network]?.NetworkID===project.networkId,'ARCHIVE_CONTAINER_NETWORK_ID');
   need(info.State?.Running===true&&info.State?.Health?.Status==='healthy','CONTAINER_NOT_HEALTHY');return info.Id;
 }
+function ownedArchiveNetwork(info,c,p){
+  return info?.Name===p.network&&info.Id===p.networkId&&info.Internal===true
+    &&info.Labels?.['ravradar.synthetic.restore.owner']===c.owner;
+}
 function isolatedArchiveNetwork(info,c,p){
-  need(info?.Name===p.network&&info.Id===p.networkId&&info.Internal===true
-    &&info.Labels?.['ravradar.synthetic.restore.owner']===c.owner
-    &&Object.keys(info.Containers??{}).length===0,'ARCHIVE_NETWORK_NOT_ISOLATED');
+  need(ownedArchiveNetwork(info,c,p)&&Object.keys(info.Containers??{}).length===0,'ARCHIVE_NETWORK_NOT_ISOLATED');
+}
+function archiveDbEndpoint(info,network,c,p){
+  const id=ownedContainer(info,p,'db',true);
+  need(ownedArchiveNetwork(network,c,p)&&network.Driver==='bridge'&&network.Scope==='local','ARCHIVE_DB_RELAY_NETWORK');
+  const endpoint=info.NetworkSettings.Networks[p.network],member=network.Containers?.[id];
+  const address=endpoint.IPAddress,subnets=network.IPAM?.Config;
+  const subnet=Array.isArray(subnets)&&subnets.length===1&&subnets[0].Subnet;
+  const [networkAddress,prefix,extra]=typeof subnet==='string'?subnet.split('/'):[];
+  need(isIPv4(address)&&isIPv4(networkAddress)&&/^(?:[89]|[12][0-9]|3[01])$/.test(prefix)&&extra===undefined,
+    'ARCHIVE_DB_RELAY_SUBNET');
+  const [first,second]=address.split('.').map(Number);
+  const allowed=new BlockList();allowed.addSubnet(networkAddress,Number(prefix),'ipv4');
+  need((first===10||first===172&&second>=16&&second<=31||first===192&&second===168)
+    &&allowed.check(address,'ipv4')&&address!==networkAddress
+    &&member?.Name===info.Name.slice(1)&&member.IPv4Address===address+'/'+prefix
+    &&endpoint.IPPrefixLen===Number(prefix)&&/^[a-f0-9]{64}$/.test(endpoint.EndpointID??'')
+    &&member.EndpointID===endpoint.EndpointID,'ARCHIVE_DB_RELAY_ENDPOINT');
+  return {address,identity:id+':'+endpoint.EndpointID};
+}
+async function inspectArchiveDocker(route,signal){
+  const response=await new Promise((resolve,reject)=>{
+    const request=httpGet({socketPath:'/var/run/docker.sock',path:route,agent:false,signal},resolve);
+    request.once('error',reject);
+  });
+  try{
+    need(response.statusCode===200,'ARCHIVE_DB_RELAY_INSPECT');
+    const chunks=[];let bytes=0;
+    for await(const chunk of response){
+      bytes+=chunk.length;need(bytes<=512*1024,'ARCHIVE_DB_RELAY_INSPECT_BOUND');chunks.push(chunk);
+    }
+    return JSON.parse(Buffer.concat(chunks).toString('utf8'));
+  }finally{response.destroy();}
+}
+async function openLoopbackRelay(resolveTarget,listenPort,targetPort){
+  const cancel=new AbortController(),sockets=new Set(),pending=new Set();
+  let closing=false,listenerFailed=false;
+  const track=socket=>{
+    sockets.add(socket);
+    socket.on('error',()=>socket.destroy());
+    socket.once('close',()=>sockets.delete(socket));
+    return socket;
+  };
+  const forward=async client=>{
+    const signal=AbortSignal.any([cancel.signal,AbortSignal.timeout(5000)]);
+    const target=await resolveTarget(signal);
+    if(closing||client.destroyed)return;
+    const peer=track(createConnection({host:target.address,port:targetPort,family:4}));
+    client.once('close',()=>peer.destroy());
+    peer.once('close',()=>client.destroy());
+    await once(peer,'connect',{signal});
+    const fresh=await resolveTarget(signal);
+    need(fresh.address===target.address&&fresh.identity===target.identity,'ARCHIVE_DB_RELAY_ENDPOINT_CHANGED');
+    if(!closing&&!client.destroyed&&!peer.destroyed){client.pipe(peer);peer.pipe(client);}
+  };
+  const listener=createServer({pauseOnConnect:true},client=>{
+    track(client);
+    if(closing){client.destroy();return;}
+    const task=forward(client).catch(()=>client.destroy()).finally(()=>pending.delete(task));
+    pending.add(task);
+  });
+  listener.maxConnections=8;
+  listener.on('error',()=>{listenerFailed=true;cancel.abort();});
+  await new Promise((resolve,reject)=>{
+    const refuse=()=>reject(Object.assign(new Error('LOCAL_RESTORE_FAILED_CLOSED'),{code:'ARCHIVE_DB_RELAY_BIND'}));
+    listener.once('error',refuse);
+    listener.listen({host:'127.0.0.1',port:listenPort,exclusive:true},()=>{
+      listener.off('error',refuse);resolve();
+    });
+  });
+  const address=listener.address();
+  return {address,async close(){
+    closing=true;cancel.abort();
+    const closed=new Promise((resolve,reject)=>listener.close(error=>error?reject(error):resolve()));
+    const socketClosures=[...sockets].map(socket=>new Promise(resolve=>{
+      socket.once('close',resolve);socket.destroy();
+    }));
+    await Promise.all([closed,Promise.all(socketClosures),Promise.all(pending)]);
+    need(!listener.listening&&sockets.size===0&&pending.size===0&&!listenerFailed,'ARCHIVE_DB_RELAY_NOT_CLOSED');
+  }};
+}
+async function openArchiveDbRelay(c,p){
+  need(c.archive===true&&p.side==='B'&&/^[1-9][0-9]{0,18}-1$/.test(c.owner)
+    &&p.id==='rr_restore_'+c.owner.slice(0,-2)+'_1_b'&&p.network==='rr-restore-'+c.owner+'-b'
+    &&/^[a-f0-9]{64}$/.test(p.networkId),'ARCHIVE_DB_RELAY_PROJECT');
+  return openLoopbackRelay(async signal=>{
+    const [info,network]=await Promise.all([
+      inspectArchiveDocker('/containers/supabase_db_'+p.id+'/json',signal),
+      inspectArchiveDocker('/networks/'+p.networkId,signal),
+    ]);
+    return archiveDbEndpoint(info,network,c,p);
+  },54322,5432);
 }
 function safeError(error,stage){
   return {stage,code:/^[A-Z0-9_]+$/.test(error?.code??'')?error.code:'LOCAL_RESTORE_REFUSED',
@@ -273,12 +370,18 @@ async function startProject(c,p){
     '--label','ravradar.synthetic.restore.owner='+c.owner,'--opt','com.docker.network.bridge.host_binding_ipv4=127.0.0.1',p.network]);
   p.networkId=raw.toString().trim();need(/^[a-f0-9]{64}$/.test(p.networkId),'NETWORK_CREATE_OUTCOME_UNKNOWN');p.networkCreated=true;
   if(c.archive)isolatedArchiveNetwork((await jsonCommand(c,'ARCHIVE_INTERNAL_NETWORK',['network','inspect',p.network]))[0],c,p);
+  // Docker does not publish ports on an internal-only bridge. The CLI's fresh
+  // database setup still dials loopback; close its temporary path before SQL or archive access.
+  c.stage='ARCHIVE_DB_RELAY_BIND';
+  const relay=c.archive?await openArchiveDbRelay(c,p):null;
   p.startAttempted=true;
-  await command(c,'START_'+p.side,'supabase',['--network-id',p.network,'start','--exclude',EXCLUDE],{cwd:p.dir});
+  try{
+    await command(c,'START_'+p.side,'supabase',['--network-id',p.network,'start','--exclude',EXCLUDE],{cwd:p.dir});
+  }finally{if(relay)await relay.close();}
   const actual={};
   for(const service of ['db','kong','auth']){
     const info=(await jsonCommand(c,'INSPECT_'+p.side+'_'+service,['inspect','supabase_'+service+'_'+p.id]))[0];
-    p[service]=ownedContainer(info,p,service);const image=(await jsonCommand(c,'IMAGE_'+service,['image','inspect',info.Image]))[0];
+    p[service]=ownedContainer(info,p,service,c.archive);const image=(await jsonCommand(c,'IMAGE_'+service,['image','inspect',info.Image]))[0];
     // The clean, unlinked CLI chooses its own normal public registry/mirror.
     // Verify exact service/tag as well as content identity; do not assume a Docker Hub alias.
     const short=IMAGES[service].split('/').at(-1);
@@ -393,7 +496,7 @@ async function restoreArchive(c,b,indexSha256){
   await command(c,'RESTART_B_AUTH','docker',['start',b.auth],{maxMs:30_000});
   let healthy=false;const end=Math.min(c.deadline,Date.now()+60_000);
   while(Date.now()<end){const info=(await jsonCommand(c,'RESTORED_AUTH_HEALTH',['inspect',b.auth]))[0];
-    if(info.State?.Health?.Status==='healthy'){ownedContainer(info,b,'auth');healthy=true;break;}await sleep(500);}
+    if(info.State?.Health?.Status==='healthy'){ownedContainer(info,b,'auth',true);healthy=true;break;}await sleep(500);}
   need(healthy,'RESTORED_AUTH_NOT_HEALTHY');
   return {status:'PASS',scope:'authenticated-archive-isolated-sql-restore',sourceHead:process.env.EXPECTED_HEAD_SHA,cliVersion:P.cli,
     indexSha256:archive.indexSha256,manifestSha256:archive.manifestSha256,totalSqlBytes:archive.totalSqlBytes,
@@ -652,6 +755,74 @@ async function selfTest(){
     assert(archiveStep);assert.match(archiveStep,/if: inputs.restore_mode == 'archive'/);
     assert(!/SUPABASE_DB_PASSWORD|SUPABASE_ACCESS_TOKEN|CLOUDFLARE_API_TOKEN|GITHUB_TOKEN|upload-artifact|continue-on-error/.test(archiveStep));
     assert.match(archiveStep,/--run-archive-restore/);assert.match(workflow,/if: inputs.restore_mode == 'synthetic'[\s\S]*--run-local-fixture/);
+  });
+  test('archive startup DB endpoint requires matching owned healthy container and bridge membership',async()=>{
+    const id='a'.repeat(64),net='b'.repeat(64),endpoint='c'.repeat(64),c={owner:'123-1',archive:true};
+    const p={side:'B',id:'rr_restore_123_1_b',network:'rr-restore-123-1-b',networkId:net};
+    const db={Id:id,Name:'/supabase_db_'+p.id,Config:{Labels:{'com.supabase.cli.project':p.id}},
+      NetworkSettings:{Networks:{[p.network]:{NetworkID:net,IPAddress:'172.23.0.2',IPPrefixLen:16,EndpointID:endpoint}},
+        Ports:{'5432/tcp':null}},State:{Running:true,Health:{Status:'healthy'}}};
+    const network={Name:p.network,Id:net,Internal:true,Driver:'bridge',Scope:'local',
+      Labels:{'ravradar.synthetic.restore.owner':c.owner},IPAM:{Config:[{Subnet:'172.23.0.0/16'}]},
+      Containers:{[id]:{Name:db.Name.slice(1),IPv4Address:'172.23.0.2/16',EndpointID:endpoint}}};
+    assert.deepEqual(archiveDbEndpoint(db,network,c,p),{address:'172.23.0.2',identity:id+':'+endpoint});
+    for(const edit of [
+      (db,n)=>db.Config.Labels['com.supabase.cli.project']='foreign',
+      (db,n)=>db.Name='/foreign',
+      (db,n)=>db.State.Health.Status='starting',
+      (db,n)=>db.NetworkSettings.Networks.bridge={},
+      (db,n)=>db.NetworkSettings.Networks[p.network].NetworkID='d'.repeat(64),
+      (db,n)=>db.NetworkSettings.Ports['5432/tcp']=[{HostIp:'127.0.0.1',HostPort:'54322'}],
+      (db,n)=>db.NetworkSettings.Networks[p.network].IPAddress='127.0.0.1',
+      (db,n)=>n.Internal=false,
+      (db,n)=>n.Driver='overlay',
+      (db,n)=>n.Labels['ravradar.synthetic.restore.owner']='foreign',
+      (db,n)=>n.Containers[id].EndpointID='d'.repeat(64),
+      (db,n)=>n.Containers[id].IPv4Address='172.24.0.2/16',
+      (db,n)=>delete n.Containers[id],
+    ]){
+      const i=structuredClone(db),n=structuredClone(network);edit(i,n);
+      assert.throws(()=>archiveDbEndpoint(i,n,c,p));
+    }
+    await assert.rejects(()=>openArchiveDbRelay(c,{...p,id:'rr_restore_124_1_b'}),
+      error=>error.code==='ARCHIVE_DB_RELAY_PROJECT');
+  });
+  test('owned bootstrap relay refuses a bind collision and stale targets, then closes listener and sockets',async()=>{
+    const payload=Buffer.from('synthetic bootstrap probe'),backendClients=new Set();let received=0;
+    const backend=createServer(socket=>{
+      backendClients.add(socket);socket.once('close',()=>backendClients.delete(socket));
+      socket.on('data',bytes=>{received+=bytes.length;socket.write(bytes);});
+    });
+    await new Promise((resolve,reject)=>{
+      backend.once('error',reject);backend.listen({host:'127.0.0.1',port:0},resolve);
+    });
+    let relay,client;
+    const identity=()=>({address:'127.0.0.1',identity:'fixed-fake-peer'}),backendPort=backend.address().port;
+    try{
+      let reads=0;
+      relay=await openLoopbackRelay(()=>({...identity(),identity:String(++reads)}),0,backendPort);
+      assert.equal(relay.address.address,'127.0.0.1');
+      client=createConnection({host:'127.0.0.1',port:relay.address.port});
+      const rejected=new Promise(resolve=>client.once('close',resolve));
+      client.on('error',()=>{}); // Windows can report the intentional refusal as a reset.
+      client.write(payload);
+      await rejected;
+      assert.equal(reads,2);assert.equal(received,0);
+      const port=relay.address.port;await relay.close();relay=null;
+      relay=await openLoopbackRelay(identity,port,backendPort);
+      await assert.rejects(()=>openLoopbackRelay(identity,port,backendPort),error=>error.code==='ARCHIVE_DB_RELAY_BIND');
+      client=createConnection({host:'127.0.0.1',port});
+      const response=once(client,'data');client.write(payload);
+      assert.deepEqual((await response)[0],payload);
+      const clientClosed=new Promise(resolve=>client.once('close',resolve));
+      client.on('error',()=>{});
+      await relay.close();relay=null;await clientClosed;
+      relay=await openLoopbackRelay(identity,port,backendPort);
+    }finally{
+      client?.destroy();if(relay)await relay.close();
+      for(const socket of backendClients)socket.destroy();
+      await new Promise(resolve=>backend.close(resolve));
+    }
   });
   test('archive target requires its empty owned internal Docker network before any SQL or container start',()=>{
     const c={owner:'synthetic-owner'},p={network:'own-net',networkId:'a'.repeat(64)},n={Name:'own-net',Id:'a'.repeat(64),
