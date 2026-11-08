@@ -7,6 +7,7 @@ import path from 'node:path';
 import {execFileSync, spawnSync, spawn} from 'node:child_process';
 import {nativePrograms,nativePostgresProgramIdentity} from './lib/checkpoint-cas-native-postgres.mjs';
 import {fileURLToPath} from 'node:url';
+import {sourceTreeContentSha256} from './lib/source-tree-content.mjs';
 import {requireAssistantLaterH0Release,requireAssistantPublic587SuccessorRelease,
   requireAssistantPublic588SuccessorRelease,requireAssistantPublic590SuccessorRelease,requireAssistantPublic591SuccessorRelease,
   requireInstalled593Original591Release,requireInstalled593Original591Binding,requireInstalled593Original591Output,
