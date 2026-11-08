@@ -70,12 +70,15 @@ if (actualBuildWorkflow !== buildWorkflow) {
     return actualBuildWorkflow.slice(start, next < 0 ? undefined : next);
   };
   const predicate = name => step(name).split('\n').find(line => line.startsWith('        if: '))?.slice(12);
+  const savedPair = "steps.source-route.outputs.source_saved_pair == 'true' && steps.source-saved-pair-admission.outcome == 'success' && steps.source-saved-pair-target.outcome == 'success'";
   assert.equal(predicate('Validate critical production artifact after fresh weather and current provenance'),
-    "steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover')");
+    "(steps.operational-model.outputs.source_normal_producer == 'false' && (steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover'))"
+    + ` || (${savedPair} && steps.production-reference-zones.outcome == 'success')`);
   assert.equal(predicate('Run release governance gate after refreshed data validation'),
-    "steps.operational-model.outputs.source_normal_producer == 'false' && (always() && steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover')");
+    "(steps.operational-model.outputs.source_normal_producer == 'false' && (always() && steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action != 'integrated-cutover'))"
+    + ` || (${savedPair} && steps.full-validation.outcome == 'success')`);
   assert.equal(predicate('Run the one explicit owned SOURCE ordinary route'),
-    "steps.operational-model.outputs.source_normal_producer == 'true'");
+    "steps.operational-model.outputs.source_normal_producer == 'true' && steps.source-route.outputs.source_saved_pair != 'true'");
   const route = step('Select actual route observations without legacy fallback');
   for (const marker of ["assert.equal(process.env.SOURCE_ACTION_OUTCOME,'success'",
     '"full_validation_outcome":"source_full_validation_outcome"',
@@ -83,6 +86,21 @@ if (actualBuildWorkflow !== buildWorkflow) {
     "assert.equal(outputs.preflight_should_run,'true'",
     "assert.equal(report.sourceHead,process.env.GITHUB_SHA",
     "assert.equal(report.privatePayloadIncluded,false"]) assert.ok(route.includes(marker), marker);
+  const savedStart = route.indexOf("if(process.env.SOURCE_SAVED_PAIR==='true'){");
+  const savedEnd = route.indexOf('}else if(selected===false){', savedStart);
+  assert.ok(savedStart >= 0 && savedEnd > savedStart, 'The actual saved-pair route must be distinct');
+  const savedRoute = route.slice(savedStart, savedEnd);
+  for (const marker of [
+    "assert.equal(selected,true,'SOURCE_SAVED_PAIR_NOT_SELECTED')",
+    "assert.equal(process.env.SOURCE_ACTION_OUTCOME,'skipped','SOURCE_SAVED_PAIR_FRESH_ACTION')",
+    "['ADMISSION','TARGET','NO_LOSS','DISPOSITION']",
+    "'success','SOURCE_SAVED_PAIR_REQUIRED_'+k",
+    "['CHECKPOINT_BUILD','CHECKPOINT_SAVE','CHECKPOINT_PUBLISH','B_PUBLISH']",
+    "'skipped','SOURCE_SAVED_PAIR_UNEXPECTED_'+k",
+    "assert.equal(outputs.full_validation_outcome,'success')",
+    "assert.equal(outputs.release_gate_outcome,'success')",
+    "assert.equal(process.env.SAVED_DISPOSITION_KIND,'SAVED_PAIR_READBACK_VERIFIED')",
+  ]) assert.ok(savedRoute.includes(marker), marker);
   const pages = step('Build lean GitHub Pages artifact');
   assert.equal(predicate('Build lean GitHub Pages artifact'),
     "steps.weather-route-result.outputs.preflight_should_run == 'true'");
