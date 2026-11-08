@@ -22,6 +22,22 @@ export function currentSourceNativeFirstFailure(stdout){
   }
   return firstProfileFailure;
 }
+export function currentSourceNativeCaseLocation(stdout){
+  const cases=new Set(["PURE_FAILURE240_CLOCK","PURE_FAILURE240_PINNED_ROWS","PURE_FAILURE240_CACHE","PURE_FAILURE240_MAIN_ROUTE","PURE_FAILURE240_MARKERS","PURE_FAILURE240_SELECTION","CURRENT_FAILURE240","CURRENT_POSITIVE"]);
+  const phases=new Set(["NONE","CAPTURE_GITHUB","OWNED_HOST","PROVIDERS","PREFIX","INITIAL_REQUEST","INITIAL_ACTIVATION","FOLLOWER_INPUTS","QUALIFY","ACTION_FAILURE240","ACTION_POSITIVE","RECONFIRM_GITHUB"]);
+  let location=null;
+  for(const line of stdout.split(/\r?\n/)){
+    if(line.length>1024)continue;
+    let value;try{value=JSON.parse(line);}catch{continue;}
+    if(value?.kind!=='CURRENT_SOURCE_NATIVE_CASE_LOCATION')continue;
+    if(location || Object.keys(value).sort().join(',')!=='caseId,exitCode,kind,localLine,privatePayloadIncluded,subprocessPhase'
+      || value.privatePayloadIncluded!==false || !cases.has(value.caseId) || !phases.has(value.subprocessPhase)
+      || (value.localLine!==null && (!Number.isInteger(value.localLine) || value.localLine < 1 || value.localLine > 8192))
+      || (value.exitCode!==null && (value.subprocessPhase==='NONE' || !Number.isInteger(value.exitCode) || value.exitCode < -255 || value.exitCode > 255)))return null;
+    location=value;
+  }
+  return location;
+}
 const OLD_MIGRATION = '20261010130000_owner_export_origin_bound_successor.sql';
 const NEW_MIGRATION = '20261012200000_checkpoint_cas_single_projection_successor.sql';
 const ACCOUNT_MIGRATION = '20261013210000_account_assistant_original_bound_successor.sql';
@@ -1282,6 +1298,8 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
         const fixed=firstProfileFailure??{kind:'CURRENT_SOURCE_NATIVE_FIRST_FAILURE',phase:'UNKNOWN',
           reason:'MISSING_CHILD_FIXED_REPORT',sqlstate:invocation.sqlState??'UNKNOWN',route:'NONE',privatePayloadIncluded:false};
         console.error(JSON.stringify(fixed));
+        const location=currentSourceNativeCaseLocation(invocation.stdout);
+        if(location)console.error(JSON.stringify(location));
         const error=new Error('NATIVE_POSTGRES_CURRENT_PROFILE_REFUSED phase='+fixed.phase+' reason='+fixed.reason
           +' sqlstate='+fixed.sqlstate+' route='+fixed.route);error.currentNativeFailure=Object.freeze(fixed);throw error;
       }

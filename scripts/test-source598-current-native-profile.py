@@ -368,6 +368,40 @@ def current_source_native_test_selection(legacy, context):
         'SourceObserverPureTests.test_current_failure240_selection_is_separate',
         'SourceCurrentNative.test_current_source_failure240_profile', positive)
 
+def current_native_case_location(test, error, traceback):
+    # The outer report receives fixed synthetic test identity and state only.
+    cases = {
+        'test_current_failure240_clock_and_refusals': 'PURE_FAILURE240_CLOCK',
+        'test_current_failure240_only_four_pinned_rows': 'PURE_FAILURE240_PINNED_ROWS',
+        'test_current_failure240_actual_current_cache': 'PURE_FAILURE240_CACHE',
+        'test_current_failure240_actual_main_route': 'PURE_FAILURE240_MAIN_ROUTE',
+        'test_current_failure240_download_then_parser_markers': 'PURE_FAILURE240_MARKERS',
+        'test_current_failure240_selection_is_separate': 'PURE_FAILURE240_SELECTION',
+        'test_current_source_failure240_profile': 'CURRENT_FAILURE240',
+        'test_current_normal_source_profile': 'CURRENT_POSITIVE',
+    }
+    case = cases.get(getattr(test, '_testMethodName', None))
+    if case is None:
+        return None
+    phases = {'NONE', 'CAPTURE_GITHUB', 'OWNED_HOST', 'PROVIDERS', 'PREFIX', 'INITIAL_REQUEST', 'INITIAL_ACTIVATION', 'FOLLOWER_INPUTS', 'QUALIFY', 'ACTION_FAILURE240', 'ACTION_POSITIVE', 'RECONFIRM_GITHUB'}
+    phase = getattr(test, '_current_native_subprocess_phase', 'NONE')
+    if phase not in phases:
+        phase = 'NONE'
+    code = (error.returncode if type(error) is subprocess.CalledProcessError
+            else getattr(test, '_current_native_subprocess_exit', None))
+    if phase == 'NONE' or type(code) is not int or not -255 <= code <= 255:
+        code = None
+    local_line = None
+    while traceback is not None:
+        if traceback.tb_frame.f_code.co_filename == __file__:
+            local_line = traceback.tb_lineno
+        traceback = traceback.tb_next
+    if local_line is not None and not 1 <= local_line <= 8192:
+        local_line = None
+    return {'kind': 'CURRENT_SOURCE_NATIVE_CASE_LOCATION', 'caseId': case,
+            'subprocessPhase': phase, 'exitCode': code, 'localLine': local_line,
+            'privatePayloadIncluded': False}
+
 class SourceObserverPureTests(unittest.TestCase):
 
     def test_current_failure240_actual_current_cache(self):
@@ -3542,19 +3576,23 @@ class SourceCurrentNative(SourceActualSUnionNative):
             if name in os.environ: capture_env[name] = os.environ[name]
         pr_test = context.get('sourceCurrentNativeTestContext')
         capture_command = [str(NODE), str(ROOT / 'scripts/fixtures/source19-current-native-metadata.mjs')]
+        self._current_native_subprocess_phase = 'CAPTURE_GITHUB'
         if pr_test is None:
             subprocess.run(capture_command + ['--capture-github'],
                 cwd=ROOT, env=capture_env, stdin=subprocess.DEVNULL, check=True, timeout=180)
         else:
             subprocess.run(capture_command + ['--capture-source-pr-native-test'],
                 cwd=ROOT, env=capture_env, input=json.dumps(pr_test).encode(), check=True, timeout=90)
+        self._current_native_subprocess_phase = 'OWNED_HOST'
         own, root, environment, target = self.owned_current_host(context['head'], with_sdk=True)
+        self._current_native_subprocess_phase = 'NONE'
         (own / 'fixture-current598').mkdir(mode=0o700, parents=False, exist_ok=False)
         commands = (
             ('providers', [sys.executable, '-I', '-B', str(root / 'scripts/fixtures/source19-current-native-providers.py'), str(NODE), target, '--current598']),
             ('prefix', [str(NODE), str(root / 'scripts/fixtures/source19-current-normal-inputs.mjs'), '--prepare-current598-prefix']),
             ('initial-request', [str(NODE), str(root / 'scripts/fixtures/source19-current-native-metadata.mjs'), '--current598-initial-rpc-request']))
         for name, command in commands:
+            self._current_native_subprocess_phase = name.upper().replace('-', '_')
             # Retain the first actual producer failure and all physical raw
             # inputs; no later generic missing-input error replaces that cause.
             with (own / ('current598-' + name + '-whole.stdout')).open('xb') as stdout, \
@@ -3562,7 +3600,9 @@ class SourceCurrentNative(SourceActualSUnionNative):
                 result = subprocess.run(command, cwd=root, env=environment, stdin=subprocess.DEVNULL,
                     stdout=stdout, stderr=stderr, check=False)
                 stdout.flush(); os.fsync(stdout.fileno()); stderr.flush(); os.fsync(stderr.fileno())
+            self._current_native_subprocess_exit = result.returncode
             self.assertEqual(result.returncode, 0, 'CURRENT598_NORMAL_' + name.upper() + '_PRODUCER_REFUSED')
+            self._current_native_subprocess_phase, self._current_native_subprocess_exit = 'NONE', None
         inputs = strict_json(own / 'current598-native-inputs/transport/current598-prefix-inputs.json', 32 * 1024 * 1024)
         self.assertEqual(inputs['profile'], 'current598-native-prefix')
         self.assertEqual(inputs['sourceHead'], profile['prefixProducer']['codeProducerHead'])
@@ -3747,16 +3787,22 @@ class SourceCurrentNative(SourceActualSUnionNative):
             owner.enter(); transport.start()
             # Initial CAS is deliberately after real owned TLS+SQL. Its return
             # object is NOT the mandatory capture: query actual PG anew below.
+            self._current_native_subprocess_phase = 'INITIAL_ACTIVATION'
             subprocess.run([str(NODE), str(root / 'scripts/fixtures/source19-current-native-initial-activation.mjs'),
                 '--native-current598-initial-central'], cwd=root, env=environment, stdin=subprocess.DEVNULL, check=True)
+            self._current_native_subprocess_phase = 'NONE'
             captured_pg = current_native_pg_capture(context)
+            self._current_native_subprocess_phase = 'FOLLOWER_INPUTS'
             subprocess.run([str(NODE), str(root / 'scripts/fixtures/source19-current-normal-inputs.mjs'),
                 '--prepare-current-from594-prefix'], cwd=root, env=environment, stdin=subprocess.DEVNULL, check=True)
+            self._current_native_subprocess_phase = 'NONE'
             current_inputs = strict_json(own / 'current-source-native-inputs/transport/current-normal-inputs.json', 32 * 1024 * 1024)
             self.assertEqual(current_inputs['sourceHead'], context['head']); self.assertEqual(current_inputs['target'], target)
+            self._current_native_subprocess_phase = 'QUALIFY'
             qualification = subprocess.run([str(NODE), str(root / 'scripts/fixtures/source19-current-native-metadata.mjs'), '--qualify'],
                 input=json.dumps({'pg': captured_pg, 'inputs': current_inputs}).encode(), cwd=root, env=environment,
                 capture_output=True, check=True, timeout=70)
+            self._current_native_subprocess_phase = 'NONE'
             qualified = json.loads(qualification.stdout)
             self.assertIn(qualified['operationalAction'], ('integrated', 'integrated-historical-maintenance'))
             self.assertEqual(qualified['bucket'], protocol['bucket'])
@@ -3785,10 +3831,12 @@ class SourceCurrentNative(SourceActualSUnionNative):
             if failure240:
                 cipher = root / '.cache/weather-private-progress.encrypted'
                 self.assertFalse(cipher.exists() or cipher.is_symlink(), 'CURRENT_FAILURE240_CIPHER_MUST_BE_ABSENT_BEFORE_SPAWN')
+            self._current_native_subprocess_phase = 'ACTION_FAILURE240' if failure240 else 'ACTION_POSITIVE'
             process = subprocess.Popen([str(NODE), str(root / ENTRY)], cwd=root, env=environment,
                 stdin=subprocess.DEVNULL, stdout=logs[0], stderr=logs[1])
             if failure240:
                 failure_result = self.observe_current_failure240(root, process, transport, action_output, environment, owner.deadline)
+                self._current_native_subprocess_phase = 'NONE'
                 physically_closed = True
                 for file, pin in original_pins:
                     self.assertEqual(transport._pin_file(Path(file)), pin, 'CURRENT_INITIAL_ORIGINAL_CHANGED')
@@ -3798,7 +3846,9 @@ class SourceCurrentNative(SourceActualSUnionNative):
                 with self.assertRaises(ChildProcessError):
                     os.waitid(os.P_ALL, 0, os.WEXITED | os.WNOHANG | os.WNOWAIT)
                 physically_closed = True
+                self._current_native_subprocess_exit = process.returncode
                 self.assertEqual(process.returncode, 0)
+                self._current_native_subprocess_phase, self._current_native_subprocess_exit = 'NONE', None
                 self.assertEqual(transport.failures, [])
                 self.assertIsNotNone(transport.current_artifact)
                 self.assertEqual(transport.current_artifact['phase'], 'finalized')
@@ -3853,9 +3903,11 @@ class SourceCurrentNative(SourceActualSUnionNative):
                 capture_env = clean_environment()
                 for name in ('GITHUB_TOKEN', 'GITHUB_REPOSITORY'):
                     if name in os.environ: capture_env[name] = os.environ[name]
+                self._current_native_subprocess_phase = 'RECONFIRM_GITHUB'
                 checked = subprocess.run([str(NODE), str(ROOT / 'scripts/fixtures/source19-current-native-metadata.mjs'),
                     '--reconfirm-source-pr-native-test'], cwd=ROOT, env=capture_env,
                     input=json.dumps(pr_test).encode(), capture_output=True, check=True, timeout=90)
+                self._current_native_subprocess_phase = 'NONE'
                 actual = json.loads(checked.stdout)
                 self.assertEqual(actual['current'], github['current'])
                 self.assertEqual(actual['mainHead'], github['mainHead'])
@@ -4270,6 +4322,13 @@ def run_current_native_profile_cli():
     class CurrentNativeFixedFirstResult(unittest.TextTestResult):
         # Standard unittest reporting remains unchanged; add only a fixed
         # first-cause observation before normal error/failure reporting.
+        def emit_case_location(self, test, error):
+            try:
+                observation = current_native_case_location(test, error[1], error[2])
+                if observation is not None:
+                    print(json.dumps(observation, separators=(',', ':')), flush=True)
+            except Exception:
+                pass  # Keep the original test result and first failure.
         def addError(self, test, error):
             if args.source_legacy_compatibility:
                 try:
@@ -4279,6 +4338,8 @@ def run_current_native_profile_cli():
                 except BaseException:
                     pass
             current_native_post64_module().emit_current_native_failure(error[1], phase='CURRENT_CASE')
+            if not args.source_legacy_compatibility:
+                self.emit_case_location(test, error)
             super().addError(test, error)
         def addFailure(self, test, error):
             if args.source_legacy_compatibility:
@@ -4289,6 +4350,8 @@ def run_current_native_profile_cli():
                 except BaseException:
                     pass
             current_native_post64_module().emit_current_native_failure(error[1], phase='CURRENT_CASE')
+            if not args.source_legacy_compatibility:
+                self.emit_case_location(test, error)
             super().addFailure(test, error)
     selected = current_source_native_test_selection(args.source_legacy_compatibility, CURRENT_NATIVE_CONTEXT)
     unittest.main(argv=[sys.argv[0]], defaultTest=selected,
