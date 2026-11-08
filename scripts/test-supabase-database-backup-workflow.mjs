@@ -98,6 +98,19 @@ test('hosted backup caller: capture preserves only bounded SQL and cipher byte t
   }
 });
 
+test('hosted backup caller: segmented counts and exact grouped bounds stay on the normal capture caller',()=>{
+  const files=Array.from({length:5},(_,i)=>({sqlBytes:1024,cipherBytes:i===0?50_000_001:128}));
+  const captureBytes={totalSqlBytes:5120,files,cipherPartCount:6,archiveWireBytes:50_001_000};
+  const result=fixture(captureEnv(),{captureBytes}).invoke();
+  assert.equal(result.totalSqlBytes,5120);assert.equal(result.totalCipherBytes,50_000_513);
+  assert(!/files|wireBytes|egressBytes/.test(JSON.stringify(result)));
+  for(const change of [{cipherPartCount:5},{archiveWireBytes:50_000_512},{archiveWireBytes:300_000_001},
+    {files:files.map((file,i)=>i===0?{...file,cipherBytes:180_000_000}:file)}]){
+    const f=fixture(captureEnv(),{captureBytes:{...captureBytes,...change}});
+    code(()=>f.invoke(),'SUPABASE_BACKUP_CAPTURE_BYTES');assert.equal(f.controllerCalls.length,1);
+  }
+});
+
 test('hosted backup caller: malformed capture byte counts stop after one child without a replay or raw disclosure',()=>{
   const five=()=>Array.from({length:5},()=>({sqlBytes:1024,cipherBytes:128}));
   const invalid=[{totalSqlBytes:undefined},{totalSqlBytes:null},{totalSqlBytes:'5120'},{totalSqlBytes:0},

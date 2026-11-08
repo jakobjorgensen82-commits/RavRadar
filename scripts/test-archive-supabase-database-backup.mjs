@@ -56,12 +56,16 @@ function fixture(temp,behavior={}){
       const entries=[...objects].map(([key,b])=>'<Contents><Key>'+key+'</Key><Size>'+b.length+'</Size></Contents>').join('')
         +(behavior.existingUsageBytes?'<Contents><Key>existing-synthetic-object</Key><Size>'+behavior.existingUsageBytes+'</Size></Contents>':'');
       return response('<ListBucketResult><IsTruncated>false</IsTruncated>'+entries+'</ListBucketResult>',behavior.bucketListStatus??200);}
-    assert.match(key,/^bundles\/sha256\/[0-9a-f]{64}\.json\.gz$/);
+    const part=/^bundles\/sha256\/[0-9a-f]{64}\/part-[0-9]{3}-([0-9a-f]{64})\.json\.gz\.part$/.exec(key);
+    if(!part)assert.match(key,/^bundles\/sha256\/[0-9a-f]{64}\.json\.gz$/);
     if(method==='HEAD')return response('',objects.has(key)?200:404);
     if(method==='PUT'){assert.equal(headers.get('content-type'),'application/gzip');assert.equal(headers.get('if-none-match'),'*');
-      assert.ok(Buffer.isBuffer(body));assert.ok(body.length<=P.maximumObjectBytes);assert.equal(sha(body),key.split('/').at(-1).split('.')[0]);
-      const frame=JSON.parse(gunzipSync(body));assert.match(frame.kind,/^SUPABASE_DB_(SQL_CIPHERTEXT|ENCRYPTED_INDEX)_FRAME_V1$/);
-      assert.equal(sha(Buffer.from(frame.data,'base64')),frame.sha256);assert.equal(Buffer.from(frame.data,'base64').length,frame.bytes);
+      assert.ok(Buffer.isBuffer(body));assert.ok(body.length<=P.maximumObjectBytes);assert.equal(sha(body),part?part[1]:key.split('/').at(-1).split('.')[0]);
+      if(part)assert.ok(gunzipSync(body,{maxOutputLength:P.maximumCipherBytes}).length>0);
+      else{
+        const frame=JSON.parse(gunzipSync(body));assert.match(frame.kind,/^SUPABASE_DB_(SQL_CIPHERTEXT|ENCRYPTED_INDEX)_FRAME_V1$/);
+        assert.equal(sha(Buffer.from(frame.data,'base64')),frame.sha256);assert.equal(Buffer.from(frame.data,'base64').length,frame.bytes);
+      }
       if(behavior.putUnknown){objects.set(key,Buffer.from(body));throw new Error('synthetic private uncertain outcome');}
       if(behavior.putStatus)return response('',behavior.putStatus);
       if(objects.has(key))return response('',412);objects.set(key,Buffer.from(body));return response('',200);}
@@ -87,6 +91,7 @@ test('fixed normal five dumps -> honest gzip frames -> R2 exact readback -> cent
   const {f,result}=await captured(t);assert.equal(f.children.length,7);assert.equal(f.objects.size,6);assert.equal(writeCalls(f).length,7);assert.equal(f.locator.version,1);
   const {index}=encryptedIndex(f);assert.deepEqual(index.objects.map(x=>x.file),names);
   const receipt=Buffer.from(index.exportReceiptBase64,'base64'),m=Buffer.from(index.manifestBase64,'base64');assert.equal(sha(receipt),f.locator.payload.exportReceiptSha256);assert.equal(sha(m),f.locator.payload.manifestSha256);
+  assert.deepEqual(result.files.map(x=>x.cipherBytes),JSON.parse(m).files.map(x=>x.cipherBytes));
   const discovered=await run({},f.dependencies());
   assert.equal(result.archiveWrittenThisOperation,true);assert.equal(result.centralLocatorWrittenThisOperation,true);assert.equal(discovered.archiveWrittenThisOperation,false);assert.equal(discovered.centralLocatorWrittenThisOperation,false);
   for(const r of [result,discovered]){assert.equal(r.remoteArchiveVerified,true);assert.equal(r.centralLocatorVerified,true);assert.equal(Object.hasOwn(r,'archiveUploaded'),false);assert.equal(Object.hasOwn(r,'centralLocatorPublished'),false);assert.equal(r.authRestoreVerified,false);
@@ -167,10 +172,11 @@ test('wrong existing master refuses index GCM; no payload or new mutation is ret
 test('fresh locator drift after remote verification is refused',async t=>{
   const {f}=await captured(t);let gets=0;f.behavior.beforeLocatorGet=api=>{if(++gets===2)api.locator.version++;};await rejectCode(()=>run({},f.dependencies()),'LOCATOR_CHANGED');
 });
-test('wire expansion limit is stricter than local cipher cap and refuses before first upload',async t=>{
-  // A genuine normal export with incompressible bytes crosses the explicit 36 MB remote preflight.
+test('segmented capture checks fresh exact whole-group headroom before first upload',async t=>{
   const random=crypto.randomBytes(P.maximumCipherBytes+1024),f=fixture(await host(t),{sql:n=>n==='roles.sql'?random:sql(n)});
-  await rejectCode(()=>run({mode:'capture',exportOptions:{fileByteLimit:40_000_000,totalByteLimit:50_000_000}},f.dependencies()),'FILE_BOUND');assert.equal(writeCalls(f).length,0);
+  let reads=0;f.behavior.beforeLocatorGet=()=>{if(++reads===3)f.behavior.existingUsageBytes=P.maximumBucketBytes-random.length;};
+  await rejectCode(()=>run({mode:'capture',exportOptions:{fileByteLimit:40_000_000,totalByteLimit:50_000_000}},f.dependencies()),'R2_CAPTURE_HEADROOM');
+  assert.equal(reads,3);assert.equal(f.children.length,7);assert.equal(writeCalls(f).length,0);assert.equal(f.objects.size,0);assert.equal(f.locator,null);
 });
 test('capture-only flags cannot be used as caller authority; unsupported modes and discovery options stop',async t=>{
   const f=fixture(await host(t));for(const options of [{mode:'restore'},{mode:'discover',exportOptions:{fileByteLimit:1}}])await assert.rejects(()=>run(options,f.dependencies()));
@@ -401,4 +407,60 @@ test('database-query HTTP201 wrong RLS remains refused before backup mutations',
   const f=fixture(await host(t),{catalogueStatus:201,catalogue:()=>{const rows=catalogue();rows[0].metadata.rls=false;return rows;}});
   await rejectCode(()=>run({mode:'discover'},f.dependencies()),'LOCATOR_PRIVACY');
   assert.equal(f.children.length,0);assert.equal(writeCalls(f).length,0);assert.equal(f.calls.length,1);
+});
+
+
+function rewriteSyntheticSelfIndex(f,mutate){
+  const {index,key}=encryptedIndex(f),base=clone(f.locator),outer=decodeObject(f.objects.get(key)),bytes=Buffer.from(outer.data,'base64');
+  const magic=Buffer.from('RR-SUPABASE-DB-INDEX-2\n');
+  assert.ok(bytes.subarray(0,magic.length).equals(magic));
+  const at=magic.length+4+bytes.readUInt32BE(magic.length),prefix=Buffer.from(bytes.subarray(0,at+28));
+  const salt=crypto.randomBytes(16),nonce=crypto.randomBytes(12);
+  salt.copy(prefix,at);nonce.copy(prefix,at+16);
+  const info='RavRadar/jakobjorgensen82-commits/RavRadar/SUPABASE_DATABASE_BACKUP/v1/INDEX';
+  const secret=crypto.hkdfSync('sha256',Buffer.from(f.env.SUPABASE_SERVICE_ROLE_KEY),salt,Buffer.from(info),32);
+  const cipher=crypto.createCipheriv('aes-256-gcm',secret,nonce);cipher.setAAD(prefix);
+  mutate(index);
+  const replacement=Buffer.concat([prefix,cipher.update(JSON.stringify(index)),cipher.final(),cipher.getAuthTag()]);
+  const wire=gzipSync(Buffer.from(JSON.stringify({kind:outer.kind,bytes:replacement.length,sha256:sha(replacement),data:replacement.toString('base64')})));
+  const digest=sha(wire),object='bundles/sha256/'+digest+'.json.gz';f.objects.set(object,wire);
+  base.payload.index={path:object,bytes:wire.length,sha256:digest};return base;
+}
+
+test('segmented capture over 50 MB rejects altered groups and restores exact five SQL files without database access',async t=>{
+  const large=crypto.randomBytes(50_001_024),expected=name=>name==='data.sql'?large:materializationSql(name);
+  const {f,result}=await captured(t,{sql:expected}),original=clone(f.locator),{index}=encryptedIndex(f);
+  assert.equal(index.kind,'SUPABASE_DB_BACKUP_INDEX_V2');assert.equal(result.cipherPartCount,6);assert.equal(f.objects.size,7);
+  assert.equal(result.archiveWireBytes,[...f.objects.values()].reduce((total,b)=>total+b.length,0));
+  assert.ok(result.files[2].cipherBytes>50_000_000);
+  assert.deepEqual(index.objects.map(entry=>entry.parts.length),[1,1,2,1,1]);
+  assert.equal(writeCalls(f).length,8);
+  const before=writeCalls(f).length;
+  for(const [label,mutate,code] of [
+    ['order',x=>x.objects[2].parts.reverse(),'CHUNK_ORDER_OR_LENGTH'],
+    ['group',x=>{const part=x.objects[2].parts[1];part.object.path=part.object.path.replace(original.payload.manifestSha256,'f'.repeat(64));},'OBJECT_DESCRIPTOR'],
+    ['missing',x=>x.objects[2].parts.pop(),'CHUNK_COUNT'],
+  ]){
+    f.locator=clone(original);
+    f.locator=rewriteSyntheticSelfIndex(f,mutate);
+    const target=await materializationTarget(f,label);
+    await rejectCode(()=>run({mode:'materialize',destination:target},f.dependencies()),code);
+    assert.equal(await absent(target),true);
+    f.objects.delete(f.locator.payload.index.path);
+  }
+  f.locator=clone(original);
+  const part=index.objects[2].parts[1].object.path,target=await materializationTarget(f,'truncated');
+  f.behavior.readObject=(key,b)=>key===part?b.subarray(0,b.length-1):b;
+  await rejectCode(()=>run({mode:'materialize',destination:target},f.dependencies()),'REMOTE_OBJECT_SHA');
+  assert.equal(await absent(target),true);assert.equal(writeCalls(f).length,before);
+  delete f.behavior.readObject;
+  const destination=await materializationTarget(f,'exact-restore');withoutDatabase(f);f.calls.length=0;
+  const recovered=await run({mode:'materialize',indexSha256:original.payload.index.sha256,destination},f.dependencies());
+  assert.equal(recovered.status,'R2_BOOTSTRAP_FIVE_SQL_FILES_MATERIALIZED_ONLY');
+  assert.equal(recovered.manifestSha256,original.payload.manifestSha256);
+  assert.equal(recovered.databaseRestoreExecuted,false);assert.equal(recovered.authRestoreVerified,false);assert.equal(recovered.freeReady,false);
+  assert.deepEqual((await fs.readdir(destination)).sort(),[...names].sort());
+  for(const name of names)assert.ok((await fs.readFile(path.join(destination,name))).equals(expected(name)));
+  assert.equal(writeCalls(f).length,0);assert.equal(f.children.length,7);
+  assert.ok(f.calls.every(c=>['GET','HEAD'].includes(c.method)&&new URL(c.url).hostname.endsWith('.eu.r2.cloudflarestorage.com')));
 });
