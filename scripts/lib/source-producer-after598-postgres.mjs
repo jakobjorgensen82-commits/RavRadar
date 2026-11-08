@@ -68,6 +68,19 @@ export async function compareSourceProducerAfter598Successor(options) {
     assert.equal(I.modelBundleSha256,selected.I);assert.equal(C.modelBundleSha256,selected.C);
     assert.equal(contracts.continuationStateContractSha256,selected.T);
     const readiness=await load('scripts/integrated-cutover-readiness.mjs');
+    // The sparse predecessor view omits these two historical SQL resources.
+    // Use its normal policy parser with the exact, unchanged predecessor bytes
+    // in this test checkout; do not widen the predecessor materializer.
+    const admissionMigrations=path.join(ROOT,'supabase/migrations');
+    for(const [filename,expectedSha] of [
+      ['20260829020000_integrated_trip_calibration_binding.sql','3e32daa856e44f81ae900e3c841b74633ef8efb473fca8b3f3dacef47de1a96d'],
+      ['20260920220000_public_hour_pack_capacity_binding.sql','4ab13e16700801ee38cd6a25cc6fe4adcc87cbe188c5f226a61798bede7b2f9f'],
+    ]){
+      assert.equal(sha(await fs.readFile(path.join(admissionMigrations,filename))),expectedSha,
+        'Exact genuine598 trip admission migration: '+filename);
+    }
+    const tripActiveAdmissionPolicy=await readiness.expectedTripActiveAdmissionPolicy({
+      migrationsDirectory:admissionMigrations});
     const baseline=readiness.accountStatisticsAssistantRequiredMigrations();
     const genuine=readiness.assistantAfter597RequiredMigrations();
     const required=sourceProducerRequiredMigrations();
@@ -145,7 +158,8 @@ export async function compareSourceProducerAfter598Successor(options) {
     // The normal GENUINE598 verifier derives all22 fields and actually executes
     // both real contracts on THIS PG. No authored metadata or READY response.
     await rpcReadback(readiness.verifyIntegratedDatabaseReadback,{
-      sourcePhase:'assistant-mixed-after597-successor',modelBinding:I,candidateModelBinding:C});
+      sourcePhase:'assistant-mixed-after597-successor',modelBinding:I,candidateModelBinding:C,
+      tripActiveAdmissionPolicy});
     await psql(sql);await psql("insert into supabase_migrations.schema_migrations(version) values('"+migration.version+"');");
     assert.notEqual((await runSql(sql)).code,0,'No replay after installed version');
     assertVersions(await versions(),required);
