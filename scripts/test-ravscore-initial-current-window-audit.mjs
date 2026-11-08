@@ -1,3 +1,4 @@
+import { inverseReviewedSource601HistoricalCodeInput } from './lib/completed-private-runtime-workflow-review.mjs';
 import { inverseAlternativeCCaller } from './lib/alternative-c-caller-test-input.mjs';
 import { inverseArchivedWeatherRestartUpdater, inverseWeatherExportMemoryUpdater,
  WEATHER_EXPORT_MEMORY_UPDATER_REVIEW, inverseCurrentNativeOriginalProducerTestInput,
@@ -18,6 +19,8 @@ import { dmiExpectedIdentityForPart } from './lib/ravscore-production-adapters.m
 import { createWeatherComponentSelectionHistory } from './lib/weather-component-selection-history.mjs';
 import { persistWeatherComponentSelections } from './lib/weather-component-runtime.mjs';
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const readSource601HistoricalUpdater=async()=>inverseReviewedSource601HistoricalCodeInput(
+ (await fs.readFile(path.join(ROOT,'scripts/update-weather.mjs'),'utf8')).replaceAll('\r\n','\n'), 'scripts/update-weather.mjs');
 const hash=value=>crypto.createHash('sha256').update(value).digest('hex');
 const HOUR_MS=3_600_000, base=Date.parse('2026-08-29T00:00:00.000Z');
 const time=hour=>new Date(base+hour*HOUR_MS).toISOString();
@@ -56,7 +59,7 @@ function diagnose(options){
  return value;
 }
 test('diagnostic source delta preserves every genuine historical updater oracle',async()=>{
- let updater=(await fs.readFile(path.join(ROOT,'scripts/update-weather.mjs'),'utf8')).replace(/\r\n/g,'\n');
+ let updater=(await readSource601HistoricalUpdater()).replace(/\r\n/g,'\n');
  updater=inverseAlternativeCCaller(updater,'scripts/update-weather.mjs');
  const oracle=(await fs.readFile(path.join(ROOT,'scripts/test-weather-update-entrypoint.mjs'),'utf8')).replace(/\r\n/g,'\n');
  const begin=oracle.indexOf('function inverseWeatherStateEpochIntegration(source) {');
@@ -94,7 +97,7 @@ test('diagnostic source delta preserves every genuine historical updater oracle'
  assert.throws(()=>inverse(updater+'// unrelated source drift\n'),/genuine 903307 updater/);
 });
 test('memory-export caller delta has an exact genuine954 inverse before every historical source oracle',async()=>{
- const current=inverseCurrentFamilyColdTargetTestInput((await fs.readFile(path.join(ROOT,'scripts/update-weather.mjs'),'utf8')).replace(/\r\n/g,'\n'),'scripts/update-weather.mjs');
+ const current=inverseCurrentFamilyColdTargetTestInput((await readSource601HistoricalUpdater()).replace(/\r\n/g,'\n'),'scripts/update-weather.mjs');
  const nativeOriginalReview=CURRENT_NATIVE_ORIGINAL_PRODUCER_TEST_REVIEW.rows.find(row=>row.path==='scripts/update-weather.mjs');
  assert(nativeOriginalReview);
  assert.equal(hash(current),nativeOriginalReview.after.sha256,'actual final native-original updater before this historical memory oracle');
@@ -126,7 +129,7 @@ test('memory-export caller delta has an exact genuine954 inverse before every hi
 });
 
 test('archive restart updater inverse preserves all old oracles and rejects every changed hunk',async()=>{
- const actual=inverseWeatherExportMemoryUpdater((await fs.readFile(path.join(ROOT,'scripts/update-weather.mjs'),'utf8')).replace(/\r\n/g,'\n'));
+ const actual=inverseWeatherExportMemoryUpdater((await readSource601HistoricalUpdater()).replace(/\r\n/g,'\n'));
  const row=JSON.parse(await fs.readFile(path.join(ROOT,'scripts/lib/archived-weather-restart-updater-test-input.json'),'utf8'));
  assert.equal(hash(actual),'6978aaa62fd8126f460913ed9ee428e4cb6da8f146bcf4146d6ee69e170f88a6');
  assert.equal(row.hunks.length,10);
@@ -144,7 +147,7 @@ test('archive restart updater inverse preserves all old oracles and rejects ever
 });
 
 test('current-family updater inverse preserves the genuine input and refuses every changed C hunk',async()=>{
- const current=(await fs.readFile(path.join(ROOT,'scripts/update-weather.mjs'),'utf8')).replace(/\r\n/g,'\n');
+ const current=(await readSource601HistoricalUpdater()).replace(/\r\n/g,'\n');
  const actual=inverseArchivedWeatherRestartUpdater(current);
  const review=(await fs.readFile(path.join(ROOT,'scripts/lib/alternative-c-caller-test-input.mjs'),'utf8')).replace(/\r\n/g,'\n');
  const begin=review.indexOf('const SOURCE_INPUTS=')+'const SOURCE_INPUTS='.length;
@@ -167,7 +170,7 @@ test('current-family updater inverse preserves the genuine input and refuses eve
 });
 
 test('normal updater fixed diagnostic catch emits safe categories and preserves original error',async()=>{
- const updater=await fs.readFile(path.join(ROOT,'scripts/update-weather.mjs'),'utf8');
+ const updater=await readSource601HistoricalUpdater();
  const begin="        if (error?.code === 'RAVSCORE_INITIAL_CURRENT_NEW_USE_NOT_READY') {";
  const finish="        if (error?.code === 'RAVSCORE_RECOVERY_REPLAY_CONFLICT'";
  assert.equal(updater.split(begin).length,2,'normal updater must have exactly one fixed diagnostic caller');
@@ -224,7 +227,7 @@ test('missing exact native hold support produces unavailable with no fabricated 
 });
 
 test('finished-owner inverse restores exact d957 and retains every historical updater oracle',async()=>{
- const current=inverseWindTailCapacityUpdaterTestInput((await fs.readFile(path.join(ROOT,'scripts/update-weather.mjs'),'utf8')).replaceAll('\r\n','\n'),'scripts/update-weather.mjs');
+ const current=inverseWindTailCapacityUpdaterTestInput((await readSource601HistoricalUpdater()).replaceAll('\r\n','\n'),'scripts/update-weather.mjs');
  const row=FINALIZED_WEATHER_OWNERS_TEST_REVIEW,relative=row.path;
  assert.equal(Buffer.byteLength(current),row.after.bytes);assert.equal(hash(current),row.after.sha256);
  const genuine=inverseFinalizedWeatherOwnersTestInput(current,relative);
@@ -252,7 +255,7 @@ test('finished-owner inverse restores exact d957 and retains every historical up
 });
 
 test('actual final caller releases all673 owners only after durable selection and awaited origin',async t=>{
- const current=(await fs.readFile(path.join(ROOT,'scripts/update-weather.mjs'),'utf8')).replaceAll('\r\n','\n');
+ const current=(await readSource601HistoricalUpdater()).replaceAll('\r\n','\n');
  const old=inverseFinalizedWeatherOwnersTestInput(current,'scripts/update-weather.mjs');
  const begin='output.coastalParts = coastalPartScoreBuild?.integratedRuntime',
   end="reportWeatherBuildStage('current-origin-ready');";
