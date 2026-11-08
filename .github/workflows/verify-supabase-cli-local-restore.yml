@@ -8,10 +8,10 @@ on:
         required: true
         type: string
       restore_mode:
-        description: Synthetic by default; archive restores only to an owned isolated local project
+        description: Synthetic by default; startup checks a cold isolated target; archive restores to the owned target
         type: choice
         default: synthetic
-        options: [synthetic, archive]
+        options: [synthetic, archive, startup]
       archive_index_sha:
         description: Exact already authenticated archive index SHA; archive mode only
         type: string
@@ -56,7 +56,7 @@ jobs:
           [[ "$EXPECTED_HEAD_SHA" =~ ^[a-f0-9]{40}$ ]]
           test "$EXPECTED_HEAD_SHA" = "$GITHUB_SHA"
           case "$RESTORE_MODE" in
-            synthetic)
+            synthetic|startup)
               test -z "$RESTORE_ARCHIVE_INDEX_SHA"
               test -z "$RESTORE_ARCHIVE_CONFIRMATION"
               ;;
@@ -110,6 +110,12 @@ jobs:
         env:
           EXPECTED_HEAD_SHA: ${{ inputs.expected_head }}
         run: node scripts/test-supabase-cli-local-restore.mjs --run-local-fixture
+      - name: Verify only cold isolated archive target startup
+        if: inputs.restore_mode == 'startup'
+        timeout-minutes: 8
+        env:
+          EXPECTED_HEAD_SHA: ${{ inputs.expected_head }}
+        run: node scripts/test-supabase-cli-local-restore.mjs --run-archive-startup
       - name: Materialize the exact authenticated archive and restore only to owned local PostgreSQL
         if: inputs.restore_mode == 'archive'
         timeout-minutes: 23

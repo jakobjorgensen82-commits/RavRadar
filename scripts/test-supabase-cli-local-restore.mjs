@@ -58,8 +58,17 @@ function safeError(error,stage){
   return {stage,code:/^[A-Z0-9_]+$/.test(error?.code??'')?error.code:'LOCAL_RESTORE_REFUSED',
     exit:Number.isInteger(error?.exit)?error.exit:null,externalDockerOutcome:'UNKNOWN_UNTIL_OWNED_READBACK'};
 }
-function diagnosticClass(bytes){
-  const text=bytes.toString('utf8');
+function diagnosticClass(bytes,stage){
+  const text=bytes.toString('utf8').replace(/\x1B\[[0-?]*[ -/]*[@-~]/g,'');
+  if(stage==='START_B'){
+    for(const [code,pattern] of [
+      ['DOCKER_HOST_PORT_IN_USE',/port is already allocated|bind: address already in use|failed to bind host port/i],
+      ['DOCKER_ISOLATED_NETWORK_SETUP_FAILED',/failed to (?:set up|configure) (?:container )?networking|network sandbox (?:join|setup) failed|could not attach to network/i],
+      ['LOCAL_CONTAINER_HEALTH_FAILED',/container [^\r\n]+ (?:is unhealthy|failed health check)|failed to (?:check|wait for) health|health checks? (?:failed|timed out)/i],
+      ['PUBLIC_IMAGE_TRANSPORT_FAILED',/(?:failed to pull (?:docker )?image|failed to resolve reference|failed to copy:)[^\r\n]*(?:unexpected status|401 unauthorized|403 forbidden|dial tcp|i\/o timeout|TLS handshake timeout|certificate signed by unknown authority|connection reset by peer)/i],
+      ['DOCKER_STORAGE_LIMIT',/no space left on device|disk quota exceeded/i],
+    ])if(pattern.test(text))return code;
+  }
   const state=/ERROR:\s+([0-9A-Z]{5})\b/.exec(text);if(state)return 'SQLSTATE_'+state[1];
   for(const [code,expression]of [
     ['DOCKER_UNAVAILABLE',/cannot connect to the docker|docker daemon is not running|error during connect/i],
@@ -193,7 +202,7 @@ async function command(c,stage,bin,args,{cwd=c.root,input=null,maxMs=P.childMs,a
     const processClosed=closed&&gone();
     c.processes.push({stage,exit,stdoutBytes:outBytes,stderrBytes:errBytes,processGroupClosed:processClosed});
     if(!processClosed)fail('PROCESS_GROUP_UNCLOSED');
-    if(first){if(first.code==='CHILD_EXIT')first.code=diagnosticClass(Buffer.concat(err));first.exit=exit;throw first;}
+    if(first){if(first.code==='CHILD_EXIT')first.code=diagnosticClass(Buffer.concat(err),stage);first.exit=exit;throw first;}
     return Buffer.concat(out);
   }finally{
     process.removeListener('SIGINT',interrupted);process.removeListener('SIGTERM',interrupted);
@@ -261,7 +270,7 @@ enabled = false
 [edge_runtime]
 enabled = false
 `;}
-async function startProject(c,p){
+async function startProject(c,p,{isolated=c.archive}={}){
   await fs.mkdir(p.dir,{mode:0o700});await projectsAbsent(c,p);
   const before=(await command(c,'NETWORK_ABSENCE','docker',['network','ls','-q','--filter','name=^'+p.network+'$'])).toString().trim();
   need(!before,'NETWORK_ALREADY_EXISTS');
@@ -269,10 +278,10 @@ async function startProject(c,p){
   await fs.writeFile(path.join(p.dir,'supabase/config.toml'),config(p.id,p.side==='B'),{mode:0o600});
   p.networkCreateAttempted=true;
   const raw=await command(c,'CREATE_NETWORK_'+p.side,'docker',['network','create','--driver','bridge',
-    ...(c.archive?['--internal']:[]),
+    ...(isolated?['--internal']:[]),
     '--label','ravradar.synthetic.restore.owner='+c.owner,'--opt','com.docker.network.bridge.host_binding_ipv4=127.0.0.1',p.network]);
   p.networkId=raw.toString().trim();need(/^[a-f0-9]{64}$/.test(p.networkId),'NETWORK_CREATE_OUTCOME_UNKNOWN');p.networkCreated=true;
-  if(c.archive)isolatedArchiveNetwork((await jsonCommand(c,'ARCHIVE_INTERNAL_NETWORK',['network','inspect',p.network]))[0],c,p);
+  if(isolated)isolatedArchiveNetwork((await jsonCommand(c,'ARCHIVE_INTERNAL_NETWORK',['network','inspect',p.network]))[0],c,p);
   p.startAttempted=true;
   await command(c,'START_'+p.side,'supabase',['--network-id',p.network,'start','--exclude',EXCLUDE],{cwd:p.dir});
   const actual={};
@@ -402,7 +411,9 @@ async function restoreArchive(c,b,indexSha256){
     productionAuthRestoreVerified:false,authRestoreVerified:false,fullDatabaseBackupVerified:false,
     sourceDataParityVerified:false,storageObjectBytesRestored:false,erasureBarriersVerified:false,freeReady:false};
 }
-async function fixture({archive=false}={}){
+async function fixture(mode='synthetic'){
+  const archive=mode==='archive',startup=mode==='startup';
+  const scope=archive?'authenticated-archive-isolated-sql-restore':startup?'synthetic-archive-isolated-startup':'synthetic-standard-cli-local-restore';
   need(process.platform==='linux'&&process.env.GITHUB_ACTIONS==='true'&&process.env.RUNNER_ENVIRONMENT==='github-hosted'
     &&process.env.RUNNER_OS==='Linux'&&process.env.GITHUB_EVENT_NAME==='workflow_dispatch','HOSTED_LINUX_ONLY');
   need(process.env.GITHUB_REPOSITORY==='jakobjorgensen82-commits/RavRadar'&&process.env.GITHUB_RUN_ATTEMPT==='1','FIXED_REPOSITORY_ATTEMPT');
@@ -429,6 +440,10 @@ async function fixture({archive=false}={}){
       for(const ref of ['HEAD^{commit}','origin/main^{commit}'])
         need((await command(c,'ARCHIVE_EXACT_HEAD','git',['rev-parse',ref],{cwd:process.cwd(),maxMs:10_000})).toString().trim()===process.env.EXPECTED_HEAD_SHA,'ARCHIVE_MAIN_CHANGED');
       result=await restoreArchive(c,b,indexSha256);
+    }else if(startup){
+      await startProject(c,b,{isolated:true});
+      result={status:'PASS',scope,sourceHead:process.env.EXPECTED_HEAD_SHA,cliVersion:P.cli,
+        ownedColdTargetStartupVerified:true,archiveRead:false,restoreSqlExecuted:false};
     }else{
     await startProject(c,a);
     const migrations=path.join(a.dir,'supabase/migrations');await fs.mkdir(migrations,{recursive:true,mode:0o700});
@@ -473,7 +488,7 @@ async function fixture({archive=false}={}){
     if(closed)try{const st=await fs.lstat(root,{bigint:true});need(st.isDirectory()&&!st.isSymbolicLink()
       &&st.dev===rootIdentity.dev&&st.ino===rootIdentity.ino&&inside(temp,await fs.realpath(root)),'SCRATCH_IDENTITY');
       await fs.rm(root,{recursive:true,force:false});}catch(e){error??=safeError(e,'SCRATCH_CLEANUP');}
-    const report={...(result??{status:'FAILED_CLOSED',scope:archive?'authenticated-archive-isolated-sql-restore':'synthetic-standard-cli-local-restore'}),
+    const report={...(result??{status:'FAILED_CLOSED',scope}),
       ...(error?{status:'FAILED_CLOSED',firstFailure:error}:{}),ownedDockerClosed:closed,
       images:c.images,dumpFiles:c.dumps,authRequests:c.authRequests,processes:c.processes};
     console.log(JSON.stringify(report));if(error)process.exitCode=1;
@@ -572,6 +587,14 @@ async function selfTest(){
     assert.equal(diagnosticClass(Buffer.from('ERROR: 23505 private synthetic detail')),'SQLSTATE_23505');
     assert.equal(diagnosticClass(Buffer.from('Cannot connect to the Docker daemon')),'DOCKER_UNAVAILABLE');
     assert.equal(diagnosticClass(Buffer.from('token=must-not-appear')),'CHILD_EXIT');
+    const start=message=>diagnosticClass(Buffer.from(message),'START_B');
+    assert.equal(start('\x1b[31mfailed to bind host port\x1b[0m: local-only'),'DOCKER_HOST_PORT_IN_USE');
+    assert.equal(start('failed to set up container networking'),'DOCKER_ISOLATED_NETWORK_SETUP_FAILED');
+    assert.equal(start('container example is unhealthy'),'LOCAL_CONTAINER_HEALTH_FAILED');
+    assert.equal(start('failed to pull docker image: unexpected status 503'),'PUBLIC_IMAGE_TRANSPORT_FAILED');
+    assert.equal(start('write layer: no space left on device'),'DOCKER_STORAGE_LIMIT');
+    assert.equal(start('token=must-not-appear'),'CHILD_EXIT');
+    assert.equal(diagnosticClass(Buffer.from('container example is unhealthy'),'RESTORE_HISTORY'),'CHILD_EXIT');
   });
   test('archive choice requires one authenticated SHA, explicit isolated confirmation and main',()=>{
     const valid={GITHUB_REF:'refs/heads/main',RESTORE_ARCHIVE_INDEX_SHA:'a'.repeat(64),RESTORE_ARCHIVE_CONFIRMATION:ARCHIVE_CONFIRMATION};
@@ -645,9 +668,13 @@ async function selfTest(){
   });
   test('normal workflow keeps synthetic default, exact source gate, lock order and archive-only credentials',async()=>{
     const workflow=await fs.readFile(new URL('../.github/workflows/verify-supabase-cli-local-restore.yml',import.meta.url),'utf8');
-    assert.match(workflow,/default: synthetic[\s\S]*options: \[synthetic, archive\]/);
+    assert.match(workflow,/default: synthetic[\s\S]*options: \[synthetic, archive, startup\]/);
     assert(workflow.indexOf('group: ${{ inputs.restore_mode')<workflow.indexOf('ravradar-trip-storage-production'));
     assert(workflow.indexOf('Refuse missing exact source proof')<workflow.indexOf('SUPABASE_SERVICE_ROLE_KEY:'));
+    const startupStep=workflow.split('name: Verify only cold isolated archive target startup')[1]
+      ?.split('name: Materialize the exact authenticated archive and restore only to owned local PostgreSQL')[0];
+    assert.match(startupStep??'',/if: inputs\.restore_mode == 'startup'[\s\S]*--run-archive-startup/);
+    assert.doesNotMatch(startupStep,/secrets\.|RESTORE_ARCHIVE_INDEX_SHA|RESTORE_ARCHIVE_CONFIRMATION|upload-artifact/);
     const archiveStep=workflow.split('name: Materialize the exact authenticated archive and restore only to owned local PostgreSQL')[1];
     assert(archiveStep);assert.match(archiveStep,/if: inputs.restore_mode == 'archive'/);
     assert(!/SUPABASE_DB_PASSWORD|SUPABASE_ACCESS_TOKEN|CLOUDFLARE_API_TOKEN|GITHUB_TOKEN|upload-artifact|continue-on-error/.test(archiveStep));
@@ -668,7 +695,11 @@ if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.ur
   else if(process.argv[2]==='--run-local-fixture')await fixture().catch(e=>{
     console.log(JSON.stringify({status:'FAILED_CLOSED',scope:'synthetic-standard-cli-local-restore',firstFailure:safeError(e,'PREFLIGHT')}));process.exitCode=1;
   });
-  else if(process.argv[2]==='--run-archive-restore')await fixture({archive:true}).catch(e=>{
+  else if(process.argv[2]==='--run-archive-startup')await fixture('startup').catch(e=>{
+    console.log(JSON.stringify({status:'FAILED_CLOSED',scope:'synthetic-archive-isolated-startup',firstFailure:safeError(e,'PREFLIGHT')}));
+    process.exitCode=1;
+  });
+  else if(process.argv[2]==='--run-archive-restore')await fixture('archive').catch(e=>{
     console.log(JSON.stringify({status:'FAILED_CLOSED',scope:'authenticated-archive-isolated-sql-restore',
       firstFailure:safeError(e,'PREFLIGHT'),productionBackupVerified:false,freeReady:false}));process.exitCode=1;
   });
