@@ -739,11 +739,13 @@ class OwnedRawSaveNative(unittest.TestCase):
             parent = subprocess.Popen([str(NODE24), action_script], cwd=root, env=environment,
                 stdin=subprocess.DEVNULL, stdout=logs[0], stderr=logs[1])
             fds['action'] = retain_pidfd(parent.pid)
+            wait_until(lambda: (root / 'worker-ready').exists())
             if dot_script:
                 self.assertIn('/./', action_script)
+                self.assertFalse(exited(fds['action']), 'action exited before cmdline observation')
                 self.assertEqual(small(f'/proc/{parent.pid}/cmdline').split(b'\0')[:-1],
                                  [os.fsencode(NODE24), os.fsencode(action_script)])
-            wait_until(lambda: (root / 'worker-ready').exists())
+                self.assertFalse(exited(fds['action']), 'action exited during cmdline observation')
             ready = json.loads(small(root / 'worker-ready'))
             for role in ('cohort', 'worker'):
                 announced = ready[role]
