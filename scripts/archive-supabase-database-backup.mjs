@@ -18,6 +18,7 @@ const NAMES=['roles.sql','schema.sql','data.sql','history-schema.sql','history-d
 const ROLE_GRANT_AUDIT_MAX_BYTES=4*1024*1024;
 // The hosted operation is pinned without publishing the protected archive selector or origin.
 const ROLE_GRANT_SELECTOR_DOMAIN='RavRadar/SupabaseRoleGrantAudit/v1/selector';
+const RESTORE_SELECTOR_DOMAIN='RavRadar/SupabaseArchiveRestore/v1/selector';
 const ROLE_GRANT_ORIGIN_DOMAIN='RavRadar/SupabaseRoleGrantAudit/v1/origin';
 export const FIXED_844_ROLE_GRANT_COMMITMENTS=Object.freeze({
   selectorSha256:'91bd13d93f1372a4ca92f624a905c60aaaceb5fbedc0dd1c3dea45d7ffdbcf70',
@@ -369,21 +370,29 @@ function collectListing(inventory,body){need(inventory.bytes<=B.maximumListBytes
   }
 }
 function candidateSummary(pointer,group){return{indexSha256:pointer.index.sha256,indexBytes:pointer.index.bytes,completedAt:group.completedAt,context:pointer.context};}
+function committedIndex(objects,domain,commitment,code){
+  // Resolve exactly one committed key from complete, bounded listing metadata before any object GET.
+  const matches=objects.filter(x=>sha(encode([domain,x.sha256]))===commitment);
+  need(matches.length>0,code+'_ABSENT');
+  need(matches.length===1,code+'_AMBIGUOUS');
+  const [target]=matches;
+  need(positive(target.bytes)&&target.bytes<=B.maximumIndexWireBytes,code+'_BOUND');
+  return target;
+}
+
 async function bootstrap(c,indexSha256,materialization=null,roleGrantAudit=null){
   c.state.searchDeadline=roleGrantAudit?.deadline??Date.now()+B.maximumSearchMs;c.state.objectReadBound=B.maximumIndexWireBytes;
   await c.r2.ensurePrivateBucket();const inventory={bytes:0,count:0,total:0,unsupported:0,objects:new Map(),parts:new Set()};c.state.listing=inventory;
   const usage=await c.r2.bucketUsage();c.state.listing=null;
   need(usage.objectCount===inventory.count&&usage.usedBytes===inventory.total,'BOOTSTRAP_LIST_PARITY');
   const all=[...inventory.objects.values()],eligible=all.filter(x=>positive(x.bytes)&&x.bytes<=B.maximumIndexWireBytes);
+  const restoreCommitment=materialization?.indexCommitmentSha256??null;
   let wanted=eligible;
-  if(roleGrantAudit){
-    // Resolve exactly one committed key from complete, bounded listing metadata before any object GET.
-    const matches=all.filter(x=>sha(encode([ROLE_GRANT_SELECTOR_DOMAIN,x.sha256]))===FIXED_844_ROLE_GRANT_COMMITMENTS.selectorSha256);
-    need(matches.length>0,'ROLE_GRANT_AUDIT_INDEX_ABSENT');
-    need(matches.length===1,'ROLE_GRANT_AUDIT_INDEX_AMBIGUOUS');
-    const [target]=matches;
-    need(positive(target.bytes)&&target.bytes<=B.maximumIndexWireBytes,'ROLE_GRANT_AUDIT_INDEX_BOUND');
-    indexSha256=target.sha256;wanted=matches;
+  if(roleGrantAudit||restoreCommitment!==null){
+    const target=roleGrantAudit
+      ? committedIndex(all,ROLE_GRANT_SELECTOR_DOMAIN,FIXED_844_ROLE_GRANT_COMMITMENTS.selectorSha256,'ROLE_GRANT_AUDIT_INDEX')
+      : committedIndex(all,RESTORE_SELECTOR_DOMAIN,restoreCommitment,'RESTORE_COMMITTED_INDEX');
+    indexSha256=target.sha256;wanted=[target];
   }else if(indexSha256!==null){const found=eligible.find(x=>x.sha256===indexSha256);need(found,'BOOTSTRAP_SHA_NOT_LISTED');wanted=[found];}
   need(wanted.length<=B.maximumCandidates&&wanted.reduce((n,x)=>n+x.bytes,0)<=B.maximumCandidateBytes,'BOOTSTRAP_CANDIDATE_LIMIT');
   const diagnostics={listedObjects:inventory.count,unsupportedNamespaceObjects:inventory.unsupported,objectsAboveIndexLimit:all.filter(x=>x.bytes>B.maximumIndexWireBytes).length,
@@ -410,14 +419,15 @@ async function bootstrap(c,indexSha256,materialization=null,roleGrantAudit=null)
     return verifyRemoteGroup(c,selected.pointer,selected.opened,roleGrantAudit);
   }
   c.state.searchDeadline=null;c.state.objectReadBound=P.maximumObjectBytes;
-  const result={candidates:candidates.sort((a,b)=>a.indexSha256<b.indexSha256?-1:a.indexSha256>b.indexSha256?1:0),diagnostics,selectionRequired:true,
+  const result={...(restoreCommitment===null?{candidates:candidates.sort((a,b)=>a.indexSha256<b.indexSha256?-1:a.indexSha256>b.indexSha256?1:0),diagnostics}:{}),selectionRequired:true,
     remoteArchiveVerified:false,centralLocatorVerified:false,archiveWrittenThisOperation:false,centralLocatorWrittenThisOperation:false,
     authRestoreVerified:false,fullDatabaseBackupVerified:false,atomicDatabaseSnapshot:false,freeReady:false,sourceAdmission:false,automaticRetry:false};
   if(indexSha256===null)return{status:'R2_BOOTSTRAP_AUTHENTICATED_INDEX_CANDIDATES_ONLY',...result};
   need(selected,'BOOTSTRAP_SELECTED_NOT_AUTHENTICATED');const {verified,directory}=await verifyRemoteGroup(c,selected.pointer,selected.opened);
   if(materialization){
     const sql=await materializeLocalDatabaseBackup({directory,destination:materialization.destination,manifestSha256:selected.pointer.manifestSha256},materialization.dependencies);
-    return{...result,...sql,status:'R2_BOOTSTRAP_FIVE_SQL_FILES_MATERIALIZED_ONLY',selectionRequired:false,indexSha256,remoteArchiveVerified:true};
+    return{...result,...sql,status:'R2_BOOTSTRAP_FIVE_SQL_FILES_MATERIALIZED_ONLY',selectionRequired:false,
+      ...(restoreCommitment===null?{indexSha256}:{indexCommitmentSha256:restoreCommitment}),remoteArchiveVerified:true};
   }
   return{...result,status:'R2_BOOTSTRAP_AUTHENTICATED_SQL_BYTE_ROUNDTRIP_ONLY',selectionRequired:false,indexSha256,remoteArchiveVerified:true,
     files:verified.files,totalSqlBytes:verified.totalSqlBytes,directory};
@@ -444,12 +454,13 @@ function archiveFailure(e,c){
 }
 
 export async function runSupabaseDatabaseArchive(options={},dependencies={}){
-  const {mode='discover',exportOptions={},indexSha256=null,destination=null}=options;
+  const {mode='discover',exportOptions={},indexSha256=null,indexCommitmentSha256=null,destination=null}=options;
   need(['capture','discover','bootstrap','materialize'].includes(mode),'EXPLICIT_BACKUP_MODE');
   need(indexSha256===null||(['bootstrap','materialize'].includes(mode)&&hash(indexSha256)),'BOOTSTRAP_SHA');
+  need(indexCommitmentSha256===null||mode==='materialize'&&indexSha256===null&&hash(indexCommitmentSha256),'MATERIALIZATION_COMMITMENT');
   if(mode==='materialize'){
     fields(options,Object.keys(options),'MATERIALIZATION_OPTIONS');
-    need(Object.keys(options).every(key=>['mode','destination','indexSha256'].includes(key)),'MATERIALIZATION_OPTIONS');
+    need(Object.keys(options).every(key=>['mode','destination','indexSha256','indexCommitmentSha256'].includes(key)),'MATERIALIZATION_OPTIONS');
     need((dependencies.processImpl??process).platform==='linux','MATERIALIZATION_LINUX_REQUIRED');
     need(typeof destination==='string'&&path.isAbsolute(destination),'MATERIALIZATION_TARGET');
     need(dependencies.signal===undefined||dependencies.signal instanceof AbortSignal,'MATERIALIZATION_SIGNAL');
@@ -457,14 +468,15 @@ export async function runSupabaseDatabaseArchive(options={},dependencies={}){
   fields(exportOptions,Object.keys(exportOptions),'EXPORT_OPTIONS');
   need(mode==='capture'||Object.keys(exportOptions).length===0,'DISCOVERY_EXPORT_OPTIONS');
   const env=dependencies.env??process.env;let c;
-  try{c=clients(env,dependencies.fetchImpl??globalThis.fetch,{bootstrap:mode==='bootstrap'||mode==='materialize'&&indexSha256!==null,readOnly:mode==='materialize'});
+  const bootstrapMode=mode==='bootstrap'||mode==='materialize'&&(indexSha256!==null||indexCommitmentSha256!==null);
+  try{c=clients(env,dependencies.fetchImpl??globalThis.fetch,{bootstrap:bootstrapMode,readOnly:mode==='materialize'});
     let materialization=null;
     if(mode==='materialize'){
       const remaining=Math.min(P.maximumMs,P.maximumMs-(Date.now()-c.state.started));need(remaining>0,'REMOTE_DEADLINE');
       const horizon=AbortSignal.timeout(remaining),signal=dependencies.signal===undefined?horizon:AbortSignal.any([dependencies.signal,horizon]);
-      materialization={destination,dependencies:{env,signal,processImpl:dependencies.processImpl??process}};
+      materialization={destination,indexCommitmentSha256,dependencies:{env,signal,processImpl:dependencies.processImpl??process}};
     }
-    return mode==='capture'?await capture(c,exportOptions,{...dependencies,env}):mode==='bootstrap'||mode==='materialize'&&indexSha256!==null
+    return mode==='capture'?await capture(c,exportOptions,{...dependencies,env}):bootstrapMode
       ?await bootstrap(c,indexSha256,materialization):await discover(c,materialization);
   }catch(e){throw archiveFailure(e,c);}
 }

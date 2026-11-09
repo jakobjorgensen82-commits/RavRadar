@@ -234,13 +234,15 @@ function restoreChildEnvironment(env,home,root,bin){
   return child;
 }
 function archiveSelection(env){
-  need(/^[a-f0-9]{64}$/.test(env.RESTORE_ARCHIVE_INDEX_SHA??'')
-    &&env.RESTORE_ARCHIVE_CONFIRMATION===ARCHIVE_CONFIRMATION,'EXPLICIT_ARCHIVE_RESTORE_REQUIRED');
+  const match=/^rr-supabase-restore-v1:([a-f0-9]{64})$/.exec(env.RESTORE_ARCHIVE_INDEX_COMMITMENT??'');
+  need(match&&!env.RESTORE_ARCHIVE_INDEX_SHA&&env.RESTORE_ARCHIVE_CONFIRMATION===ARCHIVE_CONFIRMATION,
+    'EXPLICIT_ARCHIVE_RESTORE_REQUIRED');
   need(env.GITHUB_REF==='refs/heads/main','ARCHIVE_MAIN_REQUIRED');
-  return env.RESTORE_ARCHIVE_INDEX_SHA;
+  return match[1];
 }
-async function materializeArchiveInputs(c,indexSha256,{env=process.env,archive=null}={}){
-  need(/^[a-f0-9]{64}$/.test(indexSha256),'ARCHIVE_INDEX_SHA');
+
+async function materializeArchiveInputs(c,indexCommitmentSha256,{env=process.env,archive=null}={}){
+  need(/^[a-f0-9]{64}$/.test(indexCommitmentSha256),'ARCHIVE_INDEX_COMMITMENT');
   const area=path.join(c.root,'archive-materialization');await fs.mkdir(area,{mode:0o700});
   const destination=path.join(area,'sql');
   need(!(await fs.lstat(destination).catch(e=>{if(e.code==='ENOENT')return null;throw e;})),'ARCHIVE_DESTINATION_EXISTS');
@@ -252,9 +254,10 @@ async function materializeArchiveInputs(c,indexSha256,{env=process.env,archive=n
   const remaining=c.deadline-Date.now();need(remaining>0,'OPERATION_DEADLINE');
   const signal=AbortSignal.timeout(remaining);
   const materialize=archive??(await import('./archive-supabase-database-backup.mjs')).runSupabaseDatabaseArchive;
-  const receipt=await materialize({mode:'materialize',destination,indexSha256},{env:archiveEnv,signal,
+  const receipt=await materialize({mode:'materialize',destination,indexCommitmentSha256},{env:archiveEnv,signal,
     fetchImpl:(url,options={})=>fetch(url,{...options,signal:options.signal?AbortSignal.any([signal,options.signal]):signal})});
-  need(receipt?.status==='R2_BOOTSTRAP_FIVE_SQL_FILES_MATERIALIZED_ONLY'&&receipt.indexSha256===indexSha256
+  need(receipt?.status==='R2_BOOTSTRAP_FIVE_SQL_FILES_MATERIALIZED_ONLY'&&receipt.indexCommitmentSha256===indexCommitmentSha256
+    &&!Object.hasOwn(receipt,'indexSha256')&&!Object.hasOwn(receipt,'candidates')
     &&receipt.remoteArchiveVerified===true&&receipt.materializationCompleted===true&&receipt.selectionRequired===false
     &&receipt.archiveWrittenThisOperation===false&&receipt.centralLocatorWrittenThisOperation===false
     &&receipt.databaseRestoreExecuted===false&&receipt.authRestoreVerified===false&&receipt.fullDatabaseBackupVerified===false
@@ -265,7 +268,7 @@ async function materializeArchiveInputs(c,indexSha256,{env=process.env,archive=n
     &&f.bytes>0&&f.bytes<=ARCHIVE_SQL.fileBytes&&/^[a-f0-9]{64}$/.test(f.sha256??''),'ARCHIVE_FILE_DESCRIPTOR');total+=f.bytes;}
   need(total===receipt.totalSqlBytes&&Number.isSafeInteger(total)&&total<=ARCHIVE_SQL.totalBytes,'ARCHIVE_TOTAL_BYTES');
   const actual=(await fs.readdir(destination)).sort();assert.deepEqual(actual,[...ARCHIVE_FILES].sort());
-  return {directory:destination,files:receipt.files,totalSqlBytes:total,indexSha256,manifestSha256:receipt.manifestSha256};
+  return {directory:destination,files:receipt.files,totalSqlBytes:total,manifestSha256:receipt.manifestSha256};
 }
 const fileIdentity=s=>({dev:s.dev,ino:s.ino,size:s.size,mtimeNs:s.mtimeNs,ctimeNs:s.ctimeNs});
 function privateSqlFile(s){
@@ -584,10 +587,10 @@ async function dumpFiles(c,p){
   return bytes;
 }
 
-async function restoreArchive(c,b,indexSha256){
+async function restoreArchive(c,b,indexCommitmentSha256){
   await startProject(c,b);
   need((await query(c,b,'ARCHIVE_TARGET_EMPTY','select to_jsonb((select count(*) from auth.users)=0);'))===true,'ARCHIVE_TARGET_NOT_EMPTY');
-  const archive=await materializeArchiveInputs(c,indexSha256);c.dumps=archive.files;
+  const archive=await materializeArchiveInputs(c,indexCommitmentSha256);c.dumps=archive.files;
   await command(c,'QUIESCE_B_AUTH','docker',['stop','--time','10',b.auth],{maxMs:30_000});
   await restoreArchiveSql(c,b,'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA',archive);
   await restoreArchiveSql(c,b,'RESTORE_ARCHIVE_HISTORY',archive,true);
@@ -603,11 +606,16 @@ async function restoreArchive(c,b,indexSha256){
     if(info.State?.Health?.Status==='healthy'){ownedContainer(info,b,'auth',true);healthy=true;break;}await sleep(500);}
   need(healthy,'RESTORED_AUTH_NOT_HEALTHY');
   return {status:'PASS',scope:'authenticated-archive-isolated-sql-restore',sourceHead:process.env.EXPECTED_HEAD_SHA,cliVersion:P.cli,
-    indexSha256:archive.indexSha256,manifestSha256:archive.manifestSha256,totalSqlBytes:archive.totalSqlBytes,
     authenticatedFiveFileSqlExecuted:true,exactSqlBytesStreamed:true,isolatedAuthServiceHealthy:true,containerNetworkExternalEgressDisabled:true,
-    localRestoredCatalog:restored,productionDatabaseRestoreExecuted:false,productionBackupVerified:false,
+    localRestoredCatalogVerified:true,productionDatabaseRestoreExecuted:false,productionBackupVerified:false,
     productionAuthRestoreVerified:false,authRestoreVerified:false,fullDatabaseBackupVerified:false,
     sourceDataParityVerified:false,storageObjectBytesRestored:false,erasureBarriersVerified:false,freeReady:false};
+}
+function restorePublicReport(c,result,error,closed){
+  const scope=c.archive?'authenticated-archive-isolated-sql-restore':'synthetic-standard-cli-local-restore';
+  return {...(result??{status:'FAILED_CLOSED',scope}),
+    ...(error?{status:'FAILED_CLOSED',firstFailure:error}:{}),ownedDockerClosed:closed,
+    ...(!c.archive?{images:c.images,dumpFiles:c.dumps,authRequests:c.authRequests,processes:c.processes}:{})};
 }
 async function fixture({archive=false}={}){
   need(process.platform==='linux'&&process.env.GITHUB_ACTIONS==='true'&&process.env.RUNNER_ENVIRONMENT==='github-hosted'
@@ -615,8 +623,8 @@ async function fixture({archive=false}={}){
   need(process.env.GITHUB_REPOSITORY==='jakobjorgensen82-commits/RavRadar'&&process.env.GITHUB_RUN_ATTEMPT==='1','FIXED_REPOSITORY_ATTEMPT');
   need(/^[a-f0-9]{40}$/.test(process.env.EXPECTED_HEAD_SHA??'')&&process.env.EXPECTED_HEAD_SHA===process.env.GITHUB_SHA,'EXACT_DISPATCHED_HEAD');
   const run=process.env.GITHUB_RUN_ID;need(/^[1-9][0-9]{0,18}$/.test(run??''),'RUN_ID');
-  const indexSha256=archive?archiveSelection(process.env):null;
-  if(!archive)need(!process.env.RESTORE_ARCHIVE_INDEX_SHA&&!process.env.RESTORE_ARCHIVE_CONFIRMATION,'SYNTHETIC_ARCHIVE_COLLISION');
+  const indexCommitmentSha256=archive?archiveSelection(process.env):null;
+  if(!archive)need(!process.env.RESTORE_ARCHIVE_INDEX_SHA&&!process.env.RESTORE_ARCHIVE_INDEX_COMMITMENT&&!process.env.RESTORE_ARCHIVE_CONFIRMATION,'SYNTHETIC_ARCHIVE_COLLISION');
   need(['DOCKER_HOST','DOCKER_CONTEXT','DOCKER_CONFIG','DOCKER_TLS_VERIFY','DOCKER_CERT_PATH','CONTAINER_HOST'].every(k=>!process.env[k]),'LOCAL_DOCKER_ENV');
   need(typeof process.env.RUNNER_TEMP==='string'&&path.isAbsolute(process.env.RUNNER_TEMP),'RUNNER_TEMP_REQUIRED');
   const temp=await fs.realpath(process.env.RUNNER_TEMP);need(temp!==path.parse(temp).root,'RUNNER_TEMP');
@@ -635,7 +643,7 @@ async function fixture({archive=false}={}){
       await command(c,'ARCHIVE_CURRENT_MAIN','git',['fetch','--no-tags','origin','+refs/heads/main:refs/remotes/origin/main'],{cwd:process.cwd(),maxMs:60_000});
       for(const ref of ['HEAD^{commit}','origin/main^{commit}'])
         need((await command(c,'ARCHIVE_EXACT_HEAD','git',['rev-parse',ref],{cwd:process.cwd(),maxMs:10_000})).toString().trim()===process.env.EXPECTED_HEAD_SHA,'ARCHIVE_MAIN_CHANGED');
-      result=await restoreArchive(c,b,indexSha256);
+      result=await restoreArchive(c,b,indexCommitmentSha256);
     }else{
     await startProject(c,a);
     const migrations=path.join(a.dir,'supabase/migrations');await fs.mkdir(migrations,{recursive:true,mode:0o700});
@@ -680,9 +688,7 @@ async function fixture({archive=false}={}){
     if(closed)try{const st=await fs.lstat(root,{bigint:true});need(st.isDirectory()&&!st.isSymbolicLink()
       &&st.dev===rootIdentity.dev&&st.ino===rootIdentity.ino&&inside(temp,await fs.realpath(root)),'SCRATCH_IDENTITY');
       await fs.rm(root,{recursive:true,force:false});}catch(e){error??=safeError(e,'SCRATCH_CLEANUP');}
-    const report={...(result??{status:'FAILED_CLOSED',scope:archive?'authenticated-archive-isolated-sql-restore':'synthetic-standard-cli-local-restore'}),
-      ...(error?{status:'FAILED_CLOSED',firstFailure:error}:{}),ownedDockerClosed:closed,
-      images:c.images,dumpFiles:c.dumps,authRequests:c.authRequests,processes:c.processes};
+    const report=restorePublicReport(c,result,error,closed);
     console.log(JSON.stringify(report));if(error)process.exitCode=1;
   }
 }
@@ -697,7 +703,7 @@ async function selfTest(){
       SUPABASE_DB_PASSWORD:'must-not-reach-restore',SUPABASE_ACCESS_TOKEN:'must-not-reach-restore',GITHUB_TOKEN:'must-not-reach-restore'};
     const index='a'.repeat(64);
     const materialize=async(options,dependencies)=>{
-      observed={options,dependencies};assert.equal(options.mode,'materialize');assert.equal(options.indexSha256,index);
+      observed={options,dependencies};assert.equal(options.mode,'materialize');assert.equal(options.indexCommitmentSha256,index);assert(!Object.hasOwn(options,'indexSha256'));
       assert.equal(options.destination,path.join(root,'archive-materialization','sql'));
       assert.deepEqual(Object.keys(dependencies.env).sort(),['RUNNER_TEMP','SUPABASE_SERVICE_ROLE_KEY','RAVRADAR_R2_ACCOUNT_ID','RAVRADAR_R2_ACCESS_KEY_ID','RAVRADAR_R2_SECRET_ACCESS_KEY'].sort());
       assert.equal(dependencies.env.RUNNER_TEMP,root);assert(dependencies.signal instanceof AbortSignal);
@@ -710,7 +716,7 @@ async function selfTest(){
         }finally{await h.close();}
         files.push({file,bytes,sha256:digest.digest('hex')});
       }
-      const receipt={status:'R2_BOOTSTRAP_FIVE_SQL_FILES_MATERIALIZED_ONLY',indexSha256:index,manifestSha256:'b'.repeat(64),
+      const receipt={status:'R2_BOOTSTRAP_FIVE_SQL_FILES_MATERIALIZED_ONLY',indexCommitmentSha256:index,manifestSha256:'b'.repeat(64),
         remoteArchiveVerified:true,materializationCompleted:true,selectionRequired:false,archiveWrittenThisOperation:false,
         centralLocatorWrittenThisOperation:false,databaseRestoreExecuted:false,authRestoreVerified:false,fullDatabaseBackupVerified:false,
         freeReady:false,files,totalSqlBytes:files.reduce((n,f)=>n+f.bytes,0)};
@@ -877,16 +883,31 @@ async function selfTest(){
     },{roleSql:sql});
   });
 
-  test('archive choice requires one authenticated SHA, explicit isolated confirmation and main',()=>{
-    const valid={GITHUB_REF:'refs/heads/main',RESTORE_ARCHIVE_INDEX_SHA:'a'.repeat(64),RESTORE_ARCHIVE_CONFIRMATION:ARCHIVE_CONFIRMATION};
-    assert.equal(archiveSelection(valid),'a'.repeat(64));
-    for(const change of [{RESTORE_ARCHIVE_INDEX_SHA:''},{RESTORE_ARCHIVE_INDEX_SHA:'A'.repeat(64)},
-      {RESTORE_ARCHIVE_CONFIRMATION:''},{GITHUB_REF:'refs/heads/codex/unqualified'}])assert.throws(()=>archiveSelection({...valid,...change}));
+  test('hosted archive reports exclude private backup descriptors and process byte counts',()=>{
+    const privateMarker='PRIVATE_BACKUP_SENTINEL';
+    const context={archive:true,images:{},dumps:[{sha256:privateMarker}],authRequests:[],processes:[{stdoutBytes:99}]};
+    const failure={stage:'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA',code:'SQLSTATE_42501',inputOwner:'ROLES',inputStatement:'ALTER_ROLE'};
+    const failed=restorePublicReport(context,null,failure,true);
+    assert.deepEqual(failed,{status:'FAILED_CLOSED',scope:'authenticated-archive-isolated-sql-restore',
+      firstFailure:failure,ownedDockerClosed:true});
+    const success={status:'PASS',scope:'authenticated-archive-isolated-sql-restore',authenticatedFiveFileSqlExecuted:true};
+    assert.deepEqual(restorePublicReport(context,success,null,true),{...success,ownedDockerClosed:true});
+    assert.deepEqual(restorePublicReport({...context,archive:false},success,null,true).dumpFiles,context.dumps);
   });
+  test('hosted archive choice requires a tagged commitment, explicit isolated confirmation and main',()=>{
+    const digest='a'.repeat(64),valid={GITHUB_REF:'refs/heads/main',RESTORE_ARCHIVE_INDEX_COMMITMENT:'rr-supabase-restore-v1:'+digest,
+      RESTORE_ARCHIVE_CONFIRMATION:ARCHIVE_CONFIRMATION};
+    assert.equal(archiveSelection(valid),digest);
+    for(const change of [{RESTORE_ARCHIVE_INDEX_COMMITMENT:''},{RESTORE_ARCHIVE_INDEX_COMMITMENT:digest},
+      {RESTORE_ARCHIVE_INDEX_COMMITMENT:'rr-supabase-restore-v1:'+'A'.repeat(64)},
+      {RESTORE_ARCHIVE_INDEX_SHA:digest},{RESTORE_ARCHIVE_CONFIRMATION:''},
+      {GITHUB_REF:'refs/heads/codex/unqualified'}])assert.throws(()=>archiveSelection({...valid,...change}));
+  });
+
   test('archive materialization uses the existing read-only API and isolated master/R2 environment',async()=>{
     await ownArchive(async({c,env,index,materialize,getObserved})=>{
       const archive=await materializeArchiveInputs(c,index,{env,archive:materialize});
-      assert.equal(archive.files.length,5);assert.equal(archive.indexSha256,index);assert(getObserved());
+      assert.equal(archive.files.length,5);assert(!Object.hasOwn(archive,'indexSha256'));assert(getObserved());
       const child=restoreChildEnvironment({...env,PATH:'synthetic-path'},path.join(c.root,'home'),c.root);
       assert.deepEqual(Object.keys(child).sort(),['PATH','HOME','TMPDIR','LANG','LC_ALL','CI','SUPABASE_TELEMETRY_DISABLED'].sort());
       for(const key of Object.keys(env).filter(k=>k!=='RUNNER_TEMP'))assert(!Object.hasOwn(child,key));
@@ -906,7 +927,8 @@ async function selfTest(){
   });
   test('archive receipt cannot admit incomplete, writing or upgraded evidence',async()=>{
     for(const receiptEdit of [r=>{r.remoteArchiveVerified=false;},r=>{r.databaseRestoreExecuted=true;},
-      r=>{r.archiveWrittenThisOperation=true;},r=>{r.freeReady=true;},r=>{r.files[4].file='arbitrary.sql';}])
+      r=>{r.archiveWrittenThisOperation=true;},r=>{r.freeReady=true;},r=>{r.indexCommitmentSha256='d'.repeat(64);},r=>{r.indexSha256='d'.repeat(64);},
+      r=>{r.candidates=[];},r=>{r.files[4].file='arbitrary.sql';}])
       await ownArchive(async({c,env,index,materialize})=>{
         await assert.rejects(materializeArchiveInputs(c,index,{env,archive:materialize}));
       },{receiptEdit});
@@ -949,6 +971,9 @@ async function selfTest(){
   });
   test('normal workflow keeps synthetic default, exact source gate, lock order and archive-only credentials',async()=>{
     const workflow=await fs.readFile(new URL('../.github/workflows/verify-supabase-cli-local-restore.yml',import.meta.url),'utf8');
+    assert.doesNotMatch(workflow,/archive_index_sha|RESTORE_ARCHIVE_INDEX_SHA/);
+    assert.equal(workflow.split('inputs.archive_index_commitment').length,3);
+    assert(workflow.includes('^rr-supabase-restore-v1:[a-f0-9]{64}$'));
     assert.match(workflow,/default: synthetic[\s\S]*options: \[synthetic, archive\]/);
     assert(workflow.indexOf('group: ${{ inputs.restore_mode')<workflow.indexOf('ravradar-trip-storage-production'));
     assert(workflow.indexOf('Refuse missing exact source proof')<workflow.indexOf('SUPABASE_SERVICE_ROLE_KEY:'));

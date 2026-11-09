@@ -12,8 +12,8 @@ on:
         type: choice
         default: synthetic
         options: [synthetic, archive]
-      archive_index_sha:
-        description: Exact already authenticated archive index SHA; archive mode only
+      archive_index_commitment:
+        description: Domain-separated commitment for an already authenticated archive index; archive mode only
         type: string
         default: ''
       archive_confirmation:
@@ -44,7 +44,7 @@ jobs:
         env:
           EXPECTED_HEAD_SHA: ${{ inputs.expected_head }}
           RESTORE_MODE: ${{ inputs.restore_mode }}
-          RESTORE_ARCHIVE_INDEX_SHA: ${{ inputs.archive_index_sha }}
+          RESTORE_ARCHIVE_INDEX_COMMITMENT: ${{ inputs.archive_index_commitment }}
           RESTORE_ARCHIVE_CONFIRMATION: ${{ inputs.archive_confirmation }}
         run: |
           set -euo pipefail
@@ -57,12 +57,12 @@ jobs:
           test "$EXPECTED_HEAD_SHA" = "$GITHUB_SHA"
           case "$RESTORE_MODE" in
             synthetic)
-              test -z "$RESTORE_ARCHIVE_INDEX_SHA"
+              test -z "$RESTORE_ARCHIVE_INDEX_COMMITMENT"
               test -z "$RESTORE_ARCHIVE_CONFIRMATION"
               ;;
             archive)
               test "$GITHUB_REF" = refs/heads/main
-              [[ "$RESTORE_ARCHIVE_INDEX_SHA" =~ ^[a-f0-9]{64}$ ]]
+              [[ "$RESTORE_ARCHIVE_INDEX_COMMITMENT" =~ ^rr-supabase-restore-v1:[a-f0-9]{64}$ ]]
               test "$RESTORE_ARCHIVE_CONFIRMATION" = RESTORE-PRIVATE-ARCHIVE-IN-ISOLATED-LOCAL-POSTGRES
               ;;
             *) exit 1 ;;
@@ -115,7 +115,7 @@ jobs:
         timeout-minutes: 23
         env:
           EXPECTED_HEAD_SHA: ${{ inputs.expected_head }}
-          RESTORE_ARCHIVE_INDEX_SHA: ${{ inputs.archive_index_sha }}
+          RESTORE_ARCHIVE_INDEX_COMMITMENT: ${{ inputs.archive_index_commitment }}
           RESTORE_ARCHIVE_CONFIRMATION: ${{ inputs.archive_confirmation }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
