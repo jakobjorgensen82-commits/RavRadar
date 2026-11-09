@@ -21,6 +21,7 @@ const EXCLUDE='realtime,storage-api,imgproxy,edge-runtime,postgres-meta,studio,s
 const FILES=['roles.sql','schema.sql','data.sql','history_schema.sql','history_data.sql'];
 const ARCHIVE_FILES=['roles.sql','schema.sql','data.sql','history-schema.sql','history-data.sql'];
 const ARCHIVE_SQL=Object.freeze({fileBytes:1_000_000_000,totalBytes:2_000_000_000,chunkBytes:64*1024});
+const ARCHIVE_SQL_OWNERS=['ROLES','SCHEMA','REPLICA_SETTING','DATA','HISTORY','UNKNOWN'];
 const ARCHIVE_CONFIRMATION='RESTORE-PRIVATE-ARCHIVE-IN-ISOLATED-LOCAL-POSTGRES';
 const TEXT='æøå ÆØÅ — rav 🟠\nanden linje';
 const DECIMAL='9007199254740993.123456789012345678';
@@ -153,7 +154,8 @@ async function openArchiveDbRelay(c,p){
 }
 function safeError(error,stage){
   return {stage,code:/^[A-Z0-9_]+$/.test(error?.code??'')?error.code:'LOCAL_RESTORE_REFUSED',
-    exit:Number.isInteger(error?.exit)?error.exit:null,externalDockerOutcome:'UNKNOWN_UNTIL_OWNED_READBACK'};
+    exit:Number.isInteger(error?.exit)?error.exit:null,externalDockerOutcome:'UNKNOWN_UNTIL_OWNED_READBACK',
+    ...(ARCHIVE_SQL_OWNERS.includes(error?.inputOwner)?{inputOwner:error.inputOwner}:{})};
 }
 function diagnosticClass(bytes){
   const text=bytes.toString('utf8');
@@ -166,6 +168,15 @@ function diagnosticClass(bytes){
     ['LOOPBACK_CONNECTION_REFUSED',/connection refused/i],
   ])if(expression.test(text))return code;
   return 'CHILD_EXIT';
+}
+function archiveInputOwner(diagnostic,code,inputLines){
+  if(!inputLines)return 'UNKNOWN';
+  const frames=diagnostic.toString('utf8').matchAll(/^psql:<stdin>:([1-9][0-9]{0,9}): ERROR: +([0-9A-Z]{5})\r?$/gm);
+  const frame=frames.next().value;
+  if(!frame||!frames.next().done||code!=='SQLSTATE_'+frame[2])return 'UNKNOWN';
+  const line=Number(frame[1]);
+  const ranges=[...inputLines.ranges].filter(([,range])=>line>=range.first&&line<=range.last);
+  return ranges.length===1?ranges[0][0]:'UNKNOWN';
 }
 function restoreBytes(buffers,history=false){
   need(Array.isArray(buffers)&&buffers.length===(history?2:3)&&buffers.every(Buffer.isBuffer),'RESTORE_BYTES');
@@ -217,7 +228,15 @@ function privateSqlFile(s){
   need(s.isFile()&&!s.isSymbolicLink()&&s.nlink===1n,'ARCHIVE_SQL_FILE');
   if(process.platform==='linux')need((s.mode&0o077n)===0n&&s.uid===BigInt(process.getuid()),'ARCHIVE_SQL_PERMISSIONS');
 }
-async function* materializedRestoreBytes(c,archive,history=false){
+async function* materializedRestoreBytes(c,archive,history=false,inputLines=null){
+  function track(chunk,owner){
+    if(!inputLines)return chunk;
+    const first=inputLines.next;
+    for(let at=chunk.indexOf(10);at!==-1;at=chunk.indexOf(10,at+1))inputLines.next++;
+    if(owner)inputLines.ranges.set(owner,{first:inputLines.ranges.get(owner)?.first??first,
+      last:inputLines.next-(chunk.at(-1)===10?1:0)});
+    return chunk;
+  }
   for(let at=archive.directory;;at=path.dirname(at)){
     need(at===c.root||inside(c.root,at),'ARCHIVE_SQL_DIRECTORY');const st=await fs.lstat(at);
     need(st.isDirectory()&&!st.isSymbolicLink(),'ARCHIVE_SQL_DIRECTORY');if(at===c.root)break;
@@ -227,7 +246,8 @@ async function* materializedRestoreBytes(c,archive,history=false){
   const names=history?ARCHIVE_FILES.slice(3):ARCHIVE_FILES.slice(0,3);
   for(let i=0;i<names.length;i++){
     const name=names[i],entry=archive.files.find(f=>f.file===name);need(entry,'ARCHIVE_FILE_DESCRIPTOR');
-    if(!history&&i===2)yield Buffer.from('SET session_replication_role = replica;\n');
+    if(!history&&i===2)yield track(Buffer.from('SET session_replication_role = replica;\n'),'REPLICA_SETTING');
+    const owner=history?'HISTORY':['ROLES','SCHEMA','DATA'][i];
     const file=path.join(archive.directory,name),named=await fs.lstat(file,{bigint:true});privateSqlFile(named);
     const h=await fs.open(file,constants.O_RDONLY|(constants.O_NOFOLLOW||0));
     try{
@@ -236,20 +256,20 @@ async function* materializedRestoreBytes(c,archive,history=false){
       const digest=crypto.createHash('sha256'),buffer=Buffer.alloc(ARCHIVE_SQL.chunkBytes);let count=0;
       for(;;){need(Date.now()<c.deadline,'OPERATION_DEADLINE');const {bytesRead}=await h.read(buffer,0,buffer.length,null);
         if(!bytesRead)break;count+=bytesRead;need(count<=entry.bytes,'ARCHIVE_SQL_LENGTH');
-        const chunk=buffer.subarray(0,bytesRead);digest.update(chunk);yield Buffer.from(chunk);}
+        const chunk=buffer.subarray(0,bytesRead);digest.update(chunk);yield track(Buffer.from(chunk),owner);}
       const after=await h.stat({bigint:true}),fresh=await fs.lstat(file,{bigint:true});privateSqlFile(fresh);
       assert.deepEqual(fileIdentity(before),fileIdentity(after));assert.deepEqual(fileIdentity(after),fileIdentity(fresh));
       need(count===entry.bytes&&digest.digest('hex')===entry.sha256,'ARCHIVE_SQL_SHA');
       const current=await fs.lstat(archive.directory,{bigint:true});
       need(current.isDirectory()&&!current.isSymbolicLink()&&current.dev===directory.dev&&current.ino===directory.ino,'ARCHIVE_SQL_DIRECTORY_CHANGED');
     }finally{await h.close();}
-    yield Buffer.from('\n');
+    yield track(Buffer.from('\n'));
   }
 }
 
 // Same owned process-group timeout shape as export-supabase-database.mjs.
 // Process closure never claims that a Docker daemon-side operation has stopped.
-async function command(c,stage,bin,args,{cwd=c.root,input=null,maxMs=P.childMs,audit=null,archivePsql=false}={}){
+async function command(c,stage,bin,args,{cwd=c.root,input=null,maxMs=P.childMs,audit=null,archivePsql=false,inputLines=null}={}){
   c.stage=stage;need(Date.now()<c.deadline,'OPERATION_DEADLINE');
   need(input===null||Buffer.isBuffer(input)||typeof input?.[Symbol.asyncIterator]==='function','RESTORE_INPUT_STREAM');
   let child,closed=false,exit=null,signal=null,first=null,outBytes=0,errBytes=0,inputStream=null,inputPump=null,inputDone=false,stdinClosed=false;
@@ -310,8 +330,9 @@ async function command(c,stage,bin,args,{cwd=c.root,input=null,maxMs=P.childMs,a
       if(!inputDone)inputStream?.destroy();
       await inputPump;
       if(!first&&exit===3&&signal===null){
-        const diagnostic=diagnosticClass(Buffer.concat(err));
+        const bytes=Buffer.concat(err),diagnostic=diagnosticClass(bytes);
         fail(diagnostic.startsWith('SQLSTATE_')?diagnostic:'PSQL_SCRIPT_ERROR');
+        if(inputLines&&diagnostic.startsWith('SQLSTATE_'))first.inputOwner=archiveInputOwner(bytes,diagnostic,inputLines);
       }
       if(stdinClosed)fail('STDIN_TRANSPORT');
       if(!inputDone)fail('STDIN_INCOMPLETE');
@@ -424,11 +445,15 @@ async function startProject(c,p){
   need(typeof status.ANON_KEY==='string'&&status.ANON_KEY.length>32&&typeof status.SERVICE_ROLE_KEY==='string'
     &&status.SERVICE_ROLE_KEY.length>32,'LOCAL_RUNTIME_KEYS_REQUIRED');p.anon=status.ANON_KEY;p.service=status.SERVICE_ROLE_KEY;
 }
-async function psql(c,p,stage,bytes){
+async function psql(c,p,stage,bytes,inputLines=null){
   return command(c,stage,'docker',['exec','-i','-e','PGPASSWORD='+decodeURIComponent(p.dbUrl.password),p.db,'psql','-X',
     '--host=127.0.0.1','--port=5432','--username=postgres','--dbname=postgres','--quiet','--single-transaction','--variable=ON_ERROR_STOP=1',
-    '--set=VERBOSITY=sqlstate','--tuples-only','--no-align'],{input:bytes,maxMs:90_000,
-    archivePsql:c.archive===true&&!Buffer.isBuffer(bytes)});
+    '--set=VERBOSITY=sqlstate','--tuples-only','--no-align',...(inputLines?['--file=-']:[])],
+    {input:bytes,maxMs:90_000,archivePsql:c.archive===true&&!Buffer.isBuffer(bytes),inputLines});
+}
+function restoreArchiveSql(c,p,stage,archive,history=false){
+  const inputLines={next:1,ranges:new Map()};
+  return psql(c,p,stage,materializedRestoreBytes(c,archive,history,inputLines),inputLines);
 }
 async function query(c,p,stage,sql){return JSON.parse((await psql(c,p,stage,Buffer.from(sql+'\n'))).toString().trim());}
 async function auth(c,p,route,{body=null,token=null,status=200}={}){
@@ -512,8 +537,8 @@ async function restoreArchive(c,b,indexSha256){
   need((await query(c,b,'ARCHIVE_TARGET_EMPTY','select to_jsonb((select count(*) from auth.users)=0);'))===true,'ARCHIVE_TARGET_NOT_EMPTY');
   const archive=await materializeArchiveInputs(c,indexSha256);c.dumps=archive.files;
   await command(c,'QUIESCE_B_AUTH','docker',['stop','--time','10',b.auth],{maxMs:30_000});
-  await psql(c,b,'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA',materializedRestoreBytes(c,archive));
-  await psql(c,b,'RESTORE_ARCHIVE_HISTORY',materializedRestoreBytes(c,archive,true));
+  await restoreArchiveSql(c,b,'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA',archive);
+  await restoreArchiveSql(c,b,'RESTORE_ARCHIVE_HISTORY',archive,true);
   const restored=await query(c,b,'ARCHIVE_RESTORED_CATALOG',`select jsonb_build_object(
     'database',current_database(),'role',current_user,'serverVersion',current_setting('server_version_num'),
     'publicTables',(select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind in('r','p')),
@@ -720,6 +745,33 @@ async function selfTest(){
     await assert.rejects(command(c,'ARCHIVE_SQL_TEST',process.execPath,['-e','setTimeout(()=>process.exit(3),350)'],
       {input:pending(),archivePsql:true,maxMs:100}),error=>error.code==='CHILD_TIMEOUT');
     assert(c.processes.every(p=>p.processGroupClosed));
+  });
+  test('archive SQLSTATE reports only the matching streamed input owner',async()=>{
+    await ownArchive(async({c,env,index,materialize,source})=>{
+      const archive=await materializeArchiveInputs(c,index,{env,archive:materialize});
+      const inputLines={next:1,ranges:new Map()},chunks=[];
+      for await(const chunk of materializedRestoreBytes(c,archive,false,inputLines))chunks.push(chunk);
+      assert(Buffer.concat(chunks).equals(restoreBytes(source.slice(0,3))));
+      const frame=line=>Buffer.from('psql:<stdin>:'+line+': ERROR:  42501\n');
+      for(const [line,owner]of [[1,'ROLES'],[2,'UNKNOWN'],[3,'SCHEMA'],[5,'REPLICA_SETTING'],[6,'DATA'],[7,'DATA'],[8,'DATA'],[9,'UNKNOWN']])
+        assert.equal(archiveInputOwner(frame(line),'SQLSTATE_42501',inputLines),owner);
+      assert.equal(archiveInputOwner(Buffer.concat([frame(1),frame(3)]),'SQLSTATE_42501',inputLines),'UNKNOWN');
+      assert.equal(archiveInputOwner(frame(5),'SQLSTATE_23505',inputLines),'UNKNOWN');
+      assert.equal(archiveInputOwner(Buffer.from('ERROR:  42501\n'),'SQLSTATE_42501',inputLines),'UNKNOWN');
+      const history={next:1,ranges:new Map()};
+      for await(const _ of materializedRestoreBytes(c,archive,true,history)){}
+      assert.equal(archiveInputOwner(frame(3),'SQLSTATE_42501',history),'HISTORY');
+      Object.assign(c,{home:c.root,processes:[]});
+      const streamed={next:1,ranges:new Map()};
+      const child=['-e','process.stdin.resume();process.stdin.on("end",()=>{process.stderr.write("psql:<stdin>:5: ERROR:  42501\\n",()=>process.exit(3))})'];
+      await assert.rejects(command(c,'ARCHIVE_SQL_TEST',process.execPath,child,
+        {input:materializedRestoreBytes(c,archive,false,streamed),archivePsql:true,inputLines:streamed}),
+      error=>{
+        assert.deepEqual(safeError(error,'ARCHIVE_SQL_TEST'),{stage:'ARCHIVE_SQL_TEST',code:'SQLSTATE_42501',exit:3,
+          externalDockerOutcome:'UNKNOWN_UNTIL_OWNED_READBACK',inputOwner:'REPLICA_SETTING'});
+        return true;
+      });
+    });
   });
   test('archive choice requires one authenticated SHA, explicit isolated confirmation and main',()=>{
     const valid={GITHUB_REF:'refs/heads/main',RESTORE_ARCHIVE_INDEX_SHA:'a'.repeat(64),RESTORE_ARCHIVE_CONFIRMATION:ARCHIVE_CONFIRMATION};
