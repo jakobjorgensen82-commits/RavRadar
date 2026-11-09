@@ -3,9 +3,11 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import {runHostedSupabaseBackup as run} from './run-hosted-supabase-backup.mjs';
+import {FIXED_844_ROLE_GRANT_COMMITMENTS as commitments} from './archive-supabase-database-backup.mjs';
 const workflow=fs.readFileSync(new URL('../.github/workflows/backup-supabase-database.yml',import.meta.url),'utf8');
 const realController=fs.readFileSync(new URL('./archive-supabase-database-backup.mjs',import.meta.url),'utf8');
 const workflowName='Back up RavRadar Supabase database',captureConfirmation='CAPTURE-PRIVATE-SUPABASE-DATABASE-BACKUP';
+const roleGrantConfirmation='AUDIT-EXACT-844-ARCHIVE-ROLES-GRANT-READ-ONLY';
 function fixture(changed={},fault={}){
   const env={GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_REF:'refs/heads/main',GITHUB_RUN_ATTEMPT:'1',GITHUB_RUN_ID:'12345',GITHUB_ACTIONS:'true',
     GITHUB_REPOSITORY:'jakobjorgensen82-commits/RavRadar',GITHUB_WORKFLOW:workflowName,GITHUB_SHA:'a'.repeat(40),EXPECTED_HEAD_SHA:'a'.repeat(40),
@@ -38,6 +40,14 @@ function fixture(changed={},fault={}){
     assert.equal(args[0],'scripts/archive-supabase-database-backup.mjs');controllerCalls.push({args,options});
     if(fault.childFailure)failure(fault.childCode?{status:'FAILED_CLOSED',code:fault.childCode,externalDumpOutcome:fault.dumpOutcome??null,payload:'never-log-payload'}:null);
     const mode=args[1],selected=mode==='--bootstrap'&&args.length===3;
+    if(mode==='--audit-fixed-844-role-grant'){
+      assert.deepEqual(args,['scripts/archive-supabase-database-backup.mjs','--audit-fixed-844-role-grant',roleGrantConfirmation]);
+      const status='AUTHENTICATED_ROLES_FIXED_GRANT_AUDIT_ONLY';
+      assert.ok(realController.includes("'"+status+"'"));
+      return Buffer.from(JSON.stringify({status,match:'PRESENT_ONCE',...commitments,
+        rolesFileVerified:true,fullDatabaseBackupVerified:false,databaseRestoreExecuted:false,
+        archiveWrittenThisOperation:false,...fault.roleGrantReceipt}));
+    }
     const status=mode==='--capture'?'REMOTE_AUTHENTICATED_SQL_BYTE_ROUNDTRIP_ONLY':mode==='--discover'?'CENTRAL_DISCOVERY_AUTHENTICATED_SQL_BYTE_ROUNDTRIP_ONLY'
       :selected?'R2_BOOTSTRAP_AUTHENTICATED_SQL_BYTE_ROUNDTRIP_ONLY':'R2_BOOTSTRAP_AUTHENTICATED_INDEX_CANDIDATES_ONLY';
     assert.ok(realController.includes("'"+status+"'"),'receipt type exists in the exact unchanged real V3 caller');
@@ -181,4 +191,59 @@ import './test-supabase-backup-bucket.mjs';
 test('hosted backup caller: missing index identity and unsafe bootstrap diagnostics are rejected instead of silently losing evidence',()=>{
   const capture=fixture(captureEnv(),{missingIndex:true});code(()=>capture.invoke(),'SUPABASE_BACKUP_CHILD_RECEIPT');
   const bootstrap=fixture({SUPABASE_BACKUP_OPERATION:'bootstrap'},{badDiagnostics:true});code(()=>bootstrap.invoke(),'SUPABASE_BACKUP_DIAGNOSTICS');
+});
+
+test('fixed 844 role audit workflow admits the exact operation before its own minimal private step',()=>{
+  const guardName='Require the exact fixed 844 role audit before archive access';
+  const auditName='Read only the fixed 844 archive roles';
+  const guard=workflow.indexOf(guardName),audit=workflow.indexOf(auditName);
+  assert(workflow.indexOf('Reject missing source proof')<guard&&guard<audit);
+  assert.match(workflow,/Run only the fixed backup operation\n        if: inputs.operation != 'audit-fixed-844-role-grant'/);
+  const gate=workflow.slice(guard,audit),execution=workflow.slice(audit);
+  for(const text of [gate,execution])assert.match(text,/if: inputs.operation == 'audit-fixed-844-role-grant'\n/);
+  assert.match(gate,/run: node scripts\/run-hosted-supabase-backup\.mjs --preflight/);
+  assert(!gate.includes('secrets.'));
+  for(const text of [gate,execution]){
+    assert.match(text,/SUPABASE_BACKUP_AUDIT_INDEX_ABSENT: \$\{\{ inputs\.index_sha == '' && 'true' \|\| 'false' \}\}/);
+    assert(!text.includes('SUPABASE_BACKUP_INDEX_SHA:'));
+  }
+  assert.equal((workflow.match(/if: inputs.operation == 'capture'/g)||[]).length,2);
+  assert.match(execution,/run: node scripts\/run-hosted-supabase-backup\.mjs --execute/);
+  assert.deepEqual([...execution.matchAll(/secrets\.([A-Z0-9_]+)/g)].map(x=>x[1]),
+    ['SUPABASE_SERVICE_ROLE_KEY','RAVRADAR_R2_ACCOUNT_ID','RAVRADAR_R2_ACCESS_KEY_ID','RAVRADAR_R2_SECRET_ACCESS_KEY']);
+  assert(!/setup-cli|docker|upload-artifact|SUPABASE_URL|SUPABASE_DB_PASSWORD|SUPABASE_ACCESS_TOKEN/.test(execution));
+});
+test('fixed 844 role audit caller rejects index input and reaches only the pinned archive subprocess',()=>{
+  const operation={SUPABASE_BACKUP_OPERATION:'audit-fixed-844-role-grant',SUPABASE_BACKUP_CONFIRMATION:roleGrantConfirmation,
+    SUPABASE_BACKUP_AUDIT_INDEX_ABSENT:'true'};
+  for(const phase of ['preflight','execute']){
+    for(const change of [{SUPABASE_BACKUP_CONFIRMATION:''},{SUPABASE_BACKUP_CONFIRMATION:captureConfirmation},
+      {SUPABASE_BACKUP_AUDIT_INDEX_ABSENT:'false'},{SUPABASE_BACKUP_AUDIT_INDEX_ABSENT:undefined},
+      {SUPABASE_BACKUP_INDEX_SHA:'d'.repeat(64)},
+      {GITHUB_RUN_ATTEMPT:'2'},{GITHUB_REF:'refs/heads/other'}]){
+      const f=fixture({...operation,...change});assert.throws(()=>f.invoke(phase));assert.equal(f.calls.length,0);
+    }
+  }
+  const f=fixture(operation),pre=f.invoke('preflight');
+  assert.equal(pre.status,'SUPABASE_BACKUP_READ_ONLY_PREFLIGHT_COMPLETE');assert.equal(f.controllerCalls.length,0);
+  const r=f.invoke();
+  assert.deepEqual(r,{status:'SUPABASE_BACKUP_ROLE_GRANT_AUDIT_COMPLETE',phase:'execute',operation:operation.SUPABASE_BACKUP_OPERATION,
+    match:'PRESENT_ONCE',...commitments,rolesFileVerified:true,
+    archiveWrittenThisOperation:false,centralLocatorWrittenThisOperation:false,productionDatabaseRestoreExecuted:false,
+    fullDatabaseBackupVerified:false,authRestoreVerified:false,freeReady:false,automaticRetry:false});
+  assert.equal(f.bucketCalls.length+f.dockerCalls.length+f.made.length,0);
+  assert.equal(f.controllerCalls.length,1);
+  const child=f.controllerCalls[0].options.env;
+  for(const key of ['SUPABASE_SERVICE_ROLE_KEY','RAVRADAR_R2_ACCOUNT_ID','RAVRADAR_R2_ACCESS_KEY_ID','RAVRADAR_R2_SECRET_ACCESS_KEY'])
+    assert.equal(child[key],f.env[key]);
+  for(const key of ['SUPABASE_URL','SUPABASE_ACCESS_TOKEN','SUPABASE_DB_PASSWORD','CLOUDFLARE_API_TOKEN','GITHUB_TOKEN','TRIP_GATEWAY_SHARED_SECRET','DOCKER_HOST',
+    'SUPABASE_BACKUP_INDEX_SHA','SUPABASE_BACKUP_AUDIT_INDEX_ABSENT'])
+    assert.equal(child[key],undefined);
+  const wrongMain=fixture(operation,{wrongMain:true});code(()=>wrongMain.invoke(),'SUPABASE_BACKUP_MAIN_CHANGED');
+  assert.equal(wrongMain.controllerCalls.length,0);
+  for(const roleGrantReceipt of [{selectorSha256:'0'.repeat(64)},{originSha256:'0'.repeat(64)},
+    {match:'UNAVAILABLE'},{archiveWrittenThisOperation:true},{rawSql:'never-log-payload'}]){
+    const refused=fixture(operation,{roleGrantReceipt});code(()=>refused.invoke(),'SUPABASE_BACKUP_ROLE_GRANT_RECEIPT');
+    assert.equal(refused.controllerCalls.length,1);
+  }
 });

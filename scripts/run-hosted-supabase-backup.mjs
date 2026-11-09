@@ -3,6 +3,7 @@ import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {pathToFileURL} from 'node:url';
 import {DB_BACKUP_CIPHER_LIMITS as CIPHER} from './seal-supabase-database-export.mjs';
+import {FIXED_844_ROLE_GRANT_COMMITMENTS,FIXED_844_ROLE_GRANT_CONFIRMATION} from './archive-supabase-database-backup.mjs';
 const WORKFLOW='Back up RavRadar Supabase database',REPOSITORY='jakobjorgensen82-commits/RavRadar',BUCKET='ravradar-supabase-backup';
 const need=(ok,code)=>{if(!ok){const e=new Error(code);e.code=code;throw e;}},hash=x=>typeof x==='string'&&/^[a-f0-9]{64}$/.test(x);
 const BASE_ENV=['PATH','Path','HOME','USERPROFILE','SystemRoot','WINDIR','TEMP','TMP','RUNNER_TEMP','LANG','LC_ALL'];
@@ -18,10 +19,13 @@ export function runHostedSupabaseBackup({phase='preflight'}={},dependencies={}){
       &&env.GITHUB_SHA===env.EXPECTED_HEAD_SHA&&/^[1-9][0-9]*$/.test(env.GITHUB_RUN_ID||''),'SUPABASE_BACKUP_AUTHORITY');
     need(proc.platform==='linux'&&Number(proc.versions?.node?.split('.')[0])>=24&&env.GITHUB_ACTIONS==='true'
       &&env.RUNNER_ENVIRONMENT==='github-hosted'&&env.RUNNER_OS==='Linux','SUPABASE_BACKUP_HOSTED_VM');
-    const operation=env.SUPABASE_BACKUP_OPERATION;need(['bucket-readonly','bucket-create','capture','discover','bootstrap'].includes(operation),'SUPABASE_BACKUP_OPERATION');
+    const operation=env.SUPABASE_BACKUP_OPERATION,roleGrantAudit=operation==='audit-fixed-844-role-grant';
+    need(roleGrantAudit||['bucket-readonly','bucket-create','capture','discover','bootstrap'].includes(operation),'SUPABASE_BACKUP_OPERATION');
     const confirmation=env.SUPABASE_BACKUP_CONFIRMATION||'',selector=env.SUPABASE_BACKUP_INDEX_SHA||'';
-    need(operation==='bucket-create'?confirmation==='CREATE-PRIVATE-EU-SUPABASE-BACKUP-BUCKET':operation==='capture'?confirmation==='CAPTURE-PRIVATE-SUPABASE-DATABASE-BACKUP':confirmation==='','SUPABASE_BACKUP_CONFIRMATION');
+    need(operation==='bucket-create'?confirmation==='CREATE-PRIVATE-EU-SUPABASE-BACKUP-BUCKET':operation==='capture'?confirmation==='CAPTURE-PRIVATE-SUPABASE-DATABASE-BACKUP'
+      :roleGrantAudit?confirmation===FIXED_844_ROLE_GRANT_CONFIRMATION:confirmation==='','SUPABASE_BACKUP_CONFIRMATION');
     need(selector===''||(operation==='bootstrap'&&hash(selector)),'SUPABASE_BACKUP_SELECTOR');
+    if(roleGrantAudit)need(env.SUPABASE_BACKUP_AUDIT_INDEX_ABSENT==='true','SUPABASE_BACKUP_ROLE_GRANT_INDEX_INPUT');
     need(typeof env.RUNNER_TEMP==='string'&&paths.isAbsolute(env.RUNNER_TEMP),'SUPABASE_BACKUP_TEMP');
     if(operation==='capture')need(['DOCKER_HOST','DOCKER_CONTEXT','DOCKER_CONFIG','DOCKER_TLS_VERIFY','DOCKER_CERT_PATH','CONTAINER_HOST'].every(k=>!env[k]),'SUPABASE_BACKUP_DOCKER_ENV');
     const deadline=now()+20*60_000,remaining=()=>{const n=deadline-now();need(n>0,'SUPABASE_BACKUP_DEADLINE');return n;};
@@ -61,6 +65,25 @@ export function runHostedSupabaseBackup({phase='preflight'}={},dependencies={}){
     }
     if(phase==='preflight'){mainHead();if(operation==='capture')bucket('read-only',true);else if(['bucket-readonly','bucket-create','discover'].includes(operation))bucket('read-only',operation==='discover');
       return{status:'SUPABASE_BACKUP_READ_ONLY_PREFLIGHT_COMPLETE',phase,operation,completed,archiveWrittenThisOperation:false,centralLocatorWrittenThisOperation:false,fullDatabaseBackupVerified:false,authRestoreVerified:false,freeReady:false};}
+    if(roleGrantAudit){
+      mainHead();stage=operation;
+      const childEnv=pick(env,[...BASE_ENV,...CONTEXT_ENV,'SUPABASE_SERVICE_ROLE_KEY',
+        'RAVRADAR_R2_ACCOUNT_ID','RAVRADAR_R2_ACCESS_KEY_ID','RAVRADAR_R2_SECRET_ACCESS_KEY']);
+      const r=parsedChild(['scripts/archive-supabase-database-backup.mjs','--audit-fixed-844-role-grant',confirmation],
+        childEnv,'SUPABASE_BACKUP_CHILD_FAILED',135_000);
+      const keys=['status','match','selectorSha256','originSha256','rolesFileVerified','fullDatabaseBackupVerified',
+        'databaseRestoreExecuted','archiveWrittenThisOperation'];
+      need(r&&typeof r==='object'&&!Array.isArray(r)&&Object.keys(r).length===keys.length&&keys.every(k=>Object.hasOwn(r,k))
+        &&r.status==='AUTHENTICATED_ROLES_FIXED_GRANT_AUDIT_ONLY'&&['ABSENT_EXACT','PRESENT_ONCE','PRESENT_MULTIPLE'].includes(r.match)
+        &&r.selectorSha256===FIXED_844_ROLE_GRANT_COMMITMENTS.selectorSha256
+        &&r.originSha256===FIXED_844_ROLE_GRANT_COMMITMENTS.originSha256&&r.rolesFileVerified===true
+        &&r.fullDatabaseBackupVerified===false&&r.databaseRestoreExecuted===false&&r.archiveWrittenThisOperation===false,
+        'SUPABASE_BACKUP_ROLE_GRANT_RECEIPT');
+      return{status:'SUPABASE_BACKUP_ROLE_GRANT_AUDIT_COMPLETE',phase,operation,match:r.match,
+        ...FIXED_844_ROLE_GRANT_COMMITMENTS,rolesFileVerified:true,
+        archiveWrittenThisOperation:false,centralLocatorWrittenThisOperation:false,productionDatabaseRestoreExecuted:false,
+        fullDatabaseBackupVerified:false,authRestoreVerified:false,freeReady:false,automaticRetry:false};
+    }
     if(operation==='bucket-readonly'||operation==='bucket-create'){const r=bucket(operation==='bucket-create'?'create':'read-only',operation==='bucket-create');
       return{status:'SUPABASE_BACKUP_BUCKET_OPERATION_COMPLETE',phase,operation,completed,bucketStatus:r.status,bucket:BUCKET,
         bucketCreatedThisOperation:r.writeOutcome==='CREATED'&&r.postCount===1,archiveWrittenThisOperation:false,centralLocatorWrittenThisOperation:false,fullDatabaseBackupVerified:false,authRestoreVerified:false,freeReady:false};}
