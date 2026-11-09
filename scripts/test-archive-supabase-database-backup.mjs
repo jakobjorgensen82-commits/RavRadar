@@ -7,7 +7,7 @@ import crypto from 'node:crypto';
 import {gzipSync,gunzipSync} from 'node:zlib';
 import {EventEmitter} from 'node:events';
 import {PassThrough} from 'node:stream';
-import {runSupabaseDatabaseArchive as run,DB_REMOTE_BACKUP_POLICY as P,DB_BOOTSTRAP_POLICY as B} from './archive-supabase-database-backup.mjs';
+import {runSupabaseDatabaseArchive as run,auditSupabaseDatabaseArchiveRoleGrant as auditGrant,FIXED_844_ROLE_GRANT_COMMITMENTS as commitments,DB_REMOTE_BACKUP_POLICY as P,DB_BOOTSTRAP_POLICY as B} from './archive-supabase-database-backup.mjs';
 import {PRIVATE_STUDY_ADMIN_FUNCTIONS} from './lib/private-trip-study-admin-transport.mjs';
 const sha=b=>crypto.createHash('sha256').update(b).digest('hex'),clone=x=>JSON.parse(JSON.stringify(x));
 const names=['roles.sql','schema.sql','data.sql','history-schema.sql','history-data.sql'];
@@ -508,4 +508,106 @@ test('segmented capture over 50 MB rejects altered groups and restores exact fiv
   for(const name of names)assert.ok((await fs.readFile(path.join(destination,name))).equals(expected(name)));
   assert.equal(writeCalls(f).length,0);assert.equal(f.children.length,7);
   assert.ok(f.calls.every(c=>['GET','HEAD'].includes(c.method)&&new URL(c.url).hostname.endsWith('.eu.r2.cloudflarestorage.com')));
+});
+
+function mockSyntheticRoleGrantCommitments(t){
+  const create=crypto.createHash,substitutions=new Map();
+  t.mock.method(crypto,'createHash',(...args)=>{
+    const hash=create(...args),digest=hash.digest.bind(hash);
+    hash.digest=(encoding)=>{const value=digest(encoding);return substitutions.get(value)??value;};
+    return hash;
+  });
+  const synthetic=(kind,values)=>create('sha256').update(JSON.stringify(['RavRadar/SupabaseRoleGrantAudit/v1/'+kind,...values])).digest('hex');
+  return{
+    selector(index){substitutions.set(synthetic('selector',[index]),commitments.selectorSha256);},
+    origin(index,{sourceHead,runId,runAttempt}){substitutions.set(synthetic('origin',[index,sourceHead,runId,runAttempt]),commitments.originSha256);},
+    clear(){substitutions.clear();},
+  };
+}
+test('fixed ROLES audit resolves one listed commitment and authenticates only the ROLES part',async t=>{
+  const pins=mockSyntheticRoleGrantCommitments(t);
+  const line='GRANT "postgres" TO "cli_login_postgres" WITH INHERIT FALSE GRANTED BY "supabase_admin";';
+  for(const [contents,match] of [
+    ['-- '+line+'\n'+line+' extra\n','ABSENT_EXACT'],
+    ['-'.repeat(16*1024-25)+'\n'+line+'\r\n','PRESENT_ONCE'],
+    [line+'\n'+line,'PRESENT_MULTIPLE'],
+  ]){
+    const {f,result}=await captured(t,{sql:n=>n==='roles.sql'?Buffer.from(contents):sql(n)});
+    const source=f.locator.payload.context,manifestSha256=f.locator.payload.manifestSha256;
+    let rolesPath;
+    const segmented=rewriteSyntheticSelfIndex(f,index=>{
+      index.kind='SUPABASE_DB_BACKUP_INDEX_V2';
+      index.objects=index.objects.map(({file,object},i)=>{
+        const raw=Buffer.from(decodeObject(f.objects.get(object.path)).data,'base64'),wire=gzipSync(raw,{level:0});
+        const digest=sha(wire),key='bundles/sha256/'+manifestSha256+'/part-'+String(i).padStart(3,'0')+'-'+digest+'.json.gz.part';
+        if(file==='roles.sql')rolesPath=key;
+        f.objects.set(key,wire);
+        return{file,parts:[{offset:0,cipherBytes:raw.length,cipherSha256:sha(raw),object:{path:key,bytes:wire.length,sha256:digest}}]};
+      });
+    });
+    const exactIndex=segmented.payload.index.sha256;
+    pins.clear();pins.selector(exactIndex);pins.origin(exactIndex,source);
+    const namesBefore=await fs.readdir(f.env.RUNNER_TEMP);
+    withoutDatabase(f);f.calls.length=0;
+    assert.deepEqual(await auditGrant({},f.dependencies()),{
+      status:'AUTHENTICATED_ROLES_FIXED_GRANT_AUDIT_ONLY',match,...commitments,
+      rolesFileVerified:true,fullDatabaseBackupVerified:false,databaseRestoreExecuted:false,archiveWrittenThisOperation:false,
+    });
+    const objectGets=f.calls.filter(c=>c.method==='GET'&&c.headers.has('authorization')&&c.url.includes('/bundles/'))
+      .map(c=>new URL(c.url).pathname.slice(P.bucket.length+2));
+    assert.deepEqual(objectGets,[segmented.payload.index.path,rolesPath]);
+    assert.ok(f.calls.every(c=>['GET','HEAD'].includes(c.method)&&c.headers.has('authorization')
+      &&new URL(c.url).hostname.endsWith('.eu.r2.cloudflarestorage.com')));
+    const newDirs=(await fs.readdir(f.env.RUNNER_TEMP)).filter(n=>!namesBefore.includes(n));
+    assert.equal(newDirs.length,1);
+    assert.deepEqual(await fs.readdir(path.join(f.env.RUNNER_TEMP,newDirs[0])),['roles.sql.gz.enc']);
+    assert.equal(f.children.length,7);
+    if(match==='PRESENT_ONCE'){
+      f.calls.length=0;
+      await rejectCode(()=>auditGrant({indexSha256:exactIndex},f.dependencies()),'ROLE_GRANT_AUDIT_OPTIONS');
+      assert.equal(f.calls.length,0);
+      for(const [selectors,reason]of [
+        [[], 'ROLE_GRANT_AUDIT_INDEX_ABSENT'],
+        [['0'.repeat(64)],'ROLE_GRANT_AUDIT_INDEX_ABSENT'],
+        [[exactIndex,result.indexSha256],'ROLE_GRANT_AUDIT_INDEX_AMBIGUOUS'],
+      ]){
+        pins.clear();for(const selector of selectors)pins.selector(selector);
+        f.calls.length=0;
+        await rejectCode(()=>auditGrant({},f.dependencies()),reason);
+        assert.equal(f.calls.some(c=>c.url.includes('/bundles/')),false);
+      }
+      for(const mismatch of [{sourceHead:'b'.repeat(40)},{runId:'54321'},{runAttempt:'2'}]){
+        pins.clear();pins.selector(exactIndex);pins.origin(exactIndex,{...source,...mismatch});
+        f.calls.length=0;
+        await rejectCode(()=>auditGrant({},f.dependencies()),'ROLE_GRANT_AUDIT_ORIGIN');
+        assert.equal(f.calls.some(c=>c.url.endsWith(rolesPath)),false);
+      }
+      const noHosted={...f.dependencies(),env:{...f.env,RUNNER_ENVIRONMENT:'self-hosted'}};
+      f.calls.length=0;
+      await rejectCode(()=>auditGrant({},noHosted),'HOSTED_VM_REQUIRED');
+      assert.equal(f.calls.length,0);
+      f.locator=segmented;
+      const invalidIndex=mutateIndex(f,b=>{b[b.length-1]^=1;});
+      f.locator=null;pins.clear();pins.selector(invalidIndex);
+      await rejectCode(()=>auditGrant({},f.dependencies()),'INDEX_GCM_AUTHENTICATION');
+      pins.clear();pins.selector(exactIndex);pins.origin(exactIndex,source);
+      f.behavior.readObject=(key,b)=>key===rolesPath?b.subarray(0,b.length-1):b;
+      await rejectCode(()=>auditGrant({},f.dependencies()),'REMOTE_OBJECT_SHA');
+      delete f.behavior.readObject;
+      pins.clear();pins.selector(result.indexSha256);pins.origin(result.indexSha256,source);
+      const legacy=await auditGrant({},f.dependencies());
+      assert.equal(legacy.match,'PRESENT_ONCE');
+    }
+  }
+});
+
+test('fixed ROLES audit rejects an authenticated oversized roles file before any roles object read',async t=>{
+  const {f,result}=await captured(t,{sql:n=>n==='roles.sql'?Buffer.alloc(4*1024*1024+1,65):sql(n)});
+  const pins=mockSyntheticRoleGrantCommitments(t);
+  const indexPath=f.locator.payload.index.path;
+  pins.selector(result.indexSha256);pins.origin(result.indexSha256,f.locator.payload.context);
+  withoutDatabase(f);f.calls.length=0;
+  await rejectCode(()=>auditGrant({},f.dependencies()),'ROLE_GRANT_AUDIT_BOUND');
+  const objectGets=f.calls.filter(c=>c.method==='GET'&&c.headers.has('authorization')&&c.url.includes('/bundles/'));
+  assert.deepEqual(objectGets.map(c=>new URL(c.url).pathname.slice(P.bucket.length+2)),[indexPath]);
 });

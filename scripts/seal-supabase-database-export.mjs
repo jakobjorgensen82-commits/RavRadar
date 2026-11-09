@@ -160,6 +160,31 @@ async function verifyFile(root,entry,c,env,deadline,onSqlChunk=null,maximumCiphe
   need(sqlBytes===entry.sqlBytes&&digest.digest('hex')===entry.sqlSha256,'RESTORE_SQL_SHA');
   return{file:entry.file,sqlBytes,sqlSha256:entry.sqlSha256,cipherSha256:entry.cipherSha256};
 }
+const DOCUMENTED_CLI_LOGIN_GRANT=Buffer.from('GRANT "postgres" TO "cli_login_postgres" WITH INHERIT FALSE GRANTED BY "supabase_admin";','ascii');
+
+// Compare one complete line while consuming the authenticated file. No SQL or line position leaves this helper.
+export async function auditLocalDatabaseBackupRoleGrant({directory,entry,context:sourceContext,deadline}={}, {env=process.env}={}){
+  need(entry?.file==='roles.sql'&&Number.isSafeInteger(deadline),'ROLE_GRANT_AUDIT_FILE');
+  const root=await privatePath(directory,env),c=context(sourceContext);
+  let length=0,matches=0;
+  function finishLine(newline){
+    if(length===DOCUMENTED_CLI_LOGIN_GRANT.length||newline&&length===DOCUMENTED_CLI_LOGIN_GRANT.length+1)
+      matches=Math.min(2,matches+1);
+    length=0;
+  }
+  await verifyFile(root,entry,c,env,deadline,chunk=>{
+    for(const byte of chunk){
+      if(byte===10){finishLine(true);continue;}
+      if(length<0)continue;
+      if(length<DOCUMENTED_CLI_LOGIN_GRANT.length&&byte===DOCUMENTED_CLI_LOGIN_GRANT[length]
+        ||length===DOCUMENTED_CLI_LOGIN_GRANT.length&&byte===13)length++;
+      else length=-1;
+    }
+  });
+  finishLine(false);
+  return ['ABSENT_EXACT','PRESENT_ONCE','PRESENT_MULTIPLE'][matches];
+}
+
 async function verifyAt(directory,env,deadline){
   const root=await privatePath(directory,env),raw=await readSmall(path.join(root,'manifest.json'),P.maximumManifestBytes),m=parse(raw,'LOCAL_MANIFEST_JSON');
   fields(m,['kind','context','exportReceiptSha256','files','authRestoreVerified','fullDatabaseBackupVerified','archiveUploaded','centralLocatorPublished','freeReady'],'LOCAL_MANIFEST_FIELDS');

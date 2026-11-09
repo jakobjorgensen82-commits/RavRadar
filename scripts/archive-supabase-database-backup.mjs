@@ -4,7 +4,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import {gzipSync,gunzipSync} from 'node:zlib';
 import {pathToFileURL} from 'node:url';
-import {captureLocalDatabaseBackup,verifyLocalDatabaseBackup,materializeLocalDatabaseBackup,DB_LOCAL_CARRIER_POLICY as LOCAL,DB_BACKUP_CIPHER_LIMITS as CIPHER} from './seal-supabase-database-export.mjs';
+import {captureLocalDatabaseBackup,verifyLocalDatabaseBackup,materializeLocalDatabaseBackup,auditLocalDatabaseBackupRoleGrant,DB_LOCAL_CARRIER_POLICY as LOCAL,DB_BACKUP_CIPHER_LIMITS as CIPHER} from './seal-supabase-database-export.mjs';
 import {createR2PrivateReadDenialStorage} from './lib/r2-private-read-denial-storage.mjs';
 import {createSupabaseAdminRequester} from './lib/supabase-admin-rest.mjs';
 import {PRIVATE_STUDY_ADMIN_ACCESS_SQL,assertPrivateStudyAdminAccess} from './lib/private-trip-study-admin-transport.mjs';
@@ -15,6 +15,15 @@ export const DB_REMOTE_BACKUP_POLICY=Object.freeze({project:'https://afqhhdrkjfj
 export const DB_BOOTSTRAP_POLICY=Object.freeze({maximumListedObjects:512,maximumListBytes:2*1024*1024,maximumCandidates:64,maximumIndexWireBytes:128*1024,maximumCandidateBytes:8*1024*1024,maximumSearchMs:120_000});
 const B=DB_BOOTSTRAP_POLICY,P=DB_REMOTE_BACKUP_POLICY,INDEX_PURPOSE=LOCAL.purpose+'/INDEX',INDEX_MAGIC=Buffer.from('RR-SUPABASE-DB-INDEX-1\n'),SELF_INDEX_MAGIC=Buffer.from('RR-SUPABASE-DB-INDEX-2\n');
 const NAMES=['roles.sql','schema.sql','data.sql','history-schema.sql','history-data.sql'];
+const ROLE_GRANT_AUDIT_MAX_BYTES=4*1024*1024;
+// The hosted operation is pinned without publishing the protected archive selector or origin.
+const ROLE_GRANT_SELECTOR_DOMAIN='RavRadar/SupabaseRoleGrantAudit/v1/selector';
+const ROLE_GRANT_ORIGIN_DOMAIN='RavRadar/SupabaseRoleGrantAudit/v1/origin';
+export const FIXED_844_ROLE_GRANT_COMMITMENTS=Object.freeze({
+  selectorSha256:'91bd13d93f1372a4ca92f624a905c60aaaceb5fbedc0dd1c3dea45d7ffdbcf70',
+  originSha256:'fc9ae86c913f1d3f3ec419d40686bdd106228eade13945946fbc4acbc4dd6a94',
+});
+export const FIXED_844_ROLE_GRANT_CONFIRMATION='AUDIT-EXACT-844-ARCHIVE-ROLES-GRANT-READ-ONLY';
 const encode=x=>Buffer.from(JSON.stringify(x),'utf8'),sha=b=>crypto.createHash('sha256').update(b).digest('hex'),same=(a,b)=>encode(a).equals(encode(b));
 const fail=code=>{const e=new Error(code);e.code=code;throw e;},need=(v,c)=>{if(!v)fail(c);},positive=n=>Number.isSafeInteger(n)&&n>0,hash=s=>typeof s==='string'&&/^[0-9a-f]{64}$/.test(s);
 const parse=(b,c)=>{try{return JSON.parse(b.toString('utf8'));}catch{fail(c);}};
@@ -286,11 +295,21 @@ async function capture(c,options,dependencies){
     files:local.files.map((file,i)=>({...file,cipherBytes:m.files[i].cipherBytes})),totalSqlBytes:local.totalSqlBytes,...chunkedMetrics,remoteArchiveVerified:true,centralLocatorVerified:true,archiveWrittenThisOperation:c.state.archiveCreates>0,centralLocatorWrittenThisOperation:c.state.locatorWrites>0,
     authRestoreVerified:false,fullDatabaseBackupVerified:false,atomicDatabaseSnapshot:false,freeReady:false,sourceAdmission:false,automaticRetry:false};
 }
-async function verifyRemoteGroup(c,pointer,opened){
-  const {index,manifest,manifestBytes,chunked}=validateIndex(opened,pointer),directory=await privateDirectory(c.env);
+async function verifyRemoteGroup(c,pointer,opened,roleGrantAudit=null){
+  const {index,manifest,manifestBytes,chunked}=validateIndex(opened,pointer);
+  if(roleGrantAudit){
+    const {sourceHead,runId,runAttempt}=pointer.context;
+    const origin=[ROLE_GRANT_ORIGIN_DOMAIN,pointer.index.sha256,sourceHead,runId,runAttempt];
+    need(sha(encode(origin))===FIXED_844_ROLE_GRANT_COMMITMENTS.originSha256,'ROLE_GRANT_AUDIT_ORIGIN');
+    const f=manifest.files[0],entry=index.objects[0];
+    const wireBytes=chunked?entry.parts.reduce((sum,part)=>sum+part.object.bytes,0):entry.object.bytes;
+    need(f.sqlBytes<=ROLE_GRANT_AUDIT_MAX_BYTES&&f.cipherBytes<=ROLE_GRANT_AUDIT_MAX_BYTES
+      &&wireBytes<=ROLE_GRANT_AUDIT_MAX_BYTES,'ROLE_GRANT_AUDIT_BOUND');
+  }
+  const directory=await privateDirectory(c.env);
   // Only authenticated, centrally pinned names reach this private create-only root.
   let ordinal=0;
-  for(let i=0;i<5;i++){
+  for(let i=0;i<(roleGrantAudit?1:5);i++){
     const f=manifest.files[i],entry=index.objects[i],file=path.join(directory,f.cipherFile);
     if(!chunked){
       const cipher=unframe('SQL_CIPHERTEXT',await remoteBody(c,entry.object));
@@ -310,6 +329,13 @@ async function verifyRemoteGroup(c,pointer,opened){
       }
       need(offset===f.cipherBytes&&digest.digest('hex')===f.cipherSha256,'REMOTE_CIPHER_GROUP');await handle.sync();
     }finally{await handle.close();}
+  }
+  if(roleGrantAudit){
+    const match=await auditLocalDatabaseBackupRoleGrant({directory,entry:manifest.files[0],
+      context:pointer.context,deadline:roleGrantAudit.deadline},{env:c.env});
+    return{status:'AUTHENTICATED_ROLES_FIXED_GRANT_AUDIT_ONLY',match,...FIXED_844_ROLE_GRANT_COMMITMENTS,
+      rolesFileVerified:true,fullDatabaseBackupVerified:false,
+      databaseRestoreExecuted:false,archiveWrittenThisOperation:false};
   }
   await fs.writeFile(path.join(directory,'manifest.json'),manifestBytes,{flag:'wx',mode:0o600});
   const verified=await verifyLocalDatabaseBackup({directory},{env:c.env});need(verified.manifestSha256===pointer.manifestSha256,'RESTORED_MANIFEST_SHA');
@@ -343,13 +369,22 @@ function collectListing(inventory,body){need(inventory.bytes<=B.maximumListBytes
   }
 }
 function candidateSummary(pointer,group){return{indexSha256:pointer.index.sha256,indexBytes:pointer.index.bytes,completedAt:group.completedAt,context:pointer.context};}
-async function bootstrap(c,indexSha256,materialization=null){
-  c.state.searchDeadline=Date.now()+B.maximumSearchMs;c.state.objectReadBound=B.maximumIndexWireBytes;
+async function bootstrap(c,indexSha256,materialization=null,roleGrantAudit=null){
+  c.state.searchDeadline=roleGrantAudit?.deadline??Date.now()+B.maximumSearchMs;c.state.objectReadBound=B.maximumIndexWireBytes;
   await c.r2.ensurePrivateBucket();const inventory={bytes:0,count:0,total:0,unsupported:0,objects:new Map(),parts:new Set()};c.state.listing=inventory;
   const usage=await c.r2.bucketUsage();c.state.listing=null;
   need(usage.objectCount===inventory.count&&usage.usedBytes===inventory.total,'BOOTSTRAP_LIST_PARITY');
   const all=[...inventory.objects.values()],eligible=all.filter(x=>positive(x.bytes)&&x.bytes<=B.maximumIndexWireBytes);
-  let wanted=eligible;if(indexSha256!==null){const found=eligible.find(x=>x.sha256===indexSha256);need(found,'BOOTSTRAP_SHA_NOT_LISTED');wanted=[found];}
+  let wanted=eligible;
+  if(roleGrantAudit){
+    // Resolve exactly one committed key from complete, bounded listing metadata before any object GET.
+    const matches=all.filter(x=>sha(encode([ROLE_GRANT_SELECTOR_DOMAIN,x.sha256]))===FIXED_844_ROLE_GRANT_COMMITMENTS.selectorSha256);
+    need(matches.length>0,'ROLE_GRANT_AUDIT_INDEX_ABSENT');
+    need(matches.length===1,'ROLE_GRANT_AUDIT_INDEX_AMBIGUOUS');
+    const [target]=matches;
+    need(positive(target.bytes)&&target.bytes<=B.maximumIndexWireBytes,'ROLE_GRANT_AUDIT_INDEX_BOUND');
+    indexSha256=target.sha256;wanted=matches;
+  }else if(indexSha256!==null){const found=eligible.find(x=>x.sha256===indexSha256);need(found,'BOOTSTRAP_SHA_NOT_LISTED');wanted=[found];}
   need(wanted.length<=B.maximumCandidates&&wanted.reduce((n,x)=>n+x.bytes,0)<=B.maximumCandidateBytes,'BOOTSTRAP_CANDIDATE_LIMIT');
   const diagnostics={listedObjects:inventory.count,unsupportedNamespaceObjects:inventory.unsupported,objectsAboveIndexLimit:all.filter(x=>x.bytes>B.maximumIndexWireBytes).length,
     emptyObjects:all.filter(x=>x.bytes===0).length,eligibleNotInspected:eligible.length-wanted.length,nonIndexSqlFrames:0,legacyRequiresDbPointer:0,invalidOrUnsupported:{}};
@@ -368,7 +403,13 @@ async function bootstrap(c,indexSha256,materialization=null){
     }catch(e){if(indexSha256!==null)throw e;const code=typeof e.code==='string'&&/^[A-Z][A-Z0-9_]*$/.test(e.code)?e.code:'INVALID_OR_UNSUPPORTED_INDEX';
       diagnostics.invalidOrUnsupported[code]=(diagnostics.invalidOrUnsupported[code]??0)+1;}
   }
-  need(Date.now()<c.state.searchDeadline,'BOOTSTRAP_DEADLINE');c.state.searchDeadline=null;c.state.objectReadBound=P.maximumObjectBytes;
+  need(Date.now()<c.state.searchDeadline,'BOOTSTRAP_DEADLINE');
+  if(roleGrantAudit){
+    need(selected,'BOOTSTRAP_SELECTED_NOT_AUTHENTICATED');
+    c.state.objectReadBound=ROLE_GRANT_AUDIT_MAX_BYTES;
+    return verifyRemoteGroup(c,selected.pointer,selected.opened,roleGrantAudit);
+  }
+  c.state.searchDeadline=null;c.state.objectReadBound=P.maximumObjectBytes;
   const result={candidates:candidates.sort((a,b)=>a.indexSha256<b.indexSha256?-1:a.indexSha256>b.indexSha256?1:0),diagnostics,selectionRequired:true,
     remoteArchiveVerified:false,centralLocatorVerified:false,archiveWrittenThisOperation:false,centralLocatorWrittenThisOperation:false,
     authRestoreVerified:false,fullDatabaseBackupVerified:false,atomicDatabaseSnapshot:false,freeReady:false,sourceAdmission:false,automaticRetry:false};
@@ -381,6 +422,27 @@ async function bootstrap(c,indexSha256,materialization=null){
   return{...result,status:'R2_BOOTSTRAP_AUTHENTICATED_SQL_BYTE_ROUNDTRIP_ONLY',selectionRequired:false,indexSha256,remoteArchiveVerified:true,
     files:verified.files,totalSqlBytes:verified.totalSqlBytes,directory};
 }
+// Only the dedicated caller can opt in; ordinary archive modes and CLI do not select this audit.
+export async function auditSupabaseDatabaseArchiveRoleGrant(options={},dependencies={}){
+  fields(options,[],'ROLE_GRANT_AUDIT_OPTIONS');
+  const env=dependencies.env??process.env;
+  need(env.GITHUB_ACTIONS==='true'&&env.RUNNER_ENVIRONMENT==='github-hosted'&&env.RUNNER_OS==='Linux'
+    &&env.GITHUB_REPOSITORY===LOCAL.repository&&(dependencies.processImpl??process).platform==='linux','HOSTED_VM_REQUIRED');
+  let c;
+  try{
+    c=clients(env,dependencies.fetchImpl??globalThis.fetch,{bootstrap:true,readOnly:true});
+    return await bootstrap(c,null,null,{deadline:Date.now()+B.maximumSearchMs});
+  }catch(e){throw archiveFailure(e,c);}
+}
+
+function archiveFailure(e,c){
+  const error=new Error(c?.state.unknown?'DB_BACKUP_WRITE_OUTCOME_UNKNOWN':c?.state.fatal??(typeof e.code==='string'&&/^[A-Z][A-Z0-9_]*$/.test(e.code)?e.code:'DATABASE_ARCHIVE_FAILED_CLOSED'));
+  error.code=error.message;error.automaticRetry=false;error.externalDumpOutcome=['UNKNOWN','NOT_STARTED'].includes(e.externalDumpOutcome)?e.externalDumpOutcome:null;
+  if(Number.isInteger(e.httpStatus)&&e.httpStatus>=100&&e.httpStatus<=599)error.httpStatus=e.httpStatus;
+  error.authRestoreVerified=false;error.fullDatabaseBackupVerified=false;error.freeReady=false;
+  return error;
+}
+
 export async function runSupabaseDatabaseArchive(options={},dependencies={}){
   const {mode='discover',exportOptions={},indexSha256=null,destination=null}=options;
   need(['capture','discover','bootstrap','materialize'].includes(mode),'EXPLICIT_BACKUP_MODE');
@@ -404,12 +466,13 @@ export async function runSupabaseDatabaseArchive(options={},dependencies={}){
     }
     return mode==='capture'?await capture(c,exportOptions,{...dependencies,env}):mode==='bootstrap'||mode==='materialize'&&indexSha256!==null
       ?await bootstrap(c,indexSha256,materialization):await discover(c,materialization);
-  }catch(e){const error=new Error(c?.state.unknown?'DB_BACKUP_WRITE_OUTCOME_UNKNOWN':c?.state.fatal??(typeof e.code==='string'&&/^[A-Z][A-Z0-9_]*$/.test(e.code)?e.code:'DATABASE_ARCHIVE_FAILED_CLOSED'));
-    error.code=error.message;error.automaticRetry=false;error.externalDumpOutcome=['UNKNOWN','NOT_STARTED'].includes(e.externalDumpOutcome)?e.externalDumpOutcome:null;
-    if(Number.isInteger(e.httpStatus)&&e.httpStatus>=100&&e.httpStatus<=599)error.httpStatus=e.httpStatus;
-    error.authRestoreVerified=false;error.fullDatabaseBackupVerified=false;error.freeReady=false;throw error;}
+  }catch(e){throw archiveFailure(e,c);}
 }
 async function main(){const args=process.argv.slice(2);
+  if(args[0]==='--audit-fixed-844-role-grant'){
+    need(args.length===2&&args[1]===FIXED_844_ROLE_GRANT_CONFIRMATION,'ROLE_GRANT_AUDIT_CONFIRMATION');
+    console.log(JSON.stringify(await auditSupabaseDatabaseArchiveRoleGrant()));return;
+  }
   if(args[0]==='--materialize'){
     need((args.length===3||args.length===5)&&args[1]==='--destination'
       &&(args.length===3||args[3]==='--index-sha'&&hash(args[4])),'EXPLICIT_BACKUP_MODE');
