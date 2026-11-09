@@ -19,7 +19,7 @@ jobs:
       - name: Check out the exact public synthetic fixture source
         uses: actions/checkout@v7
         with:
-          ref: 81548a089fa2eb9097b5c4b9fc6216a807dde600
+          ref: 4919bb17d4098a3c6e75a3a3e284ceda95da9adb
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@v7
@@ -44,8 +44,8 @@ jobs:
           set -eu
           umask 077
           repo=$(pwd -P)
-          head=81548a089fa2eb9097b5c4b9fc6216a807dde600
-          tree=849f41eff3a1af4a68e9da18d283c801d433e485
+          head=4919bb17d4098a3c6e75a3a3e284ceda95da9adb
+          tree=9c7332f682855a50774bae4f2fdcdc8adcd78e58
           export GIT_NO_LAZY_FETCH=1 GIT_NO_REPLACE_OBJECTS=1 GIT_OPTIONAL_LOCKS=0
           export GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null
           actual_head=$(git -c protocol.allow=never rev-parse HEAD^{commit})
@@ -97,7 +97,9 @@ jobs:
               observer.NODE = node
               assert observer.CURRENT_NATIVE_CONTEXT is None
               test = observer.SourceCurrentNative()
+              phase = 'PROFILE'
               profile = test.current598_profile()
+              phase = 'OWNED_HOST'
               own, root, environment, normal_h0 = test.owned_current_host(head, with_sdk=False, input_profile=profile)
               owner = own.lstat()
               assert own.parent == Path(tempfile.gettempdir()).resolve(strict=True)
