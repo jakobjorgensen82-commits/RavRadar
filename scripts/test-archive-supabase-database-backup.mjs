@@ -382,6 +382,72 @@ test('archive materialization: explicit bootstrap SHA authenticates its own mani
   assert.equal(writeCalls(f).length,0);assert.equal(f.children.length,7);assert.equal(result.databaseRestoreExecuted,false);assert.equal(result.authRestoreVerified,false);
   for(const name of names)assert.ok((await fs.readFile(path.join(destination,name))).equals(materializationSql(name)));
 });
+test('archive materialization: one private commitment binds only the exact authenticated archive',async t=>{
+  const {f}=await captured(t,{sql:materializationSql}),index=f.locator.payload.index;
+  await run({mode:'capture'},f.dependencies());
+  const current=f.locator.payload.index;
+  assert.notEqual(current.sha256,index.sha256);
+  const commit=(raw,domain='RavRadar/SupabaseArchiveRestore/v1/selector')=>sha(Buffer.from(JSON.stringify([domain,raw])));
+  const indexCommitmentSha256=commit(index.sha256);
+  const runCommit=(destination,overrides={})=>run({mode:'materialize',destination,indexCommitmentSha256,...overrides},f.dependencies());
+  const listing=(objects,more='')=>'<ListBucketResult><IsTruncated>'+(more?'true':'false')+'</IsTruncated>'+
+    (more?'<NextContinuationToken>'+more+'</NextContinuationToken>':'')+objects
+      .map(({path,bytes})=>'<Contents><Key>'+path+'</Key><Size>'+bytes+'</Size></Contents>').join('')+'</ListBucketResult>';
+  const objects=[...f.objects].map(([path,bytes])=>({path,bytes:bytes.length}));
+  const objectGets=()=>f.calls.filter(c=>c.method==='GET'&&c.headers.has('authorization')&&c.url.includes('/bundles/'));
+  withoutDatabase(f);f.calls.length=0;
+  let listed=0;
+  f.behavior.listXml=(_f,query)=>{
+    listed++;
+    if(query.has('continuation-token')){
+      assert.equal(query.get('continuation-token'),'synthetic-page-2');
+      return listing(objects.filter(x=>x.path!==index.path));
+    }
+    return listing([index],'synthetic-page-2');
+  };
+  const destination=await materializationTarget(f,'exact-commitment');
+  const result=await runCommit(destination);
+  assert.equal(listed,2);
+  assert.equal(result.status,'R2_BOOTSTRAP_FIVE_SQL_FILES_MATERIALIZED_ONLY');
+  assert.equal(result.indexCommitmentSha256,indexCommitmentSha256);
+  assert.equal(result.remoteArchiveVerified,true);assert.equal(result.materializationCompleted,true);
+  assert.ok(!JSON.stringify(result).includes(index.sha256));
+  assert.ok(!Object.hasOwn(result,'candidates')&&!Object.hasOwn(result,'diagnostics'));
+  assert.equal(objectGets().length,6);
+  assert.ok(objectGets()[0].url.endsWith('/'+index.path));
+  assert.ok(objectGets().every(c=>!c.url.endsWith('/'+current.path)));
+  const listAt=f.calls.map((c,i)=>[c,i]).filter(([c])=>new URL(c.url).searchParams.has('list-type')).at(-1)[1];
+  assert.ok(listAt<f.calls.indexOf(objectGets()[0]));
+  for(const name of names)assert.deepEqual(await fs.readFile(path.join(destination,name)),materializationSql(name));
+  assert.equal(writeCalls(f).length,0);assert.equal(f.children.length,14);
+  delete f.behavior.listXml;
+
+  for(const [tag,overrides,code] of [
+    ['wrong',{indexCommitmentSha256:'0'.repeat(64)},'RESTORE_COMMITTED_INDEX_ABSENT'],
+    ['raw',{indexCommitmentSha256:index.sha256},'RESTORE_COMMITTED_INDEX_ABSENT'],
+    ['wrong-domain',{indexCommitmentSha256:commit(index.sha256,'RavRadar/SupabaseRoleGrantAudit/v1/selector')},'RESTORE_COMMITTED_INDEX_ABSENT'],
+    ['both',{indexSha256:index.sha256},'MATERIALIZATION_COMMITMENT'],
+  ]){
+    const target=await materializationTarget(f,tag);f.calls.length=0;
+    await rejectCode(()=>runCommit(target,overrides),code);
+    assert.equal(objectGets().length,0);assert.equal(await absent(target),true);
+  }
+
+  for(const [tag,xml,code] of [
+    ['duplicate',(_f,q)=>q.has('continuation-token')?listing([index]):listing([index],'synthetic-page-2'),'BOOTSTRAP_LIST_DUPLICATE'],
+    ['bound',()=>listing([{...index,bytes:B.maximumIndexWireBytes+1}]),'RESTORE_COMMITTED_INDEX_BOUND'],
+  ]){
+    const target=await materializationTarget(f,tag);f.calls.length=0;f.behavior.listXml=xml;
+    await rejectCode(()=>runCommit(target),code);
+    assert.equal(objectGets().length,0);assert.equal(await absent(target),true);
+  }
+  delete f.behavior.listXml;
+  const broken=await materializationTarget(f,'wrong-bytes');f.calls.length=0;
+  f.behavior.readObject=(key,bytes)=>key===index.path?Buffer.alloc(bytes.length,65):bytes;
+  await rejectCode(()=>runCommit(broken),'REMOTE_OBJECT_SHA');
+  assert.equal(objectGets().length,1);assert.equal(await absent(broken),true);
+});
+
 test('archive materialization: unsupported platform, destination, extra manifest pin and cross-mode options stop before transport',async t=>{
   for(const [options,platform,code]of [
     [{mode:'materialize',destination:'/absolute/synthetic'},'win32','MATERIALIZATION_LINUX_REQUIRED'],
