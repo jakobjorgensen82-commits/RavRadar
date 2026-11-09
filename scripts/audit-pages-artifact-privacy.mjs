@@ -40,6 +40,8 @@ const EXPECTED_PUBLIC_PATHS = Object.freeze({
 });
 const ZONE_REGISTRY_FILE = 'data/zones.geojson';
 const PUBLIC_VERSION_FILE = 'version.json';
+const PAGES_PUBLISHED_SITE_LIMIT_BYTES = 1_000_000_000;
+const PAGES_MINIMUM_HEADROOM_BYTES = 150_000_000;
 const PUBLIC_JORDRAV_PROFILE_FILE = 'data/jordrav/context-20261006/profiles.json';
 const PUBLIC_CLIENT_MODULES = new Set([
   'js/services/private-trip-study.js',
@@ -613,6 +615,10 @@ export async function auditPagesArtifactPrivacy(siteRoot, {
   );
   const { entries, issues } = await collectEntries(root);
   const files = entries.filter(entry => entry.kind === 'file');
+  const uncompressedFileBytes = files.reduce((total, file) => total + file.size, 0);
+  if (uncompressedFileBytes > PAGES_PUBLISHED_SITE_LIMIT_BYTES) {
+    throw new Error(`Pages artifact exceeds the published site limit: ${uncompressedFileBytes} > ${PAGES_PUBLISHED_SITE_LIMIT_BYTES} bytes.`);
+  }
   let deliveryManifest = null;
   let deliveryEntries = [];
   let mapEntries = [];
@@ -782,7 +788,7 @@ export async function auditPagesArtifactPrivacy(siteRoot, {
   return Object.freeze({
     root,
     fileCount: files.length,
-    uncompressedFileBytes: files.reduce((total, file) => total + file.size, 0),
+    uncompressedFileBytes,
     jsonFileCount: parsed.size,
     liveFileCount: expectedFiles.size,
     privateFingerprintCount: privateFingerprints.size,
@@ -811,6 +817,11 @@ if (isMain) {
     .then(result => {
       console.log(`Pages artifact privacy gate: ${result.liveFileCount} allowlisted live files and ${result.fileCount} total files passed.`);
       console.log(`Pages artifact footprint: uncompressed_regular_file_bytes=${result.uncompressedFileBytes}; regular_files=${result.fileCount}.`);
+      const headroomBytes = PAGES_PUBLISHED_SITE_LIMIT_BYTES - result.uncompressedFileBytes;
+      if (headroomBytes <= PAGES_MINIMUM_HEADROOM_BYTES) {
+        const message = `The Pages artifact has ${headroomBytes} bytes left before the published site limit.`;
+        console.warn(process.env.GITHUB_ACTIONS === 'true' ? `::warning title=GitHub Pages capacity::${message}` : message);
+      }
     })
     .catch(error => {
       console.error(error instanceof PagesArtifactPrivacyError
