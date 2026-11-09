@@ -6,6 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {test} from 'node:test';
+import {sourceAfter598PreissuanceTest,historicalScalar597SyncTest} from './lib/source598-test-phase.mjs';
 import {
   assistantAfter597CheckpointInspectionView,
   nativeOriginalContinuityCheckpointInspectionView,
@@ -40,7 +41,7 @@ const CONSUMERS=['knowledge/rav-assistant-public-v1.json','scripts/fixtures/rav-
   'supabase/functions/_shared/rav-assistant-contract.ts','supabase/schema.sql',
   'supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql'];
 
-test('alle gamle navngivne kontrolvisninger læser deres egne ægte hele kanoniske kilder',async()=>{
+historicalScalar597SyncTest('alle gamle navngivne kontrolvisninger læser deres egne ægte hele kanoniske kilder',async()=>{
   const pairs=[
     [readNativeOriginalContinuityCanonicalSource,nativeOriginalContinuityCheckpointInspectionView],
     [readAssistantLaterH0CanonicalSource,assistantLaterH0CheckpointInspectionView],
@@ -68,7 +69,7 @@ test('alle gamle navngivne kontrolvisninger læser deres egne ægte hele kanonis
   assert.equal(ACTIVE,INACTIVE_SCALAR597_LATER_H0_SUCCESSOR);
 });
 
-test('ny kontrolvisning afviser uudstedt før input, filadgang og netadgang',async t=>{
+historicalScalar597SyncTest('ny kontrolvisning afviser uudstedt før input, filadgang og netadgang',async t=>{
   let accessed=0;
   const hostile=new Proxy({},{get(){accessed++;throw Error('UVENTET_INPUT');}});
   for(const key of ['readFile','writeFile','lstat','stat','readdir','mkdir','copyFile'])
@@ -81,7 +82,7 @@ test('ny kontrolvisning afviser uudstedt før input, filadgang og netadgang',asy
   assert.equal(ACTIVE,INACTIVE_SCALAR597_LATER_H0_SUCCESSOR);
 });
 
-test('normal synkronisering og genkontrol bevarer mixedV2 Edge og afviser defekt SQL før skrivning',async()=>{
+historicalScalar597SyncTest('normal synkronisering og genkontrol bevarer mixedV2 Edge og afviser defekt SQL før skrivning',async()=>{
   const stage=await fs.mkdtemp(path.join(os.tmpdir(),'rr-after597-normal-sync-'));
   const migration='supabase/migrations/'+ACTIVE.migration().filename;
   const files=[...new Set([...CONSUMERS,...RAVSCORE_CONTINUATION_IMPLEMENTATION_FILES,migration])];
@@ -116,4 +117,13 @@ test('normal synkronisering og genkontrol bevarer mixedV2 Edge og afviser defekt
     assert.equal(path.dirname(stage),path.resolve(os.tmpdir()));
     await fs.rm(stage,{recursive:true,force:false});
   }
+});
+
+sourceAfter598PreissuanceTest('Source598 sync inspection refuses NULL before hostile source operands',async()=>{
+  const sync=await import('./sync-ravscore-model-binding.mjs');
+  let reads=0;
+  const untouched=new Proxy({}, {get(){reads++;throw new Error('HOSTILE_SOURCE_SYNC_OPERAND');},
+    ownKeys(){reads++;throw new Error('HOSTILE_SOURCE_SYNC_ENUMERATION');}});
+  assert.throws(()=>sync.sourceProducerCheckpointInspectionView(untouched),/SOURCE_PRODUCER_AFTER597_UNISSUED/);
+  assert.equal(reads,0);
 });

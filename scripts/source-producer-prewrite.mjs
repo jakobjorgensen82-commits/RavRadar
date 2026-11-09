@@ -1,0 +1,155 @@
+// Fixed authenticated598 -> SOURCE SAME_H0 preparation and final preservation
+// proof. Never SQL/publication authority. Existing ordinary callers remain unchanged.
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import {createReadStream} from 'node:fs';
+import {execFileSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
+import {requireSourceProducerOutput,sourceProducerReferenceHour} from './lib/source-producer-after597-runtime-family.mjs';
+import {assertSourceProducerCodeOnlyCaller} from './select-source-producer-code-only-source.mjs';
+import {prepareSourceProducerRuntimeTransition,assertSourceProducerRuntimeTransitionPrepared}
+  from './source-producer-runtime-transition.mjs';
+import {assertExactRuntimeInventory} from './migrate-post-cutover-private-runtime.mjs';
+import {createProtectedPrivateRuntimeClients,buildProtectedPrivateRuntimeArchive}
+  from './protected-private-production-runtime.mjs';
+import {createProtectedRavScoreCheckpointRequester} from './protected-ravscore-continuation-checkpoint.mjs';
+import {withR2PrivateRuntimeCapacityDeadline} from './lib/r2-private-runtime-storage.mjs';
+
+const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+async function assertExactPrepared598(token){
+  await assertSourceProducerRuntimeTransitionPrepared(token);
+  assert.equal(token.kind,'SOURCE_PRODUCER_598_PREPARED_RUNTIME');
+  assert.equal(token.admission,'NO_ADMISSION');assert.equal(token.installationPerformed,false);
+  assert.equal(token.privatePayloadIncluded,false);assert.equal(token.partCount,673);
+  for(const field of ['numericalChanges','repairedContinuationCount','recomputedModeCount','recomputedZoneCount'])assert.equal(token[field],0);
+}
+async function digest(file){const hash=crypto.createHash('sha256');let bytes=0;
+  for await(const chunk of createReadStream(file)){hash.update(chunk);bytes+=chunk.length;}return {bytes,sha256:hash.digest('hex')};}
+async function noLinks(file){let at=path.parse(file).root;for(const part of path.relative(at,file).split(path.sep).filter(Boolean)){
+  at=path.join(at,part);assert(!(await fs.lstat(at)).isSymbolicLink(),'No aliased prepared runtime');}}
+function absoluteEnvironmentPath(name){const value=process.env[name];
+  assert(typeof value==='string'&&path.isAbsolute(value),name+' requires an absolute path');
+  assert(!/[\r\n\0]/.test(value));return path.resolve(value);}
+
+export async function verifySourceProducerPrewritePreservation(options){
+  requireSourceProducerOutput(); // FIRST, before caller options or any I/O.
+  assert.equal(arguments.length,1);assert(options&&Object.getPrototypeOf(options)===Object.prototype);
+  assert.deepEqual(Object.keys(options).sort(),['bundleManifestPath','checkpointRequest','predecessorDescriptorPath',
+    'preparedRuntimeRoot','reportPath','request','sourceRoot','targetReferenceAt','workdir']);
+  const {preparedRuntimeRoot,reportPath,...source}=options;
+  // Fresh normal authenticated B/S preparation supplies the only authority.
+  // Saved JSON, flags and a previously emitted report cannot mint this token.
+  const token=await prepareSourceProducerRuntimeTransition(source);
+  await assertExactPrepared598(token);
+  const resolved=path.resolve(preparedRuntimeRoot),prepared=await fs.realpath(resolved);
+  assert.equal(prepared,resolved);
+  const expected=await assertExactRuntimeInventory(token.outputRoot);
+  const expectedReport=JSON.parse(await fs.readFile(token.normalBReportPath,'utf8'));
+  assert.equal(expectedReport.transitionKind,'MODEL_BINDING_METADATA_ONLY');
+  const reportFile=path.resolve(reportPath);
+  async function compareActualPrepared(){
+    await noLinks(prepared);assert.equal(await fs.realpath(prepared),resolved);
+    assert.deepEqual(await assertExactRuntimeInventory(prepared),expected,'Exact whole prepared SOURCE B inventory');
+    for(const file of expected)assert.deepEqual(await digest(path.join(prepared,file.relativePath)),
+      await digest(path.join(token.outputRoot,file.relativePath)),'Every actual prepared B byte must equal the fresh normal producer');
+    await noLinks(reportFile);assert.equal(await fs.realpath(reportFile),reportFile);
+    assert((await fs.lstat(reportFile)).isFile());
+    assert.deepEqual(JSON.parse(await fs.readFile(reportFile,'utf8')),expectedReport,
+      'Whole combined normal metadata/origin report, not selected hashes');
+  }
+  await compareActualPrepared();
+  await assertExactPrepared598(token);
+  // The final awaited B/S check is not an exclusive lock on the other copy.
+  // Re-read its actual inventory, paths, every byte AND report afterwards;
+  // hashing only the earlier list would miss an added file or aliased report.
+  await compareActualPrepared();
+  return Object.freeze({kind:'SOURCE_PRODUCER_ORIGINALS_AND_PREPARED_RUNTIME_VERIFIED',admission:'NO_ADMISSION',
+    originalReferenceAt:token.originalReferenceAt,targetReferenceAt:token.targetReferenceAt,
+    numericalChanges:0,repairedContinuationCount:0,recomputedModeCount:0,recomputedZoneCount:0,
+    partCount:673,privatePayloadIncluded:false,installationPerformed:false});
+}
+
+export async function runSourceProducerPrewrite(){
+  requireSourceProducerOutput(); // No argument/environment/path authority while unissued.
+  assert.equal(arguments.length,0);assertSourceProducerCodeOnlyCaller(process.env);
+  assert.equal(process.env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE,'true');
+  assert.equal(process.env.RAVRADAR_SOURCE_PRODUCER_CURRENT_FAMILY,'predecessor');
+  assert.equal(process.env.RAVRADAR_SOURCE_PRODUCER_PHASE,'before');
+  assert.equal(process.env.RAVRADAR_SOURCE_PRODUCER_UPGRADE_OPT_IN,'true');
+  assert.equal(process.argv.length,4);assert.equal(process.argv[2],'--slot');
+  const slot=process.argv[3];assert(['prepare','final'].includes(slot));
+  const gitEnvironment=Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','TEMP','TMP','LANG','LC_ALL']
+    .filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]]));
+  Object.assign(gitEnvironment,{GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0'});
+  const read=args=>execFileSync('git',['-c','protocol.allow=never','-c','gc.auto=0','-C',ROOT,...args],{encoding:'utf8',timeout:30000,maxBuffer:65536,env:gitEnvironment}).trim();
+  assert.equal(read(['rev-parse','HEAD^{commit}']),process.env.GITHUB_SHA);
+  assert.equal(read(['rev-parse','origin/main^{commit}']),process.env.GITHUB_SHA);
+  const temporary=await fs.realpath(absoluteEnvironmentPath('RUNNER_TEMP'));
+  const workdir=path.join(temporary,'ravradar-source-producer-'+process.env.GITHUB_RUN_ID+'-'+process.env.GITHUB_RUN_ATTEMPT+'-'+slot);
+  assert.equal(path.dirname(workdir),temporary);assert(!workdir.startsWith(ROOT+path.sep)&&workdir!==ROOT);
+  const {documentRequest:request}=createProtectedPrivateRuntimeClients();
+  const options={sourceRoot:absoluteEnvironmentPath('RAVRADAR_PREDECESSOR_PRIVATE_RESTORE'),
+    bundleManifestPath:path.join(absoluteEnvironmentPath('RAVRADAR_PREDECESSOR_PRIVATE_BUNDLE'),'manifest.json'),
+    predecessorDescriptorPath:path.join(absoluteEnvironmentPath('RAVRADAR_OPERATIONAL_WORK'),'target-private-runtime-source.json'),
+    targetReferenceAt:sourceProducerReferenceHour(process.env.RAVRADAR_PRODUCTION_TARGET_HOUR),workdir,request,
+    checkpointRequest:createProtectedRavScoreCheckpointRequester()};
+  const reportPath=path.join(ROOT,'.geometry-v2-work/post-cutover-private-runtime-migration.json');
+  const envPath=absoluteEnvironmentPath('GITHUB_ENV');
+  if(slot==='prepare'){
+    const token=await prepareSourceProducerRuntimeTransition(options);
+    await assertExactPrepared598(token);
+    assert.equal(token.originalReferenceAt,token.targetReferenceAt,'Exact authenticated SAME_H0');
+    await fs.mkdir(path.dirname(reportPath),{recursive:true});
+    await fs.writeFile(reportPath,await fs.readFile(token.normalBReportPath),{flag:'wx',mode:0o600});
+    assert(!/[\r\n\0]/.test(token.outputRoot));
+    await fs.appendFile(envPath,'RAVRADAR_MIGRATED_PRIVATE_RUNTIME_RESTORE='+token.outputRoot+'\n'
+      +'RAVRADAR_SOURCE_PRODUCER_METADATA_ONLY=true\n'
+      +'RAVRADAR_SOURCE_PRODUCER_ORIGINALS_VERIFIED=true\n'
+      +'RAVRADAR_SOURCE_PRODUCER_NOLOSS_VERIFIED=true\n'
+      +'RAVRADAR_SOURCE_PRODUCER_PREWRITE_VERIFIED=true\n');
+    console.log('Præcis original598 B/S-metadataovergang forberedt; ingen eksterne skrivninger.');return;
+  }
+  // The exact same normal bundle is packed again by the later publisher.
+  // Read-only preflight runs BEFORE the unchanged final B/S freshness check,
+  // while this normal workflow already owns the exclusive production lock.
+  // It is a timed observation, not an atomic R2 reservation or publication.
+  try {
+    assert.equal(process.env.RAVRADAR_PRIVATE_RUNTIME_STORAGE_BACKEND,'r2');
+    await withR2PrivateRuntimeCapacityDeadline(async phase => {
+      phase.assertWithinDeadline();
+      const built=await buildProtectedPrivateRuntimeArchive({
+        privateRoot:absoluteEnvironmentPath('RAVRADAR_PRIVATE_RUNTIME_ROOT'),
+        bundlePath:absoluteEnvironmentPath('RAVRADAR_PRIVATE_RUNTIME_BUNDLE'),
+        repositoryRoot:ROOT,
+        expected:JSON.parse(await fs.readFile(path.join(ROOT,'.cache/private-production-runtime-expected.json'),'utf8')),
+        sourceHead:process.env.GITHUB_SHA,
+      });
+      phase.assertWithinDeadline(); // Includes elapsed local packing, even delayed synchronous work.
+      const {storage}=createProtectedPrivateRuntimeClients({fetchImpl:phase.fetchImpl,delayImpl:phase.delayImpl});
+      assert.equal(typeof storage.inspectImmutableCapacity,'function');
+      const capacity=await storage.inspectImmutableCapacity(built.descriptor.objects);
+      phase.assertWithinDeadline();
+      console.log(JSON.stringify(capacity)); // Fixed aggregates only; no object keys/private payload.
+    });
+  } catch (error) {
+    console.error(error?.code==='R2_PRIVATE_RUNTIME_CAPACITY_TIMEOUT'
+      ? 'SOURCE_PRODUCER_R2_CAPACITY_TIMEOUT' : 'SOURCE_PRODUCER_R2_CAPACITY_PREFLIGHT_REFUSED');
+    throw error; // No SQL, PUT, pointer/CAS, retention or automatic retry here.
+  }
+  // Exactly one fresh final comparison after artifact gates. Do not add a
+  // duplicate middle proof of the same unchanged preparation.
+  const result=await verifySourceProducerPrewritePreservation({...options,
+    preparedRuntimeRoot:absoluteEnvironmentPath('RAVRADAR_MIGRATED_PRIVATE_RUNTIME_RESTORE'),reportPath});
+  assert.equal(result.originalReferenceAt,result.targetReferenceAt);
+  await fs.appendFile(envPath,'RAVRADAR_SOURCE_PRODUCER_ORIGINALS_VERIFIED=true\n'
+    +'RAVRADAR_SOURCE_PRODUCER_NOLOSS_VERIFIED=true\n'
+    +'RAVRADAR_SOURCE_PRODUCER_PREWRITE_VERIFIED=true\n');
+  console.log('Præcise original598 B/S og alle forberedte SOURCE-metadata genkontrolleret; ingen SQL eller eksterne skrivninger.');
+}
+
+if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url))await runSourceProducerPrewrite().catch(()=>{
+  // Assertions can contain private values. Only this fixed category is public.
+  console.error('SOURCE_PRODUCER_PREWRITE_REFUSED');process.exitCode=1;
+});

@@ -1,13 +1,13 @@
 performance.mark?.('ravradar:bootstrap-start');
-import { initializeUserDataSafety } from "./js/services/storage-safety.js?v=4.0.598";
-import { initialiseI18n, t } from "./js/i18n.js?v=4.0.598";
-import "./js/ui/ranking-copy.js?v=4.0.598";
-import "./js/ui/score-prognosis-copy.js?v=4.0.598";
-import "./js/ui/site-search-copy.js?v=4.0.598";
-import "./js/ui/map-tab-copy.js?v=4.0.598";
-import "./js/ui/map-timeline-copy.js?v=4.0.598";
+import { initializeUserDataSafety } from "./js/services/storage-safety.js?v=4.0.610";
+import { initialiseI18n, t } from "./js/i18n.js?v=4.0.610";
+import "./js/ui/ranking-copy.js?v=4.0.610";
+import "./js/ui/score-prognosis-copy.js?v=4.0.610";
+import "./js/ui/site-search-copy.js?v=4.0.610";
+import "./js/ui/map-tab-copy.js?v=4.0.610";
+import "./js/ui/map-timeline-copy.js?v=4.0.610";
 
-import { installPublicAppUpdateFlow } from "./js/services/app-update-flow.js?v=4.0.598&transport=public-json-bridge-20261103";
+import { installPublicAppUpdateFlow } from "./js/services/app-update-flow.js?v=4.0.610&transport=public-json-bridge-20261103";
 
 let appImported = false;
 addEventListener('pageshow', event => {
@@ -24,9 +24,9 @@ installPublicAppUpdateFlow({
   version: String(globalThis.RAVRADAR_VERSION || document.querySelector('#appVersion')?.textContent || '').trim(),
   translate: t,
 });
-await import("./app.js?v=4.0.598&copy=footer-20261005&ui=zone-panels-20261027&assistant=forecast-followup-20261101&share=custom-domain-20261102&transport=public-json-bridge-20261103&map=plain-map-v3-20261104");
+await import("./app.js?v=4.0.610&copy=footer-20261005&ui=zone-panels-20261027&assistant=forecast-followup-20261101&share=custom-domain-20261102&transport=public-json-bridge-20261103&map=plain-map-v3-20261104");
 appImported = true;
 performance.mark?.('ravradar:app-imported');
-void import("./js/services/visit-counter.js?v=4.0.598")
+void import("./js/services/visit-counter.js?v=4.0.610")
   .then(({ schedulePublicPageView }) => schedulePublicPageView())
   .catch(() => {});

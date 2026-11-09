@@ -41,6 +41,106 @@ NODE24 = None
 BODY_SECONDS = 8.0  # Own fixture observer, not a new product deadline.
 CLEANUP_SECONDS = 3.0
 
+def reviewed_current_distribution():
+    """Keep current259 in every native host; project old49 ONLY for its oracle."""
+    import hashlib
+
+    action = ROOT / ENTRY.parent
+    current = {name: (action / name).read_bytes().replace(b'\r\n', b'\n')
+               for name in ('package.json', 'package-lock.json')}
+    result = subprocess.run([str(NODE24), str(ROOT / 'scripts/lib/source-artifact-distribution-review.mjs'),
+                             '--legacy-json'], cwd=ROOT, env=runtime_environment(),
+                            stdin=subprocess.DEVNULL, capture_output=True, timeout=10, check=False)
+    if result.returncode != 0 or result.stderr or len(result.stdout) > 65536:
+        raise AssertionError('SOURCE_DISTRIBUTION_REVIEW_UNPROVED')
+    report = json.loads(result.stdout)
+    if (report['kind'] != 'TEST_ONLY_SOURCE_ARTIFACT_LEGACY_GRAPH'
+            or report['productionAuthority'] is not False
+            or (report['packages'], report['predecessorPackages'], report['addedPackages']) != (259, 49, 210)):
+        raise AssertionError('SOURCE_DISTRIBUTION_REVIEW_INVALID')
+    for name, key in (('package.json', 'packageSha256'), ('package-lock.json', 'lockSha256')):
+        if hashlib.sha256(current[name]).hexdigest() != report[key]:
+            raise AssertionError('SOURCE_DISTRIBUTION_CURRENT_CHANGED')
+    if len(json.loads(current['package-lock.json'])['packages']) != 260:
+        raise AssertionError('SOURCE_DISTRIBUTION_NOT_CURRENT259')
+    prior = report['predecessorLock'].encode('utf-8')
+    if hashlib.sha256(prior).hexdigest() != '9bd935a0c94f605ab28b4cc1ea543173bb06e213ba779e6e9855e31a4dd6a9a5':
+        raise AssertionError('SOURCE_DISTRIBUTION_OLD49_CHANGED')
+    return {'current': current, 'predecessor_lock': prior}
+
+
+def bounded_npm_offline_cache_refusal(log_path):
+    """Read the complete owned fixture log, not only its first64KiB.
+
+    The larger real SDK graph produces more npm diagnostic lines. Keep the
+    exact historical line-suffix predicate and bounded memory; never infer the
+    expected npm error from a generic process failure or a truncated prefix.
+    """
+    import stat
+
+    suffix = b' error code ENOTCACHED'
+    maximum = 16 * 1024 * 1024  # Same fixed bounded source-log capture ceiling.
+    before = log_path.lstat()
+    identity = lambda value: (value.st_dev, value.st_ino, value.st_size, value.st_mtime_ns)
+    if not stat.S_ISREG(before.st_mode) or before.st_size > maximum:
+        raise AssertionError('BOUNDED_NPM_LOG_NOT_REGULAR_OR_TOO_LARGE')
+    found, tail, total = False, b'', 0
+    with log_path.open('rb') as handle:
+        if identity(os.fstat(handle.fileno())) != identity(before):
+            raise AssertionError('BOUNDED_NPM_LOG_OPEN_CHANGED')
+        while chunk := handle.read(65536):
+            total += len(chunk)
+            if total > before.st_size or total > maximum:
+                raise AssertionError('BOUNDED_NPM_LOG_GREW')
+            # bytes.splitlines() accepts LF, CRLF and bare CR. CRLF creates
+            # an extra empty record here, which cannot match the suffix.
+            lines = (tail + chunk).replace(b'\r', b'\n').split(b'\n')
+            found |= any(line.rstrip(b'\r').endswith(suffix) for line in lines[:-1])
+            tail = lines[-1][-len(suffix)-1:]
+        found |= tail.rstrip(b'\r').endswith(suffix)
+        if total != before.st_size or identity(os.fstat(handle.fileno())) != identity(before):
+            raise AssertionError('BOUNDED_NPM_LOG_READ_CHANGED')
+    if identity(log_path.lstat()) != identity(before):
+        raise AssertionError('BOUNDED_NPM_LOG_PATH_CHANGED')
+    return bool(found)
+
+
+class BoundedNpmDistributionLog(unittest.TestCase):
+    def test_complete_log_preserves_exact_error_predicate_across_chunks(self):
+        suffix = b' error code ENOTCACHED'
+        with tempfile.TemporaryDirectory(prefix='rr-npm-log-reader-') as folder:
+            log_path = Path(folder).resolve() / 'owned-debug.log'
+            positive = [b'42' + suffix + b'\n', b'42' + suffix + b'\r\n',
+                        b'x' * 70000 + b'\n42' + suffix + b'\n',
+                        b'x' * (65536 - 10) + suffix + b'\n',
+                        b'x' * 140000 + b'\n42' + suffix,
+                        b'x' * 140000 + b'\r42' + suffix + b'\rnext record',
+                        b'x' * (65536 - len(suffix) - 1) + suffix + b'\r\nnext record']
+            negative = [b'', b'42 error code ENETUNREACH\n',
+                        b'42 error code ENOTCACHED-extra\n', b'42 ENOTCACHED\n',
+                        b'42 error code ENOTCACHED trailing\n',
+                        b'x' * 140000 + b'\n42 error code ENOTCACHE\n']
+            for data in positive:
+                with self.subTest(bytes=len(data), expected=True):
+                    log_path.write_bytes(data)
+                    self.assertTrue(bounded_npm_offline_cache_refusal(log_path))
+            for data in negative:
+                with self.subTest(bytes=len(data), expected=False):
+                    log_path.write_bytes(data)
+                    self.assertFalse(bounded_npm_offline_cache_refusal(log_path))
+
+    def test_unknown_file_type_and_oversized_log_are_not_error_evidence(self):
+        with tempfile.TemporaryDirectory(prefix='rr-npm-log-reader-') as folder:
+            root = Path(folder).resolve()
+            with self.assertRaisesRegex(AssertionError, 'NOT_REGULAR_OR_TOO_LARGE'):
+                bounded_npm_offline_cache_refusal(root)
+            log_path = root / 'owned-debug.log'
+            with log_path.open('wb') as handle:
+                handle.truncate(16 * 1024 * 1024 + 1)
+            with self.assertRaisesRegex(AssertionError, 'NOT_REGULAR_OR_TOO_LARGE'):
+                bounded_npm_offline_cache_refusal(log_path)
+
+
 SYNTHETIC_CACHE = r'''
 import fs from 'node:fs';
 import path from 'node:path';
@@ -385,6 +485,182 @@ def runtime_environment():
 
 
 class OwnedRawSaveNative(unittest.TestCase):
+
+    def test_actual_source_null_action_refuses_before_guardian_provider_or_sdk(self):
+        # Real Node24 and complete unchanged product modules, never a patched
+        # output, synthetic capability, preload, process interceptor or SDK.
+        # The existing default native bridge selects this case automatically.
+        import hashlib
+
+        self.assertEqual(sys.platform, 'linux', 'NATIVE_LINUX_REQUIRED; not a skip')
+        for name in ('pidfd_open', 'waitid', 'P_PIDFD', 'WNOWAIT'):
+            self.assertTrue(hasattr(os, name), f'NATIVE_LINUX_API_REQUIRED:{name}')
+        self.assertTrue(hasattr(signal, 'pidfd_send_signal'))
+        self.assertEqual(signal.getsignal(signal.SIGCHLD), signal.SIG_DFL)
+        self.assertEqual(signal.getitimer(signal.ITIMER_REAL), (0.0, 0.0))
+        no_children()
+        self.assertIsInstance(NODE24, Path)
+        self.assertEqual(NODE24.name, 'node')
+        metadata_paths = {
+            'scripts/lib/source-producer-binding.generated.json': {
+                'schemaVersion': 'source-producer-derived-metadata-v1',
+                'version': None, 'binding': None, 'output': None},
+            'scripts/lib/source-producer-after597-binding.generated.json': {
+                'schemaVersion': 'source-producer-after597-derived-metadata-v1',
+                'release': None, 'version': None, 'binding': None, 'output': None},
+        }
+        actual_null = all((ROOT / name).read_bytes() ==
+            (json.dumps(expected, indent=2) + '\n').encode('utf-8')
+            for name, expected in metadata_paths.items())
+        if not actual_null:
+            # A real issued profile cannot assert a historical physical-NULL
+            # premise. The normal output guard must succeed first; a partial,
+            # altered or unissued profile fails instead of becoming a skip.
+            code = ("import {requireSourceProducerOutput} from "
+                    "'./scripts/lib/source-producer-after597-runtime-family.mjs';"
+                    "requireSourceProducerOutput();"
+                    "process.stdout.write('SOURCE_NORMAL_OUTPUT_GUARD_PASSED\\n');")
+            checked = subprocess.run([str(NODE24), '--input-type=module', '-e', code],
+                cwd=str(ROOT), env=runtime_environment(), capture_output=True, timeout=20)
+            self.assertEqual(checked.returncode, 0, 'NORMAL_SOURCE_OUTPUT_REQUIRED_BEFORE_NULL_NA')
+            self.assertEqual(checked.stdout, b'SOURCE_NORMAL_OUTPUT_GUARD_PASSED\n')
+            self.assertEqual(checked.stderr, b'')
+            self.skipTest('Historical actual-NULL action premise is not applicable after normal Source output guard; actual current/native physical-stop gates remain required')
+        for name, expected in metadata_paths.items():
+            self.assertEqual((ROOT / name).read_bytes(),
+                (json.dumps(expected, indent=2) + '\n').encode('utf-8'),
+                'Only the real current NULL profile is a premise of this case')
+        # This existing catalog is literal JSON DATA, not evaluated JavaScript
+        # or a caller-root override. Copy its genuine fixed source closure once.
+        family = (ROOT / 'scripts/lib/source-producer-after597-runtime-family.mjs').read_text(encoding='utf-8')
+        marker = 'export const SOURCE_PRODUCER_AFTER597_CODE_FILES = Object.freeze('
+        self.assertEqual(family.count(marker), 1)
+        start = family.index(marker) + len(marker)
+        files = json.loads(family[start:family.index(');', start)])
+        self.assertIsInstance(files, list)
+        self.assertEqual(len(files), len(set(files)))
+        for name in [ENTRY.as_posix(), 'scripts/lib/copernicus_component_process.py', *metadata_paths]:
+            self.assertIn(name, files)
+        temp_parent = Path(tempfile.gettempdir()).resolve()
+        root = Path(tempfile.mkdtemp(prefix='rr-source-null-action-', dir=temp_parent)).resolve()
+        libc = ctypes.CDLL(None, use_errno=True)
+        libc.prctl.argtypes = [ctypes.c_int, ctypes.c_ulong, ctypes.c_ulong,
+                              ctypes.c_ulong, ctypes.c_ulong]
+        libc.prctl.restype = ctypes.c_int
+        previous = ctypes.c_int()
+        self.assertEqual(libc.prctl(37, ctypes.addressof(previous), 0, 0, 0), 0)
+        self.assertEqual(libc.prctl(36, 1, 0, 0, 0), 0)
+        children, fds, logs = [], [], []
+        old_alarm = signal.getsignal(signal.SIGALRM)
+
+        def deadline(_number, _frame):
+            raise TimeoutError('OWN_SOURCE_NULL_ACTION_DEADLINE')
+
+        signal.signal(signal.SIGALRM, deadline)
+        signal.setitimer(signal.ITIMER_REAL, BODY_SECONDS)
+        try:
+            originals = {}
+            for name in files:
+                relative = Path(name)
+                self.assertFalse(relative.is_absolute())
+                self.assertNotIn('..', relative.parts)
+                self.assertNotIn('node_modules', relative.parts)
+                source = ROOT / relative
+                self.assertEqual(source.resolve(strict=True), source)
+                self.assertTrue(stat.S_ISREG(source.lstat().st_mode))
+                self.assertFalse(source.is_symlink())
+                raw = source.read_bytes()
+                target = root / relative
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(raw)
+                self.assertEqual(target.read_bytes(), raw)
+                originals[name] = hashlib.sha256(raw).hexdigest()
+            self.assertFalse((root / '.git').exists())
+            self.assertFalse((root / '.cache').exists())
+            self.assertFalse((root / ENTRY.parent / 'node_modules').exists())
+            output = root / 'action-output'
+            output.write_bytes(b'')
+            expected_stderr = (b'DMI_RAW_SAVE_REFUSED\n'
+                b'DMI_RAW_SAVE_DIAGNOSTIC stage=INPUT reason=SOURCE_PRODUCER_AFTER597_UNISSUED\n'
+                b'SOURCE_RUN_DIAGNOSTIC stage=UNKNOWN reason=UNKNOWN node_class=UNKNOWN rejection=UNKNOWN\n')
+            for legacy_inputs in (False, True):
+                with self.subTest(ordinary_save_inputs=legacy_inputs):
+                    environment = runtime_environment()
+                    environment.update({'INPUT_OPERATION': 'source',
+                        'GITHUB_REF': 'refs/heads/main', 'GITHUB_EVENT_NAME': 'workflow_dispatch',
+                        'GITHUB_RUN_ID': '17', 'GITHUB_RUN_ATTEMPT': '1', 'RUNNER_OS': 'Linux',
+                        'GITHUB_SERVER_URL': 'https://github.com', 'GITHUB_OUTPUT': str(output)})
+                    if legacy_inputs:
+                        # Valid ordinary SAVE-shaped inputs cannot select that
+                        # branch when the actual requested operation is source.
+                        generation = time.strftime('%G-W%V', time.gmtime())
+                        environment.update({'INPUT_PATH': '.cache/dmi-grib',
+                            'INPUT_KEY': f'dmi-grib-v4-Linux-{generation}-17-1',
+                            'ACTIONS_CACHE_SERVICE_V2': '1'})
+                    self.assertNotIn('NODE_OPTIONS', environment)
+                    self.assertNotIn('NODE_PATH', environment)
+                    stdout = root / ('stdout-' + str(int(legacy_inputs)))
+                    stderr = root / ('stderr-' + str(int(legacy_inputs)))
+                    out, err = stdout.open('wb'), stderr.open('wb')
+                    logs.extend((out, err))
+                    child = subprocess.Popen([str(NODE24), str(root / ENTRY)], cwd=root,
+                        env=environment, stdin=subprocess.DEVNULL, stdout=out, stderr=err)
+                    children.append(child)
+                    # Popen still owns its unreaped direct child even if this
+                    # fast negative has already exited. Do not demand liveness.
+                    fd = os.pidfd_open(child.pid, 0)
+                    fds.append(fd)
+                    info = small(f'/proc/self/fdinfo/{fd}').decode('ascii')
+                    self.assertEqual([int(line.split(':', 1)[1]) for line in info.splitlines()
+                                      if line.startswith('Pid:')], [child.pid])
+                    observed = os.waitid(os.P_PIDFD, fd, os.WEXITED | os.WNOHANG | os.WNOWAIT)
+                    if observed is not None:
+                        self.assertEqual(observed.si_pid, child.pid)
+                    self.assertEqual(child.wait(timeout=CLEANUP_SECONDS), 1)
+                    self.assertTrue(exited(fd))
+                    no_children()  # Any adopted child prevents a false pass.
+                    self.assertEqual(small(stdout), b'')
+                    self.assertEqual(small(stderr), expected_stderr,
+                        'UNKNOWN, a loader error, or generic exit1 is not named NULL evidence')
+                    self.assertEqual(output.read_bytes(), b'')
+                    self.assertFalse((root / '.cache').exists(), 'No claim, guardian work or SDK cache may start')
+                    self.assertFalse((root / ENTRY.parent / 'node_modules').exists())
+                    for name, digest in originals.items():
+                        self.assertEqual(hashlib.sha256((root / name).read_bytes()).hexdigest(), digest)
+                        self.assertEqual(hashlib.sha256((ROOT / name).read_bytes()).hexdigest(), digest)
+        finally:
+            primary = sys.exc_info()[1]
+            signal.setitimer(signal.ITIMER_REAL, CLEANUP_SECONDS)
+            try:
+                if len(children) != len(fds):
+                    raise RuntimeError('OWN_SOURCE_NULL_ACTION_IDENTITY_UNPROVED; fixture retained')
+                for fd in fds:
+                    if not exited(fd):
+                        signal.pidfd_send_signal(fd, signal.SIGKILL)
+                for child in children:
+                    child.wait(timeout=1.0)
+                no_children()
+                for fd in fds:
+                    self.assertTrue(exited(fd))
+                    os.close(fd)
+                    with self.assertRaises(OSError) as closed:
+                        os.fstat(fd)
+                    self.assertEqual(closed.exception.errno, errno.EBADF)
+                for handle in logs:
+                    handle.close()
+                    self.assertTrue(handle.closed)
+                self.assertEqual(libc.prctl(36, previous.value, 0, 0, 0), 0)
+                self.assertEqual(root.parent, temp_parent)
+                self.assertTrue(root.name.startswith('rr-source-null-action-'))
+                shutil.rmtree(root)
+            except BaseException as cleanup_error:
+                if primary is None:
+                    raise
+                primary.add_note(f'OWN_SOURCE_NULL_CLEANUP_UNPROVED:{type(cleanup_error).__name__}; fixture retained')
+            finally:
+                signal.setitimer(signal.ITIMER_REAL, 0)
+                signal.signal(signal.SIGALRM, old_alarm)
+
     def test_healthy_actual_action_cohort_and_claim_close_before_saved(self):
         self.actual_chain(interrupt=False)
 
@@ -463,11 +739,13 @@ class OwnedRawSaveNative(unittest.TestCase):
             parent = subprocess.Popen([str(NODE24), action_script], cwd=root, env=environment,
                 stdin=subprocess.DEVNULL, stdout=logs[0], stderr=logs[1])
             fds['action'] = retain_pidfd(parent.pid)
+            wait_until(lambda: (root / 'worker-ready').exists())
             if dot_script:
                 self.assertIn('/./', action_script)
+                self.assertFalse(exited(fds['action']), 'action exited before cmdline observation')
                 self.assertEqual(small(f'/proc/{parent.pid}/cmdline').split(b'\0')[:-1],
                                  [os.fsencode(NODE24), os.fsencode(action_script)])
-            wait_until(lambda: (root / 'worker-ready').exists())
+                self.assertFalse(exited(fds['action']), 'action exited during cmdline observation')
             ready = json.loads(small(root / 'worker-ready'))
             for role in ('cohort', 'worker'):
                 announced = ready[role]
@@ -867,7 +1145,12 @@ class OwnedRawSaveOfficialSdkNative(unittest.TestCase):
                 destination.write_bytes(source)
                 self.assertEqual(destination.read_bytes(), source)
             action = ROOT / ENTRY.parent
-            lock_bytes = (action / 'package-lock.json').read_bytes().replace(b'\r\n', b'\n')
+            distribution = reviewed_current_distribution()
+            # The real copied native action still receives current259. Only
+            # the historical whole-lock assertion uses its exact old49 image.
+            for name, contents in distribution['current'].items():
+                self.assertEqual((root / ENTRY.parent / name).read_bytes().replace(b'\r\n', b'\n'), contents)
+            lock_bytes = distribution['predecessor_lock']
             self.assertEqual(hashlib.sha256(lock_bytes).hexdigest(),
                 '9bd935a0c94f605ab28b4cc1ea543173bb06e213ba779e6e9855e31a4dd6a9a5')
             dependency = (action / 'node_modules').resolve(strict=True)
@@ -996,7 +1279,8 @@ class OwnedRawDistributionNative(unittest.TestCase):
         self.assertEqual(signal.getsignal(signal.SIGCHLD), signal.SIG_DFL)
         no_children()
         action_source = ROOT / ENTRY.parent
-        lock_bytes = (action_source / 'package-lock.json').read_bytes()
+        distribution = reviewed_current_distribution()
+        lock_bytes = distribution['predecessor_lock']
         self.assertEqual(hashlib.sha256(lock_bytes.replace(b'\r\n', b'\n')).hexdigest(),
                          '9bd935a0c94f605ab28b4cc1ea543173bb06e213ba779e6e9855e31a4dd6a9a5')
         official = action_source / 'node_modules/@actions/cache'
@@ -1104,6 +1388,8 @@ class OwnedRawDistributionNative(unittest.TestCase):
                 shutil.copyfile(ROOT / relative, destination)
                 self.assertEqual(destination.read_bytes(), (ROOT / relative).read_bytes())
             action = root / ENTRY.parent
+            for name, contents in distribution['current'].items():
+                self.assertEqual((action / name).read_bytes().replace(b'\r\n', b'\n'), contents)
             own_cache = action / '.npm-cache'
             own_cache.mkdir()
             self.assertFalse((action / 'node_modules').exists(), 'No preinstalled SDK can fake npm success')
@@ -1226,15 +1512,18 @@ class OwnedRawDistributionNative(unittest.TestCase):
                 self.assertEqual(metadata['exports']['.']['import'], './lib/cache.js')
                 self.assertEqual((installed / 'lib/cache.js').read_bytes(), (official / 'lib/cache.js').read_bytes())
                 self.assertFalse((installed / 'lib/cache.js').is_symlink())
+                # The actual normal offline npm process installs the new
+                # distribution, not the projected historical cache-only graph.
+                artifact = action / 'node_modules/@actions/artifact'
+                artifact_metadata = json.loads((artifact / 'package.json').read_text())
+                self.assertEqual((artifact_metadata['name'], artifact_metadata['version']), ('@actions/artifact', '6.3.1'))
+                self.assertEqual(artifact_metadata['exports']['.']['import'], './lib/artifact.js')
+                self.assertFalse(artifact.is_symlink())
             else:
                 # A generic setup failure is not the negative npm-cache proof.
                 debug_logs = list((own_cache / '_logs').glob('*-debug-0.log'))
                 self.assertEqual(len(debug_logs), 1)
-                with debug_logs[0].open('rb') as handle:
-                    debug = handle.read(65537)
-                self.assertLessEqual(len(debug), 65536)
-                self.assertTrue(any(line.endswith(b' error code ENOTCACHED')
-                                    for line in debug.splitlines()),
+                self.assertTrue(bounded_npm_offline_cache_refusal(debug_logs[0]),
                                 'Actual npm must refuse the missing offline cache')
         finally:
             primary = sys.exc_info()[1]
