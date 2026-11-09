@@ -22,8 +22,8 @@
   "nativeInputFiles": [
     {
       "path": "scripts/fixtures/source19-current-initial-weather.py",
-      "bytes": 10624,
-      "sha256": "0e3b5abb6cfe36e98f9ff62322a42dedd86129f0db319864cf655a4e3502f64c",
+      "bytes": 11181,
+      "sha256": "c9b64a1656435e7b40dc1e0a123b24266ad061f0a7e86346aeb6faaf77dd7b2a",
       "source": "THIS_SAME_ACTUAL_COMMITTED_CANDIDATE"
     },
     {

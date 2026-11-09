@@ -19,7 +19,7 @@ jobs:
       - name: Check out the exact public synthetic fixture source
         uses: actions/checkout@v7
         with:
-          ref: 3dfde7ae0d0efe32474eb8321781d3e640b91c82
+          ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@v7
@@ -33,148 +33,264 @@ jobs:
         run: >-
           python -m pip install --disable-pip-version-check --no-input --timeout 15 --retries 0
           --only-binary=:all: -r requirements-dmi.txt -r requirements-geometry.txt -r requirements-copernicus.txt
-      - name: Diagnose one synthetic provider child without source admission
+      - name: Check the two isolated one-asset WAM transactions
         shell: bash
+        timeout-minutes: 20
         run: |
-          unset GITHUB_TOKEN GH_TOKEN GITHUB_EVENT_PATH
-          PYTHON312=$(command -v python)
-          NODE24=$(command -v node)
-          unset RR855_H0
-          set -eu
+          set -euo pipefail
           umask 077
-          repo=$(pwd -P)
-          head=3dfde7ae0d0efe32474eb8321781d3e640b91c82
-          tree=7f7b7a8136371efc6f900ad0a2502587c540493a
-          export GIT_NO_LAZY_FETCH=1 GIT_NO_REPLACE_OBJECTS=1 GIT_OPTIONAL_LOCKS=0
-          export GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null
-          actual_head=$(git -c protocol.allow=never rev-parse HEAD^{commit})
-          actual_tree=$(git -c protocol.allow=never rev-parse HEAD^{tree})
-          physical_top=$(git -c protocol.allow=never rev-parse --show-toplevel)
-          shallow=$(git -c protocol.allow=never rev-parse --is-shallow-repository)
-          dirty=$(git -c protocol.allow=never status --porcelain=v1 --untracked-files=all)
-          test "$actual_head" = "$head" && test "$actual_tree" = "$tree" &&
-            test "$physical_top" = "$repo" && test "$shallow" = false && test -z "$dirty" || exit 1
-          if git config --local --get-regexp '^(extensions\.partialclone|remote\..*\.promisor)$' >/dev/null 2>&1; then exit 1; fi
-          library_path=$(printenv LD_LIBRARY_PATH || true)
-          actual_h0=$(printenv RR855_H0 || true)
-          env -i PATH="$PATH" LANG=C.UTF-8 LD_LIBRARY_PATH="$library_path" \
-            "$PYTHON312" -I -B - "$NODE24" "$actual_h0" "$head" 3>&1 >/dev/null 2>&1 <<'PY'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          before=$(mktemp -d "$RUNNER_TEMP/source855-before.XXXXXX")
+          after=$(mktemp -d "$RUNNER_TEMP/source855-after.XXXXXX")
+          git -c advice.detachedHead=false worktree add --detach "$before" 3dfde7ae0d0efe32474eb8321781d3e640b91c82
+          git -c advice.detachedHead=false worktree add --detach "$after" 3a03d3c669d9fda7b39d8dc1cabd859b1320779f
+          python_bin=$(realpath "$(command -v python)")
+          node_bin=$(realpath "$(command -v node)")
+          probe_file=$(mktemp "$RUNNER_TEMP/source855-wam-probe.XXXXXX.py")
+          cat > "$probe_file" <<'SOURCE855_PROBE'
+          #!/usr/bin/env python3
+          """Private #855 one-asset diagnosis. Use a disposable, egress-blocked Linux host.
+
+          Run once per mode in a fresh process. From the already provisioned host:
+              env -i PATH="$PATH" LANG=C.UTF-8 /absolute/python3.12 -I -B \
+                /absolute/PROBE-ONE-WAM-NSB.py red /absolute/old608 /absolute/node24
+              env -i PATH="$PATH" LANG=C.UTF-8 /absolute/python3.12 -I -B \
+                /absolute/PROBE-ONE-WAM-NSB.py green /absolute/fixed608 /absolute/node24
+
+          The fixed commit must differ from old608 only by the three pinned afterimages.
+          A full local Git bank, actual ecCodes API 2.48.2 and ordinary requirements are
+          needed. Neither checkout is edited. The existing owned-host helper makes its
+          normal disposable clone. A fixed synthetic H0 is used because the spatial
+          regression is hour-independent. No GitHub, PG, SDK, raw log upload or qualification.
+          """
+
+          from __future__ import annotations
+
+          import ast
+          import copy
+          from datetime import datetime
+          import hashlib
           import importlib.util
           import json
           import os
           from pathlib import Path
-          import re
+          import socket
           import stat
           import subprocess
           import sys
           import tempfile
 
-          phase = 'ENVIRONMENT'
-          result = {'kind': 'CURRENT_PROVIDER_ONLY_DIAGNOSTIC', 'outcome': 'REFUSED',
-                    'phase': phase, 'exitCode': None, 'referenceMode': 'UNSET',
-                    'providerFailure': None, 'initialWeatherLine': None,
-                    'privatePayloadIncluded': False, 'producerFrame': None, 'terminalFamily': None}
-          try:
+          BASE = "3dfde7ae0d0efe32474eb8321781d3e640b91c82"
+          TREE = "7f7b7a8136371efc6f900ad0a2502587c540493a"
+          FIXTURE = "scripts/fixtures/source19-current-initial-weather.py"
+          DESCRIPTOR = "scripts/fixtures/source19-current598-input-profile.json"
+          OBSERVER = "scripts/test-source598-current-native-profile.py"
+          PROVIDER = "scripts/fixtures/source19-current-native-providers.py"
+          HASHES = {
+              FIXTURE: ("0e3b5abb6cfe36e98f9ff62322a42dedd86129f0db319864cf655a4e3502f64c",
+                        "c9b64a1656435e7b40dc1e0a123b24266ad061f0a7e86346aeb6faaf77dd7b2a"),
+              DESCRIPTOR: ("eb17e5e4b576b43bfd7fee8ea7f0758d9d8bce9c56feef52ae0532685dad96da",
+                           "e508de808d85147f1ee46ae8281ec046b29d0c82d4218fb493004b50e1843d60"),
+              OBSERVER: ("cdf59624c41c89e8af51a61aa6df82492596de36f6aafd5e4ea44103be28016a",
+                         "976301b59ddd425a83a1d923229252d6c2d61f6742f55bd89f2108ac1fbdbae6"),
+              PROVIDER: ("ffac5704cbffdfe65d160ae0ea73009a8f5bcdf12dc1d6212cdd9266d8970c5a",) * 2,
+          }
+          ENV_KEYS = {"PATH", "LANG", "LC_ALL", "LC_CTYPE", "LD_LIBRARY_PATH", "LIBRARY_PATH"}
+          REFERENCE = datetime.fromisoformat("2026-11-09T08:00:00+00:00")
+          FIELDS = {"significant-wave-height", "dominant-wave-period", "mean-wave-dir"}
+
+
+          def module(name, file):
+              spec = importlib.util.spec_from_file_location(name, file)
+              assert spec is not None and spec.loader is not None
+              value = importlib.util.module_from_spec(spec)
+              sys.modules[name] = value
+              spec.loader.exec_module(value)
+              return value
+
+
+          def pinned_checkout(repo, mode):
+              env = {**os.environ, "GIT_NO_LAZY_FETCH": "1", "GIT_NO_REPLACE_OBJECTS": "1",
+                     "GIT_OPTIONAL_LOCKS": "0", "GIT_TERMINAL_PROMPT": "0",
+                     "GIT_CONFIG_NOSYSTEM": "1", "GIT_CONFIG_GLOBAL": "/dev/null"}
+
+              def git(*args):
+                  return subprocess.check_output(
+                      ["git", "-c", "core.autocrlf=false", "-c", "protocol.allow=never", "-C", str(repo), *args],
+                      env=env, stdin=subprocess.DEVNULL, timeout=30,
+                  )
+
+              assert Path(git("rev-parse", "--show-toplevel").decode().strip()).resolve(strict=True) == repo
+              assert git("rev-parse", "--is-shallow-repository") == b"false\n"
+              assert git("rev-parse", BASE + "^{tree}").decode().strip() == TREE
+              assert not git("status", "--porcelain=v1", "--untracked-files=all")
+              head = git("rev-parse", "HEAD^{commit}").decode().strip()
+              difference = git("diff", "--no-ext-diff", "--no-textconv", "--name-only", "-z", BASE, head, "--")
+              if mode == "red":
+                  assert head == BASE and not difference
+              else:
+                  assert head != BASE and set(difference.decode().rstrip("\0").split("\0")) == {
+                      FIXTURE, DESCRIPTOR, OBSERVER,
+                  }
+              for file, digests in HASHES.items():
+                  data = git("cat-file", "blob", head + ":" + file)
+                  assert hashlib.sha256(data).hexdigest() == digests[mode == "green"]
+                  assert data == (repo / file).read_bytes() and not (repo / file).is_symlink()
+              return head
+
+
+          def one_wam_asset(fixture, body):
+              # The whole source is pinned. Only restrict the two loop iterators and
+              # stop after the existing asset receipt, before unrelated wind/ledger work.
+              parsed = ast.parse(body)
+              fn, = (item for item in parsed.body
+                     if isinstance(item, ast.FunctionDef) and item.name == "add_initial_weather")
+              outer, = (item for item in fn.body if isinstance(item, ast.For)
+                        and ast.unparse(item.iter) == "recipes.items()")
+              inner, = (item for item in outer.body if isinstance(item, ast.For)
+                        and ast.unparse(item.iter) == "range(first_offset, 121)")
+              assert ast.unparse(outer.target) == "(collection, fields)" and ast.unparse(inner.target) == "offset"
+              assert ast.unparse(inner.body[-1]).startswith("observations.append(")
+              assert any(isinstance(node, ast.FunctionDef) and node.name == "admit" for node in ast.walk(inner))
+              outer.iter = ast.parse('(("wam_nsb", recipes["wam_nsb"]),)', mode="eval").body
+              inner.iter = ast.parse("range(first_offset, first_offset + 1)", mode="eval").body
+              fn.body = fn.body[:fn.body.index(outer) + 1] + [ast.Return(ast.Name("observations", ast.Load()))]
+              isolated = ast.fix_missing_locations(ast.Module(body=[fn], type_ignores=[]))
+              scope = vars(fixture).copy()
+              exec(compile(isolated, str(fixture.__file__), "exec"), scope)
+              return scope[fn.name]
+
+
+          def probe(report):
+              assert len(sys.argv) == 4 and sys.argv[1] in ("red", "green")
+              mode, repo, node = sys.argv[1], Path(sys.argv[2]), Path(sys.argv[3])
+              report["mode"] = mode.upper()
+              assert sys.platform == "linux" and sys.version_info[:2] == (3, 12) and sys.flags.isolated
+              assert os.getuid() == os.geteuid() and set(os.environ) <= ENV_KEYS
+              assert all(p.is_absolute() and p.resolve(strict=True) == p for p in (repo, node))
+              assert repo.is_dir() and node.is_file()
               import eccodes
-              import requests.adapters
-              import urllib3.util.retry
-              node, captured_h0, head = sys.argv[1:]
-              node = Path(node)
-              assert sys.platform == 'linux' and sys.version_info[:2] == (3, 12)
-              assert eccodes.codes_get_api_version() == '2.48.2'
-              assert node.is_absolute() and node.is_file()
-              assert subprocess.check_output([str(node), '-p', "process.versions.node.split('.')[0]"],
-                                             stdin=subprocess.DEVNULL, timeout=30) == b'24\n'
-              assert not captured_h0 or re.fullmatch(r'\d{4}-\d\d-\d\dT\d\d:00:00\.000Z', captured_h0)
-              phase = 'OWNED_HOST'
-              observer_path = Path.cwd() / 'scripts/test-source598-current-native-profile.py'
-              spec = importlib.util.spec_from_file_location('source855_provider_only_observer', observer_path)
-              observer = importlib.util.module_from_spec(spec)
-              spec.loader.exec_module(observer)
-              observer.NODE = node
+              assert eccodes.codes_get_api_version() == "2.48.2"
+              report["stage"] = "CHECKOUT"
+              head = pinned_checkout(repo, mode)
+              os.umask(0o077)
+              os.chdir(repo)
+              observer = module("wam_probe_observer", repo / OBSERVER)
               assert observer.CURRENT_NATIVE_CONTEXT is None
-              test = observer.SourceCurrentNative()
-              profile = test.current598_profile()
-              own, root, environment, normal_h0 = test.owned_current_host(head, with_sdk=False, input_profile=profile)
+              observer.NODE = node
+              case = observer.SourceCurrentNative()
+              own, root, child_env, _ = case.owned_current_host(head, with_sdk=False, input_profile=case.current598_profile())
               owner = own.lstat()
               assert own.parent == Path(tempfile.gettempdir()).resolve(strict=True)
-              assert owner.st_uid == os.getuid() == os.geteuid()
-              assert stat.S_ISDIR(owner.st_mode) and stat.S_IMODE(owner.st_mode) == 0o700
-              (own / 'fixture-current598').mkdir(mode=0o700)
-              phase = 'PROVIDERS'
-              result['referenceMode'] = 'CAPTURED_HOUR' if captured_h0 else 'NEW_NORMAL_HOUR'
-              command = [sys.executable, '-I', '-B',
-                         str(root / 'scripts/fixtures/source19-current-native-providers.py'),
-                         str(node), captured_h0 or normal_h0, '--current598']
-              with (own / 'current598-providers-whole.stdout').open('xb') as stdout, \
-                   (own / 'current598-providers-whole.stderr').open('xb') as stderr:
-                  child = subprocess.run(command, cwd=root, env=environment, stdin=subprocess.DEVNULL,
-                                         stdout=stdout, stderr=stderr, check=False)
-                  for stream in (stdout, stderr):
-                      stream.flush()
-                      os.fsync(stream.fileno())
-              result['exitCode'] = child.returncode
-              result['outcome'] = 'CHILD_SUCCESS' if child.returncode == 0 else 'CHILD_FAILED'
-              if child.returncode != 0:
-                  failure = observer.current_provider_failure(own, root)
-                  result['providerFailure'] = failure
-                  if failure['class'] == 'UNKNOWN' and failure['providerLine'] == 389:
-                      raw = observer.source_current_cohort_read(own, 'current598-providers-whole.stderr', 128 * 1024)
-                      _, separator, tail = (b'\n' + raw.replace(b'\r\n', b'\n')).rpartition(
-                          b'\nTraceback (most recent call last):\n')
-                      frame = b'  File "' + os.fsencode(root / 'scripts/fixtures/source19-current-initial-weather.py') + b'", line '
-                      allowed = {b'need': (17, 17), b'grid': (24, 65), b'add_initial_weather': (68, 169), b'admit': (129, 134)}
-                      if separator:
-                          for line in reversed(tail.splitlines()[:-1]):
-                              if line.startswith(frame):
-                                  match = re.fullmatch(rb'([1-9][0-9]{0,2}), in ([A-Za-z_]+)', line[len(frame):])
-                                  if match and match[2] in allowed:
-                                      number = int(match[1])
-                                      lower, upper = allowed[match[2]]
-                                      if lower <= number <= upper:
-                                          result['initialWeatherLine'] = number
-                                          break
-                      if result['initialWeatherLine'] == 136 and separator:
-                          producer_frame = b'  File "' + os.fsencode(root / 'scripts/update-dmi-bulk.py') + b'", line '
-                          permitted = {
-                              b'process_grib_transactionally': 'TRANSACTION',
-                              b'process_grib': 'DECODE',
-                              b'operational_wave_asset_stage_admissible': 'ADMISSION',
-                              b'private_wave_bootstrap_asset_summary': 'SUMMARY',
-                              b'private_wave_bootstrap_hour_rejection_code': 'REJECTION',
-                              b'build_asset_stage_document': 'BUILD_STAGE',
-                              b'_grib_read_scope': 'READ_SCOPE',
-                              b'_refuse': 'READ_REFUSAL',
-                              b'check': 'READ_CHECK',
-                              b'__enter__': 'READ_ENTER',
-                              b'__exit__': 'READ_EXIT',
-                          }
-                          lines = tail.splitlines()
-                          for line in reversed(lines[:-1]):
-                              if line.startswith(producer_frame):
-                                  match = re.fullmatch(rb'([1-9][0-9]{0,4}), in ([A-Za-z_]+)', line[len(producer_frame):])
-                                  if match and match[2] in permitted and int(match[1]) <= 24000:
-                                      result['producerFrame'] = [permitted[match[2]], int(match[1])]
-                                      break
-                          terminal = lines[-1] if lines else b''
-                          families = (
-                              (b'RuntimeError: GRIB asset stage validation failed', 'WAVE_STAGE_VALIDATION'),
-                              (b'GribReadUnproven:', 'GRIB_READ_REFUSAL'),
-                              (b'TypeError:', 'TYPE_ERROR'),
-                              (b'KeyError:', 'KEY_ERROR'),
-                              (b'ValueError:', 'VALUE_ERROR'),
-                              (b'AssertionError:', 'ASSERTION_ERROR'),
-                              (b'FileNotFoundError:', 'FILE_ABSENT'),
-                              (b'OSError:', 'OS_ERROR'),
-                              (b'MemoryError', 'MEMORY_ERROR'),
-                          )
-                          result['terminalFamily'] = next(
-                              (code for prefix, code in families if terminal.startswith(prefix)), 'UNKNOWN')
-          except Exception:
-              # Preserve refusal or the observed child failure. No exception content.
-              pass
-          result['phase'] = phase
-          with os.fdopen(3, 'w') as report:
-              print(json.dumps(result, separators=(',', ':')), file=report, flush=True)
-          raise SystemExit(0 if result['outcome'] == 'CHILD_SUCCESS' else 1)
-          PY
+              assert owner.st_uid == os.geteuid() and stat.S_ISDIR(owner.st_mode) and stat.S_IMODE(owner.st_mode) == 0o700
+              os.chdir(root)
+              os.environ.clear()
+              os.environ.update(child_env)
+              provider = module("wam_probe_provider", root / PROVIDER)
+              provider.no_links(root)
+              assert root.name == "current-source-native" and own.name.startswith("rr-source19-union-native-")
+              assert Path(os.environ["RUNNER_TEMP"]).resolve(strict=True) == root / "runner-temp"
+              assert provider.ROOT == root
+
+              report["stage"] = "ISSUER_AND_REGISTRY"
+              subprocess.run([str(node), "--input-type=module", "-e",
+                  "import {requireSourceProducerOutput} from './scripts/lib/source-producer-current-native-profile.mjs';requireSourceProducerOutput();if(process.versions.node.split('.')[0]!=='24')throw Error('NODE24_REQUIRED');"],
+                  stdin=subprocess.DEVNULL, check=True, timeout=30)
+              subprocess.run([str(node), str(root / "scripts/build-public-coastal-parts-v2.mjs")],
+                             stdin=subprocess.DEVNULL, check=True, timeout=30)
+              out = own / "fixture-current598"
+              raw_dir = out / ".cache/dmi-grib"
+              raw_dir.mkdir(mode=0o700, parents=True, exist_ok=False)
+              provider.no_links(raw_dir)
+              os.environ.update(DMI_BULK_RAW_DIR=str(raw_dir), DMI_BULK_OUTPUT_PATH=str(out / provider.BASIS[0]),
+                  DMI_BULK_DEPLOYED_FALLBACK_PATH=str(out / ".cache/never-created-deployed-bulk.json"),
+                  DMI_BULK_PUBLISHED_BASELINE_PATH=str(out / ".cache/never-created-published-bulk.json"),
+                  DMI_STAC_ROOT="https://current-source-native.invalid/v1/forecastdata")
+
+              def forbidden(*_args, **_kwargs):
+                  raise RuntimeError("CURRENT_NATIVE_PROVIDER_EXTERNAL_NETWORK_REFUSED")
+
+              socket.create_connection = socket.getaddrinfo = forbidden
+              sys.path.insert(0, str(root / "scripts"))
+              producer = provider.module("wam_probe_normal_dmi_decoder", root / "scripts/update-dmi-bulk.py")
+              assert not producer.CACHE_ONLY and not producer.API_KEY and producer.RAW_DIR == raw_dir
+              producer.STAC_SESSION.get = producer.DOWNLOAD_SESSION.get = forbidden
+              from lib.copernicus_current import load_targets
+              registry_path = root / "data/live/coastal-parts-v2.json"
+              registry = json.loads(registry_path.read_bytes())
+              targets = load_targets(registry_path)
+              assert len(targets) == registry["partCount"] == 673 and registry["zoneCount"] == 210
+              zones = producer.build_operational_zone_config(json.loads((root / "data/zones.geojson").read_bytes()), targets)
+              assert len({row["id"] for row in zones if row.get("coastalPart")}) == 673
+              assert not producer.WATER_SOURCES_PATH.exists()
+              document = producer.load_previous(producer.sampling_registry_signature(),
+                                                coastal_part_targets=targets, production_reference=REFERENCE)
+              assert not document["zones"]
+              document.update(generatedAt=provider.time_text(REFERENCE), hours=producer.HOURS,
+                              currentVectorSemanticsVersion=producer.CURRENT_VECTOR_SEMANTICS_VERSION,
+                              currentVectorSelection=producer.CURRENT_VECTOR_SELECTION,
+                              spatialProvenanceVersion=producer.SPATIAL_PROVENANCE_VERSION,
+                              currentOperationalCadenceHours=1, refreshStatus="partial")
+              document["zones"] = {zone["id"]: {**(producer.sampling_identity(zone) or {}),
+                                    "hourly": {}, "gridPoints": {}, "collections": {}} for zone in zones}
+              document.setdefault("diagnostics", {})
+              before = copy.deepcopy(document)
+              original = []
+              assert not producer._UNSETTLED_GRIB_READS and not producer.GRID_INDEX_CACHE
+              initial = provider.module("wam_probe_initial_weather", root / FIXTURE)
+              pinned = (root / FIXTURE).read_bytes()
+              assert hashlib.sha256(pinned).hexdigest() == HASHES[FIXTURE][mode == "green"]
+              one = one_wam_asset(initial, pinned)
+              report["stage"] = "TRANSACTION"
+              try:
+                  observed = one(eccodes, producer, targets, zones, document, REFERENCE, out, original)
+              except producer.DmiGridLookupError as error:
+                  if error.failure_code != "NEAREST_GRID_OUT_OF_AREA":
+                      raise
+                  report["failureCode"] = "NEAREST_GRID_OUT_OF_AREA"
+                  assert not producer._UNSETTLED_GRIB_READS and document == before and not original
+                  assert len(tuple(raw_dir.glob("*.grib"))) == 1
+                  report["outcome"] = "RED_EXPECTED" if mode == "red" else "GREEN_OUT_OF_AREA"
+                  return
+              assert not producer._UNSETTLED_GRIB_READS and len(original) == len(observed) == 1
+              assert len(tuple(raw_dir.glob("*.grib"))) == 1
+              valid = provider.time_text(REFERENCE)
+              receipt = document["runs"]["wam_nsb"]["processedSteps"][valid]
+              assert receipt["complete"] is True and receipt["assetTraversalComplete"] is True
+              assert set(receipt["recognizedParameters"]) == FIELDS
+              assert producer.wave_asset_cache_proof_coherent(receipt["waveTargetProof"], require_complete=True)
+              assert receipt["acceptedNativeZoneCount"] == len(producer.native_operational_wave_zones("wam_nsb", zones))
+              assert receipt["rawContentSha256"] == original[0]["sha256"]
+              report.update(outcome="GREEN_EXPECTED" if mode == "green" else "RED_UNEXPECTED_EOF",
+                            recognizedFields=len(FIELDS), acceptedNativeTargets=receipt["acceptedNativeZoneCount"])
+
+
+          if __name__ == "__main__":
+              result = {"kind": "SOURCE855_SINGLE_WAM_NSB_ASSET", "mode": "UNKNOWN", "stage": "HOST",
+                        "outcome": "REFUSED", "failureCode": "UNKNOWN", "recognizedFields": 0,
+                        "acceptedNativeTargets": 0, "privatePayloadIncluded": False}
+              summary = os.dup(1)
+              with open(os.devnull, "wb") as sink:
+                  os.dup2(sink.fileno(), 1)
+                  os.dup2(sink.fileno(), 2)
+              try:
+                  if sys.flags.optimize != 0:
+                      raise RuntimeError("PROBE_REQUIRES_ASSERTIONS")
+                  probe(result)
+              except Exception:
+                  pass
+              with os.fdopen(summary, "w") as out:
+                  print(json.dumps(result, separators=(",", ":")), file=out, flush=True)
+              raise SystemExit(0 if result["outcome"] in {"RED_EXPECTED", "GREEN_EXPECTED"} else 1)
+          SOURCE855_PROBE
+          if env -i PATH="$PATH" LANG=C.UTF-8 "$python_bin" -I -B "$probe_file" red "$before" "$node_bin"; then
+            red=0
+          else
+            red=$?
+          fi
+          if env -i PATH="$PATH" LANG=C.UTF-8 "$python_bin" -I -B "$probe_file" green "$after" "$node_bin"; then
+            green=0
+          else
+            green=$?
+          fi
+          test "$red" -eq 0 && test "$green" -eq 0
