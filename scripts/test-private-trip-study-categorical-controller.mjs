@@ -35,6 +35,11 @@ function database(state='EXACT_004_005_006'){
 function reviewedFrozenReplayWorkflow(source){
   assert.equal(typeof source,'string');
   const digest=value=>crypto.createHash('sha256').update(value).digest('hex');
+  if(digest(source)==='e5f1304dc0251fcca2a11dbdba73878a0f5e8a0b58191c4dc2a44506d5e95bc1'){
+    const condition="\n        if: inputs.operation == 'deliver' || inputs.operation == 'enable'";
+    assert.equal(source.split(condition).length,2);source=source.replace(condition,'');
+    assert.equal(digest(source),'435d5e5e2276e83e0502ae4fcc4230447db590b8341a41e5850a6e896f25c1f8');
+  }
   if(digest(source)!=='435d5e5e2276e83e0502ae4fcc4230447db590b8341a41e5850a6e896f25c1f8')return source;
   assert.equal(Buffer.byteLength(source),7704);
   for(const [before,after]of [["      enable_confirmation:\n        description: Skriv ENABLE_PRIVATE_UNISSUED_STUDY_ONLY for kun at \u00e5bne eksisterende signerede private ruter; ingen rapport eller kvalifikationsp\u00e5stand\n        type: string\n        default: ''\n","      enable_confirmation:\n        description: Skriv ENABLE_PRIVATE_UNISSUED_STUDY_ONLY for kun at \u00e5bne eksisterende signerede private ruter; ingen rapport eller kvalifikationsp\u00e5stand\n        type: string\n        default: ''\n      export_mode:\n        description: Almindelig eksport eller kun genl\u00e6sning af en allerede frossen rapport; ingen forberedelse ved frozen-replay\n        type: choice\n        default: ordinary\n        options: [ordinary, frozen-replay]\n      frozen_month:\n        description: P\u00e5kr\u00e6vet YYYY-MM ved frozen-replay; skal v\u00e6re den normale senest afsluttede UTC-m\u00e5ned\n        type: string\n        default: ''\n      frozen_binding_sha256:\n        description: P\u00e5kr\u00e6vet oprindelig fuld modelbindings SHA256 ved frozen-replay\n        type: string\n        default: ''\n      frozen_report_sha256:\n        description: P\u00e5kr\u00e6vet u\u00e6ndret frossen rapports SHA256 ved frozen-replay\n        type: string\n        default: ''\n"],["      PRIVATE_STUDY_OPERATION: ${{ inputs.operation }}\n      PRIVATE_STUDY_ENABLE_CONFIRMATION: ${{ inputs.enable_confirmation }}\n    steps:\n      - name: Validate fixed private study operation\n","      PRIVATE_STUDY_OPERATION: ${{ inputs.operation }}\n      PRIVATE_STUDY_ENABLE_CONFIRMATION: ${{ inputs.enable_confirmation }}\n      PRIVATE_STUDY_EXPORT_MODE: ${{ inputs.export_mode }}\n      PRIVATE_STUDY_FROZEN_MONTH: ${{ inputs.frozen_month }}\n      PRIVATE_STUDY_FROZEN_BINDING_SHA256: ${{ inputs.frozen_binding_sha256 }}\n      PRIVATE_STUDY_FROZEN_REPORT_SHA256: ${{ inputs.frozen_report_sha256 }}\n    steps:\n      - name: Validate fixed private study operation\n"],["            *) echo 'PRIVATE_STUDY_OPERATION_INVALID' >&2; exit 1 ;;\n          esac\n\n  private-study-upgrade:\n","            *) echo 'PRIVATE_STUDY_OPERATION_INVALID' >&2; exit 1 ;;\n          esac\n          if [[ \"${PRIVATE_STUDY_EXPORT_MODE:-ordinary}\" != ordinary || -n \"$PRIVATE_STUDY_FROZEN_MONTH$PRIVATE_STUDY_FROZEN_BINDING_SHA256$PRIVATE_STUDY_FROZEN_REPORT_SHA256\" ]]; then\n            test \"$PRIVATE_STUDY_OPERATION\" = export\n            test \"$PRIVATE_STUDY_EXPORT_MODE\" = frozen-replay\n            [[ \"$PRIVATE_STUDY_FROZEN_MONTH\" =~ ^[0-9]{4}-(0[1-9]|1[0-2])$ ]]\n            [[ \"$PRIVATE_STUDY_FROZEN_BINDING_SHA256\" =~ ^[a-f0-9]{64}$ ]]\n            [[ \"$PRIVATE_STUDY_FROZEN_REPORT_SHA256\" =~ ^[a-f0-9]{64}$ ]]\n          fi\n\n  private-study-upgrade:\n"],["      GITHUB_TOKEN: ${{ github.token }}\n      TRIP_STORAGE_OPERATION: private-study-export\n      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}\n      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n","      GITHUB_TOKEN: ${{ github.token }}\n      TRIP_STORAGE_OPERATION: private-study-export\n      PRIVATE_STUDY_EXPORT_MODE: ${{ inputs.export_mode }}\n      PRIVATE_STUDY_FROZEN_MONTH: ${{ inputs.frozen_month }}\n      PRIVATE_STUDY_FROZEN_BINDING_SHA256: ${{ inputs.frozen_binding_sha256 }}\n      PRIVATE_STUDY_FROZEN_REPORT_SHA256: ${{ inputs.frozen_report_sha256 }}\n      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}\n      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n"]].reverse()){
@@ -109,6 +114,7 @@ test('private-study007: whole exact test-only inverse preserves historical contr
     return value;
   };
   const inverse=value=>{
+    value=enableBefore(value,review.planOffSuccessor);
     value=enableBefore(value,review.enableSuccessor);
     assert.equal(sha(value),review.afterSha256);
     for(const edit of [...review.edits].reverse()){
@@ -215,8 +221,9 @@ function controllerFixture({state='EXACT_004_005_006',mode='deliver',allow007='t
       assert.equal(init.method,'GET');assert.equal(init.redirect,'error');assert.equal(init.body,undefined);
       metadataReads.push({kind:deployment?'deployment':'version',activeFlag});
       const body=deployment?{success:true,result:{deployments:[{id:active,strategy:'percentage',versions:[{version_id:active,percentage:100}]}]}}
-        :{success:true,result:{id:active,resources:{bindings:[...config.d1_databases.map(row=>({type:'d1',name:row.binding,id:row.database_id})),
-          {type:'plain_text',name:'TRIP_AGGREGATE_ENABLED',text:failure==='enable-post-binding'&&active===nextVersion?(activeFlag==='true'?'false':'true'):activeFlag}]}}};
+        :{success:true,result:{id:active,resources:{bindings:[...config.d1_databases.map((row,index)=>({type:'d1',name:row.binding,id:
+          failure==='plan-off-binding-drift'&&index===9&&events.includes('attest:OFF')?nextVersion:row.database_id})),
+          ...(failure==='plan-off-binding-missing'?[]:[{type:'plain_text',name:'TRIP_AGGREGATE_ENABLED',text:failure==='enable-post-binding'&&active===nextVersion?(activeFlag==='true'?'false':'true'):activeFlag}])]}}};
       return new Response(JSON.stringify(body));
     }});
   };
@@ -278,9 +285,21 @@ test('private-study007: normal read-only plan inspects all ten and sends no DDL 
     const out=await fx.invoke();assert.equal(out.state,'EXACT_004_005_006');assert.equal(out.operation,'READ_ONLY_PLAN');
     assert.equal(out.originalJobBindingReady,true);assert.equal(out.categoricalPolicyReady,false);
     assert.equal(out.schemaApplied,false);assert.equal(out.workerUpdated,false);assert.equal(fx.writes.length,0);
+    assert.equal(out.aggregateOffAttested,true);assert(fx.events.includes('attest:OFF'));
+    assert(!fx.events.some(event=>event.startsWith('supabase:')));
     assert.equal(fx.events.filter(x=>x==='worker:deploy').length,0);
     assert.deepEqual([...new Set(fx.reads.map(row=>row.index))],[0,1,2,3,4,5,6,7,8,9]);
   }finally{fx.close();}
+  const missing=controllerFixture({mode:'plan',failure:'plan-off-binding-missing'});try{
+    const out=await missing.invoke();assert.equal(out.aggregateOffAttested,false);noFixtureGap(missing);
+    assert.equal(missing.writes.length,0);
+    assert(!missing.events.some(event=>event.startsWith('supabase:')||event==='worker:deploy'));
+  }finally{missing.close();}
+  const drift=controllerFixture({mode:'plan',failure:'plan-off-binding-drift'});try{
+    await assert.rejects(drift.invoke(),error=>error.stage==='READ_ONLY_PLAN_WORKER_OFF');noFixtureGap(drift);
+    assert.equal(drift.writes.length,0);
+    assert(!drift.events.some(event=>event.startsWith('supabase:')||event==='worker:deploy'));
+  }finally{drift.close();}
 });
 
 test('private-study007: normal deliver uses exact OFF-before-maintenance, one control0 write and full46 readbacks',async()=>{
@@ -406,7 +425,7 @@ test('private-study enable: existing plan and deliver remain defaultOFF and a la
     const fx=enabledPrivateStudyFixture({mode,confirmation:'',workerOff:false});try{
       const out=await fx.invoke();noFixtureGap(fx);assert.equal(fx.writes.length,0);
       assert.equal(JSON.parse(fx.files.get('/tmp/ravradar-private-trip-study-wrangler.json')).vars.TRIP_AGGREGATE_ENABLED,'false');
-      if(mode==='plan'){assert.equal(out.operation,'READ_ONLY_PLAN');assert.equal(fx.events.filter(x=>x==='worker:deploy').length,0);}
+      if(mode==='plan'){assert.equal(out.operation,'READ_ONLY_PLAN');assert.equal(out.aggregateOffAttested,false);assert.equal(fx.events.filter(x=>x==='worker:deploy').length,0);assert(!fx.events.some(event=>event.startsWith('supabase:')));}
       else{assert.equal(out.publicStatisticsActivated,false);assert.equal(out.reportExported,false);
         assert.equal(fx.events.filter(x=>x==='worker:deploy').length,1);assert(fx.events.includes('attest:OFF'));
         assert(fx.metadataReads.some(row=>row.kind==='version'&&row.activeFlag==='true'),'known ON is read before the existing OFF update');
@@ -417,7 +436,16 @@ test('private-study enable: existing plan and deliver remain defaultOFF and a la
 
 test('private-study enable: raw workflow and controller are exact additive successors before the unchanged old oracles',()=>{
   const review=JSON.parse(fs.readFileSync('scripts/lib/private-trip-study-categorical-review.json','utf8'));
-  const workflow=reviewedFrozenReplayWorkflow(fs.readFileSync('.github/workflows/private-trip-weather-study.yml','utf8').replaceAll('\r\n','\n'));
+  const actualWorkflow=fs.readFileSync('.github/workflows/private-trip-weather-study.yml','utf8').replaceAll('\r\n','\n');
+  const workflow=reviewedFrozenReplayWorkflow(actualWorkflow);
+  const setupCondition="        if: inputs.operation == 'deliver' || inputs.operation == 'enable'";
+  assert.equal(actualWorkflow.split("      - uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf\n        if: inputs.operation == 'deliver' || inputs.operation == 'enable'").length,2);
+  for(const operation of ['plan','deliver','enable','export']){
+    const expression=setupCondition.trim().slice('if: '.length).split(' || ');
+    assert.equal(expression.some(term=>term==="inputs.operation == '"+operation+"'"),['deliver','enable'].includes(operation));
+  }
+  const setupDrift=actualWorkflow.replace(setupCondition,"        if: inputs.operation == 'plan'");
+  assert.equal(reviewedFrozenReplayWorkflow(setupDrift),setupDrift);
   const inverse=(raw,layer)=>{
     assert.equal(sha(raw),layer.afterSha256);
     for(const edit of [...layer.edits].reverse()){
@@ -427,7 +455,7 @@ test('private-study enable: raw workflow and controller are exact additive succe
   };
   assert.equal(review.afterSha256,'18f6526742667dc0c40a41e2ff2985c1c1ce431d5ceb5c0c349b88de988a7a0f');
   assert.equal(review.workflow.sourceProofReadPermission.afterSha256,'93d713d717eef8f4541e347ef8860555eb8b8948176c6ce2f9d492c3915f7255');
-  const oldController=inverse(source,review.enableSuccessor),oldWorkflow=inverse(workflow,review.workflow.enableSuccessor);
+  const oldController=inverse(inverse(source,review.planOffSuccessor),review.enableSuccessor),oldWorkflow=inverse(workflow,review.workflow.enableSuccessor);
   assert.equal(sha(oldController),review.afterSha256);
   assert.equal(sha(oldWorkflow),review.workflow.sourceProofReadPermission.afterSha256);
   assert.equal(workflow.slice(workflow.indexOf('  private-study-export:')),oldWorkflow.slice(oldWorkflow.indexOf('  private-study-export:')));
@@ -439,7 +467,7 @@ test('private-study enable: raw workflow and controller are exact additive succe
   assert.match(source,/const VARS=Object\.freeze\(\{TRIP_AGGREGATE_ENABLED:'false'\}\)/);
   assert.doesNotMatch(source,/privacyQualified:true|hostedFreeQualified:true|readTripWeatherAggregate|publishPrivateTripStudyAdmin/);
   for(const mutation of [source+'\n',source.replace("const ENABLE_CONFIRMATION='ENABLE_PRIVATE_UNISSUED_STUDY_ONLY'","const ENABLE_CONFIRMATION='true'")])
-    assert.throws(()=>inverse(mutation,review.enableSuccessor));
+    assert.throws(()=>inverse(mutation,review.planOffSuccessor));
   for(const mutation of [workflow+'\n',workflow.replace('default: plan','default: enable'),workflow.replace("inputs.allow_007 && 'true' || 'false'",'true')])
     assert.throws(()=>inverse(mutation,review.workflow.enableSuccessor));
 });

@@ -274,7 +274,16 @@ export async function deployPrivateTripStudy(){
       categoricalMigrationSha256:CATEGORICAL_MIGRATION_SHA,categoricalPolicyReady:before.state==='EXACT_004_005_006_007',
       bindingsSha256:hash(canonical(config.d1_databases)),workerSourceFiles:workerSources(),oldSchema:originalFence,...before};
     fs.writeFileSync(PLAN,JSON.stringify(plan)+'\n',{flag:'wx',mode:0o600});
-    if(env.TRIP_PRIVATE_STUDY_MODE==='plan')return{...plan,operation:'READ_ONLY_PLAN',schemaApplied:false,workerUpdated:false};
+    if(env.TRIP_PRIVATE_STUDY_MODE==='plan'){
+      stage='READ_ONLY_PLAN_WORKER_OFF';
+      let aggregateOffAttested=false;
+      try{await attest(currentVersion,true);aggregateOffAttested=true;}
+      catch(error){
+        if(error?.message!=='TRIP_STORAGE_WORKER_BINDINGS_UNVERIFIED')throw error;
+        await attest(currentVersion);
+      }
+      return{...plan,operation:'READ_ONLY_PLAN',schemaApplied:false,workerUpdated:false,aggregateOffAttested};
+    }
     if(enableMode){
       // Confirmation expresses operator intent only, never privacy/Free proof.
       // No DDL, aggregate request, preparation, export or charge runs here.
