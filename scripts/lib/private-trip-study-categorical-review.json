@@ -196,5 +196,16 @@
         "after": "    if(env.TRIP_PRIVATE_STUDY_MODE==='plan')return{...plan,operation:'READ_ONLY_PLAN',schemaApplied:false,workerUpdated:false};\n    if(enableMode){\n      // Confirmation expresses operator intent only, never privacy/Free proof.\n      // No DDL, aggregate request, preparation, export or charge runs here.\n      if(before.state!=='EXACT_004_005_006_007')throw fail('ENABLE_REQUIRES_EXACT_007');\n      desiredSchemaState=before.state;\n      stage='PRE_ENABLE_WORKER_OFF';await attest(currentVersion,true);\n      quiesce();stage='PRE_ENABLE_REVALIDATION';lease(600);exactMain();\n      if(!isDeepStrictEqual(readOwnedJson(PLAN),plan)||!isDeepStrictEqual(await inspect(),before))throw fail(stage);\n      await attest(currentVersion,true);\n      expectedVars=ENABLE_VARS;\n      config=assertConfiguration({...config,vars:{...ENABLE_VARS}},expectedVars);\n      fs.writeFileSync(CONFIG,JSON.stringify(config)+'\\n',{mode:0o600});\n      await verifySchema();\n      // This separate enable path has no automatic Worker retry or export.\n      const version=await replace();await restore(version);\n      return{kind:'PRIVATE_TRIP_STUDY_EXISTING_WORKER_ATTESTED',sourceSha:env.GITHUB_SHA,workerVersionId:version,\n        migrationSha256:MIGRATION_SHA,ddlApplied:false,controlShard:0,shards:10,\n        jobsMigrationSha256:JOBS_MIGRATION_SHA,jobsDdlApplied:false,\n        bindingMigrationSha256:BINDING_MIGRATION_SHA,bindingDdlApplied:false,originalJobBindingReady:true,\n        categoricalMigrationSha256:CATEGORICAL_MIGRATION_SHA,categoricalDdlApplied:false,categoricalPolicyReady:true,\n        configAttested:true,storageMode:'d1',privateAggregationEnabled:true,\n        reportExported:false,publicStatisticsActivated:false,qualificationExecuted:false};\n    }"
       }
     ]
+  },
+  "planOffSuccessor": {
+    "kind": "EXACT_PRIVATE_STUDY_PLAN_OFF_TEST_ONLY_INVERSE",
+    "beforeSha256": "62fff9e189cf002bb245970158413a15f4bc1914ca8b19f6cd0f3f8cbe1ed786",
+    "afterSha256": "e818a7b00edf7d028645647b6f15f35e77bb8379a6d9155cd468869419b5fc3b",
+    "edits": [
+      {
+        "before": "    if(env.TRIP_PRIVATE_STUDY_MODE==='plan')return{...plan,operation:'READ_ONLY_PLAN',schemaApplied:false,workerUpdated:false};",
+        "after": "    if(env.TRIP_PRIVATE_STUDY_MODE==='plan'){\n      stage='READ_ONLY_PLAN_WORKER_OFF';\n      let aggregateOffAttested=false;\n      try{await attest(currentVersion,true);aggregateOffAttested=true;}\n      catch(error){\n        if(error?.message!=='TRIP_STORAGE_WORKER_BINDINGS_UNVERIFIED')throw error;\n        await attest(currentVersion);\n      }\n      return{...plan,operation:'READ_ONLY_PLAN',schemaApplied:false,workerUpdated:false,aggregateOffAttested};\n    }"
+      }
+    ]
   }
 }

@@ -196,6 +196,15 @@ async function privateStudyPre007Controller(){
   const hash=value=>crypto.createHash('sha256').update(value).digest('hex');
   assert.equal(review.kind,'PRIVATE_TRIP_STUDY_007_TEST_ONLY_INVERSE');
   assert.equal(review.file,'scripts/deploy-private-trip-study.mjs');
+  const planOff=review.planOffSuccessor;
+  if(planOff&&hash(source)===planOff.afterSha256){
+    assert.equal(planOff.kind,'EXACT_PRIVATE_STUDY_PLAN_OFF_TEST_ONLY_INVERSE');
+    assert.equal(planOff.beforeSha256,review.enableSuccessor.afterSha256);
+    for(const edit of [...planOff.edits].reverse()){
+      assert.equal(source.split(edit.after).length,2);source=source.replace(edit.after,()=>edit.before);
+    }
+    assert.equal(hash(source),planOff.beforeSha256);
+  }
   const enable=review.enableSuccessor;
   if(enable&&hash(source)===enable.afterSha256){
     assert.equal(enable.kind,'EXACT_PRIVATE_STUDY_ENABLE_TEST_ONLY_INVERSE');
@@ -229,6 +238,11 @@ function reviewedFrozenStudyDashboard(source){
 function reviewedFrozenReplayWorkflow(source){
   assert.equal(typeof source,'string');
   const digest=value=>crypto.createHash('sha256').update(value).digest('hex');
+  if(digest(source)==='e5f1304dc0251fcca2a11dbdba73878a0f5e8a0b58191c4dc2a44506d5e95bc1'){
+    const condition="\n        if: inputs.operation == 'deliver' || inputs.operation == 'enable'";
+    assert.equal(source.split(condition).length,2);source=source.replace(condition,'');
+    assert.equal(digest(source),'435d5e5e2276e83e0502ae4fcc4230447db590b8341a41e5850a6e896f25c1f8');
+  }
   if(digest(source)!=='435d5e5e2276e83e0502ae4fcc4230447db590b8341a41e5850a6e896f25c1f8')return source;
   assert.equal(Buffer.byteLength(source),7704);
   for(const [before,after]of [["      enable_confirmation:\n        description: Skriv ENABLE_PRIVATE_UNISSUED_STUDY_ONLY for kun at \u00e5bne eksisterende signerede private ruter; ingen rapport eller kvalifikationsp\u00e5stand\n        type: string\n        default: ''\n","      enable_confirmation:\n        description: Skriv ENABLE_PRIVATE_UNISSUED_STUDY_ONLY for kun at \u00e5bne eksisterende signerede private ruter; ingen rapport eller kvalifikationsp\u00e5stand\n        type: string\n        default: ''\n      export_mode:\n        description: Almindelig eksport eller kun genl\u00e6sning af en allerede frossen rapport; ingen forberedelse ved frozen-replay\n        type: choice\n        default: ordinary\n        options: [ordinary, frozen-replay]\n      frozen_month:\n        description: P\u00e5kr\u00e6vet YYYY-MM ved frozen-replay; skal v\u00e6re den normale senest afsluttede UTC-m\u00e5ned\n        type: string\n        default: ''\n      frozen_binding_sha256:\n        description: P\u00e5kr\u00e6vet oprindelig fuld modelbindings SHA256 ved frozen-replay\n        type: string\n        default: ''\n      frozen_report_sha256:\n        description: P\u00e5kr\u00e6vet u\u00e6ndret frossen rapports SHA256 ved frozen-replay\n        type: string\n        default: ''\n"],["      PRIVATE_STUDY_OPERATION: ${{ inputs.operation }}\n      PRIVATE_STUDY_ENABLE_CONFIRMATION: ${{ inputs.enable_confirmation }}\n    steps:\n      - name: Validate fixed private study operation\n","      PRIVATE_STUDY_OPERATION: ${{ inputs.operation }}\n      PRIVATE_STUDY_ENABLE_CONFIRMATION: ${{ inputs.enable_confirmation }}\n      PRIVATE_STUDY_EXPORT_MODE: ${{ inputs.export_mode }}\n      PRIVATE_STUDY_FROZEN_MONTH: ${{ inputs.frozen_month }}\n      PRIVATE_STUDY_FROZEN_BINDING_SHA256: ${{ inputs.frozen_binding_sha256 }}\n      PRIVATE_STUDY_FROZEN_REPORT_SHA256: ${{ inputs.frozen_report_sha256 }}\n    steps:\n      - name: Validate fixed private study operation\n"],["            *) echo 'PRIVATE_STUDY_OPERATION_INVALID' >&2; exit 1 ;;\n          esac\n\n  private-study-upgrade:\n","            *) echo 'PRIVATE_STUDY_OPERATION_INVALID' >&2; exit 1 ;;\n          esac\n          if [[ \"${PRIVATE_STUDY_EXPORT_MODE:-ordinary}\" != ordinary || -n \"$PRIVATE_STUDY_FROZEN_MONTH$PRIVATE_STUDY_FROZEN_BINDING_SHA256$PRIVATE_STUDY_FROZEN_REPORT_SHA256\" ]]; then\n            test \"$PRIVATE_STUDY_OPERATION\" = export\n            test \"$PRIVATE_STUDY_EXPORT_MODE\" = frozen-replay\n            [[ \"$PRIVATE_STUDY_FROZEN_MONTH\" =~ ^[0-9]{4}-(0[1-9]|1[0-2])$ ]]\n            [[ \"$PRIVATE_STUDY_FROZEN_BINDING_SHA256\" =~ ^[a-f0-9]{64}$ ]]\n            [[ \"$PRIVATE_STUDY_FROZEN_REPORT_SHA256\" =~ ^[a-f0-9]{64}$ ]]\n          fi\n\n  private-study-upgrade:\n"],["      GITHUB_TOKEN: ${{ github.token }}\n      TRIP_STORAGE_OPERATION: private-study-export\n      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}\n      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n","      GITHUB_TOKEN: ${{ github.token }}\n      TRIP_STORAGE_OPERATION: private-study-export\n      PRIVATE_STUDY_EXPORT_MODE: ${{ inputs.export_mode }}\n      PRIVATE_STUDY_FROZEN_MONTH: ${{ inputs.frozen_month }}\n      PRIVATE_STUDY_FROZEN_BINDING_SHA256: ${{ inputs.frozen_binding_sha256 }}\n      PRIVATE_STUDY_FROZEN_REPORT_SHA256: ${{ inputs.frozen_report_sha256 }}\n      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}\n      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n"]].reverse()){
