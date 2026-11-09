@@ -22,6 +22,38 @@ export function currentSourceNativeFirstFailure(stdout){
   }
   return firstProfileFailure;
 }
+
+function currentProviderFailureIsSafe(value) {
+  if (!value || Object.keys(value).sort().join(',') !== 'call,class,exitCode,providerLine,reason,timeoutSeconds') return false;
+  const { class: type, call, reason, exitCode, timeoutSeconds, providerLine } = value;
+  if (providerLine !== null && (!Number.isInteger(providerLine) || providerLine < 1 || providerLine > 8192)) return false;
+  if (type === 'UNKNOWN') return call === 'UNKNOWN' && reason === 'UNKNOWN' && exitCode === null && timeoutSeconds === null;
+  if (providerLine === null) return false;
+  if (type === 'RUNTIME_ERROR') {
+    const prefix = 'CURRENT_NATIVE_PROVIDER_';
+    const fixedReasons = new Set([
+      'CURRENT598_HISTORY_TARGET', 'CURRENT598_HISTORY_DOMAIN', 'CURRENT598_HISTORY_AXIS', 'EXACT_CURRENT598_MODE',
+      'ABSOLUTE_PATH', 'ADMIN_COPY_CHANGED', 'ADMIN_INPUT_MISSING',
+      'BASIS_DESTINATION_EXISTS', 'CLEAN_NATIVE_ACQUISITION_MODE', 'ECCODES_REQUIRED',
+      'EMPTY_NORMAL_STATION_SOURCE_REQUIRED', 'EXACT_INITIAL_PHASE', 'EXACT_INITIAL_PHASE_ARGUMENT',
+      'EXACT_NODE_TARGET_ARGUMENTS', 'EXISTING_FIXTURE_DIRECTORY', 'EXISTING_OWNED_HOST',
+      'EXTERNAL_NETWORK_REFUSED', 'GRID_BOUND', 'LINUX_PYTHON312_REQUIRED',
+      'NODE24_REQUIRED', 'NORMAL_BASIS_OUTPUT_MISSING', 'NORMAL_BULK_READBACK',
+      'NORMAL_CAPTURE_MISSING', 'NORMAL_COPERNICUS_RESIDUALS_REQUIRE_DATA', 'NORMAL_DECODE_INCOMPLETE',
+      'NORMAL_DECODE_OUTCOMES_INCOMPLETE', 'NORMAL_LEDGER_NOT_READY', 'NORMAL_MODULE',
+      'NORMAL_NATIVE_PAIR_REJECTED', 'NORMAL_PART_TARGETS', 'NORMAL_REGISTRY_210_673',
+      'NO_ADOPTED_OLD_BULK', 'RAW_CHANGED_AFTER_DECODE', 'SAME_ACTION_RUNNER_TEMP',
+      'STAC_HOST', 'STAC_PAGE_BOUND', 'STAC_ROUTE',
+      'SYMLINK', 'TARGET_HOUR', 'WRITE_READBACK',
+    ]);
+    return call === 'NONE' && exitCode === null && timeoutSeconds === null && typeof reason === 'string'
+      && reason.startsWith(prefix) && fixedReasons.has(reason.slice(prefix.length));
+  }
+  return ['UNKNOWN','SOURCE_CHECK','OPEN_METEO','CLOSURE','LIVE_PILOT','FORECAST','REGISTRY'].includes(call) && reason === 'UNKNOWN'
+    && (type === 'SUBPROCESS_EXIT' && Number.isInteger(exitCode) && exitCode >= 1 && exitCode <= 255 && timeoutSeconds === null
+      || type === 'SUBPROCESS_TIMEOUT' && exitCode === null && [30,120].includes(timeoutSeconds));
+}
+
 export function currentSourceNativeCaseLocation(stdout){
   const cases=new Set(["PURE_FAILURE240_CLOCK","PURE_FAILURE240_PINNED_ROWS","PURE_FAILURE240_CACHE","PURE_FAILURE240_MAIN_ROUTE","PURE_FAILURE240_MARKERS","PURE_FAILURE240_SELECTION","CURRENT_FAILURE240","CURRENT_POSITIVE"]);
   const phases=new Set(["NONE","CAPTURE_GITHUB","OWNED_HOST","PROVIDERS","PREFIX","INITIAL_REQUEST","INITIAL_ACTIVATION","FOLLOWER_INPUTS","QUALIFY","ACTION_FAILURE240","ACTION_POSITIVE","RECONFIRM_GITHUB"]);
@@ -30,7 +62,11 @@ export function currentSourceNativeCaseLocation(stdout){
     if(line.length>1024)continue;
     let value;try{value=JSON.parse(line);}catch{continue;}
     if(value?.kind!=='CURRENT_SOURCE_NATIVE_CASE_LOCATION')continue;
-    if(location || Object.keys(value).sort().join(',')!=='caseId,exitCode,kind,localLine,privatePayloadIncluded,subprocessPhase'
+    const hasProvider = Object.hasOwn(value, 'providerFailure');
+    const fields = 'caseId,exitCode,kind,localLine,privatePayloadIncluded,' + (hasProvider ? 'providerFailure,' : '') + 'subprocessPhase';
+    if(location || Object.keys(value).sort().join(',') !== fields
+      || (hasProvider && (value.subprocessPhase !== 'PROVIDERS' || !['CURRENT_FAILURE240','CURRENT_POSITIVE'].includes(value.caseId)
+        || value.exitCode === null || value.exitCode === 0 || !currentProviderFailureIsSafe(value.providerFailure)))
       || value.privatePayloadIncluded!==false || !cases.has(value.caseId) || !phases.has(value.subprocessPhase)
       || (value.localLine!==null && (!Number.isInteger(value.localLine) || value.localLine < 1 || value.localLine > 8192))
       || (value.exitCode!==null && (value.subprocessPhase==='NONE' || !Number.isInteger(value.exitCode) || value.exitCode < -255 || value.exitCode > 255)))return null;

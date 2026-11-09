@@ -7,6 +7,7 @@ Working-install boundary only. Full SAVE/durable ACK/finalizer/publication remai
 from __future__ import annotations
 
 import argparse
+import ast
 import ctypes
 import errno
 import hashlib
@@ -421,9 +422,13 @@ def current_native_case_location(test, error, traceback):
         traceback = traceback.tb_next
     if local_line is not None and not 1 <= local_line <= 8192:
         local_line = None
-    return {'kind': 'CURRENT_SOURCE_NATIVE_CASE_LOCATION', 'caseId': case,
-            'subprocessPhase': phase, 'exitCode': code, 'localLine': local_line,
-            'privatePayloadIncluded': False}
+    observation = {'kind': 'CURRENT_SOURCE_NATIVE_CASE_LOCATION', 'caseId': case,
+                   'subprocessPhase': phase, 'exitCode': code, 'localLine': local_line,
+                   'privatePayloadIncluded': False}
+    provider = getattr(test, '_current_native_provider_failure', None)
+    if phase == 'PROVIDERS' and code not in (None, 0) and provider is not None:
+        observation['providerFailure'] = provider
+    return observation
 
 class SourceObserverPureTests(unittest.TestCase):
 
@@ -2495,6 +2500,61 @@ def source_provider_process_failure(result, own):
 
 
 
+
+CURRENT_PROVIDER_NEED_CODES = SOURCE_PROVIDER_NEED_CODES | {
+    'CURRENT_NATIVE_PROVIDER_CURRENT598_HISTORY_TARGET', 'CURRENT_NATIVE_PROVIDER_CURRENT598_HISTORY_DOMAIN',
+    'CURRENT_NATIVE_PROVIDER_CURRENT598_HISTORY_AXIS', 'CURRENT_NATIVE_PROVIDER_EXACT_CURRENT598_MODE',
+}
+
+
+def current_provider_failure(own, root):
+    # This is diagnostics after a failed, closed child. No raw log text, file path,
+    # or argv crosses this boundary; the producer command and result stay unchanged.
+    unknown = {'class': 'UNKNOWN', 'reason': 'UNKNOWN', 'call': 'UNKNOWN', 'exitCode': None,
+               'timeoutSeconds': None, 'providerLine': None}
+    try:
+        raw = source_current_cohort_read(own, 'current598-providers-whole.stderr', 128 * 1024)
+        _, sep, tail = (b'\n' + raw.replace(b'\r\n', b'\n')).rpartition(b'\nTraceback (most recent call last):\n')
+        if not sep:
+            return unknown
+        lines = tail.splitlines()
+        frame = b'  File "' + os.fsencode(root / 'scripts/fixtures/source19-current-native-providers.py') + b'", line '
+        for line in reversed(lines[:-1]):
+            if line.startswith(frame):
+                match = re.fullmatch(rb'([1-9][0-9]{0,3}), in (?:<module>|[A-Za-z_][A-Za-z_0-9]*)', line[len(frame):])
+                if match and int(match[1]) <= 8192:
+                    unknown['providerLine'] = int(match[1])
+                    break
+        if unknown['providerLine'] is None or len(lines[-1]) > 4096:
+            return unknown
+        terminal = lines[-1].decode('utf-8')
+        prefix = 'RuntimeError: '
+        if terminal.startswith(prefix) and terminal[len(prefix):] in CURRENT_PROVIDER_NEED_CODES:
+            return {**unknown, 'class': 'RUNTIME_ERROR', 'reason': terminal[len(prefix):], 'call': 'NONE'}
+        exit_match = re.fullmatch(r"subprocess\.CalledProcessError: Command '(.+)' returned non-zero exit status ([1-9][0-9]{0,2})\.", terminal)
+        timeout_match = re.fullmatch(r"subprocess\.TimeoutExpired: Command '(.+)' timed out after (30|120)(?:\.0)? seconds", terminal)
+        match = exit_match or timeout_match
+        if match is None or exit_match is not None and int(match[2]) > 255:
+            return unknown
+        result = {**unknown, 'class': 'SUBPROCESS_EXIT' if exit_match else 'SUBPROCESS_TIMEOUT',
+                  'exitCode' if exit_match else 'timeoutSeconds': int(match[2])}
+        try:
+            argv = ast.literal_eval(match[1])
+        except (ValueError, SyntaxError, RecursionError):
+            return result
+        if type(argv) is not list or not all(type(arg) is str for arg in argv):
+            return result
+        calls = [name for relative, name in SOURCE_PROVIDER_HELPERS.items() if str(root / relative) in argv[:3]]
+        if argv[1:] == ['--input-type=module', '-e',
+                "import {requireSourceProducerOutput} from './scripts/lib/source-producer-current-native-profile.mjs';requireSourceProducerOutput();if(process.versions.node.split('.')[0]!=='24')throw Error('NODE24_REQUIRED');"]:
+            calls.append('SOURCE_CHECK')
+        if len(calls) == 1:
+            result['call'] = calls[0]
+        return result
+    except Exception:
+        return unknown
+
+
 class SourceProviderEvidencePureTests(unittest.TestCase):
     def test_exact_provider_need_catalog_matches_all_literal_source_sites(self):
         import ast
@@ -3624,6 +3684,8 @@ class SourceCurrentNative(SourceActualSUnionNative):
                     stdout=stdout, stderr=stderr, check=False)
                 stdout.flush(); os.fsync(stdout.fileno()); stderr.flush(); os.fsync(stderr.fileno())
             self._current_native_subprocess_exit = result.returncode
+            if name == 'providers' and result.returncode != 0:
+                self._current_native_provider_failure = current_provider_failure(own, root)
             self.assertEqual(result.returncode, 0, 'CURRENT598_NORMAL_' + name.upper() + '_PRODUCER_REFUSED')
             self._current_native_subprocess_phase, self._current_native_subprocess_exit = 'NONE', None
         inputs = strict_json(own / 'current598-native-inputs/transport/current598-prefix-inputs.json', 32 * 1024 * 1024)
