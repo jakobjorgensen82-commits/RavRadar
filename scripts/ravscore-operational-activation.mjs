@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 
+import assert from 'node:assert/strict';
+import {requireSourceProducerOutput,requireSourceProducerBinding}
+  from './lib/source-producer-after597-runtime-family.mjs';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -50,6 +53,7 @@ import {
   checkIntegratedCutoverReadiness,
   expectedTripActiveAdmissionPolicy,
   expectedTripBindingPolicy,
+  DEFAULT_CUTOVER_SOURCE_PHASE, integratedReadinessRequiredMigrations,
 } from './integrated-cutover-readiness.mjs';
 
 export const RAVSCORE_OPERATIONAL_ACTIVATION_DOCUMENT_KEY =
@@ -1097,7 +1101,26 @@ const INTEGRATED_RETURN_PLAN_FIELDS = Object.freeze([
   'planSha256',
 ]);
 
-function assertIntegratedReadiness(readiness, sourceHead) {
+// Source-fase er et eksplicit kontraktvalg, aldrig en READY- eller B/S-adgang.
+function integratedReadinessPolicyForPhase(sourcePhase) {
+  if (sourcePhase === DEFAULT_CUTOVER_SOURCE_PHASE) return {
+    tripBindingPolicySha256: EXPECTED_TRIP_BINDING_POLICY.sha256,
+    migrationIds: REQUIRED_CUTOVER_MIGRATIONS.map(item => item.id),
+  };
+  if (sourcePhase !== 'source-producer-after597') throw new Error('Unknown integrated readiness source phase');
+  const output = requireSourceProducerOutput();
+  const binding = requireSourceProducerBinding();
+  assert.equal(integratedModelBinding().modelBundleSha256, binding.I);
+  assert.equal(candidateModelBinding().modelBundleSha256, binding.C);
+  const migrations = integratedReadinessRequiredMigrations(sourcePhase);
+  assert.equal(migrations.length, 64);
+  assert.equal(migrations.at(-1).version, binding.version);
+  return {tripBindingPolicySha256:output.tripBindingPolicySha256,
+    migrationIds:migrations.map(item => item.id)};
+}
+
+function assertIntegratedReadiness(readiness, sourceHead, sourcePhase = DEFAULT_CUTOVER_SOURCE_PHASE) {
+  const expectedReadinessPolicy = integratedReadinessPolicyForPhase(sourcePhase);
   if (!exactKeys(readiness, [
     'schemaVersion',
     'sourceHead',
@@ -1122,12 +1145,12 @@ function assertIntegratedReadiness(readiness, sourceHead) {
     || !SHA256_PATTERN.test(String(readiness.publicImplementationClosureSha256 ?? ''))
     || readiness.tripSchemaVersion !== 3
     || readiness.tripBindingPolicyId !== TRIP_BINDING_POLICY_ID
-    || readiness.tripBindingPolicySha256 !== EXPECTED_TRIP_BINDING_POLICY.sha256
+    || readiness.tripBindingPolicySha256 !== expectedReadinessPolicy.tripBindingPolicySha256
     || readiness.tripActiveAdmissionPolicyId !== TRIP_ACTIVE_ADMISSION_POLICY_ID
     || readiness.tripActiveAdmissionPolicySha256
       !== EXPECTED_TRIP_ACTIVE_ADMISSION_POLICY.sha256
     || JSON.stringify(readiness.migrationIds) !== JSON.stringify(
-      REQUIRED_CUTOVER_MIGRATIONS.map(item => item.id))
+      expectedReadinessPolicy.migrationIds)
     || !exactKeys(readiness.assistantBinding, [
       'modelId', 'stateSchemaVersion', 'modelContractSha256', 'modelBundleSha256',
       'knowledgeSchema', 'knowledgeSha256',
@@ -1155,7 +1178,10 @@ function assertIntegratedReadiness(readiness, sourceHead) {
   return true;
 }
 
-function assertSealedIntegratedReadiness(readiness, currentDocument) {
+function assertSealedIntegratedReadiness(readiness, currentDocument, sourcePhase = DEFAULT_CUTOVER_SOURCE_PHASE) {
+  if (sourcePhase !== DEFAULT_CUTOVER_SOURCE_PHASE)
+    assertIntegratedReadiness(readiness, currentDocument?.sourceHead, sourcePhase);
+
   const expectedBinding = currentDocument?.requestedModelBinding;
   if (!exactKeys(readiness, [
     'schemaVersion', 'sourceHead', 'modelContractSha256', 'modelBundleSha256',
@@ -2112,6 +2138,7 @@ export function assertIntegratedReturnPlan(plan, {
   publicManifest = null,
   publicAudit = null,
   allowSealedHistoricalTarget = false,
+  sourcePhase = DEFAULT_CUTOVER_SOURCE_PHASE,
 } = {}) {
   if (!exactKeys(plan, INTEGRATED_RETURN_PLAN_FIELDS)
     || plan.schemaVersion !== RAVSCORE_INTEGRATED_RETURN_POLICY.schemaVersion
@@ -2196,7 +2223,7 @@ export function assertIntegratedReturnPlan(plan, {
     }
   }
   if (readiness !== null) {
-    assertIntegratedReadiness(readiness, plan.sourceHead);
+    assertIntegratedReadiness(readiness, plan.sourceHead, sourcePhase);
     if (sha256(readiness) !== plan.integratedReadinessSha256) {
       throw new Error('Integrated return readiness digest mismatch');
     }
@@ -2234,6 +2261,7 @@ export function prepareIntegratedOperationalReturn({
   confirmation,
   initialCutoverRequested = false,
   initialCutoverConfirmation,
+  sourcePhase = DEFAULT_CUTOVER_SOURCE_PHASE,
 } = {}) {
   const currentResolved = resolveOperationalRavScoreModel(currentRow, {
     profileRow: currentProfileRow,
@@ -2290,7 +2318,7 @@ export function prepareIntegratedOperationalReturn({
       'Initial integrated cutover requires current same-head Candidate G source closure parity or exact legacy Candidate G attestation',
     );
   }
-  assertIntegratedReadiness(readiness, sourceHead);
+  assertIntegratedReadiness(readiness, sourceHead, sourcePhase);
   if (!SHA256_PATTERN.test(String(sourceImplementationClosureSha256 ?? ''))
     || !SHA256_PATTERN.test(String(requestedImplementationClosureSha256 ?? ''))
     || (readiness.publicImplementationClosureSha256 !== undefined
@@ -2331,7 +2359,7 @@ export function prepareIntegratedOperationalReturn({
     privatePayloadLogged: false,
   };
   const plan = Object.freeze({ ...unsealed, planSha256: sha256(unsealed) });
-  assertIntegratedReturnPlan(plan, {
+  assertIntegratedReturnPlan(plan, { sourcePhase,
     expectedSourceHead: sourceHead,
     expectedCentralVersion: centralExpectedVersion,
     currentRow,
@@ -2378,6 +2406,7 @@ export function assertIntegratedHistoricalMaintenancePlan(plan, {
   publicManifest = null,
   publicAudit = null,
   allowSealedHistoricalTarget = false,
+  sourcePhase = DEFAULT_CUTOVER_SOURCE_PHASE,
 } = {}) {
   if (!exactKeys(plan, INTEGRATED_HISTORICAL_MAINTENANCE_PLAN_FIELDS)
     || plan.schemaVersion
@@ -2451,7 +2480,7 @@ export function assertIntegratedHistoricalMaintenancePlan(plan, {
     }
   }
   if (readiness !== null) {
-    assertIntegratedReadiness(readiness, plan.sourceHead);
+    assertIntegratedReadiness(readiness, plan.sourceHead, sourcePhase);
     if (sha256(readiness) !== plan.integratedReadinessSha256
       || readiness.publicImplementationClosureSha256
         !== plan.requestedImplementationClosureSha256) {
@@ -2489,6 +2518,7 @@ export function prepareIntegratedHistoricalMaintenance({
   eventName,
   ref,
   githubSha,
+  sourcePhase = DEFAULT_CUTOVER_SOURCE_PHASE,
 } = {}) {
   if (ref !== RAVSCORE_INTEGRATED_HISTORICAL_MAINTENANCE_POLICY.mainRef
     || githubSha !== sourceHead
@@ -2504,7 +2534,7 @@ export function prepareIntegratedHistoricalMaintenance({
     || sameBinding(current.modelBinding, integratedModelBinding())) {
     throw new Error('Historical integrated maintenance requires an ACTIVE historical integrated source');
   }
-  assertIntegratedReadiness(readiness, sourceHead);
+  assertIntegratedReadiness(readiness, sourceHead, sourcePhase);
   if (!SHA256_PATTERN.test(String(sourceImplementationClosureSha256 ?? ''))
     || sourceImplementationClosureSha256 !== current.activeImplementationClosureSha256
     || !SHA256_PATTERN.test(String(requestedImplementationClosureSha256 ?? ''))
@@ -2544,7 +2574,7 @@ export function prepareIntegratedHistoricalMaintenance({
     privatePayloadLogged: false,
   };
   const plan = Object.freeze({ ...unsealed, planSha256: sha256(unsealed) });
-  assertIntegratedHistoricalMaintenancePlan(plan, {
+  assertIntegratedHistoricalMaintenancePlan(plan, { sourcePhase,
     expectedSourceHead: sourceHead,
     expectedCentralVersion: currentRow.version,
     currentRow,
@@ -3604,6 +3634,7 @@ export function operationalIntegratedMaintenanceTransition({
   readiness,
   deploymentId,
   now = new Date().toISOString(),
+  sourcePhase = DEFAULT_CUTOVER_SOURCE_PHASE,
 } = {}) {
   if (!currentRow || !Number.isSafeInteger(Number(expectedVersion))
     || Number(expectedVersion) < 1
@@ -3619,7 +3650,7 @@ export function operationalIntegratedMaintenanceTransition({
   if (!sameBinding(currentRow.payload.activeModelBinding, integratedModelBinding())) {
     throw new Error('Integrated maintenance cannot change the exact active model binding');
   }
-  assertIntegratedReadiness(readiness, sourceHead);
+  assertIntegratedReadiness(readiness, sourceHead, sourcePhase);
   assertIntegratedPublicEvidence(publicManifest, publicAudit, {
     sourceHead,
     allowMeasuredWarmup: currentRow.payload.calibrationEligible === false,
@@ -3720,11 +3751,12 @@ function assertIntegratedReturnPendingPlan(plan, currentRow, {
   readiness = null,
   publicManifest = null,
   publicAudit = null,
+  sourcePhase = DEFAULT_CUTOVER_SOURCE_PHASE,
 } = {}) {
   if (!currentRow || !isIntegratedReturnPendingDocument(currentRow.payload)) {
     throw new Error('Integrated return reconciliation lacks its exact PENDING source');
   }
-  assertIntegratedReturnPlan(plan, {
+  assertIntegratedReturnPlan(plan, { sourcePhase,
     expectedSourceHead: currentRow.payload.sourceHead,
     expectedCentralVersion: Number(currentRow.version) - 1,
     allowSealedHistoricalTarget: true,
@@ -3748,7 +3780,7 @@ function assertIntegratedReturnPendingPlan(plan, currentRow, {
   }
   if (readiness !== null || publicManifest !== null || publicAudit !== null) {
     if (sameBinding(plan.activeModelBinding, integratedModelBinding())) {
-      assertIntegratedReturnPlan(plan, {
+      assertIntegratedReturnPlan(plan, { sourcePhase,
         expectedSourceHead: currentRow.payload.sourceHead,
         expectedCentralVersion: Number(currentRow.version) - 1,
         readiness,
@@ -3756,7 +3788,7 @@ function assertIntegratedReturnPendingPlan(plan, currentRow, {
         publicAudit,
       });
     } else {
-      assertSealedIntegratedReadiness(readiness, currentRow.payload);
+      assertSealedIntegratedReadiness(readiness, currentRow.payload, sourcePhase);
       assertSealedIntegratedPublicAudit(publicAudit, currentRow.payload, {
         publicManifest,
       });
@@ -3772,13 +3804,14 @@ function assertIntegratedReturnPendingPlan(plan, currentRow, {
 
 function assertHistoricalIntegratedPendingPlan(plan, currentRow, currentProfileRow, {
   allowSealedHistoricalTarget = false,
+  sourcePhase = DEFAULT_CUTOVER_SOURCE_PHASE,
 } = {}) {
   if (!currentRow || !currentProfileRow
     || currentRow.payload.status !== RAVSCORE_OPERATIONAL_STATUSES.integratedPending
     || !isHistoricalIntegratedMaintenanceDocument(currentRow.payload)) {
     throw new Error('Historical integrated maintenance lacks its exact PENDING source');
   }
-  assertIntegratedHistoricalMaintenancePlan(plan, {
+  assertIntegratedHistoricalMaintenancePlan(plan, { sourcePhase,
     expectedSourceHead: currentRow.payload.sourceHead,
     expectedCentralVersion: Number(currentRow.version) - 1,
     allowSealedHistoricalTarget,
@@ -3821,13 +3854,14 @@ export function operationalIntegratedHistoricalMaintenanceTransition({
   failureCode = null,
   terminalEvidence = null,
   now = new Date().toISOString(),
+  sourcePhase = DEFAULT_CUTOVER_SOURCE_PHASE,
 } = {}) {
   if (!Number.isSafeInteger(Number(expectedVersion)) || Number(expectedVersion) < 1
     || Number(currentRow?.version) !== Number(expectedVersion)) {
     throw new Error('Historical integrated maintenance compare-and-swap version mismatch');
   }
   if (action === 'integrated-historical-maintenance-begin') {
-    assertIntegratedHistoricalMaintenancePlan(plan, {
+    assertIntegratedHistoricalMaintenancePlan(plan, { sourcePhase,
       expectedSourceHead: plan?.sourceHead,
       expectedCentralVersion: expectedVersion,
       currentRow,
@@ -3892,9 +3926,9 @@ export function operationalIntegratedHistoricalMaintenanceTransition({
     });
     return Object.freeze({ document, nextVersion: Number(expectedVersion) + 1 });
   }
-  assertHistoricalIntegratedPendingPlan(plan, currentRow, currentProfileRow);
+  assertHistoricalIntegratedPendingPlan(plan, currentRow, currentProfileRow, {sourcePhase});
   if (action === 'integrated-historical-maintenance-complete') {
-    assertIntegratedHistoricalMaintenancePlan(plan, {
+    assertIntegratedHistoricalMaintenancePlan(plan, { sourcePhase,
       expectedSourceHead: plan.sourceHead,
       expectedCentralVersion: Number(expectedVersion) - 1,
       readiness,
@@ -3988,6 +4022,7 @@ export function operationalIntegratedReturnTransition({
   failureCode = null,
   terminalEvidence = null,
   now = new Date().toISOString(),
+  sourcePhase = DEFAULT_CUTOVER_SOURCE_PHASE,
 } = {}) {
   if (!Number.isSafeInteger(Number(expectedVersion)) || Number(expectedVersion) < 0
     || Number(currentRow?.version ?? 0) !== Number(expectedVersion)) {
@@ -3997,7 +4032,7 @@ export function operationalIntegratedReturnTransition({
     allowSealedHistoricalBindings: true,
   });
   if (action === 'return-begin') {
-    assertIntegratedReturnPlan(plan, {
+    assertIntegratedReturnPlan(plan, { sourcePhase,
       expectedSourceHead: plan?.sourceHead,
       expectedCentralVersion: expectedVersion,
       currentRow,
@@ -4093,7 +4128,7 @@ export function operationalIntegratedReturnTransition({
     });
     return Object.freeze({ document, nextVersion: Number(expectedVersion) + 1 });
   }
-  assertIntegratedReturnPlan(plan, { expectedSourceHead: plan?.sourceHead });
+  assertIntegratedReturnPlan(plan, { sourcePhase, expectedSourceHead: plan?.sourceHead });
   if (currentRow.payload.status !== RAVSCORE_OPERATIONAL_STATUSES.integratedPending
     || currentRow.payload.returnPlanSha256 !== plan.planSha256
     || currentRow.payload.sourceHead !== plan.sourceHead
@@ -4101,7 +4136,7 @@ export function operationalIntegratedReturnTransition({
     throw new Error('Pending integrated return does not match the sealed plan');
   }
   if (action === 'return-complete') {
-    assertIntegratedReturnPlan(plan, { readiness, publicManifest, publicAudit });
+    assertIntegratedReturnPlan(plan, { sourcePhase, readiness, publicManifest, publicAudit });
     assertOperationalPagesVerification(publicVerification, {
       model: 'integrated',
       binding: integratedModelBinding(),
@@ -4316,6 +4351,7 @@ export function operationalPendingReconciliationTransition({
   failureCode = null,
   deploymentId = null,
   now = new Date().toISOString(),
+  sourcePhase = DEFAULT_CUTOVER_SOURCE_PHASE,
 } = {}) {
   if (!Number.isSafeInteger(Number(expectedVersion)) || Number(expectedVersion) < 1
     || Number(currentRow?.version) !== Number(expectedVersion)) {
@@ -4354,10 +4390,10 @@ export function operationalPendingReconciliationTransition({
         integratedPlan,
         currentRow,
         currentProfileRow,
-        { allowSealedHistoricalTarget: true },
+        { sourcePhase, allowSealedHistoricalTarget: true },
       );
     } else if (integratedReturn) {
-      assertIntegratedReturnPendingPlan(integratedPlan, currentRow);
+      assertIntegratedReturnPendingPlan(integratedPlan, currentRow, {sourcePhase});
     } else if (historicalCandidate) {
       assertCandidatePlanForPendingReconciliation(candidatePlan, currentRow);
     }
@@ -4440,16 +4476,16 @@ export function operationalPendingReconciliationTransition({
         integratedPlan,
         currentRow,
         currentProfileRow,
-        { allowSealedHistoricalTarget: true },
+        { sourcePhase, allowSealedHistoricalTarget: true },
       );
     } else if (integratedReturn) {
-      assertIntegratedReturnPendingPlan(integratedPlan, currentRow, {
+      assertIntegratedReturnPendingPlan(integratedPlan, currentRow, { sourcePhase,
         readiness,
         publicManifest,
         publicAudit,
       });
     }
-    assertSealedIntegratedReadiness(readiness, currentRow.payload);
+    assertSealedIntegratedReadiness(readiness, currentRow.payload, sourcePhase);
     assertSealedIntegratedPublicAudit(publicAudit, currentRow.payload, {
       allowMeasuredWarmup: historicalIntegrated
         && integratedPlan.calibrationEligibleAfterVerifiedActivation === false,
@@ -4544,6 +4580,11 @@ function cliOptions(argv) {
   const options = { command:argv[2] ?? 'read' };
   for (let index = 3; index < argv.length; index += 1) {
     const key = argv[index];
+    if (key === '--source-producer') {
+      if (options.sourceProducer === true) throw new Error('Duplicate SOURCE operational flag');
+      options.sourceProducer = true; continue;
+    }
+    if (key.startsWith('--source-producer')) throw new Error('Unknown SOURCE operational flag');
     const value = argv[index + 1];
     if (!key.startsWith('--') || value === undefined) throw new Error(`Unknown operational option: ${key}`);
     options[key.slice(2)] = value;
@@ -4570,7 +4611,7 @@ async function requestForEnvironment() {
 
 async function checkedIntegratedReadinessForEnvironment(
   sourceHead,
-  publicImplementationClosureSha256,
+  publicImplementationClosureSha256, sourcePhase = DEFAULT_CUTOVER_SOURCE_PHASE,
 ) {
   const url = process.env.SUPABASE_URL?.replace(/\/$/, '');
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -4579,7 +4620,7 @@ async function checkedIntegratedReadinessForEnvironment(
   if (!url || !serviceRoleKey || !publishableKey) {
     throw new Error('Integrated return readiness requires exact Supabase credentials');
   }
-  return checkIntegratedCutoverReadiness({
+  return checkIntegratedCutoverReadiness({ sourcePhase,
     sourceHead,
     publicImplementationClosureSha256,
     url,
@@ -4764,6 +4805,8 @@ export async function writeCentralCas(
 
 async function main() {
   const options = cliOptions(process.argv);
+  const sourcePhase = options.sourceProducer === true ? 'source-producer-after597' : DEFAULT_CUTOVER_SOURCE_PHASE;
+  if (options.sourceProducer === true) integratedReadinessPolicyForPhase(sourcePhase);
   const request = await requestForEnvironment();
   const currentRows = await readCentralRows(request.documents);
   const { operationalRow:currentRow, profileRow:currentProfileRow } = currentRows;
@@ -4983,10 +5026,10 @@ async function main() {
       readJsonOption(options, 'audit', 'Historical integrated maintenance public audit'),
       checkedIntegratedReadinessForEnvironment(
         process.env.GITHUB_SHA,
-        options['requested-implementation-closure-sha256'],
+        options['requested-implementation-closure-sha256'], sourcePhase,
       ),
     ]);
-    const plan = prepareIntegratedHistoricalMaintenance({
+    const plan = prepareIntegratedHistoricalMaintenance({ sourcePhase,
       currentRow,
       currentProfileRow,
       sourceHead: process.env.GITHUB_SHA,
@@ -5017,10 +5060,10 @@ async function main() {
       readJsonOption(options, 'audit', 'Integrated return public audit'),
       checkedIntegratedReadinessForEnvironment(
         process.env.GITHUB_SHA,
-        options['requested-implementation-closure-sha256'],
+        options['requested-implementation-closure-sha256'], sourcePhase,
       ),
     ]);
-    const plan = prepareIntegratedOperationalReturn({
+    const plan = prepareIntegratedOperationalReturn({ sourcePhase,
       currentRow,
       currentProfileRow,
       sourceHead: process.env.GITHUB_SHA,
@@ -5095,7 +5138,7 @@ async function main() {
       ? await readJsonOption(options, 'terminal-evidence',
         'Historical PENDING terminal Pages evidence')
       : null;
-    transition = operationalPendingReconciliationTransition({
+    transition = operationalPendingReconciliationTransition({ sourcePhase,
       currentRow,
       currentProfileRow,
       expectedVersion:Number(options['expected-version']),
@@ -5118,10 +5161,10 @@ async function main() {
       readJsonOption(options, 'verification', 'Integrated maintenance public verification'),
       checkedIntegratedReadinessForEnvironment(
         process.env.GITHUB_SHA,
-        options['requested-implementation-closure-sha256'],
+        options['requested-implementation-closure-sha256'], sourcePhase,
       ),
     ]);
-    transition = operationalIntegratedMaintenanceTransition({
+    transition = operationalIntegratedMaintenanceTransition({ sourcePhase,
       currentRow,
       currentProfileRow,
       expectedVersion: Number(options['expected-version']),
@@ -5135,7 +5178,7 @@ async function main() {
   } else {
     const plan = await readJsonOption(options, 'plan', 'Operational RavScore plan');
     if (integratedHistoricalMaintenance) {
-      assertIntegratedHistoricalMaintenancePlan(plan, {
+      assertIntegratedHistoricalMaintenancePlan(plan, { sourcePhase,
         expectedSourceHead: process.env.GITHUB_SHA,
         expectedCentralVersion: options.command === 'integrated-historical-maintenance-begin'
           ? Number(options['expected-version'])
@@ -5159,7 +5202,7 @@ async function main() {
             'Historical integrated maintenance target public audit'),
           checkedIntegratedReadinessForEnvironment(
             process.env.GITHUB_SHA,
-            plan.requestedImplementationClosureSha256,
+            plan.requestedImplementationClosureSha256, sourcePhase,
           ),
         ]);
         if (options.command === 'integrated-historical-maintenance-complete') {
@@ -5175,7 +5218,7 @@ async function main() {
             'Historical integrated maintenance source public verification'),
         ]);
       }
-      transition = operationalIntegratedHistoricalMaintenanceTransition({
+      transition = operationalIntegratedHistoricalMaintenanceTransition({ sourcePhase,
         action: options.command,
         currentRow,
         currentProfileRow,
@@ -5290,7 +5333,7 @@ async function main() {
           : null,
       });
     } else if (['return-begin', 'return-complete', 'return-abort'].includes(options.command)) {
-      assertIntegratedReturnPlan(plan, { expectedSourceHead: process.env.GITHUB_SHA });
+      assertIntegratedReturnPlan(plan, { sourcePhase, expectedSourceHead: process.env.GITHUB_SHA });
       const initialCutover = plan.transitionKind
         === RAVSCORE_OPERATIONAL_TRANSITION_KINDS.initialIntegratedCutover;
       if ((initialCutover
@@ -5313,7 +5356,7 @@ async function main() {
           readJsonOption(options, 'audit', 'Integrated return public audit'),
           checkedIntegratedReadinessForEnvironment(
             process.env.GITHUB_SHA,
-            plan.requestedImplementationClosureSha256,
+            plan.requestedImplementationClosureSha256, sourcePhase,
           ),
         ]);
         if (options.command !== 'return-begin') {
@@ -5333,7 +5376,7 @@ async function main() {
             'Legacy Candidate G source attestation');
         }
       }
-      transition = operationalIntegratedReturnTransition({
+      transition = operationalIntegratedReturnTransition({ sourcePhase,
         action: options.command,
         currentRow,
         currentProfileRow,

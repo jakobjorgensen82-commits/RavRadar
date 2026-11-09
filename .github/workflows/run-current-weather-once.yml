@@ -3,6 +3,11 @@ name: Run current RavRadar weather once
 on:
   workflow_dispatch:
     inputs:
+      source_normal_producer:
+        description: 'Private prepared SOURCE ordinary route; default off, never mixed with special modes'
+        required: false
+        type: boolean
+        default: false
       current_family_cold_start:
         description: 'Archive authenticated current-family B/S for a fresh cold start, or reopen only fixed 39886354260-1 or 39933506923-1 progress without another reset'
         required: false
@@ -79,8 +84,55 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  source-route-request:
+    name: Validate the explicit SOURCE request before any operational reentry
+    outputs:
+      ordinary_source_reentry: ${{ steps.source-route-request.outputs.ordinary_source_reentry }}
+      source_route_requested: ${{ steps.source-route-request.outputs.source_route_requested }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    permissions:
+      contents: read
+    steps:
+      - name: Reject unknown or mixed SOURCE request before any operational reentry
+        id: source-route-request
+        shell: bash
+        env:
+          SOURCE_ROUTE_REQUESTED: ${{ inputs.source_normal_producer }}
+          SOURCE_ROUTE_SPECIAL_FLAGS: ${{ inputs.current_family_cold_start || inputs.completed_private_runtime || inputs.quick_confirmation || inputs.weather_state_epoch_bootstrap || inputs.weather_state_epoch_checkpoint_reentry || inputs.native_sampling_identity_original_recovery }}
+          SOURCE_ROUTE_LOCATORS_PRESENT: ${{ inputs.completed_stage_source != '' || inputs.quick_progress_source != '' || inputs.checkpoint_target_hour != '' || inputs.weather_state_epoch_archive_key != '' || inputs.weather_state_epoch_archive_catalog_sha256 != '' || inputs.weather_state_epoch_raw_cache_key != '' }}
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import assert from 'node:assert/strict';
+          assert.equal(process.env.GITHUB_EVENT_NAME,'workflow_dispatch','SOURCE_ROUTE_EVENT_INVALID');
+          let event;
+          try { event=JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH,'utf8')); }
+          catch { assert.fail('SOURCE_ROUTE_EVENT_INVALID'); }
+          assert(event && typeof event==='object' && !Array.isArray(event),'SOURCE_ROUTE_EVENT_INVALID');
+          const request=event.inputs??{};
+          assert(request && typeof request==='object' && !Array.isArray(request),'SOURCE_ROUTE_REQUEST_INVALID');
+          const booleans=["current_family_cold_start","completed_private_runtime","quick_confirmation","weather_state_epoch_bootstrap","weather_state_epoch_checkpoint_reentry","native_sampling_identity_original_recovery"], strings=["completed_stage_source","quick_progress_source","checkpoint_target_hour","weather_state_epoch_archive_key","weather_state_epoch_archive_catalog_sha256","weather_state_epoch_raw_cache_key"];
+          const known=new Set(['source_normal_producer',...booleans,...strings]);
+          assert(Object.keys(request).every(key=>known.has(key)),'SOURCE_ROUTE_REQUEST_UNKNOWN');
+          const {SOURCE_ROUTE_REQUESTED: requested,SOURCE_ROUTE_SPECIAL_FLAGS: special,
+            SOURCE_ROUTE_LOCATORS_PRESENT: locators}=process.env;
+          assert(['true','false'].includes(requested),'SOURCE_ROUTE_SELECTION_UNKNOWN');
+          assert(['true','false'].includes(special)&&['true','false'].includes(locators),'SOURCE_ROUTE_PROJECTION_INVALID');
+          if(requested==='true'){
+            assert.equal(special,'false','SOURCE_ROUTE_MIXED_BOOLEAN');
+            assert.equal(locators,'false','SOURCE_ROUTE_MIXED_LOCATOR');
+          }
+          fs.appendFileSync(process.env.GITHUB_OUTPUT,'route='+(requested==='true'?'source':'legacy')+'\n');
+          const ordinary=special==='false'&&locators==='false';
+          fs.appendFileSync(process.env.GITHUB_OUTPUT,'ordinary_source_reentry='+ordinary+'\n'
+            +'source_route_requested='+requested+'\n');
+          NODE
+
   operational-recovery-gate:
-    if: inputs.current_family_cold_start != true
+    needs: source-route-request
+    if: needs.source-route-request.result == 'success' && (inputs.current_family_cold_start != true)
     name: Finish an interrupted generation before new work
     permissions:
       contents: read
@@ -89,14 +141,16 @@ jobs:
       pages: write
       id-token: write
     uses: ./.github/workflows/reusable-operational-reentry.yml
+    with:
+      source_normal_finalize: ${{ needs.source-route-request.outputs.ordinary_source_reentry == 'true' }}
     secrets:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
 
   current-main-target:
-    needs: operational-recovery-gate
-    if: ${{ !cancelled() && ((inputs.current_family_cold_start == true && needs.operational-recovery-gate.result == 'skipped') || (inputs.current_family_cold_start != true && needs.operational-recovery-gate.result == 'success')) }}
+    needs: [source-route-request, operational-recovery-gate]
+    if: ${{ !cancelled() && needs.source-route-request.result == 'success' && ((inputs.current_family_cold_start == true && needs.operational-recovery-gate.result == 'skipped') || (inputs.current_family_cold_start != true && needs.operational-recovery-gate.result == 'success')) }}
     name: Lock one normal run to exact current main and UTC hour
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -107,6 +161,11 @@ jobs:
       target_hour: ${{ steps.target-selection.outputs.target_hour }}
       completed_private_runtime: ${{ steps.target-selection.outputs.completed_private_runtime }}
       completed_private_runtime_pin: ${{ steps.target-selection.outputs.completed_private_runtime_pin }}
+      source_saved_pair: ${{ steps.source-saved-target.outputs.selected }}
+      source_saved_pair_pin: ${{ steps.source-saved-target.outputs.pair_pin }}
+      source_saved_pair_occurrence: ${{ steps.source-saved-target.outputs.occurrence }}
+      source_saved_pair_pages_proof: ${{ steps.source-saved-target.outputs.pages_proof }}
+      source_saved_pair_public_manifest_sha256: ${{ steps.source-saved-target.outputs.public_manifest_sha256 }}
     steps:
       - uses: actions/checkout@v7
 
@@ -289,9 +348,21 @@ jobs:
           assert.equal(process.env.CHECKPOINT_TARGET_HOUR, NATIVE_IDENTITY_ORIGINAL_PROGRESS.target.replace('.000Z', 'Z'));
           NODE
 
+      - name: Select verified saved SOURCE weather before locking a new hour
+        id: source-saved-target
+        if: inputs.completed_private_runtime != true && inputs.checkpoint_target_hour == '' && inputs.current_family_cold_start != true && inputs.quick_confirmation != true && inputs.quick_progress_source == '' && inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true && inputs.native_sampling_identity_original_recovery != true
+        run: node scripts/select-automatic-source-saved-weather.mjs
+        env:
+          SOURCE_ROUTE_REQUESTED: ${{ needs.source-route-request.outputs.source_route_requested }}
+          SOURCE_ROUTE_ORDINARY: ${{ needs.source-route-request.outputs.ordinary_source_reentry }}
+          SOURCE_SAVED_REENTRY_ACTION: ${{ needs.operational-recovery-gate.outputs.recovery_action }}
+          GITHUB_TOKEN: ${{ github.token }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
       - name: Select provider-free continuation for the default scheduled caller
         id: automatic-completed-target
-        if: steps.automatic-completed-scope.outputs.eligible == 'true'
+        if: steps.automatic-completed-scope.outputs.eligible == 'true' && steps.source-saved-target.outputs.recovery_family == 'ordinary'
         env:
           GITHUB_TOKEN: ${{ github.token }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -304,6 +375,7 @@ jobs:
         id: cache-state
         if: >-
           inputs.checkpoint_target_hour == '' && inputs.completed_private_runtime != true &&
+          steps.source-saved-target.outputs.selected != 'true' &&
           (steps.automatic-completed-target.outcome == 'skipped' ||
            steps.automatic-completed-target.outputs.completed_private_runtime == 'false')
         run: python3 scripts/check-copernicus-current-hour.py --invalid-cache-is-absent --github-output "$GITHUB_OUTPUT"
@@ -321,8 +393,27 @@ jobs:
           AUTO_PIN: ${{ steps.automatic-completed-target.outputs.completed_private_runtime_pin }}
           CHECKPOINT_TARGET: ${{ steps.checkpoint-target.outputs.target_hour }}
           CACHE_TARGET: ${{ steps.cache-state.outputs.target_hour }}
+          SOURCE_FAMILY: ${{ steps.source-saved-target.outputs.recovery_family }}
+          SOURCE_SELECTED: ${{ steps.source-saved-target.outputs.selected }}
+          SOURCE_TARGET: ${{ steps.source-saved-target.outputs.target_hour }}
+          DEFAULT_SCHEDULED_SCOPE: ${{ steps.automatic-completed-scope.outputs.eligible }}
         run: |
           set -euo pipefail
+          if test "$DEFAULT_SCHEDULED_SCOPE" = true; then
+            [[ "$SOURCE_FAMILY" == ordinary || "$SOURCE_FAMILY" == source ]]
+          fi
+          if test "$SOURCE_SELECTED" = true; then
+            test "$SOURCE_FAMILY" = source
+            test "$REQUESTED_COMPLETED" = false
+            test "$AUTO_OUTCOME" = skipped
+            test -z "$AUTO_COMPLETED$AUTO_TARGET$AUTO_PIN$MANUAL_TARGET$MANUAL_PIN$CHECKPOINT_TARGET$CACHE_TARGET"
+            [[ "$SOURCE_TARGET" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:00:00Z$ ]]
+            printf 'completed_private_runtime=false\ntarget_hour=%s\ncompleted_private_runtime_pin=\n' \
+              "$SOURCE_TARGET" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          test -z "$SOURCE_SELECTED$SOURCE_TARGET"
+          if test "$SOURCE_FAMILY" = source; then test "$AUTO_OUTCOME" = skipped; fi
           case "$AUTO_OUTCOME:$AUTO_COMPLETED" in
             success:true)
               test "$REQUESTED_COMPLETED" = false
@@ -974,9 +1065,15 @@ jobs:
       pull-requests: read
     uses: ./.github/workflows/reusable-weather-build.yml
     with:
+      source_normal_producer: ${{ inputs.source_normal_producer }}
       production_target_hour: ${{ needs.current-main-target.outputs.target_hour }}
       completed_private_runtime: ${{ needs.current-main-target.outputs.completed_private_runtime == 'true' }}
       completed_private_runtime_pin: ${{ needs.current-main-target.outputs.completed_private_runtime_pin }}
+      source_saved_pair: ${{ needs.current-main-target.outputs.source_saved_pair == 'true' }}
+      source_saved_pair_pin: ${{ needs.current-main-target.outputs.source_saved_pair_pin }}
+      source_saved_pair_occurrence: ${{ needs.current-main-target.outputs.source_saved_pair_occurrence }}
+      source_saved_pair_pages_proof: ${{ needs.current-main-target.outputs.source_saved_pair_pages_proof }}
+      source_saved_pair_public_manifest_sha256: ${{ needs.current-main-target.outputs.source_saved_pair_public_manifest_sha256 }}
       completed_stage_source: ${{ inputs.completed_stage_source }}
       force: true
       extended_provider_bootstrap: ${{ inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true }}
@@ -1014,8 +1111,8 @@ jobs:
 
   deploy-pages:
     name: Deploy prepared Pages artifact through reusable workflow
-    needs: build-and-prepare
-    if: ${{ !cancelled() && github.ref == 'refs/heads/main' && needs.build-and-prepare.result == 'success' && needs.build-and-prepare.outputs.should_deploy == 'true' }}
+    needs: [current-main-target, build-and-prepare]
+    if: ${{ !cancelled() && github.ref == 'refs/heads/main' && needs.build-and-prepare.result == 'success' && needs.build-and-prepare.outputs.should_deploy == 'true' && (needs.current-main-target.outputs.source_saved_pair != 'true' || needs.build-and-prepare.outputs.source_saved_pair_outcome == 'success') }}
     permissions:
       contents: read
       actions: read
@@ -1032,6 +1129,7 @@ jobs:
       operational_action: ${{ needs.build-and-prepare.outputs.operational_action }}
       source_repair_id: ''
       exact_public_recovery: false
+      source_saved_pair_readback: ${{ needs.current-main-target.outputs.source_saved_pair == 'true' && needs.build-and-prepare.outputs.source_saved_pair_outcome == 'success' }}
     secrets:
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -1060,6 +1158,8 @@ jobs:
           WEATHER_OUTCOME: ${{ needs.build-and-prepare.outputs.weather_outcome }}
           COMPLETED_PRIVATE_RUNTIME: ${{ needs.current-main-target.outputs.completed_private_runtime }}
           COMPLETED_RUNTIME_OUTCOME: ${{ needs.build-and-prepare.outputs.completed_runtime_outcome }}
+          SOURCE_SAVED_PAIR: ${{ needs.current-main-target.outputs.source_saved_pair == 'true' }}
+          SOURCE_SAVED_PAIR_OUTCOME: ${{ needs.build-and-prepare.outputs.source_saved_pair_outcome }}
           FULL_VALIDATION_OUTCOME: ${{ needs.build-and-prepare.outputs.full_validation_outcome }}
           RELEASE_GATE_OUTCOME: ${{ needs.build-and-prepare.outputs.release_gate_outcome }}
           PAGES_BUILD_OUTCOME: ${{ needs.build-and-prepare.outputs.pages_build_outcome }}
@@ -1077,6 +1177,9 @@ jobs:
             echo ""
             echo "- Target lock: $TARGET_RESULT"
             echo "- Weather build: $BUILD_RESULT / $WEATHER_OUTCOME"
+            if test "$SOURCE_SAVED_PAIR" = true; then
+              echo "- Saved forecast verification: $SOURCE_SAVED_PAIR_OUTCOME"
+            fi
             echo "- Full validation: $FULL_VALIDATION_OUTCOME"
             echo "- Release gate: $RELEASE_GATE_OUTCOME"
             echo "- Artifact: $ARTIFACT_BUILT / $PAGES_BUILD_OUTCOME / $PAGES_PRIVACY_OUTCOME / $PAGES_ARTIFACT_SEAL_OUTCOME"

@@ -315,3 +315,94 @@ for(let i=0;i<viewRaces.length;i++)if(viewRaces[i].status==='rejected')console.e
 const raceFailures=viewRaces.filter(x=>x.status==='rejected');
 if(raceFailures.length)throw new AggregateError(raceFailures.map(x=>x.reason),'actual normal admin view races');
 console.log('OK: Actual first alarm and zone renderers accept late normal results without global rerender, stale identity or filter/draft loss.');
+
+async function ownerNoticeProbeOneClick(){
+ const project='https://afqhhdrkjfjtpadntdzo.supabase.co';
+ const providerId='10000000-0000-4000-8000-000000000001';
+ function system({role='owner',testMode=false}={}){
+  const x=normalCaller(),button={disabled:false,isConnected:true},status={textContent:''};
+  const authListeners=new Set(),calls=[];
+  x.context.state.tab='system';
+  x.context.state.access={profile:{id:x.context.currentSession().user.id,is_active:true,role}};
+  x.context.hasPermission=()=>true; // Even a full_admin may not send this owner's probe.
+  x.context.activeModelUnavailableCard=()=>'';
+  x.context.location={origin:'https://ravradar.dk',pathname:'/admin.html'};
+  x.context.PUBLIC_CONFIG={supabaseUrl:project,supabasePublishableKey:'synthetic-publishable'};
+  x.context.SITE_TEST_MODE=testMode;
+  x.context.AbortSignal=AbortSignal;
+  x.context.requireFreshSession=async()=>x.context.currentSession();
+  x.context.onAuthChange=listener=>{authListeners.add(listener);return()=>authListeners.delete(listener);};
+  x.context.fetch=async(url,options)=>{
+   assert.equal(url,project+'/functions/v1/inactivity-notice-owner-probe');
+   assert.equal(options.method,'POST');
+   assert.equal(options.body,undefined);
+   assert.equal(options.redirect,'error');
+   assert.equal(options.credentials,'omit');
+   assert.equal(options.cache,'no-store');
+   assert.equal(options.headers.apikey,'synthetic-publishable');
+   assert.equal(options.headers.authorization,'Bearer synthetic-only');
+   assert.equal(Object.keys(options.headers).sort().join(','),'apikey,authorization');
+   calls.push(options);
+   return reply.promise;
+  };
+  const reply=deferred();
+  x.nodes.set('clearCaches',{});
+  x.nodes.set('logoutAdmin',{});
+  x.content.insertAdjacentHTML=(_where,html)=>{x.content.innerHTML+=html;};
+  x.content.querySelector=selector=>selector==='#sendOwnerNoticeProbe'?button:status;
+  const render=actualView(x,'renderSystem','\nfunction defaultVisitorPeriod(');
+  render();
+  return {x,button,status,reply,calls,render,authChanged(){
+   x.switchIdentity();
+   for(const listener of authListeners)listener();
+  }};
+ }
+
+ for(const hidden of [system({role:'expert'}),system({testMode:true})]){
+  assert(!hidden.x.content.innerHTML.includes('sendOwnerNoticeProbe'));
+  assert.equal(hidden.button.onclick,undefined);
+ }
+ const owner=system();
+ assert(owner.x.content.innerHTML.includes('Send én prøvemail'));
+ assert.equal(owner.calls.length,0,'rendering must not invoke the probe');
+ const sent=owner.button.onclick();
+ await owner.button.onclick();
+ assert.equal(owner.button.disabled,true);
+ assert.equal(owner.calls.length,1);
+ owner.reply.resolve(Response.json({state:'accepted',providerId}));
+ await sent;
+ assert(owner.status.textContent.includes(providerId));
+ owner.authChanged();
+ assert.equal(owner.status.textContent,'','owner change removes the private receipt');
+ await owner.button.onclick();
+ assert.equal(owner.calls.length,1);
+
+ const preflight=system(),session=deferred();
+ preflight.x.context.requireFreshSession=()=>session.promise;
+ const pendingSession=preflight.button.onclick();
+ preflight.authChanged();
+ session.resolve(preflight.x.context.currentSession());
+ await pendingSession;
+ assert.equal(preflight.calls.length,0,'a changed owner cannot reach the request');
+
+ const stale=system(),staleReceipt=deferred();
+ const pendingReceipt=stale.button.onclick();
+ await settle();
+ stale.reply.resolve({status:200,json:()=>staleReceipt.promise});
+ await settle();
+ stale.authChanged();
+ staleReceipt.resolve({state:'accepted',providerId});
+ await pendingReceipt;
+ assert.equal(stale.status.textContent,'');
+ assert.equal(stale.calls.length,1);
+
+ const rejected=system();
+ const denied=rejected.button.onclick();
+ rejected.reply.resolve(new Response('synthetic-provider-detail',{status:401}));
+ await denied;
+ assert.equal(rejected.status.textContent,'Afsendelsen kunne ikke bekræftes.');
+ await rejected.button.onclick();
+ assert.equal(rejected.calls.length,1,'a refused or ambiguous attempt is not retried');
+}
+await ownerNoticeProbeOneClick();
+console.log('OK: Actual System owner action sends one fixed request and discards stale receipts.');

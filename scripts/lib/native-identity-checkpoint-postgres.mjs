@@ -99,7 +99,8 @@ export function nativeIdentityHistoricalCatalogSetup(oldSource) {
   }
   assert.equal(selected.length, 17);
   for (const name of ['ravradar_ravscore_checkpoint_no_direct_read', 'ravradar_ravscore_checkpoint_versions_no_direct_read']) {
-    const matches = [...oldSource.matchAll(new RegExp('^create policy ' + name + '\\n[^;]+;', 'gm'))];
+    const matches = [...oldSource.matchAll(new RegExp(
+      '^drop policy if exists ' + name + '\\n[^;]+;\\ncreate policy ' + name + '\\n[^;]+;', 'gm'))];
     assert.equal(matches.length, 1); selected.push(matches[0][0]);
   }
   return definition(oldSource, 'ravradar_trip_v3_score_quality_allowed') + '\n' + selected.join('\n')

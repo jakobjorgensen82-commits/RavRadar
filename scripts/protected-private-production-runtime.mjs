@@ -35,6 +35,20 @@ import { assertOwnerCurrentOriginalExpectation, assertCurrentGridSamplingOrigina
   OWNER_CURRENT_DOMAIN_PREDECESSOR, OWNER_CURRENT_DOMAIN_SUCCESSOR }
   from './lib/bounded-conditions-predecessor-transition.mjs';
 
+const protectedRuntimeRestoreVerifications = new WeakMap();
+export function protectedPrivateRuntimeRestoreVerification(result) {
+  const verified = protectedRuntimeRestoreVerifications.get(result);
+  if (!verified) throw new Error('PRIVATE_RUNTIME_NORMAL_RESTORE_RESULT_REQUIRED');
+  return verified;
+}
+function freezeRestoreVerification(value) {
+  if (value && typeof value === 'object') {
+    for (const nested of Object.values(value)) freezeRestoreVerification(nested);
+    Object.freeze(value);
+  }
+  return value;
+}
+
 const gzipAsync = promisify(gzip);
 const gunzipAsync = promisify(gunzip);
 
@@ -1633,6 +1647,20 @@ export async function describeCurrentProtectedPrivateProductionRuntime({
   );
 }
 
+export async function pinCurrentProtectedPrivateProductionRuntime({ request } = {}) {
+  const policy = PROTECTED_PRIVATE_RUNTIME_POLICY;
+  const row = await readPointerRow(request, { allowMissing: false, policy });
+  const { privateRuntimeContractHashes } = await import('./private-production-runtime-workflow.mjs');
+  if (!same(row.payload.current.contractHashes, await privateRuntimeContractHashes())) {
+    throw new Error('Private runtime current pointer has incompatible contract hashes');
+  }
+  return Object.freeze({
+    pointerVersion: row.version,
+    pointerSha256: sha256(canonicalPrivateRuntimeJson(row.payload)),
+    descriptor: protectedPrivateRuntimeSourceIdentity(row.payload.current, policy.currentSourceKind, policy),
+  });
+}
+
 export async function describeTargetProtectedPrivateProductionRuntime({
   request,
   targetReferenceAt,
@@ -1791,14 +1819,20 @@ export async function restoreProtectedPrivateProductionRuntime({
   request,
   storage,
   policy = PROTECTED_PRIVATE_RUNTIME_POLICY,
+  expectedCurrentPointerVersion,
 } = {}) {
+  const currentOnly = expectedCurrentPointerVersion !== undefined;
+  if (currentOnly
+    && (!Number.isSafeInteger(expectedCurrentPointerVersion) || expectedCurrentPointerVersion < 1)) {
+    throw new Error('Expected private runtime current pointer version is invalid');
+  }
   assertStorage(storage);
   // The marker is a typed assertion request, not an authentication capability.
   // Validate the fixed source family and actual successor before any request.
   const currentGridOriginal = Object.hasOwn(expected ?? {}, 'currentGridSamplingTransition')
     ? assertCurrentGridSamplingOriginalExpectation(expected) : null;
   const row = await readPointerRow(request, {
-    allowMissing: true,
+    allowMissing: !currentOnly,
     policy,
     // Candidate compatibility is established from the archived manifest and
     // exact bytes below. Pointer shape must not hide a compatible previous
@@ -1812,6 +1846,9 @@ export async function restoreProtectedPrivateProductionRuntime({
       targetUnchanged: true,
       privatePayloadLogged: false,
     };
+  }
+  if (currentOnly && row.version !== expectedCurrentPointerVersion) {
+    throw new Error('Private runtime current pointer version changed before restore');
   }
   if (currentGridOriginal !== null) {
     const original = currentGridOriginal;
@@ -1852,7 +1889,7 @@ export async function restoreProtectedPrivateProductionRuntime({
   if (await fs.lstat(finalBundle).catch(() => null)) {
     throw new Error('Private runtime restore destination already exists');
   }
-  const descriptors = (currentGridOriginal !== null
+  const descriptors = (currentOnly || currentGridOriginal !== null
     ? [row.payload.current] : [row.payload.current, row.payload.previous])
     .filter(Boolean)
     .filter((descriptor, index, all) => all.findIndex(
@@ -1864,7 +1901,7 @@ export async function restoreProtectedPrivateProductionRuntime({
   try {
     for (let index = 0; index < descriptors.length; index += 1) {
       const descriptor = descriptors[index];
-      const exactDmiPredecessor = currentGridOriginal === null
+      const exactDmiPredecessor = !currentOnly && currentGridOriginal === null
         && isApprovedExactWeatherPredecessor(descriptor, expected);
       if (!same(descriptor.modelBinding, expected.modelBinding)
         || (!same(descriptor.contractHashes, expected.contractHashes)
@@ -1946,12 +1983,22 @@ export async function restoreProtectedPrivateProductionRuntime({
       error.rejectionCodes = Object.freeze(rejections.map(item => item.code));
       throw error;
     }
+    if (currentOnly) {
+      const latest = await readPointerRow(request, {
+        allowMissing: false,
+        policy,
+        allowHistoricalCurrentModelBinding: true,
+      });
+      if (latest.version !== row.version || !same(latest.payload, row.payload)) {
+        throw new Error('Private runtime current pointer changed during restore');
+      }
+    }
     await fs.rename(selected.candidate, finalBundle);
     const selectedIndex = temporaryDirectories.indexOf(selected.candidate);
     if (selectedIndex >= 0) temporaryDirectories.splice(selectedIndex, 1);
     const rollbackSelected = selected.descriptor.objectSha256
       !== row.payload.current.objectSha256;
-    return {
+    const result = {
       restored: true,
       reason: rollbackSelected
         ? 'protected-private-runtime-rollback-restored'
@@ -1967,6 +2014,11 @@ export async function restoreProtectedPrivateProductionRuntime({
       exactDmiPredecessor: selected.exactDmiPredecessor,
       privatePayloadLogged: false,
     };
+    // Preserve the actual normal verification behind its real result identity.
+    // The candidate was atomically renamed; expose its genuine final path.
+    protectedRuntimeRestoreVerifications.set(result, freezeRestoreVerification(
+      { ...structuredClone(selected.verified), bundlePath: finalBundle }));
+    return result;
   } finally {
     await Promise.all(temporaryDirectories.map(directory => {
       assertInside(context.root, directory, 'Private runtime cleanup target');

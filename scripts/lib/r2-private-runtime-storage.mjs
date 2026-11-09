@@ -13,6 +13,10 @@ class R2BodyTransportError extends Error {}
 // month Standard free allowance, leaving room for other account usage. It is
 // a local safety ceiling, not a Cloudflare account-wide spending cap.
 export const R2_PRIVATE_RUNTIME_BUCKET_CEILING_BYTES = 2_000_000_000;
+// Keep one maximum normal immutable part free beyond the entire pre-CAS peak.
+// Pointer/S metadata live in protected documents, not this dedicated R2 bucket.
+export const R2_PRIVATE_RUNTIME_PREFLIGHT_MARGIN_BYTES = 50_000_000;
+export const R2_PRIVATE_RUNTIME_CAPACITY_DEADLINE_MS = 60_000;
 
 const sha256 = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const hmac = (key, value) => crypto.createHmac('sha256', key).update(value).digest();
@@ -138,6 +142,61 @@ async function readBoundedBody(response, limit) {
   return Buffer.concat(chunks, total);
 }
 
+// One closed prewrite phase. No global fetch/default storage/upload override,
+// no caller-selected clock or timeout, and no Source/original admission.
+export async function withR2PrivateRuntimeCapacityDeadline(operation) {
+  if (arguments.length !== 1 || typeof operation !== 'function') {
+    throw new Error('R2 private runtime capacity operation is invalid');
+  }
+  const started = performance.now(), controller = new AbortController();
+  const expired = () => Object.assign(new Error('R2 private runtime capacity deadline expired'),
+    {code: 'R2_PRIVATE_RUNTIME_CAPACITY_TIMEOUT'});
+  const abort = () => { if (!controller.signal.aborted) controller.abort(expired()); };
+  const timer = setTimeout(abort, R2_PRIVATE_RUNTIME_CAPACITY_DEADLINE_MS);
+  const assertWithinDeadline = () => {
+    // Synchronous local packing cannot be preempted by a timer. Check elapsed
+    // monotonic time too, so a delayed event loop never authorizes late HTTP/SQL.
+    if (performance.now() - started >= R2_PRIVATE_RUNTIME_CAPACITY_DEADLINE_MS) abort();
+    if (controller.signal.aborted) throw controller.signal.reason;
+  };
+  const fetchImpl = async (target, options = {}) => {
+    assertWithinDeadline();
+    if (!['HEAD', 'GET'].includes(options.method) || options.body !== undefined
+      || options.redirect !== 'manual') {
+      throw new Error('R2 private runtime capacity transport is read-only');
+    }
+    const response = await globalThis.fetch(target, {...options, signal: controller.signal});
+    try { assertWithinDeadline(); }
+    catch (error) { await response.body?.cancel?.().catch(() => {}); throw error; }
+    return response; // The same abort signal controls the actual response body.
+  };
+  const delayImpl = ms => {
+    assertWithinDeadline();
+    return new Promise((resolve, reject) => {
+      let pause;
+      const cleanup = () => { clearTimeout(pause); controller.signal.removeEventListener('abort', onAbort); };
+      const onAbort = () => { cleanup(); reject(controller.signal.reason); };
+      pause = setTimeout(() => {
+        cleanup();
+        try { assertWithinDeadline(); resolve(); } catch (error) { reject(error); }
+      }, ms);
+      controller.signal.addEventListener('abort', onAbort, {once: true});
+    });
+  };
+  try {
+    assertWithinDeadline();
+    const result = await operation(Object.freeze({assertWithinDeadline, fetchImpl, delayImpl}));
+    assertWithinDeadline();
+    return result;
+  } catch (error) {
+    assertWithinDeadline(); // Keep the fixed timeout code through ordinary transport wrappers.
+    throw error;
+  } finally {
+    clearTimeout(timer);
+    abort(); // Also release any pending request/body/retry wait on failure.
+  }
+}
+
 export function createR2PrivateRuntimeStorage({
   accountId = process.env.RAVRADAR_R2_ACCOUNT_ID,
   accessKeyId = process.env.RAVRADAR_R2_ACCESS_KEY_ID,
@@ -249,6 +308,75 @@ export function createR2PrivateRuntimeStorage({
     return true;
   }
 
+  // Strict HEAD metadata is capacity-only; legacy upload keeps its whole contract.
+  async function capacityImmutableObjectExists(objectPath, expectedBytes) {
+    safeObjectPath(objectPath);
+    if (!Number.isSafeInteger(expectedBytes) || expectedBytes < 1
+      || expectedBytes > maximumObjectBytes) {
+      throw new Error('R2 private runtime object exceeds its size bound');
+    }
+    const response = await request('HEAD', objectPath);
+    await response.body?.cancel?.().catch(() => {});
+    if (response.status === 404) return false;
+    if (response.status !== 200) {
+      throw new Error('R2 private runtime object existence check failed closed');
+    }
+    const declared = response.headers?.get?.('content-length');
+    if (!/^(0|[1-9][0-9]*)$/.test(String(declared))
+      || !Number.isSafeInteger(Number(declared)) || Number(declared) !== expectedBytes) {
+      throw new Error('R2 private runtime immutable object size is inconsistent');
+    }
+    return true;
+  }
+
+  async function inspectImmutableCapacity(descriptors) {
+    if (arguments.length !== 1 || !Array.isArray(descriptors)
+      || descriptors.length < 1 || descriptors.length > 8) {
+      throw new Error('R2 private runtime capacity descriptors are invalid');
+    }
+    const paths = new Set(), selected = [];
+    // Validate and snapshot the entire closed list before the first HTTP read.
+    for (const [index, descriptor] of descriptors.entries()) {
+      if (!descriptor || Object.getPrototypeOf(descriptor) !== Object.prototype
+        || Object.keys(descriptor).sort().join(',') !== 'index,objectBytes,objectPath,objectSha256'
+        || Object.values(Object.getOwnPropertyDescriptors(descriptor)).some(value => value.get || value.set)
+        || descriptor.index !== index || paths.has(descriptor.objectPath)
+        || !/^[a-f0-9]{64}$/.test(String(descriptor.objectSha256))
+        || !Number.isSafeInteger(descriptor.objectBytes) || descriptor.objectBytes < 1
+        || descriptor.objectBytes > maximumObjectBytes) {
+        throw new Error('R2 private runtime capacity descriptor is invalid');
+      }
+      safeObjectPath(descriptor.objectPath);
+      if (!descriptor.objectPath.endsWith('-' + descriptor.objectSha256 + '.json.gz.part')
+        || !descriptor.objectPath.includes('/part-' + String(index).padStart(3, '0') + '-')) {
+        throw new Error('R2 private runtime capacity descriptor path is inconsistent');
+      }
+      paths.add(descriptor.objectPath);
+      selected.push({objectPath: descriptor.objectPath, objectBytes: descriptor.objectBytes});
+    }
+    let missingObjectBytes = 0, missingObjectCount = 0;
+    for (const descriptor of selected) {
+      if (!await capacityImmutableObjectExists(descriptor.objectPath, descriptor.objectBytes)) {
+        missingObjectBytes += descriptor.objectBytes;
+        missingObjectCount += 1;
+      }
+    }
+    // Count the complete dedicated bucket, including retained originals and
+    // any unreferenced objects. Future retention never finances this upload.
+    const {usedBytes, objectCount} = await bucketUsage();
+    const projectedPeakBytes = usedBytes + missingObjectBytes
+      + R2_PRIVATE_RUNTIME_PREFLIGHT_MARGIN_BYTES;
+    if (!Number.isSafeInteger(projectedPeakBytes) || projectedPeakBytes > bucketCeilingBytes) {
+      throw new Error('R2 private runtime prewrite capacity would exceed its safety ceiling');
+    }
+    return Object.freeze({kind: 'R2_PRIVATE_RUNTIME_PREWRITE_CAPACITY_V1',
+      usedBytes, bucketObjectCount: objectCount, preparedObjectCount: selected.length,
+      missingObjectCount, missingObjectBytes,
+      reservedMarginBytes: R2_PRIVATE_RUNTIME_PREFLIGHT_MARGIN_BYTES,
+      projectedPeakBytes, ceilingBytes: bucketCeilingBytes,
+      remainingBytesAfterMargin: bucketCeilingBytes - projectedPeakBytes});
+  }
+
   async function uploadImmutable(objectPath, bytes) {
     safeObjectPath(objectPath);
     if (!Buffer.isBuffer(bytes) || bytes.length < 1
@@ -301,5 +429,5 @@ export function createR2PrivateRuntimeStorage({
   }
 
   return { ensurePrivateBucket, uploadImmutable, download, removeExact,
-    anonymousStatus, bucketUsage };
+    anonymousStatus, bucketUsage, inspectImmutableCapacity };
 }
