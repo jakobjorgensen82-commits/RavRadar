@@ -21,13 +21,23 @@ def text(value):
     return value.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def grid(eccodes, producer, targets, reference, offset, destination, collection, fields):
+def grid(eccodes, producer, targets, reference, offset, destination, collection, fields,
+         *, wave_decode_zones=None):
     """Same real ecCodes sample/write recipe; no made-up digest or capture."""
     step = .02
-    west = math.floor((min(row["waterPoint"][0] for row in targets) - .04) / step) * step
-    east = math.ceil((max(row["waterPoint"][0] for row in targets) + .04) / step) * step
-    south = math.floor((min(row["waterPoint"][1] for row in targets) - .04) / step) * step
-    north = math.ceil((max(row["waterPoint"][1] for row in targets) + .04) / step) * step
+    if wave_decode_zones is None:
+        points = [row["waterPoint"] for row in targets]
+        padding = .04
+    else:
+        need(wave_decode_zones, "NORMAL_TARGETS_REQUIRED")
+        points = [(row["lon"], row["lat"]) for row in wave_decode_zones]
+        # The normal WAM nearest search probes up to .14 degrees in either
+        # axis. Keep its complete envelope one cell inside the synthetic grid.
+        padding = .14 + step
+    west = math.floor((min(point[0] for point in points) - padding) / step) * step
+    east = math.ceil((max(point[0] for point in points) + padding) / step) * step
+    south = math.floor((min(point[1] for point in points) - padding) / step) * step
+    north = math.ceil((max(point[1] for point in points) + padding) / step) * step
     ni, nj = round((east-west)/step)+1, round((north-south)/step)+1
     need(1 < ni*nj <= 1_000_000, "GRID_BOUND")
     with destination.open("xb") as output:
@@ -107,7 +117,8 @@ def add_initial_weather(eccodes, producer, targets, zones, document, reference, 
             href = ("https://current-source-native.invalid/initial-assets/" + collection + "/"
                     + model_reference.strftime("%Y%m%d%H") + "/" + str(model_step) + ".grib")
             file = producer.cached_asset_path(href)
-            grid(eccodes, producer, targets, model_reference, model_step, file, collection, fields)
+            grid(eccodes, producer, targets, model_reference, model_step, file, collection, fields,
+                 wave_decode_zones=decode_zones if collection in producer.WAVE_BOOTSTRAP_COLLECTIONS else None)
             raw = file.read_bytes()
             content_sha, size = hashlib.sha256(raw).hexdigest(), len(raw)
             item_id = "SYNTHETIC-INITIAL-" + collection.upper() + "-" + str(offset)
