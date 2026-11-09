@@ -273,13 +273,14 @@ export function verifiedPartScalarPlanningHourly({
 // Diagnostic state is private to the actual failing operation. Retain the
 // original error identity, including an unproved transport-stop brand.
 const retainedScalarFailurePhases = new WeakMap();
+const retainedScalarFailureDiagnostics = new WeakMap();
 const RETAINED_SCALAR_PHASES = new Set([
   'CONTEXT', 'ARGUMENTS', 'LOAD', 'ENCODE', 'PUBLISH', 'TRANSPORT_SETTLEMENT',
   'SNAPSHOT_BEFORE', 'REGISTRY', 'FORECAST', 'DMI_CURRENT', 'DMI_DEPLOYED',
   'DMI_HISTORICAL', 'PART_CONTINUITY', 'POINT_STATE', 'WATER_CONTEXT',
   'SOURCE_CONTINUITY', 'SOURCE_INDEX', 'PART_RETENTION', 'SELECTION_HISTORY',
   'OPEN_METEO_RETAINED', 'COMPONENT_NEEDS', 'COPERNICUS_VERIFY', 'SCALAR_NEEDS',
-  'SNAPSHOT_AFTER',
+  'SNAPSHOT_AFTER', 'RETAINED_INPUTS',
 ]);
 function rememberRetainedScalarFailure(error, phase) {
   if (error !== null && (typeof error === 'object' || typeof error === 'function')
@@ -311,7 +312,9 @@ export function retainedScalarPlanningFailureDiagnostic(error, fallbackPhase) {
       'SCALAR_ENCODING_SUPPORT_INVALID',
     ].includes(message)) category = 'INPUT_INVALID';
   }
-  return { phase: RETAINED_SCALAR_PHASES.has(phase) ? phase : 'LOAD', errorCategory: category };
+  const planningDiagnostic = retainedScalarFailureDiagnostics.get(error);
+  return { phase: RETAINED_SCALAR_PHASES.has(phase) ? phase : 'LOAD', errorCategory: category,
+    ...(planningDiagnostic ? { planningDiagnostic } : {}) };
 }
 
 // Offline counterpart of the existing retained-load section above. In
@@ -396,9 +399,20 @@ export async function loadRetainedPartScalarPlanning({
   root, dmiCachePath, productionReferenceAt, historicalCachePath = null,
 }) {
   let phase = 'TRANSPORT_SETTLEMENT';
+  let phaseStartedAt = performance.now(), completedPlan = null, failedError = null;
+  const timing = { phaseElapsedMillis: {},
+    snapshotBeforeElapsedMillis: null, snapshotAfterElapsedMillis: null,
+    snapshotBeforeBytes: null, snapshotAfterBytes: null,
+    snapshotBeforePresentFiles: null, snapshotAfterPresentFiles: null,
+    partsStarted: 0, partsCompleted: 0 };
+  const elapsed = since => Math.max(0, Math.round(performance.now() - since));
+  const changePhase = next => {
+    timing.phaseElapsedMillis[phase] = (timing.phaseElapsedMillis[phase] ?? 0) + elapsed(phaseStartedAt);
+    phase = next; phaseStartedAt = performance.now();
+  };
   try {
     assertWeatherTransportSettlement();
-    phase = 'ARGUMENTS';
+    changePhase('ARGUMENTS');
     if (!path.isAbsolute(root) || !path.isAbsolute(dmiCachePath)
       || !/^\d{4}-\d\d-\d\dT\d\d:00:00\.000Z$/.test(productionReferenceAt)
       || !Number.isFinite(Date.parse(productionReferenceAt))) {
@@ -429,23 +443,40 @@ export async function loadRetainedPartScalarPlanning({
       if (!path.isAbsolute(historicalCachePath)) throw new Error('RETAINED_SCALAR_HISTORY_PATH_INVALID');
       files.historical = [historicalCachePath, false];
     }
-    const snapshot = async () => {
-      const settled = await Promise.allSettled(Object.entries(files).map(async ([key, [file, optional]]) =>
-        [key, await retainedScalarSnapshotDigest(file, optional, planningDeadlineAt)]));
-      // Every owned stream must settle before any caller may take fallback.
-      const failed = settled.find(result => result.status === 'rejected');
-      if (failed) throw failed.reason;
-      retainedScalarRemaining(planningDeadlineAt);
-      return Object.fromEntries(settled.map(result => result.value));
+    const snapshot = async beforeSnapshot => {
+      const startedAt = performance.now();
+      try {
+        const settled = await Promise.allSettled(Object.entries(files).map(async ([key, [file, optional]]) =>
+          [key, await retainedScalarSnapshotDigest(file, optional, planningDeadlineAt)]));
+        // Every owned stream must settle before any caller may take fallback.
+        const failed = settled.find(result => result.status === 'rejected');
+        if (failed) throw failed.reason;
+        retainedScalarRemaining(planningDeadlineAt);
+        const result = Object.fromEntries(settled.map(result => result.value));
+        // Kun allerede færdige hashresultaters størrelser; ingen ekstra læsning.
+        const present = Object.values(result).filter(value => value !== null);
+        const bytes = present.reduce((sum, value) => sum + value.bytes, 0);
+        if (beforeSnapshot) {
+          timing.snapshotBeforeBytes = Number.isSafeInteger(bytes) ? bytes : null;
+          timing.snapshotBeforePresentFiles = present.length;
+        } else {
+          timing.snapshotAfterBytes = Number.isSafeInteger(bytes) ? bytes : null;
+          timing.snapshotAfterPresentFiles = present.length;
+        }
+        return result;
+      } finally {
+        if (beforeSnapshot) timing.snapshotBeforeElapsedMillis = elapsed(startedAt);
+        else timing.snapshotAfterElapsedMillis = elapsed(startedAt);
+      }
     };
-    phase = 'SNAPSHOT_BEFORE';
-    const before = await snapshot();
+    changePhase('SNAPSHOT_BEFORE');
+    const before = await snapshot(true);
     const readJson = async (key, fallback) => {
       if (before[key] === null) return fallback;
       if (before[key].bytes > 64 * 1024 * 1024) throw new Error('RETAINED_SCALAR_METADATA_LIMIT');
       return readBudgeted(async () => JSON.parse(await fs.readFile(files[key][0], 'utf8')));
     };
-    phase = 'REGISTRY';
+    changePhase('REGISTRY');
     const contract = await readJson('parts');
     const features = (await readJson('zones'))?.features;
     if (!contract?.enabled || !contract.zones || !Array.isArray(features) || !features.length) {
@@ -458,7 +489,7 @@ export async function loadRetainedPartScalarPlanning({
       throw new Error('RETAINED_SCALAR_PART_DOMAIN_INVALID');
     }
     const parentById = new Map(features.map(feature => [feature.properties?.id, feature]));
-    phase = 'FORECAST';
+    changePhase('FORECAST');
     const forecastStore = await readBudgeted(async () => {
       // Keep the normal whole-file inspector and both continuity readers.
       // This planner never consumes the already-inspected zone forecasts.
@@ -476,32 +507,32 @@ export async function loadRetainedPartScalarPlanning({
       }
       return store;
     });
-    phase = 'DMI_CURRENT';
+    changePhase('DMI_CURRENT');
     const dmiBulkCache = await readBudgeted(() => readDmiBulkDocument(dmiCachePath));
-    phase = 'DMI_DEPLOYED';
+    changePhase('DMI_DEPLOYED');
     const deployedDmiBulkCache = before.deployed === null ? null : await readBudgeted(() => readDmiBulkDocument(files.deployed[0]));
-    phase = 'DMI_HISTORICAL';
+    changePhase('DMI_HISTORICAL');
     const historicalDmiBulkCache = historicalCachePath === null ? null : await readBudgeted(() => readDmiBulkDocument(historicalCachePath));
-    phase = 'PART_CONTINUITY';
+    changePhase('PART_CONTINUITY');
     const persisted = await unpackDmiPartContinuity(forecastStore.partContinuity, parts, productionReferenceAt);
-    phase = 'POINT_STATE';
+    changePhase('POINT_STATE');
     const pointState = before.pointState === null ? {}
       : assertCoastalPointActivationStateInjection(await readJson('pointState'));
-    phase = 'WATER_CONTEXT';
+    changePhase('WATER_CONTEXT');
     const stations = (await readJson('stations'))?.stations;
     const routing = await readJson('routing', { schemaVersion: 1, zones: {} });
     if (!Array.isArray(stations) || !routing?.zones) throw new Error('RETAINED_SCALAR_WATER_CONTEXT_INVALID');
-    phase = 'SOURCE_CONTINUITY';
+    changePhase('SOURCE_CONTINUITY');
     const retainedSourceIndex = await unpackWaterSourceForecastContinuity(
       forecastStore.waterSourceContinuity, productionReferenceAt);
-    phase = 'SOURCE_INDEX';
+    changePhase('SOURCE_INDEX');
     const sourceIndex = buildWaterSourceForecastIndex(stations, dmiBulkCache, productionReferenceAt, {
       protectedBulkCache: deployedDmiBulkCache, historicalBulkCache: historicalDmiBulkCache, retainedSourceIndex,
     });
     const sourceRegistry = applyWaterSourceForecastStatus(stations, sourceIndex, productionReferenceAt, { minimumHours: 96 });
     const waterSourceRoutingContext = { sources: sourceRegistry, index: sourceIndex, routing, haversineKm,
       previousRoutingDiagnostic: null, diagnosticReferenceAt: productionReferenceAt };
-    phase = 'PART_RETENTION';
+    changePhase('PART_RETENTION');
     const records = new Map();
     for (const part of parts) {
       retainedScalarRemaining(planningDeadlineAt);
@@ -511,12 +542,14 @@ export async function loadRetainedPartScalarPlanning({
       const expectedIdentity = dmiExpectedIdentityForPart(part, bulkId);
       const feature = { type: 'Feature', geometry: { type: 'Point', coordinates: part.waterPoint },
         properties: localPartRuntimeProperties(parent.properties, part, bulkId) };
+      timing.partsStarted++;
       records.set(part.partId, buildPartDmiForecastWithProtectedRetention(feature, dmiBulkCache,
         pointState?.[part.partId] ? null : deployedDmiBulkCache, productionReferenceAt, {
           startAt: productionReferenceAt, expectedIdentity, scalarPlanningOnly: true,
           persistedHourly: pointState?.[part.partId] ? [] : persisted.get(part.partId)?.hourly ?? [],
           historicalBulkCache: pointState?.[part.partId] ? null : historicalDmiBulkCache,
         }));
+      timing.partsCompleted++;
     }
     const readVerifiedHourly = (part, inputs) => verifiedPartScalarPlanningHourly({
       part, parentFeature: parentById.get(part.zoneId), record: records.get(part.partId),
@@ -525,18 +558,19 @@ export async function loadRetainedPartScalarPlanning({
     try {
       const retentionStartAt = new Date(Date.parse(productionReferenceAt) - RESEARCH_HISTORY_HOURS * 3600000).toISOString();
       const retentionEndAt = new Date(Date.parse(productionReferenceAt) + (OPEN_METEO_FUTURE_HOURS - 1) * 3600000).toISOString();
+      changePhase('RETAINED_INPUTS');
       const { inputs } = await loadRetainedWeatherComponentPlanningInputs({ privateCacheRoot: at('.cache'),
         parts, productionReferenceAt, retentionStartAt, retentionEndAt, planningDeadlineAt });
-      phase = 'SCALAR_NEEDS';
+      changePhase('SCALAR_NEEDS');
       const needs = buildWeatherComponentNeeds({ parts, productionReferenceAt, scalarPlanningOnly: true,
         readVerifiedHourly: part => readVerifiedHourly(part, inputs) });
-      phase = 'SNAPSHOT_AFTER';
-      const after = await snapshot();
+      changePhase('SNAPSHOT_AFTER');
+      const after = await snapshot(false);
       if (JSON.stringify(before) !== JSON.stringify(after)) throw new Error('RETAINED_SCALAR_SNAPSHOT_CHANGED');
       // Wave-only parent/Feggesund work remains in the unchanged WAM/scoring
       // caller. No wave coverage or CURRENT availability is claimed here.
       const scalar = row => ['wind', 'waterLevel', 'waterTemperature'].includes(row.component);
-      return { productionReferenceAt, parts, snapshotInputHashes: before,
+      return completedPlan = { productionReferenceAt, parts, snapshotInputHashes: before,
         needs: needs.needs.filter(scalar), dmiUpgradeNeeds: needs.dmiUpgradeNeeds.filter(scalar),
         privateSupportNeeds: needs.privateSupportNeeds };
     } finally {
@@ -545,7 +579,16 @@ export async function loadRetainedPartScalarPlanning({
       catch (error) { rememberRetainedScalarFailure(error, 'TRANSPORT_SETTLEMENT'); throw error; }
     }
   } catch (error) {
+    failedError = error;
     rememberRetainedScalarFailure(error, phase);
     throw error;
+  } finally {
+    // Afgrænset observation af det faktiske forløb, aldrig ny dataautoritet.
+    timing.phaseElapsedMillis[phase] = (timing.phaseElapsedMillis[phase] ?? 0) + elapsed(phaseStartedAt);
+    Object.freeze(timing.phaseElapsedMillis);
+    const planningDiagnostic = Object.freeze(timing);
+    if (failedError !== null && (typeof failedError === 'object' || typeof failedError === 'function'))
+      retainedScalarFailureDiagnostics.set(failedError, planningDiagnostic);
+    else if (completedPlan) completedPlan.planningDiagnostic = planningDiagnostic;
   }
 }

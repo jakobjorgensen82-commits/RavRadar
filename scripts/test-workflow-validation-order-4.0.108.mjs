@@ -11,6 +11,10 @@ import { verifyWorkflow as verifyCurrentNationalWorkflow, inverseSourceBeforePos
 import {projectSourceImpactWorkflowFull} from './lib/source-impact-workflow-review.mjs';
 import { assertEarlyCompletedRuntimeStageOrder, inverseCompletedRuntimeWorkflow, inverseTerminalRepair4145WorkflowInventory } from './lib/completed-private-runtime-workflow-review.mjs';
 import fs from 'node:fs';
+import {SOURCE_PRODUCER_AFTER597_PARENT as sourceProducerPhase}
+  from './lib/source-producer-after597-parent.mjs';
+import {requireSourceProducerOutput, assertSourceProducerAfter597StaticCode}
+  from './lib/source-producer-after597-runtime-family.mjs';
 import crypto from 'node:crypto';
 import vm from 'node:vm';
 import { exactPagesAttemptStep } from './github-pages-attempt-evidence.mjs';
@@ -149,8 +153,29 @@ const productionWorkflowNames = new Set(
 );
 productionWorkflowNames.add('deploy-code-only-repair.yml');
 productionWorkflowNames.add('run-current-weather-once.yml');
+// Kun Source-testkontekst: ingen ny fil eller flag udsteder adgang.
+function readQualifiedSourceWorkflowInventory() {
+  const sourceIssued = sourceProducerPhase.binding !== null || sourceProducerPhase.output !== null
+    || sourceProducerPhase.nextRelease !== null;
+  if (sourceIssued) {
+    requireSourceProducerOutput(); // Delvis udstedelse/NULL må aldrig få en facade.
+    assertSourceProducerAfter597StaticCode(); // Faktiske C/I/RAW-bytes, ikke en fixturemarkør.
+  }
+  assert.equal(arguments.length, 0);
+  const names = fs.readdirSync(workflowDirectory).filter(name => /\.ya?ml$/i.test(name)).sort();
+  if (!sourceIssued) return names; // Hele den strenge ordinary598-admission ejer fortsat listen.
+  const sourceName = 'validate-current-source-native-profile.yml';
+  assert.equal(names.filter(name => name === sourceName).length, 1,
+    'Kun det ene eksisterende Source-workflow må indgå');
+  const bytes = fs.readFileSync(workflowDirectory + '/' + sourceName);
+  assert.equal(bytes.length, 4141, 'Hele det gennemgåede Source-workflow');
+  assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'),
+    '92396a04f4dde475d58ef4fbd9d60b6a3ddcc7e03bbc42b298b343f43049619e',
+    'Præcis gennemgået Source-workflowidentitet');
+  return names.filter(name => name !== sourceName);
+}
 const currentPhysicalWorkflowFiles = inverseForecastSharePagesWorkflowInventory(inverseTerminalRepair4145WorkflowInventory(
-  fs.readdirSync(workflowDirectory).filter((name) => /\.ya?ml$/i.test(name)).sort(),
+  readQualifiedSourceWorkflowInventory(),
   fs.readFileSync(`${workflowDirectory}/resume-operational-checkpoint.yml`, 'utf8').replaceAll('\r\n', '\n')),
   fs.readFileSync(`${workflowDirectory}/deploy-forecast-share-pages.yml`, 'utf8'));
 const expectedWorkflowFiles = ['apply-weather-model-binding-only.yml', 'audit-native-current-grid.yml', 'audit-saved-weather-inputs.yml', 'audit-sealed-current-source.yml', 'build-ravscore-historical-wave-pilot.yml', 'deploy-code-only-repair.yml', 'deploy-trip-storage.yml', 'extract-private-geodanmark-layer.yml', 'migrate-private-runtime-to-r2.yml', 'monitor-trip-storage.yml', 'notify-weather-failure.yml', 'preserve-copernicus-current-shadow.yml', 'recover-live-ravscore-central.yml', 'recover-saved-dmi-originals.yml', 'recover-sealed-weather-36396834072.yml', 'retry-national-admin-roundtrip.yml', 'reusable-operational-reentry.yml', 'reusable-pages-deploy.yml', 'reusable-weather-build.yml', 'run-current-weather-once.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-local-part-system-candidate.yml', 'validate-pull-request.yml', 'validate-six-zone-recovery.yml', 'watch-missed-weather-schedule.yml'];
