@@ -1824,6 +1824,37 @@ try {
   assert.equal(storage.objects.size, 2, 'only current and rollback objects remain');
   assert.deepEqual(storage.removed, [archiveOne.descriptor.objects[0].objectPath]);
 
+  const implementation = (await fs.readFile(
+    'scripts/protected-private-production-runtime.mjs',
+    'utf8',
+  )).replace(/\r\n/g, '\n');
+  // The completed-stage caller used to discard this verified failure result.
+  const stageImplementation = await fs.readFile(
+    path.join(sourceRepository, 'scripts/ordinary-completed-stage-admission.mjs'), 'utf8');
+  const stagePublish = stageImplementation.split("  } else if (operation === 'publish') {")[1]
+    ?.split("  } else fail('ORDINARY_STAGE_UNKNOWN_OPERATION');")[0];
+  assert.ok(stagePublish);
+  const expectedWarning = '::warning title=Private runtime retention::Published with incomplete retired-object cleanup.';
+  assert.equal(stageImplementation.split(expectedWarning).length, 2);
+  const stageWarningStart = stagePublish.indexOf('    if (publication.published === true');
+  const stageWarningEnd = stagePublish.indexOf('\n    }', stageWarningStart);
+  assert.ok(stageWarningStart >= 0 && stageWarningEnd > stageWarningStart);
+  const directStart = implementation.indexOf('  console.log(JSON.stringify({\n    status: options.mode');
+  const directEnd = implementation.indexOf('\n  }));', directStart);
+  assert.ok(directStart >= 0 && directEnd > directStart);
+  for (const publication of [cleanupFailurePublication, cleanedPublication, { published: false }]) {
+    const warnings = [], directLogs = [];
+    const console = { warn: line => warnings.push(line), log: line => directLogs.push(line) };
+    runInNewContext(stagePublish.slice(stageWarningStart, stageWarningEnd + '\n    }'.length),
+      { publication, console });
+    assert.deepEqual(warnings, publication === cleanupFailurePublication ? [expectedWarning] : []);
+    runInNewContext(implementation.slice(directStart, directEnd + '\n  }));'.length),
+      { result: publication, options: { mode: 'publish' }, console });
+    assert.deepEqual(warnings, publication === cleanupFailurePublication ? [expectedWarning] : []);
+    assert.equal(directLogs.length, 1);
+    assert.equal(JSON.parse(directLogs[0]).retentionCleanupFailureCount, publication.retentionCleanupFailureCount);
+  }
+
   const expiredBundle = path.join(restoreRoot, 'bundle-expired');
   const expired = await restoreProtectedPrivateProductionRuntime({
     privateRoot: restoreRoot,
@@ -2538,10 +2569,6 @@ try {
     });
   });
 
-  const implementation = (await fs.readFile(
-    'scripts/protected-private-production-runtime.mjs',
-    'utf8',
-  )).replace(/\r\n/g, '\n');
   const limitStart = implementation.indexOf('function effectiveEnvelopeByteLimit(policy) {');
   const limitEnd = implementation.indexOf('\nfunction archiveEnvelopeByteLength(', limitStart);
   assert.ok(limitStart >= 0 && limitEnd > limitStart);

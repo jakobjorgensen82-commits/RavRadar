@@ -360,10 +360,13 @@ async function main() {
   } else if (operation === 'publish') {
     const receipt = await verifyOrdinaryCompletedStage(env, { rebuilt: true });
     const clients = createProtectedPrivateRuntimeClients();
-    await publishProtectedPrivateProductionRuntime({ privateRoot: env.RAVRADAR_PRIVATE_RUNTIME_ROOT,
+    const publication = await publishProtectedPrivateProductionRuntime({ privateRoot: env.RAVRADAR_PRIVATE_RUNTIME_ROOT,
       bundlePath: env.RAVRADAR_PRIVATE_RUNTIME_BUNDLE, repositoryRoot: p.root,
       expected: await json(p.expectedPath), sourceHead: receipt.originalIdentity.sourceHead,
       request: bindOrdinaryStagePublicationRequest(clients.documentRequest, receipt), storage: clients.storage });
+    if (publication.published === true && publication.retentionCleanupComplete === false) {
+      console.warn('::warning title=Private runtime retention::Published with incomplete retired-object cleanup.');
+    }
   } else fail('ORDINARY_STAGE_UNKNOWN_OPERATION');
   console.log('ORDINARY_COMPLETED_STAGE_' + operation.toUpperCase().replaceAll('-', '_') + '_PASS');
 }
