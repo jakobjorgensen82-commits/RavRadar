@@ -1,0 +1,144 @@
+name: Diagnose SOURCE provider on exact synthetic fixture
+on:
+  push:
+    branches: [codex/source855-provider-only-linux-20261109]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: source855-provider-only-diagnostic
+  cancel-in-progress: false
+
+jobs:
+  provider-only-no-admission:
+    if: github.repository_id == '1306858343' && github.ref == 'refs/heads/codex/source855-provider-only-linux-20261109' && github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Check out the exact public synthetic fixture source
+        uses: actions/checkout@v7
+        with:
+          ref: 3dfde7ae0d0efe32474eb8321781d3e640b91c82
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Set up the exact existing source test dependencies
+        timeout-minutes: 5
+        run: >-
+          python -m pip install --disable-pip-version-check --no-input --timeout 15 --retries 0
+          --only-binary=:all: -r requirements-dmi.txt -r requirements-geometry.txt -r requirements-copernicus.txt
+      - name: Diagnose one synthetic provider child without source admission
+        shell: bash
+        run: |
+          unset GITHUB_TOKEN GH_TOKEN GITHUB_EVENT_PATH
+          PYTHON312=$(command -v python)
+          NODE24=$(command -v node)
+          unset RR855_H0
+          set -eu
+          umask 077
+          repo=$(pwd -P)
+          head=3dfde7ae0d0efe32474eb8321781d3e640b91c82
+          tree=7f7b7a8136371efc6f900ad0a2502587c540493a
+          export GIT_NO_LAZY_FETCH=1 GIT_NO_REPLACE_OBJECTS=1 GIT_OPTIONAL_LOCKS=0
+          export GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null
+          actual_head=$(git -c protocol.allow=never rev-parse HEAD^{commit})
+          actual_tree=$(git -c protocol.allow=never rev-parse HEAD^{tree})
+          physical_top=$(git -c protocol.allow=never rev-parse --show-toplevel)
+          shallow=$(git -c protocol.allow=never rev-parse --is-shallow-repository)
+          dirty=$(git -c protocol.allow=never status --porcelain=v1 --untracked-files=all)
+          test "$actual_head" = "$head" && test "$actual_tree" = "$tree" &&
+            test "$physical_top" = "$repo" && test "$shallow" = false && test -z "$dirty" || exit 1
+          if git config --local --get-regexp '^(extensions\.partialclone|remote\..*\.promisor)$' >/dev/null 2>&1; then exit 1; fi
+          library_path=$(printenv LD_LIBRARY_PATH || true)
+          actual_h0=$(printenv RR855_H0 || true)
+          env -i PATH="$PATH" LANG=C.UTF-8 LD_LIBRARY_PATH="$library_path" \
+            "$PYTHON312" -I -B - "$NODE24" "$actual_h0" "$head" 3>&1 >/dev/null 2>&1 <<'PY'
+          import importlib.util
+          import json
+          import os
+          from pathlib import Path
+          import re
+          import stat
+          import subprocess
+          import sys
+          import tempfile
+
+          phase = 'ENVIRONMENT'
+          result = {'kind': 'CURRENT_PROVIDER_ONLY_DIAGNOSTIC', 'outcome': 'REFUSED',
+                    'phase': phase, 'exitCode': None, 'referenceMode': 'UNSET',
+                    'providerFailure': None, 'initialWeatherLine': None,
+                    'privatePayloadIncluded': False}
+          try:
+              import eccodes
+              import requests.adapters
+              import urllib3.util.retry
+              node, captured_h0, head = sys.argv[1:]
+              node = Path(node)
+              assert sys.platform == 'linux' and sys.version_info[:2] == (3, 12)
+              assert eccodes.codes_get_api_version() == '2.48.2'
+              assert node.is_absolute() and node.is_file()
+              assert subprocess.check_output([str(node), '-p', "process.versions.node.split('.')[0]"],
+                                             stdin=subprocess.DEVNULL, timeout=30) == b'24\n'
+              assert not captured_h0 or re.fullmatch(r'\d{4}-\d\d-\d\dT\d\d:00:00\.000Z', captured_h0)
+              phase = 'OWNED_HOST'
+              observer_path = Path.cwd() / 'scripts/test-source598-current-native-profile.py'
+              spec = importlib.util.spec_from_file_location('source855_provider_only_observer', observer_path)
+              observer = importlib.util.module_from_spec(spec)
+              spec.loader.exec_module(observer)
+              observer.NODE = node
+              assert observer.CURRENT_NATIVE_CONTEXT is None
+              test = observer.SourceCurrentNative()
+              profile = test.current598_profile()
+              own, root, environment, normal_h0 = test.owned_current_host(head, with_sdk=False, input_profile=profile)
+              owner = own.lstat()
+              assert own.parent == Path(tempfile.gettempdir()).resolve(strict=True)
+              assert owner.st_uid == os.getuid() == os.geteuid()
+              assert stat.S_ISDIR(owner.st_mode) and stat.S_IMODE(owner.st_mode) == 0o700
+              (own / 'fixture-current598').mkdir(mode=0o700)
+              phase = 'PROVIDERS'
+              result['referenceMode'] = 'CAPTURED_HOUR' if captured_h0 else 'NEW_NORMAL_HOUR'
+              command = [sys.executable, '-I', '-B',
+                         str(root / 'scripts/fixtures/source19-current-native-providers.py'),
+                         str(node), captured_h0 or normal_h0, '--current598']
+              with (own / 'current598-providers-whole.stdout').open('xb') as stdout, \
+                   (own / 'current598-providers-whole.stderr').open('xb') as stderr:
+                  child = subprocess.run(command, cwd=root, env=environment, stdin=subprocess.DEVNULL,
+                                         stdout=stdout, stderr=stderr, check=False)
+                  for stream in (stdout, stderr):
+                      stream.flush()
+                      os.fsync(stream.fileno())
+              result['exitCode'] = child.returncode
+              result['outcome'] = 'CHILD_SUCCESS' if child.returncode == 0 else 'CHILD_FAILED'
+              if child.returncode != 0:
+                  failure = observer.current_provider_failure(own, root)
+                  result['providerFailure'] = failure
+                  if failure['class'] == 'UNKNOWN' and failure['providerLine'] == 389:
+                      raw = observer.source_current_cohort_read(own, 'current598-providers-whole.stderr', 128 * 1024)
+                      _, separator, tail = (b'\n' + raw.replace(b'\r\n', b'\n')).rpartition(
+                          b'\nTraceback (most recent call last):\n')
+                      frame = b'  File "' + os.fsencode(root / 'scripts/fixtures/source19-current-initial-weather.py') + b'", line '
+                      allowed = {b'need': (17, 17), b'grid': (24, 65), b'add_initial_weather': (68, 169), b'admit': (129, 134)}
+                      if separator:
+                          for line in reversed(tail.splitlines()[:-1]):
+                              if line.startswith(frame):
+                                  match = re.fullmatch(rb'([1-9][0-9]{0,2}), in ([A-Za-z_]+)', line[len(frame):])
+                                  if match and match[2] in allowed:
+                                      number = int(match[1])
+                                      lower, upper = allowed[match[2]]
+                                      if lower <= number <= upper:
+                                          result['initialWeatherLine'] = number
+                                          break
+          except Exception:
+              # Preserve refusal or the observed child failure. No exception content.
+              pass
+          result['phase'] = phase
+          with os.fdopen(3, 'w') as report:
+              print(json.dumps(result, separators=(',', ':')), file=report, flush=True)
+          raise SystemExit(0 if result['outcome'] == 'CHILD_SUCCESS' else 1)
+          PY
