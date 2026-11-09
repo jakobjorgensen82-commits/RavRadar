@@ -8,6 +8,72 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { accountAssistantCatalogQuery, verifyAccountAssistantCatalogMetadata }
   from '../verify-account-assistant-schema.mjs';
 
+export function currentSourceNativeFirstFailure(stdout){
+  const fixedReasons=new Set(["SOURCE_CURRENT_PROFILE_PENDING_FULL_PG_SCHEMA","SOURCE_CURRENT_PROFILE_PENDING_GENUINE_CENTRAL_PROFILE","SOURCE_CURRENT_PROFILE_PENDING_NORMAL_POST64_API","SOURCE_CURRENT_PROFILE_PENDING_LOCKED_SDK","SOURCE_CURRENT_PROFILE_PENDING_ACTUAL_GREEN_SOURCE_GATE","SOURCE_CURRENT_PROFILE_PG_CONTEXT","SOURCE_CURRENT_PROFILE_PG_OWNER_CHANGED","SOURCE_CURRENT_PROFILE_ACTUAL_PG_CALL_FAILED","CURRENT_POST64_SOURCE_UNISSUED","CURRENT_POST64_OWN_PARENT_REQUIRED","CURRENT_POST64_NORMAL_POLICY_REQUIRED","CURRENT_POST64_ORIGINAL_BYTES_CHANGED","CURRENT_POST64_OBJECT_BYTES_CHANGED","CURRENT_POST64_OBJECT_IDENTITY_CHANGED","CURRENT_POST64_OWNER_CHANGED","CURRENT_POST64_CHECKPOINT_BODY","CURRENT_POST64_POINTER_CAS","CURRENT_POST64_POINTER_VERSION","CURRENT_POST64_CENTRAL_CAS_BODY","CURRENT_POST64_DOCUMENT_INSERT","CURRENT_POST64_IMMUTABLE_HEADERS","CURRENT_POST64_OBJECT_DIGEST_KEY","CURRENT_POST64_PART_DIGEST_KEY","CURRENT_POST64_BODY_BOUND","CURRENT_POST64_BODY_TRUNCATED","CURRENT_POST64_REMOVE_NOT_CREATED","CURRENT_POST64_REMOVE_REFERENCED_OR_UNKNOWN","CURRENT_POST64_WRITE_READBACK","CURRENT_NATIVE_ACTIVATION_GENUINE_SOURCE_REQUIRED","UNKNOWN","GENUINE_SOURCE_INPUT_MISSING","SOURCE_UNISSUED","GENUINE_SOURCE_SEAL_REQUIRED","NORMAL_ACTIVATION_REFUSED","CANDIDATE_PUBLIC_PACK_REBUILD_REQUIRED","NONPUBLIC_FETCH","GENUINE_PREFIX_INPUT_MISSING","CANDIDATE_NORMAL_CONTINUATION_NOT_READY","CANDIDATE_NORMAL_NATIONAL_NOT_READY","NORMAL_INITIALIZATION_REFUSED"]);
+  let firstProfileFailure=null;
+  for(const line of stdout.split(/\r?\n/)){
+    if(line.length>2048)continue;let value;try{value=JSON.parse(line);}catch{continue;}
+    if(value?.kind!=='CURRENT_SOURCE_NATIVE_FIRST_FAILURE')continue;
+    assert.deepEqual(Object.keys(value).sort(),['kind','phase','privatePayloadIncluded','reason','route','sqlstate']);
+    assert(['CURRENT_CASE','PG_SQL','POST64_TRANSPORT','CENTRAL_ACTIVATION','UNKNOWN'].includes(value.phase));
+    assert(['CHECKPOINT_CAS','OPERATIONAL_CAS','POINTER_CAS','STORAGE','NONE','UNKNOWN'].includes(value.route));
+    assert(fixedReasons.has(value.reason));assert.equal(value.privatePayloadIncluded,false);
+    assert(/^(?:[0-9A-Z]{5}|UNKNOWN)$/.test(value.sqlstate));firstProfileFailure=value;break;
+  }
+  return firstProfileFailure;
+}
+
+function currentProviderFailureIsSafe(value) {
+  if (!value || Object.keys(value).sort().join(',') !== 'call,class,exitCode,providerLine,reason,timeoutSeconds') return false;
+  const { class: type, call, reason, exitCode, timeoutSeconds, providerLine } = value;
+  if (providerLine !== null && (!Number.isInteger(providerLine) || providerLine < 1 || providerLine > 8192)) return false;
+  if (type === 'UNKNOWN') return call === 'UNKNOWN' && reason === 'UNKNOWN' && exitCode === null && timeoutSeconds === null;
+  if (providerLine === null) return false;
+  if (type === 'RUNTIME_ERROR') {
+    const prefix = 'CURRENT_NATIVE_PROVIDER_';
+    const fixedReasons = new Set([
+      'CURRENT598_HISTORY_TARGET', 'CURRENT598_HISTORY_DOMAIN', 'CURRENT598_HISTORY_AXIS', 'EXACT_CURRENT598_MODE',
+      'ABSOLUTE_PATH', 'ADMIN_COPY_CHANGED', 'ADMIN_INPUT_MISSING',
+      'BASIS_DESTINATION_EXISTS', 'CLEAN_NATIVE_ACQUISITION_MODE', 'ECCODES_REQUIRED',
+      'EMPTY_NORMAL_STATION_SOURCE_REQUIRED', 'EXACT_INITIAL_PHASE', 'EXACT_INITIAL_PHASE_ARGUMENT',
+      'EXACT_NODE_TARGET_ARGUMENTS', 'EXISTING_FIXTURE_DIRECTORY', 'EXISTING_OWNED_HOST',
+      'EXTERNAL_NETWORK_REFUSED', 'GRID_BOUND', 'LINUX_PYTHON312_REQUIRED',
+      'NODE24_REQUIRED', 'NORMAL_BASIS_OUTPUT_MISSING', 'NORMAL_BULK_READBACK',
+      'NORMAL_CAPTURE_MISSING', 'NORMAL_COPERNICUS_RESIDUALS_REQUIRE_DATA', 'NORMAL_DECODE_INCOMPLETE',
+      'NORMAL_DECODE_OUTCOMES_INCOMPLETE', 'NORMAL_LEDGER_NOT_READY', 'NORMAL_MODULE',
+      'NORMAL_NATIVE_PAIR_REJECTED', 'NORMAL_PART_TARGETS', 'NORMAL_REGISTRY_210_673',
+      'NO_ADOPTED_OLD_BULK', 'RAW_CHANGED_AFTER_DECODE', 'SAME_ACTION_RUNNER_TEMP',
+      'STAC_HOST', 'STAC_PAGE_BOUND', 'STAC_ROUTE',
+      'SYMLINK', 'TARGET_HOUR', 'WRITE_READBACK',
+    ]);
+    return call === 'NONE' && exitCode === null && timeoutSeconds === null && typeof reason === 'string'
+      && reason.startsWith(prefix) && fixedReasons.has(reason.slice(prefix.length));
+  }
+  return ['UNKNOWN','SOURCE_CHECK','OPEN_METEO','CLOSURE','LIVE_PILOT','FORECAST','REGISTRY'].includes(call) && reason === 'UNKNOWN'
+    && (type === 'SUBPROCESS_EXIT' && Number.isInteger(exitCode) && exitCode >= 1 && exitCode <= 255 && timeoutSeconds === null
+      || type === 'SUBPROCESS_TIMEOUT' && exitCode === null && [30,120].includes(timeoutSeconds));
+}
+
+export function currentSourceNativeCaseLocation(stdout){
+  const cases=new Set(["PURE_FAILURE240_CLOCK","PURE_FAILURE240_PINNED_ROWS","PURE_FAILURE240_CACHE","PURE_FAILURE240_MAIN_ROUTE","PURE_FAILURE240_MARKERS","PURE_FAILURE240_SELECTION","CURRENT_FAILURE240","CURRENT_POSITIVE"]);
+  const phases=new Set(["NONE","CAPTURE_GITHUB","OWNED_HOST","PROVIDERS","PREFIX","INITIAL_REQUEST","INITIAL_ACTIVATION","FOLLOWER_INPUTS","QUALIFY","ACTION_FAILURE240","ACTION_POSITIVE","RECONFIRM_GITHUB"]);
+  let location=null;
+  for(const line of stdout.split(/\r?\n/)){
+    if(line.length>1024)continue;
+    let value;try{value=JSON.parse(line);}catch{continue;}
+    if(value?.kind!=='CURRENT_SOURCE_NATIVE_CASE_LOCATION')continue;
+    const hasProvider = Object.hasOwn(value, 'providerFailure');
+    const fields = 'caseId,exitCode,kind,localLine,privatePayloadIncluded,' + (hasProvider ? 'providerFailure,' : '') + 'subprocessPhase';
+    if(location || Object.keys(value).sort().join(',') !== fields
+      || (hasProvider && (value.subprocessPhase !== 'PROVIDERS' || !['CURRENT_FAILURE240','CURRENT_POSITIVE'].includes(value.caseId)
+        || value.exitCode === null || value.exitCode === 0 || !currentProviderFailureIsSafe(value.providerFailure)))
+      || value.privatePayloadIncluded!==false || !cases.has(value.caseId) || !phases.has(value.subprocessPhase)
+      || (value.localLine!==null && (!Number.isInteger(value.localLine) || value.localLine < 1 || value.localLine > 8192))
+      || (value.exitCode!==null && (value.subprocessPhase==='NONE' || !Number.isInteger(value.exitCode) || value.exitCode < -255 || value.exitCode > 255)))return null;
+    location=value;
+  }
+  return location;
+}
 const OLD_MIGRATION = '20261010130000_owner_export_origin_bound_successor.sql';
 const NEW_MIGRATION = '20261012200000_checkpoint_cas_single_projection_successor.sql';
 const ACCOUNT_MIGRATION = '20261013210000_account_assistant_original_bound_successor.sql';
@@ -33,7 +99,7 @@ const sqlText = text => String(text).replace(/\r\n?/g, '\n');
 const NATIVE_PSQL_PHASES = new Set(['NATIVE_SETUP', 'CAS200_MIGRATION',
   'BASELINE_FIXTURES', 'BASELINE_ADMISSION', 'BASELINE_CAS_CASES',
   'ACCOUNT213', 'CURRENT220', 'STATISTICS230', 'NATIVE_IDENTITY0600', 'CURRENT_MEMORY_WARMUP',
-  'ESTABLISHED_NATIVE_CURRENT_ORIGIN', 'LAST_MILE_ENCLOSURE', 'ACCOUNT_STATISTICS_ASSISTANT', 'NATIVE_ORIGINAL_CONTINUITY', 'ASSISTANT_LATER_H0', 'ASSISTANT_PUBLIC587_SUCCESSOR', 'ASSISTANT_PUBLIC588_SUCCESSOR', 'ASSISTANT_PUBLIC590_SUCCESSOR', 'ASSISTANT_AFTER597_SUCCESSOR', 'UNKNOWN']);
+  'ESTABLISHED_NATIVE_CURRENT_ORIGIN', 'LAST_MILE_ENCLOSURE', 'ACCOUNT_STATISTICS_ASSISTANT', 'NATIVE_ORIGINAL_CONTINUITY', 'ASSISTANT_LATER_H0', 'ASSISTANT_PUBLIC587_SUCCESSOR', 'ASSISTANT_PUBLIC588_SUCCESSOR', 'ASSISTANT_PUBLIC590_SUCCESSOR', 'ASSISTANT_AFTER597_SUCCESSOR', 'SOURCE_PRODUCER_AFTER598', 'SOURCE_CURRENT_FULL_BOOTSTRAP', 'SOURCE_CURRENT_FULL_READBACK', 'UNKNOWN']);
 const NATIVE_PSQL_STATES = Object.freeze({
   '22003':'SQL_RANGE', '22023':'SQL_PARAMETER', '22P02':'SQL_TEXT_FORMAT',
   '23502':'SQL_NOT_NULL', '23503':'SQL_FOREIGN_KEY', '23505':'SQL_UNIQUE',
@@ -282,6 +348,38 @@ export async function nativePostgresProgramIdentity(programs) {
 
 // Same native server/owner, after all thirteen old130000/200000 comparisons.
 // This is a source fixture, not an installed account or production checkpoint.
+// The synthetic ACL attempt must remain SECURITY INVOKER. In the full
+// bootstrap anon cannot see the row, so bracket only that call with fixture
+// owner reads in the same psql session. Never grant a new read or CAS right.
+async function observeNativeCheckpointAttempt(psql, reset, attempt, role, incoming) {
+  if (role !== 'anon') return JSON.parse(await psql(reset + attempt));
+  assert.match(incoming, /^[a-z0-9-]+$/);
+  const witness = extra => `select coalesce((
+    select pg_catalog.jsonb_build_object('version',version,'reference',payload->>'productionReferenceAt',
+      'payloadMd5',pg_catalog.md5(payload::text),'ownerIsNull',updated_by is null${extra})
+    from public.admin_documents where document_key='${KEY}'), 'null'::jsonb);
+`;
+  const matchesIncoming = `,'storedPayloadMatchesIncoming',payload=(
+    select payload from public.native_checkpoint_payloads where name='${incoming}')`;
+  const rows = (await psql(reset + '\n' + witness('') + attempt + `
+select pg_catalog.jsonb_build_object('role',current_user,
+  'rls',pg_catalog.row_security_active('public.admin_documents'::pg_catalog.regclass));
+reset role;
+` + witness(matchesIncoming))).split('\n');
+  assert.equal(rows.length,4,'Exact owner/invoker/visibility/owner fixture reads');
+  const [previous, observed, visibility, stored] = rows.map(line => JSON.parse(line));
+  assert.equal(visibility.role,'anon');
+  assert.equal(typeof visibility.rls,'boolean');
+  if (visibility.rls) {
+    assert.equal(observed.previous,null,'RLS hides the original checkpoint from anon');
+    assert.equal(observed.stored,null,'RLS hides the retained checkpoint from anon');
+  } else {
+    assert.deepEqual(observed.previous,previous,'Historical fixture owner and invoker read the same original');
+    assert.deepEqual(observed.stored,stored,'Historical fixture owner and invoker read the same retained row');
+  }
+  return {...observed,previous,stored};
+}
+
 async function compareAccountAssistantSuccessor({ psql, runSql, source, oldSource,
   oldFixtures, currentFixtures, cases, atHour, oldCas, newCas }) {
   assert.equal(hash(source), '80ad179bc896e9fcd62b8af103d70a2d086d3626395dd97f03e4184e52bcae5d');
@@ -361,9 +459,9 @@ async function compareAccountAssistantSuccessor({ psql, runSql, source, oldSourc
     const reset="truncate public.admin_documents;" + (central
       ? "insert into public.admin_documents(document_key,payload,version,updated_by) select '" + KEY
         + "',payload,1,'00000000-0000-0000-0000-000000000001' from native_checkpoint_payloads where name='" + central + "';" : '');
-    const observed=JSON.parse(await psql(reset + "\nset statement_timeout='55s';"
+    const observed=await observeNativeCheckpointAttempt(psql,reset,"\nset statement_timeout='55s';"
       + " do $$ begin perform set_config('request.jwt.claim.role','" + claimRole + "',false); end $$; set role " + role + ";"
-      + " select public.native_checkpoint_attempt(false," + version + ",(select payload from native_checkpoint_payloads where name='" + incoming + "'));"));
+      + " select public.native_checkpoint_attempt(false," + version + ",(select payload from native_checkpoint_payloads where name='" + incoming + "'));",role,incoming);
     assert.equal(observed.sqlstate,expectedCode,'new full-migration case ' + name);
     if (disposition) { assert.equal(observed.result.disposition,disposition); assert.equal(observed.result.centralVersion,storedVersion); }
     assert.equal(observed.stored?.version,storedVersion);
@@ -620,9 +718,9 @@ async function compareCurrentGridSuccessor({ psql, runSql, source, accountSource
     const reset = 'truncate public.admin_documents;' + (central
       ? "insert into public.admin_documents(document_key,payload,version,updated_by) select '" + KEY
         + "',payload,1,'00000000-0000-0000-0000-000000000001' from native_checkpoint_payloads where name='" + central + "';" : '');
-    const observed = JSON.parse(await psql(reset + " set statement_timeout='55s'; do $$ begin perform set_config('request.jwt.claim.role','"
+    const observed = await observeNativeCheckpointAttempt(psql,reset," set statement_timeout='55s'; do $$ begin perform set_config('request.jwt.claim.role','"
       + claimRole + "',false); end $$; set role " + role + '; select public.native_checkpoint_attempt(false,'
-      + version + ",(select payload from native_checkpoint_payloads where name='" + incoming + "'));"));
+      + version + ",(select payload from native_checkpoint_payloads where name='" + incoming + "'));",role,incoming);
     assert.equal(observed.sqlstate, expectedCode, 'native220 case ' + name);
     assert.equal(observed.stored?.version, storedVersion);
     if (disposition) { assert.equal(observed.result.disposition, disposition); assert.equal(observed.result.centralVersion, storedVersion); }
@@ -654,6 +752,30 @@ export async function runAssistantAfter597NativeCheckpointSqlComparison(options)
     includeAccountStatisticsAssistant:true,includeAssistantAfter597Successor:true});
 }
 
+// Fixed Source basic schema phase, following genuine585 in this SAME owned PG.
+// The full current action/runnerloss/240s/national profile remains a distinct gate.
+export async function runSourceProducerAfter598NativeCheckpointSqlComparison(options){
+  const {requireSourceProducerOutput}=await import('./source-producer-after597-runtime-family.mjs');
+  requireSourceProducerOutput(); // FIRST before options/programs/host/fixtures/SQL.
+  assert.equal(arguments.length,1);
+  const {repositoryRoot,sourceDocumentAt,atHour,saveCheckpoint}=options;
+  return runNativeCheckpointSqlComparison({repositoryRoot,sourceDocumentAt,atHour,saveCheckpoint,
+    includeStatisticsRevision:true,includeNativeIdentity:true,includeCurrentMemoryWarmup:true,
+    includeEstablishedNativeCurrentOrigin:true,includeLastMileEnclosure:true,
+    includeAccountStatisticsAssistant:true,includeSourceProducerAfter598:true});
+}
+export async function runSourceProducerAfter598CurrentNativeCheckpointSqlComparison(options){
+  const {requireSourceProducerOutput}=await import('./source-producer-after597-runtime-family.mjs');
+  requireSourceProducerOutput(); // FIRST before options/programs/host/fixtures/SQL.
+  assert.equal(arguments.length,1);
+  const {repositoryRoot,sourceDocumentAt,atHour,saveCheckpoint,sourceCurrentNativeTestContext=null}=options;
+  return runNativeCheckpointSqlComparison({repositoryRoot,sourceDocumentAt,atHour,saveCheckpoint,
+    includeStatisticsRevision:true,includeNativeIdentity:true,includeCurrentMemoryWarmup:true,
+    includeEstablishedNativeCurrentOrigin:true,includeLastMileEnclosure:true,
+    includeAccountStatisticsAssistant:true,includeSourceProducerAfter598:true,
+    includeCurrentSourceNativeProfile:true,sourceCurrentNativeTestContext});
+}
+
 export async function runNativeCheckpointSqlComparison({ repositoryRoot,
   sourceDocumentAt, atHour, saveCheckpoint, includeStatisticsRevision = false,
   includeNativeIdentity = false, includeCurrentMemoryWarmup = false, includeEstablishedNativeCurrentOrigin = false,
@@ -662,7 +784,39 @@ export async function runNativeCheckpointSqlComparison({ repositoryRoot,
   includeAssistantPublic587Successor = false, includeAssistantPublic588Successor = false,
   includeAssistantPublic590Successor = false, includeAssistantPublic591Successor = false,
   includeInstalled593Original591Successor = false,includeScalar597LaterH0Successor=false,
-  includeAssistantAfter597Successor=false } = {}) {
+  includeAssistantAfter597Successor=false,includeSourceProducerAfter598=false,
+  includeCurrentSourceNativeProfile=false,sourceCurrentNativeTestContext=null } = {}) {
+  const {requireSourceProducerOutput}=await import('./source-producer-after597-runtime-family.mjs');
+  assert.equal(typeof includeCurrentSourceNativeProfile,'boolean');
+  if(includeCurrentSourceNativeProfile)requireSourceProducerOutput();
+  assert(!includeCurrentSourceNativeProfile || includeSourceProducerAfter598,'CURRENT profile requires the unchanged SOURCE PG phase');
+  assert.equal(typeof includeSourceProducerAfter598,'boolean');
+  if(includeSourceProducerAfter598)requireSourceProducerOutput(); // BEFORE operands, nativePrograms/filesystem/process I/O.
+  if(sourceCurrentNativeTestContext!==null){
+    requireSourceProducerOutput(); // FIRST, including malformed new options.
+    assert(includeSourceProducerAfter598&&includeCurrentSourceNativeProfile,'SOURCE_PR_NATIVE_REQUIRES_CURRENT_PROFILE');
+    assert.equal(process.platform,'linux');assert.equal(process.versions.node.split('.')[0],'24',
+      'SOURCE_PR_NATIVE_ACTUAL_NODE24_REQUIRED');
+    const c=sourceCurrentNativeTestContext;
+    assert.deepEqual(Object.keys(c).sort(),['schemaVersion','scope','current','sourceTreeSha256'].sort());
+    assert.equal(c.schemaVersion,1);assert.equal(c.scope,'SOURCE_PR_NATIVE_TEST_V1');
+    assert.match(c.sourceTreeSha256,/^sha256:[a-f0-9]{64}$/);
+    assert.deepEqual(Object.keys(c.current??{}).sort(),['head','run','attempt','pullRequest','branch'].sort());
+    assert.match(c.current.head,/^[a-f0-9]{40}$/);assert.equal(c.current.attempt,1);
+    for(const key of ['run','pullRequest'])assert(Number.isSafeInteger(c.current[key])&&c.current[key]>0);
+    assert(typeof c.current.branch==='string'&&c.current.branch.startsWith('codex/')&&!/[\r\n\0]/.test(c.current.branch));
+    sourceCurrentNativeTestContext=Object.freeze({...c,current:Object.freeze({...c.current})});
+  }
+
+  assert.equal(typeof includeSourceProducerAfter598,'boolean');
+  if(includeSourceProducerAfter598){
+    const {requireSourceProducerOutput}=await import('./source-producer-after597-runtime-family.mjs');
+    requireSourceProducerOutput();
+    assert(includeAccountStatisticsAssistant&&!includeNativeOriginalContinuity&&!includeScalar597LaterH0Successor
+      &&!includeAssistantAfter597Successor&&!includeAssistantLaterH0&&!includeAssistantPublic587Successor
+      &&!includeAssistantPublic588Successor&&!includeAssistantPublic590Successor&&!includeAssistantPublic591Successor
+      &&!includeInstalled593Original591Successor,'Source appends genuine598 and its own schema once to the same54 baseline');
+  }
   assert.equal(typeof includeAssistantAfter597Successor,'boolean');
   if(includeAssistantAfter597Successor){
     const {requireAssistantAfter597Output}=await import('./assistant-later-h0-successor-source.mjs');
@@ -846,7 +1000,12 @@ begin
     'elapsedMs',extract(epoch from (clock_timestamp()-started))*1000);
 end $$;
 grant execute on function public.native_checkpoint_attempt(boolean,bigint,jsonb) to service_role,anon,authenticated;`;
-    await psql(setup);
+    let currentFullPostgres=null;
+    if(includeCurrentSourceNativeProfile){
+      nativePhase='SOURCE_CURRENT_FULL_BOOTSTRAP';
+      const full=await import('./source-current-full-postgres-bootstrap.mjs');
+      currentFullPostgres=await full.bootstrapSourceCurrentFullPostgres({repositoryRoot,psql,setup});
+    }else await psql(setup);
     const calibrationSignature='public.ravradar_trip_v3_calibration_truth_allowed(text,jsonb,boolean,text,text,text,text)';
     const calibrationAcl=JSON.parse(await psql("select jsonb_build_object("
       + "'public',exists(select 1 from pg_proc p cross join lateral aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a"
@@ -942,9 +1101,9 @@ grant execute on function public.native_checkpoint_attempt(boolean,bigint,jsonb)
       const observations=[];
       for (const baseline of [true,false]) {
         const reset = `truncate public.admin_documents;${central ? `insert into public.admin_documents(document_key,payload,version,updated_by) select '${KEY}',payload,1,'00000000-0000-0000-0000-000000000001' from native_checkpoint_payloads where name='${central}';` : ''}`;
-        const observed=JSON.parse(await psql(`${reset}
+        const observed=await observeNativeCheckpointAttempt(psql,reset,`
 set statement_timeout='55s'; do $$ begin perform set_config('request.jwt.claim.role','${claimRole}',false); end $$; set role ${role};
-select public.native_checkpoint_attempt(${baseline},${version},(select payload from native_checkpoint_payloads where name='${incoming}'));`));
+select public.native_checkpoint_attempt(${baseline},${version},(select payload from native_checkpoint_payloads where name='${incoming}'));`,role,incoming);
         if (observed.sqlstate!==expectedCode) {
           throw new Error(`NATIVE_POSTGRES_CASE_${name.replace(/-/g,'_').toUpperCase()}_SQLSTATE_${observed.sqlstate??'OK'}`);
         }
@@ -1036,7 +1195,7 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
     let accountStatisticsAssistant;
     if(includeAccountStatisticsAssistant){
       nativePhase='ACCOUNT_STATISTICS_ASSISTANT';
-      if(includeNativeOriginalContinuity||includeScalar597LaterH0Successor||includeAssistantAfter597Successor){
+      if(includeNativeOriginalContinuity||includeScalar597LaterH0Successor||includeAssistantAfter597Successor||includeSourceProducerAfter598){
         const {withFrozen585CheckpointPostgresSource}=await import('../run-frozen585-native-continuity-postgres-source.mjs');
         accountStatisticsAssistant=await withFrozen585CheckpointPostgresSource(async({adapter,factory})=>
           adapter.compareAccountStatisticsAssistantSuccessor({psql,runSql,root,sourceDocumentAt:factory.sourceDocumentAt,
@@ -1142,6 +1301,75 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
       const {compareAssistantAfter597Successor}=await import('./assistant-later-h0-postgres.mjs');
       assistantAfter597Successor=await compareAssistantAfter597Successor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
     }
+    let sourceProducerAfter598;
+    if(includeSourceProducerAfter598){
+      nativePhase='SOURCE_PRODUCER_AFTER598';
+      const {compareSourceProducerAfter598Successor}=await import('./source-producer-after598-postgres.mjs');
+      sourceProducerAfter598=await compareSourceProducerAfter598Successor({psql,runSql});
+    }
+    let currentSourceNativeProfile;
+    if(includeCurrentSourceNativeProfile){
+      try{
+      nativePhase='SOURCE_CURRENT_FULL_READBACK';
+      const full=await import('./source-current-full-postgres-bootstrap.mjs');
+      await full.verifySourceCurrentFullPostgres({repositoryRoot,psql,bootstrap:currentFullPostgres});
+      // SAME existing owned Unix-socket server AFTER every unchanged old/SOURCE
+      // comparison. Its normal finally still owns actual server stop/cleanup.
+      nativePhase='SOURCE_PRODUCER_AFTER598';
+      assert.deepEqual(await readOwner(),owner);
+      const head=(await command('git',['-C',repositoryRoot,'rev-parse','HEAD'],{env})).stdout.trim();
+      assert.match(head,/^[a-f0-9]{40}$/);
+      const profileEnvironment={...env,
+        ...(process.env.GITHUB_TOKEN?{GITHUB_TOKEN:process.env.GITHUB_TOKEN}:{}),
+        ...(process.env.GITHUB_REPOSITORY?{GITHUB_REPOSITORY:process.env.GITHUB_REPOSITORY}:{})};
+      const invocation=await command(process.env.PYTHON||'python3',
+        ['-I','-B',path.join(repositoryRoot,'scripts/test-source598-current-native-profile.py'),
+          '--current-source-profile','--node24-path',process.execPath,
+          '--input-profile','current598-preparation'],
+        {input:JSON.stringify({kind:'SOURCE_CURRENT_SAME_NATIVE_PG',pgRoot:root,psql:programs.psql,head,server:owner,
+          ...(sourceCurrentNativeTestContext===null?{}:{sourceCurrentNativeTestContext})}),
+          env:profileEnvironment,timeout:(sourceCurrentNativeTestContext===null?240:180)*60*1000});
+      const firstProfileFailure=currentSourceNativeFirstFailure(invocation.stdout);
+      if(firstProfileFailure||invocation.code!==0){
+        const fixed=firstProfileFailure??{kind:'CURRENT_SOURCE_NATIVE_FIRST_FAILURE',phase:'UNKNOWN',
+          reason:'MISSING_CHILD_FIXED_REPORT',sqlstate:invocation.sqlState??'UNKNOWN',route:'NONE',privatePayloadIncluded:false};
+        console.error(JSON.stringify(fixed));
+        const location=currentSourceNativeCaseLocation(invocation.stdout);
+        if(location)console.error(JSON.stringify(location));
+        const error=new Error('NATIVE_POSTGRES_CURRENT_PROFILE_REFUSED phase='+fixed.phase+' reason='+fixed.reason
+          +' sqlstate='+fixed.sqlstate+' route='+fixed.route);error.currentNativeFailure=Object.freeze(fixed);throw error;
+      }
+      assert.deepEqual(await readOwner(),owner);
+      if(sourceCurrentNativeTestContext===null){
+        currentSourceNativeProfile={sameHost:true,actualNativeProcessCompleted:true,productionProof:false};
+      }else{
+        // No flag/stdout alone completes native proof. This is reached only
+        // after real child success, fixed failure refusal and same-PG readback;
+        // the wrapper's unchanged finally must still stop its actual PG host.
+        assert.equal(head,sourceCurrentNativeTestContext.current.head);
+        const observations=invocation.stdout.split(/\r?\n/).flatMap(line=>{
+          if(line.length>8192)return [];
+          try{const value=JSON.parse(line);return value?.kind==='CURRENT_SOURCE_NORMAL_NATIVE_OBSERVATION'?[value]:[];}catch{return [];}
+        });
+        assert.equal(observations.length,1,'SOURCE_PR_NATIVE_ONE_PHYSICAL_OBSERVATION_REQUIRED');
+        const actual=observations[0];
+        assert.deepEqual(Object.keys(actual).sort(),['kind','scope','current','mainHead','sourceTreeSha256',
+          'physicalClosureBeforeCleanup','sourceAdmission','wholeFixtureRetained','productionProof'].sort());
+        assert.equal(actual.scope,'SOURCE_PR_NATIVE_TEST');
+        assert.deepEqual(Object.keys(actual.current??{}).sort(),[...Object.keys(sourceCurrentNativeTestContext.current),'jobId'].sort());
+        for(const [key,value] of Object.entries(sourceCurrentNativeTestContext.current))assert.equal(actual.current[key],value);
+        assert(Number.isSafeInteger(actual.current.jobId)&&actual.current.jobId>0);
+        assert.match(actual.mainHead,/^[a-f0-9]{40}$/);assert.notEqual(actual.mainHead,head);
+        assert.equal(actual.sourceTreeSha256,sourceCurrentNativeTestContext.sourceTreeSha256);
+        assert.equal(actual.physicalClosureBeforeCleanup,true);assert.equal(actual.wholeFixtureRetained,true);
+        assert.equal(actual.sourceAdmission,false);assert.equal(actual.productionProof,false);
+        currentSourceNativeProfile={kind:'SOURCE_PR_NATIVE_TEST_RESULT_V1',scope:'SOURCE_PR_NATIVE_TEST',
+          current:actual.current,mainHead:actual.mainHead,sourceTreeSha256:actual.sourceTreeSha256,
+          sameHost:true,actualNativeProcessCompleted:true,physicalClosureBeforeCleanup:true,
+          sourceAdmission:false,productionProof:false};
+      }
+      }catch(error){statisticsRevisionFailure={error};throw error;}
+    }
     completedReport={kind:'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',accountAssistant,currentGrid,
       ...(includeStatisticsRevision?{statisticsRevision}:{}),
       ...(includeNativeIdentity?{nativeIdentity}:{}),
@@ -1158,6 +1386,8 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
       ...(includeInstalled593Original591Successor?{installed593Original591Successor}:{}),
       ...(includeScalar597LaterH0Successor?{scalar597LaterH0Successor}:{}),
       ...(includeAssistantAfter597Successor?{assistantAfter597Successor}:{}),
+      ...(includeSourceProducerAfter598?{sourceProducerAfter598}:{}),
+      ...(includeCurrentSourceNativeProfile?{currentSourceNativeProfile}:{}),
       issuedSource:issued.sourceReceipt,postgresMajorVersion:programs.majorVersion,
       tcpEnabled:false,normalModelPartCount:673,sqlExecuted:true,migrationExecuted:true,
       migrationSQLSha256:hash(newSource),caseCount:reports.length,

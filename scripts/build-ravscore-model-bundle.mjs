@@ -30,6 +30,8 @@ export const RAVSCORE_MODEL_BUNDLE_ENTRYPOINTS = Object.freeze([
   'scripts/lib/ravscore-profile-transition.mjs',
   'scripts/lib/ravscore-recovery-replay.mjs',
   'scripts/public-conditions-lib.mjs',
+  // Fixed Source CODE DATA is bound by I; never imported/executed or added to Candidate G.
+  'scripts/lib/source-producer-after597-code-pins.generated.json',
 ]);
 
 const sha256 = value => crypto.createHash('sha256').update(value).digest('hex');

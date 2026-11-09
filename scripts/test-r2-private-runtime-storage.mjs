@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
-import { createR2PrivateRuntimeStorage } from './lib/r2-private-runtime-storage.mjs';
+import { createR2PrivateRuntimeStorage,withR2PrivateRuntimeCapacityDeadline } from './lib/r2-private-runtime-storage.mjs';
+import {mock} from 'node:test';
 import { createR2PrivateReadDenialStorage } from './lib/r2-private-read-denial-storage.mjs';
 
 const sha256 = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
@@ -164,3 +165,157 @@ for(const body of [
 ]){const p=await probeDenial({body:Buffer.isBuffer(body)?body:Buffer.from(body)});assert.equal(p.result.denied,false);assert.equal(p.result.httpStatus,400);}
 for(const headers of [{'content-type':'text/plain'},{'content-type':'application/xml','content-length':'4097'}]){const p=await probeDenial({headers});assert.equal(p.result.denied,false);assert.equal(p.pulls,0);assert.equal(p.cancels,1);}
 console.log('Private EU R2 object, immutability, typed bounded read denial, legacy status and quota ceiling: passed.');
+
+// The normal read-only prewrite path never invokes an upload, removal or pointer.
+const capacityDescriptor = {index:0, objectPath, objectSha256:digest, objectBytes:object.length};
+const capacityClient = createR2PrivateRuntimeStorage({accountId,accessKeyId:'synthetic-id',
+  secretAccessKey:'synthetic-secret',bucketId,maximumObjectBytes:50,
+  fetchImpl:async(url,options)=>{
+    const response=await fakeFetch(url,options);
+    if(options.method==='HEAD'&&response.status===200){
+      const key=decodeURIComponent(new URL(url).pathname.slice(('/'+bucketId+'/').length));
+      return new Response(null,{status:200,headers:{'content-length':String(objects.get(key).length)}});
+    }
+    return response;
+  },now:()=>new Date('2026-09-26T00:00:00.000Z'),delayImpl:async()=>{}});
+const capacityCallsStart = calls.length;
+const capacityBeforeObjects = [...objects].map(([key,value])=>[key,Buffer.from(value)]);
+const emptyCapacity = await capacityClient.inspectImmutableCapacity([capacityDescriptor]);
+assert.equal(emptyCapacity.usedBytes,0);assert.equal(emptyCapacity.missingObjectCount,1);
+assert.equal(emptyCapacity.missingObjectBytes,object.length);
+assert.equal(emptyCapacity.reservedMarginBytes,50_000_000);
+assert.equal(emptyCapacity.ceilingBytes,2_000_000_000);
+assert.equal(emptyCapacity.projectedPeakBytes,50_000_000+object.length);
+assert(calls.slice(capacityCallsStart).every(call=>['GET','HEAD'].includes(call.method)));
+assert.deepEqual([...objects],capacityBeforeObjects);
+objects.set(objectPath,Buffer.from(object));
+const reusedCapacity = await capacityClient.inspectImmutableCapacity([capacityDescriptor]);
+assert.equal(reusedCapacity.usedBytes,object.length);
+assert.equal(reusedCapacity.missingObjectBytes,0);assert.equal(reusedCapacity.missingObjectCount,0);
+assert.equal(reusedCapacity.projectedPeakBytes,object.length+50_000_000);
+const beforeInvalidCalls = calls.length;
+let capacityAccessorReads=0;
+const accessorDescriptor=Object.defineProperty({...capacityDescriptor},'objectBytes',
+  {get(){capacityAccessorReads++;return object.length;}});
+for (const invalid of [[],[capacityDescriptor,capacityDescriptor],
+  [{...capacityDescriptor,index:1}],[{...capacityDescriptor,objectPath:'../escape'}],
+  [{...capacityDescriptor,objectBytes:0}],[{...capacityDescriptor,objectBytes:51}],
+  [{...capacityDescriptor,objectSha256:'f'.repeat(64)}],[{...capacityDescriptor,unknown:true}],
+  [accessorDescriptor]]) {
+  await assert.rejects(capacityClient.inspectImmutableCapacity(invalid));
+}
+assert.equal(calls.length,beforeInvalidCalls,'Invalid descriptor lists must stop before HTTP');
+assert.equal(capacityAccessorReads,0,'Accessor input must be rejected before reading caller fields');
+objects.delete(objectPath);
+async function capacityReadFixture({usedBytes=0,status=404,declared=null}={}) {
+  const methods=[];
+  const storage=createR2PrivateRuntimeStorage({accountId,accessKeyId:'synthetic-id',
+    secretAccessKey:'synthetic-secret',bucketId,maximumObjectBytes:50,delayImpl:async()=>{},
+    fetchImpl:async(url,options)=>{
+      methods.push(options.method);
+      if(options.method==='HEAD')return new Response(null,{status,
+        headers:declared===null?{}:{'content-length':declared}});
+      assert.equal(options.method,'GET','A prewrite capacity read must never mutate storage');
+      assert.equal(new URL(url).searchParams.get('list-type'),'2');
+      return new Response('<ListBucketResult><KeyCount>1</KeyCount>'
+        +'<Contents><Key>retained-original</Key><Size>'+usedBytes+'</Size></Contents>'
+        +'<IsTruncated>false</IsTruncated></ListBucketResult>',{status:200});
+    }});
+  return {storage,methods};
+}
+const exactLimit=await capacityReadFixture({usedBytes:2_000_000_000-50_000_000-object.length});
+assert.equal((await exactLimit.storage.inspectImmutableCapacity([capacityDescriptor])).remainingBytesAfterMargin,0);
+const overLimit=await capacityReadFixture({usedBytes:2_000_000_000-50_000_000-object.length+1});
+await assert.rejects(overLimit.storage.inspectImmutableCapacity([capacityDescriptor]),/prewrite capacity/);
+assert(overLimit.methods.every(method=>['GET','HEAD'].includes(method)));
+for(const [status,declared] of [[403,null],[500,null],[200,null],[200,'garbage'],
+  [200,String(object.length+1)],[200,'0'],[206,String(object.length)]]) {
+  const bad=await capacityReadFixture({status,declared});
+  await assert.rejects(bad.storage.inspectImmutableCapacity([capacityDescriptor]));
+  assert(!bad.methods.includes('GET'),'Unknown HEAD/mismatched immutable size cannot earn missing-byte credit');
+}
+console.log('Read-only normal R2 prewrite: complete U plus exact missing D and fixed50MB margin; no PUT/delete, dedup, cap boundary and unknown metadata: passed.');
+
+// Exercise the actual fixed phase and actual R2 factory with controlled native
+// clock/timer/fetch boundaries. No caller timeout override or Source capability.
+async function phaseFixture(run) {
+  let elapsed=0, fetchCalls=0;
+  const timers=new Map();
+  const clock=mock.method(performance,'now',()=>elapsed);
+  const set=mock.method(globalThis,'setTimeout',(callback,ms)=>{
+    const token={};timers.set(token,{callback,ms});return token;
+  });
+  const clear=mock.method(globalThis,'clearTimeout',token=>timers.delete(token));
+  let transport=async(url,options)=>fakeFetch(url,options);
+  const network=mock.method(globalThis,'fetch',async(url,options)=>{
+    fetchCalls++;return transport(url,options);
+  });
+  const state={timers,setElapsed:value=>{elapsed=value;},setTransport:value=>{transport=value;},
+    get fetchCalls(){return fetchCalls;},
+    fireDeadline(){elapsed=60_000;const row=[...timers].find(([,value])=>value.ms===60_000);
+      assert(row,'The actual fixed phase must own one60s timer');timers.delete(row[0]);row[1].callback();}};
+  try {await run(state);assert.equal(timers.size,0,'All phase and retry timers must be released');}
+  finally {network.mock.restore();clear.mock.restore();set.mock.restore();clock.mock.restore();}
+}
+const phaseStorage=phase=>createR2PrivateRuntimeStorage({accountId,accessKeyId:'synthetic-id',
+  secretAccessKey:'synthetic-secret',bucketId,maximumObjectBytes:50,
+  fetchImpl:phase.fetchImpl,delayImpl:phase.delayImpl,now:()=>new Date('2026-09-26T00:00:00.000Z')});
+await phaseFixture(async state=>{
+  const objectBefore=Buffer.from(object), descriptorBefore=JSON.stringify(capacityDescriptor);
+  let phaseSignal;
+  state.setTransport(async(url,options)=>{phaseSignal=options.signal;return fakeFetch(url,options);});
+  const result=await withR2PrivateRuntimeCapacityDeadline(async phase=>
+    phaseStorage(phase).inspectImmutableCapacity([capacityDescriptor]));
+  assert.equal(result.missingObjectBytes,object.length);assert.equal(state.fetchCalls,2);
+  assert(phaseSignal instanceof AbortSignal);assert.equal(phaseSignal.aborted,true,'Settled phase releases its signal');
+  assert.deepEqual(object,objectBefore);assert.equal(JSON.stringify(capacityDescriptor),descriptorBefore);
+});
+await phaseFixture(async state=>{
+  await assert.rejects(withR2PrivateRuntimeCapacityDeadline(async()=>{
+    // A blocked local pack/event loop cannot silently move the deadline forward.
+    state.setElapsed(60_001);return 'late local pack result';
+  }),{code:'R2_PRIVATE_RUNTIME_CAPACITY_TIMEOUT'});
+  assert.equal(state.fetchCalls,0,'Expired packing must not enter R2 reads');
+});
+await phaseFixture(async state=>{
+  let active=0, phaseSignal;
+  state.setTransport(async(_url,options)=>new Promise((_resolve,reject)=>{
+    active++;phaseSignal=options.signal;
+    options.signal.addEventListener('abort',()=>{active--;reject(options.signal.reason);},{once:true});
+  }));
+  const work=withR2PrivateRuntimeCapacityDeadline(async phase=>
+    phaseStorage(phase).inspectImmutableCapacity([capacityDescriptor]));
+  assert.equal(active,1);state.fireDeadline();
+  await assert.rejects(work,{code:'R2_PRIVATE_RUNTIME_CAPACITY_TIMEOUT'});
+  assert.equal(active,0);assert.equal(phaseSignal.aborted,true);assert.equal(state.fetchCalls,1);
+});
+await phaseFixture(async state=>{
+  let activeBody=0, signal;let bodyReading;
+  const reading=new Promise(resolve=>{bodyReading=resolve;});
+  state.setTransport(async(_url,options)=>{
+    signal=options.signal;
+    if(options.method==='HEAD')return new Response(null,{status:404});
+    assert.equal(options.method,'GET');activeBody++;
+    return new Response(new ReadableStream({
+      start(controller){signal.addEventListener('abort',()=>{
+        activeBody--;controller.error(signal.reason);
+      },{once:true});},
+      pull(){bodyReading();},
+    },{highWaterMark:0}),{status:200});
+  });
+  const work=withR2PrivateRuntimeCapacityDeadline(async phase=>
+    phaseStorage(phase).inspectImmutableCapacity([capacityDescriptor]));
+  await reading;assert.equal(activeBody,1);state.fireDeadline();
+  await assert.rejects(work,{code:'R2_PRIVATE_RUNTIME_CAPACITY_TIMEOUT'});
+  assert.equal(activeBody,0);assert.equal(signal.aborted,true);assert.equal(state.fetchCalls,2);
+});
+await phaseFixture(async state=>{
+  state.setTransport(async()=>new Response(null,{status:503}));
+  const work=withR2PrivateRuntimeCapacityDeadline(async phase=>
+    phaseStorage(phase).inspectImmutableCapacity([capacityDescriptor]));
+  for(let i=0;i<20&&![...state.timers.values()].some(value=>value.ms===1000);i++)await Promise.resolve();
+  assert([...state.timers.values()].some(value=>value.ms===1000),'Actual retry must enter its abortable wait');
+  state.fireDeadline();await assert.rejects(work,{code:'R2_PRIVATE_RUNTIME_CAPACITY_TIMEOUT'});
+  assert.equal(state.fetchCalls,1,'An aborted retry wait must never start another HTTP request');
+});
+console.log('Fixed60s capacity phase: real factory HEAD/body/list abort, retry timer cleanup, late local pack refusal and unchanged immutable objects: passed.');

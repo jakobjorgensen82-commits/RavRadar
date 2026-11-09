@@ -3870,3 +3870,95 @@ const serialized = JSON.stringify([
 assert.doesNotMatch(serialized, /coordinates|waterPoint|landPoint|rawVector|currentU|currentV/i);
 
 console.log('Operational RavScore v4 protocol: exact 4/4 state machine, legacy bootstrap, delayed visibility, durable refresh, terminal evidence, head-moved sealed reconciliation, exact target profile and privacy passed.');
+
+// The Source phase is a normal issued-output consumer. A complete physical NULL
+// keeps the ordinary defaults above; partial issuance must never turn into a skip.
+{
+  const { SOURCE_PRODUCER_AFTER597_PARENT: family } =
+    await import('./lib/source-producer-after597-parent.mjs');
+  if (family.binding === null && family.output === null && family.nextRelease === null) {
+    assert.equal(family.binding, null);
+  } else {
+    const { requireSourceProducerOutput, requireSourceProducerBinding, sourceProducerMigration } =
+      await import('./lib/source-producer-after597-runtime-family.mjs');
+    const output = requireSourceProducerOutput();
+    const issued = requireSourceProducerBinding();
+    const { expectedTripBindingPolicy, integratedReadinessRequiredMigrations } =
+      await import('./integrated-cutover-readiness.mjs');
+    const sourcePhase = 'source-producer-after597';
+    const sourceReadiness = await buildIntegratedCutoverReadiness(sourceHead, {
+      publicImplementationClosureSha256: defaultImplementationClosureSha256, sourcePhase,
+    });
+    const sourcePolicy = await expectedTripBindingPolicy({ sourcePhase });
+    assert.equal(sourceReadiness.modelBundleSha256, issued.I);
+    assert.equal(sourceReadiness.candidateModelBinding.modelBundleSha256, issued.C);
+    assert.equal(sourceReadiness.migrationIds.length, 64);
+    assert.deepEqual(sourceReadiness.migrationIds,
+      integratedReadinessRequiredMigrations(sourcePhase).map(item => item.id));
+    assert.equal(sourceReadiness.migrationIds.at(-1), sourceProducerMigration().id);
+    assert.equal(sourceReadiness.tripBindingPolicySha256, sourcePolicy.sha256);
+    assert.equal(sourcePolicy.sha256, output.tripBindingPolicySha256);
+    assert.notEqual(sourceReadiness.tripBindingPolicySha256, readiness.tripBindingPolicySha256);
+    const options = {
+      currentRow: historicalIntegratedSourceRow,
+      currentProfileRow: historicalIntegratedSourceProfileRow, sourceHead,
+      publicManifest: integratedH3, publicAudit: integratedH3Audit, readiness: sourceReadiness,
+      sourceImplementationClosureSha256: defaultImplementationClosureSha256,
+      requestedImplementationClosureSha256: defaultImplementationClosureSha256,
+      eventName: 'schedule', ref: 'refs/heads/main', githubSha: sourceHead, sourcePhase,
+    };
+    const sourcePlan = prepareIntegratedHistoricalMaintenance(options);
+    const assertionOptions = {
+      expectedSourceHead: sourceHead, expectedCentralVersion: 40,
+      currentRow: historicalIntegratedSourceRow,
+      currentProfileRow: historicalIntegratedSourceProfileRow,
+      readiness: sourceReadiness, publicManifest: integratedH3,
+      publicAudit: integratedH3Audit, sourcePhase,
+    };
+    assert.doesNotThrow(() => assertIntegratedHistoricalMaintenancePlan(sourcePlan, assertionOptions));
+    assert.throws(() => prepareIntegratedHistoricalMaintenance({ ...options, sourcePhase: undefined }));
+    assert.throws(() => prepareIntegratedHistoricalMaintenance({ ...options, readiness }));
+    assert.throws(() => prepareIntegratedHistoricalMaintenance({ ...options, sourcePhase: 'source-producer-unknown' }));
+    assert.throws(() => assertIntegratedHistoricalMaintenancePlan(sourcePlan,
+      { ...assertionOptions, sourcePhase: undefined }));
+    for (const invalidReadiness of [
+      { ...sourceReadiness, migrationIds: sourceReadiness.migrationIds.slice(0, -1) },
+      { ...sourceReadiness, tripBindingPolicySha256: readiness.tripBindingPolicySha256 },
+      { ...sourceReadiness, tripBindingPolicyId: 'wrong-source-policy' },
+    ]) {
+      assert.throws(() => prepareIntegratedHistoricalMaintenance({ ...options, readiness: invalidReadiness }));
+      assert.throws(() => assertIntegratedHistoricalMaintenancePlan(sourcePlan,
+        { ...assertionOptions, readiness: invalidReadiness }));
+    }
+    const beginOptions = {
+      action: 'integrated-historical-maintenance-begin',
+      currentRow: historicalIntegratedSourceRow,
+      currentProfileRow: historicalIntegratedSourceProfileRow, expectedVersion: 40,
+      plan: sourcePlan, readiness: sourceReadiness, sourcePhase,
+      publicManifest: integratedH3, publicAudit: integratedH3Audit,
+      sourceManifest: historicalIntegratedSource,
+      sourceVerification: historicalIntegratedSourceVerification,
+      deploymentId: 'run-source-historical-integrated-h1', now: '2026-08-29T13:46:00.000Z',
+    };
+    assert.throws(() => operationalIntegratedHistoricalMaintenanceTransition({ ...beginOptions, sourcePhase: undefined }));
+    assert.throws(() => operationalIntegratedHistoricalMaintenanceTransition({ ...beginOptions, readiness }));
+    const sourceBegin = operationalIntegratedHistoricalMaintenanceTransition(beginOptions);
+    assert.deepEqual(sourceBegin.document.activeModelBinding, oldIntegratedBinding);
+    assert.deepEqual(sourceBegin.document.requestedModelBinding, integratedModelBinding());
+    const sourceComplete = operationalIntegratedHistoricalMaintenanceTransition({
+      action: 'integrated-historical-maintenance-complete',
+      currentRow: { version: sourceBegin.nextVersion, payload: sourceBegin.document },
+      currentProfileRow: historicalIntegratedSourceProfileRow,
+      expectedVersion: sourceBegin.nextVersion, plan: sourcePlan,
+      readiness: sourceReadiness, sourcePhase, publicManifest: integratedH3,
+      publicAudit: integratedH3Audit, publicVerification: integratedH3Verification,
+      deploymentId: 'pages-source-historical-integrated-h1', now: '2026-08-29T13:47:00.000Z',
+    });
+    assert.deepEqual(sourceComplete.document.activeModelBinding, sourceReadiness.modelBinding);
+    assert.deepEqual(sourceComplete.centralTargetProfile, sourceReadiness.centralProfile);
+    assert.equal(sourceComplete.document.calibrationEligible, true);
+    assert.equal(operationalResolvedBindingCurrent(resolveOperationalRavScoreModel({
+      version: sourceComplete.nextVersion, payload: sourceComplete.document,
+    }, { profileRow: { version: 31, payload: sourceReadiness.centralProfile } })), true);
+  }
+}

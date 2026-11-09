@@ -4,6 +4,16 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {spawnSync} from 'node:child_process';
+import {sourceCommandArguments} from './validate-source-once.mjs';
+
+const sourceBody = "import {withSource598CodeParent} from './scripts/check-assistant-later-h0-predecessor-source.mjs'; await withSource598CodeParent(()=>{});";
+const sourceCommand = 'node --input-type=module -e "' + sourceBody + '"';
+assert.deepEqual(sourceCommandArguments(sourceCommand), ['node','--input-type=module','-e',sourceBody]);
+for (const rejected of [sourceCommand+' --extra', sourceCommand+'; node evil.mjs',
+  sourceCommand.replace('()=>{}','()=>{process.exit(0)}'), 'node -e "console.log(1)"',
+  'node scripts/test.mjs | python other.py']) {
+  assert.throws(()=>sourceCommandArguments(rejected), /Unsupported source command/);
+}
 
 const actual = (await fs.readFile(new URL('./validate-source-once.mjs', import.meta.url), 'utf8')).replace(/\r\n?/g, '\n');
 const environmentLine = '    env: sourceChildEnvironment(command),\n';
@@ -86,6 +96,29 @@ try {
   assert.equal((rejected.stdout.match(/SYNTHETIC_SOURCE_CHILD_CLEAN:/g) ?? []).length,4,
     'A selected test failure must retain normal aggregate reporting and terminal gate execution');
   assert.match(rejected.stdout,/Critical source validation found 1 failing check\(s\): node scripts\/test-source-child\.mjs/);
+  // Execute the exact reviewed inline CODE-parent command as one -e argument.
+  // This synthetic module grants no real Source/runtime/original capability.
+  const inlineScripts = JSON.parse(await fs.readFile(path.join(owned,'package.json'),'utf8'));
+  inlineScripts.scripts['validate:source:checks'] = inlineScripts.scripts['validate:source:checks']
+    .replace(' && node scripts/source-critical-gate.mjs',' && '+sourceCommand+' && node scripts/source-critical-gate.mjs');
+  inlineScripts.type = 'module';
+  await fs.writeFile(path.join(owned,'package.json'),JSON.stringify(inlineScripts));
+  await fs.writeFile(path.join(owned,'scripts/test-source-child.mjs'),child);
+  await fs.writeFile(path.join(owned,'scripts/check-assistant-later-h0-predecessor-source.mjs'),[
+    "import assert from 'node:assert/strict';",
+    'export async function withSource598CodeParent(callback) {',
+    '  for (const key of '+JSON.stringify([...Object.keys(production),...Object.keys(flags)])+") assert(!Object.hasOwn(process.env,key),'Sensitive parent setting reached fixed CODE command');",
+    "  assert.equal(typeof callback,'function'); await callback();",
+    "  console.log('SYNTHETIC_FIXED_CODE_ARGUMENT_VECTOR');",
+    '}',
+  ].join('\n'));
+  const inline = run(dirty);
+  assert.equal(inline.error,undefined); assert.equal(inline.signal,null);
+  assert.equal(inline.status,0,inline.stderr); assert.equal(inline.stderr,'');
+  assert.equal((inline.stdout.match(/SYNTHETIC_FIXED_CODE_ARGUMENT_VECTOR/g)??[]).length,1);
+  assert.equal((inline.stdout.match(/SYNTHETIC_SOURCE_CHILD_CLEAN:/g)??[]).length,4);
+  assert.match(inline.stdout,/Critical source validation passed/);
+  assert.deepEqual(dirty,parentBefore);
   console.log('Source-child environment: actual normal CLI inherited-red -> isolated-green; host/CI/test options preserved, production settings absent, parent unchanged, real source failure remains red.');
 } finally {
   await fs.rm(owned,{recursive:true,force:true});

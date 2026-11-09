@@ -28,7 +28,8 @@ const headSha = /^[a-f0-9]{40}$/;
 const positive = value => Number.isSafeInteger(value) && value > 0;
 const runShell = promisify(execFile);
 const booleanModes = ['current_family_cold_start', 'completed_private_runtime', 'quick_confirmation',
-  'weather_state_epoch_bootstrap', 'weather_state_epoch_checkpoint_reentry', 'native_sampling_identity_original_recovery'];
+  'weather_state_epoch_bootstrap', 'weather_state_epoch_checkpoint_reentry', 'native_sampling_identity_original_recovery',
+  'source_normal_producer'];
 const stringModes = ['completed_stage_source', 'quick_progress_source', 'checkpoint_target_hour', 'weather_state_epoch_archive_key',
   'weather_state_epoch_archive_catalog_sha256', 'weather_state_epoch_raw_cache_key'];
 
