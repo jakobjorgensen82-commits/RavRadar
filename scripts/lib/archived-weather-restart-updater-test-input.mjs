@@ -3,6 +3,41 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
+// TEST INPUT ONLY: separate the exact LF7 observer before checking old caller bytes.
+const LF7_OBSERVER_UPDATER_HUNKS = Object.freeze([
+    "import { captureLf7MemoryObservation, writeLf7FurConsumerObservation } from './lib/lf7-fur-consumer-observation.mjs';\n",
+    "  const consumerMemoryObservations = [], consumerWaterObservations = [];\n",
+    "      if (routedWater.consumerObservation) consumerWaterObservations.push(routedWater.consumerObservation);\n",
+    "      const consumerMemoryObservation = captureLf7MemoryObservation({ part: { ...part, zoneId },\n"
+      + "        initialSelection, previousCandidateGContinuation, productionSeries,\n"
+      + "        hasEstablishedOrigin: establishedNativeCurrentOrigin !== null });\n"
+      + "      if (consumerMemoryObservation) consumerMemoryObservations.push(consumerMemoryObservation);\n",
+    "    consumerMemoryObservations, consumerWaterObservations,\n",
+    "  // Reporting cannot grant origin authority or hide a failure of the finalizer above.\n"
+      + "  try {\n"
+      + "    const saved = await writeLf7FurConsumerObservation({ conditions: output,\n"
+      + "      partResults: coastalPartScoreBuild.establishedNativeCurrentPartResults,\n"
+      + "      memoryObservations: coastalPartScoreBuild.consumerMemoryObservations,\n"
+      + "      activeParts,\n"
+      + "      waterObservations: [...(waterSourceApplication.consumerObservations ?? []),\n"
+      + "        ...coastalPartScoreBuild.consumerWaterObservations] });\n"
+      + "    if (!saved) console.warn('LF7_FUR_CONSUMER_OBSERVATION_NOT_RECORDED');\n"
+      + "  } catch {\n"
+      + "    console.warn('LF7_FUR_CONSUMER_OBSERVATION_NOT_SAVED');\n"
+      + "  }\n",
+]);
+export function inverseLf7ObserverUpdaterTestInput(source, relative) {
+  if (relative !== 'scripts/update-weather.mjs' || Buffer.byteLength(source) !== 251805
+    || sha(source) !== '0ba4d889e7851dc14eb031e108e8eb05649ac90444e449970f54ccd644864885') return source;
+  for (const hunk of [...LF7_OBSERVER_UPDATER_HUNKS].reverse()) {
+    assert.equal(source.split(hunk).length, 2, 'LF7_OBSERVER_UPDATER_EXACT_HUNK');
+    source = source.replace(hunk, '');
+  }
+  assert.equal(Buffer.byteLength(source), 250461, 'LF7_OBSERVER_UPDATER_BEFORE_SIZE');
+  assert.equal(sha(source), 'e4f7f442c4ad655c533adebe7470144c5aa55bcbd136c4d891a37cd7ea8b9693',
+    'LF7_OBSERVER_UPDATER_WHOLE_INVERSE');
+  return source;
+}
 // TEST INPUT ONLY: exact V7 scalar-planning callback extraction, before all
 // immutable old updater oracles. Current DMI/loader tests use actual V7 code.
 export const DMI_SCALAR_PLANNING_UPDATER_TEST_REVIEW = Object.freeze({
@@ -23,6 +58,7 @@ export const DMI_SCALAR_PLANNING_UPDATER_TEST_REVIEW = Object.freeze({
 export function inverseDmiScalarPlanningUpdaterTestInput(source, relative) {
   assert.equal(arguments.length, 2, 'DMI_SCALAR_PLANNING_UPDATER_ARGUMENTS');
   assert.equal(typeof source, 'string', 'DMI_SCALAR_PLANNING_UPDATER_TYPE');
+  source = inverseLf7ObserverUpdaterTestInput(source, relative);
   const row = DMI_SCALAR_PLANNING_UPDATER_TEST_REVIEW;
   if (relative !== row.path || sha(source) !== row.after.sha256) return source;
   assert.equal(Buffer.byteLength(source), row.after.bytes, 'DMI_SCALAR_PLANNING_UPDATER_AFTER_SIZE');

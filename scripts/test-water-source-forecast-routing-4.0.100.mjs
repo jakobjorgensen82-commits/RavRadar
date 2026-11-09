@@ -237,17 +237,34 @@ for(const zoneId of ['DK-B01-01','DK-B01-02','DK-B02-08','DK-B02-09','DK-B02-11'
     windSpeedMps:4,windDirectionDeg:0,waveHeightM:0.2,waveDirectionDeg:90,wavePeriodS:4,
     currentSpeedMps:0.1,currentDirectionDeg:0,waterTemperatureC:12}));
   const args={part:testPart,parentFeature:testFeature,hourly:direct,sources:aware,
-    routing:testRouting,haversineKm:hav};
+    routing:testRouting,haversineKm:hav,diagnosticReferenceAt:currentHour};
   const before=applyVerifiedWaterSourceRoutingToPartHourly({...args,index:baselineIndex});
   const missing=applyVerifiedWaterSourceRoutingToPartHourly({...args,index:activeIndex});
   const retained=applyVerifiedWaterSourceRoutingToPartHourly({...args,index:sourceIndex});
   assert.equal(missing.appliedHours,114);
   assert.equal(retained.appliedHours,118,'The fully qualified fresh union reaches the actual PART consumer.');
+  if(zoneId!=='DK-B05-17'){
+    assert.equal(retained.consumerObservation.hoursObserved,118);
+    assert.equal(retained.consumerObservation.applied,118);
+    assert.equal(retained.consumerObservation.trendKnown,retained.hourly.filter(row=>Number.isFinite(row.waterLevelTrendCm3h)).length);
+    assert.equal(retained.consumerObservation.trendKnown+retained.consumerObservation.trendUnknown,118);
+    assert.equal(missing.consumerObservation.applied,114);
+    assert.equal(missing.consumerObservation.trendKnown+missing.consumerObservation.trendUnknown,114);
+    assert.equal(retained.consumerObservation.admittedLfWaterEndpoints,sourceIndex===lfRetainedIndex?118:0);
+    assert.match(retained.consumerObservation.endpointSeriesSha256,/^[a-f0-9]{64}$/);
+    assert.doesNotMatch(JSON.stringify(retained.consumerObservation),/sourceKey|gridPoint|currentUMps|currentVMps|samplingPoint/);
+  }
   const parentOutput={zones:{[zoneId]:{current:{},forecast:{hourly:structuredClone(direct)},waterLevel:{}}}};
   const parentStore={zones:{[zoneId]:{hourly:structuredClone(direct)}}};
-  applyWaterSourceRouting({features:[testFeature],output:parentOutput,forecastStore:parentStore,
+  const parentObservation=applyWaterSourceRouting({features:[testFeature],output:parentOutput,forecastStore:parentStore,
     sources:aware,index:sourceIndex,routing:testRouting,haversineKm:hav,generatedAt});
   assert.equal(parentOutput.zones[zoneId].forecast.hourly.length,118);
+  assert.deepEqual(parentObservation.consumerObservations.map(row=>row.stream),['PARENT_PUBLIC','PARENT_FORECAST_CACHE']);
+  for(const observed of parentObservation.consumerObservations){
+    assert.equal(observed.hoursObserved,118);assert.equal(observed.applied,118);
+    assert.equal(observed.trendKnown,parentOutput.zones[zoneId].forecast.hourly.filter(row=>Number.isFinite(row.waterLevelTrendCm3h)).length);
+    assert.equal(observed.admittedLfWaterEndpoints,sourceIndex===lfRetainedIndex?118:0);
+  }
   for(const hour of lostDerivedHours){
     const row=retained.hourly[hour],time=row.time;
     assert.ok(Number.isFinite(row.waterLevelCm));
@@ -653,6 +670,12 @@ const currentConditions={...furMeta('rr-next'),
 assert.ok(validFurWaterRoutingDiagnostic(previousConditions.furWaterRoutingDiagnostic));
 assert.ok(validFurWaterRoutingDiagnostic(currentConditions.furWaterRoutingDiagnostic));
 assert.deepEqual(currentTrace.hourly,changedRouted,'Diagnosis cannot alter routed values or other fields.');
+assert.equal(beforeTrace.consumerObservation.hoursObserved,7);
+assert.equal(beforeTrace.consumerObservation.applied,7);
+assert.equal(beforeTrace.consumerObservation.trendKnown,7);
+assert.equal(currentTrace.consumerObservation.hoursObserved,7);
+assert.equal(currentTrace.consumerObservation.applied,0);
+assert.equal(currentTrace.consumerObservation.sourceUnavailableOrDenied,7);
 for(const time of boundaryTimes)assert.equal(classifyFurWaterLevelLoss({
   previousConditions,currentConditions,time}),'ROUTE_CHANGED_PREVIOUS_SOURCES_STILL_PRESENT');
 assert.equal(classifyFurWaterLevelLoss({previousConditions:{...furMeta('rr-legacy')},

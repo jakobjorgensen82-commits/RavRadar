@@ -179,7 +179,31 @@ export function deferCurrentGridBindingEdges(migrationVersion) {
       && migrationVersion === NATIVE_IDENTITY_BINDING_REVIEW.migrationVersion;
 }
 
-export async function currentGridEdgePublicationRequired(current, action) {
+export async function currentGridEdgePublicationRequired(current, action, options) {
+  if(options!==undefined){
+    const {requireSourceProducerOutput,requireSourceProducerBinding}=
+      await import('./source-producer-after597-runtime-family.mjs');
+    requireSourceProducerOutput(); // FØRST: options/current-data giver aldrig en uudstedt familie.
+    const next=requireSourceProducerBinding();
+    const {default:assert}=await import('node:assert/strict');
+    assert.equal(arguments.length,3,'SOURCE_EDGE_OPTIONS_REQUIRED');
+    assert(options&&Object.getPrototypeOf(options)===Object.prototype,'SOURCE_EDGE_OPTIONS_REQUIRED');
+    assert.deepEqual(Object.keys(options),['sourcePhase'],'SOURCE_EDGE_OPTIONS_REQUIRED');
+    assert.equal(options.sourcePhase,'source-producer-after597','SOURCE_EDGE_PHASE_REQUIRED');
+    const {isDeepStrictEqual}=await import('node:util');
+    const {ravScoreModelBinding}=await import('../../js/core/ravscore-model-contract.js');
+    const binding=ravScoreModelBinding();
+    assert.equal(binding.modelBundleSha256,next.I,'SOURCE_EDGE_ACTUAL_ISSUED_BINDING');
+    assert(isDeepStrictEqual(current?.modelBinding,binding),'SOURCE_EDGE_CURRENT_BINDING_REQUIRED');
+    assert(current.model==='integrated'&&current.status==='INTEGRATED_ACTIVE'&&current.pending===false
+      &&current.bindingCurrent===true&&current.initialCutoverRequired===false&&current.legacySourceRequired===false
+      &&Number.isSafeInteger(current.centralVersion)&&current.centralVersion>0&&action==='integrated',
+      'SOURCE_EDGE_NORMAL_ACTIVE_REQUIRED');
+    // Kun routing. Den autentificerede installed-selector, SQL-/Edge-readback,
+    // originale B/S og normale artifact-/activation-gates bevarer deres autoritet.
+    return false;
+  }
+
   ACTIVE.requireOutput(); // Aktiv udstedt profil, aldrig UNISSUED→gammel familie.
   const { LATEST_REQUIRED_CUTOVER_MIGRATION } = await import('../integrated-cutover-readiness.mjs');
   const native = await import('./native-sampling-identity-successor-source.mjs');
