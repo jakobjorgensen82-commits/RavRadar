@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { mock } from 'node:test';
 import {
   PagesArtifactPrivacyError,
   auditPagesArtifactPrivacy,
@@ -248,6 +249,24 @@ try {
     + Buffer.byteLength(text);
   assert.equal(result.fileCount, 9);
   assert.equal(result.uncompressedFileBytes, expectedBytes);
+
+  // Exercise the real filesystem inventory at the boundary without allocating a large fixture.
+  const sizedFile = path.join(cleanRoot, 'assets', 'size-example.txt');
+  const lstat = fs.lstat;
+  let addedBytes = 1_000_000_000 - expectedBytes;
+  const mockedStat = mock.method(fs, 'lstat', async (file, ...args) => {
+    const stat = await lstat(file, ...args);
+    if (file === sizedFile) stat.size += addedBytes;
+    return stat;
+  });
+  try {
+    assert.equal((await auditPagesArtifactPrivacy(cleanRoot)).uncompressedFileBytes, 1_000_000_000);
+    addedBytes += 1;
+    await assert.rejects(auditPagesArtifactPrivacy(cleanRoot),
+      /Pages artifact exceeds the published site limit: 1000000001 > 1000000000 bytes/);
+  } finally {
+    mockedStat.mock.restore();
+  }
 } finally {
   await fs.rm(cleanRoot, { recursive: true, force: true });
 }
