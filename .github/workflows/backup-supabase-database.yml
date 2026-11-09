@@ -11,9 +11,9 @@ on:
         description: Fixed private backup operation; readonly bucket check by default
         type: choice
         default: bucket-readonly
-        options: [bucket-readonly, bucket-create, capture, discover, bootstrap]
+        options: [bucket-readonly, bucket-create, capture, discover, bootstrap, audit-fixed-844-role-grant]
       confirmation:
-        description: Exact bucket-create or capture confirmation; empty for readonly operations
+        description: Exact bucket-create, capture, or fixed 844 role audit confirmation; otherwise empty
         type: string
         default: ''
       index_sha:
@@ -96,6 +96,7 @@ jobs:
         with:
           version: 2.117.0
       - name: Run only the fixed backup operation
+        if: inputs.operation != 'audit-fixed-844-role-grant'
         timeout-minutes: 21
         run: node scripts/run-hosted-supabase-backup.mjs --execute
         env:
@@ -111,3 +112,26 @@ jobs:
           RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
           RAVRADAR_R2_ACCESS_KEY_ID: ${{ (inputs.operation == 'capture' || inputs.operation == 'discover' || inputs.operation == 'bootstrap') && secrets.RAVRADAR_R2_ACCESS_KEY_ID || '' }}
           RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ (inputs.operation == 'capture' || inputs.operation == 'discover' || inputs.operation == 'bootstrap') && secrets.RAVRADAR_R2_SECRET_ACCESS_KEY || '' }}
+
+      - name: Require the exact fixed 844 role audit before archive access
+        if: inputs.operation == 'audit-fixed-844-role-grant'
+        timeout-minutes: 2
+        run: node scripts/run-hosted-supabase-backup.mjs --preflight
+        env:
+          EXPECTED_HEAD_SHA: ${{ inputs.expected_main }}
+          SUPABASE_BACKUP_OPERATION: ${{ inputs.operation }}
+          SUPABASE_BACKUP_CONFIRMATION: ${{ inputs.confirmation }}
+          SUPABASE_BACKUP_AUDIT_INDEX_ABSENT: ${{ inputs.index_sha == '' && 'true' || 'false' }}
+      - name: Read only the fixed 844 archive roles
+        if: inputs.operation == 'audit-fixed-844-role-grant'
+        timeout-minutes: 4
+        run: node scripts/run-hosted-supabase-backup.mjs --execute
+        env:
+          EXPECTED_HEAD_SHA: ${{ inputs.expected_main }}
+          SUPABASE_BACKUP_OPERATION: ${{ inputs.operation }}
+          SUPABASE_BACKUP_CONFIRMATION: ${{ inputs.confirmation }}
+          SUPABASE_BACKUP_AUDIT_INDEX_ABSENT: ${{ inputs.index_sha == '' && 'true' || 'false' }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
+          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
+          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}

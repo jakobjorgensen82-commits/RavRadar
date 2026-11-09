@@ -161,6 +161,7 @@ const reviewedMaintenanceWorkflows = Object.freeze({
   'maintain-admin-document-history.yml': Object.freeze({ bytes: 25067, sha256: 'e1a30ce2979f259e66db4cdf24700de223e987858a0286ec690de3ddf07d877b' }),
   'verify-supabase-cli-local-restore.yml': Object.freeze({ bytes: 5305, sha256: '9d89e9c0c0d8713703d3d62043552bd0f6ee5a76e327afc4fbe1f47a268cf012' }),
 });
+const reviewedBackupWorkflowSuccessor = Object.freeze({ bytes: 6701, sha256: '3a9a8c6ac55489ce452d7736d507ea1a0a320b7a79ce55e8983a498b62f27963' });
 function inverseReviewedMaintenanceWorkflowInventory(names, sources) {
   assert.deepEqual(names, [...expectedWorkflowFiles, 'private-trip-weather-study.yml',
     'deploy-forecast-share.yml', ...Object.keys(reviewedMaintenanceWorkflows)].sort(),
@@ -169,8 +170,10 @@ function inverseReviewedMaintenanceWorkflowInventory(names, sources) {
   for (const [name, pin] of Object.entries(reviewedMaintenanceWorkflows)) {
     const bytes = sources[name];
     assert.ok(Buffer.isBuffer(bytes), 'Whole original workflow bytes are required');
-    assert.equal(bytes.length, pin.bytes, 'Exact reviewed maintenance workflow size');
-    assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'), pin.sha256,
+    const reviewed = name === 'backup-supabase-database.yml' && bytes.length === reviewedBackupWorkflowSuccessor.bytes
+      ? reviewedBackupWorkflowSuccessor : pin;
+    assert.equal(bytes.length, reviewed.bytes, 'Exact reviewed maintenance workflow size');
+    assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'), reviewed.sha256,
       'Exact reviewed maintenance workflow content');
   }
   return names.filter(name => !Object.hasOwn(reviewedMaintenanceWorkflows, name));
