@@ -2171,7 +2171,9 @@ const { DatabaseSync } = await import('node:sqlite');
 const { handleRequest } = await import('../cloudflare/trip-gateway/worker.js');
 const { externalOwnerSubject, storeCloudflareTrip, deleteCloudflareTrips, listCloudflareTrips }
   = await import('../supabase/functions/_shared/trip-storage.js');
-test('erasure settlement: post-purge empty physical reads cannot precede a late owner insert', async () => {
+for (const partialBarrier of [false, true]) test(partialBarrier
+  ? 'erasure settlement: a late signed store cannot purge with a partial shard barrier'
+  : 'erasure settlement: post-purge empty physical reads cannot precede a late owner insert', async () => {
   const secret = 'synthetic-erasure-race-secret-at-least-32-characters';
   const gatewayUrl = 'https://synthetic-erasure-race.example.workers.dev';
   const owner = await externalOwnerSubject({ userId: '11111111-1111-4111-8111-111111111111', secret });
@@ -2185,18 +2187,25 @@ test('erasure settlement: post-purge empty physical reads cannot precede a late 
   const mayInsert = new Promise(resolve => { releaseInsert = resolve; });
   const inserted = new Promise(resolve => { committedInsert = resolve; });
   const mayReturnInsert = new Promise(resolve => { releasePostInsert = resolve; });
-  let storing;
+  let storing, purgeAttempts = 0;
+  const barrierAttempts = [];
   try {
     const schema = fs.readFileSync('cloudflare/trip-gateway/migrations/001_trip_observations.sql', 'utf8');
     const index = fs.readFileSync('cloudflare/trip-gateway/migrations/002_owner_export_keyset.sql', 'utf8');
     const env = { TRIP_GATEWAY_SHARED_SECRET: secret };
     for (const [shard, database] of databases.entries()) {
       database.exec(schema); database.exec(index);
+      if (partialBarrier) database.exec(fs.readFileSync('cloudflare/trip-gateway/migrations/003_owner_erasure_insert_guard.sql', 'utf8'));
       env[`TRIP_DB_${shard}`] = { prepare(sql) {
         const statement = database.prepare(sql);
         return { bind(...args) { return {
           async all() { return { success: true, results: statement.all(...args) }; },
           async run() {
+            if (/^\s*insert into trip_owner_erasure_tombstones\b/.test(sql)) {
+              barrierAttempts.push(shard);
+              if (partialBarrier && shard === 5) return { success: false };
+            }
+            if (/^\s*delete from (?:trip_observations|trip_observation_registry)\b/.test(sql)) purgeAttempts++;
             const isTripInsert = /^\s*insert into trip_observations\s*\(/.test(sql);
             if (isTripInsert) { enteredInsert(); await mayInsert; }
             const result = statement.run(...args);
@@ -2220,6 +2229,22 @@ test('erasure settlement: post-purge empty physical reads cannot precede a late 
     storing = storeCloudflareTrip({ ...args, owner, payload })
       .then(value => ({ ok: true, value }), error => ({ ok: false, error }));
     await Promise.race([entered, storing.then(() => { throw new Error('Store ended before the held normal insert'); })]);
+    if (partialBarrier) {
+      releaseInsert(); await inserted;
+      assert.deepEqual(physicalReadback(), { rows: 1, registry: 1 });
+      await assert.rejects(deleteCloudflareTrips({ ...args, ownerSubject: owner.subject }), /TRIP_GATEWAY_UNAVAILABLE:REQUEST_REJECTED/);
+      assert.deepEqual(barrierAttempts, [0, 1, 2, 3, 4, 5]);
+      assert.deepEqual(databases.map(db => db.prepare('select owner_subject from trip_owner_erasure_tombstones where owner_subject = ?').all(owner.subject).length),
+        [1, 1, 1, 1, 1, 0, 0, 0, 0, 0]);
+      assert.equal(purgeAttempts, 0, 'The incomplete signed delete must not purge');
+      assert.deepEqual(await listCloudflareTrips({ ...args, ownerSubject: owner.subject }), []);
+      releasePostInsert();
+      assert.equal((await storing).ok, false, 'A late store cannot acknowledge an erased owner');
+      assert.equal(purgeAttempts, 0, 'Late signed store must not purge before all ten barriers are set');
+      assert.deepEqual(physicalReadback(), { rows: 1, registry: 1 });
+      assert.deepEqual(barrierAttempts, [0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5]);
+      return;
+    }
     assert.equal(await deleteCloudflareTrips({ ...args, ownerSubject: owner.subject }), 0);
     const atDeleteReceipt = physicalReadback();
     assert.deepEqual(atDeleteReceipt, { rows: 0, registry: 0 });
@@ -2229,7 +2254,7 @@ test('erasure settlement: post-purge empty physical reads cannot precede a late 
       'The tombstone-guarded list is empty even while a late physical row exists');
     releasePostInsert();
     assert.equal((await storing).ok, false, 'Existing final guard must refuse the late store');
-    assert.deepEqual(physicalReadback(), { rows: 0, registry: 0 }, 'Existing best-effort post-insert purge still runs');
+    assert.deepEqual(physicalReadback(), { rows: 0, registry: 0 }, 'Post-insert cleanup still runs after all shard barriers are set');
     assert.deepEqual(afterLateInsert, { rows: 0, registry: 0 },
       'A terminal physical-erasure receipt must prevent an already admitted late INSERT, not merely hide it');
   } finally {

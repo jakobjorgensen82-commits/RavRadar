@@ -20,6 +20,10 @@ Rettelsen undgår at kontrollere en strengt ældre DMI-kilde en ekstra gang, nå
 
 Den normale prøve med kunstige data for 673 kystdele gav samme plan byte for byte på cirka 72 sekunder med den gældende grænse på 120 sekunder. Kildekontrol, levering og virkningen i en ny almindelig vejrhentning er fortsat åbne. Årsagen til manglende vandstand sidst i prognosen skal undersøges særskilt.
 
+## 8. november — sen turgemning ved en delvis ejerslettebarriere
+
+**ÅBEN.** Den signerede lokale prøve viste, at et sent gemmekald kunne forsøge fysisk oprydning efter en delvis ejerslettebarriere. Kandidaten går gennem den eksisterende ejersletning, så alle ti positive kvitteringer kræves før første fysiske sletning. Den nye afvisningsprøve og den eksisterende prøve for fuld barriere består. Lukning kræver præcis kildekontrol og bekræftet Worker-levering via den normale vej. Genoprettelse efter tilbagerulning af control-databasen eller flere lagre og de øvrige konto- og backupkrav er særskilte. Se håndbog 89.222.
+
 ## 7. november — planlagt genoptagelse efter udtømte Pages-opslag
 
 **ÅBEN.** En beskyttet, færdig prognose kunne afvente offentlig udgivelse, fordi metadata efter kvitteret upload gav 404 og deployet aldrig blev startet. Den konkrete prognose blev senere leveret gennem den eksisterende genoptagelse. Den nye afgrænsede gren for seks udtømte opslag og positiv adgangskontrol er prøvet lokalt. Eksakt integreret kildekontrol og faktisk automatisk offentlig effekt skal stadig dokumenteres. Adgangsfejl, hashafvigelser og uafklarede udfald er uden for denne gren. Se håndbog 89.322.
