@@ -495,6 +495,7 @@ async function startProject(c,p){
   const found=(await command(c,'EXACT_SERVICE_SET','docker',['ps','--no-trunc','-aq','--filter','label=com.supabase.cli.project='+p.id])).toString().trim().split(/\s+/).filter(Boolean);
   assert.deepEqual(found.sort(),[p.db,p.kong,p.auth].sort());
   if(c.images)assert.deepEqual(actual,c.images);else c.images=actual;
+  if(c.bootstrapSmoke)return;
   const status=JSON.parse((await command(c,'STATUS_'+p.side,'supabase',['status','--output','json'],{cwd:p.dir,maxMs:30_000})).toString());
   p.api=localUrl(status.API_URL,'api');p.dbUrl=localUrl(status.DB_URL,'db');
   need(typeof status.ANON_KEY==='string'&&status.ANON_KEY.length>32&&typeof status.SERVICE_ROLE_KEY==='string'
@@ -617,12 +618,73 @@ function restorePublicReport(c,result,error,closed){
     ...(error?{status:'FAILED_CLOSED',firstFailure:error}:{}),ownedDockerClosed:closed,
     ...(!c.archive?{images:c.images,dumpFiles:c.dumps,authRequests:c.authRequests,processes:c.processes}:{})};
 }
-async function fixture({archive=false}={}){
+const BOOTSTRAP_SMOKE_SCOPE='synthetic-local-bootstrap-socket-smoke';
+const BOOTSTRAP_SMOKE_FIELDS=Object.freeze([
+  ['socket','targetDatabase','postgres17','sessionBootstrap','effectiveBootstrap','bootstrapCanLogin','bootstrapSuperuser','authEmpty'],
+  ['sessionBootstrapRetained','effectivePostgres','replicaSettingApplied','readOnlyTransaction'],
+]);
+function bootstrapSmokeChecks(bytes){
+  const lines=bytes.toString('utf8').trim().split('\n');
+  need(bytes.length<=1024&&lines.length===BOOTSTRAP_SMOKE_FIELDS.length,'BOOTSTRAP_SMOKE_OUTPUT');
+  const checks={};
+  for(const [i,keys] of BOOTSTRAP_SMOKE_FIELDS.entries()){
+    let frame;
+    try{frame=JSON.parse(lines[i]);}catch{need(false,'BOOTSTRAP_SMOKE_OUTPUT');}
+    need(frame&&typeof frame==='object'&&!Array.isArray(frame)&&Object.keys(frame).length===keys.length,'BOOTSTRAP_SMOKE_OUTPUT');
+    for(const key of keys){
+      need(Object.hasOwn(frame,key)&&typeof frame[key]==='boolean','BOOTSTRAP_SMOKE_OUTPUT');
+      checks[key]=frame[key];
+    }
+  }
+  return checks;
+}
+async function bootstrapSocketSmoke(c,p){
+  await startProject(c,p);
+  // Borrow the CLI's in-container bootstrap authentication. The actual password never leaves the container.
+  const shell=[
+    'test "${POSTGRES_HOST:-}" = /var/run/postgresql',
+    'test -n "${POSTGRES_PASSWORD:-}"',
+    'unset PGSERVICE PGSERVICEFILE PGOPTIONS',
+    'PGPASSWORD="$POSTGRES_PASSWORD" PGPASSFILE=/dev/null PGCONNECT_TIMEOUT=5 exec psql -X -w --host=/var/run/postgresql --port=5432 --username=supabase_admin --dbname=postgres --quiet --single-transaction --variable=ON_ERROR_STOP=1 --set=VERBOSITY=sqlstate --tuples-only --no-align --file=-',
+  ].join('\n');
+  const input=Buffer.from([
+    'SET TRANSACTION READ ONLY;',
+    "SET LOCAL statement_timeout = '5s';",
+    'SELECT pg_catalog.jsonb_build_object(',
+    "  'socket', pg_catalog.inet_client_addr() IS NULL,",
+    "  'targetDatabase', pg_catalog.current_database() = 'postgres',",
+    "  'postgres17', pg_catalog.current_setting('server_version_num')::int BETWEEN 170000 AND 179999,",
+    "  'sessionBootstrap', session_user = 'supabase_admin',",
+    "  'effectiveBootstrap', current_user = 'supabase_admin',",
+    "  'bootstrapCanLogin', (SELECT rolcanlogin FROM pg_catalog.pg_roles WHERE rolname=current_user),",
+    "  'bootstrapSuperuser', (SELECT rolsuper FROM pg_catalog.pg_roles WHERE rolname=current_user),",
+    "  'authEmpty', NOT EXISTS (SELECT 1 FROM auth.users));",
+    'SET LOCAL ROLE postgres;',
+    'SET LOCAL session_replication_role = replica;',
+    'SELECT pg_catalog.jsonb_build_object(',
+    "  'sessionBootstrapRetained', session_user = 'supabase_admin',",
+    "  'effectivePostgres', current_user = 'postgres',",
+    "  'replicaSettingApplied', pg_catalog.current_setting('session_replication_role') = 'replica',",
+    "  'readOnlyTransaction', pg_catalog.current_setting('transaction_read_only') = 'on');",
+    '',
+  ].join('\n'));
+  const bytes=await command(c,'BOOTSTRAP_SOCKET_ROLE_BOUNDARY','docker',['exec','-i',p.db,'sh','-ceu',shell],{input,maxMs:20_000});
+  return bootstrapSmokeChecks(bytes);
+}
+
+async function fixture({archive=false,bootstrapSmoke=false}={}){
   need(process.platform==='linux'&&process.env.GITHUB_ACTIONS==='true'&&process.env.RUNNER_ENVIRONMENT==='github-hosted'
-    &&process.env.RUNNER_OS==='Linux'&&process.env.GITHUB_EVENT_NAME==='workflow_dispatch','HOSTED_LINUX_ONLY');
+    &&process.env.RUNNER_OS==='Linux'&&(process.env.GITHUB_EVENT_NAME==='workflow_dispatch'||(bootstrapSmoke===true&&process.env.GITHUB_EVENT_NAME==='push'
+      &&process.env.GITHUB_REF==='refs/heads/codex/backup856-bootstrap-socket-smoke-20261110')),'HOSTED_LINUX_ONLY');
   need(process.env.GITHUB_REPOSITORY==='jakobjorgensen82-commits/RavRadar'&&process.env.GITHUB_RUN_ATTEMPT==='1','FIXED_REPOSITORY_ATTEMPT');
   need(/^[a-f0-9]{40}$/.test(process.env.EXPECTED_HEAD_SHA??'')&&process.env.EXPECTED_HEAD_SHA===process.env.GITHUB_SHA,'EXACT_DISPATCHED_HEAD');
   const run=process.env.GITHUB_RUN_ID;need(/^[1-9][0-9]{0,18}$/.test(run??''),'RUN_ID');
+  if(bootstrapSmoke){
+    need(!archive&&process.versions.node.split('.')[0]==='24','BOOTSTRAP_SMOKE_NODE24');
+    need(!Object.keys(process.env).some(key=>key.startsWith('RAVRADAR_R2_')
+      ||(key.startsWith('SUPABASE_')&&!['SUPABASE_INTERNAL_IMAGE_REGISTRY','SUPABASE_TELEMETRY_DISABLED'].includes(key))),
+    'BOOTSTRAP_SMOKE_CREDENTIAL_ENV');
+  }
   const indexCommitmentSha256=archive?archiveSelection(process.env):null;
   if(!archive)need(!process.env.RESTORE_ARCHIVE_INDEX_SHA&&!process.env.RESTORE_ARCHIVE_INDEX_COMMITMENT&&!process.env.RESTORE_ARCHIVE_CONFIRMATION,'SYNTHETIC_ARCHIVE_COLLISION');
   need(['DOCKER_HOST','DOCKER_CONTEXT','DOCKER_CONFIG','DOCKER_TLS_VERIFY','DOCKER_CERT_PATH','CONTAINER_HOST'].every(k=>!process.env[k]),'LOCAL_DOCKER_ENV');
@@ -631,7 +693,7 @@ async function fixture({archive=false}={}){
   const root=await fs.mkdtemp(path.join(temp,'rr-standard-restore-'));need(inside(temp,root),'OWNED_ROOT');await fs.chmod(root,0o700);
   const rootIdentity=await fs.lstat(root,{bigint:true});
   const home=path.join(root,'home');await fs.mkdir(home,{mode:0o700});const owner=run+'-1';
-  const c={root,home,owner,archive,stage:'PREFLIGHT',deadline:Date.now()+P.operationMs,processes:[],authRequests:[],dumps:[],images:null};
+  const c={root,home,owner,archive:archive||bootstrapSmoke,bootstrapSmoke,stage:'PREFLIGHT',deadline:Date.now()+P.operationMs,processes:[],authRequests:[],dumps:[],images:null};
   const projects=['A','B'].map(side=>({side,id:'rr_restore_'+run+'_1_'+side.toLowerCase(),dir:path.join(root,side),network:'rr-restore-'+owner+'-'+side.toLowerCase()}));
   let result,error=null;
   try{
@@ -639,7 +701,11 @@ async function fixture({archive=false}={}){
     need((await command(c,'DOCKER_LINUX','docker',['info','--format','{{.OSType}}'],{maxMs:20_000})).toString().trim()==='linux','DOCKER_LINUX');
     need((await command(c,'LOCAL_DAEMON','docker',['context','inspect','default','--format','{{.Endpoints.docker.Host}}'],{maxMs:20_000})).toString().trim()==='unix:///var/run/docker.sock','LOCAL_DAEMON');
     const [a,b]=projects;
-    if(archive){
+    if(bootstrapSmoke){
+      const checks=await bootstrapSocketSmoke(c,b);
+      result={checks};
+      need(Object.values(checks).every(value=>value===true),'BOOTSTRAP_SMOKE_FALSE');
+    }else if(archive){
       await command(c,'ARCHIVE_CURRENT_MAIN','git',['fetch','--no-tags','origin','+refs/heads/main:refs/remotes/origin/main'],{cwd:process.cwd(),maxMs:60_000});
       for(const ref of ['HEAD^{commit}','origin/main^{commit}'])
         need((await command(c,'ARCHIVE_EXACT_HEAD','git',['rev-parse',ref],{cwd:process.cwd(),maxMs:10_000})).toString().trim()===process.env.EXPECTED_HEAD_SHA,'ARCHIVE_MAIN_CHANGED');
@@ -688,13 +754,26 @@ async function fixture({archive=false}={}){
     if(closed)try{const st=await fs.lstat(root,{bigint:true});need(st.isDirectory()&&!st.isSymbolicLink()
       &&st.dev===rootIdentity.dev&&st.ino===rootIdentity.ino&&inside(temp,await fs.realpath(root)),'SCRATCH_IDENTITY');
       await fs.rm(root,{recursive:true,force:false});}catch(e){error??=safeError(e,'SCRATCH_CLEANUP');}
-    const report=restorePublicReport(c,result,error,closed);
+    const report=bootstrapSmoke?{status:error?'FAILED_CLOSED':'PASS',scope:BOOTSTRAP_SMOKE_SCOPE,
+      ...(result??{}),...(error?{firstFailure:error}:{}),ownedDockerClosed:closed}:
+      restorePublicReport(c,result,error,closed);
     console.log(JSON.stringify(report));if(error)process.exitCode=1;
   }
 }
 
 async function selfTest(){
   const {test}=await import('node:test');
+  test('bootstrap socket smoke only emits fixed booleans and retains a false observation',()=>{
+    const frames=BOOTSTRAP_SMOKE_FIELDS.map(keys=>Object.fromEntries(keys.map(key=>[key,true])));
+    const output=value=>Buffer.from(value.map(frame=>JSON.stringify(frame)).join('\n')+'\n');
+    assert.deepEqual(bootstrapSmokeChecks(output(frames)),Object.assign({},...frames));
+    const [first,last]=frames;
+    assert.equal(bootstrapSmokeChecks(output([first,{...last,effectivePostgres:false}])).effectivePostgres,false);
+    for(const candidate of [Buffer.from('not JSON\n{}\n'),output([first]),output([first,last,{}]),
+      output([{...first,sessionBootstrap:'supabase_admin'},last]),
+      output([{...first,privateValue:'never reported'},last]),output([first,null])])
+      assert.throws(()=>bootstrapSmokeChecks(candidate),error=>error.code==='BOOTSTRAP_SMOKE_OUTPUT');
+  });
   async function ownArchive(run,{large=false,receiptEdit=null,roleSql=null}={}){
     const root=await fs.mkdtemp(path.join(os.tmpdir(),'rr-archive-stream-self-'));await fs.chmod(root,0o700);
     const c={root,deadline:Date.now()+30_000},source=[];let observed=null;
@@ -1068,6 +1147,9 @@ if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.ur
   else if(process.argv[2]==='--run-archive-restore')await fixture({archive:true}).catch(e=>{
     console.log(JSON.stringify({status:'FAILED_CLOSED',scope:'authenticated-archive-isolated-sql-restore',
       firstFailure:safeError(e,'PREFLIGHT'),productionBackupVerified:false,freeReady:false}));process.exitCode=1;
+  });
+  else if(process.argv[2]==='--run-bootstrap-socket-smoke')await fixture({bootstrapSmoke:true}).catch(e=>{
+    console.log(JSON.stringify({status:'FAILED_CLOSED',scope:BOOTSTRAP_SMOKE_SCOPE,firstFailure:safeError(e,'PREFLIGHT')}));process.exitCode=1;
   });
   else need(false,'UNKNOWN_MODE');
 }
