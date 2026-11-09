@@ -73,7 +73,7 @@ jobs:
           result = {'kind': 'CURRENT_PROVIDER_ONLY_DIAGNOSTIC', 'outcome': 'REFUSED',
                     'phase': phase, 'exitCode': None, 'referenceMode': 'UNSET',
                     'providerFailure': None, 'initialWeatherLine': None,
-                    'privatePayloadIncluded': False}
+                    'privatePayloadIncluded': False, 'producerFrame': None, 'terminalFamily': None}
           try:
               import eccodes
               import requests.adapters
@@ -134,6 +134,42 @@ jobs:
                                       if lower <= number <= upper:
                                           result['initialWeatherLine'] = number
                                           break
+                      if result['initialWeatherLine'] == 136 and separator:
+                          producer_frame = b'  File "' + os.fsencode(root / 'scripts/update-dmi-bulk.py') + b'", line '
+                          permitted = {
+                              b'process_grib_transactionally': 'TRANSACTION',
+                              b'process_grib': 'DECODE',
+                              b'operational_wave_asset_stage_admissible': 'ADMISSION',
+                              b'private_wave_bootstrap_asset_summary': 'SUMMARY',
+                              b'private_wave_bootstrap_hour_rejection_code': 'REJECTION',
+                              b'build_asset_stage_document': 'BUILD_STAGE',
+                              b'_grib_read_scope': 'READ_SCOPE',
+                              b'_refuse': 'READ_REFUSAL',
+                              b'check': 'READ_CHECK',
+                              b'__enter__': 'READ_ENTER',
+                              b'__exit__': 'READ_EXIT',
+                          }
+                          lines = tail.splitlines()
+                          for line in reversed(lines[:-1]):
+                              if line.startswith(producer_frame):
+                                  match = re.fullmatch(rb'([1-9][0-9]{0,4}), in ([A-Za-z_]+)', line[len(producer_frame):])
+                                  if match and match[2] in permitted and int(match[1]) <= 24000:
+                                      result['producerFrame'] = [permitted[match[2]], int(match[1])]
+                                      break
+                          terminal = lines[-1] if lines else b''
+                          families = (
+                              (b'RuntimeError: GRIB asset stage validation failed', 'WAVE_STAGE_VALIDATION'),
+                              (b'GribReadUnproven:', 'GRIB_READ_REFUSAL'),
+                              (b'TypeError:', 'TYPE_ERROR'),
+                              (b'KeyError:', 'KEY_ERROR'),
+                              (b'ValueError:', 'VALUE_ERROR'),
+                              (b'AssertionError:', 'ASSERTION_ERROR'),
+                              (b'FileNotFoundError:', 'FILE_ABSENT'),
+                              (b'OSError:', 'OS_ERROR'),
+                              (b'MemoryError', 'MEMORY_ERROR'),
+                          )
+                          result['terminalFamily'] = next(
+                              (code for prefix, code in families if terminal.startswith(prefix)), 'UNKNOWN')
           except Exception:
               # Preserve refusal or the observed child failure. No exception content.
               pass
