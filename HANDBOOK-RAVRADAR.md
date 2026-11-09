@@ -2094,6 +2094,12 @@ Den afgrænsede turlagerkilde bruger en lokal slettemarkering i hver af de ti ek
 
 Dette er kildeforberedelse, ikke en udført 003-installation, Worker-opdatering eller kontosletning. Det samlede Auth-/backup-forløb, to års inaktivitet, 30 dages varsel og mulighed for at bevare kontoen ved login er fortsat åbne krav. Statistik slået til som udgangspunkt er hverken samtykke, anonymitetsbevis eller aktiveret statistik. Ingen automatisk varsling, sletning eller statistikbehandling aktiveres her.
 
+### 8. november — sent gemmekald ved en delvis slettebarriere
+
+Den signerede lokale prøve viste, at en allerede påbegyndt turgemning kunne forsøge fysisk oprydning, når control-databasen var markeret, selv om flere af de ti lagre manglede deres lokale markering. Den afgrænsede kandidat genbruger den normale ejersletning til den sene oprydning. Den skal have en positiv kvittering fra alle ti lagre, før den kan fjerne rækker eller registrybindinger.
+
+Ved en delvis barriere afvises turgemningen, og historikopslaget følger den eksisterende slettemarkering. De lagrede rækker og registrybindinger afventer fuld barriere. Med fuld barriere består den normale oprydning og genlæsning. De to signerede tilfælde er afprøvet lokalt med syntetiske data. Kildekvalifikation og faktisk Worker-levering er åbne. Gendannelse efter tilbagerulning og de øvrige konto- og backupkrav afklares særskilt.
+
 Den særskilte, faste assistentkontrol får kun en præcis rettelse af svarformatet: result alene eller result med et tomt eller null error-felt kan godkendes, hvis alle øvrige strenge kontroller består. Forespørgslen er fortsat låst til sit historiske formål og tidsrum, højst én GET, ti sekunder, 32 KiB og færre end otte rækker. Ekstra felter og ugyldige svar afvises; kun faste strukturelle kategorier kan vises ved formatfejl. Ingen rå log, private spørgsmål eller kontodata føjes til assistentviden. Dette er ikke en faktisk ny læsning eller bevis for fungerende ekstern AI.
 
 Den kontrollerede genlevering af allerede gemte vejrdata blev faktisk afsluttet den 13. oktober kl. 23.10.58 dansk tid med 210 zoner, 673 dele og reference kl. 16 UTC, uden nye providerhentninger. Den senere 595-main bevarer den afgrænsede uploadrobusthed, men den konkrete leverandørårsag er stadig ukendt. Disse leveringsbeviser må ikke overføres til den endnu uinstallerede turlagerkandidat. De ældre afsnit om afventende genlevering er historik på netop dette punkt.

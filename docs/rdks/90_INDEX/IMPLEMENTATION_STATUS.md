@@ -20,6 +20,12 @@ Rettelsen undgår at kontrollere en strengt ældre DMI-kilde en ekstra gang, nå
 
 Den normale prøve med kunstige data for 673 kystdele gav samme plan byte for byte på cirka 72 sekunder med den gældende grænse på 120 sekunder. Kildekontrol, levering og virkningen i en ny almindelig vejrhentning er fortsat åbne. Årsagen til manglende vandstand sidst i prognosen skal undersøges særskilt.
 
+## 8. november — sent gemmekald følger den eksisterende ejersletning
+
+Den afgrænsede ændring i Workerens sidste ejercheck kalder samme slettefunktion som normal ejersletning. På den eksakte 4.0.598-kilde forsøgte den oprindelige kode 11 sletteudsagn efter fem kvitterede lokale markeringer i den signerede syntetiske prøve. Efter rettelsen var antallet nul, den skjulte række og registrybindingen var bevaret, og det eksisterende tilfælde med fuld barriere bestod. Den normale målprøve bruger rigtige signaturkald og ti lokale SQLite-lagre med de eksisterende migrationsfiler.
+
+Præcis kildekvalifikation og kontrolleret levering af kun den eksisterende Worker afventer. Verificér aktuel kilde og installeret kontrakt, de eksisterende bindinger og Worker-versionen gennem den normale reparationsvej. Denne kildeændring kræver hverken nye databaseændringer, ny Edge-installation eller nye nøgler. Se DEC-0082 og håndbog 89.222.
+
 ## 7. november — planlagt genoptagelse efter udtømte Pages-opslag
 
 Den nye kandidat registrerer et særskilt udfald, når alle seks afgrænsede opslag af en allerede uploadet Pages-pakke svarer HTTP 404, og en læsning af samme kørsels artifactliste med samme GitHub-adgang faktisk lykkes. Den næste ordinære cron kan vælge den eksisterende genoptagelse fra gemt vejr og scorehistorik efter verifikation af den afsluttede producent på samme main og første forsøg, den efterfølgende synlige pakkeidentitet og den uændrede offentlige forgænger samt centrale bindinger. Ved godkendt genbrug bygger den normale vej en ny, forseglet Pages-pakke fra de gemte data og kræver de sædvanlige bevarings-, release- og udgivelseskontroller. Adgangsfejl og ukendte udfald giver ingen genoptagelsesmarkør. Afvigende pakkeidentitet eller ugyldig kontrolhash ved næste kørsel afviser genoptagelsen.

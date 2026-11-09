@@ -20,6 +20,10 @@ Rettelsen undgår at kontrollere en strengt ældre DMI-kilde en ekstra gang, nå
 
 Den normale prøve med kunstige data for 673 kystdele gav samme plan byte for byte på cirka 72 sekunder med den gældende grænse på 120 sekunder. Kildekontrol, levering og virkningen i en ny almindelig vejrhentning er fortsat åbne. Årsagen til manglende vandstand sidst i prognosen skal undersøges særskilt.
 
+## 8. november — samme slettebarriere for en sent afsluttet turgemning
+
+En sent afsluttet, signeret turgemning, der ser ejerens slettemarkering, bruger den samme beskyttede oprydning som almindelig ejersletning. Alle ti lokale markeringer skal være kvitteret, før en række eller dens registrybinding må fjernes. Ved en delvis barriere afvises gemningen. Den eksisterende slettemarkering holder ejerens historik skjult, mens en fuld sletning afventer de resterende kvitteringer. Den signerede lokale prøve er bestået. Faktisk Worker-levering afventer.
+
 ## 7. november — planlagt genoptagelse efter udtømte Pages-opslag
 
 Når alle seks metadataopslag giver 404 efter en kvitteret Pages-upload, kan næste planlagte kørsel genbruge den gemte prognose efter positiv adgangskontrol og eksakt verifikation af den afsluttede kørsel og pakkens metadata. Den bygger og forsegler en ny Pages-pakke gennem de normale kontroller. Målrettede lokale prøver er bestået. Den nye automatiske virkning er endnu ikke verificeret i drift. Se håndbog 89.322.

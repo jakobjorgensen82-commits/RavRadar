@@ -251,7 +251,7 @@ async function storeTrip(env, body) {
     if (insert?.success !== true || !Number.isSafeInteger(insert.meta?.changes) || insert.meta.changes < 0) throw new Error('TRIP_STORAGE_INVALID');
   }
   if (await ownerErased(databaseList[0], record.owner_subject)) {
-    await purgeOwnerTrips(databaseList, record.owner_subject);
+    await deleteOwnerTrips(env, { owner_subject: record.owner_subject });
     throw new Error('TRIP_OWNER_ERASED');
   }
   const rows = await matchingTripRows(databaseList, record);
