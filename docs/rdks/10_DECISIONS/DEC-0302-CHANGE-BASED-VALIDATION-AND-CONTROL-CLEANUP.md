@@ -6,6 +6,8 @@ Den korte kontrolvej bruger den eksisterende ændringsanalyse til to afgrænsede
 
 Ændrede SQL-, model-, vejr-, tilladelses- eller andre ubundne input kræver fortsat fuld kontrol. En kumulativ sammenligning må omfatte netop denne registrerede kontrolkode og beslutning, når de fortsat bliver selvstændigt gennemgået. Et senere kort bevis påstår hverken at have kørt PostgreSQL eller national validering. Den offentlige prognoses data- og udgivelseskontroller består. Den faktiske tidsbesparelse måles først i GitHub.
 
+Bevislæseren accepterer den allerede kendte ældre kontrolrækkefølge og den aktuelle rækkefølge med det præcise DMI-installationstrin før kildeplanen. Native- og nationalbeviser skal stadig stamme fra den faktiske, afsluttede kontrol i den krævede rækkefølge. Et ukendt eller sprunget trin godkendes ikke.
+
 ## 1. november — præcis D1-registrering og bevaret native-kontrol
 
 Den lokale private enable-efterfølger registrerer den fælles Worker-bindingslæser som reel D1-produktkode og den eksisterende transient-retry-prøve som normal D1-prøve. De konkrete nye controller-/testkanter og ressourcer tilføjes uden at fjerne gamle grænser. Produktkode ommærkes ikke til test-only.

@@ -10,7 +10,7 @@ import {scanAllSourceDependencies,dependencySourceLiterals} from './lib/source-i
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const REGISTRY_SHA256='3970bc86fb8afd99d193507b82337c1068aa368f6d62ff728988fc21da9577f4';
 const REGISTRY597_SHA256='a7ccfba2b2f631ccc358342e2c3b87e1cb1edbd54311148c94822fddaa6dbcfa';
-const REGISTRY598_SHA256='4010b64bf5b4c0db6e8c986157f4b1d2e51bc059cbccc182ad684ca2b91fd128';
+const REGISTRY598_SHA256='0d0d8eefd6a49b8d4decb54566058f5e3664791e20cc7259e1ebf2cc9879b03c';
 const PAGES_TRANSPORT_FIELDS=Object.freeze({
   "scripts/lib/pages-per-artifact-identity.mjs": [],
   "scripts/lib/pages-sealed-retry-decision.mjs": [
@@ -54,7 +54,8 @@ const PAGES_TRANSPORT_FIELDS=Object.freeze({
 // owners still run the normal independent CONTROL qualification in that case.
 const NARROW_SCOPE_CONTROL_OWNERS = new Set([
   'scripts/source-impact-domain-plan.mjs', 'scripts/lib/source-impact-domain-owners-598.json',
-  'scripts/source-targeted-producer.mjs',
+  'scripts/source-targeted-producer.mjs', 'scripts/source-impact-full-baseline.mjs',
+  'scripts/native-postgres-evidence.mjs', 'scripts/test-native-postgres-evidence.mjs',
 ]);
 const LOCAL_RESTORE_FIXTURE='scripts/test-supabase-cli-local-restore.mjs';
 const LOCAL_RESTORE_SELF_TEST='node '+LOCAL_RESTORE_FIXTURE+' --self-test';

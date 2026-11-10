@@ -1347,6 +1347,24 @@ test('593 V2 live reader verifies cross-branch actual origin/upload, preserves d
   assert.equal((await decideAssistantPublic591Reuse(drift.options)).status,'EXECUTE');
 });
 
+test('native phase metadata permits only the reviewed early DMI setup step',()=>{
+  const fixture=v2LiveFixture();
+  const expected=verifyAssistantPublic591Metadata(fixture.origin,fixture.originalJobs);
+  const shifted=copy(fixture.originalJobs),steps=shifted.jobs[0].steps;
+  const added={...steps[5],name:'Install declared DMI dependencies before source planning'};
+  for(const step of steps.slice(5))step.number++;
+  steps[5].name='Build deterministic source-tree content identity';
+  steps.splice(5,0,added);
+  assert.deepEqual(verifyAssistantPublic591Metadata(fixture.origin,shifted),expected);
+  for(const changed of [
+    {name:'Unknown extra setup'}, {conclusion:'skipped'}, {number:7},
+  ]){
+    const invalid=copy(shifted);
+    Object.assign(invalid.jobs[0].steps[5],changed);
+    assert.throws(()=>verifyAssistantPublic591Metadata(fixture.origin,invalid));
+  }
+});
+
 test('593 V2 artifact is independent phase evidence, never a V1 upgrade or whole-source success',()=>{
   const fixture=v2LiveFixture(),phase=verifyAssistantPublic591Metadata(fixture.origin,fixture.originalJobs);
   const metadata=fixture.artifactFor(fixture.origin),proof=fixture.proofFor(fixture.origin),raw=Buffer.from(JSON.stringify(proof));
