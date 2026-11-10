@@ -352,7 +352,9 @@ test('actual normal B/S admission + verify reject changed valid S; both packs re
   try {
     const options = { root: installed, privateRoot, bundle: first, currentPath, restoredPath, expectedPath, activePath,
       checkpointPath, receiptPath, target: reference, head: consumer, readPin: () => readCompletedPrivateRuntimePin(request) };
-    const admission = await admitCompletedPrivateRuntime(options);
+    const admission = await admitCompletedPrivateRuntime({
+      ...options, activePath: undefined, activeSource: active, expectedPin: pin.pin,
+    });
     assert.equal(admission.datasetId, runtime.datasetId); assert.equal(admission.scoringPerformed, false);
     await verifyCompletedPrivateRuntime({ ...options, bundle: second, requireRebuiltBundle: true });
     const originalS = await fs.readFile(checkpointPath);

@@ -1,3 +1,9 @@
+## 10. november — Pages-udgivelsen gik i stå efter gemning
+
+Vejrhentning #293 hentede, beregnede og gemte vejret og scorecheckpointet. GitHub Pages modtog pakken og blev stående i `syncing_files`, indtil ventetiden udløb. Den første ordinære genoptagelse #294 brugte den samme prognose og fik samme udfald. #295 udgav den samme prognose på 64 sekunder i deploytrinnet, og det offentlige manifest matchede den gemte generations fingeraftryk. Pakkestørrelsen ved #293 var 766.835.628 bytes før transportkomprimering. Den interne årsag til Pages' ventetid er ukendt.
+
+Den aktuelle kildekandidat afgrænser automatisk genbrug til ét forsøg med den samme gemte generation efter en bekræftet Pages-annullering. Efter et ligeledes bekræftet annulleret genforsøg kan næste ordinære kørsel beregne en nyere generation. Den skal først autentificere den gemte vejrpakke og det tilhørende scorecheckpoint og før ny udgivelse kontrollere alle overlappende kystdelstimer mod både den gemte og den offentlige prognose. Den offentlige kontrol læser kun indholdsverificerede timepakker for overlap. Ukendt udgivelsesudfald, ændrede bindinger eller tab af tidligere gyldige værdier stopper. Normal tidsplan, kildeprioritet og scoremodel består. Lokal kontrol alene giver ingen produktionsstatus.
+
 ## 8. november — mindre gentaget arbejde i vejrplanlægningen
 
 To almindelige vejrhentninger ramte den fælles tidsgrænse, da RavRadar gennemgik gemte værdier for kystdelene. RavRadar fortsatte efter den normale reservevej. Den målte tid gælder hele planlægningen.

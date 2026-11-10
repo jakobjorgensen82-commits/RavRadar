@@ -107,6 +107,8 @@ jobs:
       target_hour: ${{ steps.target-selection.outputs.target_hour }}
       completed_private_runtime: ${{ steps.target-selection.outputs.completed_private_runtime }}
       completed_private_runtime_pin: ${{ steps.target-selection.outputs.completed_private_runtime_pin }}
+      fresh_after_cancelled_replay: ${{ steps.target-selection.outputs.fresh_after_cancelled_replay }}
+      repeat_anchor: ${{ steps.target-selection.outputs.repeat_anchor }}
     steps:
       - uses: actions/checkout@v7
 
@@ -319,10 +321,22 @@ jobs:
           AUTO_COMPLETED: ${{ steps.automatic-completed-target.outputs.completed_private_runtime }}
           AUTO_TARGET: ${{ steps.automatic-completed-target.outputs.target_hour }}
           AUTO_PIN: ${{ steps.automatic-completed-target.outputs.completed_private_runtime_pin }}
+          AUTO_ELIGIBLE: ${{ steps.automatic-completed-scope.outputs.eligible }}
+          AUTO_FRESH_AFTER_CANCELLED_REPLAY: ${{ steps.automatic-completed-target.outputs.fresh_after_cancelled_replay }}
+          AUTO_REPEAT_ANCHOR: ${{ steps.automatic-completed-target.outputs.repeat_anchor }}
           CHECKPOINT_TARGET: ${{ steps.checkpoint-target.outputs.target_hour }}
           CACHE_TARGET: ${{ steps.cache-state.outputs.target_hour }}
         run: |
           set -euo pipefail
+          fresh_after_cancelled_replay=false
+          if test -n "$AUTO_FRESH_AFTER_CANCELLED_REPLAY$AUTO_REPEAT_ANCHOR"; then
+            test "$AUTO_ELIGIBLE:$AUTO_OUTCOME:$AUTO_COMPLETED:$REQUESTED_COMPLETED" = true:success:false:false
+            test "$AUTO_FRESH_AFTER_CANCELLED_REPLAY" = true
+            [[ "$AUTO_REPEAT_ANCHOR" =~ ^[a-f0-9]{64}$ ]]
+            test -z "$CHECKPOINT_TARGET"
+            test -n "$CACHE_TARGET"
+            fresh_after_cancelled_replay=true
+          fi
           case "$AUTO_OUTCOME:$AUTO_COMPLETED" in
             success:true)
               test "$REQUESTED_COMPLETED" = false
@@ -352,6 +366,8 @@ jobs:
           if test "$completed" = true; then [[ "$pin" =~ ^[a-f0-9]{64}$ ]]; fi
           printf 'completed_private_runtime=%s\ntarget_hour=%s\ncompleted_private_runtime_pin=%s\n' \
             "$completed" "$target" "$pin" >> "$GITHUB_OUTPUT"
+          printf 'fresh_after_cancelled_replay=%s\nrepeat_anchor=%s\n' \
+            "$fresh_after_cancelled_replay" "$AUTO_REPEAT_ANCHOR" >> "$GITHUB_OUTPUT"
 
   native-identity-prewrite:
     name: Authenticate originals and install only the two exact recovery phases
@@ -977,6 +993,8 @@ jobs:
       production_target_hour: ${{ needs.current-main-target.outputs.target_hour }}
       completed_private_runtime: ${{ needs.current-main-target.outputs.completed_private_runtime == 'true' }}
       completed_private_runtime_pin: ${{ needs.current-main-target.outputs.completed_private_runtime_pin }}
+      fresh_after_cancelled_replay: ${{ needs.current-main-target.outputs.fresh_after_cancelled_replay == 'true' }}
+      repeat_anchor: ${{ needs.current-main-target.outputs.repeat_anchor }}
       completed_stage_source: ${{ inputs.completed_stage_source }}
       force: true
       extended_provider_bootstrap: ${{ inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true }}

@@ -1,3 +1,9 @@
+## 10. november — ordinær vejrhentning efter et annulleret Pages-genforsøg
+
+#293 gemte prognosen, og #294 genbrugte den. Begge kom til Pages, hvor deploytrinnet ramte ventetidsgrænsen. #295 udgav det eksakte gemte datasæt automatisk, uden leverandørkald eller ny beregning. En påvist svaghed i genoptagelsen gjorde det muligt at vælge #293 igen efter det mislykkede genforsøg.
+
+Kildekandidaten skelner mellem den oprindelige fejl og et allerede forsøgt genbrug. En nyere normal kørsel må gå videre efter verificeret afbrudt udgivelse og et eksakt match mellem beskyttet vejrpakke og scorecheckpoint. Udgivelseskæden kræver både den eksisterende private kontinuitetskontrol og den særskilte kontrol mod endnu offentligt tilgængelige kystdelstimer. Målrettede lokale prøver dækker tab af tidligere gyldig værdi, ændret gemt eller offentlig generation, forkert filindhold, manglende timer, begrænset overførsel og udløbet overlap. GitHub-kvalifikation og faktisk virkning i produktion står åbne.
+
 ## 8. november — genlæsning af den gemte databasehenvisning
 
 Den første krypterede databasebackup blev gemt og genlæst fra det private lager. Databasen gemte også henvisningen, men backupkontrollen meldte fejl, fordi databasen returnerede felterne i en anden rækkefølge. Rettelsen sammenligner den validerede henvisning i den oprindelige rækkefølge og bevarer de præcise værdier, versionskontrollen og det eksisterende krypterede arkiv.

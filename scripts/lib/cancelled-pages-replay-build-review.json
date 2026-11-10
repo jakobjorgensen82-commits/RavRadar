@@ -1,0 +1,26 @@
+{
+  "role": "build",
+  "path": ".github/workflows/reusable-weather-build.yml",
+  "before": {
+    "bytes": 302000,
+    "sha256": "d21fad73693dc5d5c8db69535efdfc5cae27c78897422d4fc9ab731d6440295f"
+  },
+  "after": {
+    "bytes": 303918,
+    "sha256": "d3a438fd75d967b70407bd2de00406b5835b88499afee075b440dc68946626d7"
+  },
+  "applyInThisOrder": [
+    [
+      "      fresh_after_cancelled_replay:\n        required: false\n        type: boolean\n        default: false\n      repeat_anchor:\n        required: false\n        type: string\n        default: ''\n      completed_stage_source:\n",
+      "      completed_stage_source:\n"
+    ],
+    [
+      "      - name: Verify the exact saved pair before fetching after a cancelled Pages replay\n        id: pages-repeat-saved-pair\n        if: inputs.fresh_after_cancelled_replay == true && steps.preflight.outputs.should_run == 'true'\n        shell: bash\n        env:\n          RAVRADAR_PAGES_REPEAT_ANCHOR: ${{ inputs.repeat_anchor }}\n          RAVRADAR_PAGES_REPEAT_ACTION: ${{ steps.operational-action.outputs.action }}\n          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}\n          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n        run: |\n          set -euo pipefail\n          test \"${{ inputs.completed_private_runtime }}\" = false\n          test \"${{ steps.private-runtime-install.outcome }}\" = success\n          test \"${{ steps.exact-weather-recovery.outputs.required }}\" != true\n          test \"${{ steps.historical-wave-predecessor.outputs.required }}\" != true\n          test \"${{ steps.paired-checkpoint-route.outputs.required }}\" != true\n          node scripts/pages-cancelled-replay-continuity.mjs admit\n\n      - name: Validate provider-free checkpoint continuation request\n",
+      "      - name: Validate provider-free checkpoint continuation request\n"
+    ],
+    [
+      "      - name: Preserve still-published weather after an exact cancelled Pages replay\n        if: inputs.fresh_after_cancelled_replay == true && steps.preflight.outputs.should_run == 'true'\n        shell: bash\n        env:\n          RAVRADAR_PAGES_REPEAT_ANCHOR: ${{ inputs.repeat_anchor }}\n          RAVRADAR_PAGES_REPEAT_ACTION: ${{ steps.operational-action.outputs.action }}\n          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}\n          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n        run: |\n          set -euo pipefail\n          test \"${{ steps.pages-repeat-saved-pair.outcome }}\" = success\n          node scripts/pages-cancelled-replay-continuity.mjs compare\n\n      - name: Audit runtime and collect independent cutover validation failures\n",
+      "      - name: Audit runtime and collect independent cutover validation failures\n"
+    ]
+  ]
+}

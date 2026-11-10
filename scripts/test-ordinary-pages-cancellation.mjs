@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { previousOrdinaryHadPagesFailure, readOrdinaryPagesEvidence,
+import { readPreviousOrdinaryPagesFailure, readOrdinaryPagesEvidence,
   selectAutomaticCompletedPrivateRuntime } from './select-automatic-completed-private-runtime.mjs';
 import { parseOrdinaryPagesCancellation, readOrdinaryPagesCancellation } from './lib/ordinary-pages-cancellation.mjs';
 import { sha256CanonicalJson } from './ravscore-operational-pages-recovery.mjs';
@@ -208,7 +208,8 @@ test('a failed or skipped preflight does not hide the most recent attempted Page
     assert.match(route, /\/101\/attempts\/1\/jobs/);
     return jobList(ordinaryPages(201, 'failure'));
   };
-  assert.equal(await previousOrdinaryHadPagesFailure(read, ordinaryContext), true);
+  const previous = await readPreviousOrdinaryPagesFailure(read, ordinaryContext);
+  assert.deepEqual([previous.kind, previous.run.id, previous.job.id], ['deploy', 101, 201]);
   assert.equal(calls.length, 4);
 });
 
@@ -219,7 +220,7 @@ test('a later completed Pages deploy takes precedence over an older failure', as
     assert.match(route, /\/102\/attempts\/1\/jobs/);
     return jobList(ordinaryPages(202, 'success'));
   };
-  assert.equal(await previousOrdinaryHadPagesFailure(read, ordinaryContext), false);
+  assert.equal(await readPreviousOrdinaryPagesFailure(read, ordinaryContext), null);
   assert.equal(calls, 2);
 });
 
@@ -228,7 +229,7 @@ test('an unknown outcome at the Pages deploy step stops instead of treating it a
   const read = async () => ++calls === 1
     ? runList({ ...ordinaryRun(102), conclusion: 'cancelled' })
     : jobList(ordinaryPages(202, 'cancelled'));
-  await assert.rejects(previousOrdinaryHadPagesFailure(read, ordinaryContext), /PAGES_AUTO_PRIOR_DEPLOY_UNKNOWN/);
+  await assert.rejects(readPreviousOrdinaryPagesFailure(read, ordinaryContext), /PAGES_AUTO_PRIOR_DEPLOY_UNKNOWN/);
 });
 
 test('277-shaped completed B/S reentry accepts only the exact terminal exhausted-404 seal marker', async () => {
@@ -284,7 +285,8 @@ test('277-shaped completed B/S reentry accepts only the exact terminal exhausted
     readActive: async () => activeFor(publicManifest),
     readEvidence: (saved, context) => readOrdinaryPagesEvidence({ read, saved, context }),
   });
-  assert.equal(await previousOrdinaryHadPagesFailure(read, ordinaryContext), true);
+  const previous = await readPreviousOrdinaryPagesFailure(read, ordinaryContext);
+  assert.deepEqual([previous.kind, previous.run.id], ['visibility', 103]);
   assert.deepEqual(await select(), { mode: 'COMPLETED', targetHour: saved.productionReferenceAt, pin: digest });
   assert.equal(calls.filter(route => route.endsWith('/artifacts?per_page=100')).length, 1);
   assert.equal(calls.some(route => route.includes('/logs')), false);
@@ -292,12 +294,144 @@ test('277-shaped completed B/S reentry accepts only the exact terminal exhausted
   await assert.rejects(select(), /PAGES_AUTO_VISIBILITY_ARTIFACT_IDENTITY/);
   artifact.digest = 'sha256:' + digest;
   fixtureSteps[9].conclusion = 'failure'; // The same-token authorization check failed.
-  await assert.rejects(previousOrdinaryHadPagesFailure(read, ordinaryContext), /PAGES_AUTO_VISIBILITY_STEP_OUTCOME/);
+  await assert.rejects(readPreviousOrdinaryPagesFailure(read, ordinaryContext), /PAGES_AUTO_VISIBILITY_STEP_OUTCOME/);
   fixtureSteps[9].conclusion = 'skipped'; // Auth, hash and unknown failures never produce the marker.
-  assert.equal(await previousOrdinaryHadPagesFailure(read, ordinaryContext), false);
+  assert.equal(await readPreviousOrdinaryPagesFailure(read, ordinaryContext), null);
   const before = calls.length;
   const alreadyPublic = { ...prior, datasetId: saved.datasetId, generatedAt: saved.generatedAt,
     productionReferenceAt: saved.productionReferenceAt };
   assert.deepEqual(await select(alreadyPublic), { mode: 'FETCH' });
   assert.equal(calls.length, before);
+});
+
+
+test('classifies only an authenticated cancelled automatic replay of the original saved target', async () => {
+  const at = second => new Date(Date.UTC(2026, 10, 7, 16, 0, second)).toISOString();
+  const run = (id, begin, end) => ({ ...ordinaryRun(id), workflow_id: 9,
+    triggering_actor: { login: 'github-actions[bot]' }, created_at: at(begin), run_started_at: at(begin), updated_at: at(end) });
+  const original = run(101, 0, 100);
+  const replay = run(102, 200, 900);
+  const job = (owner, id, name, conclusion, begin, end, steps) => ({
+    ...ordinaryPages(id, conclusion), name, run_id: owner.id, run_attempt: 1, head_sha: head, head_branch: 'main',
+    started_at: at(begin), completed_at: at(end),
+    steps: steps.map(([stepName, outcome], index) => ({
+      name: stepName, number: index + 1, status: 'completed', conclusion: outcome,
+      started_at: at(begin + index), completed_at: at(begin + index + 1),
+    })),
+  });
+  const noLoss = 'Refuse loss of previously valid public weather on identical coastal hours';
+  const publishB = 'Publish bounded private runtime with one protected rollback generation';
+  const publishS = 'Publish atomic RavScore checkpoint to protected admin storage';
+  const providerSteps = ['Update DMI bulk model cache', 'Fill only exact-hour DMI gaps from Copernicus',
+    'Fill only the exact remaining current gaps from Open-Meteo', 'Update central weather cache'];
+  const build = 'Build and prepare weather production through reusable workflow / build-and-prepare';
+  const originalPages = job(original, 202, jobName, 'failure', 70, 90, [['Deploy to GitHub Pages', 'failure']]);
+  const originalJobs = jobList(job(original, 201, build, 'success', 5, 65, [
+    ['Update central weather cache', 'success'], [noLoss, 'success'], [publishB, 'success'], [publishS, 'success'],
+  ]), originalPages);
+  const lock = job(replay, 210, 'Lock one normal run to exact current main and UTC hour', 'success', 201, 220, [
+    ['Identify the default scheduled weather caller', 'success'],
+    ['Select provider-free continuation for the default scheduled caller', 'success'],
+    ['Lock the canonical UTC production hour', 'skipped'],
+    ['Require one canonical target hour and completed-runtime decision', 'success'],
+  ]);
+  const repeatedBuild = job(replay, 211, build, 'success', 230, 300, [
+    ['Require the separate completed B request and actual restored originals', 'success'],
+    ['Read actual operational and profile rows for completed B admission', 'success'],
+    ['Restore the actual newest protected checkpoint for completed B admission', 'success'],
+    ['Admit only the exact authenticated completed B and matching central S', 'success'],
+    ...providerSteps.map(name => [name, 'skipped']),
+    [noLoss, 'success'],
+    ['Validate critical production artifact after fresh weather and current provenance', 'success'],
+    ['Run release governance gate after refreshed data validation', 'success'],
+    ['Refuse completed-runtime target or calibration mismatch before any new S or B publication', 'success'],
+    [publishB, 'success'], [publishS, 'success'],
+    ['Audit the complete Pages artifact for private runtime material', 'success'],
+    ['Upload GitHub Pages artifact', 'success'],
+    ['Resolve and seal the exact uploaded Pages artifact', 'success'],
+    ['Confirm exhausted exact Pages artifact metadata visibility', 'skipped'],
+    ['Upload privacy-safe operational handoff evidence after Pages artifact seal', 'success'],
+  ]);
+  const replayPages = job(replay, 212, jobName, 'failure', 320, 850, [
+    ['Require horizon-valid weather immediately before Pages deployment', 'success'],
+    ['Require monotonic public generation immediately before Pages', 'success'],
+    ['Deploy to GitHub Pages', 'failure'],
+    ['Verify deployed exact model, implementation and 210/673 artifact', 'skipped'],
+    ['Seal exact verified deployment terminal', 'failure'],
+  ]);
+  const replayJobs = jobList(lock, repeatedBuild, replayPages,
+    job(replay, 213, 'Require a verified current-weather deployment', 'failure', 860, 870,
+      [['Summarize and require the complete normal production path', 'failure']]));
+  const binding = { modelId: 'fixture', stateSchemaVersion: '6.0.0', modelContractSha256: digest, modelBundleSha256: digest };
+  const prior = { complete: true, zoneCount: 210, coastalPartCount: 673, datasetId: 'prior',
+    productionReferenceAt: '2026-11-07T12:00:00Z', generatedAt: '2026-11-07T12:25:00Z', ravScoreModelBinding: binding };
+  const target = { ...prior, datasetId: 'saved', productionReferenceAt: '2026-11-07T16:00:00Z', generatedAt: at(30) };
+  const saved = { datasetId: target.datasetId, productionReferenceAt: target.productionReferenceAt,
+    generatedAt: target.generatedAt, bundleContentSha256: digest, modelBinding: binding, sourceHead: head };
+  const env = { RAVRADAR_AUTOMATIC_COMPLETED_INPUTS: '{}', GITHUB_REPOSITORY: ordinaryRepo.full_name,
+    GITHUB_REF: 'refs/heads/main', GITHUB_WORKFLOW: 'Run current RavRadar weather once', GITHUB_EVENT_NAME: 'workflow_dispatch',
+    GITHUB_RUN_ATTEMPT: '1', GITHUB_RUN_ID: String(ordinaryContext.consumerRunId), GITHUB_ACTOR: 'github-actions[bot]',
+    GITHUB_TRIGGERING_ACTOR: 'github-actions[bot]', GITHUB_SHA: head, RAVRADAR_AUTOMATIC_COMPLETED_REENTRY_ACTION: 'NONE' };
+  const calls = [];
+  async function select({ hasReplay = true, changeManifest = false, movePin = false, movePublic = false, missingCancel = false } = {}) {
+    let pins = 0, publicReads = 0;
+    const read = async route => {
+      if (route.startsWith('/actions/workflows/')) return hasReplay ? runList(original, replay) : runList(original);
+      if (route === '/actions/runs/101/attempts/1/jobs?per_page=100') return originalJobs;
+      if (route === '/actions/runs/102/attempts/1/jobs?per_page=100') return replayJobs;
+      assert.fail('Unexpected metadata read: ' + route);
+    };
+    const previousFailure = await readPreviousOrdinaryPagesFailure(read, ordinaryContext);
+    return selectAutomaticCompletedPrivateRuntime(env, {
+      readPin: async () => ({ descriptor: saved, pin: ++pins === 2 && movePin ? 'c'.repeat(64) : digest }),
+      readPublic: async () => ++publicReads === 2 && movePublic ? { ...prior, datasetId: 'moved' } : prior,
+      readActive: async () => ({ model: 'integrated', status: 'INTEGRATED_ACTIVE', pending: false,
+        datasetId: prior.datasetId, productionReferenceAt: prior.productionReferenceAt,
+        publicManifestSha256: sha256CanonicalJson(prior) }),
+      readEvidence: (saved, context) => readOrdinaryPagesEvidence({
+        read, saved, context, previousFailure,
+        readHandoff: async ({ run }) => {
+          calls.push(['handoff', run.id]);
+          const targetManifest = changeManifest && run.id === replay.id ? { ...target, diagnostic: true } : target;
+          const targetManifestSha256 = sha256CanonicalJson(targetManifest);
+          return { targetManifest, targetManifestSha256,
+            seal: { artifactName: 'github-pages', ref: 'refs/heads/main', headSha: head,
+              runId: run.id, runAttempt: 1, artifactId: run.id + 200, artifactDigestSha256: digest,
+              targetPublicManifestSha256: targetManifestSha256, targetImplementationClosureSha256: 'd'.repeat(64) } };
+        },
+        readCancellation: async ({ artifactSeal, jobId: pagesId }) => {
+          calls.push(['cancellation', artifactSeal.runId]);
+          assert.equal(pagesId, artifactSeal.runId === replay.id ? replayPages.id : originalPages.id);
+          if (missingCancel && artifactSeal.runId === replay.id) throw new Error('ORDINARY_PAGES_CANCEL_CANCEL_COUNT');
+          return { runId: artifactSeal.runId, runAttempt: 1, jobId: pagesId, sourceHead: head,
+            artifactId: artifactSeal.artifactId, artifactDigestSha256: digest };
+        },
+      }),
+    });
+  }
+  const expected = { mode: 'COMPLETED', targetHour: saved.productionReferenceAt, pin: digest };
+  assert.deepEqual(await select({ hasReplay: false }), expected);
+  assert.deepEqual(calls.splice(0), [['handoff', 101], ['cancellation', 101]]);
+  const matchedReplay = await select();
+  assert.match(matchedReplay.repeatAnchor, /^[a-f0-9]{64}$/);
+  assert.deepEqual(matchedReplay, { ...expected, repeatAnchor: matchedReplay.repeatAnchor, cancelledReplay: {
+    kind: 'PAGES_AUTOMATIC_REPLAY_CANCELLED_CONFIRMED', runId: 102, runAttempt: 1, jobId: 212, artifactId: 302,
+    artifactDigestSha256: digest, producerRunId: 101, producerRunAttempt: 1, headSha: head,
+    targetPublicManifestSha256: sha256CanonicalJson(target), publicManifestSha256: sha256CanonicalJson(prior),
+  } });
+  assert.deepEqual(calls.splice(0).sort(), [
+    ['cancellation', 101], ['cancellation', 102], ['handoff', 101], ['handoff', 102],
+  ]);
+  const canonical = lock.steps.find(step => step.name === 'Lock the canonical UTC production hour');
+  canonical.conclusion = 'success';
+  assert.deepEqual(await select(), expected);
+  canonical.conclusion = 'skipped';
+  const provider = repeatedBuild.steps.find(step => step.name === providerSteps[0]);
+  provider.conclusion = 'success';
+  await assert.rejects(select(), /PAGES_AUTO_REPLAY_STEP_OUTCOME/);
+  provider.conclusion = 'skipped';
+  await assert.rejects(select({ changeManifest: true }), /PAGES_AUTO_REPLAY_TARGET_DRIFT/);
+  await assert.rejects(select({ missingCancel: true }), /ORDINARY_PAGES_CANCEL_CANCEL_COUNT/);
+  await assert.rejects(select({ movePin: true }), /PAGES_AUTO_POINTER_CHANGED/);
+  await assert.rejects(select({ movePublic: true }), /PAGES_AUTO_PUBLIC_CHANGED/);
 });

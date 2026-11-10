@@ -901,6 +901,7 @@ for (const row of Object.values(ordinaryStageWiringReview)) {
 Object.freeze(ordinaryStageWiringReview);
 // Exact586 then585 normal User-Agent inverses; every historical workflow byte remains the oracle.
 export function inverseRelease585WorkflowUserAgents(source, role) {
+  if (role === 'build') source = inverseAutomaticCompletedPagesWorkflow(source, role);
   source = inverseNativeOriginalSchemaSelectorWorkflow(source, role);
   if (role === 'build' && sha(source) === '8223891e25cfb7fbcf57a536bcc55a1cbf59ed676f02172588192065ae4eccc0') {
     assert.equal(source.split('RavRadar/4.0.586').length, 6, 'Exactly five normal586 User-Agent fields');
@@ -1087,9 +1088,14 @@ export function inversePairedPrivateRuntimePublication(source, role) {
 const automaticCompletedPagesReview = JSON.parse(fs.readFileSync(
   new URL('./automatic-completed-pages-workflow-review.json', import.meta.url), 'utf8'));
 
+const cancelledPagesReplayBuildReview = JSON.parse(fs.readFileSync(
+  new URL('./cancelled-pages-replay-build-review.json', import.meta.url), 'utf8'));
+
 export function inverseAutomaticCompletedPagesWorkflow(source, role) {
-  const { before, after, applyInThisOrder } = automaticCompletedPagesReview;
-  if (role !== 'once' || typeof source !== 'string'
+  const review = role === 'once' ? automaticCompletedPagesReview : role === 'build' ? cancelledPagesReplayBuildReview : null;
+  if (!review) return source;
+  const { before, after, applyInThisOrder } = review;
+  if (typeof source !== 'string'
     || Buffer.byteLength(source) !== after.bytes || sha(source) !== after.sha256) return source;
   for (const [actual, original] of applyInThisOrder) {
     assert.equal(source.split(actual).length, 2, 'One exact automatic completed Pages hunk');
