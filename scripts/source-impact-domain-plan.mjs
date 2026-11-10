@@ -10,7 +10,60 @@ import {scanAllSourceDependencies,dependencySourceLiterals} from './lib/source-i
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const REGISTRY_SHA256='3970bc86fb8afd99d193507b82337c1068aa368f6d62ff728988fc21da9577f4';
 const REGISTRY597_SHA256='a7ccfba2b2f631ccc358342e2c3b87e1cb1edbd54311148c94822fddaa6dbcfa';
-const REGISTRY598_SHA256='a206b0b39108af8e16557f4c1cb9eafa4bdc0a4e9bdd5b931d884184c04fc3ec';
+const REGISTRY598_SHA256='4010b64bf5b4c0db6e8c986157f4b1d2e51bc059cbccc182ad684ca2b91fd128';
+const PAGES_TRANSPORT_FIELDS=Object.freeze({
+  "scripts/lib/pages-per-artifact-identity.mjs": [],
+  "scripts/lib/pages-sealed-retry-decision.mjs": [
+    [
+      "MINIMUM_RECOVERY_WINDOW_MS",
+      19,
+      30
+    ],
+    [
+      "MAXIMUM_OBSERVATIONS",
+      2,
+      121
+    ]
+  ],
+  "scripts/lib/publish-sealed-pages-with-recovery.mjs": [
+    [
+      "horizon",
+      2,
+      121
+    ],
+    [
+      "intervalMs",
+      5000,
+      10000
+    ]
+  ],
+  "scripts/lib/run-sealed-pages-deployment.mjs": [
+    [
+      "intervalMs",
+      5000,
+      10000
+    ],
+    [
+      "maxAttempts",
+      60,
+      121
+    ]
+  ]
+});
+// A cumulative FULL baseline may predate this reviewed control code. Its three
+// owners still run the normal independent CONTROL qualification in that case.
+const NARROW_SCOPE_CONTROL_OWNERS = new Set([
+  'scripts/source-impact-domain-plan.mjs', 'scripts/lib/source-impact-domain-owners-598.json',
+  'scripts/source-targeted-producer.mjs',
+]);
+const LOCAL_RESTORE_FIXTURE='scripts/test-supabase-cli-local-restore.mjs';
+const LOCAL_RESTORE_SELF_TEST='node '+LOCAL_RESTORE_FIXTURE+' --self-test';
+const LOCAL_RESTORE_WORKFLOW='.github/workflows/verify-supabase-cli-local-restore.yml';
+const LOCAL_RESTORE_WORKFLOW_BLOB='6cb1db7082c7a16efa5947b7c97a6659459aedc7';
+const LOCAL_RESTORE_IMPORTS='\nconst P=Object.freeze(';
+const LOCAL_RESTORE_DISPATCH='if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){';
+const LOCAL_RESTORE_IMPORTS_SHA256='dd05a1d036c7d9afff9ae2ba4c0511dff199ad4faf5baab258b2a17b0cd728d4';
+const LOCAL_RESTORE_DISPATCH_SHA256='2e0d348293d622790375df6457726e0af04d92c9e23aedbac42033aa5049443c';
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const oid=value=>typeof value==='string'&&/^[a-f0-9]{40}$/.test(value);
 const relative=value=>typeof value==='string'&&/^[A-Za-z0-9_./-]+$/.test(value)&&!value.startsWith('/')
@@ -25,6 +78,31 @@ const environment=()=>({...Object.fromEntries(['PATH','Path','SystemRoot','WINDI
   GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_OPTIONAL_LOCKS:'0',GIT_TERMINAL_PROMPT:'0',
   GIT_CONFIG_NOSYSTEM:'1',GIT_CONFIG_GLOBAL:process.platform==='win32'?'NUL':'/dev/null',
   GIT_CONFIG_COUNT:'1',GIT_CONFIG_KEY_0:'protocol.allow',GIT_CONFIG_VALUE_0:'never'});
+// Pin every byte except the bounded transport fields. In particular auth, slots,
+// producer admission and transport identities cannot change in this domain.
+function pagesTransportFrame(file, body){
+  let source=new TextDecoder('utf8',{fatal:true}).decode(body);
+  const rules=PAGES_TRANSPORT_FIELDS[file];
+  if(!rules||source.length>32*1024)return null;
+  if(file==='scripts/lib/pages-per-artifact-identity.mjs'){
+    const pattern=/^const PENDING = new Set\(\[\n  (.+),\n\]\);$/gm;
+    const matches=[...source.matchAll(pattern)];if(matches.length!==1)return null;
+    const statuses=matches[0][1].split(', ');
+    const allowed=["'deployment_queued'","'deployment_in_progress'","'deployment_working'","'syncing_files'"];
+    if(!statuses.includes(allowed[0])||!statuses.includes(allowed[3])
+      ||new Set(statuses).size!==statuses.length||statuses.some(status=>!allowed.includes(status)))return null;
+    source=source.replace(pattern,'<reviewed-pending-statuses>');
+  }
+  for(const [name,min,max] of rules){
+    const suffix=name==='MINIMUM_RECOVERY_WINDOW_MS'?' [*] minute':'';
+    const pattern=new RegExp('^((?:export )?const '+name+' = )([0-9][0-9_]*)('+suffix+';)$','gm');
+    const matches=[...source.matchAll(pattern)];if(matches.length!==1)return null;
+    const literal=matches[0][2],value=Number(literal.replaceAll('_',''));
+    if(!/^[1-9][0-9]*(?:_[0-9]+)*$/.test(literal)||!Number.isInteger(value)||value<min||value>max)return null;
+    source=source.replace(pattern,'$1<reviewed-transport-bound>$3');
+  }
+  return sha(source);
+}
 function handbookFrame(source){
   const anchor="values('handbook','",start=source.indexOf(anchor);assert(start>=0&&source.indexOf(anchor,start+1)===-1);
   let end=start+anchor.length;
@@ -107,6 +185,9 @@ function registry598(legacyBytes){
     for(const pair of pairs){assert(/^[a-f0-9]{64}\/[a-f0-9]{64}$/.test(pair));assert(!previousPairs.includes(pair));previousPairs.push(pair);}
     registry.exactSourceTransitions[file]=previousPairs;
   }
+  const restoreOwners=registry.owners.filter(owner=>owner.localRestoreSelfTest===true);
+  assert.deepEqual(restoreOwners,[{path:LOCAL_RESTORE_FIXTURE,domains:['controls'],controlQualification:true,
+    localRestoreSelfTest:true,commands:[['controls',LOCAL_RESTORE_SELF_TEST]]}]);
   // These two existing adminUI address owners must each close the actual cache contracts.
   // This fixed598 loop cannot admit caller-supplied owner or command overrides.
   for(const file of ['admin.html','service-worker.js']){
@@ -120,7 +201,9 @@ function registry598(legacyBytes){
       assert(!owner.commands.some(row=>row[1]===command));owner.commands.push(['adminUI',command]);
     }
   }
-  return {value:registry,digest:sha(Buffer.concat([Buffer.from(previous.digest,'hex'),bytes])),blobBudgetBytes:previous.blobBudgetBytes};
+  assert.deepEqual(Object.keys(delta.pagesTransport.frames).sort(),Object.keys(PAGES_TRANSPORT_FIELDS).sort());
+  return {value:registry,digest:sha(Buffer.concat([Buffer.from(previous.digest,'hex'),bytes])),
+    blobBudgetBytes:previous.blobBudgetBytes,pagesTransport:delta.pagesTransport};
 }
 export function planSourceDomainImpactFromGit(input){
   const out=base();
@@ -163,6 +246,17 @@ export function planSourceDomainImpactFromGit(input){
       const owner=owners.get(file);for(const domain of owner.domains)selected.add(domain);
       if(owner.controlQualification)qualification=true;changes.push({file,row,owner});
     }
+    const productChanges=changes.filter(change=>{
+      if(change.file==='docs/rdks/10_DECISIONS/DEC-0302-CHANGE-BASED-VALIDATION-AND-CONTROL-CLEANUP.md'
+        && change.owner.domains.length===1 && change.owner.domains[0]==='documentation')return false;
+      return !NARROW_SCOPE_CONTROL_OWNERS.has(change.file)||change.owner.controlQualification!==true;
+    });
+    const pagesChanges=productChanges.filter(change=>change.owner.pagesTransportOnly===true);
+    if(pagesChanges.length&&(!is598||pagesChanges.length!==productChanges.length))return full('PAGES_TRANSPORT_COMBINED_SCOPE');
+    const localRestoreFixture=productChanges.find(change=>change.owner.localRestoreSelfTest===true);
+    if(localRestoreFixture&&(!is598||productChanges.length!==1))return full('LOCAL_RESTORE_FIXTURE_COMBINED_SCOPE');
+    if(localRestoreFixture&&(localRestoreFixture.row.status!=='M'||localRestoreFixture.row.beforeMode!=='100644'))
+      return full('LOCAL_RESTORE_FIXTURE_NOT_EXISTING_REGULAR_SOURCE');
     const blobs=new Map();
     const load=ids=>{
       const wanted=[...new Set(ids)].filter(id=>!blobs.has(id));if(!wanted.length)return;
@@ -185,10 +279,12 @@ export function planSourceDomainImpactFromGit(input){
     const commandsByDomain=Object.fromEntries(domainNames.map(name=>[name,selected.has(name)?[...(registry.commands[name]??[])]:[]]));
     commandsByDomain.controls=[...registry.commonCommands,...(qualification?registry.controlSuite:[])];
     for(const {owner}of changes)for(const [domain,command]of owner.commands??[])commandsByDomain[domain].push(command);
-    const entries=[...new Set(Object.values(commandsByDomain).flat().map(command=>command.split(' ').filter(value=>value.endsWith('.mjs'))).flat())];
+    const entries=[...new Set(Object.values(commandsByDomain).flat()
+      .filter(command=>!localRestoreFixture||command!==LOCAL_RESTORE_SELF_TEST)
+      .flatMap(command=>command.split(' ').filter(value=>value.endsWith('.mjs'))))];
     const pending=[...changes.filter(row=>/\.(?:mjs|js|ts)$/.test(row.file)
-      && !row.owner.exactSourceTransition).map(row=>row.file),...entries];
-    const visited=new Set(),edges=[],closureRows=[];
+      && !row.owner.exactSourceTransition && row!==localRestoreFixture).map(row=>row.file),...entries];
+    const visited=new Set(),edges=[],closureRows=[],pagesRows=[];
     // All reads below are committed blobs. Current runtime hydration is not reset.
     //597 keeps every conservative resource, then loads executable sources only when
     //actually reached. Unvisited definitions were never closure members.594 is unchanged.
@@ -197,11 +293,51 @@ export function planSourceDomainImpactFromGit(input){
       ...changes.map(row=>row.file)])].flatMap(file=>index.has(file)?[index.get(file).oid]:[]));
     const get=file=>{const row=index.get(file);if(!row||row.type!=='blob'||!['100644','100755'].includes(row.mode))throw Error('CLOSURE_SOURCE_MISSING:'+file);
       load([row.oid]);return blobs.get(row.oid);};
+    if(pagesChanges.length){
+      const {callers,frames}=selectedRegistry.pagesTransport;
+      for(const [file,oid]of Object.entries(callers)){
+        const item=index.get(file);
+        if(item?.oid!==oid||item.mode!=='100644'||item.type!=='blob')return full('PAGES_TRANSPORT_CALLER_CHANGED:'+file);
+        closureRows.push({file,mode:item.mode,blob:item.oid,sha256:sha(get(file))});
+      }
+      for(const {file,row}of pagesChanges){
+        if(row.status!=='M'||row.beforeMode!=='100644')return full('PAGES_TRANSPORT_NOT_EXISTING_SOURCE:'+file);
+        load([row.beforeOid]);
+        const before=blobs.get(row.beforeOid),after=get(file);
+        if(pagesTransportFrame(file,before)!==frames[file]||pagesTransportFrame(file,after)!==frames[file])
+          return full('PAGES_TRANSPORT_FRAME_CHANGED:'+file);
+        pagesRows.push({file,mode:row.afterMode,blob:row.afterOid,sha256:sha(after),
+          beforeBlob:row.beforeOid,beforeSha256:sha(before)});
+      }
+    }
     for(const {file,row,owner}of changes)if(owner.exactSourceTransition){
       if(row.beforeMode!=='100644')return full('UNKNOWN_EXACT_SOURCE_TRANSITION:'+file);
       load([row.beforeOid]);const pair=sha(blobs.get(row.beforeOid))+'/'+sha(get(file));
       if(!registry.exactSourceTransitions?.[file]?.includes(pair))return full('UNKNOWN_EXACT_SOURCE_TRANSITION:'+file);
       closureRows.push({file,mode:row.afterMode,blob:row.afterOid,sha256:sha(get(file))});
+    }
+    if(localRestoreFixture){
+      // ROOT independently reviews the whole fixture body before the fixed synthetic command.
+      // Here the committed old/new bytes, import header, CLI dispatcher and normal workflow are bound.
+      const {row}=localRestoreFixture;
+      const workflow=index.get(LOCAL_RESTORE_WORKFLOW);
+      if(workflow?.mode!=='100644'||workflow.type!=='blob'||workflow.oid!==LOCAL_RESTORE_WORKFLOW_BLOB)
+        return full('LOCAL_RESTORE_FIXTURE_WORKFLOW_CHANGED');
+      load([row.beforeOid]);
+      const prior=blobs.get(row.beforeOid),candidate=get(LOCAL_RESTORE_FIXTURE);
+      for(const source of [prior,candidate]){
+        const imports=source.indexOf(LOCAL_RESTORE_IMPORTS),dispatch=source.indexOf(LOCAL_RESTORE_DISPATCH);
+        if(source.length>256*1024||imports<1||dispatch<=imports
+          ||source.indexOf(LOCAL_RESTORE_IMPORTS,imports+1)!==-1
+          ||source.indexOf(LOCAL_RESTORE_DISPATCH,dispatch+1)!==-1
+          ||sha(source.subarray(0,imports))!==LOCAL_RESTORE_IMPORTS_SHA256
+          ||sha(source.subarray(dispatch))!==LOCAL_RESTORE_DISPATCH_SHA256)
+          return full('LOCAL_RESTORE_FIXTURE_IMPORTS_OR_DISPATCH_CHANGED');
+      }
+      closureRows.push({file:LOCAL_RESTORE_FIXTURE,mode:row.afterMode,blob:row.afterOid,sha256:sha(candidate),
+        beforeBlob:row.beforeOid,beforeSha256:sha(prior)});
+      closureRows.push({file:LOCAL_RESTORE_WORKFLOW,mode:workflow.mode,blob:workflow.oid,sha256:sha(get(LOCAL_RESTORE_WORKFLOW))});
+      edges.push([LOCAL_RESTORE_FIXTURE,'read',LOCAL_RESTORE_WORKFLOW]);
     }
     while(pending.length){const file=pending.pop();if(visited.has(file))continue;visited.add(file);
       const known=registry.sources[file];if(!known)return full('UNKNOWN_IMPORT_OR_EXECUTABLE:'+file);
@@ -259,10 +395,12 @@ export function planSourceDomainImpactFromGit(input){
       out.domains[domain]={status:selected.has(domain)?'SELECTED':'NOT_APPLICABLE',executed:false,commands};
     }
     out.commands=[...new Set(Object.values(out.domains).flatMap(domain=>domain.commands))];
-    if(out.commands.some(command=>!/^node(?: --[A-Za-z0-9-]+)*(?: [A-Za-z0-9_./-]+\.mjs)+$/.test(command)))return full('UNSUPPORTED_NORMAL_COMMAND');
+    if(out.commands.includes(LOCAL_RESTORE_SELF_TEST)!==Boolean(localRestoreFixture)
+      ||out.commands.some(command=>command!==LOCAL_RESTORE_SELF_TEST
+        &&!/^node(?: --[A-Za-z0-9-]+)*(?: [A-Za-z0-9_./-]+\.mjs)+$/.test(command)))return full('UNSUPPORTED_NORMAL_COMMAND');
     out.selection=qualification?'CONTROL_QUALIFICATION_REQUIRED':'TARGETED_DOMAINS';
-    out.reasonCodes=qualification?['UNCHANGED_POSTGRES_AND_MODEL_INPUTS','CONTROL_QUALIFICATION_REQUIRED']:['UNCHANGED_POSTGRES_AND_MODEL_INPUTS','CLOSED_REGISTERED_DOMAIN_IMPACT'];
-    const uniqueRows=[...new Map(closureRows.map(row=>[row.file,row])).values()].sort((a,b)=>a.file.localeCompare(b.file,'en'));
+    out.reasonCodes=qualification?['UNCHANGED_POSTGRES_AND_MODEL_INPUTS','CONTROL_QUALIFICATION_REQUIRED']:['UNCHANGED_POSTGRES_AND_MODEL_INPUTS',pagesChanges.length?'CLOSED_PAGES_TRANSPORT_POLICY':'CLOSED_REGISTERED_DOMAIN_IMPACT'];
+    const uniqueRows=[...new Map([...closureRows,...pagesRows].map(row=>[row.file,row])).values()].sort((a,b)=>a.file.localeCompare(b.file,'en'));
     out.closureSha256=sha(JSON.stringify({rows:uniqueRows,edges:[...new Set(edges.map(JSON.stringify))].sort(),
       prerequisites:is598&&out.commands.includes('node --test scripts/test-current-operational-python-contracts.mjs')
         ?{...registry.runtimePrerequisites,pythonStdlibOnly:false,thirdPartyImports:['requests','requests.adapters','urllib3.util.retry','eccodes'],
