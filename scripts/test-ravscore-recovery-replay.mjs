@@ -1,3 +1,4 @@
+import { inverseReviewedSource601HistoricalCodeInput } from './lib/completed-private-runtime-workflow-review.mjs';
 import assert from 'node:assert/strict';
 import { inverseArchivedWeatherRestartUpdater } from './lib/archived-weather-restart-updater-test-input.mjs';
 import crypto from 'node:crypto';
@@ -3357,7 +3358,8 @@ assert.throws(() => buildRavScoreRecoveryReplay({
   publicHourly: [weather(4), weather(4)],
 }), error => error?.code === 'RAVSCORE_RECOVERY_REPLAY_PUBLIC_DUPLICATE');
 
-const productionSource = inverseArchivedWeatherRestartUpdater(await fs.readFile('scripts/update-weather.mjs', 'utf8'));
+const productionSource = inverseArchivedWeatherRestartUpdater(inverseReviewedSource601HistoricalCodeInput(
+  (await fs.readFile('scripts/update-weather.mjs', 'utf8')).replaceAll('\r\n', '\n'), 'scripts/update-weather.mjs'));
 const productionPartPipelineSource = await fs.readFile(
   'scripts/lib/ravscore-production-part-pipeline.mjs',
   'utf8',

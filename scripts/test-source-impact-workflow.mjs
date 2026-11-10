@@ -8,13 +8,13 @@ import {projectSourceImpactWorkflowFull,SOURCE_IMPACT_FULL_WORKFLOW_ORIGIN,
   SOURCE_IMPACT_PR_READ_GRANT,inverseSourceImpactPrReadGrant,inverseSourceImpactSdkEarlyLinux,
   SOURCE_IMPACT_HOUR_EARLY_LINUX_REVIEW,inverseSourceImpactHourEarlyLinux}
   from './lib/source-impact-workflow-review.mjs';
-import {inverseSourceImpactDmiPython,SOURCE_IMPACT_DMI_PYTHON_REVIEW,SOURCE_IMPACT_DMI_REQUIREMENTS_REVIEW} from './lib/source-impact-workflow-review.mjs';
+import {inverseSourceImpactDmiPython,SOURCE_IMPACT_DMI_PYTHON_REVIEW,SOURCE_IMPACT_DMI_REQUIREMENTS_REVIEW,reviewedSourcePrWorkflowOrdinaryView} from './lib/source-impact-workflow-review.mjs';
 import {verifyWorkflow,inverseSourceBeforePostgresWorkflow,inverseCandidatePublicSourceRunLine,
   CURRENT_JOB,AFTER_JOB,verifyReviewed90Workflow} from './national584-source-evidence.mjs';
 import {inverseCurrent586PhaseUpload} from './native-postgres-evidence.mjs';
 
 // Read-only normal caller/contract target. No source suite, SQL, API or provider.
-const actualSource=fs.readFileSync(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8').replace(/\r\n/g,'\n');
+const actualSource=reviewedSourcePrWorkflowOrdinaryView(fs.readFileSync(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8').replace(/\r\n/g,'\n'));
 const source=inverseSourceImpactDmiPython(actualSource);
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const git=(ref,file)=>execFileSync('git',['show',ref+':'+file],{maxBuffer:65536,timeout:10000,
