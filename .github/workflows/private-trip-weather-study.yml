@@ -119,6 +119,7 @@ jobs:
         with:
           node-version: 22
       - uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf
+        if: inputs.operation == 'deliver' || inputs.operation == 'enable'
         with:
           version: 2.117.0
       - name: Restore source-content validation locator
