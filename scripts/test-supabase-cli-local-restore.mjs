@@ -166,7 +166,12 @@ function safeError(error,stage){
     exit:Number.isInteger(error?.exit)?error.exit:null,externalDockerOutcome:'UNKNOWN_UNTIL_OWNED_READBACK',
     ...(ARCHIVE_SQL_OWNERS.includes(error?.inputOwner)?{inputOwner:error.inputOwner}:{}),
     ...(ARCHIVE_ROLE_STATEMENT_STATES.has(error?.code)&&ARCHIVE_SQL_STATEMENTS.includes(error.inputStatement)?{inputStatement:error.inputStatement}:{}),
-    ...(error?.code==='SQLSTATE_42704'&&error.inputOwner==='ROLES'?safeRoleOperands(error.inputRoleOperands):{})};
+    ...(error?.code==='SQLSTATE_42704'&&error.inputOwner==='ROLES'?{
+       ...safeRoleOperands(error.inputRoleOperands),
+       ...(stage==='RESTORE_ARCHIVE_ROLES_SCHEMA_DATA'&&isGrantRoleStatement(error.inputStatement)
+         &&ROLE_OPERAND_LABELS.has(error.missingRoleClass)
+         ?{missingRoleClass:error.missingRoleClass}:{}),
+     }:{})};
 }
 function diagnosticClass(bytes){
   const text=bytes.toString('utf8');
@@ -183,7 +188,7 @@ function diagnosticClass(bytes){
 function archiveInputDiagnostic(diagnostic,code,inputLines){
   const report={inputOwner:'UNKNOWN',...(ARCHIVE_ROLE_STATEMENT_STATES.has(code)&&Object.hasOwn(inputLines,'roleLineClasses')?{inputStatement:'UNKNOWN'}:{})};
   const text=diagnostic.toString('utf8');
-  const frames=text.matchAll(/^psql:<stdin>:([1-9][0-9]{0,9}): ERROR: +([0-9A-Z]{5})\r?$/gm);
+  const frames=text.matchAll(/^psql:<stdin>:([1-9][0-9]{0,9}): ERROR: +([0-9A-Z]{5})(?:: ([^\r\n]*))?\r?$/gm);
   const frame=frames.next().value;
   if(!frame||!frames.next().done||code!=='SQLSTATE_'+frame[2])return report;
   const line=Number(frame[1]);
@@ -195,6 +200,13 @@ function archiveInputDiagnostic(diagnostic,code,inputLines){
     if(code==='SQLSTATE_42704'&&report.inputStatement!=='UNKNOWN'){
       const operands=inputLines.roleLineOperands?.get(line);
       if(operands)report.inputRoleOperands=operands;
+      const missing=frame[3]===undefined?null:UNDEFINED_ROLE_MESSAGE.exec(frame[3]);
+      // The exact verbose location must be the final line. A role identifier can
+      // contain quotes and newlines, so a matching first line alone is insufficient.
+      if(isGrantRoleStatement(report.inputStatement)&&missing
+        &&UNDEFINED_ROLE_LOCATION.test(text.slice(frame.index+frame[0].length))){
+        report.missingRoleClass=roleOperandLabel(missing[1]);
+      }
     }
   }
   return report;
@@ -216,6 +228,9 @@ const FIXED_GUC_LABELS=new Map([['session_replication_role','SESSION_REPLICATION
   ['statement_timeout','STATEMENT_TIMEOUT'],['track_io_timing','TRACK_IO_TIMING']]);
 const GUC_OPERAND_LABELS=new Set([...FIXED_GUC_LABELS.values(),'PGRST_NAMESPACE','PGAUDIT_NAMESPACE','OTHER_GUC_IDENTIFIER']);
 const QUOTED_ROLE_IDENTIFIER='"([A-Za-z_][A-Za-z0-9_]{0,62})"';
+const UNDEFINED_ROLE_MESSAGE=new RegExp('^role '+QUOTED_ROLE_IDENTIFIER+' does not exist$');
+const UNDEFINED_ROLE_LOCATION=/^\r?\nLOCATION: +get_role_oid, acl\.c:[1-9][0-9]{0,9}\r?\n?$/;
+const isGrantRoleStatement=value=>value==='GRANT_ROLE'||value==='CLI_LOGIN_POSTGRES_GRANT';
 const ALTER_ROLE_CONFIG_OPERANDS=new RegExp('^ALTER ROLE '+QUOTED_ROLE_IDENTIFIER+' SET "([a-z][a-z0-9_.]{0,62})" TO .+;$');
 const ALTER_ROLE_ATTRIBUTE_OPERANDS=new RegExp('^ALTER ROLE '+QUOTED_ROLE_IDENTIFIER+' WITH .+;$');
 const GRANT_ROLE_OPERANDS=new RegExp('^GRANT '+QUOTED_ROLE_IDENTIFIER+' TO '+QUOTED_ROLE_IDENTIFIER
@@ -579,7 +594,7 @@ function archiveBootstrapPsqlArguments(c,p){
     'test "${POSTGRES_HOST:-}" = /var/run/postgresql',
     'test -n "${POSTGRES_PASSWORD:-}"',
     'unset PGSERVICE PGSERVICEFILE PGOPTIONS',
-    'PGPASSWORD="$POSTGRES_PASSWORD" PGPASSFILE=/dev/null PGCONNECT_TIMEOUT=5 exec psql -X -w --host=/var/run/postgresql --port=5432 --username=supabase_admin --dbname=postgres --quiet --single-transaction --variable=ON_ERROR_STOP=1 --set=VERBOSITY=sqlstate --tuples-only --no-align --command="$1" --file=-',
+    'PGPASSWORD="$POSTGRES_PASSWORD" PGPASSFILE=/dev/null PGCONNECT_TIMEOUT=5 LC_ALL=C exec psql -X -w --host=/var/run/postgresql --port=5432 --username=supabase_admin --dbname=postgres --quiet --single-transaction --variable=ON_ERROR_STOP=1 --set=VERBOSITY=verbose --set=SHOW_CONTEXT=never --tuples-only --no-align --command="$1" --file=-',
   ].join('\n');
   // Run the initial role assertion before stdin so archive error line numbers stay physical.
   const bootstrapRole="DO $rr_restore$ BEGIN IF session_user <> 'supabase_admin' OR current_user <> 'supabase_admin' THEN RAISE SQLSTATE '42501'; END IF; END; $rr_restore$;";
@@ -894,6 +909,7 @@ async function selfTest(){
     const p={side:'B',db:'a'.repeat(64)},args=archiveBootstrapPsqlArguments({archive:true},p);
     assert.deepEqual(args.slice(0,5),['exec','-i',p.db,'sh','-ceu']);
     assert.match(args[5],/PGPASSWORD="\$POSTGRES_PASSWORD" .*--host=\/var\/run\/postgresql .*--username=supabase_admin .*--single-transaction .*--variable=ON_ERROR_STOP=1 .*--command="\$1" --file=-$/);
+    assert.match(args[5],/ LC_ALL=C exec psql .* --set=VERBOSITY=verbose --set=SHOW_CONTEXT=never /);
     assert.match(args[7],/session_user <> 'supabase_admin' OR current_user <> 'supabase_admin'/);
     for(const [c,target] of [[{archive:false},p],[{archive:true},{...p,side:'A'}],[{archive:true},{...p,db:'other'}]])
       assert.throws(()=>archiveBootstrapPsqlArguments(c,target),e=>e.code==='ARCHIVE_BOOTSTRAP_TARGET');
@@ -995,6 +1011,68 @@ async function selfTest(){
         });
       }
     },{roleSql:sql});
+  });
+
+  test('owned archive GRANT 42704 projects only the exact missing role class',async()=>{
+    const location='LOCATION:  get_role_oid, acl.c:1234\n';
+    const detail=name=>'psql:<stdin>:2: ERROR:  42704: role "'+name+'" does not exist\n';
+    const roleSql='-- synthetic\nGRANT "supabase_fixture_role", "postgres" TO "fixture_member";\n'
+      +'ALTER ROLE "fixture_member" WITH LOGIN;\n';
+    await ownArchive(async({c,env,index,materialize})=>{
+      const archive=await materializeArchiveInputs(c,index,{env,archive:materialize});
+      const inputLines={next:1,ranges:new Map(),roleLineClasses:null};
+      for await(const _chunk of materializedRestoreBytes(c,archive,false,inputLines)){}
+      const report=(stderr,code='SQLSTATE_42704')=>archiveInputDiagnostic(Buffer.from(stderr),code,inputLines);
+      for(const [name,label]of [['postgres','POSTGRES'],['cli_login_postgres','CLI_LOGIN_POSTGRES'],
+        ['supabase_fixture_role','RESERVED_SUPABASE_NAMESPACE'],['cli_login_fixture','RESERVED_CLI_LOGIN_NAMESPACE'],
+        ['fixture_private_member','OTHER_ROLE_IDENTIFIER']]){
+        const failure=report(detail(name)+location);
+        assert.deepEqual(failure,{inputOwner:'ROLES',inputStatement:'GRANT_ROLE',missingRoleClass:label});
+        const safe=safeError({code:'SQLSTATE_42704',exit:3,...failure},'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA');
+        assert.equal(safe.missingRoleClass,label);
+        assert(!JSON.stringify(safe).includes(name),'raw role identifier must not be reported');
+      }
+      assert.equal(report((detail('postgres')+location).replaceAll('\n','\r\n')).missingRoleClass,'POSTGRES');
+      for(const text of [detail('postgres'),detail('postgres')+location+'extra\n',
+        detail('postgres')+location+detail('anon')+location,
+        detail('postgres')+'more " does not exist\n'+location,
+        detail('postgres" does not exist\n'+location+'private-tail')+location,
+        detail('private ø')+location,detail('postgres').replace(':2:',':3:')+location,
+        detail('postgres').replace(':2:',':5:')+location,
+        detail('postgres').replace('42704','42501')+location,
+        detail('postgres')+location.replace('get_role_oid','unexpected'),
+        detail('postgres')+location.replace('acl.c','unrelated.c'),
+        detail('postgres').replace('role "postgres"','relation "postgres"')+location,
+        'psql:<stdin>:2: ERROR:  42704\n',
+        'ERROR:  42704: role "postgres" does not exist\n'+location]){
+        assert.equal(report(text).missingRoleClass,undefined);
+      }
+      assert.equal(report(detail('postgres')+location,'SQLSTATE_42501').missingRoleClass,undefined);
+      for(const invalid of [{missingRoleClass:'raw_private_identifier'},{inputOwner:'DATA'},
+        {inputStatement:'ALTER_ROLE'},{code:'SQLSTATE_42501'}]){
+        assert.equal(safeError({code:'SQLSTATE_42704',inputOwner:'ROLES',inputStatement:'GRANT_ROLE',
+          missingRoleClass:'POSTGRES',...invalid},'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA').missingRoleClass,undefined);
+      }
+      assert.equal(safeError({code:'SQLSTATE_42704',inputOwner:'ROLES',inputStatement:'GRANT_ROLE',
+        missingRoleClass:'POSTGRES'},'RESTORE_ARCHIVE_HISTORY').missingRoleClass,undefined);
+      Object.assign(c,{home:c.root,processes:[]});
+      const streamed={next:1,ranges:new Map(),roleLineClasses:null};
+      const stderr=detail('fixture_private_member')+location;
+      const child=['-e','process.stdin.resume();process.stdin.on("end",()=>{process.stderr.write('
+        +JSON.stringify(stderr)+',()=>process.exit(3))})'];
+      await assert.rejects(command(c,'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA',process.execPath,child,
+        {input:materializedRestoreBytes(c,archive,false,streamed),archivePsql:true,inputLines:streamed}),
+      error=>{
+        assert.deepEqual(safeError(error,'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA'),{
+          stage:'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA',code:'SQLSTATE_42704',exit:3,
+          externalDockerOutcome:'UNKNOWN_UNTIL_OWNED_READBACK',inputOwner:'ROLES',inputStatement:'GRANT_ROLE',
+          missingRoleClass:'OTHER_ROLE_IDENTIFIER',
+        });
+        assert(!JSON.stringify(error).includes('fixture_private_member'));
+        return true;
+      });
+      assert(c.processes.every(p=>p.processGroupClosed));
+    },{roleSql});
   });
 
   test('hosted archive reports exclude private backup descriptors and process byte counts',()=>{
