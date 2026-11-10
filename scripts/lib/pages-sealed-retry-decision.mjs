@@ -2,7 +2,8 @@ import { classifyPagesStatus } from './pages-per-artifact-identity.mjs';
 
 const sha = /^[a-f0-9]{64}$/;
 const commit = /^[a-f0-9]{40}$/;
-export const MINIMUM_RECOVERY_WINDOW_MS = 19 * 60 * 1000;
+const minute = 60_000;
+export const MINIMUM_RECOVERY_WINDOW_MS = 19 * minute;
 const MINIMUM_OBSERVATIONS = 2;
 const MAXIMUM_OBSERVATIONS = 121;
 const known = Object.freeze({
@@ -10,6 +11,21 @@ const known = Object.freeze({
   retry: 'RETRY_SAME_SEALED_PACKAGE_ONCE',
   hold: 'HOLD_PUBLICATION',
 });
+
+export function getOrdinaryPagesRetryDeadline({ createdAt, startedAt, jobStartedMs, nowMs }) {
+  const created = Date.parse(createdAt);
+  const started = Date.parse(startedAt);
+  if (!Number.isFinite(created) || !Number.isFinite(started) || created > started
+    || !Number.isSafeInteger(jobStartedMs) || started > jobStartedMs || jobStartedMs > nowMs
+    || !Number.isSafeInteger(nowMs)) throw new Error('PAGES_RETRY_JOB_CLOCK');
+
+  // A queued run belongs to its original dispatch slot. Runner startup must
+  // never buy it more retry time after a new weather slot has already arrived.
+  const cadence = 4 * 60 * minute;
+  const offset = 19 * minute;
+  const nextSlot = (Math.floor((created - offset) / cadence) + 1) * cadence + offset;
+  return Math.min(jobStartedMs + 35 * minute, nextSlot);
+}
 
 // A read-only decision. The caller still owns the normal main/runner/writer
 // fences, the exact package, and the existing full public verification.

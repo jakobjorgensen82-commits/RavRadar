@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createServer, request as httpRequest } from 'node:http';
 import { runSealedPagesDeployment, postJsonOnce } from './lib/run-sealed-pages-deployment.mjs';
 import { publishSealedPagesWithRecovery } from './lib/publish-sealed-pages-with-recovery.mjs';
-import { selectSealedPagesRecovery, MINIMUM_RECOVERY_WINDOW_MS } from './lib/pages-sealed-retry-decision.mjs';
+import { selectSealedPagesRecovery, getOrdinaryPagesRetryDeadline, MINIMUM_RECOVERY_WINDOW_MS } from './lib/pages-sealed-retry-decision.mjs';
 
 const binding = Object.fromEntries([
   'modelId', 'stateSchemaVersion', 'variantId', 'profileId', 'componentSchemaId',
@@ -96,6 +96,15 @@ function fakeService({ replayOldStatus = false, duplicate = false, createThrows 
   });
   return { posts, reads, intents, cancels, deploy };
 }
+
+test('the retry window is tied to the dispatch even when the runner starts after the next slot', () => {
+  const at = time => '2026-11-10T' + time + ':00Z';
+  const queued = { createdAt: at('12:19'), startedAt: at('16:20'),
+    jobStartedMs: Date.parse(at('16:21')), nowMs: Date.parse(at('16:32')) };
+  assert.equal(getOrdinaryPagesRetryDeadline(queued), Date.parse(at('16:19')));
+  assert.equal(getOrdinaryPagesRetryDeadline({ ...queued, createdAt: at('16:19') }), Date.parse(at('16:56')));
+  assert.throws(() => getOrdinaryPagesRetryDeadline({ ...queued, createdAt: at('16:21') }), /PAGES_RETRY_JOB_CLOCK/);
+});
 
 test('normal server path uses the exact accepted artifact and unique status route', async () => {
   const server = fakeService();

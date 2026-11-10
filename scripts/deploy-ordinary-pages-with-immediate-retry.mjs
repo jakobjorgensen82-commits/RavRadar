@@ -6,6 +6,7 @@ import { readBoundedPublicManifest } from './lib/pages-generation-order.mjs';
 import { runSealedPagesDeployment } from './lib/run-sealed-pages-deployment.mjs';
 import { classifyPagesStatus } from './lib/pages-per-artifact-identity.mjs';
 import { publishSealedPagesWithRecovery } from './lib/publish-sealed-pages-with-recovery.mjs';
+import { getOrdinaryPagesRetryDeadline, MINIMUM_RECOVERY_WINDOW_MS } from './lib/pages-sealed-retry-decision.mjs';
 import { classifyProductionTargetFreshness } from './check-production-target-freshness.mjs';
 import { sha256CanonicalJson } from './ravscore-operational-pages-recovery.mjs';
 
@@ -13,18 +14,10 @@ const api = 'https://api.github.com';
 const repo = 'jakobjorgensen82-commits/RavRadar';
 const publicBase = 'https://ravradar.dk/';
 const minute = 60_000;
-const slotLength = 4 * 60 * minute;
-const slotOffset = 19 * minute;
 const retryPollMs = 6 * minute;
 const firstPollMs = 10 * minute;
-const pagesJobBudgetMs = 35 * minute;
 const fixedRunId = /^[1-9]\d{0,15}$/;
 const hex40 = /^[0-9a-f]{40}$/;
-
-function nextOrdinarySlot(start) {
-  const currentSlot = Math.floor((start - slotOffset) / slotLength) * slotLength + slotOffset;
-  return currentSlot + slotLength;
-}
 
 async function readJson(url, { headers, maximumBytes = 256 * 1024 } = {}) {
   const response = await fetch(url, { redirect: 'error', headers, signal: AbortSignal.timeout(12_000) });
@@ -48,11 +41,10 @@ async function main(env) {
     && run.head_branch === 'main' && run.status === 'in_progress'
     && run.event === 'workflow_dispatch' && run.actor?.login === 'github-actions[bot]',
   'PAGES_RETRY_RUN_IDENTITY');
-  const started = Date.parse(run.run_started_at);
-  const jobStarted = Number(env.RAVRADAR_PAGES_JOB_STARTED_MS);
-  assert(Number.isFinite(started) && Number.isSafeInteger(jobStarted) && started <= jobStarted
-    && jobStarted <= Date.now(), 'PAGES_RETRY_JOB_CLOCK');
-  const deadline = Math.min(jobStarted + pagesJobBudgetMs, nextOrdinarySlot(started));
+  const deadline = getOrdinaryPagesRetryDeadline({
+    createdAt: run.created_at, startedAt: run.run_started_at,
+    jobStartedMs: Number(env.RAVRADAR_PAGES_JOB_STARTED_MS), nowMs: Date.now(),
+  });
   const timeRemainingMs = () => deadline - Date.now();
 
   const handoff = path.resolve(env.RAVRADAR_OPERATIONAL_HANDOFF);
@@ -90,7 +82,7 @@ async function main(env) {
       if (!await revalidateWriter() || await readPublic() !== predecessorSha256) return false;
       if (deliveryOrdinal === 2) {
         const first = deliveries[0];
-        if (timeRemainingMs() < 19 * minute || first?.outcome !== 'FAILED') return false;
+        if (timeRemainingMs() < MINIMUM_RECOVERY_WINDOW_MS || first?.outcome !== 'FAILED') return false;
         const url = first.receipt.statusUrl;
         const response = await readJson(url, { headers: githubHeaders, maximumBytes: 64 * 1024 });
         const observed = classifyPagesStatus({ status: 200, url, data: response }, first.receipt);
@@ -98,6 +90,7 @@ async function main(env) {
       }
       const currentSeal = await readHandoff('pages-artifact-seal.json');
       if (sha256CanonicalJson(currentSeal) !== sha256CanonicalJson(expectedSeal)) return false;
+      if (deliveryOrdinal === 2 && timeRemainingMs() < MINIMUM_RECOVERY_WINDOW_MS) return false;
       const file = path.join(receiptDir, 'rr-pages-' + runId + '-' + deliveryOrdinal + '.json');
       await fs.writeFile(file, JSON.stringify(intent) + '\n', { flag: 'wx', mode: 0o600 });
       return true;
