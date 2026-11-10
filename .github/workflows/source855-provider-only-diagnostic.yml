@@ -19,7 +19,7 @@ jobs:
       - name: Check out the exact public synthetic fixture source
         uses: actions/checkout@v7
         with:
-          ref: 4919bb17d4098a3c6e75a3a3e284ceda95da9adb
+          ref: 4fd88315823a4afd41372d08093ae244d401edb3
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@v7
@@ -44,8 +44,8 @@ jobs:
           set -eu
           umask 077
           repo=$(pwd -P)
-          head=4919bb17d4098a3c6e75a3a3e284ceda95da9adb
-          tree=9c7332f682855a50774bae4f2fdcdc8adcd78e58
+          head=4fd88315823a4afd41372d08093ae244d401edb3
+          tree=bce356d1d4c950eca0abd98ea7d08b2b463090ee
           export GIT_NO_LAZY_FETCH=1 GIT_NO_REPLACE_OBJECTS=1 GIT_OPTIONAL_LOCKS=0
           export GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null
           actual_head=$(git -c protocol.allow=never rev-parse HEAD^{commit})
@@ -120,6 +120,23 @@ jobs:
                       os.fsync(stream.fileno())
               result['exitCode'] = child.returncode
               result['outcome'] = 'CHILD_SUCCESS' if child.returncode == 0 else 'CHILD_FAILED'
+              if child.returncode == 0:
+                  phase = 'RESULT'
+                  result['outcome'] = 'REFUSED'
+                  evidence = json.loads(observer.source_current_cohort_read(own / 'fixture-current598',
+                      'native-provider-raw-inputs.json', 4 * 1024 * 1024))
+                  assert evidence['syntheticTestInput'] is True and evidence['productionProof'] is False
+                  assert evidence['profile'] == 'current598-preparation'
+                  assert evidence['partCount'] == 673 and evidence['privateHistoryInputHours'] == 48
+                  assert evidence['publicForecastInputHours'] == 118 and evidence['privateTPlus3SupportHours'] == 3
+                  waves = evidence['actualDecodedWeatherObservations']
+                  counts = {kind: sum(row['collection'] == kind and isinstance(row['acceptedNativeTargetCount'], int)
+                                      and row['acceptedNativeTargetCount'] > 0 for row in waves)
+                            for kind in ('wam_nsb', 'wam_dw')}
+                  assert set(counts.values()) == {169}
+                  result['coverage'] = {'parts': 673, 'publicHours': 118, 'supportHours': 3,
+                                        'historyHours': 48, 'decodedWamAssets': counts}
+                  result['outcome'] = 'CHILD_SUCCESS'
               if child.returncode != 0:
                   failure = observer.current_provider_failure(own, root)
                   result['providerFailure'] = failure

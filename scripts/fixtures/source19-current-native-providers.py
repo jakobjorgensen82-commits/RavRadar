@@ -238,7 +238,7 @@ def prepare(node, target, initial_phase=None, *, current598=False, code598_root=
             DMI_STAC_ROOT="https://current-source-native.invalid/v1/forecastdata", PYTHONDONTWRITEBYTECODE="1")
         os.chdir(normal_root)
         sys.path.insert(0, str(normal_root / "scripts"))
-        producer = module("current_native_real_dmi_decoder", normal_root / "scripts/update-dmi-bulk.py")
+        producer = import_native_decoder(normal_root, current598=current598)
         if code598_root is not None:
             need(producer.ROOT.resolve() == normal_root and producer.RAW_DIR.resolve() == normal_root / ".cache/dmi-grib",
                  "CODE598_NORMAL_CANONICAL_RAW_ROOT")
@@ -419,6 +419,25 @@ def prepare(node, target, initial_phase=None, *, current598=False, code598_root=
         sys.path[:] = old_path
         os.environ.clear()
         os.environ.update(previous_env)
+
+
+def import_native_decoder(normal_root, *, current598):
+    program = normal_root / "scripts/update-dmi-bulk.py"
+    if not current598:
+        return module("current_native_real_dmi_decoder", program)
+    # Only the credential-free synthetic asset factory shares this import clock.
+    # Keep 20 minutes of work and the existing three-minute finalization reserve.
+    limits = {"DMI_BULK_MAX_RUNTIME_SECONDS": "1380", "DMI_BULK_FINALIZE_RESERVE_SECONDS": "180"}
+    previous = {key: os.environ.get(key) for key in limits}
+    try:
+        os.environ.update(limits)
+        return module("current_native_real_dmi_decoder", program)
+    finally:
+        for key, value in previous.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
 
 
 def finish_normal_basis(node, out, reference, producer, targets, document, *, initial_phase=None, current598=False, code598_root=None):
