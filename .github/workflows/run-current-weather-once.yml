@@ -104,9 +104,12 @@ jobs:
       contents: read
       actions: read
     outputs:
+      ordinary_scheduled: ${{ steps.automatic-completed-scope.outputs.eligible }}
       target_hour: ${{ steps.target-selection.outputs.target_hour }}
       completed_private_runtime: ${{ steps.target-selection.outputs.completed_private_runtime }}
       completed_private_runtime_pin: ${{ steps.target-selection.outputs.completed_private_runtime_pin }}
+      fresh_after_pages_failure: ${{ steps.target-selection.outputs.fresh_after_pages_failure }}
+      prior_pages_anchor: ${{ steps.target-selection.outputs.prior_pages_anchor }}
     steps:
       - uses: actions/checkout@v7
 
@@ -289,7 +292,7 @@ jobs:
           assert.equal(process.env.CHECKPOINT_TARGET_HOUR, NATIVE_IDENTITY_ORIGINAL_PROGRESS.target.replace('.000Z', 'Z'));
           NODE
 
-      - name: Select provider-free continuation for the default scheduled caller
+      - name: Select fresh weather and verify a prior closed Pages outcome
         id: automatic-completed-target
         if: steps.automatic-completed-scope.outputs.eligible == 'true'
         env:
@@ -319,18 +322,23 @@ jobs:
           AUTO_COMPLETED: ${{ steps.automatic-completed-target.outputs.completed_private_runtime }}
           AUTO_TARGET: ${{ steps.automatic-completed-target.outputs.target_hour }}
           AUTO_PIN: ${{ steps.automatic-completed-target.outputs.completed_private_runtime_pin }}
+          AUTO_ELIGIBLE: ${{ steps.automatic-completed-scope.outputs.eligible }}
+          AUTO_FRESH_AFTER_CANCELLED_REPLAY: ${{ steps.automatic-completed-target.outputs.fresh_after_pages_failure }}
+          AUTO_REPEAT_ANCHOR: ${{ steps.automatic-completed-target.outputs.prior_pages_anchor }}
           CHECKPOINT_TARGET: ${{ steps.checkpoint-target.outputs.target_hour }}
           CACHE_TARGET: ${{ steps.cache-state.outputs.target_hour }}
         run: |
           set -euo pipefail
+          fresh_after_pages_failure=false
+          if test -n "$AUTO_FRESH_AFTER_CANCELLED_REPLAY$AUTO_REPEAT_ANCHOR"; then
+            test "$AUTO_ELIGIBLE:$AUTO_OUTCOME:$AUTO_COMPLETED:$REQUESTED_COMPLETED" = true:success:false:false
+            test "$AUTO_FRESH_AFTER_CANCELLED_REPLAY" = true
+            [[ "$AUTO_REPEAT_ANCHOR" =~ ^[a-f0-9]{64}$ ]]
+            test -z "$CHECKPOINT_TARGET"
+            test -n "$CACHE_TARGET"
+            fresh_after_pages_failure=true
+          fi
           case "$AUTO_OUTCOME:$AUTO_COMPLETED" in
-            success:true)
-              test "$REQUESTED_COMPLETED" = false
-              test -z "$MANUAL_TARGET$MANUAL_PIN$CHECKPOINT_TARGET$CACHE_TARGET"
-              completed=true
-              target="$AUTO_TARGET"
-              pin="$AUTO_PIN"
-              ;;
             skipped:|success:false)
               test -z "$AUTO_TARGET$AUTO_PIN"
               completed="$REQUESTED_COMPLETED"
@@ -352,6 +360,8 @@ jobs:
           if test "$completed" = true; then [[ "$pin" =~ ^[a-f0-9]{64}$ ]]; fi
           printf 'completed_private_runtime=%s\ntarget_hour=%s\ncompleted_private_runtime_pin=%s\n' \
             "$completed" "$target" "$pin" >> "$GITHUB_OUTPUT"
+          printf 'fresh_after_pages_failure=%s\nprior_pages_anchor=%s\n' \
+            "$fresh_after_pages_failure" "$AUTO_REPEAT_ANCHOR" >> "$GITHUB_OUTPUT"
 
   native-identity-prewrite:
     name: Authenticate originals and install only the two exact recovery phases
@@ -977,6 +987,8 @@ jobs:
       production_target_hour: ${{ needs.current-main-target.outputs.target_hour }}
       completed_private_runtime: ${{ needs.current-main-target.outputs.completed_private_runtime == 'true' }}
       completed_private_runtime_pin: ${{ needs.current-main-target.outputs.completed_private_runtime_pin }}
+      fresh_after_pages_failure: ${{ needs.current-main-target.outputs.fresh_after_pages_failure == 'true' }}
+      prior_pages_anchor: ${{ needs.current-main-target.outputs.prior_pages_anchor }}
       completed_stage_source: ${{ inputs.completed_stage_source }}
       force: true
       extended_provider_bootstrap: ${{ inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true }}
@@ -1014,7 +1026,7 @@ jobs:
 
   deploy-pages:
     name: Deploy prepared Pages artifact through reusable workflow
-    needs: build-and-prepare
+    needs: [current-main-target, build-and-prepare]
     if: ${{ !cancelled() && github.ref == 'refs/heads/main' && needs.build-and-prepare.result == 'success' && needs.build-and-prepare.outputs.should_deploy == 'true' }}
     permissions:
       contents: read
@@ -1023,6 +1035,7 @@ jobs:
       id-token: write
     uses: ./.github/workflows/reusable-pages-deploy.yml
     with:
+      ordinary_immediate_retry: ${{ needs.current-main-target.outputs.ordinary_scheduled == 'true' }}
       active_deployment_id: ${{ needs.build-and-prepare.outputs.active_deployment_id }}
       central_version: ${{ needs.build-and-prepare.outputs.central_version }}
       code_only_repair: false

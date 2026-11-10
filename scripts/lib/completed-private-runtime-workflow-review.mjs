@@ -901,6 +901,7 @@ for (const row of Object.values(ordinaryStageWiringReview)) {
 Object.freeze(ordinaryStageWiringReview);
 // Exact586 then585 normal User-Agent inverses; every historical workflow byte remains the oracle.
 export function inverseRelease585WorkflowUserAgents(source, role) {
+  source = inverseImmediateOrdinaryPagesWorkflow(source, role);
   source = inverseNativeOriginalSchemaSelectorWorkflow(source, role);
   if (role === 'build' && sha(source) === '8223891e25cfb7fbcf57a536bcc55a1cbf59ed676f02172588192065ae4eccc0') {
     assert.equal(source.split('RavRadar/4.0.586').length, 6, 'Exactly five normal586 User-Agent fields');
@@ -1087,7 +1088,25 @@ export function inversePairedPrivateRuntimePublication(source, role) {
 const automaticCompletedPagesReview = JSON.parse(fs.readFileSync(
   new URL('./automatic-completed-pages-workflow-review.json', import.meta.url), 'utf8'));
 
+const immediateOrdinaryPagesReview = JSON.parse(fs.readFileSync(
+  new URL('./immediate-ordinary-pages-workflow-review.json', import.meta.url), 'utf8'));
+
+export function inverseImmediateOrdinaryPagesWorkflow(source, role) {
+  const row = Object.hasOwn(immediateOrdinaryPagesReview, role) ? immediateOrdinaryPagesReview[role] : null;
+  if (!row || typeof source !== 'string' || Buffer.byteLength(source) !== row.after.bytes
+      || sha(source) !== row.after.sha256) return source;
+  let bytes = Buffer.from(source);
+  for (const [offset, length, afterSha256, original] of [...row.inverse].reverse()) {
+    assert.equal(sha(bytes.subarray(offset, offset + length)), afterSha256, 'PAGES_IMMEDIATE_WORKFLOW_HUNK_CHANGED');
+    bytes = Buffer.concat([bytes.subarray(0, offset), Buffer.from(original), bytes.subarray(offset + length)]);
+  }
+  assert.equal(bytes.length, row.before.bytes, 'PAGES_IMMEDIATE_WORKFLOW_PREDECESSOR_SIZE');
+  assert.equal(sha(bytes), row.before.sha256, 'PAGES_IMMEDIATE_WORKFLOW_PREDECESSOR_CHANGED');
+  return bytes.toString('utf8');
+}
+
 export function inverseAutomaticCompletedPagesWorkflow(source, role) {
+  source = inverseImmediateOrdinaryPagesWorkflow(source, role);
   const { before, after, applyInThisOrder } = automaticCompletedPagesReview;
   if (role !== 'once' || typeof source !== 'string'
     || Buffer.byteLength(source) !== after.bytes || sha(source) !== after.sha256) return source;

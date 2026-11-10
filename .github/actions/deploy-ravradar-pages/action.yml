@@ -1,0 +1,38 @@
+name: Deploy the exact RavRadar Pages artifact
+description: Use the normal Pages path or a bounded same-job retry for scheduled weather.
+inputs:
+  artifact_name:
+    description: Exact upload name
+    required: true
+  immediate_retry:
+    description: Allow the checked ordinary-weather path
+    required: true
+  github_token:
+    description: Existing Pages writer job token
+    required: true
+outputs:
+  page_url:
+    description: Target URL from the exact deployment receipt
+    value: ${{ steps.scheduled.outputs.page_url || steps.standard.outputs.page_url }}
+  closed_unpublished:
+    description: All submitted Pages writes are terminal and the exact predecessor is still public
+    value: ${{ steps.scheduled.outputs.closed_unpublished }}
+runs:
+  using: composite
+  steps:
+    - name: Deploy with the standard Pages action
+      id: standard
+      if: inputs.immediate_retry != 'true'
+      uses: actions/deploy-pages@v5
+      with:
+        artifact_name: ${{ inputs.artifact_name }}
+        token: ${{ inputs.github_token }}
+    - name: Deploy ordinary weather with one bounded immediate retry
+      id: scheduled
+      if: inputs.immediate_retry == 'true'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
+        RAVRADAR_ORDINARY_PAGES_RETRY: ${{ inputs.immediate_retry }}
+        RAVRADAR_PAGES_ARTIFACT_NAME: ${{ inputs.artifact_name }}
+      run: node scripts/deploy-ordinary-pages-with-immediate-retry.mjs

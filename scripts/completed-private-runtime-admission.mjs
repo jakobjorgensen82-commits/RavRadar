@@ -116,16 +116,16 @@ export async function readCompletedPrivateRuntimePin(request = null) {
 }
 
 export async function admitCompletedPrivateRuntime({ root, privateRoot, bundle, currentPath,
-  restoredPath, expectedPath, activePath, checkpointPath, receiptPath, target, head,
-  readPin = readCompletedPrivateRuntimePin }) {
+  restoredPath, expectedPath, activePath, activeSource, checkpointPath, receiptPath, target, head,
+  expectedPin = process.env.COMPLETED_PRIVATE_RUNTIME_PIN, readPin = readCompletedPrivateRuntimePin }) {
   const verified = await atBoundary('restore', async () => verifyPrivateProductionRuntimeBundle({ privateRoot, bundlePath: bundle,
     repositoryRoot: root, expected: await json(expectedPath) }));
   const manifest = verified.manifest;
   const [current, restored, expected, active] = await atBoundary('identity', () => Promise.all(
-    [currentPath, restoredPath, expectedPath, activePath].map(json)));
+    [json(currentPath), json(restoredPath), json(expectedPath), activeSource ?? json(activePath)]));
   const live = await readPin();
   await atBoundary('pointer', () => {
-  assert.equal(live.pin, process.env.COMPLETED_PRIVATE_RUNTIME_PIN, 'COMPLETED_RUNTIME_POINTER_CHANGED');
+  assert.equal(live.pin, expectedPin, 'COMPLETED_RUNTIME_POINTER_CHANGED');
   for (const key of [...tuple, 'sourceHead', 'modelBinding', 'contractHashes'])
     assert(same(live.descriptor[key], current[key]), 'COMPLETED_RUNTIME_DESCRIPTOR_CHANGED');
   });

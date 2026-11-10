@@ -285,7 +285,10 @@ test('277-shaped completed B/S reentry accepts only the exact terminal exhausted
     readEvidence: (saved, context) => readOrdinaryPagesEvidence({ read, saved, context }),
   });
   assert.equal(await previousOrdinaryHadPagesFailure(read, ordinaryContext), true);
-  assert.deepEqual(await select(), { mode: 'COMPLETED', targetHour: saved.productionReferenceAt, pin: digest });
+  const selected = await select();
+  assert.equal(selected.mode, 'FETCH_AFTER_PAGES_FAILURE');
+  assert.match(selected.priorPagesAnchor, /^[a-f0-9]{64}$/);
+  assert.equal(Object.hasOwn(selected, 'targetHour') || Object.hasOwn(selected, 'pin'), false);
   assert.equal(calls.filter(route => route.endsWith('/artifacts?per_page=100')).length, 1);
   assert.equal(calls.some(route => route.includes('/logs')), false);
   artifact.digest = 'mismatch';

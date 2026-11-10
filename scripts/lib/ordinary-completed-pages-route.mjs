@@ -21,7 +21,7 @@ function requireSameBinding(left, right) {
 // compares the whole S checkpoint and repeats normal no-loss and Pages gates.
 export function classifyOrdinaryPagesContinuation({
   head, consumerRunId, publicManifest, publicManifestSha256,
-  active, saved, targetManifest, targetManifestSha256, seal, cancelled, visibilityExhausted,
+  active, saved, targetManifest, targetManifestSha256, seal, cancelled, visibilityExhausted, terminalUnpublished,
 }) {
   assert(commit.test(head ?? '') && positive(consumerRunId), 'PAGES_SAVED_INVALID_CALLER');
   assert(publicManifest?.complete === true && publicManifest.zoneCount === 210
@@ -44,7 +44,7 @@ export function classifyOrdinaryPagesContinuation({
 
   assert(saved.datasetId !== publicManifest.datasetId, 'PAGES_SAVED_REUSED_DATASET');
   if (visibilityExhausted != null) {
-    assert(cancelled == null && seal == null && targetManifest == null && targetManifestSha256 == null
+    assert(cancelled == null && terminalUnpublished == null && seal == null && targetManifest == null && targetManifestSha256 == null
       && visibilityExhausted.kind === 'PAGES_ARTIFACT_VISIBILITY_EXHAUSTED_CONFIRMED'
       && positive(visibilityExhausted.runId) && visibilityExhausted.runId < consumerRunId
       && visibilityExhausted.runAttempt === 1 && visibilityExhausted.headSha === head
@@ -60,17 +60,19 @@ export function classifyOrdinaryPagesContinuation({
       publicManifestSha256,
     });
   }
-  if (cancelled == null) return Object.freeze({ route: 'unresolved' });
-  assert(cancelled.kind === 'PAGES_DEPLOYMENT_CANCELLED_CONFIRMED'
-    && positive(cancelled.jobId) && positive(cancelled.runId) && cancelled.runId < consumerRunId
-    && cancelled.runAttempt === 1 && cancelled.headSha === head
-    && positive(cancelled.artifactId) && sha256.test(cancelled.artifactDigestSha256 ?? ''),
+  if (cancelled == null && terminalUnpublished == null) return Object.freeze({ route: 'unresolved' });
+  assert(cancelled == null || terminalUnpublished == null, 'PAGES_SAVED_MULTIPLE_TERMINAL_PROOFS');
+  const closed = cancelled ?? terminalUnpublished;
+  assert(closed.kind === (cancelled ? 'PAGES_DEPLOYMENT_CANCELLED_CONFIRMED' : 'PAGES_SCHEDULED_WRITES_TERMINAL_UNPUBLISHED')
+    && positive(closed.jobId) && positive(closed.runId) && closed.runId < consumerRunId
+    && closed.runAttempt === 1 && closed.headSha === head
+    && positive(closed.artifactId) && sha256.test(closed.artifactDigestSha256 ?? ''),
   'PAGES_SAVED_CANCELLATION_NOT_EXACT');
 
   assert(seal?.artifactName === 'github-pages' && seal.ref === 'refs/heads/main'
-    && seal.headSha === head && seal.runId === cancelled.runId && seal.runAttempt === cancelled.runAttempt
-    && seal.artifactId === cancelled.artifactId
-    && seal.artifactDigestSha256 === cancelled.artifactDigestSha256
+    && seal.headSha === head && seal.runId === closed.runId && seal.runAttempt === closed.runAttempt
+    && seal.artifactId === closed.artifactId
+    && seal.artifactDigestSha256 === closed.artifactDigestSha256
     && seal.targetPublicManifestSha256 === targetManifestSha256 && sha256.test(targetManifestSha256 ?? ''),
   'PAGES_SAVED_ARTIFACT_DRIFT');
   assert(targetManifest?.complete === true && targetManifest.zoneCount === 210
@@ -84,8 +86,8 @@ export function classifyOrdinaryPagesContinuation({
   return Object.freeze({
     route: 'resume-completed',
     productionReferenceAt: new Date(savedHour).toISOString().replace('.000Z', 'Z'),
-    producerRunId: cancelled.runId,
-    producerRunAttempt: cancelled.runAttempt,
+    producerRunId: closed.runId,
+    producerRunAttempt: closed.runAttempt,
     publicManifestSha256,
     targetManifestSha256,
   });

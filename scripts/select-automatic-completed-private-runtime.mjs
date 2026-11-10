@@ -5,13 +5,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
-import { readCompletedPrivateRuntimePin } from './completed-private-runtime-admission.mjs';
-import { createProtectedPrivateRuntimeClients } from './protected-private-production-runtime.mjs';
+import { cancelledReplayAnchor, createOrdinaryPagesBaselineReaders } from './pages-cancelled-replay-continuity.mjs';
 import { sha256CanonicalJson } from './ravscore-operational-pages-recovery.mjs';
-import {
-  completedRuntimeOperationalSource, operationalResolvedBindingCurrent,
-  RAVSCORE_OPERATIONAL_ACTIVATION_DOCUMENT_KEY, RAVSCORE_PROFILE_SELECTION_DOCUMENT_KEY,
-} from './ravscore-operational-activation.mjs';
 import { readBoundedPublicManifest } from './lib/pages-generation-order.mjs';
 import { classifyOrdinaryPagesContinuation } from './lib/ordinary-completed-pages-route.mjs';
 import { readOrdinaryPagesCancellation } from './lib/ordinary-pages-cancellation.mjs';
@@ -22,6 +17,7 @@ const pagesJob = 'Deploy prepared Pages artifact through reusable workflow / Dep
 const buildJob = 'Build and prepare weather production through reusable workflow / build-and-prepare';
 const visibilityMarker = 'Confirm exhausted exact Pages artifact metadata visibility';
 const artifactUpload = 'Upload GitHub Pages artifact';
+const scheduledClosed = 'Confirm scheduled Pages writes are terminal and unpublished';
 const artifactSeal = 'Resolve and seal the exact uploaded Pages artifact';
 const sha = /^[a-f0-9]{64}$/;
 const headSha = /^[a-f0-9]{40}$/;
@@ -75,23 +71,15 @@ export function exactPriorProducer(runs, { consumerRunId, head, saved }) {
   'PAGES_AUTO_PRODUCER_NOT_EXACT');
 }
 
-async function fixedPublicManifest(run) {
-  const url = new URL('https://ravradar.dk/data/live/manifest.json');
-  url.searchParams.set('pages-reentry', String(run));
-  const response = await fetch(url, { redirect: 'error', signal: AbortSignal.timeout(15_000),
-    headers: { 'Cache-Control': 'no-cache' } });
-  assert(response.status === 200 && !response.redirected && response.url === url.href, 'PAGES_AUTO_PUBLIC_HTTP');
-  return JSON.parse(await readBoundedPublicManifest(response, 512 * 1024));
-}
-
 function githubReader(token) {
   assert(typeof token === 'string' && /^\S{1,4096}$/.test(token), 'PAGES_AUTO_TOKEN');
   const signal = AbortSignal.timeout(30_000);
-  return async route => {
+  return async (route, paginatedComparison = false) => {
     const r = await fetch('https://api.github.com/repos/' + repo + route, { redirect: 'error', signal,
       headers: { Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json',
         'X-GitHub-Api-Version': '2022-11-28', 'Cache-Control': 'no-cache' } });
-    assert(r.status === 200 && !/rel="?next(?=[";,\s]|$)/i.test(r.headers.get('link') ?? ''), 'PAGES_AUTO_GITHUB_HTTP');
+    assert(r.status === 200 && (paginatedComparison || !/rel="?next(?=[";,\s]|$)/i.test(r.headers.get('link') ?? '')),
+      'PAGES_AUTO_GITHUB_HTTP');
     return JSON.parse(await readBoundedPublicManifest(r, 1024 * 1024));
   };
 }
@@ -136,10 +124,10 @@ async function readExactHandoffArchive({ run, read, token }) {
   }
 }
 
-function ordinaryPredecessors(runs, { consumerRunId, head }) {
+function ordinaryPredecessors(runs, { consumerRunId }) {
   return runs.filter(run => positive(run.id) && run.id < consumerRunId && run.run_attempt === 1
     && run.repository?.full_name === repo && run.head_repository?.full_name === repo
-    && run.repository.id === run.head_repository.id && run.head_sha === head && run.head_branch === 'main'
+    && run.repository.id === run.head_repository.id && headSha.test(run.head_sha ?? '') && run.head_branch === 'main'
     && run.event === 'workflow_dispatch' && run.path === '.github/workflows/' + workflow
     && run.actor?.login === 'github-actions[bot]' && run.status === 'completed')
     .sort((left, right) => right.id - left.id);
@@ -201,9 +189,9 @@ function exactVisibilityFailure(run, jobs) {
 
 export async function previousOrdinaryHadPagesFailure(read, context) {
   const created = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  const route = '/actions/workflows/' + workflow + '/runs?branch=main&event=workflow_dispatch&status=completed&head_sha='
-    + context.head + '&per_page=12&created=' + encodeURIComponent('>=' + created);
-  const predecessors = ordinaryPredecessors(list(await read(route), 'workflow_runs', 12), context);
+  const route = '/actions/workflows/' + workflow + '/runs?branch=main&event=workflow_dispatch&status=completed'
+    + '&per_page=24&created=' + encodeURIComponent('>=' + created);
+  const predecessors = ordinaryPredecessors(list(await read(route), 'workflow_runs', 24), context);
   for (const previous of predecessors) {
     const jobs = list(await read('/actions/runs/' + previous.id + '/attempts/1/jobs?per_page=100'), 'jobs');
     if (exactVisibilityFailure(previous, jobs)) return true;
@@ -214,7 +202,11 @@ export async function previousOrdinaryHadPagesFailure(read, context) {
     const deploy = one(job.steps?.filter(step => step.name === 'Deploy to GitHub Pages'), 'PAGES_AUTO_PRIOR_DEPLOY_STEP');
     assert(job.status === 'completed' && deploy.status === 'completed', 'PAGES_AUTO_PRIOR_DEPLOY_INCOMPLETE');
     if (deploy.conclusion === 'skipped') continue;
-    if (deploy.conclusion === 'success') return false;
+    if (deploy.conclusion === 'success') {
+      if (job.conclusion === 'success') return false;
+      assert(previous.conclusion === 'failure' && job.conclusion === 'failure', 'PAGES_AUTO_PRIOR_DEPLOY_UNKNOWN');
+      return true;
+    }
     assert(previous.conclusion === 'failure' && job.conclusion === 'failure'
       && deploy.conclusion === 'failure', 'PAGES_AUTO_PRIOR_DEPLOY_UNKNOWN');
     return true;
@@ -223,10 +215,17 @@ export async function previousOrdinaryHadPagesFailure(read, context) {
 }
 
 export async function readOrdinaryPagesEvidence({ read, token, saved, context }) {
+  assert(headSha.test(saved.sourceHead ?? ''), 'PAGES_AUTO_PRODUCER_HEAD');
+  if (saved.sourceHead !== context.head) {
+    const comparison = await read('/compare/' + saved.sourceHead + '...' + context.head + '?per_page=1', true);
+    assert(comparison.status === 'ahead' && comparison.merge_base_commit?.sha === saved.sourceHead,
+      'PAGES_AUTO_PRODUCER_NOT_ANCESTOR');
+  }
+  const producerContext = { ...context, head: saved.sourceHead, saved };
   const created = new Date(Date.parse(saved.generatedAt) - 24 * 60 * 60 * 1000).toISOString();
   const path = '/actions/workflows/' + workflow + '/runs?branch=main&event=workflow_dispatch&status=completed&head_sha='
-    + context.head + '&per_page=12&created=' + encodeURIComponent('>=' + created);
-  const run = exactPriorProducer(list(await read(path), 'workflow_runs', 12), { ...context, saved });
+    + producerContext.head + '&per_page=12&created=' + encodeURIComponent('>=' + created);
+  const run = exactPriorProducer(list(await read(path), 'workflow_runs', 12), producerContext);
   const jobs = list(await read('/actions/runs/' + run.id + '/attempts/1/jobs?per_page=100'), 'jobs');
   const visibility = exactVisibilityFailure(run, jobs);
   if (visibility) {
@@ -241,7 +240,7 @@ export async function readOrdinaryPagesEvidence({ read, token, saved, context })
       && visibility.uploadStartedAt <= createdAt && createdAt <= visibility.markerStartedAt
       && createdAt <= Date.parse(artifact.updated_at) && Date.parse(artifact.expires_at) > Date.now(),
     'PAGES_AUTO_VISIBILITY_ARTIFACT_IDENTITY');
-    const latest = exactPriorProducer([await read('/actions/runs/' + run.id)], { ...context, saved });
+    const latest = exactPriorProducer([await read('/actions/runs/' + run.id)], producerContext);
     assert(latest.id === run.id && latest.created_at === run.created_at && latest.run_started_at === run.run_started_at
       && latest.updated_at === run.updated_at && latest.repository.id === run.repository.id, 'PAGES_AUTO_VISIBILITY_RUN_MOVED');
     const main = await read('/git/ref/heads/main');
@@ -259,6 +258,27 @@ export async function readOrdinaryPagesEvidence({ read, token, saved, context })
     && passed('Publish atomic RavScore checkpoint to protected admin storage'), 'PAGES_AUTO_BUILD_NOT_COMPLETE');
   const job = one(jobs.filter(job => job.name === pagesJob), 'PAGES_AUTO_JOB_COUNT');
   const evidence = await readExactHandoffArchive({ run, read, token });
+  const terminals = job.steps.filter(step => step.name === scheduledClosed);
+  if (terminals.length > 0) {
+    const terminal = one(terminals, 'PAGES_AUTO_SCHEDULED_TERMINAL_COUNT');
+    const deploy = one(job.steps.filter(step => step.name === 'Deploy to GitHub Pages'), 'PAGES_AUTO_SCHEDULED_DEPLOY_COUNT');
+    assert(job.run_id === run.id && job.run_attempt === 1 && job.head_sha === run.head_sha
+      && job.status === 'completed' && job.conclusion === 'failure' && deploy.status === 'completed'
+      && deploy.conclusion === 'failure' && terminal.status === 'completed' && terminal.conclusion === 'success'
+      && terminal.number > deploy.number && Date.parse(terminal.started_at) >= Date.parse(deploy.completed_at)
+      && Date.parse(terminal.completed_at) <= Date.parse(job.completed_at), 'PAGES_AUTO_SCHEDULED_WRITE_UNPROVED');
+    const latest = await read('/actions/runs/' + run.id);
+    assert(latest.id === run.id && latest.run_attempt === 1 && latest.head_sha === run.head_sha
+      && latest.status === 'completed' && latest.conclusion === 'failure'
+      && latest.updated_at === run.updated_at, 'PAGES_AUTO_SCHEDULED_RUN_MOVED');
+    const main = await read('/git/ref/heads/main');
+    assert(main?.ref === 'refs/heads/main' && main.object?.type === 'commit'
+      && main.object.sha === context.head, 'PAGES_AUTO_SCHEDULED_MAIN_MOVED');
+    return { ...evidence, terminalUnpublished: { kind: 'PAGES_SCHEDULED_WRITES_TERMINAL_UNPUBLISHED',
+      runId: run.id, runAttempt: run.run_attempt, headSha: run.head_sha, jobId: job.id,
+      artifactId: evidence.seal.artifactId, artifactDigestSha256: evidence.seal.artifactDigestSha256 } };
+  }
+  assert(saved.sourceHead === context.head, 'PAGES_AUTO_LEGACY_CANCELLATION_HEAD_MOVED');
   const proof = await readOrdinaryPagesCancellation({ repository: repo, currentMainHead: context.head,
     artifactSeal: evidence.seal, jobId: job.id, token });
   return { ...evidence, cancelled: { ...proof, kind: 'PAGES_DEPLOYMENT_CANCELLED_CONFIRMED', headSha: proof.sourceHead } };
@@ -274,14 +294,16 @@ export async function selectAutomaticCompletedPrivateRuntime(env, {
   const scope = { ...context, publicManifest, publicManifestSha256, active, saved };
   const first = classifyOrdinaryPagesContinuation(scope);
   if (first.route === 'ordinary') return { mode: 'FETCH' };
-  const outcome = classifyOrdinaryPagesContinuation({ ...scope, ...await readEvidence(saved, context) });
+  const evidence = await readEvidence(saved, context);
+  const outcome = classifyOrdinaryPagesContinuation({ ...scope, head: saved.sourceHead, ...evidence });
   assert.equal(outcome.route, 'resume-completed', 'PAGES_AUTO_NO_SAFE_CONTINUATION');
   const [current, publicAgain, activeAgain] = await Promise.all([readPin(), readPublic(context.consumerRunId), readActive()]);
   assert.deepEqual(current, originalPin, 'PAGES_AUTO_POINTER_CHANGED');
   assert.deepEqual(activeAgain, active, 'PAGES_AUTO_ACTIVE_CHANGED');
   assert.equal(sha256CanonicalJson(publicAgain), publicManifestSha256, 'PAGES_AUTO_PUBLIC_CHANGED');
   assert(sha.test(current.pin), 'PAGES_AUTO_POINTER_PIN');
-  return { mode: 'COMPLETED', targetHour: outcome.productionReferenceAt, pin: current.pin };
+  return { mode: 'FETCH_AFTER_PAGES_FAILURE', priorPagesAnchor: cancelledReplayAnchor({ ...context,
+    publicManifestSha256, activeSha256: sha256CanonicalJson(active), pin: current.pin }) };
 }
 
 async function main(env) {
@@ -294,24 +316,14 @@ async function main(env) {
     console.log('PAGES_AUTO_ORDINARY');
     return;
   }
-  const { documentRequest: request } = createProtectedPrivateRuntimeClients({ storageBackend: 'supabase' });
-  const a = RAVSCORE_OPERATIONAL_ACTIVATION_DOCUMENT_KEY, b = RAVSCORE_PROFILE_SELECTION_DOCUMENT_KEY;
-  const readActive = async () => {
-    const rows = await request('?select=document_key,payload,version&document_key=in.(' + a + ',' + b + ')', {}, 'read');
-    assert(Array.isArray(rows) && rows.length === 2, 'PAGES_AUTO_ACTIVE_ROWS');
-    const active = completedRuntimeOperationalSource(one(rows.filter(r => r.document_key === a), 'PAGES_AUTO_ACTIVE_ROW'),
-      one(rows.filter(r => r.document_key === b), 'PAGES_AUTO_PROFILE_ROW'));
-    assert(operationalResolvedBindingCurrent(active), 'PAGES_AUTO_ACTIVE_BINDING');
-    return active;
-  };
   const plan = await selectAutomaticCompletedPrivateRuntime(env, {
-    readPin: () => readCompletedPrivateRuntimePin(request), readPublic: fixedPublicManifest, readActive,
+    ...createOrdinaryPagesBaselineReaders(),
     readEvidence: (saved, context) => readOrdinaryPagesEvidence({ read, token, saved, context }),
   });
-  const output = plan.mode === 'FETCH' ? 'completed_private_runtime=false\n'
-    : 'completed_private_runtime=true\ntarget_hour=' + plan.targetHour + '\ncompleted_private_runtime_pin=' + plan.pin + '\n';
+  const output = 'completed_private_runtime=false\n' + (plan.mode === 'FETCH_AFTER_PAGES_FAILURE'
+    ? 'fresh_after_pages_failure=true\nprior_pages_anchor=' + plan.priorPagesAnchor + '\n' : '');
   await fs.appendFile(env.GITHUB_OUTPUT, output);
-  console.log(plan.mode === 'FETCH' ? 'PAGES_AUTO_ORDINARY' : 'PAGES_AUTO_COMPLETED_SELECTED');
+  console.log(plan.mode === 'FETCH' ? 'PAGES_AUTO_ORDINARY' : 'PAGES_AUTO_FRESH_AFTER_CLOSED_FAILURE');
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

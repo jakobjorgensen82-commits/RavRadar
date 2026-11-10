@@ -1,0 +1,152 @@
+{
+  "once": {
+    "after": {
+      "bytes": 60504,
+      "sha256": "edf3178141264ed117534a9eeb049a1a28b3014e1bf0cdf2cb171a76f7bb0c87"
+    },
+    "before": {
+      "bytes": 59252,
+      "sha256": "87b1401f437d30e57ba144bdf52820447b5a83eda7b53165ab8592375e7ef911"
+    },
+    "inverse": [
+      [
+        4075,
+        82,
+        "8a70c0d90a426ed9702bfe10c0d1a699f7c4c7ff6848341f5c4a52679fd2fe18",
+        ""
+      ],
+      [
+        4428,
+        180,
+        "9ae032ceba746060d9abc9e99692d604c33f17ac584e945ad01a4c37015b9fb5",
+        ""
+      ],
+      [
+        13697,
+        75,
+        "b85780c8083ea4a3fa737730d965831075029607659e616836915ad0a8a89b79",
+        "      - name: Select provider-free continuation for the default scheduled caller\n"
+      ],
+      [
+        15525,
+        297,
+        "82fea37366fb03b26879bd132cb5f893ed035506e2b796aec0edbecc426d8d7b",
+        ""
+      ],
+      [
+        16014,
+        489,
+        "04195e1edb31bc3c614c840a63ba7408ad682a53676aad25594b2f587c9d9708",
+        ""
+      ],
+      [
+        16553,
+        0,
+        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "            success:true)\n              test \"$REQUESTED_COMPLETED\" = false\n              test -z \"$MANUAL_TARGET$MANUAL_PIN$CHECKPOINT_TARGET$CACHE_TARGET\"\n              completed=true\n              target=\"$AUTO_TARGET\"\n              pin=\"$AUTO_PIN\"\n              ;;\n"
+      ],
+      [
+        17497,
+        158,
+        "23d8495faefde1344ab8151a30475d7f599bd819d4d576c59f976b461f5db7ab",
+        ""
+      ],
+      [
+        51342,
+        196,
+        "4fc11a6ffffb07da93095a1e3b352263d483f4888a695aa86e95620c9d080c81",
+        ""
+      ],
+      [
+        54268,
+        52,
+        "af55dc03ed97f50e4b5ec6c291cfd0c55976e9879139a40fbb008f3cff6aef6b",
+        "    needs: build-and-prepare\n"
+      ],
+      [
+        54654,
+        102,
+        "f0799694c1167cde3daa227f75ab5549e082e6a2e9e7be1b48e80923890bc064",
+        ""
+      ]
+    ]
+  },
+  "build": {
+    "after": {
+      "bytes": 303925,
+      "sha256": "ed56abc4b55a1bbc3a22efd4a67f19a675f78547cd7f70d9a6a76aa47b9abecf"
+    },
+    "before": {
+      "bytes": 302000,
+      "sha256": "d21fad73693dc5d5c8db69535efdfc5cae27c78897422d4fc9ab731d6440295f"
+    },
+    "inverse": [
+      [
+        329,
+        193,
+        "de8a8c14f55cc943b0aed67bbd9f4fa80117cc428087b1c0db890bf63dc7b23e",
+        ""
+      ],
+      [
+        95182,
+        1040,
+        "68aaf47ce1e3aeca3c97f43aedcd09b78bfb6cc14796f6cbec020839ce8a9343",
+        ""
+      ],
+      [
+        195402,
+        692,
+        "e3591aad90ec0b5d701d6b1959fed14bd92fdfa512fe4e2459061d7470c63d9a",
+        ""
+      ]
+    ]
+  },
+  "deploy": {
+    "after": {
+      "bytes": 67578,
+      "sha256": "0962368ac5efe85da0c1f24a62668f559a081823650253cdbb565fe2c489a465"
+    },
+    "before": {
+      "bytes": 66486,
+      "sha256": "260c06d3fbc08e7bf80563b803eed758251805f55cf4a0c147526d70c3e4b8f1"
+    },
+    "inverse": [
+      [
+        75,
+        189,
+        "3887627bfd1bbfd3e98219161631a6558bf791cc489cd8980662e23d240b2177",
+        ""
+      ],
+      [
+        1929,
+        72,
+        "9cc9e952d6c145b97a58445d3411de56feb1fb860e58eb3a75428f304f459288",
+        "    timeout-minutes: 25\n"
+      ],
+      [
+        2718,
+        223,
+        "2917c25a7dfb16e206abb66ecf74abae48140940a829722b67cf066f4e1759b9",
+        ""
+      ],
+      [
+        36500,
+        54,
+        "7ba3bb6b92b6dd2d9e18cfffa98a0ab1ea1f5dfbb6faa8ff0af039e9cd7a5b0c",
+        "        uses: actions/deploy-pages@v5\n"
+      ],
+      [
+        36568,
+        327,
+        "a9ffbf84340e6af0b9e820b0b8195d0da0739c12d04d5f08c5d2a0b4ed1f29ff",
+        ""
+      ],
+      [
+        37059,
+        289,
+        "479bc17e6672a196fef079ead66b60b882534506a3e8a3d87c6165a5ca713dfa",
+        ""
+      ]
+    ]
+  }
+}
