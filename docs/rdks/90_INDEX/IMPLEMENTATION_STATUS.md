@@ -1,3 +1,9 @@
+## 10. november — Pages-genforsøg og frisk vejrhentning adskilles
+
+Ejerbeslutning erstatter #865. Pages kan genbruge samme forseglede pakke én gang straks efter en bekræftet afsluttet udgivelsesfejl, mens næste normale planlagte kørsel henter frisk vejr. Før genforsøg kræves samme eksakte artifact, aktuel hovedkode, uændret offentlig forgænger og tilstrækkelig tid før næste planlagte kørsel. Ingen automatisk gentagelse ved et ukendt skriveudfald. Det normale offentlige deploybevis kræves fortsat.
+
+Ved bekræftet afsluttet forrige udgivelse og nyere gemt B/S må ordinær ny prognosetime kun fortsætte efter kontrol af gemt B/S og no-loss mod den stadig offentlige prognose. Lokale måltests verificerer det begrænsede genforsøg og valget af ny prognosetime. GitHub-kvalifikation og faktisk Pages-virkning er åbne.
+
 ## 8. november — genlæsning af den gemte databasehenvisning
 
 Den første krypterede databasebackup blev gemt og genlæst fra det private lager. Databasen gemte også henvisningen, men backupkontrollen meldte fejl, fordi databasen returnerede felterne i en anden rækkefølge. Rettelsen sammenligner den validerede henvisning i den oprindelige rækkefølge og bevarer de præcise værdier, versionskontrollen og det eksisterende krypterede arkiv.

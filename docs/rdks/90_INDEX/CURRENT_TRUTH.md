@@ -1,3 +1,9 @@
+## 10. november — genforsøg skal ligge i samme udgivelsesjob
+
+Kørsel #294 blev startet af tidsplanen kl. 09.19 og brugte den planlagte plads på genudgivelse. #295 gjorde det samme kl. 13.19 og fik den gemte prognose på hjemmesiden. Begge sprang vejrleverandører og scoreberegning over. Efter ejerens præcisering er den tidligere løsning i PR #865 lukket uden merge.
+
+Den nye kildekandidat lægger højst ét genforsøg i det oprindelige Pages-job. Den kræver, at GitHub har bekræftet det præcise første forsøgs afslutning, og at den forseglede pakke og den offentlige forgænger stadig matcher. Genforsøget skal have plads til udgivelse og efterkontrol inden næste planlagte vejrhentning. Den næste ordinære kørsel vælger en ny prognosetime. Hvis gemt vejr ligger foran hjemmesiden, bevares gyldige overlappende timer fra begge generationer. Uafklarede skrivninger giver ingen ny udgivelsesautoritet. Kildekontrol og faktisk drift afventer.
+
 ## 8. november — mindre gentaget arbejde i vejrplanlægningen
 
 To almindelige vejrhentninger ramte den fælles tidsgrænse, da RavRadar gennemgik gemte værdier for kystdelene. RavRadar fortsatte efter den normale reservevej. Den målte tid gælder hele planlægningen.

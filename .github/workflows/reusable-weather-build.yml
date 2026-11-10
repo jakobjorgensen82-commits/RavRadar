@@ -15,6 +15,14 @@ on:
         required: false
         type: string
         default: ''
+      fresh_after_pages_failure:
+        required: false
+        type: boolean
+        default: false
+      prior_pages_anchor:
+        required: false
+        type: string
+        default: ''
       completed_stage_source:
         required: false
         type: string
@@ -1593,6 +1601,24 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
+      - name: Verify the exact saved pair before fresh weather after a closed Pages failure
+        id: pages-repeat-saved-pair
+        if: inputs.fresh_after_pages_failure == true && steps.preflight.outputs.should_run == 'true'
+        shell: bash
+        env:
+          RAVRADAR_PAGES_REPEAT_ANCHOR: ${{ inputs.prior_pages_anchor }}
+          RAVRADAR_PAGES_REPEAT_ACTION: ${{ steps.operational-action.outputs.action }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+          test "${{ inputs.completed_private_runtime }}" = false
+          test "${{ steps.private-runtime-install.outcome }}" = success
+          test "${{ steps.exact-weather-recovery.outputs.required }}" != true
+          test "${{ steps.historical-wave-predecessor.outputs.required }}" != true
+          test "${{ steps.paired-checkpoint-route.outputs.required }}" != true
+          node scripts/pages-cancelled-replay-continuity.mjs admit
+
       - name: Validate provider-free checkpoint continuation request
         if: inputs.checkpoint_only == true
         shell: bash
@@ -3036,6 +3062,19 @@ jobs:
               --previous-pack "$RUNNER_TEMP/paired-15z-public-hour-delivery.pack" \
               --new-live data/live
           fi
+
+      - name: Preserve still-published weather after an exact closed Pages failure
+        if: inputs.fresh_after_pages_failure == true && steps.preflight.outputs.should_run == 'true'
+        shell: bash
+        env:
+          RAVRADAR_PAGES_REPEAT_ANCHOR: ${{ inputs.prior_pages_anchor }}
+          RAVRADAR_PAGES_REPEAT_ACTION: ${{ steps.operational-action.outputs.action }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+          test "${{ steps.pages-repeat-saved-pair.outcome }}" = success
+          node scripts/pages-cancelled-replay-continuity.mjs compare
 
       - name: Audit runtime and collect independent cutover validation failures
         # A model/control finding must remain visible, but it must not prevent

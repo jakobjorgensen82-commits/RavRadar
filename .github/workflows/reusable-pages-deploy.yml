@@ -3,6 +3,11 @@ name: Reusable RavRadar Pages deployment
 on:
   workflow_call:
     inputs:
+      ordinary_immediate_retry:
+        description: Run the bounded same-job Pages retry for default scheduled weather
+        required: false
+        type: boolean
+        default: false
       pre_activation_recovery:
         required: false
         type: boolean
@@ -60,7 +65,7 @@ jobs:
   deploy-pages:
     name: ${{ inputs.pre_activation_recovery && 'Deploy exact pre-activation Pages artifact' || 'Deploy prepared Pages artifact' }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: ${{ inputs.ordinary_immediate_retry && 35 || 25 }}
     permissions:
       contents: read
       actions: read
@@ -78,6 +83,11 @@ jobs:
       RAVRADAR_OPERATIONAL_SOURCE_EVIDENCE: /tmp/ravradar-operational-source-evidence
       RAVRADAR_PUBLIC_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
     steps:
+      - name: Measure ordinary Pages job start for the retry cutoff
+        if: inputs.ordinary_immediate_retry == true
+        shell: bash
+        run: echo "RAVRADAR_PAGES_JOB_STARTED_MS=$(date +%s%3N)" >> "$GITHUB_ENV"
+
       - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v7
@@ -609,9 +619,16 @@ jobs:
 
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v5
+        uses: ./.github/actions/deploy-ravradar-pages
         with:
+          immediate_retry: ${{ inputs.ordinary_immediate_retry && inputs.operational_action == 'integrated' && inputs.deployment_model == 'integrated' && !inputs.pre_activation_recovery && !inputs.code_only_repair && !inputs.exact_public_recovery && inputs.source_repair_id == '' }}
+          github_token: ${{ github.token }}
           artifact_name: ${{ inputs.pre_activation_recovery && format('github-pages-preactivation-{0}-{1}', github.run_id, github.run_attempt) || 'github-pages' }}
+
+      - name: Confirm scheduled Pages writes are terminal and unpublished
+        if: ${{ !cancelled() && steps.deployment.outcome == 'failure' && steps.deployment.outputs.closed_unpublished == 'true' }}
+        shell: bash
+        run: echo 'PAGES_SCHEDULED_WRITES_TERMINAL_UNPUBLISHED'
 
       - name: Verify deployed exact model, implementation and 210/673 artifact
         id: public-verification
