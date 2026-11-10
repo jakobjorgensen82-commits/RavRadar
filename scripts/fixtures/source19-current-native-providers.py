@@ -245,7 +245,7 @@ def prepare(node, target, initial_phase=None, *, current598=False, code598_root=
         need(not producer.CACHE_ONLY and not producer.API_KEY, "CLEAN_NATIVE_ACQUISITION_MODE")
         producer.STAC_SESSION.get = forbidden
         producer.DOWNLOAD_SESSION.get = forbidden
-        from lib.copernicus_current import load_targets, atomic_write_shadow_checkpoint
+        from lib.copernicus_current import load_targets
         from lib.dmi_bulk_storage import write_dmi_bulk_document, read_dmi_bulk_document
         from lib.dmi_native_provenance import verified_part_current_pair
         from lib.copernicus_target_identity import target_fingerprint
@@ -392,8 +392,6 @@ def prepare(node, target, initial_phase=None, *, current598=False, code598_root=
                     **({"raw_original_root": normal_root} if code598_root is not None else {})} if current598 else {}))
         write_dmi_bulk_document(out / BASIS[0], document)
         need(read_dmi_bulk_document(out / BASIS[0])["zoneRegistrySignature"] == signature, "NORMAL_BULK_READBACK")
-        atomic_write_shadow_checkpoint(out / BASIS[2], acquisitions=[], records=[],
-            updated_at=reference, target_identities={row["partId"]: row for row in targets})
         finish_normal_basis(node, out, reference, producer, targets, document,
             initial_phase=initial_phase, current598=current598, code598_root=code598_root)
         write_new(out / "native-provider-stac-wire.json", {"syntheticTestInput": True,
@@ -443,7 +441,7 @@ def import_native_decoder(normal_root, *, current598):
 def finish_normal_basis(node, out, reference, producer, targets, document, *, initial_phase=None, current598=False, code598_root=None):
     """Actual existing normal producers, never authored READY/closure/pilot data."""
     normal_root = ROOT if code598_root is None else genuine598_code_root(code598_root)
-    from lib.copernicus_current import file_sha256
+    from lib.copernicus_current import atomic_write_shadow, file_sha256, make_coverage_collection
     from lib.copernicus_current_source_stage import build_source_stage, atomic_write_source_stage
     from lib.current_field_shadow import empty_document, save_document
     targets_path = normal_root / "data/live/coastal-parts-v2.json"
@@ -462,10 +460,24 @@ def finish_normal_basis(node, out, reference, producer, targets, document, *, in
     # permits the normal CP/OM no-request producers below. Otherwise stop here.
     need(not registry["operationalRequiredPairs"], "NORMAL_COPERNICUS_RESIDUALS_REQUIRE_DATA")
     write_new(registry_path, registry)
-    shadow = json.loads(cp.read_text())
     identities = {row["partId"]: row for row in targets}
+    sealed_at = datetime.now(timezone.utc)
+    # Mirror the normal no-request Copernicus path. The empty record set still
+    # requires a real collection seal before the matching READY stage.
+    collection = make_coverage_collection(
+        production_reference_at=reference,
+        target_registry_sha256=registry["targetRegistrySha256"],
+        dmi_current_input_sha256=registry["dmiCurrentInputSha256"],
+        required_pairs=registry["operationalRequiredPairs"],
+        record_refs=[],
+        sealed_at=sealed_at,
+        advisory_history_required_pairs=registry["advisoryHistoryRequiredPairs"],
+        advisory_history_record_refs=[],
+    )
+    shadow = atomic_write_shadow(cp, acquisitions=[], records=[], collection=collection,
+        updated_at=sealed_at, target_identities=identities)
     stage = build_source_stage(registry=registry, shadow=shadow, target_identities=identities,
-        shadow_sha256=file_sha256(cp), attempts=[], sealed_at=datetime.now(timezone.utc))
+        shadow_sha256=file_sha256(cp), attempts=[], sealed_at=sealed_at)
     atomic_write_source_stage(stage_path, stage, registry=registry, shadow=shadow,
         target_identities=identities, shadow_sha256=file_sha256(cp))
     save_document(regional, empty_document())
