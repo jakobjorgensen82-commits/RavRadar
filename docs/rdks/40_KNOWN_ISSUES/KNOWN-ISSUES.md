@@ -1,3 +1,9 @@
+## 8. november — automatisk dokumenthistorik efter botstartet vejr
+
+**ÅBEN.** Indstillingen var aktiveret, og ordinære botstartede vejrforløb leverede offentligt vejr. De startede via GitHubs workflow-token, mens den eksisterende modtager alene lyttede efter afslutningshændelsen. GitHubs regel mod rekursive workflowkørsler forklarer, hvorfor den modtager udeblev. En ejerstartet vejrlevering blev fulgt af den automatiske modtager. Den afgrænsede kandidat sender én anmodning efter en verificeret ordinær offentlig levering og kræver, at modtageren kan eftervise sin eksakte identitet. En ukendt kvittering giver stop uden automatisk gentagelse.
+
+Den lokale målprøve er bestået. Lukning kræver kvalificeret kilde og faktisk observation af den afsluttede vejrkørsel, den ene kvitterede modtager samt resultatet af den private passage eller et eftervist sikkert stop. Et sikkert stop afprøver tidsgrænsen. En senere berettiget passage skal stadig eftervise selve vedligeholdelsen. Målbar lagerplads og beslutning om Free afventer deres særskilte beviser. Se håndbog 89.298 og 89.300.
+
 ## 8. november — genlæsning af den gemte databasehenvisning
 
 Den første krypterede databasebackup blev gemt og genlæst fra det private lager. Databasen gemte også henvisningen, men backupkontrollen meldte fejl, fordi databasen returnerede felterne i en anden rækkefølge. Rettelsen sammenligner den validerede henvisning i den oprindelige rækkefølge og bevarer de præcise værdier, versionskontrollen og det eksisterende krypterede arkiv.

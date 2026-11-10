@@ -1094,6 +1094,59 @@ jobs:
           fi
           node scripts/lib/verified-weather-deployment-terminal.mjs
 
+  handoff-admin-document-history:
+    name: Hand off verified ordinary weather to admin document history
+    needs: [terminal-outcome, current-main-target]
+    if: >-
+      !cancelled() && needs.terminal-outcome.result == 'success' &&
+      needs.current-main-target.result == 'success' &&
+      needs.current-main-target.outputs.completed_private_runtime == 'false' &&
+      github.repository == 'jakobjorgensen82-commits/RavRadar' &&
+      github.ref == 'refs/heads/main' && github.run_attempt == '1' &&
+      github.actor == 'github-actions[bot]' &&
+      vars.RAVRADAR_ADMIN_HISTORY_MAINTENANCE == 'enabled' &&
+      inputs.current_family_cold_start != true && inputs.completed_private_runtime != true &&
+      inputs.completed_stage_source == '' && inputs.quick_confirmation != true &&
+      inputs.quick_progress_source == '' && inputs.checkpoint_target_hour == '' &&
+      inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true &&
+      inputs.weather_state_epoch_archive_key == '' && inputs.weather_state_epoch_archive_catalog_sha256 == '' &&
+      inputs.weather_state_epoch_raw_cache_key == '' && inputs.native_sampling_identity_original_recovery != true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    continue-on-error: true
+    permissions:
+      actions: write
+    steps:
+      - name: Dispatch the existing document-history workflow once
+        id: dispatch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = jakobjorgensen82-commits/RavRadar
+          test "$GITHUB_REF" = refs/heads/main
+          test "$GITHUB_RUN_ATTEMPT" = 1
+          [[ "$GITHUB_SHA" =~ ^[a-f0-9]{40}$ ]]
+          [[ "$GITHUB_RUN_ID" =~ ^[1-9][0-9]*$ ]]
+          if ! ack="$(timeout --signal=KILL 20s gh api --method POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2026-03-10" \
+            "repos/$GITHUB_REPOSITORY/actions/workflows/maintain-admin-document-history.yml/dispatches" \
+            -f ref=main -f "inputs[expected_main]=$GITHUB_SHA" \
+            -f "inputs[source_weather_run_id]=$GITHUB_RUN_ID" 2>/dev/null)" ||
+            ! recipient="$(jq -er '.workflow_run_id | numbers | tostring | select(test("^[1-9][0-9]{0,14}$"))' <<< "$ack" 2>/dev/null)" ||
+            [[ "$recipient" = "$GITHUB_RUN_ID" ]]; then
+            echo '::warning::DOCUMENT_HISTORY_DISPATCH_OUTCOME_UNKNOWN_DO_NOT_RETRY'
+            exit 1
+          fi
+          echo "recipient_run_id=$recipient" >> "$GITHUB_OUTPUT"
+
+      # The recipient reads this exact successful step from this run attempt.
+      # A second dispatch with the same source cannot present its own run ID here.
+      - name: Bind document history recipient ${{ steps.dispatch.outputs.recipient_run_id }}
+        run: ':'
+
   notify-owner-failure:
     name: Hand off one bot-started ordinary failure to the existing owner alert
     needs: terminal-outcome

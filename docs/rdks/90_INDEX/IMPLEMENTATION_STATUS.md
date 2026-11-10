@@ -1,3 +1,9 @@
+## 8. november — afgrænset automatisk overdragelse til dokumenthistorik
+
+Den versionsneutrale 4.0.598-kandidat ændrer de to eksisterende workflows. Det separate afsenderjob bruger kørselsnøglen med skrivetilladelse til Actions afgrænset til jobbet. Afsenderen kan foretage ét kald efter en verificeret ordinær offentlig levering. Modtageren kontrollerer første forsøg, hændelse, aktuel main, eksakt vellykket kildejob og sit eget kvitterede run-ID før den eksisterende kildekontrol og private operation. Den eksisterende aktiveringsindstilling, manuelle operationer, køernes rækkefølge, arkivgenlæsningen, den centrale arkivhenvisning og de fem beskyttede historikversioner pr. dokument består. Grænsen er fortsat højst 25 gamle rækker fra de tre tilladte dokumenter pr. automatisk passage.
+
+Den normale målprøve bestod alle 32 cases lokalt. Den kørte modtagerens kontrol med syntetiske GitHub-svar og kontrollerede afsenderens struktur. En kvalificeret kørselsidentitet og den ene faktisk kvitterede modtager skal eftervises i GitHub på den leverede kilde. Ved en berettiget portion skal samme passage vise autentificeret arkivgenlæsning og det afgrænsede resultat. Ved et udløbet tidsvindue skal den standse før privat adgang. Se håndbog 89.298.
+
 ## 8. november — genlæsning af den gemte databasehenvisning
 
 Den første krypterede databasebackup blev gemt og genlæst fra det private lager. Databasen gemte også henvisningen, men backupkontrollen meldte fejl, fordi databasen returnerede felterne i en anden rækkefølge. Rettelsen sammenligner den validerede henvisning i den oprindelige rækkefølge og bevarer de præcise værdier, versionskontrollen og det eksisterende krypterede arkiv.

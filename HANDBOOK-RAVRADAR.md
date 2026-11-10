@@ -616,6 +616,14 @@ Automatisk adgang er lukket som standard. Repository-indstillingen RAVRADAR_ADMI
 
 Når indgangen er aktiveret, følger den en vellykket afslutning af det eksisterende vejrforløb på den kvalificerede aktuelle main. Også en vellykket genoptagelse eller et korrekt preflight-skip kan udløse den særskilte vedligeholdelse; hændelsen er ikke bevis for nye hentede eller offentligt leverede vejrdata. Repository, gren, workflowsti, udløsende hændelse, kildeidentitet og tidsvindue kontrolleres før privat adgang. Der skal fortsat være mindst 30 minutter til det næste firetimersslot, som beregnes fra det udløsende vejrforløbs oprettelsestidspunkt. En sent køsat vedligeholdelse må ikke bruge et senere slot som en ny frist. Der oprettes ingen særskilt daglig schedule eller keepalivecommits.
 
+### 8. november — overdragelse efter ordinært botstartet vejr
+
+Den hidtidige automatiske hændelsesvej ovenfor gælder for kvalificerede vejrforløb startet af andre end botten. På den versionsneutrale 4.0.598-kandidat bruger en frisk, ordinær botstartet kørsel på aktuel kvalificeret main en særskilt overdragelse i første forsøg efter verificeret offentlig levering. Denne vej kræver fortsat, at indstillingen for automatisk vedligeholdelse er aktiveret. Genoptagelse, preflight-skip og genkørsel giver ikke adgang ad denne vej.
+
+Afsenderen beder GitHub starte den eksisterende dokumentvedligeholdelse én gang og binder det kvitterede modtager-ID til det afsluttede vejrforløb. Modtageren kontrollerer begge identiteter før privat adgang. Uden en gyldig kvittering eller ved et afvigende ID standser kæden uden automatisk gentagelse. Det allerede afsluttede vejrresultat bevares. Der skal stadig være mindst 30 minutter til næste firetimersslot beregnet fra det oprindelige vejrforløbs oprettelsestidspunkt.
+
+De eksisterende regler for de tre dokumenter, de fem beskyttede historikversioner pr. dokument, højst 25 gamle rækker, arkivering med genlæsning før beskæring, central arkivhenvisning og de manuelle veje består. De 32 normale målprøver er bestået lokalt. Den faktiske automatiske passage og de særskilte backup-, gendannelses- og Free-krav er fortsat åbne.
+
 ### Operatørvej og adgang
 
 maintain-admin-document-history.yml bruger kun den præcise, allerede kvalificerede aktuelle main. Det manuelle standardvalg plan er skrivefrit. De eksisterende manuelle archive, publish-locator, discover, restore og særskilt bekræftet prune bevares. Manuel prune kan fortsat vælge 25, 100 eller 600; automatisk maintain er fast låst til 25 og sin egen præcise bekræftelse. En privat restore-fil er ikke en udført produktions-DB-restore.
