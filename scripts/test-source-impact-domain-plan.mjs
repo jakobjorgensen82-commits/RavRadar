@@ -575,7 +575,9 @@ test('normal598 registry keeps genuine148 inputs and closes only known normal co
     await t.test('exact598 backup-byte and host-formatting pairs use normal targets and refuse owner drift',()=>{
       const followOwners=['scripts/run-hosted-supabase-backup.mjs','scripts/test-supabase-database-backup-workflow.mjs',
         'js/services/forecast-share-contract.js','scripts/forecast-share/handler.mjs','scripts/test-map-forecast-panel.mjs'];
-      const followChanges=followOwners.map(followFile=>[followFile,fs.readFileSync(path.join(SOURCE,followFile))]);
+      // Replay the reviewed source bytes. Subsequent backup changes do not alter this historical transition.
+      const followReviewedHead='96f09d322bac05f2d9ce74e6679213949cf308a4';
+      const followChanges=followOwners.map(followFile=>[followFile,git(SOURCE,['cat-file','blob',followReviewedHead+':'+followFile])]);
       const followPlan=run598(make598(baseline598,followChanges,'synthetic reviewed598 bounded followup owners'));
       assert.equal(followPlan.selection,'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(followPlan.reasonCodes));
       for(const followCommand of ['node --test scripts/test-supabase-database-backup-workflow.mjs',
