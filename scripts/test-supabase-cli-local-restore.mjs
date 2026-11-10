@@ -21,7 +21,8 @@ const EXCLUDE='realtime,storage-api,imgproxy,edge-runtime,postgres-meta,studio,s
 const FILES=['roles.sql','schema.sql','data.sql','history_schema.sql','history_data.sql'];
 const ARCHIVE_FILES=['roles.sql','schema.sql','data.sql','history-schema.sql','history-data.sql'];
 const ARCHIVE_SQL=Object.freeze({fileBytes:1_000_000_000,totalBytes:2_000_000_000,chunkBytes:64*1024});
-const ARCHIVE_SQL_OWNERS=['ROLES','SCHEMA','REPLICA_SETTING','DATA','HISTORY','UNKNOWN'];
+const ARCHIVE_SQL_OWNERS=['ROLES','ROLE_SWITCH','SCHEMA','SCHEMA_ROLE_CHECK','REPLICA_SETTING','DATA','DATA_ROLE_CHECK','HISTORY','UNKNOWN'];
+const ARCHIVE_POSTGRES_ROLE_CHECK="DO $rr_restore$ BEGIN IF session_user <> 'supabase_admin' OR current_user <> 'postgres' THEN RAISE SQLSTATE '42501'; END IF; END; $rr_restore$;\n";
 const DOCUMENTED_CLI_LOGIN_GRANT='GRANT "postgres" TO "cli_login_postgres" WITH INHERIT FALSE GRANTED BY "supabase_admin";';
 const ARCHIVE_SQL_STATEMENTS=['UNKNOWN','CREATE_ROLE','ALTER_ROLE','GRANT_ROLE','REVOKE_ROLE','COMMENT_ROLE','CLI_LOGIN_POSTGRES_GRANT'];
 const MAX_ROLE_CLASS_LINES=8192;
@@ -293,7 +294,11 @@ async function* materializedRestoreBytes(c,archive,history=false,inputLines=null
   const names=history?ARCHIVE_FILES.slice(3):ARCHIVE_FILES.slice(0,3);
   for(let i=0;i<names.length;i++){
     const name=names[i],entry=archive.files.find(f=>f.file===name);need(entry,'ARCHIVE_FILE_DESCRIPTOR');
-    if(!history&&i===2)yield track(Buffer.from('SET session_replication_role = replica;\n'),'REPLICA_SETTING');
+    if(!history&&i===1)yield track(Buffer.from('SET LOCAL ROLE postgres;\n'+ARCHIVE_POSTGRES_ROLE_CHECK),'ROLE_SWITCH');
+    if(!history&&i===2){
+      yield track(Buffer.from(ARCHIVE_POSTGRES_ROLE_CHECK),'SCHEMA_ROLE_CHECK');
+      yield track(Buffer.from('SET session_replication_role = replica;\n'),'REPLICA_SETTING');
+    }
     const owner=history?'HISTORY':['ROLES','SCHEMA','DATA'][i];
     const roleLines=owner==='ROLES'&&inputLines&&Object.hasOwn(inputLines,'roleLineClasses')?
       {line:inputLines.next,buffer:Buffer.alloc(512),length:0,prefixSafe:true,classes:new Uint8Array(MAX_ROLE_CLASS_LINES)}:null;
@@ -320,6 +325,7 @@ async function* materializedRestoreBytes(c,archive,history=false,inputLines=null
     }finally{await h.close();}
     yield track(Buffer.from('\n'));
   }
+  if(!history)yield track(Buffer.from(ARCHIVE_POSTGRES_ROLE_CHECK),'DATA_ROLE_CHECK');
 }
 
 // Same owned process-group timeout shape as export-supabase-database.mjs.
@@ -506,9 +512,23 @@ async function psql(c,p,stage,bytes,inputLines=null){
     '--set=VERBOSITY=sqlstate','--tuples-only','--no-align',...(inputLines?['--file=-']:[])],
     {input:bytes,maxMs:90_000,archivePsql:c.archive===true&&!Buffer.isBuffer(bytes),inputLines});
 }
+function archiveBootstrapPsqlArguments(c,p){
+  need(c.archive===true&&p.side==='B'&&/^[a-f0-9]{64}$/.test(p.db??''),'ARCHIVE_BOOTSTRAP_TARGET');
+  const shell=[
+    'test "${POSTGRES_HOST:-}" = /var/run/postgresql',
+    'test -n "${POSTGRES_PASSWORD:-}"',
+    'unset PGSERVICE PGSERVICEFILE PGOPTIONS',
+    'PGPASSWORD="$POSTGRES_PASSWORD" PGPASSFILE=/dev/null PGCONNECT_TIMEOUT=5 exec psql -X -w --host=/var/run/postgresql --port=5432 --username=supabase_admin --dbname=postgres --quiet --single-transaction --variable=ON_ERROR_STOP=1 --set=VERBOSITY=sqlstate --tuples-only --no-align --command="$1" --file=-',
+  ].join('\n');
+  // Run the initial role assertion before stdin so archive error line numbers stay physical.
+  const bootstrapRole="DO $rr_restore$ BEGIN IF session_user <> 'supabase_admin' OR current_user <> 'supabase_admin' THEN RAISE SQLSTATE '42501'; END IF; END; $rr_restore$;";
+  return ['exec','-i',p.db,'sh','-ceu',shell,'archive-bootstrap',bootstrapRole];
+}
 function restoreArchiveSql(c,p,stage,archive,history=false){
   const inputLines={next:1,ranges:new Map(),...(history?{}:{roleLineClasses:null})};
-  return psql(c,p,stage,materializedRestoreBytes(c,archive,history,inputLines),inputLines);
+  const input=materializedRestoreBytes(c,archive,history,inputLines);
+  if(history)return psql(c,p,stage,input,inputLines);
+  return command(c,stage,'docker',archiveBootstrapPsqlArguments(c,p),{input,maxMs:90_000,archivePsql:true,inputLines});
 }
 async function query(c,p,stage,sql){return JSON.parse((await psql(c,p,stage,Buffer.from(sql+'\n'))).toString().trim());}
 async function auth(c,p,route,{body=null,token=null,status=200}={}){
@@ -804,30 +824,44 @@ async function selfTest(){
       {input:pending(),archivePsql:true,maxMs:100}),error=>error.code==='CHILD_TIMEOUT');
     assert(c.processes.every(p=>p.processGroupClosed));
   });
+  function expectedPrimaryArchiveSql([roles,schema,data]){
+    const roleCheck="DO $rr_restore$ BEGIN IF session_user <> 'supabase_admin' OR current_user <> 'postgres' THEN RAISE SQLSTATE '42501'; END IF; END; $rr_restore$;\n";
+    return Buffer.concat([roles,Buffer.from('\nSET LOCAL ROLE postgres;\n'+roleCheck),schema,
+      Buffer.from('\n'+roleCheck+'SET session_replication_role = replica;\n'),data,Buffer.from('\n'+roleCheck)]);
+  }
   test('archive SQLSTATE reports only the matching streamed input owner',async()=>{
+    const p={side:'B',db:'a'.repeat(64)},args=archiveBootstrapPsqlArguments({archive:true},p);
+    assert.deepEqual(args.slice(0,5),['exec','-i',p.db,'sh','-ceu']);
+    assert.match(args[5],/PGPASSWORD="\$POSTGRES_PASSWORD" .*--host=\/var\/run\/postgresql .*--username=supabase_admin .*--single-transaction .*--variable=ON_ERROR_STOP=1 .*--command="\$1" --file=-$/);
+    assert.match(args[7],/session_user <> 'supabase_admin' OR current_user <> 'supabase_admin'/);
+    for(const [c,target] of [[{archive:false},p],[{archive:true},{...p,side:'A'}],[{archive:true},{...p,db:'other'}]])
+      assert.throws(()=>archiveBootstrapPsqlArguments(c,target),e=>e.code==='ARCHIVE_BOOTSTRAP_TARGET');
     await ownArchive(async({c,env,index,materialize,source})=>{
       const archive=await materializeArchiveInputs(c,index,{env,archive:materialize});
       const inputLines={next:1,ranges:new Map()},chunks=[];
       for await(const chunk of materializedRestoreBytes(c,archive,false,inputLines))chunks.push(chunk);
-      assert(Buffer.concat(chunks).equals(restoreBytes(source.slice(0,3))));
+      assert(Buffer.concat(chunks).equals(expectedPrimaryArchiveSql(source)));
       const frame=line=>Buffer.from('psql:<stdin>:'+line+': ERROR:  42501\n');
       const archiveInputOwner=(...args)=>archiveInputDiagnostic(...args).inputOwner;
-      for(const [line,owner]of [[1,'ROLES'],[2,'UNKNOWN'],[3,'SCHEMA'],[5,'REPLICA_SETTING'],[6,'DATA'],[7,'DATA'],[8,'DATA'],[9,'UNKNOWN']])
+      for(const [line,owner]of [[1,'ROLES'],[2,'UNKNOWN'],[3,'ROLE_SWITCH'],[4,'ROLE_SWITCH'],[5,'SCHEMA'],
+        [6,'UNKNOWN'],[7,'SCHEMA_ROLE_CHECK'],[8,'REPLICA_SETTING'],[9,'DATA'],[10,'DATA'],[11,'DATA'],[12,'UNKNOWN'],[13,'DATA_ROLE_CHECK'],[14,'UNKNOWN']])
         assert.equal(archiveInputOwner(frame(line),'SQLSTATE_42501',inputLines),owner);
       assert.equal(archiveInputOwner(Buffer.concat([frame(1),frame(3)]),'SQLSTATE_42501',inputLines),'UNKNOWN');
-      assert.equal(archiveInputOwner(frame(5),'SQLSTATE_23505',inputLines),'UNKNOWN');
+      assert.equal(archiveInputOwner(frame(8),'SQLSTATE_23505',inputLines),'UNKNOWN');
       assert.equal(archiveInputOwner(Buffer.from('ERROR:  42501\n'),'SQLSTATE_42501',inputLines),'UNKNOWN');
       const history={next:1,ranges:new Map()};
-      for await(const _ of materializedRestoreBytes(c,archive,true,history)){}
+      const historyChunks=[];
+      for await(const chunk of materializedRestoreBytes(c,archive,true,history))historyChunks.push(chunk);
+      assert(Buffer.concat(historyChunks).equals(restoreBytes(source.slice(3),true)));
       assert.equal(archiveInputOwner(frame(3),'SQLSTATE_42501',history),'HISTORY');
       Object.assign(c,{home:c.root,processes:[]});
       const streamed={next:1,ranges:new Map()};
-      const child=['-e','process.stdin.resume();process.stdin.on("end",()=>{process.stderr.write("psql:<stdin>:5: ERROR:  42501\\n",()=>process.exit(3))})'];
+      const child=['-e','process.stdin.resume();process.stdin.on("end",()=>{process.stderr.write("psql:<stdin>:4: ERROR:  42501\\n",()=>process.exit(3))})'];
       await assert.rejects(command(c,'ARCHIVE_SQL_TEST',process.execPath,child,
         {input:materializedRestoreBytes(c,archive,false,streamed),archivePsql:true,inputLines:streamed}),
       error=>{
         assert.deepEqual(safeError(error,'ARCHIVE_SQL_TEST'),{stage:'ARCHIVE_SQL_TEST',code:'SQLSTATE_42501',exit:3,
-          externalDockerOutcome:'UNKNOWN_UNTIL_OWNED_READBACK',inputOwner:'REPLICA_SETTING'});
+          externalDockerOutcome:'UNKNOWN_UNTIL_OWNED_READBACK',inputOwner:'ROLE_SWITCH'});
         return true;
       });
     });
@@ -860,7 +894,7 @@ async function selfTest(){
       const first=await stream.next();chunks.push(first.value);
       assert.equal(report().inputStatement,'UNKNOWN','roles verification has not completed');
       for await(const chunk of stream)chunks.push(chunk);
-      assert(Buffer.concat(chunks).equals(restoreBytes(source.slice(0,3))));
+      assert(Buffer.concat(chunks).equals(expectedPrimaryArchiveSql(source)));
       assert.deepEqual(report(),{inputOwner:'ROLES',inputStatement:expected});
       assert.equal(report(frame(position+2)).inputStatement,'UNKNOWN');
       assert.equal(report(Buffer.concat([frame(position),frame(position+1)])).inputStatement,'UNKNOWN');
@@ -938,16 +972,16 @@ async function selfTest(){
       const archive=await materializeArchiveInputs(c,index,{env,archive:materialize});
       for(const history of [false,true]){const chunks=[];
         for await(const chunk of materializedRestoreBytes(c,archive,history))chunks.push(chunk);
-        assert(Buffer.concat(chunks).equals(restoreBytes(history?source.slice(3):source.slice(0,3),history)));}
+        assert(Buffer.concat(chunks).equals(history?restoreBytes(source.slice(3),true):expectedPrimaryArchiveSql(source)));}
     });
   });
   test('real archive SQL exceeds the synthetic 8MiB cap and streams in bounded chunks through backpressure',async()=>{
-    await ownArchive(async({c,env,index,materialize})=>{
+    await ownArchive(async({c,env,index,materialize,source})=>{
       const archive=await materializeArchiveInputs(c,index,{env,archive:materialize});assert(archive.files[2].bytes>P.fileBytes);
       let count=0,maximum=0,writes=0;
       await pipeline(Readable.from(materializedRestoreBytes(c,archive),{objectMode:false}),new Writable({highWaterMark:1024,
         write(chunk,_encoding,done){count+=chunk.length;maximum=Math.max(maximum,chunk.length);writes++;setImmediate(done);}}));
-      assert.equal(count,archive.files.slice(0,3).reduce((n,f)=>n+f.bytes,0)+3+Buffer.byteLength('SET session_replication_role = replica;\n'));
+      assert.equal(count,expectedPrimaryArchiveSql(source).length-source[2].length+archive.files[2].bytes);
       assert(maximum<=ARCHIVE_SQL.chunkBytes&&writes>128);
     },{large:true});
   });
@@ -958,6 +992,14 @@ async function selfTest(){
       await assert.rejects(pipeline(Readable.from(materializedRestoreBytes(c,archive),{objectMode:false}),
         new Writable({write(_chunk,_encoding,done){done();},final(done){finalized=true;done();}})),e=>e.code==='ARCHIVE_SQL_SHA');
       assert.equal(finalized,false);
+    });
+    await ownArchive(async({c,env,index,materialize})=>{
+      const archive=await materializeArchiveInputs(c,index,{env,archive:materialize});
+      const bad=Buffer.alloc(archive.files[0].bytes,120),seen=[];
+      await fs.writeFile(path.join(archive.directory,'roles.sql'),bad);
+      await assert.rejects(async()=>{for await(const chunk of materializedRestoreBytes(c,archive))seen.push(chunk);},
+        e=>e.code==='ARCHIVE_SQL_SHA');
+      assert(Buffer.concat(seen).equals(bad),'role switch must follow successful role-file verification');
     });
   });
   test('replacement hardlinks and expired operation deadlines refuse archive bytes',async()=>{
