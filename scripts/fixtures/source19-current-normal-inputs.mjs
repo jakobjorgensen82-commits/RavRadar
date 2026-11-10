@@ -108,7 +108,9 @@ async function copyInputs(inputRoot, outputRoot, rows, allowed) {
 }
 
 function cloneSource(head, tree, destination) {
-  execFileSync('git', ['-c', 'core.autocrlf=false', 'clone', '--shared', '--no-hardlinks', '--no-checkout', ROOT, destination],
+  // Only this clone of the fixed local checkout may use file transport.
+  execFileSync('git', ['-c', 'core.autocrlf=false', '-c', 'protocol.file.allow=always',
+    'clone', '--shared', '--no-hardlinks', '--no-checkout', ROOT, destination],
     {stdio: ['ignore', 'pipe', 'pipe'], timeout: 30000,
       env: {...process.env, GIT_NO_LAZY_FETCH: '1', GIT_NO_REPLACE_OBJECTS: '1', GIT_TERMINAL_PROMPT: '0'}});
   git(destination, '-c', 'advice.detachedHead=false', 'checkout', '--detach', head);

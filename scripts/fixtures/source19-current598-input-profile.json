@@ -34,8 +34,8 @@
     },
     {
       "path": "scripts/fixtures/source19-current-normal-inputs.mjs",
-      "bytes": 78754,
-      "sha256": "a5ae7c8613a103443837a2febbf8cf69e66c6341d38c04eb6c84b2c8179fce92",
+      "bytes": 78867,
+      "sha256": "4f95f06167e232fda29fe6e0c4291746a1b45c4fa3fb37e4fc78367456b41683",
       "source": "THIS_SAME_ACTUAL_COMMITTED_CANDIDATE"
     },
     {
