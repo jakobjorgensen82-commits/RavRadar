@@ -4955,6 +4955,7 @@
           "scripts/lib/source-impact-control-imports.mjs"
         ],
         "resources": [
+          "scripts/test-supabase-cli-local-restore.mjs",
           ".github/workflows/deploy-forecast-share-pages.yml",
           ".github/workflows/maintain-admin-document-history.yml",
           ".github/workflows/reusable-pages-deploy.yml",
@@ -4999,6 +5000,16 @@
           "service-worker.js"
         ],
         "dependencySurfaces": [
+          "0cfd063c6d1ace9cc217fc8ca6ca315a36a74c5604a7a9a2e3f4a7511a600af2",
+          "81b18cc1bbecb522d98d7b44248502c684bbad060942fd26c1a524385039dc57",
+          "503217a985afb0e3a0e803550f3a9373c5b201dd40c891fd1d4b21e2790efda0",
+          "4b8d593a334f808cc1e1004e300961d240caf20d35f9d324c98cab3bf717f848",
+          "6c1a74fbc033852a63e636d093dc9dded9d4d133b72918b47b23a9c0d33fc57b",
+          "cc2f0c703ff3da9752d04836755d16d6640d030fa705c24e74b97311ed43c75a",
+          "dbcbc9e7bd83102aceb107cc4867349f5975191de9946525d600382e28a2366e",
+          "ea00ae293e596cc39d6c3c52f3efa614884c7499b71b98c75d7d9823c093b999",
+          "9800b3018aa96fc688a3ee7a0af4a3f9f181be68ba4ec7d4f7d1ff99f5bcd681",
+          "a8aceb6cfe830ae399ab315458f9741e62741a3be14c5057949d025e539c29ac",
           "013346532675b5d7e14a4bf1852ce6ece984bf586be74b8dbf4bd9fb7fb27e01",
           "01c69597b6e17bd221a431a33aeaa24c132b609c043d4596345f7bd246a81185",
           "01cb0488309acdb9624ada091551e710c2512258768c6adff36e3f72d800c546",

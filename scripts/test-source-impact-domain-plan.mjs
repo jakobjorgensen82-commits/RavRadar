@@ -538,6 +538,33 @@ test('normal598 registry keeps genuine148 inputs and closes only known normal co
         assert.equal(plan.commands.filter(value=>value===command).length,1);
       assert(!plan.commands.includes('node scripts/reclaim-runner-android-sdk.mjs'),'Unregistered native SDK CLI is not silently selected or proven');
     });
+    await t.test('cumulative restore scope retains the reviewed domain planner control test only',()=>{
+      const restoreScopeFixture='scripts/test-supabase-cli-local-restore.mjs', restoreScopeWorkflow='.github/workflows/verify-supabase-cli-local-restore.yml';
+      const restoreScopeControlTest='scripts/test-source-impact-domain-plan.mjs';
+      const restoreScopeArchiveSource='4b2831a6c2b9c984195c62ce616b6140fdd46ab0';
+      const restoreScopeOriginal=git(root598,['cat-file','blob',restoreScopeArchiveSource+':'+restoreScopeFixture]);
+      const restoreScopeBaseline=make598(baseline598,[[restoreScopeFixture,restoreScopeOriginal],[restoreScopeWorkflow,git(root598,['cat-file','blob',restoreScopeArchiveSource+':'+restoreScopeWorkflow])]],
+        'synthetic current restore baseline with exact hosted workflow');
+      const restoreScopeChangedControl=Buffer.concat([git(root598,['cat-file','blob',restoreScopeBaseline+':'+restoreScopeControlTest]),
+        Buffer.from('\n// Synthetic only domain planner test follow-up.\n')]);
+      const restoreScopeController=make598(restoreScopeBaseline,[[restoreScopeControlTest,restoreScopeChangedControl]],'synthetic separately reviewed controller fixture edit');
+      const restoreScopeDispatchMarker='if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){';
+      const restoreScopeBody=restoreScopeOriginal.toString('utf8');
+      assert.equal(restoreScopeBody.split(restoreScopeDispatchMarker).length,2);
+      const restoreScopeChangedBody=Buffer.from(restoreScopeBody.replace(restoreScopeDispatchMarker,'// Synthetic restore-only body change.\n'+restoreScopeDispatchMarker));
+      const restoreScopeCombined=make598(restoreScopeController,[[restoreScopeFixture,restoreScopeChangedBody]],'synthetic restore change after control fixture edit');
+      const restoreScopeAccepted=run598(restoreScopeCombined,restoreScopeBaseline);
+      assert.equal(restoreScopeAccepted.selection,'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(restoreScopeAccepted.reasonCodes));
+      assert.equal(restoreScopeAccepted.changedRows,2);
+      assert.equal(restoreScopeAccepted.commands.filter(value=>value==='node --test '+restoreScopeControlTest).length,1);
+      assert.equal(restoreScopeAccepted.commands.filter(value=>value==='node '+restoreScopeFixture+' --self-test').length,1);
+      assert.equal(restoreScopeAccepted.domains.postgres.status,'NOT_APPLICABLE');
+      assert.equal(restoreScopeAccepted.domains.historical584National.status,'NOT_APPLICABLE');
+      const restoreScopeForeignOwner='scripts/archive-supabase-database-backup.mjs';
+      const restoreScopeForeignCandidate=make598(restoreScopeCombined,[[restoreScopeForeignOwner,Buffer.concat([git(root598,['cat-file','blob',restoreScopeArchiveSource+':'+restoreScopeForeignOwner]),
+        Buffer.from('\n// Synthetic separately owned archive change.\n')])]],'synthetic foreign owner mixed with restore');
+      assert.deepEqual(run598(restoreScopeForeignCandidate,restoreScopeBaseline).reasonCodes,['LOCAL_RESTORE_FIXTURE_COMBINED_SCOPE']);
+    });
     await t.test('reviewed B272 audit read branch keeps its real targets and refuses an unknown read capability',()=>{
       const files=['scripts/audit-saved-weather-inputs.mjs','.github/workflows/audit-saved-weather-inputs.yml',
         'scripts/test-saved-weather-audit-workflow.mjs'];

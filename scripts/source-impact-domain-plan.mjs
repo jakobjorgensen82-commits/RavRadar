@@ -10,7 +10,7 @@ import {scanAllSourceDependencies,dependencySourceLiterals} from './lib/source-i
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const REGISTRY_SHA256='3970bc86fb8afd99d193507b82337c1068aa368f6d62ff728988fc21da9577f4';
 const REGISTRY597_SHA256='a7ccfba2b2f631ccc358342e2c3b87e1cb1edbd54311148c94822fddaa6dbcfa';
-const REGISTRY598_SHA256='c08f15efee9b9dd6619f661ae1c2fd68b24154c61e5eab02822a2ff8b9ba98c1';
+const REGISTRY598_SHA256='84cab742d5fb598020f525e2d44d3ce8b2f22768cb0a4d956d836d4d4c50fac7';
 const PAGES_TRANSPORT_FIELDS=Object.freeze({
   "scripts/lib/pages-per-artifact-identity.mjs": [],
   "scripts/lib/pages-sealed-retry-decision.mjs": [
@@ -56,6 +56,7 @@ const NARROW_SCOPE_CONTROL_OWNERS = new Set([
   'scripts/source-impact-domain-plan.mjs', 'scripts/lib/source-impact-domain-owners-598.json',
   'scripts/source-targeted-producer.mjs', 'scripts/source-impact-full-baseline.mjs',
   'scripts/native-postgres-evidence.mjs', 'scripts/test-native-postgres-evidence.mjs',
+  'scripts/test-source-impact-domain-plan.mjs',
 ]);
 const LOCAL_RESTORE_FIXTURE='scripts/test-supabase-cli-local-restore.mjs';
 const LOCAL_RESTORE_SELF_TEST='node '+LOCAL_RESTORE_FIXTURE+' --self-test';
