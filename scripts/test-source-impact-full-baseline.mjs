@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
+import {readFileSync} from 'node:fs';
 import childProcess from 'node:child_process';
 import {execFileSync} from 'node:child_process';
 import {syncBuiltinESMExports} from 'node:module';
@@ -456,6 +457,36 @@ test('598 FULL baseline binds its genuine async native and national shapes witho
     assert.equal((await bad.qualify()).status,'REFUSED');assert.deepEqual(bad.zipCalls,[]);
   }
 });
+test('reviewed ordinary DMI setup allows only the exact modern FULL producer baseline',async()=>{
+  const workflow=readFileSync(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url));
+  const f=await synthetic598FullFixture();
+  assert.equal((await f.qualify()).kind,SOURCE_IMPACT_FULL_BASELINE_KIND);
+  f.zipCalls.length=0;
+  const names=['Set up job',...Array.from(workflow.toString().matchAll(/^      - (name|uses): ([^\n]+)$/gm),
+    ([,kind,name])=>kind==='uses'?'Run '+name:name)];
+  assert.equal(names.length,23);assert.equal(names[5],'Install declared DMI dependencies before source planning');
+  const steps=names.map((name,index)=>step(name,index+1));
+  f.job.steps=copy(steps);
+  for(const [id,minute] of [[f.reference.nativeArtifactId,18],[f.reference.finalArtifactId,23]])
+    f.json.get('/repos/'+repo+'/actions/artifacts/'+id).created_at=stamp(minute);
+  const read=f.dependencies.readGit;
+  const readModern=(args,options)=>args.join(' ')===('cat-file blob '+head+':'+PULL_REQUEST_SOURCE_WORKFLOW)
+    ?Buffer.from(workflow):read(args,options);
+  f.dependencies.readGit=readModern;
+  assert.equal((await f.qualify()).kind,SOURCE_IMPACT_FULL_BASELINE_KIND);
+  assert.equal(f.zipCalls.length,2);
+  for(const mutate of [f=>f.job.steps[5].conclusion='skipped',
+    f=>f.job.steps.push({...f.job.steps[5],number:42}),
+    f=>f.job.steps[16].completed_at=stamp(15),
+    f=>{const read=f.dependencies.readGit;f.dependencies.readGit=(args,options)=>{
+      const value=read(args,options);return args[2]===head+':'+PULL_REQUEST_SOURCE_WORKFLOW
+        ?Buffer.concat([value,Buffer.from('\n')]):value;};}]){
+    f.job.steps=copy(steps);f.dependencies.readGit=readModern;f.zipCalls.length=0;
+    mutate(f);
+    assert.equal((await f.qualify()).status,'REFUSED');assert.deepEqual(f.zipCalls,[]);
+  }
+});
+
 test('598 normal V2 producer and consumer use real protected closure with synthetic evidence transport only',()=>{
   execFileSync(process.execPath,['scripts/test-source-targeted-domain-integration.mjs','--source598'],{
     timeout:180000,maxBuffer:4*1024*1024,stdio:['pipe','pipe','pipe'],env:{...process.env}});

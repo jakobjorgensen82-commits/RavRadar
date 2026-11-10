@@ -4,6 +4,7 @@ import {execFileSync} from 'node:child_process';
 import {decideSourceGate,SOURCE_GATE_CONTRACT,PULL_REQUEST_SOURCE_JOB,
   PULL_REQUEST_SOURCE_WORKFLOW,PULL_REQUEST_SOURCE_STEPS} from './lib/weather-source-gate.mjs';
 import {sourceTreeContentSha256,sourceTreeProofArtifactName} from './lib/source-tree-content.mjs';
+import {SOURCE_IMPACT_DMI_REQUIREMENTS_REVIEW} from './lib/source-impact-workflow-review.mjs';
 import {verifyAssistantPublic591SuccessorPhaseReceipt,verifyAssistantPublic591V2PhaseReceipt,
   verifyAssistantPublic591Metadata,ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND,
   ASSISTANT_PUBLIC591_V2_KIND,INSTALLED593_ORIGINAL591_PHASE_KIND,
@@ -28,6 +29,7 @@ const time=value=>{const n=Date.parse(value);assert(Number.isFinite(n));return n
 const NATIVE_UPLOAD='Upload independently completed native586 PostgreSQL phase';
 const SOURCE_UNCHANGED='Require validated source tree to remain unchanged';
 const FINAL_UPLOAD='Upload tree-content source validation proof';
+const EARLY_DMI_INSTALL='Install declared DMI dependencies before source planning';
 const ZIP_LIMIT=65536,JSON_LIMIT=32768,API_LIMIT=2*1024*1024;
 
 function validateReference(value){
@@ -148,6 +150,27 @@ async function historicalNational(proof,current,native){
   }
 }
 
+// Authenticate the whole ordinary workflow before accepting its newer ordinals.
+// The legacy native verifier still sees the same run, job and original times.
+function legacyNativeViewForDmiRequirements(job,workflow){
+  const review=SOURCE_IMPACT_DMI_REQUIREMENTS_REVIEW;
+  assert.equal(workflow.length,review.afterBytes);assert.equal(sha(workflow),review.afterSha256);
+  const names=['Set up job',...Array.from(workflow.toString().matchAll(/^      - (name|uses): ([^\n]+)$/gm),
+    ([,kind,name])=>kind==='uses'?'Run '+name:name)];
+  assert.equal(names.length,23);assert.equal(names[5],EARLY_DMI_INSTALL);
+  assert.deepEqual(job.steps.filter(step=>step.number<=names.length).map(step=>step.number),
+    names.map((_,index)=>index+1));
+  let previousEnd=-Infinity;
+  for(const [index,name] of names.entries()){
+    const step=one(job.steps.filter(row=>row.name===name));
+    assert.equal(step.number,index+1);assert(success(step));
+    const start=time(step.started_at),end=time(step.completed_at);
+    assert(previousEnd<=start&&start<=end);previousEnd=end;
+  }
+  return {...job,steps:job.steps.filter(step=>step.number!==6).map(step=>
+    step.number>6?{...step,number:step.number-1}:step)};
+}
+
 // No network is performed unless the normal caller supplies bounded readers.
 // Unknown/missing evidence returns no cheap-path authority. This never upgrades
 // a TARGETED qualification or a main-source-only locator into a FULL baseline.
@@ -222,10 +245,17 @@ export async function qualifySourceImpactFullBaseline(input,dependencies){
       'Validate durable Copernicus current-reference baseline on artificial data only',
       'Validate download-inclusive DMI capacity on artificial data only'];
     for(const name of names)assert(success(one(job.steps.filter(value=>value.name===name))));
-    const phase=verifyAssistantPublic591Metadata(run,jobs);
-    const nationalStep=one(job.steps.filter(value=>value.name===NATIONAL_STEP));assert.equal(nationalStep.number,18);
-    const unchanged=one(job.steps.filter(value=>value.name===SOURCE_UNCHANGED));assert.equal(unchanged.number,21);
-    const final=one(job.steps.filter(value=>value.name===FINAL_UPLOAD));assert.equal(final.number,22);
+    const modern=job.steps.some(value=>value.name===EARLY_DMI_INSTALL);
+    let nativeJobs=jobs;
+    if(modern){
+      const workflow=git(['cat-file','blob',reference.producerHead+':'+PULL_REQUEST_SOURCE_WORKFLOW]);
+      const legacyView=legacyNativeViewForDmiRequirements(job,workflow);
+      nativeJobs={...jobs,jobs:jobs.jobs.map(row=>row===job?legacyView:row)};
+    }
+    const phase=verifyAssistantPublic591Metadata(run,nativeJobs),shift=modern?1:0;
+    const nationalStep=one(job.steps.filter(value=>value.name===NATIONAL_STEP));assert.equal(nationalStep.number,18+shift);
+    const unchanged=one(job.steps.filter(value=>value.name===SOURCE_UNCHANGED));assert.equal(unchanged.number,21+shift);
+    const final=one(job.steps.filter(value=>value.name===FINAL_UPLOAD));assert.equal(final.number,22+shift);
     assert(time(phase.uploadedAt)<=time(nationalStep.started_at));
     assert(time(nationalStep.completed_at)<=time(unchanged.started_at));
     assert(time(unchanged.completed_at)<=time(final.started_at));

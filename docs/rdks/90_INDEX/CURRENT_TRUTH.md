@@ -1,3 +1,11 @@
+## 8. november — automatisk overdragelse til dokumenthistorik efter ordinært vejr
+
+Den 10. november var indstillingen for automatisk dokumentvedligeholdelse aktiveret. Den almindelige planlægning bruger GitHubs workflow-token til at starte vejrhentningen. GitHub tillader selve startkaldet, men den efterfølgende automatiske afslutningshændelse oprettede ingen modtagerkørsel. Den kontrollerede ejerstartede vejrlevering blev derimod fulgt af en automatisk modtager.
+
+På 4.0.598-kandidaten kan første forsøg af en frisk, ordinær botstartet vejrkørsel på aktuel kvalificeret main efter verificeret offentlig levering anmode GitHub om at starte den eksisterende dokumentvedligeholdelse én gang. GitHubs kvitterede modtager-ID bindes til en succesfuld jobhandling i det præcise vejrforløb. Modtageren genlæser begge identiteter og kræver mindst 30 minutter til det næste firetimersslot beregnet fra det udløsende forløb. Manglende kvittering, anden modtager, ændret kilde eller et overskredet tidsvindue giver ingen privat adgang. Den hidtidige hændelsesvej er fortsat tilgængelig for kvalificerede kørsler startet af andre end botten. De manuelle veje består.
+
+Den målrettede lokale prøve er bestået. GitHub-kvalifikation på den leverede kilde og faktisk automatisk arkivering med genlæsning og eventuel beskæring er åbne. Kravene til en særskilt fuld database- og Auth-backup, isoleret gendannelse og vurdering af Free består. Se håndbog 89.298 og 89.300.
+
 ## 8. november — mindre gentaget arbejde i vejrplanlægningen
 
 To almindelige vejrhentninger ramte den fælles tidsgrænse, da RavRadar gennemgik gemte værdier for kystdelene. RavRadar fortsatte efter den normale reservevej. Den målte tid gælder hele planlægningen.

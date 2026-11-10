@@ -1,3 +1,9 @@
+## 8. november — afgrænset automatisk overdragelse til dokumenthistorik
+
+Den versionsneutrale rettelse lader en ordinær, frisk botstartet vejrkørsel anmode om én passage af den eksisterende dokumentvedligeholdelse, når den offentlige levering er verificeret. Vedligeholdelsen kontrollerer selv både den afsluttede vejrkørsel og det ene modtagernummer, som GitHub kvitterede for. Ved tvivl standser den, og afsenderen gentager ikke anmodningen. Det allerede afsluttede vejrresultat bevares.
+
+De eksisterende grænser for de tre dokumenter, arkivering før beskæring og sikker afstand til næste vejrkørsel gælder fortsat. Den normale målprøve bestod lokalt med syntetiske GitHub-svar. En faktisk automatisk passage skal stadig eftervises. Se håndbog 89.298.
+
 ## 8. november — genlæsning af den gemte databasehenvisning
 
 Den første krypterede databasebackup blev gemt og genlæst fra det private lager. Databasen gemte også henvisningen, men backupkontrollen meldte fejl, fordi databasen returnerede felterne i en anden rækkefølge. Rettelsen sammenligner den validerede henvisning i den oprindelige rækkefølge og bevarer de præcise værdier, versionskontrollen og det eksisterende krypterede arkiv.
