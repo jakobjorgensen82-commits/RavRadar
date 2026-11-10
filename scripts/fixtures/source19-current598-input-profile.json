@@ -28,8 +28,8 @@
     },
     {
       "path": "scripts/fixtures/source19-current-native-providers.py",
-      "bytes": 34732,
-      "sha256": "ffac5704cbffdfe65d160ae0ea73009a8f5bcdf12dc1d6212cdd9266d8970c5a",
+      "bytes": 35524,
+      "sha256": "c36ff0fdeab148aa99cb438074dc9063e7cf9779d2459ab04216e31501052a01",
       "source": "THIS_SAME_ACTUAL_COMMITTED_CANDIDATE"
     },
     {
