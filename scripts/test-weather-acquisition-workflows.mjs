@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { inverseCompletedRuntimeWorkflow, inversePagesPublicProjectionWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
+import { inverseCompletedRuntimeWorkflow, inverseImmediateOrdinaryPagesWorkflow, inversePagesPublicProjectionWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
 import {writeRuntimeAuditExecutionObservation} from './observe-runtime-audit-execution.mjs';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -514,8 +514,9 @@ test('qualified scalar planning uses the restored snapshot and preserves conserv
   const historicalExpression = expression.replace(schema12, schema1);
   assert.ok(history.includes(historicalExpression+" && '--prepare-cached-native-originals'"),
     'Every other existing ordinary-restored guard and the historical schema1 selector remain unchanged');
-  // Invert the exact reviewed Pages change before deriving the prior scalar selector.
-  const reviewedWeatherWorkflow = inversePagesPublicProjectionWorkflow(actualNormalWorkflow, 'build');
+  // Restore the exact reviewed Pages predecessors before deriving the prior scalar selector.
+  const reviewedWeatherWorkflow = inversePagesPublicProjectionWorkflow(
+    inverseImmediateOrdinaryPagesWorkflow(actualNormalWorkflow, 'build'), 'build');
   const predecessor = reviewedWeatherWorkflow.replace('RAVRADAR_RETAINED_SCALAR_CONTEXT: ${{ '+schema12,
     'RAVRADAR_RETAINED_SCALAR_CONTEXT: ${{ '+schema1);
   assert.notEqual(predecessor, reviewedWeatherWorkflow);
