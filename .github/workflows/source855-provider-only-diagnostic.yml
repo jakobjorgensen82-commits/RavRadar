@@ -1,4 +1,4 @@
-name: Verify full SOURCE provider preparation with normal Copernicus seal
+name: Diagnose exact SOURCE 610 synthetic prefix
 on:
   push:
     branches: [codex/source610-full-provider-after856-20261110]
@@ -11,15 +11,15 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  provider-only-no-admission:
-    if: github.repository_id == '1306858343' && github.ref == 'refs/heads/codex/source610-full-provider-after856-20261110' && github.event_name == 'push'
+  prefix-only-no-admission:
+    if: github.repository_id == '1306858343' && github.ref == 'refs/heads/codex/source610-full-provider-after856-20261110' && github.event_name == 'push' && github.run_attempt == '1'
     runs-on: ubuntu-24.04
-    timeout-minutes: 35
+    timeout-minutes: 70
     steps:
       - name: Check out the exact public synthetic fixture source
         uses: actions/checkout@v7
         with:
-          ref: 1f734410aa60a14bf89788c76a15d4b545bf845c
+          ref: 58b52f0d8bb014f20a68e55ce74cad2adf1c8889
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@v7
@@ -33,19 +33,19 @@ jobs:
         run: >-
           python -m pip install --disable-pip-version-check --no-input --timeout 15 --retries 0
           --only-binary=:all: -r requirements-dmi.txt -r requirements-geometry.txt -r requirements-copernicus.txt
-      - name: Rehearse the complete synthetic provider child without source admission
-        timeout-minutes: 25
+      - name: Diagnose only the normal synthetic provider and prefix children
+        timeout-minutes: 60
         shell: bash
         run: |
+          set -euo pipefail
+          test "$GITHUB_RUN_ATTEMPT" = 1
           unset GITHUB_TOKEN GH_TOKEN GITHUB_EVENT_PATH
           PYTHON312=$(command -v python)
           NODE24=$(command -v node)
-          unset RR855_H0
-          set -eu
           umask 077
           repo=$(pwd -P)
-          head=1f734410aa60a14bf89788c76a15d4b545bf845c
-          tree=1beba5af54afdc106e0b92be1e091e29f1cc475a
+          head=58b52f0d8bb014f20a68e55ce74cad2adf1c8889
+          tree=adb62108d3d32709ced06d5f5821bceb032da371
           export GIT_NO_LAZY_FETCH=1 GIT_NO_REPLACE_OBJECTS=1 GIT_OPTIONAL_LOCKS=0
           export GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null
           actual_head=$(git -c protocol.allow=never rev-parse HEAD^{commit})
@@ -57,10 +57,9 @@ jobs:
             test "$physical_top" = "$repo" && test "$shallow" = false && test -z "$dirty" || exit 1
           if git config --local --get-regexp '^(extensions\.partialclone|remote\..*\.promisor)$' >/dev/null 2>&1; then exit 1; fi
           library_path=$(printenv LD_LIBRARY_PATH || true)
-          actual_h0=$(printenv RR855_H0 || true)
+
           env -i PATH="$PATH" LANG=C.UTF-8 LD_LIBRARY_PATH="$library_path" \
-            "$PYTHON312" -I -B - "$NODE24" "$actual_h0" "$head" 3>&1 >/dev/null 2>&1 <<'PY'
-          import ast
+            "$PYTHON312" -I -B - "$NODE24" "$head" 3>&1 >/dev/null 2>&1 <<'PY'
           import importlib.util
           import json
           import os
@@ -70,150 +69,205 @@ jobs:
           import subprocess
           import sys
           import tempfile
-          import time
 
-          phase = 'ENVIRONMENT'
-          started = time.monotonic()
-          result = {'kind': 'CURRENT_PROVIDER_ONLY_DIAGNOSTIC', 'outcome': 'REFUSED',
-                    'phase': phase, 'exitCode': None, 'referenceMode': 'UNSET',
-                    'providerFailure': None, 'initialWeatherLine': None,
-                    'privatePayloadIncluded': False, 'producerFrame': None, 'terminalFamily': None}
-          try:
-              import eccodes
-              import requests.adapters
-              import urllib3.util.retry
-              node, captured_h0, head = sys.argv[1:]
-              node = Path(node)
-              assert sys.platform == 'linux' and sys.version_info[:2] == (3, 12)
-              assert eccodes.codes_get_api_version() == '2.48.2'
-              assert node.is_absolute() and node.is_file()
-              assert subprocess.check_output([str(node), '-p', "process.versions.node.split('.')[0]"],
-                                             stdin=subprocess.DEVNULL, timeout=30) == b'24\n'
-              assert not captured_h0 or re.fullmatch(r'\d{4}-\d\d-\d\dT\d\d:00:00\.000Z', captured_h0)
-              phase = 'OWNED_HOST'
-              observer_path = Path.cwd() / 'scripts/test-source598-current-native-profile.py'
-              spec = importlib.util.spec_from_file_location('source855_provider_only_observer', observer_path)
-              observer = importlib.util.module_from_spec(spec)
-              spec.loader.exec_module(observer)
-              observer.NODE = node
-              assert observer.CURRENT_NATIVE_CONTEXT is None
-              test = observer.SourceCurrentNative()
-              phase = 'PROFILE'
-              profile = test.current598_profile()
-              phase = 'OWNED_HOST'
-              own, root, environment, normal_h0 = test.owned_current_host(head, with_sdk=False, input_profile=profile)
-              owner = own.lstat()
-              assert own.parent == Path(tempfile.gettempdir()).resolve(strict=True)
-              assert owner.st_uid == os.getuid() == os.geteuid()
-              assert stat.S_ISDIR(owner.st_mode) and stat.S_IMODE(owner.st_mode) == 0o700
-              (own / 'fixture-current598').mkdir(mode=0o700)
-              phase = 'PROVIDERS'
-              result['referenceMode'] = 'CAPTURED_HOUR' if captured_h0 else 'NEW_NORMAL_HOUR'
-              command = [sys.executable, '-I', '-B',
-                         str(root / 'scripts/fixtures/source19-current-native-providers.py'),
-                         str(node), captured_h0 or normal_h0, '--current598']
-              with (own / 'current598-providers-whole.stdout').open('xb') as stdout, \
-                   (own / 'current598-providers-whole.stderr').open('xb') as stderr:
+          CAP = 256 * 1024
+          OWNERS = (
+              ('SOURCE', 'PREFIX', 'scripts/fixtures/source19-current-normal-inputs.mjs',
+               'cloneSource git produceCurrent598NativePrefix createArchivedOnlyOldSeed saveNormal prepareCurrent598NativePrefixProfile installOfflineTransport owned copyInputs read writeNew same frozenFragment'),
+              ('SOURCE', 'PROVIDER', 'scripts/fixtures/source19-current-native-providers.py',
+               'prepare need genuine598_code_root finish_normal_basis import_native_decoder normal'),
+              ('SOURCE', 'INITIAL_WEATHER', 'scripts/fixtures/source19-current-initial-weather.py',
+               'add_initial_weather admit grid need'),
+              ('SOURCE', 'FORECAST', 'scripts/fixtures/source19-current-provider-forecast.mjs', 'main'),
+              ('SOURCE', 'FROZEN_SOURCE', 'scripts/check-last-mile-enclosure-predecessor-source.mjs',
+               'withFrozenLastMileEnclosurePredecessorSource git'),
+              ('GENUINE598', 'DMI', 'scripts/update-dmi-bulk.py',
+               'process_grib_transactionally process_grib operational_wave_asset_stage_admissible _grib_read_scope _refuse'),
+              ('GENUINE598', 'ARCHIVE', 'scripts/archived-weather-restart.mjs',
+               'prepareArchivedWeatherRestart authenticate verifyArchivedWeatherRestartContext loadArchivedWeatherRestartInputViewForTarget fail need same'),
+              ('GENUINE598', 'FROZEN_SOURCE', 'scripts/check-last-mile-enclosure-predecessor-source.mjs',
+               'withFrozenLastMileEnclosurePredecessorSource git'),
+              ('GENUINE598', 'UPDATER', 'scripts/update-weather.mjs', 'run buildConditions main'),
+              ('GENUINE598', 'PUBLIC', 'scripts/generate-public-conditions.mjs', 'main'),
+              ('GENUINE598', 'PUBLIC_WRITER', 'scripts/public-conditions-lib.mjs', 'writePublicRuntimeFromFull'),
+              ('GENUINE598', 'BUNDLE', 'scripts/private-production-runtime-bundle.mjs',
+               'createPrivateProductionRuntimeBundle verifyPrivateProductionRuntimeBundle'),
+              ('GENUINE598', 'B_WORKFLOW', 'scripts/private-production-runtime-workflow.mjs',
+               'buildPrivateRuntimeCreateSpec buildPrivateRuntimeExpectation privateRuntimeContractHashes readJsonFile'),
+              ('GENUINE598', 'B_STORE', 'scripts/protected-private-production-runtime.mjs',
+               'publishProtectedPrivateProductionRuntime restoreProtectedPrivateProductionRuntime'),
+              ('GENUINE598', 'S_LOCAL', 'scripts/ravscore-continuation-checkpoint.mjs',
+               'saveRavScoreContinuationCheckpoint loadRavScoreContinuationCheckpointForTarget'),
+              ('GENUINE598', 'S_STORE', 'scripts/protected-ravscore-continuation-checkpoint.mjs',
+               'publishProtectedRavScoreContinuationCheckpoint restoreProtectedRavScoreContinuationCheckpoint'),
+              ('GENUINE598', 'CURRENT_CLOSURE', 'scripts/build-current-operational-closure.py', 'main'),
+              ('GENUINE598', 'OM_FALLBACK', 'scripts/fill-open-meteo-current-fallback.py', 'main'),
+              ('OLD', 'OLD_B_STORE', 'scripts/protected-private-production-runtime.mjs',
+               'publishProtectedPrivateProductionRuntime restoreProtectedPrivateProductionRuntime'),
+              ('OLD', 'OLD_S_STORE', 'scripts/protected-ravscore-continuation-checkpoint.mjs',
+               'publishProtectedRavScoreContinuationCheckpoint restoreProtectedRavScoreContinuationCheckpoint'),
+          )
+          CAUSES = {
+              b'CURRENT598_NATIVE_PREFIX_EXTERNAL_REQUEST_REFUSED': 'PREFIX_EXTERNAL_REQUEST_REFUSED',
+              b'CURRENT_NATIVE_PROVIDER_CODE598_OWNED_PATH': 'PROVIDER_CODE598_OWNED_PATH',
+              b'CURRENT_NATIVE_PROVIDER_GENUINE37_CODE_IDENTITY': 'PROVIDER_GENUINE37_CODE_IDENTITY',
+              b'CURRENT_NATIVE_PROVIDER_CODE598_PRODUCT_CHANGED': 'PROVIDER_CODE598_PRODUCT_CHANGED',
+              b'CURRENT_NATIVE_PROVIDER_NORMAL_COPERNICUS_RESIDUALS_REQUIRE_DATA': 'PROVIDER_COPERNICUS_RESIDUALS_REQUIRE_DATA',
+              b'CURRENT_NATIVE_INITIAL_WEATHER_NORMAL_FULL_WEATHER_DECODE_INCOMPLETE': 'PROVIDER_WEATHER_DECODE_INCOMPLETE',
+              b'COPERNICUS_COMPLETE_SEAL_INVALID': 'COPERNICUS_COMPLETE_SEAL_INVALID',
+              b'ARCHIVED_WEATHER_RESTART_TARGET_NOT_NEWER': 'ARCHIVE_TARGET_NOT_NEWER',
+              b'ARCHIVED_WEATHER_RESTART_CLOSE_UNPROVED': 'ARCHIVE_CLOSE_UNPROVED',
+              b'Normal updater must have finalized the actual opaque origin': 'PREFIX_ORIGIN_MISSING',
+              b'Actual normal public-hour pack is required': 'PREFIX_PUBLIC_PACK_MISSING',
+              b'Whole normal raw manifest preserved': 'PREFIX_RAW_MANIFEST_CHANGED',
+              b'Normal raw inventory preserved': 'PREFIX_RAW_INVENTORY_CHANGED',
+              b'Input originals stay owned in the genuine598 canonical raw root': 'PREFIX_RAW_IDENTITY_CHANGED',
+          }
+          GIT_CAUSES = (
+              (rb"fatal: transport 'file' not allowed", 'GIT_FILE_TRANSPORT_DISABLED'),
+              (rb'fatal: not a git repository \(or any of the parent directories\): \.git', 'GIT_REPOSITORY_NOT_FOUND'),
+              (rb'fatal: reference is not a tree: [0-9a-f]{40}', 'GIT_REFERENCE_NOT_A_TREE'),
+              (rb'fatal: bad object [0-9a-f]{40}', 'GIT_BAD_OBJECT'),
+              (rb'fatal: unable to read tree [0-9a-f]{40}', 'GIT_TREE_UNREADABLE'),
+          )
+          ERROR_CLASSES = {
+              b'AssertionError': 'ASSERTION_ERROR', b'TypeError': 'TYPE_ERROR', b'ValueError': 'VALUE_ERROR',
+              b'KeyError': 'KEY_ERROR', b'RuntimeError': 'RUNTIME_ERROR', b'OSError': 'OS_ERROR',
+              b'FileNotFoundError': 'FILE_ABSENT', b'PermissionError': 'PERMISSION_DENIED',
+              b'MemoryError': 'MEMORY_ERROR', b'DmiGridLookupError': 'DMI_GRID_LOOKUP_ERROR',
+              b'GribReadUnproven': 'GRIB_READ_REFUSED', b'subprocess.CalledProcessError': 'SUBPROCESS_EXIT',
+              b'subprocess.TimeoutExpired': 'SUBPROCESS_TIMEOUT', b'ENOENT': 'FILE_ABSENT',
+              b'ENOSPC': 'NO_SPACE', b'EACCES': 'PERMISSION_DENIED',
+          }
+
+          def closed_windows(file):
+              def pin(row):
+                  return row.st_dev, row.st_ino, row.st_mode, row.st_nlink, row.st_size, row.st_mtime_ns, row.st_ctime_ns
+              before = file.lstat()
+              assert stat.S_ISREG(before.st_mode) and before.st_nlink == 1
+              with os.fdopen(os.open(file, os.O_RDONLY | os.O_NOFOLLOW), 'rb') as handle:
+                  assert pin(os.fstat(handle.fileno())) == pin(before)
+                  first = handle.read(min(before.st_size, CAP))
+                  assert len(first) == min(before.st_size, CAP)
+                  if before.st_size <= CAP:
+                      windows = (first,)
+                  else:
+                      offset = max(CAP, before.st_size - CAP)
+                      handle.seek(offset)
+                      last = handle.read(before.st_size - offset)
+                      assert len(last) == before.st_size - offset
+                      windows = (first.rpartition(b'\n')[0], last.partition(b'\n')[2])
+                  assert pin(os.fstat(handle.fileno())) == pin(before)
+              assert pin(file.lstat()) == pin(before)
+              return windows
+
+          def classify(windows, roots):
+              lines = [line.rstrip(b'\r') for window in windows for line in window.split(b'\n') if 0 < len(line) <= 4096]
+              nodes, pythons = [], []
+              for scope, owner, relative, functions in OWNERS:
+                  file = roots[scope] / relative
+                  if not file.is_file() or file.is_symlink():
+                      continue
+                  line_max = min(24000, len(file.read_bytes().splitlines()))
+                  known = {name.encode('ascii') for name in functions.split()} | {b'<module>'}
+                  absolute = os.fsencode(file)
+                  paths = b'(?:' + re.escape(absolute) + b'|' + re.escape(file.as_uri().encode('ascii')) + b')'
+                  node = re.compile(rb'^\s+at (?:async )?(?:([A-Za-z_$][A-Za-z0-9_$.]*) \()?'
+                                    + paths + rb':([1-9][0-9]{0,4}):[1-9][0-9]{0,4}\)?$')
+                  python = re.compile(rb'^  File "' + re.escape(absolute) +
+                                      rb'", line ([1-9][0-9]{0,4}), in ([A-Za-z_][A-Za-z0-9_]*|<module>)$')
+                  for index, line in enumerate(lines):
+                      for destination, match in ((nodes, node.fullmatch(line)), (pythons, python.fullmatch(line))):
+                          if match:
+                              name, number = (match[1], int(match[2])) if destination is nodes else (match[2], int(match[1]))
+                              if number <= line_max:
+                                  destination.append((index, {'owner': owner, 'function': name.decode('ascii') if name in known else 'UNKNOWN',
+                                                              'line': number, 'source': scope}))
+              node_frame = min(nodes, key=lambda item: item[0])[1] if nodes else None
+              python_frame = max(pythons, key=lambda item: item[0])[1] if pythons else None
+              git_context = any(line.startswith(b'Error: Command failed: git ') for line in lines) or (
+                  node_frame is not None and node_frame['owner'] == 'PREFIX' and node_frame['function'] in {'cloneSource', 'git'})
+              fixed, family = 'UNKNOWN', 'UNKNOWN'
+              for line in lines:
+                  if git_context:
+                      git = next((code for pattern, code in GIT_CAUSES if re.fullmatch(pattern, line)), None)
+                      if git:
+                          fixed = git
+                          break
+                  payload = re.fullmatch(rb'(?:Error|RuntimeError|AssertionError(?: \[ERR_ASSERTION\])?): (.+)', line)
+                  if payload and payload[1] in CAUSES:
+                      fixed = CAUSES[payload[1]]
+                  if line == b'Current operational closure failed: COPERNICUS_COMPLETE_SEAL_INVALID':
+                      fixed = 'COPERNICUS_COMPLETE_SEAL_INVALID'
+                  error = re.match(rb'^(?:Error: )?([A-Za-z_.]+)(?:[: ]|$)', line)
+                  if error and error[1] in ERROR_CLASSES:
+                      family = ERROR_CLASSES[error[1]]
+              return {'nodeFrame': node_frame, 'pythonFrame': python_frame, 'fixedCause': fixed, 'exceptionClass': family}
+
+          def run_owned(command, stem, own, root, environment):
+              with (own / (stem + '.stdout')).open('xb') as out, (own / (stem + '.stderr')).open('xb') as err:
                   child = subprocess.run(command, cwd=root, env=environment, stdin=subprocess.DEVNULL,
-                                         stdout=stdout, stderr=stderr, check=False)
-                  for stream in (stdout, stderr):
+                                         stdout=out, stderr=err, check=False, close_fds=True)
+                  for stream in (out, err):
                       stream.flush()
                       os.fsync(stream.fileno())
-              result['exitCode'] = child.returncode
-              result['outcome'] = 'CHILD_SUCCESS' if child.returncode == 0 else 'CHILD_FAILED'
-              if child.returncode == 0:
-                  phase = 'RESULT'
-                  result['outcome'] = 'REFUSED'
-                  evidence = json.loads(observer.source_current_cohort_read(own / 'fixture-current598',
-                      'native-provider-raw-inputs.json', 4 * 1024 * 1024))
-                  assert evidence['syntheticTestInput'] is True and evidence['productionProof'] is False
-                  assert evidence['profile'] == 'current598-preparation'
-                  assert evidence['partCount'] == 673 and evidence['privateHistoryInputHours'] == 48
-                  assert evidence['publicForecastInputHours'] == 118 and evidence['privateTPlus3SupportHours'] == 3
-                  waves = evidence['actualDecodedWeatherObservations']
-                  counts = {kind: sum(row['collection'] == kind and isinstance(row['acceptedNativeTargetCount'], int)
-                                      and row['acceptedNativeTargetCount'] > 0 for row in waves)
-                            for kind in ('wam_nsb', 'wam_dw')}
-                  assert set(counts.values()) == {169}
-                  result['coverage'] = {'parts': 673, 'publicHours': 118, 'supportHours': 3,
-                                        'historyHours': 48, 'decodedWamAssets': counts}
-                  result['outcome'] = 'CHILD_SUCCESS'
-              if child.returncode != 0:
-                  failure = observer.current_provider_failure(own, root)
-                  result['providerFailure'] = failure
-                  if failure.get('call') == 'CLOSURE':
-                      stdout = observer.source_current_cohort_read(own, 'current598-providers-whole.stdout', 1024 * 1024)
-                      matches = re.findall(rb'^Current operational closure failed: ([A-Z][A-Z0-9_]{1,79})\r?$', stdout, re.M)
-                      allowed = {'UNEXPECTED_CLOSURE_ERROR'}
-                      for relative, function in (
-                          ('scripts/build-current-operational-closure.py', 'RuntimeError'),
-                          ('scripts/lib/current_operational_closure.py', '_fail'),
-                      ):
-                          syntax = ast.parse((root / relative).read_text(encoding='utf-8'))
-                          allowed.update(call.args[0].value for call in ast.walk(syntax)
-                              if isinstance(call, ast.Call) and isinstance(call.func, ast.Name) and call.func.id == function
-                              and call.args and isinstance(call.args[0], ast.Constant) and isinstance(call.args[0].value, str)
-                              and re.fullmatch(r'[A-Z][A-Z0-9_]{1,79}', call.args[0].value))
-                      reason = matches[0].decode('ascii') if len(matches) == 1 else None
-                      result['closureCode'] = reason if reason in allowed else 'UNCLASSIFIED'
-                  if failure['class'] == 'UNKNOWN' and failure['providerLine'] == 389:
-                      raw = observer.source_current_cohort_read(own, 'current598-providers-whole.stderr', 128 * 1024)
-                      _, separator, tail = (b'\n' + raw.replace(b'\r\n', b'\n')).rpartition(
-                          b'\nTraceback (most recent call last):\n')
-                      frame = b'  File "' + os.fsencode(root / 'scripts/fixtures/source19-current-initial-weather.py') + b'", line '
-                      allowed = {b'need': (17, 17), b'grid': (24, 65), b'add_initial_weather': (68, 169), b'admit': (129, 134)}
-                      if separator:
-                          for line in reversed(tail.splitlines()[:-1]):
-                              if line.startswith(frame):
-                                  match = re.fullmatch(rb'([1-9][0-9]{0,2}), in ([A-Za-z_]+)', line[len(frame):])
-                                  if match and match[2] in allowed:
-                                      number = int(match[1])
-                                      lower, upper = allowed[match[2]]
-                                      if lower <= number <= upper:
-                                          result['initialWeatherLine'] = number
-                                          break
-                      if result['initialWeatherLine'] == 136 and separator:
-                          producer_frame = b'  File "' + os.fsencode(root / 'scripts/update-dmi-bulk.py') + b'", line '
-                          permitted = {
-                              b'process_grib_transactionally': 'TRANSACTION',
-                              b'process_grib': 'DECODE',
-                              b'operational_wave_asset_stage_admissible': 'ADMISSION',
-                              b'private_wave_bootstrap_asset_summary': 'SUMMARY',
-                              b'private_wave_bootstrap_hour_rejection_code': 'REJECTION',
-                              b'build_asset_stage_document': 'BUILD_STAGE',
-                              b'_grib_read_scope': 'READ_SCOPE',
-                              b'_refuse': 'READ_REFUSAL',
-                              b'check': 'READ_CHECK',
-                              b'__enter__': 'READ_ENTER',
-                              b'__exit__': 'READ_EXIT',
-                          }
-                          lines = tail.splitlines()
-                          for line in reversed(lines[:-1]):
-                              if line.startswith(producer_frame):
-                                  match = re.fullmatch(rb'([1-9][0-9]{0,4}), in ([A-Za-z_]+)', line[len(producer_frame):])
-                                  if match and match[2] in permitted and int(match[1]) <= 24000:
-                                      result['producerFrame'] = [permitted[match[2]], int(match[1])]
-                                      break
-                          terminal = lines[-1] if lines else b''
-                          families = (
-                              (b'RuntimeError: GRIB asset stage validation failed', 'WAVE_STAGE_VALIDATION'),
-                              (b'GribReadUnproven:', 'GRIB_READ_REFUSAL'),
-                              (b'TypeError:', 'TYPE_ERROR'),
-                              (b'KeyError:', 'KEY_ERROR'),
-                              (b'ValueError:', 'VALUE_ERROR'),
-                              (b'AssertionError:', 'ASSERTION_ERROR'),
-                              (b'FileNotFoundError:', 'FILE_ABSENT'),
-                              (b'OSError:', 'OS_ERROR'),
-                              (b'MemoryError', 'MEMORY_ERROR'),
-                          )
-                          result['terminalFamily'] = next(
-                              (code for prefix, code in families if terminal.startswith(prefix)), 'UNKNOWN')
-          except Exception:
-              # Preserve refusal or the observed child failure. No exception content.
-              pass
-          result['phase'] = phase
-          result['elapsedSeconds'] = round(time.monotonic() - started, 1)
-          with os.fdopen(3, 'w') as report:
-              print(json.dumps(result, separators=(',', ':')), file=report, flush=True)
-          raise SystemExit(0 if result['outcome'] == 'CHILD_SUCCESS' else 1)
+              return child.returncode
+
+          def main():
+              result = {'kind': 'CURRENT598_PREFIX_ONLY_DIAGNOSTIC', 'phase': 'ENVIRONMENT', 'outcome': 'REFUSED',
+                        'providerExitCode': None, 'prefixExitCode': None, 'diagnosis': None,
+                        'privatePayloadIncluded': False}
+              try:
+                  import eccodes
+                  node, head = Path(sys.argv[1]), sys.argv[2]
+                  assert sys.platform == 'linux' and sys.version_info[:2] == (3, 12)
+                  assert eccodes.codes_get_api_version() == '2.48.2' and node.is_absolute() and node.is_file()
+                  assert subprocess.check_output([str(node), '-p', "process.versions.node.split('.')[0]"],
+                                                 stdin=subprocess.DEVNULL, timeout=30) == b'24\n'
+                  result['phase'] = 'PROFILE'
+                  spec = importlib.util.spec_from_file_location('source859_prefix_only_observer',
+                      Path.cwd() / 'scripts/test-source598-current-native-profile.py')
+                  observer = importlib.util.module_from_spec(spec)
+                  spec.loader.exec_module(observer)
+                  observer.NODE = node
+                  assert observer.CURRENT_NATIVE_CONTEXT is None
+                  test = observer.SourceCurrentNative()
+                  profile = test.current598_profile()
+                  result['phase'] = 'OWNED_HOST'
+                  own, root, environment, normal_h0 = test.owned_current_host(head, with_sdk=False, input_profile=profile)
+                  owner = own.lstat()
+                  assert own.parent == Path(tempfile.gettempdir()).resolve(strict=True)
+                  assert owner.st_uid == os.getuid() == os.geteuid()
+                  assert stat.S_ISDIR(owner.st_mode) and stat.S_IMODE(owner.st_mode) == 0o700
+                  (own / 'fixture-current598').mkdir(mode=0o700)
+                  roots = {'SOURCE': root, 'GENUINE598': own / 'current598-native-inputs/normal-genuine598',
+                           'OLD': own / 'current598-native-inputs/normal-old140000'}
+                  result['phase'] = 'PROVIDERS'
+                  provider = run_owned([sys.executable, '-I', '-B', str(root / 'scripts/fixtures/source19-current-native-providers.py'),
+                                        str(node), normal_h0, '--current598'],
+                                       'current598-providers-whole', own, root, environment)
+                  result['providerExitCode'] = provider
+                  if provider != 0:
+                      result['outcome'] = 'PROVIDER_FAILED'
+                      result['diagnosis'] = classify(closed_windows(own / 'current598-providers-whole.stderr'), roots)
+                  else:
+                      result['phase'] = 'PREFIX'
+                      prefix = run_owned([str(node), str(root / 'scripts/fixtures/source19-current-normal-inputs.mjs'),
+                                          '--prepare-current598-prefix'], 'current598-prefix-whole', own, root, environment)
+                      result['prefixExitCode'] = prefix
+                      result['outcome'] = 'PREFIX_FAILED' if prefix else 'PREFIX_PASSED'
+                      if prefix:
+                          # Closure diagnostics can have a fixed error on stdout. Both streams remain private.
+                          streams = ('current598-prefix-whole.stderr', 'current598-prefix-whole.stdout')
+                          windows = tuple(window for name in streams for window in closed_windows(own / name))
+                          result['diagnosis'] = classify(windows, roots)
+              except Exception:
+                  # The first known child result is preserved even if safe diagnostics are unavailable.
+                  pass
+              with os.fdopen(3, 'w') as report:
+                  print(json.dumps(result, separators=(',', ':')), file=report, flush=True)
+              raise SystemExit(0 if result['outcome'] == 'PREFIX_PASSED' else 1)
+
+          if __name__ == '__main__':
+              main()
           PY
