@@ -25,6 +25,7 @@ const ARCHIVE_SQL_OWNERS=['ROLES','ROLE_SWITCH','SCHEMA','SCHEMA_ROLE_CHECK','RE
 const ARCHIVE_POSTGRES_ROLE_CHECK="DO $rr_restore$ BEGIN IF session_user <> 'supabase_admin' OR current_user <> 'postgres' THEN RAISE SQLSTATE '42501'; END IF; END; $rr_restore$;\n";
 const DOCUMENTED_CLI_LOGIN_GRANT='GRANT "postgres" TO "cli_login_postgres" WITH INHERIT FALSE GRANTED BY "supabase_admin";';
 const ARCHIVE_SQL_STATEMENTS=['UNKNOWN','CREATE_ROLE','ALTER_ROLE','GRANT_ROLE','REVOKE_ROLE','COMMENT_ROLE','CLI_LOGIN_POSTGRES_GRANT'];
+const ARCHIVE_ROLE_STATEMENT_STATES=new Set(['SQLSTATE_42501','SQLSTATE_42704']);
 const MAX_ROLE_CLASS_LINES=8192;
 const ROLE_STATEMENT_CATEGORIES=Object.freeze({
   'CREATE ROLE':'CREATE_ROLE','ALTER ROLE':'ALTER_ROLE',
@@ -164,7 +165,8 @@ function safeError(error,stage){
   return {stage,code:/^[A-Z0-9_]+$/.test(error?.code??'')?error.code:'LOCAL_RESTORE_REFUSED',
     exit:Number.isInteger(error?.exit)?error.exit:null,externalDockerOutcome:'UNKNOWN_UNTIL_OWNED_READBACK',
     ...(ARCHIVE_SQL_OWNERS.includes(error?.inputOwner)?{inputOwner:error.inputOwner}:{}),
-    ...(error?.code==='SQLSTATE_42501'&&ARCHIVE_SQL_STATEMENTS.includes(error.inputStatement)?{inputStatement:error.inputStatement}:{})};
+    ...(ARCHIVE_ROLE_STATEMENT_STATES.has(error?.code)&&ARCHIVE_SQL_STATEMENTS.includes(error.inputStatement)?{inputStatement:error.inputStatement}:{}),
+    ...(error?.code==='SQLSTATE_42704'&&error.inputOwner==='ROLES'?safeRoleOperands(error.inputRoleOperands):{})};
 }
 function diagnosticClass(bytes){
   const text=bytes.toString('utf8');
@@ -179,7 +181,7 @@ function diagnosticClass(bytes){
   return 'CHILD_EXIT';
 }
 function archiveInputDiagnostic(diagnostic,code,inputLines){
-  const report={inputOwner:'UNKNOWN',...(code==='SQLSTATE_42501'&&Object.hasOwn(inputLines,'roleLineClasses')?{inputStatement:'UNKNOWN'}:{})};
+  const report={inputOwner:'UNKNOWN',...(ARCHIVE_ROLE_STATEMENT_STATES.has(code)&&Object.hasOwn(inputLines,'roleLineClasses')?{inputStatement:'UNKNOWN'}:{})};
   const text=diagnostic.toString('utf8');
   const frames=text.matchAll(/^psql:<stdin>:([1-9][0-9]{0,9}): ERROR: +([0-9A-Z]{5})\r?$/gm);
   const frame=frames.next().value;
@@ -190,12 +192,67 @@ function archiveInputDiagnostic(diagnostic,code,inputLines){
   if(report.inputStatement&&report.inputOwner==='ROLES'&&(text.match(/\bERROR:/g)??[]).length===1){
     const classified=inputLines.roleLineClasses?.[line-1];
     report.inputStatement=ARCHIVE_SQL_STATEMENTS[classified]??'UNKNOWN';
+    if(code==='SQLSTATE_42704'&&report.inputStatement!=='UNKNOWN'){
+      const operands=inputLines.roleLineOperands?.get(line);
+      if(operands)report.inputRoleOperands=operands;
+    }
   }
   return report;
 }
 // Recognise only complete single-line statements from a role dump prefix.
 // A multi-line string, comment, psql command or unfamiliar construct leaves attribution unknown.
 const ROLE_DUMP_PREFIX=/^((?:CREATE|ALTER) ROLE|GRANT|REVOKE|COMMENT ON ROLE) (?:(?:[A-Za-z0-9_ \t,.=]|"(?:[^"\\\r\n]|"")*"|'(?:[^'\\\r\n]|'')*'))+;$/;
+// Exact public upstream labels plus its two reserved name patterns. None of the
+// labels asserts that the corresponding role was present or was the missing object.
+const FIXED_ROLE_LABELS=new Map([
+  ['anon','ANON'],['authenticated','AUTHENTICATED'],['authenticator','AUTHENTICATOR'],
+  ['dashboard_user','DASHBOARD_USER'],['pgbouncer','PGBOUNCER'],['postgres','POSTGRES'],
+  ['service_role','SERVICE_ROLE'],['pgsodium_keyholder','PGSODIUM_KEYHOLDER'],
+  ['pgsodium_keyiduser','PGSODIUM_KEYIDUSER'],['pgsodium_keymaker','PGSODIUM_KEYMAKER'],
+  ['pgtle_admin','PGTLE_ADMIN'],['supabase_admin','SUPABASE_ADMIN'],['cli_login_postgres','CLI_LOGIN_POSTGRES'],
+]);
+const ROLE_OPERAND_LABELS=new Set([...FIXED_ROLE_LABELS.values(),'RESERVED_SUPABASE_NAMESPACE','RESERVED_CLI_LOGIN_NAMESPACE','OTHER_ROLE_IDENTIFIER']);
+const FIXED_GUC_LABELS=new Map([['session_replication_role','SESSION_REPLICATION_ROLE'],
+  ['statement_timeout','STATEMENT_TIMEOUT'],['track_io_timing','TRACK_IO_TIMING']]);
+const GUC_OPERAND_LABELS=new Set([...FIXED_GUC_LABELS.values(),'PGRST_NAMESPACE','PGAUDIT_NAMESPACE','OTHER_GUC_IDENTIFIER']);
+const QUOTED_ROLE_IDENTIFIER='"([A-Za-z_][A-Za-z0-9_]{0,62})"';
+const ALTER_ROLE_CONFIG_OPERANDS=new RegExp('^ALTER ROLE '+QUOTED_ROLE_IDENTIFIER+' SET "([a-z][a-z0-9_.]{0,62})" TO .+;$');
+const ALTER_ROLE_ATTRIBUTE_OPERANDS=new RegExp('^ALTER ROLE '+QUOTED_ROLE_IDENTIFIER+' WITH .+;$');
+const GRANT_ROLE_OPERANDS=new RegExp('^GRANT '+QUOTED_ROLE_IDENTIFIER+' TO '+QUOTED_ROLE_IDENTIFIER
+  +'(?: WITH (?:ADMIN OPTION|(?:ADMIN|INHERIT|SET) (?:TRUE|FALSE)(?:, (?:ADMIN|INHERIT|SET) (?:TRUE|FALSE))*))?'
+  +'(?: GRANTED BY '+QUOTED_ROLE_IDENTIFIER+')?;$');
+const REVOKE_ROLE_OPERANDS=new RegExp('^REVOKE '+QUOTED_ROLE_IDENTIFIER+' FROM '+QUOTED_ROLE_IDENTIFIER
+  +'(?: GRANTED BY '+QUOTED_ROLE_IDENTIFIER+')?(?: CASCADE| RESTRICT)?;$');
+
+function roleOperandLabel(name){
+  return FIXED_ROLE_LABELS.get(name)??(name.startsWith('supabase_')?'RESERVED_SUPABASE_NAMESPACE':
+    name.startsWith('cli_login_')?'RESERVED_CLI_LOGIN_NAMESPACE':'OTHER_ROLE_IDENTIFIER');
+}
+function roleLineOperands(line){
+  const config=ALTER_ROLE_CONFIG_OPERANDS.exec(line);
+  if(config){
+    const [,name,guc]=config;
+    return {form:'ALTER_ROLE_CONFIG',role:roleOperandLabel(name),guc:FIXED_GUC_LABELS.get(guc)??
+      (guc.startsWith('pgrst.')?'PGRST_NAMESPACE':guc.startsWith('pgaudit.')?'PGAUDIT_NAMESPACE':'OTHER_GUC_IDENTIFIER')};
+  }
+  const attributes=ALTER_ROLE_ATTRIBUTE_OPERANDS.exec(line);
+  if(attributes)return {form:'ALTER_ROLE_ATTRIBUTES',role:roleOperandLabel(attributes[1])};
+  const membership=GRANT_ROLE_OPERANDS.exec(line)??REVOKE_ROLE_OPERANDS.exec(line);
+  if(!membership)return null;
+  const [,role,member,grantor]=membership;
+  return {form:line.startsWith('GRANT ')?'GRANT_ROLE':'REVOKE_ROLE',
+    role:roleOperandLabel(role),member:roleOperandLabel(member),grantor:grantor?roleOperandLabel(grantor):'UNSPECIFIED'};
+}
+function safeRoleOperands(value){
+  if(!value||!ROLE_OPERAND_LABELS.has(value.role))return {};
+  const {form,role,member,grantor,guc}=value;
+  if(form==='ALTER_ROLE_ATTRIBUTES')return {inputRoleOperands:{form,role}};
+  if(form==='ALTER_ROLE_CONFIG'&&GUC_OPERAND_LABELS.has(guc))return {inputRoleOperands:{form,role,guc}};
+  if((form==='GRANT_ROLE'||form==='REVOKE_ROLE')&&ROLE_OPERAND_LABELS.has(member)
+    &&(grantor==='UNSPECIFIED'||ROLE_OPERAND_LABELS.has(grantor)))return {inputRoleOperands:{form,role,member,grantor}};
+  return {};
+}
+
 function finishRoleLine(s){
   const length=s.length;
   if(length<=s.buffer.length){
@@ -205,6 +262,8 @@ function finishRoleLine(s){
       const category=line===DOCUMENTED_CLI_LOGIN_GRANT?'CLI_LOGIN_POSTGRES_GRANT':
         ROLE_STATEMENT_CATEGORIES[statement[1]];
       s.classes[s.line-1]=ARCHIVE_SQL_STATEMENTS.indexOf(category);
+      const operands=roleLineOperands(line);
+      if(operands)s.operands.set(s.line,operands);
     }
     if(s.prefixSafe)s.prefixSafe=statement||/^[ \t]*(?:--[^\r\n]*)?$/.test(line)
       ||/^\\restrict [A-Za-z0-9]+$/.test(line)||/^SET (?:default_transaction_read_only = off|client_encoding = 'UTF8'|standard_conforming_strings = on);$/.test(line);
@@ -301,7 +360,8 @@ async function* materializedRestoreBytes(c,archive,history=false,inputLines=null
     }
     const owner=history?'HISTORY':['ROLES','SCHEMA','DATA'][i];
     const roleLines=owner==='ROLES'&&inputLines&&Object.hasOwn(inputLines,'roleLineClasses')?
-      {line:inputLines.next,buffer:Buffer.alloc(512),length:0,prefixSafe:true,classes:new Uint8Array(MAX_ROLE_CLASS_LINES)}:null;
+      {line:inputLines.next,buffer:Buffer.alloc(512),length:0,prefixSafe:true,
+        classes:new Uint8Array(MAX_ROLE_CLASS_LINES),operands:new Map()}:null;
     const file=path.join(archive.directory,name),named=await fs.lstat(file,{bigint:true});privateSqlFile(named);
     const h=await fs.open(file,constants.O_RDONLY|(constants.O_NOFOLLOW||0));
     try{
@@ -321,6 +381,7 @@ async function* materializedRestoreBytes(c,archive,history=false,inputLines=null
       if(roleLines){
         if(roleLines.length)finishRoleLine(roleLines);
         inputLines.roleLineClasses=roleLines.classes;
+        inputLines.roleLineOperands=roleLines.operands;
       }
     }finally{await h.close();}
     yield track(Buffer.from('\n'));
@@ -871,16 +932,26 @@ async function selfTest(){
     const header='-- fixture\n\\restrict synthetic123\nSET client_encoding = \'UTF8\';\nCREATE ROLE "synthetic";\n';
     const frame=(line,state='42501')=>Buffer.from('psql:<stdin>:'+line+': ERROR:  '+state+'\n');
     const splitHeader=header+'\n'.repeat(ARCHIVE_SQL.chunkBytes-5-Buffer.byteLength(header));
-    for(const [sql,expected,position]of [
-      [header+grant+'\r\n','CLI_LOGIN_POSTGRES_GRANT',5],
-      [header+grant,'CLI_LOGIN_POSTGRES_GRANT',5],
+    for(const [sql,expected,position,operands]of [
+      [header+grant+'\r\n','CLI_LOGIN_POSTGRES_GRANT',5,{form:'GRANT_ROLE',role:'POSTGRES',member:'CLI_LOGIN_POSTGRES',grantor:'SUPABASE_ADMIN'}],
+      [header+grant,'CLI_LOGIN_POSTGRES_GRANT',5,{form:'GRANT_ROLE',role:'POSTGRES',member:'CLI_LOGIN_POSTGRES',grantor:'SUPABASE_ADMIN'}],
       [splitHeader+grant+'\n','UNKNOWN',splitHeader.length-header.length+5],
-      [header+grant+'\n'+grant+'\n','CLI_LOGIN_POSTGRES_GRANT',5],
+      [header+grant+'\n'+grant+'\n','CLI_LOGIN_POSTGRES_GRANT',5,{form:'GRANT_ROLE',role:'POSTGRES',member:'CLI_LOGIN_POSTGRES',grantor:'SUPABASE_ADMIN'}],
       [header+' '+grant+'\n','UNKNOWN',5],
       [header+'CREATE ROLE "synthetic";\n','CREATE_ROLE',5],
-      [header+'ALTER ROLE "synthetic" WITH LOGIN;\n','ALTER_ROLE',5],
-      [header+'GRANT "synthetic" TO "other";\n','GRANT_ROLE',5],
-      [header+'REVOKE "synthetic" FROM "other";\n','REVOKE_ROLE',5],
+      [header+'ALTER ROLE "synthetic" WITH LOGIN;\n','ALTER_ROLE',5,{form:'ALTER_ROLE_ATTRIBUTES',role:'OTHER_ROLE_IDENTIFIER'}],
+      [header+'ALTER ROLE "supabase_unlisted" SET "statement_timeout" TO \'secret\';\n','ALTER_ROLE',5,
+        {form:'ALTER_ROLE_CONFIG',role:'RESERVED_SUPABASE_NAMESPACE',guc:'STATEMENT_TIMEOUT'}],
+      [header+'ALTER ROLE "synthetic" SET "pgrst.example" TO \'secret\';\n','ALTER_ROLE',5,
+        {form:'ALTER_ROLE_CONFIG',role:'OTHER_ROLE_IDENTIFIER',guc:'PGRST_NAMESPACE'}],
+      [header+'ALTER ROLE "synthetic" SET "other_parameter" TO \'secret\';\n','ALTER_ROLE',5,
+        {form:'ALTER_ROLE_CONFIG',role:'OTHER_ROLE_IDENTIFIER',guc:'OTHER_GUC_IDENTIFIER'}],
+      [header+'ALTER ROLE "synthetic" IN DATABASE "other" SET "statement_timeout" TO \'secret\';\n','ALTER_ROLE',5],
+      [header+'GRANT "synthetic" TO "other";\n','GRANT_ROLE',5,{form:'GRANT_ROLE',role:'OTHER_ROLE_IDENTIFIER',member:'OTHER_ROLE_IDENTIFIER',grantor:'UNSPECIFIED'}],
+      [header+'GRANT "supabase_unlisted" TO "other" GRANTED BY "cli_login_unlisted";\n','GRANT_ROLE',5,
+        {form:'GRANT_ROLE',role:'RESERVED_SUPABASE_NAMESPACE',member:'OTHER_ROLE_IDENTIFIER',grantor:'RESERVED_CLI_LOGIN_NAMESPACE'}],
+      [header+'GRANT "supabase_unlisted", "postgres" TO "other";\n','GRANT_ROLE',5],
+      [header+'REVOKE "synthetic" FROM "other";\n','REVOKE_ROLE',5,{form:'REVOKE_ROLE',role:'OTHER_ROLE_IDENTIFIER',member:'OTHER_ROLE_IDENTIFIER',grantor:'UNSPECIFIED'}],
       [header+'COMMENT ON ROLE "synthetic" IS \'x;y\';\n','COMMENT_ROLE',5],
       [header+grant+' -- comment\n','UNKNOWN',5],
       [header+'/* earlier comment\n'+grant+'\n*/\n','UNKNOWN',6],
@@ -893,9 +964,18 @@ async function selfTest(){
       const stream=materializedRestoreBytes(c,archive,false,inputLines);
       const first=await stream.next();chunks.push(first.value);
       assert.equal(report().inputStatement,'UNKNOWN','roles verification has not completed');
+      assert.equal(report(frame(position,'42704'),'SQLSTATE_42704').inputRoleOperands,undefined);
       for await(const chunk of stream)chunks.push(chunk);
       assert(Buffer.concat(chunks).equals(expectedPrimaryArchiveSql(source)));
       assert.deepEqual(report(),{inputOwner:'ROLES',inputStatement:expected});
+      const undefinedObject=report(frame(position,'42704'),'SQLSTATE_42704');
+      assert.deepEqual(undefinedObject,{inputOwner:'ROLES',inputStatement:expected,...(operands?{inputRoleOperands:operands}:{})});
+      assert.deepEqual(safeError({code:'SQLSTATE_42704',...undefinedObject},'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA').inputRoleOperands,operands);
+      assert.equal(safeError({code:'SQLSTATE_42704',inputOwner:'ROLES',inputRoleOperands:{form:'ALTER_ROLE_CONFIG',role:'private',guc:'private'}},
+        'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA').inputRoleOperands,undefined);
+      assert.equal(report(Buffer.concat([frame(position,'42704'),frame(position+1,'42704')]),'SQLSTATE_42704').inputRoleOperands,undefined);
+      assert.equal(safeError({code:'SQLSTATE_42704',...undefinedObject},'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA').inputStatement,expected);
+      assert.equal(report(Buffer.concat([frame(position,'42704'),frame(position+1,'42704')]),'SQLSTATE_42704').inputStatement,'UNKNOWN');
       assert.equal(report(frame(position+2)).inputStatement,'UNKNOWN');
       assert.equal(report(Buffer.concat([frame(position),frame(position+1)])).inputStatement,'UNKNOWN');
       assert.equal(report(Buffer.concat([frame(position),Buffer.from('ERROR: 42501 additional frame\n')])).inputStatement,'UNKNOWN');
@@ -993,14 +1073,17 @@ async function selfTest(){
         new Writable({write(_chunk,_encoding,done){done();},final(done){finalized=true;done();}})),e=>e.code==='ARCHIVE_SQL_SHA');
       assert.equal(finalized,false);
     });
-    await ownArchive(async({c,env,index,materialize})=>{
+    await ownArchive(async({c,env,index,materialize,source})=>{
       const archive=await materializeArchiveInputs(c,index,{env,archive:materialize});
-      const bad=Buffer.alloc(archive.files[0].bytes,120),seen=[];
+      const bad=Buffer.from(source[0]),at=bad.indexOf(Buffer.from("'500'"));
+      assert(at>=0);bad[at+1]=54;
+      const seen=[],inputLines={next:1,ranges:new Map(),roleLineClasses:null};
       await fs.writeFile(path.join(archive.directory,'roles.sql'),bad);
-      await assert.rejects(async()=>{for await(const chunk of materializedRestoreBytes(c,archive))seen.push(chunk);},
+      await assert.rejects(async()=>{for await(const chunk of materializedRestoreBytes(c,archive,false,inputLines))seen.push(chunk);},
         e=>e.code==='ARCHIVE_SQL_SHA');
+      assert.equal(inputLines.roleLineClasses,null);assert.equal(inputLines.roleLineOperands,undefined);
       assert(Buffer.concat(seen).equals(bad),'role switch must follow successful role-file verification');
-    });
+    },{roleSql:'ALTER ROLE "supabase_unlisted" SET "statement_timeout" TO \'500\';\n'});
   });
   test('replacement hardlinks and expired operation deadlines refuse archive bytes',async()=>{
     await ownArchive(async({c,env,index,materialize})=>{
