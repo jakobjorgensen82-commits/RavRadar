@@ -10,7 +10,7 @@ import {scanAllSourceDependencies,dependencySourceLiterals} from './lib/source-i
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const REGISTRY_SHA256='3970bc86fb8afd99d193507b82337c1068aa368f6d62ff728988fc21da9577f4';
 const REGISTRY597_SHA256='a7ccfba2b2f631ccc358342e2c3b87e1cb1edbd54311148c94822fddaa6dbcfa';
-const REGISTRY598_SHA256='214a391610cf03d096538c2f6c6ccd9b1e02f740c767c5aad1830f8a2c08e318';
+const REGISTRY598_SHA256='228d2caa4bd11f65bcd4fe7cb8070eedf0f62177ff94fc6aa84fa71651183286';
 const PAGES_TRANSPORT_FIELDS=Object.freeze({
   "scripts/lib/pages-per-artifact-identity.mjs": [],
   "scripts/lib/pages-sealed-retry-decision.mjs": [
@@ -268,17 +268,34 @@ export function planSourceDomainImpactFromGit(input){
       return !NARROW_SCOPE_CONTROL_OWNERS.has(change.file)||change.owner.controlQualification!==true;
     });
     const pagesChanges=productChanges.filter(change=>change.owner.pagesTransportOnly===true);
-    if(pagesChanges.length&&(!is598||pagesChanges.length!==productChanges.length))return full('PAGES_TRANSPORT_COMBINED_SCOPE');
+    const rollback=is598?selectedRegistry.pagesTransport.standardActionRollback:null;
+    const pagesRollback=pagesChanges.some(change=>change.owner.pagesStandardActionRollback===true);
+    const uiProducts=pagesRollback?productChanges.filter(change=>
+      change.file!==rollback?.action.path&&change.file!==rollback?.test.path):productChanges;
+    if(pagesRollback){
+      if(!rollback||pagesChanges.length!==1||productChanges.length!==2+uiProducts.length
+        ||uiProducts.length&&(!adminUi||uiProducts.length!==Object.keys(adminUi.frames).length
+          ||uiProducts.some(({file,row})=>!Object.hasOwn(adminUi.frames,file)
+            ||row.beforeOid!==adminUi.frames[file].beforeBlob||row.afterOid!==adminUi.frames[file].afterBlob)))
+        return full('PAGES_STANDARD_ACTION_ROLLBACK_SCOPE');
+      for(const entry of [rollback.action,rollback.test]){
+        const change=productChanges.find(row=>row.file===entry.path);
+        if(!change||change.row.status!=='M'||change.row.beforeMode!=='100644'
+          ||change.row.beforeOid!==entry.beforeBlob||change.row.afterOid!==entry.afterBlob)
+          return full('PAGES_STANDARD_ACTION_ROLLBACK_BYTES:'+entry.path);
+      }
+    }else if(pagesChanges.length&&(!is598||pagesChanges.length!==productChanges.length))
+      return full('PAGES_TRANSPORT_COMBINED_SCOPE');
     const localRestoreFixture=productChanges.find(change=>change.owner.localRestoreSelfTest===true);
     if(localRestoreFixture&&(!is598||productChanges.length!==1))return full('LOCAL_RESTORE_FIXTURE_COMBINED_SCOPE');
     if(localRestoreFixture&&(localRestoreFixture.row.status!=='M'||localRestoreFixture.row.beforeMode!=='100644'))
       return full('LOCAL_RESTORE_FIXTURE_NOT_EXISTING_REGULAR_SOURCE');
     const en2Selected=en2&&changes.some(change=>EN2_ENTRYPOINTS.includes(change.file));
     const adminUiSelected=adminUi&&(changes.some(change=>uiOnly.has(change.file))
-      ||en2Selected&&productChanges.length!==Object.keys(en2.transitions).length);
+      ||en2Selected&&uiProducts.length!==Object.keys(en2.transitions).length);
     if(adminUiSelected){
       const paths=Object.keys(adminUi.frames);
-      if(productChanges.length!==paths.length||productChanges.some(({file,row})=>!Object.hasOwn(adminUi.frames,file)
+      if(uiProducts.length!==paths.length||uiProducts.some(({file,row})=>!Object.hasOwn(adminUi.frames,file)
         ||row.status!=='M'||row.beforeMode!=='100644'))return full(en2Selected?'ASSISTANT_WIND_FOLLOWUP_COMBINED_SCOPE':'REVIEWED_ADMIN_UI_COMBINED_SCOPE');
     }
     if(en2Selected&&!adminUiSelected){
@@ -333,10 +350,12 @@ export function planSourceDomainImpactFromGit(input){
       const {callers,frames}=selectedRegistry.pagesTransport;
       for(const [file,oid]of Object.entries(callers)){
         const item=index.get(file);
-        if(item?.oid!==oid||item.mode!=='100644'||item.type!=='blob')return full('PAGES_TRANSPORT_CALLER_CHANGED:'+file);
+        const expected=pagesRollback&&file===rollback.action.path?rollback.action.afterBlob:oid;
+        if(item?.oid!==expected||item.mode!=='100644'||item.type!=='blob')return full('PAGES_TRANSPORT_CALLER_CHANGED:'+file);
         closureRows.push({file,mode:item.mode,blob:item.oid,sha256:sha(get(file))});
       }
       for(const {file,row}of pagesChanges){
+        if(pagesRollback)break;
         if(row.status!=='M'||row.beforeMode!=='100644')return full('PAGES_TRANSPORT_NOT_EXISTING_SOURCE:'+file);
         load([row.beforeOid]);
         const before=blobs.get(row.beforeOid),after=get(file);
@@ -347,7 +366,7 @@ export function planSourceDomainImpactFromGit(input){
       }
     }
     if(adminUiSelected){
-      for(const {file,row}of productChanges){load([row.beforeOid]);const frame=adminUi.frames[file];
+      for(const {file,row}of uiProducts){load([row.beforeOid]);const frame=adminUi.frames[file];
         if(row.beforeOid!==frame.beforeBlob||row.afterOid!==frame.afterBlob
           ||sha(blobs.get(row.beforeOid))!==frame.beforeSha256||sha(get(file))!==frame.afterSha256)
           return full('REVIEWED_ADMIN_UI_SOURCE_CHANGED:'+file);

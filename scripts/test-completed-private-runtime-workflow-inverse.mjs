@@ -2061,6 +2061,15 @@ test('actual combined caller keeps an ordinary immediate retry separate from SOU
   assert.match(build, /if\(closed\)assert\.equal\(route,'source','SOURCE_CLOSED_PAGES_REQUIRES_INSTALLED_SOURCE'\);/);
   assert.match(deploy, /inputs\.ordinary_immediate_retry && !inputs\.source_saved_pair_readback/);
   assert.match(deploy, /steps\.deployment\.outcome == 'failure' && steps\.deployment\.outputs\.closed_unpublished == 'true'/);
+  const standard = coldBlock(action, '    - name: Deploy with the standard Pages action');
+  const scheduled = coldBlock(action, '    - name: Deploy ordinary weather with one bounded immediate retry');
+  assert.match(standard, /^      uses: actions\/deploy-pages@v5$/m);
+  assert.doesNotMatch(standard, /^      if:/m);
+  assert.match(scheduled, /^      if: \$\{\{ false \}\}$/m);
+  for (const immediate_retry of [false, true])
+    assert.equal(coldEvaluate(scheduled.match(/^      if: (.+)$/m)[1], { inputs: { immediate_retry } }), false);
+  assert.match(standard, /artifact_name: \$\{\{ inputs\.artifact_name \}\}/);
+  assert.match(standard, /token: \$\{\{ inputs\.github_token \}\}/);
   assert.match(action, /run: node scripts\/deploy-ordinary-pages-with-immediate-retry\.mjs/);
   const currentMain = coldBlock(once, '  current-main-target:');
   const selection = coldStep(currentMain, 'Require one canonical target hour and completed-runtime decision');

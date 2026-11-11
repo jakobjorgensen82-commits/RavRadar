@@ -508,6 +508,20 @@
       ]
     },
     {
+      "path": ".github/actions/deploy-ravradar-pages/action.yml",
+      "domains": [
+        "controls"
+      ],
+      "pagesTransportOnly": true,
+      "pagesStandardActionRollback": true,
+      "commands": [
+        [
+          "controls",
+          "node --test scripts/test-completed-private-runtime-workflow-inverse.mjs"
+        ]
+      ]
+    },
+    {
       "path": "js/services/admin-document-store.js",
       "domains": [
         "adminUI"
@@ -4495,7 +4509,10 @@
           "node:vm"
         ],
         "imports": [
-          "scripts/lib/completed-private-runtime-workflow-review.mjs"
+          "scripts/lib/completed-private-runtime-workflow-review.mjs",
+          "scripts/test-ordinary-pages-cancellation.mjs",
+          "scripts/test-pages-cancelled-replay-continuity.mjs",
+          "scripts/test-ordinary-pages-immediate-retry.mjs"
         ],
         "resources": [
           ".github/workflows/reusable-weather-build.yml",
@@ -4590,7 +4607,36 @@
           "f0738ebe6797470604ed9c952699bfbac61719e79f7e239f1b8635a8f047c6ef",
           "f7af19fee2db7003822d3e0bc36fd1d760dd37cd8d8ef4cd8cae95f2cf39133f",
           "f9b9b2ebf59aba82a92df882464ff2881cd883404666fc3f1829a05aef9e7b58",
-          "ffb84f96b078db2922acf3270775562df294449140b3b8b18562271ed606328b"
+          "ffb84f96b078db2922acf3270775562df294449140b3b8b18562271ed606328b",
+          "1c70011dc6eed4478862f6ae2479f36d133bb825ae078513346fc229aa9ab22c",
+          "05618fe788417429634fedcadb23790addb43feb2b935130ed74410ac8ba7ffc",
+          "c05c040cbca99c30afe38b93e89ccd269774213d747c3c2c21a2a4b08bb7dad5",
+          "3902c296cde6cc27ae7bb0d389236f546a6a76b63bb1a7992f5bd25ed9de89a6",
+          "608577e11525b2a53b40470db12bd1deea955c1bc45d114728c0067ae2810b8a",
+          "080d9ce9c4b367a370bbcd07ade0fbdece56bc18885cf4f20d10cb1f3830d8d1",
+          "59f24da96259763b16ef9b7d8b8fde49f2d1b7b880118bc8d80383f8e63c8612",
+          "62d031b87b67a5f1829f2f3aa8d490a6e264b5104a48b04ba0464a25ad4df935",
+          "1041ba711a898c7f4a28e536bf51f65e1912765f24e5994fdb0f73ace64377e9",
+          "46d0cd39511d3695c48e40ce150428aabe89df480e41af4c0137e2648409ff47",
+          "8f6eb2d213b622ec193847082f23a2cc74ae84d9d62de24e6d970294a43d60a7",
+          "dcd05030143075b129bc0080424d41fe5ba6e05ff46579d9ed289bf37fe5f800",
+          "b4539a1fdefdcccc1a7e2c86f8fae23a325b54b0af1514a804882fb0eef1328d",
+          "496b417cbc021be92f1df84309cc5a7ccd6ad961b5c3c6e14d1bc09bc47b5a9f",
+          "b23318a4895b9fbda0329a4125da939b68fe3b51f92fa1649a11885226d16635",
+          "9453e594ffab7915fcac0c868be8517f87a042d06a591a9e64027b6317ef2bcb",
+          "ab0b8eca0ca2abf8fc5f020fe5d308a0b2828db0e4da7bbdaa915911da876a74",
+          "b5f622ac82d203de0e88346b5e1f21ac491db54217a6d57dd1b8e19af9dca117",
+          "f00225d4f28d6657e4893d51948157404191c0d2164baf2021d1bd9c6ec55a5b",
+          "66ba38ab5085407d49a777d28c73de667d04958e493f22988a551d41538f3a5b",
+          "182a669b480beb65961cbc1c90d4647bd54dec0b8cfc2970a1ea82c87f4bc7cf",
+          "e69006d42572dbfeaf88b6d84632eeedeadc53202478fd8c3ca8e6cdc6c2e61f",
+          "a92532b42b3fd89ebf99fc28b03f3ad7c683367d4f8c28965ac007eadf3d743c",
+          "b7f49419798a9c8202f2231d48f327bd4e548753f773607a8a37a86f4d54e2ec",
+          "c7edf4f28bfb7d20a6c7a9bdedcaf7bafeb1517e2f7a10972233864a3a61965d",
+          "c29ecc838b7cdd862132f3d9fbc069f9bd17c930f26de2243590f3929956dfe5",
+          "1986a27c3fffd58af5c5738ba93f9090984864abed4f1b3da7c366f5ec545f5b",
+          "ff28f529fa1ba25db52cb1b9f0d2ae17d5e5661be5491dd36bcf504b054de738",
+          "9adfb0d609e1edd212ef4ef82a6d54a44270a0de54960056a7b79eb1c250a749"
         ],
         "bindingSurfaces": [
           "055826d8498e957f01771ee83c0914c0da9b6d935c91199a8a76d54c53d9790a",
@@ -4616,7 +4662,11 @@
           "ca6d33cc6e28f5f57c6e4ed5b16aa66364f809c0f52ae33d7e5d72f83e0a146b",
           "cd1303bf1e20ff5175df5f5a49fd325edd90c6534dd4822f0ae52e4ce45a013e",
           "d81125657ddcf229c4d20eccfb213b0b34688f8ba103621ec99a7517f75e3d36",
-          "f0fdba0a62cbf1b0b63dcdd188eaf73f45f3eff5806083945bfe201f714d51f6"
+          "f0fdba0a62cbf1b0b63dcdd188eaf73f45f3eff5806083945bfe201f714d51f6",
+          "8859212404e282b9131132d4d17e79df9bfe7e9ebfc478d4dfa2283c996e99bc",
+          "781931164de4ec9360d82698362d73cd68d2dce34e1a3de1c50c488d6d619f81",
+          "161d8b32b116682389efd388acf98cc152ca4051d0d99028e80a3ce615ff34d7",
+          "27c65ae0fce2aa6dc1aeadb269829e818c1c735a4d60b9ce4f30e4ab9b490990"
         ],
         "computedBoundaries": []
       }
@@ -7977,6 +8027,353 @@
         "computedBoundaries": []
       }
     },
+    "scripts/test-ordinary-pages-cancellation.mjs": {
+      "beforeDefinitionSha256": null,
+      "definition": {
+        "nodeImports": [
+          "node:assert/strict",
+          "node:test"
+        ],
+        "imports": [
+          "scripts/select-automatic-completed-private-runtime.mjs",
+          "scripts/lib/ordinary-pages-cancellation.mjs",
+          "scripts/ravscore-operational-pages-recovery.mjs"
+        ],
+        "resources": [],
+        "dependencySurfaces": [],
+        "bindingSurfaces": [],
+        "computedBoundaries": []
+      }
+    },
+    "scripts/test-pages-cancelled-replay-continuity.mjs": {
+      "beforeDefinitionSha256": null,
+      "definition": {
+        "nodeImports": [
+          "node:assert/strict",
+          "node:crypto",
+          "node:fs/promises",
+          "node:os",
+          "node:path",
+          "node:test"
+        ],
+        "imports": [
+          "scripts/pages-cancelled-replay-continuity.mjs",
+          "scripts/ravscore-operational-pages-recovery.mjs"
+        ],
+        "resources": [],
+        "dependencySurfaces": [],
+        "bindingSurfaces": [
+          "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+          "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+          "6a3879d97229545d6f3903cfaec3fbe9c31004d0a098dd66a87513d2f29d2564",
+          "5e804653307ca97a4872ed1c415925657617c148919016267fd526a25df3cb92",
+          "b50ef5e01db28bcbbb96540a76cfc9314a52ec588b9e0791a7e166612df17575",
+          "baaabd1e4bb20a86daec3472ca944674a528da02c29ca0ffb8fe1f151b597244",
+          "1c322605ebefccdb38bae73b5de7ac9d1944a1a9c05a605e75c439f1798f95e8"
+        ],
+        "computedBoundaries": []
+      }
+    },
+    "scripts/pages-cancelled-replay-continuity.mjs": {
+      "beforeDefinitionSha256": null,
+      "definition": {
+        "nodeImports": [
+          "node:assert/strict",
+          "node:fs/promises",
+          "node:path",
+          "node:url"
+        ],
+        "imports": [
+          "js/core/public-delivery-contract.js",
+          "js/services/public-delivery-transport-binding.js",
+          "scripts/check-public-weather-continuity.mjs",
+          "scripts/completed-private-runtime-admission.mjs",
+          "scripts/protected-ravscore-continuation-checkpoint.mjs",
+          "scripts/lib/pages-generation-order.mjs",
+          "scripts/lib/ordinary-completed-pages-route.mjs",
+          "scripts/lib/public-delivery-json-transport.mjs",
+          "scripts/protected-private-production-runtime.mjs",
+          "scripts/ravscore-operational-activation.mjs",
+          "scripts/ravscore-operational-pages-recovery.mjs"
+        ],
+        "resources": [],
+        "dependencySurfaces": [
+          "0a3995edd1d98043222075551ff517319b6905c7d73e0b330ae658303a3ffde6",
+          "b5bce5819b049ca1fe0df9b35283ed7b4b4a8c78eceda27aea63443ff4e3b6c9",
+          "2415233f3f1fb8333fdc0fcb9cc1e26b978059673568b82bbc95a7bb9aa95349",
+          "996e50393ca3d4710729a3bc846c448e7acdfc54c0619fa88adac7039c28998e",
+          "a4c856aeb93ef6f0300b0a342c7044b50b9b98bc4229b63efb5de1ee877cdb63"
+        ],
+        "bindingSurfaces": [
+          "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+          "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+          "21f2fa4e01a158e2aa778b39e7b54ffeac93339edbc497bb40b7f737b2bf34e8"
+        ],
+        "computedBoundaries": []
+      }
+    },
+    "scripts/lib/ordinary-completed-pages-route.mjs": {
+      "beforeDefinitionSha256": null,
+      "definition": {
+        "nodeImports": [
+          "node:assert/strict"
+        ],
+        "imports": [],
+        "resources": [],
+        "dependencySurfaces": [],
+        "bindingSurfaces": [],
+        "computedBoundaries": []
+      }
+    },
+    "scripts/check-public-weather-continuity.mjs": {
+      "beforeDefinitionSha256": null,
+      "definition": {
+        "nodeImports": [
+          "node:fs/promises",
+          "node:os",
+          "node:path",
+          "node:url"
+        ],
+        "imports": [
+          "scripts/lib/public-hour-delivery-pack.mjs",
+          "scripts/lib/weather-component-needs.mjs",
+          "js/services/public-delivery-transport-binding.js",
+          "scripts/lib/public-delivery-json-transport.mjs",
+          "scripts/lib/fur-water-routing-diagnostic.mjs"
+        ],
+        "resources": [],
+        "dependencySurfaces": [
+          "eb8f23e3d160bed57726dd6e8dd48c73af33f098491f9ff2af01a24fc46a17bc",
+          "0cbeeba3c7446b6a386ec19d06ff5d8adb903685b61c3ec569130e7962484eb6",
+          "97ed18f9bd84820a657f6c69b295bb646956dad8c81933280d994925720758a0",
+          "f01f8a620a1e1bb744540dcf757e06992fad220d2fc1b36e22610face9d41cad",
+          "1318641c860709382c4768b0a728348fb2e8947f98a49caa235280e9cb7576d3"
+        ],
+        "bindingSurfaces": [
+          "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+          "baffda3fa9222611dc50bba2d8c2f39f5ca76a3599957b7e3b211b10a9097177",
+          "4d57198f8c8f580c01b1dd142e1363c9526b303e30eb65985f6bf59583da45e3",
+          "cfaaa239180b097dae95bf1936c4300a5eec1335bd148e90b733ce98ded7b879",
+          "b5406d95ec87192942b7f8cefdfdd5657f4f2c4ffc8d09e297d2222cc6feb3f6",
+          "07673a3c23600be1559422ca4be978f034d4f56d5afc34b00a97a6b4b6723a16",
+          "27a1b219e37964e15c20e25909a0ccd339bd5ebbaa2c7531e4b6e9d60066b92a"
+        ],
+        "computedBoundaries": []
+      }
+    },
+    "scripts/lib/ordinary-pages-cancellation.mjs": {
+      "beforeDefinitionSha256": null,
+      "definition": {
+        "nodeImports": [
+          "node:crypto"
+        ],
+        "imports": [],
+        "resources": [],
+        "dependencySurfaces": [
+          "7d3b79123da13249c043428f839839fa569640a0f938c00ffb06d7b70b00b781",
+          "f48267b4d9dd004e2838be80101af009ec2803a342ac3abb1c2fe65206f238fa",
+          "c7f6932c8ee3f6247d50789eeac20b925ac5dc98cf780718806b39b24a50a5ad",
+          "7b1691496001218c7138b72684cedd29fd9b3c745c0155da1134eeeb98f22a4f",
+          "760a1d2deada647e116595f46fa43c82f8c1215e6eeb19bd4daa3a5e481b3ec4",
+          "f154b56ac645fb03c8d34d65869de26d6d1271dc74298cee1514f39a8f0c41d2",
+          "7aeb0a970dbb4ae77a427d400f2376fc611cc4cd40df46df959e546158f4b805",
+          "d52cd6dbe02bf9db84e64fd8fb52b6398e7665c6592f789c55fd7bb44bfe7858",
+          "878df0f9d08933a530bcdb91e74f33f2d99a25de1c8f6e938872191d1b00baa5",
+          "e6ec725387cc48a6f55ae1122e7ca89cd147437d6641cd1716fc9e2917217a9d",
+          "6ea74c38b8577a60ba43b20923e71cb752b4b9ccb6f572b760a8ab755706ac23",
+          "696d3e983aa4b7239ad351bc0c462db2372f3f4461a4af1926c4026007899f3b",
+          "cf7b60f9d6d7b42c7481ec4c3a25e186f117f0e620033b19557798c5aad6cecd",
+          "664c51d55d0f8ea985abf753dd18b664282d09e80dc636e6d178d76b43cc66ee",
+          "6bbc55fe199b4878da208650da9d165ce8e00605bd5766c42d558b6017d0d921",
+          "97e758e7905a4af8c08fe0b7857af20be1b1c691c29642f0dc725744ca49e8d6",
+          "adf51aa63bf3f551220f30045b6bc75428e6d2fd69a8b231911218897161ba23",
+          "00538a382796087311ef9e42469a5dea2baebedf2968216d9bc86f7e714583a9",
+          "2362890fb971a74b078ea5f2ae30fa052d2753b5bb8aaab286405dfe34c8ae3f",
+          "6dc20e34e8cbb9dcd0e8b934b6e436348b7e1a6d8a839cba31c9f2461869aee1",
+          "5f3b095fca1d7e46719ea6cd34fbd0f4070967dc84e68f9c6a499393f5503eb6",
+          "8a35d373c89c8b7f50d4ac34a9d91c6ce27566013f53481fd57d83e0d967cb2c",
+          "cc09d5d458e3b37201cde852e932f25c28fb06af4634af38715a17c9f68402b1",
+          "4e8acade0833a81061902bb139cad15f871387ed506afd9e14c6868b97c8357c",
+          "9fb3c5fafa5d19f23ef71ada037e05b1130fc8fae12e84ee6eb798b12d8b9554",
+          "05299c93cf485588e6e4bf62be0c45939f5c091c92623873a7acdbfa55ebb00c",
+          "c0072ed4fb4d848e8473098378371875cf16daff3cdda808dbac2f4899d0ab38"
+        ],
+        "bindingSurfaces": [
+          "85704e59a75163cc136e4c17ad98afc3307a7728d04792bd4f7a9bdd901295c3"
+        ],
+        "computedBoundaries": []
+      }
+    },
+    "scripts/select-automatic-completed-private-runtime.mjs": {
+      "beforeDefinitionSha256": null,
+      "definition": {
+        "nodeImports": [
+          "node:assert/strict",
+          "node:child_process",
+          "node:fs/promises",
+          "node:os",
+          "node:path",
+          "node:util",
+          "node:url"
+        ],
+        "imports": [
+          "scripts/pages-cancelled-replay-continuity.mjs",
+          "scripts/ravscore-operational-pages-recovery.mjs",
+          "scripts/lib/pages-generation-order.mjs",
+          "scripts/lib/ordinary-completed-pages-route.mjs",
+          "scripts/lib/ordinary-pages-cancellation.mjs"
+        ],
+        "resources": [],
+        "dependencySurfaces": [
+          "001355c4a49970e410bb92abcf2826757e94e833bc0d4dd379c7977ec46cbb3b",
+          "adf970f2eb9744863c357b612a0b14704f309e3de7426865f558a911df653e7d",
+          "95ea99c6effbc0753c023141dd9a0c7050d74508b594b7e7bf5c50e0ab573426",
+          "c1e1c3ca4e35e3bad2167640766e3c4f2e30a28b0c3f555e70c96c29a0546343",
+          "8a2c4d60af44476ff90b8f1467e12221635dc2464e89a4263b894ebcffa1c749",
+          "38cb2d6c9b72b657f64670fdcb78685720924045cb63900b66beeab524faa3ed",
+          "9297750a930e4d610b6f84b9d122ac4f0e3f86e991a3dc6cd6bea610dd858f06",
+          "1abd1a6f78962fe380f3e09bb3b5a7be7b4e7cf8ba86c9277ec39bbc5cc9fabb",
+          "98e73fff077eb9dc209c7981902bf6fd0ee0430fe0c2e06855fcd34bf1e37cea",
+          "e724523a17fd8eec8ea3fb2df1799155adab7d5eeab01292a04d9458de22b277",
+          "9891cfaa68b4c4e8a611d763259a761b0a229c5e2bac9ae6ef72bb4a30ad7fe5",
+          "55deb2eb1d3e5c796a4167618dc7c5bf5cf68bd8132b7e130db93064d2559ee0",
+          "6b0a709c322cbf7304ccdf5de762abe29ee12ec6cbe8d390d5ed9c7401b5934a",
+          "5933f1d3b487c1cecb9ab8ca675ceba265a3adf9680683337ce258c274f2c14e",
+          "2018c5c8109cfb2790f3176fc87fa7d81ca661d11110879f0f1a17d3a65e2646",
+          "bb766ef4691af8a9f751571499ceef596167afef6541d5d49db0aa20a9c14e7b",
+          "3ea7fd7985d9f67110ba00c3089a7a120f73dbae085fc0d78fe0aab8a46d093c",
+          "ac49bef011c6a94dd15f686721b69ce31efcddccebe4111f07e80588077b4e49",
+          "48e51aed3e09f94350843e726820e0440fbab1935efbd3d8dfba3cfeac7e205b"
+        ],
+        "bindingSurfaces": [
+          "df7633a757106f8dcb8bcab6c5186b7e21bc4560de33967785aa820b55e2aeb6",
+          "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+          "5c9843fe191765daf033c13099e33b8e90ec851f5c5e39b18d6b5f75a3c1d7c6",
+          "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+          "53954cc11abc3028e9d91f953fbeefaa72ffda5c12d843a0773002cd4f48e439",
+          "02ce297516202ebe517788eb985b5240347df0e25247adb4153ce92f0e4080b3",
+          "97c3d18c10af601b22375bf893b2927c74cee7cd16db0094222535e830db143b",
+          "dd8ceefbcde4d3e9529b94d23cde74146d29de0381a0d5241960a2bc2b7cae91",
+          "907197ad85aa9090c518884e0c1ca629e6b82a5e3e6d575c7058e7a5f1b1ad21",
+          "712a7d32f32dd32a413a2bc2e875d879c0b445836cd2cdcce487e908feac9765",
+          "df87b0cf186b4acaadaf316e43b0aa5eb78845c9c88f3df753ee3a8499c0f996",
+          "e72da6d53f9194831aa4d22549d43239cacc87b3ecafdb49c05f00bad9d45239"
+        ],
+        "computedBoundaries": []
+      }
+    },
+    "scripts/completed-private-runtime-admission.mjs": {
+      "beforeDefinitionSha256": "bd220e76ea7c07d6e25ebf7146beec33893040f44cf9cb0237e8a16549456979",
+      "definition": {
+        "nodeImports": [
+          "node:assert/strict",
+          "node:child_process",
+          "node:crypto",
+          "node:fs/promises",
+          "node:os",
+          "node:path",
+          "node:url"
+        ],
+        "imports": [
+          "scripts/lib/native-sampling-identity-successor-source.mjs",
+          "scripts/private-production-runtime-bundle.mjs",
+          "scripts/protected-private-production-runtime.mjs",
+          "scripts/ravscore-continuation-checkpoint.mjs"
+        ],
+        "resources": [
+          "data/live/manifest.json",
+          "scripts/lib/native-sampling-identity-successor-source.mjs",
+          "scripts/private-production-runtime-bundle.mjs",
+          "scripts/protected-private-production-runtime.mjs",
+          "scripts/ravscore-continuation-checkpoint.mjs"
+        ],
+        "dependencySurfaces": [
+          "2902752a434eafb32811041411db30e11ab7093cc0cd2a1f28a851535918b6e1",
+          "322794c938bce87597d5378c6c6dbf2e6128a4e24d4baabd1062c9fefe5584cd",
+          "3d415f5c66f5c0cef77367380875ed30173975490d2e75a7acbff3d468f35d06",
+          "3d8198ea94cf33d210954324bba589e22e361c654a306f6c14585a59998a3747",
+          "5348c5c2bb99cb10da6d2435c409dccc45a7cebb235e6b8e2ddb961fb69783d7",
+          "71a781d78633e7a97433b5515542b53db069611656ffde226a3bade1033cd204",
+          "802baa4e803994f8706043d8e31ac4364dd52615b80e73f5b82f87ddbdacea1c",
+          "927e9700b89b3acb7cc530622253a73a450c9ebce1a00d9a2ff172723399f99d",
+          "97f5101f70775be76a755805307500747e45368cd2c758793c66d026dee838e8",
+          "98caa1b99aed321dbda8f8b1cfc7c004bf97143436612902650e54a2ee23f564",
+          "a2193d5d28c19defe998a4ed48451b8d44f4a857147ad31ae46421e97f055213",
+          "ab1c4058738e27399572963d6f71c63615455727ec8d6758e745757329c38e4e",
+          "afcfbd8e7de7a2fd67bc747abf9afc091884e540b8258bdcc4498bdce87435cc",
+          "c21ad4b753b8516faa88d679c34913da256b66e314ebeb1581c968174149fdc7",
+          "d2cadb12e8018061bbb23357b83e256acdeb5c2ae4edde8562434b5f1757e3d0",
+          "d3608f3f8a5e4f2f6cc96c5ed653add1cad68694142ac7f9ccf173dd7d4cd755",
+          "e016b7b20b9f8a64eeb0f3768fb0a81836fcdd3c5025876363d90998c3397ee2",
+          "e0f2143bb67b7de22e5806a541a0c195d26c024c5c868a9e71b05c27a49640b7",
+          "e731fc30a46debabd7e1e07e51b51fe868f1476b67a575cba025b73764d1a4ec",
+          "fea502b095ebdfab582835e467416a6ce46677426610e2773e7f7cecb9b6c4a3",
+          "2f225a919c0ccc9e15ed550e8b5359651e62b800b2f52bbd5c42689d58e13fb3",
+          "a13714fc5b6dba925423d135436390b151da0bc5136392a2a8b9963a6e8d7271",
+          "29a021df3ef25328d5ef53e1842e944e007717b5d4d8cd476ffb334f5ec80207"
+        ],
+        "bindingSurfaces": [
+          "02ce297516202ebe517788eb985b5240347df0e25247adb4153ce92f0e4080b3",
+          "214afbef8e3f459ae6d1a2ee91be28d30dbf6b022eb6c8a1d024b9b113df44e7",
+          "285d08432951677c60b32e0c705dbf87acefd2d8f2aefa5b44c1786cd41a3978",
+          "40d532bfbc7eb192867a3e8cbdc93f66a30cafb53a0c28e10a291034ea6b1866",
+          "52e3656968166d7e712276358f79fe4600332d831cef46d53442994170e8903b",
+          "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+          "8abffa521e24c39dccd65e23b49dc79bd4ec46ee068b74429509413e47b06a05",
+          "992da2e3651ff2ead975221d00c6c1aaffb8704037cdb92d27217a546796434a",
+          "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+          "a96f6552edd1ba405a00f2612b8a4502a1106b6c504a584fbb7c56a516daa408",
+          "cea61acfd2850425a78d46a804757c14ce93a11cb5f1c34406d2573604bdc8bd",
+          "dfb0eabd1d5749ae6fd5019d191a47be71ee965c69fac3921c502cabe571d79c",
+          "e24b079e8b07155d2b4cd99944aaacaa890707b8de400b9f508004b8a9ef8e75",
+          "eec34f2d33e0e0bcea7aad6bc1bc09e3dc14ac05a300974be499ea33feae96d1"
+        ],
+        "computedBoundaries": []
+      }
+    },
+    "scripts/lib/completed-private-runtime-workflow-review.mjs": {
+      "beforeDefinitionSha256": "d1f539f9bc7f1c21490f3d1c51e87ad96d85b3d9fa245b8d94934daebba0225a",
+      "definition": {
+        "nodeImports": [
+          "node:assert/strict",
+          "node:crypto",
+          "node:fs"
+        ],
+        "imports": [],
+        "resources": [
+          ".github/workflows/reusable-weather-build.yml",
+          ".github/workflows/run-current-weather-once.yml",
+          "scripts/lib/assistant587-cold-checkpoint-combined-workflow-review.json",
+          "scripts/lib/completed-private-runtime-workflow-review.json",
+          "scripts/lib/current-family-cold-checkpoint-workflow-review.json",
+          "scripts/lib/current-family-cold-start-workflow-review.json",
+          "scripts/lib/ordinary-completed-stage-workflow-review.json",
+          "scripts/lib/automatic-completed-pages-workflow-review.json",
+          "scripts/lib/immediate-ordinary-pages-workflow-review.json"
+        ],
+        "dependencySurfaces": [
+          "74a592d0bf7f3a9dfad6389a54f1c7f72bf43d02fd171c72a4f60b6c4836dd72",
+          "beab7d0e44de9c78817044c9a1432672cc7d1dbe04d3ca7a14c028e9b7fd9ee5",
+          "e0a90166e3a8083622da7d5da9f9b8220fed0a622ce16a966b1651c43a95c11c",
+          "e1dc7db640fcc7c45744b2190dd83b59a62c5df84acf47ca7a35328d36763c89",
+          "f86eccda05f89104d041e361ad5fa52e6afe4419890047fcea9f0655876b7961",
+          "5589c8034d0ddda99878ef016a4e53ea342a582e396aef26600863028971d936",
+          "b85a3c3bd330c88426e5b76985d65a878747852588a5446cc1855af40924a019"
+        ],
+        "bindingSurfaces": [
+          "304ca249dd8cfc23cfb8d0797ca85a8fd72986d50f43c1e4a8168d4cb44faaf2",
+          "3b27a1558a20f6700e670864f032485e2191f98e9211a9be51016b61260c1540",
+          "5193ca852a68475d140a771402a4fa03aae098c6694625269ec7835683d9e75a",
+          "8c561aa0a4639264e52f42918e48bad60fe2ddaa10c2b00f688b3b09e16aa72c",
+          "b1b1dbb3b798251b0d96ebe8899d07d62e5fed4f17c384c78b61ae2aaa6ee579",
+          "d3c7c0b6948622d54638729de889bded01734fa308421ec6df79cb2295a1d7ba",
+          "f7faa0e6eec627208eb09deaf3b2d180846c1b0c317ff88d730efa8245902d06",
+          "36e9ccb1f0535b2af0b7387acf05784b7bb4cc4dae2338c0fcb9c7b1226b8e8f",
+          "72b0644f8d3f3ec17454dc1771105b83a821aca06bb6205491105f8d398a147d"
+        ],
+        "computedBoundaries": []
+      }
+    },
     "scripts/test-map-timeline-generation.mjs": {
       "beforeDefinitionSha256": null,
       "definition": {
@@ -8280,6 +8677,18 @@
       "scripts/lib/pages-sealed-retry-decision.mjs": "eb20635b6c1172c8453d19f2da96295d2ab5f175b2f0a78acec161b147d6e491",
       "scripts/lib/publish-sealed-pages-with-recovery.mjs": "64bee702f790af04dc44ce8f6778b09eb0715484160422c25696e2a2310c26ab",
       "scripts/lib/run-sealed-pages-deployment.mjs": "b063dbda4ba18f852bc1281682f4ca971dd3846b1730422776f59b2958571f5e"
+    },
+    "standardActionRollback": {
+      "action": {
+        "path": ".github/actions/deploy-ravradar-pages/action.yml",
+        "beforeBlob": "ac9e98eb39d4a266ff96bebff121098465b8e00f",
+        "afterBlob": "c65da3cd39ad9b0b9bedf931e4f6ddbc44f8a34e"
+      },
+      "test": {
+        "path": "scripts/test-completed-private-runtime-workflow-inverse.mjs",
+        "beforeBlob": "b36e3b70b8344d58fb7097591166ac20de817c6c",
+        "afterBlob": "92c7437e0a48861f5c0aabbf4e39548f988d3402"
+      }
     }
   },
   "assistantWindFollowup": {
