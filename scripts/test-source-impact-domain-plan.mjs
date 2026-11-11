@@ -497,6 +497,8 @@ test('normal597 registry keeps genuine144 inputs and closes only known normal co
 // Separate598normal plan: genuine current protected inputs, synthetic Git children only.
 test('normal598 registry keeps genuine148 inputs and closes only known normal control capabilities',async t=>{
   const reference='bd9cf518fe798ddea45d2b835f324f6e2bea06fc';
+  // Replay whole historical exact pairs; current capability cases below still read current sources.
+  const historicalAfter='fa64eca25c5f46189b00962a363d066a8f85a516';
   const controls=['scripts/source-impact-domain-inputs.mjs','scripts/lib/source-impact-domain-inputs-598.json',
     'scripts/test-source-impact-domain-inputs.mjs','scripts/source-impact-domain-plan.mjs',
     'scripts/lib/source-impact-domain-owners-598.json','scripts/test-source-impact-domain-plan.mjs',
@@ -586,7 +588,7 @@ test('normal598 registry keeps genuine148 inputs and closes only known normal co
     await t.test('exact598 fixed assistant order uses normal roundtrip and refuses every unreviewed owner byte',()=>{
       const edgeOwners=['supabase/functions/_shared/rav-assistant-contract.ts',
         'supabase/functions/ravradar-assistant/index.ts','scripts/test-rav-assistant-main-edge-roundtrip.mjs'];
-      const edgeChanges=edgeOwners.map(edgeFile=>[edgeFile,fs.readFileSync(path.join(SOURCE,edgeFile))]);
+      const edgeChanges=edgeOwners.map(edgeFile=>[edgeFile,git(SOURCE,['cat-file','blob',historicalAfter+':'+edgeFile])]);
       const edgeCandidate=make598(baseline598,edgeChanges,'synthetic reviewed598 fixed assistant reply order');
       const edgePlan=run598(edgeCandidate);
       assert.equal(edgePlan.selection,'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(edgePlan.reasonCodes));
@@ -635,7 +637,7 @@ test('normal598 registry keeps genuine148 inputs and closes only known normal co
       }
     });
     await t.test('exact598 ordinary SDK workflow oracle port selects its real target and refuses byte drift',()=>{
-      const owner='scripts/test-runner-android-sdk-reclaim.mjs',body=fs.readFileSync(path.join(SOURCE,owner));
+      const owner='scripts/test-runner-android-sdk-reclaim.mjs',body=git(SOURCE,['cat-file','blob',historicalAfter+':'+owner]);
       const actual=run598(make598(baseline598,[[owner,body]],'synthetic exact reviewed ordinary SDK oracle port'));
       assert.equal(actual.selection,'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(actual.reasonCodes));
       assert.equal(actual.commands.filter(value=>value==='node --test scripts/test-runner-android-sdk-reclaim.mjs').length,1);
@@ -667,7 +669,7 @@ test('normal598 registry keeps genuine148 inputs and closes only known normal co
     });
     await t.test('exact598 admin cache publication closes both actual production contracts and refuses owner drift',()=>{
       const owners=['admin.html','service-worker.js','scripts/test-public-cold-start-4.0.303.mjs'];
-      const changes=owners.map(file=>[file,fs.readFileSync(path.join(SOURCE,file))]);
+      const changes=owners.map(file=>[file,git(SOURCE,['cat-file','blob',historicalAfter+':'+file])]);
       for(const [owner,body]of changes){
         const actual=run598(make598(baseline598,[[owner,body]],'synthetic exact admin cache publication owner'));
         assert.equal(actual.selection,owner==='scripts/test-public-cold-start-4.0.303.mjs'?'CONTROL_QUALIFICATION_REQUIRED':'TARGETED_DOMAINS',JSON.stringify(actual.reasonCodes));
