@@ -129,13 +129,22 @@ jobs:
         if: inputs.restore_mode == 'archive'
         env:
           RESTORE_ARCHIVE_INDEX_COMMITMENT: ${{ inputs.archive_index_commitment }}
+          EXPECTED_HEAD_SHA: ${{ inputs.expected_head }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
+          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
+          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
         run: |
           node --input-type=module <<'RESERVE'
           import fs from 'node:fs';
           import {databaseReserveReceiptReady} from './scripts/supabase-backup-lifecycle.mjs';
+          import {persistSupabaseDatabaseRestoreReceipt} from './scripts/archive-supabase-database-backup.mjs';
           const report=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/database-archive-restore-report.json','utf8'));
           const ready=databaseReserveReceiptReady(report,{sourceHead:process.env.GITHUB_SHA,
             indexCommitment:process.env.RESTORE_ARCHIVE_INDEX_COMMITMENT});
+          if(ready) await persistSupabaseDatabaseRestoreReceipt({report,indexCommitment:process.env.RESTORE_ARCHIVE_INDEX_COMMITMENT});
           fs.appendFileSync(process.env.GITHUB_OUTPUT,'ready='+String(ready)+'\n');
           RESERVE
       - name: Bind verified database reserve ${{ inputs.archive_index_commitment }}

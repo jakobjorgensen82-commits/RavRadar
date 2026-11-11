@@ -190,6 +190,10 @@ const reviewedBackupWorkflowSuccessor = Object.freeze({ bytes: 6701, sha256: '3a
 const reviewedRestoreWorkflowSuccessor = Object.freeze({ bytes: 5402, sha256: '78584a8a71cdd9080ea8569f4bafc1f829ea54f264f5a88c48b73ee281738526' });
 const reviewedAutomaticBackupWorkflowSuccessor=Object.freeze({"bytes":11103,"sha256":"18bf633a868577bee0cf8746a711d8fe2528a2e7c091e22cab70cd3010d1172c"});
 const reviewedReserveProofWorkflowSuccessor=Object.freeze({"bytes":6523,"sha256":"981687ce5586921bef7ec821f98dc47e0cb55cd8b2717dbe6257878bb76c7455"});
+const reviewedRenewalBackupWorkflowSuccessor=Object.freeze({"bytes":11466,"sha256":"bafd968dba679d8f33bb4da7912a7865efb7b26a883e4912d9a160b3532ad3de"});
+const reviewedDurableRestoreWorkflowSuccessor=Object.freeze({"bytes":7264,"sha256":"787a054e8d7d75c93b6ca8634b2a24f11cb86f6b2b37bc11a915c02d67c42be3"});
+// Exact existing SOURCE611 admin handoff, independently ported before RAW issuance.
+const reviewedSource611AdminHistoryWorkflowSuccessor=Object.freeze({bytes:32303,sha256:'099278384453378354c3c028f064d3ecce2586e8de9e7a75142fa2ae88a0ea97'});
 function inverseReviewedMaintenanceWorkflowInventory(names, sources) {
   assert.deepEqual(names, [...expectedWorkflowFiles, 'private-trip-weather-study.yml',
     'deploy-forecast-share.yml', ...Object.keys(reviewedMaintenanceWorkflows)].sort(),
@@ -198,7 +202,13 @@ function inverseReviewedMaintenanceWorkflowInventory(names, sources) {
   for (const [name, pin] of Object.entries(reviewedMaintenanceWorkflows)) {
     const bytes = sources[name];
     assert.ok(Buffer.isBuffer(bytes), 'Whole original workflow bytes are required');
-    const reviewed = name === 'backup-supabase-database.yml' && bytes.length === reviewedAutomaticBackupWorkflowSuccessor.bytes
+    const reviewed = name === 'maintain-admin-document-history.yml' && bytes.length === reviewedSource611AdminHistoryWorkflowSuccessor.bytes
+      ? reviewedSource611AdminHistoryWorkflowSuccessor
+      : name === 'verify-supabase-cli-local-restore.yml' && bytes.length === reviewedDurableRestoreWorkflowSuccessor.bytes
+      ? reviewedDurableRestoreWorkflowSuccessor
+      : name === 'backup-supabase-database.yml' && bytes.length === reviewedRenewalBackupWorkflowSuccessor.bytes
+      ? reviewedRenewalBackupWorkflowSuccessor
+      : name === 'backup-supabase-database.yml' && bytes.length === reviewedAutomaticBackupWorkflowSuccessor.bytes
       ? reviewedAutomaticBackupWorkflowSuccessor
       : name === 'verify-supabase-cli-local-restore.yml' && bytes.length === reviewedReserveProofWorkflowSuccessor.bytes
         ? reviewedReserveProofWorkflowSuccessor

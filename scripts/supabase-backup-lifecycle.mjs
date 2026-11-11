@@ -24,8 +24,9 @@ export function databaseReserveReceiptReady(report,{sourceHead,indexCommitment}=
     &&/^rr-supabase-restore-v1:[a-f0-9]{64}$/.test(indexCommitment??'')
     &&report.archiveIndexCommitmentSha256===indexCommitment.slice('rr-supabase-restore-v1:'.length)
     &&['authenticatedFiveFileSqlExecuted','exactSqlBytesStreamed','isolatedAuthServiceHealthy',
-      'localRestoredCatalogVerified','ownedDockerClosed','sourceDataParityVerified',
-      'authRestoreVerified','fullDatabaseBackupVerified'].every(field=>report[field]===true)
+      'localRestoredCatalogVerified','ownedDockerClosed','authenticatedExportDataParityVerified',
+      'authenticatedSequenceStateVerified','isolatedFreshAuthPasswordLoginVerified',
+      'originalAuthRowsPreservedDuringProbe'].every(field=>report[field]===true)
     &&report.productionDatabaseRestoreExecuted===false;
 }
 export function backupGithubReader(env=process.env,execute=execFileSync){

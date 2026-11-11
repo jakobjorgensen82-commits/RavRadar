@@ -78,7 +78,7 @@ function fixture(temp,behavior={}){
       assert.ok(Buffer.isBuffer(body));assert.ok(body.length<=P.maximumObjectBytes);assert.equal(sha(body),part?part[1]:key.split('/').at(-1).split('.')[0]);
       if(part)assert.ok(gunzipSync(body,{maxOutputLength:P.maximumCipherBytes}).length>0);
       else{
-        const frame=JSON.parse(gunzipSync(body));assert.match(frame.kind,/^SUPABASE_DB_(SQL_CIPHERTEXT|ENCRYPTED_INDEX)_FRAME_V1$/);
+        const frame=JSON.parse(gunzipSync(body));assert.match(frame.kind,/^SUPABASE_DB_(SQL_CIPHERTEXT|ENCRYPTED_INDEX|ENCRYPTED_RESTORE_RECEIPT)_FRAME_V1$/);
         assert.equal(sha(Buffer.from(frame.data,'base64')),frame.sha256);assert.equal(Buffer.from(frame.data,'base64').length,frame.bytes);
       }
       if(behavior.putUnknown){objects.set(key,Buffer.from(body));throw new Error('synthetic private uncertain outcome');}
@@ -757,4 +757,99 @@ test('fixed ROLES audit rejects an authenticated oversized roles file before any
   await rejectCode(()=>auditGrant({},f.dependencies()),'ROLE_GRANT_AUDIT_BOUND');
   const objectGets=f.calls.filter(c=>c.method==='GET'&&c.headers.has('authorization')&&c.url.includes('/bundles/'));
   assert.deepEqual(objectGets.map(c=>new URL(c.url).pathname.slice(P.bucket.length+2)),[indexPath]);
+});
+
+function positiveRestoreReport(f,indexSha256=f.locator.payload.index.sha256){
+  const commitment=sha(Buffer.from(JSON.stringify(['RavRadar/SupabaseArchiveRestore/v1/selector',indexSha256])));
+  return {status:'PASS',scope:'authenticated-archive-isolated-sql-restore',sourceHead:f.env.GITHUB_SHA,
+    archiveIndexCommitmentSha256:commitment,productionDatabaseRestoreExecuted:false,
+    authenticatedFiveFileSqlExecuted:true,exactSqlBytesStreamed:true,isolatedAuthServiceHealthy:true,
+    localRestoredCatalogVerified:true,ownedDockerClosed:true,authenticatedExportDataParityVerified:true,
+    authenticatedSequenceStateVerified:true,isolatedFreshAuthPasswordLoginVerified:true,originalAuthRowsPreservedDuringProbe:true,
+    fullDatabaseBackupVerified:false,authRestoreVerified:false,sourceDataParityVerified:false,storageObjectBytesRestored:false,freeReady:false};
+}
+test('durable normal reserve receipt requires every scoped positive check before private IO, keeps broad false flags and deduplicates exact existing group',async t=>{
+  const {persistSupabaseDatabaseRestoreReceipt:persist,inspectSupabaseDatabaseBackupLifecycle:inspect}=await import('./archive-supabase-database-backup.mjs');
+  const q=await tinyRotation(t),indexSha256=q.f.locator.payload.index.sha256,report=positiveRestoreReport(q.f),start=q.f.calls.length;
+  for(const field of ['authenticatedFiveFileSqlExecuted','exactSqlBytesStreamed','isolatedAuthServiceHealthy','localRestoredCatalogVerified',
+    'ownedDockerClosed','authenticatedExportDataParityVerified','authenticatedSequenceStateVerified','isolatedFreshAuthPasswordLoginVerified','originalAuthRowsPreservedDuringProbe'])
+    await rejectCode(()=>persist({indexSha256,report:{...report,[field]:false}},q.dependencies()),'RESTORE_RECEIPT_NOT_POSITIVE');
+  await rejectCode(()=>persist({indexSha256,report:{...report,status:'FAILED_CLOSED'}},q.dependencies()),'RESTORE_RECEIPT_NOT_POSITIVE');
+  assert.equal(q.f.calls.length,start);
+  assert.equal((await persist({indexSha256,report},q.dependencies())).receiptWritten,true);
+  const written=q.f.calls.slice(start).filter(call=>call.method==='PUT');assert.equal(written.length,1);assert(written[0].body.length<=8192);
+  assert.equal((await inspect(q.dependencies())).restoreVerified,true);
+  assert.equal((await persist({indexSha256,report},q.dependencies())).receiptWritten,false);
+  assert.equal(q.f.calls.slice(start).filter(call=>call.method==='PUT').length,1);
+  assert.equal(q.f.calls.filter(call=>call.method==='DELETE').length,0);
+  const materialized=await run({mode:'bootstrap',indexSha256},q.f.dependencies());assert.equal(materialized.remoteArchiveVerified,true);
+});
+test('new durable verified group replaces distinct reserve only after later capture, and old receipt expires with its group before index-last',async t=>{
+  const {persistSupabaseDatabaseRestoreReceipt:persist,rotateSupabaseDatabaseBackups:rotate}=await import('./archive-supabase-database-backup.mjs');
+  const q=await tinyRotation(t),current=clone(q.f.locator);q.f.locator=q.reserve;
+  await persist({indexSha256:q.reserve.payload.index.sha256,report:positiveRestoreReport(q.f)},q.dependencies());
+  q.f.locator=current;await persist({indexSha256:current.payload.index.sha256,report:positiveRestoreReport(q.f)},q.dependencies());
+  q.f.env.GITHUB_RUN_ID='12348';await run({mode:'capture'},q.f.dependencies());
+  let result=await rotate({},q.dependencies());assert.equal(result.retainedReserveIndexSha256,current.payload.index.sha256);
+  assert.equal(q.f.objects.has(current.payload.index.path),true);assert.equal(q.f.objects.has(q.reserve.payload.index.path),true);
+  result=await rotate({},q.dependencies());assert.equal(result.retainedReserveIndexSha256,current.payload.index.sha256);
+  assert.equal(q.f.objects.has(q.reserve.payload.index.path),false);
+  const deletes=q.f.calls.filter(call=>call.method==='DELETE').map(call=>new URL(call.url).pathname.slice(P.bucket.length+2));
+  assert.equal(deletes.at(-1),q.reserve.payload.index.path);
+  const receiptFrames=[...q.f.objects.values()].filter(wire=>{try{return decodeObject(wire).kind==='SUPABASE_DB_ENCRYPTED_RESTORE_RECEIPT_FRAME_V1';}catch{return false;}});
+  assert.equal(receiptFrames.length,1,'only the retained verified group keeps its small positive receipt');
+});
+test('unknown receipt upload never deletes and is reconciled by authentic readback on a fresh normal caller',async t=>{
+  const {persistSupabaseDatabaseRestoreReceipt:persist,inspectSupabaseDatabaseBackupLifecycle:inspect}=await import('./archive-supabase-database-backup.mjs');
+  const q=await tinyRotation(t),indexSha256=q.f.locator.payload.index.sha256,report=positiveRestoreReport(q.f);
+  q.f.behavior.putUnknown=true;
+  await rejectCode(()=>persist({indexSha256,report},q.dependencies()),'DB_BACKUP_WRITE_OUTCOME_UNKNOWN');
+  assert.equal(q.f.objects.has(q.reserve.payload.index.path),true);assert.equal(q.f.calls.filter(call=>call.method==='DELETE').length,0);
+  q.f.behavior.putUnknown=false;
+  assert.equal((await inspect(q.dependencies())).restoreVerified,true);
+  const puts=q.f.calls.filter(call=>call.method==='PUT').length;
+  assert.equal((await persist({indexSha256,report},q.dependencies())).receiptWritten,false);
+  assert.equal(q.f.calls.filter(call=>call.method==='PUT').length,puts);
+  const before=clone(q.f.locator);q.f.behavior.beforeLocatorGet=()=>{q.f.locator.version++;};
+  await assert.rejects(()=>persist({indexSha256,report},q.dependencies()));q.f.locator=before;
+});
+test('changed or unauthenticated durable proof cannot promote or delete a reserve',async t=>{
+  const {persistSupabaseDatabaseRestoreReceipt:persist,rotateSupabaseDatabaseBackups:rotate}=await import('./archive-supabase-database-backup.mjs');
+  const q=await tinyRotation(t);await persist({indexSha256:q.f.locator.payload.index.sha256,report:positiveRestoreReport(q.f)},q.dependencies());
+  const receipt=[...q.f.objects].find(([,wire])=>{try{return decodeObject(wire).kind==='SUPABASE_DB_ENCRYPTED_RESTORE_RECEIPT_FRAME_V1';}catch{return false;}});
+  const bad=Buffer.from(receipt[1]);bad[bad.length-1]^=1;q.f.objects.set(receipt[0],bad);
+  await rejectCode(()=>rotate(q.options,q.dependencies()),'REMOTE_OBJECT_SHA');
+  assert.equal(q.f.calls.filter(call=>call.method==='DELETE').length,0);
+  assert.equal(q.f.objects.has(q.reserve.payload.index.path),true);
+});
+
+test('self-addressed altered receipt with valid outer hashes still requires actual GCM authentication',async t=>{
+  const {persistSupabaseDatabaseRestoreReceipt:persist,rotateSupabaseDatabaseBackups:rotate}=await import('./archive-supabase-database-backup.mjs');
+  const q=await tinyRotation(t);await persist({indexSha256:q.f.locator.payload.index.sha256,report:positiveRestoreReport(q.f)},q.dependencies());
+  const [key,wire]=[...q.f.objects].find(([,wire])=>{try{return decodeObject(wire).kind==='SUPABASE_DB_ENCRYPTED_RESTORE_RECEIPT_FRAME_V1';}catch{return false;}});
+  const outer=decodeObject(wire),binary=Buffer.from(outer.data,'base64');binary[binary.length-1]^=1;
+  outer.data=binary.toString('base64');outer.sha256=sha(binary);
+  const altered=gzipSync(Buffer.from(JSON.stringify(outer)),{level:1});q.f.objects.delete(key);
+  q.f.objects.set('bundles/sha256/'+sha(altered)+'.json.gz',altered);
+  await rejectCode(()=>rotate(q.options,q.dependencies()),'INDEX_GCM_AUTHENTICATION');
+  assert.equal(q.f.calls.filter(call=>call.method==='DELETE').length,0);assert(q.f.objects.has(q.reserve.payload.index.path));
+});
+
+test('durable reserve renewal cannot downgrade a newer still-live verified bootstrap reserve',async t=>{
+  const {persistSupabaseDatabaseRestoreReceipt:persist,rotateSupabaseDatabaseBackups:rotate}=await import('./archive-supabase-database-backup.mjs');
+  const q=await tinyRotation(t),current=clone(q.f.locator);q.f.locator=q.retiring;
+  await persist({indexSha256:q.retiring.payload.index.sha256,report:positiveRestoreReport(q.f)},q.dependencies());
+  q.f.locator=current;const result=await rotate(q.options,q.dependencies());
+  assert.equal(result.retainedReserveIndexSha256,q.reserve.payload.index.sha256);
+  assert(q.f.objects.has(q.reserve.payload.index.path));assert.equal(q.f.objects.has(q.retiring.payload.index.path),false);
+});
+
+test('existing manual isolated restore persists the same durable receipt by authenticated commitment without repeating SQL or requiring current-as-target',async t=>{
+  const {persistSupabaseDatabaseRestoreReceipt:persist}=await import('./archive-supabase-database-backup.mjs');
+  const q=await tinyRotation(t),target=q.reserve.payload.index.sha256,report=positiveRestoreReport(q.f,target),start=q.f.calls.length;
+  Object.assign(q.f.env,{GITHUB_WORKFLOW:'Verify standard Supabase CLI local restore',GITHUB_EVENT_NAME:'workflow_dispatch'});
+  const result=await persist({report,indexCommitment:'rr-supabase-restore-v1:'+report.archiveIndexCommitmentSha256},q.dependencies());
+  assert.equal(result.receiptWritten,true);assert.equal(q.f.calls.slice(start).filter(call=>call.method==='PUT').length,1);
+  assert.equal(q.f.calls.slice(start).filter(call=>call.method==='DELETE').length,0);
+  assert.equal(q.f.children.filter(child=>child.args?.[0]==='db').length,15,'only the three earlier tiny captures dumped SQL');
 });

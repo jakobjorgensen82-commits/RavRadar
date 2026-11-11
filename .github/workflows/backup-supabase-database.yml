@@ -108,7 +108,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
       - name: Reject missing source proof before private access
         run: test "${{ steps.source-proof.outputs.required }}" = false
-      - name: Plan one weekly capture in the original weather window
+      - name: Plan one weekly capture or isolated verification in the original weather window
         id: auto-plan
         if: steps.admission.outputs.automatic == 'true'
         timeout-minutes: 2
@@ -125,6 +125,8 @@ jobs:
           RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
           RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
           RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
+          SUPABASE_BACKUP_RESERVE_INDEX_COMMITMENT: ${{ vars.RAVRADAR_SUPABASE_BACKUP_RESERVE_INDEX_COMMITMENT }}
+          SUPABASE_BACKUP_RESERVE_RESTORE_RUN_ID: ${{ vars.RAVRADAR_SUPABASE_BACKUP_RESERVE_RESTORE_RUN_ID }}
       - name: Check private bucket before capture-only CLI setup
         if: steps.admission.outputs.automatic != 'true' && inputs.operation == 'capture'
         timeout-minutes: 2
@@ -160,9 +162,9 @@ jobs:
           RAVRADAR_R2_ACCESS_KEY_ID: ${{ (inputs.operation == 'capture' || inputs.operation == 'discover' || inputs.operation == 'bootstrap') && secrets.RAVRADAR_R2_ACCESS_KEY_ID || '' }}
           RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ (inputs.operation == 'capture' || inputs.operation == 'discover' || inputs.operation == 'bootstrap') && secrets.RAVRADAR_R2_SECRET_ACCESS_KEY || '' }}
 
-      - name: Capture private Supabase database
+      - name: ${{ steps.auto-plan.outputs.action == 'capture' && 'Capture private Supabase database' || 'Verify or rotate an existing private database backup' }}
         if: steps.admission.outputs.automatic == 'true' && steps.auto-plan.outputs.proceed == 'true'
-        timeout-minutes: 21
+        timeout-minutes: 26
         run: node scripts/run-autonomous-supabase-backup.mjs --execute
         env:
           EXPECTED_HEAD_SHA: ${{ github.event_name == 'workflow_run' && github.sha || inputs.expected_main }}

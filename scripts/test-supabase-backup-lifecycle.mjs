@@ -62,12 +62,17 @@ test('normal reserve receipt bridge preserves every existing false field and req
   const report={status:'PASS',scope:'authenticated-archive-isolated-sql-restore',sourceHead:head,
     archiveIndexCommitmentSha256:'c'.repeat(64),authenticatedFiveFileSqlExecuted:true,exactSqlBytesStreamed:true,
     isolatedAuthServiceHealthy:true,localRestoredCatalogVerified:true,ownedDockerClosed:true,
-    sourceDataParityVerified:false,authRestoreVerified:false,fullDatabaseBackupVerified:false,productionDatabaseRestoreExecuted:false};
+    sourceDataParityVerified:false,authRestoreVerified:false,fullDatabaseBackupVerified:false,productionDatabaseRestoreExecuted:false,
+    authenticatedExportDataParityVerified:false,authenticatedSequenceStateVerified:false,
+    isolatedFreshAuthPasswordLoginVerified:false,originalAuthRowsPreservedDuringProbe:false};
   assert.equal(databaseReserveReceiptReady(report,options),false);
-  const complete={...report,sourceDataParityVerified:true,authRestoreVerified:true,fullDatabaseBackupVerified:true};
+  const complete={...report,authenticatedExportDataParityVerified:true,authenticatedSequenceStateVerified:true,
+    isolatedFreshAuthPasswordLoginVerified:true,originalAuthRowsPreservedDuringProbe:true};
   assert.equal(databaseReserveReceiptReady(complete,options),true);
-  for(const key of ['sourceDataParityVerified','authRestoreVerified','fullDatabaseBackupVerified','ownedDockerClosed'])
+  for(const key of ['authenticatedExportDataParityVerified','authenticatedSequenceStateVerified',
+    'isolatedFreshAuthPasswordLoginVerified','originalAuthRowsPreservedDuringProbe','ownedDockerClosed'])
     assert.equal(databaseReserveReceiptReady({...complete,[key]:false},options),false);
+  assert.equal(databaseReserveReceiptReady({...report,fullDatabaseBackupVerified:true,authRestoreVerified:true},options),false);
   assert.equal(databaseReserveReceiptReady(complete,{...options,indexCommitment:'rr-supabase-restore-v1:'+'d'.repeat(64)}),false);
 });
 test('unresolved capture, cancelled step, rerun and incomplete history stop a new capture without a private write',()=>{
@@ -90,12 +95,12 @@ test('weekly normal caller repeats admission after setup, deduplicates on authen
     rotate:async()=>{rotations++;return {status:'RETAINED',deletedObjects:0};}};
   assert.equal((await runAutonomousDatabaseBackup({phase:'plan'},dependencies)).proceed,true);
   assert.equal(captures,0);assert.equal((await runAutonomousDatabaseBackup({phase:'execute'},dependencies)).status,'DATABASE_BACKUP_WEEKLY_CAPTURE_COMPLETE');
-  assert.equal(captures,1);assert.equal(rotations,1);
+  assert.equal(captures,1);assert.equal(rotations,0);
   assert.equal((await runAutonomousDatabaseBackup({phase:'execute'},dependencies)).proceed,false);assert.equal(captures,1);
   clock+=DATABASE_BACKUP_INTERVAL_MS;
   await assert.rejects(()=>runAutonomousDatabaseBackup({phase:'execute'},{...dependencies,runHosted:({phase})=>{
     if(phase==='execute')throw Object.assign(new Error('unknown'),{code:'DB_BACKUP_WRITE_OUTCOME_UNKNOWN'});return {};}}));
-  assert.equal(rotations,1);assert.equal(preflights,3);
+  assert.equal(rotations,0);assert.equal(preflights,3);
 });
 test('automatic workflow and direct hook use the existing weather-first queues, source proof, one dispatch and fixed weekly caller',()=>{
   const backup=fs.readFileSync(new URL('../.github/workflows/backup-supabase-database.yml',import.meta.url),'utf8');
@@ -149,4 +154,26 @@ test('actual normal maintenance inventory accepts the two exact new workflows an
     const reviewedMaintenanceSources=suppliedSources;
     `+actualChecks+'\nassert.equal(physicalWorkflowFiles.length,currentPhysicalWorkflowFiles.length-3);',
     {assert,crypto,Buffer,Object,suppliedSources:sources});
+});
+
+test('normal cadence uses separate restore, capture and rotation windows; failure or unknown receipt never promotes',async()=>{
+  let clock=Date.parse('2026-11-10T03:10:00Z'),verified=false,captures=0,restores=0,persists=0,rotations=0;
+  const deps={env,now:()=>clock,verifyTrigger:()=>({proceed:true}),requireSettled:()=>{},
+    inspectCurrent:async()=>({completedAt:new Date(clock-DATABASE_BACKUP_INTERVAL_MS).toISOString(),indexSha256:'b'.repeat(64),restoreVerified:verified}),
+    runHosted:({phase})=>{if(phase==='execute')captures++;return {archiveWrittenThisOperation:true,centralLocatorVerified:true};},
+    restore:async restoreEnv=>{restores++;assert.equal(restoreEnv.RESTORE_ARCHIVE_INDEX_COMMITMENT,'rr-supabase-restore-v1:'+databaseRestoreCommitment('b'.repeat(64)));return {ownReport:true};},
+    persistRestore:async({report,indexSha256})=>{persists++;assert.deepEqual(report,{ownReport:true});assert.equal(indexSha256,'b'.repeat(64));verified=true;return {status:'DURABLE',receiptWritten:true};},
+    rotate:async()=>{rotations++;return {status:'RETIRED',deletedObjects:1};}};
+  assert.equal((await runAutonomousDatabaseBackup({phase:'plan'},deps)).action,'restore');assert.equal(restores,0);
+  await runAutonomousDatabaseBackup({phase:'execute'},deps);assert.deepEqual([restores,persists,captures,rotations],[1,1,0,0]);
+  assert.equal((await runAutonomousDatabaseBackup({phase:'execute'},deps)).action,'capture');assert.deepEqual([restores,persists,captures,rotations],[1,1,1,0]);
+  const rotation={...deps,inspectCurrent:async()=>({completedAt:new Date(clock).toISOString(),restoreVerified:true,rotationPending:true})};
+  assert.equal((await runAutonomousDatabaseBackup({phase:'execute'},rotation)).action,'rotate');assert.deepEqual([restores,persists,captures,rotations],[1,1,1,1]);
+  verified=false;
+  await assert.rejects(()=>runAutonomousDatabaseBackup({phase:'execute'},{...deps,restore:async()=>{throw new Error('synthetic local restore failure');}}));
+  assert.equal(persists,1);assert.equal(rotations,1);
+  await assert.rejects(()=>runAutonomousDatabaseBackup({phase:'execute'},{...deps,persistRestore:async()=>{throw new Error('synthetic unknown write');}}));
+  assert.equal(rotations,1);assert.equal(captures,1);
+  const late={...deps,verifyTrigger:()=>({proceed:false}),inspectCurrent:()=>{throw new Error('late source cannot touch archive');}};
+  assert.equal((await runAutonomousDatabaseBackup({phase:'execute'},late)).privateAccessStarted,false);
 });
