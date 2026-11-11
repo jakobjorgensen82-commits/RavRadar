@@ -1195,7 +1195,9 @@ function inverseReviewedSourcePrivateLf7UploadRemoval(source, relative) {
   if (currentSha !== reviewed608Sha) {
     const releaseVersion = currentSha === '694974220de75f5c44d6d31461cc51cc96490245d53ad1cab7143e380526b0e3'
       ? '4.0.609'
-      : JSON.parse(fs.readFileSync(new URL('../../package.json', import.meta.url), 'utf8')).version;
+      : currentSha === source859ImmediatePagesWorkflows.find(row => row.role === 'build')?.before.sha256
+        ? '4.0.610' // Exact reviewed intermediate produced by the SOURCE859 inverse.
+        : JSON.parse(fs.readFileSync(new URL('../../package.json', import.meta.url), 'utf8')).version;
     if (!/^4\.0\.[0-9]+$/.test(releaseVersion)) return source;
     const userAgent = 'RavRadar/' + releaseVersion;
     if (source.split(userAgent).length !== 6) return source;
@@ -1303,6 +1305,22 @@ const source859ImmediatePagesWorkflows = [
 export function inverseSource859ImmediatePagesWorkflow(source, relative) {
   source = inverseSource611MaintenanceWorkflow(source, relative);
   const row = source859ImmediatePagesWorkflows.find(entry => entry.path === relative);
+  // A later normally issued family changes only the five active User-Agent
+  // fields here. Recover the exact reviewed whole input before its old inverse;
+  // every other changed byte still reaches the existing strict refusals.
+  if (row?.role === 'build' && typeof source === 'string'
+      && Buffer.byteLength(source) === row.after.bytes && sha(source) !== row.after.sha256) {
+    const release = JSON.parse(fs.readFileSync(new URL('../../package.json', import.meta.url), 'utf8')).version;
+    const userAgent = 'RavRadar/' + release;
+    if (/^4\.0\.[0-9]+$/.test(release) && source.split(userAgent).length === 6) {
+      const reviewed = source.replaceAll(userAgent, 'RavRadar/4.0.610');
+      if (sha(reviewed) === row.after.sha256) {
+        requireSourceProducerOutput();
+        assertSourceProducerAfter597StaticCode();
+        source = reviewed;
+      }
+    }
+  }
   if (!row || typeof source !== 'string' || Buffer.byteLength(source) !== row.after.bytes
       || sha(source) !== row.after.sha256) return source;
   let bytes = Buffer.from(source);
