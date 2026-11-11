@@ -1,5 +1,5 @@
 name: Deploy the exact RavRadar Pages artifact
-description: Use the normal Pages path or a bounded same-job retry for scheduled weather.
+description: Bruger den officielle Pages-rute; samme-job-genforsøg er midlertidigt inaktivt.
 inputs:
   artifact_name:
     description: Exact upload name
@@ -22,14 +22,15 @@ runs:
   steps:
     - name: Deploy with the standard Pages action
       id: standard
-      if: inputs.immediate_retry != 'true'
       uses: actions/deploy-pages@v5
       with:
         artifact_name: ${{ inputs.artifact_name }}
         token: ${{ inputs.github_token }}
     - name: Deploy ordinary weather with one bounded immediate retry
       id: scheduled
-      if: inputs.immediate_retry == 'true'
+      # Midlertidigt inaktiv: den nye botrute har en uafklaret deployregression.
+      # Bevar koden, indtil rettelse og faktisk drift er verificeret.
+      if: ${{ false }}
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.github_token }}

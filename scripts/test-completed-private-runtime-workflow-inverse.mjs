@@ -1911,7 +1911,7 @@ test('cancelled Pages replay wiring preserves the historical build and guards bo
   }
 });
 
-test('scheduled weather locks a fresh hour while one immediate retry remains inside the Pages deploy step', async () => {
+test('scheduled weather keeps its fresh hour while standard Pages temporarily replaces the inactive retry', async () => {
   const [once, deploy, action] = await Promise.all([
     '../.github/workflows/run-current-weather-once.yml',
     '../.github/workflows/reusable-pages-deploy.yml',
@@ -1926,6 +1926,14 @@ test('scheduled weather locks a fresh hour while one immediate retry remains ins
   assert.match(deploy, /id: deployment\n        uses: \.\/\.github\/actions\/deploy-ravradar-pages/);
   assert.match(deploy, /id: public-verification[\s\S]*--base-url "\$\{\{ steps\.deployment\.outputs\.page_url \}\}"/);
   assert.match(deploy, /steps\.deployment\.outcome == 'failure' && steps\.deployment\.outputs\.closed_unpublished == 'true'/);
-  assert.match(action, /inputs\.immediate_retry != 'true'\n      uses: actions\/deploy-pages@v5/);
+  const standard = coldBlock(action, '    - name: Deploy with the standard Pages action');
+  const scheduled = coldBlock(action, '    - name: Deploy ordinary weather with one bounded immediate retry');
+  assert.match(standard, /^      uses: actions\/deploy-pages@v5$/m);
+  assert.doesNotMatch(standard, /^      if:/m);
+  assert.match(scheduled, /^      if: \$\{\{ false \}\}$/m);
+  for (const immediate_retry of [false, true])
+    assert.equal(coldEvaluate(scheduled.match(/^      if: (.+)$/m)[1], { inputs: { immediate_retry } }), false);
+  assert.match(standard, /artifact_name: \$\{\{ inputs\.artifact_name \}\}/);
+  assert.match(standard, /token: \$\{\{ inputs\.github_token \}\}/);
   assert.match(action, /run: node scripts\/deploy-ordinary-pages-with-immediate-retry\.mjs/);
 });
