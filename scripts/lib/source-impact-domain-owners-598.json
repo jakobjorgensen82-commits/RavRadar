@@ -578,6 +578,13 @@
           "node scripts/source-critical-gate.mjs"
         ]
       ]
+    },
+    {
+      "path": "scripts/test-water-station-active-routing-display-4.0.102.mjs",
+      "domains": [
+        "adminUI"
+      ],
+      "controlQualification": true
     }
   ],
   "exactSourceTransitions": {
