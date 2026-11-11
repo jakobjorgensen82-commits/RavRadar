@@ -8815,6 +8815,47 @@
           "5a3bd52c06e81f0777359b0482ca5aef84871fe83ea9963d09c278b2c2cc4599"
         ]
       }
+    },
+    "scripts/test-installed593-original591-successor.mjs": {
+      "beforeDefinitionSha256": "2f3834b3190845f8353b19f8753fad8d2aa8eb33cc0c3e6436e2b7ff3cba61ee",
+      "definition": {
+        "nodeImports": [
+          "node:assert/strict",
+          "node:fs/promises",
+          "node:os",
+          "node:path",
+          "node:url"
+        ],
+        "imports": [
+          "scripts/assistant-later-h0-binding-prewrite.mjs",
+          "scripts/build-assistant-later-h0-successor.mjs",
+          "scripts/integrated-cutover-readiness.mjs",
+          "scripts/lib/assistant-later-h0-successor-source.mjs",
+          "scripts/check-assistant-later-h0-predecessor-source.mjs"
+        ],
+        "resources": [
+          "scripts/build-assistant-later-h0-successor.mjs",
+          "scripts/integrated-cutover-readiness.mjs"
+        ],
+        "dependencySurfaces": [
+          "a1018d01426cd8dd323d80c1434838917badb180e26c432c9a7e86ad1bdd2fe3",
+          "fa20ff8b9e138962657d156304795563d9ed8489ab3ca4e42d07c24264c1b05c",
+          "0dad5a49ad9fbedc92f1a58caf9b352b0b93a4beedbf9929c2b63c2b249f00f0"
+        ],
+        "bindingSurfaces": [
+          "02ce297516202ebe517788eb985b5240347df0e25247adb4153ce92f0e4080b3",
+          "268e0230de83e428802198ecc50dbe42cc788d8b952f1ef966c882cde6016abd",
+          "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+          "946a593f8526b1b09bad2212d90a5b991592fb0084c5875a746cbeb6f0c22da9",
+          "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+          "a79863d32098c97096e65cbf40ab5f690fa8965c6c9f6ca2f026a9c3474c9d15",
+          "db7eb1231c304225b2ffe5573c0c6df600a03d647da33ecf3d7c45d7aab404f9"
+        ],
+        "computedBoundaries": [
+          "5a12de33d9557af639c85bfe61cacc9982f45750ed741b20578106505d954a33",
+          "6f8b89ff62fe355900c4c0b41d9b3d5cdea5e00ffc693f914ba8d648ceaef397"
+        ]
+      }
     }
   },
   "resourceFiles": [
