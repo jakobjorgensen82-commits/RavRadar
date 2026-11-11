@@ -7,7 +7,6 @@ import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {scanAllSourceDependencies} from './lib/source-impact-control-imports.mjs';
-import {createHash} from 'node:crypto';
 const SOURCE=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const BASE='169bebcd7bf2c4389be63c31dcd76fb303d71621';
 const LEGACY_BASE='a4dc9319dbf42cdd7fc8116733ad4eeef46e0525',LEGACY_REFERENCE='e8786fabba66bd9184ab08a0c8c83bf97711f807';
@@ -498,6 +497,8 @@ test('normal597 registry keeps genuine144 inputs and closes only known normal co
 // Separate598normal plan: genuine current protected inputs, synthetic Git children only.
 test('normal598 registry keeps genuine148 inputs and closes only known normal control capabilities',async t=>{
   const reference='bd9cf518fe798ddea45d2b835f324f6e2bea06fc';
+  // Replay whole historical exact pairs; current capability cases below still read current sources.
+  const historicalAfter='fa64eca25c5f46189b00962a363d066a8f85a516';
   // These are exact ordinary598 CODE-resource oracles, not a FULL/native proof.
   // A later Source release must not copy its599 SW, Source-only SDK port
   // or this outer fixture into the genuine598 Git fixture. Full checkout keeps the
@@ -549,7 +550,8 @@ test('normal598 registry keeps genuine148 inputs and closes only known normal co
     const objects=fs.realpathSync(path.join(text(SOURCE,['rev-parse','--path-format=absolute','--git-common-dir']),'objects'));
     fs.mkdirSync(path.join(root598,'.git/objects/info'),{recursive:true});
     fs.writeFileSync(path.join(root598,'.git/objects/info/alternates'),objects.replaceAll('\\','/')+'\n');
-    const rows=controls.map(file=>[file,file==='scripts/test-source-impact-domain-plan.mjs'?readOrdinary598Owner(file):fs.readFileSync(path.join(SOURCE,file))]);
+    // Keep the genuine598 control fixture independent of later SOURCE-only integration callers.
+    const rows=controls.map(file=>[file,file==='scripts/test-source-impact-domain-plan.mjs'?readOrdinary598Owner(file):file==='scripts/test-source-targeted-domain-integration.mjs'?git(SOURCE,['cat-file','blob',historicalAfter+':'+file]):fs.readFileSync(path.join(SOURCE,file))]);
     const make598=(parent,changes,label)=>{
       git(root598,['read-tree',parent]);
       for(const [file,bytes]of changes)git(root598,['update-index','--add','--cacheinfo','100644',
@@ -560,7 +562,7 @@ test('normal598 registry keeps genuine148 inputs and closes only known normal co
     for(const file of [...controls,'scripts/lib/source-impact-domain-inputs-594.json','scripts/lib/source-impact-domain-owners-594.json','scripts/lib/source-impact-domain-inputs-597.json',
       'scripts/lib/source-impact-domain-owners-597.json','scripts/lib/source-impact-control-imports.mjs']){
       const target=path.join(root598,file);fs.mkdirSync(path.dirname(target),{recursive:true});
-      fs.writeFileSync(target,controls.includes(file)?(file==='scripts/test-source-impact-domain-plan.mjs'?readOrdinary598Owner(file):fs.readFileSync(path.join(SOURCE,file))):
+      fs.writeFileSync(target,controls.includes(file)?(file==='scripts/test-source-impact-domain-plan.mjs'?readOrdinary598Owner(file):file==='scripts/test-source-targeted-domain-integration.mjs'?git(SOURCE,['cat-file','blob',historicalAfter+':'+file]):fs.readFileSync(path.join(SOURCE,file))):
         git(SOURCE,['cat-file','blob',reference+':'+file]));
     }
     const {planSourceDomainImpactFromGit:plan598}=await import(pathToFileURL(path.join(root598,'scripts/source-impact-domain-plan.mjs')).href);
@@ -627,7 +629,7 @@ test('normal598 registry keeps genuine148 inputs and closes only known normal co
     await t.test('exact598 fixed assistant order uses normal roundtrip and refuses every unreviewed owner byte',()=>{
       const edgeOwners=['supabase/functions/_shared/rav-assistant-contract.ts',
         'supabase/functions/ravradar-assistant/index.ts','scripts/test-rav-assistant-main-edge-roundtrip.mjs'];
-      const edgeChanges=edgeOwners.map(edgeFile=>[edgeFile,fs.readFileSync(path.join(SOURCE,edgeFile))]);
+      const edgeChanges=edgeOwners.map(edgeFile=>[edgeFile,git(SOURCE,['cat-file','blob',historicalAfter+':'+edgeFile])]);
       const edgeCandidate=make598(baseline598,edgeChanges,'synthetic reviewed598 fixed assistant reply order');
       const edgePlan=run598(edgeCandidate);
       assert.equal(edgePlan.selection,'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(edgePlan.reasonCodes));
@@ -708,7 +710,7 @@ test('normal598 registry keeps genuine148 inputs and closes only known normal co
     });
     await t.test('exact598 admin cache publication closes both actual production contracts and refuses owner drift',()=>{
       const owners=['service-worker.js','scripts/test-public-cold-start-4.0.303.mjs'];
-      const changes=owners.map(file=>[file,file==='service-worker.js'?readOrdinary598Owner(file):fs.readFileSync(path.join(SOURCE,file))]);
+      const changes=owners.map(file=>[file,file==='service-worker.js'?readOrdinary598Owner(file):git(SOURCE,['cat-file','blob',historicalAfter+':'+file])]);
       for(const [owner,body]of changes){
         const actual=run598(make598(baseline598,[[owner,body]],'synthetic exact admin cache publication owner'));
         assert.equal(actual.selection,owner==='service-worker.js'?'TARGETED_DOMAINS':'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(actual.reasonCodes));
