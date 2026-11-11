@@ -719,7 +719,12 @@ async function submitAssistantQuestion(question){
     }
     const answer=followup??await askRavRadar(routedQuestion,assistantContext());
     pending.querySelector("p").textContent=answer;pending.classList.remove("loading");
-    const topic=forecast?.topic??(followup===null?assistantTopicForQuestion(clean):previous);
+    let topic=forecast?.topic??(followup===null?assistantTopicForQuestion(clean):previous);
+    if(!topic&&followup===null&&frame.language==='en'&&assistantIntent==='wind'&&clean.length<=600){
+      // Keep the original first answer. The service still owns whole-question topic admission.
+      const topicQuestion=clean.replace(/^(?:what|which)\s+wind\s+direction\s+is\s+(?:good|best)(?=\s|[?!.]|$)/iu,'which wind is best');
+      if(topicQuestion!==clean&&assistantTopicForQuestion(topicQuestion)==='public-search:wind')topic='public-search:wind';
+    }
     if(topic&&turn===assistantTurn&&sameAssistantTopicFrame(frame,assistantTopicFrame())){
       assistantTopicState={topic,frame};
     }

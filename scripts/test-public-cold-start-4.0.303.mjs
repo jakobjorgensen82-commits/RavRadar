@@ -83,7 +83,8 @@ const previousPanelSuffix = `${previousCopySuffix}&ui=zone-panels-20261027`;
 const previousAssistantSuffix = `${previousPanelSuffix}&assistant=forecast-followup-20261101`;
 const previousDomainSuffix = `${previousAssistantSuffix}&share=custom-domain-20261102`;
 const previousTransportSuffix = `${previousDomainSuffix}&transport=public-json-bridge-20261103`;
-const suffix = `${previousTransportSuffix}&map=plain-map-v3-20261104`;
+const previousMapSuffix = `${previousTransportSuffix}&map=plain-map-v3-20261104`;
+const suffix = `${previousMapSuffix}&assistant-topic=wind-followup-20261110`;
 assert.ok(index.includes(`src="bootstrap.js${suffix}"`));
 assert.ok(bootstrap.includes(`await import("./app.js${suffix}")`));
 const admin = await fs.readFile(new URL('../admin.html', import.meta.url), 'utf8');
@@ -91,10 +92,19 @@ const dashboard = await fs.readFile(new URL('../js/ui/admin-dashboard.js', impor
 const adminDependencySuffix = `?v=${releaseVersion}&ui=admin-model-startup-20261101&map=plain-map-v3-20261104`;
 const previousAdminEntrypointSuffix = `${adminDependencySuffix}&observations=local-scope-20261106`;
 const adminStudySuffix = `?v=${releaseVersion}&study=frozen-replay-noise-20261106`;
-const adminEntrypointSuffix = `${previousAdminEntrypointSuffix}&study=frozen-replay-noise-20261106`;
+const previousStudyEntrypointSuffix = `${previousAdminEntrypointSuffix}&study=frozen-replay-noise-20261106`;
+const previousProbeEntrypointSuffix = `${previousStudyEntrypointSuffix}&probe=owner-notice-20261109`;
+const adminEntrypointSuffix = `${previousProbeEntrypointSuffix}&visits=scope-20261108`;
 assert.ok(admin.includes(`src="js/ui/admin-dashboard.js${adminEntrypointSuffix}"`));
 assert.ok(dashboard.includes(`../services/data-service.js${adminDependencySuffix}`));
 assert.ok(dashboard.includes(`./admin-private-trip-study.js${adminStudySuffix}`));
+const visitorReportSuffix = `?v=${releaseVersion}&report=scope-20261108`;
+assert.ok(dashboard.includes(`../services/visitor-report-service.js${visitorReportSuffix}`));
+const workerMapTag = worker.match(/const COMPACT_MAP = "([^"]+)";/)?.[1];
+assert.ok(workerMapTag);
+const workerAssets = worker.replaceAll('${APP_VERSION}', releaseVersion).replaceAll('${COMPACT_MAP}', workerMapTag);
+assert.ok(workerAssets.includes(`./js/ui/admin-dashboard.js${adminEntrypointSuffix}`));
+assert.ok(workerAssets.includes(`./js/services/visitor-report-service.js${visitorReportSuffix}`));
 assert.ok(worker.replaceAll('${APP_VERSION}',releaseVersion).includes(`./js/ui/admin-private-trip-study.js${adminStudySuffix}`),
   'Offline-listen skal følge den præcise nye statistikimportadresse.');
 
@@ -114,12 +124,14 @@ const cached = new Map([
   [`${origin}/app.js${previousShareSuffix}`, new Response('share-app')],
   [`${origin}/js/ui/admin-dashboard.js${adminDependencySuffix}`, new Response('old-admin')],
   [`${origin}/js/ui/admin-dashboard.js${previousAdminEntrypointSuffix}`, new Response('old-observations-admin')],
+  [`${origin}/js/ui/admin-dashboard.js${previousStudyEntrypointSuffix}`, new Response('old-study-admin')],
+  [`${origin}/js/ui/admin-dashboard.js${previousProbeEntrypointSuffix}`, new Response('old-probe-admin')],
   [`${origin}/js/ui/admin-private-trip-study.js?v=${releaseVersion}`, new Response('old-private-study')],
   [`${origin}/js/services/data-service.js${adminDependencySuffix}`, new Response('current-admin-data')],
 ]);
 const previousDeliveredAssets = [
   [previousPanelSuffix, 'panel'], [previousAssistantSuffix, 'assistant'], [previousDomainSuffix, 'domain'],
-  [previousTransportSuffix, 'transport'],
+  [previousTransportSuffix, 'transport'], [previousMapSuffix, 'map'],
 ];
 for (const [oldSuffix, label] of previousDeliveredAssets) {
   for (const file of ['bootstrap.js', 'app.js']) cached.set(`${origin}/${file}${oldSuffix}`, new Response(`${label}-${file}`));
@@ -170,6 +182,10 @@ for(let pass=0;pass<2;pass++){
     'An admin entry update must not delete an older cached asset.');
   assert.equal(await cached.get(`${origin}/js/ui/admin-dashboard.js${previousAdminEntrypointSuffix}`).clone().text(),'old-observations-admin',
     'Den tidligere leverede observationsadresse bevares som særskilt gammel kode.');
+  assert.equal(await cached.get(`${origin}/js/ui/admin-dashboard.js${previousStudyEntrypointSuffix}`).clone().text(),'old-study-admin',
+    'Prøvemailens adminadresse omgår den tidligere leverede studieadresse.');
+  assert.equal(await cached.get(`${origin}/js/ui/admin-dashboard.js${previousProbeEntrypointSuffix}`).clone().text(),'old-probe-admin',
+    'The joined admin address preserves an older probe-only entry.');
 }
 const adminDataRequest={method:'GET',mode:'cors',url:`${origin}/js/services/data-service.js${adminDependencySuffix}`};
 let adminDataResponse;
