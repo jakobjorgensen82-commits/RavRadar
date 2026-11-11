@@ -9340,6 +9340,23 @@
         "blob": "d687775e9e8b5d2b21996a73c3c8575c3f10080e",
         "sha256": "8c8cb9a9448e06c172525c1cea017c43d7ea34bf08dc921538e128cba089511e"
       }
+    },
+    "testSuccessor": {
+      "id": "CLOSED_REVIEWED_598_ADMIN_UI_WATER102_TEST_SUCCESSOR_V1",
+      "frames": {
+        "scripts/test-account-statistics-assistant-callers.mjs": {
+          "beforeBlob": "c429544bf6bf7f3f94a64371ba8bcff50bc12c93",
+          "afterBlob": "9df03e0bd81c5c81a1ab172943fa9206f8ab8da9",
+          "beforeSha256": "ee8221caa3b40105d04a141230feab16c0e45b70da8190a53b843dc3bdbcfb67",
+          "afterSha256": "f2b2dfe167e3a542fecc44a43c96fc4ba6febccf53f95d26170f6887bfa34eaa"
+        },
+        "scripts/test-water-station-active-routing-display-4.0.102.mjs": {
+          "beforeBlob": "af3b3ee04f2d17b7caeca0c8e9b636c4caf144d7",
+          "afterBlob": "f3829abd512e4f3efc3cf0736cd19b0c40307112",
+          "beforeSha256": "0138a0acb1371910f846b080133933d2165b8c934eed738b85e206dc204d3335",
+          "afterSha256": "85893c45bca2cf6a3e025017199a9142058c606dbd933e105abac90bc941a834"
+        }
+      }
     }
   }
 }
