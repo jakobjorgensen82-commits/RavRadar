@@ -67,7 +67,8 @@ const componentwise = ocean => buildDmiMarineComponentwiseHourly({
   expectedIdentity: identity,
 }).hourly;
 const producerSource = fs.readFileSync('scripts/lib/private-dmi-recovery-record.mjs', 'utf8');
-const hourlyMergeSource = producerSource.slice(
+const fixtureScalarSourceProofs = "const RETAINED_SCALAR_SOURCE_PROOFS = Symbol('fixture retained scalar source proofs');\n";
+const hourlyMergeSource = fixtureScalarSourceProofs + producerSource.slice(
   producerSource.indexOf('const ATOMIC_COMPONENT_TUPLE_KEYS'),
   producerSource.indexOf('// END normal-record selection'),
 );

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
 import test from 'node:test';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -6,7 +7,6 @@ import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {scanAllSourceDependencies} from './lib/source-impact-control-imports.mjs';
-import {createHash} from 'node:crypto';
 const SOURCE=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const BASE='169bebcd7bf2c4389be63c31dcd76fb303d71621';
 const LEGACY_BASE='a4dc9319dbf42cdd7fc8116733ad4eeef46e0525',LEGACY_REFERENCE='e8786fabba66bd9184ab08a0c8c83bf97711f807';
@@ -499,6 +499,46 @@ test('normal598 registry keeps genuine148 inputs and closes only known normal co
   const reference='bd9cf518fe798ddea45d2b835f324f6e2bea06fc';
   // Replay whole historical exact pairs; current capability cases below still read current sources.
   const historicalAfter='fa64eca25c5f46189b00962a363d066a8f85a516';
+  // These are exact ordinary598 CODE-resource oracles, not a FULL/native proof.
+  // A later Source release must not copy its599 SW, Source-only SDK port
+  // or this outer fixture into the genuine598 Git fixture. Full checkout keeps the
+  // reviewed ordinary ancestor; a missing/changed blob fails without fetching.
+  const ordinary598Head='c67060e2fb70c6a408e332b2b1d97e9a47934dad';
+  const ordinary598Owners=Object.freeze({
+    'scripts/test-runner-android-sdk-reclaim.mjs':Object.freeze({bytes:28133,sha256:'0d1aa8b12ff4a7e9533e2b05d91e14e412cf34f1756e31de603448a071ba17c4'}),
+    'service-worker.js':Object.freeze({bytes:7005,sha256:'fdcbe18836832db462910837a8958478d153567ecd55481b99a5f1635fefd9ac'}),
+    'scripts/test-source-impact-domain-plan.mjs':Object.freeze({bytes:64102,sha256:'864815ce98c976eaf937d4ff7cbb71db5a21c033b83d822bcc3d06f02132bea8'}),
+  });
+  const readOrdinary598Owner=file=>{
+    assert(Object.hasOwn(ordinary598Owners,file),'Only the three exact ordinary598 fixture owners');
+    const pin=ordinary598Owners[file],bytes=git(SOURCE,['cat-file','blob',ordinary598Head+':'+file]);
+    assert.equal(bytes.length,pin.bytes,'Whole ordinary598 fixture byte length');
+    assert.equal(createHash('sha256').update(bytes).digest('hex'),pin.sha256,'Whole ordinary598 fixture SHA256');
+    return bytes;
+  };
+  // Frosne ordinary598 CODE-filer fra b78-kandidaten, ikke et native-/originalbevis.
+  // Kilde-CI og faktisk merge kvalificeres særskilt; den historiske c670-bank bevares.
+  const statistics598Head='b78c0542cac84c29513d9bf014a849c0ea0f7f0e';
+  const statistics598Owners=Object.freeze({
+    '.github/workflows/private-trip-weather-study.yml':Object.freeze({bytes:7704,sha256:'435d5e5e2276e83e0502ae4fcc4230447db590b8341a41e5850a6e896f25c1f8'}),
+    'cloudflare/trip-gateway/trip-aggregate.js':Object.freeze({bytes:10491,sha256:'a2b506b9f9cf56fe88a89d727c5c4f481f6d2dc46339f00a3dac361d9213a6d4'}),
+    'js/ui/admin-private-trip-study.js':Object.freeze({bytes:7427,sha256:'d89dfe5d2dda2f9e022b3ce68d0e8462adde9c1875b16d90b7cad98c36460bfa'}),
+    'scripts/lib/trip-weather-aggregate-client.mjs':Object.freeze({bytes:13201,sha256:'79bf3852cbf4abce3a04743f039cf9cd30a8374055c966957de8d8acb5b7a6d9'}),
+    'scripts/publish-private-trip-weather-study.mjs':Object.freeze({bytes:6025,sha256:'9f1079b022eae294d8bbbb8577c0352a90aa0a997fea82327f50ea5d6b18bff9'}),
+    'scripts/test-account-statistics-assistant-callers.mjs':Object.freeze({bytes:195213,sha256:'63dd9e79a6dce0be4921e8d98648ccafb5644af32e20492c27b050c1b4dbbb62'}),
+    'scripts/test-trip-aggregate-month-rollover.mjs':Object.freeze({bytes:101101,sha256:'e042868f6a049277360d492609a53d40ac041e65a35981f09a37735a44a4c11f'}),
+    'admin.html':Object.freeze({bytes:2934,sha256:'f40856afe86820a77f08cb92ff6a8208207575f38cc1d218532f3e5672abe5cf'}),
+    'service-worker.js':Object.freeze({bytes:7133,sha256:'8d668ce191ee60edc269294894ce2e5d2eb85641b1c9ab4c454dd35f446dbfd1'}),
+    'scripts/test-public-cold-start-4.0.303.mjs':Object.freeze({bytes:12801,sha256:'897e72fd0c8729cf0f592b57a600a94016209ddff852f06badacce67b647eff7'}),
+  });
+  const readStatistics598Owner=file=>{
+    assert(Object.hasOwn(statistics598Owners,file),'Only the ten fixed ordinary598 statistics/cache CODE owners');
+    const pin=statistics598Owners[file],bytes=git(SOURCE,['cat-file','blob',statistics598Head+':'+file]);
+    assert.equal(bytes.length,pin.bytes,'Whole statistics598 CODE byte length');
+    assert.equal(createHash('sha256').update(bytes).digest('hex'),pin.sha256,'Whole statistics598 CODE SHA256');
+    return bytes;
+  };
+
   const controls=['scripts/source-impact-domain-inputs.mjs','scripts/lib/source-impact-domain-inputs-598.json',
     'scripts/test-source-impact-domain-inputs.mjs','scripts/source-impact-domain-plan.mjs',
     'scripts/lib/source-impact-domain-owners-598.json','scripts/test-source-impact-domain-plan.mjs',
@@ -510,7 +550,8 @@ test('normal598 registry keeps genuine148 inputs and closes only known normal co
     const objects=fs.realpathSync(path.join(text(SOURCE,['rev-parse','--path-format=absolute','--git-common-dir']),'objects'));
     fs.mkdirSync(path.join(root598,'.git/objects/info'),{recursive:true});
     fs.writeFileSync(path.join(root598,'.git/objects/info/alternates'),objects.replaceAll('\\','/')+'\n');
-    const rows=controls.map(file=>[file,fs.readFileSync(path.join(SOURCE,file))]);
+    // Keep the genuine598 control fixture independent of later SOURCE-only integration callers.
+    const rows=controls.map(file=>[file,file==='scripts/test-source-impact-domain-plan.mjs'?readOrdinary598Owner(file):file==='scripts/test-source-targeted-domain-integration.mjs'?git(SOURCE,['cat-file','blob',historicalAfter+':'+file]):fs.readFileSync(path.join(SOURCE,file))]);
     const make598=(parent,changes,label)=>{
       git(root598,['read-tree',parent]);
       for(const [file,bytes]of changes)git(root598,['update-index','--add','--cacheinfo','100644',
@@ -521,7 +562,7 @@ test('normal598 registry keeps genuine148 inputs and closes only known normal co
     for(const file of [...controls,'scripts/lib/source-impact-domain-inputs-594.json','scripts/lib/source-impact-domain-owners-594.json','scripts/lib/source-impact-domain-inputs-597.json',
       'scripts/lib/source-impact-domain-owners-597.json','scripts/lib/source-impact-control-imports.mjs']){
       const target=path.join(root598,file);fs.mkdirSync(path.dirname(target),{recursive:true});
-      fs.writeFileSync(target,controls.includes(file)?fs.readFileSync(path.join(SOURCE,file)):
+      fs.writeFileSync(target,controls.includes(file)?(file==='scripts/test-source-impact-domain-plan.mjs'?readOrdinary598Owner(file):file==='scripts/test-source-targeted-domain-integration.mjs'?git(SOURCE,['cat-file','blob',historicalAfter+':'+file]):fs.readFileSync(path.join(SOURCE,file))):
         git(SOURCE,['cat-file','blob',reference+':'+file]));
     }
     const {planSourceDomainImpactFromGit:plan598}=await import(pathToFileURL(path.join(root598,'scripts/source-impact-domain-plan.mjs')).href);
@@ -637,7 +678,7 @@ test('normal598 registry keeps genuine148 inputs and closes only known normal co
       }
     });
     await t.test('exact598 ordinary SDK workflow oracle port selects its real target and refuses byte drift',()=>{
-      const owner='scripts/test-runner-android-sdk-reclaim.mjs',body=git(SOURCE,['cat-file','blob',historicalAfter+':'+owner]);
+      const owner='scripts/test-runner-android-sdk-reclaim.mjs',body=readOrdinary598Owner(owner);
       const actual=run598(make598(baseline598,[[owner,body]],'synthetic exact reviewed ordinary SDK oracle port'));
       assert.equal(actual.selection,'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(actual.reasonCodes));
       assert.equal(actual.commands.filter(value=>value==='node --test scripts/test-runner-android-sdk-reclaim.mjs').length,1);
@@ -653,7 +694,7 @@ test('normal598 registry keeps genuine148 inputs and closes only known normal co
         'js/ui/admin-private-trip-study.js','scripts/lib/trip-weather-aggregate-client.mjs',
         'scripts/publish-private-trip-weather-study.mjs','scripts/test-account-statistics-assistant-callers.mjs',
         'scripts/test-trip-aggregate-month-rollover.mjs'];
-      const changes=files.map(file=>[file,fs.readFileSync(path.join(SOURCE,file))]);
+      const changes=files.map(file=>[file,readStatistics598Owner(file)]);
       const actual=run598(make598(baseline598,changes,'synthetic reviewed statistics replay sources'));
       assert.equal(actual.selection,'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(actual.reasonCodes));
       assert.equal(actual.commands.filter(c=>c==='node --test scripts/test-account-statistics-assistant-callers.mjs').length,1);
@@ -668,8 +709,26 @@ test('normal598 registry keeps genuine148 inputs and closes only known normal co
       assert.deepEqual(refused.reasonCodes,['UNKNOWN_SENSITIVE_BINDING_OR_REFLECTIVE_SURFACE:'+client]);
     });
     await t.test('exact598 admin cache publication closes both actual production contracts and refuses owner drift',()=>{
+      const owners=['service-worker.js','scripts/test-public-cold-start-4.0.303.mjs'];
+      const changes=owners.map(file=>[file,file==='service-worker.js'?readOrdinary598Owner(file):git(SOURCE,['cat-file','blob',historicalAfter+':'+file])]);
+      for(const [owner,body]of changes){
+        const actual=run598(make598(baseline598,[[owner,body]],'synthetic exact admin cache publication owner'));
+        assert.equal(actual.selection,owner==='service-worker.js'?'TARGETED_DOMAINS':'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(actual.reasonCodes));
+        for(const command of ['node scripts/test-public-cold-start-4.0.303.mjs','node scripts/test-admin-config-production-contract-4.0.94.mjs'])
+          assert.equal(actual.commands.filter(value=>value===command).length,1);
+        for(const family of ['postgres','C','I','T'])assert.equal(actual.inputDigests[family+'Before'],actual.inputDigests[family+'After']);
+        assert.equal(actual.domains.postgres.status,'NOT_APPLICABLE');assert.equal(actual.domains.historical584National.status,'NOT_APPLICABLE');
+        assert.equal(actual.baselineQualified,false);assert.equal(actual.skipAuthorized,false);assert.equal(actual.productionAuthority,false);
+      }
+      for(const owner of owners){
+        const variant=changes.map(([file,body])=>[file,file===owner?Buffer.concat([body,Buffer.from('\n')]):body]);
+        assert.deepEqual(run598(make598(baseline598,variant,'synthetic unreviewed admin cache publication bytes')).reasonCodes,
+          ['UNKNOWN_EXACT_SOURCE_TRANSITION:'+owner]);
+      }
+    });
+    await t.test('exact598 statistics cache and fresh head plan keep their reviewed ordinary CODE context',()=>{
       const owners=['admin.html','service-worker.js','scripts/test-public-cold-start-4.0.303.mjs'];
-      const changes=owners.map(file=>[file,git(SOURCE,['cat-file','blob',historicalAfter+':'+file])]);
+      const changes=owners.map(file=>[file,readStatistics598Owner(file)]);
       for(const [owner,body]of changes){
         const actual=run598(make598(baseline598,[[owner,body]],'synthetic exact admin cache publication owner'));
         assert.equal(actual.selection,owner==='scripts/test-public-cold-start-4.0.303.mjs'?'CONTROL_QUALIFICATION_REQUIRED':'TARGETED_DOMAINS',JSON.stringify(actual.reasonCodes));

@@ -11,6 +11,10 @@ on:
         description: Exact qualified current main SHA
         required: true
         type: string
+      source_weather_run_id:
+        description: Exact bot-started source run for the bound automatic handoff; empty for manual work
+        type: string
+        default: ''
       operation:
         description: Fixed private history operation; publish creates and verifies a fresh archive first
         type: choice
@@ -43,7 +47,7 @@ concurrency:
 
 jobs:
   admin-document-history:
-    if: github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && vars.RAVRADAR_ADMIN_HISTORY_MAINTENANCE == 'enabled')
+    if: github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.actor.login != 'github-actions[bot]' && vars.RAVRADAR_ADMIN_HISTORY_MAINTENANCE == 'enabled')
     concurrency:
       group: ravradar-trip-storage-production
       cancel-in-progress: false
@@ -56,6 +60,11 @@ jobs:
         env:
           EXPECTED_HEAD_SHA: ${{ github.event_name == 'workflow_run' && github.sha || inputs.expected_main }}
           REQUESTED_OPERATION: ${{ inputs.operation }}
+          REQUESTED_CONFIRMATION: ${{ inputs.confirmation }}
+          REQUESTED_PRUNE_LIMIT: ${{ inputs.prune_limit }}
+          REQUESTED_INDEX_SHA: ${{ inputs.index_sha }}
+          SOURCE_WEATHER_RUN_ID: ${{ inputs.source_weather_run_id }}
+          TRIGGER_ACTOR: ${{ github.event.workflow_run.actor.login }}
           AUTOMATIC_MAINTENANCE_ENABLED: ${{ vars.RAVRADAR_ADMIN_HISTORY_MAINTENANCE }}
           TRIGGER_ACTION: ${{ github.event.action }}
           TRIGGER_RUN_ID: ${{ github.event.workflow_run.id }}
@@ -81,7 +90,15 @@ jobs:
           now=$(date -u +%s)
           case "$GITHUB_EVENT_NAME" in
             workflow_dispatch)
-              if [[ "$REQUESTED_OPERATION" = maintain ]]; then
+              if [[ -n "$SOURCE_WEATHER_RUN_ID" ]]; then
+                test "$AUTOMATIC_MAINTENANCE_ENABLED" = enabled
+                test "$GITHUB_ACTOR" = 'github-actions[bot]'
+                [[ "$SOURCE_WEATHER_RUN_ID" =~ ^[1-9][0-9]{0,14}$ ]]
+                test "$REQUESTED_OPERATION" = plan
+                test -z "$REQUESTED_CONFIRMATION"
+                test "$REQUESTED_PRUNE_LIMIT" = 25
+                test -z "$REQUESTED_INDEX_SHA"
+              elif [[ "$REQUESTED_OPERATION" = maintain ]]; then
                 next=$(( now / 14400 * 14400 + 19 * 60 ))
                 if (( next <= now )); then next=$(( next + 14400 )); fi
                 since=$(( 14400 - (next - now) ))
@@ -99,6 +116,8 @@ jobs:
                 exit 0
               fi
               test "$TRIGGER_ACTION" = completed
+              test -n "$TRIGGER_ACTOR"
+              test "$TRIGGER_ACTOR" != 'github-actions[bot]'
               [[ "$TRIGGER_RUN_ID" =~ ^[1-9][0-9]*$ ]]
               test "$TRIGGER_RUN_EVENT" = workflow_dispatch
               test "$TRIGGER_RUN_NAME" = 'Run current RavRadar weather once'
@@ -132,8 +151,79 @@ jobs:
         if: steps.admission.outputs.proceed == 'true'
         with:
           node-version: 22
+      - name: Verify the completed source and its one exact recipient
+        id: bot-handoff
+        if: steps.admission.outputs.proceed == 'true' && github.event_name == 'workflow_dispatch' && inputs.source_weather_run_id != ''
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_WEATHER_RUN_ID: ${{ inputs.source_weather_run_id }}
+        run: |
+          node <<'HANDOFF'
+          const fs = require('node:fs');
+          const { execFileSync } = require('node:child_process');
+          const env = process.env;
+          function need(value) { if (!value) throw new Error('DOCUMENT_HISTORY_HANDOFF_REJECTED'); }
+          function read(path) {
+            const raw = execFileSync('gh', ['api', '--method', 'GET', '-H', 'Accept: application/vnd.github+json',
+              '-H', 'X-GitHub-Api-Version: 2026-03-10', path],
+              { timeout: 10000, maxBuffer: 512 * 1024, stdio: ['ignore', 'pipe', 'pipe'] });
+            return JSON.parse(raw.toString('utf8'));
+          }
+          try {
+            const { SOURCE_WEATHER_RUN_ID: sourceId, GITHUB_RUN_ID: recipient, GITHUB_SHA: head } = env;
+            const isId = value => /^[1-9][0-9]{0,14}$/.test(value || '');
+            const repo = 'jakobjorgensen82-commits/RavRadar';
+            need(isId(sourceId) && isId(recipient) && sourceId !== recipient && /^[a-f0-9]{40}$/.test(head || '')
+              && env.GITHUB_REPOSITORY === repo && env.GITHUB_REF === 'refs/heads/main'
+              && env.GITHUB_EVENT_NAME === 'workflow_dispatch' && env.GITHUB_RUN_ATTEMPT === '1'
+              && env.GITHUB_ACTOR === 'github-actions[bot]');
+            const endpoint = 'repos/' + repo + '/actions/runs/' + sourceId;
+            const source = read(endpoint);
+            const ownRepo = value => value?.id === 1306858343 && value.full_name === repo;
+            need(String(source.id) === sourceId && source.run_attempt === 1 && source.event === 'workflow_dispatch'
+              && source.name === 'Run current RavRadar weather once'
+              && source.path === '.github/workflows/run-current-weather-once.yml'
+              && ownRepo(source.repository) && ownRepo(source.head_repository)
+              && source.head_branch === 'main' && source.head_sha === head
+              && source.actor?.login === 'github-actions[bot]'
+              && source.status === 'completed' && source.conclusion === 'success');
+            const created = Date.parse(source.created_at);
+            need(Number.isFinite(created) && new Date(created).toISOString().replace('.000Z', 'Z') === source.created_at);
+            const slot = 4 * 60 * 60 * 1000;
+            const nextBase = Math.floor(created / slot) * slot + 19 * 60 * 1000;
+            const next = nextBase <= created ? nextBase + slot : nextBase;
+            const now = Date.now();
+            if (now < created || next - now < 30 * 60 * 1000) {
+              fs.appendFileSync(env.GITHUB_OUTPUT, 'proceed=false\n');
+              console.log('{"status":"DOCUMENT_HISTORY_SKIPPED_NO_WEATHER_WINDOW","privateAccessStarted":false}');
+            } else {
+              const jobs = read(endpoint + '/attempts/1/jobs?per_page=100');
+              need(Array.isArray(jobs.jobs) && jobs.jobs.length > 0 && jobs.jobs.length <= 100
+                && jobs.total_count === jobs.jobs.length);
+              function completedJob(name) {
+                const matches = jobs.jobs.filter(job => job.name === name);
+                need(matches.length === 1);
+                const job = matches[0];
+                need(String(job.run_id) === sourceId && job.head_sha === head
+                  && job.status === 'completed' && job.conclusion === 'success');
+                return job;
+              }
+              completedJob('Require a verified current-weather deployment');
+              const handoff = completedJob('Hand off verified ordinary weather to admin document history');
+              need(Array.isArray(handoff.steps));
+              const bindings = handoff.steps.filter(step => step.name?.startsWith('Bind document history recipient '));
+              need(bindings.length === 1 && bindings[0].name === 'Bind document history recipient ' + recipient
+                && bindings[0].status === 'completed' && bindings[0].conclusion === 'success');
+              fs.appendFileSync(env.GITHUB_OUTPUT, 'proceed=true\nsource_created_at=' + source.created_at + '\n');
+            }
+          } catch {
+            console.error('DOCUMENT_HISTORY_HANDOFF_REJECTED');
+            process.exitCode = 1;
+          }
+          HANDOFF
       - name: Restore source-content validation locator
-        if: steps.admission.outputs.proceed == 'true'
+        if: steps.admission.outputs.proceed == 'true' && (inputs.source_weather_run_id == '' || steps.bot-handoff.outputs.proceed == 'true')
         uses: actions/cache/restore@v6
         with:
           path: .cache/weather-source-validation.json
@@ -141,25 +231,28 @@ jobs:
           restore-keys: |
             weather-source-proof-v2-${{ runner.os }}-${{ github.sha }}-
       - name: Require the already qualified exact-content source
-        if: steps.admission.outputs.proceed == 'true'
+        if: steps.admission.outputs.proceed == 'true' && (inputs.source_weather_run_id == '' || steps.bot-handoff.outputs.proceed == 'true')
         id: source-proof
         timeout-minutes: 2
         run: node scripts/weather-source-gate.mjs check
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - name: Reject missing source proof before private access
-        if: steps.admission.outputs.proceed == 'true'
+        if: steps.admission.outputs.proceed == 'true' && (inputs.source_weather_run_id == '' || steps.bot-handoff.outputs.proceed == 'true')
         run: test "${{ steps.source-proof.outputs.required }}" = false
       - name: Run only the fixed document-history operation
-        if: steps.admission.outputs.proceed == 'true'
+        if: steps.admission.outputs.proceed == 'true' && (inputs.source_weather_run_id == '' || steps.bot-handoff.outputs.proceed == 'true')
         shell: bash
         env:
           EXPECTED_HEAD_SHA: ${{ github.event_name == 'workflow_run' && github.sha || inputs.expected_main }}
-          DOCUMENT_HISTORY_OPERATION: ${{ github.event_name == 'workflow_run' && 'maintain' || inputs.operation }}
-          DOCUMENT_HISTORY_CONFIRMATION: ${{ github.event_name == 'workflow_run' && 'MAINTAIN-EXACT-THREE-DOCUMENT-HISTORY' || inputs.confirmation }}
+          SOURCE_WEATHER_RUN_ID: ${{ inputs.source_weather_run_id }}
+          HANDOFF_SOURCE_CREATED_AT: ${{ steps.bot-handoff.outputs.source_created_at }}
+          DOCUMENT_HISTORY_OPERATION: ${{ (github.event_name == 'workflow_run' || steps.bot-handoff.outputs.proceed == 'true') && 'maintain' || inputs.operation }}
+          DOCUMENT_HISTORY_CONFIRMATION: ${{ (github.event_name == 'workflow_run' || steps.bot-handoff.outputs.proceed == 'true') && 'MAINTAIN-EXACT-THREE-DOCUMENT-HISTORY' || inputs.confirmation }}
           DOCUMENT_HISTORY_INDEX_SHA: ${{ inputs.index_sha }}
-          DOCUMENT_HISTORY_PRUNE_LIMIT: ${{ github.event_name == 'workflow_run' && '25' || inputs.prune_limit }}
+          DOCUMENT_HISTORY_PRUNE_LIMIT: ${{ (github.event_name == 'workflow_run' || steps.bot-handoff.outputs.proceed == 'true') && '25' || inputs.prune_limit }}
           AUTOMATIC_MAINTENANCE_ENABLED: ${{ vars.RAVRADAR_ADMIN_HISTORY_MAINTENANCE }}
+          TRIGGER_ACTOR: ${{ github.event.workflow_run.actor.login }}
           TRIGGER_ACTION: ${{ github.event.action }}
           TRIGGER_RUN_ID: ${{ github.event.workflow_run.id }}
           TRIGGER_RUN_EVENT: ${{ github.event.workflow_run.event }}
@@ -200,7 +293,8 @@ jobs:
             maintain: 'AUTOMATIC_FIXED_DOCUMENT_HISTORY_MAINTAINED',
           };
           try {
-            if (env.GITHUB_EVENT_NAME === 'workflow_run' && env.AUTOMATIC_MAINTENANCE_ENABLED !== 'enabled')
+            const botHandoff = Boolean(env.SOURCE_WEATHER_RUN_ID);
+            if ((env.GITHUB_EVENT_NAME === 'workflow_run' || botHandoff) && env.AUTOMATIC_MAINTENANCE_ENABLED !== 'enabled')
               console.log(JSON.stringify({status:'DOCUMENT_HISTORY_SKIPPED_AUTOMATION_DISABLED',privateAccessStarted:false}));
             else {
             need(['workflow_dispatch','workflow_run'].includes(env.GITHUB_EVENT_NAME) && env.GITHUB_REF === 'refs/heads/main'
@@ -228,7 +322,8 @@ jobs:
             let nextWeather = nextBase <= now ? nextBase + 14400000 : nextBase, created = null;
             if (triggered) {
               need(operation === 'maintain' && pruneLimit === '25' && !selector, 'DOCUMENT_HISTORY_TRIGGER_SCOPE');
-              need(env.TRIGGER_ACTION === 'completed' && /^[1-9][0-9]*$/.test(env.TRIGGER_RUN_ID || '')
+              need(env.TRIGGER_ACTION === 'completed' && env.TRIGGER_ACTOR && env.TRIGGER_ACTOR !== 'github-actions[bot]'
+                && /^[1-9][0-9]*$/.test(env.TRIGGER_RUN_ID || '')
                 && env.TRIGGER_RUN_EVENT === 'workflow_dispatch' && env.TRIGGER_RUN_NAME === 'Run current RavRadar weather once'
                 && env.TRIGGER_RUN_PATH === '.github/workflows/run-current-weather-once.yml'
                 && env.TRIGGER_REPOSITORY === env.GITHUB_REPOSITORY && env.TRIGGER_HEAD_REPOSITORY === env.GITHUB_REPOSITORY
@@ -240,12 +335,24 @@ jobs:
               created = Date.parse(env.TRIGGER_CREATED_AT);
               need(Number.isFinite(created) && new Date(created).toISOString().slice(0,19) === env.TRIGGER_CREATED_AT.slice(0,19),
                 'DOCUMENT_HISTORY_TRIGGER_TIME');
+            }
+            if (botHandoff) {
+              need(!triggered && env.GITHUB_ACTOR === 'github-actions[bot]'
+                && /^[1-9][0-9]{0,14}$/.test(env.SOURCE_WEATHER_RUN_ID)
+                && operation === 'maintain' && pruneLimit === '25' && !selector,
+                'DOCUMENT_HISTORY_TRIGGER_SCOPE');
+              created = Date.parse(env.HANDOFF_SOURCE_CREATED_AT);
+              need(Number.isFinite(created)
+                && new Date(created).toISOString().replace('.000Z', 'Z') === env.HANDOFF_SOURCE_CREATED_AT,
+                'DOCUMENT_HISTORY_TRIGGER_TIME');
+            }
+            if (created !== null) {
               // Bind to the triggering weather run, never a later boundary after queueing.
               nextBase = Math.floor(created / 14400000) * 14400000 + 19 * 60000;
               nextWeather = nextBase <= created ? nextBase + 14400000 : nextBase;
             }
             const noWindow = operation === 'maintain' && (nextWeather - now < 30 * 60000
-              || (triggered ? now < created : 14400000 - (nextWeather - now) < 180 * 60000));
+              || (created !== null ? now < created : 14400000 - (nextWeather - now) < 180 * 60000));
             if (noWindow) console.log(JSON.stringify({status:'DOCUMENT_HISTORY_SKIPPED_NO_WEATHER_WINDOW',privateAccessStarted:false}));
             else {
             need(typeof env.RUNNER_TEMP === 'string' && path.isAbsolute(env.RUNNER_TEMP), 'DOCUMENT_HISTORY_TEMP');

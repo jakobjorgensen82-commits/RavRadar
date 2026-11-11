@@ -1,3 +1,4 @@
+import { inverseReviewedSource601HistoricalCodeInput } from './lib/completed-private-runtime-workflow-review.mjs';
 // Narrow normal caller/source/refusal targets. Not a positive B/S origin,
 // installed SQL, national capacity or production claim. No fabricated tuple.
 import assert from 'node:assert/strict';
@@ -6,6 +7,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import test from 'node:test';
+import {sourceAfter598PreissuanceTest} from './lib/source598-test-phase.mjs';
 import {NATIVE_ORIGINAL_CONTINUITY_BINDING as BINDING,NATIVE_ORIGINAL_CONTINUITY_OUTPUT as OUTPUT,
   NATIVE_ORIGINAL_CONTINUITY_BEFORE as OLD,requireNativeOriginalContinuityBinding,
   requireNativeOriginalContinuityOutput,nativeOriginalContinuityMigration,
@@ -96,7 +98,7 @@ const installedCodeOnlyCaller=()=>({
     'RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP','RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY',
     'NATIVE_IDENTITY_RECOVERY'].map(key=>[key,'false'])),
 });
-test('current installed code-only routing leaves both historical source phases inactive',async t=>{
+sourceAfter598PreissuanceTest('current installed code-only routing leaves both historical source phases inactive',async t=>{
   const environment=Object.freeze(installedCodeOnlyCaller());
   await t.test('native586 is not the current588 source',async()=>{
     assert.equal(await selectNativeOriginalContinuityCodeOnlySource(environment),false);
@@ -108,7 +110,7 @@ test('current installed code-only routing leaves both historical source phases i
   assert.deepEqual(environment,installedCodeOnlyCaller(),'Selection never mutates caller authority');
 });
 
-test('current installed code-only source requires actual active issuance and the complete caller',async()=>{
+sourceAfter598PreissuanceTest('current installed code-only source requires actual active issuance and the complete caller',async()=>{
   const environment=Object.freeze(installedCodeOnlyCaller());
   assert.deepEqual(await selectCurrentInstalledCodeOnlySource(environment),{
     sourcePhase:ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase,
@@ -161,7 +163,7 @@ test('current installed code-only actual selection body rejects unknown or parti
   }
 });
 
-test('current installed code-only plan uses the normal active migration contract and refuses every pending write',async()=>{
+sourceAfter598PreissuanceTest('current installed code-only plan uses the normal active migration contract and refuses every pending write',async()=>{
   assert(['assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor',
     'assistant-installed593-origin591-successor','scalar597-later-h0-original594-successor','assistant-mixed-after597-successor'].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase));
   const required=(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-mixed-after597-successor'
@@ -191,7 +193,9 @@ test('current installed code-only plan uses the normal active migration contract
 
 test('current installed code-only normal workflow keeps read-only SQL, hard current restore and B before S',async()=>{
   const {runInNewContext}=await import('node:vm');
-  const source=await fs.readFile(path.join(ROOT,'.github/workflows/deploy-code-only-repair.yml'),'utf8');
+  const source=inverseReviewedSource601HistoricalCodeInput(
+    (await fs.readFile(path.join(ROOT,'.github/workflows/deploy-code-only-repair.yml'),'utf8')).replaceAll('\r\n','\n'),
+    '.github/workflows/deploy-code-only-repair.yml');
   const step=name=>{const heading='      - name: '+name,at=source.indexOf(heading);
     assert(at>=0);assert.equal(source.indexOf(heading,at+heading.length),-1);
     const end=source.indexOf('\n      - name:',at+heading.length);
@@ -1060,7 +1064,7 @@ test('assistant binding original prewrite workflow keeps locks, exact normal cen
   assert(readiness.includes('...(ASSISTANT_LATER_H0_BINDING === null ? [] : [assistantLaterH0Migration()]),'));
   assert(readiness.includes("assert.ok(remote.has(assistantPublic587SuccessorMigration().version),'ASSISTANT_PUBLIC587_SUCCESSOR_PREWRITE_ROUTE_REQUIRED')"));
 });
-test('assistant binding original prewrite exact source-import variants reject changed bytes and preserve old variants',async()=>{
+sourceAfter598PreissuanceTest('assistant binding original prewrite exact source-import variants reject changed bytes and preserve old variants',async()=>{
   for(const file of ['scripts/lib/authenticated-frozen586-predecessor.mjs','scripts/assistant-later-h0-binding-prewrite.mjs']){
     const source=await fs.readFile(path.join(ROOT,file),'utf8');
     for(const view of [historical691AssistantSource(source,file),source]){
@@ -1515,7 +1519,7 @@ test('assistant public587 fixed readers refuse caller profiles and JSON handles 
     assert.equal(io,0);assert.equal(callbacks,0);assert.equal(operands,0);
   }finally{t.mock.restoreAll();}
 });
-test('assistant public587 import variants bind whole sources and reject every unknown mutation',async()=>{
+sourceAfter598PreissuanceTest('assistant public587 import variants bind whole sources and reject every unknown mutation',async()=>{
   for(const [file,expected]of [
     ['scripts/check-assistant-later-h0-predecessor-source.mjs',[]],
     ['scripts/lib/authenticated-frozen586-predecessor.mjs',['../check-assistant-later-h0-predecessor-source.mjs']],
@@ -1540,7 +1544,7 @@ test('assistant public587 import variants bind whole sources and reject every un
     'd0ab8aa27c30aafdcc66ff120c748c05fbf4144c6aca71493a2c97710728137c',
     '4807e6e08c487a0cf7ed398dbe29be588c4bcb58b211778932cc9f36a0681df6'])assert(catalog.includes(old));
 });
-test('assistant public587 genuine DATA host keeps fixed family and exact producer ancestor policy seam',async()=>{
+sourceAfter598PreissuanceTest('assistant public587 genuine DATA host keeps fixed family and exact producer ancestor policy seam',async()=>{
   const {runInNewContext}=await import('node:vm'),{createHash}=await import('node:crypto');
   const hash=value=>createHash('sha256').update(value).digest('hex');
   const actualAuth=canonical591AssistantSource(await fs.readFile(path.join(ROOT,'scripts/lib/authenticated-frozen586-predecessor.mjs'),'utf8'),'scripts/lib/authenticated-frozen586-predecessor.mjs');
@@ -1654,7 +1658,7 @@ import {synchronizeRavScoreModelBinding,assistantPublic587SuccessorCheckpointIns
   assistantPublic588SuccessorCheckpointInspectionView,assistantPublic590SuccessorCheckpointInspectionView}
   from './sync-ravscore-model-binding.mjs';
 
-test('assistant public587 ordinary caller uses real top-level workflow identity before selecting original data',async t=>{
+sourceAfter598PreissuanceTest('assistant public587 ordinary caller uses real top-level workflow identity before selecting original data',async t=>{
   const entrypoints=await Promise.all(['update-and-deploy.yml','run-current-weather-once.yml'].map(async file=>{
     const source=await fs.readFile(path.join(ROOT,'.github/workflows',file),'utf8');
     const match=/^name: (.+)$/m.exec(source);assert(match,'Actual top-level caller has a fixed name');
@@ -1924,7 +1928,7 @@ test('assistant public587 origin retains whole parent and pair refusals in the a
   }
 });
 
-test('assistant public587 operative import variants remain whole-source bound',async()=>{
+sourceAfter598PreissuanceTest('assistant public587 operative import variants remain whole-source bound',async()=>{
   for(const file of ['scripts/assistant-later-h0-binding-prewrite.mjs','scripts/lib/established-native-current-origin.mjs',
     'scripts/lib/authenticated-frozen586-predecessor.mjs','scripts/check-assistant-later-h0-predecessor-source.mjs']){
     const source=(await fs.readFile(path.join(ROOT,file),'utf8')).replace(/\r\n?/g,'\n');
@@ -1952,7 +1956,7 @@ test('assistant public587 operative import variants remain whole-source bound',a
     'Hele den normale historiske587/588-konstruktørgren bevares');
 });
 
-test('assistant public587 late Edge route preserves exact prior profile and ordinary gates',async()=>{
+sourceAfter598PreissuanceTest('assistant public587 late Edge route preserves exact prior profile and ordinary gates',async()=>{
   const {deferCurrentGridBindingEdges,currentGridEdgePublicationRequired}=
     await import('./lib/production-workflow-sources.mjs');
   if(ACTIVE_ASSISTANT_SUCCESSOR.binding===null){
@@ -2072,7 +2076,7 @@ test('ordinary companion readers use the exact active predecessor before and aft
 });
 
 
-test('assistant592 strict source DATA inverse preserves canonical591 and refuses changed bytes',async()=>{
+sourceAfter598PreissuanceTest('assistant592 strict source DATA inverse preserves canonical591 and refuses changed bytes',async()=>{
   for(const file of Object.keys(reviewedIssued592Sources)){
     const raw=await fs.readFile(path.join(ROOT,file),'utf8'),canonical=canonical591AssistantSource(raw,file);
     assert.equal(canonical591AssistantSource(canonical,file),canonical);
@@ -2104,7 +2108,7 @@ test('assistant593 issued metadata preserves genuine591 canonical source and str
   for(const target of ['2026-10-29T08:00:00.000Z','2026-10-29T07:00:00.000Z','invalid'])assert.throws(()=>active.assertTarget(descriptor,target));
   assert.throws(()=>active.assertTarget({...descriptor,modelBinding:{modelBundleSha256:m.ASSISTANT_PUBLIC590_SUCCESSOR_BEFORE.I}},'2026-10-29T09:00:00.000Z'));
 });
-test('assistant592 ordinary caller selects only genuine591 after normal guards',async t=>{
+sourceAfter598PreissuanceTest('assistant592 ordinary caller selects only genuine591 after normal guards',async t=>{
   const m=await import('./lib/assistant-later-h0-successor-source.mjs');
   const active=m.ACTIVE_ASSISTANT_SUCCESSOR;
   const descriptor={modelBinding:{modelBundleSha256:active.before.I},contractHashes:{continuationStateContractSha256:active.before.T},productionReferenceAt:'2026-10-29T08:00:00.000Z'};
@@ -2125,7 +2129,7 @@ test('assistant592 ordinary caller selects only genuine591 after normal guards',
     assert(reads>=8);
   }finally{t.mock.restoreAll();for(const key of Object.keys(base)){if(prior[key]===undefined)delete process.env[key];else process.env[key]=prior[key];}}
 });
-test('assistant594 native evidence requires its own new commands and rejects old receipt without PG',async()=>{
+sourceAfter598PreissuanceTest('assistant594 native evidence requires its own new commands and rejects old receipt without PG',async()=>{
   const n=await import('./native-postgres-evidence.mjs');
   const e=await import('./national584-source-evidence.mjs');
   const m=await import('./lib/assistant-later-h0-successor-source.mjs');
@@ -2162,7 +2166,7 @@ test('assistant594 native evidence requires its own new commands and rejects old
 });
 
 // The uninstalled592 source stays in Git; only the closed actual593 plan is eligible.
-test('assistant593 exact outer source DATA and closed direct591 migration plan',async()=>{
+sourceAfter598PreissuanceTest('assistant593 exact outer source DATA and closed direct591 migration plan',async()=>{
   for(const [file,row]of Object.entries(reviewedCapacity593Sources)){
     const currentRaw=await fs.readFile(path.join(ROOT,file),'utf8');
     const raw=inverseIssued594HistoricalSource(currentRaw,file),old=canonical592CapacitySource(raw,file);
@@ -2282,4 +2286,94 @@ test('assistant later-H0 owned reprojection is released only after full verifica
     });
   }
   completed=true;
+});
+
+
+test('issued SOURCE CodeOnly workflow keeps its own installed SQL hard restore and B-before-S Edge guards',async t=>{
+  const {SOURCE_PRODUCER_AFTER597_PARENT:source}=await import('./lib/source-producer-after597-parent.mjs');
+  const family=await import('./lib/source-producer-after597-runtime-family.mjs');
+  if(source.binding===null&&source.output===null&&source.nextRelease===null){
+    assert.throws(()=>family.requireSourceProducerOutput(),/SOURCE_PRODUCER_AFTER597_UNISSUED/);
+    t.skip('No issued SOURCE candidate; this is not a positive Source workflow proof.');return;
+  }
+  family.requireSourceProducerOutput();family.assertSourceProducerAfter597StaticCode();
+  const raw=(await fs.readFile(path.join(ROOT,'.github/workflows/deploy-code-only-repair.yml'),'utf8')).replaceAll('\r\n','\n');
+  const step=name=>{const marker='      - name: '+name+'\n';assert.equal(raw.split(marker).length,2);
+    const at=raw.indexOf(marker),end=raw.indexOf('\n      - name: ',at+marker.length);return raw.slice(at,end<0?undefined:end);};
+  const select=step('Select the issued SOURCE source phase without admission');
+  assert(select.includes('run: node scripts/select-source-producer-code-only-source.mjs'));
+  for(const name of ['Select the issued native-original-continuity phase without admission',
+    'Select the issued account-statistics-assistant source phase without admission',
+    'Select the current installed code-only source without historical upgrade authority']){
+    const current=step(name);assert(current.includes("if: env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE != 'true' &&"));
+    assert(raw.indexOf(current)>raw.indexOf(select));
+  }
+  const installed=step('Require actually installed SOURCE contracts before installed reentry');
+  assert(installed.includes("if: env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE == 'true' && env.RAVRADAR_SOURCE_PRODUCER_PHASE == 'installed'"));
+  for(const marker of ['supabase db push --linked --dry-run --skip-vault','verify-source-producer-plan.mjs --phase installed',
+    'integrated-cutover-readiness.mjs verify-db --source-producer','verify-statistics-preference-revision-schema.mjs'])assert(installed.includes(marker));
+  assert.doesNotMatch(installed,/supabase db push --linked --skip-vault/);
+  for(const name of ['Try newest current-compatible private runtime','Try verifying current-compatible private runtime',
+    'Try installing current-compatible private runtime'])
+    assert(step(name).includes("continue-on-error: ${{ env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE != 'true' }}"));
+  const pair=step('Pair already-current SOURCE B with actual S before any local checkpoint build');
+  assert(pair.includes('reconcile-source-producer-code-only.mjs'));
+  assert(pair.includes('steps.current-private-install.outcome }}" = success'));
+  const publishB=step('Publish current bounded private runtime');
+  const publishS=step('Publish measured continuation only after verified warmup private runtime');
+  const readback=step('Read back the whole actually published SOURCE S before any Edge or Pages write');
+  assert(raw.indexOf(pair)<raw.indexOf(publishB)&&raw.indexOf(publishB)<raw.indexOf(publishS)&&raw.indexOf(publishS)<raw.indexOf(readback));
+  assert(!publishS.includes('always()'),'A failed mandatory B publish cannot be followed by Source S');
+  assert(readback.includes('steps.current-private-publish.outcome }}" = success'));
+  assert(readback.includes('steps.established-native-current-origin-checkpoint-publish.outcome }}" = success'));
+  assert(readback.includes("assert.equal(result.reason,'protected-checkpoint-equivalent')"));
+  assert(readback.includes('assert.equal(result.restored,false)'));
+  for(const name of ['Deploy exact rebound trip Edges without Worker or D1 replay',
+    'Deploy only the exact RavRadar assistant Edge function']){
+    const edge=step(name);assert(raw.indexOf(edge)>raw.indexOf(readback));
+    for(const marker of ['test "$RAVRADAR_SOURCE_PRODUCER_PHASE" = installed',
+      'test "$RAVRADAR_SOURCE_PRODUCER_UPGRADE_OPT_IN" = false',
+      'steps.current-private-publish.outcome }}" = success',
+      'steps.established-native-current-origin-checkpoint-publish.outcome }}" = success',
+      'steps.source-producer-checkpoint-readback.outputs.equivalent }}" = true',
+      'steps.source-producer-checkpoint-readback.outcome }}" = success'])assert(edge.includes(marker),name+': '+marker);
+  }
+  t.diagnostic('Actual Source workflow contracts only; no Supabase, B/S or Edge operation executed.');
+});
+
+
+test('issued Source late Edge policy accepts only the actual installed current route and preserves old default refusal',async t=>{
+  const {SOURCE_PRODUCER_AFTER597_PARENT:source}=await import('./lib/source-producer-after597-parent.mjs');
+  const family=await import('./lib/source-producer-after597-runtime-family.mjs');
+  const {currentGridEdgePublicationRequired}=await import('./lib/production-workflow-sources.mjs');
+  if(source.binding===null&&source.output===null&&source.nextRelease===null){
+    assert.throws(()=>family.requireSourceProducerOutput(),/SOURCE_PRODUCER_AFTER597_UNISSUED/);
+    t.skip('No issued Source; no positive late-Edge route is claimed.');return;
+  }
+  family.requireSourceProducerOutput();family.assertSourceProducerAfter597StaticCode();
+  const binding=ravScoreModelBinding(),issued=family.requireSourceProducerBinding();
+  assert.equal(binding.modelBundleSha256,issued.I);
+  const current={model:'integrated',status:'INTEGRATED_ACTIVE',pending:false,modelBinding:binding,
+    bindingCurrent:true,initialCutoverRequired:false,legacySourceRequired:false,centralVersion:1};
+  const options={sourcePhase:'source-producer-after597'};
+  const before=structuredClone(current);
+  assert.equal(await currentGridEdgePublicationRequired(Object.freeze({...current}),'integrated',options),false,
+    'Already-installed exact Source needs no late Edge publication; this is typed phase-data, not install authority');
+  assert.deepEqual(current,before);
+  await assert.rejects(currentGridEdgePublicationRequired(current,'integrated'),
+    'The unchanged old two-argument default cannot silently select Source');
+  for(const bad of [{},{sourcePhase:'unknown'},{sourcePhase:'assistant-mixed-after597-successor'},
+    {...options,extra:true},Object.assign(Object.create(null),options),null])
+    await assert.rejects(currentGridEdgePublicationRequired(current,'integrated',bad));
+  for(const changed of [
+    {...current,pending:true},{...current,model:'candidate'},{...current,status:'UNKNOWN'},
+    {...current,bindingCurrent:false},{...current,initialCutoverRequired:true},
+    {...current,legacySourceRequired:true},{...current,centralVersion:0},{...current,centralVersion:1.5},
+    {...current,modelBinding:{...binding,modelBundleSha256:family.SOURCE_PRODUCER_BEFORE.I}},
+    {...current,modelBinding:{...binding,modelBundleSha256:'f'.repeat(64)}},
+    {...current,modelBinding:{...binding,modelContractSha256:'f'.repeat(64)}}])
+    await assert.rejects(currentGridEdgePublicationRequired(changed,'integrated',options));
+  for(const action of ['integrated-historical-maintenance','integrated-return','integrated-cutover','code-only','unknown'])
+    await assert.rejects(currentGridEdgePublicationRequired(current,action,options));
+  t.diagnostic('Genuine issued Source binding with actual normal late-Edge API; no authenticated B/S, SQL or Edge operation.');
 });
