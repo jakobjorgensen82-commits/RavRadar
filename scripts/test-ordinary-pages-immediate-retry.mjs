@@ -60,6 +60,7 @@ function fakeService({ replayOldStatus = false, duplicate = false, createThrows 
       return reply(url, { total_count: artifacts.length, artifacts });
     }
     if (options.method === 'POST') {
+      assert.equal(options.headers['User-Agent'], 'RavRadar-Pages-deploy');
       const body = JSON.parse(options.body);
       assert.deepEqual(Object.keys(body).sort(), ['artifact_id', 'oidc_token', 'pages_build_version']);
       assert.equal(body.oidc_token, oidcToken);
@@ -84,7 +85,8 @@ function fakeService({ replayOldStatus = false, duplicate = false, createThrows 
     pause: async ms => { clock += ms; }, clock: () => clock,
     ...(cancellation !== null ? {
       waitMs: 5_000, cancelAtDeadline: true,
-      cancelImpl: async url => {
+      cancelImpl: async (url, headers) => {
+        assert.equal(headers['User-Agent'], 'RavRadar-Pages-deploy');
         const version = url.split('/').at(-2);
         cancels.push(version);
         assert.equal(url.split('/').at(-1), 'cancel');
