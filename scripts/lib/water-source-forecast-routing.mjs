@@ -3,6 +3,7 @@ import { recommendWaterStationBracket } from '../../js/core/water-station-routin
 import { dmiMarineCollectionAllowedForZone } from './dmi-marine-zone-exclusions.mjs';
 import { FUR_WATER_ROUTING_PART_ID, captureFurWaterRoutingDiagnostic }
   from './fur-water-routing-diagnostic.mjs';
+import { beginLf7WaterObservation, observeLf7WaterDecision } from './lf7-fur-consumer-observation.mjs';
 import crypto from 'node:crypto';
 import { promisify } from 'node:util';
 import { gzip, gunzip } from 'node:zlib';
@@ -407,6 +408,8 @@ export function applyVerifiedWaterSourceRoutingToPartHourly({
     onshoreDirectionDeg: parentFeature.properties?.onshoreDirectionDeg,
     sources, index, routing, haversineKm });
   const sourceMaps = rows.map(source => verifiedDmiSourceRows(index.get(sourceKey(source))));
+  const consumerObservation = beginLf7WaterObservation({ zoneId, partId: part.partId,
+    stream: 'PART_PUBLIC', referenceAt: diagnosticReferenceAt, rows });
   const diagnostic = routedHourly => part.partId === FUR_WATER_ROUTING_PART_ID
     ? captureFurWaterRoutingDiagnostic({
       part, parentFeature, directHourly: hourly, routedHourly, sources, rows,
@@ -418,21 +421,31 @@ export function applyVerifiedWaterSourceRoutingToPartHourly({
       previousDiagnostic: previousRoutingDiagnostic,
       productionReferenceAt: diagnosticReferenceAt,
     }) : null;
-  if (!rows.length) return { hourly, appliedHours: 0, diagnostic: diagnostic(hourly) };
+  if (!rows.length) {
+    for (const hour of hourly) observeLf7WaterDecision(consumerObservation, { time: hour.time, branch: 'noSelection' });
+    return { hourly, appliedHours: 0, diagnostic: diagnostic(hourly), ...(consumerObservation ? { consumerObservation } : {}) };
+  }
   let appliedHours = 0;
   const routedHourly = hourly.map(hour => {
     const timeMs = Date.parse(hour?.time ?? '');
     if (!Number.isFinite(timeMs)) return hour;
     const sourceRows = sourceMaps.map(map => map.get(hour?.time));
-    if (!sourceRowsAllowedForZone(sourceRows, zoneId)) return hour;
+    if (!sourceRowsAllowedForZone(sourceRows, zoneId)) {
+      observeLf7WaterDecision(consumerObservation, { time: hour.time, branch: 'sourceUnavailableOrDenied' });
+      return hour;
+    }
     const values = sourceRows.map(sourceRow => finite(sourceRow?.waterLevelCm));
-    if (values.some(value => value === null)) return hour;
+    if (values.some(value => value === null)) {
+      observeLf7WaterDecision(consumerObservation, { time: hour.time, branch: 'numericMissing' });
+      return hour;
+    }
     const value = round(values.reduce((sum, item, i) => sum + item * rows[i].weight, 0), 0);
     const futureTime = new Date(timeMs + 3 * 3_600_000).toISOString();
     const futureRows = sourceMaps.map(map => map.get(futureTime));
     const trendKnown = verifiedWaterSourceTrendKnown(sourceRows, futureRows, zoneId);
     const futureValue = trendKnown ? round(futureRows.reduce((sum, sourceRow, i) =>
       sum + sourceRow.waterLevelCm * rows[i].weight, 0), 0) : null;
+    observeLf7WaterDecision(consumerObservation, { time: hour.time, branch: 'APPLIED', sourceRows, futureRows, trendKnown });
     const provenance = {
       ...routedWaterLevelSource(sourceRows, rows, method, diagnosticReferenceAt),
       status: 'verified',
@@ -450,11 +463,12 @@ export function applyVerifiedWaterSourceRoutingToPartHourly({
       sources: { ...(hour.sources ?? {}), waterLevel: provenance },
     };
   });
-  return { hourly: routedHourly, appliedHours, diagnostic: diagnostic(routedHourly) };
+  return { hourly: routedHourly, appliedHours, diagnostic: diagnostic(routedHourly), ...(consumerObservation ? { consumerObservation } : {}) };
 }
 
 export function applyWaterSourceRouting({features,output,forecastStore,sources,index,routing,haversineKm,generatedAt}){
   const byZone=new Map(features.map(f=>[f.properties?.id,f]));
+  const consumerObservations=[];
   const notifications=[]; const audit={totalZones:0,adminOverride:0,automatic:0,applied:0,incomplete:0};
   for(const [zoneId,zone] of Object.entries(output.zones??{})){
     const feature=byZone.get(zoneId); if(!feature)continue; audit.totalZones++;
@@ -463,20 +477,28 @@ export function applyWaterSourceRouting({features,output,forecastStore,sources,i
       zoneName:feature.properties?.name,point,coastLine:feature.properties?.coastLine,
       onshoreDirectionDeg:feature.properties?.onshoreDirectionDeg,sources,index,routing,haversineKm});
     if(mode==='admin-override')audit.adminOverride++;else audit.automatic++;
-    if(!rows.length){audit.incomplete++;continue;}
+    if(!rows.length){
+      const observation=beginLf7WaterObservation({zoneId,stream:'PARENT_PUBLIC',referenceAt:generatedAt,rows});
+      for(const row of zone.forecast?.hourly??[])observeLf7WaterDecision(observation,{time:row.time,branch:'noSelection'});
+      if(observation)consumerObservations.push(observation);
+      audit.incomplete++;continue;
+    }
     const timeMaps=rows.map(s=>verifiedDmiSourceRows(index.get(sourceKey(s))));
-    const routeWaterLevels=target=>{
+    const routeWaterLevels=(target,stream)=>{
+      const observation=beginLf7WaterObservation({zoneId,stream,referenceAt:generatedAt,rows});
+      if(observation)consumerObservations.push(observation);
       const routed=target.map(row=>{
         const sourceRows=rows.map((s,i)=>timeMaps[i].get(row.time));
-        if(!sourceRowsAllowedForZone(sourceRows,zoneId))return row;
+        if(!sourceRowsAllowedForZone(sourceRows,zoneId)){observeLf7WaterDecision(observation,{time:row.time,branch:'sourceUnavailableOrDenied'});return row;}
         const values=sourceRows.map(sourceRow=>finite(sourceRow?.waterLevelCm));
-        if(values.some(v=>v===null))return row;
+        if(values.some(v=>v===null)){observeLf7WaterDecision(observation,{time:row.time,branch:'numericMissing'});return row;}
         const value=values.reduce((sum,v,i)=>sum+v*rows[i].weight,0);
         const futureTime=new Date(Date.parse(row.time)+3*3600000).toISOString();
         const futureRows=timeMaps.map(map=>map.get(futureTime));
         const futureValues=futureRows.map(row=>finite(row?.waterLevelCm));
         const trendKnown=verifiedWaterSourceTrendKnown(sourceRows,futureRows,zoneId);
         const futureValue=trendKnown?futureValues.reduce((sum,v,i)=>sum+v*rows[i].weight,0):null;
+        observeLf7WaterDecision(observation,{time:row.time,branch:'APPLIED',sourceRows,futureRows,trendKnown});
         return {...row,waterLevelCm:round(value,0),waterLevelModelCm:round(value,0),
           waterLevelTrendCm3h:futureValue===null?null:round(futureValue,0)-round(value,0),
           waterLevelSource:'dmi-water-source-interpolation',sources:{...(row.sources??{}),waterLevel:routedWaterLevelSource(sourceRows,rows,method,generatedAt)}};
@@ -487,12 +509,12 @@ export function applyWaterSourceRouting({features,output,forecastStore,sources,i
     // den rene DMI-cache. Rout vandstand i begge serier uden at erstatte den
     // offentlige vind-/bÃ¸lge-/strÃ¸mserie med forecastStore-versionen.
     const publicTarget=zone.forecast?.hourly??forecastStore?.zones?.[zoneId]?.hourly??[];
-    const updated=routeWaterLevels(publicTarget);
+    const updated=routeWaterLevels(publicTarget,'PARENT_PUBLIC');
     const applied=updated.filter(row=>row.waterLevelSource==='dmi-water-source-interpolation').length;
     if(!applied){audit.incomplete++;continue;} audit.applied++;
     const meta={mode,method:rows.length===1?'single-water-source':'inverse-distance-water-sources',stations:rows.map(s=>({sourceKey:sourceKey(s),stationId:String(s.stationId),name:s.name,sourceType:s.sourceType,distanceKm:round(s.distanceKm,1),weight:round(s.weight,3),role:s.role,forecastValidUntil:index.get(sourceKey(s))?.validUntil??null})),generatedAt,validUntil:rows.map(s=>index.get(sourceKey(s))?.validUntil).filter(Boolean).sort()[0]??null,completeBracket:recommendation?.completeBracket??null};
     if(forecastStore?.zones?.[zoneId]){
-      forecastStore.zones[zoneId].hourly=routeWaterLevels(forecastStore.zones[zoneId].hourly??[]);
+      forecastStore.zones[zoneId].hourly=routeWaterLevels(forecastStore.zones[zoneId].hourly??[],'PARENT_FORECAST_CACHE');
       forecastStore.zones[zoneId].waterLevelInterpolation=meta;
     }
     if(zone.forecast?.hourly)zone.forecast.hourly=updated;
@@ -509,5 +531,5 @@ export function applyWaterSourceRouting({features,output,forecastStore,sources,i
       reference:currentRouted?'DMI DKSS-prognose ved valgte vandstandskilder':(zone.waterLevel?.reference??null),
       interpolation:meta,diagnostic:{...(zone.waterLevel?.diagnostic??{}),waterSourceRouting:meta,displayValueCm:current?.waterLevelCm??zone.current?.waterLevelCm}};
   }
-  return {audit,notifications};
+  return {audit,notifications,...(consumerObservations.length?{consumerObservations}:{})};
 }

@@ -3051,7 +3051,8 @@
           "scripts/lib/source-impact-domain-owners-597.json",
           "scripts/lib/source-impact-domain-owners-598.json",
           ".github/workflows/verify-supabase-cli-local-restore.yml",
-          "scripts/test-supabase-cli-local-restore.mjs"
+          "scripts/test-supabase-cli-local-restore.mjs",
+          "scripts/test-map-timeline-generation.mjs"
         ],
         "dependencySurfaces": [
           "03daadedcb8b0dbfc39863013fdfd9a26290e144ccbe7097658da088139a2f71",
@@ -3082,7 +3083,8 @@
           "ff3998448cd0285d73b10d0cc6b17bc0cd95d8e4933d5efffc69db2939242dbe",
           "ff4c2417d608b34d80bdb67bb672b216595b36992160a41c54c34d52dc900bc7",
           "62cbd9cce50e6f33baf8406564976e804a50f4963257efd05d6f64d06befcae4",
-          "e6cf2a12d8d108bcd26e7b67f7242669f1ef2815194d5c57cf1c9d2d22c7da91"
+          "e6cf2a12d8d108bcd26e7b67f7242669f1ef2815194d5c57cf1c9d2d22c7da91",
+          "d7fcf43d9f84bcab9fb93c43108b10aafeb37152e442954569fbc8e0a76ed9f5"
         ],
         "bindingSurfaces": [
           "0f05aaff990b617dc07eace1a1118c3c65f43107ce1db531aa132eed62495e4f",
@@ -6362,7 +6364,8 @@
           "db6d7e833ab9bc58306f3f71f7e8bb22fde62aeafd67bedc1861e324a35652a6",
           "de87f1c2371ba1d7ad08ad78fb1825092fb5b7f090ee6b9988a46464312df8a9",
           "e26dafdd2a6e9cfd4e4dcda9f5319bbeed126c59da79d4f88001d5e7494652ff",
-          "e60d158f925d4215a2728107d642b89e496f8a054f0ef492f5ee77a637039367"
+          "e60d158f925d4215a2728107d642b89e496f8a054f0ef492f5ee77a637039367",
+          "64e388305c9538476693f6b3615b1f0e444c57bf11b3e3125a1c58e45cf49196"
         ],
         "computedBoundaries": []
       }
@@ -7013,7 +7016,8 @@
           "c9a91c9ab834aa3e25a41713402bf8a7820cd5ce2bd986c06f879c5bc668f049",
           "e4941080033aed6b41671287201783c388879f9a7b61a86663649180fe27a1d2",
           "c9352e7880aa8f34e2e4e2afdada313d0ee6022e67a8adf3b3ca24f2f0fa5274",
-          "774267cb3dece6fdd05c9f1381542eeddcc7aae027cc12f70fdcf3c9a6c9a553"
+          "774267cb3dece6fdd05c9f1381542eeddcc7aae027cc12f70fdcf3c9a6c9a553",
+          "f8ddd7b26705800ac8d94e50794253c7660ba052dc29bd6a6cc9761ce2e9c35d"
         ],
         "computedBoundaries": []
       }
@@ -7480,7 +7484,9 @@
           "11c890754da290207691bbb8a7789805afb077762bea363351fbb16b0ead5a80",
           "4d55a72fd87ded7c928ae6bfc0555794fe70d4b2cc5281bcf0ecf9c5a1a18a52",
           "58f82881a1b05d8763f11b9335bf7719e10d1ed5512ff742d670f626246cfd54",
-          "df26e1c2a2afb8c7d0636755ebaefcc1a5b67b83390edfdafbcafe3ccd65d14f"
+          "df26e1c2a2afb8c7d0636755ebaefcc1a5b67b83390edfdafbcafe3ccd65d14f",
+          "8c12f9a5d4f78db8c8161cb0b62581f9cc164b4372b77d4f06a78b2f4360f932",
+          "db740b73fe298a153dc940fff2f8e5925a28869e0c323190d42992ef689bf18f"
         ],
         "bindingSurfaces": [
           "0f1ee88f5cae81df3523b11b27f2f68791cc3578e9acefec28ce8eca1e649fb3",
@@ -7859,6 +7865,155 @@
         ],
         "computedBoundaries": []
       }
+    },
+    "scripts/test-map-timeline-generation.mjs": {
+      "beforeDefinitionSha256": null,
+      "definition": {
+        "nodeImports": [
+          "node:assert/strict",
+          "node:child_process",
+          "node:fs",
+          "node:url",
+          "node:vm"
+        ],
+        "imports": [
+          "js/map/map-view.js",
+          "js/services/map-forecast-view.js",
+          "scripts/test-public-json-reader-bridge.mjs"
+        ],
+        "resources": [
+          "app.js",
+          "bootstrap.js",
+          "index.html",
+          "js/map/map-view.js",
+          "js/services/data-service.js",
+          "js/ui/forecast-share.js",
+          "package.json",
+          "scripts/test-public-cold-start-4.0.303.mjs",
+          "scripts/test-public-json-transport.mjs",
+          "service-worker.js"
+        ],
+        "dependencySurfaces": [
+          "0a45984da7f870c5a3096032ade51bfaeb004f5ff9b2e5959770984fad6d5708",
+          "19de32eed3be19c6484ecabc4e02cb39ffff30d39139feaaa7556686e5333921",
+          "1c24fb186fcab3f2af4262726b3a4c6495bad320835faedfd47c64c94159e78b",
+          "23ee36e30a4cd18543c08ea5751ca6af85ef3495d269b7fac24370599b5954d3",
+          "35f72eae5d79a483b3df7e0fdd171c4d7a68bc02ac8eec9c3d87cfa68665e4b8",
+          "3b88076913c971d4943fd503e38cc18cb99aa7c7a9957b1e5b3f86b672da9bbc",
+          "478d017f2646061fa91f298f5598e13b8d8abad43f16a7de94470333595f6ffa",
+          "7e8cb6f38a73c5c7945240dbf2a0f2c08f1c463fb14c05b611909a5d6b99a894",
+          "88b80873b3235fbf13451cb07fffbf4030092513397ade07df512c69eef3bee6",
+          "8c49b7d7e56f1a43096f73a7dc43d627bbbad74374566f8452bda32aeac26888",
+          "ef3adb76b1cc369c8ecffeaea701e1c28cfdf0fbe49211d01959be9b1f6483d0"
+        ],
+        "bindingSurfaces": [
+          "1c8eee1c60284bcba7b63870e945ce363966298913d7a13015a35a79b744d90b",
+          "26655b5c39c20e428e4474cbff17c95433a6e83e9d5191ca08b6e1e35ff2bd72",
+          "29d59f25909ddd0bcee91ddd9f0727911d82425f20cc55aaaf04ae341a3ff3a2",
+          "382314544935075ffb1e30255c57219a1f58ff9af1791e7527fe38a534007775",
+          "40ecf64c598495e6ae9ffa5ae1b662045ffda9cc42c9644b06bc29f29c17d5a6",
+          "4fafe8b8106d6c1b6a5ae7fb2d8b08e40edec91d68f5c7c7f395ee6c379f0474",
+          "5193ca852a68475d140a771402a4fa03aae098c6694625269ec7835683d9e75a",
+          "61e6ba35436927471ca02692da4bcc4497344d66c7d3ae006eb341124184404e",
+          "64f1c10889e5608c9ab4017d6dae62143d5a5d02f472298a9c4962060d1a0af9",
+          "7c27e1e9f2a60af673c96d0da8eb3d7e7669f9336ea8a0a2bd977f487313007d",
+          "7c2e9c205bd7f6e6c97709dd01b6aea803b170b19b4b0ff13b1c591925574d2a",
+          "97ca5cec58f92f1bfcc46745c3f6ac65bc8da334ce8e28c1a41f78922023db5d",
+          "986d382f4d55bb6fc18d197cfd7d69853f394847f1d4c7f98ff31c96d5f75bb2",
+          "a9046d6a3cb8a52484e928c05f98aaa14f12a2fcd95e38f17eec9a666adad860",
+          "b3e4ea3c74bdfe0877df74a8b93e118a8e573fa442442e21d890fd9e93fb29f6",
+          "be5d29d59a849b2dce6e074bc7659051ff670bf5f6d92b5739551f12a6841b99",
+          "ca6d33cc6e28f5f57c6e4ed5b16aa66364f809c0f52ae33d7e5d72f83e0a146b",
+          "cb68b80ce867fc326103bf56cb8e9919409962f392ca422017586c8b4c1185fa",
+          "ccb04a8c739c33018649a308a108da4a5c068e4e53e503a08c234eb8e40ffe3b",
+          "d1d2da8e936cce614da331f45778d5990bdba2934cfed84441884faed93197fb",
+          "d52e9c8ebbba02a681b044a1cc12dc5d166c181d150c718c08be6b20b6161f7e",
+          "e1d01e09268ac129ca503dde4a8b3eddc460aa56583170cc3d8870c7ba4bdb7b",
+          "e845bee7976fda0a6dd5efa1179c7d7573081b6edb28e0fb1097a355624312bc",
+          "eb081138ac61f522f151d7edabc0bc8f0141ef0daad42d22c915b383ed4fdcd9",
+          "ede37987e6247a8231685ced4f344cffb5da36c6b493b86e57d570e295c9bda5",
+          "f5098470e10097ee3eaf734545bcd7be77dcb8b192a90b4260165b45f61f1b6e",
+          "f69e012c326dc12aff429b7737f76623470cbb434d6c09f1cdd465b235641b0a"
+        ],
+        "computedBoundaries": []
+      }
+    },
+    "scripts/test-public-json-reader-bridge.mjs": {
+      "beforeDefinitionSha256": null,
+      "definition": {
+        "nodeImports": [
+          "node:assert/strict",
+          "node:crypto",
+          "node:fs",
+          "node:os",
+          "node:path",
+          "node:url",
+          "node:vm",
+          "node:zlib"
+        ],
+        "imports": [],
+        "resources": [
+          "app.js",
+          "bootstrap.js",
+          "index.html",
+          "js/core/ravscore-evidence-trust-contract.js",
+          "js/core/ravscore-model-contract.js",
+          "js/core/ravscore-public-model.js",
+          "js/core/ravscore-public-profile-contract.js",
+          "js/core/ravscore-public-runtime-contract.js",
+          "js/core/ravscore-public-weather-source-age.js",
+          "js/services/app-update-flow.js",
+          "js/services/data-service.js",
+          "package.json",
+          "service-worker.js"
+        ],
+        "dependencySurfaces": [
+          "19de32eed3be19c6484ecabc4e02cb39ffff30d39139feaaa7556686e5333921",
+          "1c24fb186fcab3f2af4262726b3a4c6495bad320835faedfd47c64c94159e78b",
+          "23ee36e30a4cd18543c08ea5751ca6af85ef3495d269b7fac24370599b5954d3",
+          "35f72eae5d79a483b3df7e0fdd171c4d7a68bc02ac8eec9c3d87cfa68665e4b8",
+          "478d017f2646061fa91f298f5598e13b8d8abad43f16a7de94470333595f6ffa",
+          "50fb58c0a32c3dd4399ab7c8597218c52d12f5f78f3f6c98cc4806fc990e5972",
+          "677f8bc4cbf6df9b05e47fda566c9f3c61dfbad390d93eaa9b4e44d3f6a61559",
+          "a6112637f9e9ff5d71fdee3b30718f73e562729d03c8f88954ac8e34514b7399",
+          "ef3adb76b1cc369c8ecffeaea701e1c28cfdf0fbe49211d01959be9b1f6483d0",
+          "f5c007ba65aa3e77ee54029113985ff413df6f99fb9b837a9889f86893c4f0e2"
+        ],
+        "bindingSurfaces": [
+          "095e9756e4ffb27752f98782dbb4b06000a8bea88f328d471810b0e4ffa06175",
+          "117d53cad0a64b50ba11295d8040679d0ce140176e900100f4853e582f14be09",
+          "2008e1892cc10c9647c3a47e83483a0c84a5df6a5bbc382c1eabb565ad673b13",
+          "2dfa9e0aaad404a5427614ede137c0e47f03cfe95d13b56283defd38fab75a4c",
+          "2e4feb2e05386f6fddbc0b94dc5080dd08bb3dc1566b4a7b3913374fb29861a5",
+          "359a40144077bf26c896ba3b15dfc7310bc7edde5d1d8aa83fd47c6fca147a6c",
+          "3a9ef52d148c808e90b3f3a83ed50fa920ea062cb85d41d55d9d50e1fbd0e378",
+          "3bd26ec2adb2d1342abb16d41eff40c580cecffb7f650e11eae687faa9464c8d",
+          "5193ca852a68475d140a771402a4fa03aae098c6694625269ec7835683d9e75a",
+          "528645d4b853bafaeff80a7dd04c97bdc1561c2e9c705065c81da78a2e1948f7",
+          "6ad52f7114ffef3f778bb310368fe9706dbfa47cee18dc7f13283390f38a2fcb",
+          "751ccd09bffa7a8984085b82900088c9ca5532ceaabd5eba70ce0e8a517f0897",
+          "78a48832ee1d463a0d2218d31d45ad0679a431223b6650b4c91269c0ffc49f24",
+          "7e8bf255f63ef05cdd415f06b678b00f92b5d3ca1a722d1cb0f0b2b3e86139e0",
+          "83f0d7dd98ccbc8c8b9432e23a9cc7336b7760f5027cebe3a6f80a466b68d416",
+          "93d0725baa90f77207bdc945c5b63ed6b8b7a0f682ce6589a56c729da452ca40",
+          "a83be05613229e34a9ddfa5cb53574b113d00ad53896f758e9cdb347c578858d",
+          "b3846344d16f2698fad11a1332005f21eabd9535d63eec8f1d91e8a2d8a5506f",
+          "bc709e5c5271faee2440be856ff3249ae79478365e49994db6426bac10cd90b3",
+          "be5d29d59a849b2dce6e074bc7659051ff670bf5f6d92b5739551f12a6841b99",
+          "bf2056e0ee711db3da99e534375af473ae204623240648f34d531f3a11d3de97",
+          "e5c1745234aa306c0f57990b66f00691c203cd27cfc65661a1314a99bde85798"
+        ],
+        "computedBoundaries": [
+          "010b7942a42367ebb49d2562a503948610103ad6f31f00b48e4f9eb4f5804492",
+          "274dba2f0f950880ae4e2cb6fbd29fc17cee8941898c8372cd38d9d277965aab",
+          "53e1e1c48d6ad26d866fa61fec6cc68508767828a4790c35cd6c49364e5c2414",
+          "5edf982b04ebeb8a5cf43aa9986e7956cb1debbf24576130b7318e65ffac8fbe",
+          "62cef34464f54b1a7f5b4ad9ffa6a67240805bb637c7389b2b209de1b7b21abd",
+          "655265d0c8752e32d2d523c9de9b27771847f3f28bfb7e1669f5bac3f371daf3",
+          "6b67cc66969549fc0f51a2b2b472121a3ca9eb3bc8389da11a2ae3f27b504656",
+          "c5645ad1c5954a8e1855134f2a84c326f707442590b1090650b333957202fb22"
+        ]
+      }
     }
   },
   "resourceFiles": [
@@ -7912,5 +8067,38 @@
       "scripts/lib/publish-sealed-pages-with-recovery.mjs": "64bee702f790af04dc44ce8f6778b09eb0715484160422c25696e2a2310c26ab",
       "scripts/lib/run-sealed-pages-deployment.mjs": "b063dbda4ba18f852bc1281682f4ca971dd3846b1730422776f59b2958571f5e"
     }
+  },
+  "assistantWindFollowup": {
+    "transitions": {
+      "app.js": [
+        "20d2c12a86f93ed97330bbda5bbb6507b0829358822910a75030c252696dbffb",
+        "1b1269bdae0d3539686599b1eebaf3e7785c28fe5b229e81d7191c1ace521483"
+      ],
+      "bootstrap.js": [
+        "9f19a4ea5b8747c755f562f1029641f6232063dbff97c9945a1fbb625970c217",
+        "100fbce0b68ed34f9dfced853a00241b6ac6e91068cb3ac20b940473a07003dc"
+      ],
+      "index.html": [
+        "19f279d4e211dba28d5eef336fb51ffd5ce113286792b042f23a6e42cc997870",
+        "d43777bc3f53d9c85791b1d202ed91408f5139bc3c790cacd187bc0b4f668e0e"
+      ],
+      "scripts/test-map-forecast-timeline.mjs": [
+        "e2d4f75dc7b6cc46d04448681310034eb9b224aa09cf5278481c672536c0c1f8",
+        "b0263c7894d2f71d26218a5fba816c7a1737a5e0e79aba88d769659e351f8bf1"
+      ],
+      "scripts/test-public-cold-start-4.0.303.mjs": [
+        "897e72fd0c8729cf0f592b57a600a94016209ddff852f06badacce67b647eff7",
+        "b072198bbb9381d80c86b8e1f9feff523d8076034163be424481512d6f343826"
+      ],
+      "scripts/test-rav-assistant-main-edge-roundtrip.mjs": [
+        "0621cd8b56f96951fbb2f06c5da399c7ee3a98bbcb4a382430373e8aa80ffa65",
+        "2659754572861a56ca01b83a0a8f1da94a149fa9eae8cfbba03f72b7761ec55b"
+      ],
+      "service-worker.js": [
+        "8d668ce191ee60edc269294894ce2e5d2eb85641b1c9ab4c454dd35f446dbfd1",
+        "36900db192c16baedaa38f2e993d9ec0a1407c9c7b06a34f944258cc77dcaf55"
+      ]
+    },
+    "mapGenerationSha256": "9ee5b5d110aaf2b65b3030a7ba0cc1142eb21a751fd3e1c302886499f41b0ed6"
   }
 }

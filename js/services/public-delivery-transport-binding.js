@@ -1,5 +1,5 @@
-import { PUBLIC_DELIVERY_MAX_BYTES, publicDeliveryEntries } from '../core/public-delivery-contract.js?v=4.0.598';
-import { PUBLIC_JSON_ENVELOPE_KIND } from './public-json-transport.js?v=4.0.598&transport=public-json-bridge-20261103';
+import { PUBLIC_DELIVERY_MAX_BYTES, publicDeliveryEntries } from '../core/public-delivery-contract.js?v=4.0.611';
+import { PUBLIC_JSON_ENVELOPE_KIND } from './public-json-transport.js?v=4.0.611&transport=public-json-bridge-20261103';
 
 export const RAW_PUBLIC_HOUR_COUNT = 12;
 const HASH = /^[a-f0-9]{64}$/;

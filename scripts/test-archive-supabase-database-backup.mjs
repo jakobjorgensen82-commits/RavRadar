@@ -84,6 +84,13 @@ function fixture(temp,behavior={}){
       if(behavior.putUnknown){objects.set(key,Buffer.from(body));throw new Error('synthetic private uncertain outcome');}
       if(behavior.putStatus)return response('',behavior.putStatus);
       if(objects.has(key))return response('',412);objects.set(key,Buffer.from(body));return response('',200);}
+    if(method==='DELETE'){
+      assert.equal(behavior.allowRetirement,true,'ordinary capture/discovery cannot delete');
+      if(behavior.deleteNoop)return response('',204);
+      objects.delete(key);
+      if(behavior.deleteUnknown)throw new Error('synthetic lost delete response');
+      return response('',204);
+    }
     assert.equal(method,'GET');let b=objects.get(key);if(!b)return response('',404);
     if(behavior.readObject)b=behavior.readObject(key,Buffer.from(b));return response(b,200,{'content-length':String(b.length)});
   };
@@ -537,6 +544,80 @@ function rewriteSyntheticSelfIndex(f,mutate){
   const digest=sha(wire),object='bundles/sha256/'+digest+'.json.gz';f.objects.set(object,wire);
   base.payload.index={path:object,bytes:wire.length,sha256:digest};return base;
 }
+
+function tinyOwnedParts(f){
+  const original=clone(f.locator),{index}=encryptedIndex(f),manifest=f.locator.payload.manifestSha256;
+  const entries=index.objects.map((entry,ordinal)=>{
+    const raw=Buffer.from(decodeObject(f.objects.get(entry.object.path)).data,'base64'),wire=gzipSync(raw,{level:0});
+    const digest=sha(wire),key=`bundles/sha256/${manifest}/part-${String(ordinal).padStart(3,'0')}-${digest}.json.gz.part`;
+    f.objects.set(key,wire);
+    return {file:entry.file,parts:[{offset:0,cipherBytes:raw.length,cipherSha256:sha(raw),object:{path:key,sha256:digest,bytes:wire.length}}]};
+  });
+  f.locator=rewriteSyntheticSelfIndex(f,value=>{value.kind='SUPABASE_DB_BACKUP_INDEX_V2';value.objects=entries;});
+  // Test-only construction removes only its replaced tiny synthetic carriers.
+  f.objects.delete(original.payload.index.path);for(const entry of index.objects)f.objects.delete(entry.object.path);
+  return clone(f.locator);
+}
+async function tinyRotation(t){
+  const {f}=await captured(t,{allowRetirement:true}),retiring=tinyOwnedParts(f);
+  f.env.GITHUB_RUN_ID='12346';await run({mode:'capture'},f.dependencies());const reserve=clone(f.locator);
+  f.env.GITHUB_RUN_ID='12347';await run({mode:'capture'},f.dependencies());
+  Object.assign(f.env,{GITHUB_REF:'refs/heads/main',GITHUB_WORKFLOW:'Back up RavRadar Supabase database'});
+  return {f,retiring,reserve,options:{reserveIndexSha256:reserve.payload.index.sha256,restoreRunId:'700'},
+    dependencies:()=>({...f.dependencies(),confirmMain:()=>{},verifyReserveRestore:({indexSha256,restoreRunId})=>({indexSha256,restoreRunId})})};
+}
+test('normal database rotation retires one authenticated tiny group index-last and preserves current and verified distinct reserve',async t=>{
+  const {rotateSupabaseDatabaseBackups:rotate}=await import('./archive-supabase-database-backup.mjs');
+  const q=await tinyRotation(t),current=clone(q.f.locator);
+  q.f.env.GITHUB_RUN_ID='12348';await run({mode:'capture'},q.f.dependencies());
+  const unresolvedNewer=clone(q.f.locator);q.f.locator=current;const before=new Map(q.f.objects);
+  const {databaseRestoreCommitment}=await import('./supabase-backup-lifecycle.mjs');
+  const committed={restoreRunId:q.options.restoreRunId,
+    reserveIndexCommitment:'rr-supabase-restore-v1:'+databaseRestoreCommitment(q.reserve.payload.index.sha256)};
+  const held=await rotate({...committed,holdIndexSha256:[q.retiring.payload.index.sha256]},q.dependencies());
+  assert.equal(held.deletedObjects,0);
+  const result=await rotate(committed,q.dependencies());assert.equal(result.deletedObjects,6);
+  assert.equal(result.status,'DATABASE_BACKUP_ONE_GROUP_RETIRED');assert.deepEqual(q.f.locator,current);
+  const deleted=q.f.calls.filter(call=>call.method==='DELETE').map(call=>new URL(call.url).pathname.slice(P.bucket.length+2));
+  assert.equal(deleted.length,6);assert.equal(deleted.at(-1),q.retiring.payload.index.path);
+  for(const [key,wire]of before)if(!deleted.includes(key))assert.ok(q.f.objects.get(key).equals(wire));
+  assert.ok(q.f.objects.has(q.reserve.payload.index.path)&&q.f.objects.has(current.payload.index.path));
+  assert.ok(q.f.objects.has(unresolvedNewer.payload.index.path),'a newer non-current group is preserved');
+  const later=await rotate(committed,q.dependencies());assert.equal(later.deletedObjects,0);
+});
+test('normal database rotation settles runner-loss absence under the existing writer without replaying an unknown DELETE',async t=>{
+  const {rotateSupabaseDatabaseBackups:rotate}=await import('./archive-supabase-database-backup.mjs');
+  const q=await tinyRotation(t);q.f.behavior.deleteUnknown=true;
+  await rejectCode(()=>rotate(q.options,q.dependencies()),'DB_BACKUP_WRITE_OUTCOME_UNKNOWN');
+  const first=q.f.calls.filter(call=>call.method==='DELETE');assert.equal(first.length,1);
+  assert.ok(q.f.objects.has(q.retiring.payload.index.path));q.f.behavior.deleteUnknown=false;
+  const result=await rotate(q.options,q.dependencies());assert.equal(result.deletedObjects,5);
+  const deletes=q.f.calls.filter(call=>call.method==='DELETE');assert.equal(deletes.length,6);
+  assert.equal(new Set(deletes.map(call=>call.url)).size,6,'already absent object is not deleted again');
+});
+test('normal database rotation fails closed on no reserve, current-as-reserve and unobserved deletion',async t=>{
+  const {rotateSupabaseDatabaseBackups:rotate}=await import('./archive-supabase-database-backup.mjs');
+  const q=await tinyRotation(t);
+  assert.equal((await rotate({},q.dependencies())).deletedObjects,0);
+  await rejectCode(()=>rotate({...q.options,reserveIndexSha256:q.f.locator.payload.index.sha256},q.dependencies()),'ROTATION_DISTINCT_RESERVE');
+  assert.equal(q.f.calls.filter(call=>call.method==='DELETE').length,0);
+  q.f.behavior.deleteNoop=true;
+  await rejectCode(()=>rotate(q.options,q.dependencies()),'ROTATION_DELETE_NOT_OBSERVED');
+  assert.equal(q.f.calls.filter(call=>call.method==='DELETE').length,1);
+});
+test('normal database rotation rejects changed current locator and changed retiring object before DELETE',async t=>{
+  const {rotateSupabaseDatabaseBackups:rotate}=await import('./archive-supabase-database-backup.mjs');
+  const q=await tinyRotation(t),original=clone(q.f.locator);let scanned=false;
+  q.f.behavior.readObject=(key,wire)=>{if(key===q.retiring.payload.index.path)scanned=true;return wire;};
+  q.f.behavior.beforeLocatorGet=()=>{if(scanned)q.f.locator.version++;};
+  await rejectCode(()=>rotate(q.options,q.dependencies()),'LOCATOR_CHANGED');
+  assert.equal(q.f.calls.filter(call=>call.method==='DELETE').length,0);
+  q.f.locator=original;delete q.f.behavior.beforeLocatorGet;
+  q.f.behavior.readObject=(key,wire)=>{
+    if(key.startsWith('bundles/sha256/'+q.retiring.payload.manifestSha256+'/'))wire[wire.length-1]^=1;return wire;};
+  await rejectCode(()=>rotate(q.options,q.dependencies()),'REMOTE_OBJECT_SHA');
+  assert.equal(q.f.calls.filter(call=>call.method==='DELETE').length,0);
+});
 
 test('segmented capture over 50 MB rejects altered groups and restores exact five SQL files without database access',async t=>{
   const large=crypto.randomBytes(50_001_024),expected=name=>name==='data.sql'?large:materializationSql(name);

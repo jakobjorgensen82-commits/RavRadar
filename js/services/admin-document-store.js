@@ -1,5 +1,5 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.598";
-import { authorizedFetch, currentSession, requireFreshSession } from "./auth-service.js?v=4.0.598";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.611";
+import { authorizedFetch, currentSession, requireFreshSession } from "./auth-service.js?v=4.0.611";
 
 const PREFIX="ravradar-admin-document:";
 const listeners=new Set();
@@ -51,11 +51,12 @@ async function remoteWrite(key,payload){
 export async function readAdminDocumentNow(key){return remoteRead(key);}
 export function onAdminSaveStatus(fn){listeners.add(fn);return()=>listeners.delete(fn);}
 export function getAdminSaveStatuses(){return Object.fromEntries(lastStatus);}
-export async function loadAdminDocument(key,fallback){
+export async function loadAdminDocument(key,fallback,{includeSource=false}={}){
+  const result=(payload,source)=>includeSource?{payload,source}:payload;
   const local=readLocal(key,null);
-  try{const remote=await remoteRead(key);if(remote?.payload){writeLocal(key,remote.payload);emit({state:"saved",key,at:remote.updated_at,version:remote.version,central:true});return remote.payload;}}
+  try{const remote=await remoteRead(key);if(remote?.payload){writeLocal(key,remote.payload);emit({state:"saved",key,at:remote.updated_at,version:remote.version,central:true});return result(remote.payload,'central');}}
   catch(error){emit({state:"local",key,error:error.message,central:false});}
-  return local??fallback;
+  return result(local??fallback,local===null?'fallback':'local-cache');
 }
 export function queueAdminDocumentSave(key,payload,{delay=500}={}){writeLocal(key,payload);emit({state:"saving",key,central:false});clearTimeout(pending.get(key));pending.set(key,setTimeout(async()=>{try{const row=await remoteWrite(key,payload);emit({state:"saved",key,at:new Date().toISOString(),serverAt:row.updated_at||null,version:row.version,central:true});}catch(error){emit({state:"local",key,error:error.message,central:false});}},delay));}
 export async function saveAdminDocumentNow(key,payload,{writeLocal:shouldWriteLocal=true}={}){if(shouldWriteLocal)writeLocal(key,payload);emit({state:"saving",key,central:false});try{const row=await remoteWrite(key,payload);const clientAt=new Date().toISOString();emit({state:"saved",key,at:clientAt,serverAt:row.updated_at||null,version:row.version,central:true});return {ok:true,row,clientAt}}catch(error){emit({state:"local",key,error:error.message,central:false});return {ok:false,error}}}

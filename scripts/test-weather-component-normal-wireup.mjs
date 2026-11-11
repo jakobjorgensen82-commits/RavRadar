@@ -765,6 +765,27 @@ process.argv=[process.execPath,fileURLToPath(cliUrl),'--cache',cache,'--at',at];
 await import(cliUrl);
 if(!triggered)throw Error('PRIVATE_DIAGNOSTIC_INJECTION_NOT_REACHED');
 `;
+    const assertPlanningDiagnostic = (timing, completed) => {
+      assert.deepEqual(Object.keys(timing),['phaseElapsedMillis','snapshotBeforeElapsedMillis',
+        'snapshotAfterElapsedMillis','snapshotBeforeBytes','snapshotAfterBytes',
+        'snapshotBeforePresentFiles','snapshotAfterPresentFiles','partsStarted','partsCompleted']);
+      assert(Buffer.byteLength(JSON.stringify(timing))<=4096,'Fast afgrænset telemetri');
+      const phases=['TRANSPORT_SETTLEMENT','ARGUMENTS','SNAPSHOT_BEFORE','REGISTRY','FORECAST',
+        'DMI_CURRENT','DMI_DEPLOYED','DMI_HISTORICAL','PART_CONTINUITY','POINT_STATE',
+        'WATER_CONTEXT','SOURCE_CONTINUITY','SOURCE_INDEX','PART_RETENTION','RETAINED_INPUTS',
+        'SCALAR_NEEDS','SNAPSHOT_AFTER'];
+      for(const [phase,millis] of Object.entries(timing.phaseElapsedMillis)){
+        assert(phases.includes(phase));assert(Number.isSafeInteger(millis)&&millis>=0);
+      }
+      for(const key of ['snapshotBeforeElapsedMillis','snapshotAfterElapsedMillis',
+        'snapshotBeforeBytes','snapshotAfterBytes','snapshotBeforePresentFiles','snapshotAfterPresentFiles'])
+        assert(timing[key]===null||(Number.isSafeInteger(timing[key])&&timing[key]>=0));
+      assert.equal(timing.partsStarted,completed);assert.equal(timing.partsCompleted,completed);
+      const bytes=before.filter(row=>row.file!=='.cache/invalid-candidate.json')
+        .reduce((sum,row)=>sum+Number(row.identity[2]),0);
+      assert.equal(timing.snapshotBeforeBytes,bytes);
+      assert.equal(timing.snapshotBeforePresentFiles,7);
+    };
     for (const [mode,expectedPhase,errorCategory,status] of [
       ['timeout','REGISTRY','TIMEOUT',1],
       ['cp-failed','COPERNICUS_VERIFY','CP_VERIFICATION_FAILED',1],
@@ -785,7 +806,12 @@ if(!triggered)throw Error('PRIVATE_DIAGNOSTIC_INJECTION_NOT_REACHED');
       assert.equal(lines[0],status===2?'RETAINED_SCALAR_PLAN_STOP_UNPROVED':'RETAINED_SCALAR_PLAN_UNAVAILABLE');
       assert.equal(lines.length,2,'Only the old fixed marker and closed diagnostic JSON are exposed');
       const diagnostic=JSON.parse(lines[1]);
-      assert.deepEqual(Object.keys(diagnostic),['phase','errorCategory','elapsedMillis']);
+      assert.deepEqual(Object.keys(diagnostic),['phase','errorCategory','planningDiagnostic','elapsedMillis']);
+      assertPlanningDiagnostic(diagnostic.planningDiagnostic,mode==='cp-failed'?1:0);
+      assert.equal(diagnostic.planningDiagnostic.snapshotAfterElapsedMillis,null);
+      assert.equal(diagnostic.planningDiagnostic.snapshotAfterBytes,null);
+      assert.equal(diagnostic.planningDiagnostic.snapshotAfterPresentFiles,null);
+      if(mode==='cp-failed')assert(Object.hasOwn(diagnostic.planningDiagnostic.phaseElapsedMillis,'RETAINED_INPUTS'));
       assert.equal(diagnostic.phase,expectedPhase);assert.equal(diagnostic.errorCategory,errorCategory);
       assert(Number.isSafeInteger(diagnostic.elapsedMillis)&&diagnostic.elapsedMillis>=0);
       for(const privateText of ['PRIVATE_FIXTURE_MESSAGE','/private/fixture','NEVER_REPORT','stack','stderr'])
@@ -793,9 +819,19 @@ if(!triggered)throw Error('PRIVATE_DIAGNOSTIC_INJECTION_NOT_REACHED');
       await assert.rejects(io.lstat(path.join(root,'.cache/weather-scalar-needs.json')),{code:'ENOENT'});
       assert.deepEqual(await snapshot(),before,'A failed plan changes no original file or identity');
     }
-    run(process.execPath,[fileURLToPath(new URL('./plan-weather-scalar-acquisition.mjs',import.meta.url)),
+    const scalarStdout=run(process.execPath,[fileURLToPath(new URL('./plan-weather-scalar-acquisition.mjs',import.meta.url)),
       '--cache',dmiPath,'--at',H0],{RAVRADAR_RETAINED_SCALAR_CONTEXT:selectedScalarContext,
         RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE:'true'});
+    const scalarLines=scalarStdout.trim().split(/\r?\n/);
+    assert.equal(scalarLines.length,2);
+    assert.equal(scalarLines[0],'Retained scalar advisory plan prepared from normal offline readers.');
+    const successDiagnostic=JSON.parse(scalarLines[1]);
+    assert.deepEqual(Object.keys(successDiagnostic),['planningDiagnostic','elapsedMillis']);
+    assertPlanningDiagnostic(successDiagnostic.planningDiagnostic,1);
+    assert(Number.isSafeInteger(successDiagnostic.elapsedMillis)&&successDiagnostic.elapsedMillis>=0);
+    assert.equal(successDiagnostic.planningDiagnostic.snapshotAfterBytes,successDiagnostic.planningDiagnostic.snapshotBeforeBytes);
+    assert.equal(successDiagnostic.planningDiagnostic.snapshotAfterPresentFiles,7);
+    assert(Object.hasOwn(successDiagnostic.planningDiagnostic.phaseElapsedMillis,'SNAPSHOT_AFTER'));
     const python = process.env.PYTHON ?? 'python';
     run(python,['-B','-X','utf8',fileURLToPath(new URL('./build-weather-acquisition-plan.py',import.meta.url)),
       '--at',H0,'--scalar-snapshot',dmiPath]);

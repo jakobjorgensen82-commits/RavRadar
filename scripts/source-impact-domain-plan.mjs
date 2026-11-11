@@ -10,7 +10,7 @@ import {scanAllSourceDependencies,dependencySourceLiterals} from './lib/source-i
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const REGISTRY_SHA256='3970bc86fb8afd99d193507b82337c1068aa368f6d62ff728988fc21da9577f4';
 const REGISTRY597_SHA256='a7ccfba2b2f631ccc358342e2c3b87e1cb1edbd54311148c94822fddaa6dbcfa';
-const REGISTRY598_SHA256='10a0d30c086c332605373e1534328c6ae3dbf5032e72ae09e4ff1d38bc216fda';
+const REGISTRY598_SHA256='db25eb7ce8ca40d61f579e181c0782e00ea6595c202177b0cfd12ceaf89ca07d';
 const PAGES_TRANSPORT_FIELDS=Object.freeze({
   "scripts/lib/pages-per-artifact-identity.mjs": [],
   "scripts/lib/pages-sealed-retry-decision.mjs": [
@@ -66,6 +66,10 @@ const LOCAL_RESTORE_IMPORTS='\nconst P=Object.freeze(';
 const LOCAL_RESTORE_DISPATCH='if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){';
 const LOCAL_RESTORE_IMPORTS_SHA256='dd05a1d036c7d9afff9ae2ba4c0511dff199ad4faf5baab258b2a17b0cd728d4';
 const LOCAL_RESTORE_DISPATCH_SHA256='2e0d348293d622790375df6457726e0af04d92c9e23aedbac42033aa5049443c';
+// The public English dialog change owns three shared entrypoints only as the exact reviewed cohort.
+const EN2_ENTRYPOINTS=['app.js','bootstrap.js','index.html'];
+const EN2_GENERATION='scripts/test-map-timeline-generation.mjs';
+const EN2_MAP_PARENT='node --test scripts/test-map-forecast-panel.mjs '+EN2_GENERATION;
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const oid=value=>typeof value==='string'&&/^[a-f0-9]{40}$/.test(value);
 const relative=value=>typeof value==='string'&&/^[A-Za-z0-9_./-]+$/.test(value)&&!value.startsWith('/')
@@ -161,6 +165,7 @@ function registry598(legacyBytes){
   assert.equal(delta.baseRegistrySha256,previous.digest);
   assert.equal(delta.sourceReference.head,'bd9cf518fe798ddea45d2b835f324f6e2bea06fc');
   assert.equal(delta.sourceReference.tree,'2f71c562eea774ca03996802f83bdad7cccd43cc');
+  registry.assistantWindFollowup=delta.assistantWindFollowup;
   for(const owner of delta.owners){
     assert(relative(owner.path)&&!registry.owners.some(row=>row.path===owner.path));registry.owners.push(owner);
   }
@@ -241,11 +246,14 @@ export function planSourceDomainImpactFromGit(input){
     const index=new Map(tree.map(row=>[row.file,row])),inventory=analysis.completeGitDiff.inventory;
     let qualification=!analysis.evidenceControls.plannerTrustChain.unchanged;
     const changes=[];
+    const en2=is598?registry.assistantWindFollowup:null;
     for(const row of inventory){
       const file=new TextDecoder('utf8',{fatal:true,ignoreBOM:true}).decode(Buffer.from(row.pathUtf8Hex,'hex'));
-      if(!relative(file)||!owners.has(file))return full('UNCLASSIFIED_OWNER:'+file);
+      const owner=owners.get(file)??(en2&&EN2_ENTRYPOINTS.includes(file)
+        ?{domains:['adminUI'],controlQualification:true,exactSourceTransition:true}:null);
+      if(!relative(file)||!owner)return full('UNCLASSIFIED_OWNER:'+file);
       if(!['100644','000000'].includes(row.beforeMode)||row.afterMode!=='100644')return full('OWNER_MODE_OR_DELETION:'+file);
-      const owner=owners.get(file);for(const domain of owner.domains)selected.add(domain);
+      for(const domain of owner.domains)selected.add(domain);
       if(owner.controlQualification)qualification=true;changes.push({file,row,owner});
     }
     const productChanges=changes.filter(change=>{
@@ -259,6 +267,12 @@ export function planSourceDomainImpactFromGit(input){
     if(localRestoreFixture&&(!is598||productChanges.length!==1))return full('LOCAL_RESTORE_FIXTURE_COMBINED_SCOPE');
     if(localRestoreFixture&&(localRestoreFixture.row.status!=='M'||localRestoreFixture.row.beforeMode!=='100644'))
       return full('LOCAL_RESTORE_FIXTURE_NOT_EXISTING_REGULAR_SOURCE');
+    const en2Selected=en2&&changes.some(change=>EN2_ENTRYPOINTS.includes(change.file));
+    if(en2Selected){
+      const paths=Object.keys(en2.transitions);
+      if(productChanges.length!==paths.length||productChanges.some(({file,row})=>!Object.hasOwn(en2.transitions,file)
+        ||row.status!=='M'||row.beforeMode!=='100644'))return full('ASSISTANT_WIND_FOLLOWUP_COMBINED_SCOPE');
+    }
     const blobs=new Map();
     const load=ids=>{
       const wanted=[...new Set(ids)].filter(id=>!blobs.has(id));if(!wanted.length)return;
@@ -281,6 +295,11 @@ export function planSourceDomainImpactFromGit(input){
     const commandsByDomain=Object.fromEntries(domainNames.map(name=>[name,selected.has(name)?[...(registry.commands[name]??[])]:[]]));
     commandsByDomain.controls=[...registry.commonCommands,...(qualification?registry.controlSuite:[])];
     for(const {owner}of changes)for(const [domain,command]of owner.commands??[])commandsByDomain[domain].push(command);
+    if(en2Selected){
+      // Generation runs the existing cold-start child, so run that check once.
+      commandsByDomain.adminUI=commandsByDomain.adminUI.filter(command=>command!=='node scripts/test-public-cold-start-4.0.303.mjs');
+      commandsByDomain.adminUI.push(EN2_MAP_PARENT);
+    }
     const entries=[...new Set(Object.values(commandsByDomain).flat()
       .filter(command=>!localRestoreFixture||command!==LOCAL_RESTORE_SELF_TEST)
       .flatMap(command=>command.split(' ').filter(value=>value.endsWith('.mjs'))))];
@@ -312,7 +331,18 @@ export function planSourceDomainImpactFromGit(input){
           beforeBlob:row.beforeOid,beforeSha256:sha(before)});
       }
     }
-    for(const {file,row,owner}of changes)if(owner.exactSourceTransition){
+    if(en2Selected){
+      if(sha(get(EN2_GENERATION))!==en2.mapGenerationSha256)return full('ASSISTANT_WIND_FOLLOWUP_NORMAL_PARENT_CHANGED');
+      for(const {file,row}of changes)if(Object.hasOwn(en2.transitions,file)){
+        load([row.beforeOid]);
+        const beforeSha256=sha(blobs.get(row.beforeOid)),afterSha256=sha(get(file));
+        const [expectedBefore,expectedAfter]=en2.transitions[file];
+        if(beforeSha256!==expectedBefore||afterSha256!==expectedAfter)
+          return full('ASSISTANT_WIND_FOLLOWUP_SOURCE_CHANGED:'+file);
+        closureRows.push({file,mode:row.afterMode,blob:row.afterOid,sha256:afterSha256});
+      }
+    }
+    for(const {file,row,owner}of changes)if(owner.exactSourceTransition&&!(en2Selected&&Object.hasOwn(en2.transitions,file))){
       if(row.beforeMode!=='100644')return full('UNKNOWN_EXACT_SOURCE_TRANSITION:'+file);
       load([row.beforeOid]);const pair=sha(blobs.get(row.beforeOid))+'/'+sha(get(file));
       if(!registry.exactSourceTransitions?.[file]?.includes(pair))return full('UNKNOWN_EXACT_SOURCE_TRANSITION:'+file);

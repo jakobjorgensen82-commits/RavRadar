@@ -1,12 +1,20 @@
 name: Back up RavRadar Supabase database
 
 on:
+  workflow_run:
+    workflows: ['Run current RavRadar weather once']
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
     inputs:
       expected_main:
         description: Exact already qualified current main SHA
         required: true
         type: string
+      source_weather_run_id:
+        description: Bound ordinary bot weather source; empty for manual work
+        type: string
+        default: ''
       operation:
         description: Fixed private backup operation; readonly bucket check by default
         type: choice
@@ -34,6 +42,7 @@ concurrency:
 
 jobs:
   supabase-database-backup:
+    if: github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.actor.login != 'github-actions[bot]' && vars.RAVRADAR_SUPABASE_BACKUP_AUTOMATION == 'weekly')
     concurrency:
       group: ravradar-trip-storage-production
       cancel-in-progress: false
@@ -41,11 +50,32 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Require the fixed hosted main invocation
+        id: admission
         shell: bash
         env:
-          EXPECTED_HEAD_SHA: ${{ inputs.expected_main }}
+          EXPECTED_HEAD_SHA: ${{ github.event_name == 'workflow_run' && github.sha || inputs.expected_main }}
+          SOURCE_RUN_ID: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || inputs.source_weather_run_id }}
+          AUTOMATION: ${{ vars.RAVRADAR_SUPABASE_BACKUP_AUTOMATION }}
+          REQUESTED_OPERATION: ${{ inputs.operation }}
+          REQUESTED_CONFIRMATION: ${{ inputs.confirmation }}
+          REQUESTED_INDEX: ${{ inputs.index_sha }}
         run: |
-          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          set -euo pipefail
+          automatic=false
+          case "$GITHUB_EVENT_NAME" in
+            workflow_run) test "$AUTOMATION" = weekly; automatic=true ;;
+            workflow_dispatch)
+              if test -n "$SOURCE_RUN_ID"; then
+                test "$AUTOMATION" = weekly
+                test "$GITHUB_ACTOR" = 'github-actions[bot]'
+                test "$REQUESTED_OPERATION" = bucket-readonly
+                test -z "$REQUESTED_CONFIRMATION"
+                test -z "$REQUESTED_INDEX"
+                automatic=true
+              fi ;;
+            *) exit 1 ;;
+          esac
+          echo "automatic=$automatic" >> "$GITHUB_OUTPUT"
           test "$GITHUB_REF" = refs/heads/main
           test "$GITHUB_RUN_ATTEMPT" = 1
           test "$GITHUB_REPOSITORY" = jakobjorgensen82-commits/RavRadar
@@ -78,8 +108,25 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
       - name: Reject missing source proof before private access
         run: test "${{ steps.source-proof.outputs.required }}" = false
+      - name: Plan one weekly capture in the original weather window
+        id: auto-plan
+        if: steps.admission.outputs.automatic == 'true'
+        timeout-minutes: 2
+        run: node scripts/run-autonomous-supabase-backup.mjs --plan
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.event_name == 'workflow_run' && github.sha || inputs.expected_main }}
+          SUPABASE_BACKUP_SOURCE_WEATHER_RUN_ID: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || inputs.source_weather_run_id }}
+          SUPABASE_BACKUP_AUTOMATION: ${{ vars.RAVRADAR_SUPABASE_BACKUP_AUTOMATION }}
+          GITHUB_TOKEN: ${{ github.token }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
+          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
+          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
       - name: Check private bucket before capture-only CLI setup
-        if: inputs.operation == 'capture'
+        if: steps.admission.outputs.automatic != 'true' && inputs.operation == 'capture'
         timeout-minutes: 2
         run: node scripts/run-hosted-supabase-backup.mjs --preflight
         env:
@@ -90,13 +137,13 @@ jobs:
           RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       - name: Set up the already used pinned Supabase CLI only for capture
-        if: inputs.operation == 'capture'
+        if: (steps.admission.outputs.automatic != 'true' && inputs.operation == 'capture') || steps.auto-plan.outputs.proceed == 'true'
         timeout-minutes: 2
         uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf
         with:
           version: 2.117.0
-      - name: Run only the fixed backup operation
-        if: inputs.operation != 'audit-fixed-844-role-grant'
+      - name: ${{ inputs.operation == 'capture' && 'Capture private Supabase database' || 'Run only the fixed backup operation' }}
+        if: steps.admission.outputs.automatic != 'true' && inputs.operation != 'audit-fixed-844-role-grant'
         timeout-minutes: 21
         run: node scripts/run-hosted-supabase-backup.mjs --execute
         env:
@@ -112,6 +159,26 @@ jobs:
           RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
           RAVRADAR_R2_ACCESS_KEY_ID: ${{ (inputs.operation == 'capture' || inputs.operation == 'discover' || inputs.operation == 'bootstrap') && secrets.RAVRADAR_R2_ACCESS_KEY_ID || '' }}
           RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ (inputs.operation == 'capture' || inputs.operation == 'discover' || inputs.operation == 'bootstrap') && secrets.RAVRADAR_R2_SECRET_ACCESS_KEY || '' }}
+
+      - name: Capture private Supabase database
+        if: steps.admission.outputs.automatic == 'true' && steps.auto-plan.outputs.proceed == 'true'
+        timeout-minutes: 21
+        run: node scripts/run-autonomous-supabase-backup.mjs --execute
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.event_name == 'workflow_run' && github.sha || inputs.expected_main }}
+          SUPABASE_BACKUP_SOURCE_WEATHER_RUN_ID: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || inputs.source_weather_run_id }}
+          SUPABASE_BACKUP_AUTOMATION: ${{ vars.RAVRADAR_SUPABASE_BACKUP_AUTOMATION }}
+          GITHUB_TOKEN: ${{ github.token }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
+          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
+          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_BACKUP_RESERVE_INDEX_COMMITMENT: ${{ vars.RAVRADAR_SUPABASE_BACKUP_RESERVE_INDEX_COMMITMENT }}
+          SUPABASE_BACKUP_RESERVE_RESTORE_RUN_ID: ${{ vars.RAVRADAR_SUPABASE_BACKUP_RESERVE_RESTORE_RUN_ID }}
 
       - name: Require the exact fixed 844 role audit before archive access
         if: inputs.operation == 'audit-fixed-844-role-grant'

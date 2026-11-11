@@ -8,6 +8,7 @@ import {captureLocalDatabaseBackup,verifyLocalDatabaseBackup,materializeLocalDat
 import {createR2PrivateReadDenialStorage} from './lib/r2-private-read-denial-storage.mjs';
 import {createSupabaseAdminRequester} from './lib/supabase-admin-rest.mjs';
 import {PRIVATE_STUDY_ADMIN_ACCESS_SQL,assertPrivateStudyAdminAccess} from './lib/private-trip-study-admin-transport.mjs';
+import {verifyDatabaseBackupReserve,confirmDatabaseBackupMain,databaseRestoreCommitment} from './supabase-backup-lifecycle.mjs';
 
 export const DB_REMOTE_BACKUP_POLICY=Object.freeze({project:'https://afqhhdrkjfjtpadntdzo.supabase.co',bucket:'ravradar-supabase-backup',
   locatorKey:'supabase-database-backup-locator',maximumObjectBytes:50_000_000,maximumCipherBytes:CIPHER.partBytes,
@@ -101,7 +102,7 @@ async function privacy(c){need(typeof c.env.SUPABASE_ACCESS_TOKEN==='string'&&c.
     need(Array.isArray(version?.policies)&&version.policies.length===2&&version.policies.every(p=>Object.hasOwn(aliases,p.name)),'LOCATOR_PRIVACY');
     assertPrivateStudyAdminAccess([{metadata:{...version,policies:version.policies.map(p=>({...p,name:aliases[p.name]}))}}]);
   }catch{fail('LOCATOR_PRIVACY');}}
-function clients(env,fetchImpl,{bootstrap=false,readOnly=false}={}){
+function clients(env,fetchImpl,{bootstrap=false,readOnly=false,rotation=false}={}){
   need((bootstrap||env.SUPABASE_URL?.replace(/\/$/,'')===P.project)&&typeof env.SUPABASE_SERVICE_ROLE_KEY==='string'&&env.SUPABASE_SERVICE_ROLE_KEY.length>=32,'EXACT_PROJECT_MASTER');
   const state={started:Date.now(),writes:new Set(),unknown:false,fatal:null,readBytes:0,bootstrap,listing:null,searchDeadline:null,objectReadBound:P.maximumObjectBytes,archiveCreates:0,locatorWrites:0,candidateReadBytes:0},host=String(env.RAVRADAR_R2_ACCOUNT_ID)+'.eu.r2.cloudflarestorage.com';
   const guarded=async(url,options={})=>{
@@ -110,17 +111,19 @@ function clients(env,fetchImpl,{bootstrap=false,readOnly=false}={}){
     const admin=u.origin===P.project&&u.pathname==='/rest/v1/admin_documents',r2=u.protocol==='https:'&&u.hostname===host&&(u.pathname==='/'+P.bucket||u.pathname.startsWith('/'+P.bucket+'/'));
     if(bootstrap)need(r2&&['GET','HEAD'].includes(method),'BOOTSTRAP_R2_READ_ONLY');
     if(readOnly)need(management||['GET','HEAD'].includes(method),'MATERIALIZATION_READ_ONLY');
-    need(management||admin||r2,'NETWORK_SURFACE');need(management||admin?['GET','POST','PATCH'].includes(method):['GET','HEAD','PUT'].includes(method),'NETWORK_METHOD');
+    need(management||admin||r2,'NETWORK_SURFACE');need(management||admin?['GET','POST','PATCH'].includes(method):['GET','HEAD','PUT',...(rotation?['DELETE']:[])].includes(method),'NETWORK_METHOD');
+    if(method==='DELETE')need(rotation&&r2&&u.search===''&&new Headers(options.headers).has('authorization')
+      &&state.retirementPaths?.has(u.pathname.slice(P.bucket.length+2)),'RETIREMENT_EXACT_PATH');
     if(admin){const q=u.searchParams;need(q.get('select')==='document_key,payload,version','LOCATOR_SELECT');
       if(method==='GET')need(q.get('document_key')==='eq.'+P.locatorKey&&q.get('limit')==='2'&&[...q.keys()].sort().join(',')==='document_key,limit,select','LOCATOR_GET');
       else{const b=parse(Buffer.from(options.body||''),'LOCATOR_BODY');if(method==='POST'){fields(b,['document_key','payload','updated_by'],'LOCATOR_BODY');need(b.document_key===P.locatorKey&&q.get('on_conflict')==='document_key'&&[...q.keys()].sort().join(',')==='on_conflict,select','LOCATOR_INSERT');}
         else{fields(b,['payload','updated_by'],'LOCATOR_BODY');need(q.get('document_key')==='eq.'+P.locatorKey&&/^eq\.[1-9][0-9]*$/.test(q.get('version')||'')&&[...q.keys()].sort().join(',')==='document_key,select,version','LOCATOR_CAS');}
         need(b.updated_by===null&&Buffer.byteLength(options.body)<=P.maximumMetadataBytes,'LOCATOR_BODY');checkPointer(b.payload);}}
-    const write=!management&&['PUT','POST','PATCH'].includes(method);if(write){if(state.writes.has(u.href)){state.unknown=true;fail('DB_BACKUP_WRITE_OUTCOME_UNKNOWN');}state.writes.add(u.href);}
+    const write=!management&&['PUT','POST','PATCH','DELETE'].includes(method);if(write){if(state.writes.has(u.href)){state.unknown=true;fail('DB_BACKUP_WRITE_OUTCOME_UNKNOWN');}state.writes.add(u.href);}
     try{const response=await fetchImpl(u.href,{...options,redirect:'manual',signal:AbortSignal.timeout(state.searchDeadline?Math.max(1,Math.min(30_000,state.searchDeadline-Date.now())):30_000)});
       if(write&&![200,201,204,412].includes(response.status))state.unknown=true;
       if(write&&response.ok){if(r2)state.archiveCreates++;else if(admin)state.locatorWrites++;}
-      const list=bootstrap&&r2&&method==='GET'&&u.pathname==='/'+P.bucket&&u.searchParams.get('list-type')==='2';
+      const list=(bootstrap||rotation)&&r2&&method==='GET'&&u.pathname==='/'+P.bucket&&u.searchParams.get('list-type')==='2';
       // Only the exact unsigned one-byte probe stays unread for the adapter's
       // typed 400/XML bound or immediate non-400 cancellation. Authenticated
       // object/list reads retain every existing byte and operation guard.
@@ -364,7 +367,8 @@ function collectListing(inventory,body){need(inventory.bytes<=B.maximumListBytes
     need(keys.length===1&&sizes.length===1&&/^(0|[1-9][0-9]*)$/.test(sizes[0][1])&&Number.isSafeInteger(Number(sizes[0][1])),'BOOTSTRAP_LIST_ENTRY');
     inventory.count++;need(inventory.count<=B.maximumListedObjects,'BOOTSTRAP_LIST_COUNT');const bytes=Number(sizes[0][1]);inventory.total+=bytes;
     need(Number.isSafeInteger(inventory.total),'BOOTSTRAP_LIST_ENTRY');const key=keys[0][1];
-    if(partName.test(key)){need(!inventory.parts.has(key),'BOOTSTRAP_LIST_DUPLICATE');inventory.parts.add(key);continue;}
+    if(partName.test(key)){need(!inventory.parts.has(key),'BOOTSTRAP_LIST_DUPLICATE');inventory.parts.add(key);
+      inventory.partObjects?.set(key,{path:key,bytes,sha256:key.match(/-([a-f0-9]{64})\.json\.gz\.part$/)[1]});continue;}
     if(!objectName.test(key)){inventory.unsupported++;continue;}
     need(!inventory.objects.has(key),'BOOTSTRAP_LIST_DUPLICATE');inventory.objects.set(key,{path:key,bytes,sha256:key.slice(15,79)});
   }
@@ -451,6 +455,112 @@ function archiveFailure(e,c){
   if(Number.isInteger(e.httpStatus)&&e.httpStatus>=100&&e.httpStatus<=599)error.httpStatus=e.httpStatus;
   error.authRestoreVerified=false;error.fullDatabaseBackupVerified=false;error.freeReady=false;
   return error;
+}
+
+async function lifecycleCurrent(c){
+  await privacy(c);const locator=await readLocator(c);need(locator,'LOCATOR_MISSING');
+  await c.r2.ensurePrivateBucket();const pointer=locator.payload,wire=await remoteBody(c,pointer.index);
+  const opened=openIndex(unframe('ENCRYPTED_INDEX',wire),pointer,c.env),group=validateIndex(opened,pointer);
+  need(same(await readLocator(c),locator),'LOCATOR_CHANGED');
+  return {locator,pointer,opened,group};
+}
+export async function inspectSupabaseDatabaseBackupLifecycle(dependencies={}){
+  let c;try{const env=dependencies.env??process.env;
+    c=clients(env,dependencies.fetchImpl??globalThis.fetch,{readOnly:true});
+    const {locator,pointer,group}=await lifecycleCurrent(c);
+    return {indexSha256:pointer.index.sha256,locatorVersion:locator.version,completedAt:group.completedAt,
+      context:pointer.context,remoteIndexAuthenticated:true};
+  }catch(error){throw archiveFailure(error,c);}
+}
+async function rotationInventory(c){
+  const inventory={bytes:0,count:0,total:0,unsupported:0,objects:new Map(),parts:new Set(),partObjects:new Map()};
+  c.state.listing=inventory;let usage;
+  try{usage=await c.r2.bucketUsage();}finally{c.state.listing=null;}
+  need(usage.objectCount===inventory.count&&usage.usedBytes===inventory.total,'ROTATION_LIST_PARITY');
+  need(inventory.unsupported===0,'ROTATION_UNKNOWN_NAMESPACE');
+  return inventory;
+}
+async function rotationGroups(c,inventory){
+  const eligible=[...inventory.objects.values()].filter(object=>positive(object.bytes)&&object.bytes<=B.maximumIndexWireBytes);
+  need(eligible.length<=B.maximumCandidates&&eligible.reduce((sum,object)=>sum+object.bytes,0)<=B.maximumCandidateBytes,'ROTATION_INDEX_BOUND');
+  const groups=[];let legacyIndexSeen=false;
+  for(const descriptor of eligible){
+    const wire=await remoteBody(c,descriptor),outer=parse(gunzipSync(wire,{maxOutputLength:100_000}),'FRAME_JSON');
+    if(outer.kind==='SUPABASE_DB_SQL_CIPHERTEXT_FRAME_V1'){unframe('SQL_CIPHERTEXT',wire);continue;}
+    const binary=unframe('ENCRYPTED_INDEX',wire);
+    // Legacy index AAD needs its historical pointer. It is retained, never guessed.
+    if(binary.subarray(0,INDEX_MAGIC.length).equals(INDEX_MAGIC)){legacyIndexSeen=true;continue;}
+    const pointer=selfIndexHeader(binary).pointer;pointer.index=descriptor;
+    const opened=openIndex(binary,pointer,c.env),group=validateIndex(opened,pointer);
+    groups.push({pointer,opened,group,objects:[...group.index.objects.flatMap(entry=>group.chunked
+      ?entry.parts.map(part=>part.object):[entry.object]),pointer.index]});
+  }
+  return {groups,legacyIndexSeen};
+}
+// The fixed hosted caller owns weather OUTER -> trip INNER throughout. The
+// adapter has create-only content keys. Re-reading exact bytes under these
+// locks is sufficient: no new journal, key, overwrite or atomic DELETE is used.
+export async function rotateSupabaseDatabaseBackups({reserveIndexSha256,reserveIndexCommitment,restoreRunId,holdIndexSha256=[]}={},dependencies={}){
+  const env=dependencies.env??process.env;let c;
+  try{
+    need(env.GITHUB_WORKFLOW==='Back up RavRadar Supabase database'&&env.GITHUB_ACTIONS==='true'
+      &&env.GITHUB_REF==='refs/heads/main'&&env.GITHUB_RUN_ATTEMPT==='1'
+      &&env.GITHUB_REPOSITORY===LOCAL.repository&&env.RUNNER_ENVIRONMENT==='github-hosted'
+      &&env.RUNNER_OS==='Linux'&&(dependencies.processImpl??process).platform==='linux','ROTATION_OWNED_HOST');
+    need(Array.isArray(holdIndexSha256)&&holdIndexSha256.length<=64&&holdIndexSha256.every(hash),'ROTATION_HOLDS');
+    if((!reserveIndexSha256&&!reserveIndexCommitment)||!restoreRunId)return {status:'DATABASE_BACKUP_ROTATION_RETAINS_ALL_NO_VERIFIED_RESERVE',deletedObjects:0};
+    const confirmMain=()=> (dependencies.confirmMain??confirmDatabaseBackupMain)(env);
+    confirmMain();
+    c=clients(env,dependencies.fetchImpl??globalThis.fetch,{rotation:true});
+    const current=await lifecycleCurrent(c);
+    const inventory=await rotationInventory(c),{groups,legacyIndexSeen}=await rotationGroups(c,inventory);
+    if(legacyIndexSeen)return {status:'DATABASE_BACKUP_ROTATION_RETAINS_ALL_LEGACY_REFERENCE',deletedObjects:0};
+    if(reserveIndexCommitment){
+      need(/^rr-supabase-restore-v1:[a-f0-9]{64}$/.test(reserveIndexCommitment),'ROTATION_RESERVE_COMMITMENT');
+      const matches=groups.filter(group=>'rr-supabase-restore-v1:'+databaseRestoreCommitment(group.pointer.index.sha256)===reserveIndexCommitment);
+      need(matches.length===1&&(!reserveIndexSha256||reserveIndexSha256===matches[0].pointer.index.sha256),'ROTATION_RESERVE_COMMITMENT');
+      reserveIndexSha256=matches[0].pointer.index.sha256;
+    }
+    const proof=(dependencies.verifyReserveRestore??verifyDatabaseBackupReserve)(
+      {indexSha256:reserveIndexSha256,restoreRunId},{env,read:dependencies.readGithub});
+    need(proof.indexSha256===reserveIndexSha256,'ROTATION_RESERVE_PROOF');
+    need(current.pointer.index.sha256!==reserveIndexSha256,'ROTATION_DISTINCT_RESERVE');
+    const reserve=groups.find(group=>group.pointer.index.sha256===reserveIndexSha256);
+    need(reserve,'ROTATION_RESERVE_NOT_LISTED');
+    await verifyRemoteGroup(c,current.pointer,current.opened);await verifyRemoteGroup(c,reserve.pointer,reserve.opened);
+    const retained=new Set([current.pointer.index.sha256,reserveIndexSha256,...holdIndexSha256]);
+    const candidates=groups.filter(group=>group.group.completedAt<current.group.completedAt
+      &&!retained.has(group.pointer.index.sha256))
+      .sort((a,b)=>a.group.completedAt.localeCompare(b.group.completedAt)||a.pointer.index.sha256.localeCompare(b.pointer.index.sha256));
+    // One complete group per ordinary capture keeps work bounded. Historic
+    // admin_document_versions are audit snapshots, not active restore pointers:
+    // the actual consumers use current locator or an explicit authenticated SHA.
+    const retiring=candidates.find(group=>{
+      const paths=new Set(groups.filter(other=>other!==group).flatMap(other=>other.objects.map(object=>object.path)));
+      return group.objects.every(object=>!paths.has(object.path));
+    });
+    if(!retiring)return {status:'DATABASE_BACKUP_ROTATION_NO_UNSHARED_COMPLETE_GROUP',deletedObjects:0};
+    c.state.retirementPaths=new Set(retiring.objects.map(object=>object.path));let deletedObjects=0;
+    for(const [ordinal,object] of retiring.objects.entries()){
+      confirmMain();
+      need(same(await readLocator(c),current.locator),'LOCATOR_CHANGED');
+      const fresh=await rotationInventory(c),listed=fresh.objects.get(object.path)??fresh.partObjects.get(object.path);
+      // Resume after runner loss using the same authenticated index. A proven
+      // absent part is settled; an unknown listing or changed byte identity stops.
+      if(!listed)continue;
+      need(listed.bytes===object.bytes,'ROTATION_OBJECT_CHANGED');
+      await remoteBody(c,object,digest=>partName.test(object.path)
+        ?partPath(retiring.pointer.manifestSha256,ordinal,digest):objectPath(digest));
+      await c.r2.removeExact(object.path);
+      const after=await rotationInventory(c);
+      need(!after.objects.has(object.path)&&!after.parts.has(object.path),'ROTATION_DELETE_NOT_OBSERVED');
+      deletedObjects++;
+    }
+    need(same(await readLocator(c),current.locator),'LOCATOR_CHANGED');
+    return {status:'DATABASE_BACKUP_ONE_GROUP_RETIRED',deletedObjects,
+      retainedCurrentIndexSha256:current.pointer.index.sha256,retainedReserveIndexSha256:reserveIndexSha256,
+      retiredIndexSha256:retiring.pointer.index.sha256,automaticRetry:false,fullDatabaseBackupVerified:false,freeReady:false};
+  }catch(error){throw archiveFailure(error,c);}
 }
 
 export async function runSupabaseDatabaseArchive(options={},dependencies={}){

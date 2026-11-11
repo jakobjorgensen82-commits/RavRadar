@@ -1,3 +1,5 @@
+import { sourceAfter598PreissuanceTest } from './lib/source598-test-phase.mjs';
+import { inverseReviewedSource601HistoricalCodeInput } from './lib/completed-private-runtime-workflow-review.mjs';
 import { inverseActiveFamilyRetentionCompanionTestInput, ACTIVE_FAMILY_RETENTION_COMPANION_TEST_REVIEW,
   inverseAssistant590RetentionCompanionTestInput, ASSISTANT590_RETENTION_COMPANION_TEST_REVIEW,
   inverseAssistant591RetentionCompanionTestInput, ASSISTANT591_RETENTION_COMPANION_TEST_REVIEW,
@@ -14,6 +16,7 @@ import { inverseAlternativeCCaller, inverseAssistant587OriginalCompanionTestInpu
 import { inverseWindTailCapacityUpdaterTestInput, WIND_TAIL_CAPACITY_UPDATER_TEST_REVIEW,
   inverseDmiScalarPlanningRecordTestInput, DMI_SCALAR_PLANNING_RECORD_TEST_REVIEW,
   inverseDmiScalarRetentionWorkTestInput, DMI_SCALAR_RETENTION_WORK_TEST_REVIEW,
+  inverseDmiScalarSourceProofReuseTestInput, DMI_SCALAR_SOURCE_PROOF_REUSE_TEST_REVIEW,
   inverseCandidateGReadyGapUpdaterTestInput, CANDIDATE_G_READY_GAP_UPDATER_TEST_REVIEW,
   inverseDmiScalarPlanningUpdaterTestInput, DMI_SCALAR_PLANNING_UPDATER_TEST_REVIEW,
   inverseCurrentNativeOriginalProducerTestInput, CURRENT_NATIVE_ORIGINAL_PRODUCER_TEST_REVIEW,
@@ -30,8 +33,13 @@ import { withFrozenNative0600TestSource } from './run-frozen-native0600-source-t
 import { withFrozenEstablishedNativeCurrentOriginSourceTarget } from './run-frozen-established-native-current-origin-source-targets.mjs';
 
 const producerPath = new URL('./update-weather.mjs', import.meta.url);
+const readSource601HistoricalUpdater = async () => inverseReviewedSource601HistoricalCodeInput(
+  (await fs.readFile(producerPath, 'utf8')).replaceAll('\r\n', '\n'), 'scripts/update-weather.mjs');
 const sourceText = async file => {
   let source = (await fs.readFile(file, 'utf8')).replace(/\r\n/g, '\n');
+  if (file === producerPath) source = inverseReviewedSource601HistoricalCodeInput(source, 'scripts/update-weather.mjs');
+  if (file instanceof URL && file.href === new URL('./lib/dmi-forecast-file.mjs', import.meta.url).href)
+    source = inverseReviewedSource601HistoricalCodeInput(source, 'scripts/lib/dmi-forecast-file.mjs');
   if (file instanceof URL && file.href === new URL('./lib/private-dmi-recovery-record.mjs', import.meta.url).href)
     source = inverseCurrentNativeOriginalProducerTestInput(source, 'scripts/lib/private-dmi-recovery-record.mjs');
   if (file instanceof URL && file.href === new URL('./read-authenticated-dmi-current-companions.mjs', import.meta.url).href)
@@ -681,9 +689,43 @@ test('shared normal DMI recovery module is import-safe, outside I71, and byte-ex
   assert.doesNotMatch(shared, /from ['"].*update-weather/);
   const { GENERATED_RAVSCORE_MODEL_BUNDLE_MANIFEST: manifest } =
     await import('../js/core/ravscore-model-bundle.generated.js');
+  const {SOURCE_PRODUCER_AFTER597_PARENT:sourcePhase}=await import('./lib/source-producer-after597-parent.mjs');
+  if(sourcePhase.binding===null&&sourcePhase.output===null&&sourcePhase.nextRelease===null){
   for (const file of ['scripts/update-weather.mjs', 'scripts/lib/private-dmi-recovery-record.mjs']) {
     assert.equal(manifest.files.some(entry => entry.path === file), false,
       'normal orchestration extraction must not enter the unchanged model closure');
+  }
+  }else{
+    const family=await import('./lib/source-producer-after597-runtime-family.mjs');
+    family.requireSourceProducerOutput();family.assertSourceProducerAfter597StaticCode();
+    const {GENERATED_RAVSCORE_MODEL_BUNDLE_SHA256:actualI}=
+      await import('../js/core/ravscore-model-bundle.generated.js');
+    assert.equal(actualI,family.requireSourceProducerBinding().I);
+    const pinsText=await fs.readFile(new URL('./lib/source-producer-after597-code-pins.generated.json',import.meta.url),'utf8');
+    const pins=JSON.parse(pinsText),pinFile=family.SOURCE_PRODUCER_AFTER597_CODE_PIN_PATH;
+    const pinManifest=manifest.files.find(entry=>entry.path===pinFile);
+    assert(pinManifest,'The actual Source I manifest must bind the complete normal RAW pin file');
+    assert.equal(pinManifest.sha256,digest(pinsText));
+    for(const file of ['scripts/update-weather.mjs','scripts/lib/private-dmi-recovery-record.mjs']){
+      assert(family.SOURCE_PRODUCER_AFTER597_CODE_FILES.includes(file));
+      const row=pins.files.find(entry=>entry.path===file);assert(row);
+      const physical=await fs.readFile(new URL('../'+file,import.meta.url));
+      assert.equal(physical.length,row.bytes);assert.equal(digest(physical),row.sha256);
+      const direct=manifest.files.find(entry=>entry.path===file);
+      if(file==='scripts/update-weather.mjs'){
+        assert.equal(direct,undefined,'The updater is bound through the whole RAW pin file, not a fabricated direct I entry');
+        assert.match(physical.toString('utf8'),/from ['"]\.\/lib\/private-dmi-recovery-record\.mjs['"]/);
+      }else{
+        assert(direct,'The normal shared recovery module is also in the actual import closure');
+        assert.equal(direct.sha256,digest(physical));
+      }
+    }
+    const coldPath='scripts/current-family-cold-start.mjs';
+    const cold=await fs.readFile(new URL('../'+coldPath,import.meta.url),'utf8');
+    const coldEntry=manifest.files.find(entry=>entry.path===coldPath);assert(coldEntry);
+    assert.equal(coldEntry.sha256,digest(cold));
+    assert(cold.includes("import { withoutCurrent } from './lib/private-dmi-recovery-record.mjs';"),
+      'The actual I-bound normal cold-start caller imports the shared recovery module');
   }
   await inverseSharedRecoveryRecordExtraction(source, shared);
   await assert.rejects(inverseSharedRecoveryRecordExtraction(source,
@@ -816,7 +858,7 @@ test('47 baseline commands plus genuine OLD, NEW native, epoch and pure diagnost
   assert.equal(grouped.split("await import('./test-weather-update-entrypoint.mjs');").length, 2);
 });
 
-test('current frozen routes and warmup checks reach normal checkpoint integration exactly once', async () => {
+sourceAfter598PreissuanceTest('current frozen routes and warmup checks reach normal checkpoint integration exactly once', async () => {
   const pkg=JSON.parse(await fs.readFile(new URL('../package.json', import.meta.url), 'utf8'));
   const {inverseScalar597LaterH0Package,inverseAssistantAfter597Package}=await import('./national584-source-evidence.mjs');
   const {ACTIVE_ASSISTANT_SUCCESSOR}=await import('./lib/assistant-later-h0-successor-source.mjs');
@@ -891,6 +933,20 @@ test('current frozen routes and warmup checks reach normal checkpoint integratio
   assert.equal(actualInvoked.filter(file=>file==='scripts/test-dmi-forecast-file.mjs').length,1);
   assert.equal(actualInvoked.filter(file=>file==='scripts/test-weather-update-entrypoint.mjs').length,0);
 });
+
+// This current checkpoint-integration check always runs, including issued
+// Source. It reads the ACTUAL package and never uses a historical package inverse.
+test('actual current source reaches normal checkpoint integration exactly once', async () => {
+  const pkg=JSON.parse(await fs.readFile(new URL('../package.json', import.meta.url), 'utf8'));
+  const { expandSourceCommands } = await import('./validate-source-once.mjs');
+  const actualCommands=expandSourceCommands(pkg.scripts,'validate:source:checks');
+  const actualInvoked=actualCommands.flatMap(command=>command.split(' '));
+  assert.equal(actualInvoked.filter(file=>file==='scripts/test-dmi-forecast-file.mjs').length,1);
+  assert.equal(actualInvoked.filter(file=>file==='scripts/test-weather-update-entrypoint.mjs').length,0);
+  const grouped = await sourceText(new URL('./test-dmi-forecast-file.mjs', import.meta.url));
+  assert.equal(grouped.split("await import('./test-weather-update-entrypoint.mjs');").length, 2);
+});
+
 
 test('actual DMI queue propagates an uncertain real checkpoint but preserves proved safe failure handling', async t => {
   const source = await sourceText(producerPath);
@@ -1172,7 +1228,7 @@ test('forward gate diagnostic input has a whole153 inverse before every unchange
 });
 
 test('default-OFF original-plan caller preserves the whole FFD updater and all existing normal reader inverses', async () => {
-  const actual = inverseAlternativeCCaller((await fs.readFile(producerPath, 'utf8')).replace(/\r\n/g, '\n'), 'scripts/update-weather.mjs');
+  const actual = inverseAlternativeCCaller((await readSource601HistoricalUpdater()).replace(/\r\n/g, '\n'), 'scripts/update-weather.mjs');
   assert.equal(digest(actual), '06892b9200406b2529430a4227d18a36fc8438b334a1ff0c303f42b4503a0c6d', 'exact actual original-plan caller');
   const before = inverseSavedCurrentForwardOriginalPlan(actual);
   assert.equal(digest(before), '4e5b24d8f535c6074a6612b402157b8426b08ef20e507d9817b47d45bb32b034');
@@ -1200,7 +1256,7 @@ test('native-original producer preserves exact whole archived inputs and rejects
   for (const row of CURRENT_NATIVE_ORIGINAL_PRODUCER_TEST_REVIEW.rows) {
     const raw = (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
     const actual = row.path === 'scripts/update-weather.mjs'
-      ? inverseCurrentFamilyColdTargetTestInput(raw, row.path)
+      ? inverseCurrentFamilyColdTargetTestInput(inverseReviewedSource601HistoricalCodeInput(raw, 'scripts/update-weather.mjs'), row.path)
       : inverseDmiScalarPlanningRecordTestInput(raw, row.path);
     assert.equal(Buffer.byteLength(actual), row.after.bytes, 'Exact native-original predecessor after its reviewed outer inverse');
     assert.equal(digest(actual), row.after.sha256);
@@ -1226,7 +1282,15 @@ test('native-original producer preserves exact whole archived inputs and rejects
 
 test('actual scalar-planning record has one exact historical inverse and rejects mixed scopes', async () => {
   const { path: file, before, after, edits } = DMI_SCALAR_PLANNING_RECORD_TEST_REVIEW;
-  const raw = (await fs.readFile(new URL('../' + file, import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  const candidate = (await fs.readFile(new URL('../' + file, import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  const reuse = DMI_SCALAR_SOURCE_PROOF_REUSE_TEST_REVIEW;
+  assert.equal(Buffer.byteLength(candidate), reuse.after.bytes);
+  assert.equal(digest(candidate), reuse.after.sha256);
+  assert.equal(inverseDmiScalarSourceProofReuseTestInput(candidate, 'scripts/unknown.mjs'), candidate);
+  assert.throws(() => inverseCurrentNativeOriginalProducerTestInput(candidate + '\n', file),
+    /ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+  const raw = inverseDmiScalarSourceProofReuseTestInput(candidate, file);
+  assert.equal(inverseDmiScalarSourceProofReuseTestInput(raw, file), raw);
   const work = DMI_SCALAR_RETENTION_WORK_TEST_REVIEW;
   assert.equal(Buffer.byteLength(raw), work.after.bytes);
   assert.equal(digest(raw), work.after.sha256);
@@ -1268,7 +1332,7 @@ test('actual scalar-planning record has one exact historical inverse and rejects
 });
 
 test('actual native-original companion caller stays unprojected and declared in producer review', async () => {
-  const actual = (await fs.readFile(producerPath, 'utf8')).replace(/\r\n/g, '\n');
+  const actual = (await readSource601HistoricalUpdater()).replace(/\r\n/g, '\n');
   const read = "import { readCurrentPrivateRuntimeCompanions } from './read-authenticated-dmi-current-companions.mjs';";
   assert.equal(actual.split(read).length, 2, 'Actual updater imports the controller exactly once');
   assert.match(actual, /coastalPartsContract\.enabled\n  && coldInputs === null && stateEpochView === null\n  \? await readCurrentPrivateRuntimeCompanions\(generatedAt\) : \[\]/);
@@ -1577,7 +1641,7 @@ test('assistant591 retention companion uses actual592 whole source before unchan
 
 test('READY-gap caller has an exact outer inverse before every unchanged wind-tail and historical updater oracle', async () => {
   const actual = inverseDmiScalarPlanningUpdaterTestInput(
-    (await fs.readFile(producerPath, 'utf8')).replaceAll('\r\n', '\n'), 'scripts/update-weather.mjs');
+    (await readSource601HistoricalUpdater()).replaceAll('\r\n', '\n'), 'scripts/update-weather.mjs');
   const row = CANDIDATE_G_READY_GAP_UPDATER_TEST_REVIEW;
   assert.equal(Buffer.byteLength(actual), row.after.bytes);
   assert.equal(digest(actual), row.after.sha256);
@@ -1609,7 +1673,7 @@ test('READY-gap caller has an exact outer inverse before every unchanged wind-ta
 
 test('wind-tail default inverse preserves every old updater oracle and refuses other budget or source bytes', async () => {
   const actual = inverseCandidateGReadyGapUpdaterTestInput(
-    (await fs.readFile(producerPath, 'utf8')).replaceAll('\r\n', '\n'), 'scripts/update-weather.mjs');
+    (await readSource601HistoricalUpdater()).replaceAll('\r\n', '\n'), 'scripts/update-weather.mjs');
   const row = WIND_TAIL_CAPACITY_UPDATER_TEST_REVIEW;
   assert.equal(Buffer.byteLength(actual), row.after.bytes);
   assert.equal(digest(actual), row.after.sha256);
@@ -1664,7 +1728,7 @@ test('conditions593 retention reader preserves whole592 and refuses changed IO c
 
 
 test('DMI scalar callback extraction retains actualV7 tests and every immutable updater oracle', async () => {
-  const raw = (await fs.readFile(producerPath, 'utf8')).replaceAll('\r\n', '\n');
+  const raw = (await readSource601HistoricalUpdater()).replaceAll('\r\n', '\n');
   const row = DMI_SCALAR_PLANNING_UPDATER_TEST_REVIEW, relative = row.path;
   assert.equal(Buffer.byteLength(raw), row.after.bytes); assert.equal(digest(raw), row.after.sha256);
   const previous = inverseDmiScalarPlanningUpdaterTestInput(raw, relative);

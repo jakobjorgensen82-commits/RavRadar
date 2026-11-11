@@ -26,6 +26,35 @@ const bootstrap=await fs.readFile('bootstrap.js','utf8');
 assert.match(bootstrap,/schedulePublicPageView/);
 assert.doesNotMatch(bootstrap,/await schedulePublicPageView/);
 const admin=await fs.readFile('js/ui/admin-dashboard.js','utf8');
-for(const marker of ['visitors:renderVisitors','Privat besøgsstatistik','Sidevisninger','Browserbesøg','Oprettede login','registeredAccounts','activeAccounts']) assert.ok(admin.includes(marker),`Adminrapport mangler ${marker}`);
+for(const marker of ['visitors:renderVisitors','Privat besøgsstatistik','Sidevisninger','Browserbesøg','Konti på RavRadar','Besøg i den valgte periode','Datofilteret gælder besøgstallene','registeredAccounts','activeAccounts']) assert.ok(admin.includes(marker),`Adminrapport mangler ${marker}`);
 assert.match(admin,/visitors:'full_admin'/);
 console.log('Privat besøgsstatistik: sessionstælling, dataminimering, kontotal og ikke-blokerende opstart er bestået.');
+
+// Exercise the normal authenticated report caller with synthetic fetch responses.
+const fromDay='2026-08-01', toDay='2026-08-15';
+const authSession={access_token:'synthetic',expires_at:Math.floor(Date.now()/1000)+3600,user:{id:'synthetic-admin'}};
+Object.defineProperty(globalThis,'localStorage',{configurable:true,value:{getItem:()=>JSON.stringify(authSession)}});
+let reportReply, reportStatus=200;
+globalThis.fetch=async(url,options)=>{
+ if(url.endsWith('/record_account_activity')) return new Response(null,{status:204});
+ assert.ok(url.endsWith('/get_ravradar_visitor_report'));
+ assert.deepEqual(JSON.parse(options.body),{p_from_day:fromDay,p_to_day:toDay});
+ return new Response(reportReply,{status:reportStatus});
+};
+const { loadVisitorReport }=await import('../js/services/visitor-report-service.js');
+const zero={fromDay,toDay,pageViews:0,browserVisits:0,registeredAccounts:3,activeAccounts:2,days:[]};
+reportReply=JSON.stringify(zero);
+assert.deepEqual(await loadVisitorReport(fromDay,toDay),zero);
+for(const malformed of [null,{}, {...zero,toDay:'2026-08-14'}, {...zero,pageViews:null}, {...zero,days:[{day:toDay,browserVisits:1}]}]){
+ reportReply=JSON.stringify(malformed);
+ await assert.rejects(loadVisitorReport(fromDay,toDay),/ikke gyldige tal/);
+}
+reportReply='';
+await assert.rejects(loadVisitorReport(fromDay,toDay),/ikke gyldige tal/);
+reportStatus=400;
+reportReply=JSON.stringify({code:'22023'});
+await assert.rejects(loadVisitorReport(fromDay,toDay),/gyldig periode/);
+reportStatus=403;
+reportReply=JSON.stringify({code:'42501'});
+await assert.rejects(loadVisitorReport(fromDay,toDay),/ikke adgang/);
+assert.doesNotMatch(admin,/databasemigreringen til 4\.0\.310/);

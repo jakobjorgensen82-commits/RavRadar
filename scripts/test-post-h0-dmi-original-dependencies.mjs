@@ -1,3 +1,4 @@
+import { inverseReviewedSource601HistoricalCodeInput } from './lib/completed-private-runtime-workflow-review.mjs';
 import { inverseActiveFamilyRetentionCompanionTestInput } from './lib/alternative-c-caller-test-input.mjs';
 import { inverseAssistant588OriginalCompanionTestInput, ASSISTANT588_ORIGINAL_COMPANION_TEST_REVIEW } from './lib/alternative-c-caller-test-input.mjs';
 import path from 'node:path';
@@ -795,6 +796,9 @@ test('native-original planner oracle preserves complete earlier source and actua
 });
 
 const POST_H0_FIXED_CLI_SOURCES=[
+  // Actual generated metadata resources of the copied normal Source imports.
+  // Copy their entire genuine parent bytes; never construct fixture bindings.
+  'scripts/lib/source-producer-after597-binding.generated.json',
   // Actual 587 companion imports link this complete existing static chain,
   // also for ordinary fixtures that never enter the later-H0 transition.
   'scripts/assistant-later-h0-runtime-transition.mjs',
@@ -2531,7 +2535,8 @@ test('coherent raw transport lifetime: exact outer inverse preserves joint and e
 
 test('cold target inverse: complete exact modules precede unchanged historical oracles and reject every changed hunk',()=>{
   for(const row of CURRENT_FAMILY_COLD_TARGET_TEST_REVIEW){
-    const actualComplete=readFileSync(new URL('../'+row.path,import.meta.url),'utf8').replace(/\r\n/g,'\n');
+    const actualComplete=inverseReviewedSource601HistoricalCodeInput(
+      readFileSync(new URL('../'+row.path,import.meta.url),'utf8').replace(/\r\n/g,'\n'),row.path);
     const complete=row.path===FINALIZED_WEATHER_OWNERS_TEST_REVIEW.path
       ?inverseFinalizedWeatherOwnersTestInput(actualComplete,row.path)
       :row.path==='scripts/plan-ravscore-current-history.mjs'

@@ -121,4 +121,23 @@ jobs:
           RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
           RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
           RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
-        run: node scripts/test-supabase-cli-local-restore.mjs --run-archive-restore
+        run: |
+          set -euo pipefail
+          node scripts/test-supabase-cli-local-restore.mjs --run-archive-restore | tee "$RUNNER_TEMP/database-archive-restore-report.json"
+      - name: Check the normal archive receipt for usable reserve evidence
+        id: reserve-proof
+        if: inputs.restore_mode == 'archive'
+        env:
+          RESTORE_ARCHIVE_INDEX_COMMITMENT: ${{ inputs.archive_index_commitment }}
+        run: |
+          node --input-type=module <<'RESERVE'
+          import fs from 'node:fs';
+          import {databaseReserveReceiptReady} from './scripts/supabase-backup-lifecycle.mjs';
+          const report=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/database-archive-restore-report.json','utf8'));
+          const ready=databaseReserveReceiptReady(report,{sourceHead:process.env.GITHUB_SHA,
+            indexCommitment:process.env.RESTORE_ARCHIVE_INDEX_COMMITMENT});
+          fs.appendFileSync(process.env.GITHUB_OUTPUT,'ready='+String(ready)+'\n');
+          RESERVE
+      - name: Bind verified database reserve ${{ inputs.archive_index_commitment }}
+        if: inputs.restore_mode == 'archive' && steps.reserve-proof.outputs.ready == 'true'
+        run: ':'

@@ -702,6 +702,7 @@ async function restoreArchive(c,b,indexCommitmentSha256){
     if(info.State?.Health?.Status==='healthy'){ownedContainer(info,b,'auth',true);healthy=true;break;}await sleep(500);}
   need(healthy,'RESTORED_AUTH_NOT_HEALTHY');
   return {status:'PASS',scope:'authenticated-archive-isolated-sql-restore',sourceHead:process.env.EXPECTED_HEAD_SHA,cliVersion:P.cli,
+    archiveIndexCommitmentSha256:indexCommitmentSha256,
     authenticatedFiveFileSqlExecuted:true,exactSqlBytesStreamed:true,isolatedAuthServiceHealthy:true,containerNetworkExternalEgressDisabled:true,
     localRestoredCatalogVerified:true,productionDatabaseRestoreExecuted:false,productionBackupVerified:false,
     productionAuthRestoreVerified:false,authRestoreVerified:false,fullDatabaseBackupVerified:false,
@@ -1175,7 +1176,7 @@ async function selfTest(){
   test('normal workflow keeps synthetic default, exact source gate, lock order and archive-only credentials',async()=>{
     const workflow=await fs.readFile(new URL('../.github/workflows/verify-supabase-cli-local-restore.yml',import.meta.url),'utf8');
     assert.doesNotMatch(workflow,/archive_index_sha|RESTORE_ARCHIVE_INDEX_SHA/);
-    assert.equal(workflow.split('inputs.archive_index_commitment').length,3);
+    assert.equal(workflow.split('inputs.archive_index_commitment').length,5);
     assert(workflow.includes('^rr-supabase-restore-v1:[a-f0-9]{64}$'));
     assert.match(workflow,/default: synthetic[\s\S]*options: \[synthetic, archive\]/);
     assert(workflow.indexOf('group: ${{ inputs.restore_mode')<workflow.indexOf('ravradar-trip-storage-production'));
@@ -1184,6 +1185,8 @@ async function selfTest(){
     assert(archiveStep);assert.match(archiveStep,/if: inputs.restore_mode == 'archive'/);
     assert(!/SUPABASE_DB_PASSWORD|SUPABASE_ACCESS_TOKEN|CLOUDFLARE_API_TOKEN|GITHUB_TOKEN|upload-artifact|continue-on-error/.test(archiveStep));
     assert.match(archiveStep,/--run-archive-restore/);assert.match(workflow,/if: inputs.restore_mode == 'synthetic'[\s\S]*--run-local-fixture/);
+    assert.match(archiveStep,/databaseReserveReceiptReady/);
+    assert.match(archiveStep,/if: inputs.restore_mode == 'archive' && steps.reserve-proof.outputs.ready == 'true'/);
   });
   test('archive startup DB endpoint requires matching owned healthy container and bridge membership',async()=>{
     const id='a'.repeat(64),net='b'.repeat(64),endpoint='c'.repeat(64),c={owner:'123-1',archive:true};
