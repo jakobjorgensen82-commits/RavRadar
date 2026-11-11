@@ -220,6 +220,7 @@ test('same-run revision requires comparable official timestamps for every change
 // attestation test seam, never the executable acquisition entrypoint.
 const producerSource = fs.readFileSync(new URL('./update-weather.mjs', import.meta.url), 'utf8');
 const sharedRecordSource = fs.readFileSync(new URL('./lib/private-dmi-recovery-record.mjs', import.meta.url), 'utf8');
+const fixtureScalarSourceProofs = "const RETAINED_SCALAR_SOURCE_PROOFS = Symbol('fixture retained scalar source proofs');\n";
 const mergeSource = sharedRecordSource.slice(
   sharedRecordSource.indexOf('const ATOMIC_COMPONENT_TUPLE_KEYS ='),
   sharedRecordSource.indexOf('// END normal-record selection'),
@@ -233,7 +234,7 @@ const mergeContext = vm.createContext({
   verifiedDmiForecastComponentSource: (source, time, component, identity) =>
     verifiedDmiForecastSource(source, component, time, identity),
 });
-vm.runInContext(`${mergeSource}\nglobalThis.mergeForTest = mergeHourlyPreferDmi;`, mergeContext);
+vm.runInContext(`${fixtureScalarSourceProofs}${mergeSource}\nglobalThis.mergeForTest = mergeHourlyPreferDmi;`, mergeContext);
 const recordMergeSource = producerSource.slice(producerSource.indexOf('function newerDmiRecord('),
   producerSource.indexOf('\nfunction mergeDmiStores('));
 vm.runInContext(`${recordMergeSource}\nglobalThis.recordMergeForTest = newerDmiRecord;`, mergeContext);
