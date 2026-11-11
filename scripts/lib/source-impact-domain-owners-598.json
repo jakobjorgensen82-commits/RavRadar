@@ -8884,6 +8884,68 @@
           "d346bef84b2692c2d7f24cdc34567aa3d0ccc582bb0942449e5fe13f4c9f720a"
         ]
       }
+    },
+    "scripts/prepare-code-only-public-runtime.mjs": {
+      "beforeDefinitionSha256": "8de33b70774429d5a791e6cdfeb28a7860415ca428320a40c070b6e11faf6a85",
+      "definition": {
+        "nodeImports": [
+          "node:crypto",
+          "node:fs/promises",
+          "node:path",
+          "node:url"
+        ],
+        "imports": [
+          "js/core/ravscore-model-contract.js",
+          "scripts/build-forecast-share-projection.mjs",
+          "scripts/lib/private-conditions-hourly.mjs",
+          "scripts/lib/private-weather-component-inventory.mjs",
+          "scripts/lib/public-hour-delivery-pack.mjs",
+          "scripts/migrate-post-cutover-private-runtime.mjs",
+          "scripts/protected-private-production-runtime.mjs",
+          "scripts/public-conditions-lib.mjs",
+          "scripts/ravscore-operational-pages-recovery.mjs",
+          "scripts/lib/public-map-hour-projection.mjs",
+          "scripts/lib/public-bulk-details-archive.mjs"
+        ],
+        "resources": [
+          "version.json"
+        ],
+        "dependencySurfaces": [
+          "0a3995edd1d98043222075551ff517319b6905c7d73e0b330ae658303a3ffde6",
+          "19133d073af8f8b73ee31766f3de4f7e0483b78ab7b848782e2a05f82f9943e6",
+          "2fc97329106147e58c6a394f722a0e20f0b08492cc16109fcc59b4830e4dd2b4",
+          "31bcb5490d2d9234deb06dc3b7f466ad3dce510569c30dff7d2b745e50f2072b",
+          "5645f18332505fd756b1b49027102ad27a9ceddfe38b36d9b35304f1b3a992ca",
+          "67ee23b2eca68c1db8a3f858f508cedfa19b7728baa2cdcdbada2ff46fa086ef",
+          "691c6c4bb21a81590fe243461de8bcdae832b4180d33253b204fde7e00105f3d",
+          "7768a7a5dd8ba7803f4ea50d41b2ec91bfd2638b043a0fe0dd33b47380867515",
+          "802baa4e803994f8706043d8e31ac4364dd52615b80e73f5b82f87ddbdacea1c",
+          "825cdd4b8abc461a6711d613f04754e365fb2bd26c374abfd8da9fc79d960bbc",
+          "a25181d5e04e4b2d8a22a3804948860af04908f850d51fcc61c95e902040a4d2",
+          "a5e76231d2c75c3bbe10df49e56c1363141d53724b397049bfdf968e9381217b",
+          "adda06193085f1af4aea4eb1ee7cf4a0700a8d68262f8e83ec89657a9bc16ed1",
+          "ca363ae2082de5568fa0a0960d773305dd41129b27f14508b126b07f35c441f0",
+          "da20f21dadd6db71ae598b2e7003ebc8a6bb9a361f686d51f244b6486aea30cc",
+          "db1ce7cf0933001fb1aee7a72685e16fe20ed89903e54ef81571bb5502afc300",
+          "e562ba0840c5aa885a6f42b41d7ddcf88a83ccc47c6e394918d82a38cabe67f5",
+          "ee6dd3eb8f39cc3d013501b784266cb43837999463e09a25155a4ce08e08d413",
+          "ef8ec812e2b7172506fd623086c052abbb4590a53b0629c6ef8dbfd81fcdcb65"
+        ],
+        "bindingSurfaces": [
+          "0ff13243c2a3b7216918c1dfbc69747df85de5163f07933c0c6f9ed41c5438e1",
+          "21f2fa4e01a158e2aa778b39e7b54ffeac93339edbc497bb40b7f737b2bf34e8",
+          "2f866ac40d559a2dd7dae3b0f4f82ab6028b083d650fccd6fcd5f47244853b08",
+          "420ae53fd7399ef38379541ab0dd0bf65bb1f9ce803faebd17fb23f043bb6830",
+          "521c0c383896f89077ba36ab42a9dadbb8a45427665289bddb0278966ba09f91",
+          "5cf4913cca83bf8882d647f7c8eedac2b92106e07ae2426689194aed72753b17",
+          "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+          "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+          "a76c24d9da680e1357f4470c8fca085a1b67cb1fefac1598b60a3330ae354180",
+          "d6b48e2fb6087aec26254f8bd3a6c8dc86405fb8489df0d4e9f99f94b7b3cc69",
+          "f88cdb06a72e5900ba3518876463c169e65c56d9bbdad56ee07f51413b30a97a"
+        ],
+        "computedBoundaries": []
+      }
     }
   },
   "resourceFiles": [

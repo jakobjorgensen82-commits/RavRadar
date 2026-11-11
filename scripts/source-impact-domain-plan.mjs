@@ -10,7 +10,7 @@ import {scanAllSourceDependencies,dependencySourceLiterals} from './lib/source-i
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const REGISTRY_SHA256='3970bc86fb8afd99d193507b82337c1068aa368f6d62ff728988fc21da9577f4';
 const REGISTRY597_SHA256='a7ccfba2b2f631ccc358342e2c3b87e1cb1edbd54311148c94822fddaa6dbcfa';
-const REGISTRY598_SHA256='74b2de86334285d967010ec3cf8a4c67719616cf32c9b8aea1e7ccfb6ccde8ac';
+const REGISTRY598_SHA256='4905c18af59ae7d3a5982fefec83749be2203bd6d90994fd1fb333ac9dd08daa';
 const PAGES_TRANSPORT_FIELDS=Object.freeze({
   "scripts/lib/pages-per-artifact-identity.mjs": [],
   "scripts/lib/pages-sealed-retry-decision.mjs": [
