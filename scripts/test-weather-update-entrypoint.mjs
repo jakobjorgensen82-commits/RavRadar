@@ -14,6 +14,7 @@ import { inverseAlternativeCCaller, inverseAssistant587OriginalCompanionTestInpu
 import { inverseWindTailCapacityUpdaterTestInput, WIND_TAIL_CAPACITY_UPDATER_TEST_REVIEW,
   inverseDmiScalarPlanningRecordTestInput, DMI_SCALAR_PLANNING_RECORD_TEST_REVIEW,
   inverseDmiScalarRetentionWorkTestInput, DMI_SCALAR_RETENTION_WORK_TEST_REVIEW,
+  inverseDmiScalarSourceProofReuseTestInput, DMI_SCALAR_SOURCE_PROOF_REUSE_TEST_REVIEW,
   inverseCandidateGReadyGapUpdaterTestInput, CANDIDATE_G_READY_GAP_UPDATER_TEST_REVIEW,
   inverseDmiScalarPlanningUpdaterTestInput, DMI_SCALAR_PLANNING_UPDATER_TEST_REVIEW,
   inverseCurrentNativeOriginalProducerTestInput, CURRENT_NATIVE_ORIGINAL_PRODUCER_TEST_REVIEW,
@@ -1226,7 +1227,15 @@ test('native-original producer preserves exact whole archived inputs and rejects
 
 test('actual scalar-planning record has one exact historical inverse and rejects mixed scopes', async () => {
   const { path: file, before, after, edits } = DMI_SCALAR_PLANNING_RECORD_TEST_REVIEW;
-  const raw = (await fs.readFile(new URL('../' + file, import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  const candidate = (await fs.readFile(new URL('../' + file, import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  const reuse = DMI_SCALAR_SOURCE_PROOF_REUSE_TEST_REVIEW;
+  assert.equal(Buffer.byteLength(candidate), reuse.after.bytes);
+  assert.equal(digest(candidate), reuse.after.sha256);
+  assert.equal(inverseDmiScalarSourceProofReuseTestInput(candidate, 'scripts/unknown.mjs'), candidate);
+  assert.throws(() => inverseCurrentNativeOriginalProducerTestInput(candidate + '\n', file),
+    /ALTERNATIVE_C_TEST_INPUT_CHANGED/);
+  const raw = inverseDmiScalarSourceProofReuseTestInput(candidate, file);
+  assert.equal(inverseDmiScalarSourceProofReuseTestInput(raw, file), raw);
   const work = DMI_SCALAR_RETENTION_WORK_TEST_REVIEW;
   assert.equal(Buffer.byteLength(raw), work.after.bytes);
   assert.equal(digest(raw), work.after.sha256);

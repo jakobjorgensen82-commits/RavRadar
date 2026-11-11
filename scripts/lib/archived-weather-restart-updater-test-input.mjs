@@ -456,6 +456,48 @@ export const DMI_SCALAR_RETENTION_WORK_TEST_REVIEW = Object.freeze({
   ]),
 });
 
+// TEST INPUT ONLY: restore the exact pre-reuse source for the historical oracles.
+export const DMI_SCALAR_SOURCE_PROOF_REUSE_TEST_REVIEW = Object.freeze({
+  path: DMI_SCALAR_RETENTION_WORK_TEST_REVIEW.path,
+  before: DMI_SCALAR_RETENTION_WORK_TEST_REVIEW.after,
+  after: Object.freeze({ bytes: 43734, sha256: '4b3eaa2bb41b22c5f11b7214c5215cfead6190632a2f365eea47c7c56b9db12c' }),
+  edits: Object.freeze([
+    Object.freeze([156, "", "const RETAINED_SCALAR_SOURCE_PROOFS = Symbol('retained scalar source proofs');\n"]),
+    Object.freeze([169, "", "    [RETAINED_SCALAR_SOURCE_PROOFS]: sourceProofs = null,"]),
+    Object.freeze([291, "    { generatedAt, startAt, expectedIdentity: dmiIdentity, currentDecoderTransition, scalarPlanningOnly },", "    { generatedAt, startAt, expectedIdentity: dmiIdentity, currentDecoderTransition, scalarPlanningOnly,\n      [RETAINED_SCALAR_SOURCE_PROOFS]: sourceProofs && { verified: sourceProofs, ownedPrimary: true } },"]),
+    Object.freeze([411, "    nativeCurrentOriginals = null, protectedCompanionContexts = [], scalarPlanningOnly = false },", "    nativeCurrentOriginals = null, protectedCompanionContexts = [], scalarPlanningOnly = false,\n    [RETAINED_SCALAR_SOURCE_PROOFS]: sourceProofs = null },"]),
+    Object.freeze([428, "", "      [RETAINED_SCALAR_SOURCE_PROOFS]: sourceProofs,"]),
+    Object.freeze([433, "", "    [RETAINED_SCALAR_SOURCE_PROOFS]: sourceProofs,"]),
+    Object.freeze([438, "", "      [RETAINED_SCALAR_SOURCE_PROOFS]: sourceProofs,"]),
+    Object.freeze([444, "", "      [RETAINED_SCALAR_SOURCE_PROOFS]: sourceProofs && { verified: sourceProofs, ownedPrimary: false },"]),
+    Object.freeze([465, "", "      [RETAINED_SCALAR_SOURCE_PROOFS]: sourceProofs && { verified: sourceProofs, ownedPrimary: false },"]),
+    Object.freeze([469, "", "  });\n}\n\n// Only the normal offline scalar planner passes its own parsed JSON inputs here.\nfunction buildRetainedScalarPartDmiForecast(feature, activeBulkCache, protectedBulkCache, generatedAt, options) {\n  return buildPartDmiForecastWithProtectedRetention(feature, activeBulkCache, protectedBulkCache, generatedAt, {\n    ...options, scalarPlanningOnly: true, [RETAINED_SCALAR_SOURCE_PROOFS]: new WeakMap(),"]),
+    Object.freeze([721, "    protectPreviousDmi = false, currentDecoderTransition = null, scalarPlanningOnly = false } = {},", "    protectPreviousDmi = false, currentDecoderTransition = null, scalarPlanningOnly = false,\n    [RETAINED_SCALAR_SOURCE_PROOFS]: sourceProofs = null } = {},"]),
+    Object.freeze([758, "      return expectedIdentity\n        ? verifiedDmiForecastComponentSource(\n          row?.sources?.[component],\n          time,\n          declaredComponent,\n          expectedIdentity,\n        )\n        : row?.sources?.[component] ?? (retained\n          ? { provider: row?.source ?? 'open-meteo', fallback: true }\n          : { provider: 'dmi', fallback: false });", "      const source = row?.sources?.[component];\n      if (!expectedIdentity) return source ?? (retained\n        ? { provider: row?.source ?? 'open-meteo', fallback: true }\n        : { provider: 'dmi', fallback: false });\n\n      const checked = sourceProofs?.verified.get(source);\n      if (checked?.time === time && checked.component === declaredComponent\n        && checked.expectedIdentity === expectedIdentity) return source;\n\n      const verified = verifiedDmiForecastComponentSource(source, time, declaredComponent, expectedIdentity);\n      // Only the freshly built primary can add a proof to this per-part cache.\n      // Later merges preserve the exact nested source object. Persisted sources\n      // and any distinct source, component, time or identity run the normal check.\n      if (verified && sourceProofs?.ownedPrimary && !retained) {\n        sourceProofs.verified.set(source, { time, component: declaredComponent, expectedIdentity });\n      }\n      return verified;"]),
+    Object.freeze([886, "", "  buildRetainedScalarPartDmiForecast,"]),
+  ]),
+});
+
+export function inverseDmiScalarSourceProofReuseTestInput(source, relative) {
+  assert.equal(arguments.length, 2, 'DMI_SCALAR_SOURCE_PROOF_REUSE_ARGUMENTS');
+  assert.equal(typeof source, 'string', 'DMI_SCALAR_SOURCE_PROOF_REUSE_TYPE');
+  const { path, before, after, edits } = DMI_SCALAR_SOURCE_PROOF_REUSE_TEST_REVIEW;
+  if (relative !== path || sha(source) !== after.sha256) return source;
+  assert.equal(Buffer.byteLength(source), after.bytes, 'DMI_SCALAR_SOURCE_PROOF_REUSE_AFTER_SIZE');
+  const lines = source.split('\n');
+  for (const [line, previous, current] of [...edits].reverse()) {
+    const previousLines = previous ? previous.split('\n') : [];
+    const currentLines = current ? current.split('\n') : [];
+    assert.deepEqual(lines.slice(line - 1, line - 1 + currentLines.length), currentLines,
+      'DMI_SCALAR_SOURCE_PROOF_REUSE_HUNK');
+    lines.splice(line - 1, currentLines.length, ...previousLines);
+  }
+  const original = lines.join('\n');
+  assert.equal(Buffer.byteLength(original), before.bytes, 'DMI_SCALAR_SOURCE_PROOF_REUSE_BEFORE_SIZE');
+  assert.equal(sha(original), before.sha256, 'DMI_SCALAR_SOURCE_PROOF_REUSE_WHOLE_INVERSE');
+  return original;
+}
+
 export function inverseDmiScalarRetentionWorkTestInput(source, relative) {
   assert.equal(arguments.length, 2, 'DMI_SCALAR_RETENTION_WORK_ARGUMENTS');
   assert.equal(typeof source, 'string', 'DMI_SCALAR_RETENTION_WORK_TYPE');
@@ -479,6 +521,7 @@ export function inverseDmiScalarRetentionWorkTestInput(source, relative) {
 export function inverseDmiScalarPlanningRecordTestInput(source, relative) {
   assert.equal(arguments.length, 2, 'DMI_SCALAR_PLANNING_RECORD_ARGUMENTS');
   assert.equal(typeof source, 'string', 'DMI_SCALAR_PLANNING_RECORD_TYPE');
+  source = inverseDmiScalarSourceProofReuseTestInput(source, relative);
   source = inverseDmiScalarRetentionWorkTestInput(source, relative);
   const { path, before, after, edits } = DMI_SCALAR_PLANNING_RECORD_TEST_REVIEW;
   if (relative !== path || sha(source) !== after.sha256) return source;

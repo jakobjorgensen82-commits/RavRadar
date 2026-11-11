@@ -2,7 +2,7 @@ import { createReadStream } from 'node:fs';
 import { readDmiBulkDocument } from './dmi-bulk-storage.mjs';
 import { inspectDmiForecastFile, readDmiForecastRecord, readDmiWaterSourceContinuity } from './dmi-forecast-file.mjs';
 import { unpackDmiPartContinuity } from './dmi-part-continuity.mjs';
-import { buildPartDmiForecastWithProtectedRetention, haversineKm } from './private-dmi-recovery-record.mjs';
+import { buildRetainedScalarPartDmiForecast, haversineKm } from './private-dmi-recovery-record.mjs';
 import { dmiExpectedIdentityForPart } from './ravscore-production-adapters.mjs';
 import { localPartRuntimeProperties } from './local-part-runtime.mjs';
 import { buildWaterSourceForecastIndex, unpackWaterSourceForecastContinuity,
@@ -511,9 +511,9 @@ export async function loadRetainedPartScalarPlanning({
       const expectedIdentity = dmiExpectedIdentityForPart(part, bulkId);
       const feature = { type: 'Feature', geometry: { type: 'Point', coordinates: part.waterPoint },
         properties: localPartRuntimeProperties(parent.properties, part, bulkId) };
-      records.set(part.partId, buildPartDmiForecastWithProtectedRetention(feature, dmiBulkCache,
+      records.set(part.partId, buildRetainedScalarPartDmiForecast(feature, dmiBulkCache,
         pointState?.[part.partId] ? null : deployedDmiBulkCache, productionReferenceAt, {
-          startAt: productionReferenceAt, expectedIdentity, scalarPlanningOnly: true,
+          startAt: productionReferenceAt, expectedIdentity,
           persistedHourly: pointState?.[part.partId] ? [] : persisted.get(part.partId)?.hourly ?? [],
           historicalBulkCache: pointState?.[part.partId] ? null : historicalDmiBulkCache,
         }));
