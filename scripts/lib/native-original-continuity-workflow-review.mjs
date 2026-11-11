@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import { inverseReviewedPagesArtifactMetadataCaller } from './completed-private-runtime-workflow-review.mjs';
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const bytes=fs.readFileSync(new URL('./native-original-continuity-workflow-review.json',import.meta.url));
 assert.equal(sha(bytes),'2ae3fa9b4e7c4a4a4d85c22a510b29cc3d7fdb76134f5786cd81155847ea9662');
@@ -35,6 +36,7 @@ export function inverseCurrentInstalledCodeOnlyWorkflow(source){
 }
 export function inverseNativeOriginalContinuityWorkflow(source){
   assert.equal(arguments.length,1);assert.equal(typeof source,'string');
+  source = inverseReviewedPagesArtifactMetadataCaller(source, 'repair', '.github/workflows/deploy-code-only-repair.yml');
   if(sha(source)===CURRENT_INSTALLED_CODE_ONLY_WORKFLOW_SHA256)source=inverseCurrentInstalledCodeOnlyWorkflow(source);
   assert.equal(sha(source),review.actualSha256,'Unknown native-original workflow cannot enter a frozen oracle');
   let prior=source;

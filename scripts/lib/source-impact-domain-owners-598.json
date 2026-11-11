@@ -536,6 +536,48 @@
       ],
       "controlQualification": true,
       "exactSourceTransition": true
+    },
+    {
+      "path": "scripts/lib/native-original-continuity-workflow-review.mjs",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node --test scripts/test-archived-weather-restart-workflow.mjs"
+        ],
+        [
+          "controls",
+          "node scripts/test-code-only-public-runtime.mjs"
+        ],
+        [
+          "controls",
+          "node scripts/source-critical-gate.mjs"
+        ]
+      ]
+    },
+    {
+      "path": "scripts/lib/archived-production-gate-review.mjs",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node --test scripts/test-archived-weather-restart-workflow.mjs"
+        ],
+        [
+          "controls",
+          "node scripts/test-code-only-public-runtime.mjs"
+        ],
+        [
+          "controls",
+          "node scripts/source-critical-gate.mjs"
+        ]
+      ]
     }
   ],
   "exactSourceTransitions": {
@@ -601,6 +643,9 @@
       "c7caee8a00836d92c29a979292eabc383a12034d6e9e1f67a22f19a68724acad/f7b278b11082c9b2b9865cd119881337269916ad3b588150b02044f3488a5097",
       "c7caee8a00836d92c29a979292eabc383a12034d6e9e1f67a22f19a68724acad/897e72fd0c8729cf0f592b57a600a94016209ddff852f06badacce67b647eff7",
       "f7b278b11082c9b2b9865cd119881337269916ad3b588150b02044f3488a5097/897e72fd0c8729cf0f592b57a600a94016209ddff852f06badacce67b647eff7"
+    ],
+    ".github/workflows/deploy-code-only-repair.yml": [
+      "391628fbcaae106df7a29d5c7caa3a7487af18b025bd4692bc93aaab5d396bf8/7bcde5fb1dafebc4a99104c1c106d2810e9c3210799cda48ba91467bfb7d2c2d"
     ]
   },
   "sources": {
@@ -3116,7 +3161,14 @@
           "ff4c2417d608b34d80bdb67bb672b216595b36992160a41c54c34d52dc900bc7",
           "62cbd9cce50e6f33baf8406564976e804a50f4963257efd05d6f64d06befcae4",
           "e6cf2a12d8d108bcd26e7b67f7242669f1ef2815194d5c57cf1c9d2d22c7da91",
-          "d7fcf43d9f84bcab9fb93c43108b10aafeb37152e442954569fbc8e0a76ed9f5"
+          "d7fcf43d9f84bcab9fb93c43108b10aafeb37152e442954569fbc8e0a76ed9f5",
+          "d6eec3be3264a4200cbeacca6eb2d20c3b66e936ac1bdf7f6290c9522b4e453c",
+          "656bc7803eff679396ec3481f83b4971ebd88193f66dd6c7dc081f9284c6cf05",
+          "81399b1b73503294d80deeda6ebfc25a64ecb7f9af9b631f3237574e994dc5b7",
+          "d22b16bbd1a2495231564e8d5a3e41e118f1d56e7e3ea473397717143956309a",
+          "724e91b8bdbd3a5bc3ed9fce5d9481e2e3b961378ab3815ccc87e3bfa7148df0",
+          "74da1a01cabf810f0ffd8981579ab3c2c2f99f2fa063c776ec7a56a7e78633be",
+          "596000c694d78f5d386090ac52cdd8a3faeab912dbd25dec776c52a205147a40"
         ],
         "bindingSurfaces": [
           "0f05aaff990b617dc07eace1a1118c3c65f43107ce1db531aa132eed62495e4f",
@@ -4519,7 +4571,8 @@
           ".github/workflows/run-current-weather-once.yml",
           "scripts/lib/completed-private-runtime-workflow-review.json",
           "scripts/lib/current-family-cold-checkpoint-workflow-review.json",
-          "scripts/lib/current-family-cold-start-workflow-review.json"
+          "scripts/lib/current-family-cold-start-workflow-review.json",
+          ".github/workflows/deploy-code-only-repair.yml"
         ],
         "dependencySurfaces": [
           "0038e3516c8ad81102a29cf0d4fe8f8c159b77cb6f6fb9e2cc6bf3ca7532ae33",
@@ -4636,7 +4689,32 @@
           "c29ecc838b7cdd862132f3d9fbc069f9bd17c930f26de2243590f3929956dfe5",
           "1986a27c3fffd58af5c5738ba93f9090984864abed4f1b3da7c366f5ec545f5b",
           "ff28f529fa1ba25db52cb1b9f0d2ae17d5e5661be5491dd36bcf504b054de738",
-          "9adfb0d609e1edd212ef4ef82a6d54a44270a0de54960056a7b79eb1c250a749"
+          "9adfb0d609e1edd212ef4ef82a6d54a44270a0de54960056a7b79eb1c250a749",
+          "31c1aaa3c8836e6ea2d8be45f32af66b9d74616ff4204b4511acdbff769298e2",
+          "34321c46605521683e701ef593a4dd7539d56d0fb91516abae06ca908e49f82f",
+          "1a0fff3463b12bb5bf5818fcbf89b9a88a43e1fd6a8cb42e1fca4b42c9029cf9",
+          "606e2132b2493c36b9f7fa5f9cc5a9da1de2b297343c18501c40ba267ee5e7dd",
+          "b34bf8719fd91fbaecd757a78ed706e10e83d7197db7c3b33b7422373a32bfc9",
+          "414ea5bdedb6bf946540a3b35901790c174b211891d1449f360f2edc568b624d",
+          "6718a6ad17be751a970bea3af6193801622f4909b713d2d409cfd8cafa2f84c2",
+          "d807e2fa6d4ff872d081d3aaa3661cd396c4ae7472ac4507cf77d404be5a4d58",
+          "d3d1285d920c14e1dc8a12e12a83525481b5a68229a696da045dceec37b84a2d",
+          "d9a1eb8ab5c7e4d8137c1408f698051b56e7e66a89e8ec43f6c4ea33c0f224b8",
+          "15538e3c8096fbf40615dc5d2b63819c6ea81c8886d7b7cebd377dfa84161202",
+          "c9ab7fe03f4d65c9cb8aef69bb85294dc7685a97f2264fcf68d5856f4c097cf2",
+          "0fa6d91b5a483d7ce74cb206d9fd637ff008ba2e45274da8e05595301b39ec87",
+          "e950e82af29c6220070cd38b62777a8b63120b5c69599341fc8a6eb12db6b3d4",
+          "b5cad2ed23ba0de6c8959b391cbed78fea659afbb00b510842570ed9c9617e71",
+          "7053c549ce00e36a44b04a7177ded9d028fe0f2b64837097bbbec67464335184",
+          "713933695bfc0c60352646a7f0c5f043eb7896170bb2b24272e314d95e5905da",
+          "23ac870493a8a1b573f442f1f373a9d08d09489767681bfe48cb365e0907726d",
+          "79d96b7471ab46be6b62b5322d968195d1b0a6339136377df87a8c9a69fc537b",
+          "c0e977df9e71d424a514ceabaa5c1e18a0ab146631f6298252d3d5de3c32e686",
+          "bd22cdf2fc44185ee8b25af3a0f00b36a60a11a8378eab9182052bc05979712f",
+          "b58cdd76dfa0873cf0cd20b65719747aeda1d4bd03e07ac80f2be8c4357ef309",
+          "8fdba69d8f7c97282905c74e7c64f22efdfd810f19763622ff8744d9da0f55fd",
+          "e58ba7cc56757df5b1279063ef695cfda23d8ba1a984f39dc7a0ee42fc28acc8",
+          "f80d5786bbef3de48e33c526402f45f82c95adc110c33f7b071cac33c4928f5a"
         ],
         "bindingSurfaces": [
           "055826d8498e957f01771ee83c0914c0da9b6d935c91199a8a76d54c53d9790a",
@@ -4666,7 +4744,19 @@
           "8859212404e282b9131132d4d17e79df9bfe7e9ebfc478d4dfa2283c996e99bc",
           "781931164de4ec9360d82698362d73cd68d2dce34e1a3de1c50c488d6d619f81",
           "161d8b32b116682389efd388acf98cc152ca4051d0d99028e80a3ce615ff34d7",
-          "27c65ae0fce2aa6dc1aeadb269829e818c1c735a4d60b9ce4f30e4ab9b490990"
+          "27c65ae0fce2aa6dc1aeadb269829e818c1c735a4d60b9ce4f30e4ab9b490990",
+          "3afb596b1407a8cd4241bed586a00bc230fba2976cd88ae2a5dcf0e52de646e5",
+          "d71c1bc50b619374ffe936a5d491bdb57904c6a733c2a7c36d73f5612889f0c5",
+          "00b6e1afdfc5ecab77a422b36e9f1a7218deb596d0bd1206d2319b81f199502c",
+          "f8c6686b5c5b3f697850f3eafd9008e50d1ce930ad10dcbe430decbcf5f54bd9",
+          "9b6bfeea0c2876e2bee96d520944304b73ee05dd3b7fca6e843aa94a350b6755",
+          "d3da2edd26a042ec89e86693170125c6c93a3cc598cad3f2126302aadcb6028e",
+          "82f0ed8e4aae15d349cf5e06e4ffed07893509a60953303a5989d5e65af140d8",
+          "794faebd1c3063f44f0c336c7dfb24c0f75ca089b7db06b8d432c1b4bd355dc7",
+          "dfd6c7fd7bcf7331ed8473e960a39147add9f720639e8fb3d36d073ffcf1d6d0",
+          "244998fcf9e051daa886457d98602f42d0a0c7910e2e32b2401c492b344c641b",
+          "b16b78cb66a7f81e87a6117f35c4b3f11150df1c13113df1d4bdf1c017e8793c",
+          "d6b0fc8be5103b189bd9702a9eda8a9bb24914d0a0db8a9a66e2ef23fd366009"
         ],
         "computedBoundaries": []
       }
@@ -8628,6 +8718,352 @@
         "bindingSurfaces": [],
         "computedBoundaries": []
       }
+    },
+    "scripts/lib/native-original-continuity-workflow-review.mjs": {
+      "beforeDefinitionSha256": "9397950ff39fad0bebe28a077044ff10c76c174900a25b0be829fb245a57523b",
+      "definition": {
+        "nodeImports": [
+          "node:assert/strict",
+          "node:crypto",
+          "node:fs"
+        ],
+        "imports": [
+          "scripts/lib/completed-private-runtime-workflow-review.mjs"
+        ],
+        "resources": [
+          "scripts/lib/current-installed-code-only-workflow-review.json",
+          "scripts/lib/native-original-continuity-workflow-review.json"
+        ],
+        "dependencySurfaces": [
+          "0390d8d5900fbcc87e08218d20d025f1afdfe42bb29504f794d0f9f5b8cd8bb7",
+          "4e842f0c6f13efeb6f08de1b76db685c728fc26602424b96c9c1e11a425f65b9"
+        ],
+        "bindingSurfaces": [
+          "4d5bd3236b902b53f777c50e4baeafe65de10c08a1da3801920df12048beb081",
+          "5193ca852a68475d140a771402a4fa03aae098c6694625269ec7835683d9e75a",
+          "59c5cda146e951e65464e14845e52065540f1b4da88b534a0e475f66c55412f8",
+          "d3c7c0b6948622d54638729de889bded01734fa308421ec6df79cb2295a1d7ba"
+        ],
+        "computedBoundaries": []
+      }
+    },
+    "scripts/lib/archived-production-gate-review.mjs": {
+      "beforeDefinitionSha256": "6d5dac6a60d4fd050e259f594de824d4985bf10d81da4ead5f1dd286ddad2ef7",
+      "definition": {
+        "nodeImports": [
+          "node:assert/strict",
+          "node:crypto",
+          "node:fs"
+        ],
+        "imports": [
+          "scripts/lib/completed-private-runtime-workflow-review.mjs"
+        ],
+        "resources": [
+          "scripts/lib/archived-production-gate-review.json"
+        ],
+        "dependencySurfaces": [
+          "59c7ee4962523387ff5f2b52541ab6ec8a1cfbc1b6ce9ed4921daf7f88478869"
+        ],
+        "bindingSurfaces": [
+          "5193ca852a68475d140a771402a4fa03aae098c6694625269ec7835683d9e75a",
+          "92e0f1e731de2a6352c56b04b9eb4052c0f65db3a5ae3a2f23d47bb0510a78de",
+          "d3c7c0b6948622d54638729de889bded01734fa308421ec6df79cb2295a1d7ba"
+        ],
+        "computedBoundaries": []
+      }
+    },
+    "scripts/test-post-cutover-migration-routing.mjs": {
+      "beforeDefinitionSha256": "4bc3bee5094b8705c5dec142750c86cf5ecd99d37da11a57bbb066f06de9675f",
+      "definition": {
+        "nodeImports": [
+          "node:assert/strict",
+          "node:fs/promises",
+          "node:path",
+          "node:url"
+        ],
+        "imports": [
+          "js/core/ravscore-model-contract.js",
+          "scripts/assistant-later-h0-runtime-transition.mjs",
+          "scripts/check-assistant-later-h0-predecessor-source.mjs",
+          "scripts/lib/assistant-later-h0-successor-source.mjs",
+          "scripts/lib/private-weather-component-inventory.mjs",
+          "scripts/migrate-post-cutover-private-runtime.mjs",
+          "scripts/prepare-code-only-public-runtime.mjs",
+          "scripts/private-production-runtime-bundle.mjs",
+          "scripts/private-production-runtime-workflow.mjs",
+          "scripts/protected-private-production-runtime.mjs",
+          "scripts/test-established-native-current-origin591-metadata.mjs",
+          "scripts/test-installed593-original591-successor.mjs",
+          "scripts/lib/assistant-public591-runtime-contracts.mjs"
+        ],
+        "resources": [
+          ".github/workflows/deploy-code-only-repair.yml",
+          "scripts/migrate-post-cutover-private-runtime.mjs",
+          "scripts/private-production-runtime-workflow.mjs"
+        ],
+        "dependencySurfaces": [
+          "74ea4eafbb285a7e64491d533c44b75ba1b90ed2fe43dce536412cc162914fc1",
+          "b1771a26f40f0298fd7aeb91026ed178d99c711f68f21f6a1337a90860d1a533"
+        ],
+        "bindingSurfaces": [
+          "57c684023f0bfa6d1699ec94ecc4bd57217256abdaf2d46074eb06a33a33d40e",
+          "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+          "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+          "fd3b5d98980d59ece4e65c1d9992a12588e72efc5e7abe9276fc81ccf22a9d99"
+        ],
+        "computedBoundaries": [
+          "5a3bd52c06e81f0777359b0482ca5aef84871fe83ea9963d09c278b2c2cc4599"
+        ]
+      }
+    },
+    "scripts/test-installed593-original591-successor.mjs": {
+      "beforeDefinitionSha256": "2f3834b3190845f8353b19f8753fad8d2aa8eb33cc0c3e6436e2b7ff3cba61ee",
+      "definition": {
+        "nodeImports": [
+          "node:assert/strict",
+          "node:fs/promises",
+          "node:os",
+          "node:path",
+          "node:url"
+        ],
+        "imports": [
+          "scripts/assistant-later-h0-binding-prewrite.mjs",
+          "scripts/build-assistant-later-h0-successor.mjs",
+          "scripts/integrated-cutover-readiness.mjs",
+          "scripts/lib/assistant-later-h0-successor-source.mjs",
+          "scripts/check-assistant-later-h0-predecessor-source.mjs"
+        ],
+        "resources": [
+          "scripts/build-assistant-later-h0-successor.mjs",
+          "scripts/integrated-cutover-readiness.mjs"
+        ],
+        "dependencySurfaces": [
+          "a1018d01426cd8dd323d80c1434838917badb180e26c432c9a7e86ad1bdd2fe3",
+          "fa20ff8b9e138962657d156304795563d9ed8489ab3ca4e42d07c24264c1b05c",
+          "0dad5a49ad9fbedc92f1a58caf9b352b0b93a4beedbf9929c2b63c2b249f00f0"
+        ],
+        "bindingSurfaces": [
+          "02ce297516202ebe517788eb985b5240347df0e25247adb4153ce92f0e4080b3",
+          "268e0230de83e428802198ecc50dbe42cc788d8b952f1ef966c882cde6016abd",
+          "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+          "946a593f8526b1b09bad2212d90a5b991592fb0084c5875a746cbeb6f0c22da9",
+          "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+          "a79863d32098c97096e65cbf40ab5f690fa8965c6c9f6ca2f026a9c3474c9d15",
+          "db7eb1231c304225b2ffe5573c0c6df600a03d647da33ecf3d7c45d7aab404f9"
+        ],
+        "computedBoundaries": [
+          "5a12de33d9557af639c85bfe61cacc9982f45750ed741b20578106505d954a33",
+          "6f8b89ff62fe355900c4c0b41d9b3d5cdea5e00ffc693f914ba8d648ceaef397"
+        ]
+      }
+    },
+    "scripts/test-established-native-current-origin591-metadata.mjs": {
+      "beforeDefinitionSha256": "4eca4f9ed7dd102d3eacf614dce4f4bb39378211bbca4a81ff29c27f6a3a7f66",
+      "definition": {
+        "nodeImports": [
+          "node:assert/strict",
+          "node:path",
+          "node:url"
+        ],
+        "imports": [
+          "scripts/assistant-later-h0-runtime-transition.mjs",
+          "scripts/check-assistant-later-h0-predecessor-source.mjs",
+          "scripts/lib/established-native-current-origin.mjs",
+          "scripts/private-production-runtime-workflow.mjs",
+          "scripts/lib/assistant-public591-runtime-contracts.mjs",
+          "scripts/lib/assistant-later-h0-successor-source.mjs"
+        ],
+        "resources": [
+          "scripts/private-production-runtime-workflow.mjs"
+        ],
+        "dependencySurfaces": [],
+        "bindingSurfaces": [],
+        "computedBoundaries": [
+          "8e59ef2a6bced21bd57e1c2c1a6edd4c6255ac1b1d547fb01f92bee9b17ec883",
+          "38c7b017fa5c5247dc7e9f16bd5588b16c461cab42a77ff80df6ef605ce61c52",
+          "d346bef84b2692c2d7f24cdc34567aa3d0ccc582bb0942449e5fe13f4c9f720a"
+        ]
+      }
+    },
+    "scripts/prepare-code-only-public-runtime.mjs": {
+      "beforeDefinitionSha256": "8de33b70774429d5a791e6cdfeb28a7860415ca428320a40c070b6e11faf6a85",
+      "definition": {
+        "nodeImports": [
+          "node:crypto",
+          "node:fs/promises",
+          "node:path",
+          "node:url"
+        ],
+        "imports": [
+          "js/core/ravscore-model-contract.js",
+          "scripts/build-forecast-share-projection.mjs",
+          "scripts/lib/private-conditions-hourly.mjs",
+          "scripts/lib/private-weather-component-inventory.mjs",
+          "scripts/lib/public-hour-delivery-pack.mjs",
+          "scripts/migrate-post-cutover-private-runtime.mjs",
+          "scripts/protected-private-production-runtime.mjs",
+          "scripts/public-conditions-lib.mjs",
+          "scripts/ravscore-operational-pages-recovery.mjs",
+          "scripts/lib/public-map-hour-projection.mjs",
+          "scripts/lib/public-bulk-details-archive.mjs"
+        ],
+        "resources": [
+          "version.json"
+        ],
+        "dependencySurfaces": [
+          "0a3995edd1d98043222075551ff517319b6905c7d73e0b330ae658303a3ffde6",
+          "19133d073af8f8b73ee31766f3de4f7e0483b78ab7b848782e2a05f82f9943e6",
+          "2fc97329106147e58c6a394f722a0e20f0b08492cc16109fcc59b4830e4dd2b4",
+          "31bcb5490d2d9234deb06dc3b7f466ad3dce510569c30dff7d2b745e50f2072b",
+          "5645f18332505fd756b1b49027102ad27a9ceddfe38b36d9b35304f1b3a992ca",
+          "67ee23b2eca68c1db8a3f858f508cedfa19b7728baa2cdcdbada2ff46fa086ef",
+          "691c6c4bb21a81590fe243461de8bcdae832b4180d33253b204fde7e00105f3d",
+          "7768a7a5dd8ba7803f4ea50d41b2ec91bfd2638b043a0fe0dd33b47380867515",
+          "802baa4e803994f8706043d8e31ac4364dd52615b80e73f5b82f87ddbdacea1c",
+          "825cdd4b8abc461a6711d613f04754e365fb2bd26c374abfd8da9fc79d960bbc",
+          "a25181d5e04e4b2d8a22a3804948860af04908f850d51fcc61c95e902040a4d2",
+          "a5e76231d2c75c3bbe10df49e56c1363141d53724b397049bfdf968e9381217b",
+          "adda06193085f1af4aea4eb1ee7cf4a0700a8d68262f8e83ec89657a9bc16ed1",
+          "ca363ae2082de5568fa0a0960d773305dd41129b27f14508b126b07f35c441f0",
+          "da20f21dadd6db71ae598b2e7003ebc8a6bb9a361f686d51f244b6486aea30cc",
+          "db1ce7cf0933001fb1aee7a72685e16fe20ed89903e54ef81571bb5502afc300",
+          "e562ba0840c5aa885a6f42b41d7ddcf88a83ccc47c6e394918d82a38cabe67f5",
+          "ee6dd3eb8f39cc3d013501b784266cb43837999463e09a25155a4ce08e08d413",
+          "ef8ec812e2b7172506fd623086c052abbb4590a53b0629c6ef8dbfd81fcdcb65"
+        ],
+        "bindingSurfaces": [
+          "0ff13243c2a3b7216918c1dfbc69747df85de5163f07933c0c6f9ed41c5438e1",
+          "21f2fa4e01a158e2aa778b39e7b54ffeac93339edbc497bb40b7f737b2bf34e8",
+          "2f866ac40d559a2dd7dae3b0f4f82ab6028b083d650fccd6fcd5f47244853b08",
+          "420ae53fd7399ef38379541ab0dd0bf65bb1f9ce803faebd17fb23f043bb6830",
+          "521c0c383896f89077ba36ab42a9dadbb8a45427665289bddb0278966ba09f91",
+          "5cf4913cca83bf8882d647f7c8eedac2b92106e07ae2426689194aed72753b17",
+          "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+          "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+          "a76c24d9da680e1357f4470c8fca085a1b67cb1fefac1598b60a3330ae354180",
+          "d6b48e2fb6087aec26254f8bd3a6c8dc86405fb8489df0d4e9f99f94b7b3cc69",
+          "f88cdb06a72e5900ba3518876463c169e65c56d9bbdad56ee07f51413b30a97a"
+        ],
+        "computedBoundaries": []
+      }
+    },
+    "scripts/acquire-code-only-public-snapshot.mjs": {
+      "beforeDefinitionSha256": "36179f85a4e26208ad966f34208a33a20d48503483c4e89e5b5e97aeba2ccd1d",
+      "definition": {
+        "nodeImports": [
+          "node:child_process",
+          "node:crypto",
+          "node:fs",
+          "node:fs/promises",
+          "node:os",
+          "node:path",
+          "node:perf_hooks",
+          "node:url"
+        ],
+        "imports": [
+          "js/core/ravscore-public-profile-contract.js",
+          "scripts/prepare-code-only-public-runtime.mjs",
+          "scripts/ravscore-operational-pages-recovery.mjs",
+          "scripts/resolve-code-only-public-source.mjs",
+          "scripts/lib/public-bulk-details-archive.mjs"
+        ],
+        "resources": [
+          "data/live/coastal-parts-v2.json",
+          "data/live/manifest.json",
+          "data/live/public-conditions.json",
+          "data/water-level-station-routing.json",
+          "scripts/extract-code-only-public-source.py",
+          "scripts/ravscore-operational-activation.mjs"
+        ],
+        "dependencySurfaces": [
+          "018f169c26ed7a880173f5f625d7d84382addfafa48d500118a815372e625dc4",
+          "0a95f351f45aaca6b138591697b26cf97051f0aa6c2598e980285e0ef2f2a9eb",
+          "0a9780dbccd4be762bacc37b768c092ad749aefe17073488783956cef32b10e6",
+          "131021b1dc7c95687473624ea18f794a2348973ec61b629b2456d7190cbdf0a4",
+          "221e3304cc189d401eb680bd097b1e1dc99e4023de2d42f50173e859b3a26521",
+          "225df1e7d4327659135d50aa12d2221d10b326feac13f2429de98c26160b0acc",
+          "24735750deb99681bc2041b80e536543f7afd8b1b3b846bbfed3045d0c052629",
+          "2866ed8d837b8adba2c6bf7309d79092c76266f4ea94db18c126f7dc54e1a801",
+          "2a305e43253e24b48e10d95409a90d2eccac2fd2bf761fad74c97bf96b34e0ef",
+          "2c655e5a29bff38e78bc52167bc02b278123921e89ea7f3177591ef12e7d1766",
+          "322b9dd35b2973632b05156615db37bd40ec6b33258d609148428a6cf725364e",
+          "3436d2ab3946b780f45d0ec3a2440abc462a2f18ff2c9e77763ddb259405d5c5",
+          "4141c17c12fc1950c3308b16caebc152b9cd8988264366a22f3ca52a594f55d8",
+          "42d845aa44f49b293f68a7be4e6c68629138f1d0f010edcc511ad96e1fda4d6e",
+          "43bb76327a95e4f3dbff215966bd0fe6e102f5241e0c32c791b1bf8f2d23df62",
+          "473c44e7b0497de21099076b463d63b53c2e0c0c060a41f6fa7e93796762e820",
+          "5261c8a46d16ba56897b8c8405a5cee9d5b26330454164c9793b11228d5a8f65",
+          "72572246310f32890d9f3b27b18292586af99b495d7af5c60dcba1f6225173ff",
+          "7d1ced152c7290530d181fc52e3277af93608237617139df2036339a4bd8aff8",
+          "82a2ed9f21b06f11b2c24aa4a46c8e28c561a1ed4e68cc0aa3d18d9428cff4eb",
+          "8761776889e1e8e5d78d0e26da65f821cf65d7a1ded45433f36b9c5d540cc5b3",
+          "883300aa350c04f68e1997da8bb4cba49feeda21ac311083a842720c5aac5478",
+          "8c3f20b5be2f7ccfc57a96336e0c2a54ad676f6a182d2e9f4b67ba403b4b072d",
+          "923cc4f4c8b57a46cf969742b384c3564306148d5b14e40b33d92cc142b006b6",
+          "93c4da6a0e5bc158db3c2a9d46570e91a9bf0732724b29c676326c5caa9abd01",
+          "969b8327f78a053e0f26929c3300d865bb905b88f450b299fe0c05365e1c3a56",
+          "9a1fb80fa6a5c81ca7057c2fc27c9dc5723144f7b7edb47aaaa1518f93c9dc53",
+          "b4a7d65bdcbf2915a4fe55b3aed1f561fab99c70ce3bb67ff915dca1ce888088",
+          "b8351f3611913e477c0c4a0eefafb01a358004c996faea671ab8454f80ad4ccd",
+          "b9c7dc144ebb2ae8ca7b020233a4c52135251498acda5870fa8c2bd40663c121",
+          "c3fa79db3783de19a8f6688b3a1aedaef75bdfaed154d8a4ac12c6d8897fc6d5",
+          "c618fd301826668172469ad3e6dfb68b31d167a69d0b3bf7d3a0ee36655e0ef2",
+          "ca439118dc73f8ec2e882796b7b94a0fa0a1ba06426dda62cef4085924eabde5",
+          "cfd8bb63d0e3344768f3a037899987e2d85c6415791e1ca206b3cf83169d32af",
+          "d065d8e833632379b2654a191e115c518b7eb4577328952ac46072a88f184ed0",
+          "d1ebeae9b6811f4dea6f5bb733ae93a3952f40c1a08e6f39a1f64b19ff75c08d",
+          "effd8fa1a2bd2410290de76fa645e7afe382c281592a571bc4371aa6dcb015fa",
+          "f0a3c5269f78d094c83fe6332cab5f41b0573b1e744613f7ded0ba1addaa0a7f",
+          "f47a6289f87be4d20fb785aa0451fcbfc9714c686fbcfb92769bacf654c43b26",
+          "f62128d58d4a01cd1ec9be789c5bdbb0d7924ed4eeb01fd1240c5285e6df89e2",
+          "f994b3276ca2037b251db9552fdc6b68646148c60f9e286587eff365d56d5f20",
+          "ff19848fa502f2aaebe195a794ce4c89ba3188d7c256b52830a6f4e4f57402f2",
+          "ffee9f7ce01f65d7768a06e0315fe1fb98ea01cc2d06b8c016249de72870380c",
+          "1e7d09621f8485db76fdeb498a8be23f734f719e8e599cd552d6de29918b6279",
+          "5e54b31f8c73798fcf710ebf68a0f68e22f73f249faf2e4dc5e91213686f77d1",
+          "476b31b50248b994711f38c953275ce57c9f4b215b02265a1e7668bb1f0f5bf2",
+          "112b5f979aa85a9ee3d5e12e529842a594d8b98bf65eeb71be4588c09096f556",
+          "c5b55a35bdd1b5e0710acfcdd2b6777cf237175475d9b8a275c8e289e6ca7735",
+          "be34be9a9c376f04f2c85e603c58e23df7a0423e7e92501fc004d80b38ef1dd3",
+          "55c515416de8253f7e5f2083e3a3da42c5d7b73f61811d906d0ca39ddc15bd45",
+          "83dd7cf68e8842bb0efe36345c31e3c913c81cc94c7ac2d721eedc4fb2c798da",
+          "cb1bd931d898f4712ccc7c1f61e0c48d750a573df59685857c95f641bb7ddaa7",
+          "5847de468d93003abd0d68dc29ff59fc3eb0b1b7bf17381109ba6fd733285506",
+          "2927635d510a9ea98849dc91f9c4434d98226e5163fff46be21a22db59746321",
+          "0d392fd11c0218d235aeb5e0e5eb04cfc45f4d491fef2021d225d5c245cf2533",
+          "9f98d176b9e17dc7e38d8ccb63c022fc7e67b580c0a91e5c9ef8a50ca98dafd5",
+          "0af2f777fdbbba30747fd7168f9764c6e8733b2b6394d28b4d7b29698adc2a9f",
+          "6a7ecf7e03d5ed83ad68215056233488b86da2c26cc9f08f5232966b421d4d2a",
+          "fec70c0afe0247d2523604e3f393feb3de9334e6398e59f1ff481d70f423d01e",
+          "c5812c9b47f6de97a5b8523ef476c3884e3d209635c916f3a6f239e534c70491",
+          "6c4c52312c228d796a15baa8b2724de304b5d219f638b862eb62e7858ffcc01b",
+          "0f86ca9b2d8958878ead18be11340e5ee1b8532b8d7caa6806e24cbfaeb979c5"
+        ],
+        "bindingSurfaces": [
+          "02ce297516202ebe517788eb985b5240347df0e25247adb4153ce92f0e4080b3",
+          "08ea126e549ab44b17494ce075fe23310e308b6756d479ba7cb874eaab342e54",
+          "29889168321fde65ed38a935a0bf00a8c1867502096c728c502f8468385107e6",
+          "2f866ac40d559a2dd7dae3b0f4f82ab6028b083d650fccd6fcd5f47244853b08",
+          "32030e9f23a82d5a822c7c2d2e87512b1b476484a4035a96445ca4131047ced8",
+          "3b6a46f991523803aae7b2d65f263619540c06653505001fcbcc09c77550e34e",
+          "4d5d93f1995b4b4f3852baa77669b133c21ad62e68343dca0e5697104b0af6e3",
+          "54294bb273cdffe2020968146db381ec35231d722df32d3d66fe18878ee7a2b1",
+          "5a7478552886e713b3dfe7bae4266fa7baf98e2ac787d0713ec70a9dd2ecbe98",
+          "7a5622304238e96b19c1fbfaaa913dd56be2a53dc33a0660ce521ea6566508fb",
+          "83402e6da3387fff638006410a68baa2ae78e1cec1ab86b6d7ab4e131525f0fa",
+          "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+          "8fb27bf37fb147674c1a68d52a7315aebb864b787bc5de75b32718c18a1a511c",
+          "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+          "c49481cf91b5b1271465a5558c5a21f6e2bdd4e18b5dc0851d77f6637de8d796",
+          "c9400a3dee4e25aae3eebbff38f27a7f2dbad09539b60bf457011dcc0cc1411f",
+          "db7cdb4c0c5e63550323b68d90112abec90b6cddfbc621d236154c4998ffb2c7",
+          "f920bdff7701af26bc7c7b25a536eb58e44d247fb52c85f904e90d0edb1937e4",
+          "f9aa1a59bb5127b6a2f7f4e4038929eb12238e441087ae9b98be01010a8e0dde",
+          "71e4ccd9652b35378fa96d82c103a68786a7a4798b2b5532848ddd5c8b887900",
+          "519c128718679a039d58681e37f2625593b4e98561858bb0377c465e1db0cb59"
+        ],
+        "computedBoundaries": []
+      }
     }
   },
   "resourceFiles": [
@@ -8691,6 +9127,44 @@
         "path": "scripts/test-completed-private-runtime-workflow-inverse.mjs",
         "beforeBlob": "b36e3b70b8344d58fb7097591166ac20de817c6c",
         "afterBlob": "92c7437e0a48861f5c0aabbf4e39548f988d3402"
+      },
+      "artifactMetadataCaller": {
+        "path": ".github/workflows/deploy-code-only-repair.yml",
+        "beforeBlob": "be9e3d421971dd8b61db94893f21d5661e8f34d2",
+        "afterBlob": "155562a7eb49875ea03fe0350711f79c0729f0cf"
+      },
+      "artifactMetadataHistoricalBridge": {
+        "members": [
+          {
+            "path": "scripts/lib/completed-private-runtime-workflow-review.mjs",
+            "beforeBlobs": [
+              "044155fce98e9f0b2fbd0459a5e9ef80eb1267f7"
+            ],
+            "afterBlob": "3110cf89e206346ef9961e1b9e0ac9fc04e40f50"
+          },
+          {
+            "path": "scripts/lib/native-original-continuity-workflow-review.mjs",
+            "beforeBlobs": [
+              "0467728278b4da167b3bf2d9dcfaa2a9d48c7f23"
+            ],
+            "afterBlob": "62ba3db7133689e607dce7669b5b36b0b063cf12"
+          },
+          {
+            "path": "scripts/lib/archived-production-gate-review.mjs",
+            "beforeBlobs": [
+              "0945181849688930b5a23f27b80b2dbcf7fca47f"
+            ],
+            "afterBlob": "b06a7dffc8dd7864a094fe4e14ac116fbef5e60d"
+          },
+          {
+            "path": "scripts/test-completed-private-runtime-workflow-inverse.mjs",
+            "beforeBlobs": [
+              "b36e3b70b8344d58fb7097591166ac20de817c6c",
+              "92c7437e0a48861f5c0aabbf4e39548f988d3402"
+            ],
+            "afterBlob": "c0d11027c691cf8a99dba26c0135b43eb28f7ee8"
+          }
+        ]
       }
     }
   },

@@ -6,6 +6,48 @@ import fs from 'node:fs';
 const review = JSON.parse(fs.readFileSync(new URL('./completed-private-runtime-workflow-review.json', import.meta.url), 'utf8'));
 const coldReview = JSON.parse(fs.readFileSync(new URL('./current-family-cold-start-workflow-review.json', import.meta.url), 'utf8'));
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
+
+// TEST ONLY. Restore only the two reviewed complete metadata-caller inputs.
+// This read projection grants no runtime, Source, original or publication authority.
+const reviewedPagesMetadataCallers = Object.freeze([
+  {
+    "origin": "ordinary598",
+    "after": {
+      "bytes": 225321,
+      "sha256": "7bcde5fb1dafebc4a99104c1c106d2810e9c3210799cda48ba91467bfb7d2c2d"
+    },
+    "before": {
+      "bytes": 225325,
+      "sha256": "391628fbcaae106df7a29d5c7caa3a7487af18b025bd4692bc93aaab5d396bf8"
+    }
+  },
+  {
+    "origin": "source611to612",
+    "after": {
+      "bytes": 252063,
+      "sha256": "de9a9a841b9f855838c6c071910ab6d707ca55c5b8d99533f790cea66603ee2a"
+    },
+    "before": {
+      "bytes": 252067,
+      "sha256": "bd5861018d8cae0821bdd7db88f9b80813f06513c371b51b7fbb326a80874779"
+    }
+  }
+]);
+export function inverseReviewedPagesArtifactMetadataCaller(source, role, relative) {
+  assert.equal(arguments.length, 3, 'PAGES_METADATA_CALLER_ARGUMENTS');
+  assert.equal(typeof source, 'string', 'PAGES_METADATA_CALLER_TYPE');
+  if (role !== 'repair' || relative !== '.github/workflows/deploy-code-only-repair.yml') return source;
+  const bytes = Buffer.byteLength(source), digest = sha(source);
+  const row = reviewedPagesMetadataCallers.find(entry => entry.after.bytes === bytes && entry.after.sha256 === digest);
+  if (!row) return source; // Unknown/mixed inputs still reach the unchanged strict historical oracles.
+  const current = "          node scripts/read-pages-artifact-metadata.mjs \"$artifact_id\" > \"$RAVRADAR_OPERATIONAL_HANDOFF/pages-artifact-rest.json\"";
+  const original = "          gh api \"repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id\" > \"$RAVRADAR_OPERATIONAL_HANDOFF/pages-artifact-rest.json\"";
+  assert.equal(source.split(current).length, 2, 'PAGES_METADATA_CALLER_EXACT_HUNK');
+  const previous = source.replace(current, () => original);
+  assert.equal(Buffer.byteLength(previous), row.before.bytes, 'PAGES_METADATA_CALLER_WHOLE_PREDECESSOR_SIZE');
+  assert.equal(sha(previous), row.before.sha256, 'PAGES_METADATA_CALLER_WHOLE_PREDECESSOR_SHA');
+  return previous;
+}
 // TEST ONLY: exact terminal-delivery repair. No ordinary calculation/source
 // admission changes: unknown/mixed bytes are returned to the old strict oracle.
 export const terminalRepair4145WorkflowReview = Object.freeze({
@@ -462,6 +504,7 @@ export function inverseRelease597WorkflowUserAgents(source, role) {
 export function inversePagesPublicProjectionWorkflow(source, role) {
   assert.equal(arguments.length, 2, 'PAGES_PUBLIC_PROJECTION_WORKFLOW_ARGUMENTS');
   assert.equal(typeof source, 'string', 'PAGES_PUBLIC_PROJECTION_WORKFLOW_TYPE');
+  source = inverseReviewedPagesArtifactMetadataCaller(source, role, '.github/workflows/deploy-code-only-repair.yml');
   source = inverseRelease597WorkflowUserAgents(source, role);
   const { roles } = pagesPublicProjectionWorkflowReview;
   const row = typeof role === 'string' && Object.hasOwn(roles, role) ? roles[role] : null;
@@ -509,6 +552,7 @@ export function inverseQualifiedScalarPlanningWorkflow(source, role) {
 export function inverseTerminalRepair4145Workflow(source, role) {
   assert.equal(arguments.length, 2, 'TERMINAL4145_INVERSE_ARGUMENTS');
   assert.equal(typeof source, 'string', 'TERMINAL4145_INVERSE_TYPE');
+  source = inverseReviewedPagesArtifactMetadataCaller(source, role, '.github/workflows/deploy-code-only-repair.yml');
   source = inverseQualifiedScalarPlanningWorkflow(source, role);
   const roles = terminalRepair4145WorkflowReview.roles;
   const row = typeof role === 'string' && Object.hasOwn(roles, role) ? roles[role] : null;
