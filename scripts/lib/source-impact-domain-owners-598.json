@@ -8856,6 +8856,34 @@
           "6f8b89ff62fe355900c4c0b41d9b3d5cdea5e00ffc693f914ba8d648ceaef397"
         ]
       }
+    },
+    "scripts/test-established-native-current-origin591-metadata.mjs": {
+      "beforeDefinitionSha256": "4eca4f9ed7dd102d3eacf614dce4f4bb39378211bbca4a81ff29c27f6a3a7f66",
+      "definition": {
+        "nodeImports": [
+          "node:assert/strict",
+          "node:path",
+          "node:url"
+        ],
+        "imports": [
+          "scripts/assistant-later-h0-runtime-transition.mjs",
+          "scripts/check-assistant-later-h0-predecessor-source.mjs",
+          "scripts/lib/established-native-current-origin.mjs",
+          "scripts/private-production-runtime-workflow.mjs",
+          "scripts/lib/assistant-public591-runtime-contracts.mjs",
+          "scripts/lib/assistant-later-h0-successor-source.mjs"
+        ],
+        "resources": [
+          "scripts/private-production-runtime-workflow.mjs"
+        ],
+        "dependencySurfaces": [],
+        "bindingSurfaces": [],
+        "computedBoundaries": [
+          "8e59ef2a6bced21bd57e1c2c1a6edd4c6255ac1b1d547fb01f92bee9b17ec883",
+          "38c7b017fa5c5247dc7e9f16bd5588b16c461cab42a77ff80df6ef605ce61c52",
+          "d346bef84b2692c2d7f24cdc34567aa3d0ccc582bb0942449e5fe13f4c9f720a"
+        ]
+      }
     }
   },
   "resourceFiles": [
