@@ -8771,6 +8771,50 @@
         ],
         "computedBoundaries": []
       }
+    },
+    "scripts/test-post-cutover-migration-routing.mjs": {
+      "beforeDefinitionSha256": "4bc3bee5094b8705c5dec142750c86cf5ecd99d37da11a57bbb066f06de9675f",
+      "definition": {
+        "nodeImports": [
+          "node:assert/strict",
+          "node:fs/promises",
+          "node:path",
+          "node:url"
+        ],
+        "imports": [
+          "js/core/ravscore-model-contract.js",
+          "scripts/assistant-later-h0-runtime-transition.mjs",
+          "scripts/check-assistant-later-h0-predecessor-source.mjs",
+          "scripts/lib/assistant-later-h0-successor-source.mjs",
+          "scripts/lib/private-weather-component-inventory.mjs",
+          "scripts/migrate-post-cutover-private-runtime.mjs",
+          "scripts/prepare-code-only-public-runtime.mjs",
+          "scripts/private-production-runtime-bundle.mjs",
+          "scripts/private-production-runtime-workflow.mjs",
+          "scripts/protected-private-production-runtime.mjs",
+          "scripts/test-established-native-current-origin591-metadata.mjs",
+          "scripts/test-installed593-original591-successor.mjs",
+          "scripts/lib/assistant-public591-runtime-contracts.mjs"
+        ],
+        "resources": [
+          ".github/workflows/deploy-code-only-repair.yml",
+          "scripts/migrate-post-cutover-private-runtime.mjs",
+          "scripts/private-production-runtime-workflow.mjs"
+        ],
+        "dependencySurfaces": [
+          "74ea4eafbb285a7e64491d533c44b75ba1b90ed2fe43dce536412cc162914fc1",
+          "b1771a26f40f0298fd7aeb91026ed178d99c711f68f21f6a1337a90860d1a533"
+        ],
+        "bindingSurfaces": [
+          "57c684023f0bfa6d1699ec94ecc4bd57217256abdaf2d46074eb06a33a33d40e",
+          "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+          "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+          "fd3b5d98980d59ece4e65c1d9992a12588e72efc5e7abe9276fc81ccf22a9d99"
+        ],
+        "computedBoundaries": [
+          "5a3bd52c06e81f0777359b0482ca5aef84871fe83ea9963d09c278b2c2cc4599"
+        ]
+      }
     }
   },
   "resourceFiles": [
