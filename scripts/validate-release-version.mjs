@@ -62,8 +62,6 @@ for(const [id,title] of historicalHandbookTitles){
     throw new Error(`Webhåndbogens historiske titel ${id} er blevet omskrevet.`);
   }
 }
-const adminDashboard=await fs.readFile('js/ui/admin-dashboard.js','utf8');
-if(!adminDashboard.includes('databasemigreringen til 4.0.310')){
-  throw new Error('Adminens historiske besøgsstatistik-migrationsgrænse er ikke længere bundet til 4.0.310.');
-}
+// Besøgsrapporten bruger nu servicevaliderede tal og fejl; den pensionerede
+// 4.0.310-fejltekst i UI'et er ikke længere en aktiv versionskontrakt.
 console.log(`Releaseversion ${version} er konsistent i app, admin, manifest, service worker, produktionsworkflowroller og releasekontrakt.`);

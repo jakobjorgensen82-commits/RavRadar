@@ -63,7 +63,7 @@ function normalCaller({coastlineRead=null,initialPublicReject=true}={}){
   loadPublicStartupSnapshot:async()=>{await publicRead.promise;if(rejectPublic)throw Error('synthetic original startup rejection');return modelStartup;},
   loadZones:async()=>zones,
   loadZoneRegistry:async()=>({all:[{},{}],active:[{},{}],legacy:[],collection:{features:[{},{}]},counts:{registered:2,active:2,legacy:0}}),
-  loadAdminDocument:async(key,fallback)=>key==='coastline-overrides'&&coastlineRead?coastlineRead():key==='weather-health'?{status:'good'}:fallback,
+  loadAdminDocument:async(key,fallback,options)=>{const payload=key==='coastline-overrides'&&coastlineRead?await coastlineRead():key==='weather-health'?{status:'good'}:fallback;return options?.includeSource?{payload,source:'fallback'}:payload;},
   readAdminDocumentNow:async key=>{assert.equal(key,'coastline-overrides');return {payload:coastlineRead?await coastlineRead():{schemaVersion:4,overrides:{},partOwnership:{},disabledParts:{}}};},
   getJson:async()=>({schemaVersion:1,zones:{}}),decodeRuntimeDiagnosticsEnvelope:async()=>null,
   directionReviews:()=>({}),setLocalJsonSafely:()=>true,
@@ -243,7 +243,7 @@ function actualView(run,name,endMarker){
 async function lateAdministratorAlarm(){
  const x=normalCaller({initialPublicReject:false}),health=deferred();
  const read=x.context.loadAdminDocument;
- x.context.loadAdminDocument=(key,fallback)=>key==='weather-health'?health.promise:read(key,fallback);
+ x.context.loadAdminDocument=(key,fallback,options)=>key==='weather-health'?health.promise:read(key,fallback,options);
  for(const key of ['openHandbookReview','retestSupabase','adminAlarmStatus'])x.nodes.set(key,{onclick:null,textContent:''});
  let renders=0,mounts=0;
  Object.assign(x.context,{invalidateAdminTripCount(){},adminTripCountCard:()=>'',mountAdminTripCount(){mounts++;},activeModelUnavailableCard:()=>'<p>model pending</p>'});
@@ -315,3 +315,284 @@ for(let i=0;i<viewRaces.length;i++)if(viewRaces[i].status==='rejected')console.e
 const raceFailures=viewRaces.filter(x=>x.status==='rejected');
 if(raceFailures.length)throw new AggregateError(raceFailures.map(x=>x.reason),'actual normal admin view races');
 console.log('OK: Actual first alarm and zone renderers accept late normal results without global rerender, stale identity or filter/draft loss.');
+
+async function ownerNoticeProbeOneClick(){
+ const project='https://afqhhdrkjfjtpadntdzo.supabase.co';
+ const providerId='10000000-0000-4000-8000-000000000001';
+ function system({role='owner',testMode=false}={}){
+  const x=normalCaller(),button={disabled:false,isConnected:true},status={textContent:''};
+  const authListeners=new Set(),calls=[];
+  x.context.state.tab='system';
+  x.context.state.access={profile:{id:x.context.currentSession().user.id,is_active:true,role}};
+  x.context.hasPermission=()=>true; // Even a full_admin may not send this owner's probe.
+  x.context.activeModelUnavailableCard=()=>'';
+  x.context.location={origin:'https://ravradar.dk',pathname:'/admin.html'};
+  x.context.PUBLIC_CONFIG={supabaseUrl:project,supabasePublishableKey:'synthetic-publishable'};
+  x.context.SITE_TEST_MODE=testMode;
+  x.context.AbortSignal=AbortSignal;
+  x.context.requireFreshSession=async()=>x.context.currentSession();
+  x.context.onAuthChange=listener=>{authListeners.add(listener);return()=>authListeners.delete(listener);};
+  x.context.fetch=async(url,options)=>{
+   assert.equal(url,project+'/functions/v1/inactivity-notice-owner-probe');
+   assert.equal(options.method,'POST');
+   assert.equal(options.body,undefined);
+   assert.equal(options.redirect,'error');
+   assert.equal(options.credentials,'omit');
+   assert.equal(options.cache,'no-store');
+   assert.equal(options.headers.apikey,'synthetic-publishable');
+   assert.equal(options.headers.authorization,'Bearer synthetic-only');
+   assert.equal(Object.keys(options.headers).sort().join(','),'apikey,authorization');
+   calls.push(options);
+   return reply.promise;
+  };
+  const reply=deferred();
+  x.nodes.set('clearCaches',{});
+  x.nodes.set('logoutAdmin',{});
+  x.content.insertAdjacentHTML=(_where,html)=>{x.content.innerHTML+=html;};
+  x.content.querySelector=selector=>selector==='#sendOwnerNoticeProbe'?button:status;
+  const render=actualView(x,'renderSystem','\nfunction defaultVisitorPeriod(');
+  render();
+  return {x,button,status,reply,calls,render,authChanged(){
+   x.switchIdentity();
+   for(const listener of authListeners)listener();
+  }};
+ }
+
+ for(const hidden of [system({role:'expert'}),system({testMode:true})]){
+  assert(!hidden.x.content.innerHTML.includes('sendOwnerNoticeProbe'));
+  assert.equal(hidden.button.onclick,undefined);
+ }
+ const owner=system();
+ assert(owner.x.content.innerHTML.includes('Send én prøvemail'));
+ assert.equal(owner.calls.length,0,'rendering must not invoke the probe');
+ const sent=owner.button.onclick();
+ await owner.button.onclick();
+ assert.equal(owner.button.disabled,true);
+ assert.equal(owner.calls.length,1);
+ owner.reply.resolve(Response.json({state:'accepted',providerId}));
+ await sent;
+ assert(owner.status.textContent.includes(providerId));
+ owner.authChanged();
+ assert.equal(owner.status.textContent,'','owner change removes the private receipt');
+ await owner.button.onclick();
+ assert.equal(owner.calls.length,1);
+
+ const preflight=system(),session=deferred();
+ preflight.x.context.requireFreshSession=()=>session.promise;
+ const pendingSession=preflight.button.onclick();
+ preflight.authChanged();
+ session.resolve(preflight.x.context.currentSession());
+ await pendingSession;
+ assert.equal(preflight.calls.length,0,'a changed owner cannot reach the request');
+
+ const stale=system(),staleReceipt=deferred();
+ const pendingReceipt=stale.button.onclick();
+ await settle();
+ stale.reply.resolve({status:200,json:()=>staleReceipt.promise});
+ await settle();
+ stale.authChanged();
+ staleReceipt.resolve({state:'accepted',providerId});
+ await pendingReceipt;
+ assert.equal(stale.status.textContent,'');
+ assert.equal(stale.calls.length,1);
+
+ const rejected=system();
+ const denied=rejected.button.onclick();
+ rejected.reply.resolve(new Response('synthetic-provider-detail',{status:401}));
+ await denied;
+ assert.equal(rejected.status.textContent,'Afsendelsen kunne ikke bekræftes.');
+ await rejected.button.onclick();
+ assert.equal(rejected.calls.length,1,'a refused or ambiguous attempt is not retried');
+}
+await ownerNoticeProbeOneClick();
+console.log('OK: Actual System owner action sends one fixed request and discards stale receipts.');
+
+const serviceWorker=fs.readFileSync('service-worker.js','utf8');
+const cacheSource=html.match(/src="(js\/ui\/admin-dashboard\.js\?[^"]+)"/)?.[1];
+assert.ok(cacheSource?.endsWith('&probe=owner-notice-20261109&visits=scope-20261108'));
+assert.ok(serviceWorker.includes('./'+cacheSource.replace('v='+pkg.version,'v=${APP_VERSION}')
+  .replace('map=plain-map-v3-20261104','map=${COMPACT_MAP}')));
+assert.match(serviceWorker,/const CACHE = [^\n]*-owner-notice-20261109/);
+
+
+// A read-only tab opened during normal bootstrap must receive its completed
+// inputs without a second request or a change to a human's current filter.
+async function lateOpenWeatherTab({leave=false,identityChange=false,healthFirst=false}={}){
+ const x=normalCaller({initialPublicReject:false}),health=deferred();
+ const at='2026-11-11T00:00:00.000Z';x.manifest.generatedAt=at;x.conditions.generatedAt=at;
+ const read=x.context.loadAdminDocument;
+ x.context.loadAdminDocument=async(key,fallback,options)=>key==='weather-health'?health.promise:key==='runtime-diagnostics'?{fixture:true}:read(key,fallback,options);
+ x.context.decodeRuntimeDiagnosticsEnvelope=async()=>({generatedAt:at,version:'4.0.593',acquisition:{requestsUsed:7}});
+ for(const [key,value] of [['weatherZoneSearch',{value:'',oninput:null}],['weatherZoneRows',{innerHTML:''}],['downloadRuntime',{}],['moduleGuideBody',{hidden:true}]])x.nodes.set(key,value);
+ x.context.publicSourceBadge=value=>String(value||'unknown');
+ x.context.moduleGuide=()=>'<p>synthetic guide</p>';x.context.bindModuleGuide=()=>{};
+ x.content.insertAdjacentHTML=()=>{x.nodes.get('moduleGuideBody').hidden=false;};
+ const view=actualView(x,'renderWeather','\nfunction saveWaterRouting(');
+ const task=x.context.ops.boot();await settle();x.context.state.tab='weather';view();
+ assert(x.content.innerHTML.includes('Runtime kan ikke bekræftes'));
+ x.nodes.get('weatherZoneSearch').value='one';
+ if(leave)x.context.state.tab='waterStations';if(identityChange)x.switchIdentity();
+ const measuredHealth={generatedAt:at,userData:{completeZones:2,totalZones:2,healthy:true}};
+ if(healthFirst){health.resolve(measuredHealth);await settle();}
+ x.releaseConnections();x.releasePublic();await settle();
+ const before=x.content.innerHTML;
+ health.resolve(measuredHealth);await task;
+ if(leave||identityChange){assert.equal(x.content.innerHTML,before,'another tab or identity may not receive the old weather update');return;}
+ assert(x.content.innerHTML.includes('7 forespørgsler registreret'),'completed normal runtime must update the already open Datakvalitet tab');
+ assert(x.content.innerHTML.includes('2/2'),'completed normal health must update the same read-only tab');
+ assert.equal(x.nodes.get('weatherZoneSearch').value,'one','normal late reads preserve the human weather filter');
+ assert(x.nodes.get('weatherZoneRows').innerHTML.includes('<td>one</td>'));
+ assert(!x.nodes.get('weatherZoneRows').innerHTML.includes('<td>two</td>'));
+ assert.equal(x.nodes.get('moduleGuideBody').hidden,true,'a collapsed guide remains collapsed');
+ assert.equal(x.stats().manifestReads,1,'late painting must not fetch the public package again');
+}
+await lateOpenWeatherTab();await lateOpenWeatherTab({healthFirst:true});await lateOpenWeatherTab({leave:true});await lateOpenWeatherTab({identityChange:true});
+console.log('OK: The already open Datakvalitet tab receives normal late inputs and preserves its filter, identity and current tab without another read.');
+
+// Failed normal review reads are unknown, whereas a successful empty read is zero.
+async function handbookQueueReadFailure(){
+ const x=normalCaller();x.context.state.tab='handbook';x.context.state.access={profile:{id:x.context.currentSession().user.id,is_active:true,role:'owner'}};
+ x.context.allowed=()=>true;x.context.listLocalHandbookDrafts=()=>[];
+ x.context.exportLocalHandbookDrafts=()=>{};x.content.querySelectorAll=()=>[];
+ for(const id of ['jumpReviewQueue','jumpLocalDrafts','refreshReviewQueue'])x.nodes.set(id,{});
+ x.context.loadAdminDocument=async()=>({title:'synthetic handbook',handbookVersion:'synthetic',sections:[]});
+ x.context.listHandbookReviews=async()=>{throw Error('synthetic review read unavailable');};
+ const start=admin.indexOf('async function renderHandbook(){'),end=admin.indexOf('\nasync function renderDocumentation(){',start);
+ assert(start>=0&&end>start);runInNewContext(admin.slice(start,end)+'\nglobalThis.handbookView=renderHandbook;',x.context);
+ await x.context.handbookView();
+ assert(x.content.innerHTML.includes('Reviewkøen kunne ikke hentes: synthetic review read unavailable'));
+ assert(x.content.innerHTML.includes('Reviewkø (ukendt)'),'a failed review read may not imply a zero queue');
+ assert(x.content.innerHTML.includes('Reviewkøens indhold er ukendt.'));
+ assert(!x.content.innerHTML.includes('Reviewkøen er tom.'));
+ x.context.listHandbookReviews=async()=>[];await x.context.handbookView();
+ assert(x.content.innerHTML.includes('Reviewkø (0)'));
+ assert(x.content.innerHTML.includes('Reviewkøen er tom.'));
+ const read=deferred();x.context.loadAdminDocument=()=>read.promise;
+ const pending=x.context.handbookView();x.context.state.tab='coastlineEditor';x.content.innerHTML='synthetic pending editor';
+ read.resolve({title:'late synthetic handbook',sections:[]});await pending;
+ assert.equal(x.content.innerHTML,'synthetic pending editor','late normal handbook response must not replace another open editor');
+ x.context.state.tab='handbook';const first=deferred(),second=deferred();let reads=0;
+ x.context.loadAdminDocument=()=>++reads===1?first.promise:second.promise;
+ const older=x.context.handbookView(),newer=x.context.handbookView();
+ second.resolve({title:'newer synthetic handbook',sections:[]});await newer;
+ const shown=x.content.innerHTML;assert(shown.includes('newer synthetic handbook'));
+ first.resolve({title:'older synthetic handbook',sections:[]});await older;
+ assert.equal(x.content.innerHTML,shown,'older normal handbook refresh must not replace the later view');
+ const stale=deferred();x.context.loadAdminDocument=()=>stale.promise;
+ const identityRead=x.context.handbookView();x.switchIdentity();x.content.innerHTML='synthetic identity sentinel';
+ stale.resolve({title:'stale synthetic handbook',sections:[]});await identityRead;
+ assert.equal(x.content.innerHTML,'synthetic identity sentinel','another identity may not complete the old handbook view');
+}
+await handbookQueueReadFailure();
+console.log('OK: The actual handbook renderer distinguishes an unavailable review queue from a successfully empty queue.');
+
+// Visit totals use Copenhagen calendar days on the existing SQL producer.
+// The normal default may not stop one day early near local midnight or DST.
+const periodStart=admin.indexOf('function defaultVisitorPeriod('),periodEnd=admin.indexOf('\nfunction renderVisitors(',periodStart);
+assert(periodStart>=0&&periodEnd>periodStart);
+for(const [now,from,to] of [
+ ['2026-11-10T23:30:00.000Z','2026-10-13','2026-11-11'],
+ ['2026-07-10T22:30:00.000Z','2026-06-12','2026-07-11'],
+ ['2026-03-29T22:30:00.000Z','2026-03-01','2026-03-30'],
+ ['2026-10-25T23:30:00.000Z','2026-09-27','2026-10-26'],
+]){
+ const FrozenDate=class extends Date{constructor(...args){super(...(args.length?args:[now]));}};
+ const context={Date:FrozenDate,Intl};
+ runInNewContext(admin.slice(periodStart,periodEnd)+'\nglobalThis.period=defaultVisitorPeriod();',context);
+ assert.equal(context.period.to,to,'normal visit filter ends on current Copenhagen calendar day');
+ assert.equal(context.period.from,from,'normal visit filter covers exactly thirty inclusive calendar days');
+}
+console.log('OK: The normal default visit period follows Copenhagen calendar days at winter/summer midnight and both DST changes.');
+
+// Use the actual document reader and the normal priority water caller together.
+// The transport below is synthetic; no admin document is read from a service.
+async function routingReadOrigin(){
+ const x=normalCaller({initialPublicReject:false}),memory=new Map();
+ const centralRouting={schemaVersion:1,zones:{one:{enabled:true,stations:[],method:'manual-weights',requireAll:true}}};
+ const projectRouting={schemaVersion:1,zones:{one:{enabled:false,stations:[],method:'inverse-distance',requireAll:false}}};
+ let remoteMode='central',reads=0,projectAvailable=true;
+ const storage={get length(){return memory.size;},key:i=>[...memory.keys()][i],getItem:key=>memory.get(key)??null,setItem:(key,value)=>memory.set(key,value),removeItem:key=>memory.delete(key)};
+ const service={PUBLIC_CONFIG:{supabaseUrl:'https://synthetic.invalid',supabasePublishableKey:'synthetic-only'},
+  currentSession:x.context.currentSession,requireFreshSession:async()=>{},localStorage:storage,console,
+  authorizedFetch:async url=>{reads++;if(remoteMode==='failure')throw Error('synthetic central read failure');
+   const key=new URL(url).searchParams.get('document_key').slice(3);
+   const payload=key==='water-level-station-routing'?centralRouting:key==='dmi-water-stations'?{stations:[]}:null;
+   return{response:{ok:true},body:remoteMode==='central'&&payload?[{payload,version:7,updated_at:'2026-11-11T00:00:00.000Z'}]:[]};},
+ };
+ runInNewContext(store.replace(/^import .*;\r?\n/gm,'').replace(/^export /gm,'')+'\nglobalThis.load=loadAdminDocument;',service);
+ x.context.loadAdminDocument=service.load;
+ x.context.getJson=async()=>{if(!projectAvailable)throw Error('synthetic unavailable project file');return projectRouting;};
+ x.context.state.access={profile:{id:x.context.currentSession().user.id,is_active:true,role:'owner'}};
+ runInNewContext('globalThis.priorityWater=loadPriorityWaterStationAdminData;globalThis.routingNotice=waterRoutingSourceNotice;',x.context);
+ x.releasePublic();let before=reads;await x.context.priorityWater();
+ assert.equal(reads-before,2,'origin metadata uses the same two document reads');
+ assert.equal(x.context.state.waterRouting,centralRouting,'actual central routing values and identity are unchanged');
+ assert.equal(x.context.state.waterRoutingSource,'central');assert.equal(x.context.state.waterStationsSource,'central');
+ assert(x.context.routingNotice().includes('Begge dokumenter blev læst fra central lagring.'));
+ assert(x.context.routingNotice().includes('Kortet viser valgene i denne visning.'));
+ assert(x.context.routingNotice().includes('Den offentlige prognose bruger kun kilder med gyldige data for den enkelte time.'));
+ remoteMode='failure';before=reads;await x.context.priorityWater();
+ assert.equal(reads-before,2);assert.equal(JSON.stringify(x.context.state.waterRouting),JSON.stringify(centralRouting));
+ assert.equal(x.context.state.waterRoutingSource,'local-cache');assert.equal(x.context.state.waterStationsSource,'empty-default');
+ assert(x.context.routingNotice().includes('lokal kopi (fallback)'));
+ assert(!x.context.routingNotice().includes('Begge dokumenter blev læst fra central lagring.'));
+ // A successful empty response must not reuse an earlier central saved status.
+ remoteMode='empty';memory.delete('ravradar-admin-document:water-level-station-routing');before=reads;
+ await x.context.priorityWater();assert.equal(reads-before,2);
+ assert.equal(x.context.state.waterRouting,projectRouting,'the same existing project fallback is retained');
+ assert.equal(x.context.state.waterRoutingSource,'project-file');assert(x.context.routingNotice().includes('projektfil (fallback)'));
+ projectAvailable=false;await x.context.priorityWater();
+ assert.equal(JSON.stringify(x.context.state.waterRouting),JSON.stringify({schemaVersion:1,zones:{}}));
+ assert.equal(x.context.state.waterRoutingSource,'empty-default');assert(x.context.routingNotice().includes('tom standard (fallback)'));
+ // Existing callers still receive just their selected payload, without a wrapper.
+ remoteMode='central';assert.equal(await service.load('water-level-station-routing',projectRouting),centralRouting);
+ remoteMode='failure';assert.equal(JSON.stringify(await service.load('water-level-station-routing',projectRouting)),JSON.stringify(centralRouting));
+ assert.equal(x.stats().manifestReads,1,'origin painting does not fetch a second public package');
+ assert(admin.includes('content.innerHTML=waterRoutingSourceNotice()+'),'the normal station renderer mounts the reviewed origin notice');
+}
+await routingReadOrigin();
+console.log('OK: Normal station loading preserves central/local/project/default values and reports their actual read origin without another request.');
+
+// Only two renderers stop before usable controls: history filters and the
+// local observation export. Exercise their actual common render/boot callers.
+async function cleanEarlyReadView(tab,{leave=null,changeIdentity=false,replaceHost=false}={}){
+ const x=normalCaller({initialPublicReject:false});let renders=0,probeDisposals=0,studyMounts=0;
+ x.content.isConnected=true;x.nodes.set('adminContent',x.content);
+ x.context.loadZoneRegistry=async()=>{const features=[{properties:{id:'one',name:'Synthetic one'}},{properties:{id:'two',name:'Synthetic two'}}];return{all:features,active:features,collection:{features},counts:{registered:2,active:2,legacy:0}};};
+ x.nodes.set('moduleGuideBody',{hidden:false});x.nodes.set('toggleModuleGuide',{textContent:'Skjul guide',setAttribute(name,value){this[name]=value;}});
+ x.content.insertAdjacentHTML=()=>{x.nodes.get('moduleGuideBody').hidden=false;};
+ for(const name of ['renderDashboard','renderWeather','renderWaterStations','renderZones','renderAdminCoastlineEditor','renderDirectionAudit','renderVisitors','renderLearning','renderUsers','renderHandbook','renderDocumentation','renderSystem'])
+  x.context[name]=()=>{x.content.innerHTML='synthetic '+x.context.state.tab+' controls';};
+ Object.assign(x.context,{invalidateAdminTripCount(){},invalidateAdminUserCategories(){},disposeOwnerNoticeProbe:null,
+  destroyCoastlineEditor(){},destroyDirectionMap(){},moduleGuide:()=>'<p>synthetic guide</p>',bindModuleGuide(){},
+  mountPrivateTripStudyCard(){studyMounts++;},historicalSummary:()=>({count:0,excludedCount:0,finds:0,successRate:null,averages:{ravScore:null},allRows:[]}),
+  resolveAdminActivePublicRavScore:()=>({statusDa:'synthetic verified model',labelDa:'synthetic model',binding:{},observationCalibrationEligible:true,kind:'integrated',scoreProfile:{activationState:'synthetic'}}),
+ });
+ for(const key of ['exportObs','historyDate','historyZone','historyResult','clearHistory','historyOutput'])x.nodes.set(key,{value:'',innerHTML:''});
+ actualView(x,'renderObservations','\nasync function renderUsers(');actualView(x,'renderHistory','\nfunction renderLearning(');
+ const from=admin.indexOf('function render(){'),to=admin.indexOf('\nfunction scoreAvailabilityCard(',from);
+ assert(from>=0&&to>from);runInNewContext(admin.slice(from,to),x.context);
+ const actualRender=x.context.render;x.context.render=()=>{renders++;return actualRender();};
+ const task=x.context.ops.boot();await settle();x.context.state.tab=tab;x.context.render();
+ assert.equal(renders,2);assert(!x.content.innerHTML.includes(tab==='history'?'id="historyDate"':'id="exportObs"'),'no usable controls exist in the blocked branch');
+ x.nodes.get('moduleGuideBody').hidden=true;
+ if(leave){x.context.state.tab=leave;x.context.render();x.context.disposeOwnerNoticeProbe=()=>{probeDisposals++;};}
+ if(changeIdentity)x.switchIdentity();if(replaceHost)x.nodes.set('adminContent',{syntheticReplacement:true});
+ const before=x.content.innerHTML,renderCount=renders,studyCount=studyMounts;
+ x.releaseConnections();x.releasePublic();await task;
+ if(leave||changeIdentity||replaceHost){assert.equal(x.content.innerHTML,before,'a changed view/identity/host may not be remounted');assert.equal(renders,renderCount);assert.equal(probeDisposals,0);assert.equal(studyMounts,studyCount);return;}
+ assert.equal(renders,3,'exactly the same still-blocked read view is mounted after actual public verification');
+ assert(x.content.innerHTML.includes(tab==='history'?'id="historyDate"':'id="exportObs"'));
+ assert.equal(x.nodes.get('moduleGuideBody').hidden,true,'collapsed guide survives the clean read completion');
+ assert.equal(x.nodes.get('toggleModuleGuide')['aria-expanded'],'false');
+ if(tab==='history'){
+  x.nodes.get('historyDate').value='2026-11-10';const painted=x.content.innerHTML;
+  await x.context.ops.publicRuntime();
+  assert.equal(renders,3,'later public completion must not remount an already usable view');
+  assert.equal(x.nodes.get('historyDate').value,'2026-11-10','an existing human filter is preserved');assert.equal(x.content.innerHTML,painted);
+ }
+}
+await cleanEarlyReadView('history');await cleanEarlyReadView('observations');
+await cleanEarlyReadView('history',{changeIdentity:true});await cleanEarlyReadView('observations',{replaceHost:true});
+for(const leave of ['system','learning','directionAudit'])await cleanEarlyReadView('history',{leave});
+console.log('OK: Only unchanged clean history/observation blocks reopen after verified public completion; filters, report/probe controllers, editor views and changed identity/host are preserved.');
