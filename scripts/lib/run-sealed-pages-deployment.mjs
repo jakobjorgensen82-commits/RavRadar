@@ -116,7 +116,8 @@ export async function runSealedPagesDeployment({
   'PAGES_TRANSPORT_OIDC_SCOPE');
 
   const github = { Authorization: 'Bearer ' + env.GH_TOKEN, Accept: 'application/vnd.github+json',
-    'X-GitHub-Api-Version': '2022-11-28', 'Cache-Control': 'no-cache' };
+    'X-GitHub-Api-Version': '2022-11-28', 'Cache-Control': 'no-cache',
+    'User-Agent': 'RavRadar-Pages-deploy' };
   const listUrl = api + '/repos/' + repo + '/actions/runs/' + env.GITHUB_RUN_ID + '/artifacts?per_page=100';
   const listing = await requestJson(fetchImpl, listUrl, { headers: github }, 1024 * 1024);
   const rows = listing.data?.artifacts;
