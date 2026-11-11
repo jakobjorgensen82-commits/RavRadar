@@ -506,6 +506,22 @@
           "node --test scripts/test-ordinary-pages-immediate-retry.mjs"
         ]
       ]
+    },
+    {
+      "path": "js/services/admin-document-store.js",
+      "domains": [
+        "adminUI"
+      ],
+      "controlQualification": true,
+      "exactSourceTransition": true
+    },
+    {
+      "path": "js/services/visitor-report-service.js",
+      "domains": [
+        "adminUI"
+      ],
+      "controlQualification": true,
+      "exactSourceTransition": true
     }
   ],
   "exactSourceTransitions": {
@@ -600,7 +616,8 @@
           "js/ui/admin-active-ravscore.js",
           "js/ui/admin-coastline-editor.js",
           "js/ui/admin-direction-editor.js",
-          "js/ui/admin-private-trip-study.js"
+          "js/ui/admin-private-trip-study.js",
+          "config.js"
         ],
         "resources": [],
         "dependencySurfaces": [
@@ -611,7 +628,8 @@
           "5cf5f89387432cf04ac62a65583fdabee64cf504657834ca4eb792df75827205",
           "78bdb1615a46df96f0857b39e532cd3fe694ba285bb4f08b9a478b8bc621deca",
           "8e791f86b74eece8214039feb110d9387fb921c47673dadef3929d22247cc762",
-          "d9b0547c1aac378e238415a522990d61079c1ae4bae9cbb47c6a46ba15b68fa0"
+          "d9b0547c1aac378e238415a522990d61079c1ae4bae9cbb47c6a46ba15b68fa0",
+          "64da06780fcdfd9b81cb4cb2d980045070470fd66415084c959db7e36466790f"
         ],
         "bindingSurfaces": [],
         "computedBoundaries": []
@@ -3326,7 +3344,8 @@
           "d1239ff487cab752717f7038c97c47fe6b874f25276fde7fdea462353e31b525",
           "250de70e2b253b36bd360b9250223a54c6a25a3f90600aa6f1faeef7b435459e",
           "3ba93ef36fabd417553a2977b676921aec38b31a9a95c07717f1a2daf548a19f",
-          "d3919cf845bd1864b069b0ce3d59e7b551c02ab9fc2decd7b85e0a6e31f98005"
+          "d3919cf845bd1864b069b0ce3d59e7b551c02ab9fc2decd7b85e0a6e31f98005",
+          "abf2409d917c80375cd5f1462102e9ff99514cf233571396c96a98cbac518738"
         ],
         "computedBoundaries": [
           "00ada12ecd2b128af76b68f0df52777a4b55b2d5bd5b26547915d747725c25e0",
@@ -4951,7 +4970,8 @@
           "node:os",
           "node:path",
           "node:test",
-          "node:url"
+          "node:url",
+          "node:crypto"
         ],
         "imports": [
           "scripts/lib/source-impact-control-imports.mjs"
@@ -4999,7 +5019,11 @@
           "scripts/update-dmi-bulk.py",
           "scripts/test-runner-android-sdk-reclaim.mjs",
           "scripts/test-public-cold-start-4.0.303.mjs",
-          "service-worker.js"
+          "service-worker.js",
+          "bootstrap.js",
+          "js/services/admin-document-store.js",
+          "scripts/lib/source-impact-control-imports.mjs",
+          "scripts/lib/source-impact-domain-inputs-594.json"
         ],
         "dependencySurfaces": [
           "0cfd063c6d1ace9cc217fc8ca6ca315a36a74c5604a7a9a2e3f4a7511a600af2",
@@ -5523,7 +5547,77 @@
           "be6108a0621035391d0ccd4a9ef77e344d6d42e51acff9bb719ded2c06aa30bc",
           "da7f8bf50d2fbfe9fe5aa3ff5ccf5455843bbddba60897005d158f214a91fbce",
           "eb7dcbaa56d9b55d65c8f0dcf9bc98ffa08e8f1869645dfd0fffc3c8d5ae18d4",
-          "5b4b34ccd59a95ae44b58f47b94fd5c101d696bee5612ace7ff9a2f17000314e"
+          "5b4b34ccd59a95ae44b58f47b94fd5c101d696bee5612ace7ff9a2f17000314e",
+          "8a2255ca9854e33aa800e53fc0fd0fbc16264afb86b9c855e84338ffa56297a1",
+          "24b02758d931b9c50da293d5e5cc7bc713dcc59699786f126a35ea3964cc276e",
+          "c66ef7ba0dc390e8c9b3386dcbe5f896aeedf3df508a4545461adc17cac1d35a",
+          "4b39ef0d61e7d18889d3c895a143cb36912c9aea89416ce79afcc492bb54fe62",
+          "4fb4a918d4d9791576a9983f3d03395552bc43ffe2495c8b1393058299aa385a",
+          "8f50aa689deb3ae7a05c0a63c8e7c3c3a22bd895f93bde3fd93c487de59ad1de",
+          "930191920863dfbb3f78871060056ad55048e8906a60e72667ae6f0c9998dc1c",
+          "24b02758d931b9c50da293d5e5cc7bc713dcc59699786f126a35ea3964cc276e",
+          "396597a308f8030b51b21c35ca4bb1f61aae9c81aa4d1f246f6015fc7efc1a24",
+          "587c0d75df8ea0d78fc57694fa0dc41d0b90a005d853b356aea506aca79d0794",
+          "a67e7fe3f840687273f680982e9faeb268ea3e20cfb1cd575008471b43733bbb",
+          "a45cd69906e1c6649d3a945b6b13532e287c38fbcd1d561333c99ea735dd5115",
+          "7914a1be54e472ecee6288a4091617dd8a9f6ff5779c10ed7ce334e66c773238",
+          "9033c2495d32b3f727ca57fe01865e7dc450d5a80b920f3e827b2293fee2f0f2",
+          "7b0cfc0a754b386ba942d0cce47f31d919d6c01bc36831ba9118a43952c869f4",
+          "5f696220b1333b1b763045fbd818b3cf96a24ef04de48845f34b56ceb69351bc",
+          "e0e3c5cb4ab7a27f01a6ec0539077236b92c73913ce541df629d692c3c04b4ab",
+          "50ddc0c5f917fdf8ab2c30abc2911bc83ac3c973e079e37a1d85d31afba0fabb",
+          "57b9acb45b0e02773a78f28432cbef2e8a0943695702976217d2ea6de97a92cc",
+          "26365a508debcd36e38505f63eec4c7a2dc59d9088a57dc7f0a471df384b3e4c",
+          "6d56e77cf7339cf8e50945a4fcc9fc6baffe0ba389c6d8ddb6b83957d328eb34",
+          "077c1754bdcd5ddb63bd8274630a7ca8ea576875f01fba2facb99fbbeb381df0",
+          "d4ae26b27cf517ce8a0b1b601177c26e0a2bd746d6af8127ce8133fadd00411e",
+          "d59e949aed186dc84f872b32b9288586cb45cf0f4f39afe57eade08017afcefd",
+          "de30ef4c179d9dd47b02ec617df4603f0075dafb6ae9e771f0e60e154d947ebc",
+          "b49d494aa8579d0d76b459bb1f15bc7b65d28c4af67f15d61162d4ce24dc4e29",
+          "2c186623c5d3fbd4fd83d6f711e1db749c7702e6ad6b2eb69927efbedf46a992",
+          "fda313d94c50f038ae837f6a43153c8b54c752ba65b9483d6126677ee48b68ff",
+          "19be69796df42383876b61fb2f8fe5d397b563dc68f02eb0f9dc613ec27cbb76",
+          "8a2255ca9854e33aa800e53fc0fd0fbc16264afb86b9c855e84338ffa56297a1",
+          "24b02758d931b9c50da293d5e5cc7bc713dcc59699786f126a35ea3964cc276e",
+          "b4cd47d5a20190211d796cedee1c36b79fb283b46262797b9d64d4f2b627fe0f",
+          "557bea3df6e0b4d266958efc35427a70d3908ad2eaa3c94c4a5886e56e05765c",
+          "0b81bbf676881b92903bb8e472a3cc4f3ec4cc060133c6870d994c36997a639a",
+          "1c26ecd1242eec34184c411901f1704af41025b2ac3064a2f2e5b7f4f6f2a60e",
+          "c000c00fa81aac936f7ab68a51bb6e1a14b76cc42e802ff486111203c114a5bb",
+          "193f00e9ff799c2031c19c2c4da25a01746566f63f522e0d5b760f058ea70d77",
+          "377271ec0f398968296da3f5e3a9f5249e1a55cea6e381d5ab82672e6c8b4b22",
+          "5f4361d6116316f37de98fcfc36e7f16caff37bd1d132916a88ea7f8a3c5c9d6",
+          "aa3f86d912163b85095ba903ad4297669044273d7f7888cb572c13e06f309dec",
+          "5f4361d6116316f37de98fcfc36e7f16caff37bd1d132916a88ea7f8a3c5c9d6",
+          "47ebd5dcfaa65c927f6c023cbc44f13322abce0efd4d4fc00ef7875e1b6c8880",
+          "96ac730e8f5005a22e9611a6c50147ca2f6f2d58dbf8bdaf3a351e34c6146748",
+          "96a27b1ce74dceafdbba14f68f2fe23e5f7f0c97b3b727f9b25fbebba855c2ff",
+          "9aae8f7e98daeffc036bf1dcfa36bd8e31d7d7f225c9a69f937af5a9ffcb2af1",
+          "db9df355a201fd455d02781e317cbe3d309b3cbec924ea174e9d9ee6ec909b6b",
+          "e3ddae6e16eeed87f9c4cc60093a5d0e8067a63084edcc129a40136c7c1d467a",
+          "f303df0c1ae8a0fa7f23c731523f399ad6f4a89a54cc85e9087bc4c294ddf246",
+          "e3ddae6e16eeed87f9c4cc60093a5d0e8067a63084edcc129a40136c7c1d467a",
+          "208d1532749372a17553b452b277ab04b27261fd6ff205d790df91999a78cd71",
+          "f2966a123455170e5d5eb9702d59f969cfda26cca3245fc0e42e0f616b84df3f",
+          "3926ae6448a0bfa6d172441ada5363e74bd2aaff2b8f07da2d754a01df328919",
+          "62d00ba58d9f53a680fbdfc6568e5c7ac17828bbf14ebb168b2869f6faf18002",
+          "193c676661abcc67b21314c0d761a48cefa06ca0f141112fcc6a107a92cc4b65",
+          "9d98336cbb12ade14a68c2a0308ebac4e4f2a2fe5c0cf54113edef6399f4b6ac",
+          "e845835a6c3fa240d343c195e1e8d07b994c2ae99e6c4cfd6af3730fd842bf74",
+          "1f79f561f93228c4ddf4f1a7e9c44a2ff6f1a52e7f3b3a45526c6f3a85da818c",
+          "396597a308f8030b51b21c35ca4bb1f61aae9c81aa4d1f246f6015fc7efc1a24",
+          "f8e94c1cf3d317415dc9c68fe92f3e56ec0fca32e4541a3c370e10cd6fdf32ce",
+          "e6b0400b9d183a0562a2483a045218d41abea5ba0a6bb89d52fe7b4491995dfb",
+          "d515a460f0aa22739b6922c287ac121bbf84382c725ba69c6c7e2b215b9d6d51",
+          "8f74d77183541be3ce08f82a126ad7208a045bea219e77d228e651d06dd4d42c",
+          "079a8a52bd335f368eba7ce0372403edcb113569e8ce0dbf6a3fae051844a9af",
+          "b14804bfb6ea07c935e501672b77b33bdeff75fb7f19a5fec4ff3ecf7cda0c13",
+          "b9f761b27fcbc062825f0daf756dfd838f872d986a844c06c0e6400fc8b7e0bc",
+          "d691ef286f6765afe2b2cad44fe67eaccaeee244e7d1c606b705af74e8e829d3",
+          "99599d42e65d8a2a40e9574af9d933b30fcb222b9ae49cf9ab3c253825d76dc0",
+          "19c474f3bc31d1dcbcb0f7cac77facd5bedbb7a681693c920c3c7bf46cd12c25",
+          "c5361d399dfafc226c5d5c226e45c511b90cacfb2621c10a65559472af045bee",
+          "dd11e6cd52e4fa4e93e1f30213c57456542e7da0291db9637a66249dffcd009e"
         ],
         "bindingSurfaces": [
           "02c33649fd6159328912f082d680d4e2a468cbadea47ecd614fcaf9affe1dd95",
@@ -5583,7 +5677,23 @@
           "fb1223360b24393527983adfb04425e2677c26cd3a996388a26920ea39f3af02",
           "fc04fd683329d3b499995a8d05b35c8727486552aa7c6f9b84fa8c2e476abd23",
           "fda75930ec0000eeb0b98faf6b450e011565f432c1874c45f8a305d221986cfa",
-          "7653a3451b6c03dde843a8ef796797455c0c640802de761ad9db4105638be65d"
+          "7653a3451b6c03dde843a8ef796797455c0c640802de761ad9db4105638be65d",
+          "3fa6b24970040496e6e1f10ddedb65ff9c6107ad9d64329f2a85664fa8b4d91f",
+          "275e3a46c347a7794857121767bc799428f5c2b6d07a8a229b63508e022bff38",
+          "ab027aef4cc62e6abf79fc7e0f235f65ee3b94fda65738bc88a358c102301f97",
+          "c5fc1445a843e2165212973e8afa2ac456602863c7e9a2c71cd755901200bcb0",
+          "4b0d867209cf74422c70d5e6c17ca76b927cd320d2bd64316a5dc39aa82a7d80",
+          "a7b4855a7966f583f3bfeca982ed25ad7e776a9d83c7192d3786f650ebc8f19c",
+          "f625406c5daab8047420813b503d0de457a0456d2f57567bbcc7d6906c7d4dc0",
+          "c2f5e2af7700c96a16de240516ab1b6cbe7c033b904980685e7823abc77582af",
+          "c40962df91e7612b2a4757e5c928f13f93f0c6679a7a36bac035947aa0fa86ed",
+          "a7b4855a7966f583f3bfeca982ed25ad7e776a9d83c7192d3786f650ebc8f19c",
+          "f625406c5daab8047420813b503d0de457a0456d2f57567bbcc7d6906c7d4dc0",
+          "425425bbaf09857652b4fbc153e8215556f7b2aec015c485f1e5d168ea482405",
+          "e70c60933e2b5908bea9a96f7292384ea5a4c21d79c3edb1cc6f357089fc88db",
+          "c380c1ab0021ea3b4a489bc5294976959135f993326cf40fdfdde71a283c932a",
+          "8e65dfb168f9075035b00810729cd32252431a193de458df222dcf6b8818f875",
+          "9716f944cfa49a4cf35ea1093fcec5645dc7c4ae00cb59890ad9434ff30f545b"
         ],
         "computedBoundaries": [
           "25f38aa23de966019066f1a3ff84647680125117b2fedd0dccacf2992f1c5966",
@@ -7017,7 +7127,8 @@
           "e4941080033aed6b41671287201783c388879f9a7b61a86663649180fe27a1d2",
           "c9352e7880aa8f34e2e4e2afdada313d0ee6022e67a8adf3b3ca24f2f0fa5274",
           "774267cb3dece6fdd05c9f1381542eeddcc7aae027cc12f70fdcf3c9a6c9a553",
-          "f8ddd7b26705800ac8d94e50794253c7660ba052dc29bd6a6cc9761ce2e9c35d"
+          "f8ddd7b26705800ac8d94e50794253c7660ba052dc29bd6a6cc9761ce2e9c35d",
+          "38c81858c72f31056ccb34b814731a07d7b280fb7ded2c9d019bcc43fa30dfb3"
         ],
         "computedBoundaries": []
       }
@@ -8014,6 +8125,109 @@
           "c5645ad1c5954a8e1855134f2a84c326f707442590b1090650b333957202fb22"
         ]
       }
+    },
+    "scripts/test-admin-initial-dashboard-4.0.77.mjs": {
+      "beforeDefinitionSha256": "6316622aee03405a10a4fd47b43eaa36fb3ac1b60bf70542dbb3f38fb842f285",
+      "definition": {
+        "nodeImports": [
+          "node:assert/strict",
+          "node:fs",
+          "node:vm"
+        ],
+        "imports": [],
+        "resources": [
+          "admin.html",
+          "js/services/admin-document-store.js",
+          "js/services/site-function-test-service.js",
+          "js/ui/admin-dashboard.js",
+          "package.json",
+          "service-worker.js"
+        ],
+        "dependencySurfaces": [
+          "3238a0b530efbf15967c76f2e105a21e9c0c3783dc6e35efd1d902a28358d153",
+          "87c3855b4f5963dcde03dac9e4544daa5662bab6ce2af1512d869b7bfb7c0221",
+          "965bf9ab64ac0cdb4973f94077ac8bc92040bd2116a3ec8a6b80ecec456ff7ef",
+          "e4b2d2621f5dc2bc91a2a8701fe01f82471573d54ac866be643ae8ed284f693a",
+          "f124d629a2175122cc43e38f639873684dd4c647424208daed11dc9383e5ad21",
+          "61eb7523e52119020033d54c7496641d3bd4220b597c0d6afa46646c5b5a13c4"
+        ],
+        "bindingSurfaces": [
+          "368292bc0bcacd5c4f2273858b0702e2dac8414ab699ba78af9d5aad981c6e69",
+          "38afa352179ac646a9e65473a8cb7c9a3e05fa0ca9769d26e275a8071319bc1e",
+          "3faa1984614627cabf569630b5877d9a228882e1455557cf8bffb5ba9d35eb2a",
+          "4918b28bc43678bd83c6975aa75b172ee8109879203c66942bcca534cd0869cf",
+          "4f5309227b9935d32f2c2b69e253ad5e61cd369ac5a358cd5f46f1a1cb14032b",
+          "5193ca852a68475d140a771402a4fa03aae098c6694625269ec7835683d9e75a",
+          "53ca85430b7f3f3f820a9040bf2f0bbb8b11883c7bb29ef018a1b07c7351ad62",
+          "7106b2ea95ada6f386784ed390bf3177f6ae838908822e7d79a9188e876ef779",
+          "8e3bddf00ad88eb5008ee5f6891c831114f66613d0d3b0a538e9f5fd81986e22",
+          "9247cbd16721ea1ee1ba34eb410e1d0cf280f9b4cc747a44af0d04b6c2a627aa",
+          "a9c7b83aaf6f6c97836337c7e92a33da615632358ba620f540936a7fef002043",
+          "c3eb3eb9899793435cea4032be10102d1ea4dca30e6401e9d83278a164d7347d",
+          "c44552503f2c65fe6e738d101501f7545ad0b87ce1f076464d5a8e5cf8efe09d",
+          "c993e21ad39791fb3ef14c21f0b40ba7cb4a8c6df3fac7f53ffbc36089d4d799",
+          "d3c7c0b6948622d54638729de889bded01734fa308421ec6df79cb2295a1d7ba",
+          "306cd046f8f541e418889cc4af5c388cdaa3d77e6d3ac56cc99cf88220e3a686",
+          "47624e23c77ed2e38d2391dea9c853f906d41addd70a565b51ddad9cf7ba7dbc",
+          "3d22f16161aee1a2d4c8031f95728bb5282a642d5e2e22c70b7322400a50bec4",
+          "effa35838c0fa1f644deafa104aaf34c665fa19699ed1941fa2339910dd3523b",
+          "38a3b6d2f0e738368bc00b70696f78f0c493a6e2ad1a0440bec7f873b61ca6c4",
+          "05fd1e70db9a724257451e5a4ef4b42881ea780ed45ff85bf2b75a44bcc62fdf",
+          "25ea0377690dec3e42686c215d0715c9704e64ad610b150f1c70887e82c766c7",
+          "359a40144077bf26c896ba3b15dfc7310bc7edde5d1d8aa83fd47c6fca147a6c",
+          "0899b43738da7e0d022cafa5b82a78000b3757931ab8082e235d37e7196f4151",
+          "facd21c3c6a36c4237234f1ff79a27ac86853262812f0a26a196aa10e6f6beb9",
+          "d5eb950fee4a7414dc9e280a71093a684af7703e5af97beabe8d6f8d35f849bd",
+          "df95941b164cfef57621fe7bc9b95129eedaa4678203321158eac01b73e80d1e"
+        ],
+        "computedBoundaries": []
+      }
+    },
+    "scripts/test-private-visitor-statistics-4.0.215.mjs": {
+      "beforeDefinitionSha256": null,
+      "definition": {
+        "nodeImports": [
+          "node:assert/strict",
+          "node:fs/promises"
+        ],
+        "imports": [
+          "js/services/visit-counter.js",
+          "js/services/visitor-report-service.js"
+        ],
+        "resources": [
+          "bootstrap.js",
+          "js/ui/admin-dashboard.js",
+          "supabase/migrations/20260815_private_visitor_statistics.sql"
+        ],
+        "dependencySurfaces": [
+          "6def1a7cd7fe47f846972347f4f86b1901380f40582f0fee4241a801b4298fd6",
+          "76575f06a55fb84737b3cd6ba5de967aed0dabf4f439a0e38d6fe9d4eb38f95a",
+          "c26e39da5fab4d9441499bb354741361e4c7c01b1c96f6f9e46ae4f66a8b9205"
+        ],
+        "bindingSurfaces": [
+          "9b3e8695c4e139fabf566cad7ebb96ab518c5bd71f261534c36ac62b86f02c51",
+          "8a4f01bd8f396647acb9985368880685203101306a91fa4d40a125e735a49771",
+          "200b2b8c28c5bfd2095bec4fa2ec26b0e9e32e3e90e66437f1628db115b92bea",
+          "cf60004494190bcdede0ee40f7647b52b53a86c450a726bf0f7e18a12cc8fac8",
+          "7516e28151db90b91c929148d7cb0d27428fe9cbe5b20f3ceb51fdc6ab0f6894",
+          "527827cd68fcbdee00687e792051f29c4befc3f3993a58d545b58ef57b2d1a9c",
+          "ff07d9610c178a3f392e6457395353c692665f00cabd3c7df571df7183933c40"
+        ],
+        "computedBoundaries": []
+      }
+    },
+    "js/services/visit-counter.js": {
+      "beforeDefinitionSha256": null,
+      "definition": {
+        "nodeImports": [],
+        "imports": [
+          "config.js"
+        ],
+        "resources": [],
+        "dependencySurfaces": [],
+        "bindingSurfaces": [],
+        "computedBoundaries": []
+      }
     }
   },
   "resourceFiles": [
@@ -8100,5 +8314,112 @@
       ]
     },
     "mapGenerationSha256": "9ee5b5d110aaf2b65b3030a7ba0cc1142eb21a751fd3e1c302886499f41b0ed6"
+  },
+  "assistantAdminUi": {
+    "id": "CLOSED_REVIEWED_598_EN2_ADMIN_UI_V1",
+    "frames": {
+      "admin.html": {
+        "beforeBlob": "f9045fe6c77c77439eb4f9809cedbe7abdf3c3b5",
+        "afterBlob": "2d7b4cf4cfe1da3145e0fb923469c907ee3c9dcf",
+        "beforeSha256": "f40856afe86820a77f08cb92ff6a8208207575f38cc1d218532f3e5672abe5cf",
+        "afterSha256": "571e6b5edaa0fb3735a83cf75a0a2e5ee58bc04a50a95b19eba20616a3430a57"
+      },
+      "app.js": {
+        "beforeBlob": "e39e4de20ef2a79270c3817d82d24a8e561a9330",
+        "afterBlob": "9f0f201b01bd4bbe47837630dea2688582eadf82",
+        "beforeSha256": "20d2c12a86f93ed97330bbda5bbb6507b0829358822910a75030c252696dbffb",
+        "afterSha256": "1b1269bdae0d3539686599b1eebaf3e7785c28fe5b229e81d7191c1ace521483"
+      },
+      "bootstrap.js": {
+        "beforeBlob": "c5df60cc044759856edb350bedff6b0340c4e3d4",
+        "afterBlob": "2d93ee8f2379fee7686d90f31096a72276d27050",
+        "beforeSha256": "9f19a4ea5b8747c755f562f1029641f6232063dbff97c9945a1fbb625970c217",
+        "afterSha256": "100fbce0b68ed34f9dfced853a00241b6ac6e91068cb3ac20b940473a07003dc"
+      },
+      "index.html": {
+        "beforeBlob": "cbb0672a55225b9e709328d034a648f30428bbfe",
+        "afterBlob": "b2d3efd7d4eec0160e0a744f90a221c6499665e3",
+        "beforeSha256": "19f279d4e211dba28d5eef336fb51ffd5ce113286792b042f23a6e42cc997870",
+        "afterSha256": "d43777bc3f53d9c85791b1d202ed91408f5139bc3c790cacd187bc0b4f668e0e"
+      },
+      "js/services/admin-document-store.js": {
+        "beforeBlob": "4152deb2dcc8f0de8b7bfec687530f40ffcc81e1",
+        "afterBlob": "4e6b8cc8caeccdc1414a6ff7139d7da0c2fa617e",
+        "beforeSha256": "aef7844159fc8cf50cb64bdef3786b44ecb4328ae71dd043eeb71c24c776f583",
+        "afterSha256": "d4b112b6d70f72e7a616155fb5c5597e168329071ec22ce3bed2185f0d3c8acd"
+      },
+      "js/services/visitor-report-service.js": {
+        "beforeBlob": "e24772b265d2f36c7a3c74e87afb0d8e2dff6569",
+        "afterBlob": "134a79ac24100d6561d3faabaafd8e9ac4978cf3",
+        "beforeSha256": "6dc32bb8dfb38c0b36666dc6ccf5a2a731d390179b3b5f9b85e57c7eb4f3e0fb",
+        "afterSha256": "7a0b6c5d28b24f74dc4a90c4d70e8ccc095414ee8b6577ea81a6186b4382d466"
+      },
+      "js/ui/admin-dashboard.js": {
+        "beforeBlob": "fcc9f7318047f1a405a8d3dde6de7f1df7d9b1b7",
+        "afterBlob": "2bbbbc403cfd407cecb8b97f3e556223b8b6405c",
+        "beforeSha256": "2b1c2b1ffdd497979fed251df700c32bb2832063471d891d8646702dd89ae791",
+        "afterSha256": "43cf0f0c979b11db5193575b621921f2b7a100b61c6059290fb66c15810bf5e9"
+      },
+      "scripts/test-account-statistics-assistant-callers.mjs": {
+        "beforeBlob": "1f539c8b4d10c841d240342d34f1cd1c13ccd76b",
+        "afterBlob": "c429544bf6bf7f3f94a64371ba8bcff50bc12c93",
+        "beforeSha256": "ebda6434bdbb6d7d80ec95ed92f0952590343925ef17ee0a816a4b964fdbaa67",
+        "afterSha256": "ee8221caa3b40105d04a141230feab16c0e45b70da8190a53b843dc3bdbcfb67"
+      },
+      "scripts/test-admin-initial-dashboard-4.0.77.mjs": {
+        "beforeBlob": "ae430964551d065cf6e5073b73e69a8920797867",
+        "afterBlob": "f802feb330641390d4ca2ba2167d522d7753d45c",
+        "beforeSha256": "dea9cad753a863b5b22eb243f226c5ced5832be792130eac40782b0c18037336",
+        "afterSha256": "2e95cdfce516d9c92cee16f2da8046cff2b6177614b82353776f4a22f5d0144f"
+      },
+      "scripts/test-map-forecast-timeline.mjs": {
+        "beforeBlob": "22099b11b14f1f537220adaabc03906952191d27",
+        "afterBlob": "ede1a166df35ce722f59c346903dffe72e5b1b1f",
+        "beforeSha256": "e2d4f75dc7b6cc46d04448681310034eb9b224aa09cf5278481c672536c0c1f8",
+        "afterSha256": "b0263c7894d2f71d26218a5fba816c7a1737a5e0e79aba88d769659e351f8bf1"
+      },
+      "scripts/test-private-visitor-statistics-4.0.215.mjs": {
+        "beforeBlob": "71b6e813323da1e42d6fb2197b7e11ac69aa8960",
+        "afterBlob": "69ee4ac1b6dd1f0f7a692fbc0c91f443f3d00c74",
+        "beforeSha256": "478367c0a4654aa20fc10e14bdfe97fe76a1fdf2b29ed95d839977746546e625",
+        "afterSha256": "7f56839941858e41fb123883900564be6c43c5cae61220c3c1cc53b41fc4a236"
+      },
+      "scripts/test-public-cold-start-4.0.303.mjs": {
+        "beforeBlob": "16b045ba12e6b9f7491e23e5b45c0e97ccc366aa",
+        "afterBlob": "161014d36c682f31096ed8609671f07f386570c8",
+        "beforeSha256": "897e72fd0c8729cf0f592b57a600a94016209ddff852f06badacce67b647eff7",
+        "afterSha256": "193a2edb93a329c81cdf393dbe6238fce7f99ca69de205bcc078e2bb219daf3d"
+      },
+      "scripts/test-public-json-reader-bridge.mjs": {
+        "beforeBlob": "7615187131b824b9ee8483df7a7b4ab995a78edc",
+        "afterBlob": "7a24abb703c9335a4b084da0b4ae913c998069eb",
+        "beforeSha256": "dfb60bcd1ec4baede64318d2d2f7be8097b838b8dd45f177f6a7907b54563098",
+        "afterSha256": "64a8638da01498caa742caeb8253228351a50fd2b15d0e1ee58bc44a7f3149d7"
+      },
+      "scripts/test-rav-assistant-main-edge-roundtrip.mjs": {
+        "beforeBlob": "f5819420b0033d6e7a5e6dc812d09c5880afb95d",
+        "afterBlob": "dffdf877f65d0aab313f7fc62beb83f6ca91464e",
+        "beforeSha256": "0621cd8b56f96951fbb2f06c5da399c7ee3a98bbcb4a382430373e8aa80ffa65",
+        "afterSha256": "2659754572861a56ca01b83a0a8f1da94a149fa9eae8cfbba03f72b7761ec55b"
+      },
+      "scripts/validate-release-version.mjs": {
+        "beforeBlob": "fe9428010fee741d512eec67ae7d3f4fa40ede1e",
+        "afterBlob": "6629553d53166a94538285af71476c9931db3d0a",
+        "beforeSha256": "806d58c9b76b110296ede3cd2f9f96a3bec9e41e1c024ea08c1c477c4b4f881c",
+        "afterSha256": "00b174a262f5ead4d8562391a4576f3ffe0433f1340869c20372b864d2651d95"
+      },
+      "service-worker.js": {
+        "beforeBlob": "4d2536f962dd7b5b9510fb447d2ba31b73fa23bf",
+        "afterBlob": "c4d98842dedb0e6765a77bfdc4982375eb2b6b8c",
+        "beforeSha256": "8d668ce191ee60edc269294894ce2e5d2eb85641b1c9ab4c454dd35f446dbfd1",
+        "afterSha256": "a1621f9103401b3812587ceace7eb83538126e0ce4433143e40581dffec7edf2"
+      }
+    },
+    "fixtureSources": {
+      "supabase/functions/ravradar-assistant/index.ts": {
+        "blob": "d687775e9e8b5d2b21996a73c3c8575c3f10080e",
+        "sha256": "8c8cb9a9448e06c172525c1cea017c43d7ea34bf08dc921538e128cba089511e"
+      }
+    }
   }
 }

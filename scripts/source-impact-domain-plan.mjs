@@ -10,7 +10,7 @@ import {scanAllSourceDependencies,dependencySourceLiterals} from './lib/source-i
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const REGISTRY_SHA256='3970bc86fb8afd99d193507b82337c1068aa368f6d62ff728988fc21da9577f4';
 const REGISTRY597_SHA256='a7ccfba2b2f631ccc358342e2c3b87e1cb1edbd54311148c94822fddaa6dbcfa';
-const REGISTRY598_SHA256='db25eb7ce8ca40d61f579e181c0782e00ea6595c202177b0cfd12ceaf89ca07d';
+const REGISTRY598_SHA256='214a391610cf03d096538c2f6c6ccd9b1e02f740c767c5aad1830f8a2c08e318';
 const PAGES_TRANSPORT_FIELDS=Object.freeze({
   "scripts/lib/pages-per-artifact-identity.mjs": [],
   "scripts/lib/pages-sealed-retry-decision.mjs": [
@@ -166,6 +166,7 @@ function registry598(legacyBytes){
   assert.equal(delta.sourceReference.head,'bd9cf518fe798ddea45d2b835f324f6e2bea06fc');
   assert.equal(delta.sourceReference.tree,'2f71c562eea774ca03996802f83bdad7cccd43cc');
   registry.assistantWindFollowup=delta.assistantWindFollowup;
+  registry.assistantAdminUi=delta.assistantAdminUi;
   for(const owner of delta.owners){
     assert(relative(owner.path)&&!registry.owners.some(row=>row.path===owner.path));registry.owners.push(owner);
   }
@@ -247,10 +248,15 @@ export function planSourceDomainImpactFromGit(input){
     let qualification=!analysis.evidenceControls.plannerTrustChain.unchanged;
     const changes=[];
     const en2=is598?registry.assistantWindFollowup:null;
+    const adminUi=is598?registry.assistantAdminUi:null;
+    const uiOnly=new Set(['js/services/admin-document-store.js','js/services/visitor-report-service.js',
+      'scripts/test-private-visitor-statistics-4.0.215.mjs','scripts/test-public-json-reader-bridge.mjs','scripts/validate-release-version.mjs']);
     for(const row of inventory){
       const file=new TextDecoder('utf8',{fatal:true,ignoreBOM:true}).decode(Buffer.from(row.pathUtf8Hex,'hex'));
       const owner=owners.get(file)??(en2&&EN2_ENTRYPOINTS.includes(file)
-        ?{domains:['adminUI'],controlQualification:true,exactSourceTransition:true}:null);
+        ?{domains:['adminUI'],controlQualification:true,exactSourceTransition:true}:null)
+        ??(adminUi&&uiOnly.has(file)&&Object.hasOwn(adminUi.frames,file)
+          ?{domains:[file==='scripts/validate-release-version.mjs'?'controls':'adminUI'],controlQualification:true,exactSourceTransition:true}:null);
       if(!relative(file)||!owner)return full('UNCLASSIFIED_OWNER:'+file);
       if(!['100644','000000'].includes(row.beforeMode)||row.afterMode!=='100644')return full('OWNER_MODE_OR_DELETION:'+file);
       for(const domain of owner.domains)selected.add(domain);
@@ -268,7 +274,14 @@ export function planSourceDomainImpactFromGit(input){
     if(localRestoreFixture&&(localRestoreFixture.row.status!=='M'||localRestoreFixture.row.beforeMode!=='100644'))
       return full('LOCAL_RESTORE_FIXTURE_NOT_EXISTING_REGULAR_SOURCE');
     const en2Selected=en2&&changes.some(change=>EN2_ENTRYPOINTS.includes(change.file));
-    if(en2Selected){
+    const adminUiSelected=adminUi&&(changes.some(change=>uiOnly.has(change.file))
+      ||en2Selected&&productChanges.length!==Object.keys(en2.transitions).length);
+    if(adminUiSelected){
+      const paths=Object.keys(adminUi.frames);
+      if(productChanges.length!==paths.length||productChanges.some(({file,row})=>!Object.hasOwn(adminUi.frames,file)
+        ||row.status!=='M'||row.beforeMode!=='100644'))return full(en2Selected?'ASSISTANT_WIND_FOLLOWUP_COMBINED_SCOPE':'REVIEWED_ADMIN_UI_COMBINED_SCOPE');
+    }
+    if(en2Selected&&!adminUiSelected){
       const paths=Object.keys(en2.transitions);
       if(productChanges.length!==paths.length||productChanges.some(({file,row})=>!Object.hasOwn(en2.transitions,file)
         ||row.status!=='M'||row.beforeMode!=='100644'))return full('ASSISTANT_WIND_FOLLOWUP_COMBINED_SCOPE');
@@ -300,6 +313,8 @@ export function planSourceDomainImpactFromGit(input){
       commandsByDomain.adminUI=commandsByDomain.adminUI.filter(command=>command!=='node scripts/test-public-cold-start-4.0.303.mjs');
       commandsByDomain.adminUI.push(EN2_MAP_PARENT);
     }
+    if(adminUiSelected)commandsByDomain.adminUI.push('node scripts/test-admin-initial-dashboard-4.0.77.mjs',
+      'node scripts/test-private-visitor-statistics-4.0.215.mjs');
     const entries=[...new Set(Object.values(commandsByDomain).flat()
       .filter(command=>!localRestoreFixture||command!==LOCAL_RESTORE_SELF_TEST)
       .flatMap(command=>command.split(' ').filter(value=>value.endsWith('.mjs'))))];
@@ -331,7 +346,16 @@ export function planSourceDomainImpactFromGit(input){
           beforeBlob:row.beforeOid,beforeSha256:sha(before)});
       }
     }
-    if(en2Selected){
+    if(adminUiSelected){
+      for(const {file,row}of productChanges){load([row.beforeOid]);const frame=adminUi.frames[file];
+        if(row.beforeOid!==frame.beforeBlob||row.afterOid!==frame.afterBlob
+          ||sha(blobs.get(row.beforeOid))!==frame.beforeSha256||sha(get(file))!==frame.afterSha256)
+          return full('REVIEWED_ADMIN_UI_SOURCE_CHANGED:'+file);
+        closureRows.push({file,mode:row.afterMode,blob:row.afterOid,sha256:frame.afterSha256,
+          beforeBlob:row.beforeOid,beforeSha256:frame.beforeSha256});
+      }
+    }
+    if(en2Selected&&!adminUiSelected){
       if(sha(get(EN2_GENERATION))!==en2.mapGenerationSha256)return full('ASSISTANT_WIND_FOLLOWUP_NORMAL_PARENT_CHANGED');
       for(const {file,row}of changes)if(Object.hasOwn(en2.transitions,file)){
         load([row.beforeOid]);
@@ -342,7 +366,8 @@ export function planSourceDomainImpactFromGit(input){
         closureRows.push({file,mode:row.afterMode,blob:row.afterOid,sha256:afterSha256});
       }
     }
-    for(const {file,row,owner}of changes)if(owner.exactSourceTransition&&!(en2Selected&&Object.hasOwn(en2.transitions,file))){
+    for(const {file,row,owner}of changes)if(owner.exactSourceTransition&&!(adminUiSelected&&Object.hasOwn(adminUi.frames,file))
+      &&!(en2Selected&&Object.hasOwn(en2.transitions,file))){
       if(row.beforeMode!=='100644')return full('UNKNOWN_EXACT_SOURCE_TRANSITION:'+file);
       load([row.beforeOid]);const pair=sha(blobs.get(row.beforeOid))+'/'+sha(get(file));
       if(!registry.exactSourceTransitions?.[file]?.includes(pair))return full('UNKNOWN_EXACT_SOURCE_TRANSITION:'+file);
