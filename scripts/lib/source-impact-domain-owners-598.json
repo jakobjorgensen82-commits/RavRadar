@@ -536,6 +536,48 @@
       ],
       "controlQualification": true,
       "exactSourceTransition": true
+    },
+    {
+      "path": "scripts/lib/native-original-continuity-workflow-review.mjs",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node --test scripts/test-archived-weather-restart-workflow.mjs"
+        ],
+        [
+          "controls",
+          "node scripts/test-code-only-public-runtime.mjs"
+        ],
+        [
+          "controls",
+          "node scripts/source-critical-gate.mjs"
+        ]
+      ]
+    },
+    {
+      "path": "scripts/lib/archived-production-gate-review.mjs",
+      "domains": [
+        "controls"
+      ],
+      "controlQualification": true,
+      "commands": [
+        [
+          "controls",
+          "node --test scripts/test-archived-weather-restart-workflow.mjs"
+        ],
+        [
+          "controls",
+          "node scripts/test-code-only-public-runtime.mjs"
+        ],
+        [
+          "controls",
+          "node scripts/source-critical-gate.mjs"
+        ]
+      ]
     }
   ],
   "exactSourceTransitions": {
@@ -3119,7 +3161,14 @@
           "ff4c2417d608b34d80bdb67bb672b216595b36992160a41c54c34d52dc900bc7",
           "62cbd9cce50e6f33baf8406564976e804a50f4963257efd05d6f64d06befcae4",
           "e6cf2a12d8d108bcd26e7b67f7242669f1ef2815194d5c57cf1c9d2d22c7da91",
-          "d7fcf43d9f84bcab9fb93c43108b10aafeb37152e442954569fbc8e0a76ed9f5"
+          "d7fcf43d9f84bcab9fb93c43108b10aafeb37152e442954569fbc8e0a76ed9f5",
+          "d6eec3be3264a4200cbeacca6eb2d20c3b66e936ac1bdf7f6290c9522b4e453c",
+          "656bc7803eff679396ec3481f83b4971ebd88193f66dd6c7dc081f9284c6cf05",
+          "81399b1b73503294d80deeda6ebfc25a64ecb7f9af9b631f3237574e994dc5b7",
+          "d22b16bbd1a2495231564e8d5a3e41e118f1d56e7e3ea473397717143956309a",
+          "724e91b8bdbd3a5bc3ed9fce5d9481e2e3b961378ab3815ccc87e3bfa7148df0",
+          "74da1a01cabf810f0ffd8981579ab3c2c2f99f2fa063c776ec7a56a7e78633be",
+          "596000c694d78f5d386090ac52cdd8a3faeab912dbd25dec776c52a205147a40"
         ],
         "bindingSurfaces": [
           "0f05aaff990b617dc07eace1a1118c3c65f43107ce1db531aa132eed62495e4f",
@@ -4522,7 +4571,8 @@
           ".github/workflows/run-current-weather-once.yml",
           "scripts/lib/completed-private-runtime-workflow-review.json",
           "scripts/lib/current-family-cold-checkpoint-workflow-review.json",
-          "scripts/lib/current-family-cold-start-workflow-review.json"
+          "scripts/lib/current-family-cold-start-workflow-review.json",
+          ".github/workflows/deploy-code-only-repair.yml"
         ],
         "dependencySurfaces": [
           "0038e3516c8ad81102a29cf0d4fe8f8c159b77cb6f6fb9e2cc6bf3ca7532ae33",
@@ -4639,7 +4689,32 @@
           "c29ecc838b7cdd862132f3d9fbc069f9bd17c930f26de2243590f3929956dfe5",
           "1986a27c3fffd58af5c5738ba93f9090984864abed4f1b3da7c366f5ec545f5b",
           "ff28f529fa1ba25db52cb1b9f0d2ae17d5e5661be5491dd36bcf504b054de738",
-          "9adfb0d609e1edd212ef4ef82a6d54a44270a0de54960056a7b79eb1c250a749"
+          "9adfb0d609e1edd212ef4ef82a6d54a44270a0de54960056a7b79eb1c250a749",
+          "31c1aaa3c8836e6ea2d8be45f32af66b9d74616ff4204b4511acdbff769298e2",
+          "34321c46605521683e701ef593a4dd7539d56d0fb91516abae06ca908e49f82f",
+          "1a0fff3463b12bb5bf5818fcbf89b9a88a43e1fd6a8cb42e1fca4b42c9029cf9",
+          "606e2132b2493c36b9f7fa5f9cc5a9da1de2b297343c18501c40ba267ee5e7dd",
+          "b34bf8719fd91fbaecd757a78ed706e10e83d7197db7c3b33b7422373a32bfc9",
+          "414ea5bdedb6bf946540a3b35901790c174b211891d1449f360f2edc568b624d",
+          "6718a6ad17be751a970bea3af6193801622f4909b713d2d409cfd8cafa2f84c2",
+          "d807e2fa6d4ff872d081d3aaa3661cd396c4ae7472ac4507cf77d404be5a4d58",
+          "d3d1285d920c14e1dc8a12e12a83525481b5a68229a696da045dceec37b84a2d",
+          "d9a1eb8ab5c7e4d8137c1408f698051b56e7e66a89e8ec43f6c4ea33c0f224b8",
+          "15538e3c8096fbf40615dc5d2b63819c6ea81c8886d7b7cebd377dfa84161202",
+          "c9ab7fe03f4d65c9cb8aef69bb85294dc7685a97f2264fcf68d5856f4c097cf2",
+          "0fa6d91b5a483d7ce74cb206d9fd637ff008ba2e45274da8e05595301b39ec87",
+          "e950e82af29c6220070cd38b62777a8b63120b5c69599341fc8a6eb12db6b3d4",
+          "b5cad2ed23ba0de6c8959b391cbed78fea659afbb00b510842570ed9c9617e71",
+          "7053c549ce00e36a44b04a7177ded9d028fe0f2b64837097bbbec67464335184",
+          "713933695bfc0c60352646a7f0c5f043eb7896170bb2b24272e314d95e5905da",
+          "23ac870493a8a1b573f442f1f373a9d08d09489767681bfe48cb365e0907726d",
+          "79d96b7471ab46be6b62b5322d968195d1b0a6339136377df87a8c9a69fc537b",
+          "c0e977df9e71d424a514ceabaa5c1e18a0ab146631f6298252d3d5de3c32e686",
+          "bd22cdf2fc44185ee8b25af3a0f00b36a60a11a8378eab9182052bc05979712f",
+          "b58cdd76dfa0873cf0cd20b65719747aeda1d4bd03e07ac80f2be8c4357ef309",
+          "8fdba69d8f7c97282905c74e7c64f22efdfd810f19763622ff8744d9da0f55fd",
+          "e58ba7cc56757df5b1279063ef695cfda23d8ba1a984f39dc7a0ee42fc28acc8",
+          "f80d5786bbef3de48e33c526402f45f82c95adc110c33f7b071cac33c4928f5a"
         ],
         "bindingSurfaces": [
           "055826d8498e957f01771ee83c0914c0da9b6d935c91199a8a76d54c53d9790a",
@@ -4669,7 +4744,19 @@
           "8859212404e282b9131132d4d17e79df9bfe7e9ebfc478d4dfa2283c996e99bc",
           "781931164de4ec9360d82698362d73cd68d2dce34e1a3de1c50c488d6d619f81",
           "161d8b32b116682389efd388acf98cc152ca4051d0d99028e80a3ce615ff34d7",
-          "27c65ae0fce2aa6dc1aeadb269829e818c1c735a4d60b9ce4f30e4ab9b490990"
+          "27c65ae0fce2aa6dc1aeadb269829e818c1c735a4d60b9ce4f30e4ab9b490990",
+          "3afb596b1407a8cd4241bed586a00bc230fba2976cd88ae2a5dcf0e52de646e5",
+          "d71c1bc50b619374ffe936a5d491bdb57904c6a733c2a7c36d73f5612889f0c5",
+          "00b6e1afdfc5ecab77a422b36e9f1a7218deb596d0bd1206d2319b81f199502c",
+          "f8c6686b5c5b3f697850f3eafd9008e50d1ce930ad10dcbe430decbcf5f54bd9",
+          "9b6bfeea0c2876e2bee96d520944304b73ee05dd3b7fca6e843aa94a350b6755",
+          "d3da2edd26a042ec89e86693170125c6c93a3cc598cad3f2126302aadcb6028e",
+          "82f0ed8e4aae15d349cf5e06e4ffed07893509a60953303a5989d5e65af140d8",
+          "794faebd1c3063f44f0c336c7dfb24c0f75ca089b7db06b8d432c1b4bd355dc7",
+          "dfd6c7fd7bcf7331ed8473e960a39147add9f720639e8fb3d36d073ffcf1d6d0",
+          "244998fcf9e051daa886457d98602f42d0a0c7910e2e32b2401c492b344c641b",
+          "b16b78cb66a7f81e87a6117f35c4b3f11150df1c13113df1d4bdf1c017e8793c",
+          "d6b0fc8be5103b189bd9702a9eda8a9bb24914d0a0db8a9a66e2ef23fd366009"
         ],
         "computedBoundaries": []
       }
@@ -8631,6 +8718,59 @@
         "bindingSurfaces": [],
         "computedBoundaries": []
       }
+    },
+    "scripts/lib/native-original-continuity-workflow-review.mjs": {
+      "beforeDefinitionSha256": "9397950ff39fad0bebe28a077044ff10c76c174900a25b0be829fb245a57523b",
+      "definition": {
+        "nodeImports": [
+          "node:assert/strict",
+          "node:crypto",
+          "node:fs"
+        ],
+        "imports": [
+          "scripts/lib/completed-private-runtime-workflow-review.mjs"
+        ],
+        "resources": [
+          "scripts/lib/current-installed-code-only-workflow-review.json",
+          "scripts/lib/native-original-continuity-workflow-review.json"
+        ],
+        "dependencySurfaces": [
+          "0390d8d5900fbcc87e08218d20d025f1afdfe42bb29504f794d0f9f5b8cd8bb7",
+          "4e842f0c6f13efeb6f08de1b76db685c728fc26602424b96c9c1e11a425f65b9"
+        ],
+        "bindingSurfaces": [
+          "4d5bd3236b902b53f777c50e4baeafe65de10c08a1da3801920df12048beb081",
+          "5193ca852a68475d140a771402a4fa03aae098c6694625269ec7835683d9e75a",
+          "59c5cda146e951e65464e14845e52065540f1b4da88b534a0e475f66c55412f8",
+          "d3c7c0b6948622d54638729de889bded01734fa308421ec6df79cb2295a1d7ba"
+        ],
+        "computedBoundaries": []
+      }
+    },
+    "scripts/lib/archived-production-gate-review.mjs": {
+      "beforeDefinitionSha256": "6d5dac6a60d4fd050e259f594de824d4985bf10d81da4ead5f1dd286ddad2ef7",
+      "definition": {
+        "nodeImports": [
+          "node:assert/strict",
+          "node:crypto",
+          "node:fs"
+        ],
+        "imports": [
+          "scripts/lib/completed-private-runtime-workflow-review.mjs"
+        ],
+        "resources": [
+          "scripts/lib/archived-production-gate-review.json"
+        ],
+        "dependencySurfaces": [
+          "59c7ee4962523387ff5f2b52541ab6ec8a1cfbc1b6ce9ed4921daf7f88478869"
+        ],
+        "bindingSurfaces": [
+          "5193ca852a68475d140a771402a4fa03aae098c6694625269ec7835683d9e75a",
+          "92e0f1e731de2a6352c56b04b9eb4052c0f65db3a5ae3a2f23d47bb0510a78de",
+          "d3c7c0b6948622d54638729de889bded01734fa308421ec6df79cb2295a1d7ba"
+        ],
+        "computedBoundaries": []
+      }
     }
   },
   "resourceFiles": [
@@ -8699,6 +8839,39 @@
         "path": ".github/workflows/deploy-code-only-repair.yml",
         "beforeBlob": "be9e3d421971dd8b61db94893f21d5661e8f34d2",
         "afterBlob": "155562a7eb49875ea03fe0350711f79c0729f0cf"
+      },
+      "artifactMetadataHistoricalBridge": {
+        "members": [
+          {
+            "path": "scripts/lib/completed-private-runtime-workflow-review.mjs",
+            "beforeBlobs": [
+              "044155fce98e9f0b2fbd0459a5e9ef80eb1267f7"
+            ],
+            "afterBlob": "3110cf89e206346ef9961e1b9e0ac9fc04e40f50"
+          },
+          {
+            "path": "scripts/lib/native-original-continuity-workflow-review.mjs",
+            "beforeBlobs": [
+              "0467728278b4da167b3bf2d9dcfaa2a9d48c7f23"
+            ],
+            "afterBlob": "62ba3db7133689e607dce7669b5b36b0b063cf12"
+          },
+          {
+            "path": "scripts/lib/archived-production-gate-review.mjs",
+            "beforeBlobs": [
+              "0945181849688930b5a23f27b80b2dbcf7fca47f"
+            ],
+            "afterBlob": "b06a7dffc8dd7864a094fe4e14ac116fbef5e60d"
+          },
+          {
+            "path": "scripts/test-completed-private-runtime-workflow-inverse.mjs",
+            "beforeBlobs": [
+              "b36e3b70b8344d58fb7097591166ac20de817c6c",
+              "92c7437e0a48861f5c0aabbf4e39548f988d3402"
+            ],
+            "afterBlob": "c0d11027c691cf8a99dba26c0135b43eb28f7ee8"
+          }
+        ]
       }
     }
   },

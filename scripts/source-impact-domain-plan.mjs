@@ -10,7 +10,7 @@ import {scanAllSourceDependencies,dependencySourceLiterals} from './lib/source-i
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const REGISTRY_SHA256='3970bc86fb8afd99d193507b82337c1068aa368f6d62ff728988fc21da9577f4';
 const REGISTRY597_SHA256='a7ccfba2b2f631ccc358342e2c3b87e1cb1edbd54311148c94822fddaa6dbcfa';
-const REGISTRY598_SHA256='bd17fce82eb2d794c6bf2daba45f4252b8236e343b1c511cdd7ef7833e31e9b7';
+const REGISTRY598_SHA256='6a5b6e17ff9313ca455d06bcf28518ed353bcf50663c5bb1e5de5c117e29a70f';
 const PAGES_TRANSPORT_FIELDS=Object.freeze({
   "scripts/lib/pages-per-artifact-identity.mjs": [],
   "scripts/lib/pages-sealed-retry-decision.mjs": [
@@ -271,7 +271,29 @@ export function planSourceDomainImpactFromGit(input){
     const pagesChanges=productChanges.filter(change=>change.owner.pagesTransportOnly===true);
     const rollback=is598?selectedRegistry.pagesTransport.standardActionRollback:null;
     const pagesRollback=pagesChanges.some(change=>change.owner.pagesStandardActionRollback===true);
-    const metadataCaller=pagesRollback?productChanges.find(change=>
+    // This test-only historical bridge is one complete reviewed four-file cohort.
+    // Validate every status/mode/blob before excluding any member from product scope.
+    const historicalBridge=rollback?.artifactMetadataHistoricalBridge;
+    const historicalBridgeSelected=historicalBridge&&productChanges.some(change=>
+      historicalBridge.members.some(entry=>entry.path===change.file)
+      &&(change.file!==rollback.test.path||change.row.afterOid!==rollback.test.afterBlob));
+    if(historicalBridgeSelected){
+      for(const entry of historicalBridge.members){
+        const change=productChanges.find(row=>row.file===entry.path),row=change?.row;
+        if(!row||row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'
+          ||!entry.beforeBlobs.includes(row.beforeOid)||row.afterOid!==entry.afterBlob)
+          return full('PAGES_METADATA_HISTORICAL_BRIDGE_BYTES:'+entry.path);
+      }
+      for(const entry of [rollback.action,rollback.artifactMetadataCaller]){
+        const row=index.get(entry.path);
+        if(row?.type!=='blob'||row.mode!=='100644'||row.oid!==entry.afterBlob)
+          return full('PAGES_METADATA_HISTORICAL_BRIDGE_CALLER:'+entry.path);
+      }
+    }
+    const scopedProducts=historicalBridgeSelected?productChanges.filter(change=>
+      !historicalBridge.members.some(entry=>entry.path===change.file)
+      ||pagesRollback&&change.file===rollback.test.path):productChanges;
+    const metadataCaller=pagesRollback||historicalBridgeSelected?productChanges.find(change=>
       change.file===rollback?.artifactMetadataCaller?.path):null;
     if(metadataCaller){
       const {row}=metadataCaller,entry=rollback.artifactMetadataCaller;
@@ -279,10 +301,17 @@ export function planSourceDomainImpactFromGit(input){
         ||row.beforeOid!==entry.beforeBlob||row.afterOid!==entry.afterBlob)
         return full('PAGES_STANDARD_ACTION_METADATA_CALLER_BYTES:'+entry.path);
     }
-    const uiProducts=pagesRollback?productChanges.filter(change=>change!==metadataCaller
-      &&change.file!==rollback?.action.path&&change.file!==rollback?.test.path):productChanges;
+    const uiProducts=pagesRollback?scopedProducts.filter(change=>change!==metadataCaller
+      &&change.file!==rollback?.action.path&&change.file!==rollback?.test.path)
+      :historicalBridgeSelected?scopedProducts.filter(change=>change!==metadataCaller):productChanges;
+    if(historicalBridgeSelected&&uiProducts.length&&(!adminUi
+      ||uiProducts.length!==Object.keys(adminUi.frames).length
+      ||uiProducts.some(({file,row})=>!Object.hasOwn(adminUi.frames,file)
+        ||row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'
+        ||row.beforeOid!==adminUi.frames[file].beforeBlob||row.afterOid!==adminUi.frames[file].afterBlob)))
+      return full('PAGES_METADATA_HISTORICAL_BRIDGE_SCOPE');
     if(pagesRollback){
-      if(!rollback||pagesChanges.length!==1||productChanges.length!==2+(metadataCaller?1:0)+uiProducts.length
+      if(!rollback||pagesChanges.length!==1||scopedProducts.length!==2+(metadataCaller?1:0)+uiProducts.length
         ||uiProducts.length&&(!adminUi||uiProducts.length!==Object.keys(adminUi.frames).length
           ||uiProducts.some(({file,row})=>!Object.hasOwn(adminUi.frames,file)
             ||row.beforeOid!==adminUi.frames[file].beforeBlob||row.afterOid!==adminUi.frames[file].afterBlob)))
@@ -290,7 +319,8 @@ export function planSourceDomainImpactFromGit(input){
       for(const entry of [rollback.action,rollback.test]){
         const change=productChanges.find(row=>row.file===entry.path);
         if(!change||change.row.status!=='M'||change.row.beforeMode!=='100644'
-          ||change.row.beforeOid!==entry.beforeBlob||change.row.afterOid!==entry.afterBlob)
+          ||change.row.beforeOid!==entry.beforeBlob||change.row.afterOid!==(historicalBridgeSelected&&entry===rollback.test
+            ?historicalBridge.members.find(row=>row.path===entry.path).afterBlob:entry.afterBlob))
           return full('PAGES_STANDARD_ACTION_ROLLBACK_BYTES:'+entry.path);
       }
     }else if(pagesChanges.length&&(!is598||pagesChanges.length!==productChanges.length))
@@ -374,6 +404,9 @@ export function planSourceDomainImpactFromGit(input){
         pagesRows.push({file,mode:row.afterMode,blob:row.afterOid,sha256:sha(after),
           beforeBlob:row.beforeOid,beforeSha256:sha(before)});
       }
+    }
+    if(historicalBridgeSelected)for(const entry of [rollback.action,rollback.artifactMetadataCaller]){
+      const row=index.get(entry.path);closureRows.push({file:entry.path,mode:row.mode,blob:row.oid,sha256:sha(get(entry.path))});
     }
     if(adminUiSelected){
       for(const {file,row}of uiProducts){load([row.beforeOid]);const frame=adminUi.frames[file];

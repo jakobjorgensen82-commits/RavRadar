@@ -30,7 +30,9 @@ const readHistoricalWorkflow = async relative => {
   return relative.endsWith('/run-current-weather-once.yml')
     ? inverseAutomaticCompletedPagesWorkflow(source, 'once')
     : relative.endsWith('/reusable-weather-build.yml') ? inverseAutomaticCompletedPagesWorkflow(source, 'build')
-      : relative.endsWith('/reusable-pages-deploy.yml') ? inverseImmediateOrdinaryPagesWorkflow(source, 'deploy') : source;
+      : relative.endsWith('/reusable-pages-deploy.yml') ? inverseImmediateOrdinaryPagesWorkflow(source, 'deploy')
+        : relative === '../.github/workflows/deploy-code-only-repair.yml'
+          ? inverseReviewedPagesArtifactMetadataCaller(source, 'repair', '.github/workflows/deploy-code-only-repair.yml') : source;
 };
 const read = async relative => {
   const source = (await fs.readFile(new URL(relative, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
@@ -1936,4 +1938,64 @@ test('scheduled weather keeps its fresh hour while standard Pages temporarily re
   assert.match(standard, /artifact_name: \$\{\{ inputs\.artifact_name \}\}/);
   assert.match(standard, /token: \$\{\{ inputs\.github_token \}\}/);
   assert.match(action, /run: node scripts\/deploy-ordinary-pages-with-immediate-retry\.mjs/);
+});
+
+
+// The actual current repair caller remains the input, including on Source612.
+import { inverseReviewedPagesArtifactMetadataCaller } from './lib/completed-private-runtime-workflow-review.mjs';
+import { readFile as readActualPagesMetadataCaller } from 'node:fs/promises';
+import { createHash as pagesMetadataCallerCreateHash } from 'node:crypto';
+const pagesMetadataCallerHash = value => pagesMetadataCallerCreateHash('sha256').update(value).digest('hex');
+const pagesMetadataCallerPath = '.github/workflows/deploy-code-only-repair.yml';
+const pagesMetadataCallerRoles = [
+  {
+    "origin": "ordinary598",
+    "after": {
+      "bytes": 225321,
+      "sha256": "7bcde5fb1dafebc4a99104c1c106d2810e9c3210799cda48ba91467bfb7d2c2d"
+    },
+    "before": {
+      "bytes": 225325,
+      "sha256": "391628fbcaae106df7a29d5c7caa3a7487af18b025bd4692bc93aaab5d396bf8"
+    }
+  },
+  {
+    "origin": "source611to612",
+    "after": {
+      "bytes": 252063,
+      "sha256": "de9a9a841b9f855838c6c071910ab6d707ca55c5b8d99533f790cea66603ee2a"
+    },
+    "before": {
+      "bytes": 252067,
+      "sha256": "bd5861018d8cae0821bdd7db88f9b80813f06513c371b51b7fbb326a80874779"
+    }
+  }
+];
+
+test('reviewed metadata caller bridge restores the actual complete repair caller before historical views', async () => {
+  const actual = (await readActualPagesMetadataCaller(new URL('../.github/workflows/deploy-code-only-repair.yml', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  const row = pagesMetadataCallerRoles.find(entry => entry.after.bytes === Buffer.byteLength(actual)
+    && entry.after.sha256 === pagesMetadataCallerHash(actual));
+  assert.ok(row, 'Only the actual reviewed ordinary or Source repair caller may enter this bridge');
+  const previous = inverseReviewedPagesArtifactMetadataCaller(actual, 'repair', pagesMetadataCallerPath);
+  assert.notEqual(previous, actual);
+  assert.equal(Buffer.byteLength(previous), row.before.bytes);
+  assert.equal(pagesMetadataCallerHash(previous), row.before.sha256);
+  assert.equal(inverseReviewedPagesArtifactMetadataCaller(previous, 'repair', pagesMetadataCallerPath), previous);
+});
+
+test('reviewed metadata caller bridge keeps unknown mixed append duplicate and wrong-role inputs outside old oracles', async () => {
+  const actual = (await readActualPagesMetadataCaller(new URL('../.github/workflows/deploy-code-only-repair.yml', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  const previous = inverseReviewedPagesArtifactMetadataCaller(actual, 'repair', pagesMetadataCallerPath);
+  const newLine = "          node scripts/read-pages-artifact-metadata.mjs \"$artifact_id\" > \"$RAVRADAR_OPERATIONAL_HANDOFF/pages-artifact-rest.json\"";
+  for (const unknown of [actual + '\n# Unknown caller suffix\n',
+    actual.replace('read-pages-artifact-metadata.mjs', 'unreviewed-artifact-reader.mjs'),
+    actual.replace('.expired == false', '.expired == true'), actual.replace(newLine, newLine + '\n' + newLine)]) {
+    assert.notEqual(unknown, actual);
+    assert.equal(inverseReviewedPagesArtifactMetadataCaller(unknown, 'repair', pagesMetadataCallerPath), unknown);
+    assert.notEqual(inversePagesPublicProjectionWorkflow(unknown, 'repair'), previous);
+  }
+  for (const [role, relative] of [['build', pagesMetadataCallerPath], ['once', pagesMetadataCallerPath],
+    ['repair', '.github/workflows/reusable-weather-build.yml']])
+    assert.equal(inverseReviewedPagesArtifactMetadataCaller(actual, role, relative), actual);
 });
