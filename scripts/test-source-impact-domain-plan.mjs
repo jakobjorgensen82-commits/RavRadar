@@ -7,6 +7,7 @@ import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {scanAllSourceDependencies} from './lib/source-impact-control-imports.mjs';
+import {createHash} from 'node:crypto';
 const SOURCE=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const BASE='169bebcd7bf2c4389be63c31dcd76fb303d71621';
 const LEGACY_BASE='a4dc9319dbf42cdd7fc8116733ad4eeef46e0525',LEGACY_REFERENCE='e8786fabba66bd9184ab08a0c8c83bf97711f807';
@@ -870,4 +871,64 @@ test('normal598 registry keeps genuine148 inputs and closes only known normal co
     assert.equal(current.dev,owned598.dev);assert.equal(current.ino,owned598.ino);assert.equal(current.birthtimeNs,owned598.birthtimeNs);
     fs.rmSync(root598,{recursive:true,force:false});
   }
+});
+
+// Closed current UI cohort in the existing normal598 fixture. No providers,
+// PostgreSQL, national model suite or production write is run by this test.
+test('closed EN2 admin UI cohort requires exact frames and keeps unsafe scope FULL',async()=>{
+ const controls=['scripts/source-impact-domain-inputs.mjs','scripts/lib/source-impact-domain-inputs-598.json',
+  'scripts/source-impact-domain-plan.mjs','scripts/lib/source-impact-domain-owners-598.json',
+  'scripts/test-source-impact-domain-plan.mjs','scripts/lib/source-impact-domain-inputs-594.json',
+  'scripts/lib/source-impact-domain-owners-594.json','scripts/lib/source-impact-domain-inputs-597.json',
+  'scripts/lib/source-impact-domain-owners-597.json','scripts/lib/source-impact-control-imports.mjs'];
+ const registry=JSON.parse(fs.readFileSync(path.join(SOURCE,'scripts/lib/source-impact-domain-owners-598.json')));
+ const frames=registry.assistantAdminUi.frames,reference=registry.sourceReference.head;
+ assert.equal(registry.assistantAdminUi.id,'CLOSED_REVIEWED_598_EN2_ADMIN_UI_V1');
+ assert.equal(Object.keys(frames).length,16);
+ const temporary=fs.realpathSync(os.tmpdir()),root=fs.mkdtempSync(path.join(temporary,'rr-closed-ui-plan-'));
+ const owned=fs.lstatSync(root,{bigint:true});
+ try{
+  git(root,['init','-q']);git(root,['config','core.autocrlf','false']);
+  const objects=fs.realpathSync(path.join(text(SOURCE,['rev-parse','--path-format=absolute','--git-common-dir']),'objects'));
+  fs.mkdirSync(path.join(root,'.git/objects/info'),{recursive:true});fs.writeFileSync(path.join(root,'.git/objects/info/alternates'),objects.replaceAll('\\','/')+'\n');
+  const make=(parent,rows,label)=>{git(root,['read-tree',parent]);for(const [file,body]of rows)
+   git(root,['update-index','--add','--cacheinfo','100644',text(root,['hash-object','-w','--stdin'],body),file]);
+   return text(root,['commit-tree',text(root,['write-tree']),'-p',parent,'-m',label]);};
+  const controlRows=controls.map(file=>[file,fs.readFileSync(path.join(SOURCE,file))]);
+  const beforeRows=Object.entries(frames).map(([file,frame])=>[file,git(SOURCE,['cat-file','blob',frame.beforeBlob])]);
+  const afterRows=Object.entries(frames).map(([file,frame])=>[file,git(SOURCE,['cat-file','blob',frame.afterBlob])]);
+  const fixtureRows=Object.entries(registry.assistantAdminUi.fixtureSources).map(([file,frame])=>{const bytes=git(SOURCE,['cat-file','blob',frame.blob]);assert.equal(createHash('sha256').update(bytes).digest('hex'),frame.sha256);return[file,bytes];});
+  const baseline=make(reference,[...controlRows,...beforeRows,...fixtureRows],'synthetic closed UI before exact frames');
+  for(const file of controls){const dst=path.join(root,file);fs.mkdirSync(path.dirname(dst),{recursive:true});fs.writeFileSync(dst,fs.readFileSync(path.join(SOURCE,file)));}
+  const {planSourceDomainImpactFromGit:plan}=await import(pathToFileURL(path.join(root,'scripts/source-impact-domain-plan.mjs')).href);
+  const run=head=>{git(root,['update-ref','HEAD',head]);return plan({baselineCommit:baseline,candidateCommit:head,expectedHead:head});};
+  const candidate=make(baseline,afterRows,'synthetic exact closed UI after frames'),actual=run(candidate);
+  assert.equal(actual.selection,'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(actual.reasonCodes));
+  for(const family of ['postgres','C','I','T'])assert.equal(actual.inputDigests[family+'Before'],actual.inputDigests[family+'After']);
+  assert.equal(actual.domains.postgres.status,'NOT_APPLICABLE');assert.equal(actual.domains.historical584National.status,'NOT_APPLICABLE');
+  assert.equal(actual.skipAuthorized,false);assert.equal(actual.productionAuthority,false);assert.equal(actual.baselineQualified,false);
+  for(const command of ['node --test scripts/test-account-statistics-assistant-callers.mjs',
+   'node scripts/test-private-visitor-statistics-4.0.215.mjs','node --test scripts/test-map-forecast-panel.mjs scripts/test-map-timeline-generation.mjs'])
+   assert(actual.commands.includes(command),command);
+  const mutate=(file,body)=>afterRows.map(([name,value])=>[name,name===file?body:value]);
+  const doc='js/services/admin-document-store.js',body=afterRows.find(([file])=>file===doc)[1].toString();
+  const changedWrite=body.replace('const body={document_key:key,payload};','const body={document_key:key,payload,unreviewed:true};');
+  assert.notEqual(changedWrite,body);
+  assert.deepEqual(run(make(baseline,mutate(doc,Buffer.from(changedWrite)),'synthetic changed remoteWrite')).reasonCodes,
+   ['REVIEWED_ADMIN_UI_SOURCE_CHANGED:'+doc]);
+  assert.equal(run(make(baseline,[...afterRows,['scripts/unreviewed-ui-source.mjs',Buffer.from('export const unknown=1;\n')]],'synthetic unknown owner')).selection,'FULL');
+  assert.equal(run(make(baseline,afterRows.filter(([file])=>file!=='bootstrap.js'),'synthetic partial cohort')).selection,'FULL');
+  for(const file of ['js/services/permissions-service.js','supabase/schema.sql','js/core/score-engine.js','data/zones.geojson']){
+   const current=git(root,['cat-file','blob',baseline+':'+file]);
+   assert.equal(run(make(baseline,[...afterRows,[file,Buffer.concat([current,Buffer.from('\n/* synthetic unreviewed scope */\n')])]],'synthetic unsafe UI scope')).selection,'FULL',file);
+  }
+  const oldKeys=Object.keys(registry.assistantWindFollowup.transitions),oldRows=afterRows.filter(([file])=>oldKeys.includes(file));
+  assert.equal(oldRows.length,7);
+  const rejectedOld=oldRows.map(([file,value])=>[file,file==='app.js'?Buffer.concat([value,Buffer.from('\n// unreviewed old EN2 bytes\n')]):value]);
+  assert.deepEqual(run(make(baseline,rejectedOld,'synthetic unknown old EN2 app')).reasonCodes,['ASSISTANT_WIND_FOLLOWUP_SOURCE_CHANGED:app.js']);
+ }finally{
+  assert.equal(path.dirname(fs.realpathSync(root)),temporary);const current=fs.lstatSync(root,{bigint:true});
+  assert.equal(current.dev,owned.dev);assert.equal(current.ino,owned.ino);assert.equal(current.birthtimeNs,owned.birthtimeNs);
+  fs.rmSync(root,{recursive:true,force:false});
+ }
 });
