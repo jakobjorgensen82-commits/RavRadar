@@ -10,7 +10,7 @@ import {scanAllSourceDependencies,dependencySourceLiterals} from './lib/source-i
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const REGISTRY_SHA256='3970bc86fb8afd99d193507b82337c1068aa368f6d62ff728988fc21da9577f4';
 const REGISTRY597_SHA256='a7ccfba2b2f631ccc358342e2c3b87e1cb1edbd54311148c94822fddaa6dbcfa';
-const REGISTRY598_SHA256='7f20a180b13570e9b3e0562be399318591890941a1fe0e586f00f1a55e070841';
+const REGISTRY598_SHA256='bd17fce82eb2d794c6bf2daba45f4252b8236e343b1c511cdd7ef7833e31e9b7';
 const PAGES_TRANSPORT_FIELDS=Object.freeze({
   "scripts/lib/pages-per-artifact-identity.mjs": [],
   "scripts/lib/pages-sealed-retry-decision.mjs": [
@@ -180,7 +180,8 @@ function registry598(legacyBytes){
   for(const file of delta.resourceFiles){assert(relative(file)&&!registry.resourceFiles.includes(file));registry.resourceFiles.push(file);}
   // Only the fixed whole-source pairs reviewed in this598 overlay may extend the historical grammar.
   for(const [file,pairs]of Object.entries(delta.exactSourceTransitions)){
-    assert(['.github/workflows/maintain-admin-document-history.yml','admin.html',
+    assert(['.github/workflows/deploy-code-only-repair.yml',
+      '.github/workflows/maintain-admin-document-history.yml','admin.html',
       'supabase/functions/_shared/rav-assistant-contract.ts','supabase/functions/ravradar-assistant/index.ts',
       'scripts/test-rav-assistant-main-edge-roundtrip.mjs',
       'scripts/run-hosted-supabase-backup.mjs','scripts/test-supabase-database-backup-workflow.mjs',
@@ -270,10 +271,18 @@ export function planSourceDomainImpactFromGit(input){
     const pagesChanges=productChanges.filter(change=>change.owner.pagesTransportOnly===true);
     const rollback=is598?selectedRegistry.pagesTransport.standardActionRollback:null;
     const pagesRollback=pagesChanges.some(change=>change.owner.pagesStandardActionRollback===true);
-    const uiProducts=pagesRollback?productChanges.filter(change=>
-      change.file!==rollback?.action.path&&change.file!==rollback?.test.path):productChanges;
+    const metadataCaller=pagesRollback?productChanges.find(change=>
+      change.file===rollback?.artifactMetadataCaller?.path):null;
+    if(metadataCaller){
+      const {row}=metadataCaller,entry=rollback.artifactMetadataCaller;
+      if(row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'
+        ||row.beforeOid!==entry.beforeBlob||row.afterOid!==entry.afterBlob)
+        return full('PAGES_STANDARD_ACTION_METADATA_CALLER_BYTES:'+entry.path);
+    }
+    const uiProducts=pagesRollback?productChanges.filter(change=>change!==metadataCaller
+      &&change.file!==rollback?.action.path&&change.file!==rollback?.test.path):productChanges;
     if(pagesRollback){
-      if(!rollback||pagesChanges.length!==1||productChanges.length!==2+uiProducts.length
+      if(!rollback||pagesChanges.length!==1||productChanges.length!==2+(metadataCaller?1:0)+uiProducts.length
         ||uiProducts.length&&(!adminUi||uiProducts.length!==Object.keys(adminUi.frames).length
           ||uiProducts.some(({file,row})=>!Object.hasOwn(adminUi.frames,file)
             ||row.beforeOid!==adminUi.frames[file].beforeBlob||row.afterOid!==adminUi.frames[file].afterBlob)))
@@ -350,7 +359,8 @@ export function planSourceDomainImpactFromGit(input){
       const {callers,frames}=selectedRegistry.pagesTransport;
       for(const [file,oid]of Object.entries(callers)){
         const item=index.get(file);
-        const expected=pagesRollback&&file===rollback.action.path?rollback.action.afterBlob:oid;
+        const expected=pagesRollback&&file===rollback.action.path?rollback.action.afterBlob
+          :metadataCaller&&file===rollback.artifactMetadataCaller.path?rollback.artifactMetadataCaller.afterBlob:oid;
         if(item?.oid!==expected||item.mode!=='100644'||item.type!=='blob')return full('PAGES_TRANSPORT_CALLER_CHANGED:'+file);
         closureRows.push({file,mode:item.mode,blob:item.oid,sha256:sha(get(file))});
       }
