@@ -1156,7 +1156,10 @@ test('private-study006: privat eksport bevarer hele installationsarm og normale 
     const guards=['invalidateAdminTripCount','invalidateAdminUserCategories']
       .map(name=>{const actual=source.match(new RegExp('^function '+name+'\\(\\)\\{[^\\n]+\\}','m'))?.[0];assert(actual,name);return actual;}).join('\n');
     const sandbox=vm.createContext(context);
-    vm.runInContext(declarations+'\n'+guards+'\n'+source.slice(learningStart,learningEnd)+';'+render+';render();',sandbox);
+    const viewDeclarations=render.includes('adminViewEpoch++')
+      ? source.match(/^let adminConnectionRead=[^\n]*adminViewEpoch=0,pendingCleanAdminRead=null;$/m)?.[0] : '';
+    if(render.includes('adminViewEpoch++'))assert(viewDeclarations,'actual clean-read view declarations');
+    vm.runInContext(declarations+'\n'+(viewDeclarations||'')+'\n'+guards+'\n'+source.slice(learningStart,learningEnd)+';'+render+';render();',sandbox);
     assert.equal(calls.length,1,'one private-study mount on learning');assert.equal(calls[0].access,firstAccess);assert.equal(learningCalls,1);
     const tabs=[...render.matchAll(/(?:\{|,)(\w+):render\w+/g)].map(x=>x[1]);assert(tabs.includes('learning')&&tabs.includes('dashboard'));
     for(const tab of tabs.filter(name=>name!=='learning')){context.state.tab=tab;vm.runInContext('render();',sandbox);assert.equal(calls.length,1,'no private-study mount on '+tab);}
