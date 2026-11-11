@@ -1,3 +1,13 @@
+## 10. november — Pages og backupprøver følger deres faktiske ændringsområde
+
+En typisk fuld kildekontrol brugte 49 minutter på kildekode, 52 minutter på PostgreSQL og 14 minutter på nationale prøver. Den gældende Pages-rettelse ændrede ingen af de 148 registrerede PostgreSQL-input eller de tre model- og fortsættelsesbindinger. Den krævede stadig bred kontrol, fordi den også ændrede den normale vejrhentning, lagring og adgang til de beskyttede forgængere.
+
+Den korte kontrolvej bruger den eksisterende ændringsanalyse til to afgrænsede tilfælde. Justering af ventetid, observationer og kendte Pages-statusser kan bruge de eksisterende Pages-prøver, når kaldere, adgang, skrivebetingelser og prognoseforløb er identiske. En ændring begrænset til restore-fixturen kan bruge dens syntetiske selvtest efter uafhængig gennemgang af hele den ændrede fixture. Den faste testkommando får kun nødvendige værtindstillinger.
+
+Ændrede SQL-, model-, vejr-, tilladelses- eller andre ubundne input kræver fortsat fuld kontrol. En kumulativ sammenligning må omfatte netop denne registrerede kontrolkode og beslutning, når de fortsat bliver selvstændigt gennemgået. Et senere kort bevis påstår hverken at have kørt PostgreSQL eller national validering. Den offentlige prognoses data- og udgivelseskontroller består. Den faktiske tidsbesparelse måles først i GitHub.
+
+Bevislæseren accepterer den allerede kendte ældre kontrolrækkefølge og den aktuelle rækkefølge med det præcise DMI-installationstrin før kildeplanen. Native- og nationalbeviser skal stadig stamme fra den faktiske, afsluttede kontrol i den krævede rækkefølge. Et ukendt eller sprunget trin godkendes ikke.
+
 ## 1. november — præcis D1-registrering og bevaret native-kontrol
 
 Den lokale private enable-efterfølger registrerer den fælles Worker-bindingslæser som reel D1-produktkode og den eksisterende transient-retry-prøve som normal D1-prøve. De konkrete nye controller-/testkanter og ressourcer tilføjes uden at fjerne gamle grænser. Produktkode ommærkes ikke til test-only.

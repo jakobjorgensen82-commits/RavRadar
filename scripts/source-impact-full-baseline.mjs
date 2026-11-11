@@ -223,9 +223,13 @@ export async function qualifySourceImpactFullBaseline(input,dependencies){
       'Validate download-inclusive DMI capacity on artificial data only'];
     for(const name of names)assert(success(one(job.steps.filter(value=>value.name===name))));
     const phase=verifyAssistantPublic591Metadata(run,jobs);
-    const nationalStep=one(job.steps.filter(value=>value.name===NATIONAL_STEP));assert.equal(nationalStep.number,18);
-    const unchanged=one(job.steps.filter(value=>value.name===SOURCE_UNCHANGED));assert.equal(unchanged.number,21);
-    const final=one(job.steps.filter(value=>value.name===FINAL_UPLOAD));assert.equal(final.number,22);
+    const nativeUpload=one(job.steps.filter(value=>value.name===NATIVE_UPLOAD));
+    const nationalStep=one(job.steps.filter(value=>value.name===NATIONAL_STEP));
+    assert.equal(nationalStep.number,nativeUpload.number+1);
+    const unchanged=one(job.steps.filter(value=>value.name===SOURCE_UNCHANGED));
+    assert.equal(unchanged.number,nationalStep.number+3);
+    const final=one(job.steps.filter(value=>value.name===FINAL_UPLOAD));
+    assert.equal(final.number,unchanged.number+1);
     assert(time(phase.uploadedAt)<=time(nationalStep.started_at));
     assert(time(nationalStep.completed_at)<=time(unchanged.started_at));
     assert(time(unchanged.completed_at)<=time(final.started_at));

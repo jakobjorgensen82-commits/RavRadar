@@ -1012,9 +1012,17 @@ export function verifyAssistantPublic591Metadata(run,jobs){
   assert(Number.isSafeInteger(job.id)&&job.id>0);
   const source=one(job.steps.filter(row=>row.name==='Validate source contracts and release governance'));
   const pg=one(job.steps.filter(row=>row.name===STEP)),upload=one(job.steps.filter(row=>row.name===CURRENT586_PHASE_UPLOAD));
-  assert.equal(source.number,15);assert.equal(pg.number,16);assert.equal(upload.number,17);
-  assert.deepEqual(job.steps.filter(row=>row.number<=17).map(row=>row.number),Array.from({length:17},(_,i)=>i+1));
-  assert(job.steps.filter(row=>row.number<=17).every(successful));
+  const earlyDmi = job.steps.filter(row=>row.name==='Install declared DMI dependencies before source planning');
+  assert(earlyDmi.length<=1);
+  const offset=earlyDmi.length;
+  if(offset===1){
+    assert.equal(earlyDmi[0].number,6);assert(successful(earlyDmi[0]));
+    assert.equal(one(job.steps.filter(row=>row.name==='Build deterministic source-tree content identity')).number,7);
+  }
+  assert.equal(source.number,15+offset);assert.equal(pg.number,16+offset);assert.equal(upload.number,17+offset);
+  const prefix=job.steps.filter(row=>row.number<=upload.number);
+  assert.deepEqual(prefix.map(row=>row.number),Array.from({length:upload.number},(_,i)=>i+1));
+  assert(prefix.every(successful));
   assert(Date.parse(source.completed_at)<=Date.parse(pg.started_at)&&Date.parse(pg.started_at)<=Date.parse(pg.completed_at)
     &&Date.parse(pg.completed_at)<=Date.parse(upload.completed_at));
   return {job:job.id,pgStartedAt:pg.started_at,uploadedAt:upload.completed_at};

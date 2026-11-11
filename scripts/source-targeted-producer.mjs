@@ -14,6 +14,8 @@ import {discoverPullRequestSourceGate,PULL_REQUEST_SOURCE_JOB,PULL_REQUEST_SOURC
 import {sourceTreeContentSha256,sourceTreeProofArtifactName} from './lib/source-tree-content.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+const LOCAL_RESTORE_SELF_TEST='node scripts/test-supabase-cli-local-restore.mjs --self-test';
+const LOCAL_RESTORE_ENVIRONMENT=['PATH','Path','SystemRoot','WINDIR','HOME','USERPROFILE','TMPDIR','TEMP','TMP','COMSPEC','PATHEXT'];
 const RECEIPT='.cache/source-targeted-impact-proof.json',LIMIT=65536;
 const sha=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 const oid=value=>typeof value==='string'&&/^[a-f0-9]{40}$/.test(value);
@@ -187,8 +189,11 @@ export async function coordinateTargetedSourceProducer(){
     clean(head);
     const start=performance.now(),result=await new Promise(resolve=>{
       let error=null;
+      const localRestoreEnvironment=command===LOCAL_RESTORE_SELF_TEST
+        ?Object.fromEntries(LOCAL_RESTORE_ENVIRONMENT.filter(key=>typeof env[key]==='string').map(key=>[key,env[key]]))
+        :undefined;
       const child=spawn(process.execPath,command.split(' ').slice(1),
-        {cwd:ROOT,stdio:'inherit',shell:false,timeout:300000});
+        {cwd:ROOT,stdio:'inherit',shell:false,timeout:300000,env:localRestoreEnvironment});
       child.once('error',value=>{error=value;});
       child.once('close',(status,signal)=>resolve({status,signal,error}));
     });
