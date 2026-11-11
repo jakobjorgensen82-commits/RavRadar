@@ -224,17 +224,6 @@ async function privateStudyPre007Controller(){
 }
 
 // Test-only: remove only the reviewed frozen-replay workflow delta before old whole-file oracles.
-// Test-only: the separately tested exact cache-address successor precedes this unchanged mount/access oracle.
-function reviewedFrozenStudyDashboard(source){
-  const digest=value=>crypto.createHash('sha256').update(value).digest('hex');
-  if(digest(source)!=='2b1c2b1ffdd497979fed251df700c32bb2832063471d891d8646702dd89ae791')return source;
-  assert.equal(Buffer.byteLength(source),150490);
-  const current='./admin-private-trip-study.js?v=4.0.598&study=frozen-replay-noise-20261106';
-  assert.equal(source.split(current).length,2);source=source.replace(current,'./admin-private-trip-study.js?v=4.0.598');
-  assert.equal(Buffer.byteLength(source),150455);assert.equal(digest(source),'20fa84de16de4d3e97f6f63c4b7173ff4d0c38300287b7aedff09814b5228bb7');
-  return source;
-}
-
 function reviewedFrozenReplayWorkflow(source){
   assert.equal(typeof source,'string');
   const digest=value=>crypto.createHash('sha256').update(value).digest('hex');
@@ -1140,12 +1129,13 @@ test('private-study006: privat eksport bevarer hele installationsarm og normale 
   {
   // This test owns the current private-study import/render/access seam, not
   // historical complete dashboard bytes, labels or public weather readiness.
-  const dashboard=reviewedFrozenStudyDashboard(await read('js/ui/admin-dashboard.js'));
+  const dashboard=await read('js/ui/admin-dashboard.js');
   const currentVersion=JSON.parse(await read('package.json')).version;
   const checkDashboardCoupling=source=>{
     const imports=[...source.matchAll(/^\s*import\s*\{\s*mountPrivateTripStudyCard\s*\}\s*from\s*['"]([^'"]+)['"]\s*;/gm)];
     assert.equal(imports.length,1,'one normal private-study import');
-    assert.equal(imports[0][1],'./admin-private-trip-study.js?v='+currentVersion);
+    assert.equal(imports[0][1],
+      `./admin-private-trip-study.js?v=${currentVersion}&study=frozen-replay-noise-20261106`);
     const render=source.match(/^function render\(\)\{[^\n]+\}/m)?.[0];assert(render,'actual normal render');
     const learningStart=source.indexOf('function renderLearning(){'),learningEnd=source.indexOf('\n\nconst saveBadge=',learningStart);
     assert(learningStart>=0&&learningEnd>learningStart,'actual learning renderer');
@@ -1159,12 +1149,17 @@ test('private-study006: privat eksport bevarer hele installationsarm og normale 
         calls.push({host:actualHost,access});
       }};
     for(const name of new Set([...render.matchAll(/(?:\:|\|\|)(render\w+)/g)].map(x=>x[1])))context[name]=()=>{};
-    const declarations=['adminTripCountRenderEpoch','disposeAdminTripCount','adminUserRenderEpoch','disposeAdminUserCategories']
+    const declarationNames=['adminTripCountRenderEpoch','disposeAdminTripCount','adminUserRenderEpoch','disposeAdminUserCategories'];
+    if(render.includes('disposeOwnerNoticeProbe?.();'))declarationNames.push('disposeOwnerNoticeProbe');
+    const declarations=declarationNames
       .map(name=>{const actual=source.match(new RegExp('^let '+name+'=[^;]+;','m'))?.[0];assert(actual,name);return actual;}).join('\n');
     const guards=['invalidateAdminTripCount','invalidateAdminUserCategories']
       .map(name=>{const actual=source.match(new RegExp('^function '+name+'\\(\\)\\{[^\\n]+\\}','m'))?.[0];assert(actual,name);return actual;}).join('\n');
     const sandbox=vm.createContext(context);
-    vm.runInContext(declarations+'\n'+guards+'\n'+source.slice(learningStart,learningEnd)+';'+render+';render();',sandbox);
+    const viewDeclarations=render.includes('adminViewEpoch++')
+      ? source.match(/^let adminConnectionRead=[^\n]*adminViewEpoch=0,pendingCleanAdminRead=null;$/m)?.[0] : '';
+    if(render.includes('adminViewEpoch++'))assert(viewDeclarations,'actual clean-read view declarations');
+    vm.runInContext(declarations+'\n'+(viewDeclarations||'')+'\n'+guards+'\n'+source.slice(learningStart,learningEnd)+';'+render+';render();',sandbox);
     assert.equal(calls.length,1,'one private-study mount on learning');assert.equal(calls[0].access,firstAccess);assert.equal(learningCalls,1);
     const tabs=[...render.matchAll(/(?:\{|,)(\w+):render\w+/g)].map(x=>x[1]);assert(tabs.includes('learning')&&tabs.includes('dashboard'));
     for(const tab of tabs.filter(name=>name!=='learning')){context.state.tab=tab;vm.runInContext('render();',sandbox);assert.equal(calls.length,1,'no private-study mount on '+tab);}
