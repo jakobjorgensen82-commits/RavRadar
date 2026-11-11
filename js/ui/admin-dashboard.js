@@ -122,11 +122,23 @@ function activeAdminObservationDto(row,activeModel){
 
 function setLocalJsonSafely(key,payload){try{localStorage.setItem(key,JSON.stringify(payload));return true}catch(error){console.warn(`[RavRadar] Lokal browsercache kunne ikke gemmes for ${key}; Supabase-gemning fortsætter.`,error);return false}}
 
-let adminConnectionRead=0,adminPublicRead=0,adminWaterRead=0,adminCoastlineRead=0,adminHandbookRead=0;
+let adminConnectionRead=0,adminPublicRead=0,adminWaterRead=0,adminCoastlineRead=0,adminHandbookRead=0,adminViewEpoch=0,pendingCleanAdminRead=null;
 function currentAdminRead(){
  const identity=authIdentityEpoch(),owner=currentSession()?.user?.id;
  return()=>Boolean(owner)&&identity===authIdentityEpoch()&&owner===currentSession()?.user?.id
   &&state.access?.profile?.id===owner&&state.access.profile.is_active===true&&hasPermission(state.access,'admin_access');
+}
+function rememberCleanBlockedAdminRead(tab){
+ pendingCleanAdminRead={tab,epoch:adminViewEpoch,current:currentAdminRead()};
+}
+function updateCleanBlockedAdminRead(){
+ const pending=pendingCleanAdminRead;
+ if(!pending||pending.tab!==state.tab||pending.epoch!==adminViewEpoch||!pending.current()
+   ||!content.isConnected||document.querySelector('#adminContent')!==content||!activePublicRavScoreState().ok)return;
+ const guideHidden=document.querySelector('#moduleGuideBody')?.hidden===true;
+ render();
+ if(guideHidden){const body=document.querySelector('#moduleGuideBody'),toggle=document.querySelector('#toggleModuleGuide');
+  if(body)body.hidden=true;if(toggle){toggle.textContent='Vis guide';toggle.setAttribute('aria-expanded','false');}}
 }
 function waterRoutingSourceNotice(){
  const labels={central:'læst centralt','local-cache':'lokal kopi (fallback)','project-file':'projektfil (fallback)','empty-default':'tom standard (fallback)',unknown:'ikke bekræftet'};
@@ -208,6 +220,7 @@ async function refreshAdminPublicRuntime(){
  }
  updateAdminOverviewReadiness();
  updatePendingAdminWeather();
+ updateCleanBlockedAdminRead();
 }
 function retryAdminPublicRuntime(){
  if(!currentAdminRead()())return;
@@ -351,7 +364,7 @@ const MODULE_GUIDES={
 };
 function moduleGuide(){const g=MODULE_GUIDES[state.tab]||MODULE_GUIDES.dashboard;return `<article class="admin-card module-guide"><div class="module-guide-head"><div><span class="eyebrow">Hjælp til modulet</span><h2>${esc(g.title)}</h2><p>${esc(g.purpose)}</p></div><button class="admin-button secondary" id="toggleModuleGuide" aria-expanded="true">Skjul guide</button></div><div id="moduleGuideBody"><ol class="guided-steps">${g.steps.map((x,i)=>`<li><span>${i+1}</span><div>${esc(x)}</div></li>`).join('')}</ol><div class="guide-result"><b>Vigtigt:</b> ${esc(g.result)}</div></div></article>`}
 function bindModuleGuide(){const b=document.querySelector('#toggleModuleGuide'),body=document.querySelector('#moduleGuideBody');if(!b||!body)return;b.onclick=()=>{const hidden=body.hidden=!body.hidden;b.textContent=hidden?'Vis guide':'Skjul guide';b.setAttribute('aria-expanded',String(!hidden));};}
-function render(){invalidateAdminTripCount();invalidateAdminUserCategories();disposeOwnerNoticeProbe?.();if(state.tab!=='coastlineEditor')destroyCoastlineEditor();if(state.tab!=='directionAudit')destroyDirectionMap();if(state.tab!=='waterStations'&&state.stationMap){state.stationMap.remove();state.stationMap=null;}({dashboard:renderDashboard,weather:renderWeather,waterStations:renderWaterStations,zones:renderZones,coastlineEditor:renderAdminCoastlineEditor,directionAudit:renderDirectionAudit,observations:renderObservations,history:renderHistory,visitors:renderVisitors,learning:renderLearning,users:renderUsers,handbook:renderHandbook,documentation:renderDocumentation,system:renderSystem}[state.tab]||renderDashboard)();content.insertAdjacentHTML('afterbegin',moduleGuide());bindModuleGuide();if(state.tab==='learning')mountPrivateTripStudyCard(content,state.access);}
+function render(){adminViewEpoch++;pendingCleanAdminRead=null;invalidateAdminTripCount();invalidateAdminUserCategories();disposeOwnerNoticeProbe?.();if(state.tab!=='coastlineEditor')destroyCoastlineEditor();if(state.tab!=='directionAudit')destroyDirectionMap();if(state.tab!=='waterStations'&&state.stationMap){state.stationMap.remove();state.stationMap=null;}({dashboard:renderDashboard,weather:renderWeather,waterStations:renderWaterStations,zones:renderZones,coastlineEditor:renderAdminCoastlineEditor,directionAudit:renderDirectionAudit,observations:renderObservations,history:renderHistory,visitors:renderVisitors,learning:renderLearning,users:renderUsers,handbook:renderHandbook,documentation:renderDocumentation,system:renderSystem}[state.tab]||renderDashboard)();content.insertAdjacentHTML('afterbegin',moduleGuide());bindModuleGuide();if(state.tab==='learning')mountPrivateTripStudyCard(content,state.access);}
 
 function scoreAvailabilityCard(){
  const active=activePublicRavScoreState();
@@ -651,7 +664,7 @@ function renderObservations(){
   ? `<article class="admin-card"><h2>Eksport og databeskyttelse</h2><p>Eksporten er en fast allowlist uden bruger-id, GPS, rute eller råt vejrsnapshot. Hver række klassificeres mod den verificerede aktive binding for ${esc(active.value.labelDa)}; eksportens topniveau bærer samme eksakte binding.</p><button id="exportObs" class="admin-button">Eksportér dataminimeret JSON</button></article>`
   : activeModelUnavailableCard(active,{title:'Observationseksport blokeret'});
  content.innerHTML=`<p class="muted">Tallene og eksporten gælder kun observationer på denne enhed.</p><div class="admin-grid"><article class="admin-card"><h2>Observationer</h2><div class="metric">${obs.length}</div></article><article class="admin-card"><h2>Registrerede fund</h2><div class="metric">${finds}</div></article><article class="admin-card"><h2>Bundne snapshots</h2><div class="metric">${obs.filter(x=>x.forecast_snapshot_id).length}</div><p class="muted">Eksporteres kun som sikker snapshotreference</p></article></div>${exportCard}`;
- if(!active.ok)return;
+ if(!active.ok){rememberCleanBlockedAdminRead('observations');return;}
  document.querySelector('#exportObs').onclick=()=>{
   const rows=obs.map(row=>activeAdminObservationDto(row,active.value));
   download('ravradar-observationer.json',{
@@ -847,7 +860,7 @@ function renderVisitors(){
 
 function renderHistory(){
  const active=activePublicRavScoreState();
- if(!active.ok){content.innerHTML=activeModelUnavailableCard(active,{title:'Historisk analyse blokeret'});return;}
+ if(!active.ok){content.innerHTML=activeModelUnavailableCard(active,{title:'Historisk analyse blokeret'});rememberCleanBlockedAdminRead('history');return;}
  const zones=state.zones.map(z=>z.properties).sort((a,b)=>(a.name||'').localeCompare(b.name||'','da'));
  const eligibilityText=active.value.observationCalibrationEligible
   ? `Kun komplette ture, der er bundet til ${esc(active.value.labelDa)} og et uforanderligt prognosesnapshot, indgår i fundrate og gennemsnit.`

@@ -552,3 +552,47 @@ async function routingReadOrigin(){
 }
 await routingReadOrigin();
 console.log('OK: Normal station loading preserves central/local/project/default values and reports their actual read origin without another request.');
+
+// Only two renderers stop before usable controls: history filters and the
+// local observation export. Exercise their actual common render/boot callers.
+async function cleanEarlyReadView(tab,{leave=null,changeIdentity=false,replaceHost=false}={}){
+ const x=normalCaller({initialPublicReject:false});let renders=0,probeDisposals=0,studyMounts=0;
+ x.content.isConnected=true;x.nodes.set('adminContent',x.content);
+ x.context.loadZoneRegistry=async()=>{const features=[{properties:{id:'one',name:'Synthetic one'}},{properties:{id:'two',name:'Synthetic two'}}];return{all:features,active:features,collection:{features},counts:{registered:2,active:2,legacy:0}};};
+ x.nodes.set('moduleGuideBody',{hidden:false});x.nodes.set('toggleModuleGuide',{textContent:'Skjul guide',setAttribute(name,value){this[name]=value;}});
+ x.content.insertAdjacentHTML=()=>{x.nodes.get('moduleGuideBody').hidden=false;};
+ for(const name of ['renderDashboard','renderWeather','renderWaterStations','renderZones','renderAdminCoastlineEditor','renderDirectionAudit','renderVisitors','renderLearning','renderUsers','renderHandbook','renderDocumentation','renderSystem'])
+  x.context[name]=()=>{x.content.innerHTML='synthetic '+x.context.state.tab+' controls';};
+ Object.assign(x.context,{invalidateAdminTripCount(){},invalidateAdminUserCategories(){},disposeOwnerNoticeProbe:null,
+  destroyCoastlineEditor(){},destroyDirectionMap(){},moduleGuide:()=>'<p>synthetic guide</p>',bindModuleGuide(){},
+  mountPrivateTripStudyCard(){studyMounts++;},historicalSummary:()=>({count:0,excludedCount:0,finds:0,successRate:null,averages:{ravScore:null},allRows:[]}),
+  resolveAdminActivePublicRavScore:()=>({statusDa:'synthetic verified model',labelDa:'synthetic model',binding:{},observationCalibrationEligible:true,kind:'integrated',scoreProfile:{activationState:'synthetic'}}),
+ });
+ for(const key of ['exportObs','historyDate','historyZone','historyResult','clearHistory','historyOutput'])x.nodes.set(key,{value:'',innerHTML:''});
+ actualView(x,'renderObservations','\nasync function renderUsers(');actualView(x,'renderHistory','\nfunction renderLearning(');
+ const from=admin.indexOf('function render(){'),to=admin.indexOf('\nfunction scoreAvailabilityCard(',from);
+ assert(from>=0&&to>from);runInNewContext(admin.slice(from,to),x.context);
+ const actualRender=x.context.render;x.context.render=()=>{renders++;return actualRender();};
+ const task=x.context.ops.boot();await settle();x.context.state.tab=tab;x.context.render();
+ assert.equal(renders,2);assert(!x.content.innerHTML.includes(tab==='history'?'id="historyDate"':'id="exportObs"'),'no usable controls exist in the blocked branch');
+ x.nodes.get('moduleGuideBody').hidden=true;
+ if(leave){x.context.state.tab=leave;x.context.render();x.context.disposeOwnerNoticeProbe=()=>{probeDisposals++;};}
+ if(changeIdentity)x.switchIdentity();if(replaceHost)x.nodes.set('adminContent',{syntheticReplacement:true});
+ const before=x.content.innerHTML,renderCount=renders,studyCount=studyMounts;
+ x.releaseConnections();x.releasePublic();await task;
+ if(leave||changeIdentity||replaceHost){assert.equal(x.content.innerHTML,before,'a changed view/identity/host may not be remounted');assert.equal(renders,renderCount);assert.equal(probeDisposals,0);assert.equal(studyMounts,studyCount);return;}
+ assert.equal(renders,3,'exactly the same still-blocked read view is mounted after actual public verification');
+ assert(x.content.innerHTML.includes(tab==='history'?'id="historyDate"':'id="exportObs"'));
+ assert.equal(x.nodes.get('moduleGuideBody').hidden,true,'collapsed guide survives the clean read completion');
+ assert.equal(x.nodes.get('toggleModuleGuide')['aria-expanded'],'false');
+ if(tab==='history'){
+  x.nodes.get('historyDate').value='2026-11-10';const painted=x.content.innerHTML;
+  await x.context.ops.publicRuntime();
+  assert.equal(renders,3,'later public completion must not remount an already usable view');
+  assert.equal(x.nodes.get('historyDate').value,'2026-11-10','an existing human filter is preserved');assert.equal(x.content.innerHTML,painted);
+ }
+}
+await cleanEarlyReadView('history');await cleanEarlyReadView('observations');
+await cleanEarlyReadView('history',{changeIdentity:true});await cleanEarlyReadView('observations',{replaceHost:true});
+for(const leave of ['system','learning','directionAudit'])await cleanEarlyReadView('history',{leave});
+console.log('OK: Only unchanged clean history/observation blocks reopen after verified public completion; filters, report/probe controllers, editor views and changed identity/host are preserved.');
