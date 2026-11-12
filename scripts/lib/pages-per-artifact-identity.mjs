@@ -256,6 +256,11 @@ export function classifyPagesPriorStatus(response, request) {
   if (conflict) return unknown('PRIOR_STATUS_' + conflict + '_UNPROVED');
   if (Object.hasOwn(data, 'pages_build_version') && data.pages_build_version !== request.buildVersion)
     return unknown('PRIOR_STATUS_ID_UNPROVED');
+  // GitHub's status lookup also returns this exact empty singleton for an
+  // unused build alias. It proves neither absence nor ownership: admission
+  // still requires the unique intent, protected reservation and CREATE ACK.
+  if (data.status === '' && Reflect.ownKeys(data).length === 1)
+    return unknown('PRIOR_STATUS_EMPTY_UNQUALIFIED');
   if (PENDING.has(data.status)) return Object.freeze({ outcome: 'PENDING', code: data.status });
   if (['succeed', 'deployment_failed', 'deployment_content_failed', 'deployment_cancelled'].includes(data.status))
     return Object.freeze({ outcome: 'CLOSED', code: data.status });
