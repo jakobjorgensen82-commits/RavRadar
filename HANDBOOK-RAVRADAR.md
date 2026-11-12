@@ -1,3 +1,15 @@
+## 89.345 — En databasebackup skal kunne læses tilbage korrekt
+
+Den isolerede databasegendannelse får en reel indholdskontrol mod det autentificerede arkiv. PostgreSQL læser de originale COPY-records i midlertidige tabeller med målets faktiske kolonnetyper og sammenligner begge veje med EXCEPT ALL og bytefast tekstsortering. Det kontrollerer også dubletter; samme rækketal er ikke tilstrækkeligt. Sekvenser aflæses uden ny setval. Den eksisterende Auth-tjeneste prøves gennem dens verificerede interne, ejede Docker-endepunkt med én disponibel testkonto, uden at logge ind som en rigtig bruger. Kun fuldt afsluttet indholdsparitet, Auth-funktion og ejet oprydning kan give de stærke databaseflag. Det er paritet med arkivets fem filer, ikke et atomisk live-snapshot, gendannelse af Storage-objekter, produktionsinstallation eller bevis for Free-klarhed.
+
+Dette er en privat kildekandidat. De eksisterende målrettede lokale prøver er bestået; præcis GitHub-kvalifikation, den normale syntetiske Linux-gendannelse og faktisk gendannelse af det valgte autentiske arkiv er særskilte åbne beviser. Ingen numerisk model, version 4.0.598, migration, score, kildeprioritet, geometri, adgangsrettigheder, automatisk kontosletning eller backuprotation ændres af forberedelsen.
+
+## 89.344 — Admin opdaterer oplysninger uden at nulstille arbejdet
+
+Administratorens Kalibrering og System kan åbnes, mens den offentlige model stadig hentes. Den lokale rettelse opdaterer kun den oprindelige modelvisning: AFVENTER under læsning, BLOKERET ved faktisk verifikationsfejl og gyldig model efter en normal vellykket genprøvning. Rapporter, prøvemail og deres igangværende kontroller bevares. Retningseditoren monteres én gang efter den eksisterende admin-ready-grænse med de afsluttede input; en senere offentlig læsning genopretter ikke editoren eller overskriver kladden. Den eksisterende admin-UI-adresse ændres ens i side og offlinecache, mens data-service-adressen bevares.
+
+Dette er en privat kildekandidat. De eksisterende målrettede lokale prøver er bestået; præcis GitHub-kvalifikation, den normale syntetiske Linux-gendannelse og faktisk gendannelse af det valgte autentiske arkiv er særskilte åbne beviser. Ingen numerisk model, version 4.0.598, migration, score, kildeprioritet, geometri, adgangsrettigheder, automatisk kontosletning eller backuprotation ændres af forberedelsen.
+
 ## Prøveforudsætninger til kapitel 89.342 — 12. november 2026
 
 Den første faktiske Linux-kvalifikation bestod den nye V4-kontrolvej og mailmålet, men påviste manglende forudsætninger i scalarprøvens miljø. Den normale vejrhentning installerer allerede det eksisterende requirements-copernicus.txt før offline planlægning; den målrettede kildeproducent forbereder nu samme krav, når netop dette mål vælges. Prøvens barn bevarer Linux-/macOS-interpreterens biblioteksstier og udelukker fortsat credentials. Produktlæser, fejlafvisning, model og providerbudgetter ændres ikke af forberedelsen. Ny præcis Linux-kvalifikation kræves fortsat.

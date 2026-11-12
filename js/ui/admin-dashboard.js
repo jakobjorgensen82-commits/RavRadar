@@ -128,13 +128,31 @@ function currentAdminRead(){
  return()=>Boolean(owner)&&identity===authIdentityEpoch()&&owner===currentSession()?.user?.id
   &&state.access?.profile?.id===owner&&state.access.profile.is_active===true&&hasPermission(state.access,'admin_access');
 }
-function rememberCleanBlockedAdminRead(tab){
- pendingCleanAdminRead={tab,epoch:adminViewEpoch,current:currentAdminRead()};
+function rememberCleanBlockedAdminRead(tab,host=null){
+ pendingCleanAdminRead={tab,host,epoch:adminViewEpoch,current:currentAdminRead()};
 }
 function updateCleanBlockedAdminRead(){
  const pending=pendingCleanAdminRead;
  if(!pending||pending.tab!==state.tab||pending.epoch!==adminViewEpoch||!pending.current()
-   ||!content.isConnected||document.querySelector('#adminContent')!==content||!activePublicRavScoreState().ok)return;
+   ||!content.isConnected||document.querySelector('#adminContent')!==content)return;
+ if(pending.tab==='directionAudit'){
+  const host=document.querySelector('#adminDirectionEditorRead');
+  if(document.body.dataset.adminReady!=='true'||host!==pending.host||!host?.isConnected||host.parentNode!==content)return;
+  mountAdminDirectionEditor(host);pendingCleanAdminRead=null;return;
+ }
+ const active=activePublicRavScoreState();
+ if(pending.tab==='system'){
+  const host=document.querySelector('#adminSystemModelRead'),button=document.querySelector('#exportDiag');
+  if(host!==pending.host||!host?.isConnected||host.parentNode?.parentNode!==content||!button?.isConnected)return;
+  host.innerHTML=systemModelReadHtml(active);button.hidden=!active.ok;button.disabled=!active.ok;
+  if(active.ok)pendingCleanAdminRead=null;return;
+ }
+ if(pending.tab==='learning'){
+  const host=document.querySelector('#adminLearningModelRead');
+  if(host!==pending.host||!host?.isConnected||host.parentNode!==content)return;
+  host.innerHTML=learningModelReadHtml(active);if(active.ok)pendingCleanAdminRead=null;return;
+ }
+ if(!active.ok)return;
  const guideHidden=document.querySelector('#moduleGuideBody')?.hidden===true;
  render();
  if(guideHidden){const body=document.querySelector('#moduleGuideBody'),toggle=document.querySelector('#toggleModuleGuide');
@@ -209,7 +227,7 @@ async function refreshAdminOverviewConnections(){
 async function refreshAdminPublicRuntime(){
  const serial=++adminPublicRead,current=currentAdminRead(),keep=()=>current()&&serial===adminPublicRead;
  if(!keep())return;
- state.publicLoadStatus='pending';state.publicLoadError=null;updateAdminOverviewReadiness();
+ state.publicLoadStatus='pending';state.publicLoadError=null;updateAdminOverviewReadiness();updateCleanBlockedAdminRead();
  try{
   const runtime=await loadVerifiedPublicRuntime();if(!keep())return;
   state.publicManifest=runtime.manifest;state.conditions=runtime.conditions;state.coastalParts=runtime.zones.coastalParts;state.publicModelStartup=runtime.modelStartup;
@@ -324,7 +342,7 @@ async function boot(){
   updateAdminOverviewReadiness();
  })();
  await Promise.allSettled([connections,publicRuntime,waterPriority,coastlineDrafts,diagnostics]);if(!current())return;
- document.body.dataset.adminReady='true';window.dispatchEvent(new CustomEvent('ravradar:admin-ready',{detail:{version:VERSION,tab:state.tab}}));
+ document.body.dataset.adminReady='true';updateCleanBlockedAdminRead();window.dispatchEvent(new CustomEvent('ravradar:admin-ready',{detail:{version:VERSION,tab:state.tab}}));
 }
 
 
@@ -619,7 +637,15 @@ function drawDirectionZone(feature,anchors,selectedAnchorId,onPointMoved){
  const bounds=directionLayers.flatMap(x=>x.getBounds?[x.getBounds()]:[]).reduce((a,b)=>a?a.extend(b):b,null);if(bounds?.isValid()&&!directionMap.__hasFit){directionMap.fitBounds(bounds.pad(.3));directionMap.__hasFit=true;}
 }
 
-function renderDirectionAudit(){destroyDirectionMap();if(destroyPartDirectionEditor)destroyPartDirectionEditor();destroyPartDirectionEditor=createDirectionEditor(content,{zones:state.zones,coastalParts:state.coastalParts,reviews:directionReviews(),pointStagingStatus:state.pointStagingStatus,saveNow:saveDirectionReviewsNow,saveDraft:saveDirectionReviews});if(state.pointStagingStatus?.available===false)content.insertAdjacentHTML('afterbegin','<article class="admin-card status-warning"><h2>Kandidatstatus er utilgængelig</h2><p>Den beskyttede valideringsstatus kunne ikke hentes. Ingen punktændring kan derfor aktiveres fra denne visning.</p></article>');return;
+function renderDirectionAudit(){
+ destroyDirectionMap();if(destroyPartDirectionEditor)destroyPartDirectionEditor();destroyPartDirectionEditor=null;
+ content.innerHTML='<section id="adminDirectionEditorRead" class="admin-content"></section>';
+ const host=document.querySelector('#adminDirectionEditorRead');
+ if(document.body.dataset.adminReady!=='true'){
+  host.innerHTML='<article class="admin-card status-warning"><h2>Retningskontrol indlæses</h2><p>Zonegrundlag, kystdele og den gemte kandidatstatus hentes, før editoren åbnes.</p></article>';
+  rememberCleanBlockedAdminRead('directionAudit',host);return;
+ }
+ mountAdminDirectionEditor(host);return;
  const reviews=directionReviews();const active=state.zones.filter(z=>z.properties?.zoneStatus==='active');const verified=active.filter(z=>reviews[z.properties?.id]?.status==='verified').length;
  content.innerHTML=`<article class="admin-card direction-intro"><div class="rule-card-head"><div><h2>Geografisk kontrol af kystdele</h2><p>Flyt punkterne direkte på kortet. <b>Blå skal ligge i havet</b>, <b>grøn ved stranden/land</b>, og den røde retning skal pege fra havet ind mod land.</p></div><span class="badge">${verified}/${active.length} zoner godkendt</span></div><ol class="direction-steps"><li>Vælg en zone og derefter den kystdel, du vil redigere.</li><li>Træk det blå og grønne punkt til de rigtige steder.</li><li>Klik <b>Beregn retning fra punkterne</b>, eller finjustér graderne.</li><li>Ved en bugtet kyst kan du tilføje flere kystdele. Hver kystdel får sit eget havpunkt, landpunkt og retning.</li><li>Godkend zonen og download til sidst en ny <code>zones.geojson</code>.</li></ol><p class="hint">Den røde cirkel er slutningen af retningen – altså den ende, retningen peger imod. Kladder gemmes lokalt og centralt. Godkendelser og sletninger synkroniseres til næste deployment, hvor zonefil, score, kort, forecast og debug bruger samme aktive geometri.</p></article>
  <div class="direction-layout"><article class="admin-card direction-queue"><div class="toolbar"><input id="directionSearch" placeholder="Søg efter zone"><select id="directionFilter"><option value="pending">Ikke godkendte først</option><option value="uncertain">Kun mistænkelige</option><option value="verified">Kun godkendte</option><option value="all">Alle zoner</option></select></div><div id="directionZoneList" class="direction-zone-list"></div></article>
@@ -654,6 +680,10 @@ function renderDirectionAudit(){destroyDirectionMap();if(destroyPartDirectionEdi
  document.querySelector('#directionApprove').onclick=async()=>{const c=confirmationState();if(!(c.seaPointInWater&&c.landPointAtCoast&&c.arrowSeaToLand))return;const button=document.querySelector('#directionApprove');button.disabled=true;reviews[selectedId]={status:'verified',anchors:structuredClone(currentAnchors.map(a=>({...a,verified:true}))),note:document.querySelector('#directionNote').value.trim(),verifiedAt:new Date().toISOString(),confirmations:c};try{await saveDirectionReviewsNow(reviews);applyDirectionReviewToFeature(active.find(z=>z.properties?.id===selectedId),reviews[selectedId]);drawList();const next=visibleZones().find(z=>z.properties?.id!==selectedId);if(next)selectZone(next.properties.id);}catch(error){alert(error.message);updateApprove();}};document.querySelector('#directionFlag').onclick=()=>{reviews[selectedId]={status:'flagged',anchors:structuredClone(currentAnchors),note:document.querySelector('#directionNote').value.trim(),updatedAt:new Date().toISOString(),confirmations:confirmationState()};saveDirectionReviews(reviews);drawList();};
  document.querySelector('#directionSearch').oninput=drawList;document.querySelector('#directionFilter').onchange=drawList;document.querySelector('#directionExport').onclick=()=>{const output=structuredClone(state.zoneRegistry.collection||{type:'FeatureCollection',features:state.zoneRegistry.all||state.zones});output.features=(output.features||[]).filter(f=>!reviews[f.properties?.id]?.deleted);for(const f of output.features||[]){const p=f.properties||{},r=reviews[p.id];if(r?.anchors?.length){p.directionAnchors=r.anchors.map(a=>({...a,onshoreDirectionDeg:Math.round(normalizeDeg(a.onshoreDirectionDeg))}));const primary=p.directionAnchors[0];p.dataPoint=primary.dataPoint;p.pinPoint=primary.pinPoint;p.onshoreDirectionDeg=primary.onshoreDirectionDeg;p.onshoreDirectionSource='manual multi-anchor geographic review in RavRadar admin';p.onshoreDirectionAuditedAt=r.verifiedAt||r.updatedAt;p.onshoreDirectionReviewStatus=r.status==='verified'?'manually-verified':'manual-review-needed';if(r.note)p.onshoreDirectionReviewNote=r.note;}}download('zones.geojson',output);};document.querySelector('#directionExportReview').onclick=()=>download(`ravradar-geografisk-kontrol-${new Date().toISOString().slice(0,10)}.json`,{schemaVersion:'2.0',exportedAt:new Date().toISOString(),reviews});document.querySelector('#directionReset').onclick=()=>{if(confirm('Nulstil alle lokale geografiske kontroller?')){localStorage.removeItem(DIRECTION_REVIEW_KEY);renderDirectionAudit();}};
  drawList();const first=visibleZones()[0];if(first)selectZone(first.properties.id);
+}
+
+function mountAdminDirectionEditor(host){
+ destroyPartDirectionEditor=createDirectionEditor(host,{zones:state.zones,coastalParts:state.coastalParts,reviews:directionReviews(),pointStagingStatus:state.pointStagingStatus,saveNow:saveDirectionReviewsNow,saveDraft:saveDirectionReviews});if(state.pointStagingStatus?.available===false)host.insertAdjacentHTML('afterbegin','<article class="admin-card status-warning"><h2>Kandidatstatus er utilgængelig</h2><p>Den beskyttede valideringsstatus kunne ikke hentes. Ingen punktændring kan derfor aktiveres fra denne visning.</p></article>');
 }
 
 function renderObservations(){
@@ -756,17 +786,25 @@ async function renderDocumentation(){
 }
 function renderSystem(){
  const active=activePublicRavScoreState();
- const modelCard=active.ok
-  ? `<article class="admin-card"><h2>Offentlig RavScore-model</h2><div class="metric">20/50/30</div><p class="muted">${esc(active.value.labelDa)} · ${esc(active.value.binding.modelId)} · state ${esc(active.value.binding.stateSchemaVersion)}</p><p class="hint">${esc(active.value.statusDa)} Ingen administratorregler, offentlig shadowmodel eller krydsmodel-fallback.</p></article>`
-  : activeModelUnavailableCard(active);
- content.innerHTML=`<div class="admin-grid"><article class="admin-card"><h2>Version</h2><div class="metric">${VERSION}</div></article>${modelCard}</div><article class="admin-card"><h2>Vedligeholdelse</h2><div class="toolbar">${active.ok?'<button id="exportDiag" class="admin-button secondary">Eksportér diagnostik</button>':''}<button id="clearCaches" class="admin-button danger">Ryd RavRadar-caches</button><button id="logoutAdmin" class="admin-button secondary">Log ud</button></div><p class="hint">Cacheknappen rydder kun caches, hvis navn starter med “ravradar”. Den sletter ikke observationer eller ture. Diagnostik kan kun eksporteres, når den aktive offentlige modelbinding er verificeret.</p></article><article class="admin-card"><h2>Sådan ændres RavScore</h2><p>Ekspertviden indsendes gennem håndbogens review. En scoreændring bliver først offentlig, når den er omsat til én samlet model, bundet til ny model- og stateversion, dokumenteret i RDKS, testet og udgivet atomisk i en ny version.</p></article>`;
- document.querySelector('#exportDiag')?.addEventListener('click',()=>{
+ const modelCard=systemModelReadHtml(active);
+ content.innerHTML=`<div class="admin-grid"><article class="admin-card"><h2>Version</h2><div class="metric">${VERSION}</div></article><section id="adminSystemModelRead" class="admin-content">${modelCard}</section></div><article class="admin-card"><h2>Vedligeholdelse</h2><div class="toolbar"><button id="exportDiag" class="admin-button secondary"${active.ok?'':' hidden disabled'}>Eksportér diagnostik</button><button id="clearCaches" class="admin-button danger">Ryd RavRadar-caches</button><button id="logoutAdmin" class="admin-button secondary">Log ud</button></div><p class="hint">Cacheknappen rydder kun caches, hvis navn starter med “ravradar”. Den sletter ikke observationer eller ture. Diagnostik kan kun eksporteres, når den aktive offentlige modelbinding er verificeret.</p></article><article class="admin-card"><h2>Sådan ændres RavScore</h2><p>Ekspertviden indsendes gennem håndbogens review. En scoreændring bliver først offentlig, når den er omsat til én samlet model, bundet til ny model- og stateversion, dokumenteret i RDKS, testet og udgivet atomisk i en ny version.</p></article>`;
+ const viewCurrent=currentAdminRead(),viewEpoch=adminViewEpoch,exportButton=document.querySelector('#exportDiag');
+ exportButton?.addEventListener('click',()=>{
+  if(!viewCurrent()||state.tab!=='system'||viewEpoch!==adminViewEpoch||!exportButton.isConnected||document.querySelector('#exportDiag')!==exportButton)return;
+  const active=activePublicRavScoreState();if(!active.ok)return;
   const publicWaterLevelZones=Object.fromEntries(Object.entries(state.conditions.zones||{}).map(([zoneId,z])=>[zoneId,{zoneName:state.zones.find(f=>f.properties?.id===zoneId)?.properties?.name||zoneId,provider:z.provider??null,currentWaterLevelCm:z.current?.waterLevelCm??null,forecastProvider:z.forecast?.provider??null,forecastValidUntil:z.forecast?.validUntil??null}]));
   download('ravradar-diagnostik.json',{version:VERSION,exportedAt:new Date().toISOString(),publicDatasetGeneratedAt:state.conditions.generatedAt??null,health:state.health,protectedRuntimeSummary:{generatedAt:state.runtime?.generatedAt??null,version:state.runtime?.version??null,componentCoverage:state.runtime?.componentCoverage??null,acquisition:state.runtimeDetails?.acquisition??null,dataQuality:state.runtimeDetails?.dataQuality??null},publicWeatherZoneCount:Object.keys(state.conditions.zones||{}).length,zoneCount:state.zoneRegistry.counts.registered,activeZoneCount:state.zoneRegistry.counts.active,legacyZoneCount:state.zoneRegistry.counts.legacy,scoreProfile:active.value.diagnosticScoreProfile,publicWaterLevelOverview:{description:'Dataminimeret overblik fra den offentlige startpakke. Beskyttede kilde- og driftsdetaljer indgår ikke som offentlige filer.',zones:publicWaterLevelZones}});
  });
  document.querySelector('#clearCaches').onclick=async()=>{if(!confirm('Ryd RavRadars app-caches?'))return;for(const name of await caches.keys())if(name.toLowerCase().startsWith('ravradar'))await caches.delete(name);alert('RavRadar-caches er ryddet.');};
  document.querySelector('#logoutAdmin').onclick=async()=>{await signOut();location.replace('./')};
  mountOwnerNoticeProbe();
+ if(!active.ok)rememberCleanBlockedAdminRead('system',document.querySelector('#adminSystemModelRead'));
+}
+
+function systemModelReadHtml(active){
+ return active.ok
+  ? `<article class="admin-card"><h2>Offentlig RavScore-model</h2><div class="metric">20/50/30</div><p class="muted">${esc(active.value.labelDa)} · ${esc(active.value.binding.modelId)} · state ${esc(active.value.binding.stateSchemaVersion)}</p><p class="hint">${esc(active.value.statusDa)} Ingen administratorregler, offentlig shadowmodel eller krydsmodel-fallback.</p></article>`
+  : activeModelUnavailableCard(active);
 }
 
 
@@ -870,15 +908,20 @@ function renderHistory(){
  ['historyDate','historyZone','historyResult'].forEach(id=>document.querySelector('#'+id).onchange=draw);document.querySelector('#clearHistory').onclick=()=>{document.querySelector('#historyDate').value='';document.querySelector('#historyZone').value='';document.querySelector('#historyResult').value='';draw()};draw();
 }
 function renderLearning(){
- const analysis=analyzeObservations();
  const active=activePublicRavScoreState();
- if(!active.ok){content.innerHTML=activeModelUnavailableCard(active,{title:'Kalibreringsgrundlag blokeret'});return;}
+ content.innerHTML='<section id="adminLearningModelRead" class="admin-content">'+learningModelReadHtml(active)+'</section>';
+ if(!active.ok)rememberCleanBlockedAdminRead('learning',document.querySelector('#adminLearningModelRead'));
+}
+
+function learningModelReadHtml(active){
+ const analysis=analyzeObservations();
+ if(!active.ok)return activeModelUnavailableCard(active,{title:'Kalibreringsgrundlag blokeret'});
  const effortShare=analysis.sampleSize?Math.round((analysis.effortCount/analysis.sampleSize)*100):0;
  const snapshotShare=analysis.sampleSize?Math.round((analysis.snapshotLinkCount/analysis.sampleSize)*100):0;
  const calibrationNotice=active.value.observationCalibrationEligible
   ? 'Datagrundlaget kan først indgå efter den særskilte repræsentativitets- og valideringsgate.'
   : 'Den aktive offentlige modeltilstand er udtrykkeligt ikke kalibreringsegnet.';
- content.innerHTML=`<div class="admin-grid"><article class="admin-card"><h2>Ture i lokalt datagrundlag</h2><div class="metric">${analysis.sampleSize||0}</div><p class="muted">Kun lokale ture, der opfylder visningens model- og evidenskrav. Samlet turtal findes i Overblik.</p></article><article class="admin-card"><h2>Dækkede zoner</h2><div class="metric">${analysis.zoneCount||0}</div><p class="muted">Geografisk spredning skal vurderes før kalibrering</p></article><article class="admin-card"><h2>Reelle nul-fund</h2><div class="metric">${analysis.noFindCount||0}</div><p class="muted">Tæller kun sammen med dokumenteret søgeindsats</p></article></div><article class="admin-card"><h2>Kan data bruges til scorekalibrering?</h2><p><strong>Ikke endnu.</strong> Aktiv offentlig model: ${esc(active.value.labelDa)}. Denne side ændrer ikke modellen, den offentlige RavScore eller nogen lokal model. ${esc(calibrationNotice)}</p><ul><li>${effortShare}% af turene har registreret søgetid.</li><li>${snapshotShare}% har et uforanderligt link til det gemte vejrbillede.</li><li>${analysis.modes?.beach||0} strandture og ${analysis.modes?.waders||0} wadersture indgår.</li></ul><p class="hint">En senere scoreændring kræver repræsentative ture, reelle nul-fund, tidsmæssig test, geografisk hold-out, en eksplicit RDKS-beslutning, kildekodeændring, målrettede tests og offentlig produktionskontrol. Den kan ikke vedtages eller aktiveres på denne side.</p></article>`;
+ return `<div class="admin-grid"><article class="admin-card"><h2>Ture i lokalt datagrundlag</h2><div class="metric">${analysis.sampleSize||0}</div><p class="muted">Kun lokale ture, der opfylder visningens model- og evidenskrav. Samlet turtal findes i Overblik.</p></article><article class="admin-card"><h2>Dækkede zoner</h2><div class="metric">${analysis.zoneCount||0}</div><p class="muted">Geografisk spredning skal vurderes før kalibrering</p></article><article class="admin-card"><h2>Reelle nul-fund</h2><div class="metric">${analysis.noFindCount||0}</div><p class="muted">Tæller kun sammen med dokumenteret søgeindsats</p></article></div><article class="admin-card"><h2>Kan data bruges til scorekalibrering?</h2><p><strong>Ikke endnu.</strong> Aktiv offentlig model: ${esc(active.value.labelDa)}. Denne side ændrer ikke modellen, den offentlige RavScore eller nogen lokal model. ${esc(calibrationNotice)}</p><ul><li>${effortShare}% af turene har registreret søgetid.</li><li>${snapshotShare}% har et uforanderligt link til det gemte vejrbillede.</li><li>${analysis.modes?.beach||0} strandture og ${analysis.modes?.waders||0} wadersture indgår.</li></ul><p class="hint">En senere scoreændring kræver repræsentative ture, reelle nul-fund, tidsmæssig test, geografisk hold-out, en eksplicit RDKS-beslutning, kildekodeændring, målrettede tests og offentlig produktionskontrol. Den kan ikke vedtages eller aktiveres på denne side.</p></article>`;
 }
 
 const saveBadge=document.createElement('div');

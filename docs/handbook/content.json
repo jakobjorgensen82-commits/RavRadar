@@ -2,8 +2,22 @@
   "schemaVersion": "2.0",
   "handbookVersion": "4.0.598",
   "title": "RavRadar Håndbog",
-  "updatedAt": "2026-11-12",
+  "updatedAt": "2026-11-12T22:24:56.880925Z",
   "sections": [
+    {
+      "id": "authenticated-database-archive-content-and-auth-parity-2026-11-12",
+      "chapter": "89.345",
+      "title": "En databasebackup skal kunne læses tilbage korrekt",
+      "summary": "Kontrollér faktisk gendannet indhold og Auth-funktion, før en arkivbackup kaldes brugbar.",
+      "body": "<div class=\"reader-guide\"><p><strong>Under forberedelse:</strong> Kontrollerede filer og en vellykket SQL-kommando er ikke alene bevis for en brugbar gendannelse.</p></div><p>Den isolerede databasegendannelse får en reel indholdskontrol mod det autentificerede arkiv. PostgreSQL læser de originale COPY-records i midlertidige tabeller med målets faktiske kolonnetyper og sammenligner begge veje med EXCEPT ALL og bytefast tekstsortering. Det kontrollerer også dubletter; samme rækketal er ikke tilstrækkeligt. Sekvenser aflæses uden ny setval. Den eksisterende Auth-tjeneste prøves gennem dens verificerede interne, ejede Docker-endepunkt med én disponibel testkonto, uden at logge ind som en rigtig bruger. Kun fuldt afsluttet indholdsparitet, Auth-funktion og ejet oprydning kan give de stærke databaseflag. Det er paritet med arkivets fem filer, ikke et atomisk live-snapshot, gendannelse af Storage-objekter, produktionsinstallation eller bevis for Free-klarhed.</p><p>De gamle arkiver, originale SQL-filer og adgangsregler bevares. Der oprettes ikke gættede platformroller, og der springes ikke GRANT-regler over for at få prøven grøn. Faktisk gendannelse og normal løbende rotation skal bestå, før abonnementet vurderes sikkert at ændre.</p>"
+    },
+    {
+      "id": "admin-late-model-and-direction-read-surfaces-2026-11-12",
+      "chapter": "89.344",
+      "title": "Admin opdaterer oplysninger uden at nulstille arbejdet",
+      "summary": "Sene modeloplysninger og retningens færdige grundlag vises i de oprindelige felter, mens aktive kontroller bevares.",
+      "body": "<div class=\"reader-guide\"><p><strong>Under forberedelse:</strong> En afgrænset visningsrettelse; den er ikke en færdigmelding af hele administratorgennemgangen.</p></div><p>Administratorens Kalibrering og System kan åbnes, mens den offentlige model stadig hentes. Den lokale rettelse opdaterer kun den oprindelige modelvisning: AFVENTER under læsning, BLOKERET ved faktisk verifikationsfejl og gyldig model efter en normal vellykket genprøvning. Rapporter, prøvemail og deres igangværende kontroller bevares. Retningseditoren monteres én gang efter den eksisterende admin-ready-grænse med de afsluttede input; en senere offentlig læsning genopretter ikke editoren eller overskriver kladden. Den eksisterende admin-UI-adresse ændres ens i side og offlinecache, mens data-service-adressen bevares.</p><p>Ingen scoreformel, centrale punkter eller rettigheder ændres. Den faktiske offentlige virkning kontrolleres efter den normale levering.</p>"
+    },
     {
       "id": "owner-notice-fixed-ci-window-2026-11-12",
       "chapter": "89.343",
