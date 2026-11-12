@@ -1,4 +1,19 @@
+<!-- ravradar-derived-source-bindings-v1:begin -->
+## Afledt kildeidentitet — RavScore 4.0.598
+
+Integreret model: `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=f8d8befa7ecda82f8194c0ca04142bd89f5c39e92ed37cda70afca8dded108d1` over 100 kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere.
+
+Inaktiv Candidate G: `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=239ac83f1df6050438243068bba5d942c4e88a921d0b70d611a12f0c798d3f5a` over 101 transitive filer.
+
+Fortsættelse: `continuationStateContractSha256=035008731e6fac3fca396110b3d0ff3486e4854baa99bd691e2a7ea541191579` (`03500873…`) over 12 normaliserede kildefiler med `utf8-bomless-lf-v2`.
+
+Autoriteten er version.json.releaseContract.modelBindings og de aktuelle genererede manifester. Dette er afledt kildeidentitet. Identiteten beviser ikke i sig selv PostgreSQL-kvalifikation, installation eller offentlig levering. Tidligere daterede oplysninger nedenfor er historik.
+<!-- ravradar-derived-source-bindings-v1:end -->
+
 ## 89.342 Kontrol af ændringer med en fast sikkerhedskerne
+
+Den normale kildeplan kender nu håndbogens eksisterende synkroniseringskommando og backupprøvens afgrænsede selvtest. Håndbogens aktuelle tekniske modeloplysninger skrives ud fra de genererede fakta, før den uændrede kontrollæser sammenligner dem. Gamle daterede oplysninger bevares. Backupaflæsningen giver mere præcise faste fejlkategorier; den reparerer ikke et arkiv ved at ignorere importfejl.
+
 
 Under forberedelse: en lille fast sikkerhedskerne og prøver for det faktisk berørte område. Historiske beviser og aktuelle ændringer holdes adskilt.
 

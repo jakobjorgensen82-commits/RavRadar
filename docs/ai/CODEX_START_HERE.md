@@ -1,3 +1,9 @@
+## 12. november — præcis backupfejl og afledte håndbogsfakta
+
+Backupprøvens fejlaflæsning viser nu syv faste offentlige Supabase-rollekategorier i stedet for kun en fælles navnerumskategori. Ingen roller oprettes eller tildeles; import af det gemte arkiv er ikke dermed rettet eller bestået. Den normale kildeplan vælger den eksisterende credential-fri selvprøve for netop denne kendte fixture, mens dens import-/dispatchramme og produktionsworkflow bevares.
+
+Den eksisterende håndbogssynkronisering udleder nu aktuelle C/I/T-oplysninger fra de faktiske genererede kilder og releasekontrakten. Den opdaterer kun egne aktuelle blokke og installationsfilens håndbogspayload. Dateret historik, gamle afsnit og SQL uden for payloaden bevares. Den normale håndbogsprøve kontrollerer skrivefrit, at synkroniseringen er sket; dette er ikke bevis for automatisk kald fra alle modelbyggere. Version 4.0.598, model, score, vejr, administratorpunkter og geometri bevares. Kildekvalifikation, ægte backupgendannelse, Free-overgang og offentlig effekt er fortsat særskilte krav.
+
 ## 12. november — samme kildegrundlag før kontrol og udgivelse
 
 Udgivelsesreservationen og den tidlige genoptagelseskontrol læser samme tidligere kildefiler. Den tidlige kontrol havde hele Git-historikken, mens flere senere kaldere kun hentede den nyeste commit. Den afgrænsede rettelse giver hele historikken til de faktiske reservations-, afklarings-, claim- og afslutningskaldere. Kildehash, byteantal, autentificeret læsning, eksklusiv reservation og afvisning ved ukendt skriveudfald bevares. Der tilføjes ingen alternativ API-læser eller ny særregel for en bestemt kørsels fejltekst.

@@ -1,3 +1,6 @@
+import assert from 'node:assert/strict';
+import {projectHandbookBindingDocuments,readHandbookBindingFacts,synchronizeHandbookInstallationCopy}
+  from './sync-handbook-installation-copy.mjs';
 import fs from 'node:fs';
 import { ravScoreContinuationImplementationSha256 } from './lib/ravscore-continuation-implementation-contract.mjs';
 import {
@@ -813,5 +816,56 @@ const sqlPayload = JSON.stringify(book).replaceAll("'", "''");
 if (!installSql.includes(`values('handbook','${sqlPayload}'::jsonb,null)`)) {
   throw new Error('Supabase-installationsfilens håndbog er ikke identisk med den aktuelle webhåndbog');
 }
+
+
+// Normal facts consumer: all generated identities precede their documentation.
+// This check is read-only; the existing sync command writes before CI/commit.
+const bindingFacts = await readHandbookBindingFacts();
+assert.equal(bindingFacts.releaseVersion, pkg.version);
+assert.equal(bindingFacts.integrated.fileCount, integratedBundleFileCount);
+assert.equal(bindingFacts.candidateGRollback.fileCount, candidateGRollbackBundleFileCount);
+await synchronizeHandbookInstallationCopy({check:true});
+const generatedBegin='<!-- ravradar-derived-source-bindings-v1:begin -->';
+const generatedEnd='<!-- ravradar-derived-source-bindings-v1:end -->';
+const historicalText=text=>{
+  const start=text.indexOf(generatedBegin),end=text.indexOf(generatedEnd,start);
+  assert(start>=0&&end>start);
+  const after=end+generatedEnd.length;
+  return text.slice(0,start)+text.slice(after+(text.slice(after,after+2)==='\n\n'?2:0));
+};
+const factsInput={handbook:book,markdown,installationSql:installSql,facts:bindingFacts};
+const stableProjection=projectHandbookBindingDocuments(factsInput);
+assert.deepEqual(stableProjection,{handbook:JSON.stringify(book,null,2)+'\n',markdown,installationSql:installSql});
+const nextFacts=structuredClone(bindingFacts);
+nextFacts.integrated.modelBundleSha256='f'.repeat(64);
+nextFacts.continuation.sha256='e'.repeat(64);
+const projected=projectHandbookBindingDocuments({...factsInput,facts:nextFacts});
+const projectedBook=JSON.parse(projected.handbook);
+const generatedSections=new Set(['ravscore-final-bindings-4-0-320','ravscore-checkpoint-metadata-cas-4-0-321']);
+assert.deepEqual({...projectedBook,sections:[]},{...book,sections:[]});
+assert.deepEqual(projectedBook.sections.map(section=>section.id),book.sections.map(section=>section.id));
+for(let index=0;index<book.sections.length;index++){
+  const before=book.sections[index],after=projectedBook.sections[index];
+  if(!generatedSections.has(before.id)){assert.deepEqual(after,before);continue;}
+  assert.deepEqual({...after,body:''},{...before,body:''});
+  assert.equal(historicalText(after.body),historicalText(before.body),'Dated handbook text must remain byte-identical');
+}
+assert.equal(historicalText(projected.markdown),historicalText(markdown));
+const sqlOutsidePayload=sql=>{
+  const marker="insert into public.admin_documents(document_key,payload,updated_by) values('handbook','";
+  const start=sql.indexOf(marker)+marker.length,end=sql.indexOf("'::jsonb,null)",start);
+  assert(start>=marker.length&&end>=start);
+  return [sql.slice(0,start),sql.slice(end)];
+};
+assert.deepEqual(sqlOutsidePayload(projected.installationSql),sqlOutsidePayload(installSql));
+assert.deepEqual(projectHandbookBindingDocuments({handbook:projectedBook,markdown:projected.markdown,
+  installationSql:projected.installationSql,facts:nextFacts}),projected,'Generated facts must be idempotent');
+assert.throws(()=>projectHandbookBindingDocuments({...factsInput,
+  facts:{...bindingFacts,releaseVersion:'0.0.0'}}),/Version sync/);
+assert.throws(()=>projectHandbookBindingDocuments({...factsInput,
+  markdown:markdown+generatedBegin}),/Expected one/);
+assert.throws(()=>projectHandbookBindingDocuments({...factsInput,
+  installationSql:installSql.replace("values('handbook','","values('handbook-missing','")}),/Expected one/);
+console.log('Afledt håndbog: aktuelle C/I/T, uændret historik, ren SQL-payload, kontrol og idempotens består.');
 
 console.log(`OK: ${book.sections.length} kapitler har læsehjælp og den integrerede RavScore-kontrakt er dokumenteret uden aktiv Candidate G-modsigelse.`);
