@@ -1,3 +1,17 @@
+## Kapacitetskandidat til kapitel 89.294 — 12. november 2026
+
+Den særskilte scalar-kapacitetskandidat giver den eksisterende offline planlægning én fælles absolut frist på 180 sekunder i stedet for 120. Tidligere faktiske kørsler har ramt PART_RETENTION/TIMEOUT omkring 120 sekunder; vandstand er stadig obligatorisk uden planen, men den kvalificerede prioritering af reelle scalarhuller og ekstra haleefterspørgsel kan da mangle. Den normale fysiske CLI-prøve afviser 120-sekundersgrænsen før rettelsen og giver byteidentisk plan efter rettelsen med simuleret forbrug over denne grænse; 180 sekunder er fortsat et hårdt loft. Ingen ny cache, ny proof-memo eller forlænget providerhentning. Det er endnu ikke bevis for, at nutidens fulde produktionsplan kan afsluttes eller for bedre offentlig dækning.
+
+## 89.343 — Afgrænset prøvemail til ejerkontoen
+
+Den særskilte mailprøve bruger eksisterende CLI og adgang til én midlertidig, ejerbundet funktion. Den bekræfter ejerens aktuelle Auth-konto, kontrollerer fast kilde og faktisk installation og fjerner kun samme funktion efter det ti minutter lange vindue. Kun ejerens normale admin-knap kan sende den faste prøvemail; afsenderens idempotens bevarer samme notice-id. Ukendt skrive- eller sletteudfald stopper uden automatisk gentagelse. Automatisk varsling og kontosletning aktiveres ikke.
+
+Kodekvalifikation, faktisk installation, afsenderaccept og modtagelse er særskilte åbne beviser. Automatisk varsling og sletning aktiveres ikke.
+
+## Aktuel V4-kandidat til kapitel 89.342 — 12. november 2026
+
+Den nye V4-kandidat vælger normale mål fra PR'ens faktiske merge-base til dens præcise head. Før tidligere godkendte områder kan genbruges, kvalificerer den den mergede bases faktiske producent, job, hele typede kvittering, træ og afsluttende upload samt senere negativ evidens. Den normale forbruger udføres på basens rigtige Git-checkout; kandidaten gendannes og kontrolleres bagefter. En verificeret direkte sammenfatning hindrer rekursiv genåbning af hele forfaderkæden. V3 beholder sin oprindelige kumulative betydning. Manglende eller udløbet basekvittering vælger kendte kumulative mål; konkret FAIL, modstrid eller ukendt kvalifikation stopper. PostgreSQL og C/I/T kvalificeres fortsat selvstændigt mod deres autentiske, uændrede input; ingen ny databaseprøve påstås.
+
 <!-- ravradar-derived-source-bindings-v1:begin -->
 ## Afledt kildeidentitet — RavScore 4.0.598
 

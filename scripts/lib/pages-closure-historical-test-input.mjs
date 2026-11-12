@@ -2,7 +2,75 @@
 // Actual current caller tests read their raw workflow/action/CLI bytes separately.
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
+import {execFileSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
+import {currentWorkflowTargets} from '../source-current-contract-plan.mjs';
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
+const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
+// One genuine pre-mail inventory for the older oracle. Never updated per PR.
+const LEGACY_WORKFLOW_HEAD='56d53a3fcb33eae3e248ffda8ca5f262b2dfc876';
+const LEGACY_WORKFLOW_TREE='c5507d6b43108b5b9855944a3f7e9b69f2d4f1de';
+const childEnvironment=()=>Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','HOME','USERPROFILE',
+  'TMPDIR','TEMP','TMP','COMSPEC','PATHEXT','LANG','LC_ALL','PYTHON']
+  .filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]]));
+// Pure planning only. The normal entry below independently reads the genuine
+// inventory and physically executes each required current owner target.
+export function planCurrentWorkflowInventory(actualNames,legacyNames){
+  assert.equal(arguments.length,2);
+  for(const names of [actualNames,legacyNames]){
+    assert(Array.isArray(names)&&names.length>0&&names.length<=200);
+    assert(names.every(name=>typeof name==='string'&&/^[A-Za-z0-9_.-]+\.ya?ml$/.test(name)));
+    assert.equal(new Set(names).size,names.length,'Duplicate workflow names are not historical input');
+  }
+  const actual=new Set(actualNames),legacy=new Set(legacyNames),owners=new Map();
+  assert(legacyNames.every(name=>actual.has(name)),'A genuine legacy workflow is missing');
+  for(const name of actualNames.filter(name=>!legacy.has(name))){
+    const target=currentWorkflowTargets('.github/workflows/'+name);
+    assert(target?.owners.length,'Current workflow needs a declared owner and normal target');
+    for(const owner of target.owners){
+      assert(owner.commands.length>0);
+      if(owners.has(owner.area))assert.deepEqual(owners.get(owner.area),owner.commands);
+      else owners.set(owner.area,owner.commands);
+    }
+  }
+  return {scope:'HISTORICAL_INVENTORY_PLANNING_ONLY',legacyNames:[...legacyNames].sort(),
+    owners:[...owners].map(([area,commands])=>({area,commands:[...commands]}))};
+}
+export function qualifyCurrentWorkflowInventory(){
+  assert.equal(arguments.length,0,'No caller-selected workflow inventory, catalog or target runner');
+  const environment=childEnvironment();
+  const git=args=>execFileSync('git',['-C',ROOT,...args],{
+    env:{...environment,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_OPTIONAL_LOCKS:'0',
+      GIT_TERMINAL_PROMPT:'0',GIT_CONFIG_NOSYSTEM:'1',
+      GIT_CONFIG_GLOBAL:process.platform==='win32'?'NUL':'/dev/null',
+      GIT_CONFIG_COUNT:'1',GIT_CONFIG_KEY_0:'protocol.allow',GIT_CONFIG_VALUE_0:'never'},
+    timeout:10_000,maxBuffer:256*1024,stdio:['ignore','pipe','pipe']}).toString('utf8');
+  assert.equal(git(['rev-parse',LEGACY_WORKFLOW_HEAD+':.github/workflows']).trim(),LEGACY_WORKFLOW_TREE);
+  const rows=git(['ls-tree','-z',LEGACY_WORKFLOW_TREE]).split('\0').filter(Boolean);
+  const legacy=rows.map(row=>{
+    const match=/^100644 blob [a-f0-9]{40}\t([A-Za-z0-9_.-]+\.ya?ml)$/.exec(row);
+    assert(match,'Genuine historical workflow must be a regular Git blob');return match[1];
+  });
+  const directory=path.join(ROOT,'.github/workflows');
+  const actual=fs.readdirSync(directory).filter(name=>/\.ya?ml$/i.test(name)).sort();
+  for(const name of actual){
+    const stat=fs.lstatSync(path.join(directory,name));assert(stat.isFile()&&!stat.isSymbolicLink());
+  }
+  const plan=planCurrentWorkflowInventory(actual,legacy),completed=new Set();
+  for(const owner of plan.owners)for(const command of owner.commands){
+    if(completed.has(command))continue;
+    assert(/^node(?: --[a-z-]+)*(?: [A-Za-z0-9_./-]+\.mjs)+(?: --self-test)?$/.test(command));
+    try{
+      execFileSync(process.execPath,command.split(' ').slice(1),{cwd:ROOT,env:environment,
+        timeout:120_000,maxBuffer:4*1024*1024,stdio:['ignore','pipe','pipe']});
+    }catch{throw new Error('CURRENT_WORKFLOW_OWNER_TARGET_FAILED '+owner.area);}
+    completed.add(command);
+    console.log('Current workflow owner target completed: '+owner.area+' '+command);
+  }
+  return Object.freeze(plan.legacyNames);
+}
 const frames = {
   ".github/workflows/reusable-weather-build.yml": {
     "before": {

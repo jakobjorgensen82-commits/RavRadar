@@ -1,4 +1,4 @@
-// Actual V3 coordinator, command processes, Git analysis and merged consumer.
+// Actual V4 coordinator, command processes, Git analysis and merged consumer.
 // API/native receipt bodies are SYNTHETIC DATA; no SQL, provider or live API.
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
@@ -64,9 +64,11 @@ const stamp=n=>'2026-11-12T09:'+String(n).padStart(2,'0')+':00Z';
 const zip=(raw,name)=>execFileSync('python',['-c',
   'import io,sys,zipfile; b=io.BytesIO(); z=zipfile.ZipFile(b,"w",compression=zipfile.ZIP_DEFLATED); z.writestr(sys.argv[1],sys.stdin.buffer.read()); z.close(); sys.stdout.buffer.write(b.getvalue())',name],
   {input:raw,maxBuffer:65536,timeout:10000,stdio:['pipe','pipe','pipe']});
-const fullRun=50000000501,selectedRun=50000000502,fullJob=50000000503,selectedJob=50000000504;
-const fullPr=9501,selectedPr=9502,fullFinalId=50000000505,fullNativeId=50000000506,selectedArtifactId=50000000507;
-let currentReceiptHelpers;
+const fullRun=50000000501,fullJob=50000000503,fullPr=9501,fullFinalId=50000000505,fullNativeId=50000000506;
+let selectedRun=50000000502,selectedJob=50000000504,selectedPr=9502,selectedArtifactId=50000000507;
+let currentReceiptHelpers,planCurrent;
+const priorMaps=new Map(),priorZips=new Map();
+let firstDelivery,legacyFirstReceipt,legacyFirstReview;
 let base,head,main,baseContent,content,baselinePlan,coordinate,decide,discover,accessFactory;
 let native,namespace,sourceContent,fullBody,phaseBody,fullJobBody,selectedJobBody;
 let immutableFullZip,immutablePhaseZip;
@@ -92,7 +94,21 @@ const checkout=commitId=>git(root,['reset','--hard',commitId]);
 function reviewObject(plan){
   const reviewText='SYNTHETIC independent protocol-fixture review only\n'+head+'\n'+base+'\n'+JSON.stringify(plan)+'\n';
   write('.cache/synthetic-control-review.txt',reviewText);
-  return {head,baselineCommit:base,inventorySha256:plan.inventorySha256,planSha256:currentReceiptHelpers.currentContractPlanSha256(plan,{mergeCommit:base,gitTree:plan.identity.baselineTree}),reviewSha256:sha(reviewText)};
+  const pullBaseCommit=state.baseTip??base,commit=text(root,['merge-base','--all',pullBaseCommit,head]);
+  const changeBase={commit,gitTree:text(root,['rev-parse',commit+'^{tree}']),pullBaseCommit};
+  const actual=text(root,['rev-parse','HEAD']);
+  const currentPlan=planCurrent({baselineCommit:commit,candidateCommit:actual,expectedHead:actual});
+  const current={repository:native.ORIGIN.repository,head,sourceTreeSha256:content,pullRequest:selectedPr,
+    runId:selectedRun,runAttempt:1,jobId:selectedJob};
+  const reference={schemaVersion:1,kind:'RAVRADAR_SOURCE_IMPACT_FULL_BASELINE_V1',scope:'FULL_SOURCE',
+    repository:current.repository,mergeCommit:base,producerHead:base,sourceTreeSha256:baseContent,pullRequest:fullPr,
+    runId:fullRun,runAttempt:1,jobId:fullJob,finalArtifactId:fullFinalId,
+    finalArtifactDigest:'sha256:'+sha(immutableFullZip),finalProofSha256:sha(Buffer.from(JSON.stringify(fullBody)+'\n')),
+    nativeArtifactId:fullNativeId,nativeArtifactDigest:'sha256:'+sha(immutablePhaseZip),
+    gitTree:text(root,['rev-parse',base+'^{tree}']),historicalNationalScope:'HISTORICAL_584_NATIONAL_ONLY',providerOrProductionProof:false};
+  return {head,changeBaseCommit:commit,pullBaseCommit,baselineCommit:base,inventorySha256:currentPlan.inventorySha256,
+    cumulativeInventorySha256:plan.inventorySha256,planSha256:currentReceiptHelpers.currentChangePlanSha256(
+      {current,fullBaseline:reference,changeBase,currentPlan,cumulativePlan:plan}),reviewSha256:sha(reviewText)};
 }
 function currentPull(){
   const review=reviewObject(baselinePlan);
@@ -102,8 +118,8 @@ function currentPull(){
   if(state.movedReview&&rows.length)review.reviewSha256='e'.repeat(64);
   return {number:selectedPr,state:state.merged?'closed':'open',...(state.merged?{merged_at:stamp(24),merge_commit_sha:main}:{}),
     user:{login:native.ORIGIN.repository.split('/')[0]},head:{sha:head,ref:'codex/synthetic-domain-current',repo:{full_name:native.ORIGIN.repository}},
-    base:{sha:state.baseTip??base,ref:'main',repo:{full_name:native.ORIGIN.repository}},
-    body:state.missingReview?'Synthetic missing review':state.malformedReview?'<!-- RAVRADAR_CURRENT_CONTRACT_REVIEW_V3 {bad-json} -->':('Synthetic fixture only\n<!-- RAVRADAR_CURRENT_CONTRACT_REVIEW_V3 '+JSON.stringify(review)+' -->\n').repeat(state.duplicateReview?2:1)};
+    base:{sha:state.merged&&state.closedBaseTip?state.closedBaseTip:state.baseTip??base,ref:'main',repo:{full_name:native.ORIGIN.repository}},
+    body:state.missingReview?'Synthetic missing review':state.malformedReview?'<!-- RAVRADAR_CURRENT_CHANGE_REVIEW_V4 {bad-json} -->':('Synthetic fixture only\n<!-- RAVRADAR_CURRENT_CHANGE_REVIEW_V4 '+JSON.stringify(review)+' -->\n').repeat(state.duplicateReview?2:1)};
 }
 function run(selected){return {id:selected?selectedRun:fullRun,run_attempt:1,head_sha:selected?head:base,
   head_branch:selected?'codex/synthetic-domain-current':'codex/synthetic-domain-full',event:'pull_request',
@@ -138,17 +154,18 @@ function rebuildMaps(){
     [actions+'/artifacts?name='+encodeURIComponent(fullName)+'&per_page=100',{total_count:1,artifacts:[fullMeta]}],
     [actions+'/artifacts/'+fullFinalId,fullMeta],[actions+'/artifacts/'+fullNativeId,phaseMeta]]);
   if(state.expiredFull){fullMeta.expired=true;phaseMeta.expired=true;}
-  zips=new Map([[String(fullFinalId),fullZip],[String(fullNativeId),phaseZip]]);
+  zips=new Map([[String(fullFinalId),fullZip],[String(fullNativeId),phaseZip],...priorZips]);
+  for(const [route,value]of priorMaps)maps.set(route,value);
   for(const current of [base,main].filter(Boolean))for(const producer of Object.values(namespace.SOURCE_GATE_PRODUCERS))
     maps.set(actions+'/workflows/'+producer.workflowId+'/runs?head_sha='+current+'&branch=main&per_page=100&page=1',
       {total_count:0,workflow_runs:[]});
   if(state.laterNegative){
-    const [workflow,producer]=Object.entries(namespace.SOURCE_GATE_PRODUCERS)[0],negativeRun=fullRun+100;
-    maps.set(actions+'/workflows/'+producer.workflowId+'/runs?head_sha='+base+'&branch=main&per_page=100&page=1',
-      {total_count:1,workflow_runs:[{id:negativeRun,run_attempt:1,head_sha:base,head_branch:'main',path:workflow,
+    const [workflow,producer]=Object.entries(namespace.SOURCE_GATE_PRODUCERS)[0],negativeRun=fullRun+100,negativeHead=state.laterNegativeAt??base;
+    maps.set(actions+'/workflows/'+producer.workflowId+'/runs?head_sha='+negativeHead+'&branch=main&per_page=100&page=1',
+      {total_count:1,workflow_runs:[{id:negativeRun,run_attempt:1,head_sha:negativeHead,head_branch:'main',path:workflow,
         repository:{full_name:native.ORIGIN.repository},status:'completed',conclusion:'failure',updated_at:stamp(30)}]});
     maps.set(actions+'/runs/'+negativeRun+'/attempts/1/jobs?per_page=100',{total_count:1,jobs:[{
-      id:negativeRun+1000,run_id:negativeRun,run_attempt:1,head_sha:base,name:producer.gates[0].job,
+      id:negativeRun+1000,run_id:negativeRun,run_attempt:1,head_sha:negativeHead,name:producer.gates[0].job,
       status:'completed',conclusion:'failure',steps:[{name:producer.gates[0].step,status:'completed',
         conclusion:'failure',completed_at:stamp(25)}]}]});
   }
@@ -191,8 +208,8 @@ async function transport(url,options){
 }
 function configure(candidate){
   head=candidate;checkout(head);rows=[];observedRoutes=[];unexpectedRoutes=[];fixtureFailures=[];fallbackDiscoveries=[];
-  state.missingReview=false;state.movedReview=false;state.wrongPlan=false;state.merged=false;
-  state.baseTip=null;state.hintOverride=null;state.duplicateReview=false;state.malformedReview=false;state.headMismatch=false;state.expiredFull=false;state.laterNegative=false;main=null;
+  state.missingReview=false;state.movedReview=false;state.wrongPlan=false;state.merged=false;state.closedBaseTip=null;
+  state.baseTip=null;state.hintOverride=null;state.duplicateReview=false;state.malformedReview=false;state.headMismatch=false;state.expiredFull=false;state.laterNegative=false;state.laterNegativeAt=null;state.negativeDuringTargets=false;main=null;
   Object.assign(process.env,{GITHUB_EVENT_NAME:'pull_request',GITHUB_REPOSITORY:native.ORIGIN.repository,SOURCE_GATE_HEAD_SHA:head,
     PULL_REQUEST_NUMBER:String(selectedPr),GITHUB_RUN_ID:String(selectedRun),GITHUB_RUN_ATTEMPT:'1',GITHUB_JOB:'validate',
     GITHUB_TOKEN:'synthetic-never-live'});
@@ -247,6 +264,7 @@ try{
   ({coordinateTargetedSourceProducer:coordinate}=await moduleAt('scripts/source-targeted-producer.mjs'));
   ({decideTargetedSourceGate:decide,discoverTargetedSourceGate:discover}=consumer);accessFactory=native.sourceImpactEvidenceAccess;
   const {planSourceCurrentContractsFromGit:plan}=await moduleAt('scripts/source-current-contract-plan.mjs');
+  planCurrent=plan;
   currentReceiptHelpers=await moduleAt('scripts/source-current-contract-receipt.mjs');
   const successor=await moduleAt('scripts/lib/assistant-later-h0-successor-source.mjs');
   const national=await moduleAt('scripts/national584-source-evidence.mjs');
@@ -314,7 +332,9 @@ try{
 
   const owner='scripts/source-current-contract-receipt.mjs';
   const candidateTree=rewrite(baselineTree,[[owner,Buffer.concat([
-    git(root,['cat-file','blob',base+':'+owner]),Buffer.from('\n// synthetic current-control child delta\n')])]]);
+    git(root,['cat-file','blob',base+':'+owner]),Buffer.from('\n// synthetic current-control child delta\n')])],
+    ['app.js',Buffer.from('// Synthetic previously delivered public UI delta\n')],
+    ['admin.html',Buffer.from('<!-- Synthetic previously delivered admin delta -->\n')]]);
   const positiveHead=commit(candidateTree,[base],'synthetic reviewed current-control child');
   configure(positiveHead);baselinePlan=plan({baselineCommit:base,candidateCommit:head,expectedHead:head});
   assert.equal(baselinePlan.selection,'CURRENT_CONTRACTS',JSON.stringify(baselinePlan.reasonCodes));
@@ -324,23 +344,37 @@ try{
   console.log=(...args)=>{
     if(String(args[0]).startsWith('SOURCE_TIME ')){
       const row=JSON.parse(String(args[0]).slice('SOURCE_TIME '.length));rows.push(row);actualProcesses++;
+      if(state.negativeDuringTargets){state.negativeDuringTargets=false;state.laterNegative=true;
+        state.laterNegativeAt=state.baseTip??base;rebuildMaps();}
     }
     originalLog(...args);
   };
   rebuildMaps();const positive=await coordinate();
   assert.equal(positive.selection,'TARGETED');selectedReceipt=positive.receipt;
-  assert.equal(selectedReceipt.schemaVersion,3);assert.equal(selectedReceipt.scope,'CURRENT_CONTRACT_RESULTS_ONLY');
+  assert.equal(selectedReceipt.schemaVersion,4);assert.equal(selectedReceipt.scope,'CURRENT_CHANGE_CONTRACT_RESULTS_ONLY');
   assert.equal(rows.length,baselinePlan.commands.length);assert(rows.every(row=>row.outcome==='PASS'));
   const physicallyExecuted=fs.readFileSync(path.join(root,'.cache/actual-current-targets.jsonl'),'utf8')
     .trim().split('\n').map(line=>JSON.parse(line).file);
-  assert.equal(physicallyExecuted.length,rows.length,'Every selected command must physically execute its fixture body');
+  assert.deepEqual(physicallyExecuted.map(file=>path.relative(root,file).split(path.sep).join('/')).sort(),
+    rows.flatMap(row=>row.command.split(' ').filter(file=>file.endsWith('.mjs'))).sort(),
+    'Every selected command file, including each --test file, must physically execute its fixture body');
   assert(physicallyExecuted.some(file=>file.endsWith('test-source-current-contracts.mjs')),
     'The actual --test child body ran; an inherited harness skip is not execution');
   assert.deepEqual(selectedReceipt.reportedCommandResults,rows);
   assert.equal(selectedReceipt.postgres.executedInThisRun,false);
   assert.equal(selectedReceipt.historicalCompatibilityExecuted,false);
   assert.equal(selectedReceipt.fullSourceValidationClaimed,false);
-  cases++;scenarios.push('actual producer child processes and separate V3 receipt');
+  cases++;scenarios.push('actual producer child processes and separate V4 receipt');
+  assert.equal(selectedReceipt.frontier.mode,'FULL');assert.equal(selectedReceipt.frontier.missingReason,'MISSING');
+  const legacyFull={schemaVersion:1,kind:'RAVRADAR_SOURCE_IMPACT_FULL_BASELINE_V1',scope:'FULL_SOURCE',
+    ...selectedReceipt.baselineReference,gitTree:text(root,['rev-parse',base+'^{tree}']),
+    historicalNationalScope:'HISTORICAL_584_NATIONAL_ONLY',providerOrProductionProof:false};
+  legacyFirstReceipt=await currentReceiptHelpers.buildCurrentContractSourceReceipt({current:selectedReceipt.current,
+    fullBaseline:legacyFull,currentPlan:baselinePlan,commandResults:rows});
+  legacyFirstReview={head,baselineCommit:base,inventorySha256:baselinePlan.inventorySha256,
+    planSha256:currentReceiptHelpers.currentContractPlanSha256(baselinePlan,legacyFull),
+    reviewSha256:sha('SYNTHETIC old V3 control review only')};
+
 
   main=commit(candidateTree,[base,head],'synthetic same-tree main merge');checkout(main);state.merged=true;
   assert.equal(text(root,['rev-parse',head+'^{tree}']),text(root,['rev-parse',main+'^{tree}']));
@@ -350,14 +384,19 @@ try{
   const freshAccess=()=>accessFactory({env:{GITHUB_TOKEN:'synthetic-never-live'}});
   const found=await discover(context,content,{...freshAccess(),readGit});
   assert.equal(found.requiresVerification,true);
-  assert.equal(found.locator.contractId,'weather-source-current-contracts-v3');
+  assert.equal(found.locator.contractId,'weather-source-current-change-v4');
   const accepted=await decide(found.locator,context,{...freshAccess(),readGit});
   assert.equal(accepted.required,false,JSON.stringify(accepted));
-  assert.equal(accepted.scope,'CURRENT_CONTRACT_RESULTS_ONLY');
+  assert.equal(accepted.scope,'CURRENT_CHANGE_CONTRACT_RESULTS_ONLY');
   assert.equal(accepted.postgresExecuted,false);
   assert.equal(accepted.historicalCompatibilityExecuted,false);
   assert.equal(accepted.independentControlReview,'VERIFIED_EXACT_ROOT_PR_REVIEW');
-  cases++;scenarios.push('same-tree merge plus authenticated synthetic FULL and V3 consumer');
+  cases++;scenarios.push('same-tree merge plus authenticated synthetic FULL and V4 consumer');
+  assert.equal(consumer.verifiedMainSourceFrontier(accepted).commit,main);
+  assert.equal(consumer.verifiedMainSourceFrontier(clone(accepted)),null);
+  assert.equal(consumer.verifiedMainSourceFrontier({required:false}),null);
+  firstDelivery={head,main,receipt:clone(selectedReceipt),zip:selectedZip,metadata:clone(selectedMetadata),
+    pull:currentPull(),run:run(true),job:jobs(true),runId:selectedRun,jobId:selectedJob,pr:selectedPr,artifactId:selectedArtifactId};
 
   const validReceipt=clone(selectedReceipt),validMetadata=clone(selectedMetadata),validZip=selectedZip;
   for(const change of [
@@ -421,6 +460,156 @@ try{
   assert.equal(baselinePlan.selection,'FULL');assert.equal((await coordinate()).selection,'FULL');assert.equal(rows.length,0);
   cases++;scenarios.push('unknown product paths have no short-source authority');
   assert.equal(unexpectedRoutes.length,0);
+
+  // A delivered public/admin change is not retested as a current Pages change.
+  // The prior V4 ZIP only locates the FULL origin; normal FULL qualification runs.
+  const repo='/repos/'+native.ORIGIN.repository,actions=repo+'/actions';
+  firstDelivery.receipt=legacyFirstReceipt;
+  firstDelivery.zip=zip(Buffer.from(JSON.stringify(legacyFirstReceipt)+'\n'),'source-targeted-impact-proof.json');
+  firstDelivery.metadata=meta(firstDelivery.artifactId,legacyFirstReceipt.artifactName,firstDelivery.zip,
+    firstDelivery.runId,firstDelivery.head,22);
+  firstDelivery.pull.body='<!-- RAVRADAR_CURRENT_CONTRACT_REVIEW_V3 '+JSON.stringify(legacyFirstReview)+' -->';
+  priorMaps.set(repo+'/commits/'+firstDelivery.main+'/pulls?per_page=100',[firstDelivery.pull]);
+  priorMaps.set(repo+'/pulls/'+firstDelivery.pr,firstDelivery.pull);
+  priorMaps.set(actions+'/runs/'+firstDelivery.runId,firstDelivery.run);
+  priorMaps.set(actions+'/runs/'+firstDelivery.runId+'/attempts/1/jobs?per_page=100',
+    {total_count:1,jobs:[firstDelivery.job]});
+  priorMaps.set(actions+'/artifacts?name='+encodeURIComponent(firstDelivery.receipt.artifactName)+'&per_page=100',
+    {total_count:1,artifacts:[firstDelivery.metadata]});
+  priorMaps.set(actions+'/artifacts/'+firstDelivery.artifactId,firstDelivery.metadata);
+  priorZips.set(String(firstDelivery.artifactId),firstDelivery.zip);
+  for(const producer of Object.values(namespace.SOURCE_GATE_PRODUCERS))priorMaps.set(
+    actions+'/workflows/'+producer.workflowId+'/runs?head_sha='+firstDelivery.main+'&branch=main&per_page=100&page=1',
+    {total_count:0,workflow_runs:[]});
+  const pagesTree=rewrite(candidateTree,[['.github/workflows/reusable-pages-deploy.yml',
+    Buffer.from('# SYNTHETIC current Pages caller delta only\n')]]);
+  selectedRun+=1000;selectedJob+=1000;selectedPr+=1000;selectedArtifactId+=1000;
+  const pagesHead=commit(pagesTree,[firstDelivery.main],'synthetic subsequent current Pages change');
+  const configurePages=()=>{configure(pagesHead);state.baseTip=firstDelivery.main;state.missingReview=true;
+    baselinePlan=plan({baselineCommit:base,candidateCommit:head,expectedHead:head});};
+  const seedName=actions+'/artifacts?name='+encodeURIComponent(firstDelivery.receipt.artifactName)+'&per_page=100';
+  const restoreSeed=()=>{priorMaps.set(repo+'/commits/'+firstDelivery.main+'/pulls?per_page=100',[firstDelivery.pull]);
+    priorMaps.set(seedName,{total_count:1,artifacts:[firstDelivery.metadata]});
+    priorMaps.set(actions+'/artifacts/'+firstDelivery.artifactId,firstDelivery.metadata);
+    priorZips.set(String(firstDelivery.artifactId),firstDelivery.zip);};
+  const failedPrior=clone(firstDelivery.receipt);failedPrior.reportedCommandResults[0].outcome='FAIL';
+  const failedZip=zip(Buffer.from(JSON.stringify(failedPrior)+'\n'),'source-targeted-impact-proof.json');
+  const failedMeta=meta(firstDelivery.artifactId,failedPrior.artifactName,failedZip,firstDelivery.runId,firstDelivery.head,22);
+  priorMaps.set(seedName,{total_count:1,artifacts:[failedMeta]});priorMaps.set(actions+'/artifacts/'+firstDelivery.artifactId,failedMeta);
+  priorZips.set(String(firstDelivery.artifactId),failedZip);
+  configurePages();rebuildMaps();await assert.rejects(coordinate(),/FRONTIER_CONTRADICTION/);assert.equal(rows.length,0);
+  cases++;scenarios.push('known FAIL in prior typed V3 receipt is red before any target, never FULL fallback');
+  restoreSeed();configurePages();state.laterNegative=true;state.laterNegativeAt=firstDelivery.main;rebuildMaps();
+  await assert.rejects(coordinate(),/FRONTIER_CONTRADICTION/);assert.equal(rows.length,0);
+  cases++;scenarios.push('later negative on the actual prior main frontier is red before commands');
+  configurePages();state.laterNegative=true;state.laterNegativeAt=firstDelivery.main;
+  priorMaps.set(repo+'/commits/'+firstDelivery.main+'/pulls?per_page=100',[]);rebuildMaps();
+  await assert.rejects(coordinate(),/FRONTIER_LATER_NEGATIVE_OR_UNKNOWN/);assert.equal(rows.length,0);
+  cases++;scenarios.push('missing frontier cannot hide known negative exact-base source history');
+  restoreSeed();
+  restoreSeed();configurePages();
+  priorMaps.set(repo+'/commits/'+firstDelivery.main+'/pulls?per_page=100',[]);
+  state.negativeDuringTargets=true;rebuildMaps();
+  await assert.rejects(coordinate(),/FRONTIER_LATER_NEGATIVE_OR_UNKNOWN/);
+  assert.equal(rows.length,baselinePlan.commands.length);
+  cases++;scenarios.push('known negative arriving during cumulative fallback targets prevents a receipt');
+  restoreSeed();
+  for(const missing of ['MISSING','EXPIRED']){
+    restoreSeed();configurePages();
+    if(missing==='MISSING')priorMaps.set(repo+'/commits/'+firstDelivery.main+'/pulls?per_page=100',[]);
+    else priorMaps.set(seedName,{total_count:1,artifacts:[{...firstDelivery.metadata,expired:true}]});
+    rebuildMaps();const fallback=await coordinate();assert.equal(fallback.selection,'TARGETED');
+    assert.equal(fallback.receipt.frontier.mode,'FULL');assert.equal(fallback.receipt.frontier.missingReason,missing);
+    assert.deepEqual(fallback.receipt.reportedCommandResults.map(row=>row.command),baselinePlan.commands);
+    assert.equal(fallback.receipt.postgres.executedInThisRun,false);assert.equal(fallback.receipt.fullSourceValidationClaimed,false);
+    cases++;
+  }
+  scenarios.push('only explicit missing or expired frontier runs known cumulative targets without fresh PostgreSQL');
+  restoreSeed();configurePages();
+  const onlyPages=plan({baselineCommit:firstDelivery.main,candidateCommit:head,expectedHead:head});
+  assert.equal(onlyPages.selection,'CURRENT_CONTRACTS');assert.equal(onlyPages.controlQualificationRequired,false);
+  assert.deepEqual(onlyPages.commands,[...CURRENT_CONTRACT_COMMANDS.core,...CURRENT_CONTRACT_COMMANDS.pages]);
+  rebuildMaps();const next=await coordinate();
+  assert.equal(next.selection,'TARGETED');assert.deepEqual(next.receipt.reportedCommandResults.map(row=>row.command),onlyPages.commands);
+  assert.equal(next.receipt.changeBase.commit,firstDelivery.main);
+  assert.equal(next.receipt.frontier.kind,'QUALIFIED_CHANGE_FRONTIER');
+  assert.equal(next.receipt.frontier.mode,'MAIN');
+  assert.equal(next.receipt.frontier.sourceRecord.contractId,'weather-source-current-contracts-v3');
+  assert.equal(next.receipt.baselineReference.mergeCommit,base);
+  assert.equal(next.receipt.baselineContinuity.commandsExecuted,false);
+  assert(next.receipt.baselineContinuity.areas.publicUI&&next.receipt.baselineContinuity.areas.adminUI);
+  assert(!next.receipt.impact.areas.publicUI&&!next.receipt.impact.areas.adminUI);
+  assert(observedRoutes.some(route=>route.includes(encodeURIComponent(firstDelivery.receipt.artifactName))),
+    'The ordinary caller read the latest immutable receipt as an origin locator without a ROOT marker');
+  assert.equal(rows.length,7);assert(rows.every(row=>row.outcome==='PASS'));
+  selectedReceipt=next.receipt;
+  main=commit(pagesTree,[firstDelivery.main,head],'synthetic subsequent same-tree main merge');checkout(main);state.merged=true;
+  // Later API base-tip movement cannot rewrite the tested immutable Git parent.
+  state.closedBaseTip='f'.repeat(40);
+  selectedZip=zip(Buffer.from(JSON.stringify(selectedReceipt)+'\n'),'source-targeted-impact-proof.json');
+  selectedMetadata=meta(selectedArtifactId,selectedReceipt.artifactName,selectedZip,selectedRun,head,22);rebuildMaps();
+  const nextContext={...context,GITHUB_SHA:main};
+  const nextFound=await discover(nextContext,next.sourceTreeSha256,{...freshAccess(),readGit});
+  const nextAccepted=await decide(nextFound.locator,nextContext,{...freshAccess(),readGit});
+  assert.equal(nextAccepted.required,false,JSON.stringify(nextAccepted));
+  assert.equal(nextAccepted.independentControlReview,'NOT_REQUIRED');
+  assert.deepEqual(nextAccepted.testedAreas,['core','pages']);
+  cases++;scenarios.push('normal next Pages producer and merged consumer execute only 7 current core/Pages commands after delivered UI/admin');
+  const nextValid=clone(selectedReceipt),nextValidMetadata=clone(selectedMetadata),nextValidZip=selectedZip;
+  const pageDelivery={head,main,receipt:clone(selectedReceipt),zip:selectedZip,metadata:clone(selectedMetadata),
+    pull:currentPull(),run:run(true),job:jobs(true),runId:selectedRun,pr:selectedPr,artifactId:selectedArtifactId};
+  for(const alter of [
+    row=>{row.frontier.mode='MAIN';row.frontier.sourceRecord=null;},
+    row=>{row.frontier.sourceTreeSha256='sha256:'+'f'.repeat(64);},
+    row=>{row.changeBase.commit=base;},
+    row=>{row.changeBase.gitTree='f'.repeat(40);},
+    row=>{row.changeBase.pullBaseCommit=base;},
+    ...['postgres','C','I','T'].map(family=>row=>{row.baselineContinuity.inputDigests[family+'After']='f'.repeat(64);}),
+  ]){
+    selectedReceipt=clone(nextValid);alter(selectedReceipt);
+    selectedZip=zip(Buffer.from(JSON.stringify(selectedReceipt)+'\n'),'source-targeted-impact-proof.json');
+    selectedMetadata=meta(selectedArtifactId,selectedReceipt.artifactName,selectedZip,selectedRun,head,22);rebuildMaps();
+    const altered=await discover(nextContext,next.sourceTreeSha256,{...freshAccess(),readGit});
+    assert.equal((await decide(altered.locator,nextContext,{...freshAccess(),readGit})).required,true);cases++;
+  }
+  scenarios.push('three false current bases and four false FULL-origin protected input digests are refused');
+
+  // The next V4 summary is verified directly, without reopening its V3 parent ZIP.
+  for(const [route,value]of [
+    [repo+'/commits/'+pageDelivery.main+'/pulls?per_page=100',[pageDelivery.pull]],
+    [repo+'/pulls/'+pageDelivery.pr,pageDelivery.pull],
+    [actions+'/runs/'+pageDelivery.runId,pageDelivery.run],
+    [actions+'/runs/'+pageDelivery.runId+'/attempts/1/jobs?per_page=100',{total_count:1,jobs:[pageDelivery.job]}],
+    [actions+'/artifacts?name='+encodeURIComponent(pageDelivery.receipt.artifactName)+'&per_page=100',
+      {total_count:1,artifacts:[pageDelivery.metadata]}],
+    [actions+'/artifacts/'+pageDelivery.artifactId,pageDelivery.metadata],
+  ])priorMaps.set(route,value);
+  priorZips.set(String(pageDelivery.artifactId),pageDelivery.zip);
+  priorZips.delete(String(firstDelivery.artifactId));
+  for(const producer of Object.values(namespace.SOURCE_GATE_PRODUCERS))priorMaps.set(
+    actions+'/workflows/'+producer.workflowId+'/runs?head_sha='+pageDelivery.main+'&branch=main&per_page=100&page=1',
+    {total_count:0,workflow_runs:[]});
+  const uiTree=rewrite(pagesTree,[['app.js',Buffer.from('// SYNTHETIC next ordinary public UI delta\n')]]);
+  selectedRun+=1000;selectedJob+=1000;selectedPr+=1000;selectedArtifactId+=1000;
+  configure(commit(uiTree,[pageDelivery.main],'synthetic next ordinary UI change'));
+  state.baseTip=pageDelivery.main;state.missingReview=true;
+  baselinePlan=plan({baselineCommit:base,candidateCommit:head,expectedHead:head});
+  const onlyUi=plan({baselineCommit:pageDelivery.main,candidateCommit:head,expectedHead:head});
+  assert.equal(onlyUi.controlQualificationRequired,false);rebuildMaps();
+  const ui=await coordinate();assert.equal(ui.selection,'TARGETED');assert.equal(ui.receipt.frontier.mode,'MAIN');
+  assert.equal(ui.receipt.frontier.sourceRecord.contractId,'weather-source-current-change-v4');
+  assert.deepEqual(ui.receipt.reportedCommandResults.map(row=>row.command),onlyUi.commands);
+  assert(!observedRoutes.includes(actions+'/artifacts/'+firstDelivery.artifactId+'/zip'),'No ancestor ZIP recursion');
+  selectedReceipt=ui.receipt;main=commit(uiTree,[pageDelivery.main,head],'synthetic next ordinary UI same-tree merge');
+  checkout(main);state.merged=true;state.closedBaseTip='e'.repeat(40);
+  selectedZip=zip(Buffer.from(JSON.stringify(selectedReceipt)+'\n'),'source-targeted-impact-proof.json');
+  selectedMetadata=meta(selectedArtifactId,selectedReceipt.artifactName,selectedZip,selectedRun,head,22);rebuildMaps();
+  const uiContext={...context,GITHUB_SHA:main},uiFound=await discover(uiContext,ui.sourceTreeSha256,{...freshAccess(),readGit});
+  const uiAccepted=await decide(uiFound.locator,uiContext,{...freshAccess(),readGit});
+  assert.equal(uiAccepted.required,false,JSON.stringify(uiAccepted));assert.equal(uiAccepted.independentControlReview,'NOT_REQUIRED');
+  assert.deepEqual(uiAccepted.testedAreas,['core','publicUI']);
+  cases++;scenarios.push('two successive qualified V4 delta frontiers; ordinary UI has no ROOT marker and no ancestor artifact recursion');
+
 }finally{
   console.log=originalLog;globalThis.fetch=originalFetch;
   for(const key of Object.keys(process.env))if(!Object.hasOwn(originalEnvironment,key))delete process.env[key];
@@ -430,7 +619,7 @@ try{
   assert.equal(current.dev,owned.dev);assert.equal(current.ino,owned.ino);assert.equal(current.birthtimeNs,owned.birthtimeNs);
   fs.rmSync(root,{recursive:true,force:false});
 }
-console.log(JSON.stringify({kind:'SYNTHETIC_CURRENT_V3_PRODUCER_CONSUMER_INTEGRATION',cases,passed:cases,failed:0,scenarios,
+console.log(JSON.stringify({kind:'SYNTHETIC_CURRENT_V4_PRODUCER_CONSUMER_INTEGRATION',cases,passed:cases,failed:0,scenarios,
   actualTargetProcesses:actualProcesses,syntheticTransportCalls:calls,realIsolatedGit:true,
   genuineProtected148AndCIT:true,frozenAnchors:16,plannerMock:false,productSourceTestsExecuted:false,
   actualSqlOrSqliteExecuted:false,actualGitHubOrFullQualification:false,

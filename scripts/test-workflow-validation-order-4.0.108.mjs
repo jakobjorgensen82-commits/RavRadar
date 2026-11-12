@@ -1,5 +1,5 @@
 import './test-current-pages-workflow-wiring.mjs';
-import { projectPagesClosureHistoricalTestInput as historicalPagesInput } from './lib/pages-closure-historical-test-input.mjs';
+import { projectPagesClosureHistoricalTestInput as historicalPagesInput, qualifyCurrentWorkflowInventory } from './lib/pages-closure-historical-test-input.mjs';
 import assert from 'node:assert/strict';
 import {inverseForecastSharePagesWorkflowInventory}
   from './test-forecast-share-pages-deploy.mjs';
@@ -110,7 +110,7 @@ const productionWorkflowNames = new Set(
 productionWorkflowNames.add('deploy-code-only-repair.yml');
 productionWorkflowNames.add('run-current-weather-once.yml');
 const currentPhysicalWorkflowFiles = inverseForecastSharePagesWorkflowInventory(inverseTerminalRepair4145WorkflowInventory(
-  fs.readdirSync(workflowDirectory).filter((name) => /\.ya?ml$/i.test(name)).sort(),
+  qualifyCurrentWorkflowInventory(),
   fs.readFileSync(`${workflowDirectory}/resume-operational-checkpoint.yml`, 'utf8').replaceAll('\r\n', '\n')),
   fs.readFileSync(`${workflowDirectory}/deploy-forecast-share-pages.yml`, 'utf8'));
 const expectedWorkflowFiles = ['apply-weather-model-binding-only.yml', 'audit-native-current-grid.yml', 'audit-saved-weather-inputs.yml', 'audit-sealed-current-source.yml', 'build-ravscore-historical-wave-pilot.yml', 'deploy-code-only-repair.yml', 'deploy-trip-storage.yml', 'extract-private-geodanmark-layer.yml', 'migrate-private-runtime-to-r2.yml', 'monitor-trip-storage.yml', 'notify-weather-failure.yml', 'preserve-copernicus-current-shadow.yml', 'recover-live-ravscore-central.yml', 'recover-saved-dmi-originals.yml', 'recover-sealed-weather-36396834072.yml', 'retry-national-admin-roundtrip.yml', 'reusable-operational-reentry.yml', 'reusable-pages-deploy.yml', 'reusable-weather-build.yml', 'run-current-weather-once.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-local-part-system-candidate.yml', 'validate-pull-request.yml', 'validate-six-zone-recovery.yml', 'watch-missed-weather-schedule.yml'];

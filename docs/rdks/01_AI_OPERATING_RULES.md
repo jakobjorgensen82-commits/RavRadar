@@ -1,3 +1,7 @@
+## Aktuel ændringskvalifikation — V4-kandidat, 12. november 2026
+
+En tidligere FULL-kørsel er oprindelsen for uændrede PG-/modelinput, ikke automatisk testbase for alle senere funktionsrettelser. Genbrug af allerede leverede funktionsområder kræver en faktisk kvalificeret main-base; en adresse, en grøn wrapper eller callerens egne felter er ikke bevis. Konkrete røde eller ukendte beviser må ikke forvandles til automatisk FULL-fallback. Se DEC-0302 for kandidatens normale producer-/forbrugergrænse og de uændrede produktionsgates.
+
 ## 12. november — forbered kontrol efter påvirkning, bevar bevisgrænser
 
 Den nye normalvej er UNDER FORBEREDELSE: en lille fast sikkerhedskerne kombineres med prøver for ændringens faktiske område og normale kaldere. Brug uforanderlige input til historiske orakler; kontrollér den aktuelle produktvej særskilt. Nye per-head lexer-fingeraftryk og helfil-cohorts skal ikke være den normale adgang til testvalg. Historiske pins og præcis head-identitet bevarer deres rolle som integritetsbevis.
