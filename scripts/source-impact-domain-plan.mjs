@@ -10,7 +10,7 @@ import {scanAllSourceDependencies,dependencySourceLiterals} from './lib/source-i
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const REGISTRY_SHA256='3970bc86fb8afd99d193507b82337c1068aa368f6d62ff728988fc21da9577f4';
 const REGISTRY597_SHA256='a7ccfba2b2f631ccc358342e2c3b87e1cb1edbd54311148c94822fddaa6dbcfa';
-const REGISTRY598_SHA256='0d8b6ab3c89026dcce597363110913d46921853d48cf50eb31b13a8d9db6064e';
+const REGISTRY598_SHA256='e088d2e71f30cb24ef6811cf31394d4f1037aa47f569979b07e2f8fd2c3d8172';
 const PAGES_TRANSPORT_FIELDS=Object.freeze({
   "scripts/lib/pages-per-artifact-identity.mjs": [],
   "scripts/lib/pages-sealed-retry-decision.mjs": [
@@ -167,7 +167,6 @@ function registry598(legacyBytes){
   assert.equal(delta.sourceReference.tree,'2f71c562eea774ca03996802f83bdad7cccd43cc');
   registry.assistantWindFollowup=delta.assistantWindFollowup;
   registry.assistantAdminUi=delta.assistantAdminUi;
-  registry.pagesLifecycle=delta.pagesLifecycle;
   for(const owner of delta.owners){
     assert(relative(owner.path)&&!registry.owners.some(row=>row.path===owner.path));registry.owners.push(owner);
   }
@@ -247,27 +246,6 @@ export function planSourceDomainImpactFromGit(input){
       .map(line=>{const m=/^(\d{6}) (blob|commit) ([a-f0-9]{40})\t([\s\S]+)$/.exec(line);assert(m);
         return {file:m[4],mode:m[1],type:m[2],oid:m[3]};});
     const index=new Map(tree.map(row=>[row.file,row])),inventory=analysis.completeGitDiff.inventory;
-    const blobs=new Map();
-    const load=ids=>{
-      const wanted=[...new Set(ids)].filter(id=>!blobs.has(id));if(!wanted.length)return;
-      assert(wanted.length<=4096&&wanted.every(oid));
-      const meta=git(['cat-file','--batch-check'],{input:wanted.join('\n')+'\n'}).toString('ascii').trimEnd().split('\n');
-      let total=0;for(let i=0;i<wanted.length;i++){
-        const m=/^([a-f0-9]{40}) blob ([0-9]+)$/.exec(meta[i]);assert(m&&m[1]===wanted[i]);
-        assert(Number(m[2])<=8*1024*1024);total+=Number(m[2]);
-      }assert(total<=selectedRegistry.blobBudgetBytes,'DOMAIN_COMMITTED_BLOB_BUDGET_EXCEEDED');
-      if(is598||analysis.profile?.id==='REVIEWED_597_DOMAIN_INPUTS_C101_I100_T12')
-        assert(total+[...blobs.values()].reduce((sum,body)=>sum+body.length,0)<=selectedRegistry.blobBudgetBytes,
-          'DOMAIN_COMMITTED_BLOB_BUDGET_EXCEEDED');
-      const raw=git(['cat-file','--batch'],{input:wanted.join('\n')+'\n'});let offset=0;
-      for(const id of wanted){const end=raw.indexOf(10,offset),m=/^([a-f0-9]{40}) blob ([0-9]+)$/.exec(raw.subarray(offset,end).toString('ascii'));
-        assert(m&&m[1]===id);const size=Number(m[2]),body=raw.subarray(end+1,end+1+size);assert.equal(raw[end+1+size],10);
-        assert.equal(crypto.createHash('sha1').update('blob '+size+'\0').update(body).digest('hex'),id);
-        blobs.set(id,body);offset=end+2+size;
-      }assert.equal(offset,raw.length);
-    };
-    const get=file=>{const row=index.get(file);if(!row||row.type!=='blob'||!['100644','100755'].includes(row.mode))throw Error('CLOSURE_SOURCE_MISSING:'+file);
-      load([row.oid]);return blobs.get(row.oid);};
     let qualification=!analysis.evidenceControls.plannerTrustChain.unchanged;
     const changes=[];
     const en2=is598?registry.assistantWindFollowup:null;
@@ -290,49 +268,13 @@ export function planSourceDomainImpactFromGit(input){
         && change.owner.domains.length===1 && change.owner.domains[0]==='documentation')return false;
       return !NARROW_SCOPE_CONTROL_OWNERS.has(change.file)||change.owner.controlQualification!==true;
     });
-    // Whole reviewed before/after sets are authenticated before any legacy-scope exclusion.
-    const lifecycle=is598?registry.pagesLifecycle:null;
-    const lifecycleRequested=Boolean(lifecycle&&productChanges.some(({file,row})=>
-      lifecycle.variants.prBase421c.members.some(entry=>entry.path===file&&entry.afterBlob===row.afterOid)));
-    let lifecycleVariant=null;const lifecycleMembers=new Set();
-    if(lifecycleRequested){
-      const matches=variant=>productChanges.length===variant.members.length&&productChanges.every(({file,row})=>{
-        const entry=variant.members.find(value=>value.path===file);
-        return entry&&row.status===entry.status&&row.beforeMode===entry.beforeMode&&row.afterMode===entry.afterMode
-          &&row.beforeOid===entry.beforeBlob&&row.afterOid===entry.afterBlob;
-      });
-      lifecycleVariant=Object.values(lifecycle.variants).find(matches);
-      if(!lifecycleVariant)return full('PAGES_LIFECYCLE_EXACT_COHORT_REQUIRED');
-      for(const entry of lifecycleVariant.members){
-        const after=get(entry.path);if(after.length!==entry.afterBytes||sha(after)!==entry.afterSha256)
-          return full('PAGES_LIFECYCLE_AFTER_BYTES:'+entry.path);
-        if(entry.status==='M'){load([entry.beforeBlob]);const before=blobs.get(entry.beforeBlob);
-          if(before.length!==entry.beforeBytes||sha(before)!==entry.beforeSha256)return full('PAGES_LIFECYCLE_BEFORE_BYTES:'+entry.path);
-        }else if(entry.status!=='A'||entry.beforeMode!=='000000'||entry.beforeBlob!=='0'.repeat(40)
-          ||entry.beforeBytes!==0||entry.beforeSha256!==sha(Buffer.alloc(0)))return full('PAGES_LIFECYCLE_ADDITION:'+entry.path);
-        lifecycleMembers.add(entry.path);
-      }
-      for(const [file,entry]of Object.entries(lifecycle.anchors)){
-        const row=index.get(file);if(row?.type!=='blob'||row.mode!==entry.mode||row.oid!==entry.blob||sha(get(file))!==entry.sha256)
-          return full('PAGES_LIFECYCLE_CALLER_ANCHOR:'+file);
-      }
-    }
-    // Before-only bodies have passed the complete cohort SHA checks. Keep
-    // their exact metadata, but release cache bytes absent from the candidate.
-    // Any later genuine before guard reloads through the unchanged bounded load.
-    if(lifecycleVariant){
-      const candidateBlobs=new Set(tree.filter(row=>row.type==='blob').map(row=>row.oid));
-      for(const entry of lifecycleVariant.members)if(entry.status==='M'&&!candidateBlobs.has(entry.beforeBlob))
-        blobs.delete(entry.beforeBlob);
-    }
-    if(!lifecycleVariant&&changes.some(({owner})=>owner.closedPagesLifecycleOnly))return full('PAGES_LIFECYCLE_EXACT_COHORT_REQUIRED');
     const pagesChanges=productChanges.filter(change=>change.owner.pagesTransportOnly===true);
     const rollback=is598?selectedRegistry.pagesTransport.standardActionRollback:null;
-    const pagesRollback=!lifecycleVariant&&pagesChanges.some(change=>change.owner.pagesStandardActionRollback===true);
+    const pagesRollback=pagesChanges.some(change=>change.owner.pagesStandardActionRollback===true);
     // This test-only historical bridge is one complete reviewed four-file cohort.
     // Validate every status/mode/blob before excluding any member from product scope.
     const historicalBridge=rollback?.artifactMetadataHistoricalBridge;
-    const historicalBridgeSelected=!lifecycleVariant&&historicalBridge&&productChanges.some(change=>
+    const historicalBridgeSelected=historicalBridge&&productChanges.some(change=>
       historicalBridge.members.some(entry=>entry.path===change.file)
       &&(change.file!==rollback.test.path||change.row.afterOid!==rollback.test.afterBlob));
     if(historicalBridgeSelected){
@@ -369,7 +311,7 @@ export function planSourceDomainImpactFromGit(input){
     const testSuccessor=adminUi?.testSuccessor;
     const accountTest='scripts/test-account-statistics-assistant-callers.mjs';
     const waterTest='scripts/test-water-station-active-routing-display-4.0.102.mjs';
-    const testSuccessorSelected=Boolean(!lifecycleVariant&&testSuccessor&&uiProducts.some(({file,row})=>
+    const testSuccessorSelected=Boolean(testSuccessor&&uiProducts.some(({file,row})=>
       file===waterTest||file===accountTest&&row.afterOid===testSuccessor.frames[accountTest].afterBlob));
     if(testSuccessorSelected){
       const directFrames=testSuccessor.frames;
@@ -402,14 +344,14 @@ export function planSourceDomainImpactFromGit(input){
             ?historicalBridge.members.find(row=>row.path===entry.path).afterBlob:entry.afterBlob))
           return full('PAGES_STANDARD_ACTION_ROLLBACK_BYTES:'+entry.path);
       }
-    }else if(!lifecycleVariant&&pagesChanges.length&&(!is598||pagesChanges.length!==productChanges.length))
+    }else if(pagesChanges.length&&(!is598||pagesChanges.length!==productChanges.length))
       return full('PAGES_TRANSPORT_COMBINED_SCOPE');
     const localRestoreFixture=productChanges.find(change=>change.owner.localRestoreSelfTest===true);
     if(localRestoreFixture&&(!is598||productChanges.length!==1))return full('LOCAL_RESTORE_FIXTURE_COMBINED_SCOPE');
     if(localRestoreFixture&&(localRestoreFixture.row.status!=='M'||localRestoreFixture.row.beforeMode!=='100644'))
       return full('LOCAL_RESTORE_FIXTURE_NOT_EXISTING_REGULAR_SOURCE');
-    const en2Selected=!lifecycleVariant&&en2&&changes.some(change=>EN2_ENTRYPOINTS.includes(change.file));
-    const adminUiSelected=!lifecycleVariant&&adminUi&&(testSuccessorSelected||changes.some(change=>uiOnly.has(change.file))
+    const en2Selected=en2&&changes.some(change=>EN2_ENTRYPOINTS.includes(change.file));
+    const adminUiSelected=adminUi&&(testSuccessorSelected||changes.some(change=>uiOnly.has(change.file))
       ||en2Selected&&uiProducts.length!==Object.keys(en2.transitions).length);
     if(adminUiSelected){
       const paths=Object.keys(adminUiFrames);
@@ -421,15 +363,34 @@ export function planSourceDomainImpactFromGit(input){
       if(productChanges.length!==paths.length||productChanges.some(({file,row})=>!Object.hasOwn(en2.transitions,file)
         ||row.status!=='M'||row.beforeMode!=='100644'))return full('ASSISTANT_WIND_FOLLOWUP_COMBINED_SCOPE');
     }
+    const blobs=new Map();
+    const load=ids=>{
+      const wanted=[...new Set(ids)].filter(id=>!blobs.has(id));if(!wanted.length)return;
+      assert(wanted.length<=4096&&wanted.every(oid));
+      const meta=git(['cat-file','--batch-check'],{input:wanted.join('\n')+'\n'}).toString('ascii').trimEnd().split('\n');
+      let total=0;for(let i=0;i<wanted.length;i++){
+        const m=/^([a-f0-9]{40}) blob ([0-9]+)$/.exec(meta[i]);assert(m&&m[1]===wanted[i]);
+        assert(Number(m[2])<=8*1024*1024);total+=Number(m[2]);
+      }assert(total<=selectedRegistry.blobBudgetBytes,'DOMAIN_COMMITTED_BLOB_BUDGET_EXCEEDED');
+      if(is598||analysis.profile?.id==='REVIEWED_597_DOMAIN_INPUTS_C101_I100_T12')
+        assert(total+[...blobs.values()].reduce((sum,body)=>sum+body.length,0)<=selectedRegistry.blobBudgetBytes,
+          'DOMAIN_COMMITTED_BLOB_BUDGET_EXCEEDED');
+      const raw=git(['cat-file','--batch'],{input:wanted.join('\n')+'\n'});let offset=0;
+      for(const id of wanted){const end=raw.indexOf(10,offset),m=/^([a-f0-9]{40}) blob ([0-9]+)$/.exec(raw.subarray(offset,end).toString('ascii'));
+        assert(m&&m[1]===id);const size=Number(m[2]),body=raw.subarray(end+1,end+1+size);assert.equal(raw[end+1+size],10);
+        assert.equal(crypto.createHash('sha1').update('blob '+size+'\0').update(body).digest('hex'),id);
+        blobs.set(id,body);offset=end+2+size;
+      }assert.equal(offset,raw.length);
+    };
     const commandsByDomain=Object.fromEntries(domainNames.map(name=>[name,selected.has(name)?[...(registry.commands[name]??[])]:[]]));
     commandsByDomain.controls=[...registry.commonCommands,...(qualification?registry.controlSuite:[])];
     for(const {owner}of changes)for(const [domain,command]of owner.commands??[])commandsByDomain[domain].push(command);
-    if(en2Selected||lifecycleVariant?.adminUiFollowup){
+    if(en2Selected){
       // Generation runs the existing cold-start child, so run that check once.
       commandsByDomain.adminUI=commandsByDomain.adminUI.filter(command=>command!=='node scripts/test-public-cold-start-4.0.303.mjs');
       commandsByDomain.adminUI.push(EN2_MAP_PARENT);
     }
-    if(adminUiSelected||lifecycleVariant?.adminUiFollowup)commandsByDomain.adminUI.push('node scripts/test-admin-initial-dashboard-4.0.77.mjs',
+    if(adminUiSelected)commandsByDomain.adminUI.push('node scripts/test-admin-initial-dashboard-4.0.77.mjs',
       'node scripts/test-private-visitor-statistics-4.0.215.mjs');
     const entries=[...new Set(Object.values(commandsByDomain).flat()
       .filter(command=>!localRestoreFixture||command!==LOCAL_RESTORE_SELF_TEST)
@@ -443,7 +404,9 @@ export function planSourceDomainImpactFromGit(input){
     const eagerSources=is598||analysis.profile?.id==='REVIEWED_597_DOMAIN_INPUTS_C101_I100_T12'?[]:Object.keys(registry.sources);
     load([...new Set([...eagerSources,...registry.resourceFiles,...entries,
       ...changes.map(row=>row.file)])].flatMap(file=>index.has(file)?[index.get(file).oid]:[]));
-    if(pagesChanges.length&&!lifecycleVariant){
+    const get=file=>{const row=index.get(file);if(!row||row.type!=='blob'||!['100644','100755'].includes(row.mode))throw Error('CLOSURE_SOURCE_MISSING:'+file);
+      load([row.oid]);return blobs.get(row.oid);};
+    if(pagesChanges.length){
       const {callers,frames}=selectedRegistry.pagesTransport;
       for(const [file,oid]of Object.entries(callers)){
         const item=index.get(file);
@@ -462,11 +425,6 @@ export function planSourceDomainImpactFromGit(input){
         pagesRows.push({file,mode:row.afterMode,blob:row.afterOid,sha256:sha(after),
           beforeBlob:row.beforeOid,beforeSha256:sha(before)});
       }
-    }
-    if(lifecycleVariant){
-      for(const entry of lifecycleVariant.members)closureRows.push({file:entry.path,mode:entry.afterMode,blob:entry.afterBlob,
-        sha256:entry.afterSha256,beforeBlob:entry.beforeBlob,beforeSha256:entry.beforeSha256});
-      for(const [file,entry]of Object.entries(lifecycle.anchors))closureRows.push({file,mode:entry.mode,blob:entry.blob,sha256:entry.sha256});
     }
     if(historicalBridgeSelected)for(const entry of [rollback.action,rollback.artifactMetadataCaller]){
       const row=index.get(entry.path);closureRows.push({file:entry.path,mode:row.mode,blob:row.oid,sha256:sha(get(entry.path))});
@@ -491,7 +449,7 @@ export function planSourceDomainImpactFromGit(input){
         closureRows.push({file,mode:row.afterMode,blob:row.afterOid,sha256:afterSha256});
       }
     }
-    for(const {file,row,owner}of changes)if(owner.exactSourceTransition&&!lifecycleMembers.has(file)&&!(adminUiSelected&&Object.hasOwn(adminUiFrames,file))
+    for(const {file,row,owner}of changes)if(owner.exactSourceTransition&&!(adminUiSelected&&Object.hasOwn(adminUiFrames,file))
       &&!(en2Selected&&Object.hasOwn(en2.transitions,file))){
       if(row.beforeMode!=='100644')return full('UNKNOWN_EXACT_SOURCE_TRANSITION:'+file);
       load([row.beforeOid]);const pair=sha(blobs.get(row.beforeOid))+'/'+sha(get(file));
