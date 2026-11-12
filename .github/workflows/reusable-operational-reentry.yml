@@ -1321,7 +1321,7 @@ jobs:
           const seal=read(handoff+'/pages-artifact-seal.json'),identity=read(work+'/integrated-implementation-identity.json');
           assert.equal(identity.implementationClosureSha256,seal.targetImplementationClosureSha256);
           NODE
-      - uses: actions/configure-pages@v5
+      - uses: actions/configure-pages@v6
       - name: Reupload the same verified Pages bytes under this recovery attempt
         id: phase-pages-upload
         uses: actions/upload-pages-artifact@v5

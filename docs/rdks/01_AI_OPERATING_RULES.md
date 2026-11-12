@@ -1,3 +1,26 @@
+<!-- RAVRADAR_ACTIVE_ENTRY_START -->
+
+# Aktive arbejdsregler
+
+Bevar den fungerende 598-drift, og lever små afsluttelige ændringer gennem den eksisterende normale vej. Hovedagenten koordinerer integration og produktionsskrivning; afgrænsede parallelle opgaver må ikke overlappe samme skriver eller gentage undersøgelser. Ejerens stående autoritet i mål og AGENTS gælder fortsat. Spørg kun ved en faktisk ny beslutning uden for den.
+
+- **Kontrollér påvirkningen.** Brug fast sikkerhedskerne, nødvendige dokument-/versionskontroller og normale prøver for det faktisk berørte område. En app-/tekst-/deployændring skal ikke i sig selv genudstede numerisk model eller SQL. Reelle fælles eller ukendte input kræver den relevante udvidede afklaring.
+- **Hold beviserne adskilt.** Kildekvalifikation gælder præcis kode og faktisk job. PG/C/I/T genbruges kun gennem den normale vej på verificeret uændrede input og forudsætninger. Angiv udført og genbrugt ærligt. En gammel kvittering fortolkes med sit eget autentiske katalog; det nye katalog vælger kun den nye ændrings mål. En grøn wrapper, cachemarkør eller lokal prøve er ikke produktionsbevis.
+- **Fjern unødige koblinger.** Ingen nye per-head helfil-cohorts, ekstra kontrolrammer eller brede testgentagelser som standardreaktion på en lille fejl. Ret årsagen og den normale kalder. Bevar frosne SQL/originaler og historiske prøvers egne input. Skriv afledte model-/håndbogsfakta før de kontroller, der læser dem; manuel synk er ikke bevis for automatisk kald.
+- **Beskyt driften.** Ingen produktionsændring under aktiv vejrskriver. Lad fungerende cron fortsætte uden konkret pausegrund; bevar den faste tidsplan og undgå overlap. Et udgivelsesgenforsøg må ikke erstatte næste almindelige vejrhentning. Genbrug gyldigt gemt vejr/checkpoint frem for at gentage leverandørhentning eller beregning uden grund. Afklar ukendt skriveudfald før gentagelse.
+- **Bevar data og ejerskab.** Ingen tab af gyldige originaler, historik eller offentliggjorte scorer. Ingen ny nulstilling som genvej. Scoreformel, kildeprioritet, centrale administratorpunkter, geometri, adgangsrettigheder og brugernes beslutninger ændres ikke uden den nødvendige autoritet. Centralt gemt admin-konfiguration er runtime-sandhed. Secrets og private payloads må ikke komme i repository, PR eller offentlige svar.
+- **Luk kun på reel virkning.** Skeln forberedt, lokalt afprøvet, kildekvalificeret, installeret, offentligt leveret og faktisk verificeret. Hentning er ikke dækning; logisk sletning er ikke fysisk pladsgevinst; autentisk backup er ikke bevist gendannelse; syntetiske svar er ikke fungerende ekstern AI.
+
+Se [DEC-0302](10_DECISIONS/DEC-0302-CHANGE-BASED-VALIDATION-AND-CONTROL-CLEANUP.md) og [DEC-0045](10_DECISIONS/DEC-0045-COST-AWARE-TEST-MATRIX.md) for de opgaverelevante detaljer. Nye målinger og konkrete næste trin skrives i privat checkpoint, mens stabile beslutninger og leveret adfærd dokumenteres samlet med deres reelle ændring.
+
+<!-- RAVRADAR_ACTIVE_ENTRY_END -->
+
+## Daterede notater og tidligere indgange — uændret historik
+
+Nedenstående tekst er bevaret byteidentisk som historisk kildemateriale. Brug dens oprindelige dato og bevisgrænse; tidligere status er ikke en ny aktuel instruktion. Opgaverelevante aktive krav og beslutninger gælder fortsat.
+
+<!-- RAVRADAR_DATED_HISTORY_UNCHANGED -->
+
 ## Aktuel ændringskvalifikation — V4-kandidat, 12. november 2026
 
 En tidligere FULL-kørsel er oprindelsen for uændrede PG-/modelinput, ikke automatisk testbase for alle senere funktionsrettelser. Genbrug af allerede leverede funktionsområder kræver en faktisk kvalificeret main-base; en adresse, en grøn wrapper eller callerens egne felter er ikke bevis. Konkrete røde eller ukendte beviser må ikke forvandles til automatisk FULL-fallback. Se DEC-0302 for kandidatens normale producer-/forbrugergrænse og de uændrede produktionsgates.

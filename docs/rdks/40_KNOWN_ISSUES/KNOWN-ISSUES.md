@@ -1,3 +1,29 @@
+## 12. november — sene adminvisninger og faktisk arkivparitet
+
+Administratorens Kalibrering og System kan åbnes, mens den offentlige model stadig hentes. Den lokale rettelse opdaterer kun den oprindelige modelvisning: AFVENTER under læsning, BLOKERET ved faktisk verifikationsfejl og gyldig model efter en normal vellykket genprøvning. Rapporter, prøvemail og deres igangværende kontroller bevares. Retningseditoren monteres én gang efter den eksisterende admin-ready-grænse med de afsluttede input; en senere offentlig læsning genopretter ikke editoren eller overskriver kladden. Den eksisterende admin-UI-adresse ændres ens i side og offlinecache, mens data-service-adressen bevares.
+
+Den isolerede databasegendannelse får en reel indholdskontrol mod det autentificerede arkiv. PostgreSQL læser de originale COPY-records i midlertidige tabeller med målets faktiske kolonnetyper og sammenligner begge veje med EXCEPT ALL og bytefast tekstsortering. Det kontrollerer også dubletter; samme rækketal er ikke tilstrækkeligt. Sekvenser aflæses uden ny setval. Den eksisterende Auth-tjeneste prøves gennem dens verificerede interne, ejede Docker-endepunkt med én disponibel testkonto, uden at logge ind som en rigtig bruger. Kun fuldt afsluttet indholdsparitet, Auth-funktion og ejet oprydning kan give de stærke databaseflag. Det er paritet med arkivets fem filer, ikke et atomisk live-snapshot, gendannelse af Storage-objekter, produktionsinstallation eller bevis for Free-klarhed.
+
+Dette er en privat kildekandidat. De eksisterende målrettede lokale prøver er bestået; præcis GitHub-kvalifikation, den normale syntetiske Linux-gendannelse og faktisk gendannelse af det valgte autentiske arkiv er særskilte åbne beviser. Ingen numerisk model, version 4.0.598, migration, score, kildeprioritet, geometri, adgangsrettigheder, automatisk kontosletning eller backuprotation ændres af forberedelsen.
+
+## Åbent: faktisk arkivgendannelse efter reserveret rolleforskel
+
+Den eksisterende arkivgendannelse får en afgrænset rollekontrol før fuld materialisering og arkiv-SQL. Den læser det ejede, tomme måls reserverede platformroller og autentificerer kun den valgte backups roles.sql, højst 4 MiB, med fuld cipher-/GCM-/SQL-hash før rapport. Kun faktiske supabase_-rolleoperander og faste tællere må vises; kommentarer og almindelige indstillingsværdier tælles ikke med. Rollevalg via SET og Unicode-identifikatorer afvises som ikke understøttet syntax. Ingen roller oprettes, ingen GRANT springes over, og hverken fuld restore, automatisk backuprotation eller Free-klarhed påstås. De normale arkiv- og restoreprøver vælges som samme backupområde, mens PG/C/I/T fortsat kræver uændrede autentiske input.
+
+## 12. november — dokumentoprydning efter botstartet vejr
+
+En tidligere kvalificeret ændringskvittering skal reproduceres med planlæggeren fra dens egen faktisk committed kilde. En senere ændring af mål- og ejerkataloget må ikke ændre betydningen af den gamle kontrol. Den næste normale kvalifikation påviste, at en cached kandidatplanlægger ellers kan genfortolke en korrekt ældre kvittering som en modstrid. Den afgrænsede rettelse bruger den gamle normale planlægger i en credential-fri, tidsafgrænset læseproces; den overordnede kontrol bevarer faktisk Git-/CI-/artifactkontrol, uændrede PG/C/I/T-input og afvisning af reelle fejl. Nye funktionsprøver vælges fortsat med den nye planlægger på den aktuelle ændring.
+
+Den eksisterende Action-versionskontrol omfatter hele det aktive workflowinventar. Bevidst forkerte versionsnumre i negative testinput er ikke aktive workflows og giver ikke længere falske afslag. Tre forældede aktive SDK-pins følger nu den allerede gældende versionspolitik; faktiske forkerte workflowversioner afvises fortsat. Tilladelser, gates, tidsgrænser, model og SQL ændres ikke.
+
+Den ændringsbaserede V4-kildevej har bestået sin præcise Linux-kvalifikation og er merged. Efterfølgende kodeændringer kræver fortsat egen head-bundet kvalifikation; faktisk mail, oprydning, modelovergang og offentlig virkning er særskilte beviser.
+
+Åbent: workflow_run alene har ikke startet adminoprydning efter de dokumenterede botstartede vejrhentninger. enabled-indstillingen og en vellykket ejerudløst passage beviser ikke den normale botvej. Den private kildekandidat bruger en enkelt eksplicit, præcist bundet sender/modtager uden nye tjenester eller tidsplaner.
+
+Afsenderen venter ikke på modtageren. Modtageren tager de eksisterende vejr- og turlagerlåse i samme rækkefølge og kræver den afsluttede, grønne kildekørsel og sin præcise binding før privat adgang. Arkiv, fuld genlæsning, aktuelle dokumenter, de fem nyeste versioner og højst 25 ældre rækker pr. passage bevares. Ved under 30 minutter til det oprindelige næste vejrslot springes passagen over; ukendt bestillingsudfald genforsøges ikke.
+
+Seneste gemte faktiske variabelaflæsning fra 10. november var enabled; denne forberedelse har ikke ændret den. Lokale normale kalderprøver består, men den samlede kildekvalifikation og en faktisk efterfølgende botudløst arkiv-/beskæringspassage er stadig åbne. Der påstås ingen fysisk databasepladsgevinst, automatisk backuprotation eller Free-klarhed. Vejrdata, score, SQL og modelbindinger ændres ikke.
+
 ## 12. november — aktuelle kontrol- og mailafgrænsninger
 
 Den første faktiske Linux-kvalifikation bestod den nye V4-kontrolvej og mailmålet, men påviste manglende forudsætninger i scalarprøvens miljø. Den normale vejrhentning installerer allerede det eksisterende requirements-copernicus.txt før offline planlægning; den målrettede kildeproducent forbereder nu samme krav, når netop dette mål vælges. Prøvens barn bevarer Linux-/macOS-interpreterens biblioteksstier og udelukker fortsat credentials. Produktlæser, fejlafvisning, model og providerbudgetter ændres ikke af forberedelsen. Ny præcis Linux-kvalifikation kræves fortsat.

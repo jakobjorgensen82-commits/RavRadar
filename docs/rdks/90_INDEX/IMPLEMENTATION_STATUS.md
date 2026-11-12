@@ -1,3 +1,44 @@
+<!-- RAVRADAR_ACTIVE_ENTRY_START -->
+
+# Aktiv restliste
+
+Alle fem hovedområder i ejerens gældende mål består, indtil deres krav er faktisk leveret og verificeret. Denne liste samler stabile leverancegrænser; aktuelle kørsler, målinger, hashes og den præcise næste handling findes i det private checkpoint. Genbrug leverede delrettelser og læs [aktuel sandhed](CURRENT_TRUTH.md), før en opgave genåbnes.
+
+| Område | Det der fortsat skal afsluttes |
+| --- | --- |
+| Vejr og dækning | Kontinuerlig normal hentning, opdatering fra nyere kilder, komplet og ærligt målt horisont inklusive hale, fremadrettet historik, databevarelse og offentlig effekt. En kildekontrol eller enkelt grøn vejrkørsel lukker ikke dette. |
+| Strøm og samlet revision | Numerisk korrekt DMI-fortolkning og central interpolation gennem nye input, native/protected/retained historik og cache; relevant Fur-/Limfjordsafklaring, vandstandsundtagelser, processtop, eksklusiv skrivning, original-B/S-før-T samt national kapacitet. Den uinstallerede Source-revision skal også have en gennemførlig næste appudgivelse, før den aktiveres. |
+| Supabase, Cloudflare og GitHub Free | Faktisk plangrundlag, tilstrækkelig margin og automatisk begrænset vækst/rotation i normal drift. Adminhistorikkens backlog og efterfølgende vedligeholdelse skal håndteres uden at kassere aktuelle/nødvendige data. Logisk oprydning alene beviser ikke mindre fysisk database. Abonnementsændring kræver det aftalte faktiske grundlag. |
+| Backup og gendannelse | Den afgrænsede roles-only-kontrol kommer før store gendannelsesforsøg. Reel indholds-/dubletparitet og Auth-funktion er nu med i kildekandidaten, men faktisk Linux- og arkivgendannelse er endnu ikke bevist. Bevar autentiske arkiver og originale SQL/ACL-regler. Afklar de faktiske reserverede roller mod det isolerede mål; vellykket fuld restore og de aftalte opbevarings-/slettefrister er stadig særskilte krav. Opret ikke gættede roller, spring ikke SQL over, og kald ikke diagnose for genopretning. |
+| Brugerdata og mail | Færdiggør normale gemme-/genlæsnings-, offline-, konto-, præference-, eksport- og sletteforløb samt den aftalte reelt anonyme statistik. To års inaktivitet og 30 dages varsel skal have korrekt aktivitetsgrundlag. Automatisk kontosletning må ikke aktiveres før fungerende varsling; faktisk mailmodtagelse kræver eget bevis. |
+| Admin | De sene modelkort og den tidlige retningseditor er rettet i kildekandidaten; normal offentlig afprøvning er fortsat åben. Genbrug den leverede tur-/kontovisning og rollefiltrering. Fuldt felt- og brugergennemløb er ikke bevist af en enkelt tæller-/rolleaflæsning. Autonomt botudløst arkiv-/beskæringsforløb og dets kapacitet skal verificeres særskilt. Visningsetiketter må ikke tildele almindelige brugere rettigheder. |
+| Spørg RavRadar | Genbrug leveret viden og protokolrettelser. Færdiggør faglig bredde, almindelige/varierede spørgsmål og opfølgninger på dansk, tysk og engelsk samt den normale eksterne AI-kæde. Én god samtale, HTTP200 eller lokale faste svar er ikke samlet accept. |
+| Offentlig funktion og vedligeholdelse | Afslut dokumenterede rester i prognosedeling, relevante mobil-/zone-/tidsskyderforløb, offentlig visning og aftalt lokal oprydning. Bevar godkendte funktioner, hoveddomæne og eksisterende links. Følg kun reelle restpunkter; genimplementér ikke allerede leverede dele. |
+
+Den normale leveringsvej er en lille faktisk ændring, målrettet kvalifikation, sikker merge og kontrolleret kode-/datalevering med verificeret offentlig effekt. Bevar fungerende vejr imens. Den store Source-afkobling må ikke holde uafhængige admin-, mail-, assistent- eller dokumentrettelser tilbage.
+
+Se [aktive krav](../20_REQUIREMENTS/ACTIVE-REQUIREMENTS.md) og [roadmap](ACTIVE_ROADMAP.md) for de konkrete kontrakter. Punkter med manglende faktisk evidens forbliver åbne; denne dokumentforenkling er ikke en færdigmelding.
+
+<!-- RAVRADAR_ACTIVE_ENTRY_END -->
+
+## Daterede notater og tidligere indgange — uændret historik
+
+Nedenstående tekst er bevaret byteidentisk som historisk kildemateriale. Brug dens oprindelige dato og bevisgrænse; tidligere status er ikke en ny aktuel instruktion. Opgaverelevante aktive krav og beslutninger gælder fortsat.
+
+<!-- RAVRADAR_DATED_HISTORY_UNCHANGED -->
+
+## 12. november — dokumentoprydning efter botstartet vejr
+
+En tidligere kvalificeret ændringskvittering skal reproduceres med planlæggeren fra dens egen faktisk committed kilde. En senere ændring af mål- og ejerkataloget må ikke ændre betydningen af den gamle kontrol. Den næste normale kvalifikation påviste, at en cached kandidatplanlægger ellers kan genfortolke en korrekt ældre kvittering som en modstrid. Den afgrænsede rettelse bruger den gamle normale planlægger i en credential-fri, tidsafgrænset læseproces; den overordnede kontrol bevarer faktisk Git-/CI-/artifactkontrol, uændrede PG/C/I/T-input og afvisning af reelle fejl. Nye funktionsprøver vælges fortsat med den nye planlægger på den aktuelle ændring.
+
+Den eksisterende Action-versionskontrol omfatter hele det aktive workflowinventar. Bevidst forkerte versionsnumre i negative testinput er ikke aktive workflows og giver ikke længere falske afslag. Tre forældede aktive SDK-pins følger nu den allerede gældende versionspolitik; faktiske forkerte workflowversioner afvises fortsat. Tilladelser, gates, tidsgrænser, model og SQL ændres ikke.
+
+Den ændringsbaserede V4-kildevej har bestået sin præcise Linux-kvalifikation og er merged. Efterfølgende kodeændringer kræver fortsat egen head-bundet kvalifikation; faktisk mail, oprydning, modelovergang og offentlig virkning er særskilte beviser.
+
+Den eksisterende PR862-løsning er porteret privat til den aktuelle kontrolvej. Normal adminworkflowprøve: 32/32 bestået; alle fire berørte Pages-mål består. Begge faktiske kildeplaner bevarer PG/C/I/T-input. Controlleren er uændret. Den tilføjede normale Source-plancase er syntakskontrolleret, men hele protokolmålet er ikke gentaget lokalt.
+
+Seneste gemte faktiske variabelaflæsning fra 10. november var enabled; denne forberedelse har ikke ændret den. Lokale normale kalderprøver består, men den samlede kildekvalifikation og en faktisk efterfølgende botudløst arkiv-/beskæringspassage er stadig åbne. Der påstås ingen fysisk databasepladsgevinst, automatisk backuprotation eller Free-klarhed. Vejrdata, score, SQL og modelbindinger ændres ikke.
+
 ## 12. november — aktuel ændring, kvalificeret genbrug og afgrænset mailprøve
 
 Den første faktiske Linux-kvalifikation bestod den nye V4-kontrolvej og mailmålet, men påviste manglende forudsætninger i scalarprøvens miljø. Den normale vejrhentning installerer allerede det eksisterende requirements-copernicus.txt før offline planlægning; den målrettede kildeproducent forbereder nu samme krav, når netop dette mål vælges. Prøvens barn bevarer Linux-/macOS-interpreterens biblioteksstier og udelukker fortsat credentials. Produktlæser, fejlafvisning, model og providerbudgetter ændres ikke af forberedelsen. Ny præcis Linux-kvalifikation kræves fortsat.

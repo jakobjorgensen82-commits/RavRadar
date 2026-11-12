@@ -325,7 +325,6 @@ async function ownerNoticeProbeOneClick(){
   x.context.state.tab='system';
   x.context.state.access={profile:{id:x.context.currentSession().user.id,is_active:true,role}};
   x.context.hasPermission=()=>true; // Even a full_admin may not send this owner's probe.
-  x.context.activeModelUnavailableCard=()=>'';
   x.context.location={origin:'https://ravradar.dk',pathname:'/admin.html'};
   x.context.PUBLIC_CONFIG={supabaseUrl:project,supabasePublishableKey:'synthetic-publishable'};
   x.context.SITE_TEST_MODE=testMode;
@@ -346,6 +345,10 @@ async function ownerNoticeProbeOneClick(){
    return reply.promise;
   };
   const reply=deferred();
+  const grid={parentNode:x.content};
+  x.content.isConnected=true;x.nodes.set('adminContent',x.content);
+  x.nodes.set('adminSystemModelRead',{innerHTML:'',isConnected:true,parentNode:grid});
+  x.nodes.set('exportDiag',{hidden:true,disabled:true,isConnected:true,addEventListener(_event,listener){this.onclick=listener;}});
   x.nodes.set('clearCaches',{});
   x.nodes.set('logoutAdmin',{});
   x.content.insertAdjacentHTML=(_where,html)=>{x.content.innerHTML+=html;};
@@ -403,6 +406,42 @@ async function ownerNoticeProbeOneClick(){
  assert.equal(rejected.status.textContent,'Afsendelsen kunne ikke bekræftes.');
  await rejected.button.onclick();
  assert.equal(rejected.calls.length,1,'a refused or ambiguous attempt is not retried');
+
+ // Completing the public model must not restart an already in-flight owner probe.
+ const late=system();late.x.nextPublic(false);
+ late.x.context.resolveAdminActivePublicRavScore=()=>({labelDa:'synthetic completed model',statusDa:'synthetic verified',binding:{modelId:'synthetic',stateSchemaVersion:'synthetic'},diagnosticScoreProfile:{fixture:true}});
+ late.x.context.render=()=>assert.fail('public completion cannot remount a mail-bearing System tab');
+ late.x.context.download=()=>assert.fail('model completion may not export a report');
+ const originalProbe=late.button.onclick,originalStatus=late.status;
+ const inFlight=late.button.onclick();await settle();assert.equal(late.calls.length,1);
+ const surface=late.x.nodes.get('adminSystemModelRead'),exportButton=late.x.nodes.get('exportDiag');
+ if(late.x.content.innerHTML.includes('id="exportDiag"'))exportButton.onclick?.();assert.equal(exportButton.hidden,true);
+ const publicTask=late.x.context.ops.publicRuntime();await settle();late.x.releasePublic();await publicTask;
+ assert(surface.innerHTML.includes('synthetic completed model'),'System must receive its completed verified model');
+ assert.equal(exportButton.hidden,false);assert.equal(exportButton.disabled,false);
+ assert.equal(late.button.onclick,originalProbe);assert.equal(late.status,originalStatus);assert.equal(late.button.disabled,true);assert.equal(late.calls.length,1);
+ late.reply.resolve(Response.json({state:'accepted',providerId}));await inFlight;
+ await late.button.onclick();assert.equal(late.calls.length,1,'late model painting must preserve one-attempt mail ownership');
+
+ // A real verification failure paints BLOCKED on the same model card. An
+ // explicit normal retry resumes that card without recreating the mail probe.
+ const failedModel=system();
+ failedModel.x.context.resolveAdminActivePublicRavScore=()=>({labelDa:'synthetic retry model',statusDa:'synthetic verified',binding:{modelId:'synthetic',stateSchemaVersion:'synthetic'},diagnosticScoreProfile:{fixture:true}});
+ failedModel.x.context.render=()=>assert.fail('failure/retry cannot remount a mail-bearing System tab');
+ failedModel.x.context.download=()=>assert.fail('a failed model must not export diagnostics');
+ const failedSurface=failedModel.x.nodes.get('adminSystemModelRead'),failedExport=failedModel.x.nodes.get('exportDiag'),failedProbe=failedModel.button.onclick;
+ const pendingProbe=failedModel.button.onclick();await settle();assert.equal(failedModel.calls.length,1);
+ const failedPublic=failedModel.x.context.ops.publicRuntime();await settle();failedModel.x.releasePublic();await failedPublic;
+ assert(failedSurface.innerHTML.includes('BLOKERET'));assert(!failedSurface.innerHTML.includes('AFVENTER VERIFIKATION'));
+ assert.equal(failedExport.hidden,true);assert.equal(failedExport.disabled,true);failedExport.onclick();
+ assert.equal(failedModel.button.onclick,failedProbe);assert.equal(failedModel.button.disabled,true);assert.equal(failedModel.calls.length,1);
+ failedModel.x.nextPublic(false);failedModel.x.context.ops.retry();await settle();
+ assert(failedSurface.innerHTML.includes('AFVENTER VERIFIKATION'));assert.equal(failedExport.hidden,true);assert.equal(failedExport.disabled,true);
+ failedModel.x.releasePublic();await settle();
+ assert(failedSurface.innerHTML.includes('synthetic retry model'));assert.equal(failedExport.hidden,false);assert.equal(failedExport.disabled,false);
+ assert.equal(failedModel.x.nodes.get('adminSystemModelRead'),failedSurface);assert.equal(failedModel.button.onclick,failedProbe);assert.equal(failedModel.button.disabled,true);assert.equal(failedModel.calls.length,1);
+ failedModel.reply.resolve(Response.json({state:'accepted',providerId}));await pendingProbe;
+ await failedModel.button.onclick();assert.equal(failedModel.calls.length,1);assert.equal(failedModel.x.stats().manifestReads,2);
 }
 await ownerNoticeProbeOneClick();
 console.log('OK: Actual System owner action sends one fixed request and discards stale receipts.');
@@ -410,6 +449,7 @@ console.log('OK: Actual System owner action sends one fixed request and discards
 const serviceWorker=fs.readFileSync('service-worker.js','utf8');
 const cacheSource=html.match(/src="(js\/ui\/admin-dashboard\.js\?[^"]+)"/)?.[1];
 assert.ok(cacheSource?.endsWith('&probe=owner-notice-20261109&visits=scope-20261108'));
+assert.equal(new URL(cacheSource,'https://synthetic.invalid/').searchParams.get('ui'),'admin-read-surfaces-20261112');
 assert.ok(serviceWorker.includes('./'+cacheSource.replace('v='+pkg.version,'v=${APP_VERSION}')
   .replace('map=plain-map-v3-20261104','map=${COMPACT_MAP}')));
 assert.match(serviceWorker,/const CACHE = [^\n]*-owner-notice-20261109/);
@@ -596,3 +636,113 @@ await cleanEarlyReadView('history');await cleanEarlyReadView('observations');
 await cleanEarlyReadView('history',{changeIdentity:true});await cleanEarlyReadView('observations',{replaceHost:true});
 for(const leave of ['system','learning','directionAudit'])await cleanEarlyReadView('history',{leave});
 console.log('OK: Only unchanged clean history/observation blocks reopen after verified public completion; filters, report/probe controllers, editor views and changed identity/host are preserved.');
+
+
+// A pending calibration model may share its view with an already active private
+// report. Complete only that model surface through the normal bootstrap/render.
+async function learningLateModelRead({changeIdentity=false,replaceModelHost=false,publicFailureThenRetry=false}={}){
+ const x=normalCaller({initialPublicReject:publicFailureThenRetry});let renders=0,studyMounts=0,modelWrites=0,contentWrites=0;
+ let markup='',modelMarkup='',modelHost=null,report=null;
+ const open='<section id="adminLearningModelRead" class="admin-content">',close='</section>';
+ Object.defineProperty(x.content,'innerHTML',{
+  get(){if(!modelHost)return markup;const at=markup.indexOf(open)+open.length,end=markup.indexOf(close,at);return markup.slice(0,at)+modelMarkup+markup.slice(end);},
+  set(value){contentWrites++;markup=String(value);const at=markup.indexOf(open);
+   if(at<0){modelHost=null;x.nodes.delete('adminLearningModelRead');return;}
+   const end=markup.indexOf(close,at+open.length);assert(end>=0);modelMarkup=markup.slice(at+open.length,end);
+   modelHost={isConnected:true,parentNode:x.content};Object.defineProperty(modelHost,'innerHTML',{
+    get:()=>modelMarkup,set(value){modelWrites++;modelMarkup=String(value);}});
+   x.nodes.set('adminLearningModelRead',modelHost);
+  },
+ });
+ x.content.isConnected=true;x.nodes.set('adminContent',x.content);
+ x.nodes.set('moduleGuideBody',{hidden:false});x.nodes.set('toggleModuleGuide',{textContent:'Skjul guide',setAttribute(name,value){this[name]=value;}});
+ x.content.insertAdjacentHTML=()=>{x.nodes.get('moduleGuideBody').hidden=false;};
+ for(const name of ['renderDashboard','renderWeather','renderWaterStations','renderZones','renderAdminCoastlineEditor','renderDirectionAudit','renderObservations','renderHistory','renderVisitors','renderUsers','renderHandbook','renderDocumentation','renderSystem'])
+  x.context[name]=()=>{x.content.innerHTML='synthetic '+x.context.state.tab+' controls';};
+ Object.assign(x.context,{invalidateAdminTripCount(){},invalidateAdminUserCategories(){},disposeOwnerNoticeProbe:null,
+  destroyCoastlineEditor(){},destroyDirectionMap(){},moduleGuide:()=>'<p>synthetic guide</p>',bindModuleGuide(){},
+  analyzeObservations:()=>({sampleSize:0,zoneCount:0,noFindCount:0,modes:{}}),
+  mountPrivateTripStudyCard(){studyMounts++;report={button:{disabled:true},download:{disabled:true},output:{innerHTML:'synthetic report remains'},inFlight:true};},
+  resolveAdminActivePublicRavScore:()=>({statusDa:'synthetic verified model',labelDa:'synthetic model',binding:{},observationCalibrationEligible:true,kind:'integrated',scoreProfile:{activationState:'synthetic'}}),
+ });
+ actualView(x,'renderLearning','\nconst saveBadge=');
+ const from=admin.indexOf('function render(){'),to=admin.indexOf('\nfunction scoreAvailabilityCard(',from);
+ assert(from>=0&&to>from);runInNewContext(admin.slice(from,to),x.context);
+ const actualRender=x.context.render;x.context.render=()=>{renders++;return actualRender();};
+ const task=x.context.ops.boot();await settle();x.context.state.tab='learning';x.context.render();
+ assert(x.content.innerHTML.includes('AFVENTER VERIFIKATION'));
+ assert.equal(studyMounts,1);const originalReport=report,originalButton=report.button,originalOutput=report.output;
+ x.nodes.get('moduleGuideBody').hidden=true;
+ if(changeIdentity)x.switchIdentity();
+ if(replaceModelHost)x.nodes.set('adminLearningModelRead',{isConnected:true,parentNode:x.content,innerHTML:'replacement'});
+ const before=x.content.innerHTML,writes=contentWrites;
+ x.releaseConnections();x.releasePublic();await task;
+ if(publicFailureThenRetry){
+  assert(x.content.innerHTML.includes('BLOKERET'),'an actual failed model read must stop saying pending');
+  assert(!x.content.innerHTML.includes('AFVENTER VERIFIKATION'));assert.equal(studyMounts,1);assert.equal(report,originalReport);
+  x.nextPublic(false);x.context.ops.retry();await settle();
+  assert(x.content.innerHTML.includes('AFVENTER VERIFIKATION'),'normal retry paints the same pending model surface');
+  x.releasePublic();await settle();
+ }
+ if(changeIdentity||replaceModelHost){assert.equal(x.content.innerHTML,before,'stale model surface stays untouched');assert.equal(modelWrites,0);}
+ else{assert(!x.content.innerHTML.includes('AFVENTER VERIFIKATION'),'calibration model must receive the completed verified public read');assert(x.content.innerHTML.includes('synthetic model'));if(!publicFailureThenRetry)assert.equal(modelWrites,1);}
+ assert.equal(contentWrites,writes,'completion cannot replace the whole report-bearing tab');
+ assert.equal(renders,2);assert.equal(studyMounts,1);assert.equal(report,originalReport);assert.equal(report.button,originalButton);assert.equal(report.output,originalOutput);
+ assert.equal(report.button.disabled,true);assert.equal(report.download.disabled,true);assert.equal(report.inFlight,true);assert.equal(report.output.innerHTML,'synthetic report remains');
+ assert.equal(x.nodes.get('moduleGuideBody').hidden,true);assert.equal(x.stats().manifestReads,publicFailureThenRetry?2:1);
+}
+await learningLateModelRead();await learningLateModelRead({publicFailureThenRetry:true});await learningLateModelRead({changeIdentity:true});await learningLateModelRead({replaceModelHost:true});
+console.log('OK: The verified late calibration model updates only its original read surface; an in-flight private report, controls, guide and changed identity/host survive unchanged.');
+
+
+// The actual direction editor receives the completed bootstrap data once,
+// before a person can create a draft; later reads cannot replace that draft.
+async function directionLateBootstrap({leave=false,changeIdentity=false}={}){
+ const x=normalCaller({initialPublicReject:false}),reviewRead=deferred();let markup='',surfaceMarkup='',surface=null,mounts=0,disposals=0,renders=0,config=null;
+ const open='<section id="adminDirectionEditorRead" class="admin-content">',close='</section>';
+ Object.defineProperty(x.content,'innerHTML',{
+  get(){if(!surface)return markup;const at=markup.indexOf(open)+open.length,end=markup.indexOf(close,at);return markup.slice(0,at)+surfaceMarkup+markup.slice(end);},
+  set(value){markup=String(value);const at=markup.indexOf(open);
+   if(at<0){surface=null;x.nodes.delete('adminDirectionEditorRead');return;}
+   const end=markup.indexOf(close,at+open.length);assert(end>=0);surfaceMarkup=markup.slice(at+open.length,end);
+   surface={isConnected:true,parentNode:x.content,insertAdjacentHTML(_position,value){surfaceMarkup=String(value)+surfaceMarkup;}};
+   Object.defineProperty(surface,'innerHTML',{get:()=>surfaceMarkup,set(value){surfaceMarkup=String(value);}});
+   x.nodes.set('adminDirectionEditorRead',surface);
+  },
+ });
+ x.content.isConnected=true;x.nodes.set('adminContent',x.content);
+ x.nodes.set('moduleGuideBody',{hidden:false});x.nodes.set('toggleModuleGuide',{textContent:'Skjul guide',setAttribute(name,value){this[name]=value;}});
+ x.content.insertAdjacentHTML=()=>{x.nodes.get('moduleGuideBody').hidden=false;};
+ const features=[{properties:{id:'one',name:'Synthetic one',zoneStatus:'active'}}],parts={zones:{one:[{partId:'one-1'}]}},staging={available:true,entries:[{zoneId:'one',revision:'synthetic'}]};
+ x.context.loadZoneRegistry=async()=>({all:features,active:features,collection:{features},counts:{registered:1,active:1,legacy:0}});
+ x.context.loadZones=async()=>({coastalParts:parts});
+ const load=x.context.loadAdminDocument;
+ x.context.loadAdminDocument=async(key,...args)=>key==='direction-reviews'?reviewRead.promise:key==='coastal-point-staging-status'?staging:load(key,...args);
+ for(const name of ['renderDashboard','renderWeather','renderWaterStations','renderZones','renderAdminCoastlineEditor','renderObservations','renderHistory','renderVisitors','renderLearning','renderUsers','renderHandbook','renderDocumentation','renderSystem'])
+  x.context[name]=()=>{x.content.innerHTML='synthetic '+x.context.state.tab+' controls';};
+ let draft=null;
+ Object.assign(x.context,{invalidateAdminTripCount(){},invalidateAdminUserCategories(){},disposeOwnerNoticeProbe:null,
+  destroyCoastlineEditor(){},destroyDirectionMap(){},destroyPartDirectionEditor:null,moduleGuide:()=>'<p>synthetic guide</p>',bindModuleGuide(){},
+  createDirectionEditor(host,options){mounts++;config=options;draft={note:{value:'initial'},range:{value:0}};host.draftControls=draft;host.innerHTML='synthetic ready editor';return()=>{disposals++;};},
+  directionReviews:()=>JSON.parse(x.context.localStorage.getItem('test-directions')||'{}'),
+  saveDirectionReviewsNow:()=>assert.fail('bootstrap cannot save a direction'),saveDirectionReviews:()=>assert.fail('bootstrap cannot save a draft'),
+ });
+ actualView(x,'renderDirectionAudit','\nfunction renderObservations(');
+ const from=admin.indexOf('function render(){'),to=admin.indexOf('\nfunction scoreAvailabilityCard(',from);
+ assert(from>=0&&to>from);runInNewContext(admin.slice(from,to),x.context);
+ const actualRender=x.context.render;x.context.render=()=>{renders++;return actualRender();};
+ const task=x.context.ops.boot();await settle();x.context.state.tab='directionAudit';x.context.render();
+ assert.equal(mounts,0,'the direction editor must not capture incomplete bootstrap arrays');
+ x.nodes.get('moduleGuideBody').hidden=true;x.releaseConnections();x.releasePublic();await settle();
+ assert.equal(mounts,0,'public completion alone is not the completed direction/review bootstrap');
+ if(leave){x.context.state.tab='system';x.context.render();}if(changeIdentity)x.switchIdentity();
+ reviewRead.resolve({zones:{one:{note:'loaded central review'}}});await task;
+ if(leave||changeIdentity){assert.equal(mounts,0,'a changed view or identity cannot mount the deferred editor');return;}
+ assert.equal(mounts,1);assert.equal(config.zones,features);assert.equal(config.coastalParts,parts);assert.equal(config.pointStagingStatus,staging);assert.equal(config.reviews.one.note,'loaded central review');
+ assert.equal(x.nodes.get('moduleGuideBody').hidden,true);assert.equal(renders,2);assert.equal(disposals,0);assert.equal(x.events.filter(value=>value==='ravradar:admin-ready').length,1);
+ draft.note.value='person draft';draft.range.value=123;const originalDraft=surface.draftControls;
+ const before=x.content.innerHTML,originalConfig=config;await x.context.ops.publicRuntime();
+ assert.equal(mounts,1);assert.equal(config,originalConfig);assert.equal(disposals,0);assert.equal(x.content.innerHTML,before);assert.equal(surface.draftControls,originalDraft);assert.equal(surface.draftControls.note.value,'person draft');assert.equal(surface.draftControls.range.value,123);assert.equal(x.stats().manifestReads,1);
+}
+await directionLateBootstrap();await directionLateBootstrap({leave:true});await directionLateBootstrap({changeIdentity:true});
+console.log('OK: The existing admin-ready boundary mounts the deferred direction editor once with completed inputs and keeps later drafts, events, guide, view and identity unchanged.');

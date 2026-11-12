@@ -59,8 +59,12 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
   sourceControls:[
     'node --test scripts/test-source-current-contracts.mjs',
   ],
+  adminHistory:[
+    'node --test scripts/test-admin-document-history-workflow.mjs',
+  ],
   backupRestore:[
     LOCAL_RESTORE_SELF_TEST,
+    'node --test scripts/test-archive-supabase-database-backup.mjs',
   ],
   mailOwnerProbe:[
     'node --test scripts/test-owner-notice-probe-ci.mjs',
@@ -73,6 +77,9 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
   compatibility:[
     'node scripts/source-critical-gate.mjs',
     'node --test scripts/test-archived-weather-restart-workflow.mjs',
+  ],
+  actionVersions:[
+    'node scripts/test-github-action-versions.mjs',
   ],
   historicalTests:[],
 });
@@ -151,8 +158,16 @@ const PATH_AREAS=freeze({
     'scripts/lib/completed-private-runtime-workflow-review.mjs',
     'scripts/lib/native-original-continuity-workflow-review.mjs',
   ],
+  adminHistory:[
+    '.github/workflows/run-current-weather-once.yml',
+    '.github/workflows/maintain-admin-document-history.yml',
+    'scripts/test-admin-document-history-workflow.mjs',
+  ],
   backupRestore:[
     LOCAL_RESTORE_FIXTURE,
+    'scripts/seal-supabase-database-export.mjs',
+    'scripts/archive-supabase-database-backup.mjs',
+    'scripts/test-archive-supabase-database-backup.mjs',
   ],
   mailOwnerProbe:[
     '.github/workflows/test-owner-notice-mail.yml',
@@ -171,6 +186,12 @@ const PATH_AREAS=freeze({
   ],
   // Disse kendte historiske/metakontroller giver ingen produktadmission i V3.
   // Deres ændring kræver stadig en uafhængig kontrolgennemgang.
+  actionVersions:[
+    '.github/workflows/apply-weather-model-binding-only.yml',
+    '.github/workflows/audit-saved-weather-inputs.yml',
+    '.github/workflows/reusable-operational-reentry.yml',
+    'scripts/test-github-action-versions.mjs',
+  ],
   historicalTests:[
     'scripts/lib/pages-closure-historical-test-input.mjs',
     'scripts/test-account-statistics-assistant-callers.mjs',

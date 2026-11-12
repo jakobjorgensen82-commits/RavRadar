@@ -16,7 +16,8 @@ const SOURCE=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 // dispatch frames remain immutable; its actual --self-test runs separately.
 const restoreFixture='scripts/test-supabase-cli-local-restore.mjs';
 const restoreSource=fs.readFileSync(new URL('./test-supabase-cli-local-restore.mjs',import.meta.url),'utf8').replaceAll('\r\n','\n');
-assert.deepEqual(CURRENT_CONTRACT_COMMANDS.backupRestore,['node '+restoreFixture+' --self-test']);
+assert.deepEqual(CURRENT_CONTRACT_COMMANDS.backupRestore,['node '+restoreFixture+' --self-test',
+  'node --test scripts/test-archive-supabase-database-backup.mjs']);
 assert.equal(isBoundedLocalRestoreFixtureChange(restoreSource,restoreSource),true);
 assert.equal(isBoundedLocalRestoreFixtureChange(restoreSource,
   restoreSource.replace('const IMAGES=','// Synthetic reviewed body delta\nconst IMAGES=')),true);
@@ -395,6 +396,24 @@ try{
   cases++;scenarios.push('normal handbook sync helper selects only core and documentation');
   checkout(base);
 
+  // The ordinary bot sender and its existing maintenance recipient share one
+  // normal target. This classifies current behavior, not an old workflow hash.
+  const adminHistoryPaths=['.github/workflows/run-current-weather-once.yml',
+    '.github/workflows/maintain-admin-document-history.yml','scripts/test-admin-document-history-workflow.mjs'];
+  const adminHistoryTree=rewrite(baselineTree,adminHistoryPaths.map(file=>[file,fixtureControlBytes(file)]));
+  const adminHistoryHead=commit(adminHistoryTree,[base],'synthetic normal admin-history handoff child');
+  checkout(adminHistoryHead);
+  const adminHistoryPlan=plan({baselineCommit:base,candidateCommit:adminHistoryHead,expectedHead:adminHistoryHead});
+  assert.equal(adminHistoryPlan.selection,'CURRENT_CONTRACTS',JSON.stringify(adminHistoryPlan.reasonCodes));
+  assert.deepEqual(Object.keys(adminHistoryPlan.areas),['core','pages','adminHistory']);
+  assert.deepEqual(adminHistoryPlan.commands,[...CURRENT_CONTRACT_COMMANDS.core,
+    ...CURRENT_CONTRACT_COMMANDS.pages,...CURRENT_CONTRACT_COMMANDS.adminHistory]);
+  assert.equal(adminHistoryPlan.controlQualificationRequired,true);
+  for(const family of ['postgres','C','I','T'])
+    assert.equal(adminHistoryPlan.inputDigests[family+'Before'],adminHistoryPlan.inputDigests[family+'After']);
+  cases++;scenarios.push('normal bot handoff selects the ordinary sender and existing admin-history target');
+  checkout(base);
+
   const owner='scripts/source-current-contract-receipt.mjs';
   const candidateTree=rewrite(baselineTree,[[owner,Buffer.concat([
     git(root,['cat-file','blob',base+':'+owner]),Buffer.from('\n// synthetic current-control child delta\n')])],
@@ -674,6 +693,44 @@ try{
   assert.equal(uiAccepted.required,false,JSON.stringify(uiAccepted));assert.equal(uiAccepted.independentControlReview,'NOT_REQUIRED');
   assert.deepEqual(uiAccepted.testedAreas,['core','publicUI']);
   cases++;scenarios.push('two successive qualified V4 delta frontiers; ordinary UI has no ROOT marker and no ancestor artifact recursion');
+
+  // A later candidate may extend its catalogue while qualifying an older main.
+  // Its cached ESM planner must not rewrite the older receipt's actual scope.
+  const priorMain=main,catalogFile='scripts/source-current-contract-plan.mjs';
+  const priorCatalog=fs.readFileSync(path.join(root,catalogFile),'utf8');
+  const laterCatalog=priorCatalog.replace('  historicalTests:[],',
+    "  laterCatalogue:['node scripts/test-github-action-versions.mjs'],\n  historicalTests:[],")
+    .replace('  historicalTests:[\n',"  laterCatalogue:['app.js'],\n  historicalTests:[");
+  assert.notEqual(laterCatalog,priorCatalog);
+  const catalogTree=rewrite(uiTree,[[catalogFile,Buffer.from(laterCatalog)]]);
+  checkout(commit(catalogTree,[priorMain],'synthetic next catalogue registration'));
+  const {planSourceCurrentContractsFromGit:cachedLaterPlan}=await import(
+    pathToFileURL(path.join(root,catalogFile)).href+'?later-catalogue-regression');
+  checkout(priorMain);
+  const wrongCurrentPlan=cachedLaterPlan({baselineCommit:pageDelivery.main,candidateCommit:priorMain,expectedHead:priorMain});
+  assert.equal(wrongCurrentPlan.status,'PLANNED');
+  assert.notDeepEqual(wrongCurrentPlan.commands,ui.receipt.impact.commands);
+  const savedNodeOptions=process.env.NODE_OPTIONS;
+  process.env.NODE_OPTIONS='--require /RAVRADAR_SYNTHETIC_OPTIONS_MUST_NOT_EXECUTE';
+  const planDeadline=performance.now()+60000;
+  const remainingPlanBudget=()=>{const n=planDeadline-performance.now();assert(n>0);return n;};
+  let priorPlans;
+  try{
+    write('data/kystdata.json',Buffer.from('{"syntheticCentralRuntime":true}\n'));
+    write('HANDBOOK-RAVRADAR.md',Buffer.from('Synthetic hydrated handbook document\n'));
+    priorPlans=consumer.readCommittedCurrentSourcePlans({head:priorMain,baselines:[pageDelivery.main,base]},
+      {readGit,remaining:remainingPlanBudget});
+    assert.deepEqual(priorPlans[0].commands,ui.receipt.impact.commands);
+    assert.deepEqual(priorPlans[1].commands,ui.receipt.baselineContinuity.commands);
+    assert(priorPlans.every(plan=>plan.authority==='PLANNING_ONLY'&&plan.productionAuthority===false));
+    fs.appendFileSync(path.join(root,catalogFile),'\n// Synthetic uncommitted executable drift\n');
+    assert.throws(()=>consumer.readCommittedCurrentSourcePlans({head:priorMain,baselines:[base]},
+      {readGit,remaining:remainingPlanBudget}),/SOURCE_CURRENT_PLANNER_NOT_COMMITTED/);
+  }finally{
+    if(savedNodeOptions===undefined)delete process.env.NODE_OPTIONS;else process.env.NODE_OPTIONS=savedNodeOptions;
+    checkout(priorMain);
+  }
+  cases++;scenarios.push('later catalogue cannot rewrite prior V4 scope; committed child plans allow data hydration and discard Node injection');
 
   await assertScalarSourcePrerequisites();
 

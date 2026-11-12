@@ -1,3 +1,9 @@
+## Tillæg 12. november 2026 — bevar aktive kontroller ved sen læsning
+
+Administratorens Kalibrering og System kan åbnes, mens den offentlige model stadig hentes. Den lokale rettelse opdaterer kun den oprindelige modelvisning: AFVENTER under læsning, BLOKERET ved faktisk verifikationsfejl og gyldig model efter en normal vellykket genprøvning. Rapporter, prøvemail og deres igangværende kontroller bevares. Retningseditoren monteres én gang efter den eksisterende admin-ready-grænse med de afsluttede input; en senere offentlig læsning genopretter ikke editoren eller overskriver kladden. Den eksisterende admin-UI-adresse ændres ens i side og offlinecache, mens data-service-adressen bevares.
+
+Dette er en privat kildekandidat. De eksisterende målrettede lokale prøver er bestået; præcis GitHub-kvalifikation, den normale syntetiske Linux-gendannelse og faktisk gendannelse af det valgte autentiske arkiv er særskilte åbne beviser. Ingen numerisk model, version 4.0.598, migration, score, kildeprioritet, geometri, adgangsrettigheder, automatisk kontosletning eller backuprotation ændres af forberedelsen.
+
 # DEC-0025 – Admin skal være synlig ved første åbning, og sitetesten må ikke blokere brugeren
 
 ## Beslutning

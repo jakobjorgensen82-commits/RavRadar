@@ -568,14 +568,16 @@ console.log('Admin active RavScore runtime/export contract tests passed.');
  const render=(source,sampleSize,eligible,ok=true)=>{
   const analysis=Object.freeze({sampleSize,sourceCount:19,excludedCount:19-sampleSize,zoneCount:2,
    noFindCount:1,effortCount:sampleSize,snapshotLinkCount:sampleSize,modes:Object.freeze({beach:sampleSize,waders:0})});
-  const output={innerHTML:''};let reads=0;
+  const output={innerHTML:''},modelHost={};let reads=0,blockedReads=0;
   runInNewContext(source+'\nrenderLearning();',{content:output,
    analyzeObservations(){reads++;return analysis;},
    activePublicRavScoreState:()=>({ok,value:{observationCalibrationEligible:eligible,labelDa:'Aktuel model'}}),
    activeModelUnavailableCard:()=>'<p>Ukendt model</p>',esc:value=>String(value),
+   document:{querySelector(selector){assert.equal(selector,'#adminLearningModelRead');assert(output.innerHTML.includes('id="adminLearningModelRead"'));return modelHost;}},
+   rememberCleanBlockedAdminRead(tab,host){assert.equal(tab,'learning');assert.equal(host,modelHost);blockedReads++;},
    loadAdminTripCount(){throw Error('LOCAL_LEARNING_MUST_NOT_READ_CENTRAL_TRIPS');},
    fetch(){throw Error('LOCAL_LEARNING_MUST_NOT_ADD_HTTP');}});
-  assert.equal(reads,1);assert.equal(analysis.sampleSize,sampleSize);return output.innerHTML;
+  assert.equal(reads,1);assert.equal(analysis.sampleSize,sampleSize);assert.equal(blockedReads,ok?0:1);return output.innerHTML;
  };
  for(const size of [0,7])for(const eligible of [false,true]){
   const html=render(actual,size,eligible),old=render(previous,size,eligible);

@@ -298,10 +298,12 @@ async function capture(c,options,dependencies){
 }
 async function verifyRemoteGroup(c,pointer,opened,roleGrantAudit=null){
   const {index,manifest,manifestBytes,chunked}=validateIndex(opened,pointer);
-  if(roleGrantAudit){
+  if(roleGrantAudit&&!Object.hasOwn(roleGrantAudit,'targetSystemRoles')){
     const {sourceHead,runId,runAttempt}=pointer.context;
     const origin=[ROLE_GRANT_ORIGIN_DOMAIN,pointer.index.sha256,sourceHead,runId,runAttempt];
     need(sha(encode(origin))===FIXED_844_ROLE_GRANT_COMMITMENTS.originSha256,'ROLE_GRANT_AUDIT_ORIGIN');
+  }
+  if(roleGrantAudit){
     const f=manifest.files[0],entry=index.objects[0];
     const wireBytes=chunked?entry.parts.reduce((sum,part)=>sum+part.object.bytes,0):entry.object.bytes;
     need(f.sqlBytes<=ROLE_GRANT_AUDIT_MAX_BYTES&&f.cipherBytes<=ROLE_GRANT_AUDIT_MAX_BYTES
@@ -333,7 +335,11 @@ async function verifyRemoteGroup(c,pointer,opened,roleGrantAudit=null){
   }
   if(roleGrantAudit){
     const match=await auditLocalDatabaseBackupRoleGrant({directory,entry:manifest.files[0],
-      context:pointer.context,deadline:roleGrantAudit.deadline},{env:c.env});
+      context:pointer.context,deadline:roleGrantAudit.deadline,
+      ...(Object.hasOwn(roleGrantAudit,'targetSystemRoles')?{targetSystemRoles:roleGrantAudit.targetSystemRoles}:{})},{env:c.env});
+    if(Object.hasOwn(roleGrantAudit,'targetSystemRoles'))return{
+      status:'AUTHENTICATED_RESERVED_SYSTEM_ROLE_PREFLIGHT_ONLY',...match,indexCommitmentSha256:roleGrantAudit.indexCommitmentSha256,
+      rolesFileVerified:true,fullDatabaseBackupVerified:false,databaseRestoreExecuted:false,archiveWrittenThisOperation:false};
     return{status:'AUTHENTICATED_ROLES_FIXED_GRANT_AUDIT_ONLY',match,...FIXED_844_ROLE_GRANT_COMMITMENTS,
       rolesFileVerified:true,fullDatabaseBackupVerified:false,
       databaseRestoreExecuted:false,archiveWrittenThisOperation:false};
@@ -386,10 +392,10 @@ async function bootstrap(c,indexSha256,materialization=null,roleGrantAudit=null)
   const usage=await c.r2.bucketUsage();c.state.listing=null;
   need(usage.objectCount===inventory.count&&usage.usedBytes===inventory.total,'BOOTSTRAP_LIST_PARITY');
   const all=[...inventory.objects.values()],eligible=all.filter(x=>positive(x.bytes)&&x.bytes<=B.maximumIndexWireBytes);
-  const restoreCommitment=materialization?.indexCommitmentSha256??null;
+  const restoreCommitment=materialization?.indexCommitmentSha256??roleGrantAudit?.indexCommitmentSha256??null;
   let wanted=eligible;
   if(roleGrantAudit||restoreCommitment!==null){
-    const target=roleGrantAudit
+     const target=roleGrantAudit&&restoreCommitment===null
       ? committedIndex(all,ROLE_GRANT_SELECTOR_DOMAIN,FIXED_844_ROLE_GRANT_COMMITMENTS.selectorSha256,'ROLE_GRANT_AUDIT_INDEX')
       : committedIndex(all,RESTORE_SELECTOR_DOMAIN,restoreCommitment,'RESTORE_COMMITTED_INDEX');
     indexSha256=target.sha256;wanted=[target];
@@ -434,14 +440,18 @@ async function bootstrap(c,indexSha256,materialization=null,roleGrantAudit=null)
 }
 // Only the dedicated caller can opt in; ordinary archive modes and CLI do not select this audit.
 export async function auditSupabaseDatabaseArchiveRoleGrant(options={},dependencies={}){
-  fields(options,[],'ROLE_GRANT_AUDIT_OPTIONS');
+  const systemAudit=Object.hasOwn(options,'targetSystemRoles');
+  fields(options,systemAudit?['targetSystemRoles','indexCommitmentSha256']:[],'ROLE_GRANT_AUDIT_OPTIONS');
+  if(systemAudit)need(hash(options.indexCommitmentSha256)&&Array.isArray(options.targetSystemRoles)
+    &&options.targetSystemRoles.length<=128&&options.targetSystemRoles.every(n=>typeof n==='string'&&/^supabase_[A-Za-z0-9_]{1,54}$/.test(n))
+    &&new Set(options.targetSystemRoles).size===options.targetSystemRoles.length,'ROLE_AUDIT_TARGET_ROLES');
   const env=dependencies.env??process.env;
   need(env.GITHUB_ACTIONS==='true'&&env.RUNNER_ENVIRONMENT==='github-hosted'&&env.RUNNER_OS==='Linux'
     &&env.GITHUB_REPOSITORY===LOCAL.repository&&(dependencies.processImpl??process).platform==='linux','HOSTED_VM_REQUIRED');
   let c;
   try{
     c=clients(env,dependencies.fetchImpl??globalThis.fetch,{bootstrap:true,readOnly:true});
-    return await bootstrap(c,null,null,{deadline:Date.now()+B.maximumSearchMs});
+    return await bootstrap(c,null,null,{deadline:Date.now()+B.maximumSearchMs,...(systemAudit?options:{})});
   }catch(e){throw archiveFailure(e,c);}
 }
 

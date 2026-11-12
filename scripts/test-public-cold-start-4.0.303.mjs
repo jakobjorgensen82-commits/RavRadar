@@ -94,7 +94,9 @@ const previousAdminEntrypointSuffix = `${adminDependencySuffix}&observations=loc
 const adminStudySuffix = `?v=${releaseVersion}&study=frozen-replay-noise-20261106`;
 const previousStudyEntrypointSuffix = `${previousAdminEntrypointSuffix}&study=frozen-replay-noise-20261106`;
 const previousProbeEntrypointSuffix = `${previousStudyEntrypointSuffix}&probe=owner-notice-20261109`;
-const adminEntrypointSuffix = `${previousProbeEntrypointSuffix}&visits=scope-20261108`;
+const previousVisitEntrypointSuffix = `${previousProbeEntrypointSuffix}&visits=scope-20261108`;
+const adminEntrypointSuffix = previousVisitEntrypointSuffix
+  .replace('ui=admin-model-startup-20261101', 'ui=admin-read-surfaces-20261112');
 assert.ok(admin.includes(`src="js/ui/admin-dashboard.js${adminEntrypointSuffix}"`));
 assert.ok(dashboard.includes(`../services/data-service.js${adminDependencySuffix}`));
 assert.ok(dashboard.includes(`./admin-private-trip-study.js${adminStudySuffix}`));
@@ -126,6 +128,7 @@ const cached = new Map([
   [`${origin}/js/ui/admin-dashboard.js${previousAdminEntrypointSuffix}`, new Response('old-observations-admin')],
   [`${origin}/js/ui/admin-dashboard.js${previousStudyEntrypointSuffix}`, new Response('old-study-admin')],
   [`${origin}/js/ui/admin-dashboard.js${previousProbeEntrypointSuffix}`, new Response('old-probe-admin')],
+  [`${origin}/js/ui/admin-dashboard.js${previousVisitEntrypointSuffix}`, new Response('old-visits-admin')],
   [`${origin}/js/ui/admin-private-trip-study.js?v=${releaseVersion}`, new Response('old-private-study')],
   [`${origin}/js/services/data-service.js${adminDependencySuffix}`, new Response('current-admin-data')],
 ]);
@@ -187,6 +190,8 @@ for(let pass=0;pass<2;pass++){
   assert.equal(await cached.get(`${origin}/js/ui/admin-dashboard.js${previousProbeEntrypointSuffix}`).clone().text(),'old-probe-admin',
     'The joined admin address preserves an older probe-only entry.');
 }
+assert.equal(await cached.get(`${origin}/js/ui/admin-dashboard.js${previousVisitEntrypointSuffix}`).clone().text(),'old-visits-admin',
+  'The previous delivered admin remains intact while the new UI URL gets fresh code.');
 const adminDataRequest={method:'GET',mode:'cors',url:`${origin}/js/services/data-service.js${adminDependencySuffix}`};
 let adminDataResponse;
 handlers.get('fetch')({request:adminDataRequest,respondWith:value=>{adminDataResponse=value;}});
