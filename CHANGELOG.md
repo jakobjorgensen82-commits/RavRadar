@@ -1,5 +1,7 @@
 ## 12. november — dokumentoprydning efter botstartet vejr
 
+Den eksisterende Action-versionskontrol omfatter hele det aktive workflowinventar. Bevidst forkerte versionsnumre i negative testinput er ikke aktive workflows og giver ikke længere falske afslag. Tre forældede aktive SDK-pins følger nu den allerede gældende versionspolitik; faktiske forkerte workflowversioner afvises fortsat. Tilladelser, gates, tidsgrænser, model og SQL ændres ikke.
+
 Faktiske botstartede vejrhentninger har manglet det efterfølgende adminjob, selv om RAVRADAR_ADMIN_HISTORY_MAINTENANCE var enabled. Den eksisterende ejerudløste vej har derimod gennemført en passage med 25 fjernede, verificeret arkiverede historikrækker. Den afgrænsede kildekandidat tilføjer derfor én eksplicit bestilling efter verificeret almindeligt deploy og binder GitHubs returnerede modtager-id til et afsluttet trin i samme kørsel.
 
 Afsenderen venter ikke på modtageren. Modtageren tager de eksisterende vejr- og turlagerlåse i samme rækkefølge og kræver den afsluttede, grønne kildekørsel og sin præcise binding før privat adgang. Arkiv, fuld genlæsning, aktuelle dokumenter, de fem nyeste versioner og højst 25 ældre rækker pr. passage bevares. Ved under 30 minutter til det oprindelige næste vejrslot springes passagen over; ukendt bestillingsudfald genforsøges ikke.

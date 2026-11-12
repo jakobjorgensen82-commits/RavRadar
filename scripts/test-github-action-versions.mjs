@@ -18,9 +18,7 @@ const files = [];
 for (const name of fs.readdirSync('.github/workflows')) {
   if (/\.ya?ml$/i.test(name)) files.push(path.join('.github/workflows', name));
 }
-for (const name of fs.readdirSync('scripts')) {
-  if (/^test-.*\.(?:mjs|py)$/i.test(name)) files.push(path.join('scripts', name));
-}
+// Version policy applies to active workflows; tests may intentionally construct old versions to prove rejection.
 
 const seenInWorkflows = new Set();
 let references = 0;
@@ -57,4 +55,4 @@ if (!localValidation.includes('& $python -c $dependencyCheck')) {
 if (/& \$python -c\s+'[^'\r\n]*"/.test(localValidation)) {
   throw new Error('Inline Python med dobbelte citater i et enkeltciteret PowerShell-argument er ikke Windows-kompatibelt.');
 }
-console.log('Officielle GitHub Action-versioner består på tværs af workflows og testkontrakter.');
+console.log('Officielle GitHub Action-versioner består for hele det aktive workflowinventar.');

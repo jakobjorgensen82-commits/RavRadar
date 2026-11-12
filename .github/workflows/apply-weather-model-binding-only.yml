@@ -115,7 +115,7 @@ jobs:
             + deferCurrentGridBindingEdges(LATEST_REQUIRED_CUTOVER_MIGRATION.version) + '\n');
           NODE
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         if: inputs.upgrade_assistant_later_h0_original == true
         with:
           python-version: "3.12"

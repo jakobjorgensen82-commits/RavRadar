@@ -1,5 +1,9 @@
 ## 12. november — dokumentoprydning efter botstartet vejr
 
+Den eksisterende Action-versionskontrol omfatter hele det aktive workflowinventar. Bevidst forkerte versionsnumre i negative testinput er ikke aktive workflows og giver ikke længere falske afslag. Tre forældede aktive SDK-pins følger nu den allerede gældende versionspolitik; faktiske forkerte workflowversioner afvises fortsat. Tilladelser, gates, tidsgrænser, model og SQL ændres ikke.
+
+Den ændringsbaserede V4-kildevej har bestået sin præcise Linux-kvalifikation og er merged. Efterfølgende kodeændringer kræver fortsat egen head-bundet kvalifikation; faktisk mail, oprydning, modelovergang og offentlig virkning er særskilte beviser.
+
 Åbent: workflow_run alene har ikke startet adminoprydning efter de dokumenterede botstartede vejrhentninger. enabled-indstillingen og en vellykket ejerudløst passage beviser ikke den normale botvej. Den private kildekandidat bruger en enkelt eksplicit, præcist bundet sender/modtager uden nye tjenester eller tidsplaner.
 
 Afsenderen venter ikke på modtageren. Modtageren tager de eksisterende vejr- og turlagerlåse i samme rækkefølge og kræver den afsluttede, grønne kildekørsel og sin præcise binding før privat adgang. Arkiv, fuld genlæsning, aktuelle dokumenter, de fem nyeste versioner og højst 25 ældre rækker pr. passage bevares. Ved under 30 minutter til det oprindelige næste vejrslot springes passagen over; ukendt bestillingsudfald genforsøges ikke.

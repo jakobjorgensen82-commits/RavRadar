@@ -77,6 +77,9 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
     'node scripts/source-critical-gate.mjs',
     'node --test scripts/test-archived-weather-restart-workflow.mjs',
   ],
+  actionVersions:[
+    'node scripts/test-github-action-versions.mjs',
+  ],
   historicalTests:[],
 });
 const COMMANDS=CURRENT_CONTRACT_COMMANDS;
@@ -179,6 +182,12 @@ const PATH_AREAS=freeze({
   ],
   // Disse kendte historiske/metakontroller giver ingen produktadmission i V3.
   // Deres ændring kræver stadig en uafhængig kontrolgennemgang.
+  actionVersions:[
+    '.github/workflows/apply-weather-model-binding-only.yml',
+    '.github/workflows/audit-saved-weather-inputs.yml',
+    '.github/workflows/reusable-operational-reentry.yml',
+    'scripts/test-github-action-versions.mjs',
+  ],
   historicalTests:[
     'scripts/lib/pages-closure-historical-test-input.mjs',
     'scripts/test-account-statistics-assistant-callers.mjs',

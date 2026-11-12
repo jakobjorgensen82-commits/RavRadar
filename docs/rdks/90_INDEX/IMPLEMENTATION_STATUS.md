@@ -1,5 +1,9 @@
 ## 12. november — dokumentoprydning efter botstartet vejr
 
+Den eksisterende Action-versionskontrol omfatter hele det aktive workflowinventar. Bevidst forkerte versionsnumre i negative testinput er ikke aktive workflows og giver ikke længere falske afslag. Tre forældede aktive SDK-pins følger nu den allerede gældende versionspolitik; faktiske forkerte workflowversioner afvises fortsat. Tilladelser, gates, tidsgrænser, model og SQL ændres ikke.
+
+Den ændringsbaserede V4-kildevej har bestået sin præcise Linux-kvalifikation og er merged. Efterfølgende kodeændringer kræver fortsat egen head-bundet kvalifikation; faktisk mail, oprydning, modelovergang og offentlig virkning er særskilte beviser.
+
 Den eksisterende PR862-løsning er porteret privat til den aktuelle kontrolvej. Normal adminworkflowprøve: 32/32 bestået; alle fire berørte Pages-mål består. Begge faktiske kildeplaner bevarer PG/C/I/T-input. Controlleren er uændret. Den tilføjede normale Source-plancase er syntakskontrolleret, men hele protokolmålet er ikke gentaget lokalt.
 
 Seneste gemte faktiske variabelaflæsning fra 10. november var enabled; denne forberedelse har ikke ændret den. Lokale normale kalderprøver består, men den samlede kildekvalifikation og en faktisk efterfølgende botudløst arkiv-/beskæringspassage er stadig åbne. Der påstås ingen fysisk databasepladsgevinst, automatisk backuprotation eller Free-klarhed. Vejrdata, score, SQL og modelbindinger ændres ikke.
