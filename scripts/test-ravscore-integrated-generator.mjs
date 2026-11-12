@@ -1,4 +1,4 @@
-import { projectPagesClosureHistoricalTestInput as historicalPagesInput } from './lib/pages-closure-historical-test-input.mjs';
+import { inverseReviewedSource601HistoricalCodeInput } from './lib/completed-private-runtime-workflow-review.mjs';
 import { inverseAlternativeCCaller } from './lib/alternative-c-caller-test-input.mjs';
 import assert from 'node:assert/strict';
 import { inverseCompletedRuntimeWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
@@ -486,8 +486,8 @@ assert.throws(() => buildIntegratedPartScoreSeries({
 }), /incompatible model metadata/,
 'an incompatible parameter-contract state must fail closed instead of remigrating');
 
-const updater = (await fs.readFile(new URL('./update-weather.mjs', import.meta.url), 'utf8'))
-  .replaceAll('\r\n', '\n');
+const updater = inverseReviewedSource601HistoricalCodeInput((await fs.readFile(new URL('./update-weather.mjs', import.meta.url), 'utf8'))
+  .replaceAll('\r\n', '\n'), 'scripts/update-weather.mjs');
 const ordinaryUpdater = inverseAlternativeCCaller(updater, 'scripts/update-weather.mjs');
 // Reuse only the existing pure inverse, not the entrypoint target's top-level tests.
 // Its whole-source SHA keeps these historical assertions bound to genuine 903307.
@@ -508,7 +508,7 @@ assert.equal(digest(historicalUpdater),
 const bulkUpdater = await fs.readFile(new URL('./update-dmi-bulk.py', import.meta.url), 'utf8');
 const productionWorkflows = Object.freeze(Object.fromEntries(
   Object.entries(await readProductionWorkflowSources()).map(([role, source]) =>
-    [role, inverseCompletedRuntimeWorkflow(historicalPagesInput(source.replaceAll('\r\n', '\n'), role), role)]),
+    [role, inverseCompletedRuntimeWorkflow(source.replaceAll('\r\n', '\n'), role)]),
 ));
 const productionPartPipeline = await fs.readFile(
   new URL('./lib/ravscore-production-part-pipeline.mjs', import.meta.url),

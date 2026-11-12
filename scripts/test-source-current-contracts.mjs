@@ -9,6 +9,7 @@ import {execFileSync} from 'node:child_process';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {CURRENT_CONTRACT_COMMANDS} from './source-current-contract-plan.mjs';
 
+async function ordinaryV3Protocol(){
 const SOURCE=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const REFERENCE='bd9cf518fe798ddea45d2b835f324f6e2bea06fc';
 const profile=JSON.parse(fs.readFileSync(path.join(SOURCE,'scripts/lib/source-impact-domain-inputs-598.json')));
@@ -402,3 +403,30 @@ console.log(JSON.stringify({kind:'SYNTHETIC_CURRENT_V3_PRODUCER_CONSUMER_INTEGRA
   genuineProtected148AndCIT:true,frozenAnchors:16,plannerMock:false,productSourceTestsExecuted:false,
   actualSqlOrSqliteExecuted:false,actualGitHubOrFullQualification:false,
   network:false,production:false,deliveryAuthority:false}));
+
+}
+
+async function sourceFirstControlCases(){
+ const api=await import('./source-first-issuance-contracts.mjs');
+ const identity=await api.readActualSourceFirstIdentity();
+ api.assertSourceFirstIdentityData(identity);
+ const metadata={schemaVersion:'source-producer-after597-derived-metadata-v1',release:identity.release,version:identity.binding.version,binding:identity.binding,output:identity.output};
+ assert.equal(api.classifySourceValidationBaseData(identity,{version:'4.0.598'},null),api.SOURCE_FIRST_SELECTION);
+ assert.equal(api.classifySourceValidationBaseData(identity,{version:identity.release},metadata),api.SOURCE_UNCHANGED_SELECTION);
+ const changedModel=structuredClone(metadata);changedModel.binding.C='0'.repeat(64);
+ assert.throws(()=>api.classifySourceValidationBaseData(identity,{version:identity.release},changedModel));
+ assert.throws(()=>api.classifySourceValidationBaseData(identity,{version:identity.release},null));
+ assert.throws(()=>api.classifySourceValidationBaseData(identity,{version:'4.0.999999'},metadata));
+ for(const mutate of [x=>{x.predecessorRelease='4.0.597';},x=>{x.output=null;},x=>{x.binding=null;},
+  x=>{x.migrationCount=77;},x=>{x.selectedVersion='00000000000000';},x=>{x.release='4.0.598';}]){
+  const changed=structuredClone(identity);mutate(changed);assert.throws(()=>api.assertSourceFirstIdentityData(changed));
+ }
+ api.assertSourceFirstPathScope(['scripts/source-first-issuance-contracts.mjs'],identity);
+ assert.throws(()=>api.assertSourceFirstPathScope(['scripts/unreviewed-first-source-feature.mjs'],identity));
+ assert.throws(()=>api.assertSourceFirstPathScope(['supabase/migrations/00000000000000_wx_source.sql'],identity));
+ console.log(JSON.stringify({kind:'SOURCE_CURRENT_CONTROL_DATA_TESTS',scope:'MODULE_DATA_ASSERTIONS_COMPLETED',
+   includedContracts:['actualIdentity','invalidIdentity','pathScope','genuine598First','sameSourceBase','changedModelRefused','unknownBaseRefused','changedReleaseRefused'],
+   actualSqlOrSqliteExecuted:false,network:false,sourceAdmission:false,productionProof:false}));
+}
+const sourceFamily=fs.existsSync(new URL('./lib/source-producer-after597-binding.generated.json',import.meta.url));
+if(sourceFamily)await sourceFirstControlCases();else await ordinaryV3Protocol();

@@ -153,6 +153,8 @@ function dmiCollections(coastType) {
 // END normal-record collections
 
 // BEGIN normal-record records
+const RETAINED_SCALAR_SOURCE_PROOFS = Symbol('retained scalar source proofs');
+
 function bulkZoneToForecastRecord(
   feature,
   bulkCache,
@@ -164,6 +166,7 @@ function bulkZoneToForecastRecord(
     materializeMissingHorizon = false,
     currentDecoderTransition = null,
     scalarPlanningOnly = false,
+    [RETAINED_SCALAR_SOURCE_PROOFS]: sourceProofs = null,
   } = {},
 ) {
   const zoneId = feature.properties?.id;
@@ -285,7 +288,8 @@ function bulkZoneToForecastRecord(
   const mergedDmiHourly = mergeHourlyPreferDmi(
     marineContinuousHourly,
     compatiblePrevious?.hourly ?? [],
-    { generatedAt, startAt, expectedIdentity: dmiIdentity, currentDecoderTransition, scalarPlanningOnly },
+    { generatedAt, startAt, expectedIdentity: dmiIdentity, currentDecoderTransition, scalarPlanningOnly,
+      [RETAINED_SCALAR_SOURCE_PROOFS]: sourceProofs && { verified: sourceProofs, ownedPrimary: true } },
   );
   const mergedHourly = FEGGESUND_WAVE_PROXY_SOURCE_ZONE_IDS.includes(zoneId)
     ? mergedDmiHourly.map(hour => {
@@ -404,7 +408,8 @@ function buildPartDmiForecastWithProtectedRetention(
   feature, activeBulkCache, protectedBulkCache, generatedAt,
   { startAt, expectedIdentity, persistedHourly = [], historicalBulkCache = null,
     protectPreviousDmi = false, currentDecoderTransitionPart = null,
-    nativeCurrentOriginals = null, protectedCompanionContexts = [], scalarPlanningOnly = false },
+    nativeCurrentOriginals = null, protectedCompanionContexts = [], scalarPlanningOnly = false,
+    [RETAINED_SCALAR_SOURCE_PROOFS]: sourceProofs = null },
 ) {
   if (!Array.isArray(protectedCompanionContexts) || protectedCompanionContexts.length > 2) {
     throw new Error('DMI_PART_NATIVE_ORIGINAL_COMPANION_BOUND');
@@ -420,19 +425,23 @@ function buildPartDmiForecastWithProtectedRetention(
   const retained = protectedBulkCache
     ? bulkZoneToForecastRecord(feature, protectedBulkCache, generatedAt, null, {
       startAt, expectedIdentity, materializeMissingHorizon: true, scalarPlanningOnly,
+      [RETAINED_SCALAR_SOURCE_PROOFS]: sourceProofs,
     })
     : null;
   const current = bulkZoneToForecastRecord(feature, activeBulkCache, generatedAt, retained, {
     startAt, expectedIdentity, materializeMissingHorizon: true, scalarPlanningOnly, currentDecoderTransition,
+    [RETAINED_SCALAR_SOURCE_PROOFS]: sourceProofs,
   });
   const historical = historicalBulkCache
     ? bulkZoneToForecastRecord(feature, historicalBulkCache, generatedAt, null, {
       startAt, expectedIdentity, materializeMissingHorizon: true, scalarPlanningOnly,
+      [RETAINED_SCALAR_SOURCE_PROOFS]: sourceProofs,
     })
     : null;
   let previousHourly = !protectPreviousDmi && historical
     ? mergeHourlyPreferDmi(persistedHourly, historical.hourly, {
       generatedAt, startAt, expectedIdentity, currentDecoderTransition, scalarPlanningOnly,
+      [RETAINED_SCALAR_SOURCE_PROOFS]: sourceProofs && { verified: sourceProofs, ownedPrimary: false },
     })
     : persistedHourly;
   if (protectPreviousDmi) {
@@ -453,9 +462,17 @@ function buildPartDmiForecastWithProtectedRetention(
     zoneId: current.zoneId, point: current.point, generatedAt,
     hourly: mergeHourlyPreferDmi(current.hourly, previousHourly, {
       generatedAt, startAt, expectedIdentity, protectPreviousDmi, currentDecoderTransition, scalarPlanningOnly,
+      [RETAINED_SCALAR_SOURCE_PROOFS]: sourceProofs && { verified: sourceProofs, ownedPrimary: false },
     }),
     waterLevelInterpolation: current.waterLevelInterpolation,
     model: current.model,
+  });
+}
+
+// Only the normal offline scalar planner passes its own parsed JSON inputs here.
+function buildRetainedScalarPartDmiForecast(feature, activeBulkCache, protectedBulkCache, generatedAt, options) {
+  return buildPartDmiForecastWithProtectedRetention(feature, activeBulkCache, protectedBulkCache, generatedAt, {
+    ...options, scalarPlanningOnly: true, [RETAINED_SCALAR_SOURCE_PROOFS]: new WeakMap(),
   });
 }
 
@@ -701,7 +718,8 @@ function mergeHourlyPreferDmi(
   dmiHourly = [],
   fallbackHourly = [],
   { generatedAt = null, startAt = generatedAt, expectedIdentity = null,
-    protectPreviousDmi = false, currentDecoderTransition = null, scalarPlanningOnly = false } = {},
+    protectPreviousDmi = false, currentDecoderTransition = null, scalarPlanningOnly = false,
+    [RETAINED_SCALAR_SOURCE_PROOFS]: sourceProofs = null } = {},
 ) {
   // Public records keep the exact production +0..+117 axis. Private replay
   // callers deliberately supply an earlier startAt; using generatedAt here
@@ -737,16 +755,23 @@ function mergeHourlyPreferDmi(
         && row?.sources?.wind?.component === 'windTail'
         ? 'windTail'
         : component;
-      return expectedIdentity
-        ? verifiedDmiForecastComponentSource(
-          row?.sources?.[component],
-          time,
-          declaredComponent,
-          expectedIdentity,
-        )
-        : row?.sources?.[component] ?? (retained
-          ? { provider: row?.source ?? 'open-meteo', fallback: true }
-          : { provider: 'dmi', fallback: false });
+      const source = row?.sources?.[component];
+      if (!expectedIdentity) return source ?? (retained
+        ? { provider: row?.source ?? 'open-meteo', fallback: true }
+        : { provider: 'dmi', fallback: false });
+
+      const checked = sourceProofs?.verified.get(source);
+      if (checked?.time === time && checked.component === declaredComponent
+        && checked.expectedIdentity === expectedIdentity) return source;
+
+      const verified = verifiedDmiForecastComponentSource(source, time, declaredComponent, expectedIdentity);
+      // Only the freshly built primary can add a proof to this per-part cache.
+      // Later merges preserve the exact nested source object. Persisted sources
+      // and any distinct source, component, time or identity run the normal check.
+      if (verified && sourceProofs?.ownedPrimary && !retained) {
+        sourceProofs.verified.set(source, { time, component: declaredComponent, expectedIdentity });
+      }
+      return verified;
     };
     const select = component => selectAtomicComponentTuple(
       item,
@@ -858,6 +883,7 @@ export {
   bulkZoneToForecastRecord,
   publicCurrentDecoderTransition,
   buildPartDmiForecastWithProtectedRetention,
+  buildRetainedScalarPartDmiForecast,
   buildPrivateDmiRecoveryRecord,
   verifiedFeggesundNeighborSource,
   ATOMIC_COMPONENT_TUPLE_KEYS,

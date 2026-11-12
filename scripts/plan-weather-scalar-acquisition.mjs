@@ -50,6 +50,8 @@ async function main() {
     try{handle=await fs.open(temporary,'wx',0o600);owned=true;await handle.writeFile(bytes);await handle.sync();await handle.close();handle=null;await fs.rename(temporary,output);owned=false;}
     finally{await handle?.close();if(owned)await fs.unlink(temporary);}
     console.log('Retained scalar advisory plan prepared from normal offline readers.');
+    console.log(JSON.stringify({planningDiagnostic:plan.planningDiagnostic,
+      elapsedMillis:Math.max(0,Math.round(performance.now()-startedAt))}));
   } catch(error) {
     const unproved=isWeatherTransportStopUnproved(error);
     console.error(unproved?'RETAINED_SCALAR_PLAN_STOP_UNPROVED':'RETAINED_SCALAR_PLAN_UNAVAILABLE');

@@ -625,6 +625,7 @@ for (const marker of [
   `Predecessor-restorelukningen mangler ${marker}`);
 for (const forbidden of [
   'install -m 0644 scripts/private-production-runtime-bundle.mjs',
+  'install -m 0644 scripts/private-production-runtime-workflow.mjs',
   'install -m 0644 js/core/ravscore-model-contract.js',
 ]) assert.ok(!predecessorCompatibility.includes(forbidden),
   `Predecessorens forseglede model-/bundlekode må ikke overskrives: ${forbidden}`);
@@ -639,6 +640,15 @@ function relativeModuleSpecifiers(source) {
     ...[...source.matchAll(/\bimport\s*\(\s*['"](\.\.?\/[^'"]+)['"]\s*\)/g)].map(match => match[1]),
   ].sort();
 }
+// The new authenticated CURRENT pin checks its own normal workflow contract
+// lazily. The historical restore and audit CLI do not enter that helper.
+const currentPinStart = protectedRuntimeSource.indexOf('export async function pinCurrentProtectedPrivateProductionRuntime(');
+const currentPinEnd = protectedRuntimeSource.indexOf('\nexport async function describeTargetProtectedPrivateProductionRuntime(', currentPinStart);
+assert.ok(currentPinStart >= 0 && currentPinEnd > currentPinStart);
+const currentPinBody = protectedRuntimeSource.slice(currentPinStart, currentPinEnd);
+const currentPinDependency = "  const { privateRuntimeContractHashes } = await import('./private-production-runtime-workflow.mjs');";
+assert.equal(currentPinBody.split(currentPinDependency).length, 2);
+assert.deepEqual(relativeModuleSpecifiers(currentPinBody), ['./private-production-runtime-workflow.mjs']);
 const protectedRuntimeRelativeImports = relativeModuleSpecifiers(protectedRuntimeSource);
 assert.deepEqual(protectedRuntimeRelativeImports, [
   '../js/core/ravscore-model-contract.js',
@@ -647,6 +657,7 @@ assert.deepEqual(protectedRuntimeRelativeImports, [
   './lib/r2-private-runtime-storage.mjs',
   './lib/supabase-admin-rest.mjs',
   './private-production-runtime-bundle.mjs',
+  './private-production-runtime-workflow.mjs',
 ].sort(), 'Alle relative restore-wrapperimports skal klassificeres i kompatibilitetslukningen');
 for (const helperPath of [
   'scripts/lib/private-weather-component-inventory.mjs',

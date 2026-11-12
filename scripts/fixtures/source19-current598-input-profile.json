@@ -1,0 +1,164 @@
+{
+  "schemaVersion": 1,
+  "kind": "SOURCE598_NEW_CURRENT_INPUT_MATERIALIZATION_PREPARATION",
+  "status": "PREPARATION_ONLY",
+  "profile": "current598-preparation",
+  "existingCase": "current-source-native",
+  "sourceAdmission": false,
+  "productionActivation": false,
+  "materialization": {
+    "seam": "EXISTING_SourceCurrentNative.owned_current_host",
+    "head": "ACTUAL_COMMITTED_QUALIFIED_SOURCE_EXECUTOR",
+    "productOverlay": false,
+    "inventedGitHead": false,
+    "newCloneRoutine": false
+  },
+  "productPreparationReference": {
+    "tree": "e6cc1d920bdff69e22b2846f6d8218bb1c86e5b2",
+    "head": "b3d9b6f02d3f01c016384fc5f50e7e81316a419a",
+    "role": "READ_ONLY_BASE_INTEGRATION_REFERENCE_NOT_AN_ISSUED_EXECUTOR",
+    "scope": "Actual committed qualified executor is separately captured and checked at execution. This base is not a Source qualification or output proof."
+  },
+  "nativeInputFiles": [
+    {
+      "path": "scripts/fixtures/source19-current-initial-weather.py",
+      "bytes": 11306,
+      "sha256": "5a1625d83f3fbee306a43fe0c9cbefb2bdcdb95cad6aa248564f2914dce88700",
+      "source": "THIS_SAME_ACTUAL_COMMITTED_CANDIDATE"
+    },
+    {
+      "path": "scripts/fixtures/source19-current-native-providers.py",
+      "bytes": 36109,
+      "sha256": "512744b429910724f1bd10d7cd49114c32b3c975aadc58c4d61069e6c819f5b8",
+      "source": "THIS_SAME_ACTUAL_COMMITTED_CANDIDATE"
+    },
+    {
+      "path": "scripts/fixtures/source19-current-normal-inputs.mjs",
+      "bytes": 80136,
+      "sha256": "b5f65123c78b143a3b5dbcadac27f4b2329f7e634e349f1c584593bcde399dd3",
+      "source": "THIS_SAME_ACTUAL_COMMITTED_CANDIDATE"
+    },
+    {
+      "path": "scripts/fixtures/source19-current-provider-forecast.mjs",
+      "bytes": 12373,
+      "sha256": "ebd8c7f63c4a8f87da5aedc37cf5622a5df1785fe8478c64b17ca9a137df4919",
+      "source": "THIS_SAME_ACTUAL_COMMITTED_CANDIDATE"
+    },
+    {
+      "path": "scripts/fixtures/source19-current-native-metadata.mjs",
+      "bytes": 22613,
+      "sha256": "dc859bff87073c05907b09d1167f23c57304d31987f9c5ae50047b8fcaca54f8",
+      "source": "THIS_SAME_ACTUAL_COMMITTED_CANDIDATE"
+    },
+    {
+      "path": "scripts/fixtures/source19-current-native-post64.py",
+      "bytes": 21872,
+      "sha256": "442e9a3c0e5cf1fe28b75ab68a32a13b3bdfa527b44155e8e0754c8384d25dc3",
+      "source": "THIS_SAME_ACTUAL_COMMITTED_CANDIDATE"
+    },
+    {
+      "path": "scripts/fixtures/source19-current-native-initial-activation.mjs",
+      "bytes": 40042,
+      "sha256": "5a1547ff4b23e5396db5ad7ccfbf762c2508a712dd3d014120f3c57dfc1a64dd",
+      "source": "THIS_SAME_ACTUAL_COMMITTED_CANDIDATE"
+    }
+  ],
+  "inputProducer": {
+    "program": "scripts/fixtures/source19-current-native-providers.py",
+    "mode": "--current598",
+    "outputDirectory": "own/fixture-current598",
+    "options": "own/fixture-current598/current-source-native-options.json",
+    "normalPublicForecastHours": 118,
+    "privateTPlus3SupportHours": 3,
+    "normalForecastPackHours": 121,
+    "normalColdInputHistoryHours": 48,
+    "historyTransport": "SEPARATE_GRIB_BULK_ASSET_MANIFEST_NORMAL_RAW_ROOT",
+    "role": "PRELIMINARY_SOURCE_ADMIN_AND_OPTIONS_ONLY; provider JSON/RAW is retained separately and never used for37 runtime"
+  },
+  "prefixProducer": {
+    "program": "scripts/fixtures/source19-current-normal-inputs.mjs",
+    "mode": "--prepare-current598-prefix",
+    "output": "own/current598-native-inputs/transport/current598-prefix-inputs.json",
+    "codeProducerHead": "bd9cf518fe798ddea45d2b835f324f6e2bea06fc",
+    "codeProducerTree": "2f71c562eea774ca03996802f83bdad7cccd43cc",
+    "executionHead": "ACTUAL_SOURCE_HEAD_SEPARATE",
+    "dataRole": "NEW_SYNTHETIC_594_FROM_NORMAL37_UPDATER_ORIGIN_B_AND_S_NOT_PUBLIC4145_OR232_BYTES",
+    "providerFactory": {
+      "program": "scripts/fixtures/source19-current-native-providers.py",
+      "mode": "--current598-code598-raw",
+      "arguments": [
+        "<node24>",
+        "<H0.000Z>",
+        "--current598-code598-raw",
+        "own/current598-native-inputs/normal-genuine598"
+      ],
+      "position": "After normal clone37/admin-copy/registry equality and before archive/updater",
+      "inputRoot": "own/fixture-current598-code598",
+      "options": "own/fixture-current598-code598/current-source-native-options.json",
+      "rawOriginalRoot": "own/current598-native-inputs/normal-genuine598",
+      "rawRoot": "own/current598-native-inputs/normal-genuine598/.cache/dmi-grib",
+      "providerCopy": "Only NEW code598 providerInputs after normal archive restore",
+      "normalForecastPackHours": 121,
+      "separateColdInputHistoryHours": 48,
+      "rawAdmissionProved": false,
+      "sdkExecuted": false
+    }
+  },
+  "transport": {
+    "class": "CurrentSourceSdkProtocolFixture",
+    "base": "TerminalProtocolFixture",
+    "classSha256": "b4c6ffbfc1f7ffe6dbf6db9d0f93b8a06d95259520b3b44c2b6dd130ea9bc6bc",
+    "sdkReuseReceiptSha256": "98e5f206c43151045c4c8cef066c73cd910246715011af3e6497fae85b3e3542",
+    "artifact": "6.3.1",
+    "cache": "6.1.0",
+    "azureStorageBlob": "12.34.0",
+    "sdkLeafVerification": "UNCHANGED_LOCKED_SDK_HISTORICAL_REFERENCE_NO_NEW_EXECUTION_OR_SOURCE_REUSE",
+    "runtimeToken": "PUBLISHED_CLASS_LOOPBACK_TOKEN_ONLY",
+    "cacheRestore": "EXACT_KEY_MISS_ONLY",
+    "artifactPath": "runner-temp/ravradar-private-build-stage/sealed.bin",
+    "artifactName": "ravradar-private-build-stage-200-2",
+    "newServer": false
+  },
+  "existingSDKAndActionSeam": "CurrentSourceNormalProtocolFixture(CurrentSourceSdkProtocolFixture), samePG initial594 central plus SOURCE metadata, unchanged no-arg action and physical finalclose. This PREPARATION_ONLY input descriptor grants no execution or PASS.",
+  "remainingNormalInputs": {
+    "qualifiedCommittedWholeSourceExecutor": null,
+    "normalRawCacheCaptureAndSDKAdmission": null,
+    "explicit594CentralActivationOnSameOwnedPG": null,
+    "explicit594InitialMetadataAnd594ToSOURCETransition": null,
+    "normalCurrentAction6364AndAllFinalOwnerClosure": null
+  },
+  "rolePreservation": {
+    "code598": "Exact genuine bd9/598 CODE/tree/models create NEW synthetic598 data through normal decoder/updater/origin/B/S; this descriptor is not a proof.",
+    "sourceExecution": "Actual final committed Source executor and its normally issued binding remain distinct from immutable genuine bd9/598 CODE and synthetic prefix DATA. No old Source19 receipt is adopted.",
+    "providerInputs": "New code598-decoded synthetic GRIB/bulk/forecast INPUTS via exact same genuine598 host;118public+3support remain121,48historical raw originals and manifest stay separate. No provider provenance/native proof.",
+    "prefixData": "Only normal37 updater/origin/B-before-S/whole restore may create the594 prefix; JSON metadata is not an owner or native proof.",
+    "original585AndOldArchive": "Every old585/legacy branch and genuineOLD140000 archival recipe remains unchanged and is never retagged.",
+    "oldCPProposal": "The former051/056-v2 CP materialization stays historical. No CP original-union proof is claimed by this new DMI prefix."
+  },
+  "retiredIntegration": "The old051/056 v2 CP proposal remains history only; no retired bank, SDK class or old input oracle is inserted.",
+  "packetReceipts": [],
+  "noClaims": [
+    "NO_MODULE_OR_NATIVE_EXECUTION",
+    "NO_SOURCE_PASS",
+    "NO_PROVIDER_PROVENANCE",
+    "NO_SQL_BINDING_OR_OWNER_ISSUANCE",
+    "NO_ACTIVATION_OR_PRODUCTION",
+    "NO_OLD_SOURCE19_594_PROOF_RETAG",
+    "NO_OLD_SOURCE19_NATIVE_RECEIPT_REUSE"
+  ],
+  "preparedInitialMetadata": {
+    "program": "scripts/fixtures/source19-current-native-metadata.mjs",
+    "mode": "--current598-initial-rpc-request",
+    "source": "Existing normal SOURCE verifier derives the22field body from exact genuine598 I/C/T, separately from the actual executor head.",
+    "result": "own/current598-initial-request-whole.stdout; normal current598 central arm executes this request only against the actual SOURCE62 same-PG contract.",
+    "sqlExecuted": false,
+    "sameHostPgReadbackQualified": false
+  },
+  "preparedProtocolInitialRole": {
+    "class": "CurrentSourceNormalProtocolFixture",
+    "initialDataProfile": "current598-native-prefix",
+    "fixedOriginalRoot": "own/current598-native-inputs/transport",
+    "adapter": "CurrentSourcePost64Adapter(initial_prefix=True,current598_prefix=True)",
+    "source": "Only normal prefix objectRows/actual bytes; no caller-selectable root, new facade, fake PG result or SOURCE owner."
+  }
+}

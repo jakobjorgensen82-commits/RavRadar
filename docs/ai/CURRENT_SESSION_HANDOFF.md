@@ -1,3 +1,55 @@
+## 12. november – 4.0.613 – Ny SOURCE-kilde med rettet vandvisningstest før RAW
+
+Den lokale kandidat samler den gennemgåede SOURCE612-funktionalitet, Auth-/backupreserve, de præcise metadatahelper-broer og producentens begrænsede observation med den godkendte rettelse af vandvisningens test. Den aktive UI-tekst er uændret; testen forventer nu den faktiske signatur om valg i denne visning. Den normale UI-caller importerer også vandtesten og bevarer SOURCE-fasehjælperen.
+
+Alle funktionelle, test-, kontrol- og dokumentationsblade fastlægges før RAW fra den ægte uudstedte NULL-kilde. RAW læses som objekter med row.path; vandtestrettelsen indgår i de fysiske kildebytes før afledning af C, I, førstebinding og output. Identiteter fremstilles gennem de normale byggere og ommærkes ikke. De 76 tidligere migrationsfiler, herunder uinstalleret611 og612, bevares. Den normale isolerede visning vælger den ægte598-kæde og kun den nye aktuelle migration;611 og612 installeres ikke som mellemtrin.
+
+De gamle 16 UI-frames, owners, historiske pins og SOURCE-caller/helpervarianter bevares. De nye kontrolposter bruger faktiske SOURCE-fingerprints og samme lukkede to-/17-filsregel som den gennemgåede ordinary-kode. SOURCE-statistikprøvens eksisterende b78-Git-fixture bevares; ordinarys separate fa64-fixturereparation kopieres ikke over SOURCE-hjælperen.
+
+303 afsluttede den normale artifact-/releaseindsamling med57 af58 beståede kontroller; kun vand102-signaturtesten fejlede, mens releasekontrollen bestod3/3. Der kom ingen offentlig Pages-levering fra303. PR878 er merget som34e7; PR880 er efter den historiske fixturereparation kvalificeret med29/29 faktiske kommandoer på fb921ac7 og merget som421c. Dette er ordinary-kildebevis, ikke denne SOURCE-kandidats egen kvalifikation.
+
+En providerfri fortsættelse304 er bestilt fra de gemte303-originaler. Dens udfald og den seneste cron-status følges i privat checkpoint; cron var faktisk pauset ved denne klargøring. Den officielle Pages-v5-rute er aktiv. Den separate inaktive straks-genforsøgskandidat har fortsat egne uafklarede tidsbudgetrettelser og aktiveres ikke her.
+
+De tidligere byteidentiske lokale komponentprøver genbruges, hvor deres faktiske input fortsat gælder. Denne nye kandidats relevante mål, præcise GitHub-FULL, native/PostgreSQL-kvalifikation, autentificerede originaler, kontrollerede installation og offentlige effekt har hver sit bevis. En lokal afledning eller ordinarys grønne kildekontrol er ikke SOURCE-aktivering.
+
+Alle fem hovedområder er fortsat åbne. Faktisk isoleret SQL/Auth-restore, holdbar reservekvittering, backup-egress, Storage-objektlegemer, uafhængig nøglerecovery og varig Free-margen er ikke bevist; Pro er senest faktisk aflæste plan. Automatisk capture, rotation og nedgradering aktiveres ikke af denne kilde.
+
+SOURCE/T+3, DMI→Copernicus→Open-Meteo, scoreformel, centralt gemte administratorpunkter, geometri, historiske originaler og offentliggjorte scorer bevares. Ingen ny tjeneste, nøgle, plan eller produktionshandling følger.
+
+Se håndbog89.339. Tidligere612-status bevares som historik.
+
+## 11. november – 4.0.612 – Ny førudstedelse med afgrænset artifactlæsning
+
+Den nye lokale SOURCE-kandidat samler den gennemgåede611-kode, Auth-reservefornyelsen og den officielle Pages-rute med den eksisterende afgrænsede metadatahelper i code-only-kalderen. Artifact-ID, token, identitetskrav, digest og seal bevares. Et404-svar kan genforsøges inden for helperens eksisterende grænse; andre svar og udløbet grænse giver fortsat afslag.
+
+Calleren ændres før den normale RAW-afledning. Kandidaten bygges fysisk fra den ægte uudstedteNULL-kilde; tidligere611-metadata, modeller og SQL ommærkes ikke. Alle75gamle migrationsfiler, også den uinstallerede611-fil, bevares. Den normale isolerede migrationsvisning vælger kun den ægte598-kæde og den nye aktuelle migration.611 må ikke installeres som et mellemtrin.
+
+Den tidligere 611-samlings kildekontrol fejlede og er ikke et grønt bevis for denne kandidat. Den faktiske fejltekst var endnu ikke tilgængelig ved denne lokale klargøring; en nødvendig fixturekorrektion skal bygge på den faktiske fejl og indarbejdes før slutcommit. Den normale lokale 612-afledning og dens faste kontroller er gennemført. Egen eksakt GitHub-kildekontrol, native/PostgreSQL-kvalifikation, autentificerede originaler, databevarelse, kontrolleret installation og offentlig effekt afventer.
+
+Den officielle Pages-v5-rute er faktisk merget gennem PR 877 og igen aktiv for begge normale kaldere. Det særlige straks-genforsøg er midlertidigt inaktivt og fortsat en åben driftsopgave; standardrutens levering lukker ikke genforsøgets krav. En ny almindelig manuel vejrhentning kører på den mergede kode og var fortsat i DMI ved denne dokumentation. Der er endnu ingen verificeret ny offentlig vejrgeneration fra den kørsel.
+
+Et særskilt kode-only-forsøg nåede ikke offentlig Pages-levering, fordi det enkelte metadataopslag returnerede 404. Den minimale ordinary-helperrettelse er nu PR 878 med normal kildekontrol i gang. Den er ikke dermed leveret, og dens kontrol er ikke SOURCE-kandidatens egen kvalifikation. Den samme konkrete callerrettelse indgår i denne nye SOURCE-kildes normale RAW-afledning.
+
+Auth-/backupkoden og de eksisterende målprøver genbruges, hvor de faktiske input er byteidentiske. Automatisk capture, rotation, Free, fuld applikationsrecovery og isoleret restore er ikke aktiveret eller bevist af kildeafledningen. De nyeste private kvotetal ændrer ikke dette.
+
+Den afgrænsede læsning af en tidligere almindelig kørsel viste timeout i den beholdte scalarplans fælles frist og en senere lukket current-ledger. Målingen fastlægger ikke vandstandshalens præcise årsag eller optimeringens faktiske effekt. Den normale nye vejrhentning får lov at fortsætte uden ændringer fra denne lokale klargøring.
+
+SOURCE/T+3, DMI→Copernicus→Open-Meteo, scoreformel, administratorens centralt gemte punkter og geometri samt historiske originaler og offentliggjorte scorer bevares. Ingen ny tjeneste, nøgle, plan eller produktionshandling følger.
+
+Se håndbog89.338. Tidligere611- og875-status nedenfor er historik, ikke et aktuelt grønt kvalifikationsbevis.
+
+## 11. november — lokal SQL/Auth-reservefornyelse med bevaret SOURCE611
+
+Den lokale kilde samler den afgrænsede Auth-forudsætning og automatisk reservefornyelse i 11 filer. Den normale isolerede gendannelse sammenligner alle autentificerede COPY-kolonner, dubletantal og eksporterede sekvenstilstande uden tab af numerisk præcision. Forløbet er forberedt til at prøve passwordlogin på en frisk syntetisk Auth-konto i det isolerede lokale Auth-system, mens oprindelige Auth-rækker beskyttes og efterkontrolleres. Dette er SQL/Auth-scope; de brede felter for fuld database-/applikationsrecovery forbliver false.
+
+Capture, fysisk restore og rotation udføres hver for sig i eksisterende normale ledige vinduer. Syvdøgnscadencen bruger det oprindelige vejrslot, mindst 35 minutters resttid og de eksisterende ydre/indre skrivelåse. Kun en fuldt positiv kontrol efter faktisk fysisk cleanup kan gemme den lille GCM-autentificerede, create-only reservekvittering. En nyere særskilt verificeret reserve kan afløse bootstrapreserven; kvitteringen udløber med sin gruppe før indekset. Ukendt skrive- eller stopudfald giver ingen positiv kvittering eller sletteautoritet.
+
+RAW455, C193, I190, T12 og alle 556 beskyttede filer er bevaret. Der er ikke udstedt ny SOURCE, model, SQL eller version. Den nødvendige normale workflow-integration er prøvet lokalt med den eksisterende Python-runtime. Testlæseren genkender additivt den allerede gennemgåede adminhistorik-workflowefterfølger; gamle pins og ukendte eller ændrede bytes afvises fortsat. De byteidentiske øvrige 11 arkiv-, 41 kalder- og 27 restore-selftests genbruges fra deres præcise tidligere evidens og er ikke genkørt.
+
+Kilden er lokalt integreret, ikke hosted kvalificeret, installeret eller aktiveret. Faktisk isoleret SQL/Auth-restore af den eksisterende backup, holdbar kvittering, fysisk ophør og målt tids-/ressourcemargen mangler fortsat. Storage-objektlegemer, fuld applikationsrecovery, slettebarrierer og uafhængig nøglerecovery er særskilte åbne beviser. Pro er den senest faktisk aflæste plan; isoleret backup-egress og varig Free-margen er ikke bevist. Ingen ny tjeneste, nøgle, plan, automatisk capture, rotation eller nedgradering er aktiveret.
+
+Håndbogens samlede Markdown-/web-/installationsdelta er forberedt særskilt til hovedagenten. Den normale webhåndbogssynk ændrer en genereret JSON-payload i den beskyttede INSTALL-fil; den må derfor ikke anvendes skjult på den allerede udstedte SOURCE-kilde. Håndbog 89.337 beskriver den forberedte kilde, men afsnittet er endnu ikke indarbejdet i denne uændrede installationskopi.
+
 ## 22. oktober — fortsæt fra faktisk CURRENT586-observation
 
 Se den nyeste CURRENT_TRUTH og det private checkpoint før næste handling. Første præcise originale endpoint kan ikke bevises blandt de leverede kontekster; den grove identitetskategori er ikke en fysisk RAW-diagnose eller en fuld almindelig reproduktion. Lokal værdifri feltopdeling, normalt Python-mål-fingerprint og bevarede orakler er målprøvet. Capture-/RAW-/normaldekoder-/reprojektionskæde, sikker vejrlevering og alle fem hovedmål er fortsat åbne. Ingen ny version, SQL, nulstilling, kildeprioritet eller originalguard er ændret af diagnoseforfiningen.

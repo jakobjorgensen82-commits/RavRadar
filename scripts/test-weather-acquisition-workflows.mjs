@@ -1,4 +1,4 @@
-import { projectPagesClosureHistoricalTestInput as historicalPagesInput } from './lib/pages-closure-historical-test-input.mjs';
+import { inverseReviewedSource601HistoricalCodeInput } from './lib/completed-private-runtime-workflow-review.mjs';
 import assert from 'node:assert/strict';
 import { inverseCompletedRuntimeWorkflow, inverseImmediateOrdinaryPagesWorkflow, inversePagesPublicProjectionWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
 import {writeRuntimeAuditExecutionObservation} from './observe-runtime-audit-execution.mjs';
@@ -11,8 +11,9 @@ import { runInNewContext } from 'node:vm';
 
 // Workflow contract and an isolated shell guard. Never reads private data or calls a provider.
 const read = file => fs.readFileSync(file, 'utf8').replaceAll('\r\n', '\n');
-const actualNormalWorkflow = read('.github/workflows/reusable-weather-build.yml');
-const normal = inverseCompletedRuntimeWorkflow(historicalPagesInput(actualNormalWorkflow, 'build'), 'build');
+const actualNormalWorkflow = inverseReviewedSource601HistoricalCodeInput(
+  read('.github/workflows/reusable-weather-build.yml'), '.github/workflows/reusable-weather-build.yml');
+const normal = inverseCompletedRuntimeWorkflow(actualNormalWorkflow, 'build');
 const orchestrator = read('.github/workflows/update-and-deploy.yml');
 const manual = inverseCompletedRuntimeWorkflow(read('.github/workflows/run-current-weather-once.yml'), 'once');
 const watchdog = read('.github/workflows/preserve-copernicus-current-shadow.yml');
@@ -517,11 +518,11 @@ test('qualified scalar planning uses the restored snapshot and preserves conserv
     'Every other existing ordinary-restored guard and the historical schema1 selector remain unchanged');
   // Restore the exact reviewed Pages predecessors before deriving the prior scalar selector.
   const reviewedWeatherWorkflow = inversePagesPublicProjectionWorkflow(
-    inverseImmediateOrdinaryPagesWorkflow(historicalPagesInput(actualNormalWorkflow, 'build'), 'build'), 'build');
+    inverseImmediateOrdinaryPagesWorkflow(actualNormalWorkflow, 'build'), 'build');
   const predecessor = reviewedWeatherWorkflow.replace('RAVRADAR_RETAINED_SCALAR_CONTEXT: ${{ '+schema12,
     'RAVRADAR_RETAINED_SCALAR_CONTEXT: ${{ '+schema1);
   assert.notEqual(predecessor, reviewedWeatherWorkflow);
-  assert.equal(inverseCompletedRuntimeWorkflow(historicalPagesInput(actualNormalWorkflow, 'build'), 'build'),
+  assert.equal(inverseCompletedRuntimeWorkflow(actualNormalWorkflow, 'build'),
     inverseCompletedRuntimeWorkflow(predecessor, 'build'), 'The complete historical workflow oracle is unchanged');
   for (const unknown of [actualNormalWorkflow+'\n', actualNormalWorkflow.replace(schema12, schema12+' || true')]) {
     assert.throws(() => inverseCompletedRuntimeWorkflow(unknown, 'build'),
