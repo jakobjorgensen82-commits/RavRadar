@@ -8,6 +8,8 @@ import fsSync from 'node:fs';
 import vm from 'node:vm';
 import {exactRelativeModuleSpecifiers} from './lib/static-module-closure.mjs';
 import test from 'node:test';
+// Keep the existing active water-routing display contract in this normal adminUI caller.
+await import('./test-water-station-active-routing-display-4.0.102.mjs');
 import {ACTIVE_ASSISTANT_SUCCESSOR as activeNationalSource} from './lib/assistant-later-h0-successor-source.mjs';
 import {withInstalled593CodePredecessorSource} from './check-installed593-code-predecessor-source.mjs';
 const activeNationalReaderRelease=activeNationalSource.requireRelease();

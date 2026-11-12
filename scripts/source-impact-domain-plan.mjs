@@ -10,7 +10,7 @@ import {scanAllSourceDependencies,dependencySourceLiterals} from './lib/source-i
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const REGISTRY_SHA256='3970bc86fb8afd99d193507b82337c1068aa368f6d62ff728988fc21da9577f4';
 const REGISTRY597_SHA256='a7ccfba2b2f631ccc358342e2c3b87e1cb1edbd54311148c94822fddaa6dbcfa';
-const REGISTRY598_SHA256='d92730ae42fbad9e8e140970b34488d0a39a2a1cff0fe299633a451ac92794ce';
+const REGISTRY598_SHA256='e088d2e71f30cb24ef6811cf31394d4f1037aa47f569979b07e2f8fd2c3d8172';
 const PAGES_TRANSPORT_FIELDS=Object.freeze({
   "scripts/lib/pages-per-artifact-identity.mjs": [],
   "scripts/lib/pages-sealed-retry-decision.mjs": [
@@ -304,17 +304,38 @@ export function planSourceDomainImpactFromGit(input){
     const uiProducts=pagesRollback?scopedProducts.filter(change=>change!==metadataCaller
       &&change.file!==rollback?.action.path&&change.file!==rollback?.test.path)
       :historicalBridgeSelected?scopedProducts.filter(change=>change!==metadataCaller):productChanges;
+    // A reviewed test successor has exactly two direct frames or the old UI16
+    // with its one new caller after-blob and the water test added. Validate the
+    // complete status/mode/blob set before selecting either scope variant.
+    let adminUiFrames=adminUi?.frames;
+    const testSuccessor=adminUi?.testSuccessor;
+    const accountTest='scripts/test-account-statistics-assistant-callers.mjs';
+    const waterTest='scripts/test-water-station-active-routing-display-4.0.102.mjs';
+    const testSuccessorSelected=Boolean(testSuccessor&&uiProducts.some(({file,row})=>
+      file===waterTest||file===accountTest&&row.afterOid===testSuccessor.frames[accountTest].afterBlob));
+    if(testSuccessorSelected){
+      const directFrames=testSuccessor.frames;
+      const cumulativeFrames={...adminUi.frames,[accountTest]:{...adminUi.frames[accountTest],
+        afterBlob:directFrames[accountTest].afterBlob,afterSha256:directFrames[accountTest].afterSha256},
+        [waterTest]:directFrames[waterTest]};
+      const matches=frames=>uiProducts.length===Object.keys(frames).length&&uiProducts.every(({file,row})=>
+        Object.hasOwn(frames,file)&&row.status==='M'&&row.beforeMode==='100644'&&row.afterMode==='100644'
+        &&row.beforeOid===frames[file].beforeBlob&&row.afterOid===frames[file].afterBlob);
+      if(matches(directFrames))adminUiFrames=directFrames;
+      else if(matches(cumulativeFrames))adminUiFrames=cumulativeFrames;
+      else return full('REVIEWED_ADMIN_UI_TEST_SUCCESSOR_SCOPE');
+    }
     if(historicalBridgeSelected&&uiProducts.length&&(!adminUi
-      ||uiProducts.length!==Object.keys(adminUi.frames).length
-      ||uiProducts.some(({file,row})=>!Object.hasOwn(adminUi.frames,file)
+      ||uiProducts.length!==Object.keys(adminUiFrames).length
+      ||uiProducts.some(({file,row})=>!Object.hasOwn(adminUiFrames,file)
         ||row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'
-        ||row.beforeOid!==adminUi.frames[file].beforeBlob||row.afterOid!==adminUi.frames[file].afterBlob)))
+        ||row.beforeOid!==adminUiFrames[file].beforeBlob||row.afterOid!==adminUiFrames[file].afterBlob)))
       return full('PAGES_METADATA_HISTORICAL_BRIDGE_SCOPE');
     if(pagesRollback){
       if(!rollback||pagesChanges.length!==1||scopedProducts.length!==2+(metadataCaller?1:0)+uiProducts.length
-        ||uiProducts.length&&(!adminUi||uiProducts.length!==Object.keys(adminUi.frames).length
-          ||uiProducts.some(({file,row})=>!Object.hasOwn(adminUi.frames,file)
-            ||row.beforeOid!==adminUi.frames[file].beforeBlob||row.afterOid!==adminUi.frames[file].afterBlob)))
+        ||uiProducts.length&&(!adminUi||uiProducts.length!==Object.keys(adminUiFrames).length
+          ||uiProducts.some(({file,row})=>!Object.hasOwn(adminUiFrames,file)
+            ||row.beforeOid!==adminUiFrames[file].beforeBlob||row.afterOid!==adminUiFrames[file].afterBlob)))
         return full('PAGES_STANDARD_ACTION_ROLLBACK_SCOPE');
       for(const entry of [rollback.action,rollback.test]){
         const change=productChanges.find(row=>row.file===entry.path);
@@ -330,11 +351,11 @@ export function planSourceDomainImpactFromGit(input){
     if(localRestoreFixture&&(localRestoreFixture.row.status!=='M'||localRestoreFixture.row.beforeMode!=='100644'))
       return full('LOCAL_RESTORE_FIXTURE_NOT_EXISTING_REGULAR_SOURCE');
     const en2Selected=en2&&changes.some(change=>EN2_ENTRYPOINTS.includes(change.file));
-    const adminUiSelected=adminUi&&(changes.some(change=>uiOnly.has(change.file))
+    const adminUiSelected=adminUi&&(testSuccessorSelected||changes.some(change=>uiOnly.has(change.file))
       ||en2Selected&&uiProducts.length!==Object.keys(en2.transitions).length);
     if(adminUiSelected){
-      const paths=Object.keys(adminUi.frames);
-      if(uiProducts.length!==paths.length||uiProducts.some(({file,row})=>!Object.hasOwn(adminUi.frames,file)
+      const paths=Object.keys(adminUiFrames);
+      if(uiProducts.length!==paths.length||uiProducts.some(({file,row})=>!Object.hasOwn(adminUiFrames,file)
         ||row.status!=='M'||row.beforeMode!=='100644'))return full(en2Selected?'ASSISTANT_WIND_FOLLOWUP_COMBINED_SCOPE':'REVIEWED_ADMIN_UI_COMBINED_SCOPE');
     }
     if(en2Selected&&!adminUiSelected){
@@ -409,7 +430,7 @@ export function planSourceDomainImpactFromGit(input){
       const row=index.get(entry.path);closureRows.push({file:entry.path,mode:row.mode,blob:row.oid,sha256:sha(get(entry.path))});
     }
     if(adminUiSelected){
-      for(const {file,row}of uiProducts){load([row.beforeOid]);const frame=adminUi.frames[file];
+      for(const {file,row}of uiProducts){load([row.beforeOid]);const frame=adminUiFrames[file];
         if(row.beforeOid!==frame.beforeBlob||row.afterOid!==frame.afterBlob
           ||sha(blobs.get(row.beforeOid))!==frame.beforeSha256||sha(get(file))!==frame.afterSha256)
           return full('REVIEWED_ADMIN_UI_SOURCE_CHANGED:'+file);
@@ -428,7 +449,7 @@ export function planSourceDomainImpactFromGit(input){
         closureRows.push({file,mode:row.afterMode,blob:row.afterOid,sha256:afterSha256});
       }
     }
-    for(const {file,row,owner}of changes)if(owner.exactSourceTransition&&!(adminUiSelected&&Object.hasOwn(adminUi.frames,file))
+    for(const {file,row,owner}of changes)if(owner.exactSourceTransition&&!(adminUiSelected&&Object.hasOwn(adminUiFrames,file))
       &&!(en2Selected&&Object.hasOwn(en2.transitions,file))){
       if(row.beforeMode!=='100644')return full('UNKNOWN_EXACT_SOURCE_TRANSITION:'+file);
       load([row.beforeOid]);const pair=sha(blobs.get(row.beforeOid))+'/'+sha(get(file));

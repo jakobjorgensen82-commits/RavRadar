@@ -653,7 +653,7 @@ test('normal598 registry keeps genuine148 inputs and closes only known normal co
         'js/ui/admin-private-trip-study.js','scripts/lib/trip-weather-aggregate-client.mjs',
         'scripts/publish-private-trip-weather-study.mjs','scripts/test-account-statistics-assistant-callers.mjs',
         'scripts/test-trip-aggregate-month-rollover.mjs'];
-      const changes=files.map(file=>[file,fs.readFileSync(path.join(SOURCE,file))]);
+      const changes=files.map(file=>[file,git(SOURCE,['cat-file','blob',historicalAfter+':'+file])]);
       const actual=run598(make598(baseline598,changes,'synthetic reviewed statistics replay sources'));
       assert.equal(actual.selection,'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(actual.reasonCodes));
       assert.equal(actual.commands.filter(c=>c==='node --test scripts/test-account-statistics-assistant-callers.mjs').length,1);
