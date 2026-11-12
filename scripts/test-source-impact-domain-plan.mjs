@@ -963,11 +963,14 @@ test('closed ordinary Pages lifecycle keeps exact direct and cumulative source b
    const protectedInput=run([...afterRows,['config.js',Buffer.concat([config,Buffer.from('\n// genuine model input drift\n')])]]);
    assert.deepEqual(protectedInput.reasonCodes,['POSTGRES_OR_MODEL_INPUT_CHANGED'],name);
    // The same logical resident-byte cap must still refuse a real oversized
-   // candidate after before-only cache release. Valid JS whitespace keeps the
-   // padded test below8MiB and changes no product/model/cohort member.
+   // candidate after before-only cache release. Split valid JS whitespace
+   // across two control blobs below the earlier4MiB input-object bound.
    const paddingControlRow=controlRows.find(([file])=>file==='scripts/test-source-impact-domain-plan.mjs');
-   afterRows.push([paddingControlRow[0],Buffer.concat([paddingControlRow[1],Buffer.alloc(5*1024*1024,32)])]);
+   const paddingPlannerRow=controlRows.find(([file])=>file==='scripts/source-impact-domain-plan.mjs');
+   afterRows.push([paddingControlRow[0],Buffer.concat([paddingControlRow[1],Buffer.alloc(3*1024*1024,32)])],
+    [paddingPlannerRow[0],Buffer.concat([paddingPlannerRow[1],Buffer.alloc(2*1024*1024,32)])]);
    const overflow=run(afterRows);
+   afterRows.pop();
    afterRows.pop();
    assert.equal(overflow.status,'REFUSED');
    assert.deepEqual(overflow.reasonCodes,['DOMAIN_COMMITTED_BLOB_BUDGET_EXCEEDED']);
