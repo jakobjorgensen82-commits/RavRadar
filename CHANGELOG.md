@@ -1,3 +1,7 @@
+## 12. november — lokal rettelse af Pages-kildeobservation
+
+- Brug RavRadars faste hovedadresse for begge godkendte indgange før writer-reservation; bevar redirect-afvisning, to friske manifestkontroller, originaler og CAS. Normal indgang dækker den reproducerede aliasfejl og negative tilfælde. Egen CI og offentlig levering er endnu åbne.
+
 ## 12. november — ny normal kontrolvej under forberedelse, uden versionsløft
 
 - Beskriver en lille fast sikkerhedskerne og prøver for det faktisk berørte område og dets normale kaldere.

@@ -1,3 +1,9 @@
+## 12. november — fast offentlig hovedadresse før Pages-reservation
+
+Den nye afgrænsede kandidat retter en reproduceret transportfejl: den allerede tilladte Pages-adresse viderestiller til ravradar.dk, mens kildeobservationen afviser svar med viderestilling. Begge tilladte indgange bruger derfor den faste kanoniske adresse direkte. De to friske, fuldt hashkontrollerede manifestlæsninger, afvisning af andre viderestillinger og uændret fase/pointer før CAS bevares. Score, vejr, modelbinding, SQL og administratoropsætning ændres ikke.
+
+Den foregående målrettede kildekontrol bestod og er genbrugt gennem den faktiske main-forbruger. Denne rettelses egen kildekontrol og offentlig levering er fortsat åbne. Synkroniseringstimeoutens oprindelige årsag er et særskilt spor; alle fem mål består. Se DEC-0206 og håndbog89.340; faktisk kørselsstatus føres privat.
+
 ## 12. november — ny normal kildekontrol er UNDER FORBEREDELSE
 
 Den nye normalvej skal bruge en lille fast sikkerhedskerne og prøver for det faktisk berørte område og dets normale kaldere. Historiske prøver skal læse uforanderlige historiske input, mens aktuel produktkode kontrolleres særskilt. Normal testudvælgelse skal ikke kræve nye lexer-fingeraftryk eller nye helfil-cohorts for hver head. Se [DEC-0302](../rdks/10_DECISIONS/DEC-0302-CHANGE-BASED-VALIDATION-AND-CONTROL-CLEANUP.md#normal-validation-core-domain-preparation-2026-11-12) og håndbog 89.342.
