@@ -1,3 +1,4 @@
+import { projectPagesClosureHistoricalTestInput as historicalPagesInput } from './lib/pages-closure-historical-test-input.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {createHash as conditions593TestHash} from 'node:crypto';
@@ -54,7 +55,7 @@ const sources = Object.freeze(
   Object.fromEntries(
     Object.entries(rawSources).map(([role, sourceText]) => [
       role,
-      inverseCompletedRuntimeWorkflow(sourceText.replace(/\r\n/g, '\n'), role),
+      inverseCompletedRuntimeWorkflow(historicalPagesInput(sourceText.replace(/\r\n/g, '\n'), role), role),
     ]),
   ),
 );

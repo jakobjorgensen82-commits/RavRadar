@@ -1,3 +1,4 @@
+import { projectPagesClosureHistoricalTestInput as historicalPagesInput } from './lib/pages-closure-historical-test-input.mjs';
 import assert from 'node:assert/strict';
 import {inverseForecastSharePagesWorkflowInventory}
   from './test-forecast-share-pages-deploy.mjs';
@@ -75,7 +76,7 @@ for(const name of fullGitPinPreparationSteps){
 // Qualify the actual new order before restoring every unchanged historical oracle.
 assertEarlyCompletedRuntimeStageOrder(productionWorkflowSources.build.replace(/\r\n/g, '\n'));
 const productionWorkflows = Object.freeze(Object.fromEntries(
-  Object.entries(productionWorkflowSources).map(([role, source]) => [role, inverseCompletedRuntimeWorkflow(source.replace(/\r\n/g, '\n'), role)]),
+  Object.entries(productionWorkflowSources).map(([role, source]) => [role, inverseCompletedRuntimeWorkflow(historicalPagesInput(source.replace(/\r\n/g, '\n'), role), role)]),
 ));
 const {
   orchestrator: orchestratorWorkflow,

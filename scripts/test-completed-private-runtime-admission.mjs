@@ -1,3 +1,4 @@
+import { projectPagesClosureHistoricalTestInput as historicalPagesInput } from './lib/pages-closure-historical-test-input.mjs';
 import './test-reconcile-private-runtime-checkpoint.mjs';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
@@ -32,7 +33,7 @@ import { buildPrivatePublicHourDeliveryPack, compactPrivateConditionsForPersiste
 import { observeOwnedPackCloseProbes } from './lib/owned-pack-close-probe.mjs';
 
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
-const build = inversePairedPrivateRuntimePublication((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build');
+const build = inversePairedPrivateRuntimePublication(historicalPagesInput((await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), 'build'), 'build');
 const once = (await fs.readFile(new URL('../.github/workflows/run-current-weather-once.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
 const legacy = inverseCompletedRuntimeWorkflow(build, 'build');
 const legacyOnce = inverseCompletedRuntimeWorkflow(once, 'once');
