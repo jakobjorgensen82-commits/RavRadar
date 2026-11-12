@@ -89,6 +89,8 @@ jobs:
         run: echo "RAVRADAR_PAGES_JOB_STARTED_MS=$(date +%s%3N)" >> "$GITHUB_ENV"
 
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v7
         with:

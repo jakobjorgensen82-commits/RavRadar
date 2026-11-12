@@ -8,6 +8,9 @@ Under forberedelse: en lille fast sikkerhedskerne og prøver for det faktisk ber
 
 ## 89.340 Ét sikkert Pages-genforsøg og frisk vejr bagefter
 
+Når en senere udgivelse skal kontrollere en tidligere kørsels programfiler, skal filerne også være hentet på den nye runner. Kontroljob og udgivelsesjob får nu samme fulde Git-historik. Kontrollen af de præcise kildefiler ændres ikke; rettelsen retter en manglende forudsætning for kontrollen. Den ændrer ingen prognoser eller scorer. Faktisk offentlig levering skal stadig bevises.
+
+
 En lokal kandidat adskiller afsluttet udgivelse, ret til ét genforsøg og sikker afslutning før næste friske vejrhentning.
 
 <a id="ordinary-pages-intent-retry-and-closed-maintenance-2026-11-12"></a>

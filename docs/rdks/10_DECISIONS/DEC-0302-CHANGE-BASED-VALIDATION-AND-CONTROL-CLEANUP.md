@@ -1,3 +1,13 @@
+## 12. november — samlet leveringsgrænse før flere kontrolvarianter
+
+Den samlede analyse skelner mellem den aktuelle programændrings normale funktionsprøver, genbrug af en faktisk tidligere databaseprøve på uændrede relevante input og beviset for den konkrete offentlige pakke. En gammel FULL-forfader må ikke i sig selv gøre alle mellemliggende, allerede leverede områder til nye ændringer. En henvisning er kun en adresse; evidensens faktiske oprindelse og input skal fortsat kvalificeres. Dette er en konstateret forbedringsopgave, ikke en leveret ny kvitteringstype.
+
+Revisionskandidatens binding af en bred programfortegnelse til numerisk modelidentitet er en reel arkitekturkobling. En lille flytning af en hashfunktion fjerner ikke de øvrige importveje eller oprindelseskontroller. Før en efterfølger aktiveres, skal både første normale levering og den efterfølgende almindelige programrettelse være afklaret, inklusive produktionsindgangens faktiske kildebevis, SDK-forudsætninger og ærligt databasegenbrug. Den fungerende 4.0.598-produktionsvej og øvrige ubundne rettelser fortsætter imens.
+
+Historiske kildeprøver skal bruge deres egne frosne input. Aktuel produktkode og dens faktiske kaldere afprøves separat; nye helfil-cohorts må ikke være standardvejen for en lille rettelse. Automatisk model-/håndbogssynkronisering skal ske før prøverne, der læser de afledte fakta. Hårde krav til originaler, databevarelse, kildeprioritet, eksklusiv skrivning og offentlig identitet bevares.
+
+Metodegrundlag: [Google SRE, Release Engineering](https://sre.google/sre-book/release-engineering/), [Simplicity](https://sre.google/sre-book/simplicity/), [SLSA Build Provenance](https://slsa.dev/spec/v1.2/build-provenance) og [Deployment Pipeline](https://martinfowler.com/bliki/DeploymentPipeline.html). Anbefalingerne er sammenholdt med faktisk kode; de er ikke i sig selv bevis for RavRadars adfærd.
+
 ## 12. november — samlet oprydning af leveringssystemet er bestilt
 
 Ejeren kræver en samlet revurdering af rettelsesvejen, dens sikkerhedskoblinger og test-/genoptagelsesforløb med yderligere ekstern viden. Gennemgangen skal også vurdere alternative opbygninger og nødvendigheden af at koble rene deploy-/kontrolændringer til modelbinding og SQL. Gentagne tidligere testgennemgange er ikke i sig selv en løsning. Konkrete fjern/saml/flyt/bevar-forslag, faktisk normal leveringstid og sikker overgang skal dokumenteres før gennemførelse; dette afsnit aktiverer ingen ny kontrol eller svækker nogen gældende databevarelse. Den akutte vejrudgivelse fortsætter sideløbende.
