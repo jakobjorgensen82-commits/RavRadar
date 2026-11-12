@@ -1,3 +1,9 @@
+## 12. november — tom Pages-status før oprettelse
+
+En faktisk almindelig vejrhentning er stoppet før CREATE, fordi GitHubs statusopslag for en ubrugt udgivelsesidentitet svarer HTTP 200 med præcis objektet {"status":""}. Den nye afgrænsede rettelse klassificerer dette som ukendt/tom status, på samme måde som et tomt objekt. Det er ikke bevis for fravær eller ret til genforsøg. En ny bestilling kræver fortsat unik hensigt, den beskyttede eksklusive reservation og en positiv CREATE-kvittering; ukendt skriveudfald, fremmed metadata og kendte igangværende udgivelser stopper fortsat.
+
+Rettelsen er lokalt målprøvet, ikke endnu samlet kildekvalificeret eller offentligt verificeret. Vejr, score, originaler, SQL, modelbindinger og den faste cronplan ændres ikke. Den tidligere synkroniseringstimeouts rodårsag er fortsat et særskilt åbent punkt. Alle fem mål består; faktiske kørsler og genoptagelse føres i privat checkpoint.
+
 ## 12. november – 4.0.614 er lokalt udstedt; levering er åben
 
 4.0.614 er nu lokalt udstedt gennem den normale førsteafledning fra ægte NULL. Alle 455 RAW-filer er fysisk verificeret, C193/I190/T12 og den ene nye SQL-migration er normalt beregnet, og alle 77 tidligere migrationer er bevaret. Den selektive visning er fysisk kontrolleret til 63 ægte 598-filer plus kun den nye aktuelle migration. Dette er lokal kilde- og afledningsevidens; kandidatens samlede aktuelle GitHub-kontrol, nye native64-/PostgreSQL-fase, installation og offentlige effekt er fortsat åbne. De følgende forberedelsesafsnit beskriver tidligere trin og giver ikke længere status for, om RAW eller SQL er dannet. Alle fem mål består.

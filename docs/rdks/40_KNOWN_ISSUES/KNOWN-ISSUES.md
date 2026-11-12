@@ -1,3 +1,9 @@
+## 12. november — tom Pages-status før oprettelse
+
+En faktisk almindelig vejrhentning er stoppet før CREATE, fordi GitHubs statusopslag for en ubrugt udgivelsesidentitet svarer HTTP 200 med præcis objektet {"status":""}. Den nye afgrænsede rettelse klassificerer dette som ukendt/tom status, på samme måde som et tomt objekt. Det er ikke bevis for fravær eller ret til genforsøg. En ny bestilling kræver fortsat unik hensigt, den beskyttede eksklusive reservation og en positiv CREATE-kvittering; ukendt skriveudfald, fremmed metadata og kendte igangværende udgivelser stopper fortsat.
+
+Rettelsen er lokalt målprøvet, ikke endnu samlet kildekvalificeret eller offentligt verificeret. Vejr, score, originaler, SQL, modelbindinger og den faste cronplan ændres ikke. Den tidligere synkroniseringstimeouts rodårsag er fortsat et særskilt åbent punkt. Alle fem mål består; faktiske kørsler og genoptagelse føres i privat checkpoint.
+
 ## 12. november – Source14 forberedes som en ny førsteudstedelse
 
 Source14 forberedes som en ny førsteudstedelse fra den ægte uudstedte NULL-kilde. Den samler Source13-funktionaliteten med de gennemgåede Pages-værn. Source13 må ikke installeres. Tidligere bindinger, migrationer, originaler og offentliggjorte scorer bevares og ommærkes ikke.

@@ -1,3 +1,9 @@
+## 12. november — tom Pages-status før oprettelse
+
+En faktisk almindelig vejrhentning er stoppet før CREATE, fordi GitHubs statusopslag for en ubrugt udgivelsesidentitet svarer HTTP 200 med præcis objektet {"status":""}. Den nye afgrænsede rettelse klassificerer dette som ukendt/tom status, på samme måde som et tomt objekt. Det er ikke bevis for fravær eller ret til genforsøg. En ny bestilling kræver fortsat unik hensigt, den beskyttede eksklusive reservation og en positiv CREATE-kvittering; ukendt skriveudfald, fremmed metadata og kendte igangværende udgivelser stopper fortsat.
+
+Rettelsen er lokalt målprøvet, ikke endnu samlet kildekvalificeret eller offentligt verificeret. Vejr, score, originaler, SQL, modelbindinger og den faste cronplan ændres ikke. Den tidligere synkroniseringstimeouts rodårsag er fortsat et særskilt åbent punkt. Alle fem mål består; faktiske kørsler og genoptagelse føres i privat checkpoint.
+
 ## 12. november – aktuel lokal 4.0.614-kandidat
 
 Den samlede SOURCE-kandidat er lokalt sammenført med den mergede almindelige kontrolvej og rettelsen af den kanoniske manifestadresse. Normal førsteafledning fra ægte NULL er gennemført; de 77 gamle migrationer er bevaret, og én ny er oprettet. 613 er ikke installeret og må ikke bruges som produktionsforgænger.
