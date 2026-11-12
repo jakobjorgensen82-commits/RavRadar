@@ -1,3 +1,9 @@
+## 12. november — forbered kontrol efter påvirkning, bevar bevisgrænser
+
+Den nye normalvej er UNDER FORBEREDELSE: en lille fast sikkerhedskerne kombineres med prøver for ændringens faktiske område og normale kaldere. Brug uforanderlige input til historiske orakler; kontrollér den aktuelle produktvej særskilt. Nye per-head lexer-fingeraftryk og helfil-cohorts skal ikke være den normale adgang til testvalg. Historiske pins og præcis head-identitet bevarer deres rolle som integritetsbevis.
+
+PG/C/I/T må kun genbruges gennem den normale bevisvej, når de relevante input og forudsætninger er verificeret uændrede. Angiv tydeligt, hvilke kontroller der faktisk blev kørt. Ukendt påvirkning giver ingen skipautoritet. Eksisterende kilde-, bevarings- og produktionsgates består, indtil en ny vej er kvalificeret. Se DEC-0302 og håndbog 89.342. Kvalificeret 42704-diagnostik må ikke omtales som bevist realrestore-rolleafhjælpning.
+
 ## 4. november — adskil Pages-størrelse, mobil opstart og recovery
 
 Kontrollér den faktiske, samlede stagingpakke og den uploadede Pages-pakke før en størrelsesgrænse anses for overholdt. Mål almindelig offentlig opstart på mobil og efterprøv, at recovery læser samme logiske detaljer. Kilde-CI for en læserbro gælder dens præcise kode. Følg særskilt dokumentation for den kombinerede kandidat, merge, deploy og offentlig effekt.

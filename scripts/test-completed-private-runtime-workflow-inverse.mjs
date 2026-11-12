@@ -1893,20 +1893,12 @@ test('automatic completed Pages caller preserves the exact ordinary workflow ora
   assert.throws(() => inverseCompletedRuntimeWorkflow(drift, 'once'));
 });
 
-test('cancelled Pages replay wiring preserves the historical build and guards both weather bases before publication', async () => {
+test('cancelled Pages replay wiring preserves the historical build and every mutation refusal', async () => {
   const raw = (await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\\r\\n', '\\n');
   const historical = inverseImmediateOrdinaryPagesWorkflow(inverseReviewedPagesClosureBuildTestInput(raw, 'build'), 'build');
   assert.equal(sha(historical), 'd21fad73693dc5d5c8db69535efdfc5cae27c78897422d4fc9ab731d6440295f');
-  assert.match(raw, /      fresh_after_pages_failure:\n        required: false\n        type: boolean\n        default: false\n/);
-  assert.match(raw, /      prior_pages_anchor:\n        required: false\n        type: string\n        default: ''\n/);
   const admit = 'node scripts/pages-cancelled-replay-continuity.mjs admit';
   const compare = 'node scripts/pages-cancelled-replay-continuity.mjs compare';
-  const savedNoLoss = 'node scripts/check-public-weather-continuity.mjs';
-  const privatePublish = '      - name: Publish bounded private runtime with one protected rollback generation';
-  const checkpointPublish = '      - name: Publish atomic RavScore checkpoint to protected admin storage';
-  const order = [admit, '      - name: Update central weather cache', savedNoLoss, compare, privatePublish, checkpointPublish];
-  assert.deepEqual(order.map(marker => raw.indexOf(marker)), order.map(marker => raw.indexOf(marker)).sort((a,b) => a-b));
-  for (const marker of order) assert.ok(raw.includes(marker), marker);
   assert.equal(historical.includes(admit) || historical.includes(compare), false);
   for (const marker of [admit, compare, 'steps.pages-repeat-saved-pair.outcome', 'inputs.fresh_after_pages_failure == true']) {
     const changed = raw.replace(marker, 'unreviewed_replay_gate');
@@ -1916,7 +1908,7 @@ test('cancelled Pages replay wiring preserves the historical build and guards bo
   }
 });
 
-test('scheduled weather keeps its fresh hour and uses one exclusive immediate-retry route', async () => {
+test('historical Pages closure projections preserve the four reviewed predecessors and reject unknown bytes', async () => {
   // These exact adapters grant no current product provenance or source-reuse authority.
   for (const [relative, expectedBefore] of [
   [
@@ -1953,44 +1945,7 @@ test('scheduled weather keeps its fresh hour and uses one exclusive immediate-re
       'Unknown or mixed caller bytes never gain a historical projection');
   }
   assert.equal(inverseReviewedPagesClosureBuildTestInput(rawBuild, '../.github/workflows/run-current-weather-once.yml'), rawBuild);
-  const [once, deploy, action, retryCli] = await Promise.all([
-    '../.github/workflows/run-current-weather-once.yml',
-    '../.github/workflows/reusable-pages-deploy.yml',
-    '../.github/actions/deploy-ravradar-pages/action.yml',
-    './deploy-ordinary-pages-with-immediate-retry.mjs',
-  ].map(relative => fs.readFile(new URL(relative, import.meta.url), 'utf8')));
-  const currentMain = coldBlock(once, '  current-main-target:');
-  const select = coldStep(currentMain, 'Require one canonical target hour and completed-runtime decision');
-  assert.match(currentMain, /id: cache-state[\s\S]*check-copernicus-current-hour\.py/);
-  assert.doesNotMatch(select, /success:true\)|completed=true\s*\n\s*target="\$AUTO_TARGET"/);
-  assert.match(select, /target="\$\{CHECKPOINT_TARGET:-\$CACHE_TARGET\}"/);
-  assert.match(once, /ordinary_immediate_retry: \$\{\{ needs\.current-main-target\.outputs\.ordinary_scheduled == 'true' \}\}/);
-  assert.match(deploy, /id: deployment\n        uses: \.\/\.github\/actions\/deploy-ravradar-pages/);
-  assert.match(deploy, /id: public-verification[\s\S]*--base-url "\$\{\{ steps\.deployment\.outputs\.page_url \}\}"/);
-  assert.match(deploy, /steps\.deployment\.outcome == 'failure' && steps\.deployment\.outputs\.closed_unpublished == 'true'/);
-  const standard = coldBlock(action, '    - name: Deploy with the standard Pages action');
-  const scheduled = coldBlock(action, '    - name: Deploy ordinary weather with one bounded immediate retry');
-  assert.match(standard, /^      uses: actions\/deploy-pages@v5$/m);
-  assert.match(standard, /^      if: \$\{\{ inputs\.immediate_retry != 'true' \}\}$/m);
-  assert.match(scheduled, /^      if: \$\{\{ inputs\.immediate_retry == 'true' \}\}$/m);
-  for (const immediate_retry of ['false', 'true']) {
-    const context = { inputs: { immediate_retry } };
-    assert.equal(coldEvaluate(scheduled.match(/^      if: (.+)$/m)[1], context), immediate_retry === 'true');
-    assert.equal(coldEvaluate(standard.match(/^      if: (.+)$/m)[1], context), immediate_retry !== 'true');
-  }
-  assert.match(standard, /artifact_name: \$\{\{ inputs\.artifact_name \}\}/);
-  assert.match(standard, /token: \$\{\{ inputs\.github_token \}\}/);
-  assert.doesNotMatch(standard,/SUPABASE|supabase/);
-  assert.match(scheduled,/SUPABASE_URL: \$\{\{ inputs\.supabase_url \}\}/);
-  assert.match(scheduled,/SUPABASE_SERVICE_ROLE_KEY: \$\{\{ inputs\.supabase_service_role_key \}\}/);
-  assert.match(deploy,/supabase_url: \$\{\{ secrets\.SUPABASE_URL \}\}/);
-  assert.match(deploy,/supabase_service_role_key: \$\{\{ secrets\.SUPABASE_SERVICE_ROLE_KEY \}\}/);
-  assert.match(action, /run: node scripts\/deploy-ordinary-pages-with-immediate-retry\.mjs/);
-  assert.match(retryCli, /const terminal = deliveries\.length > 0 && deliveries\.every\(delivery =>\s*delivery\.outcome === 'FAILED' && hasSealedPagesTerminalEvidence\(delivery\)[\s\S]*closed_unpublished=true/);
-  assert.match(retryCli, /const first = deliveries\[0\];[\s\S]*!hasSealedPagesRetryEvidence\(first\)/);
-  assert.match(retryCli,/readProtectedPagesWriterSnapshot\([\s\S]*expectedSnapshot:writerSnapshot/);
-  assert.match(retryCli,/beforeCreate: async intent =>[\s\S]*currentSeal[\s\S]*if \(!await revalidateWriter\(\)\) return false;[\s\S]*fs\.writeFile\(file/);
-  assert.doesNotMatch(retryCli,/console\.(?:log|error).*SUPABASE|console\.(?:log|error).*serviceRoleKey/);
+
 });
 
 

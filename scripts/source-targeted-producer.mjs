@@ -5,9 +5,9 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {execFileSync,spawn} from 'node:child_process';
 import {isDeepStrictEqual} from 'node:util';
-import {planSourceImpactFromGit} from './source-impact-git-diff.mjs';
 import {qualifySourceImpactFullBaseline,SOURCE_IMPACT_FULL_BASELINE_KIND} from './source-impact-full-baseline.mjs';
-import {buildTargetedSourceReceipt,buildDomainTargetedSourceReceipt,readDomainControlReview,readDomainControlReviewBaselineHint} from './source-targeted-receipt.mjs';
+import {buildCurrentContractSourceReceipt,readCurrentContractReview,readCurrentContractReviewBaselineHint}
+  from './source-current-contract-receipt.mjs';
 import {assistantPublic591Reader,sourceImpactEvidenceAccess,ORIGIN} from './native-postgres-evidence.mjs';
 import {discoverPullRequestSourceGate,PULL_REQUEST_SOURCE_JOB,PULL_REQUEST_SOURCE_WORKFLOW}
   from './lib/weather-source-gate.mjs';
@@ -48,14 +48,10 @@ function finalProofHash(zip){
   assert(raw.length>0&&raw.length<=32768);return sha(raw);
 }
 async function selectImpactPlan(baselineCommit,head){
-  const gitPlan=planSourceImpactFromGit({baselineCommit,candidateCommit:head,expectedHead:head});
-  if(gitPlan.status==='PLANNED'&&gitPlan.plan.selection==='TARGETED')
-    return {mode:'TEXT_V1',plan:gitPlan,commands:gitPlan.plan.commands};
-  const {planSourceDomainImpactFromGit}=await import('./source-impact-domain-plan.mjs');
-  const domainPlan=planSourceDomainImpactFromGit({baselineCommit,candidateCommit:head,expectedHead:head});
-  if(domainPlan.status==='PLANNED'
-    &&['TARGETED_DOMAINS','CONTROL_QUALIFICATION_REQUIRED'].includes(domainPlan.selection))
-    return {mode:'DOMAINS_V2',plan:domainPlan,commands:domainPlan.commands};
+  const {planSourceCurrentContractsFromGit}=await import('./source-current-contract-plan.mjs');
+  const plan=planSourceCurrentContractsFromGit({baselineCommit,candidateCommit:head,expectedHead:head});
+  if(plan.status==='PLANNED'&&plan.selection==='CURRENT_CONTRACTS')
+    return {mode:'CURRENT_V3',plan,commands:plan.commands};
   return null;
 }
 function currentJob(result,current){
@@ -114,7 +110,7 @@ export async function coordinateTargetedSourceProducer(){
     if(!impactPlan)return full('COMPLETE_DIFF_REQUIRES_FULL');
     let baselineHint=null;
     try{
-      const hint=readDomainControlReviewBaselineHint(pull,head);
+      const hint=readCurrentContractReviewBaselineHint(pull,head);
       if(hint){git(['merge-base','--is-ancestor',hint,mergeBase]);baselineHint=hint;}
     }catch{
       // An unusable locator supplies no authority and does not replace the
@@ -181,8 +177,7 @@ export async function coordinateTargetedSourceProducer(){
   // It must never become a successful FULL handoff or partial TARGETED proof.
   // A missing ROOT review is a precise CONTROL refusal, never an expensive
   // automatic FULL rerun or an unreviewed short qualification.
-  const controlReview=impactPlan.mode==='DOMAINS_V2'
-    ?readDomainControlReview(pull,{current,fullBaseline:baseline,domainPlan:impactPlan.plan}):null;
+  const controlReview=readCurrentContractReview(pull,{current,fullBaseline:baseline,currentPlan:impactPlan.plan});
   const commandResults=[];
   for(const command of impactPlan.commands){
     assert.match(command,/^node(?: [A-Za-z0-9_./:-]+)+$/);
@@ -212,12 +207,10 @@ export async function coordinateTargetedSourceProducer(){
   assert.equal(freshPull.head?.repo?.full_name,current.repository);
   assert.equal(freshPull.base?.repo?.full_name,current.repository);assert.equal(freshPull.base?.ref,'main');
   assert.equal(currentJob(await finalGet('JOB',jobRoute),current),current.jobId);
-  if(impactPlan.mode==='DOMAINS_V2')assert(isDeepStrictEqual(controlReview,
-    readDomainControlReview(freshPull,{current,fullBaseline:baseline,domainPlan:impactPlan.plan})),
+  assert(isDeepStrictEqual(controlReview,
+    readCurrentContractReview(freshPull,{current,fullBaseline:baseline,currentPlan:impactPlan.plan})),
     'SOURCE_TARGETED_CONTROL_REVIEW_MOVED');
-  const receipt=impactPlan.mode==='TEXT_V1'
-    ?buildTargetedSourceReceipt({current,fullBaseline:baseline,gitPlan:impactPlan.plan,commandResults})
-    :await buildDomainTargetedSourceReceipt({current,fullBaseline:baseline,domainPlan:impactPlan.plan,commandResults});
+  const receipt=await buildCurrentContractSourceReceipt({current,fullBaseline:baseline,currentPlan:impactPlan.plan,commandResults});
   clean(head);assert.equal(sourceTreeContentSha256(head,{git}),content);
   return {schemaVersion:1,selection:'TARGETED',reasonCode:'QUALIFIED_FULL_ANCESTOR_AND_SELECTED_COMMANDS_PASS',
     sourceTreeSha256:content,artifactName:receipt.artifactName,receiptPath:RECEIPT,receipt,

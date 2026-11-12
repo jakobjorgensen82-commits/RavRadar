@@ -1,3 +1,11 @@
+## 89.342 Kontrol af ændringer med en fast sikkerhedskerne
+
+Under forberedelse: en lille fast sikkerhedskerne og prøver for det faktisk berørte område. Historiske beviser og aktuelle ændringer holdes adskilt.
+
+<a id="normal-validation-core-domain-and-historical-inputs-2026-11-12"></a>
+
+<div class="reader-guide"><p><strong>UNDER FORBEREDELSE: RavRadar skal kontrollere hver ændring med en lille fast sikkerhedskerne og prøver for det område, der faktisk påvirkes. Den nye normalvej er endnu ikke samlet CI-kvalificeret eller leveret.</strong></p></div><h3>Historiske prøver skal have historiske input</h3><p>En gammel prøve skal fortsat bruge de uforanderlige input, som dens forventninger bygger på. Den aktuelle kode skal kontrolleres gennem sine normale kaldere. Ændringer skal ikke kræve nye lexer-fingeraftryk eller nye grupper af præcise helfilhashes for hver head som normal adgang til testvalg. De historiske orakler, kildeidentiteten og bevaringen af originaler består. Se den præcise afgrænsning i DEC-0302.</p><h3>Genbrug skal fremgå ærligt</h3><p>PostgreSQL- og PG/C/I/T-beviser kan kun genbruges, når deres relevante input og forudsætninger er verificeret uændrede gennem den normale bevisvej. Rapporten skal vise, hvad der faktisk blev kørt, og hvad der blev genbrugt. Ukendte eller modstridende resultater giver ingen ret til at springe kontrol over.</p><h3>Produktionskravene består</h3><p>Administratorens gemte runtime-data, originale vejr- og scoredata, no-loss, fulde artifact- og releasekontroller efter hydrering samt de krævede offentlige kontroller bevares. Der loves ingen samlet grøn kildekontrol, installation eller offentlig levering af den nye vej. Alle fem mål er fortsat åbne.</p><h3>En syntetisk gendannelse er et afgrænset bevis</h3><p>V3 bestod sin syntetiske Linux-gendannelse med filsystem-, COPY- og Auth-kontrol. Den kvalificerede 42704-kode er diagnostik. Den tidligere ægte arkivgendannelses GRANT_ROLE/42704-fejl er ikke bevist afhjulpet. En brugbar produktionsreserve, automatisk rotation og Free-klarhed kræver særskilte faktiske beviser.</p>
+
 ## 89.340 Ét sikkert Pages-genforsøg og frisk vejr bagefter
 
 En lokal kandidat adskiller afsluttet udgivelse, ret til ét genforsøg og sikker afslutning før næste friske vejrhentning.

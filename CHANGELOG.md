@@ -1,3 +1,11 @@
+## 12. november — ny normal kontrolvej under forberedelse, uden versionsløft
+
+- Beskriver en lille fast sikkerhedskerne og prøver for det faktisk berørte område og dets normale kaldere.
+- Adskiller historiske input fra aktuel produktkode; per-head lexer-fingeraftryk og helfil-cohorts skal ikke være den normale testudvælgelse.
+- Fastholder inputbundet PG/C/I/T-genbrug, ærlige udførelsesstatusser og uændrede produktionsgates.
+- Præciserer, at V3 er kvalificeret 42704-diagnostik med syntetisk Linux-PASS, ikke bevist rolleafhjælpning eller ægte arkivgendannelse.
+- UNDER FORBEREDELSE; ingen samlet grøn CI, installation eller levering loves. Se DEC-0302 og håndbog 89.342. Alle fem mål er åbne.
+
 ## 12. november – Pages-vedligeholdelseskandidat uden versionsløft
 
 - Præciserer årsagsskellene og forskellen mellem kørsels- og PR-numre i DEC-0206's tillæg af 12. november.

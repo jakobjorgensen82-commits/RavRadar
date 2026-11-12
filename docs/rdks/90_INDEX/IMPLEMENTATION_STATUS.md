@@ -1,3 +1,9 @@
+## 12. november — fast sikkerhedskerne og berørte mål: UNDER FORBEREDELSE
+
+Den nye normale udvælgelse, dens faste kerne og adskillelsen mellem historiske input og aktuel kode er ikke leveret eller samlet CI-kvalificeret. Målet er berørte normale forbrugere uden nye per-head lexer-/helfil-cohortkrav. PG/C/I/T-genbrug kræver fortsat verificeret uændrede input og ærlig markering af faktisk udførte prøver. Produktets hydrering, fulde artifact-/releasegates, no-loss og offentlig kontrol ændres ikke. Se DEC-0302 og håndbog 89.342.
+
+V3 har faktisk syntetisk Linux-PASS, men den ægte GRANT_ROLE/42704-rolleafhjælpning og realrestore er åbne. Den kvalificerede ændring er diagnostik. Der loves ingen installation, produktionsvirkning, automatisk rotation eller Free-overgang; alle fem mål er fortsat åbne.
+
 ## 12. november – Pages-kandidatens samlede fase-/reentrylukning er åben
 
 Samlet lokal klargøring omfatter intent/CREATE-id, ét straksgenforsøg, separat kendt lukning og holdbar målbestemt ejer før POST for alle tre writerroller. Ukendt er HOLD. Retire kræver uændret ACTIVE, `current.pending=false` og den nye fases oprindelsesbevis i DEC-0206's tillæg af 12. november; gamle faser uden bevis, første installation og eksplicit recovery får ingen ny retire-ret.

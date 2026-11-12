@@ -1,3 +1,4 @@
+import './test-current-pages-workflow-wiring.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer, request as httpRequest } from 'node:http';
