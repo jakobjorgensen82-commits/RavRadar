@@ -19,12 +19,14 @@ const cancellationChecks = 7;
 const transportFailures = new WeakMap();
 const retryEvidence = new WeakSet();
 const terminalEvidence = new WeakSet();
+const noPostEvidence = new WeakSet();
 const deliveryCodes = new WeakMap();
 const deliveryResult = data => { const value = Object.freeze(data); deliveryCodes.set(value, data.code); return value; };
 export const sealedPagesDeliveryDiagnostic = delivery => deliveryCodes.get(delivery) ?? 'PAGES_DELIVERY_UNPROVED';
 const transportError = code => { const error = new Error(code); transportFailures.set(error, code); return error; };
 export const hasSealedPagesRetryEvidence = delivery => retryEvidence.has(delivery);
 export const hasSealedPagesTerminalEvidence = delivery => terminalEvidence.has(delivery);
+export const hasSealedPagesNoPostEvidence = delivery => noPostEvidence.has(delivery);
 export const sealedPagesFailureCode = error => pagesIdentityFailureCode(error)
   ?? transportFailures.get(error) ?? 'PAGES_TRANSPORT_UNPROVED';
 function require(value, reason) { if (!value) throw transportError(reason); }
@@ -104,11 +106,29 @@ export async function cancelPagesOnce(url, headers, requestImpl = httpsRequest) 
 }
 
 /** Use GitHub's signed runner identity and its returned deployment ID; never claim a per-artifact server key. */
-export async function runSealedPagesDeployment({
+export async function runSealedPagesDeployment(options = {}) {
+  let postAttempted = false;
+  try {
+    const result = await executeSealedPagesDeployment(options, () => { postAttempted = true; });
+    // A prior positive remote state still needs reconciliation. No POST in
+    // this invocation must not turn that separate uncertainty into closure.
+    if (!postAttempted && !['PRIOR_DEPLOYMENT_PENDING', 'PRIOR_UNIQUE_VERSION_ALREADY_USED'].includes(result.code))
+      noPostEvidence.add(result);
+    return result;
+  } catch (error) {
+    if (error !== null && ['object', 'function'].includes(typeof error)) {
+      noPostEvidence.delete(error);
+      if (!postAttempted) noPostEvidence.add(error);
+    }
+    throw error;
+  }
+}
+
+async function executeSealedPagesDeployment({
   env, seal, expectedBaseUrl, deliveryOrdinal = 1,
   beforeCreate, fetchImpl = fetch, postImpl = postJsonOnce, cancelImpl = cancelPagesOnce, pause = wait, clock = Date.now,
   waitMs = maxWaitMs, cancelAtDeadline = false, absoluteDeadlineMs, completionReserveMs,
-} = {}) {
+} = {}, markPostAttempted) {
   require(env?.GITHUB_REPOSITORY === repo && env.GITHUB_API_URL === api
     && env.GITHUB_REF === 'refs/heads/main' && hex40.test(env.GITHUB_SHA ?? '')
     && positive.test(env.GITHUB_RUN_ID ?? '') && positive.test(env.GITHUB_RUN_ATTEMPT ?? '')
@@ -195,6 +215,7 @@ export async function runSealedPagesDeployment({
   // This is the only POST call in this invocation. Unknown writes are returned
   // as HOLD and never fall back to the source SHA or to another deployment ID.
   let receipt;
+  markPostAttempted();
   try {
     const response = await postImpl(request.url, { ...github, 'Content-Type': 'application/json' },
       takePagesDeploymentRequestBody(request), 64 * 1024);

@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer, request as httpRequest } from 'node:http';
 import { createPagesDeploymentRequest, classifyPagesPriorStatus } from './lib/pages-per-artifact-identity.mjs';
-import { runSealedPagesDeployment, postJsonOnce, hasSealedPagesRetryEvidence, hasSealedPagesTerminalEvidence } from './lib/run-sealed-pages-deployment.mjs';
+import { runSealedPagesDeployment, postJsonOnce, hasSealedPagesRetryEvidence, hasSealedPagesTerminalEvidence, hasSealedPagesNoPostEvidence } from './lib/run-sealed-pages-deployment.mjs';
 import { publishSealedPagesWithRecovery } from './lib/publish-sealed-pages-with-recovery.mjs';
 import { selectSealedPagesRecovery, getOrdinaryPagesRetryDeadline, MINIMUM_RECOVERY_WINDOW_MS,
   NORMAL_PAGES_COMPLETION_RESERVE_MS, ORDINARY_PAGES_CLEANUP_RESERVE_MS, hasOrdinaryPagesWriteBudget } from './lib/pages-sealed-retry-decision.mjs';
@@ -47,7 +47,7 @@ function fakeService({ replayOldStatus = false, duplicate = false, createThrows 
   deadlineMs = 35 * 60_000, admitDelayMs = 0, statusIdentityFields = false,
   oidcHttp = 200, artifactListHttp = 200, cancellationWaitMs = 30_000,
   perReadMs = 0, perPostMs = 0, perCancelMs = 0, terminalAfterMs = null,
-  frozenPauseClock = false, finalWaitOvershootMs = 0 } = {}) {
+  frozenPauseClock = false, finalWaitOvershootMs = 0, postClockError = null } = {}) {
   const posts = [], reads = [], intents = [], cancels = [];
   const statusById = new Map(), versionById = new Map();
   const postTimes = [], cancelTimes = [], pauses = [];
@@ -120,7 +120,7 @@ function fakeService({ replayOldStatus = false, duplicate = false, createThrows 
       pauses.push(ms);
       if (!frozenPauseClock) clock += ms;
       if (ms > 5_000) clock += finalWaitOvershootMs;
-    }, clock: () => clock,
+    }, clock: () => { if (postClockError && posts.length > 0) throw postClockError; return clock; },
     ...(cancellation !== null ? {
       waitMs: cancellationWaitMs, cancelAtDeadline: true,
       cancelImpl: async (url, headers) => {
@@ -592,4 +592,54 @@ test('an observed deadline overshoot refuses cancellation when full cleanup no l
   assert.equal(delivery.outcome, 'UNKNOWN'); assert.equal(delivery.code, 'CANCELLATION_OPERATION_BUDGET_EXHAUSTED');
   assert.equal(server.posts.length, 1); assert.equal(server.cancels.length, 0);
   assert(minimum - server.now() >= NORMAL_PAGES_COMPLETION_RESERVE_MS);
+});
+
+
+test('only an actual pre-POST transport refusal has internal no-write evidence', async () => {
+  for (const options of [{priorStatus:401},{priorStatus:'unknown_future_status'},{deadlineMs:1}]) {
+    const server=fakeService(options), result=await server.deploy(1);
+    assert.equal(server.posts.length,0);
+    assert.equal(hasSealedPagesNoPostEvidence(result),true);
+    assert.equal(hasSealedPagesNoPostEvidence(structuredClone(result)),false);
+  }
+  const denied=fakeService({admitCreate:()=>false});
+  let refused;
+  try { await denied.deploy(1); } catch(error) { refused=error; }
+  assert(refused); assert.equal(denied.posts.length,0);
+  assert.equal(hasSealedPagesNoPostEvidence(refused),true);
+  for(const options of [{createThrows:true},{firstTerminal:'unknown_future_status'},
+    {firstTerminal:'deployment_failed'},{priorStatus:'syncing_files'},{priorStatus:'succeed'}]) {
+    const server=fakeService(options), result=await server.deploy(1);
+    assert.equal(hasSealedPagesNoPostEvidence(result),false);
+  }
+});
+
+test('normal CLI caller refusal before transport records closure without credentials or a network call', async () => {
+  const fs=await import('node:fs/promises'), os=await import('node:os'), path=await import('node:path');
+  const {spawnSync}=await import('node:child_process');
+  const directory=await fs.mkdtemp(path.join(os.tmpdir(),'rr-pages-before-post-'));
+  const output=path.join(directory,'outputs.txt');
+  try {
+    const result=spawnSync(process.execPath,['scripts/deploy-ordinary-pages-with-immediate-retry.mjs'],{
+      cwd:new URL('..',import.meta.url),encoding:'utf8',timeout:20_000,
+      env:{PATH:process.env.PATH,...(process.env.SystemRoot?{SystemRoot:process.env.SystemRoot}:{}),GITHUB_OUTPUT:output},
+    });
+    assert.equal(result.error,undefined);assert.equal(result.status,1);
+    assert.match(result.stderr,/PAGES_RETRY_ORDINARY_SCOPE_REQUIRED/);
+    assert.equal(await fs.readFile(output,'utf8'),'closed_unpublished=true\n');
+  } finally {
+    await fs.unlink(output).catch(error=>{if(error.code!=='ENOENT')throw error;});
+    await fs.rmdir(directory);
+  }
+});
+
+
+test('reusing a previous pre-POST error after an attempted POST cannot carry its no-write evidence', async () => {
+  const sentinel=new Error('synthetic reused error');
+  const before=fakeService({admitCreate:()=>{throw sentinel;}});
+  await assert.rejects(before.deploy(1),error=>error===sentinel);
+  assert.equal(before.posts.length,0);assert.equal(hasSealedPagesNoPostEvidence(sentinel),true);
+  const after=fakeService({postClockError:sentinel});
+  await assert.rejects(after.deploy(1),error=>error===sentinel);
+  assert.equal(after.posts.length,1);assert.equal(hasSealedPagesNoPostEvidence(sentinel),false);
 });

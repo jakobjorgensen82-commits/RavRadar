@@ -1,8 +1,30 @@
 import fs from 'node:fs/promises';
+import crypto from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
 const closureEvidence = new WeakSet();
+const legacyNoPostJobs = new WeakSet();
+// One reviewed historical pre-POST failure. This is not a diagnostic-code
+// allowlist: both the complete authenticated log and the exact four Git blobs
+// must match before the existing all-writer closure classifier can use it.
+// Review receipt: 6543a2b53c4bf5e95fe37953bb12aa18ad345497c6713c49169d026ed3744cd2.
+const LEGACY_NO_POST = Object.freeze({
+  repository: 'jakobjorgensen82-commits/RavRadar', runId: 43216888462, runAttempt: 1,
+  headSha: '8fc381d77e486f74cf34e667c9b73b528e954422', attemptId: 'pages-43216888462-1',
+  jobId: 131250455281, logBytes: 57470,
+  logSha256: 'facdee9288b534608d410f598fb3aba68929a293de821d4c90e8fdbe05d4f2bc',
+  signedLogHost: 'productionresultssa15.blob.core.windows.net',
+  sources: Object.freeze([
+    ['scripts/lib/run-sealed-pages-deployment.mjs', 15287, 'e0716c3652d38c6463808807cdc5454ab13c7e8ab78ceaddf58b25ddc7b3265d'],
+    ['scripts/deploy-ordinary-pages-with-immediate-retry.mjs', 9570, 'dd88f9aa9c2b8b7362f792c92eb7fc251271eec2a6aff33733f524e8ec97787f'],
+    ['scripts/lib/publish-sealed-pages-with-recovery.mjs', 4240, 'fb2f6fe6a2248f873db3541edf30739e9a678494dd2f49b9aa0bea60f97e55f4'],
+    ['scripts/lib/pages-per-artifact-identity.mjs', 17363, '6552fc80948cfdbfa6dcfde5b5517cc5eefbea8a3faff15fc6ab499db84ff79c'],
+  ].map(Object.freeze)),
+});
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const sha256 = value => crypto.createHash('sha256').update(value).digest('hex');
 const WRITER_ROLES = Object.freeze([
   ['ordinary', 'Deploy prepared Pages artifact', 'Deploy to GitHub Pages'],
   ['pre-activation', 'Deploy exact pre-activation Pages artifact', 'Deploy to GitHub Pages'],
@@ -55,6 +77,7 @@ function classifyCompletePagesJobs(jobs, owner, callerPath) {
     if (step.status !== 'completed') throw new Error('PAGES_OWNER_WRITER_STEP_ACTIVE');
     if (step.conclusion === 'skipped') { roles.push({ role, state: 'NO_POST' }); continue; }
     if (step.conclusion === 'success') { roles.push({ role, state: 'PUBLIC_TARGET_REQUIRED' }); continue; }
+    if (role === 'ordinary' && legacyNoPostJobs.has(job)) { roles.push({ role, state: 'NO_POST' }); continue; }
     const closed = job.steps.filter(item => item.name === CLOSED_STEP);
     if (role === 'exact-target-recovery' || !['failure', 'cancelled'].includes(step.conclusion)
       || closed.length !== 1 || closed[0].status !== 'completed' || closed[0].conclusion !== 'success'
@@ -73,6 +96,66 @@ function classifyCompletePagesJobs(jobs, owner, callerPath) {
   return Object.freeze({ owner: Object.freeze({ ...owner }), roles: Object.freeze(roles.map(Object.freeze)),
     state: roles.some(role => role.state === 'PUBLIC_TARGET_REQUIRED') ? 'PUBLIC_TARGET_REQUIRED'
       : roles.some(role => role.state === 'CLOSED_UNPUBLISHED') ? 'CLOSED_UNPUBLISHED' : 'NO_POST' });
+}
+
+async function qualifyLegacyNoPostJob(jobs, owner, fetchImpl, token) {
+  if (!sameOwner(owner, LEGACY_NO_POST)) return null;
+  const selected = jobs.filter(job => job.id === LEGACY_NO_POST.jobId);
+  if (selected.length !== 1) throw new Error('PAGES_OWNER_LEGACY_JOB_UNPROVED');
+  const job = selected[0], one = name => job.steps?.filter(step => step.name === name) ?? [];
+  const reserve = one('Reserve this exact Pages writer before its first POST');
+  const deploy = one('Deploy to GitHub Pages'), closed = one(CLOSED_STEP);
+  if (job.name !== 'Deploy prepared Pages artifact through reusable workflow / Deploy prepared Pages artifact'
+    || job.status !== 'completed' || job.conclusion !== 'failure'
+    || reserve.length !== 1 || reserve[0].number !== 30 || reserve[0].status !== 'completed' || reserve[0].conclusion !== 'success'
+    || deploy.length !== 1 || deploy[0].number !== 31 || deploy[0].status !== 'completed' || deploy[0].conclusion !== 'failure'
+    || closed.length !== 1 || closed[0].number !== 32 || closed[0].status !== 'completed' || closed[0].conclusion !== 'skipped')
+    throw new Error('PAGES_OWNER_LEGACY_STEP_UNPROVED');
+  const gitEnv = { ...Object.fromEntries(['PATH', 'Path', 'SystemRoot', 'WINDIR', 'TEMP', 'TMP']
+    .filter(key => typeof process.env[key] === 'string').map(key => [key, process.env[key]])),
+    GIT_NO_LAZY_FETCH: '1', GIT_NO_REPLACE_OBJECTS: '1', GIT_TERMINAL_PROMPT: '0',
+    GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: process.platform === 'win32' ? 'NUL' : '/dev/null' };
+  try {
+    for (const [file, bytes, hash] of LEGACY_NO_POST.sources) {
+      const raw = execFileSync('git', ['-c', 'protocol.allow=never', '-C', ROOT, 'cat-file', 'blob', owner.headSha + ':' + file],
+        { env: gitEnv, timeout: 5000, maxBuffer: 128 * 1024, stdio: ['pipe', 'pipe', 'pipe'] });
+      if (raw.length !== bytes || sha256(raw) !== hash) throw new Error('source');
+    }
+  } catch { throw new Error('PAGES_OWNER_LEGACY_SOURCE_UNPROVED'); }
+  const apiUrl = `https://api.github.com/repos/${owner.repository}/actions/jobs/${LEGACY_NO_POST.jobId}/logs`;
+  const signal = AbortSignal.timeout(30_000);
+  let response;
+  try {
+    response = await fetchImpl(apiUrl, { redirect: 'manual', cache: 'no-store', signal,
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28', 'User-Agent': 'RavRadar-Pages-owner-closure' } });
+    if (response.url !== apiUrl || response.redirected !== false) throw new Error('route');
+    if (response.status === 302) {
+      const target = new URL(response.headers.get('location'));
+      if (target.protocol !== 'https:' || target.hostname !== LEGACY_NO_POST.signedLogHost
+        || target.username || target.password || target.port || target.hash || target.pathname === '/') throw new Error('redirect');
+      await response.body?.cancel();
+      // The signed blob URL receives no GitHub Authorization header.
+      response = await fetchImpl(target.href, { redirect: 'error', cache: 'no-store', signal });
+      if (response.url !== target.href || response.redirected !== false) throw new Error('blob route');
+    }
+    if (response.status !== 200) throw new Error('status');
+    const reader = response.body?.getReader();
+    if (!reader) throw new Error('body');
+    const chunks = []; let bytes = 0;
+    try {
+      for (;;) {
+        const next = await reader.read(); if (next.done) break;
+        bytes += next.value.byteLength;
+        if (bytes > 128 * 1024) { await reader.cancel(); throw new Error('limit'); }
+        chunks.push(next.value);
+      }
+    } finally { reader.releaseLock(); }
+    const raw = Buffer.concat(chunks, bytes);
+    if (raw.length !== LEGACY_NO_POST.logBytes || sha256(raw) !== LEGACY_NO_POST.logSha256) throw new Error('digest');
+    new TextDecoder('utf-8', { fatal: true }).decode(raw);
+  } catch { throw new Error('PAGES_OWNER_LEGACY_LOG_UNPROVED'); }
+  return job;
 }
 
 export async function readAuthenticPagesAttemptClosure({ owner, fetchImpl = fetch,
@@ -113,9 +196,11 @@ export async function readAuthenticPagesAttemptClosure({ owner, fetchImpl = fetc
     || jobs.some(job => !Number.isSafeInteger(job.id) || job.id < 1 || job.run_id !== owner.runId
       || job.run_attempt !== owner.runAttempt || job.head_sha !== owner.headSha || typeof job.name !== 'string'))
     throw new Error('PAGES_OWNER_JOB_LIST_UNBOUND');
+  const legacyNoPost = await qualifyLegacyNoPostJob(jobs, owner, fetchImpl, token);
   const last = await read(root); assertRun(last);
   if (last.updated_at !== first.updated_at || last.conclusion !== first.conclusion || last.path !== first.path)
     throw new Error('PAGES_OWNER_RUN_CHANGED_DURING_READ');
+  if (legacyNoPost) legacyNoPostJobs.add(legacyNoPost);
   const result = classifyCompletePagesJobs(jobs, owner, first.path);
   closureEvidence.add(result);
   return result;

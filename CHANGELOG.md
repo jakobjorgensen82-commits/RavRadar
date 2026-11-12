@@ -1,3 +1,9 @@
+## 12. november — bevis for afvisning før Pages-bestilling
+
+Den lokale efterfølger skelner et bevist forløb uden Pages-POST fra et ukendt skriveudfald efter POST. Transporten udsteder kun intern, ikke-kopiérbar evidens, før POST er forsøgt; den almindelige caller kan derefter bruge det eksisterende afslutningstrin. Kendt igangværende eller allerede brugt fjernidentitet forbliver afvist. Et blandet forløb med tidligere POST og senere afvisning får ingen ny automatisk afslutningsret.
+
+Den konkrete gamle kørsel308 kan kun få denne klassifikation efter den normale autentificerede læsers kontrol af fast ejer/job, hele loggens bytes og fire præcise kildeblade samt alle tre writerroller. En faktisk skrivefri gennemlæsning er bestået. Tomt API-svar, afsluttet job, en løs fejltekst eller selvskrevet JSON er ikke lukningsbevis. Kildekvalifikation, kontrolleret genoptagelse og offentlig levering er fortsat åbne. Den oprindelige synkroniseringstimeout er et særskilt åbent årsagsspor; alle fem mål består.
+
 ## 12. november — tom Pages-status før oprettelse
 
 En faktisk almindelig vejrhentning er stoppet før CREATE, fordi GitHubs statusopslag for en ubrugt udgivelsesidentitet svarer HTTP 200 med præcis objektet {"status":""}. Den nye afgrænsede rettelse klassificerer dette som ukendt/tom status, på samme måde som et tomt objekt. Det er ikke bevis for fravær eller ret til genforsøg. En ny bestilling kræver fortsat unik hensigt, den beskyttede eksklusive reservation og en positiv CREATE-kvittering; ukendt skriveudfald, fremmed metadata og kendte igangværende udgivelser stopper fortsat.
