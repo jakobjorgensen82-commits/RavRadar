@@ -30,6 +30,8 @@ Autoriteten er version.json.releaseContract.modelBindings og de aktuelle generer
 
 ## 89.342 Kontrol af ændringer med en fast sikkerhedskerne
 
+En tidligere kvalificeret ændringskvittering skal reproduceres med planlæggeren fra dens egen faktisk committed kilde. En senere ændring af mål- og ejerkataloget må ikke ændre betydningen af den gamle kontrol. Den næste normale kvalifikation påviste, at en cached kandidatplanlægger ellers kan genfortolke en korrekt ældre kvittering som en modstrid. Den afgrænsede rettelse bruger den gamle normale planlægger i en credential-fri, tidsafgrænset læseproces; den overordnede kontrol bevarer faktisk Git-/CI-/artifactkontrol, uændrede PG/C/I/T-input og afvisning af reelle fejl. Nye funktionsprøver vælges fortsat med den nye planlægger på den aktuelle ændring.
+
 Den eksisterende Action-versionskontrol omfatter hele det aktive workflowinventar. Bevidst forkerte versionsnumre i negative testinput er ikke aktive workflows og giver ikke længere falske afslag. Tre forældede aktive SDK-pins følger nu den allerede gældende versionspolitik; faktiske forkerte workflowversioner afvises fortsat. Tilladelser, gates, tidsgrænser, model og SQL ændres ikke.
 
 Den ændringsbaserede V4-kildevej har bestået sin præcise Linux-kvalifikation og er merged. Efterfølgende kodeændringer kræver fortsat egen head-bundet kvalifikation; faktisk mail, oprydning, modelovergang og offentlig virkning er særskilte beviser.

@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {isDeepStrictEqual} from 'node:util';
 import {inspectLaterMainEvidence,PULL_REQUEST_SOURCE_JOB,PULL_REQUEST_SOURCE_WORKFLOW}
@@ -133,6 +135,54 @@ function decodeReceipt(zip,remainingBudget){
   remainingBudget();assert(raw.length>0&&raw.length<=32768);return raw;
 }
 
+// Planning only: replay the authenticated old catalogue in a fresh process,
+// never the candidate catalogue cached by ESM before checkout of main.
+export function readCommittedCurrentSourcePlans(input,dependencies){
+  assert.equal(arguments.length,2);
+  assert.deepEqual(Object.keys(input).sort(),['baselines','head']);
+  assert(oid(input.head)&&Array.isArray(input.baselines)&&input.baselines.length>=1&&input.baselines.length<=2
+    &&input.baselines.every(oid));
+  assert.deepEqual(Object.keys(dependencies).sort(),['readGit','remaining']);
+  const {readGit,remaining}=dependencies;assert.equal(typeof readGit,'function');assert.equal(typeof remaining,'function');
+  const text=args=>readGit(args).toString('utf8').trim();
+  const exactHead=()=>{assert.equal(text(['rev-parse','HEAD']),input.head);
+    assert.equal(text(['for-each-ref','refs/replace']),'');};
+  exactHead();
+  const root=fs.realpathSync(text(['rev-parse','--show-toplevel']));assert(path.isAbsolute(root));
+  // Only the actual planner's executable/resource closure must be committed.
+  // Centrally hydrated data and handbook documents can remain modified.
+  const files=['scripts/source-current-contract-plan.mjs','scripts/source-impact-domain-inputs.mjs',
+    ...['594','597','598'].map(version=>'scripts/lib/source-impact-domain-inputs-'+version+'.json')];
+  for(const file of files){
+    const target=path.join(root,file),stat=fs.lstatSync(target);assert(stat.isFile()&&!stat.isSymbolicLink());
+    assert.equal(fs.realpathSync(target),target);
+    assert(fs.readFileSync(target).equals(readGit(['cat-file','blob',input.head+':'+file])),
+      'SOURCE_CURRENT_PLANNER_NOT_COMMITTED');
+  }
+  const childEnvironment={...Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','TEMP','TMP']
+    .filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]])),
+    LANG:'C',LC_ALL:'C',GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_OPTIONAL_LOCKS:'0',
+    GIT_TERMINAL_PROMPT:'0',GIT_CONFIG_NOSYSTEM:'1',GIT_CONFIG_GLOBAL:process.platform==='win32'?'NUL':'/dev/null',
+    GIT_CONFIG_COUNT:'1',GIT_CONFIG_KEY_0:'protocol.allow',GIT_CONFIG_VALUE_0:'never'};
+  const program="import assert from 'node:assert/strict';"
+    +"import {planSourceCurrentContractsFromGit as plan} from './scripts/source-current-contract-plan.mjs';"
+    +"const [head,...bases]=process.argv.slice(1);assert(/^[a-f0-9]{40}$/.test(head));"
+    +"assert(bases.length>=1&&bases.length<=2&&bases.every(base=>/^[a-f0-9]{40}$/.test(base)));"
+    +"process.stdout.write(JSON.stringify(bases.map(baselineCommit=>plan({baselineCommit,candidateCommit:head,expectedHead:head}))));";
+  const timeout=Math.floor(remaining());assert(Number.isFinite(timeout)&&timeout>0);
+  const raw=execFileSync(process.execPath,['--input-type=module','-e',program,input.head,...input.baselines],
+    {cwd:root,env:childEnvironment,timeout,maxBuffer:32768,stdio:['pipe','pipe','pipe']});
+  remaining();exactHead();assert(raw.length>0&&raw.length<=32768);
+  const plans=JSON.parse(raw);assert(Array.isArray(plans)&&plans.length===input.baselines.length);
+  for(let i=0;i<plans.length;i++){
+    const plan=plans[i];assert.equal(plan.status,'PLANNED');assert.equal(plan.selection,'CURRENT_CONTRACTS');
+    assert.equal(plan.authority,'PLANNING_ONLY');assert.equal(plan.baselineQualified,false);
+    assert.equal(plan.skipAuthorized,false);assert.equal(plan.productionAuthority,false);
+    assert.equal(plan.identity.baselineCommit,input.baselines[i]);assert.equal(plan.identity.actualHead,input.head);
+  }
+  return plans;
+}
+
 // A dedicated fallback after the old FULL consumer. Callers provide bounded,
 // read-only GitHub/Git readers; no skip mode, different-head permission or
 // caller-verified baseline boolean exists. Nothing here writes production.
@@ -207,11 +257,8 @@ export async function decideTargetedSourceGate(record,env,dependencies){
       assert.equal(text(['merge-base','--all',parents[1],record.producerHeadSha]),changeBase.commit);
       assert.equal(text(['rev-parse',changeBase.commit+'^{tree}']),changeBase.gitTree);
       git(['merge-base','--is-ancestor',full.mergeCommit,changeBase.commit]);
-      const {planSourceCurrentContractsFromGit}=await import('./source-current-contract-plan.mjs');
-      currentPlan=planSourceCurrentContractsFromGit({baselineCommit:changeBase.commit,
-        candidateCommit:record.headSha,expectedHead:record.headSha});remaining();
-      cumulativePlan=planSourceCurrentContractsFromGit({baselineCommit:full.mergeCommit,
-        candidateCommit:record.headSha,expectedHead:record.headSha});remaining();
+      [currentPlan,cumulativePlan]=readCommittedCurrentSourcePlans({head:record.headSha,
+        baselines:[changeBase.commit,full.mergeCommit]},{readGit:git,remaining});
       const expected={current,fullBaseline:full,changeBase,currentPlan,cumulativePlan};
       controlReview=readCurrentChangeReview(pull,expected);
       structural=validateCurrentChangeSourceReceipt(receipt,{...expected,frontier:receipt.frontier,
@@ -232,9 +279,8 @@ export async function decideTargetedSourceGate(record,env,dependencies){
         record:frontier.sourceRecord??{runId:record.runId},getJson:json});
       if(negative)return negative;
     }else if(isCurrent){
-      const {planSourceCurrentContractsFromGit}=await import('./source-current-contract-plan.mjs');
-      currentPlan=planSourceCurrentContractsFromGit({baselineCommit:full.mergeCommit,
-        candidateCommit:record.headSha,expectedHead:record.headSha});remaining();
+      [currentPlan]=readCommittedCurrentSourcePlans({head:record.headSha,baselines:[full.mergeCommit]},
+        {readGit:git,remaining});
       assert.equal(currentPlan.status,'PLANNED');assert.equal(currentPlan.selection,'CURRENT_CONTRACTS');
       controlReview=readCurrentContractReview(pull,{current,fullBaseline:full,currentPlan});
       structural=validateCurrentContractSourceReceipt(receipt,{current,fullBaseline:full,currentPlan,

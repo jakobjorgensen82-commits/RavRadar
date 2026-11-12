@@ -1,5 +1,7 @@
 ## 12. november — dokumentoprydning efter botstartet vejr
 
+En tidligere kvalificeret ændringskvittering skal reproduceres med planlæggeren fra dens egen faktisk committed kilde. En senere ændring af mål- og ejerkataloget må ikke ændre betydningen af den gamle kontrol. Den næste normale kvalifikation påviste, at en cached kandidatplanlægger ellers kan genfortolke en korrekt ældre kvittering som en modstrid. Den afgrænsede rettelse bruger den gamle normale planlægger i en credential-fri, tidsafgrænset læseproces; den overordnede kontrol bevarer faktisk Git-/CI-/artifactkontrol, uændrede PG/C/I/T-input og afvisning af reelle fejl. Nye funktionsprøver vælges fortsat med den nye planlægger på den aktuelle ændring.
+
 Den eksisterende Action-versionskontrol omfatter hele det aktive workflowinventar. Bevidst forkerte versionsnumre i negative testinput er ikke aktive workflows og giver ikke længere falske afslag. Tre forældede aktive SDK-pins følger nu den allerede gældende versionspolitik; faktiske forkerte workflowversioner afvises fortsat. Tilladelser, gates, tidsgrænser, model og SQL ændres ikke.
 
 Faktiske botstartede vejrhentninger har manglet det efterfølgende adminjob, selv om RAVRADAR_ADMIN_HISTORY_MAINTENANCE var enabled. Den eksisterende ejerudløste vej har derimod gennemført en passage med 25 fjernede, verificeret arkiverede historikrækker. Den afgrænsede kildekandidat tilføjer derfor én eksplicit bestilling efter verificeret almindeligt deploy og binder GitHubs returnerede modtager-id til et afsluttet trin i samme kørsel.
