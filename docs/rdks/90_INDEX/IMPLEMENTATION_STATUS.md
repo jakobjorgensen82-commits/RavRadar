@@ -1,3 +1,32 @@
+<!-- RAVRADAR_ACTIVE_ENTRY_START -->
+
+# Aktiv restliste
+
+Alle fem hovedområder i ejerens gældende mål består, indtil deres krav er faktisk leveret og verificeret. Denne liste samler stabile leverancegrænser; aktuelle kørsler, målinger, hashes og den præcise næste handling findes i det private checkpoint. Genbrug leverede delrettelser og læs [aktuel sandhed](CURRENT_TRUTH.md), før en opgave genåbnes.
+
+| Område | Det der fortsat skal afsluttes |
+| --- | --- |
+| Vejr og dækning | Kontinuerlig normal hentning, opdatering fra nyere kilder, komplet og ærligt målt horisont inklusive hale, fremadrettet historik, databevarelse og offentlig effekt. En kildekontrol eller enkelt grøn vejrkørsel lukker ikke dette. |
+| Strøm og samlet revision | Numerisk korrekt DMI-fortolkning og central interpolation gennem nye input, native/protected/retained historik og cache; relevant Fur-/Limfjordsafklaring, vandstandsundtagelser, processtop, eksklusiv skrivning, original-B/S-før-T samt national kapacitet. Den uinstallerede Source-revision skal også have en gennemførlig næste appudgivelse, før den aktiveres. |
+| Supabase, Cloudflare og GitHub Free | Faktisk plangrundlag, tilstrækkelig margin og automatisk begrænset vækst/rotation i normal drift. Adminhistorikkens backlog og efterfølgende vedligeholdelse skal håndteres uden at kassere aktuelle/nødvendige data. Logisk oprydning alene beviser ikke mindre fysisk database. Abonnementsændring kræver det aftalte faktiske grundlag. |
+| Backup og gendannelse | Den afgrænsede roles-only-kontrol forberedes før store gendannelsesforsøg; den er ikke bevis for en rettet faktisk import. Bevar autentiske arkiver og originale SQL/ACL-regler. Afklar de faktiske reserverede roller mod det isolerede mål; vellykket fuld restore og de aftalte opbevarings-/slettefrister er stadig særskilte krav. Opret ikke gættede roller, spring ikke SQL over, og kald ikke diagnose for genopretning. |
+| Brugerdata og mail | Færdiggør normale gemme-/genlæsnings-, offline-, konto-, præference-, eksport- og sletteforløb samt den aftalte reelt anonyme statistik. To års inaktivitet og 30 dages varsel skal have korrekt aktivitetsgrundlag. Automatisk kontosletning må ikke aktiveres før fungerende varsling; faktisk mailmodtagelse kræver eget bevis. |
+| Admin | Genbrug den leverede tur-/kontovisning og rollefiltrering. Fuldt felt- og brugergennemløb er ikke bevist af en enkelt tæller-/rolleaflæsning. Autonomt botudløst arkiv-/beskæringsforløb og dets kapacitet skal verificeres særskilt. Visningsetiketter må ikke tildele almindelige brugere rettigheder. |
+| Spørg RavRadar | Genbrug leveret viden og protokolrettelser. Færdiggør faglig bredde, almindelige/varierede spørgsmål og opfølgninger på dansk, tysk og engelsk samt den normale eksterne AI-kæde. Én god samtale, HTTP200 eller lokale faste svar er ikke samlet accept. |
+| Offentlig funktion og vedligeholdelse | Afslut dokumenterede rester i prognosedeling, relevante mobil-/zone-/tidsskyderforløb, offentlig visning og aftalt lokal oprydning. Bevar godkendte funktioner, hoveddomæne og eksisterende links. Følg kun reelle restpunkter; genimplementér ikke allerede leverede dele. |
+
+Den normale leveringsvej er en lille faktisk ændring, målrettet kvalifikation, sikker merge og kontrolleret kode-/datalevering med verificeret offentlig effekt. Bevar fungerende vejr imens. Den store Source-afkobling må ikke holde uafhængige admin-, mail-, assistent- eller dokumentrettelser tilbage.
+
+Se [aktive krav](../20_REQUIREMENTS/ACTIVE-REQUIREMENTS.md) og [roadmap](ACTIVE_ROADMAP.md) for de konkrete kontrakter. Punkter med manglende faktisk evidens forbliver åbne; denne dokumentforenkling er ikke en færdigmelding.
+
+<!-- RAVRADAR_ACTIVE_ENTRY_END -->
+
+## Daterede notater og tidligere indgange — uændret historik
+
+Nedenstående tekst er bevaret byteidentisk som historisk kildemateriale. Brug dens oprindelige dato og bevisgrænse; tidligere status er ikke en ny aktuel instruktion. Opgaverelevante aktive krav og beslutninger gælder fortsat.
+
+<!-- RAVRADAR_DATED_HISTORY_UNCHANGED -->
+
 ## 12. november — dokumentoprydning efter botstartet vejr
 
 En tidligere kvalificeret ændringskvittering skal reproduceres med planlæggeren fra dens egen faktisk committed kilde. En senere ændring af mål- og ejerkataloget må ikke ændre betydningen af den gamle kontrol. Den næste normale kvalifikation påviste, at en cached kandidatplanlægger ellers kan genfortolke en korrekt ældre kvittering som en modstrid. Den afgrænsede rettelse bruger den gamle normale planlægger i en credential-fri, tidsafgrænset læseproces; den overordnede kontrol bevarer faktisk Git-/CI-/artifactkontrol, uændrede PG/C/I/T-input og afvisning af reelle fejl. Nye funktionsprøver vælges fortsat med den nye planlægger på den aktuelle ændring.

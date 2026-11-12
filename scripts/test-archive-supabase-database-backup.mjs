@@ -677,3 +677,54 @@ test('fixed ROLES audit rejects an authenticated oversized roles file before any
   const objectGets=f.calls.filter(c=>c.method==='GET'&&c.headers.has('authorization')&&c.url.includes('/bundles/'));
   assert.deepEqual(objectGets.map(c=>new URL(c.url).pathname.slice(P.bucket.length+2)),[indexPath]);
 });
+
+test('reserved system role preflight authenticates only roles and compares actual identifiers without a name enum',async t=>{
+  const contents=Buffer.from(`SET standard_conforming_strings = on;
+-- GRANT "supabase_comment_only" TO "custom";
+CREATE ROLE "custom";
+ALTER ROLE "custom" SET "pgrst.example" TO 'supabase_string_only';
+GRANT "supabase_future_role" TO "custom" WITH INHERIT FALSE GRANTED BY "supabase_admin";
+GRANT SUPABASE_OTHER_ROLE TO "custom";
+REVOKE "supabase_second_role", "supabase_admin" FROM "custom";
+COMMENT ON ROLE "supabase_future_role" IS 'supabase_comment_value';
+`);
+  const {f,result}=await captured(t,{sql:n=>n==='roles.sql'?contents:sql(n)});
+  const indexCommitmentSha256=sha(Buffer.from(JSON.stringify(['RavRadar/SupabaseArchiveRestore/v1/selector',result.indexSha256])));
+  const targetSystemRoles=['supabase_admin','supabase_second_role'];
+  const options={indexCommitmentSha256,targetSystemRoles};withoutDatabase(f);f.calls.length=0;
+  const report=await auditGrant(options,f.dependencies());
+  assert.deepEqual(report,{
+    status:'AUTHENTICATED_RESERVED_SYSTEM_ROLE_PREFLIGHT_ONLY',indexCommitmentSha256,
+    referencedSystemRoles:['supabase_admin','supabase_future_role','supabase_other_role','supabase_second_role'],
+    targetSystemRoles,missingSystemRoles:['supabase_future_role','supabase_other_role'],referencedSystemRoleCount:4,targetSystemRoleCount:2,
+    rolesFileVerified:true,fullDatabaseBackupVerified:false,databaseRestoreExecuted:false,archiveWrittenThisOperation:false,
+  });
+  const gets=f.calls.filter(c=>c.method==='GET'&&c.headers.has('authorization')&&c.url.includes('/bundles/'));
+  assert.equal(gets.length,2,'one authenticated index and one roles object only');
+  assert(f.calls.every(c=>['GET','HEAD'].includes(c.method)&&new URL(c.url).hostname.endsWith('.eu.r2.cloudflarestorage.com')));
+  assert.equal(f.children.length,7,'audit starts no dump or database process');
+  assert(!JSON.stringify(report).includes('custom')&&!JSON.stringify(report).includes('GRANT')&&!JSON.stringify(report).includes('supabase_string_only'));
+  f.calls.length=0;
+  for(const change of [{targetSystemRoles:['supabase_admin','supabase_admin']},{targetSystemRoles:['not_a_system_role']},
+    {targetSystemRoles:['supabase_'+'x'.repeat(55)]},{targetSystemRoles:Array.from({length:129},(_,i)=>'supabase_'+i)},
+    {indexCommitmentSha256:'not-a-commitment'}])await assert.rejects(()=>auditGrant({...options,...change},f.dependencies()));
+  assert.equal(f.calls.length,0,'invalid target/selector cannot cause remote reads');
+  // Reuse the same authentic cipher fixture: any changed roles bytes must fail its digest.
+  const rolesGet=gets[1].url,rolesKey=new URL(rolesGet).pathname.slice(P.bucket.length+2),original=f.objects.get(rolesKey);
+  f.objects.set(rolesKey,original.subarray(0,original.length-1));
+  await rejectCode(()=>auditGrant(options,f.dependencies()),'REMOTE_OBJECT_SHA');f.objects.set(rolesKey,original);
+  for(const roleSql of ['GRANT "supabase_new" TO "custom"; /* unfinished',
+    'GRANT "supabase_new" TO "custom"','SELECT execute_arbitrary();','ALTER ROLE "custom" IN ROLE "supabase_hidden";',
+    'SET standard_conforming_strings = off;','RESET ALL; GRANT "supabase_hidden" TO "custom";',
+    "SET ROLE 'supabase_hidden';","SET SESSION ROLE 'supabase_hidden';","SET LOCAL ROLE 'supabase_hidden';",
+    "SET SESSION AUTHORIZATION 'supabase_hidden';","SET LOCAL SESSION AUTHORIZATION 'supabase_hidden';",
+    'SET "role" TO \'supabase_hidden\';','SET "session_authorization" TO \'supabase_hidden\';',
+    'ALTER ROLE U&"\\0073upabase_hidden" LOGIN;',
+    'GRANT member TO custom GRANTED BY U&"\\0073upabase_admin";',
+    'ALTER ROLE custom UESCAPE \'!\';']){
+    const x=await captured(t,{sql:n=>n==='roles.sql'?Buffer.from(roleSql):sql(n)});
+    const commitment=sha(Buffer.from(JSON.stringify(['RavRadar/SupabaseArchiveRestore/v1/selector',x.result.indexSha256])));
+    withoutDatabase(x.f);await assert.rejects(()=>auditGrant({indexCommitmentSha256:commitment,targetSystemRoles},x.f.dependencies()),
+      e=>/^ROLE_AUDIT_/.test(e.code));
+  }
+});

@@ -1,3 +1,9 @@
+## 12. november — tidlig rollekontrol og kort aktiv projekthukommelse
+
+Den eksisterende arkivgendannelse får en afgrænset rollekontrol før fuld materialisering og arkiv-SQL. Den læser det ejede, tomme måls reserverede platformroller og autentificerer kun den valgte backups roles.sql, højst 4 MiB, med fuld cipher-/GCM-/SQL-hash før rapport. Kun faktiske supabase_-rolleoperander og faste tællere må vises; kommentarer og almindelige indstillingsværdier tælles ikke med. Rollevalg via SET og Unicode-identifikatorer afvises som ikke understøttet syntax. Ingen roller oprettes, ingen GRANT springes over, og hverken fuld restore, automatisk backuprotation eller Free-klarhed påstås. De normale arkiv- og restoreprøver vælges som samme backupområde, mens PG/C/I/T fortsat kræver uændrede autentiske input.
+
+Fem korte aktive indgange samler gældende arbejdsform og restpunkter. Alle tidligere filbytes bevares som dateret opslagsmateriale; skiftende kørselsstatus føres privat. Det er ikke en ny model, releaseversion eller lukning af de åbne mål.
+
 ## 12. november — dokumentoprydning efter botstartet vejr
 
 En tidligere kvalificeret ændringskvittering skal reproduceres med planlæggeren fra dens egen faktisk committed kilde. En senere ændring af mål- og ejerkataloget må ikke ændre betydningen af den gamle kontrol. Den næste normale kvalifikation påviste, at en cached kandidatplanlægger ellers kan genfortolke en korrekt ældre kvittering som en modstrid. Den afgrænsede rettelse bruger den gamle normale planlægger i en credential-fri, tidsafgrænset læseproces; den overordnede kontrol bevarer faktisk Git-/CI-/artifactkontrol, uændrede PG/C/I/T-input og afvisning af reelle fejl. Nye funktionsprøver vælges fortsat med den nye planlægger på den aktuelle ændring.

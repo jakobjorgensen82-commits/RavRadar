@@ -16,7 +16,8 @@ const SOURCE=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 // dispatch frames remain immutable; its actual --self-test runs separately.
 const restoreFixture='scripts/test-supabase-cli-local-restore.mjs';
 const restoreSource=fs.readFileSync(new URL('./test-supabase-cli-local-restore.mjs',import.meta.url),'utf8').replaceAll('\r\n','\n');
-assert.deepEqual(CURRENT_CONTRACT_COMMANDS.backupRestore,['node '+restoreFixture+' --self-test']);
+assert.deepEqual(CURRENT_CONTRACT_COMMANDS.backupRestore,['node '+restoreFixture+' --self-test',
+  'node --test scripts/test-archive-supabase-database-backup.mjs']);
 assert.equal(isBoundedLocalRestoreFixtureChange(restoreSource,restoreSource),true);
 assert.equal(isBoundedLocalRestoreFixtureChange(restoreSource,
   restoreSource.replace('const IMAGES=','// Synthetic reviewed body delta\nconst IMAGES=')),true);

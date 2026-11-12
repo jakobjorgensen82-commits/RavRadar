@@ -64,6 +64,7 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
   ],
   backupRestore:[
     LOCAL_RESTORE_SELF_TEST,
+    'node --test scripts/test-archive-supabase-database-backup.mjs',
   ],
   mailOwnerProbe:[
     'node --test scripts/test-owner-notice-probe-ci.mjs',
@@ -164,6 +165,9 @@ const PATH_AREAS=freeze({
   ],
   backupRestore:[
     LOCAL_RESTORE_FIXTURE,
+    'scripts/seal-supabase-database-export.mjs',
+    'scripts/archive-supabase-database-backup.mjs',
+    'scripts/test-archive-supabase-database-backup.mjs',
   ],
   mailOwnerProbe:[
     '.github/workflows/test-owner-notice-mail.yml',

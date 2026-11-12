@@ -1,3 +1,27 @@
+<!-- RAVRADAR_ACTIVE_ENTRY_START -->
+
+# Aktiv sandhed og bevisgrænser
+
+**Den fungerende produktionsvej er den numeriske 598-driftsfamilie.** Almindelig vejrhentning og offentlig levering har faktisk fungeret. Det beviser ikke fuld dækning, alle fejlforløb eller hele projektets færdiggørelse. Seneste leverance, igangværende kørsel og næste skrivevindue skal aflæses i det private checkpoint; flygtige kørselsoplysninger fastholdes ikke her.
+
+Vejret skal fortsat hentes og opdateres gennem DMI, dernæst Copernicus og til sidst Open-Meteo. DMI skal prioritere reelle tomme huller før overtagelse af gyldige timer fra andre kilder. Nyere gyldige data skal fortsat kunne opdatere prognosen efter de gældende kilde- og proveniensregler. Cache og fremadrettet historik fortsætter uden endnu en nulstilling. Gamle originale data og offentliggjorte scorer bevares efter deres egne kontrakter; de er ikke en tvungen gammel strømhistorik for den nye drift.
+
+Dækningsgrad betyder **alle forventede timer for alle zoner over hele prognosehorisonten**, med tydelig periode og nævner. Opgør de fem vejrtyper hver for sig, deres samtidige dækning og fordelingen pr. prognosedag. Hold zoner, underdele og tilstrækkelig strøm-/scorehistorik adskilt. Råfilantal, kun manifestets eksisterende timer eller et grønt leverandørtrin er ikke dækningsmål. Halen og historikopbygningen er fortsat reelle driftsopgaver.
+
+Source614 er udstedt, men ikke installeret. Den private numeriske udtrækspakke er ikke en aktiveret revision. Før en Source-overgang skal faktisk numerisk/state-/kildepolitik adskilles fra app-, kontrol- og Pages-proveniens; første normale overgang og næste almindelige apprettelse skal begge fungere med ærlig backendkvalifikation. En ren apprettelse må ikke medføre ny numerisk model/SQL alene på grund af en bred kodefortegnelse. Uafhængige 598-rettelser fortsætter imens.
+
+Den ændringsbaserede V4-kontrolvej har reel kildekvalifikation, men hver ny ændring kræver sit eget relevante bevis. Kode-CI er ikke bevis for ny offentlig prognose, korrekt botoprydning eller leveret mail. Prognosedeling, adminvisning og assistent har allerede leverede delrettelser; de skal genbruges og må ikke forveksles med afsluttede samlede opgaver.
+
+Der er ikke dokumenteret samlet Free-klarhed. Fysisk Supabase-margin, autonom vedligeholdelse, faktisk backupgendannelse og holdbar R2-rotation skal bevises særskilt. En mislykket rolleimport er ikke rettet ved en bedre diagnose. Intet ukendt punkt lukkes af denne oversigt. Se [åbne leverancer](IMPLEMENTATION_STATUS.md) og den gældende målfil.
+
+<!-- RAVRADAR_ACTIVE_ENTRY_END -->
+
+## Daterede notater og tidligere indgange — uændret historik
+
+Nedenstående tekst er bevaret byteidentisk som historisk kildemateriale. Brug dens oprindelige dato og bevisgrænse; tidligere status er ikke en ny aktuel instruktion. Opgaverelevante aktive krav og beslutninger gælder fortsat.
+
+<!-- RAVRADAR_DATED_HISTORY_UNCHANGED -->
+
 ## 12. november — dokumentoprydning efter botstartet vejr
 
 En tidligere kvalificeret ændringskvittering skal reproduceres med planlæggeren fra dens egen faktisk committed kilde. En senere ændring af mål- og ejerkataloget må ikke ændre betydningen af den gamle kontrol. Den næste normale kvalifikation påviste, at en cached kandidatplanlægger ellers kan genfortolke en korrekt ældre kvittering som en modstrid. Den afgrænsede rettelse bruger den gamle normale planlægger i en credential-fri, tidsafgrænset læseproces; den overordnede kontrol bevarer faktisk Git-/CI-/artifactkontrol, uændrede PG/C/I/T-input og afvisning af reelle fejl. Nye funktionsprøver vælges fortsat med den nye planlægger på den aktuelle ændring.

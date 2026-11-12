@@ -1,3 +1,30 @@
+<!-- RAVRADAR_ACTIVE_ENTRY_START -->
+
+# Aktiv indgang til RavRadar
+
+Læs denne korte indgang og de fire aktive indgange nedenfor før arbejde. Stop den obligatoriske startlæsning ved deres historikmarkør. De uændrede daterede afsnit er opslagsmateriale; deres tidligere ord som »aktuel«, »næste« og »færdig« er ikke en ny opgave eller en beskrivelse af nuværende drift.
+
+Målet er færdiggørelse og selvstændig drift senest **18. november 2026**. Den gældende ejer-målfil bevarer alle fem hovedområder. Denne indgang erstatter ikke målet, AGENTS eller opgaverelevante aktive krav og beslutninger.
+
+1. [Læsevej og kildehierarki](../rdks/00_READ_FIRST.md).
+2. [Stabil arbejdsform og ufravigelige grænser](../rdks/01_AI_OPERATING_RULES.md).
+3. [Fungerende drift og dens begrænsninger](../rdks/90_INDEX/CURRENT_TRUTH.md).
+4. [Åbne leverancer og krav til afslutning](../rdks/90_INDEX/IMPLEMENTATION_STATUS.md).
+
+**Prioritet:** Bevar almindelig vejrhentning, reel dækning, fremadrettet historik og offentlig levering. Færdiggør afgrænsede rettelser sideløbende, uden at kontrolarbejde holder vejret pauset i timer. Den fungerende numeriske driftsfamilie er 598; den ikke installerede Source-revision må ikke blive en forudsætning for uafhængige apprettelser.
+
+Find derefter det seneste private checkpoint i den eksisterende isolerede arbejdscheckout. Kontrollér faktisk main, igangværende skriver, cron og næste sikre handling derfra. Aktuelle kørsler, hashes, klokkeslæt, dækningsprocenter og engangskvitteringer hører hjemme dér. Skriv ikke nye statuscommits alene for disse skiftende oplysninger. Arbejd ikke i den gamle cb79-checkout.
+
+Læs kun yderligere historik, krav, håndbog og kode, som den konkrete opgave afhænger af. Genbrug allerede leveret arbejde; genåbn det kun ved en ny konkret fejl eller relevant ændring. Manglende evidens må ikke omdøbes til bestået.
+
+<!-- RAVRADAR_ACTIVE_ENTRY_END -->
+
+## Daterede notater og tidligere indgange — uændret historik
+
+Nedenstående tekst er bevaret byteidentisk som historisk kildemateriale. Brug dens oprindelige dato og bevisgrænse; tidligere status er ikke en ny aktuel instruktion. Opgaverelevante aktive krav og beslutninger gælder fortsat.
+
+<!-- RAVRADAR_DATED_HISTORY_UNCHANGED -->
+
 ## 12. november — aktuel ændring, kvalificeret genbrug og afgrænset mailprøve
 
 Den første faktiske Linux-kvalifikation bestod den nye V4-kontrolvej og mailmålet, men påviste manglende forudsætninger i scalarprøvens miljø. Den normale vejrhentning installerer allerede det eksisterende requirements-copernicus.txt før offline planlægning; den målrettede kildeproducent forbereder nu samme krav, når netop dette mål vælges. Prøvens barn bevarer Linux-/macOS-interpreterens biblioteksstier og udelukker fortsat credentials. Produktlæser, fejlafvisning, model og providerbudgetter ændres ikke af forberedelsen. Ny præcis Linux-kvalifikation kræves fortsat.

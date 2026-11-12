@@ -694,6 +694,7 @@ async function dumpFiles(c,p){
 async function restoreArchive(c,b,indexCommitmentSha256){
   await startProject(c,b);
   need((await query(c,b,'ARCHIVE_TARGET_EMPTY','select to_jsonb((select count(*) from auth.users)=0);'))===true,'ARCHIVE_TARGET_NOT_EMPTY');
+  await auditArchiveSystemRoles(c,b,indexCommitmentSha256);
   const archive=await materializeArchiveInputs(c,indexCommitmentSha256);c.dumps=archive.files;
   await command(c,'QUIESCE_B_AUTH','docker',['stop','--time','10',b.auth],{maxMs:30_000});
   await restoreArchiveSql(c,b,'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA',archive);
@@ -715,10 +716,41 @@ async function restoreArchive(c,b,indexCommitmentSha256){
     productionAuthRestoreVerified:false,authRestoreVerified:false,fullDatabaseBackupVerified:false,
     sourceDataParityVerified:false,storageObjectBytesRestored:false,erasureBarriersVerified:false,freeReady:false};
 }
+async function auditArchiveSystemRoles(c,b,indexCommitmentSha256,{env=process.env,audit=null,readTarget=query}={}){
+  delete c.systemRoleAudit;
+  need(/^[a-f0-9]{64}$/.test(indexCommitmentSha256),'ARCHIVE_INDEX_COMMITMENT');
+  const target=await readTarget(c,b,'ARCHIVE_TARGET_SYSTEM_ROLES',
+    "select coalesce(jsonb_agg(rolname::text order by rolname), '[]'::jsonb) from pg_roles where rolname::text ~ '^supabase_[A-Za-z0-9_]{1,54}$';");
+  const names=value=>Array.isArray(value)&&value.length<=128&&value.every(n=>typeof n==='string'&&/^supabase_[A-Za-z0-9_]{1,54}$/.test(n))
+    &&new Set(value).size===value.length;
+  need(names(target)&&target.includes('supabase_admin'),'ARCHIVE_TARGET_SYSTEM_ROLES');
+  const keys=['RUNNER_TEMP','SUPABASE_SERVICE_ROLE_KEY','RAVRADAR_R2_ACCOUNT_ID','RAVRADAR_R2_ACCESS_KEY_ID','RAVRADAR_R2_SECRET_ACCESS_KEY',
+    'GITHUB_ACTIONS','RUNNER_ENVIRONMENT','RUNNER_OS','GITHUB_REPOSITORY'];
+  const archiveEnv=Object.fromEntries(keys.filter(k=>typeof env[k]==='string').map(k=>[k,env[k]]));archiveEnv.RUNNER_TEMP=c.root;
+  need(typeof archiveEnv.SUPABASE_SERVICE_ROLE_KEY==='string'&&archiveEnv.SUPABASE_SERVICE_ROLE_KEY.length>=32,'ARCHIVE_MASTER_REQUIRED');
+  const remaining=c.deadline-Date.now();need(remaining>0,'OPERATION_DEADLINE');const signal=AbortSignal.timeout(remaining);
+  c.stage='ARCHIVE_RESERVED_SYSTEM_ROLE_PREFLIGHT';
+  const read=audit??(await import('./archive-supabase-database-backup.mjs')).auditSupabaseDatabaseArchiveRoleGrant;
+  const r=await read({indexCommitmentSha256,targetSystemRoles:target},{env:archiveEnv,
+    fetchImpl:(url,options={})=>fetch(url,{...options,signal:options.signal?AbortSignal.any([signal,options.signal]):signal})});
+  need(r?.status==='AUTHENTICATED_RESERVED_SYSTEM_ROLE_PREFLIGHT_ONLY'&&r.indexCommitmentSha256===indexCommitmentSha256
+    &&r.rolesFileVerified===true&&r.fullDatabaseBackupVerified===false&&r.databaseRestoreExecuted===false&&r.archiveWrittenThisOperation===false,
+    'ARCHIVE_SYSTEM_ROLE_AUDIT_RECEIPT');
+  need(names(r.referencedSystemRoles)&&names(r.targetSystemRoles)&&names(r.missingSystemRoles)
+    &&r.referencedSystemRoleCount===r.referencedSystemRoles.length&&r.targetSystemRoleCount===target.length
+    &&JSON.stringify(r.targetSystemRoles)===JSON.stringify([...target].sort())
+    &&JSON.stringify(r.missingSystemRoles)===JSON.stringify(r.referencedSystemRoles.filter(n=>!target.includes(n))),
+    'ARCHIVE_SYSTEM_ROLE_AUDIT_RECEIPT');
+  c.systemRoleAudit={referencedSystemRoles:r.referencedSystemRoles,targetSystemRoles:r.targetSystemRoles,missingSystemRoles:r.missingSystemRoles,
+    referencedSystemRoleCount:r.referencedSystemRoleCount,targetSystemRoleCount:r.targetSystemRoleCount,missingSystemRoleCount:r.missingSystemRoles.length};
+  need(r.missingSystemRoles.length===0,'ARCHIVE_SYSTEM_ROLE_COMPATIBILITY');
+  return c.systemRoleAudit;
+}
 function restorePublicReport(c,result,error,closed){
   const scope=c.archive?'authenticated-archive-isolated-sql-restore':'synthetic-standard-cli-local-restore';
   return {...(result??{status:'FAILED_CLOSED',scope}),
     ...(error?{status:'FAILED_CLOSED',firstFailure:error}:{}),ownedDockerClosed:closed,
+    ...(c.archive&&c.systemRoleAudit?{systemRoleAudit:c.systemRoleAudit}:{}),
     ...(!c.archive?{images:c.images,dumpFiles:c.dumps,authRequests:c.authRequests,processes:c.processes}:{})};
 }
 async function fixture({archive=false}={}){
@@ -837,6 +869,33 @@ async function selfTest(){
       State:{Running:true,Health:{Status:'healthy'}}};
     return {c,p,info};
   };
+  test('reserved system role preflight reads the owned target and stops before archive SQL on missing roles',async()=>{
+    const target=['supabase_admin','supabase_auth_admin'],index='a'.repeat(64),root=path.join(os.tmpdir(),'synthetic-role-audit');
+    const c={root,deadline:Date.now()+10_000,archive:true},calls=[];
+    const env={SUPABASE_SERVICE_ROLE_KEY:'synthetic-master-never-real-'.repeat(2),SUPABASE_DB_PASSWORD:'must-not-leave',GITHUB_TOKEN:'must-not-leave',
+      GITHUB_ACTIONS:'true',RUNNER_ENVIRONMENT:'github-hosted',RUNNER_OS:'Linux',GITHUB_REPOSITORY:'jakobjorgensen82-commits/RavRadar'};
+    const readTarget=async(_c,_b,stage,sql)=>{calls.push(stage);assert(sql.includes('from pg_roles'));assert(!sql.includes('pg_authid'));return target;};
+    let missing=true;
+    const audit=async(options,dependencies)=>{
+      calls.push('AUTHENTICATED_ROLES_ONLY');assert.deepEqual(options,{indexCommitmentSha256:index,targetSystemRoles:target});
+      assert.deepEqual(Object.keys(dependencies.env).sort(),['RUNNER_TEMP','SUPABASE_SERVICE_ROLE_KEY','GITHUB_ACTIONS','RUNNER_ENVIRONMENT','RUNNER_OS','GITHUB_REPOSITORY'].sort());
+      return{status:'AUTHENTICATED_RESERVED_SYSTEM_ROLE_PREFLIGHT_ONLY',indexCommitmentSha256:index,
+        referencedSystemRoles:missing?['supabase_admin','supabase_future_role']:['supabase_admin'],targetSystemRoles:target,
+        missingSystemRoles:missing?['supabase_future_role']:[],referencedSystemRoleCount:missing?2:1,targetSystemRoleCount:2,
+        rolesFileVerified:true,fullDatabaseBackupVerified:false,databaseRestoreExecuted:false,archiveWrittenThisOperation:false};
+    };
+    await assert.rejects(()=>auditArchiveSystemRoles(c,{},index,{env,audit,readTarget}),e=>e.code==='ARCHIVE_SYSTEM_ROLE_COMPATIBILITY');
+    assert.deepEqual(calls,['ARCHIVE_TARGET_SYSTEM_ROLES','AUTHENTICATED_ROLES_ONLY']);
+    const publicReport=restorePublicReport(c,null,{code:'ARCHIVE_SYSTEM_ROLE_COMPATIBILITY'},true);
+    assert.deepEqual(publicReport.systemRoleAudit.missingSystemRoles,['supabase_future_role']);
+    assert(!JSON.stringify(publicReport).includes(index)&&!JSON.stringify(publicReport).includes('must-not-leave'));
+    missing=false;assert.equal((await auditArchiveSystemRoles(c,{},index,{env,audit,readTarget})).missingSystemRoleCount,0);
+    for(const edit of [r=>{r.referencedSystemRoles=['private_role'];},r=>{r.targetSystemRoles=['supabase_other'];},
+      r=>{r.missingSystemRoles=['supabase_false_missing'];},r=>{r.rolesFileVerified=false;}]){
+      const changed=async(...args)=>{const r=await audit(...args);edit(r);return r;};
+      await assert.rejects(()=>auditArchiveSystemRoles(c,{},index,{env,audit:changed,readTarget}),e=>e.code==='ARCHIVE_SYSTEM_ROLE_AUDIT_RECEIPT');
+    }
+  });
   test('only exact loopback API and database URLs are accepted',()=>{
     assert.equal(localUrl('http://127.0.0.1:54321/','api').host,'127.0.0.1:54321');
     assert.equal(localUrl('postgresql://postgres:synthetic@127.0.0.1:54322/postgres','db').pathname,'/postgres');

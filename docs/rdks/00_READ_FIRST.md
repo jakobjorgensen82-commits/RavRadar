@@ -1,3 +1,23 @@
+<!-- RAVRADAR_ACTIVE_ENTRY_START -->
+
+# Aktiv læsevej
+
+Den obligatoriske startlæsning består af de korte aktive indgange øverst i [Codex-starten](../ai/CODEX_START_HERE.md), denne fil, [arbejdsreglerne](01_AI_OPERATING_RULES.md), [aktuel sandhed](90_INDEX/CURRENT_TRUTH.md) og [implementeringsstatus](90_INDEX/IMPLEMENTATION_STATUS.md). Daterede suffixer slås kun op efter konkret behov. De skal ikke genlæses som nye instruktioner ved hver genoptagelse.
+
+Kildehierarkiet er: ejerens aktuelle instruktion og gældende mål; aktive RDKS-krav og beslutninger; verificeret aktuel kodeadfærd; håndbog; changelog; historiske chats og statusnotater. Kodeadfærd alene ophæver ikke et aktivt krav. Ved en reel konflikt skal forskellen afklares; en gammel overskrift med ordet »aktuel« afgør den ikke.
+
+Til den konkrete opgave læses relevante dele af [aktive krav](20_REQUIREMENTS/ACTIVE-REQUIREMENTS.md), [roadmap](90_INDEX/ACTIVE_ROADMAP.md) og de relevante beslutninger. Brug især [DEC-0302](10_DECISIONS/DEC-0302-CHANGE-BASED-VALIDATION-AND-CONTROL-CLEANUP.md) om ændringsbaseret kontrol, [DEC-0045](10_DECISIONS/DEC-0045-COST-AWARE-TEST-MATRIX.md) om omfang og reelt genbrug og [DEC-0294](10_DECISIONS/DEC-0294-PAGES-FORECAST-SHARING-AND-SIMPLY-CNAME.md) ved prognosedeling. Gennemgå den konkrete kode og relevante håndbogsafsnit før ændring.
+
+Skiftende main-/PR-/runidentiteter, aktive skrivere, cronstatus, målinger og næste handling findes i seneste private checkpoint. Checkpointet er driftskvittering, ikke tilladelse til at tilsidesætte krav. Denne korte indgang fastholder stabile grænser; den er ikke et nyt testsystem eller en ny godkendelsesprocedure.
+
+<!-- RAVRADAR_ACTIVE_ENTRY_END -->
+
+## Daterede notater og tidligere indgange — uændret historik
+
+Nedenstående tekst er bevaret byteidentisk som historisk kildemateriale. Brug dens oprindelige dato og bevisgrænse; tidligere status er ikke en ny aktuel instruktion. Opgaverelevante aktive krav og beslutninger gælder fortsat.
+
+<!-- RAVRADAR_DATED_HISTORY_UNCHANGED -->
+
 ## 12. november — aktuel ændring, kvalificeret genbrug og afgrænset mailprøve
 
 Den første faktiske Linux-kvalifikation bestod den nye V4-kontrolvej og mailmålet, men påviste manglende forudsætninger i scalarprøvens miljø. Den normale vejrhentning installerer allerede det eksisterende requirements-copernicus.txt før offline planlægning; den målrettede kildeproducent forbereder nu samme krav, når netop dette mål vælges. Prøvens barn bevarer Linux-/macOS-interpreterens biblioteksstier og udelukker fortsat credentials. Produktlæser, fejlafvisning, model og providerbudgetter ændres ikke af forberedelsen. Ny præcis Linux-kvalifikation kræves fortsat.

@@ -161,11 +161,95 @@ async function verifyFile(root,entry,c,env,deadline,onSqlChunk=null,maximumCiphe
   return{file:entry.file,sqlBytes,sqlSha256:entry.sqlSha256,cipherSha256:entry.cipherSha256};
 }
 const DOCUMENTED_CLI_LOGIN_GRANT=Buffer.from('GRANT "postgres" TO "cli_login_postgres" WITH INHERIT FALSE GRANTED BY "supabase_admin";','ascii');
+const SYSTEM_ROLE_NAME=/^supabase_[A-Za-z0-9_]{1,54}$/;
+const SYSTEM_ROLE_LIMIT=128,ROLE_AUDIT_BYTES=4*1024*1024;
+function systemRoleInventory(value){
+  need(Array.isArray(value)&&value.length<=SYSTEM_ROLE_LIMIT&&value.every(n=>typeof n==='string'&&SYSTEM_ROLE_NAME.test(n))
+    &&new Set(value).size===value.length,'ROLE_AUDIT_TARGET_ROLES');return [...value].sort();
+}
+// Role-dump syntax only. String values/comments are consumed without becoming identifiers.
+// An unfamiliar statement stops the read; it cannot silently make this inventory complete.
+function referencedSystemRoles(bytes){
+  need(bytes.length<=ROLE_AUDIT_BYTES,'ROLE_GRANT_AUDIT_BOUND');
+  let text;try{text=new TextDecoder('utf-8',{fatal:true}).decode(bytes);}catch{fail('ROLE_AUDIT_UTF8');}
+  const roles=new Set();let at=0,tokens=[],resetComplete=false;
+  const word=t=>t?.kind==='word'?t.value.toUpperCase():null;
+  const systemName=t=>t?.kind==='word'?t.value.toLowerCase():t?.value;
+  const add=t=>{need(t&&(t.kind==='word'||t.kind==='identifier'),'ROLE_AUDIT_ROLE_OPERAND');const name=systemName(t);
+    if(name.startsWith('supabase_')){need(SYSTEM_ROLE_NAME.test(name),'ROLE_AUDIT_SYSTEM_ROLE_NAME');roles.add(name);
+      need(roles.size<=SYSTEM_ROLE_LIMIT,'ROLE_AUDIT_SYSTEM_ROLE_COUNT');}};
+  // A list is identifiers separated by commas, never expressions or privilege clauses.
+  const roleList=items=>{need(items.length>0&&items.length%2===1,'ROLE_AUDIT_ROLE_OPERAND');
+    items.forEach((t,i)=>i%2?need(t.value===',','ROLE_AUDIT_ROLE_OPERAND'):add(t));};
+  function statement(){
+    if(!tokens.length)return;need(!resetComplete,'ROLE_AUDIT_AFTER_RESET');const first=word(tokens[0]);
+    if(['SET','RESET'].includes(first)){
+      if(first==='SET'){
+        const start=['SESSION','LOCAL'].includes(word(tokens[1]))?2:1;
+        const setting=tokens[start]?.value.toUpperCase();
+        need(!['ROLE','AUTHORIZATION','SESSION_AUTHORIZATION'].includes(setting)
+          &&!(setting==='SESSION'&&word(tokens[start+1])==='AUTHORIZATION'),'ROLE_AUDIT_STATEMENT');
+      }
+      need(!tokens.slice(1).some(t=>t.kind!=='string'&&systemName(t).startsWith('supabase_')),'ROLE_AUDIT_STATEMENT');
+      if(tokens[1]?.value.toLowerCase()==='standard_conforming_strings')need(first==='SET'&&word(tokens.at(-1))==='ON','ROLE_AUDIT_STRING_MODE');
+      if(first==='RESET'&&word(tokens[1])==='ALL')resetComplete=true;
+    }
+    else if(['CREATE','ALTER'].includes(first)&&['ROLE','USER'].includes(word(tokens[1]))){
+      add(tokens[2]);need(!tokens.slice(3).some(t=>t.kind!=='string'&&systemName(t).startsWith('supabase_')),'ROLE_AUDIT_STATEMENT');
+    }else if(first==='COMMENT'&&word(tokens[1])==='ON'&&word(tokens[2])==='ROLE')add(tokens[3]);
+    else if(first==='GRANT'||first==='REVOKE'){
+      const split=tokens.findIndex(t=>word(t)===(first==='GRANT'?'TO':'FROM'));
+      need(split>1&&!tokens.slice(1,split).some(t=>word(t)==='ON'),'ROLE_AUDIT_STATEMENT');
+      let from=1;if(first==='REVOKE'&&word(tokens[1])==='ADMIN'&&word(tokens[2])==='OPTION'&&word(tokens[3])==='FOR')from=4;
+      roleList(tokens.slice(from,split));
+      let end=split+1;while(end<tokens.length&&!['WITH','GRANTED','CASCADE','RESTRICT'].includes(word(tokens[end])))end++;
+      roleList(tokens.slice(split+1,end));
+      const by=tokens.findIndex((t,i)=>i>=end&&word(t)==='GRANTED'&&word(tokens[i+1])==='BY');
+      if(by>=0){need(by+2<tokens.length,'ROLE_AUDIT_ROLE_OPERAND');add(tokens[by+2]);}
+      need(!tokens.slice(end).some((t,i)=>systemName(t).startsWith('supabase_')&&i+end!==by+2),'ROLE_AUDIT_STATEMENT');
+    }else fail('ROLE_AUDIT_STATEMENT');
+    tokens=[];
+  }
+  function token(kind,value){tokens.push({kind,value});need(tokens.length<=4096,'ROLE_AUDIT_STATEMENT_BOUND');}
+  while(at<text.length){
+    const c=text[at];if(/\s/.test(c)){at++;continue;}
+    if(text.startsWith('--',at)){const end=text.indexOf('\n',at+2);at=end<0?text.length:end+1;continue;}
+    if(text.startsWith('/*',at)){let depth=1;at+=2;while(at<text.length&&depth){if(text.startsWith('/*',at)){depth++;at+=2;}
+      else if(text.startsWith('*/',at)){depth--;at+=2;}else at++;}need(depth===0,'ROLE_AUDIT_COMMENT');continue;}
+    if(c==='\\'){need(!tokens.length&&(at===0||text[at-1]==='\n'),'ROLE_AUDIT_META_COMMAND');const end=text.indexOf('\n',at);
+      const line=text.slice(at,end<0?text.length:end).replace(/\r$/,'');need(/^\\(?:un)?restrict [A-Za-z0-9]+$/.test(line),'ROLE_AUDIT_META_COMMAND');at=end<0?text.length:end+1;continue;}
+    if(/[Uu]/.test(c)&&text[at+1]==='&'&&text[at+2]==='"')fail('ROLE_AUDIT_UNICODE_IDENTIFIER');
+    if(c==='"'||c==="'"){
+      const quote=c,escaped=quote==="'"&&at>0&&/[Ee]/.test(text[at-1])&&(at<2||!/[A-Za-z0-9_]/.test(text[at-2]));
+      let value='',closed=false;at++;
+      while(at<text.length){const next=text[at++];if(escaped&&next==='\\'){need(at<text.length,'ROLE_AUDIT_QUOTE');at++;continue;}
+        if(next===quote){if(text[at]===quote){value+=quote;at++;continue;}closed=true;break;}
+        if(quote==='"')value+=next;}
+      need(closed,'ROLE_AUDIT_QUOTE');token(quote==='"'?'identifier':'string',value);continue;
+    }
+    if(c===';'){at++;statement();continue;}
+    const identifier=/^[A-Za-z_\u0080-\uffff][A-Za-z0-9_$\u0080-\uffff]*/.exec(text.slice(at));
+    if(identifier){need(identifier[0].toUpperCase()!=='UESCAPE','ROLE_AUDIT_UNICODE_IDENTIFIER');
+      token('word',identifier[0]);at+=identifier[0].length;continue;}
+    token('symbol',c);at++;
+  }
+  need(tokens.length===0,'ROLE_AUDIT_UNTERMINATED_STATEMENT');return [...roles].sort();
+}
 
 // Compare one complete line while consuming the authenticated file. No SQL or line position leaves this helper.
-export async function auditLocalDatabaseBackupRoleGrant({directory,entry,context:sourceContext,deadline}={}, {env=process.env}={}){
+export async function auditLocalDatabaseBackupRoleGrant({directory,entry,context:sourceContext,deadline,targetSystemRoles}={}, {env=process.env}={}){
   need(entry?.file==='roles.sql'&&Number.isSafeInteger(deadline),'ROLE_GRANT_AUDIT_FILE');
   const root=await privatePath(directory,env),c=context(sourceContext);
+  if(targetSystemRoles!==undefined){
+    const target=systemRoleInventory(targetSystemRoles),chunks=[];let bytes=0;
+    need(entry.sqlBytes<=ROLE_AUDIT_BYTES&&entry.cipherBytes<=ROLE_AUDIT_BYTES,'ROLE_GRANT_AUDIT_BOUND');
+    await verifyFile(root,entry,c,env,deadline,chunk=>{bytes+=chunk.length;need(bytes<=ROLE_AUDIT_BYTES,'ROLE_GRANT_AUDIT_BOUND');chunks.push(Buffer.from(chunk));});
+    const sql=Buffer.concat(chunks);try{
+      const referenced=referencedSystemRoles(sql),have=new Set(target);
+      return{referencedSystemRoles:referenced,targetSystemRoles:target,missingSystemRoles:referenced.filter(n=>!have.has(n)),
+        referencedSystemRoleCount:referenced.length,targetSystemRoleCount:target.length};
+    }finally{sql.fill(0);for(const chunk of chunks)chunk.fill(0);}
+  }
   let length=0,matches=0;
   function finishLine(newline){
     if(length===DOCUMENTED_CLI_LOGIN_GRANT.length||newline&&length===DOCUMENTED_CLI_LOGIN_GRANT.length+1)
