@@ -1,3 +1,7 @@
+## 12. november — præcis reference før en normal målrettet kilde-PR
+
+Den eksisterende V3-forbruger kræver ved kontrolpåvirkning en uafhængigt gennemgået PR-markør på det eksakte head med plan-, inventar- og reviewhash. Den samme markør kan udpege den ægte tidligere FULL-reference som locator. Locator giver ingen kvalifikation: GitHub-kørslen skal selv genfinde og kontrollere de autentiske kilde-/nativebeviser og de uændrede beskyttede input. Hvis den ægte forgænger ligger uden for det faste seks-commit-opslag, skal locatoren være med, før kildekørslen starter; ellers vælges FULL uden at give kortvejsautoritet. En ny head kræver en ny præcis plan og markør. Ingen gamle grønne statusser ommærkes.
+
 ## 12. november — fast sikkerhedskerne og berørt område, UNDER FORBEREDELSE
 
 <a id="normal-validation-core-domain-preparation-2026-11-12"></a>
