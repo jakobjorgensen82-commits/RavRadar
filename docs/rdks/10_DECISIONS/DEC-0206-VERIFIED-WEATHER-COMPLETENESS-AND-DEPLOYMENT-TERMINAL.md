@@ -1,3 +1,9 @@
+## 12. november — samme kildegrundlag før kontrol og udgivelse
+
+Udgivelsesreservationen og den tidlige genoptagelseskontrol læser samme tidligere kildefiler. Den tidlige kontrol havde hele Git-historikken, mens flere senere kaldere kun hentede den nyeste commit. Den afgrænsede rettelse giver hele historikken til de faktiske reservations-, afklarings-, claim- og afslutningskaldere. Kildehash, byteantal, autentificeret læsning, eksklusiv reservation og afvisning ved ukendt skriveudfald bevares. Der tilføjes ingen alternativ API-læser eller ny særregel for en bestemt kørsels fejltekst.
+
+Dette ændrer kun runnerens kildegrundlag. Version 4.0.598, SQL-regler, modelbindinger, vejrdata og scorer bevares. Den lokale normale kalderprøve skal bestå før kilde-PR; faktisk hovedkode, genoptagelse og offentlig levering kvalificeres særskilt. Den oprindelige synkroniseringstimeout og alle fem hovedmål er fortsat åbne. Kørselsstatus føres i privat checkpoint.
+
 # DEC-0206 – verificeret vejrkomplethed og sand produktionsslutstatus
 
 **Status:** Aktiv; 4.0.423 backend installeret, normalrun fortsættes med 4.0.426

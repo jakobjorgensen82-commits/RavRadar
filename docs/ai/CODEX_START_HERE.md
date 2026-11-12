@@ -1,3 +1,9 @@
+## 12. november — samme kildegrundlag før kontrol og udgivelse
+
+Udgivelsesreservationen og den tidlige genoptagelseskontrol læser samme tidligere kildefiler. Den tidlige kontrol havde hele Git-historikken, mens flere senere kaldere kun hentede den nyeste commit. Den afgrænsede rettelse giver hele historikken til de faktiske reservations-, afklarings-, claim- og afslutningskaldere. Kildehash, byteantal, autentificeret læsning, eksklusiv reservation og afvisning ved ukendt skriveudfald bevares. Der tilføjes ingen alternativ API-læser eller ny særregel for en bestemt kørsels fejltekst.
+
+Dette ændrer kun runnerens kildegrundlag. Version 4.0.598, SQL-regler, modelbindinger, vejrdata og scorer bevares. Den lokale normale kalderprøve skal bestå før kilde-PR; faktisk hovedkode, genoptagelse og offentlig levering kvalificeres særskilt. Den oprindelige synkroniseringstimeout og alle fem hovedmål er fortsat åbne. Kørselsstatus føres i privat checkpoint.
+
 ## 12. november — bevis for afvisning før Pages-bestilling
 
 Den lokale efterfølger skelner et bevist forløb uden Pages-POST fra et ukendt skriveudfald efter POST. Transporten udsteder kun intern, ikke-kopiérbar evidens, før POST er forsøgt; den almindelige caller kan derefter bruge det eksisterende afslutningstrin. Kendt igangværende eller allerede brugt fjernidentitet forbliver afvist. Et blandet forløb med tidligere POST og senere afvisning får ingen ny automatisk afslutningsret.

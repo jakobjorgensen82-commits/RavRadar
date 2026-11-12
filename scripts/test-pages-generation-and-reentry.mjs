@@ -180,6 +180,37 @@ for (const name of ['reusable-weather-build', 'deploy-code-only-repair']) {
   }
 }
 const deploy = await read('reusable-pages-deploy');
+// Historical-owner closure reads exact committed source blobs. Every actual
+// reservation, claim, reconciliation and clear caller needs those Git objects.
+function assertPagesOwnerSourceHistory(source, job = null) {
+  if (job !== null) {
+    const header = '\n  ' + job + ':\n';
+    assert.equal(source.split(header).length, 2, 'One normal Pages/reentry job');
+    const start = source.indexOf(header), tail = source.slice(start + header.length);
+    const next = tail.search(/^  [a-z][a-z0-9-]*:\n/m);
+    source = source.slice(start, next < 0 ? source.length : start + header.length + next);
+  }
+  const header = '      - uses: actions/checkout@v7\n';
+  assert.equal(source.split(header).length, 2, 'One normal Pages checkout');
+  const start = source.indexOf(header), end = source.indexOf('\n      - ', start + header.length);
+  const checkout = source.slice(start, end < 0 ? source.length : end + 1);
+  assert.ok(checkout.includes('        with:\n          fetch-depth: 0\n'),
+    'Pages owner-source reader requires full-history checkout');
+  assert.equal(checkout.split('fetch-depth:').length, 2, 'One explicit history setting');
+  return { checkout, source };
+}
+for (const [source, job] of [[deploy, null],
+  ...['reconcile-operational-pending', 'recover-operational-pages-target',
+    'finalize-operational-pages-recovery', 'resume-pre-activation', 'complete-pre-activation']
+    .map(job => [recovery, job])]) {
+  const { checkout, source: jobSource } = assertPagesOwnerSourceHistory(source, job);
+  for (const replacement of [
+    checkout.replace('        with:\n          fetch-depth: 0\n', ''),
+    checkout.replace('          fetch-depth: 0\n', '          fetch-depth: 1\n'),
+  ]) assert.throws(() => assertPagesOwnerSourceHistory(jobSource.replace(checkout, () => replacement)),
+    /full-history checkout/);
+}
+
 assert.doesNotMatch(deploy, /^concurrency:/m);
 
 // Both normal historical begin callers must carry the independently observed
