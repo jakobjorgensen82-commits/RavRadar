@@ -202,7 +202,8 @@ function readCommittedText(ref,file,regular=false){
   const read=(ref,file)=>{
     if(regular){
       const entry=execFileSync('git',['-C',ROOT,'ls-tree','-z',ref,'--',file],
-        {env,timeout:10000,maxBuffer:4096,stdio:['pipe','pipe','pipe']}).toString('utf8');
+        {env,timeout:10000,maxBuffer:262144,stdio:['pipe','pipe','pipe']}).toString('utf8');
+      assert(Buffer.byteLength(entry)<=4096,'Bounded restore Git entry required');
       const match=/^100644 blob ([a-f0-9]{40})\t([^\0]+)\0$/.exec(entry);
       assert(match&&match[2]===file,'Existing regular restore input required');
     }
