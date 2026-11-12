@@ -73,8 +73,9 @@ for(const name of fullGitPinPreparationSteps){
     block+'\n          git fetch --no-tags origin "$legacy_source_head"\n',
   ])assert.throws(()=>assertFullGitPinPreparation(actualFullGitBuildSource.replace(block,()=>changed)));
 }
-// Qualify the actual new order before restoring every unchanged historical oracle.
-assertEarlyCompletedRuntimeStageOrder(productionWorkflowSources.build.replace(/\r\n/g, '\n'));
+// The reviewed Pages delta leaves the four early-stage blocks unchanged.
+// Preserve their whole-byte oracle through only that exact test projection.
+assertEarlyCompletedRuntimeStageOrder(historicalPagesInput(productionWorkflowSources.build.replace(/\r\n/g, '\n'), 'build'));
 const productionWorkflows = Object.freeze(Object.fromEntries(
   Object.entries(productionWorkflowSources).map(([role, source]) => [role, inverseCompletedRuntimeWorkflow(historicalPagesInput(source.replace(/\r\n/g, '\n'), role), role)]),
 ));

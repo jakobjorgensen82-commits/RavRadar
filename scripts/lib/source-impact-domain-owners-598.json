@@ -12293,11 +12293,11 @@
             "beforeMode": "100644",
             "afterMode": "100644",
             "beforeBlob": "e9a908a39bc3f6e860d4e9123c7c93dc12b23d63",
-            "afterBlob": "9d773d12af68bf9e6ddfc8d059f344902154476a",
+            "afterBlob": "35be6794067ae14a54de558a7d03aed2a9c812a2",
             "beforeBytes": 315639,
-            "afterBytes": 315795,
+            "afterBytes": 315893,
             "beforeSha256": "c086ef667c4e05964099d33423df69a7dbdb52b9ce9ff2778c8a18230f48fd3e",
-            "afterSha256": "afddff9a83ec4cc4dc1dbbc04fb25faf06a811717c3c03c4e98bf4c7b57ba69c"
+            "afterSha256": "eff54ffe6f09db7f345b4bcdbef2e6a5b7224c6c03722d0c9014d0623d6073f7"
           }
         ],
         "adminUiFollowup": false
@@ -12947,11 +12947,11 @@
             "beforeMode": "100644",
             "afterMode": "100644",
             "beforeBlob": "e9a908a39bc3f6e860d4e9123c7c93dc12b23d63",
-            "afterBlob": "9d773d12af68bf9e6ddfc8d059f344902154476a",
+            "afterBlob": "35be6794067ae14a54de558a7d03aed2a9c812a2",
             "beforeBytes": 315639,
-            "afterBytes": 315795,
+            "afterBytes": 315893,
             "beforeSha256": "c086ef667c4e05964099d33423df69a7dbdb52b9ce9ff2778c8a18230f48fd3e",
-            "afterSha256": "afddff9a83ec4cc4dc1dbbc04fb25faf06a811717c3c03c4e98bf4c7b57ba69c"
+            "afterSha256": "eff54ffe6f09db7f345b4bcdbef2e6a5b7224c6c03722d0c9014d0623d6073f7"
           },
           {
             "path": "scripts/validate-release-version.mjs",
