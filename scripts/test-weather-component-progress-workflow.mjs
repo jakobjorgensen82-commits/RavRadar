@@ -1,3 +1,4 @@
+import { projectPagesClosureHistoricalTestInput as historicalPagesInput } from './lib/pages-closure-historical-test-input.mjs';
 import assert from 'node:assert/strict';
 import { inverseCompletedRuntimeWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
 import fs from 'node:fs/promises';
@@ -17,8 +18,8 @@ for (const file of ['scripts/lib/verified-protected-progress-components.mjs',
     'The operational recovery helpers must remain in the producer inventory');
 }
 
-const workflow = inverseCompletedRuntimeWorkflow((await fs.readFile('.github/workflows/reusable-weather-build.yml', 'utf8'))
-  .replace(/\r\n/g, '\n'), 'build');
+const workflow = inverseCompletedRuntimeWorkflow(historicalPagesInput((await fs.readFile('.github/workflows/reusable-weather-build.yml', 'utf8'))
+  .replace(/\r\n/g, '\n'), 'build'), 'build');
 const step = name => {
   const start = workflow.indexOf(`      - name: ${name}\n`);
   assert.ok(start >= 0, `missing ${name}`);

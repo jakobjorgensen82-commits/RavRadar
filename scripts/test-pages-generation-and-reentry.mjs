@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import { assertMonotonicPagesGeneration, readBoundedPublicManifest } from './lib/pages-generation-order.mjs';
-import { exactPagesAttemptStep } from './github-pages-attempt-evidence.mjs';
+import { exactPagesAttemptStep, readAuthenticPagesAttemptClosure, hasAuthenticPagesAttemptClosure } from './github-pages-attempt-evidence.mjs';
 import { sha256CanonicalJson } from './ravscore-operational-pages-recovery.mjs';
 
 const manifest = (hour, minute = 10) => ({ complete: true, zoneCount: 210,
@@ -58,6 +58,58 @@ assert.throws(() => exactPagesAttemptStep([job('Deploy prepared Pages artifact')
 assert.throws(() => exactPagesAttemptStep([{ ...job('Deploy prepared Pages artifact'), run_attempt: 1 }], identity));
 assert.throws(() => exactPagesAttemptStep([{ ...job('Deploy prepared Pages artifact'), head_sha: 'b'.repeat(40) }], identity));
 
+// The skipped wrapper spelling is the actual GitHub job shape observed in 305.
+// These synthetic responses authenticate the same complete API envelope; they
+// are not a new production read or a successful Pages-write claim.
+{
+  const owner = { ...identity, repository: 'ravradar/RavRadar', attemptId: 'pages-123-2' };
+  const run = { id: 123, run_attempt: 2, head_sha: identity.headSha, head_branch: 'main',
+    repository: { full_name: owner.repository }, path: '.github/workflows/run-current-weather-once.yml',
+    status: 'completed', conclusion: 'failure', updated_at: '2026-11-12T01:00:00Z' };
+  const skipped = (id, name) => ({ id, run_id: 123, run_attempt: 2, head_sha: identity.headSha,
+    name, status: 'completed', conclusion: 'skipped' });
+  const complete = [skipped(1, 'Deploy prepared Pages artifact through reusable workflow'),
+    skipped(2, 'Finish an interrupted generation before new work / resume-pre-activation-pages'),
+    skipped(3, 'Finish an interrupted generation before new work / Redeploy only a helper-proven exact sealed Pages target')];
+  const fetchJobs = (jobs, mutate = value => value) => async (url, options) => {
+    assert.equal(options.redirect, 'error'); assert.equal(options.cache, 'no-store');
+    assert.equal(options.headers['X-GitHub-Api-Version'], '2022-11-28');
+    if (!url.includes('/jobs?')) return { ok: true, json: async () => structuredClone(run) };
+    const page = Number(new URL(url).searchParams.get('page'));
+    return { ok: true, json: async () => mutate({ total_count: jobs.length, jobs: structuredClone(jobs.slice((page - 1) * 100, page * 100)) }) };
+  };
+  const readClosure = (jobs, mutate) => readAuthenticPagesAttemptClosure({ owner, token: 'test-token', fetchImpl: fetchJobs(jobs, mutate) });
+  const noPost = await readClosure(complete);
+  assert.equal(noPost.state, 'NO_POST'); assert.equal(noPost.roles.length, 3);
+  assert.equal(hasAuthenticPagesAttemptClosure(noPost, owner), true);
+  assert.equal(hasAuthenticPagesAttemptClosure({ ...noPost }, owner), false);
+  assert.equal(hasAuthenticPagesAttemptClosure(noPost, { ...owner, runAttempt: 3 }), false);
+  for (const jobs of [[], complete.slice(0, 2), [...complete, complete[0]],
+    complete.map((job, i) => i === 2 ? { ...job, head_sha: 'b'.repeat(40) } : job),
+    complete.map((job, i) => i === 1 ? { ...job, conclusion: 'success' } : job)]) {
+    await assert.rejects(readClosure(jobs), /PAGES_OWNER_/);
+  }
+  await assert.rejects(readClosure(complete, ({ jobs }) => ({ jobs })), /JOB_LIST_INCOMPLETE/);
+  const failed = structuredClone(complete);
+  failed[0] = { ...failed[0], name: 'Deploy prepared Pages artifact through reusable workflow / Deploy prepared Pages artifact',
+    conclusion: 'failure', steps: [{ name: 'Deploy to GitHub Pages', status: 'completed', conclusion: 'failure',
+      number: 30, completed_at: '2026-11-12T00:59:00Z' }] };
+  await assert.rejects(readClosure(failed), /WRITE_CLOSURE_UNKNOWN/);
+  failed[0].steps.push({ name: 'Confirm scheduled Pages writes are terminal and unpublished', status: 'completed',
+    conclusion: 'success', number: 31, started_at: '2026-11-12T00:59:01Z' });
+  assert.equal((await readClosure(failed)).state, 'CLOSED_UNPUBLISHED');
+  const reversed = structuredClone(failed); reversed[0].steps[1].number = 29;
+  await assert.rejects(readClosure(reversed), /WRITE_CLOSURE_UNKNOWN/);
+  const recoveryUnknown = structuredClone(complete);
+  recoveryUnknown[2] = { ...recoveryUnknown[2], conclusion: 'failure', steps: [
+    { name: 'Redeploy the exact sealed Pages target', status: 'completed', conclusion: 'cancelled', number: 9 }] };
+  await assert.rejects(readClosure(recoveryUnknown), /WRITE_CLOSURE_UNKNOWN/);
+  const unknownRole = [...complete, { ...complete[0], id: 4, name: 'Other writer', steps: failed[0].steps }];
+  await assert.rejects(readClosure(unknownRole), /WRITER_ROLE_UNKNOWN/);
+  const paginated = [...complete, ...Array.from({ length: 98 }, (_, i) => skipped(i + 4, 'Non-writer ' + i))];
+  assert.equal((await readClosure(paginated)).state, 'NO_POST');
+}
+
 const read = file => fs.readFile(`.github/workflows/${file}.yml`, 'utf8');
 function assertSourceReviewRead(source, job) {
   let scope = source, indent = 0;
@@ -83,6 +135,12 @@ for (const name of ['update-and-deploy', 'run-current-weather-once', 'deploy-cod
     'operational-recovery-gate'), /Source review read permission missing/);
 }
 const recovery = await read('reusable-operational-reentry');
+const protectedPagesSource=await fs.readFile('scripts/protected-operational-reentry-evidence.mjs','utf8');
+const protectedMain=protectedPagesSource.slice(protectedPagesSource.indexOf('async function main()'));
+assert.ok(protectedMain.indexOf('const beforeRotation=')<protectedMain.indexOf("result=await publishProtectedPreActivationTarget"));
+assert.ok(protectedMain.indexOf('const beforeRotation=')<protectedMain.indexOf('? await publishProtectedOperationalEvidence'));
+assert.match(protectedMain,/if\(!beforeRotation\?\.payload\.pagesWrite\)[\s\S]*assertProtectedPagesWritesClosed/);
+assert.ok(recovery.indexOf('--reserve-recovery-writer')<recovery.indexOf('- name: Redeploy the exact sealed Pages target'));
 assertSourceReviewRead(recovery);
 for (const job of ['reconcile-operational-pending', 'recover-operational-pages-target']) {
   assertSourceReviewRead(recovery, job);
@@ -152,6 +210,8 @@ for (const id of ['integrated-historical-maintenance-begin', 'code-only-integrat
 }
 
 assert.equal(deploy.match(/check-pages-generation-order.mjs/g).length, 2);
+assert.ok(deploy.indexOf('--reserve-pages-writer')<deploy.indexOf('- name: Deploy to GitHub Pages'));
+assert.match(deploy,/--deployment-id "\$\{\{ inputs\.pre_activation_recovery && format\('pages-recovery-\{0\}-\{1\}'/);
 assert.match(deploy, /exact_public_recovery/);
 assert.match(deploy, /--recovery-source-sha256/);
 assert.equal(deploy.match(/\.sourcePublicManifestCanonicalSha256/g)?.length, 2);

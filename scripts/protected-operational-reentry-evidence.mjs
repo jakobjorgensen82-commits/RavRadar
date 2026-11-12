@@ -9,6 +9,7 @@ import { PUBLIC_CONFIG } from '../config.js';
 import { createSupabaseAdminRequester } from './lib/supabase-admin-rest.mjs';
 import { fileURLToPath } from 'node:url';
 import { gzip, gunzip } from 'node:zlib';
+import { readAuthenticPagesAttemptClosure } from './github-pages-attempt-evidence.mjs';
 
 import { assertExactPublicRavScoreModelBindingShape } from '../js/core/ravscore-public-profile-contract.js';
 import { sha256CanonicalJson, assertUploadedOperationalPagesTarget } from './ravscore-operational-pages-recovery.mjs';
@@ -163,8 +164,9 @@ export function validateProtectedOperationalEvidencePointer(value, {
   policy = PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY,
 } = {}) {
   const hasPhase = Object.hasOwn(value ?? {}, 'preActivation');
-  exactKeys(value, hasPhase ? [...POINTER_KEYS, 'preActivation'] : POINTER_KEYS, 'Operational evidence pointer');
-  if (value.schemaVersion !== (hasPhase ? '2.0.0' : policy.schemaVersion) || value.kind !== policy.pointerKind) {
+  const hasRecovery = Object.hasOwn(value ?? {}, 'pagesWrite');
+  exactKeys(value, [...POINTER_KEYS, ...(hasPhase ? ['preActivation'] : []), ...(hasRecovery ? ['pagesWrite'] : [])], 'Operational evidence pointer');
+  if (value.schemaVersion !== (hasRecovery ? '3.0.0' : hasPhase ? '2.0.0' : policy.schemaVersion) || value.kind !== policy.pointerKind) {
     throw new Error('Operational evidence pointer identity is invalid');
   }
   const current = validateProtectedOperationalEvidenceDescriptor(value.current, { policy });
@@ -177,7 +179,8 @@ export function validateProtectedOperationalEvidencePointer(value, {
   const preActivation = hasPhase && value.preActivation !== null
     ? validatePhaseSlot(value.preActivation) : null;
   return { schemaVersion: value.schemaVersion, kind: value.kind, current, previous,
-    ...(hasPhase ? { preActivation } : {}) };
+    ...(hasPhase ? { preActivation } : {}),
+    ...(hasRecovery ? { pagesWrite: validatePagesWrite(value.pagesWrite) } : {}) };
 }
 
 function validateManifest(manifest) {
@@ -237,12 +240,14 @@ function descriptorFromFiles(files, { deploymentId, repository, policy, objectSh
     label: 'Operational evidence target binding',
   });
   if (preActivation) {
-    exactKeys(phase, ['schemaVersion','sourceHead','sourceCurrent','sourceCurrentSha256','checkpointOutcomes','privatePayloadIncluded'], 'Pre-activation phase');
+    exactKeys(phase, ['schemaVersion','sourceHead','sourceCurrent','sourceCurrentSha256','checkpointOutcomes','privatePayloadIncluded',
+      ...(Object.hasOwn(phase, 'ordinaryMaintenance') ? ['ordinaryMaintenance'] : [])], 'Pre-activation phase');
     if (phase.schemaVersion !== 'ravradar-current-grid-pre-activation-v1'
       || phase.sourceHead !== seal.headSha || phase.privatePayloadIncluded !== false
       || phase.sourceCurrent?.pending !== false || phase.sourceCurrent?.model !== 'integrated'
       || phase.sourceCurrentSha256 !== sha256CanonicalJson(phase.sourceCurrent))
       throw new Error('Pre-activation source identity is invalid');
+    if (Object.hasOwn(phase, 'ordinaryMaintenance')) assertOrdinaryMaintenanceOrigin(phase.ordinaryMaintenance, phase, seal);
     assertPhaseCheckpoint(files, phase);
     if (byPath.has('handoff.json') || byPath.has('plan.json') || byPath.has('integrated-readiness.json'))
       throw new Error('Pre-activation target must not claim completed handoff/readiness/plan');
@@ -476,7 +481,8 @@ function descriptors(pointer) {
   return [pointer?.current, pointer?.previous].filter(Boolean);
 }
 function retainedDescriptors(pointer) {
-  return [...descriptors(pointer), pointer?.preActivation?.originalTarget, pointer?.preActivation?.target].filter(Boolean);
+  return [...descriptors(pointer), pointer?.preActivation?.originalTarget, pointer?.preActivation?.target,
+    pointer?.pagesWrite?.target].filter(Boolean);
 }
 
 async function removeCreatedEvidenceIfUnreferenced({
@@ -537,7 +543,8 @@ export async function publishProtectedOperationalEvidence({
   if (requireRetained && !retainingNew && !retained) {
     throw new Error('Operational evidence cannot evict the exact active source');
   }
-  const sameDeployment = existingDescriptors.find(
+  const pinnedTarget=existing?.payload.pagesWrite?.target;
+  const sameDeployment = [...existingDescriptors,...(pinnedTarget?.kind===policy.descriptorKind?[pinnedTarget]:[])].find(
     item => item.deploymentId === deploymentId,
   ) ?? null;
   if (sameDeployment && !same(sameDeployment, built.descriptor)) {
@@ -551,12 +558,15 @@ export async function publishProtectedOperationalEvidence({
     ? retained
     : existingDescriptors.find(item => item.deploymentId !== deploymentId) ?? null;
   const pointer = {
-    schemaVersion: Object.hasOwn(existing?.payload ?? {}, 'preActivation') ? '2.0.0' : policy.schemaVersion,
+    schemaVersion: Object.hasOwn(existing?.payload ?? {}, 'pagesWrite') ? '3.0.0'
+      : Object.hasOwn(existing?.payload ?? {}, 'preActivation') ? '2.0.0' : policy.schemaVersion,
     kind: policy.pointerKind,
     current: built.descriptor,
     previous: other,
     ...(Object.hasOwn(existing?.payload ?? {}, 'preActivation')
       ? { preActivation: existing.payload.preActivation } : {}),
+    ...(Object.hasOwn(existing?.payload ?? {}, 'pagesWrite')
+      ? { pagesWrite: existing.payload.pagesWrite } : {}),
   };
   if (existing && same(existing.payload, pointer)) {
     return {
@@ -745,6 +755,88 @@ function ownerFromDescriptor(d) {
   return phaseOwner({repository:d.repository,runId:d.runId,runAttempt:d.runAttempt,
     headSha:d.sourceHead,attemptId:d.deploymentId});
 }
+function validatePagesWrite(value) {
+  exactKeys(value, ['target', 'owner'], 'Pages recovery write');
+  const targetPolicy = value.target?.kind === PRE_ACTIVATION_POLICY.descriptorKind ? phasePolicy()
+    : PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY;
+  const target = validateProtectedOperationalEvidenceDescriptor(value.target, { policy: targetPolicy });
+  const owner = phaseOwner(value.owner);
+  if (owner.repository !== target.repository)
+    throw new Error('Pages recovery writer identity differs');
+  return { target, owner };
+}
+const DEFAULT_WEATHER_INPUTS = Object.freeze({ current_family_cold_start: false, completed_private_runtime: false,
+  completed_stage_source: '', quick_confirmation: false, quick_progress_source: '', checkpoint_target_hour: '',
+  weather_state_epoch_bootstrap: false, weather_state_epoch_checkpoint_reentry: false,
+  weather_state_epoch_archive_key: '', weather_state_epoch_archive_catalog_sha256: '', weather_state_epoch_raw_cache_key: '',
+  native_sampling_identity_original_recovery: false });
+const DEFAULT_WEATHER_PATH = '.github/workflows/run-current-weather-once.yml';
+function normalizedDefaultWeatherInputs(value) {
+  if (!isObject(value) || Object.keys(value).some(key => !Object.hasOwn(DEFAULT_WEATHER_INPUTS, key))) return null;
+  const result = {};
+  for (const [key, expected] of Object.entries(DEFAULT_WEATHER_INPUTS)) {
+    const input = value[key] ?? expected;
+    if (expected === false ? ![false, 'false'].includes(input) : input !== '') return null;
+    result[key] = expected;
+  }
+  return result;
+}
+function assertOrdinaryMaintenanceOrigin(origin, phase, seal) {
+  exactKeys(origin, ['schemaVersion', 'owner', 'workflowPath', 'eventName', 'inputs',
+    'sourceModelBindingSha256', 'targetModelBindingSha256', 'transitionKind'], 'Ordinary phase origin');
+  const owner = phaseOwner(origin.owner);
+  const sourceHash = sha256CanonicalJson(phase.sourceCurrent.modelBinding);
+  if (origin.schemaVersion !== 'ravradar-ordinary-unchanged-model-phase-v1' || origin.workflowPath !== DEFAULT_WEATHER_PATH
+    || origin.eventName !== 'workflow_dispatch' || !same(origin.inputs, DEFAULT_WEATHER_INPUTS)
+    || owner.repository !== seal.repository || owner.headSha !== seal.headSha
+    || owner.attemptId !== `pages-${owner.runId}-${owner.runAttempt}`
+    || phase.sourceCurrent.model !== 'integrated' || phase.sourceCurrent.bindingCurrent !== true
+    || phase.sourceCurrent.pending !== false || sourceHash !== sha256CanonicalJson(seal.targetModelBinding)
+    || origin.sourceModelBindingSha256 !== sourceHash || origin.targetModelBindingSha256 !== sourceHash
+    || origin.transitionKind !== phase.sourceCurrent.transitionKind || typeof origin.transitionKind !== 'string')
+    throw new Error('Ordinary phase origin is not the exact unchanged maintenance');
+  return origin;
+}
+async function readDefaultWeatherContext({ owner, fetchImpl = fetch, env = process.env } = {}) {
+  if (env.GITHUB_REF !== 'refs/heads/main' || env.GITHUB_WORKFLOW_REF !== owner.repository + '/' + DEFAULT_WEATHER_PATH + '@refs/heads/main'
+    || env.GITHUB_EVENT_NAME !== 'workflow_dispatch' || env.GITHUB_REPOSITORY !== owner.repository
+    || Number(env.GITHUB_RUN_ID) !== owner.runId || Number(env.GITHUB_RUN_ATTEMPT) !== owner.runAttempt
+    || env.GITHUB_SHA !== owner.headSha || !env.GITHUB_EVENT_PATH) return null;
+  const event = JSON.parse(await fs.readFile(env.GITHUB_EVENT_PATH, 'utf8'));
+  const inputs = normalizedDefaultWeatherInputs(event.inputs ?? {});
+  if (!inputs) return null;
+  const run = await repairGithubJson(owner.repository + '/actions/runs/' + owner.runId, fetchImpl);
+  if (run.id !== owner.runId || run.run_attempt !== owner.runAttempt || run.head_sha !== owner.headSha
+    || run.head_branch !== 'main' || run.path !== DEFAULT_WEATHER_PATH || run.event !== 'workflow_dispatch'
+    || run.repository?.full_name !== owner.repository || !['queued', 'in_progress', 'waiting'].includes(run.status))
+    throw new Error('Ordinary phase caller is not the actual active default run');
+  return inputs;
+}
+async function attachOrdinaryMaintenanceOrigin(directory, { repository, deploymentId, existing, storage, fetchImpl = fetch, env=process.env } = {}) {
+  const file = path.join(directory, 'pre-activation.json');
+  const phase = JSON.parse(await fs.readFile(file, 'utf8'));
+  if (Object.hasOwn(phase, 'ordinaryMaintenance')) {
+    const original = existing?.payload.preActivation?.originalTarget;
+    if (!original || !same(phase, phaseJson(await phaseFiles(storage, original), 'pre-activation.json')))
+      throw new Error('Phase origin must be derived by the publisher or retained from its immutable original');
+    return;
+  }
+  if (existing?.payload.preActivation) return; // Never upgrade an old phase's original intention on reentry.
+  const seal = JSON.parse(await fs.readFile(path.join(directory, 'pages-artifact-seal.json'), 'utf8'));
+  const owner = { repository, runId: seal.runId, runAttempt: seal.runAttempt, headSha: seal.headSha, attemptId: deploymentId };
+  // Failure to authenticate this optional disposition never creates retire authority.
+  let inputs;
+  try { inputs = await readDefaultWeatherContext({ owner, fetchImpl, env }); } catch { return; }
+  if (!inputs || phase.sourceCurrent?.bindingCurrent !== true || phase.sourceCurrent?.pending !== false
+    || phase.sourceCurrent?.model !== 'integrated'
+    || !same(phase.sourceCurrent.modelBinding, seal.targetModelBinding)) return;
+  const hash = sha256CanonicalJson(seal.targetModelBinding);
+  const origin = { schemaVersion: 'ravradar-ordinary-unchanged-model-phase-v1', owner,
+    workflowPath: DEFAULT_WEATHER_PATH, eventName: 'workflow_dispatch', inputs,
+    sourceModelBindingSha256: hash, targetModelBindingSha256: hash, transitionKind: phase.sourceCurrent.transitionKind };
+  assertOrdinaryMaintenanceOrigin(origin, phase, seal);
+  await fs.writeFile(file, JSON.stringify({ ...phase, ordinaryMaintenance: origin }), { mode: 0o600 });
+}
 function validatePhaseSlot(value) {
   exactKeys(value,['originalTarget','target','owner'],'Pre-activation slot');
   const originalTarget=validateProtectedOperationalEvidenceDescriptor(value.originalTarget,{policy:phasePolicy()});
@@ -814,6 +906,168 @@ async function phaseCurrent(request) {
   phaseDocumentRows.set(value,{operational:byKey.get(operationalKey),profile:byKey.get(profileKey)});
   return value;
 }
+const pagesClosureAdmissions = new WeakMap();
+export function hasProtectedPagesWriterClosure(value, pending) {
+  const admission = pagesClosureAdmissions.get(value);
+  return admission?.pendingSha256 === sha256CanonicalJson(pending) && value.closed === true;
+}
+async function readWriterOwners(owners, fetchImpl) {
+  const unique = owners.filter((owner, index) => owners.findIndex(other => same(owner, other)) === index);
+  const proofs = [];
+  for (const owner of unique) proofs.push(await readAuthenticPagesAttemptClosure({ owner, fetchImpl }));
+  return proofs;
+}
+function allWriterProofsClosed(proofs) {
+  return proofs.length > 0 && proofs.every(proof => ['NO_POST', 'CLOSED_UNPUBLISHED'].includes(proof.state));
+}
+async function phaseWriterClosure(evidence, { request, repository, fetchImpl = fetch, allowPublicTarget = false } = {}) {
+  const row = await readPointer(request, { allowMissing: false, policy: PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY });
+  if (row.version !== evidence.centralVersion || !same(row.payload.preActivation, evidence.slot))
+    throw new Error('Pre-activation writers changed during closure read');
+  const owners = [ownerFromDescriptor(evidence.slot.originalTarget), evidence.slot.owner, ownerFromDescriptor(evidence.slot.target)];
+  if (row.payload.pagesWrite) owners.push(row.payload.pagesWrite.owner);
+  if (owners.some(owner => owner.repository !== repository)) throw new Error('Pre-activation writer repository differs');
+  const proofs = await readWriterOwners(owners, fetchImpl);
+  if (!allWriterProofsClosed(proofs) && !(allowPublicTarget && proofs.every(proof =>
+    ['NO_POST', 'CLOSED_UNPUBLISHED', 'PUBLIC_TARGET_REQUIRED'].includes(proof.state))))
+    throw new Error('Pre-activation Pages writes need exact public completion');
+  return proofs;
+}
+export async function assertProtectedPagesWritesClosed({ request, repository, fetchImpl = fetch,
+  incomingDescriptor=null,allowCurrentOwner=false,env=process.env } = {}) {
+  const row = await readPointer(request, { allowMissing: true, policy: PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY });
+  const owners=row?.payload.pagesWrite?[validatePagesWrite(row.payload.pagesWrite).owner]
+    :[...retainedDescriptors(row?.payload),incomingDescriptor].filter(Boolean).map(ownerFromDescriptor);
+  const otherOwners=owners.filter(owner=>!(allowCurrentOwner&&owner.repository===env.GITHUB_REPOSITORY
+    &&owner.repository===repository&&owner.headSha===env.GITHUB_SHA&&env.GITHUB_REF==='refs/heads/main'
+    &&owner.runId===Number(env.GITHUB_RUN_ID)&&owner.runAttempt===Number(env.GITHUB_RUN_ATTEMPT)));
+  if(!row?.payload.pagesWrite&&otherOwners.length===0)throw new Error('Pages bootstrap predecessor is not proved closed');
+  if(otherOwners.some(owner=>owner.repository!==repository))throw new Error('Registered Pages writer repository differs');
+  const proofs=await readWriterOwners(otherOwners,fetchImpl);
+  if(proofs.some(proof=>!['NO_POST','CLOSED_UNPUBLISHED','PUBLIC_TARGET_REQUIRED'].includes(proof.state)))
+    throw new Error('Registered Pages write is not proved closed');
+  return {closed:true,pagesWriterPresent:Boolean(row?.payload.pagesWrite),privatePayloadIncluded:false};
+}
+export async function assertProtectedPagesRecoveryWriter({request,repository,owner}={}){
+  const row=await readPointer(request,{allowMissing:false,policy:PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY});
+  const record=validatePagesWrite(row.payload.pagesWrite);
+  if(record.owner.repository!==repository||!same(record.owner,phaseOwner(owner)))throw new Error('Actual recovery writer reservation missing');
+  const current=await phaseCurrent(request),target=record.target;
+  if(!current.pending||current.deploymentId!==target.deploymentId||current.sourceHead!==target.sourceHead
+    ||current.requestedPublicManifestSha256!==target.publicManifestSha256
+    ||current.requestedImplementationClosureSha256!==target.implementationClosureSha256
+    ||sha256CanonicalJson(current.requestedModelBinding)!==target.modelBindingSha256)
+    throw new Error('Actual recovery writer target changed');
+  return {reserved:true,privatePayloadIncluded:false};
+}
+export async function readProtectedPagesWriterSnapshot({request,storage,repository,owner,seal,sourceManifest,expectedSnapshot}={}){
+  phaseOwner(owner);
+  const policy=PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY;
+  const row=await readPointer(request,{allowMissing:false,policy}),record=validatePagesWrite(row.payload.pagesWrite),target=record.target;
+  if(owner.repository!==repository||!same(record.owner,owner)||seal?.repository!==repository
+    ||seal.runId!==owner.runId||seal.runAttempt!==owner.runAttempt||seal.headSha!==owner.headSha||seal.attemptId!==owner.attemptId
+    ||target.deploymentId!==owner.attemptId||target.repository!==repository||target.sourceHead!==owner.headSha
+    ||target.publicManifestSha256!==seal.targetPublicManifestSha256
+    ||target.implementationClosureSha256!==seal.targetImplementationClosureSha256
+    ||target.modelBindingSha256!==sha256CanonicalJson(seal.targetModelBinding))throw new Error('Pages writer reservation or exact target changed');
+  const targetPolicy=target.kind===PRE_ACTIVATION_POLICY.descriptorKind?phasePolicy():policy;
+  const files=await decodeArchive(await storage.download(target.objectPath),target,targetPolicy);
+  if(!same(phaseJson(files,'pages-artifact-seal.json'),seal))throw new Error('Pages writer original artifact seal changed');
+  validateManifest(sourceManifest);
+  const sourceHash=sha256CanonicalJson(sourceManifest),current=await phaseCurrent(request);
+  if(current.pending?(current.deploymentId!==target.deploymentId||current.sourceHead!==target.sourceHead
+      ||current.sourcePublicManifestSha256!==sourceHash||!same(current.sourceModelBinding,sourceManifest.ravScoreModelBinding)
+      ||current.requestedPublicManifestSha256!==target.publicManifestSha256
+      ||current.requestedImplementationClosureSha256!==target.implementationClosureSha256
+      ||!same(current.requestedModelBinding,seal.targetModelBinding))
+    :(current.publicManifestSha256!==sourceHash||!same(current.modelBinding,sourceManifest.ravScoreModelBinding)
+      ||!same(current.modelBinding,seal.targetModelBinding)))throw new Error('Pages writer central source or pending target changed');
+  const fresh=await readPointer(request,{allowMissing:false,policy});
+  if(fresh.version!==row.version||!same(fresh.payload,row.payload)||!same(current,await phaseCurrent(request)))
+    throw new Error('Pages writer reservation changed during readback');
+  const snapshotSha256=sha256CanonicalJson({pointerVersion:row.version,pagesWrite:record,current,rows:phaseDocumentRows.get(current)});
+  if(expectedSnapshot!==undefined&&expectedSnapshot!==snapshotSha256)throw new Error('Pages writer admission snapshot changed');
+  return {snapshotSha256,privatePayloadIncluded:false};
+}
+export async function readProtectedPagesWriterClosure({ request, storage, repository, pending, fetchImpl = fetch } = {}) {
+  const row = await readPointer(request, { allowMissing: false, policy: PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY });
+  const target = retainedDescriptors(row.payload).find(d => d.deploymentId === pending.attemptId
+    && d.repository === repository && d.sourceHead === pending.headSha
+    && d.publicManifestSha256 === pending.requestedPublicManifestSha256
+    && d.implementationClosureSha256 === pending.requestedImplementationClosureSha256
+    && d.modelBindingSha256 === sha256CanonicalJson(pending.requestedModelBinding));
+  if (!target) throw new Error('Exact protected Pages writer target missing');
+  const targetPolicy = target.kind === PRE_ACTIVATION_POLICY.descriptorKind ? phasePolicy() : PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY;
+  await verifyObject(storage, target, targetPolicy);
+  const owners = [ownerFromDescriptor(target)];
+  if (row.payload.pagesWrite) owners.push(row.payload.pagesWrite.owner);
+  const proofs = await readWriterOwners(owners, fetchImpl);
+  const value = Object.freeze({ closed: allWriterProofsClosed(proofs), centralVersion: row.version,
+    states: Object.freeze(proofs.map(proof => proof.state)), privatePayloadIncluded: false });
+  pagesClosureAdmissions.set(value, { pendingSha256: sha256CanonicalJson(pending), target, pointer: row.payload });
+  return value;
+}
+export async function registerProtectedPagesWriter({ request, storage, repository, pending, owner,
+  writerClosure, baseUrl = process.env.RAVRADAR_PUBLIC_BASE_URL, fetchImpl = fetch, env = process.env } = {}) {
+  phaseOwner(owner);
+  const recovery=pending!==undefined;
+  if (recovery&&!hasProtectedPagesWriterClosure(writerClosure, pending)) throw new Error('Recovery writer closure is not authentic');
+  if (owner.repository !== repository || (recovery&&owner.attemptId !== `pages-recovery-${owner.runId}-${owner.runAttempt}`)
+    || env.GITHUB_REF !== 'refs/heads/main' || env.GITHUB_REPOSITORY !== repository || env.GITHUB_SHA !== owner.headSha
+    || Number(env.GITHUB_RUN_ID) !== owner.runId || Number(env.GITHUB_RUN_ATTEMPT) !== owner.runAttempt
+    || env.GITHUB_JOB !== (recovery?'recover-operational-pages-target':'deploy-pages')) throw new Error('Pages writer is not the actual executor');
+  const run = await repairGithubJson(repository + '/actions/runs/' + owner.runId, fetchImpl);
+  if (run.id !== owner.runId || run.run_attempt !== owner.runAttempt || run.head_sha !== owner.headSha
+    || run.head_branch !== 'main' || run.repository?.full_name !== repository || run.status !== 'in_progress'
+    || ![DEFAULT_WEATHER_PATH,'.github/workflows/update-and-deploy.yml','.github/workflows/deploy-code-only-repair.yml',
+      '.github/workflows/resume-operational-checkpoint.yml'].includes(run.path))
+    throw new Error('Recovery writer run is not active exact main');
+  const admission = pagesClosureAdmissions.get(writerClosure), policy = PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY;
+  const row = await readPointer(request, { allowMissing: false, policy });
+  if ((recovery&&(row.version !== writerClosure.centralVersion || !same(row.payload, admission.pointer)))
+    || (row.payload.pagesWrite && same(row.payload.pagesWrite.owner, owner))) throw new Error('Recovery writer reservation changed or already consumed');
+  if(!recovery)await assertProtectedPagesWritesClosed({request,repository,fetchImpl,allowCurrentOwner:true,env});
+  const target=recovery?admission.target:retainedDescriptors(row.payload).find(d=>d.deploymentId===owner.attemptId
+    &&d.repository===repository&&d.sourceHead===owner.headSha&&d.runId===owner.runId&&d.runAttempt===owner.runAttempt);
+  if(!target)throw new Error('Pages writer lacks its exact protected sealed target');
+  const current = await phaseCurrent(request);
+  if (recovery&&(!current.pending || current.deploymentId !== pending.attemptId || current.sourceHead !== pending.headSha
+    || current.sourcePublicManifestSha256 !== pending.sourcePublicManifestSha256
+    || current.requestedPublicManifestSha256 !== pending.requestedPublicManifestSha256
+    || current.requestedImplementationClosureSha256 !== pending.requestedImplementationClosureSha256
+    || !same(current.requestedModelBinding, pending.requestedModelBinding))) throw new Error('Recovery target changed before reservation');
+  if(!recovery&&(current.pending?(current.deploymentId!==target.deploymentId
+      ||current.requestedPublicManifestSha256!==target.publicManifestSha256
+      ||current.requestedImplementationClosureSha256!==target.implementationClosureSha256
+      ||sha256CanonicalJson(current.requestedModelBinding)!==target.modelBindingSha256)
+    :sha256CanonicalJson(current.modelBinding)!==target.modelBindingSha256))throw new Error('Ordinary Pages source or pending target changed');
+  await verifyObject(storage, target, target.kind === PRE_ACTIVATION_POLICY.descriptorKind ? phasePolicy() : policy);
+  await observeUnchangedSource({ baseUrl, expectedSha256: recovery?pending.sourcePublicManifestSha256
+    :current.pending?current.sourcePublicManifestSha256:current.publicManifestSha256, fetchImpl });
+  if (!same(current, await phaseCurrent(request))) throw new Error('Recovery source changed during reservation');
+  const fresh=await readPointer(request,{allowMissing:false,policy});
+  if(fresh.version!==row.version||!same(fresh.payload,row.payload))throw new Error('Pages writer pointer changed before reservation');
+  const record = validatePagesWrite({ target, owner });
+  const written = await phaseCas(request, row, { ...row.payload, schemaVersion: '3.0.0', pagesWrite: record });
+  return { reserved: true, centralVersion: written.version, owner, targetDeploymentId: record.target.deploymentId, privatePayloadIncluded: false };
+}
+async function observeUnchangedSource({ baseUrl, expectedSha256, fetchImpl = fetch } = {}) {
+  const base = String(baseUrl ?? '').replace(/\/$/, '');
+  if (!['https://ravradar.dk', 'https://jakobjorgensen82-commits.github.io/RavRadar'].includes(base))
+    throw new Error('Public source observation base differs');
+  const { readBoundedPublicManifest } = await import('./lib/pages-generation-order.mjs');
+  const observations=[];
+  for (let index = 0; index < 2; index++) {
+    if(index>0)await new Promise(resolve=>setTimeout(resolve,1000));
+    const response = await fetchImpl(base + '/data/live/manifest.json?pages-closure=' + crypto.randomBytes(12).toString('hex'),
+      { redirect: 'error', cache: 'no-store', headers: { 'Cache-Control': 'no-cache' }, signal: AbortSignal.timeout(15_000) });
+    if (!response.ok) throw new Error('Public source observation unavailable');
+    const manifest = validateManifest(JSON.parse(await readBoundedPublicManifest(response)));
+    if (sha256CanonicalJson(manifest) !== expectedSha256) throw new Error('Public source changed before Pages disposition');
+    observations.push({manifest,observationNonce:'closed-source-'+crypto.randomBytes(12).toString('hex'),observedAt:new Date().toISOString()});
+  }
+  return observations;
+}
 async function phaseCas(request,existing,pointer) {
   const policy=PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY,expected=existing.version+1;
   try {
@@ -862,23 +1116,30 @@ export function classifyProtectedPreActivationReentry({evidence,current,attempt,
   if(d.sourceHead!==sourceHead||!phaseSourceMatches(current,phase,d)||current.pending!==false) throw new Error('Pre-activation source state changed');
   return 'PRE_ACTIVATION_RESUME';
 }
-export async function classifyProtectedPreActivationCurrent({request,storage,repository,sourceHead,attempt}={}) {
+export async function classifyProtectedPreActivationCurrent({request,storage,repository,sourceHead,attempt,baseUrl,
+  fetchImpl=fetch,env=process.env}={}) {
   const evidence=await inspectProtectedPreActivationTarget({request,storage,repository});
   if(evidence.action==='NONE')return {action:'NONE'};
   const current=await phaseCurrent(request);
+  if (!current.pending && !phaseTargetCompleted(current,evidence.slot.target)) {
+    const retired=await retireClosedUnpublishedOrdinaryPreActivationTarget({request,storage,repository,sourceHead,baseUrl,fetchImpl,env});
+    if(retired.retired)return {action:'NONE',retiredOrdinaryPhase:true};
+    await phaseWriterClosure(evidence,{request,repository,fetchImpl});
+  }
   if(current.pending&&current.sourcePublicManifestSha256!==evidence.phase.sourceCurrent.publicManifestSha256) {
     const ordinary=await protectedFilesBy({request,storage,repository,deploymentId:evidence.slot.target.deploymentId});
     await admitAuthenticPreparedPendingSource({current,evidence,ordinary});
   }
   return {action:classifyProtectedPreActivationReentry({evidence,current,attempt,repository,sourceHead})};
 }
-export async function publishProtectedPreActivationTarget({directory,deploymentId,repository,request,storage}={}) {
+export async function publishProtectedPreActivationTarget({directory,deploymentId,repository,request,storage,fetchImpl=fetch,env=process.env}={}) {
   const policy=PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY;
+  const existing=await readPointer(request,{allowMissing:false,policy});
+  await attachOrdinaryMaintenanceOrigin(directory,{repository,deploymentId,existing,storage,fetchImpl,env});
   const built=await buildProtectedOperationalEvidenceArchive({directory,deploymentId,repository,policy:phasePolicy()});
   const files=await decodeArchive(built.archive,built.descriptor,phasePolicy());
   const phase=phaseJson(files,'pre-activation.json'),current=await phaseCurrent(request);
   if(!phaseSourceMatches(current,phase,built.descriptor)||current.pending) throw new Error('Pre-activation source changed before publication');
-  const existing=await readPointer(request,{allowMissing:false,policy});
   const active=descriptors(existing.payload).find(d=>d.deploymentId===current.deploymentId);
   if(!active||active.repository!==repository||active.publicManifestSha256!==current.publicManifestSha256
     ||active.implementationClosureSha256!==current.activeImplementationClosureSha256
@@ -903,11 +1164,11 @@ export async function publishProtectedPreActivationTarget({directory,deploymentI
   const upload=await storage.uploadImmutable(built.descriptor.objectPath,built.archive);
   await verifyObject(storage,built.descriptor,phasePolicy());
   let row;
-  try {row=await phaseCas(request,existing,{...existing.payload,schemaVersion:'2.0.0',preActivation:slot});}
+  try {row=await phaseCas(request,existing,{...existing.payload,schemaVersion:Object.hasOwn(existing.payload,'pagesWrite')?'3.0.0':'2.0.0',preActivation:slot});}
   catch(first){if(upload?.created===true){try{await removeCreatedEvidenceIfUnreferenced({request,storage,objectPath:built.descriptor.objectPath,policy});}catch{}}throw first;}
   return {published:true,centralVersion:row.version,slot};
 }
-export async function claimProtectedPreActivationTarget({request,storage,repository,sourceHead,owner,attempt}={}) {
+export async function claimProtectedPreActivationTarget({request,storage,repository,sourceHead,owner,attempt,fetchImpl=fetch}={}) {
   phaseOwner(owner);
   if(owner.attemptId!==`pages-recovery-${owner.runId}-${owner.runAttempt}`)throw new Error('Recovery requires its fixed distinct attempt identity');
   if(owner.repository!==repository||owner.headSha!==sourceHead) throw new Error('Recovery owner source differs');
@@ -916,6 +1177,7 @@ export async function claimProtectedPreActivationTarget({request,storage,reposit
   const evidence=await inspectProtectedPreActivationTarget({request,storage,repository});
   if(evidence.centralVersion!==existing.version||!same(evidence.slot,existing.payload.preActivation)) throw new Error('Recovery phase raced');
   if(same(owner,evidence.slot.owner)) throw new Error('A live owner is not a terminal takeover');
+  await phaseWriterClosure(evidence,{request,repository,fetchImpl});
   const current=await phaseCurrent(request);
   if(classifyProtectedPreActivationReentry({evidence,current,attempt,repository,sourceHead})!=='PRE_ACTIVATION_RESUME')
     throw new Error('Recovery requires a terminal pre-activation source');
@@ -999,18 +1261,69 @@ export async function clearProtectedPreActivationTarget({request,storage,reposit
     ||verification.privatePayloadRead!==false||sha256CanonicalJson(verification.modelBinding)!==d.modelBindingSha256)
     throw new Error('Pre-activation full public verification differs');
   if(!same(current,await phaseCurrent(request)))throw new Error('Pre-activation central completion changed during verification');
+  await phaseWriterClosure({centralVersion:row.version,slot},{request,repository,fetchImpl,allowPublicTarget:true});
   const fresh=await readPointer(request,{allowMissing:false,policy});
   if(fresh.version!==row.version||!same(fresh.payload,row.payload))throw new Error('Pre-activation slot changed before clear');
   // The verified phase is finished. Restore the exact original four-field
   // pointer schema so existing rollback/source readers remain admissible.
   // No descriptor, archive, original pin or completed target is rewritten.
   const clearedPointer = validateProtectedOperationalEvidencePointer({
-    schemaVersion: policy.schemaVersion, kind: row.payload.kind,
+    schemaVersion: Object.hasOwn(row.payload,'pagesWrite')?'3.0.0':policy.schemaVersion, kind: row.payload.kind,
     current: row.payload.current, previous: row.payload.previous,
+    ...(Object.hasOwn(row.payload,'pagesWrite')?{pagesWrite:row.payload.pagesWrite}:{}),
   }, {policy});
   await phaseCas(request,row,clearedPointer);
   // Preserve all immutable phase archives for lineage; no cleanup is proof.
   return {cleared:true,privatePayloadIncluded:false};
+}
+
+export async function retireClosedUnpublishedOrdinaryPreActivationTarget({request,storage,repository,sourceHead,
+  baseUrl,fetchImpl=fetch,env=process.env,verifyPublic}={}) {
+  const policy=PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY;
+  const row=await readPointer(request,{allowMissing:true,policy});
+  if(!row?.payload.preActivation)return {retired:false,reason:'NO_PHASE'};
+  const evidence=await inspectProtectedPreActivationTarget({request,storage,repository});
+  if(evidence.centralVersion!==row.version||!same(evidence.slot,row.payload.preActivation))throw new Error('Ordinary retire phase raced');
+  const {slot,phase}=evidence,d=slot.target;
+  if(!phase.ordinaryMaintenance)return {retired:false,reason:'ORIGINAL_INTENTION_NOT_PROVED'};
+  const owner=phaseOwner({repository,runId:Number(env.GITHUB_RUN_ID),runAttempt:Number(env.GITHUB_RUN_ATTEMPT),
+    headSha:env.GITHUB_SHA,attemptId:`pages-${env.GITHUB_RUN_ID}-${env.GITHUB_RUN_ATTEMPT}`});
+  if(owner.headSha!==sourceHead||!await readDefaultWeatherContext({owner,fetchImpl,env}))
+    return {retired:false,reason:'EXPLICIT_RECOVERY_OR_NONDEFAULT_CALLER'};
+  const current=await phaseCurrent(request);
+  if(current.pending||current.model!=='integrated'||current.bindingCurrent!==true||!same(current,phase.sourceCurrent)
+    ||sha256CanonicalJson(current.modelBinding)!==d.modelBindingSha256
+    ||phase.ordinaryMaintenance.transitionKind!==current.transitionKind)
+    return {retired:false,reason:'MODEL_SOURCE_OR_INSTALLATION_TRANSITION'};
+  await phaseWriterClosure(evidence,{request,repository,fetchImpl});
+  const sourceHash=current.publicManifestSha256;
+  await observeUnchangedSource({baseUrl,expectedSha256:sourceHash,fetchImpl});
+  const source=await protectedFilesBy({request,storage,repository,deploymentId:current.deploymentId});
+  const files=source.files,descriptor=source.descriptor;
+  const {verifyRavScoreOperationalPagesDeployment}=await import('./verify-ravscore-operational-pages-deployment.mjs');
+  const verification=await (verifyPublic??verifyRavScoreOperationalPagesDeployment)({baseUrl,sourceHead:descriptor.sourceHead,expectedModel:'integrated',fetchImpl,
+    expectedManifest:phaseJson(files,'manifest.json'),expectedBinding:phaseJson(files,'target-binding.json'),
+    expectedContractText:Buffer.from(files.find(f=>f.path==='target-contract.js').contentBase64,'base64').toString('utf8'),
+    expectedBundleText:Buffer.from(files.find(f=>f.path==='target-bundle.generated.js').contentBase64,'base64').toString('utf8'),
+    expectedPublicClosure:phaseJson(files,'target-public-closure.json'),observationNonce:'ordinary-retire-'+crypto.randomBytes(12).toString('hex')});
+  const sourceManifest=phaseJson(files,'manifest.json');
+  if(verification?.schemaVersion!=='ravscore-operational-pages-verification-v1'||verification.status!=='passed'
+    ||verification.sourceHead!==descriptor.sourceHead||verification.publicManifestSha256!==sourceHash
+    ||verification.implementationClosureSha256!==descriptor.implementationClosureSha256
+    ||verification.datasetId!==sourceManifest.datasetId||verification.productionReferenceAt!==sourceManifest.productionReferenceAt
+    ||verification.zoneCount!==210||verification.coastalPartCount!==673||verification.privatePayloadRead!==false
+    ||!same(verification.modelBinding,current.modelBinding))throw new Error('Ordinary retire source is not fully public');
+  if(!same(current,await phaseCurrent(request)))throw new Error('Ordinary retire source changed');
+  const fresh=await readPointer(request,{allowMissing:false,policy});
+  if(fresh.version!==row.version||!same(fresh.payload,row.payload))throw new Error('Ordinary retire owner changed');
+  const {preActivation,...kept}=row.payload;
+  const pointer=validateProtectedOperationalEvidencePointer({...kept,
+    schemaVersion:Object.hasOwn(kept,'pagesWrite')?'3.0.0':policy.schemaVersion},{policy});
+  await phaseCas(request,row,pointer); // One CAS; lost reply only permits its exact positive readback.
+  if((await inspectProtectedPreActivationTarget({request,storage,repository})).action!=='NONE'
+    ||!same(current,await phaseCurrent(request)))throw new Error('Ordinary retire final NONE not observed');
+  // B/S, all descriptors, other evidence and every immutable archive remain intact.
+  return {retired:true,action:'NONE',privatePayloadIncluded:false};
 }
 
 
@@ -1118,6 +1431,7 @@ async function preparedPhaseTarget({request,storage,repository,executor,attempt,
   if(evidence.action!=='PRE_ACTIVATION_PRESENT')throw new Error('Prepared recovery requires its authentic phase');
   const slot=validatePhaseSlot(evidence.slot),d=slot.target;
   requireTerminalOwner(attempt,slot.owner);
+  await phaseWriterClosure(evidence,{request,repository,fetchImpl});
   if(attempt.conclusion==='success')throw new Error('Prepared repair requires the actual unsuccessful original attempt');
   const jobs=await repairGithubJson(repository+'/actions/runs/'+d.runId+'/attempts/'+d.runAttempt+'/jobs?per_page=100',fetchImpl);
   const {exactPagesAttemptStep}=await import('./github-pages-attempt-evidence.mjs');
@@ -1284,7 +1598,7 @@ function parseArgs(argv) {
   const result = { mode: null, requireRetained: false };
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
-    if (['--publish', '--restore', '--publish-pre-activation', '--inspect-pre-activation', '--classify-pre-activation', '--claim-pre-activation', '--restore-pre-activation', '--prepare-pre-activation-handoff', '--clear-pre-activation', '--assert-pre-activation-owner', '--begin-terminal-pre-activation'].includes(argument)) {
+    if (['--publish', '--restore', '--publish-pre-activation', '--inspect-pre-activation', '--classify-pre-activation', '--claim-pre-activation', '--restore-pre-activation', '--prepare-pre-activation-handoff', '--clear-pre-activation', '--assert-pre-activation-owner', '--begin-terminal-pre-activation', '--assert-pages-writes-closed', '--assert-pages-recovery-writer', '--retire-closed-ordinary-phase', '--reserve-pages-writer'].includes(argument)) {
       if (result.mode) throw new Error('Use exactly one operational evidence mode');
       result.mode = argument.slice(2);
       continue;
@@ -1305,7 +1619,7 @@ function parseArgs(argv) {
     else if (['--attempt','--readiness','--plan','--base-url'].includes(argument)) result[argument.slice(2)] = value;
     else throw new Error(`Unknown operational evidence argument: ${argument}`);
   }
-  if (!result.mode || (!['inspect-pre-activation','classify-pre-activation','claim-pre-activation','clear-pre-activation','assert-pre-activation-owner'].includes(result.mode) && !result.directory) || !result.output) {
+  if (!result.mode || (!['inspect-pre-activation','classify-pre-activation','claim-pre-activation','clear-pre-activation','assert-pre-activation-owner','assert-pages-writes-closed','assert-pages-recovery-writer','retire-closed-ordinary-phase','reserve-pages-writer'].includes(result.mode) && !result.directory) || !result.output) {
     throw new Error('Operational evidence mode, directory and output are required');
   }
   if (result.mode === 'publish' && (!result.repository || !result.deploymentId)) {
@@ -1344,12 +1658,28 @@ async function main() {
   const common={request:clients.documentRequest,storage:clients.storage,repository:options.repository};
   const read=async name=>JSON.parse(await fs.readFile(options[name],'utf8'));
   let result;
+  if(options.mode==='publish'||options.mode==='publish-pre-activation'){
+    const beforeRotation=await readPointer(clients.documentRequest,{allowMissing:true,policy:PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY});
+    if(!beforeRotation?.payload.pagesWrite){
+      const incoming=await buildProtectedOperationalEvidenceArchive({directory:options.directory,deploymentId:options.deploymentId,
+        repository:options.repository,policy:options.mode==='publish-pre-activation'?phasePolicy():PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY});
+      await assertProtectedPagesWritesClosed({...common,incomingDescriptor:incoming.descriptor,allowCurrentOwner:true});
+    }
+    // An existing slot is preserved and pins its immutable target even when
+    // unknown. Backfill grants no Pages-write authority and cannot erase it.
+  }
   if(options.mode==='publish-pre-activation'){
     const owner=own();if(owner.repository!==options.repository||owner.attemptId!==options.deploymentId)throw new Error('Phase CLI owner mismatch');
     result=await publishProtectedPreActivationTarget({...common,directory:options.directory,deploymentId:options.deploymentId});
   }else if(options.mode==='inspect-pre-activation')result=await inspectProtectedPreActivationTarget(common);
   else if(options.mode==='classify-pre-activation')result=await classifyProtectedPreActivationCurrent({...common,
-    sourceHead:process.env.GITHUB_SHA,attempt:await read('attempt')});
+    sourceHead:process.env.GITHUB_SHA,attempt:await read('attempt'),baseUrl:options['base-url']});
+  else if(options.mode==='assert-pages-writes-closed')result=await assertProtectedPagesWritesClosed(common);
+  else if(options.mode==='assert-pages-recovery-writer')result=await assertProtectedPagesRecoveryWriter({...common,owner:own()});
+  else if(options.mode==='reserve-pages-writer')result=await registerProtectedPagesWriter({...common,owner:own(),
+    baseUrl:options['base-url']});
+  else if(options.mode==='retire-closed-ordinary-phase')result=await retireClosedUnpublishedOrdinaryPreActivationTarget({...common,
+    sourceHead:process.env.GITHUB_SHA,baseUrl:options['base-url']});
   else if(options.mode==='begin-terminal-pre-activation'){
     const atomicRequest=createSupabaseAdminRequester({endpoint:process.env.SUPABASE_URL.replace(/\/$/,'')+'/rest/v1/rpc/ravradar_ravscore_operational_cas',key:process.env.SUPABASE_SERVICE_ROLE_KEY});
     result=await beginTerminalPreparedPreActivation({...common,atomicRequest,executor:own(),attempt:await read('attempt'),directory:options.directory,baseUrl:options['base-url']});

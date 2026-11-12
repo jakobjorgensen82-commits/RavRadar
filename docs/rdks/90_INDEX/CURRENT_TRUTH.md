@@ -1,3 +1,17 @@
+## 12. november — ny normalvej og præcis backupstatus er under forberedelse
+
+Planen er en lille fast sikkerhedskerne plus kontroller for det faktisk berørte område. Historiske input adskilles fra aktuel kode; normal testudvælgelse skal ikke bindes til nye lexer-fingeraftryk eller helfil-cohorts for hver head. Dette er endnu ikke en samlet grøn eller leveret kontrolvej. Gældende gates og alle fem mål består. Se DEC-0302 og håndbog 89.342.
+
+V3's syntetiske Linux-gendannelse bestod. Den ægte arkivgendannelse har fortsat en uafklaret GRANT_ROLE/42704-fejl; den kvalificerede kode giver sikker rollediagnostik, ikke en bevist rolleafhjælpning. Synthetic PASS beviser ikke produktionsarkivets rollebestand, automatisk rotation eller Free-klarhed.
+
+## 12. november – Pages: årsagsskeln og lokal lukningskandidat
+
+De første Pages-timeouts har fortsat ukendt rodårsag. Senere API- og vandtestfejl er særskilte fund. DEC-0206's tillæg af 12. november samler de præcise kørsels-/PR-fakta, pakkemålinger og den senere offentligt verificerede kørsel.
+
+Den lokale kandidat adskiller intent/CREATE-id, ét straksgenforsøg og kendt lukning samt kræver alle tre writerroller og holdbar ejer før POST. Ukendt er HOLD. Kun nye, lukkede ACTIVE-faser med `current.pending=false`, uændret hel binding og DEC-0206's snævre oprindelsesbevis kan få retire-ret; gamle faser uden bevis, første installation og eksplicit recovery bevares. Ingen samlet grøn CI eller offentlig levering påstås.
+
+4.0.613 mangler de nødvendige bundne Pages-værn og må ikke installeres. Rettelsen skal med før RAW i ny genuine førsteudstedelse 4.0.614. Alle fem mål er åbne. Se håndbog 89.340.
+
 ## 10. november — genforsøg skal ligge i samme udgivelsesjob
 
 Kørsel #294 blev startet af tidsplanen kl. 09.19 og brugte den planlagte plads på genudgivelse. #295 gjorde det samme kl. 13.19 og fik den gemte prognose på hjemmesiden. Begge sprang vejrleverandører og scoreberegning over. Efter ejerens præcisering er den tidligere løsning i PR #865 lukket uden merge.

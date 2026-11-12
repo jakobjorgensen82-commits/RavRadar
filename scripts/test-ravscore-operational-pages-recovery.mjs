@@ -136,11 +136,14 @@ function expectHardStop(mutator, pattern) {
 {
   const result = classify({ terminalStatus: 'NOT_STARTED' });
   assert.equal(result.schemaVersion, RAVSCORE_OPERATIONAL_PAGES_RECOVERY_SCHEMA);
-  assert.equal(result.action, RAVSCORE_OPERATIONAL_PAGES_RECOVERY_ACTIONS.SAFE_SOURCE_ABORT);
-  assert.equal(result.reasonCode, 'STABLE_SOURCE_AND_PROVEN_NOT_STARTED');
-  assert.equal(result.centralMutationAllowed, true);
+  assert.equal(result.action, RAVSCORE_OPERATIONAL_PAGES_RECOVERY_ACTIONS.FAIL_CLOSED);
+  assert.equal(result.reasonCode, 'PAGES_WRITER_CLOSURE_UNPROVED');
+  assert.equal(result.centralMutationAllowed, false);
   assert.equal(result.exactTargetRedeployAllowed, false);
   assert.equal(result.privatePayloadRead, false);
+  assert.equal(classifyRavScoreOperationalPagesRecovery({...fixture({terminalStatus:'NOT_STARTED'}),
+    writerClosure:{closed:true,centralVersion:1,states:['NO_POST']}}).action,
+    RAVSCORE_OPERATIONAL_PAGES_RECOVERY_ACTIONS.FAIL_CLOSED,'A JSON closure claim cannot authorize replay or abort');
   assert.deepEqual(Object.keys(result).sort(), [
     'action',
     'artifactDigestSha256',
@@ -173,7 +176,7 @@ function expectHardStop(mutator, pattern) {
   // Synthetic metadata only. The CLI can obtain this context solely by fresh
   // authenticated protected reads, never a JSON receipt or acceptance flag.
   assert.equal(classifyRavScoreOperationalPagesRecovery({...input,preparedTargetAdmission:admission}).action,
-    RAVSCORE_OPERATIONAL_PAGES_RECOVERY_ACTIONS.EXACT_TARGET_REDEPLOY);
+    RAVSCORE_OPERATIONAL_PAGES_RECOVERY_ACTIONS.FAIL_CLOSED);
   for(const mutation of [{pendingSha256:'0'.repeat(64)},{artifactSealSha256:'0'.repeat(64)},
     {originalAttemptId:'pages-99-1'},{producerHead:'f'.repeat(40)},{targetManifestSha256:'0'.repeat(64)},
     {planSha256:null},{phaseObjectSha256:null},{centralVersion:0},{privatePayloadIncluded:true},
@@ -187,11 +190,11 @@ function expectHardStop(mutator, pattern) {
   const result = classify();
   assert.equal(
     result.action,
-    RAVSCORE_OPERATIONAL_PAGES_RECOVERY_ACTIONS.EXACT_TARGET_REDEPLOY
+    RAVSCORE_OPERATIONAL_PAGES_RECOVERY_ACTIONS.FAIL_CLOSED
   );
-  assert.equal(result.reasonCode, 'STABLE_SOURCE_AND_AMBIGUOUS_DEPLOYMENT');
+  assert.equal(result.reasonCode, 'PAGES_WRITER_CLOSURE_UNPROVED');
   assert.equal(result.centralMutationAllowed, false);
-  assert.equal(result.exactTargetRedeployAllowed, true);
+  assert.equal(result.exactTargetRedeployAllowed, false);
 }
 
 {
@@ -199,8 +202,8 @@ function expectHardStop(mutator, pattern) {
   input.artifactEvidence = null;
   input.durableEvidence = true;
   const result = classifyRavScoreOperationalPagesRecovery(input);
-  assert.equal(result.action, RAVSCORE_OPERATIONAL_PAGES_RECOVERY_ACTIONS.SAFE_SOURCE_ABORT);
-  assert.equal(result.reasonCode, 'STABLE_SOURCE_AFTER_TERMINAL_FAILED_EXPIRED_ATTEMPT');
+  assert.equal(result.action, RAVSCORE_OPERATIONAL_PAGES_RECOVERY_ACTIONS.FAIL_CLOSED);
+  assert.equal(result.reasonCode, 'PAGES_WRITER_CLOSURE_UNPROVED');
   assert.equal(result.exactTargetRedeployAllowed, false);
 }
 
@@ -400,7 +403,7 @@ expectHardStop((input) => {
 {
   const temporaryRoot = mkdtempSync(path.join(tmpdir(), 'ravscore-pages-recovery-test-'));
   try {
-    const input = fixture({ terminalStatus: 'NOT_STARTED' });
+    const input = fixture({ terminalStatus: 'NOT_STARTED', observationEndpoints: ['target', 'target'] });
     const files = {
       pending: 'pending.json',
       'artifact-seal': 'artifact-seal.json',
@@ -433,7 +436,7 @@ expectHardStop((input) => {
     const execution = spawnSync(process.execPath, cliArguments, { encoding: 'utf8' });
     assert.equal(execution.status, 0, execution.stderr);
     const output = JSON.parse(readFileSync(outputPath, 'utf8'));
-    assert.equal(output.action, RAVSCORE_OPERATIONAL_PAGES_RECOVERY_ACTIONS.SAFE_SOURCE_ABORT);
+    assert.equal(output.action, RAVSCORE_OPERATIONAL_PAGES_RECOVERY_ACTIONS.TARGET_RECONCILE);
 
     input.observations[1].publicManifestSha256 = 'e'.repeat(64);
     writeFileSync(

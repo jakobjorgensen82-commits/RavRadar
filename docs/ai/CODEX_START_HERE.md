@@ -1,3 +1,9 @@
+## 12. november — ny normal kildekontrol er UNDER FORBEREDELSE
+
+Den nye normalvej skal bruge en lille fast sikkerhedskerne og prøver for det faktisk berørte område og dets normale kaldere. Historiske prøver skal læse uforanderlige historiske input, mens aktuel produktkode kontrolleres særskilt. Normal testudvælgelse skal ikke kræve nye lexer-fingeraftryk eller nye helfil-cohorts for hver head. Se [DEC-0302](../rdks/10_DECISIONS/DEC-0302-CHANGE-BASED-VALIDATION-AND-CONTROL-CLEANUP.md#normal-validation-core-domain-preparation-2026-11-12) og håndbog 89.342.
+
+Dette er forberedelse, ikke en leveret ny gate. PG/C/I/T-genbrug skal være inputbundet og fremgå ærligt som genbrug; aktuelle kilde- og produktionsgates gælder uændret. V3 er kvalificeret 42704-diagnostik og har en bestået syntetisk Linux-prøve, men ingen bevist rolleafhjælpning for det ægte arkiv. Alle fem mål er fortsat åbne.
+
 ## 7. november — planlagt genoptagelse efter udtømte Pages-opslag
 
 Den nye kandidat registrerer et særskilt udfald, når alle seks afgrænsede opslag af en allerede uploadet Pages-pakke svarer HTTP 404, og en læsning af samme kørsels artifactliste med samme GitHub-adgang faktisk lykkes. Den næste ordinære cron kan vælge den eksisterende genoptagelse fra gemt vejr og scorehistorik efter verifikation af den afsluttede producent på samme main og første forsøg, den efterfølgende synlige pakkeidentitet og den uændrede offentlige forgænger samt centrale bindinger. Ved godkendt genbrug bygger den normale vej en ny, forseglet Pages-pakke fra de gemte data og kræver de sædvanlige bevarings-, release- og udgivelseskontroller. Adgangsfejl og ukendte udfald giver ingen genoptagelsesmarkør. Afvigende pakkeidentitet eller ugyldig kontrolhash ved næste kørsel afviser genoptagelsen.

@@ -1,3 +1,15 @@
+## 12. november — fast sikkerhedskerne og berørte mål: UNDER FORBEREDELSE
+
+Den nye normale udvælgelse, dens faste kerne og adskillelsen mellem historiske input og aktuel kode er ikke leveret eller samlet CI-kvalificeret. Målet er berørte normale forbrugere uden nye per-head lexer-/helfil-cohortkrav. PG/C/I/T-genbrug kræver fortsat verificeret uændrede input og ærlig markering af faktisk udførte prøver. Produktets hydrering, fulde artifact-/releasegates, no-loss og offentlig kontrol ændres ikke. Se DEC-0302 og håndbog 89.342.
+
+V3 har faktisk syntetisk Linux-PASS, men den ægte GRANT_ROLE/42704-rolleafhjælpning og realrestore er åbne. Den kvalificerede ændring er diagnostik. Der loves ingen installation, produktionsvirkning, automatisk rotation eller Free-overgang; alle fem mål er fortsat åbne.
+
+## 12. november – Pages-kandidatens samlede fase-/reentrylukning er åben
+
+Samlet lokal klargøring omfatter intent/CREATE-id, ét straksgenforsøg, separat kendt lukning og holdbar målbestemt ejer før POST for alle tre writerroller. Ukendt er HOLD. Retire kræver uændret ACTIVE, `current.pending=false` og den nye fases oprindelsesbevis i DEC-0206's tillæg af 12. november; gamle faser uden bevis, første installation og eksplicit recovery får ingen ny retire-ret.
+
+Samlet grøn CI og offentlig effekt er åbne. 4.0.613 mangler nødvendige bundne Pages-værn og må ikke installeres; CI-annulleringen var en følge af denne grænse. Ny genuine NULL-førsteudstedelse 4.0.614 skal have rettelsen før RAW. Alle fem mål er åbne. Se håndbog 89.340.
+
 ## 10. november — Pages-genforsøg og frisk vejrhentning adskilles
 
 Ejerbeslutning erstatter #865. Pages kan genbruge samme forseglede pakke én gang straks efter en bekræftet afsluttet udgivelsesfejl, mens næste normale planlagte kørsel henter frisk vejr. Før genforsøg kræves samme eksakte artifact, aktuel hovedkode, uændret offentlig forgænger og tilstrækkelig tid før næste planlagte kørsel. Ingen automatisk gentagelse ved et ukendt skriveudfald. Det normale offentlige deploybevis kræves fortsat.

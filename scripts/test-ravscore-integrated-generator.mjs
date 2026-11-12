@@ -1,3 +1,4 @@
+import { projectPagesClosureHistoricalTestInput as historicalPagesInput } from './lib/pages-closure-historical-test-input.mjs';
 import { inverseAlternativeCCaller } from './lib/alternative-c-caller-test-input.mjs';
 import assert from 'node:assert/strict';
 import { inverseCompletedRuntimeWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
@@ -507,7 +508,7 @@ assert.equal(digest(historicalUpdater),
 const bulkUpdater = await fs.readFile(new URL('./update-dmi-bulk.py', import.meta.url), 'utf8');
 const productionWorkflows = Object.freeze(Object.fromEntries(
   Object.entries(await readProductionWorkflowSources()).map(([role, source]) =>
-    [role, inverseCompletedRuntimeWorkflow(source.replaceAll('\r\n', '\n'), role)]),
+    [role, inverseCompletedRuntimeWorkflow(historicalPagesInput(source.replaceAll('\r\n', '\n'), role), role)]),
 ));
 const productionPartPipeline = await fs.readFile(
   new URL('./lib/ravscore-production-part-pipeline.mjs', import.meta.url),

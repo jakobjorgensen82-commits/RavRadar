@@ -399,6 +399,7 @@ jobs:
         if: inputs.legacy_source_required != 'true'
         shell: bash
         env:
+          GH_TOKEN: ${{ github.token }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: >-
@@ -411,6 +412,7 @@ jobs:
       - name: Publish exact target reentry evidence before any activation CAS
         shell: bash
         env:
+          GH_TOKEN: ${{ github.token }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
@@ -425,7 +427,7 @@ jobs:
           fi
           node scripts/protected-operational-reentry-evidence.mjs --publish \
             --directory "$RAVRADAR_OPERATIONAL_HANDOFF" \
-            --deployment-id "pages-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
+            --deployment-id "${{ inputs.pre_activation_recovery && format('pages-recovery-{0}-{1}', github.run_id, github.run_attempt) || format('pages-{0}-{1}', github.run_id, github.run_attempt) }}" \
             --repository "$GITHUB_REPOSITORY" \
             "${retain_args[@]}" \
             --output /tmp/ravradar-protected-target-publish.json
@@ -617,12 +619,26 @@ jobs:
           fi
           node scripts/check-pages-generation-order.mjs "${args[@]}"
 
+      - name: Reserve this exact Pages writer before its first POST
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: >-
+          node scripts/protected-operational-reentry-evidence.mjs --reserve-pages-writer
+          --deployment-id "${{ inputs.pre_activation_recovery && format('pages-recovery-{0}-{1}', github.run_id, github.run_attempt) || format('pages-{0}-{1}', github.run_id, github.run_attempt) }}"
+          --repository "$GITHUB_REPOSITORY" --base-url "$RAVRADAR_PUBLIC_BASE_URL"
+          --output /tmp/ravradar-pages-writer-reservation.json
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: ./.github/actions/deploy-ravradar-pages
         with:
           immediate_retry: ${{ inputs.ordinary_immediate_retry && inputs.operational_action == 'integrated' && inputs.deployment_model == 'integrated' && !inputs.pre_activation_recovery && !inputs.code_only_repair && !inputs.exact_public_recovery && inputs.source_repair_id == '' }}
           github_token: ${{ github.token }}
+          supabase_url: ${{ secrets.SUPABASE_URL }}
+          supabase_service_role_key: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           artifact_name: ${{ inputs.pre_activation_recovery && format('github-pages-preactivation-{0}-{1}', github.run_id, github.run_attempt) || 'github-pages' }}
 
       - name: Confirm scheduled Pages writes are terminal and unpublished

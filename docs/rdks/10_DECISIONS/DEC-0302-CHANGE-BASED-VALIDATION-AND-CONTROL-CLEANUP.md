@@ -1,3 +1,19 @@
+## 12. november — fast sikkerhedskerne og berørt område, UNDER FORBEREDELSE
+
+<a id="normal-validation-core-domain-preparation-2026-11-12"></a>
+
+Den nye normalvej skal køre en lille fast sikkerhedskerne sammen med prøver for ændringens faktiske område og dets normale kaldere. Kernen skal fastholde gyldige workflowdefinitioner, præcis kilde-/bevisidentitet, adgangs- og skrivegrænser samt bevaring af originaler. Det konkrete område skal dække de forbrugere, som ændringen faktisk når. Kernens endelige kommandoliste og områdevalg skal kvalificeres som én sammenhængende normal vej; en samling lokale delprøver er ikke dette bevis.
+
+Historiske orakler skal bruge deres egne uforanderlige, autentiske historiske input. Den aktuelle produktvej skal samtidig kontrolleres med aktuel kode. En ny kalder må ikke skjult blive input til en gammel historisk prøve, og gamle orakler eller hashes må ikke omskrives for at acceptere den. Historiske pins og eksakt head-identitet bevares som integritetskrav.
+
+Normal testudvælgelse skal følge gennemgåede område-/ejerregler og faktiske kaldere, ikke kræve nye lexer-fingeraftryk eller nye helfil-cohorts for hver head. Dette erstatter ikke kontrol af påvirkning. Ukendt eller modstridende evidens giver ingen skipautoritet og skal afklares eller udløse den nødvendige bredere kontrol. En ændring af selve udvælgelsen kræver særskilt kontrol af dens normale positive og negative kontrakter.
+
+PG/C/I/T holdes adskilt fra det aktuelle kildebevis. Genbrug kræver verificeret uændrede relevante input, en autentisk kvalificeret forgænger og den normale bevislæser. Rapporten skal skelne mellem faktisk udført, genbrugt, sprunget over og ukendt. Et grønt målrettet kildejob må ikke beskrives som en ny PostgreSQL-, native- eller national udførelse.
+
+De gældende produktionskrav består: central runtime-sandhed, original B før S, hård no-loss, fulde artifact- og releasegates efter hydrering samt de krævede offentlige kontroller. Denne dokumentation ændrer ingen produktionsgate, SQL, modelbinding, version eller geodata. Indtil den nye vej er implementeret og kvalificeret, gælder den eksisterende leveringsvej uændret. Samlet CI og offentlig levering af den nye normalvej er åbne; alle fem mål består.
+
+V3's beståede syntetiske Linux-gendannelse er et afgrænset filsystem-, COPY- og Auth-bevis. Den kvalificerede 42704-ændring giver sikker rollediagnostik; den beviser ikke, at den tidligere ægte GRANT_ROLE/42704-fejl er afhjulpet. Ægte arkivgendannelse, brugbar produktionsreserve, rotation og Free-klarhed kræver deres egne faktiske beviser. Se håndbog 89.342.
+
 ## 10. november — Pages og backupprøver følger deres faktiske ændringsområde
 
 En typisk fuld kildekontrol brugte 49 minutter på kildekode, 52 minutter på PostgreSQL og 14 minutter på nationale prøver. Den gældende Pages-rettelse ændrede ingen af de 148 registrerede PostgreSQL-input eller de tre model- og fortsættelsesbindinger. Den krævede stadig bred kontrol, fordi den også ændrede den normale vejrhentning, lagring og adgang til de beskyttede forgængere.

@@ -7,11 +7,16 @@ import {inspectLaterMainEvidence,PULL_REQUEST_SOURCE_JOB,PULL_REQUEST_SOURCE_WOR
 import {sourceTreeContentSha256} from './lib/source-tree-content.mjs';
 import {qualifySourceImpactFullBaseline,SOURCE_IMPACT_FULL_BASELINE_KIND}
   from './source-impact-full-baseline.mjs';
-import {planSourceImpactFromGit} from './source-impact-git-diff.mjs';
-import {TARGETED_SOURCE_CONTRACT,TARGETED_SOURCE_KIND,targetedSourceArtifactName,validateTargetedSourceReceipt,
-  DOMAIN_TARGETED_SOURCE_CONTRACT,DOMAIN_TARGETED_SOURCE_KIND,domainTargetedSourceArtifactName,validateDomainTargetedSourceReceipt,readDomainControlReview}
-  from './source-targeted-receipt.mjs';
+import {CURRENT_CONTRACT_SOURCE_CONTRACT,CURRENT_CONTRACT_SOURCE_KIND,currentContractSourceArtifactName,
+  validateCurrentContractSourceReceipt,readCurrentContractReview} from './source-current-contract-receipt.mjs';
 import {ORIGIN,sourceImpactEvidenceBudget} from './native-postgres-evidence.mjs';
+
+// Archived namespaces are parsed here without initializing their old planner.
+// Their actual validators are loaded only when that legacy type is consumed.
+const TARGETED_SOURCE_CONTRACT='weather-source-targeted-impact-v1';
+const TARGETED_SOURCE_KIND='RAVRADAR_SOURCE_TARGETED_RECEIPT_V1';
+const DOMAIN_TARGETED_SOURCE_CONTRACT='weather-source-targeted-domains-v2';
+const DOMAIN_TARGETED_SOURCE_KIND='RAVRADAR_SOURCE_TARGETED_DOMAINS_RECEIPT_V2';
 
 const LOCATOR_KEYS=['contractId','repository','headSha','producerHeadSha','sourceTreeSha256',
   'pullRequestNumber','runId','runAttempt','jobId','artifactId','artifactDigest','proofSha256'];
@@ -46,7 +51,7 @@ const success=value=>value?.status==='completed'&&value.conclusion==='success';
 function locatorIdentity(record,env){
   assert(record&&Object.getPrototypeOf(record)===Object.prototype);
   assert.deepEqual(Object.keys(record).sort(),[...LOCATOR_KEYS].sort());
-  assert([TARGETED_SOURCE_CONTRACT,DOMAIN_TARGETED_SOURCE_CONTRACT].includes(record.contractId));
+  assert([TARGETED_SOURCE_CONTRACT,DOMAIN_TARGETED_SOURCE_CONTRACT,CURRENT_CONTRACT_SOURCE_CONTRACT].includes(record.contractId));
   assert.equal(record.repository,ORIGIN.repository);
   assert.equal(env.GITHUB_REPOSITORY,record.repository);assert.equal(env.GITHUB_REF,'refs/heads/main');
   assert(oid(record.headSha)&&record.headSha===env.GITHUB_SHA&&oid(record.producerHeadSha));
@@ -92,9 +97,11 @@ function runIdentity(run,pull,jobs,record,workflowText){
 }
 
 function artifactNameFor(record,current){
-  assert([TARGETED_SOURCE_CONTRACT,DOMAIN_TARGETED_SOURCE_CONTRACT].includes(record.contractId));
-  return (record.contractId===DOMAIN_TARGETED_SOURCE_CONTRACT
-    ?domainTargetedSourceArtifactName:targetedSourceArtifactName)(current);
+  assert([TARGETED_SOURCE_CONTRACT,DOMAIN_TARGETED_SOURCE_CONTRACT,CURRENT_CONTRACT_SOURCE_CONTRACT].includes(record.contractId));
+  if(record.contractId===CURRENT_CONTRACT_SOURCE_CONTRACT)return currentContractSourceArtifactName(current);
+  const prefix=record.contractId===DOMAIN_TARGETED_SOURCE_CONTRACT
+    ?'ravradar-source-targeted-domains-v2-pr-':'ravradar-source-targeted-v1-pr-';
+  return prefix+current.pullRequest+'-'+current.head+'-'+current.sourceTreeSha256.slice(7);
 }
 function verifyArtifact(metadata,record,phase){
   assert.equal(metadata.id,record.artifactId);assert.equal(metadata.digest,record.artifactDigest);
@@ -179,9 +186,19 @@ export async function decideTargetedSourceGate(record,env,dependencies){
       {getJson,getArtifactZip,readGit});remaining();
     assert.equal(full.kind,SOURCE_IMPACT_FULL_BASELINE_KIND);
     const isDomain=record.contractId===DOMAIN_TARGETED_SOURCE_CONTRACT;
-    let structural,domainPlan,controlReview;
-    if(isDomain){
+    const isCurrent=record.contractId===CURRENT_CONTRACT_SOURCE_CONTRACT;
+    let structural,domainPlan,currentPlan,controlReview;
+    if(isCurrent){
+      const {planSourceCurrentContractsFromGit}=await import('./source-current-contract-plan.mjs');
+      currentPlan=planSourceCurrentContractsFromGit({baselineCommit:full.mergeCommit,
+        candidateCommit:record.headSha,expectedHead:record.headSha});remaining();
+      assert.equal(currentPlan.status,'PLANNED');assert.equal(currentPlan.selection,'CURRENT_CONTRACTS');
+      controlReview=readCurrentContractReview(pull,{current,fullBaseline:full,currentPlan});
+      structural=validateCurrentContractSourceReceipt(receipt,{current,fullBaseline:full,currentPlan,
+        commandResults:receipt.reportedCommandResults});
+    }else if(isDomain){
       const {planSourceDomainImpactFromGit}=await import('./source-impact-domain-plan.mjs');
+      const {readDomainControlReview,validateDomainTargetedSourceReceipt}=await import('./source-targeted-receipt.mjs');
       domainPlan=planSourceDomainImpactFromGit({baselineCommit:full.mergeCommit,
         candidateCommit:record.headSha,expectedHead:record.headSha});remaining();
       assert.equal(domainPlan.status,'PLANNED');
@@ -190,6 +207,8 @@ export async function decideTargetedSourceGate(record,env,dependencies){
       structural=validateDomainTargetedSourceReceipt(receipt,{current,fullBaseline:full,domainPlan,
         commandResults:receipt.reportedCommandResults});
     }else{
+      const {planSourceImpactFromGit}=await import('./source-impact-git-diff.mjs');
+      const {validateTargetedSourceReceipt}=await import('./source-targeted-receipt.mjs');
       const gitPlan=planSourceImpactFromGit({baselineCommit:full.mergeCommit,candidateCommit:record.headSha,expectedHead:record.headSha});
       assert.equal(gitPlan.status,'PLANNED');assert.equal(gitPlan.plan.selection,'TARGETED');
       structural=validateTargetedSourceReceipt(receipt,{current,fullBaseline:full,gitPlan,
@@ -201,12 +220,22 @@ export async function decideTargetedSourceGate(record,env,dependencies){
     const later=await inspectLaterMainEvidence({env,proofTime:phase.proofTime,record,getJson:json});
     if(later)return later;
     assert.deepEqual(await json(runRoute),run);assert.deepEqual(await json(artifactRoute),metadata);
-    if(isDomain&&domainPlan.selection==='CONTROL_QUALIFICATION_REQUIRED'){
+    if((isCurrent&&currentPlan.controlQualificationRequired)
+      ||(isDomain&&domainPlan.selection==='CONTROL_QUALIFICATION_REQUIRED')){
       const freshPull=await json(repo+'/pulls/'+record.pullRequestNumber);
       runIdentity(run,freshPull,jobs,record,workflowText);
-      assert.deepEqual(readDomainControlReview(freshPull,{current,fullBaseline:full,domainPlan}),controlReview);
+      if(isCurrent)assert.deepEqual(readCurrentContractReview(freshPull,{current,fullBaseline:full,currentPlan}),controlReview);
+      else{
+        const {readDomainControlReview}=await import('./source-targeted-receipt.mjs');
+        assert.deepEqual(readDomainControlReview(freshPull,{current,fullBaseline:full,domainPlan}),controlReview);
+      }
     }
     assertCommittedHead();assert.equal(sourceTreeContentSha256(record.headSha,{git}),record.sourceTreeSha256);remaining();
+    if(isCurrent)return {required:false,reason:'verified-current-contract-pull-request-source-content',runId:record.runId,
+      scope:'CURRENT_CONTRACT_RESULTS_ONLY',testedAreas:Object.keys(receipt.impact.areas)
+        .filter(area=>receipt.impact.areas[area].commands.length>0),
+      postgresExecuted:false,historicalCompatibilityExecuted:false,historicalNationalExecuted:false,
+      independentControlReview:controlReview?'VERIFIED_EXACT_ROOT_PR_REVIEW':'NOT_REQUIRED'};
     return isDomain
       ?{required:false,reason:'verified-domain-targeted-pull-request-source-content',runId:record.runId,
         scope:'TARGETED_DOMAIN_COMMAND_RESULTS_ONLY',domains:structuredClone(receipt.domains),
@@ -258,7 +287,7 @@ export async function discoverTargetedSourceGate(env,sourceTreeSha256,dependenci
       &&pull.base?.repo?.full_name===env.GITHUB_REPOSITORY).sort((a,b)=>b.number-a.number);
     assert(candidates.length<=4&&new Set(candidates.map(pull=>pull.number)).size===candidates.length);
     for(const pull of candidates){
-     for(const contractId of [TARGETED_SOURCE_CONTRACT,DOMAIN_TARGETED_SOURCE_CONTRACT]){
+     for(const contractId of [CURRENT_CONTRACT_SOURCE_CONTRACT,DOMAIN_TARGETED_SOURCE_CONTRACT,TARGETED_SOURCE_CONTRACT]){
       const artifactName=artifactNameFor({contractId},{pullRequest:pull.number,head:pull.head.sha,sourceTreeSha256});
       const listing=await json(repo+'/actions/artifacts?name='+encodeURIComponent(artifactName)+'&per_page=100');
       assert(Array.isArray(listing.artifacts)&&Number.isSafeInteger(listing.total_count)
@@ -292,10 +321,11 @@ export async function discoverTargetedSourceGate(env,sourceTreeSha256,dependenci
       assert.equal(bytes.length,artifact.size_in_bytes);assert.equal('sha256:'+sha(bytes),artifact.digest);
       const raw=decodeReceipt(bytes,remaining),receipt=JSON.parse(raw);locator.proofSha256=sha(raw);
       locatorIdentity(locator,env);
-      const isDomain=contractId===DOMAIN_TARGETED_SOURCE_CONTRACT;
-      assert.equal(receipt.schemaVersion,isDomain?2:1);assert.equal(receipt.contractId,contractId);
-      assert.equal(receipt.kind,isDomain?DOMAIN_TARGETED_SOURCE_KIND:TARGETED_SOURCE_KIND);
-      assert.equal(receipt.scope,isDomain?'TARGETED_DOMAIN_COMMAND_RESULTS_ONLY':'TARGETED_COMMAND_RESULTS_ONLY');
+       const isDomain=contractId===DOMAIN_TARGETED_SOURCE_CONTRACT,isCurrent=contractId===CURRENT_CONTRACT_SOURCE_CONTRACT;
+       assert.equal(receipt.schemaVersion,isCurrent?3:isDomain?2:1);assert.equal(receipt.contractId,contractId);
+       assert.equal(receipt.kind,isCurrent?CURRENT_CONTRACT_SOURCE_KIND:isDomain?DOMAIN_TARGETED_SOURCE_KIND:TARGETED_SOURCE_KIND);
+       assert.equal(receipt.scope,isCurrent?'CURRENT_CONTRACT_RESULTS_ONLY'
+         :isDomain?'TARGETED_DOMAIN_COMMAND_RESULTS_ONLY':'TARGETED_COMMAND_RESULTS_ONLY');
       assert.equal(receipt.artifactName,artifactName);assert.equal(receipt.privatePayloadIncluded,false);
       assert.deepEqual(receipt.current,{repository:locator.repository,head:locator.producerHeadSha,
         sourceTreeSha256,pullRequest:locator.pullRequestNumber,runId:run.id,runAttempt:1,jobId:job.id});

@@ -1,3 +1,4 @@
+import { projectPagesClosureHistoricalTestInput as historicalPagesInput } from './lib/pages-closure-historical-test-input.mjs';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
@@ -37,7 +38,7 @@ test('committed source reuse compares all calculation objects and only exact sto
   // This old relocation/wiring fixture keeps its genuine584 operands. Reuse
   // the existing whole-hash-closed TEST inverse; never teach the product's
   // committed-source comparator to ignore current calculation/workflow drift.
-  const actual = Buffer.from(inverseRelease585WorkflowUserAgents(currentBuild.toString('utf8'), 'build'));
+  const actual = Buffer.from(inverseRelease585WorkflowUserAgents(historicalPagesInput(currentBuild.toString('utf8'), 'build'), 'build'));
   assert.equal(sha(actual), 'b509a5131c64f9df9a431fdf9f99b082fb14c88de8bf9c3ad3e33b8ddc77de57');
   const previous = ordinaryStageCalculationWorkflow(actual);
   const currentOnce = Buffer.from((await fs.readFile(new URL('../.github/workflows/run-current-weather-once.yml', import.meta.url), 'utf8'))
@@ -111,6 +112,10 @@ test('committed source reuse compares all calculation objects and only exact sto
     assert.throws(() => assertOrdinaryCompletedStageSource({ root, producerHead, consumerHead: changedHead }),
       { code: 'ORDINARY_STAGE_SOURCE_CALCULATION_DRIFT' });
     refused++;
+    if (file === '.github/workflows/reusable-weather-build.yml' && bytes.equals(currentBuild)) {
+      assert.equal(assertOrdinaryCompletedStageSource({ root, producerHead: changedHead, consumerHead: changedHead }).publicationAuthorized, false,
+        'Actual new workflow bytes remain valid on their own identical committed head, never as cross-head reuse authority');
+    }
     git('switch', '--detach', consumerHead);
   }
   await fs.unlink(path.join(root, 'scripts/update-weather.mjs'));

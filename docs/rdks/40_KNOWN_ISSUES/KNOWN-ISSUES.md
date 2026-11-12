@@ -1,3 +1,9 @@
+## 12. november – Første Pages-timeout og samlet reentrylukning er åbne
+
+**ÅBEN:** Rodårsagen til kørslerne #293 og #294 er ukendt. De særskilte senere fejl og rettelser beskrives med præcise kørsels-/PR-numre i DEC-0206, tillæg 12. november.
+
+**LOKAL KANDIDAT:** Reentry, ejer før POST, særskilt retryret og den nye fases snævre ACTIVE-retire-bevis med `current.pending=false` kræver samlet kvalifikation og offentlig bekræftelse. Ukendt er HOLD; gamle faser uden bevis, første installation og eksplicit recovery bevares. 4.0.613 mangler de bundne Pages-værn og må ikke installeres. Rettelsen skal med før RAW i ny genuine førsteudstedelse 4.0.614. Alle fem mål og eksisterende Free-/bevaringskrav er åbne. Se håndbog 89.340.
+
 ## 8. november — genlæsning af den gemte databasehenvisning
 
 Den første krypterede databasebackup blev gemt og genlæst fra det private lager. Databasen gemte også henvisningen, men backupkontrollen meldte fejl, fordi databasen returnerede felterne i en anden rækkefølge. Rettelsen sammenligner den validerede henvisning i den oprindelige rækkefølge og bevarer de præcise værdier, versionskontrollen og det eksisterende krypterede arkiv.

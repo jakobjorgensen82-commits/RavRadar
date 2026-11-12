@@ -1,5 +1,5 @@
 name: Deploy the exact RavRadar Pages artifact
-description: Bruger den officielle Pages-rute; samme-job-genforsøg er midlertidigt inaktivt.
+description: Genforsøger én kendt fejlet ordinær Pages-levering i samme job.
 inputs:
   artifact_name:
     description: Exact upload name
@@ -9,6 +9,12 @@ inputs:
     required: true
   github_token:
     description: Existing Pages writer job token
+    required: true
+  supabase_url:
+    description: Existing private Pages evidence endpoint for scheduled writer readback
+    required: true
+  supabase_service_role_key:
+    description: Existing private Pages evidence read credential for the scheduled writer
     required: true
 outputs:
   page_url:
@@ -22,18 +28,19 @@ runs:
   steps:
     - name: Deploy with the standard Pages action
       id: standard
+      if: ${{ inputs.immediate_retry != 'true' }}
       uses: actions/deploy-pages@v5
       with:
         artifact_name: ${{ inputs.artifact_name }}
         token: ${{ inputs.github_token }}
     - name: Deploy ordinary weather with one bounded immediate retry
       id: scheduled
-      # Midlertidigt inaktiv: den nye botrute har en uafklaret deployregression.
-      # Bevar koden, indtil rettelse og faktisk drift er verificeret.
-      if: ${{ false }}
+      if: ${{ inputs.immediate_retry == 'true' }}
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.github_token }}
+        SUPABASE_URL: ${{ inputs.supabase_url }}
+        SUPABASE_SERVICE_ROLE_KEY: ${{ inputs.supabase_service_role_key }}
         RAVRADAR_ORDINARY_PAGES_RETRY: ${{ inputs.immediate_retry }}
         RAVRADAR_PAGES_ARTIFACT_NAME: ${{ inputs.artifact_name }}
       run: node scripts/deploy-ordinary-pages-with-immediate-retry.mjs

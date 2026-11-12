@@ -118,6 +118,15 @@ jobs:
             --repository "$GITHUB_REPOSITORY" --output "$RAVRADAR_OPERATIONAL_WORK/pre-activation.json"
           echo "pre_activation=false" >> "$GITHUB_OUTPUT"
           if test "$(jq -r '.action' "$RAVRADAR_OPERATIONAL_WORK/pre-activation.json")" != NONE; then
+            node scripts/protected-operational-reentry-evidence.mjs --retire-closed-ordinary-phase \
+              --repository "$GITHUB_REPOSITORY" --base-url "$RAVRADAR_PUBLIC_BASE_URL" \
+              --output "$RAVRADAR_OPERATIONAL_WORK/ordinary-phase-retirement.json"
+            node scripts/ravscore-operational-activation.mjs read \
+              --output "$RAVRADAR_OPERATIONAL_WORK/current.json"
+            node scripts/protected-operational-reentry-evidence.mjs --inspect-pre-activation \
+              --repository "$GITHUB_REPOSITORY" --output "$RAVRADAR_OPERATIONAL_WORK/pre-activation.json"
+          fi
+          if test "$(jq -r '.action' "$RAVRADAR_OPERATIONAL_WORK/pre-activation.json")" != NONE; then
             echo "pre_activation=true" >> "$GITHUB_OUTPUT"
             phase_run="$(jq -er '.slot.owner.runId' "$RAVRADAR_OPERATIONAL_WORK/pre-activation.json")"
             phase_attempt="$(jq -er '.slot.owner.runAttempt' "$RAVRADAR_OPERATIONAL_WORK/pre-activation.json")"
@@ -142,6 +151,7 @@ jobs:
             fi
             node scripts/protected-operational-reentry-evidence.mjs --classify-pre-activation \
               --repository "$GITHUB_REPOSITORY" --attempt "$RAVRADAR_OPERATIONAL_WORK/pre-activation-attempt.json" \
+              --base-url "$RAVRADAR_PUBLIC_BASE_URL" \
               --output "$RAVRADAR_OPERATIONAL_WORK/pre-activation-classification.json"
             phase_action="$(jq -er '.action' "$RAVRADAR_OPERATIONAL_WORK/pre-activation-classification.json")"
             case "$phase_action" in
@@ -150,10 +160,13 @@ jobs:
                 exit 0
                 ;;
               PENDING_PRE_ACTIVATION) : ;; # Preserve the normal pending recovery below.
+              NONE) echo "pre_activation=false" >> "$GITHUB_OUTPUT" ;;
               *) echo "Unknown pre-activation disposition." >&2; exit 1 ;;
             esac
           fi
           if [ "$(jq -r '.pending' "$RAVRADAR_OPERATIONAL_WORK/current.json")" != "true" ]; then
+            node scripts/protected-operational-reentry-evidence.mjs --assert-pages-writes-closed \
+              --repository "$GITHUB_REPOSITORY" --output "$RAVRADAR_OPERATIONAL_WORK/pages-writer-closure.json"
             echo "No durable RavScore transition requires reconciliation."
             exit 0
           fi
@@ -619,9 +632,14 @@ jobs:
           if test "$recovery_action" = SAFE_SOURCE_ABORT && test "$(jq -r '.action' "$RAVRADAR_OPERATIONAL_WORK/pre-activation.json")" != NONE; then
             node scripts/protected-operational-reentry-evidence.mjs --classify-pre-activation \
               --repository "$GITHUB_REPOSITORY" --attempt "$RAVRADAR_OPERATIONAL_WORK/pre-activation-attempt.json" \
+              --base-url "$RAVRADAR_PUBLIC_BASE_URL" \
               --output "$RAVRADAR_OPERATIONAL_WORK/phase-after-source-reconcile.json"
             recovery_action="$(jq -er '.action' "$RAVRADAR_OPERATIONAL_WORK/phase-after-source-reconcile.json")"
-            test "$recovery_action" = PRE_ACTIVATION_RESUME
+            case "$recovery_action" in
+              PRE_ACTIVATION_RESUME) : ;;
+              NONE) echo "pre_activation=false" >> "$GITHUB_OUTPUT" ;;
+              *) exit 1 ;;
+            esac
           fi
           echo "recovery_action=$recovery_action" >> "$GITHUB_OUTPUT"
 
@@ -788,7 +806,7 @@ jobs:
             "$RAVRADAR_OPERATIONAL_WORK/predeploy-helper-observation-1.json" \
             "$RAVRADAR_OPERATIONAL_WORK/predeploy-helper-observation-2.json" \
             > "$RAVRADAR_OPERATIONAL_WORK/predeploy-helper-observations.json"
-          node scripts/ravscore-operational-pages-recovery.mjs --read-protected-prepared-target \
+          node scripts/ravscore-operational-pages-recovery.mjs --read-protected-prepared-target --reserve-recovery-writer \
             --pending "$bundle/pending-identity.json" \
             --artifact-seal "$bundle/pages-artifact-seal.json" \
             --artifact-evidence "$bundle/artifact-evidence.json" \
@@ -826,6 +844,16 @@ jobs:
           name: github-pages-recovery-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ env.RAVRADAR_OPERATIONAL_WORK }}/target-site
           retention-days: 14
+
+      - name: Require the actual reserved recovery writer before Pages
+        if: steps.prepare-recovery.outputs.action == 'EXACT_TARGET_REDEPLOY'
+        shell: bash
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: >-
+          node scripts/protected-operational-reentry-evidence.mjs --assert-pages-recovery-writer
+          --repository "$GITHUB_REPOSITORY" --output "$RAVRADAR_OPERATIONAL_WORK/recovery-writer-readback.json"
 
       - name: Redeploy the exact sealed Pages target
         id: recovery-deployment

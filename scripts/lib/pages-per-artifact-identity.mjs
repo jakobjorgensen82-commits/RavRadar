@@ -25,8 +25,9 @@ const BINDING_FIELDS = [
   'explanationSchemaId', 'rankingPolicyId', 'bestTimePolicyId',
   'presentationPolicyId', 'modelContractSha256', 'modelBundleSha256',
 ];
-const CREATE_FIELDS = ['id', 'page_url', 'status_url'];
+const CREATE_FIELDS = ['id', 'page_url', 'status_url', 'preview_url'];
 const STATUS_FIELDS = ['status', 'id', 'deployment_id', 'pages_build_version', 'artifact_id'];
+const REMOTE_FIELDS = [...new Set([...CREATE_FIELDS, ...STATUS_FIELDS])];
 const FAILURE = new Set([
   'deployment_failed', 'deployment_content_failed', 'deployment_cancelled', 'deployment_lost',
 ]);
@@ -36,7 +37,10 @@ const PENDING = new Set([
 const requests = new WeakMap();
 const receipts = new WeakMap();
 
-const fail = code => { throw new Error(code); };
+const identityFailures = new WeakMap();
+const fail = code => { const error = new Error(code); identityFailures.set(error, code); throw error; };
+export const pagesIdentityFailureCode = error => identityFailures.get(error) ?? null;
+const requestReasons = new Set(['DELIVERY_ORDINAL', 'CONTEXT', 'PAGE_BASE', 'SEAL', 'ATTEMPT', 'ARTIFACT', 'OIDC_FORMAT', 'VERSION_COLLISION']);
 const need = (ok, code) => { if (!ok) fail(code); };
 const matches = (value, pattern) => typeof value === 'string' && pattern.test(value);
 const positive = value => Number.isSafeInteger(value) && value > 0;
@@ -51,6 +55,37 @@ function closedRecord(value, allowed, required = allowed) {
   return keys.every(key => allowed.includes(key) && own(value, key) !== undefined)
     && required.every(key => keys.includes(key));
 }
+// GitHub permits additive response metadata. Only own data fields may enter;
+// unknown fields are ignored, never authority or part of retained evidence.
+function remoteRecord(value, required) {
+  if (!value || Object.getPrototypeOf(value) !== Object.prototype) return false;
+  const keys = Reflect.ownKeys(value);
+  return keys.every(key => typeof key === 'string'
+    && Object.hasOwn(Object.getOwnPropertyDescriptor(value, key), 'value')
+    && (!REMOTE_FIELDS.includes(key) || own(value, key) !== undefined))
+    && required.every(key => keys.includes(key));
+}
+function remoteMetadataConflict(data, { deploymentId, buildVersion, artifactId, pageUrl } = {}) {
+  const ids = ['id', 'deployment_id'].filter(key => Object.hasOwn(data, key))
+    .map(key => actualDeploymentId(own(data, key)));
+  if (ids.some(id => id === null || deploymentId !== undefined && id !== deploymentId)
+    || new Set(ids).size > 1) return 'ID';
+  if (Object.hasOwn(data, 'pages_build_version') && data.pages_build_version !== buildVersion)
+    return 'BUILD_VERSION';
+  if (Object.hasOwn(data, 'artifact_id') && (!positive(data.artifact_id)
+    || artifactId !== undefined && data.artifact_id !== artifactId)) return 'ARTIFACT';
+  if (Object.hasOwn(data, 'page_url') && (!canonicalPagesUrl(data.page_url)
+    || pageUrl !== undefined && canonicalPagesUrl(data.page_url) !== pageUrl)) return 'PAGE_URL';
+  if (Object.hasOwn(data, 'preview_url') && !(data.preview_url === ''
+    || typeof data.preview_url === 'string' && data.preview_url.length <= 2048
+      && /^https:\/\/[^\s]+$/.test(data.preview_url))) return 'PREVIEW_URL';
+  const id = deploymentId ?? ids[0] ?? buildVersion;
+  const statusUrl = CREATE_URL + '/' + encodeURIComponent(id);
+  const legacy = API + '/repos/' + REPOSITORY + '/pages/deployment/status/' + encodeURIComponent(id);
+  if (Object.hasOwn(data, 'status_url') && ![statusUrl, statusUrl + '/status', legacy].includes(data.status_url))
+    return 'STATUS_URL';
+  return null;
+}
 function idFromEnvironment(value) {
   if (!matches(value, /^[1-9][0-9]{0,15}$/)) return null;
   const id = Number(value);
@@ -62,8 +97,10 @@ function canonicalDate(value) {
   return Number.isFinite(time) ? new Date(time).toISOString() : null;
 }
 function canonicalPagesUrl(value) {
-  for (const base of [PROJECT_PAGES, CUSTOM_PAGES])
-    if (value === base || value === base + '/') return base + '/';
+  for (const base of [PROJECT_PAGES, CUSTOM_PAGES]) {
+    const bare = base.slice('https://'.length);
+    if ([base, base + '/', bare, bare + '/'].includes(value)) return base + '/';
+  }
   return null;
 }
 function validBinding(value) {
@@ -121,22 +158,23 @@ export function createPagesDeploymentRequest(options) {
     'ARTIFACT');
     need(typeof oidc === 'string' && oidc.length <= 32768 && TOKEN_FORMAT.test(oidc), 'OIDC_FORMAT');
 
-    // Closed ordered tuple: distinguish source, run/attempt and physical
-    // package without changing GITHUB_SHA or borrowing the old SHA route.
+    // Closed local intent distinguishes run/attempt/artifact/ordinal.
+    // GitHub receives the existing unique per-artifact/attempt/ordinal build version.
     const identity = [DOMAIN, CREATE_URL, REF, runId, runAttempt, deliveryOrdinal, head, seal.attemptId,
       seal.artifactId, seal.artifactName, seal.artifactDigestSha256, seal.artifactSizeBytes,
       seal.targetPublicManifestSha256, seal.targetImplementationClosureSha256];
-    const buildVersion = createHash('sha256').update(JSON.stringify(identity)).digest('hex').slice(0, 40);
+    const clientIntentSha256 = createHash('sha256').update(JSON.stringify(identity)).digest('hex');
+    const buildVersion = clientIntentSha256.slice(0, 40);
     need(buildVersion !== head, 'VERSION_COLLISION');
     const request = Object.freeze({
-      method: 'POST', url: CREATE_URL, buildVersion,
+      method: 'POST', url: CREATE_URL, buildVersion, clientIntentSha256,
       statusUrl: CREATE_URL + '/' + buildVersion, artifactId: seal.artifactId, deliveryOrdinal,
     });
     requests.set(request, { oidc, bodyTaken: false, admitted: false });
     return request;
-  } catch {
-    // Never echo raw inputs, parser errors, getters, credentials or responses.
-    fail('PAGES_CREATE_REQUEST_REFUSED');
+  } catch (error) {
+    const reason = identityFailures.get(error);
+    fail('PAGES_CREATE_REQUEST_' + (requestReasons.has(reason) ? reason : 'UNPROVED'));
   }
 }
 
@@ -156,28 +194,72 @@ export function takePagesDeploymentRequestBody(request) {
  * `url` is the actual, unredirected HTTP response URL, not a reconstructed URL
  * for an unknown response. A good create receipt is not Pages/public success.
  */
+function actualDeploymentId(value) {
+  if (typeof value === 'number') return positive(value) ? String(value) : null;
+  return matches(value, SAFE_ID) ? value : null;
+}
+
 export function admitPagesCreateResponse(response, request) {
   try {
     const state = requests.get(request), data = own(response, 'data');
-    need(state?.bodyTaken && !state.admitted && own(response, 'status') === 200
-      && own(response, 'url') === request.url
-      && closedRecord(data, CREATE_FIELDS, ['id', 'page_url'])
-      && data.id === request.buildVersion, 'CREATE_ID');
+    need(state?.bodyTaken && !state.admitted, 'CREATE_STATE');
+    const status = own(response, 'status');
+    if (status !== 200) fail('PAGES_CREATE_HTTP_' + (Number.isInteger(status) && status >= 100 && status <= 599 ? status : 'UNKNOWN'));
+    need(own(response, 'url') === request.url, 'CREATE_ROUTE');
+    need(remoteRecord(data, ['id', 'page_url']), 'CREATE_SCHEMA');
+    const id = actualDeploymentId(data.id);
+    need(id !== null, 'CREATE_ID');
     const pageUrl = canonicalPagesUrl(data.page_url);
     need(pageUrl !== null, 'CREATE_PAGE_URL');
-    // The REST docs' create example uses /status in this optional field.
-    // Validate it, but poll only the documented GET route below.
-    need(!Object.hasOwn(data, 'status_url') || data.status_url === request.statusUrl
-      || data.status_url === request.statusUrl + '/status', 'CREATE_STATUS_URL');
-    const receipt = Object.freeze({
-      deploymentId: request.buildVersion, pageUrl, statusUrl: request.statusUrl,
-    });
-    receipts.set(receipt, request.artifactId);
+    const conflict = remoteMetadataConflict(data, { deploymentId: id, buildVersion: request.buildVersion,
+      artifactId: request.artifactId, pageUrl });
+    need(conflict === null, 'CREATE_' + conflict);
+    need(!Object.hasOwn(data, 'status') || data.status === 'succeed'
+      || PENDING.has(data.status) || FAILURE.has(data.status), 'CREATE_STATUS_VALUE');
+    // Preview metadata never grants another network destination.
+    need(!Object.hasOwn(data, 'preview_url') || data.preview_url === ''
+      || (typeof data.preview_url === 'string' && data.preview_url.length <= 2048
+        && /^https:\/\/[^\s]+$/.test(data.preview_url)), 'CREATE_PREVIEW_URL');
+    const statusUrl = CREATE_URL + '/' + encodeURIComponent(id);
+    const legacy = API + '/repos/' + REPOSITORY + '/pages/deployment/status/' + encodeURIComponent(id);
+    need(!Object.hasOwn(data, 'status_url') || data.status_url === statusUrl
+      || data.status_url === statusUrl + '/status' || data.status_url === legacy, 'CREATE_STATUS_URL');
+    const receipt = Object.freeze({ deploymentId: id, pageUrl, statusUrl });
+    receipts.set(receipt, { artifactId: request.artifactId, buildVersion: request.buildVersion });
     state.admitted = true;
     return receipt;
-  } catch {
-    fail('PAGES_CREATE_RESPONSE_UNPROVED');
+  } catch (error) {
+    const reason = identityFailures.get(error);
+    fail(typeof reason === 'string' && reason.startsWith('PAGES_CREATE_')
+      ? reason : 'PAGES_CREATE_RESPONSE_' + (reason ?? 'UNPROVED'));
   }
+}
+
+// The SHA route is an API lookup alias, never a physical-artifact identity.
+// Empty/404 replies supply no qualified absence or retry authority.
+export function classifyPagesPriorStatus(response, request) {
+  const unknown = code => Object.freeze({ outcome: 'UNKNOWN', code });
+  if (!requests.has(request) || own(response, 'url') !== request.statusUrl)
+    return unknown('PRIOR_STATUS_ROUTE_UNPROVED');
+  if (own(response, 'status') === 404) return unknown('PRIOR_STATUS_ABSENCE_UNQUALIFIED');
+  if (own(response, 'status') !== 200) {
+    const status = own(response, 'status');
+    return unknown('PRIOR_STATUS_HTTP_' + (Number.isInteger(status) && status >= 100 && status <= 599 ? status : 'UNKNOWN'));
+  }
+  const data = own(response, 'data');
+  if (data && Object.getPrototypeOf(data) === Object.prototype && Reflect.ownKeys(data).length === 0)
+    return unknown('PRIOR_STATUS_EMPTY_UNQUALIFIED');
+  if (!remoteRecord(data, ['status'])) return unknown('PRIOR_STATUS_BODY_UNPROVED');
+  // A prior SHA alias can belong to another artifact. Validate consistency,
+  // never invent a match to the new physical artifact or a CREATE receipt.
+  const conflict = remoteMetadataConflict(data, { buildVersion: request.buildVersion });
+  if (conflict) return unknown('PRIOR_STATUS_' + conflict + '_UNPROVED');
+  if (Object.hasOwn(data, 'pages_build_version') && data.pages_build_version !== request.buildVersion)
+    return unknown('PRIOR_STATUS_ID_UNPROVED');
+  if (PENDING.has(data.status)) return Object.freeze({ outcome: 'PENDING', code: data.status });
+  if (['succeed', 'deployment_failed', 'deployment_content_failed', 'deployment_cancelled'].includes(data.status))
+    return Object.freeze({ outcome: 'CLOSED', code: data.status });
+  return unknown('PRIOR_STATUS_VALUE_UNPROVED');
 }
 
 /** Pure classification only. The caller owns a bounded deadline and GETs. */
@@ -186,13 +268,21 @@ export function classifyPagesStatus(response, receipt) {
   try {
     if (!receipts.has(receipt) || own(response, 'url') !== receipt.statusUrl)
       return decision('UNKNOWN', 'STATUS_ROUTE_UNPROVED');
-    if (own(response, 'status') !== 200) return decision('UNKNOWN', 'STATUS_HTTP_UNPROVED');
+    if (own(response, 'status') !== 200) {
+      const status = own(response, 'status');
+      return decision('UNKNOWN', 'STATUS_HTTP_' + (Number.isInteger(status) && status >= 100 && status <= 599 ? status : 'UNKNOWN'));
+    }
     const data = own(response, 'data');
-    if (!closedRecord(data, STATUS_FIELDS, ['status'])) return decision('UNKNOWN', 'STATUS_BODY_UNPROVED');
-    for (const key of ['id', 'deployment_id', 'pages_build_version'])
-      if (Object.hasOwn(data, key) && data[key] !== receipt.deploymentId)
+    if (!remoteRecord(data, ['status'])) return decision('UNKNOWN', 'STATUS_BODY_UNPROVED');
+    const conflict = remoteMetadataConflict(data, { deploymentId: receipt.deploymentId,
+      buildVersion: receipts.get(receipt).buildVersion, artifactId: receipts.get(receipt).artifactId, pageUrl: receipt.pageUrl });
+    if (conflict) return decision('UNKNOWN', 'STATUS_' + conflict + '_UNPROVED');
+    for (const key of ['id', 'deployment_id'])
+      if (Object.hasOwn(data, key) && actualDeploymentId(data[key]) !== receipt.deploymentId)
         return decision('UNKNOWN', 'STATUS_ID_UNPROVED');
-    if (Object.hasOwn(data, 'artifact_id') && data.artifact_id !== receipts.get(receipt))
+    if (Object.hasOwn(data, 'pages_build_version') && data.pages_build_version !== receipts.get(receipt).buildVersion)
+      return decision('UNKNOWN', 'STATUS_BUILD_VERSION_UNPROVED');
+    if (Object.hasOwn(data, 'artifact_id') && data.artifact_id !== receipts.get(receipt).artifactId)
       return decision('UNKNOWN', 'STATUS_ARTIFACT_UNPROVED');
     if (data.status === 'succeed') return decision('SUCCEEDED', 'succeed');
     if (FAILURE.has(data.status)) return decision('FAILED', data.status);
@@ -201,4 +291,12 @@ export function classifyPagesStatus(response, receipt) {
   } catch {
     return decision('UNKNOWN', 'STATUS_RESPONSE_UNPROVED');
   }
+}
+
+// Retain only already validated status/identity evidence, never additive metadata.
+export function projectPagesStatusData(response, receipt) {
+  need(classifyPagesStatus(response, receipt).outcome !== 'UNKNOWN', 'PAGES_STATUS_EVIDENCE_UNPROVED');
+  const data = own(response, 'data');
+  return Object.freeze(Object.fromEntries(STATUS_FIELDS.filter(key => Object.hasOwn(data, key))
+    .map(key => [key, own(data, key)])));
 }

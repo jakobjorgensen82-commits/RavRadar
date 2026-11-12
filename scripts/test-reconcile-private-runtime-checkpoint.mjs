@@ -1,3 +1,4 @@
+import { projectPagesClosureHistoricalTestInput as historicalPagesInput } from './lib/pages-closure-historical-test-input.mjs';
 import { classifyProductionTargetFreshness } from './check-production-target-freshness.mjs';
 import { assertSavedPrivateRuntimeCheckpointReconcileRequest, privateRuntimeCheckpointReconcileFailureDiagnostic } from './reconcile-private-runtime-checkpoint.mjs';
 import { ESTABLISHED_NATIVE_CURRENT_ORIGIN_BINDING as OLD_FAMILY } from './lib/established-native-current-origin-successor-source.mjs';
@@ -491,9 +492,9 @@ test('normal CURRENT B/S interruption reconciliation preserves whole pairs and r
 
 test('ordinary paired publication is genuinely new, exact-invertible and cannot write through a dry run', async () => {
   const raw = (await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
-  const previous = inversePairedPrivateRuntimePublication(raw, 'build');
+  const previous = inversePairedPrivateRuntimePublication(historicalPagesInput(raw, 'build'), 'build');
   assert.notEqual(raw, previous); assert.equal(sha(previous), '861fad7501e32d4b63c72caa598825b15fb5fb2758961a1187ed57858e5c01ce');
-  assert.equal(inverseCompletedRuntimeWorkflow(raw, 'build'), inverseCompletedRuntimeWorkflow(previous, 'build'));
+  assert.equal(inverseCompletedRuntimeWorkflow(historicalPagesInput(raw, 'build'), 'build'), inverseCompletedRuntimeWorkflow(previous, 'build'));
   const step = (text, name) => text.split(/(?=^      - name:)/m).find(block => block.startsWith('      - name: ' + name + '\n'));
   const Sstep = step(raw, 'Publish atomic RavScore checkpoint to protected admin storage');
   const evalIf = (block, action, required, input = {}, assistantRequired = 'false') => runInNewContext(block.match(/^        if: (.+)$/m)[1]

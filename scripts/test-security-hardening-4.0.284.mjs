@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFile, realpath } from 'node:fs/promises';
+import { readFile, realpath, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -14,6 +14,111 @@ import {
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const read=relative=>readFile(path.join(root,relative),'utf8');
 const htmlFiles=['about.html','admin.html','documentation.html','handbook.html','index.html','kystimport.html','learn.html','supabase-setup.html'];
+
+// Restricted block-mapping check for workflow_call.inputs, not a YAML parser.
+// Keep quoted multiline values and literal/folded text out of the mapping keys.
+function remainingQuote(text, quote) {
+  for (let index = 0; index < text.length; index += 1) {
+    if (quote === '"' && text[index] === '\\') { index += 1; continue; }
+    if (text[index] !== quote) continue;
+    if (quote === "'" && text[index + 1] === "'") { index += 1; continue; }
+    return null;
+  }
+  return quote;
+}
+
+function assertWorkflowCallInputFields(text, file) {
+  const parents = [];
+  let quote = null, blockIndent = null;
+  for (const line of text.replaceAll('\r\n', '\n').split('\n')) {
+    if (quote) { quote = remainingQuote(line, quote); continue; }
+    if (/^\s*(?:#.*)?$/.test(line)) continue;
+    const indent = line.match(/^ */)[0].length;
+    if (blockIndent !== null) {
+      if (indent > blockIndent) continue;
+      blockIndent = null;
+    }
+    const mapping = /^ *(?:([A-Za-z0-9_-]+)|'([A-Za-z0-9_-]+)'|"([A-Za-z0-9_-]+)"):(?:[ \t]+(.*)|[ \t]*)$/.exec(line);
+    if (!mapping) continue;
+    const key = mapping[1] ?? mapping[2] ?? mapping[3], value = (mapping[4] ?? '').trim();
+    while (parents.length && parents.at(-1).indent >= indent) parents.pop();
+    const callInputs = parents.length >= 3 && parents[0].key === 'on'
+      && parents[1].key === 'workflow_call' && parents[2].key === 'inputs';
+    if (callInputs && (parents.length === 3 || parents.length === 4)) {
+      const parent = parents.at(-1);
+      if (parent.keys.has(key)) {
+        const label = parents.length === 3 ? 'inputnavn ' : 'inputfelt ' + parent.key + '.';
+        throw new Error(file + ': gentaget workflow_call-' + label + key);
+      }
+      parent.keys.add(key);
+    }
+    parents.push({ key, indent, keys: new Set() });
+    if (/^[|>](?:[1-9]?[+-]?|[+-][1-9]?)(?:\s+#.*)?$/.test(value)) blockIndent = indent;
+    else if (value[0] === "'" || value[0] === '"') quote = remainingQuote(value.slice(1), value[0]);
+  }
+}
+
+// Exact first input blocks from main421c and Source13; no network or Git read.
+const reviewedMainInputs = `on:
+  workflow_call:
+    inputs:
+      ordinary_immediate_retry:
+        description: Run the bounded same-job Pages retry for default scheduled weather
+        required: false
+        type: boolean
+        default: false
+      pre_activation_recovery:
+        required: false
+        type: boolean
+        default: false
+`;
+const historicalSource13Duplicate = `on:
+  workflow_call:
+    inputs:
+      ordinary_immediate_retry:
+        description: Run the bounded same-job Pages retry for default scheduled weather
+        required: false
+        type: boolean
+        default: false
+        required: false
+        type: boolean
+        default: false
+      source_saved_pair_readback:
+        required: false
+        type: boolean
+        default: false
+      pre_activation_recovery:
+        required: false
+        type: boolean
+        default: false
+`;
+assertWorkflowCallInputFields(reviewedMainInputs, 'main421c Pages-inputfixture');
+assertWorkflowCallInputFields(reviewedMainInputs.replace(/^ +/gm, indent => indent.repeat(2)), 'Pages-indrykningsfixture');
+let duplicateRejected = false;
+try {
+  assertWorkflowCallInputFields(historicalSource13Duplicate, 'Source13 Pages-inputfixture');
+} catch (error) {
+  if (!error.message.endsWith(': gentaget workflow_call-inputfelt ordinary_immediate_retry.required')) throw error;
+  duplicateRejected = true;
+}
+if (!duplicateRejected) throw new Error('Source13s faktiske gentagne inputfelt blev ikke afvist.');
+
+const description = '        description: Run the bounded same-job Pages retry for default scheduled weather';
+for (const textValue of [
+  '        description: >-\n          required: kun tekst\n          default: også kun tekst',
+  '        description: |-\n          type: kun tekst\n          required: også kun tekst',
+  '        description: "første linje\n        required: stadig citeret tekst\n        default: sidste tekstlinje"',
+  "        description: 'første linje\n        required: tekst med ''citat''\n        type: sidste tekstlinje'",
+]) {
+  assertWorkflowCallInputFields(reviewedMainInputs.replace(description, textValue), 'Pages-tekstfixture');
+}
+
+// Inspect the actual checkout YAML with the existing async root-bound reader.
+for (const name of (await readdir(path.join(root, '.github/workflows'))).sort()) {
+  if (!/\.ya?ml$/i.test(name)) continue;
+  const relative = '.github/workflows/' + name;
+  assertWorkflowCallInputFields(await read(relative), relative);
+}
 
 const isWithin=(base,target)=>{
   const relative=path.relative(base,target);

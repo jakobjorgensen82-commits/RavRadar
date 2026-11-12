@@ -4241,6 +4241,7 @@ jobs:
         if: steps.current-grid-edge-route.outputs.required == 'true'
         shell: bash
         env:
+          GH_TOKEN: ${{ github.token }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: >-
@@ -4255,6 +4256,7 @@ jobs:
         if: steps.preflight.outputs.should_run == 'true' && steps.current-grid-edge-route.outputs.required == 'true'
         shell: bash
         env:
+          GH_TOKEN: ${{ github.token }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
