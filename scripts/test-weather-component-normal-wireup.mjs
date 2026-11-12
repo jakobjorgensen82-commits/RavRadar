@@ -714,7 +714,8 @@ test('retained scalar physical CLI preserves original files through offline CP a
     }));
     const before = await snapshot();
     const allowed = new Set(['PATH','SYSTEMROOT','WINDIR','TEMP','TMP','HOME','USERPROFILE',
-      'LOCALAPPDATA','APPDATA','PROGRAMFILES','PROGRAMFILES(X86)','PYTHON']);
+      'LOCALAPPDATA','APPDATA','PROGRAMFILES','PROGRAMFILES(X86)','PYTHON',
+      'LD_LIBRARY_PATH','DYLD_LIBRARY_PATH']);
     const childEnv = Object.fromEntries(Object.entries(process.env).filter(([key]) => allowed.has(key.toUpperCase())));
     Object.assign(childEnv,{PYTHONDONTWRITEBYTECODE:'1',PYTHONUTF8:'1'});
     const run = (executable,args,extra={}) => {
@@ -744,7 +745,8 @@ let offset=0,triggered=false;
 Date.now=()=>now()+offset;
 fs.readFile=async function(file,...args){
   if(String(file).replaceAll('\\','/').endsWith('/data/live/coastal-parts-v2.json')){
-    if(mode==='timeout'){const result=await readFile.call(this,file,...args);offset=120001;triggered=true;return result;}
+    if(mode==='timeout'){const result=await readFile.call(this,file,...args);offset=180001;triggered=true;return result;}
+    if(mode==='headroom'){const result=await readFile.call(this,file,...args);offset=120001;triggered=true;return result;}
     if(mode==='unknown'){triggered=true;throw Error('PRIVATE_FIXTURE_MESSAGE /private/fixture/source.json secret=NEVER_REPORT');}
     if(mode==='stop'){
       triggered=true;
@@ -793,9 +795,19 @@ if(!triggered)throw Error('PRIVATE_DIAGNOSTIC_INJECTION_NOT_REACHED');
       await assert.rejects(io.lstat(path.join(root,'.cache/weather-scalar-needs.json')),{code:'ENOENT'});
       assert.deepEqual(await snapshot(),before,'A failed plan changes no original file or identity');
     }
+    // The same normal CLI must finish after the former 120s boundary while
+    // keeping a single absolute deadline and every offline reader.
+    run(process.execPath,['--input-type=module','-e',diagnosticProbe,
+      cliUrl,settlementUrl,'headroom',dmiPath,H0],{
+        RAVRADAR_RETAINED_SCALAR_CONTEXT:selectedScalarContext,
+        RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE:'true'});
+    const headroomPlan = await io.readFile(path.join(root,'.cache/weather-scalar-needs.json'));
+    assert.deepEqual(await snapshot(),before,'Headroom must not change any original input');
     run(process.execPath,[fileURLToPath(new URL('./plan-weather-scalar-acquisition.mjs',import.meta.url)),
       '--cache',dmiPath,'--at',H0],{RAVRADAR_RETAINED_SCALAR_CONTEXT:selectedScalarContext,
         RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE:'true'});
+    assert.deepEqual(await io.readFile(path.join(root,'.cache/weather-scalar-needs.json')),headroomPlan,
+      'Allowed time after 120s must produce the same complete scalar plan as the normal clock');
     const python = process.env.PYTHON ?? 'python';
     run(python,['-B','-X','utf8',fileURLToPath(new URL('./build-weather-acquisition-plan.py',import.meta.url)),
       '--at',H0,'--scalar-snapshot',dmiPath]);

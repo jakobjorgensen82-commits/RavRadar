@@ -62,6 +62,12 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
   backupRestore:[
     LOCAL_RESTORE_SELF_TEST,
   ],
+  mailOwnerProbe:[
+    'node --test scripts/test-owner-notice-probe-ci.mjs',
+  ],
+  weatherScalarPlanning:[
+    'node --test scripts/test-weather-component-normal-wireup.mjs',
+  ],
   // Aktuel faktisk kildegate + arkivkontrakt. Det er ikke et løfte om at
   // samtlige historiske whole-oracles er udført.
   compatibility:[
@@ -148,6 +154,21 @@ const PATH_AREAS=freeze({
   backupRestore:[
     LOCAL_RESTORE_FIXTURE,
   ],
+  mailOwnerProbe:[
+    '.github/workflows/test-owner-notice-mail.yml',
+    'scripts/owner-notice-probe-ci.mjs',
+    'scripts/test-owner-notice-probe-ci.mjs',
+    'scripts/fixtures/owner-notice-probe/index.ts',
+    'scripts/fixtures/owner-notice-probe/inactivity-notice-mail.mjs',
+    'scripts/fixtures/owner-notice-probe/owner-notice-probe.mjs',
+    'scripts/fixtures/owner-notice-probe/owner-notice-probe-invoke.mjs',
+    'scripts/fixtures/owner-notice-probe/reservation.mjs',
+    'scripts/fixtures/owner-notice-probe/hosted-owner-adapter-v1/hosted-owner-notice-probe.mjs',
+  ],
+  weatherScalarPlanning:[
+    'scripts/lib/weather-component-runtime.mjs',
+    'scripts/test-weather-component-normal-wireup.mjs',
+  ],
   // Disse kendte historiske/metakontroller giver ingen produktadmission i V3.
   // Deres ændring kræver stadig en uafhængig kontrolgennemgang.
   historicalTests:[
@@ -173,6 +194,15 @@ const PATH_AREAS=freeze({
   ],
 });
 const sourceControlPaths=new Set(PATH_AREAS.sourceControls);
+// The same actual owner/target catalog serves current CI and historical input admission.
+// This is only a lookup; it does not run a producer, read Git or qualify a receipt.
+export function currentWorkflowTargets(relative){
+  assert.equal(arguments.length,1);
+  if(typeof relative!=='string'||!/^\.github\/workflows\/[A-Za-z0-9_.-]+\.ya?ml$/.test(relative))return null;
+  const areas=pathAreas.get(relative);
+  if(!areas?.length||areas.some(area=>!COMMANDS[area]?.length))return null;
+  return freeze({path:relative,owners:areas.map(area=>({area,commands:[...COMMANDS[area]]}))});
+}
 const historicalPaths=new Set(PATH_AREAS.historicalTests);
 const pathAreas=new Map();
 for(const [area,files]of Object.entries(PATH_AREAS))for(const file of files){
@@ -330,7 +360,7 @@ export function planSourceCurrentContractsFromGit(input){
       const areas=pathAreas.get(file)??(/^docs\/(?:rdks|ai|handbook)\/.+\.md$/.test(file)?['documentation']:null);
       if(!areas){unknown.push(file);continue;}
       for(const area of areas){if(!selected.has(area))selected.set(area,[]);selected.get(area).push(file);}
-      if(sourceControlPaths.has(file)||historicalPaths.has(file)||areas.includes('compatibility')||file.startsWith('scripts/test-'))
+      if(sourceControlPaths.has(file)||historicalPaths.has(file)||areas.includes('compatibility')||areas.includes('mailOwnerProbe')||file.startsWith('scripts/test-'))
         out.controlQualificationRequired=true;
     }
     if(unknown.length){out.unclassifiedPaths=unknown.sort();return refuse('CURRENT_UNCLASSIFIED_PATH');}

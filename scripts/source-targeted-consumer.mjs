@@ -8,7 +8,9 @@ import {sourceTreeContentSha256} from './lib/source-tree-content.mjs';
 import {qualifySourceImpactFullBaseline,SOURCE_IMPACT_FULL_BASELINE_KIND}
   from './source-impact-full-baseline.mjs';
 import {CURRENT_CONTRACT_SOURCE_CONTRACT,CURRENT_CONTRACT_SOURCE_KIND,currentContractSourceArtifactName,
-  validateCurrentContractSourceReceipt,readCurrentContractReview} from './source-current-contract-receipt.mjs';
+  validateCurrentContractSourceReceipt,readCurrentContractReview,CURRENT_CHANGE_SOURCE_CONTRACT,CURRENT_CHANGE_SOURCE_KIND,
+  currentChangeSourceArtifactName,validateCurrentChangeSourceReceipt,readCurrentChangeReview}
+  from './source-current-contract-receipt.mjs';
 import {ORIGIN,sourceImpactEvidenceBudget} from './native-postgres-evidence.mjs';
 
 // Archived namespaces are parsed here without initializing their old planner.
@@ -40,6 +42,12 @@ export const TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES=Object.freeze(
   TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES.map((name,index)=>index===5?'Install declared DMI dependencies before source planning':name));
 const DMI_PYTHON_WORKFLOW_SHA256='742835aa72adb58c50f6f404f5c3c1308a7c11b0038a528a9b5a1ac6253b3cff';
 const DMI_REQUIREMENTS_WORKFLOW_SHA256='2947d429c6df45cfc415ace970f4e5efc89410ca60d277de19529dde73882843';
+const verifiedMainFrontiers=new WeakMap();
+// Only a result actually accepted by this normal consumer carries this brand.
+export function verifiedMainSourceFrontier(result){
+  assert.equal(arguments.length,1);const value=verifiedMainFrontiers.get(result);
+  return value?structuredClone(value):null;
+}
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const one=rows=>{assert.equal(rows.length,1);return rows[0];};
 const positive=value=>Number.isSafeInteger(value)&&value>0;
@@ -51,7 +59,7 @@ const success=value=>value?.status==='completed'&&value.conclusion==='success';
 function locatorIdentity(record,env){
   assert(record&&Object.getPrototypeOf(record)===Object.prototype);
   assert.deepEqual(Object.keys(record).sort(),[...LOCATOR_KEYS].sort());
-  assert([TARGETED_SOURCE_CONTRACT,DOMAIN_TARGETED_SOURCE_CONTRACT,CURRENT_CONTRACT_SOURCE_CONTRACT].includes(record.contractId));
+  assert([TARGETED_SOURCE_CONTRACT,DOMAIN_TARGETED_SOURCE_CONTRACT,CURRENT_CONTRACT_SOURCE_CONTRACT,CURRENT_CHANGE_SOURCE_CONTRACT].includes(record.contractId));
   assert.equal(record.repository,ORIGIN.repository);
   assert.equal(env.GITHUB_REPOSITORY,record.repository);assert.equal(env.GITHUB_REF,'refs/heads/main');
   assert(oid(record.headSha)&&record.headSha===env.GITHUB_SHA&&oid(record.producerHeadSha));
@@ -97,7 +105,8 @@ function runIdentity(run,pull,jobs,record,workflowText){
 }
 
 function artifactNameFor(record,current){
-  assert([TARGETED_SOURCE_CONTRACT,DOMAIN_TARGETED_SOURCE_CONTRACT,CURRENT_CONTRACT_SOURCE_CONTRACT].includes(record.contractId));
+  assert([TARGETED_SOURCE_CONTRACT,DOMAIN_TARGETED_SOURCE_CONTRACT,CURRENT_CONTRACT_SOURCE_CONTRACT,CURRENT_CHANGE_SOURCE_CONTRACT].includes(record.contractId));
+  if(record.contractId===CURRENT_CHANGE_SOURCE_CONTRACT)return currentChangeSourceArtifactName(current);
   if(record.contractId===CURRENT_CONTRACT_SOURCE_CONTRACT)return currentContractSourceArtifactName(current);
   const prefix=record.contractId===DOMAIN_TARGETED_SOURCE_CONTRACT
     ?'ravradar-source-targeted-domains-v2-pr-':'ravradar-source-targeted-v1-pr-';
@@ -187,8 +196,42 @@ export async function decideTargetedSourceGate(record,env,dependencies){
     assert.equal(full.kind,SOURCE_IMPACT_FULL_BASELINE_KIND);
     const isDomain=record.contractId===DOMAIN_TARGETED_SOURCE_CONTRACT;
     const isCurrent=record.contractId===CURRENT_CONTRACT_SOURCE_CONTRACT;
-    let structural,domainPlan,currentPlan,controlReview;
-    if(isCurrent){
+    const isChange=record.contractId===CURRENT_CHANGE_SOURCE_CONTRACT;
+    let structural,domainPlan,currentPlan,cumulativePlan,changeBase,controlReview;
+    if(isChange){
+      // A normal merge's first parent is the live main base tested by the PR.
+      // No receipt-selected old ancestor may hide current changes.
+      changeBase=receipt.changeBase;
+      assert(changeBase&&oid(changeBase.commit)&&oid(changeBase.gitTree)&&oid(changeBase.pullBaseCommit));
+      assert.equal(parents[2],record.producerHeadSha);assert.equal(parents[1],changeBase.pullBaseCommit);
+      assert.equal(text(['merge-base','--all',parents[1],record.producerHeadSha]),changeBase.commit);
+      assert.equal(text(['rev-parse',changeBase.commit+'^{tree}']),changeBase.gitTree);
+      git(['merge-base','--is-ancestor',full.mergeCommit,changeBase.commit]);
+      const {planSourceCurrentContractsFromGit}=await import('./source-current-contract-plan.mjs');
+      currentPlan=planSourceCurrentContractsFromGit({baselineCommit:changeBase.commit,
+        candidateCommit:record.headSha,expectedHead:record.headSha});remaining();
+      cumulativePlan=planSourceCurrentContractsFromGit({baselineCommit:full.mergeCommit,
+        candidateCommit:record.headSha,expectedHead:record.headSha});remaining();
+      const expected={current,fullBaseline:full,changeBase,currentPlan,cumulativePlan};
+      controlReview=readCurrentChangeReview(pull,expected);
+      structural=validateCurrentChangeSourceReceipt(receipt,{...expected,frontier:receipt.frontier,
+        commandResults:receipt.reportedCommandResults});
+      if(receipt.frontier.mode==='MAIN'){
+        const frontier=receipt.frontier,prior=frontier.sourceRecord;
+        assert.equal(sourceTreeContentSha256(changeBase.commit,{git}),frontier.sourceTreeSha256);
+        assert(frontier.sourceProofTime<=phase.proofTime);
+        const priorParents=text(['rev-list','--parents','-n','1',changeBase.commit]).split(' ');
+        assert.equal(priorParents.length,3);assert.equal(priorParents[2],prior.producerHeadSha);
+        assert.equal(text(['rev-parse',prior.producerHeadSha+'^{tree}']),frontier.gitTree);
+        // The producer verified the complete immediate base before commands.
+        // This delegated summary never recursively reopens its ancestors.
+      }
+      const frontier=receipt.frontier;
+      const negative=await inspectLaterMainEvidence({env:{...env,GITHUB_SHA:changeBase.commit},
+        proofTime:frontier.mode==='MAIN'?frontier.sourceProofTime:0,
+        record:frontier.sourceRecord??{runId:record.runId},getJson:json});
+      if(negative)return negative;
+    }else if(isCurrent){
       const {planSourceCurrentContractsFromGit}=await import('./source-current-contract-plan.mjs');
       currentPlan=planSourceCurrentContractsFromGit({baselineCommit:full.mergeCommit,
         candidateCommit:record.headSha,expectedHead:record.headSha});remaining();
@@ -220,22 +263,30 @@ export async function decideTargetedSourceGate(record,env,dependencies){
     const later=await inspectLaterMainEvidence({env,proofTime:phase.proofTime,record,getJson:json});
     if(later)return later;
     assert.deepEqual(await json(runRoute),run);assert.deepEqual(await json(artifactRoute),metadata);
-    if((isCurrent&&currentPlan.controlQualificationRequired)
+    if(((isCurrent||isChange)&&currentPlan.controlQualificationRequired)
       ||(isDomain&&domainPlan.selection==='CONTROL_QUALIFICATION_REQUIRED')){
       const freshPull=await json(repo+'/pulls/'+record.pullRequestNumber);
       runIdentity(run,freshPull,jobs,record,workflowText);
-      if(isCurrent)assert.deepEqual(readCurrentContractReview(freshPull,{current,fullBaseline:full,currentPlan}),controlReview);
+      if(isChange)assert.deepEqual(readCurrentChangeReview(freshPull,{current,fullBaseline:full,changeBase,currentPlan,cumulativePlan}),controlReview);
+      else if(isCurrent)assert.deepEqual(readCurrentContractReview(freshPull,{current,fullBaseline:full,currentPlan}),controlReview);
       else{
         const {readDomainControlReview}=await import('./source-targeted-receipt.mjs');
         assert.deepEqual(readDomainControlReview(freshPull,{current,fullBaseline:full,domainPlan}),controlReview);
       }
     }
     assertCommittedHead();assert.equal(sourceTreeContentSha256(record.headSha,{git}),record.sourceTreeSha256);remaining();
-    if(isCurrent)return {required:false,reason:'verified-current-contract-pull-request-source-content',runId:record.runId,
-      scope:'CURRENT_CONTRACT_RESULTS_ONLY',testedAreas:Object.keys(receipt.impact.areas)
-        .filter(area=>receipt.impact.areas[area].commands.length>0),
+    if(isCurrent||isChange){
+      const result={required:false,reason:isChange?'verified-current-change-pull-request-source-content':
+      'verified-current-contract-pull-request-source-content',runId:record.runId,
+      scope:isChange?'CURRENT_CHANGE_CONTRACT_RESULTS_ONLY':'CURRENT_CONTRACT_RESULTS_ONLY',testedAreas:Object.keys(isChange?receipt.execution.areas:receipt.impact.areas)
+        .filter(area=>(isChange?receipt.execution.areas:receipt.impact.areas)[area].commands.length>0),
       postgresExecuted:false,historicalCompatibilityExecuted:false,historicalNationalExecuted:false,
       independentControlReview:controlReview?'VERIFIED_EXACT_ROOT_PR_REVIEW':'NOT_REQUIRED'};
+      verifiedMainFrontiers.set(result,{schemaVersion:1,kind:'QUALIFIED_CHANGE_FRONTIER',mode:'MAIN',
+        repository:record.repository,commit:record.headSha,gitTree:tree,sourceTreeSha256:record.sourceTreeSha256,
+        sourceRecord:structuredClone(record),sourceProofTime:phase.proofTime,missingReason:null});
+      return result;
+    }
     return isDomain
       ?{required:false,reason:'verified-domain-targeted-pull-request-source-content',runId:record.runId,
         scope:'TARGETED_DOMAIN_COMMAND_RESULTS_ONLY',domains:structuredClone(receipt.domains),
@@ -250,7 +301,8 @@ export async function decideTargetedSourceGate(record,env,dependencies){
 // independent FULL baseline, actual main Git tree/diff and later-failure checks.
 // No caller chooses PR/run/job/artifact/hash fields or supplies verified:true.
 export async function discoverTargetedSourceGate(env,sourceTreeSha256,dependencies){
-  const required=()=>({required:true,reason:'targeted-source-locator-unavailable'});
+  const required=(frontierAvailability='UNPROVED')=>({required:true,reason:'targeted-source-locator-unavailable',frontierAvailability});
+  let expired=false;
   const deadline=performance.now()+60000;
   let sharedBudget=null;
   const remaining=()=>{const n=sharedBudget?sharedBudget.remaining():deadline-performance.now();assert(n>0);return n;};
@@ -287,11 +339,12 @@ export async function discoverTargetedSourceGate(env,sourceTreeSha256,dependenci
       &&pull.base?.repo?.full_name===env.GITHUB_REPOSITORY).sort((a,b)=>b.number-a.number);
     assert(candidates.length<=4&&new Set(candidates.map(pull=>pull.number)).size===candidates.length);
     for(const pull of candidates){
-     for(const contractId of [CURRENT_CONTRACT_SOURCE_CONTRACT,DOMAIN_TARGETED_SOURCE_CONTRACT,TARGETED_SOURCE_CONTRACT]){
+     for(const contractId of [CURRENT_CHANGE_SOURCE_CONTRACT,CURRENT_CONTRACT_SOURCE_CONTRACT,DOMAIN_TARGETED_SOURCE_CONTRACT,TARGETED_SOURCE_CONTRACT]){
       const artifactName=artifactNameFor({contractId},{pullRequest:pull.number,head:pull.head.sha,sourceTreeSha256});
       const listing=await json(repo+'/actions/artifacts?name='+encodeURIComponent(artifactName)+'&per_page=100');
       assert(Array.isArray(listing.artifacts)&&Number.isSafeInteger(listing.total_count)
         &&listing.total_count>=0&&listing.total_count<=100&&listing.total_count===listing.artifacts.length);
+      expired ||= listing.artifacts.some(artifact=>artifact.name===artifactName&&artifact.expired===true);
       const matches=listing.artifacts.filter(artifact=>artifact.name===artifactName&&artifact.expired===false)
         .sort((a,b)=>b.id-a.id);
       assert(matches.length<=8&&new Set(matches.map(artifact=>artifact.id)).size===matches.length);
@@ -321,18 +374,24 @@ export async function discoverTargetedSourceGate(env,sourceTreeSha256,dependenci
       assert.equal(bytes.length,artifact.size_in_bytes);assert.equal('sha256:'+sha(bytes),artifact.digest);
       const raw=decodeReceipt(bytes,remaining),receipt=JSON.parse(raw);locator.proofSha256=sha(raw);
       locatorIdentity(locator,env);
-       const isDomain=contractId===DOMAIN_TARGETED_SOURCE_CONTRACT,isCurrent=contractId===CURRENT_CONTRACT_SOURCE_CONTRACT;
-       assert.equal(receipt.schemaVersion,isCurrent?3:isDomain?2:1);assert.equal(receipt.contractId,contractId);
-       assert.equal(receipt.kind,isCurrent?CURRENT_CONTRACT_SOURCE_KIND:isDomain?DOMAIN_TARGETED_SOURCE_KIND:TARGETED_SOURCE_KIND);
-       assert.equal(receipt.scope,isCurrent?'CURRENT_CONTRACT_RESULTS_ONLY'
+       const isDomain=contractId===DOMAIN_TARGETED_SOURCE_CONTRACT,isCurrent=contractId===CURRENT_CONTRACT_SOURCE_CONTRACT,
+         isChange=contractId===CURRENT_CHANGE_SOURCE_CONTRACT;
+       assert.equal(receipt.schemaVersion,isChange?4:isCurrent?3:isDomain?2:1);assert.equal(receipt.contractId,contractId);
+       assert.equal(receipt.kind,isChange?CURRENT_CHANGE_SOURCE_KIND:isCurrent?CURRENT_CONTRACT_SOURCE_KIND:isDomain?DOMAIN_TARGETED_SOURCE_KIND:TARGETED_SOURCE_KIND);
+       assert.equal(receipt.scope,isChange?'CURRENT_CHANGE_CONTRACT_RESULTS_ONLY':isCurrent?'CURRENT_CONTRACT_RESULTS_ONLY'
          :isDomain?'TARGETED_DOMAIN_COMMAND_RESULTS_ONLY':'TARGETED_COMMAND_RESULTS_ONLY');
       assert.equal(receipt.artifactName,artifactName);assert.equal(receipt.privatePayloadIncluded,false);
       assert.deepEqual(receipt.current,{repository:locator.repository,head:locator.producerHeadSha,
         sourceTreeSha256,pullRequest:locator.pullRequestNumber,runId:run.id,runAttempt:1,jobId:job.id});
       remaining();
-      return {locator,requiresVerification:true,deliveryAuthority:false};
+      if((isCurrent||isChange)&&(!Array.isArray(receipt.reportedCommandResults)
+        ||receipt.reportedCommandResults.length===0||receipt.reportedCommandResults.some(row=>row?.outcome!=='PASS')))
+        return {required:true,reason:'typed-source-reported-result-not-pass',frontierAvailability:'CONTRADICTION'};
+      return {locator,receipt,requiresVerification:true,deliveryAuthority:false,
+        // Data for locating the original FULL proof, never inherited authority.
+        ...((isCurrent||isChange)?{baselineReferenceLocator:structuredClone(receipt.baselineReference)}:{})};
      }
     }
-    return required();
+    return required(expired?'EXPIRED':'MISSING');
   }catch{return required();}
 }

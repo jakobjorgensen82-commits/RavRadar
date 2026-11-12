@@ -50,7 +50,7 @@ async function verifiedTargetedSourceProof(record, context, sourceTreeSha256) {
         GIT_CONFIG_KEY_0: 'protocol.allow', GIT_CONFIG_VALUE_0: 'never' },
     });
     let locator = ['weather-source-targeted-impact-v1', 'weather-source-targeted-domains-v2',
-      'weather-source-current-contracts-v3'].includes(record?.contractId) ? record : null;
+      'weather-source-current-contracts-v3','weather-source-current-change-v4'].includes(record?.contractId) ? record : null;
     if (!locator) {
       const found = await discoverTargetedSourceGate(context, sourceTreeSha256, { ...access, readGit });
       if (!found.locator || found.requiresVerification !== true) return null;
@@ -95,7 +95,9 @@ if (mode === 'digest' || mode === 'impact-digest') {
     await fs.appendFile(env.GITHUB_OUTPUT,
       `selection=TARGETED\nsource_tree_sha256=${impact.sourceTreeSha256}\n`
       + `artifact_name=${impact.artifactName}\nreceipt_path=${impact.receiptPath}\n`);
-    console.log(impact.receipt.schemaVersion === 3
+    console.log(impact.receipt.schemaVersion === 4
+      ? 'Created current-change receipt from a qualified change frontier or explicit cumulative target fallback; original PostgreSQL scope is unchanged.'
+      : impact.receipt.schemaVersion === 3
       ? 'Created current-contract receipt; exact current targets passed; unchanged PostgreSQL inputs and historical execution are reported separately.'
       : impact.receipt.schemaVersion === 2
       ? 'Created separate domain receipt; exact command results are reported per domain; PostgreSQL and historical national execution are not claimed.'

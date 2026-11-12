@@ -272,6 +272,7 @@ export function verifiedPartScalarPlanningHourly({
 
 // Diagnostic state is private to the actual failing operation. Retain the
 // original error identity, including an unproved transport-stop brand.
+const RETAINED_SCALAR_PLAN_MAX_MS = 180_000;
 const retainedScalarFailurePhases = new WeakMap();
 const RETAINED_SCALAR_PHASES = new Set([
   'CONTEXT', 'ARGUMENTS', 'LOAD', 'ENCODE', 'PUBLISH', 'TRANSPORT_SETTLEMENT',
@@ -319,7 +320,7 @@ export function retainedScalarPlanningFailureDiagnostic(error, fallbackPhase) {
 // CP's existing no-transportBudget arm invokes the fixed --verify-only reader.
 export async function loadRetainedWeatherComponentPlanningInputs({
   privateCacheRoot, parts, productionReferenceAt, retentionStartAt, retentionEndAt,
-  planningDeadlineAt = Date.now() + 120_000,
+  planningDeadlineAt = Date.now() + RETAINED_SCALAR_PLAN_MAX_MS,
 }) {
   let phase = 'TRANSPORT_SETTLEMENT';
   try {
@@ -359,11 +360,11 @@ export async function loadRetainedWeatherComponentPlanningInputs({
   }
 }
 
-// Reuse the normal CP original-verification ceiling, shared across the whole
-// retained plan rather than adding another unbounded pre-DMI phase.
+// One shared deadline covers the complete offline retained plan. The CP
+// verifier receives only its remaining time; no provider budget is extended.
 function retainedScalarRemaining(deadline) {
   const left = deadline - Date.now();
-  if (!Number.isSafeInteger(deadline) || left <= 0 || left > 120_000)
+  if (!Number.isSafeInteger(deadline) || left <= 0 || left > RETAINED_SCALAR_PLAN_MAX_MS)
     throw new Error('RETAINED_SCALAR_PLANNING_DEADLINE');
   return left;
 }
@@ -404,7 +405,7 @@ export async function loadRetainedPartScalarPlanning({
       || !Number.isFinite(Date.parse(productionReferenceAt))) {
       throw new Error('RETAINED_SCALAR_SNAPSHOT_ARGUMENTS_INVALID');
     }
-    const planningDeadlineAt = Date.now() + 120_000;
+    const planningDeadlineAt = Date.now() + RETAINED_SCALAR_PLAN_MAX_MS;
     const readBudgeted = async operation => {
       retainedScalarRemaining(planningDeadlineAt);
       const value = await operation();

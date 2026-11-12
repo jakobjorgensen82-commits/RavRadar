@@ -6,12 +6,15 @@ import {fileURLToPath} from 'node:url';
 import {execFileSync,spawn} from 'node:child_process';
 import {isDeepStrictEqual} from 'node:util';
 import {qualifySourceImpactFullBaseline,SOURCE_IMPACT_FULL_BASELINE_KIND} from './source-impact-full-baseline.mjs';
-import {buildCurrentContractSourceReceipt,readCurrentContractReview,readCurrentContractReviewBaselineHint}
+import {buildCurrentChangeSourceReceipt,readCurrentChangeReview,readCurrentChangeReviewBaselineHint}
   from './source-current-contract-receipt.mjs';
+import {discoverTargetedSourceGate,decideTargetedSourceGate,verifiedMainSourceFrontier}
+  from './source-targeted-consumer.mjs';
 import {assistantPublic591Reader,sourceImpactEvidenceAccess,ORIGIN} from './native-postgres-evidence.mjs';
-import {discoverPullRequestSourceGate,PULL_REQUEST_SOURCE_JOB,PULL_REQUEST_SOURCE_WORKFLOW}
+import {discoverPullRequestSourceGate,inspectLaterMainEvidence,PULL_REQUEST_SOURCE_JOB,PULL_REQUEST_SOURCE_WORKFLOW}
   from './lib/weather-source-gate.mjs';
 import {sourceTreeContentSha256,sourceTreeProofArtifactName} from './lib/source-tree-content.mjs';
+import {copernicusOfflineEnvironment} from './lib/copernicus-offline-environment.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const LOCAL_RESTORE_SELF_TEST='node scripts/test-supabase-cli-local-restore.mjs --self-test';
@@ -35,8 +38,24 @@ function clean(head){
   assert.equal(text(['for-each-ref','refs/replace']),'');
   assert.equal(text(['rev-parse','--is-shallow-repository']),'false');
 }
+const frontierRefused=reason=>Object.assign(new Error('SOURCE_TARGETED_FRONTIER_'+reason),
+  {code:'SOURCE_TARGETED_FRONTIER_REFUSED'});
 const full=reasonCode=>({schemaVersion:1,selection:'FULL',reasonCode,targetedCommandsExecuted:0,
   receiptWritten:false,deliveryAuthority:false});
+function prepareSelectedScalarSourceTarget(commands){
+  if(!commands.includes('node --test scripts/test-weather-component-normal-wireup.mjs'))return;
+  // Same declared CP runtime as ordinary weather. Prepare it only for its actual
+  // consumer target, outside the test and without the producer's credentials.
+  const environment={...Object.fromEntries(LOCAL_RESTORE_ENVIRONMENT
+    .filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]])),
+    ...copernicusOfflineEnvironment(process.env),
+    PIP_CONFIG_FILE:process.platform==='win32'?'NUL':'/dev/null'};
+  try{
+    execFileSync(process.env.PYTHON??'python',['-m','pip','install','--disable-pip-version-check','--no-input',
+      '-r','requirements-copernicus.txt'],
+    {cwd:ROOT,env:environment,timeout:120000,maxBuffer:2*1024*1024,stdio:['ignore','inherit','inherit']});
+  }catch{throw new Error('SOURCE_TARGETED_SCALAR_PREREQUISITE_FAILED');}
+}
 function finalProofHash(zip){
   assert(Buffer.isBuffer(zip)&&zip.length>0&&zip.length<=LIMIT);
   const raw=execFileSync('python',['-c',[
@@ -92,7 +111,7 @@ function freshPostTargetReader(){
 export async function coordinateTargetedSourceProducer(){
   assert.equal(arguments.length,0,'SOURCE_TARGETED_PRODUCER_NO_OVERRIDES');
   const env=process.env,head=env.SOURCE_GATE_HEAD_SHA;
-  let current,content,impactPlan,baseline,get,jobRoute,pullRoute,pull;
+  let current,content,impactPlan,cumulativeImpactPlan,changeBase,baseline,get,jobRoute,pullRoute,pull,frontierDiscovery,frontierAccess;
   try{
     assert.equal(env.GITHUB_EVENT_NAME,'pull_request');assert.equal(env.GITHUB_REPOSITORY,ORIGIN.repository);
     assert(oid(head));clean(head);
@@ -106,11 +125,12 @@ export async function coordinateTargetedSourceProducer(){
     assert.equal(pull.base?.ref,'main');assert.equal(pull.base?.repo?.full_name,env.GITHUB_REPOSITORY);
     assert(oid(pull.base.sha));
     const mergeBase=text(['merge-base','--all',pull.base.sha,head]);assert(oid(mergeBase));
+    changeBase={commit:mergeBase,gitTree:text(['rev-parse',mergeBase+'^{tree}']),pullBaseCommit:pull.base.sha};
     impactPlan=await selectImpactPlan(mergeBase,head);
     if(!impactPlan)return full('COMPLETE_DIFF_REQUIRES_FULL');
     let baselineHint=null;
     try{
-      const hint=readCurrentContractReviewBaselineHint(pull,head);
+      const hint=readCurrentChangeReviewBaselineHint(pull,head);
       if(hint){git(['merge-base','--is-ancestor',hint,mergeBase]);baselineHint=hint;}
     }catch{
       // An unusable locator supplies no authority and does not replace the
@@ -129,12 +149,33 @@ export async function coordinateTargetedSourceProducer(){
     // discovery/qualification; a TARGETED namespace never becomes FULL.
     const fallback=text(['rev-list','--first-parent','--max-count=6',mergeBase]).split('\n');
     assert(fallback.length>0&&fallback.length<=6&&fallback.every(oid));
-    const candidates=[...new Set([...(baselineHint?[baselineHint]:[]),...fallback])];
+    // The latest source receipt supplies an untrusted FULL locator, never test
+    // authority. The existing FULL reader still authenticates it independently.
+    let originReference=null;
+    if(!baselineHint){
+      const access=sourceImpactEvidenceAccess();frontierAccess=access;
+      const found=await discoverTargetedSourceGate({GITHUB_REPOSITORY:current.repository,GITHUB_REF:'refs/heads/main',
+        GITHUB_SHA:mergeBase,GITHUB_RUN_ID:String(current.runId)},sourceTreeContentSha256(mergeBase,{git}),
+        {...access,readGit:git});
+      frontierDiscovery=found;
+      if(['CONTRADICTION','UNPROVED'].includes(found.frontierAvailability))throw frontierRefused('CONTRADICTION');
+      if(found.requiresVerification===true&&found.baselineReferenceLocator){
+        const hint=found.baselineReferenceLocator;
+        if(oid(hint.mergeCommit)){
+          git(['merge-base','--is-ancestor',hint.mergeCommit,mergeBase]);originReference=hint;
+        }
+      }
+    }
+    const candidates=[...new Set([...(baselineHint?[baselineHint]:[]),
+      ...(originReference?[originReference.mergeCommit]:[]),...fallback])];
     for(const candidate of candidates){
       const plan=await selectImpactPlan(candidate,head);
       // Older ancestry can only add paths. Unknown/shared cumulative impact
       // needs the existing full workflow, without downloading private blobs.
       if(!plan)return full('CUMULATIVE_DIFF_REQUIRES_FULL');
+      let reference;
+      if(originReference?.mergeCommit===candidate)reference=originReference;
+      else {
       const sourceTreeSha256=sourceTreeContentSha256(candidate,{git});
       const located=await discoverPullRequestSourceGate({GITHUB_REPOSITORY:current.repository,GITHUB_REF:'refs/heads/main',
         GITHUB_SHA:candidate},sourceTreeSha256,route=>get(route));
@@ -156,30 +197,74 @@ export async function coordinateTargetedSourceProducer(){
       assert.equal(zip.length,final.size_in_bytes);assert.equal('sha256:'+sha(zip),final.digest);
       const jobs=await get(repo+'/actions/runs/'+record.runId+'/attempts/1/jobs?per_page=100');
       assert(jobs.total_count===jobs.jobs.length&&jobs.jobs.length<=100);
-      const reference={repository:current.repository,mergeCommit:candidate,producerHead:record.producerHeadSha,
+      reference={repository:current.repository,mergeCommit:candidate,producerHead:record.producerHeadSha,
         sourceTreeSha256,pullRequest:record.pullRequestNumber,runId:Number(record.runId),runAttempt:1,
         jobId:one(jobs.jobs.filter(row=>row.name===PULL_REQUEST_SOURCE_JOB)).id,
         finalArtifactId:final.id,finalArtifactDigest:final.digest,finalProofSha256:finalProofHash(zip),
         nativeArtifactId:native.id,nativeArtifactDigest:native.digest};
+      }
       // One closed source phase covers the complete FULL qualification and
       // signed ZIP redirects. The native/discovery default remains 24/60.
       const qualification=sourceImpactEvidenceAccess();
       const qualified=await qualifySourceImpactFullBaseline({reference,candidateCommit:head},
         {...qualification,readGit:git});
       if(qualified.kind!==SOURCE_IMPACT_FULL_BASELINE_KIND)return full('FULL_BASELINE_NOT_QUALIFIED');
-      baseline=qualified;impactPlan=plan;break;
+      baseline=qualified;cumulativeImpactPlan=plan;break;
     }
     if(!baseline)return full('NO_QUALIFIED_FULL_ANCESTOR');
     clean(head);assert.equal(sourceTreeContentSha256(head,{git}),content);
-  }catch{return full('TARGETED_PRECONDITION_UNAVAILABLE');}
+  }catch(error){
+    if(error?.code==='SOURCE_TARGETED_FRONTIER_REFUSED')throw error;
+    return full('TARGETED_PRECONDITION_UNAVAILABLE');
+  }
+
+  // Candidate verifier modules and the shared native path were loaded above.
+  // Only actual Git HEAD=base can enter the unchanged complete merged consumer.
+  const baseContext={GITHUB_REPOSITORY:current.repository,GITHUB_REF:'refs/heads/main',
+    GITHUB_SHA:changeBase.commit,GITHUB_RUN_ID:String(current.runId)};
+  const access=frontierAccess??sourceImpactEvidenceAccess();
+  const found=frontierDiscovery??await discoverTargetedSourceGate(baseContext,
+    sourceTreeContentSha256(changeBase.commit,{git}),{...access,readGit:git});
+  let frontier;
+  if(found.requiresVerification!==true){
+    if(!['MISSING','EXPIRED'].includes(found.frontierAvailability))throw frontierRefused('UNPROVED');
+    // No typed frontier supplies a temporal exemption: inspect all bounded
+    // exact-base source history before choosing fresh cumulative targets.
+    const history=await inspectLaterMainEvidence({env:baseContext,proofTime:0,
+      record:{runId:String(current.runId)},getJson:access.getJson});
+    if(history)throw frontierRefused('LATER_NEGATIVE_OR_UNKNOWN');
+    frontier={schemaVersion:1,kind:'QUALIFIED_CHANGE_FRONTIER',mode:'FULL',repository:current.repository,
+      commit:baseline.mergeCommit,gitTree:baseline.gitTree,sourceTreeSha256:baseline.sourceTreeSha256,
+      sourceRecord:null,sourceProofTime:null,missingReason:found.frontierAvailability};
+  }else{
+    if(!['weather-source-current-contracts-v3','weather-source-current-change-v4'].includes(found.locator.contractId))
+      throw frontierRefused('UNSUPPORTED_TYPE');
+    await import('./source-current-contract-plan.mjs');
+    await import('./source-current-contract-receipt.mjs');
+    let decision;
+    try{
+      clean(current.head);git(['checkout','--detach',changeBase.commit]);clean(changeBase.commit);
+      decision=await decideTargetedSourceGate(found.locator,baseContext,{...access,readGit:git});
+    }finally{
+      git(['checkout','--detach',current.head]);clean(current.head);
+      assert.equal(sourceTreeContentSha256(current.head,{git}),content,'SOURCE_TARGETED_FRONTIER_RESTORE');
+    }
+    if(decision?.required!==false)throw frontierRefused('CONTRADICTION');
+    frontier=verifiedMainSourceFrontier(decision);
+    if(!frontier||frontier.commit!==changeBase.commit||frontier.gitTree!==changeBase.gitTree)
+      throw frontierRefused('UNBRANDED_RESULT');
+  }
+  const executionPlan=frontier.mode==='MAIN'?impactPlan:cumulativeImpactPlan;
 
   // From the first selected command onward, a failure or source drift is RED.
   // It must never become a successful FULL handoff or partial TARGETED proof.
   // A missing ROOT review is a precise CONTROL refusal, never an expensive
   // automatic FULL rerun or an unreviewed short qualification.
-  const controlReview=readCurrentContractReview(pull,{current,fullBaseline:baseline,currentPlan:impactPlan.plan});
+  const reviewInput=()=>({current,fullBaseline:baseline,changeBase,currentPlan:impactPlan.plan,cumulativePlan:cumulativeImpactPlan.plan});
+  const controlReview=readCurrentChangeReview(pull,reviewInput());
+  clean(head);prepareSelectedScalarSourceTarget(executionPlan.commands);
   const commandResults=[];
-  for(const command of impactPlan.commands){
+  for(const command of executionPlan.commands){
     assert.match(command,/^node(?: [A-Za-z0-9_./:-]+)+$/);
     clean(head);
     const start=performance.now(),result=await new Promise(resolve=>{
@@ -198,8 +283,10 @@ export async function coordinateTargetedSourceProducer(){
     assert.equal(row.outcome,'PASS','SOURCE_TARGETED_PRODUCER_COMMAND_FAILED');
   }
   clean(head);assert.equal(sourceTreeContentSha256(head,{git}),content);
-  const finalPlan=await selectImpactPlan(baseline.mergeCommit,head);
-  assert(isDeepStrictEqual(finalPlan,impactPlan),'SOURCE_TARGETED_PRODUCER_DIFF_MOVED');
+  const finalPlan=await selectImpactPlan(changeBase.commit,head);
+  const finalContinuity=await selectImpactPlan(baseline.mergeCommit,head);
+  assert(isDeepStrictEqual(finalPlan,impactPlan)&&isDeepStrictEqual(finalContinuity,cumulativeImpactPlan),
+    'SOURCE_TARGETED_PRODUCER_DIFF_MOVED');
   // Fresh post-test transport, exactly two reads, irrespective of test duration.
   const finalGet=freshPostTargetReader(),freshPull=await finalGet('PULL',pullRoute);
   assert.equal(freshPull.number,current.pullRequest);assert.equal(freshPull.state,'open');
@@ -208,9 +295,14 @@ export async function coordinateTargetedSourceProducer(){
   assert.equal(freshPull.base?.repo?.full_name,current.repository);assert.equal(freshPull.base?.ref,'main');
   assert.equal(currentJob(await finalGet('JOB',jobRoute),current),current.jobId);
   assert(isDeepStrictEqual(controlReview,
-    readCurrentContractReview(freshPull,{current,fullBaseline:baseline,currentPlan:impactPlan.plan})),
+    readCurrentChangeReview(freshPull,reviewInput())),
     'SOURCE_TARGETED_CONTROL_REVIEW_MOVED');
-  const receipt=await buildCurrentContractSourceReceipt({current,fullBaseline:baseline,currentPlan:impactPlan.plan,commandResults});
+  const frontierFresh=sourceImpactEvidenceAccess();
+  const negative=await inspectLaterMainEvidence({env:baseContext,
+    proofTime:frontier.mode==='MAIN'?frontier.sourceProofTime:0,
+    record:frontier.sourceRecord??{runId:String(current.runId)},getJson:frontierFresh.getJson});
+  if(negative)throw frontierRefused('LATER_NEGATIVE_OR_UNKNOWN');
+  const receipt=await buildCurrentChangeSourceReceipt({...reviewInput(),frontier,commandResults});
   clean(head);assert.equal(sourceTreeContentSha256(head,{git}),content);
   return {schemaVersion:1,selection:'TARGETED',reasonCode:'QUALIFIED_FULL_ANCESTOR_AND_SELECTED_COMMANDS_PASS',
     sourceTreeSha256:content,artifactName:receipt.artifactName,receiptPath:RECEIPT,receipt,
