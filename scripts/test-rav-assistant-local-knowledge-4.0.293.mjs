@@ -21,6 +21,34 @@ const originalFetch = globalThis.fetch;
 globalThis.fetch = async () => { fetchCalls += 1; throw new Error('Lokale videnssvar må ikke bruge netværket.'); };
 
 try {
+  // Målrettet normal regression fra faktisk offentlig EN1→EN2.
+  // Ingen browser-, provider- eller produktionskald; hele den øvrige suite bevares.
+  {
+    const priorStorage = globalThis.localStorage;
+    globalThis.localStorage = {getItem:()=> 'en', setItem:()=>{}};
+    try {
+      const first = 'What wind direction is good for amber hunting?';
+      const follow = 'And if I search in the water?';
+      assert.equal(assistant.classifyRavQuestion(first), 'wind');
+      assert.equal(assistant.routeRavQuestion(first), 'local-deterministic');
+      assert.equal(await assistant.askRavRadar(first, {}, {language:'en'}),
+        i18n.t('assistant.local.wind', {}, 'en'));
+      const topic = assistant.assistantTopicForQuestion(first);
+      assert.equal(topic, 'public-search:wind', 'Et besvaret, helt vindspørgsmål skal gemme sit normale emne');
+      assert.equal(assistant.assistantLocalFollowupAnswer(follow, topic, 'en'),
+        i18n.t('assistant.local.waders', {}, 'en') + '\n\n'
+          + localKnowledge.localRavKnowledgeAnswer('Hvordan leder jeg med waders?', 'en'));
+      assert.equal(assistant.assistantLocalFollowupAnswer(follow, null, 'en'),
+        i18n.t('assistant.unknown', {}, 'en'));
+      assert.equal(assistant.assistantTopicForQuestion(first + ' and describe a moon scanner QX-999'), null,
+        'En ukendt ekstra del må ikke få emnet fra et delvist vindmatch');
+      assert.equal(fetchCalls, 0, 'Normale lokale vind-/opfølgningssvar må ikke forsøge provider');
+      console.log(JSON.stringify({kind:'NORMAL_EN_WIND_WATER_FOLLOWUP_REGRESSION',
+        topic, originalFirstAnswerPreserved:true, sameCanonicalWaterAnswer:true,
+        noTopicRefuses:true, unknownRemainderNotSwallowed:true, fetchCalls}));
+    } finally { globalThis.localStorage = priorStorage; }
+    if (process.argv.includes('--wind-water-followup-only')) process.exit(0);
+  }
   // Whole unfamiliar definition + pronoun use is not a known net definition.
   // Exercise the exported normal caller; the transport target separately
   // checks real validateAssistantResult on net/capabilities model evidence.

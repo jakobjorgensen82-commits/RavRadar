@@ -1,5 +1,3 @@
-import './test-current-pages-workflow-wiring.mjs';
-import { projectPagesClosureHistoricalTestInput as historicalPagesInput } from './lib/pages-closure-historical-test-input.mjs';
 import assert from 'node:assert/strict';
 import {inverseForecastSharePagesWorkflowInventory}
   from './test-forecast-share-pages-deploy.mjs';
@@ -13,6 +11,10 @@ import { verifyWorkflow as verifyCurrentNationalWorkflow, inverseSourceBeforePos
 import {projectSourceImpactWorkflowFull} from './lib/source-impact-workflow-review.mjs';
 import { assertEarlyCompletedRuntimeStageOrder, inverseCompletedRuntimeWorkflow, inverseTerminalRepair4145WorkflowInventory } from './lib/completed-private-runtime-workflow-review.mjs';
 import fs from 'node:fs';
+import {SOURCE_PRODUCER_AFTER597_PARENT as sourceProducerPhase}
+  from './lib/source-producer-after597-parent.mjs';
+import {requireSourceProducerOutput, assertSourceProducerAfter597StaticCode}
+  from './lib/source-producer-after597-runtime-family.mjs';
 import crypto from 'node:crypto';
 import vm from 'node:vm';
 import { exactPagesAttemptStep } from './github-pages-attempt-evidence.mjs';
@@ -31,11 +33,53 @@ import {
 
 const workflowDirectory = '.github/workflows';
 const productionWorkflowSources = await readProductionWorkflowSources();
-// The reviewed Pages delta leaves the four early-stage blocks unchanged.
-// Preserve their whole-byte oracle through only that exact test projection.
-assertEarlyCompletedRuntimeStageOrder(historicalPagesInput(productionWorkflowSources.build.replace(/\r\n/g, '\n'), 'build'));
+// Check actual full-checkout preparation before the unchanged historical view.
+const fullGitPinPreparationSteps = [
+  'Prepare exact pinned Candidate G source before source validation',
+  'Ensure exact historical Candidate G source is present for full validation',
+];
+function fullGitPinPreparationStep(source, name) {
+  const marker='      - name: '+name+'\n', start=source.indexOf(marker);
+  assert.equal(source.split(marker).length,2,'One exact normal pin preparation step');
+  const end=source.indexOf('\n      - ',start+marker.length);
+  return source.slice(start,end<0?source.length:end);
+}
+function assertFullGitPinPreparation(source) {
+  for(const [index,name]of fullGitPinPreparationSteps.entries()){
+    const block=fullGitPinPreparationStep(source,name);
+    assert.doesNotMatch(block,/git fetch[^\n]*(?:--depth|--deepen|--unshallow)/,
+      'Normal pin preparation must preserve a complete checkout');
+    const fetched=index===0?'            test "$(git rev-parse FETCH_HEAD^{commit})" = "$legacy_source_head"\n':'';
+    assert.ok(block.includes('          if ! git cat-file -e "${legacy_source_head}^{commit}" 2>/dev/null; then\n'
+      +'            git fetch --no-tags origin "$legacy_source_head"\n'+fetched+'          fi\n'),
+      'Fetch only a missing pinned commit; preserve fetched identity verification');
+    for(const suffix of ['commit','tree'])assert.ok(block.includes(
+      '          test "$(git rev-parse "${legacy_source_head}^{'+suffix+'}")" = "$legacy_source_'+(suffix==='commit'?'head':'tree')+'"'),
+      'Always verify the exact pinned commit and tree');
+    assert.equal((block.match(/^\s+git fetch /gm)??[]).length,index===0?2:1,
+      'No additional unguarded pin fetch');
+    if(index===0)assert.ok(block.includes('            if ! git cat-file -e "${original_head}^{commit}"; then\n'
+      +'              git fetch --no-tags origin "$original_head"\n            fi\n'
+      +'            test "$(git rev-parse "${original_head}^{commit}")" = "$original_head"'),
+      'Both original readers retain conditional no-depth fetching and exact identities');
+  }
+}
+const actualFullGitBuildSource=productionWorkflowSources.build.replace(/\r\n/g,'\n');
+assertFullGitPinPreparation(actualFullGitBuildSource);
+for(const name of fullGitPinPreparationSteps){
+  const block=fullGitPinPreparationStep(actualFullGitBuildSource,name);
+  for(const changed of [
+    block.replace('git fetch --no-tags origin','git fetch --no-tags --depth=1 origin'),
+    block.replace('if ! git cat-file','if git cat-file'),
+    ...['commit','tree'].map(suffix=>block.replace(
+      '          test "$(git rev-parse "${legacy_source_head}^{'+suffix+'}")" = "$legacy_source_'+(suffix==='commit'?'head':'tree')+'"','')),
+    block+'\n          git fetch --no-tags origin "$legacy_source_head"\n',
+  ])assert.throws(()=>assertFullGitPinPreparation(actualFullGitBuildSource.replace(block,()=>changed)));
+}
+// Qualify the actual new order before restoring every unchanged historical oracle.
+assertEarlyCompletedRuntimeStageOrder(productionWorkflowSources.build.replace(/\r\n/g, '\n'));
 const productionWorkflows = Object.freeze(Object.fromEntries(
-  Object.entries(productionWorkflowSources).map(([role, source]) => [role, inverseCompletedRuntimeWorkflow(historicalPagesInput(source.replace(/\r\n/g, '\n'), role), role)]),
+  Object.entries(productionWorkflowSources).map(([role, source]) => [role, inverseCompletedRuntimeWorkflow(source.replace(/\r\n/g, '\n'), role)]),
 ));
 const {
   orchestrator: orchestratorWorkflow,
@@ -109,8 +153,29 @@ const productionWorkflowNames = new Set(
 );
 productionWorkflowNames.add('deploy-code-only-repair.yml');
 productionWorkflowNames.add('run-current-weather-once.yml');
+// Kun Source-testkontekst: ingen ny fil eller flag udsteder adgang.
+function readQualifiedSourceWorkflowInventory() {
+  const sourceIssued = sourceProducerPhase.binding !== null || sourceProducerPhase.output !== null
+    || sourceProducerPhase.nextRelease !== null;
+  if (sourceIssued) {
+    requireSourceProducerOutput(); // Delvis udstedelse/NULL må aldrig få en facade.
+    assertSourceProducerAfter597StaticCode(); // Faktiske C/I/RAW-bytes, ikke en fixturemarkør.
+  }
+  assert.equal(arguments.length, 0);
+  const names = fs.readdirSync(workflowDirectory).filter(name => /\.ya?ml$/i.test(name)).sort();
+  if (!sourceIssued) return names; // Hele den strenge ordinary598-admission ejer fortsat listen.
+  const sourceName = 'validate-current-source-native-profile.yml';
+  assert.equal(names.filter(name => name === sourceName).length, 1,
+    'Kun det ene eksisterende Source-workflow må indgå');
+  const bytes = fs.readFileSync(workflowDirectory + '/' + sourceName);
+  assert.equal(bytes.length, 4141, 'Hele det gennemgåede Source-workflow');
+  assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'),
+    '92396a04f4dde475d58ef4fbd9d60b6a3ddcc7e03bbc42b298b343f43049619e',
+    'Præcis gennemgået Source-workflowidentitet');
+  return names.filter(name => name !== sourceName);
+}
 const currentPhysicalWorkflowFiles = inverseForecastSharePagesWorkflowInventory(inverseTerminalRepair4145WorkflowInventory(
-  fs.readdirSync(workflowDirectory).filter((name) => /\.ya?ml$/i.test(name)).sort(),
+  readQualifiedSourceWorkflowInventory(),
   fs.readFileSync(`${workflowDirectory}/resume-operational-checkpoint.yml`, 'utf8').replaceAll('\r\n', '\n')),
   fs.readFileSync(`${workflowDirectory}/deploy-forecast-share-pages.yml`, 'utf8'));
 const expectedWorkflowFiles = ['apply-weather-model-binding-only.yml', 'audit-native-current-grid.yml', 'audit-saved-weather-inputs.yml', 'audit-sealed-current-source.yml', 'build-ravscore-historical-wave-pilot.yml', 'deploy-code-only-repair.yml', 'deploy-trip-storage.yml', 'extract-private-geodanmark-layer.yml', 'migrate-private-runtime-to-r2.yml', 'monitor-trip-storage.yml', 'notify-weather-failure.yml', 'preserve-copernicus-current-shadow.yml', 'recover-live-ravscore-central.yml', 'recover-saved-dmi-originals.yml', 'recover-sealed-weather-36396834072.yml', 'retry-national-admin-roundtrip.yml', 'reusable-operational-reentry.yml', 'reusable-pages-deploy.yml', 'reusable-weather-build.yml', 'run-current-weather-once.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-local-part-system-candidate.yml', 'validate-pull-request.yml', 'validate-six-zone-recovery.yml', 'watch-missed-weather-schedule.yml'];
@@ -123,6 +188,12 @@ const reviewedMaintenanceWorkflows = Object.freeze({
 });
 const reviewedBackupWorkflowSuccessor = Object.freeze({ bytes: 6701, sha256: '3a9a8c6ac55489ce452d7736d507ea1a0a320b7a79ce55e8983a498b62f27963' });
 const reviewedRestoreWorkflowSuccessor = Object.freeze({ bytes: 5402, sha256: '78584a8a71cdd9080ea8569f4bafc1f829ea54f264f5a88c48b73ee281738526' });
+const reviewedAutomaticBackupWorkflowSuccessor=Object.freeze({"bytes":11103,"sha256":"18bf633a868577bee0cf8746a711d8fe2528a2e7c091e22cab70cd3010d1172c"});
+const reviewedReserveProofWorkflowSuccessor=Object.freeze({"bytes":6523,"sha256":"981687ce5586921bef7ec821f98dc47e0cb55cd8b2717dbe6257878bb76c7455"});
+const reviewedRenewalBackupWorkflowSuccessor=Object.freeze({"bytes":11466,"sha256":"bafd968dba679d8f33bb4da7912a7865efb7b26a883e4912d9a160b3532ad3de"});
+const reviewedDurableRestoreWorkflowSuccessor=Object.freeze({"bytes":7264,"sha256":"787a054e8d7d75c93b6ca8634b2a24f11cb86f6b2b37bc11a915c02d67c42be3"});
+// Exact existing SOURCE611 admin handoff, independently ported before RAW issuance.
+const reviewedSource611AdminHistoryWorkflowSuccessor=Object.freeze({bytes:32303,sha256:'099278384453378354c3c028f064d3ecce2586e8de9e7a75142fa2ae88a0ea97'});
 function inverseReviewedMaintenanceWorkflowInventory(names, sources) {
   assert.deepEqual(names, [...expectedWorkflowFiles, 'private-trip-weather-study.yml',
     'deploy-forecast-share.yml', ...Object.keys(reviewedMaintenanceWorkflows)].sort(),
@@ -131,7 +202,17 @@ function inverseReviewedMaintenanceWorkflowInventory(names, sources) {
   for (const [name, pin] of Object.entries(reviewedMaintenanceWorkflows)) {
     const bytes = sources[name];
     assert.ok(Buffer.isBuffer(bytes), 'Whole original workflow bytes are required');
-    const reviewed = name === 'backup-supabase-database.yml' && bytes.length === reviewedBackupWorkflowSuccessor.bytes
+    const reviewed = name === 'maintain-admin-document-history.yml' && bytes.length === reviewedSource611AdminHistoryWorkflowSuccessor.bytes
+      ? reviewedSource611AdminHistoryWorkflowSuccessor
+      : name === 'verify-supabase-cli-local-restore.yml' && bytes.length === reviewedDurableRestoreWorkflowSuccessor.bytes
+      ? reviewedDurableRestoreWorkflowSuccessor
+      : name === 'backup-supabase-database.yml' && bytes.length === reviewedRenewalBackupWorkflowSuccessor.bytes
+      ? reviewedRenewalBackupWorkflowSuccessor
+      : name === 'backup-supabase-database.yml' && bytes.length === reviewedAutomaticBackupWorkflowSuccessor.bytes
+      ? reviewedAutomaticBackupWorkflowSuccessor
+      : name === 'verify-supabase-cli-local-restore.yml' && bytes.length === reviewedReserveProofWorkflowSuccessor.bytes
+        ? reviewedReserveProofWorkflowSuccessor
+        : name === 'backup-supabase-database.yml' && bytes.length === reviewedBackupWorkflowSuccessor.bytes
       ? reviewedBackupWorkflowSuccessor
       : name === 'verify-supabase-cli-local-restore.yml' && bytes.length === reviewedRestoreWorkflowSuccessor.bytes
         ? reviewedRestoreWorkflowSuccessor : pin;

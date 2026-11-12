@@ -81,6 +81,7 @@ import { packDmiPartContinuity, unpackDmiPartContinuity } from './lib/dmi-part-c
 import { countDmiBackedZones, createPersistentDmiStore, prioritizeDmiFeatures, summarizeAvailableCoverage } from './lib/dmi-acquisition-state.mjs';
 import { buildWaterSourceForecastIndex, applyWaterSourceForecastStatus, applyWaterSourceRouting, applyVerifiedWaterSourceRoutingToPartHourly, packWaterSourceForecastContinuity, unpackWaterSourceForecastContinuity } from './lib/water-source-forecast-routing.mjs';
 import { buildFurWaterRoutingDiagnostic } from './lib/fur-water-routing-diagnostic.mjs';
+import { captureLf7MemoryObservation, writeLf7FurConsumerObservation } from './lib/lf7-fur-consumer-observation.mjs';
 import { applyCurrentTransportToHistory } from './lib/current-transport-history.mjs';
 import { retainWeatherHistory, RESEARCH_HISTORY_HOURS } from './lib/weather-history-retention.mjs';
 import { buildEffectiveRoutingCacheAlerts } from './lib/water-station-routing-alerts.mjs';
@@ -2095,6 +2096,7 @@ function scoreCoastalPartsRuntime(
   // Actual normal results stay private and retain their pipeline WeakMap
   // identity. The finalizer checks their exact H0 pairs against output.
   const establishedNativeCurrentPartResults = new Map();
+  const consumerMemoryObservations = [], consumerWaterObservations = [];
   const selectedDmiPartRecords = new Map();
   const selectedDmiPartNativeProofs = new Map();
   const currentSourceDomainTransitions = {};
@@ -2337,6 +2339,7 @@ function scoreCoastalPartsRuntime(
           hourly: verifiedHourly, ...waterSourceRoutingContext,
         }) : { hourly: verifiedHourly, diagnostic: null };
       const hourly = routedWater.hourly;
+      if (routedWater.consumerObservation) consumerWaterObservations.push(routedWater.consumerObservation);
       // Only public current enters scoring here. Keep all T+3 scalar support
       // rows for trend/continuity; replay and native holds have their own gates.
       const publicCurrentStartMs = Date.parse(partForecastStartAt);
@@ -2690,6 +2693,10 @@ function scoreCoastalPartsRuntime(
         }
         throw error;
       }
+      const consumerMemoryObservation = captureLf7MemoryObservation({ part: { ...part, zoneId },
+        initialSelection, previousCandidateGContinuation, productionSeries,
+        hasEstablishedOrigin: establishedNativeCurrentOrigin !== null });
+      if (consumerMemoryObservation) consumerMemoryObservations.push(consumerMemoryObservation);
       if (establishedNativeCurrentOrigin !== null) {
         if (establishedNativeCurrentPartResults.has(part.partId)) {
           throw new Error('RAVSCORE_ESTABLISHED_NATIVE_CURRENT_RESULT_DUPLICATE');
@@ -3034,6 +3041,7 @@ function scoreCoastalPartsRuntime(
     selectedDmiPartRecords,
     selectedDmiPartNativeProofs,
     establishedNativeCurrentPartResults,
+    consumerMemoryObservations, consumerWaterObservations,
     currentSourceDomainTransitions,
     furWaterRoutingTrace,
     weatherSourceAge,
@@ -4771,6 +4779,18 @@ if (establishedNativeCurrentOrigin !== null) {
       conditions: output,
       partResults: coastalPartScoreBuild?.establishedNativeCurrentPartResults,
     });
+  // Reporting cannot grant origin authority or hide a failure of the finalizer above.
+  try {
+    const saved = await writeLf7FurConsumerObservation({ conditions: output,
+      partResults: coastalPartScoreBuild.establishedNativeCurrentPartResults,
+      memoryObservations: coastalPartScoreBuild.consumerMemoryObservations,
+      activeParts,
+      waterObservations: [...(waterSourceApplication.consumerObservations ?? []),
+        ...coastalPartScoreBuild.consumerWaterObservations] });
+    if (!saved) console.warn('LF7_FUR_CONSUMER_OBSERVATION_NOT_RECORDED');
+  } catch {
+    console.warn('LF7_FUR_CONSUMER_OBSERVATION_NOT_SAVED');
+  }
 }
 // Retained output projections and the completed attestation no longer need
 // the full per-part production/recovery working owner.

@@ -7,6 +7,7 @@ import path from 'node:path';
 import {execFileSync, spawnSync, spawn} from 'node:child_process';
 import {nativePrograms,nativePostgresProgramIdentity} from './lib/checkpoint-cas-native-postgres.mjs';
 import {fileURLToPath} from 'node:url';
+import {sourceTreeContentSha256} from './lib/source-tree-content.mjs';
 import {requireAssistantLaterH0Release,requireAssistantPublic587SuccessorRelease,
   requireAssistantPublic588SuccessorRelease,requireAssistantPublic590SuccessorRelease,requireAssistantPublic591SuccessorRelease,
   requireInstalled593Original591Release,requireInstalled593Original591Binding,requireInstalled593Original591Output,
@@ -17,6 +18,11 @@ import {requireAssistantLaterH0Release,requireAssistantPublic587SuccessorRelease
 
 import {assistantAfter597RequiredMigrations} from './integrated-cutover-readiness.mjs';
 import {FROZEN597_NATIVE_SOURCE} from './run-frozen586-assistant-later-h0-postgres-source.mjs';
+
+import {SOURCE_PRODUCER_AFTER597_PARENT} from './lib/source-producer-after597-parent.mjs';
+import {requireSourceProducerOutput,requireSourceProducerBinding,SOURCE_PRODUCER_BEFORE}
+  from './lib/source-producer-after597-runtime-family.mjs';
+import {sourceProducerRequiredMigrations} from './integrated-cutover-readiness.mjs';
 
 export const ORIGIN = Object.freeze({
   repository: 'jakobjorgensen82-commits/RavRadar', pullRequest: 671,
@@ -1831,13 +1837,336 @@ export async function executeAssistantAfter597Native(){
     status:'EXECUTED',executedInThisRun:true,origin:null,eligibleForReuse:false,runtime,report});
 }
 
+
+// Own basic schema receipt. Never reuse an assistant/old Source/full-current proof.
+export const SOURCE_AFTER598_BASIC_PHASE_KIND='RAVRADAR_SOURCE_AFTER598_BASIC_POSTGRES_PHASE_V1';
+export const SOURCE_AFTER598_BASIC_COMMANDS=Object.freeze([
+  'node scripts/test-protected-ravscore-continuation-checkpoint.mjs --source-producer']);
+const SOURCE_AFTER598_BASIC_SCRIPT='set -euo pipefail\n'+SOURCE_AFTER598_BASIC_COMMANDS.join('\n')+'\n';
+function sourceAfter598BasicIdentity(){
+  const output=requireSourceProducerOutput(); // FIRST before evidence/environment/SQL.
+  const binding=requireSourceProducerBinding(),rows=sourceProducerRequiredMigrations();
+  assert.equal(rows.length,64);assert.equal(rows.at(-2).version,SOURCE_PRODUCER_BEFORE.version);
+  assert.equal(rows.at(-1).version,binding.version);
+  assert.equal(SOURCE_PRODUCER_AFTER597_PARENT.release,'4.0.598');
+  return {releaseVersion:SOURCE_PRODUCER_AFTER597_PARENT.nextRelease,binding,output,
+    databaseBefore:SOURCE_PRODUCER_BEFORE};
+}
+export function sourceAfter598BasicNativeReportProjection(report,options){
+  sourceAfter598BasicIdentity();
+  const {selectedPrograms}=options;
+  const {majorVersion:postgresMajorVersion}=verifyAssistantPublic591Programs(selectedPrograms);
+  assert.equal(report?.kind,SCALAR597_REPORT_MARKER);
+  assert.equal(report.sqlExecuted,true);assert.equal(report.migrationExecuted,true);
+  assert.equal(report.tcpEnabled,false);assert.equal(report.normalModelPartCount,673);
+  assert.deepEqual(report.nativeProgramIdentity,selectedPrograms);
+  assert.equal(report.postgresMajorVersion,postgresMajorVersion);
+  for(const arm of ['nativeOriginalContinuity','assistantLaterH0','assistantPublic587Successor',
+    'assistantPublic588Successor','assistantPublic590Successor','assistantPublic591Successor',
+    'installed593Original591Successor','scalar597LaterH0Successor','assistantAfter597Successor'])
+    assert(!Object.hasOwn(report,arm));
+  const sourceProducerAfter598={kind:'SOURCE_CURRENT598_SAME_PG_SCHEMA_PREPARED',
+    sourceMigrationInventory:64,genuine598MigrationInventory:63,genuine598IntegratedRpcParameters:22,
+    genuine598ActualRpcCalls:2,sourceActualRpcCalls:2,sameNativePg:true,normalVerifiers:true,
+    old585RowsPreserved:true,originalSqlBytesPreserved:true,metadataAuthored:false,
+    sourceNativeActionQualified:false,originalBAndSAuthenticated:false,productionProof:false};
+  assert.deepEqual(report.sourceProducerAfter598,sourceProducerAfter598);
+  return {kind:SCALAR597_REPORT_MARKER,sqlExecuted:true,migrationExecuted:true,tcpEnabled:false,
+    normalModelPartCount:673,postgresMajorVersion,nativeProgramIdentity:selectedPrograms,sourceProducerAfter598};
+}
+export function sourceAfter598BasicNativeReportCollector(options){
+  requireSourceProducerOutput(); // Before options or evidence ingestion.
+  const collector=nativeMarkerCollector(SCALAR597_REPORT_MARKER,65536);
+  return {write:collector.write,async finish(){return sourceAfter598BasicNativeReportProjection(collector.finish(),options);}};
+}
+export function verifySourceAfter598BasicPhaseReceipt(native,current){
+  const identity=sourceAfter598BasicIdentity();
+  assert.match(current.head,/^[a-f0-9]{40}$/);
+  assert(Number.isSafeInteger(current.run)&&current.run>ORIGIN.run);
+  assert(Number.isSafeInteger(current.attempt)&&current.attempt>=1);
+  assert(Number.isSafeInteger(current.pullRequest)&&current.pullRequest>0);
+  assert(typeof current.branch==='string'&&current.branch.length>0&&current.branch.length<=255);
+  const runtime=verifyAssistantPublic591Runtime(native?.runtime);
+  const report=sourceAfter598BasicNativeReportProjection(native.report,{selectedPrograms:runtime.selectedPrograms});
+  assert.deepEqual(native,{schemaVersion:1,kind:SOURCE_AFTER598_BASIC_PHASE_KIND,
+    phase:'SOURCE_PRODUCER_AFTER598_BASIC',sourcePhase:'source-producer-after597',...identity,current,
+    commands:SOURCE_AFTER598_BASIC_COMMANDS,status:'EXECUTED',executedInThisRun:true,origin:null,
+    eligibleForReuse:false,currentProfileExecuted:false,productionProof:false,runtime,report});
+  return native;
+}
+export async function executeSourceAfter598BasicNative(){
+  const identity=sourceAfter598BasicIdentity(); // Before environment/Git/native launch.
+  const env={...process.env},head=env.SOURCE_GATE_HEAD_SHA;
+  assert.equal(env.GITHUB_EVENT_NAME,'pull_request');assert.equal(env.GITHUB_REPOSITORY,ORIGIN.repository);
+  const verifyCheckout=()=>{
+    assert.match(head,/^[a-f0-9]{40}$/);assert.equal(git(['rev-parse','HEAD^{commit}']).trim(),head);
+    assert.equal(git(['status','--porcelain','--untracked-files=no']).trim(),'');
+    assert.equal(git(['for-each-ref','refs/replace']).trim(),'');
+    assert.equal(git(['rev-parse','--is-shallow-repository']).trim(),'false');
+  };
+  verifyCheckout();
+  const current={run:Number(env.GITHUB_RUN_ID),attempt:Number(env.GITHUB_RUN_ATTEMPT),head,
+    pullRequest:Number(env.PULL_REQUEST_NUMBER),branch:env.GITHUB_HEAD_REF};
+  const runtime=await assistantPublic591Runtime();
+  for(const key of ['GITHUB_TOKEN','SOURCE_GATE_HEAD_SHA','PULL_REQUEST_NUMBER'])delete env[key];
+  const report=await executeMarkedNative(env,SOURCE_AFTER598_BASIC_SCRIPT,
+    sourceAfter598BasicNativeReportCollector({selectedPrograms:runtime.selectedPrograms}));
+  if(!report)return;
+  verifyCheckout();verifyAssistantPublic591Runtime(runtime,await assistantPublic591Runtime());
+  await record({schemaVersion:1,kind:SOURCE_AFTER598_BASIC_PHASE_KIND,
+    phase:'SOURCE_PRODUCER_AFTER598_BASIC',sourcePhase:'source-producer-after597',...identity,current,
+    commands:SOURCE_AFTER598_BASIC_COMMANDS,status:'EXECUTED',executedInThisRun:true,origin:null,
+    eligibleForReuse:false,currentProfileExecuted:false,productionProof:false,runtime,report});
+}
+
+export function assertSourceProducerProofHeader(proof,head){
+  assert.equal(arguments.length,2);assert.match(head,/^[a-f0-9]{40}$/);
+  assert.equal(proof.headSha,head);assert.equal(proof.repository,ORIGIN.repository);
+  assert.equal(proof.contractId,'weather-source-gate-content-v2');assert.equal(proof.privatePayloadIncluded,false);
+  assert.match(proof.sourceTreeSha256,/^sha256:[a-f0-9]{64}$/);
+}
+
+export const SOURCE_PR_NATIVE_COMMANDS=Object.freeze(['node scripts/run-frozen-native0600-source-targets.mjs policy',
+  '"$RAVRADAR_SOURCE_NATIVE_NODE24_PATH" scripts/test-protected-ravscore-continuation-checkpoint.mjs'
+  +' --native-statistics-revision --native-sampling-identity --current-memory-warmup'
+  +' --established-native-current-origin --last-mile-enclosure --account-statistics-assistant'
+  +' --source-producer --current-source-native-profile']);
+export const SOURCE_PR_NATIVE_SCRIPT='set -euo pipefail\n'+SOURCE_PR_NATIVE_COMMANDS.join('\n')+'\n';
+export const SOURCE_PR_NATIVE_PHASE_KIND='RAVRADAR_SOURCE_AFTER598_PR_NATIVE_POSTGRES_PHASE_V1';
+const SOURCE_PR_ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+const sourcePrExact=(value,keys)=>assert.deepEqual(Object.keys(value??{}).sort(),[...keys].sort());
+const sourcePrPositive=value=>Number.isSafeInteger(value)&&value>0;
+function sourcePrCurrent(current){
+  sourcePrExact(current,['run','attempt','head','pullRequest','branch']);
+  assert(sourcePrPositive(current.run)&&sourcePrPositive(current.pullRequest));assert.equal(current.attempt,1);
+  assert.match(current.head,/^[a-f0-9]{40}$/);assert.equal(typeof current.branch,'string');
+  assert(current.branch.startsWith('codex/')&&current.branch.length<=256&&!/[\r\n\0]/.test(current.branch));
+}
+function sourcePrExpected(expected,current){
+  sourcePrExact(expected,['jobId','mainHead','sourceTreeSha256']);
+  assert(sourcePrPositive(expected.jobId));assert.match(expected.mainHead,/^[a-f0-9]{40}$/);
+  assert.notEqual(expected.mainHead,current.head);assert.match(expected.sourceTreeSha256,/^sha256:[a-f0-9]{64}$/);
+}
+// Ren datakontrol; ingen inputflag, kvittering eller returværdi giver en kapabilitet.
+export function verifySourcePrNativeResult(result,current,expected){
+  requireSourceProducerOutput(); // FØR caller-operander eller I/O.
+  assert.equal(arguments.length,3);sourcePrCurrent(current);sourcePrExpected(expected,current);
+  sourcePrExact(result,['kind','scope','current','mainHead','sourceTreeSha256','sameHost',
+    'actualNativeProcessCompleted','physicalClosureBeforeCleanup','sourceAdmission','productionProof']);
+  assert.equal(result.kind,'SOURCE_PR_NATIVE_TEST_RESULT_V1');assert.equal(result.scope,'SOURCE_PR_NATIVE_TEST');
+  assert.deepEqual(result.current,{...current,jobId:expected.jobId});
+  assert.equal(result.mainHead,expected.mainHead);assert.equal(result.sourceTreeSha256,expected.sourceTreeSha256);
+  for(const key of ['sameHost','actualNativeProcessCompleted','physicalClosureBeforeCleanup'])assert.equal(result[key],true);
+  assert.equal(result.sourceAdmission,false);assert.equal(result.productionProof,false);
+}
+export function verifySourcePrNativeExecutionReceipt(native,current,expected){
+  const output=requireSourceProducerOutput(),binding=requireSourceProducerBinding(); // FØR operander.
+  assert.equal(arguments.length,3);sourcePrCurrent(current);sourcePrExpected(expected,current);
+  sourcePrExact(native,['schemaVersion','kind','phase','sourcePhase','sourceVersion','binding','output',
+    'databaseBefore','currentProfileExecuted','status','executedInThisRun','origin','eligibleForReuse',
+    'current','commands','nativeResult']);
+  assert.equal(native.schemaVersion,1);assert.equal(native.kind,SOURCE_PR_NATIVE_PHASE_KIND);
+  assert.equal(native.phase,'SOURCE_PR_NATIVE_TEST');assert.equal(native.sourcePhase,'source-producer-pr-native-test');
+  assert.equal(native.sourceVersion,binding.version);assert.deepEqual(native.binding,binding);assert.deepEqual(native.output,output);
+  assert.deepEqual(native.databaseBefore,SOURCE_PRODUCER_BEFORE);assert.equal(native.currentProfileExecuted,true);
+  assert.equal(native.status,'EXECUTED');assert.equal(native.executedInThisRun,true);assert.equal(native.origin,null);
+  assert.equal(native.eligibleForReuse,false);assert.deepEqual(native.current,current);
+  assert.deepEqual(native.commands,SOURCE_PR_NATIVE_COMMANDS);verifySourcePrNativeResult(native.nativeResult,current,expected);
+}
+// Den ydre normale læser skal levere denne faktiske metadata efter PG og upload.
+export function verifySourcePrNativeJobMetadata(options){
+  requireSourceProducerOutput(); // FØR options læses.
+  assert.equal(arguments.length,1);
+  sourcePrExact(options,['run','jobs','pull','main','current','mainHead','sourceTreeSha256','stage','now']);
+  const {run,jobs,pull,main,current,mainHead,sourceTreeSha256,stage,now}=options;sourcePrCurrent(current);
+  assert(['NATIVE_RUNNING','UPLOADED'].includes(stage));assert(Number.isFinite(now));
+  assert.match(mainHead,/^[a-f0-9]{40}$/);assert.notEqual(mainHead,current.head);
+  assert.match(sourceTreeSha256,/^sha256:[a-f0-9]{64}$/);
+  assert.equal(run.id,current.run);assert.equal(run.run_attempt,1);assert.equal(run.head_sha,current.head);
+  assert.equal(run.head_branch,current.branch);assert.equal(run.path,WORKFLOW);assert.equal(run.event,'pull_request');
+  assert.equal(run.status,'in_progress');assert.equal(run.conclusion,null);
+  for(const repo of [run.repository,run.head_repository,pull.head?.repo,pull.base?.repo])assert.equal(repo?.full_name,ORIGIN.repository);
+  assert.equal(pull.number,current.pullRequest);assert.equal(pull.state,'open');assert.equal(pull.merged,false);
+  assert.equal(pull.head.sha,current.head);assert.equal(pull.head.ref,current.branch);assert.equal(pull.base.ref,'main');
+  assert.equal(pull.base.sha,mainHead);assert.equal(main.ref,'refs/heads/main');assert.equal(main.object?.type,'commit');
+  assert.equal(main.object.sha,mainHead);assert(complete(jobs,'jobs'));
+  assert.equal(new Set(jobs.jobs.map(value=>value.id)).size,jobs.jobs.length);
+  assert(jobs.jobs.every(value=>sourcePrPositive(value.id)));
+  const job=one(jobs.jobs.filter(value=>value.name===JOB));assert.equal(job.run_id,current.run);
+  assert.equal(job.head_sha,current.head);if(Object.hasOwn(job,'run_attempt'))assert.equal(job.run_attempt,1);
+  assert.equal(job.status,'in_progress');assert.equal(job.conclusion,null);assert.equal(job.completed_at,null);
+  assert(sourcePrPositive(job.runner_id)&&typeof job.runner_name==='string'&&job.runner_name.length>0);
+  const started=Date.parse(job.started_at);assert(Number.isFinite(started)&&started<=now&&now<started+180*60000);
+  assert(Array.isArray(job.steps));assert.equal(new Set(job.steps.map(value=>value.number)).size,job.steps.length);
+  const sources=job.steps.filter(value=>['Validate source contracts and release governance',
+    'Validate current Source contracts and release governance'].includes(value.name));
+  assert(sources.length>=1&&sources.length<=2);
+  assert.equal(new Set(sources.map(value=>value.name)).size,sources.length);
+  const source=one(sources.filter(successful));
+  for(const other of sources)if(other!==source)assert.equal(other.conclusion,'skipped');
+  const pg=one(job.steps.filter(value=>value.name===STEP));assert(successful(source));
+  assert(sourcePrPositive(source.number));
+  const between=job.steps.filter(value=>value.number>source.number&&value.number<pg.number);
+  assert.equal(pg.number,source.number+1+between.length);
+  assert(between.length<=1&&between.every(value=>sources.includes(value)&&value.conclusion==='skipped'));
+  const sourceEnd=Date.parse(source.completed_at),pgStart=Date.parse(pg.started_at);
+  assert(Number.isFinite(sourceEnd)&&Number.isFinite(pgStart)&&sourceEnd<=pgStart&&pgStart<=now);
+  let pgCompletedAt=null,uploadedAt=null;
+  if(stage==='NATIVE_RUNNING'){assert.equal(pg.status,'in_progress');assert.equal(pg.conclusion,null);}
+  else{
+    assert(successful(pg));const upload=one(job.steps.filter(value=>value.name===CURRENT586_PHASE_UPLOAD));
+    assert(successful(upload)&&upload.number===pg.number+1);
+    const pgEnd=Date.parse(pg.completed_at),uploadStart=Date.parse(upload.started_at),uploadEnd=Date.parse(upload.completed_at);
+    assert(Number.isFinite(pgEnd)&&Number.isFinite(uploadStart)&&Number.isFinite(uploadEnd));
+    assert(pgStart<=pgEnd&&pgEnd<=uploadStart&&uploadStart<=uploadEnd&&uploadEnd<=now);
+    pgCompletedAt=pg.completed_at;uploadedAt=upload.completed_at;
+  }
+  return {kind:'SOURCE_PR_NATIVE_JOB_METADATA_V1',stage,current:{...current,jobId:job.id},
+    mainHead,sourceTreeSha256,pgStartedAt:pg.started_at,pgCompletedAt,uploadedAt};
+}
+export function verifySourcePrNativePhaseReceipt(native,current,expected,phase){
+  requireSourceProducerOutput();assert.equal(arguments.length,4);
+  verifySourcePrNativeExecutionReceipt(native,current,expected);
+  sourcePrExact(phase,['kind','stage','current','mainHead','sourceTreeSha256','pgStartedAt','pgCompletedAt','uploadedAt']);
+  assert.equal(phase.kind,'SOURCE_PR_NATIVE_JOB_METADATA_V1');assert.equal(phase.stage,'UPLOADED');
+  assert.deepEqual(phase.current,{...current,jobId:expected.jobId});assert.equal(phase.mainHead,expected.mainHead);
+  assert.equal(phase.sourceTreeSha256,expected.sourceTreeSha256);
+  for(const key of ['pgStartedAt','pgCompletedAt','uploadedAt'])assert(Number.isFinite(Date.parse(phase[key])));
+  assert(Date.parse(phase.pgStartedAt)<=Date.parse(phase.pgCompletedAt));
+  assert(Date.parse(phase.pgCompletedAt)<=Date.parse(phase.uploadedAt));
+  // Fasekontrol alene er stadig ikke en tilstands-/produktionskapabilitet.
+}
+export function verifySourcePrNativeArtifact(metadata,zip,run,phase,current,expected){
+  requireSourceProducerOutput();assert.equal(arguments.length,6);
+  verifyAssistantPublic591ArtifactMetadata(metadata,run,{job:expected.jobId,
+    pgStartedAt:phase.pgStartedAt,uploadedAt:phase.uploadedAt});
+  assert.equal(zip.length,metadata.size_in_bytes);assert.equal('sha256:'+sha(zip),metadata.digest);
+  const raw=decodeCurrent586Artifact(zip);assert(raw.length>0&&raw.length<=32768);const proof=JSON.parse(raw);
+  sourcePrExact(proof,['schemaVersion','kind','contractId','repository','headSha','sourceTreeSha256','privatePayloadIncluded','nativePostgres']);
+  assert.equal(proof.schemaVersion,1);assert.equal(proof.kind,SOURCE_PR_NATIVE_PHASE_KIND);
+  assertSourceProducerProofHeader(proof,current.head);
+  assert.equal(proof.sourceTreeSha256,expected.sourceTreeSha256);
+  verifySourcePrNativePhaseReceipt(proof.nativePostgres,current,expected,phase);return proof;
+}
+async function sourcePrMetadata(stage,current,sourceTreeSha256,get=assistantPublic591Reader()){
+  const mainHead=git(['rev-parse','origin/main']).trim();git(['merge-base','--is-ancestor',mainHead,current.head]);
+  const base='/repos/'+ORIGIN.repository;
+  const run=await get(base+'/actions/runs/'+current.run+'/attempts/1');
+  const jobs=await get(base+'/actions/runs/'+current.run+'/attempts/1/jobs?per_page=100');
+  const pull=await get(base+'/pulls/'+current.pullRequest),main=await get(base+'/git/ref/heads/main');
+  return verifySourcePrNativeJobMetadata({run,jobs,pull,main,current,mainHead,sourceTreeSha256,stage,now:Date.now()});
+}
+// Bruges kun af den normale nationale consumer efter det faktiske uploadtrin.
+export async function readSourcePrNativeUploadedPhase(current,sourceTreeSha256){
+  requireSourceProducerOutput();assert.equal(arguments.length,2);sourcePrCurrent(current);
+  const get=assistantPublic591Reader();
+  const phase=await sourcePrMetadata('UPLOADED',current,sourceTreeSha256,get);
+  const expected={jobId:phase.current.jobId,mainHead:phase.mainHead,sourceTreeSha256};
+  const base='/repos/'+ORIGIN.repository+'/actions';
+  const listing=await get(base+'/runs/'+current.run+'/artifacts?per_page=100');assert(complete(listing,'artifacts'));
+  const metadata=one(listing.artifacts.filter(value=>value.name==='native586-phase-'+current.run+'-1-'+current.head));
+  // Metadata er valideret før det normale, adskilte ZIP-GET.
+  const run={id:current.run,head_sha:current.head};
+  verifyAssistantPublic591ArtifactMetadata(metadata,run,{job:expected.jobId,pgStartedAt:phase.pgStartedAt,uploadedAt:phase.uploadedAt});
+  const zip=await get(base+'/artifacts/'+metadata.id+'/zip',{zip:true});
+  const proof=verifySourcePrNativeArtifact(metadata,zip,run,phase,current,expected);
+  const fresh=await sourcePrMetadata('UPLOADED',current,sourceTreeSha256,get);assert.deepEqual(fresh,phase);
+  const freshListing=await get(base+'/runs/'+current.run+'/artifacts?per_page=100');assert(complete(freshListing,'artifacts'));
+  assert.deepEqual(one(freshListing.artifacts.filter(value=>value.id===metadata.id)),metadata);
+  return {proof,phase,artifact:{id:metadata.id,digest:metadata.digest}};
+}
+export function sourcePrNativeReportCollector(){
+  requireSourceProducerOutput();assert.equal(arguments.length,0);
+  let pending='',invalid=false;const reports=[];
+  const line=value=>{
+    if(Buffer.byteLength(value)>1024*1024){invalid=true;return;}
+    let row;try{row=JSON.parse(value);}catch{return;}
+    if(['NATIVE_POSTGRES_FIRST_FAILURE','CURRENT_SOURCE_NATIVE_FIRST_FAILURE',
+      'SOURCE_PRODUCER_NATIVE_FIRST_FAILURE','SOURCE_PRODUCER_NATIVE_CASE_ASSERTION'].includes(row?.kind))invalid=true;
+    if(row?.kind==='NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON'){
+      if(row.sqlProof===false)invalid=true;else reports.push(row);
+    }
+  };
+  return {write(chunk){pending+=String(chunk);let at;
+    while((at=pending.indexOf('\n'))>=0){line(pending.slice(0,at).replace(/\r$/,''));pending=pending.slice(at+1);}
+    if(Buffer.byteLength(pending)>1024*1024){invalid=true;pending='';}
+  },finish(current,expected){
+    requireSourceProducerOutput();assert.equal(arguments.length,2);if(pending)line(pending);assert(!invalid,'SOURCE_PR_NATIVE_OUTPUT_REFUSED');
+    assert.equal(reports.length,1,'SOURCE_PR_NATIVE_EXACT_ONE_COMPLETED_REPORT');const report=reports[0];
+    assert.equal(report.sqlExecuted,true);assert.equal(report.migrationExecuted,true);assert.equal(report.tcpEnabled,false);
+    assert.equal(report.normalModelPartCount,673);assert(sourcePrPositive(report.caseCount));
+    assert(Array.isArray(report.reports)&&report.reports.length===report.caseCount);
+    const source=report.sourceProducerAfter598;assert.equal(source?.kind,'SOURCE_CURRENT598_SAME_PG_SCHEMA_PREPARED');
+    assert.equal(source.sourceMigrationInventory,64);assert.equal(source.genuine598MigrationInventory,63);
+    assert.equal(source.genuine598IntegratedRpcParameters,22);assert.equal(source.genuine598ActualRpcCalls,2);assert.equal(source.sourceActualRpcCalls,2);
+    for(const key of ['sameNativePg','normalVerifiers','old585RowsPreserved','originalSqlBytesPreserved'])assert.equal(source[key],true);
+    assert.equal(source.metadataAuthored,false);assert.equal(source.sourceNativeActionQualified,false);
+    assert.equal(source.originalBAndSAuthenticated,false);assert.equal(source.productionProof,false);
+    verifySourcePrNativeResult(report.currentSourceNativeProfile,current,expected);
+    return report.currentSourceNativeProfile;
+  }};
+}
+export async function executeSourceAfter598PrNative(){
+  const output=requireSourceProducerOutput(),binding=requireSourceProducerBinding(); // FIRST, before argv/Git/FS/process/net.
+  assert.equal(process.argv.length,2);assert.equal(process.platform,'linux');assert.equal(process.cwd(),SOURCE_PR_ROOT);
+  assert.equal(process.env.GITHUB_EVENT_NAME,'pull_request');assert.equal(process.env.GITHUB_REPOSITORY,ORIGIN.repository);
+  const head=git(['rev-parse','HEAD^{commit}']).trim();assert.equal(process.env.SOURCE_GATE_HEAD_SHA,head);
+  assert.equal(git(['status','--porcelain','--untracked-files=no']).trim(),'');
+  const current={run:Number(process.env.GITHUB_RUN_ID),attempt:Number(process.env.GITHUB_RUN_ATTEMPT),head,
+    pullRequest:Number(process.env.PULL_REQUEST_NUMBER),branch:process.env.GITHUB_HEAD_REF};sourcePrCurrent(current);
+  const file=path.join(SOURCE_PR_ROOT,'.cache/source-tree-content-proof.json'),before=await fs.readFile(file,'utf8'),proof=JSON.parse(before);
+  assertSourceProducerProofHeader(proof,head);assert.equal(proof.sourceTreeSha256,sourceTreeContentSha256('HEAD'));
+  if(['SOURCE_FIRST_ISSUANCE','SOURCE_CURRENT_UNCHANGED'].includes(proof.qualification)){
+    const source=await import('./source-first-issuance-contracts.mjs');
+    const identity=await source.readActualSourceFirstIdentity();
+    source.assertSourceFirstProofData(proof,proof.currentSourceContracts.current,identity);
+  }
+  assert(!Object.hasOwn(proof,'nativePostgres')&&!Object.hasOwn(proof,'historical584National'));
+  const phase=await sourcePrMetadata('NATIVE_RUNNING',current,proof.sourceTreeSha256);
+  const expected={jobId:phase.current.jobId,mainHead:phase.mainHead,sourceTreeSha256:proof.sourceTreeSha256};
+  const node24=process.env.RAVRADAR_SOURCE_NATIVE_NODE24_PATH;
+  assert(typeof node24==='string'&&path.isAbsolute(node24)&&!/[\r\n\0]/.test(node24));
+  assert.equal(await fs.realpath(node24),node24);const stat=await fs.lstat(node24,{bigint:true});
+  assert(stat.isFile()&&!stat.isSymbolicLink());
+  assert.match(execFileSync(node24,['--version'],{encoding:'utf8',timeout:10000}).trim(),/^v24\.\d+\.\d+$/);
+  const context={schemaVersion:1,scope:'SOURCE_PR_NATIVE_TEST_V1',current,sourceTreeSha256:proof.sourceTreeSha256};
+  const env={...process.env,SOURCE_CURRENT_NATIVE_PR_TEST_CONTEXT:JSON.stringify(context)};
+  const collector=sourcePrNativeReportCollector();
+  const result=await new Promise(resolve=>{
+    const child=spawn('/usr/bin/bash',['--noprofile','--norc','-e','-o','pipefail','-c',SOURCE_PR_NATIVE_SCRIPT],
+      {env,stdio:['inherit','pipe','inherit']});let error=null;
+    child.stdout.setEncoding('utf8');child.stdout.on('data',chunk=>{process.stdout.write(chunk);collector.write(chunk);});
+    child.on('error',value=>{error=value;});child.on('close',(status,signal)=>resolve({status,signal,error}));
+  });
+  if(result.error||result.signal||result.status!==0){process.exitCode=result.status||1;return;}
+  const nativeResult=collector.finish(current,expected);
+  const end=await fs.lstat(node24,{bigint:true});assert.deepEqual([end.dev,end.ino,end.size,end.mtimeNs],
+    [stat.dev,stat.ino,stat.size,stat.mtimeNs]);assert.equal(await fs.realpath(node24),node24);
+  assert.equal(git(['rev-parse','HEAD^{commit}']).trim(),head);
+  assert.equal(git(['status','--porcelain','--untracked-files=no']).trim(),'');
+  assert.equal(sourceTreeContentSha256('HEAD'),proof.sourceTreeSha256);assert.equal(await fs.readFile(file,'utf8'),before);
+  assert.deepEqual(await sourcePrMetadata('NATIVE_RUNNING',current,proof.sourceTreeSha256),phase);
+  const receipt={schemaVersion:1,kind:SOURCE_PR_NATIVE_PHASE_KIND,phase:'SOURCE_PR_NATIVE_TEST',
+    sourcePhase:'source-producer-pr-native-test',sourceVersion:binding.version,binding,output,databaseBefore:SOURCE_PRODUCER_BEFORE,
+    currentProfileExecuted:true,status:'EXECUTED',executedInThisRun:true,origin:null,eligibleForReuse:false,
+    current,commands:SOURCE_PR_NATIVE_COMMANDS,nativeResult};
+  verifySourcePrNativeExecutionReceipt(receipt,current,expected);
+  const phaseProof={schemaVersion:1,kind:SOURCE_PR_NATIVE_PHASE_KIND,contractId:proof.contractId,repository:proof.repository,
+    headSha:head,sourceTreeSha256:proof.sourceTreeSha256,privatePayloadIncluded:false,nativePostgres:receipt};
+  const raw=JSON.stringify(phaseProof)+'\n';assert(Buffer.byteLength(raw)<=32768);
+  // Udførelse er færdig; upload kvalificeres først af den efterfølgende normale reader.
+  await fs.writeFile(CURRENT586_PHASE_FILE,raw,{flag:'wx'});
+  proof.nativePostgres=receipt;await fs.writeFile(file,JSON.stringify(proof)+'\n');
+}
+
 async function record(receipt) {
   const file='.cache/source-tree-content-proof.json', proof=JSON.parse(await fs.readFile(file,'utf8'));
   assert.equal(proof.headSha,git(['rev-parse','HEAD^{commit}']).trim()); assert.equal(proof.repository,ORIGIN.repository);
   assert.equal(proof.contractId,'weather-source-gate-content-v2'); assert.equal(proof.privatePayloadIncluded,false);
   const current={run:Number(process.env.GITHUB_RUN_ID),attempt:Number(process.env.GITHUB_RUN_ATTEMPT),
     head:proof.headSha,pullRequest:Number(process.env.PULL_REQUEST_NUMBER),branch:process.env.GITHUB_HEAD_REF};
-  if(ACTIVE.sourcePhase===ASSISTANT_AFTER597_PHASE)await verifyAssistantAfter597PhaseReceipt(receipt,current);
+  if(receipt.kind===SOURCE_AFTER598_BASIC_PHASE_KIND)verifySourceAfter598BasicPhaseReceipt(receipt,current);
+  else if(ACTIVE.sourcePhase===ASSISTANT_AFTER597_PHASE)await verifyAssistantAfter597PhaseReceipt(receipt,current);
   else if(ACTIVE.sourcePhase===SCALAR597_LATER_H0_PHASE)verifyScalar597LaterH0PhaseReceipt(receipt,current);
   else if(receipt.kind===INSTALLED593_ORIGINAL591_V2_KIND)verifyInstalled593Original591V2PhaseReceipt(receipt,current);
   else if(receipt.phase==='INSTALLED593_ORIGINAL591_SUCCESSOR')verifyInstalled593Original591PhaseReceipt(receipt,current);
@@ -1851,7 +2180,7 @@ async function record(receipt) {
   proof.nativePostgres=receipt; await fs.writeFile(file,JSON.stringify(proof)+'\n');
   const phaseProof={
     schemaVersion:receipt.schemaVersion===2?2:1,
-    kind:receipt.schemaVersion===2||receipt.kind===SCALAR597_LATER_H0_PHASE_KIND||receipt.kind===ASSISTANT_AFTER597_PHASE_KIND?receipt.kind:
+    kind:receipt.schemaVersion===2||receipt.kind===SCALAR597_LATER_H0_PHASE_KIND||receipt.kind===ASSISTANT_AFTER597_PHASE_KIND||receipt.kind===SOURCE_AFTER598_BASIC_PHASE_KIND?receipt.kind:
       receipt.phase==='INSTALLED593_ORIGINAL591_SUCCESSOR'?INSTALLED593_ORIGINAL591_PHASE_KIND:
       receipt.phase==='NATIVE_ORIGINAL_CONTINUITY'?CURRENT586_PHASE_KIND:
       receipt.phase==='ASSISTANT_PUBLIC591_SUCCESSOR'?ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND:
@@ -1861,10 +2190,11 @@ async function record(receipt) {
     repository:proof.repository,headSha:proof.headSha,sourceTreeSha256:proof.sourceTreeSha256,
     privatePayloadIncluded:false,nativePostgres:receipt,
   };
-  const raw=JSON.stringify(phaseProof)+'\n';if(receipt.schemaVersion===2||receipt.kind===SCALAR597_LATER_H0_PHASE_KIND||receipt.kind===ASSISTANT_AFTER597_PHASE_KIND)assert(Buffer.byteLength(raw)<=32768);
+  const raw=JSON.stringify(phaseProof)+'\n';if(receipt.schemaVersion===2||receipt.kind===SCALAR597_LATER_H0_PHASE_KIND||receipt.kind===ASSISTANT_AFTER597_PHASE_KIND||receipt.kind===SOURCE_AFTER598_BASIC_PHASE_KIND)assert(Buffer.byteLength(raw)<=32768);
   await fs.writeFile(CURRENT586_PHASE_FILE,raw,{flag:'wx'});
 }
 async function main() {
+  if(SOURCE_PRODUCER_AFTER597_PARENT.binding!==null)return executeSourceAfter598PrNative();
   if(ACTIVE.sourcePhase===ASSISTANT_AFTER597_PHASE)return executeAssistantAfter597Native();
   if(ACTIVE.sourcePhase===SCALAR597_LATER_H0_PHASE)return executeScalar597LaterH0();
   assert(['assistant-public587-successor','assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor'].includes(ACTIVE.sourcePhase));

@@ -8,6 +8,10 @@ on:
         required: false
         type: boolean
         default: false
+      source_saved_pair_readback:
+        required: false
+        type: boolean
+        default: false
       pre_activation_recovery:
         required: false
         type: boolean
@@ -65,7 +69,7 @@ jobs:
   deploy-pages:
     name: ${{ inputs.pre_activation_recovery && 'Deploy exact pre-activation Pages artifact' || 'Deploy prepared Pages artifact' }}
     runs-on: ubuntu-24.04
-    timeout-minutes: ${{ inputs.ordinary_immediate_retry && 35 || 25 }}
+    timeout-minutes: ${{ inputs.ordinary_immediate_retry && !inputs.source_saved_pair_readback && 35 || 25 }}
     permissions:
       contents: read
       actions: read
@@ -86,7 +90,12 @@ jobs:
       - name: Measure ordinary Pages job start for the retry cutoff
         if: inputs.ordinary_immediate_retry == true
         shell: bash
-        run: echo "RAVRADAR_PAGES_JOB_STARTED_MS=$(date +%s%3N)" >> "$GITHUB_ENV"
+        env:
+          SOURCE_SAVED_PAIR_READBACK: ${{ inputs.source_saved_pair_readback }}
+        run: |
+          set -euo pipefail
+          test "$SOURCE_SAVED_PAIR_READBACK" = false
+          echo "RAVRADAR_PAGES_JOB_STARTED_MS=$(date +%s%3N)" >> "$GITHUB_ENV"
 
       - uses: actions/checkout@v7
 
@@ -120,6 +129,17 @@ jobs:
           test "$(jq -r '.privatePayloadIncluded' "$RAVRADAR_OPERATIONAL_HANDOFF/handoff.json")" = "false"
           test "$(jq -r '.codeOnlyRepair // false' "$RAVRADAR_OPERATIONAL_HANDOFF/handoff.json")" = "${{ inputs.code_only_repair }}"
           test "$(jq -r '.sourceRepairId // ""' "$RAVRADAR_OPERATIONAL_HANDOFF/handoff.json")" = "${{ inputs.source_repair_id }}"
+          if [ "${{ inputs.source_saved_pair_readback }}" = "true" ]; then
+            test "$GITHUB_REF" = refs/heads/main
+            test "$GITHUB_RUN_ATTEMPT" = 1
+            test "${{ inputs.operational_action }}" = integrated
+            test "${{ inputs.deployment_model }}" = integrated
+            test "${{ inputs.code_only_repair }}" = false
+            test "${{ inputs.exact_public_recovery }}" = false
+            test "${{ inputs.pre_activation_recovery }}" = false
+            test "${{ inputs.legacy_source_required }}" = false
+            test -z "${{ inputs.source_repair_id }}"
+          fi
           if [ -n "${{ inputs.source_repair_id }}" ]; then
             test "${{ inputs.code_only_repair }}" = "true"
             case "${{ inputs.operational_action }}" in
@@ -177,6 +197,10 @@ jobs:
         shell: bash
         env:
           CHECKPOINT_VALIDATION_PHASE: begin
+          SOURCE_SAVED_PAIR_READBACK: ${{ inputs.source_saved_pair_readback && 'true' || 'false' }}
+          SOURCE_SAVED_PAIR_CLOSURE_SHA256: ${{ inputs.integrated_implementation_closure_sha256 }}
+          SUPABASE_URL: ${{ inputs.source_saved_pair_readback && secrets.SUPABASE_URL || '' }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ inputs.source_saved_pair_readback && secrets.SUPABASE_SERVICE_ROLE_KEY || '' }}
         run: |
           set -euo pipefail
           node --input-type=module <<'NODE'
@@ -203,6 +227,26 @@ jobs:
             'sourceHead',
           ].sort();
           const fail = (message) => { throw new Error(`Checkpoint disposition ${process.env.CHECKPOINT_VALIDATION_PHASE} validation failed: ${message}`); };
+          if (process.env.SOURCE_SAVED_PAIR_READBACK === 'true') {
+            const { assertSourceSavedPairPagesProof } = await import('./scripts/lib/source-saved-pair-pages-proof.mjs');
+            const { verifySavedSourcePairPublishedPins } = await import('./scripts/reconcile-private-runtime-checkpoint.mjs');
+            // The producer uploaded and sealed this artifact before uploading the handoff.
+            const artifactSeal = read('pages-artifact-seal.json');
+            if (artifactSeal.targetImplementationClosureSha256 !== process.env.SOURCE_SAVED_PAIR_CLOSURE_SHA256) {
+              fail('saved-pair implementation closure');
+            }
+            const expectedIdentity = {
+              repository: process.env.GITHUB_REPOSITORY,
+              sourceHead: process.env.GITHUB_SHA,
+              runId: Number(process.env.GITHUB_RUN_ID),
+              runAttempt: Number(process.env.GITHUB_RUN_ATTEMPT),
+            };
+            const savedPair = assertSourceSavedPairPagesProof({
+              handoff, manifest, runtimeAudit, disposition, artifactSeal, expectedIdentity,
+            });
+            await verifySavedSourcePairPublishedPins({ savedPair });
+            process.exit(0);
+          }
           if (disposition.schemaVersion !== 'ravscore-continuation-checkpoint-disposition-v1') fail('schema');
           if (JSON.stringify(Object.keys(disposition).sort()) !== JSON.stringify(expectedDispositionKeys)) fail('unexpected fields');
           if (disposition.sourceHead !== process.env.GITHUB_SHA || handoff.sourceHead !== process.env.GITHUB_SHA) fail('source head');
@@ -522,7 +566,7 @@ jobs:
               "$RAVRADAR_OPERATIONAL_HANDOFF/legacy-source-attestation.json"
             )
           fi
-          node scripts/ravscore-operational-activation.mjs return-begin \
+          node scripts/ravscore-operational-activation.mjs return-begin ${{ env.RAVRADAR_OPERATIONAL_READINESS_SOURCE_PHASE == 'source-producer-after597' && '--source-producer' || '' }} \
             --plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json" \
             --expected-version "${{ inputs.central_version }}" \
             --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json" \
@@ -542,7 +586,7 @@ jobs:
         id: integrated-historical-maintenance-begin
         if: inputs.operational_action == 'integrated-historical-maintenance' && inputs.code_only_repair != true
         run: >-
-          node scripts/ravscore-operational-activation.mjs integrated-historical-maintenance-begin
+          node scripts/ravscore-operational-activation.mjs integrated-historical-maintenance-begin ${{ env.RAVRADAR_OPERATIONAL_READINESS_SOURCE_PHASE == 'source-producer-after597' && '--source-producer' || '' }}
           --plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json"
           --expected-version "${{ inputs.central_version }}"
           --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json"
@@ -561,7 +605,7 @@ jobs:
         id: code-only-integrated-historical-maintenance-begin
         if: inputs.code_only_repair == true && inputs.operational_action == 'integrated-historical-maintenance'
         run: >-
-          node scripts/ravscore-operational-activation.mjs integrated-historical-maintenance-begin
+          node scripts/ravscore-operational-activation.mjs integrated-historical-maintenance-begin ${{ env.RAVRADAR_OPERATIONAL_READINESS_SOURCE_PHASE == 'source-producer-after597' && '--source-producer' || '' }}
           --plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json"
           --expected-version "${{ inputs.central_version }}"
           --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json"
@@ -635,7 +679,7 @@ jobs:
         id: deployment
         uses: ./.github/actions/deploy-ravradar-pages
         with:
-          immediate_retry: ${{ inputs.ordinary_immediate_retry && inputs.operational_action == 'integrated' && inputs.deployment_model == 'integrated' && !inputs.pre_activation_recovery && !inputs.code_only_repair && !inputs.exact_public_recovery && inputs.source_repair_id == '' }}
+          immediate_retry: ${{ inputs.ordinary_immediate_retry && !inputs.source_saved_pair_readback && inputs.operational_action == 'integrated' && inputs.deployment_model == 'integrated' && !inputs.pre_activation_recovery && !inputs.code_only_repair && !inputs.exact_public_recovery && inputs.source_repair_id == '' }}
           github_token: ${{ github.token }}
           supabase_url: ${{ secrets.SUPABASE_URL }}
           supabase_service_role_key: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -674,6 +718,10 @@ jobs:
         shell: bash
         env:
           CHECKPOINT_VALIDATION_PHASE: complete
+          SOURCE_SAVED_PAIR_READBACK: ${{ inputs.source_saved_pair_readback && 'true' || 'false' }}
+          SOURCE_SAVED_PAIR_CLOSURE_SHA256: ${{ inputs.integrated_implementation_closure_sha256 }}
+          SUPABASE_URL: ${{ inputs.source_saved_pair_readback && secrets.SUPABASE_URL || '' }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ inputs.source_saved_pair_readback && secrets.SUPABASE_SERVICE_ROLE_KEY || '' }}
         run: |
           set -euo pipefail
           node --input-type=module <<'NODE'
@@ -700,6 +748,26 @@ jobs:
             'sourceHead',
           ].sort();
           const fail = (message) => { throw new Error(`Checkpoint disposition ${process.env.CHECKPOINT_VALIDATION_PHASE} validation failed: ${message}`); };
+          if (process.env.SOURCE_SAVED_PAIR_READBACK === 'true') {
+            const { assertSourceSavedPairPagesProof } = await import('./scripts/lib/source-saved-pair-pages-proof.mjs');
+            const { verifySavedSourcePairPublishedPins } = await import('./scripts/reconcile-private-runtime-checkpoint.mjs');
+            // The producer uploaded and sealed this artifact before uploading the handoff.
+            const artifactSeal = read('pages-artifact-seal.json');
+            if (artifactSeal.targetImplementationClosureSha256 !== process.env.SOURCE_SAVED_PAIR_CLOSURE_SHA256) {
+              fail('saved-pair implementation closure');
+            }
+            const expectedIdentity = {
+              repository: process.env.GITHUB_REPOSITORY,
+              sourceHead: process.env.GITHUB_SHA,
+              runId: Number(process.env.GITHUB_RUN_ID),
+              runAttempt: Number(process.env.GITHUB_RUN_ATTEMPT),
+            };
+            const savedPair = assertSourceSavedPairPagesProof({
+              handoff, manifest, runtimeAudit, disposition, artifactSeal, expectedIdentity,
+            });
+            await verifySavedSourcePairPublishedPins({ savedPair });
+            process.exit(0);
+          }
           if (disposition.schemaVersion !== 'ravscore-continuation-checkpoint-disposition-v1') fail('schema');
           if (JSON.stringify(Object.keys(disposition).sort()) !== JSON.stringify(expectedDispositionKeys)) fail('unexpected fields');
           if (disposition.sourceHead !== process.env.GITHUB_SHA || handoff.sourceHead !== process.env.GITHUB_SHA) fail('source head');
@@ -800,7 +868,7 @@ jobs:
         shell: bash
         run: |
           pending_version="$(jq -r '.centralVersion' "$RAVRADAR_OPERATIONAL_HANDOFF/begin.json")"
-          node scripts/ravscore-operational-activation.mjs return-complete \
+          node scripts/ravscore-operational-activation.mjs return-complete ${{ env.RAVRADAR_OPERATIONAL_READINESS_SOURCE_PHASE == 'source-producer-after597' && '--source-producer' || '' }} \
             --plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json" \
             --expected-version "$pending_version" \
             --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json" \
@@ -819,7 +887,7 @@ jobs:
         shell: bash
         run: |
           pending_version="$(jq -r '.centralVersion' "$RAVRADAR_OPERATIONAL_HANDOFF/begin.json")"
-          node scripts/ravscore-operational-activation.mjs integrated-historical-maintenance-complete \
+          node scripts/ravscore-operational-activation.mjs integrated-historical-maintenance-complete ${{ env.RAVRADAR_OPERATIONAL_READINESS_SOURCE_PHASE == 'source-producer-after597' && '--source-producer' || '' }} \
             --plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json" \
             --expected-version "$pending_version" \
             --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json" \
@@ -836,7 +904,7 @@ jobs:
         id: integrated-maintenance-complete
         if: inputs.operational_action == 'integrated'
         run: >-
-          node scripts/ravscore-operational-activation.mjs integrated-maintenance
+          node scripts/ravscore-operational-activation.mjs integrated-maintenance ${{ env.RAVRADAR_OPERATIONAL_READINESS_SOURCE_PHASE == 'source-producer-after597' && '--source-producer' || '' }}
           --expected-version "${{ inputs.central_version }}"
           --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json"
           --audit "$RAVRADAR_OPERATIONAL_HANDOFF/public-audit.json"
@@ -959,6 +1027,29 @@ jobs:
             'sourceHead',
           ].sort();
           const fail = (message) => { throw new Error(`Failure reconciliation checkpoint disposition validation failed: ${message}`); };
+          if (process.env.SOURCE_SAVED_PAIR_READBACK === 'true') {
+            const { assertSourceSavedPairPagesProof } = await import('./scripts/lib/source-saved-pair-pages-proof.mjs');
+            const { verifySavedSourcePairPublishedPins } = await import('./scripts/reconcile-private-runtime-checkpoint.mjs');
+            // The producer uploaded and sealed this artifact before uploading the handoff.
+            const artifactSeal = read('pages-artifact-seal.json');
+            if (artifactSeal.targetImplementationClosureSha256 !== process.env.SOURCE_SAVED_PAIR_CLOSURE_SHA256) {
+              fail('saved-pair implementation closure');
+            }
+            const expectedIdentity = {
+              repository: process.env.GITHUB_REPOSITORY,
+              sourceHead: process.env.GITHUB_SHA,
+              runId: Number(process.env.GITHUB_RUN_ID),
+              runAttempt: Number(process.env.GITHUB_RUN_ATTEMPT),
+            };
+            const savedPair = assertSourceSavedPairPagesProof({
+              handoff, manifest, runtimeAudit, disposition, artifactSeal, expectedIdentity,
+            });
+            if (sha256CanonicalJson(observedManifest) !== savedPair.targetManifestSha256) {
+              fail('saved-pair observed target manifest');
+            }
+            await verifySavedSourcePairPublishedPins({ savedPair });
+            process.exit(0);
+          }
           if (disposition.schemaVersion !== 'ravscore-continuation-checkpoint-disposition-v1') fail('schema');
           if (JSON.stringify(Object.keys(disposition).sort()) !== JSON.stringify(expectedDispositionKeys)) fail('unexpected fields');
           if (disposition.sourceHead !== process.env.GITHUB_SHA || handoff.sourceHead !== process.env.GITHUB_SHA) fail('source head');
@@ -986,7 +1077,7 @@ jobs:
             fail('unsupported disposition');
           }
           NODE
-            node scripts/ravscore-operational-activation.mjs reconcile \
+            node scripts/ravscore-operational-activation.mjs reconcile ${{ env.RAVRADAR_OPERATIONAL_READINESS_SOURCE_PHASE == 'source-producer-after597' && '--source-producer' || '' }} \
               --expected-version "$pending_version" \
               --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/observed-manifest.json" \
               --observations "$RAVRADAR_OPERATIONAL_HANDOFF/failure-observations.json" \
@@ -1007,7 +1098,7 @@ jobs:
               && [ "$(jq -r '.bindingCurrent' "$RAVRADAR_OPERATIONAL_HANDOFF/failure-current.json")" != "true" ]; then
               source_args+=(--plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json")
             fi
-            node scripts/ravscore-operational-activation.mjs reconcile \
+            node scripts/ravscore-operational-activation.mjs reconcile ${{ env.RAVRADAR_OPERATIONAL_READINESS_SOURCE_PHASE == 'source-producer-after597' && '--source-producer' || '' }} \
               --expected-version "$pending_version" \
               --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/observed-manifest.json" \
               --observations "$RAVRADAR_OPERATIONAL_HANDOFF/failure-observations.json" \
@@ -1021,6 +1112,8 @@ jobs:
             CANDIDATE_G_PENDING|INTEGRATED_PENDING) exit 1 ;;
           esac
         env:
+          SOURCE_SAVED_PAIR_READBACK: ${{ inputs.source_saved_pair_readback && 'true' || 'false' }}
+          SOURCE_SAVED_PAIR_CLOSURE_SHA256: ${{ inputs.integrated_implementation_closure_sha256 }}
           GH_TOKEN: ${{ github.token }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

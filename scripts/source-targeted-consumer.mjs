@@ -1,10 +1,11 @@
+import {SOURCE_FIRST_NATIVE_KIND,sourceFirstNativeStepShape,verifySourceFirstCompletedReceipt} from './source-first-issuance-contracts.mjs';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import {execFileSync} from 'node:child_process';
 import {isDeepStrictEqual} from 'node:util';
 import {inspectLaterMainEvidence,PULL_REQUEST_SOURCE_JOB,PULL_REQUEST_SOURCE_WORKFLOW}
   from './lib/weather-source-gate.mjs';
-import {sourceTreeContentSha256} from './lib/source-tree-content.mjs';
+import {sourceTreeContentSha256,sourceTreeProofArtifactName} from './lib/source-tree-content.mjs';
 import {qualifySourceImpactFullBaseline,SOURCE_IMPACT_FULL_BASELINE_KIND}
   from './source-impact-full-baseline.mjs';
 import {CURRENT_CONTRACT_SOURCE_CONTRACT,CURRENT_CONTRACT_SOURCE_KIND,currentContractSourceArtifactName,
@@ -51,7 +52,7 @@ const success=value=>value?.status==='completed'&&value.conclusion==='success';
 function locatorIdentity(record,env){
   assert(record&&Object.getPrototypeOf(record)===Object.prototype);
   assert.deepEqual(Object.keys(record).sort(),[...LOCATOR_KEYS].sort());
-  assert([TARGETED_SOURCE_CONTRACT,DOMAIN_TARGETED_SOURCE_CONTRACT,CURRENT_CONTRACT_SOURCE_CONTRACT].includes(record.contractId));
+  assert([TARGETED_SOURCE_CONTRACT,DOMAIN_TARGETED_SOURCE_CONTRACT,CURRENT_CONTRACT_SOURCE_CONTRACT,SOURCE_FIRST_NATIVE_KIND].includes(record.contractId));
   assert.equal(record.repository,ORIGIN.repository);
   assert.equal(env.GITHUB_REPOSITORY,record.repository);assert.equal(env.GITHUB_REF,'refs/heads/main');
   assert(oid(record.headSha)&&record.headSha===env.GITHUB_SHA&&oid(record.producerHeadSha));
@@ -93,11 +94,12 @@ function runIdentity(run,pull,jobs,record,workflowText){
   const job=one(jobs.jobs.filter(value=>value.name===PULL_REQUEST_SOURCE_JOB));
   assert.equal(job.id,record.jobId);assert.equal(job.run_id,run.id);assert.equal(job.run_attempt,record.runAttempt);
   assert.equal(job.head_sha,record.producerHeadSha);assert(success(job));assert(Array.isArray(job.steps));
-  return verifyTargetedSourceStepShape(job,workflowText);
+  return record.contractId===SOURCE_FIRST_NATIVE_KIND ? sourceFirstNativeStepShape(job) : verifyTargetedSourceStepShape(job,workflowText);
 }
 
 function artifactNameFor(record,current){
-  assert([TARGETED_SOURCE_CONTRACT,DOMAIN_TARGETED_SOURCE_CONTRACT,CURRENT_CONTRACT_SOURCE_CONTRACT].includes(record.contractId));
+  assert([TARGETED_SOURCE_CONTRACT,DOMAIN_TARGETED_SOURCE_CONTRACT,CURRENT_CONTRACT_SOURCE_CONTRACT,SOURCE_FIRST_NATIVE_KIND].includes(record.contractId));
+  if(record.contractId===SOURCE_FIRST_NATIVE_KIND)return sourceTreeProofArtifactName({pullRequestNumber:current.pullRequest,headSha:current.head,sourceTreeSha256:current.sourceTreeSha256});
   if(record.contractId===CURRENT_CONTRACT_SOURCE_CONTRACT)return currentContractSourceArtifactName(current);
   const prefix=record.contractId===DOMAIN_TARGETED_SOURCE_CONTRACT
     ?'ravradar-source-targeted-domains-v2-pr-':'ravradar-source-targeted-v1-pr-';
@@ -112,14 +114,14 @@ function verifyArtifact(metadata,record,phase){
   assert(time(metadata.created_at)>=phase.earliestArtifact&&time(metadata.created_at)<=phase.latestArtifact);
 }
 
-function decodeReceipt(zip,remainingBudget){
+function decodeReceipt(zip,remainingBudget,entry='source-targeted-impact-proof.json'){
   const remaining=remainingBudget();
   const raw=execFileSync('python',['-c',[
     'import io,sys,zipfile','z=zipfile.ZipFile(io.BytesIO(sys.stdin.buffer.read()))',
-    'assert z.namelist()==["source-targeted-impact-proof.json"]','i=z.infolist()[0]',
+    'assert z.namelist()==[sys.argv[1]]','i=z.infolist()[0]',
     'assert not i.is_dir() and 0<i.file_size<=32768 and not (i.flag_bits & 1)',
     'sys.stdout.buffer.write(z.read(i))',
-  ].join(';')],{input:zip,maxBuffer:32768,timeout:Math.min(10000,Math.max(1,Math.floor(remaining))),
+  ].join(';'),entry],{input:zip,maxBuffer:32768,timeout:Math.min(10000,Math.max(1,Math.floor(remaining))),
     stdio:['pipe','pipe','pipe']});
   remainingBudget();assert(raw.length>0&&raw.length<=32768);return raw;
 }
@@ -177,18 +179,21 @@ export async function decideTargetedSourceGate(record,env,dependencies){
     const artifactRoute=repo+'/actions/artifacts/'+record.artifactId,metadata=await json(artifactRoute);
     verifyArtifact(metadata,record,phase);
     const bytes=await zip(artifactRoute+'/zip');assert.equal(bytes.length,metadata.size_in_bytes);
-    assert.equal('sha256:'+sha(bytes),metadata.digest);const raw=decodeReceipt(bytes,remaining);
+    assert.equal('sha256:'+sha(bytes),metadata.digest);const raw=decodeReceipt(bytes,remaining,record.contractId===SOURCE_FIRST_NATIVE_KIND?'source-tree-content-proof.json':'source-targeted-impact-proof.json');
     assert.equal(sha(raw),record.proofSha256);const receipt=JSON.parse(raw);
     const current={repository:record.repository,head:record.producerHeadSha,sourceTreeSha256:record.sourceTreeSha256,
       pullRequest:record.pullRequestNumber,runId:Number(record.runId),runAttempt:1,jobId:record.jobId};
-    assert.deepEqual(receipt.current,current);
-    const full=await qualifySourceImpactFullBaseline({reference:receipt.baselineReference,candidateCommit:record.headSha},
+    if(record.contractId!==SOURCE_FIRST_NATIVE_KIND)assert.deepEqual(receipt.current,current);
+    const isSource=record.contractId===SOURCE_FIRST_NATIVE_KIND;
+    let sourceStructure;
+    if(isSource)sourceStructure=await verifySourceFirstCompletedReceipt(receipt,{record,run,pull,jobs,readGit:git,getJson:json,getArtifactZip:zip});
+    const full=isSource?null:await qualifySourceImpactFullBaseline({reference:receipt.baselineReference,candidateCommit:record.headSha},
       {getJson,getArtifactZip,readGit});remaining();
-    assert.equal(full.kind,SOURCE_IMPACT_FULL_BASELINE_KIND);
+    if(!isSource)assert.equal(full.kind,SOURCE_IMPACT_FULL_BASELINE_KIND);
     const isDomain=record.contractId===DOMAIN_TARGETED_SOURCE_CONTRACT;
     const isCurrent=record.contractId===CURRENT_CONTRACT_SOURCE_CONTRACT;
     let structural,domainPlan,currentPlan,controlReview;
-    if(isCurrent){
+    if(isSource){structural=sourceStructure;}else if(isCurrent){
       const {planSourceCurrentContractsFromGit}=await import('./source-current-contract-plan.mjs');
       currentPlan=planSourceCurrentContractsFromGit({baselineCommit:full.mergeCommit,
         candidateCommit:record.headSha,expectedHead:record.headSha});remaining();
@@ -231,6 +236,9 @@ export async function decideTargetedSourceGate(record,env,dependencies){
       }
     }
     assertCommittedHead();assert.equal(sourceTreeContentSha256(record.headSha,{git}),record.sourceTreeSha256);remaining();
+    if(isSource)return {required:false,reason:'verified-current-source-and-actual-native',runId:record.runId,qualification:receipt.qualification,
+      scope:'SOURCE_PR_NATIVE_TEST',nativeExecutedInProducerRun:true,postgresExecuted:false,historicalCompatibilityExecuted:false,
+      historicalNationalExecuted:false,sourceAdmission:false,productionProof:false};
     if(isCurrent)return {required:false,reason:'verified-current-contract-pull-request-source-content',runId:record.runId,
       scope:'CURRENT_CONTRACT_RESULTS_ONLY',testedAreas:Object.keys(receipt.impact.areas)
         .filter(area=>receipt.impact.areas[area].commands.length>0),
@@ -287,7 +295,7 @@ export async function discoverTargetedSourceGate(env,sourceTreeSha256,dependenci
       &&pull.base?.repo?.full_name===env.GITHUB_REPOSITORY).sort((a,b)=>b.number-a.number);
     assert(candidates.length<=4&&new Set(candidates.map(pull=>pull.number)).size===candidates.length);
     for(const pull of candidates){
-     for(const contractId of [CURRENT_CONTRACT_SOURCE_CONTRACT,DOMAIN_TARGETED_SOURCE_CONTRACT,TARGETED_SOURCE_CONTRACT]){
+     for(const contractId of [SOURCE_FIRST_NATIVE_KIND,CURRENT_CONTRACT_SOURCE_CONTRACT,DOMAIN_TARGETED_SOURCE_CONTRACT,TARGETED_SOURCE_CONTRACT]){
       const artifactName=artifactNameFor({contractId},{pullRequest:pull.number,head:pull.head.sha,sourceTreeSha256});
       const listing=await json(repo+'/actions/artifacts?name='+encodeURIComponent(artifactName)+'&per_page=100');
       assert(Array.isArray(listing.artifacts)&&Number.isSafeInteger(listing.total_count)
@@ -319,8 +327,15 @@ export async function discoverTargetedSourceGate(env,sourceTreeSha256,dependenci
       const phase=runIdentity(run,pull,jobs,locator,workflowText);verifyArtifact(artifact,locator,phase);
       const bytes=await bounded(getArtifactZip,repo+'/actions/artifacts/'+artifact.id+'/zip',true);
       assert.equal(bytes.length,artifact.size_in_bytes);assert.equal('sha256:'+sha(bytes),artifact.digest);
-      const raw=decodeReceipt(bytes,remaining),receipt=JSON.parse(raw);locator.proofSha256=sha(raw);
+      const raw=decodeReceipt(bytes,remaining,contractId===SOURCE_FIRST_NATIVE_KIND?'source-tree-content-proof.json':'source-targeted-impact-proof.json'),receipt=JSON.parse(raw);locator.proofSha256=sha(raw);
       locatorIdentity(locator,env);
+      const isSource=contractId===SOURCE_FIRST_NATIVE_KIND;
+      if(isSource){
+        assert.equal(receipt.schemaVersion,1);assert.equal(receipt.kind,SOURCE_FIRST_NATIVE_KIND);
+        assert(['SOURCE_FIRST_ISSUANCE','SOURCE_CURRENT_UNCHANGED'].includes(receipt.qualification));
+        assert.equal(receipt.headSha,pull.head.sha);assert.equal(receipt.sourceTreeSha256,sourceTreeSha256);
+        assert.equal(receipt.privatePayloadIncluded,false);
+      }else{
        const isDomain=contractId===DOMAIN_TARGETED_SOURCE_CONTRACT,isCurrent=contractId===CURRENT_CONTRACT_SOURCE_CONTRACT;
        assert.equal(receipt.schemaVersion,isCurrent?3:isDomain?2:1);assert.equal(receipt.contractId,contractId);
        assert.equal(receipt.kind,isCurrent?CURRENT_CONTRACT_SOURCE_KIND:isDomain?DOMAIN_TARGETED_SOURCE_KIND:TARGETED_SOURCE_KIND);
@@ -329,6 +344,7 @@ export async function discoverTargetedSourceGate(env,sourceTreeSha256,dependenci
       assert.equal(receipt.artifactName,artifactName);assert.equal(receipt.privatePayloadIncluded,false);
       assert.deepEqual(receipt.current,{repository:locator.repository,head:locator.producerHeadSha,
         sourceTreeSha256,pullRequest:locator.pullRequestNumber,runId:run.id,runAttempt:1,jobId:job.id});
+      }
       remaining();
       return {locator,requiresVerification:true,deliveryAuthority:false};
      }

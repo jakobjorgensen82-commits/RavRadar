@@ -1,4 +1,3 @@
-import { projectPagesClosureHistoricalTestInput as historicalPagesInput } from './lib/pages-closure-historical-test-input.mjs';
 import assert from 'node:assert/strict';
 import { inverseCompletedRuntimeWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
 import fs from 'node:fs/promises';
@@ -18,8 +17,8 @@ for (const file of ['scripts/lib/verified-protected-progress-components.mjs',
     'The operational recovery helpers must remain in the producer inventory');
 }
 
-const workflow = inverseCompletedRuntimeWorkflow(historicalPagesInput((await fs.readFile('.github/workflows/reusable-weather-build.yml', 'utf8'))
-  .replace(/\r\n/g, '\n'), 'build'), 'build');
+const workflow = inverseCompletedRuntimeWorkflow((await fs.readFile('.github/workflows/reusable-weather-build.yml', 'utf8'))
+  .replace(/\r\n/g, '\n'), 'build');
 const step = name => {
   const start = workflow.indexOf(`      - name: ${name}\n`);
   assert.ok(start >= 0, `missing ${name}`);
@@ -351,6 +350,10 @@ const ownedRawAction = ownedRawFilePath(new URL('../.github/actions/save-owned-d
 const ownedRawSource = await fs.readFile(ownedRawAction, 'utf8');
 const ownedRawPackage = await fs.readFile(path.join(path.dirname(ownedRawAction), 'package.json'), 'utf8');
 const ownedRawLock = await fs.readFile(path.join(path.dirname(ownedRawAction), 'package-lock.json'), 'utf8');
+// Receipt DATA follows the lock whose complete legacy/Source phase the actual
+// runOwnedDistribution validates first. This digest grants no admission.
+const ownedRawReceiptLockSha256 = crypto.createHash('sha256')
+  .update(ownedRawLock.replace(/\r\n/g, '\n')).digest('hex');
 
 // Run the actual workflow validator body: no copied validator, no provider or cache API.
 // Non-Linux hosts retain the static contract; a skip is not actual Bash evidence.
@@ -596,11 +599,27 @@ testOwnedRawCache('owned raw cache: fixed API and physically separate owner rece
       assert.deepEqual(value.outputs, []);
       assert.equal(value.events.includes('release'), false);
       await value.finish({ api: { schemaVersion: 1, kind: 'DMI_RAW_DISTRIBUTION_READY',
-        apiVersion: '6.1.0', lockSha256: '9bd935a0c94f605ab28b4cc1ea543173bb06e213ba779e6e9855e31a4dd6a9a5' } });
+        apiVersion: '6.1.0', lockSha256: ownedRawReceiptLockSha256 } });
       const result = await operation;
       assert.equal(result.distributionReady, true);
       assert.equal(Object.hasOwn(result, 'saved'), false);
       assert.deepEqual(value.outputs, ['distribution_ready=true\n']);
+      assert.equal(value.events.includes('release'), true);
+      assert.equal(value.events.includes('retain'), false);
+      value.dispose();
+    });
+    await t.test('distribution receipt from the other admitted phase is refused after physical closure', async () => {
+      const value = fixture({ distribution: true });
+      const operation = value.runOwnedDistribution();
+      const rejected = assert.rejects(operation, /DMI_RAW_DISTRIBUTION_NOT_READY/);
+      await value.started;
+      const otherLock = ownedRawReceiptLockSha256 === '9bd935a0c94f605ab28b4cc1ea543173bb06e213ba779e6e9855e31a4dd6a9a5'
+        ? '920ad50fc3b7084879c1257d5b11e0e3ce52367b42f05871ffc68f8a66f66c47'
+        : '9bd935a0c94f605ab28b4cc1ea543173bb06e213ba779e6e9855e31a4dd6a9a5';
+      await value.finish({ api: { schemaVersion: 1, kind: 'DMI_RAW_DISTRIBUTION_READY',
+        apiVersion: '6.1.0', lockSha256: otherLock } });
+      await rejected;
+      assert.deepEqual(value.outputs, []);
       assert.equal(value.events.includes('release'), true);
       assert.equal(value.events.includes('retain'), false);
       value.dispose();
@@ -625,7 +644,7 @@ testOwnedRawCache('owned raw cache: fixed API and physically separate owner rece
       await value.started;
       await value.finish({ closure: null, api: { schemaVersion: 1,
         kind: 'DMI_RAW_DISTRIBUTION_READY', apiVersion: '6.1.0',
-        lockSha256: '9bd935a0c94f605ab28b4cc1ea543173bb06e213ba779e6e9855e31a4dd6a9a5' } });
+        lockSha256: ownedRawReceiptLockSha256 } });
       await rejected;
       assert.deepEqual(value.outputs, []);
       assert.equal(value.events.includes('release'), false);

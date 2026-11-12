@@ -50,7 +50,8 @@ async function verifiedTargetedSourceProof(record, context, sourceTreeSha256) {
         GIT_CONFIG_KEY_0: 'protocol.allow', GIT_CONFIG_VALUE_0: 'never' },
     });
     let locator = ['weather-source-targeted-impact-v1', 'weather-source-targeted-domains-v2',
-      'weather-source-current-contracts-v3'].includes(record?.contractId) ? record : null;
+      'weather-source-current-contracts-v3',
+      'RAVRADAR_SOURCE_AFTER598_PR_NATIVE_POSTGRES_PHASE_V1'].includes(record?.contractId) ? record : null;
     if (!locator) {
       const found = await discoverTargetedSourceGate(context, sourceTreeSha256, { ...access, readGit });
       if (!found.locator || found.requiresVerification !== true) return null;
@@ -82,9 +83,20 @@ if (mode === 'digest' || mode === 'impact-digest') {
   let impact = null;
   if (mode === 'impact-digest') {
     const { coordinateTargetedSourceProducer } = await import('./source-targeted-producer.mjs');
-    impact = await coordinateTargetedSourceProducer();
+    const { prepareSourceCurrentValidation } = await import('./source-first-issuance-contracts.mjs');
+    impact = await prepareSourceCurrentValidation();
+    if (!impact) impact = await coordinateTargetedSourceProducer();
   }
-  if (impact?.selection === 'TARGETED') {
+  if (['SOURCE_FIRST_ISSUANCE','SOURCE_CURRENT_UNCHANGED'].includes(impact?.selection)) {
+    await fs.mkdir('.cache', { recursive: true });
+    const owned = await fs.lstat('.cache');
+    if (!owned.isDirectory() || owned.isSymbolicLink()) throw new Error('Source cache must be an owned directory');
+    await fs.writeFile(impact.receiptPath, JSON.stringify(impact.proof)+'\n', {flag:'wx'});
+    await fs.appendFile(env.GITHUB_OUTPUT, 'selection='+impact.selection+'\n'
+      +'source_tree_sha256='+impact.current.sourceTreeSha256+'\n'
+      +'artifact_name='+impact.artifactName+'\nreceipt_path='+impact.receiptPath+'\n');
+    console.log('Source validation prepared; current contracts and actual Source native execution remain mandatory.');
+  } else if (impact?.selection === 'TARGETED') {
     if (impact.receiptPath !== '.cache/source-targeted-impact-proof.json') {
       throw new Error('Targeted source receipt destination differs from the fixed contract');
     }

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 import { mergeHourlyPreferDmi, bulkZoneToForecastRecord,
-  buildPartDmiForecastWithProtectedRetention, buildPrivateDmiRecoveryRecord }
+  buildPartDmiForecastWithProtectedRetention, buildRetainedScalarPartDmiForecast, buildPrivateDmiRecoveryRecord }
   from './lib/private-dmi-recovery-record.mjs';
 import { createProtectedDmiNativeCurrentInspector, buildProtectedDmiNativeCurrentProofs } from './lib/protected-dmi-native-current-proofs.mjs';
 import {
@@ -379,8 +379,8 @@ const planningFeature = { type: "Feature", geometry: { type: "Point", coordinate
 const beforePlanning = structuredClone(planningActive);
 const planningNormal = buildPartDmiForecastWithProtectedRetention(
   planningFeature, planningActive, nativeHistorical, time(0), planningInputs);
-const planningOnly = buildPartDmiForecastWithProtectedRetention(
-  planningFeature, planningActive, nativeHistorical, time(0), { ...planningInputs, scalarPlanningOnly: true });
+const planningOnly = buildRetainedScalarPartDmiForecast(
+  planningFeature, planningActive, nativeHistorical, time(0), planningInputs);
 const planningScalars = record => record.hourly.map(hour => ({
   time: hour.time, windSpeedMps: hour.windSpeedMps, windDirectionDeg: hour.windDirectionDeg,
   waterLevelCm: hour.waterLevelCm, waterLevelTrendCm3h: hour.waterLevelTrendCm3h,

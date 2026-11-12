@@ -3,6 +3,11 @@ name: Reusable exact RavScore operational reentry
 on:
   workflow_call:
     inputs:
+      source_normal_finalize:
+        description: "Allow exact same-head ordinary SOURCE post-Pages receipt completion"
+        required: false
+        type: boolean
+        default: false
       geometry_only:
         type: boolean
         default: false
@@ -104,6 +109,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SOURCE_NORMAL_FINALIZE: ${{ inputs.source_normal_finalize }}
         run: |
           set -euo pipefail
           recovery_bundle_name="ravscore-operational-pages-redeploy-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
@@ -165,6 +171,18 @@ jobs:
             esac
           fi
           if [ "$(jq -r '.pending' "$RAVRADAR_OPERATIONAL_WORK/current.json")" != "true" ]; then
+            if test "$SOURCE_NORMAL_FINALIZE" = true; then
+              disposition="$(node scripts/source-post-pages-integrated-reentry.mjs)"
+              case "$disposition" in
+                SOURCE_INTEGRATED_RESEALED)
+                  echo "recovery_action=$disposition" >> "$GITHUB_OUTPUT"
+                  echo "Recovered the original integrated publication receipt."
+                  exit 0
+                  ;;
+                NONE) ;;
+                *) echo "Unknown ordinary SOURCE reentry result." >&2; exit 1 ;;
+              esac
+            fi
             node scripts/protected-operational-reentry-evidence.mjs --assert-pages-writes-closed \
               --repository "$GITHUB_REPOSITORY" --output "$RAVRADAR_OPERATIONAL_WORK/pages-writer-closure.json"
             echo "No durable RavScore transition requires reconciliation."
@@ -199,6 +217,10 @@ jobs:
             --dir "$RAVRADAR_OPERATIONAL_WORK/recovery"
           historical_recovery_status=$?
           set -e
+          if [ "$durable_target_status" -ne 0 ] && jq -e '.disposition == "SAVED_PAIR_READBACK_VERIFIED"' "$RAVRADAR_OPERATIONAL_WORK/handoff/checkpoint-disposition.json" >/dev/null; then
+            echo "The saved-pair target needs its already durable evidence; refusing legacy backfill." >&2
+            exit 1
+          fi
 
           source_model="$(jq -r '.model' "$RAVRADAR_OPERATIONAL_WORK/current.json")"
           source_manifest_sha256="$(jq -r '.sourcePublicManifestSha256' "$RAVRADAR_OPERATIONAL_WORK/current.json")"
@@ -439,7 +461,13 @@ jobs:
           model="$(jq -r '.model' "$RAVRADAR_OPERATIONAL_WORK/activation-classification.json")"
 
           validate_checkpoint_disposition() {
-            CHECKPOINT_HANDOFF_ROOT="$RAVRADAR_OPERATIONAL_WORK/handoff" CHECKPOINT_EXPECTED_HEAD="$pending_head" CHECKPOINT_TARGET_MANIFEST="$RAVRADAR_OPERATIONAL_WORK/target-manifest.json" node --input-type=module <<'NODE'
+            CHECKPOINT_HANDOFF_ROOT="$RAVRADAR_OPERATIONAL_WORK/handoff" CHECKPOINT_EXPECTED_HEAD="$pending_head" \
+              CHECKPOINT_TARGET_MANIFEST="$RAVRADAR_OPERATIONAL_WORK/target-manifest.json" \
+              CHECKPOINT_PENDING_IDENTITY="$RAVRADAR_OPERATIONAL_WORK/pending-identity.json" \
+              CHECKPOINT_PENDING_CURRENT="$RAVRADAR_OPERATIONAL_WORK/current.json" \
+              CHECKPOINT_ARTIFACT_SEAL="$artifact_seal" \
+              CHECKPOINT_PRE_ACTIVATION="$(jq -r '.action != "NONE"' "$RAVRADAR_OPERATIONAL_WORK/pre-activation.json")" \
+              node --input-type=module <<'NODE'
           import fs from 'node:fs';
           import path from 'node:path';
           import { sha256CanonicalJson } from './scripts/ravscore-operational-pages-recovery.mjs';
@@ -453,6 +481,44 @@ jobs:
           const runtimeAudit = read('checkpoint-runtime-audit.json');
           const expectedKeys = ['bindingSha256','checkpointRequired','datasetId','disposition','privatePayloadIncluded','rollbackActivationReady','rollbackStatus','runtimeAuditSha256','schemaVersion','sourceHead'].sort();
           const fail = (message) => { throw new Error(`Historical checkpoint disposition validation failed: ${message}`); };
+          if (disposition.disposition === 'SAVED_PAIR_READBACK_VERIFIED') {
+            if (process.env.CHECKPOINT_PRE_ACTIVATION !== 'false') fail('saved-pair pre-activation scope');
+            const readPath = name => JSON.parse(fs.readFileSync(process.env[name], 'utf8'));
+            const pending = readPath('CHECKPOINT_PENDING_IDENTITY');
+            const live = readPath('CHECKPOINT_PENDING_CURRENT');
+            const artifactSeal = readPath('CHECKPOINT_ARTIFACT_SEAL');
+            if (pending.schemaVersion !== 'ravscore-operational-pages-pending-identity-v1'
+              || pending.repository !== process.env.GITHUB_REPOSITORY
+              || pending.headSha !== process.env.CHECKPOINT_EXPECTED_HEAD
+              || pending.ref !== 'refs/heads/main' || pending.privatePayloadIncluded !== false
+              || pending.runAttempt !== 1 || pending.attemptId !== `pages-${pending.runId}-${pending.runAttempt}`
+              || live.pending !== true || live.status !== 'INTEGRATED_PENDING'
+              || live.model !== 'integrated' || live.requestedModel !== 'integrated'
+              || live.sourceHead !== pending.headSha || live.deploymentId !== pending.attemptId
+              || ['requestedAt', 'datasetId', 'productionReferenceAt', 'sourcePublicManifestSha256',
+                'requestedPublicManifestSha256', 'requestedImplementationClosureSha256']
+                .some(key => live[key] !== pending[key])
+              || sha256CanonicalJson(live.requestedModelBinding) !== sha256CanonicalJson(pending.requestedModelBinding)) {
+              fail('saved-pair pending identity');
+            }
+            const { assertSourceSavedPairPagesProof } = await import('./scripts/lib/source-saved-pair-pages-proof.mjs');
+            const { verifySavedSourcePairPublishedPins } = await import('./scripts/reconcile-private-runtime-checkpoint.mjs');
+            const savedPair = assertSourceSavedPairPagesProof({
+              handoff, manifest: handoffManifest, runtimeAudit: runtimeAudit, disposition, artifactSeal,
+              expectedIdentity: {
+                repository: pending.repository, sourceHead: pending.headSha,
+                runId: pending.runId, runAttempt: pending.runAttempt,
+              },
+            });
+            if (savedPair.targetManifestSha256 !== pending.requestedPublicManifestSha256
+              || sha256CanonicalJson(targetManifest) !== savedPair.targetManifestSha256
+              || artifactSeal.targetImplementationClosureSha256 !== pending.requestedImplementationClosureSha256
+              || sha256CanonicalJson(artifactSeal.targetModelBinding) !== sha256CanonicalJson(pending.requestedModelBinding)) {
+              fail('saved-pair pending target');
+            }
+            if (await verifySavedSourcePairPublishedPins({ savedPair }) !== true) fail('saved-pair readback');
+            process.exit(0);
+          }
           if (handoff.schemaVersion !== 'ravscore-operational-deploy-handoff-v2' || disposition.schemaVersion !== 'ravscore-continuation-checkpoint-disposition-v1') fail('schema');
           if (JSON.stringify(Object.keys(disposition).sort()) !== JSON.stringify(expectedKeys)) fail('unexpected disposition fields');
           if (disposition.sourceHead !== process.env.CHECKPOINT_EXPECTED_HEAD || handoff.sourceHead !== process.env.CHECKPOINT_EXPECTED_HEAD) fail('source head');
@@ -514,6 +580,25 @@ jobs:
           fi
           git fetch --no-tags origin main
           test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
+          # Fasen læses i dette job; GITHUB_ENV ændrer ikke den aktuelle shell.
+          # Kun den autentificerede CURRENT-selector må vælge Source-kontrakten.
+          source_phase_args=()
+          if [ "$model" = "integrated" ]; then
+            readiness_source_phase="$(node --input-type=module -e '
+              import { createProtectedPrivateRuntimeClients } from "./scripts/protected-private-production-runtime.mjs";
+              import { selectProtectedReentryReadinessSourcePhase } from "./scripts/protected-operational-reentry-evidence.mjs";
+              const clients = createProtectedPrivateRuntimeClients({ storageBackend: "supabase" });
+              const phase = await selectProtectedReentryReadinessSourcePhase({ request: clients.documentRequest });
+              if (phase !== "source-producer-after597" && phase !== "assistant-mixed-after597-successor") throw new Error("Ukendt readinessfase");
+              process.stdout.write(phase);
+            ')"
+            case "$readiness_source_phase" in
+              source-producer-after597) source_phase_args=(--source-producer) ;;
+              assistant-mixed-after597-successor) ;;
+              *) echo "Ukendt readinessfase." >&2; exit 1 ;;
+            esac
+          fi
+
           if [ "$recovery_action" = "TARGET_RECONCILE" ]; then
             test "$activation_action" = "complete"
             node scripts/verify-ravscore-operational-pages-deployment.mjs \
@@ -542,7 +627,7 @@ jobs:
                 --plan "$RAVRADAR_OPERATIONAL_WORK/handoff/plan.json"
               )
             fi
-            node scripts/ravscore-operational-activation.mjs reconcile \
+            node scripts/ravscore-operational-activation.mjs reconcile "${source_phase_args[@]}" \
               --expected-version "$pending_version" \
               --manifest "$RAVRADAR_OPERATIONAL_WORK/public-manifest.json" \
               --observations "$RAVRADAR_OPERATIONAL_WORK/activation-observations.json" \
@@ -613,7 +698,7 @@ jobs:
               && [ "$(jq -r '.bindingCurrent' "$RAVRADAR_OPERATIONAL_WORK/current.json")" != "true" ]; then
               source_args+=(--plan "$RAVRADAR_OPERATIONAL_WORK/handoff/plan.json")
             fi
-            node scripts/ravscore-operational-activation.mjs reconcile \
+            node scripts/ravscore-operational-activation.mjs reconcile "${source_phase_args[@]}" \
               --expected-version "$pending_version" \
               --manifest "$RAVRADAR_OPERATIONAL_WORK/public-manifest.json" \
               --observations "$RAVRADAR_OPERATIONAL_WORK/activation-observations.json" \
@@ -692,6 +777,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          CHECKPOINT_PRE_ACTIVATION: ${{ needs.reconcile-operational-pending.outputs.pre_activation }}
         run: |
           set -euo pipefail
           bundle="$RAVRADAR_OPERATIONAL_WORK/bundle"
@@ -747,7 +833,14 @@ jobs:
           CHECKPOINT_HANDOFF_ROOT="$bundle/handoff"
           CHECKPOINT_EXPECTED_HEAD="$pending_head"
           CHECKPOINT_TARGET_MANIFEST="$RAVRADAR_OPERATIONAL_WORK/target-site/data/live/manifest.json"
-          CHECKPOINT_HANDOFF_ROOT="$CHECKPOINT_HANDOFF_ROOT" CHECKPOINT_EXPECTED_HEAD="$CHECKPOINT_EXPECTED_HEAD" CHECKPOINT_TARGET_MANIFEST="$CHECKPOINT_TARGET_MANIFEST" node --input-type=module <<'NODE'
+          validate_checkpoint_disposition() {
+          CHECKPOINT_HANDOFF_ROOT="$CHECKPOINT_HANDOFF_ROOT" CHECKPOINT_EXPECTED_HEAD="$CHECKPOINT_EXPECTED_HEAD" \
+            CHECKPOINT_TARGET_MANIFEST="$CHECKPOINT_TARGET_MANIFEST" \
+            CHECKPOINT_PENDING_IDENTITY="$bundle/pending-identity.json" \
+            CHECKPOINT_PENDING_CURRENT="$RAVRADAR_OPERATIONAL_WORK/current-predeploy-pending.json" \
+            CHECKPOINT_ARTIFACT_SEAL="$bundle/pages-artifact-seal.json" \
+            CHECKPOINT_PRE_ACTIVATION="$CHECKPOINT_PRE_ACTIVATION" \
+            node --input-type=module <<'NODE'
           import fs from 'node:fs';
           import path from 'node:path';
           import { sha256CanonicalJson } from './scripts/ravscore-operational-pages-recovery.mjs';
@@ -760,6 +853,44 @@ jobs:
           const audit = read('checkpoint-runtime-audit.json');
           const keys = ['bindingSha256','checkpointRequired','datasetId','disposition','privatePayloadIncluded','rollbackActivationReady','rollbackStatus','runtimeAuditSha256','schemaVersion','sourceHead'].sort();
           const fail = (message) => { throw new Error(`Recovery checkpoint disposition validation failed: ${message}`); };
+          if (disposition.disposition === 'SAVED_PAIR_READBACK_VERIFIED') {
+            if (process.env.CHECKPOINT_PRE_ACTIVATION !== 'false') fail('saved-pair pre-activation scope');
+            const readPath = name => JSON.parse(fs.readFileSync(process.env[name], 'utf8'));
+            const pending = readPath('CHECKPOINT_PENDING_IDENTITY');
+            const live = readPath('CHECKPOINT_PENDING_CURRENT');
+            const artifactSeal = readPath('CHECKPOINT_ARTIFACT_SEAL');
+            if (pending.schemaVersion !== 'ravscore-operational-pages-pending-identity-v1'
+              || pending.repository !== process.env.GITHUB_REPOSITORY
+              || pending.headSha !== process.env.CHECKPOINT_EXPECTED_HEAD
+              || pending.ref !== 'refs/heads/main' || pending.privatePayloadIncluded !== false
+              || pending.runAttempt !== 1 || pending.attemptId !== `pages-${pending.runId}-${pending.runAttempt}`
+              || live.pending !== true || live.status !== 'INTEGRATED_PENDING'
+              || live.model !== 'integrated' || live.requestedModel !== 'integrated'
+              || live.sourceHead !== pending.headSha || live.deploymentId !== pending.attemptId
+              || ['requestedAt', 'datasetId', 'productionReferenceAt', 'sourcePublicManifestSha256',
+                'requestedPublicManifestSha256', 'requestedImplementationClosureSha256']
+                .some(key => live[key] !== pending[key])
+              || sha256CanonicalJson(live.requestedModelBinding) !== sha256CanonicalJson(pending.requestedModelBinding)) {
+              fail('saved-pair pending identity');
+            }
+            const { assertSourceSavedPairPagesProof } = await import('./scripts/lib/source-saved-pair-pages-proof.mjs');
+            const { verifySavedSourcePairPublishedPins } = await import('./scripts/reconcile-private-runtime-checkpoint.mjs');
+            const savedPair = assertSourceSavedPairPagesProof({
+              handoff, manifest: manifest, runtimeAudit: audit, disposition, artifactSeal,
+              expectedIdentity: {
+                repository: pending.repository, sourceHead: pending.headSha,
+                runId: pending.runId, runAttempt: pending.runAttempt,
+              },
+            });
+            if (savedPair.targetManifestSha256 !== pending.requestedPublicManifestSha256
+              || sha256CanonicalJson(targetManifest) !== savedPair.targetManifestSha256
+              || artifactSeal.targetImplementationClosureSha256 !== pending.requestedImplementationClosureSha256
+              || sha256CanonicalJson(artifactSeal.targetModelBinding) !== sha256CanonicalJson(pending.requestedModelBinding)) {
+              fail('saved-pair pending target');
+            }
+            if (await verifySavedSourcePairPublishedPins({ savedPair }) !== true) fail('saved-pair readback');
+            process.exit(0);
+          }
           if (handoff.schemaVersion !== 'ravscore-operational-deploy-handoff-v2' || disposition.schemaVersion !== 'ravscore-continuation-checkpoint-disposition-v1') fail('schema');
           if (JSON.stringify(Object.keys(disposition).sort()) !== JSON.stringify(keys)) fail('unexpected disposition fields');
           if (handoff.sourceHead !== process.env.CHECKPOINT_EXPECTED_HEAD || disposition.sourceHead !== process.env.CHECKPOINT_EXPECTED_HEAD) fail('source head');
@@ -780,6 +911,11 @@ jobs:
             if (handoff.checkpointBuildOutcome !== 'skipped' || handoff.checkpointSaveOutcome !== 'skipped' || handoff.checkpointPublishOutcome !== 'skipped') fail('warm-up result proof');
           } else fail('unsupported disposition');
           NODE
+          }
+          checkpoint_disposition="$(jq -r '.disposition' "$bundle/handoff/checkpoint-disposition.json")"
+          if [ "$checkpoint_disposition" != "SAVED_PAIR_READBACK_VERIFIED" ]; then
+            validate_checkpoint_disposition
+          fi
           for observation_number in 1 2; do
             curl --fail --silent --show-error --location --retry 3 \
               --header 'Cache-Control: no-cache' \
@@ -830,6 +966,11 @@ jobs:
             recoverySourceSha256: pending.sourcePublicManifestSha256,
           });
           NODE
+          if [ "$checkpoint_disposition" = "SAVED_PAIR_READBACK_VERIFIED" ]; then
+            test "$CHECKPOINT_PRE_ACTIVATION" = false
+            node scripts/ravscore-operational-activation.mjs read --output "$RAVRADAR_OPERATIONAL_WORK/current-predeploy-pending.json"
+            validate_checkpoint_disposition
+          fi
           echo "action=$recovery_action" >> "$GITHUB_OUTPUT"
 
       - name: Configure GitHub Pages for exact-target recovery
@@ -1032,6 +1173,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          CHECKPOINT_PRE_ACTIVATION: ${{ needs.reconcile-operational-pending.outputs.pre_activation }}
         run: |
           set -euo pipefail
           bundle="$RAVRADAR_OPERATIONAL_WORK/bundle"
@@ -1143,7 +1285,13 @@ jobs:
           CHECKPOINT_HANDOFF_ROOT="$handoff"
           CHECKPOINT_EXPECTED_HEAD="$pending_head"
           CHECKPOINT_TARGET_MANIFEST="$RAVRADAR_OPERATIONAL_WORK/public-manifest.json"
-          CHECKPOINT_HANDOFF_ROOT="$CHECKPOINT_HANDOFF_ROOT" CHECKPOINT_EXPECTED_HEAD="$CHECKPOINT_EXPECTED_HEAD" CHECKPOINT_TARGET_MANIFEST="$CHECKPOINT_TARGET_MANIFEST" node --input-type=module <<'NODE'
+          CHECKPOINT_HANDOFF_ROOT="$CHECKPOINT_HANDOFF_ROOT" CHECKPOINT_EXPECTED_HEAD="$CHECKPOINT_EXPECTED_HEAD" \
+            CHECKPOINT_TARGET_MANIFEST="$CHECKPOINT_TARGET_MANIFEST" \
+            CHECKPOINT_PENDING_IDENTITY="$bundle/pending-identity.json" \
+            CHECKPOINT_PENDING_CURRENT="$RAVRADAR_OPERATIONAL_WORK/current-before-cas.json" \
+            CHECKPOINT_ARTIFACT_SEAL="$bundle/pages-artifact-seal.json" \
+            CHECKPOINT_PRE_ACTIVATION="$CHECKPOINT_PRE_ACTIVATION" \
+            node --input-type=module <<'NODE'
           import fs from 'node:fs';
           import path from 'node:path';
           import { sha256CanonicalJson } from './scripts/ravscore-operational-pages-recovery.mjs';
@@ -1156,6 +1304,44 @@ jobs:
           const audit = read('checkpoint-runtime-audit.json');
           const keys = ['bindingSha256','checkpointRequired','datasetId','disposition','privatePayloadIncluded','rollbackActivationReady','rollbackStatus','runtimeAuditSha256','schemaVersion','sourceHead'].sort();
           const fail = (message) => { throw new Error(`Recovery checkpoint disposition validation failed: ${message}`); };
+          if (disposition.disposition === 'SAVED_PAIR_READBACK_VERIFIED') {
+            if (process.env.CHECKPOINT_PRE_ACTIVATION !== 'false') fail('saved-pair pre-activation scope');
+            const readPath = name => JSON.parse(fs.readFileSync(process.env[name], 'utf8'));
+            const pending = readPath('CHECKPOINT_PENDING_IDENTITY');
+            const live = readPath('CHECKPOINT_PENDING_CURRENT');
+            const artifactSeal = readPath('CHECKPOINT_ARTIFACT_SEAL');
+            if (pending.schemaVersion !== 'ravscore-operational-pages-pending-identity-v1'
+              || pending.repository !== process.env.GITHUB_REPOSITORY
+              || pending.headSha !== process.env.CHECKPOINT_EXPECTED_HEAD
+              || pending.ref !== 'refs/heads/main' || pending.privatePayloadIncluded !== false
+              || pending.runAttempt !== 1 || pending.attemptId !== `pages-${pending.runId}-${pending.runAttempt}`
+              || live.pending !== true || live.status !== 'INTEGRATED_PENDING'
+              || live.model !== 'integrated' || live.requestedModel !== 'integrated'
+              || live.sourceHead !== pending.headSha || live.deploymentId !== pending.attemptId
+              || ['requestedAt', 'datasetId', 'productionReferenceAt', 'sourcePublicManifestSha256',
+                'requestedPublicManifestSha256', 'requestedImplementationClosureSha256']
+                .some(key => live[key] !== pending[key])
+              || sha256CanonicalJson(live.requestedModelBinding) !== sha256CanonicalJson(pending.requestedModelBinding)) {
+              fail('saved-pair pending identity');
+            }
+            const { assertSourceSavedPairPagesProof } = await import('./scripts/lib/source-saved-pair-pages-proof.mjs');
+            const { verifySavedSourcePairPublishedPins } = await import('./scripts/reconcile-private-runtime-checkpoint.mjs');
+            const savedPair = assertSourceSavedPairPagesProof({
+              handoff, manifest: manifest, runtimeAudit: audit, disposition, artifactSeal,
+              expectedIdentity: {
+                repository: pending.repository, sourceHead: pending.headSha,
+                runId: pending.runId, runAttempt: pending.runAttempt,
+              },
+            });
+            if (savedPair.targetManifestSha256 !== pending.requestedPublicManifestSha256
+              || sha256CanonicalJson(targetManifest) !== savedPair.targetManifestSha256
+              || artifactSeal.targetImplementationClosureSha256 !== pending.requestedImplementationClosureSha256
+              || sha256CanonicalJson(artifactSeal.targetModelBinding) !== sha256CanonicalJson(pending.requestedModelBinding)) {
+              fail('saved-pair pending target');
+            }
+            if (await verifySavedSourcePairPublishedPins({ savedPair }) !== true) fail('saved-pair readback');
+            process.exit(0);
+          }
           if (handoff.schemaVersion !== 'ravscore-operational-deploy-handoff-v2' || disposition.schemaVersion !== 'ravscore-continuation-checkpoint-disposition-v1') fail('schema');
           if (JSON.stringify(Object.keys(disposition).sort()) !== JSON.stringify(keys)) fail('unexpected disposition fields');
           if (handoff.sourceHead !== process.env.CHECKPOINT_EXPECTED_HEAD || disposition.sourceHead !== process.env.CHECKPOINT_EXPECTED_HEAD) fail('source head');
@@ -1192,7 +1378,26 @@ jobs:
             echo "Recovered target has an unsupported model." >&2
             exit 1
           fi
-          node scripts/ravscore-operational-activation.mjs reconcile \
+          # Fasen læses i dette job; GITHUB_ENV ændrer ikke den aktuelle shell.
+          # Kun den autentificerede CURRENT-selector må vælge Source-kontrakten.
+          source_phase_args=()
+          if [ "$model" = "integrated" ]; then
+            readiness_source_phase="$(node --input-type=module -e '
+              import { createProtectedPrivateRuntimeClients } from "./scripts/protected-private-production-runtime.mjs";
+              import { selectProtectedReentryReadinessSourcePhase } from "./scripts/protected-operational-reentry-evidence.mjs";
+              const clients = createProtectedPrivateRuntimeClients({ storageBackend: "supabase" });
+              const phase = await selectProtectedReentryReadinessSourcePhase({ request: clients.documentRequest });
+              if (phase !== "source-producer-after597" && phase !== "assistant-mixed-after597-successor") throw new Error("Ukendt readinessfase");
+              process.stdout.write(phase);
+            ')"
+            case "$readiness_source_phase" in
+              source-producer-after597) source_phase_args=(--source-producer) ;;
+              assistant-mixed-after597-successor) ;;
+              *) echo "Ukendt readinessfase." >&2; exit 1 ;;
+            esac
+          fi
+
+          node scripts/ravscore-operational-activation.mjs reconcile "${source_phase_args[@]}" \
             --expected-version "$pending_version" \
             --manifest "$RAVRADAR_OPERATIONAL_WORK/public-manifest.json" \
             --observations "$RAVRADAR_OPERATIONAL_WORK/activation-observations.json" \
@@ -1386,9 +1591,9 @@ jobs:
           set -euo pipefail
           closure="$(jq -er '.targetImplementationClosureSha256' "$RAVRADAR_OPERATIONAL_HANDOFF/pages-artifact-seal.json")"
           source_closure="$(jq -er '.sourceCurrent.activeImplementationClosureSha256' "$RAVRADAR_OPERATIONAL_HANDOFF/pre-activation.json")"
-          node scripts/integrated-cutover-readiness.mjs publish \
+          node scripts/integrated-cutover-readiness.mjs publish ${{ env.RAVRADAR_OPERATIONAL_READINESS_SOURCE_PHASE == 'source-producer-after597' && '--source-producer' || '' }} \
             --public-implementation-closure-sha256 "$closure" --output "$RAVRADAR_OPERATIONAL_WORK/integrated-readiness.json"
-          node scripts/ravscore-operational-activation.mjs prepare-integrated-historical-maintenance \
+          node scripts/ravscore-operational-activation.mjs prepare-integrated-historical-maintenance ${{ env.RAVRADAR_OPERATIONAL_READINESS_SOURCE_PHASE == 'source-producer-after597' && '--source-producer' || '' }} \
             --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json" --audit "$RAVRADAR_OPERATIONAL_HANDOFF/public-audit.json" \
             --source-implementation-closure-sha256 "$source_closure" --requested-implementation-closure-sha256 "$closure" \
             --output "$RAVRADAR_OPERATIONAL_WORK/plan.json"
@@ -1516,6 +1721,14 @@ jobs:
             EXACT_TARGET_REDEPLOY)
               test "$EXACT_TARGET_RESULT" = "success"
               test "$FINALIZE_RESULT" = "success"
+              ;;
+            SOURCE_INTEGRATED_RESEALED)
+              test "$HAS_PHASE" = "false"
+              test "$RESUME_RESULT" = "skipped"
+              test "$RESUME_PAGES_RESULT" = "skipped"
+              test "$PHASE_COMPLETE_RESULT" = "skipped"
+              test "$EXACT_TARGET_RESULT" = "skipped"
+              test "$FINALIZE_RESULT" = "skipped"
               ;;
             NONE|SAFE_SOURCE_ABORT|TARGET_RECONCILE)
               test "$EXACT_TARGET_RESULT" = "skipped"
