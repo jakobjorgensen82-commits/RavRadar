@@ -813,7 +813,34 @@ test('closed ordinary phase retires only its authenticated unchanged-model defau
       /WRITE_CLOSURE_UNKNOWN/,'bootstrap rejects unresolved A before source backfill could evict it');
     assert.deepEqual(state.row(),beforeBootstrap);
     const writer={repository,runId:producerId,runAttempt:1,headSha:sourceHead,attemptId:'pages-55002-1'};
-    await p.registerProtectedPagesWriter({...common,owner:writer,env:env(producerId),baseUrl:'https://ravradar.dk'});
+    const publicObservations=[];
+    const pagesAliasFetch=async(url,options)=>{
+      if(String(url).includes('/data/live/manifest.json')){
+        const observed=new URL(url);
+        if(observed.origin==='https://jakobjorgensen82-commits.github.io')
+          throw new TypeError('fetch failed',{cause:new Error('unexpected redirect')});
+        assert.equal(observed.origin,'https://ravradar.dk','the permitted Pages alias must use its fixed canonical origin');
+        assert.equal(observed.pathname,'/data/live/manifest.json');
+        assert.equal(options.redirect,'error','arbitrary response redirects remain forbidden');
+        assert.equal(options.cache,'no-store');assert.equal(options.headers['Cache-Control'],'no-cache');
+        publicObservations.push(observed.href);
+      }
+      return fetchImpl(url,options);
+    };
+    const beforePublicObservation=clone(state.row());
+    for(const [baseUrl,publicResponse,error] of [
+      ['https://untrusted.invalid',null,/Public source observation base differs/],
+      ['https://ravradar.dk',new Response('',{status:302}),/Public source observation unavailable/],
+      ['https://ravradar.dk',new Response(JSON.stringify({...source.manifest,datasetId:'rr-changed-source-210'})),/Public source changed/],
+    ]){
+      await assert.rejects(p.registerProtectedPagesWriter({...common,owner:writer,env:env(producerId),baseUrl,
+        fetchImpl:(url,options)=>String(url).includes('/data/live/manifest.json')?Promise.resolve(publicResponse):fetchImpl(url,options)}),error);
+      assert.deepEqual(state.row(),beforePublicObservation,'invalid public observations cannot reserve the writer or change its protected target');
+    }
+    await p.registerProtectedPagesWriter({...common,owner:writer,env:env(producerId),
+      baseUrl:'https://jakobjorgensen82-commits.github.io/RavRadar',fetchImpl:pagesAliasFetch});
+    assert.equal(publicObservations.length,2,'both fresh observations use the canonical public origin');
+    assert.notEqual(publicObservations[0],publicObservations[1],'each observation keeps its fresh nonce');
     const firstReservation=clone(state.row());
     assert.deepEqual(firstReservation.payload.pagesWrite.owner,writer,'ordinary A has the same single durable writer slot');
     const readbackArgs={...common,owner:writer,seal:target.seal,sourceManifest:source.manifest};

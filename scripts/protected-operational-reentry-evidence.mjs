@@ -1055,11 +1055,15 @@ async function observeUnchangedSource({ baseUrl, expectedSha256, fetchImpl = fet
   const base = String(baseUrl ?? '').replace(/\/$/, '');
   if (!['https://ravradar.dk', 'https://jakobjorgensen82-commits.github.io/RavRadar'].includes(base))
     throw new Error('Public source observation base differs');
+  // Both permitted entry points publish the same canonical site. Its Pages
+  // alias redirects, so observe the fixed canonical origin without following
+  // any response redirect or weakening the expected manifest hash.
+  const canonicalBase = 'https://ravradar.dk';
   const { readBoundedPublicManifest } = await import('./lib/pages-generation-order.mjs');
   const observations=[];
   for (let index = 0; index < 2; index++) {
     if(index>0)await new Promise(resolve=>setTimeout(resolve,1000));
-    const response = await fetchImpl(base + '/data/live/manifest.json?pages-closure=' + crypto.randomBytes(12).toString('hex'),
+    const response = await fetchImpl(canonicalBase + '/data/live/manifest.json?pages-closure=' + crypto.randomBytes(12).toString('hex'),
       { redirect: 'error', cache: 'no-store', headers: { 'Cache-Control': 'no-cache' }, signal: AbortSignal.timeout(15_000) });
     if (!response.ok) throw new Error('Public source observation unavailable');
     const manifest = validateManifest(JSON.parse(await readBoundedPublicManifest(response)));

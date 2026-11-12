@@ -1,3 +1,9 @@
+## 12. november — fast offentlig hovedadresse før Pages-reservation
+
+Den nye afgrænsede kandidat retter en reproduceret transportfejl: den allerede tilladte Pages-adresse viderestiller til ravradar.dk, mens kildeobservationen afviser svar med viderestilling. Begge tilladte indgange bruger derfor den faste kanoniske adresse direkte. De to friske, fuldt hashkontrollerede manifestlæsninger, afvisning af andre viderestillinger og uændret fase/pointer før CAS bevares. Score, vejr, modelbinding, SQL og administratoropsætning ændres ikke.
+
+Den foregående målrettede kildekontrol bestod og er genbrugt gennem den faktiske main-forbruger. Denne rettelses egen kildekontrol og offentlig levering er fortsat åbne. Synkroniseringstimeoutens oprindelige årsag er et særskilt spor; alle fem mål består. Se DEC-0206 og håndbog89.340; faktisk kørselsstatus føres privat.
+
 ## 12. november – Første Pages-timeout og samlet reentrylukning er åbne
 
 **ÅBEN:** Rodårsagen til kørslerne #293 og #294 er ukendt. De særskilte senere fejl og rettelser beskrives med præcise kørsels-/PR-numre i DEC-0206, tillæg 12. november.
