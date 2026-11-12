@@ -8,9 +8,6 @@ on:
         required: false
         type: boolean
         default: false
-        required: false
-        type: boolean
-        default: false
       source_saved_pair_readback:
         required: false
         type: boolean
