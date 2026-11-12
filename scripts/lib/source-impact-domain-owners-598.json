@@ -12298,6 +12298,18 @@
             "afterBytes": 315893,
             "beforeSha256": "c086ef667c4e05964099d33423df69a7dbdb52b9ce9ff2778c8a18230f48fd3e",
             "afterSha256": "eff54ffe6f09db7f345b4bcdbef2e6a5b7224c6c03722d0c9014d0623d6073f7"
+          },
+          {
+            "path": "supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql",
+            "status": "M",
+            "beforeMode": "100644",
+            "afterMode": "100644",
+            "beforeBlob": "59df8bcdda5744748c9d46bd05337146d054d541",
+            "afterBlob": "d39c3949bf67339ea12924eaba13a69af32dabb9",
+            "beforeBytes": 2217062,
+            "afterBytes": 2219818,
+            "beforeSha256": "688c74045a523b010c100665eaf86c9353083af37863afa7378f6a004cfe8c8b",
+            "afterSha256": "2d1f5679c12ba1d5a1bd69447cd54d23cf42217a9cbd5e897ee4dd6400d519f8"
           }
         ],
         "adminUiFollowup": false
@@ -12976,6 +12988,18 @@
             "afterBytes": 7367,
             "beforeSha256": "8d668ce191ee60edc269294894ce2e5d2eb85641b1c9ab4c454dd35f446dbfd1",
             "afterSha256": "a1621f9103401b3812587ceace7eb83538126e0ce4433143e40581dffec7edf2"
+          },
+          {
+            "path": "supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql",
+            "status": "M",
+            "beforeMode": "100644",
+            "afterMode": "100644",
+            "beforeBlob": "59df8bcdda5744748c9d46bd05337146d054d541",
+            "afterBlob": "d39c3949bf67339ea12924eaba13a69af32dabb9",
+            "beforeBytes": 2217062,
+            "afterBytes": 2219818,
+            "beforeSha256": "688c74045a523b010c100665eaf86c9353083af37863afa7378f6a004cfe8c8b",
+            "afterSha256": "2d1f5679c12ba1d5a1bd69447cd54d23cf42217a9cbd5e897ee4dd6400d519f8"
           }
         ],
         "adminUiFollowup": true
