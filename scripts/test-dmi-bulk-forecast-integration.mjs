@@ -32,7 +32,8 @@ const bulkConverter = sharedRecordSource.slice(
   sharedRecordSource.indexOf('function bulkZoneToForecastRecord('),
   sharedRecordSource.indexOf('// END normal-record records'),
 );
-const protectedRetentionSource = sharedRecordSource.slice(
+const fixtureScalarSourceProofs = "const RETAINED_SCALAR_SOURCE_PROOFS = Symbol('fixture retained scalar source proofs');\n";
+const protectedRetentionSource = fixtureScalarSourceProofs + sharedRecordSource.slice(
   sharedRecordSource.indexOf('function buildPartDmiForecastWithProtectedRetention('),
   sharedRecordSource.indexOf('function verifiedFeggesundNeighborSource('),
 );
@@ -67,7 +68,7 @@ const integratedRuntime = source.slice(
   source.indexOf('function scoreCoastalPartsRuntime('),
   source.indexOf('// Shared recovery record: collections'),
 );
-const hourlyMerge = sharedRecordSource.slice(
+const hourlyMerge = fixtureScalarSourceProofs + sharedRecordSource.slice(
   sharedRecordSource.indexOf('const ATOMIC_COMPONENT_TUPLE_KEYS'),
   sharedRecordSource.indexOf('// END normal-record selection'),
 );
