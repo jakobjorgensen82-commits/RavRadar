@@ -1,3 +1,7 @@
+## 12. november — samlet oprydning af leveringssystemet er bestilt
+
+Ejeren kræver en samlet revurdering af rettelsesvejen, dens sikkerhedskoblinger og test-/genoptagelsesforløb med yderligere ekstern viden. Gennemgangen skal også vurdere alternative opbygninger og nødvendigheden af at koble rene deploy-/kontrolændringer til modelbinding og SQL. Gentagne tidligere testgennemgange er ikke i sig selv en løsning. Konkrete fjern/saml/flyt/bevar-forslag, faktisk normal leveringstid og sikker overgang skal dokumenteres før gennemførelse; dette afsnit aktiverer ingen ny kontrol eller svækker nogen gældende databevarelse. Den akutte vejrudgivelse fortsætter sideløbende.
+
 ## 12. november — præcis reference før en normal målrettet kilde-PR
 
 Den eksisterende V3-forbruger kræver ved kontrolpåvirkning en uafhængigt gennemgået PR-markør på det eksakte head med plan-, inventar- og reviewhash. Den samme markør kan udpege den ægte tidligere FULL-reference som locator. Locator giver ingen kvalifikation: GitHub-kørslen skal selv genfinde og kontrollere de autentiske kilde-/nativebeviser og de uændrede beskyttede input. Hvis den ægte forgænger ligger uden for det faste seks-commit-opslag, skal locatoren være med, før kildekørslen starter; ellers vælges FULL uden at give kortvejsautoritet. En ny head kræver en ny præcis plan og markør. Ingen gamle grønne statusser ommærkes.

@@ -17,10 +17,83 @@ import {
   validateProtectedOperationalEvidencePointer,
 } from './protected-operational-reentry-evidence.mjs';
 import { sha256CanonicalJson } from './ravscore-operational-pages-recovery.mjs';
+import { readAuthenticPagesAttemptClosure, hasAuthenticPagesAttemptClosure } from './github-pages-attempt-evidence.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const repository = 'ravradar/RavRadar';
 const clone = value => structuredClone(value);
+
+test('historical pre-POST closure refuses other owners, incomplete logs and unsafe signed redirects', async () => {
+  const owner = { repository: 'jakobjorgensen82-commits/RavRadar', runId: 43216888462, runAttempt: 1,
+    headSha: '8fc381d77e486f74cf34e667c9b73b528e954422', attemptId: 'pages-43216888462-1' };
+  const run = { id: owner.runId, run_attempt: 1, head_sha: owner.headSha, head_branch: 'main',
+    repository: { full_name: owner.repository }, path: '.github/workflows/run-current-weather-once.yml',
+    status: 'completed', conclusion: 'failure', updated_at: '2026-11-12T15:00:00Z' };
+  const skipped = (id, name) => ({ id, run_id: owner.runId, run_attempt: 1, head_sha: owner.headSha,
+    name, status: 'completed', conclusion: 'skipped' });
+  const jobs = [
+    { ...skipped(131250455281, 'Deploy prepared Pages artifact through reusable workflow / Deploy prepared Pages artifact'),
+      conclusion: 'failure', steps: [
+        { name: 'Reserve this exact Pages writer before its first POST', number: 30, status: 'completed', conclusion: 'success' },
+        { name: 'Deploy to GitHub Pages', number: 31, status: 'completed', conclusion: 'failure' },
+        { name: 'Confirm scheduled Pages writes are terminal and unpublished', number: 32, status: 'completed', conclusion: 'skipped' },
+      ] },
+    skipped(2, 'Finish an interrupted generation before new work / resume-pre-activation-pages'),
+    skipped(3, 'Finish an interrupted generation before new work / Redeploy only a helper-proven exact sealed Pages target'),
+  ];
+  const api = `https://api.github.com/repos/${owner.repository}/actions/jobs/131250455281/logs`;
+  const signed = 'https://productionresultssa15.blob.core.windows.net/owned-log?signature=SYNTHETIC';
+  const response = (url, body, options = {}) => Object.defineProperties(new Response(body, options), {
+    url: { value: url }, redirected: { value: false },
+  });
+  const invoke = async ({ actualOwner = owner, location = signed, payload = Buffer.alloc(57470, 97), direct = false,
+    logStatus = 200, alterJobs = value => value } = {}) => {
+    const calls = [];
+    const fetchImpl = async (url, options) => {
+      calls.push({ url, options });
+      if (url === api) {
+        assert.equal(options.redirect, 'manual'); assert.equal(options.headers.Authorization, 'Bearer synthetic-token');
+        return direct ? response(url, payload, { status: logStatus })
+          : response(url, null, { status: 302, headers: { location } });
+      }
+      if (url === location) {
+        assert.equal(options.redirect, 'error'); assert.equal(options.headers, undefined, 'Signed log receives no authorization');
+        return response(url, payload, { status: logStatus });
+      }
+      assert.equal(options.headers.Authorization, 'Bearer synthetic-token');
+      if (url.includes('/jobs?')) return { ok: true, json: async () => ({ total_count: jobs.length, jobs: alterJobs(clone(jobs)) }) };
+      return { ok: true, json: async () => clone(run) };
+    };
+    await assert.rejects(readAuthenticPagesAttemptClosure({ owner: actualOwner, token: 'synthetic-token', fetchImpl }),
+      /PAGES_OWNER_/);
+    return calls;
+  };
+  const signedCalls = await invoke();
+  assert.equal(signedCalls.filter(call => call.url === api).length, 1);
+  assert.equal(signedCalls.filter(call => call.url === signed).length, 1);
+  await invoke({ direct: true });
+  await invoke({ payload: Buffer.alloc(57469, 97) });
+  await invoke({ payload: Buffer.alloc(128 * 1024 + 1, 97) });
+  await invoke({ logStatus: 403 });
+  for (const location of ['http://productionresultssa15.blob.core.windows.net/log',
+    'https://productionresultssa15.blob.core.windows.net.evil.invalid/log',
+    'https://user@productionresultssa15.blob.core.windows.net/log',
+    signed + '#untrusted']) {
+    const calls = await invoke({ location });
+    assert.equal(calls.some(call => call.url === location), false, 'Unsafe signed redirect must not be followed');
+  }
+  const otherOwner = { ...owner, runId: owner.runId + 1, attemptId: `pages-${owner.runId + 1}-1` };
+  assert.equal((await invoke({ actualOwner: otherOwner })).some(call => call.url === api), false);
+  await invoke({ alterJobs: rows => rows.map((job, index) => index ? job : { ...job, id: job.id + 1 }) });
+  await invoke({ alterJobs: rows => rows.map((job, index) => index ? job : {
+    ...job, steps: job.steps.map(step => step.number === 31 ? { ...step, conclusion: 'cancelled' } : step),
+  }) });
+  assert.equal(hasAuthenticPagesAttemptClosure({ owner, state: 'NO_POST' }, owner), false,
+    'Caller-authored closure data never acquires admission');
+  // No synthetic log can satisfy the fixed full-log digest. The positive
+  // historical case is qualified separately using the actual authenticated
+  // complete log; no private log is committed or invented for these tests.
+});
 
 async function fixture(directory, { deploymentId, hour = '10', sourceHead = 'a'.repeat(40) }) {
   await fs.mkdir(directory, { recursive: true });

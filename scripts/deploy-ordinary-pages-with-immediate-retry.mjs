@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { readBoundedPublicManifest } from './lib/pages-generation-order.mjs';
-import { runSealedPagesDeployment, hasSealedPagesRetryEvidence, hasSealedPagesTerminalEvidence } from './lib/run-sealed-pages-deployment.mjs';
+import { runSealedPagesDeployment, hasSealedPagesRetryEvidence, hasSealedPagesTerminalEvidence, hasSealedPagesNoPostEvidence } from './lib/run-sealed-pages-deployment.mjs';
 import { classifyPagesStatus } from './lib/pages-per-artifact-identity.mjs';
 import { publishSealedPagesWithRecovery } from './lib/publish-sealed-pages-with-recovery.mjs';
 import { getOrdinaryPagesRetryDeadline, MINIMUM_RECOVERY_WINDOW_MS, ORDINARY_PAGES_RETRY_POLL_MS,
@@ -21,6 +21,10 @@ const retryPollMs = ORDINARY_PAGES_RETRY_POLL_MS;
 const firstPollMs = 10 * minute;
 const fixedRunId = /^[1-9]\d{0,15}$/;
 const hex40 = /^[0-9a-f]{40}$/;
+
+// No Pages write exists outside the accounted transport invocation below.
+let transportInvocations = 0;
+const transportOutcomes = [];
 
 async function readJson(url, { headers, maximumBytes = 256 * 1024 } = {}) {
   const response = await fetch(url, { redirect: 'error', headers, signal: AbortSignal.timeout(12_000) });
@@ -91,7 +95,10 @@ async function main(env) {
   const receiptDir = await fs.realpath(env.RUNNER_TEMP);
   const deliveries = [];
   const submit = async (expectedSeal, deliveryOrdinal) => {
-    const delivery = await runSealedPagesDeployment({
+    transportInvocations++;
+    let delivery;
+    try {
+      delivery = await runSealedPagesDeployment({
     env, seal: expectedSeal, expectedBaseUrl: publicBase, deliveryOrdinal,
     waitMs: deliveryOrdinal === 1 ? firstPollMs : retryPollMs,
     cancelAtDeadline: true, absoluteDeadlineMs: deadline, completionReserveMs: NORMAL_PAGES_COMPLETION_RESERVE_MS,
@@ -116,6 +123,11 @@ async function main(env) {
       return true;
     },
     });
+    } catch (error) {
+      transportOutcomes.push(error);
+      throw error;
+    }
+    transportOutcomes.push(delivery);
     deliveries.push(delivery);
     return delivery;
   };
@@ -141,7 +153,13 @@ async function main(env) {
   console.log('PAGES_DEPLOY_DELIVERY_ATTEMPTS=' + result.attempts);
 }
 
-main(process.env).catch(error => {
+main(process.env).catch(async error => {
+  if (transportInvocations === transportOutcomes.length && transportOutcomes.every(hasSealedPagesNoPostEvidence)) {
+    // Includes a caller refusal before transport. After any attempted POST,
+    // only the normal terminal/public evidence above can close the owner.
+    try { await fs.appendFile(process.env.GITHUB_OUTPUT, 'closed_unpublished=true\n'); }
+    catch { /* No closure output is safer than claiming an unrecorded proof. */ }
+  }
   const known = new Set(['PAGES_RETRY_READ_FAILED', 'PAGES_RETRY_ORDINARY_SCOPE_REQUIRED',
     'PAGES_RETRY_RUN_IDENTITY', 'PAGES_RETRY_HANDOFF_INVALID', 'PAGES_RETRY_DELIVERY_SEQUENCE',
     'PAGES_RETRY_PUBLICATION_UNPROVED', 'PAGES_RETRY_JOB_CLOCK']);
