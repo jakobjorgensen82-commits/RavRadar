@@ -1,3 +1,9 @@
+## 12. november — tom Pages-status før oprettelse
+
+En faktisk almindelig vejrhentning er stoppet før CREATE, fordi GitHubs statusopslag for en ubrugt udgivelsesidentitet svarer HTTP 200 med præcis objektet {"status":""}. Den nye afgrænsede rettelse klassificerer dette som ukendt/tom status, på samme måde som et tomt objekt. Det er ikke bevis for fravær eller ret til genforsøg. En ny bestilling kræver fortsat unik hensigt, den beskyttede eksklusive reservation og en positiv CREATE-kvittering; ukendt skriveudfald, fremmed metadata og kendte igangværende udgivelser stopper fortsat.
+
+Rettelsen er lokalt målprøvet, ikke endnu samlet kildekvalificeret eller offentligt verificeret. Vejr, score, originaler, SQL, modelbindinger og den faste cronplan ændres ikke. Den tidligere synkroniseringstimeouts rodårsag er fortsat et særskilt åbent punkt. Alle fem mål består; faktiske kørsler og genoptagelse føres i privat checkpoint.
+
 ## 12. november — fast offentlig hovedadresse før Pages-reservation
 
 Den nye afgrænsede kandidat retter en reproduceret transportfejl: den allerede tilladte Pages-adresse viderestiller til ravradar.dk, mens kildeobservationen afviser svar med viderestilling. Begge tilladte indgange bruger derfor den faste kanoniske adresse direkte. De to friske, fuldt hashkontrollerede manifestlæsninger, afvisning af andre viderestillinger og uændret fase/pointer før CAS bevares. Score, vejr, modelbinding, SQL og administratoropsætning ændres ikke.

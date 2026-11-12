@@ -354,7 +354,7 @@ test('own unique positive CREATE and immediate known FAILED allow one same-artif
 });
 
 test('empty or 404 grants no authority while own unique reservation ACK and terminal allow one retry', async () => {
-  for (const priorStatus of [null, 404]) {
+  for (const priorStatus of [null, '', 404]) {
     const successful = fakeService({ priorStatus, immediateFirst: true });
     const done = await successful.deploy(1); assert.equal(done.outcome, 'SUCCEEDED');
     const failed = fakeService({ priorStatus, firstTerminal: 'deployment_failed' });
@@ -368,7 +368,7 @@ test('empty or 404 grants no authority while own unique reservation ACK and term
 });
 
 test('known prior PENDING, permission refusal and uncertain prior transport stop before POST', async () => {
-  for (const priorStatus of ['syncing_files', 'succeed', 'deployment_failed', 401, 403, 'throws']) {
+  for (const priorStatus of ['syncing_files', 'succeed', 'deployment_failed', ' ', 'unknown_future_status', 401, 403, 'throws']) {
     const server = fakeService({ priorStatus }), first = await server.deploy(1);
     assert.equal(first.outcome, 'UNKNOWN'); assert.equal(server.posts.length, 0);
     if (typeof priorStatus === 'number') assert.equal(first.code, 'PRIOR_STATUS_HTTP_' + priorStatus);
@@ -523,6 +523,11 @@ test('prior aliases validate known identities without claiming the new physical 
     const result = await server.deploy(1);
     assert.equal(result.outcome, 'UNKNOWN'); assert.match(result.code, /^PRIOR_STATUS_.*_UNPROVED$/);
     assert.equal(server.posts.length, 0);
+  }
+  for (const priorReplyExtra of [{ artifact_id: seal.artifactId }, { id: '123456' }, { future_metadata: true }]) {
+    const blank = fakeService({ priorStatus: '', priorReplyExtra });
+    const stopped = await blank.deploy(1);
+    assert.equal(stopped.outcome, 'UNKNOWN'); assert.equal(blank.posts.length, 0);
   }
   const oldArtifact = fakeService({ priorStatus: 'succeed', priorReplyExtra: { artifact_id: seal.artifactId - 1, future_metadata: true } });
   const used = await oldArtifact.deploy(1);
