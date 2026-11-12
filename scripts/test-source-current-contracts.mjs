@@ -5,7 +5,8 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import {execFileSync} from 'node:child_process';
+import childProcess,{execFileSync} from 'node:child_process';
+import {syncBuiltinESMExports} from 'node:module';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {CURRENT_CONTRACT_COMMANDS,isBoundedLocalRestoreFixtureChange} from './source-current-contract-plan.mjs';
 
@@ -314,6 +315,70 @@ try{
     headSha:base,sourceTreeSha256:baseContent,privatePayloadIncluded:false,nativePostgres:clone(nativeReceipt)};
 
 
+  async function assertScalarSourcePrerequisites(){
+    const scalarTarget='scripts/test-weather-component-normal-wireup.mjs';
+    const scalarTree=rewrite(baselineTree,[[scalarTarget,Buffer.concat([
+      git(root,['cat-file','blob',base+':'+scalarTarget]),Buffer.from('\n// Synthetic selected scalar target delta\n')])]]);
+    const scalarHead=commit(scalarTree,[base],'synthetic selected scalar prerequisite');
+    const ordinaryTree=rewrite(baselineTree,[['scripts/source-current-contract-receipt.mjs',Buffer.concat([
+      git(root,['cat-file','blob',base+':scripts/source-current-contract-receipt.mjs']),
+      Buffer.from('\n// Synthetic ordinary control target delta\n')])]]);
+    const ordinaryHead=commit(ordinaryTree,[base],'synthetic unselected scalar prerequisite');
+    const originalExec=childProcess.execFileSync,savedFetch=globalThis.fetch,savedLog=console.log;
+    const environmentKeys=['LD_LIBRARY_PATH','DYLD_LIBRARY_PATH','SUPABASE_SERVICE_ROLE_KEY','COPERNICUSMARINE_SERVICE_PASSWORD'];
+    const savedEnvironment=Object.fromEntries(environmentKeys.map(key=>[key,process.env[key]]));
+    const fixtureLibrary=path.join(root,'.cache','synthetic-runtime-library');
+    process.env.LD_LIBRARY_PATH=[savedEnvironment.LD_LIBRARY_PATH,fixtureLibrary].filter(Boolean).join(path.delimiter);
+    process.env.DYLD_LIBRARY_PATH=[savedEnvironment.DYLD_LIBRARY_PATH,fixtureLibrary].filter(Boolean).join(path.delimiter);
+    process.env.SUPABASE_SERVICE_ROLE_KEY='synthetic-service-never-forward';
+    process.env.COPERNICUSMARINE_SERVICE_PASSWORD='synthetic-provider-never-forward';
+    let preparationCalls=[],failPreparation=false;
+    try{
+      globalThis.fetch=transport;
+      console.log=(...args)=>{
+        if(String(args[0]).startsWith('SOURCE_TIME ')){rows.push(JSON.parse(String(args[0]).slice('SOURCE_TIME '.length)));actualProcesses++;}
+        originalLog(...args);
+      };
+      childProcess.execFileSync=function(executable,args,options){
+        if(args?.[0]==='-m'&&args?.[1]==='pip'){
+          preparationCalls.push({executable,args,options});
+          assert.equal(executable,process.env.PYTHON??'python');
+          assert.deepEqual(args,['-m','pip','install','--disable-pip-version-check','--no-input',
+            '-r','requirements-copernicus.txt']);
+          assert.equal(options.cwd,root);assert.equal(options.timeout,120000);
+          assert.equal(options.env.LD_LIBRARY_PATH,process.env.LD_LIBRARY_PATH);
+          assert.equal(options.env.DYLD_LIBRARY_PATH,process.env.DYLD_LIBRARY_PATH);
+          assert.equal(options.env.PIP_CONFIG_FILE,process.platform==='win32'?'NUL':'/dev/null');
+          for(const key of ['GITHUB_TOKEN','GH_TOKEN','SUPABASE_SERVICE_ROLE_KEY','COPERNICUSMARINE_SERVICE_PASSWORD'])
+            assert.equal(options.env[key],undefined,'No private credential in the preparation process');
+          assert.equal(rows.length,0,'Prepare the declared runtime before any selected command');
+          if(failPreparation)throw Error('SYNTHETIC_PRIVATE_PREPARATION_FAILURE');
+          return Buffer.alloc(0);
+        }
+        return Reflect.apply(originalExec,childProcess,[executable,args,options]);
+      };
+      syncBuiltinESMExports();
+      configure(scalarHead);baselinePlan=plan({baselineCommit:base,candidateCommit:head,expectedHead:head});rebuildMaps();
+      const selected=await coordinate();
+      assert.equal(selected.selection,'TARGETED');assert.equal(preparationCalls.length,1);
+      assert(selected.receipt.reportedCommandResults.some(row=>row.command==='node --test '+scalarTarget&&row.outcome==='PASS'));
+      cases++;scenarios.push('actual selected scalar coordinator prepares only existing declared CP runtime with sanitized library environment');
+      failPreparation=true;preparationCalls=[];
+      configure(scalarHead);baselinePlan=plan({baselineCommit:base,candidateCommit:head,expectedHead:head});rebuildMaps();
+      await assert.rejects(coordinate(),/SOURCE_TARGETED_SCALAR_PREREQUISITE_FAILED/);
+      assert.equal(preparationCalls.length,1);assert.equal(rows.length,0);
+      cases++;scenarios.push('failed scalar runtime preparation is red before targets with no retry or FULL fallback');
+      failPreparation=false;preparationCalls=[];
+      configure(ordinaryHead);baselinePlan=plan({baselineCommit:base,candidateCommit:head,expectedHead:head});rebuildMaps();
+      assert.equal((await coordinate()).selection,'TARGETED');assert.equal(preparationCalls.length,0);
+      cases++;scenarios.push('unselected scalar target installs no CP runtime');
+    }finally{
+      childProcess.execFileSync=originalExec;syncBuiltinESMExports();
+      globalThis.fetch=savedFetch;console.log=savedLog;
+      for(const key of environmentKeys){if(savedEnvironment[key]===undefined)delete process.env[key];else process.env[key]=savedEnvironment[key];}
+    }
+  }
+
   // The normal documentation helper has one documented area; no code fingerprint
   // or unrelated UI/Pages test is needed to classify this exact known path.
   const handbookHelper='scripts/sync-handbook-installation-copy.mjs';
@@ -609,6 +674,8 @@ try{
   assert.equal(uiAccepted.required,false,JSON.stringify(uiAccepted));assert.equal(uiAccepted.independentControlReview,'NOT_REQUIRED');
   assert.deepEqual(uiAccepted.testedAreas,['core','publicUI']);
   cases++;scenarios.push('two successive qualified V4 delta frontiers; ordinary UI has no ROOT marker and no ancestor artifact recursion');
+
+  await assertScalarSourcePrerequisites();
 
 }finally{
   console.log=originalLog;globalThis.fetch=originalFetch;

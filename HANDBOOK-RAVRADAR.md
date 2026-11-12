@@ -1,3 +1,7 @@
+## Prøveforudsætninger til kapitel 89.342 — 12. november 2026
+
+Den første faktiske Linux-kvalifikation bestod den nye V4-kontrolvej og mailmålet, men påviste manglende forudsætninger i scalarprøvens miljø. Den normale vejrhentning installerer allerede det eksisterende requirements-copernicus.txt før offline planlægning; den målrettede kildeproducent forbereder nu samme krav, når netop dette mål vælges. Prøvens barn bevarer Linux-/macOS-interpreterens biblioteksstier og udelukker fortsat credentials. Produktlæser, fejlafvisning, model og providerbudgetter ændres ikke af forberedelsen. Ny præcis Linux-kvalifikation kræves fortsat.
+
 ## Kapacitetskandidat til kapitel 89.294 — 12. november 2026
 
 Den særskilte scalar-kapacitetskandidat giver den eksisterende offline planlægning én fælles absolut frist på 180 sekunder i stedet for 120. Tidligere faktiske kørsler har ramt PART_RETENTION/TIMEOUT omkring 120 sekunder; vandstand er stadig obligatorisk uden planen, men den kvalificerede prioritering af reelle scalarhuller og ekstra haleefterspørgsel kan da mangle. Den normale fysiske CLI-prøve afviser 120-sekundersgrænsen før rettelsen og giver byteidentisk plan efter rettelsen med simuleret forbrug over denne grænse; 180 sekunder er fortsat et hårdt loft. Ingen ny cache, ny proof-memo eller forlænget providerhentning. Det er endnu ikke bevis for, at nutidens fulde produktionsplan kan afsluttes eller for bedre offentlig dækning.

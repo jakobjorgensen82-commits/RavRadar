@@ -714,7 +714,8 @@ test('retained scalar physical CLI preserves original files through offline CP a
     }));
     const before = await snapshot();
     const allowed = new Set(['PATH','SYSTEMROOT','WINDIR','TEMP','TMP','HOME','USERPROFILE',
-      'LOCALAPPDATA','APPDATA','PROGRAMFILES','PROGRAMFILES(X86)','PYTHON']);
+      'LOCALAPPDATA','APPDATA','PROGRAMFILES','PROGRAMFILES(X86)','PYTHON',
+      'LD_LIBRARY_PATH','DYLD_LIBRARY_PATH']);
     const childEnv = Object.fromEntries(Object.entries(process.env).filter(([key]) => allowed.has(key.toUpperCase())));
     Object.assign(childEnv,{PYTHONDONTWRITEBYTECODE:'1',PYTHONUTF8:'1'});
     const run = (executable,args,extra={}) => {

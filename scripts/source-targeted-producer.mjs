@@ -14,6 +14,7 @@ import {assistantPublic591Reader,sourceImpactEvidenceAccess,ORIGIN} from './nati
 import {discoverPullRequestSourceGate,inspectLaterMainEvidence,PULL_REQUEST_SOURCE_JOB,PULL_REQUEST_SOURCE_WORKFLOW}
   from './lib/weather-source-gate.mjs';
 import {sourceTreeContentSha256,sourceTreeProofArtifactName} from './lib/source-tree-content.mjs';
+import {copernicusOfflineEnvironment} from './lib/copernicus-offline-environment.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const LOCAL_RESTORE_SELF_TEST='node scripts/test-supabase-cli-local-restore.mjs --self-test';
@@ -41,6 +42,20 @@ const frontierRefused=reason=>Object.assign(new Error('SOURCE_TARGETED_FRONTIER_
   {code:'SOURCE_TARGETED_FRONTIER_REFUSED'});
 const full=reasonCode=>({schemaVersion:1,selection:'FULL',reasonCode,targetedCommandsExecuted:0,
   receiptWritten:false,deliveryAuthority:false});
+function prepareSelectedScalarSourceTarget(commands){
+  if(!commands.includes('node --test scripts/test-weather-component-normal-wireup.mjs'))return;
+  // Same declared CP runtime as ordinary weather. Prepare it only for its actual
+  // consumer target, outside the test and without the producer's credentials.
+  const environment={...Object.fromEntries(LOCAL_RESTORE_ENVIRONMENT
+    .filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]])),
+    ...copernicusOfflineEnvironment(process.env),
+    PIP_CONFIG_FILE:process.platform==='win32'?'NUL':'/dev/null'};
+  try{
+    execFileSync(process.env.PYTHON??'python',['-m','pip','install','--disable-pip-version-check','--no-input',
+      '-r','requirements-copernicus.txt'],
+    {cwd:ROOT,env:environment,timeout:120000,maxBuffer:2*1024*1024,stdio:['ignore','inherit','inherit']});
+  }catch{throw new Error('SOURCE_TARGETED_SCALAR_PREREQUISITE_FAILED');}
+}
 function finalProofHash(zip){
   assert(Buffer.isBuffer(zip)&&zip.length>0&&zip.length<=LIMIT);
   const raw=execFileSync('python',['-c',[
@@ -247,6 +262,7 @@ export async function coordinateTargetedSourceProducer(){
   // automatic FULL rerun or an unreviewed short qualification.
   const reviewInput=()=>({current,fullBaseline:baseline,changeBase,currentPlan:impactPlan.plan,cumulativePlan:cumulativeImpactPlan.plan});
   const controlReview=readCurrentChangeReview(pull,reviewInput());
+  clean(head);prepareSelectedScalarSourceTarget(executionPlan.commands);
   const commandResults=[];
   for(const command of executionPlan.commands){
     assert.match(command,/^node(?: [A-Za-z0-9_./:-]+)+$/);
