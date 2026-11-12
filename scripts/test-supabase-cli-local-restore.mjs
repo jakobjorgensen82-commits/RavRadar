@@ -677,6 +677,44 @@ function ownedDumpArguments(c,p,info){
   return Object.freeze(['--network-id',p.network,'db','dump','--db-url',target.href]);
 }
 
+// Only the synthetic producer may tighten its own fixed dump outputs.
+// Establish private permissions on the verified descriptor, never an arbitrary path.
+async function readOwnedSyntheticDump(c,name){
+  need(c.archive===false&&path.isAbsolute(c.root)&&FILES.includes(name),'SYNTHETIC_DUMP_SCOPE');
+  const dir=path.join(c.root,'dumps'),file=path.join(dir,name);
+  const root=await fs.lstat(c.root,{bigint:true}),directory=await fs.lstat(dir,{bigint:true});
+  for(const stat of [root,directory]){
+    need(stat.isDirectory()&&!stat.isSymbolicLink(),'SYNTHETIC_DUMP_DIRECTORY');
+    if(process.platform==='linux')need(stat.uid===BigInt(process.getuid())&&(stat.mode&0o077n)===0n,'SYNTHETIC_DUMP_DIRECTORY');
+  }
+  const named=await fs.lstat(file,{bigint:true});
+  need(named.isFile()&&!named.isSymbolicLink()&&named.nlink===1n&&named.size>0n
+    &&named.size<=BigInt(P.fileBytes),'DUMP_FILE');
+  if(process.platform==='linux')need(named.uid===BigInt(process.getuid()),'SYNTHETIC_DUMP_OWNER');
+  const handle=await fs.open(file,constants.O_RDONLY|(constants.O_NOFOLLOW||0));
+  try{
+    const opened=await handle.stat({bigint:true});
+    assert.deepEqual(fileIdentity(opened),fileIdentity(named));
+    need(opened.isFile()&&!opened.isSymbolicLink()&&opened.nlink===1n,'DUMP_FILE');
+    if(process.platform==='linux')need(opened.uid===BigInt(process.getuid()),'SYNTHETIC_DUMP_OWNER');
+    if(process.platform==='linux'&&(opened.mode&0o7777n)!==0o600n)await handle.chmod(0o600);
+    const secured=await handle.stat({bigint:true});privateSqlFile(secured);
+    for(const key of ['dev','ino','size','mtimeNs','uid','nlink'])need(secured[key]===opened[key],'DUMP_CHANGED');
+    const current=await fs.lstat(file,{bigint:true});privateSqlFile(current);
+    assert.deepEqual(fileIdentity(secured),fileIdentity(current));
+    const value=await handle.readFile(),after=await handle.stat({bigint:true}),fresh=await fs.lstat(file,{bigint:true});
+    privateSqlFile(after);privateSqlFile(fresh);
+    assert.deepEqual(fileIdentity(secured),fileIdentity(after));assert.deepEqual(fileIdentity(after),fileIdentity(fresh));
+    for(const [target,previous]of [[c.root,root],[dir,directory]]){
+      const stat=await fs.lstat(target,{bigint:true});
+      need(stat.isDirectory()&&!stat.isSymbolicLink()&&stat.dev===previous.dev&&stat.ino===previous.ino,'SYNTHETIC_DUMP_DIRECTORY');
+      if(process.platform==='linux')need(stat.uid===BigInt(process.getuid())&&(stat.mode&0o077n)===0n,'SYNTHETIC_DUMP_DIRECTORY');
+    }
+    need(BigInt(value.length)===secured.size,'DUMP_LENGTH');
+    return value;
+  }finally{await handle.close();}
+}
+
 async function dumpFiles(c,p){
   const info=(await jsonCommand(c,'DUMP_SOURCE_DB',['inspect',p.db]))[0];
   const dumpArguments=ownedDumpArguments(c,p,info);
@@ -685,11 +723,9 @@ async function dumpFiles(c,p){
     if(s){need(s.isFile()&&!s.isSymbolicLink()&&s.nlink===1&&s.size<=P.fileBytes,'DUMP_FILE_BOUND');n+=s.size;}}need(n<=P.totalBytes,'DUMP_TOTAL_BOUND');};
   const flags=[['--role-only'],[],['--data-only','--use-copy'],['--schema','supabase_migrations'],['--schema','supabase_migrations','--data-only','--use-copy']];
   for(let i=0;i<FILES.length;i++)await command(c,'DUMP_'+i,'supabase',[...dumpArguments,...flags[i],'--file',path.join(dir,FILES[i])],{cwd:p.dir,audit});
-  await audit();const bytes=[];for(const name of FILES){const file=path.join(dir,name),before=await fs.lstat(file,{bigint:true});
-    need(before.isFile()&&!before.isSymbolicLink()&&before.nlink===1n&&before.size>0n,'DUMP_FILE');
-    const value=await fs.readFile(file),after=await fs.lstat(file,{bigint:true});
-    for(const key of ['dev','ino','size','mtimeNs','ctimeNs'])need(before[key]===after[key],'DUMP_CHANGED');
-    need(BigInt(value.length)===before.size,'DUMP_LENGTH');bytes.push(value);c.dumps.push({name,bytes:value.length,sha256:sha(value)});}
+  await audit();const bytes=[];for(const name of FILES){
+    const value=await readOwnedSyntheticDump(c,name);
+    bytes.push(value);c.dumps.push({name,bytes:value.length,sha256:sha(value)});}
   return bytes;
 }
 
@@ -994,6 +1030,31 @@ async function selfTest(){
       State:{Running:true,Health:{Status:'healthy'}}};
     return {c,p,info};
   };
+  test('synthetic dump producer secures only its owned fixed files before unchanged archive guards',async()=>{
+    const root=await fs.mkdtemp(path.join(os.tmpdir(),'rr-synthetic-dump-mode-self-'));await fs.chmod(root,0o700);
+    const c={root,archive:false},dir=path.join(root,'dumps'),file=path.join(dir,'data.sql');
+    try{
+      await fs.mkdir(dir,{mode:0o700});
+      const expected=Buffer.from(TEXT+'\n'+DECIMAL+'\n');await fs.writeFile(file,expected,{flag:'wx',mode:0o600});
+      await fs.chmod(file,0o644);const before=await fs.lstat(file,{bigint:true});
+      if(process.platform==='linux')assert.throws(()=>privateSqlFile(before),error=>error.code==='ARCHIVE_SQL_PERMISSIONS');
+      assert((await readOwnedSyntheticDump(c,'data.sql')).equals(expected));
+      const after=await fs.lstat(file,{bigint:true});privateSqlFile(after);
+      for(const key of ['dev','ino','size','mtimeNs','uid','nlink'])assert.equal(after[key],before[key]);
+      if(process.platform==='linux')assert.equal(after.mode&0o777n,0o600n);
+      const secured=fileIdentity(after);assert((await readOwnedSyntheticDump(c,'data.sql')).equals(expected));
+      assert.deepEqual(fileIdentity(await fs.lstat(file,{bigint:true})),secured);
+      await assert.rejects(()=>readOwnedSyntheticDump(c,'../data.sql'),error=>error.code==='SYNTHETIC_DUMP_SCOPE');
+      await assert.rejects(()=>readOwnedSyntheticDump({...c,archive:true},'data.sql'),error=>error.code==='SYNTHETIC_DUMP_SCOPE');
+      const linked=path.join(root,'linked.sql');await fs.link(file,linked);
+      try{await assert.rejects(()=>readOwnedSyntheticDump(c,'data.sql'),error=>error.code==='DUMP_FILE');}
+      finally{await fs.unlink(linked);}
+      if(process.platform==='linux'){
+        await fs.rename(file,path.join(root,'moved.sql'));await fs.symlink(path.join(root,'moved.sql'),file);
+        await assert.rejects(()=>readOwnedSyntheticDump(c,'data.sql'),error=>error.code==='DUMP_FILE');
+      }
+    }finally{await fs.rm(root,{recursive:true,force:false});}
+  });
   test('authenticated COPY reader preserves split UTF8, nulls, bigint text and duplicate row multiplicity without keeping raw rows',()=>{
     const rows=['9007199254740993\tæøå\\t\\n\\\\\t\\N','-- own synthetic row\t9007199254740993.123456789012345678\t{}'];
     const body=rows[0]+'\n'+rows[1]+'\n'+rows[0]+'\n',wire=Buffer.from('SET session_replication_role = replica;\nCOPY "public"."Own Table" ("id", "text", "meta") FROM stdin;\n'+body+'\\.\nRESET ALL;\n');
