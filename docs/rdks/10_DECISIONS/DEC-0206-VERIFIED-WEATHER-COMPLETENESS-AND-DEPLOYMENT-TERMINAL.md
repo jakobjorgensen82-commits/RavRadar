@@ -136,3 +136,20 @@ bestå struktur-, hash-, modelbindings-, 673-dels- og tidsvalidering; udløb,
 fremtid, beskadigelse eller inkompatibilitet stopper og må aldrig omskrives til
 fravær. Candidate G, første cutover, retur og ukendte handlinger åbnes ikke.
 Datakomplethedskravet ændres ikke, og næste bevis er én almindelig weather.
+
+## Tillæg 2026-11-12 – Pages-intent, genforsøg og lukket vedligeholdelse
+
+### Hold de dokumenterede årsager adskilt
+
+Rodårsagen til de første Pages-timeouts i kørslerne #293 og #294 er fortsat ukendt. Produktionskoden var uændret fra kørsel #292 til kørsel #293. Kørsel #293 og den vellykkede kørsel #295 havde begge 1.107 regulære filer og 766.835.628 ukomprimerede byte i Pages-pakken; digests var forskellige. Det er samme målte størrelse og filantal, ikke en byteidentisk pakke, og det beviser ingen størrelsesårsag.
+
+Den senere API-kompatibilitetsfejl omkring PR #867 er et særskilt fund. Kørsel #303 blev stoppet før Pages af en gammel vandvisningsforventning efter UI-ændringen i PR #874. PR #880 rettede testen, og kørsel #304 blev senere offentligt verificeret. Ingen af disse fund fastslår den oprindelige timeoutårsag.
+
+### Krav til den lokale kandidat
+
+- Hver publiceringshensigt skal være genuint unik og bindes til det id, GitHub faktisk kvitterer for ved CREATE, gennem den kompatible API-vej. Artifactets og udgivelsens identiteter holdes adskilt.
+- Kendt terminal lukning og ret til genforsøg er særskilte afgørelser. Højst ét umiddelbart genforsøg må bruge præcis samme forseglede pakke efter de eksisterende identitets-, forgænger- og tidskontroller. Kendt lukning giver ikke alene genforsøgsret.
+- Alle tre reelle writerroller autentificeres. Hvis A genoptages af B, skal B være holdbart registreret som udførende ejer for det konkrete mål i den eksisterende pointer/CAS før B's POST. En senere C må ikke overse B. Ukendt skriveudfald giver HOLD. Intet globalt register eller ny tjeneste oprettes.
+- Retire før frisk default gælder kun **nye** faser med en valgfri `ordinary-maintenance`-oprindelsespost i lukket format, afledt af autentisk `run-current`/default-kontekst. En konkret lukket, upubliceret vedligeholdelsesfase kræver `current.pending=false`, autentisk oprindelse og **uændret hel ACTIVE/source-/targetbinding**. Afslutningen bruger én phase-CAS med genlæsning til NONE; den udfører ingen BEGIN, source-abort eller ny POST og ændrer ikke B/S, originaler eller leveringskrav. Gamle faser uden posten får ingen retire-ret. Første installation og eksplicit recovery bevares; reelle SOURCE-/modelovergange i PENDING følger fortsat den eksisterende eksplicitte færdiggørelse.
+
+Dette er krav til en lokal kandidat under klargøring, ikke samlet grøn CI eller offentlig levering. 4.0.613 er ikke installeret og må ikke installeres, fordi de nødvendige RAW-/C-/I-bundne Pages-værn endnu ikke indgår. Dens kilde-CI blev derfor bevidst annulleret. Rettelsen skal med før RAW i en ny genuine NULL-førsteudstedelse, planlagt som 4.0.614; den gamle udstedelse og SQL bevares. Ændret SOURCE→SOURCE-binding understøttes ikke af denne kandidat. Alle fem mål forbliver åbne. Se håndbog 89.340; detaljeret kausal evidens og skiftende driftsidentiteter føres privat.

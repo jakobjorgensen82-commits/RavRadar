@@ -332,6 +332,7 @@ test('removes only its new unreferenced object after a proven failed compare-and
 });
 
 test('pre-activation terminal takeover retains the same target through runner loss and genuine plan admission', async () => {
+  const savedPagesToken=process.env.GH_TOKEN;process.env.GH_TOKEN='synthetic-pages-test-token';
   const {publishProtectedPreActivationTarget,inspectProtectedPreActivationTarget,
     classifyProtectedPreActivationCurrent,claimProtectedPreActivationTarget,
     restoreProtectedPreActivationTarget,prepareProtectedPreActivationHandoff,
@@ -347,6 +348,17 @@ test('pre-activation terminal takeover retains the same target through runner lo
     runId:Number(run),runAttempt:Number(attempt),headSha:sourceHead,attemptId:id};};
   const terminal=o=>({id:o.runId,run_attempt:o.runAttempt,head_sha:o.headSha,head_branch:'main',
     repository:{full_name:repository},status:'completed',conclusion:'failure'});
+  const pagesGithub=async url=>{
+    const u=String(url),match=u.match(/\/actions\/runs\/(\d+)(?:\/attempts\/(\d+))?/);
+    if(!match)throw new Error('Unexpected authenticated fixture endpoint');
+    const runId=Number(match[1]),runAttempt=Number(match[2]??1);
+    const run={...terminal({runId,runAttempt,headSha:sourceHead}),path:'.github/workflows/run-current-weather-once.yml',updated_at:'2026-11-12T01:00:00Z'};
+    const jobs=[{id:runId*10+1,run_id:runId,run_attempt:runAttempt,head_sha:sourceHead,name:'Deploy prepared Pages artifact',status:'completed',conclusion:'failure',
+      steps:[{name:'Deploy to GitHub Pages',status:'completed',conclusion:'skipped'}]},
+      {id:runId*10+2,run_id:runId,run_attempt:runAttempt,head_sha:sourceHead,name:'Finish an interrupted generation before new work / resume-pre-activation-pages',status:'completed',conclusion:'skipped'},
+      {id:runId*10+3,run_id:runId,run_attempt:runAttempt,head_sha:sourceHead,name:'Redeploy only a helper-proven exact sealed Pages target',status:'completed',conclusion:'skipped'}];
+    return {ok:true,json:async()=>clone(u.includes('/jobs?')?{total_count:jobs.length,jobs}:run)};
+  };
   const read=async(d,f)=>JSON.parse(await fs.readFile(path.join(d,f),'utf8'));
   const write=(d,f,v)=>fs.writeFile(path.join(d,f),JSON.stringify(v));
   try {
@@ -392,7 +404,7 @@ test('pre-activation terminal takeover retains the same target through runner lo
       if(options.method==='PATCH')assert(suffix.includes('&version=eq.'+server.row().version+'&'));
       return server.request(suffix,options);
     };
-    const common={request,storage:server.storage,repository};
+    const common={request,storage:server.storage,repository,fetchImpl:pagesGithub};
     await publishProtectedOperationalEvidence({...common,directory:sourceDir,deploymentId:sourceId});
     const runtimeAudit={datasetId:target.manifest.datasetId,privatePayloadIncluded:false};
     const disposition={schemaVersion:'ravscore-continuation-checkpoint-disposition-v1',sourceHead,
@@ -412,6 +424,9 @@ test('pre-activation terminal takeover retains the same target through runner lo
     await write(targetDir,'pre-activation.json',phase);
     await publishProtectedPreActivationTarget({...common,directory:targetDir,deploymentId:targetId});
     const original=clone(server.row()),originalFiles=new Map(server.objects);
+    assert.equal((await (await import('./protected-operational-reentry-evidence.mjs')).retireClosedUnpublishedOrdinaryPreActivationTarget({
+      ...common,sourceHead,baseUrl:'https://ravradar.dk'})).reason,'ORIGINAL_INTENTION_NOT_PROVED');
+    assert.deepEqual(server.row(),original,'an old phase never acquires new retirement authority');
 
     // A different qualified executor may only BEGIN an already issued exact
     // ordinary target. All fixtures below are synthetic metadata, not B/S proof.
@@ -422,6 +437,7 @@ test('pre-activation terminal takeover retains the same target through runner lo
         ? clone([recoveryCentral,profileRow]) : recoveryServer.request(suffix,options);
       const recoveryCommon={request:recoveryRequest,storage:recoveryServer.storage,repository};
       await publishProtectedOperationalEvidence({...recoveryCommon,directory:sourceDir,deploymentId:sourceId});
+      const initiallyStoredSource=clone(recoveryServer.row().payload.current);
       await publishProtectedPreActivationTarget({...recoveryCommon,directory:targetDir,deploymentId:targetId});
       const ordinaryDir=path.join(work,'prepared-ordinary');await fs.mkdir(ordinaryDir);
       for(const name of await fs.readdir(targetDir))if(name!=='pre-activation.json')
@@ -461,9 +477,7 @@ test('pre-activation terminal takeover retains the same target through runner lo
       const fetchImpl=async url=>{const u=String(url);let value;
         if(u.includes('/actions/artifacts/'))value={id:target.seal.artifactId,name:target.seal.artifactName,expired:false,
           workflow_run:{id:target.seal.runId,head_sha:target.seal.headSha},size_in_bytes:target.seal.artifactSizeBytes,digest:'sha256:'+target.seal.artifactDigestSha256};
-        else if(u.includes('/jobs?'))value={total_count:1,jobs:[{run_id:producer.runId,run_attempt:producer.runAttempt,head_sha:producer.headSha,
-          name:'Deploy prepared Pages artifact',steps:[{name:'Deploy to GitHub Pages',conclusion:'skipped'}]}]};
-        else if(u.includes('/actions/runs/'))value=terminal(producer);
+        else if(u.includes('/actions/runs/'))return pagesGithub(url);
         else if(u.includes('/data/live/manifest.json'))value=observedSourceManifest;
         else throw new Error('unexpected synthetic endpoint');
         return {ok:true,json:async()=>clone(value)};};
@@ -526,6 +540,84 @@ test('pre-activation terminal takeover retains the same target through runner lo
         {publicManifestSha256:'0'.repeat(64)},{sourceHead:executor.headSha},{privatePayloadRead:true}])
         await assert.rejects(readProtectedPreparedTargetAdmission({...admissionArgs,verifySource:async()=>({...sourceVerification,...mutation})}),/source verification differs/);
       assert.equal(atomicCount,1);assert.deepEqual(recoveryServer.row(),protectedBefore);
+      const {readRavScoreOperationalPagesWriterClosure,classifyRavScoreOperationalPagesRecovery}=await import('./ravscore-operational-pages-recovery.mjs');
+      const {registerProtectedPagesWriter,assertProtectedPagesWritesClosed}=await import('./protected-operational-reentry-evidence.mjs');
+      const closure=await readRavScoreOperationalPagesWriterClosure({...recoveryCommon,pending,fetchImpl:pagesGithub});
+      const identity={repository,runId:producer.runId,runAttempt:producer.runAttempt,headSha:sourceHead,ref:'refs/heads/main',attemptId:targetId};
+      const checked=Date.now()+10_000;
+      const recoveryInput={pending,artifactSeal:target.seal,targetManifest:target.manifest,preparedTargetAdmission:a,writerClosure:closure,
+        artifactEvidence:{schemaVersion:'ravscore-operational-pages-artifact-evidence-v1',...identity,
+          artifactId:target.seal.artifactId,artifactName:target.seal.artifactName,artifactDigestSha256:target.seal.artifactDigestSha256,
+          artifactSizeBytes:target.seal.artifactSizeBytes,downloadedZipSha256:target.seal.artifactDigestSha256,
+          zipHashedBeforeExtraction:true,expired:false,checkedAt:new Date(checked).toISOString(),privatePayloadRead:false},
+        terminalEvidence:{schemaVersion:'ravscore-operational-pages-terminal-evidence-v2',...identity,...terminalEvidence,
+          runStatus:'completed',runConclusion:'failure',checkedAt:new Date(checked+1000).toISOString(),
+          evidenceSource:'github-actions-pages-terminal-readback',privatePayloadRead:false},
+        observations:[0,1].map(index=>({schemaVersion:'ravscore-operational-pages-public-observation-v1',...identity,
+          publicManifestSha256:pending.sourcePublicManifestSha256,observedAt:new Date(checked+2000+index*2000).toISOString(),
+          observationNonce:'writer-closure-'+index,privatePayloadRead:false}))};
+      assert.equal(classifyRavScoreOperationalPagesRecovery(recoveryInput).action,'EXACT_TARGET_REDEPLOY');
+      assert.equal(classifyRavScoreOperationalPagesRecovery({...recoveryInput,writerClosure:{...closure}}).action,'FAIL_CLOSED');
+      const env={GITHUB_REF:'refs/heads/main',GITHUB_REPOSITORY:repository,GITHUB_SHA:executor.headSha,
+        GITHUB_RUN_ID:String(executor.runId),GITHUB_RUN_ATTEMPT:String(executor.runAttempt),GITHUB_JOB:'recover-operational-pages-target'};
+      const reservationFetch=async url=>String(url).includes('/actions/runs/'+executor.runId)
+        ?{ok:true,json:async()=>({...terminal(executor),status:'in_progress',conclusion:null,path:'.github/workflows/run-current-weather-once.yml'})}
+        :String(url).includes('/data/live/manifest.json')?new Response(JSON.stringify(observedSourceManifest)):pagesGithub(url);
+      const beforeReservation=clone(recoveryServer.row());
+      const removedBeforeReservation=[...recoveryServer.removed],archivesBeforeReservation=new Map(recoveryServer.objects);
+      assert.deepEqual(removedBeforeReservation,[initiallyStoredSource.objectPath],
+        'the earlier normal source refresh pruned only its already unreferenced old source archive');
+      await registerProtectedPagesWriter({...recoveryCommon,pending,owner:executor,writerClosure:closure,
+        env,baseUrl:'https://ravradar.dk',fetchImpl:reservationFetch});
+      const reserved=clone(recoveryServer.row());
+      assert.equal(reserved.payload.schemaVersion,'3.0.0');assert.deepEqual(reserved.payload.pagesWrite.owner,executor);
+      assert.deepEqual(reserved.payload.current,beforeReservation.payload.current);
+      assert.deepEqual(reserved.payload.previous,beforeReservation.payload.previous);
+      assert.deepEqual(reserved.payload.preActivation,beforeReservation.payload.preActivation);
+      assert.equal(reserved.payload.pagesWrite.target.deploymentId,targetId);
+      await assert.rejects(registerProtectedPagesWriter({...recoveryCommon,pending,owner:executor,writerClosure:closure,
+        env,baseUrl:'https://ravradar.dk',fetchImpl:reservationFetch}),/changed or already consumed/);
+      assert.deepEqual(recoveryServer.row(),reserved,'same B never consumes another POST right');
+      const unknownB=async url=>{
+        if(!String(url).includes('/actions/runs/'+executor.runId))return pagesGithub(url);
+        const result=await pagesGithub(String(url).replace('/'+executor.runId,'/'+producer.runId));
+        const value=await result.json();
+        if(value.jobs){for(const job of value.jobs){job.run_id=executor.runId;job.head_sha=executor.headSha;}
+          value.jobs[2].conclusion='failure';value.jobs[2].steps=[{name:'Redeploy the exact sealed Pages target',status:'completed',conclusion:'cancelled',number:9}];}
+        else Object.assign(value,{id:executor.runId,head_sha:executor.headSha});
+        return {ok:true,json:async()=>value};
+      };
+      await assert.rejects(assertProtectedPagesWritesClosed({...recoveryCommon,fetchImpl:unknownB}),/WRITE_CLOSURE_UNKNOWN/);
+      await assert.rejects(readRavScoreOperationalPagesWriterClosure({...recoveryCommon,pending,fetchImpl:unknownB}),/WRITE_CLOSURE_UNKNOWN/);
+      const lateTarget={...recoveryInput,writerClosure:null,observations:recoveryInput.observations.map(o=>({...o,
+        publicManifestSha256:pending.requestedPublicManifestSha256}))};
+      assert.equal(classifyRavScoreOperationalPagesRecovery(lateTarget).action,'TARGET_RECONCILE');
+      assert.deepEqual(recoveryServer.row(),reserved,'late verification does not erase unknown B');
+      const closedB=async url=>{
+        if(!String(url).includes('/actions/runs/'+executor.runId))return pagesGithub(url);
+        const value=await (await pagesGithub(String(url).replace('/'+executor.runId,'/'+producer.runId))).json();
+        if(value.jobs)for(const job of value.jobs){job.run_id=executor.runId;job.head_sha=executor.headSha;}
+        else Object.assign(value,{id:executor.runId,head_sha:executor.headSha});
+        return {ok:true,json:async()=>value};
+      };
+      const nextOwner={...executor,runId:43010,attemptId:'pages-recovery-43010-1'};
+      const nextFetch=async url=>String(url).includes('/actions/runs/'+nextOwner.runId)
+        ?{ok:true,json:async()=>({...terminal(nextOwner),status:'in_progress',conclusion:null,path:'.github/workflows/run-current-weather-once.yml'})}
+        :String(url).includes('/data/live/manifest.json')?new Response(JSON.stringify(observedSourceManifest)):closedB(url);
+      const nextClosure=await readRavScoreOperationalPagesWriterClosure({...recoveryCommon,pending,fetchImpl:closedB});
+      let reservationWrites=0;
+      const lostReservationReply=async(suffix,options={})=>{
+        const result=await recoveryRequest(suffix,options);
+        if(options.method==='PATCH'){reservationWrites++;throw new Error('synthetic committed recovery-owner reply lost');}
+        return result;
+      };
+      await registerProtectedPagesWriter({...recoveryCommon,request:lostReservationReply,pending,owner:nextOwner,
+        writerClosure:nextClosure,env:{...env,GITHUB_RUN_ID:String(nextOwner.runId)},baseUrl:'https://ravradar.dk',fetchImpl:nextFetch});
+      assert.equal(reservationWrites,1);assert.deepEqual(recoveryServer.row().payload.pagesWrite.owner,nextOwner);
+      assert.deepEqual(recoveryServer.row().payload.preActivation,reserved.payload.preActivation);
+      assert.deepEqual(recoveryServer.removed,removedBeforeReservation,'B/C reservation never deletes another object');
+      for(const [name,bytes] of archivesBeforeReservation)assert.deepEqual(recoveryServer.objects.get(name),bytes,
+        'B/C reservation retains every actual recovery-server archive');
     }
 
     const firstOwner=owner(targetId),secondOwner=owner('pages-recovery-43003-1');
@@ -620,7 +712,174 @@ test('pre-activation terminal takeover retains the same target through runner lo
     assert.equal((await classifyProtectedPreActivationCurrent({...common,sourceHead:'b'.repeat(40),attempt:terminal(secondOwner)})).action,'PENDING_PRE_ACTIVATION',
       'a new delivery executor must preserve the authentic old pending producer');
     assert.deepEqual(server.row(),published,'pending coexistence does not replace durable evidence');
+    const pendingBeforeRetire=clone(central);
+    assert.equal((await (await import('./protected-operational-reentry-evidence.mjs')).retireClosedUnpublishedOrdinaryPreActivationTarget({
+      ...common,sourceHead,baseUrl:'https://ravradar.dk'})).retired,false,'a genuine historical model PENDING retains its original target');
+    assert.deepEqual(central,pendingBeforeRetire);assert.deepEqual(server.row(),published);
     for(const [name,bytes] of originalFiles)assert.deepEqual(server.objects.get(name),bytes,'original immutable archive retained');
     assert.equal(server.removed.length,0);
-  } finally {await fs.rm(work,{recursive:true,force:true});}
+    const activePhaseFetch=async(url,options)=>{
+      if(String(url).includes('/data/live/manifest.json'))return new Response(JSON.stringify(source.manifest));
+      const result=await pagesGithub(url,options);
+      if(String(url).includes('/actions/runs/'+secondOwner.runId)&&!String(url).includes('/jobs?')){
+        const value=await result.json();return {ok:true,json:async()=>({...value,status:'in_progress',conclusion:null})};
+      }
+      return result;
+    };
+    const {registerProtectedPagesWriter}=await import('./protected-operational-reentry-evidence.mjs');
+    await registerProtectedPagesWriter({...common,owner:secondOwner,baseUrl:'https://ravradar.dk',fetchImpl:activePhaseFetch,
+      env:{GITHUB_REPOSITORY:repository,GITHUB_REF:'refs/heads/main',GITHUB_SHA:sourceHead,GITHUB_RUN_ID:String(secondOwner.runId),
+        GITHUB_RUN_ATTEMPT:String(secondOwner.runAttempt),GITHUB_JOB:'deploy-pages'}});
+    assert.deepEqual(server.row().payload.pagesWrite.owner,secondOwner,'preactivation has the same one durable writer slot');
+    assert.deepEqual(server.row().payload.preActivation,published.payload.preActivation,'reserving Pages never rewrites the original phase');
+    assert.equal(server.removed.length,0);
+  } finally {if(savedPagesToken===undefined)delete process.env.GH_TOKEN;else process.env.GH_TOKEN=savedPagesToken;
+    await fs.rm(work,{recursive:true,force:true});}
+});
+
+test('closed ordinary phase retires only its authenticated unchanged-model default intention and retains every archive',async()=>{
+  const savedToken=process.env.GH_TOKEN;process.env.GH_TOKEN='synthetic-pages-test-token';
+  const p=await import('./protected-operational-reentry-evidence.mjs'),a=await import('./ravscore-operational-activation.mjs');
+  const {CANDIDATE_G_OPERATIONAL_ROLLBACK_ID}=await import('./lib/ravscore-candidate-g-rollback-runtime.mjs');
+  const work=await fs.mkdtemp(path.join(os.tmpdir(),'rr-closed-ordinary-phase-'));
+  const sourceHead='a'.repeat(40),producerId=55002,consumerId=55003;
+  try{
+    const sourceDir=path.join(work,'source'),targetDir=path.join(work,'target');
+    const source=await fixture(sourceDir,{deploymentId:'pages-55001-1',sourceHead});
+    const target=await fixture(targetDir,{deploymentId:'pages-55002-1',sourceHead,hour:'11'});
+    const profile={document_key:a.RAVSCORE_PROFILE_SELECTION_DOCUMENT_KEY,version:10,
+      payload:JSON.parse(await fs.readFile(path.join(root,'data/admin/ravscore-profile-selection.json'),'utf8'))};
+    let central={document_key:a.RAVSCORE_OPERATIONAL_ACTIVATION_DOCUMENT_KEY,version:20,payload:{
+      schemaVersion:a.RAVSCORE_OPERATIONAL_ACTIVATION_SCHEMA,status:a.RAVSCORE_OPERATIONAL_STATUSES.integrated,
+      transitionKind:a.RAVSCORE_OPERATIONAL_TRANSITION_KINDS.integratedReturn,sourceHead,datasetId:source.manifest.datasetId,
+      productionReferenceAt:source.manifest.productionReferenceAt,rollbackId:CANDIDATE_G_OPERATIONAL_ROLLBACK_ID,
+      activeModelBinding:source.binding,requestedModelBinding:source.binding,sourceModelBinding:source.binding,
+      candidatePlanSha256:null,candidateFullSha256:null,privateBundleContentSha256:null,
+      publicManifestSha256:sha256CanonicalJson(source.manifest),sourcePublicManifestSha256:sha256CanonicalJson(source.manifest),
+      requestedPublicManifestSha256:sha256CanonicalJson(source.manifest),sourceImplementationClosureSha256:source.seal.targetImplementationClosureSha256,
+      requestedImplementationClosureSha256:source.seal.targetImplementationClosureSha256,sourceDeploymentId:'pages-55001-1',deploymentId:'pages-55001-1',
+      automaticActivationAllowed:false,schedulerActivationAllowed:false,calibrationEligible:false,
+      requestedAt:source.seal.createdAt,activatedAt:source.seal.createdAt,failureCode:null,
+      returnPlanSha256:null,integratedReadinessSha256:null,integratedPublicAuditSha256:null,integratedManifestSha256:null}};
+    const resolved=a.resolveOperationalRavScoreModel(central,{profileRow:profile});
+    const sourceCurrent={...resolved,bindingCurrent:a.operationalResolvedBindingCurrent(resolved)};
+    assert.equal(sourceCurrent.bindingCurrent,true);
+    const state=remote();let lostReply=false,phaseWrites=0,producerActive=true;
+    const request=async(suffix,options={})=>{
+      if(suffix.includes('document_key=in.'))return clone([central,profile]);
+      const result=await state.request(suffix,options);
+      if(options.method==='PATCH'&&lostReply){phaseWrites++;throw new Error('synthetic committed phase reply lost');}
+      return result;
+    };
+    const eventFile=path.join(work,'event.json');await fs.writeFile(eventFile,JSON.stringify({inputs:{}}));
+    const env=runId=>({GITHUB_REPOSITORY:repository,GITHUB_SHA:sourceHead,GITHUB_REF:'refs/heads/main',
+      GITHUB_WORKFLOW_REF:repository+'/.github/workflows/run-current-weather-once.yml@refs/heads/main',GITHUB_EVENT_NAME:'workflow_dispatch',
+      GITHUB_EVENT_PATH:eventFile,GITHUB_RUN_ID:String(runId),GITHUB_RUN_ATTEMPT:'1',GITHUB_JOB:'deploy-pages'});
+    const fetchImpl=async url=>{
+      const u=String(url),runId=Number(u.match(/\/actions\/runs\/(\d+)/)?.[1]);
+      if(u.includes('/data/live/manifest.json'))return new Response(JSON.stringify(source.manifest));
+      const run={id:runId,run_attempt:1,head_sha:sourceHead,head_branch:'main',repository:{full_name:repository},
+        path:'.github/workflows/run-current-weather-once.yml',event:'workflow_dispatch',updated_at:'2026-11-12T01:00:00Z',
+        status:runId===consumerId||(runId===producerId&&producerActive)?'in_progress':'completed',
+        conclusion:runId===consumerId||(runId===producerId&&producerActive)?null:'failure'};
+      const jobs=['Deploy prepared Pages artifact through reusable workflow',
+        'Finish an interrupted generation before new work / resume-pre-activation-pages','Redeploy only a helper-proven exact sealed Pages target']
+        .map((name,index)=>({id:runId*10+index+1,run_id:runId,run_attempt:1,head_sha:sourceHead,name,status:'completed',conclusion:'skipped'}));
+      return {ok:true,json:async()=>u.includes('/jobs?')?{total_count:3,jobs}:run};
+    };
+    const common={request,storage:state.storage,repository,fetchImpl};
+    await publishProtectedOperationalEvidence({...common,directory:sourceDir,deploymentId:'pages-55001-1'});
+    const runtimeAudit={datasetId:target.manifest.datasetId,privatePayloadIncluded:false};
+    const disposition={schemaVersion:'ravscore-continuation-checkpoint-disposition-v1',sourceHead,datasetId:target.manifest.datasetId,
+      disposition:'READY_PUBLISHED',rollbackStatus:'READY',rollbackActivationReady:true,checkpointRequired:true,
+      runtimeAuditSha256:sha256CanonicalJson(runtimeAudit),privatePayloadIncluded:false};
+    await fs.writeFile(path.join(targetDir,'checkpoint-runtime-audit.json'),JSON.stringify(runtimeAudit));
+    await fs.writeFile(path.join(targetDir,'checkpoint-disposition.json'),JSON.stringify({...disposition,bindingSha256:sha256CanonicalJson(disposition)}));
+    await fs.unlink(path.join(targetDir,'handoff.json'));
+    await fs.writeFile(path.join(targetDir,'pre-activation.json'),JSON.stringify({schemaVersion:'ravradar-current-grid-pre-activation-v1',sourceHead,
+      sourceCurrent,sourceCurrentSha256:sha256CanonicalJson(sourceCurrent),checkpointOutcomes:{build:'success',save:'success',publish:'success'},privatePayloadIncluded:false}));
+    await p.publishProtectedPreActivationTarget({...common,directory:targetDir,deploymentId:'pages-55002-1',env:env(producerId)});
+    const beforeBootstrap=clone(state.row());
+    const legacyUnknown=async(url,options)=>{
+      const result=await fetchImpl(url,options);
+      if(!String(url).includes('/actions/runs/'+producerId))return result;
+      const value=await result.json();
+      if(value.jobs)value.jobs[0]={...value.jobs[0],name:'Deploy prepared Pages artifact',conclusion:'failure',
+        steps:[{name:'Deploy to GitHub Pages',status:'completed',conclusion:'failure',number:30}]};
+      else Object.assign(value,{status:'completed',conclusion:'failure'});
+      return {ok:true,json:async()=>value};
+    };
+    await assert.rejects(p.assertProtectedPagesWritesClosed({...common,fetchImpl:legacyUnknown,allowCurrentOwner:true,env:env(consumerId)}),
+      /WRITE_CLOSURE_UNKNOWN/,'bootstrap rejects unresolved A before source backfill could evict it');
+    assert.deepEqual(state.row(),beforeBootstrap);
+    const writer={repository,runId:producerId,runAttempt:1,headSha:sourceHead,attemptId:'pages-55002-1'};
+    await p.registerProtectedPagesWriter({...common,owner:writer,env:env(producerId),baseUrl:'https://ravradar.dk'});
+    const firstReservation=clone(state.row());
+    assert.deepEqual(firstReservation.payload.pagesWrite.owner,writer,'ordinary A has the same single durable writer slot');
+    const readbackArgs={...common,owner:writer,seal:target.seal,sourceManifest:source.manifest};
+    const firstReadback=await p.readProtectedPagesWriterSnapshot(readbackArgs);
+    assert.deepEqual(await p.readProtectedPagesWriterSnapshot({...readbackArgs,expectedSnapshot:firstReadback.snapshotSha256}),firstReadback);
+    for(const mutation of [{artifactId:target.seal.artifactId+1},{artifactDigestSha256:'8'.repeat(64)},
+      {targetPublicManifestSha256:'8'.repeat(64)},{targetImplementationClosureSha256:'8'.repeat(64)},
+      {targetModelBinding:{...target.binding,modelBundleSha256:'8'.repeat(64)}}])
+      await assert.rejects(p.readProtectedPagesWriterSnapshot({...readbackArgs,seal:{...target.seal,...mutation}}),
+        /reservation or exact target changed|original artifact seal changed/,'a correctly shaped different artifact/target is never the reserved seal');
+    const changedSlotRead=async(suffix,options={})=>{
+      const rows=await request(suffix,options);
+      return rows.map(row=>row.document_key===policy.documentKey?{...row,version:row.version+1,payload:{...row.payload,
+        pagesWrite:{...row.payload.pagesWrite,owner:{...writer,runId:consumerId,attemptId:'pages-55003-1'}}}}:row);
+    };
+    await assert.rejects(p.readProtectedPagesWriterSnapshot({...readbackArgs,request:changedSlotRead}),/reservation or exact target changed/,
+      'the first POST cannot proceed after its durable owner changes');
+    const changedVersionRead=async(suffix,options={})=>(await request(suffix,options)).map(row=>
+      row.document_key===policy.documentKey?{...row,version:row.version+1}:row);
+    await assert.rejects(p.readProtectedPagesWriterSnapshot({...readbackArgs,request:changedVersionRead,
+      expectedSnapshot:firstReadback.snapshotSha256}),/admission snapshot changed/,'ordinal two cannot reuse a moved durable snapshot');
+    const beforeCentralChange=clone(central);central={...central,version:central.version+1};
+    await assert.rejects(p.readProtectedPagesWriterSnapshot({...readbackArgs,expectedSnapshot:firstReadback.snapshotSha256}),/admission snapshot changed/);
+    central=beforeCentralChange;
+    assert.deepEqual(state.row(),firstReservation,'per-POST readback neither reserves nor writes');
+    await assert.rejects(p.registerProtectedPagesWriter({...common,owner:writer,env:env(producerId),baseUrl:'https://ravradar.dk'}),/already consumed/);
+    assert.deepEqual(state.row(),firstReservation,'a restarted execution cannot reuse A\'s first reservation');
+    producerActive=false;
+    const unknownOrdinary=async(url,options)=>{
+      const result=await fetchImpl(url,options);
+      if(!String(url).includes('/actions/runs/'+producerId)||!String(url).includes('/jobs?'))return result;
+      const value=await result.json();value.jobs[0]={...value.jobs[0],name:'Deploy prepared Pages artifact',conclusion:'failure',
+        steps:[{name:'Deploy to GitHub Pages',status:'completed',conclusion:'failure',number:30}]};
+      return {ok:true,json:async()=>value};
+    };
+    await assert.rejects(p.assertProtectedPagesWritesClosed({...common,fetchImpl:unknownOrdinary}),/WRITE_CLOSURE_UNKNOWN/);
+    await assert.rejects(p.registerProtectedPagesWriter({...common,owner:{...writer,runId:consumerId,attemptId:'pages-55003-1'},
+      env:env(consumerId),baseUrl:'https://ravradar.dk',fetchImpl:unknownOrdinary}),/WRITE_CLOSURE_UNKNOWN/);
+    assert.deepEqual(state.row(),firstReservation,'another caller cannot replace an unknown ordinary A');
+    const before=clone(state.row()),archives=new Map(state.objects);
+    assert.equal((await p.inspectProtectedPreActivationTarget(common)).phase.ordinaryMaintenance.owner.runId,producerId);
+    const verification={schemaVersion:'ravscore-operational-pages-verification-v1',status:'passed',sourceHead,model:'integrated',
+      datasetId:source.manifest.datasetId,productionReferenceAt:source.manifest.productionReferenceAt,modelBinding:source.binding,
+      publicManifestSha256:sha256CanonicalJson(source.manifest),implementationClosureSha256:source.seal.targetImplementationClosureSha256,
+      zoneCount:210,coastalPartCount:673,privatePayloadRead:false};
+    const args={...common,sourceHead,env:env(consumerId),baseUrl:'https://ravradar.dk',verifyPublic:async options=>{
+      assert.deepEqual(options.expectedManifest,source.manifest);assert.deepEqual(options.expectedBinding,source.binding);return verification;}};
+    await fs.writeFile(eventFile,JSON.stringify({inputs:{completed_private_runtime:true}}));
+    assert.equal((await p.retireClosedUnpublishedOrdinaryPreActivationTarget(args)).retired,false,'explicit recovery cannot discard its target');
+    assert.deepEqual(state.row(),before);
+    await fs.writeFile(eventFile,JSON.stringify({inputs:{}}));
+    const oldCentral=clone(central),oldProfile=clone(profile.payload),changedBinding={...source.binding,modelBundleSha256:'9'.repeat(64)};
+    central.payload={...central.payload,activeModelBinding:changedBinding,sourceModelBinding:changedBinding,requestedModelBinding:changedBinding};
+    profile.payload={...profile.payload,modelBundleSha256:changedBinding.modelBundleSha256};
+    assert.equal((await p.retireClosedUnpublishedOrdinaryPreActivationTarget(args)).retired,false);
+    central=oldCentral;profile.payload=oldProfile;
+    assert.deepEqual(state.row(),before,'a changed model/SQL family retains the original phase');
+    lostReply=true;
+    assert.equal((await p.retireClosedUnpublishedOrdinaryPreActivationTarget(args)).action,'NONE');
+    assert.equal(phaseWrites,1,'lost CAS response is read back without repeating the write');
+    assert.equal((await p.inspectProtectedPreActivationTarget(common)).action,'NONE');
+    assert.deepEqual(state.row().payload.current,before.payload.current);assert.deepEqual(state.row().payload.previous,before.payload.previous);
+    assert.deepEqual(state.row().payload.pagesWrite,before.payload.pagesWrite,'phase retirement preserves the latest Pages writer');
+    for(const [name,bytes]of archives)assert.deepEqual(state.objects.get(name),bytes);
+    assert.equal(state.removed.length,0);
+    assert.equal((await p.retireClosedUnpublishedOrdinaryPreActivationTarget(args)).retired,false);assert.equal(phaseWrites,1);
+  }finally{if(savedToken===undefined)delete process.env.GH_TOKEN;else process.env.GH_TOKEN=savedToken;
+    await fs.rm(work,{recursive:true,force:true});}
 });

@@ -1,3 +1,9 @@
+## 12. november – Pages-lukning og genforsøg er en lokal kandidat
+
+Læs [DEC-0206's tillæg af 12. november](10_DECISIONS/DEC-0206-VERIFIED-WEATHER-COMPLETENESS-AND-DEPLOYMENT-TERMINAL.md#tillæg-2026-11-12--pages-intent-genforsøg-og-lukket-vedligeholdelse) og [håndbog 89.340](../../HANDBOOK-RAVRADAR.md#ordinary-pages-intent-retry-and-closed-maintenance-2026-11-12). Her står årsagsskellene og den snævre ret til afslutning af nye, uændrede ACTIVE-faser med `current.pending=false`.
+
+4.0.613 mangler nødvendige bundne Pages-værn og må ikke installeres; kilde-CI blev derfor bevidst annulleret. Rettelsen skal med før RAW i en ny genuine førsteudstedelse, planlagt som 4.0.614. Samlet CI, offentlig virkning og alle fem mål er åbne.
+
 ## 4. november — lokal Pages-kandidat med kompakte korttimer
 
 Aktuelt arbejdsgrundlag er [håndbog 89.301](../../HANDBOOK-RAVRADAR.md#public-json-plain-reader-upgrader-2026-11-03), [DEC-0154](10_DECISIONS/DEC-0154-MANIFEST-BOUND-PUBLIC-DETAIL-RUNTIME.md) og [DEC-0175](10_DECISIONS/DEC-0175-MOBILE-SAFE-EMERGENCY-STARTUP.md) med tillæggene af 4. november. Tidligere PLAIN-only-udsagn beskriver læserbroen før denne lokale kandidat.

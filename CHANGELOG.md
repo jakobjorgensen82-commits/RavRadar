@@ -1,3 +1,9 @@
+## 12. november – Pages-vedligeholdelseskandidat uden versionsløft
+
+- Præciserer årsagsskellene og forskellen mellem kørsels- og PR-numre i DEC-0206's tillæg af 12. november.
+- Beskriver intent/CREATE-id, ét straksgenforsøg, separat kendt lukning og holdbar ejer før POST. Retire gælder kun nye, lukkede ACTIVE-faser med `current.pending=false`, uændret hel binding og det snævre oprindelsesbevis; gamle faser uden bevis, første installation og eksplicit recovery bevares.
+- Lokal kandidat, ikke samlet grøn CI eller levering. 4.0.613 mangler bundne Pages-værn og må ikke installeres. Rettelsen skal med før RAW i ny genuine førsteudstedelse 4.0.614. Alle fem mål er åbne. Se håndbog 89.340.
+
 ## 8. november — genlæsning af den gemte databasehenvisning
 
 Den første krypterede databasebackup blev gemt og genlæst fra det private lager. Databasen gemte også henvisningen, men backupkontrollen meldte fejl, fordi databasen returnerede felterne i en anden rækkefølge. Rettelsen sammenligner den validerede henvisning i den oprindelige rækkefølge og bevarer de præcise værdier, versionskontrollen og det eksisterende krypterede arkiv.

@@ -25,8 +25,26 @@ import { inverseRelease594WorkflowUserAgents, release594WorkflowUserAgentReview,
   from './lib/completed-private-runtime-workflow-review.mjs';
 import { spawnSync } from 'node:child_process';
 const sha = source => crypto.createHash('sha256').update(source).digest('hex');
+// Test-only exact caller projection: only the two reviewed Pages-closure token lines.
+// Historical whole-file oracles below retain their original bytes and rejections.
+function inverseReviewedPagesClosureBuildTestInput(source, relative) {
+  if (relative !== '../.github/workflows/reusable-weather-build.yml'
+    || typeof source !== 'string' || Buffer.byteLength(source) !== 304005
+    || sha(source) !== '0204c3ab1312f2b41c085ce43d990bde06f96e2a0235584ba3a57d6685aa4690') return source;
+  let bytes = Buffer.from(source);
+  for (const offset of [268692, 267865]) {
+    assert.equal(sha(bytes.subarray(offset, offset + 40)),
+      '94029cb8f71094002cd359d9bd77191a8ba34be1382b9b602dc31423781b51dc', 'PAGES_CLOSURE_TEST_CALLER_HUNK');
+    bytes = Buffer.concat([bytes.subarray(0, offset), bytes.subarray(offset + 40)]);
+  }
+  assert.equal(bytes.length, 303925, 'PAGES_CLOSURE_TEST_CALLER_BEFORE_SIZE');
+  assert.equal(sha(bytes), 'ed56abc4b55a1bbc3a22efd4a67f19a675f78547cd7f70d9a6a76aa47b9abecf',
+    'Entire actual421c caller survives only its two reviewed token-line inverses');
+  return bytes.toString('utf8');
+}
 const readHistoricalWorkflow = async relative => {
-  const source = (await fs.readFile(new URL(relative, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+  const source = inverseReviewedPagesClosureBuildTestInput(
+    (await fs.readFile(new URL(relative, import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), relative);
   return relative.endsWith('/run-current-weather-once.yml')
     ? inverseAutomaticCompletedPagesWorkflow(source, 'once')
     : relative.endsWith('/reusable-weather-build.yml') ? inverseAutomaticCompletedPagesWorkflow(source, 'build')
@@ -35,7 +53,8 @@ const readHistoricalWorkflow = async relative => {
           ? inverseReviewedPagesArtifactMetadataCaller(source, 'repair', '.github/workflows/deploy-code-only-repair.yml') : source;
 };
 const read = async relative => {
-  const source = (await fs.readFile(new URL(relative, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+  const source = inverseReviewedPagesClosureBuildTestInput(
+    (await fs.readFile(new URL(relative, import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), relative);
   const role = relative.endsWith('/reusable-weather-build.yml') ? 'build'
     : relative.endsWith('/run-current-weather-once.yml') ? 'once' : null;
   return role ? inverseCurrentFamilyColdStartWorkflow(inverseAutomaticCompletedPagesWorkflow(source, role), role) : source;
@@ -1913,11 +1932,23 @@ test('cancelled Pages replay wiring preserves the historical build and guards bo
   }
 });
 
-test('scheduled weather keeps its fresh hour while standard Pages temporarily replaces the inactive retry', async () => {
-  const [once, deploy, action] = await Promise.all([
+test('scheduled weather keeps its fresh hour and uses one exclusive immediate-retry route', async () => {
+  const rawBuild = (await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+  const historicalBuild = inverseReviewedPagesClosureBuildTestInput(rawBuild, '../.github/workflows/reusable-weather-build.yml');
+  assert.equal(sha(historicalBuild), 'ed56abc4b55a1bbc3a22efd4a67f19a675f78547cd7f70d9a6a76aa47b9abecf');
+  assert.equal(inverseAutomaticCompletedPagesWorkflow(rawBuild, 'build'), rawBuild,
+    'The old whole-file inverse still rejects the new Pages-closure caller');
+  for (const changed of [rawBuild + '# unknown append\n', rawBuild.replace('          GH_TOKEN: ${{ github.token }}', '          GH_TOKEN: changed')]) {
+    assert.notEqual(changed, rawBuild);
+    assert.equal(inverseReviewedPagesClosureBuildTestInput(changed, '../.github/workflows/reusable-weather-build.yml'), changed,
+      'Unknown or mixed caller bytes never gain a historical projection');
+  }
+  assert.equal(inverseReviewedPagesClosureBuildTestInput(rawBuild, '../.github/workflows/run-current-weather-once.yml'), rawBuild);
+  const [once, deploy, action, retryCli] = await Promise.all([
     '../.github/workflows/run-current-weather-once.yml',
     '../.github/workflows/reusable-pages-deploy.yml',
     '../.github/actions/deploy-ravradar-pages/action.yml',
+    './deploy-ordinary-pages-with-immediate-retry.mjs',
   ].map(relative => fs.readFile(new URL(relative, import.meta.url), 'utf8')));
   const currentMain = coldBlock(once, '  current-main-target:');
   const select = coldStep(currentMain, 'Require one canonical target hour and completed-runtime decision');
@@ -1931,13 +1962,26 @@ test('scheduled weather keeps its fresh hour while standard Pages temporarily re
   const standard = coldBlock(action, '    - name: Deploy with the standard Pages action');
   const scheduled = coldBlock(action, '    - name: Deploy ordinary weather with one bounded immediate retry');
   assert.match(standard, /^      uses: actions\/deploy-pages@v5$/m);
-  assert.doesNotMatch(standard, /^      if:/m);
-  assert.match(scheduled, /^      if: \$\{\{ false \}\}$/m);
-  for (const immediate_retry of [false, true])
-    assert.equal(coldEvaluate(scheduled.match(/^      if: (.+)$/m)[1], { inputs: { immediate_retry } }), false);
+  assert.match(standard, /^      if: \$\{\{ inputs\.immediate_retry != 'true' \}\}$/m);
+  assert.match(scheduled, /^      if: \$\{\{ inputs\.immediate_retry == 'true' \}\}$/m);
+  for (const immediate_retry of ['false', 'true']) {
+    const context = { inputs: { immediate_retry } };
+    assert.equal(coldEvaluate(scheduled.match(/^      if: (.+)$/m)[1], context), immediate_retry === 'true');
+    assert.equal(coldEvaluate(standard.match(/^      if: (.+)$/m)[1], context), immediate_retry !== 'true');
+  }
   assert.match(standard, /artifact_name: \$\{\{ inputs\.artifact_name \}\}/);
   assert.match(standard, /token: \$\{\{ inputs\.github_token \}\}/);
+  assert.doesNotMatch(standard,/SUPABASE|supabase/);
+  assert.match(scheduled,/SUPABASE_URL: \$\{\{ inputs\.supabase_url \}\}/);
+  assert.match(scheduled,/SUPABASE_SERVICE_ROLE_KEY: \$\{\{ inputs\.supabase_service_role_key \}\}/);
+  assert.match(deploy,/supabase_url: \$\{\{ secrets\.SUPABASE_URL \}\}/);
+  assert.match(deploy,/supabase_service_role_key: \$\{\{ secrets\.SUPABASE_SERVICE_ROLE_KEY \}\}/);
   assert.match(action, /run: node scripts\/deploy-ordinary-pages-with-immediate-retry\.mjs/);
+  assert.match(retryCli, /const terminal = deliveries\.length > 0 && deliveries\.every\(delivery =>\s*delivery\.outcome === 'FAILED' && hasSealedPagesTerminalEvidence\(delivery\)[\s\S]*closed_unpublished=true/);
+  assert.match(retryCli, /const first = deliveries\[0\];[\s\S]*!hasSealedPagesRetryEvidence\(first\)/);
+  assert.match(retryCli,/readProtectedPagesWriterSnapshot\([\s\S]*expectedSnapshot:writerSnapshot/);
+  assert.match(retryCli,/beforeCreate: async intent =>[\s\S]*currentSeal[\s\S]*if \(!await revalidateWriter\(\)\) return false;[\s\S]*fs\.writeFile\(file/);
+  assert.doesNotMatch(retryCli,/console\.(?:log|error).*SUPABASE|console\.(?:log|error).*serviceRoleKey/);
 });
 
 

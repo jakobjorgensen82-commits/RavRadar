@@ -2,7 +2,7 @@ import { setTimeout as wait } from 'node:timers/promises';
 import { request as httpsRequest } from 'node:https';
 import {
   createPagesDeploymentRequest, takePagesDeploymentRequestBody,
-  admitPagesCreateResponse, classifyPagesStatus,
+  admitPagesCreateResponse, classifyPagesStatus, classifyPagesPriorStatus, pagesIdentityFailureCode, projectPagesStatusData,
 } from './pages-per-artifact-identity.mjs';
 
 const api = 'https://api.github.com';
@@ -13,22 +13,34 @@ const hex40 = /^[a-f0-9]{40}$/;
 const secret = /^\S{1,8192}$/;
 const positive = /^[1-9]\d{0,15}$/;
 const maxAttempts = 121;
+const requestTimeoutMs = 12_000;
+const cancellationChecks = 7;
 
-function require(value, reason) {
-  if (!value) throw new Error(reason);
-}
+const transportFailures = new WeakMap();
+const retryEvidence = new WeakSet();
+const terminalEvidence = new WeakSet();
+const deliveryCodes = new WeakMap();
+const deliveryResult = data => { const value = Object.freeze(data); deliveryCodes.set(value, data.code); return value; };
+export const sealedPagesDeliveryDiagnostic = delivery => deliveryCodes.get(delivery) ?? 'PAGES_DELIVERY_UNPROVED';
+const transportError = code => { const error = new Error(code); transportFailures.set(error, code); return error; };
+export const hasSealedPagesRetryEvidence = delivery => retryEvidence.has(delivery);
+export const hasSealedPagesTerminalEvidence = delivery => terminalEvidence.has(delivery);
+export const sealedPagesFailureCode = error => pagesIdentityFailureCode(error)
+  ?? transportFailures.get(error) ?? 'PAGES_TRANSPORT_UNPROVED';
+function require(value, reason) { if (!value) throw transportError(reason); }
 
-async function requestJson(fetchImpl, url, options, limit) {
-  const response = await fetchImpl(url, {
+async function requestJson(fetchImpl, url, options, limit, phase) {
+  let response;
+  try { response = await fetchImpl(url, {
     ...options, redirect: 'error', signal: AbortSignal.timeout(12_000),
-  });
-  require(response.url === url && response.redirected === false, 'PAGES_TRANSPORT_RESPONSE_ROUTE');
+  }); } catch { throw transportError('PAGES_TRANSPORT_' + phase + '_READ_UNPROVED'); }
+  require(response.url === url && response.redirected === false, 'PAGES_TRANSPORT_' + phase + '_RESPONSE_ROUTE');
   if (response.status !== 200) {
     await response.body?.cancel();
     return { status: response.status, url: response.url, data: null };
   }
   const stream = response.body?.getReader();
-  require(stream, 'PAGES_TRANSPORT_BODY_MISSING');
+  require(stream, 'PAGES_TRANSPORT_' + phase + '_BODY_MISSING');
   const chunks = [];
   let bytes = 0;
   try {
@@ -38,7 +50,7 @@ async function requestJson(fetchImpl, url, options, limit) {
       bytes += value.byteLength;
       if (bytes > limit) {
         await stream.cancel();
-        throw new Error('PAGES_TRANSPORT_BODY_LIMIT');
+        throw transportError('PAGES_TRANSPORT_' + phase + '_BODY_LIMIT');
       }
       chunks.push(value);
     }
@@ -46,7 +58,8 @@ async function requestJson(fetchImpl, url, options, limit) {
     stream.releaseLock();
   }
   const text = new TextDecoder('utf-8', { fatal: true }).decode(Buffer.concat(chunks, bytes));
-  return { status: response.status, url: response.url, data: JSON.parse(text) };
+  try { return { status: response.status, url: response.url, data: JSON.parse(text) }; }
+  catch { throw transportError('PAGES_TRANSPORT_' + phase + '_JSON'); }
 }
 
 
@@ -70,13 +83,14 @@ export async function postJsonOnce(url, headers, body, limit, requestImpl = http
     bytes += chunk.byteLength;
     if (bytes > limit) {
       response.destroy();
-      throw new Error('PAGES_TRANSPORT_CREATE_BODY_LIMIT');
+      throw transportError('PAGES_TRANSPORT_CREATE_BODY_LIMIT');
     }
     chunks.push(chunk);
   }
   require(response.complete, 'PAGES_TRANSPORT_CREATE_INCOMPLETE');
   const text = new TextDecoder('utf-8', { fatal: true }).decode(Buffer.concat(chunks, bytes));
-  return { status: response.statusCode, url, data: JSON.parse(text) };
+  try { return { status: response.statusCode, url, data: JSON.parse(text) }; }
+  catch { throw transportError('PAGES_TRANSPORT_CREATE_JSON'); }
 }
 
 export async function cancelPagesOnce(url, headers, requestImpl = httpsRequest) {
@@ -89,11 +103,11 @@ export async function cancelPagesOnce(url, headers, requestImpl = httpsRequest) 
   return response.statusCode === 204;
 }
 
-/** Use GitHub's signed runner identity and bind all status reads to the returned package ID. */
+/** Use GitHub's signed runner identity and its returned deployment ID; never claim a per-artifact server key. */
 export async function runSealedPagesDeployment({
   env, seal, expectedBaseUrl, deliveryOrdinal = 1,
   beforeCreate, fetchImpl = fetch, postImpl = postJsonOnce, cancelImpl = cancelPagesOnce, pause = wait, clock = Date.now,
-  waitMs = maxWaitMs, cancelAtDeadline = false,
+  waitMs = maxWaitMs, cancelAtDeadline = false, absoluteDeadlineMs, completionReserveMs,
 } = {}) {
   require(env?.GITHUB_REPOSITORY === repo && env.GITHUB_API_URL === api
     && env.GITHUB_REF === 'refs/heads/main' && hex40.test(env.GITHUB_SHA ?? '')
@@ -108,7 +122,8 @@ export async function runSealedPagesDeployment({
 
   require(typeof beforeCreate === 'function', 'PAGES_TRANSPORT_CREATE_ADMISSION_REQUIRED');
   require(Number.isSafeInteger(waitMs) && waitMs >= intervalMs && waitMs <= maxWaitMs
-    && typeof cancelAtDeadline === 'boolean', 'PAGES_TRANSPORT_TIME_BUDGET');
+    && typeof cancelAtDeadline === 'boolean' && Number.isSafeInteger(absoluteDeadlineMs)
+    && Number.isSafeInteger(completionReserveMs) && completionReserveMs >= 0, 'PAGES_TRANSPORT_TIME_BUDGET');
 
   const oidcUrl = new URL(env.ACTIONS_ID_TOKEN_REQUEST_URL);
   require(oidcUrl.protocol === 'https:' && oidcUrl.hostname.endsWith('.actions.githubusercontent.com')
@@ -119,9 +134,10 @@ export async function runSealedPagesDeployment({
     'X-GitHub-Api-Version': '2022-11-28', 'Cache-Control': 'no-cache',
     'User-Agent': 'RavRadar-Pages-deploy' };
   const listUrl = api + '/repos/' + repo + '/actions/runs/' + env.GITHUB_RUN_ID + '/artifacts?per_page=100';
-  const listing = await requestJson(fetchImpl, listUrl, { headers: github }, 1024 * 1024);
+  const listing = await requestJson(fetchImpl, listUrl, { headers: github }, 1024 * 1024, 'ARTIFACT_LIST');
+  require(listing.status === 200, 'PAGES_TRANSPORT_ARTIFACT_LIST_HTTP_' + listing.status);
   const rows = listing.data?.artifacts;
-  require(listing.status === 200 && Array.isArray(rows) && rows.length <= 100
+  require(Array.isArray(rows) && rows.length <= 100
     && listing.data.total_count === rows.length, 'PAGES_TRANSPORT_ARTIFACT_LIST');
   const matches = rows.filter(row => row.name === seal.artifactName);
   require(matches.length === 1 && matches[0].id === seal.artifactId, 'PAGES_TRANSPORT_ARTIFACT_UNIQUE');
@@ -129,22 +145,52 @@ export async function runSealedPagesDeployment({
 
   const oidc = await requestJson(fetchImpl, oidcUrl.href, {
     headers: { Authorization: 'Bearer ' + env.ACTIONS_ID_TOKEN_REQUEST_TOKEN, Accept: 'application/json' },
-  }, 64 * 1024);
-  require(oidc.status === 200 && typeof oidc.data?.value === 'string', 'PAGES_TRANSPORT_OIDC_UNAVAILABLE');
+  }, 64 * 1024, 'OIDC');
+  require(oidc.status === 200, 'PAGES_TRANSPORT_OIDC_HTTP_' + oidc.status);
+  require(typeof oidc.data?.value === 'string', 'PAGES_TRANSPORT_OIDC_SCHEMA');
   const request = createPagesDeploymentRequest({
     env, seal, artifact: matches[0], oidcToken: oidc.data.value, expectedBaseUrl, deliveryOrdinal,
   });
 
+  let prior;
+  try {
+    const response = await requestJson(fetchImpl, request.statusUrl, { headers: github }, 64 * 1024, 'PRIOR_STATUS');
+    prior = classifyPagesPriorStatus(response, request);
+    if (prior.outcome === 'PENDING')
+      return deliveryResult({ outcome: 'UNKNOWN', code: 'PRIOR_DEPLOYMENT_PENDING', request });
+    if (prior.outcome === 'CLOSED')
+      return deliveryResult({ outcome: 'UNKNOWN', code: 'PRIOR_UNIQUE_VERSION_ALREADY_USED', request });
+    if (prior.outcome === 'UNKNOWN'
+      && !['PRIOR_STATUS_EMPTY_UNQUALIFIED', 'PRIOR_STATUS_ABSENCE_UNQUALIFIED'].includes(prior.code))
+      return deliveryResult({ outcome: 'UNKNOWN', code: prior.code, request });
+  } catch {
+    return deliveryResult({ outcome: 'UNKNOWN', code: 'PRIOR_STATUS_READ_UNPROVED', request });
+  }
+  // Empty/404 never proves absence or grants authority. The unique intent
+  // still requires normal admission and one create-only caller reservation.
+  const operationDeadline = absoluteDeadlineMs - completionReserveMs;
+  // Latest GET + one CANCEL + seven terminal GETs, including all six pauses.
+  const cleanupReserveMs = cancelAtDeadline
+    ? (2 + cancellationChecks) * requestTimeoutMs + (cancellationChecks - 1) * intervalMs : 0;
+  const hasWriteBudget = () => clock() + requestTimeoutMs
+    + waitMs + cleanupReserveMs <= operationDeadline;
+  if (!hasWriteBudget()) return deliveryResult({ outcome: 'UNKNOWN', code: 'CREATE_BUDGET_UNAVAILABLE', request });
+
   const intent = Object.freeze({
     repository: seal.repository, headSha: seal.headSha, runId: seal.runId,
     runAttempt: seal.runAttempt, deliveryOrdinal: request.deliveryOrdinal,
-    buildVersion: request.buildVersion, artifactId: request.artifactId,
+    buildVersion: request.buildVersion, clientIntentSha256: request.clientIntentSha256, artifactId: request.artifactId,
     artifactDigestSha256: seal.artifactDigestSha256,
     targetPublicManifestSha256: seal.targetPublicManifestSha256,
   });
   // After the artifact and runner reads, require fresh exclusivity and a
   // durable create-only reservation from the production caller before POST.
   require(await beforeCreate(intent) === true, 'PAGES_TRANSPORT_CREATE_NOT_RESERVED');
+  // The immutable request was built here from the exact authenticated seal.
+  const uniqueIntentReserved = request.buildVersion !== seal.headSha
+    && request.buildVersion === request.clientIntentSha256.slice(0, 40);
+  require(uniqueIntentReserved, 'PAGES_TRANSPORT_UNIQUE_INTENT_UNPROVED');
+  if (!hasWriteBudget()) return deliveryResult({ outcome: 'UNKNOWN', code: 'CREATE_BUDGET_EXPIRED', request });
 
   // This is the only POST call in this invocation. Unknown writes are returned
   // as HOLD and never fall back to the source SHA or to another deployment ID.
@@ -153,27 +199,42 @@ export async function runSealedPagesDeployment({
     const response = await postImpl(request.url, { ...github, 'Content-Type': 'application/json' },
       takePagesDeploymentRequestBody(request), 64 * 1024);
     receipt = admitPagesCreateResponse(response, request);
-  } catch {
-    return Object.freeze({ outcome: 'UNKNOWN', code: 'CREATE_RESPONSE_UNPROVED', request });
+  } catch (error) {
+    const cause = sealedPagesFailureCode(error);
+    return deliveryResult({ outcome: 'UNKNOWN', code: cause === 'PAGES_TRANSPORT_UNPROVED'
+      ? 'PAGES_CREATE_TRANSPORT_UNPROVED' : cause, request });
   }
 
-  const terminal = (decision, response) => Object.freeze({
-    ...decision, request, receipt, response: Object.freeze({
-      status: 200, url: receipt.statusUrl, data: Object.freeze({ ...response.data }),
-    }),
-  });
-  const unknown = code => Object.freeze({ outcome: 'UNKNOWN', code, request, receipt });
-  const observe = async () => {
-    const response = await requestJson(fetchImpl, receipt.statusUrl, { headers: github }, 64 * 1024);
-    return { response, decision: classifyPagesStatus(response, receipt) };
+  let pendingObserved = false;
+  const terminal = (decision, response) => {
+    const delivery = deliveryResult({
+      ...decision, request, receipt, pendingObserved, priorStatus: prior.code,
+      response: Object.freeze({ status: 200, url: receipt.statusUrl, data: projectPagesStatusData(response, receipt) }),
+    });
+    // The positive CREATE binds this actual ID to our one reserved unique intent.
+    // A known terminal GET is sufficient even when the provider fails immediately.
+    if (uniqueIntentReserved && decision.outcome === 'FAILED'
+      && ['deployment_failed', 'deployment_cancelled', 'deployment_content_failed'].includes(decision.code)) terminalEvidence.add(delivery);
+    if (uniqueIntentReserved && decision.outcome === 'FAILED'
+      && ['deployment_failed', 'deployment_cancelled'].includes(decision.code)) retryEvidence.add(delivery);
+    return delivery;
   };
-  const deadline = clock() + waitMs;
+  const unknown = code => deliveryResult({ outcome: 'UNKNOWN', code, request, receipt });
+  const observe = async () => {
+    require(clock() + requestTimeoutMs <= operationDeadline, 'PAGES_TRANSPORT_STATUS_OPERATION_DEADLINE');
+    const response = await requestJson(fetchImpl, receipt.statusUrl, { headers: github }, 64 * 1024, 'STATUS');
+    const decision = classifyPagesStatus(response, receipt);
+    if (decision.outcome === 'PENDING') pendingObserved = true;
+    return { response, decision };
+  };
+  const deadline = Math.min(clock() + waitMs, operationDeadline - cleanupReserveMs);
   try {
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      if (clock() + requestTimeoutMs > deadline) break;
       const { response, decision } = await observe();
       if (decision.outcome === 'UNKNOWN') return unknown(decision.code);
       if (decision.outcome !== 'PENDING') return terminal(decision, response);
-      if (clock() + intervalMs > deadline || attempt + 1 >= maxAttempts) break;
+      if (clock() + intervalMs + requestTimeoutMs > deadline || attempt + 1 >= maxAttempts) break;
       await pause(intervalMs);
     }
   } catch {
@@ -184,18 +245,39 @@ export async function runSealedPagesDeployment({
   // A 204 only acknowledges the cancellation request. A new write must wait
   // for the first deployment's exact terminal status or a verified target.
   try {
+    // One finite wait, then an observed clock proof. A frozen/early injected
+    // clock never loops and never authorizes cancellation before the deadline.
+    const beforeWait = clock();
+    if (!Number.isSafeInteger(beforeWait)) return unknown('CANCELLATION_POLL_CLOCK_UNPROVED');
+    const remainingPollMs = Math.max(0, deadline - beforeWait);
+    if (beforeWait + remainingPollMs + cleanupReserveMs > operationDeadline)
+      return unknown('CANCELLATION_OPERATION_BUDGET_EXHAUSTED');
+    if (remainingPollMs > 0) await pause(remainingPollMs);
+    const afterWait = clock();
+    if (!Number.isSafeInteger(afterWait) || afterWait < deadline)
+      return unknown('CANCELLATION_POLL_DEADLINE_UNPROVED');
+    if (afterWait + cleanupReserveMs > operationDeadline)
+      return unknown('CANCELLATION_OPERATION_BUDGET_EXHAUSTED');
     const latest = await observe();
     if (latest.decision.outcome === 'UNKNOWN') return unknown(latest.decision.code);
     if (latest.decision.outcome !== 'PENDING') return terminal(latest.decision, latest.response);
-    if (!await cancelImpl(receipt.statusUrl + '/cancel', github))
-      return unknown('CANCELLATION_UNPROVED');
-    for (let check = 0; check < 7; check++) {
+    if (clock() + cleanupReserveMs - requestTimeoutMs > operationDeadline)
+      return unknown('CANCELLATION_OPERATION_BUDGET_EXHAUSTED');
+    require(clock() + requestTimeoutMs <= operationDeadline, 'PAGES_TRANSPORT_CANCEL_OPERATION_DEADLINE');
+    let cancellationAcknowledged = false;
+    try { cancellationAcknowledged = await cancelImpl(receipt.statusUrl + '/cancel', github) === true; }
+    catch { /* One uncertain cancellation may only be followed by status reads. */ }
+    for (let check = 0; check < cancellationChecks; check++) {
       const { response, decision } = await observe();
       if (decision.outcome === 'UNKNOWN') return unknown(decision.code);
       if (decision.outcome !== 'PENDING') return terminal(decision, response);
-      if (check < 6) await pause(intervalMs);
+      if (check + 1 < cancellationChecks) {
+        if (clock() + intervalMs + requestTimeoutMs > operationDeadline)
+          return unknown('CANCELLATION_OPERATION_BUDGET_EXHAUSTED');
+        await pause(intervalMs);
+      }
     }
-    return unknown('CANCELLATION_STILL_PENDING');
+    return unknown(cancellationAcknowledged ? 'CANCELLATION_STILL_PENDING' : 'CANCELLATION_UNPROVED');
   } catch {
     return unknown('CANCELLATION_UNPROVED');
   }
