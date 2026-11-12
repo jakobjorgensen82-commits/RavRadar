@@ -51,4 +51,15 @@ for (const key of ['shouldDeploy', 'artifactBuilt', 'deployedVerified']) {
   assert.equal(result.failedBoundary, key);
 }
 
+const sourceSaved = { ...base(), sourceSavedPair:true, sourceSavedPairOutcome:'success',
+  completedRuntimeOutcome:'success', weatherOutcome:'skipped' };
+assert.equal(classifyVerifiedWeatherDeployment(sourceSaved).status,'DEPLOYED');
+for (const key of ['sourceSavedPairOutcome','completedRuntimeOutcome','fullValidationOutcome','releaseGateOutcome']) {
+  const result=classifyVerifiedWeatherDeployment({...sourceSaved,[key]:'skipped'});
+  assert.equal(result.status,'FAILED');
+  assert.equal(result.failedBoundary,key);
+}
+assert.equal(classifyVerifiedWeatherDeployment({...sourceSaved,weatherOutcome:'success'}).failedBoundary,'weatherOutcome');
+assert.equal(classifyVerifiedWeatherDeployment({...sourceSaved,completedPrivateRuntime:true}).reasonCode,'SOURCE_SAVED_RUNTIME_REQUEST_CONFLICT');
+assert.equal(classifyVerifiedWeatherDeployment({...sourceSaved,fullValidationOutcome:'failure'}).status,'FAILED');
 console.log('Verified weather deployment terminal tests passed.');

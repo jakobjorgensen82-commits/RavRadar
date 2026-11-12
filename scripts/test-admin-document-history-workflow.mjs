@@ -61,11 +61,11 @@ test('document history workflow: exact existing weather then trip locks, readonl
   assert.match(workflow,/default: plan\n        options: \[plan, archive, publish-locator, discover, restore, prune, maintain, bucket-readonly, bucket-create\]/);
   const outer=workflow.slice(workflow.indexOf('concurrency:'),workflow.indexOf('jobs:'));
   assert.match(outer,/group: ravradar-weather-production-v2\n  queue: max\n  cancel-in-progress: false/);
-  assert.match(workflow,/admin-document-history:\n    if: github.event_name != 'workflow_run' \|\| \(github.event.workflow_run.conclusion == 'success' && vars.RAVRADAR_ADMIN_HISTORY_MAINTENANCE == 'enabled'\)\n    concurrency:\n      group: ravradar-trip-storage-production\n      cancel-in-progress: false/);
+  assert.match(workflow,/admin-document-history:\n    if: github.event_name != 'workflow_run' \|\| \(github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.actor.login != 'github-actions\[bot\]' && vars.RAVRADAR_ADMIN_HISTORY_MAINTENANCE == 'enabled'\)\n    concurrency:\n      group: ravradar-trip-storage-production\n      cancel-in-progress: false/);
   assert.equal((workflow.match(/cancel-in-progress: false/g)||[]).length,2);
   assert.match(workflow,/timeout-minutes: 25/); assert.match(source,/const deadline = Date\.now\(\) \+ 20 \* 60 \* 1000/);
   assert.match(workflow,/prune_limit:\n[^\n]+\n        type: choice\n        default: '25'\n        options: \['25', '100', '600'\]/);
-  assert.match(workflow,/DOCUMENT_HISTORY_PRUNE_LIMIT: \$\{\{ github\.event_name == 'workflow_run' && '25' \|\| inputs\.prune_limit \}\}/);
+  assert.match(workflow,/DOCUMENT_HISTORY_PRUNE_LIMIT: \$\{\{ \(github\.event_name == 'workflow_run' \|\| steps\.bot-handoff\.outputs\.proceed == 'true'\) && '25' \|\| inputs\.prune_limit \}\}/);
   assert.match(workflow,/fetch-depth: 0/);
   assert.match(workflow,/contents: read\n  actions: read\n  pull-requests: read/);
   assert.match(workflow,/run: node scripts\/weather-source-gate.mjs check\n        env:\n          GITHUB_TOKEN: \$\{\{ github.token \}\}/);
@@ -176,7 +176,7 @@ import './test-admin-document-history-bucket.mjs';
 function triggered(overrides={}){return{
   GITHUB_EVENT_NAME:'workflow_run',AUTOMATIC_MAINTENANCE_ENABLED:'enabled',DOCUMENT_HISTORY_OPERATION:'maintain',
   DOCUMENT_HISTORY_CONFIRMATION:'MAINTAIN-EXACT-THREE-DOCUMENT-HISTORY',
-  TRIGGER_ACTION:'completed',TRIGGER_RUN_ID:'123456789',
+  TRIGGER_ACTION:'completed',TRIGGER_ACTOR:'known-human',TRIGGER_RUN_ID:'123456789',
   TRIGGER_RUN_EVENT:'workflow_dispatch',TRIGGER_RUN_NAME:'Run current RavRadar weather once',
   TRIGGER_RUN_PATH:'.github/workflows/run-current-weather-once.yml',
   TRIGGER_REPOSITORY:'jakobjorgensen82-commits/RavRadar',TRIGGER_HEAD_REPOSITORY:'jakobjorgensen82-commits/RavRadar',
@@ -188,8 +188,9 @@ test('document history workflow: successful own weather completion runs one fixe
   assert.deepEqual(Array.from(r.calls[0].args.slice(-4)),['--confirm','MAINTAIN-EXACT-THREE-DOCUMENT-HISTORY','--limit','25']);
   assert.deepEqual(r.bucketCalls.map(x=>x.mode),['read-only']);assert.equal(r.log[0].freeReady,false);
   assert.deepEqual(execute().calls.map(x=>x.mode),['plan']);
-  assert.equal((workflow.match(/if: steps.admission.outputs.proceed == 'true'/g)||[]).length,6);
-  assert.match(workflow,/github.event_name != 'workflow_run' \|\| \(github.event.workflow_run.conclusion == 'success' && vars.RAVRADAR_ADMIN_HISTORY_MAINTENANCE == 'enabled'\)/);
+  assert.equal((workflow.match(/if: steps.admission.outputs.proceed == 'true'/g)||[]).length,7);
+  assert.equal((workflow.match(/if: steps.admission.outputs.proceed == 'true' && \(inputs.source_weather_run_id == '' \|\| steps.bot-handoff.outputs.proceed == 'true'\)/g)||[]).length,4);
+  assert.match(workflow,/github.event_name != 'workflow_run' \|\| \(github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.actor.login != 'github-actions\[bot\]' && vars.RAVRADAR_ADMIN_HISTORY_MAINTENANCE == 'enabled'\)/);
   assert.match(workflow,/date -u \+%s/);assert.match(workflow,/next=\$\(\( created \/ 14400 \* 14400 \+ 19 \* 60 \)\)/);
   assert(!workflow.includes('head_sha }}\n        with:')); // checkout always default qualified main.
   for(const row of [...r.calls,...r.bucketCalls])for(const key of Object.keys(triggered()).filter(k=>k.startsWith('TRIGGER_')))
@@ -199,7 +200,7 @@ test('document history workflow: untrusted failed foreign or changed completion 
   for(const changed of [
     {DOCUMENT_HISTORY_OPERATION:'plan'},{DOCUMENT_HISTORY_PRUNE_LIMIT:'100'},
     {DOCUMENT_HISTORY_INDEX_SHA:'d'.repeat(64)},{DOCUMENT_HISTORY_CONFIRMATION:''},
-    {TRIGGER_ACTION:'requested'},{TRIGGER_RUN_ID:'0'},{TRIGGER_RUN_EVENT:'pull_request'},
+    {TRIGGER_ACTION:'requested'},{TRIGGER_ACTOR:''},{TRIGGER_ACTOR:'github-actions[bot]'},{TRIGGER_RUN_ID:'0'},{TRIGGER_RUN_EVENT:'pull_request'},
     {TRIGGER_RUN_NAME:'Other workflow'},{TRIGGER_RUN_PATH:'.github/workflows/untrusted.yml'},
     {TRIGGER_REPOSITORY:'foreign/RavRadar'},{TRIGGER_HEAD_REPOSITORY:'foreign/RavRadar'},
     {TRIGGER_REPOSITORY_ID:'1'},{TRIGGER_HEAD_REPOSITORY_ID:'1'},
@@ -237,7 +238,7 @@ test('document history workflow: automatic unknown write stops and discloses onl
 });
 
 test('document history workflow: automatic activation defaults off and only explicit enabled admits private IO',()=>{
-  assert.match(workflow,/if: github.event_name != 'workflow_run' \|\| \(github.event.workflow_run.conclusion == 'success' && vars.RAVRADAR_ADMIN_HISTORY_MAINTENANCE == 'enabled'\)/);
+  assert.match(workflow,/if: github.event_name != 'workflow_run' \|\| \(github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.actor.login != 'github-actions\[bot\]' && vars.RAVRADAR_ADMIN_HISTORY_MAINTENANCE == 'enabled'\)/);
   assert.equal((workflow.match(/AUTOMATIC_MAINTENANCE_ENABLED: \$\{\{ vars.RAVRADAR_ADMIN_HISTORY_MAINTENANCE \}\}/g)||[]).length,2);
   for(const value of [undefined,'','false','true','Enabled',' enabled','enabled ']){
     const r=execute(triggered({AUTOMATIC_MAINTENANCE_ENABLED:value}));
@@ -318,4 +319,109 @@ test('document history workflow: privacy failure exposes only fixed HTTP stage f
   const good=execute(options,{controllerResult:{privacyHttpStatus:201,privacyStage:'VERIFIED'}});
   assert.equal(good.exitCode,0);assert.equal(good.log[0].measurements[0].privacyHttpStatus,201);
   assert.equal(good.log[0].measurements[0].privacyStage,'VERIFIED');
+});
+
+const caller = fs.readFileSync(new URL('../.github/workflows/run-current-weather-once.yml', import.meta.url), 'utf8').replaceAll('\r\n', '\n');
+const proofStart = workflow.indexOf("          node <<'HANDOFF'\n");
+const proofEnd = workflow.indexOf('\n          HANDOFF', proofStart);
+assert(proofStart >= 0 && proofEnd > proofStart);
+const handoffProof = workflow.slice(proofStart + "          node <<'HANDOFF'\n".length, proofEnd)
+  .split('\n').map(line => { assert(line.startsWith('          ')); return line.slice(10); }).join('\n');
+
+function executeBotHandoff({env:overrides={}, source:sourceOverrides={}, jobs:changeJobs=jobs=>jobs,
+  now='2026-11-07T07:15:00Z', readFailure=false}={}) {
+  const repository = {id:1306858343,full_name:'jakobjorgensen82-commits/RavRadar'};
+  const head = 'a'.repeat(40), sourceRun = 42300000000, recipient = 42400000000;
+  const env = {GITHUB_REF:'refs/heads/main',GITHUB_REPOSITORY:repository.full_name,GITHUB_SHA:head,
+    GITHUB_RUN_ATTEMPT:'1',GITHUB_RUN_ID:String(recipient),SOURCE_WEATHER_RUN_ID:String(sourceRun),
+    GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_ACTOR:'github-actions[bot]',GITHUB_OUTPUT:'/runner/output',...overrides};
+  const source = {id:sourceRun,run_attempt:1,event:'workflow_dispatch',name:'Run current RavRadar weather once',
+    path:'.github/workflows/run-current-weather-once.yml',repository,head_repository:repository,head_branch:'main',
+    head_sha:head,actor:{login:'github-actions[bot]'},status:'completed',conclusion:'success',
+    created_at:'2026-11-07T04:19:36Z',...sourceOverrides};
+  const completed = {run_id:sourceRun,head_sha:head,status:'completed',conclusion:'success'};
+  const jobs = changeJobs([
+    {...completed,name:'Require a verified current-weather deployment'},
+    {...completed,name:'Hand off verified ordinary weather to admin document history',steps:[
+      {name:'Dispatch the existing document-history workflow once',status:'completed',conclusion:'success'},
+      {name:'Bind document history recipient '+recipient,status:'completed',conclusion:'success'}]},
+  ]);
+  const paths=[], output=[], errors=[], logs=[], proc={env,exitCode:0};
+  vm.runInNewContext(handoffProof, {require(name) {
+    if (name === 'node:fs') return {appendFileSync(file, data) {assert.equal(file,env.GITHUB_OUTPUT); output.push(data);}};
+    if (name === 'node:child_process') return {execFileSync(command,args,options) {
+      assert.equal(command,'gh');
+      assert.deepEqual(Array.from(args).slice(0,3),['api','--method','GET']);
+      assert.equal(options.timeout,10000);
+      assert.deepEqual(Array.from(options.stdio),['ignore','pipe','pipe']);
+      const route=args.at(-1); paths.push(route);
+      const endpoint='repos/'+repository.full_name+'/actions/runs/'+sourceRun;
+      if (readFailure) throw new Error('private raw text');
+      if (route === endpoint) return Buffer.from(JSON.stringify(source));
+      assert.equal(route,endpoint+'/attempts/1/jobs?per_page=100');
+      return Buffer.from(JSON.stringify({jobs,total_count:jobs.length}));
+    }};
+    throw new Error('Unexpected import '+name);
+  }, process:proc, Date:class extends Date {static now(){return Date.parse(now);}},
+  console:{log(value){logs.push(value);},error(value){errors.push(value);}}}, {timeout:1000});
+  return {output,errors,logs,paths,exitCode:proc.exitCode};
+}
+
+test('one verified ordinary bot attempt dispatches once and binds the one GitHub-acknowledged recipient',()=>{
+  const send=caller.slice(caller.indexOf('\n  handoff-admin-document-history:'),caller.indexOf('\n  notify-owner-failure:'));
+  assert.match(send,/needs: \[terminal-outcome, current-main-target\][\s\S]+needs\.terminal-outcome\.result == 'success'/);
+  assert.match(send,/needs\.current-main-target\.result == 'success'/);
+  assert.match(send,/needs\.current-main-target\.outputs\.completed_private_runtime == 'false'/);
+  assert.match(send,/github\.run_attempt == '1'[\s\S]+github\.actor == 'github-actions\[bot\]'/);
+  assert.match(send,/continue-on-error: true\n    permissions:\n      actions: write/);
+  assert.equal((send.match(/gh api --method POST/g)||[]).length,1);
+  assert.match(send,/timeout --signal=KILL 20s/);
+  assert.match(send,/-H "X-GitHub-Api-Version: 2026-03-10"/);
+  assert.doesNotMatch(send,/return_run_details/);
+  assert.match(send,/DOCUMENT_HISTORY_DISPATCH_OUTCOME_UNKNOWN_DO_NOT_RETRY[\s\S]+exit 1[\s\S]+recipient_run_id=\$recipient/);
+  assert.match(send,/name: Bind document history recipient \$\{\{ steps\.dispatch\.outputs\.recipient_run_id \}\}/);
+  assert.doesNotMatch(send,/\b(?:while|until|sleep)\b|SUPABASE_|RAVRADAR_R2_/);
+  assert.match(caller,/concurrency:\n  group: ravradar-weather-production-v2/);
+  assert(workflow.indexOf('Verify the completed source and its one exact recipient') < workflow.indexOf('Restore source-content validation locator'));
+  assert.match(workflow,/name: Run only the fixed document-history operation\n        if:[^\n]+steps\.bot-handoff\.outputs\.proceed == 'true'/);
+  const valid=executeBotHandoff();
+  assert.deepEqual(valid.output,['proceed=true\nsource_created_at=2026-11-07T04:19:36Z\n']);
+  assert.equal(valid.paths.length,2);
+  const batch=execute({GITHUB_ACTOR:'github-actions[bot]',SOURCE_WEATHER_RUN_ID:'42300000000',
+    HANDOFF_SOURCE_CREATED_AT:'2026-11-04T00:19:15Z',AUTOMATIC_MAINTENANCE_ENABLED:'enabled',
+    DOCUMENT_HISTORY_OPERATION:'maintain',DOCUMENT_HISTORY_CONFIRMATION:'MAINTAIN-EXACT-THREE-DOCUMENT-HISTORY'});
+  assert.equal(batch.exitCode,0);
+  assert.deepEqual(batch.calls.map(row=>row.mode),['maintain']);
+  assert.deepEqual(batch.bucketCalls.map(row=>row.mode),['read-only']);
+  assert(batch.calls.every(row=>!('SOURCE_WEATHER_RUN_ID' in row.env)));
+});
+
+test('bot handoff rejects a second recipient, reruns, missing/ambiguous proof and nonterminal source',()=>{
+  const duplicate=jobs=>{jobs[1].steps.push({...jobs[1].steps[1]});return jobs;};
+  const noProof=jobs=>{jobs[1].steps.pop();return jobs;};
+  const skippedProof=jobs=>{jobs[1].steps[1].conclusion='skipped';return jobs;};
+  for (const fault of [
+    {env:{GITHUB_RUN_ID:'42400000001'}},{env:{GITHUB_RUN_ATTEMPT:'2'}},{env:{GITHUB_ACTOR:'owner'}},
+    {source:{run_attempt:2}},{source:{status:'in_progress'}},{source:{conclusion:'failure'}},
+    {source:{head_sha:'b'.repeat(40)}},{source:{actor:{login:'owner'}}},{source:{head_repository:{id:1}}},
+    {jobs:duplicate},{jobs:noProof},{jobs:skippedProof},{jobs:jobs=>[jobs[1]]},{readFailure:true},
+  ]) {
+    const result=executeBotHandoff(fault);
+    assert.equal(result.exitCode,1);
+    assert.deepEqual(result.output,[]);
+    assert.deepEqual(result.errors,['DOCUMENT_HISTORY_HANDOFF_REJECTED']);
+    assert(result.paths.length<=2);
+  }
+  assert.deepEqual(executeBotHandoff({now:'2026-11-07T07:49:00Z'}).output,
+    ['proceed=true\nsource_created_at=2026-11-07T04:19:36Z\n']);
+  for (const now of ['2026-11-07T07:49:01Z','2026-11-07T08:20:00Z']) {
+    const result=executeBotHandoff({now});
+    assert.deepEqual(result.output,['proceed=false\n']);
+    assert.equal(result.paths.length,1);
+  }
+  const missing=execute({GITHUB_ACTOR:'github-actions[bot]',SOURCE_WEATHER_RUN_ID:'42300000000',
+    AUTOMATIC_MAINTENANCE_ENABLED:'enabled',DOCUMENT_HISTORY_OPERATION:'maintain',
+    DOCUMENT_HISTORY_CONFIRMATION:'MAINTAIN-EXACT-THREE-DOCUMENT-HISTORY'});
+  assert.equal(missing.exitCode,1);
+  assert.equal(missing.calls.length+missing.bucketCalls.length,0);
 });

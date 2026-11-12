@@ -30,6 +30,13 @@ import {ASSISTANT_LATER_H0_BINDING,assistantLaterH0Migration,requireAssistantLat
   INACTIVE_SCALAR597_LATER_H0_SUCCESSOR as ISSUED597_TIMEOUT_SUCCESSOR,
   UNISSUED_ASSISTANT_AFTER597_SUCCESSOR as AFTER597_TIMEOUT_SUCCESSOR}
   from './lib/assistant-later-h0-successor-source.mjs';
+import {SOURCE_PRODUCER_AFTER597_PARENT} from './lib/source-producer-after597-parent.mjs';
+import {
+  assertSourceProducerAfter597StaticCode,
+  readSourceProducerCanonicalSource,
+  requireSourceProducerOutput,
+  sourceProducerMigration,
+} from './lib/source-producer-after597-runtime-family.mjs';
 
 // Keep the payload-free operational control report inside this existing cheap
 // workflow command so the source gate does not grow another process.
@@ -89,6 +96,79 @@ function assertExactKeys(actual, expected, label) {
   assert.deepEqual(actual, [...expected], label + ' exact ordered keys');
   assert.equal(new Set(actual).size, actual.length, label + ' duplicate keys');
 }
+
+test('physical combined caller keeps typed recovery families and saved proof separate', () => {
+  const actualBuild = rawSources.build.replaceAll('\r\n', '\n');
+  const once = fs.readFileSync(new URL('../.github/workflows/run-current-weather-once.yml', import.meta.url), 'utf8').replaceAll('\r\n', '\n');
+  const ordinary = indentedBody(actualBuild, '      - name: Confirm exhausted exact Pages artifact metadata visibility');
+  const source = indentedBody(actualBuild, '      - name: Confirm exhausted exact SOURCE Pages artifact metadata visibility');
+  const flag = 'steps.operational-model.outputs.source_normal_producer';
+  const exhausted = "steps.pages-artifact-seal.outputs.metadata_visibility_exhausted == 'true'";
+  assert(ordinary.includes(flag + " == 'false'") && !ordinary.includes(flag + " == 'true'"));
+  assert(source.includes(flag + " == 'true'") && !source.includes(flag + " == 'false'"));
+  for (const marker of [ordinary, source]) {
+    assert(marker.includes(exhausted));
+    assert(marker.includes("steps.pages-upload.outcome == 'success'"));
+    assert(marker.includes("steps.pages-artifact-seal.outcome == 'failure'"));
+  }
+  assert(source.includes("steps.weather-route-result.outputs.source_result_kind == 'PREPARED_WEATHER'"));
+  const sourceStep = once.indexOf('id: source-saved-target');
+  const ordinaryStep = once.indexOf('id: automatic-completed-target');
+  const targetStep = once.indexOf('id: target-selection');
+  assert(sourceStep >= 0 && sourceStep < ordinaryStep && ordinaryStep < targetStep);
+  assert(once.slice(ordinaryStep, targetStep).includes("steps.source-saved-target.outputs.recovery_family == 'ordinary'"));
+  assert(jobBlock(once, 'current-main-target').includes('source_saved_pair_pages_proof: ' + gh('steps.source-saved-target.outputs.pages_proof')));
+  assert(jobBlock(once, 'build-and-prepare').includes('source_saved_pair_pages_proof: ' + gh('needs.current-main-target.outputs.source_saved_pair_pages_proof')));
+  assert.equal(indentedBody(once, '  workflow_dispatch:').includes('source_saved_pair_pages_proof:'), false);
+  assert.equal(actualBuild.split('SOURCE_SAVED_PAIR_PAGES_PROOF: ' + gh('inputs.source_saved_pair_pages_proof')).length - 1, 4);
+});
+
+// Verify the physical SOURCE inputs; historical inverses deliberately keep
+// the previous workflow bytes out of these assertions.
+test('SOURCE routing projects only typed controls and validates dispatch keys', () => {
+  const actualBuild = rawSources.build.replaceAll('\r\n', '\n');
+  const once = fs.readFileSync(new URL('../.github/workflows/run-current-weather-once.yml', import.meta.url), 'utf8')
+    .replaceAll('\r\n', '\n');
+  const dispatch = indentedBody(once, '      - name: Reject unknown or mixed SOURCE request before any operational reentry');
+  const saved = indentedBody(once, '      - name: Select verified saved SOURCE weather before locking a new hour');
+  const route = indentedBody(actualBuild, '      - name: Select one explicit legacy or SOURCE ordinary route');
+  const installed = indentedBody(actualBuild, '      - name: Read exact centrally active operational RavScore');
+  for (const step of [dispatch, saved, route, installed]) {
+    assert(!step.includes(gh('toJSON(inputs)')));
+  }
+  assert(dispatch.includes('process.env.GITHUB_EVENT_PATH'));
+  assert(dispatch.includes('SOURCE_ROUTE_REQUEST_UNKNOWN'));
+  assert(saved.includes(gh('needs.source-route-request.outputs.ordinary_source_reentry')));
+  assert(installed.includes(gh('steps.source-route.outputs.source_route_ordinary')));
+  assert(installed.includes('SOURCE_SAVED_PAIR_PREFLIGHT_CHANGED'));
+
+  // GitHub rejects undeclared workflow_call keys. This binds that declaration
+  // to the exact fields consulted by the reusable preflight.
+  const reusable = indentedBody(actualBuild, '  workflow_call:');
+  const declared = directKeys(indentedBody(reusable, '    inputs:'), 6);
+  const consulted = new Set([...route.matchAll(/\binputs\.([a-z0-9_]+)/g)].map(match => match[1]));
+  const jobEnv = indentedBody(jobBlock(actualBuild, 'build-and-prepare'), '    env:');
+  assert(jobEnv.includes('RAVRADAR_PRODUCTION_TARGET_HOUR: ' + gh('inputs.production_target_hour')));
+  consulted.add('production_target_hour'); // existing job-level canonical hour
+  assert.deepEqual([...consulted].sort(), declared.sort());
+  for (const key of declared.filter(key => !key.startsWith('source_saved_pair'))) {
+    if (!/^(source_normal_producer|force|production_target_hour|ravscore_candidate_g_rollback_mode)$/.test(key)
+        && indentedBody(actualBuild, '      ' + key + ':').includes('type: string')) {
+      if (key === 'source_closed_pages_pin') {
+        // This typed pin is projected directly and validated inside its closed route.
+        assert(route.includes('SOURCE_CLOSED_PAGES_PIN: ' + gh('inputs.' + key)));
+        assert(route.includes("assert(/^[a-f0-9]{64}$/.test(closedPin),'SOURCE_CLOSED_PAGES_PIN_INVALID');"));
+        assert(route.includes("}else assert.equal(closedPin,'','SOURCE_CLOSED_PAGES_PIN_WITHOUT_ROUTE');"));
+      } else {
+        assert(route.includes('inputs.' + key + " != ''"));
+      }
+    }
+  }
+  for (const key of ['pin', 'occurrence', 'pages_proof', 'public_manifest_sha256']) {
+    assert(route.includes(gh("inputs.source_saved_pair && inputs.source_saved_pair_" + key + " || ''")));
+    assert.equal(indentedBody(once, '  workflow_dispatch:').includes('source_saved_pair_' + key + ':'), false);
+  }
+});
 
 const checkpointEpochDeclarations = [
   '      weather_state_epoch_checkpoint_reentry:',
@@ -761,6 +841,33 @@ let casTimeoutSettings = fs.readdirSync(migrationsUrl).filter(name => name.endsW
   )].map(match => ({ migration: name, timeout: match[1] })));
 assert.equal(casTimeoutSettings.at(-1)?.timeout, '55s',
   'the final migration order must retain the established checkpoint-only 55s timeout');
+
+ const source = SOURCE_PRODUCER_AFTER597_PARENT;
+ if (source.binding !== null || source.output !== null || source.nextRelease !== null) {
+   const output = requireSourceProducerOutput();
+   assertSourceProducerAfter597StaticCode();
+   const migration = sourceProducerMigration();
+   const canonical = await readSourceProducerCanonicalSource();
+   assert.equal(canonical.sourcePhase, 'source-producer-after597');
+   assert.equal(canonical.admission, 'NO_ADMISSION');
+   assert.deepEqual(canonical.migration, migration);
+   const sql = fs.readFileSync(new URL(migration.filename, migrationsUrl));
+   const currentRow = {migration: migration.filename, timeout: '55s'};
+   const predecessorRow = {migration: AFTER597_TIMEOUT_SUCCESSOR.migration().filename, timeout: '55s'};
+   const inverseSource = (inventory, bytes) => {
+     assert.equal(conditions593TestHash('sha256').update(bytes).digest('hex'), output.migrationSha256);
+     assert.equal(inventory.filter(row => row.migration === migration.filename).length, 1);
+     assert.deepEqual(inventory.at(-1), currentRow);
+     assert.deepEqual(inventory.at(-2), predecessorRow);
+     const historical = inventory.slice(0, -1);
+     assert.deepEqual([...historical, currentRow], inventory);
+     return historical;
+   };
+   assert.throws(() => inverseSource(casTimeoutSettings, Buffer.concat([sql, Buffer.from('\n')])));
+   assert.throws(() => inverseSource(casTimeoutSettings.slice(0, -1), sql));
+   assert.throws(() => inverseSource([...casTimeoutSettings, currentRow], sql));
+   casTimeoutSettings = inverseSource(casTimeoutSettings, sql);
+ }
 
 // Actual594 is a separate issued source profile. Validate its whole normal SQL
 // and canonical reader before a TEST INVENTORY ONLY inverse; never remove a

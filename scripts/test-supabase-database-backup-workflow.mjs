@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {runHostedSupabaseBackup as run} from './run-hosted-supabase-backup.mjs';
 import {FIXED_844_ROLE_GRANT_COMMITMENTS as commitments} from './archive-supabase-database-backup.mjs';
+import './test-supabase-backup-lifecycle.mjs';
 const workflow=fs.readFileSync(new URL('../.github/workflows/backup-supabase-database.yml',import.meta.url),'utf8');
 const realController=fs.readFileSync(new URL('./archive-supabase-database-backup.mjs',import.meta.url),'utf8');
 const workflowName='Back up RavRadar Supabase database',captureConfirmation='CAPTURE-PRIVATE-SUPABASE-DATABASE-BACKUP';
@@ -72,7 +73,9 @@ test('hosted backup workflow: exact qualified lock/source order, readonly defaul
   assert.match(workflow,/run: node scripts\/weather-source-gate.mjs check/);assert.match(workflow,/run: test "\$\{\{ steps.source-proof.outputs.required \}\}" = false/);
   const source=workflow.indexOf('Reject missing source proof'),pre=workflow.indexOf('Check private bucket before capture-only CLI setup'),cli=workflow.indexOf('uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf'),execute=workflow.indexOf('Run only the fixed backup operation');
   assert(source<pre&&pre<cli&&cli<execute);assert(workflow.indexOf('node --test scripts/test-supabase-database-backup-workflow.mjs')<source);
-  assert.match(workflow,/version: 2\.117\.0/);assert.equal((workflow.match(/if: inputs.operation == 'capture'/g)||[]).length,2);
+  assert.match(workflow,/version: 2\.117\.0/);
+  assert.match(workflow,/if: steps.admission.outputs.automatic != 'true' && inputs.operation == 'capture'/);
+  assert.match(workflow,/if: \(steps.admission.outputs.automatic != 'true' && inputs.operation == 'capture'\) \|\| steps.auto-plan.outputs.proceed == 'true'/);
   assert(!/upload-artifact|continue-on-error|always\(\)|\|\| true|^\s+container:|restore-to-prod|prune|monitor-trip-storage/m.test(workflow));
   assert.match(workflow,/inputs.operation == 'capture' && secrets.SUPABASE_DB_PASSWORD \|\| ''/);
   assert.match(workflow,/inputs.operation != 'bootstrap' && secrets.CLOUDFLARE_API_TOKEN \|\| ''/);
@@ -198,7 +201,7 @@ test('fixed 844 role audit workflow admits the exact operation before its own mi
   const auditName='Read only the fixed 844 archive roles';
   const guard=workflow.indexOf(guardName),audit=workflow.indexOf(auditName);
   assert(workflow.indexOf('Reject missing source proof')<guard&&guard<audit);
-  assert.match(workflow,/Run only the fixed backup operation\n        if: inputs.operation != 'audit-fixed-844-role-grant'/);
+  assert.match(workflow,/Run only the fixed backup operation' \}\}\n        if: steps.admission.outputs.automatic != 'true' && inputs.operation != 'audit-fixed-844-role-grant'/);
   const gate=workflow.slice(guard,audit),execution=workflow.slice(audit);
   for(const text of [gate,execution])assert.match(text,/if: inputs.operation == 'audit-fixed-844-role-grant'\n/);
   assert.match(gate,/run: node scripts\/run-hosted-supabase-backup\.mjs --preflight/);
@@ -207,7 +210,8 @@ test('fixed 844 role audit workflow admits the exact operation before its own mi
     assert.match(text,/SUPABASE_BACKUP_AUDIT_INDEX_ABSENT: \$\{\{ inputs\.index_sha == '' && 'true' \|\| 'false' \}\}/);
     assert(!text.includes('SUPABASE_BACKUP_INDEX_SHA:'));
   }
-  assert.equal((workflow.match(/if: inputs.operation == 'capture'/g)||[]).length,2);
+  assert.match(workflow,/if: steps.admission.outputs.automatic != 'true' && inputs.operation == 'capture'/);
+  assert.match(workflow,/if: \(steps.admission.outputs.automatic != 'true' && inputs.operation == 'capture'\) \|\| steps.auto-plan.outputs.proceed == 'true'/);
   assert.match(execution,/run: node scripts\/run-hosted-supabase-backup\.mjs --execute/);
   assert.deepEqual([...execution.matchAll(/secrets\.([A-Z0-9_]+)/g)].map(x=>x[1]),
     ['SUPABASE_SERVICE_ROLE_KEY','RAVRADAR_R2_ACCOUNT_ID','RAVRADAR_R2_ACCESS_KEY_ID','RAVRADAR_R2_SECRET_ACCESS_KEY']);

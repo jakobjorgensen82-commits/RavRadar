@@ -27,6 +27,15 @@ import {CURRENT586_PHASE_UPLOAD,inverseCurrent586PhaseUpload,verifyCurrent586Pha
   verifyScalar597LaterH0PhaseReceipt,ASSISTANT_AFTER597_PHASE,ASSISTANT_AFTER597_COMMANDS,
   verifyAssistantAfter597PhaseReceipt} from './native-postgres-evidence.mjs';
 
+import {requireSourceProducerOutput} from './lib/source-producer-after597-runtime-family.mjs';
+import {SOURCE_AFTER598_BASIC_COMMANDS,verifySourceAfter598BasicPhaseReceipt}
+  from './native-postgres-evidence.mjs';
+
+import {SOURCE_PRODUCER_AFTER597_PARENT} from './lib/source-producer-after597-parent.mjs';
+import {SOURCE_PR_NATIVE_PHASE_KIND,readSourcePrNativeUploadedPhase,verifySourcePrNativePhaseReceipt,
+  assertSourceProducerProofHeader} from './native-postgres-evidence.mjs';
+import {verifySourcePrPackage,verifySourcePrWorkflow} from './lib/source598-pr-qualification-scope.mjs';
+
 export const ORIGIN=Object.freeze({
   repository:'jakobjorgensen82-commits/RavRadar',pullRequest:671,
   run:39216632584,attempt:1,job:117941905389,
@@ -650,6 +659,7 @@ async function executeHistorical({national=true}={}) {
     sourceScope:national?'HISTORICAL_584_NATIONAL_ONLY':'HISTORICAL_584_DEFAULT_ONLY',frozenHead:ORIGIN.head,frozenTree:ORIGIN.tree};
 }
 async function main(){
+  if(SOURCE_PRODUCER_AFTER597_PARENT.binding!==null)return sourceAfter598PrNationalMain();
   if(process.argv[2]==='assistant-after597-source'){
     requireAssistantAfter597Output(); // Before environment, Git, files or launch.
     assert.equal(process.argv.length,3);
@@ -826,4 +836,75 @@ async function main(){
   await fs.writeFile(file,JSON.stringify(current)+'\n');
   console.log('Historical584 national '+result.status+'; frozen '+ORIGIN.head+'; CURRENT585 native/source remain separate.');
 }
+
+// Normal basic-PG consumer only. This cannot establish full current/national
+// capacity. The real national gate must separately verify its full-profile.
+export function verifySourceProducerBasicPostgresContext(proof,current){
+  requireSourceProducerOutput(); // FIRST before proof/current operand reads.
+  assert.equal(arguments.length,2);
+  assert.equal(proof.repository,ORIGIN.repository);assert.equal(proof.headSha,current.head);
+  assert.equal(proof.contractId,'weather-source-gate-content-v2');
+  assert.equal(proof.privatePayloadIncluded,false);
+  assert.match(proof.sourceTreeSha256,/^sha256:[a-f0-9]{64}$/);
+  const receipt=verifySourceAfter598BasicPhaseReceipt(proof.nativePostgres,current);
+  assert.deepEqual(receipt.commands,SOURCE_AFTER598_BASIC_COMMANDS);
+  assert.equal(receipt.currentProfileExecuted,false);return receipt;
+}
+
+async function sourcePrNationalContext(){
+  requireSourceProducerOutput(); // FØR enhver Git-, event-, package- eller proof-læsning.
+  const env=process.env,head=git('rev-parse','HEAD^{commit}');
+  assert.equal(env.GITHUB_EVENT_NAME,'pull_request');assert.equal(env.GITHUB_REPOSITORY,ORIGIN.repository);
+  assert.equal(env.SOURCE_GATE_HEAD_SHA,head);assert.match(head,/^[a-f0-9]{40}$/);
+  assert.equal(git('status','--porcelain','--untracked-files=no'),'');git('merge-base','--is-ancestor',ORIGIN.head,head);
+  const event=JSON.parse(await fs.readFile(env.GITHUB_EVENT_PATH,'utf8'));
+  assert.equal(event.pull_request?.head?.sha,head);assert.equal(event.pull_request?.head?.repo?.full_name,ORIGIN.repository);
+  assert.equal(event.pull_request?.number,Number(env.PULL_REQUEST_NUMBER));assert.equal(event.pull_request.head.ref,env.GITHUB_HEAD_REF);
+  verifySourcePrWorkflow(await fs.readFile(path.join(ROOT,WORKFLOW),'utf8'));
+  verifySourcePrPackage(JSON.parse(await fs.readFile(path.join(ROOT,'package.json'),'utf8')));
+  const proof=JSON.parse(await fs.readFile(path.join(ROOT,'.cache/source-tree-content-proof.json'),'utf8'));
+  assertSourceProducerProofHeader(proof,head);assert.equal(proof.sourceTreeSha256,content('HEAD'));
+  assert(!Object.hasOwn(proof,'historical584National'));
+  const current={run:Number(env.GITHUB_RUN_ID),attempt:Number(env.GITHUB_RUN_ATTEMPT),head,
+    pullRequest:Number(env.PULL_REQUEST_NUMBER),branch:env.GITHUB_HEAD_REF};
+  const completed=await readSourcePrNativeUploadedPhase(current,proof.sourceTreeSha256);
+  assert.deepEqual(proof.nativePostgres,completed.proof.nativePostgres);
+  const expected={jobId:completed.phase.current.jobId,mainHead:completed.phase.mainHead,sourceTreeSha256:proof.sourceTreeSha256};
+  verifySourcePrNativePhaseReceipt(proof.nativePostgres,current,expected,completed.phase);
+  return {head,current,proof,completed};
+}
+async function sourceAfter598PrNationalMain(){
+  requireSourceProducerOutput(); // FIRST: ingen fallback til historisk basic eller gammel release.
+  assert(process.argv.length<=3);const mode=process.argv[2]??'national';assert(['source','national'].includes(mode));
+  await requireSourceEnvironment();const historical=requireHistoricalSource();
+  if(mode==='source'){
+    const head=git('rev-parse','HEAD^{commit}');assert.equal(git('status','--porcelain','--untracked-files=no'),'');
+    git('merge-base','--is-ancestor',ORIGIN.head,head);
+    verifySourcePrWorkflow(await fs.readFile(path.join(ROOT,WORKFLOW),'utf8'));
+    verifySourcePrPackage(JSON.parse(await fs.readFile(path.join(ROOT,'package.json'),'utf8')));
+    await executeHistorical({national:false});
+    assert.equal(git('rev-parse','HEAD'),head);assert.equal(git('status','--porcelain','--untracked-files=no'),'');
+    console.log('SOURCE package checked with genuine historical584 DEFAULT execution; no native/full-job/production proof.');return;
+  }
+  assert.equal(process.platform,'linux');const ctx=await sourcePrNationalContext();
+  // Ny SOURCE-fase genbruger ikke en gammel families native-/FULL-kvittering.
+  // Det hele historiske584-mål udføres af den uændrede normale kalder.
+  const result=await executeHistorical();
+  assert.equal(git('rev-parse','HEAD'),ctx.head);assert.equal(git('status','--porcelain','--untracked-files=no'),'');
+  assert.equal(content('HEAD'),ctx.proof.sourceTreeSha256);
+  const fresh=await readSourcePrNativeUploadedPhase(ctx.current,ctx.proof.sourceTreeSha256);
+  assert.deepEqual(fresh,ctx.completed);
+  const file=path.join(ROOT,'.cache/source-tree-content-proof.json');
+  const current=JSON.parse(await fs.readFile(file,'utf8'));assert.deepEqual(current,ctx.proof);
+  current.historical584National={...result,kind:'SOURCE_AFTER598_PR_NATIVE_HISTORICAL584_V1',historicalInput:historical,
+    current:{...ctx.current,jobId:fresh.phase.current.jobId},
+    currentSourcePrNative:{kind:SOURCE_PR_NATIVE_PHASE_KIND,status:'EXECUTED',executedInThisRun:true,
+      currentProfileExecuted:true,scope:'SOURCE_PR_NATIVE_TEST',mainHead:fresh.phase.mainHead,
+      sourceTreeSha256:ctx.proof.sourceTreeSha256,artifactId:fresh.artifact.id,artifactDigest:fresh.artifact.digest,
+      sourceAdmission:false,productionProof:false},
+    currentSourceNationalExecutionClaimed:false,providerOrProductionProof:false};
+  await fs.writeFile(file,JSON.stringify(current)+'\n');
+  console.log('Genuine historical584 national EXECUTED; separate SOURCE PR-native phase verified after PG/upload; no production proof.');
+}
+
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url))await main();

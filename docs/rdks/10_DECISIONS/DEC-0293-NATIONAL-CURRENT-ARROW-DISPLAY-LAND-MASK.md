@@ -1,6 +1,6 @@
 # DEC-0293 – Landsdækkende landkontrol for strømpile
 
-- **Status:** Visningsrettelse produktionsleveret og målrettet browserverificeret; numerisk diagnose åben
+- **Status:** Visningsrettelsen er produktionsleveret og browserverificeret. Den efterfølgende landsdækkende numeriske rettelse blev produktionsverificeret 24. oktober 2026.
 - **Ejerordre:** 8. oktober 2026: Rettelsen skal gælde hele landet og også hidtil usete tilfælde.
 - **Omfang:** Kortets præsentation, ikke kilders fysiske gyldighed eller RavScore.
 
@@ -31,8 +31,14 @@ eksisterende strømhukommelse. Uændret score er ikke bevis for korrekt score.
 Native celle/maskestatus, koordinatafkodning, original kilde, valgt time og
 faktisk anvendelse i score og begge strømtilstande skal spores samlet.
 Kortets landmaske må ikke alene udløse kildeafvisning, historikreset,
-renormalisering eller tab af gyldige originaler. Denne datadiagnose er åben;
-visningsleverancen må ikke beskrives som en fuld rettelse af scoregrundlaget.
+renormalisering eller tab af gyldige originaler.
+
+Den normale driftskontrol 24. oktober 2026 verificerede akser, scanorden,
+gittercelle og godkendt kystpunkt for de valgte direkte DMI-strømdata, før
+de blev brugt til RavScore. Efterfølgende almindelige kørsler bekræftede,
+at de bevarede originale strømdata indgik i strømhukommelsen.
+Prognosedækning, længden af den gyldige modelhistorik og den særskilte
+vejrhentningsrevision følges fortsat hver for sig.
 
 Masken er en lokal statisk fil med låst SHA-256 og ODbL-kildeangivelse.
 Hjemmesiden kontakter ingen ny GIS-tjeneste, og vejrhentningen downloader

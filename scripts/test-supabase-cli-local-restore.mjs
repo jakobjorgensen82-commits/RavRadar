@@ -13,6 +13,9 @@ import {setTimeout as sleep} from 'node:timers/promises';
 import {fileURLToPath} from 'node:url';
 import {Readable,Writable} from 'node:stream';
 import {pipeline} from 'node:stream/promises';
+import {AuthenticatedCopyCatalog,collectLocalCopy,localCopySql,COPY_SESSION_SQL,quoteCopyIdentifier,qualifiedCopyName}
+  from './lib/authenticated-copy-restore-parity.mjs';
+import {installOriginalAuthGuardSql,checkOriginalAuthGuardSql} from './lib/isolated-auth-original-row-guard.mjs';
 
 const P=Object.freeze({cli:'2.117.0',operationMs:20*60_000,cleanupMs:2*60_000,
   childMs:8*60_000,diagnosticBytes:1024*1024,fileBytes:8*1024*1024,totalBytes:32*1024*1024});
@@ -406,9 +409,12 @@ async function* materializedRestoreBytes(c,archive,history=false,inputLines=null
 
 // Same owned process-group timeout shape as export-supabase-database.mjs.
 // Process closure never claims that a Docker daemon-side operation has stopped.
-async function command(c,stage,bin,args,{cwd=c.root,input=null,maxMs=P.childMs,audit=null,archivePsql=false,inputLines=null}={}){
+async function command(c,stage,bin,args,{cwd=c.root,input=null,maxMs=P.childMs,audit=null,archivePsql=false,inputLines=null,
+  stdoutObserver=null,stdoutLimit=P.diagnosticBytes}={}){
   c.stage=stage;need(Date.now()<c.deadline,'OPERATION_DEADLINE');
   need(input===null||Buffer.isBuffer(input)||typeof input?.[Symbol.asyncIterator]==='function','RESTORE_INPUT_STREAM');
+  need(stdoutObserver===null?stdoutLimit===P.diagnosticBytes:typeof stdoutObserver.write==='function'&&Number.isSafeInteger(stdoutLimit)
+    &&stdoutLimit>0&&stdoutLimit<=ARCHIVE_SQL.totalBytes,'RESTORE_OUTPUT_OBSERVER');
   let child,closed=false,exit=null,signal=null,first=null,outBytes=0,errBytes=0,inputStream=null,inputPump=null,inputDone=false,stdinClosed=false;
   const out=[],err=[],started=Date.now();
   const fail=code=>{first??=Object.assign(new Error('LOCAL_RESTORE_FAILED_CLOSED'),{code});};
@@ -421,14 +427,16 @@ async function command(c,stage,bin,args,{cwd=c.root,input=null,maxMs=P.childMs,a
   };
   const inputFailure=e=>fail(/^ARCHIVE_SQL_|^OPERATION_DEADLINE$/.test(e?.code??'')?e.code:'STDIN_TRANSPORT');
   try{
-    child=spawn(bin,args,{cwd,env:restoreChildEnvironment(process.env,c.home,c.root,bin),shell:false,detached:true,stdio:['pipe','pipe','pipe']});
+    child=spawn(bin,args,{cwd,env:restoreChildEnvironment(c.env??process.env,c.home,c.root,bin),shell:false,detached:true,stdio:['pipe','pipe','pipe']});
     child.on('error',()=>fail('SPAWN_FAILED'));
     child.on('exit',(v,s)=>{
       exit=v;signal=s;
       if((v!==0||s!==null)&&!(archivePsql&&v===3&&s===null))fail('CHILD_EXIT');
     });
     child.on('close',()=>{closed=true;});
-    child.stdout.on('data',b=>{outBytes+=b.length;if(outBytes>P.diagnosticBytes)fail('STDOUT_BOUND');else out.push(Buffer.from(b));});
+    child.stdout.on('data',b=>{outBytes+=b.length;if(outBytes>stdoutLimit)fail('STDOUT_BOUND');
+      else if(stdoutObserver){if(!first)try{stdoutObserver.write(b);}catch(error){fail(/^ARCHIVE_SQL_COPY_/.test(error?.code??'')?error.code:'STDOUT_TRANSPORT');}}
+      else out.push(Buffer.from(b));});
     child.stderr.on('data',b=>{errBytes+=b.length;if(errBytes>P.diagnosticBytes)fail('STDERR_BOUND');else err.push(Buffer.from(b));});
     child.stdout.on('error',()=>fail('STDOUT_TRANSPORT'));child.stderr.on('error',()=>fail('STDERR_TRANSPORT'));
     child.stdin.on('error',stdinFailure);
@@ -582,14 +590,16 @@ async function startProject(c,p){
   need(typeof status.ANON_KEY==='string'&&status.ANON_KEY.length>32&&typeof status.SERVICE_ROLE_KEY==='string'
     &&status.SERVICE_ROLE_KEY.length>32,'LOCAL_RUNTIME_KEYS_REQUIRED');p.anon=status.ANON_KEY;p.service=status.SERVICE_ROLE_KEY;
 }
-async function psql(c,p,stage,bytes,inputLines=null){
+async function psql(c,p,stage,bytes,inputLines=null,output={}){
   return command(c,stage,'docker',['exec','-i','-e','PGPASSWORD='+decodeURIComponent(p.dbUrl.password),p.db,'psql','-X',
     '--host=127.0.0.1','--port=5432','--username=postgres','--dbname=postgres','--quiet','--single-transaction','--variable=ON_ERROR_STOP=1',
     '--set=VERBOSITY=sqlstate','--tuples-only','--no-align',...(inputLines?['--file=-']:[])],
-    {input:bytes,maxMs:90_000,archivePsql:c.archive===true&&!Buffer.isBuffer(bytes),inputLines});
+    {input:bytes,maxMs:90_000,archivePsql:c.archive===true&&!Buffer.isBuffer(bytes),inputLines,
+      stdoutObserver:output.stdoutObserver??null,stdoutLimit:output.stdoutLimit??P.diagnosticBytes});
 }
-function archiveBootstrapPsqlArguments(c,p){
-  need(c.archive===true&&p.side==='B'&&/^[a-f0-9]{64}$/.test(p.db??''),'ARCHIVE_BOOTSTRAP_TARGET');
+function archiveBootstrapPsqlArguments(c,p,purpose='restore'){
+  need(['restore','auth-guard'].includes(purpose)&&(c.archive===true||purpose==='auth-guard'&&c.archive===false)
+    &&p.side==='B'&&/^[a-f0-9]{64}$/.test(p.db??''),'ARCHIVE_BOOTSTRAP_TARGET');
   const shell=[
     'test "${POSTGRES_HOST:-}" = /var/run/postgresql',
     'test -n "${POSTGRES_PASSWORD:-}"',
@@ -683,10 +693,141 @@ async function dumpFiles(c,p){
   return bytes;
 }
 
+async function authenticatedCopyCatalog(c,archive){
+  c.stage='AUTHENTICATED_COPY_CATALOG';
+  const catalog=new AuthenticatedCopyCatalog();catalog.sources=new Map();
+  for(let at=archive.directory;;at=path.dirname(at)){
+    need(at===c.root||inside(c.root,at),'ARCHIVE_SQL_DIRECTORY');const stat=await fs.lstat(at);
+    need(stat.isDirectory()&&!stat.isSymbolicLink(),'ARCHIVE_SQL_DIRECTORY');if(at===c.root)break;
+  }
+  for(const logical of ['data.sql','history-data.sql']){
+    const physical=c.archive?logical:logical.replace('history-data','history_data');
+    const entry=archive.files.find(file=>(file.file??file.name)===physical);need(entry,'ARCHIVE_FILE_DESCRIPTOR');
+    const file=path.join(archive.directory,physical),named=await fs.lstat(file,{bigint:true});privateSqlFile(named);
+    const handle=await fs.open(file,constants.O_RDONLY|(constants.O_NOFOLLOW||0));
+    try{
+      const before=await handle.stat({bigint:true});privateSqlFile(before);assert.deepEqual(fileIdentity(named),fileIdentity(before));
+      need(before.size===BigInt(entry.bytes)&&entry.bytes>0&&entry.bytes<=ARCHIVE_SQL.fileBytes,'ARCHIVE_SQL_LENGTH');
+      const hash=crypto.createHash('sha256'),buffer=Buffer.alloc(ARCHIVE_SQL.chunkBytes);let bytes=0;catalog.beginFile(logical);
+      for(;;){need(Date.now()<c.deadline,'OPERATION_DEADLINE');const read=await handle.read(buffer,0,buffer.length,null);if(!read.bytesRead)break;
+        bytes+=read.bytesRead;need(bytes<=entry.bytes,'ARCHIVE_SQL_LENGTH');const chunk=buffer.subarray(0,read.bytesRead);hash.update(chunk);catalog.write(chunk);}
+      const after=await handle.stat({bigint:true}),fresh=await fs.lstat(file,{bigint:true});privateSqlFile(fresh);
+      assert.deepEqual(fileIdentity(before),fileIdentity(after));assert.deepEqual(fileIdentity(after),fileIdentity(fresh));
+      need(bytes===entry.bytes&&hash.digest('hex')===entry.sha256,'ARCHIVE_SQL_SHA');catalog.finishFile();
+      catalog.sources.set(logical,{file,identity:fileIdentity(after)});
+    }finally{await handle.close();}
+  }
+  return catalog.finish();
+}
+async function* expectedCopyInput(c,catalog,table){
+  const source=catalog.sources.get(table.file);need(source,'ARCHIVE_SQL_COPY_SOURCE');
+  const columns=table.columns.map(quoteCopyIdentifier).join(', '),temp='pg_temp."rr_archive_copy_expected"';
+  const formats=table.formats??table.columns.map(()=>'raw');
+  need(formats.length===table.columns.length&&formats.every(format=>['raw','timestamptz','timestamptz[]','bytea','bytea[]'].includes(format)),
+    'ARCHIVE_SQL_COPY_FORMAT_PROFILE');
+  const projection=table.columns.map((column,index)=>quoteCopyIdentifier(column)
+    +(formats[index]==='raw'?'':'::pg_catalog.'+formats[index])).join(', ');
+  // Preserve every exported digit as text. Reusing target typmods here could
+  // round both expectation and actual data and hide a lossy restore. Only the
+  // four lossless builtin representation conversions above are permitted.
+  yield Buffer.from(COPY_SESSION_SQL+'CREATE TEMP TABLE "rr_archive_copy_expected" ('
+    +table.columns.map(column=>quoteCopyIdentifier(column)+' pg_catalog.text').join(', ')
+    +');\nCOPY '+temp+' ('+columns+') FROM STDIN;\n');
+  const named=await fs.lstat(source.file,{bigint:true});privateSqlFile(named);assert.deepEqual(fileIdentity(named),source.identity);
+  const handle=await fs.open(source.file,constants.O_RDONLY|(constants.O_NOFOLLOW||0));
+  try{
+    assert.deepEqual(fileIdentity(await handle.stat({bigint:true})),source.identity);
+    const buffer=Buffer.alloc(ARCHIVE_SQL.chunkBytes),hash=crypto.createHash('sha256');let offset=table.dataStart;
+    while(offset<table.dataEnd){need(Date.now()<c.deadline,'OPERATION_DEADLINE');
+      const {bytesRead}=await handle.read(buffer,0,Math.min(buffer.length,table.dataEnd-offset),offset);
+      need(bytesRead>0,'ARCHIVE_SQL_COPY_RANGE');const chunk=buffer.subarray(0,bytesRead);hash.update(chunk);offset+=bytesRead;yield Buffer.from(chunk);}
+    assert.deepEqual(fileIdentity(await handle.stat({bigint:true})),source.identity);
+    const fresh=await fs.lstat(source.file,{bigint:true});privateSqlFile(fresh);assert.deepEqual(fileIdentity(fresh),source.identity);
+    need(offset===table.dataEnd&&hash.digest('hex')===table.copyWireSha256,'ARCHIVE_SQL_COPY_RANGE_SHA');
+  }finally{await handle.close();}
+  yield Buffer.from('\nCOPY (SELECT '+projection+' FROM '+temp+') TO STDOUT;\n');
+}
+async function verifyAuthenticatedCopyParity(c,b,catalog){
+  need(b.side==='B','ARCHIVE_SQL_COPY_TARGET');
+  for(const table of catalog.tables){
+    const literal=value=>"'"+value.replaceAll("'","''")+"'",columns='ARRAY['+table.columns.map(literal).join(',')+']::text[]';
+    const metadata=await query(c,b,'ARCHIVE_COPY_COLUMN_FORMATS',`WITH RECURSIVE base AS (
+      SELECT a.attname::text column_name,array_position(${columns},a.attname::text) ordinal,a.atttypid type_oid
+      FROM pg_attribute a WHERE a.attrelid=${literal(qualifiedCopyName(table))}::regclass AND a.attnum>0
+        AND NOT a.attisdropped AND a.attname::text=ANY(${columns})
+      UNION ALL SELECT base.column_name,base.ordinal,t.typbasetype FROM base JOIN pg_type t ON t.oid=base.type_oid WHERE t.typtype='d'
+      ) SELECT COALESCE(jsonb_agg(jsonb_build_array(base.column_name,CASE
+        WHEN t.oid='pg_catalog.timestamptz'::regtype THEN 'timestamptz'
+        WHEN t.oid='pg_catalog.timestamptz[]'::regtype THEN 'timestamptz[]'
+        WHEN t.oid='pg_catalog.bytea'::regtype THEN 'bytea'
+        WHEN t.oid='pg_catalog.bytea[]'::regtype THEN 'bytea[]' ELSE 'raw' END) ORDER BY base.ordinal),'[]'::jsonb)
+      FROM base JOIN pg_type t ON t.oid=base.type_oid WHERE t.typtype<>'d';`);
+    need(Array.isArray(metadata)&&metadata.length===table.columns.length&&metadata.every((entry,index)=>
+      Array.isArray(entry)&&entry.length===2&&entry[0]===table.columns[index]),'ARCHIVE_SQL_COPY_COLUMN_FORMATS');
+    table.formats=metadata.map(entry=>entry[1]);
+    const expected=collectLocalCopy(table,catalog.salt,{expected:null});
+    await psql(c,b,'ARCHIVE_COPY_EXPECTED',expectedCopyInput(c,catalog,table),{next:1,ranges:new Map()},
+      {stdoutObserver:expected,stdoutLimit:ARCHIVE_SQL.totalBytes});
+    const summary=expected.finish(),actual=collectLocalCopy(table,catalog.salt,{expected:summary});
+    await psql(c,b,'ARCHIVE_COPY_ACTUAL',Buffer.from(localCopySql(table)),null,
+      {stdoutObserver:actual,stdoutLimit:ARCHIVE_SQL.totalBytes});actual.finish();
+  }
+  if(catalog.sequences.length){
+    const sql='select jsonb_build_array('+catalog.sequences.map(sequence=>
+      '(select jsonb_build_array(last_value::text,is_called) from '+qualifiedCopyName(sequence)+')').join(',')+');';
+    const actual=await query(c,b,'ARCHIVE_SEQUENCE_PARITY',sql);
+    need(Array.isArray(actual)&&actual.length===catalog.sequences.length,'ARCHIVE_SQL_SEQUENCE_PARITY');
+    for(let index=0;index<actual.length;index++)need(Array.isArray(actual[index])&&actual[index].length===2
+      &&actual[index][0]===catalog.sequences[index].value&&actual[index][1]===catalog.sequences[index].called,'ARCHIVE_SQL_SEQUENCE_PARITY');
+  }
+  need(['users','identities'].every(name=>catalog.tables.some(table=>table.schema==='auth'&&table.table===name)),
+    'ARCHIVE_SQL_AUTH_EXPORT_ABSENT');
+  return {authenticatedExportDataParityVerified:true,authenticatedSequenceStateVerified:true,
+    copyTablesVerified:catalog.tables.length,copySequencesVerified:catalog.sequences.length};
+}
+async function restoredAuthHealthy(c,b){
+  await command(c,'RESTART_B_AUTH','docker',['start',b.auth],{maxMs:30_000});
+  let healthy=false;const end=Math.min(c.deadline,Date.now()+60_000);
+  while(Date.now()<end){const info=(await jsonCommand(c,'RESTORED_AUTH_HEALTH',['inspect',b.auth]))[0];
+    if(info.State?.Health?.Status==='healthy'){ownedContainer(info,b,'auth',c.archive===true);healthy=true;break;}await sleep(500);}
+  need(healthy,'RESTORED_AUTH_NOT_HEALTHY');
+}
+async function isolatedFreshAuthProbe(c,b,bindings={}){
+  need(b?.side==='B'&&/^[a-f0-9]{64}$/.test(b.auth??'')&&/^[a-f0-9]{64}$/.test(b.db??''),'ARCHIVE_AUTH_PROBE_TARGET');
+  const runCommand=bindings.command??command,runQuery=bindings.query??query,runAuth=bindings.auth??auth;
+  const healthy=bindings.healthy??restoredAuthHealthy,inspect=bindings.inspect??jsonCommand;
+  const stop=async()=>{await runCommand(c,'QUIESCE_PROBE_AUTH','docker',['stop','--time','10',b.auth],{maxMs:30_000});
+    const state=(await inspect(c,'PROBE_AUTH_STOPPED',['inspect',b.auth]))[0];
+    need(state?.Id===b.auth&&state.Name==='/supabase_auth_'+b.id
+      &&state.Config?.Labels?.['com.supabase.cli.project']===b.id&&state.State?.Running===false,'ARCHIVE_AUTH_NOT_STOPPED');};
+  const guard='rr_archive_auth_'+crypto.randomBytes(8).toString('hex');await stop();
+  await runCommand(c,'PROTECT_ORIGINAL_AUTH','docker',archiveBootstrapPsqlArguments(c,b,'auth-guard'),
+    {input:Buffer.from(installOriginalAuthGuardSql(guard)),maxMs:90_000});
+  let error=null;
+  try{
+    await healthy(c,b);
+    const nonce=crypto.randomBytes(16).toString('hex'),email='rr-isolated-restore-'+nonce+'@example.invalid',password=crypto.randomBytes(32).toString('base64url');
+    need(await runQuery(c,b,'OWN_PROBE_EMAIL_ABSENT',"select to_jsonb(count(*)=0) from auth.users where email='"+email+"';")===true,'ARCHIVE_AUTH_PROBE_ALREADY_EXISTS');
+    const metadata={rr_isolated_restore_probe:nonce},created=await runAuth(c,b,'/admin/users',
+      {token:b.service,body:{email,password,email_confirm:true,user_metadata:metadata}});need(uuid(created.id),'ARCHIVE_AUTH_PROBE_CREATED');
+    const login=await runAuth(c,b,'/token?grant_type=password',{body:{email,password}});
+    need(login.user?.id===created.id&&typeof login.access_token==='string'&&login.access_token.length>20,'ARCHIVE_AUTH_PROBE_LOGIN');
+    const user=await runAuth(c,b,'/user',{token:login.access_token});
+    need(user.id===created.id&&user.email===email&&user.user_metadata?.rr_isolated_restore_probe===nonce,'ARCHIVE_AUTH_PROBE_USER');
+    await runAuth(c,b,'/token?grant_type=password',{body:{email,password:password+'wrong'},status:400});
+  }catch(failure){error=failure;}
+  try{await stop();const checked=await runCommand(c,'ORIGINAL_AUTH_ROWS_PRESERVED','docker',archiveBootstrapPsqlArguments(c,b,'auth-guard'),
+      {input:Buffer.from(checkOriginalAuthGuardSql(guard)),maxMs:90_000});
+    need(JSON.parse(checked.toString('utf8').trim())===true,'ARCHIVE_ORIGINAL_AUTH_CHANGED');}
+  catch(failure){error??=failure;}
+  if(error)throw error;
+  return {isolatedFreshAuthPasswordLoginVerified:true,originalAuthRowsPreservedDuringProbe:true};
+}
+
 async function restoreArchive(c,b,indexCommitmentSha256){
   await startProject(c,b);
   need((await query(c,b,'ARCHIVE_TARGET_EMPTY','select to_jsonb((select count(*) from auth.users)=0);'))===true,'ARCHIVE_TARGET_NOT_EMPTY');
-  const archive=await materializeArchiveInputs(c,indexCommitmentSha256);c.dumps=archive.files;
+  const archive=await materializeArchiveInputs(c,indexCommitmentSha256,{env:c.env??process.env});c.dumps=archive.files;
   await command(c,'QUIESCE_B_AUTH','docker',['stop','--time','10',b.auth],{maxMs:30_000});
   await restoreArchiveSql(c,b,'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA',archive);
   await restoreArchiveSql(c,b,'RESTORE_ARCHIVE_HISTORY',archive,true);
@@ -696,12 +837,10 @@ async function restoreArchive(c,b,indexCommitmentSha256){
     'authUsers',(select count(*) from auth.users),
     'migrationHistoryPresent',to_regclass('supabase_migrations.schema_migrations') is not null);`);
   need(restored.database==='postgres'&&restored.role==='postgres'&&/^17[0-9]{4}$/.test(restored.serverVersion),'ARCHIVE_RESTORED_DATABASE');
-  await command(c,'RESTART_B_AUTH','docker',['start',b.auth],{maxMs:30_000});
-  let healthy=false;const end=Math.min(c.deadline,Date.now()+60_000);
-  while(Date.now()<end){const info=(await jsonCommand(c,'RESTORED_AUTH_HEALTH',['inspect',b.auth]))[0];
-    if(info.State?.Health?.Status==='healthy'){ownedContainer(info,b,'auth',true);healthy=true;break;}await sleep(500);}
-  need(healthy,'RESTORED_AUTH_NOT_HEALTHY');
-  return {status:'PASS',scope:'authenticated-archive-isolated-sql-restore',sourceHead:process.env.EXPECTED_HEAD_SHA,cliVersion:P.cli,
+  const parity=await verifyAuthenticatedCopyParity(c,b,await authenticatedCopyCatalog(c,archive));
+  const authProbe=await isolatedFreshAuthProbe(c,b);
+  return {status:'PASS',scope:'authenticated-archive-isolated-sql-restore',sourceHead:(c.env??process.env).EXPECTED_HEAD_SHA,cliVersion:P.cli,
+    archiveIndexCommitmentSha256:indexCommitmentSha256,...parity,...authProbe,
     authenticatedFiveFileSqlExecuted:true,exactSqlBytesStreamed:true,isolatedAuthServiceHealthy:true,containerNetworkExternalEgressDisabled:true,
     localRestoredCatalogVerified:true,productionDatabaseRestoreExecuted:false,productionBackupVerified:false,
     productionAuthRestoreVerified:false,authRestoreVerified:false,fullDatabaseBackupVerified:false,
@@ -713,23 +852,23 @@ function restorePublicReport(c,result,error,closed){
     ...(error?{status:'FAILED_CLOSED',firstFailure:error}:{}),ownedDockerClosed:closed,
     ...(!c.archive?{images:c.images,dumpFiles:c.dumps,authRequests:c.authRequests,processes:c.processes}:{})};
 }
-async function fixture({archive=false}={}){
-  need(process.platform==='linux'&&process.env.GITHUB_ACTIONS==='true'&&process.env.RUNNER_ENVIRONMENT==='github-hosted'
-    &&process.env.RUNNER_OS==='Linux'&&process.env.GITHUB_EVENT_NAME==='workflow_dispatch','HOSTED_LINUX_ONLY');
-  need(process.env.GITHUB_REPOSITORY==='jakobjorgensen82-commits/RavRadar'&&process.env.GITHUB_RUN_ATTEMPT==='1','FIXED_REPOSITORY_ATTEMPT');
-  need(/^[a-f0-9]{40}$/.test(process.env.EXPECTED_HEAD_SHA??'')&&process.env.EXPECTED_HEAD_SHA===process.env.GITHUB_SHA,'EXACT_DISPATCHED_HEAD');
-  const run=process.env.GITHUB_RUN_ID;need(/^[1-9][0-9]{0,18}$/.test(run??''),'RUN_ID');
-  const indexCommitmentSha256=archive?archiveSelection(process.env):null;
-  if(!archive)need(!process.env.RESTORE_ARCHIVE_INDEX_SHA&&!process.env.RESTORE_ARCHIVE_INDEX_COMMITMENT&&!process.env.RESTORE_ARCHIVE_CONFIRMATION,'SYNTHETIC_ARCHIVE_COLLISION');
-  need(['DOCKER_HOST','DOCKER_CONTEXT','DOCKER_CONFIG','DOCKER_TLS_VERIFY','DOCKER_CERT_PATH','CONTAINER_HOST'].every(k=>!process.env[k]),'LOCAL_DOCKER_ENV');
-  need(typeof process.env.RUNNER_TEMP==='string'&&path.isAbsolute(process.env.RUNNER_TEMP),'RUNNER_TEMP_REQUIRED');
-  const temp=await fs.realpath(process.env.RUNNER_TEMP);need(temp!==path.parse(temp).root,'RUNNER_TEMP');
+async function fixture({archive=false,env=process.env,automatic=false,silent=false}={}){
+  need(process.platform==='linux'&&env.GITHUB_ACTIONS==='true'&&env.RUNNER_ENVIRONMENT==='github-hosted'
+    &&env.RUNNER_OS==='Linux'&&(env.GITHUB_EVENT_NAME==='workflow_dispatch'||automatic&&env.GITHUB_EVENT_NAME==='workflow_run'),'HOSTED_LINUX_ONLY');
+  need(env.GITHUB_REPOSITORY==='jakobjorgensen82-commits/RavRadar'&&env.GITHUB_RUN_ATTEMPT==='1','FIXED_REPOSITORY_ATTEMPT');
+  need(/^[a-f0-9]{40}$/.test(env.EXPECTED_HEAD_SHA??'')&&env.EXPECTED_HEAD_SHA===env.GITHUB_SHA,'EXACT_DISPATCHED_HEAD');
+  const run=env.GITHUB_RUN_ID;need(/^[1-9][0-9]{0,18}$/.test(run??''),'RUN_ID');
+  const indexCommitmentSha256=archive?archiveSelection(env):null;
+  if(!archive)need(!env.RESTORE_ARCHIVE_INDEX_SHA&&!env.RESTORE_ARCHIVE_INDEX_COMMITMENT&&!env.RESTORE_ARCHIVE_CONFIRMATION,'SYNTHETIC_ARCHIVE_COLLISION');
+  need(['DOCKER_HOST','DOCKER_CONTEXT','DOCKER_CONFIG','DOCKER_TLS_VERIFY','DOCKER_CERT_PATH','CONTAINER_HOST'].every(k=>!env[k]),'LOCAL_DOCKER_ENV');
+  need(typeof env.RUNNER_TEMP==='string'&&path.isAbsolute(env.RUNNER_TEMP),'RUNNER_TEMP_REQUIRED');
+  const temp=await fs.realpath(env.RUNNER_TEMP);need(temp!==path.parse(temp).root,'RUNNER_TEMP');
   const root=await fs.mkdtemp(path.join(temp,'rr-standard-restore-'));need(inside(temp,root),'OWNED_ROOT');await fs.chmod(root,0o700);
   const rootIdentity=await fs.lstat(root,{bigint:true});
   const home=path.join(root,'home');await fs.mkdir(home,{mode:0o700});const owner=run+'-1';
-  const c={root,home,owner,archive,stage:'PREFLIGHT',deadline:Date.now()+P.operationMs,processes:[],authRequests:[],dumps:[],images:null};
+  const c={root,home,owner,archive,env,stage:'PREFLIGHT',deadline:Date.now()+P.operationMs,processes:[],authRequests:[],dumps:[],images:null};
   const projects=['A','B'].map(side=>({side,id:'rr_restore_'+run+'_1_'+side.toLowerCase(),dir:path.join(root,side),network:'rr-restore-'+owner+'-'+side.toLowerCase()}));
-  let result,error=null;
+  let result,error=null,report;
   try{
     need((await command(c,'CLI_VERSION','supabase',['--version'],{maxMs:20_000})).toString().trim()===P.cli,'CLI_VERSION');
     need((await command(c,'DOCKER_LINUX','docker',['info','--format','{{.OSType}}'],{maxMs:20_000})).toString().trim()==='linux','DOCKER_LINUX');
@@ -738,7 +877,7 @@ async function fixture({archive=false}={}){
     if(archive){
       await command(c,'ARCHIVE_CURRENT_MAIN','git',['fetch','--no-tags','origin','+refs/heads/main:refs/remotes/origin/main'],{cwd:process.cwd(),maxMs:60_000});
       for(const ref of ['HEAD^{commit}','origin/main^{commit}'])
-        need((await command(c,'ARCHIVE_EXACT_HEAD','git',['rev-parse',ref],{cwd:process.cwd(),maxMs:10_000})).toString().trim()===process.env.EXPECTED_HEAD_SHA,'ARCHIVE_MAIN_CHANGED');
+        need((await command(c,'ARCHIVE_EXACT_HEAD','git',['rev-parse',ref],{cwd:process.cwd(),maxMs:10_000})).toString().trim()===env.EXPECTED_HEAD_SHA,'ARCHIVE_MAIN_CHANGED');
       result=await restoreArchive(c,b,indexCommitmentSha256);
     }else{
     await startProject(c,a);
@@ -752,6 +891,10 @@ async function fixture({archive=false}={}){
     assert.equal(sourceUser.user_metadata.label,META.label);assert.deepEqual(sourceUser.user_metadata.nested,META.nested);
     const quoted=(JSON.stringify(META).slice(0,-1)+',"largeInteger":9007199254740993}').replaceAll("'","''");
     await psql(c,a,'INSERT_OWN_DATA',Buffer.from(`insert into public.rr_restore_probe(owner_id,label,amount,metadata) values('${created.id}',convert_from(decode('${Buffer.from(TEXT).toString('hex')}','hex'),'UTF8'),'${DECIMAL}', '${quoted}'::jsonb);\nselect setval('public.rr_restore_probe_id_seq',7);\n`));
+    await psql(c,a,'OWN_COPY_FORMAT_FIXTURE',Buffer.from(`
+      create table public.rr_copy_format_probe(id bigint,ts timestamptz,d date,span interval,f double precision,bytes bytea,nullable_value text);
+      insert into public.rr_copy_format_probe values(9007199254740993,'2026-07-01T12:34:56.123456+05:30','2026-07-01','1 year 2 mons 3 days 04:05:06.123456',1.2345678901234567,decode('00ff5c09','hex'),null);
+      alter role postgres set TimeZone='Europe/Copenhagen';\n`));
     await command(c,'QUIESCE_A_AUTH','docker',['stop','--time','10',a.auth],{maxMs:30_000});
     const before=await query(c,a,'SOURCE_SNAPSHOT',snapshotSql());need(before.row.decimal===DECIMAL&&before.row.text===TEXT,'SOURCE_PRECISION');
     const dumps=await dumpFiles(c,a);await stopProject(c,a);
@@ -763,6 +906,8 @@ async function fixture({archive=false}={}){
     await psql(c,b,'RESTORE_ROLES_SCHEMA_DATA',restoreBytes(dumps.slice(0,3)));
     await psql(c,b,'RESTORE_HISTORY',restoreBytes(dumps.slice(3),true));
     const after=await query(c,b,'RESTORED_SNAPSHOT',snapshotSql());assert.deepEqual(after,before);
+    const parity=await verifyAuthenticatedCopyParity(c,b,await authenticatedCopyCatalog(c,
+      {directory:path.join(c.root,'dumps'),files:c.dumps}));
     await command(c,'RESTART_B_AUTH','docker',['start',b.auth],{maxMs:30_000});
     let healthy=false;const end=Math.min(c.deadline,Date.now()+60_000);
     while(Date.now()<end){const info=(await jsonCommand(c,'RESTORED_AUTH_HEALTH',['inspect',b.auth]))[0];
@@ -771,7 +916,20 @@ async function fixture({archive=false}={}){
     const restored=await auth(c,b,'/token?grant_type=password',{body:{email,password}});need(restored.user?.id===created.id&&typeof restored.access_token==='string','RESTORED_AUTH_LOGIN');
     const user=await auth(c,b,'/user',{token:restored.access_token});need(user.id===created.id,'RESTORED_USER_ID');assert.deepEqual(user.user_metadata,sourceUser.user_metadata);
     await auth(c,b,'/token?grant_type=password',{body:{email,password:password+'wrong'},status:400});
-    result={status:'PASS',scope:'synthetic-standard-cli-local-restore',sourceHead:process.env.EXPECTED_HEAD_SHA,cliVersion:P.cli,
+    const authProbe=await isolatedFreshAuthProbe(c,b);
+    await command(c,'OWN_ORIGINAL_AUTH_GUARD_NEGATIVE','docker',archiveBootstrapPsqlArguments(c,b,'auth-guard'),
+      {input:Buffer.from(`DO $rr_guard_negative$ DECLARE detail text; BEGIN
+        BEGIN UPDATE auth.users SET updated_at=clock_timestamp() WHERE id='${created.id}';
+          RAISE EXCEPTION USING ERRCODE='XX000',MESSAGE='ORIGINAL_AUTH_UPDATE_WAS_NOT_BLOCKED';
+        EXCEPTION WHEN SQLSTATE '55000' THEN GET STACKED DIAGNOSTICS detail=MESSAGE_TEXT;
+          IF detail<>'ARCHIVE_ORIGINAL_AUTH_PROTECTED' THEN RAISE; END IF; END;
+        BEGIN DELETE FROM auth.users WHERE id='${created.id}';
+          RAISE EXCEPTION USING ERRCODE='XX000',MESSAGE='ORIGINAL_AUTH_DELETE_WAS_NOT_BLOCKED';
+        EXCEPTION WHEN SQLSTATE '55000' THEN GET STACKED DIAGNOSTICS detail=MESSAGE_TEXT;
+          IF detail<>'ARCHIVE_ORIGINAL_AUTH_PROTECTED' THEN RAISE; END IF; END;
+      END; $rr_guard_negative$;\n`),maxMs:30_000});
+    result={status:'PASS',scope:'synthetic-standard-cli-local-restore',sourceHead:env.EXPECTED_HEAD_SHA,cliVersion:P.cli,
+      ...parity,...authProbe,originalAuthRowWriteRefusalsVerified:true,
       standardFiveFileRoundtrip:true,utf8DecimalMetadata:true,rolesAndMigrationHistory:true,newAuthPasswordLogin:true,
       productionBackupVerified:false,cryptoR2Verified:false,productionAuthRestoreVerified:false};
     }
@@ -784,14 +942,21 @@ async function fixture({archive=false}={}){
     if(closed)try{const st=await fs.lstat(root,{bigint:true});need(st.isDirectory()&&!st.isSymbolicLink()
       &&st.dev===rootIdentity.dev&&st.ino===rootIdentity.ino&&inside(temp,await fs.realpath(root)),'SCRATCH_IDENTITY');
       await fs.rm(root,{recursive:true,force:false});}catch(e){error??=safeError(e,'SCRATCH_CLEANUP');}
-    const report=restorePublicReport(c,result,error,closed);
-    console.log(JSON.stringify(report));if(error)process.exitCode=1;
+    report=restorePublicReport(c,result,error,closed);
+    if(!silent){console.log(JSON.stringify(report));if(error)process.exitCode=1;}
   }
+  if(silent){need(!error,'AUTOMATIC_ARCHIVE_RESTORE_NOT_VERIFIED');return report;}
+}
+
+export async function runAuthenticatedArchiveRestore(env=process.env){
+  need(env.GITHUB_WORKFLOW==='Back up RavRadar Supabase database'&&env.SUPABASE_BACKUP_AUTOMATION==='weekly'
+    &&/^[1-9][0-9]{0,14}$/.test(env.SUPABASE_BACKUP_SOURCE_WEATHER_RUN_ID??''),'AUTOMATIC_ARCHIVE_RESTORE_CALLER');
+  return fixture({archive:true,env,automatic:true,silent:true});
 }
 
 async function selfTest(){
   const {test}=await import('node:test');
-  async function ownArchive(run,{large=false,receiptEdit=null,roleSql=null}={}){
+  async function ownArchive(run,{large=false,receiptEdit=null,roleSql=null,dataSql=null,historyDataSql=null}={}){
     const root=await fs.mkdtemp(path.join(os.tmpdir(),'rr-archive-stream-self-'));await fs.chmod(root,0o700);
     const c={root,deadline:Date.now()+30_000},source=[];let observed=null;
     const env={RUNNER_TEMP:os.tmpdir(),SUPABASE_SERVICE_ROLE_KEY:'synthetic-master-never-real-'.repeat(2),
@@ -806,7 +971,7 @@ async function selfTest(){
       await fs.mkdir(options.destination,{mode:0o700});const files=[];
       for(const [i,file]of ARCHIVE_FILES.entries()){
         const h=await fs.open(path.join(options.destination,file),'wx',0o600),digest=crypto.createHash('sha256');let bytes=0;
-        try{const piece=Buffer.from(i===0&&roleSql!==null?roleSql:i===2?TEXT+'\n'+DECIMAL+'\n':file+'\n'),repeat=large&&i===2?Math.ceil((P.fileBytes+65536)/piece.length):1;
+        try{const piece=Buffer.from(i===0&&roleSql!==null?roleSql:i===2?(dataSql??TEXT+'\n'+DECIMAL+'\n'):i===4&&historyDataSql!==null?historyDataSql:file+'\n'),repeat=large&&i===2?Math.ceil((P.fileBytes+65536)/piece.length):1;
           for(let remaining=repeat;remaining>0;){const n=Math.min(1024,remaining),chunk=Buffer.from(piece.toString('utf8').repeat(n));
             await h.writeFile(chunk);digest.update(chunk);bytes+=chunk.length;remaining-=n;}source.push(piece);
         }finally{await h.close();}
@@ -829,6 +994,76 @@ async function selfTest(){
       State:{Running:true,Health:{Status:'healthy'}}};
     return {c,p,info};
   };
+  test('authenticated COPY reader preserves split UTF8, nulls, bigint text and duplicate row multiplicity without keeping raw rows',()=>{
+    const rows=['9007199254740993\tæøå\\t\\n\\\\\t\\N','-- own synthetic row\t9007199254740993.123456789012345678\t{}'];
+    const body=rows[0]+'\n'+rows[1]+'\n'+rows[0]+'\n',wire=Buffer.from('SET session_replication_role = replica;\nCOPY "public"."Own Table" ("id", "text", "meta") FROM stdin;\n'+body+'\\.\nRESET ALL;\n');
+    const catalog=new AuthenticatedCopyCatalog();catalog.beginFile('data.sql');
+    for(let at=0;at<wire.length;at++)catalog.write(wire.subarray(at,at+1));catalog.finishFile();
+    catalog.beginFile('history-data.sql');catalog.write(Buffer.from("SELECT pg_catalog.setval('\"public\".\"OwnSeq\"', 9007199254740993, true);\nRESET ALL;\n"));catalog.finishFile();catalog.finish();
+    const [table]=catalog.tables;assert.equal(table.summary.rows,3);assert.equal(table.columns.length,3);
+    assert.equal(wire.subarray(table.dataStart,table.dataEnd).toString(),body+'\\.\n');
+    assert.equal(catalog.sequences[0].value,'9007199254740993');
+    const actual=collectLocalCopy(table,catalog.salt);actual.write(Buffer.from(rows[1]+'\n'+rows[0]+'\n'+rows[0]+'\n'));actual.finish();
+    const lost=collectLocalCopy(table,catalog.salt);lost.write(Buffer.from(rows[1]+'\n'+rows[0]+'\n'));
+    assert.throws(()=>lost.finish(),error=>error.code==='ARCHIVE_SQL_COPY_EXPORT_PARITY_MISMATCH');
+    assert(!Object.values(table.summary).some(value=>typeof value==='string'&&value.includes('æøå')));
+  });
+  test('locked COPY format rejects inserts, missing terminator, extra fields and live psql commands without treating them as parity',()=>{
+    for(const data of ['INSERT INTO "public"."t" VALUES (1);\n','COPY "public"."t" ("id") FROM stdin;\n1\n',
+      'COPY "public"."t" ("id") FROM stdin;\n1\t2\n\\.\n','\\connect other\n',
+      'SELECT pg_catalog.lo_create(123);\n']){
+      const c=new AuthenticatedCopyCatalog();assert.throws(()=>{c.beginFile('data.sql');c.write(Buffer.from(data));c.finishFile();},
+        error=>/^ARCHIVE_SQL_COPY_/.test(error.code));
+    }
+  });
+  test('normal authenticated COPY extents are read-only and changed source cannot reach the final TEMP copy-out statement',async()=>{
+    const dataSql='COPY "auth"."users" ("id") FROM stdin;\nsynthetic-user\n\\.\nCOPY "auth"."identities" ("id") FROM stdin;\n\\.\nRESET ALL;\n';
+    await ownArchive(async({c,env,index,materialize})=>{
+      c.archive=true;const archive=await materializeArchiveInputs(c,index,{env,archive:materialize});
+      const catalog=await authenticatedCopyCatalog(c,archive),table=catalog.tables[0],file=path.join(archive.directory,'data.sql');
+      const original=await fs.readFile(file),chunks=[];for await(const chunk of expectedCopyInput(c,catalog,table))chunks.push(chunk);
+      assert(Buffer.concat(chunks).includes(original.subarray(table.dataStart,table.dataEnd)));
+      const generated=Buffer.concat(chunks).toString();assert(generated.includes('CREATE TEMP TABLE'));
+      assert(generated.includes('"id" pg_catalog.text'));assert(!generated.includes(' AS SELECT '));
+      assert((await fs.readFile(file)).equals(original));
+      await fs.appendFile(file,'-- own mutation\n');const attempted=[];
+      await assert.rejects(async()=>{for await(const chunk of expectedCopyInput(c,catalog,table))attempted.push(chunk);});
+      assert(!Buffer.concat(attempted).toString().includes('TO STDOUT;'));
+    },{dataSql,historyDataSql:'RESET ALL;\n'});
+  });
+  test('normal COPY stdout observer exceeds diagnostic cap without returning raw data and waits for physical child closure',async()=>{
+    await ownArchive(async({c})=>{
+      Object.assign(c,{home:c.root,processes:[]});const table={schema:'own',table:'synthetic',columns:['text']};
+      const sink=collectLocalCopy(table,Buffer.alloc(32),{expected:null});
+      const output=await command(c,'OWN_COPY_STDOUT',process.execPath,['-e','process.stdout.write("own-fixture-row\\n".repeat(80000))'],
+        {stdoutObserver:sink,stdoutLimit:2_000_000});
+      assert.equal(output.length,0);assert.equal(sink.finish().rows,80000);
+      assert(c.processes.every(child=>child.processGroupClosed));assert(c.processes[0].stdoutBytes>P.diagnosticBytes);
+    });
+  });
+  test('normal isolated fresh Auth probe routes only its own account and checks original-row protection after success or wrong-owner failure',async()=>{
+    const b={side:'B',id:'rr_own_b',db:'a'.repeat(64),auth:'b'.repeat(64),service:'own-local-service'};
+    const state={Id:b.auth,Name:'/supabase_auth_'+b.id,Config:{Labels:{'com.supabase.cli.project':b.id}},State:{Running:false}};
+    for(const wrongUser of [false,true]){
+      const events=[],c={archive:true},userId='12345678-1234-1234-1234-123456789abc';let created=null;
+      const bindings={command:async(_c,stage,_bin,_args,options)=>{
+        events.push(stage);if(stage==='PROTECT_ORIGINAL_AUTH'){const sql=options.input.toString();assert(sql.includes('ENABLE ALWAYS TRIGGER'));
+          assert(sql.includes('TG_OP=\'TRUNCATE\''));assert(!/UPDATE auth\.|DELETE FROM auth\./.test(sql));}
+        return Buffer.from(stage==='ORIGINAL_AUTH_ROWS_PRESERVED'?'true\n':'');},
+        inspect:async()=>[state],query:async()=>true,healthy:async()=>events.push('HEALTHY'),
+        auth:async(_c,_b,route,options)=>{events.push(route);
+          if(route==='/admin/users'){created=options.body;assert(created.email.endsWith('@example.invalid'));return {id:userId};}
+          if(route==='/user')return {id:wrongUser?'87654321-1234-1234-1234-123456789abc':userId,email:created.email,user_metadata:created.user_metadata};
+          if(options.status===400){assert.equal(options.body.password,created.password+'wrong');return null;}
+          assert.equal(options.body.password,created.password);return {user:{id:userId},access_token:'own-token-'.repeat(8)};}};
+      if(wrongUser)await assert.rejects(()=>isolatedFreshAuthProbe(c,b,bindings),error=>error.code==='ARCHIVE_AUTH_PROBE_USER');
+      else assert.equal((await isolatedFreshAuthProbe(c,b,bindings)).originalAuthRowsPreservedDuringProbe,true);
+      assert(events.indexOf('PROTECT_ORIGINAL_AUTH')<events.indexOf('HEALTHY'));
+      assert.equal(events.at(-1),'ORIGINAL_AUTH_ROWS_PRESERVED');assert.equal(events.filter(value=>value==='QUIESCE_PROBE_AUTH').length,2);
+      events.length=0;await assert.rejects(()=>isolatedFreshAuthProbe(c,{...b,side:'A'},bindings),error=>error.code==='ARCHIVE_AUTH_PROBE_TARGET');
+      assert.equal(events.length,0);
+    }
+  });
   test('only exact loopback API and database URLs are accepted',()=>{
     assert.equal(localUrl('http://127.0.0.1:54321/','api').host,'127.0.0.1:54321');
     assert.equal(localUrl('postgresql://postgres:synthetic@127.0.0.1:54322/postgres','db').pathname,'/postgres');
@@ -1175,15 +1410,23 @@ async function selfTest(){
   test('normal workflow keeps synthetic default, exact source gate, lock order and archive-only credentials',async()=>{
     const workflow=await fs.readFile(new URL('../.github/workflows/verify-supabase-cli-local-restore.yml',import.meta.url),'utf8');
     assert.doesNotMatch(workflow,/archive_index_sha|RESTORE_ARCHIVE_INDEX_SHA/);
-    assert.equal(workflow.split('inputs.archive_index_commitment').length,3);
+    assert.equal(workflow.split('inputs.archive_index_commitment').length,5);
     assert(workflow.includes('^rr-supabase-restore-v1:[a-f0-9]{64}$'));
     assert.match(workflow,/default: synthetic[\s\S]*options: \[synthetic, archive\]/);
     assert(workflow.indexOf('group: ${{ inputs.restore_mode')<workflow.indexOf('ravradar-trip-storage-production'));
     assert(workflow.indexOf('Refuse missing exact source proof')<workflow.indexOf('SUPABASE_SERVICE_ROLE_KEY:'));
-    const archiveStep=workflow.split('name: Materialize the exact authenticated archive and restore only to owned local PostgreSQL')[1];
+    const archiveFlow=workflow.split('name: Materialize the exact authenticated archive and restore only to owned local PostgreSQL')[1];
+    const archiveStep=archiveFlow?.split('      - name: Check the normal archive receipt')[0];
     assert(archiveStep);assert.match(archiveStep,/if: inputs.restore_mode == 'archive'/);
     assert(!/SUPABASE_DB_PASSWORD|SUPABASE_ACCESS_TOKEN|CLOUDFLARE_API_TOKEN|GITHUB_TOKEN|upload-artifact|continue-on-error/.test(archiveStep));
     assert.match(archiveStep,/--run-archive-restore/);assert.match(workflow,/if: inputs.restore_mode == 'synthetic'[\s\S]*--run-local-fixture/);
+    const proof=archiveFlow.split('      - name: Check the normal archive receipt')[1];
+    assert(proof);assert.match(proof,/if: inputs.restore_mode == 'archive'/);
+    assert.match(proof,/databaseReserveReceiptReady/);
+    assert.match(proof,/if\(ready\) await persistSupabaseDatabaseRestoreReceipt/);
+    assert.match(proof,/SUPABASE_ACCESS_TOKEN:/);
+    assert(!/SUPABASE_DB_PASSWORD|CLOUDFLARE_API_TOKEN|GITHUB_TOKEN|upload-artifact|continue-on-error/.test(proof));
+    assert.match(proof,/if: inputs.restore_mode == 'archive' && steps.reserve-proof.outputs.ready == 'true'/);
   });
   test('archive startup DB endpoint requires matching owned healthy container and bridge membership',async()=>{
     const id='a'.repeat(64),net='b'.repeat(64),endpoint='c'.repeat(64),c={owner:'123-1',archive:true};

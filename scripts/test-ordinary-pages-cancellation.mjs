@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { previousOrdinaryHadPagesFailure, readOrdinaryPagesEvidence,
+import { assertOrdinaryPagesSelectorRequest, previousOrdinaryHadPagesFailure, readOrdinaryPagesEvidence,
   selectAutomaticCompletedPrivateRuntime } from './select-automatic-completed-private-runtime.mjs';
 import { parseOrdinaryPagesCancellation, readOrdinaryPagesCancellation } from './lib/ordinary-pages-cancellation.mjs';
 import { sha256CanonicalJson } from './ravscore-operational-pages-recovery.mjs';
@@ -197,6 +197,31 @@ const ordinaryPages = (id, conclusion) => ({
 const ordinaryContext = { head, consumerRunId: 500 };
 const runList = (...workflow_runs) => ({ total_count: workflow_runs.length, workflow_runs });
 const jobList = (...jobs) => ({ total_count: jobs.length, jobs });
+
+test('ordinary Pages selection accepts only an absent or explicitly inactive SOURCE flag', () => {
+  const env = {
+    GITHUB_REPOSITORY: ordinaryRepo.full_name,
+    GITHUB_REF: 'refs/heads/main',
+    GITHUB_WORKFLOW: 'Run current RavRadar weather once',
+    GITHUB_EVENT_NAME: 'workflow_dispatch',
+    GITHUB_RUN_ATTEMPT: '1',
+    GITHUB_ACTOR: 'github-actions[bot]',
+    GITHUB_TRIGGERING_ACTOR: 'github-actions[bot]',
+    GITHUB_SHA: ordinaryContext.head,
+    GITHUB_RUN_ID: String(ordinaryContext.consumerRunId),
+    RAVRADAR_AUTOMATIC_COMPLETED_REENTRY_ACTION: 'NONE',
+  };
+  const select = inputs => assertOrdinaryPagesSelectorRequest({
+    ...env, RAVRADAR_AUTOMATIC_COMPLETED_INPUTS: JSON.stringify(inputs),
+  });
+  assert.deepEqual(select({}), ordinaryContext);
+  assert.deepEqual(select({ source_normal_producer: false }), ordinaryContext);
+  for (const value of [true, 'false', 0, null]) {
+    assert.throws(() => select({ source_normal_producer: value }), /PAGES_AUTO_SPECIAL_MODE/);
+  }
+  assert.throws(() => select({ source_normal_producer: false, completed_private_runtime: true }), /PAGES_AUTO_SPECIAL_MODE/);
+  assert.throws(() => select({ source_normal_producer: false, unknown: false }), /PAGES_AUTO_UNKNOWN_INPUT/);
+});
 
 test('a failed or skipped preflight does not hide the most recent attempted Pages deploy', async () => {
   const calls = [];

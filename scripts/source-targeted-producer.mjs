@@ -97,21 +97,59 @@ export async function coordinateTargetedSourceProducer(){
   assert.equal(arguments.length,0,'SOURCE_TARGETED_PRODUCER_NO_OVERRIDES');
   const env=process.env,head=env.SOURCE_GATE_HEAD_SHA;
   let current,content,impactPlan,baseline,get,jobRoute,pullRoute,pull;
+  // Observation only: entering a new phase clears any prior HTTP response.
+  const precheck={phase:'ENV_GIT',category:'LOCAL_GUARD_FAILED',httpStatus:0};
+  const enterPrecheck=(phase,category)=>{precheck.phase=phase;precheck.category=category;precheck.httpStatus=0;};
+  const readPrecheck=async(phase,route,options)=>{
+    enterPrecheck(phase,'READ_NOT_STARTED');
+    const value=await get(route,options);
+    // This status belongs to this same read/check phase, never a later phase.
+    precheck.category='EVIDENCE_GUARD_FAILED';return value;
+  };
+  const precheckFinalProofHash=zip=>{
+    enterPrecheck('BASELINE_FINAL_PROOF_DECODE','LOCAL_ZIP_DECODE_FAILED');
+    const value=finalProofHash(zip);
+    enterPrecheck('BASELINE_REFERENCE_CHECK','EVIDENCE_GUARD_FAILED');return value;
+  };
   try{
     assert.equal(env.GITHUB_EVENT_NAME,'pull_request');assert.equal(env.GITHUB_REPOSITORY,ORIGIN.repository);
-    assert(oid(head));clean(head);
+    assert(oid(head));enterPrecheck('LOCAL_SOURCE_CHECK','LOCAL_GIT_OR_SOURCE_FAILED');clean(head);
+    enterPrecheck('CURRENT_IDS_CHECK','LOCAL_GUARD_FAILED');
     const pullRequest=Number(env.PULL_REQUEST_NUMBER),runId=Number(env.GITHUB_RUN_ID),runAttempt=Number(env.GITHUB_RUN_ATTEMPT);
     for(const id of [pullRequest,runId,runAttempt])assert(positive(id));
     assert.equal(runAttempt,1);assert.equal(env.GITHUB_JOB,'validate');
-    get=assistantPublic591Reader();const repo='/repos/'+env.GITHUB_REPOSITORY;
-    pullRoute=repo+'/pulls/'+pullRequest;pull=await get(pullRoute);
+    const fetchImpl=globalThis.fetch;
+    get=assistantPublic591Reader({fetchImpl:async(url,options)=>{
+      // Reset for every physical hop, including API302 -> signed ZIP.
+      precheck.httpStatus=0;
+      try{
+        const response=await fetchImpl(url,options);
+        try{
+          const status=response.status;
+          precheck.httpStatus=Number.isInteger(status)&&status>=100&&status<=599?status:0;
+          precheck.category=response.ok?'HTTP_OK_READ_REJECTED':'HTTP_STATUS_FAILED';
+        }catch{precheck.httpStatus=0;precheck.category='PRECONDITION_OTHER';}
+        return response;
+      }catch(error){
+        try{
+          precheck.category=error?.name==='TimeoutError'?'FETCH_TIMEOUT':error?.name==='AbortError'?'FETCH_ABORT'
+            :['UND_ERR_SOCKET','UND_ERR_CONNECT_TIMEOUT','UND_ERR_HEADERS_TIMEOUT','UND_ERR_BODY_TIMEOUT',
+              'ECONNRESET','ECONNREFUSED','ENOTFOUND','EAI_AGAIN','ETIMEDOUT'].includes(error?.cause?.code)
+              ?'FETCH_NETWORK':'FETCH_OTHER';
+        }catch{precheck.category='FETCH_OTHER';}
+        throw error;
+      }
+    }});const repo='/repos/'+env.GITHUB_REPOSITORY;
+    pullRoute=repo+'/pulls/'+pullRequest;pull=await readPrecheck('PULL_CHECK',pullRoute);
     assert.equal(pull.number,pullRequest);assert.equal(pull.state,'open');
     assert.equal(pull.head?.sha,head);assert.equal(pull.head?.repo?.full_name,env.GITHUB_REPOSITORY);
     assert.equal(pull.base?.ref,'main');assert.equal(pull.base?.repo?.full_name,env.GITHUB_REPOSITORY);
     assert(oid(pull.base.sha));
+    enterPrecheck('MERGE_BASE_PLAN','LOCAL_GIT_OR_SOURCE_FAILED');
     const mergeBase=text(['merge-base','--all',pull.base.sha,head]);assert(oid(mergeBase));
     impactPlan=await selectImpactPlan(mergeBase,head);
     if(!impactPlan)return full('COMPLETE_DIFF_REQUIRES_FULL');
+    enterPrecheck('BASELINE_HINT','LOCAL_GUARD_FAILED');
     let baselineHint=null;
     try{
       const hint=readDomainControlReviewBaselineHint(pull,head);
@@ -120,31 +158,36 @@ export async function coordinateTargetedSourceProducer(){
       // An unusable locator supplies no authority and does not replace the
       // legacy fallback or its later complete CONTROL review/refusal.
     }
+    enterPrecheck('SOURCE_IDENTITY','LOCAL_GIT_OR_SOURCE_FAILED');
     content=sourceTreeContentSha256(head,{git});current={repository:env.GITHUB_REPOSITORY,head,
       sourceTreeSha256:content,pullRequest,runId,runAttempt,jobId:0};
-    const runRoute=repo+'/actions/runs/'+runId,run=await get(runRoute);
+    const runRoute=repo+'/actions/runs/'+runId,run=await readPrecheck('CURRENT_RUN_CHECK',runRoute);
     assert.equal(run.id,runId);assert.equal(run.run_attempt,runAttempt);assert.equal(run.head_sha,head);
     assert.equal(run.event,'pull_request');assert.equal(run.path,PULL_REQUEST_SOURCE_WORKFLOW);
     assert.equal(run.status,'in_progress');assert.equal(run.repository?.full_name,current.repository);
     assert.equal(run.head_repository?.full_name,current.repository);
-    jobRoute=runRoute+'/attempts/'+runAttempt+'/jobs?per_page=100';current.jobId=currentJob(await get(jobRoute),current);
+    jobRoute=runRoute+'/attempts/'+runAttempt+'/jobs?per_page=100';current.jobId=currentJob(await readPrecheck('CURRENT_JOB_CHECK',jobRoute),current);
     // At most one untrusted ROOT-marker locator precedes the unchanged bounded
     // first-parent fallback. Both use the same cumulative plan and normal FULL
     // discovery/qualification; a TARGETED namespace never becomes FULL.
+    enterPrecheck('ANCESTOR_PLAN','LOCAL_GIT_OR_SOURCE_FAILED');
     const fallback=text(['rev-list','--first-parent','--max-count=6',mergeBase]).split('\n');
     assert(fallback.length>0&&fallback.length<=6&&fallback.every(oid));
     const candidates=[...new Set([...(baselineHint?[baselineHint]:[]),...fallback])];
     for(const candidate of candidates){
+      enterPrecheck('ANCESTOR_PLAN','LOCAL_GIT_OR_SOURCE_FAILED');
       const plan=await selectImpactPlan(candidate,head);
       // Older ancestry can only add paths. Unknown/shared cumulative impact
       // needs the existing full workflow, without downloading private blobs.
       if(!plan)return full('CUMULATIVE_DIFF_REQUIRES_FULL');
       const sourceTreeSha256=sourceTreeContentSha256(candidate,{git});
+      enterPrecheck('ANCESTOR_DISCOVERY','EVIDENCE_GUARD_FAILED');
       const located=await discoverPullRequestSourceGate({GITHUB_REPOSITORY:current.repository,GITHUB_REF:'refs/heads/main',
         GITHUB_SHA:candidate},sourceTreeSha256,route=>get(route));
+      precheck.category='EVIDENCE_GUARD_FAILED';
       if(located.required)continue;
       const record=located.record;assert.equal(record.proofKind,'pull-request');assert.equal(record.runAttempt,1);
-      const listing=await get(repo+'/actions/runs/'+record.runId+'/artifacts?per_page=100');
+      const listing=await readPrecheck('BASELINE_ARTIFACTS_CHECK',repo+'/actions/runs/'+record.runId+'/artifacts?per_page=100');
       assert(Array.isArray(listing.artifacts)&&listing.total_count===listing.artifacts.length&&listing.total_count<=100);
       const artifactName=sourceTreeProofArtifactName({pullRequestNumber:record.pullRequestNumber,
         headSha:record.producerHeadSha,sourceTreeSha256});
@@ -156,17 +199,19 @@ export async function coordinateTargetedSourceProducer(){
         assert.equal(artifact.workflow_run?.id,Number(record.runId));assert.equal(artifact.workflow_run?.head_sha,record.producerHeadSha);
         assert.match(artifact.digest,/^sha256:[a-f0-9]{64}$/);
       }
-      const zipRoute=repo+'/actions/artifacts/'+final.id+'/zip',zip=await get(zipRoute,{zip:true});
+      const zipRoute=repo+'/actions/artifacts/'+final.id+'/zip',zip=await readPrecheck('BASELINE_FINAL_ZIP_CHECK',zipRoute,{zip:true});
       assert.equal(zip.length,final.size_in_bytes);assert.equal('sha256:'+sha(zip),final.digest);
-      const jobs=await get(repo+'/actions/runs/'+record.runId+'/attempts/1/jobs?per_page=100');
+      const jobs=await readPrecheck('BASELINE_JOB_CHECK',repo+'/actions/runs/'+record.runId+'/attempts/1/jobs?per_page=100');
       assert(jobs.total_count===jobs.jobs.length&&jobs.jobs.length<=100);
+      enterPrecheck('BASELINE_REFERENCE_CHECK','EVIDENCE_GUARD_FAILED');
       const reference={repository:current.repository,mergeCommit:candidate,producerHead:record.producerHeadSha,
         sourceTreeSha256,pullRequest:record.pullRequestNumber,runId:Number(record.runId),runAttempt:1,
         jobId:one(jobs.jobs.filter(row=>row.name===PULL_REQUEST_SOURCE_JOB)).id,
-        finalArtifactId:final.id,finalArtifactDigest:final.digest,finalProofSha256:finalProofHash(zip),
+        finalArtifactId:final.id,finalArtifactDigest:final.digest,finalProofSha256:precheckFinalProofHash(zip),
         nativeArtifactId:native.id,nativeArtifactDigest:native.digest};
       // One closed source phase covers the complete FULL qualification and
       // signed ZIP redirects. The native/discovery default remains 24/60.
+      enterPrecheck('FULL_QUALIFICATION','EVIDENCE_GUARD_FAILED');
       const qualification=sourceImpactEvidenceAccess();
       const qualified=await qualifySourceImpactFullBaseline({reference,candidateCommit:head},
         {...qualification,readGit:git});
@@ -174,8 +219,14 @@ export async function coordinateTargetedSourceProducer(){
       baseline=qualified;impactPlan=plan;break;
     }
     if(!baseline)return full('NO_QUALIFIED_FULL_ANCESTOR');
+    enterPrecheck('FINAL_SOURCE_RECHECK','LOCAL_GIT_OR_SOURCE_FAILED');
     clean(head);assert.equal(sourceTreeContentSha256(head,{git}),content);
-  }catch{return full('TARGETED_PRECONDITION_UNAVAILABLE');}
+  }catch{
+    try{console.error('SOURCE_TARGETED_PRECHECK '+JSON.stringify({
+      phase:precheck.phase,category:precheck.category,httpStatus:precheck.httpStatus,
+    }));}catch{ /* Observation failure cannot change the existing FULL handoff. */ }
+    return full('TARGETED_PRECONDITION_UNAVAILABLE');
+  }
 
   // From the first selected command onward, a failure or source drift is RED.
   // It must never become a successful FULL handoff or partial TARGETED proof.

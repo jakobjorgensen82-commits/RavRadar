@@ -1,3 +1,4 @@
+import { inverseReviewedSource601HistoricalCodeInput } from './lib/completed-private-runtime-workflow-review.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import test from 'node:test';
@@ -7,7 +8,7 @@ import crypto from 'node:crypto';
 import { reclaimRunnerAndroidSdk, runFixedSdkCommand } from './reclaim-runner-android-sdk.mjs';
 import {
   SOURCE_IMPACT_SDK_EARLY_LINUX_REVIEW, SOURCE_IMPACT_FULL_WORKFLOW_SHA256,
-  inverseSourceImpactSdkEarlyLinux, projectSourceImpactWorkflowFull, inverseSourceImpactHourEarlyLinux, inverseSourceImpactDmiPython,
+  inverseSourceImpactSdkEarlyLinux, projectSourceImpactWorkflowFull, inverseSourceImpactHourEarlyLinux, inverseSourceImpactDmiPython, reviewedSourcePrWorkflowOrdinaryView,
 } from './lib/source-impact-workflow-review.mjs';
 
 const SDK = '/usr/local/lib/android/sdk';
@@ -131,6 +132,8 @@ test('RAW observation reads current free bytes without visiting or removing the 
 
 test('normal workflow reclaims after trip preflight and observes before RAW restore', async () => {
   const source = await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8');
+  const normalized=source.replaceAll('\r\n','\n');
+  const sourceRoute=inverseReviewedSource601HistoricalCodeInput(normalized, '.github/workflows/reusable-weather-build.yml')!==normalized;
   const preflight = source.indexOf('- name: Preflight exact integrated trip binding before provider work');
   const reclaim = source.indexOf('- name: Reclaim only the unused hosted Android SDK before private restoration');
   const restore = source.indexOf('- name: Restore newest compatible private runtime from protected storage');
@@ -140,7 +143,12 @@ test('normal workflow reclaims after trip preflight and observes before RAW rest
   assert.equal(source.split('run: node scripts/reclaim-runner-android-sdk.mjs\n').length, 2);
   assert.equal(source.split('run: node scripts/reclaim-runner-android-sdk.mjs --observe-raw\n').length, 2);
   const reclaimStep = source.slice(reclaim, source.indexOf('\n      - ', reclaim + 1));
+  if(!sourceRoute){
   assert.match(reclaimStep, /if: steps\.preflight\.outputs\.should_run == 'true'/);
+  }else{
+    assert.deepEqual(reclaimStep.split('\n').filter(line=>line.trimStart().startsWith('if:')),
+      ["        if: steps.operational-model.outputs.source_normal_producer == 'true' || (steps.preflight.outputs.should_run == 'true')"]);
+  }
   const observationStep = source.slice(observation, raw);
   assert.match(observationStep, /inputs\.completed_private_runtime != true/);
   assert.match(observationStep, /steps\.weather-source-handoff\.outputs\.reused != 'true'/);
@@ -301,7 +309,7 @@ test('fixed spawn failure reports no child and never claims an SDK success', asy
 });
 
 test('early Linux source step runs the actual fixed SDK caller before its unchanged short matrix', async () => {
-  const source = inverseSourceImpactDmiPython(await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml', import.meta.url), 'utf8'));
+  const source = inverseSourceImpactDmiPython(reviewedSourcePrWorkflowOrdinaryView(await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml', import.meta.url), 'utf8')));
   const begin = source.indexOf('      - name: Diagnose normal pack-reader closure on artificial data only\n');
   assert(begin > 0);
   const step = source.slice(begin, source.indexOf('\n      - ', begin + 1));
@@ -313,7 +321,7 @@ test('early Linux source step runs the actual fixed SDK caller before its unchan
 });
 
 test('early SDK workflow has an exact whole inverse and rejects missing changed or duplicate reviewed hunks', async () => {
-  const rawSource = inverseSourceImpactDmiPython(await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml', import.meta.url), 'utf8'));
+  const rawSource = inverseSourceImpactDmiPython(reviewedSourcePrWorkflowOrdinaryView(await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml', import.meta.url), 'utf8')));
   const source = inverseSourceImpactHourEarlyLinux(rawSource);
   assert.equal(projectSourceImpactWorkflowFull(rawSource), projectSourceImpactWorkflowFull(source));
   const review = SOURCE_IMPACT_SDK_EARLY_LINUX_REVIEW;
@@ -435,10 +443,15 @@ test('ordinary Pages publication executes required gate outcomes before any buil
   assert.equal(version.status,0,'Actual Bash is required; missing runtime is no positive proof');
   assert.match(version.stdout,/^GNU bash,/);
   const raw=await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8');
+  const sourceRoute=inverseReviewedSource601HistoricalCodeInput(raw.replaceAll('\r\n','\n'), '.github/workflows/reusable-weather-build.yml')!==raw.replaceAll('\r\n','\n');
   const name='      - name: Build lean GitHub Pages artifact\n';
   const begin=raw.indexOf(name);assert(begin>=0&&raw.indexOf(name,begin+1)===-1);
   const end=raw.indexOf('\n      - ',begin+1),step=raw.slice(begin,end<0?raw.length:end);
+  if (!sourceRoute) {
   assert(step.includes("        if: steps.preflight.outputs.should_run == 'true'\n"));
+  } else {
+    assert(step.includes("        if: steps.weather-route-result.outputs.preflight_should_run == 'true'\n"));
+  }
   const run=step.split('        run: |\n');assert.equal(run.length,2);
   const body=run[1].split('\n').map(line=>{assert(!line||line.startsWith('          '));return line.slice(10);}).join('\n')+'\n';
   const stubs='rm(){ printf "rm\n" >> "$TRACE"; }\nmkdir(){ printf "mkdir\n" >> "$TRACE"; }\nrsync(){ printf "rsync:%s:%s\n" "$2" "$3" >> "$TRACE"; }\ninstall(){ printf "install\n" >> "$TRACE"; }\nnode(){ printf "node:%s\n" "$1" >> "$TRACE"; }\n';
@@ -562,7 +575,10 @@ test('ordinary Pages publication executes required gate outcomes before any buil
       const directory=path.join(root,name);await fs.mkdir(directory);
       const script=path.join(directory,'caller.sh'),trace=path.join(directory,'trace'),output=path.join(directory,'output');
       let selected=body;
-      for(const [expression,value] of [['${{ steps.operational-action.outputs.action }}',action],['${{ steps.full-validation.outcome }}',full],['${{ steps.release-gate.outcome }}',release]])selected=selected.split(expression).join(value);
+      const expressions=sourceRoute
+        ?[['${{ steps.weather-route-result.outputs.operational_action }}',action],['${{ steps.weather-route-result.outputs.full_validation_outcome }}',full],['${{ steps.weather-route-result.outputs.release_gate_outcome }}',release]]
+        :[['${{ steps.operational-action.outputs.action }}',action],['${{ steps.full-validation.outcome }}',full],['${{ steps.release-gate.outcome }}',release]];
+      for(const [expression,value] of expressions)selected=selected.split(expression).join(value);
       assert(!selected.includes('${{'));
       await fs.writeFile(script,stubs+selected);await fs.writeFile(trace,'');await fs.writeFile(output,'');
       const result=spawnSync(shell,['--noprofile','--norc','-e','-o','pipefail',script.split(path.sep).join('/')],{cwd:directory,encoding:'utf8',windowsHide:true,timeout:5000,
