@@ -1,3 +1,15 @@
+## 13. november — Source adskiller numerik fra programlevering
+
+Den lokale Source-efterfølger adskiller de faktiske beregnings-, state- og kildevalgsmoduler fra app-, kontrol- og Pages-koden. C/I-manifesterne følger den numeriske importgraf; den eksisterende CODE-fortegnelse og den præcise GitHub-kildekvalifikation ejer programleveringen særskilt. En efterfølgende appudgivelse må kun beholde den udstedte model og SQL, når de reelle modelinput stadig er identiske. Ændret numerik, schema eller kildepolitik får ikke genbrugsret gennem denne adskillelse.
+
+Den normale afsluttende `sync-ravscore-model-binding.mjs --write` skriver nu også releasekontrakten og håndbogens afledte aktuelle modeloplysninger med de eksisterende synkroniseringsfunktioner. Det sker efter bindingen og før kildeprøverne. Bibliotekets isolerede prøve-API og skrivefri `--check` beholder deres hidtidige grænser. Aktuelle håndbogsfakta må ikke kræve en særskilt manuel rettelse, efter at en normal modelbygning er færdig.
+
+Tidligere udstedt SQL bevares med sine autentiske hele bytes og hashes. Den nye kandidats fortegnelse medtager også den faktisk tidligere udstedte 614-original; repositoryarkivets størrelse må ikke forveksles med den særskilte installerede PostgreSQL-profil. Uinstalleret automatisk backup fra en ældre privat gren følger ikke med Source. Den almindelige gendannelsesprøve og dens aktuelle 598-paritet bevares.
+
+Det eksisterende native-forløb registrerer faktisk runtime og materialisatorobservationer i sin typede kvittering. Dette er ikke i sig selv fuld backendlukning eller PostgreSQL-genbrugsautoritet. Første rigtige kandidat skal gennem faktisk frisk Linux/PostgreSQL. Den efterfølgende normale appvej skal kvalificeres særskilt før aktivering. Der tilføjes ingen generel kontrol af hele operativsystemet, hele Pythoninstallationen eller bytecode-cacher.
+
+Der kræves fortsat reel kvalifikation af normal indgang, efterbehandling, originalbevarelse og offentlig levering. Lokal sammenføring, syntetisk første/næste-generatorbevis og syntakskontrol er ikke en aktiveret revision. Den fungerende 598-drift og uafhængige rettelser fortsætter imens.
+
 # Aktuel afgrænset V4-kandidat — 12. november 2026
 
 Den første faktiske Linux-kvalifikation bestod den nye V4-kontrolvej og mailmålet, men påviste manglende forudsætninger i scalarprøvens miljø. Den normale vejrhentning installerer allerede det eksisterende requirements-copernicus.txt før offline planlægning; den målrettede kildeproducent forbereder nu samme krav, når netop dette mål vælges. Prøvens barn bevarer Linux-/macOS-interpreterens biblioteksstier og udelukker fortsat credentials. Produktlæser, fejlafvisning, model og providerbudgetter ændres ikke af forberedelsen. Ny præcis Linux-kvalifikation kræves fortsat.

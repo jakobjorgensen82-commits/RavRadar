@@ -4,6 +4,111 @@ import { sourceTreeProofArtifactName } from './source-tree-content.mjs';
 // evidence plus an equal SHA-256 content manifest is the proof.
 export const SOURCE_GATE_CONTRACT = 'weather-source-gate-content-v2';
 export const SOURCE_GATE_STEP = 'Run fast source gate before expensive data refresh';
+export const SOURCE_CODE_STEP = 'Qualify exact Source code before private hydration';
+export const SOURCE_CODE_STEP_ID = 'source-code-before-hydration';
+export const SOURCE_PR_NATIVE_CONTRACT = 'RAVRADAR_SOURCE_AFTER598_PR_NATIVE_POSTGRES_PHASE_V1';
+const SOURCE_PR_LOCATOR_KEYS = ['contractId','repository','headSha','producerHeadSha','sourceTreeSha256',
+  'pullRequestNumber','runId','runAttempt','jobId','artifactId','artifactDigest','proofSha256'];
+// This is the existing typed PR locator schema. It grants no authority alone:
+// the normal consumer independently reads its origin; the Source entry also
+// requires the genuinely successful earlier consumer step in the current job.
+export function assertSourcePrNativeLocator(record, identity, sourceTreeSha256) {
+  const fail=()=>{throw new Error('SOURCE_ENTRY_CURRENT_SOURCE_LOCATOR');};
+  const oid=value=>typeof value==='string'&&/^[a-f0-9]{40}$/.test(value);
+  const digest=value=>typeof value==='string'&&/^sha256:[a-f0-9]{64}$/.test(value);
+  const positive=value=>Number.isSafeInteger(value)&&value>0;
+  if(!record||Object.getPrototypeOf(record)!==Object.prototype
+    ||Object.keys(record).sort().join(',')!==[...SOURCE_PR_LOCATOR_KEYS].sort().join(',')
+    ||record.contractId!==SOURCE_PR_NATIVE_CONTRACT||record.repository!==identity.GITHUB_REPOSITORY
+    ||identity.GITHUB_REF!=='refs/heads/main'||!oid(record.headSha)||record.headSha!==identity.GITHUB_SHA
+    ||!oid(record.producerHeadSha)||record.producerHeadSha===record.headSha
+    ||!digest(record.sourceTreeSha256)||record.sourceTreeSha256!==sourceTreeSha256
+    ||!digest(record.artifactDigest)||!/^[a-f0-9]{64}$/.test(record.proofSha256??'')
+    ||typeof record.runId!=='string'||!/^[1-9][0-9]*$/.test(record.runId)
+    ||!positive(Number(record.runId))||record.runId===String(identity.GITHUB_RUN_ID)
+    ||record.runAttempt!==1
+    ||!['pullRequestNumber','jobId','artifactId'].every(key=>positive(record[key])))fail();
+}
+// The existing Source boundary has one fixed bootstrap, before any private
+// central read. This validates the security frame, not a whole-file hash.
+export function assertSourceCodeBeforeHydrationWorkflow(source) {
+  const fail=()=>{throw new Error('SOURCE_CODE_WORKFLOW_ORDER');};
+  if(typeof source!=='string'||Buffer.byteLength(source)>1024*1024)fail();
+  source=source.replace(/\r\n/g,'\n');
+  const heads=[...source.matchAll(/^      - (?:name|uses): ([^\n]+)\n/gm)];
+  const blocks=heads.map((row,i)=>({name:row[1],start:row.index,
+    text:source.slice(row.index,heads[i+1]?.index??source.length)}));
+  const one=name=>{const rows=blocks.filter(row=>row.name===name);if(rows.length!==1)fail();return rows[0];};
+  const gate=one(SOURCE_CODE_STEP),node=one('Set up Node.js'),
+    central=one('Read exact centrally active operational RavScore'),
+    action=one('Run the one explicit owned SOURCE ordinary route');
+  const expected=['Record the actual epoch build start before checkout','actions/checkout@v7',
+    'Require checked-out HEAD to equal current origin/main','Set up Node.js'];
+  const before=blocks.filter(row=>row.start<gate.start);
+  if(JSON.stringify(before.map(row=>row.name))!==JSON.stringify(expected)
+    ||blocks.indexOf(gate)!==blocks.indexOf(node)+1
+    ||!(gate.start<central.start&&central.start<action.start)
+    ||!gate.text.includes('        id: '+SOURCE_CODE_STEP_ID+'\n')
+    ||!/^        run: node scripts\/weather-source-gate\.mjs source-before-hydration\n/m.test(gate.text)
+    ||/^        (?:if|continue-on-error|working-directory):/m.test(gate.text)
+    ||/\bsecrets\./.test(source.slice(0,gate.start)+gate.text)
+    ||!/^        uses: \.\/\.github\/actions\/save-owned-dmi-grib\n/m.test(action.text)
+    ||!action.text.includes('          operation: source\n'))fail();
+}
+
+// Saved-weather repair already has a source-proof step before private access.
+// Reuse that placement, rather than adding another gate or checking hydrated data.
+export function assertSourceCodeBeforeSavedWeatherWorkflow(source) {
+  const fail=()=>{throw new Error('SOURCE_CODE_ONLY_WORKFLOW_ORDER');};
+  if(typeof source!=='string'||Buffer.byteLength(source)>1024*1024)fail();
+  source=source.replace(/\r\n/g,'\n');
+  const jobs=[...source.matchAll(/^  ([A-Za-z0-9_-]+):\n/gm)];
+  const selected=jobs.filter(row=>row[1]==='build-code-only');
+  if(selected.length!==1)fail();
+  const at=jobs.indexOf(selected[0]),job=source.slice(selected[0].index,jobs[at+1]?.index??source.length);
+  const heads=[...job.matchAll(/^      - (?:name|uses): ([^\n]+)\n/gm)];
+  const blocks=heads.map((row,i)=>({name:row[1],start:row.index,text:job.slice(row.index,heads[i+1]?.index??job.length)}));
+  const matches=blocks.filter(row=>row.name==='Reuse exact successful pull-request source proof');
+  if(matches.length!==1)fail();
+  const gate=matches[0],before=blocks.filter(row=>row.start<gate.start);
+  const expected=['actions/checkout@v7','Validate exact manual code-only authority and main',
+    'actions/setup-node@v7','actions/setup-python@v7',
+    'Install private weather-component verification dependencies','Seal exact integrated implementation identity'];
+  if(JSON.stringify(before.map(row=>row.name))!==JSON.stringify(expected)
+    ||!/^        id: source-proof\n/m.test(gate.text)
+    ||!/^        run: node scripts\/weather-source-gate\.mjs check-before-private\n/m.test(gate.text)
+    ||/^        (?:if|continue-on-error|working-directory):/m.test(gate.text)
+    ||/\bsecrets\./.test(job.slice(0,gate.start)+gate.text))fail();
+}
+
+// Pure metadata inspection only; the normal entry reads the actual run/job itself.
+export function verifySourceNormalEarlyCodeExecution({record,identity,run,job,sourceTreeSha256,workflowSource,observedAt}){
+  const need=(value,code)=>{if(!value)throw Object.assign(new Error('SOURCE_ENTRY_'+code),{code:'SOURCE_ENTRY_'+code});};
+  assertSourcePrNativeLocator(record,identity,sourceTreeSha256);
+  need(run.id===Number(identity.GITHUB_RUN_ID)
+    &&run.run_attempt===Number(identity.GITHUB_RUN_ATTEMPT),'CURRENT_SOURCE_RUN');
+  assertSourceCodeBeforeHydrationWorkflow(workflowSource);
+  const gateName=SOURCE_CODE_STEP;
+  need(Array.isArray(job.steps)&&job.steps.length>0&&job.steps.length<=512,'CURRENT_SOURCE_STEPS');
+  const actual=name=>{
+    const rows=job.steps.filter(step=>step?.name===name);need(rows.length===1,'CURRENT_SOURCE_STEPS');
+    const step=rows[0];need(Number.isSafeInteger(step.number)&&step.number>0,'CURRENT_SOURCE_STEPS');return step;
+  };
+  const code=actual(gateName),central=actual('Read exact centrally active operational RavScore'),
+    active=actual('Run the one explicit owned SOURCE ordinary route');
+  for(const step of [code,central])need(step.status==='completed'&&step.conclusion==='success','CURRENT_SOURCE_STEPS');
+  need(active.status==='in_progress'&&active.conclusion===null&&active.completed_at===null,'CURRENT_SOURCE_STEPS');
+  const stamp=value=>{
+    const time=Date.parse(value??'');need(typeof value==='string'&&Number.isFinite(time)
+      &&new Date(time).toISOString()===value.replace(/(?<!\.\d{3})Z$/,'.000Z'),'CURRENT_SOURCE_ORDER');return time;
+  };
+  const times=[stamp(job.started_at),stamp(code.started_at),stamp(code.completed_at),
+    stamp(central.started_at),stamp(central.completed_at),stamp(active.started_at)];
+  need(code.number<central.number&&central.number<active.number
+    &&times.every((value,index)=>index===0||times[index-1]<=value)
+    &&Number.isSafeInteger(observedAt)&&times.at(-1)<=observedAt,'CURRENT_SOURCE_ORDER');
+}
+
 export const PULL_REQUEST_SOURCE_WORKFLOW = '.github/workflows/validate-pull-request.yml';
 export const PULL_REQUEST_SOURCE_JOB = 'Source validation and release gate';
 export const PULL_REQUEST_SOURCE_STEPS = Object.freeze([

@@ -5,7 +5,7 @@ import {
 } from './ravscore-mobilisation-memory.js';
 import {
   RAVSCORE_WAVE_MOBILISATION_POLICY as MODEL_WAVE_MOBILISATION_POLICY,
-} from './ravscore-model-contract.js';
+} from './ravscore-numerical-contract.js';
 import { canonicalRavScoreTime } from './ravscore-time.js';
 
 const HOUR_MS = 3_600_000;

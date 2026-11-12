@@ -176,3 +176,11 @@ export function selectQualifiedWeatherComponent(candidates, {
   }
   return { candidate: dmi.candidate, reason: 'VALID_DMI_RETAINED' };
 }
+
+export function markPreviouslySelectedWeatherComponentCandidates(candidates, previous) {
+  return candidates.map(candidate => ({ ...candidate,
+    // This marks the previous winner only for same-provider revision ordering.
+    // A newly admitted Copernicus value may still replace Open-Meteo.
+    previouslySelected: candidate?.source?.provider === previous.provider,
+  }));
+}

@@ -1,3 +1,5 @@
+import { normalizeDegrees, uvToTowardDirectionDeg } from './ravscore-physical-calculation.mjs';
+export { normalizeDegrees, uvToTowardDirectionDeg };
 // Private H0..H120 includes the exact T+3 support for public H115..H117.
 // The public projection remains 118 hours; support rows are not extra scores.
 export const DMI_FORECAST_HOURS = 121;
@@ -8,16 +10,10 @@ export const DMI_FORECAST_SCHEMA_VERSION = 1;
 // JavaScript could coerce them into a finite Number.
 const finite = value => typeof value === 'number' && Number.isFinite(value) ? value : null;
 const round = (value, digits = 2) => Number.isFinite(value) ? Number(value.toFixed(digits)) : null;
-export const normalizeDegrees = value => ((value % 360) + 360) % 360;
 const roundedDegrees = value => {
   const numeric = finite(value);
   return numeric === null ? null : normalizeDegrees(round(numeric, 0));
 };
-export function uvToTowardDirectionDeg(uValue, vValue) {
-  const u = finite(uValue);
-  const v = finite(vValue);
-  return u === null || v === null ? null : normalizeDegrees(Math.atan2(u, v) * 180 / Math.PI);
-}
 
 export function interpolateWaterLevelStations(point, stations, levels, { maxStations = 2, minimumDistanceKm = 0.25, haversineKm } = {}) {
   if (!Array.isArray(point) || typeof haversineKm !== 'function') throw new TypeError('point and haversineKm are required');

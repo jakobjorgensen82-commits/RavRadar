@@ -388,7 +388,8 @@ try{
   }
   const shareUrl=forecastShareUrl(shareBase,shareSelection);
   const head=await shareWorkerRequest(shareUrl,{method:'HEAD'});
-  assert.equal(head.response.status,200);assert.equal(head.html,'');assert.equal(head.reads.length,3);
+  assert.equal(head.response.status,200);assert.equal(head.html,'');
+  assert.equal(head.reads.length,0);assert.equal(head.upstream.length,0);
   assert.equal(head.response.headers.get('content-type'),'text/html; charset=utf-8');
   assert.equal(head.response.headers.get('cache-control'),'no-store');cases++;
   for(const method of ['POST','PUT','PATCH','DELETE','OPTIONS']){
@@ -470,6 +471,7 @@ try{
   const pagesUrl=forecastShareUrl(FORECAST_SHARE_PAGES_BASE_URL,shareSelection);
   const pagesHead=await shareWorkerRequest(pagesUrl,{pages:true,method:'HEAD'});
   assert.equal(pagesHead.response.status,200);assert.equal(pagesHead.html,'');
+  assert.equal(pagesHead.reads.length,0);assert.equal(pagesHead.upstream.length,0);
   assert.equal(pagesHead.response.headers.get('cache-control'),'no-store');cases++;
   for(const method of ['POST','PUT','DELETE']){
     const result=await shareWorkerRequest(pagesUrl,{pages:true,method});
@@ -481,7 +483,8 @@ try{
   }
   const customUrl=forecastShareUrl(customBase,shareSelection);
   const customHead=await shareWorkerRequest(customUrl,{pages:true,method:'HEAD'});
-  assert.equal(customHead.response.status,200);assert.equal(customHead.html,'');assert.equal(customHead.reads.length,3);cases++;
+  assert.equal(customHead.response.status,200);assert.equal(customHead.html,'');
+  assert.equal(customHead.reads.length,0);assert.equal(customHead.upstream.length,0);cases++;
   for(const method of ['POST','PUT','DELETE']){
     const result=await shareWorkerRequest(customUrl,{pages:true,method});
     assert.equal(result.response.status,405);assert.equal(result.upstream.length,0);cases++;

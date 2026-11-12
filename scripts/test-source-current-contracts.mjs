@@ -10,6 +10,7 @@ import {syncBuiltinESMExports} from 'node:module';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {CURRENT_CONTRACT_COMMANDS,isBoundedLocalRestoreFixtureChange} from './source-current-contract-plan.mjs';
 
+async function ordinaryV3Protocol(){
 const SOURCE=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 
 // The fixed restore command owns only its reviewed fixture body. Import and
@@ -748,3 +749,78 @@ console.log(JSON.stringify({kind:'SYNTHETIC_CURRENT_V4_PRODUCER_CONSUMER_INTEGRA
   genuineProtected148AndCIT:true,frozenAnchors:16,plannerMock:false,productSourceTestsExecuted:false,
   actualSqlOrSqliteExecuted:false,actualGitHubOrFullQualification:false,
   network:false,production:false,deliveryAuthority:false}));
+
+}
+
+async function sourceFirstControlCases(){
+ const api=await import('./source-first-issuance-contracts.mjs');
+ const identity=await api.readActualSourceFirstIdentity();
+ api.assertSourceFirstIdentityData(identity);
+ const metadata={schemaVersion:'source-producer-after597-derived-metadata-v1',release:identity.release,version:identity.binding.version,binding:identity.binding,output:identity.output};
+ assert.equal(api.classifySourceValidationBaseData(identity,{version:'4.0.598'},null),api.SOURCE_FIRST_SELECTION);
+ assert.equal(api.classifySourceValidationBaseData(identity,{version:identity.release},metadata),api.SOURCE_UNCHANGED_SELECTION);
+ const changedModel=structuredClone(metadata);changedModel.binding.C='0'.repeat(64);
+ assert.throws(()=>api.classifySourceValidationBaseData(identity,{version:identity.release},changedModel));
+ assert.throws(()=>api.classifySourceValidationBaseData(identity,{version:identity.release},null));
+ const nextApplicationRelease='4.0.'+(Number(identity.release.slice(4))+1);
+ assert.equal(api.classifySourceValidationBaseData(identity,{version:nextApplicationRelease},metadata),api.SOURCE_UNCHANGED_SELECTION);
+ api.assertSourceApplicationRelease(nextApplicationRelease,identity.release,identity.release);
+ assert.throws(()=>api.assertSourceApplicationRelease(identity.release,identity.release,nextApplicationRelease));
+ const changedModelRelease=structuredClone(metadata);changedModelRelease.release=nextApplicationRelease;
+ assert.throws(()=>api.classifySourceValidationBaseData(identity,{version:nextApplicationRelease},changedModelRelease));
+ const gate=await import('./lib/weather-source-gate.mjs');
+ const weatherWorkflow=fs.readFileSync(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8');
+ gate.assertSourceCodeBeforeHydrationWorkflow(weatherWorkflow);
+ const bypassed=weatherWorkflow.replace('        id: source-code-before-hydration\n',
+   '        id: source-code-before-hydration\n        continue-on-error: true\n');
+ assert.throws(()=>gate.assertSourceCodeBeforeHydrationWorkflow(bypassed));
+ const savedWorkflow=fs.readFileSync(new URL('../.github/workflows/deploy-code-only-repair.yml',import.meta.url),'utf8');
+ gate.assertSourceCodeBeforeSavedWeatherWorkflow(savedWorkflow);
+ assert.throws(()=>gate.assertSourceCodeBeforeSavedWeatherWorkflow(savedWorkflow.replace(
+   '        run: node scripts/weather-source-gate.mjs check-before-private',
+   '        run: node scripts/weather-source-gate.mjs check')));
+ const locatorEnv={GITHUB_REPOSITORY:'jakobjorgensen82-commits/RavRadar',GITHUB_REF:'refs/heads/main',
+   GITHUB_SHA:'a'.repeat(40),GITHUB_RUN_ID:'9000'};
+ const locatorTree='sha256:'+'b'.repeat(64);
+ const locator={contractId:gate.SOURCE_PR_NATIVE_CONTRACT,repository:locatorEnv.GITHUB_REPOSITORY,
+   headSha:locatorEnv.GITHUB_SHA,producerHeadSha:'c'.repeat(40),sourceTreeSha256:locatorTree,
+   pullRequestNumber:40,runId:'8000',runAttempt:1,jobId:50,artifactId:60,
+   artifactDigest:'sha256:'+'d'.repeat(64),proofSha256:'e'.repeat(64)};
+ gate.assertSourcePrNativeLocator(locator,locatorEnv,locatorTree);
+ assert.throws(()=>gate.assertSourcePrNativeLocator({...locator,contractId:gate.SOURCE_GATE_CONTRACT},locatorEnv,locatorTree));
+ assert.throws(()=>gate.assertSourcePrNativeLocator({...locator,runId:locatorEnv.GITHUB_RUN_ID},locatorEnv,locatorTree));
+ for(const mutate of [x=>{x.predecessorRelease='4.0.597';},x=>{x.output=null;},x=>{x.binding=null;},
+  x=>{x.migrationCount=77;},x=>{x.selectedVersion='00000000000000';},x=>{x.release='4.0.598';}]){
+  const changed=structuredClone(identity);mutate(changed);assert.throws(()=>api.assertSourceFirstIdentityData(changed));
+ }
+ api.assertSourceFirstPathScope(['scripts/source-first-issuance-contracts.mjs'],identity);
+ assert.throws(()=>api.assertSourceFirstPathScope(['scripts/unreviewed-first-source-feature.mjs'],identity));
+ assert.throws(()=>api.assertSourceFirstPathScope(['supabase/migrations/00000000000000_wx_source.sql'],identity));
+ // Actual GitHub numbering from head2: 24 main steps, then 44..49.
+ // These are synthetic metadata mutations, not a claimed CI/native execution.
+ const at=i=>new Date(Date.UTC(2026,10,12,14,0,0)+i*2000).toISOString();
+ const main=api.SOURCE_FIRST_JOB_STEPS.map(([name,conclusion],i)=>({
+  name,conclusion,number:i+1,status:'completed',started_at:at(i*2),completed_at:at(i*2+1)}));
+ const names=['Post Restore Node22 for existing source validation','Post Set up Node24 for isolated acquisition contracts',
+  'Post Run actions/setup-python@v7','Post Run actions/setup-node@v7','Post Run actions/checkout@v7','Complete job'];
+ const job={steps:[...main,...names.map((name,i)=>({name,number:44+i,status:'completed',conclusion:'success'}))]};
+ assert.doesNotThrow(()=>api.sourceFirstNativeStepShape(job));
+ for(const mutate of [
+  x=>{x.steps[24].name='Unknown action cleanup';},
+  x=>{[x.steps[24].name,x.steps[25].name]=[x.steps[25].name,x.steps[24].name];},
+  x=>{x.steps[25].name=x.steps[24].name;},
+  x=>{x.steps[25].number=x.steps[24].number;},
+  x=>{x.steps[25].number=43;},
+  x=>{x.steps[24].number=24;},
+  x=>{x.steps[24].conclusion='skipped';},
+  x=>{x.steps.splice(24,0,{name:'Unreviewed extra main step',number:25,status:'completed',conclusion:'success'});},
+  x=>{x.steps[16].conclusion='skipped';}
+ ]){
+  const changed=structuredClone(job);mutate(changed);assert.throws(()=>api.sourceFirstNativeStepShape(changed));
+ }
+ console.log(JSON.stringify({kind:'SOURCE_CURRENT_CONTROL_DATA_TESTS',scope:'MODULE_DATA_ASSERTIONS_COMPLETED',
+   includedContracts:['actualIdentity','invalidIdentity','pathScope','genuine598First','sameSourceBase','changedModelRefused','unknownBaseRefused','modelReleaseChangeRefused','nextAppSameModel','appRollbackRefused','earlyCodeBeforeHydration','earlyCodeBypassRefused','savedWeatherEarlyCode','unchangedTypedLocator','legacyLocatorRefused','selfOriginRefused','actualGitHubPostNumbers','strictPostNamesOrderNumbersAndOutcomes'],
+   actualSqlOrSqliteExecuted:false,network:false,sourceAdmission:false,productionProof:false}));
+}
+const sourceFamily=fs.existsSync(new URL('./lib/source-producer-after597-binding.generated.json',import.meta.url));
+if(sourceFamily)await sourceFirstControlCases();else await ordinaryV3Protocol();

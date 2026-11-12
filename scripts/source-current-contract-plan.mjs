@@ -142,6 +142,7 @@ const PATH_AREAS=freeze({
   ],
   sourceControls:[
     '.github/workflows/validate-pull-request.yml',
+    '.github/workflows/validate-current-source-native-profile.yml',
     'scripts/source-current-contract-plan.mjs',
     'scripts/source-current-contract-receipt.mjs',
     'scripts/test-source-current-contracts.mjs',

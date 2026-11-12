@@ -1,0 +1,809 @@
+{
+  "schemaVersion": 1,
+  "scope": "SOURCE_AFTER598_FIRST_ISSUANCE",
+  "sourceFeaturePaths": [
+    ".github/actions/deploy-ravradar-pages/action.yml",
+    ".github/actions/save-owned-dmi-grib/action.yml",
+    ".github/actions/save-owned-dmi-grib/index.cjs",
+    ".github/actions/save-owned-dmi-grib/package-lock.json",
+    ".github/actions/save-owned-dmi-grib/package.json",
+    ".github/workflows/backup-supabase-database.yml",
+    ".github/workflows/deploy-code-only-repair.yml",
+    ".github/workflows/maintain-admin-document-history.yml",
+    ".github/workflows/reusable-operational-reentry.yml",
+    ".github/workflows/reusable-pages-deploy.yml",
+    ".github/workflows/reusable-weather-build.yml",
+    ".github/workflows/run-current-weather-once.yml",
+    ".github/workflows/validate-copernicus-current-pilot.yml",
+    ".github/workflows/validate-current-source-native-profile.yml",
+    ".github/workflows/validate-pull-request.yml",
+    ".github/workflows/verify-supabase-cli-local-restore.yml",
+    "CHANGELOG.md",
+    "HANDBOOK-RAVRADAR.md",
+    "about.html",
+    "admin.html",
+    "amber-hunting.html",
+    "app.js",
+    "bernsteinsuche.html",
+    "bootstrap.js",
+    "data/admin/ravscore-profile-selection.json",
+    "data/kystdata.json",
+    "data/zones.geojson",
+    "docs/ai/CODEX_START_HERE.md",
+    "docs/ai/CURRENT_SESSION_HANDOFF.md",
+    "docs/handbook/content.json",
+    "docs/rdks/00_READ_FIRST.md",
+    "docs/rdks/01_AI_OPERATING_RULES.md",
+    "docs/rdks/10_DECISIONS/DEC-0206-VERIFIED-WEATHER-COMPLETENESS-AND-DEPLOYMENT-TERMINAL.md",
+    "docs/rdks/10_DECISIONS/DEC-0272-PRIVATE-INSTALL-ROLLBACK-BACKUP.md",
+    "docs/rdks/10_DECISIONS/DEC-0293-NATIONAL-CURRENT-ARROW-DISPLAY-LAND-MASK.md",
+    "docs/rdks/10_DECISIONS/DEC-0302-CHANGE-BASED-VALIDATION-AND-CONTROL-CLEANUP.md",
+    "docs/rdks/40_KNOWN_ISSUES/KNOWN-ISSUES.md",
+    "docs/rdks/90_INDEX/CURRENT_TRUTH.md",
+    "docs/rdks/90_INDEX/IMPLEMENTATION_STATUS.md",
+    "docs/rdks/MASTER_LOG.md",
+    "documentation.html",
+    "handbook.html",
+    "index.html",
+    "jordrav.html",
+    "js/core/best-time-policy.js",
+    "js/core/best-time-selector.js",
+    "js/core/current-direction-audit.js",
+    "js/core/local-zone-score.js",
+    "js/core/phase-d-wave-process-candidate.js",
+    "js/core/prediction-engine.js",
+    "js/core/ravscore-candidate-g.js",
+    "js/core/ravscore-integrated-explanation-presenter.js",
+    "js/core/ravscore-model-bundle.generated.js",
+    "js/core/score-engine.js",
+    "js/core/score-presentation.js",
+    "js/jordrav/context-messages.js",
+    "js/jordrav/data-service.js",
+    "js/jordrav/evidence-chain.js",
+    "js/jordrav/layer-access.js",
+    "js/jordrav/map.js",
+    "js/jordrav/messages.js",
+    "js/map/map-view.js",
+    "js/services/account-trip-report-contract.js",
+    "js/services/admin-account-categories.js",
+    "js/services/admin-document-store.js",
+    "js/services/admin-trip-count.js",
+    "js/services/app-update-flow.js",
+    "js/services/auth-service.js",
+    "js/services/data-service.js",
+    "js/services/forecast-share-projection.js",
+    "js/services/handbook-review-store.js",
+    "js/services/historical-analysis.js",
+    "js/services/learning-analysis.js",
+    "js/services/map-forecast-view.js",
+    "js/services/observation-service.js",
+    "js/services/permissions-service.js",
+    "js/services/persistence-test-service.js",
+    "js/services/plain-map-hour.js",
+    "js/services/private-trip-study.js",
+    "js/services/public-delivery-transport-binding.js",
+    "js/services/rav-assistant.js",
+    "js/services/rule-service.js",
+    "js/services/site-function-test-service.js",
+    "js/services/trip-evidence-contract.js",
+    "js/services/trip-evidence-controller.js",
+    "js/services/trip-evidence-legacy-bridge.js",
+    "js/services/trip-evidence-public-adapter.js",
+    "js/services/trip-evidence-runtime.js",
+    "js/services/trip-evidence-store.js",
+    "js/services/trip-evidence-upload.js",
+    "js/services/visit-counter.js",
+    "js/services/visitor-report-service.js",
+    "js/ui/about-explainer-i18n.js",
+    "js/ui/about-explainer.js",
+    "js/ui/about-i18n.js",
+    "js/ui/about.js",
+    "js/ui/account-panel.js",
+    "js/ui/admin-active-ravscore.js",
+    "js/ui/admin-app.js",
+    "js/ui/admin-coastline-editor.js",
+    "js/ui/admin-dashboard.js",
+    "js/ui/admin-gate.js",
+    "js/ui/admin-private-trip-study.js",
+    "js/ui/developer-panel.js",
+    "js/ui/forecast-share.js",
+    "js/ui/handbook.js",
+    "js/ui/info-panel.js",
+    "js/ui/learn-i18n-de.js",
+    "js/ui/learn-i18n-en.js",
+    "js/ui/learn-i18n.js",
+    "js/ui/map-tab-copy.js",
+    "js/ui/map-timeline-copy.js",
+    "js/ui/map-timeline.js",
+    "js/ui/ranking-copy.js",
+    "js/ui/score-prognosis-copy.js",
+    "js/ui/site-search-copy.js",
+    "js/ui/supabase-setup.js",
+    "js/ui/trip-evidence-dialog.js",
+    "knowledge/rav-assistant-public-v1.json",
+    "learn.html",
+    "package.json",
+    "ravjagt.html",
+    "scripts/acquire-code-only-public-snapshot.mjs",
+    "scripts/archive-supabase-database-backup.mjs",
+    "scripts/build-ravscore-model-bundle.mjs",
+    "scripts/build-source-producer-successor.mjs",
+    "scripts/check-assistant-later-h0-predecessor-source.mjs",
+    "scripts/check-dmi-bulk-operational-ready.py",
+    "scripts/check-public-weather-continuity.mjs",
+    "scripts/completed-private-runtime-admission.mjs",
+    "scripts/deploy-ordinary-pages-with-immediate-retry.mjs",
+    "scripts/fixtures/rav-assistant-evals-v1.json",
+    "scripts/fixtures/rav-assistant-local-evals-v1.json",
+    "scripts/fixtures/source19-current-initial-weather.py",
+    "scripts/fixtures/source19-current-native-activation.mjs",
+    "scripts/fixtures/source19-current-native-initial-activation.mjs",
+    "scripts/fixtures/source19-current-native-metadata.mjs",
+    "scripts/fixtures/source19-current-native-post64.py",
+    "scripts/fixtures/source19-current-native-providers.py",
+    "scripts/fixtures/source19-current-normal-inputs.mjs",
+    "scripts/fixtures/source19-current-provider-forecast.mjs",
+    "scripts/fixtures/source19-current598-input-profile.json",
+    "scripts/forecast-share/handler.mjs",
+    "scripts/github-pages-attempt-evidence.mjs",
+    "scripts/integrated-cutover-readiness.mjs",
+    "scripts/lib/archived-weather-restart-updater-test-input.mjs",
+    "scripts/lib/authenticated-copy-restore-parity.mjs",
+    "scripts/lib/authenticated-frozen586-predecessor.mjs",
+    "scripts/lib/checkpoint-cas-native-postgres.mjs",
+    "scripts/lib/completed-private-runtime-workflow-review.mjs",
+    "scripts/lib/copernicus_component_process.py",
+    "scripts/lib/dmi-forecast-file.mjs",
+    "scripts/lib/established-native-current-origin.mjs",
+    "scripts/lib/isolated-auth-original-row-guard.mjs",
+    "scripts/lib/lf7-fur-consumer-observation.mjs",
+    "scripts/lib/model-source-imports.mjs",
+    "scripts/lib/native-identity-checkpoint-postgres.mjs",
+    "scripts/lib/pages-closure-historical-test-input.mjs",
+    "scripts/lib/pages-per-artifact-identity.mjs",
+    "scripts/lib/pages-sealed-retry-decision.mjs",
+    "scripts/lib/private-dmi-recovery-record.mjs",
+    "scripts/lib/private-weather-component-pack.mjs",
+    "scripts/lib/production-workflow-sources.mjs",
+    "scripts/lib/publish-sealed-pages-with-recovery.mjs",
+    "scripts/lib/r2-private-runtime-storage.mjs",
+    "scripts/lib/run-sealed-pages-deployment.mjs",
+    "scripts/lib/source-artifact-distribution-review.mjs",
+    "scripts/lib/source-completed-public-pages-occurrence.mjs",
+    "scripts/lib/source-completed-stage-artifact-identity.mjs",
+    "scripts/lib/source-completed-stage-occurrence.mjs",
+    "scripts/lib/source-current-full-postgres-bootstrap.mjs",
+    "scripts/lib/source-first-issuance-inputs.json",
+    "scripts/lib/source-impact-domain-owners-598.json",
+    "scripts/lib/source-impact-workflow-review.mjs",
+    "scripts/lib/source-integrated-publication-receipt.mjs",
+    "scripts/lib/source-pages-closure-historical-test-input.mjs",
+    "scripts/lib/source-producer-after597-binding.generated.json",
+    "scripts/lib/source-producer-after597-code-pins.generated.json",
+    "scripts/lib/source-producer-after597-derived-metadata.mjs",
+    "scripts/lib/source-producer-after597-parent.mjs",
+    "scripts/lib/source-producer-after597-runtime-family.mjs",
+    "scripts/lib/source-producer-after598-postgres.mjs",
+    "scripts/lib/source-producer-binding.generated.json",
+    "scripts/lib/source-producer-current-native-profile.mjs",
+    "scripts/lib/source-producer-derived-metadata.mjs",
+    "scripts/lib/source-producer-successor-source.mjs",
+    "scripts/lib/source-saved-pair-pages-proof.mjs",
+    "scripts/lib/source-union-birth-journal.mjs",
+    "scripts/lib/source598-pr-qualification-scope.mjs",
+    "scripts/lib/source598-test-phase.mjs",
+    "scripts/lib/source_union_birth_journal.py",
+    "scripts/lib/verified-dmi-progress-inputs.mjs",
+    "scripts/lib/verified-protected-progress-components.mjs",
+    "scripts/lib/verified-weather-deployment-terminal.mjs",
+    "scripts/lib/water-source-forecast-routing.mjs",
+    "scripts/lib/weather-component-runtime.mjs",
+    "scripts/materialize-dmi-bulk-storage.py",
+    "scripts/merge-verified-current-donor-banks.py",
+    "scripts/national584-source-evidence.mjs",
+    "scripts/native-postgres-evidence.mjs",
+    "scripts/plan-weather-scalar-acquisition.mjs",
+    "scripts/private-production-runtime-workflow.mjs",
+    "scripts/protected-operational-reentry-evidence.mjs",
+    "scripts/protected-private-production-runtime.mjs",
+    "scripts/ravscore-operational-activation.mjs",
+    "scripts/ravscore-operational-pages-recovery.mjs",
+    "scripts/reconcile-private-runtime-checkpoint.mjs",
+    "scripts/reconcile-source-producer-code-only.mjs",
+    "scripts/rollback-assets/ravscore-model-bundle.generated.js",
+    "scripts/run-autonomous-supabase-backup.mjs",
+    "scripts/run-copernicus-weather-components.py",
+    "scripts/run-dmi-bulk-supervised.py",
+    "scripts/run-hosted-supabase-backup.mjs",
+    "scripts/run-owned-dmi-grib-save.py",
+    "scripts/select-automatic-completed-private-runtime.mjs",
+    "scripts/select-automatic-source-saved-weather.mjs",
+    "scripts/select-source-producer-code-only-source.mjs",
+    "scripts/source-critical-gate.mjs",
+    "scripts/source-current-contract-plan.mjs",
+    "scripts/source-current-contract-receipt.mjs",
+    "scripts/source-first-issuance-contracts.mjs",
+    "scripts/source-impact-domain-plan.mjs",
+    "scripts/source-normal-producer-entry.mjs",
+    "scripts/source-normal-producer-tail.mjs",
+    "scripts/source-post-pages-integrated-reentry.mjs",
+    "scripts/source-producer-prewrite.mjs",
+    "scripts/source-producer-runtime-transition.mjs",
+    "scripts/source-progress-union-consumer.mjs",
+    "scripts/source-targeted-consumer.mjs",
+    "scripts/source-targeted-producer.mjs",
+    "scripts/stage-source-producer-originals.mjs",
+    "scripts/supabase-backup-lifecycle.mjs",
+    "scripts/sync-ravscore-model-binding.mjs",
+    "scripts/test-account-statistics-assistant-callers.mjs",
+    "scripts/test-admin-document-history-workflow.mjs",
+    "scripts/test-archive-supabase-database-backup.mjs",
+    "scripts/test-assistant-after597-parent-profiles.mjs",
+    "scripts/test-assistant-after597-sync-binding.mjs",
+    "scripts/test-code-only-public-runtime.mjs",
+    "scripts/test-completed-private-runtime-admission.mjs",
+    "scripts/test-completed-private-runtime-workflow-inverse.mjs",
+    "scripts/test-current-pages-workflow-wiring.mjs",
+    "scripts/test-dmi-bulk-forecast-integration.mjs",
+    "scripts/test-dmi-marine-run-seam-recovery.mjs",
+    "scripts/test-dmi-protected-tuple-continuity.mjs",
+    "scripts/test-dmi-supervisor-parent-loss.py",
+    "scripts/test-established-native-current-origin591-metadata.mjs",
+    "scripts/test-forecast-share-projection.mjs",
+    "scripts/test-map-forecast-timeline.mjs",
+    "scripts/test-native-original-continuity-callers.mjs",
+    "scripts/test-native-postgres-evidence.mjs",
+    "scripts/test-ordinary-completed-stage-source.mjs",
+    "scripts/test-ordinary-pages-cancellation.mjs",
+    "scripts/test-ordinary-pages-immediate-retry.mjs",
+    "scripts/test-owned-dmi-cache-dependency.mjs",
+    "scripts/test-owned-dmi-grib-save-native.py",
+    "scripts/test-pages-generation-and-reentry.mjs",
+    "scripts/test-post-cutover-migration-routing.mjs",
+    "scripts/test-post-h0-dmi-original-dependencies.mjs",
+    "scripts/test-protected-live-current-assembly.mjs",
+    "scripts/test-protected-operational-reentry-evidence.mjs",
+    "scripts/test-protected-private-production-runtime.mjs",
+    "scripts/test-protected-ravscore-continuation-checkpoint.mjs",
+    "scripts/test-public-weather-continuity.mjs",
+    "scripts/test-r2-private-runtime-storage.mjs",
+    "scripts/test-rav-assistant-local-knowledge-4.0.293.mjs",
+    "scripts/test-ravscore-initial-current-window-audit.mjs",
+    "scripts/test-ravscore-integrated-generator.mjs",
+    "scripts/test-ravscore-operational-activation.mjs",
+    "scripts/test-ravscore-operational-pages-recovery.mjs",
+    "scripts/test-ravscore-recovery-replay.mjs",
+    "scripts/test-reconcile-private-runtime-checkpoint.mjs",
+    "scripts/test-reusable-production-workflows.mjs",
+    "scripts/test-runner-android-sdk-reclaim.mjs",
+    "scripts/test-security-hardening-4.0.284.mjs",
+    "scripts/test-source-child-environment.mjs",
+    "scripts/test-source-completed-public-pages-occurrence.mjs",
+    "scripts/test-source-current-contracts.mjs",
+    "scripts/test-source-impact-domain-plan.mjs",
+    "scripts/test-source-impact-workflow.mjs",
+    "scripts/test-source-targeted-consumer.mjs",
+    "scripts/test-source-targeted-domain-integration.mjs",
+    "scripts/test-source-targeted-producer.mjs",
+    "scripts/test-source-validation-once.mjs",
+    "scripts/test-source598-current-native-profile.py",
+    "scripts/test-supabase-backup-lifecycle.mjs",
+    "scripts/test-supabase-cli-local-restore.mjs",
+    "scripts/test-supabase-database-backup-workflow.mjs",
+    "scripts/test-verified-weather-deployment-terminal.mjs",
+    "scripts/test-water-source-forecast-routing-4.0.100.mjs",
+    "scripts/test-water-source-production-chain-4.0.103.mjs",
+    "scripts/test-weather-acquisition-workflows.mjs",
+    "scripts/test-weather-component-composition.mjs",
+    "scripts/test-weather-component-normal-wireup.mjs",
+    "scripts/test-weather-component-progress-workflow.mjs",
+    "scripts/test-weather-state-epoch-workflow.mjs",
+    "scripts/test-weather-update-entrypoint.mjs",
+    "scripts/test-workflow-validation-order-4.0.108.mjs",
+    "scripts/update-weather.mjs",
+    "scripts/validate-source-once.mjs",
+    "scripts/verify-source-producer-plan.mjs",
+    "scripts/weather-component-progress-cache.mjs",
+    "scripts/weather-source-gate.mjs",
+    "service-worker.js",
+    "supabase-setup.html",
+    "supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql",
+    "supabase/functions/_shared/rav-assistant-contract.ts",
+    "supabase/migrations/20261111070425_source_producer_original_bound_successor.sql",
+    "supabase/migrations/20261111204618_source_producer_original_bound_successor.sql",
+    "supabase/migrations/20261112003247_source_producer_original_bound_successor.sql",
+    "supabase/schema.sql",
+    "version.json"
+  ],
+  "preservedSql": [
+    {
+      "path": "supabase/migrations/20260730_handbook_reviews.sql",
+      "bytes": 3432,
+      "sha256": "ca86b7c5d74dcaa85def9c976bb9149a7cdb881bcfa500a49dbc0cae81cb6e84"
+    },
+    {
+      "path": "supabase/migrations/20260802_handbook_review_cleanup_policy.sql",
+      "bytes": 445,
+      "sha256": "3ed704be059ec4fc6a651a1ffcb3baa5ee9d253d3a14edc0478452db416341bf"
+    },
+    {
+      "path": "supabase/migrations/20260815_private_visitor_statistics.sql",
+      "bytes": 2695,
+      "sha256": "59611f4cfac1098a883e90f6a175c57dfc3fbf57d0c5b82ce1edd3eaf70699e6"
+    },
+    {
+      "path": "supabase/migrations/20260820_observation_remote_privacy.sql",
+      "bytes": 1445,
+      "sha256": "9da6e39ad5a15c593f04d5c890faf860ec972ee9e83f05b24583cd8283368701"
+    },
+    {
+      "path": "supabase/migrations/20260821_trip_evidence_contract.sql",
+      "bytes": 5063,
+      "sha256": "8adad4a429b1258760c4097f02d0c81354c7f56f99f3762f108a5e8dba97042a"
+    },
+    {
+      "path": "supabase/migrations/20260823_account_trip_log_contract.sql",
+      "bytes": 925,
+      "sha256": "6a978e3944a484f4bf9f228fce608e8736f1d1e8f28c8fec1f6316afd8cf81ed"
+    },
+    {
+      "path": "supabase/migrations/20260823_observation_upload_contract.sql",
+      "bytes": 483,
+      "sha256": "37a33c0250003a29b60250fd4072b20c76b17511121849b88c28e90d8c7f5c2d"
+    },
+    {
+      "path": "supabase/migrations/20260826_security_hardening.sql",
+      "bytes": 14253,
+      "sha256": "b135b8d0fe2a479a50f91e3f3cd70c7cda09362a34eeb2da89236e259edd9283"
+    },
+    {
+      "path": "supabase/migrations/20260829010000_ravscore_operational_documents_no_history.sql",
+      "bytes": 7811,
+      "sha256": "84e532839d69eed7afba64d01f20bef3fdf4e8699ba66b91e4d17f469300cd45"
+    },
+    {
+      "path": "supabase/migrations/20260829020000_integrated_trip_calibration_binding.sql",
+      "bytes": 49473,
+      "sha256": "3e32daa856e44f81ae900e3c841b74633ef8efb473fca8b3f3dacef47de1a96d"
+    },
+    {
+      "path": "supabase/migrations/20260829_candidate_g_reconstructed_trip_exclusion.sql",
+      "bytes": 3821,
+      "sha256": "ff5f8401855438445a3be4e77c16eb922b37ce1aa8bb7542723b89b9755bf23c"
+    },
+    {
+      "path": "supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql",
+      "bytes": 36614,
+      "sha256": "443d7f02f7736ca9d5ab2bd5dab28b8f5f56c6dc1c7550ee548fdec611e5386c"
+    },
+    {
+      "path": "supabase/migrations/20260903010000_ravscore_checkpoint_metadata_cas.sql",
+      "bytes": 74529,
+      "sha256": "0076acd2a51ff76bc68ff9ccbcb7ad19b24848b338c22ce00b7382674d3088d5"
+    },
+    {
+      "path": "supabase/migrations/20260904140000_harmonie_wind_reference_binding.sql",
+      "bytes": 110870,
+      "sha256": "bb6f7cf3f637edaa95970d9e336c0cfa845200b8edaf15ff2929de0c4f822ce1"
+    },
+    {
+      "path": "supabase/migrations/20260905090000_open_meteo_current_fallback_binding.sql",
+      "bytes": 110874,
+      "sha256": "c94b2480770edf82863416d19b0b8abc465ddec2f9ce9bccf650258e187485ac"
+    },
+    {
+      "path": "supabase/migrations/20260906162332_per_pair_weather_fallback_binding.sql",
+      "bytes": 110881,
+      "sha256": "8767e45cc001b50d00ae32c0f3e1aaaba27411c04390956a47b1f23f86e9abf2"
+    },
+    {
+      "path": "supabase/migrations/20260907084343_horizon_valid_weather_binding.sql",
+      "bytes": 110881,
+      "sha256": "f22ce2b3ee2e45c4fc86ce6a71b7a48543aef47dbbe014ecf41bd95558421c0d"
+    },
+    {
+      "path": "supabase/migrations/20260909194000_wam_same_run_resolution_binding.sql",
+      "bytes": 110901,
+      "sha256": "a76ae8bd0de79cbbbc79edcff0af92e37c2dfb3d5798e9c35e4337cbfea6606d"
+    },
+    {
+      "path": "supabase/migrations/20260912122607_measured_rollback_warmup_binding.sql",
+      "bytes": 110902,
+      "sha256": "704439882eb6e77a7c038e14b8ecfd49ef9b6bb9074f9ea5778f6843f6c48137"
+    },
+    {
+      "path": "supabase/migrations/20260912141641_state_only_hold_closure_v2_binding.sql",
+      "bytes": 110904,
+      "sha256": "548c29250363ecb45d19408141ff5206e86de273092c4a9d15add2e774a8cfc9"
+    },
+    {
+      "path": "supabase/migrations/20260912194206_local_unavailable_cutover_binding.sql",
+      "bytes": 110903,
+      "sha256": "24a7450ae913ceef37375e6df200a0e85e6a001128c4a1ca9b6652ae6642fbd8"
+    },
+    {
+      "path": "supabase/migrations/20260913010000_public_runtime_oracle_binding.sql",
+      "bytes": 110899,
+      "sha256": "0e855c718611360ffaa633c6dd890632b791c82faed03bd4699c0a9f20a0ecd5"
+    },
+    {
+      "path": "supabase/migrations/20260914010000_h0_reference_recovery_binding.sql",
+      "bytes": 110899,
+      "sha256": "298e0a4c849d3dee363792b3cf4bad302f9eb7d724dc5f686a1f9bf602d38040"
+    },
+    {
+      "path": "supabase/migrations/20260914020000_h0_state_snapshot_binding.sql",
+      "bytes": 110895,
+      "sha256": "f664d2a36f9a9bde668a542ac74b2312eab56c1c0ef9087cc26ef71f4f3b491c"
+    },
+    {
+      "path": "supabase/migrations/20260914234500_post_cutover_current_hold_binding.sql",
+      "bytes": 111231,
+      "sha256": "9386e0f6754ccb28521422c73ee5eb00c6c2e4f5899609e0bc3033048a83b840"
+    },
+    {
+      "path": "supabase/migrations/20260915020000_private_runtime_storage_deny.sql",
+      "bytes": 501,
+      "sha256": "cf1291f9c595d2746323c1b73202958e6a596016acff72e9aae01e69c76c869c"
+    },
+    {
+      "path": "supabase/migrations/20260916120000_valid_data_before_local_missing_binding.sql",
+      "bytes": 111237,
+      "sha256": "95272e1f95d07f2616cd4bc2057cbe3c82837bea1057e04bdece33e5e2958796"
+    },
+    {
+      "path": "supabase/migrations/20260917001500_partial_zone_public_metadata_binding.sql",
+      "bytes": 111234,
+      "sha256": "548ba234d6ad2a534bef96f0068c57243c7857a71e8cbe88f262a7a46b5c826b"
+    },
+    {
+      "path": "supabase/migrations/20260918125600_last_mile_history_envelope_binding.sql",
+      "bytes": 111232,
+      "sha256": "0548e4ad175c02b32f330c9563be89a0f7d3c4093409385155469368535d5707"
+    },
+    {
+      "path": "supabase/migrations/20260918190000_weather_input_resolution_binding.sql",
+      "bytes": 111230,
+      "sha256": "9dd27fae7ffd93720a7c2c9c347ab8ea6df40cbc96d713cb1ff25c638078f2dc"
+    },
+    {
+      "path": "supabase/migrations/20260919010000_current_input_foundation_binding.sql",
+      "bytes": 111230,
+      "sha256": "5ff2e8a01d27eb5bc5df9482c0660e1b82133fa9a738bff60e93fed5fd2b1233"
+    },
+    {
+      "path": "supabase/migrations/20260919020000_measured_warmup_checkpoint.sql",
+      "bytes": 115286,
+      "sha256": "24fd06b77349fe993f844fa0401deca3d69c30d823205cd6840f51f93f4b2fe8"
+    },
+    {
+      "path": "supabase/migrations/20260919231000_public_hour_delivery_binding.sql",
+      "bytes": 115288,
+      "sha256": "491b33fe1027340ecfe389f6dc98ac3fcdcaf4c0a2351607eb98cd3b14f003be"
+    },
+    {
+      "path": "supabase/migrations/20260920220000_public_hour_pack_capacity_binding.sql",
+      "bytes": 115369,
+      "sha256": "4ab13e16700801ee38cd6a25cc6fe4adcc87cbe188c5f226a61798bede7b2f9f"
+    },
+    {
+      "path": "supabase/migrations/20260922100000_integrated_trip_binding_repair.sql",
+      "bytes": 90491,
+      "sha256": "f44465ffb4a4f253a15becf5b1a449781e05a120fec95de1a1ad35f959067e69"
+    },
+    {
+      "path": "supabase/migrations/20260922170000_integrated_model_binding_successor.sql",
+      "bytes": 90555,
+      "sha256": "6746c7e9bf1a980a194aae08410bab04917b5ee0d3e6b08f7543a3470c5680d0"
+    },
+    {
+      "path": "supabase/migrations/20260923052100_integrated_current_projection_binding.sql",
+      "bytes": 90630,
+      "sha256": "26d5133de58137d121c7f1bbf4410503fdfb553c5101010bd667dfcd6decd1a6"
+    },
+    {
+      "path": "supabase/migrations/20260923091500_integrated_native_hold_continuation_binding.sql",
+      "bytes": 90625,
+      "sha256": "fb6b357395c11e5982eb496187a6eb3c45502c21ef036a12ecb1ad4838a5457d"
+    },
+    {
+      "path": "supabase/migrations/20260923100000_integrated_checkpoint_part_identity_binding.sql",
+      "bytes": 90622,
+      "sha256": "3d0b9aa386cd19ee092a1fd2cb25afd3dc4b367d92c3fb1503bc0e1b4adf130c"
+    },
+    {
+      "path": "supabase/migrations/20260923110000_integrated_checkpoint_warmup_status_binding.sql",
+      "bytes": 90518,
+      "sha256": "24c77f96a0a21a95232dba473394b1e19783bca4bceb32069e5bb482c4421187"
+    },
+    {
+      "path": "supabase/migrations/20260923120000_integrated_checkpoint_missing_state_binding.sql",
+      "bytes": 90899,
+      "sha256": "a171ed10e1520d2979fae506aba9aca17d420ded2a11fc12ba087dfb32ccd6c1"
+    },
+    {
+      "path": "supabase/migrations/20260923130000_checkpoint_rejection_diagnostic.sql",
+      "bytes": 60529,
+      "sha256": "6c43152ca038e5d322063cb3ed922bfb43dc698de5690629b488b4a6dfbf6d57"
+    },
+    {
+      "path": "supabase/migrations/20260923140000_checkpoint_native_hold_null_evidence.sql",
+      "bytes": 78839,
+      "sha256": "b502c3c1abc12fb07375eca7954f7538d4c8f5d12f776802e7dc48a8173caa8d"
+    },
+    {
+      "path": "supabase/migrations/20260923150000_checkpoint_candidate_diagnostic_correction.sql",
+      "bytes": 9367,
+      "sha256": "10ebc7983bfab8677188c304f9591a5c21c7b7ff24dc329d622f9ecec3ec9c5f"
+    },
+    {
+      "path": "supabase/migrations/20260923160000_checkpoint_candidate_companion_id.sql",
+      "bytes": 19462,
+      "sha256": "14d2746b647006c2720a1666887f02ed59e964fe5841b626101b32efd77efe00"
+    },
+    {
+      "path": "supabase/migrations/20260923210000_checkpoint_cas_bounded_timeout.sql",
+      "bytes": 414,
+      "sha256": "547d73df4294cb7ba2dadd8bc56912d9d345108c54e5933167c4a018f01c7e00"
+    },
+    {
+      "path": "supabase/migrations/20260925150000_weather_selection_model_binding.sql",
+      "bytes": 140697,
+      "sha256": "436a0ec8a57a6b9b5e1b9124b37c0ccf3e0328234f9bf7635b88ed23602c3bc4"
+    },
+    {
+      "path": "supabase/migrations/20260926170000_exact_checkpoint_predecessor.sql",
+      "bytes": 3850,
+      "sha256": "e435b9c0ad8fa1137d770cda0bd1d277de0bc4b896886c14e25fbf8c5ac2e2fc"
+    },
+    {
+      "path": "supabase/migrations/20260928112500_checkpoint_cas_bounded_timeout_55s.sql",
+      "bytes": 371,
+      "sha256": "a6afb5329fbf9ffa4129ac63442018de6f1a0f261b0ad02179c118b61a95aef0"
+    },
+    {
+      "path": "supabase/migrations/20261002080000_top20_display_binding.sql",
+      "bytes": 145084,
+      "sha256": "103de25ac4521bef4a1b041dd2ad65eb8465c6ab38dc19b23947c675ad5b60a8"
+    },
+    {
+      "path": "supabase/migrations/20261002094500_restore_checkpoint_cas_timeout.sql",
+      "bytes": 9274,
+      "sha256": "31632e333f16bf07f00f95cc87e19cb66a92fd4448ac0a27c1b4f7964e9eee47"
+    },
+    {
+      "path": "supabase/migrations/20261003080000_copernicus_child_close_binding.sql",
+      "bytes": 149708,
+      "sha256": "b673b75476709c8bb51c5c2caba9e3acfa8f64b6666f4a74de3213ba961eb505"
+    },
+    {
+      "path": "supabase/migrations/20261004190000_owner_current_source_domain_binding.sql",
+      "bytes": 153959,
+      "sha256": "4e5ae691182ae6ef7b84f346bab0cfd828eedd321501424a307d5c918e449399"
+    },
+    {
+      "path": "supabase/migrations/20261005000000_owner_water_level_only_binding.sql",
+      "bytes": 158209,
+      "sha256": "6b161bc71753b52c5728c8b9a03b02d5d0955d0e42e751a3f2a51a6ea6900496"
+    },
+    {
+      "path": "supabase/migrations/20261010130000_owner_export_origin_bound_successor.sql",
+      "bytes": 162471,
+      "sha256": "55f01dd535553ad5df708ec70de8d58d177299f3348d18a2355a188bfb4f8cb6"
+    },
+    {
+      "path": "supabase/migrations/20261012200000_checkpoint_cas_single_projection_successor.sql",
+      "bytes": 12218,
+      "sha256": "b03605272397585a3e6ad248398ba7bc6d88af506837f76c88a9a92955b48c18"
+    },
+    {
+      "path": "supabase/migrations/20261013210000_account_assistant_original_bound_successor.sql",
+      "bytes": 150567,
+      "sha256": "80ad179bc896e9fcd62b8af103d70a2d086d3626395dd97f03e4184e52bcae5d"
+    },
+    {
+      "path": "supabase/migrations/20261013220000_current_grid_original_bound_successor.sql",
+      "bytes": 293911,
+      "sha256": "77d5a60f22ff38fce3164c87e74d089ea56c0a18647310213cde465e95e4632b"
+    },
+    {
+      "path": "supabase/migrations/20261013230000_account_statistics_revision.sql",
+      "bytes": 29257,
+      "sha256": "af4bd9d36f9a8d4badf3802d151acb2f16f2d5edd22ce095f8086167f2a00cae"
+    },
+    {
+      "path": "supabase/migrations/20261016060000_native_sampling_identity_original_bound_successor.sql",
+      "bytes": 213647,
+      "sha256": "10e26f9d095b6c06eee479eb11d821114b04e4db0dbdb7c6717c13200793f019"
+    },
+    {
+      "path": "supabase/migrations/20261017020000_current_memory_warmup_original_bound_successor.sql",
+      "bytes": 238629,
+      "sha256": "c8fff609ea03bbc2e5c84bea57b1d7702b15e51cd27f1854692506b18369ef47"
+    },
+    {
+      "path": "supabase/migrations/20261017140000_established_native_current_origin_bound_successor.sql",
+      "bytes": 299508,
+      "sha256": "f1d12590cfc93047afa94cdf152fab6e77f2851807695f0771127a2fdf6122b5"
+    },
+    {
+      "path": "supabase/migrations/20261019060000_last_mile_enclosure_original_bound_successor.sql",
+      "bytes": 299757,
+      "sha256": "7d21e67a9d9b9ef5e1322a7e746120b289185ac09f24701044cbc7254617fd67"
+    },
+    {
+      "path": "supabase/migrations/20261019100000_account_statistics_assistant_original_bound_successor.sql",
+      "bytes": 315352,
+      "sha256": "9cb02d5fccdb5c9458a1f924c8f8c57510044492d2f326ab28c45ff735039d59"
+    },
+    {
+      "path": "supabase/migrations/20261021150500_native_original_continuity_original_bound_successor.sql",
+      "bytes": 326605,
+      "sha256": "b4594e2187c5326ef798551fdb12b596ce8b2bd0ae961b7529acf5b668ea5ccd"
+    },
+    {
+      "path": "supabase/migrations/20261022181403_assistant_later_h0_original_bound_successor.sql",
+      "bytes": 325470,
+      "sha256": "b14ec45f920a86b9b055f4c30c716695fee767e25564249ac22ca448e1776fa7"
+    },
+    {
+      "path": "supabase/migrations/20261025110000_assistant_public587_later_h0_original_bound_successor.sql",
+      "bytes": 332318,
+      "sha256": "363d3f304150e8abd61e0217848839bd7babb4e5687f3e61a1a6e84b948f589f"
+    },
+    {
+      "path": "supabase/migrations/20261027124633_assistant_public588_later_h0_original_bound_successor.sql",
+      "bytes": 339166,
+      "sha256": "eb0262716b66d29d52bf0ac4412c475ab5e9ea69e1cad15eabc9a31b48bcf821"
+    },
+    {
+      "path": "supabase/migrations/20261028223717_assistant_public590_later_h0_original_bound_successor.sql",
+      "bytes": 346014,
+      "sha256": "72b53fb08ea0e5cebcda7e1cbf3bc49a8a3f2417975daeb6daf530c9029c6835"
+    },
+    {
+      "path": "supabase/migrations/20261029183010_assistant_public591_later_h0_original_bound_successor.sql",
+      "bytes": 352862,
+      "sha256": "e5c7fb182d9491bd9222cb59dbefd3da4592867522dde805ea17e67c0d023e97"
+    },
+    {
+      "path": "supabase/migrations/20261030105202_assistant_public591_later_h0_original_bound_successor.sql",
+      "bytes": 352862,
+      "sha256": "47c51886a58aa1cfbbc244a5469ace67521774499135666c26fccd8c7f291bfd"
+    },
+    {
+      "path": "supabase/migrations/20261031070755_installed593_original591_later_h0_bound_successor.sql",
+      "bytes": 307461,
+      "sha256": "0d50a857aebf838c072ee7ccfc846fecd9744f9bb093eb6943b0484eee99c777"
+    },
+    {
+      "path": "supabase/migrations/20261104004400_scalar597_later_h0_original594_bound_successor.sql",
+      "bytes": 360291,
+      "sha256": "bc8735d450ed547d2c0116704a319ab8854a47e34bac86974541050260e2174e"
+    },
+    {
+      "path": "supabase/migrations/20261105064515_assistant_after597_original597_bound_successor.sql",
+      "bytes": 367139,
+      "sha256": "8d566a81056b26a969cdf19107f8a39d97d799f20594141f94529f6d2a2fe98f"
+    },
+    {
+      "path": "supabase/migrations/20261111070425_source_producer_original_bound_successor.sql",
+      "bytes": 386217,
+      "sha256": "92064e0b471f91992eaef5c6f47dedfccbcedca47f38f9319ba55bb3f3dfcd9a"
+    },
+    {
+      "path": "supabase/migrations/20261111204618_source_producer_original_bound_successor.sql",
+      "bytes": 386217,
+      "sha256": "d0b6da4e33a88d1a571b8eeb6d80d7dee66189d528bbfd8e9968886f1b135de6"
+    },
+    {
+      "path": "supabase/migrations/20261112003247_source_producer_original_bound_successor.sql",
+      "bytes": 386217,
+      "sha256": "2308b7fb1da5b5856010e3588fbacc3704a93c7733ac6af1e4afeedc68a7d58a"
+    },
+    {
+      "path": "supabase/migrations/20261112133922_source_producer_original_bound_successor.sql",
+      "bytes": 386217,
+      "sha256": "0c1d028c7baae6b1db9bca375c8e8be193ec29ead377d5572aeb949302fa69fe"
+    }
+  ],
+  "sourcePgPaths": [
+    "config.js",
+    "js/core/phase-d-process-candidate.js",
+    "js/core/phase-d-wave-process-candidate.js",
+    "js/core/ravscore-candidate-g-state-pipeline.js",
+    "js/core/ravscore-candidate-g.js",
+    "js/core/ravscore-current-supply-memory.js",
+    "js/core/ravscore-integrated-state-pipeline.js",
+    "js/core/ravscore-mobilisation-memory.js",
+    "js/core/ravscore-model-bundle.generated.js",
+    "js/core/ravscore-model-contract.js",
+    "js/core/ravscore-profile-switch.js",
+    "js/core/ravscore-public-model.js",
+    "js/core/ravscore-regime-memory.js",
+    "js/core/ravscore-time.js",
+    "js/core/ravscore-wave-approach-state.js",
+    "js/core/ravscore-wave-mobilisation-state.js",
+    "js/core/score-presentation.js",
+    "js/core/wave-approach.js",
+    "scripts/build-statistics-preference-revision.mjs",
+    "scripts/check-account-statistics-assistant-predecessor-source.mjs",
+    "scripts/check-assistant-later-h0-predecessor-source.mjs",
+    "scripts/check-current-memory-warmup-predecessor-source.mjs",
+    "scripts/check-installed593-code-predecessor-source.mjs",
+    "scripts/check-last-mile-enclosure-predecessor-source.mjs",
+    "scripts/check-native-current-reanalysis-predecessor-source.mjs",
+    "scripts/check-native-identity-frozen-i71-source.mjs",
+    "scripts/check-native-original-continuity-predecessor-source.mjs",
+    "scripts/fixtures/installed593-code-predecessor.json",
+    "scripts/fixtures/statistics-preference-revision-input.json",
+    "scripts/integrated-cutover-readiness.mjs",
+    "scripts/lib/account-assistant-successor-source.mjs",
+    "scripts/lib/account-statistics-assistant-postgres.mjs",
+    "scripts/lib/account-statistics-assistant-successor-source.mjs",
+    "scripts/lib/assistant-later-h0-postgres.mjs",
+    "scripts/lib/assistant-later-h0-successor-source.mjs",
+    "scripts/lib/checkpoint-cas-native-postgres.mjs",
+    "scripts/lib/coastal-point-staging-contract.mjs",
+    "scripts/lib/copernicus-offline-environment.mjs",
+    "scripts/lib/current-grid-successor-source.mjs",
+    "scripts/lib/current-memory-warmup-postgres.mjs",
+    "scripts/lib/current-memory-warmup-successor-source.mjs",
+    "scripts/lib/current-transport-history.mjs",
+    "scripts/lib/dmi-marine-zone-exclusions.json",
+    "scripts/lib/dmi-marine-zone-exclusions.mjs",
+    "scripts/lib/established-native-current-origin-source-target-inventory.json",
+    "scripts/lib/established-native-current-origin-successor-source.mjs",
+    "scripts/lib/last-mile-enclosure-postgres.mjs",
+    "scripts/lib/last-mile-enclosure-predecessor-source-inventory.json",
+    "scripts/lib/last-mile-enclosure-successor-source.mjs",
+    "scripts/lib/live-current-pilot.mjs",
+    "scripts/lib/native-identity-checkpoint-postgres.mjs",
+    "scripts/lib/native-original-continuity-postgres.mjs",
+    "scripts/lib/native-original-continuity-successor-source.mjs",
+    "scripts/lib/native-sampling-identity-successor-source.mjs",
+    "scripts/lib/native0600-original-successor-source.mjs",
+    "scripts/lib/ravscore-candidate-g-rollback-runtime.mjs",
+    "scripts/lib/ravscore-continuation-implementation-contract.mjs",
+    "scripts/lib/ravscore-profile-transition.mjs",
+    "scripts/lib/ravscore-sampling-context.mjs",
+    "scripts/lib/statistics-preference-revision-native-postgres.mjs",
+    "scripts/lib/supabase-admin-rest.mjs",
+    "scripts/native-sampling-identity-successor-readiness.mjs",
+    "scripts/protected-ravscore-continuation-checkpoint.mjs",
+    "scripts/ravscore-continuation-checkpoint.mjs",
+    "scripts/rollback-assets/ravscore-model-bundle.generated.js",
+    "scripts/rollback-assets/ravscore-model-contract.js",
+    "scripts/run-frozen-current-memory-warmup-source-targets.mjs",
+    "scripts/run-frozen-established-native-current-origin-source-targets.mjs",
+    "scripts/run-frozen-native0600-source-targets.mjs",
+    "scripts/run-frozen584-checkpoint-postgres-source.mjs",
+    "scripts/run-frozen585-native-continuity-postgres-source.mjs",
+    "scripts/run-frozen586-assistant-later-h0-postgres-source.mjs",
+    "scripts/test-protected-ravscore-continuation-checkpoint.mjs",
+    "scripts/verify-account-assistant-schema.mjs"
+  ],
+  "sourceSetupPaths": [
+    ".github/workflows/validate-pull-request.yml",
+    "requirements-dmi.txt",
+    "requirements-geometry.txt",
+    "requirements-copernicus.txt",
+    "package.json",
+    "package-lock.json"
+  ],
+  "sourceContinuationPaths": [
+    "js/core/ravscore-candidate-g-state-pipeline.js",
+    "js/core/ravscore-current-supply-memory.js",
+    "js/core/ravscore-integrated-state-pipeline.js",
+    "js/core/ravscore-mobilisation-memory.js",
+    "js/core/ravscore-model-contract.js",
+    "js/core/ravscore-regime-memory.js",
+    "js/core/ravscore-wave-mobilisation-state.js",
+    "scripts/lib/coastal-point-staging-contract.mjs",
+    "scripts/lib/ravscore-candidate-g-rollback-runtime.mjs",
+    "scripts/lib/ravscore-continuation-implementation-contract.mjs",
+    "scripts/ravscore-continuation-checkpoint.mjs",
+    "scripts/rollback-assets/ravscore-model-bundle.generated.js",
+    "scripts/rollback-assets/ravscore-model-contract.js"
+  ]
+}

@@ -10,6 +10,7 @@ import {exactRelativeModuleSpecifiers} from './lib/static-module-closure.mjs';
 import test from 'node:test';
 // Keep the existing active water-routing display contract in this normal adminUI caller.
 await import('./test-water-station-active-routing-display-4.0.102.mjs');
+import {sourceAfter598PreissuanceTest} from './lib/source598-test-phase.mjs';
 import {ACTIVE_ASSISTANT_SUCCESSOR as activeNationalSource} from './lib/assistant-later-h0-successor-source.mjs';
 import {withInstalled593CodePredecessorSource} from './check-installed593-code-predecessor-source.mjs';
 const activeNationalReaderRelease=activeNationalSource.requireRelease();
@@ -765,7 +766,7 @@ test('normal original584 staging forwards the selected R2 storage into the real 
   // download, private payload, B/S admission, SQL or publication is exercised.
 });
 
-test('current586 source registration preserves exact585 predecessor and distinct current native scope',async()=>{
+sourceAfter598PreissuanceTest('current586 source registration preserves exact585 predecessor and distinct current native scope',async()=>{
   const actualPkg=await reviewed587PackageViewForUnchangedOracles(JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8')));
   const {verifyPackage,verifyCurrentNativeCommands,CURRENT586_NATIVE_COMMANDS}=await import('./national584-source-evidence.mjs');
   const {inverseReviewedAccountStatisticsAssistantSourceScripts,inverseAssistantLaterH0SourceScripts}=await import('./lib/account-statistics-assistant-package-review.mjs');
@@ -803,7 +804,7 @@ test('current586 source registration preserves exact585 predecessor and distinct
   assert.throws(()=>verifyCurrentNativeCommands([...CURRENT586_NATIVE_COMMANDS,CURRENT586_NATIVE_COMMANDS[1]],'4.0.586'));
 });
 
-test('assistant later-H0 registration keeps exact older scripts and refuses phase/order mutations',async()=>{
+sourceAfter598PreissuanceTest('assistant later-H0 registration keeps exact older scripts and refuses phase/order mutations',async()=>{
   const pkg=await reviewed587PackageViewForUnchangedOracles(JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8'))),original=structuredClone(pkg);
   const {ASSISTANT_LATER_H0_BINDING,requireAssistantLaterH0Release,requireAssistantPublic590SuccessorRelease}=await import('./lib/assistant-later-h0-successor-source.mjs');
   const {verifyPackage,verifyCurrentNativeCommands,ASSISTANT_LATER_H0_NATIVE_COMMANDS}=await import('./national584-source-evidence.mjs');
@@ -1136,8 +1137,7 @@ test('private-study006: privat eksport bevarer hele installationsarm og normale 
   const checkDashboardCoupling=source=>{
     const imports=[...source.matchAll(/^\s*import\s*\{\s*mountPrivateTripStudyCard\s*\}\s*from\s*['"]([^'"]+)['"]\s*;/gm)];
     assert.equal(imports.length,1,'one normal private-study import');
-    assert.equal(imports[0][1],
-      `./admin-private-trip-study.js?v=${currentVersion}&study=frozen-replay-noise-20261106`);
+    assert.equal(imports[0][1],'./admin-private-trip-study.js?v='+currentVersion+'&study=frozen-replay-noise-20261106');
     const render=source.match(/^function render\(\)\{[^\n]+\}/m)?.[0];assert(render,'actual normal render');
     const learningStart=source.indexOf('function renderLearning(){'),learningEnd=source.indexOf('\n\nconst saveBadge=',learningStart);
     assert(learningStart>=0&&learningEnd>learningStart,'actual learning renderer');
@@ -1212,7 +1212,7 @@ async function reviewed587PackageViewForUnchangedOracles(pkg){
   return {...pkg,version:requireAssistantLaterH0Release(),scripts:prior};
 }
 
-test('public587 successor source registration dispatches actual588 once before exact whole587 inverse',async()=>{
+sourceAfter598PreissuanceTest('public587 successor source registration dispatches actual588 once before exact whole587 inverse',async()=>{
   const actual=await reviewed588PackageViewForUnchangedOracles(JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8'))),original=structuredClone(actual);
   const {ASSISTANT_LATER_H0_SOURCE_COMMAND,ASSISTANT_PUBLIC587_SUCCESSOR_SOURCE_COMMAND,
     verifyAssistantLaterH0Package,verifyAssistantPublic587SuccessorPackage}=await import('./national584-source-evidence.mjs');
@@ -1358,7 +1358,7 @@ async function reviewed588PackageViewForUnchangedOracles(pkg){
 }
 
 
-test('compact-sharing registration qualifies actual592 plan once before unchanged whole command oracles',async()=>{
+sourceAfter598PreissuanceTest('compact-sharing registration qualifies actual592 plan once before unchanged whole command oracles',async()=>{
   const actual=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8')),original=structuredClone(actual);
   const {inverseReviewedForecastShareProjectionSourceScripts,inverseAssistantPublic588SuccessorSourceScripts}
     =await import('./lib/account-statistics-assistant-package-review.mjs');
@@ -1386,7 +1386,7 @@ test('compact-sharing registration qualifies actual592 plan once before unchange
   assert.throws(()=>inverseReviewedForecastShareProjectionSourceScripts(historical.scripts,{}));
 });
 
-test('active590 national reader validates actual591 before exact whole588 package inverse',async()=>{
+sourceAfter598PreissuanceTest('active590 national reader validates actual591 before exact whole588 package inverse',async()=>{
   const actual=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8')),original=structuredClone(actual);
   const {verifyPackage,verifyInstalled593Original591Package,verifyAssistantPublic591SuccessorPackage,verifyAssistantPublic590SuccessorPackage,verifyAssistantPublic587SuccessorPackage,
     verifyScalar597LaterH0Package,inverseScalar597LaterH0Package,verifyAssistantAfter597Package,inverseAssistantAfter597Package,
@@ -1612,7 +1612,7 @@ function reviewedPrivateStudyOperatorPublisher(source){
 // END EXACT PRIVATE STUDY OPERATOR DIAGNOSTIC TEST VIEW
 
 
-test('DMI scalar source registration qualifies75 commands before unchanged72-command oracles',async()=>{
+sourceAfter598PreissuanceTest('DMI scalar source registration qualifies75 commands before unchanged72-command oracles',async()=>{
   const live=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8'));
   const liveOriginal=structuredClone(live);
   const beforeScalar=after597Current

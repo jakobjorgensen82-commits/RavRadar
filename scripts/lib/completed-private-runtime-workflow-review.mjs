@@ -1,8 +1,13 @@
+import { inverseLf7ObserverUpdaterTestInput } from './archived-weather-restart-updater-test-input.mjs';
 // Test-only exact inverse. Every byte of the historical workflow oracle is
 // retained; new-route behavior is tested separately against the actual files.
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import {requireSourceProducerOutput, assertSourceProducerAfter597StaticCode}
+  from './source-producer-after597-runtime-family.mjs';
 const review = JSON.parse(fs.readFileSync(new URL('./completed-private-runtime-workflow-review.json', import.meta.url), 'utf8'));
 const coldReview = JSON.parse(fs.readFileSync(new URL('./current-family-cold-start-workflow-review.json', import.meta.url), 'utf8'));
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
@@ -342,7 +347,6 @@ export const release598WorkflowUserAgentReview=Object.freeze({
   after:Object.freeze({bytes:300010,sha256:'2f7917b26a994d4d33dd7445cdc992e571a9dcc3245867564dda85ebda145c61'}),
   original:'RavRadar/4.0.597',issued:'RavRadar/4.0.598',count:5,
 });
-// TEST ONLY: exact ordinary artifact-metadata readback, before all older workflow oracles.
 export const pagesArtifactVisibilityWorkflowReview = Object.freeze({
   path: release598WorkflowUserAgentReview.path,
   before: release598WorkflowUserAgentReview.after,
@@ -505,6 +509,7 @@ export function inversePagesPublicProjectionWorkflow(source, role) {
   assert.equal(arguments.length, 2, 'PAGES_PUBLIC_PROJECTION_WORKFLOW_ARGUMENTS');
   assert.equal(typeof source, 'string', 'PAGES_PUBLIC_PROJECTION_WORKFLOW_TYPE');
   source = inverseReviewedPagesArtifactMetadataCaller(source, role, '.github/workflows/deploy-code-only-repair.yml');
+  if (role === 'repair') source = inverseReviewedSource601HistoricalCodeInput(source, '.github/workflows/deploy-code-only-repair.yml');
   source = inverseRelease597WorkflowUserAgents(source, role);
   const { roles } = pagesPublicProjectionWorkflowReview;
   const row = typeof role === 'string' && Object.hasOwn(roles, role) ? roles[role] : null;
@@ -553,6 +558,9 @@ export function inverseTerminalRepair4145Workflow(source, role) {
   assert.equal(arguments.length, 2, 'TERMINAL4145_INVERSE_ARGUMENTS');
   assert.equal(typeof source, 'string', 'TERMINAL4145_INVERSE_TYPE');
   source = inverseReviewedPagesArtifactMetadataCaller(source, role, '.github/workflows/deploy-code-only-repair.yml');
+  source = inverseSource603SavedWorkflowRole(source, role);
+  if (role === 'repair') source = inverseReviewedSource601HistoricalCodeInput(source, '.github/workflows/deploy-code-only-repair.yml');
+  source = inverseReviewedSource601OperationalWorkflowInspection(source, role);
   source = inverseQualifiedScalarPlanningWorkflow(source, role);
   const roles = terminalRepair4145WorkflowReview.roles;
   const row = typeof role === 'string' && Object.hasOwn(roles, role) ? roles[role] : null;
@@ -944,8 +952,556 @@ for (const row of Object.values(ordinaryStageWiringReview)) {
 }
 Object.freeze(ordinaryStageWiringReview);
 // Exact586 then585 normal User-Agent inverses; every historical workflow byte remains the oracle.
+// Kun testvisning: de to præcise Source-workflows kan læses som hele,
+// gennemgåede ordinary598-kodebytes. Ingen original- eller runtimeadgang.
+const reviewedSourceWorkflowInspection = Object.freeze({
+  "ordinaryHead": "52d10aa7494597c3f9c5b4885f26abb4c00953c7",
+  "roles": {
+    "once": {
+      "path": ".github/workflows/run-current-weather-once.yml",
+      "after": {
+        "bytes": 57845,
+        "sha256": "b64147bbdb304160834dd080249ab05043f0ab73bdb35f015c282821d4486b7f"
+      },
+      "before": {
+        "bytes": 55548,
+        "sha256": "defc1a6fa360472b27335eccbe6f26f6bbc66d14442a990b873557def2f032af"
+      }
+    },
+    "build": {
+      "path": ".github/workflows/reusable-weather-build.yml",
+      "after": {
+        "bytes": 351841,
+        "sha256": "efb442807d3a9e5b17fb7c231dffbc56459d2dfa1fd84f0eb4b208fea0f75977"
+      },
+      "before": {
+        "bytes": 300010,
+        "sha256": "2f7917b26a994d4d33dd7445cdc992e571a9dcc3245867564dda85ebda145c61"
+      }
+    }
+  }
+});
+for (const row of Object.values(reviewedSourceWorkflowInspection.roles)) {
+  Object.freeze(row.after); Object.freeze(row.before); Object.freeze(row);
+}
+Object.freeze(reviewedSourceWorkflowInspection.roles);
+function inverseReviewedSourceWorkflowInspection(source, role) {
+  const rows = reviewedSourceWorkflowInspection.roles;
+  const row = typeof role === 'string' && Object.hasOwn(rows, role) ? rows[role] : null;
+  // Gamle/ukendte input får ingen ny adgang og går videre til gamle orakler.
+  if (!row || typeof source !== 'string' || Buffer.byteLength(source) !== row.after.bytes
+      || sha(source) !== row.after.sha256) return source;
+  requireSourceProducerOutput();
+  assertSourceProducerAfter597StaticCode();
+  const previous = execFileSync('git', [
+    '-c', 'protocol.allow=never', '-C', fileURLToPath(new URL('../../', import.meta.url)),
+    'cat-file', 'blob', reviewedSourceWorkflowInspection.ordinaryHead + ':' + row.path,
+  ], {encoding:'utf8', timeout:30_000, maxBuffer:512 * 1024,
+    env:{...process.env, GIT_NO_LAZY_FETCH:'1', GIT_NO_REPLACE_OBJECTS:'1', GIT_TERMINAL_PROMPT:'0'}});
+  assert.equal(Buffer.byteLength(previous), row.before.bytes,
+    'Hele den gennemgåede ordinary598-workflowstørrelse');
+  assert.equal(sha(previous), row.before.sha256,
+    'Hele den genuine ordinary598-kildevisning før alle gamle orakler');
+  return previous; // Kun tekst til de uændrede historiske testassertions.
+}
+
+
+// Kun601-buildets nye hele identitet. Once er byteidentisk med den bevarede
+//600-række ovenfor; begge visninger kræver de samme normale Source-guards.
+const reviewedSource601BuildWorkflowInspection = Object.freeze({
+  path: '.github/workflows/reusable-weather-build.yml',
+  after: Object.freeze({bytes: 351841,
+    sha256: '18e980e980b50b2de3654c2a435f4b3273e60d8dde88d5a0afe4473c703fc785'}),
+  before: Object.freeze({bytes: 300010,
+    sha256: '2f7917b26a994d4d33dd7445cdc992e571a9dcc3245867564dda85ebda145c61'}),
+});
+function inverseReviewedSource601BuildWorkflowInspection(source, role) {
+  const row = reviewedSource601BuildWorkflowInspection;
+  if (role !== 'build' || typeof source !== 'string'
+      || Buffer.byteLength(source) !== row.after.bytes || sha(source) !== row.after.sha256) return source;
+  requireSourceProducerOutput();
+  assertSourceProducerAfter597StaticCode();
+  const previous = execFileSync('git', [
+    '-c', 'protocol.allow=never', '-C', fileURLToPath(new URL('../../', import.meta.url)),
+    'cat-file', 'blob', reviewedSourceWorkflowInspection.ordinaryHead + ':' + row.path,
+  ], {encoding:'utf8', timeout:30_000, maxBuffer:512 * 1024,
+    env:{...process.env, GIT_NO_LAZY_FETCH:'1', GIT_NO_REPLACE_OBJECTS:'1', GIT_TERMINAL_PROMPT:'0'}});
+  assert.equal(Buffer.byteLength(previous), row.before.bytes,
+    'Hele den gennemgåede ordinary598-workflowstørrelse før601');
+  assert.equal(sha(previous), row.before.sha256,
+    'Hele den genuine ordinary598-kildevisning før601 og alle gamle orakler');
+  return previous; // Kun tekst til de uændrede historiske testassertions.
+}
+
+
+// Kun de to faktisk udstedte buildfiler før det uændrede genuine52d-orakel.
+// Gamle600/601-rækker og ukendte input bevarer deres egne afslag.
+const reviewedSource602BuildWorkflowInspection = Object.freeze({
+  path: '.github/workflows/reusable-weather-build.yml',
+  after: Object.freeze([
+    Object.freeze({bytes: 352289,
+      sha256: 'e0fff915c2e4e9a6d3182ca41b46877d2082304f950a8bc3e4480d5ffafd5eaa'}),
+    Object.freeze({bytes: 352289,
+      sha256: '9b11306a1272bcf59e836bb2abdffc15018120dc452529889fcf5097e3e5798d'}),
+  ]),
+  before: Object.freeze({bytes: 300010,
+    sha256: '2f7917b26a994d4d33dd7445cdc992e571a9dcc3245867564dda85ebda145c61'}),
+});
+function inverseReviewedSource602BuildWorkflowInspection(source, role) {
+  const row = reviewedSource602BuildWorkflowInspection;
+  if (role !== 'build' || typeof source !== 'string') return source;
+  const bytes = Buffer.byteLength(source);
+  const sourceSha256 = sha(source);
+  if (!row.after.some(entry => entry.bytes === bytes && entry.sha256 === sourceSha256)) return source;
+  requireSourceProducerOutput();
+  assertSourceProducerAfter597StaticCode();
+  const previous = execFileSync('git', [
+    '-c', 'protocol.allow=never', '-C', fileURLToPath(new URL('../../', import.meta.url)),
+    'cat-file', 'blob', reviewedSourceWorkflowInspection.ordinaryHead + ':' + row.path,
+  ], {encoding:'utf8', timeout:30_000, maxBuffer:512 * 1024,
+    env:{...process.env, GIT_NO_LAZY_FETCH:'1', GIT_NO_REPLACE_OBJECTS:'1', GIT_TERMINAL_PROMPT:'0'}});
+  assert.equal(Buffer.byteLength(previous), row.before.bytes,
+    'Hele den gennemgåede ordinary598-workflowstørrelse før602');
+  assert.equal(sha(previous), row.before.sha256,
+    'Hele den genuine ordinary598-kildevisning før602 og alle gamle orakler');
+  return previous; // Kun tekst til de uændrede historiske testassertions.
+}
+
+// Kun de to præcise601-fasekaldere før den uændrede historiske4145-inverse.
+// De frosne e81-preimages er byteidentiske med den genuine52d-forgænger,
+// som allerede er en normal lokal Git-forudsætning; ingen ny fetch kræves.
+const reviewedSource601OperationalWorkflowInspection = Object.freeze({
+  "deploy": {
+    "path": ".github/workflows/reusable-pages-deploy.yml",
+    "after": {
+      "bytes": 67398,
+      "sha256": "4dc3b299efdad4424024edc637df61143d2a19e576668d52ba7dfa4d2673f8c0"
+    },
+    "before": {
+      "bytes": 66486,
+      "sha256": "260c06d3fbc08e7bf80563b803eed758251805f55cf4a0c147526d70c3e4b8f1"
+    }
+  },
+  "recovery": {
+    "path": ".github/workflows/reusable-operational-reentry.yml",
+    "after": {
+      "bytes": 105501,
+      "sha256": "888fb3ad38cd83bd06d713c14587bbeeb68390bf7a88715b03c22e0bf7421b5f"
+    },
+    "before": {
+      "bytes": 102685,
+      "sha256": "6228ec52b4901aa26f6fa29cda81826a5f8c3536441aba8d28e5c78473f19370"
+    }
+  }
+});
+for (const row of Object.values(reviewedSource601OperationalWorkflowInspection)) {
+  Object.freeze(row.after); Object.freeze(row.before); Object.freeze(row);
+}
+function inverseReviewedSource601OperationalWorkflowInspection(source, role) {
+  const rows = reviewedSource601OperationalWorkflowInspection;
+  const row = typeof role === 'string' && Object.hasOwn(rows, role) ? rows[role] : null;
+  if (!row || typeof source !== 'string' || Buffer.byteLength(source) !== row.after.bytes
+      || sha(source) !== row.after.sha256) return source;
+  requireSourceProducerOutput();
+  assertSourceProducerAfter597StaticCode();
+  const previous = execFileSync('git', [
+    '-c', 'protocol.allow=never', '-C', fileURLToPath(new URL('../../', import.meta.url)),
+    'cat-file', 'blob', reviewedSourceWorkflowInspection.ordinaryHead + ':' + row.path,
+  ], {encoding:'utf8', timeout:30_000, maxBuffer:512 * 1024,
+    env:{...process.env, GIT_NO_LAZY_FETCH:'1', GIT_NO_REPLACE_OBJECTS:'1', GIT_TERMINAL_PROMPT:'0'}});
+  assert.equal(Buffer.byteLength(previous), row.before.bytes,
+    'Hele e81/ordinary598 Pages-/reentry-workflowstørrelsen før601');
+  assert.equal(sha(previous), row.before.sha256,
+    'Hele den genuine e81/ordinary598 Pages-/reentry-visning før gamle orakler');
+  return previous; // Kun historisk testtekst, aldrig produktions- eller DATA-adgang.
+}
+
+// Hele kendte Source-kodeinput før de bevarede historiske testorakler.
+// Dette er tekstinspektion; ingen original-, plan-, SQL- eller READY-adgang.
+const reviewedSource601HistoricalCodeInputs = Object.freeze({
+  ".github/workflows/deploy-code-only-repair.yml": {
+    "after": {
+      "bytes": 244449,
+      "sha256": "cfe08b1283fe9bbf732b99d1d847114826f38fdc1254cfe5b429185e33cc7473"
+    },
+    "correctedAfter": Object.freeze({
+      "bytes": 244216,
+      "sha256": "d1a1a824e7e4ec118820815f73134810c9bc19a2e54811d808aad04cae4c0a6c"
+    }),
+    "before": {
+      "bytes": 225325,
+      "sha256": "391628fbcaae106df7a29d5c7caa3a7487af18b025bd4692bc93aaab5d396bf8"
+    }
+  },
+  "scripts/update-weather.mjs": {
+    "after": {
+      "bytes": 251786,
+      "sha256": "ad45fb06d06345258590936d880dad21aa708226976aec31086726fe5e889907"
+    },
+    "before": {
+      "bytes": 250461,
+      "sha256": "e4f7f442c4ad655c533adebe7470144c5aa55bcbd136c4d891a37cd7ea8b9693"
+    }
+  },
+  "scripts/lib/dmi-forecast-file.mjs": {
+    "after": {
+      "bytes": 30378,
+      "sha256": "bf4615d3361a5b6fddb66aa8f12c01fd4f699c724089222a1985bb2224e392ac"
+    },
+    "before": {
+      "bytes": 29084,
+      "sha256": "75c10458973f5e3cdf2969b35c76698239e2baf696b4f0ff8fd4b466bdc3c536"
+    }
+  }
+});
+for (const row of Object.values(reviewedSource601HistoricalCodeInputs)) {
+  Object.freeze(row.after); Object.freeze(row.before); Object.freeze(row);
+}
+// Test-only whole-workflow projections. These never grant a runtime binding.
+const reviewedSource604OrdinaryHead = "d568ae61972b14193ca37dbc0911c86ed62c8ccc";
+const source604CombinedWorkflowPaths = Object.freeze({
+  build: '.github/workflows/reusable-weather-build.yml', once: '.github/workflows/run-current-weather-once.yml',
+});
+const reviewedSource604CombinedWorkflows = [
+  { ...{"path":".github/workflows/reusable-weather-build.yml","combined":{"bytes":383046,"sha256":"b5e955b762bfb3b81817475f8d820f35044c4505c96a05f96d9105af2a2bf219"},"ordinary841":{"bytes":302000,"sha256":"d21fad73693dc5d5c8db69535efdfc5cae27c78897422d4fc9ab731d6440295f"},"source604":{"bytes":378140,"sha256":"f5a82ec42da4e37dfc16dd7892e098382efb0848c357d791d51efb68234b3ad6"}}, inverse: [
+    [375315,3936,""],
+    [371178,378,"          gh api \"repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id\" \\\n            > \"$RAVRADAR_OPERATIONAL_HANDOFF/pages-artifact-rest.json\"\n"],
+    [366969,85,""],
+    [237614,85,""],
+    [50996,85,""],
+    [41726,85,""],
+    [28466,135,"            source_saved_pair_public_manifest_sha256,...request}=JSON.parse(process.env.SOURCE_REQUEST);\n"],
+    [19058,704,"            const occurrence=typeof source_saved_pair_occurrence==='string'\n              && /^([1-9][0-9]{0,15})-([1-9][0-9]{0,15})-[a-f0-9]{40}-([1-9][0-9]{0,15})$/.exec(source_saved_pair_occurrence);\n            assert(occurrence&&occurrence.slice(1).every(id=>Number.isSafeInteger(Number(id))),'SOURCE_SAVED_PAIR_OCCURRENCE_INVALID');\n          }else{\n            assert([source_saved_pair_pin,source_saved_pair_occurrence,source_saved_pair_public_manifest_sha256]\n"],
+    [17957,112,"            source_saved_pair_public_manifest_sha256='',...request}=allInputs;\n"],
+    [562,102,""],
+  ] },
+  { ...{"path":".github/workflows/run-current-weather-once.yml","combined":{"bytes":65877,"sha256":"3e0199ef66c99c8c1069e05fe399c5ef98606672c46c30f87fb199c72f2da6f5"},"ordinary841":{"bytes":59252,"sha256":"87b1401f437d30e57ba144bdf52820447b5a83eda7b53165ab8592375e7ef911"},"source604":{"bytes":60814,"sha256":"a0e4163981068540fa62f5d7015756286ef606f05c504294469d39c64029867e"}}, inverse: [
+    [61618,104,"          COMPLETED_PRIVATE_RUNTIME: ${{ inputs.completed_private_runtime }}\n"],
+    [55599,618,"      completed_private_runtime: ${{ inputs.completed_private_runtime }}\n      completed_private_runtime_pin: ${{ needs.current-main-target.outputs.completed_private_runtime_pin }}\n      source_saved_pair: ${{ needs.current-main-target.outputs.source_saved_pair == 'true' }}\n      source_saved_pair_pin: ${{ needs.current-main-target.outputs.source_saved_pair_pin }}\n      source_saved_pair_occurrence: ${{ needs.current-main-target.outputs.source_saved_pair_occurrence }}\n"],
+    [17459,4604,"      - name: Lock the canonical UTC production hour\n        id: cache-state\n        if: inputs.checkpoint_target_hour == '' && inputs.completed_private_runtime != true && steps.source-saved-target.outputs.selected != 'true'\n        run: python3 scripts/check-copernicus-current-hour.py --invalid-cache-is-absent --github-output \"$GITHUB_OUTPUT\"\n\n      - name: Require one canonical target hour\n        shell: bash\n        env:\n          TARGET_HOUR: ${{ steps.source-saved-target.outputs.target_hour || steps.completed-target.outputs.target_hour || steps.checkpoint-target.outputs.target_hour || steps.cache-state.outputs.target_hour }}\n        run: |\n          set -euo pipefail\n          [[ \"$TARGET_HOUR\" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:00:00Z$ ]]\n"],
+    [9437,1086,"      - uses: actions/setup-node@v7\n        if: inputs.completed_private_runtime == true\n"],
+    [6763,603,"      target_hour: ${{ steps.source-saved-target.outputs.target_hour || steps.completed-target.outputs.target_hour || steps.checkpoint-target.outputs.target_hour || steps.cache-state.outputs.target_hour }}\n      completed_private_runtime_pin: ${{ steps.completed-target.outputs.completed_private_runtime_pin }}\n      source_saved_pair: ${{ steps.source-saved-target.outputs.selected }}\n      source_saved_pair_pin: ${{ steps.source-saved-target.outputs.pair_pin }}\n      source_saved_pair_occurrence: ${{ steps.source-saved-target.outputs.occurrence }}\n"],
+  ] },
+];
+
+// The exact private LF7 observation addition reverses before older workflow views.
+function inverseSource604Lf7ObservationWorkflow(source, relative) {
+  if (relative !== source604CombinedWorkflowPaths.build) return source;
+  const reviewedAfter = {bytes:383395,sha256:"686ad42c0e42935fff381012135968b20fe518071ecfdd0c54f3bbe036fb9ac4"};
+  if (Buffer.byteLength(source) !== reviewedAfter.bytes || sha(source) !== reviewedAfter.sha256) return source;
+  const added = "          path: |\n            .geometry-v2-work/weather-source-operational-control-summary.json\n            ${{ steps.operational-model.outputs.source_normal_producer == 'true' && steps.weather-route-result.outputs.source_result_kind == 'PREPARED_WEATHER' && steps.source-normal.outcome == 'success' && steps.source-operational-handoff-seal.outcome == 'success' && '.geometry-v2-work/lf7-fur-consumer-observation-v1.json' || '' }}\n";
+  const original = "          path: .geometry-v2-work/weather-source-operational-control-summary.json\n";
+  assert.equal(source.split(added).length, 2, 'SOURCE604_LF7_WORKFLOW_EXACT_FRAGMENT');
+  const previous = source.replace(added, original);
+  const reviewedBefore = {bytes:383046,sha256:"b5e955b762bfb3b81817475f8d820f35044c4505c96a05f96d9105af2a2bf219"};
+  assert.equal(Buffer.byteLength(previous), reviewedBefore.bytes, 'SOURCE604_LF7_WORKFLOW_BEFORE_BYTES');
+  assert.equal(sha(previous), reviewedBefore.sha256, 'SOURCE604_LF7_WORKFLOW_BEFORE_SHA');
+  return previous;
+}
+
+// Test-only projection for the five reviewed release User-Agent edits.
+function inverseReviewedSource605WorkflowUserAgents(source, relative) {
+  if (relative !== source604CombinedWorkflowPaths.build) return source;
+  if (Buffer.byteLength(source) === 383395
+      && sha(source) === '5f22b5e16f39d7e840a3a59c114956d28bc424086fbfee84f09352863c0e4105') {
+    const next = 'RavRadar/4.0.607';
+    assert.equal(source.split(next).length, 6, 'SOURCE607_REVIEWED_BUILD_USER_AGENT_COUNT');
+    source = source.replaceAll(next, 'RavRadar/4.0.606');
+    assert.equal(sha(source), 'a2aa5c20f3e7791c07f4bd4c23eed1f7b9704d69ac4806d18980ca6d8d489588',
+      'SOURCE607_REVIEWED_BUILD_606_SHA');
+  }
+  if (Buffer.byteLength(source) === 383395
+      && sha(source) === 'a2aa5c20f3e7791c07f4bd4c23eed1f7b9704d69ac4806d18980ca6d8d489588') {
+    const next = 'RavRadar/4.0.606';
+    assert.equal(source.split(next).length, 6, 'SOURCE606_REVIEWED_BUILD_USER_AGENT_COUNT');
+    source = source.replaceAll(next, 'RavRadar/4.0.605');
+    assert.equal(sha(source), '7bd483b5c15eace61c8c25a3f36cf9bc319607665db9b21c51b59b9697ed3c62',
+      'SOURCE606_REVIEWED_BUILD_605_SHA');
+  }
+  if (Buffer.byteLength(source) !== 383395
+    || sha(source) !== '7bd483b5c15eace61c8c25a3f36cf9bc319607665db9b21c51b59b9697ed3c62') return source;
+  const next = 'RavRadar/4.0.605';
+  assert.equal(source.split(next).length, 6, 'SOURCE605_REVIEWED_BUILD_USER_AGENT_COUNT');
+  const previous = source.replaceAll(next, 'RavRadar/4.0.604');
+  assert.equal(Buffer.byteLength(previous), 383395, 'SOURCE605_REVIEWED_BUILD_BEFORE_BYTES');
+  assert.equal(sha(previous), '686ad42c0e42935fff381012135968b20fe518071ecfdd0c54f3bbe036fb9ac4', 'SOURCE605_REVIEWED_BUILD_BEFORE_SHA');
+  return previous;
+}
+
+// Restore only the exact SOURCE605 test input before the existing whole-file oracles.
+
+
+// Test-only inverse for the exact removal of two private LF7 artifact inputs.
+function inverseReviewedSourcePrivateLf7UploadRemoval(source, relative) {
+  if (relative !== source604CombinedWorkflowPaths.build || Buffer.byteLength(source) !== 384997) return source;
+  const currentSha = sha(source);
+  const reviewed608Sha = 'c888de65012329457d619e0dbde3f54eaa21576492ff062a1995410663dadba3';
+  if (currentSha !== reviewed608Sha) {
+    const releaseVersion = currentSha === '694974220de75f5c44d6d31461cc51cc96490245d53ad1cab7143e380526b0e3'
+      ? '4.0.609'
+      : currentSha === source859ImmediatePagesWorkflows.find(row => row.role === 'build')?.before.sha256
+        ? '4.0.610' // Exact reviewed intermediate produced by the SOURCE859 inverse.
+        : JSON.parse(fs.readFileSync(new URL('../../package.json', import.meta.url), 'utf8')).version;
+    if (!/^4\.0\.[0-9]+$/.test(releaseVersion)) return source;
+    const userAgent = 'RavRadar/' + releaseVersion;
+    if (source.split(userAgent).length !== 6) return source;
+    const previous = source.replaceAll(userAgent, 'RavRadar/4.0.608');
+    if (sha(previous) !== reviewed608Sha) return source;
+    source = previous;
+  }
+  const legacy = "            .geometry-v2-work/ravscore-integrated-public-runtime-audit.json.execution.json\n";
+  const summary = "          path: .geometry-v2-work/weather-source-operational-control-summary.json\n";
+  assert.equal(source.split(legacy).length, 2, 'SOURCE_LF7_EXACT_LEGACY_UPLOAD');
+  assert.equal(source.split(summary).length, 2, 'SOURCE_LF7_EXACT_SOURCE_UPLOAD');
+  const previous = source.replace(legacy, () => legacy + "            .geometry-v2-work/lf7-fur-consumer-observation-v1.json\n")
+    .replace(summary, () => "          path: |\n            .geometry-v2-work/weather-source-operational-control-summary.json\n            ${{ steps.operational-model.outputs.source_normal_producer == 'true' && steps.weather-route-result.outputs.source_result_kind == 'PREPARED_WEATHER' && steps.source-normal.outcome == 'success' && steps.source-operational-handoff-seal.outcome == 'success' && '.geometry-v2-work/lf7-fur-consumer-observation-v1.json' || '' }}\n");
+  assert.equal(Buffer.byteLength(previous), 385413, 'SOURCE_LF7_HISTORICAL_UPLOAD_BYTES');
+  assert.equal(sha(previous), 'a84abf1fdfc8ac6f7ad8952e92a7c29615cde2446962f55bee75e8713e353ddb', 'SOURCE_LF7_HISTORICAL_UPLOAD_SHA');
+  return previous;
+}
+
+// Test-only whole-file inverse. Keep the previous SOURCE workflow oracles intact
+// without importing an unavailable historical Git object into a release.
+const reviewedSourceRequestProjection = Object.freeze([
+  {"path":".github/workflows/run-current-weather-once.yml","before":{"bytes":65877,"sha256":"3e0199ef66c99c8c1069e05fe399c5ef98606672c46c30f87fb199c72f2da6f5"},"candidate":{"bytes":67265,"sha256":"d754225489a0f8118591f8efd18ef4301fce932b928868d06ac8eda70c109650"},"issued608Sha256":"d754225489a0f8118591f8efd18ef4301fce932b928868d06ac8eda70c109650","edits":[[3489,3584,"33d57ad9dd88df9bca173cdda491394b0296b31c5971be53cc393b664575f58e",""],[3832,4506,"a0a6e3720d2f049a153c125723d9a1e212c7f24a3611c48d50e554a42b8aa8e0","          SOURCE_REQUEST: ${{ toJSON(inputs) }}\n"],[4680,5107,"956a1f306d0598230b0652dd76ec6a1b09f07ecb01e4fcfb5f2e18dcb2c3b089","          const request=JSON.parse(process.env.SOURCE_REQUEST);\n"],[5824,6371,"a129633ef05c76b4fbd27a82cfe2a20ce92c8d6668b10f7f397986462725f221","          assert.equal(typeof request.source_normal_producer,'boolean','SOURCE_ROUTE_SELECTION_UNKNOWN');\n          if(request.source_normal_producer===true){\n            for(const key of booleans)assert.equal(request[key],false,'SOURCE_ROUTE_MIXED_BOOLEAN');\n            for(const key of strings)assert.equal(request[key],'','SOURCE_ROUTE_MIXED_LOCATOR');\n"],[6383,6707,"0d6144e1035934403c55ca6a5bb9e7696a9b67325174eeb780551275e9e962f3","          fs.appendFileSync(process.env.GITHUB_OUTPUT,'route='+(request.source_normal_producer===true?'source':'legacy')+'\\n');\n          const ordinary=booleans.every(key=>(request[key]??false)===false)\n            &&strings.every(key=>(request[key]??'')==='');\n          fs.appendFileSync(process.env.GITHUB_OUTPUT,'ordinary_source_reentry='+ordinary+'\\n');\n"],[18372,18570,"eba473a416802b48934f4a2e1b0be7813c6157b905c7f8a4e25d522e8289fd07","          SOURCE_REQUEST: ${{ toJSON(inputs) }}\n"]]},
+  {"path":".github/workflows/reusable-weather-build.yml","before":{"bytes":383395,"sha256":"5f22b5e16f39d7e840a3a59c114956d28bc424086fbfee84f09352863c0e4105"},"candidate":{"bytes":385413,"sha256":"9b69fdc52f89a9f5195bef2c8c01b678fad3e3893d3e2a5154aaa09d6b7c5815"},"issued608Sha256":"a84abf1fdfc8ac6f7ad8952e92a7c29615cde2446962f55bee75e8713e353ddb","edits":[[17452,19652,"a86c58e2197a157ec94c9a1d8d796d786a9769719c44800a4c43bdc7c4f739f4","          SOURCE_REQUEST: ${{ toJSON(inputs) }}\n"],[19826,20635,"70a1a98fa28e49a81ca8b164e9f3e802a4ef7cb6eb9c2490e483a300c84c2955","          const allInputs=JSON.parse(process.env.SOURCE_REQUEST);\n          assert(allInputs && typeof allInputs==='object' && !Array.isArray(allInputs),'SOURCE_ROUTE_REQUEST_INVALID');\n          const {source_saved_pair=false,source_saved_pair_pin='',source_saved_pair_occurrence='',\n            source_saved_pair_pages_proof='',source_saved_pair_public_manifest_sha256='',...request}=allInputs;\n          assert.equal(typeof source_saved_pair,'boolean','SOURCE_SAVED_PAIR_SELECTION_INVALID');\n"],[21105,21180,"819e9dafafc1b1bff8af89cc73de58bbf072db3da601ec3ff7ed4cf813c7e5f0","            assert.equal(request.force,true,'SOURCE_SAVED_PAIR_FORCE_REQUIRED');\n"],[22081,22176,"e7288f8e2ffe292fee318b3cf48ebd617ee37f009973c290c6164ea2f609920a","            assert([source_saved_pair_pin,source_saved_pair_occurrence,source_saved_pair_pages_proof,source_saved_pair_public_manifest_sha256]\n              .every(value=>value===''),'SOURCE_SAVED_PAIR_LOCATOR_WITHOUT_SELECTION');\n"],[22188,22918,"1930dd9026f446bf57a4431244a730df62615f9f059cfca9e6e31b52200d53a8","          const booleans=[\"current_family_cold_start\",\"completed_private_runtime\",\"quick_confirmation\",\"checkpoint_only\",\"weather_state_epoch_bootstrap\",\"weather_state_epoch_checkpoint_reentry\",\"native_sampling_identity_original_recovery\",\"extended_provider_bootstrap\",\"produce_weather_handoff\",\"ravscore_integrated_first_cutover\",\"ravscore_integrated_return\"], strings=[\"completed_private_runtime_pin\",\"completed_stage_source\",\"quick_progress_source\",\"weather_state_epoch_raw_cache_key\",\"weather_state_epoch_archive_key\",\"weather_state_epoch_archive_catalog_sha256\",\"produce_weather_handoff_confirmation\",\"ravscore_candidate_g_rollback_mode\",\"ravscore_candidate_g_rollback_confirmation\",\"ravscore_integrated_first_cutover_confirmation\",\"ravscore_integrated_weather_handoff_run_id\",\"ravscore_integrated_return_confirmation\"];\n          const known=new Set(['source_normal_producer',...booleans,...strings,'production_target_hour','force']);\n          assert(Object.keys(request).every(key=>known.has(key)),'SOURCE_ROUTE_REQUEST_UNKNOWN');\n          assert.equal(typeof request.source_normal_producer,'boolean','SOURCE_ROUTE_SELECTION_UNKNOWN');\n          if(request.source_normal_producer===true||source_saved_pair){\n            for(const key of booleans)assert.equal(request[key],false,'SOURCE_ROUTE_MIXED_BOOLEAN');\n            for(const key of strings)assert.equal(request[key],'','SOURCE_ROUTE_MIXED_LOCATOR');\n            assert.equal(typeof request.force,'boolean','SOURCE_ROUTE_FORCE_INVALID');\n            assert(/^\\d{4}-\\d\\d-\\d\\dT\\d\\d:00:00(?:\\.000)?Z$/.test(request.production_target_hour),'SOURCE_ROUTE_TARGET_INVALID');\n"],[22930,23241,"722ba22b3f9549d50c27b99624c18050baf7dfd4b8d9663784797d18eeb5935e","          fs.appendFileSync(process.env.GITHUB_OUTPUT,'route='+(request.source_normal_producer===true||source_saved_pair?'source':'legacy')+'\\n');\n          fs.appendFileSync(process.env.GITHUB_OUTPUT,'source_saved_pair='+source_saved_pair+'\\n');\n"],[29867,30239,"b5504506d7f7919b88c3aff441eb6a03ed5d2d713f47cd6ea5a2fe9c7db01d88","          const {source_saved_pair,source_saved_pair_pin,source_saved_pair_occurrence,\n            source_saved_pair_pages_proof,source_saved_pair_public_manifest_sha256,...request}=JSON.parse(process.env.SOURCE_REQUEST);\n"],[30301,30548,"5098e5edc2d67f12d3c9a3c6e97a4a596f1e97192f4266ea9c53338ea714233a","          assert.equal(saved,source_saved_pair===true,'SOURCE_SAVED_PAIR_PREFLIGHT_CHANGED');\n"],[32011,32288,"71fef5d1f13ae89352205163a3883636c44e5c9105258c851f0bb3cd2c20447c","          SOURCE_REQUEST: ${{ toJSON(inputs) }}\n"]]},
+]);
+
+function inverseReviewedSourceRequestProjection(source, relative) {
+  if (typeof source !== 'string') return source;
+  const row = reviewedSourceRequestProjection.find(entry => entry.path === relative);
+  if (!row || Buffer.byteLength(source) !== row.candidate.bytes) return source;
+  const currentSha = sha(source);
+  if (currentSha !== row.candidate.sha256 && currentSha !== row.issued608Sha256) return source;
+  if (currentSha !== row.candidate.sha256) {
+    source = source.replaceAll('RavRadar/4.0.608', 'RavRadar/4.0.607');
+    assert.equal(sha(source), row.candidate.sha256, 'SOURCE_REQUEST_PROJECTION_CANDIDATE_SHA');
+  }
+  let bytes = Buffer.from(source);
+  for (const [start, end, expected, original] of [...row.edits].reverse()) {
+    assert.equal(sha(bytes.subarray(start, end)), expected, 'SOURCE_REQUEST_PROJECTION_EDIT_SHA');
+    bytes = Buffer.concat([bytes.subarray(0, start), Buffer.from(original), bytes.subarray(end)]);
+  }
+  assert.equal(bytes.length, row.before.bytes, 'SOURCE_REQUEST_PROJECTION_PREVIOUS_BYTES');
+  assert.equal(sha(bytes), row.before.sha256, 'SOURCE_REQUEST_PROJECTION_PREVIOUS_SHA');
+  return bytes.toString('utf8');
+}
+
+// Historical 606 test projection only. No dispatch code is embedded here.
+function inverseHistoricalSource606Once(source, relative) {
+  if (relative !== source604CombinedWorkflowPaths.once || typeof source !== 'string'
+      || Buffer.byteLength(source) !== 68822
+      || sha(source) !== 'b91412cbb38aacef7555b984472f0cac95f3167199e5e3a9ab17cbe234c96e2f') return source;
+  const bytes = Buffer.from(source);
+  assert.equal(sha(bytes.subarray(64171, 67116)), '28db0ce29bc89827f71fc2e3e51b9439945823832e1b674cc13427193397ac17',
+    'SOURCE606_HISTORICAL_ONCE_SLICE_SHA');
+  const previous = Buffer.concat([bytes.subarray(0, 64171), bytes.subarray(67116)]).toString('utf8');
+  assert.equal(Buffer.byteLength(previous), 65877, 'SOURCE606_HISTORICAL_ONCE_BEFORE_BYTES');
+  assert.equal(sha(previous), '3e0199ef66c99c8c1069e05fe399c5ef98606672c46c30f87fb199c72f2da6f5',
+    'SOURCE606_HISTORICAL_ONCE_BEFORE_SHA');
+  return previous;
+}
+
+// Test-only inverse of the exact combined SOURCE and ordinary #867 workflow bytes.
+// Unknown or mixed revisions proceed to the existing strict oracle unchanged.
+const source859ImmediatePagesWorkflows = [
+  { ...{"path":".github/workflows/run-current-weather-once.yml","role":"once","before":{"bytes":67265,"sha256":"d754225489a0f8118591f8efd18ef4301fce932b928868d06ac8eda70c109650"},"after":{"bytes":70326,"sha256":"f8875f92d1d2ce5789e493dcec5ad27fac6b84c321599a5239897f8e5e57a1ba"}}, inverse: [
+    [8001,282,"15f6ec6b1f31a352efe58e4426b94afe504f04229d6ea2611e4ac93ba9f77f69",""],
+    [8554,180,"9ae032ceba746060d9abc9e99692d604c33f17ac584e945ad01a4c37015b9fb5",""],
+    [9178,178,"21658886205ceb2d9d902dca1f77c7b4de5bccc92c1f1df42414541798209318",""],
+    [11531,124,"1cd847a1b7ca2cfa2620f6d9842c0219cf07b236cfedd5ff9426833f9205f920","          github.run_attempt == 1 && inputs.completed_private_runtime == false &&\n"],
+    [19354,104,"045a50a52fa4d0f9b377582e2e45345eb79bd3b400768e25a60e1cb365a7d3fd",""],
+    [19633,75,"b85780c8083ea4a3fa737730d965831075029607659e616836915ad0a8a89b79","      - name: Select provider-free continuation for the default scheduled caller\n"],
+    [21594,216,"fa32ad363f5054170fe541ead47bd4bd58ad242ca5aed611ea836a1e73ef9e9b",""],
+    [22196,192,"f6c258fda6f04b0bb560c09a01b63786aa633ab130c7b58cc7a3660b0bfe4de6",""],
+    [22969,120,"88e96495c0b731533a4cbc5240bdfcab20a3a1289a9f3045a1c0d210c40680d7",""],
+    [23496,1216,"41d28f57320747bb458858a24f63a230cd7aec4bd546688bc0d441bd7c24b6d4",""],
+    [24762,0,"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","            success:true)\n              test \"$REQUESTED_COMPLETED\" = false\n              test -z \"$MANUAL_TARGET$MANUAL_PIN$CHECKPOINT_TARGET$CACHE_TARGET\"\n              completed=true\n              target=\"$AUTO_TARGET\"\n              pin=\"$AUTO_PIN\"\n              ;;\n"],
+    [25706,314,"ea68dfbdc669a16e1aef057b11f9271965f7a09bc0a6641112b1ca5364f9b108",""],
+    [59774,196,"4fc11a6ffffb07da93095a1e3b352263d483f4888a695aa86e95620c9d080c81",""],
+    [60500,194,"5473649d365965ef57246c83bca57df223d64d69c417fc6dd4aee61a2d46c70b",""],
+    [63951,102,"f0799694c1167cde3daa227f75ab5549e082e6a2e9e7be1b48e80923890bc064",""],
+  ] },
+  { ...{"path":".github/workflows/reusable-weather-build.yml","role":"build","before":{"bytes":384997,"sha256":"fc1319f095b0df93a9efcb601f0d4216ae18cddf5ac9467945a176dcaccec3ca"},"after":{"bytes":389397,"sha256":"a82ca97e6dee8f29c25dbaa4a1750518bdb5187c0000034656dc2e769e682941"}}, inverse: [
+    [187,263,"afa5ee75f79c52c257cd5708577334c3f6b404bf08c998ea0fa963079412a713",""],
+    [1346,193,"5d3480192dd5ab5d999ad5067dd84d4d0dbc3be1ab53d1b0f5e225b4d68b0fbc",""],
+    [19624,251,"6ecbd13d7bca9a7908cf67f4517eedc198599949b2539a17d81116b947a3c31e",""],
+    [20845,116,"211bbb090a9d68553bc09cd5b205b320657fa24428d1b233588f824a13854b31",""],
+    [21458,1207,"50a9fdec1e3df2156aeb71bef5789ddca8fd40affb4dca1086ec4a5341f67b73",""],
+    [24509,84,"86a6c10d6379541bfbb8dc13115c3694a5e1152c91590c6ac362d20579e7bea2","          const sourceRoute=requested==='true'||source_saved_pair;\n"],
+    [25234,157,"8e8bb862ce73f3b1e1ad049e83211fa6a7ef57ea06a7d6b7e0c56c472e57b581","            +'source_route_ordinary='+ordinary+'\\n');\n"],
+    [32451,139,"d354e00b8e9b4f568361334ffe22a5661da0442393dd72f12a376705dc3b097d",""],
+    [34151,98,"935969455eada23fcda5eb0233467fb7354c2fb00b323d4c6c38019b95a45305",""],
+    [34756,85,"e48659c47ac5a3bded871a1076f746df7987ecaa21dc3bf24032df12700d747c",""],
+    [118107,1040,"68aaf47ce1e3aeca3c97f43aedcd09b78bfb6cc14796f6cbec020839ce8a9343",""],
+    [159814,196,"ffcc0e60a163d76a0b73db4b3148e0b7e11fb8765489f5034f788c210cb57294",""],
+    [225869,692,"4d02654533638802894c731478066b255251caaae97bfcf2392ac0711f02bfac",""],
+  ] },
+  { ...{"path":".github/workflows/reusable-pages-deploy.yml","role":"deploy","before":{"bytes":72981,"sha256":"655d8d08bc86303bb91dfbf8037000d52a5c710582e84dfec1f2b6f6bcdc5284"},"after":{"bytes":74403,"sha256":"a77c062113259c8efd04d4c7c73c4b1fbf825eea1d69770b5f14dc75c27d96c7"}}, inverse: [
+    [75,258,"be89bc30386da180c4ffe882f226b556a84e85fee1e6e0b35a64c4a891e29770",""],
+    [2101,110,"54259a93887cd3e8ac9d9e75fb8a2837b5ea92969e155b8bfec63e9e64ee7123","    timeout-minutes: 25\n"],
+    [2928,408,"51af57270da30244bb8e3653225ab9c6bca3a9a8e953a09589a4486232c7148a",""],
+    [39488,54,"7ba3bb6b92b6dd2d9e18cfffa98a0ab1ea1f5dfbb6faa8ff0af039e9cd7a5b0c","        uses: actions/deploy-pages@v5\n"],
+    [39556,365,"b13344a30789a3970b034847b83ee121a4104abc14d3f7ab3dc92c8c4a37653f",""],
+    [40086,289,"785c8326130387abbd061fd74e7f96e30f19674a9a38e1a1f85ec1abf685cde1",""],
+  ] },
+];
+export function inverseSource859ImmediatePagesWorkflow(source, relative) {
+  source = inverseSource611MaintenanceWorkflow(source, relative);
+  const row = source859ImmediatePagesWorkflows.find(entry => entry.path === relative);
+  // A later normally issued family changes only the five active User-Agent
+  // fields here. Recover the exact reviewed whole input before its old inverse;
+  // every other changed byte still reaches the existing strict refusals.
+  if (row?.role === 'build' && typeof source === 'string'
+      && Buffer.byteLength(source) === row.after.bytes && sha(source) !== row.after.sha256) {
+    const release = JSON.parse(fs.readFileSync(new URL('../../package.json', import.meta.url), 'utf8')).version;
+    const userAgent = 'RavRadar/' + release;
+    if (/^4\.0\.[0-9]+$/.test(release) && source.split(userAgent).length === 6) {
+      const reviewed = source.replaceAll(userAgent, 'RavRadar/4.0.610');
+      if (sha(reviewed) === row.after.sha256) {
+        requireSourceProducerOutput();
+        assertSourceProducerAfter597StaticCode();
+        source = reviewed;
+      }
+    }
+  }
+  if (!row || typeof source !== 'string' || Buffer.byteLength(source) !== row.after.bytes
+      || sha(source) !== row.after.sha256) return source;
+  let bytes = Buffer.from(source);
+  for (const [offset, length, afterSha256, original] of [...row.inverse].reverse()) {
+    assert.equal(sha(bytes.subarray(offset, offset + length)), afterSha256, 'SOURCE859_PAGES_WORKFLOW_HUNK_CHANGED');
+    bytes = Buffer.concat([bytes.subarray(0, offset), Buffer.from(original), bytes.subarray(offset + length)]);
+  }
+  assert.equal(bytes.length, row.before.bytes, 'SOURCE859_PAGES_WORKFLOW_PREDECESSOR_SIZE');
+  assert.equal(sha(bytes), row.before.sha256, 'SOURCE859_PAGES_WORKFLOW_PREDECESSOR_CHANGED');
+  return bytes.toString('utf8');
+}
+
+export function inverseReviewedSource604CombinedWorkflow(source, relative, target) {
+  assert.equal(arguments.length, 3, 'SOURCE604_COMBINED_WORKFLOW_ARGUMENTS');
+  assert.equal(typeof source, 'string', 'SOURCE604_COMBINED_WORKFLOW_TYPE');
+  if (target !== 'ordinary841' && target !== 'source604') return source;
+  if (relative === '.github/workflows/deploy-code-only-repair.yml')
+    source = inverseReviewedPagesArtifactMetadataCaller(source, 'repair', '.github/workflows/deploy-code-only-repair.yml');
+  source = inverseSource859ImmediatePagesWorkflow(source, relative);
+  // Test-only projection of the exact Actions interpolation repair.
+  if (relative === '.github/workflows/reusable-operational-reentry.yml' && Buffer.byteLength(source) === 117556
+      && sha(source) === 'a318adebbfff2779acd8923c54021171965975bf6889c7dffe6f7e8816300baa') {
+    const env = '          SOURCE_NORMAL_FINALIZE: ${{ inputs.source_normal_finalize }}\n';
+    const shell = '            if test "$SOURCE_NORMAL_FINALIZE" = true; then\n';
+    const previous = '            if test "${{ inputs.source_normal_finalize }}" = true; then\n';
+    assert.equal(source.split(env).length, 2, 'SOURCE_REENTRY_EXACT_FINALIZE_ENV');
+    assert.equal(source.split(shell).length, 2, 'SOURCE_REENTRY_EXACT_FINALIZE_SHELL');
+    source = source.replace(env, '').replace(shell, previous);
+    assert.equal(sha(source), '019d6b5dd43f911635261784e83743fd53a6a03f20f28b9aa69c5856dbb17d9d',
+      'SOURCE_REENTRY_HISTORICAL_WORKFLOW_SHA');
+  }
+  source = inverseReviewedSourcePrivateLf7UploadRemoval(source, relative);
+  source = inverseReviewedSourceRequestProjection(source, relative);
+  source = inverseHistoricalSource606Once(source, relative);
+  source = inverseReviewedSource605WorkflowUserAgents(source, relative);
+  source = inverseSource604Lf7ObservationWorkflow(source, relative);
+  const row = reviewedSource604CombinedWorkflows.find(entry => entry.path === relative);
+  if (!row || Buffer.byteLength(source) !== row.combined.bytes || sha(source) !== row.combined.sha256) return source;
+  let previous = source;
+  if (target === 'source604') {
+    for (const [offset, length, original] of row.inverse)
+      previous = previous.slice(0, offset) + original + previous.slice(offset + length);
+  } else {
+    previous = execFileSync('git', [
+      '-c', 'protocol.allow=never', '-C', fileURLToPath(new URL('../../', import.meta.url)),
+      'cat-file', 'blob', reviewedSource604OrdinaryHead + ':' + row.path,
+    ], {encoding:'utf8', timeout:30_000, maxBuffer:512 * 1024,
+      env:{...process.env, GIT_NO_LAZY_FETCH:'1', GIT_NO_REPLACE_OBJECTS:'1', GIT_TERMINAL_PROMPT:'0'}});
+  }
+  assert.equal(Buffer.byteLength(previous), row[target].bytes, 'SOURCE604_COMBINED_WORKFLOW_BEFORE_BYTES');
+  assert.equal(sha(previous), row[target].sha256, 'SOURCE604_COMBINED_WORKFLOW_BEFORE_SHA');
+  return previous;
+}
+
+// Test-only outer layer for the exact saved-weather and post-Pages composition.
+// Each admitted file becomes its genuine issued #832 blob before older views.
+const reviewedSource603SavedWorkflowHead = '58917a42c8dfd030062c8f97a5223f35790ab15f';
+const reviewedSource603SavedWorkflows = Object.freeze({
+  build:Object.freeze({path:'.github/workflows/reusable-weather-build.yml',
+    after:Object.freeze({bytes:378140,sha256:'f5a82ec42da4e37dfc16dd7892e098382efb0848c357d791d51efb68234b3ad6'}),
+    before:Object.freeze({bytes:352289,sha256:'9b11306a1272bcf59e836bb2abdffc15018120dc452529889fcf5097e3e5798d'})}),
+  once:Object.freeze({path:'.github/workflows/run-current-weather-once.yml',
+    after:Object.freeze({bytes:60814,sha256:'a0e4163981068540fa62f5d7015756286ef606f05c504294469d39c64029867e'}),
+    before:Object.freeze({bytes:57845,sha256:'b64147bbdb304160834dd080249ab05043f0ab73bdb35f015c282821d4486b7f'})}),
+  repair:Object.freeze({path:'.github/workflows/deploy-code-only-repair.yml',
+    after:Object.freeze({bytes:252067,sha256:'bd5861018d8cae0821bdd7db88f9b80813f06513c371b51b7fbb326a80874779'}),
+    before:Object.freeze({bytes:244216,sha256:'d1a1a824e7e4ec118820815f73134810c9bc19a2e54811d808aad04cae4c0a6c'})}),
+  deploy:Object.freeze({path:'.github/workflows/reusable-pages-deploy.yml',
+    after:Object.freeze({bytes:72981,sha256:'655d8d08bc86303bb91dfbf8037000d52a5c710582e84dfec1f2b6f6bcdc5284'}),
+    before:Object.freeze({bytes:67398,sha256:'4dc3b299efdad4424024edc637df61143d2a19e576668d52ba7dfa4d2673f8c0'})}),
+  recovery:Object.freeze({path:'.github/workflows/reusable-operational-reentry.yml',
+    after:Object.freeze({bytes:117498,sha256:'019d6b5dd43f911635261784e83743fd53a6a03f20f28b9aa69c5856dbb17d9d'}),
+    before:Object.freeze({bytes:105501,sha256:'888fb3ad38cd83bd06d713c14587bbeeb68390bf7a88715b03c22e0bf7421b5f'})}),
+});
+export function inverseReviewedSource603SavedWorkflow(source, relative) {
+  assert.equal(arguments.length, 2, 'SOURCE603_SAVED_WORKFLOW_ARGUMENTS');
+  assert.equal(typeof source, 'string', 'SOURCE603_SAVED_WORKFLOW_TYPE');
+  source = inverseReviewedSource604CombinedWorkflow(source, relative, 'source604');
+  const row = Object.values(reviewedSource603SavedWorkflows).find(entry => entry.path === relative);
+  if (!row || Buffer.byteLength(source) !== row.after.bytes || sha(source) !== row.after.sha256) return source;
+  const previous = execFileSync('git', [
+    '-c', 'protocol.allow=never', '-C', fileURLToPath(new URL('../../', import.meta.url)),
+    'cat-file', 'blob', reviewedSource603SavedWorkflowHead + ':' + row.path,
+  ], {encoding:'utf8', timeout:30_000, maxBuffer:512 * 1024,
+    env:{...process.env, GIT_NO_LAZY_FETCH:'1', GIT_NO_REPLACE_OBJECTS:'1', GIT_TERMINAL_PROMPT:'0'}});
+  assert.equal(Buffer.byteLength(previous), row.before.bytes, 'SOURCE603_SAVED_WORKFLOW_BEFORE_BYTES');
+  assert.equal(sha(previous), row.before.sha256, 'SOURCE603_SAVED_WORKFLOW_BEFORE_SHA');
+  return previous;
+}
+
+function inverseSource603SavedWorkflowRole(source, role) {
+  if (!Object.hasOwn(reviewedSource603SavedWorkflows, role)) return source;
+  return inverseReviewedSource603SavedWorkflow(source, reviewedSource603SavedWorkflows[role].path);
+}
+
+export function inverseReviewedSource601HistoricalCodeInput(source, relative) {
+  assert.equal(arguments.length, 2, 'SOURCE601_HISTORICAL_INPUT_ARGUMENTS');
+  assert.equal(typeof source, 'string', 'SOURCE601_HISTORICAL_INPUT_TYPE');
+  if (relative === '.github/workflows/deploy-code-only-repair.yml')
+    source = inverseReviewedPagesArtifactMetadataCaller(source, 'repair', '.github/workflows/deploy-code-only-repair.yml');
+  source = inverseLf7ObserverUpdaterTestInput(source, relative);
+  source = inverseReviewedSource603SavedWorkflow(source, relative);
+  if (relative === '.github/workflows/reusable-weather-build.yml')
+    return inverseReviewedSource601BuildWorkflowInspection(
+      inverseReviewedSource602BuildWorkflowInspection(source, 'build'), 'build');
+  if (relative === '.github/workflows/run-current-weather-once.yml')
+    return inverseReviewedSourceWorkflowInspection(source, 'once');
+  if (relative === '.github/workflows/reusable-pages-deploy.yml')
+    return inverseReviewedSource601OperationalWorkflowInspection(source, 'deploy');
+  if (relative === '.github/workflows/reusable-operational-reentry.yml')
+    return inverseReviewedSource601OperationalWorkflowInspection(source, 'recovery');
+  const rows = reviewedSource601HistoricalCodeInputs;
+  const row = typeof relative === 'string' && Object.hasOwn(rows, relative) ? rows[relative] : null;
+  if (!row) return source;
+  const bytes = Buffer.byteLength(source);
+  const sourceSha256 = sha(source);
+  const matches = entry => entry?.bytes === bytes && entry.sha256 === sourceSha256;
+  if (!matches(row.after) && !matches(row.correctedAfter))
+    return source; // Ukendt/ændret input beholder de eksisterende strenge afslag.
+  requireSourceProducerOutput();
+  assertSourceProducerAfter597StaticCode();
+  const previous = execFileSync('git', [
+    '-c', 'protocol.allow=never', '-C', fileURLToPath(new URL('../../', import.meta.url)),
+    'cat-file', 'blob', reviewedSourceWorkflowInspection.ordinaryHead + ':' + relative,
+  ], {encoding:'utf8', timeout:30_000, maxBuffer:512 * 1024,
+    env:{...process.env, GIT_NO_LAZY_FETCH:'1', GIT_NO_REPLACE_OBJECTS:'1', GIT_TERMINAL_PROMPT:'0'}});
+  assert.equal(Buffer.byteLength(previous), row.before.bytes, 'SOURCE601_HISTORICAL_WHOLE_BEFORE_BYTES');
+  assert.equal(sha(previous), row.before.sha256, 'SOURCE601_HISTORICAL_WHOLE_BEFORE_SHA');
+  return previous;
+}
+
 export function inverseRelease585WorkflowUserAgents(source, role) {
+  source = inverseSource603SavedWorkflowRole(source, role);
   source = inverseImmediateOrdinaryPagesWorkflow(source, role);
+  source = inverseReviewedSource602BuildWorkflowInspection(source, role);
+  source = inverseReviewedSource601BuildWorkflowInspection(source, role);
+  source = inverseReviewedSourceWorkflowInspection(source, role);
   source = inverseNativeOriginalSchemaSelectorWorkflow(source, role);
   if (role === 'build' && sha(source) === '8223891e25cfb7fbcf57a536bcc55a1cbf59ed676f02172588192065ae4eccc0') {
     assert.equal(source.split('RavRadar/4.0.586').length, 6, 'Exactly five normal586 User-Agent fields');
@@ -1151,6 +1707,11 @@ export function inverseImmediateOrdinaryPagesWorkflow(source, role) {
 
 export function inverseAutomaticCompletedPagesWorkflow(source, role) {
   source = inverseImmediateOrdinaryPagesWorkflow(source, role);
+  if (role === 'once') {
+    source = inverseSource859ImmediatePagesWorkflow(source, source604CombinedWorkflowPaths.once);
+    source = inverseReviewedSourceRequestProjection(source, source604CombinedWorkflowPaths.once);
+    source = inverseHistoricalSource606Once(source, source604CombinedWorkflowPaths.once);
+  }
   const { before, after, applyInThisOrder } = automaticCompletedPagesReview;
   if (role !== 'once' || typeof source !== 'string'
     || Buffer.byteLength(source) !== after.bytes || sha(source) !== after.sha256) return source;
@@ -1164,6 +1725,7 @@ export function inverseAutomaticCompletedPagesWorkflow(source, role) {
 }
 
 export function inverseCompletedRuntimeWorkflow(source, role) {
+  source = inverseReviewedSource604CombinedWorkflow(source, source604CombinedWorkflowPaths[role], 'source604');
   source = inverseAutomaticCompletedPagesWorkflow(source, role);
   source = inverseTerminalRepair4145Workflow(source, role);
   source = inverseOrdinaryCompletedStageWorkflowWiring(source, role);
@@ -1614,5 +2176,35 @@ export function inverseAssistant587LatestColdCombinedTo2bWorkflow(source, role) 
   }
   assert.equal(Buffer.byteLength(previous), row.p0Parent.bytes, 'ASSISTANT587_LATEST_2B_SIZE');
   assert.equal(sha(previous), row.p0Parent.sha256, 'ASSISTANT587_LATEST_2B_SHA');
+  return previous;
+}
+
+// Test-only exact inverse for the two separately admitted maintenance handoffs.
+// The whole prior SOURCE workflow and all existing historical oracles survive.
+export const source611MaintenanceWorkflowReview = Object.freeze({
+  "path": ".github/workflows/run-current-weather-once.yml",
+  "before": {
+    "bytes": 70326,
+    "sha256": "f8875f92d1d2ce5789e493dcec5ad27fac6b84c321599a5239897f8e5e57a1ba"
+  },
+  "after": {
+    "bytes": 76067,
+    "sha256": "50850eabde6cedb35bef851b580f4bf4d8127ccc9f839bfc66090e44b1dd2a31"
+  },
+  "additions": [
+    "  handoff-supabase-database-backup:\n    name: Hand off verified ordinary weather to database backup\n    needs: [terminal-outcome, current-main-target]\n    if: >-\n      !cancelled() && needs.terminal-outcome.result == 'success' &&\n      needs.current-main-target.result == 'success' &&\n      needs.current-main-target.outputs.completed_private_runtime == 'false' &&\n      github.repository == 'jakobjorgensen82-commits/RavRadar' &&\n      github.ref == 'refs/heads/main' && github.run_attempt == '1' &&\n      github.actor == 'github-actions[bot]' &&\n      vars.RAVRADAR_SUPABASE_BACKUP_AUTOMATION == 'weekly' &&\n      inputs.current_family_cold_start != true && inputs.completed_private_runtime != true &&\n      inputs.completed_stage_source == '' && inputs.quick_confirmation != true &&\n      inputs.quick_progress_source == '' && inputs.checkpoint_target_hour == '' &&\n      inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true &&\n      inputs.weather_state_epoch_archive_key == '' && inputs.weather_state_epoch_archive_catalog_sha256 == '' &&\n      inputs.weather_state_epoch_raw_cache_key == '' && inputs.native_sampling_identity_original_recovery != true\n    runs-on: ubuntu-24.04\n    timeout-minutes: 2\n    continue-on-error: true\n    permissions:\n      actions: write\n    steps:\n      - name: Dispatch the existing database-backup workflow once\n        id: dispatch\n        env:\n          GH_TOKEN: ${{ github.token }}\n        shell: bash\n        run: |\n          set -euo pipefail\n          test \"$GITHUB_REPOSITORY\" = jakobjorgensen82-commits/RavRadar\n          test \"$GITHUB_REF\" = refs/heads/main\n          test \"$GITHUB_RUN_ATTEMPT\" = 1\n          [[ \"$GITHUB_SHA\" =~ ^[a-f0-9]{40}$ ]]\n          [[ \"$GITHUB_RUN_ID\" =~ ^[1-9][0-9]*$ ]]\n          if ! ack=\"$(timeout --signal=KILL 20s gh api --method POST \\\n            -H \"Accept: application/vnd.github+json\" \\\n            -H \"X-GitHub-Api-Version: 2026-03-10\" \\\n            \"repos/$GITHUB_REPOSITORY/actions/workflows/backup-supabase-database.yml/dispatches\" \\\n            -f ref=main -f \"inputs[expected_main]=$GITHUB_SHA\" \\\n            -f \"inputs[source_weather_run_id]=$GITHUB_RUN_ID\" 2>/dev/null)\" ||\n            ! recipient=\"$(jq -er '.workflow_run_id | numbers | tostring | select(test(\"^[1-9][0-9]{0,14}$\"))' <<< \"$ack\" 2>/dev/null)\" ||\n            [[ \"$recipient\" = \"$GITHUB_RUN_ID\" ]]; then\n            echo '::warning::DATABASE_BACKUP_DISPATCH_OUTCOME_UNKNOWN_DO_NOT_RETRY'\n            exit 1\n          fi\n          echo \"recipient_run_id=$recipient\" >> \"$GITHUB_OUTPUT\"\n\n      # The recipient reads this exact successful step from this run attempt.\n      # A second dispatch with the same source cannot present its own run ID here.\n      - name: Bind database backup recipient ${{ steps.dispatch.outputs.recipient_run_id }}\n        run: ':'\n\n  handoff-admin-document-history:\n    name: Hand off verified ordinary weather to admin document history\n    needs: [terminal-outcome, current-main-target]\n    if: >-\n      !cancelled() && needs.terminal-outcome.result == 'success' &&\n      needs.current-main-target.result == 'success' &&\n      needs.current-main-target.outputs.completed_private_runtime == 'false' &&\n      github.repository == 'jakobjorgensen82-commits/RavRadar' &&\n      github.ref == 'refs/heads/main' && github.run_attempt == '1' &&\n      github.actor == 'github-actions[bot]' &&\n      vars.RAVRADAR_ADMIN_HISTORY_MAINTENANCE == 'enabled' &&\n      inputs.current_family_cold_start != true && inputs.completed_private_runtime != true &&\n      inputs.completed_stage_source == '' && inputs.quick_confirmation != true &&\n      inputs.quick_progress_source == '' && inputs.checkpoint_target_hour == '' &&\n      inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true &&\n      inputs.weather_state_epoch_archive_key == '' && inputs.weather_state_epoch_archive_catalog_sha256 == '' &&\n      inputs.weather_state_epoch_raw_cache_key == '' && inputs.native_sampling_identity_original_recovery != true\n    runs-on: ubuntu-24.04\n    timeout-minutes: 2\n    continue-on-error: true\n    permissions:\n      actions: write\n    steps:\n      - name: Dispatch the existing document-history workflow once\n        id: dispatch\n        env:\n          GH_TOKEN: ${{ github.token }}\n        shell: bash\n        run: |\n          set -euo pipefail\n          test \"$GITHUB_REPOSITORY\" = jakobjorgensen82-commits/RavRadar\n          test \"$GITHUB_REF\" = refs/heads/main\n          test \"$GITHUB_RUN_ATTEMPT\" = 1\n          [[ \"$GITHUB_SHA\" =~ ^[a-f0-9]{40}$ ]]\n          [[ \"$GITHUB_RUN_ID\" =~ ^[1-9][0-9]*$ ]]\n          if ! ack=\"$(timeout --signal=KILL 20s gh api --method POST \\\n            -H \"Accept: application/vnd.github+json\" \\\n            -H \"X-GitHub-Api-Version: 2026-03-10\" \\\n            \"repos/$GITHUB_REPOSITORY/actions/workflows/maintain-admin-document-history.yml/dispatches\" \\\n            -f ref=main -f \"inputs[expected_main]=$GITHUB_SHA\" \\\n            -f \"inputs[source_weather_run_id]=$GITHUB_RUN_ID\" 2>/dev/null)\" ||\n            ! recipient=\"$(jq -er '.workflow_run_id | numbers | tostring | select(test(\"^[1-9][0-9]{0,14}$\"))' <<< \"$ack\" 2>/dev/null)\" ||\n            [[ \"$recipient\" = \"$GITHUB_RUN_ID\" ]]; then\n            echo '::warning::DOCUMENT_HISTORY_DISPATCH_OUTCOME_UNKNOWN_DO_NOT_RETRY'\n            exit 1\n          fi\n          echo \"recipient_run_id=$recipient\" >> \"$GITHUB_OUTPUT\"\n\n      # The recipient reads this exact successful step from this run attempt.\n      # A second dispatch with the same source cannot present its own run ID here.\n      - name: Bind document history recipient ${{ steps.dispatch.outputs.recipient_run_id }}\n        run: ':'\n\n"
+  ]
+});
+export function inverseSource611MaintenanceWorkflow(source, relative) {
+  const row = source611MaintenanceWorkflowReview;
+  if (relative !== row.path || typeof source !== 'string'
+      || Buffer.byteLength(source) !== row.after.bytes || sha(source) !== row.after.sha256) return source;
+  let previous = source;
+  for (const addition of [...row.additions].reverse()) {
+    assert.equal(previous.split(addition).length, 2, 'SOURCE611_EXACT_MAINTENANCE_HANDOFF');
+    previous = previous.replace(addition, '');
+  }
+  assert.equal(Buffer.byteLength(previous), row.before.bytes, 'SOURCE611_MAINTENANCE_PREDECESSOR_SIZE');
+  assert.equal(sha(previous), row.before.sha256, 'SOURCE611_MAINTENANCE_PREDECESSOR_BYTES');
   return previous;
 }

@@ -11,6 +11,17 @@ export const SOURCE_BINDING_PREFLIGHT = Object.freeze([
   'node scripts/sync-ravscore-model-binding.mjs --check',
 ]);
 
+// One reviewed Source CODE-parent command is an argument vector, never shell
+// syntax. Its fixed program still owns its normal genuine-parent admission.
+const SOURCE_CODE_PARENT_BODY = "import {withSource598CodeParent} from './scripts/check-assistant-later-h0-predecessor-source.mjs'; await withSource598CodeParent(()=>{});";
+const SOURCE_CODE_PARENT_COMMAND = 'node --input-type=module -e "' + SOURCE_CODE_PARENT_BODY + '"';
+export function sourceCommandArguments(command) {
+  if (command === SOURCE_CODE_PARENT_COMMAND) return ['node', '--input-type=module', '-e', SOURCE_CODE_PARENT_BODY];
+  // No general quoting, expressions, extra inline programs or shell fallback.
+  assert.match(command, /^(node|python)(?: [A-Za-z0-9_./:-]+)+$/, `Unsupported source command: ${command}`);
+  return command.split(' ');
+}
+
 export function expandSourceCommands(scripts, name, parents = []) {
   assert.ok(!parents.includes(name), `Cyclic source test script: ${name}`);
   assert.ok(typeof scripts[name] === 'string' && scripts[name].trim(), `Missing test script: ${name}`);
@@ -19,7 +30,7 @@ export function expandSourceCommands(scripts, name, parents = []) {
     if (nested) return expandSourceCommands(scripts, nested[1], [...parents, name]);
     // Current source commands are literal node/python invocations. New shell
     // syntax needs explicit support, never silent dropping or shell execution.
-    assert.match(command, /^(node|python)(?: [A-Za-z0-9_./:-]+)+$/, `Unsupported source command: ${command}`);
+    sourceCommandArguments(command);
     return [command];
   });
 }
@@ -67,7 +78,7 @@ function sourceChildEnvironment(command) {
 }
 
 function executeCommand(command) {
-  const [program, ...args] = command.split(' ');
+  const [program, ...args] = sourceCommandArguments(command);
   const result = spawnSync(program === 'node' ? process.execPath : program, args, {
     cwd: process.cwd(), stdio: 'inherit', shell: false,
     env: sourceChildEnvironment(command),

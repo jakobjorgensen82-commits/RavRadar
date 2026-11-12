@@ -1,6 +1,6 @@
-import fs from 'node:fs';
+import policyInput from './dmi-marine-zone-exclusions.json' with { type: 'json' };
 
-const policy = JSON.parse(fs.readFileSync(new URL('./dmi-marine-zone-exclusions.json', import.meta.url), 'utf8'));
+const policy = structuredClone(policyInput);
 if (policy?.schemaVersion !== 2
   || policy?.contractId !== 'owner-approved-dmi-marine-zone-exclusions-v2'
   || JSON.stringify(policy.allowedComponentsByExcludedCollection)

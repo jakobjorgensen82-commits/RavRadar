@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const RAVSCORE_CONTINUATION_IMPLEMENTATION_FILES = Object.freeze([
-  'js/core/ravscore-model-contract.js',
+  'js/core/ravscore-numerical-contract.js',
   'js/core/ravscore-mobilisation-memory.js',
   'js/core/ravscore-regime-memory.js',
   'js/core/ravscore-candidate-g-state-pipeline.js',
@@ -12,8 +12,8 @@ export const RAVSCORE_CONTINUATION_IMPLEMENTATION_FILES = Object.freeze([
   'js/core/ravscore-wave-mobilisation-state.js',
   'js/core/ravscore-integrated-state-pipeline.js',
   'scripts/lib/coastal-point-staging-contract.mjs',
-  'scripts/lib/ravscore-candidate-g-rollback-runtime.mjs',
-  'scripts/rollback-assets/ravscore-model-contract.js',
+  'scripts/lib/ravscore-candidate-g-rollback-calculation.mjs',
+  'scripts/rollback-assets/ravscore-numerical-contract.js',
   'scripts/rollback-assets/ravscore-model-bundle.generated.js',
   'scripts/ravscore-continuation-checkpoint.mjs',
 ]);

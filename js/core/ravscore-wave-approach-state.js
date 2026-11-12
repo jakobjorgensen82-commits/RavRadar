@@ -1,5 +1,5 @@
 import { waveMobilisationEnergy } from './ravscore-mobilisation-memory.js';
-import { RAVSCORE_LAST_MILE_POLICY } from './ravscore-model-contract.js';
+import { RAVSCORE_LAST_MILE_POLICY } from './ravscore-numerical-contract.js';
 import { canonicalRavScoreTime } from './ravscore-time.js';
 
 const HOUR_MS = 3_600_000;
