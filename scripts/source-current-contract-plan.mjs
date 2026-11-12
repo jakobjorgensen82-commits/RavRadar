@@ -1,6 +1,7 @@
 // Normal plan: aktuelle kontrakter for de faktisk ændrede områder.
 // Planlægning er hverken en FULL-baseline, en testkvittering eller deployautoritet.
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {execFileSync} from 'node:child_process';
@@ -10,6 +11,14 @@ const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const freeze=value=>{for(const item of Object.values(value))if(item&&typeof item==='object')freeze(item);return Object.freeze(value);};
 const INSTALLER='supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql';
 const WEATHER_BUILD='.github/workflows/reusable-weather-build.yml';
+const LOCAL_RESTORE_FIXTURE='scripts/test-supabase-cli-local-restore.mjs';
+const LOCAL_RESTORE_SELF_TEST='node '+LOCAL_RESTORE_FIXTURE+' --self-test';
+const LOCAL_RESTORE_WORKFLOW='.github/workflows/verify-supabase-cli-local-restore.yml';
+// Existing qualified security frame, not a per-head fixture-body fingerprint.
+const LOCAL_RESTORE_IMPORTS='\nconst P=Object.freeze(';
+const LOCAL_RESTORE_DISPATCH='if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){';
+const LOCAL_RESTORE_IMPORTS_SHA256='dd05a1d036c7d9afff9ae2ba4c0511dff199ad4faf5baab258b2a17b0cd728d4';
+const LOCAL_RESTORE_DISPATCH_SHA256='2e0d348293d622790375df6457726e0af04d92c9e23aedbac42033aa5049443c';
 
 // Rækkefølgen er også den normale kommandorækkefølge. Ingen imports-/ressourcelexer.
 export const CURRENT_CONTRACT_COMMANDS=freeze({
@@ -49,6 +58,9 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
   ],
   sourceControls:[
     'node --test scripts/test-source-current-contracts.mjs',
+  ],
+  backupRestore:[
+    LOCAL_RESTORE_SELF_TEST,
   ],
   // Aktuel faktisk kildegate + arkivkontrakt. Det er ikke et løfte om at
   // samtlige historiske whole-oracles er udført.
@@ -111,6 +123,7 @@ const PATH_AREAS=freeze({
   ],
   documentation:[
     'AGENTS.md','CHANGELOG.md','HANDBOOK-RAVRADAR.md','docs/handbook/content.json',INSTALLER,
+    'scripts/sync-handbook-installation-copy.mjs',
     'scripts/validate-rdks.mjs','scripts/test-handbook-plain-language-4.0.70.mjs',
     'scripts/test-handbook-review-archive-4.0.91.mjs','scripts/test-protected-handbook-merge-4.0.270.mjs',
   ],
@@ -131,6 +144,9 @@ const PATH_AREAS=freeze({
     'scripts/lib/archived-production-gate-review.mjs',
     'scripts/lib/completed-private-runtime-workflow-review.mjs',
     'scripts/lib/native-original-continuity-workflow-review.mjs',
+  ],
+  backupRestore:[
+    LOCAL_RESTORE_FIXTURE,
   ],
   // Disse kendte historiske/metakontroller giver ingen produktadmission i V3.
   // Deres ændring kræver stadig en uafhængig kontrolgennemgang.
@@ -176,7 +192,7 @@ function publicDigests(analysis){
 // INSTALL-filen indeholder både DDL og håndbog. Kun en faktisk håndbogsændring
 // må få docs-ruten. Hver sides payload matches mod dens EGEN Git-håndbog;
 // hele resten sammenlignes. Ingen gamle eller nye godkendte blobpar.
-function readCommittedText(ref,file){
+function readCommittedText(ref,file,regular=false){
   const env={...Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','TEMP','TMP']
     .filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]])),
     GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_OPTIONAL_LOCKS:'0',
@@ -184,6 +200,13 @@ function readCommittedText(ref,file){
     GIT_CONFIG_GLOBAL:process.platform==='win32'?'NUL':'/dev/null',
     GIT_CONFIG_COUNT:'1',GIT_CONFIG_KEY_0:'protocol.allow',GIT_CONFIG_VALUE_0:'never'};
   const read=(ref,file)=>{
+    if(regular){
+      const entry=execFileSync('git',['-C',ROOT,'ls-tree','-z',ref,'--',file],
+        {env,timeout:10000,maxBuffer:262144,stdio:['pipe','pipe','pipe']}).toString('utf8');
+      assert(Buffer.byteLength(entry)<=4096,'Bounded restore Git entry required');
+      const match=/^100644 blob ([a-f0-9]{40})\t([^\0]+)\0$/.exec(entry);
+      assert(match&&match[2]===file,'Existing regular restore input required');
+    }
     const raw=execFileSync('git',['-C',ROOT,'cat-file','blob',ref+':'+file],
       {env,timeout:10000,maxBuffer:4*1024*1024,stdio:['pipe','pipe','pipe']});
     assert(raw.length>0&&raw.length<=4*1024*1024);
@@ -250,6 +273,24 @@ export function isPagesOnlyWeatherBuildChange(before,after){
   }catch{return false;}
 }
 
+// Pure security-frame comparison only. The whole changed body still needs
+// independent control review and its actual credential-free --self-test.
+export function isBoundedLocalRestoreFixtureChange(before,after){
+  try{
+    for(const source of [before,after]){
+      assert(typeof source==='string'&&!source.includes('\r')&&Buffer.byteLength(source)<=256*1024);
+      const imports=source.indexOf(LOCAL_RESTORE_IMPORTS),dispatch=source.indexOf(LOCAL_RESTORE_DISPATCH);
+      assert(imports>0&&dispatch>imports);
+      assert.equal(source.indexOf(LOCAL_RESTORE_IMPORTS,imports+1),-1);
+      assert.equal(source.indexOf(LOCAL_RESTORE_DISPATCH,dispatch+1),-1);
+      const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
+      assert.equal(sha(source.slice(0,imports)),LOCAL_RESTORE_IMPORTS_SHA256);
+      assert.equal(sha(source.slice(dispatch)),LOCAL_RESTORE_DISPATCH_SHA256);
+    }
+    return true;
+  }catch{return false;}
+}
+
 export function planSourceCurrentContractsFromGit(input){
   const out={schemaVersion:1,status:'PLANNED',selection:'CURRENT_CONTRACTS',commands:[],areas:{},
     resultScope:'CURRENT_CONTRACT_RESULTS_ONLY',historicalCompatibilityExecuted:false,
@@ -293,6 +334,19 @@ export function planSourceCurrentContractsFromGit(input){
         out.controlQualificationRequired=true;
     }
     if(unknown.length){out.unclassifiedPaths=unknown.sort();return refuse('CURRENT_UNCLASSIFIED_PATH');}
+    const restore=analysis.completeGitDiff.inventory.find(row=>
+      Buffer.from(row.pathUtf8Hex,'hex').toString('utf8')===LOCAL_RESTORE_FIXTURE);
+    if(restore){
+      if(restore.status!=='M'||restore.beforeMode!=='100644'||restore.afterMode!=='100644')
+        return refuse('CURRENT_RESTORE_FIXTURE_REQUIRES_EXISTING_REGULAR_SOURCE');
+      const before=readCommittedText(input.baselineCommit,LOCAL_RESTORE_FIXTURE,true);
+      const after=readCommittedText(input.candidateCommit,LOCAL_RESTORE_FIXTURE,true);
+      if(!isBoundedLocalRestoreFixtureChange(before,after))
+        return refuse('CURRENT_RESTORE_FIXTURE_SECURITY_FRAME_CHANGED');
+      if(readCommittedText(input.baselineCommit,LOCAL_RESTORE_WORKFLOW,true)
+        !==readCommittedText(input.candidateCommit,LOCAL_RESTORE_WORKFLOW,true))
+        return refuse('CURRENT_RESTORE_FIXTURE_WORKFLOW_CHANGED');
+    }
     if(analysis.completeGitDiff.inventory.some(row=>Buffer.from(row.pathUtf8Hex,'hex').toString('utf8')===WEATHER_BUILD)){
       const before=readCommittedText(input.baselineCommit,WEATHER_BUILD);
       const after=readCommittedText(input.candidateCommit,WEATHER_BUILD);
@@ -309,7 +363,7 @@ export function planSourceCurrentContractsFromGit(input){
       status:area==='historicalTests'?'NOT_EXECUTED':'SELECTED',executed:false,
       commands:[...COMMANDS[area]],changedPaths:[...new Set(selected.get(area))].sort()};
     out.commands=[...new Set(Object.values(out.areas).flatMap(area=>area.commands))];
-    assert(out.commands.length>0&&out.commands.every(command=>/^node(?: --[a-z-]+)*(?: [A-Za-z0-9_./-]+\.mjs)+$/.test(command)));
+    assert(out.commands.length>0&&out.commands.every(command=>command===LOCAL_RESTORE_SELF_TEST||/^node(?: --[a-z-]+)*(?: [A-Za-z0-9_./-]+\.mjs)+$/.test(command)));
     out.reasonCodes=['CURRENT_SCOPES_CLASSIFIED','UNCHANGED_ACTUAL_POSTGRES_AND_MODELS'];
     if(out.controlQualificationRequired)out.reasonCodes.push('INDEPENDENT_CONTROL_REVIEW_REQUIRED');
     return freeze(out);

@@ -7,9 +7,25 @@ import os from 'node:os';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {fileURLToPath,pathToFileURL} from 'node:url';
-import {CURRENT_CONTRACT_COMMANDS} from './source-current-contract-plan.mjs';
+import {CURRENT_CONTRACT_COMMANDS,isBoundedLocalRestoreFixtureChange} from './source-current-contract-plan.mjs';
 
 const SOURCE=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+
+// The fixed restore command owns only its reviewed fixture body. Import and
+// dispatch frames remain immutable; its actual --self-test runs separately.
+const restoreFixture='scripts/test-supabase-cli-local-restore.mjs';
+const restoreSource=fs.readFileSync(new URL('./test-supabase-cli-local-restore.mjs',import.meta.url),'utf8').replaceAll('\r\n','\n');
+assert.deepEqual(CURRENT_CONTRACT_COMMANDS.backupRestore,['node '+restoreFixture+' --self-test']);
+assert.equal(isBoundedLocalRestoreFixtureChange(restoreSource,restoreSource),true);
+assert.equal(isBoundedLocalRestoreFixtureChange(restoreSource,
+  restoreSource.replace('const IMAGES=','// Synthetic reviewed body delta\nconst IMAGES=')),true);
+for(const changed of [
+ '// Synthetic import-frame delta\n'+restoreSource,
+ restoreSource+'\n// Synthetic dispatch-frame delta\n',
+ restoreSource.replace("process.argv[2]==='--self-test'","process.argv[2]==='--run-archive-restore'"),
+ restoreSource.replace('\nconst P=Object.freeze(','\nconst P=Object.freeze(\nconst P=Object.freeze('),
+ ' '.repeat(256*1024)+restoreSource,
+])assert.equal(isBoundedLocalRestoreFixtureChange(restoreSource,changed),false);
 const REFERENCE='bd9cf518fe798ddea45d2b835f324f6e2bea06fc';
 const profile=JSON.parse(fs.readFileSync(path.join(SOURCE,'scripts/lib/source-impact-domain-inputs-598.json')));
 const controlSources=new Set();
@@ -278,6 +294,23 @@ try{
     nativePostgres:nativeReceipt,historical584National:historical};
   phaseBody={schemaVersion:1,kind:native.ASSISTANT_AFTER597_PHASE_KIND,repository:native.ORIGIN.repository,
     headSha:base,sourceTreeSha256:baseContent,privatePayloadIncluded:false,nativePostgres:clone(nativeReceipt)};
+
+
+  // The normal documentation helper has one documented area; no code fingerprint
+  // or unrelated UI/Pages test is needed to classify this exact known path.
+  const handbookHelper='scripts/sync-handbook-installation-copy.mjs';
+  const handbookTree=rewrite(baselineTree,[[handbookHelper,fixtureControlBytes(handbookHelper)]]);
+  const handbookHead=commit(handbookTree,[base],'synthetic handbook-helper documentation child');
+  checkout(handbookHead);
+  const handbookPlan=plan({baselineCommit:base,candidateCommit:handbookHead,expectedHead:handbookHead});
+  assert.equal(handbookPlan.selection,'CURRENT_CONTRACTS',JSON.stringify(handbookPlan.reasonCodes));
+  assert.deepEqual(Object.keys(handbookPlan.areas),['core','documentation']);
+  assert.deepEqual(handbookPlan.commands,[...CURRENT_CONTRACT_COMMANDS.core,...CURRENT_CONTRACT_COMMANDS.documentation]);
+  assert.equal(handbookPlan.controlQualificationRequired,false);
+  for(const family of ['postgres','C','I','T'])
+    assert.equal(handbookPlan.inputDigests[family+'Before'],handbookPlan.inputDigests[family+'After']);
+  cases++;scenarios.push('normal handbook sync helper selects only core and documentation');
+  checkout(base);
 
   const owner='scripts/source-current-contract-receipt.mjs';
   const candidateTree=rewrite(baselineTree,[[owner,Buffer.concat([

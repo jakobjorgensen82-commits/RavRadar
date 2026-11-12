@@ -222,6 +222,14 @@ const FIXED_ROLE_LABELS=new Map([
   ['service_role','SERVICE_ROLE'],['pgsodium_keyholder','PGSODIUM_KEYHOLDER'],
   ['pgsodium_keyiduser','PGSODIUM_KEYIDUSER'],['pgsodium_keymaker','PGSODIUM_KEYMAKER'],
   ['pgtle_admin','PGTLE_ADMIN'],['supabase_admin','SUPABASE_ADMIN'],['cli_login_postgres','CLI_LOGIN_POSTGRES'],
+  // Public upstream role labels only; no role is created or granted here.
+  ['supabase_auth_admin','SUPABASE_AUTH_ADMIN'],
+  ['supabase_etl_admin','SUPABASE_ETL_ADMIN'],
+  ['supabase_functions_admin','SUPABASE_FUNCTIONS_ADMIN'],
+  ['supabase_privileged_role','SUPABASE_PRIVILEGED_ROLE'],
+  ['supabase_read_only_user','SUPABASE_READ_ONLY_USER'],
+  ['supabase_replication_admin','SUPABASE_REPLICATION_ADMIN'],
+  ['supabase_storage_admin','SUPABASE_STORAGE_ADMIN'],
 ]);
 const ROLE_OPERAND_LABELS=new Set([...FIXED_ROLE_LABELS.values(),'RESERVED_SUPABASE_NAMESPACE','RESERVED_CLI_LOGIN_NAMESPACE','OTHER_ROLE_IDENTIFIER']);
 const FIXED_GUC_LABELS=new Map([['session_replication_role','SESSION_REPLICATION_ROLE'],
@@ -1025,6 +1033,13 @@ async function selfTest(){
       const report=(stderr,code='SQLSTATE_42704')=>archiveInputDiagnostic(Buffer.from(stderr),code,inputLines);
       for(const [name,label]of [['postgres','POSTGRES'],['cli_login_postgres','CLI_LOGIN_POSTGRES'],
         ['supabase_fixture_role','RESERVED_SUPABASE_NAMESPACE'],['cli_login_fixture','RESERVED_CLI_LOGIN_NAMESPACE'],
+        ['supabase_auth_admin','SUPABASE_AUTH_ADMIN'],
+        ['supabase_etl_admin','SUPABASE_ETL_ADMIN'],
+        ['supabase_functions_admin','SUPABASE_FUNCTIONS_ADMIN'],
+        ['supabase_privileged_role','SUPABASE_PRIVILEGED_ROLE'],
+        ['supabase_read_only_user','SUPABASE_READ_ONLY_USER'],
+        ['supabase_replication_admin','SUPABASE_REPLICATION_ADMIN'],
+        ['supabase_storage_admin','SUPABASE_STORAGE_ADMIN'],
         ['fixture_private_member','OTHER_ROLE_IDENTIFIER']]){
         const failure=report(detail(name)+location);
         assert.deepEqual(failure,{inputOwner:'ROLES',inputStatement:'GRANT_ROLE',missingRoleClass:label});
