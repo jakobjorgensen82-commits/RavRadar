@@ -962,6 +962,15 @@ test('closed ordinary Pages lifecycle keeps exact direct and cumulative source b
    const config=git(root,['cat-file','blob',baseline+':config.js']);
    const protectedInput=run([...afterRows,['config.js',Buffer.concat([config,Buffer.from('\n// genuine model input drift\n')])]]);
    assert.deepEqual(protectedInput.reasonCodes,['POSTGRES_OR_MODEL_INPUT_CHANGED'],name);
+   // The same logical resident-byte cap must still refuse a real oversized
+   // candidate after before-only cache release. Valid JS whitespace keeps the
+   // padded test below8MiB and changes no product/model/cohort member.
+   const paddingControlRow=controlRows.find(([file])=>file==='scripts/test-source-impact-domain-plan.mjs');
+   afterRows.push([paddingControlRow[0],Buffer.concat([paddingControlRow[1],Buffer.alloc(5*1024*1024,32)])]);
+   const overflow=run(afterRows);
+   afterRows.pop();
+   assert.equal(overflow.status,'REFUSED');
+   assert.deepEqual(overflow.reasonCodes,['DOMAIN_COMMITTED_BLOB_BUDGET_EXCEEDED']);
   }
  }finally{
   assert.equal(path.dirname(fs.realpathSync(root)),temporary);const current=fs.lstatSync(root,{bigint:true});
