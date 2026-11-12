@@ -6,7 +6,8 @@ import {inverseSourceBeforePostgresWorkflow, SOURCE_BEFORE_POSTGRES_BLOCK,
   SCALAR597_LATER_H0_SOURCE_COMMAND,inverseScalar597LaterH0Package,verifyScalar597LaterH0NativeContext,
   scalar597LaterH0NativeClaims,ASSISTANT_AFTER597_SOURCE_COMMAND,inverseAssistantAfter597Package}
   from './national584-source-evidence.mjs';
-import {projectSourceImpactWorkflowFull} from './lib/source-impact-workflow-review.mjs';
+import {projectSourceImpactWorkflowFull,SOURCE_IMPACT_FULL_WORKFLOW_ORIGIN,
+  SOURCE_IMPACT_FULL_WORKFLOW_SHA256} from './lib/source-impact-workflow-review.mjs';
 import {ORIGIN, WORKFLOW, JOB, STEP, COMMANDS, ACCOUNT_STATISTICS_ASSISTANT_COMMANDS, CURRENT586_COMMANDS as CURRENT_COMMANDS,
   CURRENT_COMMANDS as ASSISTANT_LATER_H0_COMMANDS, NATIVE_SCRIPT as ASSISTANT_LATER_H0_SCRIPT, NEW_NATIVE_BLOCK,
   NON_NATIVE_TEST_INPUTS, NON_NATIVE_PROSE, nativeBlock, parseTree, verifyWorkflow,
@@ -30,6 +31,28 @@ const NATIVE_SCRIPT='set -euo pipefail\n'+CURRENT_COMMANDS.join('\n')+'\n';
 const copy = value => structuredClone(value);
 import {ASSISTANT_AFTER597_BINDING as AFTER597_BINDING} from './lib/assistant-later-h0-successor-source.mjs';
 const AFTER597_ISSUED=AFTER597_BINDING!==null;
+
+
+// These two 586 receipt-policy fixtures exercise the qualified historical FULL
+// workflow, not the new Source workflow. Validate the actual issued Source
+// caller first, then read the genuine fixed Git input; never turn its skipped
+// ordinary steps into a current FULL/native receipt or admission.
+async function historical586WorkflowInput(actualWorkflow){
+  const {SOURCE_PRODUCER_AFTER597_PARENT}=await import('./lib/source-producer-after597-parent.mjs');
+  if(SOURCE_PRODUCER_AFTER597_PARENT.binding===null)return projectSourceImpactWorkflowFull(actualWorkflow);
+  const {requireSourceProducerOutput}=await import('./lib/source-producer-after597-runtime-family.mjs');
+  requireSourceProducerOutput();
+  const {assertSourceFirstWorkflowContract}=await import('./source-first-issuance-contracts.mjs');
+  assertSourceFirstWorkflowContract(actualWorkflow);
+  const {execFileSync}=await import('node:child_process');
+  const raw=execFileSync('git',['-c','protocol.allow=never','cat-file','blob',
+    SOURCE_IMPACT_FULL_WORKFLOW_ORIGIN+':'+WORKFLOW],{
+    env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0'},
+    timeout:30000,maxBuffer:1024*1024});
+  assert.equal(cryptoHash('sha256').update(raw).digest('hex'),SOURCE_IMPACT_FULL_WORKFLOW_SHA256,
+    'Only the genuine qualified 334 FULL workflow is a historical 586 fixture');
+  return raw.toString('utf8');
+}
 
 test('593 V2 transport bounds streamed JSON and ZIP, separates tokens, keeps budgets and never stores signed URLs',async t=>{
   const prefix='/repos/'+ORIGIN.repository+'/',signedUrl='https://synthetic-artifact.invalid/body?signature=synthetic-private-signed-value';
@@ -369,9 +392,9 @@ test('assistant later-H0 appends its actual phase without retagging whole586 com
 
 test('current586 phase artifact is independent, exact, honest, and does not relax conservative native inputs',async()=>{
   const actualWorkflow=(await fs.readFile(WORKFLOW,'utf8')).replace(/\r\n/g,'\n');
-  // Only the historical V1 oracle and its mutation inputs receive the exact
-  // qualified FULL workflow. V2 captures the actual workflow bytes unchanged.
-  const historicalWorkflow=projectSourceImpactWorkflowFull(actualWorkflow);
+  // Validate the actual Source caller before selecting the immutable FULL
+  // fixture for these historical 586 policy and mutation assertions.
+  const historicalWorkflow=await historical586WorkflowInput(actualWorkflow);
   const workflow=inverseSourceBeforePostgresWorkflow(historicalWorkflow);
   assert(actualWorkflow.indexOf('      - name: Validate source contracts')<actualWorkflow.indexOf('      - name: '+STEP));
   assert(actualWorkflow.indexOf(CURRENT586_PHASE_UPLOAD_BLOCK)<actualWorkflow.indexOf('      - name: Validate isolated restart and two ordinary national followers'));
@@ -434,7 +457,8 @@ test('current586 exact EXECUTED origin survives a later source failure; missing,
     end.writeUInt32LE(central.length+name.length,12);end.writeUInt32LE(local.length+name.length+raw.length,16);
     return Buffer.concat([local,name,raw,central,name,end]);
   };
-  const workflow=inverseSourceBeforePostgresWorkflow(await fs.readFile(WORKFLOW,'utf8')),
+  const workflow=inverseSourceBeforePostgresWorkflow(await historical586WorkflowInput(
+    (await fs.readFile(WORKFLOW,'utf8')).replace(/\r\n/g,'\n'))),
     oldId=ORIGIN.run+10,currentId=oldId+2,number=700;
   const branch='synthetic-native586',nativeInput=verifyInputTrees(tree,tree);
   const oldRun={id:oldId,run_attempt:1,head_sha:oid,head_branch:branch,path:WORKFLOW,event:'pull_request',

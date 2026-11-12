@@ -237,12 +237,18 @@ function assertSourceFirstStepEnvelope(job){
   assert.equal(row.status,'completed');assert.equal(row.conclusion,SOURCE_FIRST_JOB_STEPS[i][1]);
  }
  const post=job.steps.slice(SOURCE_FIRST_JOB_STEPS.length);
- assert(post.length<=8);assert.equal(new Set(post.map(x=>x.name)).size,post.length);
- for(let i=0;i<post.length;i++){
-  const row=post[i];assert.equal(row.number,SOURCE_FIRST_JOB_STEPS.length+i+1);
-  assert(['Post Set up Node24 for isolated acquisition contracts','Post Restore Node22 for existing source validation',
-   'Post Run actions/setup-node@v7','Post Run actions/setup-python@v7','Post Run actions/checkout@v7','Complete job'].includes(row.name));
+ // GitHub reserves internal action step numbers, so actual post steps may
+ // begin at 44 after the same 24 declared/runtime main steps. Authenticate
+ // their known reverse action order and monotonic identities, not adjacency.
+ const postNames=['Post Restore Node22 for existing source validation','Post Set up Node24 for isolated acquisition contracts',
+  'Post Run actions/setup-python@v7','Post Run actions/setup-node@v7','Post Run actions/checkout@v7','Complete job'];
+ assert(post.length<=postNames.length);assert.equal(new Set(post.map(x=>x.name)).size,post.length);
+ let previousNumber=SOURCE_FIRST_JOB_STEPS.length,previousOrder=-1;
+ for(const row of post){
+  assert(Number.isSafeInteger(row.number)&&row.number>previousNumber);
+  const order=postNames.indexOf(row.name);assert(order>previousOrder);
   assert.equal(row.status,'completed');assert.equal(row.conclusion,'success');
+  previousNumber=row.number;previousOrder=order;
  }
 }
 export function assertSourceFirstWorkflowContract(source){

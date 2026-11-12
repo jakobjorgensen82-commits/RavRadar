@@ -424,8 +424,30 @@ async function sourceFirstControlCases(){
  api.assertSourceFirstPathScope(['scripts/source-first-issuance-contracts.mjs'],identity);
  assert.throws(()=>api.assertSourceFirstPathScope(['scripts/unreviewed-first-source-feature.mjs'],identity));
  assert.throws(()=>api.assertSourceFirstPathScope(['supabase/migrations/00000000000000_wx_source.sql'],identity));
+ // Actual GitHub numbering from head2: 24 main steps, then 44..49.
+ // These are synthetic metadata mutations, not a claimed CI/native execution.
+ const at=i=>new Date(Date.UTC(2026,10,12,14,0,0)+i*2000).toISOString();
+ const main=api.SOURCE_FIRST_JOB_STEPS.map(([name,conclusion],i)=>({
+  name,conclusion,number:i+1,status:'completed',started_at:at(i*2),completed_at:at(i*2+1)}));
+ const names=['Post Restore Node22 for existing source validation','Post Set up Node24 for isolated acquisition contracts',
+  'Post Run actions/setup-python@v7','Post Run actions/setup-node@v7','Post Run actions/checkout@v7','Complete job'];
+ const job={steps:[...main,...names.map((name,i)=>({name,number:44+i,status:'completed',conclusion:'success'}))]};
+ assert.doesNotThrow(()=>api.sourceFirstNativeStepShape(job));
+ for(const mutate of [
+  x=>{x.steps[24].name='Unknown action cleanup';},
+  x=>{[x.steps[24].name,x.steps[25].name]=[x.steps[25].name,x.steps[24].name];},
+  x=>{x.steps[25].name=x.steps[24].name;},
+  x=>{x.steps[25].number=x.steps[24].number;},
+  x=>{x.steps[25].number=43;},
+  x=>{x.steps[24].number=24;},
+  x=>{x.steps[24].conclusion='skipped';},
+  x=>{x.steps.splice(24,0,{name:'Unreviewed extra main step',number:25,status:'completed',conclusion:'success'});},
+  x=>{x.steps[16].conclusion='skipped';}
+ ]){
+  const changed=structuredClone(job);mutate(changed);assert.throws(()=>api.sourceFirstNativeStepShape(changed));
+ }
  console.log(JSON.stringify({kind:'SOURCE_CURRENT_CONTROL_DATA_TESTS',scope:'MODULE_DATA_ASSERTIONS_COMPLETED',
-   includedContracts:['actualIdentity','invalidIdentity','pathScope','genuine598First','sameSourceBase','changedModelRefused','unknownBaseRefused','changedReleaseRefused'],
+   includedContracts:['actualIdentity','invalidIdentity','pathScope','genuine598First','sameSourceBase','changedModelRefused','unknownBaseRefused','changedReleaseRefused','actualGitHubPostNumbers','strictPostNamesOrderNumbersAndOutcomes'],
    actualSqlOrSqliteExecuted:false,network:false,sourceAdmission:false,productionProof:false}));
 }
 const sourceFamily=fs.existsSync(new URL('./lib/source-producer-after597-binding.generated.json',import.meta.url));

@@ -2,6 +2,8 @@
 
 4.0.614 er nu lokalt udstedt gennem den normale førsteafledning fra ægte NULL. Alle 455 RAW-filer er fysisk verificeret, C193/I190/T12 og den ene nye SQL-migration er normalt beregnet, og alle 77 tidligere migrationer er bevaret. Den selektive visning er fysisk kontrolleret til 63 ægte 598-filer plus kun den nye aktuelle migration. Dette er lokal kilde- og afledningsevidens; kandidatens samlede aktuelle GitHub-kontrol, nye native64-/PostgreSQL-fase, installation og offentlige effekt er fortsat åbne. De følgende forberedelsesafsnit beskriver tidligere trin og giver ikke længere status for, om RAW eller SQL er dannet. Alle fem mål består.
 
+De almindelige metadata-kaldere er lokalt rettet: de historiske586-prøver bruger deres autentiske workflow, den aktuelle Source-kilde identificeres særskilt før PostgreSQL, og GitHubs eftertrin kontrolleres med kendte navne og faktisk stigende numre frem for en antaget fortløbende nummerering. De eksisterende fysiske filpins følger den gennemgåede metadata-kalder. Ingen RAW-, model-, PostgreSQL-, setup- eller T-binding er ændret. Målprøver består, men ny præcis Linux-/Node24-/PostgreSQL-kvalifikation mangler fortsat.
+
 ## 12. november – Source14 forberedes som en ny førsteudstedelse
 
 Source14 forberedes som en ny førsteudstedelse fra den ægte uudstedte NULL-kilde. Den samler Source13-funktionaliteten med de gennemgåede Pages-værn. Source13 må ikke installeres. Tidligere bindinger, migrationer, originaler og offentliggjorte scorer bevares og ommærkes ikke.

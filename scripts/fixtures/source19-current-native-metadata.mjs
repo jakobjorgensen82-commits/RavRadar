@@ -171,19 +171,26 @@ export async function captureSourcePrNativeTest(context, {reconfirm=false}={}){
   const started=Date.parse(job.started_at);assert(Number.isFinite(started)&&started<=Date.now());
   assert(Date.now()<started+180*60000,'SOURCE_PR_NATIVE_ORIGINAL_JOB_DEADLINE');
   assert(Array.isArray(job.steps));assert.equal(new Set(job.steps.map(v=>v.number)).size,job.steps.length);
-  const source=job.steps.filter(v=>v.name==='Validate source contracts and release governance');
+  const sources=job.steps.filter(v=>['Validate source contracts and release governance',
+    'Validate current Source contracts and release governance'].includes(v.name));
   const native=job.steps.filter(v=>v.name==='Validate native PostgreSQL checkpoint CAS on artificial data only');
-  assert.equal(source.length,1);assert.equal(native.length,1);
-  assert(positive(source[0].number)&&native[0].number===source[0].number+1);
-  assert.equal(source[0].status,'completed');assert.equal(source[0].conclusion,'success');
+  assert(sources.length>=1&&sources.length<=2);assert.equal(native.length,1);
+  assert.equal(new Set(sources.map(v=>v.name)).size,sources.length);
+  const successful=sources.filter(v=>v.status==='completed'&&v.conclusion==='success');
+  assert.equal(successful.length,1);const source=successful[0];
+  for(const other of sources)if(other!==source)assert.equal(other.conclusion,'skipped');
+  assert(positive(source.number));
+  const between=job.steps.filter(v=>v.number>source.number&&v.number<native[0].number);
+  assert.equal(native[0].number,source.number+1+between.length);
+  assert(between.length<=1&&between.every(v=>sources.includes(v)&&v.conclusion==='skipped'));
   assert.equal(native[0].status,'in_progress');assert.equal(native[0].conclusion,null);
-  const sourceEnd=Date.parse(source[0].completed_at),nativeStart=Date.parse(native[0].started_at);
+  const sourceEnd=Date.parse(source.completed_at),nativeStart=Date.parse(native[0].started_at);
   assert(Number.isFinite(sourceEnd)&&Number.isFinite(nativeStart)&&sourceEnd<=nativeStart&&nativeStart<=Date.now());
   const current={...c,jobId:job.id};
   const output={kind:'SOURCE_PR_NATIVE_TEST_CAPTURE_V1',scope:'SOURCE_PR_NATIVE_TEST',head:c.head,
     current,mainHead,repository,sourceTreeSha256:context.sourceTreeSha256,
     workflowPath:run.path,jobStartedAt:job.started_at,runnerName:job.runner_name,
-    sourceStepNumber:source[0].number,nativeStepNumber:native[0].number,
+    sourceStepNumber:source.number,nativeStepNumber:native[0].number,
     checkedAt:new Date().toISOString(),responses,sourceAdmission:false,productionProof:false};
   const file=path.join(ROOT,'.cache/source-current-native-github-capture.json');
   if(reconfirm){
