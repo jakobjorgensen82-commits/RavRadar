@@ -317,6 +317,14 @@ export function planSourceDomainImpactFromGit(input){
           return full('PAGES_LIFECYCLE_CALLER_ANCHOR:'+file);
       }
     }
+    // Before-only bodies have passed the complete cohort SHA checks. Keep
+    // their exact metadata, but release cache bytes absent from the candidate.
+    // Any later genuine before guard reloads through the unchanged bounded load.
+    if(lifecycleVariant){
+      const candidateBlobs=new Set(tree.filter(row=>row.type==='blob').map(row=>row.oid));
+      for(const entry of lifecycleVariant.members)if(entry.status==='M'&&!candidateBlobs.has(entry.beforeBlob))
+        blobs.delete(entry.beforeBlob);
+    }
     if(!lifecycleVariant&&changes.some(({owner})=>owner.closedPagesLifecycleOnly))return full('PAGES_LIFECYCLE_EXACT_COHORT_REQUIRED');
     const pagesChanges=productChanges.filter(change=>change.owner.pagesTransportOnly===true);
     const rollback=is598?selectedRegistry.pagesTransport.standardActionRollback:null;
