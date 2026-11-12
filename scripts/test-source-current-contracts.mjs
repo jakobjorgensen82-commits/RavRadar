@@ -395,6 +395,24 @@ try{
   cases++;scenarios.push('normal handbook sync helper selects only core and documentation');
   checkout(base);
 
+  // The ordinary bot sender and its existing maintenance recipient share one
+  // normal target. This classifies current behavior, not an old workflow hash.
+  const adminHistoryPaths=['.github/workflows/run-current-weather-once.yml',
+    '.github/workflows/maintain-admin-document-history.yml','scripts/test-admin-document-history-workflow.mjs'];
+  const adminHistoryTree=rewrite(baselineTree,adminHistoryPaths.map(file=>[file,fixtureControlBytes(file)]));
+  const adminHistoryHead=commit(adminHistoryTree,[base],'synthetic normal admin-history handoff child');
+  checkout(adminHistoryHead);
+  const adminHistoryPlan=plan({baselineCommit:base,candidateCommit:adminHistoryHead,expectedHead:adminHistoryHead});
+  assert.equal(adminHistoryPlan.selection,'CURRENT_CONTRACTS',JSON.stringify(adminHistoryPlan.reasonCodes));
+  assert.deepEqual(Object.keys(adminHistoryPlan.areas),['core','pages','adminHistory']);
+  assert.deepEqual(adminHistoryPlan.commands,[...CURRENT_CONTRACT_COMMANDS.core,
+    ...CURRENT_CONTRACT_COMMANDS.pages,...CURRENT_CONTRACT_COMMANDS.adminHistory]);
+  assert.equal(adminHistoryPlan.controlQualificationRequired,true);
+  for(const family of ['postgres','C','I','T'])
+    assert.equal(adminHistoryPlan.inputDigests[family+'Before'],adminHistoryPlan.inputDigests[family+'After']);
+  cases++;scenarios.push('normal bot handoff selects the ordinary sender and existing admin-history target');
+  checkout(base);
+
   const owner='scripts/source-current-contract-receipt.mjs';
   const candidateTree=rewrite(baselineTree,[[owner,Buffer.concat([
     git(root,['cat-file','blob',base+':'+owner]),Buffer.from('\n// synthetic current-control child delta\n')])],

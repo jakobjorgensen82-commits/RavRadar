@@ -59,6 +59,9 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
   sourceControls:[
     'node --test scripts/test-source-current-contracts.mjs',
   ],
+  adminHistory:[
+    'node --test scripts/test-admin-document-history-workflow.mjs',
+  ],
   backupRestore:[
     LOCAL_RESTORE_SELF_TEST,
   ],
@@ -150,6 +153,11 @@ const PATH_AREAS=freeze({
     'scripts/lib/archived-production-gate-review.mjs',
     'scripts/lib/completed-private-runtime-workflow-review.mjs',
     'scripts/lib/native-original-continuity-workflow-review.mjs',
+  ],
+  adminHistory:[
+    '.github/workflows/run-current-weather-once.yml',
+    '.github/workflows/maintain-admin-document-history.yml',
+    'scripts/test-admin-document-history-workflow.mjs',
   ],
   backupRestore:[
     LOCAL_RESTORE_FIXTURE,

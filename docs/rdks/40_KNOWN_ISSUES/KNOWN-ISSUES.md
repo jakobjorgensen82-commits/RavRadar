@@ -1,3 +1,11 @@
+## 12. november — dokumentoprydning efter botstartet vejr
+
+Åbent: workflow_run alene har ikke startet adminoprydning efter de dokumenterede botstartede vejrhentninger. enabled-indstillingen og en vellykket ejerudløst passage beviser ikke den normale botvej. Den private kildekandidat bruger en enkelt eksplicit, præcist bundet sender/modtager uden nye tjenester eller tidsplaner.
+
+Afsenderen venter ikke på modtageren. Modtageren tager de eksisterende vejr- og turlagerlåse i samme rækkefølge og kræver den afsluttede, grønne kildekørsel og sin præcise binding før privat adgang. Arkiv, fuld genlæsning, aktuelle dokumenter, de fem nyeste versioner og højst 25 ældre rækker pr. passage bevares. Ved under 30 minutter til det oprindelige næste vejrslot springes passagen over; ukendt bestillingsudfald genforsøges ikke.
+
+Seneste gemte faktiske variabelaflæsning fra 10. november var enabled; denne forberedelse har ikke ændret den. Lokale normale kalderprøver består, men den samlede kildekvalifikation og en faktisk efterfølgende botudløst arkiv-/beskæringspassage er stadig åbne. Der påstås ingen fysisk databasepladsgevinst, automatisk backuprotation eller Free-klarhed. Vejrdata, score, SQL og modelbindinger ændres ikke.
+
 ## 12. november — aktuelle kontrol- og mailafgrænsninger
 
 Den første faktiske Linux-kvalifikation bestod den nye V4-kontrolvej og mailmålet, men påviste manglende forudsætninger i scalarprøvens miljø. Den normale vejrhentning installerer allerede det eksisterende requirements-copernicus.txt før offline planlægning; den målrettede kildeproducent forbereder nu samme krav, når netop dette mål vælges. Prøvens barn bevarer Linux-/macOS-interpreterens biblioteksstier og udelukker fortsat credentials. Produktlæser, fejlafvisning, model og providerbudgetter ændres ikke af forberedelsen. Ny præcis Linux-kvalifikation kræves fortsat.

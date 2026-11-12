@@ -1,3 +1,11 @@
+## 12. november — dokumentoprydning efter botstartet vejr
+
+Faktiske botstartede vejrhentninger har manglet det efterfølgende adminjob, selv om RAVRADAR_ADMIN_HISTORY_MAINTENANCE var enabled. Den eksisterende ejerudløste vej har derimod gennemført en passage med 25 fjernede, verificeret arkiverede historikrækker. Den afgrænsede kildekandidat tilføjer derfor én eksplicit bestilling efter verificeret almindeligt deploy og binder GitHubs returnerede modtager-id til et afsluttet trin i samme kørsel.
+
+Afsenderen venter ikke på modtageren. Modtageren tager de eksisterende vejr- og turlagerlåse i samme rækkefølge og kræver den afsluttede, grønne kildekørsel og sin præcise binding før privat adgang. Arkiv, fuld genlæsning, aktuelle dokumenter, de fem nyeste versioner og højst 25 ældre rækker pr. passage bevares. Ved under 30 minutter til det oprindelige næste vejrslot springes passagen over; ukendt bestillingsudfald genforsøges ikke.
+
+Seneste gemte faktiske variabelaflæsning fra 10. november var enabled; denne forberedelse har ikke ændret den. Lokale normale kalderprøver består, men den samlede kildekvalifikation og en faktisk efterfølgende botudløst arkiv-/beskæringspassage er stadig åbne. Der påstås ingen fysisk databasepladsgevinst, automatisk backuprotation eller Free-klarhed. Vejrdata, score, SQL og modelbindinger ændres ikke.
+
 ## 12. november — aktuel ændring, kvalificeret genbrug og afgrænset mailprøve
 
 Den første faktiske Linux-kvalifikation bestod den nye V4-kontrolvej og mailmålet, men påviste manglende forudsætninger i scalarprøvens miljø. Den normale vejrhentning installerer allerede det eksisterende requirements-copernicus.txt før offline planlægning; den målrettede kildeproducent forbereder nu samme krav, når netop dette mål vælges. Prøvens barn bevarer Linux-/macOS-interpreterens biblioteksstier og udelukker fortsat credentials. Produktlæser, fejlafvisning, model og providerbudgetter ændres ikke af forberedelsen. Ny præcis Linux-kvalifikation kræves fortsat.

@@ -1,3 +1,9 @@
+## 12. november — dokumentoprydning efter botstartet vejr
+
+Den eksisterende PR862-løsning er porteret privat til den aktuelle kontrolvej. Normal adminworkflowprøve: 32/32 bestået; alle fire berørte Pages-mål består. Begge faktiske kildeplaner bevarer PG/C/I/T-input. Controlleren er uændret. Den tilføjede normale Source-plancase er syntakskontrolleret, men hele protokolmålet er ikke gentaget lokalt.
+
+Seneste gemte faktiske variabelaflæsning fra 10. november var enabled; denne forberedelse har ikke ændret den. Lokale normale kalderprøver består, men den samlede kildekvalifikation og en faktisk efterfølgende botudløst arkiv-/beskæringspassage er stadig åbne. Der påstås ingen fysisk databasepladsgevinst, automatisk backuprotation eller Free-klarhed. Vejrdata, score, SQL og modelbindinger ændres ikke.
+
 ## 12. november — aktuel ændring, kvalificeret genbrug og afgrænset mailprøve
 
 Den første faktiske Linux-kvalifikation bestod den nye V4-kontrolvej og mailmålet, men påviste manglende forudsætninger i scalarprøvens miljø. Den normale vejrhentning installerer allerede det eksisterende requirements-copernicus.txt før offline planlægning; den målrettede kildeproducent forbereder nu samme krav, når netop dette mål vælges. Prøvens barn bevarer Linux-/macOS-interpreterens biblioteksstier og udelukker fortsat credentials. Produktlæser, fejlafvisning, model og providerbudgetter ændres ikke af forberedelsen. Ny præcis Linux-kvalifikation kræves fortsat.

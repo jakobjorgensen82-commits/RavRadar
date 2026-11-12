@@ -686,9 +686,13 @@ Den eksisterende afslutningsrapport DOCUMENT_HISTORY_COMPLETE kan i den lokale k
 
 Rapporten indeholder ingen dokumentindhold, rækkeidentiteter, filstier, fingeraftryk eller brugeroplysninger. Bytefelterne tæller controllerens udpakkede administrationssvar, deklarerede svarlængder og læste R2-bytes; de er ikke en præcis måling af faktureret netværksforbrug. Faktisk lager, faktureringsperiode og leverandørernes forbrugstal skal fortsat kontrolleres særskilt. Rapporten beviser ikke i sig selv fuld databasegendannelse eller egnethed til Free.
 
+### Botstartet vejr: afgrænset rettelse 12. november 2026
+
+Botstartede vejrhentninger har i de faktiske observationer ikke startet den gamle efterfølgende workflow_run-vedligeholdelse. Den nye kildekandidat bestiller derfor det eksisterende adminforløb én gang efter et verificeret almindeligt deploy. GitHubs modtager-id gemmes som et afsluttet trin i kildekørslen. Afsenderen venter kun på bestillingskvitteringen, ikke på at modtageren kører. Modtageren venter på de eksisterende vejr- og turlagerlåse og genlæser den afsluttede, vellykkede kildekørsel og sin præcise binding før privat adgang. Den bevarer arkivkontrollen, portionen på højst 25 og de fem nyeste versioner. Under 30 minutter til kildekørslens oprindelige næste vejrslot giver skip; ukendt bestillingsudfald giver stop uden ny bestilling.
+
 ### Status og hvad der stadig skal bevises
 
-Kandidaten er lokalt forberedt og målrettet afprøvet. Den er ikke i sig selv kildekvalificeret, installeret eller et bevis for faktisk arkivering og beskæring. Før livebrug kræves privat lageradgang, komplet tabsfrit arkiv og autentificeret genlæsning, den varige arkivhenvisning, friske current/top5/ACL/RLS-kontroller og eksisterende Pro-rollback. Fuld database-/Authbackup er en forudsætning for senere Pro-opsigelse, ikke en ekstra gate for denne særskilt afgrænsede dokumentoprydning. Gratis drift, faktisk pladsgevinst og selvstændig efterfølgende vedligeholdelse er fortsat åbne. Ingen abonnements- eller betalingsoplysning ændres af denne funktion.
+Første private arkivering, genlæsning og afgrænsede beskæring er faktisk gennemført. En ejerudløst vejrafslutning har også udløst en passage med 25 fjernede rækker. Seneste gemte faktiske aflæsning af RAVRADAR_ADMIN_HISTORY_MAINTENANCE fra 10. november var enabled; denne forberedelse har ikke ændret indstillingen. Den nye botbestilling er lokalt forberedt og målprøvet. Samlet kildekvalifikation og en faktisk efterfølgende botudløst passage mangler stadig. Fysisk pladsgevinst, fuld database-/Authgendannelse og egnethed til Free er fortsat særskilte åbne beviser. Ingen abonnements- eller betalingsoplysning ændres af funktionen.
 
 ## 89.294 Reelle datahuller før opgradering af dækkede timer
 
