@@ -835,8 +835,8 @@ assert.doesNotMatch(checkpointTimeoutMigration, /alter (?:role|database)/i);
 // A later binding migration must not silently undo DEC-0249's scoped 55s
 // setting. Checking the old corrective file alone missed the Top20 reset.
 const migrationsUrl = new URL('../supabase/migrations/', import.meta.url);
-let casTimeoutSettings = fs.readdirSync(migrationsUrl).filter(name => name.endsWith('.sql'))
-  .sort().flatMap(name => [...fs.readFileSync(new URL(name, migrationsUrl), 'utf8').matchAll(
+const migrationFilenames = fs.readdirSync(migrationsUrl).filter(name => name.endsWith('.sql')).sort();
+let casTimeoutSettings = migrationFilenames.flatMap(name => [...fs.readFileSync(new URL(name, migrationsUrl), 'utf8').matchAll(
     /alter function public\.ravradar_ravscore_checkpoint_cas\(bigint,timestamptz,jsonb\)\s+set statement_timeout = '([^']+)';/g,
   )].map(match => ({ migration: name, timeout: match[1] })));
 assert.equal(casTimeoutSettings.at(-1)?.timeout, '55s',
@@ -863,6 +863,37 @@ assert.equal(casTimeoutSettings.at(-1)?.timeout, '55s',
      assert.deepEqual([...historical, currentRow], inventory);
      return historical;
    };
+   // TEST INVENTORY ONLY: the normal required list appends this authenticated
+   // current migration to63 genuine598. Other exact SOURCE-role files are retained
+   // SQL archive, not additional installed successors; nonSource history stays whole.
+   const sourceMigrationRole = /^[0-9]{14}_source_producer_original_bound_successor\.sql$/;
+   assert.match(migration.filename, sourceMigrationRole);
+   const currentSourceTimeoutInventory = (inventory, filenames) => {
+     const archived = filenames.filter(name => sourceMigrationRole.test(name) && name !== migration.filename);
+     assert.equal(new Set(archived).size, archived.length);
+     for (const name of archived) {
+       assert.deepEqual(inventory.filter(row => row.migration === name), [{migration: name, timeout: '55s'}]);
+     }
+     const archivedNames = new Set(archived);
+     return inventory.filter(row => !archivedNames.has(row.migration));
+   };
+   const sourceArchiveTimeoutInventory = casTimeoutSettings;
+   const selectedSourceTimeoutInventory = currentSourceTimeoutInventory(sourceArchiveTimeoutInventory, migrationFilenames);
+   const laterArchiveRow = {migration: '20990101000000_source_producer_original_bound_successor.sql', timeout: '55s'};
+   const withLaterArchiveFilenames = [...migrationFilenames, laterArchiveRow.migration];
+   assert.deepEqual(currentSourceTimeoutInventory([...sourceArchiveTimeoutInventory, laterArchiveRow], withLaterArchiveFilenames),
+     selectedSourceTimeoutInventory);
+   assert.throws(() => currentSourceTimeoutInventory([...sourceArchiveTimeoutInventory, laterArchiveRow, laterArchiveRow],
+     withLaterArchiveFilenames));
+   assert.throws(() => currentSourceTimeoutInventory([...sourceArchiveTimeoutInventory, {...laterArchiveRow, timeout: '54s'}],
+     withLaterArchiveFilenames));
+   assert.throws(() => currentSourceTimeoutInventory(sourceArchiveTimeoutInventory, withLaterArchiveFilenames));
+   const unknownNonSourceRow = {migration: '20990101000001_unknown_successor.sql', timeout: '55s'};
+   const withUnknownNonSource = currentSourceTimeoutInventory([...sourceArchiveTimeoutInventory, unknownNonSourceRow],
+     [...migrationFilenames, unknownNonSourceRow.migration]);
+   assert.deepEqual(withUnknownNonSource, [...selectedSourceTimeoutInventory, unknownNonSourceRow]);
+   assert.throws(() => inverseSource(withUnknownNonSource, sql));
+   casTimeoutSettings = selectedSourceTimeoutInventory;
    assert.throws(() => inverseSource(casTimeoutSettings, Buffer.concat([sql, Buffer.from('\n')])));
    assert.throws(() => inverseSource(casTimeoutSettings.slice(0, -1), sql));
    assert.throws(() => inverseSource([...casTimeoutSettings, currentRow], sql));
