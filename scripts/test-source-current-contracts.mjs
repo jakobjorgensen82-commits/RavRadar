@@ -699,7 +699,7 @@ try{
   const priorCatalog=fs.readFileSync(path.join(root,catalogFile),'utf8');
   const laterCatalog=priorCatalog.replace('  historicalTests:[],',
     "  laterCatalogue:['node scripts/test-github-action-versions.mjs'],\n  historicalTests:[],")
-    .replace('  historicalTests:[',"  laterCatalogue:['app.js'],\n  historicalTests:[");
+    .replace('  historicalTests:[\n',"  laterCatalogue:['app.js'],\n  historicalTests:[");
   assert.notEqual(laterCatalog,priorCatalog);
   const catalogTree=rewrite(uiTree,[[catalogFile,Buffer.from(laterCatalog)]]);
   checkout(commit(catalogTree,[priorMain],'synthetic next catalogue registration'));
