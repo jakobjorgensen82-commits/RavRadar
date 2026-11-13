@@ -1,3 +1,7 @@
+## 13. november 2026 — privat 4.0.598-backupautonomi, fortsat deaktiveret
+
+Backupvedligeholdelsen er forberedt som ét efterfølgende job i den normale adminmodtager: current-restore med stærk indholds-/Auth-kvittering, auditbundet rotation og ny optagelse efter syv døgn. Begge konkrete peerfund er dækket: kvittering erstatter aldrig positiv tidligere publicering; urefererede managed SQL-/partobjekter holdes og standser ny capture. Normale målrettede syntetiske prøver består; det er ikke hosted arkivgendannelse, aktivering eller Free-klarhed. Numerisk 598, originaler, migrationer, vejr og eksisterende manuelle workflow bevares. Se håndbog 89.347 og DEC-0255; faktiske variabel-/ressourcekvitteringer føres privat.
+
 ## 13. november — faktisk Pages-kodeversion og afvist CREATE
 
 Den særlige almindelige Pages-transport sendte en afledt lokal bestillingshash som serverens byggeversion; den officielle action sender den faktiske Git-commit. Den afgrænsede kandidat følger den officielle kontrakt og bevarer den fulde lokale hensigt, den beskyttede reservation, det præcise artifact og den faktisk modtagne CREATE-identitet. Et delt commit-opslag kan vise en ældre pakke: uden observeret ny PENDING eller en særskilt kvitteret serveridentitet giver den gamle terminalstatus ingen luknings- eller retryautoritet. En allerede synlig præcis ny prognose kan kun gå videre til den fulde offentlige verifier.

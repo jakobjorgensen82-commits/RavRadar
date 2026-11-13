@@ -17,13 +17,58 @@ const permanent=['ravradar-assistant','submit-observation','trip-log'].map((slug
 const extra={slug,id:'40000000-0000-4000-8000-000000000001',version:1,status:'ACTIVE',verify_jwt:false};
 const profile={id:ownerId,role:'owner',is_active:true};
 const user={id:ownerId,email:'owner@example.invalid',email_confirmed_at:'2026-01-01T00:00:00Z'};
-test('one current owner catalog closes new workflows; the legacy inventory stays historical',()=>{
+test('one current owner catalog closes new and changed workflows; the legacy inventory stays historical',async()=>{
   const legacy=['update-and-deploy.yml'],actual=[...legacy,'test-owner-notice-mail.yml'];
   const target=currentWorkflowTargets('.github/workflows/test-owner-notice-mail.yml');
   assert.deepEqual(target.owners,[{area:'mailOwnerProbe',commands:['node --test scripts/test-owner-notice-probe-ci.mjs']}]);
   const plan=planCurrentWorkflowInventory(actual,legacy);
   assert.deepEqual(plan.legacyNames,legacy);assert.deepEqual(plan.owners,target.owners);
   assert.equal(plan.scope,'HISTORICAL_INVENTORY_PLANNING_ONLY');
+  // Execute the actual older caller with an unrelated current workflow comment.
+  // Its immutable input must remain its own historical source, while the
+  // changed current workflow still has a real owner below.
+  const callerOracle=fs.readFileSync(path.join(root,'scripts/test-workflow-validation-order-4.0.108.mjs'),'utf8');
+  const callerBegin=callerOracle.indexOf('const expectedWorkflowFiles = ');
+  const callerEnd=callerOracle.indexOf('for (const names of [',callerBegin);
+  assert(callerBegin>=0&&callerEnd>callerBegin);
+  const callerModule=await import('./lib/pages-closure-historical-test-input.mjs');
+  const originalNames=['backup-supabase-database.yml','maintain-admin-document-history.yml','verify-supabase-cli-local-restore.yml'];
+  const callerPhysical=originalNames.map(name=>[name,fs.readFileSync(path.join(root,'.github/workflows',name))]);
+  const callerSources=Object.fromEntries(callerPhysical);
+  callerSources['backup-supabase-database.yml']=Buffer.concat([callerSources['backup-supabase-database.yml'],Buffer.from('\n# Synthetic unrelated current workflow comment\n')]);
+  const callerCode=callerOracle.slice(callerBegin,callerEnd);
+  const callerWithInventory=callerCode.replace('// Test-only:',
+    `const currentPhysicalWorkflowFiles=[...expectedWorkflowFiles,'private-trip-weather-study.yml',
+      'deploy-forecast-share.yml',...originalNames].sort();\n// Test-only:`);
+  const callerResult=vm.runInNewContext(callerWithInventory+'\nphysicalWorkflowFiles',
+    {assert,crypto:await import('node:crypto'),Buffer,originalNames,
+      readHistoricalMaintenanceWorkflowSources:callerModule.readHistoricalMaintenanceWorkflowSources,
+      workflowDirectory:'.github/workflows',fs:{readFileSync:file=>callerSources[path.basename(file)]}},
+    {timeout:1000});
+  assert(callerResult.length>0);
+
+  const existing=[...legacy,'backup-supabase-database.yml'];
+  const changed=planCurrentWorkflowInventory(existing,existing,['backup-supabase-database.yml']);
+  const backupTarget=currentWorkflowTargets('.github/workflows/backup-supabase-database.yml');
+  assert.deepEqual(changed.owners,backupTarget.owners);
+  assert(changed.owners.some(owner=>owner.commands.includes('node --test scripts/test-supabase-database-backup-workflow.mjs')));
+  for(const bad of [['unknown.yml'],['backup-supabase-database.yml','backup-supabase-database.yml'],['test-owner-notice-mail.yml']])
+    assert.throws(()=>planCurrentWorkflowInventory(existing,existing,bad));
+  const {readHistoricalMaintenanceWorkflowSources}=await import('./lib/pages-closure-historical-test-input.mjs');
+  const historical=readHistoricalMaintenanceWorkflowSources();
+  assert.deepEqual(Object.keys(historical).sort(),['backup-supabase-database.yml','maintain-admin-document-history.yml','verify-supabase-cli-local-restore.yml']);
+  assert(Object.values(historical).every(Buffer.isBuffer));
+  assert.throws(()=>readHistoricalMaintenanceWorkflowSources('caller origin'),/No caller-selected/);
+  // Run the existing exact historical oracle on its real committed inputs.
+  const oracle=fs.readFileSync(path.join(root,'scripts/test-workflow-validation-order-4.0.108.mjs'),'utf8');
+  const begin=oracle.indexOf('const expectedWorkflowFiles = '),end=oracle.indexOf('const reviewedMaintenanceSources = ');
+  assert(begin>=0&&end>begin);
+  const historicalResult=vm.runInNewContext(oracle.slice(begin,end)+
+    `inverseReviewedMaintenanceWorkflowInventory([...expectedWorkflowFiles,'private-trip-weather-study.yml',
+      'deploy-forecast-share.yml',...Object.keys(reviewedMaintenanceWorkflows)].sort(),historicalSources)`,
+    {assert,crypto:await import('node:crypto'),Buffer,historicalSources:historical});
+  assert(historicalResult.length>0);
+
   for(const [names,before]of [
     [actual.slice(1),legacy],[actual.concat(actual[0]),legacy],[actual,legacy.concat(legacy[0])],
     [actual.concat('unknown-writer.yml'),legacy],[actual.concat('../outside.yml'),legacy],

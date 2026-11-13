@@ -1,3 +1,27 @@
+## 89.347 — Databasebackup med sikker, løbende oprydning
+
+**Klargjort, ikke aktiveret.** Forberedt automatik gendanner først, beskytter en verificeret reserve og rydder kun dokumenterede gamle backups op.
+
+Ny optagelse, isoleret gendannelse og rotation er tre forskellige handlinger. Den forberedte automatik udfører højst én af dem i et almindeligt vedligeholdelsesvindue. Den starter ikke en ekstra vejrhentning og ændrer hverken RavScore eller de indsamlede vejrdata.
+
+Efter en faktisk godkendt almindelig vejrudgivelse bruges den eksisterende bestilling til adminvedligeholdelsen. Backupjobbet følger efter dette job i samme workflow og tager de normale låse i den samme rækkefølge. Det skal fortsat være den præcise botbestilte modtager på den verificerede main-kode. Der oprettes ingen ny tidsplan, tjeneste, bucket eller nøgle.
+
+Før privat adgang og igen efter klargøring kontrolleres det oprindelige næste vejrslot. Der skal være mindst 35 minutter tilbage. Et køet job må ikke skubbe sit udgangspunkt til et senere slot for at få lov at køre. Et for lille vindue giver et almindeligt skip; vejrets faste tidsplan bevares.
+
+Hvis den aktuelle databasebackup endnu ikke har en stærk gendannelseskvittering, skal den først gendannes i det eksisterende isolerede miljø. De fem originale SQL-filer, adgangsregler, faktisk indhold inklusive dubletter og den isolerede Auth-tjeneste kontrolleres. Kun afsluttet indholdsparitet, fungerende Auth og bekræftet oprydning af de ejede containere må gemme den lille, krypterede kvittering ved det samme arkiv. Roller gættes ikke, SQL springes ikke over, og en diagnose er ikke en bestået gendannelse.
+
+Når den aktuelle backup er godkendt, kan en overflødig ældre backup fjernes. Både den aktuelle backup og en særskilt verificeret reserve skal først kunne læses tilbage. En slettekandidat skal desuden have en autentificeret, præcis historisk locator, som beviser, at den faktisk tidligere var aktiv. En gendannelseskvittering alene giver aldrig sletteret. Alle locatorhistorikkens auditrækker bevares.
+
+Der slettes højst én komplet, ældre gruppe pr. passage. Objekter, som deles med en anden gruppe, beskyttes. Indekset slettes sidst. Efter et ukendt DELETE-udfald foretages ingen blind gentagelse; en senere normal passage læser det fulde inventar igen og springer kun et objekt over, når det er bekræftet fraværende. Den samme dokumenterede gruppe kan dermed afsluttes, selv om dens kvittering allerede er fjernet.
+
+Løse SQL-objekter, løse krypterede dele og grupper uden positiv tidligere publicering holdes tilbage. De slettes ikke ud fra alder eller en antagelse om en mislykket kørsel. De eksisterende fulde lageroplysninger skal opdage dem og standse ny optagelse, indtil udfaldet er afklaret. Et uafklaret lager må ikke vokse videre i stilhed.
+
+Først når gendannelse og nødvendig oprydning er afklaret, kan en ny databasebackup optages, hvis den aktuelle er mindst syv døgn gammel. Den normale cyklus sigter mod to verificerede generationer og højst én ny generation under kontrol. Det er ikke tilladelse til at slette ekstra ukendte eller historiske originaler. Plads til hele den nye transport reserveres før upload; de eksisterende lofter på 300 MB pr. transport og 2 GB i backup-bucketen består.
+
+Kvitteringen gælder databaseindholdet i arkivets fem filer. Den beviser ikke ét atomisk øjebliksbillede af hele den aktive database, gendannelse af Storage-objekters filbytes, produktionsgendannelse, fuldstændig brugersletning eller samlet Free-klarhed. Privat vejr-cache, brugernes normale lagre og deres originaler ændres ikke af denne oprydning.
+
+Dette er en privat forberedt ændring, og automatisk backup er ikke aktiveret. Før aktivering kræves præcis kildekvalifikation, faktisk fuld gendannelse af det autentiske arkiv inklusive Auth, afklaring af gamle ukendte rester og målt plads og forbrug med reserve. Supabase-, Cloudflare- og GitHub-grænser vurderes hver for sig; bucketens eget loft er ingen kontodækkende betalingsspærre. Aktivering og eventuel abonnementsændring sker først gennem den aftalte normale vej.
+
 ## 89.345 — En databasebackup skal kunne læses tilbage korrekt
 
 Den isolerede databasegendannelse får en reel indholdskontrol mod det autentificerede arkiv. PostgreSQL læser de originale COPY-records i midlertidige tabeller med målets faktiske kolonnetyper og sammenligner begge veje med EXCEPT ALL og bytefast tekstsortering. Det kontrollerer også dubletter; samme rækketal er ikke tilstrækkeligt. Sekvenser aflæses uden ny setval. Den eksisterende Auth-tjeneste prøves gennem dens verificerede interne, ejede Docker-endepunkt med én disponibel testkonto, uden at logge ind som en rigtig bruger. Kun fuldt afsluttet indholdsparitet, Auth-funktion og ejet oprydning kan give de stærke databaseflag. Det er paritet med arkivets fem filer, ikke et atomisk live-snapshot, gendannelse af Storage-objekter, produktionsinstallation eller bevis for Free-klarhed.
