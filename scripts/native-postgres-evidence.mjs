@@ -2250,7 +2250,9 @@ export async function executeSourceAfter598PrNative(){
   if(['SOURCE_FIRST_ISSUANCE','SOURCE_CURRENT_UNCHANGED'].includes(proof.qualification)){
     const source=await import('./source-first-issuance-contracts.mjs');
     const identity=await source.readActualSourceFirstIdentity();
-    source.assertSourceFirstProofData(proof,proof.currentSourceContracts.current,identity);
+    source.assertSourceFirstProofData(proof,proof.currentSourceContracts.current,identity,
+      (args,options={})=>execFileSync('git',['-C',SOURCE_PR_ROOT,...args],
+        {timeout:30000,maxBuffer:64*1024*1024,stdio:['pipe','pipe','pipe'],...options}));
   }
   assert(!Object.hasOwn(proof,'nativePostgres')&&!Object.hasOwn(proof,'historical584National'));
   const phase=await sourcePrMetadata('NATIVE_RUNNING',current,proof.sourceTreeSha256);

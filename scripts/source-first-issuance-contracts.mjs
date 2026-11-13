@@ -1,4 +1,5 @@
 import {SOURCE_PR_NATIVE_CONTRACT} from './lib/weather-source-gate.mjs';
+import {currentContractTargets} from './source-current-contract-plan.mjs';
 import {sourceProducerAfter597ManifestFromText,sourceProducerAfter597CodePinsFromText,
   SOURCE_PRODUCER_AFTER597_CODE_PIN_PATH} from './lib/source-producer-after597-runtime-family.mjs';
 // Første SOURCE efter genuine598: aktuelle kontrakter og den eksisterende
@@ -71,10 +72,17 @@ export function assertSourceFirstPathScope(paths,identity){
   for(const file of paths){
     assert(typeof file==='string'&&/^[A-Za-z0-9_.\/-]+$/.test(file)
       &&!file.startsWith('/')&&!file.split('/').some(part=>part==='.'||part==='..'));
-    if(allowed.has(file)||/^docs\/(?:rdks|ai|handbook)\/.+\.md$/.test(file))continue;
+    if(allowed.has(file)||sourceAssistantPublicContractTargets(file)||/^docs\/(?:rdks|ai|handbook)\/.+\.md$/.test(file))continue;
     assert.equal(file,'supabase/migrations/'+identity.binding.version+'_source_producer_original_bound_successor.sql',
       'SOURCE_FIRST_UNCLASSIFIED_PATH:'+file);
   }
+}
+// The ordinary catalog owns these public client/contract/fact consumers.
+// This lookup is neither a backend privilege nor a PostgreSQL reuse grant.
+export function sourceAssistantPublicContractTargets(file){
+  const target=currentContractTargets(file);
+  if(target?.owners.length!==1||target.owners[0].area!=='assistantPublicContract')return null;
+  return target.owners[0].commands;
 }
 export function assertSourceFirstDiffRecords(buffer){
   assert(Buffer.isBuffer(buffer));const fields=buffer.toString('utf8').split('\0');assert.equal(fields.pop(),'');
@@ -161,7 +169,8 @@ export function assertSourceValidationBaseFromGit(readGit,base,head,identity){
   identical(FAMILY);
   const changed=assertSourceFirstDiffRecords(readGit(['diff-tree','-r','--no-renames','--no-ext-diff','--no-textconv','--no-abbrev','--raw','-z',base,head]));
   for(const file of changed){
-    assert(!file.startsWith('supabase/functions/')&&file!=='supabase/config.toml','SOURCE_AUTH_SERVICE_CHANGED:'+file);}
+    assert((!file.startsWith('supabase/functions/')&&file!=='supabase/config.toml')
+      ||sourceAssistantPublicContractTargets(file),'SOURCE_AUTH_SERVICE_CHANGED:'+file);}
   const app=JSON.parse(read(head,'package.json')).version;
   assertSourceApplicationRelease(app,identity.release,JSON.parse(read(base,'package.json')).version);
   // CURRENT means the same issued model/schema, not a PostgreSQL reuse grant.
@@ -229,7 +238,14 @@ function assertCurrentIdentity(value){
   assert.match(value.sourceTreeSha256,/^sha256:[a-f0-9]{64}$/);
   for(const key of ['pullRequest','runId','runAttempt'])assert(positive(value[key]));assert.equal(value.runAttempt,1);
 }
-export function assertSourceFirstCurrentResults(results,current,identity){
+export function sourceFirstCommandsFromGit(readGit,base,head){
+  assert.equal(typeof readGit,'function');assert(oid(base)&&oid(head));
+  const paths=assertSourceFirstDiffRecords(readGit(['diff-tree','-r','--no-renames','--no-ext-diff',
+    '--no-textconv','--no-abbrev','--raw','-z',base,head]));
+  return Object.freeze([...new Set([...SOURCE_FIRST_COMMANDS,
+    ...paths.flatMap(file=>sourceAssistantPublicContractTargets(file)??[])])]);
+}
+function assertCurrentResultsForCommands(results,current,identity,commands){
   assertSourceFirstIdentityData(identity);assertCurrentIdentity(current);
   exact(results,['scope','current','identity','reportedCommandResults','nativeExecutionRequired',
     'nativeExecutionClaimed','historicalCompatibilityExecuted','fullSourceValidationClaimed','productionAuthority']);
@@ -237,14 +253,17 @@ export function assertSourceFirstCurrentResults(results,current,identity){
   assert.deepEqual(results.identity,identity);assert.equal(results.nativeExecutionRequired,true);
   for(const key of ['nativeExecutionClaimed','historicalCompatibilityExecuted','fullSourceValidationClaimed','productionAuthority'])
     assert.equal(results[key],false);
-  assert.equal(results.reportedCommandResults.length,SOURCE_FIRST_COMMANDS.length);
-  for(let i=0;i<SOURCE_FIRST_COMMANDS.length;i++){
+  assert.equal(results.reportedCommandResults.length,commands.length);
+  for(let i=0;i<commands.length;i++){
     const row=results.reportedCommandResults[i];exact(row,['phase','command','elapsedMs','outcome']);
-    assert.equal(row.phase,'source-current-contract');assert.equal(row.command,SOURCE_FIRST_COMMANDS[i]);
+    assert.equal(row.phase,'source-current-contract');assert.equal(row.command,commands[i]);
     assert.equal(row.outcome,'PASS');assert(Number.isSafeInteger(row.elapsedMs)&&row.elapsedMs>=0);
   }
 }
-export function assertSourceFirstProofData(proof,current,identity){
+export function assertSourceFirstCurrentResults(results,current,identity){
+  return assertCurrentResultsForCommands(results,current,identity,SOURCE_FIRST_COMMANDS);
+}
+export function assertSourceFirstProofData(proof,current,identity,readGit){
   assertCurrentIdentity(current);assertSourceFirstIdentityData(identity);
   exact(proof,['schemaVersion','contractId','kind','qualification','repository','pullRequestNumber','headSha',
     'sourceTreeSha256','privatePayloadIncluded','sourceBase','currentSourceContracts',
@@ -255,7 +274,8 @@ export function assertSourceFirstProofData(proof,current,identity){
   assert.equal(proof.pullRequestNumber,current.pullRequest);assert.equal(proof.sourceTreeSha256,current.sourceTreeSha256);
   assert.equal(proof.privatePayloadIncluded,false);
   assert(oid(proof.sourceBase));
-  assertSourceFirstCurrentResults(proof.currentSourceContracts,current,identity);
+  const commands=sourceFirstCommandsFromGit(readGit,proof.sourceBase,current.head);
+  assertCurrentResultsForCommands(proof.currentSourceContracts,current,identity,commands);
 }
 // Det komplette normale jobforløb: ingen fraværende/ukendte trin tæller som PASS.
 export const SOURCE_FIRST_JOB_STEPS=Object.freeze([
@@ -351,7 +371,7 @@ export async function verifySourceFirstCompletedReceipt(receipt,{record,run,pull
   const identity=await readActualSourceFirstIdentity(); // faktisk binding før proof-operander/I/O
   const current={repository:record.repository,head:record.producerHeadSha,sourceTreeSha256:record.sourceTreeSha256,
     pullRequest:record.pullRequestNumber,runId:Number(record.runId),runAttempt:1};
-  assertSourceFirstProofData(receipt,current,identity);
+  assertSourceFirstProofData(receipt,current,identity,readGit);
   assert.equal(pull.head?.ref,run.head_branch);
   const parents=readGit(['rev-list','--parents','-n','1',record.headSha]).toString('utf8').trim().split(' ');
   assert.equal(parents.length,3);assert.equal(parents[2],record.producerHeadSha);
@@ -426,7 +446,8 @@ async function executeCurrentContracts(){
   assert.equal(proof.headSha,id.head);assert.equal(proof.sourceTreeSha256,id.sourceTreeSha256);
   assert(!Object.hasOwn(proof,'currentSourceContracts')&&!Object.hasOwn(proof,'nativePostgres'));
   const rows=[];
-  for(const command of SOURCE_FIRST_COMMANDS){
+  const commands=sourceFirstCommandsFromGit(git,proof.sourceBase,id.head);
+  for(const command of commands){
     clean(id.head);let program=process.execPath;
     const backup=command==='node scripts/test-supabase-cli-local-restore.mjs --self-test';
     if(backup){
@@ -447,7 +468,7 @@ async function executeCurrentContracts(){
   proof.currentSourceContracts={scope:'SOURCE_CURRENT_CONTRACT_RESULTS',current:id,identity,reportedCommandResults:rows,
     nativeExecutionRequired:true,nativeExecutionClaimed:false,historicalCompatibilityExecuted:false,
     fullSourceValidationClaimed:false,productionAuthority:false};
-  assertSourceFirstProofData(proof,id,identity);
+  assertSourceFirstProofData(proof,id,identity,git);
   fs.writeFileSync(path.join(ROOT,PROOF),JSON.stringify(proof)+'\n');
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
