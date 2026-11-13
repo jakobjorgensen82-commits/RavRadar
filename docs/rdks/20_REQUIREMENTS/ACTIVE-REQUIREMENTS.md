@@ -4,6 +4,10 @@ OPTIONS uden body beholder sin direkte passage. En fysisk tilstedeværende body 
 
 De eksisterende stier, query-/origin-/metodeafslag og efterfølgende reservationsvindue bevares. OPTIONS må aldrig nå JWT-/profil-/mailkald. POST beholder alle ejer-, modtager-, reservations-, signatur- og once-krav. Kildeprøve er ikke bevis for faktisk hosted CORS eller mailmodtagelse. Se håndbog 89.343.
 
+Samme bounded-empty-kontrol skal anvendes ved den offentlige POST-grænse. Kun bevist tomt EOF må normaliseres til en bodyless Request med identisk URL, method, headers og medfølgende signal, før den eksisterende hostedadapter kaldes. Null-fastvejen samt eksisterende JSON404/CORS ved ikke-tomt eller ukendt input bevares. Ejer, modtager, profil, tidsvindue, signatur og once-/idempotenskrav ændres ikke.
+
+Den normale lokale prøve dækker nu både null body og en fysisk tom streng med friske handler-/forsøgstilstande. Begge går gennem Auth, aktiv ejerprofil, signatur og den faste Resend-afsender til én simuleret accept; et ekstra klik sender ikke igen. Negative streams afprøves for både OPTIONS og POST. Der sendes ingen rigtig mail i kildeprøven.
+
 ## 13. november — fast, privat diagnose ved afvist rollearkiv
 
 Hvis den eksisterende rolleaudit afviser et autentificeret SQL-statement, skal den private fejlrapport kun angive en fast statementtype, en fast afvisningsgren og et 1-baseret ordinal. Ukendte typer skal blive den faste kategori OTHER; SQL-tekst, rollenavne og værdier må ikke indgå. Tokenisering, accepteret grammatik, originale SQL-/ACL-regler og alle mål-, krypterings- og oprydningskrav bevares.

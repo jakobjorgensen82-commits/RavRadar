@@ -2,7 +2,9 @@
 
 Den konkrete tidlige gatewayfejl er afgrænset til body-pointer-kontrollen: den normale OPTIONS-forprøve kan få en fysisk tom stream. Et krav om body === null afviste den før tidsvindue og mail. Kildekandidaten bevarer null-fastvejen og kræver i stedet kontrolleret tomhed for en tilstedeværende stream. Det tidligere generelle udsagn om ukendt gatewayårsag er erstattet på netop dette punkt.
 
-Ikke-tomt, stillestående, fejlende eller uafklaret input afvises med den faste private kategori BODY_NOT_PROVED_EMPTY. Alle øvrige adgangs- og mailgrænser bevares. Hosted forprøvens faktiske passage, afsendelse og modtagelse står åbne, indtil de er prøvet efter levering. Der startes ikke et nyt mailvindue eller en mail af kodeændringen. Se håndbog 89.343.
+Ikke-tomt, stillestående, fejlende eller uafklaret input afvises med den faste private kategori BODY_NOT_PROVED_EMPTY. Alle øvrige adgangs- og mailgrænser bevares. Hosted er OPTIONS observeret med HTTP204 og et efterfølgende POST med HTTP404 og registreret eksekvering. POST-bodyens pointer er ikke observeret. Den lokale body-pointer-fejl er reproduceret, men er derfor fortsat en hypotese om netop det hostede afslag. Faktisk afsenderaccept, levering og modtagelse kræver fortsat særskilt bevis.
+
+Det efterfølgende POST-kald kan også have en fysisk, men tom body-stream. Den offentlige indgang genbruger derfor samme begrænsede tomhedskontrol. Kun bevist tomt EOF omsættes til en bodyless Request med samme adresse, metode, headers og abortsignal, før den uændrede ejer- og mailkæde kaldes. En Request uden body beholder sin direkte vej. Ikke-tomt eller ukendt indhold afvises fortsat med samme JSON404 og CORS; der logges ingen bodytekst. Der startes ikke et nyt mailvindue eller en mail af kodeændringen. Se håndbog 89.343.
 
 ## 13. november — fast, privat diagnose ved afvist rollearkiv
 

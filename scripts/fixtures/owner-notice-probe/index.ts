@@ -50,7 +50,7 @@ async function optionsBodyIsEmpty(request: Request) {
     clearTimeout(timer);
     if (reader) {
       // No timed-out read is abandoned. Cancel once, observe settlement, and
-      // release our lock; unknown cancellation can never authorize OPTIONS.
+      // release our lock; unknown cancellation can never authorize a request.
       let settleTimer: ReturnType<typeof setTimeout> | undefined;
       try {
         const closed = reader.closed.then(() => true, () => false);
@@ -125,7 +125,14 @@ export function createOwnerNoticeEdgeHandler(binding: Reservation | null) {
       reportGatewayGuard(request, true, "OPTIONS_ACCEPTED", "IN");
       return new Response(null, { status: 204, headers: CORS });
     }
-    const response = await handleProbe(request);
+    // Hosted gateways can expose a physically empty POST as a body stream.
+    // Only a proved empty EOF may cross the unchanged bodyless inner boundary.
+    const probeRequest = request.method === "POST" && request.body !== null
+      && await optionsBodyIsEmpty(request)
+      ? new Request(request.url, {
+        method: request.method, headers: request.headers, signal: request.signal,
+      }) : request;
+    const response = await handleProbe(probeRequest);
     for (const [header, value] of Object.entries(CORS)) response.headers.set(header, value);
     return response;
   };

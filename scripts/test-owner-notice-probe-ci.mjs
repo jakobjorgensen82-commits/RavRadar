@@ -207,9 +207,9 @@ test('CLI/help and inventory fail closed',()=>{
   assert.throws(()=>ownerProbeInventory([...permanent,extra]),/OWNER_PROBE_INVENTORY/);
   assert.throws(()=>ownerProbeInventory([{...permanent[0],version:0},...permanent.slice(1)]),/OWNER_PROBE_INVENTORY/);
 });
-test('the actual normal owner button reaches the unchanged nine-file probe once',async()=>{
+for(const body of [null,''])test('the actual normal owner button reaches the unchanged nine-file probe once with '+(body===null?'null':'empty-string')+' body',async()=>{
   const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'rr-mail-owner-'));
-  const oldFetch=globalThis.fetch,oldDeno=globalThis.Deno;let sends=0,registered;
+  const oldFetch=globalThis.fetch,oldDeno=globalThis.Deno;let sends=0,auths=0,profiles=0,registered;const statuses=[];
   const providerId='5b4529f7-1f0d-4276-a253-dbe5c1baa4f0',session={user:{id:ownerId},access_token:'synthetic.owner.token'};
   try{
     materializeOwnerProbe({sourceRoot:root,target:tmp,reservation:null});
@@ -220,8 +220,8 @@ test('the actual normal owner button reaches the unchanged nine-file probe once'
     })[key]}};
     globalThis.fetch=async(input,options)=>{
       const url=String(input);
-      if(url===project+'/auth/v1/user')return Response.json({id:ownerId});
-      if(url.startsWith(project+'/rest/v1/profiles?'))return Response.json([profile]);
+      if(url===project+'/auth/v1/user'){auths++;assert.equal(new Headers(options.headers).get('authorization'),'Bearer '+session.access_token);return Response.json({id:ownerId});}
+      if(url.startsWith(project+'/rest/v1/profiles?')){profiles++;return Response.json([profile]);}
       assert.equal(url,'https://api.resend.com/emails');sends++;
       assert.deepEqual(JSON.parse(options.body).to,[user.email]);
       return Response.json({id:providerId.toUpperCase()});
@@ -234,19 +234,23 @@ test('the actual normal owner button reaches the unchanged nine-file probe once'
     const context={content,state:{tab:'system',access:{profile:{role:'owner'}}},SITE_TEST_MODE:false,
       location:{origin:'https://ravradar.dk',pathname:'/admin.html'},PUBLIC_CONFIG:{supabaseUrl:project,supabasePublishableKey:'synthetic-public'},
       currentAdminRead:()=>()=>true,onAuthChange:()=>()=>{},currentSession:()=>session,requireFreshSession:async()=>session,AbortSignal,
-      fetch:async(url,options)=>{const headers=new Headers(options.headers);headers.set('origin','https://ravradar.dk');return handler(new Request(url,{...options,headers}));}};
+      fetch:async(url,options)=>{const headers=new Headers(options.headers);headers.set('origin','https://ravradar.dk');
+        const request=new Request(url,{...options,headers,body});
+        assert.equal(request.body===null,body===null,'Both bodyless and physical empty POST shapes use the normal chain');
+        const response=await handler(request);statuses.push(response.status);return response;}};
     const source=fs.readFileSync(path.join(root,'js/ui/admin-dashboard.js'),'utf8');
     const start=source.indexOf('let ownerNoticeProbeAttempted=false;'),end=source.indexOf('\nfunction defaultVisitorPeriod(',start);
     assert(start>=0&&end>start);
     vm.runInNewContext(source.slice(start,end)+'\nmountOwnerNoticeProbe();',context);
     await button.onclick();await button.onclick();
-    assert.equal(sends,1);assert(status.textContent.includes(providerId));assert(!status.textContent.includes(user.email));
+    assert.deepEqual(statuses,[200]);assert.equal(auths,1);assert.equal(profiles,1);assert.equal(sends,1);
+    assert(status.textContent.includes(providerId));assert(!status.textContent.includes(user.email));
   }finally{
     globalThis.fetch=oldFetch;globalThis.Deno=oldDeno;
     const target=path.resolve(tmp);assert(target.startsWith(path.resolve(os.tmpdir())+path.sep));fs.rmSync(target,{recursive:true,force:true});
   }
 });
-test('actual owner OPTIONS guards report only fixed private categories and preserve their responses',async()=>{
+test('actual owner body guards preserve fixed OPTIONS diagnostics and POST refusal responses',async()=>{
   const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'rr-mail-guard-'));
   const oldDeno=globalThis.Deno,oldInfo=console.info,oldFetch=globalThis.fetch,oldNow=Date.now;
   const now=1_800_000_000_000,rows=[];let upstream=0;
@@ -291,20 +295,35 @@ test('actual owner OPTIONS guards report only fixed private categories and prese
       for(const privateValue of [project,ownerId,noticeId,user.email,c.query,c.origin,c.body].filter(Boolean))
         assert(!JSON.stringify(rows.at(-1)).includes(privateValue));
     }
-    for(const mode of ['nonempty','stalled','reader-failure','zero-chunks','cancel-unsettled']){
+    const nullPost=await createOwnerNoticeEdgeHandler(binding)(new Request(project+'/functions/v1/'+slug,{
+      method:'POST',headers:{origin:'https://ravradar.dk'}}));
+    assert.equal(nullPost.status,401,'A null POST body keeps the direct hosted authorization boundary');
+    assert.deepEqual(await nullPost.json(),{state:'unauthorized'});
+    for(const method of ['OPTIONS','POST'])for(const mode of ['nonempty','stalled','reader-failure','zero-chunks','cancel-unsettled','unknown-chunk']){
       let cancels=0;
       const stream=new ReadableStream({
         start(controller){
           if(mode==='nonempty')controller.enqueue(new Uint8Array([1]));
           if(mode==='reader-failure')controller.error(Error('private-reader-failure'));
+          if(mode==='unknown-chunk')controller.enqueue('private-unknown-chunk');
         },
         pull(controller){if(mode==='zero-chunks')controller.enqueue(new Uint8Array());},
         cancel(){cancels++;if(mode==='cancel-unsettled')return new Promise(()=>{});},
       });
-      const request=new Request(project+'/functions/v1/'+slug,{method:'OPTIONS',duplex:'half',body:stream,
-        headers:{origin:'https://ravradar.dk','access-control-request-method':'POST'}});
+      const request=new Request(project+'/functions/v1/'+slug,{method,duplex:'half',body:stream,
+        headers:{origin:'https://ravradar.dk','access-control-request-method':'POST',authorization:'Bearer synthetic.owner.token'}});
+      const before=rows.length;
       const response=await createOwnerNoticeEdgeHandler(binding)(request);
-      assert.equal(response.status,404,mode);assert.equal(rows.at(-1)[1].category,'BODY_NOT_PROVED_EMPTY');
+      assert.equal(response.status,404,method+':'+mode);
+      if(method==='OPTIONS'){
+        assert.equal(rows.length,before+1);assert.equal(rows.at(-1)[1].category,'BODY_NOT_PROVED_EMPTY');
+        assert.equal(await response.text(),'');assert.equal(response.headers.get('access-control-allow-origin'),null);
+      }else{
+        assert.equal(rows.length,before,'POST gains no request-value diagnostics');
+        assert.deepEqual(await response.json(),{state:'not_found'});
+        assert.equal(response.headers.get('access-control-allow-origin'),'https://ravradar.dk');
+      }
+      assert.equal(response.headers.get('cache-control'),'no-store');
       assert.equal(request.body.locked,false,mode);assert.equal(cancels,mode==='reader-failure'?0:1,mode);
       assert(!JSON.stringify(rows.at(-1)).includes('private-reader-failure'));
     }

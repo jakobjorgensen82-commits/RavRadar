@@ -4,6 +4,10 @@ En forbindelsesforprøve til mailknappen kan have en body-stream, selv om den ik
 
 Forprøven sender stadig ingen mail og bruger ikke Auth eller profilopslag. Sti, origin, ønsket metode og det efterfølgende tidsvindue skal fortsat passe. Det egentlige POST-kald beholder ejer, modtager, signatur, reservation og beskyttelse mod gentagelser. Den normale lokale handlerprøve består; faktisk passage på Supabase og modtaget mail kræver stadig deres egne beviser.
 
+Det efterfølgende POST-kald kan også have en fysisk, men tom body-stream. Den offentlige indgang genbruger derfor samme begrænsede tomhedskontrol. Kun bevist tomt EOF omsættes til en bodyless Request med samme adresse, metode, headers og abortsignal, før den uændrede ejer- og mailkæde kaldes. En Request uden body beholder sin direkte vej. Ikke-tomt eller ukendt indhold afvises fortsat med samme JSON404 og CORS; der logges ingen bodytekst.
+
+Hosted er OPTIONS observeret med HTTP204 og et efterfølgende POST med HTTP404 og registreret eksekvering. POST-bodyens pointer er ikke observeret. Den lokale body-pointer-fejl er reproduceret, men er derfor fortsat en hypotese om netop det hostede afslag. Faktisk afsenderaccept, levering og modtagelse kræver fortsat særskilt bevis.
+
 ## Privat afvisningsdiagnose til kapitel 89.345 — 13. november 2026
 
 En databasebackups roller kontrolleres, før de store SQL-filer læses ind. Hvis den strenge kontrol afviser et statement, får den private rapport en fast type, et fast afvisningspunkt og statementets nummer. Ukendte typer vises kun som OTHER. SQL-tekst, rollenavne og værdier vises ikke. Kommentarer og psql-metalinjer tælles ikke som SQL-statements.
