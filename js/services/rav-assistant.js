@@ -17,7 +17,7 @@ import { formatDateTime, formatNumber, getLanguage, normaliseLanguage, t } from 
 const presentIntegratedRavScoreExplanation = presentActiveRavScoreExplanation;
 const ACTIVE_RAVSCORE_MODEL_BINDING = ravScoreModelBinding();
 const RAV_ASSISTANT_KNOWLEDGE_SCHEMA = 'rav-assistant-public-knowledge-v1';
-const RAV_ASSISTANT_KNOWLEDGE_SHA256 = 'b719ea805a455410e996eb41e829086ff811ad809b99aeca938d531f414b3533';
+const RAV_ASSISTANT_KNOWLEDGE_SHA256 = '887907d86f1cbe8a2fc7bd6f253a62929fae82ba190502f024616e06ee9a8c4e';
 const RAV_ASSISTANT_BINDING_HEADERS = Object.freeze({
   modelId:'x-ravradar-model-id',
   modelStateVersion:'x-ravradar-model-state-version',
@@ -484,10 +484,18 @@ function unknownAmberEquipmentQuestion(question, locale) {
   return false;
 }
 
+function scoreIntervalAreaQuestion(value) {
+  const text=String(value||"").trim();
+  return text.length<=600&&/(?:interval\p{L}*|intervall\p{L}*|spænd|spanne|range)/iu.test(text)
+    &&/(?:områd\p{L}*|gebiets\p{L}*|gebietswert\p{L}*|\barea\b)/iu.test(text)
+    &&/(?:bedste (?:sted|del|kyst\p{L}*)|kyststrækning\p{L}*|beste\p{L}* (?:ort|stelle|küsten\p{L}*)|küstenabschnitt\p{L}*|best (?:place|spot|coastal section)|coastal.section)/iu.test(text);
+}
+
 export function routeRavQuestion(question) {
   const text = String(question || '').trim();
   if (!text || SECURITY_PATTERN.test(text) || OUT_OF_SCOPE_PATTERN.test(text)) return 'fixed-refusal';
   if(PRIVATE_FIND_REQUEST_PATTERN.test(text))return 'remote-candidate';
+  if (scoreIntervalAreaQuestion(text)) return 'remote-candidate';
   if (mixedKnowledgeForecastQuestion(text,getLanguage())
     || knownAmberNetDefinitionUseQuestion(text,getLanguage())) return 'local-deterministic';
   if (unknownAmberEquipmentQuestion(text, getLanguage())) return 'remote-candidate';
@@ -506,6 +514,7 @@ export function routeRavQuestion(question) {
 
 export function ravQuestionNeedsConditionDetails(question, context = {}) {
   if(PRIVATE_FIND_REQUEST_PATTERN.test(String(question||'').trim()))return false;
+  if(scoreIntervalAreaQuestion(question))return !SECURITY_PATTERN.test(question)&&!OUT_OF_SCOPE_PATTERN.test(question)&&Boolean(context.zone);
   const mixed=mixedKnowledgeForecastQuestion(question,context.locale||getLanguage());
   if (mixed) return !(mixed.intent==='best-place' && context.conditions?.nationalForecast);
   if (classifyRavQuestion(question) === 'best-place' && context.conditions?.nationalForecast) return false;

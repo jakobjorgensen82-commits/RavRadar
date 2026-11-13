@@ -220,9 +220,9 @@ try {
     let controlledHttp=0;
     try {
       controlledQuotaResponse=null;responseMutation=null;
-      assert.equal(contract.RAV_ASSISTANT_KNOWLEDGE_SHA256,"b719ea805a455410e996eb41e829086ff811ad809b99aeca938d531f414b3533");
-      assert.equal(contract.RAV_ASSISTANT_FACTS.length,45);
-      const previous44=contract.RAV_ASSISTANT_FACTS.filter(row=>row.id!==id);
+      assert.equal(contract.RAV_ASSISTANT_KNOWLEDGE_SHA256,"887907d86f1cbe8a2fc7bd6f253a62929fae82ba190502f024616e06ee9a8c4e");
+      assert.equal(contract.RAV_ASSISTANT_FACTS.length,46);
+      const previous44=contract.RAV_ASSISTANT_FACTS.filter(row=>row.id!==id&&row.id!=='country-ranking-versus-zone');
       assert.equal(previous44.length,44);
       assert.equal(createHash('sha256').update(JSON.stringify(previous44)).digest('hex'),"d0875f85b80ddd7c2ad3f8d78acc7675dedda700b7cf112c81a3d4e0dc3bbeae");
       for(const locale of ['da','de','en']){
@@ -240,7 +240,7 @@ try {
           assert.equal(prompt.question,question);assert.equal(prompt.requestedLocale,locale);
           assert.deepEqual(prompt.publicFacts,contract.RAV_ASSISTANT_FACTS);
           assert.deepEqual(prompt.publicFacts.find(row=>row.id===id),{id,text:expected.en});
-          assert.deepEqual(prompt.publicFacts.filter(row=>row.id!==id),previous44);
+          assert.deepEqual(prompt.publicFacts.filter(row=>row.id!==id&&row.id!=='country-ranking-versus-zone'),previous44);
           assert.doesNotMatch(JSON.stringify(prompt),/TEST_PRIVATE_CONTEXT_MARKER/);
           assert.doesNotMatch(answer,/SYNTHETIC_PROVIDER_PROSE_NOT_PUBLISHED|TEST_PRIVATE_CONTEXT_MARKER/);
           assert.equal(JSON.stringify(context),contextBefore);assert.equal(blockedNetworkCalls,0);
@@ -280,7 +280,7 @@ try {
     const rows={"da":{"compound":["Hvad er en ravkese, og hvad kan du?","hvad er er en kese? hvad kan RavRadar hjælpe mig med?","Hvad kan du? Hvad er en kesse til ravjagt?"],"simple":["Hvad er en ravkese?","Hvad er en kese?"],"unknown":"Kan en ravmåler forudsige det præcise landingssted for næste ravstykke?"},"de":{"compound":["Was ist eine Bernsteinkescher und was kannst du?","Was ist ein Bernstein-Kescher? Wobei kannst du mir helfen?","Was kannst du für mich tun? Was ist der Kescher für die Bernsteinsuche?"],"simple":["Was ist eine Bernsteinkescher?","Was ist ein Bernstein-Kescher?"],"unknown":"Kann ein Bernsteinmessgerät den genauen Landeort des nächsten Bernsteinstücks vorhersagen?"},"en":{"compound":["What is an amber net and what can you do?","What is the amber hunting net? What can I ask you?","What can you help me with? What is an amber net?"],"simple":["What is the amber net?","What is an amber hunting net?"],"unknown":"Can an amber meter predict the exact landing place of the next piece of amber?"}};
     const canonical={"da":"En ravkese er et lille net til at tage let opskyl eller synlige stykker i helt lavt vand. Brug den kun, hvor du kan stå sikkert; den gør ikke dybt, koldt eller strømfyldt vand forsvarligt.\n\nJeg kan forklare rav, udstyr, felttegn og hvordan vejr og kyst påvirker en ravtur. Jeg kan også vise bedste steder og tidspunkter fra RavRadars gyldige prognose for den valgte søgemåde og forklare en score. Spørg gerne om en bestemt dag. Jeg kan ikke garantere ravfund eller vurdere, om det er sikkert at gå i vandet.","de":"Ein Bernsteinkescher ist ein kleines Netz für leichtes Treibgut oder sichtbare Stücke in sehr flachem Wasser. Benutze ihn nur bei sicherem Stand; er macht tiefes, kaltes oder stark strömendes Wasser nicht sicher.\n\nIch kann Bernstein, Ausrüstung, Feldzeichen und den Einfluss von Wetter und Küste auf die Suche erklären. Außerdem kann ich beste Orte und Zeiten aus RavRadars gültiger Prognose für die gewählte Suchart zeigen und einen Score erklären. Frage gern nach einem bestimmten Tag. Ich kann weder Funde garantieren noch beurteilen, ob das Betreten des Wassers sicher ist.","en":"An amber net is a small net for light wash or visible pieces in very shallow water. Use it only with secure footing; it does not make deep, cold or fast water safe.\n\nI can explain amber, equipment, field signs and how weather and the coast affect a search. I can also show the best places and times from RavRadar’s valid forecast for the selected search mode and explain a score. You can ask about a particular day. I cannot guarantee finds or assess whether entering the water is safe."},focus={"da":"Spørgsmålet rummer mere, end jeg kan besvare samlet og med alle forbehold her. Hvilken del vil du have uddybet først?","de":"Die Frage umfasst mehr, als ich hier zusammen mit allen Einschränkungen beantworten kann. Welchen Teil soll ich zuerst erläutern?","en":"The question covers more than I can answer together here with every qualification intact. Which part should I explain first?"};
     const ids=['equipment.amber-net','assistant.public-capabilities'];
-    const originalFacts=contract.RAV_ASSISTANT_FACTS.filter(row=>row.id!=='transport.current-supply-memory'&&!ids.includes(row.id));
+    const originalFacts=contract.RAV_ASSISTANT_FACTS.filter(row=>row.id!=='transport.current-supply-memory'&&row.id!=='country-ranking-versus-zone'&&!ids.includes(row.id));
     assert.equal(originalFacts.length,42);
     assert.equal(createHash('sha256').update(JSON.stringify(originalFacts)).digest('hex'),'714bba9ca2a735f28712ddb6c2f604dfbe74a60e4abb85728be94a2896453a57');
     assert.equal(createHash('sha256').update(JSON.stringify(contract.RAV_ASSISTANT_FACTS)).digest('hex'),contract.RAV_ASSISTANT_KNOWLEDGE_SHA256);
@@ -831,7 +831,7 @@ try {
     const publicKnowledge = JSON.parse(await readFile(new URL('../knowledge/rav-assistant-public-v1.json', import.meta.url), 'utf8'));
     const evalSuite = JSON.parse(await readFile(new URL('./fixtures/rav-assistant-evals-v1.json', import.meta.url), 'utf8'));
     assert.deepEqual(publicKnowledge.facts, contract.RAV_ASSISTANT_FACTS);
-    assert.equal(publicKnowledge.facts.filter(fact=>fact.id!=='transport.current-supply-memory').length, 44);
+    assert.equal(publicKnowledge.facts.filter(fact=>!['transport.current-supply-memory','country-ranking-versus-zone'].includes(fact.id)).length, 44);
     const original42Facts = publicKnowledge.facts.filter(fact =>
       !['equipment.amber-net','assistant.public-capabilities','transport.current-supply-memory'].includes(fact.id));
     assert.equal(original42Facts.length, 42);
@@ -841,7 +841,7 @@ try {
       'e90e1b6f0fda9c5e65ee44ed389817f3bdb6c79b3e01cf88a84ef380d0250656');
     assert.equal(createHash('sha256').update(JSON.stringify(original42Facts)).digest('hex'), fixture.newHash);
     assert.equal(createHash('sha256').update(JSON.stringify(publicKnowledge.facts)).digest('hex'), contract.RAV_ASSISTANT_KNOWLEDGE_SHA256);
-    assert.equal(createHash('sha256').update(JSON.stringify(contract.RAV_ASSISTANT_FACTS.filter(row=>!['equipment.amber-net','assistant.public-capabilities','transport.current-supply-memory'].includes(row.id)))).digest('hex'), fixture.newHash);
+    assert.equal(createHash('sha256').update(JSON.stringify(contract.RAV_ASSISTANT_FACTS.filter(row=>!['equipment.amber-net','assistant.public-capabilities','transport.current-supply-memory','country-ranking-versus-zone'].includes(row.id)))).digest('hex'), fixture.newHash);
     assert.deepEqual(publicKnowledge.ravScoreModelBinding, binding);
     assert.deepEqual(evalSuite.ravScoreModelBinding, binding);
     assert.deepEqual(publicKnowledge.facts.find(fact => fact.id === fixture.legacy.id), fixture.legacy);
@@ -2310,9 +2310,9 @@ try {
     const knowledge = await import('../knowledge/rav-assistant-local-v2.js');
     const { readFile } = await import('node:fs/promises');
     const publicKnowledge = JSON.parse(await readFile(new URL('../knowledge/rav-assistant-public-v1.json', import.meta.url), 'utf8'));
-    assert.equal(publicKnowledge.facts.filter(fact=>fact.id!=='transport.current-supply-memory').length, 44);
+    assert.equal(publicKnowledge.facts.filter(fact=>!['transport.current-supply-memory','country-ranking-versus-zone'].includes(fact.id)).length, 44);
     assert.deepEqual(publicKnowledge.facts, contract.RAV_ASSISTANT_FACTS);
-    assert.equal(createHash('sha256').update(JSON.stringify(contract.RAV_ASSISTANT_FACTS.filter(row=>!['equipment.amber-net','assistant.public-capabilities','transport.current-supply-memory'].includes(row.id)))).digest('hex'), '714bba9ca2a735f28712ddb6c2f604dfbe74a60e4abb85728be94a2896453a57');
+    assert.equal(createHash('sha256').update(JSON.stringify(contract.RAV_ASSISTANT_FACTS.filter(row=>!['equipment.amber-net','assistant.public-capabilities','transport.current-supply-memory','country-ranking-versus-zone'].includes(row.id)))).digest('hex'), '714bba9ca2a735f28712ddb6c2f604dfbe74a60e4abb85728be94a2896453a57');
     assert.equal(Object.keys(headerValues).length, 6);
     const laboratory = {
   "da": "Laboratorier kan kombinere FTIR, Raman, mikroskopi, massefylde og andre analyser for at skelne naturmateriale, behandling og imitation. Ingen enkelt måling besvarer altid både ægthed, behandling, oprindelse og alder. FTIR og Raman giver nyttig evidens om ravets kemi og ændringer. Sammenligning af overflade og indre kan vise forskelle, men naturlig variation og varmebehandling kan give overlappende signaler. Ét spektrum fastslår ikke i sig selv en præcis alder eller et entydigt forvitringsstadium. En faglig vurdering kombinerer sammenlignende spektre, andre analysemetoder og prøvens geologiske kontekst; spektroskopi er ikke generelt ude af stand til at påvise behandling.",
@@ -2920,7 +2920,7 @@ try {
         }catch(error){failures.push({id,name:error.name,message:error.message});}
       }
       assert.equal(blockedNetworkCalls,0);
-      assert.equal(contract.RAV_ASSISTANT_FACTS.length,45);
+      assert.equal(contract.RAV_ASSISTANT_FACTS.length,46);
       if(group==='unknown')for(const bad of [
         {locale:'fr',context:{modelBinding:binding},status:400,error:'LOCALE_NOT_SUPPORTED'},
         {locale:'da',context:{modelBinding:{...binding,modelBundleSha256:'0'.repeat(64)}},status:409,error:'MODEL_BINDING_MISMATCH'}]){
@@ -3005,7 +3005,110 @@ try {
     }
   };
 
-  if (process.argv.includes('--provider-diagnostic-only')) {
+  if (process.argv.includes('--interval-area-composition-only')) {
+    const service=await import('../js/services/rav-assistant.js');
+    const local=await import('../knowledge/rav-assistant-local-v2.js');
+    const area=local.matchLocalRavKnowledge('Hvorfor er områdescoren og kyststrækningens score forskellige?');
+    const ids=['score.history-incomplete','country-ranking-versus-zone','public-context.selected-zone-only'];
+    assert.equal(createHash('sha256').update(JSON.stringify(contract.RAV_ASSISTANT_FACTS.slice(0,45))).digest('hex'),'b719ea805a455410e996eb41e829086ff811ad809b99aeca938d531f414b3533');
+    const questions={
+      da:'Hvad betyder RavScores modelinterval 57–76, og hvorfor vises den nedre grænse? Hvad er forskellen mellem områdescoren i listen og bedste sted?',
+      de:'Was bedeutet das Modellintervall 57–76 des BernsteinScore, und warum wird die Untergrenze angezeigt? Warum unterscheidet sich der Gebietswert vom besten Küstenabschnitt?',
+      en:"What does AmberScore's model interval 57–76 mean, and why is the lower bound shown? Why does the area score differ from the best coastal section?",
+    };
+    const focus={da:'Spørgsmålet rummer mere, end jeg kan besvare samlet og med alle forbehold her. Hvilken del vil du have uddybet først?',
+      de:'Die Frage umfasst mehr, als ich hier zusammen mit allen Einschränkungen beantworten kann. Welchen Teil soll ich zuerst erläutern?',
+      en:'The question covers more than I can answer together here with every qualification intact. Which part should I explain first?'};
+    const input={modelBinding:{...binding},mode:'beach',zone:{id:'zone-1',name:'Test Coast',coastType:'strand'},
+      result:{available:true,score:57,level:'fair',scoreQuality:'HISTORY_INCOMPLETE',calibrationEligible:false,
+        scoreSemantics:'CONSERVATIVE_ENCLOSING_LOWER_BOUND',conservativeTailResetApplied:false,
+        scoreBounds:{lower:57,upper:76,modelUncertaintyPoints:19,rawLower:56.5,rawUpper:76.2},
+        historyCoverageHours:11,historyReasonCodes:['CURRENT_HISTORY_INCOMPLETE']},
+      weather:{time:'2026-08-27T12:00:00Z',windSpeedMps:7.2,windDirectionDeg:270,waveHeightM:1.3,
+        wavePeriodS:6,waterLevelCm:-4,currentSpeedMps:0.2,currentDirectionDeg:90,waterTemperatureC:14.5}};
+    const original=JSON.stringify(input),cases=[];
+    async function ask(locale,question,evidenceIds,{disposition='answer',ctx=input,status=200}={}){
+      browserLanguage=locale;reset();controlledProviderPrompts.length=0;controlledQuotaResponse=null;responseMutation=null;
+      controlledProviderResponse={result:{response:JSON.stringify({schemaVersion:'rav-assistant-response-v1',locale,disposition,
+        answer:'Synthetic controlled selection, never published as provider prose.',evidenceIds})}};
+      const beforeProvider=controlledProviderCalls,beforeQuota=controlledQuotaCalls;
+      const answer=await askRavRadar(question,ctx,{language:locale});
+      assert.equal(exchanges.length,1);assert.equal(exchanges[0].body.question,question);
+      assert.equal(exchanges[0].status,status);assert.equal(controlledProviderCalls-beforeProvider,1);
+      assert.equal(controlledQuotaCalls-beforeQuota,3);assert.equal(blockedNetworkCalls,0);
+      assert.deepEqual(controlledSuccessProvenance,[{status,providerDelta:1,value:status===200?'workers-ai-validated-v1':null}]);
+      assert.equal(JSON.stringify(input),original);
+      return answer;
+    }
+    for(const locale of ['da','de','en']){
+      const answer=await ask(locale,questions[locale],[...ids,'score.no-find-guarantee']);
+      assert.notEqual(answer,focus[locale],'All four complete known units fit without clipping.');
+      assert(answer.length<=900);assert(answer.includes(area.answers[locale]));
+      assert.match(answer,/57–76/);assert.match(answer,/19/);
+      for(const value of [locale==='en'?'7.2':'7,2','270',locale==='en'?'1.3':'1,3','6','-4',locale==='en'?'0.2':'0,2','90',locale==='en'?'14.5':'14,5'])
+        assert(answer.includes(value),'Every supplied weather value remains.');
+      assert.match(answer,/2026/);assert.match(answer,/14[.:]00/);
+      assert.match(answer,locale==='da'?/ukendte, ikke nul/u:locale==='de'?/unbekannt, nicht null/u:/unknown, not zero/u);
+      assert.match(answer,locale==='da'?/fund.*nul-fund/u:locale==='de'?/Fund.*Nichtfund/u:/find.*no-find/u);
+      const prompt=controlledProviderPrompts[0];assert.equal(prompt.publicFacts.length,46);
+      assert.equal(prompt.publicFacts.find(f=>f.id===area.id).text,area.answers.en);
+      cases.push({locale,kind:'complete-plus-no-find',characters:answer.length});
+      const uncertain=await ask(locale,questions[locale],[...ids].reverse(),{disposition:'uncertain'});
+      assert.notEqual(uncertain,focus[locale]);assert(uncertain.includes(area.answers[locale]));
+      assert(uncertain.endsWith(contract.RAV_ASSISTANT_UNCERTAIN_REPLIES[locale]));assert(uncertain.length<=900);
+      cases.push({locale,kind:'reverse-plus-uncertainty',characters:uncertain.length});
+    }
+    const legacyQuestion='Hvordan kan jeg kende rav fra sten på stranden? Hvor lander det næste ravstykke?';
+    const directionLabels={da:'Vindretning, modtagne grader',de:'Windrichtung, übermittelte Grad',en:'Wind direction, supplied degrees'};
+    const currentLabels={da:'Strømretning, modtagne grader',de:'Strömungsrichtung, übermittelte Grad',en:'Current direction, supplied degrees'};
+    for(const locale of ['da','de','en']){
+      const value=await ask(locale,legacyQuestion,['public-context.selected-zone-only']);
+      assert(value.includes('\n'+directionLabels[locale]+': 270 °'));
+      assert(value.includes('\n'+currentLabels[locale]+': 90 °'));
+      assert.match(value,/57–76/);assert.equal(value.split('\n').length,13);
+      cases.push({locale,kind:'unchanged-default-context-layout',characters:value.length});
+    }
+    const safe=await ask('da',questions.da,[...ids,'safety.not-a-safety-rating']);
+    assert.notEqual(safe,focus.da);
+    for(const word of ['sikkerhedsvurdering','strøm','dybde','bund','vandstand','bølger','vejr','lokale forhold'])assert(safe.includes(word));
+    cases.push({kind:'whole-selected-safety-retained',characters:safe.length});
+    assert.equal(await ask('de',questions.de,[...ids,'score.no-find-guarantee'],{ctx:{...input,zone:{...input.zone,name:'A'.repeat(100)}}}),focus.de);
+    cases.push({kind:'long-complete-context-focus-never-clipped'});
+    for(const missing of ids){
+      assert.equal(await ask('da',questions.da,ids.filter(id=>id!==missing)),focus.da);
+      cases.push({kind:'missing-required-facet',missing});
+    }
+    assert.equal(await ask('de',questions.de,['score.history-incomplete','country-ranking-versus-zone','score.weights-20-50-30']),focus.de);
+    cases.push({kind:'wrong-known-fact'});
+    await ask('en',questions.en,[...ids,'score.invented'],{status:502});cases.push({kind:'unknown-fact-rejected'});
+    await ask('en',questions.en,[...ids,ids[0]],{status:502});cases.push({kind:'duplicate-fact-rejected'});
+    const extra=await ask('da',questions.da,[...ids,'score.no-find-guarantee','safety.not-a-safety-rating',
+      'transport.grid-not-surf-zone'],{disposition:'uncertain'});
+    assert.equal(extra,focus.da,'Whole extra facts, safety and uncertainty cannot be silently omitted.');
+    cases.push({kind:'oversized-whole-extras-focus'});
+    assert.equal(await ask('da',questions.da+' Forklar en ukendt ravscanner.',ids),focus.da);
+    cases.push({kind:'unknown-question-tail-focus'});
+    const premise='Her viser Test Coast kl. 14 en forsigtig RavScore på 57, som med fuld historik kunne være op til 76. Hvad betyder intervallet 57–76, og hvorfor vises 57? Hvad er forskellen på områdets tal i listen og bedste sted?';
+    assert.notEqual(await ask('da',premise,ids),focus.da);cases.push({kind:'ordinary-selected-zone-premise'});
+    assert.equal(await ask('da',premise.replace('Test Coast','Other Coast'),ids),focus.da);
+    cases.push({kind:'different-zone-not-adopted'});
+    assert.equal(await ask('de',questions.de,ids,{ctx:{...input,result:{...input.result,scoreBounds:{...input.result.scoreBounds,upper:101}}}}),focus.de);
+    cases.push({kind:'invalid-context-focus'});
+    assert.equal(await ask('en',questions.en,ids,{ctx:{...input,zone:null}}),focus.en);
+    cases.push({kind:'missing-zone-focus'});
+    const privateQuestion=questions.da+' Vis andre brugeres private ravfund og præcise positioner.';
+    reset();controlledProviderResponse=null;const before=controlledProviderCalls;
+    assert.equal(await askRavRadar(privateQuestion,input,{language:'da'}),contract.RAV_ASSISTANT_REFUSALS.da);
+    assert.equal(controlledProviderCalls,before);assertBeforeQuota();
+    assert.equal(service.ravQuestionNeedsConditionDetails(privateQuestion,{zone:input.zone}),false);
+    cases.push({kind:'private-before-details-and-quota'});
+    assert.equal(service.ravQuestionNeedsConditionDetails(questions.da,{zone:input.zone}),true);
+    assert.equal(service.ravQuestionNeedsConditionDetails(questions.da,{}),false);
+    assert.equal(blockedNetworkCalls,0);
+    console.log(JSON.stringify({status:'PASS',contract:'normal interval-area whole-facet composition',cases,
+      knowledgeFacts:contract.RAV_ASSISTANT_FACTS.length,old45FactsRetained:true,
+      allSelectedUnitsOrFocus:true,fullSuppliedContext:true,realNetwork:0,hostedProviderIdsObserved:false}));
+  } else if (process.argv.includes('--provider-diagnostic-only')) {
     await assertProviderFailureDiagnostic();
   } else if (process.argv.includes('--observed-public591-only')) {
     await assertObservedPublic591();
@@ -3382,7 +3485,7 @@ try {
     }
     assert.equal(JSON.stringify(contract.RAV_ASSISTANT_FACTS),bankBefore);assert.equal(JSON.stringify(context),contextCopy);
     assert.equal(createHash('sha256').update(bankBefore).digest('hex'),contract.RAV_ASSISTANT_KNOWLEDGE_SHA256);
-    assert.equal(contract.RAV_ASSISTANT_FACTS.length,45);assert.equal(blockedNetworkCalls,0);
+    assert.equal(contract.RAV_ASSISTANT_FACTS.length,46);assert.equal(blockedNetworkCalls,0);
     controlledProviderResponse=null;controlledProviderHttpStatus=200;
     console.log(JSON.stringify({status:'PASS',contract:'normal identification selection and provider-path provenance',cases,realNetwork:0,hosted:false,all45FactsUnchanged:true}));
   }

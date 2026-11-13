@@ -408,8 +408,8 @@
     },
     {
       "path": "js/services/rav-assistant.js",
-      "bytes": 91404,
-      "sha256": "4ec4bc810699c2fa23506171f01e0a4e5f8696b5d9aa46fa41175e99acc12307"
+      "bytes": 92069,
+      "sha256": "8922519480df78189448cb34b14a7484353c5ae973edfd48a9efbf6d2905fdc4"
     },
     {
       "path": "js/services/site-function-test-service.js",

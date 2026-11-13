@@ -240,6 +240,10 @@
     {
       "id": "transport.current-supply-memory",
       "text": "After sufficiently strong and sustained verified coastward current, AmberScore can remain high through a brief seaward reversal. Outflow subtracts from the accumulated current-supply index; it does not reset it automatically. Current evidence has full age weight until 24 hours, then declining weight until 48 hours. The score combines 20 % huntability, 50 % delivery potential and 30 % wave mobilisation; the other parts also count. The 48-hour rule concerns current, not completeness of all weather history. These are model assumptions, not observed amber or a guarantee for any zone or hour."
+    },
+    {
+      "id": "country-ranking-versus-zone",
+      "text": "The national ranking compares zones with an area score. Opening a zone shows the best relevant coastal section score, so the two numbers need not be identical."
     }
   ],
   "fixedRefusals": {
