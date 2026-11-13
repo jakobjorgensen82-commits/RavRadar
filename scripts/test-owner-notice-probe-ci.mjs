@@ -246,6 +246,56 @@ test('the actual normal owner button reaches the unchanged nine-file probe once'
     const target=path.resolve(tmp);assert(target.startsWith(path.resolve(os.tmpdir())+path.sep));fs.rmSync(target,{recursive:true,force:true});
   }
 });
+test('actual owner OPTIONS guards report only fixed private categories and preserve their responses',async()=>{
+  const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'rr-mail-guard-'));
+  const oldDeno=globalThis.Deno,oldInfo=console.info,oldFetch=globalThis.fetch,oldNow=Date.now;
+  const now=1_800_000_000_000,rows=[];let upstream=0;
+  const binding={ownerId,recipient:user.email,noticeId,reservedAt:now-1,expiresAt:now+1};
+  try{
+    materializeOwnerProbe({sourceRoot:root,target:tmp,reservation:null});
+    globalThis.Deno={serve(){},env:{get:key=>({SUPABASE_URL:project,SUPABASE_ANON_KEY:'synthetic-public'})[key]}};
+    globalThis.fetch=async()=>{upstream++;throw Error('OPTIONS must not reach Auth, profile or mail');};
+    Date.now=()=>now;
+    console.info=(...values)=>rows.push(values);
+    const {createOwnerNoticeEdgeHandler}=await import(pathToFileURL(path.join(tmp,'supabase/functions/'+slug+'/index.ts')).href);
+    const cases=[
+      {category:'BINDING_MISSING',window:'UNBOUND',binding:null},
+      {category:'PATH_REJECTED',path:'/unrelated-private-path',pathClass:'OTHER'},
+      {category:'QUERY_REJECTED',query:'?private=must-not-be-logged'},
+      {category:'ORIGIN_REJECTED',origin:'https://private.invalid'},
+      {category:'REQUESTED_METHOD_REJECTED',method:'DELETE'},
+      {category:'BODY_POINTER_REJECTED',body:'private-body-must-not-be-read'},
+      {category:'WINDOW_REJECTED',window:'BEFORE',binding:{...binding,reservedAt:now+1,expiresAt:now+1000}},
+      {category:'WINDOW_REJECTED',window:'AFTER',binding:{...binding,reservedAt:now-1000,expiresAt:now}},
+      {category:'OPTIONS_ACCEPTED',window:'IN',status:204},
+      {category:'OPTIONS_ACCEPTED',window:'IN',status:204,path:'/inactivity-notice-owner-probe',pathClass:'FUNCTION'},
+    ];
+    for(const c of cases){
+      const request=new Request(project+(c.path??'/functions/v1/'+slug)+(c.query??''),{
+        method:'OPTIONS',headers:{origin:c.origin??'https://ravradar.dk','access-control-request-method':c.method??'POST'},
+        ...(c.body?{body:c.body}:{})});
+      const before=rows.length,response=await createOwnerNoticeEdgeHandler(Object.hasOwn(c,'binding')?c.binding:binding)(request);
+      assert.equal(response.status,c.status??404);assert.equal(await response.text(),'');
+      assert.equal(response.headers.get('cache-control'),'no-store');
+      assert.equal(response.headers.get('access-control-allow-origin'),c.status===204?'https://ravradar.dk':null);
+      assert.equal(rows.length,before+1);const [label,observation]=rows.at(-1);
+      assert.equal(label,'OWNER_NOTICE_PROBE_GATEWAY_GUARD');
+      assert.deepEqual(observation,{
+        bindingPresent:c.binding!==null,pathClass:c.pathClass??'PUBLIC',queryPresent:!!c.query,
+        originMatches:!c.origin,requestedMethodMatches:!c.method,bodyPointerPresent:!!c.body,
+        window:c.window??'UNOBSERVED',category:c.category});
+      for(const privateValue of [project,ownerId,noticeId,user.email,c.query,c.origin,c.body].filter(Boolean))
+        assert(!JSON.stringify(rows.at(-1)).includes(privateValue));
+    }
+    console.info=()=>{throw Error('private logger unavailable');};
+    const response=await createOwnerNoticeEdgeHandler(binding)(new Request(project+'/functions/v1/'+slug,{
+      method:'OPTIONS',headers:{origin:'https://ravradar.dk','access-control-request-method':'POST'}}));
+    assert.equal(response.status,204);assert.equal(upstream,0);
+  }finally{
+    globalThis.Deno=oldDeno;console.info=oldInfo;globalThis.fetch=oldFetch;Date.now=oldNow;
+    const target=path.resolve(tmp);assert(target.startsWith(path.resolve(os.tmpdir())+path.sep));fs.rmSync(target,{recursive:true,force:true});
+  }
+});
 test('normal workflow qualifies source and CLI before private credentials; no personal inputs',()=>{
   const workflow=fs.readFileSync(path.join(root,'.github/workflows/test-owner-notice-mail.yml'),'utf8');
   assert(workflow.indexOf('Qualify pinned CLI help')<workflow.indexOf('secrets.SUPABASE_ACCESS_TOKEN'));

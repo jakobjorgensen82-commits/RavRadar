@@ -23,6 +23,8 @@ Databasebackupens automatiske restore/rotation/ugentlige optagelse er forberedt 
 
 Mailprøvens kildekandidat har to adskilte formål: ét nyt mailvindue eller oprydning af den samme, allerede udløbne prøve. Positivt kendt ejerskab, uændret kilde og funktionsidentitet, aktuel bekræftet ejer, ingen anden skriver og slutgenlæsning kræves før en fjernelse kan bevises. Gatewayfejl bevares efter oprydning; ukendte skriveudfald genforsøges ikke. Faktisk oprydning og mailmodtagelse er fortsat særskilte beviser. Se håndbog 89.343.
 
+Ejerprøvens afgrænsede gatewaydiagnostik er en kildekandidat med faste private OPTIONS-kategorier. Den bevarer alle sikkerhedsregler og offentlige svar. En faktisk kategori kan vise handlerens afvisningspunkt; manglende kategori er ukendt. Diagnostikken lukker hverken årsagsafklaring eller faktisk mailafsendelse og modtagelse. Se håndbog 89.343.
+
 <!-- RAVRADAR_ACTIVE_ENTRY_END -->
 
 ## Daterede notater og tidligere indgange — uændret historik

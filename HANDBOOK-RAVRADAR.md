@@ -1,3 +1,11 @@
+## Privat gatewaydiagnostik til kapitel 89.343 — 13. november 2026
+
+Prøvemailens forbindelseskontrol kan blive afvist, før mailsystemet bruges. Den afgrænsede kildekandidat giver administratorens private log en fast kategori for det nåede kontrolpunkt. Den viser kun, om reservation, kendt sti, origin, ønsket metode, body-pointerens tilstedeværelse og tidsvindue passer. Adresse, query, indhold, loginoplysninger, ejer, modtager, beskedidentitet og nøgler logges ikke.
+
+De samme regler giver fortsat de samme offentlige svar. En loggerfejl ændrer ikke udfaldet. En konkret hændelse kan vise, at handleren blev nået, og hvilken regel der afviste. Hvis hændelsen mangler, er indgangen stadig uobserveret; det er ikke alene bevis for en platformfejl.
+
+Diagnostikken er under kildeforberedelse. Den opretter ingen ny prøve, åbner intet mailvindue og sender ingen mail. Ejerkontrol, signatur, ti minutters reservation, deduplikering og afsender bevares. Den præcise årsag samt faktisk afsendelse og modtagelse kræver stadig deres egne beviser.
+
 ## 89.347 — Databasebackup med sikker, løbende oprydning
 
 **Klargjort, ikke aktiveret.** Forberedt automatik gendanner først, beskytter en verificeret reserve og rydder kun dokumenterede gamle backups op.

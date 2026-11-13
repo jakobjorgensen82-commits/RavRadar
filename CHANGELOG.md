@@ -1,3 +1,9 @@
+## 13. november — privat diagnose af ejerprøvens forbindelseskontrol
+
+Ejerprøvens OPTIONS-forbindelseskontrol kan afvises på flere bevarede regler med samme tomme 404-svar. Den lille kildekandidat giver én fast privat diagnose med kategorier og booleans for det faktisk nåede afvisningspunkt. Der logges ingen rå requestværdier, ejer-/modtagerdata, identiteter eller nøgler, og de offentlige svar ændres ikke. Manglende hændelse forbliver ukendt.
+
+Den eksisterende normale handlerprøve dækker de accepterede stier, tidlige afslag, vinduesgrænser, privatliv og en utilgængelig logger; den normale ejerknap og deduplikering bevares. Ingen ny hosted prøve eller mail startes. Den præcise årsag samt faktisk afsendelse og modtagelse er fortsat åbne. Version 4.0.598, C/I/T, SQL, adgangsrettigheder og vejr ændres ikke. Se håndbog 89.343.
+
 ## 13. november — særskilt oprydning af udløbet ejerprøve
 
 En read-only gatewaykontrol kunne standse mailprøven efter positiv installation og fuld kildegenlæsning, før den kendt-ejede oprydning blev nået. Den lokale rettelse forbinder dette punkt med samme oprydning efter det oprindelige udløb. Den oprindelige gatewayfejl bevares; ukendt installation eller DELETE giver fortsat stop uden automatisk gentagelse.

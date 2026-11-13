@@ -25,8 +25,30 @@ function notFound() {
   return new Response(null, { status: 404, headers: { "Cache-Control": "no-store" } });
 }
 
+function reportGatewayGuard(request: Request, bindingPresent: boolean, category: string, window = "UNOBSERVED") {
+  if (request.method !== "OPTIONS") return;
+  try {
+    const url = new URL(request.url);
+    console.info("OWNER_NOTICE_PROBE_GATEWAY_GUARD", {
+      bindingPresent,
+      pathClass: url.pathname === PATH ? "FUNCTION" : url.pathname === "/functions/v1" + PATH ? "PUBLIC" : "OTHER",
+      queryPresent: url.search !== "",
+      originMatches: request.headers.get("origin") === ADMIN_ORIGIN,
+      requestedMethodMatches: request.headers.get("access-control-request-method") === "POST",
+      bodyPointerPresent: request.body !== null,
+      window,
+      category,
+    });
+  } catch {
+    // Private diagnostics cannot alter the existing response or authorize mail.
+  }
+}
+
 export function createOwnerNoticeEdgeHandler(binding: Reservation | null) {
-  if (!binding) return notFound;
+  if (!binding) return (request: Request) => {
+    reportGatewayGuard(request, false, "BINDING_MISSING", "UNBOUND");
+    return notFound();
+  };
 
   const { ownerId, recipient, noticeId, reservedAt, expiresAt } = binding;
   const handleProbe = createHostedOwnerNoticeProbe({
@@ -42,11 +64,19 @@ export function createOwnerNoticeEdgeHandler(binding: Reservation | null) {
 
   return async (request: Request) => {
     const url = new URL(request.url);
-    if ((url.pathname !== PATH && url.pathname !== "/functions/v1" + PATH) || url.search
-        || request.headers.get("origin") !== ADMIN_ORIGIN) return notFound();
+    const reject = (category: string, window = "UNOBSERVED") => {
+      reportGatewayGuard(request, true, category, window);
+      return notFound();
+    };
+    if (url.pathname !== PATH && url.pathname !== "/functions/v1" + PATH) return reject("PATH_REJECTED");
+    if (url.search) return reject("QUERY_REJECTED");
+    if (request.headers.get("origin") !== ADMIN_ORIGIN) return reject("ORIGIN_REJECTED");
     if (request.method === "OPTIONS") {
-      if (request.headers.get("access-control-request-method") !== "POST"
-          || request.body !== null || Date.now() < reservedAt || Date.now() >= expiresAt) return notFound();
+      if (request.headers.get("access-control-request-method") !== "POST") return reject("REQUESTED_METHOD_REJECTED");
+      if (request.body !== null) return reject("BODY_POINTER_REJECTED");
+      if (Date.now() < reservedAt) return reject("WINDOW_REJECTED", "BEFORE");
+      if (Date.now() >= expiresAt) return reject("WINDOW_REJECTED", "AFTER");
+      reportGatewayGuard(request, true, "OPTIONS_ACCEPTED", "IN");
       return new Response(null, { status: 204, headers: CORS });
     }
     const response = await handleProbe(request);

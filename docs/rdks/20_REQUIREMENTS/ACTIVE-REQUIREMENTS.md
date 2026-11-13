@@ -1,3 +1,9 @@
+## 13. november — privat diagnose af ejerprøvens forbindelseskontrol
+
+Den eksisterende ejerprøve får en afgrænset privat diagnose af OPTIONS-kontrollen. Loggen må kun indeholde faste kategorier og booleans for reservationens tilstedeværelse, kendt stiklasse, query, origin, ønsket metode, body-pointer og vinduesklasse. Rå adresser, query/body, Auth, ejer-/modtagerdata, identiteter og nøgler må ikke logges eller sættes i offentlige svar.
+
+De faktiske path-, origin-, metode-, body- og tidsafslag skal bevares med samme rækkefølge og svar. Ejerkontrol, signatur, ti minutters reservation, idempotens og Resend-forløb ændres ikke. En konkret privat kategori kan bevise handlerens indgang og afvisningspunkt; fravær af en kategori er fortsat ukendt uden kvalificeret logdækning. Diagnostik er ikke årsagsrettelse, afsendelsesautoritet eller mailaccept. Faktisk afsendelse og modtagelse står åbne. Se håndbog 89.343.
+
 ## 13. november — aktiv kontrakt for automatisk databasebackup og rotation
 
 Den forberedte vedligeholdelse skal bruge det eksisterende, præcist bundne adminmodtagerjob efter verificeret almindeligt vejr. Ingen ny dispatch, tidsplan, bucket, nøgle eller betalt plan indføres. De normale OUTER/INNER-låse og den oprindelige vejrslotbinding bevares; mindst 35 minutter skal være tilbage før privat arbejde og efter klargøring.
