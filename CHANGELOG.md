@@ -8,6 +8,10 @@ Den normale handlerprøve reproducerer den gamle BODY_POINTER_REJECTED med en ri
 
 Den eksisterende private rolleaudit angiver nu en fast statementtype, en fast afvisningsgren og et ordinal, når et autentificeret statement afvises. Det gør næste afgrænsede undersøgelse præcis uden at udskrive SQL, rollenavne eller værdier. Tokenisering og accepteret grammatik er uændrede; originale SQL-/ACL-regler og den isolerede gendannelse bevares.
 
+Ved afvist GRANT eller REVOKE skelner den samme private rapport nu mellem fire faste strukturklasser: NO_TO ved manglende modtagerkeyword, TO_POSITION ved forkert placering, OBJECT_PARAMETER ved det præcise keyword-par ON PARAMETER før modtageren og OBJECT_OTHER ved en anden objektform. Kun tokenizerens egentlige keywords tæller; citerede identifikatorer, strenge og kommentarer bliver aldrig keywords. Statementtype og nummer bevares, og ingen SQL-tekst, rolle- eller parameternavne vises.
+
+Klasserne præciserer kun det eksisterende afslag. Den faktiske arkivform skal stadig observeres; ON PARAMETER er ikke bekræftet alene af den tidligere medlemskabsafvisning. Ingen tidligere afvist form accepteres, og fuld arkiv-/Auth-gendannelse og Free-klarhed er fortsat åbne.
+
 Den eksisterende normale parsercase dækker de nye faste koder sammen med de tidligere accepterede og afviste input. Diagnostikken er ikke en formatrettelse eller bevis for faktisk arkiv-/Auth-gendannelse. Ingen ny arkivhentning, restore, aktivering eller Free-overgang startes af kodeleverancen. Version 4.0.598, C/I/T, migrationer og vejr ændres ikke. Se håndbog 89.345.
 
 ## 13. november — afgrænset femminuttersfrist for offline scalarplan
