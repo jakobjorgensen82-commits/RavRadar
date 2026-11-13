@@ -2616,9 +2616,9 @@ async function buildNormalPublishedOrdinaryFixture(work,implementation) {
   for(const zone of Object.values(source.coastalParts.zones))for(let index=1;index<zone.hourly.length;index++){
     for(const mode of ['waders','beach'])zone.hourly[index][mode]={available:false,score:null,scoreQuality:'UNAVAILABLE',scoreBounds:null,
       calibrationEligible:false,scoreSemantics:null,conservativeTailResetApplied:false,historyCoverageHours:null,historyReasonCodes:[],
-      modelBinding:implementation.binding,status:'unavailable',validPartCount:0,expectedPartCount:zone.expectedPartCount,comparisonPartCount:0,
-      unavailableParts:[],unavailability:{available:false,code:'SYNTHETIC_NO_EXACT_INPUT',messageDa:'Syntetisk prøvetime uden data.',
-        policy:'integrated-model-local-fail-closed',validPartCount:0,expectedPartCount:zone.expectedPartCount},reasons:['Syntetisk prøvetime uden data.']};
+      modelBinding:implementation.binding,
+      unavailability:{available:false,code:'SYNTHETIC_NO_EXACT_INPUT',messageDa:'Syntetisk prøvetime uden data.'},
+      reasons:['Syntetisk prøvetime uden data.']};
   }
   for(const part of Object.values(source.coastalParts.parts))part.hourly=[];
   const lib=await import('./public-conditions-lib.mjs'),share=await import('./build-forecast-share-projection.mjs');
