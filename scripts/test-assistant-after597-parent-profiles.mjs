@@ -813,6 +813,26 @@ test('issued SOURCE CodeOnly selector and installed64 plan use genuine current b
   const savedBefore=structuredClone(savedEnvironment);
   assert.equal(await selectSourceProducerCodeOnlySource(savedEnvironment),true);
   assert.deepEqual(savedEnvironment,savedBefore);
+  const command=/^        run: node ([^\r\n]+)$/m.exec(sourceStep);assert(command);
+  const {spawnSync}=await import('node:child_process');
+  const callerRoot=fileURLToPath(new URL('../',import.meta.url));
+  const selectionWork=await fs.mkdtemp(path.join(os.tmpdir(),'rr-issued-source-selector-'));
+  const requests=[
+    {...environment,RAVRADAR_SOURCE_PRODUCER_UPGRADE_OPT_IN:'true',RAVRADAR_SOURCE_PRODUCER_PHASE:'before'},
+    environment,savedEnvironment,
+  ];
+  try{
+    for(let index=0;index<requests.length;index++){
+      const envFile=path.join(selectionWork,'github-env-'+index);await fs.writeFile(envFile,'');
+      const executed=spawnSync(process.execPath,[command[1]],{cwd:callerRoot,
+        env:{...process.env,...requests[index],GITHUB_ENV:envFile},encoding:'utf8',timeout:30000});
+      assert.equal(executed.status,0,executed.stderr);
+      assert.equal(await fs.readFile(envFile,'utf8'),'RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE=true\n');
+    }
+  }finally{
+    for(let index=0;index<requests.length;index++)await fs.unlink(path.join(selectionWork,'github-env-'+index)).catch(error=>{if(error.code!=='ENOENT')throw error;});
+    await fs.rmdir(selectionWork);
+  }
   const savedOptions={...options,environment:savedEnvironment};
   const savedPlan=await verifySourceProducerPlan(savedOptions);
   assert.deepEqual(savedPlan.pendingVersions,[]);assert.equal(savedPlan.sqlWriteRequired,false);
