@@ -42,11 +42,17 @@ Den første faktiske Linux-kvalifikation bestod den nye V4-kontrolvej og mailmå
 
 Den særskilte scalar-kapacitetskandidat giver den eksisterende offline planlægning én fælles absolut frist på 180 sekunder i stedet for 120. Tidligere faktiske kørsler har ramt PART_RETENTION/TIMEOUT omkring 120 sekunder; vandstand er stadig obligatorisk uden planen, men den kvalificerede prioritering af reelle scalarhuller og ekstra haleefterspørgsel kan da mangle. Den normale fysiske CLI-prøve afviser 120-sekundersgrænsen før rettelsen og giver byteidentisk plan efter rettelsen med simuleret forbrug over denne grænse; 180 sekunder er fortsat et hårdt loft. Ingen ny cache, ny proof-memo eller forlænget providerhentning. Det er endnu ikke bevis for, at nutidens fulde produktionsplan kan afsluttes eller for bedre offentlig dækning.
 
-## 89.343 — Afgrænset prøvemail til ejerkontoen
+## 89.343 — Afgrænset prøvemail og oprydning af udløbet prøve
 
-Den særskilte mailprøve bruger eksisterende CLI og adgang til én midlertidig, ejerbundet funktion. Den bekræfter ejerens aktuelle Auth-konto, kontrollerer fast kilde og faktisk installation og fjerner kun samme funktion efter det ti minutter lange vindue. Kun ejerens normale admin-knap kan sende den faste prøvemail; afsenderens idempotens bevarer samme notice-id. Ukendt skrive- eller sletteudfald stopper uden automatisk gentagelse. Automatisk varsling og kontosletning aktiveres ikke.
+Det manuelle forløb har to adskilte valg. TEST-EXISTING-OWNER-MAIL-ONCE åbner ét ti minutter langt vindue for den aktuelle, bekræftede ejerkonto. Kun ejerens almindelige admin-knap kan sende den faste prøvemail til samme konto. Den eksisterende afsender genbruger samme besked-id for at undgå dobbeltsending.
 
-Kodekvalifikation, faktisk installation, afsenderaccept og modtagelse er særskilte åbne beviser. Automatisk varsling og sletning aktiveres ikke.
+CLEANUP-EXPIRED-OWNER-PROBE-ONLY fjerner kun den faste midlertidige prøve, når dens oprindelige vindue allerede er udløbet. Det åbner intet nyt vindue, opretter ingen funktion eller reservation og sender ingen mail. Den læste reservation skal tilhøre den aktuelle, bekræftede ejer, have det oprindelige ti minutters interval og passe til den uændrede kilde.
+
+Begge veje bruger den eksisterende CLI. De tre normale serverfunktioner bevares. Før fjernelse genlæses den midlertidige funktions identitet og alle ni forventede kildefiler; den aktuelle hovedkode og fravær af andre skrivere kontrolleres igen. Bagefter skal præcis de tre oprindelige normale funktioner stå uændret. En ændret eller ukendt identitet stopper oprydningen.
+
+Når en ny prøve er positivt installeret og genlæst, forsøges samme oprydning efter det oprindelige udløb, også hvis den efterfølgende gatewaykontrol fejler. Gatewayfejlen bliver fortsat en fejl efter vellykket oprydning. Ukendt installations- eller sletteudfald udløser ingen automatisk gentagelse. Udløbet lukker afsendelsesvinduet, også hvis runneren afbrydes; afbrydelse beviser ikke fysisk fjernelse.
+
+Dette er en forberedt kildeændring. Kodekvalifikation, faktisk fjernelse, mailafsenderens accept, levering og modtagelse er forskellige beviser. Oprydning beviser ikke maillevering. Automatisk varsling, kontosletning og samlet statistik aktiveres ikke af nogen af valgene.
 
 ## Aktuel V4-kandidat til kapitel 89.342 — 12. november 2026
 
