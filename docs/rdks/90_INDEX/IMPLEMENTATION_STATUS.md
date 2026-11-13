@@ -27,6 +27,8 @@ Ejerprøvens afgrænsede gatewaydiagnostik er en kildekandidat med faste private
 
 Den afgrænsede lokale rettelse giver den eksisterende offlineplan for vind, vandstand og vandtemperatur én fælles frist på 300 sekunder. En faktisk almindelig kørsel overskred 180-sekundersfristen efter 190.264 ms; overskridelsen blev opdaget efter den normale kontrol af den gemte Open-Meteo-bank. Tiden gælder hele kalderen, ikke kun denne fase. Leverandørbudgetter, originalkontrol, model og SQL bevares. Færdig plan og bedre prognosehale skal stadig verificeres i en efterfølgende almindelig vejrhentning.
 
+Rollearkivets afvisningsdiagnose er afgrænset til fast statementtype, fast afvisningsgren og ordinal i den eksisterende private rapport. Accepteret SQL-grammatik og adgangsregler er uændrede. Den konkrete formatårsag, korrekt håndtering og faktisk fuld arkiv-/Auth-gendannelse er fortsat åbne; diagnose er ikke Free- eller aktiveringsaccept. Se håndbog 89.345.
+
 <!-- RAVRADAR_ACTIVE_ENTRY_END -->
 
 ## Daterede notater og tidligere indgange — uændret historik

@@ -1,3 +1,9 @@
+## 13. november — fast, privat diagnose ved afvist rollearkiv
+
+Hvis den eksisterende rolleaudit afviser et autentificeret SQL-statement, skal den private fejlrapport kun angive en fast statementtype, en fast afvisningsgren og et 1-baseret ordinal. Ukendte typer skal blive den faste kategori OTHER; SQL-tekst, rollenavne og værdier må ikke indgå. Tokenisering, accepteret grammatik, originale SQL-/ACL-regler og alle mål-, krypterings- og oprydningskrav bevares.
+
+Diagnosen er ikke en formatrettelse, et bevis for manglende roller eller en bestået gendannelse. Den normale archive-vej skal fortsat kontrollere det lille autentificerede ROLES-input før store SQL-filer. Faktisk fuld arkiv-/Auth-gendannelse og Free-klarhed kræver særskilte beviser. Se håndbog 89.345.
+
 ## 13. november — privat diagnose af ejerprøvens forbindelseskontrol
 
 Den eksisterende ejerprøve får en afgrænset privat diagnose af OPTIONS-kontrollen. Loggen må kun indeholde faste kategorier og booleans for reservationens tilstedeværelse, kendt stiklasse, query, origin, ønsket metode, body-pointer og vinduesklasse. Rå adresser, query/body, Auth, ejer-/modtagerdata, identiteter og nøgler må ikke logges eller sættes i offentlige svar.

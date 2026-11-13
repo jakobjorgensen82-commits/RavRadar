@@ -729,6 +729,8 @@ COMMENT ON ROLE "supabase_future_role" IS 'supabase_comment_value';
   await rejectCode(()=>auditGrant(options,f.dependencies()),'REMOTE_OBJECT_SHA');f.objects.set(rolesKey,original);
   for(const roleSql of ['GRANT "supabase_new" TO "custom"; /* unfinished',
     'GRANT "supabase_new" TO "custom"','SELECT execute_arbitrary();','ALTER ROLE "custom" IN ROLE "supabase_hidden";',
+    'SET standard_conforming_strings = on; /* private comment */ SELECT private_function_name();',
+    'CALL private_procedure_name();','GRANT SELECT ON TABLE private_table TO custom;',
     'SET standard_conforming_strings = off;','RESET ALL; GRANT "supabase_hidden" TO "custom";',
     "SET ROLE 'supabase_hidden';","SET SESSION ROLE 'supabase_hidden';","SET LOCAL ROLE 'supabase_hidden';",
     "SET SESSION AUTHORIZATION 'supabase_hidden';","SET LOCAL SESSION AUTHORIZATION 'supabase_hidden';",
@@ -738,8 +740,17 @@ COMMENT ON ROLE "supabase_future_role" IS 'supabase_comment_value';
     'ALTER ROLE custom UESCAPE \'!\';']){
     const x=await captured(t,{sql:n=>n==='roles.sql'?Buffer.from(roleSql):sql(n)});
     const commitment=sha(Buffer.from(JSON.stringify(['RavRadar/SupabaseArchiveRestore/v1/selector',x.result.indexSha256])));
+    const diagnostics=new Map([
+      ['SELECT execute_arbitrary();','ROLE_AUDIT_STATEMENT_SELECT_UNSUPPORTED_1'],
+      ['SET standard_conforming_strings = on; /* private comment */ SELECT private_function_name();','ROLE_AUDIT_STATEMENT_SELECT_UNSUPPORTED_2'],
+      ['CALL private_procedure_name();','ROLE_AUDIT_STATEMENT_OTHER_UNSUPPORTED_1'],
+      ['GRANT SELECT ON TABLE private_table TO custom;','ROLE_AUDIT_STATEMENT_GRANT_MEMBERSHIP_SHAPE_1'],
+      ['ALTER ROLE "custom" IN ROLE "supabase_hidden";','ROLE_AUDIT_STATEMENT_ALTER_ROLE_ROLE_OPTIONS_1'],
+      ["SET ROLE 'supabase_hidden';",'ROLE_AUDIT_STATEMENT_SET_IDENTITY_1'],
+    ]);
     withoutDatabase(x.f);await assert.rejects(()=>auditGrant({indexCommitmentSha256:commitment,targetSystemRoles},x.f.dependencies()),
-      e=>/^ROLE_AUDIT_/.test(e.code));
+      e=>{assert(/^ROLE_AUDIT_/.test(e.code));if(diagnostics.has(roleSql))assert.equal(e.code,diagnostics.get(roleSql));
+        assert(!/private_|supabase_|custom|arbitrary/i.test(e.code));return true;});
   }
 });
 
