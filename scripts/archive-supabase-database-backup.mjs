@@ -8,6 +8,7 @@ import {captureLocalDatabaseBackup,verifyLocalDatabaseBackup,materializeLocalDat
 import {createR2PrivateReadDenialStorage} from './lib/r2-private-read-denial-storage.mjs';
 import {createSupabaseAdminRequester} from './lib/supabase-admin-rest.mjs';
 import {PRIVATE_STUDY_ADMIN_ACCESS_SQL,assertPrivateStudyAdminAccess} from './lib/private-trip-study-admin-transport.mjs';
+import {verifyDatabaseBackupReserve,confirmDatabaseBackupMain,databaseRestoreCommitment,databaseReserveReceiptReady} from './supabase-backup-lifecycle.mjs';
 
 export const DB_REMOTE_BACKUP_POLICY=Object.freeze({project:'https://afqhhdrkjfjtpadntdzo.supabase.co',bucket:'ravradar-supabase-backup',
   locatorKey:'supabase-database-backup-locator',maximumObjectBytes:50_000_000,maximumCipherBytes:CIPHER.partBytes,
@@ -101,26 +102,35 @@ async function privacy(c){need(typeof c.env.SUPABASE_ACCESS_TOKEN==='string'&&c.
     need(Array.isArray(version?.policies)&&version.policies.length===2&&version.policies.every(p=>Object.hasOwn(aliases,p.name)),'LOCATOR_PRIVACY');
     assertPrivateStudyAdminAccess([{metadata:{...version,policies:version.policies.map(p=>({...p,name:aliases[p.name]}))}}]);
   }catch{fail('LOCATOR_PRIVACY');}}
-function clients(env,fetchImpl,{bootstrap=false,readOnly=false}={}){
+function clients(env,fetchImpl,{bootstrap=false,readOnly=false,rotation=false,receiptWrite=false}={}){
   need((bootstrap||env.SUPABASE_URL?.replace(/\/$/,'')===P.project)&&typeof env.SUPABASE_SERVICE_ROLE_KEY==='string'&&env.SUPABASE_SERVICE_ROLE_KEY.length>=32,'EXACT_PROJECT_MASTER');
   const state={started:Date.now(),writes:new Set(),unknown:false,fatal:null,readBytes:0,bootstrap,listing:null,searchDeadline:null,objectReadBound:P.maximumObjectBytes,archiveCreates:0,locatorWrites:0,candidateReadBytes:0},host=String(env.RAVRADAR_R2_ACCOUNT_ID)+'.eu.r2.cloudflarestorage.com';
   const guarded=async(url,options={})=>{
     if(state.unknown)fail('DB_BACKUP_WRITE_OUTCOME_UNKNOWN');if(state.fatal)fail(state.fatal);need(Date.now()-state.started<P.maximumMs,'REMOTE_DEADLINE');if(state.searchDeadline&&Date.now()>=state.searchDeadline){state.fatal='BOOTSTRAP_DEADLINE';fail(state.fatal);}
     const u=new URL(url),method=String(options.method||'GET').toUpperCase(),management=u.href==='https://api.supabase.com/v1/projects/afqhhdrkjfjtpadntdzo/database/query'&&method==='POST'&&options.body===JSON.stringify({query:ACCESS_SQL});
-    const admin=u.origin===P.project&&u.pathname==='/rest/v1/admin_documents',r2=u.protocol==='https:'&&u.hostname===host&&(u.pathname==='/'+P.bucket||u.pathname.startsWith('/'+P.bucket+'/'));
-    if(bootstrap)need(r2&&['GET','HEAD'].includes(method),'BOOTSTRAP_R2_READ_ONLY');
+    const versions=rotation&&u.origin===P.project&&u.pathname==='/rest/v1/admin_document_versions',
+      admin=u.origin===P.project&&u.pathname==='/rest/v1/admin_documents',r2=u.protocol==='https:'&&u.hostname===host&&(u.pathname==='/'+P.bucket||u.pathname.startsWith('/'+P.bucket+'/'));
+    if(bootstrap)need(r2&&(['GET','HEAD'].includes(method)||receiptWrite&&method==='PUT'
+      &&u.search===''&&new Headers(options.headers).has('authorization')
+      &&u.pathname==='/'+P.bucket+'/'+state.restoreReceiptPath),'BOOTSTRAP_R2_READ_ONLY');
     if(readOnly)need(management||['GET','HEAD'].includes(method),'MATERIALIZATION_READ_ONLY');
-    need(management||admin||r2,'NETWORK_SURFACE');need(management||admin?['GET','POST','PATCH'].includes(method):['GET','HEAD','PUT'].includes(method),'NETWORK_METHOD');
+    need(management||admin||versions||r2,'NETWORK_SURFACE');need(management||admin||versions?['GET','POST','PATCH'].includes(method):['GET','HEAD','PUT',...(rotation?['DELETE']:[])].includes(method),'NETWORK_METHOD');
+    if(method==='DELETE')need(rotation&&r2&&u.search===''&&new Headers(options.headers).has('authorization')
+      &&state.retirementPaths?.has(u.pathname.slice(P.bucket.length+2)),'RETIREMENT_EXACT_PATH');
+    if(versions){const q=u.searchParams;need(method==='GET'
+      &&q.get('document_key')==='eq.'+P.locatorKey&&q.get('select')==='document_key,payload,version'
+      &&q.get('limit')==='2'&&/^eq\.[a-f0-9]{64}$/.test(q.get('payload->index->>sha256')??'')
+      &&[...q.keys()].sort().join(',')==='document_key,limit,payload->index->>sha256,select','ROTATION_HISTORICAL_LOCATOR_READ');}
     if(admin){const q=u.searchParams;need(q.get('select')==='document_key,payload,version','LOCATOR_SELECT');
       if(method==='GET')need(q.get('document_key')==='eq.'+P.locatorKey&&q.get('limit')==='2'&&[...q.keys()].sort().join(',')==='document_key,limit,select','LOCATOR_GET');
       else{const b=parse(Buffer.from(options.body||''),'LOCATOR_BODY');if(method==='POST'){fields(b,['document_key','payload','updated_by'],'LOCATOR_BODY');need(b.document_key===P.locatorKey&&q.get('on_conflict')==='document_key'&&[...q.keys()].sort().join(',')==='on_conflict,select','LOCATOR_INSERT');}
         else{fields(b,['payload','updated_by'],'LOCATOR_BODY');need(q.get('document_key')==='eq.'+P.locatorKey&&/^eq\.[1-9][0-9]*$/.test(q.get('version')||'')&&[...q.keys()].sort().join(',')==='document_key,select,version','LOCATOR_CAS');}
         need(b.updated_by===null&&Buffer.byteLength(options.body)<=P.maximumMetadataBytes,'LOCATOR_BODY');checkPointer(b.payload);}}
-    const write=!management&&['PUT','POST','PATCH'].includes(method);if(write){if(state.writes.has(u.href)){state.unknown=true;fail('DB_BACKUP_WRITE_OUTCOME_UNKNOWN');}state.writes.add(u.href);}
+    const write=!management&&['PUT','POST','PATCH','DELETE'].includes(method);if(write){if(state.writes.has(u.href)){state.unknown=true;fail('DB_BACKUP_WRITE_OUTCOME_UNKNOWN');}state.writes.add(u.href);}
     try{const response=await fetchImpl(u.href,{...options,redirect:'manual',signal:AbortSignal.timeout(state.searchDeadline?Math.max(1,Math.min(30_000,state.searchDeadline-Date.now())):30_000)});
       if(write&&![200,201,204,412].includes(response.status))state.unknown=true;
       if(write&&response.ok){if(r2)state.archiveCreates++;else if(admin)state.locatorWrites++;}
-      const list=bootstrap&&r2&&method==='GET'&&u.pathname==='/'+P.bucket&&u.searchParams.get('list-type')==='2';
+      const list=(bootstrap||rotation)&&r2&&method==='GET'&&u.pathname==='/'+P.bucket&&u.searchParams.get('list-type')==='2';
       // Only the exact unsigned one-byte probe stays unread for the adapter's
       // typed 400/XML bound or immediate non-400 cancellation. Authenticated
       // object/list reads retain every existing byte and operation guard.
@@ -131,15 +141,17 @@ function clients(env,fetchImpl,{bootstrap=false,readOnly=false}={}){
       if(anonymousRange)return response;
       const maximum=list?B.maximumListBytes:r2?state.objectReadBound:2_000_000,declared=response.headers.get('content-length');
       if(declared!==null)need(/^[0-9]+$/.test(declared)&&Number.isSafeInteger(Number(declared))&&Number(declared)<=maximum,'RESPONSE_BOUND');
-      const chunks=[];let bytes=0;for await(const b of response.body||[]){bytes+=b.length;state.readBytes+=b.length;need(bytes<=maximum&&state.readBytes<=P.maximumBucketBytes,'RESPONSE_BOUND');if(list){state.listing.bytes+=b.length;need(state.listing.bytes<=B.maximumListBytes,'RESPONSE_BOUND');}if(bootstrap&&r2&&method==='GET'&&!list&&state.searchDeadline){state.candidateReadBytes+=b.length;need(state.candidateReadBytes<=B.maximumCandidateBytes,'RESPONSE_BOUND');}chunks.push(b);}
-      const body=Buffer.concat(chunks);if(list&&response.status===200){need(state.listing,'BOOTSTRAP_LIST_STATE');collectListing(state.listing,body);}
+      const chunks=[];let bytes=0;for await(const b of response.body||[]){bytes+=b.length;state.readBytes+=b.length;need(bytes<=maximum&&state.readBytes<=P.maximumBucketBytes,'RESPONSE_BOUND');if(list&&state.listing){state.listing.bytes+=b.length;need(state.listing.bytes<=B.maximumListBytes,'RESPONSE_BOUND');}if(bootstrap&&r2&&method==='GET'&&!list&&state.searchDeadline){state.candidateReadBytes+=b.length;need(state.candidateReadBytes<=B.maximumCandidateBytes,'RESPONSE_BOUND');}chunks.push(b);}
+      const body=Buffer.concat(chunks);if(list&&response.status===200){need(state.listing||receiptWrite,'BOOTSTRAP_LIST_STATE');if(state.listing)collectListing(state.listing,body);}
       return new Response([204,205,304].includes(response.status)?null:body,{status:response.status,headers:response.headers});
     }catch(e){if(write)state.unknown=true;if(e.code==='RESPONSE_BOUND'||/^BOOTSTRAP_LIST_/.test(e.code||''))state.fatal=e.code;throw e;}
   };
   const admin=createSupabaseAdminRequester({endpoint:P.project+'/rest/v1/admin_documents',key:env.SUPABASE_SERVICE_ROLE_KEY,fetchImpl:guarded,logger:()=>{}});
   const r2=createR2PrivateReadDenialStorage({accountId:env.RAVRADAR_R2_ACCOUNT_ID,accessKeyId:env.RAVRADAR_R2_ACCESS_KEY_ID,secretAccessKey:env.RAVRADAR_R2_SECRET_ACCESS_KEY,
     bucketId:P.bucket,maximumObjectBytes:P.maximumObjectBytes,bucketCeilingBytes:P.maximumBucketBytes,fetchImpl:guarded});
-  return{env,state,fetch:guarded,admin,r2};
+  const versions=createSupabaseAdminRequester({endpoint:P.project+'/rest/v1/admin_document_versions',
+    key:env.SUPABASE_SERVICE_ROLE_KEY,fetchImpl:guarded,logger:()=>{}});
+  return{env,state,fetch:guarded,admin,versions,r2};
 }
 
 function validateManifest(raw,pointer,{chunked=false}={}){
@@ -370,7 +382,8 @@ function collectListing(inventory,body){need(inventory.bytes<=B.maximumListBytes
     need(keys.length===1&&sizes.length===1&&/^(0|[1-9][0-9]*)$/.test(sizes[0][1])&&Number.isSafeInteger(Number(sizes[0][1])),'BOOTSTRAP_LIST_ENTRY');
     inventory.count++;need(inventory.count<=B.maximumListedObjects,'BOOTSTRAP_LIST_COUNT');const bytes=Number(sizes[0][1]);inventory.total+=bytes;
     need(Number.isSafeInteger(inventory.total),'BOOTSTRAP_LIST_ENTRY');const key=keys[0][1];
-    if(partName.test(key)){need(!inventory.parts.has(key),'BOOTSTRAP_LIST_DUPLICATE');inventory.parts.add(key);continue;}
+    if(partName.test(key)){need(!inventory.parts.has(key),'BOOTSTRAP_LIST_DUPLICATE');inventory.parts.add(key);
+      inventory.partObjects?.set(key,{path:key,bytes,sha256:key.match(/-([a-f0-9]{64})\.json\.gz\.part$/)[1]});continue;}
     if(!objectName.test(key)){inventory.unsupported++;continue;}
     need(!inventory.objects.has(key),'BOOTSTRAP_LIST_DUPLICATE');inventory.objects.set(key,{path:key,bytes,sha256:key.slice(15,79)});
   }
@@ -461,6 +474,230 @@ function archiveFailure(e,c){
   if(Number.isInteger(e.httpStatus)&&e.httpStatus>=100&&e.httpStatus<=599)error.httpStatus=e.httpStatus;
   error.authRestoreVerified=false;error.fullDatabaseBackupVerified=false;error.freeReady=false;
   return error;
+}
+
+async function lifecycleCurrent(c){
+  await privacy(c);const locator=await readLocator(c);need(locator,'LOCATOR_MISSING');
+  await c.r2.ensurePrivateBucket();const pointer=locator.payload,wire=await remoteBody(c,pointer.index);
+  const opened=openIndex(unframe('ENCRYPTED_INDEX',wire),pointer,c.env),group=validateIndex(opened,pointer);
+  need(same(await readLocator(c),locator),'LOCATOR_CHANGED');
+  return {locator,pointer,opened,group};
+}
+async function qualifyHistoricalBackupGroups(c,groups,currentSha){
+  for(const group of groups){
+    group.formerCurrent=false;
+    if(group.pointer.index.sha256===currentSha)continue;
+    // Existing audit rows are positive publication evidence, never deleted.
+    // A missing row cannot authorize retirement of an unknown orphan group.
+    const suffix='?'+new URLSearchParams({document_key:'eq.'+P.locatorKey,
+      'payload->index->>sha256':'eq.'+group.pointer.index.sha256,
+      select:'document_key,payload,version',limit:'2'});
+    const rows=await c.versions(suffix,{},'exact historic database backup locator');
+    need(Array.isArray(rows)&&rows.length<=2,'ROTATION_HISTORICAL_LOCATOR_ROWS');
+    for(const row of rows){fields(row,['document_key','payload','version'],'ROTATION_HISTORICAL_LOCATOR_FIELDS');
+      need(row.document_key===P.locatorKey&&positive(row.version)
+        &&same(checkPointer(row.payload),checkPointer(group.pointer)),'ROTATION_HISTORICAL_LOCATOR_IDENTITY');}
+    group.formerCurrent=rows.length>0;
+  }
+}
+export async function inspectSupabaseDatabaseBackupLifecycle(dependencies={}){
+  let c;try{const env=dependencies.env??process.env;
+    c=clients(env,dependencies.fetchImpl??globalThis.fetch,{readOnly:true,rotation:true});
+    c.state.searchDeadline=Date.now()+B.maximumSearchMs;
+    const {locator,pointer,group}=await lifecycleCurrent(c);
+    const inventory=await rotationInventory(c),{groups,legacyIndexSeen,unreferencedManagedObjectsSeen}=await rotationGroups(c,inventory);
+    await qualifyHistoricalBackupGroups(c,groups,pointer.index.sha256);
+    const own=groups.find(item=>item.pointer.index.sha256===pointer.index.sha256);need(own,'RESTORE_CURRENT_NOT_LISTED');
+    const distinct=groups.filter(item=>item.pointer.index.sha256!==pointer.index.sha256
+      &&item.group.completedAt<group.completedAt&&item.receipts.length>0)
+      .sort((a,b)=>b.group.completedAt.localeCompare(a.group.completedAt)||a.pointer.index.sha256.localeCompare(b.pointer.index.sha256));
+    const bootstrap=groups.find(item=>env.SUPABASE_BACKUP_RESERVE_RESTORE_RUN_ID
+      &&'rr-supabase-restore-v1:'+databaseRestoreCommitment(item.pointer.index.sha256)===env.SUPABASE_BACKUP_RESERVE_INDEX_COMMITMENT);
+    const reserve=distinct[0]&&(!bootstrap||distinct[0]===bootstrap||distinct[0].group.completedAt>bootstrap.group.completedAt)?distinct[0]:bootstrap;
+    const rotationPending=Boolean(reserve)&&groups.some(item=>item!==own&&item!==reserve
+      &&item.formerCurrent&&item.group.completedAt<group.completedAt&&item.objects.every(object=>
+        groups.filter(other=>other!==item).every(other=>other.objects.every(value=>value.path!==object.path))));
+    return {indexSha256:pointer.index.sha256,locatorVersion:locator.version,completedAt:group.completedAt,
+      context:pointer.context,remoteIndexAuthenticated:true,restoreVerified:own.receipts.length>0,
+      restoreRunIds:own.receipts.map(receipt=>receipt.body.runId),
+      rotationPending,rotationHeld:legacyIndexSeen
+        ||unreferencedManagedObjectsSeen
+        ||groups.some(item=>item!==own&&!item.formerCurrent)
+        ||Boolean(groups.length>2&&!rotationPending),
+      usedBytes:inventory.total};
+  }catch(error){throw archiveFailure(error,c);}
+}
+async function rotationInventory(c){
+  const inventory={bytes:0,count:0,total:0,unsupported:0,objects:new Map(),parts:new Set(),partObjects:new Map()};
+  c.state.listing=inventory;let usage;
+  try{usage=await c.r2.bucketUsage();}finally{c.state.listing=null;}
+  need(usage.objectCount===inventory.count&&usage.usedBytes===inventory.total,'ROTATION_LIST_PARITY');
+  need(inventory.unsupported===0,'ROTATION_UNKNOWN_NAMESPACE');
+  return inventory;
+}
+async function rotationGroups(c,inventory){
+  const eligible=[...inventory.objects.values()].filter(object=>positive(object.bytes)&&object.bytes<=B.maximumIndexWireBytes);
+  need(eligible.length<=B.maximumCandidates&&eligible.reduce((sum,object)=>sum+object.bytes,0)<=B.maximumCandidateBytes,'ROTATION_INDEX_BOUND');
+  const groups=[],receipts=[];let legacyIndexSeen=false;
+  for(const descriptor of eligible){
+    const wire=await remoteBody(c,descriptor),outer=parse(gunzipSync(wire,{maxOutputLength:100_000}),'FRAME_JSON');
+    if(outer.kind==='SUPABASE_DB_SQL_CIPHERTEXT_FRAME_V1'){unframe('SQL_CIPHERTEXT',wire);continue;}
+    if(outer.kind==='SUPABASE_DB_ENCRYPTED_RESTORE_RECEIPT_FRAME_V1'){
+      receipts.push({...openRestoreReceipt(unframe('ENCRYPTED_RESTORE_RECEIPT',wire),c.env),descriptor});continue;
+    }
+    const binary=unframe('ENCRYPTED_INDEX',wire);
+    // Legacy index AAD needs its historical pointer. It is retained, never guessed.
+    if(binary.subarray(0,INDEX_MAGIC.length).equals(INDEX_MAGIC)){legacyIndexSeen=true;continue;}
+    const pointer=selfIndexHeader(binary).pointer;pointer.index=descriptor;
+    const opened=openIndex(binary,pointer,c.env),group=validateIndex(opened,pointer);
+    groups.push({pointer,opened,group,objects:[...group.index.objects.flatMap(entry=>group.chunked
+      ?entry.parts.map(part=>part.object):[entry.object]),pointer.index]});
+  }
+  for(const item of groups){
+    item.receipts=receipts.filter(receipt=>receipt.body.indexSha256===item.pointer.index.sha256);
+    need(item.receipts.every(receipt=>indexAad(receipt.pointer).equals(indexAad(item.pointer))),'RESTORE_RECEIPT_GROUP');
+    item.objects.splice(item.objects.length-1,0,...item.receipts.map(receipt=>receipt.descriptor));
+  }
+  // An index-last retirement may have removed receipt objects already. No live
+  // group ever depends on a detached receipt or adopts it as a restore pointer.
+  need(receipts.every(receipt=>groups.some(item=>item.pointer.index.sha256===receipt.body.indexSha256)),'RESTORE_RECEIPT_ORPHAN');
+  // Complete bounded inventory is already available. Managed carriers that no
+  // authenticated index claims may be an interrupted capture; retain them and
+  // block a new capture instead of inferring their outcome from run creation time.
+  const referenced=new Set(groups.flatMap(item=>item.objects.map(object=>object.path)));
+  const unreferencedManagedObjectsSeen=[...inventory.objects.keys(),...inventory.parts]
+    .some(object=>!referenced.has(object));
+  return {groups,legacyIndexSeen,unreferencedManagedObjectsSeen};
+}
+const RESTORE_CHECKS=['authenticatedFiveFileSqlExecuted','exactSqlBytesStreamed','isolatedAuthServiceHealthy',
+  'localRestoredCatalogVerified','ownedDockerClosed','sourceDataParityVerified','authRestoreVerified','fullDatabaseBackupVerified'];
+function openRestoreReceipt(binary,env){
+  need(binary.length<=8192,'RESTORE_RECEIPT_BOUND');
+  const pointer=selfIndexHeader(binary).pointer,body=parse(openIndex(binary,pointer,env),'RESTORE_RECEIPT_JSON');
+  fields(body,['kind','indexSha256','sourceHead','runId','runAttempt','verifiedAt','scope','checks'],'RESTORE_RECEIPT_FIELDS');
+  need(body.kind==='SUPABASE_DB_ISOLATED_RESTORE_RECEIPT_V1'&&hash(body.indexSha256)
+    &&/^[a-f0-9]{40}$/.test(body.sourceHead)&&/^[1-9][0-9]{0,18}$/.test(body.runId)&&body.runAttempt==='1'
+    &&body.scope==='SQL_AUTH_AUTHENTICATED_COPY_AND_SEQUENCES_V1'
+    &&typeof body.verifiedAt==='string'&&Number.isFinite(Date.parse(body.verifiedAt))
+    &&new Date(body.verifiedAt).toISOString()===body.verifiedAt,'RESTORE_RECEIPT_IDENTITY');
+  fields(body.checks,RESTORE_CHECKS,'RESTORE_RECEIPT_CHECKS');
+  need(RESTORE_CHECKS.every(field=>body.checks[field]===true),'RESTORE_RECEIPT_NOT_POSITIVE');
+  return {pointer,body};
+}
+export async function persistSupabaseDatabaseRestoreReceipt({report,indexSha256=null,indexCommitment=null}={},dependencies={}){
+  const env=dependencies.env??process.env;let c;
+  try{
+    need(['Back up RavRadar Supabase database','Verify standard Supabase CLI local restore','Maintain RavRadar admin document history'].includes(env.GITHUB_WORKFLOW)
+      &&env.GITHUB_EVENT_NAME==='workflow_dispatch'&&env.GITHUB_ACTIONS==='true'
+      &&env.GITHUB_REF==='refs/heads/main'&&env.GITHUB_RUN_ATTEMPT==='1'&&env.GITHUB_REPOSITORY===LOCAL.repository
+      &&env.RUNNER_ENVIRONMENT==='github-hosted'&&env.RUNNER_OS==='Linux'
+      &&/^[1-9][0-9]{0,18}$/.test(env.GITHUB_RUN_ID??'')
+      &&(dependencies.processImpl??process).platform==='linux','RESTORE_RECEIPT_OWNED_HOST');
+    const commitment=hash(indexSha256)?'rr-supabase-restore-v1:'+databaseRestoreCommitment(indexSha256):indexCommitment;
+    need((indexSha256===null||hash(indexSha256))&&databaseReserveReceiptReady(report,{sourceHead:env.GITHUB_SHA,
+      indexCommitment:commitment}),'RESTORE_RECEIPT_NOT_POSITIVE');
+    const confirmMain=()=> (dependencies.confirmMain??confirmDatabaseBackupMain)(env);confirmMain();
+    // The normal restore has already authenticated this exact immutable group.
+    // Its receipt needs no database locator/catalogue access or management key.
+    c=clients(env,dependencies.fetchImpl??globalThis.fetch,{bootstrap:true,receiptWrite:true});
+    c.state.searchDeadline=Date.now()+B.maximumSearchMs;
+    const inventory=await rotationInventory(c),{groups}=await rotationGroups(c,inventory);
+    const matches=groups.filter(item=>'rr-supabase-restore-v1:'+databaseRestoreCommitment(item.pointer.index.sha256)===commitment);
+    need(matches.length===1,'RESTORE_RECEIPT_NOT_LISTED');const group=matches[0];indexSha256=group.pointer.index.sha256;
+    if(group.receipts.length)return {status:'DATABASE_RESTORE_RECEIPT_ALREADY_DURABLE',receiptWritten:false};
+    const body={kind:'SUPABASE_DB_ISOLATED_RESTORE_RECEIPT_V1',indexSha256,sourceHead:env.GITHUB_SHA,
+      runId:env.GITHUB_RUN_ID,runAttempt:env.GITHUB_RUN_ATTEMPT,verifiedAt:new Date().toISOString(),
+      scope:'SQL_AUTH_AUTHENTICATED_COPY_AND_SEQUENCES_V1',checks:Object.fromEntries(RESTORE_CHECKS.map(field=>[field,true]))};
+    const wire=frame('ENCRYPTED_RESTORE_RECEIPT',sealIndex(encode(body),group.pointer,env));
+    need(wire.length<=8192,'RESTORE_RECEIPT_BOUND');
+    c.state.restoreReceiptPath=describeObject(wire).path;
+    confirmMain();await remoteBody(c,group.pointer.index);
+    const stored=await store(c,wire),opened=openRestoreReceipt(unframe('ENCRYPTED_RESTORE_RECEIPT',await remoteBody(c,stored)),env);
+    need(same(opened.body,body),'RESTORE_RECEIPT_READBACK');
+    return {status:'DATABASE_RESTORE_RECEIPT_DURABLE',receiptWritten:true,fullDatabaseBackupVerified:false,freeReady:false};
+  }catch(error){throw archiveFailure(error,c);}
+}
+
+// The fixed hosted caller owns weather OUTER -> trip INNER throughout. The
+// adapter has create-only content keys. Re-reading exact bytes under these
+// locks is sufficient: no new journal, key, overwrite or atomic DELETE is used.
+export async function rotateSupabaseDatabaseBackups({reserveIndexSha256,reserveIndexCommitment,restoreRunId,holdIndexSha256=[]}={},dependencies={}){
+  const env=dependencies.env??process.env;let c;
+  try{
+    need(['Back up RavRadar Supabase database','Maintain RavRadar admin document history'].includes(env.GITHUB_WORKFLOW)
+      &&env.GITHUB_ACTIONS==='true'
+      &&env.GITHUB_REF==='refs/heads/main'&&env.GITHUB_RUN_ATTEMPT==='1'
+      &&env.GITHUB_REPOSITORY===LOCAL.repository&&env.RUNNER_ENVIRONMENT==='github-hosted'
+      &&env.RUNNER_OS==='Linux'&&(dependencies.processImpl??process).platform==='linux','ROTATION_OWNED_HOST');
+    need(Array.isArray(holdIndexSha256)&&holdIndexSha256.length<=64&&holdIndexSha256.every(hash),'ROTATION_HOLDS');
+    const confirmMain=()=> (dependencies.confirmMain??confirmDatabaseBackupMain)(env);
+    confirmMain();
+    c=clients(env,dependencies.fetchImpl??globalThis.fetch,{rotation:true});
+    const current=await lifecycleCurrent(c);
+    const inventory=await rotationInventory(c),{groups,legacyIndexSeen,unreferencedManagedObjectsSeen}=await rotationGroups(c,inventory);
+    await qualifyHistoricalBackupGroups(c,groups,current.pointer.index.sha256);
+    const currentGroup=groups.find(group=>group.pointer.index.sha256===current.pointer.index.sha256);
+    need(currentGroup?.receipts.length>0,'ROTATION_CURRENT_NOT_RECOVERY_VERIFIED');
+    if(legacyIndexSeen)return {status:'DATABASE_BACKUP_ROTATION_RETAINS_ALL_LEGACY_REFERENCE',deletedObjects:0};
+    if(unreferencedManagedObjectsSeen)return {status:'DATABASE_BACKUP_ROTATION_RETAINS_ALL_UNREFERENCED_MANAGED_OBJECT',deletedObjects:0};
+    const bootstrap=groups.find(item=>item.pointer.index.sha256===reserveIndexSha256
+      ||reserveIndexCommitment&&'rr-supabase-restore-v1:'+databaseRestoreCommitment(item.pointer.index.sha256)===reserveIndexCommitment);
+    const latestDurable=groups.filter(item=>item.pointer.index.sha256!==current.pointer.index.sha256
+      &&item.group.completedAt<current.group.completedAt&&item.receipts.length>0)
+      .sort((a,b)=>b.group.completedAt.localeCompare(a.group.completedAt)||a.pointer.index.sha256.localeCompare(b.pointer.index.sha256))[0];
+    // A durable receipt may advance a live bootstrap reserve, never move it backwards.
+    // Once that older group has expired, its stale optional selector is no dependency.
+    const durable=latestDurable&&(!bootstrap||latestDurable===bootstrap
+      ||latestDurable.group.completedAt>bootstrap.group.completedAt)?latestDurable:null;
+    if(durable){reserveIndexSha256=durable.pointer.index.sha256;reserveIndexCommitment=null;}
+    if(!durable&&((!reserveIndexSha256&&!reserveIndexCommitment)||!restoreRunId))
+      return {status:'DATABASE_BACKUP_ROTATION_RETAINS_ALL_NO_VERIFIED_RESERVE',deletedObjects:0};
+    if(reserveIndexCommitment){
+      need(/^rr-supabase-restore-v1:[a-f0-9]{64}$/.test(reserveIndexCommitment),'ROTATION_RESERVE_COMMITMENT');
+      const matches=groups.filter(group=>'rr-supabase-restore-v1:'+databaseRestoreCommitment(group.pointer.index.sha256)===reserveIndexCommitment);
+      need(matches.length===1&&(!reserveIndexSha256||reserveIndexSha256===matches[0].pointer.index.sha256),'ROTATION_RESERVE_COMMITMENT');
+      reserveIndexSha256=matches[0].pointer.index.sha256;
+    }
+    const proof=durable?{indexSha256:reserveIndexSha256}:(dependencies.verifyReserveRestore??verifyDatabaseBackupReserve)(
+      {indexSha256:reserveIndexSha256,restoreRunId},{env,read:dependencies.readGithub});
+    need(proof.indexSha256===reserveIndexSha256,'ROTATION_RESERVE_PROOF');
+    need(current.pointer.index.sha256!==reserveIndexSha256,'ROTATION_DISTINCT_RESERVE');
+    const reserve=groups.find(group=>group.pointer.index.sha256===reserveIndexSha256);
+    need(reserve,'ROTATION_RESERVE_NOT_LISTED');
+    await verifyRemoteGroup(c,current.pointer,current.opened);await verifyRemoteGroup(c,reserve.pointer,reserve.opened);
+    const retained=new Set([current.pointer.index.sha256,reserveIndexSha256,...holdIndexSha256]);
+    const candidates=groups.filter(group=>group.group.completedAt<current.group.completedAt
+      &&group.formerCurrent&&!retained.has(group.pointer.index.sha256))
+      .sort((a,b)=>a.group.completedAt.localeCompare(b.group.completedAt)||a.pointer.index.sha256.localeCompare(b.pointer.index.sha256));
+    // One complete group per ordinary capture keeps work bounded. Historic
+    // admin_document_versions are audit snapshots, not active restore pointers:
+    // the actual consumers use current locator or an explicit authenticated SHA.
+    const retiring=candidates.find(group=>{
+      const paths=new Set(groups.filter(other=>other!==group).flatMap(other=>other.objects.map(object=>object.path)));
+      return group.objects.every(object=>!paths.has(object.path));
+    });
+    if(!retiring)return {status:'DATABASE_BACKUP_ROTATION_NO_UNSHARED_COMPLETE_GROUP',deletedObjects:0};
+    c.state.retirementPaths=new Set(retiring.objects.map(object=>object.path));let deletedObjects=0;
+    for(const [ordinal,object] of retiring.objects.entries()){
+      confirmMain();
+      need(same(await readLocator(c),current.locator),'LOCATOR_CHANGED');
+      const fresh=await rotationInventory(c),listed=fresh.objects.get(object.path)??fresh.partObjects.get(object.path);
+      // Resume after runner loss using the same authenticated index. A proven
+      // absent part is settled; an unknown listing or changed byte identity stops.
+      if(!listed){need(!fresh.parts.has(object.path)&&!fresh.objects.has(object.path),'ROTATION_LIST_IDENTITY_MISSING');continue;}
+      need(listed.bytes===object.bytes,'ROTATION_OBJECT_CHANGED');
+      await remoteBody(c,object,digest=>partName.test(object.path)
+        ?partPath(retiring.pointer.manifestSha256,ordinal,digest):objectPath(digest));
+      await c.r2.removeExact(object.path);
+      const after=await rotationInventory(c);
+      need(!after.objects.has(object.path)&&!after.parts.has(object.path),'ROTATION_DELETE_NOT_OBSERVED');
+      deletedObjects++;
+    }
+    need(same(await readLocator(c),current.locator),'LOCATOR_CHANGED');
+    return {status:'DATABASE_BACKUP_ONE_GROUP_RETIRED',deletedObjects,
+      retainedCurrentIndexSha256:current.pointer.index.sha256,retainedReserveIndexSha256:reserveIndexSha256,
+      retiredIndexSha256:retiring.pointer.index.sha256,automaticRetry:false,fullDatabaseBackupVerified:false,freeReady:false};
+  }catch(error){throw archiveFailure(error,c);}
 }
 
 export async function runSupabaseDatabaseArchive(options={},dependencies={}){

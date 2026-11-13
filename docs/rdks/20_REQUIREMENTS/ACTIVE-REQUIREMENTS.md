@@ -1,3 +1,11 @@
+## 13. november — aktiv kontrakt for automatisk databasebackup og rotation
+
+Den forberedte vedligeholdelse skal bruge det eksisterende, præcist bundne adminmodtagerjob efter verificeret almindeligt vejr. Ingen ny dispatch, tidsplan, bucket, nøgle eller betalt plan indføres. De normale OUTER/INNER-låse og den oprindelige vejrslotbinding bevares; mindst 35 minutter skal være tilbage før privat arbejde og efter klargøring.
+
+En aktuel backup skal bestå fuld autentificeret SQL-indholds-/dubletparitet, isoleret Auth-funktion og ejet oprydning før stærk kvittering. Før hver sletning kræves verificeret current og særskilt reserve samt positiv, præcis tidligere-publiceringslocator for selve kandidaten. En receipt alene må ikke erstatte locatoren. Auditlocatorer, ukendte legacyobjekter, delte objekter og eneste originaler bevares. Løse managed SQL-/partobjekter i det allerede fulde inventar skal give HELD og standse ny capture. Indeks slettes sidst; senere normal afklaring må ikke gentage et bekræftet fraværende DELETE.
+
+Efter afklaret restore/rotation må en ny optagelse ske, når aktuel backup er mindst syv døgn gammel og hele transporten har plads under de eksisterende lofter. To verificerede generationer og højst én ny under kontrol er målet; ukendte rester er ikke sletteautoritet. Automatikken forbliver deaktiveret indtil faktisk arkiv-/Auth-gendannelse, præcis kildekvalifikation og målt samlet kvotemargin. Storage-filbytes, atomisk snapshot, produktionsrestore, brugersletning og Free-overgang er særskilte åbne krav. Se DEC-0255 og håndbog 89.347.
+
 ## 5. november — 4.0.598: sammensatte ravspørgsmål og bevarede originaler
 
 - Sammensatte ravspørgsmål må ikke miste en relevant del alene fordi spørgsmålet også handler om udstyr, dato eller prognose. Et ukendt ravrelateret udtryk skal give ærlig usikkerhed eller afklaring; det er ikke automatisk et uvedkommende emne.

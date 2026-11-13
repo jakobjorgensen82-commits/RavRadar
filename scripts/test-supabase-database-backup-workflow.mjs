@@ -58,7 +58,7 @@ function fixture(changed={},fault={}){
       indexSha256:fault.missingIndex||mode==='--bootstrap'&&!selected?undefined:'d'.repeat(64),candidates:mode==='--bootstrap'&&!selected?[{indexSha256:'d'.repeat(64),completedAt:'2026-11-02T12:00:00.000Z',privatePayload:'never-log-payload'}]:undefined,
       payload:'never-log-payload'}));
   };
-  return{env,calls,bucketCalls,controllerCalls,dockerCalls,gitCalls,made,fault,invoke:(phase='execute')=>run({phase},{env,fsImpl,pathImpl:path.posix,processImpl:proc,execFileSyncImpl,now:()=>clock}),setClock:value=>{clock=value;}};
+  return{env,calls,bucketCalls,controllerCalls,dockerCalls,gitCalls,made,fault,invoke:(phase='execute',automatic=false)=>run({phase,automatic},{env,fsImpl,pathImpl:path.posix,processImpl:proc,execFileSyncImpl,now:()=>clock,verifyTrigger:()=>({proceed:!fault.triggerRejected})}),setClock:value=>{clock=value;}};
 }
 function captureEnv(){return{SUPABASE_BACKUP_OPERATION:'capture',SUPABASE_BACKUP_CONFIRMATION:captureConfirmation};}
 function code(fn,wanted){assert.throws(fn,e=>e.code===wanted);}
@@ -246,4 +246,17 @@ test('fixed 844 role audit caller rejects index input and reaches only the pinne
     const refused=fixture(operation,{roleGrantReceipt});code(()=>refused.invoke(),'SUPABASE_BACKUP_ROLE_GRANT_RECEIPT');
     assert.equal(refused.controllerCalls.length,1);
   }
+});
+
+test('existing maintenance backup job uses the same hosted caller only with automatic original-weather authority',()=>{
+  const ordinary={...captureEnv(),GITHUB_WORKFLOW:'Maintain RavRadar admin document history'};
+  const f=fixture(ordinary);const pre=f.invoke('preflight',true);
+  assert.equal(pre.archiveWrittenThisOperation,false);assert.equal(f.controllerCalls.length,0);
+  const done=f.invoke('execute',true);assert.equal(done.archiveWrittenThisOperation,true);
+  assert.equal(f.controllerCalls.length,1);assert.deepEqual(f.controllerCalls[0].args,['scripts/archive-supabase-database-backup.mjs','--capture']);
+  const manual=fixture(ordinary);code(()=>manual.invoke('execute'),'SUPABASE_BACKUP_AUTHORITY');assert.equal(manual.calls.length,0);
+  const stale=fixture(ordinary,{triggerRejected:true});code(()=>stale.invoke('execute',true),'SUPABASE_BACKUP_NO_ORIGINAL_WEATHER_WINDOW');
+  assert.equal(stale.bucketCalls.length,0);assert.equal(stale.controllerCalls.length,0);
+  const foreign=fixture({...ordinary,GITHUB_WORKFLOW:'Unrelated workflow'});code(()=>foreign.invoke('execute',true),'SUPABASE_BACKUP_AUTHORITY');
+  assert.equal(foreign.calls.length,0);
 });

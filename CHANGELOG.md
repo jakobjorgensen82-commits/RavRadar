@@ -1,3 +1,11 @@
+## 13. november — automatisk databasebackup og dokumenteret oprydning
+
+Den private 598-kandidat samler backupvedligeholdelsen efter det eksisterende, botbestilte adminjob. Den normale passage vælger én handling: gendannelse af aktuel backup med reel indholds-/Auth-kontrol, sikker rotation af én gammel gruppe eller ny optagelse efter syv døgn. Der kræves mindst 35 minutter til kildevejrets oprindelige næste slot. Vejrjobbet, den manuelle backupvej, originaler, SQL/ACL-regler og numerisk model bevares.
+
+Sletning kræver positiv tidligere publicering for hver kandidat, en verificeret aktuel backup og en særskilt verificeret reserve. Locatorhistorikkens auditrækker bevares. Løse managed SQL-objekter og dele fra det allerede komplette inventar giver HELD og blokerer ny optagelse. Indekset slettes sidst; en senere normal passage afklarer bekræftet fravær uden at gentage en ukendt DELETE blindt. Målet er to verificerede generationer og højst én ny under kontrol, ikke automatisk sletning af ukendte originaler.
+
+Forløbet er forberedt og deaktiveret. Den faktiske fulde arkiv-/Auth-gendannelse, præcis kildekvalifikation, afklaring af gamle rester og samlet målt Free-margin er stadig åbne krav. Der påstås ikke atomisk live-snapshot, gendannede Storage-filbytes, produktionsgendannelse eller afsluttet brugersletning. Se håndbog 89.347 og tillægget til DEC-0255; aktuelle målinger og variabelkvitteringer føres privat.
+
 ## 12. november — sene adminvisninger og faktisk arkivparitet
 
 Administratorens Kalibrering og System kan åbnes, mens den offentlige model stadig hentes. Den lokale rettelse opdaterer kun den oprindelige modelvisning: AFVENTER under læsning, BLOKERET ved faktisk verifikationsfejl og gyldig model efter en normal vellykket genprøvning. Rapporter, prøvemail og deres igangværende kontroller bevares. Retningseditoren monteres én gang efter den eksisterende admin-ready-grænse med de afsluttede input; en senere offentlig læsning genopretter ikke editoren eller overskriver kladden. Den eksisterende admin-UI-adresse ændres ens i side og offlinecache, mens data-service-adressen bevares.

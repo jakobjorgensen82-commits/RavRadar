@@ -1,3 +1,7 @@
+## 13. november 2026 — privat 4.0.598-backupautonomi, fortsat deaktiveret
+
+Backupvedligeholdelsen er forberedt som ét efterfølgende job i den normale adminmodtager: current-restore med stærk indholds-/Auth-kvittering, auditbundet rotation og ny optagelse efter syv døgn. Begge konkrete peerfund er dækket: kvittering erstatter aldrig positiv tidligere publicering; urefererede managed SQL-/partobjekter holdes og standser ny capture. Normale målrettede syntetiske prøver består; det er ikke hosted arkivgendannelse, aktivering eller Free-klarhed. Numerisk 598, originaler, migrationer, vejr og eksisterende manuelle workflow bevares. Se håndbog 89.347 og DEC-0255; faktiske variabel-/ressourcekvitteringer føres privat.
+
 ## 5. november — 4.0.598: sammensatte ravspørgsmål og bevarede originaler
 
 4.0.598 er den selvstændige efterfølger til den installerede 4.0.597 for Spørg RavRadar. Den samler de allerede gennemgåede rettelser til kombinerede spørgsmål om ravudstyr og prognose, relevante ukendte udtryk og afvisning af fundgarantier. Dansk, tysk og engelsk følger samme afgrænsning. Den offentlige faktabanks faglige indhold bevares; interne driftsfejl, private forhold og turdata må ikke blive assistentviden. Tidspunkt og konkret prognose skal fortsat komme fra gyldige lokale data, aldrig fra opdigtede AI-tal.

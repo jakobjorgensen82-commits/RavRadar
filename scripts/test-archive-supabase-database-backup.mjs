@@ -51,6 +51,13 @@ function fixture(temp,behavior={}){
   const fetchImpl=async(url,options={})=>{
     const u=new URL(url),method=options.method||'GET',headers=new Headers(options.headers),body=options.body;calls.push({url,method,headers,body,childrenAtRequest:children.length});
     if(u.hostname==='api.supabase.com'){assert.ok(!behavior.denySupabase,'bootstrap must never contact Supabase');assert.equal(method,'POST');assert.ok(JSON.parse(body).query.includes('has_table_privilege'));return json(behavior.catalogue?.()??catalogue(),behavior.catalogueStatus??200);}
+    if(u.origin===P.project&&u.pathname==='/rest/v1/admin_document_versions'){
+      assert.ok(!behavior.denySupabase,'receipt/bootstrap never contacts database');assert.equal(method,'GET');
+      assert.equal(u.searchParams.get('document_key'),'eq.'+P.locatorKey);
+      const wanted=u.searchParams.get('payload->index->>sha256')?.slice(3);
+      const rows=oldLocators.filter(row=>row.payload.index.sha256===wanted).slice(0,2);
+      return json(behavior.historyRows?behavior.historyRows(clone(rows)):rows);
+    }
     if(u.origin===P.project){assert.ok(!behavior.denySupabase,'bootstrap must never contact Supabase');assert.equal(u.pathname,'/rest/v1/admin_documents');assert.equal(headers.get('apikey'),env.SUPABASE_SERVICE_ROLE_KEY);
       if(method==='GET'){assert.equal(u.searchParams.get('document_key'),'eq.'+P.locatorKey);if(behavior.beforeLocatorGet)behavior.beforeLocatorGet(api);return json(locatorRepresentation(method));}
       const payload=JSON.parse(body);assert.equal(payload.updated_by,null);assert.equal(payload.payload.bucket,P.bucket);
@@ -78,12 +85,19 @@ function fixture(temp,behavior={}){
       assert.ok(Buffer.isBuffer(body));assert.ok(body.length<=P.maximumObjectBytes);assert.equal(sha(body),part?part[1]:key.split('/').at(-1).split('.')[0]);
       if(part)assert.ok(gunzipSync(body,{maxOutputLength:P.maximumCipherBytes}).length>0);
       else{
-        const frame=JSON.parse(gunzipSync(body));assert.match(frame.kind,/^SUPABASE_DB_(SQL_CIPHERTEXT|ENCRYPTED_INDEX)_FRAME_V1$/);
+        const frame=JSON.parse(gunzipSync(body));assert.match(frame.kind,/^SUPABASE_DB_(SQL_CIPHERTEXT|ENCRYPTED_INDEX|ENCRYPTED_RESTORE_RECEIPT)_FRAME_V1$/);
         assert.equal(sha(Buffer.from(frame.data,'base64')),frame.sha256);assert.equal(Buffer.from(frame.data,'base64').length,frame.bytes);
       }
       if(behavior.putUnknown){objects.set(key,Buffer.from(body));throw new Error('synthetic private uncertain outcome');}
       if(behavior.putStatus)return response('',behavior.putStatus);
       if(objects.has(key))return response('',412);objects.set(key,Buffer.from(body));return response('',200);}
+    if(method==='DELETE'){
+      assert.equal(behavior.allowRetirement,true,'ordinary capture/discovery cannot delete');
+      if(behavior.deleteNoop)return response('',204);
+      objects.delete(key);
+      if(typeof behavior.deleteUnknown==='function'?behavior.deleteUnknown(key):behavior.deleteUnknown)throw new Error('synthetic lost delete response');
+      return response('',204);
+    }
     assert.equal(method,'GET');let b=objects.get(key);if(!b)return response('',404);
     if(behavior.readObject)b=behavior.readObject(key,Buffer.from(b));return response(b,200,{'content-length':String(b.length)});
   };
@@ -727,4 +741,229 @@ COMMENT ON ROLE "supabase_future_role" IS 'supabase_comment_value';
     withoutDatabase(x.f);await assert.rejects(()=>auditGrant({indexCommitmentSha256:commitment,targetSystemRoles},x.f.dependencies()),
       e=>/^ROLE_AUDIT_/.test(e.code));
   }
+});
+
+
+function tinyOwnedParts(f){
+  const original=clone(f.locator),{index}=encryptedIndex(f),manifest=f.locator.payload.manifestSha256;
+  const entries=index.objects.map((entry,ordinal)=>{
+    const raw=Buffer.from(decodeObject(f.objects.get(entry.object.path)).data,'base64'),wire=gzipSync(raw,{level:0});
+    const digest=sha(wire),key=`bundles/sha256/${manifest}/part-${String(ordinal).padStart(3,'0')}-${digest}.json.gz.part`;
+    f.objects.set(key,wire);
+    return {file:entry.file,parts:[{offset:0,cipherBytes:raw.length,cipherSha256:sha(raw),object:{path:key,sha256:digest,bytes:wire.length}}]};
+  });
+  f.locator=rewriteSyntheticSelfIndex(f,value=>{value.kind='SUPABASE_DB_BACKUP_INDEX_V2';value.objects=entries;});
+  // Test-only construction removes only its replaced tiny synthetic carriers.
+  f.objects.delete(original.payload.index.path);for(const entry of index.objects)f.objects.delete(entry.object.path);
+  return clone(f.locator);
+}
+async function tinyRotation(t,{verifyCurrent=true}={}){
+  const {f}=await captured(t,{allowRetirement:true}),retiring=tinyOwnedParts(f);
+  f.env.GITHUB_RUN_ID='12346';await run({mode:'capture'},f.dependencies());const reserve=clone(f.locator);
+  f.env.GITHUB_RUN_ID='12347';await run({mode:'capture'},f.dependencies());
+  Object.assign(f.env,{GITHUB_REF:'refs/heads/main',GITHUB_WORKFLOW:'Back up RavRadar Supabase database'});
+  const q={f,retiring,reserve,options:{reserveIndexSha256:reserve.payload.index.sha256,restoreRunId:'700'},
+    dependencies:()=>({...f.dependencies(),confirmMain:()=>{},verifyReserveRestore:({indexSha256,restoreRunId})=>({indexSha256,restoreRunId})})};
+  Object.assign(f.env,{GITHUB_EVENT_NAME:'workflow_dispatch'});
+  if(verifyCurrent){const {persistSupabaseDatabaseRestoreReceipt:persist}=await import('./archive-supabase-database-backup.mjs');
+    await persist({indexSha256:f.locator.payload.index.sha256,report:positiveRestoreReport(f)},q.dependencies());}
+  return q;
+}
+test('normal database rotation retires one authenticated tiny group index-last and preserves current and verified distinct reserve',async t=>{
+  const {rotateSupabaseDatabaseBackups:rotate}=await import('./archive-supabase-database-backup.mjs');
+  const q=await tinyRotation(t),current=clone(q.f.locator);
+  q.f.env.GITHUB_RUN_ID='12348';await run({mode:'capture'},q.f.dependencies());
+  const unresolvedNewer=clone(q.f.locator);q.f.locator=current;const before=new Map(q.f.objects);
+  const {databaseRestoreCommitment}=await import('./supabase-backup-lifecycle.mjs');
+  const committed={restoreRunId:q.options.restoreRunId,
+    reserveIndexCommitment:'rr-supabase-restore-v1:'+databaseRestoreCommitment(q.reserve.payload.index.sha256)};
+  const held=await rotate({...committed,holdIndexSha256:[q.retiring.payload.index.sha256]},q.dependencies());
+  assert.equal(held.deletedObjects,0);
+  const result=await rotate(committed,q.dependencies());assert.equal(result.deletedObjects,6);
+  assert.equal(result.status,'DATABASE_BACKUP_ONE_GROUP_RETIRED');assert.deepEqual(q.f.locator,current);
+  const deleted=q.f.calls.filter(call=>call.method==='DELETE').map(call=>new URL(call.url).pathname.slice(P.bucket.length+2));
+  assert.equal(deleted.length,6);assert.equal(deleted.at(-1),q.retiring.payload.index.path);
+  for(const [key,wire]of before)if(!deleted.includes(key))assert.ok(q.f.objects.get(key).equals(wire));
+  assert.ok(q.f.objects.has(q.reserve.payload.index.path)&&q.f.objects.has(current.payload.index.path));
+  assert.ok(q.f.objects.has(unresolvedNewer.payload.index.path),'a newer non-current group is preserved');
+  const later=await rotate(committed,q.dependencies());assert.equal(later.deletedObjects,0);
+});
+test('normal database rotation settles runner-loss absence under the existing writer without replaying an unknown DELETE',async t=>{
+  const {rotateSupabaseDatabaseBackups:rotate}=await import('./archive-supabase-database-backup.mjs');
+  const q=await tinyRotation(t);q.f.behavior.deleteUnknown=true;
+  await rejectCode(()=>rotate(q.options,q.dependencies()),'DB_BACKUP_WRITE_OUTCOME_UNKNOWN');
+  const first=q.f.calls.filter(call=>call.method==='DELETE');assert.equal(first.length,1);
+  assert.ok(q.f.objects.has(q.retiring.payload.index.path));q.f.behavior.deleteUnknown=false;
+  const result=await rotate(q.options,q.dependencies());assert.equal(result.deletedObjects,5);
+  const deletes=q.f.calls.filter(call=>call.method==='DELETE');assert.equal(deletes.length,6);
+  assert.equal(new Set(deletes.map(call=>call.url)).size,6,'already absent object is not deleted again');
+});
+test('normal database rotation fails closed on no reserve, current-as-reserve and unobserved deletion',async t=>{
+  const {rotateSupabaseDatabaseBackups:rotate}=await import('./archive-supabase-database-backup.mjs');
+  const q=await tinyRotation(t);
+  assert.equal((await rotate({},q.dependencies())).deletedObjects,0);
+  await rejectCode(()=>rotate({...q.options,reserveIndexSha256:q.f.locator.payload.index.sha256},q.dependencies()),'ROTATION_DISTINCT_RESERVE');
+  assert.equal(q.f.calls.filter(call=>call.method==='DELETE').length,0);
+  q.f.behavior.deleteNoop=true;
+  await rejectCode(()=>rotate(q.options,q.dependencies()),'ROTATION_DELETE_NOT_OBSERVED');
+  assert.equal(q.f.calls.filter(call=>call.method==='DELETE').length,1);
+  q.f.behavior.deleteNoop=false;
+  const before=q.f.calls.filter(call=>call.method==='DELETE').length;
+  q.f.oldLocators.splice(0,q.f.oldLocators.length,...q.f.oldLocators.filter(row=>row.payload.index.sha256!==q.retiring.payload.index.sha256));
+  assert.equal((await rotate(q.options,q.dependencies())).deletedObjects,0,'unknown unpublished group is retained');
+  const {inspectSupabaseDatabaseBackupLifecycle:inspect}=await import('./archive-supabase-database-backup.mjs');
+  assert.equal((await inspect(q.dependencies())).rotationHeld,true);
+  assert.equal(q.f.calls.filter(call=>call.method==='DELETE').length,before);
+});
+test('normal database rotation rejects changed current locator and changed retiring object before DELETE',async t=>{
+  const {rotateSupabaseDatabaseBackups:rotate}=await import('./archive-supabase-database-backup.mjs');
+  const q=await tinyRotation(t),original=clone(q.f.locator);let scanned=false;
+  q.f.behavior.readObject=(key,wire)=>{if(key===q.retiring.payload.index.path)scanned=true;return wire;};
+  q.f.behavior.beforeLocatorGet=()=>{if(scanned)q.f.locator.version++;};
+  await rejectCode(()=>rotate(q.options,q.dependencies()),'LOCATOR_CHANGED');
+  assert.equal(q.f.calls.filter(call=>call.method==='DELETE').length,0);
+  q.f.locator=original;delete q.f.behavior.beforeLocatorGet;
+  q.f.behavior.historyRows=rows=>rows.map(row=>({...row,payload:{...row.payload,manifestSha256:'e'.repeat(64)}}));
+  await rejectCode(()=>rotate(q.options,q.dependencies()),'ROTATION_HISTORICAL_LOCATOR_IDENTITY');
+  assert.equal(q.f.calls.filter(call=>call.method==='DELETE').length,0);delete q.f.behavior.historyRows;
+  q.f.behavior.readObject=(key,wire)=>{
+    if(key.startsWith('bundles/sha256/'+q.retiring.payload.manifestSha256+'/'))wire[wire.length-1]^=1;return wire;};
+  await rejectCode(()=>rotate(q.options,q.dependencies()),'REMOTE_OBJECT_SHA');
+  assert.equal(q.f.calls.filter(call=>call.method==='DELETE').length,0);
+});
+
+
+function positiveRestoreReport(f,indexSha256=f.locator.payload.index.sha256){
+  const commitment=sha(Buffer.from(JSON.stringify(['RavRadar/SupabaseArchiveRestore/v1/selector',indexSha256])));
+  return {status:'PASS',scope:'authenticated-archive-isolated-sql-restore',sourceHead:f.env.GITHUB_SHA,cliVersion:'2.117.0',
+    archiveIndexCommitmentSha256:commitment,authenticatedFiveFileSqlExecuted:true,exactSqlBytesStreamed:true,
+    isolatedAuthServiceHealthy:true,localRestoredCatalogVerified:true,ownedDockerClosed:true,
+    sourceDataParityVerified:true,authRestoreVerified:true,fullDatabaseBackupVerified:true,
+    archiveDataParity:{status:'PASS',scope:'AUTHENTICATED_ARCHIVE_CONTENT_AND_DUPLICATES',digest:'c'.repeat(64)},
+    productionDatabaseRestoreExecuted:false,productionBackupVerified:false,productionAuthRestoreVerified:false,
+    atomicDatabaseSnapshot:false,storageObjectBytesRestored:false,erasureBarriersVerified:false,freeReady:false};
+}
+
+test('durable normal reserve uses exact598 strong flags before IO and only one R2 receipt without database access',async t=>{
+  const {persistSupabaseDatabaseRestoreReceipt:persist}=await import('./archive-supabase-database-backup.mjs');
+  const q=await tinyRotation(t,{verifyCurrent:false}),indexSha256=q.f.locator.payload.index.sha256;
+  const report=positiveRestoreReport(q.f),start=q.f.calls.length,children=q.f.children.length;
+  q.f.env.GITHUB_WORKFLOW='Maintain RavRadar admin document history';
+  q.f.behavior.denySupabase=true;
+  for(const field of ['sourceDataParityVerified','authRestoreVerified','fullDatabaseBackupVerified','ownedDockerClosed'])
+    await rejectCode(()=>persist({indexSha256,report:{...report,[field]:false}},q.dependencies()),'RESTORE_RECEIPT_NOT_POSITIVE');
+  await rejectCode(()=>persist({indexSha256,report:{...report,archiveDataParity:{...report.archiveDataParity,digest:''}}},q.dependencies()),'RESTORE_RECEIPT_NOT_POSITIVE');
+  assert.equal(q.f.calls.length,start);
+  const first=await persist({indexSha256,report},q.dependencies());assert.equal(first.receiptWritten,true);
+  assert.equal((await persist({indexSha256,report},q.dependencies())).receiptWritten,false);
+  const writes=q.f.calls.slice(start).filter(call=>call.method==='PUT');
+  assert.equal(writes.length,1);assert(writes[0].body.length<=8192);
+  assert.equal(q.f.calls.slice(start).some(call=>!call.url.includes('.eu.r2.cloudflarestorage.com/')),false);
+  assert.equal(q.f.children.length,children);assert.equal(q.f.calls.some(call=>call.method==='DELETE'),false);
+  assert(!JSON.stringify(first).includes(indexSha256));
+});
+
+test('durable normal rotation keeps current and latest verified reserve and preserves every locator audit row',async t=>{
+  const {persistSupabaseDatabaseRestoreReceipt:persist,rotateSupabaseDatabaseBackups:rotate,
+    inspectSupabaseDatabaseBackupLifecycle:inspect}=await import('./archive-supabase-database-backup.mjs');
+  const q=await tinyRotation(t,{verifyCurrent:false}),current=clone(q.f.locator);
+  q.f.env.GITHUB_WORKFLOW='Maintain RavRadar admin document history';
+  await persist({indexSha256:q.reserve.payload.index.sha256,report:positiveRestoreReport(q.f,q.reserve.payload.index.sha256)},q.dependencies());
+  await persist({indexSha256:current.payload.index.sha256,report:positiveRestoreReport(q.f)},q.dependencies());
+  assert.equal((await inspect(q.dependencies())).rotationPending,true);
+  const beforeAudit=clone(q.f.oldLocators),first=await rotate({},q.dependencies());
+  assert.equal(first.retainedReserveIndexSha256,q.reserve.payload.index.sha256);
+  assert.equal(q.f.objects.has(q.retiring.payload.index.path),false);
+  assert.deepEqual(q.f.oldLocators,beforeAudit);
+  q.f.env.GITHUB_RUN_ID='12348';await run({mode:'capture'},q.f.dependencies());
+  await rejectCode(()=>rotate({},q.dependencies()),'ROTATION_CURRENT_NOT_RECOVERY_VERIFIED');
+  await persist({indexSha256:q.f.locator.payload.index.sha256,report:positiveRestoreReport(q.f)},q.dependencies());
+  const nextAudit=clone(q.f.oldLocators),next=await rotate({},q.dependencies());
+  assert.equal(next.retainedReserveIndexSha256,current.payload.index.sha256);
+  assert(q.f.objects.has(current.payload.index.path)&&q.f.objects.has(q.f.locator.payload.index.path));
+  assert.equal(q.f.objects.has(q.reserve.payload.index.path),false);assert.deepEqual(q.f.oldLocators,nextAudit);
+  const deleted=q.f.calls.filter(call=>call.method==='DELETE').map(call=>new URL(call.url).pathname.slice(P.bucket.length+2));
+  assert.equal(deleted.at(-1),q.reserve.payload.index.path);
+});
+
+test('durable normal receipt uncertainty is reconciled without repeat PUT and altered GCM never authorizes rotation',async t=>{
+  const {persistSupabaseDatabaseRestoreReceipt:persist,rotateSupabaseDatabaseBackups:rotate}=await import('./archive-supabase-database-backup.mjs');
+  const q=await tinyRotation(t,{verifyCurrent:false}),indexSha256=q.f.locator.payload.index.sha256,report=positiveRestoreReport(q.f);
+  q.f.behavior.putUnknown=true;
+  await rejectCode(()=>persist({indexSha256,report},q.dependencies()),'DB_BACKUP_WRITE_OUTCOME_UNKNOWN');
+  q.f.behavior.putUnknown=false;const puts=q.f.calls.filter(call=>call.method==='PUT').length;
+  assert.equal((await persist({indexSha256,report},q.dependencies())).receiptWritten,false);
+  assert.equal(q.f.calls.filter(call=>call.method==='PUT').length,puts);
+  const [key,wire]=[...q.f.objects].find(([,wire])=>{try{return decodeObject(wire).kind==='SUPABASE_DB_ENCRYPTED_RESTORE_RECEIPT_FRAME_V1';}catch{return false;}});
+  const outer=decodeObject(wire),binary=Buffer.from(outer.data,'base64');binary[binary.length-1]^=1;
+  outer.data=binary.toString('base64');outer.sha256=sha(binary);
+  const altered=gzipSync(Buffer.from(JSON.stringify(outer)),{level:1});q.f.objects.delete(key);
+  q.f.objects.set('bundles/sha256/'+sha(altered)+'.json.gz',altered);
+  await rejectCode(()=>rotate(q.options,q.dependencies()),'INDEX_GCM_AUTHENTICATION');
+  assert.equal(q.f.calls.filter(call=>call.method==='DELETE').length,0);
+});
+
+
+test('rotation v2 requires actual former-current audit even when an unpublished group has a valid restore receipt',async t=>{
+  const {persistSupabaseDatabaseRestoreReceipt:persist,rotateSupabaseDatabaseBackups:rotate,
+    inspectSupabaseDatabaseBackupLifecycle:inspect}=await import('./archive-supabase-database-backup.mjs');
+  const q=await tinyRotation(t);
+  await persist({indexSha256:q.reserve.payload.index.sha256,
+    report:positiveRestoreReport(q.f,q.reserve.payload.index.sha256)},q.dependencies());
+  await persist({indexSha256:q.retiring.payload.index.sha256,
+    report:positiveRestoreReport(q.f,q.retiring.payload.index.sha256)},q.dependencies());
+  q.f.oldLocators.splice(0,q.f.oldLocators.length,...q.f.oldLocators.filter(row=>
+    row.payload.index.sha256!==q.retiring.payload.index.sha256));
+  const status=await inspect(q.dependencies());
+  assert.equal(status.rotationHeld,true,'a receipt cannot prove previous publication');
+  assert.equal(status.rotationPending,false,'unpublished restore-qualified group cannot retire');
+  assert.equal((await rotate(q.options,q.dependencies())).deletedObjects,0);
+  assert.equal(q.f.calls.some(call=>call.method==='DELETE'),false);
+  assert(q.f.objects.has(q.retiring.payload.index.path));
+});
+
+test('rotation v2 holds unreferenced managed SQL frames and chunks from the complete existing inventory',async t=>{
+  const {persistSupabaseDatabaseRestoreReceipt:persist,rotateSupabaseDatabaseBackups:rotate,inspectSupabaseDatabaseBackupLifecycle:inspect}
+    =await import('./archive-supabase-database-backup.mjs');
+  for(const kind of ['frame','chunk']){
+    const q=await tinyRotation(t);let wire,key;
+    await persist({indexSha256:q.reserve.payload.index.sha256,
+      report:positiveRestoreReport(q.f,q.reserve.payload.index.sha256)},q.dependencies());
+    assert.equal((await inspect(q.dependencies())).rotationHeld,false,'known normal chain before orphan');
+    if(kind==='frame'){
+      const entry=encryptedIndex(q.f).index.objects[0];
+      wire=gzipSync(gunzipSync(q.f.objects.get(entry.object.path)),{level:0});
+      key='bundles/sha256/'+sha(wire)+'.json.gz';
+    }else{
+      wire=gzipSync(Buffer.from('synthetic orphan encrypted chunk'),{level:0});
+      key='bundles/sha256/'+'e'.repeat(64)+'/part-000-'+sha(wire)+'.json.gz.part';
+    }
+    assert(!q.f.objects.has(key));q.f.objects.set(key,wire);
+    assert.equal((await inspect(q.dependencies())).rotationHeld,true,kind+' is retained and blocks capture');
+    const result=await rotate(q.options,q.dependencies());assert.equal(result.deletedObjects,0);
+    assert.equal(q.f.calls.some(call=>call.method==='DELETE'),false);assert(q.f.objects.get(key).equals(wire));
+  }
+});
+
+test('rotation v2 resumes a published group after uncertain receipt deletion without deleting any settled object again',async t=>{
+  const {persistSupabaseDatabaseRestoreReceipt:persist,rotateSupabaseDatabaseBackups:rotate,
+    inspectSupabaseDatabaseBackupLifecycle:inspect}=await import('./archive-supabase-database-backup.mjs');
+  const q=await tinyRotation(t);
+  await persist({indexSha256:q.reserve.payload.index.sha256,
+    report:positiveRestoreReport(q.f,q.reserve.payload.index.sha256)},q.dependencies());
+  const before=new Set(q.f.objects.keys());
+  await persist({indexSha256:q.retiring.payload.index.sha256,
+    report:positiveRestoreReport(q.f,q.retiring.payload.index.sha256)},q.dependencies());
+  const receiptKeys=[...q.f.objects.keys()].filter(key=>!before.has(key));assert.equal(receiptKeys.length,1);
+  const [receiptKey]=receiptKeys;q.f.behavior.deleteUnknown=key=>key===receiptKey;
+  await rejectCode(()=>rotate(q.options,q.dependencies()),'DB_BACKUP_WRITE_OUTCOME_UNKNOWN');
+  assert.equal(q.f.objects.has(receiptKey),false);assert(q.f.objects.has(q.retiring.payload.index.path));
+  q.f.behavior.deleteUnknown=false;
+  const status=await inspect(q.dependencies());assert.equal(status.rotationHeld,false);
+  // The genuine former-current row still qualifies the remaining index retirement.
+  const result=await rotate(q.options,q.dependencies());assert.equal(result.deletedObjects,1);
+  assert.equal(q.f.objects.has(q.retiring.payload.index.path),false);
+  const deleted=q.f.calls.filter(call=>call.method==='DELETE').map(call=>call.url);
+  assert.equal(deleted.length,7);assert.equal(new Set(deleted).size,7);
+  assert.equal(deleted.filter(url=>new URL(url).pathname.endsWith(receiptKey)).length,1);
 });

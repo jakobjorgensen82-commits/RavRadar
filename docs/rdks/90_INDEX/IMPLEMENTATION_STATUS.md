@@ -19,6 +19,8 @@ Den normale leveringsvej er en lille faktisk ændring, målrettet kvalifikation,
 
 Se [aktive krav](../20_REQUIREMENTS/ACTIVE-REQUIREMENTS.md) og [roadmap](ACTIVE_ROADMAP.md) for de konkrete kontrakter. Punkter med manglende faktisk evidens forbliver åbne; denne dokumentforenkling er ikke en færdigmelding.
 
+Databasebackupens automatiske restore/rotation/ugentlige optagelse er forberedt som et efterfølgende job i den eksisterende adminvedligeholdelse og er ikke aktiveret. Positive historiske locatorer kræves ved al retirement; ukendte grupper og løse managed objekter giver HELD. Faktisk fuld arkiv-/Auth-gendannelse, præcis kildekvalifikation og målt samlet margin mangler fortsat før aktivering eller Free-overgang. Se håndbog 89.347 og DEC-0255.
+
 <!-- RAVRADAR_ACTIVE_ENTRY_END -->
 
 ## Daterede notater og tidligere indgange — uændret historik
