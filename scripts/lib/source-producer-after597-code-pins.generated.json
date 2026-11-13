@@ -1483,8 +1483,8 @@
     },
     {
       "path": "scripts/lib/source-producer-after597-runtime-family.mjs",
-      "bytes": 42411,
-      "sha256": "c9a6422d12eb38825346574a90994bb1cde264ee6cf1957781b867e264905ce8"
+      "bytes": 42802,
+      "sha256": "dc49889c56e659bd7f63dc2eb8030a73df3f9c3044f2c2f8069f536db2e3160a"
     },
     {
       "path": "scripts/lib/source-producer-binding.generated.json",

@@ -695,7 +695,13 @@ function assertCommittedSourceCode(checkClock) {
     env,timeout:10000,maxBuffer:64*1024*1024,stdio:['pipe','pipe','pipe'],...options});
   const head=git(['rev-parse','HEAD^{commit}']).toString('utf8').trim();
   codeNeed(/^[a-f0-9]{40}$/.test(head));
-  if(process.env.GITHUB_SHA!==undefined)codeNeed(head===process.env.GITHUB_SHA);
+  // A normal PR checks out its authenticated head, while GitHub retains the
+  // merge-event SHA. The existing PR caller supplies SOURCE_GATE_HEAD_SHA.
+  // Captured action children supply no gate field and keep their own head SHA.
+  const requestHead=process.env.GITHUB_EVENT_NAME==='pull_request'
+    &&process.env.SOURCE_GATE_HEAD_SHA!==undefined
+    ?process.env.SOURCE_GATE_HEAD_SHA:process.env.GITHUB_SHA;
+  if(requestHead!==undefined)codeNeed(head===requestHead);
   codeNeed(git(['for-each-ref','refs/replace']).length===0);
   const pins=sourceProducerAfter597CodePinsFromText(codeUtf8(
     readSourceCodeFile(SOURCE_PRODUCER_AFTER597_CODE_PIN_PATH,null,checkClock,true,256*1024)));

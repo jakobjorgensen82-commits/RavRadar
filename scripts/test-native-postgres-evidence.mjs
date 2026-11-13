@@ -975,6 +975,19 @@ function historical592ImportSource(source,file){
 }
 
 
+// These legacy588/597 source oracles retain the genuine598 CODE inputs that
+// they inspected before the numerical/operational Source split. No old source
+// bytes are current Source admission, native execution or PostgreSQL evidence.
+async function historical598NativeSource(file){
+  const {assertSource598CodeSourceSelected}=await import('./check-assistant-later-h0-predecessor-source.mjs');
+  const {head}=assertSource598CodeSourceSelected();
+  const {execFileSync}=await import('node:child_process');
+  return execFileSync('git',['-c','protocol.allow=never','cat-file','blob',head+':'+file],{
+    encoding:'utf8',maxBuffer:1024*1024,timeout:30000,
+    env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0'},
+  });
+}
+
 test('calendar588 computed source inventories retain exact finite edges and refuse byte mutation',async()=>{
   const inventories={
   "scripts/check-assistant-later-h0-predecessor-source.mjs": [],
@@ -1025,7 +1038,7 @@ test('calendar588 computed source inventories retain exact finite edges and refu
     assert.deepEqual([...modelSourceRelativeModuleSpecifiers(source,file)],[...expected],file);
     const actualExpected=Object.hasOwn(reviewedConditions593ImportViews,file)?[...expected,'./bounded-json-writer.mjs']:[...expected];
     assert.deepEqual([...modelSourceRelativeModuleSpecifiers(actual,file)],actualExpected,file);
-    const current=await fs.readFile(file,'utf8');
+    const current=await historical598NativeSource(file);
     modelSourceRelativeModuleSpecifiers(current,file);
     for(const reviewed of new Set([actual,current])){
       for(const changed of [reviewed+'\n',reviewed+"\nimport './unreviewed-source.mjs';\n"])
@@ -1477,7 +1490,7 @@ test('593 quartet observation remains conditional and follows proved cleanup wit
 
 
 test('597 quartet observation is conditional and follows proved stop and cleanup before the completed report',async()=>{
-  const source=await fs.readFile('scripts/lib/checkpoint-cas-native-postgres.mjs','utf8');
+  const source=await historical598NativeSource('scripts/lib/checkpoint-cas-native-postgres.mjs');
   const before=source.indexOf('const nativeProgramsBefore=includeAssistantPublic591Successor||includeScalar597LaterH0Successor||includeAssistantAfter597Successor\n    ?await nativePostgresProgramIdentity(programs):null;');
   const setup=source.indexOf("const root = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-checkpoint-pg-'))",before);
   const stop=source.indexOf("assert.equal(stop.code,0,'native server stop was not proved; preserve directory');",setup);
@@ -1492,7 +1505,7 @@ test('597 quartet observation is conditional and follows proved stop and cleanup
   assert(before>=0&&setup>before&&stop>setup&&terminal>stop&&stopped>terminal&&allowed>stopped
     &&cleanup>allowed&&guard>cleanup&&after>guard&&exact>after&&property>exact&&end>property);
   assert.equal((source.match(/await nativePostgresProgramIdentity\(programs\)/g)??[]).length,2);
-  const caller=await fs.readFile('scripts/test-protected-ravscore-continuation-checkpoint.mjs','utf8');
+  const caller=await historical598NativeSource('scripts/test-protected-ravscore-continuation-checkpoint.mjs');
   assert(caller.includes('includeScalar597LaterH0Successor:scalar597LaterH0Native'));
   assert(caller.indexOf("kind:'RAVRADAR_NATIVE_PROGRAM_IDENTITY_V2'")>caller.indexOf('const report = await runNativeCheckpointSqlComparison('));
 });

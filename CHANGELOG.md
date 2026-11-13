@@ -10,6 +10,8 @@ Source598-overgangen bevarer lagerkontrakten og måler projektionskodens reelle 
 
 Den Linuxbegrænsede prøve af assistentens normale Bash-kalder udfylder de seks kendte GitHub-udtryk før shellkørsel. Ukendte udtryk afvises. Alle syv eksisterende opt-in-/legacyforløb og deres krav til antal forsøg, stop og pauser bevares. Windows springer fortsat selve Linuxprøven over; en bestået Windowskalder må ikke beskrives som et Linux-Bash-bevis.
 
+Source-kodekontrollens PR-indgang bruger den eksisterende kvalificerede SOURCE_GATE_HEAD_SHA, når den normale PR-kalder leverer den. GitHubs merge-event-SHA, almindelig main og det capture-bundne barns kildeidentitet bevares. Hele committed-blob- og før-/efter-HEAD-kontrollen er uændret. To historiske native-orakler læser sammenhængende genuine598-input med alle hidtidige assertions bevaret. Historiske NULL-forløb er fortsat kun ikke-relevante efter den eksisterende kontrol af faktisk udstedt Source og committed kode; frisk aktuel Source/PostgreSQL er et særskilt krav.
+
 ## 4.0.615 — privat Source-kandidat, endnu ikke installeret
 
 Det første normale generatorforløb er standset før bindingssynkroniseringens første skrivning på en faktisk gammel kontraktidentitet i den nye SQL. Kandidaten bevares som uinstalleret historik; den er ikke en bestået release. Årsagen og alle berørte kalderled er åbne i kendte issues.
