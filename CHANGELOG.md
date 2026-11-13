@@ -8,6 +8,8 @@ Kandidaten inkluderer de dokumenterede numeriske/CODE-grænser, normale V4-kalde
 
 Source598-overgangen bevarer lagerkontrakten og måler projektionskodens reelle nye identitet i stedet for at kræve en uændret kildehash efter kodeudtrækningen. Kun den autentiske gamle kontrakt og den faktiske udstedte Source accepteres; hele original-B/S-kæden og dens metadata-invers bevares. Historiske workflow- og 591-prøver læser sammenhængende genuine kilder, mens aktuelle Source-, privacy-, trigger- og normale brugerdata-/snapshotforløb fortsat kontrollerer aktuel kode. Den normale CODE-afledning opdaterer programfortegnelsen uden at genudstede C/I/T eller ændre de 80 SQL-filer.
 
+Den Linuxbegrænsede prøve af assistentens normale Bash-kalder udfylder de seks kendte GitHub-udtryk før shellkørsel. Ukendte udtryk afvises. Alle syv eksisterende opt-in-/legacyforløb og deres krav til antal forsøg, stop og pauser bevares. Windows springer fortsat selve Linuxprøven over; en bestået Windowskalder må ikke beskrives som et Linux-Bash-bevis.
+
 ## 4.0.615 — privat Source-kandidat, endnu ikke installeret
 
 Det første normale generatorforløb er standset før bindingssynkroniseringens første skrivning på en faktisk gammel kontraktidentitet i den nye SQL. Kandidaten bevares som uinstalleret historik; den er ikke en bestået release. Årsagen og alle berørte kalderled er åbne i kendte issues.

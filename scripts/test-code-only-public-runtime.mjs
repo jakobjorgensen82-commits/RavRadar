@@ -1295,7 +1295,23 @@ userdataTest('userdata delivery: assistant opt-in is single-attempt and legacy k
     const step = userdataStep('Deploy only the exact RavRadar assistant Edge function');
     const runMatch = /        run: \|\n([\s\S]*?)(?=\n        env:|$)/.exec(step.text);
     assert.ok(runMatch, 'The normal assistant Bash caller must be present');
-    const run = runMatch[1].replace(/^          /gm, '');
+    // GitHub renders expressions before Bash receives the actual step. The
+    // synthetic CLI/delay fixture must render the same fixed prerequisite
+    // values; literal ${{ ... }} is invalid Bash when a branch reaches it.
+    const expressions = new Map([
+      ['steps.current-private-publish.outcome', 'success'],
+      ['steps.established-native-current-origin-checkpoint-publish.outcome', 'success'],
+      ['steps.source-producer-checkpoint-readback.outputs.equivalent', 'true'],
+      ['steps.source-producer-checkpoint-readback.outcome', 'success'],
+      ['inputs.restart_archived_weather', 'false'],
+      ['steps.saved-last-mile-source.outputs.required', 'false'],
+    ]);
+    const run = runMatch[1].replace(/^          /gm, '').replace(/\$\{\{\s*([^{}]+?)\s*\}\}/g,
+      (expression, name) => {
+        assert.ok(expressions.has(name.trim()), `Unknown assistant deploy expression: ${name.trim()}`);
+        return expressions.get(name.trim());
+      });
+    assert.doesNotMatch(run, /\$\{\{/);
     for (const fixture of [
       { optIn: 'true', failures: 3, attempts: 1, status: 1, delays: [] },
       { optIn: 'true', failures: 0, attempts: 1, status: 0, delays: [] },
