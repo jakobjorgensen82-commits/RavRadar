@@ -91,6 +91,20 @@ export function materializeOwnerProbe({sourceRoot,target,reservation}){
 export function assertOwnerProbeReadback(directory,inputs){
   for(const [name,bytes]of inputs)need(regular(path.join(directory,name)).equals(bytes),'OWNER_PROBE_EXACT_SOURCE_UNPROVED');
 }
+function readExpiredOwnerProbeReservation(directory,owner,now){
+  const raw=regular(path.join(directory,sourcePath('reservation.mjs')),4096);
+  let text;try{text=new TextDecoder('utf-8',{fatal:true}).decode(raw);}catch{fail('OWNER_PROBE_RESERVATION_UNPROVED');}
+  need(text.startsWith('export default ')&&text.endsWith(';\n'),'OWNER_PROBE_RESERVATION_UNPROVED');
+  const reservation=json(text.slice('export default '.length,-2));
+  need(reservation&&typeof reservation==='object'&&!Array.isArray(reservation)
+    &&isDeepStrictEqual(Object.keys(reservation).sort(),['expiresAt','noticeId','ownerId','recipient','reservedAt'])
+    &&raw.equals(Buffer.from('export default '+JSON.stringify(reservation)+';\n'))
+    &&reservation.ownerId===owner.ownerId&&reservation.recipient===owner.recipient&&UUID.test(reservation.noticeId||'')
+    &&Number.isSafeInteger(reservation.reservedAt)&&reservation.reservedAt>=0
+    &&Number.isSafeInteger(reservation.expiresAt)&&reservation.expiresAt-reservation.reservedAt===10*60_000
+    &&Number.isSafeInteger(now)&&now>=reservation.expiresAt,'OWNER_PROBE_RESERVATION_UNPROVED');
+  return reservation;
+}
 export async function runOwnerProbeWindow({
   env=process.env,sourceRoot=path.resolve('.'),run=execFileSync,fetchImpl=globalThis.fetch,
   clock=Date.now,sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms)),uuid=()=>crypto.randomUUID(),
@@ -100,7 +114,7 @@ export async function runOwnerProbeWindow({
     &&env.GITHUB_WORKFLOW===WORKFLOW&&env.GITHUB_RUN_ATTEMPT==='1'
     &&/^[a-f0-9]{40}$/.test(env.GITHUB_SHA||'')&&/^[1-9][0-9]*$/.test(env.GITHUB_RUN_ID||'')
     &&/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(env.GITHUB_REPOSITORY||'')
-    &&env.OWNER_NOTICE_CONFIRMATION==='TEST-EXISTING-OWNER-MAIL-ONCE','OWNER_PROBE_AUTHORITY');
+    &&['TEST-EXISTING-OWNER-MAIL-ONCE','CLEANUP-EXPIRED-OWNER-PROBE-ONLY'].includes(env.OWNER_NOTICE_CONFIRMATION),'OWNER_PROBE_AUTHORITY');
   need(typeof env.SUPABASE_ACCESS_TOKEN==='string'&&env.SUPABASE_ACCESS_TOKEN
     &&typeof env.SUPABASE_SERVICE_ROLE_KEY==='string'&&env.SUPABASE_SERVICE_ROLE_KEY
     &&typeof env.GITHUB_TOKEN==='string'&&env.GITHUB_TOKEN,'OWNER_PROBE_EXISTING_CREDENTIALS_REQUIRED');
@@ -139,7 +153,31 @@ export async function runOwnerProbeWindow({
     const target=path.join(dir,label);fs.mkdirSync(target,{mode:0o700});
     cli(['functions','download',SLUG,'--project-ref',PROJECT,'--use-api'],target);return target;
   };
+  const cleanupOwned=async({before,after,inputs,reservation})=>{
+    while(clock()<reservation.expiresAt)await sleep(Math.min(10_000,reservation.expiresAt-clock()));
+    const current=list(true);
+    need(isDeepStrictEqual(current,after),'OWNER_PROBE_CLEANUP_IDENTITY_CHANGED');
+    assertOwnerProbeReadback(download('predelete'),inputs);
+    exactMain();noOtherWriter();
+    cli(['functions','delete',SLUG,'--project-ref',PROJECT,'--yes']);
+    need(isDeepStrictEqual(list(false),before),'OWNER_PROBE_DELETE_UNPROVED');
+    announce('OWNER_NOTICE_PROBE_REMOVED_THREE_PERMANENT_FUNCTIONS_UNCHANGED');
+  };
   exactMain();noOtherWriter();
+  if(env.OWNER_NOTICE_CONFIRMATION==='CLEANUP-EXPIRED-OWNER-PROBE-ONLY'){
+    const after=list(true),probe=after.find(row=>row.slug===SLUG);
+    need(probe.verify_jwt===false,'OWNER_PROBE_POSTDEPLOY_IDENTITY');
+    const before=after.filter(row=>row.slug!==SLUG);
+    const owner=await readUniqueConfirmedOwner({key:env.SUPABASE_SERVICE_ROLE_KEY,fetchImpl});
+    const downloaded=download('expired-probe');
+    const reservation=readExpiredOwnerProbeReservation(downloaded,owner,clock());
+    const expected=path.join(dir,'expected-expired');fs.mkdirSync(expected,{mode:0o700});
+    const inputs=materializeOwnerProbe({sourceRoot,target:expected,reservation});
+    assertOwnerProbeReadback(downloaded,inputs);
+    privateFile(dir,'private-cleanup-intent.json',JSON.stringify({project:PROJECT,slug:SLUG,sourceHead:env.GITHUB_SHA,before,after,reservation}));
+    await cleanupOwned({before,after,inputs,reservation});
+    return{temporaryProbeRemoved:true,permanentFunctionsUnchanged:true,mailDeliveryProved:false,cleanupOnly:true};
+  }
   const before=list(false);
   const owner=await readUniqueConfirmedOwner({key:env.SUPABASE_SERVICE_ROLE_KEY,fetchImpl});
   const reservedAt=clock(),reservation={...owner,noticeId:uuid(),reservedAt,expiresAt:reservedAt+10*60_000};
@@ -154,25 +192,23 @@ export async function runOwnerProbeWindow({
   const after=list(true),probe=after.find(row=>row.slug===SLUG);
   need(probe.verify_jwt===false&&isDeepStrictEqual(after.filter(row=>row.slug!==SLUG),before),'OWNER_PROBE_POSTDEPLOY_IDENTITY');
   assertOwnerProbeReadback(download('postdeploy'),inputs);
-  const preflight=await fetchImpl(ORIGIN+'/functions/v1/'+SLUG,{method:'OPTIONS',
-    headers:{origin:'https://ravradar.dk','access-control-request-method':'POST',
-      'access-control-request-headers':'apikey,authorization'},
-    redirect:'error',cache:'no-store',signal:AbortSignal.timeout(5_000)});
-  need(preflight.status===204&&!preflight.redirected
-    &&preflight.headers.get('access-control-allow-origin')==='https://ravradar.dk'
-    &&preflight.headers.get('access-control-allow-methods')==='POST'
-    &&preflight.headers.get('access-control-allow-headers')==='apikey, authorization','OWNER_PROBE_GATEWAY_UNPROVED');
-  need(clock()<reservation.expiresAt-60_000,'OWNER_PROBE_RESERVATION_TOO_LATE');
-  privateFile(dir,'private-deployment.json',JSON.stringify({after,reservation}));
-  announce('OWNER_NOTICE_PROBE_READY_UNTIL '+new Date(reservation.expiresAt).toISOString());
-  while(clock()<reservation.expiresAt)await sleep(Math.min(10_000,reservation.expiresAt-clock()));
-  const current=list(true);
-  need(isDeepStrictEqual(current,after),'OWNER_PROBE_CLEANUP_IDENTITY_CHANGED');
-  assertOwnerProbeReadback(download('predelete'),inputs);
-  noOtherWriter();
-  cli(['functions','delete',SLUG,'--project-ref',PROJECT,'--yes']);
-  need(isDeepStrictEqual(list(false),before),'OWNER_PROBE_DELETE_UNPROVED');
-  announce('OWNER_NOTICE_PROBE_REMOVED_THREE_PERMANENT_FUNCTIONS_UNCHANGED');
+  try{
+    privateFile(dir,'private-deployment.json',JSON.stringify({after,reservation}));
+    const preflight=await fetchImpl(ORIGIN+'/functions/v1/'+SLUG,{method:'OPTIONS',
+      headers:{origin:'https://ravradar.dk','access-control-request-method':'POST',
+        'access-control-request-headers':'apikey,authorization'},
+      redirect:'error',cache:'no-store',signal:AbortSignal.timeout(5_000)});
+    need(preflight.status===204&&!preflight.redirected
+      &&preflight.headers.get('access-control-allow-origin')==='https://ravradar.dk'
+      &&preflight.headers.get('access-control-allow-methods')==='POST'
+      &&preflight.headers.get('access-control-allow-headers')==='apikey, authorization','OWNER_PROBE_GATEWAY_UNPROVED');
+    need(clock()<reservation.expiresAt-60_000,'OWNER_PROBE_RESERVATION_TOO_LATE');
+    announce('OWNER_NOTICE_PROBE_READY_UNTIL '+new Date(reservation.expiresAt).toISOString());
+  }finally{
+    // Only the positively qualified owned deployment reaches this cleanup.
+    // A read-only gateway failure does not abandon it or open another window.
+    await cleanupOwned({before,after,inputs,reservation});
+  }
   return{temporaryProbeRemoved:true,permanentFunctionsUnchanged:true,mailDeliveryProved:false};
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){

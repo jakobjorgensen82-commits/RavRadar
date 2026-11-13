@@ -21,6 +21,8 @@ Se [aktive krav](../20_REQUIREMENTS/ACTIVE-REQUIREMENTS.md) og [roadmap](ACTIVE_
 
 Databasebackupens automatiske restore/rotation/ugentlige optagelse er forberedt som et efterfølgende job i den eksisterende adminvedligeholdelse og er ikke aktiveret. Positive historiske locatorer kræves ved al retirement; ukendte grupper og løse managed objekter giver HELD. Faktisk fuld arkiv-/Auth-gendannelse, præcis kildekvalifikation og målt samlet margin mangler fortsat før aktivering eller Free-overgang. Se håndbog 89.347 og DEC-0255.
 
+Mailprøvens kildekandidat har to adskilte formål: ét nyt mailvindue eller oprydning af den samme, allerede udløbne prøve. Positivt kendt ejerskab, uændret kilde og funktionsidentitet, aktuel bekræftet ejer, ingen anden skriver og slutgenlæsning kræves før en fjernelse kan bevises. Gatewayfejl bevares efter oprydning; ukendte skriveudfald genforsøges ikke. Faktisk oprydning og mailmodtagelse er fortsat særskilte beviser. Se håndbog 89.343.
+
 <!-- RAVRADAR_ACTIVE_ENTRY_END -->
 
 ## Daterede notater og tidligere indgange — uændret historik

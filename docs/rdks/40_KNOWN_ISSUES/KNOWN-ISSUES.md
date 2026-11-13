@@ -1,3 +1,11 @@
+## 13. november — særskilt oprydning af udløbet ejerprøve
+
+En read-only gatewaykontrol kunne standse mailprøven efter positiv installation og fuld kildegenlæsning, før den kendt-ejede oprydning blev nået. Den lokale rettelse forbinder dette punkt med samme oprydning efter det oprindelige udløb. Den oprindelige gatewayfejl bevares; ukendt installation eller DELETE giver fortsat stop uden automatisk gentagelse.
+
+Det eksisterende workflow får det særskilte formål CLEANUP-EXPIRED-OWNER-PROBE-ONLY ved siden af TEST-EXISTING-OWNER-MAIL-ONCE. Oprydning kræver en begrænset kanonisk JSON-reservation for den aktuelle bekræftede ejer, præcis ti minutter, udløb, uændret fast kilde, samme fire funktionsidentiteter, eksakt main og ingen anden skriver. Kun den faste prøve slettes én gang; efterlæsning skal vise de tre normale funktioner uændret. Der skabes ingen ny reservation, funktion, mail eller brugerbesked.
+
+Free-kandidatens historiske workflowlæser og meningsfulde gamle cases bevares sammen med de nye normale cleanup-cases. Alle ni probe/shared-templatefiler forbliver uændrede. Version 4.0.598, C/I/T, SQL, score, vejr og adgangsrettigheder bevares. Præcis kildekvalifikation, faktisk oprydning og mailmodtagelse er særskilte åbne beviser; ingen automatisk varsling, sletning eller statistik aktiveres. Se håndbog 89.343.
+
 ## 13. november — automatisk databasebackup og dokumenteret oprydning
 
 Den private 598-kandidat samler backupvedligeholdelsen efter det eksisterende, botbestilte adminjob. Den normale passage vælger én handling: gendannelse af aktuel backup med reel indholds-/Auth-kontrol, sikker rotation af én gammel gruppe eller ny optagelse efter syv døgn. Der kræves mindst 35 minutter til kildevejrets oprindelige næste slot. Vejrjobbet, den manuelle backupvej, originaler, SQL/ACL-regler og numerisk model bevares.

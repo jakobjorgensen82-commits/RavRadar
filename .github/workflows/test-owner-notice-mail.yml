@@ -3,10 +3,10 @@ on:
   workflow_dispatch:
     inputs:
       confirmation:
-        description: One approved owner probe; no automatic user notices or deletion
+        description: One owner probe or cleanup of the expired fixed probe; no user deletion
         type: choice
         required: true
-        options: [TEST-EXISTING-OWNER-MAIL-ONCE]
+        options: [TEST-EXISTING-OWNER-MAIL-ONCE, CLEANUP-EXPIRED-OWNER-PROBE-ONLY]
 permissions:
   contents: read
   actions: read
