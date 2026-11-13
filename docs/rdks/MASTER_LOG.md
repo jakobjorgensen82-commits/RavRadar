@@ -1,3 +1,13 @@
+## 13. november — faktisk Pages-kodeversion og afvist CREATE
+
+Den særlige almindelige Pages-transport sendte en afledt lokal bestillingshash som serverens byggeversion; den officielle action sender den faktiske Git-commit. Den afgrænsede kandidat følger den officielle kontrakt og bevarer den fulde lokale hensigt, den beskyttede reservation, det præcise artifact og den faktisk modtagne CREATE-identitet. Et delt commit-opslag kan vise en ældre pakke: uden observeret ny PENDING eller en særskilt kvitteret serveridentitet giver den gamle terminalstatus ingen luknings- eller retryautoritet. En allerede synlig præcis ny prognose kan kun gå videre til den fulde offentlige verifier.
+
+En faktisk CREATE-HTTP404 får en intern særskilt afvisningsklassifikation. Alle transportinvocations, outcomes og deliveries skal være bogført, og forgængeren skal være frisk uændret, før CLOSED_UNPUBLISHED må udstedes. Afvisningen er aldrig NO_POST, en terminal deployment eller ret til endnu et POST. Timeout, uklart svar, GET-/token404 og modstridende metadata beholder deres afslag.
+
+En enkelt allerede afsluttet historisk hændelse uden den nye klassifikation kvalificeres i den eksisterende ejerlæser gennem dens faktiske run/attempt/job, alle skrivere, seks oprindelige Git-blobs og hele den autentiske private log. Loggen indgår ikke i repositoryet. Dette er en eksplicit historisk hændelsesafgrænsning, ikke et nyt per-head testcohort, kildekatalog eller kontrolsystem. Den eksisterende før-POST-historik bevares. Normal genoptagelse kræver stadig fase, friskhed, ny eksklusiv ejer, præcist gemt mål, no-loss og offentlig effekt.
+
+Transportforskellen er dokumenteret; HTTP404's serverinterne rodårsag er endnu ikke bevist. Tidligere Pages-timeouts og artifact-metadata404 er særskilte fejl. Kandidaten ændrer hverken C/I/T, scoreformel, SQL, kildeprioritet, geometri eller providerbudgetter. Kildekvalifikation, sikker levering, faktisk genoptagelse og næste almindelige vejrhentning udestår; alle fem hovedmål består. Se håndbog 89.340 og privat checkpoint.
+
 ## 5. november — 4.0.598: sammensatte ravspørgsmål og bevarede originaler
 
 4.0.598 er den selvstændige efterfølger til den installerede 4.0.597 for Spørg RavRadar. Den samler de allerede gennemgåede rettelser til kombinerede spørgsmål om ravudstyr og prognose, relevante ukendte udtryk og afvisning af fundgarantier. Dansk, tysk og engelsk følger samme afgrænsning. Den offentlige faktabanks faglige indhold bevares; interne driftsfejl, private forhold og turdata må ikke blive assistentviden. Tidspunkt og konkret prognose skal fortsat komme fra gyldige lokale data, aldrig fra opdigtede AI-tal.

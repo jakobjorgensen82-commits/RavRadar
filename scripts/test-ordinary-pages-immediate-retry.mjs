@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer, request as httpRequest } from 'node:http';
 import { createPagesDeploymentRequest, classifyPagesPriorStatus } from './lib/pages-per-artifact-identity.mjs';
-import { runSealedPagesDeployment, postJsonOnce, hasSealedPagesRetryEvidence, hasSealedPagesTerminalEvidence, hasSealedPagesNoPostEvidence } from './lib/run-sealed-pages-deployment.mjs';
+import { runSealedPagesDeployment, postJsonOnce, hasSealedPagesRetryEvidence, hasSealedPagesTerminalEvidence, hasSealedPagesCreateRejectionEvidence, hasSealedPagesNoPostEvidence } from './lib/run-sealed-pages-deployment.mjs';
 import { publishSealedPagesWithRecovery } from './lib/publish-sealed-pages-with-recovery.mjs';
 import { selectSealedPagesRecovery, getOrdinaryPagesRetryDeadline, MINIMUM_RECOVERY_WINDOW_MS,
   NORMAL_PAGES_COMPLETION_RESERVE_MS, ORDINARY_PAGES_CLEANUP_RESERVE_MS, hasOrdinaryPagesWriteBudget } from './lib/pages-sealed-retry-decision.mjs';
@@ -47,7 +47,12 @@ function fakeService({ replayOldStatus = false, duplicate = false, createThrows 
   deadlineMs = 35 * 60_000, admitDelayMs = 0, statusIdentityFields = false,
   oidcHttp = 200, artifactListHttp = 200, cancellationWaitMs = 30_000,
   perReadMs = 0, perPostMs = 0, perCancelMs = 0, terminalAfterMs = null,
-  frozenPauseClock = false, finalWaitOvershootMs = 0, postClockError = null } = {}) {
+  frozenPauseClock = false, finalWaitOvershootMs = 0, postClockError = null,
+  localSeal = seal, statusSequence = null } = {}) {
+  const currentEnv = { ...env, GITHUB_RUN_ID: String(localSeal.runId), GITHUB_RUN_ATTEMPT: String(localSeal.runAttempt), GITHUB_SHA: localSeal.headSha };
+  const currentArtifact = { ...artifact, id: localSeal.artifactId, name: localSeal.artifactName,
+    digest: 'sha256:' + localSeal.artifactDigestSha256, size_in_bytes: localSeal.artifactSizeBytes,
+    workflow_run: { ...artifact.workflow_run, id: localSeal.runId, head_sha: localSeal.headSha } };
   const posts = [], reads = [], intents = [], cancels = [];
   const statusById = new Map(), versionById = new Map();
   const postTimes = [], cancelTimes = [], pauses = [];
@@ -60,13 +65,13 @@ function fakeService({ replayOldStatus = false, duplicate = false, createThrows 
   const fetchImpl = async (url, options) => {
     clock += options.method === 'POST' ? perPostMs : perReadMs;
     assert.equal(options.redirect, 'error');
-    if (url === env.ACTIONS_ID_TOKEN_REQUEST_URL) {
+    if (url === currentEnv.ACTIONS_ID_TOKEN_REQUEST_URL) {
       assert.equal(options.headers.Authorization, 'Bearer ' + runnerToken);
       return reply(url, { value: oidcToken }, oidcHttp);
     }
     assert.equal(options.headers.Authorization, 'Bearer ' + githubToken);
     if (url.endsWith('artifacts?per_page=100')) {
-      const artifacts = duplicate ? [artifact, { ...artifact, id: artifact.id + 1 }] : [artifact];
+      const artifacts = duplicate ? [currentArtifact, { ...currentArtifact, id: currentArtifact.id + 1 }] : [currentArtifact];
       return reply(url, { total_count: artifacts.length, artifacts }, artifactListHttp);
     }
     if (options.method === 'POST') {
@@ -75,20 +80,20 @@ function fakeService({ replayOldStatus = false, duplicate = false, createThrows 
       assert.deepEqual(Object.keys(body).sort(), ['artifact_id', 'oidc_token', 'pages_build_version']);
       assert.equal(body.oidc_token, oidcToken);
       assert.equal(intents.at(-1).buildVersion, body.pages_build_version);
-      assert.notEqual(body.pages_build_version, seal.headSha);
-      assert.equal(body.pages_build_version, intents.at(-1).clientIntentSha256.slice(0, 40));
+      assert.equal(body.pages_build_version, localSeal.headSha);
+      assert.match(intents.at(-1).clientIntentSha256, /^[a-f0-9]{64}$/);
       const id = returnedId ?? body.pages_build_version;
       posts.push({ id, artifactId: body.artifact_id });
       postTimes.push(clock);
       if (createThrows) throw new Error('synthetic create timeout');
       polling = true;
       const terminal = posts.length === 1 ? firstTerminal : 'succeed';
-      statusById.set(id, immediateFirst ? [terminal] : ['deployment_queued', terminal]);
+      statusById.set(id, statusSequence ? [...statusSequence] : immediateFirst ? [terminal] : ['deployment_queued', terminal]);
       versionById.set(id, body.pages_build_version);
       const createExtra = typeof createReplyExtra === 'function'
         ? createReplyExtra({ id, buildVersion: body.pages_build_version }) : createReplyExtra;
       return reply(url, { id: replayOldStatus ? '../foreign' : id, page_url: host,
-        ...(legacyStatusUrl ? { status_url: 'https://api.github.com/repos/' + seal.repository + '/pages/deployment/status/' + id } : {}),
+        ...(legacyStatusUrl ? { status_url: 'https://api.github.com/repos/' + localSeal.repository + '/pages/deployment/status/' + id } : {}),
         ...createExtra }, createHttp);
     }
     const version = url.split('/').at(-1);
@@ -103,16 +108,16 @@ function fakeService({ replayOldStatus = false, duplicate = false, createThrows 
     if (terminalAfterMs !== null && cancels.length === 0)
       status = clock - postTimes.at(-1) >= terminalAfterMs
         ? (posts.length === 1 ? firstTerminal : 'succeed') : 'syncing_files';
-    if (['succeed', 'deployment_failed', 'deployment_cancelled'].includes(status)) { polling = false; lastTerminal = status; }
+    if (['succeed', 'deployment_failed', 'deployment_cancelled', 'deployment_content_failed'].includes(status) && statusById.get(version).length === 0) { polling = false; lastTerminal = status; }
     return reply(url, { status, ...(statusIdentityFields ? { id: version,
-      deployment_id: version, pages_build_version: versionById.get(version), artifact_id: seal.artifactId } : {}), ...statusReplyExtra });
+      deployment_id: version, pages_build_version: versionById.get(version), artifact_id: localSeal.artifactId } : {}), ...statusReplyExtra });
   };
   const postImpl = async (url, headers, body) => {
     const response = await fetchImpl(url, { redirect: 'error', method: 'POST', headers, body });
     return { status: response.status, url: response.url, data: await response.json() };
   };
   const deploy = deliveryOrdinal => runSealedPagesDeployment({
-    env, seal, expectedBaseUrl: host, deliveryOrdinal, fetchImpl, postImpl,
+    env: currentEnv, seal: localSeal, expectedBaseUrl: host, deliveryOrdinal, fetchImpl, postImpl,
     waitMs: deliveryOrdinal === 1 ? 600_000 : 360_000,
     absoluteDeadlineMs: deadlineMs, completionReserveMs: NORMAL_PAGES_COMPLETION_RESERVE_MS,
     beforeCreate: async intent => { intents.push(intent); clock += admitDelayMs; return admitCreate(intent); },
@@ -152,14 +157,14 @@ test('the retry window is tied to the dispatch even when the runner starts after
   assert.throws(() => getOrdinaryPagesRetryDeadline({ ...queued, createdAt: at('16:21') }), /PAGES_RETRY_JOB_CLOCK/);
 });
 
-test('the existing unique build version keeps the exact artifact and actual receipt ID', async () => {
+test('the official source SHA keeps the exact artifact and actual receipt ID', async () => {
   const server = fakeService();
   const first = await server.deploy(1);
   assert.equal(first.outcome, 'SUCCEEDED');
   assert.deepEqual(server.reads, [first.receipt.deploymentId, first.receipt.deploymentId]);
   assert.deepEqual(server.posts, [{ id: first.receipt.deploymentId, artifactId: seal.artifactId }]);
   assert.equal(first.receipt.deploymentId, first.request.buildVersion);
-  assert.notEqual(first.request.buildVersion, seal.headSha);
+  assert.equal(first.request.buildVersion, seal.headSha);
   assert.equal(server.intents.length, 1);
   assert.equal(server.intents[0].artifactDigestSha256, seal.artifactDigestSha256);
   assert(!JSON.stringify(server.intents[0]).includes(oidcToken));
@@ -180,7 +185,8 @@ test('known terminal failure with an unchanged public predecessor admits the sam
   assert.equal(second.outcome, 'SUCCEEDED');
   assert.equal(server.posts.length, 2);
   assert(server.posts.every(row => row.artifactId === seal.artifactId));
-  assert.notEqual(server.intents[0].buildVersion, server.intents[1].buildVersion);
+  assert.equal(server.intents[0].buildVersion, seal.headSha);
+  assert.equal(server.intents[1].buildVersion, seal.headSha);
   assert.notEqual(server.intents[0].clientIntentSha256, server.intents[1].clientIntentSha256);
 });
 
@@ -220,7 +226,8 @@ test('the whole recovery decision makes one same-package repeat under the existi
   assert.equal(fences, 1);
   assert.equal(seen.length, 0);
   assert(server.posts.every(post => post.artifactId === seal.artifactId));
-  assert.notEqual(server.intents[0].buildVersion, server.intents[1].buildVersion);
+  assert.equal(server.intents[0].buildVersion, seal.headSha);
+  assert.equal(server.intents[1].buildVersion, seal.headSha);
   assert.notEqual(server.intents[0].clientIntentSha256, server.intents[1].clientIntentSha256);
 });
 
@@ -289,7 +296,8 @@ test('timeout can retry the same artifact only after exact cancellation readback
   assert.equal(result.attempts, 2);
   assert.deepEqual(server.cancels, [server.posts[0].id]);
   assert.deepEqual(server.posts.map(post => post.artifactId), [seal.artifactId, seal.artifactId]);
-  assert.notEqual(server.intents[0].buildVersion, server.intents[1].buildVersion);
+  assert.equal(server.intents[0].buildVersion, seal.headSha);
+  assert.equal(server.intents[1].buildVersion, seal.headSha);
   assert.notEqual(server.intents[0].clientIntentSha256, server.intents[1].clientIntentSha256);
 });
 
@@ -310,7 +318,7 @@ test('documented empty preview and legacy status URL accept the actual returned 
   const server = fakeService({ returnedId: '123456', createReplyExtra: { preview_url: '' }, legacyStatusUrl: true, statusIdentityFields: true });
   const first = await server.deploy(1);
   assert.equal(first.outcome, 'SUCCEEDED');
-  assert.notEqual(first.request.buildVersion, seal.headSha);
+  assert.equal(first.request.buildVersion, seal.headSha);
   assert.equal(first.receipt.deploymentId, '123456');
   assert.equal(first.receipt.statusUrl, 'https://api.github.com/repos/' + seal.repository + '/pages/deployments/123456');
   assert.deepEqual(server.reads, ['123456', '123456']);
@@ -343,7 +351,7 @@ test('a foreign status URL and a concrete CREATE HTTP refusal retain safe causes
   }
 });
 
-test('own unique positive CREATE and immediate known FAILED allow one same-artifact retry', async () => {
+test('a distinct positive CREATE ID and immediate known FAILED allow one same-artifact retry', async () => {
   const server = fakeService({ firstTerminal: 'deployment_failed', immediateFirst: true, returnedId: '123456' });
   const result = await publishSealedPagesWithRecovery({ seal, predecessorSha256: old,
     submit: (_seal, ordinal) => server.deploy(ordinal), readPublic: async () => old,
@@ -355,7 +363,7 @@ test('own unique positive CREATE and immediate known FAILED allow one same-artif
 
 test('empty or 404 grants no authority while own unique reservation ACK and terminal allow one retry', async () => {
   for (const priorStatus of [null, '', 404]) {
-    const successful = fakeService({ priorStatus, immediateFirst: true });
+    const successful = fakeService({ priorStatus });
     const done = await successful.deploy(1); assert.equal(done.outcome, 'SUCCEEDED');
     const failed = fakeService({ priorStatus, firstTerminal: 'deployment_failed' });
     const first = await failed.deploy(1);
@@ -368,7 +376,7 @@ test('empty or 404 grants no authority while own unique reservation ACK and term
 });
 
 test('known prior PENDING, permission refusal and uncertain prior transport stop before POST', async () => {
-  for (const priorStatus of ['syncing_files', 'succeed', 'deployment_failed', ' ', 'unknown_future_status', 401, 403, 'throws']) {
+  for (const priorStatus of ['syncing_files', ' ', 'unknown_future_status', 401, 403, 'throws']) {
     const server = fakeService({ priorStatus }), first = await server.deploy(1);
     assert.equal(first.outcome, 'UNKNOWN'); assert.equal(server.posts.length, 0);
     if (typeof priorStatus === 'number') assert.equal(first.code, 'PRIOR_STATUS_HTTP_' + priorStatus);
@@ -428,7 +436,7 @@ test('an unknown CREATE keeps only a fixed diagnostic and never exposes credenti
 
 test('content failure closes its write without retry while lost and unknown outcomes stay unproved', async () => {
   for (const [status, closed] of [['deployment_content_failed', true], ['deployment_lost', false], ['unknown_future_status', false]]) {
-    const server = fakeService({ firstTerminal: status, immediateFirst: true });
+    const server = fakeService({ firstTerminal: status });
     const deliveries = [];
     const result = await publishSealedPagesWithRecovery({ seal, predecessorSha256: old,
       submit: async (_seal, ordinal) => { const delivery = await server.deploy(ordinal); deliveries.push(delivery); return delivery; },
@@ -531,8 +539,10 @@ test('prior aliases validate known identities without claiming the new physical 
   }
   const oldArtifact = fakeService({ priorStatus: 'succeed', priorReplyExtra: { artifact_id: seal.artifactId - 1, future_metadata: true } });
   const used = await oldArtifact.deploy(1);
-  assert.equal(used.outcome, 'UNKNOWN'); assert.equal(used.code, 'PRIOR_UNIQUE_VERSION_ALREADY_USED');
-  assert.equal(oldArtifact.posts.length, 0);
+  assert.equal(used.outcome, 'SUCCEEDED');
+  assert.equal(used.pendingObserved, true);
+  assert.equal(used.priorStatus, 'succeed');
+  assert.equal(oldArtifact.posts.length, 1);
 });
 
 test('additive metadata never turns unknown status or unknown POST into retry authority', async () => {
@@ -642,4 +652,109 @@ test('reusing a previous pre-POST error after an attempted POST cannot carry its
   const after=fakeService({postClockError:sentinel});
   await assert.rejects(after.deploy(1),error=>error===sentinel);
   assert.equal(after.posts.length,1);assert.equal(hasSealedPagesNoPostEvidence(sentinel),false);
+});
+
+
+test('different physical artifacts on the same source SHA keep distinct local intents', async () => {
+  const nextSeal = Object.freeze({ ...seal, runId: seal.runId + 1, attemptId: 'pages-101-1',
+    artifactId: seal.artifactId + 1, artifactDigestSha256: '6'.repeat(64),
+    targetPublicManifestSha256: '7'.repeat(64) });
+  const firstServer = fakeService({ priorStatus: 'succeed', priorReplyExtra: { artifact_id: seal.artifactId - 1 } });
+  const secondServer = fakeService({ localSeal: nextSeal, priorStatus: 'succeed', priorReplyExtra: { artifact_id: seal.artifactId } });
+  const first = await firstServer.deploy(1), second = await secondServer.deploy(1);
+  assert.equal(first.outcome, 'SUCCEEDED'); assert.equal(second.outcome, 'SUCCEEDED');
+  assert.equal(first.pendingObserved, true); assert.equal(second.pendingObserved, true);
+  assert.equal(first.request.buildVersion, seal.headSha);
+  assert.equal(second.request.buildVersion, seal.headSha);
+  assert.notEqual(first.request.clientIntentSha256, second.request.clientIntentSha256);
+  assert.equal(firstServer.posts[0].artifactId, seal.artifactId);
+  assert.equal(secondServer.posts[0].artifactId, nextSeal.artifactId);
+  assert.notEqual(firstServer.intents[0].targetPublicManifestSha256, secondServer.intents[0].targetPublicManifestSha256);
+});
+
+test('a shared terminal SHA alias never grants publication closure or retry for the new target', async () => {
+  for (const stale of ['succeed', 'deployment_failed', 'deployment_cancelled', 'deployment_content_failed']) {
+    const server = fakeService({ priorStatus: stale, firstTerminal: stale, immediateFirst: true });
+    let delivery;
+    const result = await publishSealedPagesWithRecovery({ seal, predecessorSha256: old,
+      submit: async (_seal, ordinal) => delivery = await server.deploy(ordinal), readPublic: async () => old,
+      revalidateWriter: async () => true, timeRemainingMs: () => MINIMUM_RECOVERY_WINDOW_MS, pause: async () => {} });
+    assert.equal(result.kind, 'HOLD'); assert.equal(delivery.outcome, 'UNKNOWN');
+    assert.equal(delivery.code, 'STATUS_SHARED_ALIAS_UNPROVED');
+    assert.equal(hasSealedPagesTerminalEvidence(delivery), false);
+    assert.equal(hasSealedPagesRetryEvidence(delivery), false);
+    assert.equal(hasSealedPagesNoPostEvidence(delivery), false);
+    assert.equal(server.posts.length, 1); assert.equal(server.cancels.length, 0);
+  }
+  // The independent exact target, rather than an old SHA status, may reach the full public verifier.
+  const visible = fakeService({ priorStatus: 'succeed', immediateFirst: true });
+  const result = await publishSealedPagesWithRecovery({ seal, predecessorSha256: old,
+    submit: (_seal, ordinal) => visible.deploy(ordinal), readPublic: async () => seal.targetPublicManifestSha256,
+    revalidateWriter: async () => true, timeRemainingMs: () => MINIMUM_RECOVERY_WINDOW_MS, pause: async () => {} });
+  assert.equal(result.kind, 'VERIFY_PUBLIC'); assert.equal(result.delivery.outcome, 'UNKNOWN');
+  assert.equal(visible.posts.length, 1);
+});
+
+test('bounded shared-alias reads can outlive an old terminal response and observe the new deployment', async () => {
+  for (const stale of ['succeed', 'deployment_failed']) {
+    const server = fakeService({ priorStatus: stale, statusSequence: [stale, 'deployment_queued', 'succeed'] });
+    const delivery = await server.deploy(1);
+    assert.equal(delivery.outcome, 'SUCCEEDED'); assert.equal(delivery.pendingObserved, true);
+    assert.equal(server.reads.length, 3); assert.equal(server.posts.length, 1);
+  }
+});
+
+test('a concrete CREATE 404 rejection is neither a missing POST nor terminal or retry evidence', async () => {
+  const server = fakeService({ createHttp: 404 });
+  const delivery = await server.deploy(1);
+  assert.equal(delivery.outcome, 'REJECTED'); assert.equal(delivery.code, 'PAGES_CREATE_HTTP_404');
+  assert.equal(delivery.receipt, undefined); assert.equal(server.posts.length, 1); assert.equal(server.reads.length, 0);
+  assert.equal(hasSealedPagesCreateRejectionEvidence(delivery), true);
+  assert.equal(hasSealedPagesCreateRejectionEvidence(structuredClone(delivery)), false);
+  for (const predicate of [hasSealedPagesRetryEvidence, hasSealedPagesTerminalEvidence, hasSealedPagesNoPostEvidence])
+    assert.equal(predicate(delivery), false);
+  const submitServer = fakeService({ createHttp: 404 });
+  const result = await publishSealedPagesWithRecovery({ seal, predecessorSha256: old,
+    submit: (_seal, ordinal) => submitServer.deploy(ordinal), readPublic: async () => old,
+    revalidateWriter: async () => true, timeRemainingMs: () => MINIMUM_RECOVERY_WINDOW_MS, pause: async () => {} });
+  assert.equal(result.kind, 'HOLD'); assert.equal(result.stage, 'FIRST_DEPLOYMENT');
+  assert.equal(submitServer.posts.length, 1);
+  for (const options of [{ createHttp: 403 }, { createHttp: 422 }, { createHttp: 500 }, { createThrows: true }]) {
+    const other = fakeService(options), unknown = await other.deploy(1);
+    assert.equal(unknown.outcome, 'UNKNOWN'); assert.equal(hasSealedPagesCreateRejectionEvidence(unknown), false);
+    assert.equal(hasSealedPagesNoPostEvidence(unknown), false); assert.equal(other.posts.length, 1);
+  }
+});
+
+test('the actual CLI closure block accounts for every attempted transport and a fresh public predecessor', async () => {
+  const fs = await import('node:fs/promises'), { runInNewContext } = await import('node:vm');
+  const source = await fs.readFile(new URL('./deploy-ordinary-pages-with-immediate-retry.mjs', import.meta.url), 'utf8');
+  const start = source.indexOf("    const closed = new Set(['deployment_failed'");
+  const end = source.indexOf("    console.error('PAGES_RETRY_DIAGNOSTIC '", start);
+  assert(start > 0 && end > start);
+  const program = '(async () => {\n' + source.slice(start, end) + '\n})()';
+  const failed = await fakeService({ firstTerminal: 'deployment_failed' }).deploy(1);
+  const rejected = await fakeService({ createHttp: 404 }).deploy(1);
+  const secondRejected = await fakeService({ createHttp: 404 }).deploy(2);
+  const unknown = await fakeService({ createThrows: true }).deploy(2);
+  for (const entry of [
+    { deliveries: [rejected], expected: true },
+    { deliveries: [failed, secondRejected], expected: true },
+    { deliveries: [structuredClone(rejected)], expected: false },
+    { deliveries: [failed, unknown], expected: false },
+    { deliveries: [rejected], visible: seal.targetPublicManifestSha256, expected: false },
+    { deliveries: [rejected], outcomes: [], count: 1, expected: false },
+    { deliveries: [failed], outcomes: [failed, new Error('unknown second POST')], count: 2, expected: false },
+    { deliveries: [], outcomes: [new Error('unknown POST')], count: 1, expected: false },
+  ]) {
+    const outputs = [];
+    await runInNewContext(program, { deliveries: entry.deliveries,
+      transportInvocations: entry.count ?? entry.deliveries.length,
+      transportOutcomes: entry.outcomes ?? entry.deliveries,
+      hasSealedPagesTerminalEvidence, hasSealedPagesCreateRejectionEvidence, assert,
+      readPublic: async () => entry.visible ?? old, predecessorSha256: old,
+      fs: { appendFile: async (...args) => outputs.push(args) }, env: { GITHUB_OUTPUT: 'synthetic-output' } });
+    assert.equal(outputs.length, Number(entry.expected));
+    if (entry.expected) assert.deepEqual(outputs[0], ['synthetic-output', 'closed_unpublished=true\n']);
+  }
 });

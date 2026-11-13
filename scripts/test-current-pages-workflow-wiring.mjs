@@ -332,7 +332,9 @@ test('scheduled weather keeps its fresh hour and uses one exclusive immediate-re
   assert.match(deploy,/supabase_url: \$\{\{ secrets\.SUPABASE_URL \}\}/);
   assert.match(deploy,/supabase_service_role_key: \$\{\{ secrets\.SUPABASE_SERVICE_ROLE_KEY \}\}/);
   assert.match(action, /run: node scripts\/deploy-ordinary-pages-with-immediate-retry\.mjs/);
-  assert.match(retryCli, /const terminal = deliveries\.length > 0 && deliveries\.every\(delivery =>\s*delivery\.outcome === 'FAILED' && hasSealedPagesTerminalEvidence\(delivery\)[\s\S]*closed_unpublished=true/);
+  // The actual CLI closure program is behavior-tested in test-ordinary-pages-immediate-retry.
+  // This workflow check owns only the output name consumed above.
+  assert.match(retryCli, /closed_unpublished=true/);
   assert.match(retryCli, /const first = deliveries\[0\];[\s\S]*!hasSealedPagesRetryEvidence\(first\)/);
   assert.match(retryCli,/readProtectedPagesWriterSnapshot\([\s\S]*expectedSnapshot:writerSnapshot/);
   assert.match(retryCli,/beforeCreate: async intent =>[\s\S]*currentSeal[\s\S]*if \(!await revalidateWriter\(\)\) return false;[\s\S]*fs\.writeFile\(file/);
