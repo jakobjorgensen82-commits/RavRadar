@@ -2,7 +2,9 @@
 
 Den konkrete tidlige gatewayfejl er afgrænset til body-pointer-kontrollen: den normale OPTIONS-forprøve kan få en fysisk tom stream. Et krav om body === null afviste den før tidsvindue og mail. Kildekandidaten bevarer null-fastvejen og kræver i stedet kontrolleret tomhed for en tilstedeværende stream. Det tidligere generelle udsagn om ukendt gatewayårsag er erstattet på netop dette punkt.
 
-Ikke-tomt, stillestående, fejlende eller uafklaret input afvises med den faste private kategori BODY_NOT_PROVED_EMPTY. Alle øvrige adgangs- og mailgrænser bevares. Hosted forprøvens faktiske passage, afsendelse og modtagelse står åbne, indtil de er prøvet efter levering. Der startes ikke et nyt mailvindue eller en mail af kodeændringen. Se håndbog 89.343.
+Ikke-tomt, stillestående, fejlende eller uafklaret input afvises med den faste private kategori BODY_NOT_PROVED_EMPTY. Alle øvrige adgangs- og mailgrænser bevares. Hosted er OPTIONS observeret med HTTP204 og et efterfølgende POST med HTTP404 og registreret eksekvering. POST-bodyens pointer er ikke observeret. Den lokale body-pointer-fejl er reproduceret, men er derfor fortsat en hypotese om netop det hostede afslag. Faktisk afsenderaccept, levering og modtagelse kræver fortsat særskilt bevis.
+
+Det efterfølgende POST-kald kan også have en fysisk, men tom body-stream. Den offentlige indgang genbruger derfor samme begrænsede tomhedskontrol. Kun bevist tomt EOF omsættes til en bodyless Request med samme adresse, metode, headers og abortsignal, før den uændrede ejer- og mailkæde kaldes. En Request uden body beholder sin direkte vej. Ikke-tomt eller ukendt indhold afvises fortsat med samme JSON404 og CORS; der logges ingen bodytekst. Der startes ikke et nyt mailvindue eller en mail af kodeændringen. Se håndbog 89.343.
 
 ## 13. november — fast, privat diagnose ved afvist rollearkiv
 
@@ -13,6 +15,16 @@ Et faktisk autentificeret arkiv er nu stoppet i GRANT-medlemskabsgrenen, men den
 Klasserne præciserer kun det eksisterende afslag. Den faktiske arkivform skal stadig observeres; ON PARAMETER er ikke bekræftet alene af den tidligere medlemskabsafvisning. Ingen tidligere afvist form accepteres, og fuld arkiv-/Auth-gendannelse og Free-klarhed er fortsat åbne.
 
 Den konkrete arkivform og dens korrekte håndtering står fortsat åbne. Der gættes ikke på platformroller, og SQL eller grants springes ikke over. Faktiske kørsler og deres første fejl fastholdes privat. Fuld arkiv-/Auth-gendannelse og automatikkens aktivering er ikke bevist af denne kildeændring. Se håndbog 89.345.
+
+### Opfølgning: rettigheder til databaseindstillinger
+
+Den autentificerede tidlige rollekontrol har nu bekræftet, at arkivet indeholder ON PARAMETER før store SQL-filer. PostgreSQLs normale rollebackup kan også beskrive rettigheder til databaseindstillinger. Den hidtidige kontrol behandlede denne særskilte form som et medlemskab mellem roller og standsede.
+
+Den afgrænsede kildekandidat læser nu GRANT og REVOKE ON PARAMETER efter den officielle syntaks: SET og ALTER SYSTEM kan stå i en kommasepareret liste, eller alle rettigheder kan angives med ALL og valgfrit PRIVILEGES. Parameterlister, TO/FROM, valgfri grant option, rettighedsgiver og REVOKE-afhængigheder læses i deres faste rækkefølge. Hele udsagnet skal være læst. Kun modtagere og en eventuel rettighedsgiver registreres som roller; navnene på indstillinger er ikke rollenavne. Andre objekttyper og ukendte rester afvises fortsat.
+
+Den tidligere diagnose ændrede ikke accepteret syntaks. Den nye parameterrettelse erstatter derfor alene udsagnene her om uafklaret objektform og uændret grammatik. Den gamle medlemskabskontrol, tokenisering, krypterings- og målkontrol samt de originale SQL- og adgangsregler bevares. Der gættes ikke på roller, og ingen SQL eller grants springes over. Den normale afgrænsede parserprøve består; præcis kildekvalifikation, faktisk fuld arkiv-/Auth-gendannelse, autonom rotation og Free-klarhed kræver fortsat deres egne beviser.
+
+Syntaksgrundlag: [PostgreSQL GRANT](https://www.postgresql.org/docs/17/sql-grant.html) og [REVOKE](https://www.postgresql.org/docs/17/sql-revoke.html). Version 4.0.598, numerisk model, migrationer, score og vejr ændres ikke. Se håndbog 89.345.
 
 ## 13. november — offline scalarplanens fælles tidsgrænse
 

@@ -700,6 +700,13 @@ ALTER ROLE "custom" SET "pgrst.example" TO 'supabase_string_only';
 GRANT "supabase_future_role" TO "custom" WITH INHERIT FALSE GRANTED BY "supabase_admin";
 GRANT SUPABASE_OTHER_ROLE TO "custom";
 GRANT "ON" TO "PARAMETER";
+GRANT SET, ALTER SYSTEM ON PARAMETER "supabase_parameter_only", app.setting TO "custom", "supabase_parameter_grantee" WITH GRANT OPTION GRANTED BY "supabase_parameter_grantor";
+GRANT ALTER SYSTEM ON PARAMETER app."supabase_parameter_only" TO PUBLIC;
+GRANT ALL ON PARAMETER work_mem TO CURRENT_ROLE;
+GRANT ALL PRIVILEGES ON PARAMETER "app.setting" TO SESSION_USER;
+REVOKE GRANT OPTION FOR SET, ALTER SYSTEM ON PARAMETER app.setting, "supabase_parameter_only" FROM GROUP "supabase_parameter_revoked", CURRENT_USER GRANTED BY "supabase_parameter_grantor" CASCADE;
+REVOKE ALL PRIVILEGES ON PARAMETER work_mem FROM PUBLIC RESTRICT;
+REVOKE SET ON PARAMETER work_mem FROM "custom" GRANTED BY CURRENT_ROLE;
 REVOKE "supabase_second_role", "supabase_admin" FROM "custom";
 COMMENT ON ROLE "supabase_future_role" IS 'supabase_comment_value';
 `);
@@ -710,15 +717,16 @@ COMMENT ON ROLE "supabase_future_role" IS 'supabase_comment_value';
   const report=await auditGrant(options,f.dependencies());
   assert.deepEqual(report,{
     status:'AUTHENTICATED_RESERVED_SYSTEM_ROLE_PREFLIGHT_ONLY',indexCommitmentSha256,
-    referencedSystemRoles:['supabase_admin','supabase_future_role','supabase_other_role','supabase_second_role'],
-    targetSystemRoles,missingSystemRoles:['supabase_future_role','supabase_other_role'],referencedSystemRoleCount:4,targetSystemRoleCount:2,
+    referencedSystemRoles:['supabase_admin','supabase_future_role','supabase_other_role','supabase_parameter_grantee','supabase_parameter_grantor','supabase_parameter_revoked','supabase_second_role'],
+    targetSystemRoles,missingSystemRoles:['supabase_future_role','supabase_other_role','supabase_parameter_grantee','supabase_parameter_grantor','supabase_parameter_revoked'],referencedSystemRoleCount:7,targetSystemRoleCount:2,
     rolesFileVerified:true,fullDatabaseBackupVerified:false,databaseRestoreExecuted:false,archiveWrittenThisOperation:false,
   });
   const gets=f.calls.filter(c=>c.method==='GET'&&c.headers.has('authorization')&&c.url.includes('/bundles/'));
   assert.equal(gets.length,2,'one authenticated index and one roles object only');
   assert(f.calls.every(c=>['GET','HEAD'].includes(c.method)&&new URL(c.url).hostname.endsWith('.eu.r2.cloudflarestorage.com')));
   assert.equal(f.children.length,7,'audit starts no dump or database process');
-  assert(!JSON.stringify(report).includes('custom')&&!JSON.stringify(report).includes('GRANT')&&!JSON.stringify(report).includes('supabase_string_only'));
+  assert(!JSON.stringify(report).includes('custom')&&!JSON.stringify(report).includes('GRANT')&&!JSON.stringify(report).includes('supabase_string_only')
+    &&!JSON.stringify(report).includes('supabase_parameter_only'),'parameters and SQL values are not role operands');
   f.calls.length=0;
   for(const change of [{targetSystemRoles:['supabase_admin','supabase_admin']},{targetSystemRoles:['not_a_system_role']},
     {targetSystemRoles:['supabase_'+'x'.repeat(55)]},{targetSystemRoles:Array.from({length:129},(_,i)=>'supabase_'+i)},
@@ -738,6 +746,34 @@ COMMENT ON ROLE "supabase_future_role" IS 'supabase_comment_value';
     'GRANT private_member "TO" custom;',
     'GRANT private_member /* ON PARAMETER */ custom;',
     'REVOKE SELECT ON PARAMETER private_parameter FROM custom;',
+    'GRANT ALTER ON PARAMETER private_parameter TO custom;',
+    'GRANT ALTER SYSTEM SET ON PARAMETER private_parameter TO custom;',
+    'GRANT ALL, SET ON PARAMETER private_parameter TO custom;',
+    'GRANT SET, ON PARAMETER private_parameter TO custom;',
+    'GRANT ON PARAMETER private_parameter TO custom;',
+    'GRANT SET ON PARAMETER TO custom;',
+    'GRANT SET ON PARAMETER private_parameter, TO custom;',
+    'GRANT SET ON PARAMETER private_parameter..setting TO custom;',
+    'GRANT SET ON PARAMETER private_parameter. TO custom;',
+    "GRANT SET ON PARAMETER 'supabase_parameter_only' TO custom;",
+    'GRANT SET ON PARAMETER private_parameter FROM custom;',
+    'REVOKE SET ON PARAMETER private_parameter TO custom;',
+    'GRANT SET ON PARAMETER private_parameter TO;',
+    'GRANT SET ON PARAMETER private_parameter TO custom,;',
+    "GRANT SET ON PARAMETER private_parameter TO 'supabase_hidden';",
+    'GRANT SET ON PARAMETER private_parameter TO GROUP;',
+    'GRANT SET ON PARAMETER private_parameter TO custom WITH ADMIN OPTION;',
+    'GRANT SET ON PARAMETER private_parameter TO custom WITH GRANT;',
+    'GRANT SET ON PARAMETER private_parameter TO custom WITH GRANT OPTION WITH GRANT OPTION;',
+    'GRANT SET ON PARAMETER private_parameter TO custom GRANTED BY;',
+    'GRANT SET ON PARAMETER private_parameter TO custom GRANTED BY GROUP supabase_hidden;',
+    'GRANT SET ON PARAMETER private_parameter TO custom GRANTED BY supabase_admin WITH GRANT OPTION;',
+    'GRANT SET ON PARAMETER private_parameter TO custom CASCADE;',
+    'REVOKE GRANT FOR SET ON PARAMETER private_parameter FROM custom;',
+    'REVOKE SET ON PARAMETER private_parameter FROM custom WITH GRANT OPTION;',
+    'REVOKE SET ON PARAMETER private_parameter FROM custom CASCADE RESTRICT;',
+    'GRANT SET ON PARAMETER private_parameter TO custom unknown_tail;',
+    'GRANT SET ON PARAMETER private_parameter TO custom GRANTED BY supabase_admin unknown_tail;',
     'SET statement_timeout = 0;'.repeat(7)+'GRANT SELECT ON PARAMETER private_parameter TO custom;',
     'SET standard_conforming_strings = off;','RESET ALL; GRANT "supabase_hidden" TO "custom";',
     "SET ROLE 'supabase_hidden';","SET SESSION ROLE 'supabase_hidden';","SET LOCAL ROLE 'supabase_hidden';",
@@ -755,13 +791,13 @@ COMMENT ON ROLE "supabase_future_role" IS 'supabase_comment_value';
       ['GRANT SELECT ON TABLE private_table TO custom;','ROLE_AUDIT_STATEMENT_GRANT_MEMBERSHIP_SHAPE_OBJECT_OTHER_1'],
       ['GRANT private_member custom;','ROLE_AUDIT_STATEMENT_GRANT_MEMBERSHIP_SHAPE_NO_TO_1'],
       ['GRANT TO custom;','ROLE_AUDIT_STATEMENT_GRANT_MEMBERSHIP_SHAPE_TO_POSITION_1'],
-      ['GRANT SELECT ON PARAMETER private_parameter TO custom;','ROLE_AUDIT_STATEMENT_GRANT_MEMBERSHIP_SHAPE_OBJECT_PARAMETER_1'],
+      ['GRANT SELECT ON PARAMETER private_parameter TO custom;','ROLE_AUDIT_STATEMENT_GRANT_PARAMETER_PRIVILEGES_1'],
       ['GRANT SELECT ON "PARAMETER" private_parameter TO custom;','ROLE_AUDIT_STATEMENT_GRANT_MEMBERSHIP_SHAPE_OBJECT_OTHER_1'],
       ['GRANT private_member "TO" custom;','ROLE_AUDIT_STATEMENT_GRANT_MEMBERSHIP_SHAPE_NO_TO_1'],
       ['GRANT private_member /* ON PARAMETER */ custom;','ROLE_AUDIT_STATEMENT_GRANT_MEMBERSHIP_SHAPE_NO_TO_1'],
-      ['REVOKE SELECT ON PARAMETER private_parameter FROM custom;','ROLE_AUDIT_STATEMENT_REVOKE_MEMBERSHIP_SHAPE_OBJECT_PARAMETER_1'],
+      ['REVOKE SELECT ON PARAMETER private_parameter FROM custom;','ROLE_AUDIT_STATEMENT_REVOKE_PARAMETER_PRIVILEGES_1'],
       ['SET statement_timeout = 0;'.repeat(7)+'GRANT SELECT ON PARAMETER private_parameter TO custom;',
-        'ROLE_AUDIT_STATEMENT_GRANT_MEMBERSHIP_SHAPE_OBJECT_PARAMETER_8'],
+        'ROLE_AUDIT_STATEMENT_GRANT_PARAMETER_PRIVILEGES_8'],
       ['ALTER ROLE "custom" IN ROLE "supabase_hidden";','ROLE_AUDIT_STATEMENT_ALTER_ROLE_ROLE_OPTIONS_1'],
       ["SET ROLE 'supabase_hidden';",'ROLE_AUDIT_STATEMENT_SET_IDENTITY_1'],
     ]);

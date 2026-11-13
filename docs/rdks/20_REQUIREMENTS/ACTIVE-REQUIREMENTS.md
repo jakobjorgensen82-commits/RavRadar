@@ -4,6 +4,10 @@ OPTIONS uden body beholder sin direkte passage. En fysisk tilstedeværende body 
 
 De eksisterende stier, query-/origin-/metodeafslag og efterfølgende reservationsvindue bevares. OPTIONS må aldrig nå JWT-/profil-/mailkald. POST beholder alle ejer-, modtager-, reservations-, signatur- og once-krav. Kildeprøve er ikke bevis for faktisk hosted CORS eller mailmodtagelse. Se håndbog 89.343.
 
+Samme bounded-empty-kontrol skal anvendes ved den offentlige POST-grænse. Kun bevist tomt EOF må normaliseres til en bodyless Request med identisk URL, method, headers og medfølgende signal, før den eksisterende hostedadapter kaldes. Null-fastvejen samt eksisterende JSON404/CORS ved ikke-tomt eller ukendt input bevares. Ejer, modtager, profil, tidsvindue, signatur og once-/idempotenskrav ændres ikke.
+
+Den normale lokale prøve dækker nu både null body og en fysisk tom streng med friske handler-/forsøgstilstande. Begge går gennem Auth, aktiv ejerprofil, signatur og den faste Resend-afsender til én simuleret accept; et ekstra klik sender ikke igen. Negative streams afprøves for både OPTIONS og POST. Der sendes ingen rigtig mail i kildeprøven.
+
 ## 13. november — fast, privat diagnose ved afvist rollearkiv
 
 Hvis den eksisterende rolleaudit afviser et autentificeret SQL-statement, skal den private fejlrapport kun angive en fast statementtype, en fast afvisningsgren og et 1-baseret ordinal. Ukendte typer skal blive den faste kategori OTHER; SQL-tekst, rollenavne og værdier må ikke indgå. Tokenisering, accepteret grammatik, originale SQL-/ACL-regler og alle mål-, krypterings- og oprydningskrav bevares.
@@ -13,6 +17,16 @@ Ved afvist GRANT eller REVOKE skelner den samme private rapport nu mellem fire f
 Klasserne præciserer kun det eksisterende afslag. Den faktiske arkivform skal stadig observeres; ON PARAMETER er ikke bekræftet alene af den tidligere medlemskabsafvisning. Ingen tidligere afvist form accepteres, og fuld arkiv-/Auth-gendannelse og Free-klarhed er fortsat åbne.
 
 Diagnosen er ikke en formatrettelse, et bevis for manglende roller eller en bestået gendannelse. Den normale archive-vej skal fortsat kontrollere det lille autentificerede ROLES-input før store SQL-filer. Faktisk fuld arkiv-/Auth-gendannelse og Free-klarhed kræver særskilte beviser. Se håndbog 89.345.
+
+### Opfølgning: rettigheder til databaseindstillinger
+
+Den autentificerede tidlige rollekontrol har nu bekræftet, at arkivet indeholder ON PARAMETER før store SQL-filer. PostgreSQLs normale rollebackup kan også beskrive rettigheder til databaseindstillinger. Den hidtidige kontrol behandlede denne særskilte form som et medlemskab mellem roller og standsede.
+
+Den afgrænsede kildekandidat læser nu GRANT og REVOKE ON PARAMETER efter den officielle syntaks: SET og ALTER SYSTEM kan stå i en kommasepareret liste, eller alle rettigheder kan angives med ALL og valgfrit PRIVILEGES. Parameterlister, TO/FROM, valgfri grant option, rettighedsgiver og REVOKE-afhængigheder læses i deres faste rækkefølge. Hele udsagnet skal være læst. Kun modtagere og en eventuel rettighedsgiver registreres som roller; navnene på indstillinger er ikke rollenavne. Andre objekttyper og ukendte rester afvises fortsat.
+
+Den tidligere diagnose ændrede ikke accepteret syntaks. Den nye parameterrettelse erstatter derfor alene udsagnene her om uafklaret objektform og uændret grammatik. Den gamle medlemskabskontrol, tokenisering, krypterings- og målkontrol samt de originale SQL- og adgangsregler bevares. Der gættes ikke på roller, og ingen SQL eller grants springes over. Den normale afgrænsede parserprøve består; præcis kildekvalifikation, faktisk fuld arkiv-/Auth-gendannelse, autonom rotation og Free-klarhed kræver fortsat deres egne beviser.
+
+Syntaksgrundlag: [PostgreSQL GRANT](https://www.postgresql.org/docs/17/sql-grant.html) og [REVOKE](https://www.postgresql.org/docs/17/sql-revoke.html). Version 4.0.598, numerisk model, migrationer, score og vejr ændres ikke. Se håndbog 89.345.
 
 ## 13. november — privat diagnose af ejerprøvens forbindelseskontrol
 

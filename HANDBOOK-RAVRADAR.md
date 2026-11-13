@@ -4,6 +4,10 @@ En forbindelsesforprøve til mailknappen kan have en body-stream, selv om den ik
 
 Forprøven sender stadig ingen mail og bruger ikke Auth eller profilopslag. Sti, origin, ønsket metode og det efterfølgende tidsvindue skal fortsat passe. Det egentlige POST-kald beholder ejer, modtager, signatur, reservation og beskyttelse mod gentagelser. Den normale lokale handlerprøve består; faktisk passage på Supabase og modtaget mail kræver stadig deres egne beviser.
 
+Det efterfølgende POST-kald kan også have en fysisk, men tom body-stream. Den offentlige indgang genbruger derfor samme begrænsede tomhedskontrol. Kun bevist tomt EOF omsættes til en bodyless Request med samme adresse, metode, headers og abortsignal, før den uændrede ejer- og mailkæde kaldes. En Request uden body beholder sin direkte vej. Ikke-tomt eller ukendt indhold afvises fortsat med samme JSON404 og CORS; der logges ingen bodytekst.
+
+Hosted er OPTIONS observeret med HTTP204 og et efterfølgende POST med HTTP404 og registreret eksekvering. POST-bodyens pointer er ikke observeret. Den lokale body-pointer-fejl er reproduceret, men er derfor fortsat en hypotese om netop det hostede afslag. Faktisk afsenderaccept, levering og modtagelse kræver fortsat særskilt bevis.
+
 ## Privat afvisningsdiagnose til kapitel 89.345 — 13. november 2026
 
 En databasebackups roller kontrolleres, før de store SQL-filer læses ind. Hvis den strenge kontrol afviser et statement, får den private rapport en fast type, et fast afvisningspunkt og statementets nummer. Ukendte typer vises kun som OTHER. SQL-tekst, rollenavne og værdier vises ikke. Kommentarer og psql-metalinjer tælles ikke som SQL-statements.
@@ -15,6 +19,16 @@ Klasserne præciserer kun det eksisterende afslag. Den faktiske arkivform skal s
 De samme input accepteres og afvises som før. Originale filer og adgangsregler ændres ikke; der oprettes ikke gættede roller, og ingen SQL eller grants springes over. Diagnosen hjælper med at finde den konkrete formatårsag, men retter den ikke i sig selv. En afvist kontrol er heller ikke alene bevis for en manglende platformrolle eller en fejl i målmiljøet.
 
 Den eksisterende archive-vej bruges fortsat. Den starter det ejede lokale mål og læser det autentificerede indeks og det krypterede ROLES-objekt; det er ikke en læsning uden download. Store SQL-filer materialiseres først efter bestået rolleaudit. Denne kodeændring starter ingen ny prøve. Faktisk fuld gendannelse, Auth-funktion, sikker løbende drift og Free-klarhed kræver fortsat deres egne beviser.
+
+### Opfølgning: rettigheder til databaseindstillinger
+
+Den autentificerede tidlige rollekontrol har nu bekræftet, at arkivet indeholder ON PARAMETER før store SQL-filer. PostgreSQLs normale rollebackup kan også beskrive rettigheder til databaseindstillinger. Den hidtidige kontrol behandlede denne særskilte form som et medlemskab mellem roller og standsede.
+
+Den afgrænsede kildekandidat læser nu GRANT og REVOKE ON PARAMETER efter den officielle syntaks: SET og ALTER SYSTEM kan stå i en kommasepareret liste, eller alle rettigheder kan angives med ALL og valgfrit PRIVILEGES. Parameterlister, TO/FROM, valgfri grant option, rettighedsgiver og REVOKE-afhængigheder læses i deres faste rækkefølge. Hele udsagnet skal være læst. Kun modtagere og en eventuel rettighedsgiver registreres som roller; navnene på indstillinger er ikke rollenavne. Andre objekttyper og ukendte rester afvises fortsat.
+
+Den tidligere diagnose ændrede ikke accepteret syntaks. Den nye parameterrettelse erstatter derfor alene udsagnene her om uafklaret objektform og uændret grammatik. Den gamle medlemskabskontrol, tokenisering, krypterings- og målkontrol samt de originale SQL- og adgangsregler bevares. Der gættes ikke på roller, og ingen SQL eller grants springes over. Den normale afgrænsede parserprøve består; præcis kildekvalifikation, faktisk fuld arkiv-/Auth-gendannelse, autonom rotation og Free-klarhed kræver fortsat deres egne beviser.
+
+Syntaksgrundlag: [PostgreSQL GRANT](https://www.postgresql.org/docs/17/sql-grant.html) og [REVOKE](https://www.postgresql.org/docs/17/sql-revoke.html). Version 4.0.598, numerisk model, migrationer, score og vejr ændres ikke. Se håndbog 89.345.
 
 ## Privat gatewaydiagnostik til kapitel 89.343 — 13. november 2026
 
