@@ -47,9 +47,8 @@ export function selectSealedPagesRecovery({
     || !sha.test(predecessorSha256 ?? '') || predecessorSha256 === seal.targetPublicManifestSha256
     || !Number.isSafeInteger(seal?.artifactId) || seal.artifactId <= 0
     || firstRequest?.deliveryOrdinal !== 1 || firstRequest.artifactId !== seal.artifactId
-    || !commit.test(firstRequest.buildVersion ?? '') || firstRequest.buildVersion === seal.headSha
+    || firstRequest.buildVersion !== seal.headSha
     || !sha.test(firstRequest.clientIntentSha256 ?? '')
-    || firstRequest.buildVersion !== firstRequest.clientIntentSha256.slice(0, 40)
     || !hasSealedPagesRetryEvidence(firstDelivery) || firstDelivery.request !== firstRequest
     || firstDelivery.receipt !== firstReceipt || firstDelivery.response !== firstStatus
     || !Array.isArray(publicObservations)

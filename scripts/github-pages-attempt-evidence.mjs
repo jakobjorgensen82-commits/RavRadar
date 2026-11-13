@@ -6,6 +6,7 @@ import path from 'node:path';
 
 const closureEvidence = new WeakSet();
 const legacyNoPostJobs = new WeakSet();
+const historicalCreateRejectedJobs = new WeakSet();
 // One reviewed historical pre-POST failure. This is not a diagnostic-code
 // allowlist: both the complete authenticated log and the exact four Git blobs
 // must match before the existing all-writer closure classifier can use it.
@@ -21,6 +22,25 @@ const LEGACY_NO_POST = Object.freeze({
     ['scripts/deploy-ordinary-pages-with-immediate-retry.mjs', 9570, 'dd88f9aa9c2b8b7362f792c92eb7fc251271eec2a6aff33733f524e8ec97787f'],
     ['scripts/lib/publish-sealed-pages-with-recovery.mjs', 4240, 'fb2f6fe6a2248f873db3541edf30739e9a678494dd2f49b9aa0bea60f97e55f4'],
     ['scripts/lib/pages-per-artifact-identity.mjs', 17363, '6552fc80948cfdbfa6dcfde5b5517cc5eefbea8a3faff15fc6ab499db84ff79c'],
+  ].map(Object.freeze)),
+});
+// One reviewed historical POST received an explicit create HTTP404 before ACK.
+// This authenticates an old event, not a per-head source-test cohort. Its full
+// private log is never checked in. It is CLOSED_UNPUBLISHED, never NO_POST,
+// retry permission, or public success. Future transports brand rejection directly.
+const HISTORICAL_CREATE_REJECTED = Object.freeze({
+  repository: 'jakobjorgensen82-commits/RavRadar', runId: 43336157644, runAttempt: 1,
+  headSha: 'd7a9a21afd013b386d211bdb540a719050a489de', attemptId: 'pages-43336157644-1',
+  jobId: 131660621931, logBytes: 165780,
+  logSha256: '790e62b97560bfded6657cc0b914a3243521d3ac25868d3405a74a37a287c969',
+  signedLogHost: 'productionresultssa7.blob.core.windows.net',
+  sources: Object.freeze([
+    ['scripts/lib/run-sealed-pages-deployment.mjs', 16183, 'ad8949e751ae86bba14112871e394752c06325e71c9799e020ac05a4f2fc7002'],
+    ['scripts/deploy-ordinary-pages-with-immediate-retry.mjs', 10359, '43f457b6601d296ab9e472645245ee6f87d9e4314139702c59922253ce62491e'],
+    ['scripts/lib/publish-sealed-pages-with-recovery.mjs', 4240, 'fb2f6fe6a2248f873db3541edf30739e9a678494dd2f49b9aa0bea60f97e55f4'],
+    ['scripts/lib/pages-per-artifact-identity.mjs', 17709, 'ea886adac1195fde7c5e47c9b34a32db107b18991532931573a846586ca03b16'],
+    ['.github/actions/deploy-ravradar-pages/action.yml', 1834, 'cfa8db3446bb7a337bf8bbb48b296f338ce8b4793c63b2a36c23bcc4d042d347'],
+    ['.github/workflows/reusable-pages-deploy.yml', 68679, 'afed40be3c1126da6f367ffea18ef4299e5df71068823e3570cb984c4ae90619'],
   ].map(Object.freeze)),
 });
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -78,6 +98,10 @@ function classifyCompletePagesJobs(jobs, owner, callerPath) {
     if (step.conclusion === 'skipped') { roles.push({ role, state: 'NO_POST' }); continue; }
     if (step.conclusion === 'success') { roles.push({ role, state: 'PUBLIC_TARGET_REQUIRED' }); continue; }
     if (role === 'ordinary' && legacyNoPostJobs.has(job)) { roles.push({ role, state: 'NO_POST' }); continue; }
+    if (role === 'ordinary' && historicalCreateRejectedJobs.has(job)) {
+      roles.push({ role, state: 'CLOSED_UNPUBLISHED', reason: 'CREATE_HTTP_404_REJECTED', postAttempted: true });
+      continue;
+    }
     const closed = job.steps.filter(item => item.name === CLOSED_STEP);
     if (role === 'exact-target-recovery' || !['failure', 'cancelled'].includes(step.conclusion)
       || closed.length !== 1 || closed[0].status !== 'completed' || closed[0].conclusion !== 'success'
@@ -98,10 +122,12 @@ function classifyCompletePagesJobs(jobs, owner, callerPath) {
       : roles.some(role => role.state === 'CLOSED_UNPUBLISHED') ? 'CLOSED_UNPUBLISHED' : 'NO_POST' });
 }
 
-async function qualifyLegacyNoPostJob(jobs, owner, fetchImpl, token) {
-  if (!sameOwner(owner, LEGACY_NO_POST)) return null;
-  const selected = jobs.filter(job => job.id === LEGACY_NO_POST.jobId);
-  if (selected.length !== 1) throw new Error('PAGES_OWNER_LEGACY_JOB_UNPROVED');
+async function qualifyReviewedHistoricalJob(jobs, owner, fetchImpl, token, reviewed) {
+  if (!sameOwner(owner, reviewed)) return null;
+  const rejected = reviewed === HISTORICAL_CREATE_REJECTED;
+  const failure = rejected ? 'PAGES_OWNER_REJECTED_CREATE_' : 'PAGES_OWNER_LEGACY_';
+  const selected = jobs.filter(job => job.id === reviewed.jobId);
+  if (selected.length !== 1) throw new Error(failure + 'JOB_UNPROVED');
   const job = selected[0], one = name => job.steps?.filter(step => step.name === name) ?? [];
   const reserve = one('Reserve this exact Pages writer before its first POST');
   const deploy = one('Deploy to GitHub Pages'), closed = one(CLOSED_STEP);
@@ -110,19 +136,19 @@ async function qualifyLegacyNoPostJob(jobs, owner, fetchImpl, token) {
     || reserve.length !== 1 || reserve[0].number !== 30 || reserve[0].status !== 'completed' || reserve[0].conclusion !== 'success'
     || deploy.length !== 1 || deploy[0].number !== 31 || deploy[0].status !== 'completed' || deploy[0].conclusion !== 'failure'
     || closed.length !== 1 || closed[0].number !== 32 || closed[0].status !== 'completed' || closed[0].conclusion !== 'skipped')
-    throw new Error('PAGES_OWNER_LEGACY_STEP_UNPROVED');
+    throw new Error(failure + 'STEP_UNPROVED');
   const gitEnv = { ...Object.fromEntries(['PATH', 'Path', 'SystemRoot', 'WINDIR', 'TEMP', 'TMP']
     .filter(key => typeof process.env[key] === 'string').map(key => [key, process.env[key]])),
     GIT_NO_LAZY_FETCH: '1', GIT_NO_REPLACE_OBJECTS: '1', GIT_TERMINAL_PROMPT: '0',
     GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: process.platform === 'win32' ? 'NUL' : '/dev/null' };
   try {
-    for (const [file, bytes, hash] of LEGACY_NO_POST.sources) {
+    for (const [file, bytes, hash] of reviewed.sources) {
       const raw = execFileSync('git', ['-c', 'protocol.allow=never', '-C', ROOT, 'cat-file', 'blob', owner.headSha + ':' + file],
         { env: gitEnv, timeout: 5000, maxBuffer: 128 * 1024, stdio: ['pipe', 'pipe', 'pipe'] });
       if (raw.length !== bytes || sha256(raw) !== hash) throw new Error('source');
     }
-  } catch { throw new Error('PAGES_OWNER_LEGACY_SOURCE_UNPROVED'); }
-  const apiUrl = `https://api.github.com/repos/${owner.repository}/actions/jobs/${LEGACY_NO_POST.jobId}/logs`;
+  } catch { throw new Error(failure + 'SOURCE_UNPROVED'); }
+  const apiUrl = `https://api.github.com/repos/${owner.repository}/actions/jobs/${reviewed.jobId}/logs`;
   const signal = AbortSignal.timeout(30_000);
   let response;
   try {
@@ -132,7 +158,7 @@ async function qualifyLegacyNoPostJob(jobs, owner, fetchImpl, token) {
     if (response.url !== apiUrl || response.redirected !== false) throw new Error('route');
     if (response.status === 302) {
       const target = new URL(response.headers.get('location'));
-      if (target.protocol !== 'https:' || target.hostname !== LEGACY_NO_POST.signedLogHost
+      if (target.protocol !== 'https:' || target.hostname !== reviewed.signedLogHost
         || target.username || target.password || target.port || target.hash || target.pathname === '/') throw new Error('redirect');
       await response.body?.cancel();
       // The signed blob URL receives no GitHub Authorization header.
@@ -147,14 +173,14 @@ async function qualifyLegacyNoPostJob(jobs, owner, fetchImpl, token) {
       for (;;) {
         const next = await reader.read(); if (next.done) break;
         bytes += next.value.byteLength;
-        if (bytes > 128 * 1024) { await reader.cancel(); throw new Error('limit'); }
+        if (bytes > (rejected ? 256 : 128) * 1024) { await reader.cancel(); throw new Error('limit'); }
         chunks.push(next.value);
       }
     } finally { reader.releaseLock(); }
     const raw = Buffer.concat(chunks, bytes);
-    if (raw.length !== LEGACY_NO_POST.logBytes || sha256(raw) !== LEGACY_NO_POST.logSha256) throw new Error('digest');
+    if (raw.length !== reviewed.logBytes || sha256(raw) !== reviewed.logSha256) throw new Error('digest');
     new TextDecoder('utf-8', { fatal: true }).decode(raw);
-  } catch { throw new Error('PAGES_OWNER_LEGACY_LOG_UNPROVED'); }
+  } catch { throw new Error(failure + 'LOG_UNPROVED'); }
   return job;
 }
 
@@ -196,11 +222,13 @@ export async function readAuthenticPagesAttemptClosure({ owner, fetchImpl = fetc
     || jobs.some(job => !Number.isSafeInteger(job.id) || job.id < 1 || job.run_id !== owner.runId
       || job.run_attempt !== owner.runAttempt || job.head_sha !== owner.headSha || typeof job.name !== 'string'))
     throw new Error('PAGES_OWNER_JOB_LIST_UNBOUND');
-  const legacyNoPost = await qualifyLegacyNoPostJob(jobs, owner, fetchImpl, token);
+  const legacyNoPost = await qualifyReviewedHistoricalJob(jobs, owner, fetchImpl, token, LEGACY_NO_POST);
+  const createRejected = await qualifyReviewedHistoricalJob(jobs, owner, fetchImpl, token, HISTORICAL_CREATE_REJECTED);
   const last = await read(root); assertRun(last);
   if (last.updated_at !== first.updated_at || last.conclusion !== first.conclusion || last.path !== first.path)
     throw new Error('PAGES_OWNER_RUN_CHANGED_DURING_READ');
   if (legacyNoPost) legacyNoPostJobs.add(legacyNoPost);
+  if (createRejected) historicalCreateRejectedJobs.add(createRejected);
   const result = classifyCompletePagesJobs(jobs, owner, first.path);
   closureEvidence.add(result);
   return result;
