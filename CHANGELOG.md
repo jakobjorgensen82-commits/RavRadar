@@ -1,3 +1,9 @@
+## 13. november — tom OPTIONS-body skal kontrolleres som indhold
+
+Ejerprøvens CORS-forprøve afviste en fysisk, men tom Request-body, fordi den kun så på body-pointeren. Null-fastvejen bevares, mens en tilstedeværende stream nu skal nå et kontrolleret tomt EOF inden for en kort absolut frist. Indhold, læsefejl, stilstand og ukendt afslutning afvises fortsat. Der bruges ingen ubegrænset body.text-læsning, og den ejede læser annulleres højst én gang og frigives.
+
+Den normale handlerprøve reproducerer den gamle BODY_POINTER_REJECTED med en rigtig Request og body: tom streng. Den afprøver derefter tomhed, ikke-tomt indhold, stilstand, læsefejl, gentagne tomme chunks og uafklaret annullering. Alle OPTIONS-kald holder sig uden for Auth og mail. Path, query, origin, ønsket metode, reservation, tidsvindue, POST-ejerskab og deduplikering bevares. Faktisk hosted forprøve og modtaget mail kræver fortsat eget bevis. Version 4.0.598, SQL, score og vejr ændres ikke. Se håndbog 89.343.
+
 ## 13. november — fast, privat diagnose ved afvist rollearkiv
 
 Den eksisterende private rolleaudit angiver nu en fast statementtype, en fast afvisningsgren og et ordinal, når et autentificeret statement afvises. Det gør næste afgrænsede undersøgelse præcis uden at udskrive SQL, rollenavne eller værdier. Tokenisering og accepteret grammatik er uændrede; originale SQL-/ACL-regler og den isolerede gendannelse bevares.

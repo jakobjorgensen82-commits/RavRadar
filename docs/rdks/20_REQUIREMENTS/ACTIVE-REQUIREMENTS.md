@@ -1,3 +1,9 @@
+## 13. november — tom OPTIONS-body skal kontrolleres som indhold
+
+OPTIONS uden body beholder sin direkte passage. En fysisk tilstedeværende body må kun passere efter bevis for tomt EOF: højst fire læsninger under samme absolutte étsekundsfrist. Enhver byte, ukendt chunk, låst/brugt stream, læsefejl eller manglende EOF afvises. Læseren annulleres højst én gang; annullering, lukning og igangværende læsning observeres under en særskilt 250 ms afslutningsfrist. Ukendt afslutning giver aldrig 204, og låsen frigives. Ingen privat body eller fejltekst logges.
+
+De eksisterende stier, query-/origin-/metodeafslag og efterfølgende reservationsvindue bevares. OPTIONS må aldrig nå JWT-/profil-/mailkald. POST beholder alle ejer-, modtager-, reservations-, signatur- og once-krav. Kildeprøve er ikke bevis for faktisk hosted CORS eller mailmodtagelse. Se håndbog 89.343.
+
 ## 13. november — fast, privat diagnose ved afvist rollearkiv
 
 Hvis den eksisterende rolleaudit afviser et autentificeret SQL-statement, skal den private fejlrapport kun angive en fast statementtype, en fast afvisningsgren og et 1-baseret ordinal. Ukendte typer skal blive den faste kategori OTHER; SQL-tekst, rollenavne og værdier må ikke indgå. Tokenisering, accepteret grammatik, originale SQL-/ACL-regler og alle mål-, krypterings- og oprydningskrav bevares.

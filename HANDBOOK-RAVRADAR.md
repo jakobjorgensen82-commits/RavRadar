@@ -1,3 +1,9 @@
+## Tomme OPTIONS-forprøver til kapitel 89.343 — 13. november 2026
+
+En forbindelsesforprøve til mailknappen kan have en body-stream, selv om den ikke indeholder noget. Den tidligere kontrol afviste alene, at streamen fandtes. Den afgrænsede rettelse beholder den hurtige vej uden body og kontrollerer ellers, at streamen faktisk afsluttes tom inden for en kort frist. Indhold, læsefejl, stilstand og ukendt afslutning afvises. Ingen bodytekst eller private værdier skrives i loggen.
+
+Forprøven sender stadig ingen mail og bruger ikke Auth eller profilopslag. Sti, origin, ønsket metode og det efterfølgende tidsvindue skal fortsat passe. Det egentlige POST-kald beholder ejer, modtager, signatur, reservation og beskyttelse mod gentagelser. Den normale lokale handlerprøve består; faktisk passage på Supabase og modtaget mail kræver stadig deres egne beviser.
+
 ## Privat afvisningsdiagnose til kapitel 89.345 — 13. november 2026
 
 En databasebackups roller kontrolleres, før de store SQL-filer læses ind. Hvis den strenge kontrol afviser et statement, får den private rapport en fast type, et fast afvisningspunkt og statementets nummer. Ukendte typer vises kun som OTHER. SQL-tekst, rollenavne og værdier vises ikke. Kommentarer og psql-metalinjer tælles ikke som SQL-statements.
