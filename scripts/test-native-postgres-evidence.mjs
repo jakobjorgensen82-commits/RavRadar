@@ -2767,6 +2767,22 @@ test('Source backend recipe Python imports add transitive source without executi
   assert(result.externalImports.includes('json'));
   assert(result.localImports.some(([from,to])=>from==='scripts/lib/fixed.py'&&to==='scripts/lib/transitive.py'));
   assert(result.absentCandidates.includes('scripts/json.py'));
+  assert(result.absentCandidates.includes('scripts/lib/__init__.py'),'Namespace parent absence is an operand');
+  const initialized={...sources,'scripts/lib/__init__.py':'import lib.parent_recipe\n','scripts/lib/parent_recipe.py':''};
+  const withParent=run({sources:initialized,seeds:['scripts/recipe.py']});
+  assert(withParent.files.includes('scripts/lib/__init__.py'));
+  assert(withParent.files.includes('scripts/lib/parent_recipe.py'));
+  assert(!withParent.absentCandidates.includes('scripts/lib/__init__.py'));
+  const emptyParent=run({sources:{...sources,'scripts/lib/__init__.py':''},seeds:['scripts/recipe.py']});
+  assert(emptyParent.files.includes('scripts/lib/__init__.py'));
+  const relativeSources={'scripts/lib/entry.py':'from .leaf import value\n'};
+  const partial=run({sources:relativeSources,seeds:['scripts/lib/entry.py']});
+  assert.equal(partial.unresolvedRelativeImports.length,1);
+  assert(partial.absentCandidates.includes('scripts/lib/leaf.py'));
+  const completed=run({sources:{...relativeSources,'scripts/lib/leaf.py':'value=1\n'},seeds:['scripts/lib/entry.py']});
+  assert.equal(completed.unresolvedRelativeImports.length,0);
+  assert(completed.files.includes('scripts/lib/leaf.py'));
+  assert.equal(partial.externalImports.includes('scripts'),false,'Unresolved local imports are never external-runtime proof');
   assert.throws(()=>run({sources,seeds:['scripts/unknown-root.py']}));
 });
 
@@ -2831,4 +2847,24 @@ test('Source backend normal profile check refuses would-be profile or reader byt
   const reordered={...derived,files:[...derived.files].reverse()};
   assert.equal(verify(reordered,[...exact].reverse()).reuseAuthority,false);
   assert.throws(()=>verify(derived,exact.slice(1)),/RECIPE_DERIVED_PROFILE_PAIR/);
+});
+
+
+test('Source backend normal namespace absence refuses an untracked parent initializer',async()=>{
+  const {verifySourceBackendPhysicalResolutionAbsences:verify}=await import('./native-postgres-evidence.mjs');
+  const {tmpdir}=await import('node:os');const path=await import('node:path');
+  const root=await fs.mkdtemp(path.join(tmpdir(),'rr-source-namespace-'));
+  const relative='scripts/lib/__init__.py',file=path.join(root,relative);
+  try {
+    await verify(root,[relative],new Map());
+    await fs.mkdir(path.dirname(file),{recursive:true});await fs.writeFile(file,'');
+    await assert.rejects(verify(root,[relative],new Map()),/RECIPE_PHYSICAL_RESOLUTION_ABSENCE_CHANGED/);
+    await fs.unlink(file);
+    await assert.rejects(verify(root,[relative],new Map([[relative,{}]])),/RECIPE_RESOLUTION_ABSENCE_CHANGED/);
+  } finally {
+    try{await fs.unlink(file);}catch(error){if(error.code!=='ENOENT')throw error;}
+    for(const directory of [path.join(root,'scripts/lib'),path.join(root,'scripts')])
+      try{await fs.rmdir(directory);}catch(error){if(error.code!=='ENOENT')throw error;}
+    await fs.rmdir(root);
+  }
 });

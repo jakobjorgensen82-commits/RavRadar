@@ -2611,7 +2611,7 @@ export function captureSourceBackendRecipeSources({ref,readGit,sourcePaths,absen
     const entry=index.get(file);sourceRecipeNeed(entry&&entry.type==='blob'&&['100644','100755'].includes(entry.mode),
       'RECIPE_REGULAR_GIT_INPUT:'+file);
     const bytes=Buffer.from(readGit(['cat-file','blob',ref+':'+file]));
-    sourceRecipeNeed(bytes.length>0,'RECIPE_EMPTY_INPUT:'+file);
+    sourceRecipeNeed(bytes.length>0||file.endsWith('.py'),'RECIPE_EMPTY_INPUT:'+file);
     return {file,mode:entry.mode,bytes:bytes.length,sha256:sha(bytes)};
   });
   const absent=[...new Set(absentPaths.map(recipeRelative))].sort();
@@ -2645,7 +2645,7 @@ export function verifySourceBackendRecipeSources(current,prior) {
 
 // Positive local import operands from Python compilation only. This program
 // never executes/imports supplied code and creates no dynamic-loader/PG grant.
-export const SOURCE_BACKEND_PYTHON_STATIC_IMPORTS="\nimport dis,json,sys,types\nq=json.load(sys.stdin)\nassert type(q) is dict and set(q)=={'sources','seeds'}\nsources=q['sources'];seeds=q['seeds']\nassert type(sources) is dict and type(seeds) is list and seeds\nassert all(type(k) is str and type(v) is str for k,v in sources.items())\nassert all(type(k) is str and k in sources for k in seeds)\npending=list(seeds);seen=set();edges=set();absent=set();external=set()\ndef candidates(name):\n    path=name.replace('.','/')\n    for root in ('','scripts/','scripts/lib/','scripts/fixtures/'):\n        for value in (root+path+'.py',root+path+'/__init__.py'):\n            yield value\ndef add(name,owner):\n    choices=list(candidates(name));present=[p for p in choices if p in sources]\n    absent.update(p for p in choices if p not in sources)\n    for target in present:\n        edges.add((owner,target));pending.append(target)\n    return bool(present)\nwhile pending:\n    owner=pending.pop()\n    if owner in seen:continue\n    assert owner in sources and owner.endswith('.py')\n    seen.add(owner)\n    todo=[compile(sources[owner],owner,'exec',dont_inherit=True)]\n    while todo:\n        code=todo.pop();todo.extend(x for x in code.co_consts if isinstance(x,types.CodeType))\n        ins=list(dis.get_instructions(code))\n        for at,item in enumerate(ins):\n            if item.opname!='IMPORT_NAME':continue\n            assert at>=2 and ins[at-2].opname=='LOAD_CONST' and ins[at-1].opname=='LOAD_CONST'\n            level,names=ins[at-2].argval,ins[at-1].argval\n            assert type(level) is int and level>=0 and (names is None or type(names) is tuple)\n            name=item.argval\n            assert type(name) is str\n            if level:\n                base=owner.rsplit('/',1)[0].split('/')\n                assert level<=len(base)\n                name='.'.join(base[:len(base)-level+1]+([name] if name else []))\n            base_found=add(name,owner) if name else False\n            child_found=False\n            for child in names or ():\n                assert type(child) is str\n                if child!='*':child_found=add((name+'.' if name else '')+child,owner) or child_found\n            if not base_found and not child_found:\n                assert level==0\n                external.add(name.split('.')[0])\nprint(json.dumps({'files':sorted(seen),'localImports':[list(x) for x in sorted(edges)],\n    'absentCandidates':sorted(absent),'externalImports':sorted(external)},sort_keys=True))\n";
+export const SOURCE_BACKEND_PYTHON_STATIC_IMPORTS="\nimport dis,json,sys,types\nq=json.load(sys.stdin)\nassert type(q) is dict and set(q)=={'sources','seeds'}\nsources=q['sources'];seeds=q['seeds']\nassert type(sources) is dict and type(seeds) is list and seeds\nassert all(type(k) is str and type(v) is str for k,v in sources.items())\nassert all(type(k) is str and k in sources for k in seeds)\npending=list(seeds);seen=set();edges=set();absent=set();external=set();unresolved_relative=[]\ndef candidates(name):\n    path=name.replace('.','/')\n    for root in ('','scripts/','scripts/lib/','scripts/fixtures/'):\n        for value in (root+path+'.py',root+path+'/__init__.py'):\n            yield value\ndef add(name,owner):\n    choices=list(candidates(name));present=[p for p in choices if p in sources]\n    absent.update(p for p in choices if p not in sources)\n    for target in present:\n        edges.add((owner,target));pending.append(target)\n        # Importing pkg.module executes every existing parent __init__.py.\n        # Namespace packages are the corresponding explicit absence inputs.\n        directories=target.split('/')[:-1]\n        for depth in range(1,len(directories)+1):\n            parent='/'.join(directories[:depth])+'/__init__.py'\n            if parent==target:continue\n            if parent in sources:\n                edges.add((owner,parent));pending.append(parent)\n            else:absent.add(parent)\n    return bool(present)\nwhile pending:\n    owner=pending.pop()\n    if owner in seen:continue\n    assert owner in sources and owner.endswith('.py')\n    seen.add(owner)\n    todo=[compile(sources[owner],owner,'exec',dont_inherit=True)]\n    while todo:\n        code=todo.pop();todo.extend(x for x in code.co_consts if isinstance(x,types.CodeType))\n        ins=list(dis.get_instructions(code))\n        for at,item in enumerate(ins):\n            if item.opname!='IMPORT_NAME':continue\n            assert at>=2 and ins[at-2].opname=='LOAD_CONST' and ins[at-1].opname=='LOAD_CONST'\n            level,names=ins[at-2].argval,ins[at-1].argval\n            assert type(level) is int and level>=0 and (names is None or type(names) is tuple)\n            name=item.argval\n            assert type(name) is str\n            if level:\n                base=owner.rsplit('/',1)[0].split('/')\n                assert level<=len(base)\n                name='.'.join(base[:len(base)-level+1]+([name] if name else []))\n            base_found=add(name,owner) if name else False\n            child_found=False\n            for child in names or ():\n                assert type(child) is str\n                if child!='*':child_found=add((name+'.' if name else '')+child,owner) or child_found\n            if not base_found and not child_found:\n                if level:\n                    unresolved_relative.append({'owner':owner,'module':name,'level':level})\n                else:external.add(name.split('.')[0])\nprint(json.dumps({'files':sorted(seen),'localImports':[list(x) for x in sorted(edges)],\n    'absentCandidates':sorted(absent),'externalImports':sorted(external),\n    'unresolvedRelativeImports':sorted(unresolved_relative,key=lambda row:(row['owner'],row['module'],row['level']))},sort_keys=True))\n";
 
 
 
@@ -2694,6 +2694,16 @@ export async function collectSourceBackendNormalRecipeDeclarations({root=SOURCE_
     materializer:'scripts/materialize-dmi-bulk-storage.py',
     profileBuilder:'scripts/build-source-producer-successor.mjs'};
   for(const relative of Object.values(owners))await sourceRecipePhysicalBytes(root,relative,ref,readGit);
+  const namespaceIndex=new Map(parseTree(String(readGit(['ls-tree','-rz','--full-tree',ref]))).map(row=>[row[0],row]));
+  const namespaceAbsences=new Set();
+  for(const owner of [owners.selector,owners.provider,owners.materializer]) {
+    for(let directory=path.posix.dirname(owner);directory!=='.';directory=path.posix.dirname(directory)) {
+      const initializer=directory+'/__init__.py';
+      if(namespaceIndex.has(initializer))await sourceRecipePhysicalBytes(root,initializer,ref,readGit);
+      else namespaceAbsences.add(initializer);
+    }
+  }
+  await verifySourceBackendPhysicalResolutionAbsences(root,namespaceAbsences,namespaceIndex);
   const load=relative=>import(pathToFileURL(path.join(root,relative)).href+'?source-recipe='+ref);
   const normal=(await load(owners.normal)).sourceCurrentNormalInputArtifacts();
   const forecast=(await load(owners.forecast)).sourceCurrentNativeForecastInputDeclarations();
@@ -2832,7 +2842,10 @@ export async function captureSourceBackendNormalRecipeInputs(options={}) {
       input:JSON.stringify({sources:pySources,seeds:pySeeds}),encoding:'utf8',stdio:['pipe','pipe','pipe'],timeout:15000,
       maxBuffer:4*1024*1024}));
     const additional=pythonImports.absentCandidates.filter(file=>index.has(file)&&!Object.hasOwn(pySources,file));
-    if(!additional.length)break;
+    if(!additional.length) {
+      sourceRecipeNeed(Array.isArray(pythonImports.unresolvedRelativeImports)
+        &&pythonImports.unresolvedRelativeImports.length===0,'RECIPE_UNRESOLVED_RELATIVE_IMPORT');break;
+    }
     for(const file of additional) {const bytes=await read(file);pySources[file]=bytes.toString('utf8');sources.set(file,bytes);}
     sourceRecipeNeed(Object.keys(pySources).length<=512,'RECIPE_PYTHON_SOURCE_BOUND');
   }
@@ -2849,6 +2862,7 @@ export async function captureSourceBackendNormalRecipeInputs(options={}) {
         &&request.method==='POST','RECIPE_NORMAL_RPC_CAPTURE');rpc=JSON.parse(request.body);throw sentinel;
     }});}catch(error){if(error!==sentinel)throw error;}
   sourceRecipeNeed(rpc&&Object.keys(rpc).length===22,'RECIPE_NORMAL_RPC_22');
+  await verifySourceBackendPhysicalResolutionAbsences(root,absence,index);
   const result=captureSourceBackendRecipeSources({ref,readGit,sourcePaths:[...sources.keys()],
     absentPaths:[...absence],factoryInputs:fixedFactories,recipe:{nativeCommands:SOURCE_PR_NATIVE_COMMANDS,
       moduleDeclarations:declarations.moduleDeclarations,normalRpc22:rpc,storageContracts:contracts,
@@ -2903,6 +2917,16 @@ export async function sourcePrBackendRecipeObservation(stage,current,expected,pr
     completeSourceClosure:false,closedBackendBoundary:false,eligibleForReuse:false,reuseAuthority:false,
     privatePayloadIncluded:false};
   emit('SOURCE_NATIVE_BACKEND_RECIPE '+JSON.stringify(report));return snapshot;
+}
+
+
+export async function verifySourceBackendPhysicalResolutionAbsences(root,paths,index) {
+  for(const relative of paths) {
+    recipeRelative(relative);sourceRecipeNeed(!index.has(relative),'RECIPE_RESOLUTION_ABSENCE_CHANGED:'+relative);
+    let found=false;try{await fs.lstat(path.join(root,relative));found=true;}
+    catch(error){if(error.code!=='ENOENT')throw error;}
+    sourceRecipeNeed(!found,'RECIPE_PHYSICAL_RESOLUTION_ABSENCE_CHANGED:'+relative);
+  }
 }
 
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url))await main();
