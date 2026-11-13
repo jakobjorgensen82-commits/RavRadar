@@ -1,3 +1,9 @@
+## 13. november — afgrænset femminuttersfrist for offline scalarplan
+
+Den afgrænsede lokale rettelse giver den eksisterende offlineplan for vind, vandstand og vandtemperatur én fælles frist på 300 sekunder. En faktisk almindelig kørsel overskred 180-sekundersfristen efter 190.264 ms; overskridelsen blev opdaget efter den normale kontrol af den gemte Open-Meteo-bank. Tiden gælder hele kalderen, ikke kun denne fase. Leverandørbudgetter, originalkontrol, model og SQL bevares. Færdig plan og bedre prognosehale skal stadig verificeres i en efterfølgende almindelig vejrhentning.
+
+Den samme normale fysiske CLI-prøve afviser den gamle frist efter et kontrolleret forbrug over 180 sekunder og færdiggør den samme plan byte for byte under 300 sekunder. Reelt stop ved den nye grænse, ukendt transportstop, offline bytekontrol og snapshotbevarelse prøves fortsat. Der ventes ikke tre minutter i testen, og der indføres ingen ny callerparameter.
+
 ## 13. november — privat diagnose af ejerprøvens forbindelseskontrol
 
 Ejerprøvens OPTIONS-forbindelseskontrol kan afvises på flere bevarede regler med samme tomme 404-svar. Den lille kildekandidat giver én fast privat diagnose med kategorier og booleans for det faktisk nåede afvisningspunkt. Der logges ingen rå requestværdier, ejer-/modtagerdata, identiteter eller nøgler, og de offentlige svar ændres ikke. Manglende hændelse forbliver ukendt.

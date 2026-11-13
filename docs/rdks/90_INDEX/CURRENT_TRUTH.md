@@ -16,6 +16,8 @@ Der er ikke dokumenteret samlet Free-klarhed. Fysisk Supabase-margin, autonom ve
 
 Databasebackupens automatiske restore/rotation/ugentlige optagelse er forberedt som et efterfølgende job i den eksisterende adminvedligeholdelse og er ikke aktiveret. Positive historiske locatorer kræves ved al retirement; ukendte grupper og løse managed objekter giver HELD. Faktisk fuld arkiv-/Auth-gendannelse, præcis kildekvalifikation og målt samlet margin mangler fortsat før aktivering eller Free-overgang. Se håndbog 89.347 og DEC-0255.
 
+Den afgrænsede lokale rettelse giver den eksisterende offlineplan for vind, vandstand og vandtemperatur én fælles frist på 300 sekunder. En faktisk almindelig kørsel overskred 180-sekundersfristen efter 190.264 ms; overskridelsen blev opdaget efter den normale kontrol af den gemte Open-Meteo-bank. Tiden gælder hele kalderen, ikke kun denne fase. Leverandørbudgetter, originalkontrol, model og SQL bevares. Færdig plan og bedre prognosehale skal stadig verificeres i en efterfølgende almindelig vejrhentning.
+
 <!-- RAVRADAR_ACTIVE_ENTRY_END -->
 
 ## Daterede notater og tidligere indgange — uændret historik

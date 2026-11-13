@@ -25,6 +25,8 @@ Mailprøvens kildekandidat har to adskilte formål: ét nyt mailvindue eller opr
 
 Ejerprøvens afgrænsede gatewaydiagnostik er en kildekandidat med faste private OPTIONS-kategorier. Den bevarer alle sikkerhedsregler og offentlige svar. En faktisk kategori kan vise handlerens afvisningspunkt; manglende kategori er ukendt. Diagnostikken lukker hverken årsagsafklaring eller faktisk mailafsendelse og modtagelse. Se håndbog 89.343.
 
+Den afgrænsede lokale rettelse giver den eksisterende offlineplan for vind, vandstand og vandtemperatur én fælles frist på 300 sekunder. En faktisk almindelig kørsel overskred 180-sekundersfristen efter 190.264 ms; overskridelsen blev opdaget efter den normale kontrol af den gemte Open-Meteo-bank. Tiden gælder hele kalderen, ikke kun denne fase. Leverandørbudgetter, originalkontrol, model og SQL bevares. Færdig plan og bedre prognosehale skal stadig verificeres i en efterfølgende almindelig vejrhentning.
+
 <!-- RAVRADAR_ACTIVE_ENTRY_END -->
 
 ## Daterede notater og tidligere indgange — uændret historik

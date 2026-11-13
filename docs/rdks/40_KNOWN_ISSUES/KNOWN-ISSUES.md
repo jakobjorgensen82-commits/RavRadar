@@ -1,3 +1,7 @@
+## 13. november — offline scalarplanens fælles tidsgrænse
+
+Den afgrænsede lokale rettelse giver den eksisterende offlineplan for vind, vandstand og vandtemperatur én fælles frist på 300 sekunder. En faktisk almindelig kørsel overskred 180-sekundersfristen efter 190.264 ms; overskridelsen blev opdaget efter den normale kontrol af den gemte Open-Meteo-bank. Tiden gælder hele kalderen, ikke kun denne fase. Leverandørbudgetter, originalkontrol, model og SQL bevares. Færdig plan og bedre prognosehale skal stadig verificeres i en efterfølgende almindelig vejrhentning.
+
 ## 13. november — privat diagnose af ejerprøvens forbindelseskontrol
 
 Den tidlige forbindelseskontrol kan give en tom 404 uden at vise, hvilken bevaret sikkerhedsregel der afviste. Den eksisterende gemte observation fastlægger ikke den præcise værtsårsag. Den afgrænsede kildekandidat tilføjer derfor kun faste private OPTIONS-kategorier og booleans. Den er ikke en rettelse af gatewayen og lukker ikke mailafsenderens accept, levering eller modtagelse. Manglende loghændelse må ikke kaldes bevis for, at handleren ikke blev nået.

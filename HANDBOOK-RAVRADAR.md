@@ -662,6 +662,13 @@ Den eksisterende privacywalker kan nu samtidig tælle ukomprimerede bytes. Der e
 
 ## 89.299 Begge kendte kontinuitetsformater i scalarplanen
 
+### Aktuel afgrænset frist for offlineplanen
+
+Den afgrænsede lokale rettelse giver den eksisterende offlineplan for vind, vandstand og vandtemperatur én fælles frist på 300 sekunder. En faktisk almindelig kørsel overskred 180-sekundersfristen efter 190.264 ms; overskridelsen blev opdaget efter den normale kontrol af den gemte Open-Meteo-bank. Tiden gælder hele kalderen, ikke kun denne fase. Leverandørbudgetter, originalkontrol, model og SQL bevares. Færdig plan og bedre prognosehale skal stadig verificeres i en efterfølgende almindelig vejrhentning.
+
+De tidligere forløb med 120 og 180 sekunder nedenfor bevares som historik. Den nye frist ændrer kun ventetiden for den lokale planlægning; vind, vandstand og temperatur kvalificeres gennem de samme normale læsere.
+
+
 Kort fortalt: Den normale plan for reelle vejrhul skal også kunne bruge den nyere, originale strømhistorik. Kun de to allerede kendte formater tillades.
 
 ### Hvor fejlen lå
