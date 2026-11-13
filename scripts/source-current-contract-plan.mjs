@@ -59,6 +59,9 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
   sourceControls:[
     'node --test scripts/test-source-current-contracts.mjs',
   ],
+  currentInstalledCodeOnly:[
+    'node --test scripts/test-native-original-continuity-callers.mjs',
+  ],
   adminHistory:[
     'node --test scripts/test-admin-document-history-workflow.mjs',
   ],
@@ -79,7 +82,6 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
   compatibility:[
     'node scripts/source-critical-gate.mjs',
     'node --test scripts/test-archived-weather-restart-workflow.mjs',
-    'node --test scripts/test-native-original-continuity-callers.mjs',
   ],
   actionVersions:[
     'node scripts/test-github-action-versions.mjs',
@@ -155,10 +157,12 @@ const PATH_AREAS=freeze({
     'scripts/validate-release-version.mjs','scripts/test-module-version-closure-4.0.87.mjs',
     'scripts/test-security-hardening-4.0.284.mjs',
   ],
-  compatibility:[
-    '.github/workflows/deploy-code-only-repair.yml',
+  currentInstalledCodeOnly:[
     'scripts/select-native-original-continuity-code-only-source.mjs',
     'scripts/test-native-original-continuity-callers.mjs',
+  ],
+  compatibility:[
+    '.github/workflows/deploy-code-only-repair.yml',
     'scripts/lib/archived-production-gate-review.mjs',
     'scripts/lib/completed-private-runtime-workflow-review.mjs',
     'scripts/lib/native-original-continuity-workflow-review.mjs',
