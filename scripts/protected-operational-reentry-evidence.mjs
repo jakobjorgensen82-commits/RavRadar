@@ -3,6 +3,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { tmpdir } from 'node:os';
 import { promisify } from 'node:util';
 import { execFile } from 'node:child_process';
 import { PUBLIC_CONFIG } from '../config.js';
@@ -1334,11 +1335,29 @@ export async function clearProtectedPreActivationTarget({request,storage,reposit
   return {cleared:true,privatePayloadIncluded:false};
 }
 
+// Use the existing normal source admission only when this helper can write.
+// No missing/expired proof is required for a read-only no-op before normal build fallback.
+export async function checkPublishedOrdinarySource({env=process.env,execute=execFileAsync}={}) {
+  const file=path.join(tmpdir(),'ravradar-completion-source-'+crypto.randomBytes(16).toString('hex')+'.txt');
+  await fs.writeFile(file,'',{flag:'wx',mode:0o600});
+  try {
+    await execute(process.execPath,[path.join(repairRoot,'scripts/weather-source-gate.mjs'),'check'],{
+      cwd:repairRoot,env:{...env,GITHUB_TOKEN:env.GH_TOKEN||env.GITHUB_TOKEN,GITHUB_OUTPUT:file},
+      timeout:180_000,maxBuffer:64*1024,windowsHide:true});
+    const stat=await fs.lstat(file);
+    if(!stat.isFile()||stat.isSymbolicLink()||stat.size>64*1024)
+      throw new Error('Published ordinary completion source is not qualified');
+    const required=(await fs.readFile(file,'utf8')).split(/\r?\n/).filter(line=>line.startsWith('required='));
+    if(required.length!==1||required[0]!=='required=false')
+      throw new Error('Published ordinary completion source is not qualified');
+  } finally { await fs.unlink(file); }
+}
+
 // Finish only an unchanged-model ordinary target which is already public.
 // The executor stays on today's qualified main. Its immutable producer head
 // comes from the protected target, never from an environment override.
 export async function completePublishedOrdinaryPreActivationTarget({request,atomicRequest,storage,repository,
-  sourceHead,fetchImpl=fetch,checkReadiness=repairLiveReadiness,env=process.env}={}) {
+  sourceHead,fetchImpl=fetch,checkReadiness=repairLiveReadiness,checkSource=checkPublishedOrdinarySource,env=process.env}={}) {
   const policy=PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY;
   if(env.GITHUB_REF!=='refs/heads/main'||env.GITHUB_SHA!==sourceHead||env.GITHUB_REPOSITORY!==repository
     ||!HEAD_PATTERN.test(String(sourceHead??''))||!Number.isSafeInteger(Number(env.GITHUB_RUN_ID))
@@ -1356,34 +1375,71 @@ export async function completePublishedOrdinaryPreActivationTarget({request,atom
       throw new Error('Published ordinary completion executor is not the actual active workflow');
   };
   await latest();
-  const row=await readPointer(request,{allowMissing:false,policy});
+  const row=await readPointer(request,{allowMissing:true,policy});
+  if(!row)return {completed:false,reason:'NO_PHASE',privatePayloadIncluded:false};
   const evidence=await inspectProtectedPreActivationTarget({request,storage,repository});
-  if(evidence.action==='NONE')return {completed:false,reason:'NO_PHASE',privatePayloadIncluded:false};
-  if(row.version!==evidence.centralVersion||!same(row.payload.preActivation,evidence.slot))
-    throw new Error('Published ordinary completion phase changed');
-  const {slot,phase}=evidence,d=slot.target,current=await phaseCurrent(request);
-  if(phaseTargetCompleted(current,d))return {completed:false,reason:'ALREADY_ACTIVE',privatePayloadIncluded:false};
-  if(current.pending)return {completed:false,reason:'PENDING_TRANSITION',privatePayloadIncluded:false};
-  if(!phase.ordinaryMaintenance)return {completed:false,reason:'NOT_ORDINARY',privatePayloadIncluded:false};
-  if(!row.payload.pagesWrite)return {completed:false,reason:'NO_REGISTERED_WRITER',privatePayloadIncluded:false};
-  const writer=validatePagesWrite(row.payload.pagesWrite);
-  if(!same(slot.originalTarget,d)||!same(slot.owner,ownerFromDescriptor(d))||!same(writer.owner,slot.owner)
-    ||['repository','runId','runAttempt','sourceHead','deploymentId','publicManifestSha256',
-      'implementationClosureSha256','datasetId','productionReferenceAt','modelBindingSha256']
-      .some(key=>writer.target[key]!==d[key])||current.model!=='integrated'||current.bindingCurrent!==true
-    ||!same(current,phase.sourceCurrent)||sha256CanonicalJson(current.modelBinding)!==d.modelBindingSha256)
-    throw new Error('Published ordinary completion source or writer differs');
-  const owners=[ownerFromDescriptor(slot.originalTarget),slot.owner,ownerFromDescriptor(d),writer.owner];
+  const current=await phaseCurrent(request);
+  let d,files,owners;
+  if(evidence.action==='NONE') {
+    // Ordinary Pages has no Edge/model phase. Its immutable handoff binds the
+    // exact unchanged central source version; never select a newer pointer.current.
+    if(row.payload.preActivation)throw new Error('Published ordinary completion phase changed');
+    if(!row.payload.pagesWrite)return {completed:false,reason:'NO_PHASE',privatePayloadIncluded:false};
+    const writer=validatePagesWrite(row.payload.pagesWrite);d=writer.target;
+    if(d.repository!==repository||writer.owner.repository!==repository)
+      throw new Error('Published ordinary completion source or writer differs');
+    if(d.kind!==policy.descriptorKind||d.deploymentId!==`pages-${d.runId}-${d.runAttempt}`
+      ||writer.owner.attemptId===`pages-recovery-${writer.owner.runId}-${writer.owner.runAttempt}`)
+      return {completed:false,reason:'NOT_ORDINARY',privatePayloadIncluded:false};
+    if(!same(writer.owner,ownerFromDescriptor(d)))
+      throw new Error('Published ordinary completion source or writer differs');
+    files=await decodeArchive(await storage.download(d.objectPath),d,policy);
+    const handoff=phaseJson(files,'handoff.json');
+    if(handoff.action!=='integrated'){
+      if(['candidate-execute','candidate-maintenance','candidate-historical-maintenance','candidate-legacy-maintenance',
+        'integrated-return','integrated-cutover','integrated-historical-maintenance'].includes(handoff.action))
+        return {completed:false,reason:'NOT_ORDINARY',privatePayloadIncluded:false};
+      throw new Error('Published ordinary completion is not the exact ordinary handoff');
+    }
+    if(handoff.legacySourceRequired!==false||!Number.isSafeInteger(handoff.centralVersion)||handoff.centralVersion<1)
+      throw new Error('Published ordinary completion is not the exact ordinary handoff');
+    if(current.pending)return {completed:false,reason:'PENDING_TRANSITION',privatePayloadIncluded:false};
+    if(current.model!=='integrated'||current.bindingCurrent!==true
+      ||sha256CanonicalJson(current.modelBinding)!==d.modelBindingSha256)
+      throw new Error('Published ordinary completion central source version or binding differs');
+    if(current.deploymentId===d.deploymentId&&phaseTargetCompleted(current,d))
+      return {completed:false,reason:'ALREADY_ACTIVE',privatePayloadIncluded:false};
+    if(handoff.centralVersion!==current.centralVersion)
+      throw new Error('Published ordinary completion central source version or binding differs');
+    owners=[ownerFromDescriptor(d),writer.owner];
+  } else {
+    if(row.version!==evidence.centralVersion||!same(row.payload.preActivation,evidence.slot))
+      throw new Error('Published ordinary completion phase changed');
+    const {slot,phase}=evidence;d=slot.target;
+    if(phaseTargetCompleted(current,d))return {completed:false,reason:'ALREADY_ACTIVE',privatePayloadIncluded:false};
+    if(current.pending)return {completed:false,reason:'PENDING_TRANSITION',privatePayloadIncluded:false};
+    if(!phase.ordinaryMaintenance)return {completed:false,reason:'NOT_ORDINARY',privatePayloadIncluded:false};
+    if(!row.payload.pagesWrite)return {completed:false,reason:'NO_REGISTERED_WRITER',privatePayloadIncluded:false};
+    const writer=validatePagesWrite(row.payload.pagesWrite);
+    if(!same(slot.originalTarget,d)||!same(slot.owner,ownerFromDescriptor(d))||!same(writer.owner,slot.owner)
+      ||['repository','runId','runAttempt','sourceHead','deploymentId','publicManifestSha256',
+        'implementationClosureSha256','datasetId','productionReferenceAt','modelBindingSha256']
+        .some(key=>writer.target[key]!==d[key])||current.model!=='integrated'||current.bindingCurrent!==true
+      ||!same(current,phase.sourceCurrent)||sha256CanonicalJson(current.modelBinding)!==d.modelBindingSha256)
+      throw new Error('Published ordinary completion source or writer differs');
+    owners=[ownerFromDescriptor(slot.originalTarget),slot.owner,ownerFromDescriptor(d),writer.owner];
+    files=await phaseFiles(storage,d);
+    const ordinary=await protectedFilesBy({request,storage,repository,deploymentId:d.deploymentId});
+    if(!same(ordinary.descriptor,writer.target)||files.filter(f=>f.path!=='pre-activation.json')
+      .some(file=>!same(file,ordinary.files.find(other=>other.path===file.path))))
+      throw new Error('Published ordinary completion protected archives differ');
+  }
   let publicCompletionNeeded=false;
   for(const owner of owners.filter((owner,index)=>owners.findIndex(other=>same(other,owner))===index)) {
     try {if((await readAuthenticPagesAttemptClosure({owner,fetchImpl})).state==='PUBLIC_TARGET_REQUIRED')publicCompletionNeeded=true;}
     catch(error){if(!authenticPagesPublicCompletionObservation(error,owner))throw error;publicCompletionNeeded=true;}
   }
   if(!publicCompletionNeeded)return {completed:false,reason:'NOT_PUBLIC_COMPLETION',privatePayloadIncluded:false};
-  const files=await phaseFiles(storage,d),ordinary=await protectedFilesBy({request,storage,repository,deploymentId:d.deploymentId});
-  if(!same(ordinary.descriptor,writer.target)||files.filter(f=>f.path!=='pre-activation.json')
-    .some(file=>!same(file,ordinary.files.find(other=>other.path===file.path))))
-    throw new Error('Published ordinary completion protected archives differ');
   const context={request,storage,row};
   // Real readiness remains a fresh DB/Edge read, on the protected producer's
   // exact model and public implementation. No SQL or Edge deployment occurs.
@@ -1402,7 +1458,10 @@ export async function completePublishedOrdinaryPreActivationTarget({request,atom
     currentProfileRow:rows.profile,expectedVersion:current.centralVersion,sourceHead:d.sourceHead,
     publicManifest:phaseJson(files,'manifest.json'),publicAudit:phaseJson(files,'public-audit.json'),
     publicVerification:verification,readiness,deploymentId:d.deploymentId});
-  if(!same(current,await phaseCurrent(request)))throw new Error('Published ordinary completion central state changed');
+  await checkSource({env});
+  const freshCurrent=await phaseCurrent(request);
+  if(!same(current,freshCurrent)||!same(rows,phaseDocumentRows.get(freshCurrent)))
+    throw new Error('Published ordinary completion central state changed');
   const fresh=await readPointer(request,{allowMissing:false,policy});
   if(fresh.version!==row.version||!same(fresh.payload,row.payload))throw new Error('Published ordinary completion pointer changed');
   await latest();

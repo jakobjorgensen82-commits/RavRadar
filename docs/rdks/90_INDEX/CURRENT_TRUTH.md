@@ -18,6 +18,8 @@ Databasebackupens automatiske restore/rotation/ugentlige optagelse er forberedt 
 
 Den afgrænsede lokale rettelse giver den eksisterende offlineplan for vind, vandstand og vandtemperatur én fælles frist på 300 sekunder. En faktisk almindelig kørsel overskred 180-sekundersfristen efter 190.264 ms; overskridelsen blev opdaget efter den normale kontrol af den gemte Open-Meteo-bank. Tiden gælder hele kalderen, ikke kun denne fase. Leverandørbudgetter, originalkontrol, model og SQL bevares. Færdig plan og bedre prognosehale skal stadig verificeres i en efterfølgende almindelig vejrhentning.
 
+Den afgrænsede completionvej omfatter nu også en almindelig, allerede offentliggjort Pages-skriver uden pre-activation-fase. Den beskyttede målpakke binder producent, ejer, model og oprindelig centralversion; frisk ACTIVE/nonpending operation/profil skal passe præcist. Samme normale kildekvalifikation, terminalitetskontrol, fulde offentlige verifier, database-/Edge-parathed og atomiske maintenance-CAS består. Kun faktisk færdiggørelse giver den eksisterende TARGET_RECONCILE-disposition; den næste almindelige kørsel vælger fortsat frisk UTC-time. Reservations- og snapshot-hashkrav bevares. Private B/S og en eventuelt nyere gemt generation ændres ikke; gamle forseglede håndoffs får ingen implicit ny centralversion. Dette er en lokal kildekandidat, ikke hosted afslutning eller ny vejrlevering. Se håndbog 89.340.
+
 <!-- RAVRADAR_ACTIVE_ENTRY_END -->
 
 ## Daterede notater og tidligere indgange — uændret historik

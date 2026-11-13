@@ -2081,6 +2081,7 @@ if(process.argv.includes('--owner-completion-only')) {
   await verifyNormalPublishedOwnerCompletion();
   await verifyPreActivationClearRestoresLegacyPointer();
   await verifyPreActivationClearRestoresLegacyPointer({publishedOrdinary:true});
+  await verifyPreActivationClearRestoresLegacyPointer({publishedOrdinary:true,pagesWriteOnly:true});
   console.log('Owner-completion and existing final phase-clear guards: passed.');
   process.exit(0);
 }
@@ -2628,7 +2629,7 @@ async function buildNormalPublishedOrdinaryFixture(work,implementation) {
   return{manifest,files,datasetId:manifest.datasetId};
 }
 
-async function verifyPreActivationClearRestoresLegacyPointer({publishedOrdinary=false}={}) {
+async function verifyPreActivationClearRestoresLegacyPointer({publishedOrdinary=false,pagesWriteOnly=false}={}) {
   const path = await import('node:path');
   const os = await import('node:os');
   const {
@@ -2761,6 +2762,7 @@ function legacySchemaOnePointer(value, {
       returnPlanSha256:null,integratedReadinessSha256:null,integratedPublicAuditSha256:null,integratedManifestSha256:null}};
     const resolved=activation.resolveOperationalRavScoreModel(central,{profileRow});
     const sourceCurrent={...resolved,bindingCurrent:activation.operationalResolvedBindingCurrent(resolved)};
+    if(!pagesWriteOnly){
     await fs.unlink(path.join(targetDir,'handoff.json'));
     await write(targetDir,'pre-activation.json',{schemaVersion:'ravradar-current-grid-pre-activation-v1',sourceHead,
       sourceCurrent,sourceCurrentSha256:canonicalSha(sourceCurrent),checkpointOutcomes:{build:'success',save:'success',publish:'success'},
@@ -2775,13 +2777,15 @@ function legacySchemaOnePointer(value, {
       ...(publishedOrdinary?{fetchImpl:async()=>({ok:true,json:async()=>({id:51003,run_attempt:1,head_sha:sourceHead,head_branch:'main',
         path:'.github/workflows/run-current-weather-once.yml',event:'workflow_dispatch',repository:{full_name:repository},status:'in_progress'})})}:{})});}
     finally{for(const[key,value]of Object.entries(phaseEnv))if(value===undefined)delete process.env[key];else process.env[key]=value;}
+    }
     // The ordinary Pages caller publishes its full handoff before begin/complete.
     // Reuse that normal archive publisher; the phase must not replace it.
     const publishedTargetDir=await directoryFor('published-target',target.manifest,targetId);
     await publishProtectedOperationalEvidence({...common,directory:publishedTargetDir,deploymentId:targetId,
       retainDeploymentId:sourceId,requireRetained:true});
     const phaseRow=copy(row),objectBefore=new Map([...objects].map(([name,bytes])=>[name,Buffer.from(bytes)]));
-    assert.throws(()=>legacySchemaOnePointer(row.payload),'old reader must really reject an unfinished schema2 pointer');
+    if(pagesWriteOnly)assert.doesNotThrow(()=>legacySchemaOnePointer(row.payload));
+    else assert.throws(()=>legacySchemaOnePointer(row.payload),'old reader must really reject an unfinished schema2 pointer');
     const publicFetch=publishedOrdinary?async input=>{const bytes=target.files.get(new URL(input).pathname);
       return new Response(bytes??'',{status:bytes?200:404});}:mockFetch(target.files);
     const fetchPublic=async(url,options)=>{
@@ -2803,11 +2807,51 @@ function legacySchemaOnePointer(value, {
         GITHUB_WORKFLOW_REF:repository+'/.github/workflows/resume-operational-checkpoint.yml@refs/heads/main'};
       row={...row,payload:{...row.payload,schemaVersion:'3.0.0',pagesWrite:{target:copy(row.payload.current),
         owner:{repository,runId:51003,runAttempt:1,headSha:sourceHead,attemptId:targetId}}}};
-      const saved={row:copy(row),central:copy(central),profile:copy(profileRow)};
+      if(pagesWriteOnly){
+        const futureManifest={...copy(target.manifest),datasetId:'rr-later-unpublished-210'};
+        const futureDir=await directoryFor('future-unpublished',futureManifest,'pages-51005-1');
+        await publishProtectedOperationalEvidence({...common,directory:futureDir,deploymentId:'pages-51005-1',
+          retainDeploymentId:targetId,requireRetained:true});
+        const laterDir=await directoryFor('later-unpublished',{...futureManifest,datasetId:'rr-second-unpublished-210'},'pages-51007-1');
+        await publishProtectedOperationalEvidence({...common,directory:laterDir,deploymentId:'pages-51007-1',
+          retainDeploymentId:'pages-51005-1',requireRetained:true});
+        assert.equal(row.payload.current.deploymentId,'pages-51007-1');
+        assert.equal(row.payload.previous.deploymentId,'pages-51005-1');
+        assert.equal(row.payload.pagesWrite.target.deploymentId,targetId);
+        assert(!Object.hasOwn(row.payload,'preActivation'));
+      }
+      const saved={row:copy(row),central:copy(central),profile:copy(profileRow),objects:new Map(objects),removed:[...removed]};
       const ready=await buildIntegratedCutoverReadiness(sourceHead,{publicImplementationClosureSha256:identity.implementationClosureSha256});
-      let calls=0,atomicWrites=0;
-      async function invoke({oldPublic=false,activeWriter=false,pointerDrift=false,centralDrift=false,mainDrift=false,badReadiness=false,lostReply=false,uncommittedLoss=false,notStarted=false}={}){
-        row=copy(saved.row);central=copy(saved.central);profileRow=copy(saved.profile);let publicReads=0,refReads=0;
+      for(const output of ['required=false\n','required=true\n','required=false\nrequired=false\n','required=false\nrequired=true\n','reason=unknown\n']){
+        let invoked=0;
+        const run=async(program,args,options)=>{invoked++;assert.equal(program,process.execPath);
+          assert.equal(path.basename(args[0]),'weather-source-gate.mjs');assert.equal(args[1],'check');assert.equal(args.length,2);
+          assert.equal(options.env.GITHUB_TOKEN,'synthetic-normal-source-token');assert.equal(options.env.GITHUB_SHA,executorHead);
+          assert.equal(options.cwd,path.resolve(path.dirname(args[0]),'..'));assert.equal(options.windowsHide,true);
+          await fs.writeFile(options.env.GITHUB_OUTPUT,output);
+        };
+        const attempt=p.checkPublishedOrdinarySource({env:{...env,GH_TOKEN:'synthetic-normal-source-token'},execute:run});
+        if(output==='required=false\n')await attempt;else await assert.rejects(attempt,/source is not qualified/);
+        assert.equal(invoked,1);
+      }
+      let calls=0,atomicWrites=0,sourceCalls=0;
+      async function invoke({oldPublic=false,activeWriter=false,pointerDrift=false,centralDrift=false,mainDrift=false,badReadiness=false,lostReply=false,uncommittedLoss=false,notStarted=false,reset=true,wrongSourceVersion=false,wrongOwner=false,knownWriter=null,handoffChange=null,badSource=false,noWriter=false}={}){
+        if(reset){row=copy(saved.row);central=copy(saved.central);profileRow=copy(saved.profile);}
+        if(noWriter)delete row.payload.pagesWrite;
+        if(wrongSourceVersion)central.version++;
+        if(wrongOwner)row.payload.pagesWrite.owner={...row.payload.pagesWrite.owner,runId:51006,attemptId:'pages-51006-1'};
+        if(knownWriter){delete row.payload.preActivation;
+          if(knownWriter==='phase')row.payload.pagesWrite.target=copy(phaseRow.payload.preActivation.target);
+          else row.payload.pagesWrite.owner={...row.payload.pagesWrite.owner,runId:51006,attemptId:'pages-recovery-51006-1'};
+        }
+        if(handoffChange){
+          const original=await fs.readFile(path.join(publishedTargetDir,'handoff.json'),'utf8');
+          try{await write(publishedTargetDir,'handoff.json',{...JSON.parse(original),...handoffChange});
+            const built=await p.buildProtectedOperationalEvidenceArchive({directory:publishedTargetDir,deploymentId:targetId,repository});
+            objects.set(built.descriptor.objectPath,Buffer.from(built.archive));row.payload.pagesWrite.target=copy(built.descriptor);
+          }finally{await fs.writeFile(path.join(publishedTargetDir,'handoff.json'),original);}
+        }
+        let publicReads=0,refReads=0;
         const fetchImpl=async(input,options={})=>{
           assert(!options.method||options.method==='GET','no Pages/provider POST in completion');
           const url=new URL(input);
@@ -2838,6 +2882,7 @@ function legacySchemaOnePointer(value, {
           return{operationalVersion:central.version,operationalPayload:copy(central.payload),profileVersion:profileRow.version,profilePayload:copy(profileRow.payload)};
         };
         return p.completePublishedOrdinaryPreActivationTarget({...common,atomicRequest,sourceHead:executorHead,env,fetchImpl,
+          checkSource:async options=>{sourceCalls++;assert.equal(options.env,env);if(badSource)throw new Error('synthetic source qualification required');},
           checkReadiness:async options=>{calls++;assert.equal(options.sourceHead,sourceHead);assert.equal(options.publicImplementationClosureSha256,identity.implementationClosureSha256);
             return badReadiness?{...copy(ready),modelBundleSha256:'0'.repeat(64)}:copy(ready);}});
       }
@@ -2847,10 +2892,29 @@ function legacySchemaOnePointer(value, {
       const completedPointer=copy(row),completedCentral=copy(central),completedProfile=copy(profileRow),beforeWrites=atomicWrites;
       assert.deepEqual(row.payload,saved.row.payload,'central completion does not clear/retag Pages phase');
       const readyCalls=calls;assert.equal((await invoke({notStarted:true})).completed,false);assert.equal(calls,readyCalls);
-      for(const options of [{oldPublic:true},{activeWriter:true},{pointerDrift:true},{centralDrift:true},{mainDrift:true},{badReadiness:true}]){
+      for(const options of [{oldPublic:true},{activeWriter:true},{pointerDrift:true},{centralDrift:true},{mainDrift:true},{badReadiness:true},{badSource:true}]){
         await assert.rejects(invoke(options),undefined,JSON.stringify(options));assert.equal(atomicWrites,beforeWrites,'unsafe completion never writes central CAS');
       }
       await assert.rejects(invoke({uncommittedLoss:true}),/compare-and-swap lost/);assert.equal(atomicWrites,beforeWrites+1,'unknown CAS is never repeated');
+      if(pagesWriteOnly){
+        const noSourceBefore=sourceCalls,noWritesBefore=atomicWrites;
+        assert.equal((await invoke({noWriter:true,badSource:true})).reason,'NO_PHASE');
+        assert.equal(sourceCalls,noSourceBefore,'NO_PHASE preserves normal required=true source fallback');
+        assert.equal(atomicWrites,noWritesBefore);
+        for(const options of [{wrongSourceVersion:true},{wrongOwner:true},{handoffChange:{centralVersion:31}},{handoffChange:{action:'unknown'}}]){
+          const before=atomicWrites;await assert.rejects(invoke(options));assert.equal(atomicWrites,before);
+        }
+        row=copy(completedPointer);central=copy(completedCentral);profileRow=copy(completedProfile);
+        const before=atomicWrites,beforeSource=sourceCalls;assert.equal((await invoke({reset:false})).reason,'ALREADY_ACTIVE');
+        assert.equal(sourceCalls,beforeSource,'ALREADY_ACTIVE does not block normal source fallback');
+        assert.equal(atomicWrites,before,'exact newer central target is idempotent without matching old handoff version');
+        assert.equal((await p.inspectProtectedPreActivationTarget(common)).action,'NONE');
+        assert.deepEqual(row.payload,saved.row.payload,'completion preserves the newer unpublished pointer and original Pages writer');
+        for(const[name,bytes]of saved.objects)assert.deepEqual(objects.get(name),bytes);
+        assert.deepEqual(removed,saved.removed,'completion cannot remove objects after legitimate publisher rotation');
+        console.log('Normal pagesWrite-only completion: exact central source version, pinned target beyond current/previous, fresh proof/CAS, idempotence and strict negatives passed.');
+        return;
+      }
       row=copy(completedPointer);central=copy(completedCentral);profileRow=copy(completedProfile);
       const result=await clearProtectedPreActivationTarget({...common,sourceHead:executorHead,baseUrl:'https://ravradar.dk/',fetchImpl:async(input,options)=>{
         if(new URL(input).origin==='https://api.github.com'){
@@ -2865,6 +2929,13 @@ function legacySchemaOnePointer(value, {
       assert.equal(result.cleared,true);assert.equal(row.version,completedPointer.version+1);
       assert.deepEqual(row.payload.pagesWrite,saved.row.payload.pagesWrite);assert.deepEqual(central,completedCentral);
       for(const[name,bytes]of objectBefore)assert.deepEqual(objects.get(name),bytes);assert.deepEqual(removed,[]);
+      for(const knownWriter of ['phase','recovery']){
+        row=copy(completedPointer);central=copy(completedCentral);profileRow=copy(completedProfile);
+        const before=atomicWrites,beforeSource=sourceCalls,result=await invoke({reset:false,knownWriter});
+        assert.equal(sourceCalls,beforeSource,'known non-ordinary writer leaves normal source fallback reachable');
+        assert.equal(result.reason,'NOT_ORDINARY','a cleared legitimate phase/recovery writer remains a normal no-op');
+        assert.equal(atomicWrites,before);
+      }
       console.log('Normal published ordinary completion: exact old producer/new executor, full verifier, readiness, atomic CAS/lost reply and final phase clear; negatives passed.');
       return;
     }
@@ -2923,4 +2994,5 @@ function legacySchemaOnePointer(value, {
 }
 await verifyPreActivationClearRestoresLegacyPointer();
 await verifyPreActivationClearRestoresLegacyPointer({publishedOrdinary:true});
+  await verifyPreActivationClearRestoresLegacyPointer({publishedOrdinary:true,pagesWriteOnly:true});
 console.log('Pre-activation verified clear restores exact schema1/current/previous with normal public verifier and original restore: passed.');

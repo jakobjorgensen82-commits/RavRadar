@@ -207,12 +207,12 @@ const recovery = await read('reusable-operational-reentry');
 function assertPublishedCompletionOrder(source) {
   const phase=source.indexOf('if test "$(jq -r \'.action\' "$RAVRADAR_OPERATIONAL_WORK/pre-activation.json")" != NONE; then');
   const gate=source.indexOf('completion_source_output=',phase),required=source.indexOf("grep -Fx 'required=false'",gate);
-  const complete=source.indexOf('--complete-published-ordinary',gate),fresh=source.indexOf('node scripts/ravscore-operational-activation.mjs read',complete);
+  const complete=source.indexOf('--complete-published-ordinary'),fresh=source.indexOf('node scripts/ravscore-operational-activation.mjs read',complete);
   const retire=source.indexOf('--retire-closed-ordinary-phase',phase),begin=source.indexOf('--begin-terminal-pre-activation',phase);
-  assert(phase>=0&&phase<gate&&gate<required&&required<complete&&complete<fresh&&fresh<retire&&retire<begin,
-    'Qualified public completion and fresh central state must precede ordinary retirement or NOT_STARTED BEGIN');
-  return source.slice(source.lastIndexOf('\n',gate)+1,source.lastIndexOf('\n',source.indexOf('node scripts/protected-operational-reentry-evidence.mjs --retire-closed-ordinary-phase',gate))+1)
-    .split('\n').map(line=>line.replace(/^ {12}/,'')).join('\n');
+  assert(complete>=0&&complete<fresh&&fresh<phase&&phase<gate&&gate<required&&required<retire&&retire<begin,
+    'Completion is reachable without a phase; other phase writers retain normal source qualification');
+  return source.slice(source.lastIndexOf('\n',source.indexOf('node scripts/protected-operational-reentry-evidence.mjs --complete-published-ordinary'))+1,source.lastIndexOf('\n',phase)+1)
+    .split('\n').map(line=>line.replace(/^ {10}/,'')).join('\n');
 }
 const completionProgram=assertPublishedCompletionOrder(recovery);
 assert.throws(()=>assertPublishedCompletionOrder(recovery.replace("grep -Fx 'required=false'",'true # removed source decision')));
@@ -222,16 +222,20 @@ try {
   const priorPath=Object.entries(process.env).find(([key])=>key.toUpperCase()==='PATH')?.[1]??'';
   const env=Object.fromEntries(Object.entries(process.env).filter(([key])=>key.toUpperCase()!=='PATH'));
   env.PATH=(process.platform==='win32'?path.dirname(shell)+path.delimiter:'')+priorPath;
-  for(const required of ['true','false']) {
-    const directory=path.join(completionWork,required);await fs.mkdir(directory);
-    const calls=path.join(directory,'calls.txt');
-    const input='set -euo pipefail\nnode() { if test "$1" = scripts/weather-source-gate.mjs; then printf "required=%s\\n" "$TEST_REQUIRED" >> "$GITHUB_OUTPUT"; else printf "%s\\n" "$*" >> "$TEST_CALLS"; fi; }\n'+completionProgram;
+  for(const required of ['true','false'])for(const phase of ['NONE','PRE_ACTIVATION_PRESENT'])for(const completed of ['false','true']) {
+    const directory=path.join(completionWork,required+'-'+phase+'-'+completed);await fs.mkdir(directory);
+    const calls=path.join(directory,'calls.txt'),output=path.join(directory,'output.txt');
+    const input='set -euo pipefail\nnode() { if test "$1" = scripts/protected-operational-reentry-evidence.mjs && test "$TEST_COMPLETED" = true && test "$TEST_REQUIRED" = true; then return 1; fi; printf "%s\\n" "$*" >> "$TEST_CALLS"; }\njq() { if test "$2" = .completed; then printf "%s\\n" "$TEST_COMPLETED"; else printf "%s\\n" "$TEST_PHASE"; fi; }\n'+completionProgram;
     const result=spawnSync(shell,['-e','-s'],{input,encoding:'utf8',timeout:10000,env:{...env,GH_TOKEN:'synthetic-source-token',GITHUB_REPOSITORY:'ravradar/RavRadar',
-      TEST_REQUIRED:required,RAVRADAR_OPERATIONAL_WORK:directory.replace(/\\/g,'/'),TEST_CALLS:calls.replace(/\\/g,'/')}});
-    if(required==='true'){assert.notEqual(result.status,0);await assert.rejects(fs.stat(calls),{code:'ENOENT'});}
+      TEST_REQUIRED:required,TEST_PHASE:phase,TEST_COMPLETED:completed,GITHUB_OUTPUT:output.replace(/\\/g,'/'),
+      RAVRADAR_OPERATIONAL_WORK:directory.replace(/\\/g,'/'),TEST_CALLS:calls.replace(/\\/g,'/')}});
+    if(required==='true'&&completed==='true'){assert.notEqual(result.status,0);await assert.rejects(fs.stat(calls),{code:'ENOENT'});}
     else{assert.equal(result.status,0,result.stderr);const invoked=await fs.readFile(calls,'utf8');
       assert.match(invoked,/protected-operational-reentry-evidence\.mjs --complete-published-ordinary/);
-      assert.match(invoked,/ravscore-operational-activation\.mjs read/);}
+      assert.match(invoked,/ravscore-operational-activation\.mjs read/);
+      const action=await fs.readFile(output,'utf8').catch(error=>{if(error.code==='ENOENT')return '';throw error;});
+      assert.equal(action.includes('recovery_action=TARGET_RECONCILE'),phase==='NONE'&&completed==='true',
+        'only actual pagesWrite-only completion returns existing target-reconciliation semantics');}
   }
 } finally {await fs.rm(completionWork,{recursive:true,force:true});}
 const protectedPagesSource=await fs.readFile('scripts/protected-operational-reentry-evidence.mjs','utf8');
