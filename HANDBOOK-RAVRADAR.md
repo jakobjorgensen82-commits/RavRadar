@@ -1,3 +1,11 @@
+## Privat afvisningsdiagnose til kapitel 89.345 — 13. november 2026
+
+En databasebackups roller kontrolleres, før de store SQL-filer læses ind. Hvis den strenge kontrol afviser et statement, får den private rapport en fast type, et fast afvisningspunkt og statementets nummer. Ukendte typer vises kun som OTHER. SQL-tekst, rollenavne og værdier vises ikke. Kommentarer og psql-metalinjer tælles ikke som SQL-statements.
+
+De samme input accepteres og afvises som før. Originale filer og adgangsregler ændres ikke; der oprettes ikke gættede roller, og ingen SQL eller grants springes over. Diagnosen hjælper med at finde den konkrete formatårsag, men retter den ikke i sig selv. En afvist kontrol er heller ikke alene bevis for en manglende platformrolle eller en fejl i målmiljøet.
+
+Den eksisterende archive-vej bruges fortsat. Den starter det ejede lokale mål og læser det autentificerede indeks og det krypterede ROLES-objekt; det er ikke en læsning uden download. Store SQL-filer materialiseres først efter bestået rolleaudit. Denne kodeændring starter ingen ny prøve. Faktisk fuld gendannelse, Auth-funktion, sikker løbende drift og Free-klarhed kræver fortsat deres egne beviser.
+
 ## Privat gatewaydiagnostik til kapitel 89.343 — 13. november 2026
 
 Prøvemailens forbindelseskontrol kan blive afvist, før mailsystemet bruges. Den afgrænsede kildekandidat giver administratorens private log en fast kategori for det nåede kontrolpunkt. Den viser kun, om reservation, kendt sti, origin, ønsket metode, body-pointerens tilstedeværelse og tidsvindue passer. Adresse, query, indhold, loginoplysninger, ejer, modtager, beskedidentitet og nøgler logges ikke.

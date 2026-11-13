@@ -1,3 +1,9 @@
+## 13. november — fast, privat diagnose ved afvist rollearkiv
+
+Den eksisterende private rolleaudit angiver nu en fast statementtype, en fast afvisningsgren og et ordinal, når et autentificeret statement afvises. Det gør næste afgrænsede undersøgelse præcis uden at udskrive SQL, rollenavne eller værdier. Tokenisering og accepteret grammatik er uændrede; originale SQL-/ACL-regler og den isolerede gendannelse bevares.
+
+Den eksisterende normale parsercase dækker de nye faste koder sammen med de tidligere accepterede og afviste input. Diagnostikken er ikke en formatrettelse eller bevis for faktisk arkiv-/Auth-gendannelse. Ingen ny arkivhentning, restore, aktivering eller Free-overgang startes af kodeleverancen. Version 4.0.598, C/I/T, migrationer og vejr ændres ikke. Se håndbog 89.345.
+
 ## 13. november — afgrænset femminuttersfrist for offline scalarplan
 
 Den afgrænsede lokale rettelse giver den eksisterende offlineplan for vind, vandstand og vandtemperatur én fælles frist på 300 sekunder. En faktisk almindelig kørsel overskred 180-sekundersfristen efter 190.264 ms; overskridelsen blev opdaget efter den normale kontrol af den gemte Open-Meteo-bank. Tiden gælder hele kalderen, ikke kun denne fase. Leverandørbudgetter, originalkontrol, model og SQL bevares. Færdig plan og bedre prognosehale skal stadig verificeres i en efterfølgende almindelig vejrhentning.

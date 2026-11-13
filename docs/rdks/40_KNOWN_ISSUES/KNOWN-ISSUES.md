@@ -1,3 +1,9 @@
+## 13. november — fast, privat diagnose ved afvist rollearkiv
+
+Den strenge rolleaudit kan standse på et autentificeret statement med en generisk afvisningskode, før store SQL-filer materialiseres. Den generiske kode viser ikke statementets form eller det konkrete afvisningspunkt. Den afgrænsede diagnose føjer kun faste kategorier og et ordinal til den samme private rapport; den gør ingen tidligere afvist syntaks gyldig.
+
+Den konkrete arkivform og dens korrekte håndtering står fortsat åbne. Der gættes ikke på platformroller, og SQL eller grants springes ikke over. Faktiske kørsler og deres første fejl fastholdes privat. Fuld arkiv-/Auth-gendannelse og automatikkens aktivering er ikke bevist af denne kildeændring. Se håndbog 89.345.
+
 ## 13. november — offline scalarplanens fælles tidsgrænse
 
 Den afgrænsede lokale rettelse giver den eksisterende offlineplan for vind, vandstand og vandtemperatur én fælles frist på 300 sekunder. En faktisk almindelig kørsel overskred 180-sekundersfristen efter 190.264 ms; overskridelsen blev opdaget efter den normale kontrol af den gemte Open-Meteo-bank. Tiden gælder hele kalderen, ikke kun denne fase. Leverandørbudgetter, originalkontrol, model og SQL bevares. Færdig plan og bedre prognosehale skal stadig verificeres i en efterfølgende almindelig vejrhentning.
