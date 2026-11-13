@@ -1,8 +1,12 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
+import path from 'node:path';
+import os from 'node:os';
+import {spawnSync,execFileSync} from 'node:child_process';
+import {runInNewContext} from 'node:vm';
 import { assertMonotonicPagesGeneration, readBoundedPublicManifest } from './lib/pages-generation-order.mjs';
-import { exactPagesAttemptStep, readAuthenticPagesAttemptClosure, hasAuthenticPagesAttemptClosure } from './github-pages-attempt-evidence.mjs';
+import { exactPagesAttemptStep, readAuthenticPagesAttemptClosure, hasAuthenticPagesAttemptClosure, authenticPagesPublicCompletionObservation } from './github-pages-attempt-evidence.mjs';
 import { sha256CanonicalJson } from './ravscore-operational-pages-recovery.mjs';
 
 const manifest = (hour, minute = 10) => ({ complete: true, zoneCount: 210,
@@ -95,6 +99,21 @@ assert.throws(() => exactPagesAttemptStep([{ ...job('Deploy prepared Pages artif
     conclusion: 'failure', steps: [{ name: 'Deploy to GitHub Pages', status: 'completed', conclusion: 'failure',
       number: 30, completed_at: '2026-11-12T00:59:00Z' }] };
   await assert.rejects(readClosure(failed), /WRITE_CLOSURE_UNKNOWN/);
+  let unresolved;try{await readClosure(failed);}catch(error){unresolved=error;}
+  const observed=authenticPagesPublicCompletionObservation(unresolved,owner);
+  assert.equal(observed.state,'PUBLIC_TARGET_UNRESOLVED');
+  assert.equal(hasAuthenticPagesAttemptClosure(observed,owner),false);
+  assert.equal(authenticPagesPublicCompletionObservation(new Error('PAGES_OWNER_WRITE_CLOSURE_UNKNOWN'),owner),null);
+  assert.equal(authenticPagesPublicCompletionObservation(unresolved,{...owner,runAttempt:3}),null);
+  const changedOther=structuredClone(failed);changedOther[1].status='in_progress';
+  let invalid;try{await readClosure(changedOther);}catch(error){invalid=error;}
+  assert.equal(authenticPagesPublicCompletionObservation(invalid,owner),null,
+    'a failed first writer never hides another active writer');
+  for(const mutation of [{number:0},{completed_at:null}]){
+    const malformed=structuredClone(failed);Object.assign(malformed[0].steps[0],mutation);
+    let error;try{await readClosure(malformed);}catch(value){error=value;}
+    assert.equal(authenticPagesPublicCompletionObservation(error,owner),null);
+  }
   failed[0].steps.push({ name: 'Confirm scheduled Pages writes are terminal and unpublished', status: 'completed',
     conclusion: 'success', number: 31, started_at: '2026-11-12T00:59:01Z' });
   assert.equal((await readClosure(failed)).state, 'CLOSED_UNPUBLISHED');
@@ -185,6 +204,36 @@ for (const name of ['update-and-deploy', 'run-current-weather-once', 'deploy-cod
     'operational-recovery-gate'), /Source review read permission missing/);
 }
 const recovery = await read('reusable-operational-reentry');
+function assertPublishedCompletionOrder(source) {
+  const phase=source.indexOf('if test "$(jq -r \'.action\' "$RAVRADAR_OPERATIONAL_WORK/pre-activation.json")" != NONE; then');
+  const gate=source.indexOf('completion_source_output=',phase),required=source.indexOf("grep -Fx 'required=false'",gate);
+  const complete=source.indexOf('--complete-published-ordinary',gate),fresh=source.indexOf('node scripts/ravscore-operational-activation.mjs read',complete);
+  const retire=source.indexOf('--retire-closed-ordinary-phase',phase),begin=source.indexOf('--begin-terminal-pre-activation',phase);
+  assert(phase>=0&&phase<gate&&gate<required&&required<complete&&complete<fresh&&fresh<retire&&retire<begin,
+    'Qualified public completion and fresh central state must precede ordinary retirement or NOT_STARTED BEGIN');
+  return source.slice(source.lastIndexOf('\n',gate)+1,source.lastIndexOf('\n',source.indexOf('node scripts/protected-operational-reentry-evidence.mjs --retire-closed-ordinary-phase',gate))+1)
+    .split('\n').map(line=>line.replace(/^ {12}/,'')).join('\n');
+}
+const completionProgram=assertPublishedCompletionOrder(recovery);
+assert.throws(()=>assertPublishedCompletionOrder(recovery.replace("grep -Fx 'required=false'",'true # removed source decision')));
+const completionWork=await fs.mkdtemp(path.join(os.tmpdir(),'rr-published-completion-order-'));
+try {
+  const shell=process.platform==='win32'?path.resolve(execFileSync('git',['--exec-path'],{encoding:'utf8'}).trim(),'../../../usr/bin/sh.exe'):'bash';
+  const priorPath=Object.entries(process.env).find(([key])=>key.toUpperCase()==='PATH')?.[1]??'';
+  const env=Object.fromEntries(Object.entries(process.env).filter(([key])=>key.toUpperCase()!=='PATH'));
+  env.PATH=(process.platform==='win32'?path.dirname(shell)+path.delimiter:'')+priorPath;
+  for(const required of ['true','false']) {
+    const directory=path.join(completionWork,required);await fs.mkdir(directory);
+    const calls=path.join(directory,'calls.txt');
+    const input='set -euo pipefail\nnode() { if test "$1" = scripts/weather-source-gate.mjs; then printf "required=%s\\n" "$TEST_REQUIRED" >> "$GITHUB_OUTPUT"; else printf "%s\\n" "$*" >> "$TEST_CALLS"; fi; }\n'+completionProgram;
+    const result=spawnSync(shell,['-e','-s'],{input,encoding:'utf8',timeout:10000,env:{...env,GH_TOKEN:'synthetic-source-token',GITHUB_REPOSITORY:'ravradar/RavRadar',
+      TEST_REQUIRED:required,RAVRADAR_OPERATIONAL_WORK:directory.replace(/\\/g,'/'),TEST_CALLS:calls.replace(/\\/g,'/')}});
+    if(required==='true'){assert.notEqual(result.status,0);await assert.rejects(fs.stat(calls),{code:'ENOENT'});}
+    else{assert.equal(result.status,0,result.stderr);const invoked=await fs.readFile(calls,'utf8');
+      assert.match(invoked,/protected-operational-reentry-evidence\.mjs --complete-published-ordinary/);
+      assert.match(invoked,/ravscore-operational-activation\.mjs read/);}
+  }
+} finally {await fs.rm(completionWork,{recursive:true,force:true});}
 const protectedPagesSource=await fs.readFile('scripts/protected-operational-reentry-evidence.mjs','utf8');
 const protectedMain=protectedPagesSource.slice(protectedPagesSource.indexOf('async function main()'));
 assert.ok(protectedMain.indexOf('const beforeRotation=')<protectedMain.indexOf("result=await publishProtectedPreActivationTarget"));
@@ -197,6 +246,33 @@ for (const job of ['reconcile-operational-pending', 'recover-operational-pages-t
   assert.throws(() => assertSourceReviewRead(recovery.replaceAll('      pull-requests: read\n', ''), job),
     /Source review read permission missing/);
 }
+const once=await read('run-current-weather-once');
+const onceStep=name=>{const start=once.indexOf('      - name: '+name+'\n');assert(start>=0);
+  const next=once.indexOf('\n      - ',start+1),job=once.indexOf('\n  native-identity-prewrite:',start+1);
+  return once.slice(start,next>=0&&(job<0||next<job)?next:job);};
+const cancellationSelector=onceStep('Select fresh weather and verify a prior closed Pages outcome');
+const autoExpression=cancellationSelector.match(/^        if: (.+)$/m)?.[1];assert(autoExpression);
+const evaluateAuto=(action,eligible='true')=>runInNewContext(autoExpression.replace(/\b(steps|needs)\.([a-z][a-z0-9-]*)/g,(_all,type,id)=>type+'['+JSON.stringify(id)+']'),{
+  steps:{'automatic-completed-scope':{outputs:{eligible}}},needs:{'operational-recovery-gate':{outputs:{recovery_action:action}}}});
+assert.equal(evaluateAuto('NONE'),true);
+for(const action of ['COMPLETED_PRE_ACTIVATION','TARGET_RECONCILE','PRE_ACTIVATION_RESUME','UNKNOWN',undefined])assert.equal(evaluateAuto(action),false);
+assert.equal(evaluateAuto('NONE','false'),false);
+const canonicalHour=onceStep('Lock the canonical UTC production hour');
+assert.match(canonicalHour,/steps\.automatic-completed-target\.outcome == 'skipped'/);
+const targetStep=onceStep('Require one canonical target hour and completed-runtime decision');
+const targetProgram=targetStep.slice(targetStep.indexOf('        run: |\n')+'        run: |\n'.length)
+  .split('\n').map(line=>line.replace(/^ {10}/,'')).join('\n');
+const freshWork=await fs.mkdtemp(path.join(os.tmpdir(),'rr-after-completed-phase-'));
+try{
+  const shell=process.platform==='win32'?path.resolve(execFileSync('git',['--exec-path'],{encoding:'utf8'}).trim(),'../../../usr/bin/sh.exe'):'bash';
+  const output=path.join(freshWork,'output.txt'),result=spawnSync(shell,['-e','-s'],{input:targetProgram,encoding:'utf8',timeout:10000,
+    env:{...process.env,REQUESTED_COMPLETED:'false',MANUAL_TARGET:'',MANUAL_PIN:'',AUTO_OUTCOME:'skipped',AUTO_COMPLETED:'',AUTO_TARGET:'',AUTO_PIN:'',
+      AUTO_ELIGIBLE:'true',AUTO_FRESH_AFTER_CANCELLED_REPLAY:'',AUTO_REPEAT_ANCHOR:'',CHECKPOINT_TARGET:'',CACHE_TARGET:'2026-11-13T17:00:00Z',
+      GITHUB_OUTPUT:output.replace(/\\/g,'/')}});
+  assert.equal(result.status,0,result.stderr);const rows=(await fs.readFile(output,'utf8')).trim().split('\n');
+  assert(rows.includes('completed_private_runtime=false'));assert(rows.includes('target_hour=2026-11-13T17:00:00Z'));
+  assert(rows.includes('completed_private_runtime_pin='));assert(rows.includes('fresh_after_pages_failure=false'));
+}finally{await fs.rm(freshWork,{recursive:true,force:true});}
 const checkpoint = await read('resume-operational-checkpoint');
 assertSourceReviewRead(checkpoint);
 assert.match(checkpoint, /group: ravradar-weather-production-v2/);

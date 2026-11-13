@@ -1,6 +1,10 @@
 // Current Pages safety only: raw checkout files, no historical projection or inverse imports.
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 import { runInNewContext } from 'node:vm';
 
@@ -339,4 +343,99 @@ test('scheduled weather keeps its fresh hour and uses one exclusive immediate-re
   assert.match(retryCli,/readProtectedPagesWriterSnapshot\([\s\S]*expectedSnapshot:writerSnapshot/);
   assert.match(retryCli,/beforeCreate: async intent =>[\s\S]*currentSeal[\s\S]*if \(!await revalidateWriter\(\)\) return false;[\s\S]*fs\.writeFile\(file/);
   assert.doesNotMatch(retryCli,/console\.(?:log|error).*SUPABASE|console\.(?:log|error).*serviceRoleKey/);
+});
+
+
+test('current weather support contains only bounded run metadata', async () => {
+  const source = await rawWorkflow('../.github/workflows/reusable-weather-build.yml');
+  const start = source.indexOf('      - name: Build RavRadar support package');
+  const end = source.indexOf('      - name: Upload RavRadar support package', start);
+  assert(start >= 0 && end > start);
+  const supportBlock = source.slice(start, end);
+  assert.doesNotMatch(supportBlock, /\brsync\b|_support\/project|\bcp\s/,
+    'Support must write only fixed metadata instead of copying the working project');
+  assert.match(supportBlock, /node scripts\/write-support-run-metadata\.mjs\n/);
+  const supportWriter = new URL('./write-support-run-metadata.mjs', import.meta.url);
+  const supportRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-support-metadata-'));
+  try {
+    await fs.mkdir(path.join(supportRoot, '_support/run-metadata'), { recursive: true });
+    for (const directory of ['data/live', '.cache']) {
+      await fs.mkdir(path.join(supportRoot, directory), { recursive: true });
+      await fs.writeFile(path.join(supportRoot, directory, 'never-copy.json'), '{"privateMarker":"MUST_NOT_COPY"}');
+    }
+    await fs.writeFile(path.join(supportRoot, 'never-copy-project.txt'), 'MUST_NOT_COPY');
+      const environment = { GITHUB_REPOSITORY: 'owner/repository', GITHUB_RUN_NUMBER: '7',
+      GITHUB_SHA: 'a'.repeat(40), GITHUB_REF: 'refs/heads/main' };
+    const execute = env => execFileSync(process.execPath, [fileURLToPath(supportWriter)],
+      { cwd: supportRoot, env, stdio: ['ignore', 'pipe', 'pipe'], timeout: 10000 });
+    execute(environment);
+    assert.deepEqual(await fs.readdir(path.join(supportRoot, '_support')), ['run-metadata']);
+    const metadata = path.join(supportRoot, '_support/run-metadata');
+    assert.deepEqual((await fs.readdir(metadata)).sort(), ['github-run.txt', 'support-format.json']);
+    const runText = await fs.readFile(path.join(metadata, 'github-run.txt'), 'utf8');
+    assert.match(runText, /^repository=owner\/repository\nrun_number=7\nsha=a{40}\nref=refs\/heads\/main\ngenerated_at=[^\n]+\n$/);
+    const descriptorText = await fs.readFile(path.join(metadata, 'support-format.json'), 'utf8');
+    assert.deepEqual(JSON.parse(descriptorText), {
+      schemaVersion: 'ravradar-support-metadata-v1', kind: 'RUN_IDENTITY_ONLY',
+      sourceCommit: environment.GITHUB_SHA,
+      sourceUrl: 'https://github.com/owner/repository/tree/' + environment.GITHUB_SHA,
+      projectSnapshotIncluded: false, weatherPayloadIncluded: false,
+      privatePayloadIncluded: false, recoveryArtifact: false,
+    });
+    assert(Buffer.byteLength(runText) + Buffer.byteLength(descriptorText) <= 8192);
+    assert(!runText.includes('MUST_NOT_COPY') && !descriptorText.includes('MUST_NOT_COPY'));
+    assert.throws(() => execFileSync(process.execPath, [fileURLToPath(supportWriter), '--private-input'],
+    { cwd: supportRoot, env: environment, stdio: ['ignore', 'pipe', 'pipe'], timeout: 10000 }));
+  assert.throws(() => execute({ ...environment, GITHUB_SHA: 'unknown' }));
+    assert.throws(() => execute({ ...environment, GITHUB_REF: 'refs/heads/main\nprivate=value' }));
+    assert.throws(() => execute({ ...environment, GITHUB_REF: 'r'.repeat(257) }));
+  } finally {
+    assert.equal(path.dirname(supportRoot), path.resolve(os.tmpdir()));
+    assert(path.basename(supportRoot).startsWith('rr-support-metadata-'));
+    await fs.rm(supportRoot, { recursive: true, force: true });
+  }
+});
+
+
+test('current support-only scope rejects other workflow authority changes', async () => {
+  const { isSupportOnlyWeatherBuildChange, isPagesAndSupportOnlyWeatherBuildChange } = await import('./source-current-contract-plan.mjs');
+  const after = await rawWorkflow('../.github/workflows/reusable-weather-build.yml');
+  const before = after.replace('          node scripts/write-support-run-metadata.mjs\n',
+    '          rsync -a ./ _support/project/\n');
+  assert.equal(isSupportOnlyWeatherBuildChange(before, after), true);
+  assert.equal(isSupportOnlyWeatherBuildChange(after, after), false);
+  let cumulativeBefore = before;
+  for (const name of [
+    'Current-grid pre-activation - Backfill the exact active source into durable protected evidence',
+    'Preserve durable incomplete current-grid publication before any Edge write',
+  ]) {
+    const start = cumulativeBefore.indexOf('      - name: ' + name + '\n');
+    const end = cumulativeBefore.indexOf('\n      - ', start + 1);
+    assert(start >= 0 && end > start);
+    const step = cumulativeBefore.slice(start, end);
+    const token = '          GH_TOKEN: ${{ github.token }}\n';
+    assert.equal(step.split(token).length, 2);
+    cumulativeBefore = cumulativeBefore.slice(0, start) + step.replace(token, '') + cumulativeBefore.slice(end);
+  }
+  assert.equal(isSupportOnlyWeatherBuildChange(cumulativeBefore, after), false);
+  assert.equal(isPagesAndSupportOnlyWeatherBuildChange(cumulativeBefore, after), true);
+  const mutations = [
+    after.replace('node scripts/write-support-run-metadata.mjs', 'node scripts/update-weather.mjs'),
+    after.replace('node scripts/write-support-run-metadata.mjs', 'node scripts/write-support-run-metadata.mjs --private-input'),
+    after.replace('node scripts/write-support-run-metadata.mjs', 'echo "$SUPABASE_SERVICE_ROLE_KEY"'),
+    after.replace('node scripts/write-support-run-metadata.mjs', 'curl https://provider.invalid'),
+    after.replace('zip -qr', 'zip -qr --encrypt'),
+    after.replace('retention-days: 14', 'retention-days: 90'),
+    after.replace('path: RavRadar-support-${{ github.run_number }}.zip\n          retention-days: 14',
+      'path: RavRadar-support-${{ github.run_number }}.zip\n          retention-days: 90'),
+    after.replace('name: RavRadar-support-${{ github.run_number }}', 'name: Other-support-${{ github.run_number }}'),
+    after.replace('GH_TOKEN: ${{ github.token }}', 'GH_TOKEN: ${{ secrets.OTHER_TOKEN }}'),
+    after.replace('          rm -rf _support', '        env:\n          PRIVATE: value\n        run: |\n          rm -rf _support'),
+    after + '\n# Another workflow change\n',
+  ];
+  for (const changed of mutations) {
+    assert.notEqual(changed, after);
+    assert.equal(isSupportOnlyWeatherBuildChange(before, changed), false);
+    assert.equal(isPagesAndSupportOnlyWeatherBuildChange(cumulativeBefore, changed), false);
+  }
 });

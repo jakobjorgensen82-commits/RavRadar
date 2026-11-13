@@ -294,7 +294,7 @@ jobs:
 
       - name: Select fresh weather and verify a prior closed Pages outcome
         id: automatic-completed-target
-        if: steps.automatic-completed-scope.outputs.eligible == 'true'
+        if: steps.automatic-completed-scope.outputs.eligible == 'true' && needs.operational-recovery-gate.outputs.recovery_action == 'NONE'
         env:
           GITHUB_TOKEN: ${{ github.token }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}

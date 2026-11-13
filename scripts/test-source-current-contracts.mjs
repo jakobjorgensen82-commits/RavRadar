@@ -647,7 +647,7 @@ try{
   assert(!next.receipt.impact.areas.publicUI&&!next.receipt.impact.areas.adminUI);
   assert(observedRoutes.some(route=>route.includes(encodeURIComponent(firstDelivery.receipt.artifactName))),
     'The ordinary caller read the latest immutable receipt as an origin locator without a ROOT marker');
-  assert.equal(rows.length,7);assert(rows.every(row=>row.outcome==='PASS'));
+  assert.equal(rows.length,onlyPages.commands.length);assert(rows.every(row=>row.outcome==='PASS'));
   selectedReceipt=next.receipt;
   main=commit(pagesTree,[firstDelivery.main,head],'synthetic subsequent same-tree main merge');checkout(main);state.merged=true;
   // Later API base-tip movement cannot rewrite the tested immutable Git parent.
@@ -660,7 +660,7 @@ try{
   assert.equal(nextAccepted.required,false,JSON.stringify(nextAccepted));
   assert.equal(nextAccepted.independentControlReview,'NOT_REQUIRED');
   assert.deepEqual(nextAccepted.testedAreas,['core','pages']);
-  cases++;scenarios.push('normal next Pages producer and merged consumer execute only 7 current core/Pages commands after delivered UI/admin');
+  cases++;scenarios.push('normal next Pages producer and merged consumer execute exactly the current core/Pages command list after delivered UI/admin');
   const nextValid=clone(selectedReceipt),nextValidMetadata=clone(selectedMetadata),nextValidZip=selectedZip;
   const pageDelivery={head,main,receipt:clone(selectedReceipt),zip:selectedZip,metadata:clone(selectedMetadata),
     pull:currentPull(),run:run(true),job:jobs(true),runId:selectedRun,pr:selectedPr,artifactId:selectedArtifactId};

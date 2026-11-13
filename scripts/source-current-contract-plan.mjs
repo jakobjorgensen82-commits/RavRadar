@@ -31,7 +31,11 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
     'node --test scripts/test-ordinary-pages-immediate-retry.mjs',
     'node scripts/test-pages-generation-and-reentry.mjs',
     'node scripts/test-ravscore-operational-pages-recovery.mjs',
+    'node scripts/test-ravscore-operational-pages-deployment.mjs',
     'node --test scripts/test-protected-operational-reentry-evidence.mjs',
+  ],
+  workflowSupport:[
+    'node --test scripts/test-current-pages-workflow-wiring.mjs',
   ],
   pagesArtifact:[
     'node --test scripts/test-pages-artifact-metadata.mjs',
@@ -111,7 +115,11 @@ const PATH_AREAS=freeze({
     'scripts/test-current-pages-workflow-wiring.mjs',
     'scripts/test-pages-generation-and-reentry.mjs',
     'scripts/test-ravscore-operational-pages-recovery.mjs',
+    'scripts/test-ravscore-operational-pages-deployment.mjs',
     'scripts/test-protected-operational-reentry-evidence.mjs',
+  ],
+  workflowSupport:[
+    'scripts/write-support-run-metadata.mjs',
   ],
   pagesArtifact:[
     '.github/workflows/reusable-weather-build.yml',
@@ -341,6 +349,63 @@ export function isPagesOnlyWeatherBuildChange(before,after){
   }catch{return false;}
 }
 
+
+// Diagnostic support ownership only. Remove the two exact named steps on each
+// side and preserve every other byte. The candidate is one fixed metadata CLI;
+// its changed source/control still requires independent normal qualification.
+export function isSupportOnlyWeatherBuildChange(before, after) {
+  try {
+    assert(typeof before === 'string' && typeof after === 'string' && before !== after);
+    const take = source => {
+      assert(!source.includes('\r') && Buffer.byteLength(source) <= 4 * 1024 * 1024);
+      const build = '      - name: Build RavRadar support package\n';
+      const upload = '      - name: Upload RavRadar support package\n';
+      assert.equal(source.split(build).length, 2); assert.equal(source.split(upload).length, 2);
+      const start = source.indexOf(build), middle = source.indexOf(upload);
+      assert(start > source.indexOf('    steps:\n') && middle > start);
+      assert.equal(source.indexOf('\n      - ', start + 1) + 1, middle);
+      const next = source.indexOf('\n      - ', middle + 1);
+      assert(next > middle);
+      return { build: source.slice(start, middle), upload: source.slice(middle, next + 1),
+        rest: source.slice(0, start) + source.slice(next + 1) };
+    };
+    const a = take(before), b = take(after);
+    assert.equal(a.rest, b.rest); assert.equal(a.upload, b.upload);
+    const fixed = [
+      '      - name: Build RavRadar support package',
+      '        continue-on-error: true', '        if: always()', '        run: |',
+      '          rm -rf _support', '          mkdir -p _support/run-metadata',
+      '          node scripts/write-support-run-metadata.mjs',
+      '          (cd _support && zip -qr ../RavRadar-support-' + '$' + '{{ github.run_number }}.zip .)', '', '',
+    ].join('\n');
+    assert.equal(b.build, fixed);
+    return true;
+  } catch { return false; }
+}
+
+// Compose only the two existing owners. Restoring the predecessor support
+// block must leave exactly the existing two-field Pages change; the second
+// comparison independently proves the fixed metadata-only support change.
+export function isPagesAndSupportOnlyWeatherBuildChange(before, after) {
+  try {
+    const take = source => {
+      assert(typeof source === 'string' && !source.includes('\r')
+        && Buffer.byteLength(source) <= 4 * 1024 * 1024);
+      const build = '      - name: Build RavRadar support package\n';
+      const upload = '      - name: Upload RavRadar support package\n';
+      assert.equal(source.split(build).length, 2); assert.equal(source.split(upload).length, 2);
+      const start = source.indexOf(build), end = source.indexOf(upload);
+      assert(start >= 0 && end > start);
+      assert.equal(source.indexOf('\n      - ', start + 1) + 1, end);
+      return { start, end, block: source.slice(start, end) };
+    };
+    const a = take(before), b = take(after);
+    const normalizedAfter = after.slice(0, b.start) + a.block + after.slice(b.end);
+    return isPagesOnlyWeatherBuildChange(before, normalizedAfter)
+      && isSupportOnlyWeatherBuildChange(normalizedAfter, after);
+  } catch { return false; }
+}
+
 // Pure security-frame comparison only. The whole changed body still needs
 // independent control review and its actual credential-free --self-test.
 export function isBoundedLocalRestoreFixtureChange(before,after){
@@ -395,10 +460,15 @@ export function planSourceCurrentContractsFromGit(input){
       // En ændring her kræver derfor faktisk FULL-kvalifikation i denne levering.
       if(file==='.github/workflows/validate-pull-request.yml')
         return refuse('CURRENT_VALIDATION_WORKFLOW_REQUIRES_FULL');
-      const areas=pathAreas.get(file)??(/^docs\/(?:rdks|ai|handbook)\/.+\.md$/.test(file)?['documentation']:null);
+      const supportOnly=file===WEATHER_BUILD&&isSupportOnlyWeatherBuildChange(
+        readCommittedText(input.baselineCommit,file),readCommittedText(input.candidateCommit,file));
+      const pagesAndSupportOnly=file===WEATHER_BUILD&&!supportOnly&&isPagesAndSupportOnlyWeatherBuildChange(
+        readCommittedText(input.baselineCommit,file),readCommittedText(input.candidateCommit,file));
+      const areas=supportOnly?['workflowSupport']:pagesAndSupportOnly?['pages','workflowSupport']:
+        pathAreas.get(file)??(/^docs\/(?:rdks|ai|handbook)\/.+\.md$/.test(file)?['documentation']:null);
       if(!areas){unknown.push(file);continue;}
       for(const area of areas){if(!selected.has(area))selected.set(area,[]);selected.get(area).push(file);}
-      if(sourceControlPaths.has(file)||historicalPaths.has(file)||areas.includes('compatibility')||areas.includes('mailOwnerProbe')||areas.includes('currentInstalledCodeOnly')||file.startsWith('scripts/test-'))
+      if(sourceControlPaths.has(file)||historicalPaths.has(file)||areas.includes('compatibility')||areas.includes('mailOwnerProbe')||areas.includes('currentInstalledCodeOnly')||areas.includes('workflowSupport')||file.startsWith('scripts/test-'))
         out.controlQualificationRequired=true;
     }
     if(unknown.length){out.unclassifiedPaths=unknown.sort();return refuse('CURRENT_UNCLASSIFIED_PATH');}
@@ -418,7 +488,8 @@ export function planSourceCurrentContractsFromGit(input){
     if(analysis.completeGitDiff.inventory.some(row=>Buffer.from(row.pathUtf8Hex,'hex').toString('utf8')===WEATHER_BUILD)){
       const before=readCommittedText(input.baselineCommit,WEATHER_BUILD);
       const after=readCommittedText(input.candidateCommit,WEATHER_BUILD);
-      if(!isPagesOnlyWeatherBuildChange(before,after))
+      if(!isPagesOnlyWeatherBuildChange(before,after)&&!isSupportOnlyWeatherBuildChange(before,after)
+        &&!isPagesAndSupportOnlyWeatherBuildChange(before,after))
         return refuse('CURRENT_WEATHER_BUILD_CHANGE_EXCEEDS_PAGES',['WEATHER_BUILD_CONTRACTS']);
     }
     if(analysis.completeGitDiff.inventory.some(row=>Buffer.from(row.pathUtf8Hex,'hex').toString('utf8')===INSTALLER)

@@ -5,6 +5,17 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
 const closureEvidence = new WeakSet();
+const publicCompletionObservations = new WeakMap();
+// An authenticated unresolved observation is never closure or retry authority.
+export function authenticPagesPublicCompletionObservation(error, owner) {
+  const value = publicCompletionObservations.get(error);
+  return value && sameOwner(value.owner, owner) ? value : null;
+}
+function canonicalObservation(value) {
+  return Array.isArray(value) ? value.map(canonicalObservation)
+    : value && typeof value === 'object' ? Object.fromEntries(Object.keys(value).sort()
+      .map(key => [key, canonicalObservation(value[key])])) : value;
+}
 const legacyNoPostJobs = new WeakSet();
 const historicalCreateRejectedJobs = new WeakSet();
 // One reviewed historical pre-POST failure. This is not a diagnostic-code
@@ -103,6 +114,14 @@ function classifyCompletePagesJobs(jobs, owner, callerPath) {
       continue;
     }
     const closed = job.steps.filter(item => item.name === CLOSED_STEP);
+    if (role === 'ordinary' && job.conclusion === 'failure' && step.conclusion === 'failure'
+      && Number.isSafeInteger(step.number) && step.number > 0 && Number.isFinite(Date.parse(step.completed_at))
+      && (closed.length === 0 || (closed.length === 1 && closed[0].status === 'completed'
+        && closed[0].conclusion === 'skipped' && Number.isSafeInteger(closed[0].number)
+        && closed[0].number > step.number))) {
+      roles.push({ role, state: 'PUBLIC_TARGET_UNRESOLVED' });
+      continue;
+    }
     if (role === 'exact-target-recovery' || !['failure', 'cancelled'].includes(step.conclusion)
       || closed.length !== 1 || closed[0].status !== 'completed' || closed[0].conclusion !== 'success'
       || !Number.isSafeInteger(step.number) || !Number.isSafeInteger(closed[0].number)
@@ -118,7 +137,8 @@ function classifyCompletePagesJobs(jobs, owner, callerPath) {
       throw new Error('PAGES_OWNER_WRITER_ROLE_UNKNOWN');
   }
   return Object.freeze({ owner: Object.freeze({ ...owner }), roles: Object.freeze(roles.map(Object.freeze)),
-    state: roles.some(role => role.state === 'PUBLIC_TARGET_REQUIRED') ? 'PUBLIC_TARGET_REQUIRED'
+    state: roles.some(role => role.state === 'PUBLIC_TARGET_UNRESOLVED') ? 'PUBLIC_TARGET_UNRESOLVED'
+      : roles.some(role => role.state === 'PUBLIC_TARGET_REQUIRED') ? 'PUBLIC_TARGET_REQUIRED'
       : roles.some(role => role.state === 'CLOSED_UNPUBLISHED') ? 'CLOSED_UNPUBLISHED' : 'NO_POST' });
 }
 
@@ -230,6 +250,18 @@ export async function readAuthenticPagesAttemptClosure({ owner, fetchImpl = fetc
   if (legacyNoPost) legacyNoPostJobs.add(legacyNoPost);
   if (createRejected) historicalCreateRejectedJobs.add(createRejected);
   const result = classifyCompletePagesJobs(jobs, owner, first.path);
+  if (result.state === 'PUBLIC_TARGET_UNRESOLVED') {
+    const error = new Error('PAGES_OWNER_WRITE_CLOSURE_UNKNOWN');
+    if (first.conclusion === 'failure' && Number.isFinite(Date.parse(first.updated_at))
+      && owner.attemptId === `pages-${owner.runId}-${owner.runAttempt}`
+      && result.roles.every(role => role.role === 'ordinary'
+        ? role.state === 'PUBLIC_TARGET_UNRESOLVED'
+        : ['NO_POST', 'CLOSED_UNPUBLISHED'].includes(role.state))) {
+      publicCompletionObservations.set(error, Object.freeze({ ...result,
+        metadataSha256: crypto.createHash('sha256').update(JSON.stringify(canonicalObservation({run:first,jobs}))).digest('hex') }));
+    }
+    throw error; // Default callers still have no closure or public-success proof.
+  }
   closureEvidence.add(result);
   return result;
 }

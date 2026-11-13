@@ -704,6 +704,49 @@ test('bounded shared-alias reads can outlive an old terminal response and observ
   }
 });
 
+test('post-CREATE unknown status strings keep bounded GET observation on the same acknowledged write', async () => {
+  for (const status of ['', 'unknown_future_status']) {
+    const server = fakeService({ statusSequence: [status, 'deployment_queued', 'succeed'], cancellation: 'readback' });
+    const delivery = await server.deploy(1);
+    assert.equal(delivery.outcome, 'SUCCEEDED');
+    assert.equal(delivery.pendingObserved, true);
+    assert.equal(server.posts.length, 1); assert.equal(server.reads.length, 3);
+    assert.equal(server.intents.length, 1); assert.equal(server.cancels.length, 0);
+    assert.equal(hasSealedPagesRetryEvidence(delivery), false);
+    assert.equal(hasSealedPagesNoPostEvidence(delivery), false);
+  }
+});
+
+test('post-CREATE unknown status remains finite HOLD without cancellation or retry', async () => {
+  const server = fakeService({ firstTerminal: 'unknown_future_status',
+    statusReplyExtra: { status: 'unknown_future_status' }, cancellation: 'readback' });
+  let delivery;
+  const result = await publishSealedPagesWithRecovery({ seal, predecessorSha256: old,
+    submit: async (_seal, ordinal) => delivery = await server.deploy(ordinal), readPublic: async () => old,
+    revalidateWriter: async () => true, timeRemainingMs: () => 35 * 60_000, pause: async () => {} });
+  assert.equal(result.kind, 'HOLD'); assert.equal(delivery.outcome, 'UNKNOWN');
+  assert.equal(delivery.code, 'STATUS_VALUE_UNPROVED');
+  assert(server.reads.length > 1 && server.reads.length <= 121);
+  assert(server.now() <= 35 * 60_000 - NORMAL_PAGES_COMPLETION_RESERVE_MS);
+  assert.equal(server.posts.length, 1); assert.equal(server.cancels.length, 0);
+  assert.equal(hasSealedPagesTerminalEvidence(delivery), false);
+  assert.equal(hasSealedPagesRetryEvidence(delivery), false);
+  assert.equal(hasSealedPagesNoPostEvidence(delivery), false);
+});
+
+test('post-CREATE non-string status remains immediate HOLD', async () => {
+  for (const status of [null, true, 7, [], {}]) {
+    const server = fakeService({ statusReplyExtra: { status }, cancellation: 'readback' });
+    const delivery = await server.deploy(1);
+    assert.equal(delivery.outcome, 'UNKNOWN'); assert.equal(delivery.code, 'STATUS_VALUE_UNPROVED');
+    assert.equal(server.posts.length, 1); assert.equal(server.reads.length, 1);
+    assert.equal(server.cancels.length, 0);
+    assert.equal(hasSealedPagesTerminalEvidence(delivery), false);
+    assert.equal(hasSealedPagesRetryEvidence(delivery), false);
+    assert.equal(hasSealedPagesNoPostEvidence(delivery), false);
+  }
+});
+
 test('a concrete CREATE 404 rejection is neither a missing POST nor terminal or retry evidence', async () => {
   const server = fakeService({ createHttp: 404 });
   const delivery = await server.deploy(1);
