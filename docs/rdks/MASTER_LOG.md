@@ -1,3 +1,17 @@
+## 13. november 2026 – 4.0.616: samlet SOURCE-kandidat med bevaret kontrakt og normal afledningsrækkefølge
+
+Den lokale kandidat samler Source-revisionen med den faktisk leverede 4.0.598-kode. Numeriske C/I-input følger den lukkede beregningsgraf; app-, kontrol- og Pages-koden kvalificeres særskilt som programkode. Det er fortsat den første uinstallerede Source-overgang fra genuine598, ikke en allerede aktiveret revision.
+
+Det første normale 615-forsøg afslørede, at udtrækket havde fjernet historiske labelDa-felter fra den kanoniske kontrakt. Den valgte rettelse bevarer disse uændrede ABI-metadata og adskiller de faktisk viste UI-tekster i deres egen policy. De normale kontrakthashes beregnes igen fra de autentiske data; ingen fast hash, lempet sammenligning eller bredere B/S-guard indføres. Den fejlede 615-original og alle tidligere SQL-filer bevares. Den nye normale 616-afledning består sine 14 generations- og fastpunktskontroller med 79 ældre SQL-filer byteidentiske. Dette er lokal kilde, ikke SQL-installation eller Linux-/produktionsbevis.
+
+Den eksisterende afsluttende bindingskommando skriver nu releasekontrakt og håndbogens afledte aktuelle modeloplysninger med de normale synkroniseringsfunktioner, før prøverne læser dem. Dateret dokumenthistorik ændres ikke. Den første aktuelle Source-levering kræver sine målrettede kontrakter og frisk Linux/PostgreSQL; den efterfølgende almindelige appvej og faktisk B/S-/offentlig effekt skal også kvalificeres før aktivering. Der indføres ikke en generel OS-/Pythonkontrol.
+
+Den uafhængige 598-rettelsespakke er faktisk kildekvalificeret, merget og offentligt leveret. Dens syntetiske Linux-gendannelse har gennemført SQL-indholds-/dubletparitet og Auth-prøver. Den faktiske produktionsbackup, automatisk rotation, fysisk historikoprydning, Free-overgang og samlet browseraccept er stadig åbne. Kørselsspecifikke identiteter og målinger føres i det private checkpoint.
+
+Alle fem mål til 18. november består. Stabil vejrhentning og reel dækning har førsteprioritet. Scoreformel, kildeprioritet, administratorpunkter, geometri, autentiske originaler og gamle offentliggjorte scorer bevares. Den ældre private backups automatisering følger ikke med denne Source-kandidat; ingen statistik eller automatisk kontosletning aktiveres her.
+
+Se beslutning DEC-0302 og håndbog 89.346. Tidligere 614-/615-oplysninger bevares som historik, ikke som en nyere kandidat eller installationsautoritet.
+
 ## 12. november 2026 – 4.0.614: ny ægte SOURCE-kandidat og kortere kontrolvej
 
 Den nye lokale kandidat bygger på den gennemgåede SOURCE-funktionalitet og den nu mergede almindelige Pages-/kontrolrettelse. Den annullerede 613-kandidat må fortsat ikke installeres. 614 udstedes som første SOURCE fra den ægte, uudstedte NULL-forgænger mod installeret 598; ingen 613-binding ommærkes. De 77 tidligere migrationer bevares, og den normale bygger opretter kun én ny migration.
