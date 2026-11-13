@@ -725,6 +725,38 @@ def _source_normal_readiness_identity():
     return selected
 
 
+
+# One fixed program reference per existing normal phase. These declarations
+# are observations, never a file exclusion or PG/reuse authority.
+_SOURCE_NORMAL_PHASE_PROGRAMS = (
+    (52, 'scripts/enrich-current-provenance.mjs', 'UNPROVED_SEMANTIC_ROLE'),
+    (53, 'scripts/generate-public-conditions.mjs', 'UNPROVED_SEMANTIC_ROLE'),
+    (54, 'scripts/check-public-weather-continuity.mjs', 'UNPROVED_SEMANTIC_ROLE'),
+    (55, 'scripts/check-public-weather-continuity.mjs', 'UNPROVED_SEMANTIC_ROLE'),
+    (56, 'scripts/audit-ravscore-integrated-public-runtime.mjs', 'UNPROVED_SEMANTIC_ROLE'),
+    (57, 'scripts/run-validation-collection.mjs', 'UNPROVED_SEMANTIC_ROLE'),
+    (58, 'scripts/run-validation-collection.mjs', 'UNPROVED_SEMANTIC_ROLE'),
+    (59, 'scripts/private-production-runtime-workflow.mjs', 'UNPROVED_SEMANTIC_ROLE'),
+    (60, 'scripts/private-production-runtime-bundle.mjs', 'UNPROVED_SEMANTIC_ROLE'),
+    (61, 'scripts/ravscore-continuation-checkpoint.mjs', 'UNPROVED_SEMANTIC_ROLE'),
+    (62, 'scripts/check-production-target-freshness.mjs', 'UNPROVED_SEMANTIC_ROLE'),
+    (63, 'scripts/staged-private-production-runtime.mjs', 'UNPROVED_SEMANTIC_ROLE'),
+    (72, 'scripts/generate-state-reference-report-4.0.113.mjs', 'UNPROVED_SEMANTIC_ROLE'),
+    (73, 'scripts/seal-ravscore-public-browser-closure.mjs', 'FRESH_APP_ARTIFACT_ASSERTION'),
+    (74, 'scripts/integrated-cutover-readiness.mjs', 'FRESH_APP_EDGE_READINESS_ASSERTION'),
+    (75, 'lib/node_modules/npm/bin/npm-cli.js', 'UNPROVED_SEMANTIC_ROLE'),
+    (76, 'verify-trip-storage-edge.mjs', 'UNPROVED_SEMANTIC_ROLE'),
+    (77, 'verify-cloudflare-trip-gateway.mjs', 'UNPROVED_SEMANTIC_ROLE'),
+)
+
+
+def _source_normal_phase_program(phase):
+    for selected, reference, _ in _SOURCE_NORMAL_PHASE_PROGRAMS:
+        if phase == selected:
+            return reference
+    raise RuntimeError('SOURCE_NORMAL_PHASE_NOT_FIXED')
+
+
 def _source_normal_program(root, phase, options, output_path):
     import re
     import shutil
@@ -789,10 +821,11 @@ def _source_normal_program(root, phase, options, output_path):
         if not node:
             raise RuntimeError('SOURCE_NORMAL_NODE_UNAVAILABLE')
         operational = Path('/tmp/ravradar-operational-model')
+        program = _source_normal_phase_program(phase)
         if phase == 72:
-            command = [str(root / 'scripts/generate-state-reference-report-4.0.113.mjs'), '--strict']
+            command = [str(root / program), '--strict']
         elif phase == 73:
-            command = [str(root / 'scripts/seal-ravscore-public-browser-closure.mjs'),
+            command = [str(root / program),
                 '--root', '.', '--output', str(operational / 'integrated-public-closure.json'),
                 '--model', 'integrated',
                 '--identity-output', str(operational / 'integrated-implementation-identity.json')]
@@ -801,7 +834,7 @@ def _source_normal_program(root, phase, options, output_path):
             # its dependent phase. The metadata value is not an owner/admission.
             identity = _source_normal_readiness_identity()
             environment['RAVRADAR_REQUIRE_INTEGRATED_BINDING'] = 'true'
-            command = [str(root / 'scripts/integrated-cutover-readiness.mjs'), 'publish', '--source-producer',
+            command = [str(root / program), 'publish', '--source-producer',
                 '--public-implementation-closure-sha256', identity,
                 '--output', str(operational / 'integrated-readiness.json')]
         elif phase == 75:
@@ -811,15 +844,14 @@ def _source_normal_program(root, phase, options, output_path):
             if not npm:
                 raise RuntimeError('SOURCE_NORMAL_NPM_UNAVAILABLE')
             npm = os.path.realpath(npm)
-            expected_npm = str(Path(os.path.realpath(node)).parent.parent / 'lib/node_modules/npm/bin/npm-cli.js')
+            expected_npm = str(Path(os.path.realpath(node)).parent.parent / program)
             if npm != expected_npm or not Path(npm).is_file() or Path(npm).is_symlink():
                 raise RuntimeError('SOURCE_NORMAL_NPM_TOOLCHAIN_UNPROVED')
             command = [npm, 'run', 'validate:data']
         else:
             environment['EXPECTED_TRIP_STORAGE_MODE'] = 'd1'
             environment['RAVRADAR_REQUIRE_INTEGRATED_BINDING'] = 'true'
-            script = 'verify-trip-storage-edge.mjs' if phase == 76 else 'verify-cloudflare-trip-gateway.mjs'
-            command = [str(root / 'scripts' / script)]
+            command = [str(root / 'scripts' / program)]
         return [node] + command, environment
     if phase == 71:
         # The actual outer action's Node, with no provider credentials.
@@ -1051,42 +1083,43 @@ def _source_normal_program(root, phase, options, output_path):
         if not node or not os.path.isabs(temporary) or os.path.realpath(temporary) != temporary:
             raise RuntimeError('SOURCE_ARTIFACT_TEMP_INVALID')
         environment['DMI_BULK_CACHE_PATH'] = candidate
+        program = _source_normal_phase_program(phase)
         if phase == 52:
-            command = ['scripts/enrich-current-provenance.mjs']
+            command = [program]
         elif phase == 53:
-            command = ['scripts/generate-public-conditions.mjs']
+            command = [program]
         elif phase in (54, 55):
             prefix = 'previous-weather-conditions.json' if phase == 54 else 'paired-15z-conditions.json'
             pack = 'previous-public-hour-delivery.pack' if phase == 54 else 'paired-15z-public-hour-delivery.pack'
-            command = ['scripts/check-public-weather-continuity.mjs', '--previous-conditions',
+            command = [program, '--previous-conditions',
                 str(Path(temporary) / prefix), '--previous-pack', str(Path(temporary) / pack), '--new-live', 'data/live']
         elif phase == 56:
-            command = ['scripts/audit-ravscore-integrated-public-runtime.mjs', '--input', 'data/live/conditions.json',
+            command = [program, '--input', 'data/live/conditions.json',
                 '--output', '.geometry-v2-work/ravscore-integrated-public-runtime-audit.json']
         elif phase in (57, 58):
             selected = 'artifact' if phase == 57 else 'release'
-            command = ['scripts/run-validation-collection.mjs', '--script', 'validate:production-' + selected,
+            command = [program, '--script', 'validate:production-' + selected,
                 '--output', '.geometry-v2-work/production-' + selected + '-validation-report.json']
         elif phase == 59:
-            command = ['scripts/private-production-runtime-workflow.mjs', 'create-spec',
+            command = [program, 'create-spec',
                 '--repository-root', str(root), '--dmi-bulk', candidate,
                 '--output', '.cache/private-production-runtime-create-spec.json']
         elif phase == 60:
-            command = ['scripts/private-production-runtime-bundle.mjs', 'create',
+            command = [program, 'create',
                 '--private-root', '/tmp/ravradar-private-production-runtime',
                 '--bundle', '/tmp/ravradar-private-production-runtime/bundle-source-successor',
                 '--spec', '.cache/private-production-runtime-create-spec.json']
         elif phase == 61:
-            command = ['scripts/ravscore-continuation-checkpoint.mjs', '--save', '--source', 'data/live/conditions.json',
+            command = [program, '--save', '--source', 'data/live/conditions.json',
                 '--checkpoint', '.cache/ravscore-continuation-checkpoint/checkpoint.json']
         elif phase == 62:
-            command = ['scripts/check-production-target-freshness.mjs', '--target', target,
+            command = [program, '--target', target,
                 '--maximum-age-minutes', '150', '--github-output', output_path]
         elif phase == 63:
             # Same normal local seal CLI, but T has its distinct fixed name.
             # This phase performs NO artifact upload, checkpoint CAS or B publish.
             environment['STAGED_PRIVATE_BUILD_MASTER_SECRET'] = environment.get('SUPABASE_SERVICE_ROLE_KEY', '')
-            command = ['scripts/staged-private-production-runtime.mjs', 'seal',
+            command = [program, 'seal',
                 '--repository-root', str(root), '--private-root', '/tmp/ravradar-private-production-runtime',
                 '--bundle', '/tmp/ravradar-private-production-runtime/bundle-source-successor',
                 '--expected', '.cache/private-production-runtime-expected.json',
@@ -1879,12 +1912,28 @@ def source_normal_backend_program_inputs():
                         role = 'REPOSITORY_PROGRAM'
                     row = files.setdefault((role, value), set())
                     row.add(selector.__name__)
+    phase_rows = []
+    if '_source_normal_phase_program' in _source_normal_program.__code__.co_names:
+        for phase, reference, purpose in _SOURCE_NORMAL_PHASE_PROGRAMS:
+            role = ('RUNTIME_DISTRIBUTION_PROGRAM' if '/node_modules/' in reference
+                    else 'REPOSITORY_PROGRAM')
+            files.setdefault((role, reference), set()).add(_source_normal_program.__name__)
+            phase_rows.append({'phase': phase, 'role': role, 'reference': reference,
+                               'purpose': purpose,
+                               'bindingState': 'UNPROVED_RUNTIME_OPERAND'
+                                   if role == 'RUNTIME_DISTRIBUTION_PROGRAM'
+                                   else 'UNPROVED_SOURCE_OPERAND'})
+    else:
+        unknown.append({'selector': _source_normal_program.__name__,
+                        'code': 'UNPROVED_SOURCE_OPERAND',
+                        'reason': 'PHASE_DECLARATION_NOT_SELECTED'})
     rows = [{'role': role, 'reference': reference, 'selectors': sorted(names),
              'bindingState': 'UNPROVED_RUNTIME_OPERAND' if role == 'RUNTIME_DISTRIBUTION_PROGRAM'
                              else 'UNPROVED_SOURCE_OPERAND'}
             for (role, reference), names in sorted(files.items())]
     return {'schemaVersion': 1, 'scope': 'SOURCE_NORMAL_FIXED_SELECTOR_INPUTS_ONLY',
             'selectors': functions, 'declaredPrograms': rows,
+            'phaseDeclarations': phase_rows,
             'unknownOperands': unknown,
             'sourceGraphClosed': False, 'runtimeQualified': False,
             'workerStarted': False, 'pgExecuted': False, 'reuseAuthority': False}

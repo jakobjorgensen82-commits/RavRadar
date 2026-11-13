@@ -2569,12 +2569,133 @@ module._source_normal_program=added
 derived=module.source_normal_backend_program_inputs()
 module._source_normal_program=selectors['_source_normal_program']
 assert snapshot==(id(module._LOCK),module._LOCK.locked(),id(module._UNPROVED),len(module._UNPROVED))
-print(json.dumps({'normal':normal,'unknown':unproved,'changed':derived,'selectorsCalled':False,'locksUnchanged':True},separators=(',',':')))
+
+# Exercise the actual selector only: no subprocess, worker, network or owner.
+import os,shutil,tempfile
+from pathlib import Path
+phase_rows=normal['phaseDeclarations']
+assert [row['phase'] for row in phase_rows]==list(range(52,64))+list(range(72,78))
+assert [row['phase'] for row in phase_rows if row['purpose'].startswith('FRESH_')]==[73,74]
+assert all(row['bindingState'].startswith('UNPROVED_') for row in phase_rows)
+assert all(row['purpose']=='UNPROVED_SEMANTIC_ROLE' for row in phase_rows if row['phase'] not in (73,74))
+assert any(row['reference']=='scripts/integrated-cutover-readiness.mjs'
+           for row in normal['declaredPrograms'])
+original_environment=dict(os.environ)
+original_which=shutil.which
+original_identity=module._source_normal_readiness_identity
+positive_tuples=0
+refused_tuples=0
+with tempfile.TemporaryDirectory(prefix='rr-selector-tuples-') as folder:
+    base=Path(folder).resolve()
+    root=base/'repo';root.mkdir()
+    node=base/'bin'/'node';node.parent.mkdir();node.write_text('not executed')
+    npm=base/'lib'/'node_modules'/'npm'/'bin'/'npm-cli.js'
+    npm.parent.mkdir(parents=True);npm.write_text('not executed')
+    node,npm=str(node),str(npm)
+    output=str(base/'github-output')
+    target='2026-11-13T12:00:00Z'
+    operational=Path('/tmp/ravradar-operational-model')
+    identity='b'*64
+    environment={'RUNNER_TEMP':str(base),'PATH':'synthetic-path',
+        'GITHUB_REPOSITORY':'synthetic-owner/RavRadar','GITHUB_SHA':'a'*40,
+        'GITHUB_RUN_ID':'1234','GITHUB_RUN_ATTEMPT':'1',
+        'SUPABASE_SERVICE_ROLE_KEY':'synthetic-unsent-value'}
+    def script(name):return str(root/'scripts'/name)
+    commands={
+        52:[script('enrich-current-provenance.mjs')],
+        53:[script('generate-public-conditions.mjs')],
+        54:[script('check-public-weather-continuity.mjs'),'--previous-conditions',
+            str(base/'previous-weather-conditions.json'),'--previous-pack',
+            str(base/'previous-public-hour-delivery.pack'),'--new-live','data/live'],
+        55:[script('check-public-weather-continuity.mjs'),'--previous-conditions',
+            str(base/'paired-15z-conditions.json'),'--previous-pack',
+            str(base/'paired-15z-public-hour-delivery.pack'),'--new-live','data/live'],
+        56:[script('audit-ravscore-integrated-public-runtime.mjs'),'--input','data/live/conditions.json',
+            '--output','.geometry-v2-work/ravscore-integrated-public-runtime-audit.json'],
+        57:[script('run-validation-collection.mjs'),'--script','validate:production-artifact',
+            '--output','.geometry-v2-work/production-artifact-validation-report.json'],
+        58:[script('run-validation-collection.mjs'),'--script','validate:production-release',
+            '--output','.geometry-v2-work/production-release-validation-report.json'],
+        59:[script('private-production-runtime-workflow.mjs'),'create-spec','--repository-root',str(root),
+            '--dmi-bulk','.cache/dmi-candidate-progress.json','--output','.cache/private-production-runtime-create-spec.json'],
+        60:[script('private-production-runtime-bundle.mjs'),'create','--private-root',
+            '/tmp/ravradar-private-production-runtime','--bundle',
+            '/tmp/ravradar-private-production-runtime/bundle-source-successor',
+            '--spec','.cache/private-production-runtime-create-spec.json'],
+        61:[script('ravscore-continuation-checkpoint.mjs'),'--save','--source','data/live/conditions.json',
+            '--checkpoint','.cache/ravscore-continuation-checkpoint/checkpoint.json'],
+        62:[script('check-production-target-freshness.mjs'),'--target',target,
+            '--maximum-age-minutes','150','--github-output',output],
+        63:[script('staged-private-production-runtime.mjs'),'seal','--repository-root',str(root),
+            '--private-root','/tmp/ravradar-private-production-runtime','--bundle',
+            '/tmp/ravradar-private-production-runtime/bundle-source-successor',
+            '--expected','.cache/private-production-runtime-expected.json','--source-head','a'*40,
+            '--repository','synthetic-owner/RavRadar','--run-id','1234','--run-attempt','1',
+            '--output',str(base/'ravradar-private-build-stage'/'sealed.bin')],
+        72:[script('generate-state-reference-report-4.0.113.mjs'),'--strict'],
+        73:[script('seal-ravscore-public-browser-closure.mjs'),'--root','.',
+            '--output',str(operational/'integrated-public-closure.json'),'--model','integrated',
+            '--identity-output',str(operational/'integrated-implementation-identity.json')],
+        74:[script('integrated-cutover-readiness.mjs'),'publish','--source-producer',
+            '--public-implementation-closure-sha256',identity,'--output',str(operational/'integrated-readiness.json')],
+        75:[npm,'run','validate:data'],
+        76:[script('verify-trip-storage-edge.mjs')],
+        77:[script('verify-cloudflare-trip-gateway.mjs')],
+    }
+    def options(quick=False,extended=False,checkpoint=False):
+        return {'target':target,'quick':quick,'extended':extended,'checkpointOnly':checkpoint}
+    def expect_refusal(phase,request,reason):
+        global refused_tuples
+        try:module._source_normal_program(root,phase,request,output)
+        except RuntimeError as error:assert str(error)==reason,(phase,str(error),reason)
+        else:raise AssertionError(('EXPECTED_SELECTOR_REFUSAL',phase,reason))
+        refused_tuples+=1
+    try:
+        os.environ.clear();os.environ.update(environment)
+        shutil.which=lambda name:node if name=='node' else npm if name=='npm' else None
+        module._source_normal_readiness_identity=lambda:identity
+        for phase in commands:
+            for request in (options(),options(True),options(False,True),options(True,True),options(checkpoint=True)):
+                expected_environment={**environment,'GITHUB_OUTPUT':output,'RAVRADAR_PRODUCTION_TARGET_HOUR':target}
+                if 52<=phase<=63:expected_environment['DMI_BULK_CACHE_PATH']='.cache/dmi-candidate-progress.json'
+                if phase==63:expected_environment['STAGED_PRIVATE_BUILD_MASTER_SECRET']='synthetic-unsent-value'
+                if phase in (74,76,77):expected_environment['RAVRADAR_REQUIRE_INTEGRATED_BINDING']='true'
+                if phase in (76,77):expected_environment['EXPECTED_TRIP_STORAGE_MODE']='d1'
+                assert module._source_normal_program(root,phase,request,output)==([node]+commands[phase],expected_environment),phase
+                positive_tuples+=1
+        for phase in (-1,0,3,84,True,None):expect_refusal(phase,options(),'SOURCE_NORMAL_PHASE_NOT_FIXED')
+        for invalid in (None,{}, {**options(),'extra':True}, {**options(),'quick':1},
+                {**options(),'target':'2026-11-13T12:30:00Z'}):
+            expect_refusal(52,invalid,'SOURCE_NORMAL_SELECTION_INVALID')
+        for request in (options(True,False,True),options(False,True,True),options(True,True,True)):
+            expect_refusal(52,request,'SOURCE_CHECKPOINT_REQUEST_INVALID')
+        shutil.which=lambda name:None
+        for phase in commands:
+            expect_refusal(phase,options(),'SOURCE_ARTIFACT_TEMP_INVALID' if phase<64 else 'SOURCE_NORMAL_NODE_UNAVAILABLE')
+        shutil.which=lambda name:node if name=='node' else None
+        expect_refusal(75,options(),'SOURCE_NORMAL_NPM_UNAVAILABLE')
+        shutil.which=lambda name:node if name=='node' else str(base/'wrong-npm')
+        expect_refusal(75,options(),'SOURCE_NORMAL_NPM_TOOLCHAIN_UNPROVED')
+        shutil.which=lambda name:node if name=='node' else npm
+        os.environ['RUNNER_TEMP']='relative-directory'
+        for phase in range(52,64):expect_refusal(phase,options(),'SOURCE_ARTIFACT_TEMP_INVALID')
+    finally:
+        os.environ.clear();os.environ.update(original_environment)
+        shutil.which=original_which
+        module._source_normal_readiness_identity=original_identity
+assert original_environment==dict(os.environ)
+assert snapshot==(id(module._LOCK),module._LOCK.locked(),id(module._UNPROVED),len(module._UNPROVED))
+assert positive_tuples==90 and refused_tuples==46
+
+print(json.dumps({'normal':normal,'unknown':unproved,'changed':derived,'getterCalledSelectors':False,'locksUnchanged':True,'positiveTuples':positive_tuples,'refusedTuples':refused_tuples},separators=(',',':')))
 `;
   const result=JSON.parse(runPureSourcePython(process.env.PYTHON||'python3',['-I','-B','-c',code,
     sourceDescriptorFileURLToPath(new URL('./lib/copernicus_component_process.py',import.meta.url))],{
     encoding:'utf8',timeout:10000,maxBuffer:1024*1024,stdio:['pipe','pipe','pipe']}));
-  assert.equal(result.selectorsCalled,false);assert.equal(result.locksUnchanged,true);
+  assert.equal(result.getterCalledSelectors,false);assert.equal(result.locksUnchanged,true);
+  assert.equal(result.positiveTuples,90);assert.equal(result.refusedTuples,46);
+  assert.equal(result.normal.phaseDeclarations.length,18);
+  assert.deepEqual(result.normal.phaseDeclarations.filter(row=>row.purpose.startsWith('FRESH_')).map(row=>row.phase),[73,74]);
   assert.equal(result.normal.selectors.length,3);
   assert(result.normal.declaredPrograms.some(row=>row.reference==='scripts/source-progress-union-consumer.mjs'));
   assert(result.normal.declaredPrograms.some(row=>row.reference==='lib/node_modules/npm/bin/npm-cli.js'
