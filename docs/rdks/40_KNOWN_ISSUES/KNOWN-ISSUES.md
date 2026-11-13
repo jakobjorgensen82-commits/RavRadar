@@ -1,3 +1,9 @@
+## 13. november — 615-årsag afklaret, ABI-bevarende efterfølger forberedes
+
+Den nye kontraktidentitet kom alene af at fjerne fire historiske visningslabels fra hvert kanonisk parameterobjekt. Uafhængig læsning mod genuine598 bekræfter, at alle andre parametre er identiske, og at numeriske forbrugere ikke bruger labels. Den valgte efterfølger bevarer derfor canonical-ABI’en og flytter de faktiske tekster til UI-policyen. Kontroller og bundle-only-inverser beholdes; den større compiler-/JavaScript-udvidelse er fravalgt.
+
+Normale C/I-byggere og faktiske UI-/parametermutationer er lokalt kvalificeret. Den normale nye komplette generering og Linux/PostgreSQL er stadig åbne. Den fejlede615-SQL og metadata bevares uændret som historik og må ikke installeres som en bestået kandidat.
+
 ## 13. november — Source615 compiler viderefører gammel kontraktidentitet
 
 **Åben, kun privat kandidat.** Det første normale 615-forløb dannede C/I, binding, output og en ny SQL-original. Den normale efterfølgende binding-synk standsede før sin første skrivning: den nye aktive SQL-validator havde den tidligere integrerede kontraktidentitet, mens den normale numeriske bygning havde den nye. Bundle-identiteten var ens. Dette er en konkret compilerfejl, ikke en grund til at lempe synkroniseringens kontrol.

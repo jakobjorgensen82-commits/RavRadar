@@ -1,3 +1,11 @@
+## 4.0.616 — privat Source-kandidat med bevaret kontrakt-ABI
+
+De kanoniske parameterobjekter bevarer de fire historiske labelDa-felter som uændrede kontraktmetadata. Faktiske UI-tekster hører til den separate visningspolicy. Den almindelige canonicalJSON-hash beregner dermed den korrekte hidtidige kontraktidentitet; der indføres ingen fast hash eller undtagelse. Den numeriske policy forbliver tekstfri, og wrapperen reexporterer kontrakten uændret.
+
+De normale modelbyggere har konkret vist, at fysisk ændrede UI-labels ændrer scoreteksten uden at ændre C/I-artifacts, mens en ændret numerisk tærskel fortsat ændrer kontrakt- og bundlehash. De eksisterende bundle-/T-overgange kan derfor bevares. Den større contract+bundle-udvidelse af compiler og historikovergange er fravalgt. Den fejlede uinstallerede 615-original og alle øvrige tidligere SQL-originaler bevares.
+
+Kandidaten inkluderer de dokumenterede numeriske/CODE-grænser, normale V4-kaldere, seneste admin-/backupkode og den samlede afledte release-/håndbogssynkronisering. Første normale generering, faktisk Linux/PostgreSQL, efterfølgende appvej og offentlig aktivering skal fortsat kvalificeres. Ingen installation eller ny vejrkørsel følger af den lokale forberedelse.
+
 ## 4.0.615 — privat Source-kandidat, endnu ikke installeret
 
 Det første normale generatorforløb er standset før bindingssynkroniseringens første skrivning på en faktisk gammel kontraktidentitet i den nye SQL. Kandidaten bevares som uinstalleret historik; den er ikke en bestået release. Årsagen og alle berørte kalderled er åbne i kendte issues.

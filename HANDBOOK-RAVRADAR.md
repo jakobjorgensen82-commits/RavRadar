@@ -29,13 +29,13 @@ Kodekvalifikation, faktisk installation, afsenderaccept og modtagelse er særski
 Den nye V4-kandidat vælger normale mål fra PR'ens faktiske merge-base til dens præcise head. Før tidligere godkendte områder kan genbruges, kvalificerer den den mergede bases faktiske producent, job, hele typede kvittering, træ og afsluttende upload samt senere negativ evidens. Den normale forbruger udføres på basens rigtige Git-checkout; kandidaten gendannes og kontrolleres bagefter. En verificeret direkte sammenfatning hindrer rekursiv genåbning af hele forfaderkæden. V3 beholder sin oprindelige kumulative betydning. Manglende eller udløbet basekvittering vælger kendte kumulative mål; konkret FAIL, modstrid eller ukendt kvalifikation stopper. PostgreSQL og C/I/T kvalificeres fortsat selvstændigt mod deres autentiske, uændrede input; ingen ny databaseprøve påstås.
 
 <!-- ravradar-derived-source-bindings-v1:begin -->
-## Afledt kildeidentitet — RavScore 4.0.598
+## Afledt kildeidentitet — RavScore 4.0.616
 
-Integreret model: `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=f8d8befa7ecda82f8194c0ca04142bd89f5c39e92ed37cda70afca8dded108d1` over 100 kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere.
+Integreret model: `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=11cfdde5f044bd8d069358f1a594fb6f60d15dccdcc36d329a9db0f8df5171c3` over 42 kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere.
 
-Inaktiv Candidate G: `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=239ac83f1df6050438243068bba5d942c4e88a921d0b70d611a12f0c798d3f5a` over 101 transitive filer.
+Inaktiv Candidate G: `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=901c934d5bb9d7f704191531b5c816c4cf501fa30c66f4d4b765832520d8f0ec` over 42 transitive filer.
 
-Fortsættelse: `continuationStateContractSha256=035008731e6fac3fca396110b3d0ff3486e4854baa99bd691e2a7ea541191579` (`03500873…`) over 12 normaliserede kildefiler med `utf8-bomless-lf-v2`.
+Fortsættelse: `continuationStateContractSha256=7eab3aa2f46fa9e97be780101401ec2ec79d1f00db7c2ae26869dc81d0e13d5c` (`7eab3aa2…`) over 12 normaliserede kildefiler med `utf8-bomless-lf-v2`.
 
 Autoriteten er version.json.releaseContract.modelBindings og de aktuelle genererede manifester. Dette er afledt kildeidentitet. Identiteten beviser ikke i sig selv PostgreSQL-kvalifikation, installation eller offentlig levering. Tidligere daterede oplysninger nedenfor er historik.
 <!-- ravradar-derived-source-bindings-v1:end -->
@@ -2273,7 +2273,7 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.615
+**Håndbogsversion:** 4.0.616
 
 **Lokal kildebinding — 29. oktober 2026, RavScore 4.0.591, ikke installeret:** Den integrerede model er offentlig som modeltype under den særskilt leverede 4.0.590. Den nye assistentefterfølger er lokalt udstedt og er endnu ikke samlet kvalificeret, installeret eller offentliggjort.
 
@@ -11775,3 +11775,5 @@ Tidligere originale SQL-filer kontrolleres med deres faktiske størrelse og hele
 Den eksisterende Linux-prøve registrerer faktisk runtime og de kilder, som dens normale materialisatorer har leveret. En sådan observation er ikke alene tilladelse til at genbruge en databaseprøve. Første rigtige kandidat skal udføre frisk PostgreSQL-kontrol; næste almindelige appudgivelse skal også kvalificeres, før overgangen aktiveres.
 
 Dette er en privat kildekandidat, ikke en aktiveret revision. Normal indgang, efterbehandling, originalbevarelse, national kapacitet og offentlig levering skal stadig bevises. Den fungerende 598-drift fortsætter imens. Scoreformel, kildeprioritet, centrale punkter og geometri ændres ikke af denne adskillelse.
+
+De fire historiske danske labels i hvert kanonisk parameterobjekt bevares som faste kontraktmetadata. De er ikke brugerfladens aktuelle tekster. Visningswrapperen reexporterer kontrakten uændret og har sin egen labelmap. Kontrakthashen beregnes stadig normalt fra det faktiske kanoniske objekt; en reel parameterændring giver fortsat en ny identitet.

@@ -1,5 +1,5 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.615";
-import { authorizedFetch } from "./auth-service.js?v=4.0.615";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.616";
+import { authorizedFetch } from "./auth-service.js?v=4.0.616";
 
 export async function loadVisitorReport(fromDay, toDay) {
   const { response, body: parsed, errorText } = await authorizedFetch(`${PUBLIC_CONFIG.supabaseUrl}/rest/v1/rpc/get_ravradar_visitor_report`, {

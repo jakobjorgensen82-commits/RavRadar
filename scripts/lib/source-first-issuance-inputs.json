@@ -705,6 +705,11 @@
       "path": "supabase/migrations/20261112133922_source_producer_original_bound_successor.sql",
       "bytes": 386217,
       "sha256": "0c1d028c7baae6b1db9bca375c8e8be193ec29ead377d5572aeb949302fa69fe"
+    },
+    {
+      "path": "supabase/migrations/20261112232450_source_producer_original_bound_successor.sql",
+      "bytes": 386217,
+      "sha256": "30a783b268443b62301e92e6e90b6a53130eb0817aa4c53a5f6ce6fec8f40c9d"
     }
   ],
   "sourcePgPaths": [

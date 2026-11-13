@@ -1,3 +1,13 @@
+## 13. november — bevar den kanoniske kontrakt, adskil den faktiske visning
+
+Det første normale 615-forløb afslørede en unødvendig kontraktidentitetsændring: udtrækket fjernede fire historiske danske labelDa-felter fra hvert kanonisk parameterobjekt. De fulde viste parameterobjekter var ellers identiske med genuine598; den numeriske runtime bruger ikke disse labels. De faktiske UI-tekster læses allerede fra den særskilte visningspolicy. Det er derfor ikke nødvendigt at udvide hele B/S-overgangen til nye kontraktidentiteter for denne visningsadskillelse.
+
+Den valgte løsning bevarer de fire historiske labels som uændrede metadata i den kanoniske kontrakt-ABI. Den numeriske visningspolicy kan fortsat være tekstfri. UI-wrapperen reexporterer den kanoniske kontrakt uændret og har sin egen separate labelmap til faktisk visning; den må ikke rekonstruere kontraktobjektet ud fra nye UI-tekster. Herved beregner den almindelige canonicalJSON-hash igen den korrekte hidtidige kontraktidentitet. Der indføres ingen fast hashværdi, normaliseringsundtagelse eller svækket sammenligning.
+
+En tekstændring skal ske i den faktiske UI-policy, ikke i de historiske ABI-labels. En reel ændring af numeriske parametre skal fortsat ændre den normale kontrakthash og kræver sin relevante overgang. De nye C/I/T-identiteter følger fortsat den faktisk ændrede numeriske kildegraf. Første og næste almindelige appbygning samt den faktiske backend- og B/S-kæde skal stadig kvalificeres før aktivering.
+
+Den bredere compiler-/JavaScript-ændring til contract+bundle-par er fravalgt for denne leverance. Dens fund bevares som analyse; kode og guards udvides ikke uden behov. Den fejlede uinstallerede 615-original bevares, og en efterfølgende normal udstedelse skal dokumentere den valgte løsning.
+
 ## 13. november — Source adskiller numerik fra programlevering
 
 Den lokale Source-efterfølger adskiller de faktiske beregnings-, state- og kildevalgsmoduler fra app-, kontrol- og Pages-koden. C/I-manifesterne følger den numeriske importgraf; den eksisterende CODE-fortegnelse og den præcise GitHub-kildekvalifikation ejer programleveringen særskilt. En efterfølgende appudgivelse må kun beholde den udstedte model og SQL, når de reelle modelinput stadig er identiske. Ændret numerik, schema eller kildepolitik får ikke genbrugsret gennem denne adskillelse.

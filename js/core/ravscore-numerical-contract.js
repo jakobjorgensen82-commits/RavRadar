@@ -237,6 +237,18 @@ export const RAVSCORE_HUNTABILITY_POLICY = deepFreeze({
   },
 });
 
+// Faste historiske kontraktfelter bevarer den kanoniske ABI. De er ikke
+// brugerfladens aktuelle tekster; beregningen bruger den label-frie policy.
+const CANONICAL_CONTRACT_LABELS_DA = Object.freeze({
+  good: 'God', fair: 'Middel', weak: 'Svag', poor: 'Dårlig',
+});
+const CANONICAL_CONTRACT_PRESENTATION = deepFreeze({
+  ...RAVSCORE_PRESENTATION_POLICY,
+  levels: RAVSCORE_PRESENTATION_POLICY.levels.map(({ minimum, level }) => ({
+    minimum, labelDa: CANONICAL_CONTRACT_LABELS_DA[level], level,
+  })),
+});
+
 export const RAVSCORE_MODEL_CONTRACT = deepFreeze({
   modelId: RAVSCORE_MODEL_ID,
   stateSchemaVersion: RAVSCORE_STATE_SCHEMA_VERSION,
@@ -253,7 +265,7 @@ export const RAVSCORE_MODEL_CONTRACT = deepFreeze({
   scoreMeaning: 'MODELLED_COASTAL_AMBER_AND_SEARCH_OPPORTUNITY_INDEX_NOT_FIND_PROBABILITY',
   calibrationStatus: 'OWNER_AND_RESEARCH_PRIOR_NOT_FIND_CALIBRATED',
   weights: RAVSCORE_WEIGHTS,
-  presentation: RAVSCORE_PRESENTATION_POLICY,
+  presentation: CANONICAL_CONTRACT_PRESENTATION,
   bestTime: RAVSCORE_BEST_TIME_POLICY,
   currentSupply: RAVSCORE_CURRENT_SUPPLY_POLICY,
   recovery: RAVSCORE_RECOVERY_POLICY,

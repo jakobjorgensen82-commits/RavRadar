@@ -1,5 +1,5 @@
 // Investigation guidance only. No measured depth, exposure or amber score.
-import { searchContext } from './search-context.js?v=4.0.615';
+import { searchContext } from './search-context.js?v=4.0.616';
 export const LAYER_ACCESS_VERSION = '0.1.0';
 export const LAYER_ACCESS_KINDS = Object.freeze([
   'unresolved', 'legacy', 'variant', 'repeated',

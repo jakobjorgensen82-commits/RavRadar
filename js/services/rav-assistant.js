@@ -1,16 +1,16 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.615";
-import { LOCAL_RAV_KNOWLEDGE_EXAMPLES, localRavKnowledgeAnswer, matchLocalRavKnowledge, localRavQuestionRequiresWholeAnswer } from "../../knowledge/rav-assistant-local-v2.js?v=4.0.615";
-import { buildLocalZoneScore, selectLocalBestForDay } from "../core/local-zone-score.js?v=4.0.615";
-import { addNationalRanking, compareNationalRankingRows } from "../core/zone-ranking.js?v=4.0.615";
-import { forecastDateKeyForDayOffset, forecastDateKeyInTimeZone, visibleForecastDays } from "../core/forecast-calendar.js?v=4.0.615";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.616";
+import { LOCAL_RAV_KNOWLEDGE_EXAMPLES, localRavKnowledgeAnswer, matchLocalRavKnowledge, localRavQuestionRequiresWholeAnswer } from "../../knowledge/rav-assistant-local-v2.js?v=4.0.616";
+import { buildLocalZoneScore, selectLocalBestForDay } from "../core/local-zone-score.js?v=4.0.616";
+import { addNationalRanking, compareNationalRankingRows } from "../core/zone-ranking.js?v=4.0.616";
+import { forecastDateKeyForDayOffset, forecastDateKeyInTimeZone, visibleForecastDays } from "../core/forecast-calendar.js?v=4.0.616";
 import {
   RAVSCORE_CALIBRATION_ELIGIBLE,
   ravScoreModelBinding,
-} from "../core/ravscore-model-contract.js?v=4.0.615";
-import { sameRavScoreModelBinding, ravScorePublicHorizonValidUntil } from "../core/ravscore-public-runtime-contract.js?v=4.0.615";
-import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.615";
-import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.615";
-import { formatDateTime, formatNumber, getLanguage, normaliseLanguage, t } from "../i18n.js?v=4.0.615";
+} from "../core/ravscore-model-contract.js?v=4.0.616";
+import { sameRavScoreModelBinding, ravScorePublicHorizonValidUntil } from "../core/ravscore-public-runtime-contract.js?v=4.0.616";
+import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.616";
+import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.616";
+import { formatDateTime, formatNumber, getLanguage, normaliseLanguage, t } from "../i18n.js?v=4.0.616";
 
 // Compatibility name for existing source-contract tests. The implementation
 // now selects the only adapter matching the artifact's exact active binding.

@@ -116,7 +116,7 @@ export function assertSourceFirstCommittedScope(readGit,base,head,identity){
   const other=changed.filter(file=>!modelPaths.has(file)&&!codePaths.has(file));
   if(other.length)assertSourceFirstPathScope(other,identity);
   else assertSourceFirstIdentityData(identity);
-  assert.equal(inputs.preservedSql.length,78);assert.equal(new Set(inputs.preservedSql.map(x=>x.path)).size,78);
+  assert.equal(inputs.preservedSql.length,79);assert.equal(new Set(inputs.preservedSql.map(x=>x.path)).size,79);
   for(const row of inputs.preservedSql){
     const body=readGit(['cat-file','blob',head+':'+row.path]);assert(Buffer.isBuffer(body));
     assert.equal(body.length,row.bytes);assert.equal(sha(body),row.sha256,'Historical SQL archive is immutable: '+row.path);

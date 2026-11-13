@@ -1,5 +1,5 @@
 import { exactForecastShareSelection, forecastShareCopy, forecastShareDate,
-  forecastShareScoreText, forecastShareUrl, FORECAST_SHARE_BASE_URL } from '../services/forecast-share-contract.js?v=4.0.615&ui=forecast-share-20261024&share=custom-domain-20261102';
+  forecastShareScoreText, forecastShareUrl, FORECAST_SHARE_BASE_URL } from '../services/forecast-share-contract.js?v=4.0.616&ui=forecast-share-20261024&share=custom-domain-20261102';
 
 function element(tag, text, className) {
   const node = document.createElement(tag);
