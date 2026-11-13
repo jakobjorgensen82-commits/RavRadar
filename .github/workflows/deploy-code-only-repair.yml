@@ -633,7 +633,6 @@ jobs:
           echo "action=$action" >> "$GITHUB_OUTPUT"
 
       - name: Select the issued SOURCE source phase without admission
-        if: ${{ inputs.publish_newest_saved_weather != true }}
         run: node scripts/select-source-producer-code-only-source.mjs
 
       - name: Select the issued native-original-continuity phase without admission

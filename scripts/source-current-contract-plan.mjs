@@ -59,6 +59,9 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
   sourceControls:[
     'node --test scripts/test-source-current-contracts.mjs',
   ],
+  currentInstalledCodeOnly:[
+    'node --test scripts/test-native-original-continuity-callers.mjs',
+  ],
   adminHistory:[
     'node --test scripts/test-admin-document-history-workflow.mjs',
   ],
@@ -154,6 +157,10 @@ const PATH_AREAS=freeze({
     'scripts/test-source-targeted-domain-integration.mjs','scripts/weather-source-gate.mjs',
     'scripts/validate-release-version.mjs','scripts/test-module-version-closure-4.0.87.mjs',
     'scripts/test-security-hardening-4.0.284.mjs',
+  ],
+  currentInstalledCodeOnly:[
+    'scripts/select-native-original-continuity-code-only-source.mjs',
+    'scripts/test-native-original-continuity-callers.mjs',
   ],
   compatibility:[
     '.github/workflows/deploy-code-only-repair.yml',
@@ -392,7 +399,7 @@ export function planSourceCurrentContractsFromGit(input){
       const areas=pathAreas.get(file)??(/^docs\/(?:rdks|ai|handbook)\/.+\.md$/.test(file)?['documentation']:null);
       if(!areas){unknown.push(file);continue;}
       for(const area of areas){if(!selected.has(area))selected.set(area,[]);selected.get(area).push(file);}
-      if(sourceControlPaths.has(file)||historicalPaths.has(file)||areas.includes('compatibility')||areas.includes('mailOwnerProbe')||file.startsWith('scripts/test-'))
+      if(sourceControlPaths.has(file)||historicalPaths.has(file)||areas.includes('compatibility')||areas.includes('mailOwnerProbe')||areas.includes('currentInstalledCodeOnly')||file.startsWith('scripts/test-'))
         out.controlQualificationRequired=true;
     }
     if(unknown.length){out.unclassifiedPaths=unknown.sort();return refuse('CURRENT_UNCLASSIFIED_PATH');}

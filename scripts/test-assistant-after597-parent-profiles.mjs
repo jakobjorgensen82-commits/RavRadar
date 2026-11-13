@@ -793,5 +793,36 @@ test('issued SOURCE CodeOnly selector and installed64 plan use genuine current b
     {...options,phase:'before'}, {...options,phase:'unknown'}, {...options,allowPending:true},
     {...options,environment:{...environment,RAVRADAR_SOURCE_PRODUCER_UPGRADE_OPT_IN:'true'}}])
     await assert.rejects(verifySourceProducerPlan(changed));
+  // Read the real workflow connection, not just the selector helper: saved
+  // mode must select Source first and suppress all three old-family fallbacks.
+  const raw=await fs.readFile(new URL('../.github/workflows/deploy-code-only-repair.yml',import.meta.url),'utf8');
+  const step=name=>{const marker='      - name: '+name+'\n';assert.equal(raw.split(marker).length,2);
+    const at=raw.indexOf(marker),end=raw.indexOf('\n      - name: ',at+marker.length);return raw.slice(at,end<0?undefined:end);};
+  const sourceStep=step('Select the issued SOURCE source phase without admission');
+  assert(!/^        if:/m.test(sourceStep),'The normal Source mode selector must not be skipped for saved weather');
+  assert(sourceStep.includes('run: node scripts/select-source-producer-code-only-source.mjs'));
+  for(const name of ['Select the issued native-original-continuity phase without admission',
+    'Select the issued account-statistics-assistant source phase without admission',
+    'Select the current installed code-only source without historical upgrade authority']){
+    const fallback=step(name);assert(raw.indexOf(fallback)>raw.indexOf(sourceStep));
+    assert(fallback.includes("if: env.RAVRADAR_SOURCE_PRODUCER_SOURCE_ACTIVE != 'true' &&"));
+  }
+  const savedEnvironment=Object.freeze({...environment,CONFIRMATION:'DEPLOY-SAVED-WEATHER-REPAIR',
+    PUBLISH_NEWEST_SAVED_WEATHER:'true',RAVRADAR_SOURCE_PRODUCER_SAVED_WEATHER:'true',
+    RAVRADAR_SOURCE_PRODUCER_CONFIRMATION:'DEPLOY-SAVED-WEATHER-REPAIR'});
+  const savedBefore=structuredClone(savedEnvironment);
+  assert.equal(await selectSourceProducerCodeOnlySource(savedEnvironment),true);
+  assert.deepEqual(savedEnvironment,savedBefore);
+  const savedOptions={...options,environment:savedEnvironment};
+  const savedPlan=await verifySourceProducerPlan(savedOptions);
+  assert.deepEqual(savedPlan.pendingVersions,[]);assert.equal(savedPlan.sqlWriteRequired,false);
+  for(const changed of [
+    {RAVRADAR_SOURCE_PRODUCER_CONFIRMATION:'DEPLOY-CODE-ONLY-REPAIR'},
+    {RAVRADAR_SOURCE_PRODUCER_WRITER_ACTIVE:'true'},
+    {RAVRADAR_SOURCE_PRODUCER_UPGRADE_OPT_IN:'true',RAVRADAR_SOURCE_PRODUCER_PHASE:'before'},
+    {PUBLISH_NEWEST_SAVED_WEATHER:'false'},
+  ])await assert.rejects(selectSourceProducerCodeOnlySource({...savedEnvironment,...changed}));
+  await assert.rejects(verifySourceProducerPlan({...savedOptions,
+    dryRunText:'DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n • '+required.at(-1).filename+'\nFinished supabase db push.'}));
   t.diagnostic('Real issued Source C/I/T and canonical64-source plan checked; no SQL, B/S, native or production operation executed.');
 });

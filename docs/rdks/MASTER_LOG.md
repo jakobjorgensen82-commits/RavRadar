@@ -1,4 +1,12 @@
+## 13. november 2026 — privat 4.0.598-backupautonomi, fortsat deaktiveret
+
+Backupvedligeholdelsen er forberedt som ét efterfølgende job i den normale adminmodtager: current-restore med stærk indholds-/Auth-kvittering, auditbundet rotation og ny optagelse efter syv døgn. Begge konkrete peerfund er dækket: kvittering erstatter aldrig positiv tidligere publicering; urefererede managed SQL-/partobjekter holdes og standser ny capture. Normale målrettede syntetiske prøver består; det er ikke hosted arkivgendannelse, aktivering eller Free-klarhed. Numerisk 598, originaler, migrationer, vejr og eksisterende manuelle workflow bevares. Se håndbog 89.347 og DEC-0255; faktiske variabel-/ressourcekvitteringer føres privat.
+
 ## 13. november — faktisk Pages-kodeversion og afvist CREATE
+
+Den installerede kildevælger skelner nu også mellem en almindelig kodeopdatering og det eksisterende valg om at udgive nyere gemt vejr. Hvert formål skal passe præcist med sine flag. Begge veje kræver fortsat den faktisk aktuelle model og installeret SQL, afsluttet genoptagelseskontrol og en inaktiv skriver. En standardkodeopdatering beholder den offentlige prognosetime; gemt vejr skal stadig være nyere, komme fra en godkendt forfader og bestå de normale kontroller af horisont, 210 zoner, 673 kystdele, originale data og offentlig levering. Ingen leverandørhentning eller opgraderingsret følger af kildevalget.
+
+Den almindelige current-installed-kildevælger blev indført 26. oktober med standardformålets saved=false-krav, selvom workflowet allerede havde det særskilte saved-weather-valg. Den præcise rettelse accepterer kun de allerede deklarerede formål/flag-par. Alle øvrige upgrade-/recovery-/writerafslag og faktiske I/C/T-/SQL-kontroller bevares. Den aktuelle kontrolfortegnelse har et særskilt currentInstalledCodeOnly-område med kun de to præcise kode-/prøvestier og deres eksisterende normale kalderprøve. Den brede kompatibilitetskategori kører også hele jordravsamlingen og passer derfor ikke til denne ændring; dens eksisterende ejere og prøver bevares byteidentisk. Ukendte stier, manglende kvalifikation og reelle PG-/C/I/T-ændringer følger fortsat den normale afvisning eller fulde kontrolvej. Der indføres ingen ny parser, hashgruppe eller modelbinding.
 
 Den særlige almindelige Pages-transport sendte en afledt lokal bestillingshash som serverens byggeversion; den officielle action sender den faktiske Git-commit. Den afgrænsede kandidat følger den officielle kontrakt og bevarer den fulde lokale hensigt, den beskyttede reservation, det præcise artifact og den faktisk modtagne CREATE-identitet. Et delt commit-opslag kan vise en ældre pakke: uden observeret ny PENDING eller en særskilt kvitteret serveridentitet giver den gamle terminalstatus ingen luknings- eller retryautoritet. En allerede synlig præcis ny prognose kan kun gå videre til den fulde offentlige verifier.
 
@@ -27,9 +35,7 @@ Alle fem mål til 18. november består. Stabil vejrhentning og reel dækning har
 
 Se beslutning DEC-0302 og håndbog 89.346. Tidligere 614-/615-oplysninger bevares som historik, ikke som en nyere kandidat eller installationsautoritet.
 
-## 13. november 2026 — privat 4.0.598-backupautonomi, fortsat deaktiveret
-
-Backupvedligeholdelsen er forberedt som ét efterfølgende job i den normale adminmodtager: current-restore med stærk indholds-/Auth-kvittering, auditbundet rotation og ny optagelse efter syv døgn. Begge konkrete peerfund er dækket: kvittering erstatter aldrig positiv tidligere publicering; urefererede managed SQL-/partobjekter holdes og standser ny capture. Normale målrettede syntetiske prøver består; det er ikke hosted arkivgendannelse, aktivering eller Free-klarhed. Numerisk 598, originaler, migrationer, vejr og eksisterende manuelle workflow bevares. Se håndbog 89.347 og DEC-0255; faktiske variabel-/ressourcekvitteringer føres privat.
+Den prospektive videreførelse på faktisk 598-main bevarer 616 C/I/T og alle 80 tidligere SQL-filer. Normal application-CODE-afledning opdaterer kun de ændrede programbytes. Den allerede eksisterende Source-selector forbindes også til den installerede saved-weather-mode før alle historiske fallbacks; upgrade, forkert formål, aktiv skriver og pending SQL afvises fortsat. 598-prøvens forudsætning faseafgrænses gennem den eksisterende ægte Source-output/CODE-kontrol, mens den normale 616-case prøver den faktiske workflowforbindelse og saved-selectorens afslag. Det er privat forberedelse; præcis Linux/PG-kvalifikation, første installation og næste offentlige levering er fortsat åbne.
 
 ## 12. november 2026 – 4.0.614: ny ægte SOURCE-kandidat og kortere kontrolvej
 
