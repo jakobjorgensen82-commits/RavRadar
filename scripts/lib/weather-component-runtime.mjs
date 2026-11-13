@@ -272,7 +272,7 @@ export function verifiedPartScalarPlanningHourly({
 
 // Diagnostic state is private to the actual failing operation. Retain the
 // original error identity, including an unproved transport-stop brand.
-const RETAINED_SCALAR_PLAN_MAX_MS = 180_000;
+const RETAINED_SCALAR_PLAN_MAX_MS = 300_000;
 const retainedScalarFailurePhases = new WeakMap();
 const RETAINED_SCALAR_PHASES = new Set([
   'CONTEXT', 'ARGUMENTS', 'LOAD', 'ENCODE', 'PUBLISH', 'TRANSPORT_SETTLEMENT',
