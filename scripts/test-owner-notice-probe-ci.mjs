@@ -260,11 +260,12 @@ test('actual owner OPTIONS guards report only fixed private categories and prese
     const {createOwnerNoticeEdgeHandler}=await import(pathToFileURL(path.join(tmp,'supabase/functions/'+slug+'/index.ts')).href);
     const cases=[
       {category:'BINDING_MISSING',window:'UNBOUND',binding:null},
+      {category:'OPTIONS_ACCEPTED',window:'IN',status:204,body:''},
       {category:'PATH_REJECTED',path:'/unrelated-private-path',pathClass:'OTHER'},
       {category:'QUERY_REJECTED',query:'?private=must-not-be-logged'},
       {category:'ORIGIN_REJECTED',origin:'https://private.invalid'},
       {category:'REQUESTED_METHOD_REJECTED',method:'DELETE'},
-      {category:'BODY_POINTER_REJECTED',body:'private-body-must-not-be-read'},
+      {category:'BODY_NOT_PROVED_EMPTY',body:'private-body-must-not-be-logged'},
       {category:'WINDOW_REJECTED',window:'BEFORE',binding:{...binding,reservedAt:now+1,expiresAt:now+1000}},
       {category:'WINDOW_REJECTED',window:'AFTER',binding:{...binding,reservedAt:now-1000,expiresAt:now}},
       {category:'OPTIONS_ACCEPTED',window:'IN',status:204},
@@ -273,8 +274,11 @@ test('actual owner OPTIONS guards report only fixed private categories and prese
     for(const c of cases){
       const request=new Request(project+(c.path??'/functions/v1/'+slug)+(c.query??''),{
         method:'OPTIONS',headers:{origin:c.origin??'https://ravradar.dk','access-control-request-method':c.method??'POST'},
-        ...(c.body?{body:c.body}:{})});
+        ...(Object.hasOwn(c,'body')?{body:c.body}:{})});
+      if(c.body==='')assert.notEqual(request.body,null,'A real empty string has a physical Request body stream');
       const before=rows.length,response=await createOwnerNoticeEdgeHandler(Object.hasOwn(c,'binding')?c.binding:binding)(request);
+      if(c.body==='')assert.deepEqual({status:response.status,category:rows.at(-1)?.[1]?.category},
+        {status:204,category:'OPTIONS_ACCEPTED'});
       assert.equal(response.status,c.status??404);assert.equal(await response.text(),'');
       assert.equal(response.headers.get('cache-control'),'no-store');
       assert.equal(response.headers.get('access-control-allow-origin'),c.status===204?'https://ravradar.dk':null);
@@ -282,10 +286,27 @@ test('actual owner OPTIONS guards report only fixed private categories and prese
       assert.equal(label,'OWNER_NOTICE_PROBE_GATEWAY_GUARD');
       assert.deepEqual(observation,{
         bindingPresent:c.binding!==null,pathClass:c.pathClass??'PUBLIC',queryPresent:!!c.query,
-        originMatches:!c.origin,requestedMethodMatches:!c.method,bodyPointerPresent:!!c.body,
+        originMatches:!c.origin,requestedMethodMatches:!c.method,bodyPointerPresent:Object.hasOwn(c,'body'),
         window:c.window??'UNOBSERVED',category:c.category});
       for(const privateValue of [project,ownerId,noticeId,user.email,c.query,c.origin,c.body].filter(Boolean))
         assert(!JSON.stringify(rows.at(-1)).includes(privateValue));
+    }
+    for(const mode of ['nonempty','stalled','reader-failure','zero-chunks','cancel-unsettled']){
+      let cancels=0;
+      const stream=new ReadableStream({
+        start(controller){
+          if(mode==='nonempty')controller.enqueue(new Uint8Array([1]));
+          if(mode==='reader-failure')controller.error(Error('private-reader-failure'));
+        },
+        pull(controller){if(mode==='zero-chunks')controller.enqueue(new Uint8Array());},
+        cancel(){cancels++;if(mode==='cancel-unsettled')return new Promise(()=>{});},
+      });
+      const request=new Request(project+'/functions/v1/'+slug,{method:'OPTIONS',duplex:'half',body:stream,
+        headers:{origin:'https://ravradar.dk','access-control-request-method':'POST'}});
+      const response=await createOwnerNoticeEdgeHandler(binding)(request);
+      assert.equal(response.status,404,mode);assert.equal(rows.at(-1)[1].category,'BODY_NOT_PROVED_EMPTY');
+      assert.equal(request.body.locked,false,mode);assert.equal(cancels,mode==='reader-failure'?0:1,mode);
+      assert(!JSON.stringify(rows.at(-1)).includes('private-reader-failure'));
     }
     console.info=()=>{throw Error('private logger unavailable');};
     const response=await createOwnerNoticeEdgeHandler(binding)(new Request(project+'/functions/v1/'+slug,{

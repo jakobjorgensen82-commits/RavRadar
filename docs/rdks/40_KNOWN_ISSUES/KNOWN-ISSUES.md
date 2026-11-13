@@ -1,3 +1,9 @@
+## 13. november — tom OPTIONS-body skal kontrolleres som indhold
+
+Den konkrete tidlige gatewayfejl er afgrænset til body-pointer-kontrollen: den normale OPTIONS-forprøve kan få en fysisk tom stream. Et krav om body === null afviste den før tidsvindue og mail. Kildekandidaten bevarer null-fastvejen og kræver i stedet kontrolleret tomhed for en tilstedeværende stream. Det tidligere generelle udsagn om ukendt gatewayårsag er erstattet på netop dette punkt.
+
+Ikke-tomt, stillestående, fejlende eller uafklaret input afvises med den faste private kategori BODY_NOT_PROVED_EMPTY. Alle øvrige adgangs- og mailgrænser bevares. Hosted forprøvens faktiske passage, afsendelse og modtagelse står åbne, indtil de er prøvet efter levering. Der startes ikke et nyt mailvindue eller en mail af kodeændringen. Se håndbog 89.343.
+
 ## 13. november — fast, privat diagnose ved afvist rollearkiv
 
 Den strenge rolleaudit kan standse på et autentificeret statement med en generisk afvisningskode, før store SQL-filer materialiseres. Den generiske kode viser ikke statementets form eller det konkrete afvisningspunkt. Den afgrænsede diagnose føjer kun faste kategorier og et ordinal til den samme private rapport; den gør ingen tidligere afvist syntaks gyldig.
