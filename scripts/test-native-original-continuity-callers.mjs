@@ -2283,3 +2283,71 @@ test('assistant later-H0 owned reprojection is released only after full verifica
   }
   completed=true;
 });
+
+
+test('current installed saved-weather caller keeps normal public and strictly newer saved guards',async()=>{
+  const environment=Object.freeze({...installedCodeOnlyCaller(),
+    CONFIRMATION:'DEPLOY-SAVED-WEATHER-REPAIR',PUBLISH_NEWEST_SAVED_WEATHER:'true',
+    RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_CONFIRMATION:'DEPLOY-SAVED-WEATHER-REPAIR',
+    RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SAVED_WEATHER:'true',
+    RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_CONFIRMATION:'DEPLOY-SAVED-WEATHER-REPAIR',
+    RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SAVED_WEATHER:'true',OPERATIONAL_ACTION:'integrated'});
+  const before=structuredClone(environment);
+  // These are the actual three normal workflow selectors, in their real order.
+  assert.equal(await selectNativeOriginalContinuityCodeOnlySource(environment),false);
+  const {selectAccountStatisticsAssistantCodeOnlySource}=await import('./select-account-statistics-assistant-code-only-source.mjs');
+  assert.equal(await selectAccountStatisticsAssistantCodeOnlySource(environment),false);
+  assert.deepEqual(await selectCurrentInstalledCodeOnlySource(environment),{
+    sourcePhase:ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase,
+    migrationVersion:ACTIVE_ASSISTANT_SUCCESSOR.requireBinding().version});
+  const {assertSavedPrivateRuntimeCheckpointReconcileRequest}=await import('./reconcile-private-runtime-checkpoint.mjs');
+  assert.doesNotThrow(()=>assertSavedPrivateRuntimeCheckpointReconcileRequest(environment));
+  assert.deepEqual(environment,before,'No confirmation, scope or flag is rewritten to pass a selector');
+  for(const [key,value]of [
+    ['CONFIRMATION','DEPLOY-CODE-ONLY-REPAIR'],['PUBLISH_NEWEST_SAVED_WEATHER','false'],
+    ['PUBLISH_NEWEST_SAVED_WEATHER',undefined],['RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_SAVED_WEATHER','false'],
+    ['RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_WRITER_ACTIVE','true'],
+    ['RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_RECOVERY_GATE_RESULT','failure'],
+    ['RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_RECOVERY_RUN_ID','999'],
+    ['RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_UPGRADE_OPT_IN','true'],
+    ['RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_UPGRADE_OPT_IN','true'],
+    ['UPGRADE_LAST_MILE_ENCLOSURE','true'],['RESTART_ARCHIVED_WEATHER','true'],
+    ['RAVRADAR_CURRENT_MEMORY_WARMUP_UPGRADE_OPT_IN','true'],
+  ])await assert.rejects(selectCurrentInstalledCodeOnlySource({...environment,[key]:value}),{code:'ERR_ASSERTION'},key);
+
+  const {runInNewContext}=await import('node:vm');
+  const workflow=await fs.readFile(path.join(ROOT,'.github/workflows/deploy-code-only-repair.yml'),'utf8');
+  const marker='      - name: Bind saved-weather continuation to exact newer runtime\n';
+  assert.equal(workflow.split(marker).length,2);const at=workflow.indexOf(marker);
+  const end=workflow.indexOf('\n      - ',at+marker.length),block=workflow.slice(at,end);
+  const match=block.match(/node --input-type=module <<'NODE'\n([\s\S]*?)\n\s*NODE\n/);assert(match);
+  const bind=(publicHour,savedHour)=>runInNewContext(match[1],{process:{env:{
+    PUBLIC_REFERENCE:publicHour,SAVED_REFERENCE:savedHour,RECOVER_PUBLIC_RUN_ID:''}}});
+  assert.doesNotThrow(()=>bind('2026-11-12T20:00:00.000Z','2026-11-13T00:00:00.000Z'));
+  for(const saved of ['2026-11-12T20:00:00.000Z','2026-11-12T19:00:00.000Z','invalid'])
+    assert.throws(()=>bind('2026-11-12T20:00:00.000Z',saved),/does not strictly advance/);
+  assert(block.includes('git merge-base --is-ancestor "$source_head" "$GITHUB_SHA"'));
+  assert(block.includes('check-production-target-freshness.mjs --target "$target_reference" --maximum-age-minutes 240'));
+  const defaultAt=workflow.indexOf('      - name: Build current private-runtime restore expectation\n');
+  const defaultBlock=workflow.slice(defaultAt,workflow.indexOf('\n      - ',defaultAt+1));
+  assert(defaultBlock.includes('--target-reference "$PUBLIC_REFERENCE"'),
+    'Normal code-only remains bound to the public hour and cannot silently publish a newer saved hour');
+
+  const {runtimeReuseSemantics,RUNTIME_REUSE_MODES,stageCodeOnlyPublicCoastalRegistry}
+    =await import('./prepare-code-only-public-runtime.mjs');
+  assert.equal(runtimeReuseSemantics(RUNTIME_REUSE_MODES.CODE_ONLY).publicRuntimeAdvanced,false);
+  assert.equal(runtimeReuseSemantics(RUNTIME_REUSE_MODES.SAVED_WEATHER).publicRuntimeAdvanced,true);
+  const os=await import('node:os');const directory=await fs.mkdtemp(path.join(os.tmpdir(),'rr-current-saved-source-'));
+  try{
+    const manifest={schemaVersion:4,complete:true,zoneCount:210,coastalPartCount:673,
+      datasetId:'synthetic-public',productionReferenceAt:'2026-11-12T20:00:00.000Z'};
+    const expectedIdentity={datasetId:'different-authenticated-source',productionReferenceAt:manifest.productionReferenceAt};
+    for(const changed of [{zoneCount:209},{coastalPartCount:672}]){
+      await fs.writeFile(path.join(directory,'manifest.json'),JSON.stringify({...manifest,...changed}));
+      await assert.rejects(stageCodeOnlyPublicCoastalRegistry({repositoryRoot:ROOT,snapshotRoot:directory,expectedIdentity}),/complete 210\/673/);
+    }
+    await fs.writeFile(path.join(directory,'manifest.json'),JSON.stringify(manifest));
+    await assert.rejects(stageCodeOnlyPublicCoastalRegistry({repositoryRoot:ROOT,snapshotRoot:directory,expectedIdentity}),
+      /does not match the authenticated private source identity/);
+  }finally{await fs.unlink(path.join(directory,'manifest.json'));await fs.rmdir(directory);}
+});

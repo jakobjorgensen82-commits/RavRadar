@@ -416,6 +416,26 @@ try{
   cases++;scenarios.push('normal bot handoff selects the ordinary sender and existing admin-history target');
   checkout(base);
 
+  // A later selector-only edit still changes a privileged controller. Its
+  // area must require review even when the test/catalogue itself is unchanged.
+  const currentSelector='scripts/select-native-original-continuity-code-only-source.mjs';
+  const selectorBytes=fixtureControlBytes(currentSelector);
+  const selectorBaseTree=rewrite(baselineTree,[[currentSelector,selectorBytes]]);
+  const selectorBase=commit(selectorBaseTree,[base],'synthetic established current-installed selector');
+  const selectorTree=rewrite(selectorBaseTree,[[currentSelector,Buffer.concat([
+    selectorBytes,Buffer.from('\n// Synthetic later selector-only controller change\n')])]]);
+  const selectorHead=commit(selectorTree,[selectorBase],'synthetic later selector-only change');
+  checkout(selectorHead);
+  const selectorPlan=plan({baselineCommit:selectorBase,candidateCommit:selectorHead,expectedHead:selectorHead});
+  assert.equal(selectorPlan.selection,'CURRENT_CONTRACTS',JSON.stringify(selectorPlan.reasonCodes));
+  assert.deepEqual(Object.keys(selectorPlan.areas),['core','currentInstalledCodeOnly']);
+  assert.deepEqual(selectorPlan.commands,[...CURRENT_CONTRACT_COMMANDS.core,...CURRENT_CONTRACT_COMMANDS.currentInstalledCodeOnly]);
+  assert.equal(selectorPlan.controlQualificationRequired,true);
+  for(const family of ['postgres','C','I','T'])
+    assert.equal(selectorPlan.inputDigests[family+'Before'],selectorPlan.inputDigests[family+'After']);
+  cases++;scenarios.push('later selector-only controller change requires independent control review');
+  checkout(base);
+
   const owner='scripts/source-current-contract-receipt.mjs';
   const candidateTree=rewrite(baselineTree,[[owner,Buffer.concat([
     git(root,['cat-file','blob',base+':'+owner]),Buffer.from('\n// synthetic current-control child delta\n')])],
