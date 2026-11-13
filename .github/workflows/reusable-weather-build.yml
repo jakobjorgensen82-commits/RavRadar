@@ -3788,23 +3788,8 @@ jobs:
         if: always()
         run: |
           rm -rf _support
-          mkdir -p _support/project _support/run-metadata
-          rsync -a ./ _support/project/ \
-            --exclude '.git/' \
-            --exclude '_site/' \
-            --exclude '_support/' \
-            --exclude '.cache/' \
-            --exclude 'node_modules/' \
-            --exclude 'data/live/' \
-            --exclude 'data/diagnostics/' \
-            --exclude 'data/admin/' \
-            --exclude '.geometry-v2-work/'
-          printf '%s\n' \
-            "repository=${{ github.repository }}" \
-            "run_number=${{ github.run_number }}" \
-            "sha=${{ github.sha }}" \
-            "ref=${{ github.ref }}" \
-            "generated_at=$(date -u +%FT%TZ)" > _support/run-metadata/github-run.txt
+          mkdir -p _support/run-metadata
+          node scripts/write-support-run-metadata.mjs
           (cd _support && zip -qr ../RavRadar-support-${{ github.run_number }}.zip .)
 
       - name: Upload RavRadar support package

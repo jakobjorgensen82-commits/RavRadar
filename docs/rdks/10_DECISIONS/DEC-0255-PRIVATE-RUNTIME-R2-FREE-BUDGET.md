@@ -1,5 +1,16 @@
 # DEC-0255 – Privat produktionscache til R2 med målt Free-budget
 
+## Tillæg 13. november 2026 — begrænset GitHub-support uden projektkopi
+
+Den automatiske supportpakke gemmer kun de eksisterende runoplysninger: repository, kørselsnummer, præcis Git-commit, ref og dannelsestidspunkt. En lille formatbeskrivelse henviser til den samme commit og markerer tydeligt, at pakken ikke er et projektsnapshot eller en gendannelsespakke. Begge metadatafiler må tilsammen højst fylde 8 KiB før ZIP-indpakning.
+
+Hele projektmappen kopieres ikke længere ved hver vejropdatering. Supportpakken indeholder ingen vejrdata, scorer, private originaler eller hydrateret administratorkonfiguration. Kildekoden findes fortsat på den præcise Git-commit og gennem projektets normale kilde- og releasedownload. Det eksisterende artifactnavn og 14 dages retention bevares; antallet af kørsler og GitHubs samlede lager er fortsat særskilte forhold.
+
+Pages-pakker, krypteret private-stage, R2/B/S, RAW-caches og de typede kilde-, PostgreSQL- og genoptagelsesbeviser ændres ikke. Oprydning af gamle store supportpakker er en separat koordineret handling. De gamle hydraterede konfigurationskopier er diagnostiske arbejdsmappekopier uden selvstændigt bevaringskrav; der påstås ingen byteparitet for hele gamle ZIP-filer.
+
+Rettelsen er lokalt forberedt på 4.0.598. Præcis kildekvalifikation, levering og målt ny artifactstørrelse kræver deres egne beviser. Den normale planner kræver uændrede model-/databaseinput og en uafhængig kontrolgennemgang af den snævre supportgrænse; denne optimering giver ingen ny database-, deploy- eller sletteret.
+
+
 ## Tillæg 13. november 2026 — selvstændig databasebackup uden ekstra tidsplan
 
 **Status: aktiv bevarings- og leveringskontrakt; kode forberedt privat, automatisk udførelse ikke aktiveret.** Dette tillæg vedrører den separate private databasebackup og ændrer ikke den fungerende private vejr-cache eller dens pointere. De daterede målinger og tidligere migrationsforløb nedenfor bevares som historik.

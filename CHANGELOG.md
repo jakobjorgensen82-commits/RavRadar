@@ -1,3 +1,23 @@
+## 13. november — behold tidsbegrænset statuskontrol efter positiv Pages-kvittering
+
+En ukendt statusstreng efter en accepteret, præcist bundet Pages-bestilling får nu den eksisterende GET-kontrol til at fortsætte inden for samme frist. Ingen ny bestilling, ekstra annullering, genforsøgsret eller succes udledes af den ukendte værdi. Ugyldig body og modstridende identiteter afvises fortsat. Den normale målprøve består lokalt med 47 cases.
+
+Den bagvedliggende hændelse var en faktisk workflowfejl efter positiv CREATE; den nye prognose blev senere observeret offentligt uden en ny genforsøgskørsel. Den oprindelige ukendte status er ikke bevaret. Fuld offentlig verifikation, sikker skriverafslutning og de tidligere synkroniseringstimeouts er særskilte beviser. Dette er en lokal kildekandidat. Version 4.0.598, model, SQL, vejr og scorer bevares. Se håndbog 89.340.
+
+Den beskyttede ejerafslutning kan særskilt afklare et rødt observationstrin, når den autentificerede kørsel er afsluttet, den præcise forseglede målpakke findes i beskyttet lager, hele den normale offentlige verifikation består, to stabile manifestaflæsninger matcher, og alle skrivere samt den centrale peger genlæses uændret. En intern observation er ikke selv en afslutningskvittering. Ukendt offentlig kode eller ændret peger fastholder afslaget. Der gives hverken ny POST, genforsøg eller en klassifikation uden POST. Den normale CLI og reservationskalder giver den eksisterende beskyttede lagerklient videre til denne kontrol. Faktisk hosted afslutning og ny normal vejrlevering er fortsat særskilte åbne beviser.
+
+En ny, kildekvalificeret hovedkode kan færdiggøre den samme almindelige generation, som allerede er beregnet og offentliggjort. Den oprindelige producentidentitet læses fra den beskyttede målpakke; den nye kørsel er kun en verificeret afslutter. Frisk database-/Edge-parathed, fuld offentlig kontrol og uændrede peger-/skriveraflæsninger kræves før den eksisterende atomiske versionskontrol kan færdiggøre aktiveringen. Denne afslutning forsøges før den gamle retirement- og genoptagelsesvej. Den sædvanlige efterkontrol skal derefter selv verificere og rydde den afsluttede fase. Næste planlagte kørsel skal hente frisk vejr på sin normale kanoniske UTC-time; den færdige gamle generation må ikke bruge næste vejrhentning. Der beregnes ikke nyt vejr eller scorer i selve afslutningen, og der sendes ingen ny Pages-bestilling. Originale fasearkiver bevares. Kildelevering, faktisk hosted afslutning og den næste friske vejrhentning kræver fortsat egne beviser.
+
+## 13. november — små supportmetadata erstatter gentagne projektkopier
+
+Den automatiske supportpakke gemmer kun de eksisterende runoplysninger: repository, kørselsnummer, præcis Git-commit, ref og dannelsestidspunkt. En lille formatbeskrivelse henviser til den samme commit og markerer tydeligt, at pakken ikke er et projektsnapshot eller en gendannelsespakke. Begge metadatafiler må tilsammen højst fylde 8 KiB før ZIP-indpakning.
+
+Hele projektmappen kopieres ikke længere ved hver vejropdatering. Supportpakken indeholder ingen vejrdata, scorer, private originaler eller hydrateret administratorkonfiguration. Kildekoden findes fortsat på den præcise Git-commit og gennem projektets normale kilde- og releasedownload. Det eksisterende artifactnavn og 14 dages retention bevares; antallet af kørsler og GitHubs samlede lager er fortsat særskilte forhold.
+
+Pages-pakker, krypteret private-stage, R2/B/S, RAW-caches og de typede kilde-, PostgreSQL- og genoptagelsesbeviser ændres ikke. Oprydning af gamle store supportpakker er en separat koordineret handling. De gamle hydraterede konfigurationskopier er diagnostiske arbejdsmappekopier uden selvstændigt bevaringskrav; der påstås ingen byteparitet for hele gamle ZIP-filer.
+
+Rettelsen er lokalt forberedt på 4.0.598. Præcis kildekvalifikation, levering og målt ny artifactstørrelse kræver deres egne beviser. Den normale planner kræver uændrede model-/databaseinput og en uafhængig kontrolgennemgang af den snævre supportgrænse; denne optimering giver ingen ny database-, deploy- eller sletteret.
+
 ## 13. november — tom OPTIONS-body skal kontrolleres som indhold
 
 Ejerprøvens CORS-forprøve afviste en fysisk, men tom Request-body, fordi den kun så på body-pointeren. Null-fastvejen bevares, mens en tilstedeværende stream nu skal nå et kontrolleret tomt EOF inden for en kort absolut frist. Indhold, læsefejl, stilstand og ukendt afslutning afvises fortsat. Der bruges ingen ubegrænset body.text-læsning, og den ejede læser annulleres højst én gang og frigives.

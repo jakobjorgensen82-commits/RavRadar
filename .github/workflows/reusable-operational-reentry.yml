@@ -118,6 +118,14 @@ jobs:
             --repository "$GITHUB_REPOSITORY" --output "$RAVRADAR_OPERATIONAL_WORK/pre-activation.json"
           echo "pre_activation=false" >> "$GITHUB_OUTPUT"
           if test "$(jq -r '.action' "$RAVRADAR_OPERATIONAL_WORK/pre-activation.json")" != NONE; then
+            completion_source_output="$RAVRADAR_OPERATIONAL_WORK/completion-source-qualification.txt"
+            : > "$completion_source_output"
+            GITHUB_TOKEN="$GH_TOKEN" GITHUB_OUTPUT="$completion_source_output" node scripts/weather-source-gate.mjs check
+            grep -Fx 'required=false' "$completion_source_output"
+            node scripts/protected-operational-reentry-evidence.mjs --complete-published-ordinary \
+              --repository "$GITHUB_REPOSITORY" --output "$RAVRADAR_OPERATIONAL_WORK/published-ordinary-completion.json"
+            node scripts/ravscore-operational-activation.mjs read \
+              --output "$RAVRADAR_OPERATIONAL_WORK/current.json"
             node scripts/protected-operational-reentry-evidence.mjs --retire-closed-ordinary-phase \
               --repository "$GITHUB_REPOSITORY" --base-url "$RAVRADAR_PUBLIC_BASE_URL" \
               --output "$RAVRADAR_OPERATIONAL_WORK/ordinary-phase-retirement.json"

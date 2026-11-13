@@ -9,7 +9,7 @@ import { PUBLIC_CONFIG } from '../config.js';
 import { createSupabaseAdminRequester } from './lib/supabase-admin-rest.mjs';
 import { fileURLToPath } from 'node:url';
 import { gzip, gunzip } from 'node:zlib';
-import { readAuthenticPagesAttemptClosure } from './github-pages-attempt-evidence.mjs';
+import { readAuthenticPagesAttemptClosure, authenticPagesPublicCompletionObservation } from './github-pages-attempt-evidence.mjs';
 
 import { assertExactPublicRavScoreModelBindingShape } from '../js/core/ravscore-public-profile-contract.js';
 import { sha256CanonicalJson, assertUploadedOperationalPagesTarget } from './ravscore-operational-pages-recovery.mjs';
@@ -911,29 +911,82 @@ export function hasProtectedPagesWriterClosure(value, pending) {
   const admission = pagesClosureAdmissions.get(value);
   return admission?.pendingSha256 === sha256CanonicalJson(pending) && value.closed === true;
 }
-async function readWriterOwners(owners, fetchImpl) {
+async function verifyPublishedPagesWriterTarget({storage,target,fetchImpl}) {
+  const targetPolicy=target.kind===PRE_ACTIVATION_POLICY.descriptorKind?phasePolicy():PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY;
+  const files=await decodeArchive(await storage.download(target.objectPath),target,targetPolicy);
+  const {verifyRavScoreOperationalPagesDeployment}=await import('./verify-ravscore-operational-pages-deployment.mjs');
+  const verification=await verifyRavScoreOperationalPagesDeployment({baseUrl:'https://ravradar.dk/',
+    sourceHead:target.sourceHead,expectedModel:'integrated',expectedManifest:phaseJson(files,'manifest.json'),
+    expectedBinding:phaseJson(files,'target-binding.json'),
+    expectedContractText:Buffer.from(files.find(f=>f.path==='target-contract.js').contentBase64,'base64').toString('utf8'),
+    expectedBundleText:Buffer.from(files.find(f=>f.path==='target-bundle.generated.js').contentBase64,'base64').toString('utf8'),
+    expectedPublicClosure:phaseJson(files,'target-public-closure.json'),fetchImpl,attempts:1,retryDelayMs:0,
+    observationNonce:'pages-owner-complete-'+crypto.randomBytes(12).toString('hex')});
+  if(verification.status!=='passed'||verification.sourceHead!==target.sourceHead
+    ||verification.publicManifestSha256!==target.publicManifestSha256
+    ||verification.implementationClosureSha256!==target.implementationClosureSha256
+    ||verification.datasetId!==target.datasetId||verification.productionReferenceAt!==target.productionReferenceAt
+    ||verification.zoneCount!==210||verification.coastalPartCount!==673||verification.privatePayloadRead!==false
+    ||sha256CanonicalJson(verification.modelBinding)!==target.modelBindingSha256)
+    throw new Error('Protected Pages completion target differs');
+  await observeUnchangedSource({baseUrl:'https://ravradar.dk',expectedSha256:target.publicManifestSha256,fetchImpl});
+  return verification;
+}
+async function readWriterOwners(owners, fetchImpl, completion=null) {
   const unique = owners.filter((owner, index) => owners.findIndex(other => same(owner, other)) === index);
-  const proofs = [];
-  for (const owner of unique) proofs.push(await readAuthenticPagesAttemptClosure({ owner, fetchImpl }));
-  return proofs;
+  const proofs = [], unresolved=[];
+  for (const owner of unique) {
+    try { proofs.push(await readAuthenticPagesAttemptClosure({owner,fetchImpl})); }
+    catch(error) {
+      const observation=authenticPagesPublicCompletionObservation(error,owner);
+      if(!observation||!completion?.storage||typeof completion.request!=='function')throw error;
+      unresolved.push({owner,error,observation,index:proofs.length});proofs.push(null);
+    }
+  }
+  if(!unresolved.length)return proofs;
+  const original=unresolved[0].error;
+  try {
+    if(unresolved.length!==1)throw original;
+    const {owner,observation,index}=unresolved[0],{row,storage,request}=completion;
+    const record=validatePagesWrite(row.payload.pagesWrite),target=record.target;
+    if(!same(record.owner,owner)||!same(ownerFromDescriptor(target),owner))throw original;
+    const verification=await verifyPublishedPagesWriterTarget({storage,target,fetchImpl});
+    // Re-read every authenticated owner after public reads; a new attempt,
+    // changed writer/job or changed durable pointer keeps the original refusal.
+    for(let at=0;at<unique.length;at++) {
+      let freshProof=null,freshObservation=null;
+      try { freshProof=await readAuthenticPagesAttemptClosure({owner:unique[at],fetchImpl}); }
+      catch(error) { freshObservation=authenticPagesPublicCompletionObservation(error,unique[at]); }
+      if(at===index ? !freshObservation||freshObservation.metadataSha256!==observation.metadataSha256
+        : !freshProof||!same(freshProof,proofs[at]))throw original;
+    }
+    const fresh=await readPointer(request,{allowMissing:false,policy:PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY});
+    if(fresh.version!==row.version||!same(fresh.payload,row.payload))throw original;
+    completion.publicVerification=verification;
+    proofs[index]=Object.freeze({owner:observation.owner,
+      roles:Object.freeze(observation.roles.map(role=>Object.freeze({...role,
+        state:role.state==='PUBLIC_TARGET_UNRESOLVED'?'PUBLIC_TARGET_REQUIRED':role.state}))),
+      state:'PUBLIC_TARGET_REQUIRED'});
+    return proofs;
+  } catch { throw original; }
 }
 function allWriterProofsClosed(proofs) {
   return proofs.length > 0 && proofs.every(proof => ['NO_POST', 'CLOSED_UNPUBLISHED'].includes(proof.state));
 }
-async function phaseWriterClosure(evidence, { request, repository, fetchImpl = fetch, allowPublicTarget = false } = {}) {
+async function phaseWriterClosure(evidence, { request, storage, repository, fetchImpl = fetch, allowPublicTarget = false } = {}) {
   const row = await readPointer(request, { allowMissing: false, policy: PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY });
   if (row.version !== evidence.centralVersion || !same(row.payload.preActivation, evidence.slot))
     throw new Error('Pre-activation writers changed during closure read');
   const owners = [ownerFromDescriptor(evidence.slot.originalTarget), evidence.slot.owner, ownerFromDescriptor(evidence.slot.target)];
   if (row.payload.pagesWrite) owners.push(row.payload.pagesWrite.owner);
   if (owners.some(owner => owner.repository !== repository)) throw new Error('Pre-activation writer repository differs');
-  const proofs = await readWriterOwners(owners, fetchImpl);
+  const proofs = await readWriterOwners(owners, fetchImpl, allowPublicTarget?{request,storage,row}:null);
   if (!allWriterProofsClosed(proofs) && !(allowPublicTarget && proofs.every(proof =>
     ['NO_POST', 'CLOSED_UNPUBLISHED', 'PUBLIC_TARGET_REQUIRED'].includes(proof.state))))
     throw new Error('Pre-activation Pages writes need exact public completion');
   return proofs;
 }
-export async function assertProtectedPagesWritesClosed({ request, repository, fetchImpl = fetch,
+export async function assertProtectedPagesWritesClosed({ request, storage, repository, fetchImpl = fetch,
   incomingDescriptor=null,allowCurrentOwner=false,env=process.env } = {}) {
   const row = await readPointer(request, { allowMissing: true, policy: PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY });
   const owners=row?.payload.pagesWrite?[validatePagesWrite(row.payload.pagesWrite).owner]
@@ -943,7 +996,7 @@ export async function assertProtectedPagesWritesClosed({ request, repository, fe
     &&owner.runId===Number(env.GITHUB_RUN_ID)&&owner.runAttempt===Number(env.GITHUB_RUN_ATTEMPT)));
   if(!row?.payload.pagesWrite&&otherOwners.length===0)throw new Error('Pages bootstrap predecessor is not proved closed');
   if(otherOwners.some(owner=>owner.repository!==repository))throw new Error('Registered Pages writer repository differs');
-  const proofs=await readWriterOwners(otherOwners,fetchImpl);
+  const proofs=await readWriterOwners(otherOwners,fetchImpl,{request,storage,row});
   if(proofs.some(proof=>!['NO_POST','CLOSED_UNPUBLISHED','PUBLIC_TARGET_REQUIRED'].includes(proof.state)))
     throw new Error('Registered Pages write is not proved closed');
   return {closed:true,pagesWriterPresent:Boolean(row?.payload.pagesWrite),privatePayloadIncluded:false};
@@ -1026,7 +1079,7 @@ export async function registerProtectedPagesWriter({ request, storage, repositor
   const row = await readPointer(request, { allowMissing: false, policy });
   if ((recovery&&(row.version !== writerClosure.centralVersion || !same(row.payload, admission.pointer)))
     || (row.payload.pagesWrite && same(row.payload.pagesWrite.owner, owner))) throw new Error('Recovery writer reservation changed or already consumed');
-  if(!recovery)await assertProtectedPagesWritesClosed({request,repository,fetchImpl,allowCurrentOwner:true,env});
+  if(!recovery)await assertProtectedPagesWritesClosed({request,storage,repository,fetchImpl,allowCurrentOwner:true,env});
   const target=recovery?admission.target:retainedDescriptors(row.payload).find(d=>d.deploymentId===owner.attemptId
     &&d.repository===repository&&d.sourceHead===owner.headSha&&d.runId===owner.runId&&d.runAttempt===owner.runAttempt);
   if(!target)throw new Error('Pages writer lacks its exact protected sealed target');
@@ -1264,8 +1317,8 @@ export async function clearProtectedPreActivationTarget({request,storage,reposit
     ||verification.productionReferenceAt!==d.productionReferenceAt||verification.zoneCount!==210||verification.coastalPartCount!==673
     ||verification.privatePayloadRead!==false||sha256CanonicalJson(verification.modelBinding)!==d.modelBindingSha256)
     throw new Error('Pre-activation full public verification differs');
+  await phaseWriterClosure({centralVersion:row.version,slot},{request,storage,repository,fetchImpl,allowPublicTarget:true});
   if(!same(current,await phaseCurrent(request)))throw new Error('Pre-activation central completion changed during verification');
-  await phaseWriterClosure({centralVersion:row.version,slot},{request,repository,fetchImpl,allowPublicTarget:true});
   const fresh=await readPointer(request,{allowMissing:false,policy});
   if(fresh.version!==row.version||!same(fresh.payload,row.payload))throw new Error('Pre-activation slot changed before clear');
   // The verified phase is finished. Restore the exact original four-field
@@ -1279,6 +1332,87 @@ export async function clearProtectedPreActivationTarget({request,storage,reposit
   await phaseCas(request,row,clearedPointer);
   // Preserve all immutable phase archives for lineage; no cleanup is proof.
   return {cleared:true,privatePayloadIncluded:false};
+}
+
+// Finish only an unchanged-model ordinary target which is already public.
+// The executor stays on today's qualified main. Its immutable producer head
+// comes from the protected target, never from an environment override.
+export async function completePublishedOrdinaryPreActivationTarget({request,atomicRequest,storage,repository,
+  sourceHead,fetchImpl=fetch,checkReadiness=repairLiveReadiness,env=process.env}={}) {
+  const policy=PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY;
+  if(env.GITHUB_REF!=='refs/heads/main'||env.GITHUB_SHA!==sourceHead||env.GITHUB_REPOSITORY!==repository
+    ||!HEAD_PATTERN.test(String(sourceHead??''))||!Number.isSafeInteger(Number(env.GITHUB_RUN_ID))
+    ||Number(env.GITHUB_RUN_ID)<1||!Number.isSafeInteger(Number(env.GITHUB_RUN_ATTEMPT))||Number(env.GITHUB_RUN_ATTEMPT)<1)
+    throw new Error('Published ordinary completion requires the actual main executor');
+  const latest=async()=>{
+    const ref=await repairGithubJson(repository+'/git/ref/heads/main',fetchImpl);
+    if(ref.object?.sha!==sourceHead)throw new Error('Published ordinary completion main changed');
+    const run=await repairGithubJson(repository+'/actions/runs/'+env.GITHUB_RUN_ID+'/attempts/'+env.GITHUB_RUN_ATTEMPT,fetchImpl);
+    if(run.id!==Number(env.GITHUB_RUN_ID)||run.run_attempt!==Number(env.GITHUB_RUN_ATTEMPT)
+      ||run.head_sha!==sourceHead||run.head_branch!=='main'||run.repository?.full_name!==repository
+      ||run.status!=='in_progress'||run.event!==env.GITHUB_EVENT_NAME
+      ||!TERMINAL_REPAIR_OWNERS.has(run.path)||!run.path.startsWith('.github/workflows/')
+      ||env.GITHUB_WORKFLOW_REF!==repository+'/'+run.path+'@refs/heads/main')
+      throw new Error('Published ordinary completion executor is not the actual active workflow');
+  };
+  await latest();
+  const row=await readPointer(request,{allowMissing:false,policy});
+  const evidence=await inspectProtectedPreActivationTarget({request,storage,repository});
+  if(evidence.action==='NONE')return {completed:false,reason:'NO_PHASE',privatePayloadIncluded:false};
+  if(row.version!==evidence.centralVersion||!same(row.payload.preActivation,evidence.slot))
+    throw new Error('Published ordinary completion phase changed');
+  const {slot,phase}=evidence,d=slot.target,current=await phaseCurrent(request);
+  if(phaseTargetCompleted(current,d))return {completed:false,reason:'ALREADY_ACTIVE',privatePayloadIncluded:false};
+  if(current.pending)return {completed:false,reason:'PENDING_TRANSITION',privatePayloadIncluded:false};
+  if(!phase.ordinaryMaintenance)return {completed:false,reason:'NOT_ORDINARY',privatePayloadIncluded:false};
+  if(!row.payload.pagesWrite)return {completed:false,reason:'NO_REGISTERED_WRITER',privatePayloadIncluded:false};
+  const writer=validatePagesWrite(row.payload.pagesWrite);
+  if(!same(slot.originalTarget,d)||!same(slot.owner,ownerFromDescriptor(d))||!same(writer.owner,slot.owner)
+    ||['repository','runId','runAttempt','sourceHead','deploymentId','publicManifestSha256',
+      'implementationClosureSha256','datasetId','productionReferenceAt','modelBindingSha256']
+      .some(key=>writer.target[key]!==d[key])||current.model!=='integrated'||current.bindingCurrent!==true
+    ||!same(current,phase.sourceCurrent)||sha256CanonicalJson(current.modelBinding)!==d.modelBindingSha256)
+    throw new Error('Published ordinary completion source or writer differs');
+  const owners=[ownerFromDescriptor(slot.originalTarget),slot.owner,ownerFromDescriptor(d),writer.owner];
+  let publicCompletionNeeded=false;
+  for(const owner of owners.filter((owner,index)=>owners.findIndex(other=>same(other,owner))===index)) {
+    try {if((await readAuthenticPagesAttemptClosure({owner,fetchImpl})).state==='PUBLIC_TARGET_REQUIRED')publicCompletionNeeded=true;}
+    catch(error){if(!authenticPagesPublicCompletionObservation(error,owner))throw error;publicCompletionNeeded=true;}
+  }
+  if(!publicCompletionNeeded)return {completed:false,reason:'NOT_PUBLIC_COMPLETION',privatePayloadIncluded:false};
+  const files=await phaseFiles(storage,d),ordinary=await protectedFilesBy({request,storage,repository,deploymentId:d.deploymentId});
+  if(!same(ordinary.descriptor,writer.target)||files.filter(f=>f.path!=='pre-activation.json')
+    .some(file=>!same(file,ordinary.files.find(other=>other.path===file.path))))
+    throw new Error('Published ordinary completion protected archives differ');
+  const context={request,storage,row};
+  // Real readiness remains a fresh DB/Edge read, on the protected producer's
+  // exact model and public implementation. No SQL or Edge deployment occurs.
+  const readiness=await checkReadiness({sourceHead:d.sourceHead,
+    publicImplementationClosureSha256:d.implementationClosureSha256,fetchImpl});
+  const proofs=await readWriterOwners(owners,fetchImpl,context);
+  if(allWriterProofsClosed(proofs))return {completed:false,reason:'NOT_PUBLIC_COMPLETION',privatePayloadIncluded:false};
+  if(!proofs.every(p=>['NO_POST','CLOSED_UNPUBLISHED','PUBLIC_TARGET_REQUIRED'].includes(p.state)))
+    throw new Error('Published ordinary completion writer is not terminal');
+  const verification=context.publicVerification??await verifyPublishedPagesWriterTarget({storage,target:d,fetchImpl});
+  if(!context.publicVerification&&!same(proofs,await readWriterOwners(owners,fetchImpl)))
+    throw new Error('Published ordinary completion writers changed');
+  const rows=phaseDocumentRows.get(current);
+  const activation=await import('./ravscore-operational-activation.mjs');
+  const transition=activation.operationalIntegratedMaintenanceTransition({currentRow:rows.operational,
+    currentProfileRow:rows.profile,expectedVersion:current.centralVersion,sourceHead:d.sourceHead,
+    publicManifest:phaseJson(files,'manifest.json'),publicAudit:phaseJson(files,'public-audit.json'),
+    publicVerification:verification,readiness,deploymentId:d.deploymentId});
+  if(!same(current,await phaseCurrent(request)))throw new Error('Published ordinary completion central state changed');
+  const fresh=await readPointer(request,{allowMissing:false,policy});
+  if(fresh.version!==row.version||!same(fresh.payload,row.payload))throw new Error('Published ordinary completion pointer changed');
+  await latest();
+  const written=await activation.writeCentralCas(atomicRequest,request,
+    {operationalRow:rows.operational,profileRow:rows.profile},transition,readiness.centralProfile);
+  if(!phaseTargetCompleted(await phaseCurrent(request),d))throw new Error('Published ordinary completion readback differs');
+  // Keep the phase and durable Pages owner. The existing normal completion job
+  // performs its own fresh public verification and compare-and-swap clear.
+  return {completed:true,centralVersion:written.operational.version,deploymentId:d.deploymentId,
+    sourceHead:d.sourceHead,privatePayloadIncluded:false};
 }
 
 export async function retireClosedUnpublishedOrdinaryPreActivationTarget({request,storage,repository,sourceHead,
@@ -1602,7 +1736,7 @@ function parseArgs(argv) {
   const result = { mode: null, requireRetained: false };
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
-    if (['--publish', '--restore', '--publish-pre-activation', '--inspect-pre-activation', '--classify-pre-activation', '--claim-pre-activation', '--restore-pre-activation', '--prepare-pre-activation-handoff', '--clear-pre-activation', '--assert-pre-activation-owner', '--begin-terminal-pre-activation', '--assert-pages-writes-closed', '--assert-pages-recovery-writer', '--retire-closed-ordinary-phase', '--reserve-pages-writer'].includes(argument)) {
+    if (['--publish', '--restore', '--publish-pre-activation', '--inspect-pre-activation', '--classify-pre-activation', '--claim-pre-activation', '--restore-pre-activation', '--prepare-pre-activation-handoff', '--clear-pre-activation', '--complete-published-ordinary', '--assert-pre-activation-owner', '--begin-terminal-pre-activation', '--assert-pages-writes-closed', '--assert-pages-recovery-writer', '--retire-closed-ordinary-phase', '--reserve-pages-writer'].includes(argument)) {
       if (result.mode) throw new Error('Use exactly one operational evidence mode');
       result.mode = argument.slice(2);
       continue;
@@ -1623,7 +1757,7 @@ function parseArgs(argv) {
     else if (['--attempt','--readiness','--plan','--base-url'].includes(argument)) result[argument.slice(2)] = value;
     else throw new Error(`Unknown operational evidence argument: ${argument}`);
   }
-  if (!result.mode || (!['inspect-pre-activation','classify-pre-activation','claim-pre-activation','clear-pre-activation','assert-pre-activation-owner','assert-pages-writes-closed','assert-pages-recovery-writer','retire-closed-ordinary-phase','reserve-pages-writer'].includes(result.mode) && !result.directory) || !result.output) {
+  if (!result.mode || (!['inspect-pre-activation','classify-pre-activation','claim-pre-activation','clear-pre-activation','complete-published-ordinary','assert-pre-activation-owner','assert-pages-writes-closed','assert-pages-recovery-writer','retire-closed-ordinary-phase','reserve-pages-writer'].includes(result.mode) && !result.directory) || !result.output) {
     throw new Error('Operational evidence mode, directory and output are required');
   }
   if (result.mode === 'publish' && (!result.repository || !result.deploymentId)) {
@@ -1687,6 +1821,9 @@ async function main() {
   else if(options.mode==='begin-terminal-pre-activation'){
     const atomicRequest=createSupabaseAdminRequester({endpoint:process.env.SUPABASE_URL.replace(/\/$/,'')+'/rest/v1/rpc/ravradar_ravscore_operational_cas',key:process.env.SUPABASE_SERVICE_ROLE_KEY});
     result=await beginTerminalPreparedPreActivation({...common,atomicRequest,executor:own(),attempt:await read('attempt'),directory:options.directory,baseUrl:options['base-url']});
+  }else if(options.mode==='complete-published-ordinary'){
+    const atomicRequest=createSupabaseAdminRequester({endpoint:process.env.SUPABASE_URL.replace(/\/$/,'')+'/rest/v1/rpc/ravradar_ravscore_operational_cas',key:process.env.SUPABASE_SERVICE_ROLE_KEY});
+    result=await completePublishedOrdinaryPreActivationTarget({...common,atomicRequest,sourceHead:process.env.GITHUB_SHA});
   }else if(options.mode==='claim-pre-activation')result=await claimProtectedPreActivationTarget({...common,
     sourceHead:process.env.GITHUB_SHA,owner:own(),attempt:await read('attempt')});
   else if(options.mode==='restore-pre-activation')result=await restoreProtectedPreActivationTarget({...common,directory:options.directory,owner:own()});
