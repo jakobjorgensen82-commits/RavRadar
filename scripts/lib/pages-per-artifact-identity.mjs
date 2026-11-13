@@ -40,7 +40,7 @@ const receipts = new WeakMap();
 const identityFailures = new WeakMap();
 const fail = code => { const error = new Error(code); identityFailures.set(error, code); throw error; };
 export const pagesIdentityFailureCode = error => identityFailures.get(error) ?? null;
-const requestReasons = new Set(['DELIVERY_ORDINAL', 'CONTEXT', 'PAGE_BASE', 'SEAL', 'ATTEMPT', 'ARTIFACT', 'OIDC_FORMAT', 'VERSION_COLLISION']);
+const requestReasons = new Set(['DELIVERY_ORDINAL', 'CONTEXT', 'PAGE_BASE', 'SEAL', 'ATTEMPT', 'ARTIFACT', 'OIDC_FORMAT']);
 const need = (ok, code) => { if (!ok) fail(code); };
 const matches = (value, pattern) => typeof value === 'string' && pattern.test(value);
 const positive = value => Number.isSafeInteger(value) && value > 0;
@@ -159,13 +159,13 @@ export function createPagesDeploymentRequest(options) {
     need(typeof oidc === 'string' && oidc.length <= 32768 && TOKEN_FORMAT.test(oidc), 'OIDC_FORMAT');
 
     // Closed local intent distinguishes run/attempt/artifact/ordinal.
-    // GitHub receives the existing unique per-artifact/attempt/ordinal build version.
+    // GitHub receives the actual source commit, as in actions/deploy-pages.
+    // The full client intent remains local; a shared SHA alias is not artifact identity.
     const identity = [DOMAIN, CREATE_URL, REF, runId, runAttempt, deliveryOrdinal, head, seal.attemptId,
       seal.artifactId, seal.artifactName, seal.artifactDigestSha256, seal.artifactSizeBytes,
       seal.targetPublicManifestSha256, seal.targetImplementationClosureSha256];
     const clientIntentSha256 = createHash('sha256').update(JSON.stringify(identity)).digest('hex');
-    const buildVersion = clientIntentSha256.slice(0, 40);
-    need(buildVersion !== head, 'VERSION_COLLISION');
+    const buildVersion = head;
     const request = Object.freeze({
       method: 'POST', url: CREATE_URL, buildVersion, clientIntentSha256,
       statusUrl: CREATE_URL + '/' + buildVersion, artifactId: seal.artifactId, deliveryOrdinal,
@@ -257,7 +257,7 @@ export function classifyPagesPriorStatus(response, request) {
   if (Object.hasOwn(data, 'pages_build_version') && data.pages_build_version !== request.buildVersion)
     return unknown('PRIOR_STATUS_ID_UNPROVED');
   // GitHub's status lookup also returns this exact empty singleton for an
-  // unused build alias. It proves neither absence nor ownership: admission
+  // empty build alias. It proves neither absence nor ownership: admission
   // still requires the unique intent, protected reservation and CREATE ACK.
   if (data.status === '' && Reflect.ownKeys(data).length === 1)
     return unknown('PRIOR_STATUS_EMPTY_UNQUALIFIED');

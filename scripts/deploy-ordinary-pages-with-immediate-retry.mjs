@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { readBoundedPublicManifest } from './lib/pages-generation-order.mjs';
-import { runSealedPagesDeployment, hasSealedPagesRetryEvidence, hasSealedPagesTerminalEvidence, hasSealedPagesNoPostEvidence } from './lib/run-sealed-pages-deployment.mjs';
+import { runSealedPagesDeployment, hasSealedPagesRetryEvidence, hasSealedPagesTerminalEvidence, hasSealedPagesCreateRejectionEvidence, hasSealedPagesNoPostEvidence } from './lib/run-sealed-pages-deployment.mjs';
 import { classifyPagesStatus } from './lib/pages-per-artifact-identity.mjs';
 import { publishSealedPagesWithRecovery } from './lib/publish-sealed-pages-with-recovery.mjs';
 import { getOrdinaryPagesRetryDeadline, MINIMUM_RECOVERY_WINDOW_MS, ORDINARY_PAGES_RETRY_POLL_MS,
@@ -136,8 +136,13 @@ async function main(env) {
   });
   if (result.kind !== 'VERIFY_PUBLIC') {
     const closed = new Set(['deployment_failed', 'deployment_cancelled', 'deployment_content_failed']);
-    const terminal = deliveries.length > 0 && deliveries.every(delivery =>
-      delivery.outcome === 'FAILED' && hasSealedPagesTerminalEvidence(delivery) && delivery.receipt && closed.has(delivery.code));
+    const terminal = deliveries.length > 0 && transportInvocations === transportOutcomes.length
+      && transportInvocations === deliveries.length
+      && transportOutcomes.every((delivery, index) => delivery === deliveries[index])
+      && deliveries.every(delivery =>
+        (delivery.outcome === 'FAILED' && hasSealedPagesTerminalEvidence(delivery)
+          && delivery.receipt && closed.has(delivery.code))
+        || (delivery.outcome === 'REJECTED' && hasSealedPagesCreateRejectionEvidence(delivery)));
     if (terminal && await readPublic() === predecessorSha256) {
       const ordinals = deliveries.map(delivery => delivery.request.deliveryOrdinal);
       assert(ordinals.every((ordinal, index) => ordinal === index + 1), 'PAGES_RETRY_DELIVERY_SEQUENCE');
