@@ -38,21 +38,41 @@ export function planCurrentWorkflowInventory(actualNames,legacyNames){
   return {scope:'HISTORICAL_INVENTORY_PLANNING_ONLY',legacyNames:[...legacyNames].sort(),
     owners:[...owners].map(([area,commands])=>({area,commands:[...commands]}))};
 }
-export function qualifyCurrentWorkflowInventory(){
-  assert.equal(arguments.length,0,'No caller-selected workflow inventory, catalog or target runner');
+function historicalWorkflowInventory(){
   const environment=childEnvironment();
-  const git=args=>execFileSync('git',['-C',ROOT,...args],{
+  const git=(args,raw=false)=>{const output=execFileSync('git',['-C',ROOT,...args],{
     env:{...environment,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_OPTIONAL_LOCKS:'0',
       GIT_TERMINAL_PROMPT:'0',GIT_CONFIG_NOSYSTEM:'1',
       GIT_CONFIG_GLOBAL:process.platform==='win32'?'NUL':'/dev/null',
       GIT_CONFIG_COUNT:'1',GIT_CONFIG_KEY_0:'protocol.allow',GIT_CONFIG_VALUE_0:'never'},
-    timeout:10_000,maxBuffer:256*1024,stdio:['ignore','pipe','pipe']}).toString('utf8');
+    timeout:10_000,maxBuffer:raw?2*1024*1024:256*1024,stdio:['ignore','pipe','pipe']});
+    return raw?output:output.toString('utf8');};
   assert.equal(git(['rev-parse',LEGACY_WORKFLOW_HEAD+':.github/workflows']).trim(),LEGACY_WORKFLOW_TREE);
   const rows=git(['ls-tree','-z',LEGACY_WORKFLOW_TREE]).split('\0').filter(Boolean);
+  const blobs=new Map();
   const legacy=rows.map(row=>{
-    const match=/^100644 blob [a-f0-9]{40}\t([A-Za-z0-9_.-]+\.ya?ml)$/.exec(row);
-    assert(match,'Genuine historical workflow must be a regular Git blob');return match[1];
+    const match=/^100644 blob ([a-f0-9]{40})\t([A-Za-z0-9_.-]+\.ya?ml)$/.exec(row);
+    assert(match,'Genuine historical workflow must be a regular Git blob');
+    blobs.set(match[2],match[1]);return match[2];
   });
+  return {environment,git,legacy,blobs};
+}
+// Data only. These genuine old files satisfy old text oracles; they never
+// qualify the current Source gates or provide any production authority.
+export function readHistoricalSourceCriticalWorkflowSources(){
+  assert.equal(arguments.length,0,'No caller-selected historical workflow, ref or reader');
+  const {git,blobs}=historicalWorkflowInventory(),result={};
+  for(const [role,name] of [['build','reusable-weather-build.yml'],['codeOnly','deploy-code-only-repair.yml']]){
+    assert(blobs.has(name),'Missing genuine historical workflow input');
+    const bytes=git(['cat-file','blob',blobs.get(name)],true);
+    assert(bytes.length>0&&bytes.length<=2*1024*1024);
+    result[role]=bytes.toString('utf8');
+  }
+  return Object.freeze(result);
+}
+export function qualifyCurrentWorkflowInventory(){
+  assert.equal(arguments.length,0,'No caller-selected workflow inventory, catalog or target runner');
+  const {environment,legacy}=historicalWorkflowInventory();
   const directory=path.join(ROOT,'.github/workflows');
   const actual=fs.readdirSync(directory).filter(name=>/\.ya?ml$/i.test(name)).sort();
   for(const name of actual){

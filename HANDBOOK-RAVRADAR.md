@@ -11777,3 +11777,7 @@ Den eksisterende Linux-prøve registrerer faktisk runtime og de kilder, som dens
 Dette er en privat kildekandidat, ikke en aktiveret revision. Normal indgang, efterbehandling, originalbevarelse, national kapacitet og offentlig levering skal stadig bevises. Den fungerende 598-drift fortsætter imens. Scoreformel, kildeprioritet, centrale punkter og geometri ændres ikke af denne adskillelse.
 
 De fire historiske danske labels i hvert kanonisk parameterobjekt bevares som faste kontraktmetadata. De er ikke brugerfladens aktuelle tekster. Visningswrapperen reexporterer kontrakten uændret og har sin egen labelmap. Kontrakthashen beregnes stadig normalt fra det faktiske kanoniske objekt; en reel parameterændring giver fortsat en ny identitet.
+
+Ved overgangen fra 598 bevares lagerformatets kontrakt uændret. Projektionens kildehash beskriver derimod de faktiske programbytes og ændres ved den gennemgåede kodeudtrækning. Den nye, præcise Source-overgang accepterer kun den autentiske 598-forgænger, den udstedte fortsættelsesbinding og den projektionsidentitet, som beregnes fra den aktuelle kvalificerede kode. Ingen caller må vælge en ny hash. Hele originalpakken og scorecheckpointet skal stadig bestå den normale metadataovergang med uændrede værdier og historik.
+
+Historiske tekst- og 591-metadata-prøver bruger deres egne autentiske kildefiler gennem hele prøven. Aktuelle Source-betingelser, privatlivskrav og normale brugerdata- og snapshotkaldere kontrolleres fortsat med den aktuelle kode. Historisk testinput giver ingen installations- eller skriveret.

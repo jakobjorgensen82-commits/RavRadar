@@ -1,5 +1,4 @@
-import { projectSourcePagesClosureHistoricalTestInput as historicalSourcePagesInput } from './lib/source-pages-closure-historical-test-input.mjs';
-import { inverseReviewedSource601HistoricalCodeInput } from './lib/completed-private-runtime-workflow-review.mjs';
+import { readHistoricalSourceCriticalWorkflowSources } from './lib/pages-closure-historical-test-input.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -59,12 +58,11 @@ for (const page of ['index.html', 'about.html', 'admin.html', 'jordrav.html']) {
 }
 
 const actualBuildWorkflow = read('.github/workflows/reusable-weather-build.yml').replaceAll('\r\n', '\n');
-const buildWorkflow = inverseReviewedSource601HistoricalCodeInput(
-  historicalSourcePagesInput(actualBuildWorkflow, '.github/workflows/reusable-weather-build.yml'),
-  '.github/workflows/reusable-weather-build.yml');
+const historicalWorkflowSources = readHistoricalSourceCriticalWorkflowSources();
+const buildWorkflow = historicalWorkflowSources.build;
 // The old whole oracle remains below. Independently inspect the REAL Source
 // predicates; an old text view must never hide a missing publication gate.
-if (actualBuildWorkflow !== buildWorkflow) {
+{ // Source current predicates are mandatory, independent of historical input.
   const step = name => {
     const marker = '      - name: ' + name + '\n';
     assert.equal(actualBuildWorkflow.split(marker).length, 2, 'Unique actual Source gate ' + name);
@@ -201,14 +199,14 @@ for (const marker of [
 ]) assert.ok(actualCodeOnlyWorkflow.includes(marker), `Archive restart source contract is missing ${marker}.`);
 for (const forbidden of ['DMI_API_KEY', 'COPERNICUSMARINE_SERVICE_USERNAME', 'COPERNICUSMARINE_SERVICE_PASSWORD'])
   assert.ok(!actualCodeOnlyWorkflow.includes(forbidden), `Provider-free restart must not contain ${forbidden}.`);
-const codeOnlyWorkflow = inverseArchivedWeatherRestartWorkflow(actualCodeOnlyWorkflow);
-const codeOnlyTrigger = codeOnlyWorkflow.slice(
-  codeOnlyWorkflow.indexOf('\non:'),
-  codeOnlyWorkflow.indexOf('\npermissions:'),
+const codeOnlyWorkflow = inverseArchivedWeatherRestartWorkflow(historicalWorkflowSources.codeOnly);
+const codeOnlyTrigger = actualCodeOnlyWorkflow.slice(
+  actualCodeOnlyWorkflow.indexOf('\non:'),
+  actualCodeOnlyWorkflow.indexOf('\npermissions:'),
 );
 assert.doesNotMatch(codeOnlyTrigger, /\n  (?:push|schedule|workflow_run|pull_request):/,
   'Code-only deploy må kun kunne startes manuelt.');
-for (const publicWorkflow of [buildWorkflow, codeOnlyWorkflow]) {
+for (const publicWorkflow of [actualBuildWorkflow, actualCodeOnlyWorkflow]) {
   for (const excluded of [
     "--exclude 'data/kystdata.json'",
     "--exclude 'data/zone-plan.json'",

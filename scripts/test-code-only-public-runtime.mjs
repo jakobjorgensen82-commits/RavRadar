@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
 import { inverseArchivedWeatherRestartWorkflow } from './lib/archived-weather-restart-workflow-review.mjs';
+import { readHistoricalSourceCriticalWorkflowSources } from './lib/pages-closure-historical-test-input.mjs';
 import './test-post-cutover-migration-routing.mjs';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -268,7 +269,10 @@ for (const marker of [
   'kan ikke ugyldiggøre',
 ]) assert.ok(decision.includes(marker), `DEC-0148 mangler ${marker}`);
 
-const workflow = inverseArchivedWeatherRestartWorkflow(fs.readFileSync('.github/workflows/deploy-code-only-repair.yml', 'utf8').replace(/\r\n/g, '\n'));
+const actualWorkflow = fs.readFileSync('.github/workflows/deploy-code-only-repair.yml', 'utf8').replace(/\r\n/g, '\n');
+// Historical text contracts keep their genuine input. Normal inline-program
+// cases below execute the current raw workflow, never this historical view.
+const workflow = inverseArchivedWeatherRestartWorkflow(readHistoricalSourceCriticalWorkflowSources().codeOnly);
 const prewriteOrder = [
   'Rebind saved private runtime to current source without changing measurements',
   'Require exact code-only reuse invariants',
@@ -947,7 +951,7 @@ assert.throws(() => resolveFailedIntegratedMaintenancePublicSource({
 console.log('Code-only public runtime reuse contract passed.');
 // Explicit owner-export delivery runs through the existing workflow/CLI seams.
 const { default: userdataTest } = await import('node:test');
-const userdataWorkflow = workflow.replaceAll('\r\n', '\n');
+const userdataWorkflow = actualWorkflow;
 const userdataSteps = [...userdataWorkflow.matchAll(/      - name: ([^\n]+)\n([\s\S]*?)(?=      - (?:name:|uses:)|$)/g)]
   .map(match => ({ name: match[1], text: match[2], id: /^        id: (.+)$/m.exec(match[2])?.[1] || match[1],
     code: /          node --input-type=module <<'(?:REPAIR_NODE|USERDATA_EDGE_NODE|USERDATA_FINAL_NODE|NODE)'\n([\s\S]*?)          (?:REPAIR_NODE|USERDATA_EDGE_NODE|USERDATA_FINAL_NODE|NODE)/.exec(match[2])?.[1]?.replace(/^          /gm, '') }));
@@ -1232,9 +1236,9 @@ userdataTest('current220 remains a separate NEW-hour route, never an issued213 s
   });
 });
 
-const publicSnapshotStart = workflow.indexOf('- name: Download exact currently public code-only source');
-const publicSnapshotEnd = workflow.indexOf('\n      - name:', publicSnapshotStart + 1);
-const publicSnapshot = workflow.slice(publicSnapshotStart, publicSnapshotEnd);
+const publicSnapshotStart = actualWorkflow.indexOf('- name: Download exact currently public code-only source');
+const publicSnapshotEnd = actualWorkflow.indexOf('\n      - name:', publicSnapshotStart + 1);
+const publicSnapshot = actualWorkflow.slice(publicSnapshotStart, publicSnapshotEnd);
 const publicAcquisition = fs.readFileSync('scripts/acquire-code-only-public-snapshot.mjs', 'utf8');
 assert.ok(publicSnapshot.includes('curl --version'), 'Snapshot must identify the actual curl runtime');
 assert.ok(publicSnapshot.includes('node scripts/acquire-code-only-public-snapshot.mjs acquire'),
@@ -1270,11 +1274,11 @@ assert.doesNotMatch(publicSnapshot, /continue-on-error|\|\|\s*true|--ignore-cont
   'Diagnostic must neither suppress a failure nor change the transferred representation');
 assert.doesNotMatch(publicAcquisition, /--ignore-content-length|--compressed/,
   'The acquisition helper must not change the transferred representation or ignore its byte bound');
-const acquisitionCurrentStart = workflow.indexOf('- name: Read exact centrally active operational RavScore');
-const acquisitionCurrentEnd = workflow.indexOf('\n      - name:', acquisitionCurrentStart + 1);
+const acquisitionCurrentStart = actualWorkflow.indexOf('- name: Read exact centrally active operational RavScore');
+const acquisitionCurrentEnd = actualWorkflow.indexOf('\n      - name:', acquisitionCurrentStart + 1);
 assert.ok(acquisitionCurrentStart >= 0 && acquisitionCurrentEnd > acquisitionCurrentStart,
   'The later normal central-state read must remain present');
-const acquisitionCurrent = workflow.slice(acquisitionCurrentStart, acquisitionCurrentEnd);
+const acquisitionCurrent = actualWorkflow.slice(acquisitionCurrentStart, acquisitionCurrentEnd);
 const currentRead = acquisitionCurrent.indexOf('node scripts/ravscore-operational-activation.mjs read');
 const currentAssertion = acquisitionCurrent.indexOf('node scripts/acquire-code-only-public-snapshot.mjs assert-current');
 const currentOutputs = acquisitionCurrent.indexOf('for field in model status');

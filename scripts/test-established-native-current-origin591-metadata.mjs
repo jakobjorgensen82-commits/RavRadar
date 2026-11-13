@@ -16,22 +16,28 @@ import {requireSourceProducerOutput}
   from './lib/source-producer-after597-runtime-family.mjs';
 // Historical assistant598 CODE contracts only. No original/data/session admission.
 // The current Source profile has its own normal native/PG/national gates.
-async function historicalAssistantRuntimeContracts() {
+async function withHistoricalAssistantMetadata(useMetadata) {
   if (SOURCE.binding === null && SOURCE.output === null && SOURCE.nextRelease === null) {
-    return privateRuntimeContractHashes(); // Existing ordinary/pre-issue behavior.
+    return useMetadata(await privateRuntimeContractHashes(), assertFrozen591LaterOriginMetadata);
   }
-  requireSourceProducerOutput(); // Actual current output FIRST, never a fixture/old proof.
+  requireSourceProducerOutput(); // Actual current output FIRST; historical CODE grants no admission.
   return withSource598CodeParent(async root598 => {
-    const code598 = await import(pathToFileURL(path.join(root598,
-      'scripts/private-production-runtime-workflow.mjs')).href);
+    const load = relative => import(pathToFileURL(path.join(root598, relative)).href);
+    const [code598, origin598] = await Promise.all([
+      load('scripts/private-production-runtime-workflow.mjs'),
+      load('scripts/lib/established-native-current-origin.mjs'),
+    ]);
     const contracts = await code598.privateRuntimeContractHashes({repositoryRoot: root598});
-    assert.equal(contracts.continuationStateContractSha256,AFTER597.requireBinding().T);
-    return contracts; // Plain hashes only; never an authenticated original or handle.
+    assert.equal(contracts.continuationStateContractSha256, AFTER597.requireBinding().T);
+    // The genuine598 function reads its own physical contracts on every call.
+    // Keep its fixed source alive for the WHOLE historical positive/negative case.
+    return useMetadata(contracts, origin598.assertFrozen591LaterOriginMetadata);
   });
 }
 const fail={code:'ESTABLISHED_CURRENT_ORIGIN_591_METADATA_ONLY'};
 const clone=structuredClone;
 let negatives=0;
+await withHistoricalAssistantMetadata(async (currentContracts, assertFrozen591LaterOriginMetadata) => {
 await withAuthenticated591PredecessorSource(async root=>{
   const load=relative=>import(pathToFileURL(path.join(root,relative)).href);
   const originalI=(await load('js/core/ravscore-model-contract.js')).ravScoreModelBinding();
@@ -39,7 +45,6 @@ await withAuthenticated591PredecessorSource(async root=>{
   const originalContracts=await(await load('scripts/private-production-runtime-workflow.mjs')).privateRuntimeContractHashes({repositoryRoot:root});
   const descriptor={contractHashes:originalContracts};
   const checkpoint={modelBinding:originalI,candidateGRollbackCompanion:{modelBinding:originalC}};
-  const currentContracts=await historicalAssistantRuntimeContracts();
   if ([SCALAR,AFTER597].includes(ACTIVE)) {
     await withSource594CodeParent(async root594 => {
       const original594 = await import(pathToFileURL(path.join(root594,'scripts/private-production-runtime-workflow.mjs')).href);
@@ -82,4 +87,5 @@ await withAuthenticated591PredecessorSource(async root=>{
   assert.deepEqual({descriptor,checkpoint},before);
   console.log(JSON.stringify({kind:'NORMAL_591_ORIGIN_METADATA_GRAENSE',status:'PASS',negativeCases:negatives,
     originalCodeBindings:'genuine591',productionBS:false,productionProof:false,sqlExecuted:false}));
+});
 });

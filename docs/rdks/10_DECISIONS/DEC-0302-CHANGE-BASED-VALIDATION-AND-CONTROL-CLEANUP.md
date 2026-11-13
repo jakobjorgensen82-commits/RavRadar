@@ -1,3 +1,11 @@
+## 13. november — kvalificer faktisk projektionskode uden at ændre lagerformat
+
+Den eksisterende publicProjectionContractSha256 måler normaliserede implementeringsbytes fra sin faste kildeliste. Den er ikke lagerformatets kontrakt. Udtrækningen af numeriske moduler ændrer derfor legitimt denne programidentitet, selv når det gemte format og den offentlige projektion bevares. Kravet om uændret fullRuntimeContractSha256 består; den nye Source598-overgang accepterer kun hele den autentiske gamle kontrakttriple, den faktisk udstedte T og den nye projektionshash beregnet fra den kvalificerede aktuelle kode. Ingen caller-leveret ny reference eller fast gammel hash tillades. Den efterfølgende normale overgang bevarer sin hele B/S-admission og metadata-invers.
+
+Den historiske 591-prøve skal holde både kontraktberegning og metadatafunktion i samme genuine598-materialisering under hele den positive og negative prøve. Historiske workflowtekst-orakler bruger den faste genuine56d-kilde; aktuelle Source-predikater, privacy, triggere og normale brugerdata-/snapshotkaldere læser fortsat rå aktuel kode. Historiske bytes giver ingen capability, installations- eller skriveret. Nye per-head inverser eller helfil-hashgrupper tilføjes ikke.
+
+Programfortegnelsen opdateres med den eksisterende normale application-CODE-afledning på samme 616-model. C/I/T og alle 80 tidligere/aktuelle SQL-filer er uændrede. Lokal projektionparitet og historiske negativer erstatter ikke den faktiske normale Source-native/Linux/PostgreSQL- og original-B/S-kvalifikation. Aktivering er fortsat åben.
+
 ## 13. november — bevar den kanoniske kontrakt, adskil den faktiske visning
 
 Det første normale 615-forløb afslørede en unødvendig kontraktidentitetsændring: udtrækket fjernede fire historiske danske labelDa-felter fra hvert kanonisk parameterobjekt. De fulde viste parameterobjekter var ellers identiske med genuine598; den numeriske runtime bruger ikke disse labels. De faktiske UI-tekster læses allerede fra den særskilte visningspolicy. Det er derfor ikke nødvendigt at udvide hele B/S-overgangen til nye kontraktidentiteter for denne visningsadskillelse.

@@ -1,3 +1,9 @@
+## 13. november — Source598-projektion og historiske prøveinput
+
+Den private 616-overgang havde to sammenhængsfejl: den krævede samme projektions-kildehash efter den faktiske kodeudtrækning, og historiske prøver blandede genuine598-kontrakter med den nye Source-funktion eller aktuelle workflowtekster. Lagerformatets kontrakt og de numeriske parametre var ikke årsagen.
+
+Den lokale rettelse adskiller projektionskodens faktisk beregnede identitet fra lagerformatets uændrede kontrakt og bevarer hele autentiske B/S samt metadata-inversen. Historiske prøver får sammenhængende genuine kilder; aktuelle Source-, privacy-, trigger- og normale brugerdata-/snapshotkontroller læser fortsat aktuel kode. Den normale application-CODE-afledning på 616 bevarer C/I/T og alle 80 SQL-filer. Der indføres ingen ny per-head hashgruppe eller caller-valgt reference. Normal samlet kildekvalifikation, frisk Linux/PostgreSQL, den næste appvej og aktivering er fortsat åbne.
+
 ## 13. november — 615-årsag afklaret, ABI-bevarende efterfølger forberedes
 
 Den nye kontraktidentitet kom alene af at fjerne fire historiske visningslabels fra hvert kanonisk parameterobjekt. Uafhængig læsning mod genuine598 bekræfter, at alle andre parametre er identiske, og at numeriske forbrugere ikke bruger labels. Den valgte efterfølger bevarer derfor canonical-ABI’en og flytter de faktiske tekster til UI-policyen. Kontroller og bundle-only-inverser beholdes; den større compiler-/JavaScript-udvidelse er fravalgt.

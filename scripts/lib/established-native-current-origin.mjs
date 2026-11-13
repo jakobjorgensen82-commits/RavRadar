@@ -46,7 +46,7 @@ import {SOURCE597_CODE_SOURCE_PROVENANCE,withSource597OriginalDataSource,
 import {assertAuthenticatedSourceStaged597Snapshot,assertAuthenticatedSourceStaged597SnapshotFresh,
   assertAuthenticatedSourceStaged598Snapshot,assertAuthenticatedSourceStaged598SnapshotFresh}
   from './authenticated-frozen586-predecessor.mjs';
-import {requireSourceProducerBinding,requireSourceProducerOutput}
+import {SOURCE_PRODUCER_BEFORE,requireSourceProducerBinding,requireSourceProducerOutput}
   from './source-producer-after597-runtime-family.mjs';
 
 export const ESTABLISHED_NATIVE_CURRENT_SEMANTIC_CONTRACT = 'established-native-current-continuation-v1';
@@ -1469,6 +1469,27 @@ export async function assertEstablishedNativeCurrent597MetadataCheckpoint(option
 // SOURCE597_SAME_H0_METADATA_END
 
 // SOURCE598_SAME_H0_METADATA_BEGIN — additive; old numeric/origin functions are retained.
+// Source598 has one genuine original contract triple. The public-projection
+// digest inventories implementation bytes, not the persisted storage ABI.
+// Its new value is read from the actual qualified Source code, never supplied
+// by a caller. This assertion returns no origin, snapshot or write capability.
+export async function assertSource598MetadataRuntimeContracts(previous) {
+  requireSourceProducerOutput(); const issued = requireSourceProducerBinding();
+  need(arguments.length === 1, 'ARGUMENTS');
+  const original = {
+    continuationStateContractSha256: SOURCE_PRODUCER_BEFORE.T,
+    fullRuntimeContractSha256: SOURCE598_CODE_SOURCE_PROVENANCE.fullRuntimeContractSha256,
+    publicProjectionContractSha256: SOURCE598_CODE_SOURCE_PROVENANCE.publicProjectionContractSha256,
+  };
+  need(same(previous, original), 'METADATA_CONTRACT_CHANGED');
+  const current = await privateRuntimeContractHashes();
+  need(current.continuationStateContractSha256 === issued.T
+    && SHA.test(current.publicProjectionContractSha256)
+    && same({ ...original, continuationStateContractSha256: issued.T,
+      publicProjectionContractSha256: current.publicProjectionContractSha256 }, current),
+  'METADATA_CONTRACT_CHANGED');
+  return current;
+}
 // Ren hel inverse. Dette er ingen kilde-, DATA-, snapshot- eller SOURCE-admission.
 // Den normale privilegerede kalder kræver først udstedt SOURCE og ægte originale B/S.
 export function assertSource598MetadataCheckpointInverse(options){
@@ -1588,7 +1609,8 @@ export async function buildEstablishedNativeCurrent598MetadataAttestation(handle
     'scripts/lib/model-source-imports.mjs', 'scripts/lib/static-module-closure.mjs']);
   for (const builder of builders) await exec(process.execPath, [path.join(ROOT, builder), '--check'],
     { cwd: ROOT, env: sourceEnv(), encoding: 'utf8', maxBuffer: 2 * MB, timeout: 60000 });
-  const currentSource = await sourceIdentity(), contracts = await privateRuntimeContractHashes();
+  const currentSource = await sourceIdentity();
+  await assertSource598MetadataRuntimeContracts(old.descriptor.contractHashes);
   need(currentSource.integrated===issued.I&&currentSource.candidate===issued.C
     &&currentSource.continuation===issued.T,'SOURCE598_ISSUED_FAMILY');
   const oldI = old.checkpoint.modelBinding, oldC = old.checkpoint.candidateGRollbackCompanion.modelBinding;
@@ -1596,8 +1618,7 @@ export async function buildEstablishedNativeCurrent598MetadataAttestation(handle
     && currentSource.candidate !== oldC.modelBundleSha256
     && currentSource.continuation !== old.checkpoint.continuationStateContractSha256, 'METADATA_UNISSUED');
   need(same({ ...oldI, modelBundleSha256: currentSource.integrated }, ravScoreModelBinding())
-    && same({ ...oldC, modelBundleSha256: currentSource.candidate }, candidateBinding())
-    && same({ ...old.descriptor.contractHashes, continuationStateContractSha256: currentSource.continuation }, contracts),
+    && same({ ...oldC, modelBundleSha256: currentSource.candidate }, candidateBinding()),
   'METADATA_CONTRACT_CHANGED');
   const {centralContract,conditions} = options;
   need(same(centralContract,old.centralContract), 'METADATA_REGISTRY_CHANGED');

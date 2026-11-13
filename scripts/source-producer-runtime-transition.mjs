@@ -6,7 +6,8 @@ import {createReadStream} from 'node:fs';
 import path from 'node:path';
 import {isDeepStrictEqual} from 'node:util';
 import {writeBoundedJsonAtomic} from './lib/bounded-json-writer.mjs';
-import {buildEstablishedNativeCurrent598MetadataAttestation,assertSource598MetadataCheckpointInverse}
+import {buildEstablishedNativeCurrent598MetadataAttestation,assertSource598MetadataCheckpointInverse,
+  assertSource598MetadataRuntimeContracts}
   from './lib/established-native-current-origin.mjs';
 import {readAuthenticatedSourceStaged598Predecessor,assertAuthenticatedSourceStaged598Snapshot,assertAuthenticatedSourceStaged598SnapshotFresh}
   from './lib/authenticated-frozen586-predecessor.mjs';
@@ -166,9 +167,10 @@ export async function prepareSourceProducerRuntimeTransition(options){
     const oldContracts=await oldWorkflow.privateRuntimeContractHashes({repositoryRoot:frozenRoot});
     assert.equal(oldContracts.continuationStateContractSha256,OLD.T);
     same(identity.contractHashes,oldContracts,'Actual whole predecessor runtime contracts');
-    // Current c340 Pages/PLAIN/public projection and storage ABI must be retained.
-    // This metadata-only arm permits ONLY the newly derived T to differ.
-    same({...oldContracts,continuationStateContractSha256:contracts.continuationStateContractSha256},contracts,
+    // Genuine598 storage ABI remains exact. Only the issued T and the actual
+    // Source public-projection implementation digest may differ; the following
+    // normal migration still proves the whole original B/S metadata inverse.
+    same(await assertSource598MetadataRuntimeContracts(oldContracts),contracts,
       'SOURCE598_EXACT_RUNTIME_CONTRACTS');
 
     const bundlePath=path.dirname(bundleManifestPath),privateRoot=path.dirname(bundlePath);

@@ -1113,8 +1113,8 @@
     },
     {
       "path": "scripts/lib/established-native-current-origin.mjs",
-      "bytes": 128014,
-      "sha256": "549aa4668a8eed8e9571d065d08d5eee86e81ca6e37ae4088681b80f2760e4e2"
+      "bytes": 129183,
+      "sha256": "83db18eaba3f3b5d3b997b7926cde09d29c69fc9b96c3b7c8cc53f504dad894d"
     },
     {
       "path": "scripts/lib/feggesund-wave-proxy.mjs",
@@ -1863,8 +1863,8 @@
     },
     {
       "path": "scripts/source-producer-runtime-transition.mjs",
-      "bytes": 30835,
-      "sha256": "2ac9ca96a338d8eef2dfdd1ebc089ae9a9d0776f00bb9d9cf4e6264ba82d85e6"
+      "bytes": 30924,
+      "sha256": "3725057cd6c3f4f8485b490261fe59c957d742171f8c6337d0c4f072a82d2c6d"
     },
     {
       "path": "scripts/source-progress-union-consumer.mjs",
