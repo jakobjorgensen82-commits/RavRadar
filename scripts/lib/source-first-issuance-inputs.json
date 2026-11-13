@@ -235,6 +235,7 @@
     "scripts/stage-source-producer-originals.mjs",
     "scripts/supabase-backup-lifecycle.mjs",
     "scripts/sync-ravscore-model-binding.mjs",
+    "scripts/sync-handbook-installation-copy.mjs",
     "scripts/test-account-statistics-assistant-callers.mjs",
     "scripts/test-admin-document-history-workflow.mjs",
     "scripts/test-archive-supabase-database-backup.mjs",
