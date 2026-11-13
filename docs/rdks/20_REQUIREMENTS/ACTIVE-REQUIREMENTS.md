@@ -18,6 +18,16 @@ Klasserne præciserer kun det eksisterende afslag. Den faktiske arkivform skal s
 
 Diagnosen er ikke en formatrettelse, et bevis for manglende roller eller en bestået gendannelse. Den normale archive-vej skal fortsat kontrollere det lille autentificerede ROLES-input før store SQL-filer. Faktisk fuld arkiv-/Auth-gendannelse og Free-klarhed kræver særskilte beviser. Se håndbog 89.345.
 
+### Opfølgning: rettigheder til databaseindstillinger
+
+Den autentificerede tidlige rollekontrol har nu bekræftet, at arkivet indeholder ON PARAMETER før store SQL-filer. PostgreSQLs normale rollebackup kan også beskrive rettigheder til databaseindstillinger. Den hidtidige kontrol behandlede denne særskilte form som et medlemskab mellem roller og standsede.
+
+Den afgrænsede kildekandidat læser nu GRANT og REVOKE ON PARAMETER efter den officielle syntaks: SET og ALTER SYSTEM kan stå i en kommasepareret liste, eller alle rettigheder kan angives med ALL og valgfrit PRIVILEGES. Parameterlister, TO/FROM, valgfri grant option, rettighedsgiver og REVOKE-afhængigheder læses i deres faste rækkefølge. Hele udsagnet skal være læst. Kun modtagere og en eventuel rettighedsgiver registreres som roller; navnene på indstillinger er ikke rollenavne. Andre objekttyper og ukendte rester afvises fortsat.
+
+Den tidligere diagnose ændrede ikke accepteret syntaks. Den nye parameterrettelse erstatter derfor alene udsagnene her om uafklaret objektform og uændret grammatik. Den gamle medlemskabskontrol, tokenisering, krypterings- og målkontrol samt de originale SQL- og adgangsregler bevares. Der gættes ikke på roller, og ingen SQL eller grants springes over. Den normale afgrænsede parserprøve består; præcis kildekvalifikation, faktisk fuld arkiv-/Auth-gendannelse, autonom rotation og Free-klarhed kræver fortsat deres egne beviser.
+
+Syntaksgrundlag: [PostgreSQL GRANT](https://www.postgresql.org/docs/17/sql-grant.html) og [REVOKE](https://www.postgresql.org/docs/17/sql-revoke.html). Version 4.0.598, numerisk model, migrationer, score og vejr ændres ikke. Se håndbog 89.345.
+
 ## 13. november — privat diagnose af ejerprøvens forbindelseskontrol
 
 Den eksisterende ejerprøve får en afgrænset privat diagnose af OPTIONS-kontrollen. Loggen må kun indeholde faste kategorier og booleans for reservationens tilstedeværelse, kendt stiklasse, query, origin, ønsket metode, body-pointer og vinduesklasse. Rå adresser, query/body, Auth, ejer-/modtagerdata, identiteter og nøgler må ikke logges eller sættes i offentlige svar.

@@ -35,6 +35,8 @@ Den konkrete OPTIONS-fejl fra en fysisk tom body har nu en afgrænset kildekandi
 
 Den samme afgrænsede normalisering er nu forberedt ved offentlig POST. Den normale lokale null-/tom-streng-prøve består gennem hele ejer-/mailkæden; øvrige bodyafslag bevares. Hosted er OPTIONS observeret med HTTP204 og et efterfølgende POST med HTTP404 og registreret eksekvering. POST-bodyens pointer er ikke observeret. Den lokale body-pointer-fejl er reproduceret, men er derfor fortsat en hypotese om netop det hostede afslag. Faktisk afsenderaccept, levering og modtagelse kræver fortsat særskilt bevis.
 
+Den efterfølgende autentificerede rollekontrol har bekræftet ON PARAMETER før store SQL-filer. Den afgrænsede parserkandidat læser nu denne officielle form komplet og registrerer kun egentlige rolleoperander. Dette erstatter alene de tidligere aktive udsagn om ukendt objektform og uændret accepteret grammatik; den tidligere diagnose var ikke selv en formatrettelse. Normal parserprøve består, men præcis kildekvalifikation, faktisk fuld arkiv-/Auth-gendannelse, autonom rotation og Free-overgang er stadig åbne. Originale SQL-/ACL-regler og alle mål-/krypteringskrav bevares. Se håndbog 89.345.
+
 <!-- RAVRADAR_ACTIVE_ENTRY_END -->
 
 ## Daterede notater og tidligere indgange — uændret historik

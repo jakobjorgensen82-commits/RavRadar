@@ -191,6 +191,39 @@ function referencedSystemRoles(bytes){
   const statementNeed=(value,branch)=>{
     if(!value)fail('ROLE_AUDIT_STATEMENT_'+statementKind()+'_'+branch+'_'+statementOrdinal);
   };
+  // pg_dumpall also emits parameter ACLs in a role-only dump. Parse their
+  // complete grammar; only grantees/grantor are roles, never GUC names.
+  function parameterGrant(first,on){
+    let next=1;
+    const take=value=>{if(word(tokens[next])!==value)return false;next++;return true;};
+    const comma=()=>{if(tokens[next]?.value!==','||tokens[next]?.kind!=='symbol')return false;next++;return true;};
+    const name=branch=>{
+      const t=tokens[next++];
+      statementNeed(t&&['word','identifier'].includes(t.kind)&&t.value.length>0
+        &&!['ON','TO','FROM','WITH','GRANT','OPTION','GRANTED','BY','CASCADE','RESTRICT','GROUP'].includes(word(t)),branch);
+      return t;
+    };
+    if(first==='REVOKE'&&take('GRANT'))statementNeed(take('OPTION')&&take('FOR'),'PARAMETER_PRIVILEGES');
+    if(take('ALL'))take('PRIVILEGES');
+    else do{
+      if(!take('SET'))statementNeed(take('ALTER')&&take('SYSTEM'),'PARAMETER_PRIVILEGES');
+    }while(comma());
+    statementNeed(next===on,'PARAMETER_PRIVILEGES');next+=2;
+    do{
+      name('PARAMETER_TARGET');
+      while(tokens[next]?.kind==='symbol'&&tokens[next].value==='.'){next++;name('PARAMETER_TARGET');}
+    }while(comma());
+    statementNeed(take(first==='GRANT'?'TO':'FROM'),'PARAMETER_TARGET');
+    const role=groupAllowed=>{
+      if(groupAllowed)take('GROUP');
+      const t=name('PARAMETER_ROLE');statementNeed(word(t)!=='NONE','PARAMETER_ROLE');add(t);
+    };
+    do{role(true);}while(comma());
+    if(first==='GRANT'&&take('WITH'))statementNeed(take('GRANT')&&take('OPTION'),'PARAMETER_TAIL');
+    if(take('GRANTED')){statementNeed(take('BY'),'PARAMETER_TAIL');role(false);}
+    if(first==='REVOKE'&&!take('CASCADE'))take('RESTRICT');
+    statementNeed(next===tokens.length,'PARAMETER_TAIL');
+  }
   function statement(){
     if(!tokens.length)return;statementOrdinal++;need(!resetComplete,'ROLE_AUDIT_AFTER_RESET');const first=word(tokens[0]);
     if(['SET','RESET'].includes(first)){
@@ -208,6 +241,8 @@ function referencedSystemRoles(bytes){
       add(tokens[2]);statementNeed(!tokens.slice(3).some(t=>t.kind!=='string'&&systemName(t).startsWith('supabase_')),'ROLE_OPTIONS');
     }else if(first==='COMMENT'&&word(tokens[1])==='ON'&&word(tokens[2])==='ROLE')add(tokens[3]);
     else if(first==='GRANT'||first==='REVOKE'){
+      const on=tokens.findIndex(t=>word(t)==='ON');
+      if(on>0&&word(tokens[on+1])==='PARAMETER'){parameterGrant(first,on);tokens=[];return;}
       const split=tokens.findIndex(t=>word(t)===(first==='GRANT'?'TO':'FROM'));
       if(!(split>1&&!tokens.slice(1,split).some(t=>word(t)==='ON'))){
         const shape=split<0?'NO_TO':split<=1?'TO_POSITION'

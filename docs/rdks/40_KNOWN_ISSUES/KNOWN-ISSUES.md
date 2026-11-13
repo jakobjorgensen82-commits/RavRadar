@@ -16,6 +16,16 @@ Klasserne præciserer kun det eksisterende afslag. Den faktiske arkivform skal s
 
 Den konkrete arkivform og dens korrekte håndtering står fortsat åbne. Der gættes ikke på platformroller, og SQL eller grants springes ikke over. Faktiske kørsler og deres første fejl fastholdes privat. Fuld arkiv-/Auth-gendannelse og automatikkens aktivering er ikke bevist af denne kildeændring. Se håndbog 89.345.
 
+### Opfølgning: rettigheder til databaseindstillinger
+
+Den autentificerede tidlige rollekontrol har nu bekræftet, at arkivet indeholder ON PARAMETER før store SQL-filer. PostgreSQLs normale rollebackup kan også beskrive rettigheder til databaseindstillinger. Den hidtidige kontrol behandlede denne særskilte form som et medlemskab mellem roller og standsede.
+
+Den afgrænsede kildekandidat læser nu GRANT og REVOKE ON PARAMETER efter den officielle syntaks: SET og ALTER SYSTEM kan stå i en kommasepareret liste, eller alle rettigheder kan angives med ALL og valgfrit PRIVILEGES. Parameterlister, TO/FROM, valgfri grant option, rettighedsgiver og REVOKE-afhængigheder læses i deres faste rækkefølge. Hele udsagnet skal være læst. Kun modtagere og en eventuel rettighedsgiver registreres som roller; navnene på indstillinger er ikke rollenavne. Andre objekttyper og ukendte rester afvises fortsat.
+
+Den tidligere diagnose ændrede ikke accepteret syntaks. Den nye parameterrettelse erstatter derfor alene udsagnene her om uafklaret objektform og uændret grammatik. Den gamle medlemskabskontrol, tokenisering, krypterings- og målkontrol samt de originale SQL- og adgangsregler bevares. Der gættes ikke på roller, og ingen SQL eller grants springes over. Den normale afgrænsede parserprøve består; præcis kildekvalifikation, faktisk fuld arkiv-/Auth-gendannelse, autonom rotation og Free-klarhed kræver fortsat deres egne beviser.
+
+Syntaksgrundlag: [PostgreSQL GRANT](https://www.postgresql.org/docs/17/sql-grant.html) og [REVOKE](https://www.postgresql.org/docs/17/sql-revoke.html). Version 4.0.598, numerisk model, migrationer, score og vejr ændres ikke. Se håndbog 89.345.
+
 ## 13. november — offline scalarplanens fælles tidsgrænse
 
 Den afgrænsede lokale rettelse giver den eksisterende offlineplan for vind, vandstand og vandtemperatur én fælles frist på 300 sekunder. En faktisk almindelig kørsel overskred 180-sekundersfristen efter 190.264 ms; overskridelsen blev opdaget efter den normale kontrol af den gemte Open-Meteo-bank. Tiden gælder hele kalderen, ikke kun denne fase. Leverandørbudgetter, originalkontrol, model og SQL bevares. Færdig plan og bedre prognosehale skal stadig verificeres i en efterfølgende almindelig vejrhentning.

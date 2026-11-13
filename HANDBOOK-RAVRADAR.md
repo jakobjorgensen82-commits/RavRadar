@@ -20,6 +20,16 @@ De samme input accepteres og afvises som før. Originale filer og adgangsregler 
 
 Den eksisterende archive-vej bruges fortsat. Den starter det ejede lokale mål og læser det autentificerede indeks og det krypterede ROLES-objekt; det er ikke en læsning uden download. Store SQL-filer materialiseres først efter bestået rolleaudit. Denne kodeændring starter ingen ny prøve. Faktisk fuld gendannelse, Auth-funktion, sikker løbende drift og Free-klarhed kræver fortsat deres egne beviser.
 
+### Opfølgning: rettigheder til databaseindstillinger
+
+Den autentificerede tidlige rollekontrol har nu bekræftet, at arkivet indeholder ON PARAMETER før store SQL-filer. PostgreSQLs normale rollebackup kan også beskrive rettigheder til databaseindstillinger. Den hidtidige kontrol behandlede denne særskilte form som et medlemskab mellem roller og standsede.
+
+Den afgrænsede kildekandidat læser nu GRANT og REVOKE ON PARAMETER efter den officielle syntaks: SET og ALTER SYSTEM kan stå i en kommasepareret liste, eller alle rettigheder kan angives med ALL og valgfrit PRIVILEGES. Parameterlister, TO/FROM, valgfri grant option, rettighedsgiver og REVOKE-afhængigheder læses i deres faste rækkefølge. Hele udsagnet skal være læst. Kun modtagere og en eventuel rettighedsgiver registreres som roller; navnene på indstillinger er ikke rollenavne. Andre objekttyper og ukendte rester afvises fortsat.
+
+Den tidligere diagnose ændrede ikke accepteret syntaks. Den nye parameterrettelse erstatter derfor alene udsagnene her om uafklaret objektform og uændret grammatik. Den gamle medlemskabskontrol, tokenisering, krypterings- og målkontrol samt de originale SQL- og adgangsregler bevares. Der gættes ikke på roller, og ingen SQL eller grants springes over. Den normale afgrænsede parserprøve består; præcis kildekvalifikation, faktisk fuld arkiv-/Auth-gendannelse, autonom rotation og Free-klarhed kræver fortsat deres egne beviser.
+
+Syntaksgrundlag: [PostgreSQL GRANT](https://www.postgresql.org/docs/17/sql-grant.html) og [REVOKE](https://www.postgresql.org/docs/17/sql-revoke.html). Version 4.0.598, numerisk model, migrationer, score og vejr ændres ikke. Se håndbog 89.345.
+
 ## Privat gatewaydiagnostik til kapitel 89.343 — 13. november 2026
 
 Prøvemailens forbindelseskontrol kan blive afvist, før mailsystemet bruges. Den afgrænsede kildekandidat giver administratorens private log en fast kategori for det nåede kontrolpunkt. Den viser kun, om reservation, kendt sti, origin, ønsket metode, body-pointerens tilstedeværelse og tidsvindue passer. Adresse, query, indhold, loginoplysninger, ejer, modtager, beskedidentitet og nøgler logges ikke.
