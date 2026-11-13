@@ -65,6 +65,8 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
   backupRestore:[
     LOCAL_RESTORE_SELF_TEST,
     'node --test scripts/test-archive-supabase-database-backup.mjs',
+    'node --test scripts/test-supabase-database-backup-workflow.mjs',
+    'node --test scripts/test-supabase-backup-lifecycle.mjs',
   ],
   mailOwnerProbe:[
     'node --test scripts/test-owner-notice-probe-ci.mjs',
@@ -77,6 +79,7 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
   compatibility:[
     'node scripts/source-critical-gate.mjs',
     'node --test scripts/test-archived-weather-restart-workflow.mjs',
+    'node --test scripts/test-native-original-continuity-callers.mjs',
   ],
   actionVersions:[
     'node scripts/test-github-action-versions.mjs',
@@ -154,6 +157,8 @@ const PATH_AREAS=freeze({
   ],
   compatibility:[
     '.github/workflows/deploy-code-only-repair.yml',
+    'scripts/select-native-original-continuity-code-only-source.mjs',
+    'scripts/test-native-original-continuity-callers.mjs',
     'scripts/lib/archived-production-gate-review.mjs',
     'scripts/lib/completed-private-runtime-workflow-review.mjs',
     'scripts/lib/native-original-continuity-workflow-review.mjs',
@@ -164,6 +169,14 @@ const PATH_AREAS=freeze({
     'scripts/test-admin-document-history-workflow.mjs',
   ],
   backupRestore:[
+    '.github/workflows/maintain-admin-document-history.yml',
+    'scripts/supabase-backup-lifecycle.mjs',
+    'scripts/run-autonomous-supabase-backup.mjs',
+    'scripts/test-supabase-backup-lifecycle.mjs',
+    '.github/workflows/backup-supabase-database.yml',
+    LOCAL_RESTORE_WORKFLOW,
+    'scripts/run-hosted-supabase-backup.mjs',
+    'scripts/test-supabase-database-backup-workflow.mjs',
     LOCAL_RESTORE_FIXTURE,
     'scripts/seal-supabase-database-export.mjs',
     'scripts/archive-supabase-database-backup.mjs',

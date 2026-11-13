@@ -62,7 +62,8 @@ test('document history workflow: exact existing weather then trip locks, readonl
   const outer=workflow.slice(workflow.indexOf('concurrency:'),workflow.indexOf('jobs:'));
   assert.match(outer,/group: ravradar-weather-production-v2\n  queue: max\n  cancel-in-progress: false/);
   assert.match(workflow,/admin-document-history:\n    if: github.event_name != 'workflow_run' \|\| \(github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.actor.login != 'github-actions\[bot\]' && vars.RAVRADAR_ADMIN_HISTORY_MAINTENANCE == 'enabled'\)\n    concurrency:\n      group: ravradar-trip-storage-production\n      cancel-in-progress: false/);
-  assert.equal((workflow.match(/cancel-in-progress: false/g)||[]).length,2);
+  assert.equal((workflow.match(/cancel-in-progress: false/g)||[]).length,3);
+  assert.match(workflow,/database-backup-maintenance:[\s\S]*needs: admin-document-history[\s\S]*group: ravradar-trip-storage-production\n      cancel-in-progress: false/);
   assert.match(workflow,/timeout-minutes: 25/); assert.match(source,/const deadline = Date\.now\(\) \+ 20 \* 60 \* 1000/);
   assert.match(workflow,/prune_limit:\n[^\n]+\n        type: choice\n        default: '25'\n        options: \['25', '100', '600'\]/);
   assert.match(workflow,/DOCUMENT_HISTORY_PRUNE_LIMIT: \$\{\{ \(github\.event_name == 'workflow_run' \|\| steps\.bot-handoff\.outputs\.proceed == 'true'\) && '25' \|\| inputs\.prune_limit \}\}/);

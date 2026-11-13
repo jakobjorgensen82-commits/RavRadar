@@ -1,4 +1,16 @@
+## 13. november — automatisk databasebackup og dokumenteret oprydning
+
+Den private 598-kandidat samler backupvedligeholdelsen efter det eksisterende, botbestilte adminjob. Den normale passage vælger én handling: gendannelse af aktuel backup med reel indholds-/Auth-kontrol, sikker rotation af én gammel gruppe eller ny optagelse efter syv døgn. Der kræves mindst 35 minutter til kildevejrets oprindelige næste slot. Vejrjobbet, den manuelle backupvej, originaler, SQL/ACL-regler og numerisk model bevares.
+
+Sletning kræver positiv tidligere publicering for hver kandidat, en verificeret aktuel backup og en særskilt verificeret reserve. Locatorhistorikkens auditrækker bevares. Løse managed SQL-objekter og dele fra det allerede komplette inventar giver HELD og blokerer ny optagelse. Indekset slettes sidst; en senere normal passage afklarer bekræftet fravær uden at gentage en ukendt DELETE blindt. Målet er to verificerede generationer og højst én ny under kontrol, ikke automatisk sletning af ukendte originaler.
+
+Forløbet er forberedt og deaktiveret. Den faktiske fulde arkiv-/Auth-gendannelse, præcis kildekvalifikation, afklaring af gamle rester og samlet målt Free-margin er stadig åbne krav. Der påstås ikke atomisk live-snapshot, gendannede Storage-filbytes, produktionsgendannelse eller afsluttet brugersletning. Se håndbog 89.347 og tillægget til DEC-0255; aktuelle målinger og variabelkvitteringer føres privat.
+
 ## 13. november — faktisk Pages-kodeversion og afvist CREATE
+
+Den installerede kildevælger skelner nu også mellem en almindelig kodeopdatering og det eksisterende valg om at udgive nyere gemt vejr. Hvert formål skal passe præcist med sine flag. Begge veje kræver fortsat den faktisk aktuelle model og installeret SQL, afsluttet genoptagelseskontrol og en inaktiv skriver. En standardkodeopdatering beholder den offentlige prognosetime; gemt vejr skal stadig være nyere, komme fra en godkendt forfader og bestå de normale kontroller af horisont, 210 zoner, 673 kystdele, originale data og offentlig levering. Ingen leverandørhentning eller opgraderingsret følger af kildevalget.
+
+Den almindelige current-installed-kildevælger blev indført26. oktober med standardformålets saved=false-krav, selvom workflowet allerede havde det særskilte saved-weather-valg. Den præcise rettelse accepterer kun de allerede deklarerede formål/flag-par. Alle øvrige upgrade-/recovery-/writerafslag og faktiske I/C/T-/SQL-kontroller bevares. Den eksisterende kompatibilitetskategori ejer nu de to præcise kilde-/prøvestier og deres normale mål; der indføres ingen ny testcohort, parser eller modelbinding.
 
 Den særlige almindelige Pages-transport sendte en afledt lokal bestillingshash som serverens byggeversion; den officielle action sender den faktiske Git-commit. Den afgrænsede kandidat følger den officielle kontrakt og bevarer den fulde lokale hensigt, den beskyttede reservation, det præcise artifact og den faktisk modtagne CREATE-identitet. Et delt commit-opslag kan vise en ældre pakke: uden observeret ny PENDING eller en særskilt kvitteret serveridentitet giver den gamle terminalstatus ingen luknings- eller retryautoritet. En allerede synlig præcis ny prognose kan kun gå videre til den fulde offentlige verifier.
 

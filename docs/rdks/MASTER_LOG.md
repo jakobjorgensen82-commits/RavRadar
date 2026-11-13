@@ -1,4 +1,12 @@
+## 13. november 2026 — privat 4.0.598-backupautonomi, fortsat deaktiveret
+
+Backupvedligeholdelsen er forberedt som ét efterfølgende job i den normale adminmodtager: current-restore med stærk indholds-/Auth-kvittering, auditbundet rotation og ny optagelse efter syv døgn. Begge konkrete peerfund er dækket: kvittering erstatter aldrig positiv tidligere publicering; urefererede managed SQL-/partobjekter holdes og standser ny capture. Normale målrettede syntetiske prøver består; det er ikke hosted arkivgendannelse, aktivering eller Free-klarhed. Numerisk 598, originaler, migrationer, vejr og eksisterende manuelle workflow bevares. Se håndbog 89.347 og DEC-0255; faktiske variabel-/ressourcekvitteringer føres privat.
+
 ## 13. november — faktisk Pages-kodeversion og afvist CREATE
+
+Den installerede kildevælger skelner nu også mellem en almindelig kodeopdatering og det eksisterende valg om at udgive nyere gemt vejr. Hvert formål skal passe præcist med sine flag. Begge veje kræver fortsat den faktisk aktuelle model og installeret SQL, afsluttet genoptagelseskontrol og en inaktiv skriver. En standardkodeopdatering beholder den offentlige prognosetime; gemt vejr skal stadig være nyere, komme fra en godkendt forfader og bestå de normale kontroller af horisont, 210 zoner, 673 kystdele, originale data og offentlig levering. Ingen leverandørhentning eller opgraderingsret følger af kildevalget.
+
+Den almindelige current-installed-kildevælger blev indført26. oktober med standardformålets saved=false-krav, selvom workflowet allerede havde det særskilte saved-weather-valg. Den præcise rettelse accepterer kun de allerede deklarerede formål/flag-par. Alle øvrige upgrade-/recovery-/writerafslag og faktiske I/C/T-/SQL-kontroller bevares. Den eksisterende kompatibilitetskategori ejer nu de to præcise kilde-/prøvestier og deres normale mål; der indføres ingen ny testcohort, parser eller modelbinding.
 
 Den særlige almindelige Pages-transport sendte en afledt lokal bestillingshash som serverens byggeversion; den officielle action sender den faktiske Git-commit. Den afgrænsede kandidat følger den officielle kontrakt og bevarer den fulde lokale hensigt, den beskyttede reservation, det præcise artifact og den faktisk modtagne CREATE-identitet. Et delt commit-opslag kan vise en ældre pakke: uden observeret ny PENDING eller en særskilt kvitteret serveridentitet giver den gamle terminalstatus ingen luknings- eller retryautoritet. En allerede synlig præcis ny prognose kan kun gå videre til den fulde offentlige verifier.
 

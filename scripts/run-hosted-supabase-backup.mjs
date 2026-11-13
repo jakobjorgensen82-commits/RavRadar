@@ -4,22 +4,28 @@ import {execFileSync} from 'node:child_process';
 import {pathToFileURL} from 'node:url';
 import {DB_BACKUP_CIPHER_LIMITS as CIPHER} from './seal-supabase-database-export.mjs';
 import {FIXED_844_ROLE_GRANT_COMMITMENTS,FIXED_844_ROLE_GRANT_CONFIRMATION} from './archive-supabase-database-backup.mjs';
+import {verifyDatabaseBackupTrigger} from './supabase-backup-lifecycle.mjs';
 const WORKFLOW='Back up RavRadar Supabase database',REPOSITORY='jakobjorgensen82-commits/RavRadar',BUCKET='ravradar-supabase-backup';
 const need=(ok,code)=>{if(!ok){const e=new Error(code);e.code=code;throw e;}},hash=x=>typeof x==='string'&&/^[a-f0-9]{64}$/.test(x);
 const BASE_ENV=['PATH','Path','HOME','USERPROFILE','SystemRoot','WINDIR','TEMP','TMP','RUNNER_TEMP','LANG','LC_ALL'];
 const CONTEXT_ENV=['GITHUB_ACTIONS','RUNNER_ENVIRONMENT','RUNNER_OS','GITHUB_REPOSITORY','GITHUB_SHA','GITHUB_RUN_ID','GITHUB_RUN_ATTEMPT'];
 const pick=(env,keys)=>Object.fromEntries(keys.filter(k=>typeof env[k]==='string').map(k=>[k,env[k]]));
-export function runHostedSupabaseBackup({phase='preflight'}={},dependencies={}){
+export function runHostedSupabaseBackup({phase='preflight',automatic=false}={},dependencies={}){
   const env=dependencies.env??process.env,proc=dependencies.processImpl??process,files=dependencies.fsImpl??fs,paths=dependencies.pathImpl??path,
     exec=dependencies.execFileSyncImpl??execFileSync,now=dependencies.now??Date.now;let stage='AUTHORITY';
   try{
     need(['preflight','execute'].includes(phase),'SUPABASE_BACKUP_PHASE');
     need(env.GITHUB_EVENT_NAME==='workflow_dispatch'&&env.GITHUB_REF==='refs/heads/main'&&env.GITHUB_RUN_ATTEMPT==='1'
-      &&env.GITHUB_REPOSITORY===REPOSITORY&&env.GITHUB_WORKFLOW===WORKFLOW&&/^[a-f0-9]{40}$/.test(env.EXPECTED_HEAD_SHA||'')
+      &&env.GITHUB_REPOSITORY===REPOSITORY
+      &&(env.GITHUB_WORKFLOW===WORKFLOW||automatic&&env.GITHUB_WORKFLOW==='Maintain RavRadar admin document history')
+      &&/^[a-f0-9]{40}$/.test(env.EXPECTED_HEAD_SHA||'')
       &&env.GITHUB_SHA===env.EXPECTED_HEAD_SHA&&/^[1-9][0-9]*$/.test(env.GITHUB_RUN_ID||''),'SUPABASE_BACKUP_AUTHORITY');
     need(proc.platform==='linux'&&Number(proc.versions?.node?.split('.')[0])>=24&&env.GITHUB_ACTIONS==='true'
       &&env.RUNNER_ENVIRONMENT==='github-hosted'&&env.RUNNER_OS==='Linux','SUPABASE_BACKUP_HOSTED_VM');
     const operation=env.SUPABASE_BACKUP_OPERATION,roleGrantAudit=operation==='audit-fixed-844-role-grant';
+    if(automatic){need(operation==='capture','SUPABASE_BACKUP_AUTOMATIC_OPERATION');
+      need((dependencies.verifyTrigger??verifyDatabaseBackupTrigger)(env,{read:dependencies.readGithub,now}).proceed,
+        'SUPABASE_BACKUP_NO_ORIGINAL_WEATHER_WINDOW');}
     need(roleGrantAudit||['bucket-readonly','bucket-create','capture','discover','bootstrap'].includes(operation),'SUPABASE_BACKUP_OPERATION');
     const confirmation=env.SUPABASE_BACKUP_CONFIRMATION||'',selector=env.SUPABASE_BACKUP_INDEX_SHA||'';
     need(operation==='bucket-create'?confirmation==='CREATE-PRIVATE-EU-SUPABASE-BACKUP-BUCKET':operation==='capture'?confirmation==='CAPTURE-PRIVATE-SUPABASE-DATABASE-BACKUP'
