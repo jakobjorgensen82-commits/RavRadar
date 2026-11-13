@@ -3,16 +3,41 @@
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
-import {withAuthenticated591PredecessorSource,withSource594CodeParent,withSource597CodeParent} from './check-assistant-later-h0-predecessor-source.mjs';
+import {withAuthenticated591PredecessorSource,withSource594CodeParent,withSource597CodeParent,withSource598CodeParent} from './check-assistant-later-h0-predecessor-source.mjs';
 import {assertFrozen591CompactRuntimeContracts} from './lib/assistant-public591-runtime-contracts.mjs';
 import {ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE,INACTIVE_SCALAR597_LATER_H0_SUCCESSOR as SCALAR,
   UNISSUED_ASSISTANT_AFTER597_SUCCESSOR as AFTER597} from './lib/assistant-later-h0-successor-source.mjs';
 import {assertFrozen591LaterOriginMetadata} from './lib/established-native-current-origin.mjs';
 import {assertAssistantOriginalRuntimeContracts} from './assistant-later-h0-runtime-transition.mjs';
 import {privateRuntimeContractHashes} from './private-production-runtime-workflow.mjs';
+import {SOURCE_PRODUCER_AFTER597_PARENT as SOURCE}
+  from './lib/source-producer-after597-parent.mjs';
+import {requireSourceProducerOutput}
+  from './lib/source-producer-after597-runtime-family.mjs';
+// Historical assistant598 CODE contracts only. No original/data/session admission.
+// The current Source profile has its own normal native/PG/national gates.
+async function withHistoricalAssistantMetadata(useMetadata) {
+  if (SOURCE.binding === null && SOURCE.output === null && SOURCE.nextRelease === null) {
+    return useMetadata(await privateRuntimeContractHashes(), assertFrozen591LaterOriginMetadata);
+  }
+  requireSourceProducerOutput(); // Actual current output FIRST; historical CODE grants no admission.
+  return withSource598CodeParent(async root598 => {
+    const load = relative => import(pathToFileURL(path.join(root598, relative)).href);
+    const [code598, origin598] = await Promise.all([
+      load('scripts/private-production-runtime-workflow.mjs'),
+      load('scripts/lib/established-native-current-origin.mjs'),
+    ]);
+    const contracts = await code598.privateRuntimeContractHashes({repositoryRoot: root598});
+    assert.equal(contracts.continuationStateContractSha256, AFTER597.requireBinding().T);
+    // The genuine598 function reads its own physical contracts on every call.
+    // Keep its fixed source alive for the WHOLE historical positive/negative case.
+    return useMetadata(contracts, origin598.assertFrozen591LaterOriginMetadata);
+  });
+}
 const fail={code:'ESTABLISHED_CURRENT_ORIGIN_591_METADATA_ONLY'};
 const clone=structuredClone;
 let negatives=0;
+await withHistoricalAssistantMetadata(async (currentContracts, assertFrozen591LaterOriginMetadata) => {
 await withAuthenticated591PredecessorSource(async root=>{
   const load=relative=>import(pathToFileURL(path.join(root,relative)).href);
   const originalI=(await load('js/core/ravscore-model-contract.js')).ravScoreModelBinding();
@@ -20,7 +45,6 @@ await withAuthenticated591PredecessorSource(async root=>{
   const originalContracts=await(await load('scripts/private-production-runtime-workflow.mjs')).privateRuntimeContractHashes({repositoryRoot:root});
   const descriptor={contractHashes:originalContracts};
   const checkpoint={modelBinding:originalI,candidateGRollbackCompanion:{modelBinding:originalC}};
-  const currentContracts=await privateRuntimeContractHashes();
   if ([SCALAR,AFTER597].includes(ACTIVE)) {
     await withSource594CodeParent(async root594 => {
       const original594 = await import(pathToFileURL(path.join(root594,'scripts/private-production-runtime-workflow.mjs')).href);
@@ -63,4 +87,5 @@ await withAuthenticated591PredecessorSource(async root=>{
   assert.deepEqual({descriptor,checkpoint},before);
   console.log(JSON.stringify({kind:'NORMAL_591_ORIGIN_METADATA_GRAENSE',status:'PASS',negativeCases:negatives,
     originalCodeBindings:'genuine591',productionBS:false,productionProof:false,sqlExecuted:false}));
+});
 });

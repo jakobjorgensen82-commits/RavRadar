@@ -8,7 +8,7 @@ import {
   RAVSCORE_SCORE_QUALITY,
   RAVSCORE_WEIGHTS,
   ravScoreModelBinding,
-} from './ravscore-model-contract.js';
+} from './ravscore-numerical-contract.js';
 import { evaluateIntegratedHuntability } from './ravscore-huntability.js';
 import { waveMobilisationEnergy } from './ravscore-mobilisation-memory.js';
 

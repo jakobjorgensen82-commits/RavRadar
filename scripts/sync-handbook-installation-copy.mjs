@@ -46,9 +46,10 @@ export function projectHandbookBindingDocuments({handbook,markdown,installationS
   const i=facts.integrated,c=facts.candidateGRollback,t=facts.continuation;
   const note='Dette er afledt kildeidentitet. Identiteten beviser ikke i sig selv PostgreSQL-kvalifikation, installation eller offentlig levering. Tidligere daterede oplysninger nedenfor er historik.';
   const authority='Autoriteten er version.json.releaseContract.modelBindings og de aktuelle genererede manifester.';
-  const bindingText=(name,x,html)=>html
-    ?name+': <code>modelContractSha256='+x.modelContractSha256+'</code> og <code>modelBundleSha256='+x.modelBundleSha256+'</code> over '+x.fileCount
-    :name+': \`modelContractSha256='+x.modelContractSha256+'\` og \`modelBundleSha256='+x.modelBundleSha256+'\` over '+x.fileCount;
+  const bindingValue=(x,html)=>html
+    ?'<code>modelContractSha256='+x.modelContractSha256+'</code> og <code>modelBundleSha256='+x.modelBundleSha256+'</code> over '+x.fileCount
+    :'\`modelContractSha256='+x.modelContractSha256+'\` og \`modelBundleSha256='+x.modelBundleSha256+'\` over '+x.fileCount;
+  const bindingText=(name,x,html)=>name+': '+bindingValue(x,html);
   const html='<p><strong>Afledt kildeidentitet — RavScore '+facts.releaseVersion+':</strong> '
     +bindingText('Integreret model',i,true)+' kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere. '
     +bindingText('Inaktiv Candidate G',c,true)+' transitive filer. '
@@ -62,7 +63,7 @@ export function projectHandbookBindingDocuments({handbook,markdown,installationS
   const continuationSection=section('ravscore-checkpoint-metadata-cas-4-0-321');
   continuationSection.body=currentBlock(continuationSection.body,continuation);
   const md='## Afledt kildeidentitet — RavScore '+facts.releaseVersion+'\n\n'
-    +bindingText('Integreret model',i,false)+' kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere.\n\n'
+    +facts.releaseVersion+' er låst med '+bindingValue(i,false)+' kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere.\n\n'
     +bindingText('Inaktiv Candidate G',c,false)+' transitive filer.\n\n'
     +'Fortsættelse: \`continuationStateContractSha256='+t.sha256+'\` (\`'+t.sha256.slice(0,8)+'…\`) over '+t.fileCount
     +' normaliserede kildefiler med \`'+t.normalizationId+'\`.\n\n'+authority+' '+note;

@@ -1,4 +1,4 @@
-const APP_VERSION = "4.0.598";
+const APP_VERSION = "4.0.616";
 const CACHE_PREFIX = "ravradar-app-";
 const PUBLIC_JSON_TRANSPORT = "public-json-bridge-20261103";
 const COMPACT_MAP = "plain-map-v3-20261104";

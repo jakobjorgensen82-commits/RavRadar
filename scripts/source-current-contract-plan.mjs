@@ -43,6 +43,10 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
     'node --test scripts/test-map-forecast-panel.mjs scripts/test-map-timeline-generation.mjs',
     'node scripts/test-rav-assistant-main-edge-roundtrip.mjs',
   ],
+  assistantPublicContract:[
+    'node scripts/test-rav-assistant-main-edge-roundtrip.mjs',
+    'node scripts/test-rav-assistant-edge-cloudflare-4.0.290.mjs',
+  ],
   adminUI:[
     'node scripts/test-admin-initial-dashboard-4.0.77.mjs',
     'node scripts/test-admin-active-ravscore-runtime.mjs',
@@ -128,7 +132,13 @@ const PATH_AREAS=freeze({
     'scripts/test-map-timeline-generation.mjs',
     'scripts/test-public-json-reader-bridge.mjs',
     'scripts/test-public-cold-start-4.0.303.mjs',
+  ],
+  assistantPublicContract:[
+    'js/services/rav-assistant.js',
+    'supabase/functions/_shared/rav-assistant-contract.ts',
+    'knowledge/rav-assistant-public-v1.json',
     'scripts/test-rav-assistant-main-edge-roundtrip.mjs',
+    'scripts/test-rav-assistant-edge-cloudflare-4.0.290.mjs',
   ],
   adminUI:[
     'admin.html','js/ui/admin-dashboard.js',
@@ -147,6 +157,7 @@ const PATH_AREAS=freeze({
   ],
   sourceControls:[
     '.github/workflows/validate-pull-request.yml',
+    '.github/workflows/validate-current-source-native-profile.yml',
     'scripts/source-current-contract-plan.mjs',
     'scripts/source-current-contract-receipt.mjs',
     'scripts/test-source-current-contracts.mjs',
@@ -234,12 +245,18 @@ const PATH_AREAS=freeze({
 const sourceControlPaths=new Set(PATH_AREAS.sourceControls);
 // The same actual owner/target catalog serves current CI and historical input admission.
 // This is only a lookup; it does not run a producer, read Git or qualify a receipt.
-export function currentWorkflowTargets(relative){
+export function currentContractTargets(relative){
   assert.equal(arguments.length,1);
-  if(typeof relative!=='string'||!/^\.github\/workflows\/[A-Za-z0-9_.-]+\.ya?ml$/.test(relative))return null;
+  if(typeof relative!=='string'||!/^\.?[A-Za-z0-9_./-]+$/.test(relative)||relative.startsWith('/')
+    ||relative.includes('//')||relative.split('/').some(part=>part==='.'||part==='..'))return null;
   const areas=pathAreas.get(relative);
   if(!areas?.length||areas.some(area=>!COMMANDS[area]?.length))return null;
   return freeze({path:relative,owners:areas.map(area=>({area,commands:[...COMMANDS[area]]}))});
+}
+export function currentWorkflowTargets(relative){
+  assert.equal(arguments.length,1);
+  if(typeof relative!=='string'||!/^\.github\/workflows\/[A-Za-z0-9_.-]+\.ya?ml$/.test(relative))return null;
+  return currentContractTargets(relative);
 }
 const historicalPaths=new Set(PATH_AREAS.historicalTests);
 const pathAreas=new Map();

@@ -1,11 +1,12 @@
+import { CANDIDATE_G_OUTFLOW_ZERO_EXPLANATION_DA } from '../../js/core/ravscore-candidate-g.js';
 import { isDeepStrictEqual } from 'node:util';
 import { assertEstablishedNativeCurrentOriginForPart }
   from './established-native-current-origin.mjs';
 import {
-  buildCandidateGRollbackPartScoreSeries,
   assertCandidateGRollbackContinuation,
 } from './ravscore-candidate-g-rollback-runtime.mjs';
-import { buildIntegratedPartScoreSeries } from './ravscore-integrated-runtime.mjs';
+import { calculateRavScoreProductionPartSeries, calculateRavScoreOwnerCurrentHistory,
+  calculateRavScoreNewInitialCurrentApplication, completeRavScoreNewInitialCurrentApplication } from './ravscore-production-part-calculation.mjs';
 import { dmiMarineCollectionAllowedForZone } from './dmi-marine-zone-exclusions.mjs';
 import { originalCurrentDecoderHistory } from './ravscore-recovery-source-priority.mjs';
 import {
@@ -24,11 +25,6 @@ import { assertIntegratedCoastalPointContinuation, assertArchivedOwnerCurrentInt
 import { ravScoreSamplingContextKey } from './ravscore-sampling-context.mjs';
 import { assertDmiPartHourlyGridSamplingApplicable, dmiExpectedIdentityForPart }
   from './ravscore-production-adapters.mjs';
-import { buildCurrentSupplyMemory, buildCurrentSupplyScoreBounds,
-  deriveCurrentSupplyEvidence } from '../../js/core/ravscore-current-supply-memory.js';
-import { buildBoundedCurrentTransportMemory, deriveCurrentTransportEvidence,
-  CURRENT_TRANSPORT_POTENTIAL_RECOMMENDED_RESEARCH_PROFILE }
-  from '../../js/core/ravscore-regime-memory.js';
 
 // This changes ONLY the consumer's current substate. Original model/state
 // schemas, geometry/context binding, wave, last-mile and lineage stay intact.
@@ -52,73 +48,10 @@ function transitionOwnerCurrentHistory({ part, initialSelection,
   const hourly = buildRavScorePermittedCurrentHistory({ part,
     referenceAt: originalIntegratedState.time, sourceRecords: recoverySources,
     requireNativeGridSampling, liveCurrentPilot });
-  const supplyEvidence = hourly.map(row => deriveCurrentSupplyEvidence(row, {
-    getNormalSpeed: value => value.currentCoastNormalSpeedMps,
-    isVerified: value => value.currentProvenance?.status === 'verified',
-  }));
-  const transportEvidence = hourly.map(row => deriveCurrentTransportEvidence(row, {
-    ...CURRENT_TRANSPORT_POTENTIAL_RECOMMENDED_RESEARCH_PROFILE,
-    getSpeed: value => value.currentSpeedMps,
-    getAlignment: value => Number.isFinite(value.currentDirectionDeg)
-      ? Math.cos((value.currentDirectionDeg - part.onshoreDirectionDeg) * Math.PI / 180) : null,
-    isVerified: value => value.currentProvenance?.status === 'verified',
-  }));
-  const memory = buildCurrentSupplyMemory(supplyEvidence, {
-    referenceTime: originalIntegratedState.time,
-  });
-  const bounds = buildCurrentSupplyScoreBounds(supplyEvidence, {
-    referenceTime: originalIntegratedState.time,
-  });
-  const transport = buildBoundedCurrentTransportMemory(transportEvidence, {
-    ...CURRENT_TRANSPORT_POTENTIAL_RECOMMENDED_RESEARCH_PROFILE,
-    referenceTime: originalCandidateGState.time,
-    restartAfterVerifiedTimeGap: false,
-  });
-  const integratedState = { ...structuredClone(originalIntegratedState),
-    currentReferenceAt: originalIntegratedState.time,
-    currentMemoryReady: memory.memoryReady, currentMemoryStatus: memory.status,
-    currentMemoryWindowHours: memory.windowHours,
-    currentMemoryCoverageHours: memory.coverageHours,
-    currentEvidence: memory.evidence, currentNativeHoldAuthorization: null,
-    currentNativeHoldIntervalEnds: memory.nativeHoldIntervalEnds,
-    supplyPotential: memory.supplyPotential,
-    historyBounds: { ...structuredClone(originalIntegratedState.historyBounds), current: {
-      lowerPotential: bounds.available ? bounds.lowerPotential : null,
-      upperPotential: bounds.available ? bounds.upperPotential : null,
-    } },
-  };
-  const candidateGState = { ...structuredClone(originalCandidateGState),
-    transportReferenceAt: originalCandidateGState.time,
-    transportMemoryReady: transport.memoryReady, transportMemoryStatus: transport.status,
-    transportMemoryWindowHours: transport.windowHours,
-    transportMemoryCoverageHours: transport.coverageHours,
-    transportEvidence: transport.evidence,
-    // Existing normal unverified-pause contract retains a private finite
-    // point if no permitted suffix exists. It is NOT a safe/public estimate:
-    // measured warmup availability below remains hard unavailable until ready.
-    transportPotential: transport.result?.transportPotential ?? originalCandidateGState.transportPotential,
-    outboundEpisodeEffectiveHours: transport.result?.outboundEpisodeEffectiveHours
-      ?? originalCandidateGState.outboundEpisodeEffectiveHours,
-  };
-  const integratedCurrentFields = new Set(['currentReferenceAt', 'currentMemoryReady',
-    'currentMemoryStatus', 'currentMemoryWindowHours', 'currentMemoryCoverageHours',
-    'currentEvidence', 'currentNativeHoldAuthorization', 'currentNativeHoldIntervalEnds',
-    'supplyPotential', 'historyBounds']);
-  const candidateCurrentFields = new Set(['transportReferenceAt', 'transportMemoryReady',
-    'transportMemoryStatus', 'transportMemoryWindowHours', 'transportMemoryCoverageHours',
-    'transportEvidence', 'transportPotential', 'outboundEpisodeEffectiveHours']);
-  for (const [before, after, allowed] of [[originalIntegratedState, integratedState, integratedCurrentFields],
-    [originalCandidateGState, candidateGState, candidateCurrentFields]]) {
-    if (Object.keys(before).some(key => !allowed.has(key)
-      && JSON.stringify(before[key]) !== JSON.stringify(after[key]))) {
-      throw new Error('Current source transition changed non-current state history');
-    }
-  }
-  if (['waveMobilisation', 'lastMile'].some(key =>
-    JSON.stringify(originalIntegratedState.historyBounds[key])
-      !== JSON.stringify(integratedState.historyBounds[key]))) {
-    throw new Error('Current source transition changed non-current history bounds');
-  }
+  const { integratedState, candidateGState, provedCurrentHours, unknownCurrentHours } =
+    calculateRavScoreOwnerCurrentHistory({
+      part, originalIntegratedState, originalCandidateGState, hourly,
+    });
   assertIntegratedCoastalPointContinuation(integratedState, {
     samplingContextKey: ravScoreSamplingContextKey(part),
   });
@@ -127,26 +60,14 @@ function transitionOwnerCurrentHistory({ part, initialSelection,
     privateRecord: { schemaVersion: 1, kind: 'PRIVATE_OWNER_CURRENT_SOURCE_TRANSITION',
       parentZoneId, partId: part.partId, excludedCollection: 'dkss_lf',
       referenceAt: originalIntegratedState.time,
-      provedCurrentHours: supplyEvidence.filter(row => Number.isFinite(row.strength)).length,
-      unknownCurrentHours: supplyEvidence.filter(row => row.strength === null).length,
+      provedCurrentHours,
+      unknownCurrentHours,
       originalIntegratedState: structuredClone(originalIntegratedState),
       originalCandidateGState: structuredClone(originalCandidateGState),
     } };
 }
 
-export function ravScoreOwnerCurrentHistoryStartAt(part, initialState, replaySourceStartAt,
-  { requireNativeGridSampling = false } = {}) {
-  const parentZoneId = part?.zoneId ?? part?.parentZoneId ?? part?.sourceZoneId;
-  if ((!requireNativeGridSampling && dmiMarineCollectionAllowedForZone('dkss_lf', parentZoneId)) || !initialState) {
-    return replaySourceStartAt;
-  }
-  const stateMs = Date.parse(initialState.time);
-  const startMs = Date.parse(replaySourceStartAt);
-  if (!Number.isFinite(stateMs) || !Number.isFinite(startMs)) {
-    throw new Error('Current source transition requires a valid private history boundary');
-  }
-  return new Date(Math.min(startMs, stateMs - (requireNativeGridSampling ? 51 : 48) * 3_600_000)).toISOString();
-}
+export { ravScoreOwnerCurrentHistoryStartAt } from './ravscore-production-part-calculation.mjs';
 
 function assertDecoderTransitionOriginal(record, part) {
   const keys = ['schemaVersion', 'kind', 'parentZoneId', 'partId', 'coordinateInterpretation',
@@ -382,72 +303,18 @@ function transitionNewInitialCurrentApplication({ part, zone, initialSelection,
   const history = buildRavScorePermittedCurrentHistory({ part, referenceAt: state.time,
     sourceRecords: recoverySources, requireNativeGridSampling: true, liveCurrentPilot,
     preserveNativeCadenceHolds: true });
-  const incomplete = state.currentMemoryReady !== true || other.transportMemoryReady !== true;
-  if (incomplete && ((state.currentMemoryReady !== true
-      && state.currentMemoryReady !== false)
-    || (other.transportMemoryReady !== true
-      && other.transportMemoryReady !== false))) fail();
-  const boundary = Date.parse(state.time) - 48 * 3_600_000;
-  // A real selected native sample may support a boundary hold; it is never
-  // copied into intermediate hours or used to relabel old compact evidence.
-  let first = -1;
-  for (let i = 0; i < history.length && Date.parse(history[i].time) <= boundary; i++) {
-    if (history[i].currentProvenance?.status === 'verified') first = i;
-  }
-  if (incomplete) {
-    // Reproduce the retained partial window, including its actual missing rows.
-    // Never pad it to 48h, trim a hole, or promote an old readiness flag.
-    const start = Math.min(Date.parse(state.currentEvidence[0]?.time),
-      Date.parse(other.transportEvidence[0]?.time));
-    first = history.findIndex(row => Date.parse(row.time) === start);
-  }
-  if (first < 0) fail();
-  const hourly = history.slice(first);
-  if (!incomplete && hourly.some(row => row.currentProvenance?.status !== 'verified' && !row.currentStateOnlyHold)) fail();
-  const derived = buildIntegratedPartScoreSeries({ part, zone, hourly, nativeCadenceHoldHours })
-    .ravScoreState.continuationState;
-  const derivedOther = buildCandidateGRollbackPartScoreSeries({ part, zone, hourly,
-    nativeCadenceHoldHours, measuredColdStart: true }).candidateGState.continuationState;
-  if (!incomplete && (!derived.currentMemoryReady || !derivedOther.transportMemoryReady)) fail();
-  if (incomplete) {
-    const sameWindow = (left, right, prefix, evidenceKey) =>
-      ['ReferenceAt', 'MemoryReady', 'MemoryStatus', 'MemoryWindowHours', 'MemoryCoverageHours']
-        .every(key => JSON.stringify(left[prefix + key]) === JSON.stringify(right[prefix + key]))
-      && JSON.stringify(left[evidenceKey].map(row => [row.time, row.strength === null]))
-        === JSON.stringify(right[evidenceKey].map(row => [row.time, row.strength === null]));
-    if (!sameWindow(derived, state, 'current', 'currentEvidence')
-      || !sameWindow(derivedOther, other, 'transport', 'transportEvidence')) fail();
-  }
-  const integratedKeys = ['currentReferenceAt', 'currentMemoryReady', 'currentMemoryStatus',
-    'currentMemoryWindowHours', 'currentMemoryCoverageHours', 'currentEvidence',
-    'currentNativeHoldAuthorization', 'currentNativeHoldIntervalEnds', 'supplyPotential'];
-  const candidateKeys = ['transportReferenceAt', 'transportMemoryReady', 'transportMemoryStatus',
-    'transportMemoryWindowHours', 'transportMemoryCoverageHours', 'transportEvidence',
-    'transportPotential', 'outboundEpisodeEffectiveHours'];
-  const sameCurrentPair = (integrated, candidate) =>
-    integratedKeys.every(key => JSON.stringify(integrated[key]) === JSON.stringify(state[key]))
-    && candidateKeys.every(key => JSON.stringify(candidate[key]) === JSON.stringify(other[key]))
-    && JSON.stringify(integrated.historyBounds.current) === JSON.stringify(state.historyBounds.current);
-  // Equality alone is not lineage proof; all strict original/48h checks above
-  // still run. Unequal memory additionally requires the exact normal decoder
-  // association and reconstruction of the preserved OLD current pair.
-  if (sameCurrentPair(derived, derivedOther)) return null;
-  const originalHourly = originalCurrentDecoderHistory(recoverySources, hourly, part);
-  if (!originalHourly) fail();
-  const originalDerived = buildIntegratedPartScoreSeries({ part, zone,
-    hourly: originalHourly, nativeCadenceHoldHours }).ravScoreState.continuationState;
-  const originalOther = buildCandidateGRollbackPartScoreSeries({ part, zone,
-    hourly: originalHourly, nativeCadenceHoldHours, measuredColdStart: true }).candidateGState.continuationState;
-  if ((!incomplete && (!originalDerived.currentMemoryReady || !originalOther.transportMemoryReady))
-    || !sameCurrentPair(originalDerived, originalOther)) fail();
+  const calculation = calculateRavScoreNewInitialCurrentApplication({
+    part, zone, state, other, history, nativeCadenceHoldHours,
+  });
+  if (calculation === null) return null;
+  const originalHourly = originalCurrentDecoderHistory(recoverySources, calculation.hourly, part);
+  const { integratedState, candidateGState } = completeRavScoreNewInitialCurrentApplication({
+    part, zone, state, other, originalHourly, nativeCadenceHoldHours, calculation,
+  });
   const privateRecord = { schemaVersion: 1, kind: 'PRIVATE_CURRENT_DECODER_TRANSITION',
     parentZoneId: part.zoneId ?? part.parentZoneId ?? part.sourceZoneId, partId: part.partId,
     coordinateInterpretation: 'dmi-dkss-grib1-header-endpoints-v1', referenceAt: state.time,
     originalIntegratedState: structuredClone(state), originalCandidateGState: structuredClone(other) };
-  const integratedState = structuredClone(state), candidateGState = structuredClone(other);
-  for (const key of integratedKeys) integratedState[key] = structuredClone(derived[key]);
-  integratedState.historyBounds.current = structuredClone(derived.historyBounds.current);
-  for (const key of candidateKeys) candidateGState[key] = structuredClone(derivedOther[key]);
   assertIntegratedCoastalPointContinuation(integratedState, { samplingContextKey: ravScoreSamplingContextKey(part) });
   assertCandidateGRollbackContinuation(candidateGState, part);
   return { integratedState, candidateGState, privateRecord };
@@ -699,44 +566,37 @@ export function buildRavScoreProductionPartSeries({
       label: 'Candidate G score-target native-cadence reference',
     });
   assertSelectedCurrentSourceDomain(resolvedCandidateGScoreTargetNativeCadenceReferenceSample, part, zone);
-  const {
-    ravScoreState,
-    scores,
-  } = buildIntegratedPartScoreSeries({
-    part,
-    zone,
-    hourly: recovery.hourly,
-    initialState: initialSelection.state,
-    candidateGCurrentBootstrap: recovery.candidateGCurrentBootstrap,
-    candidateGWaveApproachBootstrap: recovery.candidateGWaveApproachBootstrap,
-    nativeCadenceHoldHours,
-    nativeCadenceReferenceSample: resolvedNativeCadenceReferenceSample,
-    scoreTargetNativeCadenceReferenceSample:
-      resolvedScoreTargetNativeCadenceReferenceSample,
-    coldReplayBootstrap: recovery.coldStartHistoryLineage,
-    scoreStartAt: recovery.scoreStartAt,
-  });
-  const {
-    candidateGState,
-    scores: candidateGRollbackScores,
-  } = buildCandidateGRollbackPartScoreSeries({
-    part,
-    zone,
-    hourly: recovery.hourly,
-    previousCandidateGContinuation,
-    legacyCandidateGMigrationState,
-    measuredColdStart: candidateGRollbackMeasuredColdStart,
-    measuredWarmupContinuation: candidateGRollbackMeasuredWarmupContinuation,
-    nativeCadenceHoldHours,
-    nativeCadenceReferenceSample: resolvedCandidateGNativeCadenceReferenceSample,
-    scoreTargetNativeCadenceReferenceSample:
-      resolvedCandidateGScoreTargetNativeCadenceReferenceSample,
-    scoreStartAt: recovery.scoreStartAt,
-  });
-  if (scores.length !== candidateGRollbackScores.length
-    || scores.some((score, index) => score.time !== candidateGRollbackScores[index]?.time)) {
-    throw new Error('Integrated and Candidate G rollback forecast times diverged');
-  }
+  const { ravScoreState, scores, candidateGState, candidateGRollbackScores } =
+    calculateRavScoreProductionPartSeries({
+      integrated: {
+        part,
+        zone,
+        hourly: recovery.hourly,
+        initialState: initialSelection.state,
+        candidateGCurrentBootstrap: recovery.candidateGCurrentBootstrap,
+        candidateGWaveApproachBootstrap: recovery.candidateGWaveApproachBootstrap,
+        nativeCadenceHoldHours,
+        nativeCadenceReferenceSample: resolvedNativeCadenceReferenceSample,
+        scoreTargetNativeCadenceReferenceSample:
+          resolvedScoreTargetNativeCadenceReferenceSample,
+        coldReplayBootstrap: recovery.coldStartHistoryLineage,
+        scoreStartAt: recovery.scoreStartAt,
+      },
+      candidate: {
+        part,
+        zone,
+        hourly: recovery.hourly,
+        previousCandidateGContinuation,
+        legacyCandidateGMigrationState,
+        measuredColdStart: candidateGRollbackMeasuredColdStart,
+        measuredWarmupContinuation: candidateGRollbackMeasuredWarmupContinuation,
+        nativeCadenceHoldHours,
+        nativeCadenceReferenceSample: resolvedCandidateGNativeCadenceReferenceSample,
+        scoreTargetNativeCadenceReferenceSample:
+          resolvedCandidateGScoreTargetNativeCadenceReferenceSample,
+        scoreStartAt: recovery.scoreStartAt,
+      },
+    }, { outflowZeroExplanationDa: CANDIDATE_G_OUTFLOW_ZERO_EXPLANATION_DA });
   const result = {
     recovery,
     ravScoreState,

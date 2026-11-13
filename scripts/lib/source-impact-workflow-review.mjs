@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
+import {sourcePrOrdinaryWorkflowInspection} from './source598-pr-qualification-scope.mjs';
 
 // One reviewed controller delta against the actually qualified 334 FULL path.
 // This does not qualify a run or turn skipped SQL/national steps into success.
@@ -130,9 +131,17 @@ export function inverseSourceImpactDmiPython(value){
   return source;
 }
 
+// Exact assertion view, not issuance or a caller-selected workflow exception.
+export function reviewedSourcePrWorkflowOrdinaryView(value){
+  assert.equal(arguments.length,1);assert.equal(typeof value,'string');
+  const source=value.replace(/\r\n/g,'\n');
+  return sha(source)==='d57308187a396d86f32ea080f16bb9a16c8b21d910b0d450e2a5636670fca9d1'
+    ?sourcePrOrdinaryWorkflowInspection(source):source;
+}
+
 export function projectSourceImpactWorkflowFull(value){
   assert.equal(arguments.length,1);assert.equal(typeof value,'string');
-  let source=inverseSourceImpactPrReadGrant(inverseSourceImpactSdkEarlyLinux(inverseSourceImpactHourEarlyLinux(inverseSourceImpactDmiPython(value))));
+  let source=inverseSourceImpactPrReadGrant(inverseSourceImpactSdkEarlyLinux(inverseSourceImpactHourEarlyLinux(inverseSourceImpactDmiPython(reviewedSourcePrWorkflowOrdinaryView(value)))));
   if(sha(source)===SOURCE_IMPACT_FULL_WORKFLOW_SHA256)return source;
   const selected=/steps\.source-content\.outputs\.(?:selection|receipt_path)|test-source-(?:impact|targeted)-/.test(source);
   if(selected){

@@ -765,5 +765,254 @@ raise RuntimeError("OWN_FIXTURE_MISSING_FATAL_RESULT")
                 signal.signal(signal.SIGALRM, old_handler)
 
 
+# This fixture imports the complete normal module. Its timeout is the existing
+# narrow test's CLEANUP_SECONDS, not a SOURCE H/cap or a production allowance.
+SUBSET_OBSERVER = r'''
+import importlib.util, json, os, pathlib, subprocess, sys, time
+def no_network(event, args):
+    if event.startswith("socket."):
+        raise RuntimeError("SYNTHETIC_NETWORK_FORBIDDEN")
+sys.addaudithook(no_network)
+root, repository = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
+timeout, unknown = float(sys.argv[3]), sys.argv[4] == "unknown"
+spec = importlib.util.spec_from_file_location("normal_component_process",
+    repository / "scripts/lib/copernicus_component_process.py")
+normal = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(normal)
+command = [sys.executable, "-u", str(root / "synthetic-producer.py")]
+options = dict(stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+               stderr=subprocess.DEVNULL)
+failure = None
+try:
+    normal.run_subset(command, timeout=timeout, **options)
+except BaseException as error:
+    failure = error
+assert failure is not None, "Normal subset promoted orphan-writer output"
+if unknown:
+    assert isinstance(failure, subprocess.TimeoutExpired), type(failure).__name__
+    assert normal.stop_unproved(failure)
+    retained = normal._UNPROVED[id(failure)]
+    assert retained[0] is failure and retained[1].active
+    assert normal._LOCK.locked()
+    # A live adopted child makes WNOHANG return None, not kernel ECHILD.
+    assert os.waitid(os.P_ALL, 0, os.WEXITED | os.WNOHANG | os.WNOWAIT) is None
+else:
+    assert type(failure) is RuntimeError
+    assert str(failure) == "CP_COMPONENT_SUBSET_WRITER_OUTLIVED_PARENT"
+    assert not normal.stop_unproved(failure) and not normal._LOCK.locked()
+    normal.require_closed_subset()
+    try:
+        os.waitid(os.P_ALL, 0, os.WEXITED | os.WNOHANG | os.WNOWAIT)
+    except ChildProcessError:
+        pass
+    else:
+        raise AssertionError("Normal subset returned before kernel ECHILD")
+successor = [sys.executable, "-c",
+    "import pathlib,sys; pathlib.Path(sys.argv[1]).write_bytes(b'own successor\\n')",
+    str(root / "successor-ran")]
+if unknown:
+    for attempt in (normal.require_closed_subset,
+                    lambda: normal.run_subset(successor, timeout=timeout, **options)):
+        try:
+            attempt()
+        except BaseException as error:
+            assert error is failure, "Unknown stop replaced the exact first failure"
+        else:
+            raise AssertionError("Unknown stop admitted another subset")
+    assert not (root / "successor-ran").exists()
+else:
+    assert normal.run_subset(successor, timeout=timeout, **options).returncode == 0
+    try:
+        os.waitid(os.P_ALL, 0, os.WEXITED | os.WNOHANG | os.WNOWAIT)
+    except ChildProcessError:
+        pass
+    else:
+        raise AssertionError("Successor left an owned child unreaped")
+(root / "subset-observed").write_bytes(json.dumps({
+    "unknown": unknown, "stopUnproved": normal.stop_unproved(failure),
+    "claimRetained": normal._LOCK.locked(),
+    "successorRan": (root / "successor-ran").exists(),
+}).encode("ascii"))
+while not (root / "finish-own-subset-observer").exists():
+    time.sleep(0.01)
+if unknown:
+    assert normal.stop_unproved(failure) and normal._LOCK.locked()
+    assert normal._UNPROVED[id(failure)][0] is failure
+    assert normal._UNPROVED[id(failure)][1].active
+    assert not (root / "successor-ran").exists()
+raise SystemExit(1 if unknown else 0)
+'''
+
+
+class ComponentSubsetLifetime(unittest.TestCase):
+    def test_normal_subset_stops_and_reaps_escaped_descendant_before_successor(self):
+        self.assert_normal_subset_lifetime(unknown=False)
+
+    def test_normal_subset_retains_actual_live_descendant_and_claim_on_unknown(self):
+        self.assert_normal_subset_lifetime(unknown=True)
+
+    def assert_normal_subset_lifetime(self, *, unknown):
+        self.assertEqual(sys.platform, "linux", "NATIVE_LINUX_REQUIRED; no Windows skip/proof")
+        for name in ("pidfd_open", "waitid", "P_PIDFD", "WNOWAIT", "mkfifo"):
+            self.assertTrue(hasattr(os, name), f"NATIVE_LINUX_API_REQUIRED:{name}")
+        self.assertTrue(hasattr(signal, "pidfd_send_signal"))
+        self.assertEqual(signal.getsignal(signal.SIGCHLD), signal.SIG_DFL)
+        self.assertEqual(signal.getitimer(signal.ITIMER_REAL), (0.0, 0.0))
+        require_no_children()
+        libc = ctypes.CDLL(None, use_errno=True)
+        libc.prctl.argtypes = [ctypes.c_int, ctypes.c_ulong, ctypes.c_ulong,
+                              ctypes.c_ulong, ctypes.c_ulong]
+        libc.prctl.restype = ctypes.c_int
+        previous = ctypes.c_int()
+        self.assertEqual(libc.prctl(37, ctypes.addressof(previous), 0, 0, 0), 0)
+        # Test adoption is cleanup only. The actual run_subset acquires its own
+        # subreaper in the observer and must stop/reap there before CLOSED.
+        self.assertEqual(libc.prctl(36, 1, 0, 0, 0), 0)
+        parent_root = Path(tempfile.gettempdir()).resolve()
+        root = Path(tempfile.mkdtemp(prefix="rr-subset-lifetime-", dir=parent_root)).resolve()
+        parent = None
+        parent_fd = child_fd = descendant_fd = pipe_fd = None
+        child_verified = descendant_verified = False
+        old_handler = signal.getsignal(signal.SIGALRM)
+
+        def hard_deadline(_number, _frame):
+            raise TimeoutError("OWN_SUBSET_LIFETIME_HARD_DEADLINE")
+
+        started_at = time.monotonic()
+        signal.signal(signal.SIGALRM, hard_deadline)
+        signal.setitimer(signal.ITIMER_REAL, BODY_SECONDS)
+        try:
+            (root / "original-BS").write_bytes(b"own unchanged synthetic B/S\n")
+            (root / "synthetic-producer.py").write_bytes(PRODUCER.encode("utf-8"))
+            anchor = 'root = pathlib.Path(os.environ["OWN_SUPERVISOR_LOSS_ROOT"])\n'
+            self.assertEqual(DESCENDANT.count(anchor), 1)
+            # Only our synthetic descendant escapes its parent's process group.
+            # No normal Popen, waitid, pidfd, kill or clock result is replaced.
+            descendant = DESCENDANT.replace(anchor, anchor + '''os.setsid()
+lifetime_fd = os.open(root / "descendant-lifetime-pipe", os.O_WRONLY | os.O_NONBLOCK | os.O_CLOEXEC)
+os.write(lifetime_fd, b".")
+''', 1)
+            (root / "descendant.py").write_bytes(descendant.encode("utf-8"))
+            os.mkfifo(root / "descendant-lifetime-pipe", 0o600)
+            pipe_fd = os.open(root / "descendant-lifetime-pipe", os.O_RDONLY | os.O_NONBLOCK | os.O_CLOEXEC)
+            environment = {name: value for name, value in os.environ.items()
+                           if name in {"PATH", "LD_LIBRARY_PATH", "LIBRARY_PATH",
+                                       "LANG", "LC_ALL", "LC_CTYPE"}}
+            environment.update({"PYTHONDONTWRITEBYTECODE": "1", "PYTHONNOUSERSITE": "1",
+                "PYTHONUTF8": "1", "OWN_SUPERVISOR_LOSS_ROOT": str(root),
+                "OWN_PROCESS_DESCENDANT": "1"})
+            with (root / "observer.stderr").open("wb") as diagnostic:
+                parent = subprocess.Popen([sys.executable, "-u", "-c", SUBSET_OBSERVER,
+                    str(root), str(ROOT), str(CLEANUP_SECONDS), "unknown" if unknown else "closed"],
+                    cwd=ROOT, env=environment, stdin=subprocess.DEVNULL,
+                    stdout=subprocess.DEVNULL, stderr=diagnostic)
+            parent_fd = os.pidfd_open(parent.pid, 0)
+            assert_pidfd_identity(parent_fd, parent.pid)
+            while not all((root / name).exists() for name in ("ready", "descendant-ready")):
+                if parent.poll() is not None:
+                    self.fail(read_small(root / "observer.stderr").decode("utf-8", "replace"))
+                time.sleep(0.01)  # The existing hard body alarm bounds startup.
+            announced = json.loads(read_small(root / "ready"))
+            child_fd = os.pidfd_open(announced["pid"], 0)
+            assert_pidfd_identity(child_fd, announced["pid"])
+            self.assertEqual(process_identity(announced["pid"]), announced)
+            self.assertEqual(announced["ppid"], parent.pid)
+            observer_identity = process_identity(parent.pid)
+            self.assertEqual((announced["pgid"], announced["sid"]),
+                             (observer_identity["pgid"], observer_identity["sid"]))
+            child_verified = True
+            descendant = json.loads(read_small(root / "descendant-ready"))
+            descendant_fd = os.pidfd_open(descendant["pid"], 0)
+            assert_pidfd_identity(descendant_fd, descendant["pid"])
+            self.assertEqual(process_identity(descendant["pid"]), descendant)
+            self.assertEqual(descendant["ppid"], announced["pid"])
+            self.assertEqual((descendant["pgid"], descendant["sid"]),
+                             (descendant["pid"], descendant["pid"]))
+            self.assertNotEqual(descendant["pgid"], announced["pgid"])
+            self.assertEqual(read_small(Path(f'/proc/{descendant["pid"]}/cmdline')).split(b"\0")[:-1],
+                [os.fsencode(sys.executable), b"-u", os.fsencode(root / "descendant.py")])
+            descendant_verified = True
+            self.assertEqual(os.read(pipe_fd, 1), b".")
+            with self.assertRaises(BlockingIOError):
+                os.read(pipe_fd, 1)
+            self.assertFalse(exited(descendant_fd))
+            if not unknown:
+                (root / "finish-own-producer").write_bytes(b"own healthy direct-child completion\n")
+            while not (root / "subset-observed").exists():
+                if parent.poll() is not None:
+                    self.fail(read_small(root / "observer.stderr").decode("utf-8", "replace"))
+                time.sleep(0.01)
+            self.assertIsNone(parent.poll())
+            self.assertEqual(json.loads(read_small(root / "subset-observed")), {
+                "unknown": unknown, "stopUnproved": unknown,
+                "claimRetained": unknown, "successorRan": not unknown})
+            self.assertTrue(exited(child_fd), "Normal subprocess.run did not finish its direct child")
+            if unknown:
+                # This is a kernel-live, adopted writer at the actual timeout,
+                # not a mocked UNKNOWN or a quiet-heartbeat/timer assumption.
+                assert_pidfd_identity(descendant_fd, descendant["pid"])
+                self.assertEqual(process_identity(descendant["pid"]), {**descendant, "ppid": parent.pid})
+                with self.assertRaises(BlockingIOError):
+                    os.read(pipe_fd, 1)  # Only the descendant owns a write fd.
+                heartbeat = root / "descendant-heartbeat"
+                size = heartbeat.stat().st_size
+                while heartbeat.stat().st_size == size:
+                    self.assertFalse(exited(descendant_fd))
+                    time.sleep(0.01)
+                self.assertFalse((root / "successor-ran").exists())
+            else:
+                self.assertTrue(exited(descendant_fd), "Normal drain left the escaped writer live")
+                # A dead pidfd plus Pid:-1 proves this exact process was reaped;
+                # the observer separately required kernel ECHILD before reuse.
+                info = read_small(Path(f"/proc/self/fdinfo/{descendant_fd}")).decode("ascii")
+                self.assertEqual([int(line.split(":", 1)[1]) for line in info.splitlines()
+                                  if line.startswith("Pid:")], [-1])
+                self.assertEqual(os.read(pipe_fd, 1), b"")
+                self.assertEqual((root / "successor-ran").read_bytes(), b"own successor\n")
+            self.assertEqual((root / "original-BS").read_bytes(), b"own unchanged synthetic B/S\n")
+            self.assertLess(time.monotonic() - started_at, BODY_SECONDS - 1.0,
+                            "Synthetic eight-second expiry cannot satisfy this regression")
+            # All product assertions above precede fixture shutdown or signals.
+            (root / "finish-own-subset-observer").write_bytes(b"post-measurement cleanup\n")
+            self.assertEqual(parent.wait(timeout=1.0), 1 if unknown else 0,
+                             read_small(root / "observer.stderr").decode("utf-8", "replace"))
+        finally:
+            primary = sys.exc_info()[1]
+            signal.setitimer(signal.ITIMER_REAL, CLEANUP_SECONDS)
+            try:
+                if parent_fd is not None and not exited(parent_fd):
+                    signal.pidfd_send_signal(parent_fd, signal.SIGKILL)
+                if parent is not None:
+                    parent.wait(timeout=1.0)
+                for descriptor, verified in ((child_fd, child_verified), (descendant_fd, descendant_verified)):
+                    if descriptor is None:
+                        continue
+                    if not verified:
+                        raise RuntimeError("OWN_SUBSET_CHILD_UNVERIFIED; exact root retained")
+                    if not exited(descriptor):
+                        signal.pidfd_send_signal(descriptor, signal.SIGKILL)
+                    if not exited(descriptor, 1.0):
+                        raise RuntimeError("OWN_SUBSET_CHILD_STOP_UNPROVED; exact root retained")
+                    try:
+                        os.waitid(os.P_PIDFD, descriptor, os.WEXITED | os.WNOHANG)
+                    except ChildProcessError:
+                        pass  # The normal subset may already have reaped it.
+                require_no_children()
+                for descriptor in (pipe_fd, descendant_fd, child_fd, parent_fd):
+                    if descriptor is not None:
+                        os.close(descriptor)
+                self.assertEqual(libc.prctl(36, previous.value, 0, 0, 0), 0)
+                self.assertEqual(root.parent, parent_root)
+                self.assertTrue(root.name.startswith("rr-subset-lifetime-"))
+                shutil.rmtree(root)
+            except BaseException as cleanup_error:
+                if primary is None:
+                    raise
+                primary.add_note(f"OWN_SUBSET_CLEANUP_UNPROVED:{type(cleanup_error).__name__}; root retained")
+            finally:
+                signal.setitimer(signal.ITIMER_REAL, 0)
+                signal.signal(signal.SIGALRM, old_handler)
+
+
 if __name__ == "__main__":
     unittest.main()

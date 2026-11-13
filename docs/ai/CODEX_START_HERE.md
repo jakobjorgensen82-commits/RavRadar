@@ -63,6 +63,14 @@ En faktisk almindelig vejrhentning er stoppet før CREATE, fordi GitHubs statuso
 
 Rettelsen er lokalt målprøvet, ikke endnu samlet kildekvalificeret eller offentligt verificeret. Vejr, score, originaler, SQL, modelbindinger og den faste cronplan ændres ikke. Den tidligere synkroniseringstimeouts rodårsag er fortsat et særskilt åbent punkt. Alle fem mål består; faktiske kørsler og genoptagelse føres i privat checkpoint.
 
+## 12. november – aktuel lokal 4.0.614-kandidat
+
+Den samlede SOURCE-kandidat er lokalt sammenført med den mergede almindelige kontrolvej og rettelsen af den kanoniske manifestadresse. Normal førsteafledning fra ægte NULL er gennemført; de 77 gamle migrationer er bevaret, og én ny er oprettet. 613 er ikke installeret og må ikke bruges som produktionsforgænger.
+
+Den almindelige målrettede kildekontrol er faktisk kvalificeret og merget. SOURCE-kandidaten kræver fortsat sin egen aktuelle kontraktkontrol og ny faktisk Linux-/Node24-/PostgreSQL-kørsel med 64 udvalgte migrationer. Samme uændrede SOURCE-binding har en snæver kvalifikationsvej; ændret RAW, model, pakke, Auth eller SQL får ingen sådan genbrugsautoritet. Ingen gammel kvittering ophøjes til FULL eller produktion.
+
+Læs MASTER_LOG, de aktuelle RDKS-fronter, håndbog 89.341–89.342 og det seneste private checkpoint. Kandidaten er endnu ikke GitHub-kvalificeret, installeret eller offentligt leveret. Alle fem mål består; ingen produktionsændring under aktiv writer. Ældre daterede afsnit nedenfor er historik på de konkret erstattede statuspunkter.
+
 ## 12. november — fast offentlig hovedadresse før Pages-reservation
 
 Den nye afgrænsede kandidat retter en reproduceret transportfejl: den allerede tilladte Pages-adresse viderestiller til ravradar.dk, mens kildeobservationen afviser svar med viderestilling. Begge tilladte indgange bruger derfor den faste kanoniske adresse direkte. De to friske, fuldt hashkontrollerede manifestlæsninger, afvisning af andre viderestillinger og uændret fase/pointer før CAS bevares. Score, vejr, modelbinding, SQL og administratoropsætning ændres ikke.

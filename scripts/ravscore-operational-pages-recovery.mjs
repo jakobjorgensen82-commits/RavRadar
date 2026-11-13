@@ -761,11 +761,12 @@ async function main() {
     && input.observations.every(o => o.publicManifestSha256 === input.pending.sourcePublicManifestSha256)) {
     // This option requests a fresh authenticated read. It accepts no receipt,
     // admission flag, source head override or production identity from a file.
-    const {readProtectedPreparedTargetAdmission} = await import('./protected-operational-reentry-evidence.mjs');
+    const {readProtectedPreparedTargetAdmission,selectProtectedReentryReadinessSourcePhase} = await import('./protected-operational-reentry-evidence.mjs');
+    const sourcePhase = await selectProtectedReentryReadinessSourcePhase({request:clients.documentRequest});
     const e = process.env;
     input.preparedTargetAdmission = await readProtectedPreparedTargetAdmission({
       request:clients.documentRequest,storage:clients.storage,repository:e.GITHUB_REPOSITORY,
-      ...input,directory:path.dirname(path.resolve(args.pending)),
+      ...input,sourcePhase,directory:path.dirname(path.resolve(args.pending)),
       baseUrl:e.RAVRADAR_PUBLIC_BASE_URL,
       executor:{repository:e.GITHUB_REPOSITORY,runId:Number(e.GITHUB_RUN_ID),runAttempt:Number(e.GITHUB_RUN_ATTEMPT),
         headSha:e.GITHUB_SHA,attemptId:'pages-recovery-'+e.GITHUB_RUN_ID+'-'+e.GITHUB_RUN_ATTEMPT},

@@ -147,7 +147,7 @@ Datakomplethedskravet ændres ikke, og næste bevis er én almindelig weather.
 
 ### Hold de dokumenterede årsager adskilt
 
-Rodårsagen til de første Pages-timeouts i kørslerne #293 og #294 er fortsat ukendt. Produktionskoden var uændret fra kørsel #292 til kørsel #293. Kørsel #293 og den vellykkede kørsel #295 havde begge 1.107 regulære filer og 766.835.628 ukomprimerede byte i Pages-pakken; digests var forskellige. Det er samme målte størrelse og filantal, ikke en byteidentisk pakke, og det beviser ingen størrelsesårsag.
+De første dokumenterede Pages-timeouts er kørslerne #274 og #275 den 7. november 2026; #293 og #294 tilhører en senere episode den 10. november. Den bagvedliggende årsag hos Pages er fortsat ukendt. Produktionskoden var uændret fra kørsel #292 til kørsel #293. Kørsel #293 og den vellykkede kørsel #295 havde begge 1.107 regulære filer og 766.835.628 ukomprimerede byte i Pages-pakken; digests var forskellige. Det er samme målte størrelse og filantal, ikke en byteidentisk pakke, og det beviser ingen størrelsesårsag.
 
 Den senere API-kompatibilitetsfejl omkring PR #867 er et særskilt fund. Kørsel #303 blev stoppet før Pages af en gammel vandvisningsforventning efter UI-ændringen i PR #874. PR #880 rettede testen, og kørsel #304 blev senere offentligt verificeret. Ingen af disse fund fastslår den oprindelige timeoutårsag.
 

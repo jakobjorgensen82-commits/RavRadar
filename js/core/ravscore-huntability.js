@@ -1,4 +1,4 @@
-import { RAVSCORE_HUNTABILITY_POLICY } from './ravscore-model-contract.js';
+import { RAVSCORE_HUNTABILITY_POLICY } from './ravscore-numerical-contract.js';
 
 const finite = value => typeof value === 'number' && Number.isFinite(value);
 const number = value => finite(value) ? value : null;

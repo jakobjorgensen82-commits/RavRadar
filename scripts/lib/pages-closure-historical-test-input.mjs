@@ -50,7 +50,7 @@ function historicalWorkflowInventory(){
       GIT_TERMINAL_PROMPT:'0',GIT_CONFIG_NOSYSTEM:'1',
       GIT_CONFIG_GLOBAL:process.platform==='win32'?'NUL':'/dev/null',
       GIT_CONFIG_COUNT:'1',GIT_CONFIG_KEY_0:'protocol.allow',GIT_CONFIG_VALUE_0:'never'},
-    timeout:10_000,maxBuffer:256*1024,stdio:['ignore','pipe','pipe']});
+    timeout:10_000,maxBuffer:raw?2*1024*1024:256*1024,stdio:['ignore','pipe','pipe']});
     return raw?bytes:bytes.toString('utf8');};
   assert.equal(git(['rev-parse',LEGACY_WORKFLOW_HEAD+':.github/workflows']).trim(),LEGACY_WORKFLOW_TREE);
   const rows=git(['ls-tree','-z',LEGACY_WORKFLOW_TREE]).split('\0').filter(Boolean);
@@ -74,6 +74,17 @@ export function readHistoricalMaintenanceWorkflowSources(){
     assert(body.length>0&&body.length<=128*1024,'Bounded original maintenance workflow');
     return [name,body];
   })));
+}
+export function readHistoricalSourceCriticalWorkflowSources(){
+  assert.equal(arguments.length,0,'No caller-selected historical workflow, ref or reader');
+  const {git,blobs}=historicalWorkflowInventory(),result={};
+  for(const [role,name] of [['build','reusable-weather-build.yml'],['codeOnly','deploy-code-only-repair.yml']]){
+    assert(blobs.has(name),'Missing genuine historical workflow input');
+    const bytes=git(['cat-file','blob',blobs.get(name)],true);
+    assert(bytes.length>0&&bytes.length<=2*1024*1024);
+    result[role]=bytes.toString('utf8');
+  }
+  return Object.freeze(result);
 }
 export function qualifyCurrentWorkflowInventory(){
   assert.equal(arguments.length,0,'No caller-selected workflow inventory, catalog or target runner');

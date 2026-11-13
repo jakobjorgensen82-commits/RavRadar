@@ -1,23 +1,23 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.598";
-import { LOCAL_RAV_KNOWLEDGE_EXAMPLES, localRavKnowledgeAnswer, matchLocalRavKnowledge, localRavQuestionRequiresWholeAnswer } from "../../knowledge/rav-assistant-local-v2.js?v=4.0.598";
-import { buildLocalZoneScore, selectLocalBestForDay } from "../core/local-zone-score.js?v=4.0.598";
-import { addNationalRanking, compareNationalRankingRows } from "../core/zone-ranking.js?v=4.0.598";
-import { forecastDateKeyForDayOffset, forecastDateKeyInTimeZone, visibleForecastDays } from "../core/forecast-calendar.js?v=4.0.598";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.616";
+import { LOCAL_RAV_KNOWLEDGE_EXAMPLES, localRavKnowledgeAnswer, matchLocalRavKnowledge, localRavQuestionRequiresWholeAnswer } from "../../knowledge/rav-assistant-local-v2.js?v=4.0.616";
+import { buildLocalZoneScore, selectLocalBestForDay } from "../core/local-zone-score.js?v=4.0.616";
+import { addNationalRanking, compareNationalRankingRows } from "../core/zone-ranking.js?v=4.0.616";
+import { forecastDateKeyForDayOffset, forecastDateKeyInTimeZone, visibleForecastDays } from "../core/forecast-calendar.js?v=4.0.616";
 import {
   RAVSCORE_CALIBRATION_ELIGIBLE,
   ravScoreModelBinding,
-} from "../core/ravscore-model-contract.js?v=4.0.598";
-import { sameRavScoreModelBinding, ravScorePublicHorizonValidUntil } from "../core/ravscore-public-runtime-contract.js?v=4.0.598";
-import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.598";
-import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.598";
-import { formatDateTime, formatNumber, getLanguage, normaliseLanguage, t } from "../i18n.js?v=4.0.598";
+} from "../core/ravscore-model-contract.js?v=4.0.616";
+import { sameRavScoreModelBinding, ravScorePublicHorizonValidUntil } from "../core/ravscore-public-runtime-contract.js?v=4.0.616";
+import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.616";
+import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.616";
+import { formatDateTime, formatNumber, getLanguage, normaliseLanguage, t } from "../i18n.js?v=4.0.616";
 
 // Compatibility name for existing source-contract tests. The implementation
 // now selects the only adapter matching the artifact's exact active binding.
 const presentIntegratedRavScoreExplanation = presentActiveRavScoreExplanation;
 const ACTIVE_RAVSCORE_MODEL_BINDING = ravScoreModelBinding();
 const RAV_ASSISTANT_KNOWLEDGE_SCHEMA = 'rav-assistant-public-knowledge-v1';
-const RAV_ASSISTANT_KNOWLEDGE_SHA256 = 'b719ea805a455410e996eb41e829086ff811ad809b99aeca938d531f414b3533';
+const RAV_ASSISTANT_KNOWLEDGE_SHA256 = '887907d86f1cbe8a2fc7bd6f253a62929fae82ba190502f024616e06ee9a8c4e';
 const RAV_ASSISTANT_BINDING_HEADERS = Object.freeze({
   modelId:'x-ravradar-model-id',
   modelStateVersion:'x-ravradar-model-state-version',
@@ -193,7 +193,7 @@ function generalLocalIntent(question) {
   const text = normalizeLocalQuestion(question);
   if (/^(?:hvad kan (?:du|ravradar)(?: hjælpe (?:(?:mig|os) )?med)?|hvad kan jeg spørge (?:dig|ravradar) om|hvilke spørgsmål kan du svare på|was (?:kannst du|kann ravradar)(?: für mich tun)?|wobei (?:kannst du|kann ravradar) (?:(?:mir|uns) )?helfen|what can (?:you|ravradar) (?:do|help (?:(?:me|us) )?with)|what can i ask you)[?!.]*$/iu.test(text)) return 'capabilities';
   if (/^(?:hvad er (?:er )?(?:(?:en|et) )?kesse(?: til ravjagt)?|(?:hvad bruger (?:man|jeg|vi)|hvordan bruger (?:jeg|vi|man)) (?:en )?kesse(?: til ravjagt)?|was ist (?:(?:ein|eine|einen|der|die|das) )?(?:(?:bernstein(?:-|\s*)?)?kescher|(?:bernstein(?:-|\s*)?)?kes{1,2}e)(?: für die bernsteinsuche)?|what is (?:(?:a|an|the) )?amber(?: hunting)? net)[?!.]*$/iu.test(text)) return 'amber-net';
-  if (/^(?:(?:hvad er (?:en )?god vind|hvilken (?:vind|vindretning) er (?:god|bedst))(?: til (?:rav|ravjagt))?|hvad betyder vinden for ravjagt|(?:was ist (?:ein )?guter wind|welcher wind ist (?:gut|am besten))(?: (?:für die bernsteinsuche|für bernstein))?|(?:what is (?:a )?good wind|which wind is best)(?: for (?:amber|amber hunting))?)[?!.]*$/iu.test(text)) return 'wind';
+  if (/^(?:(?:hvad er (?:en )?god vind|hvilken (?:vind|vindretning) er (?:god|bedst))(?: til (?:rav|ravjagt))?|hvad betyder vinden for ravjagt|(?:was ist (?:ein )?guter wind|welcher wind ist (?:gut|am besten))(?: (?:für die bernsteinsuche|für bernstein))?|(?:what is (?:a )?good wind|which wind is best|what wind direction is good)(?: for (?:amber|amber hunting))?)[?!.]*$/iu.test(text)) return 'wind';
   return null;
 }
 
@@ -484,10 +484,18 @@ function unknownAmberEquipmentQuestion(question, locale) {
   return false;
 }
 
+function scoreIntervalAreaQuestion(value) {
+  const text=String(value||"").trim();
+  return text.length<=600&&/(?:interval\p{L}*|intervall\p{L}*|spænd|spanne|range)/iu.test(text)
+    &&/(?:områd\p{L}*|gebiets\p{L}*|gebietswert\p{L}*|\barea\b)/iu.test(text)
+    &&/(?:bedste (?:sted|del|kyst\p{L}*)|kyststrækning\p{L}*|beste\p{L}* (?:ort|stelle|küsten\p{L}*)|küstenabschnitt\p{L}*|best (?:place|spot|coastal section)|coastal.section)/iu.test(text);
+}
+
 export function routeRavQuestion(question) {
   const text = String(question || '').trim();
   if (!text || SECURITY_PATTERN.test(text) || OUT_OF_SCOPE_PATTERN.test(text)) return 'fixed-refusal';
   if(PRIVATE_FIND_REQUEST_PATTERN.test(text))return 'remote-candidate';
+  if (scoreIntervalAreaQuestion(text)) return 'remote-candidate';
   if (mixedKnowledgeForecastQuestion(text,getLanguage())
     || knownAmberNetDefinitionUseQuestion(text,getLanguage())) return 'local-deterministic';
   if (unknownAmberEquipmentQuestion(text, getLanguage())) return 'remote-candidate';
@@ -506,6 +514,7 @@ export function routeRavQuestion(question) {
 
 export function ravQuestionNeedsConditionDetails(question, context = {}) {
   if(PRIVATE_FIND_REQUEST_PATTERN.test(String(question||'').trim()))return false;
+  if(scoreIntervalAreaQuestion(question))return !SECURITY_PATTERN.test(question)&&!OUT_OF_SCOPE_PATTERN.test(question)&&Boolean(context.zone);
   const mixed=mixedKnowledgeForecastQuestion(question,context.locale||getLanguage());
   if (mixed) return !(mixed.intent==='best-place' && context.conditions?.nationalForecast);
   if (classifyRavQuestion(question) === 'best-place' && context.conditions?.nationalForecast) return false;

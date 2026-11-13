@@ -4,40 +4,31 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { RAVSCORE_MODEL_CONTRACT } from './rollback-assets/ravscore-model-contract.js';
+import { RAVSCORE_MODEL_CONTRACT } from './rollback-assets/ravscore-numerical-contract.js';
 import { modelSourceRelativeModuleSpecifiers } from './lib/model-source-imports.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const GENERATED_PATH = 'scripts/rollback-assets/ravscore-model-bundle.generated.js';
+const IDENTITY_PATH = 'scripts/rollback-assets/ravscore-model-identity.generated.js';
 export const CANDIDATE_G_ROLLBACK_BUNDLE_NORMALIZATION_ID =
-  'candidate-g-rollback-lexer-esm-closure-utf8-lf-static-cachebuster-v2';
+  'candidate-g-rollback-numerical-esm-explicit-self-identity-exclusion-v3';
 export const CANDIDATE_G_ROLLBACK_BUNDLE_ENTRYPOINTS = Object.freeze([
-  'js/core/best-time-selector.js',
-  'js/core/local-zone-score.js',
-  'js/core/ravscore-candidate-g.js',
-  'js/core/ravscore-candidate-g-state-pipeline.js',
-  'js/core/ravscore-integrated-explanation-presenter.js',
-  'js/core/ravscore-profile-switch.js',
-  'js/core/ravscore-public-model.js',
-  'js/core/ravscore-public-runtime-contract.js',
-  'js/core/score-presentation.js',
-  'js/services/rav-assistant.js',
-  'js/services/trip-evidence-public-adapter.js',
-  'supabase/functions/_shared/trip-storage.js',
-  'supabase/functions/submit-observation/index.ts',
-  'scripts/lib/ravscore-candidate-g-rollback-runtime.mjs',
-  'scripts/lib/ravscore-production-part-pipeline.mjs',
-  'scripts/rollback-assets/ravscore-model-contract.js',
+  "scripts/lib/ravscore-production-part-calculation.mjs",
+  "scripts/lib/ravscore-recovery-calculation.mjs",
+  "scripts/lib/ravscore-recovery-source-calculation.mjs",
+  "scripts/lib/ravscore-physical-calculation.mjs",
+  "scripts/lib/ravscore-zone-score-calculation.mjs",
+  "js/core/ravscore-public-calculation.js",
+  "scripts/lib/private-dmi-recovery-record.mjs",
+  "scripts/lib/weather-component-selection-history.mjs"
 ]);
 
-// Candidate G is bound to its own contract and implementation closure. The
-// integrated contract is intentionally excluded: the source model binding is
-// verified separately by the rollback plan, and changing an integrated-only
-// calibration flag must not silently re-identify the Candidate G oracle.
+// Only generated self-identities/manifests are excluded; all real numerical imports remain bound.
 export const CANDIDATE_G_ROLLBACK_BUNDLE_EXCLUDED_MODULES = Object.freeze([
-  'js/core/ravscore-model-bundle.generated.js',
-  'js/core/ravscore-model-contract.js',
-  GENERATED_PATH,
+  "js/core/ravscore-model-bundle.generated.js",
+  "scripts/rollback-assets/ravscore-model-bundle.generated.js",
+  "js/core/ravscore-model-identity.generated.js",
+  "scripts/rollback-assets/ravscore-model-identity.generated.js"
 ]);
 
 const sha256 = value => crypto.createHash('sha256').update(value).digest('hex');
@@ -127,17 +118,31 @@ export function renderCandidateGRollbackGeneratedModule(bundle) {
   ].join('\n');
 }
 
+export function renderGeneratedIdentityModule(bundle) {
+  return [
+    '// Generated identity only. No implementation, manifest or presentation data.',
+    "export const GENERATED_RAVSCORE_MODEL_CONTRACT_SHA256 = '" + bundle.contractSha256 + "';",
+    "export const GENERATED_RAVSCORE_MODEL_BUNDLE_SHA256 = '" + bundle.modelBundleSha256 + "';",
+    '',
+  ].join('\n');
+}
+
 async function main() {
   const bundle = await computeCandidateGRollbackBundle();
   const generated = renderCandidateGRollbackGeneratedModule(bundle);
   const outputPath = path.join(ROOT, GENERATED_PATH);
   if (process.argv.includes('--write')) {
     await fs.writeFile(outputPath, generated, 'utf8');
+    await fs.writeFile(path.join(ROOT, IDENTITY_PATH), renderGeneratedIdentityModule(bundle), 'utf8');
     console.log(`Candidate G rollback bundle written: ${bundle.modelBundleSha256}`);
     return;
   }
   if (process.argv.includes('--check')) {
     const current = normalizedSource(await fs.readFile(outputPath, 'utf8'));
+    const identity = normalizedSource(await fs.readFile(path.join(ROOT, IDENTITY_PATH), 'utf8'));
+    if (identity !== normalizedSource(renderGeneratedIdentityModule(bundle))) {
+      throw new Error('Candidate G generated identity is stale');
+    }
     if (current !== normalizedSource(generated)) {
       throw new Error('Candidate G rollback implementation bundle is stale');
     }

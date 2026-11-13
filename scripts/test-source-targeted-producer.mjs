@@ -126,7 +126,8 @@ async function fakeFetch(url,options){
     head_branch:'codex/synthetic-current',event:'pull_request',path:PULL_REQUEST_SOURCE_WORKFLOW,status:'in_progress',
     repository:{full_name:ORIGIN.repository},head_repository:{full_name:ORIGIN.repository}});
   if(route===actions+'/runs/'+currentRun+'/attempts/1/jobs?per_page=100')return Response.json({total_count:1,jobs:[
-    {id:state.badJob?0:currentJob,run_id:currentRun,run_attempt:1,head_sha:head,name:PULL_REQUEST_SOURCE_JOB,status:'in_progress'}]});
+    {id:state.badJob?0:currentJob,run_id:currentRun,run_attempt:1,head_sha:head,name:PULL_REQUEST_SOURCE_JOB,status:'in_progress',
+      ...(state.badJob?{diagnosticCanary:'https://private-precheck.invalid/?token=PRIVATE_PRECHECK_BODY_TOKEN'}:{})}]});
   if(state.missing&&route===repo+'/commits/'+base+'/pulls?per_page=100')return Response.json([]);
   const match=new RegExp('^'+actions+'/artifacts/([0-9]+)/zip$').exec(route);
   if(match)return new Response(null,{status:302,headers:{location:'https://fixture.invalid/'+match[1]}});
@@ -253,7 +254,22 @@ try{
   reset();state.missing=true;assert.equal((await coordinate()).selection,'FULL');assert.equal(count(),0);cases++;
   reset();job.steps[17].conclusion='failure';rebuild();assert.equal((await coordinate()).selection,'FULL');
   assert.equal(count(),0);job.steps[17].conclusion='success';rebuild();cases++;
-  reset();state.badJob=true;assert.equal((await coordinate()).selection,'FULL');assert.equal(count(),0);cases++;
+  reset();state.badJob=true;
+  const badJobCalls=calls,badJobSignedCalls=signedCalls,badJobDiagnostics=[],badJobOldError=console.error;
+  let badJobResult;
+  try{console.error=line=>badJobDiagnostics.push(line);badJobResult=await coordinate();}
+  finally{console.error=badJobOldError;}
+  assert.deepEqual(badJobResult,{schemaVersion:1,selection:'FULL',reasonCode:'TARGETED_PRECONDITION_UNAVAILABLE',
+    targetedCommandsExecuted:0,receiptWritten:false,deliveryAuthority:false});
+  assert.deepEqual(badJobDiagnostics,['SOURCE_TARGETED_PRECHECK '+JSON.stringify({
+    phase:'CURRENT_JOB_CHECK',category:'EVIDENCE_GUARD_FAILED',httpStatus:200,
+  })]);
+  assert.equal(calls-badJobCalls,3,'The same PR/run/job reads, without retries or diagnostic requests');
+  assert.equal(signedCalls,badJobSignedCalls);assert.equal(count(),0);
+  assert(!fs.existsSync(path.join(root,'.cache/source-targeted-impact-proof.json')));
+  for(const secret of [process.env.GITHUB_TOKEN,'https://private-precheck.invalid','PRIVATE_PRECHECK_BODY_TOKEN'])
+    assert(!badJobDiagnostics.join('').includes(secret));
+  cases++;
   reset();process.env.SOURCE_GATE_HEAD_SHA=base;const before=calls;
   assert.equal((await coordinate()).selection,'FULL');assert.equal(calls,before);assert.equal(count(),0);cases++;
   reset();fs.appendFileSync(path.join(root,'js/ui/about-i18n.js'),'\n// uncommitted synthetic change\n');

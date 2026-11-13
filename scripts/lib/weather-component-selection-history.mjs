@@ -1,3 +1,4 @@
+import { markPreviouslySelectedWeatherComponentCandidates } from './weather-component-selection.mjs';
 import { createHash } from 'node:crypto';
 
 const KIND = 'RAVRADAR_PRIVATE_WEATHER_COMPONENT_SELECTION_HISTORY';
@@ -66,11 +67,7 @@ export function retainPreviouslySelectedReserve(candidates, history, { part, tim
   const expected = identity(part);
   const previous = store.selected.get(key({ partId: part.partId, time, component }));
   if (!previous || !same(expected, rowIdentity(previous))) return candidates;
-  return candidates.map(candidate => ({ ...candidate,
-    // This marks the previous winner only for same-provider revision ordering.
-    // A newly admitted Copernicus value may still replace Open-Meteo.
-    previouslySelected: candidate?.source?.provider === previous.provider,
-  }));
+  return markPreviouslySelectedWeatherComponentCandidates(candidates, previous);
 }
 
 export function recordSelectedWeatherComponents(history, part, hourly) {

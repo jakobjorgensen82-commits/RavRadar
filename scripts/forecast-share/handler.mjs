@@ -9,6 +9,9 @@ import { readForecastShare, forecastShareUrl, forecastShareCopy, forecastShareDa
 initializeForecastShareDateFormatters();
 
 const PUBLIC_PAGE = 'https://ravradar.dk/';
+const SHARE_RESPONSE_HEADERS = Object.freeze({ 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store',
+      'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer',
+      'Content-Security-Policy': "default-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'" });
 const escape = value => String(value).replace(/[&<>"']/g, char => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
 })[char]);
@@ -24,6 +27,12 @@ export async function handleForecastShare(request, { shareBaseUrl, fetchPublic =
   } catch { return new Response('Share route not configured.', { status: 503 }); }
   if (!['GET', 'HEAD'].includes(request.method)) return new Response(null, { status: 405, headers: { Allow: 'GET, HEAD' } });
   const incoming = readForecastShare(url.href);
+  // Rute, metode og hele queryen er kontrolleret. HEAD har ingen prognosekrop;
+  // dens status og headere afhænger ikke af score, bindingslæsning eller render.
+  if (request.method === 'HEAD') return new Response(null, {
+    status: incoming.status === 'valid' ? 200 : 400,
+    headers: SHARE_RESPONSE_HEADERS,
+  });
   const selection = incoming.selection;
   const copy = forecastShareCopy(selection?.language);
   let verified = null;
@@ -67,10 +76,8 @@ export async function handleForecastShare(request, { shareBaseUrl, fetchPublic =
     + '<meta property="og:image:alt" content="RavRadar"><link rel="canonical" href="' + escape(shareUrl) + '">'
     + '</head><body><main><h1>' + escape(title) + '</h1><p>' + escape(description)
     + '</p><p><a href="' + escape(appUrl) + '">' + escape(copy.open) + '</a></p></main></body></html>';
-  return new Response(request.method === 'HEAD' ? null : html, {
+  return new Response(html, {
     status: incoming.status === 'valid' ? 200 : 400,
-    headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store',
-      'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer',
-      'Content-Security-Policy': "default-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'" },
+    headers: SHARE_RESPONSE_HEADERS,
   });
 }

@@ -12,7 +12,7 @@ export const RAV_ASSISTANT_RAVSCORE_MODEL_BINDING = Object.freeze({
   bestTimePolicyId: "score-history-water-tie-earliest-v3",
   presentationPolicyId: "score-bands-35-55-75-exceptional90-v1",
   modelContractSha256: "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
-  modelBundleSha256: "f8d8befa7ecda82f8194c0ca04142bd89f5c39e92ed37cda70afca8dded108d1",
+  modelBundleSha256: "11cfdde5f044bd8d069358f1a594fb6f60d15dccdcc36d329a9db0f8df5171c3",
 });
 
 export const RAV_ASSISTANT_KNOWLEDGE_SCHEMA = "rav-assistant-public-knowledge-v1";
@@ -20,7 +20,7 @@ export const RAV_ASSISTANT_KNOWLEDGE_SCHEMA = "rav-assistant-public-knowledge-v1
 // public knowledge document by the Edge contract test and sent with every
 // assistant response so Pages can reject a split model/knowledge deployment.
 export const RAV_ASSISTANT_KNOWLEDGE_SHA256 =
-  "b719ea805a455410e996eb41e829086ff811ad809b99aeca938d531f414b3533";
+  "887907d86f1cbe8a2fc7bd6f253a62929fae82ba190502f024616e06ee9a8c4e";
 export const RAV_ASSISTANT_BINDING_HEADERS = Object.freeze({
   modelId: "x-ravradar-model-id",
   modelStateVersion: "x-ravradar-model-state-version",
@@ -81,6 +81,7 @@ export const RAV_ASSISTANT_FACTS = Object.freeze([
   { id: "equipment.amber-net", text: "An amber net is a small net for light wash or visible pieces in very shallow water. Use it only with secure footing; it does not make deep, cold or fast water safe." },
   { id: "assistant.public-capabilities", text: "I can explain amber, equipment, field signs and how weather and the coast affect a search. I can also show the best places and times from RavRadar’s valid forecast for the selected search mode and explain a score. You can ask about a particular day. I cannot guarantee finds or assess whether entering the water is safe." },
   { id: "transport.current-supply-memory", text: "After sufficiently strong and sustained verified coastward current, AmberScore can remain high through a brief seaward reversal. Outflow subtracts from the accumulated current-supply index; it does not reset it automatically. Current evidence has full age weight until 24 hours, then declining weight until 48 hours. The score combines 20 % huntability, 50 % delivery potential and 30 % wave mobilisation; the other parts also count. The 48-hour rule concerns current, not completeness of all weather history. These are model assumptions, not observed amber or a guarantee for any zone or hour." },
+  {id: "country-ranking-versus-zone",text: "The national ranking compares zones with an area score. Opening a zone shows the best relevant coastal section score, so the two numbers need not be identical."},
 ]);
 
 export const RAV_ASSISTANT_REFUSALS = Object.freeze({
@@ -233,7 +234,8 @@ export function routeAssistantQuestion(question) {
   const text = String(question || "").trim();
   if (!text || SECURITY_PATTERN.test(text) || PRIVATE_FIND_REQUEST_PATTERN.test(text) || OUT_OF_SCOPE_PATTERN.test(text)) return "fixed-refusal";
   return AMBER_DOMAIN_PATTERN.test(text)
-    || RAV_ASSISTANT_LOCALES.some(locale=>knownAmberNetDefinitionUseQuestion(text,locale)) ? "provider" : "fixed-refusal";
+    || RAV_ASSISTANT_LOCALES.some(locale=>knownAmberNetDefinitionUseQuestion(text,locale)
+      ||scoreIntervalAreaCoverage(text,locale,[])!==null) ? "provider" : "fixed-refusal";
 }
 
 // A whole question about using an unfamiliar amber-labelled instrument is
@@ -612,6 +614,7 @@ export function normaliseAssistantTerminology(value, locale) {
 
 // Canonical translations of the unchanged English public facts, not provider prose.
 const CANONICAL_FACT_TRANSLATIONS = Object.freeze({
+  "country-ranking-versus-zone": {"da":"Landsrangeringen sammenligner zoner med en områdescore. Når du åbner en zone, vises den bedste relevante kyststræknings score; derfor behøver de to tal ikke være ens.","de":"Die Landesrangliste vergleicht Zonen mit einem Gebietswert. Beim Öffnen erscheint der Wert des besten relevanten Küstenabschnitts; beide Zahlen müssen daher nicht gleich sein."},
   "equipment.amber-net": {"da":"En ravkese er et lille net til at tage let opskyl eller synlige stykker i helt lavt vand. Brug den kun, hvor du kan stå sikkert; den gør ikke dybt, koldt eller strømfyldt vand forsvarligt.","de":"Ein Bernsteinkescher ist ein kleines Netz für leichtes Treibgut oder sichtbare Stücke in sehr flachem Wasser. Benutze ihn nur bei sicherem Stand; er macht tiefes, kaltes oder stark strömendes Wasser nicht sicher."},
   "assistant.public-capabilities": {"da":"Jeg kan forklare rav, udstyr, felttegn og hvordan vejr og kyst påvirker en ravtur. Jeg kan også vise bedste steder og tidspunkter fra RavRadars gyldige prognose for den valgte søgemåde og forklare en score. Spørg gerne om en bestemt dag. Jeg kan ikke garantere ravfund eller vurdere, om det er sikkert at gå i vandet.","de":"Ich kann Bernstein, Ausrüstung, Feldzeichen und den Einfluss von Wetter und Küste auf die Suche erklären. Außerdem kann ich beste Orte und Zeiten aus RavRadars gültiger Prognose für die gewählte Suchart zeigen und einen Score erklären. Frage gern nach einem bestimmten Tag. Ich kann weder Funde garantieren noch beurteilen, ob das Betreten des Wassers sicher ist."},
   "score.integrated-only": {
@@ -864,6 +867,31 @@ const CANONICAL_CONTEXT_LABELS = Object.freeze({
   }
 });
 
+const COMPACT_CONTEXT_LABELS = Object.freeze({
+  "da": {
+    "context.supplied": "Modtaget zone",
+    "context.lowerBound": "minimum",
+    "weather.windDirection": "Vindretning",
+    "weather.currentDirection": "Strømretning",
+    "score.historyIncomplete.range": "modelinterval {lower}–{upper} ({span} point)"
+  },
+  "de": {
+    "context.supplied": "Übermittelte Zone",
+    "context.lowerBound": "Untergrenze",
+    "weather.windDirection": "Windrichtung",
+    "weather.currentDirection": "Strömungsrichtung",
+    "score.historyIncomplete.range": "Modellintervall {lower}–{upper} ({span} Punkte)"
+  },
+  "en": {
+    "context.supplied": "Supplied zone",
+    "context.lowerBound": "lower bound",
+    "weather.windDirection": "Wind direction",
+    "weather.currentDirection": "Current direction",
+    "score.historyIncomplete.range": "model interval {lower}–{upper} ({span} points)"
+  }
+});
+const COMPACT_CONTEXT_DIRECTIONS = Object.freeze({"da":"Retninger er modtagne grader.","de":"Richtungen sind übermittelte Gradwerte.","en":"Directions are supplied degrees."});
+
 function canonicalFactText(id, locale) {
   if (locale === "en") return RAV_ASSISTANT_FACTS.find(fact => fact.id === id)?.text ?? null;
   return CANONICAL_FACT_TRANSLATIONS[id]?.[locale] ?? null;
@@ -888,9 +916,9 @@ function canonicalContextTime(value, locale) {
   }).format(new Date(stamp));
 }
 
-function canonicalSelectedZone(context, locale) {
+function canonicalSelectedZone(context, locale, compact = false) {
   const supplied = publicAssistantContext(context, locale);
-  const labels = CANONICAL_CONTEXT_LABELS[locale];
+  const labels = compact ? { ...CANONICAL_CONTEXT_LABELS[locale], ...COMPACT_CONTEXT_LABELS[locale] } : CANONICAL_CONTEXT_LABELS[locale];
   if (!supplied.zone.id) return labels["assistant.local.noZone"];
   const number = (value, digits) => finite(value) === null
     ? labels["common.missing"]
@@ -918,6 +946,25 @@ function canonicalSelectedZone(context, locale) {
   } else {
     rows.push(labels["context.score"] + ": " + number(result.score, 1));
   }
+  if(compact){
+    // Unit-bearing pairs preserve every supplied value; the shared direction
+    // sentence preserves the received-degrees qualification for both vectors.
+    for(const [label,items] of [
+      ["weather.wind",[["windSpeedMps","m/s",1],["windDirectionDeg","°",1]]],
+      ["weather.waves",[["waveHeightM","m",1],["wavePeriodS","s",1]]],
+      ["weather.waterLevel",[["waterLevelCm","cm",0]]],
+      ["weather.current",[["currentSpeedMps","m/s",2],["currentDirectionDeg","°",1]]],
+      ["weather.waterTemperature",[["waterTemperatureC","°C",1]]],
+    ]){
+      const values=items.filter(([field])=>finite(supplied.weather[field])!==null)
+        .map(([field,unit,digits])=>number(supplied.weather[field],digits)+" "+unit);
+      if(values.length)rows.push(labels[label]+": "+values.join(" / "));
+    }
+    rows.push(labels["context.missing"]);
+    if([supplied.weather.windDirectionDeg,supplied.weather.currentDirectionDeg].some(value=>finite(value)!==null))
+      rows.push(COMPACT_CONTEXT_DIRECTIONS[locale]);
+    return rows.join("\n");
+  }
   const fields = [
     ["windSpeedMps", "weather.wind", "m/s", 1],
     ["windDirectionDeg", "weather.windDirection", "°", 1],
@@ -933,7 +980,9 @@ function canonicalSelectedZone(context, locale) {
     if (finite(value) !== null) rows.push(labels[label] + ": " + number(value, digits) + " " + unit);
   }
   rows.push(labels["context.missing"]);
-  return rows.join("\n");
+  if(compact&&[supplied.weather.windDirectionDeg,supplied.weather.currentDirectionDeg].some(value=>finite(value)!==null))
+    rows.push(COMPACT_CONTEXT_DIRECTIONS[locale]);
+  return rows.join(compact?"; ":"\n");
 }
 
 // Reviewed claim-preserving unions compact overlapping facts, never select a subset.
@@ -1085,7 +1134,63 @@ function exactAmberLandingPredictionBoundary(question, locale) {
 }
 
 
-export function assistantQuestionEvidenceCoverage(question, locale, evidenceIds) {
+// Every word/number must belong to the bounded score/ranking explanation.
+// Question premises never supply a score, place or time to the renderer.
+const SCORE_INTERVAL_AREA_IDS = Object.freeze([
+  "score.history-incomplete", "country-ranking-versus-zone", "public-context.selected-zone-only",
+]);
+const SCORE_INTERVAL_AREA_WORDS = Object.freeze({
+  da:"her kortet ravradar viser vises viste en et den det de valgte zone zonen zonens kl klokkeslæt forsigtig forsigtige konservativ konservative ravscore ravscores score scoren på er med fuld historik kunne kan være op til som mulig mulige øvre nedre grænse minimum maksimum interval intervallet scoreinterval scoreintervallet modelinterval modelintervallet spænd point tal tallet områdescore områdescoren område områdets områder listen liste i og hvorfor hvad betyder forklar forskel forskellen mellem fra bedste sted steder kyststrækning kyststrækningens kystdel kystdels relevante to forskellige afviger visning lavere",
+  de:"hier karte ravradar zeigt zeigen angezeigt wird werden wurde ein eine einen der die das den dem des gewählte gewählten gebiet zone um uhr vorsichtig vorsichtige konservativ konservative konservativen bernsteinscore ravscore score wert werts bei ist mit vollständiger voller historie könnte kann sein bis zu als mögliche möglichen obere untere grenze untergrenze minimum maximum intervall scoreintervall modellintervall spanne punkte zahl gebietsscore gebietswert gebietswerts gebiets liste und warum was bedeutet erkläre erklären unterschied unterschiede zwischen vom von zum besten beste bestem ort orts stelle küstenabschnitt küstenabschnitts relevanten zwei verschieden unterschiedlich unterscheiden unterscheidet sich niedriger niedrigere",
+  en:"here map ravradar shows show shown displays displayed a an the selected zone at hour conservative cautious amber amberscore ravscore score scores on of s is with complete full history could can be up to as possible upper lower bound minimum maximum interval model range span points number area area's areas list and why what does do mean explain difference between from best place spot coastal section relevant two different differ differs displayed lower",
+});
+function scoreIntervalAreaCoverage(question, locale, evidenceIds, context = {}) {
+  if(typeof question!=="string"||question.length>600||!RAV_ASSISTANT_LOCALES.includes(locale))return null;
+  const text=question.trim().normalize("NFKC").replace(/\s+/gu," ");
+  if(!/(?:interval\p{L}*|intervall\p{L}*|spænd|spanne|range)/iu.test(text)
+    ||!/(?:områd\p{L}*|gebiets\p{L}*|gebietswert\p{L}*|\barea\b)/iu.test(text)
+    ||!/(?:bedste (?:sted|del|kyst\p{L}*)|kyststrækning\p{L}*|beste\p{L}* (?:ort|stelle|küsten\p{L}*)|küstenabschnitt\p{L}*|best (?:place|spot|coastal section)|coastal.section)/iu.test(text))return null;
+  const supplied=publicAssistantContext(context,locale);
+  const words=new Set(SCORE_INTERVAL_AREA_WORDS[locale].toLocaleLowerCase().split(" "));
+  let classified=text.toLocaleLowerCase();
+  if(supplied.zone.name)classified=classified.replaceAll(supplied.zone.name.toLocaleLowerCase(),"zone");
+  const numeric=new Set([supplied.result.scoreBounds?.lower,supplied.result.scoreBounds?.upper,
+    supplied.result.scoreBounds?.modelUncertaintyPoints].filter(value=>finite(value)!==null));
+  if(canonicalContextTime(supplied.weather.time,locale)!==null){
+    numeric.add(Number(new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/Copenhagen",hour:"2-digit",hourCycle:"h23"})
+      .format(new Date(supplied.weather.time))));
+  }
+  const tokens=classified.match(/[\p{L}\p{N}]+/gu)||[];
+  const unresolved=tokens.some(token=>/^\d+$/u.test(token)?!numeric.has(Number(token)):!words.has(token));
+  const selected=new Set(Array.isArray(evidenceIds)?evidenceIds:[]);
+  const missingFacets=SCORE_INTERVAL_AREA_IDS.filter(id=>!selected.has(id));
+  if(unresolved)missingFacets.push("unresolved-score-area-clause");
+  if(!supplied.zone.id||!supplied.result.available||supplied.result.scoreQuality!=="HISTORY_INCOMPLETE")
+    missingFacets.push("validated-selected-history-context");
+  return {complete:missingFacets.length===0,missingFacets};
+}
+
+const COMPACT_SCORE_FACTS=Object.freeze({
+  "score.history-incomplete":Object.freeze({
+    da:"Kun huller i nødvendig historik, komplette direkte timeinput: hele aktuel- og femdøgnsprognosen med konservativt minimum. Beskeden forsvinder ved fuld historik. Verificerede timer viser dækning, ikke en bevist ubrudt følge; ikke kalibreringsegnet.",
+    de:"Nur Lücken in nötiger Historie, direkte Stundenwerte vollständig: ganze aktuelle/Fünf-Tage-Prognose mit konservativer Untergrenze. Hinweis endet bei voller Historie. Verifizierte Stunden belegen Abdeckung, keine lückenlose Folge; nicht kalibrierbar.",
+    en:"Only gaps in required history, complete direct hourly inputs: full current/five-day forecasts with a conservative lower bound. Notice clears with full history. Verified hours show coverage, not a proven continuous sequence; not calibration-eligible.",
+  }),
+  "score.no-find-guarantee":Object.freeze({
+    da:"Relativt model-/søgeindeks, ikke fundprocent eller fundpræcision: repræsentative fund- og nul-funddata mangler.",
+    de:"Relativer Modell-/Suchindex, keine Fundprozentzahl oder Fundpräzision: repräsentative Fund-/Nichtfunddaten fehlen.",
+    en:"Relative model/search index, not a find percentage or find precision: representative find/no-find evidence is lacking.",
+  }),
+  "safety.not-a-safety-rating":Object.freeze({
+    da:"Ingen sikkerhedsvurdering: vurder selv strøm, dybde, bund, vandstand, bølger, vejr og lokale forhold på stedet.",
+    de:"Keine Sicherheitsbewertung: Strömung, Tiefe, Grund, Wasserstand, Wellen, Wetter und örtliche Bedingungen selbst prüfen.",
+    en:"Not a safety rating: assess current, depth, seabed, water level, waves, weather and local conditions yourself.",
+  }),
+});
+
+export function assistantQuestionEvidenceCoverage(question, locale, evidenceIds, context = {}) {
+  const scoreArea=scoreIntervalAreaCoverage(question,locale,evidenceIds,context);
+  if(scoreArea)return scoreArea;
   if (knownAmberNetDefinitionUseQuestion(question,locale)) {
     const complete=Array.isArray(evidenceIds)&&evidenceIds.includes("equipment.amber-net");
     return {complete,missingFacets:complete?[]:["amber-net-definition-and-use"]};
@@ -1136,9 +1241,16 @@ function rejectedAssistantResult(code, observeRejection) {
 
 function composeCanonicalAssistantResult(evidenceIds, locale, disposition, context, observeRejection = null) {
   const pending = new Set(evidenceIds);
+  const suppliedScore=publicAssistantContext(context,locale);
+  const compactScore = suppliedScore.zone.id&&suppliedScore.result.available
+    &&suppliedScore.result.scoreQuality==="HISTORY_INCOMPLETE"
+    &&SCORE_INTERVAL_AREA_IDS.every(id=>pending.has(id));
   const units = [];
   for (const id of evidenceIds) {
     if (!pending.delete(id)) continue;
+    if(compactScore&&(id==="public-context.selected-zone-only"||COMPACT_SCORE_FACTS[id])){
+      units.push(id==="public-context.selected-zone-only"?canonicalSelectedZone(context,locale,true):COMPACT_SCORE_FACTS[id][locale]);continue;
+    }
     const union = CANONICAL_FACT_UNIONS.find(group => group.ids.includes(id)
       && group.ids.every(member => evidenceIds.includes(member)));
     if (union) {
@@ -1184,7 +1296,7 @@ export function validateAssistantResult(value, locale, context = {}, question = 
   // A full-bank ID outside this request's selected pool is unknown to this request.
   if (identification?.complete && evidenceIds.some(id => !identification.requiredIds.includes(id)))
     return reject("RESULT_EVIDENCE_UNKNOWN");
-  const questionCoverage = assistantQuestionEvidenceCoverage(question, locale, evidenceIds);
+  const questionCoverage = assistantQuestionEvidenceCoverage(question, locale, evidenceIds, context);
   const unknownEquipment = routeAssistantQuestion(question) === "provider" && unknownAmberEquipmentQuestion(question, locale);
   const unknownEquipmentAnswer=unknownAmberEquipmentGuaranteeQuestion(question,locale)
     ? unknownAmberEquipmentGuaranteeAnswer(locale) : RAV_ASSISTANT_UNCERTAIN_REPLIES[locale];

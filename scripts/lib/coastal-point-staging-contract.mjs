@@ -19,7 +19,7 @@ import {
   RAVSCORE_WAVE_MOBILISATION_POLICY,
   assertRavScoreModelBinding,
   ravScoreModelBinding,
-} from '../../js/core/ravscore-model-contract.js';
+} from '../../js/core/ravscore-numerical-contract.js';
 import { ravScoreSamplingContextKey } from './ravscore-sampling-context.mjs';
 
 export const POINT_STAGE_SCHEMA_VERSION = 3;

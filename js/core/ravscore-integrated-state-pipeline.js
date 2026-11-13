@@ -51,7 +51,7 @@ import {
   RAVSCORE_STATE_V5_MODEL_CONTRACT_SHA256,
   RAVSCORE_STATE_SCHEMA_VERSION,
   RAVSCORE_VARIANT_ID,
-} from './ravscore-model-contract.js';
+} from './ravscore-numerical-contract.js';
 
 const HOUR_MS = 3_600_000;
 const EPSILON = 1e-9;

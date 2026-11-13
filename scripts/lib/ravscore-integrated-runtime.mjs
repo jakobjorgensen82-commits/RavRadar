@@ -11,9 +11,9 @@ import {
   RAVSCORE_MODEL_ID,
   assertRavScoreModelBinding,
   ravScoreModelBinding,
-} from '../../js/core/ravscore-model-contract.js';
+} from '../../js/core/ravscore-numerical-contract.js';
 import { candidateGStateKey } from './coastal-point-staging-contract.mjs';
-import { stateOnlyCurrentRowForbiddenFields } from './live-current-pilot.mjs';
+import { stateOnlyCurrentRowForbiddenFields } from './state-only-current-row-shape.mjs';
 import { ravScoreSamplingContextKey } from './ravscore-sampling-context.mjs';
 
 const finite = value => typeof value === 'number' && Number.isFinite(value);

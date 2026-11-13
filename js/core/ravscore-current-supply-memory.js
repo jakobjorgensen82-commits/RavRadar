@@ -1,4 +1,4 @@
-import { RAVSCORE_CURRENT_SUPPLY_POLICY } from './ravscore-model-contract.js';
+import { RAVSCORE_CURRENT_SUPPLY_POLICY } from './ravscore-numerical-contract.js';
 import { canonicalRavScoreTime } from './ravscore-time.js';
 
 const HOURS_TO_MILLISECONDS = 3_600_000;

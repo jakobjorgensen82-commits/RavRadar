@@ -1,3 +1,39 @@
+## 13. november — kvalificer faktisk projektionskode uden at ændre lagerformat
+
+Den normale PR-native-kalder checker den autentificerede PR-head ud og leverer allerede SOURCE_GATE_HEAD_SHA. Den fælles committed-CODE-kontrol bruger denne ved pull_request, når feltet faktisk er leveret; ellers bruges den hidtidige GITHUB_SHA. GitHubs eventidentitet omskrives ikke. Herved bevares både den ydre PR-kalder, almindelig main og det eksisterende capture-bundne native-barn, der med vilje ikke modtager gatefeltet. Forkert eller tom forventet identitet, fysiske kodeændringer og skiftet HEAD afvises fortsat. Ingen callerparameter, ny allowlist eller ny proofart indføres.
+
+Kalender588-scannerens historiske current-input samt både vært og kalder for 597-kvartettens tekstorakel læses fra samme faste genuine598-kilde. Alle gamle testkroppe, assertions og byte-/importmutationer bevares. Den allerede eksisterende N/A-gren for historiske NULL-forløb kræver først faktisk udstedt Source og den hele committed-CODE-kontrol. Aktuel Source/native/PostgreSQL udføres fortsat separat; N/A må ikke rapporteres som udført historisk NULL- eller SQL-bevis.
+
+Den eksisterende publicProjectionContractSha256 måler normaliserede implementeringsbytes fra sin faste kildeliste. Den er ikke lagerformatets kontrakt. Udtrækningen af numeriske moduler ændrer derfor legitimt denne programidentitet, selv når det gemte format og den offentlige projektion bevares. Kravet om uændret fullRuntimeContractSha256 består; den nye Source598-overgang accepterer kun hele den autentiske gamle kontrakttriple, den faktisk udstedte T og den nye projektionshash beregnet fra den kvalificerede aktuelle kode. Ingen caller-leveret ny reference eller fast gammel hash tillades. Den efterfølgende normale overgang bevarer sin hele B/S-admission og metadata-invers.
+
+Den historiske 591-prøve skal holde både kontraktberegning og metadatafunktion i samme genuine598-materialisering under hele den positive og negative prøve. Historiske workflowtekst-orakler bruger den faste genuine56d-kilde; aktuelle Source-predikater, privacy, triggere og normale brugerdata-/snapshotkaldere læser fortsat rå aktuel kode. Historiske bytes giver ingen capability, installations- eller skriveret. Nye per-head inverser eller helfil-hashgrupper tilføjes ikke.
+
+Mailområdets eksisterende `scripts/test-owner-notice-probe-ci.mjs` medtages også i den første Source-afgrænsning. Filen har allerede den normale `mailOwnerProbe`-ejer og dens faktiske målprøve i det aktuelle katalog; kun den præcise manglende sti registreres, mens ukendte stier fortsat afvises.
+
+Programfortegnelsen opdateres med den eksisterende normale application-CODE-afledning på samme 616-model. C/I/T og alle 80 tidligere/aktuelle SQL-filer er uændrede. Lokal projektionparitet og historiske negativer erstatter ikke den faktiske normale Source-native/Linux/PostgreSQL- og original-B/S-kvalifikation. Aktivering er fortsat åben.
+
+## 13. november — bevar den kanoniske kontrakt, adskil den faktiske visning
+
+Det første normale 615-forløb afslørede en unødvendig kontraktidentitetsændring: udtrækket fjernede fire historiske danske labelDa-felter fra hvert kanonisk parameterobjekt. De fulde viste parameterobjekter var ellers identiske med genuine598; den numeriske runtime bruger ikke disse labels. De faktiske UI-tekster læses allerede fra den særskilte visningspolicy. Det er derfor ikke nødvendigt at udvide hele B/S-overgangen til nye kontraktidentiteter for denne visningsadskillelse.
+
+Den valgte løsning bevarer de fire historiske labels som uændrede metadata i den kanoniske kontrakt-ABI. Den numeriske visningspolicy kan fortsat være tekstfri. UI-wrapperen reexporterer den kanoniske kontrakt uændret og har sin egen separate labelmap til faktisk visning; den må ikke rekonstruere kontraktobjektet ud fra nye UI-tekster. Herved beregner den almindelige canonicalJSON-hash igen den korrekte hidtidige kontraktidentitet. Der indføres ingen fast hashværdi, normaliseringsundtagelse eller svækket sammenligning.
+
+En tekstændring skal ske i den faktiske UI-policy, ikke i de historiske ABI-labels. En reel ændring af numeriske parametre skal fortsat ændre den normale kontrakthash og kræver sin relevante overgang. De nye C/I/T-identiteter følger fortsat den faktisk ændrede numeriske kildegraf. Første og næste almindelige appbygning samt den faktiske backend- og B/S-kæde skal stadig kvalificeres før aktivering.
+
+Den bredere compiler-/JavaScript-ændring til contract+bundle-par er fravalgt for denne leverance. Dens fund bevares som analyse; kode og guards udvides ikke uden behov. Den fejlede uinstallerede 615-original bevares, og en efterfølgende normal udstedelse skal dokumentere den valgte løsning.
+
+## 13. november — Source adskiller numerik fra programlevering
+
+Den lokale Source-efterfølger adskiller de faktiske beregnings-, state- og kildevalgsmoduler fra app-, kontrol- og Pages-koden. C/I-manifesterne følger den numeriske importgraf; den eksisterende CODE-fortegnelse og den præcise GitHub-kildekvalifikation ejer programleveringen særskilt. En efterfølgende appudgivelse må kun beholde den udstedte model og SQL, når de reelle modelinput stadig er identiske. Ændret numerik, schema eller kildepolitik får ikke genbrugsret gennem denne adskillelse.
+
+Den normale afsluttende `sync-ravscore-model-binding.mjs --write` skriver nu også releasekontrakten og håndbogens afledte aktuelle modeloplysninger med de eksisterende synkroniseringsfunktioner. Det sker efter bindingen og før kildeprøverne. Bibliotekets isolerede prøve-API og skrivefri `--check` beholder deres hidtidige grænser. Aktuelle håndbogsfakta må ikke kræve en særskilt manuel rettelse, efter at en normal modelbygning er færdig.
+
+Tidligere udstedt SQL bevares med sine autentiske hele bytes og hashes. Den nye kandidats fortegnelse medtager også den faktisk tidligere udstedte 614-original; repositoryarkivets størrelse må ikke forveksles med den særskilte installerede PostgreSQL-profil. Uinstalleret automatisk backup fra en ældre privat gren følger ikke med Source. Den almindelige gendannelsesprøve og dens aktuelle 598-paritet bevares.
+
+Det eksisterende native-forløb registrerer faktisk runtime og materialisatorobservationer i sin typede kvittering. Dette er ikke i sig selv fuld backendlukning eller PostgreSQL-genbrugsautoritet. Første rigtige kandidat skal gennem faktisk frisk Linux/PostgreSQL. Den efterfølgende normale appvej skal kvalificeres særskilt før aktivering. Der tilføjes ingen generel kontrol af hele operativsystemet, hele Pythoninstallationen eller bytecode-cacher.
+
+Der kræves fortsat reel kvalifikation af normal indgang, efterbehandling, originalbevarelse og offentlig levering. Lokal sammenføring, syntetisk første/næste-generatorbevis og syntakskontrol er ikke en aktiveret revision. Den fungerende 598-drift og uafhængige rettelser fortsætter imens.
+
 # Aktuel afgrænset V4-kandidat — 12. november 2026
 
 Den første faktiske Linux-kvalifikation bestod den nye V4-kontrolvej og mailmålet, men påviste manglende forudsætninger i scalarprøvens miljø. Den normale vejrhentning installerer allerede det eksisterende requirements-copernicus.txt før offline planlægning; den målrettede kildeproducent forbereder nu samme krav, når netop dette mål vælges. Prøvens barn bevarer Linux-/macOS-interpreterens biblioteksstier og udelukker fortsat credentials. Produktlæser, fejlafvisning, model og providerbudgetter ændres ikke af forberedelsen. Ny præcis Linux-kvalifikation kræves fortsat.
@@ -240,3 +276,5 @@ Dette er lokal forberedelse af den præcise OM-køleverance. Registreringens, pl
 Den korte profil valgte runtimeprøven, men ikke den eksisterende bankprøve. Den brede kontrol fandt derfor først de to gamle fixtures, som antog inputarrayorden. De tre allerede registrerede Open-Meteo-ejere vælger nu begge normale prøver præcis én gang. Kun banktestens gennemgåede importlukning og den nye normale plannerprøves konkrete afhængigheder føjes til fortegnelsen. Ingen ny ejeradgang, produktkode, budget, kildeprioritet eller ændring af plannerens algoritme.
 
 Den normale plannerprøve har reproduceret den manglende bankkommando. Den nye prøve afviser fortsat en ukendt import, læsning og refleksion, ændrede PostgreSQL-/modelinput og ukendt ejer. Det gamle orakels helfilinverse accepterer kun den præcise nye fortegnelse og bevarer alle gamle assertions. Den samlede klient- og kadencekandidat kræver stadig FULL. Lokal plan og bankprøve er ikke udført Node 22-/Linux- eller produktionsbevis.
+
+Den offentlige assistent har ét eksisterende funktionsområde for klienten, den rene svarkontrakt og vidensfakta samt deres to normale prøver. Kun ændringer i dette område tilføjer de to faktiske klient/Edge-mål til Source-kontrollen. Gateway, index, konfiguration, authentication, RPC, quota og privatliv ligger udenfor; ukendt backendkode afvises fortsat. Uændret model/SQL er ikke PG-genbrug: den nuværende Source-vej kræver stadig frisk PostgreSQL ved hver ny app-PR, indtil en særskilt ægte input-/origin-kvalifikation er implementeret og bevist. Revisionen må ikke aktiveres med denne uafklarede timelåsning.

@@ -1,6 +1,6 @@
 {
   "schemaVersion": "rav-assistant-public-knowledge-v1",
-  "releaseVersion": "4.0.598",
+  "releaseVersion": "4.0.616",
   "ravScoreModelBinding": {
     "modelId": "RRS-COASTAL-PROCESS-INTEGRATED-1.1.0",
     "stateSchemaVersion": "6.0.0",
@@ -12,7 +12,7 @@
     "bestTimePolicyId": "score-history-water-tie-earliest-v3",
     "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
     "modelContractSha256": "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
-    "modelBundleSha256": "f8d8befa7ecda82f8194c0ca04142bd89f5c39e92ed37cda70afca8dded108d1"
+    "modelBundleSha256": "11cfdde5f044bd8d069358f1a594fb6f60d15dccdcc36d329a9db0f8df5171c3"
   },
   "scoreModel": {
     "id": "RRS-COASTAL-PROCESS-INTEGRATED-1.1.0",
@@ -240,6 +240,10 @@
     {
       "id": "transport.current-supply-memory",
       "text": "After sufficiently strong and sustained verified coastward current, AmberScore can remain high through a brief seaward reversal. Outflow subtracts from the accumulated current-supply index; it does not reset it automatically. Current evidence has full age weight until 24 hours, then declining weight until 48 hours. The score combines 20 % huntability, 50 % delivery potential and 30 % wave mobilisation; the other parts also count. The 48-hour rule concerns current, not completeness of all weather history. These are model assumptions, not observed amber or a guarantee for any zone or hour."
+    },
+    {
+      "id": "country-ranking-versus-zone",
+      "text": "The national ranking compares zones with an area score. Opening a zone shows the best relevant coastal section score, so the two numbers need not be identical."
     }
   ],
   "fixedRefusals": {

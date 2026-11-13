@@ -2,9 +2,10 @@
 // to the caller's existing protected bundle/GCM boundary, not to these hashes.
 // This kernel performs no I/O, selection/prioritisation, or closure mutation.
 import crypto from 'node:crypto';
+import { types } from 'node:util';
 import { buildDmiForecastHourly, sameNativeIdentity } from './dmi-forecast-store.mjs';
 import { dmiExpectedIdentityForPart, dmiOriginalWireIdentityMatchesCentralIdentity, verifiedBulkCurrent,
-  verifiedDmiForecastComponentSource, verifiedDmiNativeComponentSource } from './ravscore-production-adapters.mjs';
+  verifiedDmiForecastComponentSource, verifiedDmiNativeComponentSource } from './ravscore-input-classification.mjs';
 
 export const PROTECTED_DMI_NATIVE_PROOF_LIMITS = Object.freeze({
   parts: 673, hoursPerPart: 121, selections: 673 * 121,
@@ -499,5 +500,50 @@ export function buildProtectedDmiNativeCurrentProofs({ selections, contexts = []
     selections: entries.sort((a, b) => pair(a.partId, a.time) < pair(b.partId, b.time) ? -1 : 1) };
   bank.bankSha256 = bankDigest(bank);
   validateProtectedDmiNativeCurrentProofs(bank);
+  return bank;
+}
+
+export function nativeCurrentOriginalBankForPart(source, part) {
+  const reject = () => { throw new Error('DMI_NATIVE_PROOF_SELECTION_INVALID'); };
+  const read = (value, key) => {
+    if (!value || typeof value !== 'object' || types.isProxy(value)
+      || Object.getOwnPropertySymbols(value).length
+      || Object.getPrototypeOf(value) !== (Array.isArray(value) ? Array.prototype : Object.prototype)) reject();
+    const descriptor = Object.getOwnPropertyDescriptor(value, key);
+    if (!descriptor) return undefined;
+    if (!Object.hasOwn(descriptor, 'value')) reject();
+    return descriptor.value;
+  };
+  const originals = read(source, 'nativeCurrentOriginals');
+  if (originals === undefined || originals === null) return null;
+  if (read(originals, 'schemaVersion') !== 1 || read(originals, 'kind') !== 'PRIVATE_DMI_PART_NATIVE_ORIGINALS'
+    || read(originals, 'scope') !== 'EXACT_SAVED_PART_121_CURRENT_ROWS'
+    || Object.keys(originals).sort().join(',') !== 'bank,coverage,identity,kind,schemaVersion,scope') reject();
+  const expected = dmiExpectedIdentityForPart(part), identity = read(originals, 'identity');
+  read(identity, 'entityId'); // Reject proxy/accessor containers before Object.keys.
+  if (!expected || Object.keys(identity ?? {}).sort().join(',') !== Object.keys(expected).sort().join(',')) reject();
+  for (const [key, value] of Object.entries(expected)) {
+    const actual = read(identity, key);
+    if (Array.isArray(value)) {
+      if (!Array.isArray(actual) || read(actual, 'length') !== value.length
+        || value.some((entry, index) => read(actual, String(index)) !== entry)) reject();
+    } else if (actual !== value) reject();
+  }
+  const coverage = read(originals, 'coverage');
+  if (!Array.isArray(coverage) || read(coverage, 'length') !== 121) reject();
+  const bank = read(originals, 'bank');
+  if (bank === null) return null; // Explicitly no stored original proof; contexts still apply.
+  const contexts = read(bank, 'contexts'), nativeRows = read(bank, 'nativeRows'), selections = read(bank, 'selections');
+  if (![contexts, nativeRows, selections].every(Array.isArray)
+    || read(selections, 'length') > 121 || read(nativeRows, 'length') > 2 * read(selections, 'length')
+    || read(contexts, 'length') > read(nativeRows, 'length')) reject();
+  for (let index = 0; index < selections.length; index++) {
+    if (read(read(selections, String(index)), 'partId') !== part.partId) reject();
+  }
+  for (let index = 0; index < contexts.length; index++) {
+    if (read(read(read(contexts, String(index)), 'value'), 'partId') !== part.partId) reject();
+  }
+  // The normal inspector/indexBank still validates the COMPLETE bank and
+  // reprojects each requested selection. No proof algorithm or PASS is copied.
   return bank;
 }

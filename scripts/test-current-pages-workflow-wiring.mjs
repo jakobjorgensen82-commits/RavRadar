@@ -59,7 +59,7 @@ const selector = block => block.match(/^        if: (.+)$/m)?.[1] ?? 'true';
 const evaluate = (expression, inputs, overrides = {}) => runInNewContext(expression
   .replace(/^\$\{\{\s*|\s*\}\}$/g, '').replace(/\bsteps\.([a-z][a-z0-9-]*)/g, (_, id) => `steps[${JSON.stringify(id)}]`),
   { inputs, steps: new Proxy(overrides, { get: (o, key) => o[key] ?? { outcome: 'success', outputs: {
-    should_run: 'true', action: 'integrated-historical-maintenance', required: 'true', available: 'true',
+    should_run: 'true', action: 'integrated-historical-maintenance', required: 'true', available: 'true', source_normal_producer: 'false',
     disposition: 'MEASURED_WARMUP_PUBLISHED', maintenance_completed: 'true', reused: 'false',
   } } }), github: { ref: 'refs/heads/main', event_name: 'workflow_dispatch' },
   success: () => true, always: () => true, cancelled: () => false, failure: () => false, hashFiles: () => 'synthetic' });
@@ -83,6 +83,7 @@ function currentStepById(source, id) {
 }
 function evaluateCurrentMode(block, completed, changes = {}) {
   const rows = {
+    'operational-model': { outputs: { source_normal_producer: 'false' } },
     preflight: { outputs: { should_run: 'true' } },
     weather: { outcome: completed ? 'skipped' : 'success' },
     'completed-runtime-admission': { outcome: completed ? 'success' : 'skipped' },
@@ -187,8 +188,8 @@ export function assertCurrentCompletedRuntimeWorkflow(actualBuild, actualOnce) {
   assert(cacheLock.includes("steps.automatic-completed-target.outcome == 'skipped' ||"));
   assert(cacheLock.includes("steps.automatic-completed-target.outputs.completed_private_runtime == 'false'"));
   assert(actualOnce.includes('COMPLETED_RUNTIME_OUTCOME: ${{ needs.build-and-prepare.outputs.completed_runtime_outcome }}'));
-  assert(actualBuild.includes('weather_outcome: ${{ steps.weather.outcome }}'));
-  assert(actualBuild.includes('completed_runtime_outcome: ${{ steps.completed-runtime-target.outcome }}'));
+  assert(actualBuild.includes('weather_outcome: ${{ steps.weather-route-result.outputs.weather_outcome }}'));
+  assert(actualBuild.includes("completed_runtime_outcome: ${{ steps.source-route.outputs.source_saved_pair == 'true' && steps.source-saved-pair-target.outcome || steps.completed-runtime-target.outcome }}"));
   for (const name of providerNames) {
     for (const completed of [false, true])
       assert.equal(evaluateCurrentMode(step(actualBuild, name), completed), !completed,
@@ -205,11 +206,11 @@ export function assertCurrentCompletedRuntimeWorkflow(actualBuild, actualOnce) {
   }
   assertCurrentModeRelations(actualBuild);
   const target = step(actualBuild, 'Preserve the exact current-grid Pages target before remote upload');
-  for (const proof of ['steps.full-validation.outcome', 'steps.release-gate.outcome',
-    'steps.checkpoint-save.outcome', 'steps.checkpoint-publish.outcome',
+  for (const proof of ['steps.weather-route-result.outputs.full_validation_outcome', 'steps.weather-route-result.outputs.release_gate_outcome',
+    'steps.weather-route-result.outputs.checkpoint_save_outcome', 'steps.weather-route-result.outputs.checkpoint_publish_outcome',
     'steps.private-runtime-publish.outcome', 'steps.ravscore-integrated-runtime-audit.outputs.runtime_audit_outcome'])
     assert(target.includes('test "${{ ' + proof + ' }}" = success'), proof);
-  assert(target.includes('steps.completed-runtime-target.outcome || steps.weather.outcome'));
+  assert(target.includes('steps.completed-runtime-target.outcome || steps.weather-route-result.outputs.weather_outcome'));
   const completedTarget = step(actualBuild, 'Refuse completed-runtime target or calibration mismatch before any new S or B publication');
   assert(completedTarget.includes('validate-completed-runtime-target'));
   assert(completedTarget.includes('test "${{ steps.ravscore-integrated-runtime-audit.outputs.runtime_audit_outcome }}" = success'));
@@ -243,21 +244,21 @@ test('current Pages workflow keeps completed-runtime B S gates and provider excl
     ['restored original installation', changeStep('Install only the allowlisted restored private runtime files',
       'id: private-runtime-install\n', 'id: private-runtime-install\n        if: false\n')],
     ['full validation before Pages target', changeStep(pagesTarget,
-      'test "${{ steps.full-validation.outcome }}" = success', 'true')],
+      'test "${{ steps.weather-route-result.outputs.full_validation_outcome }}" = success', 'true')],
     ['release gate before Pages target', changeStep(pagesTarget,
-      'test "${{ steps.release-gate.outcome }}" = success', 'true')],
+      'test "${{ steps.weather-route-result.outputs.release_gate_outcome }}" = success', 'true')],
     ['protected S publication before Pages target', changeStep(pagesTarget,
-      'test "${{ steps.checkpoint-publish.outcome }}" = success', 'true')],
+      'test "${{ steps.weather-route-result.outputs.checkpoint_publish_outcome }}" = success', 'true')],
     ['completed-target runtime audit', changeStep('Refuse completed-runtime target or calibration mismatch before any new S or B publication',
       'test "${{ steps.ravscore-integrated-runtime-audit.outputs.runtime_audit_outcome }}" = success', 'true')],
     ['actual Pages upload identity', changeStep('Current-grid pre-Edge - Upload GitHub Pages artifact',
       'id: current-grid-pages-upload\n', 'id: moved-pages-upload\n')],
     ['authenticated completed outcome', changeOutput(
-      'completed_runtime_outcome: ${{ steps.completed-runtime-target.outcome }}', 'completed_runtime_outcome: success')],
+      "completed_runtime_outcome: ${{ steps.source-route.outputs.source_saved_pair == 'true' && steps.source-saved-pair-target.outcome || steps.completed-runtime-target.outcome }}", 'completed_runtime_outcome: success')],
     ['unchanged installed originals before B publication', changeStep('Prove the whole recreated B manifest and installed originals are unchanged',
       'completed-private-runtime-admission.mjs before-publish', 'true')],
     ['actual fresh weather outcome', changeOutput(
-      'weather_outcome: ${{ steps.weather.outcome }}', 'weather_outcome: success')],
+      'weather_outcome: ${{ steps.weather-route-result.outputs.weather_outcome }}', 'weather_outcome: success')],
   ];
   for (const [contract, changed] of mutations) {
     assert.notEqual(changed, build, contract);
@@ -339,4 +340,64 @@ test('scheduled weather keeps its fresh hour and uses one exclusive immediate-re
   assert.match(retryCli,/readProtectedPagesWriterSnapshot\([\s\S]*expectedSnapshot:writerSnapshot/);
   assert.match(retryCli,/beforeCreate: async intent =>[\s\S]*currentSeal[\s\S]*if \(!await revalidateWriter\(\)\) return false;[\s\S]*fs\.writeFile\(file/);
   assert.doesNotMatch(retryCli,/console\.(?:log|error).*SUPABASE|console\.(?:log|error).*serviceRoleKey/);
+});
+
+
+// Source-variant: rå aktive kaldere. Ingen historisk operand eller byteprojektion.
+export function assertCurrentSourceWorkflow(build,once,deploy){
+ const byId=id=>currentStepById(build,id);
+ const condition=(id,saved,changes={})=>{
+  const rows={'operational-model':{outputs:{source_normal_producer:'true'}},
+   'source-route':{outputs:{source_saved_pair:saved?'true':'false'}},
+   'source-route-profile':{outcome:'success'},preflight:{outputs:{should_run:'true'}},
+   'source-saved-pair-admission':{outcome:'success'},'source-saved-pair-target':{outcome:'success'},
+   'production-reference-zones':{outcome:'success'},'full-validation':{outcome:'success'},...changes};
+  return runInNewContext(selector(byId(id)).replace(/\bsteps\.([a-z][a-z0-9-]*)/g,(_,key)=>'steps['+JSON.stringify(key)+']'),
+   {steps:new Proxy(rows,{get(o,key){assert(Object.hasOwn(o,key),'Missing Source fixture operand '+String(key));return o[key];}}),
+    always:()=>true});
+ };
+ assert.match(byId('source-normal'),/uses: \.\/\.github\/actions\/save-owned-dmi-grib/);
+ assert.match(byId('source-normal'),/operation: source/);
+ assert.equal(condition('source-normal',false),true);assert.equal(condition('source-normal',true),false);
+ for(const id of ['source-saved-pair-admission','source-saved-pair-target','source-saved-pair-no-loss']){
+  assert.equal(condition(id,true),true,id);assert.equal(condition(id,false),false,id);
+ }
+ assert.equal(condition('source-saved-pair-admission',true,{preflight:{outputs:{should_run:'false'}}}),false);
+ for(const id of ['source-saved-pair-target','source-saved-pair-no-loss','full-validation','release-gate'])
+  assert.equal(condition(id,true,{'source-saved-pair-admission':{outcome:'failure'}}),false,id);
+ assert.equal(condition('source-saved-pair-no-loss',true,{'source-saved-pair-target':{outcome:'failure'}}),false);
+ assert.equal(condition('release-gate',true,{'full-validation':{outcome:'failure'}}),false);
+ assert.equal(condition('full-validation',true),true);assert.equal(condition('release-gate',true),true);
+ assert.equal(condition('full-validation',false),false);assert.equal(condition('release-gate',false),false);
+ for(const [first,second] of [['source-saved-pair-admission','source-saved-pair-target'],
+  ['source-saved-pair-target','source-saved-pair-no-loss'],['source-saved-pair-no-loss','full-validation'],
+  ['full-validation','release-gate'],['release-gate','source-saved-pair-upload-authority'],
+  ['source-saved-pair-upload-authority','pages-artifact-seal'],
+  ['pages-artifact-seal','source-saved-pair-artifact-proof'],
+  ['source-saved-pair-artifact-proof','source-integrated-publication-pin']])
+  assert(build.indexOf(byId(first))<build.indexOf(byId(second)),first+' precedes '+second);
+ assert.match(once,/source_saved_pair != 'true' \|\| needs\.build-and-prepare\.outputs\.source_saved_pair_outcome == 'success'/);
+ assert.match(once,/ordinary_scheduled: .*recovery_family == 'ordinary'.*recovery_family == 'source'.*selected != 'true'/);
+ assert.match(step(deploy,'Deploy to GitHub Pages'),/inputs\.ordinary_immediate_retry && !inputs\.source_saved_pair_readback/);
+ assert.match(build,/RAVRADAR_SOURCE_CLOSED_PAGES_PIN: \$\{\{ steps\.source-route\.outputs\.source_closed_pages_pin \}\}/);
+ assert.match(build,/SOURCE_CLOSED_PAGES_REQUIRES_INSTALLED_SOURCE/);
+ const result=byId('weather-route-result');
+ for(const invariant of ['SOURCE_RESULT_NOT_CLOSED','SOURCE_BINDING_ACTION_MISMATCH','SOURCE_OPERATIONAL_OBSERVATION_CHANGED','SOURCE_SAVED_PAIR_REQUIRED_','SAVED_PAIR_READBACK_VERIFIED'])assert(result.includes(invariant));
+}
+test('current Source workflow preserves fresh saved-pair isolation and actual gate mutations',async()=>{
+ const [build,once,deploy]=await Promise.all(['../.github/workflows/reusable-weather-build.yml',
+  '../.github/workflows/run-current-weather-once.yml','../.github/workflows/reusable-pages-deploy.yml'].map(rawWorkflow));
+ assertCurrentSourceWorkflow(build,once,deploy);
+ const changed=(id,from,to)=>{const part=currentStepById(build,id);assert.equal(part.split(from).length,2);return build.replace(part,()=>part.replace(from,to));};
+ for(const [id,from,to] of [
+  ['source-normal',"steps.source-route.outputs.source_saved_pair != 'true'","true"],
+  ['source-saved-pair-admission',"steps.preflight.outputs.should_run == 'true'","true"],
+  ['source-saved-pair-target',"steps.source-saved-pair-admission.outcome == 'success'","true"],
+  ['source-saved-pair-no-loss',"steps.source-saved-pair-target.outcome == 'success'","true"],
+  ['full-validation',"steps.source-saved-pair-admission.outcome == 'success'","true"],
+  ['release-gate',"steps.full-validation.outcome == 'success'","true"],
+ ])assert.throws(()=>assertCurrentSourceWorkflow(changed(id,from,to),once,deploy),id);
+ const deployment=step(deploy,'Deploy to GitHub Pages');
+ assert.equal(deployment.split('&& !inputs.source_saved_pair_readback').length,2);
+ assert.throws(()=>assertCurrentSourceWorkflow(build,once,deploy.replace(deployment,()=>deployment.replace('&& !inputs.source_saved_pair_readback',''))));
 });
