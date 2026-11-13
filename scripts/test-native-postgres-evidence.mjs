@@ -2868,3 +2868,38 @@ test('Source backend normal namespace absence refuses an untracked parent initia
     await fs.rmdir(root);
   }
 });
+
+
+test('Source backend metadata modes separate actual backend handlers from fresh provenance',async()=>{
+  const metadata=await import('./fixtures/source19-current-native-metadata.mjs');
+  assert.throws(()=>metadata.sourceCurrentNativeMetadataInputDeclarations({root:'elsewhere'}));
+  assert.throws(()=>metadata.sourceCurrentNativeMetadataMode('--rpc-request',{root:'elsewhere'}));
+  const value=metadata.sourceCurrentNativeMetadataInputDeclarations();
+  assert.equal(value.scope,'SOURCE_CURRENT_METADATA_OWNED_MODES_ONLY');
+  assert.equal(value.sourceGraphClosed,false);assert.equal(value.pgExecuted,false);assert.equal(value.reuseAuthority,false);
+  assert(Object.isFrozen(value)&&Object.isFrozen(value.backendModes)&&Object.isFrozen(value.freshModes));
+  assert.deepEqual(value.backendModes.map(row=>row.mode).sort(),[
+    '--current598-initial-rpc-request','--initial-rpc-request','--qualify','--rpc-request']);
+  assert.deepEqual(value.freshModes.map(row=>row.mode).sort(),[
+    '--capture-github','--capture-source-pr-native-test','--reconfirm-source-pr-native-test']);
+  assert.deepEqual(value.moduleDeclarations,[{role:'BACKEND_METADATA',namespace:'CURRENT',
+    path:'scripts/fixtures/source19-current-native-backend.mjs'}]);
+  assert.deepEqual(value.freshModuleDeclarations,[{role:'FRESH_METADATA_PROVENANCE',namespace:'CURRENT',
+    path:'scripts/fixtures/source19-current-native-provenance.mjs'}]);
+  const backend=await import('./fixtures/source19-current-native-backend.mjs');
+  for(const row of value.backendModes){
+    const actual=metadata.sourceCurrentNativeMetadataMode(row.mode);
+    assert.equal(actual.scope,'BACKEND');assert.equal(typeof backend[actual.exportName],'function');
+    assert.equal(row.path,'scripts/fixtures/'+actual.module.slice(2));
+    assert.deepEqual(actual.arguments,row.arguments);assert.equal(actual.context,false);
+    assert(Object.isFrozen(actual)&&Object.isFrozen(actual.arguments));
+  }
+  assert.deepEqual(metadata.sourceCurrentNativeMetadataMode('--rpc-request').arguments,[]);
+  assert.deepEqual(metadata.sourceCurrentNativeMetadataMode('--initial-rpc-request').arguments,[true]);
+  assert.equal(metadata.sourceCurrentNativeMetadataMode('--capture-source-pr-native-test').reconfirm,false);
+  assert.equal(metadata.sourceCurrentNativeMetadataMode('--reconfirm-source-pr-native-test').reconfirm,true);
+  for(const invalid of ['--unknown','./source19-current-native-provenance.mjs',null,{},'--rpc-request --capture-github'])
+    assert.throws(()=>metadata.sourceCurrentNativeMetadataMode(invalid));
+  const backendText=await fs.readFile(new URL('./fixtures/source19-current-native-backend.mjs',import.meta.url),'utf8');
+  assert(!backendText.includes('weather-source-gate')&&!backendText.includes('source-tree-content'));
+});

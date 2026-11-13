@@ -2686,7 +2686,8 @@ export async function collectSourceBackendNormalRecipeDeclarations({root=SOURCE_
   const actualHead=String(readGit(['rev-parse','HEAD'])).trim();ref??=actualHead;
   sourceRecipeNeed(/^[a-f0-9]{40}$/.test(ref)&&ref===actualHead
     &&String(readGit(['cat-file','-t',ref])).trim()==='commit','RECIPE_ACTUAL_COMMITTED_HEAD');
-  const owners={normal:'scripts/fixtures/source19-current-normal-inputs.mjs',
+  const owners={metadata:'scripts/fixtures/source19-current-native-metadata.mjs',
+    normal:'scripts/fixtures/source19-current-normal-inputs.mjs',
     forecast:'scripts/fixtures/source19-current-provider-forecast.mjs',
     action:'.github/actions/save-owned-dmi-grib/index.cjs',
     selector:'scripts/lib/copernicus_component_process.py',
@@ -2705,10 +2706,14 @@ export async function collectSourceBackendNormalRecipeDeclarations({root=SOURCE_
   }
   await verifySourceBackendPhysicalResolutionAbsences(root,namespaceAbsences,namespaceIndex);
   const load=relative=>import(pathToFileURL(path.join(root,relative)).href+'?source-recipe='+ref);
+  const metadata=(await load(owners.metadata)).sourceCurrentNativeMetadataInputDeclarations();
+  sourceRecipeNeed(metadata.scope==='SOURCE_CURRENT_METADATA_OWNED_MODES_ONLY'
+    &&metadata.sourceGraphClosed===false&&metadata.reuseAuthority===false,'RECIPE_METADATA_MODES_ONLY');
   const normal=(await load(owners.normal)).sourceCurrentNormalInputArtifacts();
   const forecast=(await load(owners.forecast)).sourceCurrentNativeForecastInputDeclarations();
   const action=sourceRecipeRequire(path.join(root,owners.action)).sourceActionNativeInputDeclarations();
-  const moduleDeclarations=[...sourceRecipeModuleDeclarations(normal,'NORMAL_INPUTS'),
+  const moduleDeclarations=[...sourceRecipeModuleDeclarations(metadata,'BACKEND_METADATA'),
+    ...sourceRecipeModuleDeclarations(normal,'NORMAL_INPUTS'),
     ...sourceRecipeModuleDeclarations(forecast,'FORECAST'),...sourceRecipeModuleDeclarations(action,'ACTION')];
   sourceRecipeNeed(normal.genuine598Code.head===forecast.genuine598Code.head
     &&normal.genuine598Code.tree===forecast.genuine598Code.tree,'RECIPE_GENUINE_CODE_ROLE');
@@ -2737,7 +2742,7 @@ export async function collectSourceBackendNormalRecipeDeclarations({root=SOURCE_
     &&pythonDeclarations.provider.genuine598Code.tree===normal.genuine598Code.tree,'RECIPE_PROVIDER_GENUINE_CODE');
   sourceRecipeNeed(Array.isArray(pythonDeclarations.materializer.scalarModuleDeclarations)
     &&pythonDeclarations.materializer.scalarModuleDeclarations.length>0,'RECIPE_SCALAR_DECLARATIONS_REQUIRED');
-  return Object.freeze({observedRef:ref,owners,moduleDeclarations,normal,forecast,action,
+  return Object.freeze({observedRef:ref,owners,moduleDeclarations,metadata,normal,forecast,action,
     pythonDeclarations,profileFiles,nativeInputFiles:profile.nativeInputFiles,
     profileSha256:derived.profileSha256,completeSourceClosure:false,closedBackendBoundary:false,
     eligibleForReuse:false,reuseAuthority:false});
@@ -2863,9 +2868,17 @@ export async function captureSourceBackendNormalRecipeInputs(options={}) {
     }});}catch(error){if(error!==sentinel)throw error;}
   sourceRecipeNeed(rpc&&Object.keys(rpc).length===22,'RECIPE_NORMAL_RPC_22');
   await verifySourceBackendPhysicalResolutionAbsences(root,absence,index);
+  // Fresh metadata admission is qualified physically, but is not a PG recipe operand.
+  const freshMetadataSourceFacts=[];
+  for(const row of declarations.metadata.freshModuleDeclarations) {
+    sourceRecipeNeed(row.namespace==='CURRENT'&&row.role==='FRESH_METADATA_PROVENANCE','RECIPE_FRESH_METADATA_ROLE');
+    const bytes=await sourceRecipePhysicalBytes(root,row.path,ref,readGit);
+    freshMetadataSourceFacts.push({file:row.path,bytes:bytes.length,sha256:sha(bytes)});
+  }
   const result=captureSourceBackendRecipeSources({ref,readGit,sourcePaths:[...sources.keys()],
     absentPaths:[...absence],factoryInputs:fixedFactories,recipe:{nativeCommands:SOURCE_PR_NATIVE_COMMANDS,
-      moduleDeclarations:declarations.moduleDeclarations,normalRpc22:rpc,storageContracts:contracts,
+      moduleDeclarations:declarations.moduleDeclarations,metadataBackendModes:declarations.metadata.backendModes,
+      normalRpc22:rpc,storageContracts:contracts,
       normalAdminInputRoles:declarations.normal.adminInputPaths,normalProviderInputRoles:declarations.normal.providerInputPaths,
       providerBasisRoles:declarations.pythonDeclarations.provider.basisPaths,
       materializerModules:declarations.pythonDeclarations.materializer.modules,
@@ -2873,6 +2886,7 @@ export async function captureSourceBackendNormalRecipeInputs(options={}) {
       scalarProgramSha256:declarations.pythonDeclarations.materializer.scalarProgramSha256,
       pythonExternalImports:pythonImports.externalImports}});
   return Object.freeze({...result,normalOwnerDeclarationsQualified:true,
+    metadataModeDeclarationsQualified:true,freshMetadataSourceFacts,
     computedImportOwners:[...computedOwners].map(([file,operations])=>({file,operations})),
     dynamicImportFactoryQualificationRequired:true,freshAppArtifactChecksRequired:true});
 }
