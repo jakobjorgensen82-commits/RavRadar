@@ -7,6 +7,7 @@ import path from 'node:path';
 import {execFileSync, spawnSync, spawn} from 'node:child_process';
 import {nativePrograms,nativePostgresProgramIdentity} from './lib/checkpoint-cas-native-postgres.mjs';
 import {fileURLToPath} from 'node:url';
+import {types} from 'node:util';
 import {sourceTreeContentSha256} from './lib/source-tree-content.mjs';
 import {requireAssistantLaterH0Release,requireAssistantPublic587SuccessorRelease,
   requireAssistantPublic588SuccessorRelease,requireAssistantPublic590SuccessorRelease,requireAssistantPublic591SuccessorRelease,
@@ -2050,6 +2051,159 @@ async function sourcePrProgramFile(file,version){
   assert.equal(await fs.realpath(file),realpath);assert.equal(BigInt(raw.length),before.size);
   return {path:file,realpath,mode:Number(before.mode&0o777n),bytes:raw.length,sha256:sha(raw),version};
 }
+
+// Additional runtime observations only. V1/V2 receipts and their false reuse
+// fields remain exact; these bounded facts in the existing job log mint no grant.
+export const SOURCE_PR_RUNTIME_OBSERVATION_KIND='SOURCE_NATIVE_ADDITIONAL_RUNTIME_OBSERVATION_V1';
+export const SOURCE_PR_PYTHON_RUNTIME_PROBE=String.raw`
+import hashlib, importlib.metadata as md, json, os, pathlib, re, stat, sys
+try:
+    from packaging.requirements import Requirement
+except ImportError:
+    from pip._vendor.packaging.requirements import Requirement
+def need(value):
+    if not value: raise RuntimeError("UNPROVED_RUNTIME_OPERAND")
+def digest_file(path):
+    p=pathlib.Path(path); a=p.stat()
+    need(stat.S_ISREG(a.st_mode))
+    h=hashlib.sha256()
+    with p.open("rb") as f:
+        for chunk in iter(lambda:f.read(1024*1024),b""): h.update(chunk)
+    b=p.stat()
+    need((a.st_dev,a.st_ino,a.st_size,a.st_mtime_ns)==(b.st_dev,b.st_ino,b.st_size,b.st_mtime_ns))
+    return (a.st_size,h.hexdigest())
+need(sys.platform=="linux")
+roots=json.load(sys.stdin); need(type(roots) is list and 0<len(roots)<=32)
+need(all(type(x) is str and re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*",x) for x in roots))
+normal=lambda x:re.sub(r"[-_.]+","-",x).lower()
+pending=[(x,set()) for x in roots]; done={}; expanded={}; files_seen=set()
+while pending:
+    wanted,requested=pending.pop(); key=normal(wanted)
+    previous=expanded.get(key); extras=(previous or set()) | requested
+    if previous is not None and extras==previous: continue
+    expanded[key]=extras
+    need(len(done)<128)
+    d=md.distribution(wanted); name=d.metadata["Name"]; need(normal(name)==key)
+    entries=d.files; need(entries is not None and 0<len(entries)<=100000)
+    rows=[]; total=0
+    for relative in sorted(entries,key=str):
+        path=d.locate_file(relative)
+        need(not path.is_symlink())
+        real=path.resolve(strict=True); size,sha=digest_file(real)
+        total+=size; need(total<=2*1024*1024*1024)
+        rows.append([str(relative),size,sha]); files_seen.add(str(real))
+    payload=json.dumps(rows,separators=(",",":"),ensure_ascii=True).encode()
+    done[key]={"name":key,"version":d.version,"fileCount":len(rows),"bytes":total,
+        "inventorySha256":hashlib.sha256(payload).hexdigest()}
+    for declared in d.requires or ():
+        r=Requirement(declared)
+        if r.marker is None or any(r.marker.evaluate({"extra":extra}) for extra in ({""}|extras)):
+            pending.append((r.name,set(r.extras)))
+# Same real import as the normal provider. Bind the library actually mapped by
+# this Python process, not a guessed system path or an ldd/whole-OS inventory.
+import eccodes
+api=str(eccodes.codes_get_api_version()); mapped=set()
+for line in pathlib.Path("/proc/self/maps").read_text().splitlines():
+    columns=line.split(maxsplit=5)
+    if len(columns)!=6: continue
+    value=columns[5]
+    if value.startswith("/") and re.fullmatch(r"libeccodes(?:[_.-].*)?\.so(?:\..*)?",pathlib.Path(value).name):
+        real=str(pathlib.Path(value).resolve(strict=True))
+        need(real in files_seen); mapped.add(real)
+need(0<len(mapped)<=4)
+print(json.dumps({"executable":sys.executable,"version":"Python "+".".join(map(str,sys.version_info[:3])),
+    "roots":sorted(map(normal,roots)),"distributions":[done[x] for x in sorted(done)],
+    "ecCodesApiVersion":api,"loadedEcCodesLibraries":sorted(mapped)},separators=(",",":")))
+`;
+function sourcePrRuntimeUnproved(operand) {
+  return Object.assign(new Error('UNPROVED_RUNTIME_OPERAND'),{code:'UNPROVED_RUNTIME_OPERAND',operand});
+}
+function sourcePrRuntimeData(value) {
+  if(value===null||['string','boolean'].includes(typeof value)||Number.isSafeInteger(value))return;
+  assert(value&&typeof value==='object'&&!types.isProxy(value));
+  assert(Array.isArray(value)||Object.getPrototypeOf(value)===Object.prototype);
+  assert.equal(Object.getOwnPropertySymbols(value).length,0);
+  for(const [key,descriptor]of Object.entries(Object.getOwnPropertyDescriptors(value))){
+    if(Array.isArray(value)&&key==='length')continue;
+    assert(Object.hasOwn(descriptor,'value'));sourcePrRuntimeData(descriptor.value);
+  }
+}
+export function verifySourcePrAdditionalRuntimeFacts(value) {
+  sourcePrRuntimeData(value);
+  sourcePrExact(value,['schemaVersion','platform','arch','requirements','python','roots','distributions','ecCodesApiVersion','loadedEcCodesLibraries']);
+  assert.equal(value.schemaVersion,1);assert.equal(value.platform,'linux');assert.equal(value.arch,'x64');
+  assert.equal(value.requirements.length,3);
+  assert.deepEqual(value.requirements.map(r=>r.path),['requirements-dmi.txt','requirements-geometry.txt','requirements-copernicus.txt']);
+  for(const r of value.requirements){sourcePrExact(r,['path','bytes','sha256']);assert(sourcePrPositive(r.bytes));assert.match(r.sha256,hashPattern);}
+  sourcePrExact(value.python,['path','realpath','mode','bytes','sha256','version']);
+  assert.match(value.python.version,/^Python 3\.12\.\d+$/);
+  assert(path.posix.isAbsolute(value.python.path)&&path.posix.isAbsolute(value.python.realpath));
+  assert(sourcePrPositive(value.python.bytes));assert.match(value.python.sha256,hashPattern);assert(sourcePrPositive(value.python.mode));
+  assert(Array.isArray(value.roots)&&value.roots.length>0&&value.roots.length<=32);
+  assert.deepEqual(value.roots,[...new Set(value.roots)].sort());
+  assert(Array.isArray(value.distributions)&&value.distributions.length>0&&value.distributions.length<=128);
+  assert.deepEqual(value.distributions.map(r=>r.name),[...new Set(value.distributions.map(r=>r.name))].sort());
+  for(const r of value.distributions){
+    sourcePrExact(r,['name','version','fileCount','bytes','inventorySha256']);
+    assert.match(r.name,/^[a-z0-9][a-z0-9-]*$/);assert(typeof r.version==='string'&&r.version.length>0&&r.version.length<=100);
+    assert(sourcePrPositive(r.fileCount)&&r.fileCount<=100000);assert(sourcePrPositive(r.bytes));assert.match(r.inventorySha256,hashPattern);
+  }
+  assert(value.roots.every(name=>value.distributions.some(r=>r.name===name)));
+  assert.equal(value.ecCodesApiVersion,'2.48.2');
+  assert(Array.isArray(value.loadedEcCodesLibraries)&&value.loadedEcCodesLibraries.length>0&&value.loadedEcCodesLibraries.length<=4);
+  for(const r of value.loadedEcCodesLibraries){
+    sourcePrExact(r,['path','realpath','mode','bytes','sha256','version']);
+    assert(path.posix.isAbsolute(r.path)&&path.posix.isAbsolute(r.realpath));
+    assert(sourcePrPositive(r.bytes));assert.match(r.sha256,hashPattern);assert(sourcePrPositive(r.mode));assert.equal(r.version,value.ecCodesApiVersion);
+  }
+  return value;
+}
+export async function captureSourcePrAdditionalRuntimeFacts() {
+  // Non-Linux is unknown before any Python, package or library read.
+  if(process.platform!=='linux'||process.arch!=='x64')throw sourcePrRuntimeUnproved('LINUX_NATIVE_HOST');
+  const override=['ECCODES_DIR','ECCODES_DEFINITION_PATH','ECCODES_SAMPLES_PATH','GRIB_DEFINITION_PATH','GRIB_SAMPLES_PATH'];
+  if(override.some(name=>process.env[name]))throw sourcePrRuntimeUnproved('ECCODES_RESOURCE_OVERRIDE');
+  const requirements=[],names=new Set();
+  for(const relative of ['requirements-dmi.txt','requirements-geometry.txt','requirements-copernicus.txt']){
+    const file=path.join(SOURCE_PR_ROOT,relative),before=await fs.lstat(file,{bigint:true});
+    assert(before.isFile()&&!before.isSymbolicLink()&&before.size>0n&&before.size<=65536n);
+    const raw=await fs.readFile(file),after=await fs.lstat(file,{bigint:true});
+    assert.deepEqual([before.dev,before.ino,before.size,before.mtimeNs],[after.dev,after.ino,after.size,after.mtimeNs]);
+    requirements.push({path:relative,bytes:raw.length,sha256:sha(raw)});
+    for(const line of raw.toString('utf8').split(/\r?\n/).map(x=>x.trim()).filter(x=>x&&!x.startsWith('#'))){
+      const match=/^([A-Za-z0-9][A-Za-z0-9_.-]*)(?:[<>=!~][A-Za-z0-9_.,<>=!~+-]+)?$/.exec(line);
+      if(!match)throw sourcePrRuntimeUnproved('REQUIREMENT_GRAMMAR');names.add(match[1]);
+    }
+  }
+  const childEnv=Object.fromEntries(['PATH','Path','HOME','LANG','LC_ALL','LD_LIBRARY_PATH']
+    .filter(name=>typeof process.env[name]==='string').map(name=>[name,process.env[name]]));
+  let raw;
+  try{raw=execFileSync(process.env.PYTHON||'python3',['-I','-B','-c',SOURCE_PR_PYTHON_RUNTIME_PROBE],
+    {input:JSON.stringify([...names].sort()),encoding:'utf8',env:childEnv,stdio:['pipe','pipe','pipe'],timeout:60000,maxBuffer:128*1024});}
+  catch{throw sourcePrRuntimeUnproved('PYTHON_PACKAGE_OR_ECCODES_IDENTITY');}
+  const observed=JSON.parse(raw);sourcePrRuntimeData(observed);
+  sourcePrExact(observed,['executable','version','roots','distributions','ecCodesApiVersion','loadedEcCodesLibraries']);
+  const python=await sourcePrProgramFile(observed.executable,observed.version),loadedEcCodesLibraries=[];
+  for(const file of observed.loadedEcCodesLibraries)loadedEcCodesLibraries.push(await sourcePrProgramFile(file,observed.ecCodesApiVersion));
+  return verifySourcePrAdditionalRuntimeFacts({schemaVersion:1,platform:process.platform,arch:process.arch,requirements,python,
+    roots:observed.roots,distributions:observed.distributions,ecCodesApiVersion:observed.ecCodesApiVersion,loadedEcCodesLibraries});
+}
+export async function sourcePrAdditionalRuntimeObservation(stage,current,expected,before=null,write=console.log) {
+  assert(['BEFORE','AFTER'].includes(stage));sourcePrCurrent(current);
+  assert(sourcePrPositive(expected.jobId));assert.match(expected.sourceTreeSha256,/^sha256:[a-f0-9]{64}$/);
+  const record={kind:SOURCE_PR_RUNTIME_OBSERVATION_KIND,stage,current:{...current,jobId:expected.jobId},
+    sourceTreeSha256:expected.sourceTreeSha256,state:'UNPROVED',code:'UNPROVED_RUNTIME_OPERAND',operand:'CAPTURE',
+    facts:null,matchesBefore:null,reuseAuthority:false,sourceClosureProved:false,privatePayloadIncluded:false};
+  try{
+    record.facts=await captureSourcePrAdditionalRuntimeFacts();record.state='OBSERVED';record.code=null;record.operand=null;
+    if(stage==='AFTER')record.matchesBefore=before?.state==='OBSERVED'&&JSON.stringify(before.facts)===JSON.stringify(record.facts);
+  }catch(error){
+    record.operand=['LINUX_NATIVE_HOST','ECCODES_RESOURCE_OVERRIDE','REQUIREMENT_GRAMMAR','PYTHON_PACKAGE_OR_ECCODES_IDENTITY']
+      .includes(error?.operand)?error.operand:'CAPTURE';
+  }
+  write('SOURCE_NATIVE_ADDITIONAL_RUNTIME '+JSON.stringify(record));return record;
+}
+
 async function sourcePrSelectedRuntime(){
   requireSourceProducerOutput();assert.equal(arguments.length,0);
   const run=(file,args)=>execFileSync(file,args,{encoding:'utf8',timeout:10000,maxBuffer:16384}).trim();
@@ -2263,6 +2417,7 @@ export async function executeSourceAfter598PrNative(){
   assert(stat.isFile()&&!stat.isSymbolicLink());
   assert.match(execFileSync(node24,['--version'],{encoding:'utf8',timeout:10000}).trim(),/^v24\.\d+\.\d+$/);
   const runtimeBefore=await sourcePrSelectedRuntime();
+  const additionalRuntimeBefore=await sourcePrAdditionalRuntimeObservation('BEFORE',current,expected);
   const context={schemaVersion:1,scope:'SOURCE_PR_NATIVE_TEST_V1',current,sourceTreeSha256:proof.sourceTreeSha256};
   const env={...process.env,SOURCE_CURRENT_NATIVE_PR_TEST_CONTEXT:JSON.stringify(context)};
   const collector=sourcePrNativeReportCollector();
@@ -2272,6 +2427,7 @@ export async function executeSourceAfter598PrNative(){
     child.stdout.setEncoding('utf8');child.stdout.on('data',chunk=>{process.stdout.write(chunk);collector.write(chunk);});
     child.on('error',value=>{error=value;});child.on('close',(status,signal)=>resolve({status,signal,error}));
   });
+  await sourcePrAdditionalRuntimeObservation('AFTER',current,expected,additionalRuntimeBefore);
   if(result.error||result.signal||result.status!==0){process.exitCode=result.status||1;return;}
   const {nativeResult,selectedPrograms,issuedSource,sourceMaterializers,sourceCurrentInputs}=collector.finish(current,expected);
   assert.deepEqual(await sourcePrSelectedRuntime(),runtimeBefore,'Selected Source native runtime changed during execution');

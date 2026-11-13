@@ -2,6 +2,8 @@
 
 De eksisterende 24 interval-/områdescenarier køres nu også én gang af standardprøven gennem klient og Edge. Det hidtidige særflag bruger samme uændrede lokale helper. Dermed prøver den normale ændringsvalgte kildekommando også den nye sammensætning; der tilføjes ingen ekstra suite, model-/SQL-ændring eller offentlig acceptpåstand.
 
+Den første Source-backendkørsel logger desuden de faktisk observerede ekstra Python-/CJS-/decoderforudsætninger før og efter det eksisterende native barn. De eksisterende kvitteringsformer, SQL- og runtimeværn bevares; observationerne giver ingen genbrugsret eller påstand om afsluttet backendlukning.
+
 ## 13. november — særskilt oprydning af udløbet ejerprøve
 
 En read-only gatewaykontrol kunne standse mailprøven efter positiv installation og fuld kildegenlæsning, før den kendt-ejede oprydning blev nået. Den lokale rettelse forbinder dette punkt med samme oprydning efter det oprindelige udløb. Den oprindelige gatewayfejl bevares; ukendt installation eller DELETE giver fortsat stop uden automatisk gentagelse.

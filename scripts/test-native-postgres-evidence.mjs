@@ -2500,3 +2500,45 @@ sourceAfter598PreissuanceTest('Source598 full PR native and fixed qualification 
   await assert.rejects(native.executeSourceAfter598PrNative(),/SOURCE_PRODUCER_AFTER597_UNISSUED/);
   assert.equal(reads,0);
 });
+
+test('Source additional runtime facts validate data without granting source or reuse authority', async () => {
+  const {verifySourcePrAdditionalRuntimeFacts}=await import('./native-postgres-evidence.mjs');
+  const h='a'.repeat(64),file={path:'/software/file',realpath:'/software/file',mode:0o755,bytes:10,sha256:h,version:'Python 3.12.8'};
+  const facts={schemaVersion:1,platform:'linux',arch:'x64',
+    requirements:['requirements-dmi.txt','requirements-geometry.txt','requirements-copernicus.txt'].map(path=>({path,bytes:10,sha256:h})),
+    python:file,roots:['eccodes'],distributions:[{name:'eccodes',version:'2.48.0',fileCount:1,bytes:10,inventorySha256:h}],
+    ecCodesApiVersion:'2.48.2',loadedEcCodesLibraries:[{...file,path:'/software/libeccodes.so',realpath:'/software/libeccodes.so',version:'2.48.2'}]};
+  // Synthetic schema operands only; never a Linux observation or native origin.
+  assert.equal(verifySourcePrAdditionalRuntimeFacts(facts),facts);
+  for(const mutate of [
+    x=>x.requirements.pop(),
+    x=>x.distributions.push({...x.distributions[0]}),
+    x=>x.distributions[0].inventorySha256='unknown',
+    x=>x.loadedEcCodesLibraries=[],
+    x=>x.ecCodesApiVersion='2.47.0',
+  ]){const changed=structuredClone(facts);mutate(changed);assert.throws(()=>verifySourcePrAdditionalRuntimeFacts(changed));}
+  const accessor=structuredClone(facts);let getterRead=false;
+  Object.defineProperty(accessor,'roots',{get(){getterRead=true;return ['eccodes'];},enumerable:true});
+  assert.throws(()=>verifySourcePrAdditionalRuntimeFacts(accessor));assert.equal(getterRead,false);
+});
+test('Source additional runtime observation refuses non-Linux without manufacturing an origin', async () => {
+  const native=await import('./native-postgres-evidence.mjs');
+  if(process.platform==='linux') {
+    // The normal before/after caller makes actual Linux observations once.
+    // This schema test must not repeat a package inventory.
+    assert.equal(typeof native.captureSourcePrAdditionalRuntimeFacts,'function');return;
+  }
+  await assert.rejects(native.captureSourcePrAdditionalRuntimeFacts(),error=>
+    error.code==='UNPROVED_RUNTIME_OPERAND'&&error.operand==='LINUX_NATIVE_HOST');
+  const current={run:123,attempt:1,head:'1'.repeat(40),pullRequest:1,branch:'codex/runtime-shape-only'};
+  const expected={jobId:456,sourceTreeSha256:'sha256:'+'2'.repeat(64)},lines=[];
+  const before=await native.sourcePrAdditionalRuntimeObservation('BEFORE',current,expected,null,value=>lines.push(value));
+  const after=await native.sourcePrAdditionalRuntimeObservation('AFTER',current,expected,before,value=>lines.push(value));
+  assert.equal(lines.length,2);assert(lines.every(line=>line.startsWith('SOURCE_NATIVE_ADDITIONAL_RUNTIME ')));
+  for(const row of [before,after]){
+    assert.equal(row.state,'UNPROVED');assert.equal(row.code,'UNPROVED_RUNTIME_OPERAND');assert.equal(row.operand,'LINUX_NATIVE_HOST');
+    assert.equal(row.facts,null);assert.equal(row.reuseAuthority,false);assert.equal(row.sourceClosureProved,false);
+    assert.equal(row.privatePayloadIncluded,false);
+  }
+  assert.equal(before.stage,'BEFORE');assert.equal(after.stage,'AFTER');
+});
