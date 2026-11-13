@@ -1,3 +1,7 @@
+## 13. november — almindelig offentlig Pages-generation uden overgangsfase
+
+Den afgrænsede completionvej omfatter nu også en almindelig, allerede offentliggjort Pages-skriver uden pre-activation-fase. Den beskyttede målpakke binder producent, ejer, model og oprindelig centralversion; frisk ACTIVE/nonpending operation/profil skal passe præcist. Samme normale kildekvalifikation, terminalitetskontrol, fulde offentlige verifier, database-/Edge-parathed og atomiske maintenance-CAS består. Kun faktisk færdiggørelse giver den eksisterende TARGET_RECONCILE-disposition; den næste almindelige kørsel vælger fortsat frisk UTC-time. Reservations- og snapshot-hashkrav bevares. Private B/S og en eventuelt nyere gemt generation ændres ikke; gamle forseglede håndoffs får ingen implicit ny centralversion. Dette er en lokal kildekandidat, ikke hosted afslutning eller ny vejrlevering. Se håndbog 89.340.
+
 ## 13. november — en ukendt status afbrød en accepteret udgivelse for tidligt
 
 Den normale Pages-observatør stoppede efter første identitetsgyldige, men ukendte statusværdi efter positiv CREATE-kvittering. Det gjorde workflowet rødt og udløste normal fejlvarsling; den nye prognose blev senere observeret offentligt i samme kørselsforløb. Der var ingen ny genforsøgskørsel. Den konkrete oprindelige statusværdi blev ikke bevaret og må ikke gættes.
