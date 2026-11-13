@@ -121,22 +121,4 @@ jobs:
           RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
           RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
           RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
-        run: |
-          set -euo pipefail
-          node scripts/test-supabase-cli-local-restore.mjs --run-archive-restore | tee "$RUNNER_TEMP/database-archive-restore-report.json"
-      - name: Seal one durable receipt for the actual completed archive restore
-        if: inputs.restore_mode == 'archive'
-        timeout-minutes: 2
-        env:
-          EXPECTED_HEAD_SHA: ${{ inputs.expected_head }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
-          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
-          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
-        run: |
-          node --input-type=module <<'RESERVE'
-          import fs from 'node:fs';
-          import {persistSupabaseDatabaseRestoreReceipt} from './scripts/archive-supabase-database-backup.mjs';
-          const report=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/database-archive-restore-report.json','utf8'));
-          await persistSupabaseDatabaseRestoreReceipt({report,indexCommitment:'rr-supabase-restore-v1:'+report.archiveIndexCommitmentSha256});
-          RESERVE
+        run: node scripts/test-supabase-cli-local-restore.mjs --run-archive-restore

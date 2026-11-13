@@ -132,6 +132,6 @@ test('existing maintenance owns the subsequent backup job with original weather 
   assert(!manual.includes('source_weather_run_id:')&&!manual.includes('run-autonomous-supabase-backup'));
   assert.equal((restore.match(/--run-archive-restore/g)??[]).length,1);
   const archive=restore.slice(restore.indexOf('      - name: Materialize the exact authenticated archive'));
-  assert(archive.indexOf('--run-archive-restore')<archive.indexOf('await persistSupabaseDatabaseRestoreReceipt'));
+  assert(!restore.includes('persistSupabaseDatabaseRestoreReceipt'),'manual restore remains independent of automation receipts');
   assert(!/SUPABASE_ACCESS_TOKEN|SUPABASE_DB_PASSWORD|GITHUB_TOKEN|upload-artifact/.test(archive));
 });
