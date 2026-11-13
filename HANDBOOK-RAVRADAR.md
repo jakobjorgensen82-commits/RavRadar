@@ -31,7 +31,7 @@ Den nye V4-kandidat vælger normale mål fra PR'ens faktiske merge-base til dens
 <!-- ravradar-derived-source-bindings-v1:begin -->
 ## Afledt kildeidentitet — RavScore 4.0.616
 
-Integreret model: `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=11cfdde5f044bd8d069358f1a594fb6f60d15dccdcc36d329a9db0f8df5171c3` over 42 kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere.
+4.0.616 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=11cfdde5f044bd8d069358f1a594fb6f60d15dccdcc36d329a9db0f8df5171c3` over 42 kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere.
 
 Inaktiv Candidate G: `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=901c934d5bb9d7f704191531b5c816c4cf501fa30c66f4d4b765832520d8f0ec` over 42 transitive filer.
 
