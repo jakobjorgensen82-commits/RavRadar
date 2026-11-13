@@ -778,8 +778,8 @@
     },
     {
       "path": "scripts/github-pages-attempt-evidence.mjs",
-      "bytes": 15483,
-      "sha256": "36469eb8e4af322bb0e1fa9aa9fe2f8bc4e81390628ac73437d7db030c555380"
+      "bytes": 17636,
+      "sha256": "b58427260df778d982498c21d632e8144e0686f2dbd8253df65d6a7f176d9759"
     },
     {
       "path": "scripts/integrated-cutover-readiness.mjs",

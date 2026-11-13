@@ -19,6 +19,7 @@ const cancellationChecks = 7;
 const transportFailures = new WeakMap();
 const retryEvidence = new WeakSet();
 const terminalEvidence = new WeakSet();
+const createRejectionEvidence = new WeakSet();
 const noPostEvidence = new WeakSet();
 const deliveryCodes = new WeakMap();
 const deliveryResult = data => { const value = Object.freeze(data); deliveryCodes.set(value, data.code); return value; };
@@ -26,6 +27,7 @@ export const sealedPagesDeliveryDiagnostic = delivery => deliveryCodes.get(deliv
 const transportError = code => { const error = new Error(code); transportFailures.set(error, code); return error; };
 export const hasSealedPagesRetryEvidence = delivery => retryEvidence.has(delivery);
 export const hasSealedPagesTerminalEvidence = delivery => terminalEvidence.has(delivery);
+export const hasSealedPagesCreateRejectionEvidence = delivery => createRejectionEvidence.has(delivery);
 export const hasSealedPagesNoPostEvidence = delivery => noPostEvidence.has(delivery);
 export const sealedPagesFailureCode = error => pagesIdentityFailureCode(error)
   ?? transportFailures.get(error) ?? 'PAGES_TRANSPORT_UNPROVED';
@@ -112,7 +114,7 @@ export async function runSealedPagesDeployment(options = {}) {
     const result = await executeSealedPagesDeployment(options, () => { postAttempted = true; });
     // A prior positive remote state still needs reconciliation. No POST in
     // this invocation must not turn that separate uncertainty into closure.
-    if (!postAttempted && !['PRIOR_DEPLOYMENT_PENDING', 'PRIOR_UNIQUE_VERSION_ALREADY_USED'].includes(result.code))
+    if (!postAttempted && result.code !== 'PRIOR_DEPLOYMENT_PENDING')
       noPostEvidence.add(result);
     return result;
   } catch (error) {
@@ -178,16 +180,15 @@ async function executeSealedPagesDeployment({
     prior = classifyPagesPriorStatus(response, request);
     if (prior.outcome === 'PENDING')
       return deliveryResult({ outcome: 'UNKNOWN', code: 'PRIOR_DEPLOYMENT_PENDING', request });
-    if (prior.outcome === 'CLOSED')
-      return deliveryResult({ outcome: 'UNKNOWN', code: 'PRIOR_UNIQUE_VERSION_ALREADY_USED', request });
     if (prior.outcome === 'UNKNOWN'
       && !['PRIOR_STATUS_EMPTY_UNQUALIFIED', 'PRIOR_STATUS_ABSENCE_UNQUALIFIED'].includes(prior.code))
       return deliveryResult({ outcome: 'UNKNOWN', code: prior.code, request });
   } catch {
     return deliveryResult({ outcome: 'UNKNOWN', code: 'PRIOR_STATUS_READ_UNPROVED', request });
   }
-  // Empty/404 never proves absence or grants authority. The unique intent
-  // still requires normal admission and one create-only caller reservation.
+  // A terminal SHA alias may describe an older artifact from the same commit.
+  // It grants no authority over this write; empty/404 also proves no absence.
+  // The new local intent still needs normal admission and one create-only reservation.
   const operationDeadline = absoluteDeadlineMs - completionReserveMs;
   // Latest GET + one CANCEL + seven terminal GETs, including all six pauses.
   const cleanupReserveMs = cancelAtDeadline
@@ -207,21 +208,28 @@ async function executeSealedPagesDeployment({
   // durable create-only reservation from the production caller before POST.
   require(await beforeCreate(intent) === true, 'PAGES_TRANSPORT_CREATE_NOT_RESERVED');
   // The immutable request was built here from the exact authenticated seal.
-  const uniqueIntentReserved = request.buildVersion !== seal.headSha
-    && request.buildVersion === request.clientIntentSha256.slice(0, 40);
+  const uniqueIntentReserved = request.buildVersion === seal.headSha
+    && /^[a-f0-9]{64}$/.test(request.clientIntentSha256);
   require(uniqueIntentReserved, 'PAGES_TRANSPORT_UNIQUE_INTENT_UNPROVED');
   if (!hasWriteBudget()) return deliveryResult({ outcome: 'UNKNOWN', code: 'CREATE_BUDGET_EXPIRED', request });
 
   // This is the only POST call in this invocation. Unknown writes are returned
-  // as HOLD and never fall back to the source SHA or to another deployment ID.
-  let receipt;
+  // as HOLD and never switch to another artifact or deployment ID.
+  let receipt, createResponse;
   markPostAttempted();
   try {
-    const response = await postImpl(request.url, { ...github, 'Content-Type': 'application/json' },
+    createResponse = await postImpl(request.url, { ...github, 'Content-Type': 'application/json' },
       takePagesDeploymentRequestBody(request), 64 * 1024);
-    receipt = admitPagesCreateResponse(response, request);
+    receipt = admitPagesCreateResponse(createResponse, request);
   } catch (error) {
     const cause = sealedPagesFailureCode(error);
+    // A concrete rejection is not a missing POST, a terminal deployment, or retry authority.
+    if (cause === 'PAGES_CREATE_HTTP_404' && createResponse?.status === 404
+      && createResponse.url === request.url) {
+      const rejected = deliveryResult({ outcome: 'REJECTED', code: cause, request });
+      createRejectionEvidence.add(rejected);
+      return rejected;
+    }
     return deliveryResult({ outcome: 'UNKNOWN', code: cause === 'PAGES_TRANSPORT_UNPROVED'
       ? 'PAGES_CREATE_TRANSPORT_UNPROVED' : cause, request });
   }
@@ -232,8 +240,8 @@ async function executeSealedPagesDeployment({
       ...decision, request, receipt, pendingObserved, priorStatus: prior.code,
       response: Object.freeze({ status: 200, url: receipt.statusUrl, data: projectPagesStatusData(response, receipt) }),
     });
-    // The positive CREATE binds this actual ID to our one reserved unique intent.
-    // A known terminal GET is sufficient even when the provider fails immediately.
+    // A distinct acknowledged deployment ID, or the shared SHA route after
+    // observed post-CREATE PENDING, binds the terminal GET to this reserved intent.
     if (uniqueIntentReserved && decision.outcome === 'FAILED'
       && ['deployment_failed', 'deployment_cancelled', 'deployment_content_failed'].includes(decision.code)) terminalEvidence.add(delivery);
     if (uniqueIntentReserved && decision.outcome === 'FAILED'
@@ -246,6 +254,12 @@ async function executeSealedPagesDeployment({
     const response = await requestJson(fetchImpl, receipt.statusUrl, { headers: github }, 64 * 1024, 'STATUS');
     const decision = classifyPagesStatus(response, receipt);
     if (decision.outcome === 'PENDING') pendingObserved = true;
+    // A commit-SHA deployment ID can still resolve to an older terminal artifact.
+    // Continue bounded reads until this acknowledged write has been seen pending;
+    // an old terminal alias must never close this writer or authorize another POST.
+    if (receipt.deploymentId === request.buildVersion && !pendingObserved
+      && ['SUCCEEDED', 'FAILED'].includes(decision.outcome))
+      return { response, decision: Object.freeze({ outcome: 'UNKNOWN', code: 'STATUS_SHARED_ALIAS_UNPROVED' }) };
     return { response, decision };
   };
   const deadline = Math.min(clock() + waitMs, operationDeadline - cleanupReserveMs);
@@ -253,15 +267,16 @@ async function executeSealedPagesDeployment({
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       if (clock() + requestTimeoutMs > deadline) break;
       const { response, decision } = await observe();
-      if (decision.outcome === 'UNKNOWN') return unknown(decision.code);
-      if (decision.outcome !== 'PENDING') return terminal(decision, response);
+      if (decision.outcome === 'UNKNOWN' && decision.code !== 'STATUS_SHARED_ALIAS_UNPROVED')
+        return unknown(decision.code);
+      if (['SUCCEEDED', 'FAILED'].includes(decision.outcome)) return terminal(decision, response);
       if (clock() + intervalMs + requestTimeoutMs > deadline || attempt + 1 >= maxAttempts) break;
       await pause(intervalMs);
     }
   } catch {
     return unknown('STATUS_READ_UNPROVED');
   }
-  if (!cancelAtDeadline) return unknown('STATUS_DEADLINE');
+  if (!cancelAtDeadline) return unknown(pendingObserved ? 'STATUS_DEADLINE' : 'STATUS_SHARED_ALIAS_UNPROVED');
 
   // A 204 only acknowledges the cancellation request. A new write must wait
   // for the first deployment's exact terminal status or a verified target.

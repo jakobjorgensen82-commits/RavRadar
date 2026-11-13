@@ -1,3 +1,12 @@
+## 13. november — faktisk Pages-kodeversion og afvist CREATE
+
+Den særlige almindelige Pages-transport sendte en afledt lokal bestillingshash som serverens byggeversion; den officielle action sender den faktiske Git-commit. Den afgrænsede kandidat følger den officielle kontrakt og bevarer den fulde lokale hensigt, den beskyttede reservation, det præcise artifact og den faktisk modtagne CREATE-identitet. Et delt commit-opslag kan vise en ældre pakke: uden observeret ny PENDING eller en særskilt kvitteret serveridentitet giver den gamle terminalstatus ingen luknings- eller retryautoritet. En allerede synlig præcis ny prognose kan kun gå videre til den fulde offentlige verifier.
+
+En faktisk CREATE-HTTP404 får en intern særskilt afvisningsklassifikation. Alle transportinvocations, outcomes og deliveries skal være bogført, og forgængeren skal være frisk uændret, før CLOSED_UNPUBLISHED må udstedes. Afvisningen er aldrig NO_POST, en terminal deployment eller ret til endnu et POST. Timeout, uklart svar, GET-/token404 og modstridende metadata beholder deres afslag.
+
+En enkelt allerede afsluttet historisk hændelse uden den nye klassifikation kvalificeres i den eksisterende ejerlæser gennem dens faktiske run/attempt/job, alle skrivere, seks oprindelige Git-blobs og hele den autentiske private log. Loggen indgår ikke i repositoryet. Dette er en eksplicit historisk hændelsesafgrænsning, ikke et nyt per-head testcohort, kildekatalog eller kontrolsystem. Den eksisterende før-POST-historik bevares. Normal genoptagelse kræver stadig fase, friskhed, ny eksklusiv ejer, præcist gemt mål, no-loss og offentlig effekt.
+
+Transportforskellen er dokumenteret; HTTP404's serverinterne rodårsag er endnu ikke bevist. Tidligere Pages-timeouts og artifact-metadata404 er særskilte fejl. Kandidaten ændrer hverken C/I/T, scoreformel, SQL, kildeprioritet, geometri eller providerbudgetter. Kildekvalifikation, sikker levering, faktisk genoptagelse og næste almindelige vejrhentning udestår; alle fem hovedmål består. Se håndbog 89.340 og privat checkpoint.
 ## 4.0.616 — privat Source-kandidat med bevaret kontrakt-ABI
 
 De kanoniske parameterobjekter bevarer de fire historiske labelDa-felter som uændrede kontraktmetadata. Faktiske UI-tekster hører til den separate visningspolicy. Den almindelige canonicalJSON-hash beregner dermed den korrekte hidtidige kontraktidentitet; der indføres ingen fast hash eller undtagelse. Den numeriske policy forbliver tekstfri, og wrapperen reexporterer kontrakten uændret.

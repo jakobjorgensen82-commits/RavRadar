@@ -110,6 +110,56 @@ assert.throws(() => exactPagesAttemptStep([{ ...job('Deploy prepared Pages artif
   assert.equal((await readClosure(paginated)).state, 'NO_POST');
 }
 
+
+// The private historical log is deliberately absent from this repository.
+// A real-code diagnostic-looking line, token/status HTTP404, or missing log
+// cannot replace the complete authenticated reviewed POST-rejection event.
+{
+  const owner = { repository: 'jakobjorgensen82-commits/RavRadar', runId: 43336157644,
+    runAttempt: 1, headSha: 'd7a9a21afd013b386d211bdb540a719050a489de', attemptId: 'pages-43336157644-1' };
+  const run = { id: owner.runId, run_attempt: 1, head_sha: owner.headSha, head_branch: 'main',
+    repository: { full_name: owner.repository }, path: '.github/workflows/run-current-weather-once.yml',
+    status: 'completed', conclusion: 'failure', updated_at: '2026-11-13T03:08:05Z' };
+  const root = `https://api.github.com/repos/${owner.repository}/actions/runs/${owner.runId}`;
+  const logUrl = `https://api.github.com/repos/${owner.repository}/actions/jobs/131660621931/logs`;
+  const common = { run_id: owner.runId, run_attempt: 1, head_sha: owner.headSha, status: 'completed' };
+  const step = (name, number, conclusion) => ({ name, number, status: 'completed', conclusion });
+  const jobs = [
+    { ...common, id: 131660621931, conclusion: 'failure',
+      name: 'Deploy prepared Pages artifact through reusable workflow / Deploy prepared Pages artifact', steps: [
+        step('Reserve this exact Pages writer before its first POST', 30, 'success'),
+        step('Deploy to GitHub Pages', 31, 'failure'),
+        step('Confirm scheduled Pages writes are terminal and unpublished', 32, 'skipped')] },
+    { ...common, id: 131660621932, conclusion: 'skipped',
+      name: 'Finish an interrupted generation before new work / resume-pre-activation-pages' },
+    { ...common, id: 131660621933, conclusion: 'skipped',
+      name: 'Finish an interrupted generation before new work / Redeploy only a helper-proven exact sealed Pages target' },
+  ];
+  const fetchMemory = ({ body = null, status = 200, rows = jobs, location = null } = {}) => async (url, options) => {
+    assert.equal(options.headers.Authorization, 'Bearer test-token');
+    if (url === root) return { ok: true, json: async () => structuredClone(run) };
+    if (url === root + '/attempts/1/jobs?per_page=100&page=1')
+      return { ok: true, json: async () => ({ total_count: rows.length, jobs: structuredClone(rows) }) };
+    assert.equal(url, logUrl);
+    assert.equal(options.redirect, 'manual');
+    const response = new Response(body, { status, headers: location ? { location } : {} });
+    Object.defineProperty(response, 'url', { value: url });
+    return response;
+  };
+  const qualify = options => readAuthenticPagesAttemptClosure({ owner, token: 'test-token', fetchImpl: fetchMemory(options) });
+  for (const body of [null,
+    'PAGES_RETRY_DIAGNOSTIC {"stage":"FIRST_DEPLOYMENT","code":"PAGES_CREATE_HTTP_404"}\n',
+    'PAGES_RETRY_DIAGNOSTIC {"stage":"FIRST_DEPLOYMENT","code":"PAGES_TRANSPORT_OIDC_HTTP_404"}\n',
+    'PAGES_RETRY_DIAGNOSTIC {"stage":"FIRST_DEPLOYMENT","code":"PRIOR_STATUS_ABSENCE_UNQUALIFIED"}\n']) {
+    await assert.rejects(qualify({ body }), /PAGES_OWNER_REJECTED_CREATE_LOG_UNPROVED/);
+  }
+  await assert.rejects(qualify({ status: 404 }), /PAGES_OWNER_REJECTED_CREATE_LOG_UNPROVED/);
+  await assert.rejects(qualify({ status: 302, location: 'https://untrusted.example/log' }), /PAGES_OWNER_REJECTED_CREATE_LOG_UNPROVED/);
+  await assert.rejects(qualify({ rows: [...jobs, jobs[0]] }), /PAGES_OWNER_JOB_LIST_UNBOUND/);
+  const noReservation = structuredClone(jobs); noReservation[0].steps[0].conclusion = 'skipped';
+  await assert.rejects(qualify({ rows: noReservation }), /PAGES_OWNER_REJECTED_CREATE_STEP_UNPROVED/);
+}
+
 const read = file => fs.readFile(`.github/workflows/${file}.yml`, 'utf8');
 function assertSourceReviewRead(source, job) {
   let scope = source, indent = 0;

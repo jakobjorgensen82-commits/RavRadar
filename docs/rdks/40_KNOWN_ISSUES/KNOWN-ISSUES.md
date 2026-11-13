@@ -1,3 +1,12 @@
+## 13. november — faktisk Pages-kodeversion og afvist CREATE
+
+Den særlige almindelige Pages-transport sendte en afledt lokal bestillingshash som serverens byggeversion; den officielle action sender den faktiske Git-commit. Den afgrænsede kandidat følger den officielle kontrakt og bevarer den fulde lokale hensigt, den beskyttede reservation, det præcise artifact og den faktisk modtagne CREATE-identitet. Et delt commit-opslag kan vise en ældre pakke: uden observeret ny PENDING eller en særskilt kvitteret serveridentitet giver den gamle terminalstatus ingen luknings- eller retryautoritet. En allerede synlig præcis ny prognose kan kun gå videre til den fulde offentlige verifier.
+
+En faktisk CREATE-HTTP404 får en intern særskilt afvisningsklassifikation. Alle transportinvocations, outcomes og deliveries skal være bogført, og forgængeren skal være frisk uændret, før CLOSED_UNPUBLISHED må udstedes. Afvisningen er aldrig NO_POST, en terminal deployment eller ret til endnu et POST. Timeout, uklart svar, GET-/token404 og modstridende metadata beholder deres afslag.
+
+En enkelt allerede afsluttet historisk hændelse uden den nye klassifikation kvalificeres i den eksisterende ejerlæser gennem dens faktiske run/attempt/job, alle skrivere, seks oprindelige Git-blobs og hele den autentiske private log. Loggen indgår ikke i repositoryet. Dette er en eksplicit historisk hændelsesafgrænsning, ikke et nyt per-head testcohort, kildekatalog eller kontrolsystem. Den eksisterende før-POST-historik bevares. Normal genoptagelse kræver stadig fase, friskhed, ny eksklusiv ejer, præcist gemt mål, no-loss og offentlig effekt.
+
+Transportforskellen er dokumenteret; HTTP404's serverinterne rodårsag er endnu ikke bevist. Tidligere Pages-timeouts og artifact-metadata404 er særskilte fejl. Kandidaten ændrer hverken C/I/T, scoreformel, SQL, kildeprioritet, geometri eller providerbudgetter. Kildekvalifikation, sikker levering, faktisk genoptagelse og næste almindelige vejrhentning udestår; alle fem hovedmål består. Se håndbog 89.340 og privat checkpoint.
 ## 13. november — automatisk databasebackup og dokumenteret oprydning
 
 Den private 598-kandidat samler backupvedligeholdelsen efter det eksisterende, botbestilte adminjob. Den normale passage vælger én handling: gendannelse af aktuel backup med reel indholds-/Auth-kontrol, sikker rotation af én gammel gruppe eller ny optagelse efter syv døgn. Der kræves mindst 35 minutter til kildevejrets oprindelige næste slot. Vejrjobbet, den manuelle backupvej, originaler, SQL/ACL-regler og numerisk model bevares.
