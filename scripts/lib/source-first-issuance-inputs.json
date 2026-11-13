@@ -259,6 +259,7 @@
     "scripts/test-ordinary-pages-immediate-retry.mjs",
     "scripts/test-owned-dmi-cache-dependency.mjs",
     "scripts/test-owned-dmi-grib-save-native.py",
+    "scripts/test-owner-notice-probe-ci.mjs",
     "scripts/test-pages-generation-and-reentry.mjs",
     "scripts/test-post-cutover-migration-routing.mjs",
     "scripts/test-post-h0-dmi-original-dependencies.mjs",

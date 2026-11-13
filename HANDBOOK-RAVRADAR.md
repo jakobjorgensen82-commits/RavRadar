@@ -11809,3 +11809,5 @@ Ved overgangen fra 598 bevares lagerformatets kontrakt uændret. Projektionens k
 Historiske tekst- og 591-metadata-prøver bruger deres egne autentiske kildefiler gennem hele prøven. Aktuelle Source-betingelser, privatlivskrav og normale brugerdata- og snapshotkaldere kontrolleres fortsat med den aktuelle kode. Historisk testinput giver ingen installations- eller skriveret.
 
 I en PR kontrolleres den kode, som faktisk er checket ud, mod den allerede kvalificerede PR-head. GitHubs separate merge-event-identitet omskrives ikke. Almindelig main-drift og det isolerede, capture-bundne native-barn beholder deres egen kildeidentitet. Hele committed-kodekontrollen og kontrollen af uændret HEAD før og efter læsningen består. Kalender588- og 597-kvartetprøvernes historiske kildeinput holdes samlet i genuine598; de giver ikke aktuelt Source- eller PostgreSQL-bevis.
+
+Mailprøvens normale kildeprøve er også registreret i den første Source-leverances afgrænsning. Den følger det allerede eksisterende mailområdes ejer og målprøve; ukendte filer afvises fortsat. Registreringen giver ingen ny adgang og ændrer ikke modelinput.

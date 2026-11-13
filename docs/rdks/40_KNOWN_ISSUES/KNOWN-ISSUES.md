@@ -17,6 +17,8 @@ Forløbet er forberedt og deaktiveret. Den faktiske fulde arkiv-/Auth-gendannels
 
 ## 13. november — Source598-projektion og historiske prøveinput
 
+Den samlede committed-scopekontrol påviste, at den eksisterende mailområdes normale kildeprøve manglede i første Source-afgrænsning. Prøven er allerede navngivet og ejet i det aktuelle katalog. Kun dens præcise sti registreres; der indføres ingen generel undtagelse, ny adgang eller ændring af C/I/T/SQL.
+
 Den første faktisk nåede native-kontrol samlede elleve afslag i tre årsager. Ni skyldtes, at den fælles committed-CODE-bootstrap sammenlignede den autentificerede PR-head-checkout med GitHubs separate merge-event-SHA. Den normale native-kalder leverer allerede den korrekte gate-head; den lokale rettelse bruger den uden at omskrive eventidentiteten eller ændre hele blob-/før-/efter-HEAD-kontrollen. Almindelig main og capture-barnets eksisterende GITHUB_SHA-vej bevares. De to øvrige afslag var historiske588/597-orakler med aktuelle Source-input; de får sammenhængende genuine598-input og uændrede assertions. De ni historiske NULL-kroppe er kun N/A efter eksisterende faktisk Source/CODE-kvalifikation. Lokal afprøvning er ikke faktisk hosted Source/PostgreSQL; denne kvalifikation og aktivering er fortsat åbne.
 
 Den private 616-overgang havde to sammenhængsfejl: den krævede samme projektions-kildehash efter den faktiske kodeudtrækning, og historiske prøver blandede genuine598-kontrakter med den nye Source-funktion eller aktuelle workflowtekster. Lagerformatets kontrakt og de numeriske parametre var ikke årsagen.

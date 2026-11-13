@@ -8,6 +8,8 @@ Den eksisterende publicProjectionContractSha256 måler normaliserede implementer
 
 Den historiske 591-prøve skal holde både kontraktberegning og metadatafunktion i samme genuine598-materialisering under hele den positive og negative prøve. Historiske workflowtekst-orakler bruger den faste genuine56d-kilde; aktuelle Source-predikater, privacy, triggere og normale brugerdata-/snapshotkaldere læser fortsat rå aktuel kode. Historiske bytes giver ingen capability, installations- eller skriveret. Nye per-head inverser eller helfil-hashgrupper tilføjes ikke.
 
+Mailområdets eksisterende `scripts/test-owner-notice-probe-ci.mjs` medtages også i den første Source-afgrænsning. Filen har allerede den normale `mailOwnerProbe`-ejer og dens faktiske målprøve i det aktuelle katalog; kun den præcise manglende sti registreres, mens ukendte stier fortsat afvises.
+
 Programfortegnelsen opdateres med den eksisterende normale application-CODE-afledning på samme 616-model. C/I/T og alle 80 tidligere/aktuelle SQL-filer er uændrede. Lokal projektionparitet og historiske negativer erstatter ikke den faktiske normale Source-native/Linux/PostgreSQL- og original-B/S-kvalifikation. Aktivering er fortsat åben.
 
 ## 13. november — bevar den kanoniske kontrakt, adskil den faktiske visning
