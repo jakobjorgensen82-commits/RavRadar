@@ -2837,7 +2837,7 @@ function legacySchemaOnePointer(value, {
       let calls=0,atomicWrites=0,sourceCalls=0;
       async function invoke({oldPublic=false,activeWriter=false,pointerDrift=false,centralDrift=false,mainDrift=false,badReadiness=false,lostReply=false,uncommittedLoss=false,notStarted=false,reset=true,wrongSourceVersion=false,wrongOwner=false,knownWriter=null,handoffChange=null,badSource=false,noWriter=false}={}){
         if(reset){row=copy(saved.row);central=copy(saved.central);profileRow=copy(saved.profile);}
-        if(noWriter)delete row.payload.pagesWrite;
+        if(noWriter){delete row.payload.pagesWrite;row.payload.schemaVersion=policy.schemaVersion;}
         if(wrongSourceVersion)central.version++;
         if(wrongOwner)row.payload.pagesWrite.owner={...row.payload.pagesWrite.owner,runId:51006,attemptId:'pages-51006-1'};
         if(knownWriter){delete row.payload.preActivation;
