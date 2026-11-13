@@ -1,3 +1,9 @@
+## 13. november — privat diagnose af ejerprøvens forbindelseskontrol
+
+Den tidlige forbindelseskontrol kan give en tom 404 uden at vise, hvilken bevaret sikkerhedsregel der afviste. Den eksisterende gemte observation fastlægger ikke den præcise værtsårsag. Den afgrænsede kildekandidat tilføjer derfor kun faste private OPTIONS-kategorier og booleans. Den er ikke en rettelse af gatewayen og lukker ikke mailafsenderens accept, levering eller modtagelse. Manglende loghændelse må ikke kaldes bevis for, at handleren ikke blev nået.
+
+Alle eksisterende ejer-, vindues-, metode-, body- og Resend-grænser bevares. Kun index-skabelonen ændres blandt de ni probe/shared-filer; ingen ny funktion oprettes af kodeleverancen. Faktiske hosted observationer og næste forsøg hører til det private checkpoint. Se håndbog 89.343.
+
 ## 13. november — særskilt oprydning af udløbet ejerprøve
 
 En read-only gatewaykontrol kunne standse mailprøven efter positiv installation og fuld kildegenlæsning, før den kendt-ejede oprydning blev nået. Den lokale rettelse forbinder dette punkt med samme oprydning efter det oprindelige udløb. Den oprindelige gatewayfejl bevares; ukendt installation eller DELETE giver fortsat stop uden automatisk gentagelse.
