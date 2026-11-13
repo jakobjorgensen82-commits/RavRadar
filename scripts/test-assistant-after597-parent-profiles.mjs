@@ -742,6 +742,49 @@ sourceAfter598PreissuanceTest('SOURCE after597 normal CODE DATA fingerprints pre
 });
 
 
+test('Source public assistant area selects both normal targets and rejects incomplete command facts',async()=>{
+  const {currentContractTargets}=await import('./source-current-contract-plan.mjs');
+  const api=await import('./source-first-issuance-contracts.mjs');
+  const paths=['js/services/rav-assistant.js','supabase/functions/_shared/rav-assistant-contract.ts',
+    'knowledge/rav-assistant-public-v1.json','scripts/test-rav-assistant-main-edge-roundtrip.mjs',
+    'scripts/test-rav-assistant-edge-cloudflare-4.0.290.mjs'];
+  const expected=['node scripts/test-rav-assistant-main-edge-roundtrip.mjs',
+    'node scripts/test-rav-assistant-edge-cloudflare-4.0.290.mjs'];
+  for(const file of paths){
+    assert.deepEqual(currentContractTargets(file).owners,[{area:'assistantPublicContract',commands:expected}]);
+    assert.deepEqual(api.sourceAssistantPublicContractTargets(file),expected);
+  }
+  for(const file of ['supabase/functions/rav-assistant/index.ts','supabase/functions/_shared/unknown.ts',
+    'supabase/config.toml','supabase/functions/rav-trip-store/index.ts',
+    'supabase/functions/rav-assistant/../_shared/rav-assistant-contract.ts'])
+    assert.equal(api.sourceAssistantPublicContractTargets(file),null);
+  const base='a'.repeat(40),head='b'.repeat(40),identity=await api.readActualSourceFirstIdentity();
+  const raw=file=>Buffer.from(':100644 100644 '+'c'.repeat(40)+' '+'d'.repeat(40)+' M\0'+file+'\0');
+  const reader=file=>args=>{assert.equal(args[0],'diff-tree');assert.equal(args.at(-2),base);assert.equal(args.at(-1),head);return raw(file);};
+  const commands=api.sourceFirstCommandsFromGit(reader(paths[1]),base,head);
+  assert.deepEqual(commands,[...api.SOURCE_FIRST_COMMANDS,...expected]);
+  assert.deepEqual(api.sourceFirstCommandsFromGit(reader('HANDBOOK-RAVRADAR.md'),base,head),api.SOURCE_FIRST_COMMANDS);
+  assert.throws(()=>api.assertSourceFirstPathScope(['scripts/unclassified-backend.mjs'],identity),/SOURCE_FIRST_UNCLASSIFIED_PATH/);
+  const current={repository:'jakobjorgensen82-commits/RavRadar',head,sourceTreeSha256:'sha256:'+'e'.repeat(64),
+    pullRequest:99991,runId:99992,runAttempt:1};
+  const proof={schemaVersion:1,contractId:'weather-source-gate-content-v2',kind:api.SOURCE_FIRST_NATIVE_KIND,
+    qualification:'SOURCE_CURRENT_UNCHANGED',repository:current.repository,pullRequestNumber:current.pullRequest,
+    headSha:head,sourceTreeSha256:current.sourceTreeSha256,privatePayloadIncluded:false,sourceBase:base,
+    currentSourceContracts:{scope:'SOURCE_CURRENT_CONTRACT_RESULTS',current,identity,
+      reportedCommandResults:commands.map(command=>({phase:'source-current-contract',command,elapsedMs:0,outcome:'PASS'})),
+      nativeExecutionRequired:true,nativeExecutionClaimed:false,historicalCompatibilityExecuted:false,
+      fullSourceValidationClaimed:false,productionAuthority:false}};
+  api.assertSourceFirstProofData(proof,current,identity,reader(paths[1]));
+  for(const mutate of [
+    rows=>rows.pop(),rows=>rows.reverse(),rows=>{rows.at(-1).outcome='FAIL';},
+    rows=>{rows.at(-1).command='node scripts/unclassified-backend.mjs';},
+  ]){
+    const changed=structuredClone(proof);mutate(changed.currentSourceContracts.reportedCommandResults);
+    assert.throws(()=>api.assertSourceFirstProofData(changed,current,identity,reader(paths[1])));
+  }
+  // Synthetic result DATA only. No CI/native execution or source capability.
+});
+
 test('issued SOURCE CodeOnly selector and installed64 plan use genuine current bindings and refuse pending SQL',async t=>{
   const {SOURCE_PRODUCER_AFTER597_PARENT:source}=await import('./lib/source-producer-after597-parent.mjs');
   const family=await import('./lib/source-producer-after597-runtime-family.mjs');
