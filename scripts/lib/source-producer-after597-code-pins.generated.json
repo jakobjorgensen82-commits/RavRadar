@@ -903,8 +903,8 @@
     },
     {
       "path": "scripts/lib/copernicus_component_process.py",
-      "bytes": 108201,
-      "sha256": "7a308e96a76eb2bc2239a1f27f2992b9d3796d7bf633131994dbe61d5dd3ca93"
+      "bytes": 110560,
+      "sha256": "1408b731c276c66568a78a53b1ee51d50b4d5a211244f75d04d5073d5edc5cfb"
     },
     {
       "path": "scripts/lib/copernicus_component_spatial.py",
