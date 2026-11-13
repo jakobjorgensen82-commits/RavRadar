@@ -19,6 +19,20 @@ const CODE598_TREE='2f71c562eea774ca03996802f83bdad7cccd43cc';
 const LEGACY_API=Object.freeze({readDmiBulkDocument,bulkZoneToForecastRecord,buildPrivateDmiRecoveryRecord,
   dmiExpectedIdentityForPart,verifiedIntegratedPartHourly,assertDmiPartHourlyGridSamplingApplicable,
   packDmiPartContinuity,unpackDmiPartContinuity,writeDmiForecastFileAtomic,readDmiForecastFile});
+const SOURCE_NATIVE_FORECAST_NORMAL_MODULES = Object.freeze({
+  "BULK_STORAGE": "scripts/lib/dmi-bulk-storage.mjs",
+  "PRIVATE_RECOVERY": "scripts/lib/private-dmi-recovery-record.mjs",
+  "PRODUCTION_ADAPTERS": "scripts/lib/ravscore-production-adapters.mjs",
+  "PART_CONTINUITY": "scripts/lib/dmi-part-continuity.mjs",
+  "FORECAST_FILE": "scripts/lib/dmi-forecast-file.mjs",
+  "HISTORY_DEMAND": "scripts/plan-ravscore-current-history.mjs"
+});
+function forecastNormalModulePath(role) {
+  assert.equal(arguments.length, 1);
+  assert(Object.hasOwn(SOURCE_NATIVE_FORECAST_NORMAL_MODULES, role),
+    'SOURCE_CURRENT_FORECAST_MODULE_UNPROVED');
+  return SOURCE_NATIVE_FORECAST_NORMAL_MODULES[role];
+}
 const loadNormal=(root,relative)=>import(pathToFileURL(path.join(root,relative)).href);
 async function genuine598CodeRoot(value){
   assert.equal(typeof value,'string');assert(path.isAbsolute(value));
@@ -43,11 +57,11 @@ async function genuine598CodeRoot(value){
 }
 async function normalApi(root){
   if(root===ROOT)return LEGACY_API;
-  return Object.assign({},await loadNormal(root,'scripts/lib/dmi-bulk-storage.mjs'),
-    await loadNormal(root,'scripts/lib/private-dmi-recovery-record.mjs'),
-    await loadNormal(root,'scripts/lib/ravscore-production-adapters.mjs'),
-    await loadNormal(root,'scripts/lib/dmi-part-continuity.mjs'),
-    await loadNormal(root,'scripts/lib/dmi-forecast-file.mjs'));
+  return Object.assign({},await loadNormal(root,forecastNormalModulePath('BULK_STORAGE')),
+    await loadNormal(root,forecastNormalModulePath('PRIVATE_RECOVERY')),
+    await loadNormal(root,forecastNormalModulePath('PRODUCTION_ADAPTERS')),
+    await loadNormal(root,forecastNormalModulePath('PART_CONTINUITY')),
+    await loadNormal(root,forecastNormalModulePath('FORECAST_FILE')));
 }
 export async function prepareNativeCurrentForecast(target,initialPhase=null,code598Root=null){
   requireSourceProducerOutput(); // Own genuine issued output before input getters/I/O.
@@ -131,7 +145,7 @@ export async function prepareNativeCurrent598Demand(target,code598Root=null){
   assert.equal(await fs.realpath(out),out);
   const raw=await fs.readFile(path.join(normalRoot,'data/live/coastal-parts-v2.json'));
   const registry=JSON.parse(raw);assert.equal(registry.zoneCount,210);assert.equal(registry.partCount,673);
-  const {buildRavScoreCurrentHistoryDemand}=await loadNormal(normalRoot,'scripts/plan-ravscore-current-history.mjs');
+  const {buildRavScoreCurrentHistoryDemand}=await loadNormal(normalRoot,forecastNormalModulePath('HISTORY_DEMAND'));
   const demand=buildRavScoreCurrentHistoryDemand({registry,conditions:{},checkpoint:{loaded:false},
     productionReferenceAt:at,registrySha256:'sha256:'+crypto.createHash('sha256').update(raw).digest('hex'),
     sourceHashes:{activation:null,checkpoint:null,conditions:null}});
@@ -162,4 +176,16 @@ if(process.argv[1]&&fileURLToPath(import.meta.url)===path.resolve(process.argv[1
       await emitNativePostgresFirstFailure(error,'SOURCE_LEGACY_PROVIDERS');}catch{}
     throw error;
   }
+}
+
+// Data from the same fixed operands used by normalApi and history demand.
+export function sourceCurrentNativeForecastInputDeclarations() {
+  assert.equal(arguments.length, 0);
+  return Object.freeze({
+    scope: 'SOURCE_CURRENT_NATIVE_FORECAST_INPUT_DECLARATIONS_ONLY',
+    moduleDeclarations: Object.freeze(Object.keys(SOURCE_NATIVE_FORECAST_NORMAL_MODULES)
+      .map(role => Object.freeze({role, namespace: 'NORMAL_CODE', path: forecastNormalModulePath(role)}))),
+    genuine598Code: Object.freeze({head: CODE598_HEAD, tree: CODE598_TREE}),
+    sourceGraphClosed: false, runtimeQualified: false, pgExecuted: false, reuseAuthority: false,
+  });
 }

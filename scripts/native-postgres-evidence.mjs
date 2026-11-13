@@ -8,6 +8,9 @@ import {execFileSync, spawnSync, spawn} from 'node:child_process';
 import {nativePrograms,nativePostgresProgramIdentity} from './lib/checkpoint-cas-native-postgres.mjs';
 import {fileURLToPath} from 'node:url';
 import {types} from 'node:util';
+import {pathToFileURL} from 'node:url';
+import {createRequire} from 'node:module';
+const sourceRecipeRequire=createRequire(import.meta.url);
 import {sourceTreeContentSha256} from './lib/source-tree-content.mjs';
 import {requireAssistantLaterH0Release,requireAssistantPublic587SuccessorRelease,
   requireAssistantPublic588SuccessorRelease,requireAssistantPublic590SuccessorRelease,requireAssistantPublic591SuccessorRelease,
@@ -17,7 +20,10 @@ import {requireAssistantLaterH0Release,requireAssistantPublic587SuccessorRelease
   requireAssistantAfter597Output,requireAssistantAfter597Release,requireAssistantAfter597Binding,
   readScalar597LaterH0CanonicalSource,readAssistantAfter597CanonicalSource,assistantLaterH0Definition} from './lib/assistant-later-h0-successor-source.mjs';
 
-import {assistantAfter597RequiredMigrations} from './integrated-cutover-readiness.mjs';
+import {assistantAfter597RequiredMigrations,verifyIntegratedDatabaseReadback} from './integrated-cutover-readiness.mjs';
+import {PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES,PRIVATE_RUNTIME_CONTRACT_FILES,privateRuntimeContractHashes}
+  from './private-production-runtime-workflow.mjs';
+import {sourceModuleTokens} from './lib/static-module-closure.mjs';
 import {FROZEN597_NATIVE_SOURCE} from './run-frozen586-assistant-later-h0-postgres-source.mjs';
 
 import {SOURCE_PRODUCER_AFTER597_PARENT} from './lib/source-producer-after597-parent.mjs';
@@ -1928,6 +1934,7 @@ export function assertSourceProducerProofHeader(proof,head){
 }
 
 export const SOURCE_PR_NATIVE_COMMANDS=Object.freeze(['node scripts/run-frozen-native0600-source-targets.mjs policy',
+  '"${PYTHON:-python3}" -I -B scripts/test-source598-current-native-profile.py --prefix-diagnostic-unit',
   '"$RAVRADAR_SOURCE_NATIVE_NODE24_PATH" scripts/test-protected-ravscore-continuation-checkpoint.mjs'
   +' --native-statistics-revision --native-sampling-identity --current-memory-warmup'
   +' --established-native-current-origin --last-mile-enclosure --account-statistics-assistant'
@@ -2418,6 +2425,7 @@ export async function executeSourceAfter598PrNative(){
   assert.match(execFileSync(node24,['--version'],{encoding:'utf8',timeout:10000}).trim(),/^v24\.\d+\.\d+$/);
   const runtimeBefore=await sourcePrSelectedRuntime();
   const additionalRuntimeBefore=await sourcePrAdditionalRuntimeObservation('BEFORE',current,expected);
+  const backendRecipeBefore=await sourcePrBackendRecipeObservation('BEFORE',current,expected);
   const context={schemaVersion:1,scope:'SOURCE_PR_NATIVE_TEST_V1',current,sourceTreeSha256:proof.sourceTreeSha256};
   const env={...process.env,SOURCE_CURRENT_NATIVE_PR_TEST_CONTEXT:JSON.stringify(context)};
   const collector=sourcePrNativeReportCollector();
@@ -2428,6 +2436,7 @@ export async function executeSourceAfter598PrNative(){
     child.on('error',value=>{error=value;});child.on('close',(status,signal)=>resolve({status,signal,error}));
   });
   await sourcePrAdditionalRuntimeObservation('AFTER',current,expected,additionalRuntimeBefore);
+  await sourcePrBackendRecipeObservation('AFTER',current,expected,backendRecipeBefore);
   if(result.error||result.signal||result.status!==0){process.exitCode=result.status||1;return;}
   const {nativeResult,selectedPrograms,issuedSource,sourceMaterializers,sourceCurrentInputs}=collector.finish(current,expected);
   assert.deepEqual(await sourcePrSelectedRuntime(),runtimeBefore,'Selected Source native runtime changed during execution');
@@ -2557,4 +2566,343 @@ async function main() {
   else console.log('Native PostgreSQL: REUSED from run '+ORIGIN.run+'/1, job '+ORIGIN.job+', head '+ORIGIN.head+'; no new SQL execution claimed.');
   await record(receipt);
 }
+// Positive source-input capture only; no V1/V2 receipt or reuse meaning changes.
+const sourceRecipeNeed=(value,reason)=>{if(!value)throw Object.assign(new Error('UNPROVED_SOURCE_OPERAND:'+reason),{code:'UNPROVED_SOURCE_OPERAND',reason});};
+
+
+function recipeRelative(value) {
+  sourceRecipeNeed(typeof value==='string'&&/^[A-Za-z0-9_.-]+(?:\/[A-Za-z0-9_.-]+)*$/.test(value)
+    &&!value.split('/').some(part=>part==='.'||part==='..'),'RECIPE_RELATIVE_INPUT');
+  return value;
+}
+function recipeCanonical(value) {
+  if(value===null||typeof value==='string'||typeof value==='boolean')return value;
+  if(typeof value==='number'){sourceRecipeNeed(Number.isFinite(value),'RECIPE_FINITE_NUMBER');return value;}
+  if(Array.isArray(value))return value.map(recipeCanonical);
+  sourceRecipeNeed(value&&typeof value==='object'&&!types.isProxy(value)
+    &&Object.getPrototypeOf(value)===Object.prototype,'RECIPE_DATA_ONLY');
+  const entries=[];for(const key of Object.keys(value).sort()) {
+    const descriptor=Object.getOwnPropertyDescriptor(value,key);
+    sourceRecipeNeed(descriptor?.enumerable&&Object.hasOwn(descriptor,'value'),'RECIPE_DATA_PROPERTY');
+    entries.push([key,recipeCanonical(descriptor.value)]);
+  }
+  sourceRecipeNeed(Reflect.ownKeys(value).length===entries.length,'RECIPE_OWN_KEYS');return Object.fromEntries(entries);
+}
+
+// Capture/verify positive SOURCE TEST-PROGRAM and FIXTURE-RECIPE operands.
+// The normal recipe owner supplies its actual declared readsets; this function
+// qualifies every leaf and every SQL archive member against the genuine tree.
+// A caller's list, this snapshot or its digest is never admission/reuse proof.
+// In particular source ref/head and fresh synthetic target/B/S payloads are not
+// semantic equality keys. Their normal EXECUTED checks remain mandatory.
+export function captureSourceBackendRecipeSources({ref,readGit,sourcePaths,absentPaths=[],factoryInputs,recipe}) {
+  sourceRecipeNeed(typeof ref==='string'&&/^[a-f0-9]{40}$/.test(ref)&&typeof readGit==='function','RECIPE_GIT_READER');
+  sourceRecipeNeed(Array.isArray(sourcePaths)&&sourcePaths.length>0&&Array.isArray(absentPaths),'RECIPE_POSITIVE_READSET');
+  sourceRecipeNeed(Array.isArray(factoryInputs)&&factoryInputs.length>0,'RECIPE_FACTORY_INPUTS');
+  const rawTree=Buffer.from(readGit(['ls-tree','-rz','--full-tree',ref])).toString('utf8'),index=new Map();
+  for(const line of rawTree.split('\0').filter(Boolean)) {
+    const match=/^(\d{6}) (blob|tree|commit) ([a-f0-9]{40})\t(.+)$/.exec(line);
+    sourceRecipeNeed(match&&!index.has(match[4]),'RECIPE_GIT_TREE');index.set(match[4],{mode:match[1],type:match[2],blob:match[3]});
+  }
+  const sql=[...index.keys()].filter(file=>file.startsWith('supabase/migrations/')&&file.endsWith('.sql')).sort();
+  sourceRecipeNeed(sql.length>0,'RECIPE_SQL_ARCHIVE');
+  const files=[...new Set([...sourcePaths,...sql].map(recipeRelative))].sort();
+  const rows=files.map(file=>{
+    const entry=index.get(file);sourceRecipeNeed(entry&&entry.type==='blob'&&['100644','100755'].includes(entry.mode),
+      'RECIPE_REGULAR_GIT_INPUT:'+file);
+    const bytes=Buffer.from(readGit(['cat-file','blob',ref+':'+file]));
+    sourceRecipeNeed(bytes.length>0,'RECIPE_EMPTY_INPUT:'+file);
+    return {file,mode:entry.mode,bytes:bytes.length,sha256:sha(bytes)};
+  });
+  const absent=[...new Set(absentPaths.map(recipeRelative))].sort();
+  for(const file of absent)sourceRecipeNeed(!index.has(file),'RECIPE_RESOLUTION_ABSENCE_CHANGED:'+file);
+  const roles=new Set(),factories=factoryInputs.map(input=>{
+    const row=recipeCanonical(input);sourceRecipeNeed(typeof row.role==='string'&&!roles.has(row.role),'RECIPE_FACTORY_ROLE');roles.add(row.role);
+    sourceRecipeNeed(/^[a-f0-9]{40}$/.test(row.head)&&/^[a-f0-9]{40}$/.test(row.tree),'RECIPE_FACTORY_IDENTITY');
+    sourceRecipeNeed(String(readGit(['cat-file','-t',row.head])).trim()==='commit','RECIPE_FACTORY_COMMIT');
+    sourceRecipeNeed(String(readGit(['rev-parse',row.head+'^{tree}'])).trim()===row.tree,'RECIPE_FACTORY_TREE');
+    if(Object.hasOwn(row,'path')) {
+      recipeRelative(row.path);sourceRecipeNeed(/^[a-f0-9]{64}$/.test(row.sha256),'RECIPE_FACTORY_LEAF_SHA');
+      const bytes=Buffer.from(readGit(['cat-file','blob',row.head+':'+row.path]));
+      sourceRecipeNeed(sha(bytes)===row.sha256,'RECIPE_FACTORY_LEAF_BYTES');
+    }
+    return row;
+  }).sort((a,b)=>a.role.localeCompare(b.role,'en'));
+  const inputs=recipeCanonical({scope:'SOURCE_NUMERICAL_BACKEND_TEST_AND_FIXTURE_RECIPE',
+    recipe,sourceRows:rows,sqlPaths:sql,sourceResolutionAbsences:absent,factoryInputs:factories});
+  return Object.freeze({inputs,positiveSourceInputSha256:sha(JSON.stringify(inputs)),observedRef:ref,
+    completeSourceClosure:false,closedBackendBoundary:false,eligibleForReuse:false,
+    sourceReadsetsRequireNormalOwnerQualification:true,runtimeObservationRequired:true,reuseAuthority:false});
+}
+export function verifySourceBackendRecipeSources(current,prior) {
+  sourceRecipeNeed(current&&prior&&current.reuseAuthority===false&&prior.reuseAuthority===false,'RECIPE_OBSERVATIONS_ONLY');
+  sourceRecipeNeed(current.positiveSourceInputSha256===sha(JSON.stringify(recipeCanonical(current.inputs)))
+    &&prior.positiveSourceInputSha256===sha(JSON.stringify(recipeCanonical(prior.inputs))),'RECIPE_INPUT_DIGEST');
+  sourceRecipeNeed(current.positiveSourceInputSha256===prior.positiveSourceInputSha256,'RECIPE_SOURCE_INPUTS_CHANGED');
+  assert.deepEqual(current.inputs,prior.inputs);return Object.freeze({positiveSourceInputsEqual:true,
+    runtimeQualified:false,originQualified:false,reuseAuthority:false});
+}
+
+// Positive local import operands from Python compilation only. This program
+// never executes/imports supplied code and creates no dynamic-loader/PG grant.
+export const SOURCE_BACKEND_PYTHON_STATIC_IMPORTS="\nimport dis,json,sys,types\nq=json.load(sys.stdin)\nassert type(q) is dict and set(q)=={'sources','seeds'}\nsources=q['sources'];seeds=q['seeds']\nassert type(sources) is dict and type(seeds) is list and seeds\nassert all(type(k) is str and type(v) is str for k,v in sources.items())\nassert all(type(k) is str and k in sources for k in seeds)\npending=list(seeds);seen=set();edges=set();absent=set();external=set()\ndef candidates(name):\n    path=name.replace('.','/')\n    for root in ('','scripts/','scripts/lib/','scripts/fixtures/'):\n        for value in (root+path+'.py',root+path+'/__init__.py'):\n            yield value\ndef add(name,owner):\n    choices=list(candidates(name));present=[p for p in choices if p in sources]\n    absent.update(p for p in choices if p not in sources)\n    for target in present:\n        edges.add((owner,target));pending.append(target)\n    return bool(present)\nwhile pending:\n    owner=pending.pop()\n    if owner in seen:continue\n    assert owner in sources and owner.endswith('.py')\n    seen.add(owner)\n    todo=[compile(sources[owner],owner,'exec',dont_inherit=True)]\n    while todo:\n        code=todo.pop();todo.extend(x for x in code.co_consts if isinstance(x,types.CodeType))\n        ins=list(dis.get_instructions(code))\n        for at,item in enumerate(ins):\n            if item.opname!='IMPORT_NAME':continue\n            assert at>=2 and ins[at-2].opname=='LOAD_CONST' and ins[at-1].opname=='LOAD_CONST'\n            level,names=ins[at-2].argval,ins[at-1].argval\n            assert type(level) is int and level>=0 and (names is None or type(names) is tuple)\n            name=item.argval\n            assert type(name) is str\n            if level:\n                base=owner.rsplit('/',1)[0].split('/')\n                assert level<=len(base)\n                name='.'.join(base[:len(base)-level+1]+([name] if name else []))\n            base_found=add(name,owner) if name else False\n            child_found=False\n            for child in names or ():\n                assert type(child) is str\n                if child!='*':child_found=add((name+'.' if name else '')+child,owner) or child_found\n            if not base_found and not child_found:\n                assert level==0\n                external.add(name.split('.')[0])\nprint(json.dumps({'files':sorted(seen),'localImports':[list(x) for x in sorted(edges)],\n    'absentCandidates':sorted(absent),'externalImports':sorted(external)},sort_keys=True))\n";
+
+
+
+// Normal owned declarations, not a caller-supplied path cohort. The public
+// observations remain incapable of granting SOURCE/PG/reuse authority.
+const SOURCE_BACKEND_NORMAL_PYTHON_DECLARATIONS = "import importlib.util,json,sys\nfrom pathlib import Path\nroot=Path(sys.argv[1]);sys.path.insert(0,str(root/'scripts'))\ndef load(name,relative):\n    spec=importlib.util.spec_from_file_location(name,root/relative)\n    value=importlib.util.module_from_spec(spec);sys.modules[name]=value;spec.loader.exec_module(value)\n    return value\nselector=load('source_recipe_selector','scripts/lib/copernicus_component_process.py')\nprovider=load('source_recipe_provider','scripts/fixtures/source19-current-native-providers.py')\nmaterializer=load('source_recipe_materializer','scripts/materialize-dmi-bulk-storage.py')\nprint(json.dumps({'selector':selector.source_normal_backend_program_inputs(),\n    'provider':provider.source_current_native_provider_input_declarations(),\n    'materializer':materializer.source_normal_generation_module_inputs()},sort_keys=True))\n";
+function sourceRecipeGitReader(root) {
+  return args=>execFileSync('git',['-c','protocol.allow=never','-C',root,...args],{
+    stdio:['ignore','pipe','pipe'],timeout:30000,maxBuffer:64*1024*1024,
+    env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0'}});
+}
+async function sourceRecipePhysicalBytes(root,relative,ref,readGit) {
+  recipeRelative(relative);const file=path.resolve(root,relative),before=await fs.lstat(file,{bigint:true});
+  sourceRecipeNeed(before.isFile()&&!before.isSymbolicLink()&&before.nlink===1n
+    &&await fs.realpath(file)===file,'RECIPE_PHYSICAL_REGULAR_INPUT:'+relative);
+  const expected=Buffer.from(readGit(['cat-file','blob',ref+':'+relative])),bytes=await fs.readFile(file),
+    after=await fs.lstat(file,{bigint:true});
+  sourceRecipeNeed([before.dev,before.ino,before.size,before.mtimeNs,before.ctimeNs].every((value,index)=>
+    value===[after.dev,after.ino,after.size,after.mtimeNs,after.ctimeNs][index])
+    &&bytes.equals(expected),'RECIPE_COMMITTED_PHYSICAL_BYTES:'+relative);return bytes;
+}
+function sourceRecipeModuleDeclarations(value,label) {
+  sourceRecipeNeed(value&&Array.isArray(value.moduleDeclarations)&&value.moduleDeclarations.length>0,
+    'RECIPE_MODULE_DECLARATIONS:'+label);
+  sourceRecipeNeed(value.reuseAuthority===false&&value.sourceGraphClosed===false,
+    'RECIPE_DECLARATIONS_ONLY:'+label);
+  return value.moduleDeclarations.map(row=>{
+    sourcePrExact(row,['role','namespace','path']);
+    sourceRecipeNeed(typeof row.role==='string'&&row.role.length>0
+      &&['CURRENT','NORMAL_CODE'].includes(row.namespace),'RECIPE_MODULE_NAMESPACE:'+label);
+    recipeRelative(row.path);return {...row};
+  });
+}
+export async function collectSourceBackendNormalRecipeDeclarations({root=SOURCE_PR_ROOT,ref,
+  readGit,python=process.env.PYTHON||process.env.PYTHON_EXECUTABLE||'python'}={}) {
+  const rootStat=await fs.lstat(root);sourceRecipeNeed(rootStat.isDirectory()&&!rootStat.isSymbolicLink(),
+    'RECIPE_REGULAR_ROOT');root=await fs.realpath(root);readGit??=sourceRecipeGitReader(root);
+  const actualHead=String(readGit(['rev-parse','HEAD'])).trim();ref??=actualHead;
+  sourceRecipeNeed(/^[a-f0-9]{40}$/.test(ref)&&ref===actualHead
+    &&String(readGit(['cat-file','-t',ref])).trim()==='commit','RECIPE_ACTUAL_COMMITTED_HEAD');
+  const owners={normal:'scripts/fixtures/source19-current-normal-inputs.mjs',
+    forecast:'scripts/fixtures/source19-current-provider-forecast.mjs',
+    action:'.github/actions/save-owned-dmi-grib/index.cjs',
+    selector:'scripts/lib/copernicus_component_process.py',
+    provider:'scripts/fixtures/source19-current-native-providers.py',
+    materializer:'scripts/materialize-dmi-bulk-storage.py',
+    profileBuilder:'scripts/build-source-producer-successor.mjs'};
+  for(const relative of Object.values(owners))await sourceRecipePhysicalBytes(root,relative,ref,readGit);
+  const load=relative=>import(pathToFileURL(path.join(root,relative)).href+'?source-recipe='+ref);
+  const normal=(await load(owners.normal)).sourceCurrentNormalInputArtifacts();
+  const forecast=(await load(owners.forecast)).sourceCurrentNativeForecastInputDeclarations();
+  const action=sourceRecipeRequire(path.join(root,owners.action)).sourceActionNativeInputDeclarations();
+  const moduleDeclarations=[...sourceRecipeModuleDeclarations(normal,'NORMAL_INPUTS'),
+    ...sourceRecipeModuleDeclarations(forecast,'FORECAST'),...sourceRecipeModuleDeclarations(action,'ACTION')];
+  sourceRecipeNeed(normal.genuine598Code.head===forecast.genuine598Code.head
+    &&normal.genuine598Code.tree===forecast.genuine598Code.tree,'RECIPE_GENUINE_CODE_ROLE');
+  const derived=await (await load(owners.profileBuilder)).deriveSourceProducerAfter597CurrentNativeInputProfile({root});
+  sourceRecipeNeed(Array.isArray(derived.files)&&derived.files.length===2,'RECIPE_DERIVED_PROFILE_PAIR');
+  const actualProfileFiles=[];
+  for(const file of derived.files) {
+    const physical=await sourceRecipePhysicalBytes(root,file.path,ref,readGit),
+      committed=Buffer.from(readGit(['cat-file','blob',ref+':'+file.path]));
+    actualProfileFiles.push({path:file.path,physical,committed});
+  }
+  const checkedProfile=verifySourceBackendCurrentProfileBytes(derived,actualProfileFiles),
+    profileFiles=checkedProfile.paths,profile=checkedProfile.profile;
+  for(const row of profile.nativeInputFiles) {
+    const bytes=await sourceRecipePhysicalBytes(root,row.path,ref,readGit);
+    sourceRecipeNeed(bytes.length===row.bytes&&sha(bytes)===row.sha256,'RECIPE_NATIVE_PROFILE_ROW:'+row.path);
+  }
+  const pythonDeclarations=JSON.parse(execFileSync(python,['-I','-B','-c',
+    SOURCE_BACKEND_NORMAL_PYTHON_DECLARATIONS,root],{stdio:['ignore','pipe','pipe'],timeout:15000,
+    maxBuffer:1024*1024,encoding:'utf8'}));
+  for(const value of Object.values(pythonDeclarations)) {
+    sourceRecipeNeed(value.reuseAuthority===false&&value.sourceGraphClosed===false,'RECIPE_PYTHON_DECLARATIONS_ONLY');
+    sourceRecipeNeed(!value.unknownOperands||value.unknownOperands.length===0,'RECIPE_UNKNOWN_NORMAL_PROGRAM');
+  }
+  sourceRecipeNeed(pythonDeclarations.provider.genuine598Code.head===normal.genuine598Code.head
+    &&pythonDeclarations.provider.genuine598Code.tree===normal.genuine598Code.tree,'RECIPE_PROVIDER_GENUINE_CODE');
+  sourceRecipeNeed(Array.isArray(pythonDeclarations.materializer.scalarModuleDeclarations)
+    &&pythonDeclarations.materializer.scalarModuleDeclarations.length>0,'RECIPE_SCALAR_DECLARATIONS_REQUIRED');
+  return Object.freeze({observedRef:ref,owners,moduleDeclarations,normal,forecast,action,
+    pythonDeclarations,profileFiles,nativeInputFiles:profile.nativeInputFiles,
+    profileSha256:derived.profileSha256,completeSourceClosure:false,closedBackendBoundary:false,
+    eligibleForReuse:false,reuseAuthority:false});
+}
+
+
+
+function sourceRecipeStaticImportInputs(source) {
+  const tokens=sourceModuleTokens(source),relative=new Set(),computed=[];
+  for(let at=0;at<tokens.length;at++) {
+    const token=tokens[at];if(token.type!=='id')continue;
+    if(token.value==='require'&&tokens[at+1]?.value==='(') {
+      if(tokens[at+2]?.type==='string'&&tokens[at+3]?.value===')') {
+        if(tokens[at+2].value.startsWith('.'))relative.add(tokens[at+2].value);
+      } else computed.push('REQUIRE');
+    }
+    if(!['import','export'].includes(token.value)||tokens[at+1]?.value==='.')continue;
+    if(tokens[at+1]?.value==='(') {
+      if(tokens[at+2]?.type==='string'&&tokens[at+3]?.value===')') {
+        if(tokens[at+2].value.startsWith('.'))relative.add(tokens[at+2].value);
+      } else computed.push('IMPORT');
+      continue;
+    }
+    if(token.value==='import'&&tokens[at+1]?.type==='string') {
+      if(tokens[at+1].value.startsWith('.'))relative.add(tokens[at+1].value);continue;
+    }
+    if(token.value==='export'&&!['*','{'].includes(tokens[at+1]?.value))continue;
+    for(let n=at+1;n<tokens.length;n++) {
+      if(tokens[n].value===';')break;
+      if(tokens[n].type==='id'&&tokens[n].value==='from'&&tokens[n+1]?.type==='string') {
+        if(tokens[n+1].value.startsWith('.'))relative.add(tokens[n+1].value);break;
+      }
+    }
+  }
+  return {relative:[...relative],computed};
+}
+export async function captureSourceBackendNormalRecipeInputs(options={}) {
+  const root=await fs.realpath(options.root??SOURCE_PR_ROOT),readGit=options.readGit??sourceRecipeGitReader(root),
+    python=options.python??process.env.PYTHON??process.env.PYTHON_EXECUTABLE??'python';
+  const declarations=await collectSourceBackendNormalRecipeDeclarations({root,readGit,python,ref:options.ref});
+  const ref=declarations.observedRef;
+  const tree=parseTree(String(readGit(['ls-tree','-rz','--full-tree',ref]))),index=new Map(tree.map(row=>[row[0],row]));
+  const sources=new Map(),pending=[],absence=new Set(),computedOwners=new Map();
+  const add=relative=>{recipeRelative(relative);if(!sources.has(relative))pending.push(relative);};
+  const optional=relative=>{if(index.has(relative))add(relative);else absence.add(recipeRelative(relative));};
+  const read=async relative=>{
+    const row=index.get(relative);sourceRecipeNeed(row&&['100644','100755'].includes(row[1])&&row[2]==='blob',
+      'RECIPE_REGULAR_SOURCE:'+relative);
+    return sourceRecipePhysicalBytes(root,relative,ref,readGit);
+  };
+  for(const file of [...ASSISTANT_PUBLIC591_INPUT_MODULES,...ASSISTANT_PUBLIC591_DATA,...ASSISTANT_PUBLIC591_CONTROLS,
+    ...PRIVATE_RUNTIME_PRODUCER_SOURCE_FILES,...Object.values(PRIVATE_RUNTIME_CONTRACT_FILES).flat(),
+    ...Object.values(declarations.owners),...declarations.profileFiles,
+    ...declarations.nativeInputFiles.map(row=>row.path),...declarations.moduleDeclarations.map(row=>row.path)])add(file);
+  for(const row of declarations.pythonDeclarations.selector.declaredPrograms) {
+    if(row.role==='REPOSITORY_PROGRAM')add(row.reference.includes('/')?row.reference:'scripts/'+row.reference);
+    else sourceRecipeNeed(['OWNED_DERIVED_PROGRAM','RUNTIME_DISTRIBUTION_PROGRAM'].includes(row.role),
+      'RECIPE_UNKNOWN_PROGRAM_CLASS');
+  }
+  for(const row of declarations.pythonDeclarations.provider.programDeclarations) {
+    sourceRecipeNeed(['CURRENT','NORMAL_CODE'].includes(row.namespace),'RECIPE_PROVIDER_NAMESPACE');add(row.path);
+  }
+  for(const row of [...declarations.pythonDeclarations.materializer.modules,
+    ...declarations.pythonDeclarations.materializer.scalarModuleDeclarations]) {
+    sourceRecipeNeed(row.namespace==='CURRENT','RECIPE_MATERIALIZER_NAMESPACE');add(row.path);
+  }
+  for(const file of declarations.normal.adminInputPaths)optional(file);
+  for(const file of ['package.json','package-lock.json','requirements-geometry.txt','requirements-copernicus.txt',
+    'requirements-dmi.txt'])optional(file);
+  const walk=async()=>{
+    while(pending.length) {
+      const file=pending.pop();if(sources.has(file))continue;
+      const bytes=await read(file);sources.set(file,bytes);
+      if(!/\.(?:mjs|cjs|js|ts)$/.test(file))continue;
+      const text=bytes.toString('utf8');sourceRecipeNeed(Buffer.from(text).equals(bytes),'RECIPE_SOURCE_UTF8');
+      const imports=sourceRecipeStaticImportInputs(text);
+      if(imports.computed.length)computedOwners.set(file,imports.computed);
+      for(const specifier of imports.relative) {
+        const base=path.posix.normalize(path.posix.join(path.posix.dirname(file),specifier.split(/[?#]/,1)[0]));
+        recipeRelative(base);const choices=path.posix.extname(base)?[base]:[base,base+'.js',base+'.mjs',base+'.json',base+'/index.js'];
+        const selected=choices.find(value=>index.has(value));sourceRecipeNeed(selected,'RECIPE_STATIC_IMPORT_MISSING:'+file);add(selected);
+        for(const candidate of choices)if(candidate!==selected&&!index.has(candidate))absence.add(candidate);
+      }
+      for(let directory=path.posix.dirname(file);directory!=='.';directory=path.posix.dirname(directory))optional(directory+'/package.json');
+    }
+  };
+  const factoryOwners=['scripts/lib/checkpoint-cas-native-postgres.mjs',
+    'scripts/lib/native-identity-checkpoint-postgres.mjs','scripts/run-frozen-native0600-source-targets.mjs'];
+  for(const file of factoryOwners){await sourceRecipePhysicalBytes(root,file,ref,readGit);add(file);}
+  const [issued,identity,native0600]=await Promise.all(factoryOwners.map(file=>
+    import(pathToFileURL(path.join(root,file)).href+'?source-recipe='+ref)));
+  const factories=[issued.issuedNativeCheckpointFactoryInputDeclarations(),
+    identity.nativeIdentityCheckpointFactoryInputDeclarations(),native0600.frozenNative0600FactoryInputDeclarations()];
+  add(factories[0].currentNativeProgram);
+  await walk();
+  // The compiler only adds source operands. Normal dynamic loader selections
+  // remain the owned tables/factories above; no AST result is a capability.
+  const pySources={};for(const [file,bytes] of sources)if(file.endsWith('.py'))pySources[file]=bytes.toString('utf8');
+  const pySeeds=Object.keys(pySources).sort();let pythonImports;
+  for(;;) {
+    pythonImports=JSON.parse(execFileSync(python,['-I','-B','-c',SOURCE_BACKEND_PYTHON_STATIC_IMPORTS],{
+      input:JSON.stringify({sources:pySources,seeds:pySeeds}),encoding:'utf8',stdio:['pipe','pipe','pipe'],timeout:15000,
+      maxBuffer:4*1024*1024}));
+    const additional=pythonImports.absentCandidates.filter(file=>index.has(file)&&!Object.hasOwn(pySources,file));
+    if(!additional.length)break;
+    for(const file of additional) {const bytes=await read(file);pySources[file]=bytes.toString('utf8');sources.set(file,bytes);}
+    sourceRecipeNeed(Object.keys(pySources).length<=512,'RECIPE_PYTHON_SOURCE_BOUND');
+  }
+  for(const file of pythonImports.absentCandidates)absence.add(file);
+  const fixedFactories=factories.map(({role,head,tree})=>({role,head,tree}));
+  fixedFactories.push({role:'GENUINE598_PREDECESSOR_CODE',head:declarations.normal.genuine598Code.head,
+    tree:declarations.normal.genuine598Code.tree},{role:'ARCHIVE_ONLY_OLD140000',...declarations.normal.oldArchiveCode},
+    {role:'UNCHANGED_ARCHIVE_RECIPE_SOURCE',...declarations.normal.fixedArchiveRecipe});
+  const contracts=await privateRuntimeContractHashes({repositoryRoot:root});
+  const sentinel=Object.freeze({});let rpc;
+  try {await verifyIntegratedDatabaseReadback({url:'https://current-native-pg.invalid',serviceRoleKey:'SYNTHETIC_TEST_ONLY',
+    sourcePhase:'source-producer-after597',fetchImpl:async(url,request)=>{
+      sourceRecipeNeed(url==='https://current-native-pg.invalid/rest/v1/rpc/ravradar_integrated_cutover_contract'
+        &&request.method==='POST','RECIPE_NORMAL_RPC_CAPTURE');rpc=JSON.parse(request.body);throw sentinel;
+    }});}catch(error){if(error!==sentinel)throw error;}
+  sourceRecipeNeed(rpc&&Object.keys(rpc).length===22,'RECIPE_NORMAL_RPC_22');
+  const result=captureSourceBackendRecipeSources({ref,readGit,sourcePaths:[...sources.keys()],
+    absentPaths:[...absence],factoryInputs:fixedFactories,recipe:{nativeCommands:SOURCE_PR_NATIVE_COMMANDS,
+      moduleDeclarations:declarations.moduleDeclarations,normalRpc22:rpc,storageContracts:contracts,
+      normalAdminInputRoles:declarations.normal.adminInputPaths,normalProviderInputRoles:declarations.normal.providerInputPaths,
+      providerBasisRoles:declarations.pythonDeclarations.provider.basisPaths,
+      materializerModules:declarations.pythonDeclarations.materializer.modules,
+      scalarModuleDeclarations:declarations.pythonDeclarations.materializer.scalarModuleDeclarations,
+      scalarProgramSha256:declarations.pythonDeclarations.materializer.scalarProgramSha256,
+      pythonExternalImports:pythonImports.externalImports}});
+  return Object.freeze({...result,normalOwnerDeclarationsQualified:true,
+    computedImportOwners:[...computedOwners].map(([file,operations])=>({file,operations})),
+    dynamicImportFactoryQualificationRequired:true,freshAppArtifactChecksRequired:true});
+}
+
+
+
+
+// Check the normal builder's result against ALREADY committed/physical bytes.
+// This neither writes nor normalizes a stale profile or pin into acceptance.
+export function verifySourceBackendCurrentProfileBytes(derived,actualFiles) {
+  sourceRecipeNeed(derived&&Array.isArray(derived.files)&&derived.files.length===2
+    &&Array.isArray(actualFiles)&&actualFiles.length===2,'RECIPE_DERIVED_PROFILE_PAIR');
+  const seen=new Set(),paths=[];let profile;
+  for(const file of derived.files) {
+    recipeRelative(file.path);sourceRecipeNeed(typeof file.text==='string'&&!seen.has(file.path),'RECIPE_PROFILE_FILE');seen.add(file.path);
+    const rows=actualFiles.filter(row=>row.path===file.path);sourceRecipeNeed(rows.length===1,'RECIPE_ACTUAL_PROFILE_FILE');
+    const actual=rows[0],expected=Buffer.from(file.text,'utf8');
+    sourceRecipeNeed(Buffer.isBuffer(actual.committed)&&Buffer.isBuffer(actual.physical)
+      &&actual.committed.equals(expected)&&actual.physical.equals(expected),
+      'RECIPE_STALE_PROFILE_OR_READER:'+file.path);
+    paths.push(file.path);if(file.path.endsWith('.json')) {
+      profile=JSON.parse(actual.committed);sourceRecipeNeed(sha(actual.committed)===derived.profileSha256,'RECIPE_PROFILE_DIGEST');
+    }
+  }
+  sourceRecipeNeed(profile&&Array.isArray(profile.nativeInputFiles),'RECIPE_ACTUAL_NATIVE_PROFILE');
+  return Object.freeze({paths,profile,profileSha256:derived.profileSha256,reuseAuthority:false});
+}
+
+
+
+export async function sourcePrBackendRecipeObservation(stage,current,expected,prior=null,emit=console.log) {
+  sourceRecipeNeed(['BEFORE','AFTER'].includes(stage)&&typeof emit==='function','RECIPE_OBSERVATION_STAGE');
+  const snapshot=await captureSourceBackendNormalRecipeInputs();
+  sourceRecipeNeed(snapshot.observedRef===current.head,'RECIPE_OBSERVATION_CURRENT_HEAD');
+  if(prior!==null)verifySourceBackendRecipeSources(snapshot,prior);
+  const report={kind:'SOURCE_NATIVE_BACKEND_RECIPE_OBSERVATION_V1',stage,
+    current:{run:current.run,attempt:current.attempt,jobId:expected.jobId,head:current.head},
+    positiveSourceInputSha256:snapshot.positiveSourceInputSha256,sourceRows:snapshot.inputs.sourceRows.length,
+    sqlCount:snapshot.inputs.sqlPaths.length,fixedFactoryCount:snapshot.inputs.factoryInputs.length,
+    computedImportOwnerCount:snapshot.computedImportOwners.length,
+    normalOwnerDeclarationsQualified:snapshot.normalOwnerDeclarationsQualified,
+    completeSourceClosure:false,closedBackendBoundary:false,eligibleForReuse:false,reuseAuthority:false,
+    privatePayloadIncluded:false};
+  emit('SOURCE_NATIVE_BACKEND_RECIPE '+JSON.stringify(report));return snapshot;
+}
+
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url))await main();

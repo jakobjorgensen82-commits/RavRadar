@@ -172,7 +172,7 @@ function systemRoleInventory(value){
 function referencedSystemRoles(bytes){
   need(bytes.length<=ROLE_AUDIT_BYTES,'ROLE_GRANT_AUDIT_BOUND');
   let text;try{text=new TextDecoder('utf-8',{fatal:true}).decode(bytes);}catch{fail('ROLE_AUDIT_UTF8');}
-  const roles=new Set();let at=0,tokens=[],resetComplete=false;
+  const roles=new Set();let at=0,tokens=[],resetComplete=false,statementOrdinal=0;
   const word=t=>t?.kind==='word'?t.value.toUpperCase():null;
   const systemName=t=>t?.kind==='word'?t.value.toLowerCase():t?.value;
   const add=t=>{need(t&&(t.kind==='word'||t.kind==='identifier'),'ROLE_AUDIT_ROLE_OPERAND');const name=systemName(t);
@@ -181,33 +181,82 @@ function referencedSystemRoles(bytes){
   // A list is identifiers separated by commas, never expressions or privilege clauses.
   const roleList=items=>{need(items.length>0&&items.length%2===1,'ROLE_AUDIT_ROLE_OPERAND');
     items.forEach((t,i)=>i%2?need(t.value===',','ROLE_AUDIT_ROLE_OPERAND'):add(t));};
+  const statementKind=()=>{
+    const first=word(tokens[0]),second=word(tokens[1]);
+    if(['SET','RESET','GRANT','REVOKE','SELECT'].includes(first))return first;
+    if(['CREATE','ALTER'].includes(first)&&['ROLE','USER'].includes(second))return first+'_ROLE';
+    if(first==='COMMENT'&&second==='ON'&&word(tokens[2])==='ROLE')return 'COMMENT_ROLE';
+    return 'OTHER';
+  };
+  const statementNeed=(value,branch)=>{
+    if(!value)fail('ROLE_AUDIT_STATEMENT_'+statementKind()+'_'+branch+'_'+statementOrdinal);
+  };
+  // pg_dumpall also emits parameter ACLs in a role-only dump. Parse their
+  // complete grammar; only grantees/grantor are roles, never GUC names.
+  function parameterGrant(first,on){
+    let next=1;
+    const take=value=>{if(word(tokens[next])!==value)return false;next++;return true;};
+    const comma=()=>{if(tokens[next]?.value!==','||tokens[next]?.kind!=='symbol')return false;next++;return true;};
+    const name=branch=>{
+      const t=tokens[next++];
+      statementNeed(t&&['word','identifier'].includes(t.kind)&&t.value.length>0
+        &&!['ON','TO','FROM','WITH','GRANT','OPTION','GRANTED','BY','CASCADE','RESTRICT','GROUP'].includes(word(t)),branch);
+      return t;
+    };
+    if(first==='REVOKE'&&take('GRANT'))statementNeed(take('OPTION')&&take('FOR'),'PARAMETER_PRIVILEGES');
+    if(take('ALL'))take('PRIVILEGES');
+    else do{
+      if(!take('SET'))statementNeed(take('ALTER')&&take('SYSTEM'),'PARAMETER_PRIVILEGES');
+    }while(comma());
+    statementNeed(next===on,'PARAMETER_PRIVILEGES');next+=2;
+    do{
+      name('PARAMETER_TARGET');
+      while(tokens[next]?.kind==='symbol'&&tokens[next].value==='.'){next++;name('PARAMETER_TARGET');}
+    }while(comma());
+    statementNeed(take(first==='GRANT'?'TO':'FROM'),'PARAMETER_TARGET');
+    const role=groupAllowed=>{
+      if(groupAllowed)take('GROUP');
+      const t=name('PARAMETER_ROLE');statementNeed(word(t)!=='NONE','PARAMETER_ROLE');add(t);
+    };
+    do{role(true);}while(comma());
+    if(first==='GRANT'&&take('WITH'))statementNeed(take('GRANT')&&take('OPTION'),'PARAMETER_TAIL');
+    if(take('GRANTED')){statementNeed(take('BY'),'PARAMETER_TAIL');role(false);}
+    if(first==='REVOKE'&&!take('CASCADE'))take('RESTRICT');
+    statementNeed(next===tokens.length,'PARAMETER_TAIL');
+  }
   function statement(){
-    if(!tokens.length)return;need(!resetComplete,'ROLE_AUDIT_AFTER_RESET');const first=word(tokens[0]);
+    if(!tokens.length)return;statementOrdinal++;need(!resetComplete,'ROLE_AUDIT_AFTER_RESET');const first=word(tokens[0]);
     if(['SET','RESET'].includes(first)){
       if(first==='SET'){
         const start=['SESSION','LOCAL'].includes(word(tokens[1]))?2:1;
         const setting=tokens[start]?.value.toUpperCase();
-        need(!['ROLE','AUTHORIZATION','SESSION_AUTHORIZATION'].includes(setting)
-          &&!(setting==='SESSION'&&word(tokens[start+1])==='AUTHORIZATION'),'ROLE_AUDIT_STATEMENT');
+        statementNeed(!['ROLE','AUTHORIZATION','SESSION_AUTHORIZATION'].includes(setting)
+          &&!(setting==='SESSION'&&word(tokens[start+1])==='AUTHORIZATION'),'IDENTITY');
       }
-      need(!tokens.slice(1).some(t=>t.kind!=='string'&&systemName(t).startsWith('supabase_')),'ROLE_AUDIT_STATEMENT');
+      statementNeed(!tokens.slice(1).some(t=>t.kind!=='string'&&systemName(t).startsWith('supabase_')),'MANAGED_REFERENCE');
       if(tokens[1]?.value.toLowerCase()==='standard_conforming_strings')need(first==='SET'&&word(tokens.at(-1))==='ON','ROLE_AUDIT_STRING_MODE');
       if(first==='RESET'&&word(tokens[1])==='ALL')resetComplete=true;
     }
     else if(['CREATE','ALTER'].includes(first)&&['ROLE','USER'].includes(word(tokens[1]))){
-      add(tokens[2]);need(!tokens.slice(3).some(t=>t.kind!=='string'&&systemName(t).startsWith('supabase_')),'ROLE_AUDIT_STATEMENT');
+      add(tokens[2]);statementNeed(!tokens.slice(3).some(t=>t.kind!=='string'&&systemName(t).startsWith('supabase_')),'ROLE_OPTIONS');
     }else if(first==='COMMENT'&&word(tokens[1])==='ON'&&word(tokens[2])==='ROLE')add(tokens[3]);
     else if(first==='GRANT'||first==='REVOKE'){
+      const on=tokens.findIndex(t=>word(t)==='ON');
+      if(on>0&&word(tokens[on+1])==='PARAMETER'){parameterGrant(first,on);tokens=[];return;}
       const split=tokens.findIndex(t=>word(t)===(first==='GRANT'?'TO':'FROM'));
-      need(split>1&&!tokens.slice(1,split).some(t=>word(t)==='ON'),'ROLE_AUDIT_STATEMENT');
+      if(!(split>1&&!tokens.slice(1,split).some(t=>word(t)==='ON'))){
+        const shape=split<0?'NO_TO':split<=1?'TO_POSITION'
+          :tokens.slice(1,split).some((t,i,items)=>word(t)==='ON'&&word(items[i+1])==='PARAMETER')?'OBJECT_PARAMETER':'OBJECT_OTHER';
+        statementNeed(false,'MEMBERSHIP_SHAPE_'+shape);
+      }
       let from=1;if(first==='REVOKE'&&word(tokens[1])==='ADMIN'&&word(tokens[2])==='OPTION'&&word(tokens[3])==='FOR')from=4;
       roleList(tokens.slice(from,split));
       let end=split+1;while(end<tokens.length&&!['WITH','GRANTED','CASCADE','RESTRICT'].includes(word(tokens[end])))end++;
       roleList(tokens.slice(split+1,end));
       const by=tokens.findIndex((t,i)=>i>=end&&word(t)==='GRANTED'&&word(tokens[i+1])==='BY');
       if(by>=0){need(by+2<tokens.length,'ROLE_AUDIT_ROLE_OPERAND');add(tokens[by+2]);}
-      need(!tokens.slice(end).some((t,i)=>systemName(t).startsWith('supabase_')&&i+end!==by+2),'ROLE_AUDIT_STATEMENT');
-    }else fail('ROLE_AUDIT_STATEMENT');
+      statementNeed(!tokens.slice(end).some((t,i)=>systemName(t).startsWith('supabase_')&&i+end!==by+2),'MEMBERSHIP_TAIL');
+    }else statementNeed(false,'UNSUPPORTED');
     tokens=[];
   }
   function token(kind,value){tokens.push({kind,value});need(tokens.length<=4096,'ROLE_AUDIT_STATEMENT_BOUND');}

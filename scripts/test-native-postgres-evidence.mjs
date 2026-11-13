@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import test from 'node:test';
+import {execFileSync as runPureSourcePython} from 'node:child_process';
+import {fileURLToPath as sourceDescriptorFileURLToPath} from 'node:url';
 import {sourceAfter598PreissuanceTest} from './lib/source598-test-phase.mjs';
 import {inverseSourceBeforePostgresWorkflow, SOURCE_BEFORE_POSTGRES_BLOCK,
   SCALAR597_LATER_H0_SOURCE_COMMAND,inverseScalar597LaterH0Package,verifyScalar597LaterH0NativeContext,
@@ -2541,4 +2543,292 @@ test('Source additional runtime observation refuses non-Linux without manufactur
     assert.equal(row.privatePayloadIncluded,false);
   }
   assert.equal(before.stage,'BEFORE');assert.equal(after.stage,'AFTER');
+});
+
+test('Source backend normal selector descriptor derives declarations without workers and retains unknown operands',()=>{
+  const code=String.raw`
+import importlib.util,json,sys
+spec=importlib.util.spec_from_file_location('rr_descriptor_test',sys.argv[1])
+module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+snapshot=(id(module._LOCK),module._LOCK.locked(),id(module._UNPROVED),len(module._UNPROVED))
+normal=module.source_normal_backend_program_inputs()
+selectors={name:getattr(module,name) for name in ('_source_normal_program','_run_source_dmi_cohort','_run_source_normal_phase_cohort')}
+class NeverCall:
+    def __init__(self,fn): self.__name__,self.__code__=fn.__name__,fn.__code__
+    def __call__(self,*args,**kwargs): raise AssertionError('SELECTOR_OR_WORKER_CALLED')
+try:
+    for name,fn in selectors.items(): setattr(module,name,NeverCall(fn))
+    assert module.source_normal_backend_program_inputs()==normal
+finally:
+    for name,fn in selectors.items(): setattr(module,name,fn)
+def unknown(root,phase,options,output_path): return '.mjs'
+module._source_normal_program=unknown
+unproved=module.source_normal_backend_program_inputs()
+def added(root,phase,options,output_path): return 'scripts/not-a-qualified-worker.py'
+module._source_normal_program=added
+derived=module.source_normal_backend_program_inputs()
+module._source_normal_program=selectors['_source_normal_program']
+assert snapshot==(id(module._LOCK),module._LOCK.locked(),id(module._UNPROVED),len(module._UNPROVED))
+print(json.dumps({'normal':normal,'unknown':unproved,'changed':derived,'selectorsCalled':False,'locksUnchanged':True},separators=(',',':')))
+`;
+  const result=JSON.parse(runPureSourcePython(process.env.PYTHON||'python3',['-I','-B','-c',code,
+    sourceDescriptorFileURLToPath(new URL('./lib/copernicus_component_process.py',import.meta.url))],{
+    encoding:'utf8',timeout:10000,maxBuffer:1024*1024,stdio:['pipe','pipe','pipe']}));
+  assert.equal(result.selectorsCalled,false);assert.equal(result.locksUnchanged,true);
+  assert.equal(result.normal.selectors.length,3);
+  assert(result.normal.declaredPrograms.some(row=>row.reference==='scripts/source-progress-union-consumer.mjs'));
+  assert(result.normal.declaredPrograms.some(row=>row.reference==='lib/node_modules/npm/bin/npm-cli.js'
+    &&row.bindingState==='UNPROVED_RUNTIME_OPERAND'));
+  for(const field of ['sourceGraphClosed','runtimeQualified','workerStarted','pgExecuted','reuseAuthority'])
+    assert.equal(result.normal[field],false);
+  assert(result.normal.declaredPrograms.every(row=>['UNPROVED_SOURCE_OPERAND','UNPROVED_RUNTIME_OPERAND'].includes(row.bindingState)));
+  assert(result.unknown.unknownOperands.some(row=>row.code==='UNPROVED_SOURCE_OPERAND'));
+  assert(result.changed.declaredPrograms.some(row=>row.reference==='scripts/not-a-qualified-worker.py'
+    &&row.bindingState==='UNPROVED_SOURCE_OPERAND'));
+});
+
+test('Source backend current normal artifacts share the existing owner allowsets only',async()=>{
+  const {sourceCurrentNormalInputArtifacts}=await import('./fixtures/source19-current-normal-inputs.mjs');
+  const beforeCwd=process.cwd(),beforeEnv={...process.env},beforeFetch=globalThis.fetch;
+  const value=sourceCurrentNormalInputArtifacts(),again=sourceCurrentNormalInputArtifacts();
+  assert.equal(value.scope,'SOURCE_CURRENT_NORMAL_PREPARED_INPUT_DECLARATIONS_ONLY');
+  for(const key of ['adminInputPaths','providerInputPaths']) {
+    assert.strictEqual(value[key],again[key]);
+    assert(Object.isFrozen(value[key]));
+    assert(value[key].length>0&&new Set(value[key]).size===value[key].length);
+    assert(value[key].every(file=>typeof file==='string'&&!file.startsWith('/')&&!file.split('/').includes('..')));
+    assert.throws(()=>value[key].push('unproved.json'),TypeError);
+  }
+  assert(Object.isFrozen(value));
+  assert(Object.isFrozen(value.genuine598Code));
+  assert(Object.isFrozen(value.oldArchiveCode));
+  assert.notEqual(value.genuine598Code.head,value.oldArchiveCode.head);
+  assert.match(value.genuine598Code.head,/^[a-f0-9]{40}$/);
+  assert.match(value.oldArchiveCode.tree,/^[a-f0-9]{40}$/);
+  for(const key of ['sourceGraphClosed','runtimeQualified','pgExecuted','reuseAuthority'])assert.equal(value[key],false);
+  assert.throws(()=>sourceCurrentNormalInputArtifacts({head:value.genuine598Code.head}),assert.AssertionError);
+  assert.equal(process.cwd(),beforeCwd);assert.deepEqual({...process.env},beforeEnv);assert.strictEqual(globalThis.fetch,beforeFetch);
+});
+
+test('Source backend current provider declarations are data only and keep unknown programs',()=>{
+  const python=process.env.PYTHON||process.env.PYTHON_EXECUTABLE||'python';
+  const program=String.raw`import importlib.util,json,os,sys
+spec=importlib.util.spec_from_file_location('normal_provider_declarations',sys.argv[1])
+value=importlib.util.module_from_spec(spec);spec.loader.exec_module(value)
+class NeverCall:
+    def __init__(self, function):
+        self.__name__,self.__code__=function.__name__,function.__code__
+    def __call__(self,*args,**kwargs):
+        raise AssertionError('PROVIDER_OR_WORKER_MUST_NOT_RUN')
+for name in ('prepare','import_native_decoder','finish_normal_basis'):
+    setattr(value,name,NeverCall(getattr(value,name)))
+before=(os.getcwd(),dict(os.environ),value.BASIS,value.CODE598_ADMIN_INPUTS,value.NATIVE_FORECAST)
+actual=value.source_current_native_provider_input_declarations()
+assert before==(os.getcwd(),dict(os.environ),value.BASIS,value.CODE598_ADMIN_INPUTS,value.NATIVE_FORECAST)
+actual['basisPaths'].append('unproved.json')
+assert 'unproved.json' not in value.source_current_native_provider_input_declarations()['basisPaths']
+def malformed():
+    return '.py'
+value.prepare=NeverCall(malformed)
+unknown=value.source_current_native_provider_input_declarations()
+assert unknown['unknownOperands'][0]['state']=='UNPROVED_SOURCE_OPERAND'
+def new_program():
+    return 'scripts/not-yet-qualified-provider.py'
+value.prepare=NeverCall(new_program)
+new=value.source_current_native_provider_input_declarations()
+assert any(row['reference']=='scripts/not-yet-qualified-provider.py' and row['bindingState']=='UNPROVED_SOURCE_OPERAND' for row in new['programReferences'])
+try:
+    value.source_current_native_provider_input_declarations('caller-root')
+except TypeError:
+    pass
+else:
+    raise AssertionError('NO_CALLER_SCOPE_ARGUMENT')
+print(json.dumps({'actual':actual,'unknown':unknown['unknownOperands'],'newProgramSeen':True,'normalFunctionsNotCalled':True},sort_keys=True))
+`;
+  const raw=runPureSourcePython(python,['-B','-c',program,sourceDescriptorFileURLToPath(new URL('./fixtures/source19-current-native-providers.py',import.meta.url))],{encoding:'utf8',stdio:['ignore','pipe','pipe'],timeout:10000});
+  const result=JSON.parse(raw),actual=result.actual;
+  assert.equal(actual.scope,'SOURCE_CURRENT_PROVIDER_PREPARED_INPUT_DECLARATIONS_ONLY');
+  assert(actual.programReferences.some(row=>row.reference==='scripts/update-dmi-bulk.py'));
+  assert.equal(actual.forecastProgram,'scripts/fixtures/source19-current-provider-forecast.mjs');
+  for(const name of ['providerImported','preparedInputsWritten','sourceGraphClosed','runtimeQualified','pgExecuted','reuseAuthority'])assert.equal(actual[name],false);
+  assert.equal(result.normalFunctionsNotCalled,true);assert.equal(result.newProgramSeen,true);
+});
+
+test('Source backend current owner program tables drive the real caller seams',()=>{
+  const python=process.env.PYTHON||process.env.PYTHON_EXECUTABLE||'python';
+  const program=String.raw`import ast,importlib.util,inspect,json,sys
+from pathlib import Path
+from types import MappingProxyType
+sys.path.insert(0,str(Path(sys.argv[1]).parent.parent))
+def load(name,file):
+    spec=importlib.util.spec_from_file_location(name,file)
+    value=importlib.util.module_from_spec(spec);spec.loader.exec_module(value)
+    return value
+p=load('provider_program_inputs',sys.argv[1]);m=load('material_program_inputs',sys.argv[2])
+d=p.source_current_native_provider_input_declarations()
+assert set(row['name'] for row in d['programDeclarations'])==set(p.SOURCE_NATIVE_PROVIDER_PROGRAMS)
+assert all(row['bindingState']=='UNPROVED_SOURCE_OPERAND' for row in d['programDeclarations'])
+seen=set()
+for function in (p.prepare,p.import_native_decoder,p.finish_normal_basis):
+    tree=ast.parse(inspect.getsource(function))
+    for node in ast.walk(tree):
+        if isinstance(node,ast.Call) and isinstance(node.func,ast.Name) and node.func.id=='source_native_provider_program_path':
+            assert isinstance(node.args[0],ast.Constant);seen.add(node.args[0].value)
+        if isinstance(node,ast.Constant) and isinstance(node.value,str):
+            assert not (node.value.startswith('scripts/') and node.value.endswith(('.py','.mjs','.js','.cjs'))),'PROGRAM_PATH_DUPLICATED_OUTSIDE_TABLE'
+module=ast.parse(Path(sys.argv[1]).read_text(encoding='utf8'))
+assignment=[node for node in module.body if isinstance(node,ast.Assign) and any(isinstance(t,ast.Name) and t.id=='NATIVE_FORECAST' for t in node.targets)]
+assert len(assignment)==1 and isinstance(assignment[0].value,ast.Call)
+seen.add(assignment[0].value.args[0].value)
+assert seen==set(p.SOURCE_NATIVE_PROVIDER_PROGRAMS)
+for row in d['programDeclarations']:
+    for root in (p.ROOT,p.ROOT.parent/'controlled-other-code-root'):
+        expected=(p.ROOT if row['namespace']=='CURRENT' else root)/row['path']
+        assert p.source_native_provider_program_path(row['name'],root)==expected
+def refused(call):
+    try: call()
+    except RuntimeError as error:
+        assert 'UNPROVED_SOURCE_OPERAND' in str(error)
+    else: raise AssertionError('UNKNOWN_BINDING_NOT_REFUSED')
+refused(lambda:p.source_native_provider_program_path('UNKNOWN',p.ROOT))
+refused(lambda:p.source_native_provider_program_path('DECODER',None))
+original=p.SOURCE_NATIVE_PROVIDER_PROGRAMS
+for bad in (('UNKNOWN','scripts/update-dmi-bulk.py'),('NORMAL_CODE','../outside.py')):
+    p.SOURCE_NATIVE_PROVIDER_PROGRAMS=MappingProxyType({**original,'DECODER':bad})
+    refused(lambda:p.source_native_provider_program_path('DECODER',p.ROOT))
+p.SOURCE_NATIVE_PROVIDER_PROGRAMS=original
+md=m.source_normal_generation_module_inputs()
+assert all(row['namespace']=='CURRENT' and row['bindingState']=='UNPROVED_SOURCE_OPERAND' for row in md['modules'])
+source=ast.parse(inspect.getsource(m.source_normal_generation_prepare))
+calls=[node for node in ast.walk(source) if isinstance(node,ast.Call) and isinstance(node.func,ast.Name) and node.func.id=='normal_module']
+selectors=[]
+for call in calls:
+    assert len(call.args)==1 and isinstance(call.args[0],ast.Subscript)
+    assert isinstance(call.args[0].value,ast.Name) and call.args[0].value.id=='SOURCE_NORMAL_GENERATION_MODULES'
+    assert isinstance(call.args[0].slice,ast.Constant);selectors.append(call.args[0].slice.value)
+assert set(selectors)==set(m.SOURCE_NORMAL_GENERATION_MODULES)
+for row in md['modules']:
+    assert m.source_normal_generation_module_path(p.ROOT,row['name'])==p.ROOT/row['path']
+refused(lambda:m.source_normal_generation_module_path(p.ROOT,'unknown-module'))
+refused(lambda:m.source_normal_generation_module_path(None,next(iter(m.SOURCE_NORMAL_GENERATION_MODULES.values()))))
+for result in (d,md):
+    for key in ('sourceGraphClosed','pgExecuted','reuseAuthority'):assert result[key] is False
+print(json.dumps({'providerPrograms':len(seen),'materializerModules':len(selectors),'allRealCallersUseSharedData':True,'unknownBindingsRefused':True,'workerExecuted':False,'pgExecuted':False,'networkCalls':0},sort_keys=True))
+`;
+  const raw=runPureSourcePython(python,['-B','-c',program,sourceDescriptorFileURLToPath(new URL('./fixtures/source19-current-native-providers.py',import.meta.url)),sourceDescriptorFileURLToPath(new URL('./materialize-dmi-bulk-storage.py',import.meta.url))],{encoding:'utf8',stdio:['ignore','pipe','pipe'],timeout:10000});
+  const value=JSON.parse(raw);assert.equal(value.providerPrograms,8);assert.equal(value.materializerModules,3);
+  assert.equal(value.allRealCallersUseSharedData,true);assert.equal(value.unknownBindingsRefused,true);
+  assert.equal(value.workerExecuted,false);assert.equal(value.pgExecuted,false);assert.equal(value.networkCalls,0);
+});
+
+test('Source backend recipe source capture keeps SQL and source authority separate from identity',async()=>{
+  const {captureSourceBackendRecipeSources:capture,verifySourceBackendRecipeSources:verify}=await import('./native-postgres-evidence.mjs');
+  // Immutable object reads are acquired once for this component test. This is
+  // not a live origin/freshness qualification and grants no cached authority.
+  const objectReads=new Map();
+  const readGit=args=>{const key=JSON.stringify(args);if(!objectReads.has(key))objectReads.set(key,
+    runPureSourcePython(process.env.GIT_EXECUTABLE||'git',args,
+      {stdio:['ignore','pipe','pipe'],maxBuffer:32*1024*1024,timeout:15000}));return objectReads.get(key);};
+  const ref=String(readGit(['rev-parse','HEAD'])).trim(),tree=String(readGit(['rev-parse',ref+'^{tree}'])).trim();
+  const file='scripts/fixtures/source19-current-native-metadata.mjs',absent='scripts/source-native-recipe-never-created-input.py';
+  const options={ref,readGit,sourcePaths:[file],absentPaths:[absent],
+    factoryInputs:[{role:'CAPTURE_COMPONENT_REAL_GIT_TEST',head:ref,tree}],recipe:{command:'NORMAL_CAPTURE_COMPONENT_TEST'}};
+  const actual=capture(options),again=capture(options);
+  assert.equal(verify(actual,again).positiveSourceInputsEqual,true);
+  assert(actual.inputs.sqlPaths.length>0);assert(actual.inputs.sqlPaths.every(name=>actual.inputs.sourceRows.some(row=>row.file===name)));
+  for(const name of ['completeSourceClosure','closedBackendBoundary','eligibleForReuse','reuseAuthority'])assert.equal(actual[name],false);
+  assert.equal(verify({...actual,observedRef:'0'.repeat(40)},actual).reuseAuthority,false);
+  const sql=actual.inputs.sqlPaths[0];
+  for(const changedFile of [file,sql]) {
+    const changed=capture({...options,readGit:args=>args[0]==='cat-file'&&args[1]==='blob'&&args[2]===ref+':'+changedFile
+      ?Buffer.concat([readGit(args),Buffer.from('\nSOURCE_INPUT_CHANGED\n')]):readGit(args)});
+    assert.throws(()=>verify(changed,actual),/RECIPE_SOURCE_INPUTS_CHANGED/);
+  }
+  assert.throws(()=>capture({...options,sourcePaths:[...options.sourcePaths,'scripts/missing-source-recipe-input.py']}),/RECIPE_REGULAR_GIT_INPUT/);
+  assert.throws(()=>capture({...options,absentPaths:[file]}),/RECIPE_RESOLUTION_ABSENCE_CHANGED/);
+  assert.throws(()=>capture({...options,factoryInputs:[{role:'CAPTURE_COMPONENT_REAL_GIT_TEST',head:ref,tree:'0'.repeat(40)}]}),/RECIPE_FACTORY_TREE/);
+  assert.throws(()=>verify(capture({...options,recipe:{command:'CHANGED_BACKEND_COMMAND'}}),actual),/RECIPE_SOURCE_INPUTS_CHANGED/);
+  const ordered={second:2,first:1},reordered={first:1,second:2};
+  verify(capture({...options,recipe:ordered}),capture({...options,recipe:reordered}));
+  const ownProto=JSON.parse('{"__proto__":{"kept":true},"command":"NORMAL_CAPTURE_COMPONENT_TEST"}');
+  assert.throws(()=>verify(capture({...options,recipe:ownProto}),actual),/RECIPE_SOURCE_INPUTS_CHANGED/);
+});
+
+test('Source backend recipe Python imports add transitive source without executing supplied code',async()=>{
+  const {SOURCE_BACKEND_PYTHON_STATIC_IMPORTS:program}=await import('./native-postgres-evidence.mjs');
+  const python=process.env.PYTHON||process.env.PYTHON_EXECUTABLE||'python';
+  const sources={'scripts/recipe.py':'from lib.fixed import value\nraise RuntimeError("NEVER_EXECUTE")\n',
+    'scripts/lib/fixed.py':'from lib.transitive import value\n',
+    'scripts/lib/transitive.py':'import json\nvalue = 1\n'};
+  const run=value=>JSON.parse(runPureSourcePython(python,['-I','-B','-c',program],{
+    input:JSON.stringify(value),encoding:'utf8',stdio:['pipe','pipe','pipe'],timeout:10000}));
+  const result=run({sources,seeds:['scripts/recipe.py']});
+  assert.deepEqual(result.files,Object.keys(sources).sort());
+  assert(result.externalImports.includes('json'));
+  assert(result.localImports.some(([from,to])=>from==='scripts/lib/fixed.py'&&to==='scripts/lib/transitive.py'));
+  assert(result.absentCandidates.includes('scripts/json.py'));
+  assert.throws(()=>run({sources,seeds:['scripts/unknown-root.py']}));
+});
+
+
+test('Source backend current scalar program declarations bind the actual unchanged inline caller',async()=>{
+  const {fileURLToPath}=await import('node:url');
+  const python=process.env.PYTHON||process.env.PYTHON_EXECUTABLE||'python';
+  const program="import hashlib,importlib.util,json,os,subprocess,sys,tempfile,types\nfrom pathlib import Path\nsys.path.insert(0,str(Path(sys.argv[1]).parent))\nspec=importlib.util.spec_from_file_location('source_scalar_declarations',sys.argv[1])\nm=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)\nd=m.source_normal_generation_module_inputs()\nassert d['scalarProgramSha256']==hashlib.sha256(m.SOURCE_SCALAR_PLANNING_PROGRAM.encode()).hexdigest()\nassert '@SOURCE_SCALAR_' not in m.SOURCE_SCALAR_PLANNING_PROGRAM\nassert [(x['role'],x['path']) for x in d['scalarModuleDeclarations']]==list(m.SOURCE_SCALAR_PLANNING_MODULES.items())\nassert all(x['namespace']=='CURRENT' for x in d['scalarModuleDeclarations'])\nassert len(d['scalarModuleDeclarations'])==3\nfor row in d['scalarModuleDeclarations']:\n    assert m.SOURCE_SCALAR_PLANNING_PROGRAM.count(\"path.join(codeRoot,'\"+row['path']+\"')\")==1\ntry:m.SOURCE_SCALAR_PLANNING_MODULES['UNPROVED']='../outside.mjs'\nexcept TypeError:pass\nelse:raise AssertionError('IMMUTABLE_PROGRAM_BINDINGS')\nseen=[];real=subprocess.run\ntry:\n    subprocess.run=lambda argv,**kwargs:(seen.append((argv,kwargs)) or types.SimpleNamespace(returncode=0))\n    root=Path(tempfile.gettempdir()).resolve()/'source-data-only-caller-not-created'\n    assert not root.exists()\n    assert m.source_scalar_acquisition_plan(root,root/'input-not-read', '2030-01-01T00:00:00.000Z')==0\nfinally:subprocess.run=real\nassert len(seen)==2\nassert seen[0][0][1:3]==['--input-type=module','-e'] and seen[0][0][3]==m.SOURCE_SCALAR_PLANNING_PROGRAM\nassert seen[1][0][1]=='-B' and Path(seen[1][0][2]).name=='build-weather-acquisition-plan.py'\nassert all(kwargs['cwd']==root and kwargs['check'] is False for argv,kwargs in seen)\nassert not root.exists()\nassert all(d[k] is False for k in ('sourceGraphClosed','moduleImported','workerStarted','pgExecuted','reuseAuthority'))\nprint(json.dumps({'modules':d['scalarModuleDeclarations'],'programSha256':d['scalarProgramSha256'],\n    'actualCallerArgumentsObservedWithoutChild':True,'workerStarted':False}))\n";
+  const result=JSON.parse(runPureSourcePython(python,['-I','-B','-c',program,
+    fileURLToPath(new URL('./materialize-dmi-bulk-storage.py',import.meta.url))],
+    {encoding:'utf8',stdio:['ignore','pipe','pipe'],timeout:10000}));
+  assert.equal(result.actualCallerArgumentsObservedWithoutChild,true);assert.equal(result.workerStarted,false);
+});
+
+
+test('Source backend normal factory declarations expose existing frozen inputs without native work',async()=>{
+  const {issuedNativeCheckpointFactoryInputDeclarations:issued}=await import('./lib/checkpoint-cas-native-postgres.mjs');
+  const {nativeIdentityCheckpointFactoryInputDeclarations:identity}=await import('./lib/native-identity-checkpoint-postgres.mjs');
+  const {frozenNative0600FactoryInputDeclarations:native0600}=await import('./run-frozen-native0600-source-targets.mjs');
+  const actual=[issued(),identity(),native0600()];
+  assert.equal(new Set(actual.map(x=>x.role)).size,3);
+  for(const row of actual) {
+    assert(Object.isFrozen(row));assert.match(row.head,/^[a-f0-9]{40}$/);assert.match(row.tree,/^[a-f0-9]{40}$/);
+    for(const key of ['sourceGraphClosed','runtimeQualified','pgExecuted','reuseAuthority'])assert.equal(row[key],false);
+  }
+  assert.equal(issued().currentNativeProgram,'scripts/test-source598-current-native-profile.py');
+  assert(Object.isFrozen(native0600().groups));assert(Object.isFrozen(native0600().groups.policy));
+  for(const getter of [issued,identity,native0600])assert.throws(()=>getter('caller-selected-root'),assert.AssertionError);
+});
+
+test('Source backend normal capture declarations initialize before the unchanged once CLI dispatch',async()=>{
+  const source=await fs.readFile(new URL('./native-postgres-evidence.mjs',import.meta.url),'utf8');
+  const dispatch='if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url))await main();';
+  assert.equal(source.split(dispatch).length,2,'Normal dispatch must remain exactly once and unchanged');
+  const boundary=source.indexOf(dispatch);
+  for(const declaration of ['const sourceRecipeNeed=','export const SOURCE_BACKEND_PYTHON_STATIC_IMPORTS=',
+    'const SOURCE_BACKEND_NORMAL_PYTHON_DECLARATIONS =','export async function collectSourceBackendNormalRecipeDeclarations(']) {
+    assert(source.indexOf(declaration)>=0&&source.indexOf(declaration)<boundary,'Before normal CLI invocation: '+declaration);
+  }
+  const producer=source.slice(source.indexOf('async function executeSourceAfter598PrNative(){'),source.indexOf('async function record(receipt)'));
+  const before=producer.indexOf("sourcePrBackendRecipeObservation('BEFORE'"),pg=producer.indexOf("spawn('/usr/bin/bash'"),
+    after=producer.indexOf("sourcePrBackendRecipeObservation('AFTER'");
+  assert(before>=0&&before<pg&&after>pg,'Normal collector runs before PG and after the closed actual child');
+  assert.equal((producer.match(/sourcePrBackendRecipeObservation\(/g)||[]).length,2);
+  assert(source.indexOf('export async function sourcePrBackendRecipeObservation(')<boundary);
+});
+
+
+test('Source backend normal profile check refuses would-be profile or reader bytes',async()=>{
+  const {verifySourceBackendCurrentProfileBytes:verify}=await import('./native-postgres-evidence.mjs');
+  const {deriveSourceProducerAfter597CurrentNativeInputProfile:derive}=await import('./build-source-producer-successor.mjs');
+  const {fileURLToPath}=await import('node:url');const root=fileURLToPath(new URL('../',import.meta.url));
+  const derived=await derive({root});
+  // Controlled bytes test the check contract only; they are never claimed as
+  // this checkout's committed profile or SOURCE admission.
+  const exact=derived.files.map(row=>({path:row.path,committed:Buffer.from(row.text),physical:Buffer.from(row.text)}));
+  assert.equal(verify(derived,exact).reuseAuthority,false);
+  for(let index=0;index<exact.length;index++)for(const field of ['committed','physical']) {
+    const changed=exact.map(row=>({...row}));changed[index][field]=Buffer.concat([changed[index][field],Buffer.from('\nSTALE\n')]);
+    assert.throws(()=>verify(derived,changed),/RECIPE_STALE_PROFILE_OR_READER/);
+  }
+  const reordered={...derived,files:[...derived.files].reverse()};
+  assert.equal(verify(reordered,[...exact].reverse()).reuseAuthority,false);
+  assert.throws(()=>verify(derived,exact.slice(1)),/RECIPE_DERIVED_PROFILE_PAIR/);
 });

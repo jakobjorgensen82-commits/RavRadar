@@ -28,6 +28,7 @@ import threading
 import textwrap
 import time
 import unittest
+from unittest import mock
 import urllib.parse
 import zlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -428,6 +429,9 @@ def current_native_case_location(test, error, traceback):
     provider = getattr(test, '_current_native_provider_failure', None)
     if phase == 'PROVIDERS' and code not in (None, 0) and provider is not None:
         observation['providerFailure'] = provider
+    prefix = getattr(test, '_current_native_prefix_failure', None)
+    if phase == 'PREFIX' and code not in (None, 0) and prefix is not None:
+        observation['prefixFailure'] = prefix
     return observation
 
 class SourceObserverPureTests(unittest.TestCase):
@@ -2506,6 +2510,55 @@ CURRENT_PROVIDER_NEED_CODES = SOURCE_PROVIDER_NEED_CODES | {
     'CURRENT_NATIVE_PROVIDER_CURRENT598_HISTORY_AXIS', 'CURRENT_NATIVE_PROVIDER_EXACT_CURRENT598_MODE',
 }
 
+CURRENT_PREFIX_PHASES = frozenset(('UNKNOWN', 'ENTRY_GUARDS', 'SOURCE_REGISTRY', 'ENVIRONMENT', 'OWNED_WORK',
+    'PREDECESSOR_BINDINGS', 'ADMIN_REGISTRY', 'PROVIDER_FACTORY', 'RAW_INPUTS', 'ARCHIVE_SEED', 'ARCHIVE_PREPARE',
+    'PROVIDER_INSTALL', 'NORMAL_WEATHER', 'NORMAL_PUBLIC', 'NORMAL_SAVE', 'PRESERVATION', 'TRANSPORT', 'CLEANUP'))
+CURRENT_PREFIX_CLASSES = frozenset(('UNKNOWN', 'ERROR', 'ASSERTION_ERROR', 'TYPE_ERROR', 'RANGE_ERROR',
+    'SYNTAX_ERROR', 'REFERENCE_ERROR'))
+CURRENT_PREFIX_REASONS = frozenset(('UNKNOWN', 'ERR_ASSERTION', 'ENOENT', 'EEXIST', 'EACCES', 'EPERM',
+    'EIO', 'ENOSPC', 'ENOMEM', 'ENOBUFS', 'ERR_MODULE_NOT_FOUND', 'ERR_PACKAGE_PATH_NOT_EXPORTED',
+    'ERR_REQUIRE_ESM', 'CHILD_EXIT', 'EXTERNAL_REQUEST_REFUSED'))
+CURRENT_PREFIX_MODULE = 'scripts/fixtures/source19-current-normal-inputs.mjs'
+
+
+def current_prefix_failure(own, root):
+    # The failed child is already closed and its whole stderr is retained.
+    # Only one fixed marker and its physically verified source frame may leave.
+    unknown = {'kind': 'CURRENT598_PREFIX_FIRST_FAILURE', 'phase': 'UNKNOWN', 'exceptionType': 'UNKNOWN',
+               'reason': 'UNKNOWN', 'callsite': None, 'privatePayloadIncluded': False}
+    try:
+        raw = source_current_cohort_read(own, 'current598-prefix-whole.stderr', 16 * 1024 * 1024)
+        found = []
+        for line in raw.splitlines():
+            if len(line) > 2048:
+                continue
+            try:
+                value = json.loads(line)
+            except (ValueError, UnicodeError):
+                continue
+            if type(value) is dict and value.get('kind') == unknown['kind']:
+                found.append(value)
+        if len(found) != 1:
+            return unknown
+        value = found[0]
+        if (set(value) != set(unknown) or value['privatePayloadIncluded'] is not False
+                or value['phase'] not in CURRENT_PREFIX_PHASES or value['exceptionType'] not in CURRENT_PREFIX_CLASSES
+                or value['reason'] not in CURRENT_PREFIX_REASONS):
+            return unknown
+        site = value['callsite']
+        if site is not None:
+            if (type(site) is not dict or set(site) != {'module', 'sha256', 'line', 'column'}
+                    or site['module'] != CURRENT_PREFIX_MODULE or type(site['line']) is not int
+                    or not 1 <= site['line'] <= 8192 or type(site['column']) is not int
+                    or not 1 <= site['column'] <= 100000):
+                return unknown
+            body = source_current_cohort_read(root, CURRENT_PREFIX_MODULE, 2 * 1024 * 1024)
+            if site['sha256'] != sha(body) or site['line'] > len(body.splitlines()):
+                return unknown
+        return value
+    except Exception:
+        return unknown  # The original failure and preservation guards stay first.
+
 
 def current_provider_failure(own, root):
     # This is diagnostics after a failed, closed child. No raw log text, file path,
@@ -2569,6 +2622,84 @@ def current_provider_failure(own, root):
 
 
 class SourceProviderEvidencePureTests(unittest.TestCase):
+    def prefix_node(self, script, payload=None):
+        environment = clean_environment()
+        environment.update({k: v for k, v in os.environ.items() if k.upper() in {'SYSTEMROOT', 'WINDIR', 'TEMP', 'TMP'}})
+        node = os.environ.get('RAVRADAR_SOURCE_NATIVE_NODE24_PATH') or shutil.which('node')
+        return subprocess.run([node, '--input-type=module', '-e', script], cwd=ROOT,
+            env=environment, input=None if payload is None else json.dumps(payload).encode(),
+            capture_output=True, check=True, timeout=30)
+
+    def test_prefix_first_failure_survives_normal_case_and_wrapper_without_private_values(self):
+        actual = self.prefix_node("""
+import assert from 'node:assert/strict';
+import {describeCurrent598PrefixFailure,prepareCurrent598NativePrefixProfile} from './scripts/fixtures/source19-current-normal-inputs.mjs';
+let first;
+try{await prepareCurrent598NativePrefixProfile();}catch(error){first=error;}
+assert(first,'The real normal entry must reject this unqualified pure-test host');
+const observed=await describeCurrent598PrefixFailure(first,'ENTRY_GUARDS');
+assert.equal(observed.exceptionType,'ASSERTION_ERROR');assert.equal(observed.reason,'ERR_ASSERTION');
+assert(observed.callsite);assert.equal(observed.callsite.module,'scripts/fixtures/source19-current-normal-inputs.mjs');
+const privateError=new Error('PRIVATE_SENTINEL_SQL_TOKEN');
+assert.equal((await describeCurrent598PrefixFailure(privateError,'RAW_INPUTS')).reason,'UNKNOWN');
+let touched=0;Object.defineProperty(privateError,'code',{get(){touched++;throw Error('PRIVATE');}});
+await describeCurrent598PrefixFailure(privateError,'RAW_INPUTS');assert.equal(touched,0);
+assert.equal((await describeCurrent598PrefixFailure(new Proxy(first,{}),'PRIVATE')).exceptionType,'UNKNOWN');
+assert(!JSON.stringify(observed).includes('PRIVATE_SENTINEL'));
+console.log(JSON.stringify(observed));
+""")
+        marker = json.loads(actual.stdout)
+        with tempfile.TemporaryDirectory(prefix='rr-prefix-fixed-') as directory:
+            own = Path(directory)
+            (own / 'current598-prefix-whole.stderr').write_bytes(actual.stdout + b'PRIVATE_SENTINEL_STDERR\n')
+            physical = current_prefix_failure(own, ROOT)
+            if sys.platform == 'linux':
+                self.assertEqual(physical, marker)
+            else:
+                self.assertIn(physical['phase'], ('UNKNOWN', 'ENTRY_GUARDS'))
+            # Pure framing/validation uses explicit byte-reader mocks. This is
+            # not a substitute for the unchanged Linux physical-file guards.
+            def read_fixed(root, relative, maximum):
+                self.assertIn((root, relative, maximum), ((own, 'current598-prefix-whole.stderr', 16*1024*1024),
+                    (ROOT, CURRENT_PREFIX_MODULE, 2*1024*1024)))
+                return (root / relative).read_bytes()
+            with mock.patch.dict(globals(), {'source_current_cohort_read': read_fixed}):
+                observed = current_prefix_failure(own, ROOT)
+            self.assertEqual(observed, marker)
+            test = type('Case', (), {'_testMethodName': 'test_current_source_failure240_profile',
+                '_current_native_subprocess_phase': 'PREFIX', '_current_native_subprocess_exit': 1,
+                '_current_native_prefix_failure': observed})()
+            location = current_native_case_location(test, AssertionError('PRIVATE_SENTINEL'), None)
+            self.assertEqual(location['prefixFailure'], marker)
+            self.assertNotIn('PRIVATE_SENTINEL', json.dumps(location))
+            wrapper = self.prefix_node("""
+import assert from 'node:assert/strict';import fs from 'node:fs';
+import {currentSourceNativeCaseLocation} from './scripts/lib/checkpoint-cas-native-postgres.mjs';
+const v=JSON.parse(fs.readFileSync(0,'utf8'));assert.deepEqual(currentSourceNativeCaseLocation(JSON.stringify(v)),v);
+for(const change of [{subprocessPhase:'PROVIDERS'},{prefixFailure:{...v.prefixFailure,raw:'PRIVATE'}},
+  {prefixFailure:{...v.prefixFailure,reason:'PRIVATE'}},{prefixFailure:{...v.prefixFailure,callsite:{...v.prefixFailure.callsite,module:'../PRIVATE'}}}])
+  assert.equal(currentSourceNativeCaseLocation(JSON.stringify({...v,...change})),null);
+console.log('PREFIX_NORMAL_CASE_AND_WRAPPER_PASS');
+""", location)
+            self.assertEqual(wrapper.stdout, b'PREFIX_NORMAL_CASE_AND_WRAPPER_PASS\n')
+
+    def test_prefix_missing_ambiguous_or_unverified_marker_stays_unknown(self):
+        base = {'kind': 'CURRENT598_PREFIX_FIRST_FAILURE', 'phase': 'RAW_INPUTS', 'exceptionType': 'ERROR',
+            'reason': 'ENOENT', 'callsite': None, 'privatePayloadIncluded': False}
+        bad = [b'PRIVATE_SENTINEL\n', (json.dumps(base)+'\n'+json.dumps(base)+'\n').encode()]
+        for update in ({'raw': 'PRIVATE'}, {'phase': 'PRIVATE'}, {'reason': 'PRIVATE'},
+                {'privatePayloadIncluded': True}, {'callsite': {'module': CURRENT_PREFIX_MODULE,
+                    'sha256': '0'*64, 'line': 1, 'column': 1}}):
+            bad.append((json.dumps({**base, **update})+'\n').encode())
+        with tempfile.TemporaryDirectory(prefix='rr-prefix-unknown-') as directory:
+            own = Path(directory)
+            for raw in bad:
+                (own / 'current598-prefix-whole.stderr').write_bytes(raw)
+                with mock.patch.dict(globals(), {'source_current_cohort_read': lambda root, relative, maximum: (root / relative).read_bytes()}):
+                    result = current_prefix_failure(own, ROOT)
+                self.assertEqual(result['phase'], 'UNKNOWN');self.assertIsNone(result['callsite'])
+                self.assertNotIn('PRIVATE', json.dumps(result))
+
     def test_exact_provider_need_catalog_matches_all_literal_source_sites(self):
         import ast
         tree = ast.parse((ROOT / SOURCE_PROVIDER_FRAME_FILES[0]).read_text(encoding='utf8'))
@@ -3130,7 +3261,7 @@ CURRENT_NATIVE_CASE = 'current-source-native'
 CURRENT_NATIVE_CONTEXT = None
 CURRENT_NATIVE_INPUT_PROFILE = 'operative585'
 CURRENT598_INPUT_PROFILE_PATH = 'scripts/fixtures/source19-current598-input-profile.json'
-CURRENT598_INPUT_PROFILE_SHA256 = 'c551731fb2c405559f2af5986d092c2276053ce526fe18b598fd150db59e05e8'
+CURRENT598_INPUT_PROFILE_SHA256 = '65e7eac92cf5c8da66194f5108e4f64e3f05f52eedd7d57ee42ee2db49cf3c66'
 
 CURRENT_NATIVE_POST64_MODULE = None
 def current_native_post64_module():
@@ -3705,6 +3836,8 @@ class SourceCurrentNative(SourceActualSUnionNative):
             self._current_native_subprocess_exit = result.returncode
             if name == 'providers' and result.returncode != 0:
                 self._current_native_provider_failure = current_provider_failure(own, root)
+            if name == 'prefix' and result.returncode != 0:
+                self._current_native_prefix_failure = current_prefix_failure(own, root)
             self.assertEqual(result.returncode, 0, 'CURRENT598_NORMAL_' + name.upper() + '_PRODUCER_REFUSED')
             self._current_native_subprocess_phase, self._current_native_subprocess_exit = 'NONE', None
         inputs = strict_json(own / 'current598-native-inputs/transport/current598-prefix-inputs.json', 32 * 1024 * 1024)
@@ -4461,6 +4594,10 @@ def run_current_native_profile_cli():
 
 
 if __name__ == '__main__':
+    if sys.argv[1:] == ['--prefix-diagnostic-unit']:
+        unittest.main(argv=[sys.argv[0]], defaultTest=(
+            'SourceProviderEvidencePureTests.test_prefix_first_failure_survives_normal_case_and_wrapper_without_private_values',
+            'SourceProviderEvidencePureTests.test_prefix_missing_ambiguous_or_unverified_marker_stays_unknown'))
     if sys.argv[1:] == ['--provider-diagnostic-unit']:
         unittest.main(argv=[sys.argv[0]], defaultTest='SourceProviderEvidencePureTests')
     if sys.argv[1:] == ['--legacy-diagnostic-unit']:

@@ -622,9 +622,22 @@ export async function synchronizeRavScoreModelBinding(options = {}) {
   return Object.freeze({ binding, candidateBinding, changed: Object.freeze(changed) });
 }
 
+// Only the normal Source CLI owns these derived fixture facts. The existing
+// isolated binding library API and application CODE derivation stay unchanged.
+export async function synchronizeSourceCurrentNativeInputProfile({root=ROOT,write=false}={}){
+  assert(SOURCE_PRODUCER_AFTER597_PARENT.binding!==null,'SOURCE_CURRENT_NATIVE_PROFILE_SOURCE_MODE_REQUIRED');
+  const {deriveSourceProducerAfter597CurrentNativeInputProfile}=await import('./build-source-producer-successor.mjs');
+  const derived=await deriveSourceProducerAfter597CurrentNativeInputProfile({root});
+  const changed=derived.files.filter(row=>row.before!==row.text);
+  if(!write)assert.equal(changed.length,0,'Stale derived Source current native profile: '+changed.map(row=>row.path).join(', '));
+  else for(const row of changed)await fs.writeFile(path.join(root,row.path),row.text);
+  return Object.freeze({changed:Object.freeze(changed.map(row=>row.path)),profileSha256:derived.profileSha256});
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     const write = process.argv.includes('--write');
+    if(SOURCE_PRODUCER_AFTER597_PARENT.binding!==null)await synchronizeSourceCurrentNativeInputProfile({write});
     const result = await synchronizeRavScoreModelBinding({ write });
     if (write) {
       // The normal final binding write owns its derived release/handbook facts.

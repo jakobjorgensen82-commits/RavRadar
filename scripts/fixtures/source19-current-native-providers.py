@@ -19,7 +19,36 @@ from datetime import datetime, timedelta, timezone
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 ROOT = Path(__file__).resolve().parents[2]
-NATIVE_FORECAST = ROOT / "scripts/fixtures/source19-current-provider-forecast.mjs"
+from types import MappingProxyType
+
+SOURCE_NATIVE_PROVIDER_PROGRAMS = MappingProxyType({
+    "FORECAST": ("CURRENT", "scripts/fixtures/source19-current-provider-forecast.mjs"),
+    "PUBLIC_REGISTRY": ("NORMAL_CODE", "scripts/build-public-coastal-parts-v2.mjs"),
+    "DECODER": ("NORMAL_CODE", "scripts/update-dmi-bulk.py"),
+    "INITIAL_WEATHER": ("CURRENT", "scripts/fixtures/source19-current-initial-weather.py"),
+    "CP_REGISTRY": ("NORMAL_CODE", "scripts/build-copernicus-target-registry.py"),
+    "OPEN_METEO": ("NORMAL_CODE", "scripts/fill-open-meteo-current-fallback.py"),
+    "CLOSURE": ("NORMAL_CODE", "scripts/build-current-operational-closure.py"),
+    "PILOT": ("NORMAL_CODE", "scripts/build-live-current-pilot.py"),
+})
+
+
+def source_native_provider_program_path(name, normal_root):
+    """Resolve only normal owner data; this does not import or run a program."""
+    selected = SOURCE_NATIVE_PROVIDER_PROGRAMS.get(name)
+    if selected is None or len(selected) != 2:
+        raise RuntimeError("CURRENT_NATIVE_PROVIDER_UNPROVED_SOURCE_OPERAND")
+    namespace, relative = selected
+    if namespace not in ("CURRENT", "NORMAL_CODE") or not isinstance(relative, str) \
+            or not relative.startswith("scripts/") or ".." in relative.split("/"):
+        raise RuntimeError("CURRENT_NATIVE_PROVIDER_UNPROVED_SOURCE_OPERAND")
+    selected_root = ROOT if namespace == "CURRENT" else normal_root
+    if not isinstance(selected_root, Path):
+        raise RuntimeError("CURRENT_NATIVE_PROVIDER_UNPROVED_SOURCE_OPERAND")
+    return selected_root / relative
+
+
+NATIVE_FORECAST = source_native_provider_program_path("FORECAST", ROOT)
 OFFSETS = tuple(range(121))
 BASIS = ("data/live/dmi-bulk-cache.json", "data/live/dmi-forecast-cache.json",
          ".cache/copernicus-current-shadow.json", ".cache/open-meteo-current-fallback.json",
@@ -218,7 +247,7 @@ def prepare(node, target, initial_phase=None, *, current598=False, code598_root=
         need(not (out / relative).exists(), "BASIS_DESTINATION_EXISTS")
     # The later normal input producer runs this same normal registry builder.
     # Do not decode against a stale, hand-built or one-part native registry.
-    subprocess.run([str(node), str(normal_root / "scripts/build-public-coastal-parts-v2.mjs")],
+    subprocess.run([str(node), str(source_native_provider_program_path("PUBLIC_REGISTRY", normal_root))],
         cwd=normal_root, stdin=subprocess.DEVNULL, check=True, timeout=30)
     raw_dir = (normal_root if code598_root is not None else out) / ".cache/dmi-grib"
     raw_dir.parent.mkdir(parents=True, exist_ok=True)
@@ -385,7 +414,7 @@ def prepare(node, target, initial_phase=None, *, current598=False, code598_root=
         initial_observations = None
         if initial_phase or current598:
             initial_weather = module('source_current_initial_weather',
-                ROOT / 'scripts/fixtures/source19-current-initial-weather.py')
+                source_native_provider_program_path("INITIAL_WEATHER", ROOT))
             initial_observations = initial_weather.add_initial_weather(
                 eccodes, producer, targets, zones, document, reference, out, originals,
                 **({"private_history_start": history_start,
@@ -420,7 +449,7 @@ def prepare(node, target, initial_phase=None, *, current598=False, code598_root=
 
 
 def import_native_decoder(normal_root, *, current598):
-    program = normal_root / "scripts/update-dmi-bulk.py"
+    program = source_native_provider_program_path("DECODER", normal_root)
     if not current598:
         return module("current_native_real_dmi_decoder", program)
     # Only the credential-free synthetic asset factory shares this import clock.
@@ -453,7 +482,7 @@ def finish_normal_basis(node, out, reference, producer, targets, document, *, in
     fallback = out / BASIS[3]
     closure = out / ".cache/current-operational-closure.json"
     policy = normal_root / "data/current-regional-proxy-policy.json"
-    cp_registry = module("current_native_normal_cp_registry", normal_root / "scripts/build-copernicus-target-registry.py")
+    cp_registry = module("current_native_normal_cp_registry", source_native_provider_program_path("CP_REGISTRY", normal_root))
     registry = cp_registry.build_registry(targets, document, reference, file_sha256(bulk),
         full_coast=False, require_strict_dmi_ledger=True)
     # We supply no remote CP/OM vectors. Only an ACTUAL zero-gap DMI matrix
@@ -488,14 +517,14 @@ def finish_normal_basis(node, out, reference, producer, targets, document, *, in
     common = ["--targets", str(targets_path), "--dmi", str(bulk), "--registry", str(registry_path),
         "--copernicus", str(cp), "--source-stage", str(stage_path), "--regional", str(regional),
         "--policy", str(policy), "--at", time_text(reference)]
-    normal([sys.executable, "-B", str(normal_root / "scripts/fill-open-meteo-current-fallback.py"), *common,
+    normal([sys.executable, "-B", str(source_native_provider_program_path("OPEN_METEO", normal_root)), *common,
         "--reuse-only", "--critical-only", "--output", str(fallback),
         "--donor-bank", str(out / ".cache/open-meteo-current-donor-bank.json"),
         "--report", str(report_root / "native-open-meteo.json"),
         "--fetch-report", str(report_root / "native-open-meteo-fetch.json")])
-    normal([sys.executable, "-B", str(normal_root / "scripts/build-current-operational-closure.py"), *common,
+    normal([sys.executable, "-B", str(source_native_provider_program_path("CLOSURE", normal_root)), *common,
         "--open-meteo", str(fallback), "--output", str(closure), "--report", str(report_root / "native-closure.json")])
-    normal([sys.executable, "-B", str(normal_root / "scripts/build-live-current-pilot.py"), *common,
+    normal([sys.executable, "-B", str(source_native_provider_program_path("PILOT", normal_root)), *common,
         "--open-meteo", str(fallback), "--closure", str(closure),
         "--control", str(normal_root / "data/current-live-pilot-control.json"),
         "--output", str(out / BASIS[4]), "--report", str(report_root / "native-pilot.json")])
@@ -558,3 +587,41 @@ if __name__ == "__main__":
         except BaseException:
             pass
         raise
+
+
+def source_current_native_provider_input_declarations():
+    """Data only from the normal factory; never import a decoder or prepare input."""
+    import re
+    from types import CodeType
+    selected = (prepare, import_native_decoder, finish_normal_basis)
+    programs, unknown = {}, []
+    for function in selected:
+        pending = [function.__code__]
+        while pending:
+            code = pending.pop()
+            for value in code.co_consts:
+                if isinstance(value, CodeType):
+                    pending.append(value)
+                elif isinstance(value, str) and value in SOURCE_NATIVE_PROVIDER_PROGRAMS:
+                    namespace, relative = SOURCE_NATIVE_PROVIDER_PROGRAMS[value]
+                    programs.setdefault(relative, set()).add(function.__name__)
+                elif isinstance(value, str) and value.endswith((".py", ".mjs", ".js", ".cjs")):
+                    if re.fullmatch(r"[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)*", value) is None \
+                            or value.startswith(".") or ".." in value.split("/"):
+                        unknown.append({"reference": value, "function": function.__name__,
+                            "state": "UNPROVED_SOURCE_OPERAND"})
+                    else:
+                        programs.setdefault(value, set()).add(function.__name__)
+    return {"scope": "SOURCE_CURRENT_PROVIDER_PREPARED_INPUT_DECLARATIONS_ONLY",
+        "programDeclarations": [{"name": name, "namespace": row[0], "path": row[1],
+            "bindingState": "UNPROVED_SOURCE_OPERAND"} for name, row in SOURCE_NATIVE_PROVIDER_PROGRAMS.items()],
+        "basisPaths": list(BASIS),
+        "genuine598AdminInputPaths": sorted(CODE598_ADMIN_INPUTS),
+        "genuine598Code": {"head": CODE598_HEAD, "tree": CODE598_TREE},
+        "forecastProgram": str(NATIVE_FORECAST.relative_to(ROOT)).replace("\\", "/"),
+        "programReferences": [{"reference": value, "functions": sorted(functions),
+            "bindingState": "UNPROVED_SOURCE_OPERAND"} for value, functions in sorted(programs.items())],
+        "unknownOperands": unknown,
+        "sourceGraphClosed": False, "runtimeQualified": False,
+        "providerImported": False, "preparedInputsWritten": False,
+        "pgExecuted": False, "reuseAuthority": False}

@@ -86,6 +86,16 @@ const REQUIRED_PUBLIC_CLOSURE_FILES = Object.freeze([
   'js/services/rav-assistant.js',
   'js/services/trip-evidence-public-adapter.js',
 ]);
+const NUMERICAL_BUNDLE_NORMALIZATIONS = Object.freeze({
+  integrated: 'numerical-esm-closure-explicit-self-identity-exclusion-v3',
+  'candidate-g': 'candidate-g-rollback-numerical-esm-explicit-self-identity-exclusion-v3',
+});
+const NUMERICAL_BUNDLE_SELF_IDENTITIES = Object.freeze([
+  'js/core/ravscore-model-bundle.generated.js',
+  'js/core/ravscore-model-identity.generated.js',
+  'scripts/rollback-assets/ravscore-model-bundle.generated.js',
+  'scripts/rollback-assets/ravscore-model-identity.generated.js',
+]);
 
 const sha256 = value => crypto.createHash('sha256').update(value).digest('hex');
 const canonical = value => Array.isArray(value)
@@ -266,14 +276,21 @@ export function parseSealedRavScoreBundleModule(text, { model, binding } = {}) {
   let manifest;
   try { manifest = JSON.parse(match[3]); }
   catch { throw new Error('Sealed generated model bundle manifest is not JSON'); }
+  const numerical = manifest?.normalizationId === NUMERICAL_BUNDLE_NORMALIZATIONS[model];
   const manifestFields = model === 'integrated'
-    ? ['schemaVersion', 'normalizationId', 'contractSha256', 'entrypoints', 'files']
+    ? ['schemaVersion', 'normalizationId', 'contractSha256', 'entrypoints',
+      ...(numerical ? ['excludedModules'] : []), 'files']
     : ['schemaVersion', 'normalizationId', 'entrypoints', 'excludedModules', 'files'];
   if (!exactKeys(manifest, manifestFields)
     || !Array.isArray(manifest.entrypoints)
     || !Array.isArray(manifest.files)
     || (model === 'candidate-g' && !Array.isArray(manifest.excludedModules))) {
     throw new Error('Sealed generated model bundle manifest has an incompatible exact field set');
+  }
+  if (numerical && (manifest.schemaVersion !== (model === 'integrated'
+    ? '1.0.0' : 'candidate-g-operational-rollback-bundle-v1')
+    || !same(manifest.excludedModules, NUMERICAL_BUNDLE_SELF_IDENTITIES))) {
+    throw new Error('Sealed numerical model bundle has incompatible self-identity exclusions');
   }
   const fileKey = model === 'integrated' ? 'path' : 'file';
   const seen = new Set();
@@ -289,6 +306,12 @@ export function parseSealedRavScoreBundleModule(text, { model, binding } = {}) {
     }
     seen.add(relative);
   }
+  if (numerical && (manifest.entrypoints.length === 0
+    || new Set(manifest.entrypoints).size !== manifest.entrypoints.length
+    || manifest.entrypoints.some(relative => !seen.has(relative))
+    || manifest.excludedModules.some(relative => seen.has(relative)))) {
+    throw new Error('Sealed numerical model bundle has an unbound entrypoint or excluded input');
+  }
   const computedBundleSha256 = sha256(model === 'integrated'
     ? JSON.stringify(canonical(manifest)) : JSON.stringify(manifest));
   if (match[1] !== binding.modelContractSha256
@@ -297,9 +320,11 @@ export function parseSealedRavScoreBundleModule(text, { model, binding } = {}) {
     || (model === 'integrated' && manifest.contractSha256 !== binding.modelContractSha256)) {
     throw new Error('Sealed generated model bundle differs from its exact 11-field binding');
   }
-  const contractManifestPath = model === 'integrated'
+  const contractManifestPath = (model === 'integrated'
     ? 'js/core/ravscore-model-contract.js'
-    : 'scripts/rollback-assets/ravscore-model-contract.js';
+    : 'scripts/rollback-assets/ravscore-model-contract.js')
+    .replace('ravscore-model-contract.js', numerical
+      ? 'ravscore-numerical-contract.js' : 'ravscore-model-contract.js');
   const contractFile = manifest.files.find(item => item[fileKey] === contractManifestPath);
   if (!contractFile) {
     throw new Error('Sealed generated model bundle omits its executable model contract source');
@@ -307,7 +332,7 @@ export function parseSealedRavScoreBundleModule(text, { model, binding } = {}) {
   const publicFiles = manifest.files
     .map(item => Object.freeze({ path: item[fileKey], sha256: item.sha256 }))
     .filter(item => !item.path.startsWith('scripts/') && !item.path.startsWith('supabase/'));
-  for (const required of REQUIRED_PUBLIC_CLOSURE_FILES) {
+  for (const required of numerical ? [] : REQUIRED_PUBLIC_CLOSURE_FILES) {
     if (!publicFiles.some(item => item.path === required)) {
       throw new Error(`Sealed generated model bundle omits public browser closure file ${required}`);
     }
@@ -316,6 +341,7 @@ export function parseSealedRavScoreBundleModule(text, { model, binding } = {}) {
     manifest,
     publicFiles: Object.freeze(publicFiles),
     contractSourceSha256: contractFile.sha256,
+    numerical,
   });
 }
 
@@ -333,12 +359,38 @@ export function computeSealedPublicImplementationClosureIdentity({
     model: expectedModel,
     binding: expectedBinding,
   });
-  if (sha256(normalizedBundleSource(expectedContractText)) !== sealed.contractSourceSha256) {
+  if (!sealed.numerical
+    && sha256(normalizedBundleSource(expectedContractText)) !== sealed.contractSourceSha256) {
     throw new Error('Sealed executable model contract source differs from the bundle closure');
   }
   assertRavScorePublicBrowserClosure(expectedPublicClosure);
   const expectedClosureFiles = new Map(expectedPublicClosure.files
     .map(item => [item.path, item.sha256]));
+  if (sealed.numerical) {
+    // Numerical v3 binds calculation sources, while the independently computed
+    // browser closure binds presentation and the active executable wrapper.
+    // Both describe one implementation: no model identity may be substituted.
+    if (expectedClosureFiles.get('js/core/ravscore-model-contract.js')
+      !== sha256(normalizedBundleSource(expectedContractText))) {
+      throw new Error('Sealed executable model contract source differs from the public browser closure');
+    }
+    const identityText = [
+      '// Generated identity only. No implementation, manifest or presentation data.',
+      `export const GENERATED_RAVSCORE_MODEL_CONTRACT_SHA256 = '${expectedBinding.modelContractSha256}';`,
+      `export const GENERATED_RAVSCORE_MODEL_BUNDLE_SHA256 = '${expectedBinding.modelBundleSha256}';`,
+      '',
+    ].join('\n');
+    if (expectedClosureFiles.get('js/core/ravscore-model-identity.generated.js')
+      !== sha256(identityText)) {
+      throw new Error('Sealed numerical model identity differs from the public browser closure');
+    }
+    const numericalContractPath = expectedModel === 'integrated'
+      ? 'js/core/ravscore-numerical-contract.js'
+      : 'scripts/rollback-assets/ravscore-numerical-contract.js';
+    if (expectedClosureFiles.get(numericalContractPath) !== sealed.contractSourceSha256) {
+      throw new Error('Sealed numerical model contract source differs from the public browser closure');
+    }
+  }
   for (const item of sealed.publicFiles) {
     if (expectedClosureFiles.get(item.path) !== item.sha256) {
       throw new Error(`Sealed model and public browser closures diverge at ${item.path}`);

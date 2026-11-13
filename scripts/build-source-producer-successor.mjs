@@ -780,6 +780,54 @@ async function sourceAfter597ReadRelease(){
   const pkg=JSON.parse((await sourceAfter597RegularSourceBytes('package.json')).toString('utf8'));
   return assertSourceProducerAfter597Release(pkg.version);
 }
+// Current fixture recipe facts only. This neither executes the fixture nor
+// grants Source/native/SQL authority; the normal committed reader still checks it.
+export async function deriveSourceProducerAfter597CurrentNativeInputProfile({root=ROOT}={}){
+  const rootStat=await fs.lstat(root);assert(rootStat.isDirectory()&&!rootStat.isSymbolicLink(),
+    'SOURCE_CURRENT_NATIVE_PROFILE_REGULAR_ROOT_REQUIRED');
+  const realRoot=await fs.realpath(root);
+  const profilePath='scripts/fixtures/source19-current598-input-profile.json';
+  const readerPath='scripts/test-source598-current-native-profile.py';
+  const expectedPaths=[
+    'scripts/fixtures/source19-current-initial-weather.py',
+    'scripts/fixtures/source19-current-native-providers.py',
+    'scripts/fixtures/source19-current-normal-inputs.mjs',
+    'scripts/fixtures/source19-current-provider-forecast.mjs',
+    'scripts/fixtures/source19-current-native-metadata.mjs',
+    'scripts/fixtures/source19-current-native-post64.py',
+    'scripts/fixtures/source19-current-native-initial-activation.mjs',
+  ];
+  const read=async relative=>{
+    const file=path.resolve(realRoot,relative),stat=await fs.lstat(file);
+    assert(stat.isFile()&&!stat.isSymbolicLink()&&await fs.realpath(file)===file,
+      'SOURCE_CURRENT_NATIVE_PROFILE_REGULAR_SOURCE_REQUIRED');
+    const bytes=await fs.readFile(file),text=bytes.toString('utf8');
+    assert(Buffer.from(text,'utf8').equals(bytes),'SOURCE_CURRENT_NATIVE_PROFILE_UTF8');
+    return text.replace(/\r\n/g,'\n');
+  };
+  const originalProfile=await read(profilePath),profile=JSON.parse(originalProfile);
+  assert.equal(profile.kind,'SOURCE598_NEW_CURRENT_INPUT_MATERIALIZATION_PREPARATION');
+  assert.equal(profile.status,'PREPARATION_ONLY');assert.equal(profile.profile,'current598-preparation');
+  assert.equal(profile.sourceAdmission,false);assert.equal(profile.productionActivation,false);
+  assert(Array.isArray(profile.nativeInputFiles),'SOURCE_CURRENT_NATIVE_PROFILE_RECIPE');
+  assert.deepEqual(profile.nativeInputFiles.map(row=>row.path).sort(),[...expectedPaths].sort(),
+    'SOURCE_CURRENT_NATIVE_PROFILE_RECIPE');
+  for(const row of profile.nativeInputFiles){
+    assert.deepEqual(Object.keys(row).sort(),['bytes','path','sha256','source']);
+    assert.equal(row.source,'THIS_SAME_ACTUAL_COMMITTED_CANDIDATE');
+    const source=await read(row.path);row.bytes=Buffer.byteLength(source,'utf8');row.sha256=sha(source);
+  }
+  const profileText=JSON.stringify(profile,null,2)+'\n',profileSha256=sha(profileText);
+  const originalReader=await read(readerPath);
+  const slot=/^CURRENT598_INPUT_PROFILE_SHA256 = '[a-f0-9]{64}'$/gm;
+  assert.equal([...originalReader.matchAll(slot)].length,1,'SOURCE_CURRENT_NATIVE_PROFILE_READER_SLOT');
+  const readerText=originalReader.replace(slot,"CURRENT598_INPUT_PROFILE_SHA256 = '"+profileSha256+"'");
+  return Object.freeze({profileSha256,files:Object.freeze([
+    Object.freeze({path:profilePath,before:originalProfile,text:profileText}),
+    Object.freeze({path:readerPath,before:originalReader,text:readerText}),
+  ])});
+}
+
 // Pure fixed CODE DATA preparation; no model binding/output/SQL is issued here.
 export async function deriveSourceProducerAfter597CodePins(){
   requireSourceProducerAfter597CodeParent();assert.equal(arguments.length,0);

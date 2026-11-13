@@ -244,6 +244,10 @@ export const PROTECTED_PRIVATE_RUNTIME_POLICY = Object.freeze({
   targetSourceKind: 'RAVRADAR_PRIVATE_PRODUCTION_RUNTIME_TARGET_SOURCE',
 });
 
+// Retained weather originals coexist with current, previous and a new upload.
+// Only this dedicated bucket gets extra room; all other R2 callers keep 2 GB.
+const PRIVATE_WEATHER_R2_BUCKET_CEILING_BYTES = 3_000_000_000;
+
 const POINTER_KEYS = Object.freeze(['schemaVersion', 'kind', 'current', 'previous']);
 const LEGACY_DESCRIPTOR_KEYS = Object.freeze([
   'schemaVersion',
@@ -2483,6 +2487,8 @@ export function createProtectedPrivateRuntimeClients({
       ? createR2PrivateRuntimeStorage({
         bucketId: policy.bucketId,
         maximumObjectBytes: policy.maximumArchiveBytes,
+        bucketCeilingBytes: policy.bucketId === PROTECTED_PRIVATE_RUNTIME_POLICY.bucketId
+          ? PRIVATE_WEATHER_R2_BUCKET_CEILING_BYTES : undefined,
         fetchImpl,
         delayImpl,
       })
@@ -2582,6 +2588,7 @@ async function main() {
       targetStorage: createR2PrivateRuntimeStorage({
         bucketId: PROTECTED_PRIVATE_RUNTIME_POLICY.bucketId,
         maximumObjectBytes: PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchiveBytes,
+        bucketCeilingBytes: PRIVATE_WEATHER_R2_BUCKET_CEILING_BYTES,
       }),
     });
   } else if (options.mode === 'audit-anon') {

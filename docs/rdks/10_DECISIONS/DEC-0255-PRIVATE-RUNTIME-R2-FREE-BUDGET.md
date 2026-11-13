@@ -1,5 +1,12 @@
 # DEC-0255 – Privat produktionscache til R2 med målt Free-budget
 
+## Tillæg 13. november 2026 — kun den kommende Source-vejrbucket får ekstra råderum
+
+Den kommende Source-kandidat giver kun den eksisterende private vejrbucket et lokalt loft på 3.000.000.000 bytes gennem den normale R2-parameter. Adminarkiv, databasebackup og øvrige buckets beholder 2.000.000.000-byte-loftet. De tre kendte lokale lofter summerer dermed til 7 GB, men er ingen kontodækkende betalingsgrænse eller bevist Free-klarhed. Uændret maksimal vejrgeneration og 50 MB preflightmargin bevares; gamle unikke originaler slettes ikke. Dette er Source-only forberedelse, ikke en ændring af den fungerende 598-model eller en aktiveret kapacitets-/oprydningsløsning.
+
+Hel-generationsreservation og sikkert dokumenteret retirement er fortsat særskilte krav. Det forhøjede loft må ikke finansieres med antaget sletning, og der gives ingen ny slette-, migrations-, nøgle- eller aktiveringsret. Den normale præcise Source-, CODE- og backendkvalifikation kræves før levering. Ældre 2 GB-vejrmålinger nedenfor bevarer deres oprindelige driftsperiode.
+
+
 ## Tillæg 13. november 2026 — selvstændig databasebackup uden ekstra tidsplan
 
 **Status: aktiv bevarings- og leveringskontrakt; kode forberedt privat, automatisk udførelse ikke aktiveret.** Dette tillæg vedrører den separate private databasebackup og ændrer ikke den fungerende private vejr-cache eller dens pointere. De daterede målinger og tidligere migrationsforløb nedenfor bevares som historik.

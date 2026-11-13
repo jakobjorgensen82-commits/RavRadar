@@ -24,6 +24,57 @@ const canonical=value=>JSON.stringify(value,(_key,nested)=>nested&&typeof nested
 const digest=value=>crypto.createHash('sha256').update(canonical(value)).digest('hex');
 const H0='2026-11-04T04:00:00.000Z',later='2026-11-04T05:00:00.000Z';
 
+test('Source current native recipe facts derive before consumers with write/check idempotence and closed sources',async t=>{
+  const {deriveSourceProducerAfter597CurrentNativeInputProfile:derive}=await import('./build-source-producer-successor.mjs');
+  const {synchronizeSourceCurrentNativeInputProfile:sync}=await import('./sync-ravscore-model-binding.mjs');
+  const repository=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+  const stage=await fs.mkdtemp(path.join(os.tmpdir(),'rr-source-native-facts-'));
+  t.after(async()=>{assert(stage.startsWith(path.resolve(os.tmpdir())+path.sep+'rr-source-native-facts-'));
+    await fs.rm(stage,{recursive:true,force:false});});
+  const profilePath='scripts/fixtures/source19-current598-input-profile.json',readerPath='scripts/test-source598-current-native-profile.py';
+  const original=JSON.parse(await fs.readFile(path.join(repository,profilePath),'utf8'));
+  const put=async(relative,value)=>{await fs.mkdir(path.dirname(path.join(stage,relative)),{recursive:true});await fs.writeFile(path.join(stage,relative),value);};
+  for(const relative of [profilePath,readerPath,...original.nativeInputFiles.map(row=>row.path)])
+    await put(relative,await fs.readFile(path.join(repository,relative)));
+  const get=relative=>fs.readFile(path.join(stage,relative),'utf8');
+  const pair=async()=>Promise.all([profilePath,readerPath].map(get));
+  const unchanged=await pair();
+  assert.deepEqual((await sync({root:stage,write:true})).changed,[]);
+  assert.deepEqual((await sync({root:stage})).changed,[]);assert.deepEqual(await pair(),unchanged);
+  const badRow=JSON.parse(unchanged[0]);badRow.nativeInputFiles[0].bytes=1;badRow.nativeInputFiles[0].sha256='0'.repeat(64);
+  await put(profilePath,JSON.stringify(badRow,null,2)+'\n');const staleRow=await pair();
+  await assert.rejects(sync({root:stage}),/Stale derived/);assert.deepEqual(await pair(),staleRow,'check never writes stale rows');
+  assert.deepEqual((await sync({root:stage,write:true})).changed,[profilePath]);
+  await put(readerPath,unchanged[1].replace(/^CURRENT598_INPUT_PROFILE_SHA256 = '[a-f0-9]{64}'/m,
+    "CURRENT598_INPUT_PROFILE_SHA256 = '"+'0'.repeat(64)+"'"));const staleHash=await pair();
+  await assert.rejects(sync({root:stage}),/Stale derived/);assert.deepEqual(await pair(),staleHash,'check never writes stale reader hash');
+  assert.deepEqual((await sync({root:stage,write:true})).changed,[readerPath]);
+  const selected=original.nativeInputFiles[0].path,source=await get(selected),changedSource=source+'\n# changed current fixture source\n';
+  await put(selected,changedSource);const beforePure=await pair(),derived=await derive({root:stage});
+  assert.deepEqual(await pair(),beforePure,'the builder derives data without writing');
+  const expected=JSON.parse(derived.files[0].text),expectedRow=expected.nativeInputFiles[0];
+  assert.equal(expectedRow.bytes,Buffer.byteLength(changedSource));
+  assert.equal(expectedRow.sha256,crypto.createHash('sha256').update(changedSource).digest('hex'));
+  expected.nativeInputFiles[0]={...original.nativeInputFiles[0]};assert.deepEqual(expected,original,'all other metadata, order and rows stay unchanged');
+  await assert.rejects(sync({root:stage}),/Stale derived/);
+  assert.deepEqual((await sync({root:stage,write:true})).changed,[profilePath,readerPath]);
+  const final=await pair();assert.deepEqual((await sync({root:stage})).changed,[]);
+  assert.deepEqual((await sync({root:stage,write:true})).changed,[]);assert.deepEqual(await pair(),final);
+  await put(selected,changedSource.replace(/\n/g,'\r\n'));
+  assert.deepEqual((await sync({root:stage})).changed,[],'physical CRLF follows the committed-reader canonical bytes');
+  await put(selected,changedSource);
+  const badRecipe=JSON.parse(final[0]);badRecipe.nativeInputFiles[0].path='scripts/fixtures/source19-current-unknown.py';
+  await put(profilePath,JSON.stringify(badRecipe,null,2)+'\n');const unknown=await pair();
+  await assert.rejects(sync({root:stage,write:true}),/SOURCE_CURRENT_NATIVE_PROFILE_RECIPE/);assert.deepEqual(await pair(),unknown);
+  await put(profilePath,final[0]);await fs.rm(path.join(stage,selected));
+  await assert.rejects(sync({root:stage,write:true}),/ENOENT/);assert.deepEqual(await pair(),final);
+  await fs.mkdir(path.join(stage,selected));
+  await assert.rejects(sync({root:stage,write:true}),/REGULAR_SOURCE_REQUIRED/);assert.deepEqual(await pair(),final);
+  await fs.rmdir(path.join(stage,selected));await put(selected,changedSource);
+  await put(readerPath,final[1]+"\nCURRENT598_INPUT_PROFILE_SHA256 = '"+'0'.repeat(64)+"'\n");const duplicate=await pair();
+  await assert.rejects(sync({root:stage,write:true}),/READER_SLOT/);assert.deepEqual(await pair(),duplicate,'all source facts qualify before either derived write');
+});
+
 test('issued assistant598 retains genuine597 canonical parent without granting Source authority',async()=>{
   assert.equal(ACTIVE_ASSISTANT_SUCCESSOR,next);
   assert.deepEqual(next.before,{...SCALAR597_LATER_H0_BINDING,canonicalSha256:SCALAR597_LATER_H0_OUTPUT.canonicalSha256});

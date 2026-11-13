@@ -1,3 +1,57 @@
+## Afgrænset normal adminlæsning og kommende Source-kapacitet — 13. november 2026
+
+En faktisk normal læsetur på den offentlige 598-administration har afgrænset accept af lagertotal og testmarkering adskilt fra lokale observationer, danske kalenderdage og datofilter, uændret kontototal, model-/generationsfelter og deres forbehold, central stationsrouting, aktiv modelvisning samt håndbog og zoneregister. Umærkede lagerposter er ikke dermed verificerede virkelige ture. Der blev ikke skrevet adminændringer eller læst individuelle konti eller ture.
+
+Retningseditorens indlæsning og filter er observeret, men den beskyttede kandidatstatus er utilgængelig; aktivering er derfor ikke accepteret. Dette er ikke en gennemgang af samtlige felter, fejl-/retryforløb eller hele adminmålet, og det er ikke offentlig accept af Source616.
+
+Den kommende Source-kandidat giver kun den eksisterende private vejrbucket et lokalt loft på 3.000.000.000 bytes gennem den normale R2-parameter. Adminarkiv, databasebackup og øvrige buckets beholder 2.000.000.000-byte-loftet. De tre kendte lokale lofter summerer dermed til 7 GB, men er ingen kontodækkende betalingsgrænse eller bevist Free-klarhed. Uændret maksimal vejrgeneration og 50 MB preflightmargin bevares; gamle unikke originaler slettes ikke. Dette er Source-only forberedelse, ikke en ændring af den fungerende 598-model eller en aktiveret kapacitets-/oprydningsløsning.
+
+## 13. november — afgrænset offentlig assistentaccept
+
+Den tidligere engelske opfølgning fra et vindspørgsmål til søgning i vandet er faktisk bestået på den offentlige 598-kæde sammen med det indledende vindspørgsmål, uden assistent-POST. En frisk dialog efter én normal genindlæsning gav ét eksternt AI-svar med HTTP200, alle seks forventede I/K-felter og valideret Workers-AI-proveniens. Ved et ukendt redskab bad svaret ærligt om afklaring. Det er kun denne konkrete opfølgnings- og eksterne ruterest, der er lukket.
+
+Dette er ikke accept af Source616s nye offentlige bindinger eller hele assistentmålet. Source-levering og genlæsning, faglig bredde, livscyklus og aktuelle scoreforklaringer er fortsat særskilte åbne krav. Alle øvrige hovedmål og databevaringskrav består.
+
+## Tomme OPTIONS-forprøver til kapitel 89.343 — 13. november 2026
+
+En forbindelsesforprøve til mailknappen kan have en body-stream, selv om den ikke indeholder noget. Den tidligere kontrol afviste alene, at streamen fandtes. Den afgrænsede rettelse beholder den hurtige vej uden body og kontrollerer ellers, at streamen faktisk afsluttes tom inden for en kort frist. Indhold, læsefejl, stilstand og ukendt afslutning afvises. Ingen bodytekst eller private værdier skrives i loggen.
+
+Forprøven sender stadig ingen mail og bruger ikke Auth eller profilopslag. Sti, origin, ønsket metode og det efterfølgende tidsvindue skal fortsat passe. Det egentlige POST-kald beholder ejer, modtager, signatur, reservation og beskyttelse mod gentagelser. Den normale lokale handlerprøve består; faktisk passage på Supabase og modtaget mail kræver stadig deres egne beviser.
+
+Det efterfølgende POST-kald kan også have en fysisk, men tom body-stream. Den offentlige indgang genbruger derfor samme begrænsede tomhedskontrol. Kun bevist tomt EOF omsættes til en bodyless Request med samme adresse, metode, headers og abortsignal, før den uændrede ejer- og mailkæde kaldes. En Request uden body beholder sin direkte vej. Ikke-tomt eller ukendt indhold afvises fortsat med samme JSON404 og CORS; der logges ingen bodytekst.
+
+Hosted er OPTIONS observeret med HTTP204 og et efterfølgende POST med HTTP404 og registreret eksekvering. POST-bodyens pointer er ikke observeret. Den lokale body-pointer-fejl er reproduceret, men er derfor fortsat en hypotese om netop det hostede afslag. Faktisk afsenderaccept, levering og modtagelse kræver fortsat særskilt bevis.
+
+## Privat afvisningsdiagnose til kapitel 89.345 — 13. november 2026
+
+En databasebackups roller kontrolleres, før de store SQL-filer læses ind. Hvis den strenge kontrol afviser et statement, får den private rapport en fast type, et fast afvisningspunkt og statementets nummer. Ukendte typer vises kun som OTHER. SQL-tekst, rollenavne og værdier vises ikke. Kommentarer og psql-metalinjer tælles ikke som SQL-statements.
+
+Ved afvist GRANT eller REVOKE skelner den samme private rapport nu mellem fire faste strukturklasser: NO_TO ved manglende modtagerkeyword, TO_POSITION ved forkert placering, OBJECT_PARAMETER ved det præcise keyword-par ON PARAMETER før modtageren og OBJECT_OTHER ved en anden objektform. Kun tokenizerens egentlige keywords tæller; citerede identifikatorer, strenge og kommentarer bliver aldrig keywords. Statementtype og nummer bevares, og ingen SQL-tekst, rolle- eller parameternavne vises.
+
+Klasserne præciserer kun det eksisterende afslag. Den faktiske arkivform skal stadig observeres; ON PARAMETER er ikke bekræftet alene af den tidligere medlemskabsafvisning. Ingen tidligere afvist form accepteres, og fuld arkiv-/Auth-gendannelse og Free-klarhed er fortsat åbne.
+
+De samme input accepteres og afvises som før. Originale filer og adgangsregler ændres ikke; der oprettes ikke gættede roller, og ingen SQL eller grants springes over. Diagnosen hjælper med at finde den konkrete formatårsag, men retter den ikke i sig selv. En afvist kontrol er heller ikke alene bevis for en manglende platformrolle eller en fejl i målmiljøet.
+
+Den eksisterende archive-vej bruges fortsat. Den starter det ejede lokale mål og læser det autentificerede indeks og det krypterede ROLES-objekt; det er ikke en læsning uden download. Store SQL-filer materialiseres først efter bestået rolleaudit. Denne kodeændring starter ingen ny prøve. Faktisk fuld gendannelse, Auth-funktion, sikker løbende drift og Free-klarhed kræver fortsat deres egne beviser.
+
+### Opfølgning: rettigheder til databaseindstillinger
+
+Den autentificerede tidlige rollekontrol har nu bekræftet, at arkivet indeholder ON PARAMETER før store SQL-filer. PostgreSQLs normale rollebackup kan også beskrive rettigheder til databaseindstillinger. Den hidtidige kontrol behandlede denne særskilte form som et medlemskab mellem roller og standsede.
+
+Den afgrænsede kildekandidat læser nu GRANT og REVOKE ON PARAMETER efter den officielle syntaks: SET og ALTER SYSTEM kan stå i en kommasepareret liste, eller alle rettigheder kan angives med ALL og valgfrit PRIVILEGES. Parameterlister, TO/FROM, valgfri grant option, rettighedsgiver og REVOKE-afhængigheder læses i deres faste rækkefølge. Hele udsagnet skal være læst. Kun modtagere og en eventuel rettighedsgiver registreres som roller; navnene på indstillinger er ikke rollenavne. Andre objekttyper og ukendte rester afvises fortsat.
+
+Den tidligere diagnose ændrede ikke accepteret syntaks. Den nye parameterrettelse erstatter derfor alene udsagnene her om uafklaret objektform og uændret grammatik. Den gamle medlemskabskontrol, tokenisering, krypterings- og målkontrol samt de originale SQL- og adgangsregler bevares. Der gættes ikke på roller, og ingen SQL eller grants springes over. Den normale afgrænsede parserprøve består; præcis kildekvalifikation, faktisk fuld arkiv-/Auth-gendannelse, autonom rotation og Free-klarhed kræver fortsat deres egne beviser.
+
+Syntaksgrundlag: [PostgreSQL GRANT](https://www.postgresql.org/docs/17/sql-grant.html) og [REVOKE](https://www.postgresql.org/docs/17/sql-revoke.html). Version 4.0.598, numerisk model, migrationer, score og vejr ændres ikke. Se håndbog 89.345.
+
+## Privat gatewaydiagnostik til kapitel 89.343 — 13. november 2026
+
+Prøvemailens forbindelseskontrol kan blive afvist, før mailsystemet bruges. Den afgrænsede kildekandidat giver administratorens private log en fast kategori for det nåede kontrolpunkt. Den viser kun, om reservation, kendt sti, origin, ønsket metode, body-pointerens tilstedeværelse og tidsvindue passer. Adresse, query, indhold, loginoplysninger, ejer, modtager, beskedidentitet og nøgler logges ikke.
+
+De samme regler giver fortsat de samme offentlige svar. En loggerfejl ændrer ikke udfaldet. En konkret hændelse kan vise, at handleren blev nået, og hvilken regel der afviste. Hvis hændelsen mangler, er indgangen stadig uobserveret; det er ikke alene bevis for en platformfejl.
+
+Diagnostikken er under kildeforberedelse. Den opretter ingen ny prøve, åbner intet mailvindue og sender ingen mail. Ejerkontrol, signatur, ti minutters reservation, deduplikering og afsender bevares. Den præcise årsag samt faktisk afsendelse og modtagelse kræver stadig deres egne beviser.
+
 ## 89.347 — Databasebackup med sikker, løbende oprydning
 
 **Klargjort, ikke aktiveret.** Forberedt automatik gendanner først, beskytter en verificeret reserve og rydder kun dokumenterede gamle backups op.
@@ -837,6 +891,13 @@ Den samlede lokale kandidat har bestået 109 normale backupcases, kildeplanteste
 Den eksisterende privacywalker kan nu samtidig tælle ukomprimerede bytes. Der er ingen ekstra gennemgang eller ny kvoteregel. Der foreligger endnu ingen måling af et faktisk _site fra denne kandidat.
 
 ## 89.299 Begge kendte kontinuitetsformater i scalarplanen
+
+### Aktuel afgrænset frist for offlineplanen
+
+Den afgrænsede lokale rettelse giver den eksisterende offlineplan for vind, vandstand og vandtemperatur én fælles frist på 300 sekunder. En faktisk almindelig kørsel overskred 180-sekundersfristen efter 190.264 ms; overskridelsen blev opdaget efter den normale kontrol af den gemte Open-Meteo-bank. Tiden gælder hele kalderen, ikke kun denne fase. Leverandørbudgetter, originalkontrol, model og SQL bevares. Færdig plan og bedre prognosehale skal stadig verificeres i en efterfølgende almindelig vejrhentning.
+
+De tidligere forløb med 120 og 180 sekunder nedenfor bevares som historik. Den nye frist ændrer kun ventetiden for den lokale planlægning; vind, vandstand og temperatur kvalificeres gennem de samme normale læsere.
+
 
 Kort fortalt: Den normale plan for reelle vejrhul skal også kunne bruge den nyere, originale strømhistorik. Kun de to allerede kendte formater tillades.
 

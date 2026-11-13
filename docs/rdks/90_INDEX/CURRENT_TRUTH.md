@@ -16,6 +16,18 @@ Der er ikke dokumenteret samlet Free-klarhed. Fysisk Supabase-margin, autonom ve
 
 Databasebackupens automatiske restore/rotation/ugentlige optagelse er forberedt som et efterfølgende job i den eksisterende adminvedligeholdelse og er ikke aktiveret. Positive historiske locatorer kræves ved al retirement; ukendte grupper og løse managed objekter giver HELD. Faktisk fuld arkiv-/Auth-gendannelse, præcis kildekvalifikation og målt samlet margin mangler fortsat før aktivering eller Free-overgang. Se håndbog 89.347 og DEC-0255.
 
+Den afgrænsede lokale rettelse giver den eksisterende offlineplan for vind, vandstand og vandtemperatur én fælles frist på 300 sekunder. En faktisk almindelig kørsel overskred 180-sekundersfristen efter 190.264 ms; overskridelsen blev opdaget efter den normale kontrol af den gemte Open-Meteo-bank. Tiden gælder hele kalderen, ikke kun denne fase. Leverandørbudgetter, originalkontrol, model og SQL bevares. Færdig plan og bedre prognosehale skal stadig verificeres i en efterfølgende almindelig vejrhentning.
+
+Den tidligere engelske opfølgning fra et vindspørgsmål til søgning i vandet er faktisk bestået på den offentlige 598-kæde sammen med det indledende vindspørgsmål, uden assistent-POST. En frisk dialog efter én normal genindlæsning gav ét eksternt AI-svar med HTTP200, alle seks forventede I/K-felter og valideret Workers-AI-proveniens. Ved et ukendt redskab bad svaret ærligt om afklaring. Det er kun denne konkrete opfølgnings- og eksterne ruterest, der er lukket.
+
+Dette er ikke accept af Source616s nye offentlige bindinger eller hele assistentmålet. Source-levering og genlæsning, faglig bredde, livscyklus og aktuelle scoreforklaringer er fortsat særskilte åbne krav. Alle øvrige hovedmål og databevaringskrav består.
+
+En faktisk normal læsetur på den offentlige 598-administration har afgrænset accept af lagertotal og testmarkering adskilt fra lokale observationer, danske kalenderdage og datofilter, uændret kontototal, model-/generationsfelter og deres forbehold, central stationsrouting, aktiv modelvisning samt håndbog og zoneregister. Umærkede lagerposter er ikke dermed verificerede virkelige ture. Der blev ikke skrevet adminændringer eller læst individuelle konti eller ture.
+
+Retningseditorens indlæsning og filter er observeret, men den beskyttede kandidatstatus er utilgængelig; aktivering er derfor ikke accepteret. Dette er ikke en gennemgang af samtlige felter, fejl-/retryforløb eller hele adminmålet, og det er ikke offentlig accept af Source616.
+
+Den samlede private Source-kandidat viderefører dagens normale mail-, rollearkiv- og 300-sekundersrettelser samt de allerede gennemgåede Source-filer. Førstegangsprofilens aktuelle kildefakta og CODE skal afledes normalt efter endelige ejerinput. De tre relevante normale mål er mailprøven, arkivparseren og scalarens fysiske wireup; deres faktiske kildekvalifikation på den samlede kandidat er fortsat åben. Source616, C/I/T og de 80 udstedte SQL-filer bevares.
+
 <!-- RAVRADAR_ACTIVE_ENTRY_END -->
 
 ## Daterede notater og tidligere indgange — uændret historik

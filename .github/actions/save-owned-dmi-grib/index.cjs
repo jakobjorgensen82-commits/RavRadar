@@ -10,6 +10,22 @@ const { findPackageJSON } = require('node:module');
 const { pathToFileURL } = require('node:url');
 const { types } = require('node:util');
 const ROOT = path.resolve(__dirname, '../../..');
+// Shared fixed normal module operands, not a caller-selected command surface.
+const SOURCE_ACTION_MODULES = Object.freeze({
+  COMPLETED_STAGE: Object.freeze({"path":"scripts/lib/source-completed-stage-artifact-identity.mjs"}),
+  SOURCE_RUNTIME_FAMILY: Object.freeze({"path":"scripts/lib/source-producer-after597-runtime-family.mjs","requireSpecifier":"../../../scripts/lib/source-producer-after597-runtime-family.mjs"}),
+  WEATHER_WRITER: Object.freeze({"path":"scripts/lib/weather-acquisition-writer.mjs","requireSpecifier":"../../../scripts/lib/weather-acquisition-writer.mjs"}),
+  PRIVATE_RUNTIME: Object.freeze({"path":"scripts/protected-private-production-runtime.mjs"}),
+  PROTECTED_CHECKPOINT: Object.freeze({"path":"scripts/protected-ravscore-continuation-checkpoint.mjs"}),
+  SOURCE_ENTRY: Object.freeze({"path":"scripts/source-normal-producer-entry.mjs"}),
+  SOURCE_TAIL: Object.freeze({"path":"scripts/source-normal-producer-tail.mjs"}),
+});
+function sourceActionModule(role) {
+  if (arguments.length !== 1 || !Object.hasOwn(SOURCE_ACTION_MODULES, role))
+    throw refused('DMI_RAW_SAVE_ARGUMENT_REFUSED');
+  return SOURCE_ACTION_MODULES[role];
+}
+
 const CACHE_PATH = '.cache/dmi-grib';
 const CIPHER_PATH = '.cache/weather-private-progress.encrypted';
 const MAX_CIPHER_BYTES = 384 * 1024 * 1024; // Same existing local SAVE/RESTORE cap.
@@ -94,7 +110,7 @@ function sourceFailureDiagnosticLine(error) {
 
 function requireCurrentSourceOutput() {
   // Family/output refusal only. The actual guardian/FD/owner checks below remain mandatory.
-  const current = require('../../../scripts/lib/source-producer-after597-runtime-family.mjs');
+  const current = require(sourceActionModule('SOURCE_RUNTIME_FAMILY').requireSpecifier);
   const output = current.requireSourceProducerOutput(); // NULL first, before static CODE I/O.
   current.assertSourceProducerAfter597StaticCode();
   return output;
@@ -735,7 +751,7 @@ async function runOwnedOperation(operation) {
     : operation === 'cipher' ? sourceFixedCipherInputs()
       : postWeather ? sourceFixedPostWeatherCacheInputs(operation) : sourceFixedDistributionInputs();
   if (require.main === module) cliPhase = 'LOAD';
-  const owner = require('../../../scripts/lib/weather-acquisition-writer.mjs');
+  const owner = require(sourceActionModule('WEATHER_WRITER').requireSpecifier);
   let lease;
   let child;
   let physicalClosed = false;
@@ -1059,7 +1075,7 @@ async function runSourceGeneration() {
   let normal;
   try {
     normal = await import(pathToFileURL(path.join(ROOT,
-      'scripts/source-normal-producer-tail.mjs')).href);
+      sourceActionModule('SOURCE_TAIL').path)).href);
   } catch (error) { sourceFailureImportError = error; throw error; }
   sourceFailureDiagnosticReader = normal.sourceFailureDiagnostic;
   // P awaits the fixed artifact/T consumer under the SAME issuer. A Set or
@@ -1240,7 +1256,7 @@ async function runSourceCheckpointPublish() {
   retainedSourcePublicationWorkers.add(row);
   try {
     const normal = await import(pathToFileURL(path.join(ROOT,
-      'scripts/protected-ravscore-continuation-checkpoint.mjs')).href);
+      sourceActionModule('PROTECTED_CHECKPOINT').path)).href);
     // The same normal CLI request factories, no request callback/credential/root
     // supplied by this worker's caller; existing RPC retry/55s contract remains.
     row.result = await normal.publishProtectedRavScoreContinuationCheckpoint({
@@ -1282,7 +1298,7 @@ async function runSourcePrivatePublish() {
   retainedSourcePublicationWorkers.add(row);
   try {
     const normal = await import(pathToFileURL(path.join(ROOT,
-      'scripts/protected-private-production-runtime.mjs')).href);
+      sourceActionModule('PRIVATE_RUNTIME').path)).href);
     const expectedPath = path.join(ROOT, '.cache/private-production-runtime-expected.json');
     // Parent retains this exact input before launch and rechecks it after drain.
     // Normal bundle verification and publisher validation remain mandatory.
@@ -1467,7 +1483,7 @@ async function runSourceArtifactUpload() {
     } finally { fs.closeSync(manifestFd); }
     if (generation.productionReferenceAt !== context.target) throw refused('SOURCE_ARTIFACT_GENERATION_UNPROVED');
     const {sourceCompletedStageArtifactName}=await import(pathToFileURL(path.join(ROOT,
-      'scripts/lib/source-completed-stage-artifact-identity.mjs')).href);
+      sourceActionModule('COMPLETED_STAGE').path)).href);
     const name=sourceCompletedStageArtifactName({repository:context.repository,sourceHead:context.head,
       runId:context.runId,runAttempt:context.attempt,generation});
     // Exactly one normal upload invocation, ZIP mode and retention unchanged.
@@ -1507,7 +1523,17 @@ async function runSourceArtifactUpload() {
   // This is not a standalone SAVE/closure/SOURCE-completion receipt.
 }
 
-module.exports = { runApiWorker, runOwnedSave, runOwnedDistribution, inspectFixedPostWeatherCache };
+function sourceActionNativeInputDeclarations() {
+  if (arguments.length !== 0) throw refused('DMI_RAW_SAVE_ARGUMENT_REFUSED');
+  return Object.freeze({
+    scope: 'SOURCE_ACTION_NATIVE_INPUT_DECLARATIONS_ONLY',
+    moduleDeclarations: Object.freeze(Object.keys(SOURCE_ACTION_MODULES)
+      .map(role => Object.freeze({role, namespace: 'CURRENT', path: sourceActionModule(role).path}))),
+    sourceGraphClosed: false, runtimeQualified: false, pgExecuted: false, reuseAuthority: false,
+  });
+}
+
+module.exports = { runApiWorker, runOwnedSave, runOwnedDistribution, inspectFixedPostWeatherCache, sourceActionNativeInputDeclarations };
 if (require.main === module) {
   cliPhase = 'INPUT';
   const selectedSave = process.env.INPUT_OPERATION === 'source' ? runSourceGeneration
@@ -1541,7 +1567,7 @@ if (require.main === module) {
       // Pure NULL/output refusal is first, before importing the entry's wider
       // dependencies or reading any metadata/path/client. No I/O on UNISSUED.
       requireCurrentSourceOutput();
-      const entry = await import(pathToFileURL(path.join(ROOT, 'scripts/source-normal-producer-entry.mjs')).href);
+      const entry = await import(pathToFileURL(path.join(ROOT, sourceActionModule('SOURCE_ENTRY').path)).href);
       assertPrNativeDistribution = entry.sourcePrNativeTestDistributionAssertion();
       assertPrNativeDistribution();
     }

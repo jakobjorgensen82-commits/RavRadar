@@ -23,6 +23,30 @@ Databasebackupens automatiske restore/rotation/ugentlige optagelse er forberedt 
 
 Mailprøvens kildekandidat har to adskilte formål: ét nyt mailvindue eller oprydning af den samme, allerede udløbne prøve. Positivt kendt ejerskab, uændret kilde og funktionsidentitet, aktuel bekræftet ejer, ingen anden skriver og slutgenlæsning kræves før en fjernelse kan bevises. Gatewayfejl bevares efter oprydning; ukendte skriveudfald genforsøges ikke. Faktisk oprydning og mailmodtagelse er fortsat særskilte beviser. Se håndbog 89.343.
 
+Ejerprøvens afgrænsede gatewaydiagnostik er en kildekandidat med faste private OPTIONS-kategorier. Den bevarer alle sikkerhedsregler og offentlige svar. En faktisk kategori kan vise handlerens afvisningspunkt; manglende kategori er ukendt. Diagnostikken lukker hverken årsagsafklaring eller faktisk mailafsendelse og modtagelse. Se håndbog 89.343.
+
+Den afgrænsede lokale rettelse giver den eksisterende offlineplan for vind, vandstand og vandtemperatur én fælles frist på 300 sekunder. En faktisk almindelig kørsel overskred 180-sekundersfristen efter 190.264 ms; overskridelsen blev opdaget efter den normale kontrol af den gemte Open-Meteo-bank. Tiden gælder hele kalderen, ikke kun denne fase. Leverandørbudgetter, originalkontrol, model og SQL bevares. Færdig plan og bedre prognosehale skal stadig verificeres i en efterfølgende almindelig vejrhentning.
+
+Rollearkivets afvisningsdiagnose er afgrænset til fast statementtype, fast afvisningsgren og ordinal i den eksisterende private rapport. Accepteret SQL-grammatik og adgangsregler er uændrede. Den konkrete formatårsag, korrekt håndtering og faktisk fuld arkiv-/Auth-gendannelse er fortsat åbne; diagnose er ikke Free- eller aktiveringsaccept. Se håndbog 89.345.
+
+Den samme GRANT/REVOKE-afvisning får nu fire faste strukturklasser fra egentlige keywords: NO_TO, TO_POSITION, OBJECT_PARAMETER og OBJECT_OTHER. Den normale lokale parserprøve består med uændrede produktbytes på den nye base; præcis CI og den næste faktiske strukturaflæsning er åbne. Det er ingen formatrettelse eller bestået restore.
+
+Den konkrete OPTIONS-fejl fra en fysisk tom body har nu en afgrænset kildekandidat: null-fastvej eller kontrolleret tomt EOF med begrænset læsning og afslutning. Øvrige gateway-, reservations- og POST-mailkrav bevares. Faktisk hosted passage og mailmodtagelse er fortsat åbne. Se håndbog 89.343.
+
+Den samme afgrænsede normalisering er nu forberedt ved offentlig POST. Den normale lokale null-/tom-streng-prøve består gennem hele ejer-/mailkæden; øvrige bodyafslag bevares. Hosted er OPTIONS observeret med HTTP204 og et efterfølgende POST med HTTP404 og registreret eksekvering. POST-bodyens pointer er ikke observeret. Den lokale body-pointer-fejl er reproduceret, men er derfor fortsat en hypotese om netop det hostede afslag. Faktisk afsenderaccept, levering og modtagelse kræver fortsat særskilt bevis.
+
+Den efterfølgende autentificerede rollekontrol har bekræftet ON PARAMETER før store SQL-filer. Den afgrænsede parserkandidat læser nu denne officielle form komplet og registrerer kun egentlige rolleoperander. Dette erstatter alene de tidligere aktive udsagn om ukendt objektform og uændret accepteret grammatik; den tidligere diagnose var ikke selv en formatrettelse. Normal parserprøve består, men præcis kildekvalifikation, faktisk fuld arkiv-/Auth-gendannelse, autonom rotation og Free-overgang er stadig åbne. Originale SQL-/ACL-regler og alle mål-/krypteringskrav bevares. Se håndbog 89.345.
+
+Den tidligere engelske opfølgning fra et vindspørgsmål til søgning i vandet er faktisk bestået på den offentlige 598-kæde sammen med det indledende vindspørgsmål, uden assistent-POST. En frisk dialog efter én normal genindlæsning gav ét eksternt AI-svar med HTTP200, alle seks forventede I/K-felter og valideret Workers-AI-proveniens. Ved et ukendt redskab bad svaret ærligt om afklaring. Det er kun denne konkrete opfølgnings- og eksterne ruterest, der er lukket.
+
+Dette er ikke accept af Source616s nye offentlige bindinger eller hele assistentmålet. Source-levering og genlæsning, faglig bredde, livscyklus og aktuelle scoreforklaringer er fortsat særskilte åbne krav. Alle øvrige hovedmål og databevaringskrav består.
+
+En faktisk normal læsetur på den offentlige 598-administration har afgrænset accept af lagertotal og testmarkering adskilt fra lokale observationer, danske kalenderdage og datofilter, uændret kontototal, model-/generationsfelter og deres forbehold, central stationsrouting, aktiv modelvisning samt håndbog og zoneregister. Umærkede lagerposter er ikke dermed verificerede virkelige ture. Der blev ikke skrevet adminændringer eller læst individuelle konti eller ture.
+
+Retningseditorens indlæsning og filter er observeret, men den beskyttede kandidatstatus er utilgængelig; aktivering er derfor ikke accepteret. Dette er ikke en gennemgang af samtlige felter, fejl-/retryforløb eller hele adminmålet, og det er ikke offentlig accept af Source616.
+
+Den samlede private Source-kandidat viderefører dagens normale mail-, rollearkiv- og 300-sekundersrettelser samt de allerede gennemgåede Source-filer. Førstegangsprofilens aktuelle kildefakta og CODE skal afledes normalt efter endelige ejerinput. De tre relevante normale mål er mailprøven, arkivparseren og scalarens fysiske wireup; deres faktiske kildekvalifikation på den samlede kandidat er fortsat åben. Source616, C/I/T og de 80 udstedte SQL-filer bevares.
+
 <!-- RAVRADAR_ACTIVE_ENTRY_END -->
 
 ## Daterede notater og tidligere indgange — uændret historik

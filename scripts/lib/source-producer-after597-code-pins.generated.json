@@ -8,8 +8,8 @@
     },
     {
       "path": ".github/actions/save-owned-dmi-grib/index.cjs",
-      "bytes": 88279,
-      "sha256": "34838fa2ee9cf1b2cc6c5d1919958d5d7863b48ec6cc4b15d7a580f12aa53f7a"
+      "bytes": 89924,
+      "sha256": "57bfade81f7d6d4e4ad74656107895af68ab2ccc5c46ccd81f92f53fb3802e92"
     },
     {
       "path": ".github/actions/save-owned-dmi-grib/package-lock.json",
@@ -678,8 +678,8 @@
     },
     {
       "path": "scripts/build-source-producer-successor.mjs",
-      "bytes": 78487,
-      "sha256": "8f7b3675692ad7d1ba62f3ea8b3628a5ec9e20bda99ca2a7bf7f1737c3c888b4"
+      "bytes": 81557,
+      "sha256": "ad7dd2b8868dd7cfb8a3de9921ca96b90fa2f15d0d03b5e433f37a702a61872f"
     },
     {
       "path": "scripts/build-statistics-preference-revision.mjs",
@@ -903,8 +903,8 @@
     },
     {
       "path": "scripts/lib/copernicus_component_process.py",
-      "bytes": 105464,
-      "sha256": "573e01740ccbb95ae08bcf163bb36de79aefe2e3d9d6d1a6f2fa9d6f89035583"
+      "bytes": 108201,
+      "sha256": "7a308e96a76eb2bc2239a1f27f2992b9d3796d7bf633131994dbe61d5dd3ca93"
     },
     {
       "path": "scripts/lib/copernicus_component_spatial.py",
@@ -1523,8 +1523,8 @@
     },
     {
       "path": "scripts/lib/static-module-closure.mjs",
-      "bytes": 7115,
-      "sha256": "bb64f60e1a700897f6dd982b8fe9c3ed85fbb48fd3dfd0b2f46f65e3dc91b17e"
+      "bytes": 7170,
+      "sha256": "3513cecd02e4ea8585b4558e3f76ab3b614c31433585d6da7e61b245d9161071"
     },
     {
       "path": "scripts/lib/supabase-admin-rest.mjs",
@@ -1589,7 +1589,7 @@
     {
       "path": "scripts/lib/weather-component-runtime.mjs",
       "bytes": 33905,
-      "sha256": "f6f2dca55d68ec414b820fc76ce0d1fb0b4c58edd50d176fdaa0b5aece21a1ac"
+      "sha256": "c1a865aaca78a2d3cf096ecd930a739303e2a867977070d883bf523bbc0da92b"
     },
     {
       "path": "scripts/lib/weather-component-safe-summary.mjs",
@@ -1648,8 +1648,8 @@
     },
     {
       "path": "scripts/materialize-dmi-bulk-storage.py",
-      "bytes": 15823,
-      "sha256": "16dd551032dd1dd1d10466ddac7222ff4c523af30eee6d55b742e4ae25dc6806"
+      "bytes": 17659,
+      "sha256": "e846f8fc1bae7724a518a9e85f6072cc0ce376b45bd79b3af1edb46397446036"
     },
     {
       "path": "scripts/merge-verified-current-donor-banks.py",
@@ -1733,8 +1733,8 @@
     },
     {
       "path": "scripts/protected-private-production-runtime.mjs",
-      "bytes": 117296,
-      "sha256": "7dade6f0b6cb2256b70818646d6965965ea28177cabe0a25021a471eb199d767"
+      "bytes": 117742,
+      "sha256": "2fd31cbf00df1a38e11413af8af59f5585359c253a08b0fcde3ced6a94028bf5"
     },
     {
       "path": "scripts/protected-ravscore-continuation-checkpoint.mjs",
@@ -1888,8 +1888,8 @@
     },
     {
       "path": "scripts/sync-ravscore-model-binding.mjs",
-      "bytes": 33012,
-      "sha256": "7cf09a046c9e67ca11a6abce723cc04bda29edefd85409573aaecc6b0bd17479"
+      "bytes": 34090,
+      "sha256": "8e1eebc68bf5c6127fdfee30e99e82404bb5fcdeb85aa2540ef4d18800ccd661"
     },
     {
       "path": "scripts/sync-release-contract-metadata.mjs",
@@ -2223,8 +2223,8 @@
     },
     {
       "path": "scripts/verify-ravscore-operational-pages-deployment.mjs",
-      "bytes": 40621,
-      "sha256": "4bee4b6a1797efd74708b00503162d11d9acf21ff6c0517fb303651efab548b7"
+      "bytes": 43607,
+      "sha256": "a55e58c068d1ab2dfd90fb4d74244619799b931df7b28aaf1670df604234cc1f"
     },
     {
       "path": "scripts/verify-source-producer-plan.mjs",

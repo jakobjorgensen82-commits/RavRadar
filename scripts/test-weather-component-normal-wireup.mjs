@@ -740,13 +740,12 @@ import {syncBuiltinESMExports} from 'node:module';
 import {EventEmitter} from 'node:events';
 import {fileURLToPath} from 'node:url';
 const [cliUrl,settlementUrl,mode,cache,at]=process.argv.slice(1);
-const readFile=fs.readFile,now=Date.now;
+const readFile=fs.readFile,open=fs.open,now=Date.now;
 let offset=0,triggered=false;
 Date.now=()=>now()+offset;
 fs.readFile=async function(file,...args){
   if(String(file).replaceAll('\\','/').endsWith('/data/live/coastal-parts-v2.json')){
-    if(mode==='timeout'){const result=await readFile.call(this,file,...args);offset=180001;triggered=true;return result;}
-    if(mode==='headroom'){const result=await readFile.call(this,file,...args);offset=120001;triggered=true;return result;}
+    if(mode==='timeout'){const result=await readFile.call(this,file,...args);offset=300001;triggered=true;return result;}
     if(mode==='unknown'){triggered=true;throw Error('PRIVATE_FIXTURE_MESSAGE /private/fixture/source.json secret=NEVER_REPORT');}
     if(mode==='stop'){
       triggered=true;
@@ -755,6 +754,17 @@ fs.readFile=async function(file,...args){
     }
   }
   return readFile.call(this,file,...args);
+};
+// Keep the actual optional-bank read and its checked empty index. Only the
+// controlled clock advances while the existing offline reader completes.
+fs.open=async function(file,...args){
+  try{return await open.call(this,file,...args);}
+  finally{
+    if(String(file).replaceAll('\\','/').endsWith('/.cache/open-meteo-part-component-bank.json')
+      &&['headroom','retained-timeout'].includes(mode)){
+      offset=mode==='headroom'?230001:300001;triggered=true;
+    }
+  }
 };
 if(mode==='cp-failed')childProcess.spawn=(executable,args,options)=>{
   if(!args.includes('--verify-only')||options.stdio!=='ignore')throw Error('PRIVATE_WRONG_CHILD');
@@ -790,6 +800,7 @@ if(!triggered)throw Error('PRIVATE_DIAGNOSTIC_INJECTION_NOT_REACHED');
     };
     for (const [mode,expectedPhase,errorCategory,status] of [
       ['timeout','REGISTRY','TIMEOUT',1],
+      ['retained-timeout','OPEN_METEO_RETAINED','TIMEOUT',1],
       ['cp-failed','COPERNICUS_VERIFY','CP_VERIFICATION_FAILED',1],
       ['unknown','REGISTRY','UNKNOWN_FAILURE',1],
       ['stop','REGISTRY','TRANSPORT_STOP_UNPROVED',2],
@@ -809,11 +820,12 @@ if(!triggered)throw Error('PRIVATE_DIAGNOSTIC_INJECTION_NOT_REACHED');
       assert.equal(lines.length,2,'Only the old fixed marker and closed diagnostic JSON are exposed');
       const diagnostic=JSON.parse(lines[1]);
       assert.deepEqual(Object.keys(diagnostic),['phase','errorCategory','planningDiagnostic','elapsedMillis']);
-      assertPlanningDiagnostic(diagnostic.planningDiagnostic,mode==='cp-failed'?1:0);
+      const retainedInputsReached=['cp-failed','retained-timeout'].includes(mode);
+      assertPlanningDiagnostic(diagnostic.planningDiagnostic,retainedInputsReached?1:0);
       assert.equal(diagnostic.planningDiagnostic.snapshotAfterElapsedMillis,null);
       assert.equal(diagnostic.planningDiagnostic.snapshotAfterBytes,null);
       assert.equal(diagnostic.planningDiagnostic.snapshotAfterPresentFiles,null);
-      if(mode==='cp-failed')assert(Object.hasOwn(diagnostic.planningDiagnostic.phaseElapsedMillis,'RETAINED_INPUTS'));
+      if(retainedInputsReached)assert(Object.hasOwn(diagnostic.planningDiagnostic.phaseElapsedMillis,'RETAINED_INPUTS'));
       assert.equal(diagnostic.phase,expectedPhase);assert.equal(diagnostic.errorCategory,errorCategory);
       assert(Number.isSafeInteger(diagnostic.elapsedMillis)&&diagnostic.elapsedMillis>=0);
       for(const privateText of ['PRIVATE_FIXTURE_MESSAGE','/private/fixture','NEVER_REPORT','stack','stderr'])
@@ -821,7 +833,7 @@ if(!triggered)throw Error('PRIVATE_DIAGNOSTIC_INJECTION_NOT_REACHED');
       await assert.rejects(io.lstat(path.join(root,'.cache/weather-scalar-needs.json')),{code:'ENOENT'});
       assert.deepEqual(await snapshot(),before,'A failed plan changes no original file or identity');
     }
-    // The same normal CLI must finish after the former 120s boundary while
+    // The same normal CLI must finish after the former 180s boundary while
     // keeping a single absolute deadline and every offline reader.
     run(process.execPath,['--input-type=module','-e',diagnosticProbe,
       cliUrl,settlementUrl,'headroom',dmiPath,H0],{
@@ -843,7 +855,7 @@ if(!triggered)throw Error('PRIVATE_DIAGNOSTIC_INJECTION_NOT_REACHED');
     assert.equal(successDiagnostic.planningDiagnostic.snapshotAfterPresentFiles,7);
     assert(Object.hasOwn(successDiagnostic.planningDiagnostic.phaseElapsedMillis,'SNAPSHOT_AFTER'));
     assert.deepEqual(await io.readFile(path.join(root,'.cache/weather-scalar-needs.json')),headroomPlan,
-      'Allowed time after 120s must produce the same complete scalar plan as the normal clock');
+      'Allowed time after 180s must produce the same complete scalar plan as the normal clock');
     const python = process.env.PYTHON ?? 'python';
     run(python,['-B','-X','utf8',fileURLToPath(new URL('./build-weather-acquisition-plan.py',import.meta.url)),
       '--at',H0,'--scalar-snapshot',dmiPath]);

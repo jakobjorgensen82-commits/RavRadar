@@ -25,8 +25,76 @@ function notFound() {
   return new Response(null, { status: 404, headers: { "Cache-Control": "no-store" } });
 }
 
+async function optionsBodyIsEmpty(request: Request) {
+  if (request.body === null) return true;
+  if (request.bodyUsed || request.body.locked) return false;
+  let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let pending: Promise<{ ok: boolean; result?: ReadableStreamReadResult<Uint8Array> }> | undefined;
+  let empty = false;
+  const timeout = Symbol("timeout");
+  try {
+    reader = request.body.getReader();
+    // The same absolute bound covers zero-length chunks as well as the EOF.
+    const deadline = new Promise<typeof timeout>((resolve) => { timer = setTimeout(() => resolve(timeout), 1_000); });
+    for (let count = 0; count < 4; count++) {
+      pending = reader.read().then((result) => ({ ok: true, result }), () => ({ ok: false }));
+      const observed = await Promise.race([pending, deadline]);
+      if (observed === timeout || !observed.ok) break;
+      if (observed.result!.done) { empty = true; break; }
+      if (!(observed.result!.value instanceof Uint8Array) || observed.result!.value.byteLength !== 0) break;
+    }
+  } catch {
+    empty = false;
+  } finally {
+    clearTimeout(timer);
+    if (reader) {
+      // No timed-out read is abandoned. Cancel once, observe settlement, and
+      // release our lock; unknown cancellation can never authorize a request.
+      let settleTimer: ReturnType<typeof setTimeout> | undefined;
+      try {
+        const closed = reader.closed.then(() => true, () => false);
+        const cancelled = reader.cancel().then(() => true, () => false);
+        const settled = await Promise.race([
+          Promise.all([cancelled, closed, pending ?? Promise.resolve(null)]).then(([cancel, close]) => cancel && close),
+          new Promise<false>((resolve) => { settleTimer = setTimeout(() => resolve(false), 250); }),
+        ]);
+        if (!settled) empty = false;
+      } catch {
+        empty = false;
+      } finally {
+        clearTimeout(settleTimer);
+        try { reader.releaseLock(); } catch { empty = false; }
+      }
+    }
+  }
+  return empty;
+}
+
+function reportGatewayGuard(request: Request, bindingPresent: boolean, category: string, window = "UNOBSERVED") {
+  if (request.method !== "OPTIONS") return;
+  try {
+    const url = new URL(request.url);
+    console.info("OWNER_NOTICE_PROBE_GATEWAY_GUARD", {
+      bindingPresent,
+      pathClass: url.pathname === PATH ? "FUNCTION" : url.pathname === "/functions/v1" + PATH ? "PUBLIC" : "OTHER",
+      queryPresent: url.search !== "",
+      originMatches: request.headers.get("origin") === ADMIN_ORIGIN,
+      requestedMethodMatches: request.headers.get("access-control-request-method") === "POST",
+      bodyPointerPresent: request.body !== null,
+      window,
+      category,
+    });
+  } catch {
+    // Private diagnostics cannot alter the existing response or authorize mail.
+  }
+}
+
 export function createOwnerNoticeEdgeHandler(binding: Reservation | null) {
-  if (!binding) return notFound;
+  if (!binding) return (request: Request) => {
+    reportGatewayGuard(request, false, "BINDING_MISSING", "UNBOUND");
+    return notFound();
+  };
 
   const { ownerId, recipient, noticeId, reservedAt, expiresAt } = binding;
   const handleProbe = createHostedOwnerNoticeProbe({
@@ -42,14 +110,29 @@ export function createOwnerNoticeEdgeHandler(binding: Reservation | null) {
 
   return async (request: Request) => {
     const url = new URL(request.url);
-    if ((url.pathname !== PATH && url.pathname !== "/functions/v1" + PATH) || url.search
-        || request.headers.get("origin") !== ADMIN_ORIGIN) return notFound();
+    const reject = (category: string, window = "UNOBSERVED") => {
+      reportGatewayGuard(request, true, category, window);
+      return notFound();
+    };
+    if (url.pathname !== PATH && url.pathname !== "/functions/v1" + PATH) return reject("PATH_REJECTED");
+    if (url.search) return reject("QUERY_REJECTED");
+    if (request.headers.get("origin") !== ADMIN_ORIGIN) return reject("ORIGIN_REJECTED");
     if (request.method === "OPTIONS") {
-      if (request.headers.get("access-control-request-method") !== "POST"
-          || request.body !== null || Date.now() < reservedAt || Date.now() >= expiresAt) return notFound();
+      if (request.headers.get("access-control-request-method") !== "POST") return reject("REQUESTED_METHOD_REJECTED");
+      if (!await optionsBodyIsEmpty(request)) return reject("BODY_NOT_PROVED_EMPTY");
+      if (Date.now() < reservedAt) return reject("WINDOW_REJECTED", "BEFORE");
+      if (Date.now() >= expiresAt) return reject("WINDOW_REJECTED", "AFTER");
+      reportGatewayGuard(request, true, "OPTIONS_ACCEPTED", "IN");
       return new Response(null, { status: 204, headers: CORS });
     }
-    const response = await handleProbe(request);
+    // Hosted gateways can expose a physically empty POST as a body stream.
+    // Only a proved empty EOF may cross the unchanged bodyless inner boundary.
+    const probeRequest = request.method === "POST" && request.body !== null
+      && await optionsBodyIsEmpty(request)
+      ? new Request(request.url, {
+        method: request.method, headers: request.headers, signal: request.signal,
+      }) : request;
+    const response = await handleProbe(probeRequest);
     for (const [header, value] of Object.entries(CORS)) response.headers.set(header, value);
     return response;
   };

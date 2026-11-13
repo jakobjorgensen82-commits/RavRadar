@@ -1,4 +1,4 @@
-function tokens(source) {
+export function sourceModuleTokens(source) {
   const result = [];
   const text = String(source);
   let index = 0;
@@ -128,6 +128,8 @@ function tokens(source) {
   scanCode(false);
   return result;
 }
+
+const tokens = sourceModuleTokens;
 
 function statementEnd(items, start) {
   for (let index = start; index < items.length; index += 1) {

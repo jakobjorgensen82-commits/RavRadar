@@ -9,8 +9,48 @@ from pathlib import Path
 
 from lib.dmi_bulk_storage import materialize_dmi_bulk_document
 
+from types import MappingProxyType
 
-SOURCE_SCALAR_PLANNING_PROGRAM = "import fs from 'node:fs/promises';\nimport path from 'node:path';\nimport {pathToFileURL} from 'node:url';\nconst [root,codeRoot,cache,at,historical]=process.argv.slice(1);\nlet handle=null,owned=false,diagnostic=null,phase='LOAD';\nconst startedAt=performance.now();\nconst output=path.join(root,'.cache/weather-scalar-needs.json'),temporary=output+'.tmp';\ntry {\n  const {loadRetainedPartScalarPlanning,retainedScalarPlanningFailureDiagnostic}=await import(pathToFileURL(path.join(codeRoot,'scripts/lib/weather-component-runtime.mjs')));\n  diagnostic=retainedScalarPlanningFailureDiagnostic;\n  const {encodeRetainedScalarNeeds}=await import(pathToFileURL(path.join(codeRoot,'scripts/plan-weather-scalar-acquisition.mjs')));\n  const plan=await loadRetainedPartScalarPlanning({root,dmiCachePath:cache,productionReferenceAt:new Date(at).toISOString(),historicalCachePath:historical||null});\n  phase='ENCODE';\n  const bytes=Buffer.from(JSON.stringify(encodeRetainedScalarNeeds(plan))+'\\n');\n  if(bytes.length>16*1024*1024)throw Error('SOURCE_SCALAR_PLAN_SIZE');\n  phase='PUBLISH';\n  handle=await fs.open(temporary,'wx',0o600);owned=true;\n  await handle.writeFile(bytes);await handle.sync();await handle.close();handle=null;\n  await fs.rename(temporary,output);owned=false;\n} catch(error) {\n  const {isWeatherTransportStopUnproved}=await import(pathToFileURL(path.join(codeRoot,'scripts/lib/weather-transport-settlement.mjs')));\n  process.stderr.write(isWeatherTransportStopUnproved(error)?'SOURCE_SCALAR_PLAN_STOP_UNPROVED\\n':'SOURCE_SCALAR_PLAN_UNAVAILABLE\\n');\n  process.stderr.write(JSON.stringify({...(diagnostic?diagnostic(error,phase):{phase:'LOAD',errorCategory:'UNKNOWN_FAILURE'}),elapsedMillis:Math.max(0,Math.round(performance.now()-startedAt))})+'\\n');\n  process.exitCode=isWeatherTransportStopUnproved(error)?2:1;\n} finally {\n  await handle?.close();\n  if(owned)await fs.unlink(temporary);\n}\n"
+SOURCE_NORMAL_GENERATION_MODULES = MappingProxyType({
+    "READY": "check-dmi-bulk-operational-ready",
+    "TARGETS": "build-copernicus-target-registry",
+    "PLANNER": "plan-dmi-recovery",
+})
+
+
+def source_normal_generation_module_path(root, name):
+    if not isinstance(root, Path) or name not in SOURCE_NORMAL_GENERATION_MODULES.values():
+        raise RuntimeError("SOURCE_DMI_PREPARATION_UNPROVED_SOURCE_OPERAND")
+    return root / "scripts" / (name + ".py")
+
+
+def source_normal_generation_module_inputs():
+    import hashlib
+    return {"scope": "SOURCE_NORMAL_GENERATION_FIXED_MODULES_ONLY",
+        "modules": [{"selector": selector, "name": name, "namespace": "CURRENT",
+            "path": source_normal_generation_module_path(Path("."), name).as_posix(),
+            "bindingState": "UNPROVED_SOURCE_OPERAND"}
+            for selector, name in SOURCE_NORMAL_GENERATION_MODULES.items()],
+        "scalarModuleDeclarations": [{"role": role, "namespace": "CURRENT", "path": path}
+            for role, path in SOURCE_SCALAR_PLANNING_MODULES.items()],
+        "scalarProgramSha256": hashlib.sha256(SOURCE_SCALAR_PLANNING_PROGRAM.encode("utf-8")).hexdigest(),
+        "sourceGraphClosed": False, "moduleImported": False,
+        "workerStarted": False, "pgExecuted": False, "reuseAuthority": False}
+
+
+
+
+SOURCE_SCALAR_PLANNING_MODULES = MappingProxyType({
+    "RUNTIME": "scripts/lib/weather-component-runtime.mjs",
+    "ENCODER": "scripts/plan-weather-scalar-acquisition.mjs",
+    "SETTLEMENT": "scripts/lib/weather-transport-settlement.mjs",
+})
+
+SOURCE_SCALAR_PLANNING_PROGRAM = "import fs from 'node:fs/promises';\nimport path from 'node:path';\nimport {pathToFileURL} from 'node:url';\nconst [root,codeRoot,cache,at,historical]=process.argv.slice(1);\nlet handle=null,owned=false,diagnostic=null,phase='LOAD';\nconst startedAt=performance.now();\nconst output=path.join(root,'.cache/weather-scalar-needs.json'),temporary=output+'.tmp';\ntry {\n  const {loadRetainedPartScalarPlanning,retainedScalarPlanningFailureDiagnostic}=await import(pathToFileURL(path.join(codeRoot,'@SOURCE_SCALAR_RUNTIME@')));\n  diagnostic=retainedScalarPlanningFailureDiagnostic;\n  const {encodeRetainedScalarNeeds}=await import(pathToFileURL(path.join(codeRoot,'@SOURCE_SCALAR_ENCODER@')));\n  const plan=await loadRetainedPartScalarPlanning({root,dmiCachePath:cache,productionReferenceAt:new Date(at).toISOString(),historicalCachePath:historical||null});\n  phase='ENCODE';\n  const bytes=Buffer.from(JSON.stringify(encodeRetainedScalarNeeds(plan))+'\\n');\n  if(bytes.length>16*1024*1024)throw Error('SOURCE_SCALAR_PLAN_SIZE');\n  phase='PUBLISH';\n  handle=await fs.open(temporary,'wx',0o600);owned=true;\n  await handle.writeFile(bytes);await handle.sync();await handle.close();handle=null;\n  await fs.rename(temporary,output);owned=false;\n} catch(error) {\n  const {isWeatherTransportStopUnproved}=await import(pathToFileURL(path.join(codeRoot,'@SOURCE_SCALAR_SETTLEMENT@')));\n  process.stderr.write(isWeatherTransportStopUnproved(error)?'SOURCE_SCALAR_PLAN_STOP_UNPROVED\\n':'SOURCE_SCALAR_PLAN_UNAVAILABLE\\n');\n  process.stderr.write(JSON.stringify({...(diagnostic?diagnostic(error,phase):{phase:'LOAD',errorCategory:'UNKNOWN_FAILURE'}),elapsedMillis:Math.max(0,Math.round(performance.now()-startedAt))})+'\\n');\n  process.exitCode=isWeatherTransportStopUnproved(error)?2:1;\n} finally {\n  await handle?.close();\n  if(owned)await fs.unlink(temporary);\n}\n"
+for _scalar_role, _scalar_module in SOURCE_SCALAR_PLANNING_MODULES.items():
+    SOURCE_SCALAR_PLANNING_PROGRAM = SOURCE_SCALAR_PLANNING_PROGRAM.replace(
+        "@SOURCE_SCALAR_" + _scalar_role + "@", _scalar_module)
+del _scalar_role, _scalar_module
 
 
 def source_scalar_acquisition_plan(root: Path, recovery_cache: Path, target: str,
@@ -145,7 +185,7 @@ def source_normal_generation_prepare() -> int:
     proof_identity = proof.stat()
 
     def normal_module(name):
-        filename = root / "scripts" / (name + ".py")
+        filename = source_normal_generation_module_path(root, name)
         spec = importlib.util.spec_from_file_location("source_normal_" + name.replace("-", "_"), filename)
         module = importlib.util.module_from_spec(spec)
         sys.modules[spec.name] = module
@@ -200,7 +240,7 @@ def source_normal_generation_prepare() -> int:
             os.fsync(handle.fileno())
     materialized = proof / "materialized.json"
     materialize_dmi_bulk_document(source, materialized)
-    ready = normal_module("check-dmi-bulk-operational-ready")
+    ready = normal_module(SOURCE_NORMAL_GENERATION_MODULES["READY"])
     strict = False
     reference = None
     if kind == "active":
@@ -214,7 +254,7 @@ def source_normal_generation_prepare() -> int:
             if str(error) != "DMI_OPERATIONAL_READY_LEDGER_INVALID":
                 raise
     if strict:
-        targets = normal_module("build-copernicus-target-registry")
+        targets = normal_module(SOURCE_NORMAL_GENERATION_MODULES["TARGETS"])
         document = targets.build_registry(targets.load_targets(root / "data/live/coastal-parts-v2.json"),
             targets.read_dmi_bulk_document(materialized), targets.utc_hour(reference),
             targets.file_sha256(materialized), full_coast=False, require_strict_dmi_ledger=True)
@@ -228,7 +268,7 @@ def source_normal_generation_prepare() -> int:
     if existing(".cache/dmi-candidate-progress.json"):
         recovery_cache = proof / "recovery-candidate.json"
         materialize_dmi_bulk_document(root / ".cache/dmi-candidate-progress.json", recovery_cache)
-    planner = normal_module("plan-dmi-recovery")
+    planner = normal_module(SOURCE_NORMAL_GENERATION_MODULES["PLANNER"])
     target = os.environ.get("RAVRADAR_PRODUCTION_TARGET_HOUR", "")
     result = planner.decide(planner.load_cache(recovery_cache),
         json.loads((root / "data/live/coastal-parts-v2.json").read_text(encoding="utf-8")), target)

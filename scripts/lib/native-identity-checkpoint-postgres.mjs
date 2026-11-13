@@ -344,3 +344,10 @@ async function compareNativeSamplingIdentityWithOriginalProtectedRestore({ psql,
     throw error;
   }
 }
+
+// Data from the actual normal factory; no materialization, SQL or admission.
+export function nativeIdentityCheckpointFactoryInputDeclarations() {
+  assert.equal(arguments.length,0);
+  return Object.freeze({role:'GENUINE_I71_NATIVE_FACTORY',head:HEAD,tree:TREE,target:TARGET,
+    sourceGraphClosed:false,runtimeQualified:false,pgExecuted:false,reuseAuthority:false});
+}

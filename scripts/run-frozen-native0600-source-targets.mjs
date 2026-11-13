@@ -102,5 +102,13 @@ export async function runFrozenNative0600SourceTargets(args=process.argv.slice(2
   console.log(JSON.stringify({kind:'FROZEN_NATIVE0600_NORMAL_SOURCE_TARGETS',head:HEAD,tree:TREE,group,targetCount:GROUPS[group].length,
     sourceLeaves:receipt.sourceLeaves,originalAssertionsChanged:false,executed:!sourceOnly,networkCredentialsProvided:false}));
 }
+
+// Data from the actual normal factory; no materialization, SQL or admission.
+export function frozenNative0600FactoryInputDeclarations() {
+  assert.equal(arguments.length,0);
+  return Object.freeze({role:'NATIVE0600_POLICY_FACTORY',head:HEAD,tree:TREE,groups:GROUPS,
+    sourceGraphClosed:false,runtimeQualified:false,pgExecuted:false,reuseAuthority:false});
+}
+
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url))
   await runFrozenNative0600SourceTargets().catch(()=>{console.error('FROZEN_NATIVE0600_NORMAL_TARGET_FAILED');process.exitCode=1;});

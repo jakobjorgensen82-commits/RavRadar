@@ -3,6 +3,8 @@ import crypto from 'node:crypto';
 import { createR2PrivateRuntimeStorage,withR2PrivateRuntimeCapacityDeadline } from './lib/r2-private-runtime-storage.mjs';
 import {mock} from 'node:test';
 import { createR2PrivateReadDenialStorage } from './lib/r2-private-read-denial-storage.mjs';
+import { createProtectedPrivateRuntimeClients, PROTECTED_PRIVATE_RUNTIME_POLICY }
+  from './protected-private-production-runtime.mjs';
 
 const sha256 = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const objects = new Map();
@@ -319,3 +321,66 @@ await phaseFixture(async state=>{
   assert.equal(state.fetchCalls,1,'An aborted retry wait must never start another HTTP request');
 });
 console.log('Fixed60s capacity phase: real factory HEAD/body/list abort, retry timer cleanup, late local pack refusal and unchanged immutable objects: passed.');
+
+// Exercise the normal policy-selectable factory without allocating an archive
+// or writing storage. The retained-byte scenario is synthetic, not an inventory.
+const previousR2Environment = new Map(['RAVRADAR_R2_ACCOUNT_ID', 'RAVRADAR_R2_ACCESS_KEY_ID',
+  'RAVRADAR_R2_SECRET_ACCESS_KEY'].map(name => [name, process.env[name]]));
+try {
+  process.env.RAVRADAR_R2_ACCOUNT_ID = accountId;
+  process.env.RAVRADAR_R2_ACCESS_KEY_ID = 'synthetic-id';
+  process.env.RAVRADAR_R2_SECRET_ACCESS_KEY = 'synthetic-secret';
+  const generation = Array.from({length: 7}, (_, index) => {
+    const objectSha256 = sha256(Buffer.from('capacity-part-' + index));
+    return {index, objectSha256, objectBytes: 50_000_000,
+      objectPath: `bundles/sha256/${digest}/part-${String(index).padStart(3, '0')}-${objectSha256}.json.gz.part`};
+  });
+  function factoryCapacity(selectedBucket, usedBytes) {
+    const observed = [];
+    const storage = createProtectedPrivateRuntimeClients({
+      supabaseUrl: 'https://synthetic-project.supabase.co', serviceRoleKey: 'synthetic-service-role-key',
+      storageBackend: 'r2', policy: {...PROTECTED_PRIVATE_RUNTIME_POLICY, bucketId: selectedBucket},
+      delayImpl: async () => {},
+      fetchImpl: async (url, options) => {
+        const target = new URL(url); observed.push(options.method);
+        assert.equal(target.host, accountId + '.eu.r2.cloudflarestorage.com');
+        assert(target.pathname === '/' + selectedBucket || target.pathname.startsWith('/' + selectedBucket + '/'));
+        if (options.method === 'HEAD') return new Response(null, {status: 404});
+        assert.equal(options.method, 'GET'); assert.equal(target.searchParams.get('list-type'), '2');
+        const entries = Array.from({length: 157}, (_, index) => '<Contents><Key>retained-' + index
+          + '</Key><Size>' + (Math.floor(usedBytes / 157) + (index < usedBytes % 157 ? 1 : 0)) + '</Size></Contents>').join('');
+        return new Response('<ListBucketResult><KeyCount>157</KeyCount>' + entries
+          + '<IsTruncated>false</IsTruncated></ListBucketResult>', {status: 200});
+      },
+    }).storage;
+    return {storage, observed};
+  }
+  const actualScenario = factoryCapacity(bucketId, 1_731_664_260);
+  const capacity = await actualScenario.storage.inspectImmutableCapacity(generation);
+  assert.equal(capacity.ceilingBytes, 3_000_000_000);
+  assert.equal(capacity.missingObjectBytes, 350_000_000);
+  assert.equal(capacity.reservedMarginBytes, 50_000_000);
+  assert.equal(capacity.projectedPeakBytes, 2_131_664_260);
+  assert.equal(capacity.remainingBytesAfterMargin, 868_335_740);
+  const exactCapacity = factoryCapacity(bucketId, 2_600_000_000);
+  assert.equal((await exactCapacity.storage.inspectImmutableCapacity(generation)).remainingBytesAfterMargin, 0);
+  const overCapacity = factoryCapacity(bucketId, 2_600_000_001);
+  await assert.rejects(overCapacity.storage.inspectImmutableCapacity(generation), /prewrite capacity/);
+  const overBucket = factoryCapacity(bucketId, 3_000_000_001);
+  await assert.rejects(overBucket.storage.bucketUsage(), /bucket exceeds its safety ceiling/);
+  for (const otherBucket of ['ravradar-admin-history-archive', 'ravradar-supabase-backup',
+    bucketId + '-other', 'synthetic-unknown-bucket']) {
+    const empty = factoryCapacity(otherBucket, 0);
+    assert.equal((await empty.storage.inspectImmutableCapacity(generation)).ceilingBytes, 2_000_000_000);
+    const full = factoryCapacity(otherBucket, 1_731_664_260);
+    await assert.rejects(full.storage.inspectImmutableCapacity(generation), /prewrite capacity/);
+    assert([...empty.observed, ...full.observed].every(method => ['HEAD', 'GET'].includes(method)));
+  }
+  assert([...actualScenario.observed, ...exactCapacity.observed, ...overCapacity.observed,
+    ...overBucket.observed].every(method => ['HEAD', 'GET'].includes(method)));
+} finally {
+  for (const [name, value] of previousR2Environment) {
+    if (value === undefined) delete process.env[name]; else process.env[name] = value;
+  }
+}
+console.log('Normal protected R2 factory: weather-only 3GB, other/default 2GB, complete generation plus unchanged margin, exact-limit and over-capacity refusals: passed.');

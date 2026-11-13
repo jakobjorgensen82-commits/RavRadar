@@ -64,6 +64,23 @@ function currentProviderFailureIsSafe(value) {
       || type === 'SUBPROCESS_TIMEOUT' && exitCode === null && [30,120].includes(timeoutSeconds));
 }
 
+function currentPrefixFailureIsSafe(value){
+  const phases=new Set(['UNKNOWN','ENTRY_GUARDS','SOURCE_REGISTRY','ENVIRONMENT','OWNED_WORK',
+    'PREDECESSOR_BINDINGS','ADMIN_REGISTRY','PROVIDER_FACTORY','RAW_INPUTS','ARCHIVE_SEED','ARCHIVE_PREPARE',
+    'PROVIDER_INSTALL','NORMAL_WEATHER','NORMAL_PUBLIC','NORMAL_SAVE','PRESERVATION','TRANSPORT','CLEANUP']);
+  const classes=new Set(['UNKNOWN','ERROR','ASSERTION_ERROR','TYPE_ERROR','RANGE_ERROR','SYNTAX_ERROR','REFERENCE_ERROR']);
+  const reasons=new Set(['UNKNOWN','ERR_ASSERTION','ENOENT','EEXIST','EACCES','EPERM','EIO','ENOSPC','ENOMEM',
+    'ENOBUFS','ERR_MODULE_NOT_FOUND','ERR_PACKAGE_PATH_NOT_EXPORTED','ERR_REQUIRE_ESM','CHILD_EXIT','EXTERNAL_REQUEST_REFUSED']);
+  if(!value||Object.keys(value).sort().join(',')!=='callsite,exceptionType,kind,phase,privatePayloadIncluded,reason'
+    ||value.kind!=='CURRENT598_PREFIX_FIRST_FAILURE'||value.privatePayloadIncluded!==false
+    ||!phases.has(value.phase)||!classes.has(value.exceptionType)||!reasons.has(value.reason))return false;
+  const site=value.callsite;
+  return site===null||site&&Object.keys(site).sort().join(',')==='column,line,module,sha256'
+    &&site.module==='scripts/fixtures/source19-current-normal-inputs.mjs'&&/^[a-f0-9]{64}$/.test(site.sha256)
+    &&Number.isInteger(site.line)&&site.line>=1&&site.line<=8192
+    &&Number.isInteger(site.column)&&site.column>=1&&site.column<=100000;
+}
+
 export function currentSourceNativeCaseLocation(stdout){
   const cases=new Set(["PURE_FAILURE240_CLOCK","PURE_FAILURE240_PINNED_ROWS","PURE_FAILURE240_CACHE","PURE_FAILURE240_MAIN_ROUTE","PURE_FAILURE240_MARKERS","PURE_FAILURE240_SELECTION","CURRENT_FAILURE240","CURRENT_POSITIVE"]);
   const phases=new Set(["NONE","CAPTURE_GITHUB","OWNED_HOST","PROVIDERS","PREFIX","INITIAL_REQUEST","INITIAL_ACTIVATION","FOLLOWER_INPUTS","QUALIFY","ACTION_FAILURE240","ACTION_POSITIVE","RECONFIRM_GITHUB"]);
@@ -73,10 +90,14 @@ export function currentSourceNativeCaseLocation(stdout){
     let value;try{value=JSON.parse(line);}catch{continue;}
     if(value?.kind!=='CURRENT_SOURCE_NATIVE_CASE_LOCATION')continue;
     const hasProvider = Object.hasOwn(value, 'providerFailure');
-    const fields = 'caseId,exitCode,kind,localLine,privatePayloadIncluded,' + (hasProvider ? 'providerFailure,' : '') + 'subprocessPhase';
+    const hasPrefix = Object.hasOwn(value, 'prefixFailure');
+    const fields = ['caseId','exitCode','kind','localLine','privatePayloadIncluded','subprocessPhase',
+      ...(hasProvider?['providerFailure']:[]),...(hasPrefix?['prefixFailure']:[])].sort().join(',');
     if(location || Object.keys(value).sort().join(',') !== fields
       || (hasProvider && (value.subprocessPhase !== 'PROVIDERS' || !['CURRENT_FAILURE240','CURRENT_POSITIVE'].includes(value.caseId)
         || value.exitCode === null || value.exitCode === 0 || !currentProviderFailureIsSafe(value.providerFailure)))
+      || (hasPrefix && (value.subprocessPhase !== 'PREFIX' || !['CURRENT_FAILURE240','CURRENT_POSITIVE'].includes(value.caseId)
+        || value.exitCode === null || value.exitCode === 0 || !currentPrefixFailureIsSafe(value.prefixFailure)))
       || value.privatePayloadIncluded!==false || !cases.has(value.caseId) || !phases.has(value.subprocessPhase)
       || (value.localLine!==null && (!Number.isInteger(value.localLine) || value.localLine < 1 || value.localLine > 8192))
       || (value.exitCode!==null && (value.subprocessPhase==='NONE' || !Number.isInteger(value.exitCode) || value.exitCode < -255 || value.exitCode > 255)))return null;
@@ -159,6 +180,7 @@ const ISSUED_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '
 const ISSUED_HEAD = '044d3045fecc2e70d6f35f60010921c6bd597ecc';
 const ISSUED_TREE = '4c56c3b73633bf3a5e1540e4f53e75be49f0b9da';
 const ISSUED_TARGET = 'scripts/test-protected-ravscore-continuation-checkpoint.mjs';
+const SOURCE_CURRENT_NATIVE_PROFILE_PROGRAM='scripts/test-source598-current-native-profile.py';
 const ISSUED_T = 'scripts/lib/ravscore-continuation-implementation-contract.mjs';
 const ISSUED_I = 'c1ac9b32d6bfb6bfeda81bc10566f6906d7046ef2b1481981b3470bda4a427f5';
 const ISSUED_C = '2fdc7426ea99382731c6f4d118eacf4fc271f505fcf121bc67c5349c62938af9';
@@ -1338,7 +1360,7 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
         ...(process.env.GITHUB_TOKEN?{GITHUB_TOKEN:process.env.GITHUB_TOKEN}:{}),
         ...(process.env.GITHUB_REPOSITORY?{GITHUB_REPOSITORY:process.env.GITHUB_REPOSITORY}:{})};
       const invocation=await command(process.env.PYTHON||'python3',
-        ['-I','-B',path.join(repositoryRoot,'scripts/test-source598-current-native-profile.py'),
+        ['-I','-B',path.join(repositoryRoot,SOURCE_CURRENT_NATIVE_PROFILE_PROGRAM),
           '--current-source-profile','--node24-path',process.execPath,
           '--input-profile','current598-preparation'],
         {input:JSON.stringify({kind:'SOURCE_CURRENT_SAME_NATIVE_PG',pgRoot:root,psql:programs.psql,head,server:owner,
@@ -1454,4 +1476,12 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
       throw cleanupError;
     }
   }
+}
+
+// Data from the actual normal factory; no materialization, SQL or admission.
+export function issuedNativeCheckpointFactoryInputDeclarations() {
+  assert.equal(arguments.length,0);
+  return Object.freeze({role:'ISSUED213_CHECKPOINT_FACTORY',head:ISSUED_HEAD,tree:ISSUED_TREE,
+    target:ISSUED_TARGET,continuation:ISSUED_T,currentNativeProgram:SOURCE_CURRENT_NATIVE_PROFILE_PROGRAM,
+    sourceGraphClosed:false,runtimeQualified:false,pgExecuted:false,reuseAuthority:false});
 }

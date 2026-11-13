@@ -6,7 +6,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {fileURLToPath, pathToFileURL} from 'node:url';
-import {isDeepStrictEqual} from 'node:util';
+import {isDeepStrictEqual,types} from 'node:util';
 import {requireSourceProducerOutput, requireSourceProducerBinding,
   SOURCE_PRODUCER_BEFORE,SOURCE_PRODUCER_PREDECESSOR_RELEASE} from '../lib/source-producer-current-native-profile.mjs';
 
@@ -26,6 +26,28 @@ const REGISTRY = 'data/live/coastal-parts-v2.json';
 const CHECKPOINT = '.cache/ravscore-continuation-checkpoint/checkpoint.json';
 const sha = raw => crypto.createHash('sha256').update(raw).digest('hex');
 const same = (a, b, reason) => assert(isDeepStrictEqual(a, b), reason);
+// These fixed operands are shared by the actual normal loads and data-only getter.
+const SOURCE_NORMAL_INPUT_MODULES = Object.freeze({
+  "PUBLIC_REGISTRY": "scripts/build-public-coastal-parts-v2.mjs",
+  "LAST_MILE_PREDECESSOR": "scripts/check-last-mile-enclosure-predecessor-source.mjs",
+  "NORMAL_TRANSPORTS": "scripts/lib/established-native-current-origin-test-transports.mjs",
+  "EPOCH_ARCHIVE": "scripts/lib/weather-state-epoch-archive.mjs",
+  "PRIVATE_BUNDLE": "scripts/private-production-runtime-bundle.mjs",
+  "PRIVATE_WORKFLOW": "scripts/private-production-runtime-workflow.mjs",
+  "PRIVATE_RUNTIME": "scripts/protected-private-production-runtime.mjs",
+  "PROTECTED_CHECKPOINT": "scripts/protected-ravscore-continuation-checkpoint.mjs",
+  "CONTINUATION_CHECKPOINT": "scripts/ravscore-continuation-checkpoint.mjs",
+  "SOURCE_TRANSITION": "scripts/source-producer-runtime-transition.mjs"
+});
+const SOURCE_NORMAL_CODE_MODULE_ROLES = Object.freeze(["PRIVATE_WORKFLOW","PRIVATE_BUNDLE","PRIVATE_RUNTIME","CONTINUATION_CHECKPOINT","PROTECTED_CHECKPOINT"]);
+function normalInputModulePath(namespace, role) {
+  assert.equal(arguments.length, 2);
+  assert((namespace === 'CURRENT' || namespace === 'NORMAL_CODE')
+    && Object.hasOwn(SOURCE_NORMAL_INPUT_MODULES, role)
+    && (namespace === 'CURRENT' || SOURCE_NORMAL_CODE_MODULE_ROLES.includes(role)),
+  'SOURCE_CURRENT_NORMAL_MODULE_UNPROVED');
+  return SOURCE_NORMAL_INPUT_MODULES[role];
+}
 const load = (root, relative) => import(pathToFileURL(path.join(root, relative)).href);
 const json = async file => JSON.parse(await fs.readFile(file, 'utf8'));
 const inside = (root, file) => { const rel = path.relative(root, file);
@@ -34,6 +56,60 @@ const exact = (value, keys) => {
   assert(value && Object.getPrototypeOf(value) === Object.prototype);
   same(Object.keys(value).sort(), [...keys].sort(), 'Exact private native input options');
 };
+const PREFIX_PHASES=new Set(['UNKNOWN','ENTRY_GUARDS','SOURCE_REGISTRY','ENVIRONMENT','OWNED_WORK',
+  'PREDECESSOR_BINDINGS','ADMIN_REGISTRY','PROVIDER_FACTORY','RAW_INPUTS','ARCHIVE_SEED','ARCHIVE_PREPARE',
+  'PROVIDER_INSTALL','NORMAL_WEATHER','NORMAL_PUBLIC','NORMAL_SAVE','PRESERVATION','TRANSPORT','CLEANUP']);
+const PREFIX_REASONS=new Set(['ERR_ASSERTION','ENOENT','EEXIST','EACCES','EPERM','EIO','ENOSPC','ENOMEM',
+  'ENOBUFS','ERR_MODULE_NOT_FOUND','ERR_PACKAGE_PATH_NOT_EXPORTED','ERR_REQUIRE_ESM']);
+const PREFIX_ERROR_STACK=Object.getOwnPropertyDescriptor(new Error(),'stack');
+const PREFIX_ERROR_FORMATTER=Object.getOwnPropertyDescriptor(Error,'prepareStackTrace');
+let current598PrefixPhase='UNKNOWN';
+
+// Observation only: no message, assertion operands, raw stack or caller path.
+// The original error still follows the same throw/finally/host-cleanup path.
+export async function describeCurrent598PrefixFailure(error,phase){
+  const out={kind:'CURRENT598_PREFIX_FIRST_FAILURE',phase:PREFIX_PHASES.has(phase)?phase:'UNKNOWN',
+    exceptionType:'UNKNOWN',reason:'UNKNOWN',callsite:null,privatePayloadIncluded:false};
+  try{
+    if(types.isProxy(error)||!types.isNativeError(error))return out;
+    const prototype=Object.getPrototypeOf(error);
+    out.exceptionType=new Map([[Error.prototype,'ERROR'],[assert.AssertionError.prototype,'ASSERTION_ERROR'],
+      [TypeError.prototype,'TYPE_ERROR'],[RangeError.prototype,'RANGE_ERROR'],[SyntaxError.prototype,'SYNTAX_ERROR'],
+      [ReferenceError.prototype,'REFERENCE_ERROR']]).get(prototype)??'UNKNOWN';
+    if(out.exceptionType==='UNKNOWN')return out;
+    const code=Object.getOwnPropertyDescriptor(error,'code');
+    if(code&&Object.hasOwn(code,'value')&&PREFIX_REASONS.has(code.value))out.reason=code.value;
+    const status=Object.getOwnPropertyDescriptor(error,'status');
+    if(out.reason==='UNKNOWN'&&status&&Object.hasOwn(status,'value')&&Number.isInteger(status.value)
+      &&status.value!==0&&status.value>=-255&&status.value<=255)out.reason='CHILD_EXIT';
+    const message=Object.getOwnPropertyDescriptor(error,'message');
+    if(out.reason==='UNKNOWN'&&message&&Object.hasOwn(message,'value')
+      &&message.value==='CURRENT598_NATIVE_PREFIX_EXTERNAL_REQUEST_REFUSED')out.reason='EXTERNAL_REQUEST_REFUSED';
+    const name=Object.getOwnPropertyDescriptor(error,'name')??Object.getOwnPropertyDescriptor(prototype,'name');
+    if(!isDeepStrictEqual(Object.getOwnPropertyDescriptor(Error,'prepareStackTrace'),PREFIX_ERROR_FORMATTER)
+      ||!message||!Object.hasOwn(message,'value')||typeof message.value!=='string'
+      ||!name||!Object.hasOwn(name,'value')||typeof name.value!=='string')return out;
+    const own=Object.getOwnPropertyDescriptors(error);
+    let stack=own.stack&&Object.hasOwn(own.stack,'value')?own.stack.value:undefined;
+    if(stack===undefined&&own.stack?.get!==undefined&&own.stack.get===PREFIX_ERROR_STACK?.get){
+      if(Reflect.ownKeys(own).some(key=>!Object.hasOwn(own[key],'value')
+        &&!(key==='stack'&&own.stack.get===PREFIX_ERROR_STACK.get&&own.stack.set===PREFIX_ERROR_STACK.set)))return out;
+      stack=Reflect.apply(PREFIX_ERROR_STACK.get,error,[]);
+    }
+    if(typeof stack!=='string'||stack.length>2*1024*1024)return out;
+    const url=import.meta.url,source=fileURLToPath(url),body=await read(source,2*1024*1024);
+    for(const line of stack.split(/\r?\n/)){
+      const match=/^\s+at (?:[^\r\n()]* \()?((?:file:\/\/\/)[^\r\n()]+):(\d+):(\d+)\)?$/.exec(line);
+      if(!match||match[1]!==url)continue;
+      const at=Number(match[2]),column=Number(match[3]);
+      if(Number.isSafeInteger(at)&&at>=1&&at<=body.toString('utf8').split(/\r?\n/).length
+        &&Number.isSafeInteger(column)&&column>=1&&column<=100000){
+        out.callsite={module:'scripts/fixtures/source19-current-normal-inputs.mjs',sha256:sha(body),line:at,column};break;
+      }
+    }
+  }catch{} // Diagnostic failure must never replace the actual exception.
+  return out;
+}
 function hour(value) {
   assert.equal(typeof value, 'string'); assert.match(value, /^\d{4}-\d{2}-\d{2}T\d{2}:00:00\.000Z$/);
   assert.equal(new Date(value).toISOString(), value); return value;
@@ -143,7 +219,7 @@ async function createArchivedOnlyOldSeed({work, inputRoot, adminInputs, registry
   const oldC = (await load(old, 'scripts/rollback-assets/ravscore-model-contract.js')).ravScoreModelBinding();
   // Authenticate actual OLD data contracts through its existing frozen factory;
   // no retagged585 tuple, altered source or historical fixture repin.
-  await (await load(ROOT, 'scripts/check-last-mile-enclosure-predecessor-source.mjs'))
+  await (await load(ROOT, normalInputModulePath('CURRENT', 'LAST_MILE_PREDECESSOR')))
     .withFrozenLastMileEnclosurePredecessorSource(async frozen => {
       same(oldI, (await load(frozen, 'js/core/ravscore-model-contract.js')).ravScoreModelBinding(), 'Actual genuine OLD I');
       same(oldC, (await load(frozen, 'scripts/rollback-assets/ravscore-model-contract.js')).ravScoreModelBinding(), 'Actual genuine OLD C');
@@ -190,7 +266,7 @@ async function createArchivedOnlyOldSeed({work, inputRoot, adminInputs, registry
   const publicBody = frozenFragment(recipe, '    const publicDocs=new Map(', '    const originalFiles=');
   const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
   await AsyncFunction('archiveModule', 'oldI', 'originals', 'write', 'sha', 'time', publicBody)(
-    await load(ROOT, 'scripts/lib/weather-state-epoch-archive.mjs'), oldI, originals,
+    await load(ROOT, normalInputModulePath('CURRENT', 'EPOCH_ARCHIVE')), oldI, originals,
     async (file, value) => writeNew(file, Buffer.isBuffer(value) ? value : Buffer.from(JSON.stringify(value) + '\n')), sha, time);
   assert(Date.parse(time(7)) < Date.parse(time(8)) && Date.parse(time(8)) < Date.parse(target));
   return {privateRoot, bundlePath, checkpointPath, publicRoot: originals};
@@ -250,11 +326,11 @@ function installOfflineTransport(backend, policy, publicManifestBytes) {
 }
 
 async function saveNormal(root, privateRoot, backend, sourceHead, sameReferenceSuccessorEvidence) {
-  const workflow = await load(root, 'scripts/private-production-runtime-workflow.mjs');
-  const bundle = await load(root, 'scripts/private-production-runtime-bundle.mjs');
-  const protectedB = await load(root, 'scripts/protected-private-production-runtime.mjs');
-  const normalS = await load(root, 'scripts/ravscore-continuation-checkpoint.mjs');
-  const protectedS = await load(root, 'scripts/protected-ravscore-continuation-checkpoint.mjs');
+  const workflow = await load(root, normalInputModulePath('NORMAL_CODE', 'PRIVATE_WORKFLOW'));
+  const bundle = await load(root, normalInputModulePath('NORMAL_CODE', 'PRIVATE_BUNDLE'));
+  const protectedB = await load(root, normalInputModulePath('NORMAL_CODE', 'PRIVATE_RUNTIME'));
+  const normalS = await load(root, normalInputModulePath('NORMAL_CODE', 'CONTINUATION_CHECKPOINT'));
+  const protectedS = await load(root, normalInputModulePath('NORMAL_CODE', 'PROTECTED_CHECKPOINT'));
   const conditions = await json(path.join(root, 'data/live/conditions.json')); refuseFixtureOnly(conditions);
   assert(conditions.privateEstablishedNativeCurrentOrigin, 'Normal updater must have finalized the actual opaque origin');
   const checkpointPath = path.join(privateRoot, CHECKPOINT);
@@ -348,8 +424,8 @@ async function produceNativeInputs(options,initial) {
   const closedFetch = async () => { throw new Error('CURRENT_NATIVE_INPUT_EXTERNAL_REQUEST_REFUSED'); };
   globalThis.fetch = closedFetch;
   try {
-    const backend = (await load(ROOT, 'scripts/lib/established-native-current-origin-test-transports.mjs')).normalBAndSTransports();
-    const policy = (await load(ROOT, 'scripts/protected-private-production-runtime.mjs')).PROTECTED_PRIVATE_RUNTIME_POLICY;
+    const backend = (await load(ROOT, normalInputModulePath('CURRENT', 'NORMAL_TRANSPORTS'))).normalBAndSTransports();
+    const policy = (await load(ROOT, normalInputModulePath('CURRENT', 'PRIVATE_RUNTIME'))).PROTECTED_PRIVATE_RUNTIME_POLICY;
     // The genuine frozen DATA factory proves the unchanged585 source contracts.
     // Its limited assertion-only module closure is NOT passed off as a full
     // updater host. The latter is a separate complete clone of the SAME commit.
@@ -468,12 +544,12 @@ async function produceNativeInputs(options,initial) {
     process.chdir(ROOT); process.env.PRIVATE_RUNTIME_REPOSITORY_ROOT = ROOT; process.env.GITHUB_SHA = currentHead;
     process.env.RAVRADAR_PREDECESSOR_PRIVATE_ROOT = saved585.privateRoot;
     process.env.RAVRADAR_PREDECESSOR_PRIVATE_BUNDLE = saved585.bundlePath;
-    const transition = await load(ROOT, 'scripts/source-producer-runtime-transition.mjs');
+    const transition = await load(ROOT, normalInputModulePath('CURRENT', 'SOURCE_TRANSITION'));
     const prepared = await transition.restoreAndPrepareSourceProducerRuntimeTransition({
       request: backend.documentRequest, checkpointRequest: backend.documentRequest, storage: backend.storage,
       targetReferenceAt: target, workdir: path.join(work, 'source-metadata')});
     await transition.assertSourceProducerRuntimeTransitionPrepared(prepared);
-    const workflow = await load(ROOT, 'scripts/private-production-runtime-workflow.mjs');
+    const workflow = await load(ROOT, normalInputModulePath('CURRENT', 'PRIVATE_WORKFLOW'));
     await workflow.installRestoredPrivateRuntime({restoredRoot: prepared.outputRoot, repositoryRoot: ROOT});
     const privateCurrent = path.join(work, 'saved-current'); await fs.mkdir(privateCurrent);
     const current = await saveNormal(ROOT, privateCurrent, backend, currentHead, {
@@ -624,8 +700,8 @@ export async function prepareCurrentSourceNativeFromInitialProfile(){
   await fs.mkdir(work,{recursive:false,mode:0o700});const identity=await fs.lstat(work,{bigint:true});
   const beforeEnv={...process.env},beforeCwd=process.cwd();let first;
   try{
-    const B=await load(ROOT,'scripts/protected-private-production-runtime.mjs');
-    const S=await load(ROOT,'scripts/protected-ravscore-continuation-checkpoint.mjs');
+    const B=await load(ROOT, normalInputModulePath('CURRENT', 'PRIVATE_RUNTIME'));
+    const S=await load(ROOT, normalInputModulePath('CURRENT', 'PROTECTED_CHECKPOINT'));
     const clients=B.createProtectedPrivateRuntimeClients({storageBackend:'supabase'});
     const checkpointRequest=S.createProtectedRavScoreCheckpointRequester();
     const backend={...clients,checkpointRpc:S.createProtectedRavScoreCheckpointRpcRequester()};
@@ -640,12 +716,12 @@ export async function prepareCurrentSourceNativeFromInitialProfile(){
     process.chdir(ROOT);process.env.PRIVATE_RUNTIME_REPOSITORY_ROOT=ROOT;process.env.GITHUB_SHA=currentHead;
     process.env.RAVRADAR_PREDECESSOR_PRIVATE_ROOT=savedRoot;
     process.env.RAVRADAR_PREDECESSOR_PRIVATE_BUNDLE=initial.saved585.bundlePath;
-    const transition=await load(ROOT,'scripts/source-producer-runtime-transition.mjs');
+    const transition=await load(ROOT, normalInputModulePath('CURRENT', 'SOURCE_TRANSITION'));
     const prepared=await transition.restoreAndPrepareSourceProducerRuntimeTransition({
       request:clients.documentRequest,checkpointRequest,storage:clients.storage,
       targetReferenceAt:target,workdir:path.join(work,'source-metadata')});
     await transition.assertSourceProducerRuntimeTransitionPrepared(prepared);
-    const workflow=await load(ROOT,'scripts/private-production-runtime-workflow.mjs');
+    const workflow=await load(ROOT, normalInputModulePath('CURRENT', 'PRIVATE_WORKFLOW'));
     await workflow.installRestoredPrivateRuntime({restoredRoot:prepared.outputRoot,repositoryRoot:ROOT});
     const privateCurrent=path.join(work,'saved-current');await fs.mkdir(privateCurrent,{recursive:false,mode:0o700});
     const current=await saveNormal(ROOT,privateCurrent,backend,currentHead,{
@@ -711,7 +787,7 @@ async function verifyCurrent598SourceRegistry(root, own) {
   const output = path.join(proofRoot, 'coastal-parts-v2.json');
   const registry = path.join(root, REGISTRY);
   const before = await read(registry);
-  await (await load(root, 'scripts/build-public-coastal-parts-v2.mjs')).build({output});
+  await (await load(root, normalInputModulePath('CURRENT', 'PUBLIC_REGISTRY'))).build({output});
   assert(before.equals(await read(output)) && before.equals(await read(registry)), 'SOURCE registry must match whole normal derivation');
   assert.equal(trackedDiff(), dirty, 'SOURCE tracked input changed during registry proof');
   verifyAdmin();
@@ -754,8 +830,8 @@ export async function prepareCurrentSourceNativeFrom594Prefix(){
   await fs.mkdir(work,{recursive:false,mode:0o700});const identity=await fs.lstat(work,{bigint:true});
   const beforeEnv={...process.env},beforeCwd=process.cwd();let first;
   try{
-    const B=await load(ROOT,'scripts/protected-private-production-runtime.mjs');
-    const S=await load(ROOT,'scripts/protected-ravscore-continuation-checkpoint.mjs');
+    const B=await load(ROOT, normalInputModulePath('CURRENT', 'PRIVATE_RUNTIME'));
+    const S=await load(ROOT, normalInputModulePath('CURRENT', 'PROTECTED_CHECKPOINT'));
     const clients=B.createProtectedPrivateRuntimeClients({storageBackend:'supabase'});
     const checkpointRequest=S.createProtectedRavScoreCheckpointRequester();
     const backend={...clients,checkpointRpc:S.createProtectedRavScoreCheckpointRpcRequester()};
@@ -770,12 +846,12 @@ export async function prepareCurrentSourceNativeFrom594Prefix(){
     process.chdir(ROOT);process.env.PRIVATE_RUNTIME_REPOSITORY_ROOT=ROOT;process.env.GITHUB_SHA=currentHead;
     process.env.RAVRADAR_PREDECESSOR_PRIVATE_ROOT=savedRoot;
     process.env.RAVRADAR_PREDECESSOR_PRIVATE_BUNDLE=initial.saved598.bundlePath;
-    const transition=await load(ROOT,'scripts/source-producer-runtime-transition.mjs');
+    const transition=await load(ROOT, normalInputModulePath('CURRENT', 'SOURCE_TRANSITION'));
     const prepared=await transition.restoreAndPrepareSourceProducerRuntimeTransition({
       request:clients.documentRequest,checkpointRequest,storage:clients.storage,
       targetReferenceAt:target,workdir:path.join(work,'source-metadata')});
     await transition.assertSourceProducerRuntimeTransitionPrepared(prepared);
-    const workflow=await load(ROOT,'scripts/private-production-runtime-workflow.mjs');
+    const workflow=await load(ROOT, normalInputModulePath('CURRENT', 'PRIVATE_WORKFLOW'));
     await workflow.installRestoredPrivateRuntime({restoredRoot:prepared.outputRoot,repositoryRoot:ROOT});
     const privateCurrent=path.join(work,'saved-current');await fs.mkdir(privateCurrent,{recursive:false,mode:0o700});
     const current=await saveNormal(ROOT,privateCurrent,backend,currentHead,{
@@ -816,6 +892,7 @@ export async function prepareCurrentSourceNativeFrom594Prefix(){
 }
 
 export async function produceCurrent598NativePrefix(options){
+  current598PrefixPhase='ENTRY_GUARDS';
   requireSourceProducerOutput();requireSourceProducerBinding(); // Before getters/I/O, never waive NULL/committed-source gates.
   assert.equal(arguments.length,1);assert.equal(process.platform,'linux');
   assert.equal(Number(process.versions.node.split('.')[0]),24);
@@ -827,7 +904,8 @@ export async function produceCurrent598NativePrefix(options){
   assert.equal(await fs.realpath(process.env.RUNNER_TEMP??''),path.join(ROOT,'runner-temp'));
   await noLinks(own);await noLinks(ROOT);await noLinks(inputRoot);assert.equal(await fs.realpath(ROOT),ROOT);
   const executionHead=git(ROOT,'rev-parse','HEAD');assert.match(executionHead,/^[a-f0-9]{40}$/);
-  await verifyCurrent598SourceRegistry(ROOT, own);
+  current598PrefixPhase='SOURCE_REGISTRY';await verifyCurrent598SourceRegistry(ROOT, own);
+  current598PrefixPhase='ENVIRONMENT';
   for(const name of ['RAVRADAR_ARCHIVED_WEATHER_RESTART_CONTEXT_PATH','RAVRADAR_ARCHIVED_WEATHER_RESTART_CONTEXT_SHA256',
     'RAVRADAR_CURRENT_FAMILY_COLD_START_CONTEXT_PATH','RAVRADAR_CURRENT_FAMILY_COLD_START_CONTEXT_SHA256',
     'RAVRADAR_WEATHER_STATE_EPOCH_CONTEXT_PATH','RAVRADAR_WEATHER_STATE_EPOCH_CONTEXT_SHA256',
@@ -838,6 +916,7 @@ export async function produceCurrent598NativePrefix(options){
   for(const name of ['CHECKPOINT_ONLY','RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP',
     'RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED','RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED'])
     assert([undefined,'false'].includes(process.env[name]),'No ambient exceptional mode: '+name);
+  current598PrefixPhase='OWNED_WORK';
   await fs.mkdir(work,{recursive:false,mode:0o700});const workStat=await fs.lstat(work,{bigint:true});
   const beforeEnv={...process.env},beforeCwd=process.cwd(),beforeFetch=globalThis.fetch;
   const closedFetch=async()=>{throw Error('CURRENT598_NATIVE_PREFIX_EXTERNAL_REQUEST_REFUSED');};
@@ -845,7 +924,8 @@ export async function produceCurrent598NativePrefix(options){
   try{
     Object.assign(process.env,{GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_OPTIONAL_LOCKS:'0',GIT_TERMINAL_PROMPT:'0',
       GIT_CONFIG_COUNT:'1',GIT_CONFIG_KEY_0:'protocol.allow',GIT_CONFIG_VALUE_0:'never'});
-    const backend=(await load(ROOT,'scripts/lib/established-native-current-origin-test-transports.mjs')).normalBAndSTransports();
+    const backend=(await load(ROOT, normalInputModulePath('CURRENT', 'NORMAL_TRANSPORTS'))).normalBAndSTransports();
+    current598PrefixPhase='PREDECESSOR_BINDINGS';
     const host594=path.join(work,'normal-genuine598');cloneSource(CURRENT598_DATA_CODE.head,CURRENT598_DATA_CODE.tree,host594);
     const integrated=(await load(host594,'js/core/ravscore-model-contract.js')).ravScoreModelBinding();
     const candidate=(await load(host594,'scripts/rollback-assets/ravscore-model-contract.js')).ravScoreModelBinding();
@@ -853,7 +933,7 @@ export async function produceCurrent598NativePrefix(options){
     const contracts=await workflow.privateRuntimeContractHashes({repositoryRoot:host594});
     assert.equal(integrated.modelBundleSha256,CURRENT598_DATA_CODE.I);assert.equal(candidate.modelBundleSha256,CURRENT598_DATA_CODE.C);
     assert.equal(contracts.continuationStateContractSha256,CURRENT598_DATA_CODE.T);
-    await copyInputs(inputRoot,host594,options.adminInputs,ADMIN);
+    current598PrefixPhase='ADMIN_REGISTRY';await copyInputs(inputRoot,host594,options.adminInputs,ADMIN);
     const registry=await(await load(host594,'scripts/build-public-coastal-parts-v2.mjs')).build();
     assert.equal(registry.zoneCount,210);assert.equal(registry.partCount,673);
     same(await json(path.join(ROOT,REGISTRY)),registry,'Same normal SOURCE/admin registry, never a typed fixture registry');
@@ -861,8 +941,10 @@ export async function produceCurrent598NativePrefix(options){
     // host, after its normal admin registry and BEFORE archive/updater. The
     // preliminary SOURCE fixture remains separate; no raw copy/capture retag.
     const code598InputRoot=path.join(own,'fixture-current598-code598');
+    current598PrefixPhase='PROVIDER_FACTORY';
     execFileSync(process.env.PYTHON||'python3',['-I','-B',path.join(ROOT,'scripts/fixtures/source19-current-native-providers.py'),
       process.execPath,target,'--current598-code598-raw',host594],{cwd:ROOT,stdio:['ignore','inherit','inherit'],env:{...process.env}});
+    current598PrefixPhase='RAW_INPUTS';
     const code598OptionsFile=path.join(code598InputRoot,'current-source-native-options.json');
     const code598OptionsBytes=await read(code598OptionsFile,1024*1024),code598Options=JSON.parse(code598OptionsBytes);
     exact(code598Options,['profile','workRoot','inputRoot','adminInputs','providerInputs','targetReferenceAt']);
@@ -906,14 +988,17 @@ export async function produceCurrent598NativePrefix(options){
       rawTransportFiles.push({file,relativePath:'.cache/dmi-grib/'+name,bytes:bytes.length,sha256:sha(bytes),stat});}
     // The OLD d8 family remains OLD. Only the normal37 archive/updater may
     // derive new598 I/G and its lexical origin from this unchanged archive.
+    current598PrefixPhase='ARCHIVE_SEED';
     const archiveSeed=await createArchivedOnlyOldSeed({work,inputRoot,adminInputs:options.adminInputs,registry,target,backend});
     const policy=(await load(host594,'scripts/protected-private-production-runtime.mjs')).PROTECTED_PRIVATE_RUNTIME_POLICY;
     restoreTransport=installOfflineTransport(backend,policy,await read(path.join(archiveSeed.publicRoot,'manifest.json'),1024*1024));
     const oldPrivate=path.join(work,'archive-original-private');await fs.mkdir(oldPrivate,{recursive:false,mode:0o700});
     process.env.RAVRADAR_PRIVATE_RUNTIME_ROOT=oldPrivate;process.env.RAVRADAR_PRIVATE_RUNTIME_BUNDLE=path.join(oldPrivate,'bundle');
     process.env.GITHUB_SHA=CURRENT598_DATA_CODE.head;process.env.PRIVATE_RUNTIME_REPOSITORY_ROOT=host594;
+    current598PrefixPhase='ARCHIVE_PREPARE';
     const archive=await(await load(host594,'scripts/archived-weather-restart.mjs')).prepareArchivedWeatherRestart({
       workRoot:path.join(work,'restart'),publicRoot:archiveSeed.publicRoot,targetReferenceAt:target});
+    current598PrefixPhase='PROVIDER_INSTALL';
     const providers=await copyInputs(code598InputRoot,host594,code598Options.providerInputs,PROVIDERS);
     for(const file of ['data/live/dmi-bulk-cache.json','data/live/dmi-forecast-cache.json',
       '.cache/copernicus-current-shadow.json','.cache/open-meteo-current-fallback.json',
@@ -923,12 +1008,15 @@ export async function produceCurrent598NativePrefix(options){
     process.env.RAVRADAR_PRODUCTION_TARGET_HOUR=target;
     process.env.RAVRADAR_ARCHIVED_WEATHER_RESTART_CONTEXT_PATH=archive.contextPath;
     process.env.RAVRADAR_ARCHIVED_WEATHER_RESTART_CONTEXT_SHA256=archive.contextSha256;
-    process.chdir(host594);await load(host594,'scripts/update-weather.mjs');await load(host594,'scripts/generate-public-conditions.mjs');
+    process.chdir(host594);current598PrefixPhase='NORMAL_WEATHER';await load(host594,'scripts/update-weather.mjs');
+    current598PrefixPhase='NORMAL_PUBLIC';await load(host594,'scripts/generate-public-conditions.mjs');
     same(await json(path.join(host594,REGISTRY)),registry,'Unchanged registry through actual594 weather/public');
     const private594=path.join(work,'saved598');await fs.mkdir(private594,{recursive:false,mode:0o700});
+    current598PrefixPhase='NORMAL_SAVE';
     const saved598=await saveNormal(host594,private594,backend,CURRENT598_DATA_CODE.head);
     assert.equal(saved598.referenceAt,target);same(saved598.manifest.modelBinding,integrated);
     same(saved598.manifest.contractHashes,contracts); // Normal full B/S creation and whole restore above, never a tuple projection.
+    current598PrefixPhase='PRESERVATION';
     same(await read(code598OptionsFile,1024*1024),code598OptionsBytes,'Retained new genuine598 provider options');
     same(await read(rawInventoryFile,4*1024*1024),rawInventoryBytes,'Retained original input inventory');
     same(await read(rawManifestFile,4*1024*1024),rawManifestBytes,'Whole normal raw manifest preserved');
@@ -960,16 +1048,19 @@ export async function produceCurrent598NativePrefix(options){
     clean(()=>{assert.equal(globalThis.fetch,closedFetch);globalThis.fetch=beforeFetch;});
     clean(()=>{for(const name of Object.keys(process.env))if(!Object.hasOwn(beforeEnv,name))delete process.env[name];
       for(const[name,value]of Object.entries(beforeEnv))process.env[name]=value;});
-    if(cleanupFailure&&first)Object.defineProperty(first,'nativeInputCleanupFailure',{value:cleanupFailure});else if(cleanupFailure)throw cleanupFailure;
+    if(cleanupFailure&&first)Object.defineProperty(first,'nativeInputCleanupFailure',{value:cleanupFailure});
+    else if(cleanupFailure){current598PrefixPhase='CLEANUP';throw cleanupFailure;}
   }
 }
 
 export async function prepareCurrent598NativePrefixProfile(){
+  current598PrefixPhase='ENTRY_GUARDS';
   requireSourceProducerOutput();requireSourceProducerBinding();
   assert.equal(arguments.length,0);assert.equal(process.platform,'linux');assert.equal(Number(process.versions.node.split('.')[0]),24);
   const own=path.dirname(ROOT);assert.equal(path.basename(ROOT),'current-source-native');assert.match(path.basename(own),/^rr-source19-union-native-/);
   const options=JSON.parse(await read(path.join(own,'fixture-current598/current-source-native-options.json'),1024*1024));
   const produced=await produceCurrent598NativePrefix(options),transport=path.join(produced.workRoot,'transport');
+  current598PrefixPhase='TRANSPORT';
   await fs.mkdir(transport,{recursive:false,mode:0o700});const objectRows=[];
   for(const[objectPath,raw]of produced.objects){assert(Buffer.isBuffer(raw));const relativePath='objects/'+sha(Buffer.from(objectPath))+'.bin';
     await writeNew(path.join(transport,relativePath),raw);objectRows.push({objectPath,relativePath,bytes:raw.length,sha256:sha(raw)});}
@@ -988,9 +1079,38 @@ export async function prepareCurrent598NativePrefixProfile(){
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
-  requireSourceProducerOutput(); requireSourceProducerBinding();
-  assert.equal(process.argv.length,3);
-  const mode=process.argv[2];assert(['--prepare-current-profile','--prepare-initial-profile','--prepare-current-from-initial-profile','--prepare-current598-prefix','--prepare-current-from594-prefix'].includes(mode));
-  console.log(JSON.stringify(await(mode==='--prepare-current-from594-prefix'?prepareCurrentSourceNativeFrom594Prefix():mode==='--prepare-current598-prefix'?prepareCurrent598NativePrefixProfile():mode==='--prepare-initial-profile'?prepareCurrentSourceNativeInitialProfile():
-    mode==='--prepare-current-from-initial-profile'?prepareCurrentSourceNativeFromInitialProfile():prepareCurrentSourceNativeProfile())));
+  const mode=process.argv[2];
+  try{
+    requireSourceProducerOutput(); requireSourceProducerBinding();
+    assert.equal(process.argv.length,3);
+    assert(['--prepare-current-profile','--prepare-initial-profile','--prepare-current-from-initial-profile','--prepare-current598-prefix','--prepare-current-from594-prefix'].includes(mode));
+    console.log(JSON.stringify(await(mode==='--prepare-current-from594-prefix'?prepareCurrentSourceNativeFrom594Prefix():mode==='--prepare-current598-prefix'?prepareCurrent598NativePrefixProfile():mode==='--prepare-initial-profile'?prepareCurrentSourceNativeInitialProfile():
+      mode==='--prepare-current-from-initial-profile'?prepareCurrentSourceNativeFromInitialProfile():prepareCurrentSourceNativeProfile())));
+  }catch(error){
+    if(mode==='--prepare-current598-prefix')try{console.error(JSON.stringify(await describeCurrent598PrefixFailure(error,current598PrefixPhase)));}catch{}
+    throw error;
+  }
+}
+
+// Shared DATA ONLY from the normal factory's existing allowsets/identities.
+// This does not prepare inputs, inspect Git, start a worker or qualify reuse.
+export function sourceCurrentNormalInputArtifacts() {
+  assert.equal(arguments.length, 0);
+  return Object.freeze({
+    scope: 'SOURCE_CURRENT_NORMAL_PREPARED_INPUT_DECLARATIONS_ONLY',
+    moduleDeclarations: Object.freeze(Object.keys(SOURCE_NORMAL_INPUT_MODULES).flatMap(role =>
+      ['CURRENT', ...(SOURCE_NORMAL_CODE_MODULE_ROLES.includes(role) ? ['NORMAL_CODE'] : [])]
+        .map(namespace => Object.freeze({role, namespace, path: normalInputModulePath(namespace, role)})))),
+    adminInputPaths: ADMIN,
+    providerInputPaths: PROVIDERS,
+    outputRegistryPath: REGISTRY,
+    outputCheckpointPath: CHECKPOINT,
+    genuine598Code: CURRENT598_DATA_CODE,
+    oldArchiveCode: Object.freeze({head: OLD_HEAD, tree: OLD_TREE}),
+    fixedArchiveRecipe: Object.freeze({head: HEAD585, tree: TREE585, path: OLD_RECIPE, sha256: OLD_RECIPE_SHA}),
+    sourceGraphClosed: false,
+    runtimeQualified: false,
+    pgExecuted: false,
+    reuseAuthority: false,
+  });
 }

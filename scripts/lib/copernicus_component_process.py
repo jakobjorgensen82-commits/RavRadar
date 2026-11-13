@@ -1837,6 +1837,59 @@ def _run_source_normal_program_cohort() -> int:
             _LOCK.release()
 
 
+def source_normal_backend_program_inputs():
+    """Data-only declarations from the actual fixed selectors; no worker call.
+
+    This does not qualify files, a runtime, an owner, a PG result or a reuse.
+    The normal capture caller must bind repository identities and the two
+    other operand classes before asserting a closed source boundary.
+    """
+    import re
+    import types
+
+    selectors = (_source_normal_program, _run_source_dmi_cohort,
+                 _run_source_normal_phase_cohort)
+    files = {}
+    unknown = []
+    functions = []
+    for selector in selectors:
+        code = selector.__code__
+        functions.append({'name': selector.__name__,
+                          'parameters': list(code.co_varnames[:code.co_argcount]),
+                          'keywordOnlyParameters': list(code.co_varnames[
+                              code.co_argcount:code.co_argcount + code.co_kwonlyargcount])})
+        pending = [code]
+        while pending:
+            current = pending.pop()
+            for value in current.co_consts:
+                if isinstance(value, types.CodeType):
+                    pending.append(value)
+                elif type(value) is str and value.endswith(('.py', '.mjs', '.js', '.cjs')):
+                    if (not re.fullmatch(r'(?:[A-Za-z0-9_.-]+/)*[A-Za-z0-9_-][A-Za-z0-9_.-]*\.(?:py|mjs|js|cjs)', value)
+                            or '..' in value.split('/')):
+                        unknown.append({'selector': selector.__name__,
+                                        'code': 'UNPROVED_SOURCE_OPERAND',
+                                        'reason': 'COMPUTED_OR_UNSAFE_PROGRAM_REFERENCE'})
+                        continue
+                    if value.startswith('.cache/'):
+                        role = 'OWNED_DERIVED_PROGRAM'
+                    elif '/node_modules/' in value:
+                        role = 'RUNTIME_DISTRIBUTION_PROGRAM'
+                    else:
+                        role = 'REPOSITORY_PROGRAM'
+                    row = files.setdefault((role, value), set())
+                    row.add(selector.__name__)
+    rows = [{'role': role, 'reference': reference, 'selectors': sorted(names),
+             'bindingState': 'UNPROVED_RUNTIME_OPERAND' if role == 'RUNTIME_DISTRIBUTION_PROGRAM'
+                             else 'UNPROVED_SOURCE_OPERAND'}
+            for (role, reference), names in sorted(files.items())]
+    return {'schemaVersion': 1, 'scope': 'SOURCE_NORMAL_FIXED_SELECTOR_INPUTS_ONLY',
+            'selectors': functions, 'declaredPrograms': rows,
+            'unknownOperands': unknown,
+            'sourceGraphClosed': False, 'runtimeQualified': False,
+            'workerStarted': False, 'pgExecuted': False, 'reuseAuthority': False}
+
+
 if __name__ == "__main__":
     if sys.argv[1:] not in (["--source-dmi-cohort"], ["--source-normal-phase-cohort"], ["--source-normal-program-cohort"]):
         raise SystemExit(STOP_UNPROVED_EXIT)
