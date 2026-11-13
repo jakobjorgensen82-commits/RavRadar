@@ -18,6 +18,10 @@ Alle fem mål til 18. november består. Stabil vejrhentning og reel dækning har
 
 Se beslutning DEC-0302 og håndbog 89.346. Tidligere 614-/615-oplysninger bevares som historik, ikke som en nyere kandidat eller installationsautoritet.
 
+## 13. november 2026 — privat 4.0.598-backupautonomi, fortsat deaktiveret
+
+Backupvedligeholdelsen er forberedt som ét efterfølgende job i den normale adminmodtager: current-restore med stærk indholds-/Auth-kvittering, auditbundet rotation og ny optagelse efter syv døgn. Begge konkrete peerfund er dækket: kvittering erstatter aldrig positiv tidligere publicering; urefererede managed SQL-/partobjekter holdes og standser ny capture. Normale målrettede syntetiske prøver består; det er ikke hosted arkivgendannelse, aktivering eller Free-klarhed. Numerisk 598, originaler, migrationer, vejr og eksisterende manuelle workflow bevares. Se håndbog 89.347 og DEC-0255; faktiske variabel-/ressourcekvitteringer føres privat.
+
 ## 12. november 2026 – 4.0.614: ny ægte SOURCE-kandidat og kortere kontrolvej
 
 Den nye lokale kandidat bygger på den gennemgåede SOURCE-funktionalitet og den nu mergede almindelige Pages-/kontrolrettelse. Den annullerede 613-kandidat må fortsat ikke installeres. 614 udstedes som første SOURCE fra den ægte, uudstedte NULL-forgænger mod installeret 598; ingen 613-binding ommærkes. De 77 tidligere migrationer bevares, og den normale bygger opretter kun én ny migration.

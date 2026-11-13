@@ -65,6 +65,8 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
   backupRestore:[
     LOCAL_RESTORE_SELF_TEST,
     'node --test scripts/test-archive-supabase-database-backup.mjs',
+    'node --test scripts/test-supabase-database-backup-workflow.mjs',
+    'node --test scripts/test-supabase-backup-lifecycle.mjs',
   ],
   mailOwnerProbe:[
     'node --test scripts/test-owner-notice-probe-ci.mjs',
@@ -165,6 +167,14 @@ const PATH_AREAS=freeze({
     'scripts/test-admin-document-history-workflow.mjs',
   ],
   backupRestore:[
+    '.github/workflows/maintain-admin-document-history.yml',
+    'scripts/supabase-backup-lifecycle.mjs',
+    'scripts/run-autonomous-supabase-backup.mjs',
+    'scripts/test-supabase-backup-lifecycle.mjs',
+    '.github/workflows/backup-supabase-database.yml',
+    LOCAL_RESTORE_WORKFLOW,
+    'scripts/run-hosted-supabase-backup.mjs',
+    'scripts/test-supabase-database-backup-workflow.mjs',
     LOCAL_RESTORE_FIXTURE,
     'scripts/seal-supabase-database-export.mjs',
     'scripts/archive-supabase-database-backup.mjs',

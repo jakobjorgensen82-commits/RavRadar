@@ -1,5 +1,19 @@
 # DEC-0255 – Privat produktionscache til R2 med målt Free-budget
 
+## Tillæg 13. november 2026 — selvstændig databasebackup uden ekstra tidsplan
+
+**Status: aktiv bevarings- og leveringskontrakt; kode forberedt privat, automatisk udførelse ikke aktiveret.** Dette tillæg vedrører den separate private databasebackup og ændrer ikke den fungerende private vejr-cache eller dens pointere. De daterede målinger og tidligere migrationsforløb nedenfor bevares som historik.
+
+Brug ét efterfølgende job i den eksisterende adminhistorikvedligeholdelse. Dets autoritet kommer fra den normale botbestilling, den præcise modtagerbinding og den afsluttede, verificerede almindelige vejrkørsel på samme main. Bevar den eksisterende OUTER-lås og turlagerets INNER-lås. Backupjobbet har egen Node24/CLI-klargøring og en frisk kontrol af mindst 35 minutter til kildevejrets oprindelige næste slot. Vejr- og manuelt backupworkflow ændres ikke; der oprettes ikke nye nøgler, buckets, tjenester eller tidsplaner.
+
+I hvert egnet vindue udføres højst én normal handling: stærkt kontrolleret gendannelse af den aktuelle backup, rotation af én overflødig gammel gruppe eller ny optagelse efter syv døgn. En kvittering udstedes kun efter fuld arkivindholds-/dubletparitet, isoleret Auth-funktion og bekræftet ejet oprydning. Den knyttes kryptografisk til samme autentificerede arkiv og kan ikke selv give produktions- eller sletteret.
+
+Retirement kræver positiv tidligere publicering i locatorhistorikken for ALLE kandidater, også kandidater med kvittering. Current og særskilt verificeret reserve læses fuldt tilbage før sletning. Alle locatorauditrækker og delte objekter bevares. Indeks slettes sidst, og et ukendt DELETE bliver ikke blindt gentaget. Eksisterende fuld inventarlæsning skal holde alle urefererede managed SQL-/partobjekter tilbage og blokere ny capture; ældre eller ukendte objekter må ikke antages ubrugelige.
+
+Normal rotation sigter mod to verificerede generationer og højst én ny under kontrol. Der reserveres plads til hele transporten før upload; 300 MB pr. transport og 2 GB i backup-bucketen er fortsat lokale lofter. De er ikke en garanti for kontoens samlede R2-lager-/operationsforbrug eller Supabase-/GitHub-Free. Automatikken er som udgangspunkt OFF. Den faktiske variabelaflæsning og eventuel senere aktiveringskvittering gemmes privat; en manglende variabel er ikke weekly. Aktivering kræver præcis kildekvalifikation, faktisk autentisk arkiv-/Auth-restore, afklarede gamle rester og dokumenteret samlet ressourcegrundlag.
+
+Databasepariteten gælder arkivets fem SQL-filer, ikke et atomisk live-snapshot, Storage-objekternes filbytes, produktionsrestore eller erasure-bevis. Ejerens øvrige Free- og brugerdataopgaver forbliver åbne. Denne ændring fastholder app-/modelversion 4.0.598 og udsteder ingen numerisk model eller migration. Se aktive krav, implementeringsstatus og håndbog 89.347.
+
 **Dato:** 2026-09-26
 **Status:** AKTIV BESLUTNING; migration og restore bevist, ny publish/deploy afventer
 

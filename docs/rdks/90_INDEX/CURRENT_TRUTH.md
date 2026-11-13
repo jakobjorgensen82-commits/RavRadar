@@ -14,6 +14,8 @@ Den ændringsbaserede V4-kontrolvej har reel kildekvalifikation, men hver ny æn
 
 Der er ikke dokumenteret samlet Free-klarhed. Fysisk Supabase-margin, autonom vedligeholdelse, faktisk backupgendannelse og holdbar R2-rotation skal bevises særskilt. En mislykket rolleimport er ikke rettet ved en bedre diagnose. Intet ukendt punkt lukkes af denne oversigt. Se [åbne leverancer](IMPLEMENTATION_STATUS.md) og den gældende målfil.
 
+Databasebackupens automatiske restore/rotation/ugentlige optagelse er forberedt som et efterfølgende job i den eksisterende adminvedligeholdelse og er ikke aktiveret. Positive historiske locatorer kræves ved al retirement; ukendte grupper og løse managed objekter giver HELD. Faktisk fuld arkiv-/Auth-gendannelse, præcis kildekvalifikation og målt samlet margin mangler fortsat før aktivering eller Free-overgang. Se håndbog 89.347 og DEC-0255.
+
 <!-- RAVRADAR_ACTIVE_ENTRY_END -->
 
 ## Daterede notater og tidligere indgange — uændret historik

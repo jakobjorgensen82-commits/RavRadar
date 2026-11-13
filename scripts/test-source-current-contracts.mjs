@@ -18,7 +18,9 @@ const SOURCE=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const restoreFixture='scripts/test-supabase-cli-local-restore.mjs';
 const restoreSource=fs.readFileSync(new URL('./test-supabase-cli-local-restore.mjs',import.meta.url),'utf8').replaceAll('\r\n','\n');
 assert.deepEqual(CURRENT_CONTRACT_COMMANDS.backupRestore,['node '+restoreFixture+' --self-test',
-  'node --test scripts/test-archive-supabase-database-backup.mjs']);
+  'node --test scripts/test-archive-supabase-database-backup.mjs',
+  'node --test scripts/test-supabase-database-backup-workflow.mjs',
+  'node --test scripts/test-supabase-backup-lifecycle.mjs']);
 assert.equal(isBoundedLocalRestoreFixtureChange(restoreSource,restoreSource),true);
 assert.equal(isBoundedLocalRestoreFixtureChange(restoreSource,
   restoreSource.replace('const IMAGES=','// Synthetic reviewed body delta\nconst IMAGES=')),true);
@@ -406,9 +408,9 @@ try{
   checkout(adminHistoryHead);
   const adminHistoryPlan=plan({baselineCommit:base,candidateCommit:adminHistoryHead,expectedHead:adminHistoryHead});
   assert.equal(adminHistoryPlan.selection,'CURRENT_CONTRACTS',JSON.stringify(adminHistoryPlan.reasonCodes));
-  assert.deepEqual(Object.keys(adminHistoryPlan.areas),['core','pages','adminHistory']);
+  assert.deepEqual(Object.keys(adminHistoryPlan.areas),['core','pages','adminHistory','backupRestore']);
   assert.deepEqual(adminHistoryPlan.commands,[...CURRENT_CONTRACT_COMMANDS.core,
-    ...CURRENT_CONTRACT_COMMANDS.pages,...CURRENT_CONTRACT_COMMANDS.adminHistory]);
+    ...CURRENT_CONTRACT_COMMANDS.pages,...CURRENT_CONTRACT_COMMANDS.adminHistory,...CURRENT_CONTRACT_COMMANDS.backupRestore]);
   assert.equal(adminHistoryPlan.controlQualificationRequired,true);
   for(const family of ['postgres','C','I','T'])
     assert.equal(adminHistoryPlan.inputDigests[family+'Before'],adminHistoryPlan.inputDigests[family+'After']);

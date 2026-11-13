@@ -17,16 +17,21 @@ const childEnvironment=()=>Object.fromEntries(['PATH','Path','SystemRoot','WINDI
   .filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]]));
 // Pure planning only. The normal entry below independently reads the genuine
 // inventory and physically executes each required current owner target.
-export function planCurrentWorkflowInventory(actualNames,legacyNames){
-  assert.equal(arguments.length,2);
+export function planCurrentWorkflowInventory(actualNames,legacyNames,changedNames=[]){
+  assert(arguments.length===2||arguments.length===3);
   for(const names of [actualNames,legacyNames]){
     assert(Array.isArray(names)&&names.length>0&&names.length<=200);
     assert(names.every(name=>typeof name==='string'&&/^[A-Za-z0-9_.-]+\.ya?ml$/.test(name)));
     assert.equal(new Set(names).size,names.length,'Duplicate workflow names are not historical input');
   }
   const actual=new Set(actualNames),legacy=new Set(legacyNames),owners=new Map();
+  assert(Array.isArray(changedNames)&&changedNames.length<=legacyNames.length);
+  assert.equal(new Set(changedNames).size,changedNames.length,'Duplicate changed workflow names');
+  assert(changedNames.every(name=>typeof name==='string'&&actual.has(name)&&legacy.has(name)),
+    'Changed historical workflows must exist in both actual and original inventories');
+  const changed=new Set(changedNames);
   assert(legacyNames.every(name=>actual.has(name)),'A genuine legacy workflow is missing');
-  for(const name of actualNames.filter(name=>!legacy.has(name))){
+  for(const name of actualNames.filter(name=>!legacy.has(name)||changed.has(name))){
     const target=currentWorkflowTargets('.github/workflows/'+name);
     assert(target?.owners.length,'Current workflow needs a declared owner and normal target');
     for(const owner of target.owners){
@@ -40,13 +45,13 @@ export function planCurrentWorkflowInventory(actualNames,legacyNames){
 }
 function historicalWorkflowInventory(){
   const environment=childEnvironment();
-  const git=(args,raw=false)=>{const output=execFileSync('git',['-C',ROOT,...args],{
+  const git=(args,raw=false)=>{const bytes=execFileSync('git',['-C',ROOT,...args],{
     env:{...environment,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_OPTIONAL_LOCKS:'0',
       GIT_TERMINAL_PROMPT:'0',GIT_CONFIG_NOSYSTEM:'1',
       GIT_CONFIG_GLOBAL:process.platform==='win32'?'NUL':'/dev/null',
       GIT_CONFIG_COUNT:'1',GIT_CONFIG_KEY_0:'protocol.allow',GIT_CONFIG_VALUE_0:'never'},
     timeout:10_000,maxBuffer:raw?2*1024*1024:256*1024,stdio:['ignore','pipe','pipe']});
-    return raw?output:output.toString('utf8');};
+    return raw?bytes:bytes.toString('utf8');};
   assert.equal(git(['rev-parse',LEGACY_WORKFLOW_HEAD+':.github/workflows']).trim(),LEGACY_WORKFLOW_TREE);
   const rows=git(['ls-tree','-z',LEGACY_WORKFLOW_TREE]).split('\0').filter(Boolean);
   const blobs=new Map();
@@ -57,8 +62,19 @@ function historicalWorkflowInventory(){
   });
   return {environment,git,legacy,blobs};
 }
-// Data only. These genuine old files satisfy old text oracles; they never
-// qualify the current Source gates or provide any production authority.
+// The older oracle reads its own already-pinned inventory, never current bytes
+// coerced into another successor. This reader grants no current qualification.
+export function readHistoricalMaintenanceWorkflowSources(){
+  assert.equal(arguments.length,0,'No caller-selected historical workflow origin');
+  const {git,blobs}=historicalWorkflowInventory();
+  return Object.freeze(Object.fromEntries(['backup-supabase-database.yml',
+    'maintain-admin-document-history.yml','verify-supabase-cli-local-restore.yml'].map(name=>{
+    assert(blobs.has(name),'Original maintenance workflow must exist');
+    const body=git(['cat-file','blob',blobs.get(name)],true);
+    assert(body.length>0&&body.length<=128*1024,'Bounded original maintenance workflow');
+    return [name,body];
+  })));
+}
 export function readHistoricalSourceCriticalWorkflowSources(){
   assert.equal(arguments.length,0,'No caller-selected historical workflow, ref or reader');
   const {git,blobs}=historicalWorkflowInventory(),result={};
@@ -72,13 +88,21 @@ export function readHistoricalSourceCriticalWorkflowSources(){
 }
 export function qualifyCurrentWorkflowInventory(){
   assert.equal(arguments.length,0,'No caller-selected workflow inventory, catalog or target runner');
-  const {environment,legacy}=historicalWorkflowInventory();
+  const {environment,legacy,blobs}=historicalWorkflowInventory(),changed=[];
   const directory=path.join(ROOT,'.github/workflows');
   const actual=fs.readdirSync(directory).filter(name=>/\.ya?ml$/i.test(name)).sort();
   for(const name of actual){
-    const stat=fs.lstatSync(path.join(directory,name));assert(stat.isFile()&&!stat.isSymbolicLink());
+    const file=path.join(directory,name),stat=fs.lstatSync(file);assert(stat.isFile()&&!stat.isSymbolicLink());
+    assert(stat.size>0&&stat.size<=2*1024*1024,'Bounded actual workflow');
+    if(blobs.has(name)){
+      const body=fs.readFileSync(file);
+      // Exact Git blob identity only selects the current owner target; it is
+      // neither a new snapshot pin nor evidence that any target has passed.
+      const blob=crypto.createHash('sha1').update('blob '+body.length+'\0').update(body).digest('hex');
+      if(blob!==blobs.get(name))changed.push(name);
+    }
   }
-  const plan=planCurrentWorkflowInventory(actual,legacy),completed=new Set();
+  const plan=planCurrentWorkflowInventory(actual,legacy,changed),completed=new Set();
   for(const owner of plan.owners)for(const command of owner.commands){
     if(completed.has(command))continue;
     assert(/^node(?: --[a-z-]+)*(?: [A-Za-z0-9_./-]+\.mjs)+(?: --self-test)?$/.test(command));

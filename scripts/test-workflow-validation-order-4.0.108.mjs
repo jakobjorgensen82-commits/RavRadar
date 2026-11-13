@@ -1,5 +1,5 @@
 import './test-current-pages-workflow-wiring.mjs';
-import { projectPagesClosureHistoricalTestInput as historicalPagesInput, qualifyCurrentWorkflowInventory } from './lib/pages-closure-historical-test-input.mjs';
+import { projectPagesClosureHistoricalTestInput as historicalPagesInput, qualifyCurrentWorkflowInventory, readHistoricalMaintenanceWorkflowSources } from './lib/pages-closure-historical-test-input.mjs';
 import assert from 'node:assert/strict';
 import {inverseForecastSharePagesWorkflowInventory}
   from './test-forecast-share-pages-deploy.mjs';
@@ -187,8 +187,7 @@ function inverseReviewedMaintenanceWorkflowInventory(names, sources) {
   }
   return names.filter(name => !Object.hasOwn(reviewedMaintenanceWorkflows, name));
 }
-const reviewedMaintenanceSources = Object.fromEntries(Object.keys(reviewedMaintenanceWorkflows)
-  .map(name => [name, fs.readFileSync(`${workflowDirectory}/${name}`)]));
+const reviewedMaintenanceSources = readHistoricalMaintenanceWorkflowSources();
 const physicalWorkflowFiles = inverseReviewedMaintenanceWorkflowInventory(
   currentPhysicalWorkflowFiles, reviewedMaintenanceSources);
 for (const names of [

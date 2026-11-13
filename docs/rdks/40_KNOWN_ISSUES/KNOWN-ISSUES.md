@@ -1,3 +1,11 @@
+## 13. november — automatisk databasebackup og dokumenteret oprydning
+
+Den private 598-kandidat samler backupvedligeholdelsen efter det eksisterende, botbestilte adminjob. Den normale passage vælger én handling: gendannelse af aktuel backup med reel indholds-/Auth-kontrol, sikker rotation af én gammel gruppe eller ny optagelse efter syv døgn. Der kræves mindst 35 minutter til kildevejrets oprindelige næste slot. Vejrjobbet, den manuelle backupvej, originaler, SQL/ACL-regler og numerisk model bevares.
+
+Sletning kræver positiv tidligere publicering for hver kandidat, en verificeret aktuel backup og en særskilt verificeret reserve. Locatorhistorikkens auditrækker bevares. Løse managed SQL-objekter og dele fra det allerede komplette inventar giver HELD og blokerer ny optagelse. Indekset slettes sidst; en senere normal passage afklarer bekræftet fravær uden at gentage en ukendt DELETE blindt. Målet er to verificerede generationer og højst én ny under kontrol, ikke automatisk sletning af ukendte originaler.
+
+Forløbet er forberedt og deaktiveret. Den faktiske fulde arkiv-/Auth-gendannelse, præcis kildekvalifikation, afklaring af gamle rester og samlet målt Free-margin er stadig åbne krav. Der påstås ikke atomisk live-snapshot, gendannede Storage-filbytes, produktionsgendannelse eller afsluttet brugersletning. Se håndbog 89.347 og tillægget til DEC-0255; aktuelle målinger og variabelkvitteringer føres privat.
+
 ## 13. november — Source598-projektion og historiske prøveinput
 
 Den første faktisk nåede native-kontrol samlede elleve afslag i tre årsager. Ni skyldtes, at den fælles committed-CODE-bootstrap sammenlignede den autentificerede PR-head-checkout med GitHubs separate merge-event-SHA. Den normale native-kalder leverer allerede den korrekte gate-head; den lokale rettelse bruger den uden at omskrive eventidentiteten eller ændre hele blob-/før-/efter-HEAD-kontrollen. Almindelig main og capture-barnets eksisterende GITHUB_SHA-vej bevares. De to øvrige afslag var historiske588/597-orakler med aktuelle Source-input; de får sammenhængende genuine598-input og uændrede assertions. De ni historiske NULL-kroppe er kun N/A efter eksisterende faktisk Source/CODE-kvalifikation. Lokal afprøvning er ikke faktisk hosted Source/PostgreSQL; denne kvalifikation og aktivering er fortsat åbne.

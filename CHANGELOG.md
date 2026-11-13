@@ -12,6 +12,14 @@ Den Linuxbegrænsede prøve af assistentens normale Bash-kalder udfylder de seks
 
 Source-kodekontrollens PR-indgang bruger den eksisterende kvalificerede SOURCE_GATE_HEAD_SHA, når den normale PR-kalder leverer den. GitHubs merge-event-SHA, almindelig main og det capture-bundne barns kildeidentitet bevares. Hele committed-blob- og før-/efter-HEAD-kontrollen er uændret. To historiske native-orakler læser sammenhængende genuine598-input med alle hidtidige assertions bevaret. Historiske NULL-forløb er fortsat kun ikke-relevante efter den eksisterende kontrol af faktisk udstedt Source og committed kode; frisk aktuel Source/PostgreSQL er et særskilt krav.
 
+## 13. november — automatisk databasebackup og dokumenteret oprydning
+
+Den private 598-kandidat samler backupvedligeholdelsen efter det eksisterende, botbestilte adminjob. Den normale passage vælger én handling: gendannelse af aktuel backup med reel indholds-/Auth-kontrol, sikker rotation af én gammel gruppe eller ny optagelse efter syv døgn. Der kræves mindst 35 minutter til kildevejrets oprindelige næste slot. Vejrjobbet, den manuelle backupvej, originaler, SQL/ACL-regler og numerisk model bevares.
+
+Sletning kræver positiv tidligere publicering for hver kandidat, en verificeret aktuel backup og en særskilt verificeret reserve. Locatorhistorikkens auditrækker bevares. Løse managed SQL-objekter og dele fra det allerede komplette inventar giver HELD og blokerer ny optagelse. Indekset slettes sidst; en senere normal passage afklarer bekræftet fravær uden at gentage en ukendt DELETE blindt. Målet er to verificerede generationer og højst én ny under kontrol, ikke automatisk sletning af ukendte originaler.
+
+Forløbet er forberedt og deaktiveret. Den faktiske fulde arkiv-/Auth-gendannelse, præcis kildekvalifikation, afklaring af gamle rester og samlet målt Free-margin er stadig åbne krav. Der påstås ikke atomisk live-snapshot, gendannede Storage-filbytes, produktionsgendannelse eller afsluttet brugersletning. Se håndbog 89.347 og tillægget til DEC-0255; aktuelle målinger og variabelkvitteringer føres privat.
+
 ## 4.0.615 — privat Source-kandidat, endnu ikke installeret
 
 Det første normale generatorforløb er standset før bindingssynkroniseringens første skrivning på en faktisk gammel kontraktidentitet i den nye SQL. Kandidaten bevares som uinstalleret historik; den er ikke en bestået release. Årsagen og alle berørte kalderled er åbne i kendte issues.
