@@ -1,3 +1,11 @@
+## 13. november — særskilt oprydning af udløbet ejerprøve
+
+En read-only gatewaykontrol kunne standse mailprøven efter positiv installation og fuld kildegenlæsning, før den kendt-ejede oprydning blev nået. Den lokale rettelse forbinder dette punkt med samme oprydning efter det oprindelige udløb. Den oprindelige gatewayfejl bevares; ukendt installation eller DELETE giver fortsat stop uden automatisk gentagelse.
+
+Det eksisterende workflow får det særskilte formål CLEANUP-EXPIRED-OWNER-PROBE-ONLY ved siden af TEST-EXISTING-OWNER-MAIL-ONCE. Oprydning kræver en begrænset kanonisk JSON-reservation for den aktuelle bekræftede ejer, præcis ti minutter, udløb, uændret fast kilde, samme fire funktionsidentiteter, eksakt main og ingen anden skriver. Kun den faste prøve slettes én gang; efterlæsning skal vise de tre normale funktioner uændret. Der skabes ingen ny reservation, funktion, mail eller brugerbesked.
+
+Free-kandidatens historiske workflowlæser og meningsfulde gamle cases bevares sammen med de nye normale cleanup-cases. Alle ni probe/shared-templatefiler forbliver uændrede. Version 4.0.598, C/I/T, SQL, score, vejr og adgangsrettigheder bevares. Præcis kildekvalifikation, faktisk oprydning og mailmodtagelse er særskilte åbne beviser; ingen automatisk varsling, sletning eller statistik aktiveres. Se håndbog 89.343.
+
 ## 13. november 2026 — privat 4.0.598-backupautonomi, fortsat deaktiveret
 
 Backupvedligeholdelsen er forberedt som ét efterfølgende job i den normale adminmodtager: current-restore med stærk indholds-/Auth-kvittering, auditbundet rotation og ny optagelse efter syv døgn. Begge konkrete peerfund er dækket: kvittering erstatter aldrig positiv tidligere publicering; urefererede managed SQL-/partobjekter holdes og standser ny capture. Normale målrettede syntetiske prøver består; det er ikke hosted arkivgendannelse, aktivering eller Free-klarhed. Numerisk 598, originaler, migrationer, vejr og eksisterende manuelle workflow bevares. Se håndbog 89.347 og DEC-0255; faktiske variabel-/ressourcekvitteringer føres privat.

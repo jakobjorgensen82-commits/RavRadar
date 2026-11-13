@@ -79,28 +79,38 @@ test('one current owner catalog closes new and changed workflows; the legacy inv
 });
 function fixture(change={}){
   const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'rr-mail-ci-')),calls=[],announcements=[];
-  let deployed=false,deleted=false,deployment,now=1_800_000_000_000;
+  let deployed=!!change.cleanupOnly,deleted=false,deployment,now=1_800_000_000_000,listReads=0;
   const env={RUNNER_TEMP:tmp,GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_REF:'refs/heads/main',
     GITHUB_WORKFLOW:'Test one RavRadar owner notice',GITHUB_RUN_ATTEMPT:'1',GITHUB_RUN_ID:'42',
     GITHUB_SHA:'a'.repeat(40),GITHUB_REPOSITORY:'synthetic-owner/synthetic-repo',
-    OWNER_NOTICE_CONFIRMATION:'TEST-EXISTING-OWNER-MAIL-ONCE',SUPABASE_ACCESS_TOKEN:'synthetic-management',
+    OWNER_NOTICE_CONFIRMATION:change.cleanupOnly?'CLEANUP-EXPIRED-OWNER-PROBE-ONLY':'TEST-EXISTING-OWNER-MAIL-ONCE',SUPABASE_ACCESS_TOKEN:'synthetic-management',
     SUPABASE_SERVICE_ROLE_KEY:'synthetic-service',GITHUB_TOKEN:'synthetic-github',...change.env};
+  if(change.cleanupOnly){
+    deployment=path.join(tmp,'existing-expired');
+    materializeOwnerProbe({sourceRoot:root,target:deployment,reservation:{ownerId,recipient:user.email,noticeId,
+      reservedAt:now-600_001,expiresAt:now-1,...change.cleanupReservation}});
+    if(change.cleanupReservationText)fs.writeFileSync(path.join(deployment,'supabase/functions/'+slug+'/reservation.mjs'),change.cleanupReservationText);
+  }
   const fetchImpl=async(url,options)=>{
     calls.push({url:String(url),options});
     if(String(url).includes('/rest/v1/profiles?'))return Response.json(change.profiles??[profile]);
     if(String(url).includes('/auth/v1/admin/users/'))return Response.json(change.user??user);
     assert.equal(options.method,'OPTIONS');assert.equal(options.headers.origin,'https://ravradar.dk');
-    return new Response(null,{status:204,headers:{'access-control-allow-origin':'https://ravradar.dk',
+    if(change.gatewayThrows)throw Error('synthetic gateway read failed');
+    return new Response(null,{status:change.gatewayStatus??204,headers:{'access-control-allow-origin':'https://ravradar.dk',
       'access-control-allow-methods':'POST','access-control-allow-headers':'apikey, authorization'}});
   };
   const run=(command,args,options)=>{
-    calls.push({command,args,options});
+    calls.push({command,args,options,at:now});
     if(command==='git')return args[0]==='fetch'?'':env.GITHUB_SHA;
     if(command==='gh')return JSON.stringify([{workflow_runs:change.otherWriter?[{id:99,path:'.github/workflows/update-and-deploy.yml'}]:[{id:42}]}]);
     assert.equal(command,'supabase');assert.equal(options.env.SUPABASE_ACCESS_TOKEN,'synthetic-management');
     for(const key of ['GITHUB_TOKEN','GH_TOKEN','SUPABASE_SERVICE_ROLE_KEY'])assert.equal(options.env[key],undefined);
     assert(!args.includes('--prune'));assert(args.includes('afqhhdrkjfjtpadntdzo'));
-    if(args[1]==='list')return JSON.stringify(deployed&&!deleted?[...permanent,{...extra,...(change.identityChanged?{version:2}:{})}]:permanent);
+    if(args[1]==='list'){
+      listReads++;
+      return JSON.stringify(deployed&&!deleted?[...permanent,{...extra,...((change.identityChanged||(change.cleanupIdentityChanged&&listReads>1))?{version:2}:{})}]:permanent);
+    }
     assert.equal(args[2],slug);
     if(args[1]==='deploy'){
       deployed=true;deployment=options.cwd;
@@ -108,6 +118,7 @@ function fixture(change={}){
     }else if(args[1]==='download'){
       fs.cpSync(path.join(deployment,'supabase'),path.join(options.cwd,'supabase'),{recursive:true});
       if(change.sourceChanged)fs.appendFileSync(path.join(options.cwd,'supabase/functions/'+slug+'/reservation.mjs'),'// changed');
+      if(change.sourceCodeChanged)fs.appendFileSync(path.join(options.cwd,'supabase/functions/'+slug+'/index.ts'),'// changed');
     }else if(args[1]==='delete'){
       deleted=true;if(change.deleteUnknown)throw Error('synthetic unknown delete');
     }else assert.fail('Unexpected CLI call');
@@ -142,6 +153,51 @@ for(const [name,change,code,deploys,deletes]of [
       await assert.rejects(runOwnerProbeWindow(f.options),error=>error.code===code);
       for(const [operation,count]of [['deploy',deploys],['delete',deletes]])
         assert.equal(f.calls.filter(c=>c.command==='supabase'&&c.args[1]===operation).length,count);
+    }finally{f.cleanup();}
+  });
+}
+for(const [name,change,code]of [
+  ['rejected OPTIONS',{gatewayStatus:404},'OWNER_PROBE_GATEWAY_UNPROVED'],
+  ['unknown OPTIONS read',{gatewayThrows:true},undefined],
+]){
+  test('known owned probe is cleaned after '+name+' without READY or a new reservation',async()=>{
+    const f=fixture(change);try{
+      await assert.rejects(runOwnerProbeWindow(f.options),error=>code?error.code===code:error.message==='synthetic gateway read failed');
+      const writes=f.calls.filter(c=>c.command==='supabase'&&['deploy','delete'].includes(c.args[1]));
+      assert.deepEqual(writes.map(c=>c.args[1]),['deploy','delete']);
+      assert(writes[1].at>=writes[0].at+600_000);
+      assert(!f.announcements.some(x=>x.startsWith('OWNER_NOTICE_PROBE_READY_UNTIL')));
+      assert.equal(f.announcements.at(-1),'OWNER_NOTICE_PROBE_REMOVED_THREE_PERMANENT_FUNCTIONS_UNCHANGED');
+    }finally{f.cleanup();}
+  });
+}
+test('cleanup-only removes the matched expired fixed probe without deploy, new UUID, OPTIONS or mail',async()=>{
+  const f=fixture({cleanupOnly:true});try{
+    f.options.uuid=()=>assert.fail('Cleanup must not mint another reservation');
+    f.options.sleep=()=>assert.fail('Already expired cleanup must not open a window');
+    assert.deepEqual(await runOwnerProbeWindow(f.options),{temporaryProbeRemoved:true,permanentFunctionsUnchanged:true,mailDeliveryProved:false,cleanupOnly:true});
+    const writes=f.calls.filter(c=>c.command==='supabase'&&['deploy','delete'].includes(c.args[1]));
+    assert.deepEqual(writes.map(c=>c.args[1]),['delete']);
+    assert.equal(f.calls.filter(c=>c.url&&c.options.method==='OPTIONS').length,0);
+    assert.equal(f.calls.filter(c=>c.url?.includes('resend.com')).length,0);
+    assert(!f.announcements.some(x=>x.startsWith('OWNER_NOTICE_PROBE_READY_UNTIL')));
+  }finally{f.cleanup();}
+});
+for(const [name,change,code,deletes]of [
+  ['active reservation',{cleanupReservation:{reservedAt:1_800_000_000_000-599_999,expiresAt:1_800_000_000_001}},'OWNER_PROBE_RESERVATION_UNPROVED',0],
+  ['different owner reservation',{cleanupReservation:{ownerId:noticeId}},'OWNER_PROBE_RESERVATION_UNPROVED',0],
+  ['wrong reservation interval',{cleanupReservation:{reservedAt:1_800_000_000_000-600_002}},'OWNER_PROBE_RESERVATION_UNPROVED',0],
+  ['executable reservation',{cleanupReservationText:'export default (()=>({}));\n'},'OWNER_PROBE_JSON_UNPROVED',0],
+  ['changed source',{sourceChanged:true},'OWNER_PROBE_RESERVATION_UNPROVED',0],
+  ['changed executable source',{sourceCodeChanged:true},'OWNER_PROBE_EXACT_SOURCE_UNPROVED',0],
+  ['changed cleanup identity',{cleanupIdentityChanged:true},'OWNER_PROBE_CLEANUP_IDENTITY_CHANGED',0],
+  ['unknown delete',{deleteUnknown:true},'OWNER_PROBE_CLI_OUTCOME_UNPROVED',1],
+]){
+  test('cleanup-only refuses '+name+' without deployment or delete retry',async()=>{
+    const f=fixture({cleanupOnly:true,...change});try{
+      await assert.rejects(runOwnerProbeWindow(f.options),error=>error.code===code);
+      assert.equal(f.calls.filter(c=>c.command==='supabase'&&c.args[1]==='deploy').length,0);
+      assert.equal(f.calls.filter(c=>c.command==='supabase'&&c.args[1]==='delete').length,deletes);
     }finally{f.cleanup();}
   });
 }
@@ -195,6 +251,7 @@ test('normal workflow qualifies source and CLI before private credentials; no pe
   assert(workflow.indexOf('Qualify pinned CLI help')<workflow.indexOf('secrets.SUPABASE_ACCESS_TOKEN'));
   assert(workflow.indexOf('Reject missing actual source qualification')<workflow.indexOf('secrets.SUPABASE_ACCESS_TOKEN'));
   assert(workflow.includes('group: ravradar-weather-production-v2'));
+  assert(workflow.includes('options: [TEST-EXISTING-OWNER-MAIL-ONCE, CLEANUP-EXPIRED-OWNER-PROBE-ONLY]'));
   assert(!/upload-artifact|--prune|recipient:|owner_id:|RAVRADAR_RESEND_NOTICE_SEND_KEY:/.test(workflow));
   assert.deepEqual([...workflow.matchAll(/secrets\.([A-Z0-9_]+)/g)].map(m=>m[1]).sort(),
     ['SUPABASE_ACCESS_TOKEN','SUPABASE_SERVICE_ROLE_KEY']);
