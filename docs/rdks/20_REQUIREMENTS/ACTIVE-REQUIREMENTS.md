@@ -8,6 +8,10 @@ De eksisterende stier, query-/origin-/metodeafslag og efterfølgende reservation
 
 Hvis den eksisterende rolleaudit afviser et autentificeret SQL-statement, skal den private fejlrapport kun angive en fast statementtype, en fast afvisningsgren og et 1-baseret ordinal. Ukendte typer skal blive den faste kategori OTHER; SQL-tekst, rollenavne og værdier må ikke indgå. Tokenisering, accepteret grammatik, originale SQL-/ACL-regler og alle mål-, krypterings- og oprydningskrav bevares.
 
+Ved afvist GRANT eller REVOKE skelner den samme private rapport nu mellem fire faste strukturklasser: NO_TO ved manglende modtagerkeyword, TO_POSITION ved forkert placering, OBJECT_PARAMETER ved det præcise keyword-par ON PARAMETER før modtageren og OBJECT_OTHER ved en anden objektform. Kun tokenizerens egentlige keywords tæller; citerede identifikatorer, strenge og kommentarer bliver aldrig keywords. Statementtype og nummer bevares, og ingen SQL-tekst, rolle- eller parameternavne vises.
+
+Klasserne præciserer kun det eksisterende afslag. Den faktiske arkivform skal stadig observeres; ON PARAMETER er ikke bekræftet alene af den tidligere medlemskabsafvisning. Ingen tidligere afvist form accepteres, og fuld arkiv-/Auth-gendannelse og Free-klarhed er fortsat åbne.
+
 Diagnosen er ikke en formatrettelse, et bevis for manglende roller eller en bestået gendannelse. Den normale archive-vej skal fortsat kontrollere det lille autentificerede ROLES-input før store SQL-filer. Faktisk fuld arkiv-/Auth-gendannelse og Free-klarhed kræver særskilte beviser. Se håndbog 89.345.
 
 ## 13. november — privat diagnose af ejerprøvens forbindelseskontrol

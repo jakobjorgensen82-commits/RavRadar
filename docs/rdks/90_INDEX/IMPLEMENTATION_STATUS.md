@@ -29,6 +29,8 @@ Den afgrænsede lokale rettelse giver den eksisterende offlineplan for vind, van
 
 Rollearkivets afvisningsdiagnose er afgrænset til fast statementtype, fast afvisningsgren og ordinal i den eksisterende private rapport. Accepteret SQL-grammatik og adgangsregler er uændrede. Den konkrete formatårsag, korrekt håndtering og faktisk fuld arkiv-/Auth-gendannelse er fortsat åbne; diagnose er ikke Free- eller aktiveringsaccept. Se håndbog 89.345.
 
+Den samme GRANT/REVOKE-afvisning får nu fire faste strukturklasser fra egentlige keywords: NO_TO, TO_POSITION, OBJECT_PARAMETER og OBJECT_OTHER. Den normale lokale parserprøve består med uændrede produktbytes på den nye base; præcis CI og den næste faktiske strukturaflæsning er åbne. Det er ingen formatrettelse eller bestået restore.
+
 Den konkrete OPTIONS-fejl fra en fysisk tom body har nu en afgrænset kildekandidat: null-fastvej eller kontrolleret tomt EOF med begrænset læsning og afslutning. Øvrige gateway-, reservations- og POST-mailkrav bevares. Faktisk hosted passage og mailmodtagelse er fortsat åbne. Se håndbog 89.343.
 
 <!-- RAVRADAR_ACTIVE_ENTRY_END -->

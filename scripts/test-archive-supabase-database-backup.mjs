@@ -699,6 +699,7 @@ CREATE ROLE "custom";
 ALTER ROLE "custom" SET "pgrst.example" TO 'supabase_string_only';
 GRANT "supabase_future_role" TO "custom" WITH INHERIT FALSE GRANTED BY "supabase_admin";
 GRANT SUPABASE_OTHER_ROLE TO "custom";
+GRANT "ON" TO "PARAMETER";
 REVOKE "supabase_second_role", "supabase_admin" FROM "custom";
 COMMENT ON ROLE "supabase_future_role" IS 'supabase_comment_value';
 `);
@@ -731,6 +732,13 @@ COMMENT ON ROLE "supabase_future_role" IS 'supabase_comment_value';
     'GRANT "supabase_new" TO "custom"','SELECT execute_arbitrary();','ALTER ROLE "custom" IN ROLE "supabase_hidden";',
     'SET standard_conforming_strings = on; /* private comment */ SELECT private_function_name();',
     'CALL private_procedure_name();','GRANT SELECT ON TABLE private_table TO custom;',
+    'GRANT private_member custom;','GRANT TO custom;',
+    'GRANT SELECT ON PARAMETER private_parameter TO custom;',
+    'GRANT SELECT ON "PARAMETER" private_parameter TO custom;',
+    'GRANT private_member "TO" custom;',
+    'GRANT private_member /* ON PARAMETER */ custom;',
+    'REVOKE SELECT ON PARAMETER private_parameter FROM custom;',
+    'SET statement_timeout = 0;'.repeat(7)+'GRANT SELECT ON PARAMETER private_parameter TO custom;',
     'SET standard_conforming_strings = off;','RESET ALL; GRANT "supabase_hidden" TO "custom";',
     "SET ROLE 'supabase_hidden';","SET SESSION ROLE 'supabase_hidden';","SET LOCAL ROLE 'supabase_hidden';",
     "SET SESSION AUTHORIZATION 'supabase_hidden';","SET LOCAL SESSION AUTHORIZATION 'supabase_hidden';",
@@ -744,7 +752,16 @@ COMMENT ON ROLE "supabase_future_role" IS 'supabase_comment_value';
       ['SELECT execute_arbitrary();','ROLE_AUDIT_STATEMENT_SELECT_UNSUPPORTED_1'],
       ['SET standard_conforming_strings = on; /* private comment */ SELECT private_function_name();','ROLE_AUDIT_STATEMENT_SELECT_UNSUPPORTED_2'],
       ['CALL private_procedure_name();','ROLE_AUDIT_STATEMENT_OTHER_UNSUPPORTED_1'],
-      ['GRANT SELECT ON TABLE private_table TO custom;','ROLE_AUDIT_STATEMENT_GRANT_MEMBERSHIP_SHAPE_1'],
+      ['GRANT SELECT ON TABLE private_table TO custom;','ROLE_AUDIT_STATEMENT_GRANT_MEMBERSHIP_SHAPE_OBJECT_OTHER_1'],
+      ['GRANT private_member custom;','ROLE_AUDIT_STATEMENT_GRANT_MEMBERSHIP_SHAPE_NO_TO_1'],
+      ['GRANT TO custom;','ROLE_AUDIT_STATEMENT_GRANT_MEMBERSHIP_SHAPE_TO_POSITION_1'],
+      ['GRANT SELECT ON PARAMETER private_parameter TO custom;','ROLE_AUDIT_STATEMENT_GRANT_MEMBERSHIP_SHAPE_OBJECT_PARAMETER_1'],
+      ['GRANT SELECT ON "PARAMETER" private_parameter TO custom;','ROLE_AUDIT_STATEMENT_GRANT_MEMBERSHIP_SHAPE_OBJECT_OTHER_1'],
+      ['GRANT private_member "TO" custom;','ROLE_AUDIT_STATEMENT_GRANT_MEMBERSHIP_SHAPE_NO_TO_1'],
+      ['GRANT private_member /* ON PARAMETER */ custom;','ROLE_AUDIT_STATEMENT_GRANT_MEMBERSHIP_SHAPE_NO_TO_1'],
+      ['REVOKE SELECT ON PARAMETER private_parameter FROM custom;','ROLE_AUDIT_STATEMENT_REVOKE_MEMBERSHIP_SHAPE_OBJECT_PARAMETER_1'],
+      ['SET statement_timeout = 0;'.repeat(7)+'GRANT SELECT ON PARAMETER private_parameter TO custom;',
+        'ROLE_AUDIT_STATEMENT_GRANT_MEMBERSHIP_SHAPE_OBJECT_PARAMETER_8'],
       ['ALTER ROLE "custom" IN ROLE "supabase_hidden";','ROLE_AUDIT_STATEMENT_ALTER_ROLE_ROLE_OPTIONS_1'],
       ["SET ROLE 'supabase_hidden';",'ROLE_AUDIT_STATEMENT_SET_IDENTITY_1'],
     ]);

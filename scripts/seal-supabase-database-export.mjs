@@ -209,7 +209,11 @@ function referencedSystemRoles(bytes){
     }else if(first==='COMMENT'&&word(tokens[1])==='ON'&&word(tokens[2])==='ROLE')add(tokens[3]);
     else if(first==='GRANT'||first==='REVOKE'){
       const split=tokens.findIndex(t=>word(t)===(first==='GRANT'?'TO':'FROM'));
-      statementNeed(split>1&&!tokens.slice(1,split).some(t=>word(t)==='ON'),'MEMBERSHIP_SHAPE');
+      if(!(split>1&&!tokens.slice(1,split).some(t=>word(t)==='ON'))){
+        const shape=split<0?'NO_TO':split<=1?'TO_POSITION'
+          :tokens.slice(1,split).some((t,i,items)=>word(t)==='ON'&&word(items[i+1])==='PARAMETER')?'OBJECT_PARAMETER':'OBJECT_OTHER';
+        statementNeed(false,'MEMBERSHIP_SHAPE_'+shape);
+      }
       let from=1;if(first==='REVOKE'&&word(tokens[1])==='ADMIN'&&word(tokens[2])==='OPTION'&&word(tokens[3])==='FOR')from=4;
       roleList(tokens.slice(from,split));
       let end=split+1;while(end<tokens.length&&!['WITH','GRANTED','CASCADE','RESTRICT'].includes(word(tokens[end])))end++;
