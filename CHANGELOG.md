@@ -1,3 +1,7 @@
+## 13. november — assistentens nye scenarier i den normale prøve
+
+De eksisterende 24 interval-/områdescenarier køres nu også én gang af standardprøven gennem klient og Edge. Det hidtidige særflag bruger samme uændrede lokale helper. Dermed prøver den normale ændringsvalgte kildekommando også den nye sammensætning; der tilføjes ingen ekstra suite, model-/SQL-ændring eller offentlig acceptpåstand.
+
 ## 13. november — særskilt oprydning af udløbet ejerprøve
 
 En read-only gatewaykontrol kunne standse mailprøven efter positiv installation og fuld kildegenlæsning, før den kendt-ejede oprydning blev nået. Den lokale rettelse forbinder dette punkt med samme oprydning efter det oprindelige udløb. Den oprindelige gatewayfejl bevares; ukendt installation eller DELETE giver fortsat stop uden automatisk gentagelse.

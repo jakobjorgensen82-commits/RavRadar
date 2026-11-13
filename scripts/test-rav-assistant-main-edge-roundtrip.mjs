@@ -3010,7 +3010,7 @@ try {
     }
   };
 
-  if (process.argv.includes('--interval-area-composition-only')) {
+  const assertIntervalAreaComposition = async () => {
     const service=await import('../js/services/rav-assistant.js');
     const local=await import('../knowledge/rav-assistant-local-v2.js');
     const area=local.matchLocalRavKnowledge('Hvorfor er områdescoren og kyststrækningens score forskellige?');
@@ -3113,6 +3113,10 @@ try {
     console.log(JSON.stringify({status:'PASS',contract:'normal interval-area whole-facet composition',cases,
       knowledgeFacts:contract.RAV_ASSISTANT_FACTS.length,old45FactsRetained:true,
       allSelectedUnitsOrFocus:true,fullSuppliedContext:true,realNetwork:0,hostedProviderIdsObserved:false}));
+  };
+
+  if (process.argv.includes('--interval-area-composition-only')) {
+    await assertIntervalAreaComposition();
   } else if (process.argv.includes('--provider-diagnostic-only')) {
     await assertProviderFailureDiagnostic();
   } else if (process.argv.includes('--observed-public591-only')) {
@@ -3515,6 +3519,7 @@ try {
   await assertUnknownEquipmentUncertainty();
   await assertObservedPublic591();
   await assertObservedMixedForecastRest();
+  await assertIntervalAreaComposition();
   }
 } finally {
   declarationHook.deregister();
