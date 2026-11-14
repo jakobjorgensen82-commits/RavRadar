@@ -1,3 +1,9 @@
+## 14. november — præcis fælles assistentkontrakt under eksisterende Edge-ansvar
+
+Den eksisterende assistantEdge-gruppe udvides med den ene faktiske kontraktejer `supabase/functions/_shared/rav-assistant-contract.ts`. Den offentlige handler importerer denne kontrakt; ingen anden aktuel Edge-funktion importerer den. Samme tre hele normale Edge-, klient-rundtur- og faste loglæsermål vælges, og den almindelige deduplikering bevares. Dette afløser alene den tidligere firestiers fortegnelse for dette ansvar; den er ikke en generel undtagelse for `_shared`.
+
+Frisk uafhængigt kontrolreview, normale aktuelle/kumulative planer og faktisk PG/C/I/T-analyse er fortsat nødvendige. Andre fælles moduler, andre funktioner og ukendte stier afvises som før; ændret beskyttet input kræver fortsat sin egen kvalifikation. Den eksisterende normale scopeprøve dækker den ekstra præcise ejer samt blanding med et beskyttet model-/PG-input. Fokuseret lokal kontrol er ikke et helt scope-PASS. Ingen ny hashgruppe, historisk byteovergang, waiver eller ændring af analyzeren indføres. Se DEC-0091 og håndbog 89.279.
+
 ## 14. november — lukket ansvar for assistentens Edge og aktuelle logger
 
 Den forberedte `assistantEdge`-gruppe ejer præcis disse fire eksisterende stier:

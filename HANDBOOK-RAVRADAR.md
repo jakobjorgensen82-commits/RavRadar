@@ -1290,6 +1290,16 @@ Den eksisterende Edge-prøve, hele normale klient-rundtur og faste loglæserprø
 
 Fasetidsdiagnostik løser ikke i sig selv AI-timeout. Lokale syntetiske prøver er ikke bevis for offentlig levering eller fungerende ekstern AI. Præcis kildekvalifikation, faktisk tidsfordeling og almindelige danske, tyske og engelske spørgsmål og opfølgninger skal stadig afprøves. En eventuel ny frist kræver et begrundet budget; ingen ny frist eller requestparameter er valgt her.
 
+### Samme sprog og budget i hele svaret
+
+En ny forberedt rettelse giver svarmodellen de samme komplette faktatekster på dansk, tysk eller engelsk, som RavRadar udgiver. Den får også det samlede budget på 900 tegn, inklusive afsnit og den fulde usikkerhedstekst. En kort tekst fra modellen er ikke nok, hvis de valgte faktatekster tilsammen er længere.
+
+To eksisterende UV-forklaringer kan samles uden gentagelser. Rådet om en langbølget ravlygte omkring 395 nm i mørke og efterfølgende fysisk kontrol bevares sammen med første kendetegn, fluorescensens variation og forbeholdet om efterligninger. UV alene er ikke bevis. Et nødvendigt forbehold må ikke kasseres for at få plads; er hele svaret stadig for langt, beder assistenten fortsat om et mere afgrænset spørgsmål.
+
+Rettelsen er en lokal kildekandidat, ikke bevis for fungerende ekstern AI eller en løst timeout. De faktiske faktavalg i de observerede afvisninger er ikke aflæst. Det tyske input er større, og tidsvirkningen kræver reel afprøvning. Serverens syv sekunder, browserens otte sekunder, kvoter og model er uændrede. Den særskilte lokale fejl ved tysk tegnsætning ændres ikke her.
+
+Den fælles assistentkontrakt får samme præcise kildeansvar som handleren og de eksisterende normale assistentprøver. Andre fælles funktioner, ukendte stier og beskyttede model- eller backendinput får ingen ny undtagelse.
+
 ## 89.278 En kortere delingsadresse med den samme prognose
 
 **Kort fortalt: En ny, kortere delingsadresse skal gøre det lettere at dele en prognose uden et personnavn i domænet. Den skal vise den samme valgte prognose og ændrer hverken RavScore eller vejrhentningen. Adressen er endnu en forberedt kandidat, ikke en offentlig leverance.**

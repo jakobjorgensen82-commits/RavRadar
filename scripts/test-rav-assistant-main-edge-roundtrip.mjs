@@ -150,6 +150,18 @@ try {
   assert.equal(publicConfig.ravAssistantRemoteEnabled, true);
   assert.ok(publicConfig.supabaseUrl && publicConfig.supabasePublishableKey);
   const contract = await import('../supabase/functions/_shared/rav-assistant-contract.ts');
+// The single-unit renderer still has the independent canonical wording hashes below.
+// Prompt projection changes language, not the original English knowledge bank.
+function expectedPromptFacts(facts, locale, context = {}) {
+  return facts.map(({id}) => {
+    const result = contract.validateAssistantResult({schemaVersion:'rav-assistant-response-v1',
+      locale, disposition:'answer', answer:'SYNTHETIC_PROVIDER_PROSE', evidenceIds:[id]}, locale, context);
+    assert.equal(result?.disposition, 'answer', id);
+    return {id, text:result.answer};
+  });
+}
+
+
   binding = contract.RAV_ASSISTANT_RAVSCORE_MODEL_BINDING;
   controlledProviderUrl = `https://api.cloudflare.com/client/v4/accounts/${"a".repeat(32)}/ai/run/${contract.RAV_ASSISTANT_MODEL}`;
   const names = contract.RAV_ASSISTANT_BINDING_HEADERS;
@@ -238,9 +250,9 @@ try {
           assert.equal(controlledProviderCalls-providerBefore,1);assert.equal(controlledQuotaCalls-quotaBefore,3);
           const prompt=controlledProviderPrompts.at(-1);
           assert.equal(prompt.question,question);assert.equal(prompt.requestedLocale,locale);
-          assert.deepEqual(prompt.publicFacts,contract.RAV_ASSISTANT_FACTS);
-          assert.deepEqual(prompt.publicFacts.find(row=>row.id===id),{id,text:expected.en});
-          assert.deepEqual(prompt.publicFacts.filter(row=>row.id!==id),previous44);
+          assert.deepEqual(prompt.publicFacts,expectedPromptFacts(contract.RAV_ASSISTANT_FACTS,locale,context));
+          assert.deepEqual(prompt.publicFacts.find(row=>row.id===id),{id,text:expected[locale]});
+          assert.deepEqual(prompt.publicFacts.filter(row=>row.id!==id),expectedPromptFacts(previous44,locale,context));
           assert.doesNotMatch(JSON.stringify(prompt),/TEST_PRIVATE_CONTEXT_MARKER/);
           assert.doesNotMatch(answer,/SYNTHETIC_PROVIDER_PROSE_NOT_PUBLISHED|TEST_PRIVATE_CONTEXT_MARKER/);
           assert.equal(JSON.stringify(context),contextBefore);assert.equal(blockedNetworkCalls,0);
@@ -292,7 +304,7 @@ try {
       const answer=await askRavRadar(question,context,{language:locale});assertRemote(question,locale,200);
       assert.equal(controlledProviderCalls-beforeProvider,1);assert.equal(controlledQuotaCalls-beforeQuota,3);
       assert.equal(controlledProviderPrompts.at(-1).question,question);
-      assert.deepEqual(controlledProviderPrompts.at(-1).publicFacts,contract.RAV_ASSISTANT_FACTS);
+      assert.deepEqual(controlledProviderPrompts.at(-1).publicFacts,expectedPromptFacts(contract.RAV_ASSISTANT_FACTS,locale,context));
       assert.equal(answer,exchanges[0].result.answer);assert(!answer.includes('SYNTHETIC_PROVIDER_PROSE'));
       return answer;
     };
@@ -575,7 +587,7 @@ try {
           assert.equal(controlledProviderCalls - beforeProvider, 1);
           assert.equal(controlledQuotaCalls - beforeQuota, 3);
           assert.equal(controlledProviderPrompts.at(-1).question, question);
-          assert.deepEqual(controlledProviderPrompts.at(-1).publicFacts, contract.RAV_ASSISTANT_FACTS);
+          assert.deepEqual(controlledProviderPrompts.at(-1).publicFacts, expectedPromptFacts(contract.RAV_ASSISTANT_FACTS,locale,context));
           cases++;
         }
         // No extra clause/qualification can be consumed as an instrument name.
@@ -883,7 +895,7 @@ try {
       assert.equal(JSON.stringify(context),contextBefore);
       assert.equal(Object.keys(headerValues).length,6);
       const prompt=controlledProviderPrompts.at(-1);
-      assert.deepEqual(prompt.publicFacts,publicKnowledge.facts);
+      assert.deepEqual(prompt.publicFacts,expectedPromptFacts(publicKnowledge.facts,locale,context));
       if(status===200)assert.equal(answer,exchanges[0].result.answer);
       else assert.equal(answer,t('assistant.remoteUnavailable',{},locale));
       calls++;return answer;
@@ -2411,7 +2423,7 @@ try {
           assert.equal(controlledQuotaCalls - quota, 3);
           const prompt = controlledProviderPrompts.at(-1);
           assert.equal(prompt.publicFacts.filter(fact=>fact.id!=='transport.current-supply-memory').length, 44);
-          assert.equal(prompt.publicFacts.find(fact => fact.id === 'identification.spectroscopy-limits').text, canonical.en);
+          assert.equal(prompt.publicFacts.find(fact => fact.id === 'identification.spectroscopy-limits').text, canonical[locale]);
           assert.doesNotMatch(JSON.stringify(prompt), /TEST_PRIVATE_CONTEXT_MARKER/);
           visited.push(locale + '/' + name); remoteCalls++;
         }
@@ -3361,7 +3373,7 @@ try {
       const answer=await askRavRadar(question,context,{language:locale});assertRemote(question,locale,200);
       assert.equal(controlledProviderCalls-providerBefore,1);assert.equal(controlledQuotaCalls-quotaBefore,3);
       const prompt=controlledProviderPrompts.at(-1);assert.equal(prompt.question,question);
-      assert.deepEqual(prompt.publicFacts,selected);assert.equal(prompt.publicSelectedZoneContext,null);
+      assert.deepEqual(prompt.publicFacts,expectedPromptFacts(selected,locale));assert.equal(prompt.publicSelectedZoneContext,null);
       assert.equal(prompt.questionEvidence.wholeQuestionClassified,true);assert.deepEqual(prompt.questionEvidence.requiredIds,ids);
       assert.equal(prompt.questionEvidence.fullKnowledgeSha256,contract.RAV_ASSISTANT_KNOWLEDGE_SHA256);
       assert.equal(answer,exchanges[0].result.answer);assert(answer.length<=900);
@@ -3376,7 +3388,7 @@ try {
       reset();const whole=question+'; explain an unknown amber instrument';
       controlledProviderResponse={result:{response:JSON.stringify({schemaVersion:'rav-assistant-response-v1',locale,disposition:'answer',answer:'Supported.',evidenceIds:ids})}};
       const focused=await askRavRadar(whole,context,{language:locale});assertRemote(whole,locale,200);
-      assert.equal(controlledProviderPrompts.at(-1).question,whole);assert.deepEqual(controlledProviderPrompts.at(-1).publicFacts,contract.RAV_ASSISTANT_FACTS);
+      assert.equal(controlledProviderPrompts.at(-1).question,whole);assert.deepEqual(controlledProviderPrompts.at(-1).publicFacts,expectedPromptFacts(contract.RAV_ASSISTANT_FACTS,locale,context));
       assert.equal(controlledProviderPrompts.at(-1).questionEvidence.wholeQuestionClassified,false);
       assert.equal(focused,contract.assistantIdentificationFocusAnswer(locale));cases++;
       // Request/context cannot manufacture provenance on a fixed refusal.
