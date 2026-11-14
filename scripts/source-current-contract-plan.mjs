@@ -249,10 +249,45 @@ export function currentWorkflowTargets(relative){
   if(!areas?.length||areas.some(area=>!COMMANDS[area]?.length))return null;
   return freeze({path:relative,owners:areas.map(area=>({area,commands:[...COMMANDS[area]]}))});
 }
+const PAGES_DEPLOYMENT_COMMAND='node scripts/test-ravscore-operational-pages-deployment.mjs';
+const PAGES_OWNER_COMPLETION_COMMAND=PAGES_DEPLOYMENT_COMMAND+' --owner-completion-only';
+const PAGES_OWNER_HELPERS=new Set(['scripts/github-pages-attempt-evidence.mjs',
+  'scripts/protected-operational-reentry-evidence.mjs']);
+const PAGES_FULLY_EXECUTED_TESTS=new Set(COMMANDS.pages.filter(command=>command!==PAGES_DEPLOYMENT_COMMAND)
+  .flatMap(command=>command.split(' ').filter(file=>file.endsWith('.mjs'))));
+const PAGES_SCOPE_CONTROLS=new Set(['scripts/source-current-contract-plan.mjs','scripts/test-source-current-contracts.mjs']);
+const PAGES_TRANSPORT_INPUTS=new Set(['scripts/lib/run-sealed-pages-deployment.mjs',
+  'scripts/test-ordinary-pages-immediate-retry.mjs']);
 const historicalPaths=new Set(PATH_AREAS.historicalTests);
 const pathAreas=new Map();
 for(const [area,files]of Object.entries(PATH_AREAS))for(const file of files){
   if(!pathAreas.has(file))pathAreas.set(file,[]);pathAreas.get(file).push(area);
+}
+
+
+// Datavalg alene. Den normale Gitplan validerer fortsat hele inventaret,
+// beskyttede input og installerens DDL, foer kommandoerne bruges.
+export function pagesContractCommandsForChangedInputs(changes){
+  const regular=row=>row.status==='M'&&row.beforeMode==='100644'&&row.afterMode==='100644';
+  if(!Array.isArray(changes)||!changes.length
+    ||changes.some(row=>!row||typeof row.path!=='string')
+    ||new Set(changes.map(row=>row.path)).size!==changes.length)return COMMANDS.pages;
+  if(changes.some(row=>PAGES_TRANSPORT_INPUTS.has(row.path))){
+    const documentation=row=>(pathAreas.get(row.path)?.every(area=>area==='documentation')
+      &&!row.path.endsWith('.mjs'))||/^docs\/(?:rdks|ai|handbook)\/.+\.md$/.test(row.path);
+    if(changes.every(row=>regular(row)&&(PAGES_TRANSPORT_INPUTS.has(row.path)
+      ||PAGES_SCOPE_CONTROLS.has(row.path)||documentation(row))))
+      return freeze(COMMANDS.pages.filter(command=>command!==PAGES_DEPLOYMENT_COMMAND));
+    return COMMANDS.pages;
+  }
+  if(!changes.some(row=>PAGES_OWNER_HELPERS.has(row.path)&&regular(row)))return COMMANDS.pages;
+  for(const row of changes){
+    if(PAGES_OWNER_HELPERS.has(row.path)||PAGES_FULLY_EXECUTED_TESTS.has(row.path)||PAGES_SCOPE_CONTROLS.has(row.path)){
+      if(!regular(row))return COMMANDS.pages;
+    }else if(!(pathAreas.get(row.path)?.every(area=>area==='documentation')
+      ||/^docs\/(?:rdks|ai|handbook)\/.+\.md$/.test(row.path)))return COMMANDS.pages;
+  }
+  return freeze(COMMANDS.pages.map(command=>command===PAGES_DEPLOYMENT_COMMAND?PAGES_OWNER_COMPLETION_COMMAND:command));
 }
 
 function publicDigests(analysis){
@@ -447,7 +482,7 @@ export function planSourceCurrentContractsFromGit(input){
     for(const family of ['C','I','T'])if(!analysis.models[family].unchanged)required.push('ACTUAL_MODEL_'+family);
     if(required.length)return refuse('CURRENT_PROTECTED_INPUT_CHANGED',required);
     if(!out.changedRows)return refuse('CURRENT_EMPTY_DIFF_REQUIRES_NO_NEW_SHORT_PROOF');
-    const selected=new Map([['core',[]]]),unknown=[];
+    const selected=new Map([['core',[]]]),unknown=[],changedInputs=[];
     for(const row of analysis.completeGitDiff.inventory){
       const bytes=Buffer.from(row.pathUtf8Hex,'hex');
       const file=new TextDecoder('utf-8',{fatal:true}).decode(bytes);
@@ -456,6 +491,7 @@ export function planSourceCurrentContractsFromGit(input){
       if(!['A','M','D'].includes(row.status)
         ||![row.beforeMode,row.afterMode].every(mode=>['000000','100644','100755'].includes(mode)))
         return refuse('CURRENT_UNSUPPORTED_DIFF_ENTRY');
+      changedInputs.push({path:file,status:row.status,beforeMode:row.beforeMode,afterMode:row.afterMode});
       // Den gamle eksekveringsform genkender endnu kun to eksakte PR-YAML-former.
       // En ændring her kræver derfor faktisk FULL-kvalifikation i denne levering.
       if(file==='.github/workflows/validate-pull-request.yml')
@@ -500,9 +536,10 @@ export function planSourceCurrentContractsFromGit(input){
       ||!analysis.evidenceControls.plannerTrustChain.unchanged)out.controlQualificationRequired=true;
     for(const area of Object.keys(COMMANDS))if(selected.has(area))out.areas[area]={
       status:area==='historicalTests'?'NOT_EXECUTED':'SELECTED',executed:false,
-      commands:[...COMMANDS[area]],changedPaths:[...new Set(selected.get(area))].sort()};
+      commands:area==='pages'?pagesContractCommandsForChangedInputs(changedInputs):[...COMMANDS[area]],
+      changedPaths:[...new Set(selected.get(area))].sort()};
     out.commands=[...new Set(Object.values(out.areas).flatMap(area=>area.commands))];
-    assert(out.commands.length>0&&out.commands.every(command=>command===LOCAL_RESTORE_SELF_TEST||/^node(?: --[a-z-]+)*(?: [A-Za-z0-9_./-]+\.mjs)+$/.test(command)));
+    assert(out.commands.length>0&&out.commands.every(command=>command===LOCAL_RESTORE_SELF_TEST||command===PAGES_OWNER_COMPLETION_COMMAND||/^node(?: --[a-z-]+)*(?: [A-Za-z0-9_./-]+\.mjs)+$/.test(command)));
     out.reasonCodes=['CURRENT_SCOPES_CLASSIFIED','UNCHANGED_ACTUAL_POSTGRES_AND_MODELS'];
     if(out.controlQualificationRequired)out.reasonCodes.push('INDEPENDENT_CONTROL_REVIEW_REQUIRED');
     return freeze(out);

@@ -1,3 +1,9 @@
+## Tillæg 2026-11-14 — samme afgrænsede læsning for alle ukendte Pages-statusværdier
+
+Efter en positiv, identitetsvalideret Pages-kvittering fortsætter hele klassen STATUS_VALUE_UNPROVED de allerede afgrænsede GET-aflæsninger. Det gælder også null, tal, sand/falsk, lister og objekter; værdien forbliver ukendt og skaber ikke PENDING, succes, terminal fejl eller ret til POST, CANCEL, genforsøg eller ejerafslutning. Kun en senere kendt status kan anvende de eksisterende regler. Forkert svarform, statusadresse eller kendt id-/artifact-/kodeidentitet stopper fortsat straks. Ved fortsat ukendt slutstatus holdes udgivelsen uden annullering. Frister, antal forsøg og øvrige kontrolkrav er uændrede.
+
+Det bevarede 315-bevis viser fejlkategorien efter en accepteret bestilling, men hverken den oprindelige statusværdi eller dens type. Den tidligere rettelse omfattede kun strenge; denne lokale kandidat omfatter hele den samme validerede klasse. Det er ikke et bevis for, hvilken konkret værdi GitHub returnerede, og de ældre ti minutters synkroniseringstimeouts er fortsat uforklarede. Præcis kildekvalifikation og faktisk almindelig offentlig levering kræves fortsat; version 4.0.598, model, SQL, prognoser og kildeprioritet ændres ikke. Se håndbog 89.340.
+
 ## Tillæg 2026-11-13 — fortsat afgrænset aflæsning efter ukendt Pages-status
 
 Efter en positiv, identitetsvalideret CREATE-kvittering må en syntaktisk gyldig, men ukendt statusstreng kun forlænge de eksisterende GET-observationer inden for samme faste frist. Den samme kvittering, statusadresse, forseglede pakke og eksisterende antal forsøg bevares. Ukendt bliver hverken PENDING, succes eller terminal fejl og giver ingen selvstændig POST-, CANCEL-, genforsøgs- eller afslutningsret. Forkert body, route eller kendt id-/artifact-/kodeidentitet afvises fortsat straks.

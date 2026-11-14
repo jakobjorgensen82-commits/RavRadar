@@ -8,7 +8,7 @@ import path from 'node:path';
 import childProcess,{execFileSync} from 'node:child_process';
 import {syncBuiltinESMExports} from 'node:module';
 import {fileURLToPath,pathToFileURL} from 'node:url';
-import {CURRENT_CONTRACT_COMMANDS,isBoundedLocalRestoreFixtureChange} from './source-current-contract-plan.mjs';
+import {CURRENT_CONTRACT_COMMANDS,isBoundedLocalRestoreFixtureChange,pagesContractCommandsForChangedInputs} from './source-current-contract-plan.mjs';
 
 const SOURCE=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 
@@ -30,6 +30,60 @@ for(const changed of [
  restoreSource.replace('\nconst P=Object.freeze(','\nconst P=Object.freeze(\nconst P=Object.freeze('),
  ' '.repeat(256*1024)+restoreSource,
 ])assert.equal(isBoundedLocalRestoreFixtureChange(restoreSource,changed),false);
+// Eksisterende ownerindgang: kun fast helper-scope, aldrig et blanket Pages-skip.
+const ownerHelpers=['scripts/github-pages-attempt-evidence.mjs','scripts/protected-operational-reentry-evidence.mjs'];
+const deploymentCommand='node scripts/test-ravscore-operational-pages-deployment.mjs';
+const ownerCommand=deploymentCommand+' --owner-completion-only';
+const ownerCommands=CURRENT_CONTRACT_COMMANDS.pages.map(command=>command===deploymentCommand?ownerCommand:command);
+const modified=path=>({path,status:'M',beforeMode:'100644',afterMode:'100644'});
+for(const inputs of [[modified(ownerHelpers[0])],ownerHelpers.map(modified),
+  [modified(ownerHelpers[1]),modified('docs/rdks/40_KNOWN_ISSUES/KNOWN-ISSUES.md')],
+  [modified(ownerHelpers[1]),modified('scripts/source-current-contract-plan.mjs'),modified('scripts/test-source-current-contracts.mjs')],
+  [modified(ownerHelpers[1]),modified('scripts/test-protected-operational-reentry-evidence.mjs')]])
+  assert.deepEqual(pagesContractCommandsForChangedInputs(inputs),ownerCommands);
+for(const extra of ['scripts/test-ravscore-operational-pages-deployment.mjs',
+  'scripts/lib/run-sealed-pages-deployment.mjs','.github/workflows/reusable-operational-reentry.yml',
+  'app.js','scripts/source-targeted-consumer.mjs','js/unclassified-production-feature.js'])
+  assert.deepEqual(pagesContractCommandsForChangedInputs([modified(ownerHelpers[1]),modified(extra)]),CURRENT_CONTRACT_COMMANDS.pages);
+for(const inputs of [[],null,[modified('CHANGELOG.md')],
+  [{...modified(ownerHelpers[1]),status:'A',beforeMode:'000000'}],
+  [{...modified(ownerHelpers[1]),status:'D',afterMode:'000000'}],
+  [{...modified(ownerHelpers[1]),afterMode:'100755'}],
+  [modified(ownerHelpers[1]),modified(ownerHelpers[1])]])
+  assert.deepEqual(pagesContractCommandsForChangedInputs(inputs),CURRENT_CONTRACT_COMMANDS.pages);
+
+// Rene transportændringer vælger fire fulde mål; ingen ejerindgang eller blanket Pages-fritagelse.
+const transportInputs=['scripts/lib/run-sealed-pages-deployment.mjs','scripts/test-ordinary-pages-immediate-retry.mjs'];
+const transportCommands=CURRENT_CONTRACT_COMMANDS.pages.filter(command=>command!==deploymentCommand);
+for(const inputs of [transportInputs.slice(0,1).map(modified),transportInputs.slice(1).map(modified),transportInputs.map(modified),
+  [modified(transportInputs[0]),modified('CHANGELOG.md'),modified('docs/rdks/40_KNOWN_ISSUES/KNOWN-ISSUES.md')],
+  [...transportInputs.map(modified),modified('scripts/source-current-contract-plan.mjs'),modified('scripts/test-source-current-contracts.mjs')],
+  [modified(transportInputs[1]),modified('HANDBOOK-RAVRADAR.md'),modified('docs/handbook/content.json')]]){
+  const selected=pagesContractCommandsForChangedInputs(inputs);
+  assert.deepEqual(selected,transportCommands);assert.equal(selected.length,4);assert(Object.isFrozen(selected));
+  assert(!selected.includes(deploymentCommand));assert(!selected.includes(ownerCommand));
+}
+const transportMixedPaths=[...ownerHelpers,'scripts/verify-ravscore-operational-pages-deployment.mjs',
+  'scripts/test-ravscore-operational-pages-deployment.mjs','.github/workflows/reusable-pages-deploy.yml',
+  '.github/workflows/reusable-operational-reentry.yml','app.js','scripts/test-pages-generation-and-reentry.mjs',
+  'scripts/test-protected-operational-reentry-evidence.mjs','scripts/source-current-contract-receipt.mjs',
+  'scripts/source-targeted-consumer.mjs','scripts/sync-handbook-installation-copy.mjs',
+  'scripts/test-handbook-review-archive-4.0.91.mjs','js/unclassified-production-feature.js'];
+for(const extra of transportMixedPaths)for(const transport of transportInputs)
+  assert.deepEqual(pagesContractCommandsForChangedInputs([modified(transport),modified(extra)]),CURRENT_CONTRACT_COMMANDS.pages);
+for(const inputs of [[],null,[modified('CHANGELOG.md')],[modified('scripts/source-current-contract-plan.mjs')],
+  [modified(transportInputs[0]),modified(transportInputs[0])],
+  [{...modified(transportInputs[0]),status:'A',beforeMode:'000000'}],
+  [{...modified(transportInputs[1]),status:'D',afterMode:'000000'}],
+  [{...modified(transportInputs[0]),beforeMode:'100755'}],
+  [{...modified(transportInputs[1]),afterMode:'100755'}],
+  [{...modified(transportInputs[0]),status:'R100'}],
+  [modified(transportInputs[0]),{...modified('CHANGELOG.md'),status:'A',beforeMode:'000000'}],
+  [modified(transportInputs[0]),{...modified('scripts/test-source-current-contracts.mjs'),afterMode:'100755'}],
+  [modified(transportInputs[0]),{}],[modified(transportInputs[0]),null]])
+  assert.deepEqual(pagesContractCommandsForChangedInputs(inputs),CURRENT_CONTRACT_COMMANDS.pages);
+// Slut på de nye rene transportassertions.
+
 const REFERENCE='bd9cf518fe798ddea45d2b835f324f6e2bea06fc';
 const profile=JSON.parse(fs.readFileSync(path.join(SOURCE,'scripts/lib/source-impact-domain-inputs-598.json')));
 const controlSources=new Set();
@@ -46,7 +100,7 @@ function collect(file){
 }
 for(const file of ['scripts/source-targeted-producer.mjs','scripts/source-targeted-consumer.mjs',
   'scripts/source-current-contract-receipt.mjs','scripts/source-current-contract-plan.mjs'])collect(file);
-const additions=[...controlSources,...['594','597','598'].map(v=>'scripts/lib/source-impact-domain-inputs-'+v+'.json')];
+const additions=[...controlSources,...ownerHelpers,...['594','597','598'].map(v=>'scripts/lib/source-impact-domain-inputs-'+v+'.json')];
 const fixtureControlBytes=file=>fs.readFileSync(path.join(SOURCE,file));
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const clone=value=>structuredClone(value);
@@ -269,6 +323,68 @@ try{
   ({decideTargetedSourceGate:decide,discoverTargetedSourceGate:discover}=consumer);accessFactory=native.sourceImpactEvidenceAccess;
   const {planSourceCurrentContractsFromGit:plan}=await moduleAt('scripts/source-current-contract-plan.mjs');
   planCurrent=plan;
+  // Den samme normale Gitplan skal eje transportvalget og bevare sine beskyttede input.
+  const beforeTransportHead=text(root,['rev-parse','HEAD']);
+  try{
+    const transportFixtureFiles=[...transportInputs,...ownerHelpers,'scripts/verify-ravscore-operational-pages-deployment.mjs',
+      'scripts/test-ravscore-operational-pages-deployment.mjs','.github/workflows/reusable-pages-deploy.yml',
+      '.github/workflows/reusable-operational-reentry.yml','scripts/test-pages-generation-and-reentry.mjs',
+      'scripts/test-protected-operational-reentry-evidence.mjs','scripts/source-current-contract-receipt.mjs',
+      'scripts/sync-handbook-installation-copy.mjs','app.js','CHANGELOG.md'];
+    const transportBaseTree=rewrite(baselineTree,transportFixtureFiles.map(file=>[file,fixtureControlBytes(file)]));
+    const transportBase=commit(transportBaseTree,[base],'synthetic genuine transport scope base');
+    for(const [label,paths,narrow,control]of [
+      ['transport',[transportInputs[0]],true,false],['test',[transportInputs[1]],true,true],
+      ['both',transportInputs,true,true],['docs',[transportInputs[0],'CHANGELOG.md'],true,false],
+      ['controllers',[...transportInputs,'scripts/source-current-contract-plan.mjs','scripts/test-source-current-contracts.mjs'],true,true],
+      ...[...ownerHelpers,'scripts/verify-ravscore-operational-pages-deployment.mjs',
+        'scripts/test-ravscore-operational-pages-deployment.mjs','.github/workflows/reusable-pages-deploy.yml',
+        '.github/workflows/reusable-operational-reentry.yml','scripts/test-pages-generation-and-reentry.mjs',
+        'scripts/test-protected-operational-reentry-evidence.mjs','scripts/source-current-contract-receipt.mjs',
+        'scripts/sync-handbook-installation-copy.mjs','app.js'].map(file=>['mixed '+file,[transportInputs[1],file],false,null]),
+    ]){
+      const tree=rewrite(transportBaseTree,paths.map(file=>[file,Buffer.concat([
+        git(root,['cat-file','blob',transportBase+':'+file]),Buffer.from('\n// Synthetic transport scope delta\n')])]));
+      const candidate=commit(tree,[transportBase],'synthetic transport scope '+label);checkout(candidate);
+      const selected=plan({baselineCommit:transportBase,candidateCommit:candidate,expectedHead:candidate});
+      assert(narrow?selected.selection==='CURRENT_CONTRACTS':['CURRENT_CONTRACTS','FULL'].includes(selected.selection),label);
+      if(selected.selection==='CURRENT_CONTRACTS'){
+        assert.deepEqual(selected.areas.pages.commands,narrow?transportCommands:CURRENT_CONTRACT_COMMANDS.pages,label);
+        assert.equal(selected.commands.includes(deploymentCommand),!narrow,label);
+      }
+      assert(!selected.commands.includes(ownerCommand),label);
+      if(control!==null)assert.equal(selected.controlQualificationRequired,control,label);
+      for(const key of ['postgresUnchanged','CUnchanged','IUnchanged','TUnchanged'])assert.equal(selected.protectedInputs[key],true,label);
+      cases++;
+    }
+    for(const kind of ['A','D','mode']){
+      checkout(transportBase);const file=transportInputs[0];git(root,['update-index','--force-remove','--',file]);
+      const absentTree=text(root,['write-tree']);
+      const absentBase=commit(absentTree,[transportBase],'synthetic absent transport base');
+      let comparisonBase=transportBase,tree=absentTree;
+      if(kind==='A'){comparisonBase=absentBase;tree=transportBaseTree;}
+      if(kind==='mode'){
+        checkout(transportBase);const blob=text(root,['rev-parse',transportBase+':'+file]);
+        git(root,['update-index','--cacheinfo','100755,'+blob+','+file]);tree=text(root,['write-tree']);
+      }
+      const candidate=commit(tree,[comparisonBase],'synthetic non-M transport '+kind);checkout(candidate);
+      const selected=plan({baselineCommit:comparisonBase,candidateCommit:candidate,expectedHead:candidate});
+      assert(['CURRENT_CONTRACTS','FULL'].includes(selected.selection),kind);
+      if(selected.selection==='CURRENT_CONTRACTS')assert.deepEqual(selected.areas.pages.commands,CURRENT_CONTRACT_COMMANDS.pages,kind);
+      assert(!selected.commands.includes(ownerCommand),kind);cases++;
+    }
+    for(const [label,file]of [['unknown','js/unclassified-production-feature.js'],['PG',profile.postgresModules[0]]]){
+      const bytes=label==='unknown'?Buffer.from('export const changed=true;\n'):Buffer.concat([
+        git(root,['cat-file','blob',transportBase+':'+file]),Buffer.from('\n// Synthetic protected PG drift\n')]);
+      const tree=rewrite(transportBaseTree,[[transportInputs[0],Buffer.concat([
+        git(root,['cat-file','blob',transportBase+':'+transportInputs[0]]),Buffer.from('\n// Synthetic transport scope delta\n')])],[file,bytes]]);
+      const candidate=commit(tree,[transportBase],'synthetic transport plus '+label);checkout(candidate);
+      assert.equal(plan({baselineCommit:transportBase,candidateCommit:candidate,expectedHead:candidate}).selection,'FULL',label);cases++;
+    }
+  }finally{checkout(beforeTransportHead);}
+  scenarios.push('normal Git transport-only selection keeps four full Pages targets, fresh control review, protected inputs and broad/FULL mixed fallbacks');
+  // Slut på de nye normale Gittransportcases.
+
   currentReceiptHelpers=await moduleAt('scripts/source-current-contract-receipt.mjs');
   const successor=await moduleAt('scripts/lib/assistant-later-h0-successor-source.mjs');
   const national=await moduleAt('scripts/national584-source-evidence.mjs');
@@ -587,6 +703,28 @@ try{
   for(const producer of Object.values(namespace.SOURCE_GATE_PRODUCERS))priorMaps.set(
     actions+'/workflows/'+producer.workflowId+'/runs?head_sha='+firstDelivery.main+'&branch=main&per_page=100&page=1',
     {total_count:0,workflow_runs:[]});
+  // Den faktiske Gitplan skal bruge det snavre valg, ikke kun den rene udvaelger.
+  const beforeOwnerPlan=head;
+  try{
+    for(const [label,extra,bounded]of [
+      ['helper',[],true],
+      ['deployment-test',[['scripts/test-ravscore-operational-pages-deployment.mjs',Buffer.from('// Synthetic changed broad deployment test\n')]],false],
+      ['workflow',[['.github/workflows/reusable-pages-deploy.yml',Buffer.from('# Synthetic changed Pages workflow\n')]],false],
+    ]){
+      const helper=ownerHelpers[1],original=git(root,['cat-file','blob',firstDelivery.main+':'+helper]);
+      const tree=rewrite(candidateTree,[[helper,Buffer.concat([original,Buffer.from('\n// Synthetic owner-only delta\n')])],...extra]);
+      const candidate=commit(tree,[firstDelivery.main],'synthetic owner scope '+label);checkout(candidate);
+      const selected=plan({baselineCommit:firstDelivery.main,candidateCommit:candidate,expectedHead:candidate});
+      assert.equal(selected.selection,'CURRENT_CONTRACTS');
+      assert.deepEqual(selected.areas.pages.commands,bounded?ownerCommands:CURRENT_CONTRACT_COMMANDS.pages);
+      assert.equal(selected.commands.includes(ownerCommand),bounded);
+      assert.equal(selected.commands.includes(deploymentCommand),!bounded);
+      assert.equal(selected.protectedInputs.postgresUnchanged,true);
+      assert.equal(selected.protectedInputs.CUnchanged,true);assert.equal(selected.protectedInputs.IUnchanged,true);
+      assert.equal(selected.protectedInputs.TUnchanged,true);cases++;
+    }
+  }finally{checkout(beforeOwnerPlan);}
+  scenarios.push('normal Git owner-only plan selects the existing entry; changed broad deployment test or workflow preserves the full command');
   const pagesTree=rewrite(candidateTree,[['.github/workflows/reusable-pages-deploy.yml',
     Buffer.from('# SYNTHETIC current Pages caller delta only\n')]]);
   selectedRun+=1000;selectedJob+=1000;selectedPr+=1000;selectedArtifactId+=1000;

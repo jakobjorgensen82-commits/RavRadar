@@ -1,3 +1,21 @@
+## 14. november — normal måludvælgelse ved rene Pages-transportændringer
+
+Den normale målplan får en snæver transportafgrænsning: kun ændringer af den eksisterende Pages-statuslæser eller dens egen normale prøve kan vælge de fire øvrige fulde Pagesmål uden den brede deploymentprøve. Den brede prøve kalder ikke statuslæseren. Fast sikkerhedskerne, dokumentkontrol og frisk uafhængig kontrol af ændret testvalg består. Transportafgrænsningen bruger ikke owner-completion-only.
+
+Den samme pagesContractCommandsForChangedInputs accepterer her kun status M med filmode 100644 før og efter for scripts/lib/run-sealed-pages-deployment.mjs og/eller scripts/test-ordinary-pages-immediate-retry.mjs. Ledsagere kan kun være egentlig dokumentation og de to eksisterende scopecontrollerblade. Eksekverbare håndbogshelpers og andre prøver tæller ikke som dokumentation. De fire fulde mål er ordinary-immediate-retry, pages-generation-and-reentry, operational-pages-recovery og protected-operational-reentry-evidence. Kildecontrollerområdet og det friske controlQualificationRequired bevares.
+
+Blanding med offentlig verifier, ejerafslutning, completion, workflow, den brede fixture eller andre program- og prøvefiler beholder den brede kontrol. Kun ændringer af eksisterende regulære filer kan bruge afgrænsningen; nye, slettede, omdøbte, modeændrede, dobbelte eller ukendte input giver ingen snæver adgang. Databaser, numeriske bindinger, tidsgrænser, adgang og selve Pages-transporten ændres ikke. Den tidligere ejerafgrænsning gælder fortsat kun sit eget lukkede område; blandet ejer- og transportændring vælger ikke ejerindgangen. PG/C/I/T og faktisk produktionsverifikation kvalificeres fortsat gennem deres uændrede normale kontrakter.
+
+Den brede deploymentprøves tidsmargin er fortsat åben: en faktisk kildekørsel nåede den uændrede grænse på 300 sekunder uden en påvist assertionfejl. Rettelsen kvalificerer det relevante testomfang; den påstår ikke en forbedret køretid for den brede prøve. Hele den nye normale kildekontrol skal bestå på det præcise nye head før levering. Version 4.0.598 bevares. Nye positive og negative assertions ligger i den eksisterende scopeprøve, inklusive den normale Gitplan. En privat fokuseret kalder er kun lokal evidens og indgår ikke som en ny normal CLI, gate eller leveringsautoritet.
+
+## 14. november — målrettet ejerprøve ved rene helperrettelser
+
+Den afgrænsede lokale forberedelse vælger den eksisterende owner-completion-only-indgang, når ændringen kun omfatter de to eksisterende ejer-/reentryhelpers, deres fuldt udførte øvrige Pagesprøver og eventuel dokumentation eller den normale plancontroller. Kun en almindelig ændring af en eksisterende regulær helper kan vælge indgangen. Den store deploymentprøve skal være uændret. De fire øvrige Pagesmål udføres fortsat fuldt; ejerafslutning, readiness, fuld offentlig verifier, CAS, raceafslag og arkivbevarelse bevares.
+
+Ændret deploymentprøve, workflow, transport, browserkode eller andet relevant input beholder den brede kommando. Nye eller slettede helpers, ændret filmode og ukendte inputs får ingen snæver adgang; eksisterende FULL-/afvisningsregler for model, backend og ukendt påvirkning bevares. PR911 ville fortsat blive bredprøvet, fordi den ændrede selve deploymentprøven. Der indføres ingen ny CLI-indgang, ny testpakke, per-head hashgruppe eller højere tidsgrænse.
+
+Den normale scopeprøve og den præcise kildekvalifikation skal være afsluttet, og en faktisk tidsbesparelse skal måles, før denne forberedelse omtales som leveret optimering. Version 4.0.598, numeriske bindinger, SQL, vejrdata og produktionskontroller ændres ikke. Aktuelle prøve- og leveringsresultater føres i privat checkpoint.
+
 # Aktuel afgrænset V4-kandidat — 12. november 2026
 
 Den første faktiske Linux-kvalifikation bestod den nye V4-kontrolvej og mailmålet, men påviste manglende forudsætninger i scalarprøvens miljø. Den normale vejrhentning installerer allerede det eksisterende requirements-copernicus.txt før offline planlægning; den målrettede kildeproducent forbereder nu samme krav, når netop dette mål vælges. Prøvens barn bevarer Linux-/macOS-interpreterens biblioteksstier og udelukker fortsat credentials. Produktlæser, fejlafvisning, model og providerbudgetter ændres ikke af forberedelsen. Ny præcis Linux-kvalifikation kræves fortsat.
