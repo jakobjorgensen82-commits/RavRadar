@@ -8,7 +8,7 @@ import path from 'node:path';
 import childProcess,{execFileSync} from 'node:child_process';
 import {syncBuiltinESMExports} from 'node:module';
 import {fileURLToPath,pathToFileURL} from 'node:url';
-import {CURRENT_CONTRACT_COMMANDS,isBoundedLocalRestoreFixtureChange,pagesContractCommandsForChangedInputs,dmiBudgetWeatherBuildAreas,isDmiBudgetOnlyUpdaterChange,isDmiBudgetOnlySupervisorChange,isDmiCollectionRecoveryOnlyUpdaterChange,isDmiCollectionRecoveryOnlyFixtureChange,dmiCollectionRecoveryUpdaterAreas} from './source-current-contract-plan.mjs';
+import {CURRENT_CONTRACT_COMMANDS,isBoundedLocalRestoreFixtureChange,isArchiveRestoreOuterQueueOnlyChange,pagesContractCommandsForChangedInputs,dmiBudgetWeatherBuildAreas,isDmiBudgetOnlyUpdaterChange,isDmiBudgetOnlySupervisorChange,isDmiCollectionRecoveryOnlyUpdaterChange,isDmiCollectionRecoveryOnlyFixtureChange,dmiCollectionRecoveryUpdaterAreas} from './source-current-contract-plan.mjs';
 
 const SOURCE=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const dmiBudgetScopeOnly=process.argv.includes('--dmi-budget-scope-only');
@@ -147,6 +147,81 @@ function assertAssistantEdgePlanScope({baselineCommit,baselineTree,rewriteTree,m
   }finally{checkoutCommit(restoreHead);}
 }
 // End Assistant Edge scope assertions.
+
+// Archive outer queue: identical assertions also run in the normal Git fixture.
+function assertArchiveOuterQueuePlanScope({baselineCommit,baselineTree,rewriteTree,makeCommit,checkoutCommit,plan,restoreHead,fixtureSource,workflowSource}){
+  const fixture='scripts/test-supabase-cli-local-restore.mjs';
+  const workflow='.github/workflows/verify-supabase-cli-local-restore.yml';
+  const oldGroup="  group: ${{ inputs.restore_mode == 'archive' && 'ravradar-weather-production-v2' || 'ravradar-synthetic-standard-local-restore' }}\n";
+  const newGroup=oldGroup.replace('ravradar-weather-production-v2','ravradar-isolated-archive-restore');
+  const original=workflowSource.includes(newGroup)?workflowSource.replace(newGroup,oldGroup):workflowSource;
+  assert.equal(original.split(oldGroup).length,2);
+  const changed=original.replace(oldGroup,newGroup);
+  const mutate=(source,from,to)=>{assert(source.includes(from),from);return source.replace(from,to);};
+  const invalid=[
+    ['synthetic-queue',mutate(changed,'ravradar-synthetic-standard-local-restore','other-synthetic-queue')],
+    ['trip-lock',mutate(changed,'ravradar-trip-storage-production','other-trip-lock')],
+    ['queue',mutate(changed,'  queue: max\n','  queue: single\n')],
+    ['cancel',mutate(changed,'  cancel-in-progress: false\n','  cancel-in-progress: true\n')],
+    ['confirmation',mutate(changed,'RESTORE-PRIVATE-ARCHIVE-IN-ISOLATED-LOCAL-POSTGRES','OTHER-CONFIRMATION')],
+    ['inputs',mutate(changed,'        default: synthetic\n','        default: archive\n')],
+    ['timeout',mutate(changed,'    timeout-minutes: 30\n','    timeout-minutes: 31\n')],
+    ['permissions',mutate(changed,'  contents: read\n','  contents: write\n')],
+    ['env',mutate(changed,'          EXPECTED_HEAD_SHA:','          OTHER_EXPECTED_HEAD_SHA:')],
+    ['command',mutate(changed,'run: node scripts/test-supabase-cli-local-restore.mjs --self-test','run: node scripts/test-supabase-cli-local-restore.mjs --run-archive-restore')],
+    ['secret',changed+'\nenv:\n  EXTRA: ${{ secrets.EXTRA }}\n'],
+    ['comment',changed+'\n# Unrelated workflow change\n'],
+    ['duplicate-new',changed+newGroup],['duplicate-old',changed+oldGroup],
+    ['wrong-group',changed.replace('ravradar-isolated-archive-restore','other-archive-queue')],
+    ['indent',changed.replace(newGroup,' '+newGroup)],
+    ['context',changed.replace('\nconcurrency:\n','\nother-concurrency:\n')],
+    ['CRLF',changed.replaceAll('\n','\r\n')],['NUL',changed+'\0'],
+  ];
+  assert.equal(isArchiveRestoreOuterQueueOnlyChange(original,changed),true);
+  assert.equal(isArchiveRestoreOuterQueueOnlyChange(original,original),false);
+  assert.equal(isArchiveRestoreOuterQueueOnlyChange(changed,original),false);
+  for(const[label,body]of invalid)assert.equal(isArchiveRestoreOuterQueueOnlyChange(original,body),false,label);
+  assert.equal(isArchiveRestoreOuterQueueOnlyChange(original+oldGroup,changed+oldGroup),false);
+  assert.equal(isArchiveRestoreOuterQueueOnlyChange(original+' '.repeat(256*1024),changed+' '.repeat(256*1024)),false);
+  assert.equal(isArchiveRestoreOuterQueueOnlyChange(null,changed),false);
+  const baseline=makeCommit(rewriteTree(baselineTree,[[fixture,Buffer.from(fixtureSource)],
+    [workflow,Buffer.from(original)]]),[baselineCommit],'synthetic archive original outer queue');
+  const tree=rewriteTree(baselineTree,[[fixture,Buffer.from(fixtureSource)],[workflow,Buffer.from(original)]]);
+  const reviewedBody=fixtureSource.replace('const IMAGES=','// Synthetic reviewed fixture body\nconst IMAGES=');
+  assert.notEqual(reviewedBody,fixtureSource);assert.equal(isBoundedLocalRestoreFixtureChange(fixtureSource,reviewedBody),true);
+  const results=[],commands=['node scripts/test-supabase-cli-local-restore.mjs --self-test',
+    'node --test scripts/test-archive-supabase-database-backup.mjs',
+    'node --test scripts/test-supabase-database-backup-workflow.mjs',
+    'node --test scripts/test-supabase-backup-lifecycle.mjs'];
+  assert.deepEqual(CURRENT_CONTRACT_COMMANDS.backupRestore,commands);
+  const select=(label,body,fixtureBody=reviewedBody)=>{
+    const candidate=makeCommit(rewriteTree(tree,[[fixture,Buffer.from(fixtureBody)],[workflow,Buffer.from(body)]]),
+      [baseline],'synthetic archive outer queue '+label);
+    checkoutCommit(candidate);
+    const selected=plan({baselineCommit:baseline,candidateCommit:candidate,expectedHead:candidate});
+    results.push({label,plan:selected});return selected;
+  };
+  try{
+    for(const[label,body]of [['unchanged-workflow',original],['exact-outer-queue',changed]]){
+      const selected=select(label,body);assert.equal(selected.status,'PLANNED',label);
+      assert.equal(selected.selection,'CURRENT_CONTRACTS');assert.equal(selected.controlQualificationRequired,true);
+      assert.deepEqual(selected.areas.backupRestore.commands,commands);
+      assert.deepEqual(selected.commands,[...CURRENT_CONTRACT_COMMANDS.core,...commands]);
+      assert.deepEqual(selected.protectedInputs,{postgresUnchanged:true,CUnchanged:true,IUnchanged:true,TUnchanged:true});
+    }
+    for(const[label,body]of invalid){
+      const selected=select(label,body);assert.equal(selected.status,'REFUSED',label);
+      assert.deepEqual(selected.reasonCodes,['CURRENT_RESTORE_FIXTURE_WORKFLOW_CHANGED'],label);
+    }
+    for(const[label,body]of [['import-frame','// Synthetic import mutation\n'+reviewedBody],
+      ['dispatch-frame',reviewedBody+'\n// Synthetic dispatch mutation\n']]){
+      const selected=select(label,changed,body);assert.equal(selected.status,'REFUSED',label);
+      assert.deepEqual(selected.reasonCodes,['CURRENT_RESTORE_FIXTURE_SECURITY_FRAME_CHANGED'],label);
+    }
+    return results;
+  }finally{checkoutCommit(restoreHead);}
+}
+// End archive outer queue scope assertions.
 
 
 // Current bytes with a small semantic predecessor, no full source hash/pin.
@@ -926,6 +1001,12 @@ try{
     makeCommit:commit,checkoutCommit:checkout,plan,restoreHead:head});
   cases+=assistantScopeResults.length;
   scenarios.push('exact assistant Edge owners select existing full targets; UI deduplicates roundtrip and unknown/shared functions retain refusal');
+  const archiveQueueResults=assertArchiveOuterQueuePlanScope({baselineCommit:firstDelivery.main,
+    baselineTree:text(root,['rev-parse',firstDelivery.main+'^{tree}']),rewriteTree:rewrite,
+    makeCommit:commit,checkoutCommit:checkout,plan,restoreHead:head,fixtureSource:restoreSource,
+    workflowSource:fs.readFileSync(new URL('../.github/workflows/verify-supabase-cli-local-restore.yml',import.meta.url),'utf8')});
+  cases+=archiveQueueResults.length;
+  scenarios.push('only the exact manual archive outer queue replacement composes with the unchanged fixture security frame; all four backup targets and fresh control review remain');
   const pagesTree=rewrite(candidateTree,[['.github/workflows/reusable-pages-deploy.yml',
     Buffer.from('# SYNTHETIC current Pages caller delta only\n')]]);
   selectedRun+=1000;selectedJob+=1000;selectedPr+=1000;selectedArtifactId+=1000;

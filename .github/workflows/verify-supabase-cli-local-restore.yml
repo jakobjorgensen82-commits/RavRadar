@@ -27,7 +27,7 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: ${{ inputs.restore_mode == 'archive' && 'ravradar-weather-production-v2' || 'ravradar-synthetic-standard-local-restore' }}
+  group: ${{ inputs.restore_mode == 'archive' && 'ravradar-isolated-archive-restore' || 'ravradar-synthetic-standard-local-restore' }}
   queue: max
   cancel-in-progress: false
 

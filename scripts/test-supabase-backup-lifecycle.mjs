@@ -135,3 +135,15 @@ test('existing maintenance owns the subsequent backup job with original weather 
   assert(!restore.includes('persistSupabaseDatabaseRestoreReceipt'),'manual restore remains independent of automation receipts');
   assert(!/SUPABASE_ACCESS_TOKEN|SUPABASE_DB_PASSWORD|GITHUB_TOKEN|upload-artifact/.test(archive));
 });
+
+// This manual reader keeps retirement/capture exclusion without owning the
+// ordinary weather queue. Autonomous receipt/rotation/capture paths stay locked.
+test('manual archive keeps the retention lock and does not acquire the weather queue',()=>{
+  const workflow=fs.readFileSync(new URL('../.github/workflows/verify-supabase-cli-local-restore.yml',import.meta.url),'utf8');
+  assert(workflow.includes("group: ${{ inputs.restore_mode == 'archive' && 'ravradar-isolated-archive-restore' || 'ravradar-synthetic-standard-local-restore' }}"));
+  assert(workflow.includes("group: ${{ inputs.restore_mode == 'archive' && 'ravradar-trip-storage-production' || format('ravradar-synthetic-standard-local-restore-{0}', github.run_id) }}"));
+  assert(!workflow.includes("'ravradar-weather-production-v2'"));
+  assert.match(workflow,/default: synthetic[\s\S]*options: \[synthetic, archive\]/);
+  assert.equal((workflow.match(/cancel-in-progress: false/g)??[]).length,2);
+  assert(!workflow.includes('persistSupabaseDatabaseRestoreReceipt'));
+});

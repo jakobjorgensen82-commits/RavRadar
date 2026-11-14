@@ -1,5 +1,31 @@
 <!-- RAVRADAR_ACTIVE_ENTRY_START -->
 
+# Aktiv restliste
+
+Alle fem hovedområder i ejerens gældende mål består, indtil deres krav er faktisk leveret og verificeret. Leverede delrettelser genbruges; de er ikke nye lokale kandidater. Tabellen skelner mellem leveret funktion og de resterende faktiske beviser. Se [aktuel sandhed](CURRENT_TRUTH.md), [aktive krav](../20_REQUIREMENTS/ACTIVE-REQUIREMENTS.md) og [roadmap](ACTIVE_ROADMAP.md), før en afsluttet del genåbnes.
+
+| Område | Leveret grundlag og reel rest |
+| --- | --- |
+| Vejr og dækning | Almindeligt vejr og efterfølgende kodelevering er offentligt verificeret. Den længere DMI-driftsprofil og rettelsen af tom vedligeholdelse/parserkategori er kildeleveret. Første normale kørsel med længere profil er offentliggjort og målt over hele horisonten; fuld hale og gentagen stabil virkning er fortsat åbne. Behovstimer er ikke upstreamtilbud, og HARMONIE-prioriteringen er fortsat åben. Faktisk decode/persist efter parserrettelsen, særskilt progress-save, RAW-margin, historik og kontinuerlig offentlig effekt skal stadig følges. |
+| Strøm og samlet revision | Numerisk DMI-fortolkning, interpolation, native/protected/retained historik, relevante Fur-/Limfjordsforhold, vandstandsundtagelser, processtop, eksklusiv skrivning, original-B/S-før-T og national kapacitet er fortsat selvstændige opgaver. Source-revisionen er ikke installeret; ægte første udførelse og en gennemførlig næste appudgivelse skal bevises før aktivering. |
+| Supabase, Cloudflare og GitHub Free | Den installerede tredokumentoprydning kan arkivere, genlæse og beskære uden at ændre aktuelle dokumenter eller de fem nyeste historikversioner. Backlog, faktisk fysisk DB-/TOAST-margin og normale vedligeholdelsespassager mangler. Adminarkivets lagerstop er ikke løbende rotation; en varig bevarings-/kapacitetspolitik er stadig åben. Samlet periodeforbrug og reserve skal måles før abonnementsændring. |
+| Backup og gendannelse | Den afgrænsede rolleaudit, parametergrammatik og indholds-/dublet-/Auth-kontrol er kildeleveret. Faktisk fuld autentisk arkiv-/Auth-gendannelse mangler. Den manuelle arkivprøves ydre kø er adskilt fra vejrets kø; trip-låsen mod optagelse og rotation bevares. Manuel archive-PASS er ikke automatikkens varige restorekvittering. Weekly-aktivering, autonom persistRestore, verificeret current/reserve, normal rotation og fremtidig optagelse kræver egne beviser. Atomisk snapshot, Storage-filbytes, slettebarrierer og uafhængig nøglerecovery er særskilt åbne. |
+| Brugerdata og mail | Normale gemme-/genlæsnings-, offline-, konto-, præference-, eksport- og sletteforløb samt aftalt anonym statistik skal færdiggøres. To års inaktivitet og 30 dages varsel skal have korrekt aktivitetsgrundlag. Den afgrænsede normale ejerprøve har verificeret afsenderaccept, leverandørlevering og faktisk indbakkemodtagelse; den midlertidige prøve er fjernet med de tre permanente funktioner bevaret. Automatisk varsling og kontosletning er stadig særskilte åbne trin og må ikke aktiveres alene på denne prøve. |
+| Admin | Tur-/kontovisning, kategorier og filtre, sene modelkort og forsinket retningseditor er leveret. Normal ejerlæsning har omfattet alle 14 faner og Besøgs-datofilteret. Indlæsningskort er ikke feltaccept, og alle handlinger er ikke afprøvet. Utilgængelig kandidatstatus med blokeret aktivering, den konkrete ekspertkonto, global ejerunikhed, øvrige adgangs-/brugerforløb og beskyttet månedsrapport er åbne. Kategorier tildeler ikke rettigheder. Mail og autonomt arkiv-/beskæringsforløb kræver egne beviser. |
+| Spørg RavRadar | Viden, protokolrettelser, normal svarskomposition og afgrænset fasetidsdiagnostik er leveret. Danske normalsvar er observeret, men den sammensatte UV-opfølgning og bred almindelig DA/DE/EN-brug er ikke samlet accepteret. Faktisk ekstern AI-kæde, valgte kilde-id'er og tidsfordeling kræver egne beviser; frister og kvoter består. Den numerisk bundne lokale kommafejl er fortsat særskilt. |
+| Offentlig funktion og vedligeholdelse | Pages-statuslæsning og den beskyttede ejerafslutning er leveret; offentlig målverifikation, central CAS og afslutning er faktisk gennemført. De tidligere synkroniseringstimeouts har stadig uafklaret rodårsag. Prognosedeling, relevante mobil-/zone-/tidsskyderforløb, offentlig visning, lokal oprydning og målt ressourcevirkning har deres egne rester. Bevar godkendte funktioner, hoveddomæne og links; genimplementér ikke leverede dele. |
+
+Den normale leveringsvej er en lille faktisk ændring, målrettet kvalifikation, sikker integration og kontrolleret kode-/datalevering med verificeret offentlig effekt. Kildegrøn er ikke installation eller fuld brugeraccept. Ukendte skriveudfald giver ingen automatisk gentagelse; originale data, kvalificeret main, eksklusiv writer, kildeprioritet, model-/SQL-grænser og normale offentlige kontroller består. Den uinstallerede Source-revision må ikke holde uafhængige rettelser tilbage.
+
+Tredokumentoprydningen følger sine egne arkiv-/genlæsnings-/bevaringskrav. Fuld database-/Auth-backup er et særskilt krav før Free/Pro-beslutning og må ikke opfindes som ekstra gate for den afgrænsede oprydning. Manuel archive-gendannelse og autonom restore/ACK bevarer hver sin betydning. Faktisk mail, adgang, revision og vedvarende kvotemargin forbliver åbne, indtil deres normale forløb er observeret.
+
+<!-- RAVRADAR_ACTIVE_ENTRY_END -->
+
+## 14. november — erstattet aktivstatus før denne konsolidering
+
+Følgende tidligere aktive tekst er bevaret uændret som dateret arbejdshistorik. Dens udsagn om lokale kandidater og åbne kilde-/leveringstrin er erstattet af den aktive tabel ovenfor. Historikken giver ingen ny ændrings- eller driftsautoritet.
+
+
 ## 2026-11-14: DMI: tom vedligeholdelse uden falsk parserpause
 
 En vedligeholdelsestur, som ikke gennemgår nogen GRIB-fil, registreres som nul fremskridt i stedet for en parserfejl. Den gamle fejlklassifikation kan genvurderes én gang gennem det normale budget. En faktisk ugenkendelig fil får fortsat den normale 24-timers blokering, som bevares gennem gemning, genlæsning og backfill. Rettelsen ændrer ikke dekodning, RAW-grænser eller kildeprioritet. Den er kildeforberedt; faktisk DMI-hentning og gemning skal stadig verificeres i næste almindelige vejrkørsel.
@@ -65,7 +91,7 @@ Arkivmålets kildekandidat aktiverer nu kun leverandørens normale Realtime-enga
 
 Assistentens lokale kompositionskandidat viser provider de komplette kanoniske tekster på svarets sprog og det samme samlede budget på 900 tegn. En sammenfatning af to eksisterende UV-fakta bevarer begge id'er, alle udsagn og alle forbehold; ingen fakta eller K-binding ændres. Den præcise fælles kontrakt føjes til eksisterende assistantEdge-ansvar med samme hele normale mål og uændrede unknown-/PG-/C/I/T-afslag. Præcis kildekvalifikation, faktisk valgte id'er, ekstern AI-accept og virkningen af større tysk promptinput er åbne. Den numerisk bundne lokale kommafejl ændres ikke her. Frister, kvoter og model består. Se håndbog 89.279.
 
-<!-- RAVRADAR_ACTIVE_ENTRY_END -->
+
 
 ## Daterede notater og tidligere indgange — uændret historik
 

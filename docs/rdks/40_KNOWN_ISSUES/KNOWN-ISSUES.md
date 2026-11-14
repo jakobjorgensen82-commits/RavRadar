@@ -1,3 +1,9 @@
+## 14. november — manuel arkivprøve og vejrets kø
+
+Den manuelle archive-prøve delte vejrets ydre writerkø, selv om dens produktionsadgang er læsning af et autentificeret arkiv. Den forberedte koordinationsrettelse flytter kun denne ydre gruppe og bevarer trip-låsen mod samtidig backupoptagelse og rotation. Autonom restore med vedvarende kvittering og den eksisterende 35-minuttersregel er uændrede. En anden writer kan stadig skabe en indirekte kø.
+
+Faktisk parallel kørsel, fuld arkivindholds-/dubletparitet, lokal Auth-funktion og ejet oprydning er fortsat åbne. Kildeprøver er ikke en restore- eller Free-godkendelse. Se DEC-0255.
+
 ## 14. november — arkivmålets bootstrap skal stadig bevises i faktisk restore
 
 ## 2026-11-14: DMI: tom vedligeholdelse uden falsk parserpause
