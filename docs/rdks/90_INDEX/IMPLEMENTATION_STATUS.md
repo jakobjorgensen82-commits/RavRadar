@@ -56,6 +56,10 @@ Den normale målplan får en snæver transportafgrænsning: kun ændringer af de
 
 Assistentens forberedte fasetidsdiagnostik bevarer syv sekunders samlet serverfrist, otte sekunders klientfrist og alle kvoter. Faste private tal og første deadlineårsag kan afklare tidsfordelingen uden brugerindhold; lokal fetch er ikke bevis for modtagelse hos leverandøren. Det lukkede assistantEdge-ansvar vælger tre eksisterende hele mål med frisk kontrolreview og uændrede PG/C/I/T-/unknown-afslag. Præcis kildekvalifikation, faktisk fasetid og ekstern DA/DE/EN-AI-accept er fortsat åbne; timeout og providerparametre er ikke ændret. Se DEC-0091, DEC-0302 og håndbog 89.279.
 
+Arkivmålets kildekandidat aktiverer nu kun leverandørens normale Realtime-engangsinitialisering, mens den vedvarende tjeneste fortsat er udelukket. Den generiske rolleaudit skal stadig bestå før store SQL-filer; syntetisk standardadfærd, tre vedvarende containere og originale SQL-/ACL-regler bevares. Den normale lokale egenprøve består. Præcis kildekvalifikation og faktisk fuld arkiv-/Auth-gendannelse er fortsat åbne, og rettelsen giver ingen prune-, rotations- eller Free-autoritet. Se DEC-0255 og håndbog 89.345.
+
+Assistentens lokale kompositionskandidat viser provider de komplette kanoniske tekster på svarets sprog og det samme samlede budget på 900 tegn. En sammenfatning af to eksisterende UV-fakta bevarer begge id'er, alle udsagn og alle forbehold; ingen fakta eller K-binding ændres. Den præcise fælles kontrakt føjes til eksisterende assistantEdge-ansvar med samme hele normale mål og uændrede unknown-/PG-/C/I/T-afslag. Præcis kildekvalifikation, faktisk valgte id'er, ekstern AI-accept og virkningen af større tysk promptinput er åbne. Den numerisk bundne lokale kommafejl ændres ikke her. Frister, kvoter og model består. Se håndbog 89.279.
+
 <!-- RAVRADAR_ACTIVE_ENTRY_END -->
 
 ## Daterede notater og tidligere indgange — uændret historik

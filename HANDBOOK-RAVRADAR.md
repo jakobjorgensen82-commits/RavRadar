@@ -78,6 +78,16 @@ Den isolerede databasegendannelse får en reel indholdskontrol mod det autentifi
 
 Dette er en privat kildekandidat. De eksisterende målrettede lokale prøver er bestået; præcis GitHub-kvalifikation, den normale syntetiske Linux-gendannelse og faktisk gendannelse af det valgte autentiske arkiv er særskilte åbne beviser. Ingen numerisk model, version 4.0.598, migration, score, kildeprioritet, geometri, adgangsrettigheder, automatisk kontosletning eller backuprotation ændres af forberedelsen.
 
+### Normal engangsinitialisering af arkivmålet
+
+Den tidlige autentificerede rollekontrol har påvist en reel forskel mellem arkivets krævede systemroller og det isolerede mål. Den afgrænsede rettelse bruger derfor leverandørens normale initialisering af målet; den ændrer ikke parseren eller arkivets rolle- og adgangsregler.
+
+Kun archive-målets midlertidige konfiguration aktiverer Realtime-engangsinitialisering gennem den allerede pinnede Supabase CLI 2.117.0. Realtime forbliver på listen over udelukkede vedvarende tjenester. CLI'ens eget Realtime 2.130.0-job udfører de originale leverandørmigrationer på projektets eksisterende interne netværk. Derefter skal det præcise vedvarende sæt fortsat være database, gateway og Auth. Den syntetiske standardvej er uændret.
+
+Der tilføjes ingen egen CREATE ROLE, ændrede grants eller SQL, som springes over. Efter initialiseringen læses målets faktiske systemroller igen af den samme generiske kontrol. Enhver fortsat manglende krævet rolle stopper stadig før de store SQL-filer. De eksisterende kilde-, mål-, låse-, billedidentitets-, netværks-, tids- og oprydningskrav bevares.
+
+Den normale lokale egenprøve består og kontrollerer konfigurationen og de bevarede afslag. Det er ikke et bevis for faktisk arkiv-/Auth-gendannelse. Fuld indholds- og dubletparitet, Auth-funktion og ejet oprydning skal fortsat bestå på det autentificerede arkiv før en stærk restorekvittering. Automatisk rotation, databaseoprydning og Free-overgang får ingen ny autoritet. Version 4.0.598, numerisk model, migrationer, score og vejr bevares.
+
 ## 89.344 — Admin opdaterer oplysninger uden at nulstille arbejdet
 
 Administratorens Kalibrering og System kan åbnes, mens den offentlige model stadig hentes. Den lokale rettelse opdaterer kun den oprindelige modelvisning: AFVENTER under læsning, BLOKERET ved faktisk verifikationsfejl og gyldig model efter en normal vellykket genprøvning. Rapporter, prøvemail og deres igangværende kontroller bevares. Retningseditoren monteres én gang efter den eksisterende admin-ready-grænse med de afsluttede input; en senere offentlig læsning genopretter ikke editoren eller overskriver kladden. Den eksisterende admin-UI-adresse ændres ens i side og offlinecache, mens data-service-adressen bevares.
@@ -1297,6 +1307,16 @@ Observationerne indeholder kun faste kategorier og kontrollerede tal i den priva
 Den eksisterende Edge-prøve, hele normale klient-rundtur og faste loglæserprøve får et præcist fælles kildeansvar. Faktiske UI-ændringer beholder deres normale rundtur, og samme kommando udføres kun én gang ved blandede ændringer. Andre funktioner, ukendte stier og beskyttede model- eller backendinput får ingen ny undtagelse.
 
 Fasetidsdiagnostik løser ikke i sig selv AI-timeout. Lokale syntetiske prøver er ikke bevis for offentlig levering eller fungerende ekstern AI. Præcis kildekvalifikation, faktisk tidsfordeling og almindelige danske, tyske og engelske spørgsmål og opfølgninger skal stadig afprøves. En eventuel ny frist kræver et begrundet budget; ingen ny frist eller requestparameter er valgt her.
+
+### Samme sprog og budget i hele svaret
+
+En ny forberedt rettelse giver svarmodellen de samme komplette faktatekster på dansk, tysk eller engelsk, som RavRadar udgiver. Den får også det samlede budget på 900 tegn, inklusive afsnit og den fulde usikkerhedstekst. En kort tekst fra modellen er ikke nok, hvis de valgte faktatekster tilsammen er længere.
+
+To eksisterende UV-forklaringer kan samles uden gentagelser. Rådet om en langbølget ravlygte omkring 395 nm i mørke og efterfølgende fysisk kontrol bevares sammen med første kendetegn, fluorescensens variation og forbeholdet om efterligninger. UV alene er ikke bevis. Et nødvendigt forbehold må ikke kasseres for at få plads; er hele svaret stadig for langt, beder assistenten fortsat om et mere afgrænset spørgsmål.
+
+Rettelsen er en lokal kildekandidat, ikke bevis for fungerende ekstern AI eller en løst timeout. De faktiske faktavalg i de observerede afvisninger er ikke aflæst. Det tyske input er større, og tidsvirkningen kræver reel afprøvning. Serverens syv sekunder, browserens otte sekunder, kvoter og model er uændrede. Den særskilte lokale fejl ved tysk tegnsætning ændres ikke her.
+
+Den fælles assistentkontrakt får samme præcise kildeansvar som handleren og de eksisterende normale assistentprøver. Andre fælles funktioner, ukendte stier og beskyttede model- eller backendinput får ingen ny undtagelse.
 
 ## 89.278 En kortere delingsadresse med den samme prognose
 

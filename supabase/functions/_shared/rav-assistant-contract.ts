@@ -452,6 +452,7 @@ export function assistantSystemInstruction() {
     "Use RavRadar's exact public terminology: in Danish write rav, jagtbarhed, strømevidens and mobiliseringsmulighed; in German write Bernstein, Suchbarkeit, Strömungsevidenz and Mobilisierungsmöglichkeit; in English write amber, huntability, current evidence and mobilisation opportunity. Never create hybrid words across languages.",
     "evidenceIds must contain only IDs from the supplied facts that directly support the answer. Out-of-scope answers must use an empty evidenceIds array.",
     "The server publishes canonical fact units, not your prose. Include every necessary ID for all supported parts. When using supplied selected-zone values, also include public-context.selected-zone-only; never substitute invented values. Mark relevant unsupported parts uncertain.",
+    "publicFacts contains the exact canonical units in the requested language. canonicalAnswerContract describes the published 900-character budget, paragraph separator, uncertainty suffix and reviewed claim-preserving unions; your short draft does not shorten those units. Complete listed unions consume their members once in the listed order. Choose the facts needed for the whole question, not incidental model or selected-zone detail. Never omit a requested facet or qualification to fit the budget; a character cost is not evidence of relevance.",
     "For every question, assess every substantive part against the supplied facts and context. Use disposition answer only when all parts are supported. If any part cannot be supported, use disposition uncertain with evidenceIds for the supported parts; do not label a partial selection complete merely because each selected fact is valid. Never infer the cause or condition of a particular find from general conservation facts.",
     "For the reviewed compound questions about moving material between bars/channels and observing beach wash, cover every supported part. Physical model limits, local redistribution and observable field signs are distinct facets. A partial selection of evidence is not a complete answer; do not invent evidence or drop another selected fact to fit.",
     "For the reviewed compound question about water level and whether a green score guarantees a find, cite both water-level.context and score.no-find-guarantee. Neither facet alone answers the whole question; keep every qualification and do not invent local water levels.",
@@ -535,9 +536,16 @@ export function assistantIdentificationPolicy(question, locale) {
 export function assistantPrompt(question, context, locale, originalQuestion = question) {
   const policy = assistantIdentificationPolicy(originalQuestion, locale);
   const selected = policy?.complete ? new Set(policy.requiredIds) : null;
+  const facts = selected ? RAV_ASSISTANT_FACTS.filter(fact => selected.has(fact.id)) : RAV_ASSISTANT_FACTS;
   return JSON.stringify({ requestedLocale: locale, question,
     publicSelectedZoneContext:selected ? null : publicAssistantContext(context, locale),
-    publicFacts:selected ? RAV_ASSISTANT_FACTS.filter(fact => selected.has(fact.id)) : RAV_ASSISTANT_FACTS,
+    publicFacts:facts.map(fact => ({ id:fact.id, text:fact.id === "public-context.selected-zone-only"
+      ? canonicalSelectedZone(context, locale) : canonicalFactText(fact.id, locale) })),
+    canonicalAnswerContract:{ maximumCharacters:900, paragraphSeparator:"\n\n",
+      uncertainSuffix:RAV_ASSISTANT_UNCERTAIN_REPLIES[locale],
+      claimPreservingUnions:CANONICAL_FACT_UNIONS.filter(group => group.ids.every(id => facts.some(fact => fact.id === id)))
+        .map(group => ({ evidenceIds:group.ids, characters:group.text[locale].length })),
+    },
     ...(policy ? { questionEvidence:{ family:policy.family, wholeQuestionClassified:policy.complete,
       requiredIds:policy.complete ? policy.requiredIds : [], fullKnowledgeSha256:policy.fullKnowledgeSha256,
       unsupportedMagnifierDiagnosticValue:policy.magnifierLimit } } : {}),
@@ -944,6 +952,14 @@ const CANONICAL_FACT_UNIONS = Object.freeze([
   "de": "Erste Hinweise: geringes Gewicht für die Größe, harzartige Oberfläche. Der meiste baltische Bernstein (Dichte ca. 1,05–1,10 g/cm³) sinkt in normalem dänischem Meerwasser, ist darin aber viel leichter als Sand/Stein. Salzgehalt/Temperatur ändern den Auftrieb leicht, nicht genug, um die meisten schwimmen zu lassen. RavRadar rät: langwelliges UV um 395 nm im Dunkeln, dann physisch prüfen. Baltischer Bernstein fluoresziert oft deutlich; Zusammensetzung, Verwitterung und Behandlung verändern dies. Auch Imitate können fluoreszieren; UV ist kein Beweis. Kunststoff, Glas, Copal, Pressbernstein, Verbunde, Füllungen, Farbstoffe und Wärmebehandlung können Bernstein imitieren/verändern. Kein einzelner Heimtest trennt alle Fälle zuverlässig: zerstörungsfreie Hinweise kombinieren. Keine heißen Nadeln, Feuer oder zerstörenden Tests; wertvolle/unsichere/ungewöhnliche Funde fachlich prüfen lassen.",
   "en": "First clues: low weight for size and a resin-like surface. Most Baltic amber (density about 1.05–1.10 g/cm³) sinks in ordinary Danish seawater but is much lighter than sand and stone underwater. Salinity and temperature alter buoyancy slightly, not enough to float most amber. RavRadar recommends long-wave UV around 395 nm in darkness, followed by physical checking: Baltic amber often fluoresces clearly, but composition, weathering and treatment affect fluorescence; imitations may fluoresce too. UV is not proof. Plastic, glass, copal, pressed amber, composites, fillings, dyes and heat treatment can imitate or alter amber. No single home test reliably separates every case: combine non-destructive clues. Avoid hot needles, fire and other destructive tests; valuable, uncertain or unusual finds need specialist assessment."
 }) }),
+  Object.freeze({
+    ids:Object.freeze(["identification.uv-clue-not-proof", "identification.fluorescence-varies"]),
+    text:Object.freeze({
+      "da": "Lav vægt i forhold til størrelse og en harpiksagtig overflade er nyttige første spor. RavRadars søgeråd er en langbølget ravlygte med UV omkring 395 nm i mørke efterfulgt af fysisk kontrol: baltisk rav fluorescerer ofte tydeligt, men fluorescensen varierer med sammensætning, forvitring og behandling. Andre materialer, også nogle efterligninger, kan fluorescere; UV alene er ikke bevis.",
+      "de": "Geringes Gewicht für die Größe und harzartige Oberfläche sind nützliche erste Hinweise. RavRadar empfiehlt zur Suche eine langwellige UV-Lampe um 395 nm im Dunkeln, danach physische Prüfung. Die oft deutliche Fluoreszenz baltischen Bernsteins variiert mit Zusammensetzung, Verwitterung und Behandlung. Auch andere Stoffe, darunter manche Imitationen, fluoreszieren; UV allein ist kein Beweis.",
+      "en": "Low weight for size and a resin-like surface are useful first clues. RavRadar recommends a long-wave amber light with UV around 395 nm in darkness followed by physical checking: Baltic amber often fluoresces clearly, but fluorescence varies with composition, weathering and treatment. Other materials, including some imitations, also fluoresce; UV alone is not proof."
+}),
+  }),
 ]);
 
 // A finite whole-question grammar, not a generic keyword or provider claim.

@@ -137,6 +137,7 @@ const PATH_AREAS=freeze({
   ],
   assistantEdge:[
     'supabase/functions/ravradar-assistant/index.ts',
+    'supabase/functions/_shared/rav-assistant-contract.ts',
     'scripts/test-rav-assistant-edge-cloudflare-4.0.290.mjs',
     'scripts/test-rav-assistant-main-edge-roundtrip.mjs',
     'scripts/test-fixed-assistant-failure-log-20261101.mjs',

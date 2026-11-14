@@ -1,3 +1,13 @@
+## 14. november — normal leverandørbootstrap før autentisk arkivgendannelse
+
+Kun archive-målets midlertidige konfiguration aktiverer den pinnede CLI's normale Realtime-engangsinitialisering. Den vedvarende Realtime-tjeneste forbliver udelukket, og de tre normale tjenester, syntetisk standardadfærd, generisk rolleaudit og originale SQL-/ACL-regler bevares. Der indføres ingen egen rolleoprettelse eller SQL-udeladelse. Den normale lokale egenprøve består; præcis kildekvalifikation og faktisk fuld arkiv-/Auth-gendannelse er fortsat særskilte krav. Ingen rotation, beskæring, produktionsrestore eller Free-overgang aktiveres. Version 4.0.598 og numeriske bindinger bevares. Se håndbog 89.345.
+
+## 14. november — kanoniske assistentsvar med samme sprog og længdebudget
+
+Den lokale kandidat viser svarmodellen de faktiske komplette kanoniske tekster på DA/DE/EN samt det eksisterende samlede budget på 900 tegn, afsnitsadskillelse, usikkerhedstekst og gennemgåede sammenfatningers tegnpris. To eksisterende UV-fakta får en kortere fælles formulering med alle påstande og forbehold bevaret; begge valgte id'er, de 45 originalfakta og K-bindingen består. Et for langt helt svar afvises stadig uden at klippe eller fjerne valgte fakta.
+
+Den ene faktiske fælles assistentkontrakt får naturligt ansvar i den eksisterende assistantEdge-gruppe med samme tre hele normale mål. Andre fælles moduler og ukendte eller beskyttede input får ingen undtagelse; frisk kontrolreview og normal kildekvalifikation består. Lokale syntetiske mål er ikke ekstern AI-accept. Valgte id'er i de observerede browserhændelser er ukendte, og større tysk promptinput har en uafprøvet tidsvirkning. Den særskilte C/I-bundne komma-routing ændres ikke. Version 4.0.598, model, SQL, 7/8-sekundersfrister, kvoter og providerparametre bevares. Se DEC-0091, DEC-0302 og håndbog 89.279.
+
 ## 14. november — kvalificerede vandstandsbehov vælger eksisterende DMI-profil
 
 En afgrænset driftskandidat vælger den eksisterende lange DMI-profil efter den kvalificerede plan for reelle vandstands- og trendhuller. Supervisorens valgte profil registreres særskilt fra barnets afrundede resttid, så den uændrede firetimers-/100-par-cooldown virker. Det er en varig ressourcepolitik og kan gentages efter hver firetimer; et behov beviser ikke et upstreamtilbud eller bedre dækning. RAW-loft, kildeorden, nyere-vinder, originaler, checkpoint, model, releaseversion og migrations-SQL bevares.
