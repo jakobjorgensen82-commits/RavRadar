@@ -296,7 +296,9 @@ test('document history workflow: one final report keeps only fixed safe counters
   const counters={candidateRows:25,eligibleRowsBefore:51,confirmedAbsentAfterWrite:25,remainingCandidates:26,
     previouslyAbsentCandidates:0,adminDecodedReadBytes:123456,declaredAdminContentLengthBytes:123456,
     adminResponses:111,r2ReadBytes:67890,wireWrites:28,retiredArchiveObjects:0,legacyRows:21,legacyObjects:4,keepNewVersions:10,
-    preparationMetadataObjectsDeleted:0,preparationPointerBytes:700,preparationMetadataBytes:1000,locatorHistoryRowsExpired:0};
+    preparationMetadataObjectsDeleted:0,preparationPointerBytes:700,preparationMetadataBytes:1000,locatorHistoryRowsExpired:0,
+    unresolvedPreparationObjectsDeleted:0,unresolvedPreparationPointerBytes:700,unresolvedPreparationReservedBytes:4000000,
+    preparedReservationBytes:8000000,retentionReservedBytes:2000000000};
   const result=execute(triggered(),{controllerResult:{...counters,archiveRequired:true,
     indexSha256:'a'.repeat(64),paths:['PRIVATE-PATH-MUST-NOT-APPEAR'],rowIDs:[12345],
     payload:{private:'PRIVATE-DOCUMENT-MUST-NOT-APPEAR'},email:'private-user@example.invalid'}});
