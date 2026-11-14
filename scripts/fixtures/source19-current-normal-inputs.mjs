@@ -139,8 +139,9 @@ async function noLinks(file) {
     at = path.join(at, segment); assert(!(await fs.lstat(at)).isSymbolicLink(), 'Private native path contains a link');
   }
 }
-async function read(file, maximum = 256 * 1024 * 1024) {
+async function read(file, maximum = 256 * 1024 * 1024, observe = null) {
   await noLinks(file); const before = await fs.lstat(file, {bigint: true});
+  if(observe!==null)observe(Object.freeze({regular:before.isFile(),nlink:before.nlink,size:before.size}));
   assert(before.isFile() && before.nlink === 1n && before.size > 0n && before.size <= BigInt(maximum));
   const raw = await fs.readFile(file), after = await fs.lstat(file, {bigint: true});
   same([before.dev, before.ino, before.size, before.mtimeNs, before.ctimeNs],
@@ -178,20 +179,21 @@ const PROVIDERS = Object.freeze(['data/live/dmi-bulk-cache.json', 'data/live/dmi
   '.cache/weather-component-fallback-cursor.json', '.cache/weather-component-selection-history.json',
   'data/live/current-pilot-history.json', 'data/live/dmi-water-stations.json']);
 
-async function copyInputs(inputRoot, outputRoot, rows, allowed) {
+async function copyInputs(inputRoot, outputRoot, rows, allowed, observe = null) {
   assert(Array.isArray(rows) && rows.length > 0); const seen = new Set();
   for (const row of rows) {
     exact(row, ['relativePath', 'bytes', 'sha256']); const name = row.relativePath;
     assert(allowed.includes(name) && !seen.has(name), 'Only exact normal input leaves'); seen.add(name);
     assert(Number.isSafeInteger(row.bytes) && row.bytes > 0); assert.match(row.sha256, /^[a-f0-9]{64}$/);
     const source = path.join(inputRoot, name), target = path.join(outputRoot, name);
-    assert(inside(inputRoot, source) && inside(outputRoot, target)); const raw = await read(source);
+    assert(inside(inputRoot, source) && inside(outputRoot, target)); const raw = await read(source,undefined,
+      observe===null?null:stat=>observe(name,'SOURCE',stat));
     same({bytes: raw.length, sha256: sha(raw)}, {bytes: row.bytes, sha256: row.sha256}, 'Actual prepared provider/admin input');
     // These are runtime input leaves in a fresh, owned Git work copy, not old
     // model code or originals. The later source-clean comparison excludes no code.
     refuseFixtureOnly(JSON.parse(raw)); await fs.mkdir(path.dirname(target), {recursive: true});
     await noLinks(path.dirname(target)); await fs.writeFile(target, raw);
-    same(await read(target), raw, 'Actual copied provider/admin input');
+    same(await read(target,undefined,observe===null?null:stat=>observe(name,'TARGET',stat)), raw, 'Actual copied provider/admin input');
   }
   return seen;
 }
@@ -906,11 +908,19 @@ export async function prepareCurrentSourceNativeFrom594Prefix(){
 
 export async function produceCurrent598NativePrefix(options){
   current598PrefixPhase='ENTRY_GUARDS';
+  requireSourceProducerOutput();requireSourceProducerBinding();assert.equal(arguments.length,1);
+  return produceCurrent598NativePrefixFromAdmin(options,false);
+}
+async function produceCurrent598NativePrefixFromAdmin(options,providerFilesOnly){
+  current598PrefixPhase='ENTRY_GUARDS';
   requireSourceProducerOutput();requireSourceProducerBinding(); // Before getters/I/O, never waive NULL/committed-source gates.
-  assert.equal(arguments.length,1);assert.equal(process.platform,'linux');
+  assert.equal(arguments.length,2);assert.equal(typeof providerFilesOnly,'boolean');assert.equal(process.platform,'linux');
   assert.equal(Number(process.versions.node.split('.')[0]),24);
-  exact(options,['profile','workRoot','inputRoot','adminInputs','providerInputs','targetReferenceAt']);
-  assert.equal(options.profile,'current598-preparation');
+  if(providerFilesOnly)exact(options,['workRoot','inputRoot','adminInputs','targetReferenceAt']);
+  else{
+    exact(options,['profile','workRoot','inputRoot','adminInputs','providerInputs','targetReferenceAt']);
+    assert.equal(options.profile,'current598-preparation');
+  }
   const target=hour(options.targetReferenceAt),own=path.dirname(ROOT),work=path.resolve(options.workRoot),inputRoot=path.resolve(options.inputRoot);
   assert.equal(path.basename(ROOT),'current-source-native');assert.match(path.basename(own),/^rr-source19-union-native-/);
   assert.equal(work,path.join(own,'current598-native-inputs'));assert.equal(inputRoot,path.join(own,'fixture-current598'));
@@ -1011,11 +1021,38 @@ export async function produceCurrent598NativePrefix(options){
     current598PrefixPhase='ARCHIVE_PREPARE';
     const archive=await(await load(host594,'scripts/archived-weather-restart.mjs')).prepareArchivedWeatherRestart({
       workRoot:path.join(work,'restart'),publicRoot:archiveSeed.publicRoot,targetReferenceAt:target});
+    const preserveOriginals=async()=>{
+    same(await read(code598OptionsFile,1024*1024),code598OptionsBytes,'Retained new genuine598 provider options');
+    same(await read(rawInventoryFile,4*1024*1024),rawInventoryBytes,'Retained original input inventory');
+    same(await read(rawManifestFile,4*1024*1024),rawManifestBytes,'Whole normal raw manifest preserved');
+    same((await fs.readdir(rawRoot)).sort(),rawNames,'Normal raw inventory preserved');
+    for(const row of rawTransportFiles){const bytes=await read(row.file),stat=await fs.lstat(row.file,{bigint:true});
+      same({bytes:bytes.length,sha256:sha(bytes)},{bytes:row.bytes,sha256:row.sha256},'Whole raw transport original preserved');
+      same([stat.dev,stat.ino,stat.size,stat.mtimeNs,stat.ctimeNs],[row.stat.dev,row.stat.ino,row.stat.size,row.stat.mtimeNs,row.stat.ctimeNs]);}
+
+    for(const {file,stat}of originalRows){const after=await fs.lstat(file,{bigint:true});
+      same([after.dev,after.ino,after.size,after.mtimeNs,after.ctimeNs],[stat.dev,stat.ino,stat.size,stat.mtimeNs,stat.ctimeNs],
+        'Input originals stay owned in the genuine598 canonical raw root');}
+    same([workStat.dev,workStat.ino],await fs.lstat(work,{bigint:true}).then(stat=>[stat.dev,stat.ino]));
+    };
     current598PrefixPhase='PROVIDER_INSTALL';
-    const providers=await copyInputs(code598InputRoot,host594,code598Options.providerInputs,PROVIDERS);
+    const observe=providerFilesOnly?(relativePath,side,stat)=>{
+      assert(PROVIDERS.includes(relativePath)&&['SOURCE','TARGET'].includes(side));
+      console.error(JSON.stringify({kind:'CURRENT598_PROVIDER_FILE_STAT',relativePath,side,
+        regular:stat.regular,nlink:Number(stat.nlink),sizeBytes:Number(stat.size),maximumBytes:256*1024*1024,
+        sourceAdmission:false,productionProof:false}));
+    }:null;
+    const providers=await copyInputs(code598InputRoot,host594,code598Options.providerInputs,PROVIDERS,observe);
     for(const file of ['data/live/dmi-bulk-cache.json','data/live/dmi-forecast-cache.json',
       '.cache/copernicus-current-shadow.json','.cache/open-meteo-current-fallback.json',
       'data/live/current-pilot-history.json','data/live/dmi-water-stations.json'])assert(providers.has(file),'Actual provider leaf: '+file);
+    if(providerFilesOnly){
+      current598PrefixPhase='PRESERVATION';await preserveOriginals();
+      return Object.freeze({profile:'current598-preparation',status:'PREPARATION_ONLY',
+        providerFactoryReturned:true,providerCopyCompleted:true,providerFiles:code598Options.providerInputs,
+        initialSqlExecuted:false,normalActionStarted:false,sdkExecuted:false,sourceAdmission:false,
+        nativePass:false,productionProof:false});
+    }
     process.env.DMI_BULK_RAW_DIR=rawRoot; // The SAME canonical code598 ROOT/.cache/dmi-grib; no raw copy/capture retag.
     process.env.RAVRADAR_WEATHER_CACHE_ONLY='true';process.env.RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE='true';
     process.env.RAVRADAR_PRODUCTION_TARGET_HOUR=target;
@@ -1030,18 +1067,7 @@ export async function produceCurrent598NativePrefix(options){
     assert.equal(saved598.referenceAt,target);same(saved598.manifest.modelBinding,integrated);
     same(saved598.manifest.contractHashes,contracts); // Normal full B/S creation and whole restore above, never a tuple projection.
     current598PrefixPhase='PRESERVATION';
-    same(await read(code598OptionsFile,1024*1024),code598OptionsBytes,'Retained new genuine598 provider options');
-    same(await read(rawInventoryFile,4*1024*1024),rawInventoryBytes,'Retained original input inventory');
-    same(await read(rawManifestFile,4*1024*1024),rawManifestBytes,'Whole normal raw manifest preserved');
-    same((await fs.readdir(rawRoot)).sort(),rawNames,'Normal raw inventory preserved');
-    for(const row of rawTransportFiles){const bytes=await read(row.file),stat=await fs.lstat(row.file,{bigint:true});
-      same({bytes:bytes.length,sha256:sha(bytes)},{bytes:row.bytes,sha256:row.sha256},'Whole raw transport original preserved');
-      same([stat.dev,stat.ino,stat.size,stat.mtimeNs,stat.ctimeNs],[row.stat.dev,row.stat.ino,row.stat.size,row.stat.mtimeNs,row.stat.ctimeNs]);}
-
-    for(const {file,stat}of originalRows){const after=await fs.lstat(file,{bigint:true});
-      same([after.dev,after.ino,after.size,after.mtimeNs,after.ctimeNs],[stat.dev,stat.ino,stat.size,stat.mtimeNs,stat.ctimeNs],
-        'Input originals stay owned in the genuine598 canonical raw root');}
-    same([workStat.dev,workStat.ino],await fs.lstat(work,{bigint:true}).then(stat=>[stat.dev,stat.ino]));
+    await preserveOriginals();
     return Object.freeze({profile:'current598-native-prefix',workRoot:work,sourceRoot:host594,executionHead,
       saved598,registry:structuredClone(registry),documents:backend.documents,objects:backend.objects,
       archiveContextPath:archive.contextPath,archiveContextSha256:archive.contextSha256,
@@ -1064,6 +1090,16 @@ export async function produceCurrent598NativePrefix(options){
     if(cleanupFailure&&first)Object.defineProperty(first,'nativeInputCleanupFailure',{value:cleanupFailure});
     else if(cleanupFailure){current598PrefixPhase='CLEANUP';throw cleanupFailure;}
   }
+}
+
+export async function prepareCurrent598NativeProviderFiles(){
+  current598PrefixPhase='ENTRY_GUARDS';
+  requireSourceProducerOutput();requireSourceProducerBinding();assert.equal(arguments.length,0);
+  assert.equal(process.platform,'linux');assert.equal(Number(process.versions.node.split('.')[0]),24);
+  const own=path.dirname(ROOT);assert.equal(path.basename(ROOT),'current-source-native');
+  assert.match(path.basename(own),/^rr-source19-union-native-/);
+  const transport=JSON.parse(await read(path.join(own,'fixture-current598/current598-admin-transport.json'),1024*1024));
+  return produceCurrent598NativePrefixFromAdmin(transport,true);
 }
 
 export async function prepareCurrent598NativePrefixProfile(){
@@ -1096,11 +1132,11 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
   try{
     requireSourceProducerOutput(); requireSourceProducerBinding();
     assert.equal(process.argv.length,3);
-    assert(['--prepare-current-profile','--prepare-initial-profile','--prepare-current-from-initial-profile','--prepare-current598-prefix','--prepare-current-from594-prefix'].includes(mode));
-    console.log(JSON.stringify(await(mode==='--prepare-current-from594-prefix'?prepareCurrentSourceNativeFrom594Prefix():mode==='--prepare-current598-prefix'?prepareCurrent598NativePrefixProfile():mode==='--prepare-initial-profile'?prepareCurrentSourceNativeInitialProfile():
+    assert(['--prepare-current-profile','--prepare-initial-profile','--prepare-current-from-initial-profile','--prepare-current598-prefix','--prepare-current598-provider-files','--prepare-current-from594-prefix'].includes(mode));
+    console.log(JSON.stringify(await(mode==='--prepare-current-from594-prefix'?prepareCurrentSourceNativeFrom594Prefix():mode==='--prepare-current598-prefix'?prepareCurrent598NativePrefixProfile():mode==='--prepare-current598-provider-files'?prepareCurrent598NativeProviderFiles():mode==='--prepare-initial-profile'?prepareCurrentSourceNativeInitialProfile():
       mode==='--prepare-current-from-initial-profile'?prepareCurrentSourceNativeFromInitialProfile():prepareCurrentSourceNativeProfile())));
   }catch(error){
-    if(mode==='--prepare-current598-prefix')try{console.error(JSON.stringify(await describeCurrent598PrefixFailure(error,current598PrefixPhase)));}catch{}
+    if(['--prepare-current598-prefix','--prepare-current598-provider-files'].includes(mode))try{console.error(JSON.stringify(await describeCurrent598PrefixFailure(error,current598PrefixPhase)));}catch{}
     throw error;
   }
 }

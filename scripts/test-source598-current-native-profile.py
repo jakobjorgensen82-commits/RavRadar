@@ -2596,11 +2596,40 @@ def current_prefix_provider_failure(own, root):
 
 
 def emit_current598_preparation_failure(test):
+    for value in getattr(test, '_current_native_provider_file_stats', ()):
+        print(json.dumps(value, separators=(',', ':')), flush=True)
     for name in ('_current_native_provider_failure', '_current_native_prefix_provider_failure',
             '_current_native_prefix_failure'):
         value = getattr(test, name, None)
         if value is not None:
             print(json.dumps(value, separators=(',', ':')), flush=True)
+
+
+def current598_provider_file_stat_reports(own, allowed):
+    raw = source_current_cohort_read(own, 'current598-prefix-whole.stderr', 16 * 1024 * 1024)
+    expected = [(name, side) for name in allowed for side in ('SOURCE', 'TARGET')]
+    found = []
+    for line in raw.splitlines():
+        if len(line) > 4096:
+            continue
+        try:
+            value = json.loads(line)
+        except (ValueError, UnicodeError):
+            continue
+        if type(value) is not dict or value.get('kind') != 'CURRENT598_PROVIDER_FILE_STAT':
+            continue
+        if (set(value) != {'kind', 'relativePath', 'side', 'regular', 'nlink', 'sizeBytes',
+                'maximumBytes', 'sourceAdmission', 'productionProof'}
+                or len(found) >= len(expected)
+                or (value['relativePath'], value['side']) != expected[len(found)]
+                or type(value['regular']) is not bool
+                or any(type(value[key]) is not int or not 0 <= value[key] <= 2**53-1
+                    for key in ('nlink', 'sizeBytes'))
+                or type(value['maximumBytes']) is not int or value['maximumBytes'] != 256 * 1024 * 1024
+                or value['sourceAdmission'] is not False or value['productionProof'] is not False):
+            raise AssertionError('CURRENT598_PROVIDER_FILE_STAT_UNPROVED')
+        found.append(value)
+    return found
 
 
 def current_provider_failure(own, root):
@@ -2676,7 +2705,8 @@ class SourceProviderEvidencePureTests(unittest.TestCase):
     def test_prefix_first_failure_survives_normal_case_and_wrapper_without_private_values(self):
         actual = self.prefix_node("""
 import assert from 'node:assert/strict';
-import {describeCurrent598PrefixFailure,prepareCurrent598NativePrefixProfile} from './scripts/fixtures/source19-current-normal-inputs.mjs';
+import {describeCurrent598PrefixFailure,prepareCurrent598NativePrefixProfile,prepareCurrent598NativeProviderFiles} from './scripts/fixtures/source19-current-normal-inputs.mjs';
+await assert.rejects(prepareCurrent598NativeProviderFiles(),{code:'ERR_ASSERTION'});
 let first;
 try{await prepareCurrent598NativePrefixProfile();}catch(error){first=error;}
 assert(first,'The real normal entry must reject this unqualified pure-test host');
@@ -2822,6 +2852,52 @@ process.exitCode=first.status;
                         self.assertIsNone(current_prefix_provider_failure(own, ROOT))
                     (own / 'current598-prefix-whole.stderr').write_bytes((json.dumps(boundary)+'\n'+json.dumps(boundary)+'\n').encode())
                     self.assertIsNone(current_prefix_provider_failure(own, ROOT))
+
+    def test_current598_admin_transport_preserves_actual_source_bytes(self):
+        import runpy
+        api = runpy.run_path(str(ROOT / 'scripts/fixtures/source19-current-native-providers.py'))
+        copy = api['copy_native_provider_admin_inputs']
+        with tempfile.TemporaryDirectory(prefix='rr-provider-admin-unit-') as directory:
+            out = Path(directory)
+            rows = copy(ROOT, out)
+            self.assertTrue(rows)
+            for row in rows:
+                raw = (ROOT / row['relativePath']).read_bytes()
+                self.assertEqual((out / row['relativePath']).read_bytes(), raw)
+                self.assertEqual((row['bytes'], row['sha256']), (len(raw), sha(raw)))
+            with self.assertRaises(FileExistsError):
+                copy(ROOT, out)
+            with self.assertRaisesRegex(RuntimeError, '^CURRENT_NATIVE_PROVIDER_ADMIN_INPUT_MISSING$'):
+                copy(out / 'absent', out / 'new')
+
+    def test_current598_provider_file_stat_projection_preserves_failed_guards(self):
+        import runpy
+        api = runpy.run_path(str(ROOT / 'scripts/fixtures/source19-current-native-providers.py'))
+        allowed = api['NORMAL_PROVIDER_FILES']
+        self.assertEqual(len(allowed), 9)
+        base = {'kind': 'CURRENT598_PROVIDER_FILE_STAT', 'relativePath': allowed[0], 'side': 'SOURCE',
+            'regular': True, 'nlink': 1, 'sizeBytes': 3, 'maximumBytes': 256 * 1024 * 1024,
+            'sourceAdmission': False, 'productionProof': False}
+        with tempfile.TemporaryDirectory(prefix='rr-provider-stat-unit-') as directory:
+            own = Path(directory); file = own / 'current598-prefix-whole.stderr'
+            def read_fixed(root, relative, maximum):
+                self.assertEqual((root, relative, maximum), (own, file.name, 16 * 1024 * 1024))
+                return file.read_bytes()
+            with mock.patch.dict(globals(), {'source_current_cohort_read': read_fixed}):
+                for changed in ({'regular': False}, {'nlink': 2}, {'sizeBytes': 0}, {'sizeBytes': 268435457}):
+                    value = {**base, **changed}
+                    file.write_text(json.dumps(value) + '\nPRIVATE_SENTINEL\n', encoding='utf8')
+                    self.assertEqual(current598_provider_file_stat_reports(own, allowed), [value])
+                for changed in ({'raw': 'PRIVATE'}, {'relativePath': 'unknown'}, {'side': 'OTHER'},
+                        {'regular': 1}, {'nlink': True}, {'sizeBytes': -1}, {'maximumBytes': 268435457},
+                        {'maximumBytes': 268435456.0},
+                        {'sourceAdmission': True}, {'productionProof': True}):
+                    file.write_text(json.dumps({**base, **changed}) + '\n', encoding='utf8')
+                    with self.assertRaisesRegex(AssertionError, '^CURRENT598_PROVIDER_FILE_STAT_UNPROVED$'):
+                        current598_provider_file_stat_reports(own, allowed)
+                file.write_text(json.dumps(base) + '\n' + json.dumps(base) + '\n', encoding='utf8')
+                with self.assertRaises(AssertionError):
+                    current598_provider_file_stat_reports(own, allowed)
 
     def test_prefix_missing_ambiguous_or_unverified_marker_stays_unknown(self):
         base = {'kind': 'CURRENT598_PREFIX_FIRST_FAILURE', 'phase': 'RAW_INPUTS', 'exceptionType': 'ERROR',
@@ -3401,7 +3477,7 @@ CURRENT_NATIVE_CASE = 'current-source-native'
 CURRENT_NATIVE_CONTEXT = None
 CURRENT_NATIVE_INPUT_PROFILE = 'operative585'
 CURRENT598_INPUT_PROFILE_PATH = 'scripts/fixtures/source19-current598-input-profile.json'
-CURRENT598_INPUT_PROFILE_SHA256 = '058cb06dacb7ad7cd1d444695b1de29a8e48a139572bf3bcf679e1b51e0aabae'
+CURRENT598_INPUT_PROFILE_SHA256 = '45ef3e0d6fb7bc8ec340a0d13b285e32d3b0bb9cc7c2250f3ca65901ce624294'
 
 CURRENT_NATIVE_POST64_MODULE = None
 def current_native_post64_module():
@@ -3991,6 +4067,47 @@ class SourceCurrentNative(SourceActualSUnionNative):
         self.assertIs(inputs['providerOriginals']['sdkExecuted'], False)
         self.assertTrue(inputs['providerOriginals']['rawTransportFiles'])
         return inputs
+
+
+    def test_current598_provider_files_preparation(self):
+        self.assertEqual(sys.platform, 'linux'); self.assertEqual(sys.version_info[:2], (3, 12))
+        self.assertIsNone(CURRENT_NATIVE_CONTEXT)
+        self.assertEqual(CURRENT_NATIVE_INPUT_PROFILE, 'current598-preparation')
+        profile = self.current598_profile()
+        head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT,
+            env=clean_environment(), text=True).strip()
+        own, root, environment, target = self.owned_current_host(head, with_sdk=True)
+        inputs = own / 'fixture-current598'; inputs.mkdir(mode=0o700, parents=False, exist_ok=False)
+        file = root / 'scripts/fixtures/source19-current-native-providers.py'
+        spec = importlib.util.spec_from_file_location('owned_provider_admin_transport', file)
+        api = importlib.util.module_from_spec(spec); spec.loader.exec_module(api)
+        subprocess.run([str(NODE), str(api.source_native_provider_program_path('PUBLIC_REGISTRY', root))],
+            cwd=root, env=environment, stdin=subprocess.DEVNULL, check=True, timeout=30)
+        admin = api.copy_native_provider_admin_inputs(root, inputs)
+        transport = {'workRoot': str(own / 'current598-native-inputs'), 'inputRoot': str(inputs),
+            'adminInputs': admin, 'targetReferenceAt': target}
+        with (inputs / 'current598-admin-transport.json').open('x', encoding='utf8') as stream:
+            stream.write(json.dumps(transport, separators=(',', ':')) + '\n'); stream.flush(); os.fsync(stream.fileno())
+        allowed = api.NORMAL_PROVIDER_FILES
+        try:
+            self.run_current598_preparation_commands(own, root, environment, (
+                ('prefix', [str(NODE), str(root / 'scripts/fixtures/source19-current-normal-inputs.mjs'),
+                    '--prepare-current598-provider-files']),))
+        except BaseException:
+            try:
+                self._current_native_provider_file_stats = current598_provider_file_stat_reports(own, allowed)
+            except BaseException:
+                pass  # Den oprindelige childfejl bevares.
+            raise
+        observed = current598_provider_file_stat_reports(own, allowed)
+        self.assertEqual(len(observed), 2 * len(allowed)); self.assertEqual(len(allowed), 9)
+        for value in observed:
+            print(json.dumps(value, separators=(',', ':')), flush=True)
+        print(json.dumps({'kind': 'CURRENT598_NORMAL_INPUT_PREPARATION', 'status': 'PREPARATION_ONLY',
+            'profileSha256': CURRENT598_INPUT_PROFILE_SHA256, 'executionHead': head,
+            'normalPrefixReturned': False, 'providerFactoryReturned': True, 'providerCopyCompleted': True,
+            'initialSqlExecuted': False, 'normalActionStarted': False, 'sdkExecuted': False,
+            'sourceAdmission': False, 'nativePass': False, 'productionProof': False}, separators=(',', ':')), flush=True)
 
 
     def test_current598_prefix_preparation(self):
@@ -4712,9 +4829,11 @@ def run_current_native_profile_cli():
     profile.add_argument('--current-source-profile', action='store_true')
     profile.add_argument('--source-legacy-compatibility', action='store_true')
     profile.add_argument('--prepare-current598-prefix', action='store_true')
+    profile.add_argument('--prepare-current598-provider-files', action='store_true')
     parser.add_argument('--node24-path', required=True)
     parser.add_argument('--input-profile', choices=('operative585', 'current598-preparation'), default='operative585')
     args = parser.parse_args()
+    preparation_only = args.prepare_current598_prefix or args.prepare_current598_provider_files
     if args.source_legacy_compatibility and args.input_profile != 'operative585':
         raise ValueError('SOURCE_CURRENT_PROFILE_LEGACY_INPUTS_UNCHANGED')
     CURRENT_NATIVE_INPUT_PROFILE = args.input_profile
@@ -4731,7 +4850,7 @@ def run_current_native_profile_cli():
         raise ValueError('SOURCE_CURRENT_PROFILE_MUST_MATCH_ACTUAL594_PRODUCT')
     NODE = NODE.resolve(strict=True); NODE22 = NODE  # old cases are not selected
     CASE = 'source-legacy-compatibility' if args.source_legacy_compatibility else CURRENT_NATIVE_CASE
-    if args.prepare_current598_prefix:
+    if preparation_only:
         CURRENT_NATIVE_CONTEXT = None
     else:
         raw = sys.stdin.buffer.read(16385)
@@ -4741,7 +4860,7 @@ def run_current_native_profile_cli():
         # Standard unittest reporting remains unchanged; add only a fixed
         # first-cause observation before normal error/failure reporting.
         def emit_case_location(self, test, error):
-            if args.prepare_current598_prefix:
+            if preparation_only:
                 emit_current598_preparation_failure(test)
                 return
             try:
@@ -4758,7 +4877,7 @@ def run_current_native_profile_cli():
                         print(json.dumps(projected, separators=(',', ':')), flush=True)
                 except BaseException:
                     pass
-            if not args.prepare_current598_prefix:
+            if not preparation_only:
                 current_native_post64_module().emit_current_native_failure(error[1], phase='CURRENT_CASE')
             if not args.source_legacy_compatibility:
                 self.emit_case_location(test, error)
@@ -4771,12 +4890,13 @@ def run_current_native_profile_cli():
                         print(json.dumps(projected, separators=(',', ':')), flush=True)
                 except BaseException:
                     pass
-            if not args.prepare_current598_prefix:
+            if not preparation_only:
                 current_native_post64_module().emit_current_native_failure(error[1], phase='CURRENT_CASE')
             if not args.source_legacy_compatibility:
                 self.emit_case_location(test, error)
             super().addFailure(test, error)
-    selected = ('SourceCurrentNative.test_current598_prefix_preparation' if args.prepare_current598_prefix
+    selected = ('SourceCurrentNative.test_current598_provider_files_preparation' if args.prepare_current598_provider_files
+        else 'SourceCurrentNative.test_current598_prefix_preparation' if args.prepare_current598_prefix
         else current_source_native_test_selection(args.source_legacy_compatibility, CURRENT_NATIVE_CONTEXT))
     unittest.main(argv=[sys.argv[0]], defaultTest=selected,
         testRunner=unittest.TextTestRunner(resultclass=CurrentNativeFixedFirstResult, failfast=True))
@@ -4787,12 +4907,14 @@ if __name__ == '__main__':
         unittest.main(argv=[sys.argv[0]], defaultTest=(
             'SourceProviderEvidencePureTests.test_prefix_first_failure_survives_normal_case_and_wrapper_without_private_values',
             'SourceProviderEvidencePureTests.test_prefix_missing_ambiguous_or_unverified_marker_stays_unknown',
-            'SourceProviderEvidencePureTests.test_prefix_nested_provider_and_forecast_failures_reach_normal_diagnostic_printer'))
+            'SourceProviderEvidencePureTests.test_prefix_nested_provider_and_forecast_failures_reach_normal_diagnostic_printer',
+            'SourceProviderEvidencePureTests.test_current598_admin_transport_preserves_actual_source_bytes',
+            'SourceProviderEvidencePureTests.test_current598_provider_file_stat_projection_preserves_failed_guards'))
     if sys.argv[1:] == ['--provider-diagnostic-unit']:
         unittest.main(argv=[sys.argv[0]], defaultTest='SourceProviderEvidencePureTests')
     if sys.argv[1:] == ['--legacy-diagnostic-unit']:
         unittest.main(argv=[sys.argv[0]], defaultTest='SourceObserverPureTests.test_legacy_child_failure_projects_three_commands_without_raw_exception')
-    if sys.argv[1:2] in (['--current-source-profile'], ['--source-legacy-compatibility'], ['--prepare-current598-prefix']):
+    if sys.argv[1:2] in (['--current-source-profile'], ['--source-legacy-compatibility'], ['--prepare-current598-prefix'], ['--prepare-current598-provider-files']):
         run_current_native_profile_cli()
     if sys.argv[1:] == ['--terminal-marker-unit']:
         unittest.main(argv=[sys.argv[0]], defaultTest='SourceTerminalMarkerInputTests')

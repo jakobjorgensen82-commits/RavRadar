@@ -53,6 +53,8 @@ OFFSETS = tuple(range(121))
 BASIS = ("data/live/dmi-bulk-cache.json", "data/live/dmi-forecast-cache.json",
          ".cache/copernicus-current-shadow.json", ".cache/open-meteo-current-fallback.json",
          "data/live/current-pilot-history.json", "data/live/dmi-water-stations.json")
+NORMAL_PROVIDER_FILES = (*BASIS, ".cache/copernicus-current-source-stage.json",
+    ".cache/current-field-shadow.json", ".cache/open-meteo-current-donor-bank.json")
 
 
 def need(value, reason):
@@ -483,6 +485,28 @@ def run_current_native_provider_command(command, normal_root):
     return subprocess.run(command, cwd=normal_root, stdin=subprocess.DEVNULL, check=True, timeout=120)
 
 
+def copy_native_provider_admin_inputs(normal_root, out):
+    admin = ("data/zones.geojson", "data/admin/coastline-overrides.json", "data/admin/direction-reviews.json",
+        "data/geometry-v2/active-national-coastal-parts/manifest.json",
+        *["data/geometry-v2/active-national-coastal-parts/" + name for name in
+          ("coastal-parts.geojson", "part-names.json", "point-pairs.json", "dmi-grid-proof.json")])
+    admin_rows = []
+    for relative in admin:
+        source = normal_root / relative
+        if not source.exists():
+            need(relative in {"data/admin/coastline-overrides.json", "data/admin/direction-reviews.json"}, "ADMIN_INPUT_MISSING")
+            continue
+        target = out / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        with target.open("xb") as output:
+            output.write(source.read_bytes())
+            output.flush()
+            os.fsync(output.fileno())
+        need(digest(target) == digest(source), "ADMIN_COPY_CHANGED")
+        admin_rows.append({"relativePath": relative, "bytes": target.stat().st_size, "sha256": digest(target)})
+    return admin_rows
+
+
 def finish_normal_basis(node, out, reference, producer, targets, document, *, initial_phase=None, current598=False, code598_root=None):
     """Actual existing normal producers, never authored READY/closure/pilot data."""
     normal_root = ROOT if code598_root is None else genuine598_code_root(code598_root)
@@ -551,26 +575,8 @@ def finish_normal_basis(node, out, reference, producer, targets, document, *, in
     # no invented inventory, forecast value, source routing or status. The real
     # updater creates its full lifecycle document later from these empty inputs.
     write_new(out / BASIS[5], {"stations": []})
-    admin = ("data/zones.geojson", "data/admin/coastline-overrides.json", "data/admin/direction-reviews.json",
-        "data/geometry-v2/active-national-coastal-parts/manifest.json",
-        *["data/geometry-v2/active-national-coastal-parts/" + name for name in
-          ("coastal-parts.geojson", "part-names.json", "point-pairs.json", "dmi-grid-proof.json")])
-    admin_rows = []
-    for relative in admin:
-        source = normal_root / relative
-        if not source.exists():
-            need(relative in {"data/admin/coastline-overrides.json", "data/admin/direction-reviews.json"}, "ADMIN_INPUT_MISSING")
-            continue
-        target = out / relative
-        target.parent.mkdir(parents=True, exist_ok=True)
-        with target.open("xb") as output:
-            output.write(source.read_bytes())
-            output.flush()
-            os.fsync(output.fileno())
-        need(digest(target) == digest(source), "ADMIN_COPY_CHANGED")
-        admin_rows.append({"relativePath": relative, "bytes": target.stat().st_size, "sha256": digest(target)})
-    provider_files = (*BASIS, ".cache/copernicus-current-source-stage.json", ".cache/current-field-shadow.json",
-        ".cache/open-meteo-current-donor-bank.json")
+    admin_rows = copy_native_provider_admin_inputs(normal_root, out)
+    provider_files = NORMAL_PROVIDER_FILES
     provider_rows = []
     for relative in provider_files:
         file = out / relative

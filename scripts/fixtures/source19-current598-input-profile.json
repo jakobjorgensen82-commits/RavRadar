@@ -28,14 +28,14 @@
     },
     {
       "path": "scripts/fixtures/source19-current-native-providers.py",
-      "bytes": 40134,
-      "sha256": "35680b987e1d49c6898d6dce39b1b268af9929c720575d03ca3a93a71d28076f",
+      "bytes": 40326,
+      "sha256": "dda8b873920b27e039e25c6731be5ef401f09724369f4d4827aaf442eb558602",
       "source": "THIS_SAME_ACTUAL_COMMITTED_CANDIDATE"
     },
     {
       "path": "scripts/fixtures/source19-current-normal-inputs.mjs",
-      "bytes": 88542,
-      "sha256": "fc3d7d7a4df5734095f42b219272a89be27f036375a1d7918a61a7d28e136aaf",
+      "bytes": 91033,
+      "sha256": "0a84d2639b61203eb00ff54bd2144b61bb2e29683e5858e4ff5a93cd476e6834",
       "source": "THIS_SAME_ACTUAL_COMMITTED_CANDIDATE"
     },
     {
