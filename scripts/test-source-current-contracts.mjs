@@ -8,10 +8,11 @@ import path from 'node:path';
 import childProcess,{execFileSync} from 'node:child_process';
 import {syncBuiltinESMExports} from 'node:module';
 import {fileURLToPath,pathToFileURL} from 'node:url';
-import {CURRENT_CONTRACT_COMMANDS,isBoundedLocalRestoreFixtureChange,pagesContractCommandsForChangedInputs,dmiBudgetWeatherBuildAreas,isDmiBudgetOnlyUpdaterChange,isDmiBudgetOnlySupervisorChange} from './source-current-contract-plan.mjs';
+import {CURRENT_CONTRACT_COMMANDS,isBoundedLocalRestoreFixtureChange,pagesContractCommandsForChangedInputs,dmiBudgetWeatherBuildAreas,isDmiBudgetOnlyUpdaterChange,isDmiBudgetOnlySupervisorChange,isDmiCollectionRecoveryOnlyUpdaterChange,isDmiCollectionRecoveryOnlyFixtureChange,dmiCollectionRecoveryUpdaterAreas} from './source-current-contract-plan.mjs';
 
 const SOURCE=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const dmiBudgetScopeOnly=process.argv.includes('--dmi-budget-scope-only');
+const dmiRecoveryScopeOnly=process.argv.includes('--dmi-recovery-scope-only');
 
 // The fixed restore command owns only its reviewed fixture body. Import and
 // dispatch frames remain immutable; its actual --self-test runs separately.
@@ -440,6 +441,7 @@ try{
   const {planSourceCurrentContractsFromGit:plan}=await moduleAt('scripts/source-current-contract-plan.mjs');
   planCurrent=plan;
 
+  if(!dmiRecoveryScopeOnly){
   const dmiScopeStarted=performance.now();
   // The existing normal Git planner, with genuine PG/C/I/T fixture inputs.
   const dmiBaseTree=rewrite(baselineTree,DMI_FILES.map(f=>[f,Buffer.from(dmiBefore.get(f))]));
@@ -470,7 +472,53 @@ try{
   checkout(base);scenarios.push('DMI owner preserves all unowned workflow/updater/supervisor bytes; unknown or protected changes retain FULL');
   console.log(JSON.stringify({kind:'DMI_BUDGET_NORMAL_GIT_SCOPE',cases:6,elapsedMs:performance.now()-dmiScopeStarted,
     independentProtectedBoundaryRefusals:3,unknownAndAddedRefusals:2,protectedAnalysisReused:false}));
+  }
   if(!dmiBudgetScopeOnly){
+    const started=performance.now(),producer='scripts/update-dmi-bulk.py',fixture='scripts/test-dmi-dkss-primary-mode.py';
+    // Actual historical Git blobs are test inputs only. They cannot route or
+    // qualify a candidate. Pin both preimages so later producer/version work
+    // does not silently rewrite this historical scope oracle.
+    const oldBytes=new Map([[producer,'261fec2f43c72bd3c47adef9ce9f652b24a4e5a0'],
+      [fixture,'d1f7b0dfdb50244b66e939d3d5111706de7c0897']].map(([file,blob])=>[file,git(SOURCE,['cat-file','blob',blob])]));
+    const newBytes=new Map([[producer,'6dc5367aa803572057b7a0c49f7ffc430ae85ea4'],
+      [fixture,'3880978c343e2ba9bab21476363d418a91eaaf92']].map(([file,blob])=>[file,git(SOURCE,['cat-file','blob',blob])]));
+    const helper=file=>file===producer?isDmiCollectionRecoveryOnlyUpdaterChange:isDmiCollectionRecoveryOnlyFixtureChange;
+    for(const file of [producer,fixture])assert.equal(helper(file)(oldBytes.get(file).toString(),newBytes.get(file).toString()),true);
+    const priorTree=rewrite(baselineTree,[...oldBytes]),prior=commit(priorTree,[base],'synthetic collection recovery predecessor');
+    const positive=commit(rewrite(priorTree,[...newBytes]),[prior],'synthetic complete recovery scope');checkout(positive);
+    const selected=plan({baselineCommit:prior,candidateCommit:positive,expectedHead:positive});
+    assert.equal(selected.selection,'CURRENT_CONTRACTS',JSON.stringify(selected));
+    assert.deepEqual(selected.commands,[...CURRENT_CONTRACT_COMMANDS.core,...CURRENT_CONTRACT_COMMANDS.dmiCollectionRecovery]);
+    assert.deepEqual(selected.protectedInputs,{postgresUnchanged:true,CUnchanged:true,IUnchanged:true,TUnchanged:true});
+    assert.equal(selected.controlQualificationRequired,true);assert.equal(selected.changedRows,2);
+    assert.deepEqual(selected.areas.dmiCollectionRecovery.changedPaths,[fixture,producer].sort());cases++;
+    const cumulativePriorProducer=git(SOURCE,['cat-file','blob','c7449040417c61dd9fa1a84ca00f6c3e02b5a402:'+producer]);
+    assert.deepEqual(dmiCollectionRecoveryUpdaterAreas(cumulativePriorProducer.toString(),newBytes.get(producer).toString()),['dmiBudget','dmiCollectionRecovery']);
+    const cumulativeTree=rewrite(priorTree,[[producer,cumulativePriorProducer]]),cumulativeBase=commit(cumulativeTree,[base],'synthetic genuine full producer predecessor');
+    const cumulativeHead=commit(rewrite(cumulativeTree,[...newBytes]),[cumulativeBase],'synthetic closed budget and recovery composition');checkout(cumulativeHead);
+    const combined=plan({baselineCommit:cumulativeBase,candidateCommit:cumulativeHead,expectedHead:cumulativeHead});
+    assert.equal(combined.selection,'CURRENT_CONTRACTS',JSON.stringify(combined));
+    assert.deepEqual(combined.commands,[...CURRENT_CONTRACT_COMMANDS.core,...CURRENT_CONTRACT_COMMANDS.dmiBudget,...CURRENT_CONTRACT_COMMANDS.dmiCollectionRecovery]);
+    assert.deepEqual(combined.protectedInputs,{postgresUnchanged:true,CUnchanged:true,IUnchanged:true,TUnchanged:true});cases++;
+    const original=newBytes.get(producer).toString(),replace=(needle,next)=>{assert(original.includes(needle));return original.replace(needle,next);};
+    const refusals=[
+      [producer,replace('\ndef process_grib_transactionally(','\ndef changed_process_grib_transactionally(')],
+      [producer,replace('\ndef prepare_raw_cache_space(','\ndef changed_prepare_raw_cache_space(')],
+      [producer,replace('WORK_DEADLINE = STARTED +','WORK_DEADLINE = STARTED + 1 +')],
+      [producer,replace('PARSER_VERSION = 20','PARSER_VERSION = 21')],
+      [producer,replace('blocked_parser_version != PARSER_VERSION','False')],
+      [fixture,newBytes.get(fixture).toString()+'\n# outside the new local regression\n'],
+    ];
+    for(const [file,body]of refusals){
+      const failed=commit(rewrite(priorTree,[[file,Buffer.from(body)]]),[prior],'synthetic recovery boundary refusal');checkout(failed);
+      const rejected=plan({baselineCommit:prior,candidateCommit:failed,expectedHead:failed});
+      assert.equal(rejected.selection,'FULL',JSON.stringify(rejected));assert.deepEqual(rejected.commands,[]);cases++;
+    }
+    checkout(base);scenarios.push('Recovery classifier preserves decoder/RAW/deadline/native/original-parser and all old test bytes');
+    console.log(JSON.stringify({kind:'DMI_COLLECTION_RECOVERY_NORMAL_GIT_SCOPE',cases:8,elapsedMs:performance.now()-started,
+      protectedAnalysisReused:false,productInputsAreHistoricalGitBlobs:true,qualificationHashPinsAdded:false}));
+  }
+  if(!dmiBudgetScopeOnly&&!dmiRecoveryScopeOnly){
   // Den samme normale Gitplan skal eje transportvalget og bevare sine beskyttede input.
   const beforeTransportHead=text(root,['rev-parse','HEAD']);
   try{

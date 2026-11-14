@@ -1,5 +1,10 @@
 ## 14. november — normal leverandørbootstrap før autentisk arkivgendannelse
 
+## 2026-11-14: DMI: tom vedligeholdelse uden falsk parserpause
+
+En vedligeholdelsestur, som ikke gennemgår nogen GRIB-fil, registreres som nul fremskridt i stedet for en parserfejl. Den gamle fejlklassifikation kan genvurderes én gang gennem det normale budget. En faktisk ugenkendelig fil får fortsat den normale 24-timers blokering, som bevares gennem gemning, genlæsning og backfill. Rettelsen ændrer ikke dekodning, RAW-grænser eller kildeprioritet. Den er kildeforberedt; faktisk DMI-hentning og gemning skal stadig verificeres i næste almindelige vejrkørsel.
+
+
 Kun archive-målets midlertidige konfiguration aktiverer den pinnede CLI's normale Realtime-engangsinitialisering. Den vedvarende Realtime-tjeneste forbliver udelukket, og de tre normale tjenester, syntetisk standardadfærd, generisk rolleaudit og originale SQL-/ACL-regler bevares. Der indføres ingen egen rolleoprettelse eller SQL-udeladelse. Den normale lokale egenprøve består; præcis kildekvalifikation og faktisk fuld arkiv-/Auth-gendannelse er fortsat særskilte krav. Ingen rotation, beskæring, produktionsrestore eller Free-overgang aktiveres. Version 4.0.598 og numeriske bindinger bevares. Se håndbog 89.345.
 
 ## 14. november — kanoniske assistentsvar med samme sprog og længdebudget

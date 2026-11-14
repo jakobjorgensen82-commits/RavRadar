@@ -86,6 +86,9 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
   dmiBudget:[
     'node scripts/test-dmi-budget-rotation-4.0.189.mjs',
   ],
+  dmiCollectionRecovery:[
+    'node --test scripts/test-current-operational-python-contracts.mjs',
+  ],
   weatherScalarPlanning:[
     'node --test scripts/test-weather-component-normal-wireup.mjs',
   ],
@@ -547,6 +550,75 @@ export function isDmiBudgetOnlySupervisorChange(before,after){
   }catch{return false;}
 }
 
+// Collection failure classification only. These anchored source edits restore
+// the complete prior updater text; decoding, ledger, RAW, identity and deadlines
+// are outside this owner. This is not a whole-blob/hash exception.
+const DMI_COLLECTION_RECOVERY_EDITS=Object.freeze([
+  [
+    "DOWNLOAD_SESSION.headers.update({\"Accept\": \"application/x-grib, application/octet-stream, */*\"})\n\nPARSER_VERSION = 20\nPARAMETER_MAP_VERSION = 4\nGRID_LOOKUP_VERSION = 9\nWAVE_ASSET_ADMISSION_POLICY = \"per-part-atomic-owner-v2\"\n",
+    "DOWNLOAD_SESSION.headers.update({\"Accept\": \"application/x-grib, application/octet-stream, */*\"})\n\nPARSER_VERSION = 20\nUNRECOGNIZED_PARAMETERS_CLASSIFICATION_REVISION = 1\nPARAMETER_MAP_VERSION = 4\nGRID_LOOKUP_VERSION = 9\nWAVE_ASSET_ADMISSION_POLICY = \"per-part-atomic-owner-v2\"\n"
+  ],
+  [
+    "        entry[\"failureClass\"] = None\n        entry[\"blockedParserVersion\"] = None\n        entry[\"consecutiveFailures\"] = 0\n    return epoch(entry.get(\"nextEligibleAt\")) <= now_value\n\n\ndef wam_runtime_reserve(\n",
+    "        entry[\"failureClass\"] = None\n        entry[\"blockedParserVersion\"] = None\n        entry[\"consecutiveFailures\"] = 0\n    classification_revision = entry.get(\"unrecognizedParametersClassificationRevision\", 0)\n    unrecognized_classification_obsolete = (\n        entry.get(\"failureClass\") == \"parser-blocked\"\n        and entry.get(\"lastError\") == (\n            \"GRIB downloaded but no required RavRadar parameters were recognized\"\n        )\n        and type(classification_revision) is int\n        and 0 <= classification_revision < UNRECOGNIZED_PARAMETERS_CLASSIFICATION_REVISION\n    )\n    # This only admits the next ordinary budgeted assessment. A read or an\n    # interrupted/empty turn must not claim that the new classifier was used.\n    return unrecognized_classification_obsolete or epoch(entry.get(\"nextEligibleAt\")) <= now_value\n\n\ndef wam_runtime_reserve(\n"
+  ],
+  [
+    "                    } if bootstrap_operational_wam else {}),\n                    \"assetsSkippedBySupervisor\": 0,\n                    \"assetsSkippedPreviouslyProcessed\": 0,\n                    \"assetsDeferredValidRefresh\": 0,\n                    \"assetsBoundedRefreshAttempted\": 0,\n                    \"assetsBoundedRefreshCompleted\": 0,\n",
+    "                    } if bootstrap_operational_wam else {}),\n                    \"assetsSkippedBySupervisor\": 0,\n                    \"assetsSkippedPreviouslyProcessed\": 0,\n                    \"assetsTraversedThisTurn\": 0,\n                    \"assetsDeferredValidRefresh\": 0,\n                    \"assetsBoundedRefreshAttempted\": 0,\n                    \"assetsBoundedRefreshCompleted\": 0,\n"
+  ],
+  [
+    "                    regional_proxy_collection_completed = True\n                if not interrupted and bootstrap_operational_wam:\n                    run_info[\"assetsObserved\"] += 1\n                recognized.update(found)\n                run_info[\"recognizedParameters\"] = sorted(recognized)\n                result[\"diagnostics\"][\"messagesSeen\"] += messages_seen\n",
+    "                    regional_proxy_collection_completed = True\n                if not interrupted and bootstrap_operational_wam:\n                    run_info[\"assetsObserved\"] += 1\n                run_info[\"assetsTraversedThisTurn\"] += 1\n                if (\n                    found\n                    and state.get(\"failureClass\") == \"parser-blocked\"\n                    and state.get(\"lastError\") == (\n                        \"GRIB downloaded but no required RavRadar parameters were recognized\"\n                    )\n                ):\n                    state[\"failureClass\"] = None\n                    state[\"blockedParserVersion\"] = None\n                    state[\"lastError\"] = None\n                    state[\"nextEligibleAt\"] = None\n                recognized.update(found)\n                run_info[\"recognizedParameters\"] = sorted(recognized)\n                result[\"diagnostics\"][\"messagesSeen\"] += messages_seen\n"
+  ],
+  [
+    "                    result[\"runs\"][collection] = previous_run\n                else:\n                    result[\"runs\"].pop(collection, None)\n            elif not made_progress and collection_assets_complete and recognized >= required and run_info[\"assetsSkippedPreviouslyProcessed\"] == len(assets):\n                state[\"lastCheckedAt\"] = generated\n                state[\"referenceTime\"] = collection_reference_time\n",
+    "                    result[\"runs\"][collection] = previous_run\n                else:\n                    result[\"runs\"].pop(collection, None)\n            elif (\n                collection_is_maintenance\n                and not recognized\n                and run_info[\"assetsTraversedThisTurn\"] == 0\n                and not budget_stop\n            ):\n                # No GRIB was traversed: unfinished critical work is outside\n                # this maintenance turn, not evidence of a parser failure.\n                state[\"lastCheckedAt\"] = generated\n                result[\"diagnostics\"][\"zeroProgressCollections\"].append(collection)\n                if previous_run:\n                    result[\"runs\"][collection] = previous_run\n                else:\n                    result[\"runs\"].pop(collection, None)\n            elif not made_progress and collection_assets_complete and recognized >= required and run_info[\"assetsSkippedPreviouslyProcessed\"] == len(assets):\n                state[\"lastCheckedAt\"] = generated\n                state[\"referenceTime\"] = collection_reference_time\n"
+  ],
+  [
+    "            state[\"lastError\"] = message\n            state[\"failureClass\"] = failure_class\n            state[\"blockedParserVersion\"] = PARSER_VERSION if (parser_blocked or parser_exception) else None\n            state[\"nextEligibleAt\"] = datetime.fromtimestamp(time.time() + delay_minutes * 60, timezone.utc).isoformat().replace(\"+00:00\", \"Z\")\n            result[\"diagnostics\"][\"errors\"].append({\n                \"collection\": collection,\n",
+    "            state[\"lastError\"] = message\n            state[\"failureClass\"] = failure_class\n            state[\"blockedParserVersion\"] = PARSER_VERSION if (parser_blocked or parser_exception) else None\n            if (\n                failure_code == \"GRIB_PARAMETERS_UNRECOGNIZED\"\n                and run_info[\"assetsTraversedThisTurn\"] > 0\n                and not budget_stop\n            ):\n                state[\"unrecognizedParametersClassificationRevision\"] = (\n                    UNRECOGNIZED_PARAMETERS_CLASSIFICATION_REVISION\n                )\n            state[\"nextEligibleAt\"] = datetime.fromtimestamp(time.time() + delay_minutes * 60, timezone.utc).isoformat().replace(\"+00:00\", \"Z\")\n            result[\"diagnostics\"][\"errors\"].append({\n                \"collection\": collection,\n"
+  ]
+]);
+const DMI_COLLECTION_RECOVERY_PATHS=new Set(['scripts/update-dmi-bulk.py','scripts/test-dmi-dkss-primary-mode.py']);
+function restoreDmiCollectionRecoverySource(source){
+  dmiText(source);let restored=source;
+  for(const [prior,next]of DMI_COLLECTION_RECOVERY_EDITS){
+    dmiUnique(restored,next);restored=restored.replace(next,prior);
+  }
+  return restored;
+}
+export function isDmiCollectionRecoveryOnlyUpdaterChange(before,after){
+  try{dmiText(before);assert(before!==after);return restoreDmiCollectionRecoverySource(after)===before;}catch{return false;}
+}
+export function dmiCollectionRecoveryUpdaterAreas(before,after){
+  try{dmiText(before);assert(before!==after);const restored=restoreDmiCollectionRecoverySource(after);
+    if(restored===before)return ['dmiCollectionRecovery'];
+    // Compose only the already closed budget-owner projection. Any remaining
+    // updater difference still refuses this route, including decoder changes.
+    if(isDmiBudgetOnlyUpdaterChange(before,restored))return ['dmiBudget','dmiCollectionRecovery'];
+    return null;
+  }catch{return null;}
+}
+export function isDmiCollectionRecoveryOnlyFixtureChange(before,after){
+  try{dmiText(before);dmiText(after);assert(before!==after);
+    const start='\ndef check_empty_critical_maintenance_is_not_a_parser_failure():\n';
+    const end='\nMODEL_RUN = "2026-01-01T00:00:00Z"\n';
+    const dispatch='\n\ncheck_empty_critical_maintenance_is_not_a_parser_failure()\n'
+      +'if "--empty-maintenance-only" in sys.argv:\n    raise SystemExit(0)\n\n';
+    const frame=(source,required)=>{
+      const first=source.indexOf(start);if(first<0){assert(!required);return source;}
+      assert.equal(source.indexOf(start,first+1),-1);const last=dmiUnique(source,end);assert(last>first);
+      const owned=source.slice(first,last);assert(owned.length<32*1024&&owned.endsWith(dispatch));
+      const body=owned.slice(start.length,-dispatch.length);assert(body.length>0);
+      assert(body.split('\n').every(line=>!line||line.startsWith('    ')));
+      return source.slice(0,first)+source.slice(last);
+    };
+    // Original imports, every old assertion and the fixed normal invocation
+    // stay exact. Only this one new local regression body needs fresh review.
+    return frame(before,false)===frame(after,true);
+  }catch{return false;}
+}
+
 export function planSourceCurrentContractsFromGit(input){
   const out={schemaVersion:1,status:'PLANNED',selection:'CURRENT_CONTRACTS',commands:[],areas:{},
     resultScope:'CURRENT_CONTRACT_RESULTS_ONLY',historicalCompatibilityExecuted:false,
@@ -586,7 +658,15 @@ export function planSourceCurrentContractsFromGit(input){
         return refuse('CURRENT_VALIDATION_WORKFLOW_REQUIRES_FULL');
       if(DMI_BUDGET_PATHS.has(file)&&(row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'))
         return refuse('CURRENT_DMI_BUDGET_REQUIRES_EXISTING_REGULAR_SOURCE');
-      if(file==='scripts/update-dmi-bulk.py'&&!isDmiBudgetOnlyUpdaterChange(
+      const recoveryAreas=file==='scripts/update-dmi-bulk.py'?dmiCollectionRecoveryUpdaterAreas(
+        readCommittedText(input.baselineCommit,file),readCommittedText(input.candidateCommit,file)):null;
+      const recoveryScope=Boolean(recoveryAreas)||(file==='scripts/test-dmi-dkss-primary-mode.py'
+        &&isDmiCollectionRecoveryOnlyFixtureChange(readCommittedText(input.baselineCommit,file),readCommittedText(input.candidateCommit,file)));
+      if(DMI_COLLECTION_RECOVERY_PATHS.has(file)&&(row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'))
+        return refuse('CURRENT_DMI_RECOVERY_REQUIRES_EXISTING_REGULAR_SOURCE',['DMI_PRODUCER_CONTRACTS']);
+      if(file==='scripts/test-dmi-dkss-primary-mode.py'&&!recoveryScope)
+        return refuse('CURRENT_DMI_RECOVERY_FIXTURE_SCOPE_CHANGED',['DMI_PRODUCER_CONTRACTS']);
+      if(file==='scripts/update-dmi-bulk.py'&&!recoveryScope&&!isDmiBudgetOnlyUpdaterChange(
         readCommittedText(input.baselineCommit,file),readCommittedText(input.candidateCommit,file)))
         return refuse('CURRENT_DMI_BUDGET_UPDATER_SCOPE_CHANGED',['DMI_PRODUCER_CONTRACTS']);
       if(file==='scripts/run-dmi-bulk-supervised.py'&&!isDmiBudgetOnlySupervisorChange(
@@ -598,11 +678,11 @@ export function planSourceCurrentContractsFromGit(input){
         readCommittedText(input.baselineCommit,file),readCommittedText(input.candidateCommit,file));
       const pagesAndSupportOnly=file===WEATHER_BUILD&&!supportOnly&&isPagesAndSupportOnlyWeatherBuildChange(
         readCommittedText(input.baselineCommit,file),readCommittedText(input.candidateCommit,file));
-      const areas=dmiAreas??(supportOnly?['workflowSupport']:pagesAndSupportOnly?['pages','workflowSupport']:
+      const areas=(recoveryAreas??(recoveryScope?['dmiCollectionRecovery']:dmiAreas))??(supportOnly?['workflowSupport']:pagesAndSupportOnly?['pages','workflowSupport']:
         pathAreas.get(file)??(/^docs\/(?:rdks|ai|handbook)\/.+\.md$/.test(file)?['documentation']:null));
       if(!areas){unknown.push(file);continue;}
       for(const area of areas){if(!selected.has(area))selected.set(area,[]);selected.get(area).push(file);}
-      if(sourceControlPaths.has(file)||historicalPaths.has(file)||areas.includes('compatibility')||areas.includes('assistantEdge')||areas.includes('mailOwnerProbe')||areas.includes('currentInstalledCodeOnly')||areas.includes('workflowSupport')||areas.includes('dmiBudget')||file.startsWith('scripts/test-'))
+      if(sourceControlPaths.has(file)||historicalPaths.has(file)||areas.includes('compatibility')||areas.includes('assistantEdge')||areas.includes('mailOwnerProbe')||areas.includes('currentInstalledCodeOnly')||areas.includes('workflowSupport')||areas.includes('dmiBudget')||areas.includes('dmiCollectionRecovery')||file.startsWith('scripts/test-'))
         out.controlQualificationRequired=true;
     }
     if(unknown.length){out.unclassifiedPaths=unknown.sort();return refuse('CURRENT_UNCLASSIFIED_PATH');}

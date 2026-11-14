@@ -332,6 +332,7 @@ STAC_SESSION.headers.update({"Accept": "application/geo+json, application/json"}
 DOWNLOAD_SESSION.headers.update({"Accept": "application/x-grib, application/octet-stream, */*"})
 
 PARSER_VERSION = 20
+UNRECOGNIZED_PARAMETERS_CLASSIFICATION_REVISION = 1
 PARAMETER_MAP_VERSION = 4
 GRID_LOOKUP_VERSION = 9
 WAVE_ASSET_ADMISSION_POLICY = "per-part-atomic-owner-v2"
@@ -1085,7 +1086,18 @@ def collection_retry_eligible(
         entry["failureClass"] = None
         entry["blockedParserVersion"] = None
         entry["consecutiveFailures"] = 0
-    return epoch(entry.get("nextEligibleAt")) <= now_value
+    classification_revision = entry.get("unrecognizedParametersClassificationRevision", 0)
+    unrecognized_classification_obsolete = (
+        entry.get("failureClass") == "parser-blocked"
+        and entry.get("lastError") == (
+            "GRIB downloaded but no required RavRadar parameters were recognized"
+        )
+        and type(classification_revision) is int
+        and 0 <= classification_revision < UNRECOGNIZED_PARAMETERS_CLASSIFICATION_REVISION
+    )
+    # This only admits the next ordinary budgeted assessment. A read or an
+    # interrupted/empty turn must not claim that the new classifier was used.
+    return unrecognized_classification_obsolete or epoch(entry.get("nextEligibleAt")) <= now_value
 
 
 def wam_runtime_reserve(
@@ -16544,6 +16556,7 @@ def main() -> int:
                     } if bootstrap_operational_wam else {}),
                     "assetsSkippedBySupervisor": 0,
                     "assetsSkippedPreviouslyProcessed": 0,
+                    "assetsTraversedThisTurn": 0,
                     "assetsDeferredValidRefresh": 0,
                     "assetsBoundedRefreshAttempted": 0,
                     "assetsBoundedRefreshCompleted": 0,
@@ -17593,6 +17606,18 @@ def main() -> int:
                     regional_proxy_collection_completed = True
                 if not interrupted and bootstrap_operational_wam:
                     run_info["assetsObserved"] += 1
+                run_info["assetsTraversedThisTurn"] += 1
+                if (
+                    found
+                    and state.get("failureClass") == "parser-blocked"
+                    and state.get("lastError") == (
+                        "GRIB downloaded but no required RavRadar parameters were recognized"
+                    )
+                ):
+                    state["failureClass"] = None
+                    state["blockedParserVersion"] = None
+                    state["lastError"] = None
+                    state["nextEligibleAt"] = None
                 recognized.update(found)
                 run_info["recognizedParameters"] = sorted(recognized)
                 result["diagnostics"]["messagesSeen"] += messages_seen
@@ -18291,6 +18316,20 @@ def main() -> int:
                     result["runs"][collection] = previous_run
                 else:
                     result["runs"].pop(collection, None)
+            elif (
+                collection_is_maintenance
+                and not recognized
+                and run_info["assetsTraversedThisTurn"] == 0
+                and not budget_stop
+            ):
+                # No GRIB was traversed: unfinished critical work is outside
+                # this maintenance turn, not evidence of a parser failure.
+                state["lastCheckedAt"] = generated
+                result["diagnostics"]["zeroProgressCollections"].append(collection)
+                if previous_run:
+                    result["runs"][collection] = previous_run
+                else:
+                    result["runs"].pop(collection, None)
             elif not made_progress and collection_assets_complete and recognized >= required and run_info["assetsSkippedPreviouslyProcessed"] == len(assets):
                 state["lastCheckedAt"] = generated
                 state["referenceTime"] = collection_reference_time
@@ -18449,6 +18488,14 @@ def main() -> int:
             state["lastError"] = message
             state["failureClass"] = failure_class
             state["blockedParserVersion"] = PARSER_VERSION if (parser_blocked or parser_exception) else None
+            if (
+                failure_code == "GRIB_PARAMETERS_UNRECOGNIZED"
+                and run_info["assetsTraversedThisTurn"] > 0
+                and not budget_stop
+            ):
+                state["unrecognizedParametersClassificationRevision"] = (
+                    UNRECOGNIZED_PARAMETERS_CLASSIFICATION_REVISION
+                )
             state["nextEligibleAt"] = datetime.fromtimestamp(time.time() + delay_minutes * 60, timezone.utc).isoformat().replace("+00:00", "Z")
             result["diagnostics"]["errors"].append({
                 "collection": collection,

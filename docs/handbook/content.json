@@ -2,8 +2,15 @@
   "schemaVersion": "2.0",
   "handbookVersion": "4.0.598",
   "title": "RavRadar Håndbog",
-  "updatedAt": "2026-11-14T01:09:37.731Z",
+  "updatedAt": "2026-11-14T12:08:42.512184Z",
   "sections": [
+    {
+      "id": "dmi-empty-maintenance-classification-2026-11-14",
+      "chapter": "89.348",
+      "title": "DMI: tom vedligeholdelse uden falsk parserpause",
+      "summary": "Tomme vedligeholdelsesture må ikke lukke DMI i et døgn; ægte parserfejl forbliver blokeret.",
+      "body": "<p>En vedligeholdelsestur, som ikke gennemgår nogen GRIB-fil, registreres som nul fremskridt i stedet for en parserfejl. Den gamle fejlklassifikation kan genvurderes én gang gennem det normale budget. En faktisk ugenkendelig fil får fortsat den normale 24-timers blokering, som bevares gennem gemning, genlæsning og backfill. Rettelsen ændrer ikke dekodning, RAW-grænser eller kildeprioritet. Den er kildeforberedt; faktisk DMI-hentning og gemning skal stadig verificeres i næste almindelige vejrkørsel.</p>"
+    },
     {
       "id": "supabase-database-backup-autonomous-retention-2026-11-13",
       "chapter": "89.347",

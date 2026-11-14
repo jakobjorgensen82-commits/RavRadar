@@ -47,6 +47,185 @@ producer = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(producer)
 
 
+def check_empty_critical_maintenance_is_not_a_parser_failure():
+    """Execute the real skip, run builder, outcome and failure-handler bodies.
+
+    The decode boundary returns no recognized fields in the negative case;
+    this fixture does not download or decode a provider file.
+    """
+    legacy = {"failureClass": "parser-blocked", "blockedParserVersion": producer.PARSER_VERSION,
+              "lastError": "GRIB downloaded but no required RavRadar parameters were recognized",
+              "nextEligibleAt": (datetime.now(timezone.utc) + timedelta(hours=24)).isoformat()}
+    unchanged_legacy = copy.deepcopy(legacy)
+    assert producer.collection_retry_eligible(legacy), "OLD_UNRECOGNIZED_CLASSIFICATION_STILL_BLOCKS_NORMAL_REASSESSMENT"
+    assert legacy == unchanged_legacy, "ELIGIBILITY_CONSUMED_THE_CLASSIFICATION_REVISION"
+    main_tree = ast.parse(inspect.getsource(producer.main))
+    owner = next(node for node in ast.walk(main_tree) if isinstance(node, ast.Try)
+                 and any(isinstance(item, ast.Assign)
+                         and any(isinstance(target, ast.Name) and target.id == "parser_blocked"
+                                 for target in item.targets)
+                         for handler in node.handlers for item in handler.body))
+    builder = next(node for node in ast.walk(owner) if isinstance(node, ast.FunctionDef)
+                   and node.name == "new_collection_run_info")
+    skip = next(node for node in ast.walk(owner) if isinstance(node, ast.If)
+                and ast.unparse(node.test) == "collection_is_maintenance and primary_requirement['critical']")
+    defer = next(node for node in ast.walk(owner) if isinstance(node, ast.If)
+                 and ast.unparse(node.test) == "primary_requirement['deferValidRefresh']")
+    budget_guard = next(node for node in ast.walk(owner) if isinstance(node, ast.If)
+                        and ast.unparse(node.test).startswith("not checkpoint_controller.can_start_asset("))
+    outcome = next(node for node in owner.body if isinstance(node, ast.If)
+                   and any(isinstance(item, ast.Raise) and isinstance(item.exc, ast.Call)
+                           and item.exc.args and isinstance(item.exc.args[0], ast.Constant)
+                           and item.exc.args[0].value == "GRIB downloaded but no required RavRadar parameters were recognized"
+                           for item in ast.walk(node)))
+    recognized_update = next(node for node in ast.walk(owner) if isinstance(node, ast.Expr)
+                             and ast.unparse(node) == "recognized.update(found)")
+    traversal = next(node for node in ast.walk(owner) if isinstance(node, ast.AugAssign)
+                     and ast.unparse(node.target) == "run_info['assetsTraversedThisTurn']")
+    recognized_healing = next((node for node in ast.walk(owner) if isinstance(node, ast.If)
+                              and ast.unparse(node.test).startswith("found and state.get('failureClass')")),
+                             ast.If(test=ast.Constant(value=False), body=[ast.Pass()], orelse=[]))
+    production_file = inspect.getsourcefile(producer.main)
+    assert production_file
+    failures = []
+    for label, maintenance, count, prior in (
+        ("empty-maintenance-no-prior", True, 113, {}),
+        ("empty-maintenance-prior-preserved", True, 113, {"referenceTime": "2026-01-01T00:00:00Z"}),
+        ("deferred-maintenance", True, 1, {}),
+        ("budget-interrupted-after-traversal", False, 2, {}),
+        ("traversed-unrecognized-native", False, 1, {}),
+        ("recognized-native-partial", False, 1, {}),
+        ("recognized-native-complete", False, 1, {}),
+    ):
+        required = {"current-u", "current-v"}
+        budget_checks = []
+        def can_start_asset(**kwargs):
+            budget_checks.append(True)
+            return label != "budget-interrupted-after-traversal" or len(budget_checks) < 2
+        namespace = dict(vars(producer), collection="dkss_idw", collection_is_maintenance=maintenance,
+                         collection_refresh_only=maintenance, bootstrap_operational_wam=False,
+                         processing_signature="fixture", required_for_family=required,
+                         previously_processed=set(), required=required, recognized=set(),
+                         assets=[{} for _ in range(count)],
+                         requirements=[{"critical": label != "deferred-maintenance",
+                                        "deferValidRefresh": label == "deferred-maintenance"}] * count,
+                         asset={"valid": "2026-01-01T08:00:00Z"}, asset_number=1,
+                         primary_refresh_assets_remaining=0, pending_critical_wam=[], pending_critical_current=[],
+                         previous_run=prior, state=copy.deepcopy(legacy), generated="2026-01-01T08:00:00Z",
+                         collection_reference_time="2026-01-01T00:00:00Z", made_progress=False,
+                         collection_assets_complete=label == "recognized-native-complete",
+                         budget_stop=None, traversal_results=[],
+                         reserve_for_pending_critical=0,
+                         checkpoint_controller=types.SimpleNamespace(flush_if_due=lambda **kwargs: None,
+                                                                     can_start_asset=can_start_asset))
+        diagnostics = {"collectionsDeferredValidDkssRefresh": [], "zeroProgressCollections": [],
+                       "collectionsUnchanged": [], "collectionsSucceeded": [], "collectionsPartial": [], "errors": [],
+                       "assetsDeferredValidDkssRefresh": 0}
+        namespace["result"] = {"runs": {}, "diagnostics": diagnostics}
+        exec(compile(ast.fix_missing_locations(ast.Module(body=[copy.deepcopy(builder)], type_ignores=[])),
+                     production_file, "exec"), namespace)
+        namespace["run_info"] = namespace["new_collection_run_info"](namespace["collection_reference_time"], count, {})
+        namespace["result"]["runs"]["dkss_idw"] = namespace["run_info"]
+        # Only the decode result is simulated. All branch/catch logic below
+        # comes directly from the same main() that the normal producer runs.
+        loop_tail = ast.parse("traversal_results.append('decoded')\n"
+                              "found = set(required) if label.startswith('recognized-native-') else set()\n"
+                              "run_info['assetsProcessed'] = 1 if found else 0\n").body
+        namespace["label"] = label
+        loop = ast.For(target=ast.Name(id="primary_requirement", ctx=ast.Store()),
+                       iter=ast.Name(id="requirements", ctx=ast.Load()),
+                       body=[copy.deepcopy(skip), copy.deepcopy(defer), copy.deepcopy(budget_guard), *loop_tail,
+                             copy.deepcopy(traversal), copy.deepcopy(recognized_healing),
+                             copy.deepcopy(recognized_update)], orelse=[])
+        deferred = ast.parse("deferred_only = dkss_collection_deferred_only(run_info, len(assets))\n"
+                             "refresh_maintenance_no_progress = dkss_bounded_refresh_failed_only("
+                             "run_info, collection_refresh_only=collection_refresh_only)\n").body
+        operation = ast.Try(body=[loop, *deferred, copy.deepcopy(outcome)],
+                            handlers=copy.deepcopy(owner.handlers), orelse=[], finalbody=[])
+        exec(compile(ast.fix_missing_locations(ast.Module(body=[operation], type_ignores=[])),
+                     production_file, "exec"), namespace)
+        if label == "budget-interrupted-after-traversal":
+            valid = (namespace["traversal_results"] == ["decoded"]
+                     and not diagnostics["errors"] and namespace["budget_stop"]
+                     and namespace["state"].get("lastBudgetInterruptedAt") == namespace["generated"]
+                     and not namespace["state"].get("unrecognizedParametersClassificationRevision")
+                     and producer.collection_retry_eligible(namespace["state"]))
+        elif label.startswith("recognized-native-"):
+            bucket = "collectionsSucceeded" if label.endswith("complete") else "collectionsPartial"
+            valid = (namespace["traversal_results"] == ["decoded"] and not diagnostics["errors"]
+                     and diagnostics[bucket] == ["dkss_idw"]
+                     and all(namespace["state"].get(key) is None for key in (
+                         "failureClass", "blockedParserVersion", "lastError", "nextEligibleAt"))
+                     and not namespace["state"].get("unrecognizedParametersClassificationRevision")
+                     and producer.collection_retry_eligible(namespace["state"]))
+        elif maintenance:
+            valid = (not namespace["traversal_results"] and not diagnostics["errors"]
+                     and producer.collection_retry_eligible(namespace["state"])
+                     and not namespace["state"].get("unrecognizedParametersClassificationRevision")
+                     and diagnostics["zeroProgressCollections"] == ["dkss_idw"]
+                     and diagnostics["collectionsDeferredValidDkssRefresh"] == (
+                         ["dkss_idw"] if label == "deferred-maintenance" else [])
+                     and (namespace["result"]["runs"].get("dkss_idw") is prior
+                          if prior else "dkss_idw" not in namespace["result"]["runs"]))
+        else:
+            valid = (namespace["traversal_results"] == ["decoded"]
+                     and len(diagnostics["errors"]) == 1
+                     and diagnostics["errors"][0]["failureCode"] == "GRIB_PARAMETERS_UNRECOGNIZED"
+                     and diagnostics["errors"][0]["retryAfterMinutes"] == 1440
+                     and namespace["state"]["failureClass"] == "parser-blocked"
+                     and namespace["state"]["blockedParserVersion"] == producer.PARSER_VERSION
+                     and namespace["state"]["unrecognizedParametersClassificationRevision"] ==
+                         producer.UNRECOGNIZED_PARAMETERS_CLASSIFICATION_REVISION
+                     and not producer.collection_retry_eligible(namespace["state"])
+                     and producer.epoch(namespace["state"]["nextEligibleAt"]) > producer.time.time())
+        print(f"DMI empty-maintenance regression: {label} {'PASS' if valid else 'FAIL'}")
+        if not valid:
+            failures.append(label)
+        if label == "traversed-unrecognized-native" and valid:
+            document = {"schemaVersion": 2, "zones": {}, "collectionState": {"dkss_idw": namespace["state"]}}
+            with tempfile.TemporaryDirectory(prefix="rr-classifier-state-") as folder:
+                saved = Path(folder) / "dmi.json"
+                producer.write_dmi_bulk_document(saved, document)
+                restored = producer.read_dmi_bulk_document(saved)
+            assert restored["collectionState"] == document["collectionState"]
+            assert not producer.collection_retry_eligible(restored["collectionState"]["dkss_idw"])
+            resumed = {"zones": {}}
+            producer.backfill_compatible_cache_data(resumed, restored)
+            producer.backfill_compatible_cache_data(resumed, {"zones": {}, "collectionState": {"dkss_idw": legacy}})
+            assert resumed["collectionState"] == restored["collectionState"], "OLDER_DONOR_REPLACED_NEW_CLASSIFICATION"
+            assert not producer.collection_retry_eligible(resumed["collectionState"]["dkss_idw"])
+            print("DMI classifier revision durable codec/backfill roundtrip PASS")
+    assert not failures, ", ".join(failures)
+    for change in (
+        {"lastError": "A different parser failure"},
+        {"failureClass": "parser-exception"},
+        {"failureClass": "transient"},
+        {"unrecognizedParametersClassificationRevision": producer.UNRECOGNIZED_PARAMETERS_CLASSIFICATION_REVISION},
+        {"unrecognizedParametersClassificationRevision": 999},
+        {"unrecognizedParametersClassificationRevision": None},
+        {"unrecognizedParametersClassificationRevision": "0"},
+        {"unrecognizedParametersClassificationRevision": False},
+    ):
+        entry = {**legacy, **change}
+        before_entry = copy.deepcopy(entry)
+        assert not producer.collection_retry_eligible(entry), "UNRELATED_OR_CURRENT_BLOCK_WAS_REOPENED"
+        assert entry == before_entry
+    # A budget interruption does not issue a classifier revision either: only
+    # the actual failure-handler path after traversal can record that revision.
+    handler_source = ast.unparse(next(handler for handler in owner.handlers
+                                     if any(isinstance(item, ast.Assign)
+                                            and any(isinstance(target, ast.Name) and target.id == "parser_blocked"
+                                                    for target in item.targets) for item in handler.body)))
+    assert "run_info['assetsTraversedThisTurn'] > 0" in handler_source
+    assert "not budget_stop" in handler_source
+    print("DMI classification revision OK: legacy retry remains unconsumed; current/other/unknown blocks remain closed")
+
+
+check_empty_critical_maintenance_is_not_a_parser_failure()
+if "--empty-maintenance-only" in sys.argv:
+    raise SystemExit(0)
+
+
 MODEL_RUN = "2026-01-01T00:00:00Z"
 STRIDE_VALID = "2026-01-01T09:00:00Z"
 NON_STRIDE_VALID = "2026-01-01T08:00:00Z"
