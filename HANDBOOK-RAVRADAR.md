@@ -1454,6 +1454,8 @@ Når en linkkontrol beder om HEAD, har svaret ingen indholdskrop. Den forberedte
 
 Rettelsen er kildeforberedt på de eksisterende værter og sprog. Den opretter ikke et domæne, ændrer ikke den valgte time eller score og leverer ikke selv ny kode til hosten. Faktisk offentlig forhåndsvisning, svartid og gratis kapacitet skal stadig måles.
 
+Den normale tidsskyderprøve kontrollerer samme HEAD-regel: ingen prognosefiler hentes, og svaret har ingen krop. Alle kontroller af almindelig åbning, adresse, linkparametre, score og ugyldige input bevares. De to hele normale delingsprøver kræver fortsat kildekvalifikation; der ændres ingen produktkode eller testejerskab.
+
 ## 89.277 Undersøg de gemte data, før hentningen ændres
 
 **Kort fortalt: Huller i prognosen skal undersøges i de data, som vejrhentningen faktisk gemte. En afgrænset læsning kan vise, hvor meget de enkelte reservekilder udfyldte, uden at starte en ny vejrhentning.**

@@ -78,3 +78,8 @@ Den normale lokale delings-/tidsskyderprøve består med 171 cases. Præcis saml
 Den eksisterende handler kontrollerer først den kildevalgte HTTPS-route, rodsti, metode og hele selection-queryen. HEAD kan derefter returnere samme status og sikkerhedsheadere uden at hente manifest, descriptor eller scorefil og uden at bygge HTML. GET beholder den normale kontrollerede prognoselæsning og visning. Begge godkendte værter, tre sprog, gyldige og ugyldige selections samt fremmed route og metode dækkes af de eksisterende normale mål.
 
 Det er kildeforberedelse uden nyt domæne, deploy, datagrundlag eller scoreberegning. Hosted GET/HEAD, preview, latency og Free-kapacitet beviser sig fortsat hver for sig; et lokalt nul-tal for HEAD-læsninger er ikke et løfte om leverandørens CPU-forbrug.
+
+
+### Samme HEAD-kontrakt i den normale tidsskyderprøve
+
+Den normale tidsskyder-/delingsprøve kræver nul prognoselæsninger ved HEAD. Den gamle forventning om tre læsninger er rettet til den gennemgåede handlerkontrakt; GET-, route-, query-, score- og negative kontroller bevares. Prøvens eksisterende publicUI-ejerskab bevares uden ændret kontrolkatalog. Både hele timeline- og projectionsprøven skal fortsat bestå på det præcise kildehead; denne testrettelse er ikke hosted delings- eller Free-accept.

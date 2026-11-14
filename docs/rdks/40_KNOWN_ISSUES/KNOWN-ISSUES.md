@@ -1,3 +1,7 @@
+## Præcis HEAD-forventning i den normale delingsprøve
+
+Den normale tidsskyder-/delingsprøve kræver nul prognoselæsninger ved HEAD. Den gamle forventning om tre læsninger er rettet til den gennemgåede handlerkontrakt; GET-, route-, query-, score- og negative kontroller bevares. Prøvens eksisterende publicUI-ejerskab bevares uden ændret kontrolkatalog. Både hele timeline- og projectionsprøven skal fortsat bestå på det præcise kildehead; denne testrettelse er ikke hosted delings- eller Free-accept.
+
 ## Normal syntetisk relationskontrol er faktisk bestået
 
 Den normale syntetiske restore med den uændrede fixture har faktisk bestået alle fire relationscases på det pinnede PostgreSQL 17 med samme SQL-builder og psql-læser: eksisterende tabel og sekvens, tom historik, manglende relation og forkert relationstype. Canary-rollback og ikke udført DATA-hale er bekræftet. Standardens fem filers roundtrip, UTF-8/decimaler, roller/migrationshistorik, ny syntetisk Auth-adgang og ejet Docker-oprydning er også bestået. Ægte arkiv-/Auth-gendannelse, den konkrete manglende relations årsag og Free-klarhed er fortsat åbne; Storage forbliver deaktiveret.
