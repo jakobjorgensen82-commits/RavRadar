@@ -267,11 +267,10 @@ async function executeSealedPagesDeployment({
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       if (clock() + requestTimeoutMs > deadline) break;
       const { response, decision } = await observe();
-      // An unrecognized status string after the exact CREATE ACK is only a
-      // bounded read observation. It grants no terminal, retry or CANCEL proof.
+      // Any unrecognized status value after the exact CREATE ACK is only a
+      // bounded read observation. It grants no PENDING, terminal, retry or CANCEL proof.
       // Keep all body/route/identity failures fail-closed.
-      const awaitingKnownStatus = decision.code === 'STATUS_VALUE_UNPROVED'
-        && typeof response.data?.status === 'string';
+      const awaitingKnownStatus = decision.code === 'STATUS_VALUE_UNPROVED';
       if (decision.outcome === 'UNKNOWN' && decision.code !== 'STATUS_SHARED_ALIAS_UNPROVED'
         && !awaitingKnownStatus)
         return unknown(decision.code);

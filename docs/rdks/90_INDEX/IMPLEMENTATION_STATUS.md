@@ -50,6 +50,8 @@ Den afgrænsede completionvej omfatter nu også en almindelig, allerede offentli
 
 En lokal, inaktiv specialisering af kildeplanen bruger den eksisterende ejerprøve ved rene ændringer af de to normale Pages-/reentryhelpers. Den store deploymentprøve og øvrige relevante input skal være uændrede; ændret filmode, A/D- og ukendte relevante input giver ingen snæver adgang. De fire øvrige Pagesmål og alle produktionskontroller består. PR911 ville stadig vælge bredprøven. Normal scopeprøve, eksakt kildekvalifikation og målt tidsvirkning kræves før leveringspåstand; se DEC-0302 og håndbog 89.340.
 
+Den lokale Pages-kandidat udvider kun den eksisterende tidsbegrænsede statusaflæsning til hele den identitetsgyldige STATUS_VALUE_UNPROVED-klasse, også ikke-strenge. Ukendt giver ingen skrive- eller afslutningsret; ved ukendt slutstatus foretages ingen annullering. Den konkrete 315-værdi og dens type er tabt, og de gamle synkroniseringstimeouts er ikke forklaret. De berørte normale cases er målprøvet lokalt; præcis kilde- og offentlig kvalifikation er fortsat egne krav. Se DEC-0206 og håndbog 89.340.
+
 <!-- RAVRADAR_ACTIVE_ENTRY_END -->
 
 ## Daterede notater og tidligere indgange — uændret historik
