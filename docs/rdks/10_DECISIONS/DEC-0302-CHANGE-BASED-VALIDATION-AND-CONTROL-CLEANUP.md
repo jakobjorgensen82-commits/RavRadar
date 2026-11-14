@@ -1,3 +1,18 @@
+## 14. november — lukket ansvar for assistentens Edge og aktuelle logger
+
+Den forberedte `assistantEdge`-gruppe ejer præcis disse fire eksisterende stier:
+
+- `supabase/functions/ravradar-assistant/index.ts`
+- `scripts/test-rav-assistant-edge-cloudflare-4.0.290.mjs`
+- `scripts/test-rav-assistant-main-edge-roundtrip.mjs`
+- `scripts/test-fixed-assistant-failure-log-20261101.mjs`
+
+Gruppen vælger de tre eksisterende hele normale kommandoer: `node scripts/test-rav-assistant-edge-cloudflare-4.0.290.mjs`, `node scripts/test-rav-assistant-main-edge-roundtrip.mjs` og `node scripts/test-fixed-assistant-failure-log-20261101.mjs`. Der tilføjes intet særligt testflag. Roundtriptestens eget sti-ejerskab flyttes fra publicUI til assistantEdge; faktiske UI-ændringer beholder publicUI-gruppens uændrede fulde roundtripkommando. Den eksisterende kommandodeduplikering udfører samme kommando én gang ved blandede ændringer.
+
+Alle ændringer i assistantEdge kræver frisk uafhængig kontrolgennemgang. Den normale PG/C/I/T-analyzer, originale baselinekrav, historiske planreproduktion og afslag ved ændrede beskyttede input er uændrede. Ukendte stier, andre Edge-funktioner og ukendte filer under `_shared` får ingen adgang gennem gruppen. Den faktiske fælles gateways modelbinding skal fortsat respekteres. Intet generelt Supabase-præfiks, per-head hashgruppe eller waiver indføres.
+
+De nye positive og negative scopeassertions indgår i det eksisterende normale scopeprogram. En privat fokuseret kørsel af netop disse assertions er ikke et helt scope-PASS; det fulde normale mål skal kvalificeres på den præcise senere CI-head. Aktuelle kørselsidentiteter og målplaner føres i privat checkpoint. Dette katalogarbejde ændrer ingen frist, numerisk model, SQL, vejr eller produktionsadgang. Se DEC-0091 og håndbog 89.279.
+
 ## 14. november — normal måludvælgelse ved rene Pages-transportændringer
 
 Den normale målplan får en snæver transportafgrænsning: kun ændringer af den eksisterende Pages-statuslæser eller dens egen normale prøve kan vælge de fire øvrige fulde Pagesmål uden den brede deploymentprøve. Den brede prøve kalder ikke statuslæseren. Fast sikkerhedskerne, dokumentkontrol og frisk uafhængig kontrol af ændret testvalg består. Transportafgrænsningen bruger ikke owner-completion-only.

@@ -795,13 +795,20 @@ try {
   // Only transport and clock are controlled; no replacement handler is used.
   const clockDescriptor=Object.getOwnPropertyDescriptor(globalThis,'performance');
   const realTimeout=globalThis.setTimeout,realClear=globalThis.clearTimeout,oldGet=globalThis.Deno.env.get,oldFetch=globalThis.fetch;
+  const oldWarn=console.warn;const failureRows=[];
   let clock=0;const timers=new Map();let quotaCalls=0,providerCalls=0,cancelledBody=0;
   const unexpectedRoutes=[];let quotaFactory=null,providerFactory=null;let lastProviderSignal=null;
   const syntheticEnv={PUBLIC_RATE_LIMIT_SECRET:'SYNTHETIC_RATE_ONLY',SUPABASE_URL:'https://quota.invalid',SUPABASE_SERVICE_ROLE_KEY:'SYNTHETIC_NOT_A_KEY',CLOUDFLARE_ACCOUNT_ID:'a'.repeat(32),CLOUDFLARE_WORKERS_AI_TOKEN:'SYNTHETIC_NOT_A_CREDENTIAL'};
   const pause=()=>new Promise(resolve=>realTimeout(resolve,0));
   const until=async test=>{for(let i=0;i<100&&!test();i++)await pause();assert(test(),'Normal fixture phase must actually be reached');};
   const tick=async value=>{clock=value;for(const [id,t]of [...timers])if(t.at<=clock){timers.delete(id);t.fn();}await pause();};
-  const resetDeadlineCase=()=>{assert.equal(timers.size,0);clock=0;quotaCalls=0;providerCalls=0;cancelledBody=0;quotaFactory=null;providerFactory=null;lastProviderSignal=null;};
+  const resetDeadlineCase=()=>{assert.equal(timers.size,0);clock=0;quotaCalls=0;providerCalls=0;cancelledBody=0;quotaFactory=null;providerFactory=null;lastProviderSignal=null;failureRows.length=0;};
+  const failureObservation=(stage,expected)=>{
+    assert.equal(failureRows.length,1);const [marker,row]=failureRows[0];
+    assert.equal(marker,'RAVRADAR_ASSISTANT_FAILURE');
+    assert.deepEqual(Object.keys(row),['schemaVersion','stage','responseStatus','upstreamStatus','rejectionCode','quotaCompletedElapsedMs','quotaCompletedRemainingMs','providerStartElapsedMs','providerStartRemainingMs','providerFetchCalled','deadlineCause']);
+    assert.deepEqual(row,{schemaVersion:1,stage,responseStatus:504,upstreamStatus:null,rejectionCode:null,...expected});
+  };
   const validProvider={result:{response:JSON.stringify({schemaVersion:'rav-assistant-response-v1',locale:'da',disposition:'answer',answer:'Public identification.',evidenceIds:identificationIds})}};
   const normalRequest=()=>new Request('https://edge.invalid/ravradar-assistant',{method:'POST',headers:{origin:'https://ravradar.dk','content-type':'application/json'},body:JSON.stringify({question:identificationQuestions[0][1],locale:'da',context:{modelBinding:RAV_ASSISTANT_RAVSCORE_MODEL_BINDING}})});
   try{
@@ -809,6 +816,7 @@ try {
     globalThis.setTimeout=(fn,ms)=>{const id={};timers.set(id,{fn,ms,at:clock+ms});return id;};
     globalThis.clearTimeout=id=>{timers.delete(id);};
     globalThis.Deno.env.get=name=>syntheticEnv[name];
+    console.warn=(...args)=>failureRows.push(args);
     globalThis.fetch=async(input,init)=>{
       const request=new Request(input,init);
       if(request.url==='https://quota.invalid/rest/v1/rpc/consume_public_request_limit'){
@@ -829,6 +837,7 @@ try {
     assert.equal(response.headers.get(RAV_ASSISTANT_SUCCESS_PROVENANCE.header),RAV_ASSISTANT_SUCCESS_PROVENANCE.value);
     assert(response.headers.get('access-control-expose-headers').includes(RAV_ASSISTANT_SUCCESS_PROVENANCE.header));
     assert.deepEqual(Object.keys(await response.json()),['answer']);
+    assert.equal(failureRows.length,0,'Successful provider responses must not gain diagnostics or altered public headers/body');
     // Preserve the old JSON parser behaviour: content type was not an added gate.
     resetDeadlineCase();const plain=normalRequest();const plainHeaders=new Headers(plain.headers);plainHeaders.set('content-type','text/plain');
     response=await edgeHandler(new Request(plain,{headers:plainHeaders}));assert.equal(response.status,200);
@@ -843,6 +852,7 @@ try {
     const lateQuota=edgeHandler(normalRequest());await until(()=>quotaCalls===3&&timers.size===1);
     await tick(7001);response=await lateQuota;assert.equal(response.status,504);assert.equal(providerCalls,0);
     for(const release of releases)release();await pause();await pause();assert.equal(providerCalls,0);assert.equal(response.headers.get(RAV_ASSISTANT_SUCCESS_PROVENANCE.header),null);
+    assert.equal(failureRows.length,0,'Quota timeout must not be relabelled as reaching the provider branch');
     // A stalled inbound body has an owned reader and is cancelled at the total deadline.
     resetDeadlineCase();let inboundCancelled=0;
     const stalled=new Request('https://edge.invalid/ravradar-assistant',{method:'POST',headers:{origin:'https://ravradar.dk','content-type':'application/json'},body:new ReadableStream({pull(){},cancel(){inboundCancelled++;}}, {highWaterMark:0}),duplex:'half'});
@@ -855,6 +865,20 @@ try {
     resetDeadlineCase();quotaFactory=()=>{if(quotaCalls===3)clock=6500;return Response.json(true);};
     providerFactory=request=>new Promise((_resolve,reject)=>request.signal.addEventListener('abort',()=>reject(new Error('SYNTHETIC_ABORT')),{once:true}));
     const remainder=edgeHandler(normalRequest());await until(()=>providerCalls===1);assert.equal(clock,6500);await tick(7001);response=await remainder;assert.equal(response.status,504);
+    assert.deepEqual(await response.json(),{error:'UPSTREAM_TIMEOUT'});
+    failureObservation('UPSTREAM_REQUEST',{quotaCompletedElapsedMs:6500,quotaCompletedRemainingMs:500,providerStartElapsedMs:6500,providerStartRemainingMs:500,providerFetchCalled:true,deadlineCause:'TIMER'});
+    // The branch marker precedes the existing check: no locally invoked fetch
+    // may be inferred if that check finds the absolute deadline exhausted.
+    resetDeadlineCase();globalThis.Deno.env.get=name=>{if(name==='CLOUDFLARE_WORKERS_AI_TOKEN')clock=7001;return syntheticEnv[name];};
+    try{
+      response=await edgeHandler(normalRequest());assert.equal(response.status,504);assert.equal(providerCalls,0);
+      failureObservation('UPSTREAM_REQUEST',{quotaCompletedElapsedMs:0,quotaCompletedRemainingMs:7000,providerStartElapsedMs:null,providerStartRemainingMs:null,providerFetchCalled:false,deadlineCause:'CHECK'});
+    }finally{globalThis.Deno.env.get=name=>syntheticEnv[name];}
+    resetDeadlineCase();const providerCaller=new AbortController();
+    providerFactory=request=>new Promise((_resolve,reject)=>request.signal.addEventListener('abort',()=>reject(new Error('SYNTHETIC_ABORT')),{once:true}));
+    const stoppedProvider=edgeHandler(new Request(normalRequest(),{signal:providerCaller.signal}));await until(()=>providerCalls===1);
+    providerCaller.abort();response=await stoppedProvider;assert.equal(response.status,504);assert.equal(lastProviderSignal.aborted,true);
+    failureObservation('UPSTREAM_REQUEST',{quotaCompletedElapsedMs:0,quotaCompletedRemainingMs:7000,providerStartElapsedMs:0,providerStartRemainingMs:7000,providerFetchCalled:true,deadlineCause:'REQUEST_ABORT'});
     resetDeadlineCase();let transportCancelled=0;
     const caller=new AbortController();
     const callerBody=new Request('https://edge.invalid/ravradar-assistant',{method:'POST',signal:caller.signal,headers:{origin:'https://ravradar.dk'},body:new ReadableStream({pull(){},cancel(){transportCancelled++;}}, {highWaterMark:0}),duplex:'half'});
@@ -875,7 +899,9 @@ try {
     }
     assert.equal(providerCalls,0);assert.equal(timers.size,0);assert.deepEqual(unexpectedRoutes,[],'Product catches must not turn unknown fixture routes into passing failures');
     console.log('OK: actual Edge absolute deadline, late quota no provider, owned input/output body, caps, JSON, unchanged pre-read gates and success provenance; artificial transports only.');
+    console.log('OK: fixed monotonic quota/provider observations distinguish local fetch from branch-only CHECK, TIMER and REQUEST_ABORT; no payload or remote-receipt claim.');
   }finally{
+    console.warn=oldWarn;
     globalThis.fetch=oldFetch;globalThis.Deno.env.get=oldGet;globalThis.setTimeout=realTimeout;globalThis.clearTimeout=realClear;
     if(clockDescriptor)Object.defineProperty(globalThis,'performance',clockDescriptor);else delete globalThis.performance;
   }

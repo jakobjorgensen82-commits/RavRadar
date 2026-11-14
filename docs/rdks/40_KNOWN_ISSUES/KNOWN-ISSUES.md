@@ -1,3 +1,11 @@
+## 14. november — assistentens fasetid er endnu ikke en timeoutrettelse
+
+Der er observeret en normal offentlig AI-forespørgsel, som endte før en accepteret providerstatus. Den eksisterende providergren kan være nået, selv om et efterfølgende deadlinecheck stopper før lokalt fetch. Den hidtidige markør viser ikke tidsfordelingen mellem kvoteventetid og providerarbejde; den dokumenterer heller ikke, om Cloudflare modtog kaldet.
+
+Den lokale observationskandidat tilføjer kun faste monotone snapshots, lokal fetchmarkør og første deadlineårsag til den eksisterende private fejlmarkør. Samlet serverfrist på syv sekunder, klientfrist på otte sekunder, alle kvoter, model, requestparametre, sikkerheds-/resultatvalidering og offentlige fejl bevares. Den faste historiske loglæser beholder sit oprindelige tidsvindue, projektion og data. Den lukkede assistantEdge-gruppe vælger tre eksisterende hele normale mål med uafhængig kontrolgennemgang; ukendte og beskyttede inputs beholder deres afslag.
+
+Fokuserede lokale timing-/logger-/scopecases er ikke løst timeout, offentlig levering eller ekstern AI-accept. Præcis samlet kildekvalifikation, reel fasetid og DA/DE/EN-forløb med relevante spørgsmål og opfølgninger står fortsat åbne. Der er ikke valgt en højere frist eller nye providerparametre. Se DEC-0091, DEC-0302 og håndbog 89.279.
+
 ## 14. november — bred Pagesprøves tidsmargin er fortsat åben
 
 Den brede deploymentprøves tidsmargin er fortsat åben: en faktisk kildekørsel nåede den uændrede grænse på 300 sekunder uden en påvist assertionfejl. Rettelsen kvalificerer det relevante testomfang; den påstår ikke en forbedret køretid for den brede prøve. Hele den nye normale kildekontrol skal bestå på det præcise nye head før levering. Version 4.0.598 bevares.

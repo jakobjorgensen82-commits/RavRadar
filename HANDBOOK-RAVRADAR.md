@@ -1280,6 +1280,16 @@ Observationen sker på de eksisterende fejlgrene og må ikke ændre, hvilke svar
 
 En fast kode kan hjælpe med at skelne en leverandørfejl fra et format- eller valideringsproblem, når den faktisk er registreret. Koden er ikke i sig selv et bevis for rodårsagen. Den offentligt observerede fejl med HTTP-status 502 er fortsat uafklaret; denne udvidelse løser den ikke alene. Et lokalt fast svar eller HTTP 200 beviser heller ikke i sig selv, at den eksterne AI er blevet kaldt og fungerer.
 
+### Faste fasetider ved manglende AI-svar
+
+Den forberedte observationsændring kan vise, hvor meget af den samme svarfrist der var brugt efter kvotekontrollen og lige før RavRadar kaldte leverandøren lokalt. Den registrerer også en fast årsag til fristens udløb. En nået providergren er ikke det samme som et startet lokalt kald, og et lokalt kald beviser ikke, at leverandøren modtog det.
+
+Observationerne indeholder kun faste kategorier og kontrollerede tal i den private driftslog. Der tilføjes ingen spørgsmål, svar, råt indhold, URL, nøgler eller request-id. De offentlige svar og fejl er uændrede. Den samlede serverfrist er fortsat syv sekunder, browserens frist otte sekunder, og alle kvoter og sikkerhedsregler bevares.
+
+Den eksisterende Edge-prøve, hele normale klient-rundtur og faste loglæserprøve får et præcist fælles kildeansvar. Faktiske UI-ændringer beholder deres normale rundtur, og samme kommando udføres kun én gang ved blandede ændringer. Andre funktioner, ukendte stier og beskyttede model- eller backendinput får ingen ny undtagelse.
+
+Fasetidsdiagnostik løser ikke i sig selv AI-timeout. Lokale syntetiske prøver er ikke bevis for offentlig levering eller fungerende ekstern AI. Præcis kildekvalifikation, faktisk tidsfordeling og almindelige danske, tyske og engelske spørgsmål og opfølgninger skal stadig afprøves. En eventuel ny frist kræver et begrundet budget; ingen ny frist eller requestparameter er valgt her.
+
 ## 89.278 En kortere delingsadresse med den samme prognose
 
 **Kort fortalt: En ny, kortere delingsadresse skal gøre det lettere at dele en prognose uden et personnavn i domænet. Den skal vise den samme valgte prognose og ændrer hverken RavScore eller vejrhentningen. Adressen er endnu en forberedt kandidat, ikke en offentlig leverance.**

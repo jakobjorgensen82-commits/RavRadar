@@ -2975,8 +2975,12 @@ try {
         assert.deepEqual(exchanges[0].result, { error: row.publicCode ?? 'ASSISTANT_RESPONSE_REJECTED' });
         assert.equal(controlledProviderCalls - providersBefore, 1); assert.equal(controlledQuotaCalls - quotaBefore, 3);
         assert.equal(logs.length, 1);
-        assert.deepEqual(logs[0], ['RAVRADAR_ASSISTANT_FAILURE', { schemaVersion: 1,
+        const {quotaCompletedElapsedMs,quotaCompletedRemainingMs,providerStartElapsedMs,providerStartRemainingMs,providerFetchCalled,deadlineCause,...categories}=logs[0][1];
+        assert.deepEqual([logs[0][0],categories], ['RAVRADAR_ASSISTANT_FAILURE', { schemaVersion: 1,
           stage: row.stage ?? 'RESULT_VALIDATION', responseStatus: 502, upstreamStatus: row.http ?? 200, rejectionCode: row.code }]);
+        for(const value of [quotaCompletedElapsedMs,quotaCompletedRemainingMs,providerStartElapsedMs,providerStartRemainingMs])assert(Number.isSafeInteger(value)&&value>=0&&value<=7000);
+        for(const total of [quotaCompletedElapsedMs+quotaCompletedRemainingMs,providerStartElapsedMs+providerStartRemainingMs])assert(total===6999||total===7000);
+        assert(providerStartElapsedMs>=quotaCompletedElapsedMs);assert.equal(providerFetchCalled,true);assert.equal(deadlineCause,null);
         const serialized = JSON.stringify(logs);
         for (const forbidden of [secret, question, 'equipment.amber-net', 'SYNTHETIC_ONLY_NOT_A_CREDENTIAL']) assert.ok(!serialized.includes(forbidden));
       }
