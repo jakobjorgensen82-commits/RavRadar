@@ -3800,30 +3800,7 @@ class SourceCurrentNative(SourceActualSUnionNative):
                 for row in profile['nativeInputFiles']]}
         return profile
 
-    def prepare_current598_normal_inputs(self, context, *, failure240=False):
-        profile = self.current598_profile()
-        # Use the existing exact committed-host seam, never a mixed no-Git
-        # materialization or an e932 overlay on a different authenticated HEAD.
-        capture_env = clean_environment()
-        for name in ('GITHUB_TOKEN', 'GITHUB_REPOSITORY'):
-            if name in os.environ: capture_env[name] = os.environ[name]
-        pr_test = context.get('sourceCurrentNativeTestContext')
-        capture_command = [str(NODE), str(ROOT / 'scripts/fixtures/source19-current-native-metadata.mjs')]
-        self._current_native_subprocess_phase = 'CAPTURE_GITHUB'
-        if pr_test is None:
-            subprocess.run(capture_command + ['--capture-github'],
-                cwd=ROOT, env=capture_env, stdin=subprocess.DEVNULL, check=True, timeout=180)
-        else:
-            subprocess.run(capture_command + ['--capture-source-pr-native-test'],
-                cwd=ROOT, env=capture_env, input=json.dumps(pr_test).encode(), check=True, timeout=90)
-        self._current_native_subprocess_phase = 'OWNED_HOST'
-        own, root, environment, target = self.owned_current_host(context['head'], with_sdk=True)
-        self._current_native_subprocess_phase = 'NONE'
-        (own / 'fixture-current598').mkdir(mode=0o700, parents=False, exist_ok=False)
-        commands = (
-            ('providers', [sys.executable, '-I', '-B', str(root / 'scripts/fixtures/source19-current-native-providers.py'), str(NODE), target, '--current598']),
-            ('prefix', [str(NODE), str(root / 'scripts/fixtures/source19-current-normal-inputs.mjs'), '--prepare-current598-prefix']),
-            ('initial-request', [str(NODE), str(root / 'scripts/fixtures/source19-current-native-metadata.mjs'), '--current598-initial-rpc-request']))
+    def run_current598_preparation_commands(self, own, root, environment, commands):
         for name, command in commands:
             self._current_native_subprocess_phase = name.upper().replace('-', '_')
             # Retain the first actual producer failure and all physical raw
@@ -3840,10 +3817,25 @@ class SourceCurrentNative(SourceActualSUnionNative):
                 self._current_native_prefix_failure = current_prefix_failure(own, root)
             self.assertEqual(result.returncode, 0, 'CURRENT598_NORMAL_' + name.upper() + '_PRODUCER_REFUSED')
             self._current_native_subprocess_phase, self._current_native_subprocess_exit = 'NONE', None
+
+
+    def prepare_current598_prefix_inputs(self, head):
+        self._current_native_subprocess_phase = 'OWNED_HOST'
+        own, root, environment, target = self.owned_current_host(head, with_sdk=True)
+        self._current_native_subprocess_phase = 'NONE'
+        (own / 'fixture-current598').mkdir(mode=0o700, parents=False, exist_ok=False)
+        commands = (
+            ('providers', [sys.executable, '-I', '-B', str(root / 'scripts/fixtures/source19-current-native-providers.py'), str(NODE), target, '--current598']),
+            ('prefix', [str(NODE), str(root / 'scripts/fixtures/source19-current-normal-inputs.mjs'), '--prepare-current598-prefix']))
+        self.run_current598_preparation_commands(own, root, environment, commands)
+        return own, root, environment, target
+
+
+    def read_current598_prefix_inputs(self, own, head, profile, target):
         inputs = strict_json(own / 'current598-native-inputs/transport/current598-prefix-inputs.json', 32 * 1024 * 1024)
         self.assertEqual(inputs['profile'], 'current598-native-prefix')
         self.assertEqual(inputs['sourceHead'], profile['prefixProducer']['codeProducerHead'])
-        self.assertEqual(inputs['executionHead'], context['head']); self.assertEqual(inputs['target'], target)
+        self.assertEqual(inputs['executionHead'], head); self.assertEqual(inputs['target'], target)
         self.assertEqual(inputs['registry']['zoneCount'], 210); self.assertEqual(inputs['registry']['partCount'], 673)
         self.assertTrue(inputs['objectRows']); self.assertEqual(inputs['saved598']['referenceAt'], target)
         self.assertIs(inputs['actionInvoked'], False); self.assertIs(inputs['sdkInvoked'], False)
@@ -3857,6 +3849,52 @@ class SourceCurrentNative(SourceActualSUnionNative):
         self.assertIs(inputs['providerOriginals']['rawAdmissionProved'], False)
         self.assertIs(inputs['providerOriginals']['sdkExecuted'], False)
         self.assertTrue(inputs['providerOriginals']['rawTransportFiles'])
+        return inputs
+
+
+    def test_current598_prefix_preparation(self):
+        # The same synthetic preparation only; no PG/native receipt or Source admission.
+        self.assertEqual(sys.platform, 'linux'); self.assertEqual(sys.version_info[:2], (3, 12))
+        self.assertIsNone(CURRENT_NATIVE_CONTEXT)
+        self.assertEqual(CURRENT_NATIVE_INPUT_PROFILE, 'current598-preparation')
+        profile = self.current598_profile()
+        head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT,
+            env=clean_environment(), text=True).strip()
+        own, root, environment, target = self.prepare_current598_prefix_inputs(head)
+        inputs = self.read_current598_prefix_inputs(own, head, profile, target)
+        report = {'kind': 'CURRENT598_NORMAL_INPUT_PREPARATION', 'status': 'PREPARATION_ONLY',
+            'profileSha256': CURRENT598_INPUT_PROFILE_SHA256, 'executionHead': head,
+            'dataProducerHead': inputs['sourceHead'], 'target': target,
+            'normalPrefixReturned': True, 'normalInitialRequestCaptured': False,
+            'initialSqlExecuted': False, 'normalActionStarted': False, 'sdkExecuted': False,
+            'sourceAdmission': False, 'nativePass': False, 'productionProof': False}
+        with (own / 'current598-prefix-only-preparation.json').open('x', encoding='utf8') as stream:
+            stream.write(json.dumps(report, separators=(',', ':')) + '\n')
+            stream.flush(); os.fsync(stream.fileno())
+        print(json.dumps(report, separators=(',', ':')), flush=True)
+
+
+    def prepare_current598_normal_inputs(self, context, *, failure240=False):
+        profile = self.current598_profile()
+        # Use the existing exact committed-host seam, never a mixed no-Git
+        # materialization or an e932 overlay on a different authenticated HEAD.
+        capture_env = clean_environment()
+        for name in ('GITHUB_TOKEN', 'GITHUB_REPOSITORY'):
+            if name in os.environ: capture_env[name] = os.environ[name]
+        pr_test = context.get('sourceCurrentNativeTestContext')
+        capture_command = [str(NODE), str(ROOT / 'scripts/fixtures/source19-current-native-metadata.mjs')]
+        self._current_native_subprocess_phase = 'CAPTURE_GITHUB'
+        if pr_test is None:
+            subprocess.run(capture_command + ['--capture-github'],
+                cwd=ROOT, env=capture_env, stdin=subprocess.DEVNULL, check=True, timeout=180)
+        else:
+            subprocess.run(capture_command + ['--capture-source-pr-native-test'],
+                cwd=ROOT, env=capture_env, input=json.dumps(pr_test).encode(), check=True, timeout=90)
+        own, root, environment, target = self.prepare_current598_prefix_inputs(context['head'])
+        commands = (
+            ('initial-request', [str(NODE), str(root / 'scripts/fixtures/source19-current-native-metadata.mjs'), '--current598-initial-rpc-request']),)
+        self.run_current598_preparation_commands(own, root, environment, commands)
+        inputs = self.read_current598_prefix_inputs(own, context['head'], profile, target)
         initial_request = strict_json(own / 'current598-initial-request-whole.stdout', 1024 * 1024)
         self.assertEqual(initial_request['profile'], 'current598-native-prefix')
         self.assertEqual(initial_request['dataProducerHead'], inputs['sourceHead'])
@@ -4532,6 +4570,7 @@ def run_current_native_profile_cli():
     profile = parser.add_mutually_exclusive_group(required=True)
     profile.add_argument('--current-source-profile', action='store_true')
     profile.add_argument('--source-legacy-compatibility', action='store_true')
+    profile.add_argument('--prepare-current598-prefix', action='store_true')
     parser.add_argument('--node24-path', required=True)
     parser.add_argument('--input-profile', choices=('operative585', 'current598-preparation'), default='operative585')
     args = parser.parse_args()
@@ -4551,13 +4590,25 @@ def run_current_native_profile_cli():
         raise ValueError('SOURCE_CURRENT_PROFILE_MUST_MATCH_ACTUAL594_PRODUCT')
     NODE = NODE.resolve(strict=True); NODE22 = NODE  # old cases are not selected
     CASE = 'source-legacy-compatibility' if args.source_legacy_compatibility else CURRENT_NATIVE_CASE
-    raw = sys.stdin.buffer.read(16385)
-    if len(raw) > 16384: raise ValueError('SOURCE_CURRENT_PROFILE_PG_CONTEXT_BOUND')
-    CURRENT_NATIVE_CONTEXT = json.loads(raw)
+    if args.prepare_current598_prefix:
+        CURRENT_NATIVE_CONTEXT = None
+    else:
+        raw = sys.stdin.buffer.read(16385)
+        if len(raw) > 16384: raise ValueError('SOURCE_CURRENT_PROFILE_PG_CONTEXT_BOUND')
+        CURRENT_NATIVE_CONTEXT = json.loads(raw)
     class CurrentNativeFixedFirstResult(unittest.TextTestResult):
         # Standard unittest reporting remains unchanged; add only a fixed
         # first-cause observation before normal error/failure reporting.
         def emit_case_location(self, test, error):
+            if args.prepare_current598_prefix:
+                # Relay only the same existing safe child projections, never raw logs.
+                provider = getattr(test, '_current_native_provider_failure', None)
+                if provider is not None:
+                    print(json.dumps(provider, separators=(',', ':')), flush=True)
+                prefix = getattr(test, '_current_native_prefix_failure', None)
+                if prefix is not None:
+                    print(json.dumps(prefix, separators=(',', ':')), flush=True)
+                return
             try:
                 observation = current_native_case_location(test, error[1], error[2])
                 if observation is not None:
@@ -4572,7 +4623,8 @@ def run_current_native_profile_cli():
                         print(json.dumps(projected, separators=(',', ':')), flush=True)
                 except BaseException:
                     pass
-            current_native_post64_module().emit_current_native_failure(error[1], phase='CURRENT_CASE')
+            if not args.prepare_current598_prefix:
+                current_native_post64_module().emit_current_native_failure(error[1], phase='CURRENT_CASE')
             if not args.source_legacy_compatibility:
                 self.emit_case_location(test, error)
             super().addError(test, error)
@@ -4584,11 +4636,13 @@ def run_current_native_profile_cli():
                         print(json.dumps(projected, separators=(',', ':')), flush=True)
                 except BaseException:
                     pass
-            current_native_post64_module().emit_current_native_failure(error[1], phase='CURRENT_CASE')
+            if not args.prepare_current598_prefix:
+                current_native_post64_module().emit_current_native_failure(error[1], phase='CURRENT_CASE')
             if not args.source_legacy_compatibility:
                 self.emit_case_location(test, error)
             super().addFailure(test, error)
-    selected = current_source_native_test_selection(args.source_legacy_compatibility, CURRENT_NATIVE_CONTEXT)
+    selected = ('SourceCurrentNative.test_current598_prefix_preparation' if args.prepare_current598_prefix
+        else current_source_native_test_selection(args.source_legacy_compatibility, CURRENT_NATIVE_CONTEXT))
     unittest.main(argv=[sys.argv[0]], defaultTest=selected,
         testRunner=unittest.TextTestRunner(resultclass=CurrentNativeFixedFirstResult, failfast=True))
 
@@ -4602,7 +4656,7 @@ if __name__ == '__main__':
         unittest.main(argv=[sys.argv[0]], defaultTest='SourceProviderEvidencePureTests')
     if sys.argv[1:] == ['--legacy-diagnostic-unit']:
         unittest.main(argv=[sys.argv[0]], defaultTest='SourceObserverPureTests.test_legacy_child_failure_projects_three_commands_without_raw_exception')
-    if sys.argv[1:2] in (['--current-source-profile'], ['--source-legacy-compatibility']):
+    if sys.argv[1:2] in (['--current-source-profile'], ['--source-legacy-compatibility'], ['--prepare-current598-prefix']):
         run_current_native_profile_cli()
     if sys.argv[1:] == ['--terminal-marker-unit']:
         unittest.main(argv=[sys.argv[0]], defaultTest='SourceTerminalMarkerInputTests')

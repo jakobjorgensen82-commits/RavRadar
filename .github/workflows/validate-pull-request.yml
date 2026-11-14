@@ -13,8 +13,69 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  prefix-preparation-only:
+    name: PREFIX preparation only — no source qualification
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'codex/source-prefix-preparation-only-20261114' }}
+    permissions:
+      contents: read
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Require the exact same-repository diagnostic source head
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_EVENT_NAME" = pull_request
+          test "$GITHUB_HEAD_REF" = codex/source-prefix-preparation-only-20261114
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Install existing native acquisition dependencies
+        run: >-
+          python -m pip install --disable-pip-version-check
+          -r requirements-dmi.txt -r requirements-geometry.txt -r requirements-copernicus.txt
+
+      - name: Install the same locked local SDK without scripts
+        working-directory: .github/actions/save-owned-dmi-grib
+        env:
+          npm_config_cache: ${{ github.workspace }}/.github/actions/save-owned-dmi-grib/.npm-cache
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      # This explicit diagnostic branch must never be merged. It cannot write
+      # source-completed/native-phase receipts or qualify a release/main tree.
+      - name: Prepare the normal PREFIX only without PG or source admission
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -I -B scripts/test-source598-current-native-profile.py \
+            --prepare-current598-prefix --node24-path "$(command -v node)" \
+            --input-profile current598-preparation
+
+      - name: Require the diagnostic source checkout to remain unchanged
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "$(git status --short --untracked-files=no)"
+
   validate:
     name: Source validation and release gate
+    if: ${{ github.event.pull_request.head.repo.full_name != github.repository || github.head_ref != 'codex/source-prefix-preparation-only-20261114' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 180
     steps:
