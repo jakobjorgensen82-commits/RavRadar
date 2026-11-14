@@ -8,6 +8,12 @@ Den lokale kandidat viser svarmodellen de faktiske komplette kanoniske tekster p
 
 Den ene faktiske fælles assistentkontrakt får naturligt ansvar i den eksisterende assistantEdge-gruppe med samme tre hele normale mål. Andre fælles moduler og ukendte eller beskyttede input får ingen undtagelse; frisk kontrolreview og normal kildekvalifikation består. Lokale syntetiske mål er ikke ekstern AI-accept. Valgte id'er i de observerede browserhændelser er ukendte, og større tysk promptinput har en uafprøvet tidsvirkning. Den særskilte C/I-bundne komma-routing ændres ikke. Version 4.0.598, model, SQL, 7/8-sekundersfrister, kvoter og providerparametre bevares. Se DEC-0091, DEC-0302 og håndbog 89.279.
 
+## 14. november — kvalificerede vandstandsbehov vælger eksisterende DMI-profil
+
+En afgrænset driftskandidat vælger den eksisterende lange DMI-profil efter den kvalificerede plan for reelle vandstands- og trendhuller. Supervisorens valgte profil registreres særskilt fra barnets afrundede resttid, så den uændrede firetimers-/100-par-cooldown virker. Det er en varig ressourcepolitik og kan gentages efter hver firetimer; et behov beviser ikke et upstreamtilbud eller bedre dækning. RAW-loft, kildeorden, nyere-vinder, originaler, checkpoint, model, releaseversion og migrations-SQL bevares.
+
+Det normale budgetmål får snævert kildeansvar for de berørte workflowtrin og metadatafelter; øvrige workflow-, updater-, supervisor-, PG- og modelændringer beholder deres afslag. Første almindelige leverance skal måle vandstand og samtidige fem felter i sidste 24 timer samt samlet varighed. Se håndbog 89.294. Den statiske installationsbog synkroniseres alene med håndbogens normale payload.
+
 ## 14. november — faste private assistenttider og præcist kildeansvar
 
 En lokal observationskandidat føjer faste monotone tal for afsluttet kvoteventetid og lokalt providerkald samt første deadlineårsag til assistentens eksisterende private fejlmarkør. Den skelner providergren fra faktisk lokal fetchinvokation og lover ikke modtagelse hos Cloudflare. Brugerindhold, rå svar, URL, nøgler og request-id logges ikke. Syv sekunders samlet serverfrist, otte sekunders klientfrist, alle kvoter, model, requestparametre, offentlige svar, headers, validering og oprydning bevares.

@@ -841,9 +841,17 @@ Den lokale kandidat bruger de samme læsere af bevarede DMI-, Copernicus- og Ope
 
 Et hul får kun denne prioritet i en DMI-samling, som efter de eksisterende komponent- og zoneregler må levere de pågældende data. De syv kystzoner beholder deres vandstandsundtagelse uden adgang til Limfjordens strøm, strømhukommelse, vind eller temperatur. Ukendt eller ændret planlægningsgrundlag bevarer den konservative native kø. Samme grænse gælder første plan, omplanlægning og udvælgelse af felter.
 
+### Valg af den længere DMI-henteprofil
+
+Den godkendte budgetkandidat bruger den eksisterende profil på 3600 sekunder og 4096 MiB download, når den kvalificerede plan viser et vandstands- eller trendhul for mindst 15 procent af kystdelene i én offentlig prognosetime. Den gamle brede native-kontrol består som konservativ vej ved ukendt plan. De tre private støttetimer til vandstandens udvikling udvider ikke de 118 offentlige timer.
+
+Behov er ikke det samme som leverandørens tilbud. En manglende time udenfor DMI-modellens rækkevidde kan derfor stadig udløse den længere profil. Den uændrede cooldown holder en ny lang tur tilbage i fire timer uden mere end 100 pars samlet native fremgang. Efter udløb kan hver normal firetimerskørsel igen blive lang; ved seks kørsler er selve profilforskellen op til 210 ekstra Linux-minutter i døgnet. Markøren skelner valgt lang profil fra barnets faktiske restbudget og påstår ikke, at alle 3600 sekunder blev brugt.
+
+Den lokale RAW-cache beholder sit loft på 4 GiB. GitHubs konfigurerede 10 GB og automatiske LRU begrænser summen af cachegenerationer; de er ikke et nyt slettebevis for originaler. De normale current- og afhængighedsrestores bevares. Første almindelige leverance skal måle vandstand, samtidige fem felter i sidste 24 timer og samlet varighed. Den anslåede tidsmargin er ikke en garanti, og HARMONIEs særlige prioritering og modeloverlap står fortsat åbne.
+
 ### Status og bevisgrænse
 
-De relevante normale lokale prøver består på den samlede kandidat, også den fysiske kæde gennem de eksisterende offline-læsere. Det er ikke GitHub-kvalifikation eller offentlig effekt. Tidsbudgetter, kildeaccept, originaler, no-loss, administratorpunkter, geometri og scoreformel er uændrede. SOURCE-revisionens særskilte indgang kræver fortsat sin egen integration før aktivering.
+De relevante normale lokale prøver består på den samlede kandidat, også den fysiske kæde gennem de eksisterende offline-læsere. Det er ikke GitHub-kvalifikation eller offentlig effekt. Den oprindelige kørettelse ændrede ikke tidsbudgetter; den efterfølgende budgetkandidat vælger mellem de eksisterende profiler som beskrevet ovenfor. Kildeaccept, originaler, no-loss, administratorpunkter, geometri og scoreformel bevares. SOURCE-revisionens særskilte indgang kræver fortsat sin egen integration før aktivering.
 
 ## 89.293 Prøver skal følge det, rettelsen kan påvirke
 

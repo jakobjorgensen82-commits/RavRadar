@@ -8,6 +8,12 @@ En kort gyldig providertekst kan efterfølges af fokusafslag, når de valgte kom
 
 Et tysk komma før et underordnet »wo« kan særskilt udløse den eksisterende helspørgsmålsvej, mens en tilsvarende engelsk formulering får en lokal FAQ. Den lokale parser er fortsat C/I-bundet i 598 og ændres ikke af denne kandidat. Kildekvalifikation, faktisk DA/DE/EN-AI-accept og en korrekt afbundet rettelse af tegnsætningen står åbne. Se DEC-0091, DEC-0302 og håndbog 89.279.
 
+## DMI-budget: kvalificerede vandstandsbehov og valgt profil
+
+Den afgrænsede kandidat flytter budgetvalget efter den eksisterende kvalificerede plan uden ekstra STAC-hentning eller ny planlægning. Vandstands-VALUE_GAP og TREND_GAP tælles over de 118 offentlige timer med den eksisterende rumtærskel; de tre private T+3-støttetimer udvider ikke budgetnævneren. Ukendt eller ændret plan bevarer den konservative native beslutning. Den valgte lange profil videreføres uafhængigt af supervisorens afrundede resttid, så den eksisterende cooldown ikke tabes ved et barn med 3599 sekunder. Deadline, checkpoint, kildevalg, originaler, numerisk model og SQL bevares.
+
+En bred behovstime kan være udenfor leverandørens faktiske tilbud. Den godkendte ressourcepolitik kan derfor vælge den lange profil igen efter fire timer, også uden opnåelig gevinst på netop den time; mere end 100 pars samlet native fremgang kan allerede tillade en ny tur indenfor cooldown. Den anslåede margin til næste normale kørsel er ikke en garanti. Første virkelige leverance skal måle vandstand og samtidige fem felter i sidste 24 timer samt samlet varighed. HARMONIEs native urgency, modeloverlap og de selvstændige bevarings-/adgangskrav er fortsat åbne. Lokale regressioner er ikke offentlig dækningsaccept.
+
 ## 14. november — assistentens fasetid er endnu ikke en timeoutrettelse
 
 Der er observeret en normal offentlig AI-forespørgsel, som endte før en accepteret providerstatus. Den eksisterende providergren kan være nået, selv om et efterfølgende deadlinecheck stopper før lokalt fetch. Den hidtidige markør viser ikke tidsfordelingen mellem kvoteventetid og providerarbejde; den dokumenterer heller ikke, om Cloudflare modtog kaldet.
