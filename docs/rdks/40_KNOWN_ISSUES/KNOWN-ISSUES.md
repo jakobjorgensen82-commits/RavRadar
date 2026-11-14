@@ -1,3 +1,7 @@
+## 14. november — arkivmålets bootstrap skal stadig bevises i faktisk restore
+
+En autentificeret rolleaudit har påvist en krævet reserveret systemrolle, som det isolerede mål manglede. Den afgrænsede kildekandidat bruger den pinnede leverandørs normale engangsinitialisering uden en ny vedvarende tjeneste, gættet rolle-SQL eller ændring af originalarkivet. Det erstatter ikke den generiske manglende-rolle-vagt. Den lokale konfigurationsprøve består, men faktisk fuld SQL-, indholds-/dubletparitets-, Auth- og oprydningsaccept er fortsat åben. Tidligere syntetisk succes eller denne lokale prøve må ikke bruges som arkivaccept. Se DEC-0255 og håndbog 89.345.
+
 ## 14. november — assistentens fasetid er endnu ikke en timeoutrettelse
 
 Der er observeret en normal offentlig AI-forespørgsel, som endte før en accepteret providerstatus. Den eksisterende providergren kan være nået, selv om et efterfølgende deadlinecheck stopper før lokalt fetch. Den hidtidige markør viser ikke tidsfordelingen mellem kvoteventetid og providerarbejde; den dokumenterer heller ikke, om Cloudflare modtog kaldet.

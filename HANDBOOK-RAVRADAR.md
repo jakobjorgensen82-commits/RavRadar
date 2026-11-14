@@ -78,6 +78,16 @@ Den isolerede databasegendannelse får en reel indholdskontrol mod det autentifi
 
 Dette er en privat kildekandidat. De eksisterende målrettede lokale prøver er bestået; præcis GitHub-kvalifikation, den normale syntetiske Linux-gendannelse og faktisk gendannelse af det valgte autentiske arkiv er særskilte åbne beviser. Ingen numerisk model, version 4.0.598, migration, score, kildeprioritet, geometri, adgangsrettigheder, automatisk kontosletning eller backuprotation ændres af forberedelsen.
 
+### Normal engangsinitialisering af arkivmålet
+
+Den tidlige autentificerede rollekontrol har påvist en reel forskel mellem arkivets krævede systemroller og det isolerede mål. Den afgrænsede rettelse bruger derfor leverandørens normale initialisering af målet; den ændrer ikke parseren eller arkivets rolle- og adgangsregler.
+
+Kun archive-målets midlertidige konfiguration aktiverer Realtime-engangsinitialisering gennem den allerede pinnede Supabase CLI 2.117.0. Realtime forbliver på listen over udelukkede vedvarende tjenester. CLI'ens eget Realtime 2.130.0-job udfører de originale leverandørmigrationer på projektets eksisterende interne netværk. Derefter skal det præcise vedvarende sæt fortsat være database, gateway og Auth. Den syntetiske standardvej er uændret.
+
+Der tilføjes ingen egen CREATE ROLE, ændrede grants eller SQL, som springes over. Efter initialiseringen læses målets faktiske systemroller igen af den samme generiske kontrol. Enhver fortsat manglende krævet rolle stopper stadig før de store SQL-filer. De eksisterende kilde-, mål-, låse-, billedidentitets-, netværks-, tids- og oprydningskrav bevares.
+
+Den normale lokale egenprøve består og kontrollerer konfigurationen og de bevarede afslag. Det er ikke et bevis for faktisk arkiv-/Auth-gendannelse. Fuld indholds- og dubletparitet, Auth-funktion og ejet oprydning skal fortsat bestå på det autentificerede arkiv før en stærk restorekvittering. Automatisk rotation, databaseoprydning og Free-overgang får ingen ny autoritet. Version 4.0.598, numerisk model, migrationer, score og vejr bevares.
+
 ## 89.344 — Admin opdaterer oplysninger uden at nulstille arbejdet
 
 Administratorens Kalibrering og System kan åbnes, mens den offentlige model stadig hentes. Den lokale rettelse opdaterer kun den oprindelige modelvisning: AFVENTER under læsning, BLOKERET ved faktisk verifikationsfejl og gyldig model efter en normal vellykket genprøvning. Rapporter, prøvemail og deres igangværende kontroller bevares. Retningseditoren monteres én gang efter den eksisterende admin-ready-grænse med de afsluttede input; en senere offentlig læsning genopretter ikke editoren eller overskriver kladden. Den eksisterende admin-UI-adresse ændres ens i side og offlinecache, mens data-service-adressen bevares.

@@ -1,3 +1,7 @@
+## 14. november — normal leverandørbootstrap før autentisk arkivgendannelse
+
+Kun archive-målets midlertidige konfiguration aktiverer den pinnede CLI's normale Realtime-engangsinitialisering. Den vedvarende Realtime-tjeneste forbliver udelukket, og de tre normale tjenester, syntetisk standardadfærd, generisk rolleaudit og originale SQL-/ACL-regler bevares. Der indføres ingen egen rolleoprettelse eller SQL-udeladelse. Den normale lokale egenprøve består; præcis kildekvalifikation og faktisk fuld arkiv-/Auth-gendannelse er fortsat særskilte krav. Ingen rotation, beskæring, produktionsrestore eller Free-overgang aktiveres. Version 4.0.598 og numeriske bindinger bevares. Se håndbog 89.345.
+
 ## 14. november — faste private assistenttider og præcist kildeansvar
 
 En lokal observationskandidat føjer faste monotone tal for afsluttet kvoteventetid og lokalt providerkald samt første deadlineårsag til assistentens eksisterende private fejlmarkør. Den skelner providergren fra faktisk lokal fetchinvokation og lover ikke modtagelse hos Cloudflare. Brugerindhold, rå svar, URL, nøgler og request-id logges ikke. Syv sekunders samlet serverfrist, otte sekunders klientfrist, alle kvoter, model, requestparametre, offentlige svar, headers, validering og oprydning bevares.
