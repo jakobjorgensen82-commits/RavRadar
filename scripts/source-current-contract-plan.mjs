@@ -83,6 +83,9 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
   mailOwnerProbe:[
     'node --test scripts/test-owner-notice-probe-ci.mjs',
   ],
+  dmiBudget:[
+    'node scripts/test-dmi-budget-rotation-4.0.189.mjs',
+  ],
   weatherScalarPlanning:[
     'node --test scripts/test-weather-component-normal-wireup.mjs',
   ],
@@ -214,6 +217,11 @@ const PATH_AREAS=freeze({
     'scripts/fixtures/owner-notice-probe/owner-notice-probe-invoke.mjs',
     'scripts/fixtures/owner-notice-probe/reservation.mjs',
     'scripts/fixtures/owner-notice-probe/hosted-owner-adapter-v1/hosted-owner-notice-probe.mjs',
+  ],
+  dmiBudget:[
+    'scripts/plan-dmi-recovery.py','scripts/lib/dmi_adaptive_recovery.py',
+    'scripts/run-dmi-bulk-supervised.py','scripts/update-dmi-bulk.py',
+    'scripts/test-plan-dmi-recovery.py','scripts/test-dmi-budget-rotation-4.0.189.mjs',
   ],
   weatherScalarPlanning:[
     'scripts/lib/weather-component-runtime.mjs',
@@ -469,6 +477,75 @@ export function isBoundedLocalRestoreFixtureChange(before,after){
   }catch{return false;}
 }
 
+
+// Narrow scheduling ownership; source review and actual normal tests remain required.
+const DMI_BUDGET_PATHS=new Set(['scripts/plan-dmi-recovery.py','scripts/lib/dmi_adaptive_recovery.py',
+  'scripts/run-dmi-bulk-supervised.py','scripts/update-dmi-bulk.py',
+  'scripts/test-plan-dmi-recovery.py','scripts/test-dmi-budget-rotation-4.0.189.mjs']);
+function dmiText(s){assert(typeof s==='string'&&!s.includes('\r')&&Buffer.byteLength(s)<=4*1024*1024);return s;}
+function dmiUnique(s,marker){assert.equal(s.split(marker).length,2);return s.indexOf(marker);}
+function dmiStep(s,name){
+  dmiText(s);const start=dmiUnique(s,'      - name: '+name+'\n');
+  const job=dmiUnique(s,'  build-and-prepare:\n'),steps=dmiUnique(s,'    steps:\n');assert(job<steps&&steps<start);
+  const next=s.indexOf('\n      - ',start+1);assert(next>start);return {start,end:next+1,body:s.slice(start,next+1)};
+}
+// Fixed normal wiring of the moved budget call, not a blob/cohort hash. Other
+// workflow bodies and every acquisition/deploy/budget-limit field stay exact.
+const DMI_MOVED_BUDGET_STEP="      - name: Choose DMI budget from retained five-component PART coverage\n        id: dmi-recovery-budget\n        if: inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true')\n        shell: bash\n        env:\n          DMI_PLANNING_SNAPSHOT: ${{ steps.dmi-recovery-snapshot.outputs.cache_path }}\n          DMI_PART_CONTINUITY_DONOR_PATH: ${{ steps.restored-dmi-part-continuity-donor.outputs.path }}\n        run: |\n          set -euo pipefail\n          qualified_args=(--qualified-plan .cache/weather-qualified-acquisition-plan.json\n            --current-plan .cache/weather-current-acquisition-plan.json\n            --scalar-snapshot \"$DMI_PLANNING_SNAPSHOT\")\n          if test -n \"$DMI_PART_CONTINUITY_DONOR_PATH\"; then\n            qualified_args+=(--scalar-history \"$DMI_PART_CONTINUITY_DONOR_PATH\")\n          fi\n          python scripts/plan-dmi-recovery.py \\\n            --cache \"$DMI_PLANNING_SNAPSHOT\" \\\n            --parts data/live/coastal-parts-v2.json \\\n            --at \"$RAVRADAR_PRODUCTION_TARGET_HOUR\" \\\n            \"${qualified_args[@]}\" \\\n            --github-output \"$GITHUB_OUTPUT\"\n          printf 'cache_path=%s\\n' \"$DMI_PLANNING_SNAPSHOT\" >> \"$GITHUB_OUTPUT\"\n\n";
+function restoreOwnedDmiBudgetSteps(before,after){
+  const oldBudget=dmiStep(before,'Choose DMI budget from retained five-component PART coverage');
+  const oldPlan=dmiStep(before,'Plan global current acquisition before DMI');
+  const snapshot=dmiStep(after,'Prepare retained DMI planning snapshot');
+  const plan=dmiStep(after,'Plan global current acquisition before DMI');
+  const budget=dmiStep(after,'Choose DMI budget from retained five-component PART coverage');
+  assert.equal(oldBudget.end,oldPlan.start);assert.equal(snapshot.end,plan.start);assert.equal(plan.end,budget.start);
+  assert.equal(budget.body,DMI_MOVED_BUDGET_STEP);
+  const callStart=dmiUnique(oldBudget.body,'          python scripts/plan-dmi-recovery.py \\\n');
+  const printf="          printf 'cache_path=%s\\n' ",callEnd=dmiUnique(oldBudget.body,printf);assert(callStart<callEnd);
+  const restored=snapshot.body.replace('      - name: Prepare retained DMI planning snapshot\n',
+    '      - name: Choose DMI budget from retained five-component PART coverage\n')
+    .replace('        id: dmi-recovery-snapshot\n','        id: dmi-recovery-budget\n');
+  const insert=dmiUnique(restored,printf);
+  assert.equal(restored.slice(0,insert)+oldBudget.body.slice(callStart,callEnd)+restored.slice(insert),oldBudget.body);
+  assert.equal(plan.body.replaceAll('steps.dmi-recovery-snapshot.outputs.cache_path',
+    'steps.dmi-recovery-budget.outputs.cache_path'),oldPlan.body);
+  return after.slice(0,snapshot.start)+before.slice(oldBudget.start,oldPlan.end)+after.slice(budget.end);
+}
+export function dmiBudgetWeatherBuildAreas(before,after){
+  try{assert(before!==after);const restored=restoreOwnedDmiBudgetSteps(before,after);
+    if(restored===before)return ['dmiBudget'];
+    if(isPagesOnlyWeatherBuildChange(before,restored))return ['pages','dmiBudget'];
+    if(isSupportOnlyWeatherBuildChange(before,restored))return ['workflowSupport','dmiBudget'];
+    if(isPagesAndSupportOnlyWeatherBuildChange(before,restored))return ['pages','workflowSupport','dmiBudget'];
+    return null;
+  }catch{return null;}
+}
+export function isDmiBudgetOnlyUpdaterChange(before,after){
+  try{assert(before!==after);const project=s=>{
+    dmiText(s);const imports=[...s.matchAll(/^from lib\.dmi_adaptive_recovery import ([^\n]+)\n/gm)];assert.equal(imports.length,1);
+    assert(['EXTENDED_RUNTIME_SECONDS, next_adaptive_recovery',
+      'extended_runtime_profile_selected, next_adaptive_recovery'].includes(imports[0][1]));
+    const selected='    selected_runtime_budget = os.getenv("DMI_BULK_SUPERVISOR_TOTAL_RUNTIME_SECONDS")\n';
+    const legacy='    extended_recovery = (os.getenv("DMI_BULK_ADAPTIVE_RECOVERY", "false").lower() == "true"\n';
+    const start=dmiUnique(s,s.includes(selected)?selected:legacy),end=dmiUnique(s,'    if adaptive_recovery is not None:\n');
+    assert(start<end&&end-start<8192&&start>s.indexOf('\ndef main()'));
+    const body=s.slice(start,end);assert.equal(body.split('    adaptive_recovery = next_adaptive_recovery(\n').length,2);
+    assert(body.split('\n').every(line=>!line||line.startsWith('    ')));
+    return (s.slice(0,start)+'<DMI_SELECTED_PROFILE_REGISTRATION>\n'+s.slice(end))
+      .replace(imports[0][0],'<DMI_ADAPTIVE_BUDGET_IMPORT>\n');
+  };return project(before)===project(after);}catch{return false;}
+}
+export function isDmiBudgetOnlySupervisorChange(before,after){
+  try{dmiText(before);dmiText(after);assert(before!==after);
+    const addition='    # Preserve the actually selected envelope, not a rounded child remainder.\n'
+      +'    # Overwrite caller input; this metadata neither resets nor extends deadline.\n'
+      +'    environment["DMI_BULK_SUPERVISOR_TOTAL_RUNTIME_SECONDS"] = str(total_runtime)\n';
+    const deadline='    deadline = time.monotonic() + total_runtime\n';dmiUnique(before,deadline);dmiUnique(after,deadline);
+    assert.equal(after.split(addition).length,2);assert(after.includes(addition+deadline));
+    return after.replace(addition,'')===before;
+  }catch{return false;}
+}
+
 export function planSourceCurrentContractsFromGit(input){
   const out={schemaVersion:1,status:'PLANNED',selection:'CURRENT_CONTRACTS',commands:[],areas:{},
     resultScope:'CURRENT_CONTRACT_RESULTS_ONLY',historicalCompatibilityExecuted:false,
@@ -506,15 +583,25 @@ export function planSourceCurrentContractsFromGit(input){
       // En ændring her kræver derfor faktisk FULL-kvalifikation i denne levering.
       if(file==='.github/workflows/validate-pull-request.yml')
         return refuse('CURRENT_VALIDATION_WORKFLOW_REQUIRES_FULL');
+      if(DMI_BUDGET_PATHS.has(file)&&(row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'))
+        return refuse('CURRENT_DMI_BUDGET_REQUIRES_EXISTING_REGULAR_SOURCE');
+      if(file==='scripts/update-dmi-bulk.py'&&!isDmiBudgetOnlyUpdaterChange(
+        readCommittedText(input.baselineCommit,file),readCommittedText(input.candidateCommit,file)))
+        return refuse('CURRENT_DMI_BUDGET_UPDATER_SCOPE_CHANGED',['DMI_PRODUCER_CONTRACTS']);
+      if(file==='scripts/run-dmi-bulk-supervised.py'&&!isDmiBudgetOnlySupervisorChange(
+        readCommittedText(input.baselineCommit,file),readCommittedText(input.candidateCommit,file)))
+        return refuse('CURRENT_DMI_BUDGET_SUPERVISOR_SCOPE_CHANGED',['DMI_SUPERVISOR_CONTRACTS']);
+      const dmiAreas=file===WEATHER_BUILD?dmiBudgetWeatherBuildAreas(
+        readCommittedText(input.baselineCommit,file),readCommittedText(input.candidateCommit,file)):null;
       const supportOnly=file===WEATHER_BUILD&&isSupportOnlyWeatherBuildChange(
         readCommittedText(input.baselineCommit,file),readCommittedText(input.candidateCommit,file));
       const pagesAndSupportOnly=file===WEATHER_BUILD&&!supportOnly&&isPagesAndSupportOnlyWeatherBuildChange(
         readCommittedText(input.baselineCommit,file),readCommittedText(input.candidateCommit,file));
-      const areas=supportOnly?['workflowSupport']:pagesAndSupportOnly?['pages','workflowSupport']:
-        pathAreas.get(file)??(/^docs\/(?:rdks|ai|handbook)\/.+\.md$/.test(file)?['documentation']:null);
+      const areas=dmiAreas??(supportOnly?['workflowSupport']:pagesAndSupportOnly?['pages','workflowSupport']:
+        pathAreas.get(file)??(/^docs\/(?:rdks|ai|handbook)\/.+\.md$/.test(file)?['documentation']:null));
       if(!areas){unknown.push(file);continue;}
       for(const area of areas){if(!selected.has(area))selected.set(area,[]);selected.get(area).push(file);}
-      if(sourceControlPaths.has(file)||historicalPaths.has(file)||areas.includes('compatibility')||areas.includes('assistantEdge')||areas.includes('mailOwnerProbe')||areas.includes('currentInstalledCodeOnly')||areas.includes('workflowSupport')||file.startsWith('scripts/test-'))
+      if(sourceControlPaths.has(file)||historicalPaths.has(file)||areas.includes('compatibility')||areas.includes('assistantEdge')||areas.includes('mailOwnerProbe')||areas.includes('currentInstalledCodeOnly')||areas.includes('workflowSupport')||areas.includes('dmiBudget')||file.startsWith('scripts/test-'))
         out.controlQualificationRequired=true;
     }
     if(unknown.length){out.unclassifiedPaths=unknown.sort();return refuse('CURRENT_UNCLASSIFIED_PATH');}
@@ -535,7 +622,7 @@ export function planSourceCurrentContractsFromGit(input){
       const before=readCommittedText(input.baselineCommit,WEATHER_BUILD);
       const after=readCommittedText(input.candidateCommit,WEATHER_BUILD);
       if(!isPagesOnlyWeatherBuildChange(before,after)&&!isSupportOnlyWeatherBuildChange(before,after)
-        &&!isPagesAndSupportOnlyWeatherBuildChange(before,after))
+        &&!isPagesAndSupportOnlyWeatherBuildChange(before,after)&&!dmiBudgetWeatherBuildAreas(before,after))
         return refuse('CURRENT_WEATHER_BUILD_CHANGE_EXCEEDS_PAGES',['WEATHER_BUILD_CONTRACTS']);
     }
     if(analysis.completeGitDiff.inventory.some(row=>Buffer.from(row.pathUtf8Hex,'hex').toString('utf8')===INSTALLER)
