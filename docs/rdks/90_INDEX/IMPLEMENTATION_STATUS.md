@@ -4,7 +4,7 @@
 
 Alle fem hovedområder i ejerens gældende mål består, indtil deres krav er faktisk leveret og verificeret. Denne liste samler stabile leverancegrænser; aktuelle kørsler, målinger, hashes og den præcise næste handling findes i det private checkpoint. Genbrug leverede delrettelser og læs [aktuel sandhed](CURRENT_TRUTH.md), før en opgave genåbnes.
 
-Den særskilte DRAFT PR917 er alene credentialfri PREFIX-diagnostik og må aldrig merges. Den første faktiske Linuxforberedelse fejlede i anden genuine598-providerfabrik efter 32m28s med PROVIDER_FACTORY/CHILD_EXIT; den underliggende årsag er fortsat UKENDT. Den lokale formatterfølger og dens tre korte unitcases er ingen Source-, native-, PG- eller aktiveringsaccept. Python-frameprøvens Windows-fstat-seam er udtrykkeligt syntetisk. En ny faktisk PREFIX-kørsel kræves fortsat; alle 80 udstedte SQL og C/I/T bevares.
+Den særskilte DRAFT PR917 er alene credentialfri PREFIX-diagnostik og må aldrig merges. Den første faktiske Linuxforberedelse fejlede i anden genuine598-providerfabrik med PROVIDER_FACTORY/CHILD_EXIT; dens underliggende årsag er fortsat UKENDT. De tre formatterprøver bestod på faktisk Linux, og anden PREFIX nåede begge providerfabrikker samt RAW_INPUTS før ARCHIVE_SEED/REFERENCE_ERROR. Den autentiske publicDocs-kalder manglede en eksplicit path-binding; den minimale lokale rettelse består før/efterprøven med seks byteidentiske filer og uændret historisk recipe. Hele PREFIX efter rettelsen, Source/native/PG og aktivering er fortsat åbne. Alle 80 udstedte SQL og C/I/T bevares.
 
 | Område | Det der fortsat skal afsluttes |
 | --- | --- |

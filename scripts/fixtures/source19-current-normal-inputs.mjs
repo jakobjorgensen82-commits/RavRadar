@@ -278,9 +278,9 @@ async function createArchivedOnlyOldSeed({work, inputRoot, adminInputs, registry
   const originals = path.join(work, 'old-archive-public'); await fs.mkdir(originals);
   const publicBody = frozenFragment(recipe, '    const publicDocs=new Map(', '    const originalFiles=');
   const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
-  await AsyncFunction('archiveModule', 'oldI', 'originals', 'write', 'sha', 'time', publicBody)(
+  await AsyncFunction('archiveModule', 'oldI', 'originals', 'write', 'sha', 'time', 'path', publicBody)(
     await load(ROOT, normalInputModulePath('CURRENT', 'EPOCH_ARCHIVE')), oldI, originals,
-    async (file, value) => writeNew(file, Buffer.isBuffer(value) ? value : Buffer.from(JSON.stringify(value) + '\n')), sha, time);
+    async (file, value) => writeNew(file, Buffer.isBuffer(value) ? value : Buffer.from(JSON.stringify(value) + '\n')), sha, time, path);
   assert(Date.parse(time(7)) < Date.parse(time(8)) && Date.parse(time(8)) < Date.parse(target));
   return {privateRoot, bundlePath, checkpointPath, publicRoot: originals};
 }
