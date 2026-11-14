@@ -310,8 +310,7 @@ def prepare(node, target, initial_phase=None, *, current598=False, code598_root=
             # The actual normal selector determines this cold INPUT axis.
             # It creates no state, origin, readiness or positive whole-runtime proof.
             demand_mode = ["--current598-demand"] if code598_root is None else ["--current598-code598-demand", str(normal_root)]
-            subprocess.run([str(node), str(NATIVE_FORECAST), target, *demand_mode],
-                cwd=normal_root, stdin=subprocess.DEVNULL, check=True, timeout=120)
+            run_current_native_provider_command([str(node), str(NATIVE_FORECAST), target, *demand_mode], normal_root)
             history_plan = json.loads((out / ".cache/current598-history-demand.json").read_text())
             need(history_plan["productionReferenceAt"] == target, "CURRENT598_HISTORY_TARGET")
             demands = producer.current_history_demands(history_plan["demands"], zones, time_text(reference))
@@ -467,6 +466,23 @@ def import_native_decoder(normal_root, *, current598):
                 os.environ[key] = value
 
 
+def emit_current_native_provider_failure(error):
+    try:
+        # Importing the committed canonical reader executes no native case.
+        observer = module('source_provider_boundary_observer',
+            ROOT / 'scripts/test-source598-current-native-profile.py')
+        projected = observer.source_provider_boundary_failure(error)
+        if projected is not None:
+            print(json.dumps(projected, separators=(',', ':')), file=sys.stderr, flush=True)
+    except BaseException:
+        pass  # Keep the first actual failure.
+
+
+def run_current_native_provider_command(command, normal_root):
+    # Same normal command, cwd and existing 120-second bound.
+    return subprocess.run(command, cwd=normal_root, stdin=subprocess.DEVNULL, check=True, timeout=120)
+
+
 def finish_normal_basis(node, out, reference, producer, targets, document, *, initial_phase=None, current598=False, code598_root=None):
     """Actual existing normal producers, never authored READY/closure/pilot data."""
     normal_root = ROOT if code598_root is None else genuine598_code_root(code598_root)
@@ -513,7 +529,7 @@ def finish_normal_basis(node, out, reference, producer, targets, document, *, in
     report_root = out / "data/diagnostics"
     def normal(command):
         # Input fixture only, not a production time-budget or scheduler change.
-        subprocess.run(command, cwd=normal_root, stdin=subprocess.DEVNULL, check=True, timeout=120)
+        run_current_native_provider_command(command, normal_root)
     common = ["--targets", str(targets_path), "--dmi", str(bulk), "--registry", str(registry_path),
         "--copernicus", str(cp), "--source-stage", str(stage_path), "--regional", str(regional),
         "--policy", str(policy), "--at", time_text(reference)]
@@ -576,16 +592,7 @@ if __name__ == "__main__":
         need(len(sys.argv) == 3 or phase is not None or current598, "EXACT_INITIAL_PHASE_ARGUMENT")
         prepare(Path(sys.argv[1]), sys.argv[2], initial_phase=phase, current598=current598, code598_root=code598_root)
     except BaseException as error:
-        try:
-            # Reuse the existing terminal exception/frame reader only AFTER
-            # the actual failure. No native work or caller is retried here.
-            observer = module('source_provider_boundary_observer',
-                ROOT / 'scripts/test-source19-terminal-failure-proof-bank-v17-observer-native.py')
-            projected = observer.source_provider_boundary_failure(error)
-            if projected is not None:
-                print(json.dumps(projected, separators=(',', ':')), file=sys.stderr, flush=True)
-        except BaseException:
-            pass
+        emit_current_native_provider_failure(error)
         raise
 
 

@@ -67,7 +67,7 @@ let current598PrefixPhase='UNKNOWN';
 
 // Observation only: no message, assertion operands, raw stack or caller path.
 // The original error still follows the same throw/finally/host-cleanup path.
-export async function describeCurrent598PrefixFailure(error,phase){
+async function describeCurrent598FixtureFailure(error,phase,ownerUrl,ownerPath){
   const out={kind:'CURRENT598_PREFIX_FIRST_FAILURE',phase:PREFIX_PHASES.has(phase)?phase:'UNKNOWN',
     exceptionType:'UNKNOWN',reason:'UNKNOWN',callsite:null,privatePayloadIncluded:false};
   try{
@@ -97,18 +97,31 @@ export async function describeCurrent598PrefixFailure(error,phase){
       stack=Reflect.apply(PREFIX_ERROR_STACK.get,error,[]);
     }
     if(typeof stack!=='string'||stack.length>2*1024*1024)return out;
-    const url=import.meta.url,source=fileURLToPath(url),body=await read(source,2*1024*1024);
+    const url=ownerUrl,source=fileURLToPath(url),body=await read(source,2*1024*1024);
     for(const line of stack.split(/\r?\n/)){
       const match=/^\s+at (?:[^\r\n()]* \()?((?:file:\/\/\/)[^\r\n()]+):(\d+):(\d+)\)?$/.exec(line);
       if(!match||match[1]!==url)continue;
       const at=Number(match[2]),column=Number(match[3]);
       if(Number.isSafeInteger(at)&&at>=1&&at<=body.toString('utf8').split(/\r?\n/).length
         &&Number.isSafeInteger(column)&&column>=1&&column<=100000){
-        out.callsite={module:'scripts/fixtures/source19-current-normal-inputs.mjs',sha256:sha(body),line:at,column};break;
+        out.callsite={module:ownerPath,sha256:sha(body),line:at,column};break;
       }
     }
   }catch{} // Diagnostic failure must never replace the actual exception.
   return out;
+}
+export async function describeCurrent598PrefixFailure(error,phase){
+  return describeCurrent598FixtureFailure(error,phase,import.meta.url,
+    'scripts/fixtures/source19-current-normal-inputs.mjs');
+}
+export async function describeCurrent598ProviderForecastFailure(error){
+  const owner='scripts/fixtures/source19-current-provider-forecast.mjs';
+  const value=await describeCurrent598FixtureFailure(error,'PROVIDER_FACTORY',
+    new URL('./source19-current-provider-forecast.mjs',import.meta.url).href,owner);
+  return {kind:'SOURCE_PROVIDER_BOUNDARY_FIRST_FAILURE',
+    exceptionType:['ASSERTION_ERROR','TYPE_ERROR','UNKNOWN'].includes(value.exceptionType)?value.exceptionType:'UNKNOWN',
+    reason:'UNKNOWN',callsite:value.callsite===null?null:{module:owner,sha256:value.callsite.sha256,line:value.callsite.line},
+    helper:'NONE',timeoutSeconds:null,privatePayloadIncluded:false};
 }
 function hour(value) {
   assert.equal(typeof value, 'string'); assert.match(value, /^\d{4}-\d{2}-\d{2}T\d{2}:00:00\.000Z$/);

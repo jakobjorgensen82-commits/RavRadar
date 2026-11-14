@@ -2386,7 +2386,8 @@ def source_legacy_child_failure(error, phase):
 
 SOURCE_PROVIDER_NEED_CODES = frozenset(["CURRENT_NATIVE_PROVIDER_ABSOLUTE_PATH","CURRENT_NATIVE_PROVIDER_ADMIN_COPY_CHANGED","CURRENT_NATIVE_PROVIDER_ADMIN_INPUT_MISSING","CURRENT_NATIVE_PROVIDER_BASIS_DESTINATION_EXISTS","CURRENT_NATIVE_PROVIDER_CLEAN_NATIVE_ACQUISITION_MODE","CURRENT_NATIVE_PROVIDER_ECCODES_REQUIRED","CURRENT_NATIVE_PROVIDER_EMPTY_NORMAL_STATION_SOURCE_REQUIRED","CURRENT_NATIVE_PROVIDER_EXACT_INITIAL_PHASE","CURRENT_NATIVE_PROVIDER_EXACT_INITIAL_PHASE_ARGUMENT","CURRENT_NATIVE_PROVIDER_EXACT_NODE_TARGET_ARGUMENTS","CURRENT_NATIVE_PROVIDER_EXISTING_FIXTURE_DIRECTORY","CURRENT_NATIVE_PROVIDER_EXISTING_OWNED_HOST","CURRENT_NATIVE_PROVIDER_EXTERNAL_NETWORK_REFUSED","CURRENT_NATIVE_PROVIDER_GRID_BOUND","CURRENT_NATIVE_PROVIDER_LINUX_PYTHON312_REQUIRED","CURRENT_NATIVE_PROVIDER_NODE24_REQUIRED","CURRENT_NATIVE_PROVIDER_NORMAL_BASIS_OUTPUT_MISSING","CURRENT_NATIVE_PROVIDER_NORMAL_BULK_READBACK","CURRENT_NATIVE_PROVIDER_NORMAL_CAPTURE_MISSING","CURRENT_NATIVE_PROVIDER_NORMAL_COPERNICUS_RESIDUALS_REQUIRE_DATA","CURRENT_NATIVE_PROVIDER_NORMAL_DECODE_INCOMPLETE","CURRENT_NATIVE_PROVIDER_NORMAL_DECODE_OUTCOMES_INCOMPLETE","CURRENT_NATIVE_PROVIDER_NORMAL_LEDGER_NOT_READY","CURRENT_NATIVE_PROVIDER_NORMAL_MODULE","CURRENT_NATIVE_PROVIDER_NORMAL_NATIVE_PAIR_REJECTED","CURRENT_NATIVE_PROVIDER_NORMAL_PART_TARGETS","CURRENT_NATIVE_PROVIDER_NORMAL_REGISTRY_210_673","CURRENT_NATIVE_PROVIDER_NO_ADOPTED_OLD_BULK","CURRENT_NATIVE_PROVIDER_RAW_CHANGED_AFTER_DECODE","CURRENT_NATIVE_PROVIDER_SAME_ACTION_RUNNER_TEMP","CURRENT_NATIVE_PROVIDER_STAC_HOST","CURRENT_NATIVE_PROVIDER_STAC_PAGE_BOUND","CURRENT_NATIVE_PROVIDER_STAC_ROUTE","CURRENT_NATIVE_PROVIDER_SYMLINK","CURRENT_NATIVE_PROVIDER_TARGET_HOUR","CURRENT_NATIVE_PROVIDER_WRITE_READBACK"])
 SOURCE_PROVIDER_FRAME_FILES = ('scripts/fixtures/source19-current-native-providers.py',
-    'scripts/update-dmi-bulk.py', 'scripts/test-source598-current-native-profile.py')
+    'scripts/update-dmi-bulk.py', 'scripts/test-source598-current-native-profile.py',
+    'scripts/fixtures/source19-current-provider-forecast.mjs')
 SOURCE_PROVIDER_SIGNALS = {-1: 'SIGHUP', -2: 'SIGINT', -3: 'SIGQUIT', -6: 'SIGABRT',
     -9: 'SIGKILL', -11: 'SIGSEGV', -13: 'SIGPIPE', -15: 'SIGTERM'}
 SOURCE_PROVIDER_HELPERS = {'scripts/fill-open-meteo-current-fallback.py': 'OPEN_METEO',
@@ -2560,6 +2561,48 @@ def current_prefix_failure(own, root):
         return unknown  # The original failure and preservation guards stay first.
 
 
+def current_prefix_provider_failure(own, root):
+    # Same closed private stream; no raw text or unverified frame may leave.
+    try:
+        raw = source_current_cohort_read(own, 'current598-prefix-whole.stderr', 16 * 1024 * 1024)
+        found = []
+        for line in raw.splitlines():
+            if len(line) > 4096:
+                continue
+            try:
+                value = json.loads(line)
+            except (ValueError, UnicodeError):
+                continue
+            if type(value) is not dict or value.get('kind') != 'SOURCE_PROVIDER_BOUNDARY_FIRST_FAILURE':
+                continue
+            if not source_provider_boundary_valid(value) or value['callsite'] is None:
+                return None
+            site = value['callsite']
+            body = source_current_cohort_read(root, site['module'], 32 * 1024 * 1024)
+            if site['sha256'] != sha(body) or site['line'] > len(body.splitlines()):
+                return None
+            found.append(value)
+        if len(found) == 1:
+            return found[0]
+        # The real forecast emits before its ordinary Python subprocess wrapper.
+        if (len(found) == 2
+                and found[0]['callsite']['module'] == 'scripts/fixtures/source19-current-provider-forecast.mjs'
+                and found[1]['callsite']['module'] == 'scripts/fixtures/source19-current-native-providers.py'
+                and found[1]['exceptionType'] == 'SUBPROCESS_EXIT' and found[1]['helper'] == 'FORECAST'):
+            return found[0]
+    except Exception:
+        pass
+    return None
+
+
+def emit_current598_preparation_failure(test):
+    for name in ('_current_native_provider_failure', '_current_native_prefix_provider_failure',
+            '_current_native_prefix_failure'):
+        value = getattr(test, name, None)
+        if value is not None:
+            print(json.dumps(value, separators=(',', ':')), flush=True)
+
+
 def current_provider_failure(own, root):
     # This is diagnostics after a failed, closed child. No raw log text, file path,
     # or argv crosses this boundary; the producer command and result stay unchanged.
@@ -2682,6 +2725,103 @@ for(const change of [{subprocessPhase:'PROVIDERS'},{prefixFailure:{...v.prefixFa
 console.log('PREFIX_NORMAL_CASE_AND_WRAPPER_PASS');
 """, location)
             self.assertEqual(wrapper.stdout, b'PREFIX_NORMAL_CASE_AND_WRAPPER_PASS\n')
+
+    def test_prefix_nested_provider_and_forecast_failures_reach_normal_diagnostic_printer(self):
+        import contextlib
+        import io
+        node = os.environ.get('RAVRADAR_SOURCE_NATIVE_NODE24_PATH') or shutil.which('node')
+        provider = ROOT / 'scripts/fixtures/source19-current-native-providers.py'
+        # Test-only Windows stat adapter: creation/change-time semantics differ
+        # between lstat/fstat. All other fields and the actual traceback stay real.
+        # This proves synthetic formatting, never Linux physical-file admission.
+        child_prelude = """
+import importlib.util,os,runpy,sys
+from pathlib import Path
+from types import SimpleNamespace
+from unittest import mock
+provider=Path(%r)
+real_fstat=os.fstat
+fields=('st_dev','st_ino','st_mode','st_nlink','st_size','st_mtime_ns','st_ctime_ns')
+def test_fstat(fd):
+    row=real_fstat(fd)
+    leaf=provider.lstat()
+    if sys.platform=='win32' and (row.st_dev,row.st_ino)==(leaf.st_dev,leaf.st_ino):
+        values={key:getattr(row,key) for key in fields}
+        values['st_ctime_ns']=leaf.st_ctime_ns
+        return SimpleNamespace(**values)
+    return row
+""" % str(provider)
+        direct_code = child_prelude + """
+with mock.patch.object(os,'fstat',test_fstat):
+    sys.argv=[str(provider)]
+    runpy.run_path(str(provider),run_name='__main__')
+"""
+        direct = [sys.executable, '-I', '-B', '-c', direct_code]
+        child = child_prelude + """
+spec=importlib.util.spec_from_file_location('controlled_normal_provider',str(provider))
+api=importlib.util.module_from_spec(spec);spec.loader.exec_module(api)
+with mock.patch.object(os,'fstat',test_fstat):
+    try:
+        api.run_current_native_provider_command([%r, str(api.source_native_provider_program_path('FORECAST',api.ROOT))],api.ROOT)
+    except BaseException as error:
+        api.emit_current_native_provider_failure(error)
+        raise
+""" % node
+        deep = [sys.executable, '-I', '-B', '-c', child]
+        for argv, expected_type, expected_module in (
+                (direct, 'RUNTIME_ERROR', 'scripts/fixtures/source19-current-native-providers.py'),
+                (deep, 'ASSERTION_ERROR', 'scripts/fixtures/source19-current-provider-forecast.mjs')):
+            with self.subTest(module=expected_module), tempfile.TemporaryDirectory(prefix='rr-prefix-nested-') as directory:
+                own = Path(directory)
+                script = """
+import assert from 'node:assert/strict';import {execFileSync} from 'node:child_process';
+import {describeCurrent598PrefixFailure} from './scripts/fixtures/source19-current-normal-inputs.mjs';
+const argv=%s;let first;try{execFileSync(argv[0],argv.slice(1),{stdio:['ignore','inherit','inherit']});}catch(error){first=error;}
+assert(first&&Number.isInteger(first.status)&&first.status!==0);
+console.error(JSON.stringify(await describeCurrent598PrefixFailure(first,'PROVIDER_FACTORY')));
+process.exitCode=first.status;
+""" % json.dumps(argv)
+                test = SourceCurrentNative('test_current598_prefix_preparation')
+                environment = clean_environment()
+                environment.update({k: v for k, v in os.environ.items()
+                    if k.upper() in {'SYSTEMROOT', 'WINDIR', 'TEMP', 'TMP'}})
+                def read_fixed(root, relative, maximum):
+                    self.assertTrue(root == own and relative == 'current598-prefix-whole.stderr'
+                        or root == ROOT and relative in (CURRENT_PREFIX_MODULE, *SOURCE_PROVIDER_FRAME_FILES))
+                    raw = (root / relative).read_bytes()
+                    self.assertLessEqual(len(raw), maximum)
+                    return raw
+                # Actual Node/Python subprocesses and normal command/error functions;
+                # only the unchanged Linux-specific byte-reader seam is explicit here.
+                with mock.patch.dict(globals(), {'source_current_cohort_read': read_fixed}):
+                    with self.assertRaises(AssertionError):
+                        test.run_current598_preparation_commands(own, ROOT, environment,
+                            (('prefix', [node, '--input-type=module', '-e', script]),))
+                    boundary = test._current_native_prefix_provider_failure
+                    self.assertIsNotNone(boundary)
+                    self.assertEqual(boundary['exceptionType'], expected_type)
+                    self.assertEqual(boundary['callsite']['module'], expected_module)
+                    body = (ROOT / expected_module).read_bytes()
+                    self.assertEqual(boundary['callsite']['sha256'], sha(body))
+                    self.assertTrue(1 <= boundary['callsite']['line'] <= len(body.splitlines()))
+                    if argv == direct:
+                        self.assertEqual(boundary['reason'], 'CURRENT_NATIVE_PROVIDER_EXACT_NODE_TARGET_ARGUMENTS')
+                    self.assertEqual(test._current_native_prefix_failure['reason'], 'CHILD_EXIT')
+                    stream = io.StringIO()
+                    with contextlib.redirect_stdout(stream):
+                        emit_current598_preparation_failure(test)
+                    emitted = [json.loads(line) for line in stream.getvalue().splitlines()]
+                    self.assertEqual(emitted, [boundary, test._current_native_prefix_failure])
+                    self.assertNotIn('PRIVATE_SENTINEL', stream.getvalue())
+                    # Extra fields, forged/stale frames, ambiguity and raw text do not become causes.
+                    bad = [dict(boundary, raw='PRIVATE_SENTINEL'),
+                        dict(boundary, callsite={**boundary['callsite'], 'sha256': '0'*64}),
+                        dict(boundary, privatePayloadIncluded=True)]
+                    for value in bad:
+                        (own / 'current598-prefix-whole.stderr').write_bytes((json.dumps(value)+'\nPRIVATE_SENTINEL\n').encode())
+                        self.assertIsNone(current_prefix_provider_failure(own, ROOT))
+                    (own / 'current598-prefix-whole.stderr').write_bytes((json.dumps(boundary)+'\n'+json.dumps(boundary)+'\n').encode())
+                    self.assertIsNone(current_prefix_provider_failure(own, ROOT))
 
     def test_prefix_missing_ambiguous_or_unverified_marker_stays_unknown(self):
         base = {'kind': 'CURRENT598_PREFIX_FIRST_FAILURE', 'phase': 'RAW_INPUTS', 'exceptionType': 'ERROR',
@@ -3261,7 +3401,7 @@ CURRENT_NATIVE_CASE = 'current-source-native'
 CURRENT_NATIVE_CONTEXT = None
 CURRENT_NATIVE_INPUT_PROFILE = 'operative585'
 CURRENT598_INPUT_PROFILE_PATH = 'scripts/fixtures/source19-current598-input-profile.json'
-CURRENT598_INPUT_PROFILE_SHA256 = '9e8fa4dad221457bacd0466eff072d711450921ca33ced4434d4bfa66814b6db'
+CURRENT598_INPUT_PROFILE_SHA256 = 'b582e6b02baf28d5a75638013b856ad35e7b7b29aab200b4258f8290c3306ce9'
 
 CURRENT_NATIVE_POST64_MODULE = None
 def current_native_post64_module():
@@ -3815,6 +3955,7 @@ class SourceCurrentNative(SourceActualSUnionNative):
                 self._current_native_provider_failure = current_provider_failure(own, root)
             if name == 'prefix' and result.returncode != 0:
                 self._current_native_prefix_failure = current_prefix_failure(own, root)
+                self._current_native_prefix_provider_failure = current_prefix_provider_failure(own, root)
             self.assertEqual(result.returncode, 0, 'CURRENT598_NORMAL_' + name.upper() + '_PRODUCER_REFUSED')
             self._current_native_subprocess_phase, self._current_native_subprocess_exit = 'NONE', None
 
@@ -4601,13 +4742,7 @@ def run_current_native_profile_cli():
         # first-cause observation before normal error/failure reporting.
         def emit_case_location(self, test, error):
             if args.prepare_current598_prefix:
-                # Relay only the same existing safe child projections, never raw logs.
-                provider = getattr(test, '_current_native_provider_failure', None)
-                if provider is not None:
-                    print(json.dumps(provider, separators=(',', ':')), flush=True)
-                prefix = getattr(test, '_current_native_prefix_failure', None)
-                if prefix is not None:
-                    print(json.dumps(prefix, separators=(',', ':')), flush=True)
+                emit_current598_preparation_failure(test)
                 return
             try:
                 observation = current_native_case_location(test, error[1], error[2])
@@ -4651,7 +4786,8 @@ if __name__ == '__main__':
     if sys.argv[1:] == ['--prefix-diagnostic-unit']:
         unittest.main(argv=[sys.argv[0]], defaultTest=(
             'SourceProviderEvidencePureTests.test_prefix_first_failure_survives_normal_case_and_wrapper_without_private_values',
-            'SourceProviderEvidencePureTests.test_prefix_missing_ambiguous_or_unverified_marker_stays_unknown'))
+            'SourceProviderEvidencePureTests.test_prefix_missing_ambiguous_or_unverified_marker_stays_unknown',
+            'SourceProviderEvidencePureTests.test_prefix_nested_provider_and_forecast_failures_reach_normal_diagnostic_printer'))
     if sys.argv[1:] == ['--provider-diagnostic-unit']:
         unittest.main(argv=[sys.argv[0]], defaultTest='SourceProviderEvidencePureTests')
     if sys.argv[1:] == ['--legacy-diagnostic-unit']:

@@ -1,3 +1,11 @@
+## 14. november — PR917 er kun PREFIX-diagnostik og må aldrig merges
+
+Den særskilte DRAFT PR917 mod den autentiske Source895-gren er ingen main- eller releasekandidat. Dens normale validate-job er eksplicit sprunget over; kun den credentialfri PREFIX-forberedelse kører. Run 43581162831/1 på ac04d22edaece151bc41ad28320d53514044f308 fejlede efter 32 minutter og 28 sekunder i den anden normale providerfabrik mod genuine598. Den sikre observation var PROVIDER_FACTORY/CHILD_EXIT ved den fysisk verificerede normal-inputs-linje945. Den underliggende Pythonårsag er stadig UKENDT, og der er ikke kørt PG eller udstedt Source-/native-PASS.
+
+Den afgrænsede formatterfølger genbruger den faktisk committed Pythonformatter, fører sikre nested-providerfelter frem og giver forecast-childen en fast egenfil/SHA/linje. Oprindelige exceptions, guards, argv, roots og tidsgrænser bevares. Tre korte unitcases køres før den dyre PREFIX i samme diagnostikjob. Den lokale kontrollerede prøve bestod, men dens Python-framekontrol anvender en eksplicit Windows-fstat-testadapter og beviser derfor kun syntetisk formatering; faktisk Linux/lstat/fstat og ny PREFIX afventer deres egen kørsel. Nodeforecastens assertion og egenlinje er observeret faktisk. Den første rå null-/fejlprobe bevares privat.
+
+Kun de tre ændrede fixturefilers kildefakta i profilen og readerens afledte profil-SHA synkroniseres gennem den eksisterende normale Sourcebygger. Ingen version, C/I/T, udstedt SQL eller produktionsdata ændres. PR917 må aldrig merges til Source895 eller main og lukkes efter diagnosen. Den store Source-revision er fortsat uinstalleret.
+
 ## 13. november — samlet Source-forberedelse og afgrænset adminaccept
 
 Den samlede private Source-kandidat viderefører dagens normale mail-, rollearkiv- og 300-sekundersrettelser samt de allerede gennemgåede Source-filer. Førstegangsprofilens aktuelle kildefakta og CODE skal afledes normalt efter endelige ejerinput. De tre relevante normale mål er mailprøven, arkivparseren og scalarens fysiske wireup; deres faktiske kildekvalifikation på den samlede kandidat er fortsat åben. Source616, C/I/T og de 80 udstedte SQL-filer bevares.

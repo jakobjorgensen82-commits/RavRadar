@@ -56,6 +56,13 @@ jobs:
           npm_config_cache: ${{ github.workspace }}/.github/actions/save-owned-dmi-grib/.npm-cache
         run: npm ci --ignore-scripts --no-audit --no-fund
 
+      - name: Verify bounded PREFIX error formatting before the factory
+        shell: bash
+        run: |
+          set -euo pipefail
+          RAVRADAR_SOURCE_NATIVE_NODE24_PATH="$(command -v node)" \
+            python -I -B scripts/test-source598-current-native-profile.py --prefix-diagnostic-unit
+
       # This explicit diagnostic branch must never be merged. It cannot write
       # source-completed/native-phase receipts or qualify a release/main tree.
       - name: Prepare the normal PREFIX only without PG or source admission

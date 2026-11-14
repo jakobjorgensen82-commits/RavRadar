@@ -1,5 +1,6 @@
 // PRIVATE native provider INPUT only: no conditions/state/origin/publicPack.
 import assert from 'node:assert/strict';
+import {describeCurrent598ProviderForecastFailure} from './source19-current-normal-inputs.mjs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
@@ -172,8 +173,7 @@ if(process.argv[1]&&fileURLToPath(import.meta.url)===path.resolve(process.argv[1
   console.log(JSON.stringify(await(demand?prepareNativeCurrent598Demand(process.argv[2],code598Root):
     prepareNativeCurrentForecast(process.argv[2],phase,code598Root))));
   }catch(error){
-    try{const {emitNativePostgresFirstFailure}=await import('../lib/checkpoint-cas-native-postgres.mjs');
-      await emitNativePostgresFirstFailure(error,'SOURCE_LEGACY_PROVIDERS');}catch{}
+    try{console.error(JSON.stringify(await describeCurrent598ProviderForecastFailure(error)));}catch{}
     throw error;
   }
 }
