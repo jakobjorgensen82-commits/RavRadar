@@ -67,12 +67,15 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
   ],
   sourceControls:[
     'node --test scripts/test-source-current-contracts.mjs',
+    'node scripts/test-weather-source-gate.mjs',
+    'node scripts/test-weather-cadence-watchdog.mjs',
   ],
   currentInstalledCodeOnly:[
     'node --test scripts/test-native-original-continuity-callers.mjs',
   ],
   adminHistory:[
     'node --test scripts/test-admin-document-history-workflow.mjs',
+    'node --test scripts/test-admin-document-history-maintenance.mjs',
   ],
   backupRestore:[
     LOCAL_RESTORE_SELF_TEST,
@@ -179,6 +182,9 @@ const PATH_AREAS=freeze({
     'scripts/source-targeted-receipt.mjs','scripts/test-source-targeted-receipt.mjs',
     'scripts/source-targeted-consumer.mjs','scripts/test-source-targeted-consumer.mjs',
     'scripts/test-source-targeted-domain-integration.mjs','scripts/weather-source-gate.mjs',
+    '.github/workflows/watch-missed-weather-schedule.yml',
+    'scripts/lib/weather-source-gate.mjs',
+    'scripts/test-weather-source-gate.mjs','scripts/test-weather-cadence-watchdog.mjs',
     'scripts/validate-release-version.mjs','scripts/test-module-version-closure-4.0.87.mjs',
     'scripts/test-security-hardening-4.0.284.mjs',
   ],
@@ -196,6 +202,8 @@ const PATH_AREAS=freeze({
     '.github/workflows/run-current-weather-once.yml',
     '.github/workflows/maintain-admin-document-history.yml',
     'scripts/test-admin-document-history-workflow.mjs',
+    'scripts/admin-document-history-maintenance.mjs',
+    'scripts/test-admin-document-history-maintenance.mjs',
   ],
   backupRestore:[
     '.github/workflows/maintain-admin-document-history.yml',
@@ -234,6 +242,7 @@ const PATH_AREAS=freeze({
   // Disse kendte historiske/metakontroller giver ingen produktadmission i V3.
   // Deres ændring kræver stadig en uafhængig kontrolgennemgang.
   actionVersions:[
+    '.github/workflows/watch-missed-weather-schedule.yml',
     '.github/workflows/apply-weather-model-binding-only.yml',
     '.github/workflows/audit-saved-weather-inputs.yml',
     '.github/workflows/reusable-operational-reentry.yml',
@@ -669,6 +678,9 @@ export function planSourceCurrentContractsFromGit(input){
       // En ændring her kræver derfor faktisk FULL-kvalifikation i denne levering.
       if(file==='.github/workflows/validate-pull-request.yml')
         return refuse('CURRENT_VALIDATION_WORKFLOW_REQUIRES_FULL');
+      if(['scripts/admin-document-history-maintenance.mjs','scripts/test-admin-document-history-maintenance.mjs'].includes(file)
+        &&(row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'))
+        return refuse('CURRENT_ADMIN_HISTORY_REQUIRES_EXISTING_REGULAR_SOURCE');
       if(DMI_BUDGET_PATHS.has(file)&&(row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'))
         return refuse('CURRENT_DMI_BUDGET_REQUIRES_EXISTING_REGULAR_SOURCE');
       const recoveryAreas=file==='scripts/update-dmi-bulk.py'?dmiCollectionRecoveryUpdaterAreas(
@@ -695,7 +707,7 @@ export function planSourceCurrentContractsFromGit(input){
         pathAreas.get(file)??(/^docs\/(?:rdks|ai|handbook)\/.+\.md$/.test(file)?['documentation']:null));
       if(!areas){unknown.push(file);continue;}
       for(const area of areas){if(!selected.has(area))selected.set(area,[]);selected.get(area).push(file);}
-      if(sourceControlPaths.has(file)||historicalPaths.has(file)||areas.includes('compatibility')||areas.includes('assistantEdge')||areas.includes('mailOwnerProbe')||areas.includes('currentInstalledCodeOnly')||areas.includes('workflowSupport')||areas.includes('dmiBudget')||areas.includes('dmiCollectionRecovery')||file.startsWith('scripts/test-'))
+      if(sourceControlPaths.has(file)||historicalPaths.has(file)||areas.includes('compatibility')||areas.includes('assistantEdge')||areas.includes('mailOwnerProbe')||areas.includes('currentInstalledCodeOnly')||areas.includes('workflowSupport')||areas.includes('dmiBudget')||areas.includes('dmiCollectionRecovery')||areas.includes('adminHistory')||file.startsWith('scripts/test-'))
         out.controlQualificationRequired=true;
     }
     if(unknown.length){out.unclassifiedPaths=unknown.sort();return refuse('CURRENT_UNCLASSIFIED_PATH');}

@@ -20,9 +20,9 @@ function fixture(){
     id:id++,document_key:key,version,created_at:`2026-08-${String(version).padStart(2,'0')}T00:00:00.000Z`,
     created_by:version%2?null:'00000000-0000-0000-0000-000000000001',
     payload:{title:key,text:'synthetic-document-secret-never-log-æøå',nested:{version,list:[true,null,'ö']}}});
-  const currents=P.keys.map(document_key=>({document_key,version:8,updated_at:'2026-08-08T00:00:00.000Z'}));
+  const currents=P.keys.map(document_key=>({document_key,payload:{title:document_key,text:'synthetic-current-never-log'},version:8,updated_at:'2026-08-08T00:00:00.000Z',updated_by:null}));
   const rawRows=new Map(); // Synthetic exact REST responses; metadata stays on the normal fixture.
-  const locators=[],locatorVersions=[],objects=new Map(),calls=[],fault={privacy:false,historyPrivacy:false,acl:false,locatorRace:false,public:false,bucketDenied:false,r2Unknown:false,deleteUnknown:false,oversize:false,wrongRow:false};
+  const locators=[],locatorVersions=[],preparations=[],unresolvedPreparations=[],objects=new Map(),calls=[],fault={privacy:false,historyPrivacy:false,acl:false,locatorRace:false,public:false,bucketDenied:false,r2Unknown:false,deleteUnknown:false,oversize:false,wrongRow:false};
   const json=(body,status=200)=>{const b=Buffer.from(JSON.stringify(body));return new Response(b,{status,headers:{'content-type':'application/json','content-length':String(b.length)}});};
   const fetchImpl=async(url,options={})=>{
     const u=new URL(url),method=String(options.method||'GET').toUpperCase();calls.push({url:u.href,method});
@@ -34,7 +34,7 @@ function fixture(){
           {name:'ravradar_admin_documents_read',permissive:'PERMISSIVE',roles:['authenticated'],command:'SELECT',qual:"public.is_ravradar_owner() or public.has_ravradar_permission('full_admin') or public.has_ravradar_permission(public.ravradar_document_permission(document_key))"},
           {name:'ravradar_ravscore_checkpoint_no_direct_read',permissive:'RESTRICTIVE',roles:['authenticated'],command:'SELECT',qual:"document_key <> 'ravscore-continuation-checkpoint'"}],functions:clone(PRIVATE_STUDY_ADMIN_FUNCTIONS)};
       const version_metadata=clone(metadata);version_metadata.anonSelect=fault.historyPrivacy;version_metadata.policies[0].name='ravradar_admin_document_versions_read';version_metadata.policies[1].name='ravradar_ravscore_checkpoint_versions_no_direct_read';
-      const report=[{current_access:!fault.acl,history_access:!fault.acl,metadata,version_metadata}];
+      const report=[{current_access:!fault.acl,history_access:!fault.acl,prepared_access:!fault.preparedAcl,metadata,version_metadata}];
       if(fault.catalogueChange)fault.catalogueChange(report);
       const status=fault.privacyStatus??200;
       if(status===204)return new Response(null,{status});
@@ -44,21 +44,53 @@ function fixture(){
     if(u.origin===P.project){
       const q=u.searchParams,key=q.get('document_key')?.slice(3);
       if(u.pathname==='/rest/v1/admin_documents'&&method==='POST'){
-        const body=JSON.parse(options.body);assert.equal(body.document_key,P.locatorKey);assert.equal(body.updated_by,null);
+        const body=JSON.parse(options.body);assert.equal(body.updated_by,null);
+        if([P.preparedKey,P.unresolvedKey].includes(body.document_key)){
+          const prefix=body.document_key===P.preparedKey?'prepared':'unresolved',store=prefix==='prepared'?preparations:unresolvedPreparations;
+          if(fault[prefix+'InsertBefore']){fault[prefix+'InsertBefore']=false;throw Error('synthetic preparation INSERT not committed');}
+          if(store.length)return json([]);store.push({document_key:body.document_key,payload:clone(body.payload),version:1});
+          if(fault[prefix+'InsertUnknown']){fault[prefix+'InsertUnknown']=false;throw Error('synthetic unknown preparation INSERT');}
+          return json(clone(store),201);
+        }
+        assert.equal(body.document_key,P.locatorKey);
         if(locators.length)return json([]);locators.push({document_key:P.locatorKey,payload:clone(body.payload),version:1});if(fault.afterLocator)fault.afterLocator();if(fault.locatorUnknown){fault.locatorUnknown=false;throw Error('PRIVATE-UPSTREAM-BODY-MUST-NOT-ESCAPE');}return json(clone(locators),201);
+      }
+      if([P.preparedKey,P.unresolvedKey].includes(key)){
+        const prefix=key===P.preparedKey?'prepared':'unresolved',store=prefix==='prepared'?preparations:unresolvedPreparations;
+        assert.equal(u.pathname,'/rest/v1/admin_documents','preparation never reaches document history');
+        if(method==='GET')return json(clone(store));assert.equal(method,'DELETE','preparation is never UPDATEd');
+        assert.equal(q.get('version'),'eq.1');assert.equal(store.length,1);
+        assert.equal(q.get('payload'),'eq.'+bytes(store[0].payload).toString('utf8'),'full immutable pointer payload binds its exact DELETE');
+        if(fault[prefix+'DeleteBefore']){fault[prefix+'DeleteBefore']=false;throw Error('synthetic metadata DELETE not committed');}
+        store.pop();if(fault[prefix+'DeleteUnknown']){fault[prefix+'DeleteUnknown']=false;return json({},504);}return new Response(null,{status:204});
       }
       if(key===P.locatorKey){
         if(u.pathname==='/rest/v1/admin_documents'){
           if(method==='GET')return json(clone(locators));assert.equal(method,'PATCH');
           if(fault.locatorRace||!locators.length||q.get('version')!=='eq.'+locators[0].version)return json([]);
-          const body=JSON.parse(options.body);locatorVersions.push(clone(locators[0]));locators[0]={document_key:P.locatorKey,payload:clone(body.payload),version:locators[0].version+1};return json(clone(locators));
+          const body=JSON.parse(options.body);
+          if(fault.beforeLocatorPatch){fault.beforeLocatorPatch=false;throw Error('synthetic locator CAS not committed');}
+          locatorVersions.push({...clone(locators[0]),id:Math.max(0,...rows.map(r=>r.id),...locatorVersions.map(r=>r.id))+1,
+            created_at:new Date(Date.UTC(2026,9,1)+locators[0].version*1000).toISOString(),created_by:null});
+          locators[0]={document_key:P.locatorKey,payload:clone(body.payload),version:locators[0].version+1};
+          if(fault.locatorPatchUnknown){fault.locatorPatchUnknown=false;throw Error('synthetic committed locator CAS unknown');}
+          return json(clone(locators));
         }
-        assert.equal(method,'GET','locator history can never be pruned');
-        const digest=q.get('payload->>indexSha256')?.slice(3);return json(locatorVersions.filter(x=>x.payload.indexSha256===digest).slice(0,2).map(clone));
+        let selected=locatorVersions.filter(x=>(!q.has('payload->>indexSha256')||x.payload.indexSha256===q.get('payload->>indexSha256').slice(3))
+          &&(!q.has('version')||x.version===Number(q.get('version').slice(3)))&&(!q.has('id')||x.id===Number(q.get('id').slice(3))));
+        if(method==='DELETE'){
+          assert.equal(selected.length,1);assert.equal(selected[0].payload.kind,'ADMIN_HISTORY_ARCHIVE_LOCATOR_V3','V2/legacy locator rows can never expire');
+          assert.equal(q.get('payload'),'eq.'+bytes(selected[0].payload).toString('utf8'),'the full exact JSONB payload is part of the delete filter');
+          locatorVersions.splice(locatorVersions.indexOf(selected[0]),1);
+          if(fault.locatorExpiryUnknown){fault.locatorExpiryUnknown=false;return json({},504);}return new Response(null,{status:204});
+        }
+        assert.equal(method,'GET');const select=q.get('select');
+        return json(selected.slice(0,2).map(r=>select==='*'?clone(r):Object.fromEntries(select.split(',').map(k=>[k,r[k]]))));
       }
       assert.ok(P.keys.includes(key),'only the3 documentation keys or exact private locator reach the database');
       if(u.pathname==='/rest/v1/admin_documents'){
-        assert.equal(method,'GET','current documents are read-only');return json(currents.filter(r=>r.document_key===key));
+        assert.equal(method,'GET','current documents are read-only');const select=q.get('select');
+        return json(currents.filter(r=>r.document_key===key).map(r=>select==='*'?clone(r):Object.fromEntries(select.split(',').map(k=>[k,r[k]]))));
       }
       assert.equal(u.pathname,'/rest/v1/admin_document_versions');
       let selected=rows.filter(r=>r.document_key===key);
@@ -85,7 +117,7 @@ function fixture(){
     if(!key){
       if(method==='HEAD')return new Response(null,{status:fault.bucketDenied?403:200});
       assert.equal(method,'GET');assert.equal(u.searchParams.get('list-type'),'2');
-      const entries=[...objects].map(([k,b])=>`<Contents><Key>${k}</Key><Size>${b.length}</Size></Contents>`).join('');
+      const entries=[...objects].map(([k,b])=>`<Contents><Key>${k}</Key><Size>${fault.listedSizes?.get(k)??b.length}</Size></Contents>`).join('');
       return new Response(`<ListBucketResult><KeyCount>${objects.size}</KeyCount><IsTruncated>false</IsTruncated>${entries}</ListBucketResult>`);
     }
     const authenticated=new Headers(options.headers).has('authorization');
@@ -96,14 +128,30 @@ function fixture(){
     }
     if(method==='HEAD')return new Response(null,{status:objects.has(key)?200:404});
     if(method==='GET')return objects.has(key)?new Response(objects.get(key)):new Response(null,{status:404});
+    if(method==='DELETE'){
+      assert.ok(fault.retentionDeleteAllowed,'only explicitly initialized retention cases allow archive DELETE');
+      if(fault.r2DeleteBefore){fault.r2DeleteBefore=false;throw Error('PRIVATE-UPSTREAM-BODY-MUST-NOT-ESCAPE');}
+      assert.ok(objects.has(key),'retirement never repeats an absent object');const prior=objects.get(key);objects.delete(key);
+      if(fault.r2DeleteUnknown&&(!fault.r2DeleteOnlyGeneration||JSON.parse(gunzipSync(prior).toString('utf8').trimEnd()).kind!=='ADMIN_HISTORY_PREPARATION_V1')){
+        fault.r2DeleteUnknown=false;return new Response(null,{status:504});}
+      return new Response(null,{status:204});
+    }
     assert.equal(method,'PUT','the maintenance caller never deletes an archive object');
     assert.equal(new Headers(options.headers).get('if-none-match'),'*');
     if(objects.has(key))return new Response(null,{status:412});
+    if(fault.preparationPutBefore&&JSON.parse(gunzipSync(Buffer.from(options.body)).toString('utf8').trimEnd()).kind==='ADMIN_HISTORY_PREPARATION_V1'){
+      fault.preparationPutBefore=false;throw Error('synthetic preparation PUT not committed');}
+    if(fault.preparationPutDeferred&&JSON.parse(gunzipSync(Buffer.from(options.body)).toString('utf8').trimEnd()).kind==='ADMIN_HISTORY_PREPARATION_V1'){
+      fault.preparationPutDeferred=false;const wire=Buffer.from(options.body);
+      fault.deferredPreparationWire=wire;
+      fault.completeDeferredPreparationPut=()=>{assert.ok(!objects.has(key));objects.set(key,wire);};
+      throw Error('synthetic timed-out preparation PUT still pending remotely');}
     objects.set(key,Buffer.from(options.body));
+    if(fault.afterR2Put)fault.afterR2Put(key,objects.get(key));
     if(fault.r2Unknown){fault.r2Unknown=false;throw new Error('PRIVATE-UPSTREAM-BODY-MUST-NOT-ESCAPE');}
     return new Response(null,{status:200});
   };
-  return{env,rows,rawRows,currents,locators,locatorVersions,objects,calls,fault,fetchImpl,
+  return{env,rows,rawRows,currents,locators,locatorVersions,preparations,unresolvedPreparations,objects,calls,fault,fetchImpl,
     dependencies(){return{env,fetchImpl};},count(method){return calls.filter(c=>c.method===method).length;}};
 }
 async function host(t){
@@ -296,6 +344,287 @@ test('exact REST bytes preserve large integers, high-precision decimals and mult
 });
 
 const maintainConfirm={confirmation:'MAINTAIN-EXACT-THREE-DOCUMENT-HISTORY'};
+const retentionConfirm={confirmation:'INITIALIZE-EXACT-THREE-DOCUMENT-RETENTION'};
+function appendDocumentVersions(f,count){
+  let nextId=Math.max(...f.rows.map(r=>r.id),...f.locatorVersions.map(r=>r.id))+1;
+  for(let n=0;n<count;n++)for(const current of f.currents){
+    f.rows.push({id:nextId++,document_key:current.document_key,version:current.version,created_at:current.updated_at,created_by:null,payload:clone(current.payload)});
+    current.version++;current.updated_at=new Date(Date.UTC(2026,8,1)+current.version*1000).toISOString();
+    current.payload={title:current.document_key,text:'synthetic-current-never-log',revision:current.version};
+  }
+}
+const retainedIndex=f=>JSON.parse(gunzipSync(f.objects.get(f.locators[0].payload.indexPath)));
+async function drainRetention(t,f){
+  for(let pass=0;pass<30;pass++){
+    const r=await call(f,await host(t),'maintain',maintainConfirm);
+    if(r.remainingCandidates===0&&r.candidateRows===0&&!r.archiveObjectsDeleted)return;
+  }
+  assert.fail('bounded fixture backlog did not settle');
+}
+test('retention: explicit transition preserves all legacy and current originals, keeps ten NEW versions and rotates only published unshared objects',async t=>{
+  const {f}=await prepared(t);f.fault.retentionDeleteAllowed=true;
+  f.objects.set('unknown-legacy-key-kept-forever',Buffer.from('synthetic-opaque-legacy'));
+  const legacyObjects=new Map([...f.objects].map(([k,b])=>[k,Buffer.from(b)])),legacyRows=clone(f.rows.filter(r=>P.keys.includes(r.document_key)));
+  const init=await call(f,await host(t),'initialize-retention',retentionConfirm);assert.equal(init.legacyRows,21);
+  assert.equal(f.locators[0].payload.kind,'ADMIN_HISTORY_ARCHIVE_LOCATOR_V3');
+  const frozen=clone(retainedIndex(f).legacy);assert.equal(frozen.rows.length,21);assert.equal(frozen.currents.length,3);
+  await drainRetention(t,f);appendDocumentVersions(f,14);await drainRetention(t,f);
+  appendDocumentVersions(f,20);await drainRetention(t,f);
+  const index=retainedIndex(f);assert.equal(index.retained.length,30);assert.equal(index.lateLegacy.length,3);
+  assert.deepEqual(index.legacy,frozen,'cutover identity cannot drift');
+  for(const key of P.keys){const current=f.currents.find(r=>r.document_key===key);
+    assert.deepEqual(index.retained.filter(r=>r.document_key===key).map(r=>r.version),Array.from({length:10},(_,n)=>current.version-6-n));
+    assert.equal(f.rows.filter(r=>r.document_key===key).length,5);}
+  for(const [key,original]of legacyObjects)assert.deepEqual(f.objects.get(key),original,'pre-transition originals and unknown keys remain byte-identical');
+  for(const row of legacyRows){const reference=index.legacy.rows.find(r=>r.id===row.id),record=JSON.parse(gunzipSync(f.objects.get(reference.object.path)).toString('utf8').trimEnd());
+    const raw=Buffer.from(record.rawBase64,'base64');assert.equal(sha(raw),reference.rowSha256);assert.deepEqual(JSON.parse(raw),[row]);}
+  const r2Deletes=f.calls.filter(r=>r.method==='DELETE'&&new URL(r.url).hostname.endsWith('.r2.cloudflarestorage.com'));
+  assert.ok(r2Deletes.length>0,'normal initialized maintenance performed actual synthetic retirement');
+  assert.ok(r2Deletes.every(r=>!legacyObjects.has(decodeURIComponent(new URL(r.url).pathname.slice(P.bucket.length+2)))));
+  const currentManifest={kind:'ADMIN_HISTORY_MANIFEST_V3',index:{path:f.locators[0].payload.indexPath,sha256:f.locators[0].payload.indexSha256,bytes:f.locators[0].payload.indexBytes}};
+  assert.ok(f.objects.has(currentManifest.index.path));assert.ok(f.objects.has(index.reserve.index.path));
+  const reserve=JSON.parse(gunzipSync(f.objects.get(index.reserve.index.path)));
+  for(const chunk of [...index.chunks,...reserve.chunks])assert.equal(sha(f.objects.get(chunk.path)),chunk.sha256,'all current/reserve originals remain readable');
+  assert.ok(f.rows.filter(r=>!P.keys.includes(r.document_key)).length===14,'other document keys are unchanged');
+  const calls=f.calls.length;await call(f,await host(t),'maintain',maintainConfirm);
+  assert.equal(f.calls.slice(calls).filter(r=>['PUT','PATCH','POST','DELETE'].includes(r.method)&&!r.url.startsWith('https://api.supabase.com/')).length,0,'settled empty pass makes no mutation');
+});
+test('retention: no implicit transition, no downgrade, complete byte reservation before PUT and unknown new objects held',async t=>{
+  const {f}=await prepared(t);const original=f.locators[0].payload.indexSha256,puts=f.count('PUT');
+  await assert.rejects(async()=>call(f,await host(t),'initialize-retention'),{code:'RETENTION_INITIALIZATION_CONFIRMATION'});
+  assert.equal(f.count('PUT'),puts);assert.equal(f.locators[0].payload.indexSha256,original);
+  f.objects.set('large-unknown-legacy',Buffer.from('synthetic'));f.fault.listedSizes=new Map([['large-unknown-legacy',1_850_000_000]]);
+  await assert.rejects(async()=>call(f,await host(t),'initialize-retention',retentionConfirm),{code:'RETENTION_CAPACITY_HELD'});
+  assert.equal(f.count('PUT'),puts,'all pending legacy and transient capacity are checked before first upload');
+  f.objects.delete('large-unknown-legacy');f.fault.listedSizes=null;
+  f.fault.retentionDeleteAllowed=true;await call(f,await host(t),'initialize-retention',retentionConfirm);
+  f.objects.set('new-unexplained-object',Buffer.from('synthetic'));const writes=f.calls.filter(r=>['PUT','PATCH','DELETE'].includes(r.method)).length;
+  await assert.rejects(async()=>call(f,await host(t),'maintain',maintainConfirm),{code:'RETENTION_UNREFERENCED_OBJECT'});
+  assert.equal(f.calls.filter(r=>['PUT','PATCH','DELETE'].includes(r.method)).length,writes);
+  const dir=await host(t);await call(f,dir,'plan');
+  // A locally retained old V2 manifest cannot replace the initialized root.
+  const historic=f.locatorVersions.find(r=>r.payload.kind==='ADMIN_HISTORY_ARCHIVE_LOCATOR_V2').payload;
+  await fs.writeFile(path.join(dir,'archive-manifest.json'),bytes({kind:'ADMIN_HISTORY_MANIFEST_V2',index:{path:historic.indexPath,sha256:historic.indexSha256,bytes:historic.indexBytes},indexRawBytes:historic.indexRawBytes,indexRawSha256:historic.indexRawSha256}));
+  await assert.rejects(()=>call(f,dir,'publish-locator',publishConfirm),e=>['RETENTION_CANNOT_DOWNGRADE','CURRENT_DOCUMENT_CHANGED','TOP_FIVE_CHANGED'].includes(e.code));
+});
+test('retention: unknown DELETE is classified read-only, stops the pass, and resumes index-last without repeated deletion',async t=>{
+  const {f}=await prepared(t);f.fault.retentionDeleteAllowed=true;
+  await call(f,await host(t),'initialize-retention',retentionConfirm);await drainRetention(t,f);
+  appendDocumentVersions(f,30);await drainRetention(t,f);appendDocumentVersions(f,30);
+  f.fault.r2DeleteUnknown=true;f.fault.r2DeleteOnlyGeneration=true;let failure=null;
+  for(let pass=0;pass<20&&!failure;pass++)try{await call(f,await host(t),'maintain',maintainConfirm);}catch(e){failure=e;}
+  assert.ok(failure,'normal retirement reached the injected unknown outcome');
+  assert.equal(failure.code,'WRITE_OUTCOME_RESOLVED_STOPPED');assert.equal(failure.safeOperation.writeOutcome,'EXACT_ARCHIVE_ABSENT');
+  assert.equal(failure.safeOperation.furtherWritesPerformed,false);
+  const deleted=f.calls.filter(r=>r.method==='DELETE'&&new URL(r.url).hostname.endsWith('.r2.cloudflarestorage.com')).map(r=>r.url);
+  const last=deleted.at(-1),count=deleted.filter(r=>r===last).length;
+  await drainRetention(t,f);
+  assert.equal(f.calls.filter(r=>r.method==='DELETE'&&r.url===last).length,count,'confirmed absent DELETE is never repeated');
+});
+test('retention: changed legacy identity, missing originals and ambiguous NEW document versions cannot gain any retirement or upload',async t=>{
+  for(const fault of ['changed-row','missing-original','duplicate-new-version']){
+    const {f}=await prepared(t);f.fault.retentionDeleteAllowed=true;
+    await call(f,await host(t),'initialize-retention',retentionConfirm);
+    let code;
+    if(fault==='changed-row'){f.rows.find(r=>r.document_key===P.keys[0]&&r.version===1).payload.text='changed';code='LEGACY_SOURCE_CHANGED';}
+    if(fault==='missing-original'){f.objects.delete(retainedIndex(f).legacy.currents[0].object.path);code='LEGACY_OBJECT_MISSING';}
+    if(fault==='duplicate-new-version'){
+      appendDocumentVersions(f,14);const row=f.rows.find(r=>r.document_key===P.keys[0]&&r.version===9);
+      f.rows.push({...clone(row),id:Math.max(...f.rows.map(r=>r.id))+1});code='RETENTION_DUPLICATE_DOCUMENT_VERSION';
+    }
+    const writes=f.calls.filter(r=>['PUT','PATCH','DELETE'].includes(r.method)).length;
+    await assert.rejects(async()=>call(f,await host(t),'maintain',maintainConfirm),{code});
+    assert.equal(f.calls.filter(r=>['PUT','PATCH','DELETE'].includes(r.method)).length,writes,fault+' stops before mutation');
+  }
+});
+test('retention recovery: own interrupted chunk or index upload resumes on a fresh pass after current has advanced',async t=>{
+  for(const phase of ['chunk','index'])await t.test(phase,async()=>{
+    const {f}=await prepared(t);f.fault.retentionDeleteAllowed=true;
+    await call(f,await host(t),'initialize-retention',retentionConfirm);await drainRetention(t,f);
+    appendDocumentVersions(f,14);await drainRetention(t,f);appendDocumentVersions(f,12);
+    f.fault.afterR2Put=(key,body)=>{if(JSON.parse(gunzipSync(body).toString('utf8').trimEnd()).kind===(phase==='chunk'?'ADMIN_HISTORY_REST_RESPONSE_V2':'ADMIN_HISTORY_GENERATION_V3')){
+      f.fault.afterR2Put=null;throw Error('synthetic interrupted generation index upload');}};
+    await assert.rejects(async()=>call(f,await host(t),'maintain',maintainConfirm),{code:'WRITE_OUTCOME_RESOLVED_STOPPED'});
+    appendDocumentVersions(f,1);
+    const recovered=await call(f,await host(t),'maintain',maintainConfirm);
+    assert.equal(recovered.preparedArchiveRecovered,true,phase);
+    assert.equal(recovered.confirmedAbsentAfterWrite,0,'stale prepared archive cannot delete under old current/top5 guards');
+    await drainRetention(t,f);
+    for(const key of P.keys)assert.equal(f.rows.filter(r=>r.document_key===key).length,5);
+  });
+});
+test('retention preparation: first intent, CAS and exact cleanup failures stop and recover without any orphan adoption',async t=>{
+  for(const phase of ['pointer-before','pointer-after','intent-before','intent-after','cas-before','cas-after','intent-delete','pointer-delete'])await t.test(phase,async()=>{
+    const {f}=await prepared(t);f.fault.retentionDeleteAllowed=true;
+    await call(f,await host(t),'initialize-retention',retentionConfirm);await drainRetention(t,f);
+    appendDocumentVersions(f,14);await drainRetention(t,f);appendDocumentVersions(f,4);
+    if(phase==='pointer-before')f.fault.preparedInsertBefore=true;
+    if(phase==='pointer-after')f.fault.preparedInsertUnknown=true;
+    if(phase==='intent-before')f.fault.preparationPutBefore=true;
+    if(phase==='intent-after')f.fault.afterR2Put=(key,wire)=>{if(JSON.parse(gunzipSync(wire).toString('utf8')).kind==='ADMIN_HISTORY_PREPARATION_V1'){
+      f.fault.afterR2Put=null;throw Error('synthetic committed preparation PUT unknown');}};
+    if(phase==='cas-before')f.fault.beforeLocatorPatch=true;
+    if(phase==='cas-after')f.fault.locatorPatchUnknown=true;
+    if(phase==='intent-delete')f.fault.r2DeleteUnknown=true;
+    if(phase==='pointer-delete')f.fault.preparedDeleteUnknown=true;
+    const start=f.calls.length;
+    await assert.rejects(async()=>call(f,await host(t),'maintain',maintainConfirm),e=>['WRITE_OUTCOME_UNKNOWN','WRITE_OUTCOME_RESOLVED_STOPPED'].includes(e.code));
+    const attempted=f.calls.slice(start),puts=attempted.filter(r=>r.method==='PUT');
+    if(phase.startsWith('pointer-')&&phase!=='pointer-delete')assert.equal(puts.length,0,'unknown pointer outcome performs no R2 PUT');
+    if(phase.startsWith('intent-')&&phase!=='intent-delete')assert.equal(puts.length,1,'unknown first intent PUT never reaches data PUT');
+    appendDocumentVersions(f,1);const beforeNext=f.calls.length;
+    const next=await call(f,await host(t),'maintain',maintainConfirm);
+    if(['pointer-after','intent-before'].includes(phase)){
+      assert.equal(next.preparedIntentAbsent,true);assert.equal(f.calls.slice(beforeNext).filter(r=>r.method==='PUT').length,0,'absence is classified on a fresh pass before any new attempt');
+    }
+    await drainRetention(t,f);assert.equal(f.preparations.length,0);
+    for(const key of P.keys)assert.equal(f.rows.filter(r=>r.document_key===key).length,5);
+    assert.ok(f.locatorVersions.every(r=>r.document_key!==P.preparedKey),'create-only scratch produces no historical versions');
+  });
+});
+test('retention receipt: scratch-only cleanup never claims a locator write',async t=>{
+  const {f}=await prepared(t);f.fault.retentionDeleteAllowed=true;f.fault.preparedDeleteBefore=true;
+  await assert.rejects(async()=>call(f,await host(t),'initialize-retention',retentionConfirm),{code:'WRITE_OUTCOME_UNKNOWN'});
+  const before=f.calls.length,locator=clone(f.locators[0]);
+  const r=await call(f,await host(t),'maintain',maintainConfirm);
+  assert.equal(r.preparedArchiveRecovered,true);assert.equal(r.preparationDocumentWritten,true);
+  assert.equal(f.calls.slice(before).filter(c=>['POST','PATCH'].includes(c.method)&&new URL(c.url).searchParams.get('document_key')==='eq.'+P.locatorKey).length,0);
+  assert.deepEqual(f.locators[0],locator);assert.equal(r.locatorDocumentWritten,false);
+});
+test('retention preparation: first timed-out metadata PUT may become durable after a later absent read',async t=>{
+  const {f}=await prepared(t);f.fault.retentionDeleteAllowed=true;
+  await call(f,await host(t),'initialize-retention',retentionConfirm);await drainRetention(t,f);
+  appendDocumentVersions(f,14);await drainRetention(t,f);appendDocumentVersions(f,4);
+  f.fault.preparationPutDeferred=true;
+  await assert.rejects(async()=>call(f,await host(t),'maintain',maintainConfirm),{code:'WRITE_OUTCOME_UNKNOWN'});
+  const pointer=clone(f.preparations[0]);assert.ok(pointer);assert.ok(!f.objects.has(pointer.payload.preparation.path));
+  await call(f,await host(t),'maintain',maintainConfirm);
+  assert.deepEqual(f.unresolvedPreparations[0].payload,pointer.payload);assert.equal(f.preparations.length,0);
+  f.fault.completeDeferredPreparationPut();appendDocumentVersions(f,1);
+  assert.ok(f.objects.has(pointer.payload.preparation.path),'the original request becomes durable only after the absent read');
+  const current=clone(f.locators[0]),originals=sha(bytes(f.rows));
+  const clean=await call(f,await host(t),'maintain',maintainConfirm);
+  assert.equal(clean.unresolvedPreparationCleanupCompleted,true);assert.equal(clean.locatorDocumentWritten,false);
+  assert.equal(clean.confirmedAbsentAfterWrite,0);assert.equal(sha(bytes(f.rows)),originals);assert.deepEqual(f.locators[0],current);
+  assert.equal(f.preparations.length+f.unresolvedPreparations.length,0);assert.ok(!f.objects.has(pointer.payload.preparation.path));
+  assert.equal(f.calls.filter(c=>c.method==='PUT'&&new URL(c.url).pathname.endsWith('/'+pointer.payload.preparation.path)).length,1,'the one original request was never retried');
+});
+async function unresolvedFirstIntent(t,initializing=false){
+  const {f}=await prepared(t);f.fault.retentionDeleteAllowed=true;
+  if(!initializing){await call(f,await host(t),'initialize-retention',retentionConfirm);await drainRetention(t,f);
+    appendDocumentVersions(f,14);await drainRetention(t,f);appendDocumentVersions(f,4);}
+  f.fault.preparationPutDeferred=true;
+  await assert.rejects(async()=>call(f,await host(t),initializing?'initialize-retention':'maintain',initializing?retentionConfirm:maintainConfirm),{code:'WRITE_OUTCOME_UNKNOWN'});
+  return{f,pointer:clone(f.preparations[0])};
+}
+test('retention unresolved: never-executed PUT stays reserved while a fresh unchanged selection proceeds and a second unknown is held',async t=>{
+  const {f,pointer}=await unresolvedFirstIntent(t);const transfer=await call(f,await host(t),'maintain',maintainConfirm);
+  assert.equal(transfer.unresolvedPreparationDocumentWritten,true);assert.ok(transfer.unresolvedPreparationPointerBytes<1024);
+  assert.equal(f.preparations.length,0);assert.equal(f.unresolvedPreparations.length,1);
+  const next=await call(f,await host(t),'maintain',maintainConfirm);
+  assert.equal(next.locatorDocumentWritten,true);assert.ok(next.confirmedAbsentAfterWrite>0);
+  assert.equal(f.locators[0].payload.indexSha256,pointer.payload.targetIndexSha256,'only the private preparation envelope changes, not the independently fresh index/original selection');
+  assert.equal(next.unresolvedPreparationReservedBytes,pointer.payload.preparation.bytes);
+  assert.ok(next.preparedReservationBytes>pointer.payload.preparation.bytes&&next.preparedReservationBytes<=8000000);
+  assert.ok(next.retentionReservedBytes<=P.maximumBucketBytes);
+  assert.ok(next.retentionReservedBytes>=[...f.objects.values()].reduce((n,b)=>n+b.length,0)+100000000+pointer.payload.preparation.bytes);
+  assert.ok(!f.objects.has(pointer.payload.preparation.path));assert.equal(f.unresolvedPreparations.length,1);
+  assert.equal(f.calls.filter(c=>c.method==='PUT'&&new URL(c.url).pathname.endsWith('/'+pointer.payload.preparation.path)).length,1);
+  await drainRetention(t,f);appendDocumentVersions(f,2);f.fault.preparationPutBefore=true;
+  await assert.rejects(async()=>call(f,await host(t),'maintain',maintainConfirm),{code:'WRITE_OUTCOME_UNKNOWN'});
+  const writes=f.calls.length,second=clone(f.preparations[0]);
+  await assert.rejects(async()=>call(f,await host(t),'maintain',maintainConfirm),{code:'UNRESOLVED_PREPARATION_SLOT_HELD'});
+  assert.deepEqual(f.unresolvedPreparations[0].payload,pointer.payload);assert.deepEqual(f.preparations[0],second);
+  assert.equal(f.calls.slice(writes).filter(c=>['PUT','PATCH','DELETE'].includes(c.method)||c.method==='POST'&&new URL(c.url).origin===P.project).length,0);
+});
+test('retention unresolved: positive transfer survives unknown create/delete without overwriting the one reservation',async t=>{
+  for(const phase of ['unresolvedInsertBefore','unresolvedInsertUnknown','preparedDeleteBefore','preparedDeleteUnknown'])await t.test(phase,async()=>{
+    const {f,pointer}=await unresolvedFirstIntent(t);f.fault[phase]=true;
+    await assert.rejects(async()=>call(f,await host(t),'maintain',maintainConfirm),e=>['WRITE_OUTCOME_UNKNOWN','WRITE_OUTCOME_RESOLVED_STOPPED'].includes(e.code));
+    assert.ok(f.preparations.length||f.unresolvedPreparations.length,'at least one positive pointer survives every unknown transfer');
+    await call(f,await host(t),'maintain',maintainConfirm);
+    assert.equal(f.preparations.length,0);assert.equal(f.unresolvedPreparations.length,1);
+    assert.deepEqual(f.unresolvedPreparations[0].payload,pointer.payload);
+    assert.equal(f.calls.filter(c=>c.method==='PUT'&&new URL(c.url).pathname.endsWith('/'+pointer.payload.preparation.path)).length,1);
+    assert.ok(!f.calls.some(c=>c.method==='PATCH'&&[P.preparedKey,P.unresolvedKey].some(k=>new URL(c.url).searchParams.get('document_key')==='eq.'+k)));
+  });
+});
+test('retention unresolved: late metadata before a new INITIALIZE is never frozen as a legacy original',async t=>{
+  for(const late of [false,true])await t.test(late?'late-before-freeze':'never-executed',async()=>{
+    const {f,pointer}=await unresolvedFirstIntent(t,true);await call(f,await host(t),'maintain',maintainConfirm);
+    if(late)f.fault.completeDeferredPreparationPut();
+    f.objects.set('synthetic-unknown-legacy-preserved',Buffer.from('synthetic-original'));const originals=sha(bytes(f.rows));
+    await call(f,await host(t),'initialize-retention',retentionConfirm);
+    const index=JSON.parse(gunzipSync(f.objects.get('bundles/sha256/'+f.locators[0].payload.indexSha256+'.json.gz')));
+    assert.ok(!index.legacy.objects.some(d=>d.path===pointer.payload.preparation.path),'exact positive reservation alone excludes this owned intent');
+    assert.ok(index.legacy.objects.some(d=>d.path==='synthetic-unknown-legacy-preserved'));
+    assert.equal(sha(bytes(f.rows)),originals,'initialization never deletes DB originals');
+    if(late){const cleaned=await call(f,await host(t),'maintain',maintainConfirm);assert.equal(cleaned.unresolvedPreparationCleanupCompleted,true);
+      assert.equal(f.unresolvedPreparations.length,0);assert.ok(!f.objects.has(pointer.payload.preparation.path));}
+    else{await call(f,await host(t),'maintain',maintainConfirm);assert.equal(f.unresolvedPreparations.length,1);assert.ok(!f.objects.has(pointer.payload.preparation.path));}
+    assert.deepEqual(f.objects.get('synthetic-unknown-legacy-preserved'),Buffer.from('synthetic-original'));
+    assert.equal(f.calls.filter(c=>c.method==='PUT'&&new URL(c.url).pathname.endsWith('/'+pointer.payload.preparation.path)).length,1);
+  });
+});
+test('retention unresolved: durable cleanup witness survives runner gaps and unknown cleanup writes without repeated object deletion',async t=>{
+  for(const phase of ['preparedInsertBefore','preparedInsertUnknown','r2DeleteUnknown','unresolvedDeleteBefore','unresolvedDeleteUnknown','preparedDeleteBefore','preparedDeleteUnknown'])await t.test(phase,async()=>{
+    const {f,pointer}=await unresolvedFirstIntent(t);await call(f,await host(t),'maintain',maintainConfirm);
+    f.fault.completeDeferredPreparationPut();f.fault[phase]=true;
+    await assert.rejects(async()=>call(f,await host(t),'maintain',maintainConfirm),e=>['WRITE_OUTCOME_UNKNOWN','WRITE_OUTCOME_RESOLVED_STOPPED'].includes(e.code));
+    const deleted=f.calls.filter(c=>c.method==='DELETE'&&new URL(c.url).pathname.endsWith('/'+pointer.payload.preparation.path)).length;
+    if(f.preparations.length)assert.equal(f.preparations[0].payload.kind,'ADMIN_HISTORY_PREPARATION_CLEANUP_V1');
+    if(f.preparations.length||f.unresolvedPreparations.length){const r=await call(f,await host(t),'maintain',maintainConfirm);
+      assert.equal(r.unresolvedPreparationCleanupCompleted,true);assert.equal(r.locatorDocumentWritten,false);assert.equal(r.confirmedAbsentAfterWrite,0);}
+    assert.equal(f.preparations.length+f.unresolvedPreparations.length,0);assert.ok(!f.objects.has(pointer.payload.preparation.path));
+    const after=f.calls.filter(c=>c.method==='DELETE'&&new URL(c.url).pathname.endsWith('/'+pointer.payload.preparation.path)).length;
+    assert.equal(after,deleted||1,'an already absent exact metadata object is never DELETEd again');
+    assert.equal(f.calls.filter(c=>c.method==='PUT'&&new URL(c.url).pathname.endsWith('/'+pointer.payload.preparation.path)).length,1);
+  });
+});
+test('retention metadata: compact pointers, bounded new locator history, exact positive expiry and unknown-outcome readback',async t=>{
+  const {f}=await prepared(t);f.fault.retentionDeleteAllowed=true;
+  const legacyPayloadBytes=bytes(f.locators[0].payload).length;
+  const init=await call(f,await host(t),'initialize-retention',retentionConfirm);
+  assert.ok(init.preparationPointerBytes>0&&init.preparationPointerBytes<1024);
+  assert.ok(init.preparationMetadataBytes>0&&init.preparationMetadataBytes<=4_000_000);
+  assert.equal(init.preparationMetadataObjectsDeleted,1);assert.equal(f.preparations.length,0);
+  const legacyLocators=clone(f.locatorVersions.filter(r=>r.payload.kind==='ADMIN_HISTORY_ARCHIVE_LOCATOR_V2'));
+  let expired=0;
+  for(let round=0;round<12;round++){
+    appendDocumentVersions(f,3);
+    for(let pass=0;pass<10;pass++){
+      const r=await call(f,await host(t),'maintain',maintainConfirm);expired+=r.locatorHistoryRowsExpired;
+      if(r.remainingCandidates===0&&r.candidateRows===0&&!r.archiveObjectsDeleted)break;
+    }
+  }
+  const newRows=f.locatorVersions.filter(r=>r.payload.kind==='ADMIN_HISTORY_ARCHIVE_LOCATOR_V3');
+  assert.ok(expired>0,'actual normal REST expiry occurred');assert.ok(newRows.length<=4,'unreferenced new audit rows do not accumulate');
+  assert.deepEqual(f.locatorVersions.filter(r=>r.payload.kind==='ADMIN_HISTORY_ARCHIVE_LOCATOR_V2'),legacyLocators,'all V2/legacy audit rows remain byte-identical');
+  assert.ok(newRows.every(r=>bytes(r.payload).length<1024));assert.ok(bytes(newRows).length<=4*4096);
+  assert.equal(f.preparations.length,0);assert.ok(!f.calls.some(r=>r.method==='PATCH'&&new URL(r.url).searchParams.get('document_key')==='eq.'+P.preparedKey));
+  console.log(JSON.stringify({kind:'ADMIN_HISTORY_METADATA_BYTE_BOUNDS',fixtureOnly:true,legacyLocatorPayloadBytes:legacyPayloadBytes,
+    v3LocatorPayloadBytes:bytes(f.locators[0].payload).length,preparationPointerBytes:init.preparationPointerBytes,
+    privatePreparationBytes:init.preparationMetadataBytes,newLocatorHistoryRows:newRows.length,newLocatorHistoryWireBytes:bytes(newRows).length,
+    scratchHistoryRows:0,locatorUpdatesPerNewGeneration:1,actualNanoMemoryMeasured:false}));
+  f.fault.locatorExpiryUnknown=true;let failure=null;
+  for(let round=0;round<5&&!failure;round++){
+    appendDocumentVersions(f,3);
+    for(let pass=0;pass<5&&!failure;pass++)try{await call(f,await host(t),'maintain',maintainConfirm);}catch(e){failure=e;}
+  }
+  assert.ok(failure);assert.equal(failure.code,'WRITE_OUTCOME_RESOLVED_STOPPED');assert.equal(failure.safeOperation.writeOutcome,'EXACT_LOCATOR_HISTORY_ABSENT');
+  const deletion=f.calls.filter(r=>r.method==='DELETE'&&new URL(r.url).searchParams.get('document_key')==='eq.'+P.locatorKey).at(-1);
+  const count=f.calls.filter(r=>r.method==='DELETE'&&r.url===deletion.url).length;await drainRetention(t,f);
+  assert.equal(f.calls.filter(r=>r.method==='DELETE'&&r.url===deletion.url).length,count,'confirmed absent V3 metadata DELETE is never repeated');
+});
+test('retention preparation: exact existing RLS and DELETE access dominate the new fixed key before any pointer or private upload',async t=>{
+  for(const bad of ['privacy','historyPrivacy','preparedAcl']){
+    const {f}=await prepared(t);f.fault.retentionDeleteAllowed=true;f.fault[bad]=true;
+    const writes=f.calls.filter(r=>['PUT','PATCH','DELETE'].includes(r.method)||r.method==='POST'&&new URL(r.url).origin===P.project).length;
+    await assert.rejects(async()=>call(f,await host(t),'initialize-retention',retentionConfirm));
+    assert.equal(f.calls.filter(r=>['PUT','PATCH','DELETE'].includes(r.method)||r.method==='POST'&&new URL(r.url).origin===P.project).length,writes);
+    assert.equal(f.preparations.length,0);
+  }
+});
 test('automatic pass runs the existing exact V2 archive locator restore fresh-protection prune chain',async t=>{
   const f=fixture(),dir=await host(t),current=sha(bytes(f.currents)),other=sha(bytes(f.rows.filter(r=>!P.keys.includes(r.document_key))));
   const r=await call(f,dir,'maintain',maintainConfirm);

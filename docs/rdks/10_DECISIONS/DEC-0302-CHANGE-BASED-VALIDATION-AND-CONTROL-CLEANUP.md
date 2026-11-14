@@ -1,3 +1,9 @@
+## Tillæg 14. november 2026 — naturligt ansvar for kilde- og cadencekontrol
+
+Det eksisterende sourceControls-ansvar omfatter den normale kilde-CLI, dens fælles v2-læser, den eksisterende eksterne cadenceworkflow og deres to normale testfiler. Det vælger den hele normale kilde-/scopeprøve og begge hele kilde- og cadenceprøver; workflowets Actions-versioner kontrolleres desuden gennem det eksisterende actionVersions-ansvar. Der flyttes ingen cases til en ny testvej, og samme kommando udføres fortsat kun én gang.
+
+Registreringen er konkrete ejerskaber, ikke en generel undtagelse for workflows, kildehjælpere eller tests. Andre ukendte input beholder FULL-afslaget; ændret PostgreSQL- eller C/I/T-input kræver fortsat den normale nye kvalifikation. Uafhængigt kontrolreview af ændret udvælgelse, den faste sikkerhedskerne og dokumentkontrollen består. Planlægning og syntetiske kontroller beviser ikke faktisk hosted kildefornyelse eller produktionsvirkning.
+
 ## 14. november — kumulativ kontrol af den manuelle arkivkø
 
 Den kumulative kildekontrol tillader kun én præcis ændring af den manuelle arkivprøves yderste kø: fra vejrets kø til den isolerede arkivkø. Alle øvrige workflowbytes, fixtureimporter og kommandorammen skal være uændrede. Den syntetiske kø, trip-låsen, tidsgrænser, adgang og cleanup bevares. Hele backupområdets fire normale prøver og frisk uafhængig kontrol af kildeudvælgelsen kræves stadig. Dette giver hverken en bestået arkivgendannelse eller ret til rotation, beskæring eller Free-overgang.

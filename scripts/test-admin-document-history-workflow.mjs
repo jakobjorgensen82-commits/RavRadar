@@ -12,7 +12,7 @@ const source = workflow.slice(start + "          node <<'NODE'\n".length, end).s
 }).join('\n');
 const statuses = Object.fromEntries([...source.matchAll(/^  (?:'([^']+)'|([a-z]+)): '([A-Z_]+)',$/gm)]
   .map(match => [match[1] || match[2], match[3]]));
-for (const value of Object.values(statuses)) assert(controller.includes("'" + value + "'"), 'Every receipt status comes from the unchanged real V2 controller');
+for (const value of Object.values(statuses)) assert(controller.includes("'" + value + "'"), 'Every receipt status comes from the real owned controller');
 function execute(overrides = {}, fault = {}) {
   const calls = [], bucketCalls = [], gitCalls = [], log = [], errors = [], made = [];
   const env = {GITHUB_EVENT_NAME:'workflow_dispatch', GITHUB_REF:'refs/heads/main', GITHUB_RUN_ATTEMPT:'1',
@@ -45,7 +45,7 @@ function execute(overrides = {}, fault = {}) {
       if (fault.typedCode) error.stderr = Buffer.from(JSON.stringify({status:'FAILED_CLOSED', code:fault.typedCode, httpStatus:fault.genericHttpStatus, privacyHttpStatus:fault.privacyHttpStatus, privacyStage:fault.privacyStage, operation:{private:'not printed',writeOutcome:fault.writeOutcome}}));
       throw error;}
     return Buffer.from(JSON.stringify({...fault.controllerResult, mode, status:statuses[mode], currentDocumentsWritten:false,
-      protectedOtherKeysWritten:false, archiveObjectsDeleted:false}));
+      protectedOtherKeysWritten:false, archiveObjectsDeleted:fault.controllerResult?.archiveObjectsDeleted??false}));
   }};
   vm.runInNewContext(source, {require(name) {
     if (name === 'node:fs') return {mkdtempSync(prefix) {made.push(prefix); return prefix+'owned';}, chmodSync(file,mode) {assert.equal(mode,0o700);}};
@@ -58,7 +58,7 @@ function execute(overrides = {}, fault = {}) {
 
 test('document history workflow: exact existing weather then trip locks, readonly default and isolated authority', () => {
   assert.match(workflow,/on:\n  workflow_run:\n    workflows: \['Run current RavRadar weather once'\]\n    types: \[completed\]\n    branches: \[main\]\n  workflow_dispatch:/); assert(!workflow.includes('  schedule:'));
-  assert.match(workflow,/default: plan\n        options: \[plan, archive, publish-locator, discover, restore, prune, maintain, bucket-readonly, bucket-create\]/);
+  assert.match(workflow,/default: plan\n        options: \[plan, archive, publish-locator, discover, restore, prune, maintain, initialize-retention, bucket-readonly, bucket-create\]/);
   const outer=workflow.slice(workflow.indexOf('concurrency:'),workflow.indexOf('jobs:'));
   assert.match(outer,/group: ravradar-weather-production-v2\n  queue: max\n  cancel-in-progress: false/);
   assert.match(workflow,/admin-document-history:\n    if: github.event_name != 'workflow_run' \|\| \(github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.actor.login != 'github-actions\[bot\]' && vars.RAVRADAR_ADMIN_HISTORY_MAINTENANCE == 'enabled'\)\n    concurrency:\n      group: ravradar-trip-storage-production\n      cancel-in-progress: false/);
@@ -231,6 +231,43 @@ test('document history workflow: queued completion stays bound to its own next b
   assert.equal(execute(manual,{now:'2026-11-04T07:30:00Z'}).calls.length,1);
   assert.equal(execute(manual,{now:'2026-11-04T04:20:00Z'}).calls.length,0);
 });
+test('document history workflow: retention transition is explicit and uses the existing private bucket, source, locks and original window',()=>{
+  const options={DOCUMENT_HISTORY_OPERATION:'initialize-retention',DOCUMENT_HISTORY_CONFIRMATION:'INITIALIZE-EXACT-THREE-DOCUMENT-RETENTION'};
+  const result=execute(options);assert.equal(result.exitCode,0);assert.deepEqual(result.calls.map(r=>r.mode),['initialize-retention']);
+  assert.deepEqual(result.bucketCalls.map(r=>r.mode),['read-only']);
+  assert.ok(result.calls[0].args.includes('--confirm'));assert.ok(result.calls[0].args.includes('--limit'));
+  assert.equal(execute(options,{now:'2026-11-04T04:20:00Z'}).calls.length,0);
+  for(const extra of [{DOCUMENT_HISTORY_CONFIRMATION:''},{DOCUMENT_HISTORY_PRUNE_LIMIT:'100'},{DOCUMENT_HISTORY_INDEX_SHA:'a'.repeat(64)}]){
+    const failed=execute({...options,...extra});assert.equal(failed.exitCode,1);assert.equal(failed.calls.length+failed.bucketCalls.length,0);}
+  for(const [operation,confirmation] of [['plan',''],['prune','PRUNE-EXACT-THREE-DOCUMENT-HISTORY']]){
+    const failed=execute({DOCUMENT_HISTORY_OPERATION:operation,DOCUMENT_HISTORY_CONFIRMATION:confirmation},
+      {controllerResult:{archiveObjectsDeleted:true,retiredArchiveObjects:1}});
+    assert.equal(failed.exitCode,1);assert.equal(failed.errors[0].code,'DOCUMENT_HISTORY_RECEIPT');}
+  const retirement=execute(triggered(),{controllerResult:{archiveObjectsDeleted:true,retiredArchiveObjects:3}});
+  assert.equal(retirement.exitCode,0);assert.equal(retirement.log[0].measurements[0].retiredArchiveObjects,3);
+  const initCleanup=execute(options,{controllerResult:{archiveObjectsDeleted:true,preparationMetadataObjectsDeleted:1,
+    preparationPointerBytes:632,preparationMetadataBytes:4516}});
+  assert.equal(initCleanup.exitCode,0);assert.equal(initCleanup.log[0].measurements[0].preparationMetadataObjectsDeleted,1);
+  const unresolvedCleanup=execute(triggered(),{controllerResult:{archiveObjectsDeleted:true,unresolvedPreparationObjectsDeleted:1,
+    unresolvedPreparationPointerBytes:700,unresolvedPreparationReservedBytes:4000000,preparedReservationBytes:8000000,retentionReservedBytes:2000000000}});
+  assert.equal(unresolvedCleanup.exitCode,0);assert.equal(unresolvedCleanup.log[0].measurements[0].unresolvedPreparationObjectsDeleted,1);
+  assert.equal(execute(options,{controllerResult:{archiveObjectsDeleted:true,unresolvedPreparationObjectsDeleted:1}}).exitCode,1);
+  for(const count of [0,-1,null,'1']){
+    const failed=execute(triggered(),{controllerResult:{archiveObjectsDeleted:true,retiredArchiveObjects:count}});
+    assert.equal(failed.exitCode,1);}
+  for(const bad of [{preparationPointerBytes:1024},{preparationMetadataBytes:4000001},
+    {preparationMetadataObjectsDeleted:2,archiveObjectsDeleted:true},{locatorHistoryRowsExpired:2},
+    {unresolvedPreparationObjectsDeleted:2},{unresolvedPreparationPointerBytes:1024},
+    {unresolvedPreparationReservedBytes:4000001},{preparedReservationBytes:8000001},{retentionReservedBytes:2000000001}])
+    assert.equal(execute(triggered(),{controllerResult:bad}).exitCode,1);
+  for(const writeOutcome of ['EXACT_ARCHIVE_ABSENT','EXACT_ARCHIVE_STILL_PRESENT','PREPARATION_POINTER_ABSENT',
+    'PREPARATION_POINTER_PRESENT_VERIFIED','EXACT_PREPARATION_ABSENT','EXACT_PREPARATION_STILL_PRESENT',
+    'UNRESOLVED_PREPARATION_POINTER_ABSENT','UNRESOLVED_PREPARATION_POINTER_PRESENT_VERIFIED',
+    'EXACT_UNRESOLVED_PREPARATION_ABSENT','EXACT_UNRESOLVED_PREPARATION_STILL_PRESENT',
+    'EXACT_LOCATOR_HISTORY_ABSENT','EXACT_LOCATOR_HISTORY_STILL_PRESENT']){
+    const failed=execute(triggered(),{failMode:'maintain',typedCode:'WRITE_OUTCOME_RESOLVED_STOPPED',writeOutcome});
+    assert.equal(failed.exitCode,1);assert.equal(failed.errors[0].writeOutcome,writeOutcome);}
+});
 test('document history workflow: automatic unknown write stops and discloses only a fixed read-only outcome',()=>{
   const r=execute(triggered(),{failMode:'maintain',typedCode:'WRITE_OUTCOME_RESOLVED_STOPPED',writeOutcome:'EXACT_ROW_ABSENT'});
   assert.equal(r.exitCode,1);assert.equal(r.calls.length,1);
@@ -258,7 +295,8 @@ test('document history workflow: automatic activation defaults off and only expl
 test('document history workflow: one final report keeps only fixed safe counters, old missing fields become null',()=>{
   const counters={candidateRows:25,eligibleRowsBefore:51,confirmedAbsentAfterWrite:25,remainingCandidates:26,
     previouslyAbsentCandidates:0,adminDecodedReadBytes:123456,declaredAdminContentLengthBytes:123456,
-    adminResponses:111,r2ReadBytes:67890,wireWrites:28};
+    adminResponses:111,r2ReadBytes:67890,wireWrites:28,retiredArchiveObjects:0,legacyRows:21,legacyObjects:4,keepNewVersions:10,
+    preparationMetadataObjectsDeleted:0,preparationPointerBytes:700,preparationMetadataBytes:1000,locatorHistoryRowsExpired:0};
   const result=execute(triggered(),{controllerResult:{...counters,archiveRequired:true,
     indexSha256:'a'.repeat(64),paths:['PRIVATE-PATH-MUST-NOT-APPEAR'],rowIDs:[12345],
     payload:{private:'PRIVATE-DOCUMENT-MUST-NOT-APPEAR'},email:'private-user@example.invalid'}});

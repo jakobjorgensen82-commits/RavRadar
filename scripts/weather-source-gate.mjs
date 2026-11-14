@@ -3,6 +3,8 @@ import { execFileSync } from 'node:child_process';
 import {
   decideSourceGate,
   discoverPullRequestSourceGate,
+  discoverMainSourceGate,
+  inspectSourceProofRenewalMetadata,
   sourceGateRecord,
   SOURCE_GATE_CONTRACT,
 } from './lib/weather-source-gate.mjs';
@@ -15,18 +17,6 @@ const locatorPath = '.cache/weather-source-validation.json';
 const pullRequestProofPath = '.cache/source-tree-content-proof.json';
 const env = process.env;
 
-async function githubJson(route) {
-  const response = await fetch(`https://api.github.com${route}`, {
-    headers: {
-      Authorization: `Bearer ${env.GITHUB_TOKEN}`,
-      Accept: 'application/vnd.github+json',
-      'X-GitHub-Api-Version': '2022-11-28',
-    },
-    signal: AbortSignal.timeout(15000),
-  });
-  if (!response.ok) throw new Error('GitHub proof is unavailable');
-  return response.json();
-}
 
 function exactHead() {
   return execFileSync('git', ['rev-parse', 'HEAD^{commit}'], { encoding: 'utf8' }).trim();
@@ -37,11 +27,9 @@ async function writeJson(path, value) {
   await fs.writeFile(path, `${JSON.stringify(value)}\n`);
 }
 
-async function verifiedTargetedSourceProof(record, context, sourceTreeSha256) {
+async function verifiedTargetedSourceProof(record, context, sourceTreeSha256, access) {
   try {
     const { decideTargetedSourceGate, discoverTargetedSourceGate } = await import('./source-targeted-consumer.mjs');
-    const { sourceImpactEvidenceAccess } = await import('./native-postgres-evidence.mjs');
-    const access = sourceImpactEvidenceAccess({ env: context });
     const readGit = (args, options = {}) => execFileSync('git', args, {
       maxBuffer: 512 * 1024 * 1024, timeout: 10000,
       stdio: ['pipe', 'pipe', 'pipe'], ...options,
@@ -51,9 +39,11 @@ async function verifiedTargetedSourceProof(record, context, sourceTreeSha256) {
     });
     let locator = ['weather-source-targeted-impact-v1', 'weather-source-targeted-domains-v2',
       'weather-source-current-contracts-v3','weather-source-current-change-v4'].includes(record?.contractId) ? record : null;
+    let found;
     if (!locator) {
-      const found = await discoverTargetedSourceGate(context, sourceTreeSha256, { ...access, readGit });
-      if (!found.locator || found.requiresVerification !== true) return null;
+      found = await discoverTargetedSourceGate(context, sourceTreeSha256, { ...access, readGit });
+      if (!found.locator || found.requiresVerification !== true)
+        return { renewalState: ['MISSING','EXPIRED'].includes(found.frontierAvailability) ? found.frontierAvailability : 'UNPROVED' };
       locator = found.locator;
     }
     // Discovery is only a locator. One closed physical request/deadline budget
@@ -61,7 +51,15 @@ async function verifiedTargetedSourceProof(record, context, sourceTreeSha256) {
     const decision = await decideTargetedSourceGate(locator, context, {
       ...access, readGit,
     });
-    return { decision, record: locator };
+    if (!decision.required) return { decision, record: locator };
+    if (decision.reason !== 'targeted-source-proof-unavailable') return { decision, record: locator };
+    found ??= await discoverTargetedSourceGate(context, sourceTreeSha256, { ...access, readGit });
+    if (['MISSING','EXPIRED'].includes(found.frontierAvailability))
+      return { decision, renewalState: found.frontierAvailability };
+    if (!found.receipt || found.requiresVerification !== true) return { decision };
+    const renewalState = await inspectSourceProofRenewalMetadata(
+      found.receipt.baselineReference, context.GITHUB_REPOSITORY, access.getJson);
+    return { decision, renewalState };
   } catch {
     return { decision: { required: true, reason: 'targeted-source-proof-unavailable' } };
   }
@@ -134,29 +132,66 @@ if (mode === 'digest' || mode === 'impact-digest') {
   const record = sourceGateRecord(env, env.SOURCE_GATE_OUTCOME, sourceTreeSha256);
   await writeJson(locatorPath, record);
 } else if (mode === 'check') {
+  // All discovery, verification, signed ZIP hops and final negative reads
+  // share the existing physical 64-request/60-second source envelope.
+  // Record/digest remain offline and do not require a GitHub token.
+  const { sourceImpactEvidenceAccess } = await import('./native-postgres-evidence.mjs');
+  const access = sourceImpactEvidenceAccess({ env });
+  const githubJson = access.getJson;
   if (exactHead() !== env.GITHUB_SHA) throw new Error('Source proof checkout differs from GITHUB_SHA');
   const sourceTreeSha256 = sourceTreeContentSha256('HEAD');
   let record = null;
   try { record = JSON.parse(await fs.readFile(locatorPath, 'utf8')); } catch { /* discover or run gate */ }
+  let renewalState = null;
   let decision = await decideSourceGate(record, env, githubJson, { sourceTreeSha256 });
-  if (decision.required) {
+  // These are absence/old-history outcomes, not actual source-red, identity
+  // drift or unavailable transport. Every other refusal stays HOLD throughout
+  // the fallback chain; a later locator miss cannot erase its cause.
+  const mayLocate = value => value.required && [
+    'missing-or-mismatched-proof', 'source-history-inspection-limit',
+  ].includes(value.reason);
+  // An unusable old locator is not authority to reuse or renew, but it must
+  // not prevent an independent current dedicated proof from being qualified.
+  // A dedicated miss preserves that old HOLD; known source-red/unresolved
+  // never enters this fallback. The new proof uses the unchanged v2 reader.
+  if (mayLocate(decision) || decision.reason === 'proof-verification-unavailable') {
+    const main = await discoverMainSourceGate(env, sourceTreeSha256, githubJson);
+    if (!main.required) {
+      record = main.record;
+      await writeJson(locatorPath, record);
+      decision = { required: false, reason: main.reason, runId: main.runId };
+    } else if (main.mainAvailability !== 'MISSING') {
+      decision = { required: true, reason: main.reason };
+    }
+  }
+  if (mayLocate(decision)) {
     const discovered = await discoverPullRequestSourceGate(env, sourceTreeSha256, githubJson);
     if (!discovered.required) {
       record = discovered.record;
-      await writeJson(locatorPath, record);
       decision = await decideSourceGate(record, env, githubJson, { sourceTreeSha256 });
+      if (!decision.required) await writeJson(locatorPath, record);
     } else {
       decision = discovered;
     }
   }
-  if (decision.required) {
-    const targeted = await verifiedTargetedSourceProof(record, env, sourceTreeSha256);
-    if (targeted) {
+  if (decision.required && (mayLocate(decision)
+      || decision.reason === 'matching-pull-request-source-proof-not-found')) {
+    const targeted = await verifiedTargetedSourceProof(record, env, sourceTreeSha256, access);
+    renewalState = targeted?.renewalState ?? null;
+    if (targeted?.decision) {
       decision = targeted.decision;
       if (!decision.required) {
         record = targeted.record;
         await writeJson(locatorPath, record);
       }
+    }
+    if (decision.required && ['MISSING','EXPIRED'].includes(renewalState)
+        && (!targeted?.decision || ['targeted-source-proof-unavailable',
+          'source-history-inspection-limit'].includes(decision.reason))) {
+      // Permission to RUN a new complete source validation, never permission
+      // to reuse old evidence or dispatch weather. Only a real new FULL-PASS
+      // can create the normal v2 record with its actual new run/proofTime.
+      decision = { required: true, reason: 'source-proof-renewal-required' };
     }
   }
   await fs.appendFile(
