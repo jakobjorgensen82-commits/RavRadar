@@ -1,3 +1,11 @@
+## Tillæg 14. november 2026 — en ny kildeprøve er ikke genbrug
+
+Retten til at køre en ny komplet, credential-fri `validate:source` på præcis aktuel main holdes adskilt fra retten til at genbruge et gammelt bevis eller starte vejr. Positivt manglende eller udløbet artifact kan kræve en reel ny fuld kildeprøve, også når den gamle kvalifikation kun rammer det afgrænsede historieinspektionsloft. Det gamle bevis forbliver afvist. Faktisk kendt kildefejl, uafklaret kildetrin og andre ukendte transport- eller identitetsafslag må ikke ommærkes som gyldig kilde eller tilladelse til vejrhentning.
+
+Den eksisterende eksterne cadencekontrol får et separat, afgrænset kildejob. Først efter faktisk fuld kildeprøve skriver det den uændrede normale v2-kvittering med sit virkelige run, attempt og afslutningstid. En anden kørsel skal kvalificere den gennem den eksisterende live-læser og dens senere negative evidens. Samme-run-bevis, en grøn checkfarve eller en cachemarkør alene er ikke autoritet. Et ubrugeligt gammelt locatoropslag må søge et uafhængigt aktuelt kildebevis, men en miss bevarer det gamle afslag.
+
+Main og cadencevinduet genlæses efter kildejobbet. Et lukket vindue giver intet dispatch; kildejobbevis og en eventuel ny immutable locator kan bruges normalt i næste vindue. Cachelagring er best-effort, og genbrug kan finde det faktiske separate kildejob uden den gamle cache. Alle kildeopslag deler det samme eksisterende fysiske læsebudget. Der tilføjes ingen ugentlig fuldprøve, nye kvoter eller ændrede produktionsgates.
+
 ## Tillæg 30. oktober 2026 — ændringsbaseret omfang
 
 DEC-0302 erstatter blanketomfang ved enhver rettelse: valgt testomfang følger faktisk påvirkning og afhængigheder; uvedkommende områder skal ikke automatisk genprøves. Ejerbeslutningen er aktiv arbejdsinstruks, men den nye tekniske matrix er endnu ikke leveret. Bevar alle relevante data-/integritetsgates og ærlig udførelse/genbrug/ikke-berørt-status. Historiske regler nedenfor bevares på deres oprindelige scope.

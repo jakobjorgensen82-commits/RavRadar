@@ -24,8 +24,20 @@ jobs:
     permissions:
       actions: write
       contents: read
+      pull-requests: read
+    outputs:
+      dispatch: ${{ steps.first-check.outputs.dispatch }}
+      renew_source: ${{ steps.source-decision.outputs.renew_source }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
 
       - name: Inspect both production entrances for this external cadence slot
         id: first-check
@@ -43,9 +55,147 @@ jobs:
             --manual-runs "$RUNNER_TEMP/manual-runs.json" \
             --summary "$GITHUB_STEP_SUMMARY" --github-output "$GITHUB_OUTPUT"
 
+      - name: Require exact current main before source admission
+        if: inputs.external_watchdog == true && steps.first-check.outputs.dispatch == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          test "$GITHUB_REF" = refs/heads/main
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/main)" = "$GITHUB_SHA"
+
+      - name: Qualify existing exact-main source before any weather dispatch
+        id: source-proof
+        if: inputs.external_watchdog == true && steps.first-check.outputs.dispatch == 'true'
+        run: node scripts/weather-source-gate.mjs check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Choose real validation only after positive proof absence or expiry
+        id: source-decision
+        if: inputs.external_watchdog == true && steps.first-check.outputs.dispatch == 'true'
+        shell: bash
+        env:
+          REQUIRED: ${{ steps.source-proof.outputs.required }}
+          REASON: ${{ steps.source-proof.outputs.reason }}
+        run: |
+          set -euo pipefail
+          if test "$REQUIRED" = false; then
+            echo 'renew_source=false' >> "$GITHUB_OUTPUT"
+          elif test "$REQUIRED" = true && test "$REASON" = source-proof-renewal-required; then
+            echo 'renew_source=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'SOURCE_PROOF_UNKNOWN_OR_CONTRADICTORY_NO_DISPATCH' >&2
+            exit 1
+          fi
+
+  qualify-source:
+    name: Qualify exact main source without production
+    needs: inspect
+    if: inputs.external_watchdog == true && needs.inspect.outputs.dispatch == 'true' && needs.inspect.outputs.renew_source == 'true'
+    runs-on: ubuntu-24.04
+    # Same whole-source ceiling as the existing source-only PR job. The 5min
+    # controller does not wait inside a process for this separate job.
+    timeout-minutes: 180
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Install the declared source-gate dependencies
+        run: >-
+          python -m pip install --disable-pip-version-check
+          -r requirements-dmi.txt
+          -r requirements-geometry.txt
+          -r requirements-copernicus.txt
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Prepare exact local cache API dependencies without scripts
+        working-directory: .github/actions/save-owned-dmi-grib
+        env:
+          npm_config_cache: ${{ github.workspace }}/.github/actions/save-owned-dmi-grib/.npm-cache
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Run actual exact-main source gate without production
+        id: source-gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          test "$GITHUB_REF" = refs/heads/main
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/main)" = "$GITHUB_SHA"
+          git diff --exit-code HEAD
+          npm run validate:source
+          git diff --exit-code HEAD
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+      - name: Record the actual isolated source-step outcome
+        id: source-record
+        if: always() && (steps.source-gate.outcome == 'success' || steps.source-gate.outcome == 'failure' || steps.source-gate.outcome == 'cancelled')
+        run: node scripts/weather-source-gate.mjs record
+        env:
+          SOURCE_GATE_OUTCOME: ${{ steps.source-gate.outcome }}
+      - name: Preserve the isolated source locator under a new immutable key
+        if: always() && steps.source-record.outcome == 'success'
+        uses: actions/cache/save@v6
+        with:
+          path: .cache/weather-source-validation.json
+          key: weather-source-proof-v2-${{ runner.os }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}-source-only
+
+  dispatch:
+    needs: [inspect, qualify-source]
+    if: ${{ !cancelled() && inputs.external_watchdog == true && needs.inspect.result == 'success' && needs.inspect.outputs.dispatch == 'true' && (needs.qualify-source.result == 'success' || (needs.qualify-source.result == 'skipped' && needs.inspect.outputs.renew_source == 'false')) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      actions: write
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Reconfirm exact main after any completed source job
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          test "$GITHUB_REF" = refs/heads/main
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse origin/main)" = "$GITHUB_SHA"
+      - name: Reconfirm a reused proof without consuming our own source run
+        if: needs.inspect.outputs.renew_source == 'false'
+        id: reused-source
+        run: node scripts/weather-source-gate.mjs check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Require the reused source to remain qualified
+        if: needs.inspect.outputs.renew_source == 'false'
+        env:
+          REQUIRED: ${{ steps.reused-source.outputs.required }}
+        run: test "$REQUIRED" = false
+      # If qualify-source ran, its completed real source job is only permission
+      # to START another run. That ordinary run independently discovers and
+      # qualifies this v2 proof with its own real, different GITHUB_RUN_ID.
       - name: Recheck immediately before a scheduled rescue
         id: recheck
-        if: inputs.external_watchdog == true && steps.first-check.outputs.dispatch == 'true'
+        if: inputs.external_watchdog == true && needs.inspect.outputs.dispatch == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -59,7 +209,7 @@ jobs:
             --github-output "$GITHUB_OUTPUT"
 
       - name: Dispatch one ordinary current-weather run
-        if: inputs.external_watchdog == true && steps.first-check.outputs.dispatch == 'true' && steps.recheck.outputs.dispatch == 'true'
+        if: inputs.external_watchdog == true && needs.inspect.outputs.dispatch == 'true' && steps.recheck.outputs.dispatch == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash

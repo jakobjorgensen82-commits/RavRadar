@@ -1,3 +1,15 @@
+## 14. november — afgrænset varig adminarkivretention og genoptagelse
+
+Kildekandidat til de tre dokumentkeys: bevar hele legacy-reserven, og behold ti nye arkivversioner pr. key efter en udtrykkelig overgang. Private forberedelsesmetadata bindes før dataupload, så en kendt halvleverance kan genoptages uden generel orphan-adoption. To kompakte create-only pegerækker skaber ingen automatisk scratchhistorik. Uafklaret første metadata-PUT bevarer sin positive reservation uden genforsøg; et snævert oprydningsvidne tåler afbrydelse efter sletning. Kun positivt udløbet egen V3-locatormetadata kan ryddes præcist. Current/top5, nødvendige referencer, gamle originaler, øvrige keys, score, vejr, model, migrations-SQL og adgang bevares.
+
+Normale berørte controller-/workflow- og fejlforløb er målprøvet. Den naturlige adminHistory-ejer vælger også controllerens eksisterende normale prøve og bevarer unknown-/PG-/C/I/T-afslag. Faktisk overgang, R2-oprydning, fysisk DB-margin, autonom ACK og samlet Free-klarhed mangler; denne kildeændring aktiverer intet. Se DEC-0255 og håndbog 89.298.
+
+## 14. november — selvstændig fornyelse af kildebevis er forberedt
+
+En afgrænset kildekandidat lader den eksisterende cadencecontroller kræve en ny reel fuld kildeprøve ved positivt manglende eller udløbet artifact uden først at genkvalificere hele den gamle fejl-/vejrhistorik. En ny faktisk grøn kildeprøve skal fortsat kvalificeres normalt af en anden kørsel, før den kan bruges til vejr. Kendte kildefejl, uafklarede kildetrin og andre ukendte afslag forbliver stop. Cache er kun en læsevej; hovedgren, run, attempt og kildetrin verificeres live. Frisk cadencekontrol efter prøveafslutning forhindrer et dispatch uden for det normale vindue.
+
+De konkrete controller-/kildeejere får naturligt sourceControls-ansvar med begge eksisterende hele prøver og den almindelige scopeprøve. Workflowets Actions-versioner har deres eksisterende særskilte kontrol. Præcis kilde-CI, uafhængigt kontrolreview og faktisk hosted fornyelse er fortsat særskilte krav. Der påstås ingen ny PostgreSQL-eksekvering, installation eller fuldt selvstændig drift alene fra private syntetiske prøver. Version, model, migrations-SQL, kvoter, vejr- og produktionsgates bevares. Se DEC-0045, DEC-0302 og håndbog 89.342.
+
 ## 14. november — manuel arkivprøve uden vejrets kø
 
 Den normale ejerprøve er accepteret af mailafsenderen, leveret og modtaget i testkontoens indbakke. Prøvefunktionen er efterfølgende fjernet; de tre permanente funktioner er bevaret. Det aktiverer ikke automatisk varsling eller kontosletning.

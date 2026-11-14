@@ -4,6 +4,8 @@ import { sourceTreeProofArtifactName } from './source-tree-content.mjs';
 // evidence plus an equal SHA-256 content manifest is the proof.
 export const SOURCE_GATE_CONTRACT = 'weather-source-gate-content-v2';
 export const SOURCE_GATE_STEP = 'Run fast source gate before expensive data refresh';
+export const MAIN_SOURCE_JOB = 'Qualify exact main source without production';
+export const MAIN_SOURCE_STEP = 'Run actual exact-main source gate without production';
 export const PULL_REQUEST_SOURCE_WORKFLOW = '.github/workflows/validate-pull-request.yml';
 export const PULL_REQUEST_SOURCE_JOB = 'Source validation and release gate';
 export const PULL_REQUEST_SOURCE_STEPS = Object.freeze([
@@ -27,6 +29,9 @@ export const SOURCE_GATE_PRODUCERS = Object.freeze({
   '.github/workflows/run-current-weather-once.yml': producer('run-current-weather-once.yml', [{
     job: 'Build and prepare weather production through reusable workflow / build-and-prepare',
     step: SOURCE_GATE_STEP,
+  }]),
+  '.github/workflows/watch-missed-weather-schedule.yml': producer('watch-missed-weather-schedule.yml', [{
+    job: MAIN_SOURCE_JOB, step: MAIN_SOURCE_STEP,
   }]),
   '.github/workflows/validate-copernicus-current-pilot.yml': producer(
     'validate-copernicus-current-pilot.yml',
@@ -291,6 +296,132 @@ export async function decideSourceGate(record, env, getJson, { sourceTreeSha256 
   } catch {
     return required('proof-verification-unavailable');
   }
+}
+
+
+// Check-runs locate only registered source jobs. A check status is never proof:
+// every proposed locator still passes the unchanged live MAIN consumer below.
+// In particular this works when an immutable cache contains an unusable old
+// locator, as well as when the cache/locator is entirely absent.
+
+// Positive expiry/absence data only selects an actual new validation. This
+// never accepts an expired proof. Unknown transport/identity remains unknown.
+export async function inspectSourceProofRenewalMetadata(reference, repository, getJson) {
+  try {
+    if (arguments.length !== 3 || !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository)
+        || typeof getJson !== 'function' || reference?.repository !== repository
+        || !validPositiveInteger(reference.runId) || reference.runAttempt !== 1
+        || !validPositiveInteger(reference.pullRequest) || !validSha(reference.producerHead)
+        || !validSha256(reference.sourceTreeSha256)) return 'UNPROVED';
+    for (const kind of ['native', 'final'])
+      if (!validPositiveInteger(reference[kind + 'ArtifactId']) || !validSha256(reference[kind + 'ArtifactDigest'])) return 'UNPROVED';
+    let state = null;
+    for (const kind of ['native', 'final']) {
+      const id = reference[kind + 'ArtifactId'], digest = reference[kind + 'ArtifactDigest'];
+      const name = kind === 'native' ? 'native586-phase-' + reference.runId + '-1-' + reference.producerHead
+        : sourceTreeProofArtifactName({ pullRequestNumber: reference.pullRequest,
+          headSha: reference.producerHead, sourceTreeSha256: reference.sourceTreeSha256 });
+      let metadata;
+      try { metadata = await getJson('/repos/' + repository + '/actions/artifacts/' + id); }
+      catch {
+        const listing = await getJson('/repos/' + repository + '/actions/artifacts?name=' + encodeURIComponent(name) + '&per_page=100');
+        if (!Array.isArray(listing.artifacts) || !Number.isSafeInteger(listing.total_count)
+            || listing.total_count < 0 || listing.total_count !== listing.artifacts.length || listing.total_count > 100)
+          return 'UNPROVED';
+        const matches = listing.artifacts.filter(row => row.id === id);
+        if (matches.length === 0) { state = 'MISSING'; continue; }
+        if (matches.length !== 1) return 'UNPROVED';
+        metadata = matches[0];
+      }
+      if (metadata.id !== id || metadata.name !== name || metadata.digest !== digest
+          || metadata.workflow_run?.id !== reference.runId || metadata.workflow_run?.head_sha !== reference.producerHead)
+        return 'UNPROVED';
+      if (metadata.expired === true) state ??= 'EXPIRED';
+      else if (metadata.expired !== false) return 'UNPROVED';
+    }
+    return state ?? 'UNPROVED';
+  } catch { return 'UNPROVED'; }
+}
+
+export async function discoverMainSourceGate(env, sourceTreeSha256, getJson) {
+  const unavailable = reason => ({ required: true, reason, mainAvailability: 'UNPROVED' });
+  const deadline = performance.now() + 60000;
+  let calls = 0;
+  const json = async route => {
+    if (++calls > 64 || performance.now() >= deadline) throw new Error('BOUND');
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), Math.min(15000, deadline - performance.now()));
+    try {
+      const value = await getJson(route, { signal: controller.signal });
+      if (performance.now() >= deadline || Buffer.byteLength(JSON.stringify(value)) > 2 * 1024 * 1024)
+        throw new Error('BOUND');
+      return value;
+    } finally { clearTimeout(timer); controller.abort(); }
+  };
+  try {
+    if (arguments.length !== 3 || env.GITHUB_REF !== 'refs/heads/main'
+        || !validSha(env.GITHUB_SHA) || !validSha256(sourceTreeSha256)
+        || !/^\d+$/.test(env.GITHUB_RUN_ID || '') || !validPositiveInteger(Number(env.GITHUB_RUN_ID))
+        || !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(env.GITHUB_REPOSITORY)
+        || typeof getJson !== 'function') return unavailable('main-source-discovery-identity');
+    const repo = '/repos/' + env.GITHUB_REPOSITORY;
+    // This new locator entrance searches only its dedicated source-only job.
+    // Existing ordinary/pilot cache proofs and all negative producer checks
+    // remain owned by the unchanged normal v2 consumer, never by check colour.
+    let total = null, count = 0;
+    const seen = new Set();
+    for (let page = 1; page <= 10; page += 1) {
+      const listing = await json(repo + '/commits/' + env.GITHUB_SHA + '/check-runs?check_name='
+        + encodeURIComponent(MAIN_SOURCE_JOB) + '&filter=all&per_page=100&page=' + page);
+      if (!Number.isSafeInteger(listing.total_count) || listing.total_count < 0
+          || listing.total_count > 1000 || !Array.isArray(listing.check_runs)
+          || listing.check_runs.length > 100 || total !== null && total !== listing.total_count)
+        return unavailable('main-source-check-history-incomplete');
+      total = listing.total_count;
+      count += listing.check_runs.length;
+      for (const check of listing.check_runs) {
+        if (check.name !== MAIN_SOURCE_JOB || check.head_sha !== env.GITHUB_SHA
+            || !validPositiveInteger(check.id) || seen.has(check.id)) return unavailable('main-source-check-identity');
+        seen.add(check.id);
+        if (check.status === 'completed' && check.conclusion === 'skipped') continue;
+        const url = new URL(check.details_url);
+        const escaped = env.GITHUB_REPOSITORY.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const match = url.pathname.match(new RegExp('^/' + escaped + '/actions/runs/([1-9][0-9]*)/job/([1-9][0-9]*)$'));
+        if (url.origin !== 'https://github.com' || url.username || url.password || url.search || url.hash || !match)
+          return unavailable('main-source-check-locator');
+        const runId = match[1];
+        if (runId === String(env.GITHUB_RUN_ID)) continue;
+        const run = await json(repo + '/actions/runs/' + runId);
+        const producer = producerForPath(run.path);
+        if (run.id !== Number(runId) || run.head_sha !== env.GITHUB_SHA || run.head_branch !== 'main'
+            || run.repository?.full_name !== env.GITHUB_REPOSITORY
+            || run.event !== 'workflow_dispatch' || !validPositiveInteger(run.run_attempt)
+            || producer?.workflowId !== 'watch-missed-weather-schedule.yml')
+          return unavailable('main-source-run-identity');
+        const evidence = await json(repo + '/actions/runs/' + runId + '/attempts/' + run.run_attempt + '/jobs?per_page=100');
+        if (!completeJobs(evidence)) return unavailable('main-source-jobs-incomplete');
+        if (evidence.jobs.filter(job => job.id === Number(match[2]) && job.name === MAIN_SOURCE_JOB).length !== 1)
+          return unavailable('main-source-check-job-locator');
+        const proof = inspectProducerJobs(evidence.jobs, producer,
+          { headSha: env.GITHUB_SHA, runId: run.id, runAttempt: run.run_attempt });
+        if (proof.reason || proof.ranProducerJobWithoutGate || proof.matches.length !== 1)
+          return unavailable('main-source-job-unproved');
+        const step = proof.matches[0].step;
+        if (step.status !== 'completed') return { required: true, reason: 'later-source-unresolved', mainAvailability: 'CONTRADICTION' };
+        if (step.conclusion === 'skipped') return unavailable('main-source-job-unproved');
+        if (step.conclusion !== 'success') return { required: true, reason: 'later-source-not-green', mainAvailability: 'CONTRADICTION' };
+        const record = sourceGateRecord({ ...env, GITHUB_RUN_ID: runId, GITHUB_RUN_ATTEMPT: String(run.run_attempt) }, 'success', sourceTreeSha256);
+        const decision = await decideSourceGate(record, env, json, { sourceTreeSha256 });
+        if (decision.required) return { ...decision, mainAvailability: 'UNPROVED' };
+        return { ...decision, record, mainAvailability: 'VERIFIED' };
+      }
+      if (count === total) return { required: true,
+        reason: 'matching-dedicated-main-source-proof-not-found', mainAvailability: 'MISSING' };
+      if (count > total || page === 10 || listing.check_runs.length === 0)
+        return unavailable('main-source-check-history-incomplete');
+    }
+    return unavailable('main-source-check-history-incomplete');
+  } catch { return unavailable('main-source-proof-discovery-unavailable'); }
 }
 
 export async function discoverPullRequestSourceGate(env, sourceTreeSha256, getJson) {

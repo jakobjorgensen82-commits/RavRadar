@@ -119,7 +119,7 @@ assert.throws(() => check({ normalRuns: { workflow_runs: [{ ...old, conclusion: 
 
 const workflow = await fs.readFile('.github/workflows/watch-missed-weather-schedule.yml', 'utf8');
 assert.doesNotMatch(workflow, /\bschedule:\s*\n/);
-assert.match(workflow, /steps\.first-check\.outputs\.dispatch == 'true' && steps\.recheck\.outputs\.dispatch == 'true'/);
+assert.match(workflow, /needs\.inspect\.outputs\.dispatch == 'true' && steps\.recheck\.outputs\.dispatch == 'true'/);
 assert.match(workflow, /inputs\.external_watchdog == true/);
 assert.match(workflow, /run-current-weather-once\.yml\/dispatches/);
 assert.match(workflow, /inputs\[quick_confirmation\]=false/);
@@ -284,7 +284,9 @@ test('Actual Bash caller retries reads but never repeats an uncertain dispatch',
   }
   const blocks = [...workflow.matchAll(/^        run: \|\r?\n((?:          [^\n]*(?:\n|$)|\r?\n)+)/gm)]
     .map(match => match[1].split(/\r?\n/).map(line => line.startsWith('          ') ? line.slice(10) : line).join('\n').trimEnd());
-  assert.equal(blocks.length, 3);
+  const cadenceBlocks = blocks.filter(block => /read-weather-cadence-github\.mjs workflow/.test(block)
+    || /normal-runs-recheck\.json/.test(block) || /gh api --method POST/.test(block));
+  assert.equal(cadenceBlocks.length, 3);
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-cadence-bash-'));
   const hook = path.join(dir, 'hook.mjs'), gh = path.join(dir, 'gh');
   const calls = path.join(dir, 'calls.jsonl'), writes = path.join(dir, 'writes.jsonl');
@@ -326,15 +328,15 @@ fs.appendFileSync(process.env.RR_CADENCE_WRITES,JSON.stringify(process.argv.slic
 if(process.env.RR_CADENCE_CASE==='unknown-post'){console.error('PRIVATE_FIXTURE_CANARY');process.exitCode=1;}
 `);
   await fs.chmod(gh, 0o700);
-  const script = `export RR_CADENCE_STAGE=first\n${blocks[0]}
+  const script = `export RR_CADENCE_STAGE=first\n${cadenceBlocks[0]}
 first=$(sed -n 's/^dispatch=//p' "$GITHUB_OUTPUT")
 if [ "$first" = true ]; then
   export RR_CADENCE_STAGE=recheck
   : > "$GITHUB_OUTPUT"
-${blocks[1]}
+${cadenceBlocks[1]}
   second=$(sed -n 's/^dispatch=//p' "$GITHUB_OUTPUT")
   if [ "$second" = true ]; then
-${blocks[2]}
+${cadenceBlocks[2]}
   fi
 fi\n`;
   try {
@@ -690,4 +692,69 @@ process.on('exit',()=>console.log(JSON.stringify({offlineFixture:true,calls,read
     await fs.unlink(hookFile);
     await fs.rmdir(directory);
   }
+});
+
+
+test('Source renewal is a separate bounded source-only job and preserves immutable cache identities',()=>{
+  const source=workflow.slice(workflow.indexOf('\n  qualify-source:'),workflow.indexOf('\n  dispatch:'));
+  const inspect=workflow.slice(workflow.indexOf('\n  inspect:'),workflow.indexOf('\n  qualify-source:'));
+  const dispatch=workflow.slice(workflow.indexOf('\n  dispatch:'));
+  assert.match(inspect,/timeout-minutes: 5/);
+  assert.doesNotMatch(inspect,/npm run validate:source/);
+  assert.match(inspect,/actions\/setup-python@v7\n        with:\n          python-version: \"3\.12\"/);
+  assert.match(dispatch,/actions\/setup-python@v7\n        with:\n          python-version: \"3\.12\"/);
+  const record=source.slice(source.indexOf('      - name: Record the actual isolated source-step outcome'),
+    source.indexOf('      - name: Preserve the isolated source locator'));
+  assert.doesNotMatch(record,/GITHUB_TOKEN|GH_TOKEN/);
+  assert.doesNotMatch(inspect,/pip install|npm ci/);
+  assert.doesNotMatch(dispatch,/pip install|npm ci/);
+  assert.match(source,/timeout-minutes: 180/);
+  assert.match(source,/name: Qualify exact main source without production/);
+  assert.match(source,/name: Run actual exact-main source gate without production/);
+  assert.match(source,/npm run validate:source/);
+  assert.equal((source.match(/git diff --exit-code HEAD/g)||[]).length,2);
+  assert.match(source,/SOURCE_GATE_OUTCOME: \$\{\{ steps\.source-gate\.outcome \}\}/);
+  assert.match(source,/weather-source-proof-v2-\$\{\{ runner\.os \}\}-\$\{\{ github\.sha \}\}-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}-source-only/);
+  assert.doesNotMatch(source,/SUPABASE_|COPERNICUSMARINE_|R2_|update-dmi|deploy-pages|gh api --method POST|cache\/delete|--write/);
+  assert.match(dispatch,/timeout-minutes: 5/);
+  assert.match(dispatch,/needs: \[inspect, qualify-source\]/);
+  assert.match(dispatch,/needs\.qualify-source\.result == 'success'/);
+  assert.match(dispatch,/needs\.qualify-source\.result == 'skipped' && needs\.inspect\.outputs\.renew_source == 'false'/);
+  assert.match(dispatch,/Reconfirm exact main after any completed source job/);
+  assert.match(dispatch,/Reconfirm a reused proof without consuming our own source run/);
+  assert.match(dispatch,/if: needs\.inspect\.outputs\.renew_source == 'false'/);
+  assert.equal((workflow.match(/gh api --method POST/g)||[]).length,1);
+  assert.match(inspect,/REASON: \$\{\{ steps\.source-proof\.outputs\.reason \}\}/);
+  assert.match(inspect,/source-proof-renewal-required/);
+  assert.match(inspect,/SOURCE_PROOF_UNKNOWN_OR_CONTRADICTORY_NO_DISPATCH/);
+  // The existing normal cadence policy must be evaluated at the later time.
+  assert.equal(check({nowMs:at('2026-09-28T00:19:00Z')}).dispatch,true);
+  assert.equal(check({nowMs:at('2026-09-28T01:47:00Z')}).dispatch,false);
+});
+
+test('Actual source-decision Bash accepts only reuse or explicit renewal',{
+  skip:process.platform==='win32'?'PENDING: actual Bash block requires Linux CI':false,
+},async()=>{
+  const start=workflow.indexOf('      - name: Choose real validation only after positive proof absence or expiry');
+  const end=workflow.indexOf('\n  qualify-source:',start);
+  const block=workflow.slice(start,end).match(/        run: \|\n((?:          [^\n]*(?:\n|$)|\n)+)/)[1]
+    .split('\n').map(line=>line.startsWith('          ')?line.slice(10):line).join('\n');
+  const dir=await fs.mkdtemp(path.join(os.tmpdir(),'rr-source-decision-'));
+  const output=path.join(dir,'output');
+  try{
+    for(const [required,reason,status,expected]of[
+      ['false','verified-exact-main-source-content',0,'renew_source=false\n'],
+      ['true','source-proof-renewal-required',0,'renew_source=true\n'],
+      ['true','later-source-not-green',1,''],['true','later-source-unresolved',1,''],
+      ['true','source-history-inspection-limit',1,''],['true','source-history-limit',1,''],
+      ['true','main-source-proof-discovery-unavailable',1,''],['','source-proof-renewal-required',1,''],
+    ]){
+      await fs.writeFile(output,'');
+      const actual=spawnSync('bash',['-c',block],{encoding:'utf8',timeout:3000,
+        env:{...process.env,REQUIRED:required,REASON:reason,GITHUB_OUTPUT:output}});
+      assert.equal(actual.error,undefined);assert.equal(actual.status,status);
+      assert.equal(await fs.readFile(output,'utf8'),expected);
+      if(status)assert.match(actual.stderr,/SOURCE_PROOF_UNKNOWN_OR_CONTRADICTORY_NO_DISPATCH/);
+    }
+  }finally{await fs.unlink(output);await fs.rmdir(dir);}
 });
