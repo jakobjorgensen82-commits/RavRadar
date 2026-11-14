@@ -254,7 +254,9 @@ const assistant=(await read('supabase/functions/ravradar-assistant/index.ts')).r
 assert.match(assistant,/^    deadline = assistantDeadline\(request\.signal\); deadline\.check\(\);\n    requestBody = assistantRequestBody\(request, deadline\);\n    const body = await deadline\.wait\(readJsonObject\(requestBody\.request, 16 \* 1024\)\); deadline\.check\(\);$/m);
 assert.match(assistant,/minute: 6, hour: 40, globalDay: 300/);
 assert.match(assistant,/^function assistantDeadline\(requestSignal: AbortSignal\) \{\n  const end = performance\.now\(\) \+ 7_000;$/m);
-assert.match(assistant,/^  const timer = setTimeout\(expire, 7_000\);$/m);
+// Preserve the exact7s security frame for both equivalent callback forms.
+// The normal Edge target also proves deadline/abort/body/quota behaviour.
+assert.match(assistant,/^  const timer = setTimeout\((?:expire|\(\) => expire\("TIMER"\)), 7_000\);$/m);
 assert.doesNotMatch(assistant,/knowledge_rules/);
 assert.match(assistant,/CLOUDFLARE_ACCOUNT_ID/);
 assert.match(assistant,/CLOUDFLARE_WORKERS_AI_TOKEN/);
