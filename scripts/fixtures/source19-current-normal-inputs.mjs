@@ -1036,12 +1036,12 @@ async function produceCurrent598NativePrefixFromAdmin(options,providerFilesOnly)
     same([workStat.dev,workStat.ino],await fs.lstat(work,{bigint:true}).then(stat=>[stat.dev,stat.ino]));
     };
     current598PrefixPhase='PROVIDER_INSTALL';
-    const observe=providerFilesOnly?(relativePath,side,stat)=>{
+    const observe=(relativePath,side,stat)=>{
       assert(PROVIDERS.includes(relativePath)&&['SOURCE','TARGET'].includes(side));
       console.error(JSON.stringify({kind:'CURRENT598_PROVIDER_FILE_STAT',relativePath,side,
         regular:stat.regular,nlink:Number(stat.nlink),sizeBytes:Number(stat.size),maximumBytes:256*1024*1024,
         sourceAdmission:false,productionProof:false}));
-    }:null;
+    };
     const providers=await copyInputs(code598InputRoot,host594,code598Options.providerInputs,PROVIDERS,observe);
     for(const file of ['data/live/dmi-bulk-cache.json','data/live/dmi-forecast-cache.json',
       '.cache/copernicus-current-shadow.json','.cache/open-meteo-current-fallback.json',

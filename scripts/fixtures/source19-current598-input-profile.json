@@ -34,14 +34,14 @@
     },
     {
       "path": "scripts/fixtures/source19-current-normal-inputs.mjs",
-      "bytes": 91033,
-      "sha256": "0a84d2639b61203eb00ff54bd2144b61bb2e29683e5858e4ff5a93cd476e6834",
+      "bytes": 91010,
+      "sha256": "7b467ce6028b8f41a01f293660272af4cd5f0cb9dcb1524086f654d7621cfeb2",
       "source": "THIS_SAME_ACTUAL_COMMITTED_CANDIDATE"
     },
     {
       "path": "scripts/fixtures/source19-current-provider-forecast.mjs",
-      "bytes": 14298,
-      "sha256": "1bca6b6350f3a56f3e62026043ede7ca30d0bc991bd18ca435017e88d005aed8",
+      "bytes": 16697,
+      "sha256": "d3650c7b207ab2fbf3347ad67ff4486cc76f7fe7039457229c505845bc83077d",
       "source": "THIS_SAME_ACTUAL_COMMITTED_CANDIDATE"
     },
     {

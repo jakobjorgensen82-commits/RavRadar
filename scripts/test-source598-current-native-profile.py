@@ -2605,6 +2605,88 @@ def current_prefix_provider_failure(own, root):
     return None
 
 
+def current598_forecast_build_observation(own, role, child_outcome):
+    # The normal parent owns these two roles and has closed/fsynced the stream.
+    # A child outcome or observed COMPLETE never grants source/native authority.
+    streams = {'CURRENT': 'current598-providers-whole.stdout', 'GENUINE598': 'current598-prefix-whole.stdout'}
+    if (type(role) is not str or role not in streams or type(child_outcome) is not str
+            or child_outcome not in ('SUCCESS', 'FAILURE')):
+        return None
+    empty = {'kind': 'CURRENT598_FORECAST_BUILD_OBSERVATION', 'status': 'UNPROVED',
+        'role': role, 'childOutcome': child_outcome,
+        'stdoutBytes': None, 'stages': [], 'partContinuity': None,
+        'sourceAdmission': False, 'productionProof': False}
+    try:
+        raw = source_current_cohort_read(own, streams[role], 16 * 1024 * 1024)
+        empty['stdoutBytes'] = len(raw)
+        phases = ('GUARDS', 'BULK_READ', 'MAPPING', 'PACK', 'ATOMIC_WRITE', 'INDEX_READBACK',
+            'UNPACK', 'EXACT_COMPARE', 'COMPLETE')
+        stage_kind, size_kind = 'CURRENT598_FORECAST_BUILD_STAGE', 'DMI_PART_CONTINUITY_SIZE'
+        metrics = ('elapsedMillis', 'userCpuMicros', 'systemCpuMicros', 'rssBytes', 'heapUsedBytes')
+        counts = ('parentsCompleted', 'forwardPartsCompleted', 'historyPartsCompleted')
+        fields = {'kind', 'stage', *metrics, *counts, 'bulkBytes', 'forecastBytes',
+            'sourceAdmission', 'productionProof'}
+        found, continuity, last_phase = [], None, -1
+        def unique_fields(pairs):
+            value = dict(pairs)
+            if len(value) != len(pairs): raise ValueError('DUPLICATE_FIELD')
+            return value
+        for line in raw.splitlines():
+            # The full PREFIX can pack its later normal weather runtime too.
+            # Only the forecaster's own bounded GUARDS..COMPLETE window belongs here.
+            if last_phase == len(phases)-1 and stage_kind.encode() not in line:
+                continue
+            recognized = stage_kind.encode() in line or size_kind.encode() in line
+            if len(line) > 4096:
+                if recognized: return empty
+                continue
+            try: value = json.loads(line, object_pairs_hook=unique_fields)
+            except (ValueError, UnicodeError):
+                if recognized: return empty
+                continue
+            if type(value) is not dict: continue
+            if value.get('kind') == stage_kind:
+                if (set(value) != fields or len(found) >= 24
+                        or type(value['stage']) is not str or value['stage'] not in phases
+                        or value['sourceAdmission'] is not False or value['productionProof'] is not False
+                        or any(type(value[key]) is not int or not 0 <= value[key] <= 2**53-1 for key in metrics)
+                        or any(type(value[key]) is not int or not 0 <= value[key] <= limit
+                            for key, limit in zip(counts, (210, 673, 673)))
+                        or any(value[key] is not None and (type(value[key]) is not int
+                            or not 0 <= value[key] <= 2**53-1) for key in ('bulkBytes', 'forecastBytes'))
+                        or value['historyPartsCompleted'] > value['forwardPartsCompleted']):
+                    return empty
+                phase = phases.index(value['stage'])
+                if (phase > last_phase + 1 or phase < last_phase
+                        or phase == last_phase and (phase != 2
+                            or value['forwardPartsCompleted'] <= found[-1]['forwardPartsCompleted'])
+                        or phase < 2 and any(value[key] != 0 for key in counts)
+                        or phase >= 3 and tuple(value[key] for key in counts) != (210, 673, 673)
+                        or phase < 5 and value['forecastBytes'] is not None):
+                    return empty
+                if found and (any(value[key] < found[-1][key] for key in (*metrics[:3], *counts))
+                        or any(found[-1][key] is not None and value[key] != found[-1][key]
+                            for key in ('bulkBytes', 'forecastBytes'))):
+                    return empty
+                found.append(value); last_phase = phase
+            elif value.get('kind') == size_kind:
+                if (continuity is not None or set(value) != {'kind', 'partCount', 'rawBytes', 'compressedBytes',
+                        'rawLimitBytes', 'compressedLimitBytes'} or type(value['partCount']) is not int
+                        or value['partCount'] != 673 or type(value['rawLimitBytes']) is not int
+                        or value['rawLimitBytes'] != 2048 * 1024 * 1024
+                        or type(value['compressedLimitBytes']) is not int
+                        or value['compressedLimitBytes'] != 160 * 1024 * 1024
+                        or any(type(value[key]) is not int or not 1 <= value[key] <= value[limit]
+                            for key, limit in (('rawBytes', 'rawLimitBytes'), ('compressedBytes', 'compressedLimitBytes')))
+                        or found and last_phase != 3):
+                    return empty
+                continuity = value
+        return {**empty, 'status': 'OBSERVED' if found or continuity is not None else 'NO_MARKERS',
+            'stages': found, 'partContinuity': continuity}
+    except Exception:
+        return empty  # The original timeout/exception and cohort stop stay first.
+
+
 def emit_current598_preparation_failure(test):
     for value in getattr(test, '_current_native_provider_file_stats', ()):
         print(json.dumps(value, separators=(',', ':')), flush=True)
@@ -2613,6 +2695,9 @@ def emit_current598_preparation_failure(test):
         value = getattr(test, name, None)
         if value is not None:
             print(json.dumps(value, separators=(',', ':')), flush=True)
+    value = getattr(test, '_current_native_forecast_build_observation', None)
+    if value is not None:
+        print(json.dumps(value, separators=(',', ':')), flush=True)
 
 
 def current598_provider_file_stat_reports(own, allowed):
@@ -2711,6 +2796,164 @@ class SourceProviderEvidencePureTests(unittest.TestCase):
         return subprocess.run([node, '--input-type=module', '-e', script], cwd=ROOT,
             env=environment, input=None if payload is None else json.dumps(payload).encode(),
             capture_output=True, check=True, timeout=30)
+
+    def test_forecast_build_timeout_preserves_fixed_progress_through_normal_parent(self):
+        import contextlib
+        import copy
+        import io
+        actual = self.prefix_node("""
+import {createNativeCurrentForecastReporter} from './scripts/fixtures/source19-current-provider-forecast.mjs';
+const report=createNativeCurrentForecastReporter(),counts={parentsCompleted:0,forwardPartsCompleted:0,
+  historyPartsCompleted:0,bulkBytes:null,forecastBytes:null};
+report('GUARDS',counts);counts.bulkBytes=1024;report('BULK_READ',counts);report('MAPPING',counts);
+counts.parentsCompleted=210;counts.forwardPartsCompleted=673;counts.historyPartsCompleted=673;
+report('MAPPING',counts);report('PACK',counts);
+console.log(JSON.stringify({kind:'DMI_PART_CONTINUITY_SIZE',partCount:673,rawBytes:4096,compressedBytes:512,
+  rawLimitBytes:2048*1024*1024,compressedLimitBytes:160*1024*1024}));
+report('ATOMIC_WRITE',counts);
+report('PRIVATE_SENTINEL',counts);report('MAPPING',{...counts,forwardPartsCompleted:'PRIVATE_SENTINEL'});
+""")
+        rows = [json.loads(line) for line in actual.stdout.splitlines()]
+        provider = 'scripts/fixtures/source19-current-native-providers.py'
+        boundary = {'kind': 'SOURCE_PROVIDER_BOUNDARY_FIRST_FAILURE', 'exceptionType': 'SUBPROCESS_TIMEOUT',
+            'reason': 'UNKNOWN', 'callsite': {'module': provider, 'sha256': sha((ROOT / provider).read_bytes()),
+                'line': 485}, 'helper': 'FORECAST_BUILD', 'timeoutSeconds': None, 'privatePayloadIncluded': False}
+        prefix = {'kind': 'CURRENT598_PREFIX_FIRST_FAILURE', 'phase': 'PROVIDER_FACTORY',
+            'exceptionType': 'ERROR', 'reason': 'CHILD_EXIT', 'callsite': None, 'privatePayloadIncluded': False}
+        # Controlled short child + actual parent/formatter. The synthetic timeout
+        # frame is not an executed BUILD or Linux physical-file admission proof.
+        with tempfile.TemporaryDirectory(prefix='rr-forecast-progress-unit-') as directory:
+            own = Path(directory)
+            def read_fixed(root, relative, maximum):
+                self.assertIn((root, relative, maximum), (
+                    (own, 'current598-prefix-whole.stdout', 16*1024*1024),
+                    (own, 'current598-prefix-whole.stderr', 16*1024*1024),
+                    (ROOT, provider, 32*1024*1024)))
+                raw = (root / relative).read_bytes()
+                self.assertLessEqual(len(raw), maximum)
+                return raw
+            stderr = (json.dumps(boundary) + '\n' + json.dumps(prefix) + '\nPRIVATE_SENTINEL\n').encode()
+            child = ('import sys;sys.stdout.buffer.write(%r);sys.stderr.buffer.write(%r);raise SystemExit(7)'
+                % (actual.stdout + b'PRIVATE_SENTINEL\n', stderr))
+            test = SourceCurrentNative('test_current598_provider_files_preparation')
+            with mock.patch.dict(globals(), {'source_current_cohort_read': read_fixed}):
+                with self.assertRaises(AssertionError):
+                    test.run_current598_preparation_commands(own, ROOT, clean_environment(),
+                        (('prefix', [sys.executable, '-I', '-B', '-c', child]),))
+                observed = test._current_native_forecast_build_observation
+                self.assertEqual(test._current_native_subprocess_exit, 7)
+                self.assertEqual(test._current_native_prefix_provider_failure, boundary)
+                self.assertEqual(test._current_native_prefix_failure, prefix)
+                self.assertEqual(observed['status'], 'OBSERVED')
+                self.assertEqual(observed['stages'], [row for row in rows if row['kind'].endswith('_STAGE')])
+                self.assertEqual(observed['partContinuity'], rows[-2])
+                output = io.StringIO()
+                with contextlib.redirect_stdout(output): emit_current598_preparation_failure(test)
+                self.assertEqual([json.loads(line) for line in output.getvalue().splitlines()],
+                    [boundary, prefix, observed])
+                self.assertNotIn('PRIVATE_SENTINEL', output.getvalue())
+                self.assertEqual((observed['role'], observed['childOutcome']), ('GENUINE598', 'FAILURE'))
+                self.assertIsNone(current598_forecast_build_observation(own, None, 'FAILURE'))
+                self.assertIsNone(current598_forecast_build_observation(own, 'PRIVATE', 'FAILURE'))
+                self.assertIsNone(current598_forecast_build_observation(own, 'GENUINE598', 'PRIVATE'))
+                stream = own / 'current598-prefix-whole.stdout'
+                stream.write_bytes(b'PRIVATE_SENTINEL\n')
+                self.assertEqual(current598_forecast_build_observation(own, 'GENUINE598', 'FAILURE')['status'], 'NO_MARKERS')
+                # Reuse the genuine existing size-marker without requiring new stages.
+                stream.write_text(json.dumps(rows[-2]) + '\n', encoding='utf8')
+                self.assertEqual(current598_forecast_build_observation(own, 'GENUINE598', 'FAILURE')['partContinuity'], rows[-2])
+                wrong = []
+                for key, value in [('raw', 'PRIVATE_SENTINEL'), ('sourceAdmission', True),
+                        ('elapsedMillis', -1), ('userCpuMicros', True), ('parentsCompleted', 211),
+                        ('forwardPartsCompleted', 674), ('stage', 'PRIVATE_SENTINEL')]:
+                    altered = copy.deepcopy(rows); altered[0][key] = value; wrong.append(altered)
+                altered = copy.deepcopy(rows); altered[1]['elapsedMillis'] = -1; wrong.append(altered)
+                wrong.extend(([rows[1]], [rows[0], rows[0]], rows + [rows[-2]]))
+                altered = copy.deepcopy(rows); altered[-2]['rawLimitBytes'] += 1; wrong.append(altered)
+                altered = copy.deepcopy(rows); altered[0]['raw'] = 'PRIVATE_SENTINEL' * 4096; wrong.append(altered)
+                for values in wrong:
+                    stream.write_text('\n'.join(json.dumps(row) for row in values) + '\n', encoding='utf8')
+                    denied = current598_forecast_build_observation(own, 'GENUINE598', 'FAILURE')
+                    self.assertEqual((denied['status'], denied['stages'], denied['partContinuity']),
+                        ('UNPROVED', [], None))
+                    self.assertNotIn('PRIVATE_SENTINEL', json.dumps(denied))
+                stream.write_text(json.dumps(rows[0]).replace('"stage": "GUARDS"',
+                    '"stage": "GUARDS", "stage": "GUARDS"') + '\n', encoding='utf8')
+                self.assertEqual(current598_forecast_build_observation(own, 'GENUINE598', 'FAILURE')['status'], 'UNPROVED')
+                with mock.patch.dict(globals(), {'source_current_cohort_read': mock.Mock(side_effect=AssertionError('BOUND'))}):
+                    denied = current598_forecast_build_observation(own, 'GENUINE598', 'FAILURE')
+                    self.assertEqual((denied['status'], denied['stdoutBytes']), ('UNPROVED', None))
+
+    def test_full_prefix_parent_separates_success_and_later_install_failure(self):
+        import contextlib
+        import io
+        actual = self.prefix_node("""
+import {createNativeCurrentForecastReporter} from './scripts/fixtures/source19-current-provider-forecast.mjs';
+const report=createNativeCurrentForecastReporter(),counts={parentsCompleted:0,forwardPartsCompleted:0,
+  historyPartsCompleted:0,bulkBytes:null,forecastBytes:null};
+report('GUARDS',counts);counts.bulkBytes=1024;report('BULK_READ',counts);report('MAPPING',counts);
+counts.parentsCompleted=210;counts.forwardPartsCompleted=673;counts.historyPartsCompleted=673;report('MAPPING',counts);
+report('PACK',counts);
+console.log(JSON.stringify({kind:'DMI_PART_CONTINUITY_SIZE',partCount:673,rawBytes:4096,compressedBytes:512,
+  rawLimitBytes:2048*1024*1024,compressedLimitBytes:160*1024*1024}));
+report('ATOMIC_WRITE',counts);counts.forecastBytes=2048;
+for(const stage of ['INDEX_READBACK','UNPACK','EXACT_COMPARE','COMPLETE'])report(stage,counts);
+""")
+        forecast_pack = next(json.loads(line) for line in actual.stdout.splitlines()
+            if json.loads(line)['kind'] == 'DMI_PART_CONTINUITY_SIZE')
+        # A later full-PREFIX producer legitimately packs another normal runtime.
+        later_pack = {**forecast_pack, 'partCount': 1, 'rawBytes': 64, 'compressedBytes': 32}
+        prefix_stdout = actual.stdout + (json.dumps(later_pack) + '\nPRIVATE_SENTINEL\n').encode()
+        def command(stdout, stderr, code):
+            text = 'import sys;sys.stdout.buffer.write(%r);sys.stderr.buffer.write(%r);raise SystemExit(%d)'
+            return [sys.executable, '-I', '-B', '-c', text % (stdout, stderr, code)]
+        for late_failure in (True, False):
+            with self.subTest(laterFailure=late_failure), tempfile.TemporaryDirectory(prefix='rr-full-prefix-parent-') as directory:
+                own = Path(directory)
+                test = SourceCurrentNative('test_current598_prefix_preparation')
+                allowed = test.current598_provider_module(ROOT).NORMAL_PROVIDER_FILES
+                stats = [{'kind': 'CURRENT598_PROVIDER_FILE_STAT', 'relativePath': name, 'side': side,
+                    'regular': True, 'nlink': 1, 'sizeBytes': 3, 'maximumBytes': 256*1024*1024,
+                    'sourceAdmission': False, 'productionProof': False} for name in allowed for side in ('SOURCE', 'TARGET')]
+                prefix_failure = {'kind': 'CURRENT598_PREFIX_FIRST_FAILURE', 'phase': 'PROVIDER_INSTALL',
+                    'exceptionType': 'ASSERTION_ERROR', 'reason': 'ERR_ASSERTION', 'callsite': None,
+                    'privatePayloadIncluded': False}
+                if late_failure:
+                    stats = [{**stats[0], 'regular': False}]
+                stderr = b''.join((json.dumps(value)+'\n').encode() for value in
+                    [*stats, *([prefix_failure] if late_failure else [])])
+                commands = (('providers', command(actual.stdout, b'', 0)),
+                    ('prefix', command(prefix_stdout, stderr, 9 if late_failure else 0)))
+                def read_fixed(root, relative, maximum):
+                    self.assertEqual(root, own)
+                    self.assertIn(relative, ('current598-prefix-whole.stdout', 'current598-prefix-whole.stderr',
+                        'current598-providers-whole.stdout'))
+                    raw = (root / relative).read_bytes(); self.assertLessEqual(len(raw), maximum); return raw
+                output = io.StringIO()
+                with mock.patch.dict(globals(), {'source_current_cohort_read': read_fixed}), contextlib.redirect_stdout(output):
+                    if late_failure:
+                        with self.assertRaisesRegex(AssertionError, 'CURRENT598_NORMAL_PREFIX_PRODUCER_REFUSED'):
+                            test.run_current598_preparation_commands(own, ROOT, clean_environment(), commands)
+                        self.assertEqual(test._current_native_subprocess_exit, 9)
+                        self.assertEqual(test._current_native_prefix_failure, prefix_failure)
+                        emit_current598_preparation_failure(test)
+                    else:
+                        test.run_current598_preparation_commands(own, ROOT, clean_environment(), commands)
+                        self.assertEqual(test._current_native_subprocess_phase, 'NONE')
+                        self.assertIsNone(test._current_native_forecast_build_observation)
+                emitted = [json.loads(line) for line in output.getvalue().splitlines()]
+                observed = [value for value in emitted if value['kind'] == 'CURRENT598_FORECAST_BUILD_OBSERVATION']
+                self.assertEqual([(value['role'], value['childOutcome']) for value in observed],
+                    [('CURRENT', 'SUCCESS'), ('GENUINE598', 'FAILURE' if late_failure else 'SUCCESS')])
+                for value in observed:
+                    self.assertEqual(value['status'], 'OBSERVED'); self.assertEqual(value['stages'][-1]['stage'], 'COMPLETE')
+                    self.assertEqual(value['partContinuity'], forecast_pack)
+                    self.assertIs(value['sourceAdmission'], False); self.assertIs(value['productionProof'], False)
+                self.assertEqual([value for value in emitted if value['kind'] == 'CURRENT598_PROVIDER_FILE_STAT'], stats)
+                if late_failure:
+                    self.assertEqual(emitted[0], observed[0]); self.assertEqual(emitted[-2], prefix_failure)
+                    self.assertEqual(emitted[-1], observed[1])
+                self.assertNotIn('PRIVATE_SENTINEL', output.getvalue())
 
     def test_prefix_first_failure_survives_normal_case_and_wrapper_without_private_values(self):
         actual = self.prefix_node("""
@@ -2826,7 +3069,7 @@ process.exitCode=first.status;
                 environment.update({k: v for k, v in os.environ.items()
                     if k.upper() in {'SYSTEMROOT', 'WINDIR', 'TEMP', 'TMP'}})
                 def read_fixed(root, relative, maximum):
-                    self.assertTrue(root == own and relative == 'current598-prefix-whole.stderr'
+                    self.assertTrue(root == own and relative in ('current598-prefix-whole.stderr', 'current598-prefix-whole.stdout')
                         or root == ROOT and relative in (CURRENT_PREFIX_MODULE, *SOURCE_PROVIDER_FRAME_FILES))
                     raw = (root / relative).read_bytes()
                     self.assertLessEqual(len(raw), maximum)
@@ -2851,7 +3094,10 @@ process.exitCode=first.status;
                     with contextlib.redirect_stdout(stream):
                         emit_current598_preparation_failure(test)
                     emitted = [json.loads(line) for line in stream.getvalue().splitlines()]
-                    self.assertEqual(emitted, [boundary, test._current_native_prefix_failure])
+                    self.assertEqual(emitted[:2], [boundary, test._current_native_prefix_failure])
+                    self.assertEqual(emitted[2], test._current_native_forecast_build_observation)
+                    self.assertEqual((emitted[2]['role'], emitted[2]['childOutcome'], emitted[2]['status']),
+                        ('GENUINE598', 'FAILURE', 'NO_MARKERS'))
                     self.assertNotIn('PRIVATE_SENTINEL', stream.getvalue())
                     # Extra fields, forged/stale frames, ambiguity and raw text do not become causes.
                     bad = [dict(boundary, raw='PRIVATE_SENTINEL'),
@@ -3496,7 +3742,7 @@ CURRENT_NATIVE_CASE = 'current-source-native'
 CURRENT_NATIVE_CONTEXT = None
 CURRENT_NATIVE_INPUT_PROFILE = 'operative585'
 CURRENT598_INPUT_PROFILE_PATH = 'scripts/fixtures/source19-current598-input-profile.json'
-CURRENT598_INPUT_PROFILE_SHA256 = '8070203c43f0537cd234993cce323022dd004ee21797fae80c4e545ff9a3d494'
+CURRENT598_INPUT_PROFILE_SHA256 = '3809beab1a9eb04cacc8b838e95bdd505d1b23932b85ca91c32a1c602f2a8bf3'
 
 CURRENT_NATIVE_POST64_MODULE = None
 def current_native_post64_module():
@@ -4035,7 +4281,20 @@ class SourceCurrentNative(SourceActualSUnionNative):
                 for row in profile['nativeInputFiles']]}
         return profile
 
+    def current598_provider_module(self, root):
+        file = root / 'scripts/fixtures/source19-current-native-providers.py'
+        spec = importlib.util.spec_from_file_location('owned_provider_admin_transport', file)
+        api = importlib.util.module_from_spec(spec); spec.loader.exec_module(api)
+        return api
+
+
     def run_current598_preparation_commands(self, own, root, environment, commands):
+        # Read the same committed data before any child, never evaluate code
+        # from a failed child host merely to format its later file statistics.
+        try:
+            provider_paths = self.current598_provider_module(root).NORMAL_PROVIDER_FILES
+        except Exception:
+            provider_paths = ()  # Observation failure is never a new producer gate.
         for name, command in commands:
             self._current_native_subprocess_phase = name.upper().replace('-', '_')
             # Retain the first actual producer failure and all physical raw
@@ -4051,6 +4310,24 @@ class SourceCurrentNative(SourceActualSUnionNative):
             if name == 'prefix' and result.returncode != 0:
                 self._current_native_prefix_failure = current_prefix_failure(own, root)
                 self._current_native_prefix_provider_failure = current_prefix_provider_failure(own, root)
+            role = {'providers': 'CURRENT', 'prefix': 'GENUINE598'}.get(name)
+            observed = current598_forecast_build_observation(own, role,
+                'SUCCESS' if result.returncode == 0 else 'FAILURE')
+            if name == 'prefix':
+                try:
+                    self._current_native_provider_file_stats = current598_provider_file_stat_reports(
+                        own, provider_paths)
+                except Exception:
+                    self._current_native_provider_file_stats = ()  # Never mask the first child failure.
+            if result.returncode == 0:
+                if name == 'prefix':
+                    for value in self._current_native_provider_file_stats:
+                        print(json.dumps(value, separators=(',', ':')), flush=True)
+                if observed is not None:
+                    print(json.dumps(observed, separators=(',', ':')), flush=True)
+                self._current_native_forecast_build_observation = None
+            else:
+                self._current_native_forecast_build_observation = observed
             self.assertEqual(result.returncode, 0, 'CURRENT598_NORMAL_' + name.upper() + '_PRODUCER_REFUSED')
             self._current_native_subprocess_phase, self._current_native_subprocess_exit = 'NONE', None
 
@@ -4097,9 +4374,7 @@ class SourceCurrentNative(SourceActualSUnionNative):
             env=clean_environment(), text=True).strip()
         own, root, environment, target = self.owned_current_host(head, with_sdk=True)
         inputs = own / 'fixture-current598'; inputs.mkdir(mode=0o700, parents=False, exist_ok=False)
-        file = root / 'scripts/fixtures/source19-current-native-providers.py'
-        spec = importlib.util.spec_from_file_location('owned_provider_admin_transport', file)
-        api = importlib.util.module_from_spec(spec); spec.loader.exec_module(api)
+        api = self.current598_provider_module(root)
         subprocess.run([str(NODE), str(api.source_native_provider_program_path('PUBLIC_REGISTRY', root))],
             cwd=root, env=environment, stdin=subprocess.DEVNULL, check=True, timeout=30)
         admin = api.copy_native_provider_admin_inputs(root, inputs)
@@ -4120,8 +4395,6 @@ class SourceCurrentNative(SourceActualSUnionNative):
             raise
         observed = current598_provider_file_stat_reports(own, allowed)
         self.assertEqual(len(observed), 2 * len(allowed)); self.assertEqual(len(allowed), 9)
-        for value in observed:
-            print(json.dumps(value, separators=(',', ':')), flush=True)
         print(json.dumps({'kind': 'CURRENT598_NORMAL_INPUT_PREPARATION', 'status': 'PREPARATION_ONLY',
             'profileSha256': CURRENT598_INPUT_PROFILE_SHA256, 'executionHead': head,
             'normalPrefixReturned': False, 'providerFactoryReturned': True, 'providerCopyCompleted': True,
@@ -4928,7 +5201,9 @@ if __name__ == '__main__':
             'SourceProviderEvidencePureTests.test_prefix_missing_ambiguous_or_unverified_marker_stays_unknown',
             'SourceProviderEvidencePureTests.test_prefix_nested_provider_and_forecast_failures_reach_normal_diagnostic_printer',
             'SourceProviderEvidencePureTests.test_current598_admin_transport_preserves_actual_source_bytes',
-            'SourceProviderEvidencePureTests.test_current598_provider_file_stat_projection_preserves_failed_guards'))
+            'SourceProviderEvidencePureTests.test_current598_provider_file_stat_projection_preserves_failed_guards',
+            'SourceProviderEvidencePureTests.test_forecast_build_timeout_preserves_fixed_progress_through_normal_parent',
+            'SourceProviderEvidencePureTests.test_full_prefix_parent_separates_success_and_later_install_failure'))
     if sys.argv[1:] == ['--provider-diagnostic-unit']:
         unittest.main(argv=[sys.argv[0]], defaultTest='SourceProviderEvidencePureTests')
     if sys.argv[1:] == ['--legacy-diagnostic-unit']:

@@ -65,12 +65,12 @@ jobs:
 
       # This explicit diagnostic branch must never be merged. It cannot write
       # source-completed/native-phase receipts or qualify a release/main tree.
-      - name: Prepare normal genuine598 provider files only without PG or source admission
+      - name: Prepare both normal factories and full PREFIX without PG or source admission
         shell: bash
         run: |
           set -euo pipefail
           python -I -B scripts/test-source598-current-native-profile.py \
-            --prepare-current598-provider-files --node24-path "$(command -v node)" \
+            --prepare-current598-prefix --node24-path "$(command -v node)" \
             --input-profile current598-preparation
 
       - name: Require the diagnostic source checkout to remain unchanged
