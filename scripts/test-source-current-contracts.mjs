@@ -13,6 +13,7 @@ import {CURRENT_CONTRACT_COMMANDS,isBoundedLocalRestoreFixtureChange,isArchiveRe
 const SOURCE=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const dmiBudgetScopeOnly=process.argv.includes('--dmi-budget-scope-only');
 const dmiRecoveryScopeOnly=process.argv.includes('--dmi-recovery-scope-only');
+const adminHistoryScopeOnly=process.argv.includes('--admin-history-scope-only');
 
 // The fixed restore command owns only its reviewed fixture body. Import and
 // dispatch frames remain immutable; its actual --self-test runs separately.
@@ -224,6 +225,55 @@ function assertArchiveOuterQueuePlanScope({baselineCommit,baselineTree,rewriteTr
 // End archive outer queue scope assertions.
 
 
+// Existing source-control responsibility: exact controller/library/test paths,
+// whole normal targets, and no permission for adjacent unknown dependencies.
+function assertSourceAutonomyPlanScope({baselineCommit,baselineTree,rewriteTree,makeCommit,checkoutCommit,plan,restoreHead}){
+  const files=['.github/workflows/watch-missed-weather-schedule.yml','scripts/weather-source-gate.mjs',
+    'scripts/lib/weather-source-gate.mjs','scripts/test-weather-source-gate.mjs','scripts/test-weather-cadence-watchdog.mjs'];
+  const commands=['node --test scripts/test-source-current-contracts.mjs',
+    'node scripts/test-weather-source-gate.mjs','node scripts/test-weather-cadence-watchdog.mjs'];
+  assert.deepEqual(CURRENT_CONTRACT_COMMANDS.sourceControls,commands);
+  const results=[];
+  const select=(label,paths)=>{
+    const changes=paths.map(file=>[file,Buffer.from('// Synthetic source-owner scope '+label+String.fromCharCode(10))]);
+    const candidate=makeCommit(rewriteTree(baselineTree,changes),[baselineCommit],'synthetic source-owner scope '+label);
+    checkoutCommit(candidate);
+    const selected=plan({baselineCommit,candidateCommit:candidate,expectedHead:candidate});
+    results.push({label,plan:selected});return selected;
+  };
+  const positive=selected=>{
+    assert.equal(selected.status,'PLANNED');assert.equal(selected.selection,'CURRENT_CONTRACTS');
+    assert.deepEqual(selected.areas.sourceControls.commands,commands);
+    assert.equal(selected.controlQualificationRequired,true);
+    assert.deepEqual(selected.protectedInputs,{postgresUnchanged:true,CUnchanged:true,IUnchanged:true,TUnchanged:true});
+    for(const command of commands)assert.equal(selected.commands.filter(row=>row===command).length,1);
+  };
+  try{
+    for(const file of files){
+      const selected=select(file,[file]);positive(selected);
+      assert.deepEqual(Object.keys(selected.areas),file===files[0]?['core','sourceControls','actionVersions']:['core','sourceControls']);
+      assert.deepEqual(selected.commands,[...CURRENT_CONTRACT_COMMANDS.core,...commands,
+        ...(file===files[0]?CURRENT_CONTRACT_COMMANDS.actionVersions:[])]);
+    }
+    const all=select('all-controller-owners-with-selector-and-docs',[...files,
+      'scripts/source-current-contract-plan.mjs','scripts/test-source-current-contracts.mjs','docs/rdks/40_KNOWN_ISSUES/KNOWN-ISSUES.md']);
+    positive(all);assert.deepEqual(Object.keys(all.areas),['core','documentation','sourceControls','actionVersions']);
+    for(const file of ['scripts/lib/unclassified-weather-source.mjs','scripts/test-weather-source-extra.mjs',
+      '.github/workflows/unclassified-source-renewal.yml']){
+      const selected=select(file,[files[1],file]);assert.equal(selected.selection,'FULL');
+      assert.deepEqual(selected.reasonCodes,['CURRENT_UNCLASSIFIED_PATH']);assert.deepEqual(selected.commands,[]);
+    }
+    const changedProtected=select('changed-protected-source-input',[files[1],'config.js']);
+    assert.equal(changedProtected.selection,'FULL');assert.deepEqual(changedProtected.commands,[]);
+    assert.deepEqual(changedProtected.reasonCodes,['CURRENT_PROTECTED_INPUT_CHANGED']);
+    for(const qualification of ['ACTUAL_POSTGRES','ACTUAL_MODEL_C','ACTUAL_MODEL_I'])
+      assert(changedProtected.requiredQualifications.includes(qualification));
+    return results;
+  }finally{checkoutCommit(restoreHead);}
+}
+// End exact source-autonomy ownership assertions.
+
+
 // Current bytes with a small semantic predecessor, no full source hash/pin.
 const DMI_FILES=['.github/workflows/reusable-weather-build.yml','scripts/plan-dmi-recovery.py',
   'scripts/lib/dmi_adaptive_recovery.py','scripts/run-dmi-bulk-supervised.py','scripts/update-dmi-bulk.py',
@@ -292,7 +342,9 @@ function collect(file){
 }
 for(const file of ['scripts/source-targeted-producer.mjs','scripts/source-targeted-consumer.mjs',
   'scripts/source-current-contract-receipt.mjs','scripts/source-current-contract-plan.mjs'])collect(file);
-const additions=[...controlSources,...ownerHelpers,...['594','597','598'].map(v=>'scripts/lib/source-impact-domain-inputs-'+v+'.json')];
+const additions=[...controlSources,...ownerHelpers,
+  '.github/workflows/watch-missed-weather-schedule.yml','scripts/weather-source-gate.mjs',
+  ...['594','597','598'].map(v=>'scripts/lib/source-impact-domain-inputs-'+v+'.json')];
 const fixtureControlBytes=file=>fs.readFileSync(path.join(SOURCE,file));
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const clone=value=>structuredClone(value);
@@ -516,7 +568,41 @@ try{
   const {planSourceCurrentContractsFromGit:plan}=await moduleAt('scripts/source-current-contract-plan.mjs');
   planCurrent=plan;
 
-  if(!dmiRecoveryScopeOnly){
+  if(!dmiBudgetScopeOnly&&!dmiRecoveryScopeOnly){
+    const started=performance.now(),files=['scripts/admin-document-history-maintenance.mjs','scripts/test-admin-document-history-maintenance.mjs'];
+    const priorTree=rewrite(baselineTree,files.map(file=>[file,fixtureControlBytes(file)]));
+    const prior=commit(priorTree,[base],'synthetic existing admin history controller and regression');
+    const changes=files.map(file=>[file,Buffer.concat([fixtureControlBytes(file),Buffer.from('\n// Synthetic owned admin-history delta\n')])]);
+    const positive=commit(rewrite(priorTree,changes),[prior],'synthetic complete admin-history owned scope');checkout(positive);
+    const selected=plan({baselineCommit:prior,candidateCommit:positive,expectedHead:positive});
+    assert.equal(selected.selection,'CURRENT_CONTRACTS',JSON.stringify(selected));
+    assert.deepEqual(Object.keys(selected.areas),['core','adminHistory']);
+    assert.deepEqual(selected.areas.adminHistory.changedPaths,[...files].sort());
+    assert.deepEqual(selected.commands,[...CURRENT_CONTRACT_COMMANDS.core,...CURRENT_CONTRACT_COMMANDS.adminHistory]);
+    assert.deepEqual(selected.protectedInputs,{postgresUnchanged:true,CUnchanged:true,IUnchanged:true,TUnchanged:true});
+    assert.equal(selected.controlQualificationRequired,true);cases++;
+    for(const [label,file]of [['unknown','scripts/unclassified-admin-retention.mjs'],['PG',profile.postgresModules[0]]]){
+      const bytes=label==='unknown'?Buffer.from('export const synthetic=true;\n'):Buffer.concat([
+        git(root,['cat-file','blob',prior+':'+file]),Buffer.from('\n// Synthetic protected PG drift\n')]);
+      const candidate=commit(rewrite(priorTree,[...changes,[file,bytes]]),[prior],'synthetic admin-history '+label+' refusal');checkout(candidate);
+      const rejected=plan({baselineCommit:prior,candidateCommit:candidate,expectedHead:candidate});
+      assert.equal(rejected.selection,'FULL',JSON.stringify(rejected));assert.deepEqual(rejected.commands,[]);cases++;
+    }
+    for(const kind of ['A','D','mode']){
+      checkout(prior);const file=files[0];git(root,['update-index','--force-remove','--',file]);
+      const absentTree=text(root,['write-tree']),absent=commit(absentTree,[prior],'synthetic absent admin-history controller');
+      let comparison=prior,tree=absentTree;
+      if(kind==='A'){comparison=absent;tree=priorTree;}
+      if(kind==='mode'){checkout(prior);const blob=text(root,['rev-parse',prior+':'+file]);
+        git(root,['update-index','--cacheinfo','100755,'+blob+','+file]);tree=text(root,['write-tree']);}
+      const candidate=commit(tree,[comparison],'synthetic non-M admin-history '+kind);checkout(candidate);
+      const rejected=plan({baselineCommit:comparison,candidateCommit:candidate,expectedHead:candidate});
+      assert.equal(rejected.selection,'FULL',JSON.stringify(rejected));assert.deepEqual(rejected.commands,[]);cases++;
+    }
+    checkout(base);scenarios.push('Existing admin-history controller selects both real owner targets; unknown/PG/A/D/mode retain FULL');
+    console.log(JSON.stringify({kind:'ADMIN_HISTORY_NORMAL_GIT_SCOPE',cases:6,elapsedMs:performance.now()-started,protectedAnalysisReused:false}));
+  }
+  if(!dmiRecoveryScopeOnly&&!adminHistoryScopeOnly){
   const dmiScopeStarted=performance.now();
   // The existing normal Git planner, with genuine PG/C/I/T fixture inputs.
   const dmiBaseTree=rewrite(baselineTree,DMI_FILES.map(f=>[f,Buffer.from(dmiBefore.get(f))]));
@@ -548,7 +634,7 @@ try{
   console.log(JSON.stringify({kind:'DMI_BUDGET_NORMAL_GIT_SCOPE',cases:6,elapsedMs:performance.now()-dmiScopeStarted,
     independentProtectedBoundaryRefusals:3,unknownAndAddedRefusals:2,protectedAnalysisReused:false}));
   }
-  if(!dmiBudgetScopeOnly){
+  if(!dmiBudgetScopeOnly&&!adminHistoryScopeOnly){
     const started=performance.now(),producer='scripts/update-dmi-bulk.py',fixture='scripts/test-dmi-dkss-primary-mode.py';
     // Actual historical Git blobs are test inputs only. They cannot route or
     // qualify a candidate. Pin both preimages so later producer/version work
@@ -593,7 +679,7 @@ try{
     console.log(JSON.stringify({kind:'DMI_COLLECTION_RECOVERY_NORMAL_GIT_SCOPE',cases:8,elapsedMs:performance.now()-started,
       protectedAnalysisReused:false,productInputsAreHistoricalGitBlobs:true,qualificationHashPinsAdded:false}));
   }
-  if(!dmiBudgetScopeOnly&&!dmiRecoveryScopeOnly){
+  if(!dmiBudgetScopeOnly&&!dmiRecoveryScopeOnly&&!adminHistoryScopeOnly){
   // Den samme normale Gitplan skal eje transportvalget og bevare sine beskyttede input.
   const beforeTransportHead=text(root,['rev-parse','HEAD']);
   try{
@@ -1007,6 +1093,11 @@ try{
     workflowSource:fs.readFileSync(new URL('../.github/workflows/verify-supabase-cli-local-restore.yml',import.meta.url),'utf8')});
   cases+=archiveQueueResults.length;
   scenarios.push('only the exact manual archive outer queue replacement composes with the unchanged fixture security frame; all four backup targets and fresh control review remain');
+  const sourceAutonomyScopeResults=assertSourceAutonomyPlanScope({baselineCommit:firstDelivery.main,
+    baselineTree:text(root,['rev-parse',firstDelivery.main+'^{tree}']),rewriteTree:rewrite,
+    makeCommit:commit,checkoutCommit:checkout,plan,restoreHead:head});
+  cases+=sourceAutonomyScopeResults.length;
+  scenarios.push('exact source-controller owners select both normal whole tests and independent source-controls; unknown and protected inputs retain refusal');
   const pagesTree=rewrite(candidateTree,[['.github/workflows/reusable-pages-deploy.yml',
     Buffer.from('# SYNTHETIC current Pages caller delta only\n')]]);
   selectedRun+=1000;selectedJob+=1000;selectedPr+=1000;selectedArtifactId+=1000;

@@ -1,3 +1,17 @@
+## 14. november — autentisk arkivprøve stopper i DATA-gendannelse
+
+Den efterfølgende autentiske prøve har bestået kilde- og rollekontrollen uden manglende roller og er nået videre til DATA-gendannelse. Den stopper med SQLSTATE 42P01 for en manglende relation; årsagen undersøges. Det ejede lokale Docker-mål er lukket. Fuld indholds-/Auth-gendannelse, autonom restorekvittering og Free-klarhed er ikke bestået. De tidligere GRANT_ROLE/42704-afslag bevares som historik og beskriver ikke længere prøvens aktuelle første stop. Original SQL og alle bevaringskrav består.
+
+## 14. november — varig adminarkivretention skal stadig have faktisk overgang og pladsbevis
+
+Den afgrænsede V3-kildekandidat bevarer hele legacy-reserven og ti nye arkivversioner pr. af de tre dokumentkeys efter en udtrykkelig overgang. Normal recovery fra kendte halvleverancer og præcis oprydning af egne nye locatorhistorikrækker er målprøvet. De to små create-only pegerækker giver ingen automatisk scratchhistorik. Uafklaret første PUT forbliver positivt reserveret, også ved fravær; en afbrudt metadataoprydning har et snævert varigt vidne. Ukendte objekter, en anden uafklaret reservation og ulukkede referencer holdes. Det er ingen aktivering, faktisk R2-sletning eller garanti om mindre fysisk database. Præcis kildekvalifikation, sikker overgang, faktiske bytes/ressourcer, backlogprune og fysisk eftermåling samt normal efterfølgende drift mangler. En reserveret, afbrudt initforberedelse er ikke en gennemført overgang. Periodens gennemsnit og abonnementsændringens virkningsdato er særskilt fra live DB-tal og diskens read-only-grænse. Faktisk DB-/Auth-restore og autonom ACK er fortsat åbne, men må ikke opfindes som ekstra gate for tredokumentoprydningen. Se DEC-0255 og håndbog 89.298.
+
+## 14. november — selvstændig fornyelse af kildebevis er forberedt
+
+En afgrænset kildekandidat lader den eksisterende cadencecontroller kræve en ny reel fuld kildeprøve ved positivt manglende eller udløbet artifact uden først at genkvalificere hele den gamle fejl-/vejrhistorik. En ny faktisk grøn kildeprøve skal fortsat kvalificeres normalt af en anden kørsel, før den kan bruges til vejr. Kendte kildefejl, uafklarede kildetrin og andre ukendte afslag forbliver stop. Cache er kun en læsevej; hovedgren, run, attempt og kildetrin verificeres live. Frisk cadencekontrol efter prøveafslutning forhindrer et dispatch uden for det normale vindue.
+
+De konkrete controller-/kildeejere får naturligt sourceControls-ansvar med begge eksisterende hele prøver og den almindelige scopeprøve. Workflowets Actions-versioner har deres eksisterende særskilte kontrol. Præcis kilde-CI, uafhængigt kontrolreview og faktisk hosted fornyelse er fortsat særskilte krav. Der påstås ingen ny PostgreSQL-eksekvering, installation eller fuldt selvstændig drift alene fra private syntetiske prøver. Version, model, migrations-SQL, kvoter, vejr- og produktionsgates bevares. Se DEC-0045, DEC-0302 og håndbog 89.342.
+
 ## 14. november — manuel arkivprøve og vejrets kø
 
 Den manuelle archive-prøve delte vejrets ydre writerkø, selv om dens produktionsadgang er læsning af et autentificeret arkiv. Den forberedte koordinationsrettelse flytter kun denne ydre gruppe og bevarer trip-låsen mod samtidig backupoptagelse og rotation. Autonom restore med vedvarende kvittering og den eksisterende 35-minuttersregel er uændrede. En anden writer kan stadig skabe en indirekte kø.

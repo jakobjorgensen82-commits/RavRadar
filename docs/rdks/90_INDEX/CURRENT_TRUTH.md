@@ -1,3 +1,9 @@
+## 14. november — selvstændig fornyelse af kildebevis er forberedt
+
+En afgrænset kildekandidat lader den eksisterende cadencecontroller kræve en ny reel fuld kildeprøve ved positivt manglende eller udløbet artifact uden først at genkvalificere hele den gamle fejl-/vejrhistorik. En ny faktisk grøn kildeprøve skal fortsat kvalificeres normalt af en anden kørsel, før den kan bruges til vejr. Kendte kildefejl, uafklarede kildetrin og andre ukendte afslag forbliver stop. Cache er kun en læsevej; hovedgren, run, attempt og kildetrin verificeres live. Frisk cadencekontrol efter prøveafslutning forhindrer et dispatch uden for det normale vindue.
+
+De konkrete controller-/kildeejere får naturligt sourceControls-ansvar med begge eksisterende hele prøver og den almindelige scopeprøve. Workflowets Actions-versioner har deres eksisterende særskilte kontrol. Præcis kilde-CI, uafhængigt kontrolreview og faktisk hosted fornyelse er fortsat særskilte krav. Der påstås ingen ny PostgreSQL-eksekvering, installation eller fuldt selvstændig drift alene fra private syntetiske prøver. Version, model, migrations-SQL, kvoter, vejr- og produktionsgates bevares. Se DEC-0045, DEC-0302 og håndbog 89.342.
+
 <!-- RAVRADAR_ACTIVE_ENTRY_START -->
 
 ## 2026-11-14: DMI: tom vedligeholdelse uden falsk parserpause

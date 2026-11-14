@@ -19,9 +19,9 @@ on:
         description: Fixed private history operation; publish creates and verifies a fresh archive first
         type: choice
         default: plan
-        options: [plan, archive, publish-locator, discover, restore, prune, maintain, bucket-readonly, bucket-create]
+        options: [plan, archive, publish-locator, discover, restore, prune, maintain, initialize-retention, bucket-readonly, bucket-create]
       confirmation:
-        description: Exact publish-locator, prune, maintain or bucket-create confirmation; empty for read-only/archive operations
+        description: Exact publish-locator, prune, maintain, initialize-retention or bucket-create confirmation; empty for read-only/archive operations
         type: string
         default: ''
       prune_limit:
@@ -100,7 +100,7 @@ jobs:
                 test -z "$REQUESTED_CONFIRMATION"
                 test "$REQUESTED_PRUNE_LIMIT" = 25
                 test -z "$REQUESTED_INDEX_SHA"
-              elif [[ "$REQUESTED_OPERATION" = maintain ]]; then
+              elif [[ "$REQUESTED_OPERATION" = maintain || "$REQUESTED_OPERATION" = initialize-retention ]]; then
                 next=$(( now / 14400 * 14400 + 19 * 60 ))
                 if (( next <= now )); then next=$(( next + 14400 )); fi
                 since=$(( 14400 - (next - now) ))
@@ -293,6 +293,7 @@ jobs:
             restore: 'CENTRAL_DISCOVERY_READONLY_FULL_ROW_RESTORE_VERIFIED',
             prune: 'EXACT_ARCHIVED_ROWS_ABSENT_AFTER_WRITE',
             maintain: 'AUTOMATIC_FIXED_DOCUMENT_HISTORY_MAINTAINED',
+            'initialize-retention': 'ADMIN_HISTORY_RETENTION_INITIALIZED',
           };
           try {
             const botHandoff = Boolean(env.SOURCE_WEATHER_RUN_ID);
@@ -315,6 +316,7 @@ jobs:
               : operation === 'publish-locator' ? confirmation === 'PUBLISH-PRIVATE-ADMIN-HISTORY-LOCATOR'
               : operation === 'prune' ? confirmation === 'PRUNE-EXACT-THREE-DOCUMENT-HISTORY'
               : operation === 'maintain' ? confirmation === 'MAINTAIN-EXACT-THREE-DOCUMENT-HISTORY'
+              : operation === 'initialize-retention' ? confirmation === 'INITIALIZE-EXACT-THREE-DOCUMENT-RETENTION'
               : confirmation === '', 'DOCUMENT_HISTORY_CONFIRMATION');
             const selector = env.DOCUMENT_HISTORY_INDEX_SHA || '';
             need(selector === '' || (['discover', 'restore'].includes(operation) && /^[a-f0-9]{64}$/.test(selector)),
@@ -353,7 +355,7 @@ jobs:
               nextBase = Math.floor(created / 14400000) * 14400000 + 19 * 60000;
               nextWeather = nextBase <= created ? nextBase + 14400000 : nextBase;
             }
-            const noWindow = operation === 'maintain' && (nextWeather - now < 30 * 60000
+            const noWindow = ['maintain', 'initialize-retention'].includes(operation) && (nextWeather - now < 30 * 60000
               || (created !== null ? now < created : 14400000 - (nextWeather - now) < 180 * 60000));
             if (noWindow) console.log(JSON.stringify({status:'DOCUMENT_HISTORY_SKIPPED_NO_WEATHER_WINDOW',privateAccessStarted:false}));
             else {
@@ -385,7 +387,11 @@ jobs:
             const completed = [], measurements = [];
             const counterKeys = Object.freeze(['candidateRows','eligibleRowsBefore','confirmedAbsentAfterWrite',
               'remainingCandidates','previouslyAbsentCandidates','adminDecodedReadBytes',
-              'declaredAdminContentLengthBytes','adminResponses','r2ReadBytes','wireWrites']);
+              'declaredAdminContentLengthBytes','adminResponses','r2ReadBytes','wireWrites',
+              'retiredArchiveObjects','legacyRows','legacyObjects','keepNewVersions','preparationMetadataObjectsDeleted',
+              'preparationPointerBytes','preparationMetadataBytes','locatorHistoryRowsExpired',
+              'unresolvedPreparationObjectsDeleted','unresolvedPreparationPointerBytes','unresolvedPreparationReservedBytes',
+              'preparedReservationBytes','retentionReservedBytes']);
             function measured(mode, result) {
               const row = {mode};
               for (const key of counterKeys) {
@@ -430,11 +436,11 @@ jobs:
               completed.push('bucket-' + mode);
             }
             function invoke(mode) {
-              if (['archive', 'publish-locator', 'prune', 'maintain'].includes(mode)) invokeBucket('read-only');
+              if (['archive', 'publish-locator', 'prune', 'maintain', 'initialize-retention'].includes(mode)) invokeBucket('read-only');
               mainHead(); phase = mode;
               const args = ['scripts/admin-document-history-maintenance.mjs', '--' + mode, '--workdir', workdir];
-              if (mode === 'publish-locator' || mode === 'prune' || mode === 'maintain') args.push('--confirm', confirmation);
-              if (mode === 'prune' || mode === 'maintain') args.push('--limit', pruneLimit);
+              if (['publish-locator', 'prune', 'maintain', 'initialize-retention'].includes(mode)) args.push('--confirm', confirmation);
+              if (['prune', 'maintain', 'initialize-retention'].includes(mode)) args.push('--limit', pruneLimit);
               if (selector && ['discover', 'restore'].includes(mode)) args.push('--index-sha', selector);
               let result;
               try {
@@ -442,23 +448,45 @@ jobs:
                   timeout: remaining(), maxBuffer: 65536 });
                 result = JSON.parse(output.toString('utf8'));
               } catch (error) {
-                let code = ['archive', 'publish-locator', 'prune', 'maintain'].includes(mode) ? 'WRITE_OUTCOME_UNKNOWN' : 'DOCUMENT_HISTORY_CHILD_FAILED';
+                let code = ['archive', 'publish-locator', 'prune', 'maintain', 'initialize-retention'].includes(mode) ? 'WRITE_OUTCOME_UNKNOWN' : 'DOCUMENT_HISTORY_CHILD_FAILED';
                 let failureOutcome = null, httpStatus = null, privacyHttpStatus = null, privacyStage = null;
                 try { const record = JSON.parse(error.stderr.toString('utf8'));
                   if (record.status === 'FAILED_CLOSED' && /^[A-Z_]{1,96}$/.test(record.code)) code = record.code;
                   if (record.status === 'FAILED_CLOSED' && Number.isInteger(record.httpStatus)
                     && record.httpStatus >= 100 && record.httpStatus <= 599) httpStatus = record.httpStatus;
                   if (['EXACT_ROW_ABSENT','EXACT_ROW_STILL_PRESENT','LOCATOR_ABSENT','LOCATOR_PAYLOAD_PRESENT_VERIFIED',
-                    'IMMUTABLE_ARCHIVE_OBJECT_PRESENT_VERIFIED','UNRESOLVED'].includes(record.operation?.writeOutcome))
+                    'IMMUTABLE_ARCHIVE_OBJECT_PRESENT_VERIFIED','EXACT_ARCHIVE_ABSENT','EXACT_ARCHIVE_STILL_PRESENT',
+                    'PREPARATION_POINTER_ABSENT','PREPARATION_POINTER_PRESENT_VERIFIED','EXACT_PREPARATION_ABSENT','EXACT_PREPARATION_STILL_PRESENT',
+                    'UNRESOLVED_PREPARATION_POINTER_ABSENT','UNRESOLVED_PREPARATION_POINTER_PRESENT_VERIFIED',
+                    'EXACT_UNRESOLVED_PREPARATION_ABSENT','EXACT_UNRESOLVED_PREPARATION_STILL_PRESENT',
+                    'EXACT_LOCATOR_HISTORY_ABSENT','EXACT_LOCATOR_HISTORY_STILL_PRESENT','UNRESOLVED'].includes(record.operation?.writeOutcome))
                     failureOutcome = record.operation.writeOutcome;
                   if (record.status === 'FAILED_CLOSED' && Number.isInteger(record.privacyHttpStatus)
                     && record.privacyHttpStatus >= 100 && record.privacyHttpStatus <= 599) privacyHttpStatus = record.privacyHttpStatus;
                   if (record.status === 'FAILED_CLOSED' && privacyStages.includes(record.privacyStage)) privacyStage = record.privacyStage; } catch {}
                 const failure = new Error(code); failure.code = code; failure.httpStatus = httpStatus; failure.writeOutcome = failureOutcome; failure.privacyHttpStatus = privacyHttpStatus; failure.privacyStage = privacyStage; throw failure;
               }
+              const generationDeletes = result?.retiredArchiveObjects ?? 0;
+              const preparationDeletes = result?.preparationMetadataObjectsDeleted ?? 0;
+              const locatorDeletes = result?.locatorHistoryRowsExpired ?? 0;
+              const unresolvedDeletes = result?.unresolvedPreparationObjectsDeleted ?? 0;
+              need(Number.isSafeInteger(generationDeletes) && generationDeletes >= 0
+                && Number.isSafeInteger(preparationDeletes) && preparationDeletes >= 0 && preparationDeletes <= 1
+                && Number.isSafeInteger(locatorDeletes) && locatorDeletes >= 0 && locatorDeletes <= 1
+                && Number.isSafeInteger(unresolvedDeletes) && unresolvedDeletes >= 0 && unresolvedDeletes <= 1
+                && (generationDeletes === 0 || mode === 'maintain')
+                && (locatorDeletes === 0 || mode === 'maintain')
+                && (unresolvedDeletes === 0 || mode === 'maintain')
+                && (preparationDeletes === 0 || ['maintain','publish-locator','initialize-retention'].includes(mode)), 'DOCUMENT_HISTORY_RECEIPT');
+              need((result?.preparationPointerBytes ?? 0) < 1024 && (result?.preparationMetadataBytes ?? 0) <= 4000000
+                && (result?.unresolvedPreparationPointerBytes ?? 0) < 1024
+                && (result?.unresolvedPreparationReservedBytes ?? 0) <= 4000000
+                && (result?.preparedReservationBytes ?? 0) <= 8000000
+                && (result?.retentionReservedBytes ?? 0) <= 2000000000,
+                'DOCUMENT_HISTORY_RECEIPT');
               need(result && result.mode === mode && result.status === expected[mode]
                 && result.currentDocumentsWritten === false && result.protectedOtherKeysWritten === false
-                && result.archiveObjectsDeleted === false, 'DOCUMENT_HISTORY_RECEIPT');
+                && result.archiveObjectsDeleted === (generationDeletes + preparationDeletes + unresolvedDeletes > 0), 'DOCUMENT_HISTORY_RECEIPT');
               measurements.push(measured(mode, result));
               completed.push(mode);
             }
