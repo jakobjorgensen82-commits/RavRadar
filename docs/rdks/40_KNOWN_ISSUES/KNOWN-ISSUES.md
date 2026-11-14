@@ -1,3 +1,9 @@
+## 14. november — bred Pagesprøves tidsmargin er fortsat åben
+
+Den brede deploymentprøves tidsmargin er fortsat åben: en faktisk kildekørsel nåede den uændrede grænse på 300 sekunder uden en påvist assertionfejl. Rettelsen kvalificerer det relevante testomfang; den påstår ikke en forbedret køretid for den brede prøve. Hele den nye normale kildekontrol skal bestå på det præcise nye head før levering. Version 4.0.598 bevares.
+
+Den normale målplan får en snæver transportafgrænsning: kun ændringer af den eksisterende Pages-statuslæser eller dens egen normale prøve kan vælge de fire øvrige fulde Pagesmål uden den brede deploymentprøve. Den brede prøve kalder ikke statuslæseren. Fast sikkerhedskerne, dokumentkontrol og frisk uafhængig kontrol af ændret testvalg består. Transportafgrænsningen bruger ikke owner-completion-only. Blanding med offentlig verifier, ejerafslutning, completion, workflow, den brede fixture eller andre program- og prøvefiler beholder den brede kontrol. Kun ændringer af eksisterende regulære filer kan bruge afgrænsningen; nye, slettede, omdøbte, modeændrede, dobbelte eller ukendte input giver ingen snæver adgang. Databaser, numeriske bindinger, tidsgrænser, adgang og selve Pages-transporten ændres ikke. Se DEC-0302 og håndbog 89.342.
+
 ## 14. november — Pages-statusværdi og type var ikke bevaret
 
 Efter en positiv, identitetsvalideret Pages-kvittering fortsætter hele klassen STATUS_VALUE_UNPROVED de allerede afgrænsede GET-aflæsninger. Det gælder også null, tal, sand/falsk, lister og objekter; værdien forbliver ukendt og skaber ikke PENDING, succes, terminal fejl eller ret til POST, CANCEL, genforsøg eller ejerafslutning. Kun en senere kendt status kan anvende de eksisterende regler. Forkert svarform, statusadresse eller kendt id-/artifact-/kodeidentitet stopper fortsat straks. Ved fortsat ukendt slutstatus holdes udgivelsen uden annullering. Frister, antal forsøg og øvrige kontrolkrav er uændrede.
