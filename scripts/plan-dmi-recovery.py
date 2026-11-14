@@ -12,9 +12,12 @@ import json
 import math
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from time import monotonic
 
 from lib.dmi_bulk_storage import read_dmi_bulk_document
 from lib.dmi_adaptive_recovery import retained_adaptive_recovery
+from lib.copernicus_target_identity import targets_from_registry
+from lib.weather_acquisition_plan import read_qualified_acquisition_plan, scalar_snapshot_paths
 
 HOURS = 118
 COMPONENT_FIELDS = {
@@ -120,7 +123,37 @@ def part_ids(document):
     return values
 
 
-def decide(cache, registry, target, *, now=None):
+def qualified_water_gap_summary(plan, ids, target, broad_limit):
+    """Count only validated public VALUE/TREND demand, never native takeover.
+
+    T+3 support remains in the producer plan; its 121-hour axis must not add
+    extra public hours to this 118-hour budget decision. No STAC offer is proved.
+    """
+    if plan is None:
+        return None
+    if tuple(sorted(ids, key=lambda value: value.encode("utf-8"))) != plan["partIds"]:
+        raise ValueError("QUALIFIED_BUDGET_TARGETS_CHANGED")
+    start = reference_hour(target)
+    if plan["referenceAt"] != start:
+        raise ValueError("QUALIFIED_BUDGET_TIME_CHANGED")
+    value, trend = plan["valueGapMasks"]["waterLevel"], plan["waterTrendGapMask"]
+    counts = []
+    for offset in range(HOURS):
+        amount = 0
+        for index in range(len(ids)):
+            bit = index * HOURS + offset
+            if (value[bit // 8] | trend[bit // 8]) & (1 << (bit % 8)):
+                amount += 1
+        counts.append(amount)
+    broad = [offset for offset, count in enumerate(counts) if count >= broad_limit]
+    return {"scope": "qualified-retained-water-value-or-trend-gap", "sourceAdmission": False,
+            "upstreamOfferProved": False, "gapPairCount": sum(counts),
+            "broadGapHours": len(broad),
+            "firstBroadGapAt": ((start + timedelta(hours=broad[0])).isoformat().replace("+00:00", "Z")
+                                if broad else None)}
+
+
+def decide(cache, registry, target, *, now=None, qualified_scalar_plan=None):
     ids = part_ids(registry)
     zones = cache.get("zones")
     if not isinstance(zones, dict):
@@ -163,6 +196,9 @@ def decide(cache, registry, target, *, now=None):
             if amount >= broad_limit:
                 counts[component] += 1
     recovering = [component for component in COMPONENT_FIELDS if counts[component] >= 12]
+    water_gaps = qualified_water_gap_summary(qualified_scalar_plan, ids, target, broad_limit)
+    if water_gaps is not None and water_gaps["broadGapHours"] > 0 and "waterLevel" not in recovering:
+        recovering.append("waterLevel")
     previous = retained_adaptive_recovery(cache) or {}
     last_at = previous.get("lastExtendedAt")
     last_missing = previous.get("missingDmiPairsAtStart")
@@ -179,7 +215,7 @@ def decide(cache, registry, target, *, now=None):
     # responses cannot force a one-hour run on every 15-minute cron tick.
     cooled_down = (elapsed is not None and 0 <= elapsed < 4 * 3600
                    and (previous_total is None or current_total >= previous_total - 100))
-    return {
+    result = {
         "extended": bool(recovering) and not cooled_down,
         "cooldownActive": bool(recovering) and cooled_down,
         "partCount": len(ids),
@@ -191,6 +227,9 @@ def decide(cache, registry, target, *, now=None):
         "missingDmiPairs": missing_pairs,
         "missingDmiPairTotal": current_total,
     }
+    if water_gaps is not None:
+        result["qualifiedWaterGaps"] = water_gaps
+    return result
 
 
 def load_cache(path):
@@ -204,9 +243,31 @@ def main():
     parser.add_argument("--parts", type=Path, required=True)
     parser.add_argument("--at", required=True)
     parser.add_argument("--github-output", type=Path, required=True)
+    parser.add_argument("--qualified-plan", type=Path)
+    parser.add_argument("--current-plan", type=Path)
+    parser.add_argument("--scalar-snapshot", type=Path)
+    parser.add_argument("--scalar-history", type=Path)
     args = parser.parse_args()
+    qualified = None
+    qualified_unavailable = False
+    if args.qualified_plan is not None:
+        try:
+            if args.current_plan is None or args.scalar_snapshot is None:
+                raise ValueError("QUALIFIED_BUDGET_SNAPSHOT_CONTEXT_REQUIRED")
+            # Match the existing qualified-plan builder's bounded readback.
+            verification_deadline = monotonic() + 120
+            qualified = read_qualified_acquisition_plan(
+                args.qualified_plan, current_plan_path=args.current_plan,
+                targets=targets_from_registry(args.parts), production_reference_at=args.at,
+                snapshot_paths=scalar_snapshot_paths(Path.cwd(), args.scalar_snapshot, args.scalar_history),
+                check_continue=lambda: monotonic() < verification_deadline)
+        except (OSError, UnicodeError, ValueError, TypeError, KeyError, RecursionError):
+            qualified_unavailable = True
     result = decide(load_cache(args.cache),
-                    json.loads(args.parts.read_text(encoding="utf-8")), args.at)
+                    json.loads(args.parts.read_text(encoding="utf-8")), args.at,
+                    qualified_scalar_plan=qualified)
+    if qualified_unavailable:
+        result["qualifiedWaterGaps"] = {"status": "unavailable", "sourceAdmission": False}
     with args.github_output.open("a", encoding="utf-8") as output:
         output.write(f"extended={'true' if result['extended'] else 'false'}\n")
         output.write(f"missing_pair_counts_json={json.dumps(result['missingDmiPairs'], separators=(',', ':'))}\n")

@@ -8,9 +8,10 @@ import path from 'node:path';
 import childProcess,{execFileSync} from 'node:child_process';
 import {syncBuiltinESMExports} from 'node:module';
 import {fileURLToPath,pathToFileURL} from 'node:url';
-import {CURRENT_CONTRACT_COMMANDS,isBoundedLocalRestoreFixtureChange,pagesContractCommandsForChangedInputs} from './source-current-contract-plan.mjs';
+import {CURRENT_CONTRACT_COMMANDS,isBoundedLocalRestoreFixtureChange,pagesContractCommandsForChangedInputs,dmiBudgetWeatherBuildAreas,isDmiBudgetOnlyUpdaterChange,isDmiBudgetOnlySupervisorChange} from './source-current-contract-plan.mjs';
 
 const SOURCE=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+const dmiBudgetScopeOnly=process.argv.includes('--dmi-budget-scope-only');
 
 // The fixed restore command owns only its reviewed fixture body. Import and
 // dispatch frames remain immutable; its actual --self-test runs separately.
@@ -138,6 +139,59 @@ function assertAssistantEdgePlanScope({baselineCommit,baselineTree,rewriteTree,m
   }finally{checkoutCommit(restoreHead);}
 }
 // End Assistant Edge scope assertions.
+
+
+// Current bytes with a small semantic predecessor, no full source hash/pin.
+const DMI_FILES=['.github/workflows/reusable-weather-build.yml','scripts/plan-dmi-recovery.py',
+  'scripts/lib/dmi_adaptive_recovery.py','scripts/run-dmi-bulk-supervised.py','scripts/update-dmi-bulk.py',
+  'scripts/test-plan-dmi-recovery.py','scripts/test-dmi-budget-rotation-4.0.189.mjs'];
+const dmiAfter=new Map(DMI_FILES.map(f=>[f,fs.readFileSync(path.join(SOURCE,f),'utf8').replaceAll('\r\n','\n')])),dmiBefore=new Map();
+const takeDmiStep=(s,name)=>{const start=s.indexOf('      - name: '+name+'\n'),end=s.indexOf('\n      - ',start+1)+1;
+  assert(start>=0&&end>start);return {start,end,body:s.slice(start,end)};};
+{
+  const f=DMI_FILES[0],s=dmiAfter.get(f),a=takeDmiStep(s,'Prepare retained DMI planning snapshot'),
+    b=takeDmiStep(s,'Plan global current acquisition before DMI'),c=takeDmiStep(s,'Choose DMI budget from retained five-component PART coverage');
+  const printf="          printf 'cache_path=%s\\n' ";
+  let call=c.body.slice(c.body.indexOf('          python scripts/plan-dmi-recovery.py \\\n'),c.body.indexOf(printf));
+  call=call.replace('"$DMI_PLANNING_SNAPSHOT"','"$recovery_cache"').replace('            "'+'$'+'{qualified_args[@]}" \\\n','');
+  const aOld=a.body.replace('Prepare retained DMI planning snapshot','Choose DMI budget from retained five-component PART coverage')
+    .replace('id: dmi-recovery-snapshot','id: dmi-recovery-budget'),at=aOld.indexOf(printf);assert(at>0);
+  dmiBefore.set(f,s.slice(0,a.start)+aOld.slice(0,at)+call+aOld.slice(at)
+    +b.body.replaceAll('steps.dmi-recovery-snapshot.outputs.cache_path','steps.dmi-recovery-budget.outputs.cache_path')+s.slice(c.end));
+  assert.deepEqual(dmiBudgetWeatherBuildAreas(dmiBefore.get(f),s),['dmiBudget']);
+  for(const x of [s+'# unowned workflow\n',s.replace('DMI_BULK_MAX_DOWNLOAD_MB:','CHANGED_LIMIT:'),
+    s.replace('--parts data/live/coastal-parts-v2.json','--parts data/other.json')])
+    assert.equal(dmiBudgetWeatherBuildAreas(dmiBefore.get(f),x),null);
+}
+{
+  const f='scripts/update-dmi-bulk.py',s=dmiAfter.get(f),a=s.indexOf('    selected_runtime_budget = os.getenv("DMI_BULK_SUPERVISOR_TOTAL_RUNTIME_SECONDS")\n'),
+    b=s.indexOf('    if adaptive_recovery is not None:\n');assert(a>0&&b>a);
+  const old='    extended_recovery = (os.getenv("DMI_BULK_ADAPTIVE_RECOVERY", "false").lower() == "true"\n'
+    +'                         and MAX_RUNTIME_SECONDS >= EXTENDED_RUNTIME_SECONDS)\n'
+    +'    adaptive_recovery = next_adaptive_recovery(\n'
+    +'        previous, requested=extended_recovery, runtime_budget_seconds=MAX_RUNTIME_SECONDS,\n'
+    +'        generated_at=generated,\n'
+    +'        before_counts=(json.loads(os.getenv("DMI_BULK_RECOVERY_BEFORE_COUNTS", "{}"))\n'
+    +'                       if extended_recovery else None),\n    )\n';
+  const before=(s.slice(0,a)+old+s.slice(b)).replace('from lib.dmi_adaptive_recovery import extended_runtime_profile_selected, next_adaptive_recovery',
+    'from lib.dmi_adaptive_recovery import EXTENDED_RUNTIME_SECONDS, next_adaptive_recovery');dmiBefore.set(f,before);
+  assert.equal(isDmiBudgetOnlyUpdaterChange(before,s),true);
+  assert.equal(isDmiBudgetOnlyUpdaterChange(before,s+'# changed numerical tail\n'),false);
+  assert.equal(isDmiBudgetOnlyUpdaterChange(before,s.replace('WORK_DEADLINE = STARTED +','WORK_DEADLINE = STARTED + 1 +')),false);
+}
+{
+  const f='scripts/run-dmi-bulk-supervised.py',s=dmiAfter.get(f),addition=
+    '    # Preserve the actually selected envelope, not a rounded child remainder.\n'
+    +'    # Overwrite caller input; this metadata neither resets nor extends deadline.\n'
+    +'    environment["DMI_BULK_SUPERVISOR_TOTAL_RUNTIME_SECONDS"] = str(total_runtime)\n';
+  const before=s.replace(addition,'');assert.notEqual(before,s);dmiBefore.set(f,before);
+  assert.equal(isDmiBudgetOnlySupervisorChange(before,s),true);
+  assert.equal(isDmiBudgetOnlySupervisorChange(before,s.replace('deadline = time.monotonic() + total_runtime',
+    'deadline = time.monotonic() + total_runtime + 1')),false);
+  assert.equal(isDmiBudgetOnlySupervisorChange(before,s+'# changed process closure\n'),false);
+}
+for(const f of DMI_FILES)if(!dmiBefore.has(f))dmiBefore.set(f,dmiAfter.get(f)+(f.endsWith('.py')?'\n# Synthetic budget predecessor\n':'\n// Synthetic budget predecessor\n'));
+assert.deepEqual(CURRENT_CONTRACT_COMMANDS.dmiBudget,['node scripts/test-dmi-budget-rotation-4.0.189.mjs']);
 
 const REFERENCE='bd9cf518fe798ddea45d2b835f324f6e2bea06fc';
 const profile=JSON.parse(fs.readFileSync(path.join(SOURCE,'scripts/lib/source-impact-domain-inputs-598.json')));
@@ -378,6 +432,38 @@ try{
   ({decideTargetedSourceGate:decide,discoverTargetedSourceGate:discover}=consumer);accessFactory=native.sourceImpactEvidenceAccess;
   const {planSourceCurrentContractsFromGit:plan}=await moduleAt('scripts/source-current-contract-plan.mjs');
   planCurrent=plan;
+
+  const dmiScopeStarted=performance.now();
+  // The existing normal Git planner, with genuine PG/C/I/T fixture inputs.
+  const dmiBaseTree=rewrite(baselineTree,DMI_FILES.map(f=>[f,Buffer.from(dmiBefore.get(f))]));
+  const dmiBase=commit(dmiBaseTree,[base],'synthetic bounded budget predecessor');
+  {
+    const files=DMI_FILES; // One whole inventory, not seven identical protected analyses.
+    const c=commit(rewrite(dmiBaseTree,files.map(f=>[f,Buffer.from(dmiAfter.get(f))])),[dmiBase],'synthetic DMI budget scope');checkout(c);
+    const selected=plan({baselineCommit:dmiBase,candidateCommit:c,expectedHead:c});
+    assert.equal(selected.selection,'CURRENT_CONTRACTS',JSON.stringify(selected));
+    assert.deepEqual(selected.commands,[...CURRENT_CONTRACT_COMMANDS.core,...CURRENT_CONTRACT_COMMANDS.dmiBudget]);
+    assert.deepEqual(selected.protectedInputs,{postgresUnchanged:true,CUnchanged:true,IUnchanged:true,TUnchanged:true});
+    assert.equal(selected.controlQualificationRequired,true);
+    assert.equal(selected.changedRows,DMI_FILES.length);
+    assert.deepEqual(selected.areas.dmiBudget.changedPaths,[...DMI_FILES].sort());cases++;
+  }
+  for(const[f,body,reason]of [
+    ['scripts/update-dmi-bulk.py',dmiAfter.get('scripts/update-dmi-bulk.py')+'# outside metadata\n','CURRENT_DMI_BUDGET_UPDATER_SCOPE_CHANGED'],
+    ['scripts/run-dmi-bulk-supervised.py',dmiAfter.get('scripts/run-dmi-bulk-supervised.py')+'# outside budget\n','CURRENT_DMI_BUDGET_SUPERVISOR_SCOPE_CHANGED'],
+    [DMI_FILES[0],dmiAfter.get(DMI_FILES[0])+'# outside workflow\n','CURRENT_WEATHER_BUILD_CHANGE_EXCEEDS_PAGES'],
+    ['scripts/unclassified-dmi-operation.py','# unknown\n','CURRENT_UNCLASSIFIED_PATH'],
+  ]){
+    const c=commit(rewrite(dmiBaseTree,[[f,Buffer.from(body)]]),[dmiBase],'synthetic refused budget scope');checkout(c);
+    const selected=plan({baselineCommit:dmiBase,candidateCommit:c,expectedHead:c});
+    assert.equal(selected.selection,'FULL');assert.deepEqual(selected.reasonCodes,[reason]);assert.deepEqual(selected.commands,[]);cases++;
+  }
+  const added=commit(rewrite(baselineTree,[['scripts/plan-dmi-recovery.py',Buffer.from(dmiAfter.get('scripts/plan-dmi-recovery.py'))]]),[base],'synthetic added scheduler');checkout(added);
+  assert.equal(plan({baselineCommit:base,candidateCommit:added,expectedHead:added}).selection,'FULL');cases++;
+  checkout(base);scenarios.push('DMI owner preserves all unowned workflow/updater/supervisor bytes; unknown or protected changes retain FULL');
+  console.log(JSON.stringify({kind:'DMI_BUDGET_NORMAL_GIT_SCOPE',cases:6,elapsedMs:performance.now()-dmiScopeStarted,
+    independentProtectedBoundaryRefusals:3,unknownAndAddedRefusals:2,protectedAnalysisReused:false}));
+  if(!dmiBudgetScopeOnly){
   // Den samme normale Gitplan skal eje transportvalget og bevare sine beskyttede input.
   const beforeTransportHead=text(root,['rev-parse','HEAD']);
   try{
@@ -953,6 +1039,7 @@ try{
   cases++;scenarios.push('later catalogue cannot rewrite prior V4 scope; committed child plans allow data hydration and discard Node injection');
 
   await assertScalarSourcePrerequisites();
+  }
 
 }finally{
   console.log=originalLog;globalThis.fetch=originalFetch;

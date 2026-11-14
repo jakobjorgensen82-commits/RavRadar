@@ -619,6 +619,9 @@ def main() -> int:
         print("DMI supervisor budget conflict; no producer work started.",
               file=sys.stderr, flush=True)
         return 2
+    # Preserve the actually selected envelope, not a rounded child remainder.
+    # Overwrite caller input; this metadata neither resets nor extends deadline.
+    environment["DMI_BULK_SUPERVISOR_TOTAL_RUNTIME_SECONDS"] = str(total_runtime)
     deadline = time.monotonic() + total_runtime
     skipped_assets: list[dict[str, str]] = []
     while True:

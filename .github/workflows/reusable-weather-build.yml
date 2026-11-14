@@ -2379,8 +2379,8 @@ jobs:
         if: inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true && inputs.checkpoint_only == true && steps.current-history-demand.outcome == 'success' && steps.dmi-generation-prepare.outcome == 'success')
         run: node scripts/plan-dmi-legacy-current-originals.mjs
 
-      - name: Choose DMI budget from retained five-component PART coverage
-        id: dmi-recovery-budget
+      - name: Prepare retained DMI planning snapshot
+        id: dmi-recovery-snapshot
         if: inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true')
         shell: bash
         run: |
@@ -2392,18 +2392,13 @@ jobs:
               --input .cache/dmi-candidate-progress.json \
               --output "$recovery_cache"
           fi
-          python scripts/plan-dmi-recovery.py \
-            --cache "$recovery_cache" \
-            --parts data/live/coastal-parts-v2.json \
-            --at "$RAVRADAR_PRODUCTION_TARGET_HOUR" \
-            --github-output "$GITHUB_OUTPUT"
           printf 'cache_path=%s\n' "$recovery_cache" >> "$GITHUB_OUTPUT"
 
       - name: Plan global current acquisition before DMI
         if: inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true')
         shell: bash
         env:
-          DMI_PLANNING_SNAPSHOT: ${{ steps.dmi-recovery-budget.outputs.cache_path }}
+          DMI_PLANNING_SNAPSHOT: ${{ steps.dmi-recovery-snapshot.outputs.cache_path }}
           DMI_PART_CONTINUITY_DONOR_PATH: ${{ steps.restored-dmi-part-continuity-donor.outputs.path }}
           RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE: ${{ steps.private-runtime-install.outcome == 'success' && 'true' || 'false' }}
           RAVRADAR_RETAINED_SCALAR_CONTEXT: ${{ (steps.dmi-part-continuity-donor.outputs.continuity_schema == '1' || steps.dmi-part-continuity-donor.outputs.continuity_schema == '2') && steps.private-runtime-install.outcome == 'success' && steps.operational-model.outputs.model == 'integrated' && steps.operational-model.outputs.binding_current == 'true' && steps.operational-action.outputs.action == 'integrated' && steps.legacy-bootstrap.outputs.stateless_integrated_recovery != 'true' && inputs.completed_private_runtime != true && inputs.completed_private_runtime_pin == '' && inputs.completed_stage_source == '' && inputs.checkpoint_only != true && inputs.quick_confirmation != true && inputs.quick_progress_source == '' && inputs.current_family_cold_start != true && inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true && inputs.weather_state_epoch_raw_cache_key == '' && inputs.weather_state_epoch_archive_key == '' && inputs.weather_state_epoch_archive_catalog_sha256 == '' && inputs.native_sampling_identity_original_recovery != true && inputs.ravscore_integrated_weather_handoff_run_id == '' && inputs.produce_weather_handoff != true && inputs.ravscore_integrated_first_cutover != true && inputs.ravscore_integrated_return != true && (inputs.ravscore_candidate_g_rollback_mode == '' || inputs.ravscore_candidate_g_rollback_mode == 'none') && 'ordinary-restored' || '' }}
@@ -2433,6 +2428,29 @@ jobs:
             rm -f .cache/weather-current-acquisition-plan.json .cache/weather-qualified-acquisition-plan.json
             echo "::warning::Advisory acquisition plan unavailable; DMI uses conservative native coverage."
           fi
+
+      - name: Choose DMI budget from retained five-component PART coverage
+        id: dmi-recovery-budget
+        if: inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true')
+        shell: bash
+        env:
+          DMI_PLANNING_SNAPSHOT: ${{ steps.dmi-recovery-snapshot.outputs.cache_path }}
+          DMI_PART_CONTINUITY_DONOR_PATH: ${{ steps.restored-dmi-part-continuity-donor.outputs.path }}
+        run: |
+          set -euo pipefail
+          qualified_args=(--qualified-plan .cache/weather-qualified-acquisition-plan.json
+            --current-plan .cache/weather-current-acquisition-plan.json
+            --scalar-snapshot "$DMI_PLANNING_SNAPSHOT")
+          if test -n "$DMI_PART_CONTINUITY_DONOR_PATH"; then
+            qualified_args+=(--scalar-history "$DMI_PART_CONTINUITY_DONOR_PATH")
+          fi
+          python scripts/plan-dmi-recovery.py \
+            --cache "$DMI_PLANNING_SNAPSHOT" \
+            --parts data/live/coastal-parts-v2.json \
+            --at "$RAVRADAR_PRODUCTION_TARGET_HOUR" \
+            "${qualified_args[@]}" \
+            --github-output "$GITHUB_OUTPUT"
+          printf 'cache_path=%s\n' "$DMI_PLANNING_SNAPSHOT" >> "$GITHUB_OUTPUT"
 
       - name: Preserve the fixed epoch post-processing reserve before dmi
         if: inputs.completed_private_runtime != true && ((inputs.weather_state_epoch_bootstrap == true || inputs.current_family_cold_start == true) && steps.preflight.outputs.should_run == 'true')

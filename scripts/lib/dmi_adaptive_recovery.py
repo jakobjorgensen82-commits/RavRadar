@@ -30,7 +30,8 @@ def retained_adaptive_recovery(cache):
     marker = diagnostics.get("adaptiveRecovery")
     if not isinstance(marker, dict):
         return None
-    if _known_short_budget(marker.get("runtimeBudgetSeconds")):
+    selected_runtime = marker.get("selectedRuntimeBudgetSeconds", marker.get("runtimeBudgetSeconds"))
+    if _known_short_budget(selected_runtime):
         return None
     if "runtimeBudgetSeconds" not in marker:
         generated = _utc_instant(cache.get("generatedAt"))
@@ -41,16 +42,34 @@ def retained_adaptive_recovery(cache):
     return copy.deepcopy(marker)
 
 
-def next_adaptive_recovery(cache, *, requested, runtime_budget_seconds, generated_at, before_counts):
+def extended_runtime_profile_selected(runtime_budget_seconds, selected_runtime_budget_seconds=None):
+    """The selected envelope is distinct from a supervised child countdown.
+
+    Old direct callers keep their actual-budget rule. The supervisor alone
+    forwards its original selected envelope; this never extends a deadline.
+    """
+    selected = runtime_budget_seconds if selected_runtime_budget_seconds is None else selected_runtime_budget_seconds
+    return (type(selected) in (int, float) and math.isfinite(selected)
+            and selected >= EXTENDED_RUNTIME_SECONDS
+            and type(runtime_budget_seconds) in (int, float) and math.isfinite(runtime_budget_seconds)
+            and 0 < runtime_budget_seconds <= selected)
+
+
+def next_adaptive_recovery(cache, *, requested, runtime_budget_seconds, generated_at, before_counts,
+                           selected_runtime_budget_seconds=None):
     marker = retained_adaptive_recovery(cache)
-    if requested is not True or runtime_budget_seconds < EXTENDED_RUNTIME_SECONDS:
+    if requested is not True or not extended_runtime_profile_selected(
+            runtime_budget_seconds, selected_runtime_budget_seconds):
         return marker
     if (not isinstance(before_counts, dict)
             or any(type(before_counts.get(component)) is not int or before_counts[component] < 0
                    for component in COMPONENTS)):
         raise ValueError("DMI adaptive recovery needs the measured five-component baseline")
-    return {
+    result = {
         "lastExtendedAt": generated_at,
         "runtimeBudgetSeconds": runtime_budget_seconds,
         "missingDmiPairsAtStart": {component: before_counts[component] for component in COMPONENTS},
     }
+    if selected_runtime_budget_seconds is not None:
+        result["selectedRuntimeBudgetSeconds"] = selected_runtime_budget_seconds
+    return result
