@@ -1353,11 +1353,72 @@ export async function checkPublishedOrdinarySource({env=process.env,execute=exec
   } finally { await fs.unlink(file); }
 }
 
+// Ordinary completion has two authentic roles: the immutable public producer
+// and the currently installed backend readiness. Never retag either contract.
+const ordinaryReadinessRows=new WeakMap();
+async function readPublishedOrdinaryLiveReadiness(request) {
+  const key='ravscore-integrated-cutover-readiness';
+  const rows=await requestDocument(request,'?document_key=eq.'+encodeURIComponent(key)
+    +'&select=document_key,payload,version&limit=2',{},'ordinary readiness read');
+  if(!Array.isArray(rows)||rows.length!==1||rows[0].document_key!==key
+    ||!Number.isSafeInteger(rows[0].version)||rows[0].version<1
+    ||!rows[0].payload||typeof rows[0].payload!=='object'||Array.isArray(rows[0].payload))
+    throw new Error('Published ordinary completion readiness row is not unique');
+  return structuredClone(rows[0]);
+}
+export async function assertPublishedOrdinaryReadinessSourceParity({producerHead,liveHead,executorHead}={}) {
+  if(![producerHead,liveHead,executorHead].every(value=>HEAD_PATTERN.test(String(value??''))))
+    throw new Error('Published ordinary completion readiness source identity is invalid');
+  if((await repairGit(['rev-parse','HEAD'])).trim()!==executorHead
+    ||(await repairGit(['status','--porcelain','--untracked-files=no'])).trim())
+    throw new Error('Published ordinary completion readiness executor source differs');
+  await repairGit(['merge-base','--is-ancestor',producerHead,liveHead]);
+  const {analyzeSourceDomainInputs}=await import('./source-impact-domain-inputs.mjs');
+  // This existing reader is input analysis, not PG execution/reuse authority.
+  // Current runtime authority is the separate full sealed DB/Trip/Assistant check.
+  for(const baselineCommit of new Set([producerHead,liveHead])) {
+    const facts=analyzeSourceDomainInputs({baselineCommit,candidateCommit:executorHead,expectedHead:executorHead});
+    if(facts.analysis!=='COMPLETE'||facts.identity.ancestorVerified!==true
+      ||!facts.actualPostgresInput.unchanged||!facts.actualPostgresInput.before.completeReviewedInputs
+      ||!facts.actualPostgresInput.after.completeReviewedInputs
+      ||!['C','I','T'].every(key=>facts.models[key].unchanged)
+      ||!['native','setup','plannerTrustChain'].every(key=>facts.evidenceControls[key].unchanged)
+      ||facts.frozenGitAnchors.verified!==true)
+      throw new Error('Published ordinary completion readiness backend inputs differ');
+    // These are the normal builder's profile and K operands, not a head cohort.
+    const resources=['scripts/lib/source-impact-domain-inputs-598.json',
+      'data/admin/ravscore-profile-selection.json','knowledge/rav-assistant-public-v1.json'];
+    for(const file of resources)await repairGit(['cat-file','-e',baselineCommit+':'+file]);
+    await repairGit(['diff','--exit-code',baselineCommit,executorHead,'--',...resources]);
+  }
+}
+export async function checkPublishedOrdinaryReadiness({request,files,sourceHead,executorHead,
+  publicImplementationClosureSha256,fetchImpl=fetch,env=process.env}={}) {
+  // phaseJson refuses an absent original; a rebuilt substitute is never proof.
+  const target=phaseJson(files,'integrated-readiness.json');
+  const liveRow=await readPublishedOrdinaryLiveReadiness(request);
+  const live=liveRow.payload;
+  await assertPublishedOrdinaryReadinessSourceParity({producerHead:sourceHead,liveHead:live.sourceHead,executorHead});
+  const {buildIntegratedCutoverReadiness,checkSealedIntegratedCutoverReadiness}=
+    await import('./integrated-cutover-readiness.mjs');
+  const options={publicImplementationClosureSha256};
+  if(!same(target,await buildIntegratedCutoverReadiness(sourceHead,options))
+    ||!same(live,await buildIntegratedCutoverReadiness(live.sourceHead,options)))
+    throw new Error('Published ordinary completion authentic readiness differs from its normal builder');
+  const checked=await checkSealedIntegratedCutoverReadiness({expected:live,
+    url:env.SUPABASE_URL,serviceRoleKey:env.SUPABASE_SERVICE_ROLE_KEY,
+    publishableKey:env.SUPABASE_PUBLISHABLE_KEY||PUBLIC_CONFIG.supabasePublishableKey,fetchImpl});
+  if(!same(checked,live)||!same(liveRow,await readPublishedOrdinaryLiveReadiness(request)))
+    throw new Error('Published ordinary completion live readiness changed');
+  ordinaryReadinessRows.set(target,liveRow);
+  return target;
+}
+
 // Finish only an unchanged-model ordinary target which is already public.
 // The executor stays on today's qualified main. Its immutable producer head
 // comes from the protected target, never from an environment override.
 export async function completePublishedOrdinaryPreActivationTarget({request,atomicRequest,storage,repository,
-  sourceHead,fetchImpl=fetch,checkReadiness=repairLiveReadiness,checkSource=checkPublishedOrdinarySource,env=process.env}={}) {
+  sourceHead,fetchImpl=fetch,checkReadiness,checkSource=checkPublishedOrdinarySource,env=process.env}={}) {
   const policy=PROTECTED_OPERATIONAL_REENTRY_EVIDENCE_POLICY;
   if(env.GITHUB_REF!=='refs/heads/main'||env.GITHUB_SHA!==sourceHead||env.GITHUB_REPOSITORY!==repository
     ||!HEAD_PATTERN.test(String(sourceHead??''))||!Number.isSafeInteger(Number(env.GITHUB_RUN_ID))
@@ -1443,8 +1504,9 @@ export async function completePublishedOrdinaryPreActivationTarget({request,atom
   const context={request,storage,row};
   // Real readiness remains a fresh DB/Edge read, on the protected producer's
   // exact model and public implementation. No SQL or Edge deployment occurs.
-  const readiness=await checkReadiness({sourceHead:d.sourceHead,
-    publicImplementationClosureSha256:d.implementationClosureSha256,fetchImpl});
+  const readiness=await (checkReadiness??(evidence.action==='NONE'?checkPublishedOrdinaryReadiness:repairLiveReadiness))({
+    request,files,sourceHead:d.sourceHead,executorHead:sourceHead,
+    publicImplementationClosureSha256:d.implementationClosureSha256,fetchImpl,env});
   const proofs=await readWriterOwners(owners,fetchImpl,context);
   if(allWriterProofsClosed(proofs))return {completed:false,reason:'NOT_PUBLIC_COMPLETION',privatePayloadIncluded:false};
   if(!proofs.every(p=>['NO_POST','CLOSED_UNPUBLISHED','PUBLIC_TARGET_REQUIRED'].includes(p.state)))
@@ -1459,6 +1521,9 @@ export async function completePublishedOrdinaryPreActivationTarget({request,atom
     publicManifest:phaseJson(files,'manifest.json'),publicAudit:phaseJson(files,'public-audit.json'),
     publicVerification:verification,readiness,deploymentId:d.deploymentId});
   await checkSource({env});
+  const liveReadinessRow=ordinaryReadinessRows.get(readiness);
+  if(liveReadinessRow&&!same(liveReadinessRow,await readPublishedOrdinaryLiveReadiness(request)))
+    throw new Error('Published ordinary completion live readiness changed before CAS');
   const freshCurrent=await phaseCurrent(request);
   if(!same(current,freshCurrent)||!same(rows,phaseDocumentRows.get(freshCurrent)))
     throw new Error('Published ordinary completion central state changed');
@@ -1471,7 +1536,8 @@ export async function completePublishedOrdinaryPreActivationTarget({request,atom
   // Keep the phase and durable Pages owner. The existing normal completion job
   // performs its own fresh public verification and compare-and-swap clear.
   return {completed:true,centralVersion:written.operational.version,deploymentId:d.deploymentId,
-    sourceHead:d.sourceHead,privatePayloadIncluded:false};
+    sourceHead:d.sourceHead,
+    ...(liveReadinessRow?{readinessSourceHead:liveReadinessRow.payload.sourceHead}:{}),privatePayloadIncluded:false};
 }
 
 export async function retireClosedUnpublishedOrdinaryPreActivationTarget({request,storage,repository,sourceHead,

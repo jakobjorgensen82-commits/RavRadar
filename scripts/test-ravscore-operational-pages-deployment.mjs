@@ -23,6 +23,8 @@ import {
 const sourceHead = 'e'.repeat(40);
 const productionReferenceAt = '2026-08-29T12:00:00.000Z';
 const sha256 = value => crypto.createHash('sha256').update(value).digest('hex');
+// Only the deterministic input template is shared; every case owns its bytes/state.
+let normalPublishedOrdinaryTemplate;
 const canonical = value => Array.isArray(value)
   ? value.map(canonical)
   : value && typeof value === 'object'
@@ -2077,6 +2079,10 @@ async function verifyNormalPublishedOwnerCompletion() {
   } finally {if(priorToken===undefined)delete process.env.GH_TOKEN;else process.env.GH_TOKEN=priorToken;
     await fs.rm(directory,{recursive:true,force:true});}
 }
+if(process.argv.includes('--readiness-roles-only')) {
+  await verifyPreActivationClearRestoresLegacyPointer({publishedOrdinary:true,pagesWriteOnly:true,readinessRolesOnly:true});
+  process.exit(0);
+}
 if(process.argv.includes('--owner-completion-only')) {
   await verifyNormalPublishedOwnerCompletion();
   await verifyPreActivationClearRestoresLegacyPointer();
@@ -2581,7 +2587,21 @@ console.log('Operational Pages exact integrated/Candidate 210/673 verification a
 
 // The existing complete 210/673 public fixture drives the real verifier here;
 // neither a caller supplied "verified" object nor a stubbed clear is used.
+function copyNormalPublishedOrdinaryTemplate(implementation) {
+  assert.deepEqual(implementation,normalPublishedOrdinaryTemplate.implementation,
+    'shared normal fixture requires identical complete implementation inputs');
+  const original=normalPublishedOrdinaryTemplate.fixture;
+  const copy={manifest:structuredClone(original.manifest),
+    files:new Map([...original.files].map(([name,bytes])=>[name,Buffer.from(bytes)])),datasetId:original.datasetId};
+  assert.notEqual(copy.manifest,original.manifest);assert.deepEqual(copy.manifest,original.manifest);
+  assert.notEqual(copy.manifest.detailDelivery,original.manifest.detailDelivery);
+  assert.notEqual(copy.files,original.files);assert.equal(copy.files.size,original.files.size);
+  for(const[name,bytes]of copy.files){assert.notEqual(bytes,original.files.get(name));assert(bytes.equals(original.files.get(name)));}
+  return copy;
+}
+
 async function buildNormalPublishedOrdinaryFixture(work,implementation) {
+  if(normalPublishedOrdinaryTemplate)return copyNormalPublishedOrdinaryTemplate(implementation);
   const {registerHooks}=await import('node:module');
   const factoryUrl=new URL('./test-ravscore-public-data-service-binding.mjs?published-ordinary',import.meta.url).href;
   const factorySource=(await fs.readFile(new URL('./test-ravscore-public-data-service-binding.mjs',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
@@ -2596,9 +2616,9 @@ async function buildNormalPublishedOrdinaryFixture(work,implementation) {
   for(const zone of Object.values(source.coastalParts.zones))for(let index=1;index<zone.hourly.length;index++){
     for(const mode of ['waders','beach'])zone.hourly[index][mode]={available:false,score:null,scoreQuality:'UNAVAILABLE',scoreBounds:null,
       calibrationEligible:false,scoreSemantics:null,conservativeTailResetApplied:false,historyCoverageHours:null,historyReasonCodes:[],
-      modelBinding:implementation.binding,status:'unavailable',validPartCount:0,expectedPartCount:zone.expectedPartCount,comparisonPartCount:0,
-      unavailableParts:[],unavailability:{available:false,code:'SYNTHETIC_NO_EXACT_INPUT',messageDa:'Syntetisk prøvetime uden data.',
-        policy:'integrated-model-local-fail-closed',validPartCount:0,expectedPartCount:zone.expectedPartCount},reasons:['Syntetisk prøvetime uden data.']};
+      modelBinding:implementation.binding,
+      unavailability:{available:false,code:'SYNTHETIC_NO_EXACT_INPUT',messageDa:'Syntetisk prøvetime uden data.'},
+      reasons:['Syntetisk prøvetime uden data.']};
   }
   for(const part of Object.values(source.coastalParts.parts))part.hourly=[];
   const lib=await import('./public-conditions-lib.mjs'),share=await import('./build-forecast-share-projection.mjs');
@@ -2626,10 +2646,108 @@ async function buildNormalPublishedOrdinaryFixture(work,implementation) {
     manifest,manifestSha256:sha256(manifestBytes)});
   files.set('/data/live/forecast-share.json',sharing.descriptorBytes);
   for(const file of sharing.zoneFiles)files.set('/data/live/'+file.entry.path.slice(2),file.bytes);
-  return{manifest,files,datasetId:manifest.datasetId};
+  normalPublishedOrdinaryTemplate={implementation:structuredClone(implementation),
+    fixture:{manifest,files,datasetId:manifest.datasetId}};
+  return copyNormalPublishedOrdinaryTemplate(implementation);
 }
 
-async function verifyPreActivationClearRestoresLegacyPointer({publishedOrdinary=false,pagesWriteOnly=false}={}) {
+// Same controlled DB/Edge responses as the normal readiness test; no network.
+async function ordinaryReadinessRuntimeFixture(readiness) {
+  const {REQUIRED_CUTOVER_MIGRATIONS,LATEST_RAVSCORE_BINDING_MIGRATION,ASSISTANT_BINDING_HEADERS,
+    expectedTripBindingPolicy,expectedTripActiveAdmissionPolicy,expectedCheckpointCasContract}=
+    await import('./integrated-cutover-readiness.mjs');
+  const expectedPolicy=await expectedTripBindingPolicy(),expectedActiveAdmissionPolicy=await expectedTripActiveAdmissionPolicy();
+  const expectedCheckpointContract=await expectedCheckpointCasContract();
+  const databaseReadback = {
+  schemaVersion: 'ravscore-integrated-cutover-db-v1',
+  tripSchemaVersion: 3,
+  appliedMigrationVersions: REQUIRED_CUTOVER_MIGRATIONS.slice(0, 3).map(item => item.version),
+  tripBindingPolicy: {
+    id: expectedPolicy.id,
+    definition: expectedPolicy.definition,
+  },
+  tripActiveAdmissionPolicy: {
+    id: expectedActiveAdmissionPolicy.id,
+    definition: expectedActiveAdmissionPolicy.definition,
+    triggerFunctionDefinition: expectedActiveAdmissionPolicy.triggerFunctionDefinition,
+    triggerDefinition: 'CREATE TRIGGER ravradar_observations_active_v3_binding_trigger BEFORE INSERT OR UPDATE OF schema_version, model_version, calibration_features, calibration_eligible, actual_zone_id, actual_coastal_part_id, forecast_zone_id, forecast_coastal_part_id ON public.observations FOR EACH ROW EXECUTE FUNCTION ravradar_observation_require_active_v3_binding()',
+  },
+  checks: {
+    schemaVersionConstraintPresent: true,
+    dataQualityConstraintPresent: true,
+    nestedPrivacyConstraintPresent: true,
+    tripV3ConstraintPresent: true,
+    tripV3ConstraintValidatedAgainstHistoricalRows: false,
+    tripIdIndexPresent: true,
+    bindingPolicyDefinitionPresent: true,
+    bindingTruthCalledForBothModels: true,
+    activeBindingAdmissionDefinitionPresent: true,
+    activeBindingTriggerPresent: true,
+    activeBindingTriggerCallsGateExactlyOnce: true,
+    bindingGateCalledExactlyOnce: true,
+    integratedModelBindingPresent: true,
+    integratedProxyCeilingBindingPresent: true,
+    integratedMissingCalibrationCeilingRejected: true,
+    candidateGRollbackBindingPresent: true,
+    unknownModelBindingRejected: true,
+    exactModelBindingPresent: true,
+  },
+};
+
+const checkpointDatabaseReadback = {
+  schemaVersion: 'ravscore-checkpoint-db-v1',
+  appliedMigrationVersion: LATEST_RAVSCORE_BINDING_MIGRATION.version,
+  checkpointContract: {
+    id: expectedCheckpointContract.id,
+    definition: expectedCheckpointContract.definition,
+  },
+  checks: {
+    checkpointContractDefinitionPresent: true,
+    checkpointCanonicalTimeHelperStableSecurityInvoker: true,
+    checkpointHistoryExclusionInstalled: true,
+    checkpointDirectPayloadReadRestricted: true,
+    checkpointCasSecurityDefiner: true,
+    checkpointCasStatementTimeout55Seconds: true,
+    checkpointCasServiceRoleExecutable: true,
+    checkpointCasAnonymousExecutionRejected: true,
+    checkpointValidatorExecutionRestricted: true,
+    checkpointFunctionsSearchPathLocked: true,
+  },
+};
+
+
+  const calls=[];let rejectDatabase=false;
+  const fetchImpl=async(input,options={})=>{
+    const url=new URL(input),method=options.method??'GET';calls.push({path:url.pathname,method});
+    const json=(body,status=200,headers={})=>new Response(JSON.stringify(body),{status,headers});
+    if(url.pathname.endsWith('/rpc/ravradar_integrated_cutover_contract')) {
+      assert.equal(method,'POST');assert.equal(Object.keys(JSON.parse(options.body)).length,22);
+      return json(rejectDatabase?{...databaseReadback,tripSchemaVersion:99}:databaseReadback);
+    }
+    if(url.pathname.endsWith('/rpc/ravradar_ravscore_checkpoint_contract'))return json(checkpointDatabaseReadback);
+    if(url.pathname==='/rest/v1/admin_documents') {assert.equal(method,'GET');return json([{payload:readiness}]);}
+    if(options.headers.origin==='https://example.invalid')return new Response(null,{status:403});
+    if(url.pathname.includes('/functions/v1/trip-log')||url.pathname.includes('/functions/v1/submit-observation')) {
+      if(method==='OPTIONS')return new Response(null,{status:204,headers:{'access-control-allow-origin':'https://ravradar.dk'}});
+      return json({error:url.pathname.endsWith('/trip-log')?'LOGIN_REQUIRED':'INVALID_REQUEST'},url.pathname.endsWith('/trip-log')?401:400);
+    }
+    assert.equal(url.pathname,'/functions/v1/ravradar-assistant');
+    const headers={'access-control-allow-origin':'https://ravradar.dk'};
+    for(const [role,name]of Object.entries(ASSISTANT_BINDING_HEADERS))headers[name]=readiness.assistantBinding[role];
+    headers['access-control-expose-headers']=Object.values(ASSISTANT_BINDING_HEADERS).join(', ');
+    if(method==='OPTIONS')return new Response(null,{status:204,headers});
+    assert.equal(method,'POST');const supplied=JSON.parse(options.body)?.context?.modelBinding;
+    const exact=JSON.stringify(supplied)===JSON.stringify(readiness.modelBinding);
+    return json(exact?{answer:'Det spørgsmål ligger uden for RavRadar.'}:{error:'MODEL_BINDING_MISMATCH'},exact?200:409,headers);
+  };
+  return {calls,fetchImpl,set rejectDatabase(value){rejectDatabase=value;}};
+}
+
+async function verifyPreActivationClearRestoresLegacyPointer({publishedOrdinary=false,pagesWriteOnly=false,readinessRolesOnly=false}={}) {
+  // Immutable, genuine public-producer and later installed-backend identities.
+  const readinessRoles=pagesWriteOnly||readinessRolesOnly;
+  const sourceHead=readinessRoles?'b599d3e4e83a712f4481c556ac49908f9b152258':'e'.repeat(40);
+  const liveHead='250417469d197bd9d94c3b0e1a4753e859e05d6c';
   const path = await import('node:path');
   const os = await import('node:os');
   const {
@@ -2687,6 +2805,13 @@ function legacySchemaOnePointer(value, {
     expectedBinding:implementation.binding,expectedContractText:implementation.contractText,
     expectedBundleText:implementation.bundleText,expectedPublicClosure:implementation.publicClosure});
   const sourceManifest={...copy(target.manifest),datasetId:'rr-schema-one-source-210'};
+  const readinessModule=readinessRoles?await import('./integrated-cutover-readiness.mjs'):null;
+  const targetReadiness=readinessRoles?await readinessModule.buildIntegratedCutoverReadiness(sourceHead,
+    {publicImplementationClosureSha256:identity.implementationClosureSha256}):null;
+  const liveReadiness=readinessRoles?await readinessModule.buildIntegratedCutoverReadiness(liveHead,
+    {publicImplementationClosureSha256:identity.implementationClosureSha256}):null;
+  const runtime=readinessRoles?await ordinaryReadinessRuntimeFixture(liveReadiness):null;
+  let liveReadinessRow=readinessRoles?{document_key:'ravscore-integrated-cutover-readiness',version:40,payload:copy(liveReadiness)}:null;
   const write=async(directory,name,value)=>fs.writeFile(path.join(directory,name),
     typeof value==='string'?value:JSON.stringify(value));
   const directoryFor = async (name,manifest,deploymentId) => {
@@ -2717,6 +2842,7 @@ function legacySchemaOnePointer(value, {
       'pages-artifact-seal.json':seal,'target-binding.json':implementation.binding,
       'target-public-closure.json':implementation.publicClosure,'target-contract.js':implementation.contractText,
       'target-bundle.generated.js':implementation.bundleText,'public-audit.json':runtimeAudit,
+      ...(readinessRoles?{'integrated-readiness.json':targetReadiness}:{}),
       'checkpoint-disposition.json':{...d,bindingSha256:canonicalSha(d)},'checkpoint-runtime-audit.json':runtimeAudit}))
       await write(directory,file,value);
     return directory;
@@ -2729,6 +2855,7 @@ function legacySchemaOnePointer(value, {
   const request=async(suffix,options={})=>{
     const method=options.method??'GET';
     if(suffix.includes('document_key=in.')){assert.equal(method,'GET');return copy([central,profileRow]);}
+    if(readinessRoles&&suffix.includes('document_key=eq.ravscore-integrated-cutover-readiness')){assert.equal(method,'GET');return [copy(liveReadinessRow)];}
     if(method==='GET')return row?[copy(row)]:[];
     writes.push(method);if(failCas)throw null;
     const body=JSON.parse(options.body);
@@ -2802,9 +2929,10 @@ function legacySchemaOnePointer(value, {
     if(publishedOrdinary){
       const p=await import('./protected-operational-reentry-evidence.mjs');
       const {buildIntegratedCutoverReadiness}=await import('./integrated-cutover-readiness.mjs');
-      const executorHead='f'.repeat(40),env={GITHUB_REF:'refs/heads/main',GITHUB_SHA:executorHead,GITHUB_REPOSITORY:repository,
+      const executorHead=readinessRoles?(await import('node:child_process')).execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim():'f'.repeat(40),env={GITHUB_REF:'refs/heads/main',GITHUB_SHA:executorHead,GITHUB_REPOSITORY:repository,
         GITHUB_RUN_ID:'51004',GITHUB_RUN_ATTEMPT:'1',GITHUB_EVENT_NAME:'workflow_dispatch',
-        GITHUB_WORKFLOW_REF:repository+'/.github/workflows/resume-operational-checkpoint.yml@refs/heads/main'};
+        GITHUB_WORKFLOW_REF:repository+'/.github/workflows/resume-operational-checkpoint.yml@refs/heads/main',
+        ...(readinessRoles?{SUPABASE_URL:'https://project.example',SUPABASE_SERVICE_ROLE_KEY:'sb_secret_test_only',SUPABASE_PUBLISHABLE_KEY:'sb_publishable_test_only'}:{})};
       row={...row,payload:{...row.payload,schemaVersion:'3.0.0',pagesWrite:{target:copy(row.payload.current),
         owner:{repository,runId:51003,runAttempt:1,headSha:sourceHead,attemptId:targetId}}}};
       if(pagesWriteOnly){
@@ -2822,7 +2950,7 @@ function legacySchemaOnePointer(value, {
       }
       const saved={row:copy(row),central:copy(central),profile:copy(profileRow),objects:new Map(objects),removed:[...removed]};
       const ready=await buildIntegratedCutoverReadiness(sourceHead,{publicImplementationClosureSha256:identity.implementationClosureSha256});
-      for(const output of ['required=false\n','required=true\n','required=false\nrequired=false\n','required=false\nrequired=true\n','reason=unknown\n']){
+      if(!readinessRolesOnly)for(const output of ['required=false\n','required=true\n','required=false\nrequired=false\n','required=false\nrequired=true\n','reason=unknown\n']){
         let invoked=0;
         const run=async(program,args,options)=>{invoked++;assert.equal(program,process.execPath);
           assert.equal(path.basename(args[0]),'weather-source-gate.mjs');assert.equal(args[1],'check');assert.equal(args.length,2);
@@ -2834,9 +2962,10 @@ function legacySchemaOnePointer(value, {
         if(output==='required=false\n')await attempt;else await assert.rejects(attempt,/source is not qualified/);
         assert.equal(invoked,1);
       }
-      let calls=0,atomicWrites=0,sourceCalls=0;
-      async function invoke({oldPublic=false,activeWriter=false,pointerDrift=false,centralDrift=false,mainDrift=false,badReadiness=false,lostReply=false,uncommittedLoss=false,notStarted=false,reset=true,wrongSourceVersion=false,wrongOwner=false,knownWriter=null,handoffChange=null,badSource=false,noWriter=false}={}){
+      let calls=0,atomicWrites=0,sourceCalls=0,initialDefaultCompletion=null,defaultSourceNegativePassed=false;
+      async function invoke({oldPublic=false,activeWriter=false,pointerDrift=false,centralDrift=false,mainDrift=false,badReadiness=false,lostReply=false,uncommittedLoss=false,notStarted=false,reset=true,wrongSourceVersion=false,wrongOwner=false,knownWriter=null,handoffChange=null,badSource=false,noWriter=false,liveChange=null,readinessRace=false,missingOriginal=false,targetChange=null,badDatabase=false,defaultReadiness=false}={}){
         if(reset){row=copy(saved.row);central=copy(saved.central);profileRow=copy(saved.profile);}
+        if(readinessRoles){liveReadinessRow={document_key:'ravscore-integrated-cutover-readiness',version:40,payload:{...copy(liveReadiness),...liveChange}};runtime.rejectDatabase=badDatabase;}
         if(noWriter){delete row.payload.pagesWrite;row.payload.schemaVersion=policy.schemaVersion;}
         if(wrongSourceVersion)central.version++;
         if(wrongOwner)row.payload.pagesWrite.owner={...row.payload.pagesWrite.owner,runId:51006,attemptId:'pages-51006-1'};
@@ -2851,8 +2980,17 @@ function legacySchemaOnePointer(value, {
             objects.set(built.descriptor.objectPath,Buffer.from(built.archive));row.payload.pagesWrite.target=copy(built.descriptor);
           }finally{await fs.writeFile(path.join(publishedTargetDir,'handoff.json'),original);}
         }
+        if(missingOriginal||targetChange){
+          const original=await fs.readFile(path.join(publishedTargetDir,'integrated-readiness.json'));
+          try{if(missingOriginal)await fs.unlink(path.join(publishedTargetDir,'integrated-readiness.json'));
+            else await write(publishedTargetDir,'integrated-readiness.json',{...targetReadiness,...targetChange});
+            const built=await p.buildProtectedOperationalEvidenceArchive({directory:publishedTargetDir,deploymentId:targetId,repository});
+            objects.set(built.descriptor.objectPath,Buffer.from(built.archive));row.payload.pagesWrite.target=copy(built.descriptor);
+          }finally{await fs.writeFile(path.join(publishedTargetDir,'integrated-readiness.json'),original);}
+        }
         let publicReads=0,refReads=0;
         const fetchImpl=async(input,options={})=>{
+          if(readinessRoles&&new URL(input).origin==='https://project.example')return runtime.fetchImpl(input,options);
           assert(!options.method||options.method==='GET','no Pages/provider POST in completion');
           const url=new URL(input);
           if(url.origin!=='https://api.github.com'){
@@ -2882,18 +3020,42 @@ function legacySchemaOnePointer(value, {
           return{operationalVersion:central.version,operationalPayload:copy(central.payload),profileVersion:profileRow.version,profilePayload:copy(profileRow.payload)};
         };
         return p.completePublishedOrdinaryPreActivationTarget({...common,atomicRequest,sourceHead:executorHead,env,fetchImpl,
-          checkSource:async options=>{sourceCalls++;assert.equal(options.env,env);if(badSource)throw new Error('synthetic source qualification required');},
-          checkReadiness:async options=>{calls++;assert.equal(options.sourceHead,sourceHead);assert.equal(options.publicImplementationClosureSha256,identity.implementationClosureSha256);
-            return badReadiness?{...copy(ready),modelBundleSha256:'0'.repeat(64)}:copy(ready);}});
+          checkSource:async options=>{sourceCalls++;assert.equal(options.env,env);if(readinessRace)liveReadinessRow.version++;if(badSource)throw new Error('synthetic source qualification required');},
+          ...(defaultReadiness?{}:{checkReadiness:async options=>{calls++;assert.equal(options.sourceHead,sourceHead);assert.equal(options.publicImplementationClosureSha256,identity.implementationClosureSha256);
+            return badReadiness?{...copy(ready),modelBundleSha256:'0'.repeat(64)}:copy(ready);}})});
       }
-      const completed=await invoke({lostReply:true});assert.equal(completed.completed,true);assert.equal(atomicWrites,1);
+      async function verifyDefaultReadinessMatrix(){
+        const beforePositive=atomicWrites,beforeReadinessCallbacks=calls;
+        const completed=readinessRolesOnly?await invoke({defaultReadiness:true}):initialDefaultCompletion;
+        assert.equal(completed.completed,true);if(readinessRolesOnly)assert.equal(atomicWrites,beforePositive+1);
+        assert.equal(completed.sourceHead,sourceHead);assert.equal(completed.readinessSourceHead,liveHead);
+        assert.equal(central.payload.sourceHead,sourceHead);assert.deepEqual(liveReadinessRow.payload,liveReadiness);
+        assert.deepEqual(row.payload,saved.row.payload,'newer private target and pinned public writer are unchanged');
+        assert(runtime.calls.some(x=>x.path.endsWith('/rpc/ravradar_integrated_cutover_contract')));
+        assert(runtime.calls.some(x=>x.path.endsWith('/rpc/ravradar_ravscore_checkpoint_contract')));
+        assert(runtime.calls.some(x=>x.path.includes('/functions/v1/trip-log')));
+        assert(runtime.calls.some(x=>x.path.includes('/functions/v1/ravradar-assistant')&&x.method==='POST'));
+        for(const options of [{missingOriginal:true},{targetChange:{publicImplementationClosureSha256:'0'.repeat(64)}},
+          {liveChange:{modelBundleSha256:'0'.repeat(64)}},{liveChange:{assistantBinding:{...liveReadiness.assistantBinding,knowledgeSha256:'0'.repeat(64)}}},
+          {liveChange:{sourceHead:'0'.repeat(40)}},{badDatabase:true},{readinessRace:true},...(readinessRolesOnly?[{badSource:true}]:[])]){
+          const before=atomicWrites;await assert.rejects(invoke({...options,defaultReadiness:true}));assert.equal(atomicWrites,before,'readiness/source/closure/backend drift cannot reach CAS');
+        }
+        assert.equal(calls,beforeReadinessCallbacks,'the normal default readiness seam is exercised without checkReadiness injection');
+        assert(readinessRolesOnly||defaultSourceNegativePassed,'the source-negative uses the normal default seam too');
+        assert.deepEqual(liveReadiness,targetReadiness.sourceHead===liveHead?targetReadiness:await readinessModule.buildIntegratedCutoverReadiness(liveHead,
+          {publicImplementationClosureSha256:identity.implementationClosureSha256}));
+        console.log('Normal default ordinary completion: immutable public producer + later authentic backend, full sealed DB/Trip/Assistant checks, unchanged raw contracts, final row reread and eight strict no-CAS negatives passed.');
+      }
+      if(readinessRolesOnly){await verifyDefaultReadinessMatrix();return;}
+      const completed=await invoke({lostReply:true,defaultReadiness:readinessRoles});initialDefaultCompletion=completed;assert.equal(completed.completed,true);assert.equal(atomicWrites,1);
       assert.equal(central.payload.sourceHead,sourceHead,'immutable producer is preserved; executor is distinct');
       assert.equal(central.payload.deploymentId,targetId);assert.equal(central.payload.datasetId,target.manifest.datasetId);
       const completedPointer=copy(row),completedCentral=copy(central),completedProfile=copy(profileRow),beforeWrites=atomicWrites;
       assert.deepEqual(row.payload,saved.row.payload,'central completion does not clear/retag Pages phase');
       const readyCalls=calls;assert.equal((await invoke({notStarted:true})).completed,false);assert.equal(calls,readyCalls);
       for(const options of [{oldPublic:true},{activeWriter:true},{pointerDrift:true},{centralDrift:true},{mainDrift:true},{badReadiness:true},{badSource:true}]){
-        await assert.rejects(invoke(options),undefined,JSON.stringify(options));assert.equal(atomicWrites,beforeWrites,'unsafe completion never writes central CAS');
+        await assert.rejects(invoke({...options,defaultReadiness:readinessRoles&&options.badSource===true}),undefined,JSON.stringify(options));
+        if(readinessRoles&&options.badSource)defaultSourceNegativePassed=true;assert.equal(atomicWrites,beforeWrites,'unsafe completion never writes central CAS');
       }
       await assert.rejects(invoke({uncommittedLoss:true}),/compare-and-swap lost/);assert.equal(atomicWrites,beforeWrites+1,'unknown CAS is never repeated');
       if(pagesWriteOnly){
@@ -2912,6 +3074,7 @@ function legacySchemaOnePointer(value, {
         assert.deepEqual(row.payload,saved.row.payload,'completion preserves the newer unpublished pointer and original Pages writer');
         for(const[name,bytes]of saved.objects)assert.deepEqual(objects.get(name),bytes);
         assert.deepEqual(removed,saved.removed,'completion cannot remove objects after legitimate publisher rotation');
+        await verifyDefaultReadinessMatrix();
         console.log('Normal pagesWrite-only completion: exact central source version, pinned target beyond current/previous, fresh proof/CAS, idempotence and strict negatives passed.');
         return;
       }
