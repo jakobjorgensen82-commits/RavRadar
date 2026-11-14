@@ -2424,6 +2424,15 @@ def source_provider_boundary_failure(error):
                         for relative, fixed in SOURCE_PROVIDER_HELPERS.items():
                             if token == str(ROOT / relative):
                                 helper = fixed
+                if helper == 'FORECAST':
+                    mode = command[3] if len(command) > 3 else None
+                    if ((len(command) == 4 and mode == '--current598-demand')
+                            or (len(command) == 5 and mode == '--current598-code598-demand')):
+                        helper = 'FORECAST_DEMAND'
+                    elif (len(command) == 3
+                            or len(command) == 4 and mode in ('--initial-h0', '--initial-h1', '--current598')
+                            or len(command) == 5 and mode == '--current598-code598'):
+                        helper = 'FORECAST_BUILD'
             if type(error) is subprocess.TimeoutExpired and type(error.timeout) in (int, float) and error.timeout in (30, 120):
                 timeout = int(error.timeout)
         reason = 'UNKNOWN'
@@ -2446,7 +2455,7 @@ def source_provider_boundary_valid(value):
                 or value['privatePayloadIncluded'] is not False
                 or value['exceptionType'] not in (*SOURCE_TERMINAL_EXCEPTION_TYPES, 'SUBPROCESS_TIMEOUT', 'SUBPROCESS_EXIT')
                 or value['reason'] not in (*SOURCE_PROVIDER_NEED_CODES, 'UNKNOWN')
-                or value['helper'] not in (*SOURCE_PROVIDER_HELPERS.values(), 'NONE', 'UNKNOWN')
+                or value['helper'] not in (*SOURCE_PROVIDER_HELPERS.values(), 'FORECAST_DEMAND', 'FORECAST_BUILD', 'NONE', 'UNKNOWN')
                 or value['timeoutSeconds'] is not None and (type(value['timeoutSeconds']) is not int or value['timeoutSeconds'] not in (30, 120))
                 or value['timeoutSeconds'] is not None and value['exceptionType'] != 'SUBPROCESS_TIMEOUT'
                 or value['reason'] != 'UNKNOWN' and value['exceptionType'] != 'RUNTIME_ERROR'
@@ -2588,7 +2597,8 @@ def current_prefix_provider_failure(own, root):
         if (len(found) == 2
                 and found[0]['callsite']['module'] == 'scripts/fixtures/source19-current-provider-forecast.mjs'
                 and found[1]['callsite']['module'] == 'scripts/fixtures/source19-current-native-providers.py'
-                and found[1]['exceptionType'] == 'SUBPROCESS_EXIT' and found[1]['helper'] == 'FORECAST'):
+                and found[1]['exceptionType'] == 'SUBPROCESS_EXIT'
+                and found[1]['helper'] in ('FORECAST', 'FORECAST_DEMAND', 'FORECAST_BUILD')):
             return found[0]
     except Exception:
         pass
@@ -2955,6 +2965,15 @@ process.exitCode=first.status;
     def test_actual_subprocess_exception_types_have_fixed_helper_and_timeout(self):
         for error, kind, helper, timeout in (
                 (subprocess.TimeoutExpired(['node', str(ROOT / 'scripts/fixtures/source19-current-provider-forecast.mjs'), 'PRIVATE_ARG'], 120),
+                    'SUBPROCESS_TIMEOUT', 'FORECAST_BUILD', 120),
+                (subprocess.TimeoutExpired(['node', str(ROOT / 'scripts/fixtures/source19-current-provider-forecast.mjs'),
+                    'PRIVATE_TARGET', '--current598-code598-demand', 'PRIVATE_ROOT'], 120),
+                    'SUBPROCESS_TIMEOUT', 'FORECAST_DEMAND', 120),
+                (subprocess.TimeoutExpired(['node', str(ROOT / 'scripts/fixtures/source19-current-provider-forecast.mjs'),
+                    'PRIVATE_TARGET', '--current598-code598', 'PRIVATE_ROOT'], 120),
+                    'SUBPROCESS_TIMEOUT', 'FORECAST_BUILD', 120),
+                (subprocess.TimeoutExpired(['node', str(ROOT / 'scripts/fixtures/source19-current-provider-forecast.mjs'),
+                    'PRIVATE_TARGET', '--PRIVATE_UNSUPPORTED', 'PRIVATE_ROOT'], 120),
                     'SUBPROCESS_TIMEOUT', 'FORECAST', 120),
                 (subprocess.CalledProcessError(-9, ['python', '-B', str(ROOT / 'scripts/build-current-operational-closure.py'), 'PRIVATE_ARG']),
                     'SUBPROCESS_EXIT', 'CLOSURE', None)):
@@ -3477,7 +3496,7 @@ CURRENT_NATIVE_CASE = 'current-source-native'
 CURRENT_NATIVE_CONTEXT = None
 CURRENT_NATIVE_INPUT_PROFILE = 'operative585'
 CURRENT598_INPUT_PROFILE_PATH = 'scripts/fixtures/source19-current598-input-profile.json'
-CURRENT598_INPUT_PROFILE_SHA256 = '45ef3e0d6fb7bc8ec340a0d13b285e32d3b0bb9cc7c2250f3ca65901ce624294'
+CURRENT598_INPUT_PROFILE_SHA256 = '8070203c43f0537cd234993cce323022dd004ee21797fae80c4e545ff9a3d494'
 
 CURRENT_NATIVE_POST64_MODULE = None
 def current_native_post64_module():

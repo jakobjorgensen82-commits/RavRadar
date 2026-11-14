@@ -545,3 +545,47 @@ test('record reader and writer process an actual forecast larger than V8 maximum
     maximumFileBytes: DMI_FORECAST_FILE_MAX_BYTES,
     note: 'synthetic capacity proof, not production coverage' }));
 });
+
+
+test('native provider indexed readback preserves full file validation and exact PART continuity', async t => {
+  const {readNativeCurrentPartContinuity}=await import('./fixtures/source19-current-provider-forecast.mjs');
+  const {packDmiPartContinuity,unpackDmiPartContinuity}=await import('./lib/dmi-part-continuity.mjs');
+  const folder=await fixture(t),file=path.join(folder,'native-forecast.json');
+  const at='2026-11-14T00:00:00.000Z';
+  const parts=[{partId:'LOCAL-A',waterPoint:[10,56]},{partId:'LOCAL-B',waterPoint:[11,57]}];
+  const records=new Map(parts.map(part=>[part.partId,{zoneId:'PART::'+part.partId,point:part.waterPoint,
+    hourly:Array.from({length:121},(_,i)=>({time:new Date(Date.parse(at)+i*3600000).toISOString(),
+      currentUMps:0.1,currentVMps:0.2}))}]));
+  const partContinuity=await packDmiPartContinuity(records,parts,at);
+  const zones=Object.fromEntries(Array.from({length:6},(_,i)=>['ZONE'+i,
+    {zoneId:'ZONE'+i,point:[10,56],hourly:[{time:at}],localParserPadding:'x'.repeat(128*1024)}]));
+  await writeDmiForecastFileAtomic(file,{schemaVersion:2,generatedAt:at,zones,partContinuity});
+  const original=await fs.readFile(file),beforeHash=crypto.createHash('sha256').update(original).digest('hex');
+  const started=performance.now(),old=await readDmiForecastFile(file),oldMillis=performance.now()-started;
+  let parentReads=0,entryReads=0;
+  const api={inspectDmiForecastFile,readDmiForecastRecord:async(index,descriptor)=>{
+    if([...index.zones.values()].includes(descriptor))parentReads++;else entryReads++;
+    return readDmiForecastRecord(index,descriptor);
+  }};
+  const nextStarted=performance.now(),next=await readNativeCurrentPartContinuity(file,api),nextMillis=performance.now()-nextStarted;
+  assert.deepEqual(next,old.partContinuity);assert.equal(parentReads,0);assert.equal(entryReads,parts.length);
+  for(const pack of [old.partContinuity,next]){
+    const restored=await unpackDmiPartContinuity(pack,parts,at);
+    for(const part of parts)assert.deepEqual(restored.get(part.partId).hourly,records.get(part.partId).hourly);
+  }
+  assert.equal(crypto.createHash('sha256').update(await fs.readFile(file)).digest('hex'),beforeHash);
+  console.log(JSON.stringify({kind:'NATIVE_FORECAST_INDEX_READBACK_LOCAL_PARITY',fixtureBytes:original.length,
+    parentCount:Object.keys(zones).length,partCount:parts.length,oldMillis,nextMillis,
+    avoidedParentRecordReads:Object.keys(zones).length,exactContinuity:true,wholeFileUnchanged:true}));
+  // A malformed UNUSED parent must still fail in both paths: no input is hidden.
+  const duplicate=Buffer.from(original.toString('utf8').replace('"zoneId":"ZONE0"','"zoneId":"ZONE0","zoneId":"ZONE0"'));
+  await fs.writeFile(file,duplicate);
+  for(const read of [()=>readDmiForecastFile(file),()=>readNativeCurrentPartContinuity(file,api)])
+    await assert.rejects(read,/DMI_FORECAST_FILE_DUPLICATE_KEY/);
+  // A changed file after the complete index scan is not an authorized record source.
+  await fs.writeFile(file,original);
+  const changedApi={...api,inspectDmiForecastFile:async name=>{
+    const index=await inspectDmiForecastFile(name);await fs.appendFile(name,' ');return index;
+  }};
+  await assert.rejects(readNativeCurrentPartContinuity(file,changedApi),/DMI_FORECAST_FILE_CHANGED/);
+});

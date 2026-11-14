@@ -12,14 +12,14 @@ import {bulkZoneToForecastRecord,buildPrivateDmiRecoveryRecord} from '../lib/pri
 import {dmiExpectedIdentityForPart,verifiedIntegratedPartHourly,
   assertDmiPartHourlyGridSamplingApplicable} from '../lib/ravscore-production-adapters.mjs';
 import {packDmiPartContinuity,unpackDmiPartContinuity} from '../lib/dmi-part-continuity.mjs';
-import {writeDmiForecastFileAtomic,readDmiForecastFile} from '../lib/dmi-forecast-file.mjs';
+import {writeDmiForecastFileAtomic,inspectDmiForecastFile,readDmiForecastRecord} from '../lib/dmi-forecast-file.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const CODE598_HEAD='bd9cf518fe798ddea45d2b835f324f6e2bea06fc';
 const CODE598_TREE='2f71c562eea774ca03996802f83bdad7cccd43cc';
 const LEGACY_API=Object.freeze({readDmiBulkDocument,bulkZoneToForecastRecord,buildPrivateDmiRecoveryRecord,
   dmiExpectedIdentityForPart,verifiedIntegratedPartHourly,assertDmiPartHourlyGridSamplingApplicable,
-  packDmiPartContinuity,unpackDmiPartContinuity,writeDmiForecastFileAtomic,readDmiForecastFile});
+  packDmiPartContinuity,unpackDmiPartContinuity,writeDmiForecastFileAtomic,inspectDmiForecastFile,readDmiForecastRecord});
 const SOURCE_NATIVE_FORECAST_NORMAL_MODULES = Object.freeze({
   "BULK_STORAGE": "scripts/lib/dmi-bulk-storage.mjs",
   "PRIVATE_RECOVERY": "scripts/lib/private-dmi-recovery-record.mjs",
@@ -125,12 +125,21 @@ export async function prepareNativeCurrentForecast(target,initialPhase=null,code
   assert.equal(parts.length,673);assert.equal(qualifiedNativeRows,673*121);
   const partContinuity=await api.packDmiPartContinuity(records,parts,at);
   await api.writeDmiForecastFileAtomic(file,{schemaVersion:2,generatedAt:at,zones,partContinuity});
-  const readback=await api.readDmiForecastFile(file),restored=await api.unpackDmiPartContinuity(readback.partContinuity,parts,at);
+  const readback=await readNativeCurrentPartContinuity(file,api),restored=await api.unpackDmiPartContinuity(readback,parts,at);
   for(const part of parts)assert.deepEqual(restored.get(part.partId).hourly,records.get(part.partId).hourly);
   return {parentRecords:Object.keys(zones).length,partCount:parts.length,qualifiedCurrentRows:qualifiedNativeRows,
     otherWeatherComplete:false,scoreProduced:false,actionInvoked:false,productionProof:false,
     ...(current598?{profile:'current598-preparation',qualifiedPrivateHistoryRows,historyProducedByNormalDecoder:true,
       fullRuntimeProduced:false,sourceOwnerIssued:false}: {})};
+}
+// The normal index reader validates the ENTIRE file, including every parent
+// record. Only continuity is consumed here; do not parse/retain all parents again.
+export async function readNativeCurrentPartContinuity(file,api=LEGACY_API){
+  const index=await api.inspectDmiForecastFile(file);assert(index.continuity);
+  const entries=[];
+  for(const descriptor of index.continuity.entries)
+    entries.push(await api.readDmiForecastRecord(index,descriptor));
+  return {...index.continuity.metadata,entries};
 }
 // One actual normal acquisition-demand projection, not a selected parent,
 // state/origin/READY writer or an alternate positive attestation.

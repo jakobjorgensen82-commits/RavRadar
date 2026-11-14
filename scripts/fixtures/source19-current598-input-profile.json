@@ -40,8 +40,8 @@
     },
     {
       "path": "scripts/fixtures/source19-current-provider-forecast.mjs",
-      "bytes": 13743,
-      "sha256": "af4bb89286cecdfcfca99b72544526a4c645144a950197a46245223039a96528",
+      "bytes": 14298,
+      "sha256": "1bca6b6350f3a56f3e62026043ede7ca30d0bc991bd18ca435017e88d005aed8",
       "source": "THIS_SAME_ACTUAL_COMMITTED_CANDIDATE"
     },
     {
