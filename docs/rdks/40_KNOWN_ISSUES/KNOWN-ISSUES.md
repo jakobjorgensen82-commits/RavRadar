@@ -1,6 +1,8 @@
-## 14. november — autentisk arkivprøve stopper i DATA-gendannelse
+## 14. november — arkivets DATA stopper fortsat ved en manglende relation
 
-Den efterfølgende autentiske prøve har bestået kilde- og rollekontrollen uden manglende roller og er nået videre til DATA-gendannelse. Den stopper med SQLSTATE 42P01 for en manglende relation; årsagen undersøges. Det ejede lokale Docker-mål er lukket. Fuld indholds-/Auth-gendannelse, autonom restorekvittering og Free-klarhed er ikke bestået. De tidligere GRANT_ROLE/42704-afslag bevares som historik og beskriver ikke længere prøvens aktuelle første stop. Original SQL og alle bevaringskrav består.
+Den autentiske prøve har bestået kilde- og rollekontrollen uden manglende roller og er nået til DATA-gendannelse, men stopper med SQLSTATE 42P01 for en manglende relation. Den konkrete relation og årsagen er fortsat uafklaret. En ny kildekandidat indsamler alle COPY- og setval-referencer fra begge verificerede datafiler og kontrollerer relationernes tilstedeværelse og type efter den oprindelige DDL, før hver fases DATA i samme transaktion. Rapporter viser kun faste kategorier og tællere; originale SQL-filer, roller og grants ændres ikke.
+
+Den lokale protokolprøve og den eksisterende syntetiske kalder er forberedt; faktisk PostgreSQL 17, fuld arkiv-/Auth-accept og den konkrete manglende relation er ikke bevist. Storage forbliver deaktiveret. Ingen original SQL, rettighed eller produktionsdata ændres af diagnosen.
 
 ## 14. november — varig adminarkivretention skal stadig have faktisk overgang og pladsbevis
 

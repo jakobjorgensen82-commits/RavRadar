@@ -4,7 +4,7 @@
 
 Den obligatoriske startlæsning består af de korte aktive indgange øverst i [Codex-starten](../ai/CODEX_START_HERE.md), denne fil, [arbejdsreglerne](01_AI_OPERATING_RULES.md), [aktuel sandhed](90_INDEX/CURRENT_TRUTH.md) og [implementeringsstatus](90_INDEX/IMPLEMENTATION_STATUS.md). Daterede suffixer slås kun op efter konkret behov. De skal ikke genlæses som nye instruktioner ved hver genoptagelse.
 
-Kildehierarkiet er: ejerens aktuelle instruktion og gældende mål; aktive RDKS-krav og beslutninger; verificeret aktuel kodeadfærd; håndbog; changelog; historiske chats og statusnotater. Kodeadfærd alene ophæver ikke et aktivt krav. Ved en reel konflikt skal forskellen afklares; en gammel overskrift med ordet »aktuel« afgør den ikke.
+Kildehierarkiet er: ejerens aktuelle instruktion og gældende mål; aktive RDKS-krav og beslutninger; verificeret aktuel kodeadfærd; håndbog; changelog; historiske chats og statusnotater. Kodeadfærd alene ophæver ikke et aktivt krav. Gamle samlede Source-pakker er udgået som leveringsenheder; målkrav læses mod aktuel main, og kun konkrete aktuelle kodehuller giver nye ændringer. Ved en reel konflikt skal forskellen afklares; en gammel overskrift med ordet »aktuel« afgør den ikke.
 
 Til den konkrete opgave læses relevante dele af [aktive krav](20_REQUIREMENTS/ACTIVE-REQUIREMENTS.md), [roadmap](90_INDEX/ACTIVE_ROADMAP.md) og de relevante beslutninger. Brug især [DEC-0302](10_DECISIONS/DEC-0302-CHANGE-BASED-VALIDATION-AND-CONTROL-CLEANUP.md) om ændringsbaseret kontrol, [DEC-0045](10_DECISIONS/DEC-0045-COST-AWARE-TEST-MATRIX.md) om omfang og reelt genbrug og [DEC-0294](10_DECISIONS/DEC-0294-PAGES-FORECAST-SHARING-AND-SIMPLY-CNAME.md) ved prognosedeling. Gennemgå den konkrete kode og relevante håndbogsafsnit før ændring.
 

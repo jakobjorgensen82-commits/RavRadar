@@ -1,3 +1,11 @@
+## 14. november — samlet relationsdiagnose og normal PostgreSQL-kalder
+
+Den autentiske prøve har bestået kilde- og rollekontrollen uden manglende roller og er nået til DATA-gendannelse, men stopper med SQLSTATE 42P01 for en manglende relation. Den konkrete relation og årsagen er fortsat uafklaret. En ny kildekandidat indsamler alle COPY- og setval-referencer fra begge verificerede datafiler og kontrollerer relationernes tilstedeværelse og type efter den oprindelige DDL, før hver fases DATA i samme transaktion. Rapporter viser kun faste kategorier og tællere; originale SQL-filer, roller og grants ændres ikke.
+
+Den lokale protokolprøve og den eksisterende syntetiske kalder er forberedt; faktisk PostgreSQL 17, fuld arkiv-/Auth-accept og den konkrete manglende relation er ikke bevist. Storage forbliver deaktiveret. Ingen original SQL, rettighed eller produktionsdata ændres af diagnosen.
+
+Gamle samlede Source-pakker er udgået som leveringsenheder. Målkrav verificeres på aktuel main; en ny Source-overgang er ikke et selvstændigt slutmål. Kun konkrete aktuelle kodehuller begrunder nye ændringer. Relevante krav til numerik, originaler, adgang og faktiske beviser består. Alle fem mål og ukendte beviser bevares.
+
 ## 14. november — afgrænset varig adminarkivretention og genoptagelse
 
 Kildekandidat til de tre dokumentkeys: bevar hele legacy-reserven, og behold ti nye arkivversioner pr. key efter en udtrykkelig overgang. Private forberedelsesmetadata bindes før dataupload, så en kendt halvleverance kan genoptages uden generel orphan-adoption. To kompakte create-only pegerækker skaber ingen automatisk scratchhistorik. Uafklaret første metadata-PUT bevarer sin positive reservation uden genforsøg; et snævert oprydningsvidne tåler afbrydelse efter sletning. Kun positivt udløbet egen V3-locatormetadata kan ryddes præcist. Current/top5, nødvendige referencer, gamle originaler, øvrige keys, score, vejr, model, migrations-SQL og adgang bevares.
