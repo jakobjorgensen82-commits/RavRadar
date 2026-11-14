@@ -9,7 +9,7 @@
       "chapter": "89.348",
       "title": "DMI: tom vedligeholdelse uden falsk parserpause",
       "summary": "Tomme vedligeholdelsesture må ikke lukke DMI i et døgn; ægte parserfejl forbliver blokeret.",
-      "body": "<p>En vedligeholdelsestur, som ikke gennemgår nogen GRIB-fil, registreres som nul fremskridt i stedet for en parserfejl. Den gamle fejlklassifikation kan genvurderes én gang gennem det normale budget. En faktisk ugenkendelig fil får fortsat den normale 24-timers blokering, som bevares gennem gemning, genlæsning og backfill. Rettelsen ændrer ikke dekodning, RAW-grænser eller kildeprioritet. Den er kildeforberedt; faktisk DMI-hentning og gemning skal stadig verificeres i næste almindelige vejrkørsel.</p>"
+      "body": "<div class=\"reader-guide\"><p>Dette afsnit forklarer, hvordan tom vedligeholdelse holdes adskilt fra en reel fejl i DMI-data.</p></div><p>En vedligeholdelsestur, som ikke gennemgår nogen GRIB-fil, registreres som nul fremskridt i stedet for en parserfejl. Den gamle fejlklassifikation kan genvurderes én gang gennem det normale budget. En faktisk ugenkendelig fil får fortsat den normale 24-timers blokering, som bevares gennem gemning, genlæsning og backfill. Rettelsen ændrer ikke dekodning, RAW-grænser eller kildeprioritet. Den er kildeforberedt; faktisk DMI-hentning og gemning skal stadig verificeres i næste almindelige vejrkørsel.</p>"
     },
     {
       "id": "supabase-database-backup-autonomous-retention-2026-11-13",
