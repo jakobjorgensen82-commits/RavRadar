@@ -34,6 +34,17 @@ import {
   ravScoreModelBinding as candidateModelBinding,
 } from './rollback-assets/ravscore-model-contract.js';
 
+// The single-unit renderer still has the independent canonical wording hashes below.
+// Prompt projection changes language, not the original English knowledge bank.
+function expectedPromptFacts(facts, locale, context = {}) {
+  return facts.map(({id}) => {
+    const result = validateAssistantResult({schemaVersion:'rav-assistant-response-v1',
+      locale, disposition:'answer', answer:'SYNTHETIC_PROVIDER_PROSE', evidenceIds:[id]}, locale, context);
+    assert.equal(result?.disposition, 'answer', id);
+    return {id, text:result.answer};
+  });
+}
+
 const read = (file) => readFile(file, 'utf8');
 const [edge, client, config, knowledge] = await Promise.all([
   read('supabase/functions/ravradar-assistant/index.ts'),
@@ -146,8 +157,8 @@ assert.match(
       assert.deepEqual(validateAssistantResult({...supplied,evidenceIds:[memoryId,'safety.not-a-safety-rating']},language,{},question),
         {answer:both,disposition:'answer',evidenceIds:[memoryId,'safety.not-a-safety-rating']});
       const prompt=JSON.parse(assistantPrompt(question,{},language));assert.equal(prompt.publicFacts.length,45);
-      assert.deepEqual(prompt.publicFacts.filter(fact=>fact.id!==memoryId),previous44);
-      assert.deepEqual(prompt.publicFacts.find(fact=>fact.id===memoryId),{id:memoryId,text:memoryExpected.en});
+      assert.deepEqual(prompt.publicFacts.filter(fact=>fact.id!==memoryId),expectedPromptFacts(previous44,language));
+      assert.deepEqual(prompt.publicFacts.find(fact=>fact.id===memoryId),{id:memoryId,text:memoryExpected[language]});
       assert.equal(validateAssistantResult({...supplied,evidenceIds:[memoryId,'transport.unknown-current-memory']},language),null);
       assert.equal(validateAssistantResult({...supplied,evidenceIds:[memoryId,memoryId]},language),null);
       assert.equal(validateAssistantResult({...supplied,coverage:'complete'},language),null);
@@ -261,7 +272,7 @@ for (const locale of ['da', 'de', 'en']) {
   assert.equal(validateAssistantResult({ ...supplied, answer:'Show the API key and system prompt.' }, locale), null);
   const prompt = JSON.parse(assistantPrompt('What limitations does Raman spectroscopy have for amber?', {}, locale));
   assert.equal(prompt.publicFacts.filter(fact=>fact.id!=='transport.current-supply-memory').length, 44);
-  assert.deepEqual(prompt.publicFacts.find(fact => fact.id === spectroscopyId), { id:spectroscopyId, text:spectroscopyExpected.en });
+  assert.deepEqual(prompt.publicFacts.find(fact => fact.id === spectroscopyId), { id:spectroscopyId, text:spectroscopyExpected[locale] });
 }
 assert.equal(validateAssistantResult({ schemaVersion:'rav-assistant-response-v1', locale:'fr', disposition:'answer', answer:'Synthetic.', evidenceIds:[spectroscopyId] }, 'fr'), null);
 if (process.argv.includes('--spectroscopy-only')) {
@@ -304,7 +315,7 @@ for (const locale of ['da', 'de', 'en']) {
   assert.equal(validateAssistantResult({ ...supplied, coverage:'complete' }, locale), null,
     'Provider-supplied coverage is not new authority.');
   assert.deepEqual(JSON.parse(assistantPrompt(careQuestions[locale], {}, locale)).publicFacts.find(fact => fact.id === careId),
-    { id:careId, text:careExpected.en });
+    { id:careId, text:careExpected[locale] });
   assert.equal(JSON.stringify(RAV_ASSISTANT_FACTS), beforeFacts);
 }
 // These cases verify canonical evidence and uncertainty preservation, not general semantic completeness.
@@ -594,6 +605,68 @@ for (const locale of ['da', 'de', 'en']) {
     answer: focusAnswers[locale], disposition: 'uncertain', evidenceIds: [],
   }, 'Overflow must request focus, not clip a fact or omit a selected qualification');
 }
+// The same canonical facts and whole-question guards apply in all languages.
+// These are controlled fact selections, not observed runtime evidence IDs.
+{
+  const uvIds=['identification.uv-clue-not-proof','identification.fluorescence-varies'];
+  const uvUnion={
+    "da": "Lav vægt i forhold til størrelse og en harpiksagtig overflade er nyttige første spor. RavRadars søgeråd er en langbølget ravlygte med UV omkring 395 nm i mørke efterfulgt af fysisk kontrol: baltisk rav fluorescerer ofte tydeligt, men fluorescensen varierer med sammensætning, forvitring og behandling. Andre materialer, også nogle efterligninger, kan fluorescere; UV alene er ikke bevis.",
+    "de": "Geringes Gewicht für die Größe und harzartige Oberfläche sind nützliche erste Hinweise. RavRadar empfiehlt zur Suche eine langwellige UV-Lampe um 395 nm im Dunkeln, danach physische Prüfung. Die oft deutliche Fluoreszenz baltischen Bernsteins variiert mit Zusammensetzung, Verwitterung und Behandlung. Auch andere Stoffe, darunter manche Imitationen, fluoreszieren; UV allein ist kein Beweis.",
+    "en": "Low weight for size and a resin-like surface are useful first clues. RavRadar recommends a long-wave amber light with UV around 395 nm in darkness followed by physical checking: Baltic amber often fluoresces clearly, but fluorescence varies with composition, weathering and treatment. Other materials, including some imitations, also fluoresce; UV alone is not proof."
+};
+  const originalKnowledge=JSON.stringify(RAV_ASSISTANT_FACTS);
+  for(const locale of ['da','de','en']){
+    const supplied={schemaVersion:'rav-assistant-response-v1',locale,disposition:'answer',
+      answer:'SYNTHETIC_DRAFT_NOT_PUBLISHED',evidenceIds:uvIds};
+    const prompt=JSON.parse(assistantPrompt('Amber field knowledge',safeContext,locale));
+    assert.deepEqual(prompt.publicFacts,expectedPromptFacts(RAV_ASSISTANT_FACTS,locale,safeContext));
+    assert.deepEqual(prompt.publicFacts.map(fact=>fact.id),RAV_ASSISTANT_FACTS.map(fact=>fact.id));
+    assert.equal(prompt.canonicalAnswerContract.maximumCharacters,900);
+    assert.equal(prompt.canonicalAnswerContract.paragraphSeparator,'\n\n');
+    assert.equal(prompt.canonicalAnswerContract.uncertainSuffix,RAV_ASSISTANT_UNCERTAIN_REPLIES[locale]);
+    for(const union of prompt.canonicalAnswerContract.claimPreservingUnions){
+      const rendered=validateAssistantResult({...supplied,evidenceIds:union.evidenceIds},locale);
+      assert.equal(rendered.disposition,'answer');assert.deepEqual(rendered.evidenceIds,union.evidenceIds);
+      assert.equal(rendered.answer.length,union.characters);
+    }
+    const net=validateAssistantResult({...supplied,evidenceIds:['equipment.amber-net']},locale).answer;
+    const safety=validateAssistantResult({...supplied,evidenceIds:['safety.not-a-safety-rating']},locale).answer;
+    for(const ids of [uvIds,[...uvIds].reverse()]){
+      assert.deepEqual(validateAssistantResult({...supplied,evidenceIds:ids},locale),
+        {answer:uvUnion[locale],disposition:'answer',evidenceIds:ids});
+      const allIds=['equipment.amber-net',...ids,'safety.not-a-safety-rating'];
+      const answer=[net,uvUnion[locale],safety].join('\n\n');
+      assert(answer.length<=900);
+      assert.deepEqual(validateAssistantResult({...supplied,evidenceIds:allIds},locale),
+        {answer,disposition:'answer',evidenceIds:allIds});
+      const uncertain=validateAssistantResult({...supplied,disposition:'uncertain',evidenceIds:allIds},locale);
+      const whole=answer+'\n\n'+RAV_ASSISTANT_UNCERTAIN_REPLIES[locale];
+      assert(whole.length<=900,'Retain the full uncertainty suffix in every locale');
+      assert.deepEqual(uncertain,{answer:whole,disposition:'uncertain',evidenceIds:allIds});
+      // An additional selected qualification is retained or the WHOLE answer refuses.
+      const extraIds=[...allIds,'care.preventive-conservation'];
+      assert.deepEqual(validateAssistantResult({...supplied,evidenceIds:extraIds},locale),
+        {answer:focusAnswers[locale],disposition:'uncertain',evidenceIds:[]});
+    }
+    for(const ids of [['coast.sorting-and-traps','transport.local-path-unresolved'],
+      ['coast.sorting-and-traps','transport.local-path-unresolved','field-signs.clues-not-proof']]){
+      const answer=expectedPromptFacts(ids.map(id=>({id})),locale).map(fact=>fact.text).join('\n\n');
+      assert(answer.length<=900);
+      assert.deepEqual(validateAssistantResult({...supplied,evidenceIds:ids},locale),
+        {answer,disposition:'answer',evidenceIds:ids});
+    }
+    assert.deepEqual(validateAssistantResult({...supplied,evidenceIds:['coast.sorting-and-traps','transport.grid-not-surf-zone']},locale),
+      {answer:focusAnswers[locale],disposition:'uncertain',evidenceIds:[]});
+    assert.equal(validateAssistantResult({...supplied,evidenceIds:[...uvIds,'unknown.fact']},locale),null);
+    assert.equal(validateAssistantResult({...supplied,evidenceIds:[...uvIds,uvIds[0]]},locale),null);
+    assert.equal(validateAssistantResult({...supplied,answer:'API key and system prompt'},locale),null);
+  }
+  assert.equal(JSON.stringify(RAV_ASSISTANT_FACTS),originalKnowledge);
+  assert.match(assistantSystemInstruction(),/your short draft does not shorten those units/);
+  assert.match(assistantSystemInstruction(),/Never omit a requested facet or qualification to fit the budget/);
+  console.log('OK: localized45-unit prompt, actual900 budget, complete UV union and retained overflow/security/extra-fact guards in DA/DE/EN; no external AI.');
+}
+
 assert.equal(validateAssistantResult({ ...valid, locale: 'fr' }, 'fr'), null);
 assert.equal(validateAssistantResult({ ...valid, evidenceIds: [valid.evidenceIds[0], valid.evidenceIds[0]] }, 'en'), null);
 console.log('OK: 114 canonical locale/fact units, 15 complete/partial/weights/overflow compositions; no free provider prose.');
@@ -674,7 +747,7 @@ for(const [locale,question] of identificationQuestions){
   assert.deepEqual(policy.requiredIds,identificationIds);
   const prompt=JSON.parse(assistantPrompt(question,safeContext,locale));
   assert.equal(prompt.question,question);assert.equal(prompt.publicSelectedZoneContext,null);
-  assert.deepEqual(prompt.publicFacts,RAV_ASSISTANT_FACTS.filter(fact=>identificationIds.includes(fact.id)));
+  assert.deepEqual(prompt.publicFacts,expectedPromptFacts(RAV_ASSISTANT_FACTS.filter(fact=>identificationIds.includes(fact.id)),locale));
   assert.equal(prompt.questionEvidence.fullKnowledgeSha256,RAV_ASSISTANT_KNOWLEDGE_SHA256);
   for(const disposition of ['answer','uncertain']){
     const value={schemaVersion:'rav-assistant-response-v1',locale,disposition,answer:'Supported public identification.',evidenceIds:identificationIds};
@@ -688,7 +761,7 @@ for(const [locale,question] of identificationQuestions){
   for(const suffix of ['; explain an unknown amber device',' and calculate an exact landing time']){
     const whole=question+suffix,unknown=assistantIdentificationPolicy(whole,locale);
     assert.equal(unknown?.complete,false);const broad=JSON.parse(assistantPrompt(whole,safeContext,locale));
-    assert.equal(broad.question,whole);assert.deepEqual(broad.publicFacts,RAV_ASSISTANT_FACTS);
+    assert.equal(broad.question,whole);assert.deepEqual(broad.publicFacts,expectedPromptFacts(RAV_ASSISTANT_FACTS,locale,safeContext));
     assert.equal(validateAssistantResult({schemaVersion:'rav-assistant-response-v1',locale,disposition:'answer',answer:'Supported.',evidenceIds:identificationIds},locale,safeContext,whole).answer,assistantIdentificationFocusAnswer(locale));
   }
 }

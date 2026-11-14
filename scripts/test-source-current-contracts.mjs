@@ -89,7 +89,8 @@ function assertAssistantEdgePlanScope({baselineCommit,baselineTree,rewriteTree,m
   const files=['supabase/functions/ravradar-assistant/index.ts',
     'scripts/test-rav-assistant-edge-cloudflare-4.0.290.mjs',
     'scripts/test-rav-assistant-main-edge-roundtrip.mjs',
-    'scripts/test-fixed-assistant-failure-log-20261101.mjs'];
+    'scripts/test-fixed-assistant-failure-log-20261101.mjs',
+    'supabase/functions/_shared/rav-assistant-contract.ts'];
   const commands=['node scripts/test-rav-assistant-edge-cloudflare-4.0.290.mjs',
     'node scripts/test-rav-assistant-main-edge-roundtrip.mjs',
     'node scripts/test-fixed-assistant-failure-log-20261101.mjs'];
@@ -131,6 +132,12 @@ function assertAssistantEdgePlanScope({baselineCommit,baselineTree,rewriteTree,m
       const selected=select(file,[files[0],file]);assert.equal(selected.selection,'FULL');
       assert.deepEqual(selected.reasonCodes,['CURRENT_UNCLASSIFIED_PATH']);assert.deepEqual(selected.commands,[]);
     }
+    const protectedInput=select('assistant-contract-with-model-input',
+      ['supabase/functions/_shared/rav-assistant-contract.ts','config.js']);
+    assert.equal(protectedInput.selection,'FULL');assert.deepEqual(protectedInput.commands,[]);
+    assert.deepEqual(protectedInput.reasonCodes,['CURRENT_PROTECTED_INPUT_CHANGED']);
+    for(const qualification of ['ACTUAL_POSTGRES','ACTUAL_MODEL_C','ACTUAL_MODEL_I'])
+      assert(protectedInput.requiredQualifications.includes(qualification));
     const shared=select('shared-gateway',['supabase/functions/_shared/public-gateway.ts']);
     assert.equal(shared.selection,'FULL');assert.deepEqual(shared.commands,[]);
     assert.equal(shared.areas.assistantEdge,undefined);

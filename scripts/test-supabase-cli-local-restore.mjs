@@ -526,7 +526,7 @@ async function stopProject(c,p){
   }
   p.closed=true;return true;
 }
-function config(id,target){return `project_id = "${id}"
+function config(id,target,archive=false){return `project_id = "${id}"
 [api]
 enabled = true
 port = 54321
@@ -551,7 +551,8 @@ enabled = false
 [storage]
 enabled = false
 [realtime]
-enabled = false
+# The CLI runs this one-shot bootstrap even when the persistent service is excluded.
+enabled = ${target&&archive}
 [studio]
 enabled = false
 [analytics]
@@ -564,7 +565,7 @@ async function startProject(c,p){
   const before=(await command(c,'NETWORK_ABSENCE','docker',['network','ls','-q','--filter','name=^'+p.network+'$'])).toString().trim();
   need(!before,'NETWORK_ALREADY_EXISTS');
   await command(c,'INIT_'+p.side,'supabase',['init','--yes'],{cwd:p.dir,maxMs:30_000});
-  await fs.writeFile(path.join(p.dir,'supabase/config.toml'),config(p.id,p.side==='B'),{mode:0o600});
+  await fs.writeFile(path.join(p.dir,'supabase/config.toml'),config(p.id,p.side==='B',c.archive===true),{mode:0o600});
   p.networkCreateAttempted=true;
   const raw=await command(c,'CREATE_NETWORK_'+p.side,'docker',['network','create','--driver','bridge',
     ...(c.archive?['--internal']:[]),
@@ -1009,6 +1010,15 @@ async function selfTest(){
       State:{Running:true,Health:{Status:'healthy'}}};
     return {c,p,info};
   };
+  test('only archive targets enable normal realtime bootstrap while the persistent service remains excluded',()=>{
+    const realtimeEnabled=text=>/^enabled = true$/m.test(text.split('[realtime]\n')[1].split('\n[')[0]);
+    assert.equal(realtimeEnabled(config('rr_restore_probe',true,true)),true);
+    for(const [target,archive]of [[false,false],[true,false],[false,true]])
+      assert.equal(realtimeEnabled(config('rr_restore_probe',target,archive)),false);
+    assert.equal(realtimeEnabled(config('rr_restore_probe',true)),false);
+    assert(EXCLUDE.split(',').includes('realtime'));
+    assert.match(startProject.toString(),/config\(p\.id,p\.side==='B',c\.archive===true\)/);
+  });
   test('reserved system role preflight reads the owned target and stops before archive SQL on missing roles',async()=>{
     const target=['supabase_admin','supabase_auth_admin'],index='a'.repeat(64),root=path.join(os.tmpdir(),'synthetic-role-audit');
     const c={root,deadline:Date.now()+10_000,archive:true},calls=[];

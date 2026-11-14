@@ -1,5 +1,20 @@
 # DEC-0255 – Privat produktionscache til R2 med målt Free-budget
 
+## Tillæg 14. november 2026 — leverandørens engangsinitialisering af arkivmålet
+
+**Status: afgrænset kildekandidat; faktisk arkiv-/Auth-accept fortsat åben.**
+
+Den tidlige autentificerede rollekontrol har påvist en reel forskel mellem arkivets krævede systemroller og det isolerede mål. Den afgrænsede rettelse bruger derfor leverandørens normale initialisering af målet; den ændrer ikke parseren eller arkivets rolle- og adgangsregler.
+
+Kun archive-målets midlertidige konfiguration aktiverer Realtime-engangsinitialisering gennem den allerede pinnede Supabase CLI 2.117.0. Realtime forbliver på listen over udelukkede vedvarende tjenester. CLI'ens eget Realtime 2.130.0-job udfører de originale leverandørmigrationer på projektets eksisterende interne netværk. Derefter skal det præcise vedvarende sæt fortsat være database, gateway og Auth. Den syntetiske standardvej er uændret.
+
+Der tilføjes ingen egen CREATE ROLE, ændrede grants eller SQL, som springes over. Efter initialiseringen læses målets faktiske systemroller igen af den samme generiske kontrol. Enhver fortsat manglende krævet rolle stopper stadig før de store SQL-filer. De eksisterende kilde-, mål-, låse-, billedidentitets-, netværks-, tids- og oprydningskrav bevares.
+
+Den normale lokale egenprøve består og kontrollerer konfigurationen og de bevarede afslag. Det er ikke et bevis for faktisk arkiv-/Auth-gendannelse. Fuld indholds- og dubletparitet, Auth-funktion og ejet oprydning skal fortsat bestå på det autentificerede arkiv før en stærk restorekvittering. Automatisk rotation, databaseoprydning og Free-overgang får ingen ny autoritet. Version 4.0.598, numerisk model, migrationer, score og vejr bevares.
+
+Kildegrundlag på de faktisk pinnede versioner: [Supabase CLI 2.117.0: servicebootstrap uafhængigt af --exclude](https://github.com/supabase/cli/blob/21db855916f2c2b12f61cde923a27094b8528b23/apps/cli/src/command-internal/db-bootstrap/bootstrap-config.ts), [Supabase CLI 2.117.0: engangsjob og isoleret projektnetværk](https://github.com/supabase/cli/blob/21db855916f2c2b12f61cde923a27094b8528b23/apps/cli/src/command-internal/db-bootstrap/db-setup.ts), [Realtime 2.130.0: original rolleinitialisering](https://github.com/supabase/realtime/blob/e9e98286418485250d2935e5288bd1673806822b/lib/realtime/tenants/repo/migrations/20240401105812_create_realtime_admin_and_move_ownership.ex).
+
+
 ## Tillæg 13. november 2026 — begrænset GitHub-support uden projektkopi
 
 Den automatiske supportpakke gemmer kun de eksisterende runoplysninger: repository, kørselsnummer, præcis Git-commit, ref og dannelsestidspunkt. En lille formatbeskrivelse henviser til den samme commit og markerer tydeligt, at pakken ikke er et projektsnapshot eller en gendannelsespakke. Begge metadatafiler må tilsammen højst fylde 8 KiB før ZIP-indpakning.

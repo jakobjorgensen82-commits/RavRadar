@@ -1,3 +1,13 @@
+## 14. november — normal leverandørbootstrap før autentisk arkivgendannelse
+
+Kun archive-målets midlertidige konfiguration aktiverer den pinnede CLI's normale Realtime-engangsinitialisering. Den vedvarende Realtime-tjeneste forbliver udelukket, og de tre normale tjenester, syntetisk standardadfærd, generisk rolleaudit og originale SQL-/ACL-regler bevares. Der indføres ingen egen rolleoprettelse eller SQL-udeladelse. Den normale lokale egenprøve består; præcis kildekvalifikation og faktisk fuld arkiv-/Auth-gendannelse er fortsat særskilte krav. Ingen rotation, beskæring, produktionsrestore eller Free-overgang aktiveres. Version 4.0.598 og numeriske bindinger bevares. Se håndbog 89.345.
+
+## 14. november — kanoniske assistentsvar med samme sprog og længdebudget
+
+Den lokale kandidat viser svarmodellen de faktiske komplette kanoniske tekster på DA/DE/EN samt det eksisterende samlede budget på 900 tegn, afsnitsadskillelse, usikkerhedstekst og gennemgåede sammenfatningers tegnpris. To eksisterende UV-fakta får en kortere fælles formulering med alle påstande og forbehold bevaret; begge valgte id'er, de 45 originalfakta og K-bindingen består. Et for langt helt svar afvises stadig uden at klippe eller fjerne valgte fakta.
+
+Den ene faktiske fælles assistentkontrakt får naturligt ansvar i den eksisterende assistantEdge-gruppe med samme tre hele normale mål. Andre fælles moduler og ukendte eller beskyttede input får ingen undtagelse; frisk kontrolreview og normal kildekvalifikation består. Lokale syntetiske mål er ikke ekstern AI-accept. Valgte id'er i de observerede browserhændelser er ukendte, og større tysk promptinput har en uafprøvet tidsvirkning. Den særskilte C/I-bundne komma-routing ændres ikke. Version 4.0.598, model, SQL, 7/8-sekundersfrister, kvoter og providerparametre bevares. Se DEC-0091, DEC-0302 og håndbog 89.279.
+
 ## 14. november — faste private assistenttider og præcist kildeansvar
 
 En lokal observationskandidat føjer faste monotone tal for afsluttet kvoteventetid og lokalt providerkald samt første deadlineårsag til assistentens eksisterende private fejlmarkør. Den skelner providergren fra faktisk lokal fetchinvokation og lover ikke modtagelse hos Cloudflare. Brugerindhold, rå svar, URL, nøgler og request-id logges ikke. Syv sekunders samlet serverfrist, otte sekunders klientfrist, alle kvoter, model, requestparametre, offentlige svar, headers, validering og oprydning bevares.
