@@ -48,6 +48,8 @@ En ny, kildekvalificeret hovedkode kan færdiggøre den samme almindelige genera
 
 Den afgrænsede completionvej omfatter nu også en almindelig, allerede offentliggjort Pages-skriver uden pre-activation-fase. Den beskyttede målpakke binder producent, ejer, model og oprindelig centralversion; frisk ACTIVE/nonpending operation/profil skal passe præcist. Samme normale kildekvalifikation, terminalitetskontrol, fulde offentlige verifier, database-/Edge-parathed og atomiske maintenance-CAS består. Kun faktisk færdiggørelse giver den eksisterende TARGET_RECONCILE-disposition; den næste almindelige kørsel vælger fortsat frisk UTC-time. Reservations- og snapshot-hashkrav bevares. Private B/S og en eventuelt nyere gemt generation ændres ikke; gamle forseglede håndoffs får ingen implicit ny centralversion. Dette er en lokal kildekandidat, ikke hosted afslutning eller ny vejrlevering. Se håndbog 89.340.
 
+En lokal, inaktiv specialisering af kildeplanen bruger den eksisterende ejerprøve ved rene ændringer af de to normale Pages-/reentryhelpers. Den store deploymentprøve og øvrige relevante input skal være uændrede; ændret filmode, A/D- og ukendte relevante input giver ingen snæver adgang. De fire øvrige Pagesmål og alle produktionskontroller består. PR911 ville stadig vælge bredprøven. Normal scopeprøve, eksakt kildekvalifikation og målt tidsvirkning kræves før leveringspåstand; se DEC-0302 og håndbog 89.340.
+
 <!-- RAVRADAR_ACTIVE_ENTRY_END -->
 
 ## Daterede notater og tidligere indgange — uændret historik

@@ -1,3 +1,11 @@
+## 14. november — målrettet ejerprøve ved rene helperrettelser
+
+Den afgrænsede lokale forberedelse vælger den eksisterende owner-completion-only-indgang, når ændringen kun omfatter de to eksisterende ejer-/reentryhelpers, deres fuldt udførte øvrige Pagesprøver og eventuel dokumentation eller den normale plancontroller. Kun en almindelig ændring af en eksisterende regulær helper kan vælge indgangen. Den store deploymentprøve skal være uændret. De fire øvrige Pagesmål udføres fortsat fuldt; ejerafslutning, readiness, fuld offentlig verifier, CAS, raceafslag og arkivbevarelse bevares.
+
+Ændret deploymentprøve, workflow, transport, browserkode eller andet relevant input beholder den brede kommando. Nye eller slettede helpers, ændret filmode og ukendte inputs får ingen snæver adgang; eksisterende FULL-/afvisningsregler for model, backend og ukendt påvirkning bevares. PR911 ville fortsat blive bredprøvet, fordi den ændrede selve deploymentprøven. Der indføres ingen ny CLI-indgang, ny testpakke, per-head hashgruppe eller højere tidsgrænse.
+
+Den normale scopeprøve og den præcise kildekvalifikation skal være afsluttet, og en faktisk tidsbesparelse skal måles, før denne forberedelse omtales som leveret optimering. Version 4.0.598, numeriske bindinger, SQL, vejrdata og produktionskontroller ændres ikke. Aktuelle prøve- og leveringsresultater føres i privat checkpoint.
+
 # Aktuel afgrænset V4-kandidat — 12. november 2026
 
 Den første faktiske Linux-kvalifikation bestod den nye V4-kontrolvej og mailmålet, men påviste manglende forudsætninger i scalarprøvens miljø. Den normale vejrhentning installerer allerede det eksisterende requirements-copernicus.txt før offline planlægning; den målrettede kildeproducent forbereder nu samme krav, når netop dette mål vælges. Prøvens barn bevarer Linux-/macOS-interpreterens biblioteksstier og udelukker fortsat credentials. Produktlæser, fejlafvisning, model og providerbudgetter ændres ikke af forberedelsen. Ny præcis Linux-kvalifikation kræves fortsat.
