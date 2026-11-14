@@ -1,3 +1,7 @@
+## 14. november — kumulativ kontrol af den manuelle arkivkø
+
+Den kumulative kildekontrol tillader kun én præcis ændring af den manuelle arkivprøves yderste kø: fra vejrets kø til den isolerede arkivkø. Alle øvrige workflowbytes, fixtureimporter og kommandorammen skal være uændrede. Den syntetiske kø, trip-låsen, tidsgrænser, adgang og cleanup bevares. Hele backupområdets fire normale prøver og frisk uafhængig kontrol af kildeudvælgelsen kræves stadig. Dette giver hverken en bestået arkivgendannelse eller ret til rotation, beskæring eller Free-overgang.
+
 ## 14. november — præcis fælles assistentkontrakt under eksisterende Edge-ansvar
 
 Den eksisterende assistantEdge-gruppe udvides med den ene faktiske kontraktejer `supabase/functions/_shared/rav-assistant-contract.ts`. Den offentlige handler importerer denne kontrakt; ingen anden aktuel Edge-funktion importerer den. Samme tre hele normale Edge-, klient-rundtur- og faste loglæsermål vælges, og den almindelige deduplikering bevares. Dette afløser alene den tidligere firestiers fortegnelse for dette ansvar; den er ikke en generel undtagelse for `_shared`.

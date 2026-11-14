@@ -481,6 +481,19 @@ export function isBoundedLocalRestoreFixtureChange(before,after){
   }catch{return false;}
 }
 
+// Only the manual archive's outer queue may change with a reviewed fixture body.
+// Raw UTF-8 equality preserves every other workflow byte and the inner trip lock.
+export function isArchiveRestoreOuterQueueOnlyChange(before,after){
+  if([before,after].some(source=>typeof source!=='string'||source.includes('\r')
+    ||source.includes('\0')||Buffer.byteLength(source)>256*1024))return false;
+  const oldLine="  group: ${{ inputs.restore_mode == 'archive' && 'ravradar-weather-production-v2' || 'ravradar-synthetic-standard-local-restore' }}\n";
+  const newLine="  group: ${{ inputs.restore_mode == 'archive' && 'ravradar-isolated-archive-restore' || 'ravradar-synthetic-standard-local-restore' }}\n";
+  if(before.split(oldLine).length!==2||before.includes(newLine)
+    ||after.split(newLine).length!==2||after.includes(oldLine))return false;
+  if(!before.includes('\nconcurrency:\n'+oldLine)||!after.includes('\nconcurrency:\n'+newLine))return false;
+  return after.replace(newLine,oldLine)===before;
+}
+
 
 // Narrow scheduling ownership; source review and actual normal tests remain required.
 const DMI_BUDGET_PATHS=new Set(['scripts/plan-dmi-recovery.py','scripts/lib/dmi_adaptive_recovery.py',
@@ -695,8 +708,9 @@ export function planSourceCurrentContractsFromGit(input){
       const after=readCommittedText(input.candidateCommit,LOCAL_RESTORE_FIXTURE,true);
       if(!isBoundedLocalRestoreFixtureChange(before,after))
         return refuse('CURRENT_RESTORE_FIXTURE_SECURITY_FRAME_CHANGED');
-      if(readCommittedText(input.baselineCommit,LOCAL_RESTORE_WORKFLOW,true)
-        !==readCommittedText(input.candidateCommit,LOCAL_RESTORE_WORKFLOW,true))
+      const beforeWorkflow=readCommittedText(input.baselineCommit,LOCAL_RESTORE_WORKFLOW,true);
+      const afterWorkflow=readCommittedText(input.candidateCommit,LOCAL_RESTORE_WORKFLOW,true);
+      if(beforeWorkflow!==afterWorkflow&&!isArchiveRestoreOuterQueueOnlyChange(beforeWorkflow,afterWorkflow))
         return refuse('CURRENT_RESTORE_FIXTURE_WORKFLOW_CHANGED');
     }
     if(analysis.completeGitDiff.inventory.some(row=>Buffer.from(row.pathUtf8Hex,'hex').toString('utf8')===WEATHER_BUILD)){

@@ -1,5 +1,15 @@
 # DEC-0255 – Privat produktionscache til R2 med målt Free-budget
 
+## Tillæg 14. november 2026 — manuel arkivprøve uden vejrets kø
+
+**Status: kildeforberedt; faktisk parallel arkiv-/Auth-gendannelse er fortsat åben.**
+
+Kun den særskilte manuelle archive-indgang får sin egen ydre køgruppe. Den læser det præcist valgte autentificerede arkiv og udfører SQL- og Auth-skriverier i sit eget isolerede lokale projekt. Turlagerets fælles trip-lås holdes stadig under hele læsningen, gendannelsen og oprydningen, så normal backupoptagelse og rotation ikke kan slette det valgte arkiv undervejs. Den syntetiske standardvej er uændret.
+
+Dette erstatter alene kravet om weather-OUTER for den manuelle archive-indgang. Den manuelle prøve udsteder ingen vedvarende restorekvittering. Autonom restore med efterfølgende persistens, optagelse, rotation og deres eksisterende writerlåse samt 35-minuttersregel bevares. En anden writer kan fortsat holde weather-låsen, mens den venter på trip-låsen; der loves ikke fravær af alle indirekte køer.
+
+Præcis kildekvalifikation og en faktisk fuld arkiv-/Auth-prøve med indholds-/dubletparitet og ejet oprydning skal stadig bestå. Samlet lager-/driftsmargin og Free-overgang er særskilte åbne krav. Der ændres ingen releaseversion, model, SQL/ACL, arkivbytes, nøgler eller tjenester.
+
 ## Tillæg 14. november 2026 — leverandørens engangsinitialisering af arkivmålet
 
 **Status: afgrænset kildekandidat; faktisk arkiv-/Auth-accept fortsat åben.**

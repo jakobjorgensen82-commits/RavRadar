@@ -1,3 +1,11 @@
+## 14. november — manuel arkivprøve uden vejrets kø
+
+Den normale ejerprøve er accepteret af mailafsenderen, leveret og modtaget i testkontoens indbakke. Prøvefunktionen er efterfølgende fjernet; de tre permanente funktioner er bevaret. Det aktiverer ikke automatisk varsling eller kontosletning.
+
+Kun den manuelle autentiske archive-prøve får sin egen ydre kø; trip-låsen mod samtidig optagelse og rotation bevares. Den syntetiske standardvej og automatikkens vedvarende restorekvittering, rotation og writerkrav er uændrede. Faktisk arkiv-/Auth-gendannelse og samlet Free-klarhed kræver stadig egne beviser. De aktive restpunkter er samlet uden at slette dateret historik. Version 4.0.598, SQL, model og vejr bevares.
+
+Den kumulative kildeguard tillader kun denne præcise udskiftning af yderkøen, med alle øvrige workflowbytes og fixtureimport-/kommandorammen bevaret. Hele backupområdets normale prøver og frisk uafhængig kontrolreview kræves fortsat; der tilføjes ingen per-head undtagelse.
+
 ## 14. november — normal leverandørbootstrap før autentisk arkivgendannelse
 
 ## 2026-11-14: DMI: tom vedligeholdelse uden falsk parserpause

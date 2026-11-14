@@ -132,6 +132,8 @@ Autoriteten er version.json.releaseContract.modelBindings og de aktuelle generer
 
 ## 89.342 Kontrol af ændringer med en fast sikkerhedskerne
 
+Den kumulative kildekontrol tillader kun én præcis ændring af den manuelle arkivprøves yderste kø: fra vejrets kø til den isolerede arkivkø. Alle øvrige workflowbytes, fixtureimporter og kommandorammen skal være uændrede. Den syntetiske kø, trip-låsen, tidsgrænser, adgang og cleanup bevares. Hele backupområdets fire normale prøver og frisk uafhængig kontrol af kildeudvælgelsen kræves stadig. Dette giver hverken en bestået arkivgendannelse eller ret til rotation, beskæring eller Free-overgang.
+
 Den normale målplan får en snæver transportafgrænsning: kun ændringer af den eksisterende Pages-statuslæser eller dens egen normale prøve kan vælge de fire øvrige fulde Pagesmål uden den brede deploymentprøve. Den brede prøve kalder ikke statuslæseren. Fast sikkerhedskerne, dokumentkontrol og frisk uafhængig kontrol af ændret testvalg består. Transportafgrænsningen bruger ikke owner-completion-only.
 
 Blanding med offentlig verifier, ejerafslutning, completion, workflow, den brede fixture eller andre program- og prøvefiler beholder den brede kontrol. Kun ændringer af eksisterende regulære filer kan bruge afgrænsningen; nye, slettede, omdøbte, modeændrede, dobbelte eller ukendte input giver ingen snæver adgang. Databaser, numeriske bindinger, tidsgrænser, adgang og selve Pages-transporten ændres ikke.
