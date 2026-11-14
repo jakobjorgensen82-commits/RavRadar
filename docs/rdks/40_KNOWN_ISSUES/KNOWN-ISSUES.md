@@ -1,6 +1,32 @@
-## 14. november — autentisk arkivprøve stopper i DATA-gendannelse
+## Normal syntetisk relationskontrol er faktisk bestået
 
-Den efterfølgende autentiske prøve har bestået kilde- og rollekontrollen uden manglende roller og er nået videre til DATA-gendannelse. Den stopper med SQLSTATE 42P01 for en manglende relation; årsagen undersøges. Det ejede lokale Docker-mål er lukket. Fuld indholds-/Auth-gendannelse, autonom restorekvittering og Free-klarhed er ikke bestået. De tidligere GRANT_ROLE/42704-afslag bevares som historik og beskriver ikke længere prøvens aktuelle første stop. Original SQL og alle bevaringskrav består.
+Den normale syntetiske restore med den uændrede fixture har faktisk bestået alle fire relationscases på det pinnede PostgreSQL 17 med samme SQL-builder og psql-læser: eksisterende tabel og sekvens, tom historik, manglende relation og forkert relationstype. Canary-rollback og ikke udført DATA-hale er bekræftet. Standardens fem filers roundtrip, UTF-8/decimaler, roller/migrationshistorik, ny syntetisk Auth-adgang og ejet Docker-oprydning er også bestået. Ægte arkiv-/Auth-gendannelse, den konkrete manglende relations årsag og Free-klarhed er fortsat åbne; Storage forbliver deaktiveret.
+
+Retningseditorens normale utilgængelighedsvisning følger en faktisk fraværende central statusrække. En afgrænset læsning med dokumenteret fuldt tabeludsyn har skilt fraværet fra en ren RLS-synlighedsfejl. Det er ikke et tomt kandidatpayload, bevis for ingen kandidater eller en påvist renderfejl. Producentårsag og korrekt fremtidig publicering er fortsat åbne; ingen punkt-, rolle- eller konfigurationsændring følger af læsningen.
+
+## 14. november — implicitte UV-fund og kort evidensvalg er kildeforberedt
+
+Den næste afgrænsede assistentkandidat genkender implicitte UV-fundspørgsmål gennem samme normale Edge-vej og beder modellen vælge disposition og dækkende kilde-id'er med en kort lokaliseret markør frem for en fri forklaring, som alligevel ikke udgives. Femfeltsprotokollen, alle råsvarsvagter, 45 fakta, K-bindingen og den kanoniske sammensætning under 900 tegn bevares. Den observerede tyske længdeafvisning skete før den kanoniske komposition; den engelske provider-timeout er fortsat uafklaret. Frister, kvoter og providerparametre ændres ikke. Syntetiske normale mål er ikke faktisk ekstern AI- eller helsvarsaccept; boblers diagnostiske betydning og den numerisk bundne enkeltleds-/tegnsætningsgrænse er særskilt åbne.
+
+## Aktuelle statusafgrænsninger
+
+Revisionens syv målkrav består hos de aktuelle ejere: Fur og bevarelse af gyldige timer; de syv zoners begrænsede LF-vandstandsundtagelse; kilde-/historik-/interpolationskæden inklusive T+3; fysisk processtop, eksklusiv skrivning og holdbarhed; afgrænset fejlafslutning; original-B/S-før-T; og national 210/673-kapacitet. De følges gennem de normale DMI-/CP-kaldere, kilde- og historikvalg, SAVE/SDK, bundle/reentry og private/offentlige gates. Pensionerede Source-pakker genåbnes ikke som leveringsenheder, og ingen af disse mål lukkes alene af pensioneringen.
+
+Den konkret identificerede 240-sekunders failure-worker tilhører den pensionerede private Source-tail. Den er ikke en ny global frist for almindelig R2-/cacheupload. Den normale lokale SAVE og efterfølgende upload er adskilte operationer. DMI-finalisering og CP-timeout-recovery bevarer deres egne vedtagne budgetter samt fysisk stop, afventning og første fejl. Kravet om sikker, tidsafgrænset fejlafslutning består som en afgrænset acceptrest. Den additive normale SDK-prøve for tab af actionparent er separat kildeforberedt og indgår ikke i denne pakke; syntakskontrol er ikke faktisk Linux-/SDK-accept eller bevis for en produktfejl.
+
+Den normale beskyttede månedsrapport er læseaccepteret via den eksisterende ejerknap med færdig rapport og genetablerede kontroller. De ni relevante kalder-/adgangs-/schemafiler er bytebevist uændrede siden den accepterede læsning; installations-SQL er uændret uden for håndbogspayload. Dette lukker kun den almindelige beskyttede visningsprøve. JSON-eksport, andre rollers adgang, privacybevis, kalibreringsgyldighed og offentlig statistikaktivering har egne rester.
+
+## 14. november — HEAD, servernøgler og SAVE-observation er kildeforberedt
+
+HEAD på et gyldigt delingslink kunne hente prognosen, selv om svaret ikke har en indholdskrop. Ejerens slettekalder sendte desuden alle Supabase-servernøgler som Bearer, også den opaque nøglefamilie. De små rettelser er lokalt målprøvet og bevarer de normale adgangs-, query-, HMAC-, rækkefølge- og genlæsningskontroller. Faktisk levering og relevante brugerforløb er fortsat åbne.
+
+En størrelsesafvist progress-SAVE får kun en efterfølgende fast metadataobservation. Den løser ikke størrelsesårsagen og giver hverken autentificeret inputfortegnelse, kapacitetsbevis eller genbrugsret. Permanent testejerskab og den valgte progressprøves eksisterende CP-afhængighed er forberedt uden nye kvoter, modelinput eller brede undtagelser. De oprindelige afslag og ukendte udfald bevares.
+
+## 14. november — arkivets DATA stopper fortsat ved en manglende relation
+
+Den autentiske prøve har bestået kilde- og rollekontrollen uden manglende roller og er nået til DATA-gendannelse, men stopper med SQLSTATE 42P01 for en manglende relation. Den konkrete relation og årsagen er fortsat uafklaret. En ny kildekandidat indsamler alle COPY- og setval-referencer fra begge verificerede datafiler og kontrollerer relationernes tilstedeværelse og type efter den oprindelige DDL, før hver fases DATA i samme transaktion. Rapporter viser kun faste kategorier og tællere; originale SQL-filer, roller og grants ændres ikke.
+
+Den lokale protokolprøve og den eksisterende syntetiske kalder er forberedt; faktisk PostgreSQL 17, fuld arkiv-/Auth-accept og den konkrete manglende relation er ikke bevist. Storage forbliver deaktiveret. Ingen original SQL, rettighed eller produktionsdata ændres af diagnosen.
 
 ## 14. november — varig adminarkivretention skal stadig have faktisk overgang og pladsbevis
 

@@ -43,7 +43,8 @@ const frontierRefused=reason=>Object.assign(new Error('SOURCE_TARGETED_FRONTIER_
 const full=reasonCode=>({schemaVersion:1,selection:'FULL',reasonCode,targetedCommandsExecuted:0,
   receiptWritten:false,deliveryAuthority:false});
 function prepareSelectedScalarSourceTarget(commands){
-  if(!commands.includes('node --test scripts/test-weather-component-normal-wireup.mjs'))return;
+  if(!commands.includes('node --test scripts/test-weather-component-normal-wireup.mjs')
+    &&!commands.includes('node --test scripts/test-weather-component-progress-cache.mjs scripts/test-weather-component-progress-workflow.mjs scripts/test-dmi-progress-inputs.mjs'))return;
   // Same declared CP runtime as ordinary weather. Prepare it only for its actual
   // consumer target, outside the test and without the producer's credentials.
   const environment={...Object.fromEntries(LOCAL_RESTORE_ENVIRONMENT

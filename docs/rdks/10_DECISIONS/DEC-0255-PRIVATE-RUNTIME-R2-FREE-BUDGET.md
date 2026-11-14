@@ -1,4 +1,18 @@
+## Normal syntetisk relationskontrol er faktisk bestået
+
+Den normale syntetiske restore med den uændrede fixture har faktisk bestået alle fire relationscases på det pinnede PostgreSQL 17 med samme SQL-builder og psql-læser: eksisterende tabel og sekvens, tom historik, manglende relation og forkert relationstype. Canary-rollback og ikke udført DATA-hale er bekræftet. Standardens fem filers roundtrip, UTF-8/decimaler, roller/migrationshistorik, ny syntetisk Auth-adgang og ejet Docker-oprydning er også bestået. Ægte arkiv-/Auth-gendannelse, den konkrete manglende relations årsag og Free-klarhed er fortsat åbne; Storage forbliver deaktiveret.
+
 # DEC-0255 – Privat produktionscache til R2 med målt Free-budget
+
+## Tillæg 14. november 2026 — samlet relationskontrol før arkivets DATA
+
+**Status: kildeforberedt diagnose og syntetisk kalder; faktisk PostgreSQL- og arkiv-/Auth-accept mangler.**
+
+Den autentiske prøve har bestået kilde- og rollekontrollen uden manglende roller og er nået til DATA-gendannelse, men stopper med SQLSTATE 42P01 for en manglende relation. Den konkrete relation og årsagen er fortsat uafklaret. En ny kildekandidat indsamler alle COPY- og setval-referencer fra begge verificerede datafiler og kontrollerer relationernes tilstedeværelse og type efter den oprindelige DDL, før hver fases DATA i samme transaktion. Rapporter viser kun faste kategorier og tællere; originale SQL-filer, roller og grants ændres ikke.
+
+Inventaret læses først efter privat materialisering af alle fem arkivfiler. Det er ikke en læsning uden arkivdownload. Den normale syntetiske fixture kalder nu samme SQL-builder og psql-læser på sit allerede ejede B-mål med fire cases: tilstedeværende tabel og sekvens, tom historikfase, manglende relation og forkert relationstype. Rollback af en canary og uændret ikke-transaktionel sekvens skal bevise, at DATA efter et afslag ikke blev udført. Den lokale protokolprøve bruger stub-svar og er ikke faktisk PostgreSQL-accept; en normal syntetisk kørsel på det pinnede PostgreSQL 17 mangler stadig.
+
+Storage forbliver deaktiveret, og der tilføjes ingen tjeneste, ny rolle eller udeladt SQL. Manglende relation må ikke uden konkret bevis kaldes en Storage-fejl. Fuld autentisk indholds-/Auth-gendannelse, Storage-objektbytes, autonom restorekvittering og Free-klarhed er fortsat åbne. Version 4.0.598, model, vejr, tidsgrænser og ejet oprydning bevares.
 
 ## Tillæg 14. november 2026 — afgrænset varig adminarkivretention
 

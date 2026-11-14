@@ -11,6 +11,7 @@ import { weatherComponentProgressCache, withAuthenticatedWeatherProgress,
   WEATHER_PROGRESS_CIPHER_PATH, WEATHER_PROGRESS_MAX_CIPHER_BYTES } from './weather-component-progress-cache.mjs';
 import { buildPrivateWeatherComponentPack } from './lib/private-weather-component-pack.mjs';
 import { PRIVATE_WEATHER_COMPONENT_FILES as files } from './lib/private-weather-component-inventory.mjs';
+import { PRIVATE_WEATHER_PROGRESS_ONLY_FILES as progressFiles } from './lib/private-weather-progress-files.mjs';
 import { mergeVerifiedProtectedProgressComponents,
   protectedProgressUnionFailureCode } from './lib/verified-protected-progress-components.mjs';
 import { pairedSourceDiagnostic,
@@ -1149,6 +1150,158 @@ test('missing key, absent snapshot, invalid original pack and unsafe destination
   const rejected = await f.call('restore', f.target);
   assert.equal(rejected.code, 'INSTALL_REJECTED');
   assert.deepEqual(JSON.parse(await fs.readFile(path.join(f.target, files.openMeteoBank), 'utf8')), originalBank);
+});
+
+// Inject a fixed pack rejection at its ordinary output-open boundary, after
+// genuine source inventory readers have closed. No large fixture or second
+// inventory implementation is needed to test the caller's failure report.
+async function withPackSizeRejection(root, inspect, { afterRejection = async () => {}, statOverride = null } = {}) {
+  root = await fs.realpath(root);
+  const originalOpen = fs.open, originalReadFile = fs.readFile, originalLstat = fs.lstat;
+  let rejected = false, payloadReadsAfterRejection = 0, leafStatsAfterRejection = 0;
+  const fixedPaths = new Set([...Object.values(files), ...Object.values(progressFiles)].map(relative => path.join(root, relative)));
+  fs.open = async (...args) => {
+    if (!rejected && args[1] === 'wx' && path.basename(String(args[0])).startsWith('weather-component-inputs.pack.tmp-')) {
+      rejected = true;
+      await afterRejection();
+      throw new Error('WEATHER_PACK_SIZE_LIMIT');
+    }
+    if (rejected) payloadReadsAfterRejection += 1;
+    return originalOpen.apply(fs, args);
+  };
+  fs.readFile = async (...args) => {
+    if (rejected) payloadReadsAfterRejection += 1;
+    return originalReadFile.apply(fs, args);
+  };
+  fs.lstat = async (...args) => {
+    if (rejected && fixedPaths.has(String(args[0]))) leafStatsAfterRejection += 1;
+    if (rejected && statOverride) return statOverride(args, originalLstat, root);
+    return originalLstat.apply(fs, args);
+  };
+  try {
+    const result = await inspect();
+    assert.equal(rejected, true, 'the normal pack boundary must actually be traversed');
+    assert.equal(payloadReadsAfterRejection, 0, 'post-failure observation must not read or reopen payloads');
+    return { result, leafStatsAfterRejection };
+  } finally {
+    fs.open = originalOpen; fs.readFile = originalReadFile; fs.lstat = originalLstat;
+  }
+}
+
+test('progress failure metadata observes only 21 fixed files after rejection and preserves the prior snapshot', async t => {
+  const f = await fixture(t);
+  const saved = await f.call('save');
+  assert.equal(saved.saved, true);
+  assert.equal(Object.hasOwn(saved, 'postFailureObservation'), false);
+  const cipher = await fs.readFile(path.join(f.source, WEATHER_PROGRESS_CIPHER_PATH));
+  const originals = await Promise.all([files.openMeteoBank, files.fallbackCursor, files.selectedComponents]
+    .map(async relative => [relative, await fs.readFile(path.join(f.source, relative))]));
+  await write(f.source, '.cache/copernicus-components/objects/unreferenced-private.nc', 'SYNTHETIC_PRIVATE_CP_CONTENT');
+  await write(f.source, '.cache/old-runtime-bank/private.json', 'SYNTHETIC_PRIVATE_OLD_BANK');
+  const { result } = await withPackSizeRejection(f.source, () => f.call('save'));
+  assert.equal(result.status, 'CACHE_MISS');
+  assert.equal(result.code, 'WEATHER_PACK_SIZE_LIMIT');
+  assert.equal(result.saved, false);
+  const observed = result.postFailureObservation;
+  assert.equal(observed.kind, 'WEATHER_PROGRESS_FIXED_FILE_OBSERVATION');
+  assert.equal(observed.phase, 'POST_SAVE_FAILURE');
+  assert.equal(observed.atomic, false);
+  assert.equal(observed.failedInputInventory, 'UNKNOWN');
+  assert.equal(observed.status, 'OBSERVED');
+  assert.equal(observed.fixedPathCount, 21);
+  assert.equal(observed.files.length, 21);
+  assert.equal(new Set(observed.files.map(row => row.componentClass)).size, 21);
+  assert.equal(observed.presentFileCount, 3);
+  assert.equal(observed.absentFileCount, 18);
+  assert.equal(observed.unknownFileCount, 0);
+  const expectedBytes = originals.reduce((sum, [, bytes]) => sum + bytes.length, 0);
+  assert.equal(observed.knownPresentBytes, expectedBytes);
+  assert.equal(observed.allFixedFileBytes, expectedBytes);
+  assert.equal(observed.cpReferenceInventory, 'UNKNOWN');
+  for (const field of ['cpReferenceBytes', 'manifestBytes', 'headerBytes', 'rawPackBytes']) assert.equal(observed[field], null);
+  assert.equal(observed.maximumRawPackBytes, 768 * 1024 * 1024);
+  const text = JSON.stringify(result);
+  for (const privateText of ['SYNTHETIC_PRIVATE', f.source, '.cache/', 'data/live/', encryptionKey]) assert.equal(text.includes(privateText), false);
+  assert.deepEqual(await fs.readFile(path.join(f.source, WEATHER_PROGRESS_CIPHER_PATH)), cipher);
+  for (const [relative, bytes] of originals) assert.deepEqual(await fs.readFile(path.join(f.source, relative)), bytes);
+});
+
+test('progress failure metadata distinguishes absent, zero byte and unavailable observations without changing failure', async t => {
+  const f = await fixture(t);
+  const unreadable = path.join(await fs.realpath(f.source), files.selectedComponents);
+  const zeroByte = path.join(f.source, files.fallbackCursor);
+  const { result } = await withPackSizeRejection(f.source, () => f.call('save'), {
+    // Change only after the refused inventory was read: the report is expressly
+    // a later observation, never the inventory of those failed input bytes.
+    afterRejection: () => fs.writeFile(zeroByte, ''),
+    statOverride: async (args, original) => {
+      if (String(args[0]) === unreadable) throw Object.assign(new Error('SYNTHETIC_PRIVATE_FAILURE'), { code: 'EACCES' });
+      return original.apply(fs, args);
+    },
+  });
+  assert.equal(result.code, 'WEATHER_PACK_SIZE_LIMIT');
+  const observed = result.postFailureObservation;
+  assert.equal(observed.status, 'PARTIAL');
+  assert.equal(observed.presentFileCount, 2);
+  assert.equal(observed.absentFileCount, 18);
+  assert.equal(observed.unknownFileCount, 1);
+  assert.equal(observed.allFixedFileBytes, null);
+  assert.deepEqual(observed.files.find(row => row.componentClass === 'FALLBACK_CURSOR'),
+    { componentClass: 'FALLBACK_CURSOR', status: 'REGULAR_FILE', bytes: 0 });
+  assert.deepEqual(observed.files.find(row => row.componentClass === 'SELECTED_COMPONENTS'),
+    { componentClass: 'SELECTED_COMPONENTS', status: 'UNKNOWN', bytes: null });
+  assert.equal(JSON.stringify(result).includes('SYNTHETIC_PRIVATE'), false);
+});
+
+test('progress failure metadata refuses a changed root identity before any fixed leaf measurement', async t => {
+  const f = await fixture(t);
+  const { result, leafStatsAfterRejection } = await withPackSizeRejection(f.source, () => f.call('save'), {
+    statOverride: async (args, original, root) => {
+      const stat = await original.apply(fs, args);
+      if (String(args[0]) === root) stat.ino += 1n;
+      return stat;
+    },
+  });
+  assert.equal(result.code, 'WEATHER_PACK_SIZE_LIMIT');
+  assert.equal(result.postFailureObservation.status, 'UNAVAILABLE');
+  assert.equal(result.postFailureObservation.reason, 'ROOT_IDENTITY_UNPROVED');
+  assert.equal(result.postFailureObservation.unknownFileCount, 21);
+  assert.equal(result.postFailureObservation.allFixedFileBytes, null);
+  assert.equal(leafStatsAfterRejection, 0);
+});
+
+test('progress failure metadata rejects unsafe fixed entries and does not attach to other SAVE errors', async t => {
+  const f = await fixture(t);
+  const { result } = await withPackSizeRejection(f.source, () => f.call('save'), {
+    statOverride: async (args, original, root) => {
+      const stat = await original.apply(fs, args);
+      if (String(args[0]) === path.join(root, files.openMeteoBank)) stat.isSymbolicLink = () => true;
+      return stat;
+    },
+  });
+  assert.equal(result.code, 'WEATHER_PACK_SIZE_LIMIT');
+  assert.equal(result.postFailureObservation.status, 'PARTIAL');
+  assert.equal(result.postFailureObservation.files.find(row => row.componentClass === 'OPEN_METEO_BANK').status, 'UNKNOWN');
+  await write(f.source, files.openMeteoBank, { invalid: true });
+  const other = await f.call('save');
+  assert.equal(other.code, 'WEATHER_PACK_OM_BANK_HASH_INVALID');
+  assert.equal(Object.hasOwn(other, 'postFailureObservation'), false);
+  const originalLstat = fs.lstat;
+  let prematureLeafStats = 0;
+  fs.lstat = async (...args) => {
+    if (String(args[0]) === path.resolve(f.source) && args[1] === undefined)
+      throw Object.assign(new Error('SYNTHETIC_PRIVATE_PREMATURE_FAILURE'), { progressCode: 'WEATHER_PACK_SIZE_LIMIT' });
+    prematureLeafStats += 1;
+    return originalLstat.apply(fs, args);
+  };
+  try {
+    const premature = await f.call('save');
+    assert.equal(premature.code, 'WEATHER_PACK_SIZE_LIMIT');
+    assert.equal(premature.postFailureObservation.reason, 'PACK_READERS_UNPROVED');
+    assert.equal(premature.postFailureObservation.unknownFileCount, 21);
+    assert.equal(prematureLeafStats, 0);
+    assert.equal(JSON.stringify(premature).includes('SYNTHETIC_PRIVATE'), false);
+  } finally { fs.lstat = originalLstat; }
 });
 
 test('existing protected service secret derives one stable domain-separated progress key', async t => {

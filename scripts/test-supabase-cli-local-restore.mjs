@@ -21,7 +21,7 @@ const EXCLUDE='realtime,storage-api,imgproxy,edge-runtime,postgres-meta,studio,s
 const FILES=['roles.sql','schema.sql','data.sql','history_schema.sql','history_data.sql'];
 const ARCHIVE_FILES=['roles.sql','schema.sql','data.sql','history-schema.sql','history-data.sql'];
 const ARCHIVE_SQL=Object.freeze({fileBytes:1_000_000_000,totalBytes:2_000_000_000,chunkBytes:64*1024});
-const ARCHIVE_SQL_OWNERS=['ROLES','ROLE_SWITCH','SCHEMA','SCHEMA_ROLE_CHECK','REPLICA_SETTING','DATA','DATA_ROLE_CHECK','HISTORY','UNKNOWN'];
+const ARCHIVE_SQL_OWNERS=['ROLES','ROLE_SWITCH','SCHEMA','SCHEMA_ROLE_CHECK','REPLICA_SETTING','RELATION_PREFLIGHT','DATA','DATA_ROLE_CHECK','HISTORY','UNKNOWN'];
 const ARCHIVE_POSTGRES_ROLE_CHECK="DO $rr_restore$ BEGIN IF session_user <> 'supabase_admin' OR current_user <> 'postgres' THEN RAISE SQLSTATE '42501'; END IF; END; $rr_restore$;\n";
 const DOCUMENTED_CLI_LOGIN_GRANT='GRANT "postgres" TO "cli_login_postgres" WITH INHERIT FALSE GRANTED BY "supabase_admin";';
 const ARCHIVE_SQL_STATEMENTS=['UNKNOWN','CREATE_ROLE','ALTER_ROLE','GRANT_ROLE','REVOKE_ROLE','COMMENT_ROLE','CLI_LOGIN_POSTGRES_GRANT'];
@@ -390,6 +390,8 @@ async function* materializedRestoreBytes(c,archive,history=false,inputLines=null
       yield track(Buffer.from(ARCHIVE_POSTGRES_ROLE_CHECK),'SCHEMA_ROLE_CHECK');
       yield track(Buffer.from('SET session_replication_role = replica;\n'),'REPLICA_SETTING');
     }
+    if(c.archiveRelationInventory&&i===(history?1:2))
+      yield track(archiveRelationPreflightSql(c.archiveRelationInventory,history?'HISTORY_DATA':'DATA'),'RELATION_PREFLIGHT');
     const owner=history?'HISTORY':['ROLES','SCHEMA','DATA'][i];
     const roleLines=owner==='ROLES'&&inputLines&&Object.hasOwn(inputLines,'roleLineClasses')?
       {line:inputLines.next,buffer:Buffer.alloc(512),length:0,prefixSafe:true,
@@ -436,7 +438,7 @@ async function command(c,stage,bin,args,{cwd=c.root,input=null,maxMs=P.childMs,a
     if(archivePsql&&closedPipe)stdinClosed=true;
     else fail('STDIN_TRANSPORT');
   };
-  const inputFailure=e=>fail(/^ARCHIVE_SQL_|^ARCHIVE_PARITY_|^OPERATION_DEADLINE$/.test(e?.code??'')?e.code:'STDIN_TRANSPORT');
+  const inputFailure=e=>fail(/^ARCHIVE_SQL_|^ARCHIVE_PARITY_|^ARCHIVE_RELATION_|^OPERATION_DEADLINE$/.test(e?.code??'')?e.code:'STDIN_TRANSPORT');
   try{
     child=spawn(bin,args,{cwd,env:restoreChildEnvironment(process.env,c.home,c.root,bin),shell:false,detached:true,stdio:['pipe','pipe','pipe']});
     child.on('error',()=>fail('SPAWN_FAILED'));
@@ -483,6 +485,12 @@ async function command(c,stage,bin,args,{cwd=c.root,input=null,maxMs=P.childMs,a
     if(archivePsql){
       if(!inputDone)inputStream?.destroy();
       await inputPump;
+      if(!first)try{
+        const report=readArchiveRelationPreflight(c,stage,Buffer.concat(out),exit);
+        if(report&&(report.missingCount||report.wrongKindCount)){
+          fail('ARCHIVE_RELATION_PREFLIGHT_MISSING');first.inputOwner='RELATION_PREFLIGHT';
+        }
+      }catch(e){fail(/^ARCHIVE_RELATION_/.test(e.code??'')?e.code:'ARCHIVE_RELATION_REPORT_INVALID');}
       if(!first&&exit===3&&signal===null){
         const bytes=Buffer.concat(err),diagnostic=diagnosticClass(bytes);
         fail(diagnostic.startsWith('SQLSTATE_')?diagnostic:'PSQL_SCRIPT_ERROR');
@@ -745,12 +753,19 @@ async function* archiveParityFileChunks(c,archive,name){
       &&current.dev===dir.dev&&current.ino===dir.ino,'ARCHIVE_SQL_DIRECTORY_CHANGED');
   }finally{await h.close();}
 }
-async function* archiveParitySql(c,archive,summary){
+async function* archiveParitySql(c,archive,summary,inventoryOnly=false){
+  need(typeof inventoryOnly==='boolean','ARCHIVE_RELATION_PARSE_MODE');
   const tables=new Set(),sequences=new Set();let ordinal=0,rows=0;
+  const relations=[];let relationBytes=0;
+  const remember=(file,kind,qualified)=>{
+    const entry=archiveRelationEntry(file,kind,qualified);relationBytes+=Buffer.byteLength(JSON.stringify(entry));
+    need(relationBytes<=P.diagnosticBytes,'ARCHIVE_RELATION_INVENTORY_BOUND');relations.push(entry);
+  };
   const text=value=>Buffer.from(value,'utf8');
-  yield text('SET LOCAL standard_conforming_strings = on;\nSET LOCAL client_encoding = \'UTF8\';\nSET LOCAL statement_timeout = \'90s\';\n');
+  if(!inventoryOnly)yield text('SET LOCAL standard_conforming_strings = on;\nSET LOCAL client_encoding = \'UTF8\';\nSET LOCAL statement_timeout = \'90s\';\n');
   for(const file of ['data.sql','history-data.sql']){
     let header=[],headerBytes=0,copy=null,lineBytes=0,prefix=Buffer.alloc(0);
+    const controlState={restrict:null,seenRestrict:false},utf8=new TextDecoder('utf-8',{fatal:true});
     function endCopy(){
       const {table,columns,temp}=copy,record='ROW('+columns+')::text COLLATE "C"';
       const expected=`SELECT ${record} FROM pg_temp.${temp}`,actual=`SELECT ${record} FROM ONLY ${table}`;
@@ -759,30 +774,34 @@ async function* archiveParitySql(c,archive,summary){
     }
     function control(bytes){
       const line=new TextDecoder('utf-8',{fatal:true}).decode(bytes).replace(/\r?\n$/,'');
-      if(!line.trim()||/^--[^\r\n]*$/.test(line)||/^\\(?:un)?restrict [A-Za-z0-9]+$/.test(line)
+      if(inventoryOnly&&archiveInventoryControl(line,controlState))return '';
+      if(!inventoryOnly&&(!line.trim()||/^--[^\r\n]*$/.test(line)||/^\\(?:un)?restrict [A-Za-z0-9]+$/.test(line)
         ||/^SET [A-Za-z_][A-Za-z0-9_. ]* = [^\r\n]+;$/.test(line)||line==='RESET ALL;'
-        ||line==="SELECT pg_catalog.set_config('search_path', '', false);")return '';
+        ||line==="SELECT pg_catalog.set_config('search_path', '', false);"))return '';
       const start=COPY_HEADER.exec(line);
       if(start){const [,table,columns]=start;need(!tables.has(table),'ARCHIVE_PARITY_DUPLICATE_COPY');tables.add(table);
         need(tables.size<=4096,'ARCHIVE_PARITY_TABLE_BOUND');const temp='"rr_archive_expected_'+String(++ordinal)+'"';
-        copy={table,columns,temp};return `CREATE TEMP TABLE ${temp} ON COMMIT DROP AS SELECT ${columns} FROM ONLY ${table} WITH NO DATA;\nCOPY pg_temp.${temp} (${columns}) FROM stdin;\n`;}
+        if(inventoryOnly)remember(file,'COPY',table);
+        copy={table,columns,temp};return inventoryOnly?'':`CREATE TEMP TABLE ${temp} ON COMMIT DROP AS SELECT ${columns} FROM ONLY ${table} WITH NO DATA;\nCOPY pg_temp.${temp} (${columns}) FROM stdin;\n`;}
       const sequence=SETVAL_HEADER.exec(line);
       if(sequence){const name=sequence[1].replaceAll("''","'"),value=sequence[2],called=sequence[3];
         need(qualifiedCopyName.test(name)&&!sequences.has(name),'ARCHIVE_PARITY_SEQUENCE');sequences.add(name);
         need(sequences.size<=4096,'ARCHIVE_PARITY_SEQUENCE_BOUND');
+        if(inventoryOnly){need(BigInt(value)>=-(1n<<63n)&&BigInt(value)<(1n<<63n),'ARCHIVE_RELATION_SEQUENCE_VALUE');remember(file,'SEQUENCE',name);return '';}
         return `DO $rr_archive_parity$ DECLARE v text; c boolean; BEGIN SELECT last_value::text,is_called INTO STRICT v,c FROM ${name}; IF v IS DISTINCT FROM ${sqlString(value)} OR c IS DISTINCT FROM ${called} THEN RAISE SQLSTATE 'P0001' USING MESSAGE='ARCHIVE_SEQUENCE_MISMATCH'; END IF; END $rr_archive_parity$;\n`;}
       need(false,'ARCHIVE_PARITY_UNSUPPORTED_DATA_COMMAND');
     }
     for await(const chunk of archiveParityFileChunks(c,archive,file)){
+      if(inventoryOnly){need(!chunk.includes(0),'ARCHIVE_RELATION_NUL');utf8.decode(chunk,{stream:true});}
       for(let from=0;from<chunk.length;){
         const nl=chunk.indexOf(10,from),end=nl<0?chunk.length:nl+1,part=chunk.subarray(from,end),complete=nl>=0;
         if(copy){
           const content=complete?part.subarray(0,part.length-1):part;
           if(prefix.length<3)prefix=Buffer.concat([prefix,content.subarray(0,3-prefix.length)]);
-          lineBytes+=content.length;yield part;
+          lineBytes+=content.length;if(!inventoryOnly)yield part;
           if(complete){const terminator=lineBytes===2&&prefix.subarray(0,2).equals(Buffer.from('\\.'))
             ||lineBytes===3&&prefix.equals(Buffer.from('\\.\r'));
-            if(terminator)yield text(endCopy());else rows++;
+            if(terminator){if(inventoryOnly)copy=null;else yield text(endCopy());}else rows++;
             lineBytes=0;prefix=Buffer.alloc(0);}
         }else{
           headerBytes+=part.length;need(headerBytes<=8192,'ARCHIVE_PARITY_CONTROL_BOUND');header.push(part);
@@ -793,10 +812,111 @@ async function* archiveParitySql(c,archive,summary){
     }
     need(copy===null&&lineBytes===0,'ARCHIVE_PARITY_UNTERMINATED_COPY');
     if(headerBytes){const sql=control(Buffer.concat(header,headerBytes));need(copy===null,'ARCHIVE_PARITY_UNTERMINATED_COPY');if(sql)yield text(sql);}
+    if(inventoryOnly){utf8.decode();need(controlState.restrict===null,'ARCHIVE_RELATION_UNCLOSED_RESTRICT');}
   }
   need(tables.has('"auth"."users"')&&tables.has('"auth"."identities"'),'ARCHIVE_PARITY_AUTH_TABLES_REQUIRED');
   Object.assign(summary,{tableCount:tables.size,rowCount:rows,sequenceCount:sequences.size});
-  yield text(`SELECT jsonb_build_object('status','PASS','scope','AUTHENTICATED_ARCHIVE_CONTENT_AND_DUPLICATES','tables',${tables.size},'rows',${rows},'sequences',${sequences.size});\n`);
+  if(inventoryOnly)summary.relations=relations;
+  else yield text(`SELECT jsonb_build_object('status','PASS','scope','AUTHENTICATED_ARCHIVE_CONTENT_AND_DUPLICATES','tables',${tables.size},'rows',${rows},'sequences',${sequences.size});\n`);
+}
+const ARCHIVE_RELATION_SCHEMAS=Object.freeze({auth:'AUTH',storage:'STORAGE',supabase_functions:'SUPABASE_FUNCTIONS',
+  supabase_migrations:'SUPABASE_MIGRATIONS',public:'PUBLIC',cron:'CRON',net:'NET',pgmq:'PGMQ'});
+const ARCHIVE_FIXED_RELATIONS=Object.freeze({
+  '"storage"."migrations"':'STORAGE_MIGRATIONS','"storage"."buckets"':'STORAGE_BUCKETS','"storage"."objects"':'STORAGE_OBJECTS',
+  '"storage"."s3_multipart_uploads"':'STORAGE_MULTIPART_UPLOADS','"storage"."s3_multipart_uploads_parts"':'STORAGE_MULTIPART_PARTS',
+  '"storage"."prefixes"':'STORAGE_PREFIXES','"storage"."buckets_analytics"':'STORAGE_ANALYTICS_BUCKETS',
+  '"storage"."buckets_vectors"':'STORAGE_VECTOR_BUCKETS','"storage"."vector_indexes"':'STORAGE_VECTOR_INDEXES',
+  '"auth"."users"':'AUTH_USERS','"auth"."identities"':'AUTH_IDENTITIES','"auth"."schema_migrations"':'AUTH_SCHEMA_MIGRATIONS',
+  '"supabase_migrations"."schema_migrations"':'MIGRATION_HISTORY',
+});
+function archiveInventoryControl(line,state){
+  if(!line.trim()||/^--[^\r\n]*$/.test(line)||line==='RESET ALL;'
+    ||line==="SELECT pg_catalog.set_config('search_path', '', false);")return true;
+  const restricted=/^\\(unrestrict|restrict) ([A-Za-z0-9]{1,256})$/.exec(line);
+  if(restricted){
+    if(restricted[1]==='restrict'){need(!state.seenRestrict&&!state.restrict,'ARCHIVE_RELATION_RESTRICT');state.restrict=restricted[2];state.seenRestrict=true;}
+    else{need(state.restrict===restricted[2],'ARCHIVE_RELATION_RESTRICT');state.restrict=null;}return true;
+  }
+  const setting=/^SET ([a-z_]+) = (.+);$/.exec(line);if(!setting)return false;
+  const patterns={statement_timeout:/^[0-9]{1,19}$/,lock_timeout:/^[0-9]{1,19}$/,
+    idle_in_transaction_session_timeout:/^[0-9]{1,19}$/,transaction_timeout:/^[0-9]{1,19}$/,
+    client_encoding:/^'UTF8'$/,standard_conforming_strings:/^on$/,check_function_bodies:/^(true|false)$/,
+    xmloption:/^(content|document)$/,client_min_messages:/^(warning|error|notice)$/,
+    row_security:/^(on|off)$/,session_replication_role:/^(replica|origin)$/,
+    default_tablespace:/^''$/,default_table_access_method:/^heap$/};
+  need(Object.hasOwn(patterns,setting[1])&&patterns[setting[1]].test(setting[2]),'ARCHIVE_RELATION_UNSUPPORTED_SETTING');return true;
+}
+function archiveRelationEntry(file,kind,qualified){
+  const match=new RegExp('^('+COPY_IDENTIFIER+')\\.('+COPY_IDENTIFIER+')$').exec(qualified);
+  need(match&&['COPY','SEQUENCE'].includes(kind)&&['data.sql','history-data.sql'].includes(file),'ARCHIVE_RELATION_IDENTITY');
+  const identifiers=match.slice(1).map(v=>v.slice(1,-1).replaceAll('""','"'));
+  need(identifiers.every(v=>Buffer.byteLength(v)>0&&Buffer.byteLength(v)<=63&&!v.includes('\0')),'ARCHIVE_RELATION_IDENTIFIER_BOUND');
+  return {phase:file==='data.sql'?'DATA':'HISTORY_DATA',kind,qualified,
+    schemaClass:Object.hasOwn(ARCHIVE_RELATION_SCHEMAS,identifiers[0])?ARCHIVE_RELATION_SCHEMAS[identifiers[0]]:'OTHER',
+    relationClass:Object.hasOwn(ARCHIVE_FIXED_RELATIONS,qualified)?ARCHIVE_FIXED_RELATIONS[qualified]:'OTHER'};
+}
+async function collectArchiveRelationInventory(c,archive){
+  c.stage='ARCHIVE_RELATION_INVENTORY';c.archiveRelationInventoryAttempted=true;const summary={};
+  try{for await(const _chunk of archiveParitySql(c,archive,summary,true))need(false,'ARCHIVE_RELATION_ROW_OUTPUT');}
+  catch(e){if(/^ARCHIVE_SQL_|^ARCHIVE_PARITY_|^ARCHIVE_RELATION_|^OPERATION_DEADLINE$/.test(e.code??''))throw e;
+    need(false,'ARCHIVE_RELATION_PARSE_REFUSED');}
+  const relations=summary.relations;need(Array.isArray(relations)&&relations.length<=8192,'ARCHIVE_RELATION_INVENTORY_BOUND');
+  const inventory={complete:true,relations,digest:sha(Buffer.from(JSON.stringify({
+    files:archive.files.filter(f=>['data.sql','history-data.sql'].includes(f.file)),relations})))};
+  // Build both bounded payloads now. No DDL/data starts if full parse or either
+  // phase's exact query cannot be represented inside the existing diagnostic cap.
+  for(const phase of ['DATA','HISTORY_DATA'])archiveRelationPreflightSql(inventory,phase);return inventory;
+}
+function archiveRelationPreflightSql(inventory,phase){
+  need(inventory?.complete===true&&/^[a-f0-9]{64}$/.test(inventory.digest)&&['DATA','HISTORY_DATA'].includes(phase),'ARCHIVE_RELATION_INVENTORY_INCOMPLETE');
+  const rows=inventory.relations.filter(r=>r.phase===phase);
+  const required=rows.length?'VALUES '+rows.map(r=>'('+[r.kind,r.qualified,r.schemaClass,r.relationClass].map(sqlString).join(',')+')').join(',')
+    :'SELECT NULL::text,NULL::text,NULL::text,NULL::text WHERE false';
+  const wrong="oid IS NOT NULL AND NOT ((kind='COPY' AND relkind IN ('r','p')) OR (kind='SEQUENCE' AND relkind='S'))";
+  const grouped=where=>`coalesce((SELECT jsonb_object_agg(schema_class,n) FROM (SELECT schema_class,count(*) n FROM observed WHERE ${where} GROUP BY schema_class) g),'{}'::jsonb)`;
+  const fixed=where=>`coalesce((SELECT jsonb_agg(relation_class ORDER BY relation_class) FROM (SELECT DISTINCT relation_class FROM observed WHERE ${where} AND relation_class<>'OTHER') g),'[]'::jsonb)`;
+  const sql=`SET LOCAL standard_conforming_strings = on;\nWITH required(kind,qualified,schema_class,relation_class) AS (${required}),
+observed AS (SELECT e.*,c.oid,c.relkind FROM required e LEFT JOIN pg_catalog.pg_class c ON c.oid=pg_catalog.to_regclass(e.qualified))
+SELECT jsonb_build_object('kind','ARCHIVE_RELATION_PREFLIGHT_V1','phase',${sqlString(phase)},'inventorySha256',${sqlString(inventory.digest)},
+'completeParse',true,'copyTargets',count(*) FILTER (WHERE kind='COPY'),'sequenceTargets',count(*) FILTER (WHERE kind='SEQUENCE'),
+'missingCount',count(*) FILTER (WHERE oid IS NULL),'wrongKindCount',count(*) FILTER (WHERE ${wrong}),
+'missingBySchema',${grouped('oid IS NULL')},'wrongKindBySchema',${grouped(wrong)},
+'missingFixedRelations',${fixed('oid IS NULL')},'wrongKindFixedRelations',${fixed(wrong)}) AS rr_archive_relation_report,
+(count(*) FILTER (WHERE oid IS NULL OR (${wrong}))=0) AS rr_archive_relation_ok FROM observed
+\\gset
+\\echo :rr_archive_relation_report
+\\if :rr_archive_relation_ok
+\\else
+DO $rr_archive_relation$ BEGIN RAISE SQLSTATE 'P0001' USING MESSAGE='ARCHIVE_RELATION_PREFLIGHT_MISSING_OR_KIND'; END $rr_archive_relation$;
+\\endif
+`;
+  const bytes=Buffer.from(sql);need(bytes.length<=P.diagnosticBytes,'ARCHIVE_RELATION_QUERY_BOUND');return bytes;
+}
+function readArchiveRelationPreflight(c,stage,bytes,exit){
+  const phase=stage==='RESTORE_ARCHIVE_ROLES_SCHEMA_DATA'?'DATA':stage==='RESTORE_ARCHIVE_HISTORY'?'HISTORY_DATA':null;
+  if(!phase||!c.archiveRelationInventory)return null;
+  const reports=[];for(const line of bytes.toString('utf8').split(/\r?\n/))try{
+    const value=JSON.parse(line);if(value?.kind==='ARCHIVE_RELATION_PREFLIGHT_V1')reports.push(value);
+  }catch{}
+  if(!reports.length&&exit!==0)return null;
+  need(reports.length===1,'ARCHIVE_RELATION_REPORT_MISSING');const report=reports[0],inventory=c.archiveRelationInventory;
+  const keys=['kind','phase','inventorySha256','completeParse','copyTargets','sequenceTargets','missingCount','wrongKindCount',
+    'missingBySchema','wrongKindBySchema','missingFixedRelations','wrongKindFixedRelations'];
+  need(JSON.stringify(Object.keys(report).sort())===JSON.stringify(keys.sort()),'ARCHIVE_RELATION_REPORT_FIELDS');
+  const rows=inventory.relations.filter(r=>r.phase===phase),copies=rows.filter(r=>r.kind==='COPY').length,sequences=rows.length-copies;
+  need(report.phase===phase&&report.inventorySha256===inventory.digest&&report.completeParse===true
+    &&report.copyTargets===copies&&report.sequenceTargets===sequences,'ARCHIVE_RELATION_REPORT_IDENTITY');
+  const labels=new Set(rows.map(r=>r.relationClass).filter(r=>r!=='OTHER')),schemas=new Set([...Object.values(ARCHIVE_RELATION_SCHEMAS),'OTHER']);
+  for(const prefix of ['missing','wrongKind']){
+    const count=report[prefix+'Count'],groups=report[prefix+'BySchema'],fixed=report[prefix+'FixedRelations'];
+    need(Number.isSafeInteger(count)&&count>=0&&count<=rows.length&&groups&&Object.getPrototypeOf(groups)===Object.prototype
+      &&Object.keys(groups).every(k=>schemas.has(k)&&Number.isSafeInteger(groups[k])&&groups[k]>0)
+      &&Object.values(groups).reduce((n,v)=>n+v,0)===count&&Array.isArray(fixed)&&fixed.length<=count
+      &&new Set(fixed).size===fixed.length&&fixed.every(v=>labels.has(v)),'ARCHIVE_RELATION_REPORT_COUNTS');
+  }
+  need(report.missingCount+report.wrongKindCount<=rows.length,'ARCHIVE_RELATION_REPORT_COUNTS');
+  c.archiveRelationReports??=new Map();need(!c.archiveRelationReports.has(phase),'ARCHIVE_RELATION_REPORT_DUPLICATE');
+  c.archiveRelationReports.set(phase,report);return report;
 }
 async function verifyArchiveDataParity(c,p,archive){
   const expected={},input=archiveParitySql(c,archive,expected);
@@ -806,14 +926,66 @@ async function verifyArchiveDataParity(c,p,archive){
   assert.deepEqual(actual,{status:'PASS',scope:'AUTHENTICATED_ARCHIVE_CONTENT_AND_DUPLICATES',tables:expected.tableCount,rows:expected.rowCount,sequences:expected.sequenceCount});
   return {status:'PASS',scope:actual.scope,digest:sha(Buffer.from(JSON.stringify({files:archive.files.filter(f=>['data.sql','history-data.sql'].includes(f.file)),...expected})))};
 }
+// The normal synthetic route owns B and its synthetic rows. Only self-tests
+// supply the private run seam; the fixed normal caller always uses real psql.
+async function verifySyntheticRelationPreflight(c,p,archive,run=psql){
+  need(c.archive===false&&p.side==='B'&&typeof run==='function','SYNTHETIC_RELATION_TARGET');
+  need(!c.archiveRelationInventory&&!c.archiveRelationReports,'SYNTHETIC_RELATION_INITIAL_STATE');
+  const inventory=await collectArchiveRelationInventory(c,archive);
+  const table='"public"."rr_restore_probe"',sequence='"public"."rr_restore_probe_id_seq"';
+  need(inventory.relations.some(r=>r.phase==='DATA'&&r.kind==='COPY'&&r.qualified===table)
+    &&inventory.relations.some(r=>r.phase==='DATA'&&r.kind==='SEQUENCE'&&r.qualified===sequence),'SYNTHETIC_RELATION_EXISTING_TARGETS');
+  const variant=relations=>({complete:true,relations,digest:sha(Buffer.from(JSON.stringify({
+    files:archive.files.filter(f=>['data.sql','history-data.sql'].includes(f.file)),relations})))});
+  const execute=async(value,phase,before='',after='')=>{
+    c.archiveRelationInventory=value;c.archiveRelationReports=new Map();
+    const input=(async function*(){if(before)yield Buffer.from(before);yield archiveRelationPreflightSql(value,phase);if(after)yield Buffer.from(after);})();
+    await run(c,p,phase==='DATA'?'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA':'RESTORE_ARCHIVE_HISTORY',input);
+    const report=c.archiveRelationReports.get(phase);
+    need(report&&report.missingCount===0&&report.wrongKindCount===0,'SYNTHETIC_RELATION_POSITIVE_REPORT');return report;
+  };
+  const snapshotSql="SELECT jsonb_build_object('beforeRows',(SELECT count(*) FROM public.rr_restore_duplicates WHERE value='rr_preflight_before'),"
+    +"'afterRows',(SELECT count(*) FROM public.rr_restore_duplicates WHERE value='rr_preflight_after'),"
+    +"'sequenceValue',last_value::text,'isCalled',is_called) FROM public.rr_restore_probe_id_seq;\n";
+  const snapshot=async()=>{
+    const value=JSON.parse((await run(c,p,'SYNTHETIC_RELATION_CANARY_SNAPSHOT',Buffer.from(snapshotSql))).toString().trim());
+    need(value&&Object.keys(value).sort().join(',')==='afterRows,beforeRows,isCalled,sequenceValue'
+      &&value.beforeRows===0&&value.afterRows===0&&typeof value.sequenceValue==='string'&&/^[0-9]{1,19}$/.test(value.sequenceValue)
+      &&typeof value.isCalled==='boolean','SYNTHETIC_RELATION_CANARY_STATE');return value;
+  };
+  try{
+    await execute(inventory,'DATA');
+    const empty=await execute(variant(inventory.relations.filter(r=>r.phase!=='HISTORY_DATA')),'HISTORY_DATA');
+    need(empty.copyTargets===0&&empty.sequenceTargets===0,'SYNTHETIC_RELATION_EMPTY_HISTORY');
+    const baseline=await snapshot();
+    const missing=variant([...inventory.relations,archiveRelationEntry('data.sql','COPY','"public"."rr_preflight_missing_relation"')]);
+    const wrong=variant(inventory.relations.map(r=>r.phase==='DATA'&&r.qualified===sequence?{...r,kind:'COPY'}:r));
+    const prefix="INSERT INTO public.rr_restore_duplicates(value) VALUES ('rr_preflight_before');\n";
+    // nextval is deliberately nontransactional: an unchanged sequence proves
+    // that the post-preflight DATA tail never ran, separately from row rollback.
+    const tail="SELECT nextval('public.rr_restore_probe_id_seq');\nINSERT INTO public.rr_restore_duplicates(value) VALUES ('rr_preflight_after');\n";
+    for(const [value,missingCount,wrongKindCount]of [[missing,1,0],[wrong,0,1]]){
+      await assert.rejects(()=>execute(value,'DATA',prefix,tail),e=>e.code==='ARCHIVE_RELATION_PREFLIGHT_MISSING'&&e.inputOwner==='RELATION_PREFLIGHT');
+      const report=c.archiveRelationReports.get('DATA');
+      need(report&&report.missingCount===missingCount&&report.wrongKindCount===wrongKindCount,'SYNTHETIC_RELATION_NEGATIVE_REPORT');
+      assert.deepEqual(await snapshot(),baseline,'The owned preflight must roll back its canary and stop before DATA/nextval');
+    }
+    return {status:'PASS',scope:'SYNTHETIC_OWNED_POSTGRES_RELATION_PREFLIGHT',checks:4,
+      sameBuilderAndPsqlReader:true,emptyHistory:true,missingAndWrongKindClosed:true,canaryRollback:true,dataTailNotExecuted:true};
+  }finally{
+    delete c.archiveRelationInventory;delete c.archiveRelationReports;delete c.archiveRelationInventoryAttempted;
+  }
+}
 async function restoreArchive(c,b,indexCommitmentSha256){
   await startProject(c,b);
   need((await query(c,b,'ARCHIVE_TARGET_EMPTY','select to_jsonb((select count(*) from auth.users)=0);'))===true,'ARCHIVE_TARGET_NOT_EMPTY');
   await auditArchiveSystemRoles(c,b,indexCommitmentSha256);
   const archive=await materializeArchiveInputs(c,indexCommitmentSha256);c.dumps=archive.files;
+  c.archiveRelationInventory=await collectArchiveRelationInventory(c,archive);
   await command(c,'QUIESCE_B_AUTH','docker',['stop','--time','10',b.auth],{maxMs:30_000});
   await restoreArchiveSql(c,b,'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA',archive);
   await restoreArchiveSql(c,b,'RESTORE_ARCHIVE_HISTORY',archive,true);
+  need(c.archiveRelationReports?.size===2,'ARCHIVE_RELATION_REPORT_INCOMPLETE');
   const parity=await verifyArchiveDataParity(c,b,archive);
   const restored=await query(c,b,'ARCHIVE_RESTORED_CATALOG',`select jsonb_build_object(
     'database',current_database(),'role',current_user,'serverVersion',current_setting('server_version_num'),
@@ -876,6 +1048,9 @@ function restorePublicReport(c,result,error,closed){
     ...(c.archive&&result&&Object.hasOwn(result,'fullDatabaseBackupVerified')?{fullDatabaseBackupVerified:strongArchive,
       authRestoreVerified:strongArchive,sourceDataParityVerified:strongArchive}:{}),
     ...(c.archive&&c.systemRoleAudit?{systemRoleAudit:c.systemRoleAudit}:{}),
+    ...(c.archive&&error&&c.archiveRelationInventoryAttempted?{archiveRelationPreflight:{
+      inventoryComplete:c.archiveRelationInventory?.complete===true,reports:[...(c.archiveRelationReports?.values()??[])],
+    }}:{}),
     ...(!c.archive?{images:c.images,dumpFiles:c.dumps,authRequests:c.authRequests,processes:c.processes}:{})};
 }
 async function fixture({archive=false}={}){
@@ -933,6 +1108,7 @@ async function fixture({archive=false}={}){
       await fs.writeFile(path.join(parityDirectory,file),dumps[i],{flag:'wx',mode:0o600});
       parityArchive.files.push({file,bytes:dumps[i].length,sha256:sha(dumps[i])});
     }
+    const relationPreflight=await verifySyntheticRelationPreflight(c,b,parityArchive);
     await verifyArchiveDataParity(c,b,parityArchive);
     for(const [kind,mutation]of [
       ['VALUE',"UPDATE public.rr_restore_duplicates SET value='changed' WHERE ctid IN (SELECT ctid FROM public.rr_restore_duplicates WHERE value='other' LIMIT 1);\n"],
@@ -954,6 +1130,7 @@ async function fixture({archive=false}={}){
     await auth(c,b,'/token?grant_type=password',{body:{email,password:password+'wrong'},status:400});
     result={status:'PASS',scope:'synthetic-standard-cli-local-restore',sourceHead:process.env.EXPECTED_HEAD_SHA,cliVersion:P.cli,
       standardFiveFileRoundtrip:true,utf8DecimalMetadata:true,rolesAndMigrationHistory:true,newAuthPasswordLogin:true,
+      syntheticRelationPreflight:relationPreflight,
       productionBackupVerified:false,cryptoR2Verified:false,productionAuthRestoreVerified:false};
     }
   }catch(e){error=safeError(e,c.stage);}
@@ -1438,6 +1615,144 @@ async function selfTest(){
       const archive=await materializeArchiveInputs(c,index,{env,archive:materialize});
       await assert.rejects(async()=>{for await(const _chunk of archiveParitySql(c,archive,{})){};},e=>/^ARCHIVE_PARITY_/.test(e.code));
     },{fileSql:{'data.sql':data,'history-data.sql':'-- empty history\n'}});
+  });
+  test('archive relation preflight: full COPY/setval inventory and valid same-transaction primary/history reports',async()=>{
+    const data="\\restrict fixtureToken\nSET statement_timeout = 0;\nSET client_encoding = 'UTF8';\nSET standard_conforming_strings = on;\n"
+      +'COPY "storage"."migrations" ("id") FROM stdin;\nprivate-row-never-report'+('æ'.repeat(ARCHIVE_SQL.chunkBytes))+'\n\\.\n'
+      +'COPY "auth"."users" ("id") FROM stdin;\n\\.\nCOPY "auth"."identities" ("id") FROM stdin;\n\\.\n'
+      +`SELECT pg_catalog.setval('"public"."probe_id_seq"', 7, true);\n\\unrestrict fixtureToken\n`;
+    const history='COPY "supabase_migrations"."schema_migrations" ("version") FROM stdin;\nprivate-history-row\n\\.\n';
+    await ownArchive(async({c,env,index,materialize})=>{
+      const archive=await materializeArchiveInputs(c,index,{env,archive:materialize});c.archive=true;c.processes=[];
+      c.archiveRelationInventory=await collectArchiveRelationInventory(c,archive);const inventory=c.archiveRelationInventory;
+      assert.equal(inventory.relations.length,5);assert.equal(inventory.complete,true);
+      assert.equal(inventory.relations.filter(r=>r.kind==='SEQUENCE').length,1);
+      c.home=path.join(c.root,'home');await fs.mkdir(c.home,{mode:0o700});
+      for(const [phase,stage,historyPhase]of [['DATA','RESTORE_ARCHIVE_ROLES_SCHEMA_DATA',false],['HISTORY_DATA','RESTORE_ARCHIVE_HISTORY',true]]){
+        const rows=inventory.relations.filter(r=>r.phase===phase),query=archiveRelationPreflightSql(inventory,phase).toString();
+        assert(query.includes('pg_catalog.to_regclass(e.qualified)'));assert(query.includes('\\gset\n'));
+        assert(!query.includes('private-row')&&!query.includes('private-history-row'));
+        const streamed=[];for await(const part of materializedRestoreBytes(c,archive,historyPhase))streamed.push(part);
+        const original=await fs.readFile(path.join(archive.directory,historyPhase?'history-data.sql':'data.sql'));
+        const wire=Buffer.concat(streamed);assert(wire.indexOf(query)<wire.indexOf(original));assert(wire.includes(original));
+        const report={kind:'ARCHIVE_RELATION_PREFLIGHT_V1',phase,inventorySha256:inventory.digest,completeParse:true,
+          copyTargets:rows.filter(r=>r.kind==='COPY').length,sequenceTargets:rows.filter(r=>r.kind==='SEQUENCE').length,
+          missingCount:0,wrongKindCount:0,missingBySchema:{},wrongKindBySchema:{},missingFixedRelations:[],wrongKindFixedRelations:[]};
+        const child=['-e','process.stdin.resume();process.stdin.on("end",()=>process.stdout.write('+JSON.stringify(JSON.stringify(report)+'\n')+'));'];
+        await command(c,stage,process.execPath,child,{input:materializedRestoreBytes(c,archive,historyPhase),archivePsql:true,maxMs:10_000});
+      }
+      assert.equal(c.archiveRelationReports.size,2);
+      assert.equal(restorePublicReport(c,null,{code:'LATER_FAILURE'},true).archiveRelationPreflight.inventoryComplete,true);
+    },{fileSql:{'data.sql':data,'history-data.sql':history}});
+  });
+  test('archive relation preflight: missing Storage plus another family is one fixed failure with no row or arbitrary identifier output',async()=>{
+    const data='COPY "storage"."migrations" ("id") FROM stdin;\nprivate-row\n\\.\n'
+      +'COPY "auth"."users" ("id") FROM stdin;\n\\.\nCOPY "auth"."identities" ("id") FROM stdin;\n\\.\n';
+    await ownArchive(async({c,env,index,materialize})=>{
+      const archive=await materializeArchiveInputs(c,index,{env,archive:materialize});c.archive=true;c.processes=[];
+      c.archiveRelationInventory=await collectArchiveRelationInventory(c,archive);c.home=path.join(c.root,'home');await fs.mkdir(c.home,{mode:0o700});
+      const report={kind:'ARCHIVE_RELATION_PREFLIGHT_V1',phase:'DATA',inventorySha256:c.archiveRelationInventory.digest,completeParse:true,
+        copyTargets:3,sequenceTargets:0,missingCount:2,wrongKindCount:0,missingBySchema:{STORAGE:1,AUTH:1},wrongKindBySchema:{},
+        missingFixedRelations:['AUTH_IDENTITIES','STORAGE_MIGRATIONS'],wrongKindFixedRelations:[]};
+      const child=['-e','process.stdin.resume();process.stdin.on("end",()=>{process.stdout.write('+JSON.stringify(JSON.stringify(report)+'\n')+');process.stderr.write("psql:<stdin>:7: ERROR: P0001\\n",()=>process.exit(3));});'];
+      await assert.rejects(()=>command(c,'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA',process.execPath,child,
+        {input:materializedRestoreBytes(c,archive),archivePsql:true,maxMs:10_000}),e=>{
+        assert.equal(e.code,'ARCHIVE_RELATION_PREFLIGHT_MISSING');assert.equal(e.inputOwner,'RELATION_PREFLIGHT');
+        const publicReport=restorePublicReport(c,null,safeError(e,'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA'),true);
+        assert.equal(publicReport.status,'FAILED_CLOSED');assert.equal(publicReport.archiveRelationPreflight.reports[0].missingCount,2);
+        assert.deepEqual(publicReport.archiveRelationPreflight.reports[0].missingFixedRelations,['AUTH_IDENTITIES','STORAGE_MIGRATIONS']);
+        assert(!JSON.stringify(publicReport).includes('private-row'));return true;
+      });
+      for(const edit of [r=>{r.completeParse=false;},r=>{r.missingFixedRelations=['free-private-name'];},r=>{r.missingBySchema={RAW_PRIVATE:2};},
+        r=>{r.missingCount=1;},r=>{r.inventorySha256='b'.repeat(64);},r=>{r.extra='private-value';}]){
+        const changed=structuredClone(report);edit(changed);const trial={archiveRelationInventory:c.archiveRelationInventory};
+        assert.throws(()=>readArchiveRelationPreflight(trial,'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA',Buffer.from(JSON.stringify(changed)),3),
+          e=>/^ARCHIVE_RELATION_/.test(e.code));assert.equal(trial.archiveRelationReports,undefined);
+      }
+      assert.throws(()=>readArchiveRelationPreflight({archiveRelationInventory:c.archiveRelationInventory},
+        'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA',Buffer.alloc(0),0),e=>e.code==='ARCHIVE_RELATION_REPORT_MISSING');
+      const wrong={...report,missingCount:0,missingBySchema:{},missingFixedRelations:[],wrongKindCount:1,
+        wrongKindBySchema:{STORAGE:1},wrongKindFixedRelations:['STORAGE_MIGRATIONS']};
+      delete c.archiveRelationReports;
+      const wrongChild=['-e','process.stdin.resume();process.stdin.on("end",()=>{process.stdout.write('+JSON.stringify(JSON.stringify(wrong)+'\n')+');process.stderr.write("psql:<stdin>:7: ERROR: P0001\\n",()=>process.exit(3));});'];
+      await assert.rejects(()=>command(c,'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA',process.execPath,wrongChild,
+        {input:materializedRestoreBytes(c,archive),archivePsql:true,maxMs:10_000}),e=>e.code==='ARCHIVE_RELATION_PREFLIGHT_MISSING');
+      assert.equal(c.archiveRelationReports.get('DATA').wrongKindCount,1);
+    },{fileSql:{'data.sql':data,'history-data.sql':'-- empty history\n'}});
+  });
+  test('archive relation preflight: unsupported unsafe incomplete and over-bound inputs never yield a complete inventory',async()=>{
+    const auth='COPY "auth"."users" ("id") FROM stdin;\n\\.\nCOPY "auth"."identities" ("id") FROM stdin;\n\\.\n';
+    for(const extra of ['SET statement_timeout = 0; COPY "private"."hidden" ("id") FROM stdin;\n',
+      'SET standard_conforming_strings = off;\n','INSERT INTO public.private VALUES (1);\n',
+      'COPY "private"."hidden" FROM PROGRAM \'private-command\';\n','COPY "private"."hidden" ("id") FROM stdin;\nunterminated\n',
+      `SELECT pg_catalog.setval('unsafe; SELECT private', 1, true);\n`,
+      'COPY "public"."'+('x'.repeat(64))+'" ("id") FROM stdin;\n\\.\n',
+      '\\restrict a\n\\unrestrict b\n',
+      Array.from({length:4097},(_,i)=>'COPY "public"."t'+i+'" ("id") FROM stdin;\n\\.\n').join('')])
+      await ownArchive(async({c,env,index,materialize})=>{
+        const archive=await materializeArchiveInputs(c,index,{env,archive:materialize});
+        await assert.rejects(()=>collectArchiveRelationInventory(c,archive),e=>/^ARCHIVE_RELATION_|^ARCHIVE_PARITY_/.test(e.code));
+        assert.equal(c.archiveRelationInventory,undefined);assert.equal(c.archiveRelationReports,undefined);
+      },{fileSql:{'data.sql':auth+extra,'history-data.sql':'-- empty history\n'}});
+    for(const invalid of [Buffer.from([0]),Buffer.from([0xc3])])await ownArchive(async({c,env,index,materialize})=>{
+      const archive=await materializeArchiveInputs(c,index,{env,archive:materialize}),bytes=Buffer.concat([Buffer.from(auth),invalid]);
+      const file=path.join(archive.directory,'data.sql');await fs.writeFile(file,bytes);
+      Object.assign(archive.files.find(f=>f.file==='data.sql'),{bytes:bytes.length,sha256:sha(bytes)});
+      await assert.rejects(()=>collectArchiveRelationInventory(c,archive),e=>/^ARCHIVE_RELATION_/.test(e.code));
+      assert.equal(c.archiveRelationInventory,undefined);
+    },{fileSql:{'data.sql':auth,'history-data.sql':'-- empty history\n'}});
+  });
+  test('synthetic relation preflight normal caller: protocol stubs preserve builder stream reader and rollback guards',async()=>{
+    const data='COPY "public"."rr_restore_probe" ("id") FROM stdin;\n\\.\n'
+      +'COPY "auth"."users" ("id") FROM stdin;\n\\.\nCOPY "auth"."identities" ("id") FROM stdin;\n\\.\n'
+      +`SELECT pg_catalog.setval('"public"."rr_restore_probe_id_seq"', 7, true);\n`;
+    const trial=async advanceSequence=>ownArchive(async({c,env,index,materialize})=>{
+      const archive=await materializeArchiveInputs(c,index,{env,archive:materialize});
+      c.archive=false;c.processes=[];c.home=path.join(c.root,'home');await fs.mkdir(c.home,{mode:0o700});
+      const calls=[];let snapshots=0;
+      const run=async(context,project,stage,input)=>{
+        assert.equal(context,c);assert.equal(project.side,'B');
+        let body,negative=false;
+        if(stage==='SYNTHETIC_RELATION_CANARY_SNAPSHOT'){
+          snapshots++;body={beforeRows:0,afterRows:0,sequenceValue:advanceSequence&&snapshots>1?'8':'7',isCalled:true};
+        }else{
+          assert(['RESTORE_ARCHIVE_ROLES_SCHEMA_DATA','RESTORE_ARCHIVE_HISTORY'].includes(stage));
+          const phase=stage==='RESTORE_ARCHIVE_HISTORY'?'HISTORY_DATA':'DATA',inventory=context.archiveRelationInventory;
+          const rows=inventory.relations.filter(r=>r.phase===phase);
+          const missing=rows.some(r=>r.qualified==='"public"."rr_preflight_missing_relation"');
+          const wrong=rows.some(r=>r.kind==='COPY'&&r.qualified==='"public"."rr_restore_probe_id_seq"');
+          negative=missing||wrong;
+          body={kind:'ARCHIVE_RELATION_PREFLIGHT_V1',phase,inventorySha256:inventory.digest,completeParse:true,
+            copyTargets:rows.filter(r=>r.kind==='COPY').length,sequenceTargets:rows.filter(r=>r.kind==='SEQUENCE').length,
+            missingCount:missing?1:0,wrongKindCount:wrong?1:0,missingBySchema:missing?{PUBLIC:1}:{},wrongKindBySchema:wrong?{PUBLIC:1}:{},
+            missingFixedRelations:[],wrongKindFixedRelations:[]};
+        }
+        const chunks=[];
+        const wire=Buffer.isBuffer(input)?input:(async function*(){for await(const chunk of input){chunks.push(Buffer.from(chunk));yield chunk;}})();
+        const program='process.stdin.resume();process.stdin.on("end",()=>{process.stdout.write('+JSON.stringify(JSON.stringify(body)+'\n')+');'
+          +(negative?'process.stderr.write("psql:<stdin>:10: ERROR: P0001\\n",()=>process.exit(3));':'')+'});';
+        try{return await command(context,stage,process.execPath,['-e',program],{input:wire,archivePsql:!Buffer.isBuffer(input),maxMs:10_000});}
+        finally{
+          const bytes=Buffer.isBuffer(input)?input:Buffer.concat(chunks),sql=bytes.toString('utf8');
+          if(stage!=='SYNTHETIC_RELATION_CANARY_SNAPSHOT'){
+            assert(sql.includes('pg_catalog.to_regclass(e.qualified)'));assert(sql.includes('\\gset\n'));assert(sql.includes('\\if :rr_archive_relation_ok\n'));
+            if(negative){assert(sql.indexOf('rr_preflight_before')<sql.indexOf('WITH required'));
+              assert(sql.indexOf('\\endif\n')<sql.indexOf("SELECT nextval('public.rr_restore_probe_id_seq')"));assert(sql.includes('rr_preflight_after'));}
+          }
+          calls.push({stage,negative});
+        }
+      };
+      const result=await verifySyntheticRelationPreflight(c,{side:'B'},archive,run);
+      assert.equal(result.status,'PASS');assert.equal(result.checks,4);assert.equal(result.dataTailNotExecuted,true);
+      assert.equal(calls.length,7);assert.equal(calls.filter(row=>row.negative).length,2);assert.equal(snapshots,3);
+      assert.equal(c.archiveRelationInventory,undefined);assert.equal(c.archiveRelationReports,undefined);
+    },{fileSql:{'data.sql':data,'history-data.sql':'-- empty synthetic history\n'}});
+    await trial(false);
+    await assert.rejects(()=>trial(true),e=>e.code==='ERR_ASSERTION','A nontransactional DATA witness advance must fail the same normal caller');
+    const source=await fs.readFile(fileURLToPath(import.meta.url),'utf8');
+    const caller=source.slice(source.indexOf('async function fixture('),source.indexOf('\nasync function selfTest('));
+    assert(caller.includes('const relationPreflight=await verifySyntheticRelationPreflight(c,b,parityArchive);'));
+    assert(caller.includes('syntheticRelationPreflight:relationPreflight,'));
   });
   test('archive Auth endpoint uses only the healthy owned Kong on the internal bridge',()=>{
     const id='a'.repeat(64),net='b'.repeat(64),endpoint='c'.repeat(64),c={owner:'123-1',archive:true};

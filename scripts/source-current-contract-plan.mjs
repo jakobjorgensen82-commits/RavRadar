@@ -95,6 +95,23 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
   weatherScalarPlanning:[
     'node --test scripts/test-weather-component-normal-wireup.mjs',
   ],
+  sharing:[
+    'node scripts/test-map-forecast-timeline.mjs',
+    'node scripts/test-forecast-share-projection.mjs',
+  ],
+  ownerErasure:[
+    'node --test scripts/test-delete-trip-owner-data-readback.mjs',
+  ],
+  // Shared capture/SAVE/restore, authenticated audit and local installation.
+  // The ordinary package group plus its actual caller contracts run in full.
+  weatherProgressRecovery:[
+    'node --test scripts/test-weather-component-progress-cache.mjs scripts/test-weather-component-progress-workflow.mjs scripts/test-dmi-progress-inputs.mjs',
+    'node --test scripts/test-audit-saved-weather-inputs.mjs',
+    'node --test scripts/test-native-identity-checkpoint-runtime.mjs',
+    'node --test scripts/test-current-family-cold-supervisor-wrapper.mjs',
+    'node --test scripts/test-saved-current-window-scratch.mjs',
+  ],
+
   // Aktuel faktisk kildegate + arkivkontrakt. Det er ikke et løfte om at
   // samtlige historiske whole-oracles er udført.
   compatibility:[
@@ -239,6 +256,18 @@ const PATH_AREAS=freeze({
     'scripts/lib/weather-component-runtime.mjs',
     'scripts/test-weather-component-normal-wireup.mjs',
   ],
+  sharing:[
+    'scripts/forecast-share/handler.mjs',
+    'scripts/test-forecast-share-projection.mjs',
+  ],
+  ownerErasure:[
+    'supabase/functions/_shared/trip-owner-erasure.js',
+    'scripts/test-delete-trip-owner-data-readback.mjs',
+  ],
+  weatherProgressRecovery:[
+    'scripts/weather-component-progress-cache.mjs',
+    'scripts/test-weather-component-progress-cache.mjs',
+  ],
   // Disse kendte historiske/metakontroller giver ingen produktadmission i V3.
   // Deres ændring kræver stadig en uafhængig kontrolgennemgang.
   actionVersions:[
@@ -270,6 +299,8 @@ const PATH_AREAS=freeze({
     'scripts/lib/source-impact-domain-owners-598.json',
   ],
 });
+const WEATHER_PROGRESS_RECOVERY_PATHS=new Set(PATH_AREAS.weatherProgressRecovery);
+const SMALL_USER_CONTRACT_PATHS=new Set([...PATH_AREAS.sharing,...PATH_AREAS.ownerErasure]);
 const sourceControlPaths=new Set(PATH_AREAS.sourceControls);
 // The same actual owner/target catalog serves current CI and historical input admission.
 // This is only a lookup; it does not run a producer, read Git or qualify a receipt.
@@ -681,6 +712,12 @@ export function planSourceCurrentContractsFromGit(input){
       if(['scripts/admin-document-history-maintenance.mjs','scripts/test-admin-document-history-maintenance.mjs'].includes(file)
         &&(row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'))
         return refuse('CURRENT_ADMIN_HISTORY_REQUIRES_EXISTING_REGULAR_SOURCE');
+      if(WEATHER_PROGRESS_RECOVERY_PATHS.has(file)
+        &&(row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'))
+        return refuse('CURRENT_WEATHER_PROGRESS_REQUIRES_EXISTING_REGULAR_SOURCE');
+      if(SMALL_USER_CONTRACT_PATHS.has(file)
+        &&(row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'))
+        return refuse('CURRENT_SMALL_USER_CONTRACT_REQUIRES_EXISTING_REGULAR_SOURCE');
       if(DMI_BUDGET_PATHS.has(file)&&(row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'))
         return refuse('CURRENT_DMI_BUDGET_REQUIRES_EXISTING_REGULAR_SOURCE');
       const recoveryAreas=file==='scripts/update-dmi-bulk.py'?dmiCollectionRecoveryUpdaterAreas(
@@ -707,7 +744,7 @@ export function planSourceCurrentContractsFromGit(input){
         pathAreas.get(file)??(/^docs\/(?:rdks|ai|handbook)\/.+\.md$/.test(file)?['documentation']:null));
       if(!areas){unknown.push(file);continue;}
       for(const area of areas){if(!selected.has(area))selected.set(area,[]);selected.get(area).push(file);}
-      if(sourceControlPaths.has(file)||historicalPaths.has(file)||areas.includes('compatibility')||areas.includes('assistantEdge')||areas.includes('mailOwnerProbe')||areas.includes('currentInstalledCodeOnly')||areas.includes('workflowSupport')||areas.includes('dmiBudget')||areas.includes('dmiCollectionRecovery')||areas.includes('adminHistory')||file.startsWith('scripts/test-'))
+      if(sourceControlPaths.has(file)||historicalPaths.has(file)||areas.includes('compatibility')||areas.includes('assistantEdge')||areas.includes('mailOwnerProbe')||areas.includes('currentInstalledCodeOnly')||areas.includes('workflowSupport')||areas.includes('dmiBudget')||areas.includes('dmiCollectionRecovery')||areas.includes('adminHistory')||areas.includes('sharing')||areas.includes('ownerErasure')||areas.includes('weatherProgressRecovery')||file.startsWith('scripts/test-'))
         out.controlQualificationRequired=true;
     }
     if(unknown.length){out.unclassifiedPaths=unknown.sort();return refuse('CURRENT_UNCLASSIFIED_PATH');}

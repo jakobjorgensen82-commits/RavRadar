@@ -16,6 +16,7 @@ import { classifyProductionTargetFreshness } from './check-production-target-fre
 import { buildPrivateWeatherComponentPack, unpackPrivateWeatherComponentPack, privateWeatherPackJsonReadsClosed,
   ownFileDescriptorIdentity, ownedFileDescriptorClosed } from './lib/private-weather-component-pack.mjs';
 import { PRIVATE_WEATHER_COMPONENT_FILES, PRIVATE_WEATHER_COMPONENT_PACK_FILE } from './lib/private-weather-component-inventory.mjs';
+import { PRIVATE_WEATHER_PROGRESS_ONLY_FILES } from './lib/private-weather-progress-files.mjs';
 import { mergeVerifiedProtectedProgressComponents, protectedProgressUnionFailureCode, protectedProgressPackJsonReadsClosed } from './lib/verified-protected-progress-components.mjs';
 
 export const WEATHER_PROGRESS_CIPHER_PATH = '.cache/weather-private-progress.encrypted';
@@ -100,6 +101,95 @@ async function checkedPath(root, relative, { optional = false, maximum = MAX_PAC
   }
   return destination;
 }
+// Metadata only, after a failed SAVE. These fixed classes never expose paths,
+// payloads or caller-supplied error text, and never reconstruct the codec plan.
+const PROGRESS_OBSERVATION_FILES = Object.freeze([
+  ['OPEN_METEO_BANK', PRIVATE_WEATHER_COMPONENT_FILES.openMeteoBank],
+  ['COPERNICUS_BANK', PRIVATE_WEATHER_COMPONENT_FILES.copernicusBank],
+  ['COPERNICUS_PROGRESS', PRIVATE_WEATHER_COMPONENT_FILES.copernicusProgress],
+  ['FALLBACK_CURSOR', PRIVATE_WEATHER_COMPONENT_FILES.fallbackCursor],
+  ['SELECTED_COMPONENTS', PRIVATE_WEATHER_COMPONENT_FILES.selectedComponents],
+  ['DMI_ACTIVE', PRIVATE_WEATHER_COMPONENT_FILES.dmiActive],
+  ['DMI_CANDIDATE', PRIVATE_WEATHER_COMPONENT_FILES.dmiCandidate],
+  ['CURRENT_FIELD_SHADOW', PRIVATE_WEATHER_COMPONENT_FILES.currentFieldShadow],
+  ['COPERNICUS_CURRENT_SHADOW', PRIVATE_WEATHER_COMPONENT_FILES.copernicusCurrentShadow],
+  ['COPERNICUS_CURRENT_SOURCE_STAGE', PRIVATE_WEATHER_COMPONENT_FILES.copernicusCurrentSourceStage],
+  ['COPERNICUS_CURRENT_DONOR_BANK', PRIVATE_WEATHER_COMPONENT_FILES.copernicusCurrentDonorBank],
+  ['COPERNICUS_CURRENT_SEGMENT_JOURNAL', PRIVATE_WEATHER_COMPONENT_FILES.copernicusCurrentSegmentJournal],
+  ['OPEN_METEO_CURRENT_FALLBACK', PRIVATE_WEATHER_COMPONENT_FILES.openMeteoCurrentFallback],
+  ['OPEN_METEO_CURRENT_DONOR_BANK', PRIVATE_WEATHER_COMPONENT_FILES.openMeteoCurrentDonorBank],
+  ['COASTAL_POINT_DMI', PRIVATE_WEATHER_COMPONENT_FILES.coastalPointDmi],
+  ['COASTAL_POINT_STATE', PRIVATE_WEATHER_COMPONENT_FILES.coastalPointState],
+  ['COASTAL_POINT_STATUS', PRIVATE_WEATHER_COMPONENT_FILES.coastalPointStatus],
+  ['COASTAL_POINT_ACTIVATION_STATE', PRIVATE_WEATHER_COMPONENT_FILES.coastalPointActivationState],
+  ['COASTAL_POINT_PENDING_PROMOTION', PRIVATE_WEATHER_COMPONENT_FILES.coastalPointPendingPromotion],
+  ['DMI_FORECAST_STORE', PRIVATE_WEATHER_PROGRESS_ONLY_FILES.dmiForecastStore],
+  ['DMI_WATER_STATIONS', PRIVATE_WEATHER_PROGRESS_ONLY_FILES.dmiWaterStations],
+].map(Object.freeze));
+async function observationRoot(root) {
+  try {
+    const stat = await fs.lstat(root, { bigint: true });
+    return stat.isDirectory() && !stat.isSymbolicLink()
+      && typeof stat.dev === 'bigint' && typeof stat.ino === 'bigint'
+      ? { root, dev: stat.dev, ino: stat.ino } : null;
+  } catch { return null; }
+}
+async function observeFixedProgressFile(root, relative) {
+  try {
+    let current = root;
+    const segments = relative.split('/');
+    for (const [index, segment] of segments.entries()) {
+      if (!segment || segment === '.' || segment === '..' || segment.includes('\\')) return { status: 'UNKNOWN', bytes: null };
+      current = path.join(current, segment);
+      const stat = await fs.lstat(current, { bigint: true });
+      if (stat.isSymbolicLink()) return { status: 'UNKNOWN', bytes: null };
+      if (index < segments.length - 1) {
+        if (!stat.isDirectory()) return { status: 'UNKNOWN', bytes: null };
+      } else {
+        if (!stat.isFile() || stat.size < 0n || stat.size > BigInt(Number.MAX_SAFE_INTEGER)) return { status: 'UNKNOWN', bytes: null };
+        return { status: 'REGULAR_FILE', bytes: Number(stat.size) };
+      }
+    }
+  } catch (error) {
+    if (error?.code === 'ENOENT') return { status: 'ABSENT', bytes: null };
+  }
+  return { status: 'UNKNOWN', bytes: null };
+}
+async function postFailureFixedFileObservation(before, invocation) {
+  const unknownFiles = () => PROGRESS_OBSERVATION_FILES.map(([componentClass]) => ({ componentClass, status: 'UNKNOWN', bytes: null }));
+  const report = (files, reason) => {
+    const present = files.filter(row => row.status === 'REGULAR_FILE');
+    const knownPresentBytes = present.reduce((sum, row) => sum + row.bytes, 0);
+    const unknownFileCount = files.filter(row => row.status === 'UNKNOWN').length;
+    return {
+      schemaVersion: 1, kind: 'WEATHER_PROGRESS_FIXED_FILE_OBSERVATION',
+      phase: 'POST_SAVE_FAILURE', atomic: false, failedInputInventory: 'UNKNOWN',
+      status: reason === 'ROOT_IDENTITY_STABLE' ? (unknownFileCount ? 'PARTIAL' : 'OBSERVED') : 'UNAVAILABLE', reason,
+      fixedPathCount: 21, presentFileCount: present.length,
+      absentFileCount: files.filter(row => row.status === 'ABSENT').length, unknownFileCount,
+      knownPresentBytes, allFixedFileBytes: unknownFileCount ? null : knownPresentBytes, files,
+      cpReferenceInventory: 'UNKNOWN', cpReferenceBytes: null, manifestBytes: null, headerBytes: null, rawPackBytes: null,
+      maximumRawPackBytes: MAX_PACK_BYTES,
+    };
+  };
+  // The exact owned invocation must have settled and closed all its readers.
+  // A stable root does not make separate lstat observations an atomic snapshot.
+  if (!invocation || !privateWeatherPackJsonReadsClosed(invocation)) return report(unknownFiles(), 'PACK_READERS_UNPROVED');
+  const sameRoot = current => before !== null && current !== null && current.dev === before.dev && current.ino === before.ino;
+  try {
+    const paths = PROGRESS_OBSERVATION_FILES.map(([, relative]) => relative);
+    if (paths.length !== 21 || new Set(paths).size !== 21 || paths.some(value => typeof value !== 'string'))
+      return report(unknownFiles(), 'FIXED_PATHS_UNAVAILABLE');
+    if (!before || !sameRoot(await observationRoot(before.root))) return report(unknownFiles(), 'ROOT_IDENTITY_UNPROVED');
+    const files = [];
+    for (const [componentClass, relative] of PROGRESS_OBSERVATION_FILES)
+      files.push({ componentClass, ...await observeFixedProgressFile(before.root, relative) });
+    if (!sameRoot(await observationRoot(before.root))) return report(unknownFiles(), 'ROOT_IDENTITY_UNPROVED');
+    if (!Number.isSafeInteger(files.reduce((sum, row) => sum + (row.bytes ?? 0), 0))) return report(unknownFiles(), 'BYTE_SUM_UNAVAILABLE');
+    return report(files, 'ROOT_IDENTITY_STABLE');
+  } catch { return report(unknownFiles(), 'OBSERVATION_UNAVAILABLE'); }
+}
+
 async function conditionsDigest(root) {
   const source = await checkedPath(root, CONDITIONS_PATH);
   const hash = crypto.createHash('sha256');
@@ -560,6 +650,7 @@ export async function weatherComponentProgressCache({
   let coldPackInvocation = null;
   let cipherTemporary = null;
   let restoreInstalled = false;
+  let saveObservationRoot = null;
   try {
     if (!['capture-base', 'save', 'restore'].includes(mode)) fail('MODE_INVALID');
     if (typeof resumeOriginalTarget !== 'boolean' || (resumeOriginalTarget && mode !== 'restore')) fail('ARGUMENT_INVALID');
@@ -593,6 +684,7 @@ export async function weatherComponentProgressCache({
       if (!Number.isSafeInteger(maximumEncryptedBytes) || maximumEncryptedBytes < 1024
         || maximumEncryptedBytes > MAX_CIPHER_BYTES) fail('SIZE_BUDGET_INVALID');
       temporary = await temporaryRoot();
+      saveObservationRoot = await observationRoot(root);
       packInvocation = buildPrivateWeatherComponentPack({
         repositoryRoot: root, outputRoot: temporary.folder, conditions: {}, pythonExecutable,
         includeOperationalProgress: true,
@@ -763,7 +855,8 @@ export async function weatherComponentProgressCache({
       ?? (mode === 'capture-base' ? 'BASE_UNAVAILABLE' : 'PROGRESS_UNAVAILABLE');
     return restoreInstalled || ['ROLLBACK_FAILED', 'PROTECTED_PROGRESS_UNION_FAILED'].includes(code)
       ? status('RESTORE_REPAIR_REQUIRED', code, { requiresProtectedRestore: true })
-      : status('CACHE_MISS', code);
+      : status('CACHE_MISS', code, mode === 'save' && code === 'WEATHER_PACK_SIZE_LIMIT'
+        ? { postFailureObservation: await postFailureFixedFileObservation(saveObservationRoot, packInvocation) } : {});
   } finally {
     if (cipherTemporary) await fs.unlink(cipherTemporary).catch(() => {});
     // Preserve earlier primary errors, especially failed rollback/union,

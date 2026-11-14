@@ -18,7 +18,8 @@ const secret = 'synthetic-shared-secret-for-local-test-only';
 const routeOrder = ['d1-delete', 'supabase-delete', 'd1-readback', 'supabase-readback'];
 
 async function run({ body = [], status = 200, jsonError, firstError, failAt, confirmed = true,
-  direct = false, targetUserId = ownerId, heldReadback = null } = {}) {
+  direct = false, targetUserId = ownerId, heldReadback = null,
+  serviceKey = 'synthetic-service-key' } = {}) {
   const calls = [], logs = [];
   let bodyReads = 0;
   const fetchImpl = async (input, options) => {
@@ -44,7 +45,10 @@ async function run({ body = [], status = 200, jsonError, firstError, failAt, con
     }
     assert.equal(url.pathname, '/rest/v1/observations');
     assert.equal(url.searchParams.get('user_id'), `eq.${ownerId}`);
-    assert.equal(options.headers.apikey, 'synthetic-service-key');
+    assert.equal(options.headers.apikey, serviceKey);
+    assert.equal(new Headers(options.headers).get('authorization'),
+      serviceKey.startsWith('sb_secret_') ? null : `Bearer ${serviceKey}`,
+      'Both Supabase requests retain apikey and use Bearer only for legacy keys');
     if (options.method === 'DELETE') {
       calls.push('supabase-delete');
       assert.equal(options.headers.Prefer, 'return=minimal');
@@ -70,12 +74,12 @@ async function run({ body = [], status = 200, jsonError, firstError, failAt, con
       argv: ['node', 'synthetic-cli', ...(confirmed ? ['--confirm-delete-owner-data'] : [])],
       env: { TARGET_SUPABASE_USER_ID: targetUserId, TRIP_PSEUDONYM_SECRET_V1: secret,
         CLOUDFLARE_TRIP_GATEWAY_URL: gateway, TRIP_GATEWAY_SHARED_SECRET: secret,
-        SUPABASE_URL: supabase, SUPABASE_SERVICE_ROLE_KEY: 'synthetic-service-key' },
+        SUPABASE_URL: supabase, SUPABASE_SERVICE_ROLE_KEY: serviceKey },
     },
   };
   const result = await (direct
     ? scope.eraseTripOwnerSources({ userId: targetUserId, pseudonymSecret: secret,
-      gatewayUrl: gateway, sharedSecret: secret, supabaseUrl: supabase, serviceKey: 'synthetic-service-key' })
+      gatewayUrl: gateway, sharedSecret: secret, supabaseUrl: supabase, serviceKey })
     : vm.runInNewContext(`(async () => { ${cli}\n})()`, scope,
       { filename: 'actual-delete-owner-cli-with-synthetic-transport.js' }))
     .then(value => ({ ok: true, value }), error => ({ ok: false, error }));
@@ -94,6 +98,21 @@ test('actual CLI declares verified deletion only after an empty array readback',
   assert.equal(result.logs[0].includes(ownerId), false);
   assert.equal(result.logs[0].includes(secret), false);
 });
+
+for (const [name, serviceKey] of [
+  ['opaque secret key', 'sb_secret_SYNTHETIC_ONLY_NOT_A_REAL_CREDENTIAL'],
+  ['legacy service-role JWT', 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIn0.SYNTHETIC_ONLY'],
+]) {
+  test(`actual CLI preserves both Supabase request headers for ${name}`, async () => {
+    const result = await run({ serviceKey });
+    assert.equal(result.ok, true, result.error?.message);
+    assert.deepEqual(result.calls, routeOrder);
+    assert.equal(result.bodyReads, 1);
+    assert.equal(result.logs.length, 1);
+    assert.match(result.logs[0], /slettet og verificeret/);
+    assert.equal(result.logs[0].includes(serviceKey), false);
+  });
+}
 
 for (const [name, body] of [
   ['empty object', {}], ['error object', { error: 'synthetic-readback-failure' }],
