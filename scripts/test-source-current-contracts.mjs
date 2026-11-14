@@ -84,6 +84,61 @@ for(const inputs of [[],null,[modified('CHANGELOG.md')],[modified('scripts/sourc
   assert.deepEqual(pagesContractCommandsForChangedInputs(inputs),CURRENT_CONTRACT_COMMANDS.pages);
 // Slut på de nye rene transportassertions.
 
+// Assistant Edge scope: the same assertions run in the normal Git fixture.
+function assertAssistantEdgePlanScope({baselineCommit,baselineTree,rewriteTree,makeCommit,checkoutCommit,plan,restoreHead}){
+  const files=['supabase/functions/ravradar-assistant/index.ts',
+    'scripts/test-rav-assistant-edge-cloudflare-4.0.290.mjs',
+    'scripts/test-rav-assistant-main-edge-roundtrip.mjs',
+    'scripts/test-fixed-assistant-failure-log-20261101.mjs'];
+  const commands=['node scripts/test-rav-assistant-edge-cloudflare-4.0.290.mjs',
+    'node scripts/test-rav-assistant-main-edge-roundtrip.mjs',
+    'node scripts/test-fixed-assistant-failure-log-20261101.mjs'];
+  assert.deepEqual(CURRENT_CONTRACT_COMMANDS.assistantEdge,commands);
+  const roundtrip=commands[1],results=[];
+  const select=(label,paths)=>{
+    const changes=paths.map(file=>[file,Buffer.from('// Synthetic assistant scope '+label+'\n')]);
+    const candidate=makeCommit(rewriteTree(baselineTree,changes),[baselineCommit],'synthetic assistant scope '+label);
+    checkoutCommit(candidate);
+    const selected=plan({baselineCommit,candidateCommit:candidate,expectedHead:candidate});
+    results.push({label,plan:selected});return selected;
+  };
+  const positive=selected=>{
+    assert.equal(selected.status,'PLANNED');assert.equal(selected.selection,'CURRENT_CONTRACTS');
+    assert.deepEqual(selected.areas.assistantEdge.commands,commands);
+    assert.equal(selected.controlQualificationRequired,true);
+    assert.deepEqual(selected.protectedInputs,{postgresUnchanged:true,CUnchanged:true,IUnchanged:true,TUnchanged:true});
+  };
+  try{
+    for(const file of files){
+      const selected=select(file,[file]);positive(selected);
+      assert.deepEqual(Object.keys(selected.areas),['core','assistantEdge']);
+      assert.deepEqual(selected.commands,[...CURRENT_CONTRACT_COMMANDS.core,...commands]);
+    }
+    const all=select('all-four',files);positive(all);
+    assert.deepEqual(all.areas.assistantEdge.changedPaths,[...files].sort());
+    assert.deepEqual(all.commands,[...CURRENT_CONTRACT_COMMANDS.core,...commands]);
+    const mixed=select('with-public-ui',[files[0],'app.js']);positive(mixed);
+    assert.deepEqual(mixed.areas.publicUI.commands,CURRENT_CONTRACT_COMMANDS.publicUI);
+    assert.deepEqual(mixed.commands,[...new Set([...CURRENT_CONTRACT_COMMANDS.core,...commands,...CURRENT_CONTRACT_COMMANDS.publicUI])]);
+    assert.equal(mixed.commands.filter(command=>command===roundtrip).length,1);
+    const ui=select('public-ui-only',['app.js']);
+    assert.equal(ui.selection,'CURRENT_CONTRACTS');assert.equal(ui.areas.assistantEdge,undefined);
+    assert.deepEqual(ui.areas.publicUI.commands,CURRENT_CONTRACT_COMMANDS.publicUI);
+    assert.equal(ui.commands.filter(command=>command===roundtrip).length,1);
+    for(const file of ['supabase/functions/_shared/unclassified-assistant.ts',
+      'supabase/functions/other-assistant/index.ts','supabase/functions/ravradar-assistant/diagnostic.ts',
+      'scripts/test-rav-assistant-extra.mjs']){
+      const selected=select(file,[files[0],file]);assert.equal(selected.selection,'FULL');
+      assert.deepEqual(selected.reasonCodes,['CURRENT_UNCLASSIFIED_PATH']);assert.deepEqual(selected.commands,[]);
+    }
+    const shared=select('shared-gateway',['supabase/functions/_shared/public-gateway.ts']);
+    assert.equal(shared.selection,'FULL');assert.deepEqual(shared.commands,[]);
+    assert.equal(shared.areas.assistantEdge,undefined);
+    return results;
+  }finally{checkoutCommit(restoreHead);}
+}
+// End Assistant Edge scope assertions.
+
 const REFERENCE='bd9cf518fe798ddea45d2b835f324f6e2bea06fc';
 const profile=JSON.parse(fs.readFileSync(path.join(SOURCE,'scripts/lib/source-impact-domain-inputs-598.json')));
 const controlSources=new Set();
@@ -725,6 +780,11 @@ try{
     }
   }finally{checkout(beforeOwnerPlan);}
   scenarios.push('normal Git owner-only plan selects the existing entry; changed broad deployment test or workflow preserves the full command');
+  const assistantScopeResults=assertAssistantEdgePlanScope({baselineCommit:firstDelivery.main,
+    baselineTree:text(root,['rev-parse',firstDelivery.main+'^{tree}']),rewriteTree:rewrite,
+    makeCommit:commit,checkoutCommit:checkout,plan,restoreHead:head});
+  cases+=assistantScopeResults.length;
+  scenarios.push('exact assistant Edge owners select existing full targets; UI deduplicates roundtrip and unknown/shared functions retain refusal');
   const pagesTree=rewrite(candidateTree,[['.github/workflows/reusable-pages-deploy.yml',
     Buffer.from('# SYNTHETIC current Pages caller delta only\n')]]);
   selectedRun+=1000;selectedJob+=1000;selectedPr+=1000;selectedArtifactId+=1000;

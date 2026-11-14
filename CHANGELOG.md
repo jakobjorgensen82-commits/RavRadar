@@ -1,3 +1,11 @@
+## 14. november — faste private assistenttider og præcist kildeansvar
+
+En lokal observationskandidat føjer faste monotone tal for afsluttet kvoteventetid og lokalt providerkald samt første deadlineårsag til assistentens eksisterende private fejlmarkør. Den skelner providergren fra faktisk lokal fetchinvokation og lover ikke modtagelse hos Cloudflare. Brugerindhold, rå svar, URL, nøgler og request-id logges ikke. Syv sekunders samlet serverfrist, otte sekunders klientfrist, alle kvoter, model, requestparametre, offentlige svar, headers, validering og oprydning bevares.
+
+Et lukket assistantEdge-ansvar omfatter kun den eksisterende handler og tre tilhørende testfiler. Det vælger de eksisterende hele Edge-, klient-rundtur- og faste loglæsermål. Faktiske UI-ændringer beholder deres normale roundtripprøve; samme kommando deduplikeres. Frisk uafhængigt kontrolreview, normal PG/C/I/T-analyse og alle ukendte/beskyttede inputafslag består.
+
+Dette er fasetidsdiagnostik og afgrænset målvalg, ikke en timeoutrettelse eller ekstern AI-accept. Den fulde normale scopeprøve og præcise kildekvalifikation skal bestå før levering. Den eksisterende historiske logprojektion og gamle kvitteringer er urørte. Version 4.0.598, faktaliste, model og SQL bevares; den statiske installation ændres kun i håndbogens normale payload. Se håndbog 89.279, DEC-0091 og DEC-0302.
+
 ## 14. november — præcist testomfang ved ren Pages-transportrettelse
 
 Den normale målplan får en snæver transportafgrænsning: kun ændringer af den eksisterende Pages-statuslæser eller dens egen normale prøve kan vælge de fire øvrige fulde Pagesmål uden den brede deploymentprøve. Den brede prøve kalder ikke statuslæseren. Fast sikkerhedskerne, dokumentkontrol og frisk uafhængig kontrol af ændret testvalg består. Transportafgrænsningen bruger ikke owner-completion-only.

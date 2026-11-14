@@ -54,22 +54,30 @@ function assistantErrorResponse(request: Request, error: unknown) {
 // The quota leaf may finish later; it contains no continuation to the provider.
 function assistantDeadline(requestSignal: AbortSignal) {
   const end = performance.now() + 7_000;
+  const started = end - 7_000;
   const controller = new AbortController(); let closed = false; let expired = false;
+  let cause: "TIMER" | "REQUEST_ABORT" | "CHECK" | null = null;
   let rejectDeadline: (reason: unknown) => void = () => {};
   const failure = () => new GatewayError(504, "UPSTREAM_TIMEOUT");
   const expiredPromise = new Promise<never>((_resolve, reject) => { rejectDeadline = reject; });
   void expiredPromise.catch(() => {});
-  const expire = () => { if (!expired) { expired = true; controller.abort(); rejectDeadline(failure()); } };
-  const timer = setTimeout(expire, 7_000);
-  requestSignal.addEventListener("abort", expire, { once:true });
-  if (requestSignal.aborted) expire();
-  const check = () => { if (closed || expired || performance.now() >= end) { expire(); throw failure(); } };
+  const expire = (reason: "TIMER" | "REQUEST_ABORT" | "CHECK") => { if (!expired) { expired = true; cause = reason; controller.abort(); rejectDeadline(failure()); } };
+  const timer = setTimeout(() => expire("TIMER"), 7_000);
+  const requestAbort = () => expire("REQUEST_ABORT");
+  requestSignal.addEventListener("abort", requestAbort, { once:true });
+  if (requestSignal.aborted) requestAbort();
+  const check = () => { if (closed || expired || performance.now() >= end) { expire("CHECK"); throw failure(); } };
   return {
     signal: controller.signal, check,
+    observation() {
+      const now = performance.now();
+      return { elapsedMs:Math.max(0, Math.floor(now - started)), remainingMs:Math.max(0, Math.floor(end - now)) };
+    },
+    cause: () => cause,
     async wait<T>(pending: Promise<T>): Promise<T> {
       check(); const value = await Promise.race([pending, expiredPromise]); check(); return value;
     },
-    close() { closed = true; clearTimeout(timer); requestSignal.removeEventListener("abort", expire); controller.abort(); },
+    close() { closed = true; clearTimeout(timer); requestSignal.removeEventListener("abort", requestAbort); controller.abort(); },
   };
 }
 type AssistantDeadline = ReturnType<typeof assistantDeadline>;
@@ -136,15 +144,29 @@ function cloudflareCredential() {
 
 // Failure observation contains only fixed categories and numeric HTTP status.
 // A missing/failing logger must preserve the original public error unchanged.
-function reportAssistantFailure(stage: string, upstreamStatus: number | null, rejectionCode: string | null, responseStatus: number) {
+type AssistantFailureObservation = {
+  quotaCompleted: ReturnType<AssistantDeadline["observation"]> | null;
+  providerStarted: ReturnType<AssistantDeadline["observation"]> | null;
+  providerFetchCalled: boolean;
+  deadlineCause: ReturnType<AssistantDeadline["cause"]> | null;
+};
+function reportAssistantFailure(stage: string, upstreamStatus: number | null, rejectionCode: string | null, responseStatus: number, observation: AssistantFailureObservation | null = null) {
   try {
     const stages = ["UPSTREAM_REQUEST", "UPSTREAM_HTTP_REJECTED", "UPSTREAM_JSON_PARSE", "UPSTREAM_ENVELOPE_REJECTED", "RESULT_EXTRACTION", "RESULT_VALIDATION"];
+    const milliseconds = (value: unknown, maximum = Number.MAX_SAFE_INTEGER) => typeof value === "number" && Number.isSafeInteger(value) && value >= 0 && value <= maximum ? value : null;
     console.warn("RAVRADAR_ASSISTANT_FAILURE", {
       schemaVersion: 1,
       stage: stages.includes(stage) ? stage : "UNKNOWN",
       responseStatus: Number.isInteger(responseStatus) && responseStatus >= 400 && responseStatus <= 599 ? responseStatus : null,
       upstreamStatus: upstreamStatus !== null && Number.isInteger(upstreamStatus) && upstreamStatus >= 100 && upstreamStatus <= 599 ? upstreamStatus : null,
       rejectionCode: typeof rejectionCode === "string" && RAV_ASSISTANT_REJECTION_CODES.includes(rejectionCode) ? rejectionCode : null,
+      quotaCompletedElapsedMs: milliseconds(observation?.quotaCompleted?.elapsedMs),
+      quotaCompletedRemainingMs: milliseconds(observation?.quotaCompleted?.remainingMs, 7_000),
+      providerStartElapsedMs: milliseconds(observation?.providerStarted?.elapsedMs),
+      providerStartRemainingMs: milliseconds(observation?.providerStarted?.remainingMs, 7_000),
+      // This records only invocation of our local fetch, never receipt at Cloudflare.
+      providerFetchCalled: observation?.providerFetchCalled === true,
+      deadlineCause: ["TIMER", "REQUEST_ABORT", "CHECK"].includes(observation?.deadlineCause ?? "") ? observation!.deadlineCause : null,
     });
   } catch { /* Diagnostics cannot replace the original failure. */ }
 }
@@ -156,6 +178,9 @@ Deno.serve(async (request) => {
   let observedStage: string | null = null;
   let observedUpstreamStatus: number | null = null;
   let observedRejectionCode: string | null = null;
+  let quotaCompleted: ReturnType<AssistantDeadline["observation"]> | null = null;
+  let providerStarted: ReturnType<AssistantDeadline["observation"]> | null = null;
+  let providerFetchCalled = false;
   try {
     assertAllowedOrigin(request);
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: assistantHeaders(request) });
@@ -186,10 +211,15 @@ Deno.serve(async (request) => {
       return assistantJsonResponse(request, { answer:assistantIdentificationFocusAnswer(locale) });
     deadline.check();
     await deadline.wait(enforceRateLimits(request, "ravradar-assistant", { minute: 6, hour: 40, globalDay: 300 })); deadline.check();
+    quotaCompleted = deadline.observation();
     const { accountId, token } = cloudflareCredential();
     observedStage = "UPSTREAM_REQUEST";
     deadline.check();
-    const response = await deadline.wait(fetch(`https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/ai/run/${RAV_ASSISTANT_MODEL}`, {
+    const fetchProvider = (input: string, init: RequestInit) => {
+      providerStarted = deadline!.observation(); providerFetchCalled = true;
+      return fetch(input, init);
+    };
+    const response = await deadline.wait(fetchProvider(`https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/ai/run/${RAV_ASSISTANT_MODEL}`, {
       method: "POST",
       signal: deadline.signal,
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
@@ -231,7 +261,8 @@ Deno.serve(async (request) => {
     return answerResponse;
   } catch (error) {
     const response = assistantErrorResponse(request, error);
-    if (observedStage !== null) reportAssistantFailure(observedStage, observedUpstreamStatus, observedRejectionCode, response.status);
+    if (observedStage !== null) reportAssistantFailure(observedStage, observedUpstreamStatus, observedRejectionCode, response.status,
+      { quotaCompleted, providerStarted, providerFetchCalled, deadlineCause:deadline?.cause() ?? null });
     return response;
   } finally {
     deadline?.close(); requestBody?.cancel();

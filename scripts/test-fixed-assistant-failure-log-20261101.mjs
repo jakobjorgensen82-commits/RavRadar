@@ -364,8 +364,9 @@ assert.equal(priorRegistry.owners.length,90);
 assert.equal(digest(JSON.stringify(priorRegistry,null,2)+'\n'),review.registryBeforeSha256);
 assert.match(await text('scripts/test-source-impact-domain-plan.mjs'), /const adminReviewedHead='14ade133b7f3b9557f312630a5b557086245b938'/);
 
-// Exercise the actual logger body. Remove only this exact TypeScript signature.
-const signature = 'function reportAssistantFailure(stage: string, upstreamStatus: number | null, rejectionCode: string | null, responseStatus: number) {';
+// Exercise the current logger body. Remove only its exact TypeScript annotations;
+// the historical query/projection and all original observation data stay exact.
+const signature = 'function reportAssistantFailure(stage: string, upstreamStatus: number | null, rejectionCode: string | null, responseStatus: number, observation: AssistantFailureObservation | null = null) {';
 const loggerStart = edge.indexOf(signature), loggerEnd = edge.indexOf('\nDeno.serve(', loggerStart);
 assert(loggerStart >= 0 && loggerEnd > loggerStart);
 const rejectionBlock = /export const RAV_ASSISTANT_REJECTION_CODES = Object\.freeze\(\[([\s\S]*?)\]\);/.exec(contract);
@@ -377,17 +378,22 @@ assert(stagesBlock);
 const stages = [...JSON.parse(stagesBlock[1]), 'UNKNOWN'];
 let emitted = null;
 const logger = runInNewContext(edge.slice(loggerStart, loggerEnd).replace(signature,
-  'function reportAssistantFailure(stage, upstreamStatus, rejectionCode, responseStatus) {')
+  'function reportAssistantFailure(stage, upstreamStatus, rejectionCode, responseStatus, observation = null) {').replace('value: unknown','value').replace('observation!.deadlineCause','observation.deadlineCause')
   + '\nreportAssistantFailure;', {
   RAV_ASSISTANT_REJECTION_CODES: codes,
   console: { warn(marker, value) { emitted = { marker, value: JSON.parse(JSON.stringify(value)) }; } },
 });
 logger('UPSTREAM_REQUEST', null, null, 504);
 assert.equal(emitted.marker, 'RAVRADAR_ASSISTANT_FAILURE');
-assert.deepEqual(Object.keys(emitted.value).sort(), ['rejectionCode','responseStatus','schemaVersion','stage','upstreamStatus']);
-assert.deepEqual(emitted.value, {schemaVersion:1,stage:'UPSTREAM_REQUEST',responseStatus:504,upstreamStatus:null,rejectionCode:null});
+const emptyTiming={quotaCompletedElapsedMs:null,quotaCompletedRemainingMs:null,providerStartElapsedMs:null,providerStartRemainingMs:null,providerFetchCalled:false,deadlineCause:null};
+assert.deepEqual(Object.keys(emitted.value).sort(), ['rejectionCode','responseStatus','schemaVersion','stage','upstreamStatus',...Object.keys(emptyTiming)].sort());
+assert.deepEqual(emitted.value, {schemaVersion:1,stage:'UPSTREAM_REQUEST',responseStatus:504,upstreamStatus:null,rejectionCode:null,...emptyTiming});
 logger('PRIVATE_RAW_STAGE', 999, 'PRIVATE_RAW_CODE', 399);
-assert.deepEqual(emitted.value, {schemaVersion:1,stage:'UNKNOWN',responseStatus:null,upstreamStatus:null,rejectionCode:null});
+assert.deepEqual(emitted.value, {schemaVersion:1,stage:'UNKNOWN',responseStatus:null,upstreamStatus:null,rejectionCode:null,...emptyTiming});
+logger('UPSTREAM_REQUEST',null,null,504,{quotaCompleted:{elapsedMs:6500,remainingMs:500},providerStarted:{elapsedMs:6500,remainingMs:500},providerFetchCalled:true,deadlineCause:'TIMER'});
+assert.deepEqual(emitted.value,{schemaVersion:1,stage:'UPSTREAM_REQUEST',responseStatus:504,upstreamStatus:null,rejectionCode:null,quotaCompletedElapsedMs:6500,quotaCompletedRemainingMs:500,providerStartElapsedMs:6500,providerStartRemainingMs:500,providerFetchCalled:true,deadlineCause:'TIMER'});
+logger('UPSTREAM_REQUEST',null,null,504,{quotaCompleted:{elapsedMs:'PRIVATE_RAW',remainingMs:7001},providerStarted:{elapsedMs:Infinity,remainingMs:-1},providerFetchCalled:'PRIVATE_RAW',deadlineCause:'PRIVATE_RAW'});
+assert.deepEqual(emitted.value,{schemaVersion:1,stage:'UPSTREAM_REQUEST',responseStatus:504,upstreamStatus:null,rejectionCode:null,...emptyTiming});
 
 assert.equal(Object.hasOwn(process.env, 'SUPABASE_ACCESS_TOKEN'), false,
   'Never inspect or replace an ambient credential in this offline target');

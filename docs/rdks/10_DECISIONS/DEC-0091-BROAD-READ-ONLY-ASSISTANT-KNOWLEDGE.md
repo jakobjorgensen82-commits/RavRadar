@@ -1,3 +1,13 @@
+## Tillæg 2026-11-14 — private fasetider med uændret svarfrist
+
+Den forberedte observationsændring bevarer den fælles hårde serverfrist på syv sekunder og klientens otte sekunder. Modellen, alle requestparametre, offentlige svar og headers, validering, 6/minut, 40/time, 300/dag, dataminimering og oprydning ændres ikke. Sen body- eller kvoteafslutning får fortsat ingen vej til et nyt leverandørkald efter fristen. Der sendes ingen ekstra AI-forespørgsel eller automatisk genprøve.
+
+Den eksisterende private fejlmarkør kan få seks faste observationsfelter. `quotaCompletedElapsedMs` og `quotaCompletedRemainingMs` er ét monotont snapshot efter bestået kvoteventetid. `providerStartElapsedMs` og `providerStartRemainingMs` er samme type snapshot umiddelbart før det lokale fetchkald, efter opbygning af argumenterne. Elapsed er tid siden den samme serverfrist begyndte; remaining er restbudget, ikke en ny fasefrist. En fase, der ikke blev observeret, har null. `providerFetchCalled` skelner lokal fetchinvokation fra den allerede eksisterende providergren. Det beviser aldrig modtagelse eller arbejdstid hos Cloudflare. `deadlineCause` bevarer den første faste årsag TIMER, REQUEST_ABORT eller CHECK, ellers null.
+
+Observationerne føjes kun til de eksisterende observerede providerfejlgrene. Et tidligere body- eller kvoteafslag får ingen ny fejlgren eller logmarkør. Tal og årsager kontrolleres før logning; spørgsmål, svar, rå body, URL, credentials, request-id og frie fejlbeskeder indgår ikke. Loggerfejl bevarer den oprindelige offentlige status og body.
+
+Den fokuserede lokale kontrol og de eksisterende assistentmål er syntetiske beviser. Ændringen løser ikke den observerede AI-timeout og dokumenterer ikke ekstern AI-accept. Faktisk tidsfordeling, præcis kildelevering og offentlig afprøvning er fortsat åbne. En eventuel senere fælles afstemning af server- og klientfrist kræver et begrundet budget og den normale bindingsvej. Der er ikke valgt nye frister eller providerparametre. Se håndbog 89.279.
+
 ## Tillæg 2026-11-01 — samlet serverfrist og relevante eksisterende fakta
 
 Den lokale efterfølger bevarer alle 45 udstedte fakta og den fulde vidensbinding. Kun et helt genkendt generelt identifikationsspørgsmål må vælge et mindre, præcist relevant udsnit før inference. Hele det oprindelige spørgsmål kontrolleres, og et ukendt eller blandet led giver ikke adgang til at erklære et delsvar fuldstændigt. Manglende viden om en lups diagnostiske værdi beskrives uden opfundne kendetegn. Uvedkommende zone-/scorefakta kan ikke passere eftervalideringen for det valgte udsnit.

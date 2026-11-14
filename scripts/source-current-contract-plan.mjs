@@ -40,6 +40,11 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
   pagesArtifact:[
     'node --test scripts/test-pages-artifact-metadata.mjs',
   ],
+  assistantEdge:[
+    'node scripts/test-rav-assistant-edge-cloudflare-4.0.290.mjs',
+    'node scripts/test-rav-assistant-main-edge-roundtrip.mjs',
+    'node scripts/test-fixed-assistant-failure-log-20261101.mjs',
+  ],
   publicUI:[
     'node scripts/test-ravscore-public-data-service-binding.mjs',
     'node scripts/test-ravscore-public-browser-closure.mjs',
@@ -127,6 +132,12 @@ const PATH_AREAS=freeze({
     'scripts/read-pages-artifact-metadata.mjs',
     'scripts/test-pages-artifact-metadata.mjs',
   ],
+  assistantEdge:[
+    'supabase/functions/ravradar-assistant/index.ts',
+    'scripts/test-rav-assistant-edge-cloudflare-4.0.290.mjs',
+    'scripts/test-rav-assistant-main-edge-roundtrip.mjs',
+    'scripts/test-fixed-assistant-failure-log-20261101.mjs',
+  ],
   publicUI:[
     'app.js','bootstrap.js','index.html','service-worker.js',
     'scripts/test-ravscore-public-data-service-binding.mjs',
@@ -136,7 +147,6 @@ const PATH_AREAS=freeze({
     'scripts/test-map-timeline-generation.mjs',
     'scripts/test-public-json-reader-bridge.mjs',
     'scripts/test-public-cold-start-4.0.303.mjs',
-    'scripts/test-rav-assistant-main-edge-roundtrip.mjs',
   ],
   adminUI:[
     'admin.html','js/ui/admin-dashboard.js',
@@ -504,7 +514,7 @@ export function planSourceCurrentContractsFromGit(input){
         pathAreas.get(file)??(/^docs\/(?:rdks|ai|handbook)\/.+\.md$/.test(file)?['documentation']:null);
       if(!areas){unknown.push(file);continue;}
       for(const area of areas){if(!selected.has(area))selected.set(area,[]);selected.get(area).push(file);}
-      if(sourceControlPaths.has(file)||historicalPaths.has(file)||areas.includes('compatibility')||areas.includes('mailOwnerProbe')||areas.includes('currentInstalledCodeOnly')||areas.includes('workflowSupport')||file.startsWith('scripts/test-'))
+      if(sourceControlPaths.has(file)||historicalPaths.has(file)||areas.includes('compatibility')||areas.includes('assistantEdge')||areas.includes('mailOwnerProbe')||areas.includes('currentInstalledCodeOnly')||areas.includes('workflowSupport')||file.startsWith('scripts/test-'))
         out.controlQualificationRequired=true;
     }
     if(unknown.length){out.unclassifiedPaths=unknown.sort();return refuse('CURRENT_UNCLASSIFIED_PATH');}
