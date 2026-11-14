@@ -1,5 +1,10 @@
 <!-- RAVRADAR_ACTIVE_ENTRY_START -->
 
+## 2026-11-14: DMI: tom vedligeholdelse uden falsk parserpause
+
+En vedligeholdelsestur, som ikke gennemgår nogen GRIB-fil, registreres som nul fremskridt i stedet for en parserfejl. Den gamle fejlklassifikation kan genvurderes én gang gennem det normale budget. En faktisk ugenkendelig fil får fortsat den normale 24-timers blokering, som bevares gennem gemning, genlæsning og backfill. Rettelsen ændrer ikke dekodning, RAW-grænser eller kildeprioritet. Den er kildeforberedt; faktisk DMI-hentning og gemning skal stadig verificeres i næste almindelige vejrkørsel.
+
+
 # Aktiv restliste
 
 Alle fem hovedområder i ejerens gældende mål består, indtil deres krav er faktisk leveret og verificeret. Denne liste samler stabile leverancegrænser; aktuelle kørsler, målinger, hashes og den præcise næste handling findes i det private checkpoint. Genbrug leverede delrettelser og læs [aktuel sandhed](CURRENT_TRUTH.md), før en opgave genåbnes.

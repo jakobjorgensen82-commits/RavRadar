@@ -11719,3 +11719,8 @@ selve JSON-indholdet. 4.0.466 holder de to hashes adskilt. Den offentlige
 rækkefølgekontrol accepterer kun den forseglede forgænger eller målpakke;
 en ældre eller ukendt pakke afvises fortsat. Ingen vejr- eller scoretal
 ændres af denne rettelse.
+
+
+## 89.348. DMI: tom vedligeholdelse uden falsk parserpause
+
+En vedligeholdelsestur, som ikke gennemgår nogen GRIB-fil, registreres som nul fremskridt i stedet for en parserfejl. Den gamle fejlklassifikation kan genvurderes én gang gennem det normale budget. En faktisk ugenkendelig fil får fortsat den normale 24-timers blokering, som bevares gennem gemning, genlæsning og backfill. Rettelsen ændrer ikke dekodning, RAW-grænser eller kildeprioritet. Den er kildeforberedt; faktisk DMI-hentning og gemning skal stadig verificeres i næste almindelige vejrkørsel.

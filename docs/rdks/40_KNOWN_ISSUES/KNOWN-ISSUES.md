@@ -1,5 +1,10 @@
 ## 14. november — arkivmålets bootstrap skal stadig bevises i faktisk restore
 
+## 2026-11-14: DMI: tom vedligeholdelse uden falsk parserpause
+
+En vedligeholdelsestur, som ikke gennemgår nogen GRIB-fil, registreres som nul fremskridt i stedet for en parserfejl. Den gamle fejlklassifikation kan genvurderes én gang gennem det normale budget. En faktisk ugenkendelig fil får fortsat den normale 24-timers blokering, som bevares gennem gemning, genlæsning og backfill. Rettelsen ændrer ikke dekodning, RAW-grænser eller kildeprioritet. Den er kildeforberedt; faktisk DMI-hentning og gemning skal stadig verificeres i næste almindelige vejrkørsel.
+
+
 En autentificeret rolleaudit har påvist en krævet reserveret systemrolle, som det isolerede mål manglede. Den afgrænsede kildekandidat bruger den pinnede leverandørs normale engangsinitialisering uden en ny vedvarende tjeneste, gættet rolle-SQL eller ændring af originalarkivet. Det erstatter ikke den generiske manglende-rolle-vagt. Den lokale konfigurationsprøve består, men faktisk fuld SQL-, indholds-/dubletparitets-, Auth- og oprydningsaccept er fortsat åben. Tidligere syntetisk succes eller denne lokale prøve må ikke bruges som arkivaccept. Se DEC-0255 og håndbog 89.345.
 
 ## 14. november — kanonisk fokusafslag og lokal tegnsætning er forskellige rester

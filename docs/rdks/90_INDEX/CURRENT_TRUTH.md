@@ -1,5 +1,10 @@
 <!-- RAVRADAR_ACTIVE_ENTRY_START -->
 
+## 2026-11-14: DMI: tom vedligeholdelse uden falsk parserpause
+
+En vedligeholdelsestur, som ikke gennemgår nogen GRIB-fil, registreres som nul fremskridt i stedet for en parserfejl. Den gamle fejlklassifikation kan genvurderes én gang gennem det normale budget. En faktisk ugenkendelig fil får fortsat den normale 24-timers blokering, som bevares gennem gemning, genlæsning og backfill. Rettelsen ændrer ikke dekodning, RAW-grænser eller kildeprioritet. Den er kildeforberedt; faktisk DMI-hentning og gemning skal stadig verificeres i næste almindelige vejrkørsel.
+
+
 # Aktiv sandhed og bevisgrænser
 
 **Den fungerende produktionsvej er den numeriske 598-driftsfamilie.** Almindelig vejrhentning og offentlig levering har faktisk fungeret. Det beviser ikke fuld dækning, alle fejlforløb eller hele projektets færdiggørelse. Seneste leverance, igangværende kørsel og næste skrivevindue skal aflæses i det private checkpoint; flygtige kørselsoplysninger fastholdes ikke her.
