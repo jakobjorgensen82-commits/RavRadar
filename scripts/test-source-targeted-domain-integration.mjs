@@ -13,17 +13,31 @@ const SOURCE=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const fixture597=process.argv[2]==='--source597',fixture598=process.argv[2]==='--source598';
 assert(process.argv.length===2||(process.argv.length===3&&(fixture597||fixture598)),'Only the three fixed normal fixture profiles');
 const REFERENCE=fixture598?'bd9cf518fe798ddea45d2b835f324f6e2bea06fc':fixture597?'c340b8d8637407b309d3380ae9221a607a4157ef':'e8786fabba66bd9184ab08a0c8c83bf97711f807';
-const profile=JSON.parse(fs.readFileSync(path.join(SOURCE,fixture598?'scripts/lib/source-impact-domain-inputs-598.json':fixture597
-  ?'scripts/lib/source-impact-domain-inputs-597.json':'scripts/lib/source-impact-domain-inputs-594.json')));
-const registry=JSON.parse(fs.readFileSync(path.join(SOURCE,'scripts/lib/source-impact-domain-owners-594.json')));
+// 598-V2 bruger den allerede kvalificerede FULL-producent som historisk input.
+// De genuine PG/C/I/T-input fra REFERENCE bevares byteidentiske. Aktuel V4 prøves særskilt.
+const V2_INPUT_REFERENCE=fixture598?'fa64eca25c5f46189b00962a363d066a8f85a516':REFERENCE;
+const legacyControlFiles=new Set(['scripts/source-impact-domain-inputs.mjs','scripts/test-source-impact-domain-inputs.mjs',
+  'scripts/source-impact-domain-plan.mjs','scripts/test-source-impact-domain-plan.mjs','scripts/test-source-targeted-domain-integration.mjs']);
+const fixtureControlBytes=file=>fixture598
+  ?execFileSync('git',['-c','protocol.allow=never','-C',SOURCE,'cat-file','blob',V2_INPUT_REFERENCE+':'+file],{
+    timeout:10000,maxBuffer:8*1024*1024,
+    env:{...Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','TEMP','TMP']
+      .filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]])),
+      GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_OPTIONAL_LOCKS:'0',GIT_TERMINAL_PROMPT:'0'}})
+  :!fixture598&&legacyControlFiles.has(file)
+  ?execFileSync('git',['-C',SOURCE,'cat-file','blob',(fixture597?'fad617a60b9830869b03e26ffa629b6e3d0fcb08':'45594e185f087ff02c8e72649d02cb45cf79cf16')+':'+file],{timeout:10000,maxBuffer:8*1024*1024})
+  :fs.readFileSync(path.join(SOURCE,file));
+const profile=JSON.parse(fixtureControlBytes(fixture598?'scripts/lib/source-impact-domain-inputs-598.json':fixture597
+  ?'scripts/lib/source-impact-domain-inputs-597.json':'scripts/lib/source-impact-domain-inputs-594.json'));
+const registry=JSON.parse(fixtureControlBytes('scripts/lib/source-impact-domain-owners-594.json'));
 if(fixture597||fixture598){
   // Fixture input inventory only. The actual normal planner independently verifies the fixed delta bytes.
-  const delta=JSON.parse(fs.readFileSync(path.join(SOURCE,'scripts/lib/source-impact-domain-owners-597.json')));
+  const delta=JSON.parse(fixtureControlBytes('scripts/lib/source-impact-domain-owners-597.json'));
   registry.owners.push(...delta.owners);
   for(const [file,row]of Object.entries(delta.sources))registry.sources[file]=row.definition;
   registry.resourceFiles.push(...delta.resourceFiles);
   if(fixture598){
-    const current=JSON.parse(fs.readFileSync(path.join(SOURCE,'scripts/lib/source-impact-domain-owners-598.json')));
+    const current=JSON.parse(fixtureControlBytes('scripts/lib/source-impact-domain-owners-598.json'));
     registry.owners.push(...current.owners);for(const [file,row]of Object.entries(current.sources))registry.sources[file]=row.definition;
     registry.resourceFiles.push(...current.resourceFiles);
   }
@@ -37,11 +51,6 @@ const additions=['scripts/source-impact-domain-inputs.mjs','scripts/lib/source-i
   'scripts/test-source-targeted-domain-integration.mjs'];
 if(fixture597||fixture598)additions.push('scripts/lib/source-impact-domain-inputs-597.json','scripts/lib/source-impact-domain-owners-597.json');
 if(fixture598)additions.push('scripts/lib/source-impact-domain-inputs-598.json','scripts/lib/source-impact-domain-owners-598.json','scripts/source-impact-full-baseline.mjs');
-const legacyControlFiles=new Set(['scripts/source-impact-domain-inputs.mjs','scripts/test-source-impact-domain-inputs.mjs',
-  'scripts/source-impact-domain-plan.mjs','scripts/test-source-impact-domain-plan.mjs','scripts/test-source-targeted-domain-integration.mjs']);
-const fixtureControlBytes=file=>!fixture598&&legacyControlFiles.has(file)
-  ?execFileSync('git',['-C',SOURCE,'cat-file','blob',(fixture597?'fad617a60b9830869b03e26ffa629b6e3d0fcb08':'45594e185f087ff02c8e72649d02cb45cf79cf16')+':'+file],{timeout:10000,maxBuffer:8*1024*1024})
-  :fs.readFileSync(path.join(SOURCE,file));
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const clone=value=>structuredClone(value);
 const originalEnvironment={...process.env},originalFetch=globalThis.fetch,originalLog=console.log;
@@ -197,9 +206,9 @@ function configure(candidate){
 }
 try{
   git(root,['init','-q']);git(root,['config','core.autocrlf','false']);
-  const referenceRows=git(SOURCE,['ls-tree','-rz','-t','--full-tree',REFERENCE]).toString('utf8').split('\0').filter(Boolean).map(line=>{
+  const referenceRows=git(SOURCE,['ls-tree','-rz','-t','--full-tree',V2_INPUT_REFERENCE]).toString('utf8').split('\0').filter(Boolean).map(line=>{
     const m=/^(\d{6}) (blob|tree|commit) ([a-f0-9]{40})\t(.+)$/.exec(line);assert(m);return{mode:m[1],type:m[2],oid:m[3],file:m[4]};});
-  const referenceTree=text(SOURCE,['rev-parse',REFERENCE+'^{tree}']);
+  const referenceTree=text(SOURCE,['rev-parse',V2_INPUT_REFERENCE+'^{tree}']);
   const modelFiles=Object.values(profile.models).flatMap(def=>{
     const raw=sourceBlob(def.file).toString('utf8'),manifest=JSON.parse(raw.slice(raw.indexOf('Object.freeze(')+14,raw.lastIndexOf(');')));
     return[def.file,...manifest.files.map(row=>row[def.rowKey])];});
@@ -457,7 +466,7 @@ try{
     // Same real producer -> discovery -> consumer path, genuine148/C101/I100/T12
     // fixture inputs and synthetic API/target bodies; both ROOT-review reads run.
     const modernWorkflow='.github/workflows/validate-pull-request.yml';
-    const modernTree=rewrite(candidateTree,[[modernWorkflow,fs.readFileSync(path.join(SOURCE,modernWorkflow))]]);
+    const modernTree=rewrite(candidateTree,[[modernWorkflow,fixtureControlBytes(modernWorkflow)]]);
     configure(commit(modernTree,[base],'synthetic exact modern Python environment workflow'));
     state.modernWorkflow=true;baselinePlan=plan({baselineCommit:base,candidateCommit:head,expectedHead:head});
     assert.equal(baselinePlan.selection,'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(baselinePlan.reasonCodes));rebuildMaps();

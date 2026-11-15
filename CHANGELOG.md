@@ -2,6 +2,8 @@
 
 Den normale CURRENT-plan kan vælge dependency-kontrollen og hele nativefilens 19 cases med faktisk Node24 og egen credential-fri npm-cache. V4 accepterer den præcise Pythonkommando i den krævede rækkefølge; ældre kvitteringsformater og FULL-betydning bevares. De to tidlige miljøsteps kan kun godkendes mod producer-heads hele workflow og den eksisterende lukkede inverse.
 
+Den historiske 598-V2-prøve læser sin samlede kontrol- og workflowkæde fra den allerede autentiske FULL-producent. Dens oprindelige V2-forventninger og beskyttede PG/C/I/T-input bevares. Den aktuelle V4-kæde prøves særskilt med aktuelle input; manglende historiske Gitobjekter afvises uden netværkshentning.
+
 Den tilføjede SDK-parent-loss-case er endnu ikke kørt på rigtig Linux. Ingen installeret kontrolvej, ny PG-eksekvering eller løst produktionsproblem påstås. Version 4.0.598, model, PG/C/I/T, gamle SQL og produktionsgates er uændrede. Se DEC-0302 og håndbog 89.342/89.232.
 
 ## 15. november 2026 — arkivmålets Storage-bootstrap og faste Auth-metadata

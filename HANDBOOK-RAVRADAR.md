@@ -168,6 +168,8 @@ Autoriteten er version.json.releaseContract.modelBindings og de aktuelle generer
 
 En privat kildekandidat giver den normale CURRENT-vej ansvar for den eksisterende dependency-prøve og hele nativefilens 19 cases. Dependency-prøven kommer først. Nativearbejdet bruger faktisk Node24 og egen npm-cache uden credentials; øvrig kildekontrol beholder Node22. Kun V4-kvitteringen får den præcise Pythonoperation. Gamle formater, PostgreSQL-/modelbeviser og produktionskontroller beholder deres betydning.
 
+Den historiske 598-V2-prøve læser sin samlede kontrol- og workflowkæde fra den allerede autentiske FULL-producent. Dens oprindelige V2-forventninger og beskyttede PG/C/I/T-input bevares. Den aktuelle V4-kæde prøves særskilt med aktuelle input; manglende historiske Gitobjekter afvises uden netværkshentning.
+
 De to nye tidlige miljøsteps kræver begge succes og det autentiske workflow fra producerens head. Den hele lukkede inverse skal føre tilbage til det eksisterende FULL-grundlag. Gamle metadata beholder deres tidligere kontrol; ukendte workflowændringer giver ingen adgang. Friske kilde-, review-, input- og slutkontroller består.
 
 Den tilføjede SDK-case for tab af styrende proces efter PUT og før afsluttende ACK er endnu ikke kørt på rigtig Linux i kandidaten. Den skal vise produktets eget fysiske stop og reap før testoprydning, bevare original og skrivelås og undlade falsk gemmekvittering. Syntetiske PASS-rækker er formatdata, ikke native-eksekvering. Forberedelsen beviser hverken installeret kontrolvej eller løst produktion. Se også 89.232.
