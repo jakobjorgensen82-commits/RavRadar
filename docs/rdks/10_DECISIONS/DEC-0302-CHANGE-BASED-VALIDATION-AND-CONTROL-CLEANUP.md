@@ -1,3 +1,11 @@
+## 15. november — Prøveforberedelse og faktisk FULL-kontrolejerskab
+
+Den normale CURRENT-fixture kan genbruge sin deterministiske plandel til et syntetisk PR-review ved præcis samme Git-, profil-, mappe- og namespaceidentitet. Den genopbygger fortsat reviewtekst, hash, state og API-svar ved hver læsning. Ukendte eller ændrede input og funktioner bruger den normale beregning. Alle faktiske producer-/consumerplaner, målprocesser, før-/efterkontroller og ændringsafslag er uændrede.
+
+Den eksisterende FULL-kontrolkæde udfører nu også hele det normale CURRENT-mål én gang med samme hårde grænse på 300 sekunder. TARGETED-grenen udfører fortsat sine relevante hele mål gennem den normale producent. Den historiske workflowprøve bruger en præcis inverse til sit allerede autentiske grundlag; der tilføjes ingen ny head- eller hashkohorte.
+
+Genbrug af prøveforberedelse er ingen genbrug af kilde-, PostgreSQL- eller produktionsaccept. Faktisk afsluttet CURRENT, nødvendig ny PostgreSQL-kvalifikation, præcis kildekontrol og normal installation skal fortsat dokumenteres; en tidligere tidsafbrudt prøve er ikke bestået.
+
 ## 15. november 2026 — lokal599-udstedelse og adskilt app-/modelfamilie
 
 En almindelig appopdatering skal beholde den installerede modelfamilie, når modelinput er uændrede. Den aktuelle package-læser binder appversionen præcist til kildens version.json og den fulde normale releasekontrakt med de udstedte C/I-bindinger. Native-kvitteringer og direkte familiekrav beholder deres faste modelrelease. Kun de normale aktuelle kaldere fører den verificerede appkontekst til den faste familie; gamle profiler og gamle kvitteringer ommærkes ikke. FULL-genbrug læser den historiske producents egne committed appmetadata.

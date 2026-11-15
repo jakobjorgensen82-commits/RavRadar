@@ -6,6 +6,14 @@ En almindelig appopdatering skal beholde den installerede modelfamilie, når mod
 
 Udstedelsen og den efterfølgende almindelige appversionsprøve er lokalt afprøvet. Den nye familie kræver fortsat faktisk PostgreSQL-kvalifikation, præcis samlet kildekontrol, installation gennem normalvejen og verificeret offentlig virkning. Alle fem hovedmål og de syv særskilte revisionskrav består. Den tidligere førudstedelsespost er et historisk forberedelsescheckpoint, ikke den aktuelle lokale outputtilstand.
 
+### Prøveforberedelse og faktisk FULL-kontrolejerskab
+
+Den normale CURRENT-fixture kan genbruge sin deterministiske plandel til et syntetisk PR-review ved præcis samme Git-, profil-, mappe- og namespaceidentitet. Den genopbygger fortsat reviewtekst, hash, state og API-svar ved hver læsning. Ukendte eller ændrede input og funktioner bruger den normale beregning. Alle faktiske producer-/consumerplaner, målprocesser, før-/efterkontroller og ændringsafslag er uændrede.
+
+Den eksisterende FULL-kontrolkæde udfører nu også hele det normale CURRENT-mål én gang med samme hårde grænse på 300 sekunder. TARGETED-grenen udfører fortsat sine relevante hele mål gennem den normale producent. Den historiske workflowprøve bruger en præcis inverse til sit allerede autentiske grundlag; der tilføjes ingen ny head- eller hashkohorte.
+
+Genbrug af prøveforberedelse er ingen genbrug af kilde-, PostgreSQL- eller produktionsaccept. Faktisk afsluttet CURRENT, nødvendig ny PostgreSQL-kvalifikation, præcis kildekontrol og normal installation skal fortsat dokumenteres; en tidligere tidsafbrudt prøve er ikke bestået.
+
 ## 4.0.598 — Normale vendorversioner til isoleret arkivgendannelse
 
 Den ældre lokale bootstrap indeholder ikke arkivets fire SCIM-/recovery-relationer og to Storage-lifecycle-relationer. Identiteterne er afklaret ved navne-SHA mod officielle migrationer. Kun det friske, ikke tilknyttede archive-B får create-only lokale versionspins til Auth v2.197.0 og Storage v1.86.0 før den normale CLI 2.117.0-start. Gamle pins, projekttilknytning og Storage-migrationsloft afvises; pinfilerne genlæses efter start. Den syntetiske vej, de tre vedvarende tjenester, image-/netværks-/stop-/oprydningskontroller og alle fem originale SQL-strømme bevares.

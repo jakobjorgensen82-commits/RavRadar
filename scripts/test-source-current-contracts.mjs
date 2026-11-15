@@ -795,13 +795,37 @@ function rewrite(tree,changes){
 }
 const commit=(tree,parents,label)=>text(root,['commit-tree',tree,...parents.flatMap(parent=>['-p',parent]),'-m',label]);
 const checkout=commitId=>git(root,['reset','--hard',commitId]);
+// Kun fixture-PR'ens deterministiske plandel genbruges; review/API/state er altid friske.
+const reviewPlanCache=new WeakMap();
 function reviewObject(plan){
   const reviewText='SYNTHETIC independent protocol-fixture review only\n'+head+'\n'+base+'\n'+JSON.stringify(plan)+'\n';
   write('.cache/synthetic-control-review.txt',reviewText);
   const pullBaseCommit=state.baseTip??base,commit=text(root,['merge-base','--all',pullBaseCommit,head]);
   const changeBase={commit,gitTree:text(root,['rev-parse',commit+'^{tree}']),pullBaseCommit};
   const actual=text(root,['rev-parse','HEAD']);
-  const currentPlan=planCurrent({baselineCommit:commit,candidateCommit:actual,expectedHead:actual});
+  const input={baselineCommit:commit,candidateCommit:actual,expectedHead:actual};
+  let cacheKey=null;
+  try{
+    const location=fs.lstatSync(root,{bigint:true}),realRoot=fs.realpathSync(root);
+    const top=fs.statSync(fs.realpathSync(text(root,['rev-parse','--show-toplevel'])),{bigint:true});
+    if(location.isDirectory()&&!location.isSymbolicLink()&&realRoot===root
+      &&location.dev===owned.dev&&location.ino===owned.ino&&top.dev===owned.dev&&top.ino===owned.ino
+      &&text(root,['status','--porcelain','--untracked-files=no'])===''
+      &&text(root,['for-each-ref','refs/replace'])===''&&text(root,['rev-parse','--is-shallow-repository'])==='false'){
+      cacheKey=JSON.stringify([input,pullBaseCommit,root,String(owned.dev),String(owned.ino),
+        ['PATH','Path','SystemRoot','WINDIR','TEMP','TMP'].map(key=>process.env[key]??null),
+        sha(fs.readFileSync(path.join(root,'.git/config'))),
+        ['594','597','598'].map(version=>sha(fs.readFileSync(path.join(root,'scripts/lib/source-impact-domain-inputs-'+version+'.json'))))]);
+    }
+  }catch{} // Uafklaret eller ændret levende input bruger altid den normale beregning.
+  const bindings=[execFileSync,childProcess.execFileSync,fs.readFileSync,fs.lstatSync,fs.statSync,fs.realpathSync,performance,performance.now];
+  let plans=reviewPlanCache.get(planCurrent);
+  if(!plans){plans=new Map();reviewPlanCache.set(planCurrent,plans);}
+  const cached=cacheKey&&plans.get(cacheKey);
+  const currentPlan=cached&&bindings.every((value,index)=>value===cached.bindings[index])
+    ?clone(cached.plan):planCurrent(input);
+  if(cacheKey&&currentPlan.status==='PLANNED'&&currentPlan.selection==='CURRENT_CONTRACTS')
+    plans.set(cacheKey,{plan:clone(currentPlan),bindings});
   const current={repository:native.ORIGIN.repository,head,sourceTreeSha256:content,pullRequest:selectedPr,
     runId:selectedRun,runAttempt:1,jobId:selectedJob};
   const reference={schemaVersion:1,kind:'RAVRADAR_SOURCE_IMPACT_FULL_BASELINE_V1',scope:'FULL_SOURCE',

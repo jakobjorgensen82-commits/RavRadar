@@ -266,6 +266,14 @@ En almindelig appopdatering følger kildens faktiske version.json og hele den no
 
 Den lokale efterfølger er dannet med normale C-, I- og T-byggere og en ny append-only migration. Den bevarer hele den tidligere kanoniske kilde gennem en kontrolleret inverse og beholder alle gamle SQL-filer. Den normale næste-app-prøve kontrollerer uændrede bindinger og afviser forkert appversion, modelmetadata og native-familie. Faktisk PostgreSQL-kvalifikation, præcis kildekontrol, normal installation og offentlig virkning kræves fortsat. Ingen del af denne lokale forberedelse afslutter alene de syv revisionskrav eller de øvrige hovedmål.
 
+### Prøveforberedelse og faktisk FULL-kontrolejerskab
+
+Den normale CURRENT-fixture kan genbruge sin deterministiske plandel til et syntetisk PR-review ved præcis samme Git-, profil-, mappe- og namespaceidentitet. Den genopbygger fortsat reviewtekst, hash, state og API-svar ved hver læsning. Ukendte eller ændrede input og funktioner bruger den normale beregning. Alle faktiske producer-/consumerplaner, målprocesser, før-/efterkontroller og ændringsafslag er uændrede.
+
+Den eksisterende FULL-kontrolkæde udfører nu også hele det normale CURRENT-mål én gang med samme hårde grænse på 300 sekunder. TARGETED-grenen udfører fortsat sine relevante hele mål gennem den normale producent. Den historiske workflowprøve bruger en præcis inverse til sit allerede autentiske grundlag; der tilføjes ingen ny head- eller hashkohorte.
+
+Genbrug af prøveforberedelse er ingen genbrug af kilde-, PostgreSQL- eller produktionsaccept. Faktisk afsluttet CURRENT, nødvendig ny PostgreSQL-kvalifikation, præcis kildekontrol og normal installation skal fortsat dokumenteres; en tidligere tidsafbrudt prøve er ikke bestået.
+
 ## 89.340 Ét sikkert Pages-genforsøg og frisk vejr bagefter
 
 Når en senere udgivelse skal kontrollere en tidligere kørsels programfiler, skal filerne også være hentet på den nye runner. Kontroljob og udgivelsesjob får nu samme fulde Git-historik. Kontrollen af de præcise kildefiler ændres ikke; rettelsen retter en manglende forudsætning for kontrollen. Den ændrer ingen prognoser eller scorer. Faktisk offentlig levering skal stadig bevises.
