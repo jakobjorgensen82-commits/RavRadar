@@ -9,6 +9,8 @@ import {fileURLToPath,pathToFileURL} from 'node:url';
 import {sourceTreeContentSha256,sourceTreeProofArtifactName} from './lib/source-tree-content.mjs';
 import {SOURCE_GATE_CONTRACT,PULL_REQUEST_SOURCE_JOB,PULL_REQUEST_SOURCE_WORKFLOW,SOURCE_GATE_PRODUCERS}
   from './lib/weather-source-gate.mjs';
+import {currentChangeSourceArtifactName,currentContractSourceArtifactName}
+  from './source-current-contract-receipt.mjs';
 import {TARGETED_SOURCE_STEP_NAMES,TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES,TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES,TARGETED_OWNED_CACHE_NATIVE_SOURCE_STEP_NAMES,verifyTargetedSourceStepShape} from './source-targeted-consumer.mjs';
 import {SOURCE_IMPACT_DMI_REQUIREMENTS_REVIEW,inverseOwnedCacheNativeWorkflow} from './lib/source-impact-workflow-review.mjs';
 import {ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS,ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND,ORIGIN}
@@ -34,7 +36,7 @@ const copy=value=>structuredClone(value),repo='/repos/'+ORIGIN.repository,action
 const fullRun=50000000001,fullJob=50000000003,fullPr=998,fullFinal=50000000005,fullNative=50000000006;
 const selectedRun=50000000002,selectedJob=50000000004,selectedPr=999,selectedArtifact=50000000007;
 let cases=0,base,producer,main,baseContent,content,fullReference,fullBody,nativeBody,fullZip,nativeZip;
-let receipt,rawReceipt,targetZip,targetMetadata,currentJob,fullSourceJob,json,zips,locator,decide,discover,accessFactory;
+let receipt,rawReceipt,targetZip,targetMetadata,currentJob,fullSourceJob,json,zips,locator,decide,discover,accessFactory,absentArtifactNames;
 const env={GITHUB_REPOSITORY:ORIGIN.repository,GITHUB_REF:'refs/heads/main',GITHUB_RUN_ID:'50000000009'};
 function jobs(selected){
   return {id:selected?selectedJob:fullJob,run_id:selected?selectedRun:fullRun,run_attempt:1,
@@ -72,6 +74,10 @@ function maps(){
   json.set(repo+'/commits/'+main+'/pulls?per_page=100',[pull(true)]);
   json.set(actions+'/artifacts?name='+encodeURIComponent(targetMetadata.name)+'&per_page=100',
     {total_count:1,artifacts:[targetMetadata]});
+  // De tre kendte nyere namespaces er faktisk fraværende i denne V1-fixture.
+  // Ukendte ruter får fortsat ingen standardrespons.
+  for(const name of absentArtifactNames)json.set(actions+'/artifacts?name='+encodeURIComponent(name)+'&per_page=100',
+    {total_count:0,artifacts:[]});
   for(const head of [base,main])for(const p of Object.values(SOURCE_GATE_PRODUCERS))
     json.set(actions+'/workflows/'+p.workflowId+'/runs?head_sha='+head+'&branch=main&per_page=100&page=1',
       {total_count:0,workflow_runs:[]});
@@ -144,7 +150,12 @@ try{
   assert.throws(()=>copyModule('../outside-fixture.mjs'),/FIXTURE_MODULE_OUTSIDE_REPOSITORY/);
   assert.throws(()=>copyModule('scripts/__missing_targeted_fixture__.mjs?fixture=1#fragment'),
     error=>error.code==='ENOENT'&&error.path===path.join(SOURCE,'scripts/__missing_targeted_fixture__.mjs'));
-  copyModule('scripts/source-targeted-consumer.mjs');
+  // Aktuel consumer beholder sine lazy V1-validatorer; ingen historisk reader erstatning.
+  const currentModules=new Set();
+  for(const name of ['scripts/source-targeted-consumer.mjs','scripts/source-impact-git-diff.mjs',
+    'scripts/source-targeted-receipt.mjs'])copyModule(name,currentModules);
+  for(const name of ['scripts/source-targeted-consumer.mjs','scripts/source-impact-full-baseline.mjs',
+    'scripts/native-postgres-evidence.mjs'])assert(fs.readFileSync(path.join(root,name)).equals(fs.readFileSync(path.join(SOURCE,name))));
   for(const name of ['package.json','scripts/lib/account-statistics-assistant-package-review.json',
     'scripts/sync-admin-config.py','data/water-level-station-routing.json',
     'js/ui/about-i18n.js','js/ui/about-explainer-i18n.js','js/ui/learn-i18n.js','js/ui/learn-i18n-de.js','js/ui/learn-i18n-en.js'])
@@ -182,12 +193,16 @@ try{
   const updated=about.replace("'about.header':'Om projektet'","'about.header':'Om RavRadar'");assert.notEqual(updated,about);
   write('js/ui/about-i18n.js',updated);producer=commit('reviewed text only');content=sourceTreeContentSha256(producer,{git});
   const {planSourceImpactFromGit}=await import(pathToFileURL(path.join(root,'scripts/source-impact-git-diff.mjs')).href);
-  const {buildTargetedSourceReceipt}=await import(pathToFileURL(path.join(root,'scripts/source-targeted-receipt.mjs')).href);
+  const {buildTargetedSourceReceipt,domainTargetedSourceArtifactName}=await import(pathToFileURL(path.join(root,'scripts/source-targeted-receipt.mjs')).href);
   const gitPlan=planSourceImpactFromGit({baselineCommit:base,candidateCommit:producer,expectedHead:producer});
   assert.equal(gitPlan.plan.selection,'TARGETED');
   receipt=copy(buildTargetedSourceReceipt({current:{repository:ORIGIN.repository,head:producer,sourceTreeSha256:content,
     pullRequest:selectedPr,runId:selectedRun,runAttempt:1,jobId:selectedJob},fullBaseline:fullReference,gitPlan,
     commandResults:gitPlan.plan.commands.map(command=>({phase:'targeted',command,elapsedMs:1,outcome:'PASS'}))}));
+  const artifactCurrent={pullRequest:selectedPr,head:producer,sourceTreeSha256:content};
+  absentArtifactNames=[currentChangeSourceArtifactName(artifactCurrent),currentContractSourceArtifactName(artifactCurrent),
+    domainTargetedSourceArtifactName(artifactCurrent)];
+  assert.equal(new Set([receipt.artifactName,...absentArtifactNames]).size,4);
   git(['checkout','-qb','main',base]);git(['merge','--no-ff','-qm','synthetic same-tree reviewed merge','codex/synthetic-targeted']);
   main=text(['rev-parse','HEAD']);env.GITHUB_SHA=main;assert.equal(sourceTreeContentSha256(main,{git}),content);
   ({decideTargetedSourceGate:decide,discoverTargetedSourceGate:discover}=
@@ -280,14 +295,17 @@ try{
   assert(fs.readFileSync(path.join(root,'data/water-level-station-routing.json')).equals(hydrated));
 
   // Actual normal scoped adapter + fetch protocol across all three ZIPs,
-  // both three-producer histories and a later non-source weather failure.
+  // both four-producer histories and a later non-source weather failure.
   receipt=copy(canonicalReceipt);rebuildTarget();maps();addLaterWeatherFailureWithSuccessfulSource();
   const physical=physicalTransport();assert.equal((await decide(locator,env,physical.dependencies)).required,false);
-  assert.equal(physical.seen.physical,27);assert.equal(physical.seen.signed,3);cases++;
+  assert.equal(Object.keys(SOURCE_GATE_PRODUCERS).length,4);
+  // Den nye watch-producent giver ét ekstra GET i hver af de to historikrunder.
+  assert.equal(physical.seen.physical,29);assert.equal(physical.seen.signed,3);cases++;
   receipt=copy(canonicalReceipt);rebuildTarget();maps();addLaterWeatherFailureWithSuccessfulSource();
   const whole=physicalTransport(),located=await discover(env,content,whole.access);
   assert(located.locator);assert.equal((await decide(located.locator,env,whole.dependencies)).required,false);
-  assert.equal(whole.seen.physical,33);assert.equal(whole.seen.signed,4);cases++;
+  // To ekstra historik-GETs og tre eksplicit tomme V4/V3/V2-opslag før V1.
+  assert.equal(whole.seen.physical,38);assert.equal(whole.seen.signed,4);cases++;
 
   // Physical overflow counts redirect fetches. No helper can reset the phase
   // when nested FULL qualification or discovery enters the same adapter.

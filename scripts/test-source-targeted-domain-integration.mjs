@@ -13,20 +13,16 @@ const SOURCE=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const fixture597=process.argv[2]==='--source597',fixture598=process.argv[2]==='--source598';
 assert(process.argv.length===2||(process.argv.length===3&&(fixture597||fixture598)),'Only the three fixed normal fixture profiles');
 const REFERENCE=fixture598?'bd9cf518fe798ddea45d2b835f324f6e2bea06fc':fixture597?'c340b8d8637407b309d3380ae9221a607a4157ef':'e8786fabba66bd9184ab08a0c8c83bf97711f807';
-// 598-V2 bruger den allerede kvalificerede FULL-producent som historisk input.
-// De genuine PG/C/I/T-input fra REFERENCE bevares byteidentiske. Aktuel V4 prøves særskilt.
-const V2_INPUT_REFERENCE=fixture598?'fa64eca25c5f46189b00962a363d066a8f85a516':REFERENCE;
-const legacyControlFiles=new Set(['scripts/source-impact-domain-inputs.mjs','scripts/test-source-impact-domain-inputs.mjs',
-  'scripts/source-impact-domain-plan.mjs','scripts/test-source-impact-domain-plan.mjs','scripts/test-source-targeted-domain-integration.mjs']);
-const fixtureControlBytes=file=>fixture598
-  ?execFileSync('git',['-c','protocol.allow=never','-C',SOURCE,'cat-file','blob',V2_INPUT_REFERENCE+':'+file],{
-    timeout:10000,maxBuffer:8*1024*1024,
-    env:{...Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','TEMP','TMP']
-      .filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]])),
-      GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_OPTIONAL_LOCKS:'0',GIT_TERMINAL_PROMPT:'0'}})
-  :!fixture598&&legacyControlFiles.has(file)
-  ?execFileSync('git',['-C',SOURCE,'cat-file','blob',(fixture597?'fad617a60b9830869b03e26ffa629b6e3d0fcb08':'45594e185f087ff02c8e72649d02cb45cf79cf16')+':'+file],{timeout:10000,maxBuffer:8*1024*1024})
-  :fs.readFileSync(path.join(SOURCE,file));
+// Hver V2-profil læser sine allerede faste, autentiske kontroltilføjelser.
+// Genuine PG/C/I/T og workflow fra REFERENCE bevares for 594/597; aktuel V4 prøves særskilt.
+const V2_CONTROL_REFERENCE=fixture598?'fa64eca25c5f46189b00962a363d066a8f85a516'
+  :fixture597?'fad617a60b9830869b03e26ffa629b6e3d0fcb08':'45594e185f087ff02c8e72649d02cb45cf79cf16';
+const V2_INPUT_REFERENCE=fixture598?V2_CONTROL_REFERENCE:REFERENCE;
+const fixtureControlBytes=file=>execFileSync('git',['-c','protocol.allow=never','-C',SOURCE,'cat-file','blob',V2_CONTROL_REFERENCE+':'+file],{
+  timeout:10000,maxBuffer:8*1024*1024,
+  env:{...Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','TEMP','TMP']
+    .filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]])),
+    GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_OPTIONAL_LOCKS:'0',GIT_TERMINAL_PROMPT:'0'}});
 const profile=JSON.parse(fixtureControlBytes(fixture598?'scripts/lib/source-impact-domain-inputs-598.json':fixture597
   ?'scripts/lib/source-impact-domain-inputs-597.json':'scripts/lib/source-impact-domain-inputs-594.json'));
 const registry=JSON.parse(fixtureControlBytes('scripts/lib/source-impact-domain-owners-594.json'));

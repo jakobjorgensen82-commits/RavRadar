@@ -1,8 +1,8 @@
-## 15. november — SDK-parent-loss mangler sin relevante Linux-accept
+## 15. november — SDK-case bestået; samlet kildekvalifikation er åben
 
-Den konkrete krypterede SDK-case efter PUT og før afsluttende ACK er endnu ikke kørt på rigtig Linux i den private kandidat. Tidligere native-PASS dækker sine oprindelige cases og må ikke udlægges som accept af denne tilføjelse eller den nye CURRENT-kalder. Der er ikke påvist en aktuel produktfejl alene af dette manglende bevis.
+Hele SDK-nativefilens 19 cases har faktisk bestået på Linux med Node24, inklusive tab af styrende proces efter PUT og før afsluttende ACK. Den samlede kildekontrol stoppede senere i en gammel V1-producentprøve, som blandede V1-forventninger med den aktuelle V4-kæde. Det er ikke en påvist fejl i vejrhentning eller et fuldt bestået kildebevis.
 
-Kandidaten vælger den eksisterende dependency-prøve og hele nativefilens 19 cases med faktisk Node24, egen npm-cache og normal V4-kvittering. Den nye FULL-metadataform skal være bundet til producer-heads hele workflow; ukendte bytes og forkerte steps afvises. Alle normale kilde-/review-/input-/slutkontroller skal stadig bestå før levering. Ingen ny model eller PG-kørsel påstås, og produktets stop-/bevaringskrav svækkes ikke. Se DEC-0302 og håndbog 89.342/89.232.
+De historiske V1-/V2-input afgrænses til deres autentiske oprindelse, mens den aktuelle forbruger og V4-integration prøves særskilt. Den kommende SDK-metadataform kræver autentisk workflowlæsning i både opdagelse og genlæsning; fetch-valget giver ingen ny acceptadgang. Alle normale kilde-/review-/input-/slutkontroller skal bestå på det nye head før levering. Ingen ny model eller PostgreSQL-eksekvering påstås, og stop-/bevaringskravene består. Se DEC-0302 og håndbog 89.342/89.232.
 
 ## 15. november — originalarkivets Auth-kompatibilitet er fortsat åben
 

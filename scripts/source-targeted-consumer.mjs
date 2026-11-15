@@ -249,7 +249,8 @@ export async function decideTargetedSourceGate(record,env,dependencies){
     const run=await json(runRoute),pull=await json(repo+'/pulls/'+record.pullRequestNumber);
     const jobs=await json(runRoute+'/attempts/1/jobs?per_page=100');
     const selectedJob=one(jobs.jobs.filter(value=>value.name===PULL_REQUEST_SOURCE_JOB));
-    const usesDmiPythonShape=selectedJob.steps?.some(value=>value.number===5&&value.name==='Run actions/setup-python@v7');
+    const usesDmiPythonShape=selectedJob.steps?.some(value=>(value.number===5&&value.name==='Run actions/setup-python@v7')
+      ||OWNED_CACHE_NATIVE_EARLY_STEP_NAMES.includes(value.name));
     const workflowText=usesDmiPythonShape?git(['cat-file','blob',record.producerHeadSha+':'+PULL_REQUEST_SOURCE_WORKFLOW]).toString('utf8'):undefined;
     const phase=runIdentity(run,pull,jobs,record,workflowText);
     const artifactRoute=repo+'/actions/artifacts/'+record.artifactId,metadata=await json(artifactRoute);
@@ -427,7 +428,8 @@ export async function discoverTargetedSourceGate(env,sourceTreeSha256,dependenci
         headSha:env.GITHUB_SHA,producerHeadSha:pull.head.sha,sourceTreeSha256,pullRequestNumber:pull.number,
         runId:String(run.id),runAttempt:run.run_attempt,jobId:job.id,artifactId:artifact.id,
         artifactDigest:artifact.digest};
-      const usesDmiPythonShape=job.steps?.some(value=>value.number===5&&value.name==='Run actions/setup-python@v7');
+      const usesDmiPythonShape=job.steps?.some(value=>(value.number===5&&value.name==='Run actions/setup-python@v7')
+        ||OWNED_CACHE_NATIVE_EARLY_STEP_NAMES.includes(value.name));
       let workflowText;
       if(usesDmiPythonShape){
         assert.equal(typeof readGit,'function');const timeout=Math.min(10000,Math.max(1,Math.floor(remaining())));

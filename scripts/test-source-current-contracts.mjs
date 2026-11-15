@@ -544,7 +544,7 @@ let native,namespace,sourceContent,fullBody,phaseBody,fullJobBody,selectedJobBod
 let immutableFullZip,immutablePhaseZip;
 let maps,zips,selectedReceipt,selectedZip,selectedMetadata,rows=[],cases=0,actualProcesses=0,calls=0;
 const state={movedReview:false,missingReview:false,wrongPlan:false,merged:false,
-  baseTip:null,hintOverride:null,duplicateReview:false,malformedReview:false,headMismatch:false,expiredFull:false,laterNegative:false,modernWorkflow:false};
+  baseTip:null,hintOverride:null,duplicateReview:false,malformedReview:false,headMismatch:false,expiredFull:false,laterNegative:false,modernWorkflow:false,ownedCacheNativeWorkflow:false,fullModernWorkflow:false,sdkStepFault:null};
 const fallbackOnlyCommits=new Set();let observedRoutes=[],unexpectedRoutes=[],fixtureFailures=[],fallbackDiscoveries=[];
 const scenarios=[];
 const moduleAt=async file=>import(pathToFileURL(path.join(root,file)).href);
@@ -597,12 +597,18 @@ function run(selected){return {id:selected?selectedRun:fullRun,run_attempt:1,hea
   conclusion:selected&&!state.merged?null:'success',repository:{full_name:native.ORIGIN.repository},
   head_repository:{full_name:native.ORIGIN.repository},pull_requests:[]};}
 function jobs(selected){
-  const modern=selected&&state.modernWorkflow;
-  const names=modern?namespace.TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES:namespace.TARGETED_SOURCE_STEP_NAMES;
+  const owned=selected&&state.ownedCacheNativeWorkflow;
+  const modern=selected?state.modernWorkflow:state.fullModernWorkflow;
+  const names=owned?namespace.TARGETED_OWNED_CACHE_NATIVE_SOURCE_STEP_NAMES
+    :modern?namespace.TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES:namespace.TARGETED_SOURCE_STEP_NAMES;
+  const steps=names.map((name,index)=>({name,number:index+1,status:'completed',
+    conclusion:selected&&(owned?(index>=9&&index<=22):modern?(index>=7&&index<=20):(index>=5&&index<=19))?'skipped':'success',
+    started_at:stamp(index),completed_at:stamp(index+1)}));
+  if(selected&&state.sdkStepFault==='python-position')steps.find(row=>row.name==='Run actions/setup-python@v7').number=5;
+  if(selected&&state.sdkStepFault==='retainer-skipped')steps[4].conclusion='skipped';
   return {id:selected?selectedJob:fullJob,run_id:selected?selectedRun:fullRun,run_attempt:1,head_sha:selected?head:base,
     name:namespace.PULL_REQUEST_SOURCE_JOB,status:selected&&!state.merged?'in_progress':'completed',
-    conclusion:selected&&!state.merged?null:'success',steps:names.map((name,index)=>({name,number:index+1,status:'completed',
-      conclusion:selected&&(modern?(index>=7&&index<=20):(index>=5&&index<=19))?'skipped':'success',started_at:stamp(index),completed_at:stamp(index+1)}))};
+    conclusion:selected&&!state.merged?null:'success',steps};
 }
 function meta(id,name,body,runId,producer,n){return{id,name,digest:'sha256:'+sha(body),expired:false,size_in_bytes:body.length,
   workflow_run:{id:runId,head_sha:producer},created_at:stamp(n)};}
@@ -679,6 +685,7 @@ async function transport(url,options){
 function configure(candidate){
   head=candidate;checkout(head);rows=[];observedRoutes=[];unexpectedRoutes=[];fixtureFailures=[];fallbackDiscoveries=[];
   state.missingReview=false;state.movedReview=false;state.wrongPlan=false;state.merged=false;state.closedBaseTip=null;
+  state.modernWorkflow=false;state.ownedCacheNativeWorkflow=false;state.fullModernWorkflow=false;state.sdkStepFault=null;
   state.baseTip=null;state.hintOverride=null;state.duplicateReview=false;state.malformedReview=false;state.headMismatch=false;state.expiredFull=false;state.laterNegative=false;state.laterNegativeAt=null;state.negativeDuringTargets=false;main=null;
   Object.assign(process.env,{GITHUB_EVENT_NAME:'pull_request',GITHUB_REPOSITORY:native.ORIGIN.repository,SOURCE_GATE_HEAD_SHA:head,
     PULL_REQUEST_NUMBER:String(selectedPr),GITHUB_RUN_ID:String(selectedRun),GITHUB_RUN_ATTEMPT:'1',GITHUB_JOB:'validate',
@@ -729,7 +736,8 @@ try{
   const gate=await moduleAt('scripts/lib/weather-source-gate.mjs'),consumer=await moduleAt('scripts/source-targeted-consumer.mjs');
   namespace={...gate,TARGETED_SOURCE_STEP_NAMES:consumer.TARGETED_SOURCE_STEP_NAMES,
     TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES:consumer.TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES,
-    TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES:consumer.TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES};
+    TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES:consumer.TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES,
+    TARGETED_OWNED_CACHE_NATIVE_SOURCE_STEP_NAMES:consumer.TARGETED_OWNED_CACHE_NATIVE_SOURCE_STEP_NAMES};
   sourceContent=await moduleAt('scripts/lib/source-tree-content.mjs');
   ({coordinateTargetedSourceProducer:coordinate}=await moduleAt('scripts/source-targeted-producer.mjs'));
   ({decideTargetedSourceGate:decide,discoverTargetedSourceGate:discover}=consumer);accessFactory=native.sourceImpactEvidenceAccess;
@@ -1735,6 +1743,82 @@ try{
     checkout(priorMain);
   }
   cases++;scenarios.push('later catalogue cannot rewrite prior V4 scope; committed child plans allow data hydration and discard Node injection');
+
+  {
+
+    // Selvstændig SDK/control-case: de tidligere V3/22- og UI/no-ROOT-cases bevares.
+    const saved={base,baseContent,fullBody,phaseBody,immutableFullZip,immutablePhaseZip,head,main,
+      baselinePlan,selectedReceipt,selectedZip,selectedMetadata,rows,selectedRun,selectedJob,selectedPr,selectedArtifactId,
+      maps,zips,state:clone(state),priorMaps:new Map(priorMaps),priorZips:new Map(priorZips),gitHead:text(root,['rev-parse','HEAD'])};
+    try{
+      const workflow='.github/workflows/validate-pull-request.yml';
+      const sdkWorkflow=git(SOURCE,['cat-file','blob','HEAD:'+workflow]).toString('utf8');
+      assert.equal(sdkWorkflow,fixtureControlBytes(workflow).toString('utf8').replaceAll('\r\n','\n'));
+      const predecessor=inverseOwnedCacheNativeWorkflow(sdkWorkflow);assert.notEqual(predecessor,sdkWorkflow);
+      const seedTree=rewrite(baselineTree,[[workflow,Buffer.from(predecessor)]]);
+      base=commit(seedTree,[saved.base],'synthetic same genuine PG seed with normal DMI environment');
+      assert.equal(text(root,['diff','--name-only',saved.base,base]),workflow);
+      checkout(base);baseContent=sourceContent.sourceTreeContentSha256(base,{git:readGit});
+      const sdkNativeCurrent={...nativeCurrent,head:base};
+      const sdkNative={...clone(nativeReceipt),current:sdkNativeCurrent};
+      const sdkHistorical={...clone(historical),current:{...historical.current,head:base},
+        ...await national.assistantAfter597NativeClaims(sdkNative,sdkNativeCurrent)};
+      fullBody={...clone(saved.fullBody),headSha:base,sourceTreeSha256:baseContent,
+        nativePostgres:sdkNative,historical584National:sdkHistorical};
+      phaseBody={...clone(saved.phaseBody),headSha:base,sourceTreeSha256:baseContent,nativePostgres:clone(sdkNative)};
+      immutableFullZip=null;immutablePhaseZip=null;priorMaps.clear();priorZips.clear();
+      const sdkTree=rewrite(seedTree,[[workflow,Buffer.from(sdkWorkflow)]]);
+      selectedRun+=1000;selectedJob+=1000;selectedPr+=1000;selectedArtifactId+=1000;
+      configure(commit(sdkTree,[base],'synthetic real committed SDK workflow change'));
+      state.modernWorkflow=true;state.ownedCacheNativeWorkflow=true;state.fullModernWorkflow=true;
+      baselinePlan=plan({baselineCommit:base,candidateCommit:head,expectedHead:head});
+      assert.equal(baselinePlan.status,'PLANNED');assert.equal(baselinePlan.selection,'CURRENT_CONTRACTS');
+      assert.deepEqual(Object.keys(baselinePlan.areas),['core','sourceControls']);
+      assert.equal(baselinePlan.controlQualificationRequired,true);
+      assert.deepEqual(baselinePlan.commands,[...CURRENT_CONTRACT_COMMANDS.core,...CURRENT_CONTRACT_COMMANDS.sourceControls]);
+      assert.deepEqual(baselinePlan.protectedInputs,{postgresUnchanged:true,CUnchanged:true,IUnchanged:true,TUnchanged:true});
+      const logFile=path.join(root,'.cache/actual-current-targets.jsonl');
+      const beforeTargets=fs.readFileSync(logFile,'utf8').trim().split('\n').filter(Boolean).length;
+      rebuildMaps();const sdk=await coordinate();assert.equal(sdk.selection,'TARGETED');
+      assert.equal(rows.length,baselinePlan.commands.length);assert(rows.every(row=>row.outcome==='PASS'));
+      const executed=fs.readFileSync(logFile,'utf8').trim().split('\n').filter(Boolean).slice(beforeTargets)
+        .map(line=>path.relative(root,JSON.parse(line).file).split(path.sep).join('/'));
+      assert.deepEqual(executed.sort(),rows.flatMap(row=>row.command.split(' ').filter(file=>file.endsWith('.mjs'))).sort());
+      selectedReceipt=sdk.receipt;assert.equal(selectedReceipt.schemaVersion,4);
+      assert.deepEqual(selectedReceipt.reportedCommandResults,rows);
+      main=commit(sdkTree,[base,head],'synthetic SDK same-tree main merge');checkout(main);state.merged=true;
+      selectedZip=zip(Buffer.from(JSON.stringify(selectedReceipt)+'\n'),'source-targeted-impact-proof.json');
+      selectedMetadata=meta(selectedArtifactId,selectedReceipt.artifactName,selectedZip,selectedRun,head,24);rebuildMaps();
+      const sdkJob=jobs(true);assert.equal(sdkJob.steps.find(row=>row.name==='Run actions/setup-python@v7').number,7);
+      assert.deepEqual(sdkJob.steps.slice(3,5).map(row=>row.name),[
+        'Set up Node24 for selected owned-cache native contracts','Retain actual Node24 executable for selected native contracts']);
+      const sdkContext={...context,GITHUB_SHA:main};let workflowReads=0;
+      const sdkReadGit=(args,options)=>{
+        if(args[0]==='cat-file'&&args[1]==='blob'&&args[2]===head+':'+workflow){workflowReads++;
+          const bytes=readGit(args,options);assert.equal(bytes.toString('utf8'),sdkWorkflow);return bytes;}
+        return readGit(args,options);
+      };
+      const sdkFound=await discover(sdkContext,sdk.sourceTreeSha256,{...freshAccess(),readGit:sdkReadGit});
+      assert(sdkFound.locator);assert.equal(sdkFound.locator.contractId,'weather-source-current-change-v4');
+      const sdkAccepted=await decide(sdkFound.locator,sdkContext,{...freshAccess(),readGit:sdkReadGit});
+      assert.equal(sdkAccepted.required,false,JSON.stringify(sdkAccepted));
+      assert.equal(sdkAccepted.independentControlReview,'VERIFIED_EXACT_ROOT_PR_REVIEW');
+      assert.deepEqual(sdkAccepted.testedAreas,['core','sourceControls']);assert.equal(workflowReads,2);
+      cases++;
+      for(const fault of ['python-position','retainer-skipped']){
+        state.sdkStepFault=fault;
+        assert.equal((await discover(sdkContext,sdk.sourceTreeSha256,{...freshAccess(),readGit:sdkReadGit})).required,true);
+        assert.equal((await decide(sdkFound.locator,sdkContext,{...freshAccess(),readGit:sdkReadGit})).required,true);cases++;
+      }
+      state.sdkStepFault=null;
+      scenarios.push('normal SDK/control producer executes its full selected fake targets; Python7 workflow binds in discovery and decide, unknown layout/status still refuse');
+    }finally{
+      ({base,baseContent,fullBody,phaseBody,immutableFullZip,immutablePhaseZip,head,main,baselinePlan,
+        selectedReceipt,selectedZip,selectedMetadata,rows,selectedRun,selectedJob,selectedPr,selectedArtifactId,maps,zips}=saved);
+      Object.assign(state,saved.state);priorMaps.clear();for(const [key,value]of saved.priorMaps)priorMaps.set(key,value);
+      priorZips.clear();for(const [key,value]of saved.priorZips)priorZips.set(key,value);checkout(saved.gitHead);
+    }
+  }
 
   await assertScalarSourcePrerequisites();
   }
