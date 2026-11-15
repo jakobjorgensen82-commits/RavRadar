@@ -6,6 +6,18 @@ En almindelig appopdatering skal beholde den installerede modelfamilie, når mod
 
 Udstedelsen og den efterfølgende almindelige appversionsprøve er lokalt afprøvet. Den nye familie kræver fortsat faktisk PostgreSQL-kvalifikation, præcis samlet kildekontrol, installation gennem normalvejen og verificeret offentlig virkning. Alle fem hovedmål og de syv særskilte revisionskrav består. Den tidligere førudstedelsespost er et historisk forberedelsescheckpoint, ikke den aktuelle lokale outputtilstand.
 
+## 4.0.598 — Normale vendorversioner til isoleret arkivgendannelse
+
+Den ældre lokale bootstrap indeholder ikke arkivets fire SCIM-/recovery-relationer og to Storage-lifecycle-relationer. Identiteterne er afklaret ved navne-SHA mod officielle migrationer. Kun det friske, ikke tilknyttede archive-B får create-only lokale versionspins til Auth v2.197.0 og Storage v1.86.0 før den normale CLI 2.117.0-start. Gamle pins, projekttilknytning og Storage-migrationsloft afvises; pinfilerne genlæses efter start. Den syntetiske vej, de tre vedvarende tjenester, image-/netværks-/stop-/oprydningskontroller og alle fem originale SQL-strømme bevares.
+
+Den lokale kandidat skal bruge leverandørernes fulde normale migratorer, ikke stubtabeller eller omskrevet original SQL. Faste labels og Auth-migrationsmetadata er diagnose, ikke accept. Præcis kildekvalifikation, faktisk vendorbootstrap, arkivets kolonner, fuld indholds-/dubletparitet, Auth-funktion og ejet oprydning kræver fortsat deres reelle beviser. En lokal imagecachepost beviser ikke den brugte transiente Storage-container. Ingen SQL-installation, gendannelse, automatisk backup/rotation eller Free-overgang udføres ved kildeforberedelsen.
+
+## 4.0.598 — GraphQL-schema: dokumenteret fejlfri null-konvolut
+
+Cloudflares normale fejlfri GraphQL-svar kan indeholde `errors: null`. Den faste schema-læser afviste denne dokumenterede form. Den afgrænsede rettelse accepterer kun fraværende fejl, null eller en tom fejlliste; ikke-tomme fejl, fremmede felter og manglende typedata afvises fortsat. Konvolut, leverandørfejl og typedata har særskilte faste kategorier og HTTP-status uden rå svartekst.
+
+Det er en dokumenteret protokolrettelse i den skrivefri tilstand. Den tidligere samlede konvolutafvisning viser ikke, hvilken konkret del af svaret der var forkert. Lokal og præcis kildekvalifikation, faktisk genlæsning af de faste schemafelter og enheds-/Free-accept er særskilte beviser. Ingen projekt-, DNS-, database-, vejr-, model-, nøgle- eller planændring.
+
 ## 15. november 2026 — kildeidentitet i metadataprøvens afslag
 
 En afgrænset prøvekorrektion fjerner en forældet lighed med fejltekstens familienavn. ERR_ASSERTION, SHA-256 af hele den muterede kanoniske kilde og den aktive udstedte SHA-256 identificerer fortsat den præcise kontrol. Alle fire mutationer og øvrige immutable-/no-write-/schemaafslag bevares. Ingen ny label-liste, wrapper, produktkode, SQL eller modelbinding indføres. Hele det ændrede normale mål og præcis kildekvalifikation er fortsat krav.

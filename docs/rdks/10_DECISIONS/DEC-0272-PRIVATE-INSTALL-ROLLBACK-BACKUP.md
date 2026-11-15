@@ -137,3 +137,13 @@ Et gyldigt målt HTTP-statusfelt fra en senere childfejl bevares i workflowets f
 Den afgrænsede rettelse bevarer 4.0.598-kandidatens C/I/T og version, alle gamle migrationsbytes og den nye598-migration, scoreformel, kildeprioritet, originale vejr- og scoredata, administratorpunkter og geometri. Den normale håndbogssynkronisering ændrer kun dokumentations-JSON i INSTALL, aldrig DDL. De samlede eksisterende R2-, dokumenthistorik-, databasebackup- og workflowmål er de relevante kontrolindgange. Præcis slut-head-kildekontrol, sikker levering og faktisk gendannelses-/FreeReady-bevis er fortsat selvstændige krav.
 
 Se håndbog 89.313. Private statusaflæsninger, kørselspins og konkrete prøvekvitteringer føres i privat evidens; løbende kørselstilstande hører ikke til i denne dokumentation.
+
+## Tillæg 2026-11-15 — normal vendorbootstrap kun på friskt archive-B
+
+Den ældre lokale bootstrap indeholder ikke arkivets fire SCIM-/recovery-relationer og to Storage-lifecycle-relationer. Identiteterne er afklaret ved navne-SHA mod officielle migrationer. Kun det friske, ikke tilknyttede archive-B får create-only lokale versionspins til Auth v2.197.0 og Storage v1.86.0 før den normale CLI 2.117.0-start. Gamle pins, projekttilknytning og Storage-migrationsloft afvises; pinfilerne genlæses efter start. Den syntetiske vej, de tre vedvarende tjenester, image-/netværks-/stop-/oprydningskontroller og alle fem originale SQL-strømme bevares.
+
+Den lokale kandidat skal bruge leverandørernes fulde normale migratorer, ikke stubtabeller eller omskrevet original SQL. Faste labels og Auth-migrationsmetadata er diagnose, ikke accept. Præcis kildekvalifikation, faktisk vendorbootstrap, arkivets kolonner, fuld indholds-/dubletparitet, Auth-funktion og ejet oprydning kræver fortsat deres reelle beviser. En lokal imagecachepost beviser ikke den brugte transiente Storage-container. Ingen SQL-installation, gendannelse, automatisk backup/rotation eller Free-overgang udføres ved kildeforberedelsen.
+
+CLI-versionens officielle konfigurationslæser bruger projektets egne .temp/gotrue-version og storage-version. Begge pins er lokale og kræver ingen supabase link eller managementforespørgsel. Den valgte Auth-version indeholder de officielle SCIM-/recovery-migrationer og den nødvendige enumudvidelse. Storage-versionen indeholder den samlede lifecycle-DDL; kun de to CREATE TABLE-udsagn må ikke kopieres ud af migreringsforløbet.
+
+Primære kilder: https://github.com/supabase/cli/blob/21db855916f2c2b12f61cde923a27094b8528b23/apps/cli-go/pkg/config/config.go#L841-L849 ; https://github.com/supabase/auth/tree/4eee58f296d9698a1c2c0ae14d7a0b379c7622d3/migrations ; https://github.com/supabase/storage/tree/94e9900d227fb152ad3e66d14cf0a6d3e1901c49/migrations/tenant .

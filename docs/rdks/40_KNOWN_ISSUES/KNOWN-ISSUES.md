@@ -2,6 +2,18 @@
 
 Den lokalt reproducerede kobling mellem appversion og udstedt modelfamilie er rettet i de aktuelle package-/kilde-/native-kaldere og den historiske FULL-læser. Den almindelige næste-app-prøve har faktisk bevaret C/I/T og alle SQL-filer. Fuld ny kilde-/PostgreSQL-kvalifikation og sikker installation er fortsat ÅBENT; forberedelse er ikke produktionsbevis.
 
+## Arkivets leverandørskema kræver kompatible lokale versioner
+
+Den ældre lokale bootstrap indeholder ikke arkivets fire SCIM-/recovery-relationer og to Storage-lifecycle-relationer. Identiteterne er afklaret ved navne-SHA mod officielle migrationer. Kun det friske, ikke tilknyttede archive-B får create-only lokale versionspins til Auth v2.197.0 og Storage v1.86.0 før den normale CLI 2.117.0-start. Gamle pins, projekttilknytning og Storage-migrationsloft afvises; pinfilerne genlæses efter start. Den syntetiske vej, de tre vedvarende tjenester, image-/netværks-/stop-/oprydningskontroller og alle fem originale SQL-strømme bevares.
+
+Den lokale kandidat skal bruge leverandørernes fulde normale migratorer, ikke stubtabeller eller omskrevet original SQL. Faste labels og Auth-migrationsmetadata er diagnose, ikke accept. Præcis kildekvalifikation, faktisk vendorbootstrap, arkivets kolonner, fuld indholds-/dubletparitet, Auth-funktion og ejet oprydning kræver fortsat deres reelle beviser. En lokal imagecachepost beviser ikke den brugte transiente Storage-container. Ingen SQL-installation, gendannelse, automatisk backup/rotation eller Free-overgang udføres ved kildeforberedelsen. Se håndbog 89.350 og DEC-0272.
+
+## 15. november — Schema-læser afviste dokumenteret errors:null
+
+Cloudflares normale fejlfri GraphQL-svar kan indeholde `errors: null`. Den faste schema-læser afviste denne dokumenterede form. Den afgrænsede rettelse accepterer kun fraværende fejl, null eller en tom fejlliste; ikke-tomme fejl, fremmede felter og manglende typedata afvises fortsat. Konvolut, leverandørfejl og typedata har særskilte faste kategorier og HTTP-status uden rå svartekst.
+
+Det er en dokumenteret protokolrettelse i den skrivefri tilstand. Den tidligere samlede konvolutafvisning viser ikke, hvilken konkret del af svaret der var forkert. Lokal og præcis kildekvalifikation, faktisk genlæsning af de faste schemafelter og enheds-/Free-accept er særskilte beviser. Ingen projekt-, DNS-, database-, vejr-, model-, nøgle- eller planændring.
+
 ## Metadataprøvens kildeidentitet afventer præcis kvalifikation
 
 Et forældet familienavn i fejltekstassertionen standsede den normale metadataprøve, selv om den aktuelle hele kanoniske kildekontrol afviste de muterede bytes med korrekt kode og begge præcise SHA-værdier. Den minimale kandidat fjerner alene denne tekstlighed. Alle mutations-, hash-, immutable-, no-write- og schemaassertions bevares. Hele det ændrede normale mål og endelig kildekvalifikation kræves fortsat; produktkode, SQL og modelbindinger ændres ikke.

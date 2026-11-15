@@ -83,3 +83,11 @@ Det er kildeforberedelse uden nyt domæne, deploy, datagrundlag eller scorebereg
 ### Samme HEAD-kontrakt i den normale tidsskyderprøve
 
 Den normale tidsskyder-/delingsprøve kræver nul prognoselæsninger ved HEAD. Den gamle forventning om tre læsninger er rettet til den gennemgåede handlerkontrakt; GET-, route-, query-, score- og negative kontroller bevares. Prøvens eksisterende publicUI-ejerskab bevares uden ændret kontrolkatalog. Både hele timeline- og projectionsprøven skal fortsat bestå på det præcise kildehead; denne testrettelse er ikke hosted delings- eller Free-accept.
+
+### Normal GraphQL-konvolut og indholdsfrie afslag, 15. november
+
+Cloudflares normale fejlfri GraphQL-svar kan indeholde `errors: null`. Den faste schema-læser afviste denne dokumenterede form. Den afgrænsede rettelse accepterer kun fraværende fejl, null eller en tom fejlliste; ikke-tomme fejl, fremmede felter og manglende typedata afvises fortsat. Konvolut, leverandørfejl og typedata har særskilte faste kategorier og HTTP-status uden rå svartekst.
+
+Det er en dokumenteret protokolrettelse i den skrivefri tilstand. Den tidligere samlede konvolutafvisning viser ikke, hvilken konkret del af svaret der var forkert. Lokal og præcis kildekvalifikation, faktisk genlæsning af de faste schemafelter og enheds-/Free-accept er særskilte beviser. Ingen projekt-, DNS-, database-, vejr-, model-, nøgle- eller planændring.
+
+Primær protokolkilde: https://developers.cloudflare.com/analytics/graphql-api/getting-started/querying-basics/ (normale svar med errors:null).
