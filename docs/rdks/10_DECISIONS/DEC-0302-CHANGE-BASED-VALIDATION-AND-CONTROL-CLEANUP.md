@@ -297,3 +297,8 @@ Tre naturlige områder ejer seks eksisterende regulære stier. `sharing` ejer `s
 Kun ændringer af de eksisterende regulære filer får dette ansvar; tilføjelse, sletning og ændret mode afvises. Ukendte nabofiler og ændrede PG/C/I/T-input beholder FULL. Der tilføjes ingen head-/hash-kohorte, generel shared-undtagelse eller ny genbrugstilladelse. Ændret kontrolkode kræver fortsat frisk selvstændigt kontrolreview og hele det normale kontrolmål på det præcise CI-head.
 
 Den valgte samlede progressprøve bruger allerede den normale CP-fixture. Producentens eksisterende credentialfri og tidsbegrænsede installation af `requirements-copernicus.txt` forberedes derfor også ved netop denne kommandostreng. Scalarprøvens adgang består, begge valgt sammen installerer kun én gang, og andre mål udløser ingen installation. Den eksisterende sanitiserede proces, 120-sekundersgrænse og fejl før måludførelse bevares. Lokal fokuseret kontrol er ikke en fuld scope-, Linux- eller PostgreSQL-kvittering.
+
+
+### Historisk workflowinput og faktisk aktuelle kodeblokke
+
+Den normale fremskridtsprøves ældre workflowasserter læser deres allerede fastlagte, autentiske workflowgrundlag. De aktuelle workflowkaldere og alle udførte Node-, Python- og Bash-blokke læses særskilt fra den aktuelle kilde. Historisk testinput giver ingen drifts- eller genbrugsautoritet. Det gamle orakel og alle sikkerhedsasserter bevares; der ændres ingen workflow, CLI, model, kvote eller produktionspolitik. Præcis kildekvalifikation og reel Linux-/Bash-afprøvning kræves fortsat.

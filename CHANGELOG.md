@@ -1,3 +1,7 @@
+## Autentisk historisk workflowinput og aktuelle kalderprøver
+
+Den normale fremskridtsprøves ældre workflowasserter læser deres allerede fastlagte, autentiske workflowgrundlag. De aktuelle workflowkaldere og alle udførte Node-, Python- og Bash-blokke læses særskilt fra den aktuelle kilde. Historisk testinput giver ingen drifts- eller genbrugsautoritet. Det gamle orakel og alle sikkerhedsasserter bevares; der ændres ingen workflow, CLI, model, kvote eller produktionspolitik. Præcis kildekvalifikation og reel Linux-/Bash-afprøvning kræves fortsat.
+
 ## Præcis HEAD-forventning i den normale delingsprøve
 
 Den normale tidsskyder-/delingsprøve kræver nul prognoselæsninger ved HEAD. Den gamle forventning om tre læsninger er rettet til den gennemgåede handlerkontrakt; GET-, route-, query-, score- og negative kontroller bevares. Prøvens eksisterende publicUI-ejerskab bevares uden ændret kontrolkatalog. Både hele timeline- og projectionsprøven skal fortsat bestå på det præcise kildehead; denne testrettelse er ikke hosted delings- eller Free-accept.

@@ -1,4 +1,4 @@
-import { projectPagesClosureHistoricalTestInput as historicalPagesInput } from './lib/pages-closure-historical-test-input.mjs';
+import { projectPagesClosureHistoricalTestInput as historicalPagesInput, readHistoricalBuildWorkflowSource } from './lib/pages-closure-historical-test-input.mjs';
 import assert from 'node:assert/strict';
 import { inverseCompletedRuntimeWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
 import fs from 'node:fs/promises';
@@ -18,13 +18,14 @@ for (const file of ['scripts/lib/verified-protected-progress-components.mjs',
     'The operational recovery helpers must remain in the producer inventory');
 }
 
-const workflow = inverseCompletedRuntimeWorkflow(historicalPagesInput((await fs.readFile('.github/workflows/reusable-weather-build.yml', 'utf8'))
+const workflow = inverseCompletedRuntimeWorkflow(historicalPagesInput(readHistoricalBuildWorkflowSource()
   .replace(/\r\n/g, '\n'), 'build'), 'build');
-const step = name => {
-  const start = workflow.indexOf(`      - name: ${name}\n`);
+const currentBuildWorkflow = (await fs.readFile('.github/workflows/reusable-weather-build.yml', 'utf8')).replace(/\r\n/g, '\n');
+const step = (name, source = workflow) => {
+  const start = source.indexOf(`      - name: ${name}\n`);
   assert.ok(start >= 0, `missing ${name}`);
-  const end = workflow.indexOf('\n      - ', start + 1);
-  return workflow.slice(start, end < 0 ? workflow.length : end);
+  const end = source.indexOf('\n      - ', start + 1);
+  return source.slice(start, end < 0 ? source.length : end);
 };
 const install = workflow.indexOf('id: private-runtime-install');
 const capture = workflow.indexOf('id: component-progress-restore');
@@ -114,16 +115,16 @@ assert.ok(encryptedConfirmation.indexOf('assertUsableDmiProgressRecovery(report.
   < encryptedConfirmation.indexOf('test -s .cache/dmi-candidate-progress.json'));
 assert.doesNotMatch(confirmation, /continue-on-error|\|\| true/,
   'A known forecast restore rejection must not be swallowed');
-const assertionBlock = confirmation.match(/node --input-type=module <<'NODE'\n([\s\S]*?)\n          NODE/);
+const assertionBlock = step('Require recovered progress before short confirmation', currentBuildWorkflow).match(/node --input-type=module <<'NODE'\n([\s\S]*?)\n          NODE/);
 assert.ok(assertionBlock, 'The actual quick-confirmation assertion must remain executable');
 const assertionScript = assertionBlock[1].replace(/^ {10}/gm, '');
-const protectedBlock = confirmation.match(/node --input-type=module <<'NODE_PROTECTED'\n([\s\S]*?)\n          NODE_PROTECTED/);
+const protectedBlock = step('Require recovered progress before short confirmation', currentBuildWorkflow).match(/node --input-type=module <<'NODE_PROTECTED'\n([\s\S]*?)\n          NODE_PROTECTED/);
 assert.ok(protectedBlock, 'The protected-current assertion must be the actual workflow code');
 const protectedScript = protectedBlock[1].replace(/^ {10}/gm, '');
-const protectedDmiBlock = confirmation.match(/python - <<'PYTHON_PROTECTED'\n([\s\S]*?)\n          PYTHON_PROTECTED/);
+const protectedDmiBlock = step('Require recovered progress before short confirmation', currentBuildWorkflow).match(/python - <<'PYTHON_PROTECTED'\n([\s\S]*?)\n          PYTHON_PROTECTED/);
 assert.ok(protectedDmiBlock);
 const protectedDmiScript = protectedDmiBlock[1].replace(/^ {10}/gm, '');
-const normalAssertionBlock = bind.match(/node --input-type=module <<'NODE'\n([\s\S]*?)\n          NODE/);
+const normalAssertionBlock = step('Bind optional progress to the exact protected baseline', currentBuildWorkflow).match(/node --input-type=module <<'NODE'\n([\s\S]*?)\n          NODE/);
 assert.ok(normalAssertionBlock, 'The actual normal restore assertion must remain executable');
 const normalAssertionScript = normalAssertionBlock[1].replace(/^ {10}/gm, '');
 const temporary = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-quick-confirmation-contract-'));
@@ -332,7 +333,7 @@ assert.match(cipherAction, /cache\.saveCache\(\[CIPHER_PATH\], input\.key, undef
 assert.ok(cipherAction.indexOf('if (firstFailure !== null) throw firstFailure.value;')
   < cipherAction.indexOf("'uploaded=true\\n'"), 'Upload output follows closure and actual claim release');
 for (const file of ['update-and-deploy', 'run-current-weather-once']) {
-  const caller = inverseCompletedRuntimeWorkflow((await fs.readFile(`.github/workflows/${file}.yml`, 'utf8')).replaceAll('\r\n', '\n'), file === 'run-current-weather-once' ? 'once' : 'orchestrator');
+  const caller = (await fs.readFile(`.github/workflows/${file}.yml`, 'utf8')).replaceAll('\r\n', '\n');
   assert.doesNotMatch(caller, /WEATHER_PROGRESS_ENCRYPTION_KEY/);
 }
 console.log('Encrypted private weather progress: shared normal caller order, trusted restore, ciphertext-only save and failure recovery passed.');
@@ -356,7 +357,7 @@ const ownedRawLock = await fs.readFile(path.join(path.dirname(ownedRawAction), '
 // Non-Linux hosts retain the static contract; a skip is not actual Bash evidence.
 testOwnedRawCache('explicit progress source: actual Bash accepts exact full-run source and keeps protected-current short-only',
   { skip: process.platform !== 'linux' ? 'Actual Bash validator requires the normal Linux source host' : false }, () => {
-    const runMatch = validateSource.match(/        run: \|\n([\s\S]*)$/);
+    const runMatch = step('Validate requested short-confirmation progress source', currentBuildWorkflow).match(/        run: \|\n([\s\S]*)$/);
     assert.ok(runMatch, 'The exact normal validator body must be present');
     const script = runMatch[1].replace(/^          /gm, '');
     const fixtures = [
@@ -385,7 +386,7 @@ testOwnedRawCache('explicit progress source: actual Bash accepts exact full-run 
 
 testOwnedRawCache('checkpoint-only request: actual Bash locks an original hour but never acquires weather',
   { skip: process.platform !== 'linux' ? 'Actual Bash validator requires the normal Linux source host' : false }, async () => {
-    const caller = inverseCompletedRuntimeWorkflow((await fs.readFile('.github/workflows/run-current-weather-once.yml', 'utf8')).replaceAll('\r\n', '\n'), 'once');
+    const caller = (await fs.readFile('.github/workflows/run-current-weather-once.yml', 'utf8')).replaceAll('\r\n', '\n');
     const block = caller.split(/(?=^      - (?:name:|uses:))/m).find(value =>
       value.startsWith('      - name: Lock the requested original checkpoint hour without provider work\n'));
     assert.ok(block);
@@ -431,7 +432,7 @@ testOwnedRawCache('checkpoint-only request: actual Bash locks an original hour b
   });
 
 testOwnedRawCache('checkpoint-only original-hour gate executes the actual post-authentication workflow body', async () => {
-  const block = step('Require the authenticated original hour before provider-free continuation');
+  const block = step('Require the authenticated original hour before provider-free continuation', currentBuildWorkflow);
   const body = block.match(/node --input-type=module <<'NODE'\n([\s\S]*?)\n          NODE/);
   assert.ok(body);
   const script = body[1].replace(/^ {10}/gm, '');

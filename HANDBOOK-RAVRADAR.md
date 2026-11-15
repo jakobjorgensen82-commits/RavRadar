@@ -193,6 +193,8 @@ Den tidligere 240-sekunders fejlworker hørte til den private Source-tail. Den m
 
 En særskilt forberedt SDK-prøve undersøger tab af dens egen actionparent og kræver, at de ejede processer er stoppet før prøvens oprydning, at originalerne bevares, og at der ikke udstedes et falsk upload-svar. En syntakskontrol er ikke en gennemført native prøve. Den særskilte native prøve er ikke med i denne kildepakke og afventer sin egen normale leveringsvej. Den må ikke tælles som udført her.
 
+Ældre workflowprøver kontrollerer deres eget autentiske originalgrundlag. De kodeblokke, som prøven faktisk udfører, læses fra de aktuelle workflows, så historik ikke bliver et falsk bevis for nutidig adfærd. De eksisterende sikkerhedskontroller og afslag bevares. Dette er en rettelse af prøveinput, ikke en ændring af driften eller bevis for ekstern gemning.
+
 ## 89.340 Ét sikkert Pages-genforsøg og frisk vejr bagefter
 
 Når en senere udgivelse skal kontrollere en tidligere kørsels programfiler, skal filerne også være hentet på den nye runner. Kontroljob og udgivelsesjob får nu samme fulde Git-historik. Kontrollen af de præcise kildefiler ændres ikke; rettelsen retter en manglende forudsætning for kontrollen. Den ændrer ingen prognoser eller scorer. Faktisk offentlig levering skal stadig bevises.
