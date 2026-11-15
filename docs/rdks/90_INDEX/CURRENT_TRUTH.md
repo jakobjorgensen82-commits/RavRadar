@@ -1,3 +1,9 @@
+## Aktuelt — originalarkivets CHECK-fejl er endnu ikke forklaret
+
+Det autentiske arkivforsøg stopper i DATA med SQLSTATE 23514 efter bestået relations- og systemrollekontrol; ejet Dockerlukning er bekræftet. Den bevarede rapport indeholder ingen constraint-identitet. Den lokale readerdiagnostic udleder et begrænset katalogfingeraftryk før DATA i samme transaktion og tillader kun hash/faste metadata for den præcise primære fejl; ukendt forbliver UNAVAILABLE. Lokal selvtest og normal lifecycle-prøve består, men dette er ikke en restore-rettelse, faktisk ny diagnostic, kildekvalifikation eller installation.
+
+Fem originale SQL-filer, constraints, rækkefølge, første fejl og stærke PASS-/oprydningskrav er bevaret. Faktisk originalrestore/Auth, autonom reserve og Free-klarhed mangler fortsat deres egne beviser. Ingen version, C/I/T, numerisk model, migrations-SQL eller produktionshandling følger af denne kildeforberedelse. Se DEC-0302, KNOWN-ISSUES og håndbog 89.350; tidligere bootstrapstatus er historik alene på de konkret nu observerede delkrav.
+
 ## 15. november — GraphQLs fejlfri null-konvolut
 
 Cloudflares normale fejlfri GraphQL-svar kan indeholde `errors: null`. Den faste schema-læser afviste denne dokumenterede form. Den afgrænsede rettelse accepterer kun fraværende fejl, null eller en tom fejlliste; ikke-tomme fejl, fremmede felter og manglende typedata afvises fortsat. Konvolut, leverandørfejl og typedata har særskilte faste kategorier og HTTP-status uden rå svartekst.
