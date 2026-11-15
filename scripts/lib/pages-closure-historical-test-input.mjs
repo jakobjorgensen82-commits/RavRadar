@@ -86,6 +86,16 @@ export function readHistoricalBuildWorkflowSource(){
   assert.equal(sha(body),row.after.sha256,'Original build workflow identity');
   return body.toString('utf8');
 }
+// The older stage-source oracle uses the same authentic inventory for BOTH
+// workflow roles. Current caller checks continue reading their actual files.
+export function readHistoricalCompletedStageWorkflowSources(){
+  assert.equal(arguments.length,0,'No caller-selected historical stage source');
+  const {git,blobs}=historicalWorkflowInventory(),name='run-current-weather-once.yml';
+  assert(blobs.has(name),'Original once workflow must exist');
+  const once=git(['cat-file','blob',blobs.get(name)],true);
+  assert(once.length>0&&once.length<=128*1024,'Bounded original once workflow');
+  return Object.freeze({build:readHistoricalBuildWorkflowSource(),once:once.toString('utf8')});
+}
 export function qualifyCurrentWorkflowInventory(){
   assert.equal(arguments.length,0,'No caller-selected workflow inventory, catalog or target runner');
   const {environment,legacy,blobs}=historicalWorkflowInventory(),changed=[];

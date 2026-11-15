@@ -587,6 +587,11 @@ try{
         assert.deepEqual(selected.areas.weatherPublication.commands,CURRENT_CONTRACT_COMMANDS.weatherPublication);
         assert.equal(selected.controlQualificationRequired,true);
         assert.deepEqual(selected.protectedInputs,{postgresUnchanged:true,CUnchanged:true,IUnchanged:true,TUnchanged:true});
+      }else if(file===repair){
+        assert.equal(selected.selection,'CURRENT_CONTRACTS',JSON.stringify(selected));
+        assert.deepEqual(Object.keys(selected.areas),['core','pagesArtifact','compatibility']);
+        assert.deepEqual(selected.commands,[...CURRENT_CONTRACT_COMMANDS.core,...CURRENT_CONTRACT_COMMANDS.pagesArtifact,...CURRENT_CONTRACT_COMMANDS.compatibility]);
+        assert.equal(selected.controlQualificationRequired,true);
       }else{assert.equal(selected.selection,'FULL',JSON.stringify(selected));assert.deepEqual(selected.commands,[]);}
       cases++;
     };
@@ -620,7 +625,7 @@ try{
     }
     assert(!isAdditivePrivateWeatherPublicationOwnerChange(Buffer.from(predecessor),Buffer.from(current.toString().replace("'node scripts/test-security-hardening-4.0.284.mjs'","'node scripts/unknown.mjs'"))));
     assert(!isAdditivePrivateWeatherPublicationOwnerChange(Buffer.from(predecessor),Buffer.from(current.toString().replace('out.controlQualificationRequired=true','out.controlQualificationRequired=false'))));
-    checkout(base);scenarios.push('Normal publication solo owners and exact fresh/repair argv require control review; unknown steps/env/argv/gates and PG drift retain FULL');
+    checkout(base);scenarios.push('Publication solo owners and exact argv require control review; unknown BUILD/PG retains FULL and repair retains its original broader compatibility targets');
     console.log(JSON.stringify({kind:'WEATHER_PUBLICATION_NORMAL_GIT_SCOPE',cases:18,elapsedMs:performance.now()-started,
       realGit:true,actualProtectedInputsUnchanged:true,ownerRemovalRefused:true,unknownChangesRefused:true,productionAuthority:false}));
   }
