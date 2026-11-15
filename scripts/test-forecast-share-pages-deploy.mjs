@@ -504,7 +504,7 @@ async function schemaScenario(kind){
   assert(!JSON.stringify(receipts).includes('SYNTHETIC_CF'));
   return{result,error,cfReads,ghReads,requests,receipts};
 }
-for(const kind of ['success','nullable-wrapper','empty-errors']){
+for(const kind of ['success','nullable-wrapper','empty-errors','errors-null']){
   const r=await schemaScenario(kind);assert.equal(r.error,undefined,kind);
   assert.equal(r.cfReads,1);assert.equal(r.ghReads,2);assert.equal(r.receipts.length,1);
   assert.equal(r.result.kind,'FORECAST_SHARE_PAGES_SCHEMA_READBACK_V1');
@@ -515,12 +515,16 @@ for(const kind of ['success','nullable-wrapper','empty-errors']){
   assert.equal(r.result.schema.quantiles[0].description,'Synthetic public schema description for cpuTimeP50');
   schemaCases++;
 }
-for(const kind of ['401','403','500','json','empty-body','too-large','errors','errors-null','data-null','quantiles-null',
+for(const kind of ['401','403','500','json','empty-body','too-large','errors','data-null','quantiles-null',
   'type-name','type-binding','scalar-type','missing-field','duplicate-field','description-null','deprecated',
   'private-data','main-before','main-after']){
   const r=await schemaScenario(kind);assert(r.error,kind);assert.equal(r.receipts.length,1,kind);
   assert.equal(r.error.receipt.outcome,'REFUSED_BEFORE_WRITE');
   assert.equal(r.error.receipt.createIssued,false);assert.equal(r.error.receipt.deployIssued,false);
+  if(kind==='errors'||kind==='data-null'||kind==='private-data'){
+    assert.equal(r.error.receipt.code,kind==='errors'?'SHARE_PAGES_SCHEMA_ERRORS':'SHARE_PAGES_SCHEMA_DATA');
+    assert.equal(r.error.receipt.httpStatus,200);assert.equal(r.error.receipt.readKind,'GRAPHQL_SCHEMA');
+  }
   if(kind==='401'||kind==='403'){
     assert.equal(r.error.receipt.code,'SHARE_PAGES_PERMISSION');assert.equal(r.error.receipt.httpStatus,Number(kind));
     assert.equal(r.error.receipt.readKind,'GRAPHQL_SCHEMA');

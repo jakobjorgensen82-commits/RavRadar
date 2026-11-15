@@ -1,3 +1,9 @@
+## 15. november — Schema-læser afviste dokumenteret errors:null
+
+Cloudflares normale fejlfri GraphQL-svar kan indeholde `errors: null`. Den faste schema-læser afviste denne dokumenterede form. Den afgrænsede rettelse accepterer kun fraværende fejl, null eller en tom fejlliste; ikke-tomme fejl, fremmede felter og manglende typedata afvises fortsat. Konvolut, leverandørfejl og typedata har særskilte faste kategorier og HTTP-status uden rå svartekst.
+
+Det er en dokumenteret protokolrettelse i den skrivefri tilstand. Den tidligere samlede konvolutafvisning viser ikke, hvilken konkret del af svaret der var forkert. Lokal og præcis kildekvalifikation, faktisk genlæsning af de faste schemafelter og enheds-/Free-accept er særskilte beviser. Ingen projekt-, DNS-, database-, vejr-, model-, nøgle- eller planændring.
+
 ## Metadataprøvens kildeidentitet afventer præcis kvalifikation
 
 Et forældet familienavn i fejltekstassertionen standsede den normale metadataprøve, selv om den aktuelle hele kanoniske kildekontrol afviste de muterede bytes med korrekt kode og begge præcise SHA-værdier. Den minimale kandidat fjerner alene denne tekstlighed. Alle mutations-, hash-, immutable-, no-write- og schemaassertions bevares. Hele det ændrede normale mål og endelig kildekvalifikation kræves fortsat; produktkode, SQL og modelbindinger ændres ikke.

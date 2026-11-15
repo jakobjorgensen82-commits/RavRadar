@@ -174,9 +174,11 @@ function schemaDescription(row){
   return row.description;
 }
 function pagesSchemaMetadata(value){
-  need(object(value)&&Object.keys(value).every(key=>key==='data'||key==='errors')
-    &&(!Object.hasOwn(value,'errors')||Array.isArray(value.errors)&&value.errors.length===0)
-    &&schemaKeys(value.data,['group','quantiles','sums']),'SCHEMA_ENVELOPE');
+  need(object(value)&&Object.keys(value).every(key=>key==='data'||key==='errors'),'SCHEMA_ENVELOPE');
+  // Cloudflare documents errors:null as a normal successful GraphQL response.
+  need(!Object.hasOwn(value,'errors')||value.errors===null
+    ||Array.isArray(value.errors)&&value.errors.length===0,'SCHEMA_ERRORS');
+  need(schemaKeys(value.data,['group','quantiles','sums']),'SCHEMA_DATA');
   const group=schemaFields(value.data.group,SCHEMA_TYPES.group,['name','type']);
   need(group.has('quantiles')&&schemaType(group.get('quantiles').type,'OBJECT')===SCHEMA_TYPES.quantiles
     &&group.has('sum')&&schemaType(group.get('sum').type,'OBJECT')===SCHEMA_TYPES.sums,'SCHEMA_BINDING');
@@ -249,8 +251,11 @@ export async function deployForecastSharePages({env=process.env,fetchImpl=global
       const response=await boundedJson(fetchImpl,'https://api.cloudflare.com/client/v4/graphql',{
         method:'POST',headers:{Authorization:'Bearer '+env.CLOUDFLARE_API_TOKEN,Accept:'application/json','Content-Type':'application/json'},
         body:JSON.stringify({query:FORECAST_SHARE_PAGES_SCHEMA_QUERY})},'GRAPHQL_SCHEMA');
-      need(response.status===200,'SCHEMA_STATUS');
-      const schema=pagesSchemaMetadata(response.value);
+      let schema;
+      try{
+        need(response.status===200,'SCHEMA_STATUS');
+        schema=pagesSchemaMetadata(response.value);
+      }catch(error){throw Object.assign(error,{kind:'GRAPHQL_SCHEMA',httpStatus:response.status});}
       await freshMain();
       stage='COMPLETE';readback='SCHEMA_METADATA_PROVED';
       const receipt={kind:'FORECAST_SHARE_PAGES_SCHEMA_READBACK_V1',stage,sourceSha:commit,operation,
