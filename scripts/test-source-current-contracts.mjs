@@ -10,6 +10,8 @@ import {syncBuiltinESMExports} from 'node:module';
 import vm from 'node:vm';
 import {copernicusOfflineEnvironment} from './lib/copernicus-offline-environment.mjs';
 import {fileURLToPath,pathToFileURL} from 'node:url';
+import {OWNED_CACHE_DEPENDENCY_COMMAND,OWNED_CACHE_NATIVE_COMMAND,currentChangeCommand} from './source-current-contract-receipt.mjs';
+import {inverseOwnedCacheNativeWorkflow,OWNED_CACHE_NATIVE_EARLY_NODE24} from './lib/source-impact-workflow-review.mjs';
 import {CURRENT_CONTRACT_COMMANDS,isBoundedLocalRestoreFixtureChange,isArchiveRestoreOuterQueueOnlyChange,pagesContractCommandsForChangedInputs,dmiBudgetWeatherBuildAreas,isDmiBudgetOnlyUpdaterChange,isDmiBudgetOnlySupervisorChange,isDmiCollectionRecoveryOnlyUpdaterChange,isDmiCollectionRecoveryOnlyFixtureChange,dmiCollectionRecoveryUpdaterAreas} from './source-current-contract-plan.mjs';
 
 import { WEATHER_PUBLICATION_PATHS, inversePrivateWeatherPublicationWorkflow, isPrivateWeatherPublicationWorkflowChange,
@@ -211,6 +213,62 @@ function assertSmallUserContractPlanScope({baselineCommit,baselineTree,rewriteTr
   }finally{checkoutCommit(restoreHead);}
 }
 
+// Syntetisk støtteprøve af DEN normale forberedelse/argv; ingen Linux-/SDK-PASS.
+function assertOwnedCacheNativePreparation(){
+  assert.deepEqual(CURRENT_CONTRACT_COMMANDS.ownedCacheNative,
+    [OWNED_CACHE_DEPENDENCY_COMMAND,OWNED_CACHE_NATIVE_COMMAND]);
+  assert.equal(currentChangeCommand(OWNED_CACHE_NATIVE_COMMAND),true);
+  for(const command of [OWNED_CACHE_NATIVE_COMMAND+' --official-sdk-only',
+    OWNED_CACHE_NATIVE_COMMAND+' --unknown','python -c print(1)'])assert.equal(currentChangeCommand(command),false);
+  const source=fs.readFileSync(path.join(SOURCE,'scripts/source-targeted-producer.mjs'),'utf8');
+  const begin='function prepareSelectedOwnedCacheNativeSourceTarget(commands){',end='function prepareSelectedScalarSourceTarget(commands){';
+  assert.equal(source.split(begin).length,2);assert.equal(source.split(end).length,2);
+  const body=source.slice(source.indexOf(begin),source.indexOf(end));
+  const ownRoot='/own/source',node24='/tools/node24/bin/node';
+  let calls=[],filesystem=0,failInstall=false,version='v24.0.0\n';
+  const ownEnvironment={PATH:'/usr/bin',LANG:'C.UTF-8',RAVRADAR_SOURCE_NODE24:node24,
+    GITHUB_TOKEN:'synthetic-never-forward',ACTIONS_RUNTIME_TOKEN:'synthetic-never-forward',
+    NODE_OPTIONS:'synthetic-never-forward',SUPABASE_SERVICE_ROLE_KEY:'synthetic-never-forward'};
+  const fakeFs={constants:{O_WRONLY:1,O_CREAT:2,O_EXCL:4,O_NOFOLLOW:8},
+    realpathSync(value){filesystem++;return value==='/tools/node24/bin/npm'?'/tools/node24/lib/node_modules/npm/bin/npm-cli.js':value;},
+    readFileSync(){return '{"name":"npm"}';},
+    lstatSync(value){filesystem++;if(value.endsWith('/.npmrc'))throw Object.assign(Error('SYNTHETIC_ABSENT'),{code:'ENOENT'});
+      const directory=value.endsWith('/.npm-cache');
+      return {isFile:()=>!directory,isDirectory:()=>directory,isSymbolicLink:()=>false,nlink:1,size:0};},
+    mkdirSync(){filesystem++;},openSync(){filesystem++;return 17;},closeSync(){filesystem++;}};
+  const context={assert,fs:fakeFs,path:path.posix,ROOT:ownRoot,process:{platform:'linux',env:ownEnvironment},
+    OWNED_CACHE_DEPENDENCY_COMMAND,OWNED_CACHE_NATIVE_COMMAND,
+    execFileSync(executable,args,options){
+      calls.push({executable,args:Array.from(args),options});
+      for(const key of ['GITHUB_TOKEN','GH_TOKEN','ACTIONS_RUNTIME_TOKEN','SUPABASE_SERVICE_ROLE_KEY','NODE_OPTIONS'])
+        assert.equal(options.env[key],undefined);
+      if(args[0]==='--version')return version;
+      assert.equal(executable,node24);
+      assert.deepEqual(Array.from(args),['/tools/node24/lib/node_modules/npm/bin/npm-cli.js','ci','--ignore-scripts','--no-audit','--no-fund']);
+      assert.equal(options.cwd,ownRoot+'/.github/actions/save-owned-dmi-grib');
+      assert.equal(options.env.npm_config_cache,options.cwd+'/.npm-cache');
+      assert.notEqual(options.env.npm_config_userconfig,options.env.npm_config_globalconfig);
+      assert.equal(options.timeout,300000);
+      if(failInstall)throw Error('SYNTHETIC_NPM_FAILURE');return Buffer.alloc(0);
+    }};
+  const functions=vm.runInNewContext(body+'\n({prepareSelectedOwnedCacheNativeSourceTarget,ownedCacheNativeInvocation});',context);
+  const prepare=functions.prepareSelectedOwnedCacheNativeSourceTarget;
+  assert.equal(prepare(CURRENT_CONTRACT_COMMANDS.core),null);assert.equal(calls.length,0);assert.equal(filesystem,0);
+  assert.throws(()=>prepare([OWNED_CACHE_DEPENDENCY_COMMAND]),/PLAN_REFUSED/);
+  const runtime=prepare(CURRENT_CONTRACT_COMMANDS.ownedCacheNative);assert.equal(calls.length,2);
+  const dependency=functions.ownedCacheNativeInvocation(OWNED_CACHE_DEPENDENCY_COMMAND,runtime);
+  const native=functions.ownedCacheNativeInvocation(OWNED_CACHE_NATIVE_COMMAND,runtime);
+  assert.equal(dependency.program,node24);assert.deepEqual(Array.from(dependency.args),['scripts/test-owned-dmi-cache-dependency.mjs']);
+  assert.equal(native.program,'python');assert.deepEqual(Array.from(native.args),
+    ['-B','scripts/test-owned-dmi-grib-save-native.py','--node24-path',node24]);
+  assert(!native.args.includes('--official-sdk-only'),'Whole-file owner must execute the whole normal file');
+  assert.throws(()=>functions.ownedCacheNativeInvocation(OWNED_CACHE_NATIVE_COMMAND+' --unknown',runtime),/COMMAND_REFUSED/);
+  failInstall=true;assert.throws(()=>prepare(CURRENT_CONTRACT_COMMANDS.ownedCacheNative),/PREREQUISITE_FAILED/);failInstall=false;
+  version='v22.0.0\n';assert.throws(()=>prepare(CURRENT_CONTRACT_COMMANDS.ownedCacheNative),/NODE24_REFUSED/);version='v24.0.0\n';
+  context.process.platform='win32';assert.throws(()=>prepare(CURRENT_CONTRACT_COMMANDS.ownedCacheNative),/LINUX_REQUIRED/);
+  return 9;
+}
+
 // Run the actual bounded prerequisite function with a synthetic pip transport only.
 function assertSelectedProgressCopernicusPrerequisite(){
   const source=fs.readFileSync(path.join(SOURCE,'scripts/source-targeted-producer.mjs'),'utf8');
@@ -327,8 +385,15 @@ function assertArchiveOuterQueuePlanScope({baselineCommit,baselineTree,rewriteTr
 // whole normal targets, and no permission for adjacent unknown dependencies.
 function assertSourceAutonomyPlanScope({baselineCommit,baselineTree,rewriteTree,makeCommit,checkoutCommit,plan,restoreHead}){
   const files=['.github/workflows/watch-missed-weather-schedule.yml','scripts/weather-source-gate.mjs',
-    'scripts/lib/weather-source-gate.mjs','scripts/test-weather-source-gate.mjs','scripts/test-weather-cadence-watchdog.mjs'];
+    'scripts/lib/weather-source-gate.mjs','scripts/test-weather-source-gate.mjs','scripts/test-weather-cadence-watchdog.mjs',
+    'scripts/native-postgres-evidence.mjs','scripts/source-impact-full-baseline.mjs',
+    'scripts/test-native-postgres-evidence.mjs','scripts/test-source-impact-full-baseline.mjs'];
   const commands=['node --test scripts/test-source-current-contracts.mjs',
+    'node scripts/test-source-impact-workflow.mjs',
+    'node scripts/test-source-targeted-producer.mjs',
+    'node scripts/test-source-targeted-consumer.mjs',
+    'node --test scripts/test-native-postgres-evidence.mjs',
+    'node --test scripts/test-source-impact-full-baseline.mjs',
     'node scripts/test-weather-source-gate.mjs','node scripts/test-weather-cadence-watchdog.mjs'];
   assert.deepEqual(CURRENT_CONTRACT_COMMANDS.sourceControls,commands);
   const results=[];
@@ -357,15 +422,19 @@ function assertSourceAutonomyPlanScope({baselineCommit,baselineTree,rewriteTree,
       'scripts/source-current-contract-plan.mjs','scripts/test-source-current-contracts.mjs','docs/rdks/40_KNOWN_ISSUES/KNOWN-ISSUES.md']);
     positive(all);assert.deepEqual(Object.keys(all.areas),['core','documentation','sourceControls','actionVersions']);
     for(const file of ['scripts/lib/unclassified-weather-source.mjs','scripts/test-weather-source-extra.mjs',
+      'scripts/native-postgres-evidence-extra.mjs','scripts/test-source-impact-full-baseline-extra.mjs',
       '.github/workflows/unclassified-source-renewal.yml']){
       const selected=select(file,[files[1],file]);assert.equal(selected.selection,'FULL');
       assert.deepEqual(selected.reasonCodes,['CURRENT_UNCLASSIFIED_PATH']);assert.deepEqual(selected.commands,[]);
     }
-    const changedProtected=select('changed-protected-source-input',[files[1],'config.js']);
-    assert.equal(changedProtected.selection,'FULL');assert.deepEqual(changedProtected.commands,[]);
-    assert.deepEqual(changedProtected.reasonCodes,['CURRENT_PROTECTED_INPUT_CHANGED']);
-    for(const qualification of ['ACTUAL_POSTGRES','ACTUAL_MODEL_C','ACTUAL_MODEL_I'])
-      assert(changedProtected.requiredQualifications.includes(qualification));
+    for(const [label,owners]of [['changed-protected-source-input',[files[1]]],
+      ['changed-protected-native-evidence-input',files.slice(-4)]]){
+      const changedProtected=select(label,[...owners,'config.js']);
+      assert.equal(changedProtected.selection,'FULL');assert.deepEqual(changedProtected.commands,[]);
+      assert.deepEqual(changedProtected.reasonCodes,['CURRENT_PROTECTED_INPUT_CHANGED']);
+      for(const qualification of ['ACTUAL_POSTGRES','ACTUAL_MODEL_C','ACTUAL_MODEL_I'])
+        assert(changedProtected.requiredQualifications.includes(qualification));
+    }
     return results;
   }finally{checkoutCommit(restoreHead);}
 }
@@ -441,6 +510,7 @@ function collect(file){
 for(const file of ['scripts/source-targeted-producer.mjs','scripts/source-targeted-consumer.mjs',
   'scripts/source-current-contract-receipt.mjs','scripts/source-current-contract-plan.mjs'])collect(file);
 const additions=[...controlSources,...ownerHelpers,...WEATHER_PUBLICATION_PATHS,
+  'scripts/test-owned-dmi-grib-save-native.py',
   '.github/workflows/watch-missed-weather-schedule.yml','scripts/weather-source-gate.mjs',
   ...['594','597','598'].map(v=>'scripts/lib/source-impact-domain-inputs-'+v+'.json')];
 const fixtureControlBytes=file=>fs.readFileSync(path.join(SOURCE,file));
@@ -474,7 +544,7 @@ let native,namespace,sourceContent,fullBody,phaseBody,fullJobBody,selectedJobBod
 let immutableFullZip,immutablePhaseZip;
 let maps,zips,selectedReceipt,selectedZip,selectedMetadata,rows=[],cases=0,actualProcesses=0,calls=0;
 const state={movedReview:false,missingReview:false,wrongPlan:false,merged:false,
-  baseTip:null,hintOverride:null,duplicateReview:false,malformedReview:false,headMismatch:false,expiredFull:false,laterNegative:false,modernWorkflow:false};
+  baseTip:null,hintOverride:null,duplicateReview:false,malformedReview:false,headMismatch:false,expiredFull:false,laterNegative:false,modernWorkflow:false,ownedCacheNativeWorkflow:false,fullModernWorkflow:false,sdkStepFault:null};
 const fallbackOnlyCommits=new Set();let observedRoutes=[],unexpectedRoutes=[],fixtureFailures=[],fallbackDiscoveries=[];
 const scenarios=[];
 const moduleAt=async file=>import(pathToFileURL(path.join(root,file)).href);
@@ -527,12 +597,18 @@ function run(selected){return {id:selected?selectedRun:fullRun,run_attempt:1,hea
   conclusion:selected&&!state.merged?null:'success',repository:{full_name:native.ORIGIN.repository},
   head_repository:{full_name:native.ORIGIN.repository},pull_requests:[]};}
 function jobs(selected){
-  const modern=selected&&state.modernWorkflow;
-  const names=modern?namespace.TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES:namespace.TARGETED_SOURCE_STEP_NAMES;
+  const owned=selected&&state.ownedCacheNativeWorkflow;
+  const modern=selected?state.modernWorkflow:state.fullModernWorkflow;
+  const names=owned?namespace.TARGETED_OWNED_CACHE_NATIVE_SOURCE_STEP_NAMES
+    :modern?namespace.TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES:namespace.TARGETED_SOURCE_STEP_NAMES;
+  const steps=names.map((name,index)=>({name,number:index+1,status:'completed',
+    conclusion:selected&&(owned?(index>=9&&index<=22):modern?(index>=7&&index<=20):(index>=5&&index<=19))?'skipped':'success',
+    started_at:stamp(index),completed_at:stamp(index+1)}));
+  if(selected&&state.sdkStepFault==='python-position')steps.find(row=>row.name==='Run actions/setup-python@v7').number=5;
+  if(selected&&state.sdkStepFault==='retainer-skipped')steps[4].conclusion='skipped';
   return {id:selected?selectedJob:fullJob,run_id:selected?selectedRun:fullRun,run_attempt:1,head_sha:selected?head:base,
     name:namespace.PULL_REQUEST_SOURCE_JOB,status:selected&&!state.merged?'in_progress':'completed',
-    conclusion:selected&&!state.merged?null:'success',steps:names.map((name,index)=>({name,number:index+1,status:'completed',
-      conclusion:selected&&(modern?(index>=7&&index<=20):(index>=5&&index<=19))?'skipped':'success',started_at:stamp(index),completed_at:stamp(index+1)}))};
+    conclusion:selected&&!state.merged?null:'success',steps};
 }
 function meta(id,name,body,runId,producer,n){return{id,name,digest:'sha256:'+sha(body),expired:false,size_in_bytes:body.length,
   workflow_run:{id:runId,head_sha:producer},created_at:stamp(n)};}
@@ -609,6 +685,7 @@ async function transport(url,options){
 function configure(candidate){
   head=candidate;checkout(head);rows=[];observedRoutes=[];unexpectedRoutes=[];fixtureFailures=[];fallbackDiscoveries=[];
   state.missingReview=false;state.movedReview=false;state.wrongPlan=false;state.merged=false;state.closedBaseTip=null;
+  state.modernWorkflow=false;state.ownedCacheNativeWorkflow=false;state.fullModernWorkflow=false;state.sdkStepFault=null;
   state.baseTip=null;state.hintOverride=null;state.duplicateReview=false;state.malformedReview=false;state.headMismatch=false;state.expiredFull=false;state.laterNegative=false;state.laterNegativeAt=null;state.negativeDuringTargets=false;main=null;
   Object.assign(process.env,{GITHUB_EVENT_NAME:'pull_request',GITHUB_REPOSITORY:native.ORIGIN.repository,SOURCE_GATE_HEAD_SHA:head,
     PULL_REQUEST_NUMBER:String(selectedPr),GITHUB_RUN_ID:String(selectedRun),GITHUB_RUN_ATTEMPT:'1',GITHUB_JOB:'validate',
@@ -659,7 +736,8 @@ try{
   const gate=await moduleAt('scripts/lib/weather-source-gate.mjs'),consumer=await moduleAt('scripts/source-targeted-consumer.mjs');
   namespace={...gate,TARGETED_SOURCE_STEP_NAMES:consumer.TARGETED_SOURCE_STEP_NAMES,
     TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES:consumer.TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES,
-    TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES:consumer.TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES};
+    TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES:consumer.TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES,
+    TARGETED_OWNED_CACHE_NATIVE_SOURCE_STEP_NAMES:consumer.TARGETED_OWNED_CACHE_NATIVE_SOURCE_STEP_NAMES};
   sourceContent=await moduleAt('scripts/lib/source-tree-content.mjs');
   ({coordinateTargetedSourceProducer:coordinate}=await moduleAt('scripts/source-targeted-producer.mjs'));
   ({decideTargetedSourceGate:decide,discoverTargetedSourceGate:discover}=consumer);accessFactory=native.sourceImpactEvidenceAccess;
@@ -979,6 +1057,91 @@ try{
   }finally{checkout(beforeTransportHead);}
   scenarios.push('normal Git transport-only selection keeps four full Pages targets, fresh control review, protected inputs and broad/FULL mixed fallbacks');
   // Slut på de nye normale Gittransportcases.
+
+  // Aktuel helefilsejer samt præcis workflowbootstrap; kun normale Git-/planlæsninger.
+  if(!weatherPublicationScopeOnly&&!dmiBudgetScopeOnly&&!dmiRecoveryScopeOnly&&!adminHistoryScopeOnly){
+    const restore=text(root,['rev-parse','HEAD']),tree=text(root,['rev-parse',base+'^{tree}']);
+    const nativeFile='scripts/test-owned-dmi-grib-save-native.py',workflow='.github/workflows/validate-pull-request.yml';
+    const source=git(root,['show',base+':'+nativeFile]);
+    const currentWorkflow=fs.readFileSync(path.join(SOURCE,workflow),'utf8');
+    const predecessor=inverseOwnedCacheNativeWorkflow(currentWorkflow);
+    try{
+      const beforeTree=rewrite(tree,[[workflow,Buffer.from(predecessor)]]);
+      const before=commit(beforeTree,[base],'synthetic normal SDK environment predecessor');
+      const frontierTree=rewrite(beforeTree,[['docs/rdks/90_INDEX/SYNTHETIC-NATIVE-FRONTIER.md',Buffer.from('Synthetic ordinary documentation frontier\n')]]);
+      const frontier=commit(frontierTree,[before],'synthetic qualified current frontier');
+      const afterTree=rewrite(frontierTree,[[nativeFile,Buffer.concat([source,Buffer.from('\n# Synthetic native test delta\n')])],
+        [workflow,Buffer.from(currentWorkflow)]]);
+      const after=commit(afterTree,[frontier],'synthetic whole native owner with normal environment');checkout(after);
+      const nativePlans=new Map();
+      for(const baselineCommit of [frontier,before]){
+        const selected=plan({baselineCommit,candidateCommit:after,expectedHead:after});
+        assert.equal(selected.status,'PLANNED',JSON.stringify(selected.reasonCodes));
+        assert.deepEqual(selected.areas.ownedCacheNative.commands,[OWNED_CACHE_DEPENDENCY_COMMAND,OWNED_CACHE_NATIVE_COMMAND]);
+        assert.deepEqual(selected.protectedInputs,{postgresUnchanged:true,CUnchanged:true,IUnchanged:true,TUnchanged:true});
+        assert.equal(selected.controlQualificationRequired,true);nativePlans.set(baselineCommit,selected);cases++;
+      }
+      // Receipt DATA only: normal builders replay these actual synthetic Git plans.
+      // PASS rows here are format fixtures, never SDK/native execution evidence.
+      const receiptHelpers=await moduleAt('scripts/source-current-contract-receipt.mjs');
+      const currentPlan=nativePlans.get(frontier),cumulativePlan=nativePlans.get(before);
+      const fullBaseline={schemaVersion:1,kind:'RAVRADAR_SOURCE_IMPACT_FULL_BASELINE_V1',scope:'FULL_SOURCE',
+        repository:native.ORIGIN.repository,mergeCommit:before,producerHead:before,gitTree:beforeTree,
+        sourceTreeSha256:sourceContent.sourceTreeContentSha256(before,{git:readGit}),
+        pullRequest:fullPr,runId:fullRun,runAttempt:1,jobId:fullJob,finalArtifactId:fullFinalId,
+        finalArtifactDigest:'sha256:'+'a'.repeat(64),finalProofSha256:'b'.repeat(64),
+        nativeArtifactId:fullNativeId,nativeArtifactDigest:'sha256:'+'c'.repeat(64),
+        historicalNationalScope:'HISTORICAL_584_NATIONAL_ONLY',providerOrProductionProof:false};
+      const current={repository:native.ORIGIN.repository,head:after,
+        sourceTreeSha256:sourceContent.sourceTreeContentSha256(after,{git:readGit}),pullRequest:selectedPr,
+        runId:selectedRun,runAttempt:1,jobId:selectedJob};
+      const commandResults=cumulativePlan.commands.map(command=>({phase:'targeted',command,elapsedMs:0,outcome:'PASS'}));
+      const input={current,fullBaseline,changeBase:{commit:frontier,gitTree:frontierTree,pullBaseCommit:frontier},
+        currentPlan,cumulativePlan,frontier:{schemaVersion:1,kind:'QUALIFIED_CHANGE_FRONTIER',mode:'FULL',
+          repository:native.ORIGIN.repository,commit:before,gitTree:beforeTree,
+          sourceTreeSha256:fullBaseline.sourceTreeSha256,sourceRecord:null,sourceProofTime:null,missingReason:'MISSING'},
+        commandResults};
+      const receipt=await receiptHelpers.buildCurrentChangeSourceReceipt(input);
+      assert.equal(receiptHelpers.validateCurrentChangeSourceReceipt(receipt,input).validStructure,true);
+      assert.deepEqual(receipt.reportedCommandResults,commandResults);
+      assert(receipt.execution.commands.includes(OWNED_CACHE_NATIVE_COMMAND));
+      assert.equal(receipt.postgres.executedInThisRun,false);assert.equal(receipt.fullSourceValidationClaimed,false);
+      const legacy={current,fullBaseline,currentPlan:cumulativePlan,commandResults};
+      assert.throws(()=>receiptHelpers.validateCurrentContractSourceReceipt(null,legacy),/CURRENT_COMMANDS/);
+      await assert.rejects(receiptHelpers.buildCurrentContractSourceReceipt(legacy),/CURRENT_COMMANDS/);
+      for(const change of ['missing-dependency','reversed-order','extra-flag']){
+        const invalid=clone(input);
+        for(const value of [invalid.currentPlan,invalid.cumulativePlan]){
+          const dep=value.commands.indexOf(OWNED_CACHE_DEPENDENCY_COMMAND),nativeIndex=value.commands.indexOf(OWNED_CACHE_NATIVE_COMMAND);
+          if(change==='missing-dependency'){value.commands.splice(dep,1);value.areas.ownedCacheNative.commands.splice(0,1);}
+          else if(change==='reversed-order')[value.commands[dep],value.commands[nativeIndex]]=[value.commands[nativeIndex],value.commands[dep]];
+          else{
+            value.commands[nativeIndex]+=' --official-sdk-only';
+            value.areas.ownedCacheNative.commands[1]+=' --official-sdk-only';
+          }
+        }
+        await assert.rejects(receiptHelpers.buildCurrentChangeSourceReceipt(invalid),
+          change==='extra-flag'?/CURRENT_COMMANDS/:/CURRENT_OWNED_CACHE_NATIVE_COMMANDS/);
+      }
+      const invalidRows=clone(input),dep=invalidRows.commandResults.findIndex(row=>row.command===OWNED_CACHE_DEPENDENCY_COMMAND);
+      const nativeIndex=invalidRows.commandResults.findIndex(row=>row.command===OWNED_CACHE_NATIVE_COMMAND);
+      [invalidRows.commandResults[dep],invalidRows.commandResults[nativeIndex]]=
+        [invalidRows.commandResults[nativeIndex],invalidRows.commandResults[dep]];
+      assert.throws(()=>receiptHelpers.validateCurrentChangeSourceReceipt(receipt,invalidRows),/COMMAND_RESULTS/);
+      cases+=7;
+      scenarios.push('normal V4 Python receipt builder/validator with two whole command rows and unchanged V3 refusal; synthetic receipt DATA only');
+      const reverse=commit(rewrite(afterTree,[[workflow,Buffer.from(predecessor)]]),[after],'synthetic forbidden reverse SDK workflow');checkout(reverse);
+      assert.deepEqual(plan({baselineCommit:after,candidateCommit:reverse,expectedHead:reverse}).reasonCodes,
+        ['CURRENT_VALIDATION_WORKFLOW_REQUIRES_FULL']);cases++;
+      for(const [file,bytes]of [['scripts/lib/unclassified-native-helper.mjs',Buffer.from('export const unknown=true;\n')],
+        [profile.postgresModules[0],Buffer.concat([git(root,['show',base+':'+profile.postgresModules[0]]),Buffer.from('\n// Synthetic protected drift\n')])]]){
+        const candidate=commit(rewrite(afterTree,[[file,bytes]]),[before],'synthetic native plus unknown or protected drift');checkout(candidate);
+        assert.equal(plan({baselineCommit:before,candidateCommit:candidate,expectedHead:candidate}).selection,'FULL');cases++;
+      }
+      cases+=assertOwnedCacheNativePreparation();
+      scenarios.push('whole owned-cache native owner selects dependency plus full Python file, preserves actual PG/C/I/T and closes environment/bootstrap/reverse/unknown boundaries; helper execution is SYNTHETIC only');
+    }finally{checkout(restore);}
+  }
 
   currentReceiptHelpers=await moduleAt('scripts/source-current-contract-receipt.mjs');
   const successor=await moduleAt('scripts/lib/assistant-later-h0-successor-source.mjs');
@@ -1580,6 +1743,82 @@ try{
     checkout(priorMain);
   }
   cases++;scenarios.push('later catalogue cannot rewrite prior V4 scope; committed child plans allow data hydration and discard Node injection');
+
+  {
+
+    // Selvstændig SDK/control-case: de tidligere V3/22- og UI/no-ROOT-cases bevares.
+    const saved={base,baseContent,fullBody,phaseBody,immutableFullZip,immutablePhaseZip,head,main,
+      baselinePlan,selectedReceipt,selectedZip,selectedMetadata,rows,selectedRun,selectedJob,selectedPr,selectedArtifactId,
+      maps,zips,state:clone(state),priorMaps:new Map(priorMaps),priorZips:new Map(priorZips),gitHead:text(root,['rev-parse','HEAD'])};
+    try{
+      const workflow='.github/workflows/validate-pull-request.yml';
+      const sdkWorkflow=git(SOURCE,['cat-file','blob','HEAD:'+workflow]).toString('utf8');
+      assert.equal(sdkWorkflow,fixtureControlBytes(workflow).toString('utf8').replaceAll('\r\n','\n'));
+      const predecessor=inverseOwnedCacheNativeWorkflow(sdkWorkflow);assert.notEqual(predecessor,sdkWorkflow);
+      const seedTree=rewrite(baselineTree,[[workflow,Buffer.from(predecessor)]]);
+      base=commit(seedTree,[saved.base],'synthetic same genuine PG seed with normal DMI environment');
+      assert.equal(text(root,['diff','--name-only',saved.base,base]),workflow);
+      checkout(base);baseContent=sourceContent.sourceTreeContentSha256(base,{git:readGit});
+      const sdkNativeCurrent={...nativeCurrent,head:base};
+      const sdkNative={...clone(nativeReceipt),current:sdkNativeCurrent};
+      const sdkHistorical={...clone(historical),current:{...historical.current,head:base},
+        ...await national.assistantAfter597NativeClaims(sdkNative,sdkNativeCurrent)};
+      fullBody={...clone(saved.fullBody),headSha:base,sourceTreeSha256:baseContent,
+        nativePostgres:sdkNative,historical584National:sdkHistorical};
+      phaseBody={...clone(saved.phaseBody),headSha:base,sourceTreeSha256:baseContent,nativePostgres:clone(sdkNative)};
+      immutableFullZip=null;immutablePhaseZip=null;priorMaps.clear();priorZips.clear();
+      const sdkTree=rewrite(seedTree,[[workflow,Buffer.from(sdkWorkflow)]]);
+      selectedRun+=1000;selectedJob+=1000;selectedPr+=1000;selectedArtifactId+=1000;
+      configure(commit(sdkTree,[base],'synthetic real committed SDK workflow change'));
+      state.modernWorkflow=true;state.ownedCacheNativeWorkflow=true;state.fullModernWorkflow=true;
+      baselinePlan=plan({baselineCommit:base,candidateCommit:head,expectedHead:head});
+      assert.equal(baselinePlan.status,'PLANNED');assert.equal(baselinePlan.selection,'CURRENT_CONTRACTS');
+      assert.deepEqual(Object.keys(baselinePlan.areas),['core','sourceControls']);
+      assert.equal(baselinePlan.controlQualificationRequired,true);
+      assert.deepEqual(baselinePlan.commands,[...CURRENT_CONTRACT_COMMANDS.core,...CURRENT_CONTRACT_COMMANDS.sourceControls]);
+      assert.deepEqual(baselinePlan.protectedInputs,{postgresUnchanged:true,CUnchanged:true,IUnchanged:true,TUnchanged:true});
+      const logFile=path.join(root,'.cache/actual-current-targets.jsonl');
+      const beforeTargets=fs.readFileSync(logFile,'utf8').trim().split('\n').filter(Boolean).length;
+      rebuildMaps();const sdk=await coordinate();assert.equal(sdk.selection,'TARGETED');
+      assert.equal(rows.length,baselinePlan.commands.length);assert(rows.every(row=>row.outcome==='PASS'));
+      const executed=fs.readFileSync(logFile,'utf8').trim().split('\n').filter(Boolean).slice(beforeTargets)
+        .map(line=>path.relative(root,JSON.parse(line).file).split(path.sep).join('/'));
+      assert.deepEqual(executed.sort(),rows.flatMap(row=>row.command.split(' ').filter(file=>file.endsWith('.mjs'))).sort());
+      selectedReceipt=sdk.receipt;assert.equal(selectedReceipt.schemaVersion,4);
+      assert.deepEqual(selectedReceipt.reportedCommandResults,rows);
+      main=commit(sdkTree,[base,head],'synthetic SDK same-tree main merge');checkout(main);state.merged=true;
+      selectedZip=zip(Buffer.from(JSON.stringify(selectedReceipt)+'\n'),'source-targeted-impact-proof.json');
+      selectedMetadata=meta(selectedArtifactId,selectedReceipt.artifactName,selectedZip,selectedRun,head,24);rebuildMaps();
+      const sdkJob=jobs(true);assert.equal(sdkJob.steps.find(row=>row.name==='Run actions/setup-python@v7').number,7);
+      assert.deepEqual(sdkJob.steps.slice(3,5).map(row=>row.name),[
+        'Set up Node24 for selected owned-cache native contracts','Retain actual Node24 executable for selected native contracts']);
+      const sdkContext={...context,GITHUB_SHA:main};let workflowReads=0;
+      const sdkReadGit=(args,options)=>{
+        if(args[0]==='cat-file'&&args[1]==='blob'&&args[2]===head+':'+workflow){workflowReads++;
+          const bytes=readGit(args,options);assert.equal(bytes.toString('utf8'),sdkWorkflow);return bytes;}
+        return readGit(args,options);
+      };
+      const sdkFound=await discover(sdkContext,sdk.sourceTreeSha256,{...freshAccess(),readGit:sdkReadGit});
+      assert(sdkFound.locator);assert.equal(sdkFound.locator.contractId,'weather-source-current-change-v4');
+      const sdkAccepted=await decide(sdkFound.locator,sdkContext,{...freshAccess(),readGit:sdkReadGit});
+      assert.equal(sdkAccepted.required,false,JSON.stringify(sdkAccepted));
+      assert.equal(sdkAccepted.independentControlReview,'VERIFIED_EXACT_ROOT_PR_REVIEW');
+      assert.deepEqual(sdkAccepted.testedAreas,['core','sourceControls']);assert.equal(workflowReads,2);
+      cases++;
+      for(const fault of ['python-position','retainer-skipped']){
+        state.sdkStepFault=fault;
+        assert.equal((await discover(sdkContext,sdk.sourceTreeSha256,{...freshAccess(),readGit:sdkReadGit})).required,true);
+        assert.equal((await decide(sdkFound.locator,sdkContext,{...freshAccess(),readGit:sdkReadGit})).required,true);cases++;
+      }
+      state.sdkStepFault=null;
+      scenarios.push('normal SDK/control producer executes its full selected fake targets; Python7 workflow binds in discovery and decide, unknown layout/status still refuse');
+    }finally{
+      ({base,baseContent,fullBody,phaseBody,immutableFullZip,immutablePhaseZip,head,main,baselinePlan,
+        selectedReceipt,selectedZip,selectedMetadata,rows,selectedRun,selectedJob,selectedPr,selectedArtifactId,maps,zips}=saved);
+      Object.assign(state,saved.state);priorMaps.clear();for(const [key,value]of saved.priorMaps)priorMaps.set(key,value);
+      priorZips.clear();for(const [key,value]of saved.priorZips)priorZips.set(key,value);checkout(saved.gitHead);
+    }
+  }
 
   await assertScalarSourcePrerequisites();
   }

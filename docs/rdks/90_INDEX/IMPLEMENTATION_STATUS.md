@@ -1,3 +1,15 @@
+## 15. november — SDK-native-kandidat afventer samlet kildekvalifikation
+
+Privat kode og kontrolreview er forberedt: naturligt CURRENT-ansvar, dependency før hele nativefilens 19 cases, faktisk Node24 med egen npm-cache, præcis V4-Pythonkvittering og head-bundet +2 FULL-metadata-layout. Den øvrige Node22-kildevej og gamle V1/V2/V3/FULL-betydninger bevares. Kontrolinput er reelt ændrede; de kaldes ikke uændrede nativebeviser.
+
+De fire eksisterende native-/FULL-kontrollæsere og deres målprøver hører til det samme sourceControls-område. Området vælger også hele test-native-postgres-evidence.mjs og test-source-impact-full-baseline.mjs. Ukendte nabostier og ændrede beskyttede PG/C/I/T-input afvises fortsat; ændrede kontrollæsere kræver frisk uafhængig gennemgang. Det er ikke en ny PostgreSQL-eksekvering eller tilladelse til genbrug.
+
+Den historiske V1-producentprøve bruger hele sit allerede autentiske program, sine navnerum og sine ressourcer fra samme oprindelse. Gamle V1-orakler bevares. Kun syv hele, uændrede aktuelle sikkerhedsrammer sammenlignes med dette grundlag; ændrede rammer kræver en aktuel prøve. De historiske CLI-kald beviser ikke den aktuelle V4-CLI. V2-profilerne 594, 597 og 598 læser hver deres allerede faste historiske kontroltilføjelser uden aktuelle erstatningsfiler; originale PG/C/I/T-input og workflows bevares efter profilens egen kontrakt.
+
+Den aktuelle forbruger af gamle V1-kvitteringer forbliver aktuel. Dens prøve stiller de kendte lazy-moduler, tre faktisk fraværende nyere navnerum og den aktuelle fire-producenthistorik til rådighed. Både normal opdagelse og genlæsning henter desuden den autentiske producer-heads workflow, når de præcise SDK-miljøsteps flytter de efterfølgende trinnumre. Navnene udløser kun læsning; hele workflow-inversen og alle metadata-, artifact-, review-, FULL-, race- og budgetkontroller bestemmer stadig accept. En særskilt normal SDK-kaldercase bruger reelt committed workflow og afviser forkert trinplacering eller sprunget miljøbevaring; dens syntetiske FULL-felter er ikke faktisk SQL-eksekvering.
+
+Hele nativefilens 19 cases, inklusive SDK-parent-loss-casen, har faktisk bestået på Linux med Node24. Den samlede kildekontrol stoppede senere på forældede V1-prøveinput. Åbent er de nødvendige normale mål og planer på det endelige head samt sikker levering. Syntetiske PASS-rækker er kun kvitteringsformatdata. Ingen ny PostgreSQL-eksekvering, model-/SQL-overgang, installeret kontrolvej eller produktionsvirkning er bevist. Version 4.0.598 bevares. Se DEC-0302 og håndbog 89.342/89.232.
+
 ## 15. november — entydigt evidensvalg og struktureret AI-svar
 
 Den afgrænsede assistentkandidat gør hele systeminstruksen til evidensvalg og beder den eksisterende GPT-OSS-model om samme femfeltsprotokol gennem Cloudflares direkte JSON-schema-format. Svarfeltet er en lokaliseret fast markør; modellen vælger fortsat disposition og alle nødvendige eksisterende fakta-ID’er. Serveren skriver fortsat det viste svar fra de godkendte tekstenheder.

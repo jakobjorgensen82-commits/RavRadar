@@ -7,6 +7,8 @@ import {fileURLToPath} from 'node:url';
 import {execFileSync} from 'node:child_process';
 import { inversePrivateWeatherPublicationWorkflow, isPrivateWeatherPublicationWorkflowChange, WEATHER_PUBLICATION_COMMANDS, WEATHER_PUBLICATION_PATHS } from './lib/private-weather-publication-workflow.mjs';
 import {analyzeSourceDomainInputs} from './source-impact-domain-inputs.mjs';
+import {OWNED_CACHE_DEPENDENCY_COMMAND,OWNED_CACHE_NATIVE_COMMAND} from './source-current-contract-receipt.mjs';
+import {isAdditiveOwnedCacheNativeWorkflowChange} from './lib/source-impact-workflow-review.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const freeze=value=>{for(const item of Object.values(value))if(item&&typeof item==='object')freeze(item);return Object.freeze(value);};
@@ -66,8 +68,14 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
     'node scripts/test-handbook-review-archive-4.0.91.mjs',
     'node scripts/test-protected-handbook-merge-4.0.270.mjs',
   ],
+  ownedCacheNative:[OWNED_CACHE_DEPENDENCY_COMMAND,OWNED_CACHE_NATIVE_COMMAND],
   sourceControls:[
     'node --test scripts/test-source-current-contracts.mjs',
+    'node scripts/test-source-impact-workflow.mjs',
+    'node scripts/test-source-targeted-producer.mjs',
+    'node scripts/test-source-targeted-consumer.mjs',
+    'node --test scripts/test-native-postgres-evidence.mjs',
+    'node --test scripts/test-source-impact-full-baseline.mjs',
     'node scripts/test-weather-source-gate.mjs',
     'node scripts/test-weather-cadence-watchdog.mjs',
   ],
@@ -192,14 +200,21 @@ const PATH_AREAS=freeze({
     'scripts/validate-rdks.mjs','scripts/test-handbook-plain-language-4.0.70.mjs',
     'scripts/test-handbook-review-archive-4.0.91.mjs','scripts/test-protected-handbook-merge-4.0.270.mjs',
   ],
+  ownedCacheNative:[
+    'scripts/test-owned-dmi-grib-save-native.py',
+    'scripts/test-owned-dmi-cache-dependency.mjs',
+  ],
   sourceControls:[
     '.github/workflows/validate-pull-request.yml',
+    'scripts/lib/source-impact-workflow-review.mjs','scripts/test-source-impact-workflow.mjs',
     'scripts/source-current-contract-plan.mjs',
     'scripts/source-current-contract-receipt.mjs',
     'scripts/test-source-current-contracts.mjs',
     'scripts/source-targeted-producer.mjs','scripts/test-source-targeted-producer.mjs',
     'scripts/source-targeted-receipt.mjs','scripts/test-source-targeted-receipt.mjs',
     'scripts/source-targeted-consumer.mjs','scripts/test-source-targeted-consumer.mjs',
+    'scripts/native-postgres-evidence.mjs','scripts/test-native-postgres-evidence.mjs',
+    'scripts/source-impact-full-baseline.mjs','scripts/test-source-impact-full-baseline.mjs',
     'scripts/test-source-targeted-domain-integration.mjs','scripts/weather-source-gate.mjs',
     '.github/workflows/watch-missed-weather-schedule.yml',
     'scripts/lib/weather-source-gate.mjs',
@@ -721,10 +736,15 @@ export function planSourceCurrentContractsFromGit(input){
         ||![row.beforeMode,row.afterMode].every(mode=>['000000','100644','100755'].includes(mode)))
         return refuse('CURRENT_UNSUPPORTED_DIFF_ENTRY');
       changedInputs.push({path:file,status:row.status,beforeMode:row.beforeMode,afterMode:row.afterMode});
-      // Den gamle eksekveringsform genkender endnu kun to eksakte PR-YAML-former.
-      // En ændring her kræver derfor faktisk FULL-kvalifikation i denne levering.
-      if(file==='.github/workflows/validate-pull-request.yml')
+      // Kun den lukkede normale Node24-miljøtilføjelse kan kvalificeres her.
+      // Andre PR-workflowændringer beholder den eksisterende FULL-grænse.
+      if(file==='.github/workflows/validate-pull-request.yml'
+        &&!isAdditiveOwnedCacheNativeWorkflowChange(
+          readCommittedText(input.baselineCommit,file),readCommittedText(input.candidateCommit,file)))
         return refuse('CURRENT_VALIDATION_WORKFLOW_REQUIRES_FULL');
+      if(pathAreas.get(file)?.includes('ownedCacheNative')
+        &&(row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'))
+        return refuse('CURRENT_OWNED_CACHE_NATIVE_REQUIRES_EXISTING_REGULAR_SOURCE');
       if(['scripts/admin-document-history-maintenance.mjs','scripts/test-admin-document-history-maintenance.mjs'].includes(file)
         &&(row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'))
         return refuse('CURRENT_ADMIN_HISTORY_REQUIRES_EXISTING_REGULAR_SOURCE');
@@ -760,7 +780,7 @@ export function planSourceCurrentContractsFromGit(input){
         pathAreas.get(file)??(/^docs\/(?:rdks|ai|handbook)\/.+\.md$/.test(file)?['documentation']:null));
       if(!areas){unknown.push(file);continue;}
       for(const area of areas){if(!selected.has(area))selected.set(area,[]);selected.get(area).push(file);}
-      if(sourceControlPaths.has(file)||historicalPaths.has(file)||areas.includes('compatibility')||areas.includes('assistantEdge')||areas.includes('mailOwnerProbe')||areas.includes('currentInstalledCodeOnly')||areas.includes('workflowSupport')||areas.includes('weatherPublication')||areas.includes('dmiBudget')||areas.includes('dmiCollectionRecovery')||areas.includes('adminHistory')||areas.includes('sharing')||areas.includes('ownerErasure')||areas.includes('weatherProgressRecovery')||file.startsWith('scripts/test-'))
+      if(sourceControlPaths.has(file)||historicalPaths.has(file)||areas.includes('compatibility')||areas.includes('assistantEdge')||areas.includes('mailOwnerProbe')||areas.includes('currentInstalledCodeOnly')||areas.includes('workflowSupport')||areas.includes('weatherPublication')||areas.includes('dmiBudget')||areas.includes('dmiCollectionRecovery')||areas.includes('adminHistory')||areas.includes('sharing')||areas.includes('ownerErasure')||areas.includes('weatherProgressRecovery')||areas.includes('ownedCacheNative')||file.startsWith('scripts/test-'))
         out.controlQualificationRequired=true;
     }
     if(unknown.length){out.unclassifiedPaths=unknown.sort();return refuse('CURRENT_UNCLASSIFIED_PATH');}
@@ -796,7 +816,7 @@ export function planSourceCurrentContractsFromGit(input){
       commands:area==='pages'?pagesContractCommandsForChangedInputs(changedInputs):[...COMMANDS[area]],
       changedPaths:[...new Set(selected.get(area))].sort()};
     out.commands=[...new Set(Object.values(out.areas).flatMap(area=>area.commands))];
-    assert(out.commands.length>0&&out.commands.every(command=>command===LOCAL_RESTORE_SELF_TEST||command===PAGES_OWNER_COMPLETION_COMMAND||/^node(?: --[a-z-]+)*(?: [A-Za-z0-9_./-]+\.mjs)+$/.test(command)));
+    assert(out.commands.length>0&&out.commands.every(command=>command===LOCAL_RESTORE_SELF_TEST||command===PAGES_OWNER_COMPLETION_COMMAND||command===OWNED_CACHE_NATIVE_COMMAND||/^node(?: --[a-z-]+)*(?: [A-Za-z0-9_./-]+\.mjs)+$/.test(command)));
     out.reasonCodes=['CURRENT_SCOPES_CLASSIFIED','UNCHANGED_ACTUAL_POSTGRES_AND_MODELS'];
     if(out.controlQualificationRequired)out.reasonCodes.push('INDEPENDENT_CONTROL_REVIEW_REQUIRED');
     return freeze(out);

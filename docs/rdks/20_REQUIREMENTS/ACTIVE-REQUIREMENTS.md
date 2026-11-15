@@ -1,3 +1,9 @@
+## 15. november — relevant hele native-prøve uden uvedkommende PG-gentagelse
+
+Når den normale CURRENT-plan ejer hele den aktuelle cache-native-testfil, skal den udføre hele filen med dens 19 cases efter den eksisterende dependency-prøve. Den private kandidat bruger den faktiske Node24 og egen npm-cache uden credentials; øvrig kildekontrol beholder Node22. Kun V4 må bære den præcise Pythonoperation med dependency før native. Historiske formater, FULL-betydning, inputanalyse, review, frister, kvitteringsplads og afslag ved ukendt eller ændret beskyttet input bevares.
+
+Den tilføjede SDK-cipher-parent-loss-case skal bevise produktets fysiske stop og reap før testoprydning samt uændret original/skrivelås uden falsk gemmekvittering. Dette acceptkrav er stadig ukørt på rigtig Linux for kandidaten. Planlægning, syntetiske kvitteringsrækker og tidligere native-cases er ikke dette bevis. Det nye +2-metadata-layout kræver autentisk producer-head-workflow, den hele lukkede inverse og de eksisterende friske slutkontroller. Der gives ingen ny PostgreSQL-, model-, SQL- eller produktionsautoritet. Se DEC-0302 og håndbog 89.342/89.232.
+
 ## 13. november — tom OPTIONS-body skal kontrolleres som indhold
 
 OPTIONS uden body beholder sin direkte passage. En fysisk tilstedeværende body må kun passere efter bevis for tomt EOF: højst fire læsninger under samme absolutte étsekundsfrist. Enhver byte, ukendt chunk, låst/brugt stream, læsefejl eller manglende EOF afvises. Læseren annulleres højst én gang; annullering, lukning og igangværende læsning observeres under en særskilt 250 ms afslutningsfrist. Ukendt afslutning giver aldrig 204, og låsen frigives. Ingen privat body eller fejltekst logges.

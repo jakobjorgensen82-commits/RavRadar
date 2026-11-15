@@ -1,3 +1,17 @@
+## 15. november 2026 — privat kandidat til hele SDK-native-prøven
+
+Den normale CURRENT-plan kan vælge dependency-kontrollen og hele nativefilens 19 cases med faktisk Node24 og egen credential-fri npm-cache. V4 accepterer den præcise Pythonkommando i den krævede rækkefølge; ældre kvitteringsformater og FULL-betydning bevares. De to tidlige miljøsteps kan kun godkendes mod producer-heads hele workflow og den eksisterende lukkede inverse.
+
+Den historiske 598-V2-prøve læser sin samlede kontrol- og workflowkæde fra den allerede autentiske FULL-producent. Dens oprindelige V2-forventninger og beskyttede PG/C/I/T-input bevares. Den aktuelle V4-kæde prøves særskilt med aktuelle input; manglende historiske Gitobjekter afvises uden netværkshentning.
+
+De fire eksisterende native-/FULL-kontrollæsere og deres målprøver hører til det samme sourceControls-område. Området vælger også hele test-native-postgres-evidence.mjs og test-source-impact-full-baseline.mjs. Ukendte nabostier og ændrede beskyttede PG/C/I/T-input afvises fortsat; ændrede kontrollæsere kræver frisk uafhængig gennemgang. Det er ikke en ny PostgreSQL-eksekvering eller tilladelse til genbrug.
+
+Den historiske V1-producentprøve bruger hele sit allerede autentiske program, sine navnerum og sine ressourcer fra samme oprindelse. Gamle V1-orakler bevares. Kun syv hele, uændrede aktuelle sikkerhedsrammer sammenlignes med dette grundlag; ændrede rammer kræver en aktuel prøve. De historiske CLI-kald beviser ikke den aktuelle V4-CLI. V2-profilerne 594, 597 og 598 læser hver deres allerede faste historiske kontroltilføjelser uden aktuelle erstatningsfiler; originale PG/C/I/T-input og workflows bevares efter profilens egen kontrakt.
+
+Den aktuelle forbruger af gamle V1-kvitteringer forbliver aktuel. Dens prøve stiller de kendte lazy-moduler, tre faktisk fraværende nyere navnerum og den aktuelle fire-producenthistorik til rådighed. Både normal opdagelse og genlæsning henter desuden den autentiske producer-heads workflow, når de præcise SDK-miljøsteps flytter de efterfølgende trinnumre. Navnene udløser kun læsning; hele workflow-inversen og alle metadata-, artifact-, review-, FULL-, race- og budgetkontroller bestemmer stadig accept. En særskilt normal SDK-kaldercase bruger reelt committed workflow og afviser forkert trinplacering eller sprunget miljøbevaring; dens syntetiske FULL-felter er ikke faktisk SQL-eksekvering.
+
+Den tilføjede SDK-parent-loss-case har bestået sammen med hele filens 19 cases på Linux og faktisk Node24. Den samlede kildekontrol stoppede senere på forældede V1-prøveinput; ny samlet kvalifikation kræves fortsat. Ingen installeret kontrolvej, ny PG-eksekvering eller løst produktionsproblem påstås. Version 4.0.598, model, PG/C/I/T, gamle SQL og produktionsgates er uændrede. Se DEC-0302 og håndbog 89.342/89.232.
+
 ## 15. november 2026 — arkivmålets Storage-bootstrap og faste Auth-metadata
 
 En lokal kildekandidat initialiserer Storage-skemaet gennem den normale leverandørkalder alene på det isolerede arkivmål. Før original SQL aflæses lokale Auth-migrationsnumre og faste relationskategorier; ukendte mål og alle afslag efter DDL bevares. De fem originalfiler, CLI-/Auth-pin, vedvarende tjenester, budgetter og gendannelseskæde ændres ikke. Den lokale selvtest er UNKNOWN, ikke PASS. Auths fire manglende mål, kolonnekompatibilitet, faktisk originalrestore, autonom kvittering, rotation og Free-klarhed er fortsat åbne. Se håndbog 89.350.

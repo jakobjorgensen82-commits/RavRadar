@@ -42,6 +42,10 @@ function fullBaseline(value,current){
 const DOMAIN_DIGESTS=['postgresBefore','postgresAfter','CBefore','CAfter','IBefore','IAfter','TBefore','TAfter'];
 const hash64=value=>typeof value==='string'&&/^[a-f0-9]{64}$/.test(value);
 const nodeCommand=value=>typeof value==='string'&&/^node(?: [A-Za-z0-9_./:-]+)+$/.test(value);
+// Aktuelle faste nativeoperationer; gamle V1/V2/V3/FULL-grammatikker bevares.
+export const OWNED_CACHE_DEPENDENCY_COMMAND='node scripts/test-owned-dmi-cache-dependency.mjs';
+export const OWNED_CACHE_NATIVE_COMMAND='python -B scripts/test-owned-dmi-grib-save-native.py';
+export const currentChangeCommand=value=>nodeCommand(value)||value===OWNED_CACHE_NATIVE_COMMAND;
 
 // Current contracts are a new evidence scope. V1/V2 records and the genuine
 // FULL/native reference keep their original meanings and are never upgraded.
@@ -52,7 +56,7 @@ export function currentContractSourceArtifactName(current){
   must(positive(current.pullRequest)&&oid(current.head)&&digest(current.sourceTreeSha256),'ARTIFACT_IDENTITY');
   return 'ravradar-source-current-contracts-v3-pr-'+current.pullRequest+'-'+current.head+'-'+current.sourceTreeSha256.slice(7);
 }
-function contractPlanProjection(plan,base){
+function contractPlanProjection(plan,base,allowOwnedCacheNative=false){
   must(plan&&plan.schemaVersion===1&&plan.status==='PLANNED'&&plan.selection==='CURRENT_CONTRACTS','CURRENT_PLAN_TYPE');
   must(plan.authority==='PLANNING_ONLY'&&plan.baselineQualified===false
     &&plan.skipAuthorized===false&&plan.productionAuthority===false,'CURRENT_PLAN_AUTHORITY');
@@ -68,7 +72,8 @@ function contractPlanProjection(plan,base){
   must(positive(plan.changedRows)&&hash64(plan.inventorySha256)&&hash64(plan.rawInventorySha256),'CURRENT_INVENTORY');
   must(typeof plan.controlQualificationRequired==='boolean','CURRENT_CONTROL_SCOPE');
   must(Array.isArray(plan.commands)&&plan.commands.length>0&&plan.commands.length<=128
-    &&new Set(plan.commands).size===plan.commands.length&&plan.commands.every(nodeCommand),'CURRENT_COMMANDS');
+    &&new Set(plan.commands).size===plan.commands.length
+    &&plan.commands.every(allowOwnedCacheNative?currentChangeCommand:nodeCommand),'CURRENT_COMMANDS');
   must(plan.areas&&Object.getPrototypeOf(plan.areas)===Object.prototype
     &&Object.keys(plan.areas).length>0&&Object.keys(plan.areas).length<=32,'CURRENT_AREAS');
   const covered=new Set();
@@ -86,6 +91,12 @@ function contractPlanProjection(plan,base){
     for(const command of area.commands)covered.add(command);
   }
   must(plan.commands.every(command=>covered.has(command)),'CURRENT_UNASSIGNED_COMMAND');
+  if(allowOwnedCacheNative&&(Object.hasOwn(plan.areas,'ownedCacheNative')||plan.commands.includes(OWNED_CACHE_NATIVE_COMMAND))){
+    must(equal(plan.areas.ownedCacheNative?.commands,[OWNED_CACHE_DEPENDENCY_COMMAND,OWNED_CACHE_NATIVE_COMMAND])
+      &&plan.commands.indexOf(OWNED_CACHE_DEPENDENCY_COMMAND)>=0
+      &&plan.commands.indexOf(OWNED_CACHE_DEPENDENCY_COMMAND)<plan.commands.indexOf(OWNED_CACHE_NATIVE_COMMAND),
+      'CURRENT_OWNED_CACHE_NATIVE_COMMANDS');
+  }
   // A PR head and its no-change merge have different commit IDs but the same
   // source tree. The real consumer proves that merge relation independently.
   return {baselineCommit:id.baselineCommit,baselineTree:id.baselineTree,candidateTree:id.candidateTree,
@@ -223,8 +234,9 @@ function currentChangeProjection(input){
   const reference=fullBaseline(input.fullBaseline,current);
   keys(changeBase,['commit','gitTree','pullBaseCommit']);
   must(Object.values(changeBase).every(oid),'CHANGE_BASE_IDENTITY');
-  const impact=contractPlanProjection(currentPlan,{commit:changeBase.commit,tree:changeBase.gitTree});
-  const continuity=currentContractPlanProjection(cumulativePlan,input.fullBaseline);
+  const impact=contractPlanProjection(currentPlan,{commit:changeBase.commit,tree:changeBase.gitTree},true);
+  const continuity=contractPlanProjection(cumulativePlan,
+    {commit:input.fullBaseline.mergeCommit,tree:input.fullBaseline.gitTree},true);
   must(impact.candidateTree===continuity.candidateTree,'CHANGE_TREE_MISMATCH');
   for(const family of ['postgres','C','I','T'])must(impact.inputDigests[family+'After']
     ===continuity.inputDigests[family+'After'],'CHANGE_INPUT_MISMATCH');

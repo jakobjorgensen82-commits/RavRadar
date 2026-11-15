@@ -6,18 +6,10 @@ import os from 'node:os';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {fileURLToPath,pathToFileURL} from 'node:url';
-import {expandSourceCommands} from './validate-source-once.mjs';
-import {sourceTreeContentSha256,sourceTreeProofArtifactName} from './lib/source-tree-content.mjs';
-import {SOURCE_GATE_CONTRACT,PULL_REQUEST_SOURCE_JOB,PULL_REQUEST_SOURCE_STEPS,PULL_REQUEST_SOURCE_WORKFLOW,
-  SOURCE_GATE_PRODUCERS} from './lib/weather-source-gate.mjs';
-import {ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS,ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND,ORIGIN}
-  from './native-postgres-evidence.mjs';
-import {ORIGIN as NATIONAL,COMMAND as NATIONAL_COMMAND,STEP as NATIONAL_STEP,
-  ASSISTANT_PUBLIC591_SUCCESSOR_SOURCE_COMMAND} from './national584-source-evidence.mjs';
-
-// Actual normal coordinator and child-process execution; tiny local fixtures,
+// Genuine reviewed594 V1 coordinator and CLI; tiny local fixtures,
 // synthetic GitHub/artifacts and synthetic target script bodies. No product
-// suite, native SQL, live API, provider, production or historical data is used.
+// suite, native SQL, live API, provider or production data is used. The whole
+// archived program has one origin; current V4 integration remains a separate target.
 const SOURCE=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const temp=fs.realpathSync(os.tmpdir()),root=fs.mkdtempSync(path.join(temp,'rr-targeted-producer-'));
 const owned=fs.lstatSync(root,{bigint:true}),oldEnv={...process.env},oldFetch=globalThis.fetch;
@@ -33,10 +25,30 @@ const zip=(raw,name)=>execFileSync('python',['-c',
   'import io,sys,zipfile; b=io.BytesIO(); z=zipfile.ZipFile(b,"w",compression=zipfile.ZIP_DEFLATED); z.writestr(sys.argv[1],sys.stdin.buffer.read()); z.close(); sys.stdout.buffer.write(b.getvalue())',name],
   {input:raw,maxBuffer:65536,timeout:10000,stdio:['pipe','pipe','pipe']});
 let cases=0,executions=0,calls=0,signedCalls=0,cliTransportCalls=0,coordinate,base,head,content,full,phase,job,json,zips;
+let expandSourceCommands,sourceTreeContentSha256,sourceTreeProofArtifactName,SOURCE_GATE_CONTRACT,
+  PULL_REQUEST_SOURCE_JOB,PULL_REQUEST_SOURCE_STEPS,PULL_REQUEST_SOURCE_WORKFLOW,SOURCE_GATE_PRODUCERS,
+  ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS,ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND,ORIGIN,
+  NATIONAL,NATIONAL_COMMAND,NATIONAL_STEP,ASSISTANT_PUBLIC591_SUCCESSOR_SOURCE_COMMAND;
 const currentRun=50000000002,baselineRun=50000000001,baselineJob=50000000003;
 const currentJob=50000000004,finalId=50000000005,nativeId=50000000006,pr=999,baselinePr=998;
-const repo='/repos/'+ORIGIN.repository,actions=repo+'/actions';
+let repo,actions;
 const state={missing:false,badNational:false,badJob:false,movedPull:false,laterInspections:false,transportRoutes:false,postFailure:false};
+// One existing genuine historical oracle, not a per-current-head cohort.
+const HISTORICAL_V1_HEAD='84051e2d700595837ebf80426410dcbef8e08704';
+const HISTORICAL_V1_TREE='cc2abe539303b099a1e29491cc2b4bfe6f56388b';
+function readReviewed594ImpactProgram(relative){
+  assert(typeof relative==='string' && (/^scripts\/(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_-]+\.mjs$/.test(relative)
+    || relative==='scripts/lib/account-statistics-assistant-package-review.json'),
+  'REVIEWED594_PROGRAM_PATH_REFUSED');
+  const options={timeout:10000,maxBuffer:1024*1024,stdio:['ignore','pipe','pipe'],
+    env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0'}};
+  const args=['-c','protocol.allow=never','-C',SOURCE];
+  try{
+    assert.equal(execFileSync('git',[...args,'rev-parse','--verify',HISTORICAL_V1_HEAD+'^{tree}'],options)
+      .toString('utf8').trim(),HISTORICAL_V1_TREE);
+    return execFileSync('git',[...args,'cat-file','blob',HISTORICAL_V1_HEAD+':'+relative],options);
+  }catch{throw new Error('REVIEWED594_PROGRAM_INPUT_UNAVAILABLE');}
+}
 function copyModule(name,seen=new Set()){
   // ESM resolves relative specifiers as URLs; query/fragment identify a module,
   // while fileURLToPath supplies the underlying local filename for byte copying.
@@ -47,9 +59,72 @@ function copyModule(name,seen=new Set()){
   assert(relative&&!path.isAbsolute(relative)&&relative!=='..'&&!relative.startsWith('..'+path.sep),
     'FIXTURE_MODULE_OUTSIDE_REPOSITORY');
   const key=relative.split(path.sep).join('/');
-  if(seen.has(key))return;seen.add(key);const bytes=fs.readFileSync(sourceFile);write(key,bytes);
+  if(seen.has(key))return;seen.add(key);const bytes=readReviewed594ImpactProgram(key);write(key,bytes);
   for(const m of bytes.toString('utf8').matchAll(/^import\b[^;]*?\bfrom\s*['"](\.[^'"]+)['"]/gm))
     copyModule(new URL(m[1],url).href,seen);
+}
+
+// Only these complete unchanged security frames can borrow the historical
+// inputs. A changed/missing frame requires a real current guard test instead.
+const CURRENT_GUARD_FRAMES=[
+  [
+    "clean",
+    "function clean(head){",
+    "\n}\n"
+  ],
+  [
+    "currentJob",
+    "function currentJob(result,current){",
+    "\n}\n"
+  ],
+  [
+    "freshPostTargetReader",
+    "function freshPostTargetReader(){",
+    "\n}\n"
+  ],
+  [
+    "no-overrides",
+    "export async function coordinateTargetedSourceProducer(){",
+    "  const env=process.env,head=env.SOURCE_GATE_HEAD_SHA;\n"
+  ],
+  [
+    "entry-preflight",
+    "    assert.equal(env.GITHUB_EVENT_NAME,'pull_request');",
+    "    get=assistantPublic591Reader();const repo='/repos/'+env.GITHUB_REPOSITORY;\n"
+  ],
+  [
+    "target-completion",
+    "      child.once('error',value=>{error=value;});",
+    "  clean(head);assert.equal(sourceTreeContentSha256(head,{git}),content);\n"
+  ],
+  [
+    "post-target-identity",
+    "  // Fresh post-test transport, exactly two reads, irrespective of test duration.\n",
+    "  assert.equal(currentJob(await finalGet('JOB',jobRoute),current),current.jobId);\n"
+  ]
+];
+function currentGuardFrame(source,first,last){
+  assert.equal(typeof source,'string','CURRENT_TARGETED_GUARD_REQUIRES_CURRENT_TEST');
+  const at=source.indexOf(first);
+  assert(at>=0 && source.indexOf(first,at+first.length)<0,'CURRENT_TARGETED_GUARD_REQUIRES_CURRENT_TEST');
+  const end=source.indexOf(last,at+first.length);
+  assert(end>=0,'CURRENT_TARGETED_GUARD_REQUIRES_CURRENT_TEST');
+  return source.slice(at,end+last.length);
+}
+function assertCurrentProducerSafetyFrames(current,historical){
+  for(const [name,first,last]of CURRENT_GUARD_FRAMES)
+    assert.equal(currentGuardFrame(current,first,last),currentGuardFrame(historical,first,last),
+      'CURRENT_TARGETED_GUARD_REQUIRES_CURRENT_TEST: '+name);
+  // The unchanged completion and identity blocks are still actual callers
+  // after the selected-command loop, not unused copies before execution.
+  for(const source of [current,historical]){
+    const loop=source.indexOf('  const commandResults=[];');
+    assert(loop>=0 && source.indexOf('  const commandResults=[];',loop+1)<0,
+      'CURRENT_TARGETED_GUARD_REQUIRES_CURRENT_TEST');
+    const completion=source.indexOf("      child.once('error',value=>{error=value;});");
+    const post=source.indexOf('  // Fresh post-test transport, exactly two reads, irrespective of test duration.\n');
+    assert(completion>loop && post>completion,'CURRENT_TARGETED_GUARD_REQUIRES_CURRENT_TEST');
+  }
 }
 function rebuild(){
   const rawFinal=Buffer.from(JSON.stringify(full)+'\n'),rawNative=Buffer.from(JSON.stringify(phase)+'\n');
@@ -181,14 +256,36 @@ try{
     assert.throws(()=>copyModule(name),/FIXTURE_LOCAL_MODULE_ONLY/);
   assert.throws(()=>copyModule('../outside-fixture.mjs'),/FIXTURE_MODULE_OUTSIDE_REPOSITORY/);
   assert.throws(()=>copyModule('scripts/__missing_targeted_fixture__.mjs?fixture=1#fragment'),
-    error=>error.code==='ENOENT'&&error.path===path.join(SOURCE,'scripts/__missing_targeted_fixture__.mjs'));
+    error=>error.message==='REVIEWED594_PROGRAM_INPUT_UNAVAILABLE');
+  const currentProducer=fs.readFileSync(path.join(SOURCE,'scripts/source-targeted-producer.mjs'),'utf8');
+  const historicalProducer=readReviewed594ImpactProgram('scripts/source-targeted-producer.mjs').toString('utf8');
+  assertCurrentProducerSafetyFrames(currentProducer,historicalProducer);
+  assert.throws(()=>assertCurrentProducerSafetyFrames(currentProducer.replace(
+    "function currentJob(result,current){","function changedCurrentJob(result,current){"),historicalProducer),
+  /CURRENT_TARGETED_GUARD_REQUIRES_CURRENT_TEST/);
+  assert.throws(()=>assertCurrentProducerSafetyFrames(currentProducer.replace(
+    "assert.equal(arguments.length,0,'SOURCE_TARGETED_PRODUCER_NO_OVERRIDES');",
+    "assert.equal(arguments.length,1,'SOURCE_TARGETED_PRODUCER_NO_OVERRIDES');"),historicalProducer),
+  /CURRENT_TARGETED_GUARD_REQUIRES_CURRENT_TEST/);
   copyModule('scripts/source-targeted-producer.mjs');
   copyModule('scripts/weather-source-gate.mjs');
+  copyModule('scripts/validate-source-once.mjs');
   for(const name of ['package.json','scripts/lib/account-statistics-assistant-package-review.json','js/ui/about-i18n.js',
     'js/ui/about-explainer-i18n.js','js/ui/learn-i18n.js','js/ui/learn-i18n-de.js','js/ui/learn-i18n-en.js'])
-    write(name,name==='package.json'?readReviewed594ImpactPackage():readImpactFixtureInput(SOURCE,name));
+    write(name,name==='package.json'?readReviewed594ImpactPackage():name==='scripts/lib/account-statistics-assistant-package-review.json'
+      ?readReviewed594ImpactProgram(name):readImpactFixtureInput(SOURCE,name));
+  const moduleAt=relative=>import(pathToFileURL(path.join(root,relative)).href);
+  ({expandSourceCommands}=await moduleAt('scripts/validate-source-once.mjs'));
+  ({sourceTreeContentSha256,sourceTreeProofArtifactName}=await moduleAt('scripts/lib/source-tree-content.mjs'));
+  ({SOURCE_GATE_CONTRACT,PULL_REQUEST_SOURCE_JOB,PULL_REQUEST_SOURCE_STEPS,PULL_REQUEST_SOURCE_WORKFLOW,
+    SOURCE_GATE_PRODUCERS}=await moduleAt('scripts/lib/weather-source-gate.mjs'));
+  ({ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS,ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND,ORIGIN}
+    =await moduleAt('scripts/native-postgres-evidence.mjs'));
+  ({ORIGIN:NATIONAL,COMMAND:NATIONAL_COMMAND,STEP:NATIONAL_STEP,ASSISTANT_PUBLIC591_SUCCESSOR_SOURCE_COMMAND}
+    =await moduleAt('scripts/national584-source-evidence.mjs'));
+  repo='/repos/'+ORIGIN.repository;actions=repo+'/actions';
   write('.gitignore','.cache/\n');fs.mkdirSync(path.join(root,'.cache'));
-  const scripts=JSON.parse(fs.readFileSync(path.join(SOURCE,'package.json'))).scripts;
+  const scripts=JSON.parse(fs.readFileSync(path.join(root,'package.json'))).scripts;
   const commands=[...new Set(['validate:release-version','test:module-version-closure','test:security-hardening',
     'test:public-about','test:public-i18n-assistant'].flatMap(name=>expandSourceCommands(scripts,name)))];
   for(const command of commands){const tokens=command.split(' ');assert.equal(tokens.length,2);write(tokens[1],
@@ -232,8 +329,8 @@ try{
   ({coordinateTargetedSourceProducer:coordinate}=await import(pathToFileURL(path.join(root,'scripts/source-targeted-producer.mjs')).href));
   let parentTicks=0,positive;const parentHeartbeat=setInterval(()=>parentTicks++,5);
   try{positive=await coordinate();}finally{clearInterval(parentHeartbeat);}
-  assert(parentTicks>0,'SOURCE_TARGETED_PARENT_EVENT_LOOP_BLOCKED');
   assert.equal(positive.selection,'TARGETED');assert.equal(count(),5);
+  assert(parentTicks>0,'SOURCE_TARGETED_PARENT_EVENT_LOOP_BLOCKED');
   assert.equal(positive.receipt.reportedCommandResults.length,5);assert.equal(positive.receipt.database.executed,false);
   assert.equal(positive.receipt.national.status,'NOT_APPLICABLE');assert.equal(positive.deliveryAuthority,false);
   assert(signedCalls>=2);executions+=count();cases++;
@@ -338,4 +435,5 @@ try{
 console.log(JSON.stringify({kind:'PRIVATE_NORMAL_TARGETED_PRODUCER_TARGET',cases,passed:cases,failed:0,
   realLocalGitFixtures:true,actualSyntheticTargetProcesses:executions,syntheticTransportCalls:calls,
   cliSyntheticTransportCalls:cliTransportCalls,actualDigestCliCases:3,
-  productSourceCommandsExecuted:0,liveApiRequests:0,nativeSqlExecuted:false,production:false,deliveryAuthority:false}));
+  historicalV1Program:true,currentSafetyFramesCompared:CURRENT_GUARD_FRAMES.map(([name])=>name),
+  currentV4CliExecuted:false,productSourceCommandsExecuted:0,liveApiRequests:0,nativeSqlExecuted:false,production:false,deliveryAuthority:false}));

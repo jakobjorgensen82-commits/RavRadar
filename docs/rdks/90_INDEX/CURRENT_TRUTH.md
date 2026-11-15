@@ -1,3 +1,15 @@
+## 15. november — SDK-native-kontrol er privat forberedt
+
+En privat kandidat lader den normale CURRENT-vej vælge dependency-prøven og hele den eksisterende nativefil med 19 cases på faktisk Node24. Øvrig kildekontrol beholder Node22. V4-kvitteringen kan bære den præcise Pythonoperation med samme normale plan-, review- og oprindelseskontrol; ældre formater ommærkes ikke. FULL-læserens nye to miljøsteps kræver den autentiske producer-heads hele workflow og den eksisterende lukkede inverse.
+
+De fire eksisterende native-/FULL-kontrollæsere og deres målprøver hører til det samme sourceControls-område. Området vælger også hele test-native-postgres-evidence.mjs og test-source-impact-full-baseline.mjs. Ukendte nabostier og ændrede beskyttede PG/C/I/T-input afvises fortsat; ændrede kontrollæsere kræver frisk uafhængig gennemgang. Det er ikke en ny PostgreSQL-eksekvering eller tilladelse til genbrug.
+
+Den historiske V1-producentprøve bruger hele sit allerede autentiske program, sine navnerum og sine ressourcer fra samme oprindelse. Gamle V1-orakler bevares. Kun syv hele, uændrede aktuelle sikkerhedsrammer sammenlignes med dette grundlag; ændrede rammer kræver en aktuel prøve. De historiske CLI-kald beviser ikke den aktuelle V4-CLI. V2-profilerne 594, 597 og 598 læser hver deres allerede faste historiske kontroltilføjelser uden aktuelle erstatningsfiler; originale PG/C/I/T-input og workflows bevares efter profilens egen kontrakt.
+
+Den aktuelle forbruger af gamle V1-kvitteringer forbliver aktuel. Dens prøve stiller de kendte lazy-moduler, tre faktisk fraværende nyere navnerum og den aktuelle fire-producenthistorik til rådighed. Både normal opdagelse og genlæsning henter desuden den autentiske producer-heads workflow, når de præcise SDK-miljøsteps flytter de efterfølgende trinnumre. Navnene udløser kun læsning; hele workflow-inversen og alle metadata-, artifact-, review-, FULL-, race- og budgetkontroller bestemmer stadig accept. En særskilt normal SDK-kaldercase bruger reelt committed workflow og afviser forkert trinplacering eller sprunget miljøbevaring; dens syntetiske FULL-felter er ikke faktisk SQL-eksekvering.
+
+Den tilføjede SDK-case for tab af styrende proces har bestået sammen med hele filens 19 cases på Linux og faktisk Node24. Den samlede kildekontrol stoppede senere på forældede V1-prøveinput. Ny samlet kildekvalifikation, sikker levering og faktisk drift er særskilte åbne beviser. Der påstås ingen installeret ny kontrolvej eller rettet produktionsfejl. Version 4.0.598, PG/C/I/T, gamle SQL-bytes, numerik og produktionsgates bevares. Se DEC-0302 og håndbog 89.342/89.232.
+
 ## 15. november — entydigt evidensvalg og struktureret AI-svar
 
 Den afgrænsede assistentkandidat gør hele systeminstruksen til evidensvalg og beder den eksisterende GPT-OSS-model om samme femfeltsprotokol gennem Cloudflares direkte JSON-schema-format. Svarfeltet er en lokaliseret fast markør; modellen vælger fortsat disposition og alle nødvendige eksisterende fakta-ID’er. Serveren skriver fortsat det viste svar fra de godkendte tekstenheder.

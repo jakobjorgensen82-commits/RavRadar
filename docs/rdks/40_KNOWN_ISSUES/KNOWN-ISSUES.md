@@ -1,3 +1,9 @@
+## 15. november — SDK-case bestået; samlet kildekvalifikation er åben
+
+Hele SDK-nativefilens 19 cases har faktisk bestået på Linux med Node24, inklusive tab af styrende proces efter PUT og før afsluttende ACK. Den samlede kildekontrol stoppede senere i en gammel V1-producentprøve, som blandede V1-forventninger med den aktuelle V4-kæde. Det er ikke en påvist fejl i vejrhentning eller et fuldt bestået kildebevis.
+
+De historiske V1-/V2-input afgrænses til deres autentiske oprindelse, mens den aktuelle forbruger og V4-integration prøves særskilt. Den kommende SDK-metadataform kræver autentisk workflowlæsning i både opdagelse og genlæsning; fetch-valget giver ingen ny acceptadgang. Alle normale kilde-/review-/input-/slutkontroller skal bestå på det nye head før levering. Ingen ny model eller PostgreSQL-eksekvering påstås, og stop-/bevaringskravene består. Se DEC-0302 og håndbog 89.342/89.232.
+
 ## 15. november — originalarkivets Auth-kompatibilitet er fortsat åben
 
 Storage-bootstrap på det isolerede arkivmål var slået fra, mens originalens DATA kræver Storage-relationer. En accepteret lokal kildekandidat retter netop denne initialisering og tilføjer faste vendorlabels samt lokal Auth-migrationsmetadata før original SQL. De fire manglende Auth-mål og deres kolonnekompatibilitet er stadig uafklarede. Faste labels giver ingen reparationsret, og ukendte mål/alle afslag efter DDL bevares.

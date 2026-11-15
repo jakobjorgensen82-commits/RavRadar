@@ -34,6 +34,17 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
 
+      # Kun runtimeklargøring; faktisk nativearbejde vælges og kvalificeres normalt.
+      - name: Set up Node24 for selected owned-cache native contracts
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Retain actual Node24 executable for selected native contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          node -e "const fs=require('node:fs');const p=fs.realpathSync(process.execPath);if(process.platform!=='linux'||process.versions.node.split('.')[0]!=='24'||/[\r\n]/.test(p))throw Error('SOURCE_NATIVE_NODE24_REQUIRED');fs.appendFileSync(process.env.GITHUB_ENV,'RAVRADAR_SOURCE_NODE24='+p+'\n');"
+
       - uses: actions/setup-node@v7
         with:
           node-version: 22

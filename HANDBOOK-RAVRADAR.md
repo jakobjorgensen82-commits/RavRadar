@@ -164,6 +164,22 @@ Autoriteten er version.json.releaseContract.modelBindings og de aktuelle generer
 
 ## 89.342 Kontrol af ændringer med en fast sikkerhedskerne
 
+### Hele SDK-native-prøven er en særskilt Linux-accept
+
+En privat kildekandidat giver den normale CURRENT-vej ansvar for den eksisterende dependency-prøve og hele nativefilens 19 cases. Dependency-prøven kommer først. Nativearbejdet bruger faktisk Node24 og egen npm-cache uden credentials; øvrig kildekontrol beholder Node22. Kun V4-kvitteringen får den præcise Pythonoperation. Gamle formater, PostgreSQL-/modelbeviser og produktionskontroller beholder deres betydning.
+
+Den historiske 598-V2-prøve læser sin samlede kontrol- og workflowkæde fra den allerede autentiske FULL-producent. Dens oprindelige V2-forventninger og beskyttede PG/C/I/T-input bevares. Den aktuelle V4-kæde prøves særskilt med aktuelle input; manglende historiske Gitobjekter afvises uden netværkshentning.
+
+De fire eksisterende native-/FULL-kontrollæsere og deres målprøver hører til det samme sourceControls-område. Området vælger også hele test-native-postgres-evidence.mjs og test-source-impact-full-baseline.mjs. Ukendte nabostier og ændrede beskyttede PG/C/I/T-input afvises fortsat; ændrede kontrollæsere kræver frisk uafhængig gennemgang. Det er ikke en ny PostgreSQL-eksekvering eller tilladelse til genbrug.
+
+Den historiske V1-producentprøve bruger hele sit allerede autentiske program, sine navnerum og sine ressourcer fra samme oprindelse. Gamle V1-orakler bevares. Kun syv hele, uændrede aktuelle sikkerhedsrammer sammenlignes med dette grundlag; ændrede rammer kræver en aktuel prøve. De historiske CLI-kald beviser ikke den aktuelle V4-CLI. V2-profilerne 594, 597 og 598 læser hver deres allerede faste historiske kontroltilføjelser uden aktuelle erstatningsfiler; originale PG/C/I/T-input og workflows bevares efter profilens egen kontrakt.
+
+Den aktuelle forbruger af gamle V1-kvitteringer forbliver aktuel. Dens prøve stiller de kendte lazy-moduler, tre faktisk fraværende nyere navnerum og den aktuelle fire-producenthistorik til rådighed. Både normal opdagelse og genlæsning henter desuden den autentiske producer-heads workflow, når de præcise SDK-miljøsteps flytter de efterfølgende trinnumre. Navnene udløser kun læsning; hele workflow-inversen og alle metadata-, artifact-, review-, FULL-, race- og budgetkontroller bestemmer stadig accept. En særskilt normal SDK-kaldercase bruger reelt committed workflow og afviser forkert trinplacering eller sprunget miljøbevaring; dens syntetiske FULL-felter er ikke faktisk SQL-eksekvering.
+
+De to nye tidlige miljøsteps kræver begge succes og det autentiske workflow fra producerens head. Den hele lukkede inverse skal føre tilbage til det eksisterende FULL-grundlag. Gamle metadata beholder deres tidligere kontrol; ukendte workflowændringer giver ingen adgang. Friske kilde-, review-, input- og slutkontroller består.
+
+Den tilføjede SDK-case for tab af styrende proces efter PUT og før afsluttende ACK har bestået med hele filens 19 cases på Linux og faktisk Node24. Den samlede kildekontrol er fortsat åben efter det senere V1-fixtureafslag. Den skal vise produktets eget fysiske stop og reap før testoprydning, bevare original og skrivelås og undlade falsk gemmekvittering. Syntetiske PASS-rækker er formatdata, ikke native-eksekvering. Forberedelsen beviser hverken installeret kontrolvej eller løst produktion. Se også 89.232.
+
 Den kumulative kildekontrol tillader kun én præcis ændring af den manuelle arkivprøves yderste kø: fra vejrets kø til den isolerede arkivkø. Alle øvrige workflowbytes, fixtureimporter og kommandorammen skal være uændrede. Den syntetiske kø, trip-låsen, tidsgrænser, adgang og cleanup bevares. Hele backupområdets fire normale prøver og frisk uafhængig kontrol af kildeudvælgelsen kræves stadig. Dette giver hverken en bestået arkivgendannelse eller ret til rotation, beskæring eller Free-overgang.
 
 Den normale målplan får en snæver transportafgrænsning: kun ændringer af den eksisterende Pages-statuslæser eller dens egen normale prøve kan vælge de fire øvrige fulde Pagesmål uden den brede deploymentprøve. Den brede prøve kalder ikke statuslæseren. Fast sikkerhedskerne, dokumentkontrol og frisk uafhængig kontrol af ændret testvalg består. Transportafgrænsningen bruger ikke owner-completion-only.
@@ -2218,6 +2234,8 @@ Derpå følger den særskilt godkendte providerfri genoptagelse gennem den norma
 Status: PR623 har bestået præcis Linux/native/source/PostgreSQL og er merget, men er ikke en ny offentlig vejrgeneration. Det første godkendte genopretningsforsøg stoppede før DMI-originalhentning og cachegemning på en faktisk CLI-indlæsningscirkel. CLI-opstarten afslutter nu modulindlæsningen, før den asynkrone kommando afventer læseren. Faktiske lokale underprocesser prøver scope- og filsystemafslag uden HTTP; den direkte funktionstest alene dækkede ikke denne opstartsvej. Den nye præcise kildekontrol, faktisk originaltilgængelighed, cachegemning/genbrug og offentlig effekt er fortsat åbne. Ejeren har stående godkendt nødvendige tilsvarende fejllæsninger, rettelser og kontrollerede genoptagelser inden for det samme eksisterende vejrforløb uden nye spørgsmål. Et nyt forsøg kræver en faktisk rettet årsag og beståede kontroller, ikke en blind gentagelse; data-, destinations- og sikkerhedsgrænser bevares. Modelbinding, originaler, budgetter, proces- og no-loss-kontroller er uændrede. Cron er deaktiveret med tidsplanen bevaret. Blind rollback og en ny nødpolicy er ikke aktiveret. Alle fem mål og fristen 18. oktober består; øvrige leverancer holdes tilbage.
 
 ## 89.232 Cachegemning ved brat tab af den styrende proces
+
+**Afgrænset opfølgning, 15. november:** Den ene nye case gennem den eksisterende krypterede SDK-kalder har faktisk bestået på Linux med hele nativefilens 19 cases og faktisk Node24. Prøven bekræfter i dette afgrænsede syntetiske forløb produktets eget stop og reap før oprydning, samme original/skrivelås og fravær af falsk gemmekvittering. Den samlede kildekontrol stoppede senere på forældede V1-prøveinput. Ny samlet kvalifikation, sikker levering, hele runnerens tab og holdbar fjernlagring er fortsat særskilte beviser.
 
 **Kort fortalt:** En afbrudt gemning skal stoppe sine egne underprocesser og bevare originaler og skrivelås; den må ikke vises som gemt.
 

@@ -5,7 +5,8 @@ import {inverseSourceBeforePostgresWorkflow, SOURCE_BEFORE_POSTGRES_BLOCK,
   SCALAR597_LATER_H0_SOURCE_COMMAND,inverseScalar597LaterH0Package,verifyScalar597LaterH0NativeContext,
   scalar597LaterH0NativeClaims,ASSISTANT_AFTER597_SOURCE_COMMAND,inverseAssistantAfter597Package}
   from './national584-source-evidence.mjs';
-import {projectSourceImpactWorkflowFull} from './lib/source-impact-workflow-review.mjs';
+import {projectSourceImpactWorkflowFull,inverseOwnedCacheNativeWorkflow,OWNED_CACHE_NATIVE_EARLY_STEP_NAMES}
+  from './lib/source-impact-workflow-review.mjs';
 import {ORIGIN, WORKFLOW, JOB, STEP, COMMANDS, ACCOUNT_STATISTICS_ASSISTANT_COMMANDS, CURRENT586_COMMANDS as CURRENT_COMMANDS,
   CURRENT_COMMANDS as ASSISTANT_LATER_H0_COMMANDS, NATIVE_SCRIPT as ASSISTANT_LATER_H0_SCRIPT, NEW_NATIVE_BLOCK,
   NON_NATIVE_TEST_INPUTS, NON_NATIVE_PROSE, nativeBlock, parseTree, verifyWorkflow,
@@ -1363,6 +1364,58 @@ test('native phase metadata permits only the reviewed early DMI setup step',()=>
     Object.assign(invalid.jobs[0].steps[5],changed);
     assert.throws(()=>verifyAssistantPublic591Metadata(fixture.origin,invalid));
   }
+});
+
+test('native FULL metadata accepts only the whole authenticated owned-cache environment layout',async()=>{
+  const fixture=v2LiveFixture(),requests=[];
+  const expected=verifyAssistantPublic591Metadata(fixture.origin,fixture.originalJobs,()=>{
+    throw new Error('Old metadata must not need a new workflow read');
+  });
+  const workflow=await fs.readFile(new URL('../'+WORKFLOW,import.meta.url),'utf8');
+  const predecessor=inverseOwnedCacheNativeWorkflow(workflow);assert.notEqual(predecessor,workflow);
+  const shifted=copy(fixture.originalJobs),steps=shifted.jobs[0].steps;
+  const dmi={...steps[5],name:'Install declared DMI dependencies before source planning'};
+  for(const step of steps.slice(5))step.number++;
+  steps[5].name='Build deterministic source-tree content identity';steps.splice(5,0,dmi);
+  const environment=OWNED_CACHE_NATIVE_EARLY_STEP_NAMES.map((name,index)=>({...steps[3],name,number:4+index}));
+  for(const step of steps.slice(3))step.number+=2;
+  steps.splice(3,0,...environment);
+  const readWorkflow=(args,value=workflow)=>{
+    requests.push(args);assert.deepEqual(args,['cat-file','blob',fixture.origin.head_sha+':'+WORKFLOW]);
+    return Buffer.from(value);
+  };
+  assert.deepEqual(verifyAssistantPublic591Metadata(fixture.origin,shifted,readWorkflow),expected);
+  assert.equal(requests.length,1);
+  for(const value of [predecessor,predecessor.replace(/\n/g,'\r\n'),workflow+'\n',
+    workflow.replace('          node-version: 24','          node-version: 22'),
+    workflow.replace('  contents: read','  contents: write')])
+    assert.throws(()=>verifyAssistantPublic591Metadata(fixture.origin,shifted,args=>readWorkflow(args,value)));
+  assert.throws(()=>verifyAssistantPublic591Metadata(fixture.origin,shifted,()=>null));
+  for(const mutate of [
+    rows=>rows.splice(3,1),rows=>rows.splice(4,0,copy(rows[3])),
+    rows=>[rows[3],rows[4]]=[rows[4],rows[3]],
+    rows=>rows[3].name='Unknown environment step',rows=>rows[4].number++,
+    rows=>rows[3].conclusion='skipped',rows=>rows[4].conclusion='failure',
+    rows=>rows.find(row=>row.name==='Install declared DMI dependencies before source planning').name='Unknown DMI setup',
+    rows=>rows.find(row=>row.name===STEP).conclusion='skipped',
+  ]){
+    const invalid=copy(shifted);mutate(invalid.jobs[0].steps);
+    assert.throws(()=>verifyAssistantPublic591Metadata(fixture.origin,invalid,readWorkflow));
+  }
+  // Both the initial normal origin read and final reread use this same Git seam.
+  fixture.originalJobs.jobs[0].steps=copy(steps);
+  const normalReadGit=fixture.options.readGit;let workflowReads=0;
+  fixture.options.readGit=args=>{
+    if(args[0]==='cat-file'&&args[2].endsWith(':'+WORKFLOW)){
+      assert([fixture.origin.head_sha,'HEAD'].some(ref=>args[2]===ref+':'+WORKFLOW));
+      if(args[2]===fixture.origin.head_sha+':'+WORKFLOW)workflowReads++;
+      return workflow;
+    }
+    return normalReadGit(args);
+  };
+  const decision=await decideAssistantPublic591Reuse(fixture.options);
+  assert.equal(decision.status,'REUSED');assert.equal(decision.origin.run,fixture.origin.id);
+  assert(workflowReads>=2);assert.equal(decision.executedInThisRun,false);
 });
 
 test('593 V2 artifact is independent phase evidence, never a V1 upgrade or whole-source success',()=>{
