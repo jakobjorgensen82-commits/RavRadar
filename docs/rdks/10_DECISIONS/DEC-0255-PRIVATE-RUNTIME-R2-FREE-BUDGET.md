@@ -1,3 +1,15 @@
+## Tillæg 15. november 2026 — archive-only Storage-bootstrap og lokal metadata før original SQL
+
+**Status: accepteret lokal kildekandidat; lokal selvtest UNKNOWN, ingen faktisk originalrestore accepteret.** Den hidtidige arkivdiagnose har påvist manglende Auth- og Storage-mål. Den normale capture udelader managed DDL og leverandørernes migrationshistorik, selv om deres data kan indgå. Den deaktiverede lokale Storage-bootstrap er en konkret årsag; de fire Auth-mål og kolonnekompatibilitet er fortsat uafklarede. Der må ikke udledes en OAuth-årsag eller foretages blind opgradering.
+
+Kun archive-B får normal Storage-engangsinitialisering gennem den eksisterende CLI-pin. Auth-pinnen, den syntetiske standardvej, alle tidsbudgetter, de ejede netværks-/servicekontroller og oprydning bevares. Storage forbliver udelukket som vedvarende tjeneste, og produktions-Storage aktiveres ikke. De tidligere noter om deaktiveret Storage er dermed afløst alene for denne lokale arkivinitialisering.
+
+Efter Auth-stop og før original SQL udføres, læses én fast metadataform fra det ejede lokale mål gennem den eksisterende psql-kalder. Højst 512 numeriske migrationsversioner og 16 KiB rapportdata samt kontrolleret imagefingeraftryk og faste vendorkategorier må projiceres. Ukendte relationer bliver OTHER og tællere. Ugyldig, ufuldstændig eller for stor metadata giver afslag; fri SQL-, image-, tabel-, række- eller brugertekst udskrives ikke. Det allerede fuldt parsekontrollerede arkivinventar genbruges; ingen ekstra arkivdownload eller produktionsforespørgsel tilføjes.
+
+Den eksisterende håndhævende relationskontrol efter original DDL bevares. Faste offentligt kildebeviste labels er diagnose, ikke ret til at oprette relationer eller springe DATA over. Før-/efterobservationen kan forklare en forskel i målet, men kvalificerer ikke selv Auth eller skemakompatibilitet. Alle fem autentiske SQL-filer og deres byteidentiteter bevares. Fuld DATA/HISTORY, indholds-/dubletparitet, faktisk Auth-funktion og ejet Dockerclosure kræves stadig.
+
+Den ene lokale selvtestinvokation fik intet terminalresultat; UNKNOWN giver hverken PASS eller produkt-FAIL. Præcis kildekvalifikation og faktisk gendannelse af det samme originale arkiv er fortsat nødvendige. Manuel archive-PASS er ikke autonom persistRestore, rotationstilladelse eller Free-godkendelse. Ingen ny capture erstatter det gamle originalbevis. Se håndbog 89.350.
+
 ## Normal syntetisk relationskontrol er faktisk bestået
 
 Den normale syntetiske restore med den uændrede fixture har faktisk bestået alle fire relationscases på det pinnede PostgreSQL 17 med samme SQL-builder og psql-læser: eksisterende tabel og sekvens, tom historik, manglende relation og forkert relationstype. Canary-rollback og ikke udført DATA-hale er bekræftet. Standardens fem filers roundtrip, UTF-8/decimaler, roller/migrationshistorik, ny syntetisk Auth-adgang og ejet Docker-oprydning er også bestået. Ægte arkiv-/Auth-gendannelse, den konkrete manglende relations årsag og Free-klarhed er fortsat åbne; Storage forbliver deaktiveret.

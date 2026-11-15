@@ -1,3 +1,7 @@
+## 15. november 2026 — arkivmålets Storage-bootstrap og faste Auth-metadata
+
+En lokal kildekandidat initialiserer Storage-skemaet gennem den normale leverandørkalder alene på det isolerede arkivmål. Før original SQL aflæses lokale Auth-migrationsnumre og faste relationskategorier; ukendte mål og alle afslag efter DDL bevares. De fem originalfiler, CLI-/Auth-pin, vedvarende tjenester, budgetter og gendannelseskæde ændres ikke. Den lokale selvtest er UNKNOWN, ikke PASS. Auths fire manglende mål, kolonnekompatibilitet, faktisk originalrestore, autonom kvittering, rotation og Free-klarhed er fortsat åbne. Se håndbog 89.350.
+
 ## 15. november — entydigt evidensvalg og struktureret AI-svar
 
 Den afgrænsede assistentkandidat gør hele systeminstruksen til evidensvalg og beder den eksisterende GPT-OSS-model om samme femfeltsprotokol gennem Cloudflares direkte JSON-schema-format. Svarfeltet er en lokaliseret fast markør; modellen vælger fortsat disposition og alle nødvendige eksisterende fakta-ID’er. Serveren skriver fortsat det viste svar fra de godkendte tekstenheder.

@@ -557,7 +557,7 @@ enable_confirmations = false
 [local_smtp]
 enabled = false
 [storage]
-enabled = false
+enabled = ${target&&archive}
 [realtime]
 # The CLI runs this one-shot bootstrap even when the persistent service is excluded.
 enabled = ${target&&archive}
@@ -828,7 +828,135 @@ const ARCHIVE_FIXED_RELATIONS=Object.freeze({
   '"storage"."buckets_vectors"':'STORAGE_VECTOR_BUCKETS','"storage"."vector_indexes"':'STORAGE_VECTOR_INDEXES',
   '"auth"."users"':'AUTH_USERS','"auth"."identities"':'AUTH_IDENTITIES','"auth"."schema_migrations"':'AUTH_SCHEMA_MIGRATIONS',
   '"supabase_migrations"."schema_migrations"':'MIGRATION_HISTORY',
+  '"auth"."refresh_tokens"':'AUTH_REFRESH_TOKENS',
+  '"auth"."instances"':'AUTH_INSTANCES',
+  '"auth"."audit_log_entries"':'AUTH_AUDIT_LOG_ENTRIES',
+  '"auth"."sessions"':'AUTH_SESSIONS',
+  '"auth"."mfa_factors"':'AUTH_MFA_FACTORS',
+  '"auth"."mfa_challenges"':'AUTH_MFA_CHALLENGES',
+  '"auth"."mfa_amr_claims"':'AUTH_MFA_AMR_CLAIMS',
+  '"auth"."sso_providers"':'AUTH_SSO_PROVIDERS',
+  '"auth"."sso_domains"':'AUTH_SSO_DOMAINS',
+  '"auth"."saml_providers"':'AUTH_SAML_PROVIDERS',
+  '"auth"."saml_relay_states"':'AUTH_SAML_RELAY_STATES',
+  '"auth"."sso_sessions"':'AUTH_SSO_SESSIONS',
+  '"auth"."flow_state"':'AUTH_FLOW_STATE',
+  '"auth"."one_time_tokens"':'AUTH_ONE_TIME_TOKENS',
+  '"auth"."oauth_clients"':'AUTH_OAUTH_CLIENTS',
+  '"auth"."oauth_authorizations"':'AUTH_OAUTH_AUTHORIZATIONS',
+  '"auth"."oauth_consents"':'AUTH_OAUTH_CONSENTS',
+  '"auth"."oauth_client_states"':'AUTH_OAUTH_CLIENT_STATES',
+  '"auth"."custom_oauth_providers"':'AUTH_CUSTOM_OAUTH_PROVIDERS',
+  '"auth"."webauthn_credentials"':'AUTH_WEBAUTHN_CREDENTIALS',
+  '"auth"."webauthn_challenges"':'AUTH_WEBAUTHN_CHALLENGES',
+  '"storage"."iceberg_namespaces"':'STORAGE_ICEBERG_NAMESPACES',
+  '"storage"."iceberg_tables"':'STORAGE_ICEBERG_TABLES',
+  '"auth"."refresh_tokens_id_seq"':'AUTH_REFRESH_TOKENS_ID_SEQUENCE',
 });
+const ARCHIVE_LOCAL_AUTH_METADATA=Object.freeze({bytes:16*1024,versions:512});
+function archiveLocalAuthBootstrapScope(c){
+  const inventory=c.archiveRelationInventory;
+  need(c.archive===true&&inventory?.complete===true&&/^[a-f0-9]{64}$/.test(inventory.digest)
+    &&Array.isArray(inventory.relations)&&inventory.relations.length<=8192,'ARCHIVE_LOCAL_AUTH_INVENTORY');
+  const image=c.images?.auth?.id;
+  need(typeof image==='string'&&/^sha256:[a-f0-9]{64}$/.test(image),'ARCHIVE_LOCAL_AUTH_IMAGE');
+  const rows=inventory.relations.filter(r=>['AUTH','STORAGE'].includes(r.schemaClass));
+  for(const r of rows)assert.deepEqual(r,archiveRelationEntry(r.phase==='DATA'?'data.sql':'history-data.sql',r.kind,r.qualified));
+  const fixed=rows.filter(r=>r.relationClass!=='OTHER').map(r=>({label:r.relationClass,kind:r.kind}))
+    .sort((a,b)=>(a.label<b.label?-1:a.label>b.label?1:0)||(a.kind<b.kind?-1:a.kind>b.kind?1:0));
+  need(fixed.length<=Object.keys(ARCHIVE_FIXED_RELATIONS).length
+    &&new Set(fixed.map(r=>r.label+':'+r.kind)).size===fixed.length,'ARCHIVE_LOCAL_AUTH_TARGETS');
+  return {inventory,rows,fixed,authImageSha256:image.slice(7)};
+}
+function archiveLocalAuthBootstrapSql(c){
+  const {inventory,rows,authImageSha256}=archiveLocalAuthBootstrapScope(c);
+  const required=rows.length?'VALUES '+rows.map(r=>'('+[r.kind,r.qualified,r.relationClass].map(sqlString).join(',')+')').join(',')
+    :'SELECT NULL::text,NULL::text,NULL::text WHERE false';
+  const common="WITH required(kind,qualified,relation_class) AS ("+required+"),"
+    +"observed AS (SELECT e.*,c.oid,c.relkind FROM required e LEFT JOIN pg_catalog.pg_class c ON c.oid=pg_catalog.to_regclass(e.qualified))";
+  const migrationKind="coalesce((SELECT CASE c.relkind WHEN 'r' THEN 'TABLE' WHEN 'p' THEN 'PARTITIONED_TABLE' ELSE 'OTHER_KIND' END"
+    +" FROM pg_catalog.pg_class c WHERE c.oid=pg_catalog.to_regclass('auth.schema_migrations')),'MISSING')";
+  const targets="coalesce((SELECT jsonb_agg(jsonb_build_object('label',relation_class,'kind',kind,'state',"
+    +"CASE WHEN oid IS NULL THEN 'MISSING' WHEN relkind='r' THEN 'TABLE' WHEN relkind='p' THEN 'PARTITIONED_TABLE'"
+    +" WHEN relkind='S' THEN 'SEQUENCE' ELSE 'OTHER_KIND' END) ORDER BY relation_class COLLATE \"C\",kind COLLATE \"C\")"
+    +" FROM observed WHERE relation_class<>'OTHER'),'[]'::jsonb)";
+  const fields="'kind','ARCHIVE_LOCAL_AUTH_BOOTSTRAP_V1','measurementPoint','AFTER_AUTH_STOP_BEFORE_ORIGINAL_SQL',"
+    +"'inventorySha256',"+sqlString(inventory.digest)+",'authTag',"+sqlString(IMAGES.auth.split('/').at(-1))+","
+    +"'authImageSha256',"+sqlString(authImageSha256)+",'targetCount',(SELECT count(*) FROM observed),"
+    +"'unclassifiedTargetCount',(SELECT count(*) FROM observed WHERE relation_class='OTHER'),'fixedTargets',"+targets+","
+    +"'migrationTableKind',"+migrationKind;
+  const sql=[
+    "SET LOCAL standard_conforming_strings = on;",
+    "SELECT "+migrationKind+" IN ('TABLE','PARTITIONED_TABLE') AS rr_local_auth_versions_readable",
+    "\\gset",
+    "\\if :rr_local_auth_versions_readable",
+    common+",versions AS (SELECT version::text AS value FROM auth.schema_migrations),"
+      +"version_state AS (SELECT count(*) AS n,count(*) FILTER (WHERE value IS NULL OR value !~ '^[0-9]{1,19}$') AS invalid FROM versions),"
+      +"version_sample AS (SELECT value FROM versions WHERE value ~ '^[0-9]{1,19}$' ORDER BY length(value),value COLLATE \"C\" LIMIT "
+      +(ARCHIVE_LOCAL_AUTH_METADATA.versions+1)+")",
+    "SELECT jsonb_build_object("+fields+",'migrationState',CASE WHEN n>"+ARCHIVE_LOCAL_AUTH_METADATA.versions
+      +" THEN 'OVER_BOUND' WHEN invalid>0 THEN 'INVALID_VERSION' ELSE 'OBSERVED' END,"
+      +"'migrationCount',CASE WHEN n<="+ARCHIVE_LOCAL_AUTH_METADATA.versions+" THEN n ELSE NULL END,"
+      +"'migrationVersions',CASE WHEN n<="+ARCHIVE_LOCAL_AUTH_METADATA.versions+" AND invalid=0"
+      +" THEN coalesce((SELECT jsonb_agg(value ORDER BY length(value),value COLLATE \"C\") FROM version_sample),'[]'::jsonb)"
+      +" ELSE '[]'::jsonb END) FROM version_state;",
+    "\\else",
+    common+" SELECT jsonb_build_object("+fields+",'migrationState',CASE WHEN "+migrationKind
+      +"='MISSING' THEN 'MISSING' ELSE 'WRONG_KIND' END,'migrationCount',NULL,'migrationVersions','[]'::jsonb);",
+    "\\endif",
+    "",
+  ].join('\n');
+  const bytes=Buffer.from(sql);need(bytes.length<=P.diagnosticBytes,'ARCHIVE_LOCAL_AUTH_QUERY_BOUND');return bytes;
+}
+function readArchiveLocalAuthBootstrap(c,bytes){
+  need(Buffer.isBuffer(bytes)&&bytes.length<=ARCHIVE_LOCAL_AUTH_METADATA.bytes,'ARCHIVE_LOCAL_AUTH_REPORT_BOUND');
+  let value;try{value=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));}
+  catch{need(false,'ARCHIVE_LOCAL_AUTH_REPORT_JSON');}
+  const exact=(v,keys)=>v&&Object.getPrototypeOf(v)===Object.prototype
+    &&JSON.stringify(Object.keys(v).sort())===JSON.stringify([...keys].sort());
+  const keys=['kind','measurementPoint','inventorySha256','authTag','authImageSha256','targetCount','unclassifiedTargetCount',
+    'fixedTargets','migrationTableKind','migrationState','migrationCount','migrationVersions'];
+  need(exact(value,keys),'ARCHIVE_LOCAL_AUTH_REPORT_FIELDS');
+  const {inventory,rows,fixed,authImageSha256}=archiveLocalAuthBootstrapScope(c);
+  need(value.kind==='ARCHIVE_LOCAL_AUTH_BOOTSTRAP_V1'&&value.measurementPoint==='AFTER_AUTH_STOP_BEFORE_ORIGINAL_SQL'
+    &&value.inventorySha256===inventory.digest&&value.authTag===IMAGES.auth.split('/').at(-1)
+    &&value.authImageSha256===authImageSha256,'ARCHIVE_LOCAL_AUTH_REPORT_IDENTITY');
+  need(value.targetCount===rows.length&&value.unclassifiedTargetCount===rows.length-fixed.length
+    &&Array.isArray(value.fixedTargets)&&value.fixedTargets.length===fixed.length,'ARCHIVE_LOCAL_AUTH_REPORT_TARGETS');
+  for(let i=0;i<fixed.length;i++){
+    const item=value.fixedTargets[i];
+    need(exact(item,['label','kind','state'])&&item.label===fixed[i].label&&item.kind===fixed[i].kind
+      &&['MISSING','TABLE','PARTITIONED_TABLE','SEQUENCE','OTHER_KIND'].includes(item.state),'ARCHIVE_LOCAL_AUTH_REPORT_TARGETS');
+  }
+  const kind=value.migrationTableKind,state=value.migrationState,count=value.migrationCount,versions=value.migrationVersions;
+  need(['TABLE','PARTITIONED_TABLE','MISSING','OTHER_KIND'].includes(kind)
+    &&['OBSERVED','MISSING','WRONG_KIND','INVALID_VERSION','OVER_BOUND'].includes(state)
+    &&Array.isArray(versions)&&versions.length<=ARCHIVE_LOCAL_AUTH_METADATA.versions,'ARCHIVE_LOCAL_AUTH_REPORT_VERSIONS');
+  if(kind==='MISSING'||kind==='OTHER_KIND'){
+    need(state===(kind==='MISSING'?'MISSING':'WRONG_KIND')&&count===null&&versions.length===0,'ARCHIVE_LOCAL_AUTH_REPORT_VERSIONS');
+  }else if(state==='OVER_BOUND'){
+    need(count===null&&versions.length===0,'ARCHIVE_LOCAL_AUTH_REPORT_VERSIONS');
+  }else{
+    need(['OBSERVED','INVALID_VERSION'].includes(state)&&Number.isSafeInteger(count)&&count>=0
+      &&count<=ARCHIVE_LOCAL_AUTH_METADATA.versions,'ARCHIVE_LOCAL_AUTH_REPORT_VERSIONS');
+    if(state==='INVALID_VERSION')need(count>0&&versions.length===0,'ARCHIVE_LOCAL_AUTH_REPORT_VERSIONS');
+    else{
+      need(versions.length===count&&versions.every(v=>typeof v==='string'&&/^[0-9]{1,19}$/.test(v))
+        &&new Set(versions).size===versions.length,'ARCHIVE_LOCAL_AUTH_REPORT_VERSIONS');
+      const sorted=[...versions].sort((a,b)=>a.length-b.length||(a<b?-1:a>b?1:0));
+      need(JSON.stringify(versions)===JSON.stringify(sorted),'ARCHIVE_LOCAL_AUTH_REPORT_VERSIONS');
+    }
+  }
+  return value;
+}
+async function observeArchiveLocalAuthBootstrap(c,p,run=command){
+  need(c.archive===true&&p.side==='B'&&c.stage==='QUIESCE_B_AUTH','ARCHIVE_LOCAL_AUTH_SEQUENCE');
+  const input=archiveLocalAuthBootstrapSql(c);
+  const bytes=await run(c,'ARCHIVE_LOCAL_AUTH_BOOTSTRAP','docker',archiveBootstrapPsqlArguments(c,p),
+    {input,maxMs:90_000,archivePsql:true});
+  const metadata=readArchiveLocalAuthBootstrap(c,bytes);c.archiveLocalAuthBootstrap=metadata;
+  need(metadata.migrationState==='OBSERVED','ARCHIVE_LOCAL_AUTH_BOOTSTRAP_NOT_READY');return metadata;
+}
 function archiveInventoryControl(line,state){
   if(!line.trim()||/^--[^\r\n]*$/.test(line)||line==='RESET ALL;'
     ||line==="SELECT pg_catalog.set_config('search_path', '', false);")return true;
@@ -983,6 +1111,7 @@ async function restoreArchive(c,b,indexCommitmentSha256){
   const archive=await materializeArchiveInputs(c,indexCommitmentSha256);c.dumps=archive.files;
   c.archiveRelationInventory=await collectArchiveRelationInventory(c,archive);
   await command(c,'QUIESCE_B_AUTH','docker',['stop','--time','10',b.auth],{maxMs:30_000});
+  await observeArchiveLocalAuthBootstrap(c,b);
   await restoreArchiveSql(c,b,'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA',archive);
   await restoreArchiveSql(c,b,'RESTORE_ARCHIVE_HISTORY',archive,true);
   need(c.archiveRelationReports?.size===2,'ARCHIVE_RELATION_REPORT_INCOMPLETE');
@@ -1051,6 +1180,9 @@ function restorePublicReport(c,result,error,closed){
     ...(c.archive&&error&&c.archiveRelationInventoryAttempted?{archiveRelationPreflight:{
       inventoryComplete:c.archiveRelationInventory?.complete===true,reports:[...(c.archiveRelationReports?.values()??[])],
     }}:{}),
+    ...(c.archive&&c.archiveLocalAuthBootstrap?{
+      localAuthBootstrap:readArchiveLocalAuthBootstrap(c,Buffer.from(JSON.stringify(c.archiveLocalAuthBootstrap))),
+    }:{}),
     ...(!c.archive?{images:c.images,dumpFiles:c.dumps,authRequests:c.authRequests,processes:c.processes}:{})};
 }
 async function fixture({archive=false}={}){
@@ -1189,12 +1321,147 @@ async function selfTest(){
   };
   test('only archive targets enable normal realtime bootstrap while the persistent service remains excluded',()=>{
     const realtimeEnabled=text=>/^enabled = true$/m.test(text.split('[realtime]\n')[1].split('\n[')[0]);
+    const storageEnabled=text=>/^enabled = true$/m.test(text.split('[storage]\n')[1].split('\n[')[0]);
     assert.equal(realtimeEnabled(config('rr_restore_probe',true,true)),true);
+    assert.equal(storageEnabled(config('rr_restore_probe',true,true)),true);
     for(const [target,archive]of [[false,false],[true,false],[false,true]])
       assert.equal(realtimeEnabled(config('rr_restore_probe',target,archive)),false);
+    for(const [target,archive]of [[false,false],[true,false],[false,true]])
+      assert.equal(storageEnabled(config('rr_restore_probe',target,archive)),false);
     assert.equal(realtimeEnabled(config('rr_restore_probe',true)),false);
+    assert.equal(storageEnabled(config('rr_restore_probe',true)),false);
     assert(EXCLUDE.split(',').includes('realtime'));
+    assert(EXCLUDE.split(',').includes('storage-api'));
     assert.match(startProject.toString(),/config\(p\.id,p\.side==='B',c\.archive===true\)/);
+  });
+  async function ownLocalAuthBootstrap(run){
+    const data=[
+      'COPY "auth"."users" ("id") FROM stdin;',
+      '\\.',
+      'COPY "auth"."identities" ("id") FROM stdin;',
+      '\\.',
+      'COPY "auth"."webauthn_credentials" ("id") FROM stdin;',
+      '\\.',
+      'COPY "storage"."iceberg_namespaces" ("id") FROM stdin;',
+      '\\.',
+      'COPY "auth"."PRIVATE_RELATION_SENTINEL" ("id") FROM stdin;',
+      '\\.',
+      '',
+    ].join('\n');
+    await ownArchive(async({c,index,materialize,env})=>{
+      const archive=await materializeArchiveInputs(c,index,{archive:materialize,env});
+      c.archive=true;c.images={auth:{id:'sha256:'+'d'.repeat(64),digests:['PRIVATE_IMAGE_SENTINEL']}};
+      c.archiveRelationInventory=await collectArchiveRelationInventory(c,archive);c.stage='QUIESCE_B_AUTH';
+      const p={side:'B',db:'e'.repeat(64)};
+      const report={kind:'ARCHIVE_LOCAL_AUTH_BOOTSTRAP_V1',measurementPoint:'AFTER_AUTH_STOP_BEFORE_ORIGINAL_SQL',
+        inventorySha256:c.archiveRelationInventory.digest,authTag:'gotrue:v2.196.0',authImageSha256:'d'.repeat(64),
+        targetCount:5,unclassifiedTargetCount:1,fixedTargets:[
+          {label:'AUTH_IDENTITIES',kind:'COPY',state:'TABLE'},
+          {label:'AUTH_USERS',kind:'COPY',state:'TABLE'},
+          {label:'AUTH_WEBAUTHN_CREDENTIALS',kind:'COPY',state:'MISSING'},
+          {label:'STORAGE_ICEBERG_NAMESPACES',kind:'COPY',state:'MISSING'},
+        ],migrationTableKind:'TABLE',migrationState:'OBSERVED',migrationCount:2,migrationVersions:['0','20260625000000']};
+      await run({c,p,archive,report});
+    },{fileSql:{'data.sql':data,'history-data.sql':'\n'}});
+  }
+  test('archive local Auth bootstrap uses the complete inventory and one owned pre-original read without raw target output',async()=>{
+    await ownLocalAuthBootstrap(async({c,p,report})=>{
+      let calls=0;
+      const observed=await observeArchiveLocalAuthBootstrap(c,p,async(context,stage,bin,args,options)=>{
+        calls++;assert.equal(context,c);assert.equal(stage,'ARCHIVE_LOCAL_AUTH_BOOTSTRAP');assert.equal(bin,'docker');
+        assert.deepEqual(args,archiveBootstrapPsqlArguments(c,p));
+        assert.equal(options.maxMs,90_000);assert.equal(options.archivePsql,true);assert(Buffer.isBuffer(options.input));
+        const sql=options.input.toString('utf8');
+        assert.match(sql,/\\if :rr_local_auth_versions_readable/);
+        assert.match(sql,/FROM auth\.schema_migrations/);assert.match(sql,/LIMIT 513/);
+        assert.match(sql,/PRIVATE_RELATION_SENTINEL/);
+        assert(!sql.includes('PRIVATE_IMAGE_SENTINEL'));assert(!sql.includes('COPY '));
+        return Buffer.from(JSON.stringify(report)+'\n');
+      });
+      assert.equal(calls,1);assert.deepEqual(observed,report);assert.deepEqual(c.archiveLocalAuthBootstrap,report);
+      const missing={kind:'ARCHIVE_RELATION_PREFLIGHT_V1',phase:'DATA',inventorySha256:c.archiveRelationInventory.digest,
+        completeParse:true,copyTargets:5,sequenceTargets:0,missingCount:2,wrongKindCount:0,
+        missingBySchema:{AUTH:1,STORAGE:1},wrongKindBySchema:{},
+        missingFixedRelations:['AUTH_WEBAUTHN_CREDENTIALS','STORAGE_ICEBERG_NAMESPACES'],wrongKindFixedRelations:[]};
+      const post=readArchiveRelationPreflight(c,'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA',Buffer.from(JSON.stringify(missing)),3);
+      assert.equal(post.missingCount,2);assert.deepEqual(post.missingFixedRelations,missing.missingFixedRelations);
+      const published=restorePublicReport(c,null,{stage:'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA',code:'ARCHIVE_RELATION_PREFLIGHT_MISSING'},true);
+      assert.deepEqual(published.localAuthBootstrap,report);
+      assert(!JSON.stringify(published).includes('PRIVATE_'));
+      const body=restoreArchive.toString();
+      assert(body.indexOf('collectArchiveRelationInventory')<body.indexOf('QUIESCE_B_AUTH'));
+      assert(body.indexOf('QUIESCE_B_AUTH')<body.indexOf('observeArchiveLocalAuthBootstrap'));
+      assert(body.indexOf('observeArchiveLocalAuthBootstrap')<body.indexOf('RESTORE_ARCHIVE_ROLES_SCHEMA_DATA'));
+      assert(body.indexOf('RESTORE_ARCHIVE_ROLES_SCHEMA_DATA')<body.indexOf('RESTORE_ARCHIVE_HISTORY'));
+    });
+  });
+  test('archive local Auth bootstrap preserves fixed missing kind and invalid-version observations but grants no continuation',async()=>{
+    await ownLocalAuthBootstrap(async({c,p,report})=>{
+      for(const [migrationTableKind,migrationState,migrationCount]of [
+        ['MISSING','MISSING',null],['OTHER_KIND','WRONG_KIND',null],
+        ['TABLE','INVALID_VERSION',2],['TABLE','OVER_BOUND',null],
+      ]){
+        c.stage='QUIESCE_B_AUTH';delete c.archiveLocalAuthBootstrap;
+        const value={...report,migrationTableKind,migrationState,migrationCount,migrationVersions:[]};let calls=0;
+        await assert.rejects(()=>observeArchiveLocalAuthBootstrap(c,p,async()=>{calls++;return Buffer.from(JSON.stringify(value));}),
+          e=>e.code==='ARCHIVE_LOCAL_AUTH_BOOTSTRAP_NOT_READY');
+        assert.equal(calls,1);assert.deepEqual(c.archiveLocalAuthBootstrap,value);
+        assert.deepEqual(restorePublicReport(c,null,{code:'ARCHIVE_LOCAL_AUTH_BOOTSTRAP_NOT_READY'},true).localAuthBootstrap,value);
+      }
+      let calls=0;
+      for(const stage of ['PREFLIGHT','START_B','RESTORE_ARCHIVE_ROLES_SCHEMA_DATA']){
+        c.stage=stage;
+        await assert.rejects(()=>observeArchiveLocalAuthBootstrap(c,p,async()=>{calls++;}),e=>e.code==='ARCHIVE_LOCAL_AUTH_SEQUENCE');
+      }
+      assert.equal(calls,0);
+    });
+  });
+  test('archive local Auth metadata rejects private extra fields unsafe versions unknown labels and changed identity before public projection',async()=>{
+    await ownLocalAuthBootstrap(async({c,report})=>{
+      for(const edit of [
+        v=>v.raw='PRIVATE_PAYLOAD_SENTINEL',
+        v=>v.authTag='PRIVATE_IMAGE_SENTINEL',
+        v=>v.authImageSha256='a'.repeat(64),
+        v=>v.inventorySha256='b'.repeat(64),
+        v=>v.measurementPoint='AFTER_ORIGINAL_SQL',
+        v=>v.fixedTargets[0].label='PRIVATE_RELATION_SENTINEL',
+        v=>v.fixedTargets[0].qualified='"auth"."PRIVATE_RELATION_SENTINEL"',
+        v=>v.fixedTargets[0].state='PRIVATE_STATUS_SENTINEL',
+        v=>v.unclassifiedTargetCount=0,
+        v=>v.targetCount=0,
+        v=>v.migrationVersions=['PRIVATE_VERSION_SENTINEL','20260625000000'],
+        v=>v.migrationVersions=['20260625000000','0'],
+        v=>v.migrationVersions=['0','0'],
+        v=>v.migrationVersions=['0','9'.repeat(20)],
+        v=>v.migrationVersions=Array(513).fill('0'),
+        v=>v.migrationCount=513,
+        v=>v.migrationCount=1,
+        v=>v.migrationState='PASS',
+        v=>{v.migrationState='MISSING';v.migrationVersions=[];v.migrationCount=null;},
+      ]){
+        const changed=structuredClone(report);edit(changed);
+        assert.throws(()=>readArchiveLocalAuthBootstrap(c,Buffer.from(JSON.stringify(changed))),e=>/^ARCHIVE_LOCAL_AUTH_REPORT_/.test(e.code));
+        c.archiveLocalAuthBootstrap=changed;
+        assert.throws(()=>restorePublicReport(c,null,{code:'OTHER'},true),e=>/^ARCHIVE_LOCAL_AUTH_REPORT_/.test(e.code));
+      }
+      delete c.archiveLocalAuthBootstrap;
+      for(const bytes of [Buffer.from('{'),Buffer.from([0xff]),Buffer.alloc(ARCHIVE_LOCAL_AUTH_METADATA.bytes+1,32)])
+        assert.throws(()=>readArchiveLocalAuthBootstrap(c,bytes),e=>/^ARCHIVE_LOCAL_AUTH_REPORT_/.test(e.code));
+      c.archiveRelationInventory.complete=false;
+      assert.throws(()=>archiveLocalAuthBootstrapSql(c),e=>e.code==='ARCHIVE_LOCAL_AUTH_INVENTORY');
+    });
+  });
+  test('archive vendor labels name only exact public Auth Storage and serial targets while private and future names stay OTHER',()=>{
+    for(const [qualified,label,kind]of [
+      ['"auth"."webauthn_credentials"','AUTH_WEBAUTHN_CREDENTIALS','COPY'],
+      ['"auth"."custom_oauth_providers"','AUTH_CUSTOM_OAUTH_PROVIDERS','COPY'],
+      ['"auth"."sso_sessions"','AUTH_SSO_SESSIONS','COPY'],
+      ['"auth"."refresh_tokens_id_seq"','AUTH_REFRESH_TOKENS_ID_SEQUENCE','SEQUENCE'],
+      ['"storage"."iceberg_namespaces"','STORAGE_ICEBERG_NAMESPACES','COPY'],
+      ['"storage"."iceberg_tables"','STORAGE_ICEBERG_TABLES','COPY'],
+    ])assert.equal(archiveRelationEntry('data.sql',kind,qualified).relationClass,label);
+    for(const qualified of ['"auth"."PRIVATE_RELATION_SENTINEL"','"storage"."future_vendor_table"','"public"."users"'])
+      assert.equal(archiveRelationEntry('data.sql','COPY',qualified).relationClass,'OTHER');
   });
   test('reserved system role preflight reads the owned target and stops before archive SQL on missing roles',async()=>{
     const target=['supabase_admin','supabase_auth_admin'],index='a'.repeat(64),root=path.join(os.tmpdir(),'synthetic-role-audit');

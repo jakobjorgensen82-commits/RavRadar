@@ -1,3 +1,9 @@
+## 15. november — originalarkivets Auth-kompatibilitet er fortsat åben
+
+Storage-bootstrap på det isolerede arkivmål var slået fra, mens originalens DATA kræver Storage-relationer. En accepteret lokal kildekandidat retter netop denne initialisering og tilføjer faste vendorlabels samt lokal Auth-migrationsmetadata før original SQL. De fire manglende Auth-mål og deres kolonnekompatibilitet er stadig uafklarede. Faste labels giver ingen reparationsret, og ukendte mål/alle afslag efter DDL bevares.
+
+Den nye lokale selvtests udfald er UNKNOWN uden terminalt procesresultat. Tidligere syntetiske PASS-beviser gælder deres tidligere fixture, ikke denne kandidat eller det autentiske arkiv. Præcis kildekvalifikation, hele originalrestore med indholds-/dublet-/Auth-bevis og ejet oprydning mangler. Autonom restorekvittering, rotation og Free-klarhed er fortsat særskilte åbne krav. De fem originaler, CLI-/Auth-pin, syntetisk standardvej og vedvarende Storage-deaktivering bevares; kun archive-Bs engangsinitialisering ændres. Se DEC-0255 og håndbog 89.350.
+
 ## 15. november — entydigt evidensvalg og struktureret AI-svar
 
 Den afgrænsede assistentkandidat gør hele systeminstruksen til evidensvalg og beder den eksisterende GPT-OSS-model om samme femfeltsprotokol gennem Cloudflares direkte JSON-schema-format. Svarfeltet er en lokaliseret fast markør; modellen vælger fortsat disposition og alle nødvendige eksisterende fakta-ID’er. Serveren skriver fortsat det viste svar fra de godkendte tekstenheder.
