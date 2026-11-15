@@ -9,6 +9,7 @@ import {
   RAV_ASSISTANT_SUCCESS_PROVENANCE,
   assistantQuestionEvidenceCoverage,
   assistantSystemInstruction,
+  assistantResponseFormat,
   extractCloudflareAssistantResult,
   normaliseAssistantLocale,
   normaliseAssistantTerminology,
@@ -645,6 +646,29 @@ for (const locale of ['da', 'de', 'en']) {
     "en": "Low weight for size and a resin-like surface are useful first clues. RavRadar recommends a long-wave amber light with UV around 395 nm in darkness followed by physical checking: Baltic amber often fluoresces clearly, but fluorescence varies with composition, weathering and treatment. Other materials, including some imitations, also fluoresce; UV alone is not proof."
 };
   const originalKnowledge=JSON.stringify(RAV_ASSISTANT_FACTS);
+  // The existing five-field v1 protocol uses Cloudflare's direct raw-schema shape.
+  const system = assistantSystemInstruction();
+  assert.doesNotMatch(system, /brief clarification|state only that you cannot answer reliably|For a RavScore weights question, state that/);
+  assert.match(system, /HISTORY_INCOMPLETE[\s\S]*score\.history-incomplete and public-context\.selected-zone-only/);
+  assert.match(system, /conservative lower bound[\s\S]*supplied scoreBounds lower-to-upper interval, never an exact point score/);
+  assert.match(system, /For answer, uncertain and out_of_scope alike/);
+  for (const locale of ['da', 'de', 'en']) {
+    const format = assistantResponseFormat(locale), schema = format.json_schema;
+    assert.deepEqual(Object.keys(format).sort(), ['json_schema', 'type']);
+    assert.equal(format.type, 'json_schema');
+    assert.deepEqual(Object.keys(schema).sort(), ['additionalProperties', 'properties', 'required', 'type']);
+    assert.equal(schema.type, 'object'); assert.equal(schema.additionalProperties, false);
+    assert.deepEqual(schema.required, ['schemaVersion', 'locale', 'disposition', 'answer', 'evidenceIds']);
+    assert.deepEqual(Object.keys(schema.properties).sort(), ['answer', 'disposition', 'evidenceIds', 'locale', 'schemaVersion']);
+    assert.deepEqual(schema.properties.schemaVersion, {type:'string', enum:['rav-assistant-response-v1']});
+    assert.deepEqual(schema.properties.locale, {type:'string', enum:[locale]});
+    assert.deepEqual(schema.properties.disposition, {type:'string', enum:['answer','out_of_scope','uncertain']});
+    assert.deepEqual(schema.properties.answer, {type:'string', enum:[{da:'Vurderet.',de:'Geprüft.',en:'Assessed.'}[locale]]});
+    assert.deepEqual(schema.properties.evidenceIds, {type:'array', items:{type:'string', enum:RAV_ASSISTANT_FACTS.map(fact => fact.id)}});
+    assert.equal(schema.properties.evidenceIds.items.enum.length, 45);
+  }
+  assert.throws(() => assistantResponseFormat('fr'), RangeError);
+
   for(const locale of ['da','de','en']){
     const supplied={schemaVersion:'rav-assistant-response-v1',locale,disposition:'answer',
       answer:'SYNTHETIC_DRAFT_NOT_PUBLISHED',evidenceIds:uvIds};
@@ -744,7 +768,7 @@ for (const invalid of [
 assert.match(edge, /CLOUDFLARE_ACCOUNT_ID/);
 assert.match(edge, /CLOUDFLARE_WORKERS_AI_TOKEN/);
 assert.match(edge, /@cf\/openai\/gpt-oss-20b|RAV_ASSISTANT_MODEL/);
-assert.match(edge, /response_format:\s*\{ type: "json_object" \}/);
+assert.match(edge, /response_format:\s*assistantResponseFormat\(locale\)/);
 assert.match(edge, /max_completion_tokens:\s*800/);
 assert.match(edge, /reasoning_effort:\s*"low"/);
 assert.match(edge, /minute: 6, hour: 40, globalDay: 300/);

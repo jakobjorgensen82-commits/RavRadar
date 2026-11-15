@@ -1,3 +1,13 @@
+## 15. november — entydigt evidensvalg og struktureret AI-svar
+
+Den afgrænsede assistentkandidat gør hele systeminstruksen til evidensvalg og beder den eksisterende GPT-OSS-model om samme femfeltsprotokol gennem Cloudflares direkte JSON-schema-format. Svarfeltet er en lokaliseret fast markør; modellen vælger fortsat disposition og alle nødvendige eksisterende fakta-ID’er. Serveren skriver fortsat det viste svar fra de godkendte tekstenheder.
+
+Dette erstatter de modstridende instrukser om både kort markør og fri forklaring samt den løse json_object-request. De 45 fakta, vidensbindingen, normal udtrækning, råsvars- og helspørgsmålskontrol, begge 900-tegnsgrænser, model, kvoter og tidsfrister bevares. Der tilføjes ingen afskæring, automatisk modelgentagelse eller ny fallback.
+
+Cloudflares egen GPT-OSS-adapter bruger direkte json_schema uden OpenAI-wrapperen name/schema. Et skema er ikke en garanti for korrekt leverandøradfærd. Præcis kildekvalifikation, sikker installation og faktiske normale danske, tyske og engelske svar kræves fortsat; syntetiske prøver lukker ikke offentlig AI-accept. De seneste normale prøver på den forrige kode afviste for lange råsvar før kanonisk komposition. Deres rå indhold og konkrete faktaudvalg er ikke aflæst, og promptmodstriden er derfor ikke bevist som eneste årsag.
+
+Version 4.0.598, RavScore, kildeprioritet, SQL-regler, geometri og vejrhentning ændres ikke. Den pensionerede samlede Source-pakke genåbnes ikke.
+
 ## Tillæg 14. november 2026 — implicit fundrelevans og samme kompakte femfeltsprotokol
 
 Den næste afgrænsede assistentkandidat genkender implicitte UV-fundspørgsmål gennem samme normale Edge-vej og beder modellen vælge disposition og dækkende kilde-id'er med en kort lokaliseret markør frem for en fri forklaring, som alligevel ikke udgives. Femfeltsprotokollen, alle råsvarsvagter, 45 fakta, K-bindingen og den kanoniske sammensætning under 900 tegn bevares. Den observerede tyske længdeafvisning skete før den kanoniske komposition; den engelske provider-timeout er fortsat uafklaret. Frister, kvoter og providerparametre ændres ikke. Syntetiske normale mål er ikke faktisk ekstern AI- eller helsvarsaccept; boblers diagnostiske betydning og den numerisk bundne enkeltleds-/tegnsætningsgrænse er særskilt åbne.

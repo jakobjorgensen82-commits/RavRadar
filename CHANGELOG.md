@@ -1,3 +1,13 @@
+## 15. november — entydigt evidensvalg og struktureret AI-svar
+
+Den afgrænsede assistentkandidat gør hele systeminstruksen til evidensvalg og beder den eksisterende GPT-OSS-model om samme femfeltsprotokol gennem Cloudflares direkte JSON-schema-format. Svarfeltet er en lokaliseret fast markør; modellen vælger fortsat disposition og alle nødvendige eksisterende fakta-ID’er. Serveren skriver fortsat det viste svar fra de godkendte tekstenheder.
+
+Dette erstatter de modstridende instrukser om både kort markør og fri forklaring samt den løse json_object-request. De 45 fakta, vidensbindingen, normal udtrækning, råsvars- og helspørgsmålskontrol, begge 900-tegnsgrænser, model, kvoter og tidsfrister bevares. Der tilføjes ingen afskæring, automatisk modelgentagelse eller ny fallback.
+
+Cloudflares egen GPT-OSS-adapter bruger direkte json_schema uden OpenAI-wrapperen name/schema. Et skema er ikke en garanti for korrekt leverandøradfærd. Præcis kildekvalifikation, sikker installation og faktiske normale danske, tyske og engelske svar kræves fortsat; syntetiske prøver lukker ikke offentlig AI-accept. De seneste normale prøver på den forrige kode afviste for lange råsvar før kanonisk komposition. Deres rå indhold og konkrete faktaudvalg er ikke aflæst, og promptmodstriden er derfor ikke bevist som eneste årsag.
+
+Version 4.0.598, RavScore, kildeprioritet, SQL-regler, geometri og vejrhentning ændres ikke. Den pensionerede samlede Source-pakke genåbnes ikke.
+
 ## 15. november 2026 — korrekt parent-S før stage-lineage
 
 Genoptagelsens kalder bruger en frisk beskyttet parent-S frem for en eventuelt nyere lokal child-S. To separate tomme mål bevarer frisk efterkontrol uden at overskrive gyldig arbejdscache. Den aktuelle normale transportprøve dækker også manglende/korrupt parent; fuld admission og offentlig levering er særskilte gates. Ingen version, model, original, migration eller publiceringsgrænse ændres.

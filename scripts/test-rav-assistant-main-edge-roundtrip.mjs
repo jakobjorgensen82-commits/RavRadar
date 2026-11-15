@@ -812,7 +812,13 @@ function expectedPromptFacts(facts, locale, context = {}) {
       assert.match(request.messages[0].content,/In answer copy only canonicalAnswerContract\.providerAnswerMarker/);
       assert.deepEqual(Object.keys(request).sort(),['max_completion_tokens','messages','reasoning_effort','response_format','seed','store']);
       const {messages,...parameters}=request;
-      assert.deepEqual(parameters,{max_completion_tokens:800,reasoning_effort:'low',seed:827,store:false,response_format:{type:'json_object'}});
+      assert.deepEqual(parameters,{max_completion_tokens:800,reasoning_effort:'low',seed:827,store:false,response_format:contract.assistantResponseFormat(locale)});
+      assert.equal(request.response_format.type,'json_schema');
+      assert.deepEqual(request.response_format.json_schema.properties.answer.enum,[markers[locale]]);
+      assert.deepEqual(request.response_format.json_schema.properties.locale.enum,[locale]);
+      assert.deepEqual(request.response_format.json_schema.properties.evidenceIds.items.enum,contract.RAV_ASSISTANT_FACTS.map(fact=>fact.id));
+      assert.equal(request.response_format.json_schema.additionalProperties,false);
+      assert.doesNotMatch(request.messages[0].content,/brief clarification|state only that you cannot answer reliably/);
       assert.equal(messages.length,2);assert.equal(prompt.question,questions[locale]);
       assert.equal(prompt.requestedLocale,locale);assert.equal(prompt.publicFacts.length,45);
       assert.equal(prompt.canonicalAnswerContract.maximumCharacters,900);

@@ -7,6 +7,7 @@ import {
   assistantScoreFindAnswer,
   assistantUnknownEquipmentGuaranteeReply,
   assistantSystemInstruction,
+  assistantResponseFormat,
   extractCloudflareAssistantResult,
   normaliseAssistantLocale,
   RAV_ASSISTANT_BINDING_HEADERS,
@@ -232,7 +233,7 @@ Deno.serve(async (request) => {
         reasoning_effort: "low",
         seed: 827,
         store: false,
-        response_format: { type: "json_object" },
+        response_format: assistantResponseFormat(locale),
       }),
     }).then(value => {
       try { deadline!.check(); return value; }

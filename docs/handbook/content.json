@@ -2,8 +2,15 @@
   "schemaVersion": "2.0",
   "handbookVersion": "4.0.598",
   "title": "RavRadar Håndbog",
-  "updatedAt": "2026-11-14T12:08:42.512184Z",
+  "updatedAt": "2026-11-15T00:00:00.000Z",
   "sections": [
+    {
+      "id": "assistant-structured-selector-output-2026-11-15",
+      "chapter": "89.349",
+      "title": "AI vælger fakta, serveren skriver svaret",
+      "summary": "Et entydigt evidensvalg og samme femfeltsprotokol som direkte JSON-schema; offentlig AI-accept kræver stadig faktisk afprøvning.",
+      "body": "<div class=\"reader-guide\"><p><strong>Kort fortalt:</strong> Den eksterne AI vælger de fakta, som besvarer hele spørgsmålet. RavRadars server samler derefter det viste svar af gennemgåede tekstenheder.</p></div><p>Den afgrænsede kandidat fjerner modstridende instrukser om både en kort markør og en fri forklaring. Den samme eksisterende model får et direkte JSON-schema med præcis fem felter: protokolversion, sprog, svarkategori, fast lokaliseret markør og de valgte fakta-ID’er. Markøren vises ikke som svar.</p><p>De 45 fakta og alle eksisterende efterkontroller bevares. Ukendte, ufuldstændige, usikre eller for lange svar får ingen ny adgang. Både råsvar og det samlede offentlige svar har fortsat højst 900 tegn. Der afskæres ikke tekst, udelades ikke nødvendige forbehold og gentages ikke automatisk et leverandørkald.</p><p>Cloudflares egen GPT-OSS-adapter bruger dette direkte schemaformat. Det garanterer hverken fagligt korrekt faktaudvalg eller fungerende eksterne svar. Kandidaten kræver præcis kildekvalifikation, sikker installation og faktisk dansk, tysk og engelsk afprøvning. Version, modelbinding, score, vejr, kvoter, frister, databaser og geometri ændres ikke.</p>"
+    },
     {
       "id": "dmi-empty-maintenance-classification-2026-11-14",
       "chapter": "89.348",
