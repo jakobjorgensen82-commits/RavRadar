@@ -4,6 +4,8 @@ En almindelig appopdatering skal beholde den installerede modelfamilie, når mod
 
 Den samme normale versionsprøve skal verificere uændrede C/I/T, alle gamle SQL-filer og korrekte afslag ved forkert appversion, ændrede modelmetadata og et forkert native-familieargument. Den nye current-positivfixture skal indeholde den normale CLI-afslutning; migrationslæserens strenge formatkrav består.
 
+Den historiske CURRENT-fixture vælger sine input før importgrafen indsamles. De oprindelige model-/PG-/T-filer bevares fra deres autentiske reference; den historiske native-/national-/FULL-kontekst læses fra den allerede eksisterende verificerede kodeoprindelse. Aktuelle producer-, consumer-, receipt- og plannerkaldere forbliver aktuelle, og den faktiske nye SOURCE-familie prøves særskilt. En kontrolimport må ikke tavst overskrive et beskyttet modelinput. Modstridende input afvises før materialisering; gamle assertioner og direkte aktuelle native-/FULL-prøver består. Ingen nye head-cohorts, frosne banker, modelbindinger eller SQL følger af fixturekorrektionen.
+
 ## Præcis lokal kildematerialisering før model- og nativekontrol
 
 Før filer materialiseres i en ny, egen isoleret kildebank, sættes bankens lokale Git-konfiguration til `core.autocrlf=false` og `core.eol=lf`. Før en builder eller nativeprøve skal de faktiske filbytes og SHA-256 sammenholdes med de eksakte indexblobs for alle uændrede PostgreSQL-, C/I/T- og profilinput, også JSON. En grøn normaliseret Git-diff eller samme tree er ikke fysisk bytebevis. Ved checkout-konvertering genskabes alene den egne banks uændrede filer fra deres autentiske blobs; ændrede kilder bevares og gennemgås særskilt. Gamle banker og global Git-konfiguration ændres ikke, og hashberegningen må ikke normalisere afvigelser væk.

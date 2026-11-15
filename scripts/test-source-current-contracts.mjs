@@ -713,13 +713,37 @@ assert.deepEqual(CURRENT_CONTRACT_COMMANDS.dmiBudget,['node scripts/test-dmi-bud
 
 const REFERENCE='bd9cf518fe798ddea45d2b835f324f6e2bea06fc';
 const profile=JSON.parse(fs.readFileSync(path.join(SOURCE,'scripts/lib/source-impact-domain-inputs-598.json')));
+// Historiske model-/PG-input og nativekontekst vælges før importkæden indsamles.
+const gitEnvironment={...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_OPTIONAL_LOCKS:'0',
+  GIT_TERMINAL_PROMPT:'0',GIT_AUTHOR_NAME:'Synthetic current-contract protocol',GIT_AUTHOR_EMAIL:'fixture@example.invalid',
+  GIT_COMMITTER_NAME:'Synthetic current-contract protocol',GIT_COMMITTER_EMAIL:'fixture@example.invalid',
+  GIT_AUTHOR_DATE:'2026-11-12T09:00:00Z',GIT_COMMITTER_DATE:'2026-11-12T09:00:00Z'};
+const git=(where,args,input)=>execFileSync('git',['-C',where,...args],{input,env:gitEnvironment,
+  timeout:30000,maxBuffer:256*1024*1024,stdio:['pipe','pipe','pipe']});
+const text=(where,args,input)=>git(where,args,input).toString('utf8').trim();
+const sourceBlob=file=>git(SOURCE,['cat-file','blob',REFERENCE+':'+file]);
+const modelFiles=Object.values(profile.models).flatMap(def=>{
+  const raw=sourceBlob(def.file).toString('utf8'),manifest=JSON.parse(raw.slice(raw.indexOf('Object.freeze(')+14,raw.lastIndexOf(');')));
+  return[def.file,...manifest.files.map(row=>row[def.rowKey])];});
+const protectedFiles=new Set([...profile.postgresModules,...profile.postgresData,...profile.continuation.files,profile.continuation.file,...modelFiles]);
+const historicalControlSources=new Set(['scripts/native-postgres-evidence.mjs',
+  'scripts/national584-source-evidence.mjs','scripts/source-impact-full-baseline.mjs']);
+const {assertSource598CodeSourceSelected}=await import(pathToFileURL(path.join(SOURCE,'scripts/check-assistant-later-h0-predecessor-source.mjs')).href);
+const fixedCode598=assertSource598CodeSourceSelected();
+assert.equal(text(SOURCE,['rev-parse',fixedCode598.head+'^{tree}']),fixedCode598.tree);
+const fixtureControlOrigin=file=>protectedFiles.has(file)?'REFERENCE':historicalControlSources.has(file)?'CODE598':'SOURCE';
+function fixtureControlBytes(file){
+  const origin=fixtureControlOrigin(file);
+  return origin==='REFERENCE'?sourceBlob(file):origin==='CODE598'
+    ?git(SOURCE,['cat-file','blob',fixedCode598.head+':'+file]):fs.readFileSync(path.join(SOURCE,file));
+}
 const controlSources=new Set();
 function collect(file){
   if(controlSources.has(file))return;
   const sourceFile=path.resolve(SOURCE,file),relative=path.relative(SOURCE,sourceFile);
   assert(relative&&!path.isAbsolute(relative)&&relative!=='..'&&!relative.startsWith('..'+path.sep));
   controlSources.add(file);
-  const body=fs.readFileSync(sourceFile,'utf8'),url=pathToFileURL(sourceFile);
+  const body=fixtureControlBytes(file).toString('utf8'),url=pathToFileURL(sourceFile);
   for(const match of body.matchAll(/^import\b[^;]*?\bfrom\s*['"](\.[^'"]+)['"]/gm)){
     const dep=fileURLToPath(new URL(match[1],url)),name=path.relative(SOURCE,dep).split(path.sep).join('/');
     collect(name);
@@ -731,20 +755,11 @@ const additions=[...controlSources,...ownerHelpers,...WEATHER_PUBLICATION_PATHS,
   'scripts/test-owned-dmi-grib-save-native.py',
   '.github/workflows/watch-missed-weather-schedule.yml','scripts/weather-source-gate.mjs',
   ...['594','597','598'].map(v=>'scripts/lib/source-impact-domain-inputs-'+v+'.json')];
-const fixtureControlBytes=file=>fs.readFileSync(path.join(SOURCE,file));
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const clone=value=>structuredClone(value);
 const originalEnvironment={...process.env},originalFetch=globalThis.fetch,originalLog=console.log;
 const temp=fs.realpathSync(os.tmpdir()),root=fs.mkdtempSync(path.join(temp,'rr-current-contract-protocol-'));
 const owned=fs.lstatSync(root,{bigint:true});
-const gitEnvironment={...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_OPTIONAL_LOCKS:'0',
-  GIT_TERMINAL_PROMPT:'0',GIT_AUTHOR_NAME:'Synthetic current-contract protocol',GIT_AUTHOR_EMAIL:'fixture@example.invalid',
-  GIT_COMMITTER_NAME:'Synthetic current-contract protocol',GIT_COMMITTER_EMAIL:'fixture@example.invalid',
-  GIT_AUTHOR_DATE:'2026-11-12T09:00:00Z',GIT_COMMITTER_DATE:'2026-11-12T09:00:00Z'};
-const git=(where,args,input)=>execFileSync('git',['-C',where,...args],{input,env:gitEnvironment,
-  timeout:30000,maxBuffer:256*1024*1024,stdio:['pipe','pipe','pipe']});
-const text=(where,args,input)=>git(where,args,input).toString('utf8').trim();
-const sourceBlob=file=>git(SOURCE,['cat-file','blob',REFERENCE+':'+file]);
 const readGit=(args,options={})=>execFileSync('git',['-C',root,...args],{env:gitEnvironment,maxBuffer:256*1024*1024,
   timeout:10000,stdio:['pipe','pipe','pipe'],...options});
 const write=(file,bytes)=>{const target=path.join(root,file);fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,bytes);};
@@ -919,10 +934,6 @@ try{
   const referenceRows=git(SOURCE,['ls-tree','-rz','-t','--full-tree',REFERENCE]).toString('utf8').split('\0').filter(Boolean).map(line=>{
     const m=/^(\d{6}) (blob|tree|commit) ([a-f0-9]{40})\t(.+)$/.exec(line);assert(m);return{mode:m[1],type:m[2],oid:m[3],file:m[4]};});
   const referenceTree=text(SOURCE,['rev-parse',REFERENCE+'^{tree}']);
-  const modelFiles=Object.values(profile.models).flatMap(def=>{
-    const raw=sourceBlob(def.file).toString('utf8'),manifest=JSON.parse(raw.slice(raw.indexOf('Object.freeze(')+14,raw.lastIndexOf(');')));
-    return[def.file,...manifest.files.map(row=>row[def.rowKey])];});
-  const protectedFiles=new Set([...profile.postgresModules,...profile.postgresData,...profile.continuation.files,profile.continuation.file,...modelFiles]);
   // A small SYNTHETIC repository, not a copied entire432MB release tree.
   // Every protected input and every real planner/runtime source/resource stays
   // genuine. Other unrelated files are absent from this new root identity.
@@ -948,7 +959,21 @@ try{
     +"fs.mkdirSync('.cache',{recursive:true});\n"
     +"fs.appendFileSync('.cache/actual-current-targets.jsonl',JSON.stringify({file:process.argv[1]})+'\\n');\n"
     +"console.log('SYNTHETIC_CURRENT_TARGET_EXECUTED');\n");
-  const baselineTree=rewrite(protectedTree,[...new Map([...additions.map(file=>[file,fixtureControlBytes(file)]),...targetFiles.map(file=>[file,tiny(file)])])]);
+  const baselineChanges=new Map(),targetSet=new Set(targetFiles);
+  const putFixture=(file,body)=>{
+    const prior=baselineChanges.get(file);
+    if(prior)assert(prior.equals(body),'CURRENT_FIXTURE_ORIGIN_CONFLICT: '+file);
+    baselineChanges.set(file,body);
+  };
+  for(const file of additions){
+    assert(!historicalControlSources.has(file)||!targetSet.has(file),'Historical native context is never a synthetic command target');
+    if(targetSet.has(file))continue; // De allerede erklærede kunstige mål ejer kun deres egne bladfiler.
+    const body=fixtureControlBytes(file);
+    if(protectedFiles.has(file))assert(body.equals(sourceBlob(file)),'CURRENT_FIXTURE_PROTECTED_INPUT_CONFLICT: '+file);
+    putFixture(file,body);
+  }
+  for(const file of targetFiles)putFixture(file,tiny(file));
+  const baselineTree=rewrite(protectedTree,[...baselineChanges]);
   base=commit(baselineTree,[],'synthetic root with genuine594 protected inputs and synthetic control targets');
   checkout(base);assert.notEqual(base,REFERENCE);assert.deepEqual(text(root,['rev-list','--parents','-n','1',base]).split(' '),[base]);
   native=await moduleAt('scripts/native-postgres-evidence.mjs');
@@ -1376,8 +1401,8 @@ try{
   let nativeReceipt;
   {
     // Synthetic report DATA against real598C/I/T and74actualSQLfiles, not native execution proof.
-    // Historical FULL598 owns the named issued598 profile. The coordinator and
-    // reader modules above remain current; their ACTIVE599 is never receipt DATA.
+    // Historisk FULL598 bruger sin autentiske native/national/FULL-kontekst.
+    // Producer/consumer/receipt/planner er aktuelle; faktisk599 prøves særskilt ved SOURCE.
     const active=successor.UNISSUED_ASSISTANT_AFTER597_SUCCESSOR;
     const binding=active.requireBinding(),databaseBefore=active.databaseBefore;
     assert.equal(active.sourcePhase,'assistant-mixed-after597-successor');assert.equal(active.requireRelease(),'4.0.598');
