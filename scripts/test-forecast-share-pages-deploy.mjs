@@ -7,7 +7,7 @@ import {registerHooks} from 'node:module';
 import {fileURLToPath} from 'node:url';
 import {deployForecastSharePages,assertForecastSharePagesAuthority,assertForecastSharePagesConfig,
   assertForecastSharePagesRemoteProject,assertForecastSharePagesDeployment,
-  completeForecastSharePagesList} from './deploy-forecast-share-pages.mjs';
+  completeForecastSharePagesList,FORECAST_SHARE_PAGES_SCHEMA_QUERY} from './deploy-forecast-share-pages.mjs';
 import {deployForecastSharePagesProcess} from './lib/forecast-share-pages-deploy-process.mjs';
 import {buildForecastSharePagesWranglerOnce,FORECAST_SHARE_PAGES_WRANGLER_PINS}
   from './lib/forecast-share-pages-wrangler-once.mjs';
@@ -15,9 +15,50 @@ const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const WORKFLOW='deploy-forecast-share-pages.yml';
 const WORKFLOW_SHA='c42aef1818804e97a61c4ccf5f25b3c1d8e5d5d7f537340acea987cc48f9925e';
 const hash=v=>crypto.createHash('sha256').update(v).digest('hex');
+// Only the named read-only mode may be removed before the original whole-workflow oracle.
+// Unknown edits still change the old residual hash; no new workflow hash is admitted.
+const SCHEMA_WORKFLOW_ADDITIONS=[
+  [
+    "Skriv DEPLOY-FORECAST-SHARE-PAGES eller UPDATE-FORECAST-SHARE-PAGES efter valgt handling",
+    "Skriv den faste DEPLOY-, UPDATE- eller INSPECT-FORECAST-SHARE-PAGES-SCHEMA-bekræftelse efter valgt handling"
+  ],
+  [
+    "Create kræver bevist fravær. Update kræver tidligere verificeret eget projekt og deployment.",
+    "Create kræver bevist fravær. Update kræver tidligere verificeret eget projekt. Inspect-schema læser kun faste schemafelter."
+  ],
+  [
+    "          - create\n          - update\n",
+    "          - create\n          - update\n          - inspect-schema\n"
+  ],
+  [
+    "            *) exit 1 ;;\n",
+    "            inspect-schema)\n              test \"$SHARE_CONFIRMATION\" = INSPECT-FORECAST-SHARE-PAGES-SCHEMA\n              test -z \"$EXPECTED_PROJECT_ID$EXPECTED_DEPLOYMENT_ID$EXPECTED_DEPLOYMENT_COMMIT\"\n              ;;\n            *) exit 1 ;;\n"
+  ],
+  [
+    "      - name: Install pinned Pages CLI in this run-owned runtime only\n",
+    "      - name: Install pinned Pages CLI in this run-owned runtime only\n        if: inputs.operation != 'inspect-schema'\n"
+  ],
+  [
+    "      - name: Create absent fixed project or update exact owned project once\n",
+    "      - name: Read fixed schema or create absent fixed project or update exact owned project once\n"
+  ],
+  [
+    "          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}",
+    "          CLOUDFLARE_ACCOUNT_ID: ${{ inputs.operation != 'inspect-schema' && secrets.CLOUDFLARE_ACCOUNT_ID || '' }}"
+  ]
+];
+function inverseSchemaOnlyWorkflow(source){
+  if(!source.includes('          - inspect-schema\n'))return source;
+  for(const [before,after]of SCHEMA_WORKFLOW_ADDITIONS){
+    assert.equal(source.split(after).length,2,'Exact schema-only workflow addition');
+    source=source.replace(after,before);
+  }
+  return source;
+}
+
 export function inverseForecastSharePagesWorkflowInventory(names,source){
   assert.equal(names.filter(x=>x===WORKFLOW).length,1);
-  assert.equal(hash(source.replace(/\r\n/g,'\n')),WORKFLOW_SHA,'Exact fixed Pages workflow before old workflow oracles');
+  assert.equal(hash(inverseSchemaOnlyWorkflow(source.replace(/\r\n/g,'\n'))),WORKFLOW_SHA,'Exact fixed Pages workflow before old workflow oracles');
   return names.filter(x=>x!==WORKFLOW);
 }
 let cases=0;
@@ -28,7 +69,7 @@ await assert.rejects(()=>deployForecastSharePagesProcess({commitSha:'a'.repeat(4
   prepareImpl:async()=>{preparationOverrides++;throw Error('must not execute');}}));
 assert.equal(preparationOverrides,0);cases++;
 const workflow=await fs.readFile(path.join(ROOT,'.github/workflows',WORKFLOW),'utf8');
-assert.equal(hash(workflow),WORKFLOW_SHA);
+assert.equal(hash(inverseSchemaOnlyWorkflow(workflow)),WORKFLOW_SHA);
 for(const marker of ['workflow_dispatch:','expected_main:','DEPLOY-FORECAST-SHARE-PAGES','group: ravradar-weather-production-v2',
   'queue: max','cancel-in-progress: false','node scripts/weather-source-gate.mjs check','steps.source-proof.outputs.required',
   'test "$GITHUB_RUN_ATTEMPT" = 1','node scripts/deploy-forecast-share-pages.mjs','if: always()'])assert(workflow.includes(marker));
@@ -369,6 +410,125 @@ for(const kind of ['stop-unknown','uncommitted-reply-lost','bad-output','drift-f
   assert.equal(result.error.receipt.outcome,'UNKNOWN_NO_RETRY',kind);cases++;
 }
 
+
+// Same normal controller; all requests and credentials below are synthetic.
+// Actual old create/update/process cases above and below remain unchanged.
+let schemaCases=0;
+const schemaEnv={...env,SHARE_OPERATION:'inspect-schema',SHARE_CONFIRMATION:'INSPECT-FORECAST-SHARE-PAGES-SCHEMA',
+  CLOUDFLARE_ACCOUNT_ID:''};
+assert.equal(assertForecastSharePagesAuthority(schemaEnv),'inspect-schema');
+for(const delta of [{SHARE_OPERATION:'schema'},{SHARE_OPERATION:'inspect-schema-extra'},
+  {SHARE_CONFIRMATION:env.SHARE_CONFIRMATION},{EXPECTED_PROJECT_ID:projectId},
+  {EXPECTED_DEPLOYMENT_ID:deploymentId},{EXPECTED_DEPLOYMENT_COMMIT:commit},
+  {CLOUDFLARE_ACCOUNT_ID:'b'.repeat(32)},{SOURCE_REQUIRED:'true'},{GITHUB_RUN_ATTEMPT:'2'},
+  {GITHUB_REF:'refs/heads/other'},{CLOUDFLARE_API_TOKEN:''}]){
+  assert.throws(()=>assertForecastSharePagesAuthority({...schemaEnv,...delta}));schemaCases++;
+}
+const oldWorkflow=inverseSchemaOnlyWorkflow(workflow);
+assert.equal(hash(oldWorkflow),WORKFLOW_SHA);
+assert.deepEqual(inverseForecastSharePagesWorkflowInventory([WORKFLOW],oldWorkflow),[]);
+for(const [before,after]of SCHEMA_WORKFLOW_ADDITIONS){
+  assert.throws(()=>inverseForecastSharePagesWorkflowInventory([WORKFLOW],workflow.replace(after,before)));schemaCases++;
+}
+for(const changed of [workflow.replace('contents: read','contents: write'),
+  workflow.replace('          - inspect-schema','          - inspect-schema\n          - arbitrary-query'),
+  workflow.replace('node scripts/deploy-forecast-share-pages.mjs','node scripts/deploy-forecast-share-pages.mjs --query')]){
+  assert.throws(()=>inverseForecastSharePagesWorkflowInventory([WORKFLOW],changed));schemaCases++;
+}
+assert(workflow.includes("if: inputs.operation != 'inspect-schema'"));
+assert(workflow.includes("inputs.operation != 'inspect-schema' && secrets.CLOUDFLARE_ACCOUNT_ID || ''"));
+assert.equal((FORECAST_SHARE_PAGES_SCHEMA_QUERY.match(/__type\(/g)||[]).length,3);
+assert.doesNotMatch(FORECAST_SHARE_PAGES_SCHEMA_QUERY,/\b(?:accountTag|viewer|accounts|mutation|variables)\b/u);
+const schemaCpuNames=['cpuTimeP50','cpuTimeP75','cpuTimeP99','cpuTimeP999'];
+const schemaDurationNames=['durationP50','durationP75','durationP99','durationP999'];
+const schemaGroup='AccountPagesFunctionsInvocationsAdaptiveGroups';
+const scalar=()=>({kind:'SCALAR',name:'float64',ofType:null});
+const objectType=name=>({kind:'OBJECT',name,ofType:null});
+function schemaResponse(){return{data:{
+  group:{name:schemaGroup,fields:[{name:'quantiles',type:objectType(schemaGroup+'Quantiles')},
+    {name:'sum',type:objectType(schemaGroup+'Sum')}]},
+  quantiles:{name:schemaGroup+'Quantiles',fields:[...schemaCpuNames,...schemaDurationNames].map(name=>
+    ({name,description:'Synthetic public schema description for '+name,isDeprecated:false,type:scalar()}))},
+  sums:{name:schemaGroup+'Sum',fields:[{name:'duration',description:'Synthetic duration description'},
+    {name:'requests',description:'Synthetic request-count description'}]},
+}};}
+async function schemaScenario(kind){
+  let cfReads=0,ghReads=0,deploys=0,projectInputReads=0;const requests=[],receipts=[];
+  const fetchImpl=async(url,options)=>{
+    requests.push({url,method:options.method});assert.equal(options.redirect,'error');assert.equal(options.cache,'no-store');
+    assert(options.signal instanceof AbortSignal);
+    if(url==='https://api.github.com/repos/jakobjorgensen82-commits/RavRadar/git/ref/heads/main'){
+      ghReads++;assert.equal(options.method,'GET');
+      return json({ref:'refs/heads/main',object:{type:'commit',sha:kind==='main-before'||kind==='main-after'&&ghReads===2?'c'.repeat(40):commit}});
+    }
+    assert.equal(url,'https://api.cloudflare.com/client/v4/graphql');
+    assert.equal(options.method,'POST');assert.equal(options.headers.Authorization,'Bearer SYNTHETIC_CF');
+    assert.equal(options.headers['Content-Type'],'application/json');
+    assert.deepEqual(JSON.parse(options.body),{query:FORECAST_SHARE_PAGES_SCHEMA_QUERY});cfReads++;
+    assert.equal(cfReads,1,'The fixed schema read must never retry');
+    if(kind==='401'||kind==='403'||kind==='500')return json({errors:[{message:'RAW_SCHEMA_PRIVATE'}]},Number(kind));
+    if(kind==='json')return new Response('RAW_SCHEMA_PRIVATE');
+    if(kind==='empty-body')return new Response(null);
+    if(kind==='too-large')return new Response('{}',{headers:{'Content-Length':String(2*1024*1024+1)}});
+    const value=schemaResponse();
+    if(kind==='errors')value.errors=[{message:'RAW_SCHEMA_PRIVATE'}];
+    if(kind==='errors-null')value.errors=null;
+    if(kind==='data-null')value.data=null;
+    if(kind==='quantiles-null')value.data.quantiles=null;
+    if(kind==='type-name')value.data.quantiles.name='AnotherQuantileType';
+    if(kind==='type-binding')value.data.group.fields[0].type.name='AnotherQuantileType';
+    if(kind==='scalar-type')value.data.quantiles.fields[0].type=objectType('AnotherObject');
+    if(kind==='missing-field')value.data.quantiles.fields.shift();
+    if(kind==='duplicate-field')value.data.quantiles.fields.push(structuredClone(value.data.quantiles.fields[0]));
+    if(kind==='description-null')value.data.quantiles.fields[0].description=null;
+    if(kind==='deprecated')value.data.quantiles.fields[0].isDeprecated=true;
+    if(kind==='private-data')value.data.accountMetrics={private:'RAW_SCHEMA_PRIVATE'};
+    if(kind==='nullable-wrapper')value.data.group.fields[0].type={kind:'NON_NULL',name:null,
+      ofType:{kind:'OBJECT',name:schemaGroup+'Quantiles'}};
+    if(kind==='empty-errors')value.errors=[];
+    return json(value);
+  };
+  const schemaGit=args=>{
+    if(args[0]==='show'){projectInputReads++;throw Error('No project input is allowed in schema mode');}
+    return args[0]==='rev-parse'?commit:'';
+  };
+  let result,error;
+  try{result=await deployForecastSharePages({env:schemaEnv,fetchImpl,git:schemaGit,
+    deployImpl:async()=>{deploys++;throw Error('No deploy in schema mode');},report:x=>receipts.push(x)});}
+  catch(caught){error=caught;}
+  assert.equal(deploys,0);assert.equal(projectInputReads,0);
+  assert.equal(cfReads,kind==='main-before'?0:1);assert(cfReads<=1);
+  assert(requests.every(r=>r.url==='https://api.cloudflare.com/client/v4/graphql'
+    ||r.url==='https://api.github.com/repos/jakobjorgensen82-commits/RavRadar/git/ref/heads/main'));
+  assert(!JSON.stringify(receipts).includes('RAW_SCHEMA_PRIVATE'));
+  assert(!JSON.stringify(receipts).includes('SYNTHETIC_CF'));
+  return{result,error,cfReads,ghReads,requests,receipts};
+}
+for(const kind of ['success','nullable-wrapper','empty-errors']){
+  const r=await schemaScenario(kind);assert.equal(r.error,undefined,kind);
+  assert.equal(r.cfReads,1);assert.equal(r.ghReads,2);assert.equal(r.receipts.length,1);
+  assert.equal(r.result.kind,'FORECAST_SHARE_PAGES_SCHEMA_READBACK_V1');
+  assert.equal(r.result.schemaOnly,true);assert.equal(r.result.accountScoped,false);assert.equal(r.result.metricsRead,false);
+  assert.equal(r.result.createIssued,false);assert.equal(r.result.deployIssued,false);
+  assert.equal(r.result.unitAcceptanceProved,false);assert.equal(r.result.freeCapacityProved,false);
+  assert.equal(r.result.schema.quantiles.length,8);assert.equal(r.result.schema.sumFields.length,2);
+  assert.equal(r.result.schema.quantiles[0].description,'Synthetic public schema description for cpuTimeP50');
+  schemaCases++;
+}
+for(const kind of ['401','403','500','json','empty-body','too-large','errors','errors-null','data-null','quantiles-null',
+  'type-name','type-binding','scalar-type','missing-field','duplicate-field','description-null','deprecated',
+  'private-data','main-before','main-after']){
+  const r=await schemaScenario(kind);assert(r.error,kind);assert.equal(r.receipts.length,1,kind);
+  assert.equal(r.error.receipt.outcome,'REFUSED_BEFORE_WRITE');
+  assert.equal(r.error.receipt.createIssued,false);assert.equal(r.error.receipt.deployIssued,false);
+  if(kind==='401'||kind==='403'){
+    assert.equal(r.error.receipt.code,'SHARE_PAGES_PERMISSION');assert.equal(r.error.receipt.httpStatus,Number(kind));
+    assert.equal(r.error.receipt.readKind,'GRAPHQL_SCHEMA');
+  }
+  schemaCases++;
+}
+assert.equal(schemaCases,44);cases+=schemaCases;
+
 async function processScenario(scenario){
   const host=Object.assign(new EventEmitter(),{platform:'linux'}),child=Object.assign(new EventEmitter(),{pid:24444,unref(){}});
   for(const key of ['stdout','stderr'])child[key]=Object.assign(new EventEmitter(),{destroy(){}});
@@ -394,5 +554,5 @@ for(const kind of ['success','timeout','descendant','unknown']){
   if(kind==='success')assert.equal(result.value.terminationConfirmed,true);
   else{assert(result.error);assert.equal(result.error.terminationConfirmed,kind!=='unknown');}cases++;
 }
-console.log(JSON.stringify({kind:'FORECAST_SHARE_PAGES_NORMAL_CONTROLLER_WORKFLOW_PROCESS_TARGET',cases,
+console.log(JSON.stringify({kind:'FORECAST_SHARE_PAGES_NORMAL_CONTROLLER_WORKFLOW_PROCESS_TARGET',cases,schemaCases,
   actualCloudflareCalls:0,providerCalls:0,projectCreated:false,hostedPreviewProved:false,freeCapacityProved:false}));

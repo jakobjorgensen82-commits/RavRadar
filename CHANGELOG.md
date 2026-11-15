@@ -1,4 +1,18 @@
-## 15. november 2026 — privat kandidat til hele SDK-native-prøven
+## 15. november 2026 — kildeidentitet i metadataprøvens afslag
+
+En afgrænset prøvekorrektion fjerner en forældet lighed med fejltekstens familienavn. ERR_ASSERTION, SHA-256 af hele den muterede kanoniske kilde og den aktive udstedte SHA-256 identificerer fortsat den præcise kontrol. Alle fire mutationer og øvrige immutable-/no-write-/schemaafslag bevares. Ingen ny label-liste, wrapper, produktkode, SQL eller modelbinding indføres. Hele det ændrede normale mål og præcis kildekvalifikation er fortsat krav.
+
+## 15. november 2026 — præcist kontrolvalg og Pages-controllerens normale testansvar
+
+En afgrænset kildekandidat vælger fire hele kontrolmål alene for det regulære planner-/CURRENT-prøvepar; andre ændrede kontrolinput beholder standardens otte. De tre eksisterende Pages-delingscontrollerstier får naturligt sharing-ansvar med hele controllerprøven samt de bevarede timeline-/projection-mål. Unknown-/protected-/modeafslag, frisk review, historiske kataloger, normal FULL-kvalifikation og sene negativer bevares. Korte lokale selektionscases er ikke hele CURRENT eller endelig kilde-CI; faktisk Linux-tidsmargin og offentlig accept forbliver åbne. Ingen ændret timeout, model, migrations-SQL eller version.
+
+Samme kandidat retter årsagen til, at et almindeligt appversionsskift omskrev historiske C/I-bundne engangs-/kapacitetspolicyer. Setter og to metadataprøvestier får to hele normale releaseMetadata-mål med regulær filgrænse og frisk review også for setter alene; validatoren beholder de otte sourceControls-mål. Pages-controllerens særskilte schemafunktion foretager kun én fast skrivefri forespørgsel med uændrede kilde-/adgangskrav. Fuld slutkvalifikation, faktisk Cloudflare-læsning og offentlig/Free-accept er fortsat åbne.
+
+## 15. november 2026 — separat inventory af originalarkivets mål
+
+Den private inventory-kandidat tilføjer én eksplicit læsetilstand til det eksisterende manuelle arkivworkflow. Alle fem autentiske originale SQL-filer hentes og materialiseres med reelt wireforbrug; kun faste kategorier, tællere og hashmetadata udgives. Docker, SQL, restore og rotation startes ikke. Naturligt backupRestore-ejerskab kvalificerer den nye faste CLI-/workflowrolle med de fire hele eksisterende mål og frisk kontrolreview. De fire eksisterende hele backupmål er bestået lokalt på samme kode: fixture-selvtest, arkivprøve, workflowprøve og lifecycleprøve. Præcis kildekvalifikation på inventory-leveringens endelige head og faktisk læsning af originalarkivet er fortsat åbne. Faktisk inventory, originalrestore, Auth-kompatibilitet og Free-klarhed er fortsat åbne. Version 4.0.598, model, migrationer og originaler bevares. Se håndbog 89.350 og 89.342.
+
+## 15. november 2026 — hele SDK-native-prøven i den normale kildevej
 
 Den normale CURRENT-plan kan vælge dependency-kontrollen og hele nativefilens 19 cases med faktisk Node24 og egen credential-fri npm-cache. V4 accepterer den præcise Pythonkommando i den krævede rækkefølge; ældre kvitteringsformater og FULL-betydning bevares. De to tidlige miljøsteps kan kun godkendes mod producer-heads hele workflow og den eksisterende lukkede inverse.
 
@@ -10,11 +24,11 @@ Den historiske V1-producentprøve bruger hele sit allerede autentiske program, s
 
 Den aktuelle forbruger af gamle V1-kvitteringer forbliver aktuel. Dens prøve stiller de kendte lazy-moduler, tre faktisk fraværende nyere navnerum og den aktuelle fire-producenthistorik til rådighed. Både normal opdagelse og genlæsning henter desuden den autentiske producer-heads workflow, når de præcise SDK-miljøsteps flytter de efterfølgende trinnumre. Navnene udløser kun læsning; hele workflow-inversen og alle metadata-, artifact-, review-, FULL-, race- og budgetkontroller bestemmer stadig accept. En særskilt normal SDK-kaldercase bruger reelt committed workflow og afviser forkert trinplacering eller sprunget miljøbevaring; dens syntetiske FULL-felter er ikke faktisk SQL-eksekvering.
 
-Den tilføjede SDK-parent-loss-case har bestået sammen med hele filens 19 cases på Linux og faktisk Node24. Den samlede kildekontrol stoppede senere på forældede V1-prøveinput; ny samlet kvalifikation kræves fortsat. Ingen installeret kontrolvej, ny PG-eksekvering eller løst produktionsproblem påstås. Version 4.0.598, model, PG/C/I/T, gamle SQL og produktionsgates er uændrede. Se DEC-0302 og håndbog 89.342/89.232.
+Hele nativefilens 19 cases har bestået på Linux med faktisk Node24. Den efterfølgende præcise kildekontrol bestod alle 17 valgte mål, er merget til main og har bestået normal main-admission. Det tidligere V1-fixtureafslag bevares som historik. Faktisk brug i en almindelig vejrkørsel, tab af hele runneren og holdbar fjernlagring er fortsat særskilte åbne beviser. Der påstås ingen ny PG-eksekvering eller løst produktionsproblem. Version 4.0.598, model, PG/C/I/T, gamle SQL og produktionsgates er uændrede. Se DEC-0302 og håndbog 89.342/89.232.
 
 ## 15. november 2026 — arkivmålets Storage-bootstrap og faste Auth-metadata
 
-En lokal kildekandidat initialiserer Storage-skemaet gennem den normale leverandørkalder alene på det isolerede arkivmål. Før original SQL aflæses lokale Auth-migrationsnumre og faste relationskategorier; ukendte mål og alle afslag efter DDL bevares. De fem originalfiler, CLI-/Auth-pin, vedvarende tjenester, budgetter og gendannelseskæde ændres ikke. Den lokale selvtest er UNKNOWN, ikke PASS. Auths fire manglende mål, kolonnekompatibilitet, faktisk originalrestore, autonom kvittering, rotation og Free-klarhed er fortsat åbne. Se håndbog 89.350.
+En lokal kildekandidat initialiserer Storage-skemaet gennem den normale leverandørkalder alene på det isolerede arkivmål. Før original SQL aflæses lokale Auth-migrationsnumre og faste relationskategorier; ukendte mål og alle afslag efter DDL bevares. De fem originalfiler, CLI-/Auth-pin, vedvarende tjenester, budgetter og gendannelseskæde ændres ikke. Den normale lokale selvtest på denne restorekode er bestået; det er ikke en gendannelse af originalarkivet. Auths fire manglende mål, kolonnekompatibilitet, faktisk originalrestore, autonom kvittering, rotation og Free-klarhed er fortsat åbne. Se håndbog 89.350.
 
 ## 15. november — entydigt evidensvalg og struktureret AI-svar
 

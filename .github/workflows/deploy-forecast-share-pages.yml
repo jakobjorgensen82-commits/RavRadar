@@ -8,17 +8,18 @@ on:
         required: true
         type: string
       confirmation:
-        description: "Skriv DEPLOY-FORECAST-SHARE-PAGES eller UPDATE-FORECAST-SHARE-PAGES efter valgt handling"
+        description: "Skriv den faste DEPLOY-, UPDATE- eller INSPECT-FORECAST-SHARE-PAGES-SCHEMA-bekræftelse efter valgt handling"
         required: true
         type: string
       operation:
-        description: "Create kræver bevist fravær. Update kræver tidligere verificeret eget projekt og deployment."
+        description: "Create kræver bevist fravær. Update kræver tidligere verificeret eget projekt. Inspect-schema læser kun faste schemafelter."
         required: true
         type: choice
         default: create
         options:
           - create
           - update
+          - inspect-schema
       expected_project_id:
         description: "Kun update: projekt-ID fra første vellykkede create-kvittering"
         type: string
@@ -81,6 +82,10 @@ jobs:
               [[ "$EXPECTED_DEPLOYMENT_ID" =~ ^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$ ]]
               [[ "$EXPECTED_DEPLOYMENT_COMMIT" =~ ^[a-f0-9]{40}$ ]]
               ;;
+            inspect-schema)
+              test "$SHARE_CONFIRMATION" = INSPECT-FORECAST-SHARE-PAGES-SCHEMA
+              test -z "$EXPECTED_PROJECT_ID$EXPECTED_DEPLOYMENT_ID$EXPECTED_DEPLOYMENT_COMMIT"
+              ;;
             *) exit 1 ;;
           esac
           [[ "$EXPECTED_MAIN" =~ ^[a-f0-9]{40}$ ]]
@@ -100,6 +105,7 @@ jobs:
         run: test "${{ steps.source-proof.outputs.required }}" = false
 
       - name: Install pinned Pages CLI in this run-owned runtime only
+        if: inputs.operation != 'inspect-schema'
         shell: bash
         run: |
           set -euo pipefail
@@ -107,7 +113,7 @@ jobs:
           test ! -e "$runtime"
           npm install --prefix "$runtime" --no-save --package-lock=false --ignore-scripts wrangler@4.28.1
 
-      - name: Create absent fixed project or update exact owned project once
+      - name: Read fixed schema or create absent fixed project or update exact owned project once
         run: node scripts/deploy-forecast-share-pages.mjs
         env:
           EXPECTED_MAIN: ${{ inputs.expected_main }}
@@ -119,7 +125,7 @@ jobs:
           SOURCE_REQUIRED: ${{ steps.source-proof.outputs.required }}
           GITHUB_TOKEN: ${{ github.token }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ inputs.operation != 'inspect-schema' && secrets.CLOUDFLARE_ACCOUNT_ID || '' }}
 
       - name: Preserve safe Pages release outcome
         if: always()

@@ -631,8 +631,6 @@ for (const failureCase of migrationFailureCases) {
     assert.equal(error.code, 'ERR_ASSERTION');
     assert.equal(error.actual, sourceSha(corruptedCanonical));
     assert.equal(error.expected, ACTIVE.requireOutput().canonicalSha256);
-    assert.equal(error.message.split(/\r?\n/, 1)[0],
-      'Public588 successor inspection requires the entire issued canonical source');
     return true;
   }, failureCase.label + ' fails at the stronger whole-canonical guard');
   const root = await createModelBindingSyncFixture({ migrationTransform: failureCase.transform });

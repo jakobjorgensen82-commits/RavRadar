@@ -1,3 +1,13 @@
+## 15. november 2026 — 4.0.599 er samlet kildeforberedelse før udstedelse
+
+Den private 4.0.599-kandidat sammenfører den gennemgåede assistent-/kildeforberedelse efter598 med den faktiske hovedgren efter SourceOps- og inventory-leveringen. Begge dokumentdeltaer og den kanoniske håndbog bevares; den statiske INSTALL-kopi indeholder samme bog. Versionsværktøjets rettelse bevarer de historiske engangspolicyer ved et rent appversionsløft. De to fjernede linjer i én forældet Public588-fejltekstassertion genindføres ikke; alle præcise hele kildehashassertioner består.
+
+Normale package-, source-, native- og FULL-kald har eksplicit efter598-ansvar. De fem eksisterende testforældres nye current-tilstand kræver faktisk udstedt tuple, output, SQL, release og den korrekte ACTIVE-profil; deres 17 historiske PRE-testkroppe og gamle facit bevares. Historisk FULL598 ejer sin navngivne udstedte profil og autentiske CODE822-data, mens den aktuelle599-kildevej prøves særskilt. Retentionkalderens semantiske inverse skal genskabe den eksisterende hele gamle kildehash og den fulde fremadgående rundtur. Der indføres ingen ny helfilhashgruppe eller kopieret legacykontrolpakke.
+
+Syntaks og afgrænsede rene kalder-/inverseprøver er bestået på de gennemgåede kildeinput. Den første nye C/I/T-afledning og migrations-SQL er endnu ikke udstedt; efter598-binding, output og release er fortsat null, og ACTIVE ejer stadig den gamle udstedte598-familie. De 74 gamle migrationsfiler, schema, to genererede modelmoduler, fortsættelsens 12 filer og autentiske originaler bevares. Ingen PostgreSQL, factory, ekstern kilde-CI eller produktion er kørt som del af denne integration.
+
+Root skal gennemgå det præcise samlede input før normal udstedelse. Derefter kræves de faktiske current-forældre, normal native-/FULL-/releasekvalifikation og den næste rene appversionsprøve599→600 med samme udstedte familie. Den kendte stramme package-/releasekobling er ikke kaldt bestået. Endelig RDKS-, håndbogs- og changelogdokumentation skal følge de faktiske resultater før levering; denne post er et permanent forberedelsescheckpoint, ingen stabil release, installation eller produktionsaccept.
+
 ## 13. november — særskilt oprydning af udløbet ejerprøve
 
 En read-only gatewaykontrol kunne standse mailprøven efter positiv installation og fuld kildegenlæsning, før den kendt-ejede oprydning blev nået. Den lokale rettelse forbinder dette punkt med samme oprydning efter det oprindelige udløb. Den oprindelige gatewayfejl bevares; ukendt installation eller DELETE giver fortsat stop uden automatisk gentagelse.
