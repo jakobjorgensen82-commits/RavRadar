@@ -2,6 +2,8 @@
 // CURRENT585 native SQL and source/builder remain mandatory earlier steps.
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import {readFileSync} from 'node:fs';
+import {assertReleaseContractMetadata} from './lib/release-contract-metadata.mjs';
 import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
@@ -347,10 +349,22 @@ export async function verifyAssistantAfter597SourceTarget(){
     release,canonicalSha256:output.canonicalSha256,sourceOnly:true,sqlExecuted:false,
     originalsAuthenticated:false,nationalExecutionClaimed:false,productionProof:false});
 }
+function assertAssistantAfter598ApplicationRelease(version){
+  const binding=requireAssistantAfter598Binding(),issuedRelease=requireAssistantAfter598Release();
+  const actual=JSON.parse(readFileSync(path.join(ROOT,'version.json'),'utf8'));
+  assert.equal(typeof actual.version,'string');assert.match(actual.version,/^4\.0\.(0|[1-9][0-9]*)$/);
+  assert(BigInt(actual.version.split('.').at(-1))>=BigInt(issuedRelease.split('.').at(-1)),
+    'Actual application release must not precede its issued model family');
+  assert.equal(version,actual.version,'Only the actual application release, not a caller-selected version');
+  assertReleaseContractMetadata(actual.releaseContract,{releaseVersion:actual.version});
+  assert.equal(actual.releaseContract.modelBindings.integrated.modelBundleSha256,binding.I);
+  assert.equal(actual.releaseContract.modelBindings.candidateGRollback.modelBundleSha256,binding.C);
+  return actual.version;
+}
 export function inverseAssistantAfter598Package(pkg){
   requireAssistantAfter598Output(); // Before inspecting a package or another family.
   assert.equal(arguments.length,1);
-  assert.equal(pkg.version,requireAssistantAfter598Release());
+  assertAssistantAfter598ApplicationRelease(pkg.version);
   assert.equal(pkg.scripts?.['test:assistant-later-h0-source'],ASSISTANT_AFTER598_SOURCE_COMMAND);
   // Exact package DATA inverse only. Never retag a native or national receipt.
   const previous={...pkg,version:requireAssistantAfter597Release(),
@@ -576,7 +590,7 @@ async function currentContext() {
   const native=proof.nativePostgres;
   if(ACTIVE.sourcePhase===ASSISTANT_AFTER598_PHASE)await verifyAssistantAfter598NativeContext(native,
     {run:Number(env.GITHUB_RUN_ID),attempt:Number(env.GITHUB_RUN_ATTEMPT),head,
-      pullRequest:Number(env.PULL_REQUEST_NUMBER),branch:event.pull_request.head.ref},pkg.version);
+      pullRequest:Number(env.PULL_REQUEST_NUMBER),branch:event.pull_request.head.ref},requireAssistantAfter598Release());
   else if(ACTIVE.sourcePhase===ASSISTANT_AFTER597_PHASE)await verifyAssistantAfter597NativeContext(native,
     {run:Number(env.GITHUB_RUN_ID),attempt:Number(env.GITHUB_RUN_ATTEMPT),head,
       pullRequest:Number(env.PULL_REQUEST_NUMBER),branch:event.pull_request.head.ref},pkg.version);
@@ -606,7 +620,7 @@ async function currentContext() {
   assert.equal(native.current?.head,head);assert.equal(native.current?.run,Number(env.GITHUB_RUN_ID));
   assert.equal(native.current?.attempt,Number(env.GITHUB_RUN_ATTEMPT));assert.equal(native.origin,null);
   }
-  verifyCurrentNativeCommands(native.commands,pkg.version);
+  verifyCurrentNativeCommands(native.commands,ACTIVE.sourcePhase===ASSISTANT_AFTER598_PHASE?requireAssistantAfter598Release():pkg.version);
   assert(!Object.hasOwn(proof,'historical584National'));
   return {head,run:Number(env.GITHUB_RUN_ID),attempt:Number(env.GITHUB_RUN_ATTEMPT),pullRequest:Number(env.PULL_REQUEST_NUMBER),
     branch:event.pull_request.head.ref,releaseVersion:pkg.version,proof};
@@ -794,7 +808,7 @@ async function main(){
       current585NationalExecutionClaimed:false,current586NationalExecutionClaimed:false,
       currentAssistantLaterH0NationalExecutionClaimed:false,providerOrProductionProof:false};
   }else if(ACTIVE.sourcePhase===ASSISTANT_AFTER598_PHASE){
-    assert.equal(ctx.releaseVersion,requireAssistantAfter598Release());
+    assertAssistantAfter598ApplicationRelease(ctx.releaseVersion);
     current.historical584National={...result,historicalInput:historical,
       current:{head:ctx.head,run:ctx.run,attempt:ctx.attempt,pullRequest:ctx.pullRequest},
       ...await assistantAfter598NativeClaims(ctx.proof.nativePostgres,ctx.proof.nativePostgres.current),

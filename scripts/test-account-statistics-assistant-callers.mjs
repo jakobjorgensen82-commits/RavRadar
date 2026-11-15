@@ -17,6 +17,7 @@ const installed593Original591Current=activeNationalSource.sourcePhase==='assista
 const scalar597Current=activeNationalSource.sourcePhase==='scalar597-later-h0-original594-successor';
 const after597Current=activeNationalSource.sourcePhase==='assistant-mixed-after597-successor';
 const after598Current=activeNationalSource.sourcePhase==='assistant-after598-successor';
+const activeNationalPackageRelease=after598Current?JSON.parse(await fs.readFile(new URL('../version.json',import.meta.url),'utf8')).version:activeNationalReaderRelease;
 
 test('593 V2 national reader derives every native prefix from the actual whole-phase execution or reuse',async()=>{
   // Genuine frozen593 modules retain their own ACTIVE guard. Never retag593
@@ -33,7 +34,7 @@ test('593 V2 national reader derives every native prefix from the actual whole-p
   const historicalPackage=JSON.parse(await fs.readFile(path.join(frozenRoot,'package.json'),'utf8'));
   assert.equal(historicalPackage.version,'4.0.593');historicalReader.verifyPackage(historicalPackage);
   if(installed593Original591Current||after597Current||after598Current)assert.throws(()=>currentReader.verifyPackage(historicalPackage),error=>
-    error.code==='ERR_ASSERTION'&&error.actual==='4.0.593'&&error.expected===activeNationalReaderRelease);
+    error.code==='ERR_ASSERTION'&&error.actual==='4.0.593'&&error.expected===activeNationalPackageRelease);
   const current={run:ORIGIN.run+593,attempt:1,head:'b'.repeat(40),pullRequest:756,branch:'synthetic593-national-v2'};
   const receipt={schemaVersion:2,kind:ASSISTANT_PUBLIC591_V2_KIND,profile:ASSISTANT_PUBLIC591_V2_PROFILE,
     phase:'ASSISTANT_PUBLIC591_SUCCESSOR',commands:[...ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS],
@@ -775,12 +776,12 @@ test('current586 source registration preserves exact585 predecessor and distinct
   if(later){
     if(ASSISTANT_LATER_H0_BINDING===null)assert.throws(()=>verifyPackage(actualPkg),/ASSISTANT_LATER_H0_UNISSUED/);
     else assert.throws(()=>verifyPackage(actualPkg),error=>error.code==='ERR_ASSERTION'
-      &&error.actual===actualPkg.version&&error.expected===activeNationalReaderRelease,
+      &&error.actual===actualPkg.version&&error.expected===activeNationalPackageRelease,
       'ACTIVE-first590 rejects the preserved historical587 package');
   }
   const pkg=later?{...actualPkg,version:'4.0.586',scripts:inverseAssistantLaterH0SourceScripts(actualPkg.scripts)}:actualPkg;
   assert.equal(pkg.version,'4.0.586');assert.throws(()=>verifyPackage(pkg),error=>error.code==='ERR_ASSERTION'
-    &&error.actual==='4.0.586'&&error.expected===activeNationalReaderRelease,
+    &&error.actual==='4.0.586'&&error.expected===activeNationalPackageRelease,
     'ACTIVE-first590 rejects historical586 while its whole scripts inverse remains tested');
   assert.doesNotThrow(()=>inverseReviewedAccountStatisticsAssistantSourceScripts(pkg.scripts));
   const critical=pkg.scripts['test:ravscore-source-critical'],group='test:native-original-continuity-source';
@@ -817,7 +818,7 @@ test('assistant later-H0 registration keeps exact older scripts and refuses phas
   if(ASSISTANT_LATER_H0_BINDING===null)assert.throws(()=>verifyPackage(pkg),/ASSISTANT_LATER_H0_UNISSUED/);
   else{
     assert.equal(pkg.version,requireAssistantLaterH0Release());assert.throws(()=>verifyPackage(pkg),error=>error.code==='ERR_ASSERTION'
-      &&error.actual===pkg.version&&error.expected===activeNationalReaderRelease);
+      &&error.actual===pkg.version&&error.expected===activeNationalPackageRelease);
     assert.throws(()=>verifyCurrentNativeCommands([...ASSISTANT_LATER_H0_NATIVE_COMMANDS],pkg.version),error=>error.code==='ERR_ASSERTION'
       &&error.actual===pkg.version&&error.expected===activeNationalReaderRelease);
     assert.throws(()=>verifyCurrentNativeCommands(ASSISTANT_LATER_H0_NATIVE_COMMANDS.map(c=>c.replace(' --assistant-later-h0','')),pkg.version));
@@ -1406,7 +1407,7 @@ test('active590 national reader validates actual591 before exact whole588 packag
   const activePackageVerifier=after598Current?verifyAssistantAfter598Package:after597Current?verifyAssistantAfter597Package:scalar597Current?verifyScalar597LaterH0Package:
     installed593Original591Current?verifyInstalled593Original591Package
     :current592?verifyAssistantPublic591SuccessorPackage:verifyAssistantPublic590SuccessorPackage;
-  assert.equal(actual.version,compactCurrent||scalar597Current||after597Current||after598Current?activeNationalReaderRelease:requireAssistantPublic590SuccessorRelease());
+  assert.equal(actual.version,after598Current?activeNationalPackageRelease:compactCurrent||scalar597Current||after597Current?activeNationalReaderRelease:requireAssistantPublic590SuccessorRelease());
   if(after598Current){
     assert.equal(actual.scripts['test:assistant-later-h0-source'],ASSISTANT_AFTER598_SOURCE_COMMAND);
     assert.throws(()=>verifyPackage(inverseAssistantAfter598Package(actual)));
@@ -1446,7 +1447,7 @@ test('active590 national reader validates actual591 before exact whole588 packag
     ...(scalar597Current||after597Current||after598Current?['4.0.594','4.0.595','4.0.596']:[]),...(after597Current||after598Current?['4.0.597']:[]),...(after598Current?['4.0.598']:[])]){
     const changed={...actual,version};
     assert.throws(()=>verifyPackage(changed),error=>error.code==='ERR_ASSERTION'
-      &&error.actual===version&&error.expected===activeNationalReaderRelease);
+      &&error.actual===version&&error.expected===activeNationalPackageRelease);
   }
   assert.deepEqual(actual,original);
 });

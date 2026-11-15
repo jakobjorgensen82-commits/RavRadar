@@ -1,3 +1,9 @@
+## 15. november 2026 — lokal599-udstedelse og adskilt app-/modelfamilie
+
+En almindelig appopdatering skal beholde den installerede modelfamilie, når modelinput er uændrede. Den aktuelle package-læser binder appversionen præcist til kildens version.json og den fulde normale releasekontrakt med de udstedte C/I-bindinger. Native-kvitteringer og direkte familiekrav beholder deres faste modelrelease. Kun de normale aktuelle kaldere fører den verificerede appkontekst til den faste familie; gamle profiler og gamle kvitteringer ommærkes ikke. FULL-genbrug læser den historiske producents egne committed appmetadata.
+
+Den samme normale versionsprøve skal verificere uændrede C/I/T, alle gamle SQL-filer og korrekte afslag ved forkert appversion, ændrede modelmetadata og et forkert native-familieargument. Den nye current-positivfixture skal indeholde den normale CLI-afslutning; migrationslæserens strenge formatkrav består.
+
 ## Præcis lokal kildematerialisering før model- og nativekontrol
 
 Før filer materialiseres i en ny, egen isoleret kildebank, sættes bankens lokale Git-konfiguration til `core.autocrlf=false` og `core.eol=lf`. Før en builder eller nativeprøve skal de faktiske filbytes og SHA-256 sammenholdes med de eksakte indexblobs for alle uændrede PostgreSQL-, C/I/T- og profilinput, også JSON. En grøn normaliseret Git-diff eller samme tree er ikke fysisk bytebevis. Ved checkout-konvertering genskabes alene den egne banks uændrede filer fra deres autentiske blobs; ændrede kilder bevares og gennemgås særskilt. Gamle banker og global Git-konfiguration ændres ikke, og hashberegningen må ikke normalisere afvigelser væk.

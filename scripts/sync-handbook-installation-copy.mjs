@@ -62,7 +62,8 @@ export function projectHandbookBindingDocuments({handbook,markdown,installationS
   const continuationSection=section('ravscore-checkpoint-metadata-cas-4-0-321');
   continuationSection.body=currentBlock(continuationSection.body,continuation);
   const md='## Afledt kildeidentitet — RavScore '+facts.releaseVersion+'\n\n'
-    +bindingText('Integreret model',i,false)+' kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere.\n\n'
+    +facts.releaseVersion+' er låst med `modelContractSha256='+i.modelContractSha256+'` og `modelBundleSha256='+i.modelBundleSha256+'` over '+i.fileCount
+    +' kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere.\n\n'
     +bindingText('Inaktiv Candidate G',c,false)+' transitive filer.\n\n'
     +'Fortsættelse: \`continuationStateContractSha256='+t.sha256+'\` (\`'+t.sha256.slice(0,8)+'…\`) over '+t.fileCount
     +' normaliserede kildefiler med \`'+t.normalizationId+'\`.\n\n'+authority+' '+note;

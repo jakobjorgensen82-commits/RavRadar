@@ -11,6 +11,7 @@ import {ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE,UNISSUED_ASSISTANT_AFTER597_SUCCESS
 import {qualifySourceImpactFullBaseline,SOURCE_IMPACT_FULL_BASELINE_KIND}
   from './source-impact-full-baseline.mjs';
 import {sourceTreeContentSha256,sourceTreeProofArtifactName} from './lib/source-tree-content.mjs';
+import {buildReleaseContractMetadata} from './lib/release-contract-metadata.mjs';
 import {PULL_REQUEST_SOURCE_STEPS,PULL_REQUEST_SOURCE_JOB,PULL_REQUEST_SOURCE_WORKFLOW,
   SOURCE_GATE_PRODUCERS,SOURCE_GATE_CONTRACT} from './lib/weather-source-gate.mjs';
 import {ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS,ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND,
@@ -496,6 +497,15 @@ async function synthetic599FullFixture(){
   const native=await import('./native-postgres-evidence.mjs'),national=await import('./national584-source-evidence.mjs');
   const f=fixture({installed594V2:true}),prior=f.full.nativePostgres;
   use597Package(f,{candidateVersion:'4.0.599',producerVersion:'4.0.599'});
+  f.applicationMetadata={version:'4.0.599',releaseContract:buildReleaseContractMetadata({releaseVersion:'4.0.599'})};
+  f.applicationMetadataReads=[];
+  const ordinaryReadGit=f.dependencies.readGit;
+  f.dependencies.readGit=(args,options)=>{
+    if(args[0]==='cat-file'&&args[1]==='blob'&&args[2]===head+':version.json'){
+      f.applicationMetadataReads.push(args[2]);return Buffer.from(JSON.stringify(f.applicationMetadata));
+    }
+    return ordinaryReadGit(args,options);
+  };
   const binding=CURRENT599.requireBinding(),databaseBefore=CURRENT599.databaseBefore;
   const observed={kind:'ASSISTANT_AFTER598_SUCCESSOR',sourceMigrationInventory:64,
     databaseBeforeVersion:databaseBefore.version,originalStateRelease:598,migrationVersion:binding.version,
@@ -523,7 +533,24 @@ async function synthetic599FullFixture(){
 if(ACTIVE.sourcePhase==='assistant-after598-successor'){
   test('599 FULL validates its separately issued current native/source shapes and rejects old598 proof',async()=>{
     const f=await synthetic599FullFixture(),result=await f.qualify();assert.equal(result.kind,SOURCE_IMPACT_FULL_BASELINE_KIND);
+    assert.deepEqual(f.applicationMetadataReads,[head+':version.json']);
+    // Kun kunstig kontroltransport: app600/601 genudsteder eller ommærker ikke den faste native599-familie.
+    const next=await synthetic599FullFixture();use597Package(next,{candidateVersion:'4.0.601',producerVersion:'4.0.600'});
+    next.applicationMetadata={version:'4.0.600',releaseContract:buildReleaseContractMetadata({releaseVersion:'4.0.600'})};
+    assert.equal((await next.qualify()).kind,SOURCE_IMPACT_FULL_BASELINE_KIND);
+    assert.deepEqual(next.applicationMetadataReads,[head+':version.json']);
+    assert.equal(next.full.nativePostgres.releaseVersion,CURRENT599.requireRelease());
+    assert.deepEqual(next.full.nativePostgres.binding,CURRENT599.requireBinding());
+    const metadata=next.applicationMetadata;
+    for(const mutate of [v=>v.version='4.0.599',v=>v.releaseContract.releaseVersion='4.0.599',
+      v=>v.releaseContract.modelBindings.integrated.modelBundleSha256='f'.repeat(64),
+      v=>v.releaseContract.modelBindings.candidateGRollback.modelBundleSha256='f'.repeat(64)]){
+      next.applicationMetadata=copy(metadata);mutate(next.applicationMetadata);
+      assert.equal((await next.qualify()).status,'REFUSED');
+    }
+    next.applicationMetadata=metadata;
     const mutations=[
+      f=>f.full.nativePostgres.releaseVersion='4.0.600',
       f=>f.full.nativePostgres.eligibleForReuse=true,
       f=>f.full.nativePostgres.report.assistantAfter598Successor.predecessorSetupMigrationCount=8,
       f=>f.full.nativePostgres.report.assistantAfter598Successor.parentCodeHead='803f2c7c61237cef5c5f6b39ce0eaac5e090fb84',

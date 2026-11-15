@@ -4,6 +4,7 @@ import {execFileSync} from 'node:child_process';
 import {decideSourceGate,SOURCE_GATE_CONTRACT,PULL_REQUEST_SOURCE_JOB,
   PULL_REQUEST_SOURCE_WORKFLOW,PULL_REQUEST_SOURCE_STEPS} from './lib/weather-source-gate.mjs';
 import {sourceTreeContentSha256,sourceTreeProofArtifactName} from './lib/source-tree-content.mjs';
+import {assertReleaseContractMetadata} from './lib/release-contract-metadata.mjs';
 import {verifyAssistantPublic591SuccessorPhaseReceipt,verifyAssistantPublic591V2PhaseReceipt,
   verifyAssistantPublic591Metadata,ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND,
   ASSISTANT_PUBLIC591_V2_KIND,INSTALLED593_ORIGINAL591_PHASE_KIND,
@@ -78,7 +79,6 @@ function artifactMetadata(metadata,reference,kind,phase){
 async function nativeProof(proof,reference,current,releaseVersion){
   const after598=proof.kind===ASSISTANT_AFTER598_PHASE_KIND;
   if(releaseVersion==='4.0.599')assert(after598);
-  if(after598)assert.equal(releaseVersion,'4.0.599');
   const after597=proof.kind===ASSISTANT_AFTER597_PHASE_KIND;
   if(releaseVersion==='4.0.598')assert(after597);
   if(after597)assert.equal(releaseVersion,'4.0.598');
@@ -193,7 +193,7 @@ export async function qualifySourceImpactFullBaseline(input,dependencies){
     const gitTree=text(['rev-parse',reference.mergeCommit+'^{tree}']);assert.match(gitTree,/^[a-f0-9]{40}$/);
     assert.equal(text(['rev-parse',reference.producerHead+'^{tree}']),gitTree);
     assert.equal(sourceTreeContentSha256(reference.mergeCommit,{git}),reference.sourceTreeSha256);
-    // This cheap path inherits a current native phase only from the same release.
+    // De gamle597/598-profiler kræver samme apprelease; after598 binder app og fast nativefamilie særskilt.
     const version=commit=>{
       const raw=git(['cat-file','blob',commit+':package.json']);assert(raw.length<=65536);
       const value=JSON.parse(raw).version;assert.match(value,/^4\.0\.\d+$/);return value;
@@ -260,6 +260,17 @@ export async function qualifySourceImpactFullBaseline(input,dependencies){
     const current={run:reference.runId,attempt:1,head:reference.producerHead,
       pullRequest:reference.pullRequest,branch:run.head_branch};
     const native=await nativeProof(phaseProof,reference,current,baselineVersion);assert.deepEqual(full.nativePostgres,native);
+    if(phaseProof.kind===ASSISTANT_AFTER598_PHASE_KIND){
+      // Appversionen kommer fra producentens autentiske Git-træ; native beholder sin faste modelrelease.
+      const raw=git(['cat-file','blob',reference.producerHead+':version.json']);
+      assert(raw.length>0&&raw.length<=65536);
+      const metadata=JSON.parse(raw);assert(metadata&&Object.getPrototypeOf(metadata)===Object.prototype);
+      assert.equal(metadata.version,baselineVersion);
+      assert.equal(metadata.releaseContract?.releaseVersion,baselineVersion);
+      assertReleaseContractMetadata(metadata.releaseContract,{releaseVersion:baselineVersion});
+      assert.equal(metadata.releaseContract.modelBindings.integrated.modelBundleSha256,native.binding.I);
+      assert.equal(metadata.releaseContract.modelBindings.candidateGRollback.modelBundleSha256,native.binding.C);
+    }
     await historicalNational(full,current,native);
     assert.deepEqual(await json(runRoute),run);
     for(const kind of ['native','final'])assert.deepEqual(await json(base+'/artifacts/'+metadata[kind].id),metadata[kind]);

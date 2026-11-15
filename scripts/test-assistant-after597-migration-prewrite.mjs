@@ -106,7 +106,7 @@ test('normal kontraktlæser kan behandle ægte597-aliasdata uden at give dem ins
     const plan=await ready.assertAssistantAfter598MigrationPlan({migrationListText:migrationList(),dryRunText:upToDate,migrationsDirectory:path.join(ROOT,'supabase/migrations')});
     assert.deepEqual(plan.pendingVersions,[]);assert.equal(ready.assertAssistantAfter598MigrationsApplied(migrationList()).appliedVersions.length,64);
     const pending=await ready.assertAssistantAfter598MigrationPlan({migrationListText:migrationList(currentRows,true),
-      dryRunText:'DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n • '+currentRows.at(-1).filename+'\n',migrationsDirectory:path.join(ROOT,'supabase/migrations')});
+      dryRunText:'DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n • '+currentRows.at(-1).filename+'\nFinished supabase db push.\n',migrationsDirectory:path.join(ROOT,'supabase/migrations')});
     assert.deepEqual(pending.pendingVersions,[currentRows.at(-1).version]);
     const output=currentSource.requireAssistantAfter598Output();
     assert.equal((await ready.expectedCheckpointCasContract({sourcePhase:'assistant-after598-successor'})).sha256,output.checkpointContractSha256);

@@ -225,7 +225,19 @@ test('normal synkronisering og genkontrol bevarer mixedV2 Edge og afviser defekt
       assert.deepEqual(plan.pendingVersions,[]);
       // Actual normal caller, not a relaxed stand-in: this must also accept the
       // next application release with the unchanged issued model/SQL family.
-      (await load('scripts/national584-source-evidence.mjs')).verifyPackage(pkg);
+      const national=await load('scripts/national584-source-evidence.mjs');
+      national.verifyPackage(pkg);
+      for(const wrongVersion of [version,'4.0.'+(Number(nextApplicationVersion.split('.').at(-1))+1),''])
+        assert.throws(()=>national.verifyPackage({...pkg,version:wrongVersion}));
+      const {ASSISTANT_AFTER598_COMMANDS}=await load('scripts/native-postgres-evidence.mjs');
+      national.verifyCurrentNativeCommands(ASSISTANT_AFTER598_COMMANDS,stagedSource.requireAssistantAfter598Release());
+      assert.throws(()=>national.verifyAssistantAfter598NativeCommands(ASSISTANT_AFTER598_COMMANDS,nextApplicationVersion),'Family-native release remains the exact issued release');
+      const versionPath=path.join(stage,'version.json'),versionBytes=await fs.readFile(versionPath);
+      const mismatched=JSON.parse(versionBytes);mismatched.releaseContract.modelBindings.integrated.modelBundleSha256='0'.repeat(64);
+      await fs.writeFile(versionPath,JSON.stringify(mismatched));
+      assert.throws(()=>national.verifyPackage(pkg),'Actual release metadata must bind the issued model');
+      await fs.writeFile(versionPath,versionBytes);
+      national.verifyPackage(pkg);
     }finally{assert.equal(path.dirname(stage),path.resolve(os.tmpdir()));assert(path.basename(stage).startsWith('rr-after598-next-app-'));await fs.rm(stage,{recursive:true,force:false});}
   });
 

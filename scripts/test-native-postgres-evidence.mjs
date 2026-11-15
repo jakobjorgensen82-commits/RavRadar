@@ -2522,15 +2522,15 @@ if(AFTER598_ACTIVE){
       }
     }
     assert.deepEqual(native.ASSISTANT_AFTER598_COMMANDS,['node scripts/test-protected-ravscore-continuation-checkpoint.mjs --assistant-after598-successor']);
-    normal.verifyAssistantAfter598NativeCommands(native.ASSISTANT_AFTER598_COMMANDS,pkg.version);
-    assert.throws(()=>normal.verifyAssistantAfter598NativeCommands(native.ASSISTANT_AFTER597_COMMANDS,pkg.version));
+    normal.verifyAssistantAfter598NativeCommands(native.ASSISTANT_AFTER598_COMMANDS,source.requireAssistantAfter598Release());
+    assert.throws(()=>normal.verifyAssistantAfter598NativeCommands(native.ASSISTANT_AFTER597_COMMANDS,source.requireAssistantAfter598Release()));
     const {RELEASE_GATE_TEST_FILES,releaseGateTestArguments}=await import('./lib/release-gate-test-plan.mjs');
     for(const command of normal.ASSISTANT_AFTER598_CURRENT_SOURCE_COMMANDS){const file=command.split(' ')[1];assert.equal(RELEASE_GATE_TEST_FILES.filter(f=>f===file).length,1);assert.deepEqual(releaseGateTestArguments(file),[file,'--after598-current']);}
     assert.deepEqual(releaseGateTestArguments('scripts/test-protected-ravscore-continuation-checkpoint.mjs'),['scripts/test-protected-ravscore-continuation-checkpoint.mjs']);
     const checked=await normal.verifyAssistantAfter598SourceTarget();assert.equal(checked.release,source.requireAssistantAfter598Release());assert.equal(checked.sqlExecuted,false);
     const {spawnSync}=await import('node:child_process');
     const result=spawnSync(process.execPath,['scripts/national584-source-evidence.mjs','assistant-after598-source'],{encoding:'utf8',timeout:30000,maxBuffer:32768,env:{PATH:process.env.PATH,SystemRoot:process.env.SystemRoot}});
-    assert.equal(result.error,undefined);assert.equal(result.status,0);assert.equal(JSON.parse(result.stdout).release,pkg.version);
+    assert.equal(result.error,undefined);assert.equal(result.status,0);assert.equal(JSON.parse(result.stdout).release,source.requireAssistantAfter598Release());
   });
   test('after598 current synthetic report contract rejects old receipt, false truths and old native command',async()=>{
     const native=await import('./native-postgres-evidence.mjs'),source=await import('./lib/assistant-later-h0-successor-source.mjs');

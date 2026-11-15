@@ -1454,10 +1454,10 @@ try{
     assert.deepEqual([checked.sourceOnly,checked.sqlExecuted,checked.originalsAuthenticated,checked.productionProof],[true,false,false,false]);
     assert.notDeepEqual(actualNative.ASSISTANT_AFTER598_COMMANDS,nativeReceipt.commands);
     assert.notDeepEqual(currentBinding,nativeReceipt.binding);
-    actualNational.verifyAssistantAfter598NativeCommands(actualNative.ASSISTANT_AFTER598_COMMANDS,currentPackage.version);
-    assert.throws(()=>actualNational.verifyAssistantAfter598NativeCommands(nativeReceipt.commands,currentPackage.version));
+    actualNational.verifyAssistantAfter598NativeCommands(actualNative.ASSISTANT_AFTER598_COMMANDS,actualSuccessor.requireAssistantAfter598Release());
+    assert.throws(()=>actualNational.verifyAssistantAfter598NativeCommands(nativeReceipt.commands,actualSuccessor.requireAssistantAfter598Release()));
     await assert.rejects(actualNative.verifyAssistantAfter598PhaseReceipt(nativeReceipt,nativeCurrent));
-    await assert.rejects(actualNational.verifyAssistantAfter598NativeContext(nativeReceipt,nativeCurrent,currentPackage.version));
+    await assert.rejects(actualNational.verifyAssistantAfter598NativeContext(nativeReceipt,nativeCurrent,actualSuccessor.requireAssistantAfter598Release()));
     const omitted=structuredClone(currentPackage);omitted.scripts['test:assistant-later-h0-source']=
       omitted.scripts['test:assistant-later-h0-source'].replace(actualNational.ASSISTANT_AFTER598_CURRENT_SOURCE_COMMANDS[0]+' && ','');
     assert.throws(()=>actualNational.verifyAssistantAfter598Package(omitted));

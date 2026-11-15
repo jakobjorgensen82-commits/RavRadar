@@ -1,3 +1,7 @@
+## 15. november 2026 — lokal599-udstedelse og adskilt app-/modelfamilie
+
+Den lokalt reproducerede kobling mellem appversion og udstedt modelfamilie er rettet i de aktuelle package-/kilde-/native-kaldere og den historiske FULL-læser. Den almindelige næste-app-prøve har faktisk bevaret C/I/T og alle SQL-filer. Fuld ny kilde-/PostgreSQL-kvalifikation og sikker installation er fortsat ÅBENT; forberedelse er ikke produktionsbevis.
+
 ## Metadataprøvens kildeidentitet afventer præcis kvalifikation
 
 Et forældet familienavn i fejltekstassertionen standsede den normale metadataprøve, selv om den aktuelle hele kanoniske kildekontrol afviste de muterede bytes med korrekt kode og begge præcise SHA-værdier. Den minimale kandidat fjerner alene denne tekstlighed. Alle mutations-, hash-, immutable-, no-write- og schemaassertions bevares. Hele det ændrede normale mål og endelig kildekvalifikation kræves fortsat; produktkode, SQL og modelbindinger ændres ikke.

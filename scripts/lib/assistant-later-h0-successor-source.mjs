@@ -957,13 +957,23 @@ export const UNISSUED_ASSISTANT_AFTER597_SUCCESSOR=Object.freeze({
   assertTarget:assertAssistantAfter597Target,assertCaller:assertAssistantPublic591SuccessorCaller,
 });
 
-// Inactive preparation only. No next tuple, release, output or SQL is issued.
-// The genuine issued598 canonical is the only predecessor; ACTIVE stays598.
+// Locally issued599 metadata successor; source qualification and installation remain required.
+// The genuine issued598 canonical remains the immutable predecessor.
 export const ASSISTANT_AFTER598_BEFORE=Object.freeze({...ASSISTANT_AFTER597_BINDING,
   canonicalSha256:ASSISTANT_AFTER597_OUTPUT.canonicalSha256});
-export const ASSISTANT_AFTER598_BINDING=null;
-export const ASSISTANT_AFTER598_OUTPUT=null;
-export const ASSISTANT_AFTER598_RELEASE=null;
+export const ASSISTANT_AFTER598_BINDING=Object.freeze({
+  "version": "20261115174259",
+  "C": "faa049cb86e733e451211f50c155ff90fd3462230310298cf5696757ef5c9f5d",
+  "I": "d8319503e040139ab739d589fa80c97cb683dfad7a2fc6f79eeeec6a9afe44e9",
+  "T": "23577d15b555acb50ee73f0fb4117282701f4d97e933932f30ac54df2c679645"
+});
+export const ASSISTANT_AFTER598_OUTPUT=Object.freeze({
+  "migrationSha256": "3b8270ee8d0e9302cf642a72b888c34255859b16ebc44084a6556e5f7bf0f699",
+  "canonicalSha256": "007afada3fb652aab03a7f057b1b62290e2040cff78fce7b53ab8ba9a45cbe4f",
+  "checkpointContractSha256": "ab775efbf30712a37e9c7a4b1d02b665e766d05ef15124c54efc57dcdeb0eac1",
+  "tripBindingPolicySha256": "95681130a1c5ec9219e5535a9b8f0a9d6007f3a7273ebf1359cedc3f582c6adb"
+});
+export const ASSISTANT_AFTER598_RELEASE="4.0.599";
 export const ASSISTANT_AFTER598_ALIASES=Object.freeze([
   Object.freeze({name:'ravradar_ravscore_checkpoint_ask598_state_valid',signature:'(jsonb,text)'}),
   Object.freeze({name:'ravradar_ravscore_checkpoint_ask598_payload_valid',signature:'(jsonb,timestamptz)'}),
@@ -1074,4 +1084,4 @@ export const INACTIVE_ASSISTANT_AFTER598_SUCCESSOR=Object.freeze({
   assertTarget:assertAssistantAfter598Target,assertCaller:assertAssistantPublic591SuccessorCaller,
 });
 
-export const ACTIVE_ASSISTANT_SUCCESSOR=UNISSUED_ASSISTANT_AFTER597_SUCCESSOR;
+export const ACTIVE_ASSISTANT_SUCCESSOR=INACTIVE_ASSISTANT_AFTER598_SUCCESSOR;

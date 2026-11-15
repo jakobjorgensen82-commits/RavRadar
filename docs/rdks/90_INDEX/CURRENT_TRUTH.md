@@ -1,3 +1,11 @@
+## 15. november 2026 — lokal599-udstedelse og adskilt app-/modelfamilie
+
+Den afgrænsede599-kandidat samler assistentens rettelse af sammensatte strøm-/bølgespørgsmål med faste årsagsoplysninger ved komponentcachens eksisterende størrelsesafslag. Den normale C-bygger, I-bygger og T-afledning danner de faktiske bindinger før den almindelige originalbevarende SQL-konstruktør, metadata- og håndbogssynkronisering. Den nye append-only migration er `20261115174259_assistant_after598_original598_bound_successor.sql`. Alle 74 tidligere SQL-filer bevares. Scoreregler, kildeprioritet og administratorens geometri følger deres eksisterende kontrakter.
+
+En almindelig appopdatering skal beholde den installerede modelfamilie, når modelinput er uændrede. Den aktuelle package-læser binder appversionen præcist til kildens version.json og den fulde normale releasekontrakt med de udstedte C/I-bindinger. Native-kvitteringer og direkte familiekrav beholder deres faste modelrelease. Kun de normale aktuelle kaldere fører den verificerede appkontekst til den faste familie; gamle profiler og gamle kvitteringer ommærkes ikke. FULL-genbrug læser den historiske producents egne committed appmetadata.
+
+Udstedelsen og den efterfølgende almindelige appversionsprøve er lokalt afprøvet. Den nye familie kræver fortsat faktisk PostgreSQL-kvalifikation, præcis samlet kildekontrol, installation gennem normalvejen og verificeret offentlig virkning. Alle fem hovedmål og de syv særskilte revisionskrav består. Den tidligere førudstedelsespost er et historisk forberedelsescheckpoint, ikke den aktuelle lokale outputtilstand.
+
 Den afgrænsede metadataprøvekorrektion fjerner kun en forældet familienavns-lighed i fejlteksten. ERR_ASSERTION og de to præcise hele kanoniske SHA-256-værdier identificerer fortsat kildegrænsen. Alle fire mutationer, immutable-/no-write-/schemaafslag og originale SQL-bytes bevares. Det ændrede hele normale mål og præcis kildekvalifikation kræves fortsat; ingen produktionsvirkning påstås. Se DEC-0302 og håndbog 89.342.
 
 ## Privat arkiv-inventory er forberedt, ikke en gendannelse
