@@ -4,6 +4,8 @@ Den normale CURRENT-plan kan vælge dependency-kontrollen og hele nativefilens 1
 
 Den historiske 598-V2-prøve læser sin samlede kontrol- og workflowkæde fra den allerede autentiske FULL-producent. Dens oprindelige V2-forventninger og beskyttede PG/C/I/T-input bevares. Den aktuelle V4-kæde prøves særskilt med aktuelle input; manglende historiske Gitobjekter afvises uden netværkshentning.
 
+De fire eksisterende native-/FULL-kontrollæsere og deres målprøver hører til det samme sourceControls-område. Området vælger også hele test-native-postgres-evidence.mjs og test-source-impact-full-baseline.mjs. Ukendte nabostier og ændrede beskyttede PG/C/I/T-input afvises fortsat; ændrede kontrollæsere kræver frisk uafhængig gennemgang. Det er ikke en ny PostgreSQL-eksekvering eller tilladelse til genbrug.
+
 Den tilføjede SDK-parent-loss-case er endnu ikke kørt på rigtig Linux. Ingen installeret kontrolvej, ny PG-eksekvering eller løst produktionsproblem påstås. Version 4.0.598, model, PG/C/I/T, gamle SQL og produktionsgates er uændrede. Se DEC-0302 og håndbog 89.342/89.232.
 
 ## 15. november 2026 — arkivmålets Storage-bootstrap og faste Auth-metadata

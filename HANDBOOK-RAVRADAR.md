@@ -170,6 +170,8 @@ En privat kildekandidat giver den normale CURRENT-vej ansvar for den eksisterend
 
 Den historiske 598-V2-prøve læser sin samlede kontrol- og workflowkæde fra den allerede autentiske FULL-producent. Dens oprindelige V2-forventninger og beskyttede PG/C/I/T-input bevares. Den aktuelle V4-kæde prøves særskilt med aktuelle input; manglende historiske Gitobjekter afvises uden netværkshentning.
 
+De fire eksisterende native-/FULL-kontrollæsere og deres målprøver hører til det samme sourceControls-område. Området vælger også hele test-native-postgres-evidence.mjs og test-source-impact-full-baseline.mjs. Ukendte nabostier og ændrede beskyttede PG/C/I/T-input afvises fortsat; ændrede kontrollæsere kræver frisk uafhængig gennemgang. Det er ikke en ny PostgreSQL-eksekvering eller tilladelse til genbrug.
+
 De to nye tidlige miljøsteps kræver begge succes og det autentiske workflow fra producerens head. Den hele lukkede inverse skal føre tilbage til det eksisterende FULL-grundlag. Gamle metadata beholder deres tidligere kontrol; ukendte workflowændringer giver ingen adgang. Friske kilde-, review-, input- og slutkontroller består.
 
 Den tilføjede SDK-case for tab af styrende proces efter PUT og før afsluttende ACK er endnu ikke kørt på rigtig Linux i kandidaten. Den skal vise produktets eget fysiske stop og reap før testoprydning, bevare original og skrivelås og undlade falsk gemmekvittering. Syntetiske PASS-rækker er formatdata, ikke native-eksekvering. Forberedelsen beviser hverken installeret kontrolvej eller løst produktion. Se også 89.232.

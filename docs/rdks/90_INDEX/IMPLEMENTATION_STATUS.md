@@ -2,6 +2,8 @@
 
 Privat kode og kontrolreview er forberedt: naturligt CURRENT-ansvar, dependency før hele nativefilens 19 cases, faktisk Node24 med egen npm-cache, præcis V4-Pythonkvittering og head-bundet +2 FULL-metadata-layout. Den øvrige Node22-kildevej og gamle V1/V2/V3/FULL-betydninger bevares. Kontrolinput er reelt ændrede; de kaldes ikke uændrede nativebeviser.
 
+De fire eksisterende native-/FULL-kontrollæsere og deres målprøver hører til det samme sourceControls-område. Området vælger også hele test-native-postgres-evidence.mjs og test-source-impact-full-baseline.mjs. Ukendte nabostier og ændrede beskyttede PG/C/I/T-input afvises fortsat; ændrede kontrollæsere kræver frisk uafhængig gennemgang. Det er ikke en ny PostgreSQL-eksekvering eller tilladelse til genbrug.
+
 Åbent er de nødvendige normale mål og planer på det endelige head, den faktiske Linux-udførelse af SDK-parent-loss-casen og sikker levering. Syntetiske PASS-rækker er kun kvitteringsformatdata. Ingen ny PostgreSQL-eksekvering, model-/SQL-overgang, installeret kontrolvej eller produktionsvirkning er bevist. Version 4.0.598 bevares. Se DEC-0302 og håndbog 89.342/89.232.
 
 ## 15. november — entydigt evidensvalg og struktureret AI-svar

@@ -2,6 +2,8 @@
 
 En privat kandidat lader den normale CURRENT-vej vælge dependency-prøven og hele den eksisterende nativefil med 19 cases på faktisk Node24. Øvrig kildekontrol beholder Node22. V4-kvitteringen kan bære den præcise Pythonoperation med samme normale plan-, review- og oprindelseskontrol; ældre formater ommærkes ikke. FULL-læserens nye to miljøsteps kræver den autentiske producer-heads hele workflow og den eksisterende lukkede inverse.
 
+De fire eksisterende native-/FULL-kontrollæsere og deres målprøver hører til det samme sourceControls-område. Området vælger også hele test-native-postgres-evidence.mjs og test-source-impact-full-baseline.mjs. Ukendte nabostier og ændrede beskyttede PG/C/I/T-input afvises fortsat; ændrede kontrollæsere kræver frisk uafhængig gennemgang. Det er ikke en ny PostgreSQL-eksekvering eller tilladelse til genbrug.
+
 Den tilføjede SDK-case for tab af styrende proces er endnu ikke kørt på rigtig Linux i kandidaten. Kilde-/Linux-kvalifikation, sikker levering og faktisk drift er særskilte åbne beviser. Der påstås ingen installeret ny kontrolvej eller rettet produktionsfejl. Version 4.0.598, PG/C/I/T, gamle SQL-bytes, numerik og produktionsgates bevares. Se DEC-0302 og håndbog 89.342/89.232.
 
 ## 15. november — entydigt evidensvalg og struktureret AI-svar

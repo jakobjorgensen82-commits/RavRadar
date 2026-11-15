@@ -385,11 +385,15 @@ function assertArchiveOuterQueuePlanScope({baselineCommit,baselineTree,rewriteTr
 // whole normal targets, and no permission for adjacent unknown dependencies.
 function assertSourceAutonomyPlanScope({baselineCommit,baselineTree,rewriteTree,makeCommit,checkoutCommit,plan,restoreHead}){
   const files=['.github/workflows/watch-missed-weather-schedule.yml','scripts/weather-source-gate.mjs',
-    'scripts/lib/weather-source-gate.mjs','scripts/test-weather-source-gate.mjs','scripts/test-weather-cadence-watchdog.mjs'];
+    'scripts/lib/weather-source-gate.mjs','scripts/test-weather-source-gate.mjs','scripts/test-weather-cadence-watchdog.mjs',
+    'scripts/native-postgres-evidence.mjs','scripts/source-impact-full-baseline.mjs',
+    'scripts/test-native-postgres-evidence.mjs','scripts/test-source-impact-full-baseline.mjs'];
   const commands=['node --test scripts/test-source-current-contracts.mjs',
     'node scripts/test-source-impact-workflow.mjs',
     'node scripts/test-source-targeted-producer.mjs',
     'node scripts/test-source-targeted-consumer.mjs',
+    'node --test scripts/test-native-postgres-evidence.mjs',
+    'node --test scripts/test-source-impact-full-baseline.mjs',
     'node scripts/test-weather-source-gate.mjs','node scripts/test-weather-cadence-watchdog.mjs'];
   assert.deepEqual(CURRENT_CONTRACT_COMMANDS.sourceControls,commands);
   const results=[];
@@ -418,15 +422,19 @@ function assertSourceAutonomyPlanScope({baselineCommit,baselineTree,rewriteTree,
       'scripts/source-current-contract-plan.mjs','scripts/test-source-current-contracts.mjs','docs/rdks/40_KNOWN_ISSUES/KNOWN-ISSUES.md']);
     positive(all);assert.deepEqual(Object.keys(all.areas),['core','documentation','sourceControls','actionVersions']);
     for(const file of ['scripts/lib/unclassified-weather-source.mjs','scripts/test-weather-source-extra.mjs',
+      'scripts/native-postgres-evidence-extra.mjs','scripts/test-source-impact-full-baseline-extra.mjs',
       '.github/workflows/unclassified-source-renewal.yml']){
       const selected=select(file,[files[1],file]);assert.equal(selected.selection,'FULL');
       assert.deepEqual(selected.reasonCodes,['CURRENT_UNCLASSIFIED_PATH']);assert.deepEqual(selected.commands,[]);
     }
-    const changedProtected=select('changed-protected-source-input',[files[1],'config.js']);
-    assert.equal(changedProtected.selection,'FULL');assert.deepEqual(changedProtected.commands,[]);
-    assert.deepEqual(changedProtected.reasonCodes,['CURRENT_PROTECTED_INPUT_CHANGED']);
-    for(const qualification of ['ACTUAL_POSTGRES','ACTUAL_MODEL_C','ACTUAL_MODEL_I'])
-      assert(changedProtected.requiredQualifications.includes(qualification));
+    for(const [label,owners]of [['changed-protected-source-input',[files[1]]],
+      ['changed-protected-native-evidence-input',files.slice(-4)]]){
+      const changedProtected=select(label,[...owners,'config.js']);
+      assert.equal(changedProtected.selection,'FULL');assert.deepEqual(changedProtected.commands,[]);
+      assert.deepEqual(changedProtected.reasonCodes,['CURRENT_PROTECTED_INPUT_CHANGED']);
+      for(const qualification of ['ACTUAL_POSTGRES','ACTUAL_MODEL_C','ACTUAL_MODEL_I'])
+        assert(changedProtected.requiredQualifications.includes(qualification));
+    }
     return results;
   }finally{checkoutCommit(restoreHead);}
 }
