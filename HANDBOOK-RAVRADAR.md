@@ -12,6 +12,16 @@ Alle fem originale SQL-filer og deres identiteter bevares. Kontrollen efter DDL 
 
 Dette er en lokal kildekandidat. Den normale lokale selvtest kontrollerer de afgrænsede pins, afslag og kaldere; den kvalificerer ikke det autentiske arkiv. De officielle migratorer skal oprette hele leverandørskemaet med de faktiske kolonner, genererede felter, constraints, indekser og adgangsregler. Der indføres ingen stubtabeller eller rettelse af original SQL. Præcis kildekvalifikation, faktisk image-/migrationsforløb, kolonnekompatibilitet og gendannelse af samme originale arkiv er fortsat nødvendige. En lokal imagecachepost er ikke bevis for den brugte engangscontainer. Autonom restorekvittering, backuprotation og samlet Free-klarhed kræver stadig deres egne beviser.
 
+### Katalogbundet fingeraftryk ved CHECK-fejl
+
+Det autentiske originalarkiv når DATA, men er fortsat afvist med SQLSTATE 23514. Bestået relationspreflight og systemrollekontrol samt bekræftet oprydning forklarer ikke, hvilken CHECK der fejler. Den bevarede rapport indeholder ingen constraint-identitet. En bestemt leverandørforskel eller rækkefølge må derfor ikke kaldes årsagen endnu.
+
+Den lokale diagnostic bruger den eksisterende katalogaflæsning umiddelbart før DATA i samme transaktion. Højst 512 CHECK-identiteter repræsenteres ved SHA-256: de eksakte UTF-8-navne for skema, relation og constraint får hver en firebyte big-endian byte-længde foran sig. Navne og constraintdefinitioner kommer ikke i rapporten. Ved den præcise primære DATA/23514-fejl skal entydige verbose-serverfelter matche kataloget. Ellers vises UNAVAILABLE; der gættes ikke ud fra fri fejltekst.
+
+En bundet rapport viser kun tuplehash, fast skemakategori, contype, convalidated og målepunktet BEFORE_DATA_SAME_TRANSACTION. convalidated beskriver dette målepunkt før DATA, ikke kataloget efter en rollback og ikke en forklaring på den fejlede række. For stor, manglende eller tvetydig metadata bevarer den oprindelige fejl uden en ekstra identitet. Andre fejlformater ændres ikke.
+
+Den normale selvtest og lifecycle-forbrugermål består lokalt. Det er diagnosticdækning, ikke faktisk gendannelse eller reparation. Fem originale SQL-filer, constraints, rækkefølge, rollback, første fejl, ejet oprydning og stærke PASS-krav bevares. Præcis kildekvalifikation og et senere normalt arkivforsøg skal stadig vise en brugbar identitet. Originalrestore/Auth, autonom reservekvittering, rotation og Free-klarhed kræver fortsat deres egne beviser. Ingen ny version, SQL-installation, tjeneste, adgang eller automatisk gentagelse følger af diagnosticen.
+
 ### Læsende inventory fra det autentiske originalarkiv
 
 Den nye eksplicitte archive-inventory-tilstand bruger den eksisterende manuelle arkivkalder, samme kvalificerede aktuelle main, indekscommitment, bekræftelse og arkiv-/trip-låse. Den forlader forløbet før Supabase CLI, Docker, Auth og SQL. Der startes ingen gendannelse, backupoptagelse, beskæring, rotation eller automatisering.

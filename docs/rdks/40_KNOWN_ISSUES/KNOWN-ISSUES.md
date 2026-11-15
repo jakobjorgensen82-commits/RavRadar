@@ -1,3 +1,9 @@
+## Åbent: originalarkivets DATA afvises med CHECK-fejl
+
+Det autentiske originalarkiv når DATA, men stopper fortsat med SQLSTATE 23514. Den faste rapport bekræfter komplet relationspreflight uden manglende eller forkerte mål, ingen manglende systemroller og lukning af de ejede Dockerressourcer. Constraintens identitet og den konkrete årsag kan ikke genfindes i den bevarede rapport. Schema-/DATA-rækkefølge og leverandørkompatibilitet er hypoteser, ikke påviste årsager.
+
+En lokal diagnostic i den eksisterende reader binder kun den primære DATA-fejls entydige serverfelter til CHECK-kataloget læst før DATA i samme transaktion. Kun hash og faste metadata kan vises; ellers UNAVAILABLE. Den normale selvtest og lifecycle-prøve består lokalt. Det beviser hverken en faktisk constraint-identitet eller et rettet restoreforløb. Alle fem originalfiler, constraints, rækkefølge, første fejl, oprydning og PASS-krav bevares. Næste normale forsøg kræver præcis kildekvalifikation og de eksisterende ejerskabs-/adgangsgrænser; ingen automatisk gentagelse. Originalrestore/Auth, autonom reservekvittering, rotation og Free-klarhed er fortsat åbne. Se DEC-0302 og håndbog 89.350.
+
 ## Arkivets leverandørskema kræver kompatible lokale versioner
 
 Den ældre lokale bootstrap indeholder ikke arkivets fire SCIM-/recovery-relationer og to Storage-lifecycle-relationer. Identiteterne er afklaret ved navne-SHA mod officielle migrationer. Kun det friske, ikke tilknyttede archive-B får create-only lokale versionspins til Auth v2.197.0 og Storage v1.86.0 før den normale CLI 2.117.0-start. Gamle pins, projekttilknytning og Storage-migrationsloft afvises; pinfilerne genlæses efter start. Den syntetiske vej, de tre vedvarende tjenester, image-/netværks-/stop-/oprydningskontroller og alle fem originale SQL-strømme bevares.
