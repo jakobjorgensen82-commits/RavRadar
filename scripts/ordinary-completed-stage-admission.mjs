@@ -98,7 +98,8 @@ async function assertParent(receipt) {
     'ORDINARY_STAGE_PARENT_POINTER_CHANGED');
   return live;
 }
-async function readNormalParentCheckpoint(parentDescriptor, own) {
+// A protected data read only; this result grants no stage admission.
+export async function readOrdinaryStageParentCheckpoint(parentDescriptor, own) {
   const checkpoint = path.join(own, '.cache/ravscore-continuation-checkpoint/checkpoint.json');
   const result = await restoreProtectedRavScoreContinuationCheckpoint({ checkpointPath: checkpoint,
     targetReference: parentDescriptor.productionReferenceAt,
@@ -107,7 +108,7 @@ async function readNormalParentCheckpoint(parentDescriptor, own) {
   return json(checkpoint);
 }
 async function normalParentCheckpoint(receipt, own) {
-  const value = await readNormalParentCheckpoint(receipt.parentDescriptor, own);
+  const value = await readOrdinaryStageParentCheckpoint(receipt.parentDescriptor, own);
   require(digest(value) === receipt.parentCheckpointSha256, 'ORDINARY_STAGE_PARENT_CHECKPOINT_CHANGED');
 }
 export async function materializeOrdinaryStageCandidate(root) {
@@ -222,7 +223,7 @@ export async function admitOrdinaryCompletedStage(env = process.env) {
     const nextConditions = JSON.parse(raw);
     const ownerPolicyGitBlob = execFileSync('git', ['-C', p.root, 'rev-parse', `HEAD:${POLICY}`],
       { encoding: 'utf8', timeout: 30_000, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true }).trim();
-    const oldS = await readNormalParentCheckpoint(parent.descriptor, path.join(own.work, 'parent-before-lineage'));
+    const oldS = await readOrdinaryStageParentCheckpoint(parent.descriptor, path.join(own.work, 'parent-before-lineage'));
     assertOrdinaryCompletedStageLineage({ conditions: nextConditions, conditionsPayloadBytes: raw,
       newBManifest: verified.manifest, originalAADIdentity: downloaded.identity,
       baselineBDescriptor: parent.descriptor, baselineConditions: oldConditions, baselineCheckpoint: oldS,
