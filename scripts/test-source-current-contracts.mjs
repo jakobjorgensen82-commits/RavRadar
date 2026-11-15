@@ -542,6 +542,7 @@ let firstDelivery,legacyFirstReceipt,legacyFirstReview;
 let base,head,main,baseContent,content,baselinePlan,coordinate,decide,discover,accessFactory;
 let native,namespace,sourceContent,fullBody,phaseBody,fullJobBody,selectedJobBody;
 let immutableFullZip,immutablePhaseZip;
+let actualCurrentAfter598SourceVerified=false;
 let maps,zips,selectedReceipt,selectedZip,selectedMetadata,rows=[],cases=0,actualProcesses=0,calls=0;
 const state={movedReview:false,missingReview:false,wrongPlan:false,merged:false,
   baseTip:null,hintOverride:null,duplicateReview:false,malformedReview:false,headMismatch:false,expiredFull:false,laterNegative:false,modernWorkflow:false,ownedCacheNativeWorkflow:false,fullModernWorkflow:false,sdkStepFault:null};
@@ -1157,7 +1158,36 @@ try{
   let nativeReceipt;
   {
     // Synthetic report DATA against real598C/I/T and74actualSQLfiles, not native execution proof.
-    const active=successor.ACTIVE_ASSISTANT_SUCCESSOR,binding=active.requireBinding(),databaseBefore=active.databaseBefore;
+    // Historical FULL598 owns the named issued598 profile. The coordinator and
+    // reader modules above remain current; their ACTIVE599 is never receipt DATA.
+    const active=successor.UNISSUED_ASSISTANT_AFTER597_SUCCESSOR;
+    const binding=active.requireBinding(),databaseBefore=active.databaseBefore;
+    assert.equal(active.sourcePhase,'assistant-mixed-after597-successor');assert.equal(active.requireRelease(),'4.0.598');
+    assert.deepEqual(readGit(['cat-file','blob',base+':package.json']),sourceBlob('package.json'),
+      'The historical FULL package is the authentic REFERENCE blob, never retagged current599');
+    const historicalPackage=JSON.parse(readGit(['cat-file','blob',base+':package.json']));
+    assert.equal(historicalPackage.version,active.requireRelease());
+    const oldSQL=referenceRows.filter(row=>row.file.startsWith('supabase/migrations/')&&row.file.endsWith('.sql'));
+    const actualSQL=git(root,['ls-tree','-rz','--full-tree',base,'--','supabase/migrations']).toString('utf8').split('\0').filter(Boolean).map(line=>{
+      const match=/^(\d{6}) blob ([a-f0-9]{40})\t(.+)$/.exec(line);assert(match);return {file:match[3],oid:match[2]};});
+    assert.equal(oldSQL.length,74);assert.deepEqual(actualSQL,oldSQL.map(({file,oid})=>({file,oid})));
+    const {withSource598CodeParent}=await import(pathToFileURL(path.join(SOURCE,'scripts/check-assistant-later-h0-predecessor-source.mjs')).href);
+    const original598=await withSource598CodeParent(async originalRoot=>{
+      const original=await import(pathToFileURL(path.join(originalRoot,'scripts/lib/assistant-later-h0-successor-source.mjs')).href);
+      const pkg=JSON.parse(fs.readFileSync(path.join(originalRoot,'package.json'),'utf8'));
+      assert.equal(original.ACTIVE_ASSISTANT_SUCCESSOR,original.UNISSUED_ASSISTANT_AFTER597_SUCCESSOR);
+      assert.equal(pkg.version,original.requireAssistantAfter597Release());
+      return {binding:original.requireAssistantAfter597Binding(),output:original.requireAssistantAfter597Output(),
+        databaseBefore:original.ASSISTANT_AFTER597_BEFORE,release:pkg.version};
+    });
+    assert.deepEqual(binding,original598.binding);assert.deepEqual(active.requireOutput(),original598.output);
+    assert.deepEqual(databaseBefore,original598.databaseBefore);assert.equal(active.requireRelease(),original598.release);
+    const oldIntegrated=await moduleAt('js/core/ravscore-model-contract.js');
+    const oldCandidate=await moduleAt('scripts/rollback-assets/ravscore-model-contract.js');
+    const oldContinuation=await moduleAt('scripts/lib/ravscore-continuation-implementation-contract.mjs');
+    assert.equal(oldIntegrated.ravScoreModelBinding().modelBundleSha256,binding.I);
+    assert.equal(oldCandidate.ravScoreModelBinding().modelBundleSha256,binding.C);
+    assert.equal(await oldContinuation.ravScoreContinuationImplementationSha256({repositoryRoot:root}),binding.T);
     const fixtureRuntime={platform:'linux',arch:'x64',imageOS:'ubuntu24',imageVersion:'20261012.334.1',
       node:'v22.23.3',python:'Python 3.12.15',pythonLocation:'/opt/hostedtoolcache/Python/3.12.15/x64',
       ldLibraryPath:'/opt/hostedtoolcache/Python/3.12.15/x64/lib',pgBindir:'/usr/lib/postgresql/16/bin',git:'git version 2.55.0',overrides:[],
@@ -1190,6 +1220,32 @@ try{
     nativePostgres:nativeReceipt,historical584National:historical};
   phaseBody={schemaVersion:1,kind:native.ASSISTANT_AFTER597_PHASE_KIND,repository:native.ORIGIN.repository,
     headSha:base,sourceTreeSha256:baseContent,privatePayloadIncluded:false,nativePostgres:clone(nativeReceipt)};
+
+  // The actual current source owner is exercised separately from the old FULL
+  // fixture. Its real binding/output/SQL are required; old receipts stay old.
+  const actualSuccessor=await import(pathToFileURL(path.join(SOURCE,'scripts/lib/assistant-later-h0-successor-source.mjs')).href);
+  if(actualSuccessor.ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-after598-successor'){
+    const actualNational=await import(pathToFileURL(path.join(SOURCE,'scripts/national584-source-evidence.mjs')).href);
+    const actualNative=await import(pathToFileURL(path.join(SOURCE,'scripts/native-postgres-evidence.mjs')).href);
+    const currentOutput=actualSuccessor.requireAssistantAfter598Output(),currentBinding=actualSuccessor.requireAssistantAfter598Binding();
+    const currentPackage=JSON.parse(fs.readFileSync(path.join(SOURCE,'package.json'),'utf8'));
+    actualNational.verifyAssistantAfter598Package(currentPackage);
+    const checked=await actualNational.verifyAssistantAfter598SourceTarget();
+    assert.equal(checked.sourcePhase,'assistant-after598-successor');assert.equal(checked.canonicalSha256,currentOutput.canonicalSha256);
+    assert.equal(checked.release,actualSuccessor.requireAssistantAfter598Release());
+    assert.deepEqual([checked.sourceOnly,checked.sqlExecuted,checked.originalsAuthenticated,checked.productionProof],[true,false,false,false]);
+    assert.notDeepEqual(actualNative.ASSISTANT_AFTER598_COMMANDS,nativeReceipt.commands);
+    assert.notDeepEqual(currentBinding,nativeReceipt.binding);
+    actualNational.verifyAssistantAfter598NativeCommands(actualNative.ASSISTANT_AFTER598_COMMANDS,currentPackage.version);
+    assert.throws(()=>actualNational.verifyAssistantAfter598NativeCommands(nativeReceipt.commands,currentPackage.version));
+    await assert.rejects(actualNative.verifyAssistantAfter598PhaseReceipt(nativeReceipt,nativeCurrent));
+    await assert.rejects(actualNational.verifyAssistantAfter598NativeContext(nativeReceipt,nativeCurrent,currentPackage.version));
+    const omitted=structuredClone(currentPackage);omitted.scripts['test:assistant-later-h0-source']=
+      omitted.scripts['test:assistant-later-h0-source'].replace(actualNational.ASSISTANT_AFTER598_CURRENT_SOURCE_COMMANDS[0]+' && ','');
+    assert.throws(()=>actualNational.verifyAssistantAfter598Package(omitted));
+    actualCurrentAfter598SourceVerified=true;cases++;
+    scenarios.push('actual current after598 source namespace/package is distinct from authentic historical FULL598; old receipt refused, no PG execution');
+  }
 
 
   async function assertScalarSourcePrerequisites(){
@@ -1835,5 +1891,5 @@ try{
 console.log(JSON.stringify({kind:'SYNTHETIC_CURRENT_V4_PRODUCER_CONSUMER_INTEGRATION',cases,passed:cases,failed:0,scenarios,
   actualTargetProcesses:actualProcesses,syntheticTransportCalls:calls,realIsolatedGit:true,
   genuineProtected148AndCIT:true,frozenAnchors:16,plannerMock:false,productSourceTestsExecuted:false,
-  actualSqlOrSqliteExecuted:false,actualGitHubOrFullQualification:false,
+  actualSqlOrSqliteExecuted:false,actualGitHubOrFullQualification:false,actualCurrentAfter598SourceVerified,
   network:false,production:false,deliveryAuthority:false}));

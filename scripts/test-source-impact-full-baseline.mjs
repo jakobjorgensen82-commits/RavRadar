@@ -6,7 +6,8 @@ import {syncBuiltinESMExports} from 'node:module';
 import test from 'node:test';
 import fs from 'node:fs/promises';
 import {OWNED_CACHE_NATIVE_EARLY_STEP_NAMES} from './lib/source-impact-workflow-review.mjs';
-import {ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE} from './lib/assistant-later-h0-successor-source.mjs';
+import {ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE,UNISSUED_ASSISTANT_AFTER597_SUCCESSOR as ISSUED598,
+  INACTIVE_ASSISTANT_AFTER598_SUCCESSOR as CURRENT599} from './lib/assistant-later-h0-successor-source.mjs';
 import {qualifySourceImpactFullBaseline,SOURCE_IMPACT_FULL_BASELINE_KIND}
   from './source-impact-full-baseline.mjs';
 import {sourceTreeContentSha256,sourceTreeProofArtifactName} from './lib/source-tree-content.mjs';
@@ -435,11 +436,11 @@ test('597 normal FULL baseline inherits an exact completed 597 native receipt, w
 
 // Protocol-only598 evidence DATA. These fixtures do not execute PostgreSQL or qualify a live run.
 async function synthetic598FullFixture(){
-  assert.equal(ACTIVE.sourcePhase,'assistant-mixed-after597-successor');
+  assert.equal(ISSUED598.sourcePhase,'assistant-mixed-after597-successor');
   const native=await import('./native-postgres-evidence.mjs'),national=await import('./national584-source-evidence.mjs');
   const f=fixture({installed594V2:true}),prior=f.full.nativePostgres;
   use597Package(f,{candidateVersion:'4.0.598',producerVersion:'4.0.598'});
-  const binding=ACTIVE.requireBinding(),databaseBefore=ACTIVE.databaseBefore;
+  const binding=ISSUED598.requireBinding(),databaseBefore=ISSUED598.databaseBefore;
   const observed={kind:'ASSISTANT_AFTER597_SUCCESSOR',sourceMigrationInventory:63,
     databaseBeforeVersion:databaseBefore.version,originalStateRelease:597,migrationVersion:binding.version,
     partCount:673,checkpointOidSlots:45,contractBodies:48,productionSeedAuthenticated:false,
@@ -452,7 +453,7 @@ async function synthetic598FullFixture(){
     'nextActiveAfterCompletion','old597RefusedAfterCompletion','wholeHistoryAndDocumentsPreserved',
     'quotaFunctionAndAdmissionUnchanged','quotaServiceRoleWorking'].map(key=>[key,true]));
   const receipt={schemaVersion:1,kind:native.ASSISTANT_AFTER597_PHASE_KIND,phase:'ASSISTANT_AFTER597_SUCCESSOR',
-    sourcePhase:native.ASSISTANT_AFTER597_PHASE,releaseVersion:ACTIVE.requireRelease(),binding,output:ACTIVE.requireOutput(),
+    sourcePhase:native.ASSISTANT_AFTER597_PHASE,releaseVersion:ISSUED598.requireRelease(),binding,output:ISSUED598.requireOutput(),
     databaseBefore,current:copy(prior.current),commands:[...native.ASSISTANT_AFTER597_COMMANDS],
     status:'EXECUTED',executedInThisRun:true,origin:null,eligibleForReuse:false,runtime:prior.runtime,
     report:{kind:'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',sqlExecuted:true,migrationExecuted:true,tcpEnabled:false,
@@ -488,3 +489,52 @@ test('598 normal V2 producer and consumer use real protected closure with synthe
   execFileSync(process.execPath,['scripts/test-source-targeted-domain-integration.mjs','--source598'],{
     timeout:180000,maxBuffer:4*1024*1024,stdio:['pipe','pipe','pipe'],env:{...process.env}});
 });
+
+// Current599 protocol DATA only; never actual PG execution or source qualification.
+async function synthetic599FullFixture(){
+  assert.equal(CURRENT599.sourcePhase,'assistant-after598-successor');
+  const native=await import('./native-postgres-evidence.mjs'),national=await import('./national584-source-evidence.mjs');
+  const f=fixture({installed594V2:true}),prior=f.full.nativePostgres;
+  use597Package(f,{candidateVersion:'4.0.599',producerVersion:'4.0.599'});
+  const binding=CURRENT599.requireBinding(),databaseBefore=CURRENT599.databaseBefore;
+  const observed={kind:'ASSISTANT_AFTER598_SUCCESSOR',sourceMigrationInventory:64,
+    databaseBeforeVersion:databaseBefore.version,originalStateRelease:598,migrationVersion:binding.version,
+    partCount:673,checkpointOidSlots:47,contractBodies:50,productionSeedAuthenticated:false,
+    parentCodeHead:'82200280c42b9060f14be2721ba7b766e0ede5a6',predecessorSetupMigrationCount:9};
+  for(const key of ['sqlExecuted','wholeMigrationExecuted','oldFunctionsAndOidsPreserved','allOriginalDefinitionsPreserved',
+    'exactCheckpointContract','exactTripContract','schema2Catalog','normalProtectedJsonbRoundtrip','originalDigestsPreserved',
+    'trueOld598Fixtures','currentNormalFixtures','old598ModelNotRetagged','wholeMetadataInverse',
+    'strictlyLater598ToNextOnly','sqlIsNotOriginAuthentication','predecessorExecutedInSameHost'])observed[key]=true;
+  observed.intermediateRuntime=Object.fromEntries(['old598ActiveAfterSql','nextRefusedBeforeActivation','pendingBothRefused',
+    'nextActiveAfterCompletion','old598RefusedAfterCompletion','wholeHistoryAndDocumentsPreserved',
+    'quotaFunctionAndAdmissionUnchanged','quotaServiceRoleWorking'].map(key=>[key,true]));
+  const receipt={schemaVersion:1,kind:native.ASSISTANT_AFTER598_PHASE_KIND,phase:'ASSISTANT_AFTER598_SUCCESSOR',
+    sourcePhase:native.ASSISTANT_AFTER598_PHASE,releaseVersion:CURRENT599.requireRelease(),binding,output:CURRENT599.requireOutput(),
+    databaseBefore,current:copy(prior.current),commands:[...native.ASSISTANT_AFTER598_COMMANDS],
+    status:'EXECUTED',executedInThisRun:true,origin:null,eligibleForReuse:false,runtime:prior.runtime,
+    report:{kind:'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',sqlExecuted:true,migrationExecuted:true,tcpEnabled:false,
+      normalModelPartCount:673,postgresMajorVersion:16,nativeProgramIdentity:prior.runtime.selectedPrograms,
+      assistantAfter598Successor:observed}};
+  f.full.nativePostgres=receipt;Object.assign(f.phase,{schemaVersion:1,kind:native.ASSISTANT_AFTER598_PHASE_KIND,nativePostgres:copy(receipt)});
+  for(const key of Object.keys(f.full.historical584National).filter(key=>key.startsWith('current')))if(key!=='current')delete f.full.historical584National[key];
+  Object.assign(f.full.historical584National,await national.assistantAfter598NativeClaims(receipt,receipt.current));
+  f.rebuild();return f;
+}
+if(ACTIVE.sourcePhase==='assistant-after598-successor'){
+  test('599 FULL validates its separately issued current native/source shapes and rejects old598 proof',async()=>{
+    const f=await synthetic599FullFixture(),result=await f.qualify();assert.equal(result.kind,SOURCE_IMPACT_FULL_BASELINE_KIND);
+    const mutations=[
+      f=>f.full.nativePostgres.eligibleForReuse=true,
+      f=>f.full.nativePostgres.report.assistantAfter598Successor.predecessorSetupMigrationCount=8,
+      f=>f.full.nativePostgres.report.assistantAfter598Successor.parentCodeHead='803f2c7c61237cef5c5f6b39ce0eaac5e090fb84',
+      f=>f.full.nativePostgres.report.assistantAfter598Successor.sourceMigrationInventory=63,
+      f=>f.full.historical584National.currentAssistantAfter598NationalExecutionClaimed=true,
+      f=>f.full.historical584National.currentAssistantAfter598Source.actualCommand+=' --unknown',
+      f=>f.full.historical584National.currentAssistantAfter597Native={status:'EXECUTED'},
+      f=>f.phase.kind='RAVRADAR_ASSISTANT_AFTER597_POSTGRES_PHASE_V1',
+    ];
+    for(const mutate of mutations){const bad=await synthetic599FullFixture();mutate(bad);bad.phase.nativePostgres=copy(bad.full.nativePostgres);bad.rebuild();assert.equal((await bad.qualify()).status,'REFUSED');}
+    const old=await synthetic598FullFixture();use597Package(old,{candidateVersion:'4.0.599',producerVersion:'4.0.598'});
+    assert.equal((await old.qualify()).status,'REFUSED');assert.deepEqual(old.zipCalls,[]);
+  });
+}

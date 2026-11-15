@@ -1139,7 +1139,53 @@ function exactAmberLandingPredictionBoundary(question, locale) {
 }
 
 
+// A negative whole-question boundary for coordinated current/wave requests.
+// Topic words only require coverage; they never certify an arbitrary suffix.
+// The positive grammar is a basic interaction family, not safety, prediction,
+// score weights, local conditions or a new scientific fact.
+const CURRENT_WAVE_FOCUS_REPLIES = Object.freeze({
+  da:"Jeg kan ikke give et samlet kildebundet svar på hele spørgsmålet om strøm og bølger her. Spørg gerne særskilt til mobilisering, transport eller den sidste vej ind til stranden.",
+  de:"Ich kann hier keine vollständige, quellengebundene Antwort auf die gesamte Frage zu Strömung und Wellen geben. Frage bitte gezielt nach Mobilisierung, Transport oder dem letzten Weg zum Strand.",
+  en:"I cannot give a complete, evidence-bound answer to the whole question about currents and waves here. Please ask specifically about mobilisation, transport or the final path to the beach.",
+});
+const CURRENT_WAVE_SUBJECTS = Object.freeze({
+  da:Object.freeze({current:String.raw`(?:(?:hav)?strøm(?:men|me|mene)?)`,wave:String.raw`bølge(?:n|r|rne)?`,join:String.raw`(?:og|samt|&)`}),
+  de:Object.freeze({current:String.raw`(?:(?:die )?(?:meeres)?strömung(?:en)?)`,wave:String.raw`(?:die )?welle(?:n)?`,join:String.raw`(?:und|sowie|&)`}),
+  en:Object.freeze({current:String.raw`(?:(?:the )?(?:sea )?currents?)`,wave:String.raw`(?:the )?waves?`,join:String.raw`(?:and|plus|&)`}),
+});
+function coordinatedCurrentWaveCoverage(question,locale,evidenceIds){
+  if(typeof question!=="string"||!RAV_ASSISTANT_LOCALES.includes(locale))return null;
+  const text=question.trim().normalize("NFKC").replace(/\s+/gu," ");
+  const current=/(?<![\p{L}\p{N}_])(?:(?:hav)?strøm(?:men|mens|me|mene|retning(?:en|ens|er|erne)?|hastighed(?:en|ens)?)?|(?:meeres)?strömung(?:en|srichtung(?:en)?|sgeschwindigkeit(?:en)?)?|currents?)(?![\p{L}\p{N}_])/iu;
+  const wave=/(?<![\p{L}\p{N}_])(?:bølge(?:n|r|rne|højde(?:n|r)?|periode(?:n|r)?)?|welle(?:n(?:höhe|periode|richtung)?n?)?|waves?)(?![\p{L}\p{N}_])/iu;
+  if(!current.test(text)||!wave.test(text))return null;
+  const words=CURRENT_WAVE_SUBJECTS[locale];
+  const subjects="(?:"+words.current+"\\s+"+words.join+"\\s+"+words.wave+"|"+words.wave+"\\s+"+words.join+"\\s+"+words.current+")";
+  const purpose={da:"(?:ved|under|for) ravjagt",de:"bei der bernsteinsuche",en:"(?:in|for|during) amber hunting"}[locale];
+  const grammar={
+    da:["hvordan (?:virker|arbejder|spiller) "+subjects+" (?:sammen|ind)(?: "+purpose+")?",
+      "hvordan (?:virker|arbejder) "+subjects+" "+purpose+" sammen",
+      "hvordan påvirker "+subjects+" (?:ravjagt|ravets bevægelse)",
+      "forklar samspillet mellem "+subjects+"(?: "+purpose+")?"],
+    de:["wie (?:wirken|arbeiten|spielen) "+subjects+" (?:zusammen(?: "+purpose+")?|"+purpose+" zusammen)",
+      "wie beeinflussen "+subjects+" (?:die bernsteinsuche|die bewegung von bernstein)",
+      "erkläre (?:das zusammenspiel|die wechselwirkung) (?:von|zwischen) "+subjects+"(?: "+purpose+")?"],
+    en:["how do "+subjects+" (?:interact|work together)(?: "+purpose+")?",
+      "how do "+subjects+" affect (?:amber hunting|amber movement)",
+      "explain (?:the )?(?:interaction|relationship) between "+subjects+"(?: "+purpose+")?"],
+  }[locale];
+  const whole=question.length<=600&&grammar.some(source=>new RegExp("^(?:"+source+")[?!.]*$","iu").test(text));
+  const selected=new Set(Array.isArray(evidenceIds)?evidenceIds:[]);
+  // This existing indivisible unit explains both processes, their connection
+  // and the unresolved final path. Two topic IDs alone do not prove a relation.
+  const missingFacets=selected.has("sequence.release-transport-deposition")?[]:["current-wave-interaction-with-local-path-boundary"];
+  if(!whole)missingFacets.push("unsupported-question-remainder");
+  return{complete:missingFacets.length===0,missingFacets};
+}
+
 export function assistantQuestionEvidenceCoverage(question, locale, evidenceIds) {
+  const currentWave=coordinatedCurrentWaveCoverage(question,locale,evidenceIds);
+  if(currentWave)return currentWave;
   if (knownAmberNetDefinitionUseQuestion(question,locale)) {
     const complete=Array.isArray(evidenceIds)&&evidenceIds.includes("equipment.amber-net");
     return {complete,missingFacets:complete?[]:["amber-net-definition-and-use"]};
@@ -1239,6 +1285,8 @@ export function validateAssistantResult(value, locale, context = {}, question = 
   if (identification?.complete && evidenceIds.some(id => !identification.requiredIds.includes(id)))
     return reject("RESULT_EVIDENCE_UNKNOWN");
   const questionCoverage = assistantQuestionEvidenceCoverage(question, locale, evidenceIds);
+  const currentWaveCoverage = coordinatedCurrentWaveCoverage(question, locale, evidenceIds);
+  const questionFocus = currentWaveCoverage ? CURRENT_WAVE_FOCUS_REPLIES[locale] : CANONICAL_FOCUS_REPLIES[locale];
   const unknownEquipment = routeAssistantQuestion(question) === "provider" && unknownAmberEquipmentQuestion(question, locale);
   const unknownEquipmentAnswer=unknownAmberEquipmentGuaranteeQuestion(question,locale)
     ? unknownAmberEquipmentGuaranteeAnswer(locale) : RAV_ASSISTANT_UNCERTAIN_REPLIES[locale];
@@ -1248,7 +1296,7 @@ export function validateAssistantResult(value, locale, context = {}, question = 
     if (identification) return { answer:assistantIdentificationFocusAnswer(locale), disposition:"uncertain", evidenceIds:[] };
     if (precisionBoundary) return { answer:RAV_ASSISTANT_UNCERTAIN_REPLIES[locale], disposition:"uncertain", evidenceIds:[] };
     if (unknownEquipment) return { answer:unknownEquipmentAnswer, disposition:"uncertain", evidenceIds:[] };
-    if (questionCoverage) return { answer:CANONICAL_FOCUS_REPLIES[locale], disposition:"uncertain", evidenceIds:[] };
+    if (questionCoverage) return { answer:questionFocus, disposition:"uncertain", evidenceIds:[] };
     return { answer: RAV_ASSISTANT_REFUSALS[locale], disposition: value.disposition, evidenceIds };
   }
   if (value.disposition === "answer" && !evidenceIds.length) return reject("RESULT_ANSWER_EVIDENCE_MISSING");
@@ -1275,10 +1323,10 @@ export function validateAssistantResult(value, locale, context = {}, question = 
     // Unsupported prose remains unsupported even when the provider labels it
     // uncertain. Keep the validated schema, locale and security checks above;
     // never publish a guessed cause or use without any bound public evidence.
-    return { answer: RAV_ASSISTANT_UNCERTAIN_REPLIES[locale], disposition: value.disposition, evidenceIds };
+    return { answer: currentWaveCoverage ? questionFocus : RAV_ASSISTANT_UNCERTAIN_REPLIES[locale], disposition: value.disposition, evidenceIds };
   }
   if (questionCoverage && !questionCoverage.complete) {
-    return { answer:CANONICAL_FOCUS_REPLIES[locale], disposition:"uncertain", evidenceIds:[] };
+    return { answer:questionFocus, disposition:"uncertain", evidenceIds:[] };
   }
   if (value.disposition === "answer" && evidenceIds.length === 2 && evidenceIds.includes("score.integrated-only") && evidenceIds.includes("score.weights-20-50-30")) {
     return { answer: RAV_ASSISTANT_WEIGHT_ANSWERS[locale], disposition: value.disposition, evidenceIds };

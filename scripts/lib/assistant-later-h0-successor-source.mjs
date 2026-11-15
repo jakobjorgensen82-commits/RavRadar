@@ -6,7 +6,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {FROZEN590_CODE_SOURCE_PROVENANCE,assertFrozen590CodeSourceSelected,
-  FROZEN591_CODE_SOURCE_PROVENANCE,assertFrozen591CodeSourceSelected,assertSource597CodeSourceSelected}
+  FROZEN591_CODE_SOURCE_PROVENANCE,assertFrozen591CodeSourceSelected,assertSource597CodeSourceSelected,assertSource598CodeSourceSelected}
   from '../check-assistant-later-h0-predecessor-source.mjs';
 import {NATIVE_ORIGINAL_CONTINUITY_BINDING,NATIVE_ORIGINAL_CONTINUITY_OUTPUT,
   readNativeOriginalContinuityCanonicalSource,nativeOriginalContinuityDefinition}
@@ -112,7 +112,7 @@ export async function readAssistantLaterH0CanonicalSource(options){
   return readFixedCanonicalSource(ISSUED587_SOURCE,options,pins,migration);
 }
 async function readFixedCanonicalSource(profile,options,pins,migration){
-  assert(profile===ISSUED587_SOURCE||profile===PUBLIC587_SUCCESSOR_SOURCE||profile===PUBLIC588_SUCCESSOR_SOURCE||profile===PUBLIC590_SUCCESSOR_SOURCE||profile===PUBLIC591_SUCCESSOR_SOURCE||profile===INSTALLED593_ORIGINAL591_SOURCE||profile===SCALAR597_LATER_H0_SOURCE||profile===ASSISTANT_AFTER597_SOURCE,'ASSISTANT_SUCCESSOR_UNKNOWN_SOURCE_PROFILE');
+  assert(profile===ISSUED587_SOURCE||profile===PUBLIC587_SUCCESSOR_SOURCE||profile===PUBLIC588_SUCCESSOR_SOURCE||profile===PUBLIC590_SUCCESSOR_SOURCE||profile===PUBLIC591_SUCCESSOR_SOURCE||profile===INSTALLED593_ORIGINAL591_SOURCE||profile===SCALAR597_LATER_H0_SOURCE||profile===ASSISTANT_AFTER597_SOURCE||profile===ASSISTANT_AFTER598_SOURCE,'ASSISTANT_SUCCESSOR_UNKNOWN_SOURCE_PROFILE');
   let migrationsDirectory=path.join(ROOT,'supabase/migrations');
   if(options!==undefined){assert(options&&Object.getPrototypeOf(options)===Object.prototype);
     assert.deepEqual(Object.keys(options),['migrationsDirectory']);assert(path.isAbsolute(options.migrationsDirectory));
@@ -955,6 +955,123 @@ export const UNISSUED_ASSISTANT_AFTER597_SUCCESSOR=Object.freeze({
   readCanonicalSource:readAssistantAfter597CanonicalSource,
   readPredecessorCanonicalSource:readScalar597LaterH0CanonicalSource,
   assertTarget:assertAssistantAfter597Target,assertCaller:assertAssistantPublic591SuccessorCaller,
+});
+
+// Inactive preparation only. No next tuple, release, output or SQL is issued.
+// The genuine issued598 canonical is the only predecessor; ACTIVE stays598.
+export const ASSISTANT_AFTER598_BEFORE=Object.freeze({...ASSISTANT_AFTER597_BINDING,
+  canonicalSha256:ASSISTANT_AFTER597_OUTPUT.canonicalSha256});
+export const ASSISTANT_AFTER598_BINDING=null;
+export const ASSISTANT_AFTER598_OUTPUT=null;
+export const ASSISTANT_AFTER598_RELEASE=null;
+export const ASSISTANT_AFTER598_ALIASES=Object.freeze([
+  Object.freeze({name:'ravradar_ravscore_checkpoint_ask598_state_valid',signature:'(jsonb,text)'}),
+  Object.freeze({name:'ravradar_ravscore_checkpoint_ask598_payload_valid',signature:'(jsonb,timestamptz)'}),
+]);
+export function requireAssistantAfter598Binding(){
+  assert.equal(arguments.length,0,'No caller-selected assistant binding');
+  assert(ASSISTANT_AFTER598_BINDING&&Object.isFrozen(ASSISTANT_AFTER598_BINDING),'ASSISTANT_AFTER598_UNISSUED');
+  const binding=ASSISTANT_AFTER598_BINDING;
+  assert.deepEqual(Object.keys(binding).sort(),['C','I','T','version']);
+  assert.match(binding.version,/^[0-9]{14}$/);assert(binding.version>ASSISTANT_AFTER598_BEFORE.version);
+  for(const key of ['C','I','T'])assert.match(binding[key],/^[a-f0-9]{64}$/);
+  assert.equal(new Set(['C','I','T'].flatMap(key=>[binding[key],ASSISTANT_AFTER598_BEFORE[key]])).size,6);
+  assertSource598CodeSourceSelected();
+  return binding;
+}
+export function requireAssistantAfter598Output(){
+  assert.equal(arguments.length,0);requireAssistantAfter598Binding();
+  assert(ASSISTANT_AFTER598_OUTPUT&&Object.isFrozen(ASSISTANT_AFTER598_OUTPUT),'ASSISTANT_AFTER598_SQL_UNISSUED');
+  const output=ASSISTANT_AFTER598_OUTPUT;
+  assert.deepEqual(Object.keys(output).sort(),['canonicalSha256','checkpointContractSha256','migrationSha256','tripBindingPolicySha256']);
+  for(const value of Object.values(output))assert.match(value,/^[a-f0-9]{64}$/);
+  return output;
+}
+export function requireAssistantAfter598Release(){
+  assert.equal(arguments.length,0);requireAssistantAfter598Output();
+  assert.equal(typeof ASSISTANT_AFTER598_RELEASE,'string');
+  assert.match(ASSISTANT_AFTER598_RELEASE,/^4\.0\.[0-9]+$/);
+  assert(Number(ASSISTANT_AFTER598_RELEASE.split('.').at(-1))>598);
+  return ASSISTANT_AFTER598_RELEASE;
+}
+export function assistantAfter598Migration(){
+  assert.equal(arguments.length,0);const{version}=requireAssistantAfter598Binding();
+  const id=version+'_assistant_after598_original598_bound_successor';
+  return Object.freeze({version,id,filename:id+'.sql'});
+}
+export function assistantAfter598CheckpointContractFromBase(source,base){
+  assert.equal(arguments.length,2);
+  let text=assistantAfter597CheckpointContractFromBase(source,base).definition;
+  for(const[index,alias]of ASSISTANT_AFTER598_ALIASES.entries()){
+    const whole=nativeOriginalContinuityDefinition(source,alias.name);
+    text+='\n-- assistant-later-h0-original598-'+(index===0?'state':'payload')+'-validator --\n'
+      +whole.slice(whole.indexOf('as $$')+5,whole.lastIndexOf('$$;')).replace(/\r\n?/g,'\n').trim();
+  }
+  return Object.freeze({id:base.id,definition:text,sha256:sha(text)});
+}
+const ASSISTANT_AFTER598_SOURCE=Object.freeze({
+  readPredecessor:readAssistantAfter597CanonicalSource,aliases:ASSISTANT_AFTER598_ALIASES,previousRelease:598,
+});
+export async function readAssistantAfter598CanonicalSource(options){
+  assert(arguments.length<=1);const output=requireAssistantAfter598Output();
+  return readFixedCanonicalSource(ASSISTANT_AFTER598_SOURCE,options,output,assistantAfter598Migration());
+}
+// Hele den ægte598-S skal kunne genskabes; kun udstedte metadata må ændres.
+// Værdisammenligning alene giver ingen original-, SQL- eller runtimeautoritet.
+export function assertAssistantAfter598CheckpointInverse(old,incoming,next){
+  assert.equal(arguments.length,3);requireAssistantAfter598Output();
+  assert.deepEqual(next,requireAssistantAfter598Binding());
+  const before=ASSISTANT_AFTER598_BEFORE;
+  assert.equal(old?.modelBinding?.modelBundleSha256,before.I);
+  assert.equal(old?.candidateGRollbackCompanion?.modelBinding?.modelBundleSha256,before.C);
+  assert.equal(old?.continuationStateContractSha256,before.T);
+  assert.equal(incoming?.modelBinding?.modelBundleSha256,next.I);
+  assert.equal(incoming?.candidateGRollbackCompanion?.modelBinding?.modelBundleSha256,next.C);
+  assert.equal(incoming?.continuationStateContractSha256,next.T);
+  const ids=Object.keys(old.states).sort();assert.equal(ids.length,673);
+  assert.deepEqual(Object.keys(old.candidateGRollbackCompanion.states).sort(),ids);
+  assert.deepEqual(Object.keys(incoming.states).sort(),ids);
+  assert.deepEqual(Object.keys(incoming.candidateGRollbackCompanion.states).sort(),ids);
+  const inverse=structuredClone(incoming);
+  inverse.modelBinding.modelBundleSha256=before.I;
+  inverse.candidateGRollbackCompanion.modelBinding.modelBundleSha256=before.C;
+  inverse.continuationStateContractSha256=before.T;
+  for(const id of ids){
+    assert.equal(inverse.states[id].modelBundleSha256,next.I);
+    inverse.states[id].modelBundleSha256=old.states[id].modelBundleSha256;
+    const candidate=inverse.candidateGRollbackCompanion.states[id];
+    if(Object.hasOwn(candidate,'modelBundleSha256')){
+      assert.equal(candidate.modelBundleSha256,next.C);
+      assert(Object.hasOwn(old.candidateGRollbackCompanion.states[id],'modelBundleSha256'));
+      candidate.modelBundleSha256=old.candidateGRollbackCompanion.states[id].modelBundleSha256;
+    }
+  }
+  for(const key of ['generationSha256','stateSha256']){
+    inverse[key]=old[key];
+    if(Object.hasOwn(old.candidateGRollbackCompanion,key))inverse.candidateGRollbackCompanion[key]=old.candidateGRollbackCompanion[key];
+  }
+  assert.deepEqual(inverse,old,'Hele den originale598-checkpoint skal genskabes');return true;
+}
+export function assertAssistantAfter598Target(descriptor,targetReferenceAt){
+  assert.equal(arguments.length,2);
+  assert.equal(descriptor?.modelBinding?.modelBundleSha256,ASSISTANT_AFTER598_BEFORE.I);
+  assert.equal(descriptor?.contractHashes?.continuationStateContractSha256,ASSISTANT_AFTER598_BEFORE.T);
+  for(const value of [descriptor.productionReferenceAt,targetReferenceAt]){
+    assert.equal(typeof value,'string');assert.match(value,/^\d{4}-\d{2}-\d{2}T\d{2}:00:00\.000Z$/);
+    assert.equal(new Date(value).toISOString(),value);
+  }
+  assert(Date.parse(targetReferenceAt)>Date.parse(descriptor.productionReferenceAt),'ASSISTANT_AFTER598_STRICTLY_LATER');
+  return true; // Input constraint only, no original authentication or SQL authority.
+}
+export const INACTIVE_ASSISTANT_AFTER598_SUCCESSOR=Object.freeze({
+  sourcePhase:'assistant-after598-successor',
+  before:ASSISTANT_AFTER598_BEFORE,databaseBefore:ASSISTANT_AFTER598_BEFORE,originalStateFamily:'598',
+  binding:ASSISTANT_AFTER598_BINDING,output:ASSISTANT_AFTER598_OUTPUT,
+  requireBinding:requireAssistantAfter598Binding,requireOutput:requireAssistantAfter598Output,
+  requireRelease:requireAssistantAfter598Release,migration:assistantAfter598Migration,
+  readCanonicalSource:readAssistantAfter598CanonicalSource,
+  readPredecessorCanonicalSource:readAssistantAfter597CanonicalSource,
+  assertTarget:assertAssistantAfter598Target,assertCaller:assertAssistantPublic591SuccessorCaller,
 });
 
 export const ACTIVE_ASSISTANT_SUCCESSOR=UNISSUED_ASSISTANT_AFTER597_SUCCESSOR;

@@ -291,6 +291,12 @@ export function localRavQuestionRequiresWholeAnswer(question) {
   const normalized = normalizeKnowledgeQuestion(text);
   const exactFaq = Object.values(LOCAL_RAV_KNOWLEDGE_EXAMPLES).some(examples =>
     examples.some(example => normalizeKnowledgeQuestion(example) === normalized));
+  // Reuse the coordinated-weather boundary: a broad first-topic match does not
+  // cover another weather subject in the same grammatical clause.
+  const coordinatedWeather = !exactFaq && [
+    /(?<![\p{L}\p{N}_])(?:(?:hav)?strøm(?:men|mens|me|mene|retning(?:en|ens|er|erne)?|hastighed(?:en|ens)?)?|(?:meeres)?strömung(?:en|srichtung(?:en)?|sgeschwindigkeit(?:en)?)?|currents?)(?![\p{L}\p{N}_])/iu,
+    /(?<![\p{L}\p{N}_])(?:bølge(?:n|r|rne|højde(?:n|r)?|periode(?:n|r)?)?|welle(?:n(?:höhe|periode|richtung)?n?)?|waves?)(?![\p{L}\p{N}_])/iu,
+  ].every(pattern => pattern.test(text));
   const materialComparison = !exactFaq
     && /^(?:hvorfor|hvordan|forklar|kan|warum|wie|erkläre?|kann|why|how|explain|can)(?!\p{L})/iu.test(text)
     && /(?<![\p{L}\p{N}_])(?:rav(?:et|ets)?|bernstein(?:s)?|amber(?:['’]s)?)(?![\p{L}\p{N}_])/iu.test(text)
@@ -300,7 +306,7 @@ export function localRavQuestionRequiresWholeAnswer(question) {
   const starter = String.raw`(?:hvor|hvordan|hvorfor|hvad|hvilk(?:et|en|e)|kan|er|betyder|wo|wie|warum|was|welch(?:e|es|er)|kann(?:st)?|können|ist|bedeutet|garantiert|where|how|why|what|which|can|is|does)\b`;
   const clauses = text.split(new RegExp(
     String.raw`[?？]\s*(?=\p{L})|[,:.;]\s*(?:(?:og|und|and)\s+)?(?=${starter})|\s+(?:og|und|and)\s+(?=${starter})`, 'iu'));
-  return materialComparison || clauses.filter(clause => clause.trim()).length > 1;
+  return materialComparison || coordinatedWeather || clauses.filter(clause => clause.trim()).length > 1;
 }
 
 export function matchLocalRavKnowledge(question) {

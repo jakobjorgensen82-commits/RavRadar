@@ -11,7 +11,7 @@ import {promisify} from 'node:util';
 const execute=promisify(callbackExec);
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 function fixedSource(profile){
-  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588||profile===FROZEN590||profile===FROZEN591||profile===SOURCE594_CODE_PROFILE||profile===SOURCE594_ORIGINAL_DATA_PROFILE||profile===SOURCE597_CODE_PROFILE||profile===SOURCE597_ORIGINAL_DATA_PROFILE,'FROZEN_SOURCE_UNKNOWN_PROFILE');
+  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588||profile===FROZEN590||profile===FROZEN591||profile===SOURCE594_CODE_PROFILE||profile===SOURCE594_ORIGINAL_DATA_PROFILE||profile===SOURCE597_CODE_PROFILE||profile===SOURCE597_ORIGINAL_DATA_PROFILE||profile===SOURCE598_CODE_PROFILE||profile===SOURCE598_ORIGINAL_DATA_PROFILE,'FROZEN_SOURCE_UNKNOWN_PROFILE');
   const HEAD=profile.head,TREE=profile.tree;
 const C='scripts/rollback-assets/ravscore-model-bundle.generated.js';
 const I='js/core/ravscore-model-bundle.generated.js';
@@ -337,7 +337,39 @@ export async function assertSource597OriginSnapshotData(options) {
     &&same(pair.candidate,checkpoint.candidateGRollbackCompanion.states[id]),'B_S_DIFFER');
 }
 `;
-const ASSERTION_SUFFIX=profile===SOURCE597_ORIGINAL_DATA_PROFILE?SOURCE_597_ASSERTION_SUFFIX:profile===SOURCE594_ORIGINAL_DATA_PROFILE?SOURCE_594_ASSERTION_SUFFIX:profile===FROZEN591?ORIGINAL_591_ASSERTION_SUFFIX:profile===FROZEN590?ORIGINAL_590_ASSERTION_SUFFIX:profile===FROZEN588?ORIGINAL_588_ASSERTION_SUFFIX:profile===FROZEN586?ORIGINAL_586_ASSERTION_SUFFIX:
+const SOURCE_598_ASSERTION_SUFFIX=String.raw`
+// DATA assertions over whole selected normal598 origin implementation.
+// No original/ForPart/finalizer handle or metadata admission is minted here.
+async function source598OriginData(descriptor,conditions,centralContract) {
+  const {validateProtectedPrivateRuntimeDescriptor} = await import('../protected-private-production-runtime.mjs');
+  need(same(validateProtectedPrivateRuntimeDescriptor(descriptor),descriptor),'SOURCE_598_DESCRIPTOR');
+  const binding=ravScoreModelBinding(),candidate=candidateBinding(),contracts=await privateRuntimeContractHashes();
+  need(same(descriptor.modelBinding,binding)&&same(descriptor.contractHashes,contracts),'SOURCE_598_FAMILY');
+  const parts=registryParts(centralContract),pairs=pairsFromConditions(conditions,parts);
+  const currentSource=Object.freeze({sourceHead:descriptor.sourceHead,
+    semanticContract:ESTABLISHED_NATIVE_CURRENT_SEMANTIC_CONTRACT,
+    integrated:binding.modelBundleSha256,candidate:candidate.modelBundleSha256,
+    continuation:contracts.continuationStateContractSha256,ownerPolicyGitBlob:SEED.ownerPolicyGitBlob});
+  need(conditions[ATTEST]?.kind===KIND&&conditions[ATTEST]?.transition==='NORMAL_STRICT_CONTINUATION','SOURCE_598_NORMAL_GENERATION_REQUIRED');
+  validateAttestation(conditions[ATTEST],{descriptor,conditions,central:centralContract,pairs,currentSource});
+  need(conditions[ATTEST].registrySha256===digest(centralContract),'METADATA_REGISTRY_CHANGED');
+  return {pairs,binding,candidate,contracts};
+}
+export async function assertSource598OriginSnapshotData(options) {
+  need(arguments.length===1&&exact(options,['descriptor','conditions','centralContract','checkpoint']),'ARGUMENTS');
+  const {descriptor,conditions,centralContract,checkpoint}=options;
+  const {pairs,binding,candidate,contracts}=await source598OriginData(descriptor,conditions,centralContract);
+  need(same(checkpoint.modelBinding,binding)&&same(checkpoint.candidateGRollbackCompanion?.modelBinding,candidate)
+    &&checkpoint.continuationStateContractSha256===contracts.continuationStateContractSha256
+    &&checkpoint.datasetId===conditions.datasetId&&checkpoint.productionReferenceAt===conditions.productionReferenceAt
+    &&SHA.test(checkpoint.generationSha256),'SOURCE_598_CHECKPOINT');
+  need(same(Object.keys(checkpoint.states??{}).sort(),[...pairs.keys()].sort())
+    &&same(Object.keys(checkpoint.candidateGRollbackCompanion?.states??{}).sort(),[...pairs.keys()].sort()),'PARTS');
+  for(const[id,pair]of pairs)need(same(pair.integrated,checkpoint.states[id])
+    &&same(pair.candidate,checkpoint.candidateGRollbackCompanion.states[id]),'B_S_DIFFER');
+}
+`;
+const ASSERTION_SUFFIX=profile===SOURCE598_ORIGINAL_DATA_PROFILE?SOURCE_598_ASSERTION_SUFFIX:profile===SOURCE597_ORIGINAL_DATA_PROFILE?SOURCE_597_ASSERTION_SUFFIX:profile===SOURCE594_ORIGINAL_DATA_PROFILE?SOURCE_594_ASSERTION_SUFFIX:profile===FROZEN591?ORIGINAL_591_ASSERTION_SUFFIX:profile===FROZEN590?ORIGINAL_590_ASSERTION_SUFFIX:profile===FROZEN588?ORIGINAL_588_ASSERTION_SUFFIX:profile===FROZEN586?ORIGINAL_586_ASSERTION_SUFFIX:
   assertionNames.reduce((source,[before,after])=>{assert(source.includes(before));return source.replaceAll(before,after);},ORIGINAL_586_ASSERTION_SUFFIX);
 if(profile===FROZEN587)assert.equal([...assertionNames].reverse().reduce(
   (source,[before,after])=>source.replaceAll(after,before),ASSERTION_SUFFIX),ORIGINAL_586_ASSERTION_SUFFIX,'Whole assertion-suffix inverse');
@@ -363,6 +395,8 @@ async function exactTree(root,files,index,gitReference){
   await visit(root);assert.deepEqual([...seen].sort(),files);
 }
 async function withSource(useVerifiedSource){
+  if(profile===SOURCE598_ORIGINAL_DATA_PROFILE)assertSource598OriginalDataSourceSelected();
+  if(profile===SOURCE598_CODE_PROFILE)assertSource598CodeSourceSelected();
   if(profile===SOURCE597_ORIGINAL_DATA_PROFILE)assertSource597OriginalDataSourceSelected();
   if(profile===SOURCE597_CODE_PROFILE)assertSource597CodeSourceSelected();
   if(profile===SOURCE594_ORIGINAL_DATA_PROFILE)assertSource594OriginalDataSourceSelected();
@@ -388,7 +422,8 @@ async function withSource(useVerifiedSource){
     for(const file of files){const output=path.resolve(root,file);assert(inside(root,output));await fs.mkdir(path.dirname(output),{recursive:true});
       await fs.writeFile(output,await materializedBytes(file,index,gitReference),{flag:'wx',mode:0o600});}
     await exactTree(root,files,index,gitReference);
-    const builderArgs=(profile===SOURCE597_CODE_PROFILE||profile===SOURCE597_ORIGINAL_DATA_PROFILE)?['--scalar597-later-h0','--check']:
+    const builderArgs=(profile===SOURCE598_CODE_PROFILE||profile===SOURCE598_ORIGINAL_DATA_PROFILE)?['--assistant-after597','--check']:
+      (profile===SOURCE597_CODE_PROFILE||profile===SOURCE597_ORIGINAL_DATA_PROFILE)?['--scalar597-later-h0','--check']:
       (profile===SOURCE594_CODE_PROFILE||profile===SOURCE594_ORIGINAL_DATA_PROFILE)?['--installed593-origin591-successor','--check']:
       profile===FROZEN591?['--public590-successor','--check']:
       profile===FROZEN590?['--public588-successor','--check']:
@@ -586,6 +621,38 @@ const SOURCE597_ORIGINAL_DATA_PROFILE=Object.freeze({...SOURCE597_CODE_PROFILE,
   purpose:'NEW_NORMAL_597_ORIGINAL_DATA_ASSERTIONS_ONLY_NO_ADMISSION',
   assertion:'scripts/lib/established-native-current-origin-597-assertion.mjs',temporaryPrefix:'rr-source-a597-data-'});
 
+// Inactive successor family with fixed old598 CODE provenance.
+// This CODE selection and old tuple create no data/installation authority.
+export const SOURCE598_CODE_SOURCE_PROVENANCE=Object.freeze({
+  "selected": true,
+  "purpose": "CODE_ONLY_NO_ORIGINAL_OR_RUNTIME_ADMISSION",
+  "head": "82200280c42b9060f14be2721ba7b766e0ede5a6",
+  "tree": "c69c1beed4275fb02af216a1c4741410555e2675",
+  "candidateFiles": 101,
+  "integratedFiles": 100,
+  "originSha256": "fe1dad972fc236c42ebb3c9457d9c192f81ede06dd6e85a2978bdf6aa8407916",
+  "partPipelineSha256": "8e979128a682a7324d7defcc3d2d2dfa5edc85ebc22d4ae714810aa085490758",
+  "fullRuntimeContractSha256": "ede0b53b8ed0f3fa5d0e505ea7c07d98969dc7a38fe94ae034a85f9c5d5af7ff",
+  "publicProjectionContractSha256": "24e95d442450769ff233e42aa4b100842c353c8d28735defbbfef5d5457c99ec"
+});
+const SOURCE598_CODE_PROFILE=Object.freeze({
+  ...SOURCE598_CODE_SOURCE_PROVENANCE,
+  builder:'scripts/build-assistant-later-h0-successor.mjs',
+  builderChecked:'Præcis assistentkilde efter597 kontrolleret; ingen installation eller tilstandsoptagelse.',
+  assertion:null,temporaryPrefix:'rr-source-a598-code-',
+  candidate:'239ac83f1df6050438243068bba5d942c4e88a921d0b70d611a12f0c798d3f5a',
+  integrated:'f8d8befa7ecda82f8194c0ca04142bd89f5c39e92ed37cda70afca8dded108d1',
+  additionalMigrations:Object.freeze([...SOURCE597_CODE_PROFILE.additionalMigrations,
+    Object.freeze({path:'supabase/migrations/20261105064515_assistant_after597_original597_bound_successor.sql',
+      sha256:'8d566a81056b26a969cdf19107f8a39d97d799f20594141f94529f6d2a2fe98f'})]),
+  runtimeContracts:Object.freeze({continuationStateContractSha256:'035008731e6fac3fca396110b3d0ff3486e4854baa99bd691e2a7ea541191579',
+    fullRuntimeContractSha256:SOURCE598_CODE_SOURCE_PROVENANCE?.fullRuntimeContractSha256??null,
+    publicProjectionContractSha256:SOURCE598_CODE_SOURCE_PROVENANCE?.publicProjectionContractSha256??null}),
+});
+const SOURCE598_ORIGINAL_DATA_PROFILE=Object.freeze({...SOURCE598_CODE_PROFILE,
+  purpose:'NEW_NORMAL_598_ORIGINAL_DATA_ASSERTIONS_ONLY_NO_ADMISSION',
+  assertion:'scripts/lib/established-native-current-origin-598-assertion.mjs',temporaryPrefix:'rr-source-a598-data-'});
+
 // Hver fast profil ejer sin cache; samme relative sti kan aldrig genbruge den anden familie.
 const source586=fixedSource(FROZEN586),source587=fixedSource(FROZEN587),source588=fixedSource(FROZEN588);
 export async function withAuthenticated586PredecessorSource(useVerifiedSource){
@@ -695,4 +762,33 @@ export function assertSource597OriginalDataSourceSelected(){
 }
 export async function withSource597OriginalDataSource(callback){
   assertSource597OriginalDataSourceSelected();return source597OriginalData(...arguments);
+}
+
+const source598Code=fixedSource(SOURCE598_CODE_PROFILE);
+const source598OriginalData=fixedSource(SOURCE598_ORIGINAL_DATA_PROFILE);
+export function assertSource598CodeSourceSelected(){
+  assert.equal(arguments.length,0,'No caller-selected598 CODE source');
+  const source=SOURCE598_CODE_SOURCE_PROVENANCE;
+  assert(source&&Object.isFrozen(source),'SOURCE598_CODE_UNSELECTED');
+  assert.equal(source.selected,true);assert.equal(source.purpose,'CODE_ONLY_NO_ORIGINAL_OR_RUNTIME_ADMISSION');
+  assert.deepEqual(Object.keys(source).sort(),['candidateFiles','fullRuntimeContractSha256','head','integratedFiles',
+    'originSha256','partPipelineSha256','publicProjectionContractSha256','purpose','selected','tree'].sort());
+  for(const key of ['head','tree'])assert.match(source[key],/^[a-f0-9]{40}$/);
+  for(const key of ['candidateFiles','integratedFiles'])assert(Number.isSafeInteger(source[key])&&source[key]>0);
+  for(const key of ['originSha256','partPipelineSha256','fullRuntimeContractSha256','publicProjectionContractSha256'])
+    assert.match(source[key],/^[a-f0-9]{64}$/);
+  return source; // CODE data only; no current original or runtime capability.
+}
+export async function withSource598CodeParent(callback){
+  assertSource598CodeSourceSelected();return source598Code(...arguments);
+}
+export function assertSource598OriginalDataSourceSelected(){
+  assert.equal(arguments.length,0);assertSource598CodeSourceSelected();
+  assert.equal(SOURCE598_ORIGINAL_DATA_PROFILE.purpose,'NEW_NORMAL_598_ORIGINAL_DATA_ASSERTIONS_ONLY_NO_ADMISSION');
+  assert.equal(SOURCE598_ORIGINAL_DATA_PROFILE.head,SOURCE598_CODE_SOURCE_PROVENANCE.head);
+  assert.equal(SOURCE598_ORIGINAL_DATA_PROFILE.tree,SOURCE598_CODE_SOURCE_PROVENANCE.tree);
+  assert.equal(SOURCE598_ORIGINAL_DATA_PROFILE.assertion,'scripts/lib/established-native-current-origin-598-assertion.mjs');
+}
+export async function withSource598OriginalDataSource(callback){
+  assertSource598OriginalDataSourceSelected();return source598OriginalData(...arguments);
 }

@@ -59,4 +59,21 @@ export const RELEASE_GATE_TEST_FILES = Object.freeze([
   'scripts/test-reusable-production-workflows.mjs',
   'scripts/test-hydrated-atomic-dataset-4.0.67.mjs',
   'scripts/test-hydrate-deployed-weather-fail-closed-4.0.272.mjs',
+  'scripts/test-assistant-after597-fixed-generator.mjs',
+  'scripts/test-assistant-after597-migration-prewrite.mjs',
+  'scripts/test-assistant-after597-parent-profiles.mjs',
+  'scripts/test-assistant-after597-runtime-origin.mjs',
+  'scripts/test-assistant-after597-sync-binding.mjs',
 ]);
+
+const AFTER598_CURRENT_TEST_FILES=Object.freeze([
+  "scripts/test-assistant-after597-fixed-generator.mjs",
+  "scripts/test-assistant-after597-migration-prewrite.mjs",
+  "scripts/test-assistant-after597-parent-profiles.mjs",
+  "scripts/test-assistant-after597-runtime-origin.mjs",
+  "scripts/test-assistant-after597-sync-binding.mjs"
+]);
+export function releaseGateTestArguments(file){
+  // Closed argv mapping: the generic checkpoint target remains NON-PG.
+  return AFTER598_CURRENT_TEST_FILES.includes(file)?[file,'--after598-current']:[file];
+}

@@ -14,7 +14,7 @@ import { readDmiBulkDocument } from './lib/dmi-bulk-storage.mjs';
 import { copernicusOfflineEnvironment } from './lib/copernicus-offline-environment.mjs';
 import { classifyProductionTargetFreshness } from './check-production-target-freshness.mjs';
 import { buildPrivateWeatherComponentPack, unpackPrivateWeatherComponentPack, privateWeatherPackJsonReadsClosed,
-  ownFileDescriptorIdentity, ownedFileDescriptorClosed } from './lib/private-weather-component-pack.mjs';
+  ownFileDescriptorIdentity, ownedFileDescriptorClosed, privateWeatherPackSizeFailure } from './lib/private-weather-component-pack.mjs';
 import { PRIVATE_WEATHER_COMPONENT_FILES, PRIVATE_WEATHER_COMPONENT_PACK_FILE } from './lib/private-weather-component-inventory.mjs';
 import { PRIVATE_WEATHER_PROGRESS_ONLY_FILES } from './lib/private-weather-progress-files.mjs';
 import { mergeVerifiedProtectedProgressComponents, protectedProgressUnionFailureCode, protectedProgressPackJsonReadsClosed } from './lib/verified-protected-progress-components.mjs';
@@ -853,10 +853,13 @@ export async function weatherComponentProgressCache({
     const code = error?.progressCode
       ?? (mode === 'save' && SAFE_PACK_ERROR_CODES.has(error?.message) ? error.message : null)
       ?? (mode === 'capture-base' ? 'BASE_UNAVAILABLE' : 'PROGRESS_UNAVAILABLE');
+    const sizeLimitGuard = mode === 'save' && code === 'WEATHER_PACK_SIZE_LIMIT'
+      ? privateWeatherPackSizeFailure(error) : null;
     return restoreInstalled || ['ROLLBACK_FAILED', 'PROTECTED_PROGRESS_UNION_FAILED'].includes(code)
       ? status('RESTORE_REPAIR_REQUIRED', code, { requiresProtectedRestore: true })
       : status('CACHE_MISS', code, mode === 'save' && code === 'WEATHER_PACK_SIZE_LIMIT'
-        ? { postFailureObservation: await postFailureFixedFileObservation(saveObservationRoot, packInvocation) } : {});
+        ? { ...(sizeLimitGuard ? { sizeLimitGuard } : {}),
+            postFailureObservation: await postFailureFixedFileObservation(saveObservationRoot, packInvocation) } : {});
   } finally {
     if (cipherTemporary) await fs.unlink(cipherTemporary).catch(() => {});
     // Preserve earlier primary errors, especially failed rollback/union,

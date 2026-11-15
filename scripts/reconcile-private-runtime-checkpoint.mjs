@@ -38,7 +38,7 @@ import { ownFileDescriptorIdentity, ownedFileDescriptorClosed } from './lib/priv
 import { classifyProductionTargetFreshness } from './check-production-target-freshness.mjs';
 import { PRIVATE_CONDITIONS_MAX_BYTES } from './lib/bounded-json-writer.mjs';
 
-import {withAuthenticated591PredecessorSource,withSource594OriginalDataSource,withSource597OriginalDataSource}
+import {withAuthenticated591PredecessorSource,withSource594OriginalDataSource,withSource597OriginalDataSource,withSource598OriginalDataSource}
   from './check-assistant-later-h0-predecessor-source.mjs';
 import {ASSISTANT_LATER_H0_BINDING as ASSISTANT_LATER_FAMILY,
   ASSISTANT_PUBLIC587_SUCCESSOR_BINDING as ASSISTANT_PUBLIC587_FAMILY,
@@ -47,7 +47,8 @@ import {ASSISTANT_LATER_H0_BINDING as ASSISTANT_LATER_FAMILY,
   ASSISTANT_PUBLIC591_SUCCESSOR_BINDING as ASSISTANT_PUBLIC591_FAMILY,
   INSTALLED593_ORIGINAL591_BINDING as INSTALLED593_ORIGINAL591_FAMILY,
   SCALAR597_LATER_H0_BINDING as SCALAR597_FAMILY,
-  ASSISTANT_AFTER597_BINDING as ASSISTANT_AFTER597_FAMILY,requireAssistantAfter597Output}
+  ASSISTANT_AFTER597_BINDING as ASSISTANT_AFTER597_FAMILY,requireAssistantAfter597Output,
+  ASSISTANT_AFTER598_BINDING as ASSISTANT_AFTER598_FAMILY,requireAssistantAfter598Output}
   from './lib/assistant-later-h0-successor-source.mjs';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const sha = raw => crypto.createHash('sha256').update(raw).digest('hex');
@@ -58,6 +59,8 @@ const DIRECT_RECONCILE_CLI = Boolean(process.argv[1]
 const RECONCILE_DIAGNOSTIC_PHASES = new Set(["UNCLASSIFIED","CLI_REQUEST","CLI_MAIN_IDENTITY","CLI_COMMAND","CLI_SOURCE_SELECTION","CLI_OUTPUT","CURRENT_POINTER","CURRENT_IDENTITY","B_PATH","B_VERIFY","INSTALLED_SOURCE","LOCAL_S_ABSENT","DERIVE_S","RESTORE_S","S_RELATION_GUARD","CAS_STABILITY","CAS_PUBLISH","CAS_READBACK","FINAL_STABILITY","LOCAL_S_INSTALL","TEMP_CLEANUP"]);
 const RECONCILE_DIAGNOSTIC_MESSAGES = new Map([["PAIRED_PUBLICATION_B_IDENTITY","B_IDENTITY"],["PAIRED_PUBLICATION_B_PATH","B_PATH"],["PAIRED_PUBLICATION_B_S_DIFFER","B_S_DIFFER"],["PAIRED_PUBLICATION_CLOSE_UNPROVED","CLOSE_UNPROVED"],["PAIRED_PUBLICATION_COMMAND","COMMAND"],["PAIRED_PUBLICATION_CURRENT_IDENTITY","CURRENT_IDENTITY"],["PAIRED_PUBLICATION_DERIVED_REFERENCE","DERIVED_REFERENCE"],["PAIRED_PUBLICATION_FILE","FILE"],["PAIRED_PUBLICATION_FILE_CHANGED","FILE_CHANGED"],["PAIRED_PUBLICATION_GENUINE591_STRICTLY_OLDER","GENUINE591_STRICTLY_OLDER"],["PAIRED_PUBLICATION_GENUINE594_STRICTLY_OLDER","GENUINE594_STRICTLY_OLDER"],["PAIRED_PUBLICATION_INSTALLED_B_CHANGED","INSTALLED_B_CHANGED"],["PAIRED_PUBLICATION_INSTALLED_SOURCE_CHANGED","INSTALLED_SOURCE_CHANGED"],["PAIRED_PUBLICATION_LINK","LINK"],["PAIRED_PUBLICATION_MAIN","MAIN"],["PAIRED_PUBLICATION_METADATA_CURRENT_FAMILY","METADATA_CURRENT_FAMILY"],["PAIRED_PUBLICATION_METADATA_INSTALLED_CURRENT_REQUEST","METADATA_INSTALLED_CURRENT_REQUEST"],["PAIRED_PUBLICATION_METADATA_OPERATIONAL_ACTION","METADATA_OPERATIONAL_ACTION"],["PAIRED_PUBLICATION_NATIVE_METADATA_CURRENT_FAMILY","NATIVE_METADATA_CURRENT_FAMILY"],["PAIRED_PUBLICATION_NATIVE_METADATA_INSTALLED_CURRENT_REQUEST","NATIVE_METADATA_INSTALLED_CURRENT_REQUEST"],["PAIRED_PUBLICATION_NATIVE_METADATA_OPERATIONAL_ACTION","NATIVE_METADATA_OPERATIONAL_ACTION"],["PAIRED_PUBLICATION_NON_ORDINARY_REQUEST","NON_ORDINARY_REQUEST"],["PAIRED_PUBLICATION_OPERATIONAL_ACTION","OPERATIONAL_ACTION"],["PAIRED_PUBLICATION_PARENT","PARENT"],["PAIRED_PUBLICATION_PARENT_CHANGED","PARENT_CHANGED"],["PAIRED_PUBLICATION_POINTER","POINTER"],["PAIRED_PUBLICATION_POINTER_CHANGED","POINTER_CHANGED"],["PAIRED_PUBLICATION_SAME_H0_METADATA_ORIGINALS","SAME_H0_METADATA_ORIGINALS"],["PAIRED_PUBLICATION_SAME_H0_NATIVE_METADATA_ORIGINALS","SAME_H0_NATIVE_METADATA_ORIGINALS"],["PAIRED_PUBLICATION_SAVED_MODE_COLLISION","SAVED_MODE_COLLISION"],["PAIRED_PUBLICATION_SAVED_OPERATIONAL_ACTION","SAVED_OPERATIONAL_ACTION"],["PAIRED_PUBLICATION_SAVED_REQUEST","SAVED_REQUEST"],["PAIRED_PUBLICATION_SAVED_WORK_PATH","SAVED_WORK_PATH"],["PAIRED_PUBLICATION_S_CHANGED_BEFORE_PUBLISH","S_CHANGED_BEFORE_PUBLISH"],["PAIRED_PUBLICATION_S_CHANGED_BEFORE_READ","S_CHANGED_BEFORE_READ"],["PAIRED_PUBLICATION_S_DISPOSITION","S_DISPOSITION"],["PAIRED_PUBLICATION_S_NOT_BEHIND","S_NOT_BEHIND"],["PAIRED_PUBLICATION_S_READBACK_DIFFER","S_READBACK_DIFFER"],["PAIRED_PUBLICATION_S_READBACK_MISSING","S_READBACK_MISSING"],["PAIRED_PUBLICATION_S_ROW","S_ROW"],["PAIRED_PUBLICATION_S_VERSION_CHANGED_BEFORE_PUBLISH","S_VERSION_CHANGED_BEFORE_PUBLISH"],["PAIRED_PUBLICATION_UNSUPPORTED_FAMILY","UNSUPPORTED_FAMILY"],["PAIRED_PUBLICATION_WORKFLOW","WORKFLOW"],["PAIRED_PUBLICATION_WORK_CHANGED","WORK_CHANGED"]]);
 RECONCILE_DIAGNOSTIC_MESSAGES.set('PAIRED_PUBLICATION_GENUINE597_STRICTLY_OLDER','GENUINE597_STRICTLY_OLDER');
+for(const code of ['GENUINE598_STRICTLY_OLDER','AFTER598_CURRENT_FAMILY','AFTER598_OPERATIONAL_ACTION'])
+  RECONCILE_DIAGNOSTIC_MESSAGES.set('PAIRED_PUBLICATION_'+code,code);
 const RECONCILE_DIAGNOSTIC_FIXED_ERRORS = new Map([
   ['PRODUCTION_TARGET_TIME_INVALID', 'TARGET_TIME_INVALID'],
   ['PRODUCTION_TARGET_HORIZON_INVALID', 'TARGET_HORIZON_INVALID'],
@@ -116,22 +119,41 @@ function reconcileFamily(descriptor) {
   return [FAMILY, NEXT_FAMILY, METADATA_FAMILY, NATIVE_METADATA_FAMILY,
     ASSISTANT_LATER_FAMILY, ASSISTANT_PUBLIC587_FAMILY,
     ASSISTANT_PUBLIC588_FAMILY,ASSISTANT_PUBLIC590_FAMILY,ASSISTANT_PUBLIC591_FAMILY,
-    INSTALLED593_ORIGINAL591_FAMILY,SCALAR597_FAMILY,ASSISTANT_AFTER597_FAMILY].filter(Boolean).find(family =>
+    INSTALLED593_ORIGINAL591_FAMILY,SCALAR597_FAMILY,ASSISTANT_AFTER597_FAMILY,ASSISTANT_AFTER598_FAMILY].filter(Boolean).find(family =>
     descriptor?.modelBinding?.modelBundleSha256 === family.I
     && descriptor?.contractHashes?.continuationStateContractSha256 === family.T) ?? null;
 }
 export function requiresPrivateRuntimeCheckpointReconcile(descriptor) {
   return reconcileFamily(descriptor) !== null;
 }
+// Only the issued after598 pair can select this new historical-maintenance
+// caller. These are already-produced CURRENT header metadata, never a grant.
+export function requiresAssistantAfter598CheckpointReconcile(descriptor) {
+  if(ASSISTANT_AFTER598_FAMILY === null) return false;
+  requireAssistantAfter598Output();
+  const integrated=descriptor?.modelBinding?.modelBundleSha256 === ASSISTANT_AFTER598_FAMILY.I;
+  const continuation=descriptor?.contractHashes?.continuationStateContractSha256 === ASSISTANT_AFTER598_FAMILY.T;
+  need(integrated === continuation,'AFTER598_CURRENT_FAMILY');
+  return integrated && continuation;
+}
 export function assertPrivateRuntimeCheckpointPublicationDisposition(descriptor, disposition) {
   if (requiresPrivateRuntimeCheckpointReconcile(descriptor)) need(
     ['READY_PUBLISHED', 'MEASURED_WARMUP_PUBLISHED'].includes(disposition), 'S_DISPOSITION');
 }
-export function assertOrdinaryPrivateRuntimeCheckpointReconcileRequest(env = process.env) {
-  need(env.OPERATIONAL_ACTION === 'integrated', 'OPERATIONAL_ACTION');
+function assertOrdinaryReconcileExclusions(env) {
   for (const key of ['COMPLETED_PRIVATE_RUNTIME', 'CHECKPOINT_ONLY', 'QUICK_CONFIRMATION',
     'RAVRADAR_WEATHER_STATE_EPOCH_BOOTSTRAP', 'RAVRADAR_WEATHER_STATE_EPOCH_CHECKPOINT_REENTRY',
     'NATIVE_IDENTITY_RECOVERY']) need(env[key] === 'false', 'NON_ORDINARY_REQUEST');
+}
+export function assertOrdinaryPrivateRuntimeCheckpointReconcileRequest(env = process.env) {
+  need(env.OPERATIONAL_ACTION === 'integrated', 'OPERATIONAL_ACTION');
+  assertOrdinaryReconcileExclusions(env);
+}
+export function assertAssistantAfter598CheckpointReconcileRequest(env = process.env) {
+  need(['integrated','integrated-historical-maintenance'].includes(env.OPERATIONAL_ACTION),'AFTER598_OPERATIONAL_ACTION');
+  // Preserve every ordinary exclusion; the only additional action is confined
+  // to this fixed family and rechecked against the fresh CURRENT below.
+  assertOrdinaryReconcileExclusions(env);
 }
 export function assertSavedPrivateRuntimeCheckpointReconcileRequest(env = process.env) {
   need(['integrated', 'integrated-historical-maintenance'].includes(env.OPERATIONAL_ACTION), 'SAVED_OPERATIONAL_ACTION');
@@ -175,11 +197,29 @@ export function assistantAfter597ReconcileParent(rows,targetReference){
   }
   return old;
 }
+// Fast værdiklassifikation alene; normal ægte598-læser og CAS skal stadig
+// kontrollere hele S. Uudstedt afvises før rækker, target eller transport læses.
+export function assistantAfter598ReconcileParent(rows,targetReference){
+  requireAssistantAfter598Output();assert.equal(arguments.length,2);
+  const old=Array.isArray(rows)&&rows.length===1
+    &&rows[0].payload?.modelBinding?.modelBundleSha256===ASSISTANT_AFTER597_FAMILY.I
+    &&rows[0].payload?.continuationStateContractSha256===ASSISTANT_AFTER597_FAMILY.T;
+  if(old){
+    const earlier=rows[0].payload.productionReferenceAt;
+    for(const value of [earlier,targetReference])need(typeof value==='string'
+      &&/^\d{4}-\d{2}-\d{2}T\d{2}:00:00\.000Z$/.test(value)&&Number.isFinite(Date.parse(value))
+      &&new Date(value).toISOString()===value,'GENUINE598_STRICTLY_OLDER');
+    need(Date.parse(earlier)<Date.parse(targetReference),'GENUINE598_STRICTLY_OLDER');
+  }
+  return old;
+}
 async function restoreReconcilePredecessor({ family, checkpointPath, targetReference, request }) {
   const rows = await readCheckpointRows(request);
   // Reader selection is NOT numerical admission. Normal current validation
   // remains unchanged. A 597 CURRENT B can advance strictly older genuine
   // 594 S, but can neither install that S nor perform a same-H0 transition.
+  const old598 = ASSISTANT_AFTER598_FAMILY!==null&&family===ASSISTANT_AFTER598_FAMILY
+    &&assistantAfter598ReconcileParent(rows,targetReference);
   const old597 = ASSISTANT_AFTER597_FAMILY!==null&&family===ASSISTANT_AFTER597_FAMILY
     &&assistantAfter597ReconcileParent(rows,targetReference);
   const old594 = family === SCALAR597_FAMILY && rows.length === 1
@@ -206,7 +246,11 @@ async function restoreReconcilePredecessor({ family, checkpointPath, targetRefer
   };
   const options = { checkpointPath, targetReference, request: checkedRequest };
   let restored;
-  if(old597) restored = await withSource597OriginalDataSource(async sourceRoot=>{
+  if(old598) restored = await withSource598OriginalDataSource(async sourceRoot=>{
+    const reader=await import(pathToFileURL(path.join(sourceRoot,'scripts/protected-ravscore-continuation-checkpoint.mjs')).href);
+    return reader.restoreProtectedRavScoreContinuationCheckpoint(options);
+  });
+  else if(old597) restored = await withSource597OriginalDataSource(async sourceRoot=>{
     const reader=await import(pathToFileURL(path.join(sourceRoot,'scripts/protected-ravscore-continuation-checkpoint.mjs')).href);
     return reader.restoreProtectedRavScoreContinuationCheckpoint(options);
   });
@@ -232,7 +276,7 @@ async function restoreReconcilePredecessor({ family, checkpointPath, targetRefer
     return reader.restoreProtectedRavScoreContinuationCheckpoint(options);
   });
   else restored = await restoreProtectedRavScoreContinuationCheckpoint(options);
-  return { restored, rows, predecessorFamily: old597 ? SCALAR597_FAMILY : old594 ? INSTALLED593_ORIGINAL591_FAMILY :
+  return { restored, rows, predecessorFamily: old598 ? ASSISTANT_AFTER597_FAMILY : old597 ? SCALAR597_FAMILY : old594 ? INSTALLED593_ORIGINAL591_FAMILY :
     old591 ? ASSISTANT_PUBLIC590_FAMILY : old585 ? METADATA_FAMILY : old584 ? NEXT_FAMILY : old ? FAMILY : family };
 }
 async function readPointer(request) {
@@ -345,6 +389,20 @@ export async function reconcileSavedPrivateRuntimeCheckpoint(options = {}) {
     'SAVED_OPERATIONAL_ACTION');
   return reconcileAuthenticatedPrivateRuntimeCheckpoint(options);
 }
+export async function reconcileAssistantAfter598PrivateRuntimeCheckpoint(options = {}) {
+  requireAssistantAfter598Output();
+  assertAssistantAfter598CheckpointReconcileRequest();
+  need(options.operationalAction === undefined || options.operationalAction === process.env.OPERATIONAL_ACTION,
+    'AFTER598_OPERATIONAL_ACTION');
+  return reconcileAuthenticatedPrivateRuntimeCheckpoint(options,ASSISTANT_AFTER598_FAMILY);
+}
+export async function reconcileSavedAssistantAfter598PrivateRuntimeCheckpoint(options = {}) {
+  requireAssistantAfter598Output();
+  assertSavedPrivateRuntimeCheckpointReconcileRequest();
+  need(options.operationalAction === undefined || options.operationalAction === process.env.OPERATIONAL_ACTION,
+    'SAVED_OPERATIONAL_ACTION');
+  return reconcileAuthenticatedPrivateRuntimeCheckpoint(options,ASSISTANT_AFTER598_FAMILY);
+}
 export async function reconcileAccountStatisticsAssistantPrivateRuntimeCheckpoint(options = {}) {
   assertAccountStatisticsAssistantPrewriteCaller(process.env);
   need(process.env.RAVRADAR_ACCOUNT_STATISTICS_ASSISTANT_SOURCE_ACTIVE === 'true'
@@ -376,14 +434,14 @@ export async function reconcileNativeOriginalContinuityPrivateRuntimeCheckpoint(
     && source.contractHashes?.continuationStateContractSha256 === NATIVE_METADATA_FAMILY.T, 'NATIVE_METADATA_CURRENT_FAMILY');
   return reconcileAuthenticatedPrivateRuntimeCheckpoint({...options,request});
 }
-async function reconcileAuthenticatedPrivateRuntimeCheckpoint(options = {}) {
-  try { return await reconcileAuthenticatedPrivateRuntimeCheckpointObserved(options); }
+async function reconcileAuthenticatedPrivateRuntimeCheckpoint(options = {}, requiredFamily = null) {
+  try { return await reconcileAuthenticatedPrivateRuntimeCheckpointObserved(options,requiredFamily); }
   catch (error) { rememberReconcileFailure(error); throw error; }
 }
 async function reconcileAuthenticatedPrivateRuntimeCheckpointObserved({ repositoryRoot = ROOT, privateRoot, bundlePath,
   checkpointPath = path.join(repositoryRoot, '.cache/ravscore-continuation-checkpoint/checkpoint.json'),
   expected, now = new Date().toISOString(), operationalAction = process.env.OPERATIONAL_ACTION,
-  request, checkpointRequest, checkpointVersionRequest, rpcRequest } = {}) {
+  request, checkpointRequest, checkpointVersionRequest, rpcRequest } = {}, requiredFamily = null) {
   // Both public entry points have their distinct fixed request guard above.
   request ??= createProtectedPrivateRuntimeClients({ storageBackend: 'supabase' }).documentRequest;
   checkpointRequest ??= createProtectedRavScoreCheckpointRequester();
@@ -396,6 +454,7 @@ async function reconcileAuthenticatedPrivateRuntimeCheckpointObserved({ reposito
   markReconcilePhase('CURRENT_POINTER');
   const before = await readPointer(pointerRequest), current = before.pointer.current;
   const family = reconcileFamily(current); need(family !== null, 'UNSUPPORTED_FAMILY');
+  need(requiredFamily === null || family === requiredFamily,'AFTER598_CURRENT_FAMILY');
   classifyProductionTargetFreshness({ target: current.productionReferenceAt, now, maximumAgeMinutes: 150 });
   markReconcilePhase('B_PATH');
   need(path.isAbsolute(privateRoot) && path.isAbsolute(bundlePath) && path.dirname(bundlePath) === privateRoot, 'B_PATH');
@@ -527,28 +586,33 @@ async function main() {
   markReconcilePhase('CLI_REQUEST');
   need(process.env.GITHUB_REF === 'refs/heads/main' && process.env.GITHUB_EVENT_NAME === 'workflow_dispatch', 'WORKFLOW');
   const command = process.argv[2];
-  const savedWeather = ['select-saved', 'reconcile-saved'].includes(command);
+  const after598 = ['select-after598','reconcile-after598','select-after598-saved','reconcile-after598-saved'].includes(command);
+  if(after598) need(process.argv.length === 3,'COMMAND');
+  const savedWeather = ['select-saved', 'reconcile-saved','select-after598-saved','reconcile-after598-saved'].includes(command);
   const metadata = command === 'reconcile-account-statistics-assistant';
   const nativeMetadata = command === 'reconcile-native-original-continuity';
   if (nativeMetadata) { requireNativeOriginalContinuityOutput(); assertNativeOriginalContinuityCodeOnlyCaller(process.env); }
   else if (metadata) assertAccountStatisticsAssistantPrewriteCaller(process.env);
   else if (savedWeather) assertSavedPrivateRuntimeCheckpointReconcileRequest();
+  else if(after598) assertAssistantAfter598CheckpointReconcileRequest();
   else assertOrdinaryPrivateRuntimeCheckpointReconcileRequest();
   markReconcilePhase('CLI_MAIN_IDENTITY');
   const head = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).trim();
   const main = execFileSync('git', ['rev-parse', 'origin/main'], { cwd: ROOT, encoding: 'utf8' }).trim();
   need(head === process.env.GITHUB_SHA && head === main, 'MAIN');
   markReconcilePhase('CLI_COMMAND');
-  if (command === 'select' || command === 'select-saved') {
+  if (['select','select-saved','select-after598','select-after598-saved'].includes(command)) {
     markReconcilePhase('CLI_SOURCE_SELECTION');
     if (savedWeather) need(path.isAbsolute(process.env.RAVRADAR_OPERATIONAL_WORK ?? ''), 'SAVED_WORK_PATH');
     const source = await json(savedWeather
       ? path.join(process.env.RAVRADAR_OPERATIONAL_WORK, 'current-private-runtime-source.json')
       : path.join(process.env.RUNNER_TEMP, 'private-runtime-current-source.json'));
-    await fs.appendFile(process.env.GITHUB_OUTPUT, `required=${requiresPrivateRuntimeCheckpointReconcile(source)}\n`);
+    const required=after598 ? requiresAssistantAfter598CheckpointReconcile(source) : requiresPrivateRuntimeCheckpointReconcile(source);
+    await fs.appendFile(process.env.GITHUB_OUTPUT, `required=${required}\n`);
   } else {
-    need(command === 'reconcile' || command === 'reconcile-saved' || metadata || nativeMetadata, 'COMMAND');
+    need(['reconcile','reconcile-saved','reconcile-after598','reconcile-after598-saved'].includes(command) || metadata || nativeMetadata, 'COMMAND');
     const reconcile = nativeMetadata ? reconcileNativeOriginalContinuityPrivateRuntimeCheckpoint : metadata ? reconcileAccountStatisticsAssistantPrivateRuntimeCheckpoint
+      : after598 ? (savedWeather ? reconcileSavedAssistantAfter598PrivateRuntimeCheckpoint : reconcileAssistantAfter598PrivateRuntimeCheckpoint)
       : savedWeather ? reconcileSavedPrivateRuntimeCheckpoint : reconcilePrivateRuntimeCheckpoint;
     const result = await reconcile({ privateRoot: process.env.RAVRADAR_PRIVATE_RUNTIME_ROOT,
       bundlePath: process.env.RAVRADAR_PRIVATE_RUNTIME_BUNDLE });

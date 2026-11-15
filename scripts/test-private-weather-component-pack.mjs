@@ -12,7 +12,7 @@ import { promisify } from 'node:util';
 import { buildPrivateWeatherComponentPack, unpackPrivateWeatherComponentPack,
   unpackPrivateWeatherComponentCompanions,
   privateWeatherPackJsonReadsClosed, ownFileDescriptorIdentity,
-  ownedFileDescriptorClosed } from './lib/private-weather-component-pack.mjs';
+  ownedFileDescriptorClosed, assertPrivateWeatherPackSize, privateWeatherPackSizeFailure } from './lib/private-weather-component-pack.mjs';
 import { mergeVerifiedProtectedProgressComponents } from './lib/verified-protected-progress-components.mjs';
 import { PRIVATE_RUNTIME_BASE_FILES, PRIVATE_WEATHER_COMPONENT_FILES, PRIVATE_WEATHER_COMPONENT_PACK_FILE,
   PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE,
@@ -368,6 +368,55 @@ test('inventory cancellation observes actual owned process close before temporar
     t.mock.restoreAll();
     syncBuiltinESMExports();
   }
+});
+
+test('pack budget guard records exact descriptor totals at both original refusal points', () => {
+  // Synthetic descriptor arithmetic only, not an oversized physical pack or
+  // an authenticated CP inventory. The same guard is called by both builders.
+  const maximum = 768 * 1024 * 1024, manifestMaximum = 32 * 1024 * 1024;
+  const descriptor = (bytes, relativePath = '.cache/SYNTHETIC_PRIVATE_INPUT.json') => ({
+    relativePath, bytes, sha256: 'a'.repeat(64),
+  });
+  const cp = descriptor(7, '.cache/copernicus-components/objects/' + 'b'.repeat(64) + '.nc');
+  const rejected = (rows, manifestBytes, expected) => {
+    let failure;
+    assert.throws(() => assertPrivateWeatherPackSize(rows, manifestBytes), error => {
+      failure = error;
+      return error.message === 'WEATHER_PACK_SIZE_LIMIT';
+    });
+    const facts = privateWeatherPackSizeFailure(failure);
+    assert.deepEqual(facts, { schemaVersion: 1, kind: 'WEATHER_PACK_SIZE_LIMIT_GUARD',
+      fileCount: rows.length, sourceBytes: rows.reduce((sum, row) => sum + row.bytes, 0),
+      cpReferenceCount: rows.filter(row => row.relativePath.startsWith('.cache/copernicus-components/')).length,
+      cpReferenceBytes: rows.filter(row => row.relativePath.startsWith('.cache/copernicus-components/'))
+        .reduce((sum, row) => sum + row.bytes, 0),
+      headerBytes: 32, manifestBytes, maximumRawPackBytes: maximum, ...expected });
+    assert.equal(JSON.stringify(facts).includes('SYNTHETIC_PRIVATE'), false);
+    facts.sourceBytes = 0;
+    assert.notEqual(privateWeatherPackSizeFailure(failure).sourceBytes, 0,
+      'a returned copy cannot alter the original observation');
+  };
+  assert.equal(assertPrivateWeatherPackSize([descriptor(maximum)]), maximum);
+  assert.equal(assertPrivateWeatherPackSize([descriptor(maximum - 34)], 2), maximum);
+  assert.equal(assertPrivateWeatherPackSize([descriptor(1)], manifestMaximum), 33 + manifestMaximum);
+  rejected([descriptor(maximum - 6), cp], null,
+    { phase: 'SOURCE_INVENTORY', limit: 'SOURCE_BYTES', rawPackBytes: null });
+  rejected(Array.from({ length: 65537 }, () => descriptor(1)), null,
+    { phase: 'SOURCE_INVENTORY', limit: 'FILE_COUNT', rawPackBytes: null });
+  rejected([descriptor(1)], manifestMaximum + 1,
+    { phase: 'SERIALIZED_PACK', limit: 'MANIFEST_BYTES', rawPackBytes: 34 + manifestMaximum });
+  rejected([descriptor(maximum - 33)], 2,
+    { phase: 'SERIALIZED_PACK', limit: 'RAW_PACK_BYTES', rawPackBytes: maximum + 1 });
+  for (const invalidBytes of ['SYNTHETIC_PRIVATE_BYTES', Number.MAX_SAFE_INTEGER + 1, Infinity]) {
+    assert.throws(() => assertPrivateWeatherPackSize([descriptor(invalidBytes)], manifestMaximum + 1), error => {
+      assert.equal(error.message, 'WEATHER_PACK_SIZE_LIMIT');
+      assert.equal(privateWeatherPackSizeFailure(error), null,
+        'non-numeric or unsafe counters cannot become logged facts');
+      return true;
+    });
+  }
+  assert.equal(privateWeatherPackSizeFailure(Object.assign(new Error('WEATHER_PACK_SIZE_LIMIT'),
+    { sizeLimitGuard: { sourceBytes: 123 } })), null, 'copied fields are not a guard observation');
 });
 
 test('fixed inventory accepts the two independent sealed extensions, never arbitrary files', () => {

@@ -1,3 +1,7 @@
+## Præcis lokal kildematerialisering før model- og nativekontrol
+
+Før filer materialiseres i en ny, egen isoleret kildebank, sættes bankens lokale Git-konfiguration til `core.autocrlf=false` og `core.eol=lf`. Før en builder eller nativeprøve skal de faktiske filbytes og SHA-256 sammenholdes med de eksakte indexblobs for alle uændrede PostgreSQL-, C/I/T- og profilinput, også JSON. En grøn normaliseret Git-diff eller samme tree er ikke fysisk bytebevis. Ved checkout-konvertering genskabes alene den egne banks uændrede filer fra deres autentiske blobs; ændrede kilder bevares og gennemgås særskilt. Gamle banker og global Git-konfiguration ændres ikke, og hashberegningen må ikke normalisere afvigelser væk.
+
 ## Tillæg 15. november 2026 — hele SDK-native-prøven i den normale CURRENT-vej
 
 En privat kildekandidat giver området `ownedCacheNative` naturligt ansvar for de to eksisterende prøver `scripts/test-owned-dmi-cache-dependency.mjs` og `scripts/test-owned-dmi-grib-save-native.py`. Den normale plan vælger først `node scripts/test-owned-dmi-cache-dependency.mjs` og derefter `python -B scripts/test-owned-dmi-grib-save-native.py`. Hele Pythonfilens 19 cases skal udføres; en klasseudvælgelse med official-sdk-only kan ikke kvalificere ændringer i hele filen. Fast sikkerhedskerne, uafhængigt kontrolreview, den aktuelle og kumulative plan samt alle oprindelses- og kapacitetskrav består.

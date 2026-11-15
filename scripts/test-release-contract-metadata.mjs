@@ -5,6 +5,9 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { computeRavScoreModelBundle } from './build-ravscore-model-bundle.mjs';
+import { modelSourceRelativeModuleSpecifiers } from './lib/model-source-imports.mjs';
 
 import {
   PRODUCTION_OUTCOME_SCHEMA_VERSION,
@@ -158,6 +161,115 @@ const SYNC_MIGRATION_PATHS = Object.freeze([
   'supabase/migrations/20261013210000_account_assistant_original_bound_successor.sql',
   ACTIVE_CHECKPOINT_MIGRATION_PATH,
 ]);
+
+async function assertAppVersionPreservesHistoricalModelPolicies() {
+  const C = await computeCandidateGRollbackBundle();
+  const I = await computeRavScoreModelBundle();
+  const fixture = await fs.mkdtemp(path.join(os.tmpdir(), 'ravradar-app-version-policy-'));
+  try {
+    const fixed = [
+      'scripts/set-version.mjs', 'scripts/validate-release-version.mjs',
+      'scripts/lib/dmi-marine-zone-exclusions.json', 'scripts/lib/copernicus-component-spatial-policy.json',
+      'scripts/sync-release-contract-metadata.mjs', 'scripts/lib/release-contract-metadata.mjs',
+      'scripts/lib/production-workflow-sources.mjs', 'scripts/production-workflow-outcome.mjs',
+      'package.json', 'version.json', 'data/admin/ravscore-profile-selection.json',
+      'scripts/fixtures/rav-assistant-local-evals-v1.json', 'knowledge/rav-assistant-public-v1.json',
+      'scripts/fixtures/rav-assistant-evals-v1.json', 'data/kystdata.json', 'data/zones.geojson',
+      'index.html', 'admin.html', 'documentation.html', 'handbook.html', 'service-worker.js',
+      'app.js', 'js/ui/admin-dashboard.js', 'js/ui/admin-app.js', 'js/services/zone-registry.js',
+      'HANDBOOK-RAVRADAR.md', 'docs/handbook/content.json',
+      'supabase/schema.sql', 'supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql',
+      'scripts/rollback-assets/ravscore-model-bundle.generated.js', 'js/core/ravscore-model-bundle.generated.js',
+      ...Object.values(PRODUCTION_WORKFLOW_SOURCES), '.github/workflows/validate-copernicus-current-pilot.yml',
+      ...C.manifest.files.map(row => row.file), ...I.manifest.files.map(row => row.path),
+      ...RAVSCORE_CONTINUATION_IMPLEMENTATION_FILES,
+    ];
+    const sql = (await fs.readdir(path.join(REPOSITORY_ROOT, 'supabase/migrations')))
+      .filter(name => name.endsWith('.sql')).map(name => 'supabase/migrations/' + name);
+    // The actual setter walks browser cache references; this fixture uses the
+    // real current browser sources and no runtime, weather or account payloads.
+    const browser = [];
+    const walk = async relative => {
+      for (const entry of await fs.readdir(path.join(REPOSITORY_ROOT, relative), { withFileTypes: true })) {
+        const child = path.posix.join(relative, entry.name);
+        if (entry.isDirectory()) await walk(child);
+        else if (/\.(?:js|html)$/.test(entry.name)) browser.push(child);
+      }
+    };
+    await walk('js');
+    for (const name of await fs.readdir(REPOSITORY_ROOT))
+      if (/\.(?:js|html)$/.test(name) && !/^KYSTZONER-/.test(name)) browser.push(name);
+    // Copy the real two fixed programs' complete reviewed import closure.
+    // This is source-only fixture setup, not model/source admission or a PG seed.
+    const programQueue = ['scripts/set-version.mjs', 'scripts/validate-release-version.mjs'];
+    const programFiles = new Set();
+    while (programQueue.length) {
+      const relative = programQueue.shift();
+      if (programFiles.has(relative)) continue;
+      programFiles.add(relative);
+      const source = await fs.readFile(path.join(REPOSITORY_ROOT, relative), 'utf8');
+      for (const specifier of modelSourceRelativeModuleSpecifiers(source, relative)) {
+        const dependency = path.posix.normalize(path.posix.join(path.posix.dirname(relative), specifier.replace(/[?#].*$/, '')));
+        assert(!path.posix.isAbsolute(dependency) && dependency !== '..' && !dependency.startsWith('../'));
+        programQueue.push(dependency);
+      }
+    }
+    for (const relative of new Set([...fixed, ...sql, ...browser, ...programFiles])) await copyFixtureFile(fixture, relative);
+    const policy = 'scripts/private-production-runtime-workflow.mjs';
+    const generated = ['scripts/rollback-assets/ravscore-model-bundle.generated.js', 'js/core/ravscore-model-bundle.generated.js'];
+    const immutable = await snapshotFixturePaths(fixture, [policy, 'supabase/schema.sql', ...sql, ...generated]);
+    const geodata = await snapshotFixturePaths(fixture, ['data/kystdata.json', 'data/zones.geojson']);
+    const installPath = 'supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql';
+    const withoutHandbook = text => {
+      const marker = "insert into public.admin_documents(document_key,payload,updated_by) values('handbook','";
+      const start = text.indexOf(marker), end = text.indexOf("'::jsonb,null)", start + marker.length);
+      assert(start >= 0 && end > start && text.indexOf(marker, start + marker.length) === -1);
+      return text.slice(0, start + marker.length) + '<normal-handbook-payload>' + text.slice(end);
+    };
+    const installBefore = withoutHandbook(await fs.readFile(path.join(fixture, installPath), 'utf8'));
+    const packageBefore = JSON.parse(await fs.readFile(path.join(fixture, 'package.json'), 'utf8'));
+    const nextVersion = packageBefore.version.replace(/\d+$/, value => String(Number(value) + 1));
+    const T = await ravScoreContinuationImplementationSha256({ repositoryRoot: fixture });
+    execFileSync(process.execPath, ['scripts/set-version.mjs', nextVersion],
+      { cwd: fixture, timeout: 30000, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+    const nextC = await computeCandidateGRollbackBundle({ root: fixture });
+    const nextI = await computeRavScoreModelBundle({ root: fixture });
+    const nextT = await ravScoreContinuationImplementationSha256({ repositoryRoot: fixture });
+    console.log(JSON.stringify({ kind: 'APP_VERSION_HISTORICAL_POLICY_PARITY',
+      before: packageBefore.version, after: nextVersion,
+      C: [C.modelBundleSha256, nextC.modelBundleSha256], I: [I.modelBundleSha256, nextI.modelBundleSha256],
+      T: [T, nextT], immutableMigrationCount: sql.length, generatedModulesWritten: false }));
+    await assertFixturePathsUnchanged(fixture, immutable);
+    assert.equal(nextC.modelBundleSha256, C.modelBundleSha256, 'Pure app version must preserve C');
+    assert.equal(nextI.modelBundleSha256, I.modelBundleSha256, 'Pure app version must preserve I');
+    assert.equal(nextT, T, 'Pure app version must preserve T');
+    for (const [relative, before] of geodata) {
+      const after = await fs.readFile(path.join(fixture, relative), 'utf8');
+      assert.equal(after, before.toString('utf8').replace('"version": "' + packageBefore.version + '"',
+        '"version": "' + nextVersion + '"'), relative + ': only the existing top version field may change');
+    }
+    assert.equal(withoutHandbook(await fs.readFile(path.join(fixture, installPath), 'utf8')), installBefore);
+    // A genuine physical policy change still changes both normal model inputs.
+    // No hash normalization or generated C/I/T output is introduced here.
+    const changedPolicy = immutable.get(policy).toString('utf8').replace(/(releaseVersion:\s*')\d+\.\d+\.\d+(')/g,
+      (_match, prefix, suffix) => prefix + nextVersion + suffix);
+    assert.notEqual(changedPolicy, immutable.get(policy).toString('utf8'));
+    const sourceOverrides = new Map([[policy, changedPolicy]]);
+    assert.notEqual((await computeCandidateGRollbackBundle({ root: fixture, sourceOverrides })).modelBundleSha256, C.modelBundleSha256);
+    assert.notEqual((await computeRavScoreModelBundle({ root: fixture, sourceOverrides })).modelBundleSha256, I.modelBundleSha256);
+    execFileSync(process.execPath, ['scripts/validate-release-version.mjs'],
+      { cwd: fixture, timeout: 30000, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+    await assertFixturePathsUnchanged(fixture, immutable);
+  } finally {
+    await fs.rm(fixture, { recursive: true, force: true });
+  }
+}
+
+await assertAppVersionPreservesHistoricalModelPolicies();
+if (process.argv.includes('--app-version-policy-only')) {
+  console.log('OK: actual app setter preserves retired one-off policies, C/I/T, geodata and old SQL boundaries.');
+  process.exit(0);
+}
 
 const packageScripts = JSON.parse(await fs.readFile('package.json', 'utf8')).scripts;
 assert.equal(

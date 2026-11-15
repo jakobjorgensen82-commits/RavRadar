@@ -14,9 +14,9 @@ import { PRIVATE_RUNTIME_FILES,privateRuntimeContractHashes } from './private-pr
 import { assertAssistantOriginalRuntimeContracts } from './assistant-later-h0-runtime-transition.mjs';
 import {ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE,INACTIVE_INSTALLED593_ORIGINAL591_SUCCESSOR as HISTORICAL,
   INACTIVE_SCALAR597_LATER_H0_SUCCESSOR as SCALAR,
-  UNISSUED_ASSISTANT_AFTER597_SUCCESSOR as AFTER597} from './lib/assistant-later-h0-successor-source.mjs';
+  UNISSUED_ASSISTANT_AFTER597_SUCCESSOR as AFTER597,INACTIVE_ASSISTANT_AFTER598_SUCCESSOR as AFTER598} from './lib/assistant-later-h0-successor-source.mjs';
 import {assertFrozen591CompactRuntimeContracts} from './lib/assistant-public591-runtime-contracts.mjs';
-import {FROZEN591_CODE_SOURCE_PROVENANCE as ORIGINAL591,SOURCE594_CODE_SOURCE_PROVENANCE as ORIGINAL594,withSource597CodeParent}
+import {FROZEN591_CODE_SOURCE_PROVENANCE as ORIGINAL591,SOURCE594_CODE_SOURCE_PROVENANCE as ORIGINAL594,withSource597CodeParent,withSource598CodeParent}
   from './check-assistant-later-h0-predecessor-source.mjs';
 import {
   PRIVATE_PUBLIC_HOUR_DELIVERY_PACK_FILE,
@@ -27,7 +27,7 @@ import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 
 // Actual normal contract computation, not an independently copied guard. This
 // exact genuine591 -> issued593 pair failed before suppliers in production.
-assert([HISTORICAL,SCALAR,AFTER597].includes(ACTIVE));
+assert([HISTORICAL,SCALAR,AFTER597,AFTER598].includes(ACTIVE));
 assert.equal(HISTORICAL.requireRelease(),'4.0.594');
 const currentContracts=await privateRuntimeContractHashes();
 const originalContracts={
@@ -42,7 +42,29 @@ const genuine594={
 };
 assert.notEqual(originalContracts.publicProjectionContractSha256,genuine594.publicProjectionContractSha256);
 assert.equal(assertFrozen591CompactRuntimeContracts(originalContracts,genuine594),true);
-if(ACTIVE===AFTER597){
+if(ACTIVE===AFTER598){
+  await withSource598CodeParent(async frozen=>{
+    const original598=await import(pathToFileURL(path.join(frozen,'scripts/private-production-runtime-workflow.mjs')).href);
+    const genuine598=await original598.privateRuntimeContractHashes({repositoryRoot:frozen});
+    assert.equal(genuine598.continuationStateContractSha256,AFTER597.requireBinding().T);
+    assert.equal(ACTIVE.before.T,genuine598.continuationStateContractSha256);
+    assert.deepEqual({...genuine594,continuationStateContractSha256:genuine598.continuationStateContractSha256},genuine598,
+      'Whole genuine594/598 persisted ABI retains the old598 metadata transition');
+    assert.notEqual(currentContracts.continuationStateContractSha256,genuine598.continuationStateContractSha256);
+    assert.equal(assertAssistantOriginalRuntimeContracts(genuine598,currentContracts),true);
+    for(const key of Object.keys(genuine598)){
+      assert.throws(()=>assertAssistantOriginalRuntimeContracts({...genuine598,[key]:'0'.repeat(64)},currentContracts));
+      assert.throws(()=>assertAssistantOriginalRuntimeContracts(genuine598,{...currentContracts,[key]:'0'.repeat(64)}));
+      const missing={...currentContracts};delete missing[key];
+      assert.throws(()=>assertAssistantOriginalRuntimeContracts(genuine598,missing));
+    }
+    assert.throws(()=>assertAssistantOriginalRuntimeContracts(originalContracts,currentContracts));
+    assert.throws(()=>assertAssistantOriginalRuntimeContracts(genuine594,currentContracts));
+    assert.throws(()=>assertAssistantOriginalRuntimeContracts({...genuine598,unknown:'x'},currentContracts));
+    assert.throws(()=>assertAssistantOriginalRuntimeContracts(genuine598,{...currentContracts,unknown:'x'}));
+    assert.throws(()=>assertAssistantOriginalRuntimeContracts(genuine598,currentContracts,'override'));
+  });
+}else if(ACTIVE===AFTER597){
   await withSource597CodeParent(async frozen=>{
     const original597=await import(pathToFileURL(path.join(frozen,'scripts/private-production-runtime-workflow.mjs')).href);
     const genuine597=await original597.privateRuntimeContractHashes({repositoryRoot:frozen});

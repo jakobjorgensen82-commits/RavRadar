@@ -3,7 +3,8 @@ import { PRODUCTION_WORKFLOW_SOURCES } from './lib/production-workflow-sources.m
 import { PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY } from './private-production-runtime-workflow.mjs';
 import { synchronizeReleaseContractMetadata } from './sync-release-contract-metadata.mjs';
 const pkg=JSON.parse(await fs.readFile('package.json','utf8'));const version=pkg.version;
-if(PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY.releaseVersion!==version){
+if(PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY.retired!==true
+  && PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY.releaseVersion!==version){
   throw new Error(`DEC-0122-engangsundtagelsen gælder ${PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY.releaseVersion}, ikke release ${version}. En ny release må ikke arve undtagelsen uden en udtrykkelig beslutning.`);
 }
 if(PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY.retired!==true){
