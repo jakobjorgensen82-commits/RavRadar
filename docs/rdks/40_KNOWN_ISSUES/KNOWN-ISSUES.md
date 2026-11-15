@@ -1,3 +1,9 @@
+## Arkivets leverandørskema kræver kompatible lokale versioner
+
+Den ældre lokale bootstrap indeholder ikke arkivets fire SCIM-/recovery-relationer og to Storage-lifecycle-relationer. Identiteterne er afklaret ved navne-SHA mod officielle migrationer. Kun det friske, ikke tilknyttede archive-B får create-only lokale versionspins til Auth v2.197.0 og Storage v1.86.0 før den normale CLI 2.117.0-start. Gamle pins, projekttilknytning og Storage-migrationsloft afvises; pinfilerne genlæses efter start. Den syntetiske vej, de tre vedvarende tjenester, image-/netværks-/stop-/oprydningskontroller og alle fem originale SQL-strømme bevares.
+
+Den lokale kandidat skal bruge leverandørernes fulde normale migratorer, ikke stubtabeller eller omskrevet original SQL. Faste labels og Auth-migrationsmetadata er diagnose, ikke accept. Præcis kildekvalifikation, faktisk vendorbootstrap, arkivets kolonner, fuld indholds-/dubletparitet, Auth-funktion og ejet oprydning kræver fortsat deres reelle beviser. En lokal imagecachepost beviser ikke den brugte transiente Storage-container. Ingen SQL-installation, gendannelse, automatisk backup/rotation eller Free-overgang udføres ved kildeforberedelsen. Se håndbog 89.350 og DEC-0272.
+
 ## 15. november — Schema-læser afviste dokumenteret errors:null
 
 Cloudflares normale fejlfri GraphQL-svar kan indeholde `errors: null`. Den faste schema-læser afviste denne dokumenterede form. Den afgrænsede rettelse accepterer kun fraværende fejl, null eller en tom fejlliste; ikke-tomme fejl, fremmede felter og manglende typedata afvises fortsat. Konvolut, leverandørfejl og typedata har særskilte faste kategorier og HTTP-status uden rå svartekst.
