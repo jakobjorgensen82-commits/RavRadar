@@ -1,14 +1,28 @@
-## 15. november — SDK-case bestået; samlet kildekvalifikation er åben
+## Metadataprøvens kildeidentitet afventer præcis kvalifikation
 
-Hele SDK-nativefilens 19 cases har faktisk bestået på Linux med Node24, inklusive tab af styrende proces efter PUT og før afsluttende ACK. Den samlede kildekontrol stoppede senere i en gammel V1-producentprøve, som blandede V1-forventninger med den aktuelle V4-kæde. Det er ikke en påvist fejl i vejrhentning eller et fuldt bestået kildebevis.
+Et forældet familienavn i fejltekstassertionen standsede den normale metadataprøve, selv om den aktuelle hele kanoniske kildekontrol afviste de muterede bytes med korrekt kode og begge præcise SHA-værdier. Den minimale kandidat fjerner alene denne tekstlighed. Alle mutations-, hash-, immutable-, no-write- og schemaassertions bevares. Hele det ændrede normale mål og endelig kildekvalifikation kræves fortsat; produktkode, SQL og modelbindinger ændres ikke.
 
-De historiske V1-/V2-input afgrænses til deres autentiske oprindelse, mens den aktuelle forbruger og V4-integration prøves særskilt. Den kommende SDK-metadataform kræver autentisk workflowlæsning i både opdagelse og genlæsning; fetch-valget giver ingen ny acceptadgang. Alle normale kilde-/review-/input-/slutkontroller skal bestå på det nye head før levering. Ingen ny model eller PostgreSQL-eksekvering påstås, og stop-/bevaringskravene består. Se DEC-0302 og håndbog 89.342/89.232.
+## Afgrænset kontrolvalg afventer præcis hel kildekvalifikation
+
+Katalog-/CURRENT-prøveparrets firemålsvariant og Pages-controllerens tre præcise sharing-ejere er en lokal kildekandidat. Standard otte ved andre kontrolinput og de hele normale produktmål bevares. Fokuserede selektionscases erstatter ikke hele CURRENT-prøven; dens slutkørsel på Linux skal fortsat passe inden for den uændrede målfrist. Ukendt input, ændret PG/C/I/T og uafklaret eller senere negativ kildeevidens giver ingen genbrugsret. Der påstås ingen hosted Pages-/Free- eller produktionsaccept. Se DEC-0302 og håndbog 89.342.
+
+Den samlede afgrænsede kildekandidat omfatter også setterens historiske policybevaring, præcis releaseMetadata-ejerregistrering og Pages-controllerens faste skrivefri schematilstand. Hele de to normale metadatamål og slutkvalifikationen skal bestå på den samlede kilde. Syntetiske svar beviser ikke Cloudflare-adgang eller schemaets faktiske enheder; deling, installation og samlet Free-klarhed kræver særskilte virkelige beviser. Ingen drift eller ny model aktiveres.
+
+## Originalarkivets ukendte mål kræver stadig faktisk inventory og gendannelse
+
+Den uafhængigt gennemgåede private inventory-kandidat kan læse samme autentiske originalarkiv uden at starte Docker eller SQL. Alle fem SQL-filer materialiseres med wireforbrug; kun faste kategorier, tællere og hashmetadata udgives. De fire eksisterende hele backupmål er bestået lokalt på samme kode: fixture-selvtest, arkivprøve, workflowprøve og lifecycleprøve. Præcis kildekvalifikation på inventory-leveringens endelige head og faktisk læsning af originalarkivet er fortsat åbne. Ukendte Auth-/Storage-mål og kolonnekompatibilitet er derfor fortsat uafklarede. Original DATA og alle afslag efter DDL bevares. Faktisk fuld arkiv-/Auth-gendannelse, autonom kvittering, rotation og Free-klarhed er stadig åbne. Se håndbog 89.350 og 89.342.
+
+## 15. november — SDK-kilde kvalificeret; vejrbrug og runnerholdbarhed er åbne
+
+Hele nativefilens 19 cases har bestået på Linux med faktisk Node24. Den efterfølgende præcise kildekontrol bestod alle 17 valgte mål, er merget til main og har bestået normal main-admission. Det tidligere V1-fixtureafslag bevares som historik. Faktisk brug i en almindelig vejrkørsel, tab af hele runneren og holdbar fjernlagring er fortsat særskilte åbne beviser. Det tidligere afslag var ikke en påvist fejl i vejrhentning.
+
+De historiske V1-/V2-input afgrænses til deres autentiske oprindelse, mens den aktuelle forbruger og V4-integration prøves særskilt. SDK-metadataformen kræver autentisk workflowlæsning i både opdagelse og genlæsning; fetch-valget giver ingen ny acceptadgang. Alle normale kilde-/review-/input-/slutkontroller er bestået for SDK-leveringen; efterfølgende ændringer kræver fortsat egen præcis kvalifikation. Ingen ny model eller PostgreSQL-eksekvering påstås, og stop-/bevaringskravene består. Se DEC-0302 og håndbog 89.342/89.232.
 
 ## 15. november — originalarkivets Auth-kompatibilitet er fortsat åben
 
 Storage-bootstrap på det isolerede arkivmål var slået fra, mens originalens DATA kræver Storage-relationer. En accepteret lokal kildekandidat retter netop denne initialisering og tilføjer faste vendorlabels samt lokal Auth-migrationsmetadata før original SQL. De fire manglende Auth-mål og deres kolonnekompatibilitet er stadig uafklarede. Faste labels giver ingen reparationsret, og ukendte mål/alle afslag efter DDL bevares.
 
-Den nye lokale selvtests udfald er UNKNOWN uden terminalt procesresultat. Tidligere syntetiske PASS-beviser gælder deres tidligere fixture, ikke denne kandidat eller det autentiske arkiv. Præcis kildekvalifikation, hele originalrestore med indholds-/dublet-/Auth-bevis og ejet oprydning mangler. Autonom restorekvittering, rotation og Free-klarhed er fortsat særskilte åbne krav. De fem originaler, CLI-/Auth-pin, syntetisk standardvej og vedvarende Storage-deaktivering bevares; kun archive-Bs engangsinitialisering ændres. Se DEC-0255 og håndbog 89.350.
+Den normale lokale selvtest på denne restorekode er bestået. Det kvalificerer ikke det autentiske arkiv. Inventory-leveringens præcise kildekvalifikation og hele originalrestore med indholds-/dublet-/Auth-bevis og ejet oprydning mangler. Autonom restorekvittering, rotation og Free-klarhed er fortsat særskilte åbne krav. De fem originaler, CLI-/Auth-pin, syntetisk standardvej og vedvarende Storage-deaktivering bevares; kun archive-Bs engangsinitialisering ændres. Se DEC-0255 og håndbog 89.350.
 
 ## 15. november — entydigt evidensvalg og struktureret AI-svar
 

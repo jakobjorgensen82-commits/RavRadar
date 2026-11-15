@@ -27,7 +27,7 @@ const sha=v=>crypto.createHash('sha256').update(v).digest('hex');
 const need=(v,code)=>{if(!v)throw fail('SHARE_PAGES_'+code);};
 export function assertForecastSharePagesAuthority(env){
   const operation=env.SHARE_OPERATION??'create';
-  need(operation==='create'||operation==='update','OPERATION');
+  need(operation==='create'||operation==='update'||operation==='inspect-schema','OPERATION');
   if(operation==='update')need(projectId(env.EXPECTED_PROJECT_ID)
     &&UUID.test(env.EXPECTED_DEPLOYMENT_ID??'')&&SHA.test(env.EXPECTED_DEPLOYMENT_COMMIT??''),'UPDATE_IDENTITY');
   else need(['EXPECTED_PROJECT_ID','EXPECTED_DEPLOYMENT_ID','EXPECTED_DEPLOYMENT_COMMIT']
@@ -37,8 +37,10 @@ export function assertForecastSharePagesAuthority(env){
     &&env.GITHUB_REF==='refs/heads/main'&&env.GITHUB_RUN_ATTEMPT==='1'
     &&/^[1-9][0-9]*$/.test(env.GITHUB_RUN_ID??'')&&SHA.test(env.EXPECTED_MAIN??'')
     &&env.GITHUB_SHA===env.EXPECTED_MAIN&&env.SHARE_CONFIRMATION===(operation==='create'
-      ?'DEPLOY-FORECAST-SHARE-PAGES':'UPDATE-FORECAST-SHARE-PAGES')
-    &&env.SOURCE_REQUIRED==='false'&&/^[a-f0-9]{32}$/.test(env.CLOUDFLARE_ACCOUNT_ID??'')
+      ?'DEPLOY-FORECAST-SHARE-PAGES':operation==='update'?'UPDATE-FORECAST-SHARE-PAGES':'INSPECT-FORECAST-SHARE-PAGES-SCHEMA')
+    &&env.SOURCE_REQUIRED==='false'&&(operation==='inspect-schema'
+      ?env.CLOUDFLARE_ACCOUNT_ID===undefined||env.CLOUDFLARE_ACCOUNT_ID===''
+      :/^[a-f0-9]{32}$/.test(env.CLOUDFLARE_ACCOUNT_ID??''))
     &&typeof env.CLOUDFLARE_API_TOKEN==='string'&&env.CLOUDFLARE_API_TOKEN.length>0
     &&typeof env.GITHUB_TOKEN==='string'&&env.GITHUB_TOKEN.length>0,'AUTHORITY');
   return operation;
@@ -138,6 +140,56 @@ async function boundedJson(fetchImpl,url,options,kind){
     const value=JSON.parse(Buffer.concat(chunks).toString('utf8'));return{status,value};
   }catch(error){throw Object.assign(fail(/^SHARE_PAGES_[A-Z_]+$/.test(error?.code??'')?error.code:'SHARE_PAGES_HTTP_OR_JSON'),{kind,httpStatus:status});}
 }
+
+// Only public schema metadata: no account tag, project or metric invocation.
+export const FORECAST_SHARE_PAGES_SCHEMA_QUERY="# IKKE UDFØRT: kun schema-metadata, ingen kontometrik eller nye credentials.\nquery PagesFunctionsCpuFieldUnits {\n  group: __type(name: \"AccountPagesFunctionsInvocationsAdaptiveGroups\") {\n    name\n    fields { name type { kind name ofType { kind name } } }\n  }\n  quantiles: __type(name: \"AccountPagesFunctionsInvocationsAdaptiveGroupsQuantiles\") {\n    name\n    fields(includeDeprecated: true) {\n      name description isDeprecated\n      type { kind name ofType { kind name } }\n    }\n  }\n  sums: __type(name: \"AccountPagesFunctionsInvocationsAdaptiveGroupsSum\") {\n    name\n    fields(includeDeprecated: true) { name description }\n  }\n}\n";
+const SCHEMA_TYPES=Object.freeze({group:'AccountPagesFunctionsInvocationsAdaptiveGroups',
+  quantiles:'AccountPagesFunctionsInvocationsAdaptiveGroupsQuantiles',sums:'AccountPagesFunctionsInvocationsAdaptiveGroupsSum'});
+const SCHEMA_CPU_FIELDS=Object.freeze(['cpuTimeP50','cpuTimeP75','cpuTimeP99','cpuTimeP999']);
+const SCHEMA_DURATION_FIELDS=Object.freeze(['durationP50','durationP75','durationP99','durationP999']);
+function schemaKeys(value,keys){return object(value)&&Object.keys(value).sort().join('|')===[...keys].sort().join('|');}
+function schemaType(value,expectedKind){
+  need(schemaKeys(value,['kind','name','ofType']),'SCHEMA_TYPE');
+  if(value.kind==='NON_NULL'){
+    need(value.name===null&&schemaKeys(value.ofType,['kind','name']),'SCHEMA_TYPE');
+    value=value.ofType;
+  }else need(value.ofType===null,'SCHEMA_TYPE');
+  need(value.kind===expectedKind&&typeof value.name==='string'&&/^[A-Za-z_][A-Za-z0-9_]{0,127}$/.test(value.name),'SCHEMA_TYPE');
+  return value.name;
+}
+function schemaFields(value,name,keys){
+  need(schemaKeys(value,['name','fields'])&&value.name===name&&Array.isArray(value.fields)
+    &&value.fields.length>0&&value.fields.length<=64,'SCHEMA_TYPE');
+  const rows=new Map();
+  for(const row of value.fields){
+    need(schemaKeys(row,keys)&&typeof row.name==='string'&&/^[A-Za-z_][A-Za-z0-9_]{0,127}$/.test(row.name)
+      &&!rows.has(row.name),'SCHEMA_FIELDS');
+    rows.set(row.name,row);
+  }
+  return rows;
+}
+function schemaDescription(row){
+  need(row&&typeof row.description==='string'&&row.description.trim().length>0&&row.description.length<=1024
+    &&!/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/u.test(row.description),'SCHEMA_DESCRIPTION');
+  return row.description;
+}
+function pagesSchemaMetadata(value){
+  need(object(value)&&Object.keys(value).every(key=>key==='data'||key==='errors')
+    &&(!Object.hasOwn(value,'errors')||Array.isArray(value.errors)&&value.errors.length===0)
+    &&schemaKeys(value.data,['group','quantiles','sums']),'SCHEMA_ENVELOPE');
+  const group=schemaFields(value.data.group,SCHEMA_TYPES.group,['name','type']);
+  need(group.has('quantiles')&&schemaType(group.get('quantiles').type,'OBJECT')===SCHEMA_TYPES.quantiles
+    &&group.has('sum')&&schemaType(group.get('sum').type,'OBJECT')===SCHEMA_TYPES.sums,'SCHEMA_BINDING');
+  const quantiles=schemaFields(value.data.quantiles,SCHEMA_TYPES.quantiles,['name','description','isDeprecated','type']);
+  const selected=[...SCHEMA_CPU_FIELDS,...SCHEMA_DURATION_FIELDS].map(name=>{
+    const row=quantiles.get(name);need(row&&row.isDeprecated===false,'SCHEMA_FIELDS');
+    return{name,description:schemaDescription(row),scalarType:schemaType(row.type,'SCALAR')};
+  });
+  const sums=schemaFields(value.data.sums,SCHEMA_TYPES.sums,['name','description']);
+  return {groupType:SCHEMA_TYPES.group,quantileType:SCHEMA_TYPES.quantiles,sumType:SCHEMA_TYPES.sums,
+    quantiles:selected,sumFields:['duration','requests'].map(name=>({name,description:schemaDescription(sums.get(name))}))};
+}
+
 const envelope=value=>{need(object(value)&&value.success===true&&Array.isArray(value.errors)&&value.errors.length===0,'CF_ENVELOPE');return value.result;};
 export async function completeForecastSharePagesList(read){
   const rows=[],ids=new Set(),names=new Set();let total=null,pages=null,perPage=null;
@@ -185,7 +237,6 @@ export async function deployForecastSharePages({env=process.env,fetchImpl=global
   const emit=value=>report(value);
   try{
     operation=assertForecastSharePagesAuthority(env);const commit=env.EXPECTED_MAIN;
-    const inventory=forecastSharePagesInventory(git,commit);
     const ghHeaders={Authorization:'Bearer '+env.GITHUB_TOKEN,Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'};
     const freshMain=async()=>{
       need(git(['rev-parse','HEAD^{commit}'])===commit&&git(['status','--porcelain','--untracked-files=no'])==='','LOCAL_MAIN');
@@ -193,6 +244,22 @@ export async function deployForecastSharePages({env=process.env,fetchImpl=global
       need(result.status===200&&result.value.ref==='refs/heads/main'&&result.value.object?.type==='commit'
         &&result.value.object.sha===commit,'MAIN_MOVED');
     };
+    if(operation==='inspect-schema'){
+      stage='SCHEMA_READ';await freshMain();
+      const response=await boundedJson(fetchImpl,'https://api.cloudflare.com/client/v4/graphql',{
+        method:'POST',headers:{Authorization:'Bearer '+env.CLOUDFLARE_API_TOKEN,Accept:'application/json','Content-Type':'application/json'},
+        body:JSON.stringify({query:FORECAST_SHARE_PAGES_SCHEMA_QUERY})},'GRAPHQL_SCHEMA');
+      need(response.status===200,'SCHEMA_STATUS');
+      const schema=pagesSchemaMetadata(response.value);
+      await freshMain();
+      stage='COMPLETE';readback='SCHEMA_METADATA_PROVED';
+      const receipt={kind:'FORECAST_SHARE_PAGES_SCHEMA_READBACK_V1',stage,sourceSha:commit,operation,
+        querySha256:sha(FORECAST_SHARE_PAGES_SCHEMA_QUERY),schema,createIssued:false,deployIssued:false,
+        readback,outcome:'SCHEMA_METADATA_READ',schemaOnly:true,accountScoped:false,metricsRead:false,
+        unitAcceptanceProved:false,freeCapacityProved:false};
+      emit(receipt);return receipt;
+    }
+    const inventory=forecastSharePagesInventory(git,commit);
     const cfBase='https://api.cloudflare.com/client/v4/accounts/'+env.CLOUDFLARE_ACCOUNT_ID;
     const cfHeaders={Authorization:'Bearer '+env.CLOUDFLARE_API_TOKEN,Accept:'application/json'};
     const read=(suffix,kind)=>boundedJson(fetchImpl,cfBase+suffix,{method:'GET',headers:cfHeaders},kind);
@@ -306,7 +373,7 @@ export async function deployForecastSharePages({env=process.env,fetchImpl=global
       dnsChanged:false,legacyWorkerChanged:false,
       frontendChanged:false,hostedScoreProved:false,freeCapacityProved:false};emit(receipt);return receipt;
   }catch(error){
-    lastKind=['GH_MAIN','PUBLIC_MANIFEST','PROJECT_LIST','PROJECT_ABSENCE','PROJECT_CREATE','CREATE_READBACK',
+    lastKind=['GRAPHQL_SCHEMA','GH_MAIN','PUBLIC_MANIFEST','PROJECT_LIST','PROJECT_ABSENCE','PROJECT_CREATE','CREATE_READBACK',
       'OWNED_PROJECT_READBACK','UPDATE_PROJECT_READBACK','UPDATE_PREDECESSOR_DETAIL','UPDATE_PROJECT_PREWRITE',
       'DEPLOY_PROJECT','DEPLOYMENT_DETAIL','FINAL_PROJECT'].includes(error?.kind)?error.kind:null;
     httpStatus=Number.isInteger(error?.httpStatus)&&error.httpStatus>=100&&error.httpStatus<=599?error.httpStatus:null;
@@ -323,7 +390,9 @@ if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.ur
     need(process.argv.length===2,'ARGUMENTS');fs.mkdirSync(path.join(ROOT,'.cache'),{recursive:true});
     descriptor=fs.openSync(path.join(ROOT,'.cache/forecast-share-pages-release.jsonl'),'wx',0o600);
     await deployForecastSharePages({report:value=>{fs.writeSync(descriptor,JSON.stringify(value)+'\n');fs.fsyncSync(descriptor);}});
-    console.log('Pages-prognosedeling: projekt og deploy genlæst. Hosted score og Free-kapacitet afventer særskilt kontrol.');
+    console.log(process.env.SHARE_OPERATION==='inspect-schema'
+      ?'Pages-schema: faste metadata genlæst. Ingen konto-/metricslæsning, projektændring eller Free-accept.'
+      :'Pages-prognosedeling: projekt og deploy genlæst. Hosted score og Free-kapacitet afventer særskilt kontrol.');
   }catch{console.error('Pages-prognosedeling stoppet; se fast kvittering. Ingen automatisk gentagelse.');process.exitCode=1;}
   finally{if(descriptor!==undefined)fs.closeSync(descriptor);}
 }

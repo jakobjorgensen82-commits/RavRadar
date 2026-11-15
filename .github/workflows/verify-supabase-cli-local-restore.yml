@@ -8,16 +8,16 @@ on:
         required: true
         type: string
       restore_mode:
-        description: Synthetic by default; archive restores only to an owned isolated local project
+        description: Synthetic by default; archive restores locally; archive-inventory reads only authenticated target metadata
         type: choice
         default: synthetic
-        options: [synthetic, archive]
+        options: [synthetic, archive, archive-inventory]
       archive_index_commitment:
-        description: Domain-separated commitment for an already authenticated archive index; archive mode only
+        description: Domain-separated commitment for an already authenticated archive index; archive modes only
         type: string
         default: ''
       archive_confirmation:
-        description: RESTORE-PRIVATE-ARCHIVE-IN-ISOLATED-LOCAL-POSTGRES; archive mode only
+        description: RESTORE-PRIVATE-ARCHIVE-IN-ISOLATED-LOCAL-POSTGRES; archive modes only
         type: string
         default: ''
 
@@ -27,7 +27,7 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: ${{ inputs.restore_mode == 'archive' && 'ravradar-isolated-archive-restore' || 'ravradar-synthetic-standard-local-restore' }}
+  group: ${{ (inputs.restore_mode == 'archive' || inputs.restore_mode == 'archive-inventory') && 'ravradar-isolated-archive-restore' || 'ravradar-synthetic-standard-local-restore' }}
   queue: max
   cancel-in-progress: false
 
@@ -35,7 +35,7 @@ jobs:
   standard-local-restore:
     if: github.repository == 'jakobjorgensen82-commits/RavRadar'
     concurrency:
-      group: ${{ inputs.restore_mode == 'archive' && 'ravradar-trip-storage-production' || format('ravradar-synthetic-standard-local-restore-{0}', github.run_id) }}
+      group: ${{ (inputs.restore_mode == 'archive' || inputs.restore_mode == 'archive-inventory') && 'ravradar-trip-storage-production' || format('ravradar-synthetic-standard-local-restore-{0}', github.run_id) }}
       cancel-in-progress: false
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -60,7 +60,7 @@ jobs:
               test -z "$RESTORE_ARCHIVE_INDEX_COMMITMENT"
               test -z "$RESTORE_ARCHIVE_CONFIRMATION"
               ;;
-            archive)
+            archive|archive-inventory)
               test "$GITHUB_REF" = refs/heads/main
               [[ "$RESTORE_ARCHIVE_INDEX_COMMITMENT" =~ ^rr-supabase-restore-v1:[a-f0-9]{64}$ ]]
               test "$RESTORE_ARCHIVE_CONFIRMATION" = RESTORE-PRIVATE-ARCHIVE-IN-ISOLATED-LOCAL-POSTGRES
@@ -83,7 +83,7 @@ jobs:
         timeout-minutes: 1
         run: node scripts/test-supabase-cli-local-restore.mjs --self-test
       - name: Restore qualified source locator before any archive access
-        if: inputs.restore_mode == 'archive'
+        if: inputs.restore_mode == 'archive' || inputs.restore_mode == 'archive-inventory'
         uses: actions/cache/restore@v6
         with:
           path: .cache/weather-source-validation.json
@@ -91,16 +91,17 @@ jobs:
           restore-keys: |
             weather-source-proof-v2-${{ runner.os }}-${{ github.sha }}-
       - name: Require the already qualified exact source before any archive access
-        if: inputs.restore_mode == 'archive'
+        if: inputs.restore_mode == 'archive' || inputs.restore_mode == 'archive-inventory'
         id: source-proof
         timeout-minutes: 2
         run: node scripts/weather-source-gate.mjs check
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - name: Refuse missing exact source proof before archive credentials
-        if: inputs.restore_mode == 'archive'
+        if: inputs.restore_mode == 'archive' || inputs.restore_mode == 'archive-inventory'
         run: test "${{ steps.source-proof.outputs.required }}" = false
       - uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf
+        if: inputs.restore_mode != 'archive-inventory'
         timeout-minutes: 2
         with:
           version: 2.117.0
@@ -122,3 +123,15 @@ jobs:
           RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
           RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
         run: node scripts/test-supabase-cli-local-restore.mjs --run-archive-restore
+      - name: Read only the authenticated archive vendor-target inventory without Docker or SQL
+        if: inputs.restore_mode == 'archive-inventory'
+        timeout-minutes: 23
+        env:
+          EXPECTED_HEAD_SHA: ${{ inputs.expected_head }}
+          RESTORE_ARCHIVE_INDEX_COMMITMENT: ${{ inputs.archive_index_commitment }}
+          RESTORE_ARCHIVE_CONFIRMATION: ${{ inputs.archive_confirmation }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
+          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
+          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}
+        run: node scripts/test-supabase-cli-local-restore.mjs --run-archive-inventory

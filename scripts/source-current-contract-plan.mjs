@@ -23,6 +23,17 @@ const LOCAL_RESTORE_DISPATCH='if(process.argv[1]&&path.resolve(process.argv[1])=
 const LOCAL_RESTORE_IMPORTS_SHA256='dd05a1d036c7d9afff9ae2ba4c0511dff199ad4faf5baab258b2a17b0cd728d4';
 const LOCAL_RESTORE_DISPATCH_SHA256='2e0d348293d622790375df6457726e0af04d92c9e23aedbac42033aa5049443c';
 
+// Navngiven inventory-CLI: en reel ny mode, ikke et nyt helfil-/headpin.
+const LOCAL_RESTORE_INVENTORY_DISPATCH=[
+  "  else if(process.argv[2]==='--run-archive-inventory')await fixture({archive:true,inventoryOnly:true}).catch(e=>{",
+  "    console.log(JSON.stringify({status:'FAILED_CLOSED',scope:'authenticated-archive-relation-inventory-only',",
+  "      firstFailure:safeError(e,'PREFLIGHT'),rawNamesIncluded:false,columnsIncluded:false,rowsIncluded:false,sqlIncluded:false,",
+  "      dockerInvoked:false,sqlExecuted:false,databaseRestoreExecuted:false,authRestoreVerified:false,fullDatabaseBackupVerified:false,freeReady:false}));process.exitCode=1;",
+  "  });",
+  ""
+].join('\n');
+
+
 // Rækkefølgen er også den normale kommandorækkefølge. Ingen imports-/ressourcelexer.
 export const CURRENT_CONTRACT_COMMANDS=freeze({
   core:[
@@ -68,6 +79,10 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
     'node scripts/test-handbook-review-archive-4.0.91.mjs',
     'node scripts/test-protected-handbook-merge-4.0.270.mjs',
   ],
+  releaseMetadata:[
+    'node scripts/test-private-production-runtime-workflow.mjs',
+    'node scripts/test-release-contract-metadata.mjs',
+  ],
   ownedCacheNative:[OWNED_CACHE_DEPENDENCY_COMMAND,OWNED_CACHE_NATIVE_COMMAND],
   sourceControls:[
     'node --test scripts/test-source-current-contracts.mjs',
@@ -107,6 +122,7 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
   sharing:[
     'node scripts/test-map-forecast-timeline.mjs',
     'node scripts/test-forecast-share-projection.mjs',
+    'node scripts/test-forecast-share-pages-deploy.mjs',
   ],
   ownerErasure:[
     'node --test scripts/test-delete-trip-owner-data-readback.mjs',
@@ -200,6 +216,11 @@ const PATH_AREAS=freeze({
     'scripts/validate-rdks.mjs','scripts/test-handbook-plain-language-4.0.70.mjs',
     'scripts/test-handbook-review-archive-4.0.91.mjs','scripts/test-protected-handbook-merge-4.0.270.mjs',
   ],
+  releaseMetadata:[
+    'scripts/set-version.mjs',
+    'scripts/test-private-production-runtime-workflow.mjs',
+    'scripts/test-release-contract-metadata.mjs',
+  ],
   ownedCacheNative:[
     'scripts/test-owned-dmi-grib-save-native.py',
     'scripts/test-owned-dmi-cache-dependency.mjs',
@@ -276,6 +297,9 @@ const PATH_AREAS=freeze({
   sharing:[
     'scripts/forecast-share/handler.mjs',
     'scripts/test-forecast-share-projection.mjs',
+    '.github/workflows/deploy-forecast-share-pages.yml',
+    'scripts/deploy-forecast-share-pages.mjs',
+    'scripts/test-forecast-share-pages-deploy.mjs',
   ],
   ownerErasure:[
     'supabase/functions/_shared/trip-owner-erasure.js',
@@ -317,6 +341,7 @@ const PATH_AREAS=freeze({
     'scripts/lib/source-impact-domain-owners-598.json',
   ],
 });
+const RELEASE_METADATA_PATHS=new Set(PATH_AREAS.releaseMetadata);
 const WEATHER_PROGRESS_RECOVERY_PATHS=new Set(PATH_AREAS.weatherProgressRecovery);
 const SMALL_USER_CONTRACT_PATHS=new Set([...PATH_AREAS.sharing,...PATH_AREAS.ownerErasure]);
 const sourceControlPaths=new Set(PATH_AREAS.sourceControls);
@@ -368,6 +393,28 @@ export function pagesContractCommandsForChangedInputs(changes){
       ||/^docs\/(?:rdks|ai|handbook)\/.+\.md$/.test(row.path)))return COMMANDS.pages;
   }
   return freeze(COMMANDS.pages.map(command=>command===PAGES_DEPLOYMENT_COMMAND?PAGES_OWNER_COMPLETION_COMMAND:command));
+}
+
+// Kun de eksisterende planner-/CURRENT-prøveinput kan vælge de fire hele mål.
+// Andre kontrolinput beholder hele standarden; den normale Gitplan afviser
+// fortsat ukendte/beskyttede input og kræver uafhængigt kontrolreview.
+const SOURCE_CONTROL_PLANNER_INPUTS=new Set(['scripts/source-current-contract-plan.mjs',
+  'scripts/test-source-current-contracts.mjs']);
+const SOURCE_CONTROL_PLANNER_COMMANDS=freeze([
+  'node --test scripts/test-source-current-contracts.mjs',
+  'node scripts/test-source-impact-workflow.mjs',
+  'node scripts/test-weather-source-gate.mjs',
+  'node scripts/test-weather-cadence-watchdog.mjs',
+]);
+export function sourceControlCommandsForChangedInputs(changes){
+  if(!Array.isArray(changes)||!changes.length
+    ||changes.some(row=>!row||typeof row.path!=='string')
+    ||new Set(changes.map(row=>row.path)).size!==changes.length)return COMMANDS.sourceControls;
+  const controls=changes.filter(row=>sourceControlPaths.has(row.path));
+  if(controls.length&&controls.every(row=>SOURCE_CONTROL_PLANNER_INPUTS.has(row.path)
+    &&row.status==='M'&&row.beforeMode==='100644'&&row.afterMode==='100644'))
+    return SOURCE_CONTROL_PLANNER_COMMANDS;
+  return COMMANDS.sourceControls;
 }
 
 function publicDigests(analysis){
@@ -533,7 +580,12 @@ export function isBoundedLocalRestoreFixtureChange(before,after){
       assert.equal(source.indexOf(LOCAL_RESTORE_DISPATCH,dispatch+1),-1);
       const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
       assert.equal(sha(source.slice(0,imports)),LOCAL_RESTORE_IMPORTS_SHA256);
-      assert.equal(sha(source.slice(dispatch)),LOCAL_RESTORE_DISPATCH_SHA256);
+      let frame=source.slice(dispatch);
+      if(frame.includes('--run-archive-inventory')){
+        assert.equal(frame.split(LOCAL_RESTORE_INVENTORY_DISPATCH).length,2);
+        frame=frame.replace(LOCAL_RESTORE_INVENTORY_DISPATCH,'');
+      }
+      assert.equal(sha(frame),LOCAL_RESTORE_DISPATCH_SHA256);
     }
     return true;
   }catch{return false;}
@@ -552,6 +604,81 @@ export function isArchiveRestoreOuterQueueOnlyChange(before,after){
   return after.replace(newLine,oldLine)===before;
 }
 
+
+// Lukket ny inventory-rolle. Kun dens faste CLI, archive-familie og læsetrin
+// føres tilbage til den gamle form; øvrige workflowbytes skal stadig matche.
+const LOCAL_RESTORE_INVENTORY_STEP=[
+  "      - name: Read only the authenticated archive vendor-target inventory without Docker or SQL",
+  "        if: inputs.restore_mode == 'archive-inventory'",
+  "        timeout-minutes: 23",
+  "        env:",
+  "          EXPECTED_HEAD_SHA: ${{ inputs.expected_head }}",
+  "          RESTORE_ARCHIVE_INDEX_COMMITMENT: ${{ inputs.archive_index_commitment }}",
+  "          RESTORE_ARCHIVE_CONFIRMATION: ${{ inputs.archive_confirmation }}",
+  "          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}",
+  "          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}",
+  "          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}",
+  "          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}",
+  "        run: node scripts/test-supabase-cli-local-restore.mjs --run-archive-inventory",
+  ""
+].join('\n');
+const LOCAL_RESTORE_INVENTORY_WORKFLOW_EDITS=[
+  [
+    "        description: Synthetic by default; archive restores locally; archive-inventory reads only authenticated target metadata\n",
+    "        description: Synthetic by default; archive restores only to an owned isolated local project\n"
+  ],
+  [
+    "        description: Domain-separated commitment for an already authenticated archive index; archive modes only\n",
+    "        description: Domain-separated commitment for an already authenticated archive index; archive mode only\n"
+  ],
+  [
+    "        description: RESTORE-PRIVATE-ARCHIVE-IN-ISOLATED-LOCAL-POSTGRES; archive modes only\n",
+    "        description: RESTORE-PRIVATE-ARCHIVE-IN-ISOLATED-LOCAL-POSTGRES; archive mode only\n"
+  ],
+  [
+    "        options: [synthetic, archive, archive-inventory]\n",
+    "        options: [synthetic, archive]\n"
+  ],
+  [
+    "  group: ${{ (inputs.restore_mode == 'archive' || inputs.restore_mode == 'archive-inventory') && 'ravradar-isolated-archive-restore' || 'ravradar-synthetic-standard-local-restore' }}\n",
+    "  group: ${{ inputs.restore_mode == 'archive' && 'ravradar-isolated-archive-restore' || 'ravradar-synthetic-standard-local-restore' }}\n"
+  ],
+  [
+    "      group: ${{ (inputs.restore_mode == 'archive' || inputs.restore_mode == 'archive-inventory') && 'ravradar-trip-storage-production' || format('ravradar-synthetic-standard-local-restore-{0}', github.run_id) }}\n",
+    "      group: ${{ inputs.restore_mode == 'archive' && 'ravradar-trip-storage-production' || format('ravradar-synthetic-standard-local-restore-{0}', github.run_id) }}\n"
+  ],
+  [
+    "            archive|archive-inventory)\n",
+    "            archive)\n"
+  ],
+  [
+    "      - uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf\n        if: inputs.restore_mode != 'archive-inventory'\n",
+    "      - uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf\n"
+  ]
+];
+export function archiveRestoreWorkflowWithoutInventory(source){
+  assert(typeof source==='string'&&!source.includes('\r')&&!source.includes('\0')&&Buffer.byteLength(source)<=256*1024);
+  if(!source.includes('archive-inventory'))return source;
+  assert.equal(source.split(LOCAL_RESTORE_INVENTORY_STEP).length,2);
+  assert(source.endsWith(LOCAL_RESTORE_INVENTORY_STEP));
+  let original=source.slice(0,-LOCAL_RESTORE_INVENTORY_STEP.length);
+  for(const [inventory,previous]of LOCAL_RESTORE_INVENTORY_WORKFLOW_EDITS){
+    assert.equal(original.split(inventory).length,2);
+    original=original.replace(inventory,previous);
+  }
+  const inventoryIf="        if: inputs.restore_mode == 'archive' || inputs.restore_mode == 'archive-inventory'\n";
+  assert.equal(original.split(inventoryIf).length,4);
+  original=original.replaceAll(inventoryIf,"        if: inputs.restore_mode == 'archive'\n");
+  assert(!original.includes('archive-inventory'));
+  return original;
+}
+export function isArchiveRestoreWorkflowChange(before,after){
+  try{
+    const previous=archiveRestoreWorkflowWithoutInventory(before);
+    const current=archiveRestoreWorkflowWithoutInventory(after);
+    return previous===current||isArchiveRestoreOuterQueueOnlyChange(previous,current);
+  }catch{return false;}
+}
 
 // Narrow scheduling ownership; source review and actual normal tests remain required.
 const DMI_BUDGET_PATHS=new Set(['scripts/plan-dmi-recovery.py','scripts/lib/dmi_adaptive_recovery.py',
@@ -748,6 +875,9 @@ export function planSourceCurrentContractsFromGit(input){
       if(['scripts/admin-document-history-maintenance.mjs','scripts/test-admin-document-history-maintenance.mjs'].includes(file)
         &&(row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'))
         return refuse('CURRENT_ADMIN_HISTORY_REQUIRES_EXISTING_REGULAR_SOURCE');
+      if(RELEASE_METADATA_PATHS.has(file)
+        &&(row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'))
+        return refuse('CURRENT_RELEASE_METADATA_REQUIRES_EXISTING_REGULAR_SOURCE');
       if(WEATHER_PROGRESS_RECOVERY_PATHS.has(file)
         &&(row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'))
         return refuse('CURRENT_WEATHER_PROGRESS_REQUIRES_EXISTING_REGULAR_SOURCE');
@@ -780,14 +910,16 @@ export function planSourceCurrentContractsFromGit(input){
         pathAreas.get(file)??(/^docs\/(?:rdks|ai|handbook)\/.+\.md$/.test(file)?['documentation']:null));
       if(!areas){unknown.push(file);continue;}
       for(const area of areas){if(!selected.has(area))selected.set(area,[]);selected.get(area).push(file);}
-      if(sourceControlPaths.has(file)||historicalPaths.has(file)||areas.includes('compatibility')||areas.includes('assistantEdge')||areas.includes('mailOwnerProbe')||areas.includes('currentInstalledCodeOnly')||areas.includes('workflowSupport')||areas.includes('weatherPublication')||areas.includes('dmiBudget')||areas.includes('dmiCollectionRecovery')||areas.includes('adminHistory')||areas.includes('sharing')||areas.includes('ownerErasure')||areas.includes('weatherProgressRecovery')||areas.includes('ownedCacheNative')||file.startsWith('scripts/test-'))
+      if(sourceControlPaths.has(file)||historicalPaths.has(file)||areas.includes('compatibility')||areas.includes('assistantEdge')||areas.includes('mailOwnerProbe')||areas.includes('currentInstalledCodeOnly')||areas.includes('workflowSupport')||areas.includes('weatherPublication')||areas.includes('dmiBudget')||areas.includes('dmiCollectionRecovery')||areas.includes('adminHistory')||areas.includes('sharing')||areas.includes('releaseMetadata')||areas.includes('ownerErasure')||areas.includes('weatherProgressRecovery')||areas.includes('ownedCacheNative')||file.startsWith('scripts/test-'))
         out.controlQualificationRequired=true;
     }
     if(unknown.length){out.unclassifiedPaths=unknown.sort();return refuse('CURRENT_UNCLASSIFIED_PATH');}
     const restore=analysis.completeGitDiff.inventory.find(row=>
       Buffer.from(row.pathUtf8Hex,'hex').toString('utf8')===LOCAL_RESTORE_FIXTURE);
-    if(restore){
-      if(restore.status!=='M'||restore.beforeMode!=='100644'||restore.afterMode!=='100644')
+    const restoreWorkflow=analysis.completeGitDiff.inventory.find(row=>
+      Buffer.from(row.pathUtf8Hex,'hex').toString('utf8')===LOCAL_RESTORE_WORKFLOW);
+    if(restore||restoreWorkflow){
+      if([restore,restoreWorkflow].filter(Boolean).some(row=>row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'))
         return refuse('CURRENT_RESTORE_FIXTURE_REQUIRES_EXISTING_REGULAR_SOURCE');
       const before=readCommittedText(input.baselineCommit,LOCAL_RESTORE_FIXTURE,true);
       const after=readCommittedText(input.candidateCommit,LOCAL_RESTORE_FIXTURE,true);
@@ -795,8 +927,9 @@ export function planSourceCurrentContractsFromGit(input){
         return refuse('CURRENT_RESTORE_FIXTURE_SECURITY_FRAME_CHANGED');
       const beforeWorkflow=readCommittedText(input.baselineCommit,LOCAL_RESTORE_WORKFLOW,true);
       const afterWorkflow=readCommittedText(input.candidateCommit,LOCAL_RESTORE_WORKFLOW,true);
-      if(beforeWorkflow!==afterWorkflow&&!isArchiveRestoreOuterQueueOnlyChange(beforeWorkflow,afterWorkflow))
+      if(!isArchiveRestoreWorkflowChange(beforeWorkflow,afterWorkflow))
         return refuse('CURRENT_RESTORE_FIXTURE_WORKFLOW_CHANGED');
+      out.controlQualificationRequired=true;
     }
     if(analysis.completeGitDiff.inventory.some(row=>Buffer.from(row.pathUtf8Hex,'hex').toString('utf8')===WEATHER_BUILD)){
       const before=readCommittedText(input.baselineCommit,WEATHER_BUILD);
@@ -813,7 +946,8 @@ export function planSourceCurrentContractsFromGit(input){
       ||!analysis.evidenceControls.plannerTrustChain.unchanged)out.controlQualificationRequired=true;
     for(const area of Object.keys(COMMANDS))if(selected.has(area))out.areas[area]={
       status:area==='historicalTests'?'NOT_EXECUTED':'SELECTED',executed:false,
-      commands:area==='pages'?pagesContractCommandsForChangedInputs(changedInputs):[...COMMANDS[area]],
+      commands:area==='pages'?pagesContractCommandsForChangedInputs(changedInputs)
+        :area==='sourceControls'?sourceControlCommandsForChangedInputs(changedInputs):[...COMMANDS[area]],
       changedPaths:[...new Set(selected.get(area))].sort()};
     out.commands=[...new Set(Object.values(out.areas).flatMap(area=>area.commands))];
     assert(out.commands.length>0&&out.commands.every(command=>command===LOCAL_RESTORE_SELF_TEST||command===PAGES_OWNER_COMPLETION_COMMAND||command===OWNED_CACHE_NATIVE_COMMAND||/^node(?: --[a-z-]+)*(?: [A-Za-z0-9_./-]+\.mjs)+$/.test(command)));

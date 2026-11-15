@@ -86,15 +86,10 @@ for(const file of [...new Set(versionedWeatherWorkflows)]){
   await fs.writeFile(file,text);
 }
 
-// Legacy private-runtime policy metadata følger releaseversionen, men
-// DEC-0122's retired-lås nedenfor må aldrig blive fjernet eller åbnet igen
-// af et mekanisk versionsløft; de historiske run/head-bindinger ændres ikke.
-{
-  const file='scripts/private-production-runtime-workflow.mjs';
-  let text=await fs.readFile(file,'utf8');
-  text=text.replace(/(releaseVersion:\s*')\d+\.\d+\.\d+(')/g,(_match,prefix,suffix)=>`${prefix}${version}${suffix}`);
-  await fs.writeFile(file,text);
-}
+// De udstedte engangs- og capacity-resume-policyer er historiske kontrakter.
+// Et appversionsløft må ikke omskrive deres egne releaseVersion-felter eller
+// forny deres faste run/head/retired-afgrænsning. Reelle policyændringer kræver
+// fortsat normal modelafledning, fordi hele ejerbladet indgår i C og I.
 
 // Synkronisér den statiske, offentlige releasekontrakt uden at røre releasedAt.
 await synchronizeReleaseContractMetadata({write:true});
