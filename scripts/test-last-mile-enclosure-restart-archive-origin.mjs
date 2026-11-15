@@ -597,7 +597,9 @@ test('issued584 genuine old B/S and UNPAIRED archive mint a new zero-history ori
           targetReferenceAt:saved.conditions.productionReferenceAt,
           minimumReferenceAt:expected.minimumReferenceAt,minimumGeneratedAt:expected.minimumGeneratedAt});
         await workflow.installRestoredPrivateRuntime({restoredRoot:restoredParent,repositoryRoot:HOST});
-        await fs.copyFile(saved.remoteCheckpointPath,path.join(HOST,'.cache/ravscore-continuation-checkpoint/checkpoint.json'));
+        // A failed ordinary build can retain its valid newer child-S locally.
+        // The actual protected parent-S/backend and B-pointer remain unchanged.
+        await write(path.join(HOST,'.cache/ravscore-continuation-checkpoint/checkpoint.json'),unpublished.checkpoint);
         assert.deepEqual(await fs.readFile(path.join(HOST,'data/live/conditions.json')),parentConditionsBytes);
         process.env.RAVRADAR_PRIVATE_RUNTIME_ROOT=saved.privateRoot;
         process.env.RAVRADAR_PRIVATE_RUNTIME_BUNDLE=saved.bundlePath;
