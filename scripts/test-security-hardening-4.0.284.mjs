@@ -260,7 +260,7 @@ assert.match(assistant,/^  const timer = setTimeout\((?:expire|\(\) => expire\("
 assert.doesNotMatch(assistant,/knowledge_rules/);
 assert.match(assistant,/CLOUDFLARE_ACCOUNT_ID/);
 assert.match(assistant,/CLOUDFLARE_WORKERS_AI_TOKEN/);
-assert.match(assistant,/response_format:\s*\{ type: "json_object" \}/);
+assert.match(assistant,/response_format:\s*assistantResponseFormat\(locale\)/);
 assert.match(assistant,/validateAssistantResult/);
 assert.doesNotMatch(assistant,/OPENAI_API_KEY|OPENAI_MODEL|api\.openai\.com/);
 const publicConfig=await read('config.js');

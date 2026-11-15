@@ -1,3 +1,27 @@
+## 89.350 — Arkivets databasedele skal passe til det lokale mål
+
+<div class="reader-guide"><p>Kun den isolerede arkivprøve klargør Storage-skemaet. Faste metadata hjælper med at finde forskellen, men er ikke bevis for vellykket gendannelse.</p></div>
+
+Den lokale kildekandidat bruger leverandørens normale Storage-engangsinitialisering alene på arkivprøvens ejede B-mål. Den eksisterende Supabase CLI 2.117.0 og Auth-version v2.196.0 bevares. Den syntetiske standardvej ændres ikke. Storage er fortsat udelukket som vedvarende tjeneste; det kontrollerede sæt er stadig database, gateway og Auth på det samme isolerede netværk.
+
+Baggrunden er forskellen mellem det gemte arkivs data og det lokale mål: standarddumpet kan indeholde Auth- og Storage-data, mens disse leverandørers DDL og migrationshistorik ikke følger med i de fem SQL-filer. Storage-initialisering var slået fra på målet. Det forklarer en konkret del af afslaget, men identificerer ikke automatisk de fire manglende Auth-mål eller beviser kolonnekompatibilitet.
+
+Efter at den ejede Auth-tjeneste er stoppet og før original SQL udføres, læses ét afgrænset metadataudsnit fra den lokale database. Arkivets fem filer er allerede materialiseret og gennemgået til relationsinventaret; metadataaflæsningen kræver ikke endnu en arkivhentning. Det viser migrationsnumre, et kontrolleret imagefingeraftryk og faste kategorier for de valgte leverandørrelationer. Ukendte relationer vises som OTHER og antal; der udskrives ingen frie tabelnavne, SQL, rækker eller brugeroplysninger. Sammenholdt med den eksisterende kontrol efter DDL kan dette skelne manglende bootstrap fra en ændring under original DDL. Metadata giver ingen ny migrations- eller reparationsret.
+
+Alle fem originale SQL-filer og deres identiteter bevares. Kontrollen efter DDL stopper fortsat før DATA ved en manglende relation eller forkert type. Hele DATA- og migrationshistorikforløbet, indholds- og dubletparitet, faktisk Auth-funktion og bekræftet oprydning af de ejede containere er fortsat nødvendige for et stærkt arkivbevis.
+
+Dette er en lokal kildekandidat. Den lokale selvtests udfald er UNKNOWN: værktøjet returnerede ikke et afsluttende procesresultat. Det er hverken PASS eller bevis for en produktfejl, og de tidligere syntetiske beviser kvalificerer ikke denne kandidat. Præcis kildekvalifikation, de fire Auth-mål, kolonnekompatibilitet og faktisk gendannelse af det samme originale arkiv er fortsat åbne. Autonom restorekvittering, backuprotation og samlet Free-klarhed kræver stadig deres egne beviser.
+
+## 89.349 — AI vælger fakta, serveren skriver svaret
+
+Den afgrænsede assistentkandidat gør hele systeminstruksen til evidensvalg og beder den eksisterende GPT-OSS-model om samme femfeltsprotokol gennem Cloudflares direkte JSON-schema-format. Svarfeltet er en lokaliseret fast markør; modellen vælger fortsat disposition og alle nødvendige eksisterende fakta-ID’er. Serveren skriver fortsat det viste svar fra de godkendte tekstenheder.
+
+Dette erstatter de modstridende instrukser om både kort markør og fri forklaring samt den løse json_object-request. De 45 fakta, vidensbindingen, normal udtrækning, råsvars- og helspørgsmålskontrol, begge 900-tegnsgrænser, model, kvoter og tidsfrister bevares. Der tilføjes ingen afskæring, automatisk modelgentagelse eller ny fallback.
+
+Cloudflares egen GPT-OSS-adapter bruger direkte json_schema uden OpenAI-wrapperen name/schema. Et skema er ikke en garanti for korrekt leverandøradfærd. Præcis kildekvalifikation, sikker installation og faktiske normale danske, tyske og engelske svar kræves fortsat; syntetiske prøver lukker ikke offentlig AI-accept. De seneste normale prøver på den forrige kode afviste for lange råsvar før kanonisk komposition. Deres rå indhold og konkrete faktaudvalg er ikke aflæst, og promptmodstriden er derfor ikke bevist som eneste årsag.
+
+Version 4.0.598, RavScore, kildeprioritet, SQL-regler, geometri og vejrhentning ændres ikke. Den pensionerede samlede Source-pakke genåbnes ikke.
+
 ## Let supportpakke til GitHub Actions — 13. november 2026
 
 Den automatiske supportpakke gemmer kun de eksisterende runoplysninger: repository, kørselsnummer, præcis Git-commit, ref og dannelsestidspunkt. En lille formatbeskrivelse henviser til den samme commit og markerer tydeligt, at pakken ikke er et projektsnapshot eller en gendannelsespakke. Begge metadatafiler må tilsammen højst fylde 8 KiB før ZIP-indpakning.
