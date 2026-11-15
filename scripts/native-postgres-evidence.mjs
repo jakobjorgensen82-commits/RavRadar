@@ -17,6 +17,9 @@ import {requireAssistantLaterH0Release,requireAssistantPublic587SuccessorRelease
 
 import {assistantAfter597RequiredMigrations} from './integrated-cutover-readiness.mjs';
 import {FROZEN597_NATIVE_SOURCE} from './run-frozen586-assistant-later-h0-postgres-source.mjs';
+import {inverseOwnedCacheNativeWorkflow,OWNED_CACHE_NATIVE_EARLY_STEP_NAMES,
+  projectSourceImpactWorkflowFull,SOURCE_IMPACT_FULL_WORKFLOW_SHA256}
+  from './lib/source-impact-workflow-review.mjs';
 
 export const ORIGIN = Object.freeze({
   repository: 'jakobjorgensen82-commits/RavRadar', pullRequest: 671,
@@ -1001,7 +1004,7 @@ async function assistantPublic591LocalProof({env=process.env,readGit=git,getRunt
     phase:'ASSISTANT_PUBLIC591_SUCCESSOR',commands:ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS,
     eligibleForReuse:true,current,nativeInput,runtime};
 }
-export function verifyAssistantPublic591Metadata(run,jobs){
+export function verifyAssistantPublic591Metadata(run,jobs,readGit=git){
   assert.equal(run.run_attempt,1);assert.equal(run.path,WORKFLOW);assert.equal(run.event,'pull_request');
   assert.equal(run.repository?.full_name,ORIGIN.repository);assert.equal(run.head_repository?.full_name,ORIGIN.repository);
   assert.equal(run.status,'completed');assert(['success','failure'].includes(run.conclusion));
@@ -1014,10 +1017,28 @@ export function verifyAssistantPublic591Metadata(run,jobs){
   const pg=one(job.steps.filter(row=>row.name===STEP)),upload=one(job.steps.filter(row=>row.name===CURRENT586_PHASE_UPLOAD));
   const earlyDmi = job.steps.filter(row=>row.name==='Install declared DMI dependencies before source planning');
   assert(earlyDmi.length<=1);
-  const offset=earlyDmi.length;
-  if(offset===1){
-    assert.equal(earlyDmi[0].number,6);assert(successful(earlyDmi[0]));
-    assert.equal(one(job.steps.filter(row=>row.name==='Build deterministic source-tree content identity')).number,7);
+  const earlyNode24=job.steps.filter(row=>OWNED_CACHE_NATIVE_EARLY_STEP_NAMES.includes(row.name));
+  let node24Offset=0;
+  if(earlyNode24.length){
+    // Only this exact whole workflow permits two extra environment steps. Raw
+    // job metadata and old receipt/command meanings remain unchanged.
+    assert.equal(earlyDmi.length,1);assert.equal(earlyNode24.length,2);
+    assert.equal(typeof readGit,'function');
+    const raw=readGit(['cat-file','blob',run.head_sha+':'+WORKFLOW]);
+    assert(Buffer.isBuffer(raw)||typeof raw==='string');assert(Buffer.byteLength(raw)<=65536);
+    const workflow=(Buffer.isBuffer(raw)?raw.toString('utf8'):raw).replace(/\r\n/g,'\n');
+    assert.notEqual(inverseOwnedCacheNativeWorkflow(workflow),workflow,'EXACT_OWNED_CACHE_NATIVE_WORKFLOW_REQUIRED');
+    assert.equal(sha(projectSourceImpactWorkflowFull(workflow)),SOURCE_IMPACT_FULL_WORKFLOW_SHA256);
+    for(let index=0;index<OWNED_CACHE_NATIVE_EARLY_STEP_NAMES.length;index++){
+      const step=one(earlyNode24.filter(row=>row.name===OWNED_CACHE_NATIVE_EARLY_STEP_NAMES[index]));
+      assert.equal(step.number,4+index);assert(successful(step));
+    }
+    node24Offset=2;
+  }
+  const offset=earlyDmi.length+node24Offset;
+  if(earlyDmi.length===1){
+    assert.equal(earlyDmi[0].number,6+node24Offset);assert(successful(earlyDmi[0]));
+    assert.equal(one(job.steps.filter(row=>row.name==='Build deterministic source-tree content identity')).number,7+node24Offset);
   }
   assert.equal(source.number,15+offset);assert.equal(pg.number,16+offset);assert.equal(upload.number,17+offset);
   const prefix=job.steps.filter(row=>row.number<=upload.number);
@@ -1184,7 +1205,7 @@ export async function decideAssistantPublic591Reuse({env=process.env,local,get,r
     assert(row);const load=async expected=>{
       const run=await get(base+'/runs/'+expected.id);
       for(const key of ['id','head_sha','head_branch','run_attempt'])assert.equal(run[key],expected[key]);
-      const jobs=await get(base+'/runs/'+run.id+'/attempts/1/jobs?per_page=100'),phase=verifyAssistantPublic591Metadata(run,jobs);
+      const jobs=await get(base+'/runs/'+run.id+'/attempts/1/jobs?per_page=100'),phase=verifyAssistantPublic591Metadata(run,jobs,readGit);
       const artifacts=await get(base+'/runs/'+run.id+'/artifacts?per_page=100');assert(complete(artifacts,'artifacts'));
       const artifact=one(artifacts.artifacts.filter(value=>value.name==='native586-phase-'+run.id+'-1-'+run.head_sha));
       verifyAssistantPublic591ArtifactMetadata(artifact,run,phase);
@@ -1224,7 +1245,7 @@ export async function decideAssistantPublic591Reuse({env=process.env,local,get,r
     const originFinal=await get(base+'/runs/'+origin.run.id);
     for(const key of ['id','head_sha','head_branch','run_attempt'])assert.equal(originFinal[key],origin.run[key]);
     assert.deepEqual(verifyAssistantPublic591Metadata(originFinal,
-      await get(base+'/runs/'+origin.run.id+'/attempts/1/jobs?per_page=100')),origin.phase);
+      await get(base+'/runs/'+origin.run.id+'/attempts/1/jobs?per_page=100'),readGit),origin.phase);
     verifyAssistantPublic591OriginPullRequest(await get(repo+'/pulls/'+origin.proof.nativePostgres.current.pullRequest),
       originFinal,origin.proof.nativePostgres.current.pullRequest);
     const refreshed=await get(base+'/artifacts/'+origin.artifact.id);
@@ -1533,7 +1554,7 @@ export async function decideInstalled593Original591Reuse({env=process.env,local,
       const run=await get(base+'/runs/'+expected.id);
       for(const key of ['id','head_sha','head_branch','run_attempt'])assert.equal(run[key],expected[key]);
       const jobs=expected.id===row.id?rowJobs:await get(base+'/runs/'+run.id+'/attempts/1/jobs?per_page=100');
-      const phase=verifyAssistantPublic591Metadata(run,jobs);
+      const phase=verifyAssistantPublic591Metadata(run,jobs,readGit);
       const artifacts=await get(base+'/runs/'+run.id+'/artifacts?per_page=100');assert(complete(artifacts,'artifacts'));
       const artifact=one(artifacts.artifacts.filter(value=>value.name==='native586-phase-'+run.id+'-1-'+run.head_sha));
       verifyAssistantPublic591ArtifactMetadata(artifact,run,phase);
@@ -1574,7 +1595,7 @@ export async function decideInstalled593Original591Reuse({env=process.env,local,
     const originFinal=await get(base+'/runs/'+origin.run.id);
     for(const key of ['id','head_sha','head_branch','run_attempt'])assert.equal(originFinal[key],origin.run[key]);
     assert.deepEqual(verifyAssistantPublic591Metadata(originFinal,
-      await get(base+'/runs/'+origin.run.id+'/attempts/1/jobs?per_page=100')),origin.phase);
+      await get(base+'/runs/'+origin.run.id+'/attempts/1/jobs?per_page=100'),readGit),origin.phase);
     verifyAssistantPublic591OriginPullRequest(await get(repo+'/pulls/'+origin.proof.nativePostgres.current.pullRequest),
       originFinal,origin.proof.nativePostgres.current.pullRequest);
     const refreshed=await get(base+'/artifacts/'+origin.artifact.id);

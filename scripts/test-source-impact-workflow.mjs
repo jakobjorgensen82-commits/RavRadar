@@ -6,7 +6,8 @@ import {execFileSync} from 'node:child_process';
 import {projectSourceImpactWorkflowFull,SOURCE_IMPACT_FULL_WORKFLOW_ORIGIN,
   SOURCE_IMPACT_FULL_WORKFLOW_SHA256,SOURCE_IMPACT_FULL_STEP_CONDITION,SOURCE_IMPACT_CONTROL_TARGETS,
   SOURCE_IMPACT_PR_READ_GRANT,inverseSourceImpactPrReadGrant,inverseSourceImpactSdkEarlyLinux,
-  SOURCE_IMPACT_HOUR_EARLY_LINUX_REVIEW,inverseSourceImpactHourEarlyLinux}
+  SOURCE_IMPACT_HOUR_EARLY_LINUX_REVIEW,inverseSourceImpactHourEarlyLinux,
+  inverseOwnedCacheNativeWorkflow,isAdditiveOwnedCacheNativeWorkflowChange,OWNED_CACHE_NATIVE_EARLY_NODE24}
   from './lib/source-impact-workflow-review.mjs';
 import {inverseSourceImpactDmiPython,SOURCE_IMPACT_DMI_PYTHON_REVIEW,SOURCE_IMPACT_DMI_REQUIREMENTS_REVIEW} from './lib/source-impact-workflow-review.mjs';
 import {verifyWorkflow,inverseSourceBeforePostgresWorkflow,inverseCandidatePublicSourceRunLine,
@@ -14,7 +15,29 @@ import {verifyWorkflow,inverseSourceBeforePostgresWorkflow,inverseCandidatePubli
 import {inverseCurrent586PhaseUpload} from './native-postgres-evidence.mjs';
 
 // Read-only normal caller/contract target. No source suite, SQL, API or provider.
-const actualSource=fs.readFileSync(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8').replace(/\r\n/g,'\n');
+const currentSource=fs.readFileSync(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8').replace(/\r\n/g,'\n');
+const actualSource=inverseOwnedCacheNativeWorkflow(currentSource);
+// Aktuel rå kalder: præcis to miljøsteps, normal Node22 og hele gamle ramme.
+assert.equal(currentSource.replace(OWNED_CACHE_NATIVE_EARLY_NODE24,''),actualSource);
+assert.equal(isAdditiveOwnedCacheNativeWorkflowChange(actualSource,currentSource),true);
+assert.equal(isAdditiveOwnedCacheNativeWorkflowChange(currentSource,actualSource),false);
+assert.equal(isAdditiveOwnedCacheNativeWorkflowChange(currentSource,currentSource),false);
+assert(currentSource.indexOf('Set up Node24 for selected owned-cache native contracts')
+  <currentSource.indexOf('Build deterministic source-tree content identity'));
+assert(currentSource.indexOf('node-version: 22')<currentSource.indexOf('Build deterministic source-tree content identity'));
+assert.equal(projectSourceImpactWorkflowFull(currentSource),projectSourceImpactWorkflowFull(actualSource));
+for(const changed of [
+  currentSource.replace('node-version: 24','node-version: 22'),
+  currentSource.replace('RAVRADAR_SOURCE_NODE24=','RAVRADAR_SOURCE_NODE24_OVERRIDE='),
+  currentSource.replace(OWNED_CACHE_NATIVE_EARLY_NODE24,OWNED_CACHE_NATIVE_EARLY_NODE24+OWNED_CACHE_NATIVE_EARLY_NODE24),
+  currentSource.replace('  contents: read','  contents: write'),
+  currentSource.replace("selection != 'TARGETED'","selection == 'TARGETED'"),
+  currentSource+'\n# UNKNOWN_NATIVE_WORKFLOW\n',
+]){
+  assert.equal(isAdditiveOwnedCacheNativeWorkflowChange(actualSource,changed),false);
+  assert.throws(()=>projectSourceImpactWorkflowFull(changed));
+}
+
 const source=inverseSourceImpactDmiPython(actualSource);
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const git=(ref,file)=>execFileSync('git',['show',ref+':'+file],{maxBuffer:65536,timeout:10000,

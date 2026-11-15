@@ -1,3 +1,9 @@
+## 15. november 2026 — privat kandidat til hele SDK-native-prøven
+
+Den normale CURRENT-plan kan vælge dependency-kontrollen og hele nativefilens 19 cases med faktisk Node24 og egen credential-fri npm-cache. V4 accepterer den præcise Pythonkommando i den krævede rækkefølge; ældre kvitteringsformater og FULL-betydning bevares. De to tidlige miljøsteps kan kun godkendes mod producer-heads hele workflow og den eksisterende lukkede inverse.
+
+Den tilføjede SDK-parent-loss-case er endnu ikke kørt på rigtig Linux. Ingen installeret kontrolvej, ny PG-eksekvering eller løst produktionsproblem påstås. Version 4.0.598, model, PG/C/I/T, gamle SQL og produktionsgates er uændrede. Se DEC-0302 og håndbog 89.342/89.232.
+
 ## 15. november 2026 — arkivmålets Storage-bootstrap og faste Auth-metadata
 
 En lokal kildekandidat initialiserer Storage-skemaet gennem den normale leverandørkalder alene på det isolerede arkivmål. Før original SQL aflæses lokale Auth-migrationsnumre og faste relationskategorier; ukendte mål og alle afslag efter DDL bevares. De fem originalfiler, CLI-/Auth-pin, vedvarende tjenester, budgetter og gendannelseskæde ændres ikke. Den lokale selvtest er UNKNOWN, ikke PASS. Auths fire manglende mål, kolonnekompatibilitet, faktisk originalrestore, autonom kvittering, rotation og Free-klarhed er fortsat åbne. Se håndbog 89.350.

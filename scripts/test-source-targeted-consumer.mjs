@@ -9,8 +9,8 @@ import {fileURLToPath,pathToFileURL} from 'node:url';
 import {sourceTreeContentSha256,sourceTreeProofArtifactName} from './lib/source-tree-content.mjs';
 import {SOURCE_GATE_CONTRACT,PULL_REQUEST_SOURCE_JOB,PULL_REQUEST_SOURCE_WORKFLOW,SOURCE_GATE_PRODUCERS}
   from './lib/weather-source-gate.mjs';
-import {TARGETED_SOURCE_STEP_NAMES,TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES,TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES,verifyTargetedSourceStepShape} from './source-targeted-consumer.mjs';
-import {SOURCE_IMPACT_DMI_REQUIREMENTS_REVIEW} from './lib/source-impact-workflow-review.mjs';
+import {TARGETED_SOURCE_STEP_NAMES,TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES,TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES,TARGETED_OWNED_CACHE_NATIVE_SOURCE_STEP_NAMES,verifyTargetedSourceStepShape} from './source-targeted-consumer.mjs';
+import {SOURCE_IMPACT_DMI_REQUIREMENTS_REVIEW,inverseOwnedCacheNativeWorkflow} from './lib/source-impact-workflow-review.mjs';
 import {ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS,ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND,ORIGIN}
   from './native-postgres-evidence.mjs';
 import {ORIGIN as NATIONAL,COMMAND as NATIONAL_COMMAND,ASSISTANT_PUBLIC591_SUCCESSOR_SOURCE_COMMAND}
@@ -197,7 +197,19 @@ try{
   const canonicalReceipt=copy(receipt);rebuildTarget();maps();
   const check=async mutate=>{receipt=copy(canonicalReceipt);rebuildTarget();maps();const deps=dependencies();mutate?.(deps);
     const result=await decide(locator,env,d(deps));cases++;return {result,deps};};
-  const dmiWorkflow=fs.readFileSync(path.join(SOURCE,'.github/workflows/validate-pull-request.yml'),'utf8');
+  const nativeWorkflow=fs.readFileSync(path.join(SOURCE,'.github/workflows/validate-pull-request.yml'),'utf8');
+  const dmiWorkflow=inverseOwnedCacheNativeWorkflow(nativeWorkflow);
+  const nativeSteps=TARGETED_OWNED_CACHE_NATIVE_SOURCE_STEP_NAMES.map((name,index)=>({name,number:index+1,status:'completed',
+    conclusion:index>=9&&index<=22?'skipped':'success',started_at:stamp(index),completed_at:stamp(index+1)}));
+  assert.equal(verifyTargetedSourceStepShape({steps:nativeSteps},nativeWorkflow).proofTime,Date.parse(stamp(9)));cases++;
+  for(const edit of [x=>x[3].conclusion='skipped',x=>x[4].conclusion='skipped',x=>x[8].conclusion='skipped',
+    x=>x[9].conclusion='success',x=>x.splice(4,1),x=>x.push(copy(x[4]))]){
+    const changed=copy(nativeSteps);edit(changed);
+    assert.throws(()=>verifyTargetedSourceStepShape({steps:changed},nativeWorkflow));cases++;
+  }
+  for(const changed of [nativeWorkflow+'\n',nativeWorkflow.replace('RAVRADAR_SOURCE_NODE24=','RAVRADAR_SOURCE_OTHER=')]){
+    assert.throws(()=>verifyTargetedSourceStepShape({steps:nativeSteps},changed));cases++;
+  }
   const dmiSteps=TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES.map((name,index)=>({name,number:index+1,status:'completed',
     conclusion:index>=7&&index<=20?'skipped':'success',started_at:stamp(index),completed_at:stamp(index+1)}));
   assert.equal(verifyTargetedSourceStepShape({steps:dmiSteps},dmiWorkflow).proofTime,Date.parse(stamp(7)));cases++;

@@ -14,6 +14,7 @@ import {CURRENT_CONTRACT_SOURCE_CONTRACT,CURRENT_CONTRACT_SOURCE_KIND,currentCon
   currentChangeSourceArtifactName,validateCurrentChangeSourceReceipt,readCurrentChangeReview,CURRENT_CHANGE_SOURCE_MAX_FILE_BYTES}
   from './source-current-contract-receipt.mjs';
 import {ORIGIN,sourceImpactEvidenceBudget} from './native-postgres-evidence.mjs';
+import {inverseOwnedCacheNativeWorkflow,OWNED_CACHE_NATIVE_EARLY_STEP_NAMES} from './lib/source-impact-workflow-review.mjs';
 
 // Archived namespaces are parsed here without initializing their old planner.
 // Their actual validators are loaded only when that legacy type is consumed.
@@ -42,6 +43,10 @@ export const TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES=Object.freeze([
   ...TARGETED_SOURCE_STEP_NAMES.slice(4,6),...TARGETED_SOURCE_STEP_NAMES.slice(7)]);
 export const TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES=Object.freeze(
   TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES.map((name,index)=>index===5?'Install declared DMI dependencies before source planning':name));
+export const TARGETED_OWNED_CACHE_NATIVE_SOURCE_STEP_NAMES=Object.freeze([
+  ...TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES.slice(0,3),...OWNED_CACHE_NATIVE_EARLY_STEP_NAMES,
+  ...TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES.slice(3),
+]);
 const DMI_PYTHON_WORKFLOW_SHA256='742835aa72adb58c50f6f404f5c3c1308a7c11b0038a528a9b5a1ac6253b3cff';
 const DMI_REQUIREMENTS_WORKFLOW_SHA256='2947d429c6df45cfc415ace970f4e5efc89410ca60d277de19529dde73882843';
 const verifiedMainFrontiers=new WeakMap();
@@ -76,15 +81,21 @@ function locatorIdentity(record,env){
 export function verifyTargetedSourceStepShape(job,workflowText){
   assert.equal(arguments.length,2);assert(Array.isArray(job.steps));
   const modern=workflowText!==undefined;
-  const workflowHash=modern?sha(workflowText):null;
+  const previous=modern?inverseOwnedCacheNativeWorkflow(workflowText):null;
+  const ownedCacheNative=modern&&previous!==workflowText;
+  const workflowHash=modern?sha(previous):null;
   if(modern)assert([DMI_PYTHON_WORKFLOW_SHA256,DMI_REQUIREMENTS_WORKFLOW_SHA256].includes(workflowHash),'EXACT_DMI_PYTHON_WORKFLOW_REQUIRED');
-  const names=modern?(workflowHash===DMI_PYTHON_WORKFLOW_SHA256?TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES:TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES):TARGETED_SOURCE_STEP_NAMES;
+  if(ownedCacheNative)assert.equal(workflowHash,DMI_REQUIREMENTS_WORKFLOW_SHA256,'EXACT_OWNED_CACHE_NATIVE_PREDECESSOR_REQUIRED');
+  const names=ownedCacheNative?TARGETED_OWNED_CACHE_NATIVE_SOURCE_STEP_NAMES
+    :modern?(workflowHash===DMI_PYTHON_WORKFLOW_SHA256?TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES:TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES):TARGETED_SOURCE_STEP_NAMES;
   assert.deepEqual(job.steps.filter(value=>value.number<=names.length).map(value=>value.number),Array.from({length:names.length},(_,i)=>i+1));
   for(let i=0;i<names.length;i++){
     const step=one(job.steps.filter(value=>value.number===i+1));assert.equal(step.name,names[i]);assert.equal(step.status,'completed');
-    assert.equal(step.conclusion,modern?(i>=7&&i<=20?'skipped':'success'):(i>=5&&i<=19?'skipped':'success'));
+    const oldIndex=ownedCacheNative?(i<3?i:i<5?-1:i-2):i;
+    assert.equal(step.conclusion,modern?(oldIndex>=7&&oldIndex<=20?'skipped':'success'):(i>=5&&i<=19?'skipped':'success'));
   }
-  const selected=job.steps[modern?6:4],unchanged=job.steps[modern?21:20],uploaded=job.steps[modern?22:21];
+  const offset=ownedCacheNative?2:0;
+  const selected=job.steps[(modern?6:4)+offset],unchanged=job.steps[(modern?21:20)+offset],uploaded=job.steps[(modern?22:21)+offset];
   assert(time(selected.started_at)<=time(selected.completed_at));assert(time(selected.completed_at)<=time(unchanged.started_at));
   assert(time(unchanged.started_at)<=time(unchanged.completed_at));assert(time(unchanged.completed_at)<=time(uploaded.started_at));assert(time(uploaded.started_at)<=time(uploaded.completed_at));
   return {proofTime:time(selected.completed_at),earliestArtifact:time(selected.started_at),latestArtifact:time(uploaded.completed_at)};
@@ -103,6 +114,8 @@ function runIdentity(run,pull,jobs,record,workflowText){
   const job=one(jobs.jobs.filter(value=>value.name===PULL_REQUEST_SOURCE_JOB));
   assert.equal(job.id,record.jobId);assert.equal(job.run_id,run.id);assert.equal(job.run_attempt,record.runAttempt);
   assert.equal(job.head_sha,record.producerHeadSha);assert(success(job));assert(Array.isArray(job.steps));
+  if(workflowText!==undefined&&inverseOwnedCacheNativeWorkflow(workflowText)!==workflowText)
+    assert.equal(record.contractId,CURRENT_CHANGE_SOURCE_CONTRACT,'OWNED_CACHE_NATIVE_REQUIRES_CURRENT_V4');
   return verifyTargetedSourceStepShape(job,workflowText);
 }
 

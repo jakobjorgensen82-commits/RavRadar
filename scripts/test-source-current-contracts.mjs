@@ -10,6 +10,8 @@ import {syncBuiltinESMExports} from 'node:module';
 import vm from 'node:vm';
 import {copernicusOfflineEnvironment} from './lib/copernicus-offline-environment.mjs';
 import {fileURLToPath,pathToFileURL} from 'node:url';
+import {OWNED_CACHE_DEPENDENCY_COMMAND,OWNED_CACHE_NATIVE_COMMAND,currentChangeCommand} from './source-current-contract-receipt.mjs';
+import {inverseOwnedCacheNativeWorkflow,OWNED_CACHE_NATIVE_EARLY_NODE24} from './lib/source-impact-workflow-review.mjs';
 import {CURRENT_CONTRACT_COMMANDS,isBoundedLocalRestoreFixtureChange,isArchiveRestoreOuterQueueOnlyChange,pagesContractCommandsForChangedInputs,dmiBudgetWeatherBuildAreas,isDmiBudgetOnlyUpdaterChange,isDmiBudgetOnlySupervisorChange,isDmiCollectionRecoveryOnlyUpdaterChange,isDmiCollectionRecoveryOnlyFixtureChange,dmiCollectionRecoveryUpdaterAreas} from './source-current-contract-plan.mjs';
 
 import { WEATHER_PUBLICATION_PATHS, inversePrivateWeatherPublicationWorkflow, isPrivateWeatherPublicationWorkflowChange,
@@ -211,6 +213,62 @@ function assertSmallUserContractPlanScope({baselineCommit,baselineTree,rewriteTr
   }finally{checkoutCommit(restoreHead);}
 }
 
+// Syntetisk støtteprøve af DEN normale forberedelse/argv; ingen Linux-/SDK-PASS.
+function assertOwnedCacheNativePreparation(){
+  assert.deepEqual(CURRENT_CONTRACT_COMMANDS.ownedCacheNative,
+    [OWNED_CACHE_DEPENDENCY_COMMAND,OWNED_CACHE_NATIVE_COMMAND]);
+  assert.equal(currentChangeCommand(OWNED_CACHE_NATIVE_COMMAND),true);
+  for(const command of [OWNED_CACHE_NATIVE_COMMAND+' --official-sdk-only',
+    OWNED_CACHE_NATIVE_COMMAND+' --unknown','python -c print(1)'])assert.equal(currentChangeCommand(command),false);
+  const source=fs.readFileSync(path.join(SOURCE,'scripts/source-targeted-producer.mjs'),'utf8');
+  const begin='function prepareSelectedOwnedCacheNativeSourceTarget(commands){',end='function prepareSelectedScalarSourceTarget(commands){';
+  assert.equal(source.split(begin).length,2);assert.equal(source.split(end).length,2);
+  const body=source.slice(source.indexOf(begin),source.indexOf(end));
+  const ownRoot='/own/source',node24='/tools/node24/bin/node';
+  let calls=[],filesystem=0,failInstall=false,version='v24.0.0\n';
+  const ownEnvironment={PATH:'/usr/bin',LANG:'C.UTF-8',RAVRADAR_SOURCE_NODE24:node24,
+    GITHUB_TOKEN:'synthetic-never-forward',ACTIONS_RUNTIME_TOKEN:'synthetic-never-forward',
+    NODE_OPTIONS:'synthetic-never-forward',SUPABASE_SERVICE_ROLE_KEY:'synthetic-never-forward'};
+  const fakeFs={constants:{O_WRONLY:1,O_CREAT:2,O_EXCL:4,O_NOFOLLOW:8},
+    realpathSync(value){filesystem++;return value==='/tools/node24/bin/npm'?'/tools/node24/lib/node_modules/npm/bin/npm-cli.js':value;},
+    readFileSync(){return '{"name":"npm"}';},
+    lstatSync(value){filesystem++;if(value.endsWith('/.npmrc'))throw Object.assign(Error('SYNTHETIC_ABSENT'),{code:'ENOENT'});
+      const directory=value.endsWith('/.npm-cache');
+      return {isFile:()=>!directory,isDirectory:()=>directory,isSymbolicLink:()=>false,nlink:1,size:0};},
+    mkdirSync(){filesystem++;},openSync(){filesystem++;return 17;},closeSync(){filesystem++;}};
+  const context={assert,fs:fakeFs,path:path.posix,ROOT:ownRoot,process:{platform:'linux',env:ownEnvironment},
+    OWNED_CACHE_DEPENDENCY_COMMAND,OWNED_CACHE_NATIVE_COMMAND,
+    execFileSync(executable,args,options){
+      calls.push({executable,args:Array.from(args),options});
+      for(const key of ['GITHUB_TOKEN','GH_TOKEN','ACTIONS_RUNTIME_TOKEN','SUPABASE_SERVICE_ROLE_KEY','NODE_OPTIONS'])
+        assert.equal(options.env[key],undefined);
+      if(args[0]==='--version')return version;
+      assert.equal(executable,node24);
+      assert.deepEqual(Array.from(args),['/tools/node24/lib/node_modules/npm/bin/npm-cli.js','ci','--ignore-scripts','--no-audit','--no-fund']);
+      assert.equal(options.cwd,ownRoot+'/.github/actions/save-owned-dmi-grib');
+      assert.equal(options.env.npm_config_cache,options.cwd+'/.npm-cache');
+      assert.notEqual(options.env.npm_config_userconfig,options.env.npm_config_globalconfig);
+      assert.equal(options.timeout,300000);
+      if(failInstall)throw Error('SYNTHETIC_NPM_FAILURE');return Buffer.alloc(0);
+    }};
+  const functions=vm.runInNewContext(body+'\n({prepareSelectedOwnedCacheNativeSourceTarget,ownedCacheNativeInvocation});',context);
+  const prepare=functions.prepareSelectedOwnedCacheNativeSourceTarget;
+  assert.equal(prepare(CURRENT_CONTRACT_COMMANDS.core),null);assert.equal(calls.length,0);assert.equal(filesystem,0);
+  assert.throws(()=>prepare([OWNED_CACHE_DEPENDENCY_COMMAND]),/PLAN_REFUSED/);
+  const runtime=prepare(CURRENT_CONTRACT_COMMANDS.ownedCacheNative);assert.equal(calls.length,2);
+  const dependency=functions.ownedCacheNativeInvocation(OWNED_CACHE_DEPENDENCY_COMMAND,runtime);
+  const native=functions.ownedCacheNativeInvocation(OWNED_CACHE_NATIVE_COMMAND,runtime);
+  assert.equal(dependency.program,node24);assert.deepEqual(Array.from(dependency.args),['scripts/test-owned-dmi-cache-dependency.mjs']);
+  assert.equal(native.program,'python');assert.deepEqual(Array.from(native.args),
+    ['-B','scripts/test-owned-dmi-grib-save-native.py','--node24-path',node24]);
+  assert(!native.args.includes('--official-sdk-only'),'Whole-file owner must execute the whole normal file');
+  assert.throws(()=>functions.ownedCacheNativeInvocation(OWNED_CACHE_NATIVE_COMMAND+' --unknown',runtime),/COMMAND_REFUSED/);
+  failInstall=true;assert.throws(()=>prepare(CURRENT_CONTRACT_COMMANDS.ownedCacheNative),/PREREQUISITE_FAILED/);failInstall=false;
+  version='v22.0.0\n';assert.throws(()=>prepare(CURRENT_CONTRACT_COMMANDS.ownedCacheNative),/NODE24_REFUSED/);version='v24.0.0\n';
+  context.process.platform='win32';assert.throws(()=>prepare(CURRENT_CONTRACT_COMMANDS.ownedCacheNative),/LINUX_REQUIRED/);
+  return 9;
+}
+
 // Run the actual bounded prerequisite function with a synthetic pip transport only.
 function assertSelectedProgressCopernicusPrerequisite(){
   const source=fs.readFileSync(path.join(SOURCE,'scripts/source-targeted-producer.mjs'),'utf8');
@@ -329,6 +387,9 @@ function assertSourceAutonomyPlanScope({baselineCommit,baselineTree,rewriteTree,
   const files=['.github/workflows/watch-missed-weather-schedule.yml','scripts/weather-source-gate.mjs',
     'scripts/lib/weather-source-gate.mjs','scripts/test-weather-source-gate.mjs','scripts/test-weather-cadence-watchdog.mjs'];
   const commands=['node --test scripts/test-source-current-contracts.mjs',
+    'node scripts/test-source-impact-workflow.mjs',
+    'node scripts/test-source-targeted-producer.mjs',
+    'node scripts/test-source-targeted-consumer.mjs',
     'node scripts/test-weather-source-gate.mjs','node scripts/test-weather-cadence-watchdog.mjs'];
   assert.deepEqual(CURRENT_CONTRACT_COMMANDS.sourceControls,commands);
   const results=[];
@@ -441,6 +502,7 @@ function collect(file){
 for(const file of ['scripts/source-targeted-producer.mjs','scripts/source-targeted-consumer.mjs',
   'scripts/source-current-contract-receipt.mjs','scripts/source-current-contract-plan.mjs'])collect(file);
 const additions=[...controlSources,...ownerHelpers,...WEATHER_PUBLICATION_PATHS,
+  'scripts/test-owned-dmi-grib-save-native.py',
   '.github/workflows/watch-missed-weather-schedule.yml','scripts/weather-source-gate.mjs',
   ...['594','597','598'].map(v=>'scripts/lib/source-impact-domain-inputs-'+v+'.json')];
 const fixtureControlBytes=file=>fs.readFileSync(path.join(SOURCE,file));
@@ -979,6 +1041,91 @@ try{
   }finally{checkout(beforeTransportHead);}
   scenarios.push('normal Git transport-only selection keeps four full Pages targets, fresh control review, protected inputs and broad/FULL mixed fallbacks');
   // Slut på de nye normale Gittransportcases.
+
+  // Aktuel helefilsejer samt præcis workflowbootstrap; kun normale Git-/planlæsninger.
+  if(!weatherPublicationScopeOnly&&!dmiBudgetScopeOnly&&!dmiRecoveryScopeOnly&&!adminHistoryScopeOnly){
+    const restore=text(root,['rev-parse','HEAD']),tree=text(root,['rev-parse',base+'^{tree}']);
+    const nativeFile='scripts/test-owned-dmi-grib-save-native.py',workflow='.github/workflows/validate-pull-request.yml';
+    const source=git(root,['show',base+':'+nativeFile]);
+    const currentWorkflow=fs.readFileSync(path.join(SOURCE,workflow),'utf8');
+    const predecessor=inverseOwnedCacheNativeWorkflow(currentWorkflow);
+    try{
+      const beforeTree=rewrite(tree,[[workflow,Buffer.from(predecessor)]]);
+      const before=commit(beforeTree,[base],'synthetic normal SDK environment predecessor');
+      const frontierTree=rewrite(beforeTree,[['docs/rdks/90_INDEX/SYNTHETIC-NATIVE-FRONTIER.md',Buffer.from('Synthetic ordinary documentation frontier\n')]]);
+      const frontier=commit(frontierTree,[before],'synthetic qualified current frontier');
+      const afterTree=rewrite(frontierTree,[[nativeFile,Buffer.concat([source,Buffer.from('\n# Synthetic native test delta\n')])],
+        [workflow,Buffer.from(currentWorkflow)]]);
+      const after=commit(afterTree,[frontier],'synthetic whole native owner with normal environment');checkout(after);
+      const nativePlans=new Map();
+      for(const baselineCommit of [frontier,before]){
+        const selected=plan({baselineCommit,candidateCommit:after,expectedHead:after});
+        assert.equal(selected.status,'PLANNED',JSON.stringify(selected.reasonCodes));
+        assert.deepEqual(selected.areas.ownedCacheNative.commands,[OWNED_CACHE_DEPENDENCY_COMMAND,OWNED_CACHE_NATIVE_COMMAND]);
+        assert.deepEqual(selected.protectedInputs,{postgresUnchanged:true,CUnchanged:true,IUnchanged:true,TUnchanged:true});
+        assert.equal(selected.controlQualificationRequired,true);nativePlans.set(baselineCommit,selected);cases++;
+      }
+      // Receipt DATA only: normal builders replay these actual synthetic Git plans.
+      // PASS rows here are format fixtures, never SDK/native execution evidence.
+      const receiptHelpers=await moduleAt('scripts/source-current-contract-receipt.mjs');
+      const currentPlan=nativePlans.get(frontier),cumulativePlan=nativePlans.get(before);
+      const fullBaseline={schemaVersion:1,kind:'RAVRADAR_SOURCE_IMPACT_FULL_BASELINE_V1',scope:'FULL_SOURCE',
+        repository:native.ORIGIN.repository,mergeCommit:before,producerHead:before,gitTree:beforeTree,
+        sourceTreeSha256:sourceContent.sourceTreeContentSha256(before,{git:readGit}),
+        pullRequest:fullPr,runId:fullRun,runAttempt:1,jobId:fullJob,finalArtifactId:fullFinalId,
+        finalArtifactDigest:'sha256:'+'a'.repeat(64),finalProofSha256:'b'.repeat(64),
+        nativeArtifactId:fullNativeId,nativeArtifactDigest:'sha256:'+'c'.repeat(64),
+        historicalNationalScope:'HISTORICAL_584_NATIONAL_ONLY',providerOrProductionProof:false};
+      const current={repository:native.ORIGIN.repository,head:after,
+        sourceTreeSha256:sourceContent.sourceTreeContentSha256(after,{git:readGit}),pullRequest:selectedPr,
+        runId:selectedRun,runAttempt:1,jobId:selectedJob};
+      const commandResults=cumulativePlan.commands.map(command=>({phase:'targeted',command,elapsedMs:0,outcome:'PASS'}));
+      const input={current,fullBaseline,changeBase:{commit:frontier,gitTree:frontierTree,pullBaseCommit:frontier},
+        currentPlan,cumulativePlan,frontier:{schemaVersion:1,kind:'QUALIFIED_CHANGE_FRONTIER',mode:'FULL',
+          repository:native.ORIGIN.repository,commit:before,gitTree:beforeTree,
+          sourceTreeSha256:fullBaseline.sourceTreeSha256,sourceRecord:null,sourceProofTime:null,missingReason:'MISSING'},
+        commandResults};
+      const receipt=await receiptHelpers.buildCurrentChangeSourceReceipt(input);
+      assert.equal(receiptHelpers.validateCurrentChangeSourceReceipt(receipt,input).validStructure,true);
+      assert.deepEqual(receipt.reportedCommandResults,commandResults);
+      assert(receipt.execution.commands.includes(OWNED_CACHE_NATIVE_COMMAND));
+      assert.equal(receipt.postgres.executedInThisRun,false);assert.equal(receipt.fullSourceValidationClaimed,false);
+      const legacy={current,fullBaseline,currentPlan:cumulativePlan,commandResults};
+      assert.throws(()=>receiptHelpers.validateCurrentContractSourceReceipt(null,legacy),/CURRENT_COMMANDS/);
+      await assert.rejects(receiptHelpers.buildCurrentContractSourceReceipt(legacy),/CURRENT_COMMANDS/);
+      for(const change of ['missing-dependency','reversed-order','extra-flag']){
+        const invalid=clone(input);
+        for(const value of [invalid.currentPlan,invalid.cumulativePlan]){
+          const dep=value.commands.indexOf(OWNED_CACHE_DEPENDENCY_COMMAND),nativeIndex=value.commands.indexOf(OWNED_CACHE_NATIVE_COMMAND);
+          if(change==='missing-dependency'){value.commands.splice(dep,1);value.areas.ownedCacheNative.commands.splice(0,1);}
+          else if(change==='reversed-order')[value.commands[dep],value.commands[nativeIndex]]=[value.commands[nativeIndex],value.commands[dep]];
+          else{
+            value.commands[nativeIndex]+=' --official-sdk-only';
+            value.areas.ownedCacheNative.commands[1]+=' --official-sdk-only';
+          }
+        }
+        await assert.rejects(receiptHelpers.buildCurrentChangeSourceReceipt(invalid),
+          change==='extra-flag'?/CURRENT_COMMANDS/:/CURRENT_OWNED_CACHE_NATIVE_COMMANDS/);
+      }
+      const invalidRows=clone(input),dep=invalidRows.commandResults.findIndex(row=>row.command===OWNED_CACHE_DEPENDENCY_COMMAND);
+      const nativeIndex=invalidRows.commandResults.findIndex(row=>row.command===OWNED_CACHE_NATIVE_COMMAND);
+      [invalidRows.commandResults[dep],invalidRows.commandResults[nativeIndex]]=
+        [invalidRows.commandResults[nativeIndex],invalidRows.commandResults[dep]];
+      assert.throws(()=>receiptHelpers.validateCurrentChangeSourceReceipt(receipt,invalidRows),/COMMAND_RESULTS/);
+      cases+=7;
+      scenarios.push('normal V4 Python receipt builder/validator with two whole command rows and unchanged V3 refusal; synthetic receipt DATA only');
+      const reverse=commit(rewrite(afterTree,[[workflow,Buffer.from(predecessor)]]),[after],'synthetic forbidden reverse SDK workflow');checkout(reverse);
+      assert.deepEqual(plan({baselineCommit:after,candidateCommit:reverse,expectedHead:reverse}).reasonCodes,
+        ['CURRENT_VALIDATION_WORKFLOW_REQUIRES_FULL']);cases++;
+      for(const [file,bytes]of [['scripts/lib/unclassified-native-helper.mjs',Buffer.from('export const unknown=true;\n')],
+        [profile.postgresModules[0],Buffer.concat([git(root,['show',base+':'+profile.postgresModules[0]]),Buffer.from('\n// Synthetic protected drift\n')])]]){
+        const candidate=commit(rewrite(afterTree,[[file,bytes]]),[before],'synthetic native plus unknown or protected drift');checkout(candidate);
+        assert.equal(plan({baselineCommit:before,candidateCommit:candidate,expectedHead:candidate}).selection,'FULL');cases++;
+      }
+      cases+=assertOwnedCacheNativePreparation();
+      scenarios.push('whole owned-cache native owner selects dependency plus full Python file, preserves actual PG/C/I/T and closes environment/bootstrap/reverse/unknown boundaries; helper execution is SYNTHETIC only');
+    }finally{checkout(restore);}
+  }
 
   currentReceiptHelpers=await moduleAt('scripts/source-current-contract-receipt.mjs');
   const successor=await moduleAt('scripts/lib/assistant-later-h0-successor-source.mjs');

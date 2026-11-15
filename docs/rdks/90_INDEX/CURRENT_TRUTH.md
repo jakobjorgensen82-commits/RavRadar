@@ -1,3 +1,9 @@
+## 15. november — SDK-native-kontrol er privat forberedt
+
+En privat kandidat lader den normale CURRENT-vej vælge dependency-prøven og hele den eksisterende nativefil med 19 cases på faktisk Node24. Øvrig kildekontrol beholder Node22. V4-kvitteringen kan bære den præcise Pythonoperation med samme normale plan-, review- og oprindelseskontrol; ældre formater ommærkes ikke. FULL-læserens nye to miljøsteps kræver den autentiske producer-heads hele workflow og den eksisterende lukkede inverse.
+
+Den tilføjede SDK-case for tab af styrende proces er endnu ikke kørt på rigtig Linux i kandidaten. Kilde-/Linux-kvalifikation, sikker levering og faktisk drift er særskilte åbne beviser. Der påstås ingen installeret ny kontrolvej eller rettet produktionsfejl. Version 4.0.598, PG/C/I/T, gamle SQL-bytes, numerik og produktionsgates bevares. Se DEC-0302 og håndbog 89.342/89.232.
+
 ## 15. november — entydigt evidensvalg og struktureret AI-svar
 
 Den afgrænsede assistentkandidat gør hele systeminstruksen til evidensvalg og beder den eksisterende GPT-OSS-model om samme femfeltsprotokol gennem Cloudflares direkte JSON-schema-format. Svarfeltet er en lokaliseret fast markør; modellen vælger fortsat disposition og alle nødvendige eksisterende fakta-ID’er. Serveren skriver fortsat det viste svar fra de godkendte tekstenheder.

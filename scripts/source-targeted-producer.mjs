@@ -6,7 +6,8 @@ import {fileURLToPath} from 'node:url';
 import {execFileSync,spawn} from 'node:child_process';
 import {isDeepStrictEqual} from 'node:util';
 import {qualifySourceImpactFullBaseline,SOURCE_IMPACT_FULL_BASELINE_KIND} from './source-impact-full-baseline.mjs';
-import {buildCurrentChangeSourceReceipt,readCurrentChangeReview,readCurrentChangeReviewBaselineHint,assertCurrentChangeReceiptCapacity}
+import {buildCurrentChangeSourceReceipt,readCurrentChangeReview,readCurrentChangeReviewBaselineHint,assertCurrentChangeReceiptCapacity,
+  OWNED_CACHE_DEPENDENCY_COMMAND,OWNED_CACHE_NATIVE_COMMAND}
   from './source-current-contract-receipt.mjs';
 import {discoverTargetedSourceGate,decideTargetedSourceGate,verifiedMainSourceFrontier}
   from './source-targeted-consumer.mjs';
@@ -42,6 +43,66 @@ const frontierRefused=reason=>Object.assign(new Error('SOURCE_TARGETED_FRONTIER_
   {code:'SOURCE_TARGETED_FRONTIER_REFUSED'});
 const full=reasonCode=>({schemaVersion:1,selection:'FULL',reasonCode,targetedCommandsExecuted:0,
   receiptWritten:false,deliveryAuthority:false});
+// Hele det normale cache-native-mål; ingen fri Python-/SDK-kommando.
+function prepareSelectedOwnedCacheNativeSourceTarget(commands){
+  const dependency=commands.includes(OWNED_CACHE_DEPENDENCY_COMMAND),native=commands.includes(OWNED_CACHE_NATIVE_COMMAND);
+  if(!dependency&&!native)return null;
+  assert(dependency&&native&&commands.indexOf(OWNED_CACHE_DEPENDENCY_COMMAND)<commands.indexOf(OWNED_CACHE_NATIVE_COMMAND),
+    'SOURCE_OWNED_CACHE_NATIVE_PLAN_REFUSED');
+  assert.equal(process.platform,'linux','SOURCE_OWNED_CACHE_NATIVE_LINUX_REQUIRED');
+  const node24=process.env.RAVRADAR_SOURCE_NODE24;
+  assert(typeof node24==='string'&&path.isAbsolute(node24)&&path.basename(node24)==='node'
+    &&!/[\r\n]/.test(node24),'SOURCE_OWNED_CACHE_NODE24_REFUSED');
+  const executable=fs.lstatSync(node24);
+  assert(executable.isFile()&&!executable.isSymbolicLink()&&fs.realpathSync(node24)===node24,
+    'SOURCE_OWNED_CACHE_NODE24_REFUSED');
+  const environment=Object.fromEntries(['PATH','LD_LIBRARY_PATH','LIBRARY_PATH','LANG','LC_ALL','LC_CTYPE','RUNNER_TRACKING_ID']
+    .filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]]));
+  environment.PATH=path.dirname(node24)+path.delimiter+(environment.PATH??'');
+  assert.match(execFileSync(node24,['--version'],{env:environment,encoding:'utf8',timeout:5000,
+    stdio:['ignore','pipe','pipe']}),/^v24\.\d+\.\d+\n$/,'SOURCE_OWNED_CACHE_NODE24_REFUSED');
+  const runtimePrefix=fs.realpathSync(path.resolve(path.dirname(node24),'..'));
+  const npmCli=fs.realpathSync(path.join(path.dirname(node24),'npm'));
+  const npmRelative=path.relative(runtimePrefix,npmCli);
+  assert(!npmRelative.startsWith('..')&&!path.isAbsolute(npmRelative)&&path.basename(npmCli)==='npm-cli.js'
+    &&JSON.parse(fs.readFileSync(path.join(path.dirname(npmCli),'../package.json'),'utf8')).name==='npm',
+    'SOURCE_OWNED_CACHE_NPM_REFUSED');
+  const action=path.join(ROOT,'.github/actions/save-owned-dmi-grib');
+  assert.equal(fs.realpathSync(action),action,'SOURCE_OWNED_CACHE_ROOT_REFUSED');
+  try{fs.lstatSync(path.join(action,'.npmrc'));throw new Error('SOURCE_OWNED_CACHE_CONFIG_REFUSED');}
+  catch(error){if(error?.code!=='ENOENT')throw error;}
+  const cache=path.join(action,'.npm-cache');
+  fs.mkdirSync(cache,{recursive:true});
+  const cacheStat=fs.lstatSync(cache);
+  assert(cacheStat.isDirectory()&&!cacheStat.isSymbolicLink()&&fs.realpathSync(cache)===cache,
+    'SOURCE_OWNED_CACHE_PATH_REFUSED');
+  // To forskellige tomme, egne konfigurationer; ingen bruger-/registrycredentials.
+  for(const [key,name]of [['npm_config_userconfig','.native-source-user.npmrc'],
+    ['npm_config_globalconfig','.native-source-global.npmrc']]){
+    const file=path.join(cache,name);
+    try{const fd=fs.openSync(file,fs.constants.O_WRONLY|fs.constants.O_CREAT|fs.constants.O_EXCL|fs.constants.O_NOFOLLOW,0o600);
+      fs.closeSync(fd);}catch(error){if(error?.code!=='EEXIST')throw error;}
+    const stat=fs.lstatSync(file);
+    assert(stat.isFile()&&!stat.isSymbolicLink()&&stat.nlink===1&&stat.size===0,
+      'SOURCE_OWNED_CACHE_CONFIG_REFUSED');
+    environment[key]=file;
+  }
+  environment.npm_config_cache=cache;
+  try{
+    execFileSync(node24,[npmCli,'ci','--ignore-scripts','--no-audit','--no-fund'],
+      {cwd:action,env:environment,timeout:300000,stdio:['ignore','inherit','inherit']});
+  }catch{throw new Error('SOURCE_OWNED_CACHE_PREREQUISITE_FAILED');}
+  return {node24,environment};
+}
+function ownedCacheNativeInvocation(command,runtime){
+  assert(runtime&&typeof runtime.node24==='string','SOURCE_OWNED_CACHE_RUNTIME_REQUIRED');
+  if(command===OWNED_CACHE_DEPENDENCY_COMMAND)return {program:runtime.node24,
+    args:['scripts/test-owned-dmi-cache-dependency.mjs'],env:runtime.environment};
+  assert.equal(command,OWNED_CACHE_NATIVE_COMMAND,'SOURCE_OWNED_CACHE_COMMAND_REFUSED');
+  return {program:'python',args:['-B','scripts/test-owned-dmi-grib-save-native.py','--node24-path',runtime.node24],
+    env:runtime.environment};
+}
+
 function prepareSelectedScalarSourceTarget(commands){
   if(!commands.includes('node --test scripts/test-weather-component-normal-wireup.mjs')
     &&!commands.includes('node --test scripts/test-weather-component-progress-cache.mjs scripts/test-weather-component-progress-workflow.mjs scripts/test-dmi-progress-inputs.mjs'))return;
@@ -265,17 +326,21 @@ export async function coordinateTargetedSourceProducer(){
   const controlReview=readCurrentChangeReview(pull,reviewInput());
   assertCurrentChangeReceiptCapacity({...reviewInput(),frontier});
   clean(head);prepareSelectedScalarSourceTarget(executionPlan.commands);
+  const ownedCacheNative=prepareSelectedOwnedCacheNativeSourceTarget(executionPlan.commands);
   const commandResults=[];
   for(const command of executionPlan.commands){
-    assert.match(command,/^node(?: [A-Za-z0-9_./:-]+)+$/);
+    assert(command===OWNED_CACHE_NATIVE_COMMAND||/^node(?: [A-Za-z0-9_./:-]+)+$/.test(command));
     clean(head);
     const start=performance.now(),result=await new Promise(resolve=>{
       let error=null;
       const localRestoreEnvironment=command===LOCAL_RESTORE_SELF_TEST
         ?Object.fromEntries(LOCAL_RESTORE_ENVIRONMENT.filter(key=>typeof env[key]==='string').map(key=>[key,env[key]]))
         :undefined;
-      const child=spawn(process.execPath,command.split(' ').slice(1),
-        {cwd:ROOT,stdio:'inherit',shell:false,timeout:300000,env:localRestoreEnvironment});
+      const invocation=command===OWNED_CACHE_NATIVE_COMMAND||command===OWNED_CACHE_DEPENDENCY_COMMAND
+        ?ownedCacheNativeInvocation(command,ownedCacheNative)
+        :{program:process.execPath,args:command.split(' ').slice(1),env:localRestoreEnvironment};
+      const child=spawn(invocation.program,invocation.args,
+        {cwd:ROOT,stdio:'inherit',shell:false,timeout:300000,env:invocation.env});
       child.once('error',value=>{error=value;});
       child.once('close',(status,signal)=>resolve({status,signal,error}));
     });

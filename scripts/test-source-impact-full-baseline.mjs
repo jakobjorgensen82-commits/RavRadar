@@ -4,6 +4,8 @@ import childProcess from 'node:child_process';
 import {execFileSync} from 'node:child_process';
 import {syncBuiltinESMExports} from 'node:module';
 import test from 'node:test';
+import fs from 'node:fs/promises';
+import {OWNED_CACHE_NATIVE_EARLY_STEP_NAMES} from './lib/source-impact-workflow-review.mjs';
 import {ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE} from './lib/assistant-later-h0-successor-source.mjs';
 import {qualifySourceImpactFullBaseline,SOURCE_IMPACT_FULL_BASELINE_KIND}
   from './source-impact-full-baseline.mjs';
@@ -158,6 +160,32 @@ test('actual normal gate plus bound artifact bodies qualify V1 and V2 full ances
     assert.equal(f.phase.nativePostgres.schemaVersion,options.v2?2:undefined);
     assert.equal(f.full.nativePostgres.executedInThisRun,!options.reused);
   }
+});
+
+test('normal FULL qualifier binds the new raw native layout to the actual producer workflow blob',async()=>{
+  const f=fixture({v2:true}),steps=f.job.steps;
+  const workflow=await fs.readFile(new URL('../'+PULL_REQUEST_SOURCE_WORKFLOW,import.meta.url),'utf8');
+  steps[2].name='Require exact pull-request source head';
+  const dmi={...steps[5],name:'Install declared DMI dependencies before source planning'};
+  for(const value of steps.slice(5))value.number++;
+  steps[5].name='Build deterministic source-tree content identity';steps.splice(5,0,dmi);
+  const environment=OWNED_CACHE_NATIVE_EARLY_STEP_NAMES.map((name,index)=>({...steps[3],name,number:4+index}));
+  for(const value of steps.slice(3))value.number+=2;
+  steps.splice(3,0,...environment);f.rebuild();
+  const originalReadGit=f.dependencies.readGit,reads=[];
+  f.dependencies.readGit=(args,options)=>{
+    if(args[0]==='cat-file'&&args[2]===head+':'+PULL_REQUEST_SOURCE_WORKFLOW){
+      reads.push(args);return Buffer.from(workflow);
+    }
+    return originalReadGit(args,options);
+  };
+  const result=await f.qualify();assert.equal(result.kind,SOURCE_IMPACT_FULL_BASELINE_KIND);
+  assert.equal(result.scope,'FULL_SOURCE');assert.equal(result.providerOrProductionProof,false);
+  assert.equal(f.phase.nativePostgres.schemaVersion,2);assert.equal(reads.length,1);
+  assert.equal(f.zipCalls.length,2);
+  f.dependencies.readGit=(args,options)=>args[0]==='cat-file'&&args[2]===head+':'+PULL_REQUEST_SOURCE_WORKFLOW
+    ?Buffer.from(workflow+'\n'):originalReadGit(args,options);
+  const refused=await f.qualify();assert.equal(refused.status,'REFUSED');assert.equal(refused.cheapPlanAvailable,false);
 });
 
 test('source-only/main locators, foreign identities and incomplete or non-green deep steps cannot be a FULL baseline',async()=>{

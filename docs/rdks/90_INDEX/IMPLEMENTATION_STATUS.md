@@ -1,3 +1,9 @@
+## 15. november — SDK-native-kandidat afventer faktisk Linux-kontrol
+
+Privat kode og kontrolreview er forberedt: naturligt CURRENT-ansvar, dependency før hele nativefilens 19 cases, faktisk Node24 med egen npm-cache, præcis V4-Pythonkvittering og head-bundet +2 FULL-metadata-layout. Den øvrige Node22-kildevej og gamle V1/V2/V3/FULL-betydninger bevares. Kontrolinput er reelt ændrede; de kaldes ikke uændrede nativebeviser.
+
+Åbent er de nødvendige normale mål og planer på det endelige head, den faktiske Linux-udførelse af SDK-parent-loss-casen og sikker levering. Syntetiske PASS-rækker er kun kvitteringsformatdata. Ingen ny PostgreSQL-eksekvering, model-/SQL-overgang, installeret kontrolvej eller produktionsvirkning er bevist. Version 4.0.598 bevares. Se DEC-0302 og håndbog 89.342/89.232.
+
 ## 15. november — entydigt evidensvalg og struktureret AI-svar
 
 Den afgrænsede assistentkandidat gør hele systeminstruksen til evidensvalg og beder den eksisterende GPT-OSS-model om samme femfeltsprotokol gennem Cloudflares direkte JSON-schema-format. Svarfeltet er en lokaliseret fast markør; modellen vælger fortsat disposition og alle nødvendige eksisterende fakta-ID’er. Serveren skriver fortsat det viste svar fra de godkendte tekstenheder.

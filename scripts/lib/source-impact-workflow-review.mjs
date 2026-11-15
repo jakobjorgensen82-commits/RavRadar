@@ -26,6 +26,30 @@ const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const once=(source,from,to)=>{assert.equal(source.split(from).length,2,'Exact once-only reviewed workflow field required');
   return source.replace(from,()=>to);};
 
+
+// Fælles lukket miljøinverse. Ingen kildekvalifikation eller ny historisk pin.
+export const OWNED_CACHE_NATIVE_EARLY_NODE24="      # Kun runtimeklargøring; faktisk nativearbejde vælges og kvalificeres normalt.\n      - name: Set up Node24 for selected owned-cache native contracts\n        uses: actions/setup-node@v7\n        with:\n          node-version: 24\n      - name: Retain actual Node24 executable for selected native contracts\n        shell: bash\n        run: |\n          set -euo pipefail\n          node -e \"const fs=require('node:fs');const p=fs.realpathSync(process.execPath);if(process.platform!=='linux'||process.versions.node.split('.')[0]!=='24'||/[\\r\\n]/.test(p))throw Error('SOURCE_NATIVE_NODE24_REQUIRED');fs.appendFileSync(process.env.GITHUB_ENV,'RAVRADAR_SOURCE_NODE24='+p+'\\n');\"\n\n";
+const OWNED_CACHE_NATIVE_NODE22_ANCHOR="      - uses: actions/setup-node@v7\n        with:\n          node-version: 22\n";
+export const OWNED_CACHE_NATIVE_EARLY_STEP_NAMES=Object.freeze([
+  'Set up Node24 for selected owned-cache native contracts',
+  'Retain actual Node24 executable for selected native contracts',
+]);
+export function inverseOwnedCacheNativeWorkflow(value){
+  assert.equal(arguments.length,1);assert.equal(typeof value,'string');
+  const source=value.replace(/\r\n/g,'\n');
+  if(!source.includes(OWNED_CACHE_NATIVE_EARLY_STEP_NAMES[0]))return source;
+  return once(source,OWNED_CACHE_NATIVE_EARLY_NODE24+OWNED_CACHE_NATIVE_NODE22_ANCHOR,
+    OWNED_CACHE_NATIVE_NODE22_ANCHOR);
+}
+export function isAdditiveOwnedCacheNativeWorkflowChange(before,after){
+  if(arguments.length!==2||typeof before!=='string'||typeof after!=='string')return false;
+  try{
+    const old=before.replace(/\r\n/g,'\n'),next=after.replace(/\r\n/g,'\n');
+    return old!==next&&inverseOwnedCacheNativeWorkflow(old)===old
+      &&inverseOwnedCacheNativeWorkflow(next)===old;
+  }catch{return false;}
+}
+
 // Exact test-only outer inverse: the hour-lock target is selected before SDK
 // in the same existing three-minute Linux step. The SDK history below is intact.
 export const SOURCE_IMPACT_HOUR_EARLY_LINUX_REVIEW=Object.freeze({
@@ -132,7 +156,7 @@ export function inverseSourceImpactDmiPython(value){
 
 export function projectSourceImpactWorkflowFull(value){
   assert.equal(arguments.length,1);assert.equal(typeof value,'string');
-  let source=inverseSourceImpactPrReadGrant(inverseSourceImpactSdkEarlyLinux(inverseSourceImpactHourEarlyLinux(inverseSourceImpactDmiPython(value))));
+  let source=inverseSourceImpactPrReadGrant(inverseSourceImpactSdkEarlyLinux(inverseSourceImpactHourEarlyLinux(inverseSourceImpactDmiPython(inverseOwnedCacheNativeWorkflow(value)))));
   if(sha(source)===SOURCE_IMPACT_FULL_WORKFLOW_SHA256)return source;
   const selected=/steps\.source-content\.outputs\.(?:selection|receipt_path)|test-source-(?:impact|targeted)-/.test(source);
   if(selected){

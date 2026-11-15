@@ -1,3 +1,9 @@
+## 15. november — SDK-parent-loss mangler sin relevante Linux-accept
+
+Den konkrete krypterede SDK-case efter PUT og før afsluttende ACK er endnu ikke kørt på rigtig Linux i den private kandidat. Tidligere native-PASS dækker sine oprindelige cases og må ikke udlægges som accept af denne tilføjelse eller den nye CURRENT-kalder. Der er ikke påvist en aktuel produktfejl alene af dette manglende bevis.
+
+Kandidaten vælger den eksisterende dependency-prøve og hele nativefilens 19 cases med faktisk Node24, egen npm-cache og normal V4-kvittering. Den nye FULL-metadataform skal være bundet til producer-heads hele workflow; ukendte bytes og forkerte steps afvises. Alle normale kilde-/review-/input-/slutkontroller skal stadig bestå før levering. Ingen ny model eller PG-kørsel påstås, og produktets stop-/bevaringskrav svækkes ikke. Se DEC-0302 og håndbog 89.342/89.232.
+
 ## 15. november — originalarkivets Auth-kompatibilitet er fortsat åben
 
 Storage-bootstrap på det isolerede arkivmål var slået fra, mens originalens DATA kræver Storage-relationer. En accepteret lokal kildekandidat retter netop denne initialisering og tilføjer faste vendorlabels samt lokal Auth-migrationsmetadata før original SQL. De fire manglende Auth-mål og deres kolonnekompatibilitet er stadig uafklarede. Faste labels giver ingen reparationsret, og ukendte mål/alle afslag efter DDL bevares.

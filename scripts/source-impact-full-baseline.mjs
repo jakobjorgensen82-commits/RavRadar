@@ -222,7 +222,7 @@ export async function qualifySourceImpactFullBaseline(input,dependencies){
       'Validate durable Copernicus current-reference baseline on artificial data only',
       'Validate download-inclusive DMI capacity on artificial data only'];
     for(const name of names)assert(success(one(job.steps.filter(value=>value.name===name))));
-    const phase=verifyAssistantPublic591Metadata(run,jobs);
+    const phase=verifyAssistantPublic591Metadata(run,jobs,git);
     const nativeUpload=one(job.steps.filter(value=>value.name===NATIVE_UPLOAD));
     const nationalStep=one(job.steps.filter(value=>value.name===NATIONAL_STEP));
     assert.equal(nationalStep.number,nativeUpload.number+1);
