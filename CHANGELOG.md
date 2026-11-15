@@ -1,3 +1,7 @@
+## 15. november 2026 — korrekt parent-S før stage-lineage
+
+Genoptagelsens kalder bruger en frisk beskyttet parent-S frem for en eventuelt nyere lokal child-S. To separate tomme mål bevarer frisk efterkontrol uden at overskrive gyldig arbejdscache. Den aktuelle normale transportprøve dækker også manglende/korrupt parent; fuld admission og offentlig levering er særskilte gates. Ingen version, model, original, migration eller publiceringsgrænse ændres.
+
 ## V4-kvittering med afgrænset filplads før prøver
 
 Den afgrænsede V4-kildekandidat bevarer alle felter og oprindelseskrav, men tillader en komplet kvitteringsfil på 48 KiB inklusive linjeskift. En konservativ byteberegning stopper en for stor plan før afhængighedsklargøring og prøver, uden at udstede resultater eller kildebevis. Begge normale læseveje bruger samme filgrænse. Ældre formater, fulde baselinebeviser og planlæseren bevarer deres tidligere grænser; ZIP-pakken er fortsat begrænset til 64 KiB. Den faktiske slutkvittering kræver stadig alle valgte resultater og de friske kilde-/job-/reviewkontroller. Præcis kildekvalifikation og uafhængigt kontrolreview kræves fortsat.

@@ -1,3 +1,7 @@
+## Genoptagelse: nyere lokal child-S er ikke forælderens S
+
+Den normale restore kan korrekt bevare en nyere lokal checkpointfil. Genoptagelsens lineagekontrol skal derfor læse den autentificerede parent-S særskilt og må ikke bruge arbejdsfilen som forælder. Den afgrænsede kalderrettelse og aktuelle inputvalg er lokalt målprøvet; kildekvalifikation og faktisk fuld genoptagelse er særskilte beviser. Ingen lineagekontrol eller nyere gyldig cache fjernes. Se DEC-0255 og håndbog 89.257.
+
 ## V4-kvitteringsplads: afgrænset kildekandidat
 
 Den afgrænsede V4-kildekandidat bevarer alle felter og oprindelseskrav, men tillader en komplet kvitteringsfil på 48 KiB inklusive linjeskift. En konservativ byteberegning stopper en for stor plan før afhængighedsklargøring og prøver, uden at udstede resultater eller kildebevis. Begge normale læseveje bruger samme filgrænse. Ældre formater, fulde baselinebeviser og planlæseren bevarer deres tidligere grænser; ZIP-pakken er fortsat begrænset til 64 KiB. Den faktiske slutkvittering kræver stadig alle valgte resultater og de friske kilde-/job-/reviewkontroller. Præcis kildekvalifikation og uafhængigt kontrolreview kræves fortsat.

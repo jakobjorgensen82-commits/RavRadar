@@ -4,6 +4,12 @@ Den normale syntetiske restore med den uændrede fixture har faktisk bestået al
 
 # DEC-0255 – Privat produktionscache til R2 med målt Free-budget
 
+## Tillæg 15. november 2026 — korrekt parent-S ved staged genoptagelse
+
+Ved genoptagelse læses forælderens S gennem den normale beskyttede checkpointlæser til et separat tomt, ejet område før lineagekontrollen. En gyldig nyere child-S i arbejdscachen bevares. En anden frisk parent-S-læsning skal bagefter matche den samme hash, og den faktiske B-pointer skal stadig matche. Alle oprindelige lineage-, GCM-, model-, no-loss-, readback- og CAS-krav består; rettelsen giver ingen genoptagelsesret fra lokal cache alene.
+
+Den aktuelle transportprøve bruger de normale current-state- og S-byggere samt den virkelige beskyttede læser mod testens autentificerede backend. Den beviser inputvalg og afvisninger, ikke fuld admission eller offentlig levering. Det kræver stadig den normale forseglede stage, oprindelige producent og alle aktuelle gates. Ingen model-, versions- eller migrationsændring indføres.
+
 ## Tillæg 15. november 2026 — plads til en hel ny privat vejrgeneration
 
 Den nye normale transportkalder har et fast loft på **2.500.000.000 bytes** for præcis weather-bucketen `ravradar-private-production-runtime`. Adminarkivets og databasebackuppens lofter er fortsat 2.000.000.000 bytes hver. Der er ingen miljø-, workflow- eller CLI-parameter til at hæve vejrbudgettet. Den frosne adapters oprindelige standardloft og de historiske læsere ændres ikke.

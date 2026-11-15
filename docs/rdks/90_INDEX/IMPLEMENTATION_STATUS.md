@@ -1,3 +1,7 @@
+## 15. november — parent-S ved staged genoptagelse
+
+En afgrænset kildekandidat læser parent-S i et separat autentificeret tempmål før lineage og bevarer en nyere child-S i arbejdscachen. Samme normale requester, checkpointvalidering, efterfølgende parenthash-/pointergenlæsninger og CAS består. Den aktuelle lokale parent-S-prøve er bestået; fuld admission og offentlig levering af det gemte build kræver fortsat den normale kontrollerede genoptagelse. Version, numerik og migrations-SQL bevares.
+
 ## V4-kvitteringsplads før prøveudførelse
 
 Den afgrænsede V4-kildekandidat bevarer alle felter og oprindelseskrav, men tillader en komplet kvitteringsfil på 48 KiB inklusive linjeskift. En konservativ byteberegning stopper en for stor plan før afhængighedsklargøring og prøver, uden at udstede resultater eller kildebevis. Begge normale læseveje bruger samme filgrænse. Ældre formater, fulde baselinebeviser og planlæseren bevarer deres tidligere grænser; ZIP-pakken er fortsat begrænset til 64 KiB. Den faktiske slutkvittering kræver stadig alle valgte resultater og de friske kilde-/job-/reviewkontroller. Præcis kildekvalifikation og uafhængigt kontrolreview kræves fortsat.
