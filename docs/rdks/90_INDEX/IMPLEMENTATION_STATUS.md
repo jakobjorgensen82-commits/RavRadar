@@ -1,3 +1,7 @@
+## 15. november — parent-S ved staged genoptagelse
+
+En afgrænset kildekandidat læser parent-S i et separat autentificeret tempmål før lineage og bevarer en nyere child-S i arbejdscachen. Samme normale requester, checkpointvalidering, efterfølgende parenthash-/pointergenlæsninger og CAS består. Den aktuelle lokale parent-S-prøve er bestået; fuld admission og offentlig levering af det gemte build kræver fortsat den normale kontrollerede genoptagelse. Version, numerik og migrations-SQL bevares.
+
 ## 14. november — selvstændig fornyelse af kildebevis er forberedt
 
 En afgrænset kildekandidat lader den eksisterende cadencecontroller kræve en ny reel fuld kildeprøve ved positivt manglende eller udløbet artifact uden først at genkvalificere hele den gamle fejl-/vejrhistorik. En ny faktisk grøn kildeprøve skal fortsat kvalificeres normalt af en anden kørsel, før den kan bruges til vejr. Kendte kildefejl, uafklarede kildetrin og andre ukendte afslag forbliver stop. Cache er kun en læsevej; hovedgren, run, attempt og kildetrin verificeres live. Frisk cadencekontrol efter prøveafslutning forhindrer et dispatch uden for det normale vindue.

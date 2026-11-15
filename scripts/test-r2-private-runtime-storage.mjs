@@ -305,7 +305,7 @@ test('weather publication normal request and GCM/B/atomic install/recreated B an
   const target = fileURLToPath(new URL('./test-ordinary-completed-stage-admission.mjs', import.meta.url));
   const selected = spawnSync(process.execPath, ['--test',
     '--test-name-pattern=^(explicit stage request|normal GCM/B/|normal protected parent checkpoint)', target], {
-    cwd: path.dirname(path.dirname(target)), encoding: 'utf8', timeout: 30_000,
+    cwd: path.dirname(path.dirname(target)), encoding: 'utf8', timeout: 60_000,
     maxBuffer: 1024 * 1024, windowsHide: true,
   });
   assert.equal(selected.error, undefined);

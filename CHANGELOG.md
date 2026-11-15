@@ -1,3 +1,7 @@
+## 15. november 2026 — korrekt parent-S før stage-lineage
+
+Genoptagelsens kalder bruger en frisk beskyttet parent-S frem for en eventuelt nyere lokal child-S. To separate tomme mål bevarer frisk efterkontrol uden at overskrive gyldig arbejdscache. Den aktuelle normale transportprøve dækker også manglende/korrupt parent; fuld admission og offentlig levering er særskilte gates. Ingen version, model, original, migration eller publiceringsgrænse ændres.
+
 ## 15. november 2026 — samlet plads før privat vejrpublicering
 
 - Én normal weather-transport bruger det vedtagne 2,5 GB-loft og kræver målt plads til 350 MB ny generation plus 100 MB reserve før første nye PUT. Frisk/staged/code-only deler kaldet; eksisterende HEAD-genbrug, frozen arkiv-/modelbytes, readback, parent-CAS og alle data bevares.
