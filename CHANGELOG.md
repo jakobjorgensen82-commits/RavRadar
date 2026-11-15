@@ -1,3 +1,13 @@
+## 15. november 2026 — kildeidentitet i metadataprøvens afslag
+
+En afgrænset prøvekorrektion fjerner en forældet lighed med fejltekstens familienavn. ERR_ASSERTION, SHA-256 af hele den muterede kanoniske kilde og den aktive udstedte SHA-256 identificerer fortsat den præcise kontrol. Alle fire mutationer og øvrige immutable-/no-write-/schemaafslag bevares. Ingen ny label-liste, wrapper, produktkode, SQL eller modelbinding indføres. Hele det ændrede normale mål og præcis kildekvalifikation er fortsat krav.
+
+## 15. november 2026 — præcist kontrolvalg og Pages-controllerens normale testansvar
+
+En afgrænset kildekandidat vælger fire hele kontrolmål alene for det regulære planner-/CURRENT-prøvepar; andre ændrede kontrolinput beholder standardens otte. De tre eksisterende Pages-delingscontrollerstier får naturligt sharing-ansvar med hele controllerprøven samt de bevarede timeline-/projection-mål. Unknown-/protected-/modeafslag, frisk review, historiske kataloger, normal FULL-kvalifikation og sene negativer bevares. Korte lokale selektionscases er ikke hele CURRENT eller endelig kilde-CI; faktisk Linux-tidsmargin og offentlig accept forbliver åbne. Ingen ændret timeout, model, migrations-SQL eller version.
+
+Samme kandidat retter årsagen til, at et almindeligt appversionsskift omskrev historiske C/I-bundne engangs-/kapacitetspolicyer. Setter og to metadataprøvestier får to hele normale releaseMetadata-mål med regulær filgrænse og frisk review også for setter alene; validatoren beholder de otte sourceControls-mål. Pages-controllerens særskilte schemafunktion foretager kun én fast skrivefri forespørgsel med uændrede kilde-/adgangskrav. Fuld slutkvalifikation, faktisk Cloudflare-læsning og offentlig/Free-accept er fortsat åbne.
+
 ## 15. november 2026 — separat inventory af originalarkivets mål
 
 Den private inventory-kandidat tilføjer én eksplicit læsetilstand til det eksisterende manuelle arkivworkflow. Alle fem autentiske originale SQL-filer hentes og materialiseres med reelt wireforbrug; kun faste kategorier, tællere og hashmetadata udgives. Docker, SQL, restore og rotation startes ikke. Naturligt backupRestore-ejerskab kvalificerer den nye faste CLI-/workflowrolle med de fire hele eksisterende mål og frisk kontrolreview. De fire eksisterende hele backupmål er bestået lokalt på samme kode: fixture-selvtest, arkivprøve, workflowprøve og lifecycleprøve. Præcis kildekvalifikation på inventory-leveringens endelige head og faktisk læsning af originalarkivet er fortsat åbne. Faktisk inventory, originalrestore, Auth-kompatibilitet og Free-klarhed er fortsat åbne. Version 4.0.598, model, migrationer og originaler bevares. Se håndbog 89.350 og 89.342.

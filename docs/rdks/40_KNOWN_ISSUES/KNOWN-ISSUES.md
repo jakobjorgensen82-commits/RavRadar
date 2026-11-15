@@ -1,3 +1,13 @@
+## Metadataprøvens kildeidentitet afventer præcis kvalifikation
+
+Et forældet familienavn i fejltekstassertionen standsede den normale metadataprøve, selv om den aktuelle hele kanoniske kildekontrol afviste de muterede bytes med korrekt kode og begge præcise SHA-værdier. Den minimale kandidat fjerner alene denne tekstlighed. Alle mutations-, hash-, immutable-, no-write- og schemaassertions bevares. Hele det ændrede normale mål og endelig kildekvalifikation kræves fortsat; produktkode, SQL og modelbindinger ændres ikke.
+
+## Afgrænset kontrolvalg afventer præcis hel kildekvalifikation
+
+Katalog-/CURRENT-prøveparrets firemålsvariant og Pages-controllerens tre præcise sharing-ejere er en lokal kildekandidat. Standard otte ved andre kontrolinput og de hele normale produktmål bevares. Fokuserede selektionscases erstatter ikke hele CURRENT-prøven; dens slutkørsel på Linux skal fortsat passe inden for den uændrede målfrist. Ukendt input, ændret PG/C/I/T og uafklaret eller senere negativ kildeevidens giver ingen genbrugsret. Der påstås ingen hosted Pages-/Free- eller produktionsaccept. Se DEC-0302 og håndbog 89.342.
+
+Den samlede afgrænsede kildekandidat omfatter også setterens historiske policybevaring, præcis releaseMetadata-ejerregistrering og Pages-controllerens faste skrivefri schematilstand. Hele de to normale metadatamål og slutkvalifikationen skal bestå på den samlede kilde. Syntetiske svar beviser ikke Cloudflare-adgang eller schemaets faktiske enheder; deling, installation og samlet Free-klarhed kræver særskilte virkelige beviser. Ingen drift eller ny model aktiveres.
+
 ## Originalarkivets ukendte mål kræver stadig faktisk inventory og gendannelse
 
 Den uafhængigt gennemgåede private inventory-kandidat kan læse samme autentiske originalarkiv uden at starte Docker eller SQL. Alle fem SQL-filer materialiseres med wireforbrug; kun faste kategorier, tællere og hashmetadata udgives. De fire eksisterende hele backupmål er bestået lokalt på samme kode: fixture-selvtest, arkivprøve, workflowprøve og lifecycleprøve. Præcis kildekvalifikation på inventory-leveringens endelige head og faktisk læsning af originalarkivet er fortsat åbne. Ukendte Auth-/Storage-mål og kolonnekompatibilitet er derfor fortsat uafklarede. Original DATA og alle afslag efter DDL bevares. Faktisk fuld arkiv-/Auth-gendannelse, autonom kvittering, rotation og Free-klarhed er stadig åbne. Se håndbog 89.350 og 89.342.

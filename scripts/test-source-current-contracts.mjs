@@ -12,7 +12,7 @@ import {copernicusOfflineEnvironment} from './lib/copernicus-offline-environment
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {OWNED_CACHE_DEPENDENCY_COMMAND,OWNED_CACHE_NATIVE_COMMAND,currentChangeCommand} from './source-current-contract-receipt.mjs';
 import {inverseOwnedCacheNativeWorkflow,OWNED_CACHE_NATIVE_EARLY_NODE24} from './lib/source-impact-workflow-review.mjs';
-import {CURRENT_CONTRACT_COMMANDS,isBoundedLocalRestoreFixtureChange,isArchiveRestoreOuterQueueOnlyChange,archiveRestoreWorkflowWithoutInventory,isArchiveRestoreWorkflowChange,pagesContractCommandsForChangedInputs,dmiBudgetWeatherBuildAreas,isDmiBudgetOnlyUpdaterChange,isDmiBudgetOnlySupervisorChange,isDmiCollectionRecoveryOnlyUpdaterChange,isDmiCollectionRecoveryOnlyFixtureChange,dmiCollectionRecoveryUpdaterAreas} from './source-current-contract-plan.mjs';
+import {CURRENT_CONTRACT_COMMANDS,isBoundedLocalRestoreFixtureChange,isArchiveRestoreOuterQueueOnlyChange,archiveRestoreWorkflowWithoutInventory,isArchiveRestoreWorkflowChange,pagesContractCommandsForChangedInputs,sourceControlCommandsForChangedInputs,dmiBudgetWeatherBuildAreas,isDmiBudgetOnlyUpdaterChange,isDmiBudgetOnlySupervisorChange,isDmiCollectionRecoveryOnlyUpdaterChange,isDmiCollectionRecoveryOnlyFixtureChange,dmiCollectionRecoveryUpdaterAreas} from './source-current-contract-plan.mjs';
 
 import { WEATHER_PUBLICATION_PATHS, inversePrivateWeatherPublicationWorkflow, isPrivateWeatherPublicationWorkflowChange,
   PRIVATE_WEATHER_PUBLICATION_OWNER_EDITS, isAdditivePrivateWeatherPublicationOwnerChange } from './lib/private-weather-publication-workflow.mjs';
@@ -62,6 +62,54 @@ for(const inputs of [[],null,[modified('CHANGELOG.md')],
   [{...modified(ownerHelpers[1]),afterMode:'100755'}],
   [modified(ownerHelpers[1]),modified(ownerHelpers[1])]])
   assert.deepEqual(pagesContractCommandsForChangedInputs(inputs),CURRENT_CONTRACT_COMMANDS.pages);
+
+// Præcise kataloginput vælger hele CURRENT/workflow/gate/cadence; standarden bevares.
+function assertPlannerControlCommandSelection(){
+  const planner=['scripts/source-current-contract-plan.mjs','scripts/test-source-current-contracts.mjs'];
+  const whole=[
+    'node --test scripts/test-source-current-contracts.mjs',
+    'node scripts/test-source-impact-workflow.mjs',
+    'node scripts/test-weather-source-gate.mjs',
+    'node scripts/test-weather-cadence-watchdog.mjs',
+  ];
+  const broad=CURRENT_CONTRACT_COMMANDS.sourceControls;
+  assert.deepEqual(broad,[whole[0],whole[1],
+    'node scripts/test-source-targeted-producer.mjs','node scripts/test-source-targeted-consumer.mjs',
+    'node --test scripts/test-native-postgres-evidence.mjs','node --test scripts/test-source-impact-full-baseline.mjs',
+    whole[2],whole[3]]);
+  let passed=0;
+  for(const changes of [[modified(planner[0])],[modified(planner[1])],planner.map(modified),
+    [...planner.map(modified),modified('CHANGELOG.md')],
+    [modified(planner[0]),modified('scripts/deploy-forecast-share-pages.mjs')]]){
+    const selected=sourceControlCommandsForChangedInputs(changes);
+    assert.deepEqual(selected,whole);assert(Object.isFrozen(selected));passed++;
+  }
+  for(const file of ['.github/workflows/validate-pull-request.yml',
+    'scripts/lib/source-impact-workflow-review.mjs','scripts/test-source-impact-workflow.mjs',
+    'scripts/source-current-contract-receipt.mjs','scripts/source-targeted-producer.mjs',
+    'scripts/test-source-targeted-producer.mjs','scripts/source-targeted-receipt.mjs',
+    'scripts/test-source-targeted-receipt.mjs','scripts/source-targeted-consumer.mjs',
+    'scripts/test-source-targeted-consumer.mjs','scripts/native-postgres-evidence.mjs',
+    'scripts/test-native-postgres-evidence.mjs','scripts/source-impact-full-baseline.mjs',
+    'scripts/test-source-impact-full-baseline.mjs','scripts/test-source-targeted-domain-integration.mjs',
+    'scripts/weather-source-gate.mjs','.github/workflows/watch-missed-weather-schedule.yml',
+    'scripts/lib/weather-source-gate.mjs','scripts/test-weather-source-gate.mjs',
+    'scripts/test-weather-cadence-watchdog.mjs','scripts/validate-release-version.mjs',
+    'scripts/test-module-version-closure-4.0.87.mjs','scripts/test-security-hardening-4.0.284.mjs']){
+    assert.strictEqual(sourceControlCommandsForChangedInputs([modified(file)]),broad);passed++;
+    assert.strictEqual(sourceControlCommandsForChangedInputs([...planner.map(modified),modified(file)]),broad);passed++;
+  }
+  for(const changes of [null,[],[modified('CHANGELOG.md')],
+    [modified(planner[0]),modified(planner[0])],[{}],[null],
+    [{...modified(planner[0]),status:'A',beforeMode:'000000'}],
+    [{...modified(planner[1]),status:'D',afterMode:'000000'}],
+    [{...modified(planner[0]),beforeMode:'100755'}],
+    [{...modified(planner[1]),afterMode:'100755'}]]){
+    assert.strictEqual(sourceControlCommandsForChangedInputs(changes),broad);passed++;
+  }
+  return passed;
+}
+const plannerControlSelectionCases=assertPlannerControlCommandSelection();
 
 // Rene transportændringer vælger fire fulde mål; ingen ejerindgang eller blanket Pages-fritagelse.
 const transportInputs=['scripts/lib/run-sealed-pages-deployment.mjs','scripts/test-ordinary-pages-immediate-retry.mjs'];
@@ -158,11 +206,96 @@ function assertAssistantEdgePlanScope({baselineCommit,baselineTree,rewriteTree,m
 // End Assistant Edge scope assertions.
 
 // Exact existing sharing/erasure paths; all assertions also run in the normal Git fixture.
+// Samme normale Git-/analyzerkald som de øvrige CURRENT-ejerassertions.
+function assertPlannerAndSharingPlanScope({baselineCommit,baselineTree,rewriteTree,makeCommit,checkoutCommit,plan,restoreHead}){
+  const controls=['scripts/source-current-contract-plan.mjs','scripts/test-source-current-contracts.mjs'];
+  const pages=['.github/workflows/deploy-forecast-share-pages.yml',
+    'scripts/deploy-forecast-share-pages.mjs','scripts/test-forecast-share-pages-deploy.mjs'];
+  const sharing=['node scripts/test-map-forecast-timeline.mjs','node scripts/test-forecast-share-projection.mjs',
+    'node scripts/test-forecast-share-pages-deploy.mjs'];
+  const release=['scripts/set-version.mjs','scripts/test-private-production-runtime-workflow.mjs',
+    'scripts/test-release-contract-metadata.mjs'];
+  const releaseCommands=['node scripts/test-private-production-runtime-workflow.mjs',
+    'node scripts/test-release-contract-metadata.mjs'];
+  const narrow=sourceControlCommandsForChangedInputs(controls.map(modified)),results=[];
+  assert.deepEqual(CURRENT_CONTRACT_COMMANDS.sharing,sharing);
+  const tree=rewriteTree(baselineTree,[...pages,...release,'scripts/validate-release-version.mjs']
+    .map(file=>[file,fixtureControlBytes(file)]));
+  const prior=makeCommit(tree,[baselineCommit],'synthetic existing Pages controller and current controls');
+  const before=file=>git(root,['cat-file','blob',prior+':'+file]);
+  const changed=files=>files.map(file=>[file,Buffer.concat([before(file),Buffer.from('\n// Synthetic normal scope delta\n')])]);
+  const select=(label,files,extra=[])=>{
+    const candidate=makeCommit(rewriteTree(tree,[...changed(files),...extra]),[prior],'synthetic planner/sharing '+label);
+    checkoutCommit(candidate);const selected=plan({baselineCommit:prior,candidateCommit:candidate,expectedHead:candidate});
+    results.push({label,plan:selected});return selected;
+  };
+  const positive=selected=>{
+    assert.equal(selected.selection,'CURRENT_CONTRACTS',JSON.stringify(selected));
+    assert.equal(selected.controlQualificationRequired,true);
+    assert.deepEqual(selected.protectedInputs,{postgresUnchanged:true,CUnchanged:true,IUnchanged:true,TUnchanged:true});
+  };
+  try{
+    const all=select('planner-and-all-Pages-owners',[...controls,...pages]);positive(all);
+    assert.deepEqual(all.areas.sourceControls.commands,narrow);assert.deepEqual(all.areas.sharing.commands,sharing);
+    assert.deepEqual(all.commands,[...new Set([...CURRENT_CONTRACT_COMMANDS.core,...narrow,...sharing])]);
+    const unknown=select('unknown-neighbour',[...controls,pages[1]],
+      [['scripts/deploy-forecast-share-pages-extra.mjs',Buffer.from('// Unknown neighbouring source\n')]]);
+    assert.equal(unknown.selection,'FULL');assert.deepEqual(unknown.reasonCodes,['CURRENT_UNCLASSIFIED_PATH']);
+    const protectedFiles=['config.js','js/core/ravscore-model-contract.js','scripts/fixtures/statistics-preference-revision-input.json'];
+    const protectedChanges=protectedFiles.map(file=>[file,Buffer.concat([before(file),Buffer.from('\n')])]);
+    const protectedHead=makeCommit(rewriteTree(tree,[...changed(controls),...protectedChanges]),[prior],'synthetic protected planner neighbour');
+    checkoutCommit(protectedHead);
+    const protectedPlan=plan({baselineCommit:prior,candidateCommit:protectedHead,expectedHead:protectedHead});
+    results.push({label:'protected-inputs',plan:protectedPlan});
+    assert.equal(protectedPlan.selection,'FULL');assert.deepEqual(protectedPlan.reasonCodes,['CURRENT_PROTECTED_INPUT_CHANGED']);
+    assert(protectedPlan.requiredQualifications.includes('ACTUAL_POSTGRES'));
+    checkoutCommit(prior);git(root,['update-index','--chmod=+x','--',pages[1]]);
+    const mode=makeCommit(text(root,['write-tree']),[prior],'synthetic Pages controller mode change');checkoutCommit(mode);
+    const modePlan=plan({baselineCommit:prior,candidateCommit:mode,expectedHead:mode});results.push({label:'Pages-mode-change',plan:modePlan});
+    assert.equal(modePlan.selection,'FULL');
+    assert.deepEqual(modePlan.reasonCodes,['CURRENT_SMALL_USER_CONTRACT_REQUIRES_EXISTING_REGULAR_SOURCE']);
+    // Release metadata uses the same normal Git fixture; no separate suite or proof cohort.
+    assert.deepEqual(CURRENT_CONTRACT_COMMANDS.releaseMetadata,releaseCommands);
+    for(const files of [release,[release[0]]]){
+      const selected=select(files.length===1?'release-setter-only':'release-metadata-owners',files);positive(selected);
+      assert.deepEqual(selected.areas.releaseMetadata.commands,releaseCommands);
+      assert.deepEqual(selected.commands,[...CURRENT_CONTRACT_COMMANDS.core,...releaseCommands]);
+      assert.deepEqual(selected.areas.releaseMetadata.changedPaths,[...files].sort());
+    }
+    const mixed=select('release-metadata-and-validator',[...release,...controls,'scripts/validate-release-version.mjs']);positive(mixed);
+    assert.deepEqual(mixed.areas.sourceControls.commands,CURRENT_CONTRACT_COMMANDS.sourceControls);
+    assert.deepEqual(mixed.commands,[...new Set([...CURRENT_CONTRACT_COMMANDS.core,...releaseCommands,...CURRENT_CONTRACT_COMMANDS.sourceControls])]);
+    const releaseUnknown=select('unknown-release-neighbour',[release[0]],
+      [['scripts/set-version-extra.mjs',Buffer.from('// Unknown neighbouring version source\n')]]);
+    assert.equal(releaseUnknown.selection,'FULL');assert.deepEqual(releaseUnknown.reasonCodes,['CURRENT_UNCLASSIFIED_PATH']);
+    const boundPolicy='scripts/private-production-runtime-workflow.mjs';
+    const policy=select('changed-bound-runtime-policy',[release[0]],
+      [[boundPolicy,Buffer.concat([before(boundPolicy),Buffer.from('\n// Synthetic bound policy delta\n')])]]);
+    assert.equal(policy.selection,'FULL');assert.deepEqual(policy.reasonCodes,['CURRENT_PROTECTED_INPUT_CHANGED']);
+    assert(policy.requiredQualifications.includes('ACTUAL_MODEL_C'));assert(policy.requiredQualifications.includes('ACTUAL_MODEL_I'));
+    checkoutCommit(prior);git(root,['update-index','--force-remove','--',release[0]]);
+    const absentTree=text(root,['write-tree']),absent=makeCommit(absentTree,[prior],'synthetic absent release setter');
+    checkoutCommit(absent);
+    const deleted=plan({baselineCommit:prior,candidateCommit:absent,expectedHead:absent});results.push({label:'release-setter-deleted',plan:deleted});
+    assert.equal(deleted.selection,'FULL');assert.deepEqual(deleted.reasonCodes,['CURRENT_RELEASE_METADATA_REQUIRES_EXISTING_REGULAR_SOURCE']);
+    const addedHead=makeCommit(tree,[absent],'synthetic added release setter');checkoutCommit(addedHead);
+    const added=plan({baselineCommit:absent,candidateCommit:addedHead,expectedHead:addedHead});results.push({label:'release-setter-added',plan:added});
+    assert.equal(added.selection,'FULL');assert.deepEqual(added.reasonCodes,['CURRENT_RELEASE_METADATA_REQUIRES_EXISTING_REGULAR_SOURCE']);
+    checkoutCommit(prior);git(root,['update-index','--chmod=+x','--',release[0]]);
+    const modeHead=makeCommit(text(root,['write-tree']),[prior],'synthetic release setter mode change');checkoutCommit(modeHead);
+    const releaseMode=plan({baselineCommit:prior,candidateCommit:modeHead,expectedHead:modeHead});results.push({label:'release-setter-mode-change',plan:releaseMode});
+    assert.equal(releaseMode.selection,'FULL');assert.deepEqual(releaseMode.reasonCodes,['CURRENT_RELEASE_METADATA_REQUIRES_EXISTING_REGULAR_SOURCE']);
+    // End release metadata scope assertions.
+    return results;
+  }finally{checkoutCommit(restoreHead);}
+}
+
 function assertSmallUserContractPlanScope({baselineCommit,baselineTree,rewriteTree,makeCommit,checkoutCommit,plan,restoreHead}){
   let passed=0;
   const definitions=[
     {area:'sharing',paths:['scripts/forecast-share/handler.mjs','scripts/test-forecast-share-projection.mjs'],
-      commands:['node scripts/test-map-forecast-timeline.mjs','node scripts/test-forecast-share-projection.mjs']},
+      commands:['node scripts/test-map-forecast-timeline.mjs','node scripts/test-forecast-share-projection.mjs',
+        'node scripts/test-forecast-share-pages-deploy.mjs']},
     {area:'ownerErasure',paths:['supabase/functions/_shared/trip-owner-erasure.js','scripts/test-delete-trip-owner-data-readback.mjs'],
       commands:['node --test scripts/test-delete-trip-owner-data-readback.mjs']},
   ];
@@ -1646,6 +1779,11 @@ try{
     }
   }finally{checkout(beforeOwnerPlan);}
   scenarios.push('normal Git owner-only plan selects the existing entry; changed broad deployment test or workflow preserves the full command');
+  const plannerSharingResults=assertPlannerAndSharingPlanScope({baselineCommit:firstDelivery.main,
+    baselineTree:text(root,['rev-parse',firstDelivery.main+'^{tree}']),rewriteTree:rewrite,
+    makeCommit:commit,checkoutCommit:checkout,plan,restoreHead:head});
+  cases+=plannerSharingResults.length;
+  scenarios.push('exact regular planner/current inputs select four whole controls; other controls retain eight; exact Pages sharing owners and unknown/protected/mode refusals remain');
   const assistantScopeResults=assertAssistantEdgePlanScope({baselineCommit:firstDelivery.main,
     baselineTree:text(root,['rev-parse',firstDelivery.main+'^{tree}']),rewriteTree:rewrite,
     makeCommit:commit,checkoutCommit:checkout,plan,restoreHead:head});

@@ -1,3 +1,31 @@
+## Tillæg — den kanoniske kilde identificeres ved hele bytes
+
+Den afgrænsede korrektion af den normale metadataprøve fjerner alene ligheden med et forældet familienavn i fejlteksten. Den stærke kildegrænse identificeres fortsat ved ERR_ASSERTION, præcis SHA-256 af hele den muterede kanoniske kilde og præcis den aktive udstedte kanoniske SHA-256. Ingen ny familie-label, whitelist, wrapper eller generel fejltolerance tilføjes.
+
+Alle fire oprindelige mutationer, deres historiske indre fejlregexer, kode-/hashassertions og efterfølgende immutable-/no-write-/schemaafslag bevares. Fejlafslagets snapshots omfatter fortsat de skrivbare fixturefiler og originale migrationsfiler. Produktkode, kildepins, SQL, modelbindinger og originaler ændres ikke. Den tidligere afvisning bevares som evidens; den ændrede hele normale metadataprøve og præcis kildekvalifikation skal fortsat bestå. En lokal prøve er ikke installation eller produktionsaccept.
+
+## Tillæg — præcis katalogkontrol og Pages-delingskalder
+
+Kun ændringer af de eksisterende regulære scripts/source-current-contract-plan.mjs og/eller scripts/test-source-current-contracts.mjs med status M og mode 100644 før og efter kan vælge de fire hele kontrolmål: CURRENT-prøven, workflowprøven, kildegaten og cadenceprøven. Standardlisten med otte sourceControls-mål bevares. Ethvert andet ændret registreret kontrolinput, også blandet med dette par, vælger alle otte; det gælder også releasevalidatoren. Andre berørte produktområder beholder deres hele normale mål, og fælles kommandoer udføres fortsat én gang.
+
+Udvælgelsen ændrer hverken den normale PG/C/I/T-analyzer, ukendte inputs afslag, kontrolreview, kvitteringsformat, frister eller produktionsgates. Nye, slettede eller modeændrede kataloginput får ikke den snævre variant. Historiske V1/V2/V3-beviser og producenters egne autentiske kataloger bevarer deres betydning. En normal FULL-kvalifikation og senere negativ evidens læses stadig. Kun en reelt kvalificeret MAIN-frontier kan vælge den aktuelle deltaplan; uden den gælder den normale kumulative plan.
+
+Sharing-ansvaret omfatter desuden præcis .github/workflows/deploy-forecast-share-pages.yml, scripts/deploy-forecast-share-pages.mjs og scripts/test-forecast-share-pages-deploy.mjs. Deres hele eksisterende controllerprøve vælges sammen med de hidtidige hele timeline-/projection-mål. De samme M/100644-, unknown-/protected-afslag og krav om frisk uafhængigt review gælder. Der indføres ingen generel workflow-, script- eller delingsundtagelse.
+
+Dette er en afgrænset kildekandidat. Fokuserede lokale selektionscases er ikke et helt CURRENT-PASS eller kildeadmission; hele det normale CURRENT-mål og det præcise endelige source-head skal fortsat kvalificeres. Der loves ingen bestemt tidsgevinst eller ny timeout. Pages-adgang, faktisk installation, offentlig deling og Free-kapacitet kræver deres egne beviser. Version 4.0.598, model, originaler og migrations-SQL bevares. Se håndbog 89.342.
+
+### Versionsmetadata uden omskrivning af historiske policyer
+
+Det almindelige versionsværktøj omskrev tidligere to udstedte engangs- og capacity-resume-policyers egne releaseVersion-felter. Hele deres ejerblad indgår i C og I; en ren appversion kunne derfor ændre modelinput. Den afgrænsede årsagsrettelse bevarer hele de historiske policyer og deres faste run-, head- og retired-grænser. Aktuelle appmetadata og de eksisterende workflowlitteraler følger fortsat appversionen. Validatoren kan acceptere en anden appversion, når engangspolicyen er retired=true, men afviser fortsat genaktivering. Kapacitetsprøven bruger policyens egen version og afviser en nyere appversion. Den aktuelle sourceVersion-forventning for de workflowlitteraler, som den faktiske setter stadig opdaterer, bevares.
+
+Præcis scripts/set-version.mjs, scripts/test-private-production-runtime-workflow.mjs og scripts/test-release-contract-metadata.mjs får naturligt releaseMetadata-ansvar med de to hele eksisterende normale prøver. Kun M/100644 før og efter kan bruge dette ansvar. Setter alene kræver også frisk uafhængigt kontrolreview. Den faste sikkerhedskerne består. scripts/validate-release-version.mjs forbliver sourceControls og vælger standardens otte mål, også blandet med planner-/CURRENT-parret og releaseMetadata. Ukendte nabostier og ændrede bundne policy-/PG/C/I/T-input kræver fortsat normal udvidet kvalifikation/FULL. Der indføres ingen ny suite, helfil-cohort eller normalisering.
+
+### Fast, skrivefri Pages-schemalæsning
+
+Den eksisterende Pages-controller får en særskilt tilstand til én fast GraphQL-schemaforespørgsel. Den læser kun de udvalgte offentlige type- og feltbeskrivelser; konto-tag, måleværdier, projekter, npm og deploy indgår ikke. Ét forsøg har højst 30 sekunder og 2 MiB. Null, fejl, ukendt typeform og manglende tilladelse afvises med faste, indholdsfrie udfald. Den normale hovedgren-, kildebevis-, attempt-, kø- og friske hovedgrenbinding før og efter kaldet består. Den præcise navngivne workflowtilføjelse skal kunne føres helt tilbage til det oprindelige workflow; ukendte rester afvises.
+
+Dette er kildeforberedelse. Fokuserede scopeprøver og tidligere uændrede lokale produktprøver erstatter ikke de valgte hele normale mål på det endelige kilde-head. Faktisk Cloudflare-adgang, schemaets enheder og beskrivelser, installation, offentlig deling og samlet Free-klarhed er ikke bevist af denne kandidat. Ingen ny tjeneste, nøgle, plan, version, numerisk model, migrations-SQL eller produktionsaktivering følger af den.
+
 ## Tillæg — lukket backupRestore-rolle for læsende arkiv-inventory
 
 Den nye faste `--run-archive-inventory`-gren er en reel udvidelse af kommandorammen. Kun denne entydige CLI-gren og den navngivne inventory-workflowrolle kan normaliseres før sammenligning med det eksisterende grundlag; gamle import-/dispatch-pins, oprindelse og den tidligere outerqueue-only-regel bevares. Workflowet beholder syntetisk standard, samme to arkivlåse, exact-main/commitment/bekræftelse, kildebevis før credentials og frister. Alle andre workflowbytes skal matche. Ukendt mode, argument, trin, adgang, credential eller ændret beskyttet input afvises fortsat. Der er ingen ny helfilhashgruppe eller genbrug af gammel sikkerhedsautoritet som uændret.

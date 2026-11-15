@@ -85,7 +85,7 @@ const resumeEvidence = verifyPrivateRuntimeCapacityResumeEvidence({
   currentSourceHead: 'b'.repeat(40),
   requestedRunId: PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY.priorRunId,
   targetReferenceAt: PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY.targetReferenceAt,
-  releaseVersion: sourceVersion,
+  releaseVersion: PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY.releaseVersion,
 });
 assert.equal(resumeEvidence.priorSuccessfulStepCount, 8);
 assert.equal(resumeEvidence.priorHandoffCreated, false);
@@ -108,7 +108,7 @@ assert.throws(
     currentSourceHead: 'b'.repeat(40),
     requestedRunId: PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY.priorRunId,
     targetReferenceAt: PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY.targetReferenceAt,
-    releaseVersion: sourceVersion,
+    releaseVersion: PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY.releaseVersion,
   }),
   /did not fail at capacity measurement/,
 );
@@ -121,10 +121,19 @@ assert.throws(
     currentSourceHead: 'b'.repeat(40),
     requestedRunId: PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY.priorRunId,
     targetReferenceAt: PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY.targetReferenceAt,
-    releaseVersion: sourceVersion,
+    releaseVersion: PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY.releaseVersion,
   }),
   /unexpectedly retained an artifact/,
 );
+
+// A new app cannot renew this exact historical capacity-resume authority.
+assert.throws(() => verifyPrivateRuntimeCapacityResumeEvidence({
+  run: resumeRun, jobs: resumeJobs, artifacts: { total_count: 0, artifacts: [] },
+  repository: 'owner/repository', currentSourceHead: 'b'.repeat(40),
+  requestedRunId: PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY.priorRunId,
+  targetReferenceAt: PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY.targetReferenceAt,
+  releaseVersion: PRIVATE_RUNTIME_CAPACITY_RESUME_POLICY.releaseVersion.replace(/\d+$/, value => String(Number(value) + 1)),
+}), /outside its one-time boundary/);
 
 try {
   await fs.mkdir(repository, { recursive: true });
@@ -523,7 +532,7 @@ try {
   );
   assert.equal(approvedCapacity.firstCutoverException.eligible, false);
   assert.equal(PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY.retired, true);
-  assert.equal(approvedCapacity.firstCutoverException.releaseVersion, sourceVersion);
+  assert.equal(approvedCapacity.firstCutoverException.releaseVersion, PRIVATE_RUNTIME_FIRST_CUTOVER_EXCEPTION_POLICY.releaseVersion);
   assert.equal(
     approvedCapacity.firstCutoverException.maximumArchiveObjectBytes,
     50_000_000,

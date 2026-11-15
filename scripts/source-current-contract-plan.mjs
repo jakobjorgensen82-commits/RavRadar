@@ -79,6 +79,10 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
     'node scripts/test-handbook-review-archive-4.0.91.mjs',
     'node scripts/test-protected-handbook-merge-4.0.270.mjs',
   ],
+  releaseMetadata:[
+    'node scripts/test-private-production-runtime-workflow.mjs',
+    'node scripts/test-release-contract-metadata.mjs',
+  ],
   ownedCacheNative:[OWNED_CACHE_DEPENDENCY_COMMAND,OWNED_CACHE_NATIVE_COMMAND],
   sourceControls:[
     'node --test scripts/test-source-current-contracts.mjs',
@@ -118,6 +122,7 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
   sharing:[
     'node scripts/test-map-forecast-timeline.mjs',
     'node scripts/test-forecast-share-projection.mjs',
+    'node scripts/test-forecast-share-pages-deploy.mjs',
   ],
   ownerErasure:[
     'node --test scripts/test-delete-trip-owner-data-readback.mjs',
@@ -211,6 +216,11 @@ const PATH_AREAS=freeze({
     'scripts/validate-rdks.mjs','scripts/test-handbook-plain-language-4.0.70.mjs',
     'scripts/test-handbook-review-archive-4.0.91.mjs','scripts/test-protected-handbook-merge-4.0.270.mjs',
   ],
+  releaseMetadata:[
+    'scripts/set-version.mjs',
+    'scripts/test-private-production-runtime-workflow.mjs',
+    'scripts/test-release-contract-metadata.mjs',
+  ],
   ownedCacheNative:[
     'scripts/test-owned-dmi-grib-save-native.py',
     'scripts/test-owned-dmi-cache-dependency.mjs',
@@ -287,6 +297,9 @@ const PATH_AREAS=freeze({
   sharing:[
     'scripts/forecast-share/handler.mjs',
     'scripts/test-forecast-share-projection.mjs',
+    '.github/workflows/deploy-forecast-share-pages.yml',
+    'scripts/deploy-forecast-share-pages.mjs',
+    'scripts/test-forecast-share-pages-deploy.mjs',
   ],
   ownerErasure:[
     'supabase/functions/_shared/trip-owner-erasure.js',
@@ -328,6 +341,7 @@ const PATH_AREAS=freeze({
     'scripts/lib/source-impact-domain-owners-598.json',
   ],
 });
+const RELEASE_METADATA_PATHS=new Set(PATH_AREAS.releaseMetadata);
 const WEATHER_PROGRESS_RECOVERY_PATHS=new Set(PATH_AREAS.weatherProgressRecovery);
 const SMALL_USER_CONTRACT_PATHS=new Set([...PATH_AREAS.sharing,...PATH_AREAS.ownerErasure]);
 const sourceControlPaths=new Set(PATH_AREAS.sourceControls);
@@ -379,6 +393,28 @@ export function pagesContractCommandsForChangedInputs(changes){
       ||/^docs\/(?:rdks|ai|handbook)\/.+\.md$/.test(row.path)))return COMMANDS.pages;
   }
   return freeze(COMMANDS.pages.map(command=>command===PAGES_DEPLOYMENT_COMMAND?PAGES_OWNER_COMPLETION_COMMAND:command));
+}
+
+// Kun de eksisterende planner-/CURRENT-prøveinput kan vælge de fire hele mål.
+// Andre kontrolinput beholder hele standarden; den normale Gitplan afviser
+// fortsat ukendte/beskyttede input og kræver uafhængigt kontrolreview.
+const SOURCE_CONTROL_PLANNER_INPUTS=new Set(['scripts/source-current-contract-plan.mjs',
+  'scripts/test-source-current-contracts.mjs']);
+const SOURCE_CONTROL_PLANNER_COMMANDS=freeze([
+  'node --test scripts/test-source-current-contracts.mjs',
+  'node scripts/test-source-impact-workflow.mjs',
+  'node scripts/test-weather-source-gate.mjs',
+  'node scripts/test-weather-cadence-watchdog.mjs',
+]);
+export function sourceControlCommandsForChangedInputs(changes){
+  if(!Array.isArray(changes)||!changes.length
+    ||changes.some(row=>!row||typeof row.path!=='string')
+    ||new Set(changes.map(row=>row.path)).size!==changes.length)return COMMANDS.sourceControls;
+  const controls=changes.filter(row=>sourceControlPaths.has(row.path));
+  if(controls.length&&controls.every(row=>SOURCE_CONTROL_PLANNER_INPUTS.has(row.path)
+    &&row.status==='M'&&row.beforeMode==='100644'&&row.afterMode==='100644'))
+    return SOURCE_CONTROL_PLANNER_COMMANDS;
+  return COMMANDS.sourceControls;
 }
 
 function publicDigests(analysis){
@@ -839,6 +875,9 @@ export function planSourceCurrentContractsFromGit(input){
       if(['scripts/admin-document-history-maintenance.mjs','scripts/test-admin-document-history-maintenance.mjs'].includes(file)
         &&(row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'))
         return refuse('CURRENT_ADMIN_HISTORY_REQUIRES_EXISTING_REGULAR_SOURCE');
+      if(RELEASE_METADATA_PATHS.has(file)
+        &&(row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'))
+        return refuse('CURRENT_RELEASE_METADATA_REQUIRES_EXISTING_REGULAR_SOURCE');
       if(WEATHER_PROGRESS_RECOVERY_PATHS.has(file)
         &&(row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'))
         return refuse('CURRENT_WEATHER_PROGRESS_REQUIRES_EXISTING_REGULAR_SOURCE');
@@ -871,7 +910,7 @@ export function planSourceCurrentContractsFromGit(input){
         pathAreas.get(file)??(/^docs\/(?:rdks|ai|handbook)\/.+\.md$/.test(file)?['documentation']:null));
       if(!areas){unknown.push(file);continue;}
       for(const area of areas){if(!selected.has(area))selected.set(area,[]);selected.get(area).push(file);}
-      if(sourceControlPaths.has(file)||historicalPaths.has(file)||areas.includes('compatibility')||areas.includes('assistantEdge')||areas.includes('mailOwnerProbe')||areas.includes('currentInstalledCodeOnly')||areas.includes('workflowSupport')||areas.includes('weatherPublication')||areas.includes('dmiBudget')||areas.includes('dmiCollectionRecovery')||areas.includes('adminHistory')||areas.includes('sharing')||areas.includes('ownerErasure')||areas.includes('weatherProgressRecovery')||areas.includes('ownedCacheNative')||file.startsWith('scripts/test-'))
+      if(sourceControlPaths.has(file)||historicalPaths.has(file)||areas.includes('compatibility')||areas.includes('assistantEdge')||areas.includes('mailOwnerProbe')||areas.includes('currentInstalledCodeOnly')||areas.includes('workflowSupport')||areas.includes('weatherPublication')||areas.includes('dmiBudget')||areas.includes('dmiCollectionRecovery')||areas.includes('adminHistory')||areas.includes('sharing')||areas.includes('releaseMetadata')||areas.includes('ownerErasure')||areas.includes('weatherProgressRecovery')||areas.includes('ownedCacheNative')||file.startsWith('scripts/test-'))
         out.controlQualificationRequired=true;
     }
     if(unknown.length){out.unclassifiedPaths=unknown.sort();return refuse('CURRENT_UNCLASSIFIED_PATH');}
@@ -907,7 +946,8 @@ export function planSourceCurrentContractsFromGit(input){
       ||!analysis.evidenceControls.plannerTrustChain.unchanged)out.controlQualificationRequired=true;
     for(const area of Object.keys(COMMANDS))if(selected.has(area))out.areas[area]={
       status:area==='historicalTests'?'NOT_EXECUTED':'SELECTED',executed:false,
-      commands:area==='pages'?pagesContractCommandsForChangedInputs(changedInputs):[...COMMANDS[area]],
+      commands:area==='pages'?pagesContractCommandsForChangedInputs(changedInputs)
+        :area==='sourceControls'?sourceControlCommandsForChangedInputs(changedInputs):[...COMMANDS[area]],
       changedPaths:[...new Set(selected.get(area))].sort()};
     out.commands=[...new Set(Object.values(out.areas).flatMap(area=>area.commands))];
     assert(out.commands.length>0&&out.commands.every(command=>command===LOCAL_RESTORE_SELF_TEST||command===PAGES_OWNER_COMPLETION_COMMAND||command===OWNED_CACHE_NATIVE_COMMAND||/^node(?: --[a-z-]+)*(?: [A-Za-z0-9_./-]+\.mjs)+$/.test(command)));
