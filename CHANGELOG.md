@@ -2,11 +2,49 @@
 
 Genoptagelsens kalder bruger en frisk beskyttet parent-S frem for en eventuelt nyere lokal child-S. To separate tomme mål bevarer frisk efterkontrol uden at overskrive gyldig arbejdscache. Den aktuelle normale transportprøve dækker også manglende/korrupt parent; fuld admission og offentlig levering er særskilte gates. Ingen version, model, original, migration eller publiceringsgrænse ændres.
 
+## V4-kvittering med afgrænset filplads før prøver
+
+Den afgrænsede V4-kildekandidat bevarer alle felter og oprindelseskrav, men tillader en komplet kvitteringsfil på 48 KiB inklusive linjeskift. En konservativ byteberegning stopper en for stor plan før afhængighedsklargøring og prøver, uden at udstede resultater eller kildebevis. Begge normale læseveje bruger samme filgrænse. Ældre formater, fulde baselinebeviser og planlæseren bevarer deres tidligere grænser; ZIP-pakken er fortsat begrænset til 64 KiB. Den faktiske slutkvittering kræver stadig alle valgte resultater og de friske kilde-/job-/reviewkontroller. Præcis kildekvalifikation og uafhængigt kontrolreview kræves fortsat.
+
 ## 15. november 2026 — samlet plads før privat vejrpublicering
 
 - Én normal weather-transport bruger det vedtagne 2,5 GB-loft og kræver målt plads til 350 MB ny generation plus 100 MB reserve før første nye PUT. Frisk/staged/code-only deler kaldet; eksisterende HEAD-genbrug, frozen arkiv-/modelbytes, readback, parent-CAS og alle data bevares.
 - Naturligt CURRENT-ejerskab og én fælles præcis argvregel adskiller transportændringen fra beregningen. En retningsbestemt helinverse bevarer hele den gamle planner; ukendt drift får ingen ny kort kvalifikation.
 - Historiske stage-workfloworakler læser deres autentiske faste Git-input, mens aktuelle kalderkontroller fortsat læser aktuelle bytes. Kilde-CI, installation, genoptagelse og Free er særskilte beviser; ingen ny model, version eller migration udstedes.
+
+## Autentisk historisk workflowinput og aktuelle kalderprøver
+
+Den normale fremskridtsprøves ældre workflowasserter læser deres allerede fastlagte, autentiske workflowgrundlag. De aktuelle workflowkaldere og alle udførte Node-, Python- og Bash-blokke læses særskilt fra den aktuelle kilde. Historisk testinput giver ingen drifts- eller genbrugsautoritet. Det gamle orakel og alle sikkerhedsasserter bevares; der ændres ingen workflow, CLI, model, kvote eller produktionspolitik. Præcis kildekvalifikation og reel Linux-/Bash-afprøvning kræves fortsat.
+
+## Præcis HEAD-forventning i den normale delingsprøve
+
+Den normale tidsskyder-/delingsprøve kræver nul prognoselæsninger ved HEAD. Den gamle forventning om tre læsninger er rettet til den gennemgåede handlerkontrakt; GET-, route-, query-, score- og negative kontroller bevares. Prøvens eksisterende publicUI-ejerskab bevares uden ændret kontrolkatalog. Både hele timeline- og projectionsprøven skal fortsat bestå på det præcise kildehead; denne testrettelse er ikke hosted delings- eller Free-accept.
+
+## 14. november — kompakt assistentvalg og præcise aktive statusgrænser
+
+Den normale syntetiske restore med den uændrede fixture har faktisk bestået alle fire relationscases på det pinnede PostgreSQL 17 med samme SQL-builder og psql-læser: eksisterende tabel og sekvens, tom historik, manglende relation og forkert relationstype. Canary-rollback og ikke udført DATA-hale er bekræftet. Standardens fem filers roundtrip, UTF-8/decimaler, roller/migrationshistorik, ny syntetisk Auth-adgang og ejet Docker-oprydning er også bestået. Ægte arkiv-/Auth-gendannelse, den konkrete manglende relations årsag og Free-klarhed er fortsat åbne; Storage forbliver deaktiveret.
+
+Den næste afgrænsede assistentkandidat genkender implicitte UV-fundspørgsmål gennem samme normale Edge-vej og beder modellen vælge disposition og dækkende kilde-id'er med en kort lokaliseret markør frem for en fri forklaring, som alligevel ikke udgives. Femfeltsprotokollen, alle råsvarsvagter, 45 fakta, K-bindingen og den kanoniske sammensætning under 900 tegn bevares. Den observerede tyske længdeafvisning skete før den kanoniske komposition; den engelske provider-timeout er fortsat uafklaret. Frister, kvoter og providerparametre ændres ikke. Syntetiske normale mål er ikke faktisk ekstern AI- eller helsvarsaccept; boblers diagnostiske betydning og den numerisk bundne enkeltleds-/tegnsætningsgrænse er særskilt åbne.
+
+Revisionens syv målkrav består hos de aktuelle ejere: Fur og bevarelse af gyldige timer; de syv zoners begrænsede LF-vandstandsundtagelse; kilde-/historik-/interpolationskæden inklusive T+3; fysisk processtop, eksklusiv skrivning og holdbarhed; afgrænset fejlafslutning; original-B/S-før-T; og national 210/673-kapacitet. De følges gennem de normale DMI-/CP-kaldere, kilde- og historikvalg, SAVE/SDK, bundle/reentry og private/offentlige gates. Pensionerede Source-pakker genåbnes ikke som leveringsenheder, og ingen af disse mål lukkes alene af pensioneringen.
+
+Den konkret identificerede 240-sekunders failure-worker tilhører den pensionerede private Source-tail. Den er ikke en ny global frist for almindelig R2-/cacheupload. Den normale lokale SAVE og efterfølgende upload er adskilte operationer. DMI-finalisering og CP-timeout-recovery bevarer deres egne vedtagne budgetter samt fysisk stop, afventning og første fejl. Kravet om sikker, tidsafgrænset fejlafslutning består som en afgrænset acceptrest. Den additive normale SDK-prøve for tab af actionparent er separat kildeforberedt og indgår ikke i denne pakke; syntakskontrol er ikke faktisk Linux-/SDK-accept eller bevis for en produktfejl.
+
+Den normale beskyttede månedsrapport er læseaccepteret via den eksisterende ejerknap med færdig rapport og genetablerede kontroller. De ni relevante kalder-/adgangs-/schemafiler er bytebevist uændrede siden den accepterede læsning; installations-SQL er uændret uden for håndbogspayload. Dette lukker kun den almindelige beskyttede visningsprøve. JSON-eksport, andre rollers adgang, privacybevis, kalibreringsgyldighed og offentlig statistikaktivering har egne rester.
+
+## 14. november — afgrænsede kaldere og permanent testejerskab
+
+Kildekandidat: delings-HEAD afsluttes efter normal route-, metode- og querykontrol uden prognosehentning. Ejerens eksisterende slettekalder bruger opaque Supabase-servernøgler kun som apikey og bevarer Bearer for legacy service-role JWT. GET-visning, ejer-HMAC, bekræftelsesflag, slette-/genlæsningsrækkefølge og første fejl er uændrede.
+
+Ved størrelsesafvist progress-SAVE tilføjes en fast privat observation af 21 kendte filklasser efter læserlukning. Det er efterfølgende metadata, ikke et atomisk snapshot, årsagsbevis eller kapacitets-/restorebevis. Sharing, ejer-sletning og progress/recovery får præcist naturligt testansvar med hele eksisterende mål. Den eksisterende credentialfri CP-klargøring gælder også den eksakte samlede progressprøve og sker kun én gang. Uklassificerede og beskyttede input beholder deres fulde afslag; nye testflags og hash-kohorter tilføjes ikke. Tidligere beståede lokale mål genbruges på uændrede kodebytes. Præcis samlet kilde-CI og faktisk virkning mangler; version, model, originaler og SQL bevares.
+
+## 14. november — samlet relationsdiagnose og normal PostgreSQL-kalder
+
+Den autentiske prøve har bestået kilde- og rollekontrollen uden manglende roller og er nået til DATA-gendannelse, men stopper med SQLSTATE 42P01 for en manglende relation. Den konkrete relation og årsagen er fortsat uafklaret. En ny kildekandidat indsamler alle COPY- og setval-referencer fra begge verificerede datafiler og kontrollerer relationernes tilstedeværelse og type efter den oprindelige DDL, før hver fases DATA i samme transaktion. Rapporter viser kun faste kategorier og tællere; originale SQL-filer, roller og grants ændres ikke.
+
+Den lokale protokolprøve og den eksisterende syntetiske kalder er forberedt; faktisk PostgreSQL 17, fuld arkiv-/Auth-accept og den konkrete manglende relation er ikke bevist. Storage forbliver deaktiveret. Ingen original SQL, rettighed eller produktionsdata ændres af diagnosen.
+
+Gamle samlede Source-pakker er udgået som leveringsenheder. Målkrav verificeres på aktuel main; en ny Source-overgang er ikke et selvstændigt slutmål. Kun konkrete aktuelle kodehuller begrunder nye ændringer. Relevante krav til numerik, originaler, adgang og faktiske beviser består. Alle fem mål og ukendte beviser bevares.
 
 ## 14. november — afgrænset varig adminarkivretention og genoptagelse
 

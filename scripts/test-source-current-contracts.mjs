@@ -7,6 +7,8 @@ import os from 'node:os';
 import path from 'node:path';
 import childProcess,{execFileSync} from 'node:child_process';
 import {syncBuiltinESMExports} from 'node:module';
+import vm from 'node:vm';
+import {copernicusOfflineEnvironment} from './lib/copernicus-offline-environment.mjs';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {CURRENT_CONTRACT_COMMANDS,isBoundedLocalRestoreFixtureChange,isArchiveRestoreOuterQueueOnlyChange,pagesContractCommandsForChangedInputs,dmiBudgetWeatherBuildAreas,isDmiBudgetOnlyUpdaterChange,isDmiBudgetOnlySupervisorChange,isDmiCollectionRecoveryOnlyUpdaterChange,isDmiCollectionRecoveryOnlyFixtureChange,dmiCollectionRecoveryUpdaterAreas} from './source-current-contract-plan.mjs';
 
@@ -152,6 +154,98 @@ function assertAssistantEdgePlanScope({baselineCommit,baselineTree,rewriteTree,m
   }finally{checkoutCommit(restoreHead);}
 }
 // End Assistant Edge scope assertions.
+
+// Exact existing sharing/erasure paths; all assertions also run in the normal Git fixture.
+function assertSmallUserContractPlanScope({baselineCommit,baselineTree,rewriteTree,makeCommit,checkoutCommit,plan,restoreHead}){
+  let passed=0;
+  const definitions=[
+    {area:'sharing',paths:['scripts/forecast-share/handler.mjs','scripts/test-forecast-share-projection.mjs'],
+      commands:['node scripts/test-map-forecast-timeline.mjs','node scripts/test-forecast-share-projection.mjs']},
+    {area:'ownerErasure',paths:['supabase/functions/_shared/trip-owner-erasure.js','scripts/test-delete-trip-owner-data-readback.mjs'],
+      commands:['node --test scripts/test-delete-trip-owner-data-readback.mjs']},
+  ];
+  const select=(before,tree,changes,label)=>{
+    const candidate=makeCommit(rewriteTree(tree,changes),[before],'synthetic exact user contract '+label);checkoutCommit(candidate);
+    return plan({baselineCommit:before,candidateCommit:candidate,expectedHead:candidate});
+  };
+  const refuse=(selected,reason)=>{
+    assert.equal(selected.selection,'FULL',JSON.stringify(selected));
+    assert.deepEqual(selected.reasonCodes,[reason]);assert.deepEqual(selected.commands,[]);passed++;
+  };
+  try{
+    for(const def of definitions){
+      const original=def.paths.map(file=>[file,fixtureControlBytes(file)]),tree=rewriteTree(baselineTree,original);
+      const prior=makeCommit(tree,[baselineCommit],'synthetic existing '+def.area);
+      const changes=original.map(([file,bytes])=>[file,Buffer.concat([bytes,Buffer.from('\n// Synthetic exact contract body change\n')])]);
+      const selected=select(prior,tree,changes,def.area);
+      assert.equal(selected.selection,'CURRENT_CONTRACTS',JSON.stringify(selected));
+      assert.deepEqual(CURRENT_CONTRACT_COMMANDS[def.area],def.commands);
+      assert.deepEqual(selected.commands,[...CURRENT_CONTRACT_COMMANDS.core,...def.commands]);
+      assert.deepEqual(selected.areas[def.area].changedPaths,[...def.paths].sort());
+      assert.deepEqual(selected.protectedInputs,{postgresUnchanged:true,CUnchanged:true,IUnchanged:true,TUnchanged:true});
+      assert.equal(selected.controlQualificationRequired,true);passed++;
+      const caller=def.paths[0];checkoutCommit(prior);git(root,['update-index','--force-remove','--',caller]);
+      const absentTree=text(root,['write-tree']),absent=makeCommit(absentTree,[prior],'synthetic absent '+def.area);
+      const deleted=makeCommit(absentTree,[prior],'synthetic deleted '+def.area);checkoutCommit(deleted);
+      refuse(plan({baselineCommit:prior,candidateCommit:deleted,expectedHead:deleted}),'CURRENT_SMALL_USER_CONTRACT_REQUIRES_EXISTING_REGULAR_SOURCE');
+      const added=makeCommit(tree,[absent],'synthetic added '+def.area);checkoutCommit(added);
+      refuse(plan({baselineCommit:absent,candidateCommit:added,expectedHead:added}),'CURRENT_SMALL_USER_CONTRACT_REQUIRES_EXISTING_REGULAR_SOURCE');
+      checkoutCommit(prior);git(root,['update-index','--chmod=+x','--',caller]);
+      const mode=makeCommit(text(root,['write-tree']),[prior],'synthetic executable '+def.area);checkoutCommit(mode);
+      refuse(plan({baselineCommit:prior,candidateCommit:mode,expectedHead:mode}),'CURRENT_SMALL_USER_CONTRACT_REQUIRES_EXISTING_REGULAR_SOURCE');
+    }
+    const allPaths=[...definitions.flatMap(def=>def.paths),'scripts/weather-component-progress-cache.mjs','scripts/test-weather-component-progress-cache.mjs'];
+    const allBytes=allPaths.map(file=>[file,fixtureControlBytes(file)]),tree=rewriteTree(baselineTree,allBytes),prior=makeCommit(tree,[baselineCommit],'synthetic six existing contract owners');
+    const changes=allBytes.map(([file,bytes])=>[file,Buffer.concat([bytes,Buffer.from('\n// Synthetic owned source delta\n')])]);
+    const selected=select(prior,tree,changes,'all six');
+    assert.equal(selected.selection,'CURRENT_CONTRACTS',JSON.stringify(selected));
+    assert.deepEqual(selected.commands,[...new Set([...CURRENT_CONTRACT_COMMANDS.core,...CURRENT_CONTRACT_COMMANDS.sharing,
+      ...CURRENT_CONTRACT_COMMANDS.ownerErasure,...CURRENT_CONTRACT_COMMANDS.weatherProgressRecovery])]);
+    assert.equal(selected.controlQualificationRequired,true);passed++;
+    for(const file of ['scripts/forecast-share/unclassified-handler.mjs','supabase/functions/_shared/unclassified-erasure.js'])
+      refuse(select(prior,tree,[...changes,[file,Buffer.from('// Unknown neighbouring source\n')]],file),'CURRENT_UNCLASSIFIED_PATH');
+    const protectedBefore=git(root,['cat-file','blob',prior+':config.js']);
+    refuse(select(prior,tree,[...changes,['config.js',Buffer.concat([protectedBefore,Buffer.from('\n// Changed protected input\n')])]],'protected input'),
+      'CURRENT_PROTECTED_INPUT_CHANGED');
+    return passed;
+  }finally{checkoutCommit(restoreHead);}
+}
+
+// Run the actual bounded prerequisite function with a synthetic pip transport only.
+function assertSelectedProgressCopernicusPrerequisite(){
+  const source=fs.readFileSync(path.join(SOURCE,'scripts/source-targeted-producer.mjs'),'utf8');
+  const start='function prepareSelectedScalarSourceTarget(commands){',end='\nfunction finalProofHash(zip){';
+  assert.equal(source.split(start).length,2);assert.equal(source.split(end).length,2);
+  const body=source.slice(source.indexOf(start),source.indexOf(end));
+  const declaration=source.slice(source.indexOf('const LOCAL_RESTORE_ENVIRONMENT='),source.indexOf('\nconst RECEIPT='));
+  const scalar='node --test scripts/test-weather-component-normal-wireup.mjs';
+  const progress='node --test scripts/test-weather-component-progress-cache.mjs scripts/test-weather-component-progress-workflow.mjs scripts/test-dmi-progress-inputs.mjs';
+  let calls=[],failed=false;
+  const childEnvironment={PATH:process.env.PATH??process.env.Path,SystemRoot:process.env.SystemRoot,
+    LD_LIBRARY_PATH:'synthetic-runtime-library',DYLD_LIBRARY_PATH:'synthetic-runtime-library',PYTHON:'synthetic-python',
+    GITHUB_TOKEN:'synthetic-never-forward',SUPABASE_SERVICE_ROLE_KEY:'synthetic-never-forward',
+    COPERNICUSMARINE_SERVICE_PASSWORD:'synthetic-never-forward'};
+  const context={process:{env:childEnvironment,platform:process.platform},ROOT:SOURCE,copernicusOfflineEnvironment,
+    execFileSync(executable,args,options){
+      calls.push({executable,args,options});assert.equal(executable,'synthetic-python');
+      assert.deepEqual(Array.from(args),['-m','pip','install','--disable-pip-version-check','--no-input','-r','requirements-copernicus.txt']);
+      assert.equal(options.cwd,SOURCE);assert.equal(options.timeout,120000);assert.equal(options.maxBuffer,2*1024*1024);
+      assert.deepEqual(Array.from(options.stdio),['ignore','inherit','inherit']);
+      assert.equal(options.env.LD_LIBRARY_PATH,childEnvironment.LD_LIBRARY_PATH);
+      assert.equal(options.env.DYLD_LIBRARY_PATH,childEnvironment.DYLD_LIBRARY_PATH);
+      assert.equal(options.env.PIP_CONFIG_FILE,process.platform==='win32'?'NUL':'/dev/null');
+      for(const key of ['GITHUB_TOKEN','GH_TOKEN','SUPABASE_SERVICE_ROLE_KEY','COPERNICUSMARINE_SERVICE_PASSWORD'])assert.equal(options.env[key],undefined);
+      if(failed)throw Error('SYNTHETIC_PREREQUISITE_FAILURE');return Buffer.alloc(0);
+    }};
+  const prepare=vm.runInNewContext(declaration+'\n'+body+'\nprepareSelectedScalarSourceTarget;',context);
+  for(const commands of [[scalar],[progress],[scalar,progress]]){calls=[];prepare(commands);assert.equal(calls.length,1);}
+  for(const commands of [['node --test scripts/test-delete-trip-owner-data-readback.mjs'],[progress+' --unknown']]){
+    calls=[];prepare(commands);assert.equal(calls.length,0);
+  }
+  calls=[];failed=true;assert.throws(()=>prepare([progress]),/SOURCE_TARGETED_SCALAR_PREREQUISITE_FAILED/);assert.equal(calls.length,1);
+  return 6;
+}
+
 
 // Archive outer queue: identical assertions also run in the normal Git fixture.
 function assertArchiveOuterQueuePlanScope({baselineCommit,baselineTree,rewriteTree,makeCommit,checkoutCommit,plan,restoreHead,fixtureSource,workflowSource}){
@@ -571,6 +665,68 @@ try{
   ({decideTargetedSourceGate:decide,discoverTargetedSourceGate:discover}=consumer);accessFactory=native.sourceImpactEvidenceAccess;
   const {planSourceCurrentContractsFromGit:plan}=await moduleAt('scripts/source-current-contract-plan.mjs');
   planCurrent=plan;
+
+  // Begin exact small-contract owner assertions (also run by the full normal target).
+  if(!weatherPublicationScopeOnly&&!dmiBudgetScopeOnly&&!dmiRecoveryScopeOnly&&!adminHistoryScopeOnly){
+    const started=performance.now(),caller='scripts/weather-component-progress-cache.mjs',
+      fixture='scripts/test-weather-component-progress-cache.mjs',workflow='.github/workflows/reusable-weather-build.yml';
+    const ownedPaths=[caller,fixture],bytes=new Map([...ownedPaths,workflow].map(file=>[file,fixtureControlBytes(file)]));
+    const priorTree=rewrite(baselineTree,[...bytes]),prior=commit(priorTree,[base],'synthetic existing weather progress owner');
+    const changes=ownedPaths.map(file=>[file,Buffer.concat([bytes.get(file),Buffer.from('\n// Synthetic permanent owner delta\n')])]);
+    const selectedTree=rewrite(priorTree,changes),candidate=commit(selectedTree,[prior],'synthetic combined progress owner');checkout(candidate);
+    const selected=plan({baselineCommit:prior,candidateCommit:candidate,expectedHead:candidate});
+    assert.equal(selected.selection,'CURRENT_CONTRACTS',JSON.stringify(selected));
+    const wholeCommands=[
+      'node --test scripts/test-weather-component-progress-cache.mjs scripts/test-weather-component-progress-workflow.mjs scripts/test-dmi-progress-inputs.mjs',
+      'node --test scripts/test-audit-saved-weather-inputs.mjs',
+      'node --test scripts/test-native-identity-checkpoint-runtime.mjs',
+      'node --test scripts/test-current-family-cold-supervisor-wrapper.mjs',
+      'node --test scripts/test-saved-current-window-scratch.mjs',
+    ];
+    assert.deepEqual(CURRENT_CONTRACT_COMMANDS.weatherProgressRecovery,wholeCommands);
+    assert.deepEqual(selected.commands,[...CURRENT_CONTRACT_COMMANDS.core,...wholeCommands]);
+    assert.deepEqual(selected.areas.weatherProgressRecovery.changedPaths,[...ownedPaths].sort());
+    assert.deepEqual(selected.protectedInputs,{postgresUnchanged:true,CUnchanged:true,IUnchanged:true,TUnchanged:true});
+    assert.equal(selected.controlQualificationRequired,true);assert.equal(selected.changedRows,2);cases++;
+    const codec='scripts/lib/private-weather-component-pack.mjs';
+    const protectedBefore=git(root,['cat-file','blob',prior+':'+codec]);
+    for(const [label,extra,reason]of [
+      ['unknown adjacent input',['scripts/unclassified-progress-input.mjs',Buffer.from('// Unknown input\n')],'CURRENT_UNCLASSIFIED_PATH'],
+      ['broader weather workflow',[workflow,Buffer.concat([bytes.get(workflow),Buffer.from('\n# outside every owned workflow section\n')])],'CURRENT_WEATHER_BUILD_CHANGE_EXCEEDS_PAGES'],
+      ['protected codec',[codec,Buffer.concat([protectedBefore,Buffer.from('\n// Changed protected codec\n')])],'CURRENT_PROTECTED_INPUT_CHANGED'],
+    ]){
+      const refused=commit(rewrite(selectedTree,[extra]),[prior],'synthetic progress refusal '+label);checkout(refused);
+      const rejected=plan({baselineCommit:prior,candidateCommit:refused,expectedHead:refused});
+      assert.equal(rejected.selection,'FULL',JSON.stringify(rejected));assert.deepEqual(rejected.reasonCodes,[reason]);
+      assert.deepEqual(rejected.commands,[]);cases++;
+    }
+    // Neither a new path, deleting this owner, nor changing its executable mode
+    // inherits the existing regular-source contract.
+    checkout(prior);git(root,['update-index','--force-remove','--',caller]);
+    const absentTree=text(root,['write-tree']),absent=commit(absentTree,[prior],'synthetic absent progress owner');
+    const deleted=commit(absentTree,[prior],'synthetic deleted progress owner');checkout(deleted);
+    let refused=plan({baselineCommit:prior,candidateCommit:deleted,expectedHead:deleted});
+    assert.equal(refused.selection,'FULL');assert.deepEqual(refused.reasonCodes,['CURRENT_WEATHER_PROGRESS_REQUIRES_EXISTING_REGULAR_SOURCE']);cases++;
+    const added=commit(priorTree,[absent],'synthetic added progress owner');checkout(added);
+    refused=plan({baselineCommit:absent,candidateCommit:added,expectedHead:added});
+    assert.equal(refused.selection,'FULL');assert.deepEqual(refused.reasonCodes,['CURRENT_WEATHER_PROGRESS_REQUIRES_EXISTING_REGULAR_SOURCE']);cases++;
+    checkout(prior);git(root,['update-index','--chmod=+x','--',caller]);
+    const executable=commit(text(root,['write-tree']),[prior],'synthetic changed progress owner mode');checkout(executable);
+    refused=plan({baselineCommit:prior,candidateCommit:executable,expectedHead:executable});
+    assert.equal(refused.selection,'FULL');assert.deepEqual(refused.reasonCodes,['CURRENT_WEATHER_PROGRESS_REQUIRES_EXISTING_REGULAR_SOURCE']);cases++;
+    checkout(base);scenarios.push('Permanent progress owner selects whole existing caller contracts; unknown, broader workflow, protected input and A/D/mode retain FULL');
+    console.log(JSON.stringify({kind:'WEATHER_PROGRESS_RECOVERY_NORMAL_GIT_SCOPE',cases:7,elapsedMs:performance.now()-started,
+      completeExistingTargetFiles:7,wholeExistingTargetCommands:5,protectedAnalysisReused:false,plannerMock:false}));
+  }
+
+  if(!weatherPublicationScopeOnly&&!dmiBudgetScopeOnly&&!dmiRecoveryScopeOnly&&!adminHistoryScopeOnly){
+    const ownerCases=assertSmallUserContractPlanScope({baselineCommit:base,baselineTree,rewriteTree:rewrite,makeCommit:commit,checkoutCommit:checkout,plan,restoreHead:base});
+    const prerequisiteCases=assertSelectedProgressCopernicusPrerequisite();
+    cases+=ownerCases+prerequisiteCases;
+    scenarios.push('Exact sharing/erasure/progress owners retain whole tests and refusal boundaries; selected CP prerequisite is bounded and credential-free');
+    console.log(JSON.stringify({kind:'SMALL_USER_AND_PROGRESS_OWNERS_FOCUSED_ASSERTIONS',ownerCases,prerequisiteCases,wholeSuite:false,productTargetsExecuted:0}));
+  }
+  // End exact small-contract owner assertions.
 
   if(!dmiBudgetScopeOnly&&!dmiRecoveryScopeOnly&&!adminHistoryScopeOnly){
     const started=performance.now(),build='.github/workflows/reusable-weather-build.yml',repair='.github/workflows/deploy-code-only-repair.yml';
@@ -1036,6 +1192,60 @@ try{
     planSha256:currentReceiptHelpers.currentContractPlanSha256(baselinePlan,legacyFull),
     reviewSha256:sha('SYNTHETIC old V3 control review only')};
 
+  // V4 keeps its entire canonical shape; only its complete-file capacity grows.
+  const capacityLimit=currentReceiptHelpers.CURRENT_CHANGE_SOURCE_MAX_FILE_BYTES;
+  assert.equal(capacityLimit,48*1024);
+  const capacityInput={current:selectedReceipt.current,fullBaseline:legacyFull,
+    changeBase:selectedReceipt.changeBase,currentPlan:clone(baselinePlan),cumulativePlan:clone(baselinePlan),
+    frontier:selectedReceipt.frontier,commandResults:clone(selectedReceipt.reportedCommandResults)};
+  const plannedInput=value=>Object.fromEntries(Object.entries(value).filter(([key])=>key!=='commandResults'));
+  const paddedCapacity=length=>{
+    const input=clone(capacityInput),receipt=clone(selectedReceipt);
+    const file='scripts/synthetic-capacity-'+('x'.repeat(length))+'.mjs';
+    input.currentPlan.areas.core.changedPaths.push(file);receipt.impact.areas.core.changedPaths.push(file);
+    const {planSha256,...impact}=receipt.impact;receipt.impact.planSha256=sha(JSON.stringify(impact));
+    return {input,receipt,bytes:Buffer.byteLength(JSON.stringify(receipt)+'\n')};
+  };
+  const emptyCapacity=paddedCapacity(0),mediumCapacity=paddedCapacity(33000-emptyCapacity.bytes);
+  assert.equal(mediumCapacity.bytes,33000);
+  assert.equal(currentReceiptHelpers.validateCurrentChangeSourceReceipt(mediumCapacity.receipt,mediumCapacity.input).validStructure,true);
+  const plannedCapacity=currentReceiptHelpers.assertCurrentChangeReceiptCapacity(plannedInput(mediumCapacity.input));
+  assert.equal(plannedCapacity.scope,'PLANNED_RECEIPT_BYTE_BUDGET_ONLY');
+  assert.equal(plannedCapacity.maximumFileBytes,capacityLimit);assert(plannedCapacity.plannedFileBytes>=mediumCapacity.bytes);
+  assert.equal(plannedCapacity.actualCommandResults,false);assert.equal(plannedCapacity.receiptCreated,false);
+  assert.equal(plannedCapacity.deliveryAuthority,false);assert(!Object.hasOwn(plannedCapacity,'reportedCommandResults'));
+  const exactCapacity=paddedCapacity(capacityLimit-emptyCapacity.bytes);
+  assert.equal(exactCapacity.bytes,capacityLimit);
+  assert.equal(currentReceiptHelpers.validateCurrentChangeSourceReceipt(exactCapacity.receipt,exactCapacity.input).validStructure,true);
+  const overCapacity=paddedCapacity(capacityLimit+1-emptyCapacity.bytes);
+  assert.equal(overCapacity.bytes,capacityLimit+1);
+  assert.throws(()=>currentReceiptHelpers.validateCurrentChangeSourceReceipt(overCapacity.receipt,overCapacity.input),/RECEIPT_TOO_LARGE/);
+  assert.throws(()=>currentReceiptHelpers.assertCurrentChangeReceiptCapacity(plannedInput(overCapacity.input)),/RECEIPT_CAPACITY_EXCEEDED/);
+  const oldCapacity=clone(capacityInput.currentPlan);
+  oldCapacity.areas.core.changedPaths.push('scripts/'+('x'.repeat(33000))+'.mjs');
+  assert.throws(()=>currentReceiptHelpers.validateCurrentContractSourceReceipt(null,{current:capacityInput.current,
+    fullBaseline:legacyFull,currentPlan:oldCapacity,commandResults:capacityInput.commandResults}),/RECEIPT_TOO_LARGE/);
+  // The independent planned upper bound accounts for every safe-integer width.
+  const worstInput=clone(mediumCapacity.input);
+  for(const row of worstInput.commandResults)row.elapsedMs=Number.MAX_SAFE_INTEGER;
+  const worstReceipt=clone(mediumCapacity.receipt);worstReceipt.reportedCommandResults=worstInput.commandResults;
+  assert.equal(Buffer.byteLength(JSON.stringify(worstReceipt)+'\n'),plannedCapacity.plannedFileBytes);
+  assert.equal(currentReceiptHelpers.validateCurrentChangeSourceReceipt(worstReceipt,worstInput).validStructure,true);
+  const producerSource=fixtureControlBytes('scripts/source-targeted-producer.mjs').toString('utf8');
+  assert(producerSource.indexOf('assertCurrentChangeReceiptCapacity({...reviewInput(),frontier})')
+    <producerSource.indexOf('clean(head);prepareSelectedScalarSourceTarget(executionPlan.commands)'));
+  const priorCapacityRows=rows;
+  const largeDocs=Array.from({length:180},(_,i)=>['docs/ai/synthetic-capacity-'+String(i).padStart(3,'0')+'-'+('x'.repeat(100))+'.md',
+    Buffer.from('# Synthetic planned capacity only\n')]);
+  configure(commit(rewrite(candidateTree,largeDocs),[positiveHead],'synthetic receipt capacity before commands'));
+  baselinePlan=plan({baselineCommit:base,candidateCommit:head,expectedHead:head});
+  assert.equal(baselinePlan.status,'PLANNED');rebuildMaps();
+  await assert.rejects(coordinate(),/RECEIPT_CAPACITY_EXCEEDED/);assert.equal(rows.length,0);
+  configure(positiveHead);baselinePlan=plan({baselineCommit:base,candidateCommit:head,expectedHead:head});
+  rows=priorCapacityRows;rebuildMaps();
+  cases+=7;scenarios.push('V4 complete-file48KiB and newline boundaries, exact conservative planning budget, legacy32KiB unchanged, actual producer stops before any target');
+
+
 
   main=commit(candidateTree,[base,head],'synthetic same-tree main merge');checkout(main);state.merged=true;
   assert.equal(text(root,['rev-parse',head+'^{tree}']),text(root,['rev-parse',main+'^{tree}']));
@@ -1060,6 +1270,30 @@ try{
     pull:currentPull(),run:run(true),job:jobs(true),runId:selectedRun,jobId:selectedJob,pr:selectedPr,artifactId:selectedArtifactId};
 
   const validReceipt=clone(selectedReceipt),validMetadata=clone(selectedMetadata),validZip=selectedZip;
+
+  // Both normal MAIN entry points consume one stored V4 member at exactly48KiB.
+  const canonicalRaw=Buffer.from(JSON.stringify(validReceipt)+'\n');
+  const boundaryRaw=Buffer.concat([canonicalRaw,Buffer.alloc(capacityLimit-canonicalRaw.length,32)]);
+  const storedBoundary=execFileSync('python',['-c',
+    'import io,sys,zipfile; b=io.BytesIO(); z=zipfile.ZipFile(b,"w",compression=zipfile.ZIP_STORED); z.writestr("source-targeted-impact-proof.json",sys.stdin.buffer.read()); z.close(); sys.stdout.buffer.write(b.getvalue())'],
+    {input:boundaryRaw,maxBuffer:65536,timeout:10000,stdio:['pipe','pipe','pipe']});
+  assert.equal(storedBoundary.length,boundaryRaw.length+164);assert(storedBoundary.length<=65536);
+  selectedZip=storedBoundary;selectedMetadata=meta(selectedArtifactId,validReceipt.artifactName,selectedZip,selectedRun,head,22);rebuildMaps();
+  const boundaryFound=await discover(context,content,{...freshAccess(),readGit});
+  assert.equal(boundaryFound.requiresVerification,true);
+  assert.equal(boundaryFound.locator.proofSha256,sha(boundaryRaw));
+  assert.equal((await decide(boundaryFound.locator,context,{...freshAccess(),readGit})).required,false);
+  selectedZip=zip(Buffer.concat([boundaryRaw,Buffer.from(' ')]),'source-targeted-impact-proof.json');
+  selectedMetadata=meta(selectedArtifactId,validReceipt.artifactName,selectedZip,selectedRun,head,22);rebuildMaps();
+  assert.equal((await discover(context,content,{...freshAccess(),readGit})).required,true);
+  const oversizedV3=Buffer.concat([Buffer.from(JSON.stringify(legacyFirstReceipt)+'\n'),
+    Buffer.alloc(32769-Buffer.byteLength(JSON.stringify(legacyFirstReceipt)+'\n'),32)]);
+  selectedReceipt=legacyFirstReceipt;selectedZip=zip(oversizedV3,'source-targeted-impact-proof.json');
+  selectedMetadata=meta(selectedArtifactId,legacyFirstReceipt.artifactName,selectedZip,selectedRun,head,22);rebuildMaps();
+  assert.equal((await discover(context,content,{...freshAccess(),readGit})).required,true);
+  selectedReceipt=validReceipt;selectedMetadata=validMetadata;selectedZip=validZip;rebuildMaps();
+  cases+=3;scenarios.push('normal discover and MAIN decoder accept exact48KiB V4 stored file, reject one-byte overflow, preserve old V3 complete-file32KiB');
+
   for(const change of [
     row=>{row.reportedCommandResults[0].outcome='FAIL';},
     row=>{row.reportedCommandResults.pop();},

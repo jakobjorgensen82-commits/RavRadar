@@ -103,3 +103,9 @@ Den eneste kodeerstatning er normal deploy af den samme Worker efter exact-main,
 Efter fejl kræver ét højst afgrænset D1-fremadgående forsøg eget faktisk maintenance-intent, ny lease/drain, privat kontrol og frisk main. Ingen Supabase-toggle eller genkørsel efter annullering. Oprindelig fejlstatus bevares. Automatisk leaseudløb er ikke observeret recovery, og ingen atomisk leverandørgaranti mod ny Worker-oprettelse ved samtidig bortfald er bevist.
 
 Dette tillæg beskriver lokal kode og nødvendige gates, ikke i sig selv en operationstilladelse. Ejeren har særskilt givet den præcise betingede reparationsautoritet. Den nye procesrettelse består 44 lokale kontroller med én sprunget Linux-procesprøve; egen source-CI inklusive den rigtige Linux-prøve, sikker merge uden aktiv writer, faktisk installation og normale brugerforløb kræves fortsat. De tilbageholdte eksport-, formåls-, opbevarings-, testoprindelses- og bindingsovergange er uændrede.
+
+## Tillæg 14. november 2026 — servernøglefamilier i ejerens eksisterende slettekalder
+
+Den eksisterende eksplicit bekræftede CLI og dens serverfunktion bruger samme Supabase-nøgle som apikey i begge observationskald. En opaque `sb_secret_`-nøgle er ikke en JWT og sættes ikke også som Bearer; legacy service-role JWT bevarer Bearer. Ejerens UUID-validering, domæneadskilte HMAC, signerede D1-kald, rækkefølge, første fejl og den strenge tom-array-genlæsning bevares. Der er fortsat ingen automatisk gentagelse.
+
+Det er en afgrænset kildekandidat. Den giver ingen ny HTTP-route, rettighed, nøgle, konto-/profilsletning eller automatisk retention. Den eksisterende normale CLI-/readbackprøve kontrollerer begge nøglefamilier og de gamle afvisninger med syntetisk transport. Hosted brugeraccept kræver sin egen godkendte handling; ingen rigtig tur slettes af kildekontrollen.

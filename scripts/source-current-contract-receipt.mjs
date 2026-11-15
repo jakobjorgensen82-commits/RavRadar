@@ -183,6 +183,8 @@ export function readCurrentContractReview(pull,expected){
 // execution from a separately authenticated unchanged FULL input origin.
 export const CURRENT_CHANGE_SOURCE_CONTRACT='weather-source-current-change-v4';
 export const CURRENT_CHANGE_SOURCE_KIND='RAVRADAR_CURRENT_CHANGE_SOURCE_RECEIPT_V4';
+// Maximum complete V4 file, including the producer's final newline.
+export const CURRENT_CHANGE_SOURCE_MAX_FILE_BYTES=48*1024;
 export function currentChangeSourceArtifactName(current){
   must(arguments.length===1,'ARGUMENTS');keys(current,['pullRequest','head','sourceTreeSha256']);
   must(positive(current.pullRequest)&&oid(current.head)&&digest(current.sourceTreeSha256),'ARTIFACT_IDENTITY');
@@ -233,18 +235,10 @@ export function currentChangePlanSha256(input){
   const {changeBase,impact,continuity}=currentChangeProjection(input);
   return sha(JSON.stringify({policy:'QUALIFIED_FRONTIER_OR_KNOWN_CUMULATIVE_V1',changeBase,impact,continuity}));
 }
-function constructCurrentChangeReceipt(input){
-  keys(input,['current','fullBaseline','changeBase','currentPlan','cumulativePlan','frontier','commandResults']);
-  const {current,commandResults}=input,{reference,changeBase,impact,continuity}=currentChangeProjection(input);
-  const frontier=changeFrontierProjection(input.frontier,changeBase,input.fullBaseline);
+function currentChangeReceiptValue(input,projection,frontier,commandResults){
+  const {current}=input,{reference,changeBase,impact,continuity}=projection;
   const execution=frontier.mode==='MAIN'?impact:continuity;
-  must(Array.isArray(commandResults)&&commandResults.length===execution.commands.length,'COMMAND_RESULTS');
-  for(let index=0;index<commandResults.length;index++){
-    const row=commandResults[index];keys(row,['phase','command','elapsedMs','outcome']);
-    must(row.phase==='targeted'&&row.command===execution.commands[index]&&row.outcome==='PASS'
-      &&Number.isSafeInteger(row.elapsedMs)&&row.elapsedMs>=0,'COMMAND_RESULTS');
-  }
-  const receipt={schemaVersion:4,contractId:CURRENT_CHANGE_SOURCE_CONTRACT,kind:CURRENT_CHANGE_SOURCE_KIND,
+  return {schemaVersion:4,contractId:CURRENT_CHANGE_SOURCE_CONTRACT,kind:CURRENT_CHANGE_SOURCE_KIND,
     scope:'CURRENT_CHANGE_CONTRACT_RESULTS_ONLY',current:structuredClone(current),changeBase,frontier,
     baselineReference:reference,baselineScope:{source:'FULL_SOURCE',gitTree:input.fullBaseline.gitTree,
       historicalNationalScope:'HISTORICAL_584_NATIONAL_ONLY',providerOrProductionProof:false},
@@ -262,7 +256,40 @@ function constructCurrentChangeReceipt(input){
     rootVerificationRequired:{liveFullBaseline:true,actualCommandExecution:true,liveChangeBaseQualification:true,
       livePullChangeBaseAndMergeParents:true,trackedCleanBeforeAndAfter:true,finalSourceIdentityAndWorkflow:true,
       independentControlReview:impact.controlQualificationRequired}};
-  must(Buffer.byteLength(JSON.stringify(receipt),'utf8')<=32768,'RECEIPT_TOO_LARGE');return freeze(receipt);
+}
+export function assertCurrentChangeReceiptCapacity(input){
+  must(arguments.length===1,'ARGUMENTS');
+  keys(input,['current','fullBaseline','changeBase','currentPlan','cumulativePlan','frontier']);
+  const projection=currentChangeProjection(input);
+  const frontier=changeFrontierProjection(input.frontier,projection.changeBase,input.fullBaseline);
+  const execution=frontier.mode==='MAIN'?projection.impact:projection.continuity;
+  // Size only: no command results or receipt leave this function. The fixed
+  // row text describes the existing serialization, not an executed PASS.
+  const rowOverhead=Buffer.byteLength('{"phase":"targeted","command":,"elapsedMs":,"outcome":"PASS"}','utf8')
+    +String(Number.MAX_SAFE_INTEGER).length;
+  const empty=currentChangeReceiptValue(input,projection,frontier,[]);
+  const plannedFileBytes=Buffer.byteLength(JSON.stringify(empty)+'\n','utf8')
+    +execution.commands.reduce((total,command)=>total+rowOverhead+Buffer.byteLength(JSON.stringify(command),'utf8'),0)
+    +Math.max(0,execution.commands.length-1);
+  must(plannedFileBytes<=CURRENT_CHANGE_SOURCE_MAX_FILE_BYTES,'RECEIPT_CAPACITY_EXCEEDED');
+  return Object.freeze({scope:'PLANNED_RECEIPT_BYTE_BUDGET_ONLY',plannedFileBytes,
+    maximumFileBytes:CURRENT_CHANGE_SOURCE_MAX_FILE_BYTES,actualCommandResults:false,
+    receiptCreated:false,deliveryAuthority:false});
+}
+function constructCurrentChangeReceipt(input){
+  keys(input,['current','fullBaseline','changeBase','currentPlan','cumulativePlan','frontier','commandResults']);
+  const {commandResults}=input,projection=currentChangeProjection(input);
+  const {changeBase,impact,continuity}=projection;
+  const frontier=changeFrontierProjection(input.frontier,changeBase,input.fullBaseline);
+  const execution=frontier.mode==='MAIN'?impact:continuity;
+  must(Array.isArray(commandResults)&&commandResults.length===execution.commands.length,'COMMAND_RESULTS');
+  for(let index=0;index<commandResults.length;index++){
+    const row=commandResults[index];keys(row,['phase','command','elapsedMs','outcome']);
+    must(row.phase==='targeted'&&row.command===execution.commands[index]&&row.outcome==='PASS'
+      &&Number.isSafeInteger(row.elapsedMs)&&row.elapsedMs>=0,'COMMAND_RESULTS');
+  }
+  const receipt=currentChangeReceiptValue(input,projection,frontier,commandResults);
+  must(Buffer.byteLength(JSON.stringify(receipt)+'\n','utf8')<=CURRENT_CHANGE_SOURCE_MAX_FILE_BYTES,'RECEIPT_TOO_LARGE');return freeze(receipt);
 }
 export async function buildCurrentChangeSourceReceipt(input){
   must(arguments.length===1,'ARGUMENTS');

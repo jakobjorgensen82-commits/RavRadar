@@ -30,6 +30,7 @@ let controlledProviderCalls = 0;
 let controlledQuotaCalls = 0;
 let controlledQuotaResponse = null;
 const controlledProviderPrompts = [];
+const controlledProviderRequests = [];
 const controlledSuccessProvenance = [];
 const controlledEnvironment = {
   PUBLIC_RATE_LIMIT_SECRET: 'SYNTHETIC_ONLY_RATE_SECRET',
@@ -71,6 +72,7 @@ globalThis.fetch = async (input, init) => {
       assert.match(providerBody.messages[0].content, /A relevant word does not make an unrelated or private request permissible\./);
       assert.match(providerBody.messages[0].content, /Uncertainty never licenses speculation/);
       assert.doesNotMatch(JSON.stringify(providerBody), /TEST_PRIVATE_CONTEXT_MARKER/);
+      controlledProviderRequests.push(structuredClone(providerBody));
       controlledProviderPrompts.push(JSON.parse(providerBody.messages[1].content));
       controlledProviderCalls += 1;
       return Response.json(controlledProviderResponse, { status: controlledProviderHttpStatus });
@@ -210,7 +212,7 @@ function expectedPromptFacts(facts, locale, context = {}) {
     result: Object.freeze({ available: true, score: 91 }), // No valid binding/evidence: must not be sent as a score.
   });
   const contextBefore = JSON.stringify(context);
-  const reset = () => { envReads.length = 0; exchanges.length = 0; controlledSuccessProvenance.length = 0; };
+  const reset = () => { envReads.length = 0; exchanges.length = 0; controlledSuccessProvenance.length = 0; controlledProviderRequests.length = 0; };
   const assertBeforeQuota = () => assert.ok(envReads.every(name => name === 'RAVRADAR_ALLOWED_ORIGINS'),
     'Controlled answers/refusals must not read quota or provider configuration.');
   const assertRemote = (question, locale, status) => {
@@ -724,7 +726,130 @@ function expectedPromptFacts(facts, locale, context = {}) {
   };
 
 
+  const assertImplicitUvFindRelevance = async () => {
+    const questions = [
+      ['da', 'Jeg har fundet et gennemsigtigt stykke ved vandet. Det lyser under UV, men har små bobler. Hvad fortæller det mig, og hvilke skånsomme tjek kan jeg bruge uden at beskadige det?'],
+      ['da', 'Jeg fandt et lille stykke. Det fluorescerer. Hvordan undersøger jeg det skånsomt?'],
+      ['de', 'Ich habe ein durchsichtiges Stück gefunden. Es leuchtet unter UV. Wie kann ich es schonend untersuchen?'],
+      ['de', 'Mein Fundstück fluoresziert. Welche zerstörungsfreien Prüfungen kann ich verwenden?'],
+      ['en', 'I found a translucent piece by the water. It glows under UV. How can I check it without damaging it?'],
+      ['en', 'My sample fluoresces. Which non-destructive checks can I use?'],
+    ];
+    let positive = 0, negative = 0;
+    for (const [locale, question] of questions) {
+      reset(); responseMutation = null; browserLanguage = locale;
+      // This tests relevance, not an invented diagnosis or bubble knowledge.
+      controlledProviderResponse = {result:{response:JSON.stringify({
+        schemaVersion:'rav-assistant-response-v1', locale, disposition:'uncertain',
+        answer:'SYNTHETIC_UNSUPPORTED_PROSE_NOT_PUBLISHED', evidenceIds:[],
+      })}};
+      const providerBefore=controlledProviderCalls,quotaBefore=controlledQuotaCalls;
+      const answer=await askRavRadar(question, {}, {language:locale});
+      assertRemote(question,locale,200);
+      console.log(JSON.stringify({case:'implicit-UV-find-relevance',locale,
+        clientRoute:routeRavQuestion(question),serverRoute:contract.routeAssistantQuestion(question),
+        answer,providerCalls:controlledProviderCalls-providerBefore,quotaCalls:controlledQuotaCalls-quotaBefore,
+        provenance:controlledSuccessProvenance.at(-1)?.value??null}));
+      assert.equal(routeRavQuestion(question),'remote-candidate');
+      assert.equal(contract.routeAssistantQuestion(question),'provider',question);
+      assert.equal(answer,contract.RAV_ASSISTANT_UNCERTAIN_REPLIES[locale]);
+      assert.equal(controlledProviderCalls-providerBefore,1);
+      assert.equal(controlledQuotaCalls-quotaBefore,3);
+      assert.equal(controlledSuccessProvenance.at(-1)?.value,'workers-ai-validated-v1');
+      assert.equal(controlledProviderPrompts.at(-1).question,question);
+      assert.equal(controlledProviderPrompts.at(-1).publicFacts.length,45);
+      assert.deepEqual(exchanges[0].body.context.zone,{id:null,name:null,coastType:null});
+      assert.equal(blockedNetworkCalls,0);positive++;
+    }
+    for (const [locale,question] of [
+      ['da','Jeg har et gennemsigtigt stykke. Hvilke skånsomme tjek kan jeg bruge?'],
+      ['de','Ich habe ein Stück gefunden. Wie kann ich es schonend untersuchen?'],
+      ['en','I found a piece. How can I check it without damage?'],
+    ]) {
+      reset(); browserLanguage=locale; controlledProviderResponse=null;
+      const providerBefore=controlledProviderCalls,quotaBefore=controlledQuotaCalls;
+      assert.equal(routeRavQuestion(question),'remote-candidate');
+      assert.equal(contract.routeAssistantQuestion(question),'fixed-refusal');
+      assert.equal(await askRavRadar(question,{}, {language:locale}),contract.RAV_ASSISTANT_REFUSALS[locale]);
+      assertRemote(question,locale,200);assertBeforeQuota();
+      assert.equal(controlledProviderCalls-providerBefore,0);assert.equal(controlledQuotaCalls-quotaBefore,0);
+      assert.equal(controlledSuccessProvenance.at(-1)?.value,null);negative++;
+    }
+    // This separate, installed client boundary is not changed by an Edge fix.
+    assert.equal(routeRavQuestion('Hvordan undersøger jeg skånsomt et stykke under UV?'),'fixed-refusal');
+    console.log(JSON.stringify({status:'PASS',contract:'implicit UV find relevance only',positive,negative,
+      liveProvider:false,newBubbleKnowledge:false,clientSingleClauseBoundary:'unchanged'}));
+  };
+
+  const assertCompactEvidenceSelection = async () => {
+    const markers={da:'Vurderet.',de:'Geprüft.',en:'Assessed.'};
+    const questions={
+      da:'Jeg har fundet et gennemsigtigt stykke ved vandet. Det lyser under UV, men har små bobler. Hvad fortæller det mig, og hvilke skånsomme tjek kan jeg bruge uden at beskadige det?',
+      de:'Ich habe am Strand ein durchsichtiges Stück gefunden, das unter UV-Licht leuchtet und kleine Blasen enthält. Kann es Bernstein sein, und wie prüfe ich es schonend, ohne es zu beschädigen?',
+      en:'I found a translucent piece on the beach. It glows under UV and has small bubbles. Could it be amber, and how can I check it without damage?',
+    };
+    const ids=['identification.uv-clue-not-proof','identification.fluorescence-varies','identification.avoid-destructive-tests'];
+    let cases=0;
+    for(const locale of ['da','de','en']){
+      reset();responseMutation=null;browserLanguage=locale;
+      // Unsupported bubble diagnosis stays uncertain; this is not new knowledge.
+      const value={schemaVersion:'rav-assistant-response-v1',locale,disposition:'uncertain',
+        answer:markers[locale],evidenceIds:ids};
+      controlledProviderResponse={result:{response:JSON.stringify(value)}};
+      const providerBefore=controlledProviderCalls,quotaBefore=controlledQuotaCalls;
+      const answer=await askRavRadar(questions[locale],{}, {language:locale});
+      assertRemote(questions[locale],locale,200);
+      const request=controlledProviderRequests.at(-1),prompt=controlledProviderPrompts.at(-1);
+      console.log(JSON.stringify({case:'compact-evidence-selection-request',locale,
+        markerPresent:typeof prompt.canonicalAnswerContract.providerAnswerMarker==='string',
+        draftProseForbidden:request.messages[0].content.includes('Do not write an explanatory answer draft.'),
+        providerCalls:controlledProviderCalls-providerBefore,publicAnswerCharacters:answer.length,
+        systemCharacters:request.messages[0].content.length,systemBytes:Buffer.byteLength(request.messages[0].content),
+        promptCharacters:request.messages[1].content.length,promptBytes:Buffer.byteLength(request.messages[1].content),
+        providerRequestCharacters:JSON.stringify(request).length,providerRequestBytes:Buffer.byteLength(JSON.stringify(request))}));
+      assert.equal(prompt.canonicalAnswerContract.providerAnswerMarker,markers[locale]);
+      assert.match(request.messages[0].content,/Do not write an explanatory answer draft\./);
+      assert.match(request.messages[0].content,/In answer copy only canonicalAnswerContract\.providerAnswerMarker/);
+      assert.deepEqual(Object.keys(request).sort(),['max_completion_tokens','messages','reasoning_effort','response_format','seed','store']);
+      const {messages,...parameters}=request;
+      assert.deepEqual(parameters,{max_completion_tokens:800,reasoning_effort:'low',seed:827,store:false,response_format:{type:'json_object'}});
+      assert.equal(messages.length,2);assert.equal(prompt.question,questions[locale]);
+      assert.equal(prompt.requestedLocale,locale);assert.equal(prompt.publicFacts.length,45);
+      assert.equal(prompt.canonicalAnswerContract.maximumCharacters,900);
+      assert(markers[locale].length<=16);
+      assert.equal(controlledProviderCalls-providerBefore,1);assert.equal(controlledQuotaCalls-quotaBefore,3);
+      assert.equal(controlledSuccessProvenance.at(-1)?.value,'workers-ai-validated-v1');
+      const expected=contract.validateAssistantResult({...value,answer:'SYNTHETIC_OLD_DRAFT_NOT_PUBLISHED'},locale,{},questions[locale]);
+      assert.equal(expected.disposition,'uncertain');assert.equal(answer,expected.answer);
+      assert.notEqual(answer,markers[locale]);assert(answer.length<=900);
+      for(const invalid of [{answer:''},{answer:'x'.repeat(901)},{answer:'API key private'},
+        {evidenceIds:['unknown.fact']},{evidenceIds:[ids[0],ids[0]]},{locale:'fr'},
+        {schemaVersion:'UNISSUED_SCHEMA'},{extra:true}]){
+        assert.equal(contract.validateAssistantResult({...value,...invalid},locale,{},questions[locale]),null);
+      }
+      cases++;
+    }
+    // Actual normal handler must still reject bad model output after the new request.
+    const question=questions.da,base={schemaVersion:'rav-assistant-response-v1',locale:'da',disposition:'uncertain',answer:markers.da,evidenceIds:ids};
+    const oldWarn=console.warn;const logs=[];
+    try{
+      console.warn=(...args)=>logs.push(args);
+      for(const [delta,code] of [[{answer:'x'.repeat(901)},'RESULT_ANSWER_TOO_LONG'],
+        [{answer:'API key private'},'RESULT_ANSWER_SECURITY'],[{evidenceIds:['unknown.fact']},'RESULT_EVIDENCE_UNKNOWN']]){
+        reset();logs.length=0;browserLanguage='da';controlledProviderResponse={result:{response:JSON.stringify({...base,...delta})}};
+        assert.equal(await askRavRadar(question,{}, {language:'da'}),t('assistant.remoteUnavailable',{},'da'));
+        assertRemote(question,'da',502);assert.deepEqual(exchanges[0].result,{error:'ASSISTANT_RESPONSE_REJECTED'});
+        assert.equal(logs.length,1);assert.equal(logs[0][1].rejectionCode,code);
+        assert.equal(controlledSuccessProvenance.at(-1)?.value,null);cases++;
+      }
+    }finally{console.warn=oldWarn;}
+    console.log(JSON.stringify({status:'PASS',contract:'compact same-v1 evidence selector',cases,
+      oldRejectionMatrixRetained:true,public900Retained:true,newFacts:false,realNetwork:0,externalAIProved:false}));
+  };
+
   const assertCanonicalIdentificationUnion = async () => {
+    await assertImplicitUvFindRelevance();
+    await assertCompactEvidenceSelection();
     const ids = ["amber.mostly-sinks","identification.uv-clue-not-proof","identification.avoid-destructive-tests","identification.fluorescence-varies","identification.treatments-and-imitations"];
     const expected = {
   "da": "Første spor: lav vægt for størrelsen og harpiksagtig overflade. Det meste baltiske rav har massefylde omkring 1,05–1,10 g/cm³, synker i almindeligt dansk havvand og er under vand meget lettere end sand og sten. Salt og temperatur ændrer opdriften lidt, ikke nok til at få det meste rav til at flyde. RavRadars søgeråd er langbølget UV omkring 395 nm i mørke og fysisk kontrol: baltisk rav fluorescerer ofte tydeligt, men fluorescensen varierer med sammensætning, forvitring og behandling; også efterligninger kan lyse. UV er ikke bevis. Plast, glas, copal, presset rav, kompositter, fyldninger, farvestoffer og varmebehandling kan efterligne eller ændre rav. Ingen enkelt hjemmetest skelner alle tilfælde pålideligt; kombiner ikke-destruktive tegn. Undgå varme nåle, ild og andre ødelæggende tests; få værdifulde, usikre eller usædvanlige fund vurderet fagligt.",

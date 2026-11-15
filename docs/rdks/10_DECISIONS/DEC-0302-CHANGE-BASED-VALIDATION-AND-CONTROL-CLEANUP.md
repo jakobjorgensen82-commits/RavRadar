@@ -1,3 +1,7 @@
+## Afgrænset V4-filplads og tidlig kapacitetskontrol
+
+Den afgrænsede V4-kildekandidat bevarer alle felter og oprindelseskrav, men tillader en komplet kvitteringsfil på 48 KiB inklusive linjeskift. En konservativ byteberegning stopper en for stor plan før afhængighedsklargøring og prøver, uden at udstede resultater eller kildebevis. Begge normale læseveje bruger samme filgrænse. Ældre formater, fulde baselinebeviser og planlæseren bevarer deres tidligere grænser; ZIP-pakken er fortsat begrænset til 64 KiB. Den faktiske slutkvittering kræver stadig alle valgte resultater og de friske kilde-/job-/reviewkontroller. Præcis kildekvalifikation og uafhængigt kontrolreview kræves fortsat.
+
 ## Tillæg 15. november 2026 — naturligt ansvar for privat vejrpublicering
 
 Det eksisterende CURRENT-katalog får ét præcist `weatherPublication`-område for den normale transportkalder, dens fælles rene workflowregel, stage-kalder/kildekontrol og deres eksisterende prøver. De normale hele R2- og stage-source-mål køres; R2-målet genbruger samme normale GCM/B/parent-CAS-case, mens stage-testens oprindelige direkte indgang og genuine origin-case bevares. Alle områdets soloændringer kræver den eksisterende uafhængige kontrolgennemgang.
@@ -297,3 +301,16 @@ Dette er lokal forberedelse af den præcise OM-køleverance. Registreringens, pl
 Den korte profil valgte runtimeprøven, men ikke den eksisterende bankprøve. Den brede kontrol fandt derfor først de to gamle fixtures, som antog inputarrayorden. De tre allerede registrerede Open-Meteo-ejere vælger nu begge normale prøver præcis én gang. Kun banktestens gennemgåede importlukning og den nye normale plannerprøves konkrete afhængigheder føjes til fortegnelsen. Ingen ny ejeradgang, produktkode, budget, kildeprioritet eller ændring af plannerens algoritme.
 
 Den normale plannerprøve har reproduceret den manglende bankkommando. Den nye prøve afviser fortsat en ukendt import, læsning og refleksion, ændrede PostgreSQL-/modelinput og ukendt ejer. Det gamle orakels helfilinverse accepterer kun den præcise nye fortegnelse og bevarer alle gamle assertions. Den samlede klient- og kadencekandidat kræver stadig FULL. Lokal plan og bankprøve er ikke udført Node 22-/Linux- eller produktionsbevis.
+
+## Tillæg 14. november 2026 — præcise delings-, ejer- og progresskontrakter
+
+Tre naturlige områder ejer seks eksisterende regulære stier. `sharing` ejer `scripts/forecast-share/handler.mjs` og `scripts/test-forecast-share-projection.mjs` og vælger hele normalmålene for timeline/HTTP og projektion. `ownerErasure` ejer `supabase/functions/_shared/trip-owner-erasure.js` og dens normale CLI-/readbackprøve. `weatherProgressRecovery` ejer `scripts/weather-component-progress-cache.mjs` og dens normale prøve og vælger hele den eksisterende SAVE/restore-gruppe samt audit-, native-checkpoint-, cold-wrapper- og scratchkaldernes mål. En blanding vælger unionen med almindelig deduplikering.
+
+Kun ændringer af de eksisterende regulære filer får dette ansvar; tilføjelse, sletning og ændret mode afvises. Ukendte nabofiler og ændrede PG/C/I/T-input beholder FULL. Der tilføjes ingen head-/hash-kohorte, generel shared-undtagelse eller ny genbrugstilladelse. Ændret kontrolkode kræver fortsat frisk selvstændigt kontrolreview og hele det normale kontrolmål på det præcise CI-head.
+
+Den valgte samlede progressprøve bruger allerede den normale CP-fixture. Producentens eksisterende credentialfri og tidsbegrænsede installation af `requirements-copernicus.txt` forberedes derfor også ved netop denne kommandostreng. Scalarprøvens adgang består, begge valgt sammen installerer kun én gang, og andre mål udløser ingen installation. Den eksisterende sanitiserede proces, 120-sekundersgrænse og fejl før måludførelse bevares. Lokal fokuseret kontrol er ikke en fuld scope-, Linux- eller PostgreSQL-kvittering.
+
+
+### Historisk workflowinput og faktisk aktuelle kodeblokke
+
+Den normale fremskridtsprøves ældre workflowasserter læser deres allerede fastlagte, autentiske workflowgrundlag. De aktuelle workflowkaldere og alle udførte Node-, Python- og Bash-blokke læses særskilt fra den aktuelle kilde. Historisk testinput giver ingen drifts- eller genbrugsautoritet. Det gamle orakel og alle sikkerhedsasserter bevares; der ændres ingen workflow, CLI, model, kvote eller produktionspolitik. Præcis kildekvalifikation og reel Linux-/Bash-afprøvning kræves fortsat.

@@ -72,3 +72,14 @@ Lever den kildekvalificerede controller før domænet tilknyttes. Derefter følg
 Den afgrænsede klientkandidat vælger del.ravradar.dk som delingsadresse og giver index → bootstrap → app → delingsmoduler en ny, sammenhængende cacheadresse. Den oprindelige selection for zone, UTC-time, søgemåde og sprog bevares; ingen score eller data fastfryses. Den gamle Worker beholder sin særskilte, uændrede adresse og allerede delte links.
 
 Den normale lokale delings-/tidsskyderprøve består med 171 cases. Præcis samlet kildekvalifikation er åben. Kandidaten må først merges og offentliggøres efter den leverede controller, faktisk Pagesdomæne, én Simply-CNAME, aktiv TLS og korrekt hosted visning. Formfelter eller en gennemført kildeprøve er ikke domæne-/Facebook-/Free-bevis. Ingen ændring af RavScore, vejrforløb, model, SQL, administratorpunkter eller geometri. Se DEC-0294 og håndbog 89.278; skiftende beviser føres privat.
+
+## Tillæg 14. november 2026 — HEAD uden prognosehentning
+
+Den eksisterende handler kontrollerer først den kildevalgte HTTPS-route, rodsti, metode og hele selection-queryen. HEAD kan derefter returnere samme status og sikkerhedsheadere uden at hente manifest, descriptor eller scorefil og uden at bygge HTML. GET beholder den normale kontrollerede prognoselæsning og visning. Begge godkendte værter, tre sprog, gyldige og ugyldige selections samt fremmed route og metode dækkes af de eksisterende normale mål.
+
+Det er kildeforberedelse uden nyt domæne, deploy, datagrundlag eller scoreberegning. Hosted GET/HEAD, preview, latency og Free-kapacitet beviser sig fortsat hver for sig; et lokalt nul-tal for HEAD-læsninger er ikke et løfte om leverandørens CPU-forbrug.
+
+
+### Samme HEAD-kontrakt i den normale tidsskyderprøve
+
+Den normale tidsskyder-/delingsprøve kræver nul prognoselæsninger ved HEAD. Den gamle forventning om tre læsninger er rettet til den gennemgåede handlerkontrakt; GET-, route-, query-, score- og negative kontroller bevares. Prøvens eksisterende publicUI-ejerskab bevares uden ændret kontrolkatalog. Både hele timeline- og projectionsprøven skal fortsat bestå på det præcise kildehead; denne testrettelse er ikke hosted delings- eller Free-accept.

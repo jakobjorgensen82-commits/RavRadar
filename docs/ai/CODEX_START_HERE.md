@@ -11,7 +11,7 @@ Målet er færdiggørelse og selvstændig drift senest **18. november 2026**. De
 3. [Fungerende drift og dens begrænsninger](../rdks/90_INDEX/CURRENT_TRUTH.md).
 4. [Åbne leverancer og krav til afslutning](../rdks/90_INDEX/IMPLEMENTATION_STATUS.md).
 
-**Prioritet:** Bevar almindelig vejrhentning, reel dækning, fremadrettet historik og offentlig levering. Færdiggør afgrænsede rettelser sideløbende, uden at kontrolarbejde holder vejret pauset i timer. Den fungerende numeriske driftsfamilie er 598; den ikke installerede Source-revision må ikke blive en forudsætning for uafhængige apprettelser.
+**Prioritet:** Bevar almindelig vejrhentning, reel dækning, fremadrettet historik og offentlig levering. Færdiggør afgrænsede rettelser sideløbende, uden at kontrolarbejde holder vejret pauset i timer. Den fungerende numeriske driftsfamilie er 598. Gamle samlede Source-pakker er udgået som leveringsenheder. Målkrav verificeres på aktuel main; en ny Source-overgang er ikke et selvstændigt slutmål. Kun konkrete aktuelle kodehuller begrunder nye ændringer. Relevante krav til numerik, originaler, adgang og faktiske beviser består.
 
 Find derefter det seneste private checkpoint i den eksisterende isolerede arbejdscheckout. Kontrollér faktisk main, igangværende skriver, cron og næste sikre handling derfra. Aktuelle kørsler, hashes, klokkeslæt, dækningsprocenter og engangskvitteringer hører hjemme dér. Skriv ikke nye statuscommits alene for disse skiftende oplysninger. Arbejd ikke i den gamle cb79-checkout.
 
