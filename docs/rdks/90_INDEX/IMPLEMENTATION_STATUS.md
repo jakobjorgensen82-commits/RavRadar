@@ -1,6 +1,10 @@
-## 15. november — SDK-native-kandidat afventer samlet kildekvalifikation
+## Arkiv-inventory — privat kildeforberedelse med faktisk læsning åben
 
-Privat kode og kontrolreview er forberedt: naturligt CURRENT-ansvar, dependency før hele nativefilens 19 cases, faktisk Node24 med egen npm-cache, præcis V4-Pythonkvittering og head-bundet +2 FULL-metadata-layout. Den øvrige Node22-kildevej og gamle V1/V2/V3/FULL-betydninger bevares. Kontrolinput er reelt ændrede; de kaldes ikke uændrede nativebeviser.
+Den nye eksplicitte læsetilstand og dens lukkede naturlige kontrolansvar er uafhængigt gennemgået som privat kildekandidat. De fire eksisterende hele backupmål er bestået lokalt på samme kode: fixture-selvtest, arkivprøve, workflowprøve og lifecycleprøve. Præcis kildekvalifikation på inventory-leveringens endelige head og faktisk læsning af originalarkivet er fortsat åbne. Alle fem autentiske SQL-filer materialiseres med wireforbrug; kun faste hashmetadata og tællere udgives. Docker/SQL/restore og rotation startes ikke. Kilde-/leveringskvalifikation, ukendte Auth-/Storage-mål, kompatibilitet, fuld originalrestore og Free-klarhed er fortsat åbne. De eksisterende SDK-/native-, kilde- og produktionskrav ændres ikke. Se håndbog 89.350 og 89.342.
+
+## 15. november — SDK-native-vej er kildekvalificeret og main-admitteret
+
+Kildekode og kontrolreview er kvalificeret: naturligt CURRENT-ansvar, dependency før hele nativefilens 19 cases, faktisk Node24 med egen npm-cache, præcis V4-Pythonkvittering og head-bundet +2 FULL-metadata-layout. Den øvrige Node22-kildevej og gamle V1/V2/V3/FULL-betydninger bevares. Kontrolinput er reelt ændrede; de kaldes ikke uændrede nativebeviser.
 
 De fire eksisterende native-/FULL-kontrollæsere og deres målprøver hører til det samme sourceControls-område. Området vælger også hele test-native-postgres-evidence.mjs og test-source-impact-full-baseline.mjs. Ukendte nabostier og ændrede beskyttede PG/C/I/T-input afvises fortsat; ændrede kontrollæsere kræver frisk uafhængig gennemgang. Det er ikke en ny PostgreSQL-eksekvering eller tilladelse til genbrug.
 
@@ -8,7 +12,7 @@ Den historiske V1-producentprøve bruger hele sit allerede autentiske program, s
 
 Den aktuelle forbruger af gamle V1-kvitteringer forbliver aktuel. Dens prøve stiller de kendte lazy-moduler, tre faktisk fraværende nyere navnerum og den aktuelle fire-producenthistorik til rådighed. Både normal opdagelse og genlæsning henter desuden den autentiske producer-heads workflow, når de præcise SDK-miljøsteps flytter de efterfølgende trinnumre. Navnene udløser kun læsning; hele workflow-inversen og alle metadata-, artifact-, review-, FULL-, race- og budgetkontroller bestemmer stadig accept. En særskilt normal SDK-kaldercase bruger reelt committed workflow og afviser forkert trinplacering eller sprunget miljøbevaring; dens syntetiske FULL-felter er ikke faktisk SQL-eksekvering.
 
-Hele nativefilens 19 cases, inklusive SDK-parent-loss-casen, har faktisk bestået på Linux med Node24. Den samlede kildekontrol stoppede senere på forældede V1-prøveinput. Åbent er de nødvendige normale mål og planer på det endelige head samt sikker levering. Syntetiske PASS-rækker er kun kvitteringsformatdata. Ingen ny PostgreSQL-eksekvering, model-/SQL-overgang, installeret kontrolvej eller produktionsvirkning er bevist. Version 4.0.598 bevares. Se DEC-0302 og håndbog 89.342/89.232.
+Hele nativefilens 19 cases har bestået på Linux med faktisk Node24. Den efterfølgende præcise kildekontrol bestod alle 17 valgte mål, er merget til main og har bestået normal main-admission. Det tidligere V1-fixtureafslag bevares som historik. Faktisk brug i en almindelig vejrkørsel, tab af hele runneren og holdbar fjernlagring er fortsat særskilte åbne beviser. Syntetiske PASS-rækker er kun kvitteringsformatdata. Ingen ny PostgreSQL-eksekvering, model-/SQL-overgang eller produktionsvirkning er bevist. Version 4.0.598 bevares. Se DEC-0302 og håndbog 89.342/89.232.
 
 ## 15. november — entydigt evidensvalg og struktureret AI-svar
 

@@ -1185,7 +1185,74 @@ function restorePublicReport(c,result,error,closed){
     }:{}),
     ...(!c.archive?{images:c.images,dumpFiles:c.dumps,authRequests:c.authRequests,processes:c.processes}:{})};
 }
-async function fixture({archive=false}={}){
+async function requireArchiveCurrentMain(c,run=command,env=process.env){
+  need(/^[a-f0-9]{40}$/.test(env.EXPECTED_HEAD_SHA??'')&&env.EXPECTED_HEAD_SHA===env.GITHUB_SHA,'EXACT_DISPATCHED_HEAD');
+  await run(c,'ARCHIVE_CURRENT_MAIN','git',['fetch','--no-tags','origin','+refs/heads/main:refs/remotes/origin/main'],{cwd:process.cwd(),maxMs:60_000});
+  for(const ref of ['HEAD^{commit}','origin/main^{commit}'])
+    need((await run(c,'ARCHIVE_EXACT_HEAD','git',['rev-parse',ref],{cwd:process.cwd(),maxMs:10_000})).toString().trim()===env.EXPECTED_HEAD_SHA,'ARCHIVE_MAIN_CHANGED');
+}
+function archiveInventoryOnlyReport(archive,inventory,indexCommitmentSha256,sourceHead){
+  need(inventory?.complete===true&&/^[a-f0-9]{64}$/.test(inventory.digest)
+    &&Array.isArray(inventory.relations)&&inventory.relations.length<=8192,'ARCHIVE_INVENTORY_INCOMPLETE');
+  const phases={};
+  for(const phase of ['DATA','HISTORY_DATA']){
+    const rows=inventory.relations.filter(r=>r.phase===phase);
+    phases[phase]={copyTargets:rows.filter(r=>r.kind==='COPY').length,sequenceTargets:rows.filter(r=>r.kind==='SEQUENCE').length};
+  }
+  const targets=[],unclassifiedBySchema={AUTH:0,STORAGE:0};let vendorTargetCount=0;
+  for(const row of inventory.relations){
+    assert.deepEqual(row,archiveRelationEntry(row.phase==='DATA'?'data.sql':'history-data.sql',row.kind,row.qualified));
+    if(!['AUTH','STORAGE'].includes(row.schemaClass))continue;
+    vendorTargetCount++;
+    if(row.relationClass!=='OTHER')continue;
+    const match=new RegExp('^('+COPY_IDENTIFIER+')\\.('+COPY_IDENTIFIER+')$').exec(row.qualified);
+    need(match,'ARCHIVE_RELATION_IDENTITY');
+    // Canonical SQL quoting only: preserve identifier case and exact UTF-8;
+    // no Unicode/case folding, whitespace or newline is added to the preimage.
+    const normalized=match.slice(1).map(v=>'"'+v.slice(1,-1).replaceAll('""','"').replaceAll('"','""')+'"').join('.');
+    const schema=row.schemaClass==='AUTH'?'auth':'storage';unclassifiedBySchema[row.schemaClass]++;
+    targets.push({schema,kind:row.kind,qualifiedNameSha256:sha(Buffer.from(normalized,'utf8'))});
+  }
+  targets.sort((a,b)=>a.schema.localeCompare(b.schema)||a.kind.localeCompare(b.kind)||a.qualifiedNameSha256.localeCompare(b.qualifiedNameSha256));
+  const report={schemaVersion:1,status:'INVENTORY_ONLY',scope:'authenticated-archive-relation-inventory-only',
+    sourceHead,archiveIndexCommitmentSha256:indexCommitmentSha256,manifestSha256:archive.manifestSha256,
+    completeParse:true,inventorySha256:inventory.digest,phases,
+    files:archive.files.map(f=>({file:f.file,bytes:f.bytes,sha256:f.sha256})),totalSqlBytes:archive.totalSqlBytes,
+    vendorTargetCount,classifiedVendorTargetCount:vendorTargetCount-targets.length,unclassifiedTargetCount:targets.length,unclassifiedBySchema,
+    qualifiedNameHashFormat:'canonical-sql-quoted-qualified-utf8-no-newline-sha256',targets,
+    rawNamesIncluded:false,columnsIncluded:false,rowsIncluded:false,sqlIncluded:false,
+    dockerInvoked:false,sqlExecuted:false,databaseRestoreExecuted:false,archiveWrittenThisOperation:false,
+    centralLocatorWrittenThisOperation:false,authRestoreVerified:false,fullDatabaseBackupVerified:false,freeReady:false};
+  need(Buffer.byteLength(JSON.stringify(report))<=P.diagnosticBytes,'ARCHIVE_INVENTORY_REPORT_BOUND');return report;
+}
+async function collectArchiveInventoryOnly(c,indexCommitmentSha256,{env=process.env,archive=null,run=command}={}){
+  need(c.archive===true&&archiveSelection(env)===indexCommitmentSha256,'ARCHIVE_INVENTORY_BINDING');
+  await requireArchiveCurrentMain(c,run,env);
+  const materialized=await materializeArchiveInputs(c,indexCommitmentSha256,{env,archive});
+  const inventory=await collectArchiveRelationInventory(c,materialized);
+  return archiveInventoryOnlyReport(materialized,inventory,indexCommitmentSha256,env.EXPECTED_HEAD_SHA);
+}
+async function archiveInventoryFixture(c,indexCommitmentSha256,temp,rootIdentity){
+  let result,error=null,closed=false;
+  try{result=await collectArchiveInventoryOnly(c,indexCommitmentSha256);}
+  catch(e){error=safeError(e,c.stage);}
+  finally{
+    c.deadline=Date.now()+P.cleanupMs;
+    try{
+      const st=await fs.lstat(c.root,{bigint:true});need(st.isDirectory()&&!st.isSymbolicLink()
+        &&st.dev===rootIdentity.dev&&st.ino===rootIdentity.ino&&inside(temp,await fs.realpath(c.root)),'SCRATCH_IDENTITY');
+      await fs.rm(c.root,{recursive:true,force:false});
+      closed=await fs.lstat(c.root).then(()=>false,e=>{if(e.code==='ENOENT')return true;throw e;});
+      need(closed,'SCRATCH_CLEANUP_UNPROVED');
+    }catch(e){error??=safeError(e,'SCRATCH_CLEANUP');}
+    console.log(JSON.stringify({...(!error?result:{status:'FAILED_CLOSED',scope:'authenticated-archive-relation-inventory-only',firstFailure:error,
+      rawNamesIncluded:false,columnsIncluded:false,rowsIncluded:false,sqlIncluded:false,dockerInvoked:false,sqlExecuted:false,
+      databaseRestoreExecuted:false,authRestoreVerified:false,fullDatabaseBackupVerified:false,freeReady:false}),ownedScratchClosed:closed}));
+    if(error)process.exitCode=1;
+  }
+}
+async function fixture({archive=false,inventoryOnly=false}={}){
+  need(typeof inventoryOnly==='boolean'&&(!inventoryOnly||archive===true),'ARCHIVE_INVENTORY_MODE');
   need(process.platform==='linux'&&process.env.GITHUB_ACTIONS==='true'&&process.env.RUNNER_ENVIRONMENT==='github-hosted'
     &&process.env.RUNNER_OS==='Linux'&&process.env.GITHUB_EVENT_NAME==='workflow_dispatch','HOSTED_LINUX_ONLY');
   need(process.env.GITHUB_REPOSITORY==='jakobjorgensen82-commits/RavRadar'&&process.env.GITHUB_RUN_ATTEMPT==='1','FIXED_REPOSITORY_ATTEMPT');
@@ -1200,6 +1267,7 @@ async function fixture({archive=false}={}){
   const rootIdentity=await fs.lstat(root,{bigint:true});
   const home=path.join(root,'home');await fs.mkdir(home,{mode:0o700});const owner=run+'-1';
   const c={root,home,owner,archive,stage:'PREFLIGHT',deadline:Date.now()+P.operationMs,processes:[],authRequests:[],dumps:[],images:null};
+  if(inventoryOnly)return archiveInventoryFixture(c,indexCommitmentSha256,temp,rootIdentity);
   const projects=['A','B'].map(side=>({side,id:'rr_restore_'+run+'_1_'+side.toLowerCase(),dir:path.join(root,side),network:'rr-restore-'+owner+'-'+side.toLowerCase()}));
   let result,error=null;
   try{
@@ -1208,9 +1276,7 @@ async function fixture({archive=false}={}){
     need((await command(c,'LOCAL_DAEMON','docker',['context','inspect','default','--format','{{.Endpoints.docker.Host}}'],{maxMs:20_000})).toString().trim()==='unix:///var/run/docker.sock','LOCAL_DAEMON');
     const [a,b]=projects;
     if(archive){
-      await command(c,'ARCHIVE_CURRENT_MAIN','git',['fetch','--no-tags','origin','+refs/heads/main:refs/remotes/origin/main'],{cwd:process.cwd(),maxMs:60_000});
-      for(const ref of ['HEAD^{commit}','origin/main^{commit}'])
-        need((await command(c,'ARCHIVE_EXACT_HEAD','git',['rev-parse',ref],{cwd:process.cwd(),maxMs:10_000})).toString().trim()===process.env.EXPECTED_HEAD_SHA,'ARCHIVE_MAIN_CHANGED');
+      await requireArchiveCurrentMain(c);
       result=await restoreArchive(c,b,indexCommitmentSha256);
     }else{
     await startProject(c,a);
@@ -1311,6 +1377,75 @@ async function selfTest(){
     try{await run({c,source,env,index,materialize,getObserved:()=>observed});}
     finally{await fs.rm(root,{recursive:true,force:false});}
   }
+  const inventoryEnv=(env,index)=>({...env,GITHUB_REF:'refs/heads/main',EXPECTED_HEAD_SHA:'c'.repeat(40),GITHUB_SHA:'c'.repeat(40),
+    RESTORE_ARCHIVE_INDEX_COMMITMENT:'rr-supabase-restore-v1:'+index,RESTORE_ARCHIVE_CONFIRMATION:ARCHIVE_CONFIRMATION});
+  const inventoryData='COPY "auth"."Private_Target_Sentinel" ("private_column") FROM stdin;\nprivate-row-never-output\n\\.\n'
+    +'COPY "auth"."users" ("id") FROM stdin;\n\\.\nCOPY "auth"."identities" ("id") FROM stdin;\n\\.\nCOPY "public"."Private_Public_Sentinel" ("value") FROM stdin;\nsecret-row\n\\.\n'
+    +`SELECT pg_catalog.setval('"storage"."Private_Sequence_Sentinel"', 7, true);\n`;
+  const inventoryHistory='COPY "supabase_migrations"."schema_migrations" ("version") FROM stdin;\n20200101\n\\.\n';
+  test('inventory-only uses the authenticated materializer and complete parser before any Docker or SQL',async()=>{
+    await ownArchive(async({c,env,index,materialize})=>{
+      c.archive=true;const calls=[];const selectedEnv=inventoryEnv(env,index);
+      const run=async(_c,stage,bin,args)=>{assert.equal(_c,c);assert.equal(bin,'git');calls.push([stage,...args]);
+        return Buffer.from(stage==='ARCHIVE_EXACT_HEAD'?selectedEnv.EXPECTED_HEAD_SHA+'\n':'');};
+      const archive=async(...args)=>{calls.push(['MATERIALIZE']);return materialize(...args);};
+      const report=await collectArchiveInventoryOnly(c,index,{env:selectedEnv,archive,run});
+      assert.deepEqual(calls.map(row=>row[0]),['ARCHIVE_CURRENT_MAIN','ARCHIVE_EXACT_HEAD','ARCHIVE_EXACT_HEAD','MATERIALIZE']);
+      assert.equal(report.status,'INVENTORY_ONLY');assert.equal(report.completeParse,true);
+      assert.equal(report.archiveIndexCommitmentSha256,index);assert.equal(report.manifestSha256,'b'.repeat(64));
+      assert.deepEqual(report.phases,{DATA:{copyTargets:4,sequenceTargets:1},HISTORY_DATA:{copyTargets:1,sequenceTargets:0}});
+      assert.equal(report.vendorTargetCount,4);assert.equal(report.unclassifiedTargetCount,2);
+      assert.deepEqual(report.unclassifiedBySchema,{AUTH:1,STORAGE:1});
+      assert.deepEqual(report.targets,[
+        {schema:'auth',kind:'COPY',qualifiedNameSha256:sha(Buffer.from('"auth"."Private_Target_Sentinel"'))},
+        {schema:'storage',kind:'SEQUENCE',qualifiedNameSha256:sha(Buffer.from('"storage"."Private_Sequence_Sentinel"'))},
+      ]);
+      assert.notEqual(report.targets[0].qualifiedNameSha256,sha(Buffer.from('"auth"."private_target_sentinel"')),'Quoted identifier case is exact');
+      assert.equal(report.files.length,5);assert.equal(report.totalSqlBytes,report.files.reduce((n,f)=>n+f.bytes,0));
+      for(const f of report.files){assert(ARCHIVE_FILES.includes(f.file));assert(Number.isSafeInteger(f.bytes)&&f.bytes>0);assert.match(f.sha256,/^[a-f0-9]{64}$/);}
+      for(const key of ['dockerInvoked','sqlExecuted','databaseRestoreExecuted','archiveWrittenThisOperation','centralLocatorWrittenThisOperation',
+        'authRestoreVerified','fullDatabaseBackupVerified','freeReady','rawNamesIncluded','columnsIncluded','rowsIncluded','sqlIncluded'])assert.equal(report[key],false);
+      assert.doesNotMatch(JSON.stringify(report),/Private_|private_column|private-row|secret-row|COPY |setval|SELECT /);
+      // Pure output-bound refusal only, not an authenticated inventory claim.
+      const tooWide={complete:true,digest:'d'.repeat(64),relations:Array.from({length:8192},(_,i)=>
+        archiveRelationEntry('data.sql','SEQUENCE','"storage"."synthetic_'+i+'"'))};
+      assert.throws(()=>archiveInventoryOnlyReport({files:report.files,totalSqlBytes:report.totalSqlBytes,manifestSha256:report.manifestSha256},
+        tooWide,index,selectedEnv.EXPECTED_HEAD_SHA),e=>e.code==='ARCHIVE_INVENTORY_REPORT_BOUND');
+      const source=fixture.toString();assert(source.indexOf('if(inventoryOnly)return archiveInventoryFixture(')<source.indexOf("'CLI_VERSION'"));
+    },{fileSql:{'data.sql':inventoryData,'history-data.sql':inventoryHistory}});
+  });
+  test('inventory-only preserves exact head/commitment/receipt/complete-parse refusals',async()=>{
+    for(const fault of ['COMMITMENT','MAIN','RECEIPT','UNSAFE_SQL','CHANGED_BYTES'])await ownArchive(async({c,env,index,materialize})=>{
+      c.archive=true;const selectedEnv=inventoryEnv(env,index);let materialized=false;
+      if(fault==='COMMITMENT')selectedEnv.RESTORE_ARCHIVE_INDEX_COMMITMENT='rr-supabase-restore-v1:'+'d'.repeat(64);
+      const run=async(_c,stage,bin)=>{assert.equal(bin,'git');return Buffer.from(stage==='ARCHIVE_EXACT_HEAD'
+        ?(fault==='MAIN'?'d'.repeat(40):selectedEnv.EXPECTED_HEAD_SHA)+'\n':'');};
+      const archive=async(...args)=>{materialized=true;const value=await materialize(...args);
+        if(fault==='RECEIPT')value.archiveWrittenThisOperation=true;
+        if(fault==='CHANGED_BYTES')await fs.appendFile(path.join(args[0].destination,'data.sql'),'-- changed\n');
+        return value;};
+      await assert.rejects(collectArchiveInventoryOnly(c,index,{env:selectedEnv,archive,run}),e=>/^(ARCHIVE_|MATERIALIZATION_)/.test(e.code??''));
+      if(['COMMITMENT','MAIN'].includes(fault))assert.equal(materialized,false,'Refuse before archive access');
+    },{fileSql:{'data.sql':fault==='UNSAFE_SQL'?'INSERT INTO public.private_table VALUES (1);\n':inventoryData,'history-data.sql':inventoryHistory}});
+  });
+  test('inventory-only has one explicit mode, the same archive locks/source gate and no CLI setup',async()=>{
+    await assert.rejects(fixture({archive:false,inventoryOnly:true}),e=>e.code==='ARCHIVE_INVENTORY_MODE');
+    const workflow=await fs.readFile(new URL('../.github/workflows/verify-supabase-cli-local-restore.yml',import.meta.url),'utf8');
+    const family="(inputs.restore_mode == 'archive' || inputs.restore_mode == 'archive-inventory')";
+    assert(workflow.includes('group: ${{ '+family+" && 'ravradar-isolated-archive-restore'"));
+    assert(workflow.includes('group: ${{ '+family+" && 'ravradar-trip-storage-production'"));
+    assert(workflow.includes('archive|archive-inventory)'));assert(workflow.includes("if: inputs.restore_mode != 'archive-inventory'"));
+    const inventoryStep=workflow.split('name: Read only the authenticated archive vendor-target inventory without Docker or SQL')[1];
+    assert(inventoryStep);assert.match(inventoryStep,/if: inputs.restore_mode == 'archive-inventory'/);
+    assert.match(inventoryStep,/--run-archive-inventory/);assert(!/--run-archive-restore|--capture|upload-artifact|continue-on-error/.test(inventoryStep));
+    assert(workflow.indexOf('Refuse missing exact source proof')<workflow.indexOf('name: Read only the authenticated archive vendor-target inventory'));
+    for(const args of [['--run-archive-inventory','--run-archive-restore'],['--run-archive-inventory','--run-local-fixture']]){
+      const env=Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','TEMP','TMP','HOME']
+        .filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]]));
+      const child=spawn(process.execPath,[fileURLToPath(import.meta.url),...args],{env,windowsHide:true,timeout:10_000,stdio:['ignore','ignore','ignore']});
+      const [code,signal]=await once(child,'close');assert.equal(signal,null);assert(Number.isInteger(code)&&code!==0,'Mixed fixed CLI modes refuse before any operation');
+    }
+  });
   const dumpFixture=()=>{
     const c={owner:'123-1',archive:false},p={side:'A',id:'rr_restore_123_1_a',network:'rr-restore-123-1-a',
       networkId:'b'.repeat(64),db:'a'.repeat(64),dbUrl:new URL('postgresql://postgres:synthetic%40%3A%2F%3F@127.0.0.1:54322/postgres')};
@@ -1843,12 +1978,12 @@ async function selfTest(){
   test('normal workflow keeps synthetic default, exact source gate, lock order and archive-only credentials',async()=>{
     const workflow=await fs.readFile(new URL('../.github/workflows/verify-supabase-cli-local-restore.yml',import.meta.url),'utf8');
     assert.doesNotMatch(workflow,/archive_index_sha|RESTORE_ARCHIVE_INDEX_SHA/);
-    assert.equal(workflow.split('inputs.archive_index_commitment').length,3);
+    assert.equal(workflow.split('inputs.archive_index_commitment').length,4);
     assert(workflow.includes('^rr-supabase-restore-v1:[a-f0-9]{64}$'));
-    assert.match(workflow,/default: synthetic[\s\S]*options: \[synthetic, archive\]/);
-    assert(workflow.indexOf('group: ${{ inputs.restore_mode')<workflow.indexOf('ravradar-trip-storage-production'));
+    assert.match(workflow,/default: synthetic[\s\S]*options: \[synthetic, archive, archive-inventory\]/);
+    assert(workflow.indexOf('group: ${{ (inputs.restore_mode')<workflow.indexOf('ravradar-trip-storage-production'));
     assert(workflow.indexOf('Refuse missing exact source proof')<workflow.indexOf('SUPABASE_SERVICE_ROLE_KEY:'));
-    const archiveStep=workflow.split('name: Materialize the exact authenticated archive and restore only to owned local PostgreSQL')[1];
+    const archiveStep=workflow.split('name: Materialize the exact authenticated archive and restore only to owned local PostgreSQL')[1].split('\n      - name:')[0];
     assert(archiveStep);assert.match(archiveStep,/if: inputs.restore_mode == 'archive'/);
     assert(!/SUPABASE_DB_PASSWORD|SUPABASE_ACCESS_TOKEN|CLOUDFLARE_API_TOKEN|GITHUB_TOKEN|upload-artifact|continue-on-error/.test(archiveStep));
     assert.match(archiveStep,/--run-archive-restore/);assert.match(workflow,/if: inputs.restore_mode == 'synthetic'[\s\S]*--run-local-fixture/);
@@ -2131,6 +2266,11 @@ if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.ur
   if(process.argv[2]==='--self-test')await selfTest();
   else if(process.argv[2]==='--run-local-fixture')await fixture().catch(e=>{
     console.log(JSON.stringify({status:'FAILED_CLOSED',scope:'synthetic-standard-cli-local-restore',firstFailure:safeError(e,'PREFLIGHT')}));process.exitCode=1;
+  });
+  else if(process.argv[2]==='--run-archive-inventory')await fixture({archive:true,inventoryOnly:true}).catch(e=>{
+    console.log(JSON.stringify({status:'FAILED_CLOSED',scope:'authenticated-archive-relation-inventory-only',
+      firstFailure:safeError(e,'PREFLIGHT'),rawNamesIncluded:false,columnsIncluded:false,rowsIncluded:false,sqlIncluded:false,
+      dockerInvoked:false,sqlExecuted:false,databaseRestoreExecuted:false,authRestoreVerified:false,fullDatabaseBackupVerified:false,freeReady:false}));process.exitCode=1;
   });
   else if(process.argv[2]==='--run-archive-restore')await fixture({archive:true}).catch(e=>{
     console.log(JSON.stringify({status:'FAILED_CLOSED',scope:'authenticated-archive-isolated-sql-restore',

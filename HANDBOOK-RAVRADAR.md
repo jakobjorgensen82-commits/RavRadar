@@ -10,7 +10,15 @@ Efter at den ejede Auth-tjeneste er stoppet og før original SQL udføres, læse
 
 Alle fem originale SQL-filer og deres identiteter bevares. Kontrollen efter DDL stopper fortsat før DATA ved en manglende relation eller forkert type. Hele DATA- og migrationshistorikforløbet, indholds- og dubletparitet, faktisk Auth-funktion og bekræftet oprydning af de ejede containere er fortsat nødvendige for et stærkt arkivbevis.
 
-Dette er en lokal kildekandidat. Den lokale selvtests udfald er UNKNOWN: værktøjet returnerede ikke et afsluttende procesresultat. Det er hverken PASS eller bevis for en produktfejl, og de tidligere syntetiske beviser kvalificerer ikke denne kandidat. Præcis kildekvalifikation, de fire Auth-mål, kolonnekompatibilitet og faktisk gendannelse af det samme originale arkiv er fortsat åbne. Autonom restorekvittering, backuprotation og samlet Free-klarhed kræver stadig deres egne beviser.
+Dette er en lokal kildekandidat. Den normale lokale selvtest på denne restorekode er bestået; den kvalificerer ikke det autentiske arkiv. Inventory-leveringens præcise kildekvalifikation, de fire Auth-mål, kolonnekompatibilitet og faktisk gendannelse af det samme originale arkiv er fortsat åbne. Autonom restorekvittering, backuprotation og samlet Free-klarhed kræver stadig deres egne beviser.
+
+### Læsende inventory fra det autentiske originalarkiv
+
+Den nye eksplicitte archive-inventory-tilstand bruger den eksisterende manuelle arkivkalder, samme kvalificerede aktuelle main, indekscommitment, bekræftelse og arkiv-/trip-låse. Den forlader forløbet før Supabase CLI, Docker, Auth og SQL. Der startes ingen gendannelse, backupoptagelse, beskæring, rotation eller automatisering.
+
+Læsende betyder her ingen ændring af fjernlager eller database, ikke ingen filhentning: den samme autentificerede materializer henter, dekrypterer og privat materialiserer alle fem originale SQL-filer. Der er derfor reelt wireforbrug for det valgte arkivs krypterede objekter, selv om den færdige rapport er lille. Begge DATA-filer gennemgås med den eksisterende komplette COPY-/setval-parser; originalerne ændres ikke.
+
+Rapporten viser faste skema- og typekategorier, tællere, filernes størrelser og identiteter samt SHA-256 af de ukategoriserede Auth-/Storage-måls præcist citerede navne. Frie relationer, kolonnenavne, SQL og rækker vises ikke. Ejet privat scratch fjernes med identitetskontrol og faktisk fraværsaflæsning. De fire eksisterende hele backupmål er bestået lokalt på samme kode: fixture-selvtest, arkivprøve, workflowprøve og lifecycleprøve. Præcis kildekvalifikation på inventory-leveringens endelige head og faktisk læsning af originalarkivet er fortsat åbne. Tilstanden er en kildekandidat; faktisk inventory, de ukendte leverandørmål, kompatibilitet og fuld arkiv-/Auth-gendannelse er fortsat åbne. Hashmetadata er hverken restore-PASS, autonom kvittering eller Free-klarhed.
 
 ## 89.349 — AI vælger fakta, serveren skriver svaret
 
@@ -166,7 +174,7 @@ Autoriteten er version.json.releaseContract.modelBindings og de aktuelle generer
 
 ### Hele SDK-native-prøven er en særskilt Linux-accept
 
-En privat kildekandidat giver den normale CURRENT-vej ansvar for den eksisterende dependency-prøve og hele nativefilens 19 cases. Dependency-prøven kommer først. Nativearbejdet bruger faktisk Node24 og egen npm-cache uden credentials; øvrig kildekontrol beholder Node22. Kun V4-kvitteringen får den præcise Pythonoperation. Gamle formater, PostgreSQL-/modelbeviser og produktionskontroller beholder deres betydning.
+Den kildekvalificerede normale CURRENT-vej har ansvar for den eksisterende dependency-prøve og hele nativefilens 19 cases. Dependency-prøven kommer først. Nativearbejdet bruger faktisk Node24 og egen npm-cache uden credentials; øvrig kildekontrol beholder Node22. Kun V4-kvitteringen får den præcise Pythonoperation. Gamle formater, PostgreSQL-/modelbeviser og produktionskontroller beholder deres betydning.
 
 Den historiske 598-V2-prøve læser sin samlede kontrol- og workflowkæde fra den allerede autentiske FULL-producent. Dens oprindelige V2-forventninger og beskyttede PG/C/I/T-input bevares. Den aktuelle V4-kæde prøves særskilt med aktuelle input; manglende historiske Gitobjekter afvises uden netværkshentning.
 
@@ -178,7 +186,7 @@ Den aktuelle forbruger af gamle V1-kvitteringer forbliver aktuel. Dens prøve st
 
 De to nye tidlige miljøsteps kræver begge succes og det autentiske workflow fra producerens head. Den hele lukkede inverse skal føre tilbage til det eksisterende FULL-grundlag. Gamle metadata beholder deres tidligere kontrol; ukendte workflowændringer giver ingen adgang. Friske kilde-, review-, input- og slutkontroller består.
 
-Den tilføjede SDK-case for tab af styrende proces efter PUT og før afsluttende ACK har bestået med hele filens 19 cases på Linux og faktisk Node24. Den samlede kildekontrol er fortsat åben efter det senere V1-fixtureafslag. Den skal vise produktets eget fysiske stop og reap før testoprydning, bevare original og skrivelås og undlade falsk gemmekvittering. Syntetiske PASS-rækker er formatdata, ikke native-eksekvering. Forberedelsen beviser hverken installeret kontrolvej eller løst produktion. Se også 89.232.
+Den tilføjede SDK-case for tab af styrende proces efter PUT og før afsluttende ACK har bestået med hele filens 19 cases på Linux og faktisk Node24. Den efterfølgende præcise kildekontrol bestod alle 17 valgte mål, er merget til main og har bestået normal main-admission. Det tidligere V1-fixtureafslag bevares som historik. Faktisk vejrbrug, tab af hele runneren og holdbar fjernlagring er fortsat særskilte åbne beviser. Den afgrænsede nativeprøve bekræfter produktets eget fysiske stop og reap før testoprydning, bevaret original og skrivelås og fravær af falsk gemmekvittering. Syntetiske PASS-rækker er formatdata, ikke native-eksekvering. Kildekvalifikation og main-admission beviser ikke faktisk vejrbrug eller løst produktion. Se også 89.232.
 
 Den kumulative kildekontrol tillader kun én præcis ændring af den manuelle arkivprøves yderste kø: fra vejrets kø til den isolerede arkivkø. Alle øvrige workflowbytes, fixtureimporter og kommandorammen skal være uændrede. Den syntetiske kø, trip-låsen, tidsgrænser, adgang og cleanup bevares. Hele backupområdets fire normale prøver og frisk uafhængig kontrol af kildeudvælgelsen kræves stadig. Dette giver hverken en bestået arkivgendannelse eller ret til rotation, beskæring eller Free-overgang.
 
@@ -238,6 +246,12 @@ En særskilt forberedt SDK-prøve undersøger tab af dens egen actionparent og k
 ### Plads til den komplette kildekvittering
 
 En kildekvittering kan fylde mere, når flere områder er ændret. V4-filen har i denne kildekandidat plads til 48 KiB inklusive linjeskift, og pladsen kontrolleres før prøveforberedelse og prøver. Det ændrer ingen resultater eller beviskrav. Ældre formater beholder 32 KiB, og den pakkede fil har fortsat højst 64 KiB. En planlagt byteberegning er ikke en bestået prøve eller ret til genbrug.
+
+### Den nye inventory-rolle skal kvalificeres som en ny mode
+
+Inventory er en reel ny CLI- og workflowsikkerhedsrolle, ikke den gamle kommandoramme kaldt uændret. Det eksisterende backupRestore-område tillader kun den faste inventory-kommando med ét modeargument og dens payloadfri fejlform. Den præcise inventory-tilføjelse kan føres tilbage til den tidligere dispatchramme; import- og dispatchkontrollens gamle pins og oprindelse bevares. Den tidligere særregel for arkivets yderste kø kan stadig sammensættes med denne navngivne tilføjelse.
+
+Workflowrollen omfatter kun den tredje choice med syntetisk standard, samme arkivfamilie i begge låse og input-/kildebetingelser, fravalgt CLI-klargøring og ét fast inventory-læsetrin. Alle øvrige bytes skal matche forgængeren. Ukendte modes, blandede argumenter, andre trin, credentials, ændrede låse, rettigheder eller kildegates giver ingen snæver adgang. Hele backupområdets fire normale mål er bestået lokalt. De relevante hele sourceControls-mål og frisk uafhængigt kontrolreview på inventory-leveringens endelige head kræves stadig. Beviser for gammel kode genfortolkes ikke, og normal PG/C/I/T-kvalifikation og faktisk levering er særskilte krav.
 
 ## 89.340 Ét sikkert Pages-genforsøg og frisk vejr bagefter
 
@@ -2235,7 +2249,7 @@ Status: PR623 har bestået præcis Linux/native/source/PostgreSQL og er merget, 
 
 ## 89.232 Cachegemning ved brat tab af den styrende proces
 
-**Afgrænset opfølgning, 15. november:** Den ene nye case gennem den eksisterende krypterede SDK-kalder har faktisk bestået på Linux med hele nativefilens 19 cases og faktisk Node24. Prøven bekræfter i dette afgrænsede syntetiske forløb produktets eget stop og reap før oprydning, samme original/skrivelås og fravær af falsk gemmekvittering. Den samlede kildekontrol stoppede senere på forældede V1-prøveinput. Ny samlet kvalifikation, sikker levering, hele runnerens tab og holdbar fjernlagring er fortsat særskilte beviser.
+**Afgrænset opfølgning, 15. november:** Den ene nye case gennem den eksisterende krypterede SDK-kalder har faktisk bestået på Linux med hele nativefilens 19 cases og faktisk Node24. Prøven bekræfter i dette afgrænsede syntetiske forløb produktets eget stop og reap før oprydning, samme original/skrivelås og fravær af falsk gemmekvittering. Den efterfølgende præcise kildekontrol bestod alle 17 valgte mål, er merget til main og har bestået normal main-admission. Det tidligere V1-fixtureafslag bevares som historik. Faktisk vejrbrug, tab af hele runneren og holdbar fjernlagring er fortsat særskilte åbne beviser.
 
 **Kort fortalt:** En afbrudt gemning skal stoppe sine egne underprocesser og bevare originaler og skrivelås; den må ikke vises som gemt.
 

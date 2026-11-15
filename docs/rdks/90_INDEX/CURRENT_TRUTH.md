@@ -1,6 +1,10 @@
-## 15. november — SDK-native-kontrol er privat forberedt
+## Privat arkiv-inventory er forberedt, ikke en gendannelse
 
-En privat kandidat lader den normale CURRENT-vej vælge dependency-prøven og hele den eksisterende nativefil med 19 cases på faktisk Node24. Øvrig kildekontrol beholder Node22. V4-kvitteringen kan bære den præcise Pythonoperation med samme normale plan-, review- og oprindelseskontrol; ældre formater ommærkes ikke. FULL-læserens nye to miljøsteps kræver den autentiske producer-heads hele workflow og den eksisterende lukkede inverse.
+En separat kildekandidat føjer læsende inventory til den eksisterende manuelle arkivkalder på samme kvalificerede main og under de samme arkiv-/trip-låse. Alle fem autentiske originale SQL-filer hentes, dekrypteres og privat materialiseres med wireforbrug. Rapporten indeholder kun faste kategorier, tællere og hashmetadata. Docker, SQL, restore, beskæring og rotation startes ikke. Den reelt nye CLI-/workflowrolle har afgrænset backupRestore-ansvar og kræver normale hele mål samt frisk kontrolreview. De fire eksisterende hele backupmål er bestået lokalt på samme kode: fixture-selvtest, arkivprøve, workflowprøve og lifecycleprøve. Præcis kildekvalifikation på inventory-leveringens endelige head og faktisk læsning af originalarkivet er fortsat åbne. Faktisk inventory, ukendte leverandørmål, originalrestore/Auth og Free-klarhed er fortsat åbne. Version 4.0.598 og alle øvrige bevisgrænser bevares; se håndbog 89.350 og 89.342.
+
+## 15. november — SDK-native-kontrol er kildekvalificeret og main-admitteret
+
+Den kildekvalificerede CURRENT-vej vælger dependency-prøven og hele den eksisterende nativefil med 19 cases på faktisk Node24. Øvrig kildekontrol beholder Node22. V4-kvitteringen kan bære den præcise Pythonoperation med samme normale plan-, review- og oprindelseskontrol; ældre formater ommærkes ikke. FULL-læserens nye to miljøsteps kræver den autentiske producer-heads hele workflow og den eksisterende lukkede inverse.
 
 De fire eksisterende native-/FULL-kontrollæsere og deres målprøver hører til det samme sourceControls-område. Området vælger også hele test-native-postgres-evidence.mjs og test-source-impact-full-baseline.mjs. Ukendte nabostier og ændrede beskyttede PG/C/I/T-input afvises fortsat; ændrede kontrollæsere kræver frisk uafhængig gennemgang. Det er ikke en ny PostgreSQL-eksekvering eller tilladelse til genbrug.
 
@@ -8,7 +12,7 @@ Den historiske V1-producentprøve bruger hele sit allerede autentiske program, s
 
 Den aktuelle forbruger af gamle V1-kvitteringer forbliver aktuel. Dens prøve stiller de kendte lazy-moduler, tre faktisk fraværende nyere navnerum og den aktuelle fire-producenthistorik til rådighed. Både normal opdagelse og genlæsning henter desuden den autentiske producer-heads workflow, når de præcise SDK-miljøsteps flytter de efterfølgende trinnumre. Navnene udløser kun læsning; hele workflow-inversen og alle metadata-, artifact-, review-, FULL-, race- og budgetkontroller bestemmer stadig accept. En særskilt normal SDK-kaldercase bruger reelt committed workflow og afviser forkert trinplacering eller sprunget miljøbevaring; dens syntetiske FULL-felter er ikke faktisk SQL-eksekvering.
 
-Den tilføjede SDK-case for tab af styrende proces har bestået sammen med hele filens 19 cases på Linux og faktisk Node24. Den samlede kildekontrol stoppede senere på forældede V1-prøveinput. Ny samlet kildekvalifikation, sikker levering og faktisk drift er særskilte åbne beviser. Der påstås ingen installeret ny kontrolvej eller rettet produktionsfejl. Version 4.0.598, PG/C/I/T, gamle SQL-bytes, numerik og produktionsgates bevares. Se DEC-0302 og håndbog 89.342/89.232.
+Hele nativefilens 19 cases har bestået på Linux med faktisk Node24. Den efterfølgende præcise kildekontrol bestod alle 17 valgte mål, er merget til main og har bestået normal main-admission. Det tidligere V1-fixtureafslag bevares som historik. Faktisk brug i en almindelig vejrkørsel, tab af hele runneren og holdbar fjernlagring er fortsat særskilte åbne beviser. Der påstås ingen rettet produktionsfejl. Version 4.0.598, PG/C/I/T, gamle SQL-bytes, numerik og produktionsgates bevares. Se DEC-0302 og håndbog 89.342/89.232.
 
 ## 15. november — entydigt evidensvalg og struktureret AI-svar
 

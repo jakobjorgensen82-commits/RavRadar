@@ -12,7 +12,7 @@ import {copernicusOfflineEnvironment} from './lib/copernicus-offline-environment
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {OWNED_CACHE_DEPENDENCY_COMMAND,OWNED_CACHE_NATIVE_COMMAND,currentChangeCommand} from './source-current-contract-receipt.mjs';
 import {inverseOwnedCacheNativeWorkflow,OWNED_CACHE_NATIVE_EARLY_NODE24} from './lib/source-impact-workflow-review.mjs';
-import {CURRENT_CONTRACT_COMMANDS,isBoundedLocalRestoreFixtureChange,isArchiveRestoreOuterQueueOnlyChange,pagesContractCommandsForChangedInputs,dmiBudgetWeatherBuildAreas,isDmiBudgetOnlyUpdaterChange,isDmiBudgetOnlySupervisorChange,isDmiCollectionRecoveryOnlyUpdaterChange,isDmiCollectionRecoveryOnlyFixtureChange,dmiCollectionRecoveryUpdaterAreas} from './source-current-contract-plan.mjs';
+import {CURRENT_CONTRACT_COMMANDS,isBoundedLocalRestoreFixtureChange,isArchiveRestoreOuterQueueOnlyChange,archiveRestoreWorkflowWithoutInventory,isArchiveRestoreWorkflowChange,pagesContractCommandsForChangedInputs,dmiBudgetWeatherBuildAreas,isDmiBudgetOnlyUpdaterChange,isDmiBudgetOnlySupervisorChange,isDmiCollectionRecoveryOnlyUpdaterChange,isDmiCollectionRecoveryOnlyFixtureChange,dmiCollectionRecoveryUpdaterAreas} from './source-current-contract-plan.mjs';
 
 import { WEATHER_PUBLICATION_PATHS, inversePrivateWeatherPublicationWorkflow, isPrivateWeatherPublicationWorkflowChange,
   PRIVATE_WEATHER_PUBLICATION_OWNER_EDITS, isAdditivePrivateWeatherPublicationOwnerChange } from './lib/private-weather-publication-workflow.mjs';
@@ -24,7 +24,7 @@ const adminHistoryScopeOnly=process.argv.includes('--admin-history-scope-only');
 const weatherPublicationScopeOnly=process.argv.includes('--weather-publication-scope-only');
 
 // The fixed restore command owns only its reviewed fixture body. Import and
-// dispatch frames remain immutable; its actual --self-test runs separately.
+// dispatch frames retain the old form plus the closed inventory mode; --self-test runs separately.
 const restoreFixture='scripts/test-supabase-cli-local-restore.mjs';
 const restoreSource=fs.readFileSync(new URL('./test-supabase-cli-local-restore.mjs',import.meta.url),'utf8').replaceAll('\r\n','\n');
 assert.deepEqual(CURRENT_CONTRACT_COMMANDS.backupRestore,['node '+restoreFixture+' --self-test',
@@ -311,7 +311,8 @@ function assertArchiveOuterQueuePlanScope({baselineCommit,baselineTree,rewriteTr
   const workflow='.github/workflows/verify-supabase-cli-local-restore.yml';
   const oldGroup="  group: ${{ inputs.restore_mode == 'archive' && 'ravradar-weather-production-v2' || 'ravradar-synthetic-standard-local-restore' }}\n";
   const newGroup=oldGroup.replace('ravradar-weather-production-v2','ravradar-isolated-archive-restore');
-  const original=workflowSource.includes(newGroup)?workflowSource.replace(newGroup,oldGroup):workflowSource;
+  const legacyWorkflow=archiveRestoreWorkflowWithoutInventory(workflowSource);
+  const original=legacyWorkflow.includes(newGroup)?legacyWorkflow.replace(newGroup,oldGroup):legacyWorkflow;
   assert.equal(original.split(oldGroup).length,2);
   const changed=original.replace(oldGroup,newGroup);
   const mutate=(source,from,to)=>{assert(source.includes(from),from);return source.replace(from,to);};
@@ -380,6 +381,90 @@ function assertArchiveOuterQueuePlanScope({baselineCommit,baselineTree,rewriteTr
 }
 // End archive outer queue scope assertions.
 
+
+// Inventory er en ny, lukket sikkerhedsrolle; gammel CLI/origin retagges ikke.
+function assertArchiveInventoryPlanScope({baselineCommit,baselineTree,rewriteTree,makeCommit,checkoutCommit,plan,restoreHead,fixtureSource,workflowSource}){
+  const fixture='scripts/test-supabase-cli-local-restore.mjs',workflow='.github/workflows/verify-supabase-cli-local-restore.yml';
+  const legacyWorkflow=archiveRestoreWorkflowWithoutInventory(workflowSource);
+  const branchStart=fixtureSource.indexOf("  else if(process.argv[2]==='--run-archive-inventory')");
+  const branchEnd=fixtureSource.indexOf("  else if(process.argv[2]==='--run-archive-restore')");
+  assert(branchStart>0&&branchEnd>branchStart);
+  const branch=fixtureSource.slice(branchStart,branchEnd),legacyFixture=fixtureSource.replace(branch,'');
+  assert.notEqual(legacyFixture,fixtureSource);
+  assert.equal(isBoundedLocalRestoreFixtureChange(legacyFixture,fixtureSource),true);
+  assert.equal(isBoundedLocalRestoreFixtureChange(fixtureSource,legacyFixture),true);
+  assert.equal(isArchiveRestoreWorkflowChange(legacyWorkflow,workflowSource),true);
+  assert.equal(isArchiveRestoreWorkflowChange(workflowSource,workflowSource),true);
+  const mutate=(source,from,to)=>{assert.equal(source.split(from).length,2,from);return source.replace(from,to);};
+  const badFixtures=[
+    ['unknown-mode',mutate(fixtureSource,"process.argv[2]==='--run-archive-inventory'","process.argv[2]==='--run-private-inventory'")],
+    ['mixed-mode',mutate(fixtureSource,"process.argv[2]==='--run-archive-inventory'","process.argv.includes('--run-archive-inventory')")],
+    ['mode-args',mutate(fixtureSource,'await fixture({archive:true,inventoryOnly:true}).catch','await fixture({archive:true}).catch')],
+    ['argc',mutate(fixtureSource,'process.argv.length===3','process.argv.length>=3')],
+    ['duplicate-branch',fixtureSource.slice(0,branchStart)+branch+fixtureSource.slice(branchStart)],
+  ];
+  for(const[label,source]of badFixtures)assert.equal(isBoundedLocalRestoreFixtureChange(legacyFixture,source),false,label);
+  const step=workflowSource.slice(workflowSource.indexOf('      - name: Read only the authenticated archive vendor-target inventory without Docker or SQL\n'));
+  assert(step.length>0&&step.includes('--run-archive-inventory'));
+  const sourceIf="        if: inputs.restore_mode == 'archive' || inputs.restore_mode == 'archive-inventory'\n";
+  assert.equal(workflowSource.split(sourceIf).length,4);
+  const badWorkflows=[
+    ['unknown-mode',mutate(workflowSource,'options: [synthetic, archive, archive-inventory]','options: [synthetic, archive, archive-inventory, other]')],
+    ['default',mutate(workflowSource,'        default: synthetic\n','        default: archive-inventory\n')],
+    ['trip-lock',mutate(workflowSource,'ravradar-trip-storage-production','other-trip-lock')],
+    ['outer-lock',mutate(workflowSource,'ravradar-isolated-archive-restore','other-archive-lock')],
+    ['permissions',mutate(workflowSource,'  contents: read\n','  contents: write\n')],
+    ['source-gate',workflowSource.replace(sourceIf,"        if: inputs.restore_mode == 'archive'\n")],
+    ['source-required',mutate(workflowSource,'outputs.required }}" = false','outputs.required }}" = true')],
+    ['inventory-sql',mutate(workflowSource,'run: node scripts/test-supabase-cli-local-restore.mjs --run-archive-inventory','run: node scripts/test-supabase-cli-local-restore.mjs --run-archive-restore')],
+    ['inventory-env',mutate(workflowSource,step,step.replace('          EXPECTED_HEAD_SHA:','          OTHER_EXPECTED_HEAD_SHA:'))],
+    ['cli-setup',mutate(workflowSource,"if: inputs.restore_mode != 'archive-inventory'","if: inputs.restore_mode == 'archive-inventory'")],
+    ['duplicate-step',workflowSource+step],['extra-step',workflowSource+'      - run: private-unreviewed-command\n'],
+    ['CRLF',workflowSource.replaceAll('\n','\r\n')],['NUL',workflowSource+'\0'],
+  ];
+  for(const[label,source]of badWorkflows)assert.equal(isArchiveRestoreWorkflowChange(legacyWorkflow,source),false,label);
+  const oldGroup="  group: ${{ inputs.restore_mode == 'archive' && 'ravradar-weather-production-v2' || 'ravradar-synthetic-standard-local-restore' }}\n";
+  const newGroup=oldGroup.replace('ravradar-weather-production-v2','ravradar-isolated-archive-restore');
+  assert.equal(legacyWorkflow.split(newGroup).length,2);
+  const oldQueueWorkflow=legacyWorkflow.replace(newGroup,oldGroup);
+  assert.equal(isArchiveRestoreWorkflowChange(oldQueueWorkflow,workflowSource),true);
+  const commands=CURRENT_CONTRACT_COMMANDS.backupRestore,results=[];
+  const expectedCommands=[...CURRENT_CONTRACT_COMMANDS.core,...commands];
+  const select=(label,previousFixture,previousWorkflow,nextFixture,nextWorkflow,extra=[])=>{
+    const tree=rewriteTree(baselineTree,[[fixture,Buffer.from(previousFixture)],[workflow,Buffer.from(previousWorkflow)]]);
+    const baseline=makeCommit(tree,[baselineCommit],'synthetic inventory baseline '+label);
+    const candidate=makeCommit(rewriteTree(tree,[[fixture,Buffer.from(nextFixture)],[workflow,Buffer.from(nextWorkflow)],...extra]),[baseline],'synthetic inventory '+label);
+    checkoutCommit(candidate);
+    const selected=plan({baselineCommit:baseline,candidateCommit:candidate,expectedHead:candidate});
+    results.push({label,plan:selected});return selected;
+  };
+  try{
+    for(const[label,previousFixture,previousWorkflow,nextFixture]of [
+      ['new-mode',legacyFixture,legacyWorkflow,fixtureSource],
+      ['cumulative-outer-queue-and-mode',legacyFixture,oldQueueWorkflow,fixtureSource],
+      ['installed-body',fixtureSource,workflowSource,fixtureSource.replace('const IMAGES=','// Synthetic reviewed inventory body\nconst IMAGES=')],
+      ['workflow-only',fixtureSource,legacyWorkflow,fixtureSource],
+    ]){
+      const selected=select(label,previousFixture,previousWorkflow,nextFixture,workflowSource);
+      assert.equal(selected.status,'PLANNED',label);assert.equal(selected.selection,'CURRENT_CONTRACTS');
+      assert.equal(selected.controlQualificationRequired,true);assert.deepEqual(selected.areas.backupRestore.commands,commands);
+      assert.deepEqual(selected.commands,expectedCommands);
+      assert.deepEqual(selected.protectedInputs,{postgresUnchanged:true,CUnchanged:true,IUnchanged:true,TUnchanged:true});
+    }
+    const fixtureRejected=select('unknown-cli',legacyFixture,legacyWorkflow,badFixtures[0][1],workflowSource);
+    assert.equal(fixtureRejected.selection,'FULL');assert.deepEqual(fixtureRejected.reasonCodes,['CURRENT_RESTORE_FIXTURE_SECURITY_FRAME_CHANGED']);
+    for(const label of ['source-gate','inventory-sql']){
+      const body=badWorkflows.find(row=>row[0]===label)[1];
+      const rejected=select(label,fixtureSource,workflowSource,fixtureSource,body);
+      assert.equal(rejected.selection,'FULL');assert.deepEqual(rejected.reasonCodes,['CURRENT_RESTORE_FIXTURE_WORKFLOW_CHANGED']);
+    }
+    const unknown=select('unknown-adjacent',legacyFixture,legacyWorkflow,fixtureSource,workflowSource,
+      [['scripts/archive-inventory-unknown-helper.mjs',Buffer.from('// Unknown inventory helper\n')]]);
+    assert.equal(unknown.selection,'FULL');assert.deepEqual(unknown.reasonCodes,['CURRENT_UNCLASSIFIED_PATH']);
+    return results;
+  }finally{checkoutCommit(restoreHead);}
+}
+// Slut på inventory-rollens normale plannerassertioner.
 
 // Existing source-control responsibility: exact controller/library/test paths,
 // whole normal targets, and no permission for adjacent unknown dependencies.
@@ -1572,6 +1657,12 @@ try{
     workflowSource:fs.readFileSync(new URL('../.github/workflows/verify-supabase-cli-local-restore.yml',import.meta.url),'utf8')});
   cases+=archiveQueueResults.length;
   scenarios.push('only the exact manual archive outer queue replacement composes with the unchanged fixture security frame; all four backup targets and fresh control review remain');
+  const archiveInventoryResults=assertArchiveInventoryPlanScope({baselineCommit:firstDelivery.main,
+    baselineTree:text(root,['rev-parse',firstDelivery.main+'^{tree}']),rewriteTree:rewrite,
+    makeCommit:commit,checkoutCommit:checkout,plan,restoreHead:head,fixtureSource:restoreSource,
+    workflowSource:fs.readFileSync(new URL('../.github/workflows/verify-supabase-cli-local-restore.yml',import.meta.url),'utf8')});
+  cases+=archiveInventoryResults.length;
+  scenarios.push('the fixed inventory CLI and workflow role select all four backup targets and fresh review; unknown mode, source/writer changes and adjacent paths refuse');
   const sourceAutonomyScopeResults=assertSourceAutonomyPlanScope({baselineCommit:firstDelivery.main,
     baselineTree:text(root,['rev-parse',firstDelivery.main+'^{tree}']),rewriteTree:rewrite,
     makeCommit:commit,checkoutCommit:checkout,plan,restoreHead:head});
