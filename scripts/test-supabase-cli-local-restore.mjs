@@ -17,6 +17,8 @@ import {pipeline} from 'node:stream/promises';
 const P=Object.freeze({cli:'2.117.0',operationMs:20*60_000,cleanupMs:2*60_000,
   childMs:8*60_000,diagnosticBytes:1024*1024,fileBytes:8*1024*1024,totalBytes:32*1024*1024});
 const IMAGES=Object.freeze({db:'supabase/postgres:17.6.1.167',kong:'kong:2.8.1',auth:'supabase/gotrue:v2.196.0'});
+const ARCHIVE_VENDOR_IMAGES=Object.freeze({auth:'supabase/gotrue:v2.197.0',storage:'supabase/storage-api:v1.86.0'});
+const ARCHIVE_VENDOR_PINS=Object.freeze({'gotrue-version':'v2.197.0\n','storage-version':'v1.86.0\n'});
 const EXCLUDE='realtime,storage-api,imgproxy,edge-runtime,postgres-meta,studio,supavisor,logflare,vector,mailpit,postgrest';
 const FILES=['roles.sql','schema.sql','data.sql','history_schema.sql','history_data.sql'];
 const ARCHIVE_FILES=['roles.sql','schema.sql','data.sql','history-schema.sql','history-data.sql'];
@@ -568,12 +570,75 @@ enabled = false
 [edge_runtime]
 enabled = false
 `;}
+function archiveVendorPinDirectory(c,p){
+  need(c.archive===true&&/^[1-9][0-9]{0,18}-1$/.test(c.owner??'')
+    &&p.side==='B'&&p.id==='rr_restore_'+c.owner.replace('-','_')+'_b'
+    &&path.isAbsolute(c.root)&&p.dir===path.join(c.root,'B'),'ARCHIVE_VENDOR_PROJECT');
+  return path.join(p.dir,'supabase','.temp');
+}
+async function verifyArchiveVendorBootstrap(c,p){
+  const directory=archiveVendorPinDirectory(c,p);
+  for(const at of [c.root,p.dir,path.dirname(directory),directory]){
+    const stat=await fs.lstat(at);
+    need(stat.isDirectory()&&!stat.isSymbolicLink(),'ARCHIVE_VENDOR_DIRECTORY');
+  }
+  const names=await fs.readdir(directory);
+  need(!names.includes('storage-migration'),'ARCHIVE_VENDOR_MIGRATION_CEILING');
+  need(!names.includes('project-ref')&&!names.includes('pooler-url'),'ARCHIVE_VENDOR_LINKED_PROJECT');
+  need(names.every(name=>name==='cli-latest'||Object.hasOwn(ARCHIVE_VENDOR_PINS,name)),'ARCHIVE_VENDOR_PIN_INVENTORY');
+  for(const [name,value]of Object.entries(ARCHIVE_VENDOR_PINS)){
+    const file=path.join(directory,name),named=await fs.lstat(file,{bigint:true});
+    const regular=stat=>{
+      need(stat.isFile()&&!stat.isSymbolicLink()&&stat.nlink===1n,'ARCHIVE_VENDOR_PIN_FILE');
+      if(process.platform==='linux')need((stat.mode&0o077n)===0n&&stat.uid===BigInt(process.getuid()),'ARCHIVE_VENDOR_PIN_PERMISSIONS');
+    };
+    regular(named);need(named.size===BigInt(Buffer.byteLength(value)),'ARCHIVE_VENDOR_PIN_VALUE');
+    const handle=await fs.open(file,constants.O_RDONLY|(constants.O_NOFOLLOW||0));
+    try{
+      const before=await handle.stat({bigint:true});regular(before);assert.deepEqual(fileIdentity(before),fileIdentity(named));
+      const buffer=Buffer.alloc(Buffer.byteLength(value)+1),read=await handle.read(buffer,0,buffer.length,0);
+      need(read.bytesRead===Buffer.byteLength(value)&&buffer.subarray(0,read.bytesRead).equals(Buffer.from(value)),'ARCHIVE_VENDOR_PIN_VALUE');
+      const after=await handle.stat({bigint:true}),fresh=await fs.lstat(file,{bigint:true});regular(fresh);
+      assert.deepEqual(fileIdentity(before),fileIdentity(after));assert.deepEqual(fileIdentity(after),fileIdentity(fresh));
+    }finally{await handle.close();}
+  }
+}
+async function prepareArchiveVendorBootstrap(c,p){
+  const directory=archiveVendorPinDirectory(c,p);
+  for(const at of [c.root,p.dir,path.dirname(directory)]){
+    const stat=await fs.lstat(at);
+    need(stat.isDirectory()&&!stat.isSymbolicLink(),'ARCHIVE_VENDOR_DIRECTORY');
+  }
+  await fs.mkdir(directory,{mode:0o700}).catch(error=>{if(error.code!=='EEXIST')throw error;});
+  const stat=await fs.lstat(directory);
+  need(stat.isDirectory()&&!stat.isSymbolicLink(),'ARCHIVE_VENDOR_DIRECTORY');
+  const names=await fs.readdir(directory);
+  need(!names.includes('storage-migration'),'ARCHIVE_VENDOR_MIGRATION_CEILING');
+  need(!names.includes('project-ref')&&!names.includes('pooler-url'),'ARCHIVE_VENDOR_LINKED_PROJECT');
+  // The CLI may keep its own latest-version cache; no prior service pins are adopted.
+  need(names.every(name=>name==='cli-latest'),'ARCHIVE_VENDOR_PIN_EXISTS');
+  for(const [name,value]of Object.entries(ARCHIVE_VENDOR_PINS))
+    await fs.writeFile(path.join(directory,name),value,{flag:'wx',mode:0o600});
+  await verifyArchiveVendorBootstrap(c,p);
+}
+function serviceImageMetadata(c,p,service,info,image){
+  need(c.archive!==true||p.side==='B','ARCHIVE_VENDOR_PROJECT');
+  const expected=c.archive===true&&service==='auth'?ARCHIVE_VENDOR_IMAGES.auth:IMAGES[service];
+  need(typeof expected==='string','UNEXPECTED_SERVICE_IMAGE');
+  // Keep normal registry/mirror selection, exact tag, content identity and digest checks.
+  const short=expected.split('/').at(-1);
+  need(image.Id===info.Image&&typeof info.Config.Image==='string'
+    &&info.Config.Image.split('/').at(-1)===short,'UNEXPECTED_SERVICE_IMAGE');
+  need(Array.isArray(image.RepoDigests)&&image.RepoDigests.length>0,'IMAGE_DIGEST_REQUIRED');
+  return {id:image.Id,digests:[...image.RepoDigests].sort()};
+}
 async function startProject(c,p){
   await fs.mkdir(p.dir,{mode:0o700});await projectsAbsent(c,p);
   const before=(await command(c,'NETWORK_ABSENCE','docker',['network','ls','-q','--filter','name=^'+p.network+'$'])).toString().trim();
   need(!before,'NETWORK_ALREADY_EXISTS');
   await command(c,'INIT_'+p.side,'supabase',['init','--yes'],{cwd:p.dir,maxMs:30_000});
   await fs.writeFile(path.join(p.dir,'supabase/config.toml'),config(p.id,p.side==='B',c.archive===true),{mode:0o600});
+  if(c.archive===true)await prepareArchiveVendorBootstrap(c,p);
   p.networkCreateAttempted=true;
   const raw=await command(c,'CREATE_NETWORK_'+p.side,'docker',['network','create','--driver','bridge',
     ...(c.archive?['--internal']:[]),
@@ -588,17 +653,12 @@ async function startProject(c,p){
   try{
     await command(c,'START_'+p.side,'supabase',['--network-id',p.network,'start','--exclude',EXCLUDE],{cwd:p.dir});
   }finally{if(relay)await relay.close();}
+  if(c.archive===true)await verifyArchiveVendorBootstrap(c,p);
   const actual={};
   for(const service of ['db','kong','auth']){
     const info=(await jsonCommand(c,'INSPECT_'+p.side+'_'+service,['inspect','supabase_'+service+'_'+p.id]))[0];
     p[service]=ownedContainer(info,p,service,c.archive);const image=(await jsonCommand(c,'IMAGE_'+service,['image','inspect',info.Image]))[0];
-    // The clean, unlinked CLI chooses its own normal public registry/mirror.
-    // Verify exact service/tag as well as content identity; do not assume a Docker Hub alias.
-    const short=IMAGES[service].split('/').at(-1);
-    need(image.Id===info.Image&&typeof info.Config.Image==='string'
-      &&info.Config.Image.split('/').at(-1)===short,'UNEXPECTED_SERVICE_IMAGE');
-    need(Array.isArray(image.RepoDigests)&&image.RepoDigests.length>0,'IMAGE_DIGEST_REQUIRED');
-    actual[service]={id:image.Id,digests:[...image.RepoDigests].sort()};
+    actual[service]=serviceImageMetadata(c,p,service,info,image);
   }
   const found=(await command(c,'EXACT_SERVICE_SET','docker',['ps','--no-trunc','-aq','--filter','label=com.supabase.cli.project='+p.id])).toString().trim().split(/\s+/).filter(Boolean);
   assert.deepEqual(found.sort(),[p.db,p.kong,p.auth].sort());
@@ -851,6 +911,10 @@ const ARCHIVE_FIXED_RELATIONS=Object.freeze({
   '"auth"."webauthn_challenges"':'AUTH_WEBAUTHN_CHALLENGES',
   '"storage"."iceberg_namespaces"':'STORAGE_ICEBERG_NAMESPACES',
   '"storage"."iceberg_tables"':'STORAGE_ICEBERG_TABLES',
+  '"auth"."scim_users"':'AUTH_SCIM_USERS','"auth"."scim_tokens"':'AUTH_SCIM_TOKENS',
+  '"auth"."mfa_recovery_code_sets"':'AUTH_MFA_RECOVERY_CODE_SETS','"auth"."mfa_recovery_codes"':'AUTH_MFA_RECOVERY_CODES',
+  '"storage"."bucket_lifecycle_states"':'STORAGE_BUCKET_LIFECYCLE_STATES',
+  '"storage"."lifecycle_abandoned_artifacts"':'STORAGE_LIFECYCLE_ABANDONED_ARTIFACTS',
   '"auth"."refresh_tokens_id_seq"':'AUTH_REFRESH_TOKENS_ID_SEQUENCE',
 });
 const ARCHIVE_LOCAL_AUTH_METADATA=Object.freeze({bytes:16*1024,versions:512});
@@ -881,7 +945,7 @@ function archiveLocalAuthBootstrapSql(c){
     +" WHEN relkind='S' THEN 'SEQUENCE' ELSE 'OTHER_KIND' END) ORDER BY relation_class COLLATE \"C\",kind COLLATE \"C\")"
     +" FROM observed WHERE relation_class<>'OTHER'),'[]'::jsonb)";
   const fields="'kind','ARCHIVE_LOCAL_AUTH_BOOTSTRAP_V1','measurementPoint','AFTER_AUTH_STOP_BEFORE_ORIGINAL_SQL',"
-    +"'inventorySha256',"+sqlString(inventory.digest)+",'authTag',"+sqlString(IMAGES.auth.split('/').at(-1))+","
+    +"'inventorySha256',"+sqlString(inventory.digest)+",'authTag',"+sqlString(ARCHIVE_VENDOR_IMAGES.auth.split('/').at(-1))+","
     +"'authImageSha256',"+sqlString(authImageSha256)+",'targetCount',(SELECT count(*) FROM observed),"
     +"'unclassifiedTargetCount',(SELECT count(*) FROM observed WHERE relation_class='OTHER'),'fixedTargets',"+targets+","
     +"'migrationTableKind',"+migrationKind;
@@ -919,7 +983,7 @@ function readArchiveLocalAuthBootstrap(c,bytes){
   need(exact(value,keys),'ARCHIVE_LOCAL_AUTH_REPORT_FIELDS');
   const {inventory,rows,fixed,authImageSha256}=archiveLocalAuthBootstrapScope(c);
   need(value.kind==='ARCHIVE_LOCAL_AUTH_BOOTSTRAP_V1'&&value.measurementPoint==='AFTER_AUTH_STOP_BEFORE_ORIGINAL_SQL'
-    &&value.inventorySha256===inventory.digest&&value.authTag===IMAGES.auth.split('/').at(-1)
+    &&value.inventorySha256===inventory.digest&&value.authTag===ARCHIVE_VENDOR_IMAGES.auth.split('/').at(-1)
     &&value.authImageSha256===authImageSha256,'ARCHIVE_LOCAL_AUTH_REPORT_IDENTITY');
   need(value.targetCount===rows.length&&value.unclassifiedTargetCount===rows.length-fixed.length
     &&Array.isArray(value.fixedTargets)&&value.fixedTargets.length===fixed.length,'ARCHIVE_LOCAL_AUTH_REPORT_TARGETS');
@@ -1469,6 +1533,79 @@ async function selfTest(){
     assert(EXCLUDE.split(',').includes('storage-api'));
     assert.match(startProject.toString(),/config\(p\.id,p\.side==='B',c\.archive===true\)/);
   });
+  async function ownVendorBootstrap(run){
+    await ownArchive(async({c})=>{
+      c.archive=true;c.owner='123-1';
+      const p={side:'B',id:'rr_restore_123_1_b',dir:path.join(c.root,'B')};
+      await fs.mkdir(path.join(p.dir,'supabase'),{recursive:true,mode:0o700});
+      await run(c,p);
+    });
+  }
+  test('fresh unlinked archive B alone receives create-only normal vendor version pins',async()=>{
+    await ownVendorBootstrap(async(c,p)=>{
+      const directory=archiveVendorPinDirectory(c,p);
+      for(const [context,project]of [[{...c,archive:false},p],[c,{...p,side:'A'}],[c,{...p,id:'other'}],[c,{...p,dir:c.root}]])
+        await assert.rejects(()=>prepareArchiveVendorBootstrap(context,project),error=>error.code==='ARCHIVE_VENDOR_PROJECT');
+      await fs.mkdir(directory,{mode:0o700});
+      await fs.writeFile(path.join(directory,'cli-latest'),'3.1.0\n',{flag:'wx',mode:0o600});
+      await prepareArchiveVendorBootstrap(c,p);await verifyArchiveVendorBootstrap(c,p);
+      assert.equal(await fs.readFile(path.join(directory,'gotrue-version'),'utf8'),'v2.197.0\n');
+      assert.equal(await fs.readFile(path.join(directory,'storage-version'),'utf8'),'v1.86.0\n');
+      assert.deepEqual((await fs.readdir(directory)).sort(),['cli-latest','gotrue-version','storage-version']);
+      await assert.rejects(()=>prepareArchiveVendorBootstrap(c,p),error=>error.code==='ARCHIVE_VENDOR_PIN_EXISTS');
+      assert.equal(P.cli,'2.117.0');assert.equal(IMAGES.auth,'supabase/gotrue:v2.196.0');
+      for(const [name,service]of [['gotrue-version','auth'],['storage-version','storage']])
+        assert.equal(ARCHIVE_VENDOR_PINS[name],ARCHIVE_VENDOR_IMAGES[service].split(':').at(-1)+'\n');
+      const body=startProject.toString();
+      assert(body.indexOf("['init','--yes']")<body.indexOf('prepareArchiveVendorBootstrap'));
+      assert(body.indexOf('prepareArchiveVendorBootstrap')<body.indexOf("'CREATE_NETWORK_'"));
+      assert(body.indexOf("'START_'")<body.indexOf('verifyArchiveVendorBootstrap'));
+      assert(body.includes('if(c.archive===true)await prepareArchiveVendorBootstrap(c,p)'));
+      assert(body.includes('if(c.archive===true)await verifyArchiveVendorBootstrap(c,p)'));
+    });
+  });
+  test('archive vendor pins refuse a linked project stale ceiling or any pre-existing service pin',async()=>{
+    for(const [name,code]of [['project-ref','ARCHIVE_VENDOR_LINKED_PROJECT'],['pooler-url','ARCHIVE_VENDOR_LINKED_PROJECT'],
+      ['storage-migration','ARCHIVE_VENDOR_MIGRATION_CEILING'],['gotrue-version','ARCHIVE_VENDOR_PIN_EXISTS'],
+      ['storage-version','ARCHIVE_VENDOR_PIN_EXISTS'],['realtime-version','ARCHIVE_VENDOR_PIN_EXISTS'],['unknown','ARCHIVE_VENDOR_PIN_EXISTS']])
+      await ownVendorBootstrap(async(c,p)=>{
+        const directory=archiveVendorPinDirectory(c,p);await fs.mkdir(directory,{mode:0o700});
+        await fs.writeFile(path.join(directory,name),'stale-owned-sentinel',{flag:'wx',mode:0o600});
+        await assert.rejects(()=>prepareArchiveVendorBootstrap(c,p),error=>error.code===code);
+        assert.deepEqual(await fs.readdir(directory),[name]);
+        assert.equal(await fs.readFile(path.join(directory,name),'utf8'),'stale-owned-sentinel');
+      });
+  });
+  test('archive vendor pin readback refuses changed bytes hardlinks redirected directories and later ceilings',async()=>{
+    for(const fault of ['value','hardlink','directory','ceiling'])await ownVendorBootstrap(async(c,p)=>{
+      const directory=archiveVendorPinDirectory(c,p);await prepareArchiveVendorBootstrap(c,p);
+      const pin=path.join(directory,'storage-version');
+      if(fault==='value')await fs.writeFile(pin,'v1.72.1\n');
+      if(fault==='hardlink')await fs.link(pin,path.join(c.root,'owned-pin-alias'));
+      if(fault==='directory'){
+        await fs.rename(directory,path.join(c.root,'owned-pins'));
+        await fs.symlink(path.join(c.root,'owned-pins'),directory,process.platform==='win32'?'junction':'dir');
+      }
+      if(fault==='ceiling')await fs.writeFile(path.join(directory,'storage-migration'),'0067-objects-null-version-index',{flag:'wx',mode:0o600});
+      await assert.rejects(()=>verifyArchiveVendorBootstrap(c,p),error=>/^ARCHIVE_VENDOR_/.test(error.code??''));
+    });
+  });
+  test('archive B uses exact Auth197 while synthetic A and B retain exact Auth196 and the same other images',()=>{
+    const imageId='sha256:'+'a'.repeat(64),image={Id:imageId,RepoDigests:['synthetic-public-image-digest']};
+    const info=tag=>({Image:imageId,Config:{Image:'ghcr.io/supabase/'+tag}});
+    for(const side of ['A','B']){
+      assert.equal(serviceImageMetadata({archive:false},{side},'auth',info('gotrue:v2.196.0'),image).id,imageId);
+      assert.throws(()=>serviceImageMetadata({archive:false},{side},'auth',info('gotrue:v2.197.0'),image),error=>error.code==='UNEXPECTED_SERVICE_IMAGE');
+    }
+    assert.equal(serviceImageMetadata({archive:true},{side:'B'},'auth',info('gotrue:v2.197.0'),image).id,imageId);
+    for(const tag of ['gotrue:v2.196.0','gotrue:v2.198.0','gotrue:latest'])
+      assert.throws(()=>serviceImageMetadata({archive:true},{side:'B'},'auth',info(tag),image),error=>error.code==='UNEXPECTED_SERVICE_IMAGE');
+    assert.throws(()=>serviceImageMetadata({archive:true},{side:'A'},'auth',info('gotrue:v2.197.0'),image),error=>error.code==='ARCHIVE_VENDOR_PROJECT');
+    for(const service of ['db','kong'])for(const archive of [false,true])
+      assert.equal(serviceImageMetadata({archive},{side:'B'},service,info(IMAGES[service].split('/').at(-1)),image).id,imageId);
+    assert.throws(()=>serviceImageMetadata({archive:true},{side:'B'},'auth',info('gotrue:v2.197.0'),{...image,Id:'sha256:'+'b'.repeat(64)}));
+    assert.throws(()=>serviceImageMetadata({archive:true},{side:'B'},'auth',info('gotrue:v2.197.0'),{...image,RepoDigests:[]}),error=>error.code==='IMAGE_DIGEST_REQUIRED');
+  });
   async function ownLocalAuthBootstrap(run){
     const data=[
       'COPY "auth"."users" ("id") FROM stdin;',
@@ -1489,7 +1626,7 @@ async function selfTest(){
       c.archiveRelationInventory=await collectArchiveRelationInventory(c,archive);c.stage='QUIESCE_B_AUTH';
       const p={side:'B',db:'e'.repeat(64)};
       const report={kind:'ARCHIVE_LOCAL_AUTH_BOOTSTRAP_V1',measurementPoint:'AFTER_AUTH_STOP_BEFORE_ORIGINAL_SQL',
-        inventorySha256:c.archiveRelationInventory.digest,authTag:'gotrue:v2.196.0',authImageSha256:'d'.repeat(64),
+        inventorySha256:c.archiveRelationInventory.digest,authTag:'gotrue:v2.197.0',authImageSha256:'d'.repeat(64),
         targetCount:5,unclassifiedTargetCount:1,fixedTargets:[
           {label:'AUTH_IDENTITIES',kind:'COPY',state:'TABLE'},
           {label:'AUTH_USERS',kind:'COPY',state:'TABLE'},
@@ -1556,6 +1693,7 @@ async function selfTest(){
       for(const edit of [
         v=>v.raw='PRIVATE_PAYLOAD_SENTINEL',
         v=>v.authTag='PRIVATE_IMAGE_SENTINEL',
+        v=>v.authTag='gotrue:v2.196.0',
         v=>v.authImageSha256='a'.repeat(64),
         v=>v.inventorySha256='b'.repeat(64),
         v=>v.measurementPoint='AFTER_ORIGINAL_SQL',
@@ -1594,6 +1732,10 @@ async function selfTest(){
       ['"auth"."refresh_tokens_id_seq"','AUTH_REFRESH_TOKENS_ID_SEQUENCE','SEQUENCE'],
       ['"storage"."iceberg_namespaces"','STORAGE_ICEBERG_NAMESPACES','COPY'],
       ['"storage"."iceberg_tables"','STORAGE_ICEBERG_TABLES','COPY'],
+      ['"auth"."scim_users"','AUTH_SCIM_USERS','COPY'],['"auth"."scim_tokens"','AUTH_SCIM_TOKENS','COPY'],
+      ['"auth"."mfa_recovery_code_sets"','AUTH_MFA_RECOVERY_CODE_SETS','COPY'],['"auth"."mfa_recovery_codes"','AUTH_MFA_RECOVERY_CODES','COPY'],
+      ['"storage"."bucket_lifecycle_states"','STORAGE_BUCKET_LIFECYCLE_STATES','COPY'],
+      ['"storage"."lifecycle_abandoned_artifacts"','STORAGE_LIFECYCLE_ABANDONED_ARTIFACTS','COPY'],
     ])assert.equal(archiveRelationEntry('data.sql',kind,qualified).relationClass,label);
     for(const qualified of ['"auth"."PRIVATE_RELATION_SENTINEL"','"storage"."future_vendor_table"','"public"."users"'])
       assert.equal(archiveRelationEntry('data.sql','COPY',qualified).relationClass,'OTHER');
