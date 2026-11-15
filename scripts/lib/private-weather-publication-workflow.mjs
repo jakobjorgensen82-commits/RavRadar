@@ -65,7 +65,7 @@ export const PRIVATE_WEATHER_PUBLICATION_OWNER_EDITS = Object.freeze([
   ],
   [
     "  try{assert(before!==after);const restored=restoreOwnedDmiBudgetSteps(before,after);\n",
-    "  try{assert(before!==after);if(isPrivateWeatherPublicationWorkflowChange(before,after))return ['weatherPublication'];\n    const restored=restoreOwnedDmiBudgetSteps(before,after);\n"
+    "  try{assert(before!==after);if(isPrivateWeatherPublicationWorkflowChange(before,after))return ['weatherPublication'];\n    const oldPublication=inversePrivateWeatherPublicationWorkflow(Buffer.from(before)).toString('utf8');\n    const nextPublication=inversePrivateWeatherPublicationWorkflow(Buffer.from(after)).toString('utf8');\n    const hadPublication=oldPublication!==before,hasPublication=nextPublication!==after;\n    if(hadPublication||hasPublication){\n      if(hadPublication&&!hasPublication)return null;\n      // At most one recursion: both normal forms now contain only the old entry.\n      const areas=dmiBudgetWeatherBuildAreas(oldPublication,nextPublication)\n        ??(isPagesOnlyWeatherBuildChange(oldPublication,nextPublication)?['pages']\n          :isSupportOnlyWeatherBuildChange(oldPublication,nextPublication)?['workflowSupport']\n          :isPagesAndSupportOnlyWeatherBuildChange(oldPublication,nextPublication)?['pages','workflowSupport']:null);\n      return areas?(hadPublication?areas:[...areas,'weatherPublication']):null;\n    }\n    const restored=restoreOwnedDmiBudgetSteps(before,after);\n"
   ],
   [
     "      const dmiAreas=file===WEATHER_BUILD?dmiBudgetWeatherBuildAreas(\n",

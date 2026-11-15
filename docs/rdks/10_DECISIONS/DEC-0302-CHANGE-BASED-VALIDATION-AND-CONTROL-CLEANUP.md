@@ -4,7 +4,7 @@ Det eksisterende CURRENT-katalog får ét præcist `weatherPublication`-område 
 
 Fælles pure-regel genkender kun den præcise nye publiceringsentry med samme argv i det almindelige vejrworkflow og code-only-kalderen. Alle andre workflowbytes og deres tidligere routing bevares. Ukendt code-only-drift går fortsat til sine oprindelige bredere mål; det bliver ikke ny transportadmission. PostgreSQL/C/I/T kvalificeres stadig selvstændigt på deres faktiske input.
 
-Cross-head stage-source må kun acceptere den retningsbestemte additive ejer-operation: import, de to deklarationer, den lukkede routingtilslutning og kontrolflaget rekonstruerer hele den gamle planner byteidentisk. Ejerfjernelse, ændret gammel mapping/routing/flag eller andre controllerændringer afvises. Ingen plannerfil ignoreres, og der tilføjes ingen per-head hashgruppe. Aktuel kilde-CI, autenticitet, parent-CAS, GCM, originaler og produktionsgates er fortsat nødvendige.
+Cross-head stage-source må kun acceptere den retningsbestemte additive ejer-operation: import, de to deklarationer, den lukkede routingtilslutning og kontrolflaget rekonstruerer hele den gamle planner byteidentisk. Ejerfjernelse, ændret gammel mapping/routing/flag eller andre controllerændringer afvises. Ingen plannerfil ignoreres, og der tilføjes ingen per-head hashgruppe. Kumulativt sammensættes kun de eksisterende Pages-/support-/DMI-inverser med den samme rene publish-inverse. Når begge kilder allerede bruger den nye entry, bevares de oprindelige områder; fjernelse af entry afvises også ved staged-kildesammenligning. Aktuel kilde-CI, autenticitet, parent-CAS, GCM, originaler og produktionsgates er fortsat nødvendige.
 
 ## Tillæg 14. november 2026 — naturligt ansvar for kilde- og cadencekontrol
 

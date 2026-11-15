@@ -195,8 +195,12 @@ function compareSource({ root, producerHead, consumerHead }, requireCleanCheckou
     }
     if ([BUILD, ONCE, CODE_ONLY].includes(name) && old?.mode === '100644' && current?.mode === '100644'
       && old.type === 'blob' && current.type === 'blob') {
-      const normalizedBefore = ordinaryStageCalculationWorkflow(git(['cat-file', 'blob', old.blob]));
-      const normalizedAfter = ordinaryStageCalculationWorkflow(git(['cat-file', 'blob', current.blob]));
+      const beforeBytes = git(['cat-file', 'blob', old.blob]), afterBytes = git(['cat-file', 'blob', current.blob]);
+      if (!inversePrivateWeatherPublicationWorkflow(beforeBytes).equals(beforeBytes)
+        && inversePrivateWeatherPublicationWorkflow(afterBytes).equals(afterBytes))
+        fail('ORDINARY_STAGE_SOURCE_CALCULATION_DRIFT');
+      const normalizedBefore = ordinaryStageCalculationWorkflow(beforeBytes);
+      const normalizedAfter = ordinaryStageCalculationWorkflow(afterBytes);
       if (!normalizedBefore.equals(normalizedAfter)) fail('ORDINARY_STAGE_SOURCE_CALCULATION_DRIFT');
       invertedWorkflows++; continue;
     }

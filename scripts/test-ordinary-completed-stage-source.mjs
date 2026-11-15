@@ -185,6 +185,15 @@ test('committed source reuse compares all calculation objects and only exact sto
   assert.equal(delivery.consumerHead, normalConsumer);
   for (const [file, source] of [['.github/workflows/reusable-weather-build.yml', currentBuild],
     ['.github/workflows/deploy-code-only-repair.yml', codeOnly]]) {
+    await write(file, inversePrivateWeatherPublicationWorkflow(source));
+    const reverseHead = commit('synthetic reverse publication entry is refused');
+    assert.throws(() => assertOrdinaryCompletedStageSource({ root,
+      producerHead: normalConsumer, consumerHead: reverseHead }), { code: 'ORDINARY_STAGE_SOURCE_CALCULATION_DRIFT' });
+    refused++;
+    git('switch', '--detach', normalConsumer);
+  }
+  for (const [file, source] of [['.github/workflows/reusable-weather-build.yml', currentBuild],
+    ['.github/workflows/deploy-code-only-repair.yml', codeOnly]]) {
     for (const [label, changed] of [
       ['source-head', source.toString().replace('--source-head "$GITHUB_SHA"', '--source-head "wrong"')],
       ['expected', source.toString().replace('--expected .cache/private-production-runtime-expected.json', '--expected wrong.json')],

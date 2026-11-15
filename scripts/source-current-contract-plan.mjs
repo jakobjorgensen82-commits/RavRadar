@@ -542,6 +542,18 @@ function restoreOwnedDmiBudgetSteps(before,after){
 }
 export function dmiBudgetWeatherBuildAreas(before,after){
   try{assert(before!==after);if(isPrivateWeatherPublicationWorkflowChange(before,after))return ['weatherPublication'];
+    const oldPublication=inversePrivateWeatherPublicationWorkflow(Buffer.from(before)).toString('utf8');
+    const nextPublication=inversePrivateWeatherPublicationWorkflow(Buffer.from(after)).toString('utf8');
+    const hadPublication=oldPublication!==before,hasPublication=nextPublication!==after;
+    if(hadPublication||hasPublication){
+      if(hadPublication&&!hasPublication)return null;
+      // At most one recursion: both normal forms now contain only the old entry.
+      const areas=dmiBudgetWeatherBuildAreas(oldPublication,nextPublication)
+        ??(isPagesOnlyWeatherBuildChange(oldPublication,nextPublication)?['pages']
+          :isSupportOnlyWeatherBuildChange(oldPublication,nextPublication)?['workflowSupport']
+          :isPagesAndSupportOnlyWeatherBuildChange(oldPublication,nextPublication)?['pages','workflowSupport']:null);
+      return areas?(hadPublication?areas:[...areas,'weatherPublication']):null;
+    }
     const restored=restoreOwnedDmiBudgetSteps(before,after);
     if(restored===before)return ['dmiBudget'];
     if(isPagesOnlyWeatherBuildChange(before,restored))return ['pages','dmiBudget'];

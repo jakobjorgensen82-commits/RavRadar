@@ -574,6 +574,7 @@ try{
 
   if(!dmiBudgetScopeOnly&&!dmiRecoveryScopeOnly&&!adminHistoryScopeOnly){
     const started=performance.now(),build='.github/workflows/reusable-weather-build.yml',repair='.github/workflows/deploy-code-only-repair.yml';
+    const publicationCaseStart=cases;
     const actual=new Map([build,repair].map(file=>[file,fs.readFileSync(path.join(SOURCE,file))]));
     const old=new Map([...actual].map(([file,bytes])=>[file,inversePrivateWeatherPublicationWorkflow(bytes)]));
     const priorTree=rewrite(baselineTree,[...old]),prior=commit(priorTree,[base],'synthetic private weather publication predecessor');
@@ -612,6 +613,26 @@ try{
         check(file,Buffer.from(body),label,false);
       }
     }
+    const combinedBefore=inversePrivateWeatherPublicationWorkflow(Buffer.from(dmiBefore.get(build)));
+    const combinedAfter=actual.get(build);
+    for(const [label,beforeBytes,afterBytes,expected]of [
+      ['old-to-new with DMI',combinedBefore,combinedAfter,['dmiBudget','weatherPublication']],
+      ['both-new retain DMI',Buffer.from(dmiBefore.get(build)),combinedAfter,['dmiBudget']],
+      ['reverse entry',combinedAfter,combinedBefore,null],
+      ['combined unknown argv',combinedBefore,Buffer.from(combinedAfter.toString().replace('scripts/publish-private-weather-runtime.mjs','scripts/publish-private-weather-runtime.mjs --unknown')),null],
+      ['combined unknown gate',combinedBefore,Buffer.from(combinedAfter.toString().replace('        if:','        if: false &&')),null],
+      ['combined unknown step',combinedBefore,Buffer.concat([combinedAfter,Buffer.from('\n# Synthetic unknown workflow change\n')]),null],
+    ]){
+      const oldTree=rewrite(priorTree,[[build,beforeBytes]]),comparison=commit(oldTree,[prior],'synthetic publication combination predecessor');
+      const candidate=commit(rewrite(oldTree,[[build,afterBytes]]),[comparison],'synthetic publication combination '+label);checkout(candidate);
+      const selected=plan({baselineCommit:comparison,candidateCommit:candidate,expectedHead:candidate});
+      if(expected){assert.equal(selected.selection,'CURRENT_CONTRACTS',JSON.stringify(selected));
+        assert.deepEqual(Object.keys(selected.areas).filter(area=>area!=='core').sort(),[...expected].sort());
+        assert.equal(selected.controlQualificationRequired,true);
+        assert.deepEqual(selected.protectedInputs,{postgresUnchanged:true,CUnchanged:true,IUnchanged:true,TUnchanged:true});
+      }else{assert.equal(selected.selection,'FULL',JSON.stringify(selected));assert.deepEqual(selected.commands,[]);}
+      cases++;
+    }
     const protectedFile=profile.postgresModules[0];check(protectedFile,Buffer.concat([
       git(root,['cat-file','blob',prior+':'+protectedFile]),Buffer.from('\n// Synthetic genuine protected drift\n')]),'PG remains protected',false);
     const current=fs.readFileSync(path.join(SOURCE,'scripts/source-current-contract-plan.mjs'));
@@ -626,7 +647,7 @@ try{
     assert(!isAdditivePrivateWeatherPublicationOwnerChange(Buffer.from(predecessor),Buffer.from(current.toString().replace("'node scripts/test-security-hardening-4.0.284.mjs'","'node scripts/unknown.mjs'"))));
     assert(!isAdditivePrivateWeatherPublicationOwnerChange(Buffer.from(predecessor),Buffer.from(current.toString().replace('out.controlQualificationRequired=true','out.controlQualificationRequired=false'))));
     checkout(base);scenarios.push('Publication solo owners and exact argv require control review; unknown BUILD/PG retains FULL and repair retains its original broader compatibility targets');
-    console.log(JSON.stringify({kind:'WEATHER_PUBLICATION_NORMAL_GIT_SCOPE',cases:18,elapsedMs:performance.now()-started,
+    console.log(JSON.stringify({kind:'WEATHER_PUBLICATION_NORMAL_GIT_SCOPE',cases:cases-publicationCaseStart,elapsedMs:performance.now()-started,
       realGit:true,actualProtectedInputsUnchanged:true,ownerRemovalRefused:true,unknownChangesRefused:true,productionAuthority:false}));
   }
   if(!weatherPublicationScopeOnly&&!dmiBudgetScopeOnly&&!dmiRecoveryScopeOnly){
