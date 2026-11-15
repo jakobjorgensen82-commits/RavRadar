@@ -2,6 +2,8 @@
 // publication. The caller must separately authenticate the original producer,
 // GCM envelope, model contracts, current predecessor and every delivery gate.
 import assert from 'node:assert/strict';
+import { inversePrivateWeatherPublicationWorkflow, isAdditivePrivateWeatherPublicationOwnerChange } from './lib/private-weather-publication-workflow.mjs';
+export { inversePrivateWeatherPublicationWorkflow } from './lib/private-weather-publication-workflow.mjs';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -10,10 +12,16 @@ const SHA = /^[a-f0-9]{40}$/;
 const digest = value => crypto.createHash('sha256').update(value).digest('hex');
 const BUILD = '.github/workflows/reusable-weather-build.yml';
 const ONCE = '.github/workflows/run-current-weather-once.yml';
+const CODE_ONLY = '.github/workflows/deploy-code-only-repair.yml';
 const BOOK = 'docs/handbook/content.json';
 const INSTALL = 'supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql';
 const wiring = JSON.parse(fs.readFileSync(new URL('./lib/ordinary-completed-stage-workflow-review.json', import.meta.url), 'utf8'));
 const DELIVERY_ONLY = new Set([
+  'scripts/publish-private-weather-runtime.mjs',
+  'scripts/lib/private-weather-publication-workflow.mjs',
+  'scripts/test-r2-private-runtime-storage.mjs',
+  'scripts/test-source-current-contracts.mjs',
+  'scripts/lib/pages-closure-historical-test-input.mjs',
   'scripts/ordinary-completed-stage-artifact.mjs',
   'scripts/extract-ordinary-completed-stage.py',
   'scripts/ordinary-completed-stage-lineage.mjs',
@@ -30,12 +38,15 @@ const DELIVERY_ONLY = new Set([
   'scripts/test-workflow-validation-order-4.0.108.mjs',
   'scripts/test-native-postgres-evidence.mjs',
   'CHANGELOG-4.0.508.md',
+  'CHANGELOG.md',
   'HANDBOOK-RAVRADAR.md',
   'docs/handbook/content.json',
   'docs/ai/CODEX_START_HERE.md',
   'docs/rdks/00_READ_FIRST.md',
   'docs/rdks/01_AI_OPERATING_RULES.md',
   'docs/rdks/10_DECISIONS/DEC-0249-WEATHER-CACHE-AND-BOUNDED-COPERNICUS.md',
+  'docs/rdks/10_DECISIONS/DEC-0255-PRIVATE-RUNTIME-R2-FREE-BUDGET.md',
+  'docs/rdks/10_DECISIONS/DEC-0302-CHANGE-BASED-VALIDATION-AND-CONTROL-CLEANUP.md',
   'docs/rdks/20_REQUIREMENTS/ACTIVE-REQUIREMENTS.md',
   'docs/rdks/40_KNOWN_ISSUES/KNOWN-ISSUES.md',
   'docs/rdks/90_INDEX/CURRENT_TRUTH.md',
@@ -46,6 +57,10 @@ const DELIVERY_ONLY = new Set([
 function fail(code) {
   throw Object.assign(new Error(code), { code });
 }
+
+// Only the two real normal publication invocations may select the explicit
+// weather transport. Every argument and all surrounding workflow bytes remain
+// calculation/source-comparison inputs. No commit/hash cohort or path ignore.
 
 // The existing source gate requires the installer's handbook seed to equal
 // the complete web handbook. Normalize ONLY that exact JSON value, using the
@@ -70,6 +85,7 @@ function documentationSql(bytes, handbookBytes) {
 // input. Invert the entire four-step move; an arbitrary workflow edit is NOT
 // allowed simply because it belongs to a delivery file.
 export function ordinaryStageCalculationWorkflow(bytes) {
+  bytes = inversePrivateWeatherPublicationWorkflow(bytes);
   let source = bytes.toString('utf8');
   for (const row of Object.values(wiring)) {
     if (digest(bytes) !== row.afterSha256) continue;
@@ -172,10 +188,19 @@ function compareSource({ root, producerHead, consumerHead }, requireCleanCheckou
         fail('ORDINARY_STAGE_SOURCE_DELIVERY_MODE');
       deliveryPaths++; continue;
     }
-    if ([BUILD, ONCE].includes(name) && old?.mode === '100644' && current?.mode === '100644'
+    if (name === 'scripts/source-current-contract-plan.mjs' && old?.mode === '100644' && current?.mode === '100644'
+      && old.type === 'blob' && current.type === 'blob'
+      && isAdditivePrivateWeatherPublicationOwnerChange(git(['cat-file', 'blob', old.blob]), git(['cat-file', 'blob', current.blob]))) {
+      deliveryPaths++; continue;
+    }
+    if ([BUILD, ONCE, CODE_ONLY].includes(name) && old?.mode === '100644' && current?.mode === '100644'
       && old.type === 'blob' && current.type === 'blob') {
-      const normalizedBefore = ordinaryStageCalculationWorkflow(git(['cat-file', 'blob', old.blob]));
-      const normalizedAfter = ordinaryStageCalculationWorkflow(git(['cat-file', 'blob', current.blob]));
+      const beforeBytes = git(['cat-file', 'blob', old.blob]), afterBytes = git(['cat-file', 'blob', current.blob]);
+      if (!inversePrivateWeatherPublicationWorkflow(beforeBytes).equals(beforeBytes)
+        && inversePrivateWeatherPublicationWorkflow(afterBytes).equals(afterBytes))
+        fail('ORDINARY_STAGE_SOURCE_CALCULATION_DRIFT');
+      const normalizedBefore = ordinaryStageCalculationWorkflow(beforeBytes);
+      const normalizedAfter = ordinaryStageCalculationWorkflow(afterBytes);
       if (!normalizedBefore.equals(normalizedAfter)) fail('ORDINARY_STAGE_SOURCE_CALCULATION_DRIFT');
       invertedWorkflows++; continue;
     }

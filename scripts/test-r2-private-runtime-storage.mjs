@@ -1,7 +1,16 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
+import test from 'node:test';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
 import { createR2PrivateRuntimeStorage } from './lib/r2-private-runtime-storage.mjs';
 import { createR2PrivateReadDenialStorage } from './lib/r2-private-read-denial-storage.mjs';
+import { createPrivateWeatherPublicationStorage, assertPrivateWeatherPublicationPolicy,
+  PRIVATE_WEATHER_PUBLICATION_POLICY, assertPrivateWeatherPublicationBackend,
+  privateWeatherPublicationArguments } from './publish-private-weather-runtime.mjs';
 
 const sha256 = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const objects = new Map();
@@ -164,3 +173,145 @@ for(const body of [
 ]){const p=await probeDenial({body:Buffer.isBuffer(body)?body:Buffer.from(body)});assert.equal(p.result.denied,false);assert.equal(p.result.httpStatus,400);}
 for(const headers of [{'content-type':'text/plain'},{'content-type':'application/xml','content-length':'4097'}]){const p=await probeDenial({headers});assert.equal(p.result.denied,false);assert.equal(p.pulls,0);assert.equal(p.cancels,1);}
 console.log('Private EU R2 object, immutability, typed bounded read denial, legacy status and quota ceiling: passed.');
+
+test('weather publication has one internal weather-only budget and no override route', () => {
+  assert.deepEqual(PRIVATE_WEATHER_PUBLICATION_POLICY, { bucketCeilingBytes: 2_500_000_000, reserveBytes: 100_000_000 });
+  assert(Object.isFrozen(PRIVATE_WEATHER_PUBLICATION_POLICY));
+  for (const policy of [null, {}, { bucketCeilingBytes: null, reserveBytes: 100_000_000 },
+    { bucketCeilingBytes: 2_500_000_000.5, reserveBytes: 100_000_000 },
+    { bucketCeilingBytes: 3_000_000_001, reserveBytes: 100_000_000 },
+    { bucketCeilingBytes: 400_000_000, reserveBytes: 100_000_000 },
+    { bucketCeilingBytes: 2_500_000_000, reserveBytes: -1 },
+    { ...PRIVATE_WEATHER_PUBLICATION_POLICY, extra: true }]) {
+    assert.throws(() => assertPrivateWeatherPublicationPolicy(policy), { code: 'PRIVATE_WEATHER_PUBLICATION_POLICY_INVALID' });
+  }
+  for (const key of ['bucketCeilingBytes', 'bucketId', 'maximumObjectBytes', 'policy']) {
+    assert.throws(() => createPrivateWeatherPublicationStorage({ [key]: 'override' }),
+      { code: 'PRIVATE_WEATHER_PUBLICATION_OPTION_INVALID' });
+  }
+  for (const backend of ['supabase', '', 'other', null]) assert.throws(() => assertPrivateWeatherPublicationBackend(backend),
+    { code: 'PRIVATE_WEATHER_PUBLICATION_BACKEND_MISMATCH' });
+  assertPrivateWeatherPublicationBackend('r2');
+  const argv = ['--publish', '--private-root', '/private', '--bundle', '/private/bundle',
+    '--repository-root', '/repository', '--expected', '/expected.json', '--source-head', 'a'.repeat(40)];
+  const parsed = privateWeatherPublicationArguments(argv);
+  assert.deepEqual(parsed, { privateRoot: '/private', bundlePath: '/private/bundle',
+    repositoryRoot: '/repository', expectedPath: '/expected.json', sourceHead: 'a'.repeat(40) });
+  assert.deepEqual(privateWeatherPublicationArguments([...argv, '--same-reference-migration-report', '/migration.json',
+    '--same-reference-predecessor-manifest', '/predecessor.json']),
+  { ...parsed, migrationReportPath: '/migration.json', predecessorManifestPath: '/predecessor.json' });
+  for (const values of [[], argv.slice(0, -2), [...argv, '--source-head', 'b'.repeat(40)],
+    [...argv, '--bucket-ceiling-bytes', '9000000000'], [...argv, '--same-reference-migration-report', '/migration.json']])
+    assert.throws(() => privateWeatherPublicationArguments(values), { code: 'PRIVATE_WEATHER_PUBLICATION_ARGUMENT_INVALID' });
+});
+
+test('weather publication admits the whole generation before first PUT and keeps idempotent HEAD/readback', async () => {
+  const make = ({ used, existing = false, loseFirstPut = false }) => {
+    const store = new Map(existing ? [[objectPath, object]] : []), observed = [];
+    let puts = 0;
+    const fetchImpl = async (url, request) => {
+      const u = new URL(url), headers = new Headers(request.headers);
+      assert.equal(u.host, `${accountId}.eu.r2.cloudflarestorage.com`);
+      assert.equal(request.redirect, 'manual');
+      observed.push({ url, request });
+      if (request.method === 'GET' && u.searchParams.get('list-type') === '2') {
+        const bytes = used + [...store.values()].reduce((n, value) => n + value.length, 0);
+        return new Response(`<ListBucketResult><Contents><Key>preserved</Key><Size>${bytes}</Size></Contents><KeyCount>1</KeyCount><IsTruncated>false</IsTruncated></ListBucketResult>`);
+      }
+      const key = decodeURIComponent(u.pathname.slice(`/${bucketId}/`.length));
+      if (request.method === 'HEAD') return new Response(null, { status: store.has(key) ? 200 : 404 });
+      if (request.method === 'PUT') {
+        puts++;
+        assert.equal(key, objectPath);
+        assert.equal(request.body, object, 'The same caller Buffer reaches the unchanged immutable transport.');
+        assert.equal(headers.get('if-none-match'), '*');
+        assert.equal(headers.get('x-amz-content-sha256'), digest);
+        if (store.has(key)) return new Response(null, { status: 412 });
+        store.set(key, Buffer.from(request.body));
+        if (loseFirstPut) throw new Error('synthetic lost PUT response after immutable commit');
+        return new Response(null, { status: 200 });
+      }
+      if (request.method === 'GET' && store.has(key)) return new Response(store.get(key));
+      throw new Error('unexpected synthetic R2 operation');
+    };
+    const storage = createPrivateWeatherPublicationStorage({ storageBackend: 'r2', accountId, accessKeyId: 'synthetic-id',
+      secretAccessKey: 'synthetic-secret', fetchImpl, now: () => new Date('2026-11-14T00:00:00Z'), delayImpl: async () => {} });
+    return { storage, observed, puts: () => puts };
+  };
+  for (const used of [1_734_856_529, 2_050_000_000]) {
+    const probe = make({ used });
+    assert.deepEqual(await probe.storage.uploadImmutable(objectPath, object), { created: true });
+    assert.equal(probe.puts(), 1);
+    assert.deepEqual(await probe.storage.download(objectPath), object);
+    const firstPut = probe.observed.findIndex(row => row.request.method === 'PUT');
+    assert.equal(probe.observed.slice(0, firstPut).filter(row => new URL(row.url).searchParams.has('list-type')).length, 2,
+      'The frozen per-part check and the one whole-generation admission both precede PUT.');
+    const lists = probe.observed.filter(row => new URL(row.url).searchParams.has('list-type')).length;
+    assert.deepEqual(await probe.storage.uploadImmutable(objectPath, object), { created: false, alreadyExists: true });
+    assert.equal(probe.observed.filter(row => new URL(row.url).searchParams.has('list-type')).length, lists);
+  }
+  const held = make({ used: 2_050_000_001 });
+  await assert.rejects(held.storage.uploadImmutable(objectPath, object), error =>
+    error.cause?.code === 'PRIVATE_WEATHER_PUBLICATION_GENERATION_CAPACITY');
+  assert.equal(held.puts(), 0);
+  assert.equal(held.observed.filter(row => new URL(row.url).searchParams.has('list-type')).length, 2,
+    'Rejected admission is latched across the frozen adapter retry; no extra scan or PUT.');
+  const reused = make({ used: 2_490_000_000, existing: true });
+  assert.deepEqual(await reused.storage.uploadImmutable(objectPath, object), { created: false, alreadyExists: true });
+  assert.deepEqual(await reused.storage.download(objectPath), object);
+  assert.equal(reused.puts(), 0);
+  assert.equal(reused.observed.some(row => new URL(row.url).searchParams.has('list-type')), false);
+  const unknown = make({ used: 1_734_856_529, loseFirstPut: true });
+  assert.deepEqual(await unknown.storage.uploadImmutable(objectPath, object), { created: false, alreadyExists: true });
+  assert.deepEqual(await unknown.storage.download(objectPath), object);
+  assert.equal(unknown.puts(), 2, 'Only the frozen adapter\'s existing immutable retry is retained; no outer retry.');
+  assert.equal(unknown.observed.filter(row => new URL(row.url).searchParams.has('list-type')).length, 2);
+});
+
+test('weather publication CLI rejects backend mismatch and metadata failures without raw error text', async t => {
+  const parent = await fs.realpath(os.tmpdir());
+  const root = await fs.mkdtemp(path.join(parent, 'rr-weather-publication-metadata-'));
+  t.after(async () => {
+    assert.equal(path.dirname(root), parent);
+    assert(path.basename(root).startsWith('rr-weather-publication-metadata-'));
+    assert((await fs.lstat(root)).isDirectory());
+    await fs.rm(root, { recursive: true, force: false });
+  });
+  const expected = path.join(root, 'expected.json'), migration = path.join(root, 'migration.json'), predecessor = path.join(root, 'predecessor.json');
+  const args = [fileURLToPath(new URL('./publish-private-weather-runtime.mjs', import.meta.url)), '--publish',
+    '--private-root', root, '--bundle', path.join(root, 'bundle'), '--repository-root', root,
+    '--expected', expected, '--source-head', 'a'.repeat(40)];
+  const env = Object.fromEntries(['PATH', 'Path', 'SystemRoot', 'WINDIR', 'HOME', 'USERPROFILE', 'TEMP', 'TMP']
+    .filter(key => typeof process.env[key] === 'string').map(key => [key, process.env[key]]));
+  const run = (backend, extra = []) => spawnSync(process.execPath, [...args, ...extra],
+    { env: { ...env, RAVRADAR_PRIVATE_RUNTIME_STORAGE_BACKEND: backend }, encoding: 'utf8', windowsHide: true });
+  let result = run('supabase');
+  assert.equal(result.status, 1);
+  assert.equal(result.stderr.trim(), 'Protected private production runtime failed closed: PRIVATE_WEATHER_PUBLICATION_BACKEND_MISMATCH');
+  const malformed = '{"SYNTHETIC_PRIVATE_MARKER":';
+  for (const [file, role] of [[expected, 'EXPECTED'], [migration, 'MIGRATION_REPORT'], [predecessor, 'PREDECESSOR_MANIFEST']]) {
+    for (const target of [expected, migration, predecessor]) await fs.writeFile(target, '{}');
+    await fs.writeFile(file, malformed);
+    result = run('r2', file === expected ? [] : ['--same-reference-migration-report', migration,
+      '--same-reference-predecessor-manifest', predecessor]);
+    assert.equal(result.status, 1);
+    assert.equal(result.stdout, '');
+    assert.equal(result.stderr.trim(), `Protected private production runtime failed closed: PRIVATE_WEATHER_PUBLICATION_${role}_INVALID`);
+    assert.equal(await fs.readFile(file, 'utf8'), malformed);
+  }
+});
+
+test('weather publication normal request and GCM/B/atomic install/recreated B and parent CAS', () => {
+  const target = fileURLToPath(new URL('./test-ordinary-completed-stage-admission.mjs', import.meta.url));
+  const selected = spawnSync(process.execPath, ['--test',
+    '--test-name-pattern=^(explicit stage request|normal GCM/B/)', target], {
+    cwd: path.dirname(path.dirname(target)), encoding: 'utf8', timeout: 30_000,
+    maxBuffer: 1024 * 1024, windowsHide: true,
+  });
+  assert.equal(selected.error, undefined);
+  assert.equal(selected.signal, null);
+  assert.equal(selected.status, 0, selected.stderr || selected.stdout);
+  assert.match(selected.stdout, /normalGcm.*true/);
+  assert.match(selected.stdout, /pass 2/);
+  console.log(selected.stdout);
+});

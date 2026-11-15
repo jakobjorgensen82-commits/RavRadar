@@ -1754,6 +1754,15 @@ En lille, størrelsesbegrænset hukommelse kan genbruge fortolkningen af præcis
 
 ## 89.257 Gem det færdige arbejde, før det leveres
 
+### Plads til hele den næste private generation
+
+Den normale vejrtransport har et fast lokalt lagerbudget på 2,5 GB og beholder 100 MB reserve efter plads til en hel ny generation på højst 350 MB. Før det første nye objekt uploades, tæller den samme lagerlæser alt eksisterende indhold med. Aktuel generation, reserve og ældre nødvendige originaler skal bevares; utilstrækkelig eller ukendt plads giver afslag.
+
+Frisk vejr, genoptagelse af en autentificeret færdig beregning og almindelig kodelevering bruger samme transportpolitik. En allerede gemt identisk pakke kan stadig genlæses og verificeres uden ny upload. Fuld genlæsning, databevaring og central sammenlign-og-byt består før udgivelse. Der slettes ingen gammel gruppe som følge af det større budget, og samlet gratis drift er ikke dermed bevist. Adminarkiv og databasebackup beholder deres egne 2 GB-lofter.
+
+Den gemte pakkes udløbsfrist er selvstændig. Prognosens normale friskheds- og horisontkontrol samt den uændrede aktive forgænger skal stadig godkende genoptagelse.
+
+
 Kort fortalt: En færdig prognose skal kunne gemmes sikkert, så en senere leveringsfejl ikke tvinger systemet til at hente og beregne det samme igen.
 
 Den forberedte rettelse gemmer en krypteret kopi straks efter en vellykket almindelig beregning. De fire eksisterende trin beskriver pakken, bygger den, krypterer den og gemmer den. Kopien er stadig privat og ikke godkendt til offentlig visning. De normale slutkontroller skal fortsat bestå, før hjemmesiden opdateres.

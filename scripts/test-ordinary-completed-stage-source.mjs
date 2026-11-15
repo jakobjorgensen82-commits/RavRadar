@@ -1,4 +1,5 @@
-import { projectPagesClosureHistoricalTestInput as historicalPagesInput } from './lib/pages-closure-historical-test-input.mjs';
+import { projectPagesClosureHistoricalTestInput as historicalPagesInput, readHistoricalCompletedStageWorkflowSources }
+  from './lib/pages-closure-historical-test-input.mjs';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
@@ -6,11 +7,15 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import test from 'node:test';
-import { assertOrdinaryCompletedStageSource, assertOrdinaryCompletedStageCommittedSource, ordinaryStageCalculationWorkflow }
+import { assertOrdinaryCompletedStageSource, assertOrdinaryCompletedStageCommittedSource, ordinaryStageCalculationWorkflow,
+  inversePrivateWeatherPublicationWorkflow }
   from './ordinary-completed-stage-source.mjs';
 import { inverseAutomaticCompletedPagesWorkflow, inverseRelease585WorkflowUserAgents } from './lib/completed-private-runtime-workflow-review.mjs';
+import { PRIVATE_WEATHER_PUBLICATION_OWNER_EDITS, inversePrivateWeatherPublicationWorkflow as sharedPublicationInverse }
+  from './lib/private-weather-publication-workflow.mjs';
 
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
+assert.equal(inversePrivateWeatherPublicationWorkflow, sharedPublicationInverse, 'Both callers use the same pure function object.');
 
 test('committed source reuse compares all calculation objects and only exact storage relocation', async t => {
   const parent = await fs.realpath(os.tmpdir());
@@ -38,12 +43,14 @@ test('committed source reuse compares all calculation objects and only exact sto
   // This old relocation/wiring fixture keeps its genuine584 operands. Reuse
   // the existing whole-hash-closed TEST inverse; never teach the product's
   // committed-source comparator to ignore current calculation/workflow drift.
-  const actual = Buffer.from(inverseRelease585WorkflowUserAgents(historicalPagesInput(currentBuild.toString('utf8'), 'build'), 'build'));
+  const historical = readHistoricalCompletedStageWorkflowSources();
+  assert.throws(() => readHistoricalCompletedStageWorkflowSources('caller-selected'), /No caller-selected/);
+  const actual = Buffer.from(inverseRelease585WorkflowUserAgents(historicalPagesInput(historical.build, 'build'), 'build'));
   assert.equal(sha(actual), 'b509a5131c64f9df9a431fdf9f99b082fb14c88de8bf9c3ad3e33b8ddc77de57');
   const previous = ordinaryStageCalculationWorkflow(actual);
   const currentOnce = Buffer.from((await fs.readFile(new URL('../.github/workflows/run-current-weather-once.yml', import.meta.url), 'utf8'))
     .replaceAll('\r\n', '\n'));
-  const actualOnce = Buffer.from(inverseRelease585WorkflowUserAgents(inverseAutomaticCompletedPagesWorkflow(currentOnce.toString('utf8'), 'once'), 'once'));
+  const actualOnce = Buffer.from(inverseRelease585WorkflowUserAgents(inverseAutomaticCompletedPagesWorkflow(historical.once, 'once'), 'once'));
   const previousOnce = ordinaryStageCalculationWorkflow(actualOnce);
   assert.equal(sha(previous), 'f0254a092c0baa188370c207b218e15ad7c9e616138d15234e6f323f101178c6');
   assert.equal(sha(previousOnce), '445964fbbc697ec86848744a9413897d3418b011c4218fb10336734b5e5055a2');
@@ -163,7 +170,86 @@ test('committed source reuse compares all calculation objects and only exact sto
   refused++;
   git('switch', '--detach', consumerHead);
   assert.equal(assertOrdinaryCompletedStageSource({ root, producerHead, consumerHead }).consumerHead, consumerHead);
-  console.log(JSON.stringify({ kind: 'ORDINARY_STAGE_SOURCE_CONTRACT', positive: 5, refused: refused + sqlRefused,
+  const codeOnly = Buffer.from((await fs.readFile(new URL('../.github/workflows/deploy-code-only-repair.yml', import.meta.url), 'utf8'))
+    .replaceAll('\r\n', '\n'));
+  await write('.github/workflows/reusable-weather-build.yml', inversePrivateWeatherPublicationWorkflow(currentBuild));
+  await write('.github/workflows/deploy-code-only-repair.yml', inversePrivateWeatherPublicationWorkflow(codeOnly));
+  const normalProducer = commit('synthetic normal weather producer before explicit transport');
+  await write('.github/workflows/reusable-weather-build.yml', currentBuild);
+  await write('.github/workflows/deploy-code-only-repair.yml', codeOnly);
+  await write('scripts/publish-private-weather-runtime.mjs', await fs.readFile(new URL('./publish-private-weather-runtime.mjs', import.meta.url)));
+  const normalConsumer = commit('synthetic exact weather transport delivery');
+  const delivery = assertOrdinaryCompletedStageSource({ root, producerHead: normalProducer, consumerHead: normalConsumer });
+  assert.equal(delivery.publicationAuthorized, false);
+  assert.equal(delivery.payloadAuthenticated, false);
+  assert.equal(delivery.consumerHead, normalConsumer);
+  for (const [file, source] of [['.github/workflows/reusable-weather-build.yml', currentBuild],
+    ['.github/workflows/deploy-code-only-repair.yml', codeOnly]]) {
+    await write(file, inversePrivateWeatherPublicationWorkflow(source));
+    const reverseHead = commit('synthetic reverse publication entry is refused');
+    assert.throws(() => assertOrdinaryCompletedStageSource({ root,
+      producerHead: normalConsumer, consumerHead: reverseHead }), { code: 'ORDINARY_STAGE_SOURCE_CALCULATION_DRIFT' });
+    refused++;
+    git('switch', '--detach', normalConsumer);
+  }
+  for (const [file, source] of [['.github/workflows/reusable-weather-build.yml', currentBuild],
+    ['.github/workflows/deploy-code-only-repair.yml', codeOnly]]) {
+    for (const [label, changed] of [
+      ['source-head', source.toString().replace('--source-head "$GITHUB_SHA"', '--source-head "wrong"')],
+      ['expected', source.toString().replace('--expected .cache/private-production-runtime-expected.json', '--expected wrong.json')],
+      ['unknown-flag', source.toString().replace('--publish \\\n', '--publish --bucket-ceiling-bytes 9999999999 \\\n')],
+      ['extra-call', source.toString() + '\n# scripts/publish-private-weather-runtime.mjs\n'],
+    ]) {
+      assert.notEqual(changed, source.toString(), label);
+      await write(file, changed);
+      const changedHead = commit('synthetic changed publication ' + label);
+      assert.throws(() => assertOrdinaryCompletedStageSource({ root,
+        producerHead: normalProducer, consumerHead: changedHead }), error =>
+        ['ORDINARY_STAGE_SOURCE_WORKFLOW_INVERSE', 'ORDINARY_STAGE_SOURCE_CALCULATION_DRIFT'].includes(error.code));
+      git('switch', '--detach', normalConsumer);
+      refused++;
+    }
+  }
+  await write('scripts/protected-private-production-runtime.mjs', '// frozen publisher drift\n');
+  const publisherDrift = commit('synthetic frozen publisher remains a protected input');
+  assert.throws(() => assertOrdinaryCompletedStageSource({ root, producerHead: normalProducer, consumerHead: publisherDrift }),
+    { code: 'ORDINARY_STAGE_SOURCE_CALCULATION_DRIFT' });
+  refused++;
+  git('switch', '--detach', normalConsumer);
+  const plannerPath = 'scripts/source-current-contract-plan.mjs';
+  const currentPlanner = await fs.readFile(new URL('./source-current-contract-plan.mjs', import.meta.url), 'utf8');
+  let oldPlanner = currentPlanner;
+  for (const [original, added] of PRIVATE_WEATHER_PUBLICATION_OWNER_EDITS) {
+    assert.equal(oldPlanner.split(added).length, 2);
+    oldPlanner = oldPlanner.replace(added, original);
+  }
+  await write(plannerPath, oldPlanner);
+  const ownerParent = commit('synthetic whole planner before the one additive owner');
+  await write(plannerPath, currentPlanner);
+  await write('scripts/lib/private-weather-publication-workflow.mjs',
+    await fs.readFile(new URL('./lib/private-weather-publication-workflow.mjs', import.meta.url)));
+  const ownerHead = commit('synthetic complete directional additive owner');
+  assert.equal(assertOrdinaryCompletedStageSource({ root, producerHead: ownerParent, consumerHead: ownerHead }).publicationAuthorized, false);
+  const badOwners = PRIVATE_WEATHER_PUBLICATION_OWNER_EDITS.flatMap(([old, added]) => [
+    currentPlanner.replace(added, old), currentPlanner.replace(added, added + added),
+  ]);
+  badOwners.push(currentPlanner.replace("'node scripts/test-security-hardening-4.0.284.mjs'", "'node scripts/unknown.mjs'"));
+  badOwners.push(currentPlanner.replace('out.controlQualificationRequired=true', 'out.controlQualificationRequired=false'));
+  for (const body of badOwners) {
+    assert.notEqual(body, currentPlanner);
+    await write(plannerPath, body);
+    const changed = commit('synthetic malformed additive owner or old-control drift');
+    assert.throws(() => assertOrdinaryCompletedStageSource({ root, producerHead: ownerParent, consumerHead: changed }),
+      { code: 'ORDINARY_STAGE_SOURCE_CALCULATION_DRIFT' });
+    refused++;
+    git('switch', '--detach', ownerHead);
+  }
+  await write(plannerPath, oldPlanner);
+  const removedOwner = commit('synthetic owner removal is not an additive operation');
+  assert.throws(() => assertOrdinaryCompletedStageSource({ root, producerHead: ownerHead, consumerHead: removedOwner }),
+    { code: 'ORDINARY_STAGE_SOURCE_CALCULATION_DRIFT' });
+  refused++;
+  console.log(JSON.stringify({ kind: 'ORDINARY_STAGE_SOURCE_CONTRACT', positive: 7, refused: refused + sqlRefused,
     realGitObjects: true, originalFullWorkflowRestored: true,
     networkPerformed: false, payloadAuthenticated: false, publicationAuthorized: false }));
 });

@@ -1,3 +1,9 @@
+## 15. november 2026 — samlet plads før privat vejrpublicering
+
+- Én normal weather-transport bruger det vedtagne 2,5 GB-loft og kræver målt plads til 350 MB ny generation plus 100 MB reserve før første nye PUT. Frisk/staged/code-only deler kaldet; eksisterende HEAD-genbrug, frozen arkiv-/modelbytes, readback, parent-CAS og alle data bevares.
+- Naturligt CURRENT-ejerskab og én fælles præcis argvregel adskiller transportændringen fra beregningen. En retningsbestemt helinverse bevarer hele den gamle planner; ukendt drift får ingen ny kort kvalifikation.
+- Historiske stage-workfloworakler læser deres autentiske faste Git-input, mens aktuelle kalderkontroller fortsat læser aktuelle bytes. Kilde-CI, installation, genoptagelse og Free er særskilte beviser; ingen ny model, version eller migration udstedes.
+
 ## 14. november — afgrænset varig adminarkivretention og genoptagelse
 
 Kildekandidat til de tre dokumentkeys: bevar hele legacy-reserven, og behold ti nye arkivversioner pr. key efter en udtrykkelig overgang. Private forberedelsesmetadata bindes før dataupload, så en kendt halvleverance kan genoptages uden generel orphan-adoption. To kompakte create-only pegerækker skaber ingen automatisk scratchhistorik. Uafklaret første metadata-PUT bevarer sin positive reservation uden genforsøg; et snævert oprydningsvidne tåler afbrydelse efter sletning. Kun positivt udløbet egen V3-locatormetadata kan ryddes præcist. Current/top5, nødvendige referencer, gamle originaler, øvrige keys, score, vejr, model, migrations-SQL og adgang bevares.

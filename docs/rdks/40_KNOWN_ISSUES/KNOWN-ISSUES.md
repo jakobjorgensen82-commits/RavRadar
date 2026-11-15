@@ -1,3 +1,9 @@
+## Privat vejrpublicering: hel generationsplads og faktisk genoptagelse
+
+En færdig beregning kan afvises, når gammel aktuel/reserve og bevaringspligtige originaler efterlader for lidt plads til næste private generation. Den nye lokale transportpolitik er 2,5 GB alene til weather-bucketen, med målt helgenerationsadmission og 100 MB reserve. Den frosne læser, originaler og normale pointer-/readbackregler ændres ikke.
+
+Konkret kildekvalifikation og faktisk genoptagelse er fortsat nødvendige. Et gemt krypteret build er ikke offentlig levering; artifactudløb, prognosefriskhed, parent-B/S og alle normale gates skal bestå. Ældre ukendte objekter giver ingen sletteret. Varig oprydning efter ukendt DELETE, alle originale rødder og samlet Free-/backupaccept er fortsat særskilte spørgsmål. Se DEC-0255, DEC-0302 og håndbog 89.257.
+
 ## 14. november — autentisk arkivprøve stopper i DATA-gendannelse
 
 Den efterfølgende autentiske prøve har bestået kilde- og rollekontrollen uden manglende roller og er nået videre til DATA-gendannelse. Den stopper med SQLSTATE 42P01 for en manglende relation; årsagen undersøges. Det ejede lokale Docker-mål er lukket. Fuld indholds-/Auth-gendannelse, autonom restorekvittering og Free-klarhed er ikke bestået. De tidligere GRANT_ROLE/42704-afslag bevares som historik og beskriver ikke længere prøvens aktuelle første stop. Original SQL og alle bevaringskrav består.

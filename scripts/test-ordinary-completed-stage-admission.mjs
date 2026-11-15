@@ -17,6 +17,7 @@ import { createPrivateProductionRuntimeBundle, restorePrivateProductionRuntimeBu
 import { sealStagedPrivateProductionRuntime, openStagedPrivateProductionRuntime }
   from './staged-private-production-runtime.mjs';
 import { publishProtectedPrivateProductionRuntime } from './protected-private-production-runtime.mjs';
+import { publishPrivateWeatherRuntime } from './publish-private-weather-runtime.mjs';
 import { readCompletedPrivateRuntimePin } from './completed-private-runtime-admission.mjs';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 import { normalBAndSTransports } from './lib/established-native-current-origin-test-transports.mjs';
@@ -56,7 +57,7 @@ test('explicit stage request keeps the old completed mode separate and rejects m
   console.log(JSON.stringify({ requestPositive: 2, refused: refused + 1, networkPerformed: false }));
 });
 
-test('normal GCM/B/atomic install/recreated B and real publisher bind the original producer to exact parent CAS', async t => {
+export async function assertNormalStagePublication(t) {
   const parent = await fs.realpath(os.tmpdir());
   const own = await fs.mkdtemp(path.join(parent, 'rr-ordinary-stage-normal-seams-'));
   t.after(async () => {
@@ -129,20 +130,58 @@ test('normal GCM/B/atomic install/recreated B and real publisher bind the origin
     await fs.readFile(path.join(rebuilt, 'manifest.json')), 'Whole rebuilt B, not a subset.');
   assert.deepEqual(await fs.readFile(cipher), originalCipher, 'Original GCM/AAD remains unchanged.');
   const parentReceipt = { parentPin: pin.pin, parentDescriptor: pin.descriptor };
-  const request = bindOrdinaryStagePublicationRequest(transport.documentRequest, parentReceipt);
-  const publication = await publishProtectedPrivateProductionRuntime({ ...publish(child), request });
+  let virtualUsed = 2_050_000_001;
+  const r2Calls = [];
+  const r2Options = { storageBackend: 'r2', accountId: 'a'.repeat(32), accessKeyId: 'synthetic-id',
+    secretAccessKey: 'synthetic-secret', delayImpl: async () => {}, fetchImpl: async (url, request) => {
+      const address = new URL(url);
+      r2Calls.push(request.method);
+      if (request.method === 'GET' && address.searchParams.has('list-type')) {
+        return new Response(`<ListBucketResult><Contents><Key>preserved</Key><Size>${virtualUsed}</Size></Contents><KeyCount>1</KeyCount><IsTruncated>false</IsTruncated></ListBucketResult>`);
+      }
+      if (request.method === 'HEAD' && address.pathname === '/ravradar-private-production-runtime') return new Response(null);
+      const key = decodeURIComponent(address.pathname.slice('/ravradar-private-production-runtime/'.length));
+      if (request.method === 'HEAD') return new Response(null, { status: transport.objects.has(key) ? 200 : 404 });
+      if (request.method === 'PUT') {
+        const result = await transport.storage.uploadImmutable(key, request.body);
+        return new Response(null, { status: result.created ? 200 : 412 });
+      }
+      if (request.method === 'GET') return new Response(await transport.storage.download(key));
+      if (request.method === 'DELETE') { await transport.storage.removeExact(key); return new Response(null, { status: 204 }); }
+      throw new Error('unexpected normal publisher storage method');
+    } };
+  const { storage: _syntheticOriginalStorage, ...normalPublication } = publish(child);
+  const publishChild = () => publishPrivateWeatherRuntime({ ...normalPublication,
+    request: bindOrdinaryStagePublicationRequest(transport.documentRequest, parentReceipt) }, r2Options);
+  const heldParent = structuredClone(transport.documents.get('ravscore-private-production-runtime-pointer'));
+  await assert.rejects(publishChild(), error => error.cause?.code === 'PRIVATE_WEATHER_PUBLICATION_GENERATION_CAPACITY');
+  assert.deepEqual(transport.documents.get('ravscore-private-production-runtime-pointer'), heldParent,
+    'Capacity refusal never reaches parent CAS.');
+  assert.equal(r2Calls.includes('PUT'), false, 'Capacity refusal reaches no actual PUT.');
+  virtualUsed = 1_734_856_529;
+  const publication = await publishChild();
   assert.equal(publication.published, true);
   const row = transport.documents.get('ravscore-private-production-runtime-pointer');
   assert.equal(row.version, 2);
   assert.equal(row.payload.current.sourceHead, identity.sourceHead);
   assert.deepEqual(row.payload.previous, pin.descriptor);
   const saves = transport.events.filter(value => value === 'OBJECT_SAVE').length;
-  await assert.rejects(publishProtectedPrivateProductionRuntime({ ...publish(child),
-    request: bindOrdinaryStagePublicationRequest(transport.documentRequest, parentReceipt) }),
+  const beforeChangedParentCalls = r2Calls.length;
+  await assert.rejects(publishChild(),
   error => error.message === 'Private runtime pointer read failed closed'
     && error.cause?.code === 'ORDINARY_STAGE_PARENT_PUBLISH_READ');
   assert.equal(transport.events.filter(value => value === 'OBJECT_SAVE').length, saves,
     'Changed parent rejected before any new immutable upload.');
+  assert.equal(r2Calls.length, beforeChangedParentCalls);
+  virtualUsed = 2_490_000_000;
+  const beforeCodeOnlyCalls = r2Calls.length;
+  const codeOnly = await publishPrivateWeatherRuntime({ ...normalPublication,
+    sourceHead: 'c'.repeat(40), request: transport.documentRequest }, r2Options);
+  assert.equal(codeOnly.published, false);
+  assert.equal(codeOnly.reason, 'protected-private-runtime-content-already-current');
+  assert.equal(r2Calls.slice(beforeCodeOnlyCalls).includes('PUT'), false);
+  assert.equal(transport.documents.get('ravscore-private-production-runtime-pointer').version, 2);
+  assert.equal(transport.documents.get('ravscore-private-production-runtime-pointer').payload.current.sourceHead, identity.sourceHead);
   const fresh = bindOrdinaryStagePublicationRequest(async () => { throw new Error('No request should occur'); }, parentReceipt);
   await assert.rejects(fresh('?ignored', {}, 'insert'), /PARENT_INSERT_FORBIDDEN/);
   await assert.rejects(fresh('?ignored', { body: '{}' }, 'compare-and-swap'), /PARENT_CAS_CHANGED/);
@@ -150,7 +189,8 @@ test('normal GCM/B/atomic install/recreated B and real publisher bind the origin
     atomicNormalRestoreAndInstall: true, wholeManifestIdentical: true, realPublisherParentCas: true,
     changedParentRefusedBeforeUpload: true, externalNetwork: false, ordinaryOriginAdmissionProved: false,
     scoringPerformed: false, providerRequestsPerformed: false }));
-});
+}
+test('normal GCM/B/atomic install/recreated B and real publisher bind the original producer to exact parent CAS', assertNormalStagePublication);
 
 test('actual completed-stage consumer admits genuine normal parent/child through the lexical origin reader', () => {
   // Existing archive/origin fixture, not a detached JSON attestation or a
