@@ -21,9 +21,8 @@ import { publishPrivateWeatherRuntime } from './publish-private-weather-runtime.
 import { readCompletedPrivateRuntimePin } from './completed-private-runtime-admission.mjs';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 import { normalBAndSTransports } from './lib/established-native-current-origin-test-transports.mjs';
-const directEntry = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 
-if (directEntry) test('explicit stage request keeps the old completed mode separate and rejects mixed requests before I/O', () => {
+test('explicit stage request keeps the old completed mode separate and rejects mixed requests before I/O', () => {
   const env = { COMPLETED_STAGE_SOURCE: '123-1-' + 'a'.repeat(40), COMPLETED_PRIVATE_RUNTIME: 'true',
     GITHUB_REF: 'refs/heads/main', GITHUB_EVENT_NAME: 'workflow_dispatch', GITHUB_RUN_ATTEMPT: '1',
     GITHUB_SHA: 'b'.repeat(40), GITHUB_REPOSITORY: 'owner/RavRadar',
@@ -191,9 +190,9 @@ export async function assertNormalStagePublication(t) {
     changedParentRefusedBeforeUpload: true, externalNetwork: false, ordinaryOriginAdmissionProved: false,
     scoringPerformed: false, providerRequestsPerformed: false }));
 }
-if (directEntry) test('normal GCM/B/atomic install/recreated B and real publisher bind the original producer to exact parent CAS', assertNormalStagePublication);
+test('normal GCM/B/atomic install/recreated B and real publisher bind the original producer to exact parent CAS', assertNormalStagePublication);
 
-if (directEntry) test('actual completed-stage consumer admits genuine normal parent/child through the lexical origin reader', () => {
+test('actual completed-stage consumer admits genuine normal parent/child through the lexical origin reader', () => {
   // Existing archive/origin fixture, not a detached JSON attestation or a
   // second recovery platform. Only the new explicit branch produces 673 H0
   // pairs; the old default and full national/two-follower cases stay intact.

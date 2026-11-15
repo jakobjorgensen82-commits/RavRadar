@@ -8,7 +8,6 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { createR2PrivateRuntimeStorage } from './lib/r2-private-runtime-storage.mjs';
 import { createR2PrivateReadDenialStorage } from './lib/r2-private-read-denial-storage.mjs';
-import { assertNormalStagePublication } from './test-ordinary-completed-stage-admission.mjs';
 import { createPrivateWeatherPublicationStorage, assertPrivateWeatherPublicationPolicy,
   PRIVATE_WEATHER_PUBLICATION_POLICY, assertPrivateWeatherPublicationBackend,
   privateWeatherPublicationArguments } from './publish-private-weather-runtime.mjs';
@@ -302,4 +301,17 @@ test('weather publication CLI rejects backend mismatch and metadata failures wit
   }
 });
 
-test('weather publication normal GCM/B/atomic install/recreated B and parent CAS', assertNormalStagePublication);
+test('weather publication normal request and GCM/B/atomic install/recreated B and parent CAS', () => {
+  const target = fileURLToPath(new URL('./test-ordinary-completed-stage-admission.mjs', import.meta.url));
+  const selected = spawnSync(process.execPath, ['--test',
+    '--test-name-pattern=^(explicit stage request|normal GCM/B/)', target], {
+    cwd: path.dirname(path.dirname(target)), encoding: 'utf8', timeout: 30_000,
+    maxBuffer: 1024 * 1024, windowsHide: true,
+  });
+  assert.equal(selected.error, undefined);
+  assert.equal(selected.signal, null);
+  assert.equal(selected.status, 0, selected.stderr || selected.stdout);
+  assert.match(selected.stdout, /normalGcm.*true/);
+  assert.match(selected.stdout, /pass 2/);
+  console.log(selected.stdout);
+});
