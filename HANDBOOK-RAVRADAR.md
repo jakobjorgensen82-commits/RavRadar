@@ -1754,6 +1754,8 @@ En lille, størrelsesbegrænset hukommelse kan genbruge fortolkningen af præcis
 
 ## 89.257 Gem det færdige arbejde, før det leveres
 
+Ved genoptagelse læses forælderens S gennem den normale beskyttede checkpointlæser til et separat tomt, ejet område før lineagekontrollen. En gyldig nyere child-S i arbejdscachen bevares. En anden frisk parent-S-læsning skal bagefter matche den samme hash, og den faktiske B-pointer skal stadig matche. Alle oprindelige lineage-, GCM-, model-, no-loss-, readback- og CAS-krav består; rettelsen giver ingen genoptagelsesret fra lokal cache alene.
+
 ### Plads til hele den næste private generation
 
 Den normale vejrtransport har et fast lokalt lagerbudget på 2,5 GB og beholder 100 MB reserve efter plads til en hel ny generation på højst 350 MB. Før det første nye objekt uploades, tæller den samme lagerlæser alt eksisterende indhold med. Aktuel generation, reserve og ældre nødvendige originaler skal bevares; utilstrækkelig eller ukendt plads giver afslag.

@@ -8,7 +8,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { assertOrdinaryCompletedStageRequest, bindOrdinaryStagePublicationRequest, materializeOrdinaryStageCandidate }
+import { assertOrdinaryCompletedStageRequest, bindOrdinaryStagePublicationRequest, materializeOrdinaryStageCandidate, readOrdinaryStageParentCheckpoint }
   from './ordinary-completed-stage-admission.mjs';
 import { PRIVATE_RUNTIME_FILES, PRIVATE_RUNTIME_CONTRACT_FILES, buildPrivateRuntimeCreateSpec,
   buildPrivateRuntimeExpectation, installRestoredPrivateRuntime } from './private-production-runtime-workflow.mjs';
@@ -21,6 +21,14 @@ import { publishPrivateWeatherRuntime } from './publish-private-weather-runtime.
 import { readCompletedPrivateRuntimePin } from './completed-private-runtime-admission.mjs';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 import { normalBAndSTransports } from './lib/established-native-current-origin-test-transports.mjs';
+import { saveRavScoreContinuationCheckpoint } from './ravscore-continuation-checkpoint.mjs';
+import { restoreProtectedRavScoreContinuationCheckpoint } from './protected-ravscore-continuation-checkpoint.mjs';
+import { buildIntegratedRavScoreStateSeries } from '../js/core/ravscore-integrated-state-pipeline.js';
+import { buildCandidateGDerivedStateSeries } from '../js/core/ravscore-candidate-g-state-pipeline.js';
+import { candidateGStateKey } from './lib/coastal-point-staging-contract.mjs';
+import { ravScoreSamplingContextKey } from './lib/ravscore-sampling-context.mjs';
+import { ravScoreModelBinding as candidateBinding } from './rollback-assets/ravscore-model-contract.js';
+import { CANDIDATE_G_OPERATIONAL_ROLLBACK_ID } from './lib/ravscore-candidate-g-rollback-runtime.mjs';
 
 test('explicit stage request keeps the old completed mode separate and rejects mixed requests before I/O', () => {
   const env = { COMPLETED_STAGE_SOURCE: '123-1-' + 'a'.repeat(40), COMPLETED_PRIVATE_RUNTIME: 'true',
@@ -191,6 +199,86 @@ export async function assertNormalStagePublication(t) {
     scoringPerformed: false, providerRequestsPerformed: false }));
 }
 test('normal GCM/B/atomic install/recreated B and real publisher bind the original producer to exact parent CAS', assertNormalStagePublication);
+
+test('normal protected parent checkpoint uses isolated reads and preserves a newer working child', async t => {
+  const temp = await fs.realpath(os.tmpdir());
+  const own = await fs.mkdtemp(path.join(temp, 'rr-ordinary-parent-s-'));
+  const identity = await fs.lstat(own, { bigint: true });
+  t.after(async () => {
+    const current = await fs.lstat(own, { bigint: true });
+    assert.equal(path.dirname(own), temp); assert(path.basename(own).startsWith('rr-ordinary-parent-s-'));
+    assert.equal(current.isSymbolicLink(), false); assert.equal(current.ino, identity.ino); assert.equal(current.dev, identity.dev);
+    await fs.rm(own, { recursive: true, force: false });
+  });
+  const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+  const I = ravScoreModelBinding(), C = candidateBinding();
+  const conditionsFor = reference => {
+    // Same current 49-hour/673-part state recipe as the normal lineage case.
+    // This constructs valid S values, not an origin attestation or admission.
+    const samples = Array.from({ length: 49 }, (_, i) => ({
+      time: new Date(Date.parse(reference) - (48 - i) * 3_600_000).toISOString(),
+      currentSpeedMps: 0.12, currentAlignment: 0.75, currentVerified: true,
+      waveHeightM: 1.2, wavePeriodS: 6, waveDirectionDeg: 270,
+    }));
+    const partFor = i => ({ partId: 'p' + i, zoneId: 'fixture-zone', landPoint: [10, 56],
+      waterPoint: [10.01, 56.01], onshoreDirectionDeg: 90 });
+    const first = partFor(0), parts = {}, candidateParts = {};
+    const integrated = buildIntegratedRavScoreStateSeries(samples, {
+      samplingContextKey: ravScoreSamplingContextKey(first), onshoreDirectionDeg: 90 }).rows.at(-1).continuationState;
+    const candidate = buildCandidateGDerivedStateSeries(samples, { stateKey: candidateGStateKey(first) }).continuationState;
+    for (let i = 0; i < 673; i++) {
+      const part = partFor(i);
+      parts[part.partId] = { ...part, ravScoreModel: { currentState: {
+        ...structuredClone(integrated), samplingContextKey: ravScoreSamplingContextKey(part) } } };
+      candidateParts[part.partId] = { ravScoreModel: { currentState: {
+        ...structuredClone(candidate), stateKey: candidateGStateKey(part) } } };
+    }
+    return { datasetId: 'rr-parent-s-' + reference.slice(11, 13), productionReferenceAt: reference,
+      coastalParts: { modelBinding: I, expectedPartCount: 673, parts },
+      ravScoreCandidateGRollback: { schemaVersion: '1.0.0', kind: 'PRIVATE_CANDIDATE_G_OPERATIONAL_ROLLBACK_RUNTIME',
+        privacyClass: 'PRIVATE_PRODUCTION_RUNTIME', sourceModelBinding: I, rollbackModelBinding: C,
+        rollbackId: CANDIDATE_G_OPERATIONAL_ROLLBACK_ID, automaticActivationAllowed: false, publicDuringNormalOperation: false,
+        runtime: { modelBinding: C, expectedPartCount: 673, scoredPartCount: 673,
+          scoreProfile: { modelCoverageReady: true, modelMemoryReady: true, modelMigrationReady: true }, parts: candidateParts } } };
+  };
+  const parentAt = '2026-10-19T10:00:00.000Z', childAt = '2026-10-19T11:00:00.000Z';
+  const checkpoints = [];
+  for (const [label, reference] of [['parent', parentAt], ['child', childAt]]) {
+    const sourcePath = path.join(own, label + '-conditions.json'), checkpointPath = path.join(own, label + '-checkpoint.json');
+    await fs.writeFile(sourcePath, JSON.stringify(conditionsFor(reference)));
+    await saveRavScoreContinuationCheckpoint({ sourcePath, checkpointPath, repositoryRoot });
+    checkpoints.push(JSON.parse(await fs.readFile(checkpointPath, 'utf8')));
+  }
+  const [parent, child] = checkpoints, transport = normalBAndSTransports();
+  const row = { document_key: 'ravscore-continuation-checkpoint', version: 7, payload: structuredClone(parent) };
+  transport.documents.set(row.document_key, structuredClone(row));
+  const restoreTransport = transport.installFixedReaderTransport();
+  t.after(restoreTransport);
+  const working = path.join(own, 'working', '.cache/ravscore-continuation-checkpoint/checkpoint.json');
+  await fs.mkdir(path.dirname(working), { recursive: true });
+  await fs.writeFile(working, JSON.stringify(child) + '\n');
+  const workingBytes = await fs.readFile(working);
+  const oldRestore = await restoreProtectedRavScoreContinuationCheckpoint({ checkpointPath: working, targetReference: childAt,
+    request: transport.documentRequest });
+  assert.equal(oldRestore.restored, false); assert.equal(oldRestore.reason, 'local-checkpoint-newer');
+  const descriptor = { datasetId: parent.datasetId, productionReferenceAt: parentAt };
+  const first = await readOrdinaryStageParentCheckpoint(descriptor, path.join(own, 'parent-before-lineage'));
+  const second = await readOrdinaryStageParentCheckpoint(descriptor, path.join(own, 'parent-after-lineage'));
+  assert.deepEqual(first, parent); assert.deepEqual(second, parent);
+  assert.notEqual(first.generationSha256, child.generationSha256);
+  assert.deepEqual(await fs.readFile(working), workingBytes);
+  assert.deepEqual(transport.documents.get(row.document_key), row);
+  transport.documents.delete(row.document_key);
+  await assert.rejects(readOrdinaryStageParentCheckpoint(descriptor, path.join(own, 'missing-parent')),
+    { code: 'ORDINARY_STAGE_PARENT_CHECKPOINT_MISSING' });
+  transport.documents.set(row.document_key, { ...structuredClone(row), payload: { ...structuredClone(parent), generationSha256: '0'.repeat(64) } });
+  await assert.rejects(readOrdinaryStageParentCheckpoint(descriptor, path.join(own, 'corrupt-parent')));
+  assert.deepEqual(await fs.readFile(working), workingBytes);
+  assert(transport.events.every(event => event === 'S_READ'), 'The protected parent reads perform no SAVE/CAS.');
+  console.log(JSON.stringify({ currentProtectedParentRead: true, workingChildUnchanged: true,
+    twoFreshAuthenticatedReads: true, missingOrCorruptParentRefused: true, fullAdmissionProved: false,
+    providerOrProductionRequests: false }));
+});
 
 test('actual completed-stage consumer admits genuine normal parent/child through the lexical origin reader', () => {
   // Existing archive/origin fixture, not a detached JSON attestation or a

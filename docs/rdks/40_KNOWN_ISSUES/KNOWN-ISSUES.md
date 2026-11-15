@@ -1,3 +1,7 @@
+## Genoptagelse: nyere lokal child-S er ikke forælderens S
+
+Den normale restore kan korrekt bevare en nyere lokal checkpointfil. Genoptagelsens lineagekontrol skal derfor læse den autentificerede parent-S særskilt og må ikke bruge arbejdsfilen som forælder. Den afgrænsede kalderrettelse og aktuelle inputvalg er lokalt målprøvet; kildekvalifikation og faktisk fuld genoptagelse er særskilte beviser. Ingen lineagekontrol eller nyere gyldig cache fjernes. Se DEC-0255 og håndbog 89.257.
+
 ## Privat vejrpublicering: hel generationsplads og faktisk genoptagelse
 
 En færdig beregning kan afvises, når gammel aktuel/reserve og bevaringspligtige originaler efterlader for lidt plads til næste private generation. Den nye lokale transportpolitik er 2,5 GB alene til weather-bucketen, med målt helgenerationsadmission og 100 MB reserve. Den frosne læser, originaler og normale pointer-/readbackregler ændres ikke.
