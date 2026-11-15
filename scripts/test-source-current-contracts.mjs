@@ -12,10 +12,14 @@ import {copernicusOfflineEnvironment} from './lib/copernicus-offline-environment
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {CURRENT_CONTRACT_COMMANDS,isBoundedLocalRestoreFixtureChange,isArchiveRestoreOuterQueueOnlyChange,pagesContractCommandsForChangedInputs,dmiBudgetWeatherBuildAreas,isDmiBudgetOnlyUpdaterChange,isDmiBudgetOnlySupervisorChange,isDmiCollectionRecoveryOnlyUpdaterChange,isDmiCollectionRecoveryOnlyFixtureChange,dmiCollectionRecoveryUpdaterAreas} from './source-current-contract-plan.mjs';
 
+import { WEATHER_PUBLICATION_PATHS, inversePrivateWeatherPublicationWorkflow, isPrivateWeatherPublicationWorkflowChange,
+  PRIVATE_WEATHER_PUBLICATION_OWNER_EDITS, isAdditivePrivateWeatherPublicationOwnerChange } from './lib/private-weather-publication-workflow.mjs';
+
 const SOURCE=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const dmiBudgetScopeOnly=process.argv.includes('--dmi-budget-scope-only');
 const dmiRecoveryScopeOnly=process.argv.includes('--dmi-recovery-scope-only');
 const adminHistoryScopeOnly=process.argv.includes('--admin-history-scope-only');
+const weatherPublicationScopeOnly=process.argv.includes('--weather-publication-scope-only');
 
 // The fixed restore command owns only its reviewed fixture body. Import and
 // dispatch frames remain immutable; its actual --self-test runs separately.
@@ -436,7 +440,7 @@ function collect(file){
 }
 for(const file of ['scripts/source-targeted-producer.mjs','scripts/source-targeted-consumer.mjs',
   'scripts/source-current-contract-receipt.mjs','scripts/source-current-contract-plan.mjs'])collect(file);
-const additions=[...controlSources,...ownerHelpers,
+const additions=[...controlSources,...ownerHelpers,...WEATHER_PUBLICATION_PATHS,
   '.github/workflows/watch-missed-weather-schedule.yml','scripts/weather-source-gate.mjs',
   ...['594','597','598'].map(v=>'scripts/lib/source-impact-domain-inputs-'+v+'.json')];
 const fixtureControlBytes=file=>fs.readFileSync(path.join(SOURCE,file));
@@ -663,7 +667,7 @@ try{
   planCurrent=plan;
 
   // Begin exact small-contract owner assertions (also run by the full normal target).
-  if(!dmiBudgetScopeOnly&&!dmiRecoveryScopeOnly&&!adminHistoryScopeOnly){
+  if(!weatherPublicationScopeOnly&&!dmiBudgetScopeOnly&&!dmiRecoveryScopeOnly&&!adminHistoryScopeOnly){
     const started=performance.now(),caller='scripts/weather-component-progress-cache.mjs',
       fixture='scripts/test-weather-component-progress-cache.mjs',workflow='.github/workflows/reusable-weather-build.yml';
     const ownedPaths=[caller,fixture],bytes=new Map([...ownedPaths,workflow].map(file=>[file,fixtureControlBytes(file)]));
@@ -715,7 +719,7 @@ try{
       completeExistingTargetFiles:7,wholeExistingTargetCommands:5,protectedAnalysisReused:false,plannerMock:false}));
   }
 
-  if(!dmiBudgetScopeOnly&&!dmiRecoveryScopeOnly&&!adminHistoryScopeOnly){
+  if(!weatherPublicationScopeOnly&&!dmiBudgetScopeOnly&&!dmiRecoveryScopeOnly&&!adminHistoryScopeOnly){
     const ownerCases=assertSmallUserContractPlanScope({baselineCommit:base,baselineTree,rewriteTree:rewrite,makeCommit:commit,checkoutCommit:checkout,plan,restoreHead:base});
     const prerequisiteCases=assertSelectedProgressCopernicusPrerequisite();
     cases+=ownerCases+prerequisiteCases;
@@ -724,7 +728,85 @@ try{
   }
   // End exact small-contract owner assertions.
 
-  if(!dmiBudgetScopeOnly&&!dmiRecoveryScopeOnly){
+  if(!dmiBudgetScopeOnly&&!dmiRecoveryScopeOnly&&!adminHistoryScopeOnly){
+    const started=performance.now(),build='.github/workflows/reusable-weather-build.yml',repair='.github/workflows/deploy-code-only-repair.yml';
+    const publicationCaseStart=cases;
+    const actual=new Map([build,repair].map(file=>[file,fs.readFileSync(path.join(SOURCE,file))]));
+    const old=new Map([...actual].map(([file,bytes])=>[file,inversePrivateWeatherPublicationWorkflow(bytes)]));
+    const priorTree=rewrite(baselineTree,[...old]),prior=commit(priorTree,[base],'synthetic private weather publication predecessor');
+    const check=(file,body,label,expected=true)=>{
+      const candidate=commit(rewrite(priorTree,[[file,body]]),[prior],'synthetic weather publication '+label);checkout(candidate);
+      const selected=plan({baselineCommit:prior,candidateCommit:candidate,expectedHead:candidate});
+      if(expected){
+        assert.equal(selected.selection,'CURRENT_CONTRACTS',JSON.stringify(selected));
+        assert.deepEqual(Object.keys(selected.areas),['core','weatherPublication',
+          ...(file==='scripts/test-ordinary-completed-stage-source.mjs'?['historicalTests']:[])]);
+        assert.deepEqual(selected.areas.weatherPublication.commands,CURRENT_CONTRACT_COMMANDS.weatherPublication);
+        assert.equal(selected.controlQualificationRequired,true);
+        assert.deepEqual(selected.protectedInputs,{postgresUnchanged:true,CUnchanged:true,IUnchanged:true,TUnchanged:true});
+      }else if(file===repair){
+        assert.equal(selected.selection,'CURRENT_CONTRACTS',JSON.stringify(selected));
+        assert.deepEqual(Object.keys(selected.areas),['core','pagesArtifact','compatibility']);
+        assert.deepEqual(selected.commands,[...CURRENT_CONTRACT_COMMANDS.core,...CURRENT_CONTRACT_COMMANDS.pagesArtifact,...CURRENT_CONTRACT_COMMANDS.compatibility]);
+        assert.equal(selected.controlQualificationRequired,true);
+      }else{assert.equal(selected.selection,'FULL',JSON.stringify(selected));assert.deepEqual(selected.commands,[]);}
+      cases++;
+    };
+    for(const file of WEATHER_PUBLICATION_PATHS){
+      const before=git(root,['cat-file','blob',prior+':'+file]);
+      check(file,Buffer.concat([before,Buffer.from('\n// Synthetic solo publication owner delta\n')]),file);
+    }
+    for(const file of [build,repair]){
+      check(file,actual.get(file),'exact publication argv');
+      const source=actual.get(file).toString();
+      for(const [label,body]of [
+        ['argv',source.replace('scripts/publish-private-weather-runtime.mjs','scripts/publish-private-weather-runtime.mjs --unknown')],
+        ['env',source.replace('secrets.RAVRADAR_R2_ACCOUNT_ID','secrets.UNKNOWN_ACCOUNT')],
+        ['gate',source.replace('        if:','        if: false &&')],
+        ['step',source+'\n      - name: Synthetic unknown step\n        run: false\n'],
+      ]){
+        assert.notEqual(body,source);assert.equal(isPrivateWeatherPublicationWorkflowChange(old.get(file),Buffer.from(body)),false);
+        check(file,Buffer.from(body),label,false);
+      }
+    }
+    const combinedBefore=inversePrivateWeatherPublicationWorkflow(Buffer.from(dmiBefore.get(build)));
+    const combinedAfter=actual.get(build);
+    for(const [label,beforeBytes,afterBytes,expected]of [
+      ['old-to-new with DMI',combinedBefore,combinedAfter,['dmiBudget','weatherPublication']],
+      ['both-new retain DMI',Buffer.from(dmiBefore.get(build)),combinedAfter,['dmiBudget']],
+      ['reverse entry',combinedAfter,combinedBefore,null],
+      ['combined unknown argv',combinedBefore,Buffer.from(combinedAfter.toString().replace('scripts/publish-private-weather-runtime.mjs','scripts/publish-private-weather-runtime.mjs --unknown')),null],
+      ['combined unknown gate',combinedBefore,Buffer.from(combinedAfter.toString().replace('        if:','        if: false &&')),null],
+      ['combined unknown step',combinedBefore,Buffer.concat([combinedAfter,Buffer.from('\n# Synthetic unknown workflow change\n')]),null],
+    ]){
+      const oldTree=rewrite(priorTree,[[build,beforeBytes]]),comparison=commit(oldTree,[prior],'synthetic publication combination predecessor');
+      const candidate=commit(rewrite(oldTree,[[build,afterBytes]]),[comparison],'synthetic publication combination '+label);checkout(candidate);
+      const selected=plan({baselineCommit:comparison,candidateCommit:candidate,expectedHead:candidate});
+      if(expected){assert.equal(selected.selection,'CURRENT_CONTRACTS',JSON.stringify(selected));
+        assert.deepEqual(Object.keys(selected.areas).filter(area=>area!=='core').sort(),[...expected].sort());
+        assert.equal(selected.controlQualificationRequired,true);
+        assert.deepEqual(selected.protectedInputs,{postgresUnchanged:true,CUnchanged:true,IUnchanged:true,TUnchanged:true});
+      }else{assert.equal(selected.selection,'FULL',JSON.stringify(selected));assert.deepEqual(selected.commands,[]);}
+      cases++;
+    }
+    const protectedFile=profile.postgresModules[0];check(protectedFile,Buffer.concat([
+      git(root,['cat-file','blob',prior+':'+protectedFile]),Buffer.from('\n// Synthetic genuine protected drift\n')]),'PG remains protected',false);
+    const current=fs.readFileSync(path.join(SOURCE,'scripts/source-current-contract-plan.mjs'));
+    let predecessor=current.toString();
+    for(const [old,added]of PRIVATE_WEATHER_PUBLICATION_OWNER_EDITS){assert.equal(predecessor.split(added).length,2);predecessor=predecessor.replace(added,old);}
+    assert(isAdditivePrivateWeatherPublicationOwnerChange(Buffer.from(predecessor),current));
+    assert(!isAdditivePrivateWeatherPublicationOwnerChange(current,Buffer.from(predecessor)),'Owner removal is not additive admission.');
+    for(const [old,added]of PRIVATE_WEATHER_PUBLICATION_OWNER_EDITS){
+      assert(!isAdditivePrivateWeatherPublicationOwnerChange(Buffer.from(predecessor),Buffer.from(current.toString().replace(added,old))));
+      assert(!isAdditivePrivateWeatherPublicationOwnerChange(Buffer.from(predecessor),Buffer.from(current.toString().replace(added,added+added))));
+    }
+    assert(!isAdditivePrivateWeatherPublicationOwnerChange(Buffer.from(predecessor),Buffer.from(current.toString().replace("'node scripts/test-security-hardening-4.0.284.mjs'","'node scripts/unknown.mjs'"))));
+    assert(!isAdditivePrivateWeatherPublicationOwnerChange(Buffer.from(predecessor),Buffer.from(current.toString().replace('out.controlQualificationRequired=true','out.controlQualificationRequired=false'))));
+    checkout(base);scenarios.push('Publication solo owners and exact argv require control review; unknown BUILD/PG retains FULL and repair retains its original broader compatibility targets');
+    console.log(JSON.stringify({kind:'WEATHER_PUBLICATION_NORMAL_GIT_SCOPE',cases:cases-publicationCaseStart,elapsedMs:performance.now()-started,
+      realGit:true,actualProtectedInputsUnchanged:true,ownerRemovalRefused:true,unknownChangesRefused:true,productionAuthority:false}));
+  }
+  if(!weatherPublicationScopeOnly&&!dmiBudgetScopeOnly&&!dmiRecoveryScopeOnly){
     const started=performance.now(),files=['scripts/admin-document-history-maintenance.mjs','scripts/test-admin-document-history-maintenance.mjs'];
     const priorTree=rewrite(baselineTree,files.map(file=>[file,fixtureControlBytes(file)]));
     const prior=commit(priorTree,[base],'synthetic existing admin history controller and regression');
@@ -758,7 +840,7 @@ try{
     checkout(base);scenarios.push('Existing admin-history controller selects both real owner targets; unknown/PG/A/D/mode retain FULL');
     console.log(JSON.stringify({kind:'ADMIN_HISTORY_NORMAL_GIT_SCOPE',cases:6,elapsedMs:performance.now()-started,protectedAnalysisReused:false}));
   }
-  if(!dmiRecoveryScopeOnly&&!adminHistoryScopeOnly){
+  if(!weatherPublicationScopeOnly&&!dmiRecoveryScopeOnly&&!adminHistoryScopeOnly){
   const dmiScopeStarted=performance.now();
   // The existing normal Git planner, with genuine PG/C/I/T fixture inputs.
   const dmiBaseTree=rewrite(baselineTree,DMI_FILES.map(f=>[f,Buffer.from(dmiBefore.get(f))]));
@@ -790,7 +872,7 @@ try{
   console.log(JSON.stringify({kind:'DMI_BUDGET_NORMAL_GIT_SCOPE',cases:6,elapsedMs:performance.now()-dmiScopeStarted,
     independentProtectedBoundaryRefusals:3,unknownAndAddedRefusals:2,protectedAnalysisReused:false}));
   }
-  if(!dmiBudgetScopeOnly&&!adminHistoryScopeOnly){
+  if(!weatherPublicationScopeOnly&&!dmiBudgetScopeOnly&&!adminHistoryScopeOnly){
     const started=performance.now(),producer='scripts/update-dmi-bulk.py',fixture='scripts/test-dmi-dkss-primary-mode.py';
     // Actual historical Git blobs are test inputs only. They cannot route or
     // qualify a candidate. Pin both preimages so later producer/version work
@@ -835,7 +917,7 @@ try{
     console.log(JSON.stringify({kind:'DMI_COLLECTION_RECOVERY_NORMAL_GIT_SCOPE',cases:8,elapsedMs:performance.now()-started,
       protectedAnalysisReused:false,productInputsAreHistoricalGitBlobs:true,qualificationHashPinsAdded:false}));
   }
-  if(!dmiBudgetScopeOnly&&!dmiRecoveryScopeOnly&&!adminHistoryScopeOnly){
+  if(!weatherPublicationScopeOnly&&!dmiBudgetScopeOnly&&!dmiRecoveryScopeOnly&&!adminHistoryScopeOnly){
   // Den samme normale Gitplan skal eje transportvalget og bevare sine beskyttede input.
   const beforeTransportHead=text(root,['rev-parse','HEAD']);
   try{
@@ -1110,6 +1192,60 @@ try{
     planSha256:currentReceiptHelpers.currentContractPlanSha256(baselinePlan,legacyFull),
     reviewSha256:sha('SYNTHETIC old V3 control review only')};
 
+  // V4 keeps its entire canonical shape; only its complete-file capacity grows.
+  const capacityLimit=currentReceiptHelpers.CURRENT_CHANGE_SOURCE_MAX_FILE_BYTES;
+  assert.equal(capacityLimit,48*1024);
+  const capacityInput={current:selectedReceipt.current,fullBaseline:legacyFull,
+    changeBase:selectedReceipt.changeBase,currentPlan:clone(baselinePlan),cumulativePlan:clone(baselinePlan),
+    frontier:selectedReceipt.frontier,commandResults:clone(selectedReceipt.reportedCommandResults)};
+  const plannedInput=value=>Object.fromEntries(Object.entries(value).filter(([key])=>key!=='commandResults'));
+  const paddedCapacity=length=>{
+    const input=clone(capacityInput),receipt=clone(selectedReceipt);
+    const file='scripts/synthetic-capacity-'+('x'.repeat(length))+'.mjs';
+    input.currentPlan.areas.core.changedPaths.push(file);receipt.impact.areas.core.changedPaths.push(file);
+    const {planSha256,...impact}=receipt.impact;receipt.impact.planSha256=sha(JSON.stringify(impact));
+    return {input,receipt,bytes:Buffer.byteLength(JSON.stringify(receipt)+'\n')};
+  };
+  const emptyCapacity=paddedCapacity(0),mediumCapacity=paddedCapacity(33000-emptyCapacity.bytes);
+  assert.equal(mediumCapacity.bytes,33000);
+  assert.equal(currentReceiptHelpers.validateCurrentChangeSourceReceipt(mediumCapacity.receipt,mediumCapacity.input).validStructure,true);
+  const plannedCapacity=currentReceiptHelpers.assertCurrentChangeReceiptCapacity(plannedInput(mediumCapacity.input));
+  assert.equal(plannedCapacity.scope,'PLANNED_RECEIPT_BYTE_BUDGET_ONLY');
+  assert.equal(plannedCapacity.maximumFileBytes,capacityLimit);assert(plannedCapacity.plannedFileBytes>=mediumCapacity.bytes);
+  assert.equal(plannedCapacity.actualCommandResults,false);assert.equal(plannedCapacity.receiptCreated,false);
+  assert.equal(plannedCapacity.deliveryAuthority,false);assert(!Object.hasOwn(plannedCapacity,'reportedCommandResults'));
+  const exactCapacity=paddedCapacity(capacityLimit-emptyCapacity.bytes);
+  assert.equal(exactCapacity.bytes,capacityLimit);
+  assert.equal(currentReceiptHelpers.validateCurrentChangeSourceReceipt(exactCapacity.receipt,exactCapacity.input).validStructure,true);
+  const overCapacity=paddedCapacity(capacityLimit+1-emptyCapacity.bytes);
+  assert.equal(overCapacity.bytes,capacityLimit+1);
+  assert.throws(()=>currentReceiptHelpers.validateCurrentChangeSourceReceipt(overCapacity.receipt,overCapacity.input),/RECEIPT_TOO_LARGE/);
+  assert.throws(()=>currentReceiptHelpers.assertCurrentChangeReceiptCapacity(plannedInput(overCapacity.input)),/RECEIPT_CAPACITY_EXCEEDED/);
+  const oldCapacity=clone(capacityInput.currentPlan);
+  oldCapacity.areas.core.changedPaths.push('scripts/'+('x'.repeat(33000))+'.mjs');
+  assert.throws(()=>currentReceiptHelpers.validateCurrentContractSourceReceipt(null,{current:capacityInput.current,
+    fullBaseline:legacyFull,currentPlan:oldCapacity,commandResults:capacityInput.commandResults}),/RECEIPT_TOO_LARGE/);
+  // The independent planned upper bound accounts for every safe-integer width.
+  const worstInput=clone(mediumCapacity.input);
+  for(const row of worstInput.commandResults)row.elapsedMs=Number.MAX_SAFE_INTEGER;
+  const worstReceipt=clone(mediumCapacity.receipt);worstReceipt.reportedCommandResults=worstInput.commandResults;
+  assert.equal(Buffer.byteLength(JSON.stringify(worstReceipt)+'\n'),plannedCapacity.plannedFileBytes);
+  assert.equal(currentReceiptHelpers.validateCurrentChangeSourceReceipt(worstReceipt,worstInput).validStructure,true);
+  const producerSource=fixtureControlBytes('scripts/source-targeted-producer.mjs').toString('utf8');
+  assert(producerSource.indexOf('assertCurrentChangeReceiptCapacity({...reviewInput(),frontier})')
+    <producerSource.indexOf('clean(head);prepareSelectedScalarSourceTarget(executionPlan.commands)'));
+  const priorCapacityRows=rows;
+  const largeDocs=Array.from({length:180},(_,i)=>['docs/ai/synthetic-capacity-'+String(i).padStart(3,'0')+'-'+('x'.repeat(100))+'.md',
+    Buffer.from('# Synthetic planned capacity only\n')]);
+  configure(commit(rewrite(candidateTree,largeDocs),[positiveHead],'synthetic receipt capacity before commands'));
+  baselinePlan=plan({baselineCommit:base,candidateCommit:head,expectedHead:head});
+  assert.equal(baselinePlan.status,'PLANNED');rebuildMaps();
+  await assert.rejects(coordinate(),/RECEIPT_CAPACITY_EXCEEDED/);assert.equal(rows.length,0);
+  configure(positiveHead);baselinePlan=plan({baselineCommit:base,candidateCommit:head,expectedHead:head});
+  rows=priorCapacityRows;rebuildMaps();
+  cases+=7;scenarios.push('V4 complete-file48KiB and newline boundaries, exact conservative planning budget, legacy32KiB unchanged, actual producer stops before any target');
+
+
 
   main=commit(candidateTree,[base,head],'synthetic same-tree main merge');checkout(main);state.merged=true;
   assert.equal(text(root,['rev-parse',head+'^{tree}']),text(root,['rev-parse',main+'^{tree}']));
@@ -1134,6 +1270,30 @@ try{
     pull:currentPull(),run:run(true),job:jobs(true),runId:selectedRun,jobId:selectedJob,pr:selectedPr,artifactId:selectedArtifactId};
 
   const validReceipt=clone(selectedReceipt),validMetadata=clone(selectedMetadata),validZip=selectedZip;
+
+  // Both normal MAIN entry points consume one stored V4 member at exactly48KiB.
+  const canonicalRaw=Buffer.from(JSON.stringify(validReceipt)+'\n');
+  const boundaryRaw=Buffer.concat([canonicalRaw,Buffer.alloc(capacityLimit-canonicalRaw.length,32)]);
+  const storedBoundary=execFileSync('python',['-c',
+    'import io,sys,zipfile; b=io.BytesIO(); z=zipfile.ZipFile(b,"w",compression=zipfile.ZIP_STORED); z.writestr("source-targeted-impact-proof.json",sys.stdin.buffer.read()); z.close(); sys.stdout.buffer.write(b.getvalue())'],
+    {input:boundaryRaw,maxBuffer:65536,timeout:10000,stdio:['pipe','pipe','pipe']});
+  assert.equal(storedBoundary.length,boundaryRaw.length+164);assert(storedBoundary.length<=65536);
+  selectedZip=storedBoundary;selectedMetadata=meta(selectedArtifactId,validReceipt.artifactName,selectedZip,selectedRun,head,22);rebuildMaps();
+  const boundaryFound=await discover(context,content,{...freshAccess(),readGit});
+  assert.equal(boundaryFound.requiresVerification,true);
+  assert.equal(boundaryFound.locator.proofSha256,sha(boundaryRaw));
+  assert.equal((await decide(boundaryFound.locator,context,{...freshAccess(),readGit})).required,false);
+  selectedZip=zip(Buffer.concat([boundaryRaw,Buffer.from(' ')]),'source-targeted-impact-proof.json');
+  selectedMetadata=meta(selectedArtifactId,validReceipt.artifactName,selectedZip,selectedRun,head,22);rebuildMaps();
+  assert.equal((await discover(context,content,{...freshAccess(),readGit})).required,true);
+  const oversizedV3=Buffer.concat([Buffer.from(JSON.stringify(legacyFirstReceipt)+'\n'),
+    Buffer.alloc(32769-Buffer.byteLength(JSON.stringify(legacyFirstReceipt)+'\n'),32)]);
+  selectedReceipt=legacyFirstReceipt;selectedZip=zip(oversizedV3,'source-targeted-impact-proof.json');
+  selectedMetadata=meta(selectedArtifactId,legacyFirstReceipt.artifactName,selectedZip,selectedRun,head,22);rebuildMaps();
+  assert.equal((await discover(context,content,{...freshAccess(),readGit})).required,true);
+  selectedReceipt=validReceipt;selectedMetadata=validMetadata;selectedZip=validZip;rebuildMaps();
+  cases+=3;scenarios.push('normal discover and MAIN decoder accept exact48KiB V4 stored file, reject one-byte overflow, preserve old V3 complete-file32KiB');
+
   for(const change of [
     row=>{row.reportedCommandResults[0].outcome='FAIL';},
     row=>{row.reportedCommandResults.pop();},

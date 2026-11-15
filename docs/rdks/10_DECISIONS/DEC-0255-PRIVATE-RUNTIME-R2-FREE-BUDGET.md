@@ -4,6 +4,18 @@ Den normale syntetiske restore med den uændrede fixture har faktisk bestået al
 
 # DEC-0255 – Privat produktionscache til R2 med målt Free-budget
 
+## Tillæg 15. november 2026 — plads til en hel ny privat vejrgeneration
+
+Den nye normale transportkalder har et fast loft på **2.500.000.000 bytes** for præcis weather-bucketen `ravradar-private-production-runtime`. Adminarkivets og databasebackuppens lofter er fortsat 2.000.000.000 bytes hver. Der er ingen miljø-, workflow- eller CLI-parameter til at hæve vejrbudgettet. Den frosne adapters oprindelige standardloft og de historiske læsere ændres ikke.
+
+Under den eksisterende eksklusive writer skal den samme R2-adapter måle forbruget før **første faktiske nye immutable PUT**. Forbruget plus den uændrede maksimale generation på 350.000.000 bytes plus 100.000.000 bytes reserve skal kunne rummes under 2,5 GB. Samme admission bruges af frisk vejr, genoptagelse fra autentificeret completed-stage og den almindelige kodeleverings private publicering. Allerede eksisterende objekter må fortsat genbruges gennem normal HEAD og fuld byte-/hashgenlæsning uden et nyt PUT. Ingen ekstra transportgenforsøg indføres; en afvist admission holdes afvist under den eksisterende adapters genforsøg.
+
+Maksimal del er fortsat 50.000.000 bytes. Arkivberegning, originaler, model- og B/S-bindinger, no-loss, hel genlæsning før pointer-CAS, afklaring af mistet svar, kun-ejet fejloprydning og retirement af gammel previous efter succes bevares. De ældre ukendte/bevaringspligtige grupper slettes eller omklassificeres ikke. Denne ændring giver ikke en generel orphan-pruner eller holdbar DELETE-genoptagelse.
+
+De tre lokale bucketlofter summerer til 6,5 GB. Den nominelle forskel til 10 GB-måned er 3,5 GB; det er ikke en global kontospærring, bevis for tidligere daglige peaks, alle fremtidige skriveres adfærd eller en samlet Free-godkendelse. Lagerklasse, operationskvoter og faktisk kontoforbrug skal stadig måles. Kildekvalifikation og kontrolleret normal levering kræver deres egne beviser.
+
+Et staged artifact udløber efter sin egen frist. Det er ikke det samme som den normale friskhedskontrol af prognosen: den foretrukne alder er et varsel, mens ugyldig/fremtidig akse eller faktisk udløbet horisont stopper. Gammelt artifact, data eller source-head må ikke ommærkes som en ny beregning.
+
 ## Tillæg 14. november 2026 — samlet relationskontrol før arkivets DATA
 
 **Status: kildeforberedt diagnose og syntetisk kalder; faktisk PostgreSQL- og arkiv-/Auth-accept mangler.**

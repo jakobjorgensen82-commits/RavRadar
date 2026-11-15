@@ -195,6 +195,10 @@ En særskilt forberedt SDK-prøve undersøger tab af dens egen actionparent og k
 
 Ældre workflowprøver kontrollerer deres eget autentiske originalgrundlag. De kodeblokke, som prøven faktisk udfører, læses fra de aktuelle workflows, så historik ikke bliver et falsk bevis for nutidig adfærd. De eksisterende sikkerhedskontroller og afslag bevares. Dette er en rettelse af prøveinput, ikke en ændring af driften eller bevis for ekstern gemning.
 
+### Plads til den komplette kildekvittering
+
+En kildekvittering kan fylde mere, når flere områder er ændret. V4-filen har i denne kildekandidat plads til 48 KiB inklusive linjeskift, og pladsen kontrolleres før prøveforberedelse og prøver. Det ændrer ingen resultater eller beviskrav. Ældre formater beholder 32 KiB, og den pakkede fil har fortsat højst 64 KiB. En planlagt byteberegning er ikke en bestået prøve eller ret til genbrug.
+
 ## 89.340 Ét sikkert Pages-genforsøg og frisk vejr bagefter
 
 Når en senere udgivelse skal kontrollere en tidligere kørsels programfiler, skal filerne også være hentet på den nye runner. Kontroljob og udgivelsesjob får nu samme fulde Git-historik. Kontrollen af de præcise kildefiler ændres ikke; rettelsen retter en manglende forudsætning for kontrollen. Den ændrer ingen prognoser eller scorer. Faktisk offentlig levering skal stadig bevises.
@@ -1803,6 +1807,15 @@ Den interne behandling skal undgå at bygge samme grundlag flere gange og undgå
 En lille, størrelsesbegrænset hukommelse kan genbruge fortolkningen af præcis samme tidsangivelse. Det ændrer ikke tidspunktet eller de tilhørende vejrdata. Systemet skal stadig kontrollere hver kilde og række samt gemme og genlæse resultatet sikkert. Hurtigere lokal behandling er hverken bevis for komplette prognoser eller en målt forbedring på den offentlige side.
 
 ## 89.257 Gem det færdige arbejde, før det leveres
+
+### Plads til hele den næste private generation
+
+Den normale vejrtransport har et fast lokalt lagerbudget på 2,5 GB og beholder 100 MB reserve efter plads til en hel ny generation på højst 350 MB. Før det første nye objekt uploades, tæller den samme lagerlæser alt eksisterende indhold med. Aktuel generation, reserve og ældre nødvendige originaler skal bevares; utilstrækkelig eller ukendt plads giver afslag.
+
+Frisk vejr, genoptagelse af en autentificeret færdig beregning og almindelig kodelevering bruger samme transportpolitik. En allerede gemt identisk pakke kan stadig genlæses og verificeres uden ny upload. Fuld genlæsning, databevaring og central sammenlign-og-byt består før udgivelse. Der slettes ingen gammel gruppe som følge af det større budget, og samlet gratis drift er ikke dermed bevist. Adminarkiv og databasebackup beholder deres egne 2 GB-lofter.
+
+Den gemte pakkes udløbsfrist er selvstændig. Prognosens normale friskheds- og horisontkontrol samt den uændrede aktive forgænger skal stadig godkende genoptagelse.
+
 
 Kort fortalt: En færdig prognose skal kunne gemmes sikkert, så en senere leveringsfejl ikke tvinger systemet til at hente og beregne det samme igen.
 

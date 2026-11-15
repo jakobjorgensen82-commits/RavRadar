@@ -1,3 +1,15 @@
+## Afgrænset V4-filplads og tidlig kapacitetskontrol
+
+Den afgrænsede V4-kildekandidat bevarer alle felter og oprindelseskrav, men tillader en komplet kvitteringsfil på 48 KiB inklusive linjeskift. En konservativ byteberegning stopper en for stor plan før afhængighedsklargøring og prøver, uden at udstede resultater eller kildebevis. Begge normale læseveje bruger samme filgrænse. Ældre formater, fulde baselinebeviser og planlæseren bevarer deres tidligere grænser; ZIP-pakken er fortsat begrænset til 64 KiB. Den faktiske slutkvittering kræver stadig alle valgte resultater og de friske kilde-/job-/reviewkontroller. Præcis kildekvalifikation og uafhængigt kontrolreview kræves fortsat.
+
+## Tillæg 15. november 2026 — naturligt ansvar for privat vejrpublicering
+
+Det eksisterende CURRENT-katalog får ét præcist `weatherPublication`-område for den normale transportkalder, dens fælles rene workflowregel, stage-kalder/kildekontrol og deres eksisterende prøver. De normale hele R2- og stage-source-mål køres; R2-målet genbruger samme normale GCM/B/parent-CAS-case, mens stage-testens oprindelige direkte indgang og genuine origin-case bevares. Alle områdets soloændringer kræver den eksisterende uafhængige kontrolgennemgang.
+
+Fælles pure-regel genkender kun den præcise nye publiceringsentry med samme argv i det almindelige vejrworkflow og code-only-kalderen. Alle andre workflowbytes og deres tidligere routing bevares. Ukendt code-only-drift går fortsat til sine oprindelige bredere mål; det bliver ikke ny transportadmission. PostgreSQL/C/I/T kvalificeres stadig selvstændigt på deres faktiske input.
+
+Cross-head stage-source må kun acceptere den retningsbestemte additive ejer-operation: import, de to deklarationer, den lukkede routingtilslutning og kontrolflaget rekonstruerer hele den gamle planner byteidentisk. Ejerfjernelse, ændret gammel mapping/routing/flag eller andre controllerændringer afvises. Ingen plannerfil ignoreres, og der tilføjes ingen per-head hashgruppe. Kumulativt sammensættes kun de eksisterende Pages-/support-/DMI-inverser med den samme rene publish-inverse. Når begge kilder allerede bruger den nye entry, bevares de oprindelige områder; fjernelse af entry afvises også ved staged-kildesammenligning. Aktuel kilde-CI, autenticitet, parent-CAS, GCM, originaler og produktionsgates er fortsat nødvendige.
+
 ## Tillæg 14. november 2026 — naturligt ansvar for kilde- og cadencekontrol
 
 Det eksisterende sourceControls-ansvar omfatter den normale kilde-CLI, dens fælles v2-læser, den eksisterende eksterne cadenceworkflow og deres to normale testfiler. Det vælger den hele normale kilde-/scopeprøve og begge hele kilde- og cadenceprøver; workflowets Actions-versioner kontrolleres desuden gennem det eksisterende actionVersions-ansvar. Der flyttes ingen cases til en ny testvej, og samme kommando udføres fortsat kun én gang.

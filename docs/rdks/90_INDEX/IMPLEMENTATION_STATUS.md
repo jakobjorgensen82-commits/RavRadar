@@ -1,3 +1,7 @@
+## V4-kvitteringsplads før prøveudførelse
+
+Den afgrænsede V4-kildekandidat bevarer alle felter og oprindelseskrav, men tillader en komplet kvitteringsfil på 48 KiB inklusive linjeskift. En konservativ byteberegning stopper en for stor plan før afhængighedsklargøring og prøver, uden at udstede resultater eller kildebevis. Begge normale læseveje bruger samme filgrænse. Ældre formater, fulde baselinebeviser og planlæseren bevarer deres tidligere grænser; ZIP-pakken er fortsat begrænset til 64 KiB. Den faktiske slutkvittering kræver stadig alle valgte resultater og de friske kilde-/job-/reviewkontroller. Præcis kildekvalifikation og uafhængigt kontrolreview kræves fortsat.
+
 ## 14. november — selvstændig fornyelse af kildebevis er forberedt
 
 En afgrænset kildekandidat lader den eksisterende cadencecontroller kræve en ny reel fuld kildeprøve ved positivt manglende eller udløbet artifact uden først at genkvalificere hele den gamle fejl-/vejrhistorik. En ny faktisk grøn kildeprøve skal fortsat kvalificeres normalt af en anden kørsel, før den kan bruges til vejr. Kendte kildefejl, uafklarede kildetrin og andre ukendte afslag forbliver stop. Cache er kun en læsevej; hovedgren, run, attempt og kildetrin verificeres live. Frisk cadencekontrol efter prøveafslutning forhindrer et dispatch uden for det normale vindue.

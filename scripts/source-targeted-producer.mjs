@@ -6,7 +6,7 @@ import {fileURLToPath} from 'node:url';
 import {execFileSync,spawn} from 'node:child_process';
 import {isDeepStrictEqual} from 'node:util';
 import {qualifySourceImpactFullBaseline,SOURCE_IMPACT_FULL_BASELINE_KIND} from './source-impact-full-baseline.mjs';
-import {buildCurrentChangeSourceReceipt,readCurrentChangeReview,readCurrentChangeReviewBaselineHint}
+import {buildCurrentChangeSourceReceipt,readCurrentChangeReview,readCurrentChangeReviewBaselineHint,assertCurrentChangeReceiptCapacity}
   from './source-current-contract-receipt.mjs';
 import {discoverTargetedSourceGate,decideTargetedSourceGate,verifiedMainSourceFrontier}
   from './source-targeted-consumer.mjs';
@@ -263,6 +263,7 @@ export async function coordinateTargetedSourceProducer(){
   // automatic FULL rerun or an unreviewed short qualification.
   const reviewInput=()=>({current,fullBaseline:baseline,changeBase,currentPlan:impactPlan.plan,cumulativePlan:cumulativeImpactPlan.plan});
   const controlReview=readCurrentChangeReview(pull,reviewInput());
+  assertCurrentChangeReceiptCapacity({...reviewInput(),frontier});
   clean(head);prepareSelectedScalarSourceTarget(executionPlan.commands);
   const commandResults=[];
   for(const command of executionPlan.commands){

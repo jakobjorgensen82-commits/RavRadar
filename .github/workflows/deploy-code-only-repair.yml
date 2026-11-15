@@ -2717,7 +2717,7 @@ jobs:
               --same-reference-predecessor-manifest "$RAVRADAR_PREDECESSOR_PRIVATE_BUNDLE/manifest.json"
             )
           fi
-          node scripts/protected-private-production-runtime.mjs --publish \
+          node scripts/publish-private-weather-runtime.mjs --publish \
             --private-root "$RAVRADAR_PRIVATE_RUNTIME_ROOT" \
             --bundle "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE" \
             --repository-root "$GITHUB_WORKSPACE" \

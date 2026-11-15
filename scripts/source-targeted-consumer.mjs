@@ -11,7 +11,7 @@ import {qualifySourceImpactFullBaseline,SOURCE_IMPACT_FULL_BASELINE_KIND}
   from './source-impact-full-baseline.mjs';
 import {CURRENT_CONTRACT_SOURCE_CONTRACT,CURRENT_CONTRACT_SOURCE_KIND,currentContractSourceArtifactName,
   validateCurrentContractSourceReceipt,readCurrentContractReview,CURRENT_CHANGE_SOURCE_CONTRACT,CURRENT_CHANGE_SOURCE_KIND,
-  currentChangeSourceArtifactName,validateCurrentChangeSourceReceipt,readCurrentChangeReview}
+  currentChangeSourceArtifactName,validateCurrentChangeSourceReceipt,readCurrentChangeReview,CURRENT_CHANGE_SOURCE_MAX_FILE_BYTES}
   from './source-current-contract-receipt.mjs';
 import {ORIGIN,sourceImpactEvidenceBudget} from './native-postgres-evidence.mjs';
 
@@ -128,11 +128,17 @@ function decodeReceipt(zip,remainingBudget){
   const raw=execFileSync('python',['-c',[
     'import io,sys,zipfile','z=zipfile.ZipFile(io.BytesIO(sys.stdin.buffer.read()))',
     'assert z.namelist()==["source-targeted-impact-proof.json"]','i=z.infolist()[0]',
-    'assert not i.is_dir() and 0<i.file_size<=32768 and not (i.flag_bits & 1)',
+    'assert not i.is_dir() and 0<i.file_size<='+CURRENT_CHANGE_SOURCE_MAX_FILE_BYTES+' and not (i.flag_bits & 1)',
     'sys.stdout.buffer.write(z.read(i))',
-  ].join(';')],{input:zip,maxBuffer:32768,timeout:Math.min(10000,Math.max(1,Math.floor(remaining))),
+  ].join(';')],{input:zip,maxBuffer:CURRENT_CHANGE_SOURCE_MAX_FILE_BYTES,timeout:Math.min(10000,Math.max(1,Math.floor(remaining))),
     stdio:['pipe','pipe','pipe']});
-  remainingBudget();assert(raw.length>0&&raw.length<=32768);return raw;
+  remainingBudget();assert(raw.length>0&&raw.length<=CURRENT_CHANGE_SOURCE_MAX_FILE_BYTES);
+  const type=JSON.parse(raw);
+  // The larger transport window is exclusively V4. Archived formats keep
+  // their old complete-file bound and unchanged canonical validators.
+  if(type?.schemaVersion!==4||type?.contractId!==CURRENT_CHANGE_SOURCE_CONTRACT||type?.kind!==CURRENT_CHANGE_SOURCE_KIND)
+    assert(raw.length<=32768);
+  return raw;
 }
 
 // Planning only: replay the authenticated old catalogue in a fresh process,

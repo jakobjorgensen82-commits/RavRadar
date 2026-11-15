@@ -1,3 +1,13 @@
+## V4-kvittering med afgrænset filplads før prøver
+
+Den afgrænsede V4-kildekandidat bevarer alle felter og oprindelseskrav, men tillader en komplet kvitteringsfil på 48 KiB inklusive linjeskift. En konservativ byteberegning stopper en for stor plan før afhængighedsklargøring og prøver, uden at udstede resultater eller kildebevis. Begge normale læseveje bruger samme filgrænse. Ældre formater, fulde baselinebeviser og planlæseren bevarer deres tidligere grænser; ZIP-pakken er fortsat begrænset til 64 KiB. Den faktiske slutkvittering kræver stadig alle valgte resultater og de friske kilde-/job-/reviewkontroller. Præcis kildekvalifikation og uafhængigt kontrolreview kræves fortsat.
+
+## 15. november 2026 — samlet plads før privat vejrpublicering
+
+- Én normal weather-transport bruger det vedtagne 2,5 GB-loft og kræver målt plads til 350 MB ny generation plus 100 MB reserve før første nye PUT. Frisk/staged/code-only deler kaldet; eksisterende HEAD-genbrug, frozen arkiv-/modelbytes, readback, parent-CAS og alle data bevares.
+- Naturligt CURRENT-ejerskab og én fælles præcis argvregel adskiller transportændringen fra beregningen. En retningsbestemt helinverse bevarer hele den gamle planner; ukendt drift får ingen ny kort kvalifikation.
+- Historiske stage-workfloworakler læser deres autentiske faste Git-input, mens aktuelle kalderkontroller fortsat læser aktuelle bytes. Kilde-CI, installation, genoptagelse og Free er særskilte beviser; ingen ny model, version eller migration udstedes.
+
 ## Autentisk historisk workflowinput og aktuelle kalderprøver
 
 Den normale fremskridtsprøves ældre workflowasserter læser deres allerede fastlagte, autentiske workflowgrundlag. De aktuelle workflowkaldere og alle udførte Node-, Python- og Bash-blokke læses særskilt fra den aktuelle kilde. Historisk testinput giver ingen drifts- eller genbrugsautoritet. Det gamle orakel og alle sikkerhedsasserter bevares; der ændres ingen workflow, CLI, model, kvote eller produktionspolitik. Præcis kildekvalifikation og reel Linux-/Bash-afprøvning kræves fortsat.

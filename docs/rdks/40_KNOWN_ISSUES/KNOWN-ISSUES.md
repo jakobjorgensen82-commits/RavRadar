@@ -1,3 +1,13 @@
+## V4-kvitteringsplads: afgrænset kildekandidat
+
+Den afgrænsede V4-kildekandidat bevarer alle felter og oprindelseskrav, men tillader en komplet kvitteringsfil på 48 KiB inklusive linjeskift. En konservativ byteberegning stopper en for stor plan før afhængighedsklargøring og prøver, uden at udstede resultater eller kildebevis. Begge normale læseveje bruger samme filgrænse. Ældre formater, fulde baselinebeviser og planlæseren bevarer deres tidligere grænser; ZIP-pakken er fortsat begrænset til 64 KiB. Den faktiske slutkvittering kræver stadig alle valgte resultater og de friske kilde-/job-/reviewkontroller. Præcis kildekvalifikation og uafhængigt kontrolreview kræves fortsat.
+
+## Privat vejrpublicering: hel generationsplads og faktisk genoptagelse
+
+En færdig beregning kan afvises, når gammel aktuel/reserve og bevaringspligtige originaler efterlader for lidt plads til næste private generation. Den nye lokale transportpolitik er 2,5 GB alene til weather-bucketen, med målt helgenerationsadmission og 100 MB reserve. Den frosne læser, originaler og normale pointer-/readbackregler ændres ikke.
+
+Konkret kildekvalifikation og faktisk genoptagelse er fortsat nødvendige. Et gemt krypteret build er ikke offentlig levering; artifactudløb, prognosefriskhed, parent-B/S og alle normale gates skal bestå. Ældre ukendte objekter giver ingen sletteret. Varig oprydning efter ukendt DELETE, alle originale rødder og samlet Free-/backupaccept er fortsat særskilte spørgsmål. Se DEC-0255, DEC-0302 og håndbog 89.257.
+
 ## Autentisk historisk workflowinput og aktuelle kalderprøver
 
 Den normale fremskridtsprøves ældre workflowasserter læser deres allerede fastlagte, autentiske workflowgrundlag. De aktuelle workflowkaldere og alle udførte Node-, Python- og Bash-blokke læses særskilt fra den aktuelle kilde. Historisk testinput giver ingen drifts- eller genbrugsautoritet. Det gamle orakel og alle sikkerhedsasserter bevares; der ændres ingen workflow, CLI, model, kvote eller produktionspolitik. Præcis kildekvalifikation og reel Linux-/Bash-afprøvning kræves fortsat.
