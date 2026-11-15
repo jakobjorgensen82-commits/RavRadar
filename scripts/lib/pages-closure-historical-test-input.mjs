@@ -45,12 +45,12 @@ export function planCurrentWorkflowInventory(actualNames,legacyNames,changedName
 }
 function historicalWorkflowInventory(){
   const environment=childEnvironment();
-  const git=(args,raw=false)=>{const bytes=execFileSync('git',['-C',ROOT,...args],{
+  const git=(args,raw=false,maximumBytes=256*1024)=>{const bytes=execFileSync('git',['-C',ROOT,...args],{
     env:{...environment,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_OPTIONAL_LOCKS:'0',
       GIT_TERMINAL_PROMPT:'0',GIT_CONFIG_NOSYSTEM:'1',
       GIT_CONFIG_GLOBAL:process.platform==='win32'?'NUL':'/dev/null',
       GIT_CONFIG_COUNT:'1',GIT_CONFIG_KEY_0:'protocol.allow',GIT_CONFIG_VALUE_0:'never'},
-    timeout:10_000,maxBuffer:256*1024,stdio:['ignore','pipe','pipe']});
+    timeout:10_000,maxBuffer:maximumBytes,stdio:['ignore','pipe','pipe']});
     return raw?bytes:bytes.toString('utf8');};
   assert.equal(git(['rev-parse',LEGACY_WORKFLOW_HEAD+':.github/workflows']).trim(),LEGACY_WORKFLOW_TREE);
   const rows=git(['ls-tree','-z',LEGACY_WORKFLOW_TREE]).split('\0').filter(Boolean);
@@ -74,6 +74,17 @@ export function readHistoricalMaintenanceWorkflowSources(){
     assert(body.length>0&&body.length<=128*1024,'Bounded original maintenance workflow');
     return [name,body];
   })));
+}
+// One authentic original build for the older workflow oracle; never current authority.
+export function readHistoricalBuildWorkflowSource(){
+  assert.equal(arguments.length,0,'No caller-selected historical build source');
+  const {git,blobs}=historicalWorkflowInventory(),name='reusable-weather-build.yml';
+  assert(blobs.has(name),'Original build workflow must exist');
+  const row=frames[aliases.build];
+  const body=git(['cat-file','blob',blobs.get(name)],true,row.after.bytes+1);
+  assert.equal(body.length,row.after.bytes,'Original build workflow size');
+  assert.equal(sha(body),row.after.sha256,'Original build workflow identity');
+  return body.toString('utf8');
 }
 export function qualifyCurrentWorkflowInventory(){
   assert.equal(arguments.length,0,'No caller-selected workflow inventory, catalog or target runner');

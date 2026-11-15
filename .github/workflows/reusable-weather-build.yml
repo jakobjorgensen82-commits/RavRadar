@@ -3623,7 +3623,7 @@ jobs:
           if test -n "$COMPLETED_STAGE_SOURCE"; then
             node scripts/ordinary-completed-stage-admission.mjs publish
           else
-            node scripts/protected-private-production-runtime.mjs \
+            node scripts/publish-private-weather-runtime.mjs \
               --publish \
               --private-root "$RAVRADAR_PRIVATE_RUNTIME_ROOT" \
               --bundle "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE" \

@@ -20,9 +20,10 @@ import { readEstablishedNativeCurrentOrigin } from './lib/established-native-cur
 import { saveRavScoreContinuationCheckpoint } from './ravscore-continuation-checkpoint.mjs';
 import { restoreProtectedRavScoreContinuationCheckpoint, createProtectedRavScoreCheckpointRequester }
   from './protected-ravscore-continuation-checkpoint.mjs';
-import { createProtectedPrivateRuntimeClients, publishProtectedPrivateProductionRuntime,
+import { createProtectedPrivateRuntimeClients,
   validateProtectedPrivateRuntimePointer, PROTECTED_PRIVATE_RUNTIME_POLICY }
   from './protected-private-production-runtime.mjs';
+import { publishPrivateWeatherRuntime, assertPrivateWeatherPublicationBackend } from './publish-private-weather-runtime.mjs';
 import { PRIVATE_CONDITIONS_MAX_BYTES } from './lib/bounded-json-writer.mjs';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 import { ravScoreModelBinding as candidateBinding } from './rollback-assets/ravscore-model-contract.js';
@@ -358,12 +359,13 @@ async function main() {
     await fs.writeFile(output, cipher, { flag: 'wx', mode: 0o600 });
     console.log('ORIGINAL_CIPHERTEXT_PRESERVED_NOT_NEW_GENERATION');
   } else if (operation === 'publish') {
+    assertPrivateWeatherPublicationBackend();
     const receipt = await verifyOrdinaryCompletedStage(env, { rebuilt: true });
     const clients = createProtectedPrivateRuntimeClients();
-    const publication = await publishProtectedPrivateProductionRuntime({ privateRoot: env.RAVRADAR_PRIVATE_RUNTIME_ROOT,
+    const publication = await publishPrivateWeatherRuntime({ privateRoot: env.RAVRADAR_PRIVATE_RUNTIME_ROOT,
       bundlePath: env.RAVRADAR_PRIVATE_RUNTIME_BUNDLE, repositoryRoot: p.root,
       expected: await json(p.expectedPath), sourceHead: receipt.originalIdentity.sourceHead,
-      request: bindOrdinaryStagePublicationRequest(clients.documentRequest, receipt), storage: clients.storage });
+      request: bindOrdinaryStagePublicationRequest(clients.documentRequest, receipt) });
     if (publication.published === true && publication.retentionCleanupComplete === false) {
       console.warn('::warning title=Private runtime retention::Published with incomplete retired-object cleanup.');
     }

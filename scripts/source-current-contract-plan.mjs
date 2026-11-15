@@ -5,6 +5,7 @@ import crypto from 'node:crypto';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {execFileSync} from 'node:child_process';
+import { inversePrivateWeatherPublicationWorkflow, isPrivateWeatherPublicationWorkflowChange, WEATHER_PUBLICATION_COMMANDS, WEATHER_PUBLICATION_PATHS } from './lib/private-weather-publication-workflow.mjs';
 import {analyzeSourceDomainInputs} from './source-impact-domain-inputs.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
@@ -95,6 +96,7 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
   weatherScalarPlanning:[
     'node --test scripts/test-weather-component-normal-wireup.mjs',
   ],
+  weatherPublication:WEATHER_PUBLICATION_COMMANDS,
   // Aktuel faktisk kildegate + arkivkontrakt. Det er ikke et løfte om at
   // samtlige historiske whole-oracles er udført.
   compatibility:[
@@ -239,6 +241,7 @@ const PATH_AREAS=freeze({
     'scripts/lib/weather-component-runtime.mjs',
     'scripts/test-weather-component-normal-wireup.mjs',
   ],
+  weatherPublication:WEATHER_PUBLICATION_PATHS,
   // Disse kendte historiske/metakontroller giver ingen produktadmission i V3.
   // Deres ændring kræver stadig en uafhængig kontrolgennemgang.
   actionVersions:[
@@ -538,7 +541,8 @@ function restoreOwnedDmiBudgetSteps(before,after){
   return after.slice(0,snapshot.start)+before.slice(oldBudget.start,oldPlan.end)+after.slice(budget.end);
 }
 export function dmiBudgetWeatherBuildAreas(before,after){
-  try{assert(before!==after);const restored=restoreOwnedDmiBudgetSteps(before,after);
+  try{assert(before!==after);if(isPrivateWeatherPublicationWorkflowChange(before,after))return ['weatherPublication'];
+    const restored=restoreOwnedDmiBudgetSteps(before,after);
     if(restored===before)return ['dmiBudget'];
     if(isPagesOnlyWeatherBuildChange(before,restored))return ['pages','dmiBudget'];
     if(isSupportOnlyWeatherBuildChange(before,restored))return ['workflowSupport','dmiBudget'];
@@ -697,7 +701,7 @@ export function planSourceCurrentContractsFromGit(input){
       if(file==='scripts/run-dmi-bulk-supervised.py'&&!isDmiBudgetOnlySupervisorChange(
         readCommittedText(input.baselineCommit,file),readCommittedText(input.candidateCommit,file)))
         return refuse('CURRENT_DMI_BUDGET_SUPERVISOR_SCOPE_CHANGED',['DMI_SUPERVISOR_CONTRACTS']);
-      const dmiAreas=file===WEATHER_BUILD?dmiBudgetWeatherBuildAreas(
+      const dmiAreas=(file===WEATHER_BUILD||file==='.github/workflows/deploy-code-only-repair.yml')?dmiBudgetWeatherBuildAreas(
         readCommittedText(input.baselineCommit,file),readCommittedText(input.candidateCommit,file)):null;
       const supportOnly=file===WEATHER_BUILD&&isSupportOnlyWeatherBuildChange(
         readCommittedText(input.baselineCommit,file),readCommittedText(input.candidateCommit,file));
@@ -707,7 +711,7 @@ export function planSourceCurrentContractsFromGit(input){
         pathAreas.get(file)??(/^docs\/(?:rdks|ai|handbook)\/.+\.md$/.test(file)?['documentation']:null));
       if(!areas){unknown.push(file);continue;}
       for(const area of areas){if(!selected.has(area))selected.set(area,[]);selected.get(area).push(file);}
-      if(sourceControlPaths.has(file)||historicalPaths.has(file)||areas.includes('compatibility')||areas.includes('assistantEdge')||areas.includes('mailOwnerProbe')||areas.includes('currentInstalledCodeOnly')||areas.includes('workflowSupport')||areas.includes('dmiBudget')||areas.includes('dmiCollectionRecovery')||areas.includes('adminHistory')||file.startsWith('scripts/test-'))
+      if(sourceControlPaths.has(file)||historicalPaths.has(file)||areas.includes('compatibility')||areas.includes('assistantEdge')||areas.includes('mailOwnerProbe')||areas.includes('currentInstalledCodeOnly')||areas.includes('workflowSupport')||areas.includes('weatherPublication')||areas.includes('dmiBudget')||areas.includes('dmiCollectionRecovery')||areas.includes('adminHistory')||file.startsWith('scripts/test-'))
         out.controlQualificationRequired=true;
     }
     if(unknown.length){out.unclassifiedPaths=unknown.sort();return refuse('CURRENT_UNCLASSIFIED_PATH');}
