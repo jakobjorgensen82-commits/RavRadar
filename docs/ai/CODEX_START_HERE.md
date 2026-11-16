@@ -13,7 +13,7 @@ Målet er færdiggørelse og selvstændig drift senest **18. november 2026**. De
 
 **Prioritet:** Bevar almindelig vejrhentning, reel dækning, fremadrettet historik og offentlig levering. Færdiggør afgrænsede rettelser sideløbende, uden at kontrolarbejde holder vejret pauset i timer. Den fungerende numeriske driftsfamilie er 598. Gamle samlede Source-pakker er udgået som leveringsenheder. Målkrav verificeres på aktuel main; en ny Source-overgang er ikke et selvstændigt slutmål. Kun konkrete aktuelle kodehuller begrunder nye ændringer. Relevante krav til numerik, originaler, adgang og faktiske beviser består.
 
-Historiske workflowprøver bruger deres eget allerede fastlagte input; aktuelle sikkerhedsrammer prøves særskilt på rå aktuelle workflows. Den seneste kontrolrettelse er lokalt målprøvet, men samlet kildekvalifikation, nødvendig PostgreSQL og installation mangler fortsat. Dette afslutter ikke revisionens syv målkrav.
+Historiske workflowprøver bruger deres eget allerede fastlagte input; aktuelle sikkerhedsrammer prøves særskilt på rå aktuelle workflows. Det omfatter også Python-WAM-prøvens to kaldere; den aktuelle reentry-expression læses fortsat rå. Den seneste kontrolrettelse er lokalt målprøvet, men samlet kildekvalifikation, nødvendig PostgreSQL og installation mangler fortsat. Dette afslutter ikke revisionens syv målkrav.
 
 Det allerede forbrugte Node24-hint fra SDK-kontrol ryddes kun ved de to direkte isolerede PostgreSQL-/national-CLI-indgange. Eksporterede miljøguards og importer er uændrede. Den normale kildeprøve af denne afgrænsning er bestået; faktisk SQL-/samlet kildekvalifikation og levering er selvstændigt åbne.
 

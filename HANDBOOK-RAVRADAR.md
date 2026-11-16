@@ -217,6 +217,8 @@ Den normale hele kildeprøve for native-evidens har bestået med den additive re
 
 De historiske workflowprøver læser deres egne allerede fastlagte Git-originaler. RAW-retention bruger sit f644-grundlag; Pages-/arkivprøverne bruger deres egne senere originaler. Ingen ny helfilkohorte, nuværende produktionsadgang eller genbrugstilladelse opstår af læsningen.
 
+Python-prøvens to gamle WAM-workflowkaldere bruger samme allerede gennemgåede læser og projektionsrækkefølge som JavaScript-prøven. Autentisk historisk input læses før den eksisterende completed-runtime-inverse. Den særskilte reentry-expression læses fortsat fra det rå aktuelle DMI-trin og afprøves med sine oprindelige mutationer. Alle 71 cases og de 696 hidtidige assertions bevares; ingen produktkode, helfilhash eller skip-regel ændres. De to rettede kaldere består lokalt. Den hele Linux-prøve og præcis samlet kildekvalifikation kræves fortsat.
+
 Den aktuelle kildegate læser fortsat rå aktuelle workflows. De eksisterende hele SQL-, original-, plan- og frisk-main-rammer, deres rækkefølge og de afgrænsede arkivkommandoer kontrolleres særskilt. Alle SQL-pushformer uden for de kendte skriverammer afvises, bortset fra den præcise eksisterende skrivefri dry-run. Den aktuelle snapshotlæser må fortsat ikke starte updater, leverandører, fuld validering eller releasegate.
 
 Rettelsen ændrer kontrolinput og prøveforberedelse, ikke produktkode, vejr, score eller udstedte migrationer. Lokale målprøver er ikke samlet kilde-/PostgreSQL-kvalifikation, installation eller revisionsaccept. Alle fem hovedmål og revisionens resterende beviser består.
