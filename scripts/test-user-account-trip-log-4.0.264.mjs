@@ -374,7 +374,13 @@ await assert.rejects(authScope.runtime.authorizedFetch('https://example.invalid'
 assert.equal(authCalls, 2, 'Kontoskift giver ikke et 401-genforsøg med den anden konto.');
 authScope.runtime.set({ access_token: 'dummy-a', refresh_token: 'dummy-refresh', user: { id: ownerA } });
 const refreshedCalls = [];
+let positiveRefreshJournalCalls=0;
 authScope.fetch = async (url, options) => {
+  if(url.endsWith('/rest/v1/rpc/record_account_lifecycle_activity')){
+    positiveRefreshJournalCalls++;assert.equal(options.body,'{}');
+    assert.equal(options.headers.Authorization,'Bearer dummy-a-refreshed');
+    return {ok:true,json:async()=>({recorded:true})};
+  }
   refreshedCalls.push({ url, authorization: options.headers.Authorization });
   if (url.endsWith('/auth/v1/token?grant_type=refresh_token')) {
     return { ok: true, json: async () => ({ access_token: 'dummy-a-refreshed', refresh_token: 'dummy-refresh', user: { id: ownerA } }) };
@@ -384,6 +390,7 @@ authScope.fetch = async (url, options) => {
 await authScope.runtime.authorizedFetch('https://example.invalid', {}, { expectedUserId: ownerA });
 assert.equal(refreshedCalls.length, 3);
 assert.equal(refreshedCalls[2].authorization, 'Bearer dummy-a-refreshed');
+assert.equal(positiveRefreshJournalCalls,1);
 
 // Run actual normal Edge route; only its existing auth/rate/storage boundaries
 // are synthetic. No server row or real login is read or created.
@@ -1289,4 +1296,133 @@ async function scenario(action) {
 for (const action of ['logout', 'same-login', 'other-login', 'unchanged', 'renewal'])
   test(`new normal export while ${action} is awaiting: preserve explicit login intent`, () => scenario(action));
 
+}
+
+// Execute the new notice controller with synthetic HTTP/RPC boundaries only.
+// These cases do not execute SQL or qualify native activity coverage/delivery.
+{
+const { default: test } = await import('node:test');
+const { runInNewContext } = await import('node:vm');
+const { runAccountInactivityNotice, checkedAccountInactivityNotice, validateAccountInactivityNoticePayload,
+ NOTICE_CONFIRMATION } = await import('../supabase/functions/_shared/account-inactivity-notice.js');
+const { sendInactivityNotice, inactivityNoticeBody } = await import('../supabase/functions/_shared/inactivity-notice-mail.mjs');
+const { sendInactivityNotice: oldSender } = await import('./fixtures/owner-notice-probe/inactivity-notice-mail.mjs');
+const uid=n=>`00000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
+const owner=uid(1),target=uid(2),notice=uid(3),providerId=uid(4),nativeCreated='2026-08-01T10:11:12.123456789Z';
+const keys=['noticeId','targetUserId','state','holdReason','revision','activityRevision','accepted','delivered','deleteNotBefore','automaticDeletionEnabled'];
+const initial=(extra={})=>({noticeId:notice,targetUserId:target,state:'READY',holdReason:null,revision:'1',activityRevision:'1',accepted:false,
+ delivered:false,deleteNotBefore:null,automaticDeletionEnabled:false,attemptId:null,recipientDigest:null,authUserCreatedAt:null,providerId:null,reservedAt:null,...extra});
+const pub=row=>Object.fromEntries(keys.map(key=>[key,row[key]]));
+const payload=attempt=>({operation:'account-inactivity-resume',noticeId:notice,attemptId:attempt,confirmation:NOTICE_CONFIRMATION});
+async function fixture(options,work){
+ const originalFetch=globalThis.fetch,originalDeno=globalThis.Deno;
+ const h={row:initial(options.initial),calls:[],posts:[],reads:0,failures:options.failures||0,usedAttempts:new Set()};
+ const env={SUPABASE_URL:'https://notice-fixture.supabase.co',SUPABASE_ANON_KEY:'synthetic-publishable',
+  SUPABASE_SERVICE_ROLE_KEY:'sb_secret_synthetic',RAVRADAR_RESEND_NOTICE_SEND_KEY:'re_synthetic_existing_key'};
+ const body=inactivityNoticeBody('synthetic@example.invalid',false);
+ globalThis.Deno={env:{get:name=>env[name]}};
+ const json=(value,status=200)=>new Response(JSON.stringify(value),{status,headers:{'Content-Type':'application/json'}});
+ globalThis.fetch=async(input,init={})=>{
+  const url=new URL(input);h.calls.push({path:url.pathname,method:init.method,body:init.body});
+  if(url.origin===env.SUPABASE_URL&&url.pathname.startsWith('/rest/v1/rpc/')){
+   const name=url.pathname.split('/').at(-1),p=JSON.parse(init.body);
+   if(init.headers.apikey==='sb_secret_synthetic')assert.equal(init.headers.Authorization,undefined,'opaque service key is not a JWT');
+   if(name==='get_account_inactivity_notice_status'||name==='prepare_account_inactivity_notice')return json(pub(h.row));
+   if(name==='list_account_inactivity_notices')return json({scope:'own-account-inactivity-notices',rows:[pub(h.row)],truncated:false});
+   if(name==='get_account_inactivity_notice_service_status')return json(h.row);
+   if(name==='hold_account_inactivity_notice'){
+    h.row={...h.row,state:'HELD',holdReason:p.p_reason,revision:String(BigInt(h.row.revision)+1n)};return json(pub(h.row));
+   }
+   if(name==='claim_account_inactivity_notice'){
+    const allowed=p.p_expected_revision===h.row.revision&&!h.row.accepted&&!h.usedAttempts.has(p.p_attempt);
+    if(allowed){h.usedAttempts.add(p.p_attempt);h.row={...h.row,state:'CLAIMED',holdReason:null,revision:String(BigInt(h.row.revision)+1n),attemptId:p.p_attempt,
+     recipientDigest:p.p_recipient_digest,authUserCreatedAt:p.p_auth_created_at,reservedAt:h.row.reservedAt||new Date().toISOString()};
+    }
+    return json({...h.row,shouldSend:allowed});
+   }
+   if(name==='acknowledge_account_inactivity_notice'){
+    if(h.row.state==='CANCELLED'||p.p_expected_revision!==h.row.revision)return json(pub(h.row));
+    h.row.revision=String(BigInt(h.row.revision)+1n);
+    if(p.p_outcome==='accepted')h.row={...h.row,state:'ACCEPTED',accepted:true,providerId:p.p_provider,holdReason:'DELIVERY_UNCONFIRMED'};
+    else if(p.p_outcome==='delivered')h.row={...h.row,state:'DELIVERED',delivered:true,holdReason:null,deleteNotBefore:new Date(Date.now()+30*86400000).toISOString()};
+    else h.row={...h.row,state:'UNKNOWN',holdReason:'SEND_OUTCOME_UNKNOWN'};
+    return json(pub(h.row));
+   }
+   throw Error('Unexpected synthetic RPC '+name);
+  }
+  if(url.origin===env.SUPABASE_URL&&url.pathname==='/auth/v1/admin/users/'+target){
+   assert.equal(init.method,'GET');return json({id:target,email:'synthetic@example.invalid',created_at:nativeCreated});
+  }
+  assert.equal(url.origin,'https://api.resend.com','No other external service');
+  if(url.pathname==='/emails'&&init.method==='POST'){
+   h.posts.push({body:init.body,key:init.headers['Idempotency-Key']});
+   if(options.cancelOnPost)h.row={...h.row,state:'CANCELLED',holdReason:'ACTIVITY_OBSERVED',revision:String(BigInt(h.row.revision)+1n)};
+   if(h.failures-->0)throw Error('synthetic lost provider response');
+   return json({id:providerId});
+  }
+  if(url.pathname==='/emails/'+providerId&&init.method==='GET'){
+   h.reads++;if(options.provider403)return json({error:'forbidden'},403);
+   return json({id:providerId,from:body.from,to:body.to,subject:body.subject,text:body.text,
+    reply_to:[body.reply_to],last_event:options.event||'delivered'});
+  }
+  throw Error('Unexpected synthetic transport');
+ };
+ h.run=p=>runAccountInactivityNotice(new Request('https://notice-fixture.supabase.co/functions/v1/trip-log',{
+  method:'POST',headers:{Authorization:'Bearer synthetic-owner-token'}}),owner,p);
+ try{await work(h);}finally{globalThis.fetch=originalFetch;globalThis.Deno=originalDeno;}
+}
+test('inactivity notice: existing sender wire body and idempotency remain unchanged',async()=>{
+ const request={key:'re_synthetic',recipient:'synthetic@example.invalid',noticeId:notice,reservedAt:Date.now(),probe:false};
+ const sent=[];const fetchImpl=async(url,init)=>{sent.push({url,body:init.body,key:init.headers['Idempotency-Key']});return new Response(JSON.stringify({id:providerId}),{headers:{'Content-Type':'application/json'}});};
+ assert.deepEqual(await oldSender({...request,fetchImpl}),await sendInactivityNotice({...request,fetchImpl}));assert.deepEqual(sent[0],sent[1]);
+});
+test('inactivity notice: policy/coverage/delivery HOLD sends no Auth or provider request',async()=>{
+ for(const reason of ['POLICY_OFF','COVERAGE_UNKNOWN','DELIVERY_UNQUALIFIED','ACTIVITY_UNKNOWN'])await fixture({initial:{state:'HELD',holdReason:reason}},async h=>{
+  const result=await h.run(payload(uid(8)));assert.equal(result.holdReason,reason);assert.equal(h.posts.length,0);
+  assert(h.calls.every(call=>call.path.startsWith('/rest/v1/rpc/')));assert.equal(result.automaticDeletionEnabled,false);
+ });
+});
+test('inactivity notice: accepted is not delivered; provider positive read starts only a durable projected deadline',async()=>{
+ await fixture({event:'sent'},async h=>{const result=await h.run(payload(uid(8)));assert.equal(result.accepted,true);assert.equal(result.delivered,false);assert.equal(result.deleteNotBefore,null);});
+ await fixture({},async h=>{const result=await h.run(payload(uid(8)));assert.equal(result.delivered,true);assert(result.deleteNotBefore);assert.equal(result.automaticDeletionEnabled,false);
+  assert.equal(h.row.authUserCreatedAt,nativeCreated,'native generation string retains all precision');
+  assert.deepEqual(Object.keys(result).sort(),keys.sort());assert(!JSON.stringify(result).includes('synthetic@example.invalid'));
+  assert(h.calls.every(call=>call.method!=='DELETE'));
+ });
+});
+test('inactivity notice: send-only provider denial is HOLD with no fabricated delivery or new key',()=>fixture({provider403:true},async h=>{
+ const result=await h.run(payload(uid(8)));assert.equal(result.accepted,true);assert.equal(result.holdReason,'DELIVERY_UNAVAILABLE');assert.equal(result.delivered,false);assert.equal(result.deleteNotBefore,null);assert.equal(h.posts.length,1);
+}));
+test('inactivity notice: login cancellation during mail preserves cancellation and no deadline',()=>fixture({cancelOnPost:true},async h=>{
+ const result=await h.run(payload(uid(8)));assert.equal(result.state,'CANCELLED');assert.equal(result.deleteNotBefore,null);assert.equal(result.automaticDeletionEnabled,false);assert.equal(h.reads,0);
+}));
+test('inactivity notice: unknown outcome needs explicit new CAS attempt with the same provider body/key',()=>fixture({failures:2},async h=>{
+ let result=await h.run(payload(uid(8)));assert.equal(result.state,'UNKNOWN');assert.equal(result.delivered,false);assert.equal(h.posts.length,1);
+ result=await h.run(payload(uid(8)));assert.equal(h.posts.length,1,'same unknown attempt is not replayed');
+ result=await h.run(payload(uid(9)));assert.equal(h.posts.length,2);assert.deepEqual(h.posts[0],h.posts[1]);assert.equal(result.automaticDeletionEnabled,false);
+ await h.run(payload(uid(8)));assert.equal(h.posts.length,2,'A cannot be replayed after B');
+ await h.run(payload(uid(10)));assert.equal(h.posts.length,3);assert.deepEqual(h.posts[1],h.posts[2]);
+}));
+test('inactivity notice: public payload/status cannot inject actor, automatic authority or private fields',()=>{
+ assert.throws(()=>validateAccountInactivityNoticePayload({...payload(uid(8)),actorId:owner}));
+ assert.throws(()=>checkedAccountInactivityNotice({...pub(initial()),automaticDeletionEnabled:true}));
+ assert.throws(()=>checkedAccountInactivityNotice({...pub(initial()),providerId}));
+ assert.throws(()=>checkedAccountInactivityNotice({...pub(initial()),delivered:true,deleteNotBefore:new Date().toISOString()}));
+});
+test('positive refresh activity: actual refresh uses new atomic activity RPC and journal failure remains fail-open',async()=>{
+ for(const failJournal of [false,true]){
+  const calls=[],stored=new Map([['ravradar-auth-session',JSON.stringify({access_token:'synthetic-old',refresh_token:'synthetic-refresh',user:{id:target}})]]);
+  const context={PUBLIC_CONFIG:{supabaseUrl:'https://notice-fixture.supabase.co',supabasePublishableKey:'synthetic-public'},
+   localStorage:{getItem:key=>stored.get(key)||null,setItem:(key,value)=>stored.set(key,value),removeItem:key=>stored.delete(key)},
+   AbortController,DOMException,URLSearchParams,setTimeout,clearTimeout,Response,
+   fetch:async(url,init)=>{calls.push({url,init});if(url.includes('/auth/v1/token'))return Response.json({access_token:'synthetic-renewed',refresh_token:'synthetic-refresh',user:{id:target}});
+    assert(url.endsWith('/rest/v1/rpc/record_account_lifecycle_activity'));assert.equal(init.body,'{}');
+    assert.equal(init.headers.Authorization,'Bearer synthetic-renewed');if(failJournal)throw Error('synthetic journal failure');return Response.json({recorded:true});},
+  };
+  const source=auth.replace(/^import[^\n]+\r?\n/gm,'').replace(/^export\s+/gm,'');
+  runInNewContext(source+'\nthis.refresh=refreshSession;',context);
+  const session=await context.refresh({force:true});await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(session.user.id,target);assert.equal(calls.length,2);assert.equal(session.access_token,'synthetic-renewed');
+ }
+});
 }

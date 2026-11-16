@@ -1174,7 +1174,8 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
         const {exerciseAccountErasureOutbox}=await import('./account-erasure-outbox-native-fixture.mjs');
         const source=accountErasureSchema.readAccountErasureSource(repositoryRoot);
         const files=(await fs.readdir(path.join(repositoryRoot,'supabase/migrations'))).filter(file=>file.endsWith('.sql'));
-        assert.equal(files.length,76);assert(files.includes(accountErasureSchema.ACCOUNT_ERASURE_APP_MIGRATION.filename));
+        assert.equal(files.length,77);assert(files.includes(accountErasureSchema.ACCOUNT_ERASURE_APP_MIGRATION.filename));
+        assert(files.includes('20261116230000_account_inactivity_notice_off.sql'));
         accountErasure={kind:'ACCOUNT_ERASURE_APP_NATIVE_SQL_CASES',sqlExecuted:true,
           migrationVersion:accountErasureSchema.ACCOUNT_ERASURE_APP_MIGRATION.version,
           migrationSQLSha256:source.sha256,sourceSqlFileCount:files.length,

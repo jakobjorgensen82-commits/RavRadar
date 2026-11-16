@@ -4,10 +4,12 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import {createHash} from 'node:crypto';
 import {readAccountErasureSource,accountErasureCatalogQuery,verifyAccountErasureCatalogMetadata}
  from '../verify-account-erasure-schema.mjs';
 const DB='rr_account_erasure_native_fixture';
 export const ACCOUNT_ERASURE_NATIVE_SQL_CASE_COUNT=49;
+export const ACCOUNT_INACTIVITY_NOTICE_NATIVE_SQL_CASE_COUNT=13;
 const actor='10000000-0000-4000-8000-000000000001';
 const id=n=>'20000000-0000-4000-8000-'+String(n).padStart(12,'0');
 const op=n=>'30000000-0000-4000-8000-'+String(n).padStart(12,'0');
@@ -196,7 +198,63 @@ alter table storage.s3_multipart_uploads_parts enable row level security;
   await stateFailure(auth(id(1))+'select public.list_account_erasure_operations();','42501');
   await stateFailure(auth(actor,'service_role')+'select public.list_account_erasure_operations();','42501');
   assert.equal(checked,ACCOUNT_ERASURE_NATIVE_SQL_CASE_COUNT,'Whole app SQL/race case inventory must execute');
+  // Notice-only extension on the SAME already-owned host/database. Backdated
+  // rows and enabled policy below are synthetic prerequisites, not real history.
+  const noticeSql=fs.readFileSync(path.join(repositoryRoot,'supabase/migrations/20261116230000_account_inactivity_notice_off.sql'),'utf8');
+  await pg(noticeSql);let noticeChecked=0;
+  const notice=n=>'40000000-0000-4000-8000-'+String(n).padStart(12,'0');
+  const attempt=n=>'50000000-0000-4000-8000-'+String(n).padStart(12,'0');
+  const prepareNotice=n=>owner("select public.prepare_account_inactivity_notice('"+notice(n)+"','"+id(n)+"');").then(jsonLast);
+  const noticeStatus=n=>owner("select public.get_account_inactivity_notice_status('"+notice(n)+"');").then(jsonLast);
+  const positive=n=>pg(auth(id(n))+"select public.record_account_lifecycle_activity();").then(jsonLast);
+  const claimNotice=(n,revision,tryId)=>"select public.claim_account_inactivity_notice('"+notice(n)+"','"+actor+"',"+revision+",'"+tryId+"','"+'a'.repeat(64)+"','2020-01-01T00:00:00.123456789Z');";
+  const expectState=async(text,state)=>{const r=await raw(text);assert.equal(r.code,3);assert.equal(r.sqlState,state);noticeChecked++;};
+  await seed(101);const off=await prepareNotice(101);assert.equal(off.state,'HELD');assert.equal(off.holdReason,'POLICY_OFF');
+  assert.equal(off.automaticDeletionEnabled,false);noticeChecked++;
+  assert.equal((await positive(101)).recorded,true);const cancelled=await noticeStatus(101);
+  assert.equal(cancelled.state,'CANCELLED');assert(BigInt(cancelled.revision)>BigInt(off.revision));
+  assert.equal(cancelled.deleteNotBefore,null);noticeChecked++;
+  await expectState(auth(id(101),'anon')+'select public.record_account_lifecycle_activity();','42501');
+  await expectState(auth(id(101))+"select public.prepare_account_inactivity_notice('"+notice(102)+"','"+id(101)+"');",'42501');
+  await expectState(auth(actor,'service_role')+"insert into public.account_inactivity_policy(singleton) values(false);",'42501');
+  await pg("update public.account_inactivity_policy set notices_enabled=true,coverage_status='CAPTURING',coverage_started_at=clock_timestamp()-interval '3 years',delivery_qualified=true;");
+  const qualified=async n=>{
+   await seed(n);await positive(n);
+   await pg("update public.account_activity_journal set first_observed_at=clock_timestamp()-interval '4 years',last_activity_at=clock_timestamp()-interval '3 years' where user_id='"+id(n)+"';"
+    +"update public.account_lifecycle_activity set first_observed_at=clock_timestamp()-interval '4 years',last_activity_at=clock_timestamp()-interval '3 years',coverage_epoch=(select coverage_epoch from public.account_inactivity_policy) where user_id='"+id(n)+"';");
+   return prepareNotice(n);
+  };
+  const readyNotice=await qualified(102);assert.equal(readyNotice.state,'READY');noticeChecked++;
+  const nullCas=await service(claimNotice(102,'null',attempt(1)));assert.equal(nullCas.shouldSend,false);assert.equal(nullCas.state,'READY');noticeChecked++;
+  const noticeClaimed=await service(claimNotice(102,readyNotice.revision,attempt(1)));assert.equal(noticeClaimed.shouldSend,true);
+  assert.equal(noticeClaimed.authUserCreatedAt,'2020-01-01T00:00:00.123456789Z');noticeChecked++;
+  const ack=(n,version,tryId,outcome)=>service("select public.acknowledge_account_inactivity_notice('"+notice(n)+"','"+actor+"',"+version+",'"+tryId+"','"+outcome+"','60000000-0000-4000-8000-000000000001');");
+  const noticeAccepted=await ack(102,noticeClaimed.revision,attempt(1),'accepted');assert.equal(noticeAccepted.accepted,true);
+  assert.equal(noticeAccepted.delivered,false);assert.equal(noticeAccepted.deleteNotBefore,null);noticeChecked++;
+  const noticeDelivered=await ack(102,noticeAccepted.revision,attempt(1),'delivered');assert.equal(noticeDelivered.delivered,true);
+  assert.equal(await pg("select delete_not_before=delivered_at+interval '720 hours' from public.account_inactivity_notices where notice_id='"+notice(102)+"';"),'t');
+  assert.equal(noticeDelivered.automaticDeletionEnabled,false);noticeChecked++;
+  await positive(102);const noticeRetained=await noticeStatus(102);assert.equal(noticeRetained.state,'CANCELLED');assert.equal(noticeRetained.deleteNotBefore,null);
+  assert.equal(await pg("select exists(select 1 from auth.users where id='"+id(102)+"');"),'t');
+  assert.equal(await pg('select count(*) from public.observations where id=102;'),'1');noticeChecked++;
+  const racing=await qualified(103);
+  const activity=raw("set application_name='rr_notice_positive_activity';"+auth(id(103))+"begin;select public.record_account_lifecycle_activity();select pg_sleep(0.3);commit;");
+  await waitApplication('rr_notice_positive_activity');
+  const competing=raw(auth(actor,'service_role')+claimNotice(103,racing.revision,attempt(2)));
+  const activityResult=await activity,claimResult=await competing;assert.equal(activityResult.code,0);assert.equal(claimResult.code,0);
+  const afterLogin=jsonLast(claimResult.stdout);assert.equal(afterLogin.state,'CANCELLED');assert.equal(afterLogin.shouldSend,false);noticeChecked++;
+  const replayReady=await qualified(104);
+  const firstNoticeAttempt=await service(claimNotice(104,replayReady.revision,attempt(3)));
+  const unknownFirst=await ack(104,firstNoticeAttempt.revision,attempt(3),'unknown');
+  const secondNoticeAttempt=await service(claimNotice(104,unknownFirst.revision,attempt(4)));
+  const unknownSecond=await ack(104,secondNoticeAttempt.revision,attempt(4),'unknown');
+  const replayFirst=await service(claimNotice(104,unknownSecond.revision,attempt(3)));
+  assert.equal(replayFirst.shouldSend,false);assert.equal(replayFirst.attemptId,attempt(4));noticeChecked++;
+  assert.equal(noticeChecked,ACCOUNT_INACTIVITY_NOTICE_NATIVE_SQL_CASE_COUNT,'Whole notice SQL extension must execute');
   result={passed:true,cases:checked,actualPostgres:true,syntheticSqlHost:true,realGoTrue:false,checkReference,checkExpressionDriftRefused:true,
+   inactivityNotice:{cases:noticeChecked,migrationVersion:'20261116230000',migrationSQLSha256:createHash('sha256').update(noticeSql).digest('hex'),
+    actualPostgres:true,coverageSynthetic:true,providerDeliverySynthetic:true,
+    positiveRpcCancellation:true,defaultOff:true,automaticDeletion:false,realAuth:false,realMail:false},
    serviceEvidenceSynthetic:true,failedTransactionRolledBack:true,aclMutationRefused:true,ownerPendingDiscoveryAndPagination:true,
    authAttemptReplayAndGeneration:true,initialAbsenceWithoutDeleteClaim:true,
    authUuidFenceSqlOnly:true,storageDefaultDenyAndOwnership:true,postPgStorageClaimHeld:true,

@@ -241,3 +241,8 @@ export async function runManualAccountErasure(request, actorId, payload) {
   } catch { status = await readService(); }
   return publicStatus(status); // Only the durable SQL ACK may report COMPLETE.
 }
+
+// Existing bounded, no-retry server transport. Notice code receives no erasure authority.
+export { configuration as accountLifecycleConfiguration, configured as accountLifecycleSetting,
+  serviceHeaders as accountLifecycleServiceHeaders, requestJson as accountLifecycleRequestJson,
+  rpc as accountLifecycleRpc };
