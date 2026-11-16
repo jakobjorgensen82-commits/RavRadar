@@ -12,7 +12,8 @@ import {SOURCE_GATE_CONTRACT,PULL_REQUEST_SOURCE_JOB,PULL_REQUEST_SOURCE_WORKFLO
 import {currentChangeSourceArtifactName,currentContractSourceArtifactName}
   from './source-current-contract-receipt.mjs';
 import {TARGETED_SOURCE_STEP_NAMES,TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES,TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES,TARGETED_OWNED_CACHE_NATIVE_SOURCE_STEP_NAMES,verifyTargetedSourceStepShape} from './source-targeted-consumer.mjs';
-import {SOURCE_IMPACT_DMI_REQUIREMENTS_REVIEW,inverseOwnedCacheNativeWorkflow} from './lib/source-impact-workflow-review.mjs';
+import {SOURCE_IMPACT_DMI_REQUIREMENTS_REVIEW,SOURCE_IMPACT_FULL_CURRENT_COMMAND,
+  inverseOwnedCacheNativeWorkflow,inverseSourceImpactFullCurrent} from './lib/source-impact-workflow-review.mjs';
 import {ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS,ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND,ORIGIN}
   from './native-postgres-evidence.mjs';
 import {ORIGIN as NATIONAL,COMMAND as NATIONAL_COMMAND,ASSISTANT_PUBLIC591_SUCCESSOR_SOURCE_COMMAND}
@@ -212,7 +213,9 @@ try{
   const canonicalReceipt=copy(receipt);rebuildTarget();maps();
   const check=async mutate=>{receipt=copy(canonicalReceipt);rebuildTarget();maps();const deps=dependencies();mutate?.(deps);
     const result=await decide(locator,env,d(deps));cases++;return {result,deps};};
-  const nativeWorkflow=fs.readFileSync(path.join(SOURCE,'.github/workflows/validate-pull-request.yml'),'utf8');
+  const currentNativeWorkflow=fs.readFileSync(path.join(SOURCE,'.github/workflows/validate-pull-request.yml'),'utf8');
+  // The unchanged historical shapes retain their exact whole predecessor.
+  const nativeWorkflow=inverseSourceImpactFullCurrent(currentNativeWorkflow);
   const dmiWorkflow=inverseOwnedCacheNativeWorkflow(nativeWorkflow);
   const nativeSteps=TARGETED_OWNED_CACHE_NATIVE_SOURCE_STEP_NAMES.map((name,index)=>({name,number:index+1,status:'completed',
     conclusion:index>=9&&index<=22?'skipped':'success',started_at:stamp(index),completed_at:stamp(index+1)}));
@@ -224,6 +227,25 @@ try{
   }
   for(const changed of [nativeWorkflow+'\n',nativeWorkflow.replace('RAVRADAR_SOURCE_NODE24=','RAVRADAR_SOURCE_OTHER=')]){
     assert.throws(()=>verifyTargetedSourceStepShape({steps:nativeSteps},changed));cases++;
+  }
+  // Actual raw current input is accepted independently of the historical oracle.
+  assert.notEqual(currentNativeWorkflow,nativeWorkflow,'The raw current workflow must retain its reviewed whole CURRENT owner');
+  assert.equal(verifyTargetedSourceStepShape({steps:nativeSteps},currentNativeWorkflow).proofTime,Date.parse(stamp(9)));cases++;
+  const currentLine='          && '+SOURCE_IMPACT_FULL_CURRENT_COMMAND+'\n';
+  const currentAnchor='          && node scripts/test-source-impact-workflow.mjs\n';
+  assert.equal(currentNativeWorkflow.split(currentAnchor+currentLine).length,2);
+  for(const changed of [
+    currentNativeWorkflow.replace(SOURCE_IMPACT_FULL_CURRENT_COMMAND,SOURCE_IMPACT_FULL_CURRENT_COMMAND.replace('300s','299s')),
+    currentNativeWorkflow.replace(currentLine,currentLine+currentLine),
+    currentNativeWorkflow.replace(currentAnchor+currentLine,currentLine+currentAnchor),
+    currentNativeWorkflow+'\n',currentNativeWorkflow.replace('RAVRADAR_SOURCE_NODE24=','RAVRADAR_SOURCE_OTHER='),
+  ]){
+    assert.notEqual(changed,currentNativeWorkflow);
+    assert.throws(()=>verifyTargetedSourceStepShape({steps:nativeSteps},changed));cases++;
+  }
+  for(const edit of [x=>x[3].conclusion='skipped',x=>x[9].conclusion='success',x=>x.push(copy(x[4]))]){
+    const changed=copy(nativeSteps);edit(changed);
+    assert.throws(()=>verifyTargetedSourceStepShape({steps:changed},currentNativeWorkflow));cases++;
   }
   const dmiSteps=TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES.map((name,index)=>({name,number:index+1,status:'completed',
     conclusion:index>=7&&index<=20?'skipped':'success',started_at:stamp(index),completed_at:stamp(index+1)}));
