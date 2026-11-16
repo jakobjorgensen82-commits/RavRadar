@@ -1208,8 +1208,9 @@ function archiveNotValidCheckSql(inventory,phase,after=false){
   need(inventory?.complete===true&&/^[a-f0-9]{64}$/.test(inventory.digest)
     &&['DATA','HISTORY_DATA'].includes(phase)&&typeof after==='boolean','ARCHIVE_RELATION_CHECK_INVENTORY');
   const maximum=4096,maximumBytes=8*1024*1024;
-  const same="NOT EXISTS ((SELECT semantic FROM pg_temp.rr_archive_check_snapshot EXCEPT ALL SELECT semantic FROM pg_temp.rr_archive_check_live)"
-    +" UNION ALL (SELECT semantic FROM pg_temp.rr_archive_check_live EXCEPT ALL SELECT semantic FROM pg_temp.rr_archive_check_snapshot))";
+  const comparison='semantic,unsupported,unsafe';
+  const same=`NOT EXISTS ((SELECT ${comparison} FROM pg_temp.rr_archive_check_snapshot EXCEPT ALL SELECT ${comparison} FROM pg_temp.rr_archive_check_live)`
+    +` UNION ALL (SELECT ${comparison} FROM pg_temp.rr_archive_check_live EXCEPT ALL SELECT ${comparison} FROM pg_temp.rr_archive_check_snapshot))`;
   const catalog="SELECT con.oid AS constraint_oid,con.convalidated,con.conname,n.nspname AS schema_name,r.relname AS table_name,"
     +"pg_catalog.pg_get_constraintdef(con.oid,false) AS definition,pg_catalog.obj_description(con.oid,'pg_constraint') AS comment,"
     +"(con.contypid<>0 OR con.conrelid=0 OR r.relkind<>'r' OR r.relispartition OR NOT con.conislocal OR con.coninhcount<>0 OR con.conparentid<>0"
@@ -1219,6 +1220,14 @@ function archiveNotValidCheckSql(inventory,phase,after=false){
     +" OR (d.classid='pg_catalog.pg_class'::regclass AND d.objid=r.oid)))"
     +" OR EXISTS(SELECT 1 FROM pg_catalog.pg_depend d JOIN pg_catalog.pg_depend e ON e.classid=d.refclassid AND e.objid=d.refobjid AND e.deptype='e'"
     +" WHERE d.classid='pg_catalog.pg_constraint'::regclass AND d.objid=con.oid)) AS unsupported,"
+    // Known local r/p families can remain untouched and enforced. This does not
+    // permit their suspension, foreign-table assumptions, or new COPY routing.
+    +"(con.contypid<>0 OR con.conrelid=0 OR r.relkind NOT IN ('r','p')"
+    +" OR n.nspname ~ '^pg_' OR n.nspname='information_schema'"
+    +" OR EXISTS(SELECT 1 FROM pg_catalog.pg_depend d WHERE d.deptype='e' AND ((d.classid='pg_catalog.pg_constraint'::regclass AND d.objid=con.oid)"
+    +" OR (d.classid='pg_catalog.pg_class'::regclass AND d.objid=r.oid)))"
+    +" OR EXISTS(SELECT 1 FROM pg_catalog.pg_depend d JOIN pg_catalog.pg_depend e ON e.classid=d.refclassid AND e.objid=d.refobjid AND e.deptype='e'"
+    +" WHERE d.classid='pg_catalog.pg_constraint'::regclass AND d.objid=con.oid)) AS unsafe,"
     +"jsonb_build_object('schema',coalesce(n.nspname,tn.nspname),'relation',r.relname,'domain',t.typname,'name',con.conname,"
     +"'definition',pg_catalog.pg_get_constraintdef(con.oid,false),'validated',con.convalidated,'deferrable',con.condeferrable,"
     +"'deferred',con.condeferred,'local',con.conislocal,'inheritCount',con.coninhcount,'noInherit',con.connoinherit,"
@@ -1256,13 +1265,13 @@ function archiveNotValidCheckSql(inventory,phase,after=false){
     +"'inheritanceTargetCount',least(count(*) FILTER(WHERE EXISTS(SELECT 1 FROM pg_catalog.pg_inherits i WHERE i.inhrelid=r.oid OR i.inhparent=r.oid)),8193))";
   const targetDetail="(WITH required(qualified) AS ("+required+") SELECT "+diagnostic('ARCHIVE_CHECK_TARGET_UNSUPPORTED',targetCounts)
     +" FROM required e LEFT JOIN pg_catalog.pg_class r ON r.oid=pg_catalog.to_regclass(e.qualified))::text";
-  const differenceCounts="jsonb_build_object('removedSemanticCount',(SELECT least(count(*),4097) FROM (SELECT semantic FROM pg_temp.rr_archive_check_snapshot EXCEPT ALL SELECT semantic FROM pg_temp.rr_archive_check_live) d),"
-    +"'addedSemanticCount',(SELECT least(count(*),4097) FROM (SELECT semantic FROM pg_temp.rr_archive_check_live EXCEPT ALL SELECT semantic FROM pg_temp.rr_archive_check_snapshot) d))";
+  const differenceCounts=`jsonb_build_object('removedSemanticCount',(SELECT least(count(*),4097) FROM (SELECT ${comparison} FROM pg_temp.rr_archive_check_snapshot EXCEPT ALL SELECT ${comparison} FROM pg_temp.rr_archive_check_live) d),`
+    +`'addedSemanticCount',(SELECT least(count(*),4097) FROM (SELECT ${comparison} FROM pg_temp.rr_archive_check_live EXCEPT ALL SELECT ${comparison} FROM pg_temp.rr_archive_check_snapshot) d))`;
   const changedDetail=diagnostic('ARCHIVE_CHECK_CATALOG_CHANGED',differenceCounts)+"::text";
   const sql=after?String.raw`SET LOCAL search_path=pg_catalog;
 DO $rr_archive_check_restore$ DECLARE item record; BEGIN
   IF current_user<>'postgres' OR current_database()<>'postgres' THEN RAISE SQLSTATE '42501'; END IF;
-  FOR item IN SELECT * FROM pg_temp.rr_archive_check_snapshot WHERE NOT convalidated ORDER BY constraint_oid LOOP
+  FOR item IN SELECT * FROM pg_temp.rr_archive_check_staged ORDER BY constraint_oid LOOP
     EXECUTE pg_catalog.format('ALTER TABLE %I.%I ADD CONSTRAINT %I %s',item.schema_name,item.table_name,item.conname,item.definition);
     IF item.comment IS NOT NULL THEN
       EXECUTE pg_catalog.format('COMMENT ON CONSTRAINT %I ON %I.%I IS %L',item.conname,item.schema_name,item.table_name,item.comment);
@@ -1272,18 +1281,28 @@ DO $rr_archive_check_restore$ DECLARE item record; BEGIN
 END $rr_archive_check_restore$;
 SELECT jsonb_build_object('kind','ARCHIVE_NOTVALID_CHECK_RESTORE_V1','phase',${sqlString(phase)},
 'inventorySha256',${sqlString(inventory.digest)},'catalogScope','ALL_DATABASE_CHECKS','measurementPoint','AFTER_DATA_BEFORE_COMMIT',
-'checkCount',count(*),'stagedCount',count(*) FILTER(WHERE NOT convalidated),'validatedCheckCount',count(*) FILTER(WHERE convalidated),
+'checkCount',count(*),'stagedCount',(SELECT count(*) FROM pg_temp.rr_archive_check_staged),
+'retainedNotValidCount',count(*) FILTER(WHERE NOT convalidated)-(SELECT count(*) FROM pg_temp.rr_archive_check_staged),
+'validatedCheckCount',count(*) FILTER(WHERE convalidated),
 'catalogSha256',pg_catalog.encode(pg_catalog.sha256(pg_catalog.convert_to(coalesce(jsonb_agg(semantic ORDER BY semantic::text COLLATE "C"),'[]'::jsonb)::text,'UTF8')),'hex'),
 'semanticEqualityVerified',true) FROM pg_temp.rr_archive_check_snapshot;
 `:String.raw`SET LOCAL search_path=pg_catalog;
 CREATE TEMP VIEW rr_archive_check_live AS ${catalog};
 CREATE TEMP TABLE rr_archive_check_snapshot ON COMMIT DROP AS SELECT * FROM pg_temp.rr_archive_check_live;
+-- COPY names are a conservative staging scope, not a complete trigger-write
+-- graph. Every other CHECK stays active; any actual violation must still fail.
+CREATE TEMP TABLE rr_archive_check_staged ON COMMIT DROP AS
+WITH required(qualified) AS (${required})
+SELECT snapshot.* FROM pg_temp.rr_archive_check_snapshot snapshot
+JOIN pg_catalog.pg_constraint con ON con.oid=snapshot.constraint_oid
+WHERE NOT snapshot.convalidated AND snapshot.unsupported IS FALSE
+  AND EXISTS(SELECT 1 FROM required e WHERE pg_catalog.to_regclass(e.qualified)=con.conrelid);
 DO $rr_archive_check_suspend$ DECLARE item record; diagnostic_detail text; BEGIN
   IF current_user<>'postgres' OR current_database()<>'postgres' THEN RAISE SQLSTATE '42501'; END IF;
   IF (SELECT count(*) FROM pg_temp.rr_archive_check_snapshot)>${maximum}
     OR (SELECT coalesce(sum(pg_catalog.pg_column_size(semantic)),0) FROM pg_temp.rr_archive_check_snapshot)>${maximumBytes}
     OR EXISTS(SELECT 1 FROM pg_temp.rr_archive_check_snapshot WHERE NOT convalidated AND
-      (unsupported IS DISTINCT FROM false OR pg_catalog.octet_length(definition)>131072
+      (unsafe IS DISTINCT FROM false OR pg_catalog.octet_length(definition)>131072
        OR pg_catalog.octet_length(coalesce(comment,''))>65536 OR definition !~ ' NOT VALID$')) THEN
     BEGIN
       diagnostic_detail := ${scopeDetail};
@@ -1305,7 +1324,7 @@ DO $rr_archive_check_suspend$ DECLARE item record; diagnostic_detail text; BEGIN
     END;
     RAISE SQLSTATE 'P0001' USING MESSAGE='ARCHIVE_CHECK_TARGET_UNSUPPORTED', DETAIL=coalesce(diagnostic_detail,'');
   END IF;
-  FOR item IN SELECT DISTINCT constraint_oid,schema_name,table_name FROM pg_temp.rr_archive_check_snapshot WHERE NOT convalidated ORDER BY constraint_oid LOOP
+  FOR item IN SELECT DISTINCT constraint_oid,schema_name,table_name FROM pg_temp.rr_archive_check_staged ORDER BY constraint_oid LOOP
     EXECUTE pg_catalog.format('LOCK TABLE %I.%I IN ACCESS EXCLUSIVE MODE',item.schema_name,item.table_name);
   END LOOP;
   IF NOT (${same}) THEN
@@ -1317,7 +1336,7 @@ DO $rr_archive_check_suspend$ DECLARE item record; diagnostic_detail text; BEGIN
     END;
     RAISE SQLSTATE 'P0001' USING MESSAGE='ARCHIVE_CHECK_CATALOG_CHANGED', DETAIL=coalesce(diagnostic_detail,'');
   END IF;
-  FOR item IN SELECT * FROM pg_temp.rr_archive_check_snapshot WHERE NOT convalidated ORDER BY constraint_oid LOOP
+  FOR item IN SELECT * FROM pg_temp.rr_archive_check_staged ORDER BY constraint_oid LOOP
     EXECUTE pg_catalog.format('ALTER TABLE %I.%I DROP CONSTRAINT %I RESTRICT',item.schema_name,item.table_name,item.conname);
   END LOOP;
 END $rr_archive_check_suspend$;
@@ -1329,13 +1348,13 @@ function readArchiveNotValidCheckReport(c,phase,bytes){
     const value=JSON.parse(line);if(value?.kind==='ARCHIVE_NOTVALID_CHECK_RESTORE_V1')found.push(value);
   }catch{}
   need(found.length===1,'ARCHIVE_RELATION_CHECK_REPORT_MISSING');const r=found[0];
-  const keys=['kind','phase','inventorySha256','catalogScope','measurementPoint','checkCount','stagedCount','validatedCheckCount','catalogSha256','semanticEqualityVerified'];
+  const keys=['kind','phase','inventorySha256','catalogScope','measurementPoint','checkCount','stagedCount','retainedNotValidCount','validatedCheckCount','catalogSha256','semanticEqualityVerified'];
   need(r&&Object.getPrototypeOf(r)===Object.prototype&&JSON.stringify(Object.keys(r).sort())===JSON.stringify(keys.sort())
     &&r.phase===phase&&r.inventorySha256===c.archiveRelationInventory?.digest&&r.catalogScope==='ALL_DATABASE_CHECKS'
     &&r.measurementPoint==='AFTER_DATA_BEFORE_COMMIT'&&r.semanticEqualityVerified===true
     &&/^[a-f0-9]{64}$/.test(r.catalogSha256??'')
-    &&[r.checkCount,r.stagedCount,r.validatedCheckCount].every(v=>Number.isSafeInteger(v)&&v>=0&&v<=4096)
-    &&r.stagedCount+r.validatedCheckCount===r.checkCount,'ARCHIVE_RELATION_CHECK_REPORT_INVALID');
+    &&[r.checkCount,r.stagedCount,r.retainedNotValidCount,r.validatedCheckCount].every(v=>Number.isSafeInteger(v)&&v>=0&&v<=4096)
+    &&r.stagedCount+r.retainedNotValidCount+r.validatedCheckCount===r.checkCount,'ARCHIVE_RELATION_CHECK_REPORT_INVALID');
   c.archiveNotValidCheckReports??=new Map();need(!c.archiveNotValidCheckReports.has(phase),'ARCHIVE_RELATION_CHECK_REPORT_DUPLICATE');
   c.archiveNotValidCheckReports.set(phase,r);return r;
 }
@@ -1541,10 +1560,6 @@ SELECT value FROM pg_temp.rr_restore_check_diagnostic_capture;
   const unsupported=[
     ["CREATE DOMAIN rr_restore_check_scope.domain_probe AS integer; ALTER DOMAIN rr_restore_check_scope.domain_probe ADD CONSTRAINT domain_pending CHECK(VALUE>0) NOT VALID;\n",
       'DROP DOMAIN rr_restore_check_scope.domain_probe;\n'],
-    ['CREATE TABLE rr_restore_check_scope.parent(value integer); ALTER TABLE rr_restore_check_scope.parent ADD CONSTRAINT inherited_pending CHECK(value>0) NOT VALID; CREATE TABLE rr_restore_check_scope.child() INHERITS(rr_restore_check_scope.parent);\n',
-      'DROP TABLE rr_restore_check_scope.child; DROP TABLE rr_restore_check_scope.parent;\n'],
-    ['CREATE TABLE rr_restore_check_scope.partitioned(value integer) PARTITION BY RANGE(value); ALTER TABLE rr_restore_check_scope.partitioned ADD CONSTRAINT partition_pending CHECK(value>0) NOT VALID;\n',
-      'DROP TABLE rr_restore_check_scope.partitioned;\n'],
   ];
   for(const [ddl,cleanup]of unsupported){
     await run(c,p,'SYNTHETIC_CHECK_UNSUPPORTED_SETUP',Buffer.from(ddl));const before=await canary();
@@ -1565,6 +1580,47 @@ SELECT value FROM pg_temp.rr_restore_check_diagnostic_capture;
     assert.deepEqual(await canary(),before,'Unsupported scope must stop before the nontransactional DATA canary');
     await run(c,p,'SYNTHETIC_CHECK_UNSUPPORTED_CLEANUP',Buffer.from(cleanup));
   }
+  const retainedFamilies=[
+    {ddl:'CREATE TABLE rr_restore_check_scope.parent(value integer); ALTER TABLE rr_restore_check_scope.parent ADD CONSTRAINT inherited_pending CHECK(value>0) NOT VALID; CREATE TABLE rr_restore_check_scope.child() INHERITS(rr_restore_check_scope.parent);\n',
+      target:'rr_restore_check_scope.child',parent:'parent',constraint:'inherited_pending',triggerMode:'REPLICA',
+      cleanup:'DROP TABLE rr_restore_check_scope.child; DROP TABLE rr_restore_check_scope.parent;\n'},
+    {ddl:'CREATE TABLE rr_restore_check_scope.partitioned(value integer) PARTITION BY RANGE(value); ALTER TABLE rr_restore_check_scope.partitioned ADD CONSTRAINT partition_pending CHECK(value>0) NOT VALID; CREATE TABLE rr_restore_check_scope.partition_leaf PARTITION OF rr_restore_check_scope.partitioned DEFAULT;\n',
+      target:'rr_restore_check_scope.partitioned',parent:'partitioned',constraint:'partition_pending',triggerMode:'ALWAYS',
+      cleanup:'DROP TABLE rr_restore_check_scope.partition_leaf; DROP TABLE rr_restore_check_scope.partitioned;\n'},
+  ];
+  for(const family of retainedFamilies){
+    await run(c,p,'SYNTHETIC_CHECK_RETAINED_SETUP',Buffer.from(family.ddl));
+    const before=await rows(),output=await run(c,p,'SYNTHETIC_CHECK_RETAINED_COPY',staged(inventory));
+    const report=readArchiveNotValidCheckReport({archiveRelationInventory:inventory},'DATA',output);
+    assert.equal(report.stagedCount,2);assert(report.retainedNotValidCount>=1);
+    assert.equal(report.stagedCount+report.retainedNotValidCount+report.validatedCheckCount,report.checkCount);
+    assert.deepEqual(await rows(),[before[0]+2,before[1]+1]);
+    await assert.rejects(()=>run(c,p,'SYNTHETIC_CHECK_RETAINED_DIRECT_REFUSED',
+      Buffer.from('COPY '+family.target+'(value) FROM stdin;\n0\n\\.\n')),e=>e.code==='SQLSTATE_23514');
+    await run(c,p,'SYNTHETIC_CHECK_RETAINED_DIRECT_VALID',Buffer.from('COPY '+family.target+'(value) FROM stdin;\n1\n\\.\n'));
+    const familyRows=async()=>Number((await run(c,p,'SYNTHETIC_CHECK_RETAINED_ROWS',
+      Buffer.from('SELECT count(*) FROM '+family.target+';\n'))).toString().trim());
+    assert.equal(await familyRows(),1);
+    const stable=await rows();
+    await assert.rejects(()=>run(c,p,'SYNTHETIC_CHECK_RETAINED_MISMATCH',staged(inventory,Buffer.alloc(0),
+      'COMMENT ON CONSTRAINT '+family.constraint+' ON rr_restore_check_scope.'+family.parent+" IS 'changed';\n")),e=>e.code==='SQLSTATE_P0001');
+    assert.deepEqual(await rows(),stable);
+    // These remain real replica-session side effects. The family CHECK is not
+    // staged even though its trigger can be reached from a staged COPY table.
+    await run(c,p,'SYNTHETIC_CHECK_RETAINED_TRIGGER_SETUP',Buffer.from(
+      'CREATE FUNCTION rr_restore_check_scope.write_family() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN INSERT INTO '+family.target+' VALUES(NEW.value); RETURN NEW; END; $$;\n'
+      +'CREATE TRIGGER rr_retained_family BEFORE INSERT ON public.rr_restore_check_legacy FOR EACH ROW EXECUTE FUNCTION rr_restore_check_scope.write_family();\n'
+      +'ALTER TABLE public.rr_restore_check_legacy ENABLE '+family.triggerMode+' TRIGGER rr_retained_family;\n'));
+    const triggerInput=(async function*(){yield Buffer.from('SET LOCAL session_replication_role=replica;\n');yield* staged(inventory);})();
+    await assert.rejects(()=>run(c,p,'SYNTHETIC_CHECK_RETAINED_TRIGGER_REFUSED',triggerInput),e=>e.code==='SQLSTATE_23514');
+    assert.deepEqual(await rows(),stable);
+    assert.equal(await familyRows(),1);
+    await run(c,p,'SYNTHETIC_CHECK_RETAINED_TRIGGER_CLEANUP',Buffer.from('DROP TRIGGER rr_retained_family ON public.rr_restore_check_legacy; DROP FUNCTION rr_restore_check_scope.write_family();\n'));
+    const unchanged=readArchiveNotValidCheckReport({archiveRelationInventory:inventory},'DATA',
+      await run(c,p,'SYNTHETIC_CHECK_RETAINED_AFTER_ROLLBACK',staged(inventory,Buffer.alloc(0))));
+    assert.equal(unchanged.catalogSha256,report.catalogSha256);
+    await run(c,p,'SYNTHETIC_CHECK_RETAINED_CLEANUP',Buffer.from(family.cleanup));
+  }
   const beforeDiagnostic=await canary();
   await run(c,p,'SYNTHETIC_CHECK_TARGET_DIAGNOSTIC_SETUP',Buffer.from('CREATE TABLE rr_restore_check_scope.target_partition(value integer) PARTITION BY RANGE(value);\n'));
   const targetRelations=[...inventory.relations,archiveRelationEntry('data.sql','COPY','"rr_restore_check_scope"."target_partition"')];
@@ -1580,7 +1636,8 @@ SELECT value FROM pg_temp.rr_restore_check_diagnostic_capture;
   await run(c,p,'SYNTHETIC_CHECK_CLEANUP',Buffer.from('DROP TABLE public.rr_restore_check_legacy; DROP TABLE rr_restore_check_scope.other; DROP SEQUENCE public.rr_restore_check_canary_seq; DROP SCHEMA rr_restore_check_scope;\n'));
   return {status:'PASS',scope:'SYNTHETIC_OWNED_POSTGRES_NOTVALID_CHECK_RESTORE',phases:reports.map(r=>r.phase),
     legacyRowsAndDuplicates:true,validatedChecksPreserved:true,newViolationsRefused:true,recreateMismatchRolledBack:true,
-    domainInheritancePartitionRefusedBeforeData:true,sameBuilderAndPsqlReader:true};
+    domainAndUnknownRefusedBeforeData:true,retainedFamiliesUnchanged:true,
+    retainedDirectAndReplicaAlwaysTriggerViolationsRefused:true,sameBuilderAndPsqlReader:true};
 }
 
 async function restoreArchive(c,b,indexCommitmentSha256){
@@ -1899,11 +1956,12 @@ async function selfTest(){
   test('archive CHECK report requires complete bound counts exact identity and semantic equality without private fields',()=>{
     const inventory={complete:true,digest:'a'.repeat(64),relations:[]},report={kind:'ARCHIVE_NOTVALID_CHECK_RESTORE_V1',phase:'DATA',
       inventorySha256:inventory.digest,catalogScope:'ALL_DATABASE_CHECKS',measurementPoint:'AFTER_DATA_BEFORE_COMMIT',
-      checkCount:3,stagedCount:2,validatedCheckCount:1,catalogSha256:'b'.repeat(64),semanticEqualityVerified:true};
+      checkCount:4,stagedCount:2,retainedNotValidCount:1,validatedCheckCount:1,catalogSha256:'b'.repeat(64),semanticEqualityVerified:true};
     const wire=v=>Buffer.from(JSON.stringify(v)+'\n'),context=()=>({archiveRelationInventory:inventory});
     assert.deepEqual(readArchiveNotValidCheckReport(context(),'DATA',wire(report)),report);
     for(const edit of [r=>r.phase='HISTORY_DATA',r=>r.inventorySha256='c'.repeat(64),r=>r.semanticEqualityVerified=false,
-      r=>r.catalogScope='COPY_ONLY',r=>r.checkCount=4097,r=>r.stagedCount=0,r=>r.catalogSha256='unknown',r=>r.definition='PRIVATE_PREDICATE']){
+      r=>r.catalogScope='COPY_ONLY',r=>r.checkCount=4097,r=>r.stagedCount=0,r=>r.retainedNotValidCount=-1,
+      r=>delete r.retainedNotValidCount,r=>r.catalogSha256='unknown',r=>r.definition='PRIVATE_PREDICATE']){
       const changed=structuredClone(report);edit(changed);
       assert.throws(()=>readArchiveNotValidCheckReport(context(),'DATA',wire(changed)),e=>e.code==='ARCHIVE_RELATION_CHECK_REPORT_INVALID');
     }
@@ -2001,7 +2059,7 @@ async function selfTest(){
     });
     assert(c.processes.every(p=>p.processGroupClosed));
   });
-  test('CHECK_SUSPEND SQL adds only bounded own DETAIL and leaves its three guard predicates and semantic comparison intact',()=>{
+  test('CHECK_SUSPEND separates the exact COPY staging set from the complete CHECK control group',()=>{
     const f=suspendDiagnosticFixture();
     for(const phase of ['DATA','HISTORY_DATA']){
       const sql=archiveNotValidCheckSql(f.inventory,phase).toString(),post=archiveNotValidCheckSql(f.inventory,phase,true).toString();
@@ -2009,11 +2067,18 @@ async function selfTest(){
       assert(sql.includes("IF current_user<>'postgres' OR current_database()<>'postgres' THEN RAISE SQLSTATE '42501'; END IF;"));
       assert(sql.includes('FROM pg_temp.rr_archive_check_snapshot)>4096'));
       assert(sql.includes('FROM pg_temp.rr_archive_check_snapshot)>8388608'));
-      assert(sql.includes("unsupported IS DISTINCT FROM false OR pg_catalog.octet_length(definition)>131072"));
+      assert(sql.includes("unsafe IS DISTINCT FROM false OR pg_catalog.octet_length(definition)>131072"));
       assert(sql.includes("OR pg_catalog.octet_length(coalesce(comment,''))>65536 OR definition !~ ' NOT VALID$'"));
       assert(sql.includes('WHERE r.oid IS NULL OR r.relkind<>\'r\' OR r.relispartition'));
-      assert(sql.includes('EXCEPT ALL SELECT semantic FROM pg_temp.rr_archive_check_live'));
-      assert(sql.includes('EXCEPT ALL SELECT semantic FROM pg_temp.rr_archive_check_snapshot'));
+      assert(sql.includes('EXCEPT ALL SELECT semantic,unsupported,unsafe FROM pg_temp.rr_archive_check_live'));
+      assert(sql.includes('EXCEPT ALL SELECT semantic,unsupported,unsafe FROM pg_temp.rr_archive_check_snapshot'));
+      assert(sql.includes("r.relkind NOT IN ('r','p')"));
+      assert(sql.includes('WHERE NOT snapshot.convalidated AND snapshot.unsupported IS FALSE'));
+      assert(sql.includes('pg_catalog.to_regclass(e.qualified)=con.conrelid'));
+      assert(sql.includes('FROM pg_temp.rr_archive_check_staged ORDER BY constraint_oid LOOP'));
+      assert(post.includes('FROM pg_temp.rr_archive_check_staged ORDER BY constraint_oid LOOP'));
+      assert(post.includes("'retainedNotValidCount',count(*) FILTER(WHERE NOT convalidated)-(SELECT count(*) FROM pg_temp.rr_archive_check_staged)"));
+      assert(!post.includes('WHERE NOT convalidated ORDER BY constraint_oid LOOP'));
       assert(sql.includes("'inventorySha256','"+f.inventory.digest+"'"));assert(sql.includes("'phase','"+phase+"'"));
       assert(sql.includes('least(count(*),4097)'));assert(sql.includes('least(count(*),8193)'));
       assert.equal((sql.match(/WHEN query_canceled THEN RAISE;/g)??[]).length,3);
