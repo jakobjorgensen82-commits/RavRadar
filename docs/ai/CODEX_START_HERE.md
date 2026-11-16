@@ -25,6 +25,8 @@ Find derefter det seneste private checkpoint i den eksisterende isolerede arbejd
 
 Læs kun yderligere historik, krav, håndbog og kode, som den konkrete opgave afhænger af. Genbrug allerede leveret arbejde; genåbn det kun ved en ny konkret fejl eller relevant ændring. Manglende evidens må ikke omdøbes til bestået.
 
+Den lokale DMI-recoveryrettelse binder den eksisterende firetimerspause til den faktisk valgte produktionsreference, når lang profil og målt baseline er kendte. Ukendt historisk reference beholder vægursreglen; budgetter, kildeprioritet og samme-H0-grænser bevares. Lokal målprøve er ikke kilde-CI, installation eller bevist forbedring af prognosehalen. Se DEC-0254 og håndbog 89.294.
+
 <!-- RAVRADAR_ACTIVE_ENTRY_END -->
 
 ## Daterede notater og tidligere indgange — uændret historik

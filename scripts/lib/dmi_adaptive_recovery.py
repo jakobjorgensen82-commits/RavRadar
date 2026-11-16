@@ -56,7 +56,7 @@ def extended_runtime_profile_selected(runtime_budget_seconds, selected_runtime_b
 
 
 def next_adaptive_recovery(cache, *, requested, runtime_budget_seconds, generated_at, before_counts,
-                           selected_runtime_budget_seconds=None):
+                           selected_runtime_budget_seconds=None, production_reference_at=None):
     marker = retained_adaptive_recovery(cache)
     if requested is not True or not extended_runtime_profile_selected(
             runtime_budget_seconds, selected_runtime_budget_seconds):
@@ -72,4 +72,11 @@ def next_adaptive_recovery(cache, *, requested, runtime_budget_seconds, generate
     }
     if selected_runtime_budget_seconds is not None:
         result["selectedRuntimeBudgetSeconds"] = selected_runtime_budget_seconds
+    if production_reference_at is not None:
+        reference = _utc_instant(production_reference_at)
+        generated = _utc_instant(generated_at)
+        if (reference is None or reference.minute or reference.second or reference.microsecond
+                or generated is None or reference > generated):
+            raise ValueError("DMI recovery production reference must be an elapsed exact UTC hour")
+        result["productionReferenceAt"] = reference.isoformat().replace("+00:00", "Z")
     return result

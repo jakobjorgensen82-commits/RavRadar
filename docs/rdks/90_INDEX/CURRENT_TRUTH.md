@@ -4,6 +4,15 @@ En allerede centralt afsluttet almindelig Pages-prognose kvalificeres som en skr
 
 Readiness-prøvens positive matrix bruger nu sin faktisk committed forgænger og aktuelle checkout i samme familie. Den normale produktlæser skal først bevise uændrede PostgreSQL-, C/I/T- og kontrolinput på det rene træ. De tidligere 598-originaler bevares som afslag mod den aktuelle familie; deres tidligere positive bevis gælder fortsat kun deres oprindelige kontekst. Ingen produktguard eller kontrakt ændres af testkonteksten.
 
+## Produktionsreferencen styrer DMI-recoverys firetimerspause
+
+Den normale planlægger og DMI-updater starter på forskellige tidspunkter. En firetimerspause må derfor ikke alene måles fra updaterens senere start, når næste almindelige produktionsreference allerede er rykket fire timer frem. Den afgrænsede rettelse gemmer den faktisk låste produktionsreference i den eksisterende markør for en valgt lang recoveryprofil. Planlæggeren kan kun lade denne pause udløbe via mindst fire timers fremrykket H0, når både den lange profil, den målte femkomponentbaseline og de ikke-fremtidige UTC-referencer er kendte.
+
+Manglende, ugyldig eller historisk reference udfyldes ikke fra en senere caches ledger; den beholder den hidtidige vægursregel. Samme H0 får ingen ny gentagelsestilladelse, og reglen om mere end 100 pars målt fremgang består. De eksisterende profiler på 1500 og 3600 sekunder, downloadlofter, RAW-loft, finalize-reserver, behovsadmission og kildeprioritet ændres ikke.
+
+Et officielt katalogtilbud er ikke bevis for hentning, og et lokalt checkpoint er ikke bevis for den valgte vandstandskilde i alle kystdele. Den observerede lokale overspringning og den udførte LF-hentning er skilt fra offentlig dækning. Den konkrete komponentkilde i halens enkelte timer og virkningen af en længere profil på hele halen er fortsat ukendt; nærmeste native kant er kun en mulig kodevej uden en faktisk generationsbundet observation.
+
+Hele det eksisterende lokale dmiBudget-mål består med regressionsprøver for firetimers H0-fremrykning, samme og tidligere H0, ukendte referencer, uændret 100-par-grænse samt den normale producents markør. Det er lokal kildeforberedelse, ikke præcis kilde-CI, installation eller bevist offentlig forbedring. LF7-observationens egen leverance og de øvrige revisionskrav består.
 ## Afgrænset forklaring af arkivlæserens CHECK_SUSPEND-afslag
 
 Den eksisterende arkivlæser kan forklare sine tre faste P0001-afslag før CHECK_SUSPEND: ikke-understøttet eller for stor CHECK-metadata, ikke-understøttede COPY-mål og ændret CHECK-katalog. Kun præcis fejlramme, fase, inventory-hash og mættede årsagstællere må forlade den ejede lokale database. Navne, definitioner, kommentarer, rækker og rå fejltekst forbliver private. Ukendt eller modstridende diagnostic bliver UNAVAILABLE.

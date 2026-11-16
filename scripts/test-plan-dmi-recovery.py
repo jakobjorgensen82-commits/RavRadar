@@ -58,6 +58,44 @@ stalled = {**level_gap, "diagnostics": {"adaptiveRecovery": {
 assert planner.decide(stalled, registry, target, now=datetime(2026, 9, 24, 13, tzinfo=timezone.utc))["cooldownActive"] is True
 assert planner.decide(stalled, registry, target, now=datetime(2026, 9, 24, 16, tzinfo=timezone.utc))["extended"] is True
 
+# The existing long marker binds the selected production H0, not a guessed
+# tolerance around updater startup. This reproduces 334's 66-second shortfall.
+reference_marker = next_adaptive_recovery({}, requested=True, runtime_budget_seconds=3599,
+    selected_runtime_budget_seconds=3600, generated_at="2026-09-24T08:36:40.492143Z",
+    production_reference_at="2026-09-24T08:00:00Z", before_counts=result["missingDmiPairs"])
+reference_cache = {**level_gap, "diagnostics": {"adaptiveRecovery": reference_marker}}
+reference_clock = datetime(2026, 9, 24, 12, 35, 34, tzinfo=timezone.utc)
+assert planner.decide(reference_cache, registry, target, now=reference_clock)["extended"] is True
+for earlier_target in ("2026-09-24T08:00:00Z", "2026-09-24T11:00:00Z"):
+    assert planner.decide(reference_cache, registry, earlier_target, now=reference_clock)["cooldownActive"] is True
+for key, value in (("productionReferenceAt", None), ("productionReferenceAt", "bad"),
+                   ("productionReferenceAt", "2026-09-24T08:01:00Z"),
+                   ("productionReferenceAt", "2026-09-24T09:00:00Z"),
+                   ("runtimeBudgetSeconds", None), ("missingDmiPairsAtStart", None)):
+    unknown_reference = copy.deepcopy(reference_cache)
+    unknown_reference["diagnostics"]["adaptiveRecovery"][key] = value
+    assert planner.decide(unknown_reference, registry, target, now=reference_clock)["cooldownActive"] is True
+assert planner.decide(reference_cache, registry, "2026-09-24T13:00:00Z",
+    now=reference_clock)["cooldownActive"] is True, "Future H0 cannot expire cooldown"
+for extra_pairs, expected in ((100, False), (101, True)):
+    progressed_reference = copy.deepcopy(reference_cache)
+    progressed_counts = planner.decide(reference_cache, registry, "2026-09-24T11:00:00Z",
+        now=reference_clock)["missingDmiPairs"]
+    progressed_reference["diagnostics"]["adaptiveRecovery"]["missingDmiPairsAtStart"] = dict(progressed_counts)
+    progressed_reference["diagnostics"]["adaptiveRecovery"]["missingDmiPairsAtStart"]["waterLevel"] += extra_pairs
+    assert planner.decide(progressed_reference, registry, "2026-09-24T11:00:00Z",
+        now=reference_clock)["extended"] is expected
+for invalid_reference in ("bad", "2026-09-24T08:01:00Z", "2026-09-24T09:00:00Z",
+                          "2026-09-24T08:00:00+01:00"):
+    try:
+        next_adaptive_recovery({}, requested=True, runtime_budget_seconds=3600,
+            generated_at="2026-09-24T08:36:40Z", production_reference_at=invalid_reference,
+            before_counts=result["missingDmiPairs"])
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("An unknown/future production H0 must not enter a long marker")
+
 # A 4.0.492 quick turn could incorrectly claim an extended recovery. Match
 # instants, not spelling: production used both Z and .000Z UTC forms.
 short = copy.deepcopy(stalled)
@@ -176,6 +214,7 @@ def actual_normal_marker(selected, remaining, *, finalize=False, cache_only=Fals
     scope = {"previous": short, "generated": target, "result": {"diagnostics": {}}, "os": os, "json": json,
              "MAX_RUNTIME_SECONDS": remaining, "EXTENDED_RUNTIME_SECONDS": 3600,
              "FINALIZE_ONLY": finalize, "CACHE_ONLY": cache_only,
+             "locked_production_reference": datetime.fromisoformat(target.replace("Z", "+00:00")),
              "next_adaptive_recovery": next_adaptive_recovery,
              "extended_runtime_profile_selected": getattr(recovery, "extended_runtime_profile_selected", None)}
     with patch.dict(os.environ, {"DMI_BULK_ADAPTIVE_RECOVERY": "true",
@@ -184,6 +223,7 @@ def actual_normal_marker(selected, remaining, *, finalize=False, cache_only=Fals
         exec(branch, scope)
     return scope["result"]["diagnostics"].get("adaptiveRecovery")
 assert actual_normal_marker(3600, 3599) is not None, "Selected long profile lost at rounded child3599"
+assert actual_normal_marker(3600, 3599)["productionReferenceAt"] == target
 assert actual_normal_marker(900, 899) is None
 assert actual_normal_marker(3600, 600, finalize=True) is None
 assert actual_normal_marker(3600, 600, cache_only=True) is None
