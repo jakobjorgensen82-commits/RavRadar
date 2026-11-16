@@ -13,6 +13,14 @@ Manglende, ugyldig eller historisk reference udfyldes ikke fra en senere caches 
 Et officielt katalogtilbud er ikke bevis for hentning, og et lokalt checkpoint er ikke bevis for den valgte vandstandskilde i alle kystdele. Den observerede lokale overspringning og den udførte LF-hentning er skilt fra offentlig dækning. Den konkrete komponentkilde i halens enkelte timer og virkningen af en længere profil på hele halen er fortsat ukendt; nærmeste native kant er kun en mulig kodevej uden en faktisk generationsbundet observation.
 
 Hele det eksisterende lokale dmiBudget-mål består med regressionsprøver for firetimers H0-fremrykning, samme og tidligere H0, ukendte referencer, uændret 100-par-grænse samt den normale producents markør. Det er lokal kildeforberedelse, ikke præcis kilde-CI, installation eller bevist offentlig forbedring. LF7-observationens egen leverance og de øvrige revisionskrav består.
+
+## Arkivets komplette CHECK-kontrol og afgrænsede udsættelse
+
+Den lokale arkivlæser skelner nu mellem det komplette CHECK-katalog og det mindre sæt, som skal udsættes under DATA. Kun oprindeligt ikke-validerede CHECKs på katalogbeviste selvstændige almindelige tabeller i den pågældende fases direkte COPY-inventar udsættes og genetableres. Hele kataloget før og efter, inklusive validerede og urørte ikke-validerede regler, skal fortsat være identisk. Udsatte, bevarede ikke-validerede og validerede regler tælles særskilt; deres sum skal være det komplette antal.
+
+Kendte lokale arve- og partitionsregler forbliver urørte og aktive. En REPLICA- eller ALWAYS-trigger kan stadig skrive uden for de direkte COPY-mål; den skrivning møder de bevarede CHECKs og skal ved en reel overtrædelse stoppe med sin oprindelige fejl. Direkte COPY til ikke-understøttede familier samt foreign-/ukendt relationstype, domæne, system, extension og for stor metadata afvises fortsat. Der tilføjes ingen familiegenopbygning eller specialcase på en bestemt relation.
+
+Baggrunden er et faktisk lukket afslag før DATA: det komplette katalog indeholdt én ikke-valideret arve-/partitionsregel, som den tidligere globale guard krævede udsættelsesstøtte for. Den præcise relation og dens berøring er ikke identificeret. Den normale credentialfri readerprøve og lifecycle-målet består lokalt; de udvidede SQL-cases i den eksisterende B-prøve er kildeforberedt, men skal faktisk køres på Linux. Den kvalificerede 599-mainbaseline er ikke kvalifikation af denne efterfølgende ændring. Frisk kildekontrol, uafhængigt review, faktisk original-/Auth-gendannelse og de øvrige backup-/Free-beviser er fortsat nødvendige.
 ## Afgrænset forklaring af arkivlæserens CHECK_SUSPEND-afslag
 
 Den eksisterende arkivlæser kan forklare sine tre faste P0001-afslag før CHECK_SUSPEND: ikke-understøttet eller for stor CHECK-metadata, ikke-understøttede COPY-mål og ændret CHECK-katalog. Kun præcis fejlramme, fase, inventory-hash og mættede årsagstællere må forlade den ejede lokale database. Navne, definitioner, kommentarer, rækker og rå fejltekst forbliver private. Ukendt eller modstridende diagnostic bliver UNAVAILABLE.
@@ -56,7 +64,7 @@ Hele normalmålet består lokalt på Windows/Node24 med 127 cases, inklusive de 
 
 Den autentiske diagnose binder afvisningen til en oprindeligt ikke-valideret tabel-CHECK. Hele schema-only-filen indlæses før DATA, selv om pg_dump normalt placerer ikke-validerede CHECKs efter data. NOT VALID fritager eksisterende rækker fra scanning, men håndhæves stadig ved ny COPY. Det forklarer den lokale indlæsningskonflikt; en korrupt originalrække er ikke dermed bevist.
 
-Den afgrænsede rettelse udsætter alene de katalogbestemte ikke-validerede almindelige tabel-CHECKs i den ejede lokale database og genetablerer dem identisk før commit. Fuld semantisk kataloglighed og validerede kontrolregler bevares. Domæne-, partitions-, arve- og extensionsemantik, som ikke er understøttet, afvises før DATA. Fem originale SQL-filer, rækker, sekvenser, Auth-accept og ejet oprydning bevares. Begge normale DATA-faser dækkes. Kildelevering og syntetiske prøver er ikke faktisk originalrestore eller autonom backupaccept. Se håndbog89.350 og DEC-0255/DEC-0302.
+Den første rækkefølgerettelse udsatte alle understøttede almindelige tabel-CHECKs og afviste globalt ikke-validerede domæne-/partitions-/arve-/extensionregler. Den efterfølgende lokale kandidat skelner mellem udsatte og urørte aktive regler som beskrevet øverst. De fem originale SQL-filer, rækker, sekvenser, Auth-accept og ejet oprydning bevares.
 
 ## Ejerbeslutning 16. november — egress som budgetgrundlag for Free
 

@@ -27,6 +27,13 @@ Læs kun yderligere historik, krav, håndbog og kode, som den konkrete opgave af
 
 Den lokale DMI-recoveryrettelse binder den eksisterende firetimerspause til den faktisk valgte produktionsreference, når lang profil og målt baseline er kendte. Ukendt historisk reference beholder vægursreglen; budgetter, kildeprioritet og samme-H0-grænser bevares. Lokal målprøve er ikke kilde-CI, installation eller bevist forbedring af prognosehalen. Se DEC-0254 og håndbog 89.294.
 
+## Arkivets komplette CHECK-kontrol og afgrænsede udsættelse
+
+Den lokale arkivlæser skelner nu mellem det komplette CHECK-katalog og det mindre sæt, som skal udsættes under DATA. Kun oprindeligt ikke-validerede CHECKs på katalogbeviste selvstændige almindelige tabeller i den pågældende fases direkte COPY-inventar udsættes og genetableres. Hele kataloget før og efter, inklusive validerede og urørte ikke-validerede regler, skal fortsat være identisk. Udsatte, bevarede ikke-validerede og validerede regler tælles særskilt; deres sum skal være det komplette antal.
+
+Kendte lokale arve- og partitionsregler forbliver urørte og aktive. En REPLICA- eller ALWAYS-trigger kan stadig skrive uden for de direkte COPY-mål; den skrivning møder de bevarede CHECKs og skal ved en reel overtrædelse stoppe med sin oprindelige fejl. Direkte COPY til ikke-understøttede familier samt foreign-/ukendt relationstype, domæne, system, extension og for stor metadata afvises fortsat. Der tilføjes ingen familiegenopbygning eller specialcase på en bestemt relation.
+
+Baggrunden er et faktisk lukket afslag før DATA: det komplette katalog indeholdt én ikke-valideret arve-/partitionsregel, som den tidligere globale guard krævede udsættelsesstøtte for. Den præcise relation og dens berøring er ikke identificeret. Den normale credentialfri readerprøve og lifecycle-målet består lokalt; de udvidede SQL-cases i den eksisterende B-prøve er kildeforberedt, men skal faktisk køres på Linux. Den kvalificerede 599-mainbaseline er ikke kvalifikation af denne efterfølgende ændring. Frisk kildekontrol, uafhængigt review, faktisk original-/Auth-gendannelse og de øvrige backup-/Free-beviser er fortsat nødvendige.
 <!-- RAVRADAR_ACTIVE_ENTRY_END -->
 
 ## Daterede notater og tidligere indgange — uændret historik
