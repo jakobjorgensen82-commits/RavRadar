@@ -355,7 +355,11 @@ test('derived599 input inventory keeps genuine metadata, factory origins and all
     const manifest=JSON.parse(raw.slice(raw.indexOf('Object.freeze(')+14,raw.lastIndexOf(');')));
     return [def.file,...manifest.files.map(row=>row[def.rowKey])];
   });
-  const migrations=text(SOURCE,['ls-files','-z']).split('\0').filter(file=>file.startsWith('supabase/migrations/')&&file.endsWith('.sql'));
+  const offSql='supabase/migrations/20261116181500_account_erasure_outbox_off.sql';
+  const offReader='scripts/verify-account-erasure-schema.mjs';
+  const erasureAdapter='scripts/lib/account-erasure-outbox-native-fixture.mjs';
+  // Preserve the original actual59975-row input; the named app successor is separate below.
+  const migrations=text(SOURCE,['ls-files','-z']).split('\0').filter(file=>file.startsWith('supabase/migrations/')&&file.endsWith('.sql')&&file!==offSql);
   assert.equal(migrations.length,75);
   const selected=[...new Set([...p.postgresModules,...p.postgresData,...p.nativeEvidenceControls,...p.setupInputs,
     ...p.plannerTrustChain,...p.continuation.files,p.continuation.file,...modelFiles,...migrations,'package.json','version.json'])];
@@ -396,6 +400,32 @@ test('derived599 input inventory keeps genuine metadata, factory origins and all
       assert.equal(original.models.C.before.files.length,101);assert.equal(original.models.I.before.files.length,100);
       assert.equal(original.models.T.before.files.length,12);assert.equal(original.frozenGitAnchors.anchors.length,18);
       assert.equal(original.actualPostgresInput.unchanged,true);for(const family of Object.values(original.models))assert.equal(family.unchanged,true);
+    });
+    await t.test('the actual OFF76th SQL and metadata reader are new PG inputs, never old75 proof',()=>{
+      reset();
+      for(const file of [offSql,offReader,erasureAdapter]){
+        const source=path.join(SOURCE,file),target=path.join(root,file);
+        assert(fs.lstatSync(source).isFile());fs.mkdirSync(path.dirname(target),{recursive:true});fs.copyFileSync(source,target);
+      }
+      command(root,['add','--',offSql,offReader,erasureAdapter]);
+      const offCommit=text(root,['commit-tree',text(root,['write-tree']),'-p',baseline,'-m','synthetic actual OFF app inputs, not PG qualification']);
+      command(root,['update-ref','HEAD',offCommit]);
+      const added=run(offCommit);assert.equal(added.analysis,'COMPLETE',added.failureCode);
+      assert.equal(added.actualPostgresInput.before.sqlFiles,75);assert.equal(added.actualPostgresInput.after.sqlFiles,76);
+      assert.equal(added.actualPostgresInput.before.modules,69);assert.equal(added.actualPostgresInput.after.modules,71);
+      assert.equal(added.actualPostgresInput.after.totalFiles,152);
+      assert.equal(added.actualPostgresInput.unchanged,false);
+      for(const file of [offSql,offReader,erasureAdapter])assert(added.actualPostgresInput.changes.some(row=>row.file===file));
+      for(const family of Object.values(added.models))assert.equal(family.unchanged,true);
+      const same=analyze({baselineCommit:offCommit,candidateCommit:offCommit,expectedHead:offCommit});
+      noAuthority(same);assert.equal(same.analysis,'COMPLETE',same.failureCode);
+      assert.equal(same.actualPostgresInput.before.sqlFiles,76);assert.equal(same.actualPostgresInput.unchanged,true);
+      fs.writeFileSync(path.join(root,'supabase/migrations/20990101000000_unknown.sql'),'-- synthetic unknown extra input\n');
+      command(root,['add','--','supabase/migrations/20990101000000_unknown.sql']);
+      const unknown=text(root,['commit-tree',text(root,['write-tree']),'-p',offCommit,'-m','synthetic unknown77-row baseline']);
+      command(root,['update-ref','HEAD',unknown]);
+      const refused=analyze({baselineCommit:unknown,candidateCommit:unknown,expectedHead:unknown});
+      noAuthority(refused);assert.equal(refused.analysis,'REFUSED');
     });
     // equal/deepEqual append their diff: the existing normal API deliberately
     // projects these failures to its closed generic refusal code.

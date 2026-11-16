@@ -7,6 +7,7 @@ import path from 'node:path';
 import {readAccountErasureSource,accountErasureCatalogQuery,verifyAccountErasureCatalogMetadata}
  from '../verify-account-erasure-schema.mjs';
 const DB='rr_account_erasure_native_fixture';
+export const ACCOUNT_ERASURE_NATIVE_SQL_CASE_COUNT=48;
 const actor='10000000-0000-4000-8000-000000000001';
 const id=n=>'20000000-0000-4000-8000-'+String(n).padStart(12,'0');
 const op=n=>'30000000-0000-4000-8000-'+String(n).padStart(12,'0');
@@ -69,10 +70,20 @@ alter table storage.buckets enable row level security;
 alter table storage.s3_multipart_uploads enable row level security;
 alter table storage.s3_multipart_uploads_parts enable row level security;
 `+canonical.slice(start,end));
+  const injected=source.sql.replace(/commit;\s*$/,"do $$begin raise exception 'SYNTHETIC_ERASURE_PRECOMMIT';end;$;\ncommit;\n");
+  assert.notEqual(injected,source.sql);const rollback=await raw(injected);
+  assert.equal(rollback.code,3);assert.equal(rollback.sqlState,'P0001');
+  assert.equal(await pg("select to_regclass('public.account_erasure_operations') is null and not exists(select 1 from pg_catalog.pg_proc where pronamespace='public'::regnamespace and proname like '%account_erasure%');"),'t');checked++;
   await pg(source.sql);
   await pg("insert into auth.users values('"+actor+"'); insert into public.profiles values('"+actor+"','owner-synthetic@example.invalid','owner',true);");
   const metadata=JSON.parse(await pg(accountErasureCatalogQuery));
-  verifyAccountErasureCatalogMetadata([{metadata}],{source});checked++;
+  const checkReference=verifyAccountErasureCatalogMetadata([{metadata}],{source}).checkReference;checked++;
+  const checkName=checkReference.definitions[0][0];assert(/^account_erasure_operations_[a-z0-9_]+$/.test(checkName));
+  const checkDrift=JSON.parse(await pg('begin;alter table public.account_erasure_operations drop constraint "'+checkName+'";alter table public.account_erasure_operations add constraint "'+checkName+'" check(true);'+accountErasureCatalogQuery+'rollback;'));
+  assert.equal(checkDrift.table.checks,28);
+  assert.throws(()=>verifyAccountErasureCatalogMetadata([{metadata:checkDrift}],{source,expectedCheckReference:checkReference}),/ACCOUNT_ERASURE_CHECK_SEMANTICS_MISMATCH/);checked++;
+  const aclDrift=JSON.parse(await pg('begin;grant execute on function public.account_erasure_require_service_owner(uuid) to service_role;'+accountErasureCatalogQuery+'rollback;'));
+  assert.throws(()=>verifyAccountErasureCatalogMetadata([{metadata:aclDrift}],{source}),/ACCOUNT_ERASURE_CATALOG_MISMATCH/);checked++;
   await seed(1);const ready=await prepare(1);assert.equal(ready.state,'PREPARED');assert.equal(ready.complete,false);checked++;
   assert.deepEqual(await prepare(1),ready);checked++;
   const found=jsonLast(await owner("select public.find_account_erasure_operation('"+id(1)+"');"));assert.equal(found.operationId,op(1));checked++;
@@ -122,6 +133,9 @@ alter table storage.s3_multipart_uploads_parts enable row level security;
   await pg('drop policy synthetic_unknown_upload on storage.objects;');
   await seed(12);await pg("insert into storage.objects(owner_id) values('"+id(12)+"');");
   assert.equal((await prepare(12)).holdReason,'STORAGE_OWNERSHIP');checked++;
+  await seed(13);await pg('alter table storage.s3_multipart_uploads_parts drop column owner_id;');
+  assert.equal((await prepare(13)).holdReason,'STORAGE_CATALOG_UNKNOWN');checked++;
+  await pg('alter table storage.s3_multipart_uploads_parts add column owner_id text;');
   await seed(4);await pg("insert into public.app_user_roles values('"+id(4)+"');");assert.equal((await prepare(4)).holdReason,'REFERENCE_POLICY');checked++;
   await seed(5);await pg("update public.profiles set email='expert@ravradar.dk' where id='"+id(5)+"';");assert.equal((await prepare(5)).holdReason,'PRIVILEGED_TARGET');checked++;
   // READ COMMITTED must re-read positive journal after a waited profile lock.
@@ -150,8 +164,23 @@ alter table storage.s3_multipart_uploads_parts enable row level security;
   await waitApplication('rr_erasure_actor_lifetime');
   const revoke=await raw("set lock_timeout='100ms';update public.profiles set is_active=false where id='"+actor+"';");
   assert.equal(revoke.code,3);assert.equal(revoke.sqlState,'55P03');assert.equal((await ownerRead).code,0);checked++;
-  result={passed:true,cases:checked,actualPostgres:true,syntheticSqlHost:true,realGoTrue:false,
-   serviceEvidenceSynthetic:true,authAttemptReplayAndGeneration:true,initialAbsenceWithoutDeleteClaim:true,
+  // Durable server discovery, including profile-gone and all HOLD operations.
+  await pg('insert into public.account_erasure_operations(operation_id,target_user_id,requested_by,profile_was_active,state,hold_reason,prepared_at,updated_at) values '+
+   Array.from({length:65},(_,i)=>"('"+op(2001+i)+"','"+id(5001+i)+"','"+actor+"',true,'HOLD_POLICY','REFERENCE_POLICY',now(),now())").join(',')+';');
+  const page1=jsonLast(await owner('select public.list_account_erasure_operations();'));
+  assert.equal(page1.scope,'own-account-erasure-operations');assert.equal(page1.rows.length,64);assert.equal(page1.truncated,true);
+  assert(page1.rows.some(row=>row.operationId===op(3)),'A removed profile must not hide its durable operation');
+  for(const row of page1.rows)assert.deepEqual(Object.keys(row).sort(),Object.keys(staged).sort());
+  const page2=jsonLast(await owner("select public.list_account_erasure_operations(p_after=>'"+page1.rows.at(-1).operationId+"');"));
+  assert.equal(page2.truncated,false);assert(page2.rows.length>0&&page2.rows.length<=64);
+  assert.equal(new Set([...page1.rows,...page2.rows].map(row=>row.operationId)).size,page1.rows.length+page2.rows.length);
+  assert.equal(Number(await pg("select count(*) from public.account_erasure_operations where requested_by='"+actor+"' and state<>'COMPLETE';")),page1.rows.length+page2.rows.length);checked++;
+  await stateFailure(auth(id(1))+'select public.list_account_erasure_operations();','42501');
+  await stateFailure(auth(actor,'service_role')+'select public.list_account_erasure_operations();','42501');
+  assert.equal(checked,ACCOUNT_ERASURE_NATIVE_SQL_CASE_COUNT,'Whole app SQL/race case inventory must execute');
+  result={passed:true,cases:checked,actualPostgres:true,syntheticSqlHost:true,realGoTrue:false,checkReference,checkExpressionDriftRefused:true,
+   serviceEvidenceSynthetic:true,failedTransactionRolledBack:true,aclMutationRefused:true,ownerPendingDiscoveryAndPagination:true,
+   authAttemptReplayAndGeneration:true,initialAbsenceWithoutDeleteClaim:true,
    authUuidFenceSqlOnly:true,storageDefaultDenyAndOwnership:true,
    observationsAndBootstrapFence:true,readCommittedFreshness:true,repeatableReadNoLateCommit:true,
    serializableNoLateCommit:true,actorNonKeyPrivilegeLock:true,authDeletion:false,d1Ack:false,completionAuthority:false};

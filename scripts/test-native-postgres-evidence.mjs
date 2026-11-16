@@ -1208,7 +1208,6 @@ test('593 V2 shares the real ordered PG selector, including configured-directory
   const changed=copy(actual);changed.selectedPrograms.files[0].sha256='d'.repeat(64);
   assert.throws(()=>verifyAssistantPublic591Runtime(changed,actual));
 });
-
 test('593 V2 input capture closes65 modules/four JSON/all71 SQL and package scopes while preserving named UI/docs/test deltas',async t=>{
   const check=async sourceRoot=>{
   const {execFileSync}=await import('node:child_process'),cache=new Map(),requests=[];
@@ -2543,7 +2542,7 @@ if(AFTER598_ACTIVE){
     const result=spawnSync(process.execPath,['scripts/national584-source-evidence.mjs','assistant-after598-source'],{encoding:'utf8',timeout:30000,maxBuffer:32768,env:{PATH:process.env.PATH,SystemRoot:process.env.SystemRoot}});
     assert.equal(result.error,undefined);assert.equal(result.status,0);assert.equal(JSON.parse(result.stdout).release,source.requireAssistantAfter598Release());
   });
-  test('after598 current synthetic report contract rejects old receipt, false truths and old native command',async()=>{
+  test('after598 current synthetic report contract rejects old receipt, false truths and old native command',async t=>{
     const native=await import('./native-postgres-evidence.mjs'),source=await import('./lib/assistant-later-h0-successor-source.mjs');
     const runtime=v2Runtime(),binding=source.requireAssistantAfter598Binding(),output=source.requireAssistantAfter598Output();
     const canonical=await source.readAssistantAfter598CanonicalSource();
@@ -2565,6 +2564,50 @@ if(AFTER598_ACTIVE){
     const old={...installed594Receipt(),runtime,report:scalar597Report('20261104004400','20261029233000')};
     await assert.rejects(native.verifyAssistantAfter598PhaseReceipt(old,old.current));
     assert.equal(output,source.requireAssistantAfter598Output()); // DATA format checks are not native execution.
+    await t.test('current76-row OFF evidence survives RAW projection and is mandatory before normal record',async()=>{
+      const sql=await fs.readFile('supabase/migrations/20261116181500_account_erasure_outbox_off.sql');
+      const schema=await import('./verify-account-erasure-schema.mjs');
+      const checkReference=schema.accountErasureCheckReference({format:'PG_CONSTRAINTDEF_V1',postgresMajor:16,
+        definitions:Array.from({length:28},(_,i)=>['account_erasure_operations_check'+String(i).padStart(2,'0'),'CHECK (SYNTHETIC)'])});
+      const app={kind:'ACCOUNT_ERASURE_APP_NATIVE_SQL_CASES',sqlExecuted:true,
+        migrationVersion:'20261116181500',migrationSQLSha256:cryptoHash('sha256').update(sql).digest('hex'),sourceSqlFileCount:76,
+        passed:true,cases:48,actualPostgres:true,syntheticSqlHost:true,realGoTrue:false,checkReference,checkExpressionDriftRefused:true,
+        serviceEvidenceSynthetic:true,failedTransactionRolledBack:true,aclMutationRefused:true,ownerPendingDiscoveryAndPagination:true,
+        authAttemptReplayAndGeneration:true,initialAbsenceWithoutDeleteClaim:true,authUuidFenceSqlOnly:true,storageDefaultDenyAndOwnership:true,
+        observationsAndBootstrapFence:true,readCommittedFreshness:true,repeatableReadNoLateCommit:true,serializableNoLateCommit:true,
+        actorNonKeyPrivilegeLock:true,authDeletion:false,d1Ack:false,completionAuthority:false};
+      // The original historical599/75 projection above remains valid, but never becomes current OFF proof.
+      await assert.rejects(native.assertCurrentAccountErasureNativeReport(report));
+      const raw={...copy(report),accountErasure:app};
+      const typed=await native.assistantAfter598NativeReportProjection(raw,{selectedPrograms:runtime.selectedPrograms});
+      assert.deepEqual(typed.accountErasure,app);
+      assert.deepEqual(await native.assertCurrentAccountErasureNativeReport(typed),app);
+      const chunks=native.assistantAfter598NativeReportCollector({selectedPrograms:runtime.selectedPrograms});
+      chunks.write(JSON.stringify(raw)+'\n');
+      assert.deepEqual((await chunks.finish()).accountErasure,app);
+      const controller=await fs.readFile('scripts/native-postgres-evidence.mjs','utf8');
+      const record=controller.slice(controller.indexOf('async function record(receipt) {'));
+      assert(record.indexOf('await assertCurrentAccountErasureNativeReport(receipt.report);')>=0);
+      assert(record.indexOf('await assertCurrentAccountErasureNativeReport(receipt.report);')
+        <record.indexOf('proof.nativePostgres=receipt;'));
+      for(const key of Object.keys(app)){
+        const bad=copy(raw);delete bad.accountErasure[key];
+        await assert.rejects(native.assertCurrentAccountErasureNativeReport(bad));
+        await assert.rejects(native.assistantAfter598NativeReportProjection(bad,{selectedPrograms:runtime.selectedPrograms}));
+      }
+      await assert.rejects(native.assertCurrentAccountErasureNativeReport(report,{ignore:true}));
+      for(const mutate of [r=>delete r.accountErasure,r=>r.accountErasure=undefined,
+        r=>r.accountErasure.sourceSqlFileCount=75,r=>r.accountErasure.migrationSQLSha256='0'.repeat(64),
+        r=>r.accountErasure.migrationVersion='20261115060000',r=>r.accountErasure.cases=47,
+        r=>r.accountErasure.checkReference.postgresMajor=17,r=>r.accountErasure.checkExpressionDriftRefused=false,
+        r=>r.accountErasure.realGoTrue=true,r=>r.accountErasure.completionAuthority=true,
+        r=>r.accountErasure.failedTransactionRolledBack=false,r=>r.accountErasure.extra=true]){
+        const bad=copy(raw);mutate(bad);await assert.rejects(native.assertCurrentAccountErasureNativeReport(bad));
+        if(Object.hasOwn(bad,'accountErasure'))
+          await assert.rejects(native.assistantAfter598NativeReportProjection(bad,{selectedPrograms:runtime.selectedPrograms}));
+      }
+    });
+
   });
 }
 

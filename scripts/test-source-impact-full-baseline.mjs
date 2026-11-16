@@ -8,7 +8,7 @@ import fs from 'node:fs/promises';
 import {OWNED_CACHE_NATIVE_EARLY_STEP_NAMES} from './lib/source-impact-workflow-review.mjs';
 import {ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE,UNISSUED_ASSISTANT_AFTER597_SUCCESSOR as ISSUED598,
   INACTIVE_ASSISTANT_AFTER598_SUCCESSOR as CURRENT599} from './lib/assistant-later-h0-successor-source.mjs';
-import {qualifySourceImpactFullBaseline,SOURCE_IMPACT_FULL_BASELINE_KIND}
+import {qualifySourceImpactFullBaseline,SOURCE_IMPACT_FULL_BASELINE_KIND,qualifiedAccountErasureChecks}
   from './source-impact-full-baseline.mjs';
 import {sourceTreeContentSha256,sourceTreeProofArtifactName} from './lib/source-tree-content.mjs';
 import {buildReleaseContractMetadata} from './lib/release-contract-metadata.mjs';
@@ -531,6 +531,29 @@ async function synthetic599FullFixture(){
   f.rebuild();return f;
 }
 if(ACTIVE.sourcePhase==='assistant-after598-successor'){
+  test('qualified599 FULL alone releases the exact typed app CHECK reference; copies and forged flags do not',async()=>{
+    const schema=await import('./verify-account-erasure-schema.mjs'),f=await synthetic599FullFixture();
+    const checkReference=schema.accountErasureCheckReference({format:'PG_CONSTRAINTDEF_V1',postgresMajor:16,
+      definitions:Array.from({length:28},(_,i)=>['account_erasure_operations_check'+String(i).padStart(2,'0'),'CHECK (SYNTHETIC)'])});
+    f.full.nativePostgres.report.accountErasure={kind:'ACCOUNT_ERASURE_APP_NATIVE_SQL_CASES',sqlExecuted:true,
+      migrationVersion:'20261116181500',migrationSQLSha256:schema.readAccountErasureSource().sha256,sourceSqlFileCount:76,
+      passed:true,cases:48,actualPostgres:true,syntheticSqlHost:true,realGoTrue:false,checkReference,checkExpressionDriftRefused:true,
+      serviceEvidenceSynthetic:true,failedTransactionRolledBack:true,aclMutationRefused:true,ownerPendingDiscoveryAndPagination:true,
+      authAttemptReplayAndGeneration:true,initialAbsenceWithoutDeleteClaim:true,authUuidFenceSqlOnly:true,storageDefaultDenyAndOwnership:true,
+      observationsAndBootstrapFence:true,readCommittedFreshness:true,repeatableReadNoLateCommit:true,serializableNoLateCommit:true,
+      actorNonKeyPrivilegeLock:true,authDeletion:false,d1Ack:false,completionAuthority:false};
+    f.phase.nativePostgres=copy(f.full.nativePostgres);f.rebuild();
+    const result=await f.qualify();assert.equal(result.kind,SOURCE_IMPACT_FULL_BASELINE_KIND);
+    const value=qualifiedAccountErasureChecks(result);assert.deepEqual(value.checkReference,checkReference);
+    assert.equal(value.migrationSQLSha256,schema.readAccountErasureSource().sha256);
+    assert.equal(qualifiedAccountErasureChecks(copy(result)),null);
+    assert.equal(qualifiedAccountErasureChecks({...result,verified:true}),null);
+    value.checkReference.definitions[0][1]='CHECK (forged)';
+    assert.deepEqual(qualifiedAccountErasureChecks(result).checkReference,checkReference);
+    f.full.nativePostgres.report.accountErasure.checkExpressionDriftRefused=false;
+    f.phase.nativePostgres=copy(f.full.nativePostgres);f.rebuild();
+    const refused=await f.qualify();assert.equal(refused.status,'REFUSED');assert.equal(qualifiedAccountErasureChecks(refused),null);
+  });
   test('599 FULL validates its separately issued current native/source shapes and rejects old598 proof',async()=>{
     const f=await synthetic599FullFixture(),result=await f.qualify();assert.equal(result.kind,SOURCE_IMPACT_FULL_BASELINE_KIND);
     assert.deepEqual(f.applicationMetadataReads,[head+':version.json']);

@@ -14,6 +14,10 @@ const FAMILY599=Object.freeze({C:'faa049cb86e733e451211f50c155ff90fd346223031029
 const TEMPLATE598=Object.freeze({head:'bd9cf518fe798ddea45d2b835f324f6e2bea06fc',tree:'2f71c562eea774ca03996802f83bdad7cccd43cc'});
 const FACTORY598=Object.freeze({head:'82200280c42b9060f14be2721ba7b766e0ede5a6',tree:'c69c1beed4275fb02af216a1c4741410555e2675'});
 const PROFILE599_ID='DERIVED_599_DOMAIN_INPUTS_C101_I100_T12';
+// One semantic ancillary app schema after issued599, never a per-head profile.
+const ERASURE_SQL='supabase/migrations/20261116181500_account_erasure_outbox_off.sql';
+const ERASURE_METADATA_READER='scripts/verify-account-erasure-schema.mjs';
+const ERASURE_NATIVE_ADAPTER='scripts/lib/account-erasure-outbox-native-fixture.mjs';
 const PROFILE_FILE='scripts/lib/source-impact-domain-inputs-594.json';
 const PROFILE_SHA256='ae33e59b09a9d005579da78a32e2be5943856bfe03fdc2a54ba252071e5fe563';
 const MAX_BLOB=4*1024*1024,MAX_TOTAL=32*1024*1024,MAX_GIT=64*1024*1024;
@@ -258,10 +262,14 @@ export function analyzeSourceDomainInputs(input){
     for(const module of p.postgresModules)for(let directory=path.posix.dirname(module);directory!=='.';directory=path.posix.dirname(directory))
       scopePaths.add(directory+'/package.json');
     const sql=ref=>[...trees.get(ref).keys()].filter(file=>file.startsWith('supabase/migrations/')&&file.endsWith('.sql')).sort();
-    assert.equal(sql(input.baselineCommit).length,is599?75:is598?74:is597?73:72,'DOMAIN_BASELINE_PROFILE_SQL_COUNT');
+    const offPresent=ref=>is599&&trees.get(ref).has(ERASURE_SQL);
+    const pgModules=ref=>offPresent(ref)?[...p.postgresModules,ERASURE_METADATA_READER,ERASURE_NATIVE_ADAPTER]:p.postgresModules;
+    // All SQL stays in the real PG inventory; the known76th row grants no reuse.
+    assert.equal(sql(input.baselineCommit).length,is599?75+Number(offPresent(input.baselineCommit)):is598?74:is597?73:72,
+      'DOMAIN_BASELINE_PROFILE_SQL_COUNT');
     if(is597||is598||is599){assert.equal(modelData.get(input.baselineCommit).C.manifest.files.length,101,'DOMAIN_BASELINE_MODEL_MEMBERSHIP');
       assert.equal(modelData.get(input.baselineCommit).I.manifest.files.length,100,'DOMAIN_BASELINE_MODEL_MEMBERSHIP');}
-    const selected=ref=>[...new Set([...p.postgresModules,...p.postgresData,...sql(ref),...p.nativeEvidenceControls,
+    const selected=ref=>[...new Set([...pgModules(ref),...p.postgresData,...sql(ref),...p.nativeEvidenceControls,
       ...p.setupInputs,...p.plannerTrustChain,...scopePaths,...p.continuation.files,p.continuation.file,
       ...Object.values(p.models).map(def=>def.file),
       ...Object.entries(modelData.get(ref)).flatMap(([family,data])=>data.manifest.files.map(row=>row[p.models[family].rowKey]))])];
@@ -273,15 +281,16 @@ export function analyzeSourceDomainInputs(input){
     }
     const rows=(ref,files,required=true)=>[...files].sort((a,b)=>a.localeCompare(b,'en')).map(file=>record(ref,file,required));
     const native=ref=>{
-      const files=rows(ref,[...p.postgresModules,...p.postgresData,...sql(ref)],ref===input.baselineCommit);
+      const modules=pgModules(ref);
+      const files=rows(ref,[...modules,...p.postgresData,...sql(ref)],ref===input.baselineCommit);
       const scopes=[...scopePaths].sort().map(file=>{
         if(!trees.get(ref).has(file))return {file,present:false};
         const row=record(ref,file),value=JSON.parse(raw(ref,file));
         return file==='package.json'?{file,present:true,mode:row.mode,type:value.type??null,version:value.version??null}:
           {...row,present:true,type:value.type??null};
       });
-      const moduleRows=p.postgresModules.map(file=>record(ref,file,ref===input.baselineCommit));
-      return {files,modules:p.postgresModules.length,dataFiles:p.postgresData.length,sqlFiles:sql(ref).length,totalFiles:files.length,
+      const moduleRows=modules.map(file=>record(ref,file,ref===input.baselineCommit));
+      return {files,modules:modules.length,dataFiles:p.postgresData.length,sqlFiles:sql(ref).length,totalFiles:files.length,
         completeReviewedInputs:files.every(row=>row.present!==false),inputSha256:sha(JSON.stringify(files)),
         moduleSha256:sha(JSON.stringify(moduleRows.map(({file,bytes,sha256,present})=>present===false?{file,present:false}:{file,bytes,sha256}))),
         packageScopes:scopes};

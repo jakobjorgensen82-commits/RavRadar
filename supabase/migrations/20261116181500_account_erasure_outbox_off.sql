@@ -80,6 +80,20 @@ end;
 $owner$;
 revoke all on function public.account_erasure_require_owner() from public, anon, authenticated, service_role;
 
+create function public.account_erasure_check_metadata()
+returns jsonb language plpgsql stable security definer set search_path = '' set standard_conforming_strings = 'on' as $check_metadata$
+begin
+  -- Code-only catalog definitions, canonicalized by this exact PostgreSQL
+  -- major and fixed function settings; never account rows or CHECK values.
+  return jsonb_build_object('format','PG_CONSTRAINTDEF_V1',
+    'postgresMajor',pg_catalog.current_setting('server_version_num')::integer / 10000,
+    'definitions',(select jsonb_agg(jsonb_build_array(conname,pg_catalog.pg_get_constraintdef(oid,false))
+      order by conname::text collate pg_catalog."C") from pg_catalog.pg_constraint
+      where conrelid = 'public.account_erasure_operations'::regclass and contype = 'c'));
+end;
+$check_metadata$;
+revoke all on function public.account_erasure_check_metadata() from public, anon, authenticated, service_role;
+
 create function public.account_erasure_require_service_owner(p_actor uuid)
 returns uuid language plpgsql security definer set search_path = '' set lock_timeout = '5s' as $service_owner$
 begin
@@ -200,6 +214,25 @@ end;
 $status$;
 revoke all on function public.get_account_erasure_status(uuid) from public, anon, authenticated, service_role;
 grant execute on function public.get_account_erasure_status(uuid) to authenticated;
+
+create function public.list_account_erasure_operations(p_after uuid default null)
+returns jsonb language plpgsql security definer set search_path = '' as $list$
+declare actor uuid := public.account_erasure_require_owner(); result jsonb;
+begin
+  -- Keyset discovery survives a missing browser state and a deleted profile.
+  -- Every HOLD remains visible; more than64 rows require an explicit next page.
+  with selected as materialized(select operation_id from public.account_erasure_operations
+    where requested_by = actor and state <> 'COMPLETE' and (p_after is null or operation_id > p_after)
+    order by operation_id limit 65)
+  select jsonb_build_object('scope','own-account-erasure-operations','rows',coalesce((
+    select jsonb_agg(public.account_erasure_status_json(operation_id,actor,false) order by operation_id)
+    from(select operation_id from selected order by operation_id limit 64) visible),'[]'::jsonb),
+    'truncated',(select count(*) > 64 from selected)) into result;
+  return result;
+end;
+$list$;
+revoke all on function public.list_account_erasure_operations(uuid) from public, anon, authenticated, service_role;
+grant execute on function public.list_account_erasure_operations(uuid) to authenticated;
 
 create function public.find_account_erasure_operation(p_target uuid)
 returns jsonb language plpgsql security definer set search_path = '' as $find$

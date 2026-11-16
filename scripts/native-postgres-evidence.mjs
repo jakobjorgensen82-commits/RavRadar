@@ -18,6 +18,7 @@ import {requireAssistantLaterH0Release,requireAssistantPublic587SuccessorRelease
   requireAssistantAfter598Output,requireAssistantAfter598Release,requireAssistantAfter598Binding,readAssistantAfter598CanonicalSource} from './lib/assistant-later-h0-successor-source.mjs';
 
 import {assistantAfter597RequiredMigrations,assistantAfter598RequiredMigrations} from './integrated-cutover-readiness.mjs';
+import * as accountErasureSchema from './verify-account-assistant-schema.mjs';
 import {FROZEN597_NATIVE_SOURCE,FROZEN598_NATIVE_SOURCE} from './run-frozen586-assistant-later-h0-postgres-source.mjs';
 import {inverseOwnedCacheNativeWorkflow,OWNED_CACHE_NATIVE_EARLY_STEP_NAMES,
   projectSourceImpactWorkflowFull,SOURCE_IMPACT_FULL_WORKFLOW_SHA256}
@@ -1889,6 +1890,44 @@ async function assistantAfter598PhaseIdentity(){
   return {releaseVersion,binding,output,databaseBefore:ASSISTANT_AFTER598_BEFORE,
     shape:next,migrationInventory:migrations.length};
 }
+// App evidence is separate from the unchanged64-row numerical cutover report.
+// No caller option can turn a current76-row source into historical75-row evidence.
+async function accountErasureSourceIdentity(){
+  const directory=new URL('../supabase/migrations/',import.meta.url);
+  const filename='20261116181500_account_erasure_outbox_off.sql';
+  const files=(await fs.readdir(directory)).filter(file=>file.endsWith('.sql'));
+  const descriptor=accountErasureSchema.ACCOUNT_ERASURE_APP_MIGRATION;
+  if(descriptor===undefined){
+    assert.equal(files.length,75,'Only the genuine historical599 source has no OFF descriptor');
+    assert(!files.includes(filename),'OFF source without its fixed descriptor is unknown');
+    return null;
+  }
+  assert.deepEqual(descriptor,{version:'20261116181500',id:'20261116181500_account_erasure_outbox_off',filename});
+  assert.equal(files.length,76,'The current OFF candidate requires all75 original SQL plus its exact76th source');
+  assert(files.includes(filename),'The current OFF source must physically exist');
+  const file=new URL(filename,directory),stat=await fs.lstat(file);
+  assert(stat.isFile()&&!stat.isSymbolicLink()&&stat.size>0&&stat.size<=65536,'OFF source must be bounded regular SQL');
+  const source=await fs.readFile(file);assert.equal(source.length,stat.size);
+  return {migrationVersion:descriptor.version,migrationSQLSha256:sha(source),sourceSqlFileCount:76};
+}
+function projectAccountErasureNative(value,identity,postgresMajor){
+  assert(identity,'Historical75-row evidence cannot claim an OFF installation');
+  const checkReference=accountErasureSchema.verifyAccountErasureCheckReference(value?.checkReference,{postgresMajor});
+  const expected={kind:'ACCOUNT_ERASURE_APP_NATIVE_SQL_CASES',sqlExecuted:true,...identity,
+    passed:true,cases:48,actualPostgres:true,syntheticSqlHost:true,realGoTrue:false,checkReference,checkExpressionDriftRefused:true,
+    serviceEvidenceSynthetic:true,failedTransactionRolledBack:true,aclMutationRefused:true,ownerPendingDiscoveryAndPagination:true,
+    authAttemptReplayAndGeneration:true,initialAbsenceWithoutDeleteClaim:true,
+    authUuidFenceSqlOnly:true,storageDefaultDenyAndOwnership:true,
+    observationsAndBootstrapFence:true,readCommittedFreshness:true,repeatableReadNoLateCommit:true,
+    serializableNoLateCommit:true,actorNonKeyPrivilegeLock:true,authDeletion:false,d1Ack:false,completionAuthority:false};
+  assert.deepEqual(value,expected,'Whole typed OFF native result must match actual current SQL and every fixed truth');
+  return Object.freeze(expected);
+}
+export async function assertCurrentAccountErasureNativeReport(report){
+  const identity=await accountErasureSourceIdentity();
+  if(identity===null){assert(!Object.hasOwn(report,'accountErasure'),'Historical source cannot claim current OFF');return null;}
+  return projectAccountErasureNative(report.accountErasure,identity,report.postgresMajorVersion);
+}
 export async function assistantAfter598NativeReportProjection(report,options){
   const identity=await assistantAfter598PhaseIdentity();
   const {selectedPrograms}=options;
@@ -1909,8 +1948,11 @@ export async function assistantAfter598NativeReportProjection(report,options){
   for(const key of after598ReportTruths)observed[key]=true;
   observed.intermediateRuntime=Object.fromEntries(after598IntermediateTruths.map(key=>[key,true]));
   for(const[key,value]of Object.entries(observed))assert.deepEqual(report.assistantAfter598Successor?.[key],value,'After598 native report: '+key);
+  const app=Object.hasOwn(report,'accountErasure')
+    ?projectAccountErasureNative(report.accountErasure,await accountErasureSourceIdentity(),postgresMajorVersion):null;
   return {kind:SCALAR597_REPORT_MARKER,sqlExecuted:true,migrationExecuted:true,tcpEnabled:false,
-    normalModelPartCount:673,postgresMajorVersion,nativeProgramIdentity:selectedPrograms,assistantAfter598Successor:observed};
+    normalModelPartCount:673,postgresMajorVersion,nativeProgramIdentity:selectedPrograms,assistantAfter598Successor:observed,
+    ...(app===null?{}:{accountErasure:app})};
 }
 export function assistantAfter598NativeReportCollector(options){
   requireAssistantAfter598Output(); // FIRST before options or evidence ingestion.
@@ -1934,6 +1976,7 @@ export async function verifyAssistantAfter598PhaseReceipt(native,current){
 }
 export async function executeAssistantAfter598Native(){
   const identity=await assistantAfter598PhaseIdentity(); // Before environment/Git/native launch.
+  const appSourceBefore=await accountErasureSourceIdentity();
   const env={...process.env},head=env.SOURCE_GATE_HEAD_SHA;
   assert.equal(env.GITHUB_EVENT_NAME,'pull_request');assert.equal(env.GITHUB_REPOSITORY,ORIGIN.repository);
   const verifyCheckout=()=>{
@@ -1951,6 +1994,8 @@ export async function executeAssistantAfter598Native(){
   const report=await executeMarkedNative(env,ASSISTANT_AFTER598_SCRIPT,
     assistantAfter598NativeReportCollector({selectedPrograms:runtime.selectedPrograms}));
   if(!report)return;
+  assert.deepEqual(await accountErasureSourceIdentity(),appSourceBefore,'OFF source changed during native execution');
+  await assertCurrentAccountErasureNativeReport(report);
   verifyCheckout();verifyAssistantPublic591Runtime(runtime,await assistantPublic591Runtime());
   const {shape,migrationInventory,...issued}=identity;
   await record({schemaVersion:1,kind:ASSISTANT_AFTER598_PHASE_KIND,phase:AFTER598_RESULT,
@@ -1964,7 +2009,11 @@ async function record(receipt) {
   assert.equal(proof.contractId,'weather-source-gate-content-v2'); assert.equal(proof.privatePayloadIncluded,false);
   const current={run:Number(process.env.GITHUB_RUN_ID),attempt:Number(process.env.GITHUB_RUN_ATTEMPT),
     head:proof.headSha,pullRequest:Number(process.env.PULL_REQUEST_NUMBER),branch:process.env.GITHUB_HEAD_REF};
-  if(ACTIVE.sourcePhase===ASSISTANT_AFTER598_PHASE)await verifyAssistantAfter598PhaseReceipt(receipt,current);
+  if(ACTIVE.sourcePhase===ASSISTANT_AFTER598_PHASE){
+    // Actual current source decides; old/omitted RAW metadata cannot authorize a current76-row record.
+    await assertCurrentAccountErasureNativeReport(receipt.report);
+    await verifyAssistantAfter598PhaseReceipt(receipt,current);
+  }
   else if(ACTIVE.sourcePhase===ASSISTANT_AFTER597_PHASE)await verifyAssistantAfter597PhaseReceipt(receipt,current);
   else if(ACTIVE.sourcePhase===SCALAR597_LATER_H0_PHASE)verifyScalar597LaterH0PhaseReceipt(receipt,current);
   else if(receipt.kind===INSTALLED593_ORIGINAL591_V2_KIND)verifyInstalled593Original591V2PhaseReceipt(receipt,current);
