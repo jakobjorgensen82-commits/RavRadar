@@ -33,7 +33,11 @@ Den lokale arkivlæser skelner nu mellem det komplette CHECK-katalog og det mind
 
 Kendte lokale arve- og partitionsregler forbliver urørte og aktive. En REPLICA- eller ALWAYS-trigger kan stadig skrive uden for de direkte COPY-mål; den skrivning møder de bevarede CHECKs og skal ved en reel overtrædelse stoppe med sin oprindelige fejl. Direkte COPY til ikke-understøttede familier samt foreign-/ukendt relationstype, domæne, system, extension og for stor metadata afvises fortsat. Der tilføjes ingen familiegenopbygning eller specialcase på en bestemt relation.
 
-Baggrunden er et faktisk lukket afslag før DATA: det komplette katalog indeholdt én ikke-valideret arve-/partitionsregel, som den tidligere globale guard krævede udsættelsesstøtte for. Den præcise relation og dens berøring er ikke identificeret. Den normale credentialfri readerprøve og lifecycle-målet består lokalt; de udvidede SQL-cases i den eksisterende B-prøve er kildeforberedt, men skal faktisk køres på Linux. Den kvalificerede 599-mainbaseline er ikke kvalifikation af denne efterfølgende ændring. Frisk kildekontrol, uafhængigt review, faktisk original-/Auth-gendannelse og de øvrige backup-/Free-beviser er fortsat nødvendige.
+Baggrunden er et faktisk lukket afslag før DATA: det komplette katalog indeholdt én ikke-valideret arve-/partitionsregel, som den tidligere globale guard krævede udsættelsesstøtte for. Den præcise relation og dens berøring er ikke identificeret. Den uændrede reader og dens normale syntetiske Linux-B-prøve har nu faktisk bestået både DATA og HISTORY_DATA, bevarede aktive familier, ugyldig direkte COPY og REPLICA/ALWAYS-triggerberøring, katalogmismatch, rollback og ejet oprydning. Det er syntetisk SQL-/Auth-kvalifikation, ikke originalarkiv- eller produktionsgendannelse. Samlet præcis kildekontrol, frisk uafhængigt review, original-/Auth-gendannelse og de øvrige backup-/Free-beviser er fortsat nødvendige.
+## Samlet kildekandidat og adskilte bevisgrænser
+
+Den samlede lokale kildekandidat bygger på den efterfølgende main, som har faktisk CURRENT-kildekvalifikation og normal main-admission. Den tidligere fuldt kvalificerede 599-kildebasis forbliver den særskilte FULL-reference; en CURRENT-frontier ommærkes ikke til FULL. LF7-observation, recovery-cadence og den afgrænsede restore-rettelse er fortsat efterfølgende kildeændringer med krav om deres eget præcise kildebevis. Installation og verificeret offentlig virkning følger deres normale egne forløb.
+
 <!-- RAVRADAR_ACTIVE_ENTRY_END -->
 
 ## Daterede notater og tidligere indgange — uændret historik
