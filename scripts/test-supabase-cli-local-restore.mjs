@@ -23,7 +23,7 @@ const EXCLUDE='realtime,storage-api,imgproxy,edge-runtime,postgres-meta,studio,s
 const FILES=['roles.sql','schema.sql','data.sql','history_schema.sql','history_data.sql'];
 const ARCHIVE_FILES=['roles.sql','schema.sql','data.sql','history-schema.sql','history-data.sql'];
 const ARCHIVE_SQL=Object.freeze({fileBytes:1_000_000_000,totalBytes:2_000_000_000,chunkBytes:64*1024});
-const ARCHIVE_SQL_OWNERS=['ROLES','ROLE_SWITCH','SCHEMA','SCHEMA_ROLE_CHECK','REPLICA_SETTING','RELATION_PREFLIGHT','DATA','DATA_ROLE_CHECK','HISTORY','UNKNOWN'];
+const ARCHIVE_SQL_OWNERS=['ROLES','ROLE_SWITCH','SCHEMA','SCHEMA_ROLE_CHECK','REPLICA_SETTING','RELATION_PREFLIGHT','CHECK_SUSPEND','CHECK_RESTORE','DATA','DATA_ROLE_CHECK','HISTORY','UNKNOWN'];
 const ARCHIVE_POSTGRES_ROLE_CHECK="DO $rr_restore$ BEGIN IF session_user <> 'supabase_admin' OR current_user <> 'postgres' THEN RAISE SQLSTATE '42501'; END IF; END; $rr_restore$;\n";
 const DOCUMENTED_CLI_LOGIN_GRANT='GRANT "postgres" TO "cli_login_postgres" WITH INHERIT FALSE GRANTED BY "supabase_admin";';
 const ARCHIVE_SQL_STATEMENTS=['UNKNOWN','CREATE_ROLE','ALTER_ROLE','GRANT_ROLE','REVOKE_ROLE','COMMENT_ROLE','CLI_LOGIN_POSTGRES_GRANT'];
@@ -467,8 +467,10 @@ async function* materializedRestoreBytes(c,archive,history=false,inputLines=null
       yield track(Buffer.from(ARCHIVE_POSTGRES_ROLE_CHECK),'SCHEMA_ROLE_CHECK');
       yield track(Buffer.from('SET session_replication_role = replica;\n'),'REPLICA_SETTING');
     }
-    if(c.archiveRelationInventory&&i===(history?1:2))
+    if(c.archiveRelationInventory&&i===(history?1:2)){
       yield track(archiveRelationPreflightSql(c.archiveRelationInventory,history?'HISTORY_DATA':'DATA'),'RELATION_PREFLIGHT');
+      if(c.archive===true)yield track(archiveNotValidCheckSql(c.archiveRelationInventory,history?'HISTORY_DATA':'DATA'),'CHECK_SUSPEND');
+    }
     const owner=history?'HISTORY':['ROLES','SCHEMA','DATA'][i];
     const roleLines=owner==='ROLES'&&inputLines&&Object.hasOwn(inputLines,'roleLineClasses')?
       {line:inputLines.next,buffer:Buffer.alloc(512),length:0,prefixSafe:true,
@@ -498,6 +500,7 @@ async function* materializedRestoreBytes(c,archive,history=false,inputLines=null
     yield track(Buffer.from('\n'));
   }
   if(!history)yield track(Buffer.from(ARCHIVE_POSTGRES_ROLE_CHECK),'DATA_ROLE_CHECK');
+  if(c.archive===true&&c.archiveRelationInventory)yield track(archiveNotValidCheckSql(c.archiveRelationInventory,history?'HISTORY_DATA':'DATA',true),'CHECK_RESTORE');
 }
 
 // Same owned process-group timeout shape as export-supabase-database.mjs.
@@ -765,6 +768,11 @@ function archiveBootstrapPsqlArguments(c,p){
   return ['exec','-i',p.db,'sh','-ceu',shell,'archive-bootstrap',bootstrapRole];
 }
 function restoreArchiveSql(c,p,stage,archive,history=false){
+  if(c.archive===true){
+    need(c.archiveRelationInventory?.complete===true,'ARCHIVE_RELATION_CHECK_INVENTORY');
+    c.archiveNotValidCheckExpected??=new Set();c.archiveNotValidCheckExpected.add(history?'HISTORY_DATA':'DATA');
+    c.archiveNotValidCheckReports?.delete(history?'HISTORY_DATA':'DATA');
+  }
   const inputLines={next:1,ranges:new Map(),...(history?{}:{roleLineClasses:null})};
   const input=materializedRestoreBytes(c,archive,history,inputLines);
   if(history)return psql(c,p,stage,input,inputLines);
@@ -1137,6 +1145,92 @@ async function collectArchiveRelationInventory(c,archive){
   // phase's exact query cannot be represented inside the existing diagnostic cap.
   for(const phase of ['DATA','HISTORY_DATA'])archiveRelationPreflightSql(inventory,phase);return inventory;
 }
+// Keep complete CHECK metadata private; only counts/digest leave this transaction.
+function archiveNotValidCheckSql(inventory,phase,after=false){
+  need(inventory?.complete===true&&/^[a-f0-9]{64}$/.test(inventory.digest)
+    &&['DATA','HISTORY_DATA'].includes(phase)&&typeof after==='boolean','ARCHIVE_RELATION_CHECK_INVENTORY');
+  const maximum=4096,maximumBytes=8*1024*1024;
+  const same="NOT EXISTS ((SELECT semantic FROM pg_temp.rr_archive_check_snapshot EXCEPT ALL SELECT semantic FROM pg_temp.rr_archive_check_live)"
+    +" UNION ALL (SELECT semantic FROM pg_temp.rr_archive_check_live EXCEPT ALL SELECT semantic FROM pg_temp.rr_archive_check_snapshot))";
+  const catalog="SELECT con.oid AS constraint_oid,con.convalidated,con.conname,n.nspname AS schema_name,r.relname AS table_name,"
+    +"pg_catalog.pg_get_constraintdef(con.oid,false) AS definition,pg_catalog.obj_description(con.oid,'pg_constraint') AS comment,"
+    +"(con.contypid<>0 OR con.conrelid=0 OR r.relkind<>'r' OR r.relispartition OR NOT con.conislocal OR con.coninhcount<>0 OR con.conparentid<>0"
+    +" OR n.nspname ~ '^pg_' OR n.nspname='information_schema'"
+    +" OR EXISTS(SELECT 1 FROM pg_catalog.pg_inherits i WHERE i.inhrelid=r.oid OR i.inhparent=r.oid)"
+    +" OR EXISTS(SELECT 1 FROM pg_catalog.pg_depend d WHERE d.deptype='e' AND ((d.classid='pg_catalog.pg_constraint'::regclass AND d.objid=con.oid)"
+    +" OR (d.classid='pg_catalog.pg_class'::regclass AND d.objid=r.oid)))"
+    +" OR EXISTS(SELECT 1 FROM pg_catalog.pg_depend d JOIN pg_catalog.pg_depend e ON e.classid=d.refclassid AND e.objid=d.refobjid AND e.deptype='e'"
+    +" WHERE d.classid='pg_catalog.pg_constraint'::regclass AND d.objid=con.oid)) AS unsupported,"
+    +"jsonb_build_object('schema',coalesce(n.nspname,tn.nspname),'relation',r.relname,'domain',t.typname,'name',con.conname,"
+    +"'definition',pg_catalog.pg_get_constraintdef(con.oid,false),'validated',con.convalidated,'deferrable',con.condeferrable,"
+    +"'deferred',con.condeferred,'local',con.conislocal,'inheritCount',con.coninhcount,'noInherit',con.connoinherit,"
+    +"'parentId',con.conparentid,'keys',con.conkey,'comment',pg_catalog.obj_description(con.oid,'pg_constraint')) AS semantic"
+    +" FROM pg_catalog.pg_constraint con LEFT JOIN pg_catalog.pg_class r ON r.oid=con.conrelid"
+    +" LEFT JOIN pg_catalog.pg_namespace n ON n.oid=r.relnamespace LEFT JOIN pg_catalog.pg_type t ON t.oid=con.contypid"
+    +" LEFT JOIN pg_catalog.pg_namespace tn ON tn.oid=t.typnamespace WHERE con.contype='c'";
+  const targets=inventory.relations.filter(r=>r.phase===phase&&r.kind==='COPY');
+  const required=targets.length?'VALUES '+targets.map(r=>'('+sqlString(r.qualified)+')').join(','):'SELECT NULL::text WHERE false';
+  const sql=after?String.raw`SET LOCAL search_path=pg_catalog;
+DO $rr_archive_check_restore$ DECLARE item record; BEGIN
+  IF current_user<>'postgres' OR current_database()<>'postgres' THEN RAISE SQLSTATE '42501'; END IF;
+  FOR item IN SELECT * FROM pg_temp.rr_archive_check_snapshot WHERE NOT convalidated ORDER BY constraint_oid LOOP
+    EXECUTE pg_catalog.format('ALTER TABLE %I.%I ADD CONSTRAINT %I %s',item.schema_name,item.table_name,item.conname,item.definition);
+    IF item.comment IS NOT NULL THEN
+      EXECUTE pg_catalog.format('COMMENT ON CONSTRAINT %I ON %I.%I IS %L',item.conname,item.schema_name,item.table_name,item.comment);
+    END IF;
+  END LOOP;
+  IF NOT (${same}) THEN RAISE SQLSTATE 'P0001' USING MESSAGE='ARCHIVE_CHECK_SEMANTIC_MISMATCH'; END IF;
+END $rr_archive_check_restore$;
+SELECT jsonb_build_object('kind','ARCHIVE_NOTVALID_CHECK_RESTORE_V1','phase',${sqlString(phase)},
+'inventorySha256',${sqlString(inventory.digest)},'catalogScope','ALL_DATABASE_CHECKS','measurementPoint','AFTER_DATA_BEFORE_COMMIT',
+'checkCount',count(*),'stagedCount',count(*) FILTER(WHERE NOT convalidated),'validatedCheckCount',count(*) FILTER(WHERE convalidated),
+'catalogSha256',pg_catalog.encode(pg_catalog.sha256(pg_catalog.convert_to(coalesce(jsonb_agg(semantic ORDER BY semantic::text COLLATE "C"),'[]'::jsonb)::text,'UTF8')),'hex'),
+'semanticEqualityVerified',true) FROM pg_temp.rr_archive_check_snapshot;
+`:String.raw`SET LOCAL search_path=pg_catalog;
+CREATE TEMP VIEW rr_archive_check_live AS ${catalog};
+CREATE TEMP TABLE rr_archive_check_snapshot ON COMMIT DROP AS SELECT * FROM pg_temp.rr_archive_check_live;
+DO $rr_archive_check_suspend$ DECLARE item record; BEGIN
+  IF current_user<>'postgres' OR current_database()<>'postgres' THEN RAISE SQLSTATE '42501'; END IF;
+  IF (SELECT count(*) FROM pg_temp.rr_archive_check_snapshot)>${maximum}
+    OR (SELECT coalesce(sum(pg_catalog.pg_column_size(semantic)),0) FROM pg_temp.rr_archive_check_snapshot)>${maximumBytes}
+    OR EXISTS(SELECT 1 FROM pg_temp.rr_archive_check_snapshot WHERE NOT convalidated AND
+      (unsupported IS DISTINCT FROM false OR pg_catalog.octet_length(definition)>131072
+       OR pg_catalog.octet_length(coalesce(comment,''))>65536 OR definition !~ ' NOT VALID$')) THEN
+    RAISE SQLSTATE 'P0001' USING MESSAGE='ARCHIVE_CHECK_SCOPE_UNSUPPORTED_OR_BOUND';
+  END IF;
+  IF EXISTS(WITH required(qualified) AS (${required}) SELECT 1 FROM required e
+    LEFT JOIN pg_catalog.pg_class r ON r.oid=pg_catalog.to_regclass(e.qualified)
+    WHERE r.oid IS NULL OR r.relkind<>'r' OR r.relispartition
+      OR EXISTS(SELECT 1 FROM pg_catalog.pg_inherits i WHERE i.inhrelid=r.oid OR i.inhparent=r.oid)) THEN
+    RAISE SQLSTATE 'P0001' USING MESSAGE='ARCHIVE_CHECK_TARGET_UNSUPPORTED';
+  END IF;
+  FOR item IN SELECT DISTINCT constraint_oid,schema_name,table_name FROM pg_temp.rr_archive_check_snapshot WHERE NOT convalidated ORDER BY constraint_oid LOOP
+    EXECUTE pg_catalog.format('LOCK TABLE %I.%I IN ACCESS EXCLUSIVE MODE',item.schema_name,item.table_name);
+  END LOOP;
+  IF NOT (${same}) THEN RAISE SQLSTATE 'P0001' USING MESSAGE='ARCHIVE_CHECK_CATALOG_CHANGED'; END IF;
+  FOR item IN SELECT * FROM pg_temp.rr_archive_check_snapshot WHERE NOT convalidated ORDER BY constraint_oid LOOP
+    EXECUTE pg_catalog.format('ALTER TABLE %I.%I DROP CONSTRAINT %I RESTRICT',item.schema_name,item.table_name,item.conname);
+  END LOOP;
+END $rr_archive_check_suspend$;
+`;
+  const bytes=Buffer.from(sql);need(bytes.length<=P.diagnosticBytes,'ARCHIVE_RELATION_CHECK_QUERY_BOUND');return bytes;
+}
+function readArchiveNotValidCheckReport(c,phase,bytes){
+  const found=[];for(const line of bytes.toString('utf8').split(/\r?\n/))try{
+    const value=JSON.parse(line);if(value?.kind==='ARCHIVE_NOTVALID_CHECK_RESTORE_V1')found.push(value);
+  }catch{}
+  need(found.length===1,'ARCHIVE_RELATION_CHECK_REPORT_MISSING');const r=found[0];
+  const keys=['kind','phase','inventorySha256','catalogScope','measurementPoint','checkCount','stagedCount','validatedCheckCount','catalogSha256','semanticEqualityVerified'];
+  need(r&&Object.getPrototypeOf(r)===Object.prototype&&JSON.stringify(Object.keys(r).sort())===JSON.stringify(keys.sort())
+    &&r.phase===phase&&r.inventorySha256===c.archiveRelationInventory?.digest&&r.catalogScope==='ALL_DATABASE_CHECKS'
+    &&r.measurementPoint==='AFTER_DATA_BEFORE_COMMIT'&&r.semanticEqualityVerified===true
+    &&/^[a-f0-9]{64}$/.test(r.catalogSha256??'')
+    &&[r.checkCount,r.stagedCount,r.validatedCheckCount].every(v=>Number.isSafeInteger(v)&&v>=0&&v<=4096)
+    &&r.stagedCount+r.validatedCheckCount===r.checkCount,'ARCHIVE_RELATION_CHECK_REPORT_INVALID');
+  c.archiveNotValidCheckReports??=new Map();need(!c.archiveNotValidCheckReports.has(phase),'ARCHIVE_RELATION_CHECK_REPORT_DUPLICATE');
+  c.archiveNotValidCheckReports.set(phase,r);return r;
+}
+
 function archiveRelationPreflightSql(inventory,phase){
   need(inventory?.complete===true&&/^[a-f0-9]{64}$/.test(inventory.digest)&&['DATA','HISTORY_DATA'].includes(phase),'ARCHIVE_RELATION_INVENTORY_INCOMPLETE');
   const rows=inventory.relations.filter(r=>r.phase===phase);
@@ -1203,7 +1297,9 @@ function readArchiveRelationPreflight(c,stage,bytes,exit){
   }
   need(report.missingCount+report.wrongKindCount<=rows.length,'ARCHIVE_RELATION_REPORT_COUNTS');
   c.archiveRelationReports??=new Map();need(!c.archiveRelationReports.has(phase),'ARCHIVE_RELATION_REPORT_DUPLICATE');
-  c.archiveRelationReports.set(phase,report);readArchiveCheckCatalog(c,phase,bytes);return report;
+  c.archiveRelationReports.set(phase,report);readArchiveCheckCatalog(c,phase,bytes);
+  if(exit===0&&c.archiveNotValidCheckExpected?.has(phase))readArchiveNotValidCheckReport(c,phase,bytes);
+  return report;
 }
 async function verifyArchiveDataParity(c,p,archive){
   const expected={},input=archiveParitySql(c,archive,expected);
@@ -1263,6 +1359,67 @@ async function verifySyntheticRelationPreflight(c,p,archive,run=psql){
     delete c.archiveRelationInventory;delete c.archiveRelationReports;delete c.archiveRelationInventoryAttempted;
   }
 }
+async function verifySyntheticNotValidChecks(c,p,run=psql){
+  need(c.archive===false&&p.side==='B','SYNTHETIC_CHECK_TARGET');
+  const setup=String.raw`CREATE SCHEMA rr_restore_check_scope;
+CREATE TABLE public.rr_restore_check_legacy(value integer CONSTRAINT rr_restore_check_valid CHECK(value>=0));
+INSERT INTO public.rr_restore_check_legacy VALUES(0);
+ALTER TABLE public.rr_restore_check_legacy ADD CONSTRAINT rr_restore_check_pending CHECK(value>0) NOT VALID;
+COMMENT ON CONSTRAINT rr_restore_check_pending ON public.rr_restore_check_legacy IS 'æøå preserved';
+CREATE TABLE rr_restore_check_scope.other(value integer);
+INSERT INTO rr_restore_check_scope.other VALUES(0);
+ALTER TABLE rr_restore_check_scope.other ADD CONSTRAINT other_pending CHECK(value>0) NOT VALID;
+CREATE SEQUENCE public.rr_restore_check_canary_seq START 77;
+`;
+  await run(c,p,'SYNTHETIC_CHECK_SETUP',Buffer.from(setup));
+  const rows=async()=>JSON.parse((await run(c,p,'SYNTHETIC_CHECK_ROWS',Buffer.from("SELECT jsonb_build_array((SELECT count(*) FROM public.rr_restore_check_legacy),(SELECT count(*) FROM rr_restore_check_scope.other));\n"))).toString().trim());
+  const canary=async()=>JSON.parse((await run(c,p,'SYNTHETIC_CHECK_CANARY',Buffer.from("SELECT jsonb_build_array(last_value,is_called) FROM public.rr_restore_check_canary_seq;\n"))).toString().trim());
+  const copy=Buffer.from('COPY public.rr_restore_check_legacy(value) FROM stdin;\n0\n0\n\\.\nCOPY rr_restore_check_scope.other(value) FROM stdin;\n0\n\\.\n');
+  const scope=phase=>({complete:true,digest:sha(Buffer.from('synthetic-check-'+phase)),relations:
+    ['"public"."rr_restore_check_legacy"','"rr_restore_check_scope"."other"'].map(name=>archiveRelationEntry(phase==='DATA'?'data.sql':'history-data.sql','COPY',name))});
+  const staged=(inventory,data=copy,afterData='')=>(async function*(){
+    yield archiveNotValidCheckSql(inventory,inventory.relations[0].phase);yield data;
+    if(afterData)yield Buffer.from(afterData);
+    yield archiveNotValidCheckSql(inventory,inventory.relations[0].phase,true);
+  })();
+  const reports=[];
+  for(const phase of ['DATA','HISTORY_DATA']){
+    const inventory=scope(phase),before=await rows();
+    await assert.rejects(()=>run(c,p,'SYNTHETIC_CHECK_SCHEMA_FIRST_REFUSED',copy),e=>e.code==='SQLSTATE_23514');
+    assert.deepEqual(await rows(),before);
+    const output=await run(c,p,'SYNTHETIC_CHECK_POST_DATA',staged(inventory));
+    const report=readArchiveNotValidCheckReport({archiveRelationInventory:inventory},phase,output);
+    need(report.stagedCount>=2&&report.validatedCheckCount>=1,'SYNTHETIC_CHECK_INVENTORY');reports.push(report);
+    assert.deepEqual(await rows(),[before[0]+2,before[1]+1]);
+    await assert.rejects(()=>run(c,p,'SYNTHETIC_CHECK_NEW_ROW_REFUSED',copy),e=>e.code==='SQLSTATE_23514');
+    const stable=await rows();
+    await assert.rejects(()=>run(c,p,'SYNTHETIC_CHECK_VALIDATED_REFUSED',staged(inventory,
+      Buffer.from('COPY public.rr_restore_check_legacy(value) FROM stdin;\n-1\n\\.\n'))),e=>e.code==='SQLSTATE_23514');
+    await assert.rejects(()=>run(c,p,'SYNTHETIC_CHECK_RECREATE_MISMATCH',staged(inventory,copy,
+      'ALTER TABLE public.rr_restore_check_legacy DROP CONSTRAINT rr_restore_check_valid;\n')),e=>e.code==='SQLSTATE_P0001');
+    assert.deepEqual(await rows(),stable);
+  }
+  const inventory=scope('DATA'),probe=Buffer.from("SELECT nextval('public.rr_restore_check_canary_seq');\n");
+  const unsupported=[
+    ["CREATE DOMAIN rr_restore_check_scope.domain_probe AS integer; ALTER DOMAIN rr_restore_check_scope.domain_probe ADD CONSTRAINT domain_pending CHECK(VALUE>0) NOT VALID;\n",
+      'DROP DOMAIN rr_restore_check_scope.domain_probe;\n'],
+    ['CREATE TABLE rr_restore_check_scope.parent(value integer); ALTER TABLE rr_restore_check_scope.parent ADD CONSTRAINT inherited_pending CHECK(value>0) NOT VALID; CREATE TABLE rr_restore_check_scope.child() INHERITS(rr_restore_check_scope.parent);\n',
+      'DROP TABLE rr_restore_check_scope.child; DROP TABLE rr_restore_check_scope.parent;\n'],
+    ['CREATE TABLE rr_restore_check_scope.partitioned(value integer) PARTITION BY RANGE(value); ALTER TABLE rr_restore_check_scope.partitioned ADD CONSTRAINT partition_pending CHECK(value>0) NOT VALID;\n',
+      'DROP TABLE rr_restore_check_scope.partitioned;\n'],
+  ];
+  for(const [ddl,cleanup]of unsupported){
+    await run(c,p,'SYNTHETIC_CHECK_UNSUPPORTED_SETUP',Buffer.from(ddl));const before=await canary();
+    await assert.rejects(()=>run(c,p,'SYNTHETIC_CHECK_UNSUPPORTED_REFUSED',staged(inventory,probe)),e=>e.code==='SQLSTATE_P0001');
+    assert.deepEqual(await canary(),before,'Unsupported scope must stop before the nontransactional DATA canary');
+    await run(c,p,'SYNTHETIC_CHECK_UNSUPPORTED_CLEANUP',Buffer.from(cleanup));
+  }
+  await run(c,p,'SYNTHETIC_CHECK_CLEANUP',Buffer.from('DROP TABLE public.rr_restore_check_legacy; DROP TABLE rr_restore_check_scope.other; DROP SEQUENCE public.rr_restore_check_canary_seq; DROP SCHEMA rr_restore_check_scope;\n'));
+  return {status:'PASS',scope:'SYNTHETIC_OWNED_POSTGRES_NOTVALID_CHECK_RESTORE',phases:reports.map(r=>r.phase),
+    legacyRowsAndDuplicates:true,validatedChecksPreserved:true,newViolationsRefused:true,recreateMismatchRolledBack:true,
+    domainInheritancePartitionRefusedBeforeData:true,sameBuilderAndPsqlReader:true};
+}
+
 async function restoreArchive(c,b,indexCommitmentSha256){
   await startProject(c,b);
   need((await query(c,b,'ARCHIVE_TARGET_EMPTY','select to_jsonb((select count(*) from auth.users)=0);'))===true,'ARCHIVE_TARGET_NOT_EMPTY');
@@ -1274,6 +1431,7 @@ async function restoreArchive(c,b,indexCommitmentSha256){
   await restoreArchiveSql(c,b,'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA',archive);
   await restoreArchiveSql(c,b,'RESTORE_ARCHIVE_HISTORY',archive,true);
   need(c.archiveRelationReports?.size===2,'ARCHIVE_RELATION_REPORT_INCOMPLETE');
+  need(c.archiveNotValidCheckReports?.size===2,'ARCHIVE_RELATION_CHECK_REPORT_INCOMPLETE');
   const parity=await verifyArchiveDataParity(c,b,archive);
   const restored=await query(c,b,'ARCHIVE_RESTORED_CATALOG',`select jsonb_build_object(
     'database',current_database(),'role',current_user,'serverVersion',current_setting('server_version_num'),
@@ -1339,6 +1497,8 @@ function restorePublicReport(c,result,error,closed){
     ...(c.archive&&error&&c.archiveRelationInventoryAttempted?{archiveRelationPreflight:{
       inventoryComplete:c.archiveRelationInventory?.complete===true,reports:[...(c.archiveRelationReports?.values()??[])],
     }}:{}),
+    ...(c.archive&&c.archiveNotValidCheckReports?{archiveNotValidChecks:[...c.archiveNotValidCheckReports.entries()].map(([phase,r])=>
+      readArchiveNotValidCheckReport({archiveRelationInventory:c.archiveRelationInventory},phase,Buffer.from(JSON.stringify(r))))}:{}),
     ...(c.archive&&c.archiveLocalAuthBootstrap?{
       localAuthBootstrap:readArchiveLocalAuthBootstrap(c,Buffer.from(JSON.stringify(c.archiveLocalAuthBootstrap))),
     }:{}),
@@ -1466,6 +1626,7 @@ async function fixture({archive=false,inventoryOnly=false}={}){
       parityArchive.files.push({file,bytes:dumps[i].length,sha256:sha(dumps[i])});
     }
     const relationPreflight=await verifySyntheticRelationPreflight(c,b,parityArchive);
+    const notValidChecks=await verifySyntheticNotValidChecks(c,b);
     await verifyArchiveDataParity(c,b,parityArchive);
     for(const [kind,mutation]of [
       ['VALUE',"UPDATE public.rr_restore_duplicates SET value='changed' WHERE ctid IN (SELECT ctid FROM public.rr_restore_duplicates WHERE value='other' LIMIT 1);\n"],
@@ -1487,7 +1648,7 @@ async function fixture({archive=false,inventoryOnly=false}={}){
     await auth(c,b,'/token?grant_type=password',{body:{email,password:password+'wrong'},status:400});
     result={status:'PASS',scope:'synthetic-standard-cli-local-restore',sourceHead:process.env.EXPECTED_HEAD_SHA,cliVersion:P.cli,
       standardFiveFileRoundtrip:true,utf8DecimalMetadata:true,rolesAndMigrationHistory:true,newAuthPasswordLogin:true,
-      syntheticRelationPreflight:relationPreflight,
+      syntheticRelationPreflight:relationPreflight,syntheticNotValidChecks:notValidChecks,
       productionBackupVerified:false,cryptoR2Verified:false,productionAuthRestoreVerified:false};
     }
   }catch(e){error=safeError(e,c.stage);}
@@ -1542,6 +1703,53 @@ async function selfTest(){
     +'COPY "auth"."users" ("id") FROM stdin;\n\\.\nCOPY "auth"."identities" ("id") FROM stdin;\n\\.\nCOPY "public"."Private_Public_Sentinel" ("value") FROM stdin;\nsecret-row\n\\.\n'
     +`SELECT pg_catalog.setval('"storage"."Private_Sequence_Sentinel"', 7, true);\n`;
   const inventoryHistory='COPY "supabase_migrations"."schema_migrations" ("version") FROM stdin;\n20200101\n\\.\n';
+
+  test('archive CHECK staging wraps both original DATA streams without changing original file bytes',async()=>{
+    await ownArchive(async({c,index,materialize,env,source})=>{
+      const archive=await materializeArchiveInputs(c,index,{archive:materialize,env});
+      c.archive=true;
+      for(const history of [false,true]){
+        const chunks=[];for await(const b of materializedRestoreBytes(c,archive,history))chunks.push(b);
+        const bytes=Buffer.concat(chunks);assert.doesNotMatch(bytes.toString('utf8'),/rr_archive_check_(?:suspend|restore)/);
+        for(const i of history?[3,4]:[0,1,2])assert(bytes.includes(source[i]));
+        assert.throws(()=>restoreArchiveSql(c,{},history?'RESTORE_ARCHIVE_HISTORY':'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA',archive,history),
+          e=>e.code==='ARCHIVE_RELATION_CHECK_INVENTORY');
+      }
+      c.archiveRelationInventory=await collectArchiveRelationInventory(c,archive);
+      for(const history of [false,true]){
+        const chunks=[],lines={next:1,ranges:new Map()};
+        for await(const b of materializedRestoreBytes(c,archive,history,lines))chunks.push(b);
+        const bytes=Buffer.concat(chunks),text=bytes.toString('utf8'),data=source[history?4:2];
+        for(const i of history?[3,4]:[0,1,2])assert(bytes.includes(source[i]));
+        assert(text.indexOf('DO $rr_archive_check_suspend$')<text.indexOf(data.toString('utf8')));
+        assert(text.indexOf('DO $rr_archive_check_restore$')>text.indexOf(data.toString('utf8')));
+        assert(lines.ranges.has('CHECK_SUSPEND'));assert(lines.ranges.has('CHECK_RESTORE'));
+      }
+      c.archiveRelationInventory.complete=false;
+      assert.throws(()=>archiveNotValidCheckSql(c.archiveRelationInventory,'DATA'),e=>e.code==='ARCHIVE_RELATION_CHECK_INVENTORY');
+      for(const history of [false,true])assert.throws(()=>restoreArchiveSql(c,{},
+        history?'RESTORE_ARCHIVE_HISTORY':'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA',archive,history),e=>e.code==='ARCHIVE_RELATION_CHECK_INVENTORY');
+    },{fileSql:{'data.sql':'COPY "auth"."users" ("id") FROM stdin;\n\\.\nCOPY "auth"."identities" ("id") FROM stdin;\n\\.\n'
+      +'COPY "public"."check_fixture" ("value") FROM stdin;\nprivate-data-sentinel\n\\.\n',
+      'history-data.sql':'COPY "supabase_migrations"."schema_migrations" ("version") FROM stdin;\n20200101\n\\.\n'}});
+  });
+  test('archive CHECK report requires complete bound counts exact identity and semantic equality without private fields',()=>{
+    const inventory={complete:true,digest:'a'.repeat(64),relations:[]},report={kind:'ARCHIVE_NOTVALID_CHECK_RESTORE_V1',phase:'DATA',
+      inventorySha256:inventory.digest,catalogScope:'ALL_DATABASE_CHECKS',measurementPoint:'AFTER_DATA_BEFORE_COMMIT',
+      checkCount:3,stagedCount:2,validatedCheckCount:1,catalogSha256:'b'.repeat(64),semanticEqualityVerified:true};
+    const wire=v=>Buffer.from(JSON.stringify(v)+'\n'),context=()=>({archiveRelationInventory:inventory});
+    assert.deepEqual(readArchiveNotValidCheckReport(context(),'DATA',wire(report)),report);
+    for(const edit of [r=>r.phase='HISTORY_DATA',r=>r.inventorySha256='c'.repeat(64),r=>r.semanticEqualityVerified=false,
+      r=>r.catalogScope='COPY_ONLY',r=>r.checkCount=4097,r=>r.stagedCount=0,r=>r.catalogSha256='unknown',r=>r.definition='PRIVATE_PREDICATE']){
+      const changed=structuredClone(report);edit(changed);
+      assert.throws(()=>readArchiveNotValidCheckReport(context(),'DATA',wire(changed)),e=>e.code==='ARCHIVE_RELATION_CHECK_REPORT_INVALID');
+    }
+    for(const bytes of [Buffer.alloc(0),Buffer.concat([wire(report),wire(report)])])
+      assert.throws(()=>readArchiveNotValidCheckReport(context(),'DATA',bytes),e=>e.code==='ARCHIVE_RELATION_CHECK_REPORT_MISSING');
+    const c=context();readArchiveNotValidCheckReport(c,'DATA',wire(report));
+    assert.throws(()=>readArchiveNotValidCheckReport(c,'DATA',wire(report)),e=>e.code==='ARCHIVE_RELATION_CHECK_REPORT_DUPLICATE');
+  });
+
   test('inventory-only uses the authenticated materializer and complete parser before any Docker or SQL',async()=>{
     await ownArchive(async({c,env,index,materialize})=>{
       c.archive=true;const calls=[];const selectedEnv=inventoryEnv(env,index);

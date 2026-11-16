@@ -1,3 +1,9 @@
+## Originalarkiv — NOT VALID-CHECK indlæses for tidligt
+
+Årsagen til det hidtidige autentiske DATA/23514-afslag er nu knyttet til en oprindeligt ikke-valideret tabel-CHECK. Schema-only indeholder post-data-regler, og NOT VALID håndhæves ved ny COPY. Rettelsen er fasevis lokal udsættelse og identisk genetablering af det komplette understøttede ikke-validerede CHECK-sæt; validerede regler og originale SQL-/række-/sekvensbytes bevares. Unsupported semantik afvises før DATA.
+
+Der påstås endnu ingen faktisk original-/Auth-restore, autonom kvittering eller samlet Free-klarhed. Den oprindelige afvisning og diagnosticfasen bevares som historik, men deres tidligere ukendte årsag er afløst på dette konkrete led. Lokal Node-prøve, egentlig syntetisk PostgreSQL og autentisk restore har hver sin bevisgrænse. Se håndbog89.350 og DEC-0255.
+
 ## Åbent: originalarkivets DATA afvises med CHECK-fejl
 
 Det autentiske originalarkiv når DATA, men stopper fortsat med SQLSTATE 23514. Den faste rapport bekræfter komplet relationspreflight uden manglende eller forkerte mål, ingen manglende systemroller og lukning af de ejede Dockerressourcer. Constraintens identitet og den konkrete årsag kan ikke genfindes i den bevarede rapport. Schema-/DATA-rækkefølge og leverandørkompatibilitet er hypoteser, ikke påviste årsager.

@@ -1,3 +1,9 @@
+## Restore-rækkefølge — afgrænset rettelse med faktisk gendannelse åben
+
+Årsagen til den autentiske DATA/23514 er identificeret som en oprindeligt ikke-valideret tabel-CHECK, der bliver aktiv før COPY i den samlede schema-only-før-data-vej. Den lokale reader udsætter kun komplette katalogbestemte ikke-validerede almindelige tabel-CHECKs og genetablerer deres identiske definition, tilstand og kommentar i samme lokale transaktion. Validerede regler er uændret kontrolgruppe; unsupported domæne/partition/arv/extension stopper før DATA. Originale fem filer, paritet, Auth og ejet closure består.
+
+De eksisterende lokale Node-mål kvalificerer reader/forbruger; den udvidede normale syntetiske B-fixtures SQL-cases skal faktisk køres på Linux. Kildekvalifikation, faktisk original-/Auth-gendannelse, autonom kvittering, reserve og rotation er selvstændige åbne leverancer. Ingen produktionsdata eller numerisk model ændres. Ejerens egressbudget er accepteret; fysisk DB-margin og fungerende retention færdiggøres før abonnementsændring. Se håndbog89.350.
+
 ## Lokal implementation — katalogbundet arkiv-CHECK-diagnostic
 
 Den eksisterende restore-reader har en afgrænset lokal diagnostic for primær DATA/23514. Samme præ-DATA-katalogaflæsning binder højst 512 CHECK-tuplehashes til fast skemakategori, contype, convalidated og BEFORE_DATA_SAME_TRANSACTION. Kun entydige serverfelter kan bindes; manglende, tvetydig, for stor eller fremmed metadata bliver UNAVAILABLE uden at erstatte første fejl. Andre fejlformater og de oprindelige SQL-/rollback-/oprydnings-/PASS-ejere er bevaret.

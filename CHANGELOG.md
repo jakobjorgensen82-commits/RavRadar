@@ -1,3 +1,10 @@
+## 16. november 2026 — originalrestore og oprindeligt ikke-validerede CHECKs
+
+- Ret den lokale restore-rækkefølge: komplet katalogbundet udsættelse af understøttede NOT VALID-tabel-CHECKs under uændret DATA og identisk genetablering før commit; validerede regler bevares.
+- Stop før DATA ved ikke-understøttet domæne-, partitions-, arve- eller extensionsemantik. Bevar fem originale SQL-filer, første fejl, paritet, Auth og ejet oprydning.
+- Udvid den eksisterende syntetiske B-fixture med egentlige PostgreSQL-cases; lokale Node-prøver, kildekvalifikation og faktisk originalrestore har særskilte bevisgrænser.
+- Fasthold ejerens egressbudgetaccept som grundlag for Free uden en ekstra målerunde. Fysisk DB-margin, retention og autonom recovery færdiggøres før abonnementsændring. Version4.0.598 og PG/C/I/T bevares.
+
 ## 4.0.598 — Afgrænset identifikation af arkivets CHECK-fejl
 
 Den eksisterende arkivlæser kan binde den primære DATA/23514-fejl til et begrænset CHECK-katalog fra samme transaktion før DATA. Kun entydig tuplehash og faste metadata kan vises; ukendt forbliver ukendt. Original SQL, constraints, rækkefølge, rollback, første fejl og stærke gendannelseskrav bevares. Normal selvtest og lifecycle-kalder er lokalt afprøvet; faktisk constraint-identitet, årsag og originalrestore/Auth er fortsat åbne. Dette er diagnose og giver ingen Free- eller restoreaccept.

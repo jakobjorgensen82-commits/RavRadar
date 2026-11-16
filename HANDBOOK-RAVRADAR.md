@@ -12,7 +12,23 @@ Alle fem originale SQL-filer og deres identiteter bevares. Kontrollen efter DDL 
 
 Dette er en lokal kildekandidat. Den normale lokale selvtest kontrollerer de afgrænsede pins, afslag og kaldere; den kvalificerer ikke det autentiske arkiv. De officielle migratorer skal oprette hele leverandørskemaet med de faktiske kolonner, genererede felter, constraints, indekser og adgangsregler. Der indføres ingen stubtabeller eller rettelse af original SQL. Præcis kildekvalifikation, faktisk image-/migrationsforløb, kolonnekompatibilitet og gendannelse af samme originale arkiv er fortsat nødvendige. En lokal imagecachepost er ikke bevis for den brugte engangscontainer. Autonom restorekvittering, backuprotation og samlet Free-klarhed kræver stadig deres egne beviser.
 
+### Gendannelse med oprindeligt ikke-validerede CHECK-regler
+
+Den autentiske præ-DATA-diagnose har nu identificeret en ikke-valideret tabel-CHECK. Den komplette schema-only-fil indeholder også regler, som pg_dump normalt placerer efter data. NOT VALID undlader at kontrollere allerede eksisterende rækker, men håndhæver stadig reglen ved ny COPY. Når hele skemaet indlæses først, kan en bevaret gammel række derfor blive afvist under gendannelsen. Dette er en rækkefølgefejl i den lokale restorevej; den dokumenterer ikke i sig selv et korrupt originalarkiv.
+
+Den afgrænsede rettelse bruger samme ejede lokale B-database og samme transaktion i hver af de to DATA-faser. Et komplet privat katalogsnapshot omfatter alle CHECK-regler og en uændret kontrolgruppe af validerede regler. Kun oprindeligt ikke-validerede almindelige tabel-CHECKs udsættes med DROP RESTRICT. Navn, katalogdefinition, valideringstilstand og kommentar genetableres efter uændret DATA. Fuld semantisk kataloglighed skal bestå før commit. Domæner, partitioner, arv, extensionafhængigheder og ukendt eller for stor metadata afvises før DATA, når semantikken ikke er understøttet. Der bruges ingen specialcase på den første fejlende regel.
+
+De fem originale SQL-filer og alle COPY-/sekvensbytes ændres ikke. Ingen rækker filtreres, repareres eller erklæres gyldige, og validerede CHECKs udsættes ikke. Nye overtrædelser skal igen afvises efter genetableringen. Transaktionsbevaringen gælder den enkelte fases DDL og rækker; dette er ikke et nyt løfte om én samlet transaktion over alle fem filer eller rollback af Postgres-sekvenser. Eksisterende fuld indholds-/dublet-/sekvensparitet, faktisk Auth-funktion og bekræftet ejet Dockerlukning består.
+
+Den normale credentialfri selvtest dækker strømmenes bytebevarelse, komplette rapporter og gamle afslag. Den eksisterende syntetiske B-prøve har desuden egentlige PostgreSQL-cases for bevarede legacyrækker og dubletter, fremtidig håndhævelse, validerede regler, rollback ved katalogafvigelse og afslag før DATA ved ikke-understøttet semantik. De cases skal faktisk udføres gennem det eksisterende Linux-forløb. Lokale Node-prøver, kildekvalifikation og en faktisk original-/Auth-gendannelse har hver sin bevisgrænse; autonom kvittering, rotation og Free-overgang følger ikke af kildeleveringen alene.
+
+### Egress som accepteret budgetgrundlag
+
+Ejeren accepterer de målte egress-tal og den konservative periodefremskrivning som budgetgrundlag for den planlagte Free-overgang. En intern3,5GB-varsling er ikke i sig selv en blokering, og der kræves ikke en ekstra ren driftsmålerunde alene for at genbekræfte accepten. Fysisk database-/TOAST-margin, automatisk retention, faktisk original-/Auth-gendannelse og autonom backupkvittering/rotation færdiggøres på deres egne normale krav før abonnementsændring.
+
 ### Katalogbundet fingeraftryk ved CHECK-fejl
+
+Det følgende beskriver diagnosticens første leverance, før årsagen blev identificeret. Den aktuelle rækkefølgerettelse og dens bevisgrænser står ovenfor.
 
 Det autentiske originalarkiv når DATA, men er fortsat afvist med SQLSTATE 23514. Bestået relationspreflight og systemrollekontrol samt bekræftet oprydning forklarer ikke, hvilken CHECK der fejler. Den bevarede rapport indeholder ingen constraint-identitet. En bestemt leverandørforskel eller rækkefølge må derfor ikke kaldes årsagen endnu.
 
