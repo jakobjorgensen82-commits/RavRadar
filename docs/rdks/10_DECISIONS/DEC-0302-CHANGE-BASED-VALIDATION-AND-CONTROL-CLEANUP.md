@@ -1,3 +1,11 @@
+## Tillæg — korrekt post-data-CHECK i den eksisterende restore-reader
+
+Den samme manuelle arkivkalder og samme ejede lokale B-database bevares. Et komplet privat katalogsnapshot omfatter samtlige CHECKs; kun understøttede almindelige tabel-CHECKs med oprindelig convalidated=false udsættes med DROP RESTRICT. Definition, navn, NOT VALID-tilstand og kommentar genetableres efter uændret DATA, med fuld semantisk kataloglighed før commit. Validerede CHECKs berøres ikke. Domæner, partitioner, arv, extensionafhængigheder, ufuldstændig eller for stor metadata stopper før DATA. Begge eksisterende DATA-faser bruger samme mekanisme; ingen original SQL eller række omskrives.
+
+Den normale restoreindgang kræver komplet inventory før første SQL. Den indre streamhelpers tidligere no-inventory-testadfærd bevares symmetrisk uden at give den normale indgang en genvej. Første reelle SQLSTATE, fasevis rollback, sekvensparitet, Auth og ejet oprydning består. Der indføres intet nyt workflow, testregister, fejltolerance eller numerisk model.
+
+De relevante lokale mål er hele readerens normale selvtest og hele backup-lifecycle-prøven. De oprindelige arkiv-/workflowejere er uændrede og bliver stadig valgt normalt i præcis kilde-CI. Nye egentlige SQL-cases er placeret i den eksisterende syntetiske B-fixture og skal køres gennem det eksisterende Linux-forløb før en rettet autentisk prøve. Et lokalt Node-PASS er ikke PostgreSQL-eksekvering eller produktionsbevis. Se håndbog89.350.
+
 ## Tillæg — katalogbundet CHECK-diagnostic i den eksisterende arkivlæser
 
 Den primære originale arkivgendannelse kan stoppe i DATA med SQLSTATE 23514, selv om relations- og systemrollekontrollerne består. Den afgrænsede diagnostic ændrer alene den eksisterende restore-reader: samme katalogaflæsning umiddelbart før DATA udleder højst 512 CHECK-fingeraftryk og deres convalidated-værdi i samme transaktion. Et fingeraftryk er SHA-256 af de tre eksakte UTF-8-navne for skema, relation og constraint, hver med sin firebyte big-endian byte-længde. Navne og definitioner udskrives ikke. For stor, manglende eller tvetydig metadata giver UNAVAILABLE.

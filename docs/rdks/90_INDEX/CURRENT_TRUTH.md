@@ -1,3 +1,14 @@
+## Aktuelt — årsagen til originalarkivets CHECK-afslag er identificeret
+
+Den autentiske diagnose binder afvisningen til en oprindeligt ikke-valideret tabel-CHECK. Hele schema-only-filen indlæses før DATA, selv om pg_dump normalt placerer ikke-validerede CHECKs efter data. NOT VALID fritager eksisterende rækker fra scanning, men håndhæves stadig ved ny COPY. Det forklarer den lokale indlæsningskonflikt; en korrupt originalrække er ikke dermed bevist.
+
+Den afgrænsede rettelse udsætter alene de katalogbestemte ikke-validerede almindelige tabel-CHECKs i den ejede lokale database og genetablerer dem identisk før commit. Fuld semantisk kataloglighed og validerede kontrolregler bevares. Domæne-, partitions-, arve- og extensionsemantik, som ikke er understøttet, afvises før DATA. Fem originale SQL-filer, rækker, sekvenser, Auth-accept og ejet oprydning bevares. Begge normale DATA-faser dækkes. Kildelevering og syntetiske prøver er ikke faktisk originalrestore eller autonom backupaccept. Se håndbog89.350 og DEC-0255/DEC-0302.
+
+## Ejerbeslutning 16. november — egress som budgetgrundlag for Free
+
+Ejeren accepterer de faktisk målte egress-tal og den konservative periodefremskrivning som budgetgrundlag for den planlagte Free-overgang. Den interne varslingsgrænse på 3,5 GB er ikke i sig selv en leveringsblokering. Der kræves ikke en ny særskilt målerunde med seks fejlfri døgnkørsler alene for at genbekræfte budgetaccepten.
+
+Accepten er ikke en garanti for senere trafik eller bevis for, at abonnementet allerede er Free. Fysisk database-/TOAST-margin, eksisterende automatisk retention samt faktisk original-/Auth-gendannelse og autonom backupkvittering/rotation færdiggøres på deres normale egne krav. Skiftende målinger, kvitteringer og konkrete abonnementsdatoer føres i det private checkpoint. Plan eller betalingsoplysninger ændres først efter de nødvendige faktiske driftsbeviser.
 ## Aktuelt — originalarkivets CHECK-fejl er endnu ikke forklaret
 
 Det autentiske arkivforsøg stopper i DATA med SQLSTATE 23514 efter bestået relations- og systemrollekontrol; ejet Dockerlukning er bekræftet. Den bevarede rapport indeholder ingen constraint-identitet. Den lokale readerdiagnostic udleder et begrænset katalogfingeraftryk før DATA i samme transaktion og tillader kun hash/faste metadata for den præcise primære fejl; ukendt forbliver UNAVAILABLE. Lokal selvtest og normal lifecycle-prøve består, men dette er ikke en restore-rettelse, faktisk ny diagnostic, kildekvalifikation eller installation.
