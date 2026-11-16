@@ -1,4 +1,6 @@
-import { projectPagesClosureHistoricalTestInput as historicalPagesInput } from './lib/pages-closure-historical-test-input.mjs';
+import { projectPagesClosureHistoricalTestInput as historicalPagesInput,
+  inverseAssistantAfter598BuildTestInput, readHistoricalBuildWorkflowSource,
+  readHistoricalPagesClosureWorkflowSources, readHistoricalCompletedStageWorkflowSources } from './lib/pages-closure-historical-test-input.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {createHash as conditions593TestHash} from 'node:crypto';
@@ -29,7 +31,8 @@ import {ASSISTANT_LATER_H0_BINDING,assistantLaterH0Migration,requireAssistantLat
   ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE_TIMEOUT_SUCCESSOR,
   INACTIVE_INSTALLED593_ORIGINAL591_SUCCESSOR as ISSUED594_TIMEOUT_SUCCESSOR,
   INACTIVE_SCALAR597_LATER_H0_SUCCESSOR as ISSUED597_TIMEOUT_SUCCESSOR,
-  UNISSUED_ASSISTANT_AFTER597_SUCCESSOR as AFTER597_TIMEOUT_SUCCESSOR}
+  UNISSUED_ASSISTANT_AFTER597_SUCCESSOR as AFTER597_TIMEOUT_SUCCESSOR,
+  INACTIVE_ASSISTANT_AFTER598_SUCCESSOR as AFTER598_TIMEOUT_SUCCESSOR}
   from './lib/assistant-later-h0-successor-source.mjs';
 
 // Keep the payload-free operational control report inside this existing cheap
@@ -50,12 +53,35 @@ import {
 // deploy-workflow command so the source gate does not grow another process.
 await import('./test-national-weather-shadow-contract.mjs');
 
+if(ACTIVE_TIMEOUT_SUCCESSOR===AFTER598_TIMEOUT_SUCCESSOR)await test('actual599 workflow inverse authenticates all exact hunks before unchanged historical workflow oracles',async()=>{
+  const profile=AFTER598_TIMEOUT_SUCCESSOR,output=profile.requireOutput();
+  assert.equal(profile.requireRelease(),'4.0.599');
+  const canonical=await profile.readCanonicalSource();
+  assert.equal(canonical.admission,'NO_ADMISSION');assert.deepEqual(canonical.migration,profile.migration());
+  assert.equal(conditions593TestHash('sha256').update(canonical.canonicalSource).digest('hex'),output.canonicalSha256);
+  const raw=fs.readFileSync(new URL('../.github/workflows/reusable-weather-build.yml',import.meta.url),'utf8');
+  const historical=inverseAssistantAfter598BuildTestInput(raw);
+  assert(!historical.includes('select-after598')&&!historical.includes('reconcile-after598'));
+  assert.equal(historicalPagesInput(raw,'build'),raw,'Current599 is not an old Pages closure input');
+  assert.equal(historicalPagesInput(historical,'build'),historical,'CODE822 is not an old Pages closure input');
+  const originalClosure=readHistoricalBuildWorkflowSource();
+  assert.notEqual(historicalPagesInput(originalClosure,'build'),originalClosure,'The original AFTER input exercises its old inverse');
+  for(const changed of [raw+'\n',raw.replace('select-after598','select-after599'),
+    raw.replace('reconcile-after598','reconcile-after599'),
+    raw.replace(" || steps.operational-action.outputs.action == 'integrated-historical-maintenance'",''),
+    raw.replace('          WEATHER_USER_AGENT:', '          WRONG_WEATHER_USER_AGENT:'),
+    raw.replace('node scripts/reconcile-private-runtime-checkpoint.mjs select-after598',
+      'node scripts/reconcile-private-runtime-checkpoint.mjs select-after598\n            node scripts/reconcile-private-runtime-checkpoint.mjs select-after598')])
+    assert.throws(()=>inverseAssistantAfter598BuildTestInput(changed));
+});
 const rawSources = await readProductionWorkflowSources();
+const historicalSources = readHistoricalPagesClosureWorkflowSources();
 const sources = Object.freeze(
   Object.fromEntries(
     Object.entries(rawSources).map(([role, sourceText]) => [
       role,
-      inverseCompletedRuntimeWorkflow(historicalPagesInput(sourceText.replace(/\r\n/g, '\n'), role), role),
+      inverseCompletedRuntimeWorkflow(historicalPagesInput(
+        (Object.hasOwn(historicalSources,role)?historicalSources[role]:sourceText).replace(/\r\n/g, '\n'), role), role),
     ]),
   ),
 );
@@ -157,9 +183,8 @@ function assertCheckpointEpochInterface(actualBuild, actualManual) {
       'Actual default/fresh/reentry routing must preserve its separate archive and RAW sources');
   }
 }
-const checkpointEpochManual = inverseCompletedRuntimeWorkflow(fs.readFileSync(
-  new URL('../.github/workflows/run-current-weather-once.yml', import.meta.url), 'utf8',
-).replaceAll('\r\n', '\n'), 'once');
+const checkpointEpochManual = inverseCompletedRuntimeWorkflow(
+  readHistoricalCompletedStageWorkflowSources().once, 'once');
 assertCheckpointEpochInterface(build, checkpointEpochManual);
 for (const changed of [
   build.replace(checkpointEpochDeclarations, ''),
@@ -767,8 +792,35 @@ assert.equal(casTimeoutSettings.at(-1)?.timeout, '55s',
 // and canonical reader before a TEST INVENTORY ONLY inverse; never remove a
 // guessed latest row or grant SQL/data admission to historical593 oracles.
 const activeTimeoutMigration=ISSUED594_TIMEOUT_SUCCESSOR.migration();
+if(ACTIVE_TIMEOUT_SUCCESSOR===AFTER598_TIMEOUT_SUCCESSOR){
+  const profile=AFTER598_TIMEOUT_SUCCESSOR,migration=profile.migration(),output=profile.requireOutput();
+  assert.equal(profile.requireRelease(),'4.0.599');
+  const sql=fs.readFileSync(new URL(migration.filename,migrationsUrl));
+  const canonical=await profile.readCanonicalSource();
+  assert.equal(canonical.admission,'NO_ADMISSION');assert.deepEqual(canonical.migration,migration);
+  assert.equal(conditions593TestHash('sha256').update(canonical.canonicalSource).digest('hex'),output.canonicalSha256);
+  const inverse599=(inventory,bytes=sql,selected=profile)=>{
+    assert.equal(selected,AFTER598_TIMEOUT_SUCCESSOR,'EXACT_ISSUED599_TIMEOUT_PROFILE_REQUIRED');
+    assert.equal(conditions593TestHash('sha256').update(bytes).digest('hex'),output.migrationSha256);
+    assert.equal(inventory.filter(row=>row.migration===migration.filename).length,1);
+    assert.deepEqual(inventory.at(-1),{migration:migration.filename,timeout:'55s'});
+    assert.deepEqual(inventory.at(-2),{migration:AFTER597_TIMEOUT_SUCCESSOR.migration().filename,timeout:'55s'});
+    const historical=inventory.slice(0,-1);
+    assert.deepEqual([...historical,{migration:migration.filename,timeout:'55s'}],inventory);
+    return historical;
+  };
+  const row={migration:migration.filename,timeout:'55s'};
+  for(const inventory of [casTimeoutSettings.slice(0,-1),[...casTimeoutSettings,row],
+    [...casTimeoutSettings.slice(0,-1),{...row,timeout:'54s'}],
+    [...casTimeoutSettings,{migration:'20990101000000_unknown.sql',timeout:'55s'}],
+    [...casTimeoutSettings.slice(0,-2),row]])assert.throws(()=>inverse599(inventory));
+  assert.throws(()=>inverse599(casTimeoutSettings,Buffer.concat([sql,Buffer.from('\n')])));
+  assert.throws(()=>inverse599(casTimeoutSettings,sql,{...profile}),/EXACT_ISSUED599_TIMEOUT_PROFILE_REQUIRED/);
+  casTimeoutSettings=inverse599(casTimeoutSettings);
+}
+if(ACTIVE_TIMEOUT_SUCCESSOR!==AFTER598_TIMEOUT_SUCCESSOR)
 assert([ISSUED594_TIMEOUT_SUCCESSOR,ISSUED597_TIMEOUT_SUCCESSOR,AFTER597_TIMEOUT_SUCCESSOR].includes(ACTIVE_TIMEOUT_SUCCESSOR));
-if(ACTIVE_TIMEOUT_SUCCESSOR===AFTER597_TIMEOUT_SUCCESSOR){
+if(ACTIVE_TIMEOUT_SUCCESSOR===AFTER597_TIMEOUT_SUCCESSOR||ACTIVE_TIMEOUT_SUCCESSOR===AFTER598_TIMEOUT_SUCCESSOR){
   const profile=AFTER597_TIMEOUT_SUCCESSOR,migration=profile.migration();
   const sql=fs.readFileSync(new URL(migration.filename,migrationsUrl));
   const canonical=await profile.readCanonicalSource();
@@ -784,7 +836,7 @@ if(ACTIVE_TIMEOUT_SUCCESSOR===AFTER597_TIMEOUT_SUCCESSOR){
   assert.throws(()=>inverse([...casTimeoutSettings,casTimeoutSettings.at(-1)]));
   casTimeoutSettings=inverse(casTimeoutSettings);
 }
-if([ISSUED597_TIMEOUT_SUCCESSOR,AFTER597_TIMEOUT_SUCCESSOR].includes(ACTIVE_TIMEOUT_SUCCESSOR)){
+if([ISSUED597_TIMEOUT_SUCCESSOR,AFTER597_TIMEOUT_SUCCESSOR,AFTER598_TIMEOUT_SUCCESSOR].includes(ACTIVE_TIMEOUT_SUCCESSOR)){
   const migration=ISSUED597_TIMEOUT_SUCCESSOR.migration();
   const sql=fs.readFileSync(new URL(migration.filename,migrationsUrl));
   const canonical=await ISSUED597_TIMEOUT_SUCCESSOR.readCanonicalSource();

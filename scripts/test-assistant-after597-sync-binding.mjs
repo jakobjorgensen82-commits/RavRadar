@@ -188,6 +188,19 @@ test('normal synkronisering og genkontrol bevarer mixedV2 Edge og afviser defekt
     const beforeGenerated=new Map(await Promise.all(generated.map(async file=>[file,await fs.readFile(path.join(ROOT,file))])));
     const migrations=files.filter(file=>file.startsWith('supabase/migrations/')&&file.endsWith('.sql'));
     const beforeSQL=new Map(await Promise.all(migrations.map(async file=>[file,await fs.readFile(path.join(ROOT,file))])));
+    const inputProfile=JSON.parse(await fs.readFile(path.join(ROOT,'scripts/lib/source-impact-domain-inputs-598.json'),'utf8'));
+    const modelFiles=(await Promise.all(Object.values(inputProfile.models).map(async def=>{
+      const source=await fs.readFile(path.join(ROOT,def.file),'utf8');
+      const manifest=JSON.parse(source.slice(source.indexOf('Object.freeze(')+14,source.lastIndexOf(');')));
+      return [def.file,...manifest.files.map(row=>row[def.rowKey])];
+    }))).flat();
+    const analysisFiles=[...new Set([...inputProfile.postgresModules,...inputProfile.postgresData,
+      ...inputProfile.nativeEvidenceControls,...inputProfile.setupInputs,...inputProfile.plannerTrustChain,
+      ...inputProfile.continuation.files,inputProfile.continuation.file,...modelFiles,...migrations,
+      'version.json','data/admin/ravscore-profile-selection.json','knowledge/rav-assistant-public-v1.json',
+      'scripts/protected-operational-reentry-evidence.mjs'])];
+    const beforeAnalysis=new Map(await Promise.all(analysisFiles.map(async file=>[file,await fs.readFile(path.join(ROOT,file))])));
+
     try{
       for(const file of files){assert(!path.isAbsolute(file)&&!file.split('/').includes('..'));
         const from=path.join(ROOT,file),to=path.join(stage,file);assert((await fs.lstat(from)).isFile());
@@ -238,6 +251,72 @@ test('normal synkronisering og genkontrol bevarer mixedV2 Edge og afviser defekt
       assert.throws(()=>national.verifyPackage(pkg),'Actual release metadata must bind the issued model');
       await fs.writeFile(versionPath,versionBytes);
       national.verifyPackage(pkg);
+
+      // Both source-parity operands are clean owned Git commits of actual normal
+      // input bytes. No readiness rows, PG receipts or execution are fabricated.
+      assert.equal(await fs.lstat(path.join(stage,'.git')).then(()=>true,error=>{if(error.code==='ENOENT')return false;throw error;}),false);
+      const gitEnvironment={...env,GIT_CONFIG_NOSYSTEM:'1',GIT_CONFIG_GLOBAL:process.platform==='win32'?'NUL':'/dev/null',
+        GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_OPTIONAL_LOCKS:'0',GIT_TERMINAL_PROMPT:'0',
+        GIT_CONFIG_COUNT:'1',GIT_CONFIG_KEY_0:'protocol.allow',GIT_CONFIG_VALUE_0:'never',
+        GIT_AUTHOR_NAME:'Synthetic source parity',GIT_AUTHOR_EMAIL:'fixture@example.invalid',
+        GIT_COMMITTER_NAME:'Synthetic source parity',GIT_COMMITTER_EMAIL:'fixture@example.invalid',
+        GIT_AUTHOR_DATE:'2026-11-15T12:00:00Z',GIT_COMMITTER_DATE:'2026-11-15T12:00:00Z'};
+      const git=(directory,args,input)=>execFileSync('git',['-C',directory,'-c','core.autocrlf=false',...args],
+        {input,env:gitEnvironment,timeout:30000,maxBuffer:64*1024*1024,stdio:['pipe','pipe','pipe']});
+      const text=args=>git(stage,args).toString('utf8').trim();
+      git(stage,['init','-q']);git(stage,['config','core.autocrlf','false']);
+      const origins=[...inputProfile.frozenGitAnchors,
+        {head:'bd9cf518fe798ddea45d2b835f324f6e2bea06fc',tree:'2f71c562eea774ca03996802f83bdad7cccd43cc'},
+        {head:'82200280c42b9060f14be2721ba7b766e0ede5a6',tree:'c69c1beed4275fb02af216a1c4741410555e2675'}];
+      const requiredBlobs=[['bd9cf518fe798ddea45d2b835f324f6e2bea06fc','version.json'],
+        ['82200280c42b9060f14be2721ba7b766e0ede5a6','scripts/test-protected-ravscore-continuation-checkpoint.mjs'],
+        ['82200280c42b9060f14be2721ba7b766e0ede5a6','data/admin/ravscore-profile-selection.json'],
+        // Exact ancestor tree objects for these historical selected paths only.
+        ['82200280c42b9060f14be2721ba7b766e0ede5a6','scripts'],
+        ['82200280c42b9060f14be2721ba7b766e0ede5a6','data'],
+        ['82200280c42b9060f14be2721ba7b766e0ede5a6','data/admin']]
+        .map(([ref,file])=>git(ROOT,['rev-parse',ref+':'+file]).toString('utf8').trim());
+      git(stage,['unpack-objects','-q'],git(ROOT,['pack-objects','--stdout'],
+        [...new Set([...origins.flatMap(row=>[row.head,row.tree]),...requiredBlobs])].join('\n')+'\n'));
+      const afterAnalysis=new Map(await Promise.all(analysisFiles.map(async file=>[file,await fs.readFile(path.join(stage,file))])));
+      for(const[file,bytes]of beforeAnalysis)await fs.writeFile(path.join(stage,file),bytes);
+      git(stage,['add','-f','--',...analysisFiles]);
+      const beforeCommit=text(['commit-tree',text(['write-tree']),'-m','synthetic actual599 source facts, never a qualified producer']);
+      git(stage,['update-ref','HEAD',beforeCommit]);assert.equal(text(['status','--porcelain','--untracked-files=no']),'');
+      const {analyzeSourceDomainInputs:analyze}=await load('scripts/source-impact-domain-inputs.mjs');
+      const {assertPublishedOrdinaryReadinessSourceParity:parity}=await load('scripts/protected-operational-reentry-evidence.mjs');
+      const analyzePair=(baselineCommit,candidateCommit)=>analyze({baselineCommit,candidateCommit,expectedHead:candidateCommit});
+      const same599=analyzePair(beforeCommit,beforeCommit);assert.equal(same599.analysis,'COMPLETE',same599.failureCode);
+      assert.equal(same599.profile.id,'DERIVED_599_DOMAIN_INPUTS_C101_I100_T12');
+      assert.equal(same599.actualPostgresInput.unchanged,true);assert.equal(same599.postgresExecuted,false);
+      await parity({producerHead:beforeCommit,liveHead:beforeCommit,executorHead:beforeCommit});
+      for(const[file,bytes]of afterAnalysis)await fs.writeFile(path.join(stage,file),bytes);
+      git(stage,['add','-f','--',...analysisFiles]);
+      const afterCommit=text(['commit-tree',text(['write-tree']),'-p',beforeCommit,'-m','synthetic real normal setter next-app source facts']);
+      git(stage,['update-ref','HEAD',afterCommit]);assert.equal(text(['status','--porcelain','--untracked-files=no']),'');
+      const same600=analyzePair(afterCommit,afterCommit);assert.equal(same600.analysis,'COMPLETE',same600.failureCode);
+      assert.equal(same600.profile.id,same599.profile.id);assert.equal(same600.profile.sha256,same599.profile.sha256);
+      assert.equal(same600.actualPostgresInput.unchanged,true);assert.equal(same600.models.T.before.implementationSha256,issued.T);
+      assert.equal(same600.postgresExecuted,false);assert.equal(same600.baselineQualified,false);
+      await parity({producerHead:afterCommit,liveHead:afterCommit,executorHead:afterCommit});
+      const cross=analyzePair(beforeCommit,afterCommit);assert.equal(cross.analysis,'COMPLETE',cross.failureCode);
+      assert.equal(cross.actualPostgresInput.unchanged,false);
+      assert.notDeepEqual(cross.actualPostgresInput.before.packageScopes,cross.actualPostgresInput.after.packageScopes);
+      await assert.rejects(parity({producerHead:beforeCommit,liveHead:beforeCommit,executorHead:afterCommit}),
+        /Published ordinary completion readiness backend inputs differ/);
+      // A genuine same-family documentation diff goes to generic CurrentV4,
+      // while the historical V2 owners explicitly retain FULL for this family.
+      await fs.writeFile(path.join(stage,'CHANGELOG.md'),'Synthetic current-family source-planning prose only.\n');
+      git(stage,['add','-f','--','CHANGELOG.md']);
+      const proseCommit=text(['commit-tree',text(['write-tree']),'-p',afterCommit,'-m','synthetic current family unbound prose']);
+      git(stage,['update-ref','HEAD',proseCommit]);assert.equal(text(['status','--porcelain','--untracked-files=no']),'');
+      const input={baselineCommit:afterCommit,candidateCommit:proseCommit,expectedHead:proseCommit};
+      const {planSourceCurrentContractsFromGit:currentPlan}=await load('scripts/source-current-contract-plan.mjs');
+      const current=currentPlan(input);assert.equal(current.status,'PLANNED');assert.equal(current.selection,'CURRENT_CONTRACTS');
+      assert.equal(current.inputProfile.id,same599.profile.id);assert.equal(current.baselineQualified,false);
+      const {planSourceDomainImpactFromGit:domainPlan}=await load('scripts/source-impact-domain-plan.mjs');
+      const domain=domainPlan(input);assert.equal(domain.selection,'FULL');
+      assert.deepEqual(domain.reasonCodes,['DERIVED_599_REQUIRES_CURRENT_OR_FULL']);
     }finally{assert.equal(path.dirname(stage),path.resolve(os.tmpdir()));assert(path.basename(stage).startsWith('rr-after598-next-app-'));await fs.rm(stage,{recursive:true,force:false});}
   });
 

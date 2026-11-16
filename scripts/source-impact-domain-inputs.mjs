@@ -7,6 +7,13 @@ import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+// Known issued model family, not an application-version range or gate authority.
+const FAMILY599=Object.freeze({C:'faa049cb86e733e451211f50c155ff90fd3462230310298cf5696757ef5c9f5d',
+  I:'d8319503e040139ab739d589fa80c97cb683dfad7a2fc6f79eeeec6a9afe44e9',
+  T:'23577d15b555acb50ee73f0fb4117282701f4d97e933932f30ac54df2c679645'});
+const TEMPLATE598=Object.freeze({head:'bd9cf518fe798ddea45d2b835f324f6e2bea06fc',tree:'2f71c562eea774ca03996802f83bdad7cccd43cc'});
+const FACTORY598=Object.freeze({head:'82200280c42b9060f14be2721ba7b766e0ede5a6',tree:'c69c1beed4275fb02af216a1c4741410555e2675'});
+const PROFILE599_ID='DERIVED_599_DOMAIN_INPUTS_C101_I100_T12';
 const PROFILE_FILE='scripts/lib/source-impact-domain-inputs-594.json';
 const PROFILE_SHA256='ae33e59b09a9d005579da78a32e2be5943856bfe03fdc2a54ba252071e5fe563';
 const MAX_BLOB=4*1024*1024,MAX_TOTAL=32*1024*1024,MAX_GIT=64*1024*1024;
@@ -72,6 +79,13 @@ function profile598(){
     ['97d189e4a99fdab1b2764db1bfe59f96e92c3f02','b804a9d766e1828cfed6ef6927ddf6582d2dc326']])
     assert(value.frozenGitAnchors.some(anchor=>anchor.head===head&&anchor.tree===tree),'DOMAIN_GENUINE_597_CODE_AND_NATIVE_REQUIRED');
   return value;
+}
+// The reviewed598 inventory remains immutable; these are already genuine input origins.
+function profile599(){
+  const source=profile598();assert.equal(source.referenceCommit,TEMPLATE598.head);
+  return {...source,id:PROFILE599_ID,derivedFrom:{id:source.id,sha256:'6bb15e67912b919beecf26eea50c89c227425bf79bf0e4cbf7c65bd6904afed0',
+    family:FAMILY599,metadataTemplate:TEMPLATE598,factory:FACTORY598},
+    frozenGitAnchors:[...source.frozenGitAnchors,TEMPLATE598,FACTORY598]};
 }
 function fixedProfileForReleases(before,after){
   assert.match(before,/^4\.0\.[0-9]+$/);assert.match(after,/^4\.0\.[0-9]+$/);
@@ -152,9 +166,8 @@ export function analyzeSourceDomainInputs(input){
     git(['merge-base','--is-ancestor',input.baselineCommit,input.candidateCommit]);
     const release=ref=>{const raw=git(['cat-file','blob',ref+':package.json']);
       assert(raw.length>0&&raw.length<=65536,'DOMAIN_PACKAGE_SCOPE_BOUND');return JSON.parse(raw).version;};
-    const p=fixedProfileForReleases(release(input.baselineCommit),release(input.candidateCommit)),refs=[input.baselineCommit,input.candidateCommit];
-    const is597=p.id==='REVIEWED_597_DOMAIN_INPUTS_C101_I100_T12';
-    const is598=p.id==='REVIEWED_598_DOMAIN_INPUTS_C101_I100_T12';
+    let p=fixedProfileForReleases(release(input.baselineCommit),release(input.candidateCommit));
+    const refs=[input.baselineCommit,input.candidateCommit];
     const trees=new Map(refs.map(ref=>[ref,parseTree(git(['ls-tree','-rz','--full-tree',ref]))]));
     const objects=new Map();let selectedBytes=0;
     const load=(ids,phase)=>{
@@ -193,12 +206,60 @@ export function analyzeSourceDomainInputs(input){
     load(refs.flatMap(ref=>Object.values(p.models).map(def=>trees.get(ref).get(def.file)?.blob)),'MODEL');
     for(const ref of refs)modelData.set(ref,Object.fromEntries(Object.entries(p.models).map(([family,def])=>
       [family,generatedManifest(raw(ref,def.file),def,family)])));
+    // Old profile paths above are unchanged and lazy: only the known issued pair
+    // may read the additional Git metadata/origins below. No candidate JS is evaluated.
+    const family599=refs.map(ref=>modelData.get(ref).C.bundleSha256===FAMILY599.C
+      &&modelData.get(ref).I.bundleSha256===FAMILY599.I);
+    if(family599.some(Boolean)){
+      assert(family599.every(Boolean),'DOMAIN_RELEASE_PROFILE_MISMATCH');
+      const previousModels=p.models;p=profile599();assert.deepEqual(p.models,previousModels);
+      const origins=[TEMPLATE598,FACTORY598];
+      load(origins.flatMap(origin=>[origin.head,origin.tree]),'ANCHOR');
+      for(const origin of origins){
+        assert.equal(objects.get(origin.head).type,'commit');assert.equal(objects.get(origin.tree).type,'tree');
+        assert.equal(objects.get(origin.head).raw.toString('utf8').split('\n',1)[0],'tree '+origin.tree,'DOMAIN_FROZEN_ANCHOR_TREE');
+      }
+      const historicalTrees=new Map([
+        [TEMPLATE598.head,parseTree(git(['ls-tree','-z','--full-tree',TEMPLATE598.head,'--','version.json']))],
+        [FACTORY598.head,parseTree(git(['ls-tree','-rz','--full-tree',FACTORY598.head,'--',
+          'scripts/test-protected-ravscore-continuation-checkpoint.mjs','data/admin/ravscore-profile-selection.json']))],
+      ]);
+      const historicalBlob=(origin,file)=>{const row=historicalTrees.get(origin.head).get(file);
+        assert(row&&row.mode==='100644'&&row.type==='blob','DOMAIN_FROZEN_SELECTED_INPUT');return row.blob;};
+      const templateBlob=historicalBlob(TEMPLATE598,'version.json');
+      const factoryBlob=historicalBlob(FACTORY598,'scripts/test-protected-ravscore-continuation-checkpoint.mjs');
+      const factoryProfileBlob=historicalBlob(FACTORY598,'data/admin/ravscore-profile-selection.json');
+      const metadataFiles=refs.flatMap(ref=>['package.json','version.json'].map(file=>{const row=trees.get(ref).get(file);
+        assert(row&&row.mode==='100644'&&row.type==='blob','DOMAIN_AFTER598_RELEASE_METADATA');return row.blob;}));
+      load([templateBlob,factoryBlob,factoryProfileBlob,...metadataFiles],'INPUT');
+      const templateRaw=objects.get(templateBlob).raw;assert(templateRaw.length>0&&templateRaw.length<=65536,'DOMAIN_METADATA_BOUND');
+      const template=JSON.parse(templateRaw);assert.equal(template.version,'4.0.598','DOMAIN_METADATA_TEMPLATE');
+      assert.equal(template.releaseContract.releaseVersion,'4.0.598','DOMAIN_METADATA_TEMPLATE');
+      assert.equal(objects.get(factoryBlob).raw.length,72068,'DOMAIN_FACTORY_INPUT_BOUND');
+      assert.equal(sha(objects.get(factoryBlob).raw),'ade9f05c1cfbf25687700a7d5d12b47653fe6da5b7961d49eca7997c6b3d8e5c','DOMAIN_FACTORY_INPUT');
+      assert.equal(objects.get(factoryProfileBlob).raw.length,1633,'DOMAIN_FACTORY_INPUT_BOUND');
+      assert.equal(sha(objects.get(factoryProfileBlob).raw),'8a2a91ade24d85bd18804d5c91bc17b28b1578933446f4dfcfc8a2c618d604f8','DOMAIN_FACTORY_INPUT');
+      for(const ref of refs){
+        const boundedJson=file=>{const bytes=raw(ref,file);assert(bytes.length>0&&bytes.length<=65536,'DOMAIN_METADATA_BOUND');return JSON.parse(bytes);};
+        const pkg=boundedJson('package.json'),version=boundedJson('version.json');
+        assert.equal(pkg.type,'module','DOMAIN_AFTER598_RELEASE_METADATA');assert.match(pkg.version,/^4\.0\.[0-9]+$/);
+        assert.equal(version.version,pkg.version,'DOMAIN_AFTER598_RELEASE_METADATA');
+        const expected=structuredClone(template.releaseContract);expected.releaseVersion=pkg.version;
+        expected.modelBindings.candidateGRollback.modelBundleSha256=FAMILY599.C;
+        expected.modelBindings.integrated.modelBundleSha256=FAMILY599.I;
+        assert.deepEqual(version.releaseContract,expected,'DOMAIN_AFTER598_RELEASE_METADATA');
+        assert.equal(modelData.get(ref).C.contractSha256,expected.modelBindings.candidateGRollback.modelContractSha256,'DOMAIN_AFTER598_RELEASE_METADATA');
+        assert.equal(modelData.get(ref).I.contractSha256,expected.modelBindings.integrated.modelContractSha256,'DOMAIN_AFTER598_RELEASE_METADATA');
+      }
+    }
+    const is597=p.id==='REVIEWED_597_DOMAIN_INPUTS_C101_I100_T12';
+    const is598=p.id==='REVIEWED_598_DOMAIN_INPUTS_C101_I100_T12',is599=p.id===PROFILE599_ID;
     const scopePaths=new Set(['package.json']);
     for(const module of p.postgresModules)for(let directory=path.posix.dirname(module);directory!=='.';directory=path.posix.dirname(directory))
       scopePaths.add(directory+'/package.json');
     const sql=ref=>[...trees.get(ref).keys()].filter(file=>file.startsWith('supabase/migrations/')&&file.endsWith('.sql')).sort();
-    assert.equal(sql(input.baselineCommit).length,is598?74:is597?73:72,'DOMAIN_BASELINE_PROFILE_SQL_COUNT');
-    if(is597||is598){assert.equal(modelData.get(input.baselineCommit).C.manifest.files.length,101,'DOMAIN_BASELINE_MODEL_MEMBERSHIP');
+    assert.equal(sql(input.baselineCommit).length,is599?75:is598?74:is597?73:72,'DOMAIN_BASELINE_PROFILE_SQL_COUNT');
+    if(is597||is598||is599){assert.equal(modelData.get(input.baselineCommit).C.manifest.files.length,101,'DOMAIN_BASELINE_MODEL_MEMBERSHIP');
       assert.equal(modelData.get(input.baselineCommit).I.manifest.files.length,100,'DOMAIN_BASELINE_MODEL_MEMBERSHIP');}
     const selected=ref=>[...new Set([...p.postgresModules,...p.postgresData,...sql(ref),...p.nativeEvidenceControls,
       ...p.setupInputs,...p.plannerTrustChain,...scopePaths,...p.continuation.files,p.continuation.file,
@@ -245,14 +306,15 @@ export function analyzeSourceDomainInputs(input){
     };
     const beforeT=continuation(input.baselineCommit),afterT=continuation(input.candidateCommit);
     models.T={before:beforeT,after:afterT,unchanged:JSON.stringify(beforeT)===JSON.stringify(afterT)};
+    if(is599)for(const value of [beforeT,afterT])assert.equal(value.implementationSha256,FAMILY599.T,'DOMAIN_AFTER598_FAMILY_T_MISMATCH');
     const control=(files,optional=false)=>comparison(rows(input.baselineCommit,files,!optional),rows(input.candidateCommit,files,!optional));
     const inventoryRaw=git(['diff-tree','-r','--raw','-z','--no-abbrev','--no-renames','--no-ext-diff','--no-textconv',
       '--no-commit-id',input.baselineCommit,input.candidateCommit,'--']);
     const inventory=diffInventory(inventoryRaw);
     exactHead();assert.equal(text(['for-each-ref','refs/replace']),'');
     return freeze({schemaVersion:1,status:SOURCE_DOMAIN_ANALYSIS_STATUS,analysis:'COMPLETE',...authority,
-      profile:{id:p.id,sha256:is598?'6bb15e67912b919beecf26eea50c89c227425bf79bf0e4cbf7c65bd6904afed0':is597?'5e25fbfe6f8d08f65fcf5885f7a4be4b6387bd1e3affb012b5ad08e75ed4036f':PROFILE_SHA256,
-        scope:is598?'REVIEWED_598_INPUT_INVENTORY_ONLY':is597?'REVIEWED_597_INPUT_INVENTORY_ONLY':'REVIEWED_594_INPUT_INVENTORY_ONLY'},
+      profile:{id:p.id,sha256:is599?sha(JSON.stringify(canonical(p))):is598?'6bb15e67912b919beecf26eea50c89c227425bf79bf0e4cbf7c65bd6904afed0':is597?'5e25fbfe6f8d08f65fcf5885f7a4be4b6387bd1e3affb012b5ad08e75ed4036f':PROFILE_SHA256,
+        scope:is599?'DERIVED_599_INPUT_INVENTORY_ONLY':is598?'REVIEWED_598_INPUT_INVENTORY_ONLY':is597?'REVIEWED_597_INPUT_INVENTORY_ONLY':'REVIEWED_594_INPUT_INVENTORY_ONLY'},
       identity:{...input,actualHead:input.expectedHead,ancestorVerified:true,
         baselineTree:text(['rev-parse',input.baselineCommit+'^{tree}']),candidateTree:text(['rev-parse',input.candidateCommit+'^{tree}'])},
       completeGitDiff:{inventory,rawInventorySha256:sha(inventoryRaw),changedRows:inventory.length},

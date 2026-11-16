@@ -1,4 +1,7 @@
-import { projectPagesClosureHistoricalTestInput as inverseReviewedPagesClosureBuildTestInput } from './lib/pages-closure-historical-test-input.mjs';
+import { projectPagesClosureHistoricalTestInput as inverseReviewedPagesClosureBuildTestInput,
+  readHistoricalPagesClosureWorkflowSources, readHistoricalCompletedStageWorkflowSources,
+  readHistoricalRepairWorkflowSource }
+  from './lib/pages-closure-historical-test-input.mjs';
 // Test-only source inverse. No native B/S fixture, providers or production calls.
 import assert from 'node:assert/strict';
 import { inverseImmediateOrdinaryPagesWorkflow, inverseAutomaticCompletedPagesWorkflow, inverseFullGitPinnedSourcePreparationWorkflow, fullGitPinnedSourcePreparationWorkflowReview }
@@ -26,9 +29,24 @@ import { inverseRelease594WorkflowUserAgents, release594WorkflowUserAgentReview,
   from './lib/completed-private-runtime-workflow-review.mjs';
 import { spawnSync } from 'node:child_process';
 const sha = source => crypto.createHash('sha256').update(source).digest('hex');
+const originalClosureSources=Object.freeze({...readHistoricalPagesClosureWorkflowSources(),
+  repair:readHistoricalRepairWorkflowSource()});
+const originalStageSources=readHistoricalCompletedStageWorkflowSources();
+const originalWorkflowRoles=Object.freeze({
+  '../.github/workflows/reusable-weather-build.yml':'build',
+  '../.github/workflows/reusable-pages-deploy.yml':'deploy',
+  '../.github/workflows/reusable-operational-reentry.yml':'recovery',
+  '../.github/actions/deploy-ravradar-pages/action.yml':'action',
+  '../.github/workflows/deploy-code-only-repair.yml':'repair',
+});
+const readHistoricalWorkflowInput=async relative=>{
+  if(Object.hasOwn(originalWorkflowRoles,relative))return originalClosureSources[originalWorkflowRoles[relative]];
+  if(relative==='../.github/workflows/run-current-weather-once.yml')return originalStageSources.once;
+  return fs.readFile(new URL(relative,import.meta.url),'utf8');
+};
 const readHistoricalWorkflow = async relative => {
   const source = inverseReviewedPagesClosureBuildTestInput(
-    (await fs.readFile(new URL(relative, import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), relative);
+    (await readHistoricalWorkflowInput(relative)).replaceAll('\r\n', '\n'), relative);
   return relative.endsWith('/run-current-weather-once.yml')
     ? inverseAutomaticCompletedPagesWorkflow(source, 'once')
     : relative.endsWith('/reusable-weather-build.yml') ? inverseAutomaticCompletedPagesWorkflow(source, 'build')
@@ -38,7 +56,7 @@ const readHistoricalWorkflow = async relative => {
 };
 const read = async relative => {
   const source = inverseReviewedPagesClosureBuildTestInput(
-    (await fs.readFile(new URL(relative, import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), relative);
+    (await readHistoricalWorkflowInput(relative)).replaceAll('\r\n', '\n'), relative);
   const role = relative.endsWith('/reusable-weather-build.yml') ? 'build'
     : relative.endsWith('/run-current-weather-once.yml') ? 'once' : null;
   return role ? inverseCurrentFamilyColdStartWorkflow(inverseAutomaticCompletedPagesWorkflow(source, role), role) : source;
@@ -543,7 +561,7 @@ const actualWiringBranches = block => {
 };
 test('actual optional stage wiring preserves default commands, original cipher, caller mode and every delivery gate', async () => {
   const current = Object.fromEntries(await Promise.all([['build', 'reusable-weather-build.yml'], ['once', 'run-current-weather-once.yml']]
-    .map(async ([role, file]) => [role, inverseRelease585WorkflowUserAgents(inverseAutomaticCompletedPagesWorkflow(inverseReviewedPagesClosureBuildTestInput((await fs.readFile(new URL('../.github/workflows/' + file, import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), role), role), role)])));
+    .map(async ([role, file]) => [role, inverseRelease585WorkflowUserAgents(inverseAutomaticCompletedPagesWorkflow(inverseReviewedPagesClosureBuildTestInput((await readHistoricalWorkflowInput('../.github/workflows/' + file)).replaceAll('\r\n', '\n'), role), role), role)])));
   assert.equal(sha(current.build), 'b509a5131c64f9df9a431fdf9f99b082fb14c88de8bf9c3ad3e33b8ddc77de57');
   assert.equal(sha(current.once), 'ca7f15673910e1176ba68c190b9f08c85d8274efb31dc36dbceca1b3838360b3');
   for (const [role, source] of Object.entries(current)) {
@@ -625,7 +643,7 @@ test('actual optional stage wiring preserves default commands, original cipher, 
 
 test('actual optional wiring refuses every partial hunk, wrong role and changed complete workflow', async () => {
   for (const [role, file] of [['build', 'reusable-weather-build.yml'], ['once', 'run-current-weather-once.yml']]) {
-    const source = inverseRelease585WorkflowUserAgents(inverseAutomaticCompletedPagesWorkflow(inverseReviewedPagesClosureBuildTestInput((await fs.readFile(new URL('../.github/workflows/' + file, import.meta.url), 'utf8')).replaceAll('\r\n', '\n'), role), role), role);
+    const source = inverseRelease585WorkflowUserAgents(inverseAutomaticCompletedPagesWorkflow(inverseReviewedPagesClosureBuildTestInput((await readHistoricalWorkflowInput('../.github/workflows/' + file)).replaceAll('\r\n', '\n'), role), role), role);
     assert.equal(sha(source), ordinaryStageWiringReview[role].afterSha256);
     for (const [offset, actual] of ordinaryStageWiringReview[role].edits) {
       assert(actual.length > 0);
@@ -1882,7 +1900,7 @@ test('release598 UA inverse preserves whole main1684 and rejects unknown same-si
 });
 
 test('automatic completed Pages caller preserves the exact ordinary workflow oracle', async () => {
-  const current = (await fs.readFile(new URL('../.github/workflows/run-current-weather-once.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+  const current = (await readHistoricalWorkflowInput('../.github/workflows/run-current-weather-once.yml')).replaceAll('\r\n', '\n');
   const raw = inverseImmediateOrdinaryPagesWorkflow(current, 'once');
   assert.equal(sha(raw), '87b1401f437d30e57ba144bdf52820447b5a83eda7b53165ab8592375e7ef911');
   const historical = inverseAutomaticCompletedPagesWorkflow(raw, 'once');
@@ -1894,7 +1912,7 @@ test('automatic completed Pages caller preserves the exact ordinary workflow ora
 });
 
 test('cancelled Pages replay wiring preserves the historical build and every mutation refusal', async () => {
-  const raw = (await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\\r\\n', '\\n');
+  const raw = (await readHistoricalWorkflowInput('../.github/workflows/reusable-weather-build.yml')).replaceAll('\\r\\n', '\\n');
   const historical = inverseImmediateOrdinaryPagesWorkflow(inverseReviewedPagesClosureBuildTestInput(raw, 'build'), 'build');
   assert.equal(sha(historical), 'd21fad73693dc5d5c8db69535efdfc5cae27c78897422d4fc9ab731d6440295f');
   const admit = 'node scripts/pages-cancelled-replay-continuity.mjs admit';
@@ -1928,13 +1946,13 @@ test('historical Pages closure projections preserve the four reviewed predecesso
     "9e954ec600f629befc82a65c37fe21c90f4337b00abb43c9ce0d0cb462bfae20"
   ]
 ]) {
-    const current = (await fs.readFile(new URL('../' + relative, import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+    const current = (await readHistoricalWorkflowInput('../' + relative)).replaceAll('\r\n', '\n');
     assert.equal(sha(inverseReviewedPagesClosureBuildTestInput(current, relative)), expectedBefore);
     for (const changed of [current + '# unknown append\n', current.slice(0, -1) + '?'])
       assert.equal(inverseReviewedPagesClosureBuildTestInput(changed, relative), changed);
     assert.equal(inverseReviewedPagesClosureBuildTestInput(current, '.github/workflows/unreviewed.yml'), current);
   }
-  const rawBuild = (await fs.readFile(new URL('../.github/workflows/reusable-weather-build.yml', import.meta.url), 'utf8')).replaceAll('\r\n', '\n');
+  const rawBuild = (await readHistoricalWorkflowInput('../.github/workflows/reusable-weather-build.yml')).replaceAll('\r\n', '\n');
   const historicalBuild = inverseReviewedPagesClosureBuildTestInput(rawBuild, '../.github/workflows/reusable-weather-build.yml');
   assert.equal(sha(historicalBuild), 'ed56abc4b55a1bbc3a22efd4a67f19a675f78547cd7f70d9a6a76aa47b9abecf');
   assert.equal(inverseAutomaticCompletedPagesWorkflow(rawBuild, 'build'), rawBuild,
@@ -1981,7 +1999,11 @@ const pagesMetadataCallerRoles = [
 ];
 
 test('reviewed metadata caller bridge restores the actual complete repair caller before historical views', async () => {
-  const actual = (await readActualPagesMetadataCaller(new URL('../.github/workflows/deploy-code-only-repair.yml', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  // Keep actual raw caller observation separate from the original whole oracle.
+  const current = (await readActualPagesMetadataCaller(new URL('../.github/workflows/deploy-code-only-repair.yml', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  assert.equal(inverseReviewedPagesArtifactMetadataCaller(current,'build',pagesMetadataCallerPath),current,
+    'The actual raw repair caller cannot enter an unrelated role');
+  const actual = readHistoricalRepairWorkflowSource();
   const row = pagesMetadataCallerRoles.find(entry => entry.after.bytes === Buffer.byteLength(actual)
     && entry.after.sha256 === pagesMetadataCallerHash(actual));
   assert.ok(row, 'Only the actual reviewed ordinary or Source repair caller may enter this bridge');

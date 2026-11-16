@@ -274,6 +274,17 @@ Den eksisterende FULL-kontrolkæde udfører nu også hele det normale CURRENT-m�
 
 Genbrug af prøveforberedelse er ingen genbrug af kilde-, PostgreSQL- eller produktionsaccept. Faktisk afsluttet CURRENT, nødvendig ny PostgreSQL-kvalifikation, præcis kildekontrol og normal installation skal fortsat dokumenteres; en tidligere tidsafbrudt prøve er ikke bestået.
 
+
+### Den normale kæde skal kende den udstedte familie
+
+Historiske prøver beholder deres egne originale konstruktører, migrationer og forventninger, når den aktuelle familie bliver 599. De normale kaldere vælger den allerede autentiske 594- eller 598-kontekst efter den konkrete rolle. Den aktuelle førskrivnings- og runtimekontrol bruger fortsat den faktisk udstedte 599-binding. Et nyt familienavn alene er ikke grund til at acceptere en gammel prøve på nye input. Workflow- og actionprøver læser de allerede autentiske førbilleder for hver rolle og anvender de eksisterende inverser i deres oprindelige rækkefølge. SDK-kalderen anvender først den eksisterende inverse for det ejede cache- og nativetrin; gamle forventninger og hashkrav bevares, mens aktuelle 599-ruter og afslag prøves særskilt.
+
+Det afledte 599-kildeinventar bygger på det bytevaliderede 598-inventar, den autentiske releasekontrakt og den eksisterende historiske 598-factory. Den kendte udstedte C/I-kombination, hele appreleasekontrakten, 75 originale migrationer og de faktiske transitive input bestemmer familien; intet appversionsinterval eller aktuelt head giver adgang. Gamle profiler bevares, og der indføres ingen ny JSON-profil eller per-head-kohorte. Inputanalyse er ikke et PostgreSQL- eller produktionsbevis.
+
+Samme 599-kode og en almindelig app600 med fast modelfamilie599 kan analyseres på deres egne committed input. Kildepariteten mellem forskellige versioner må stadig afvise ændrede rå modul-, pakke-, model- eller kontrolinput. Den ældre domæneplan vælger eksplicit FULL for denne familie; den aktuelle V4-plan bruger det faktisk beregnede inventar. De fulde guards ved almindelig afslutning ændres ikke.
+
+Den normale workflowprøve skal tilsvarende verificere den nye migrationsrække og de præcise nye kald før sine uændrede historiske projektioner. Hele den nye række, oprindelig SQL, workflowets øvrige bytes og begge rundrejser kontrolleres. Der opfindes ingen ny baseline eller generel versionsnormalisering. De relevante normale mål, faktisk Linux-kildekontrol, ny nødvendig PostgreSQL-eksekvering og sikker installation er fortsat særskilte krav.
+
 ## 89.340 Ét sikkert Pages-genforsøg og frisk vejr bagefter
 
 Når en senere udgivelse skal kontrollere en tidligere kørsels programfiler, skal filerne også være hentet på den nye runner. Kontroljob og udgivelsesjob får nu samme fulde Git-historik. Kontrollen af de præcise kildefiler ændres ikke; rettelsen retter en manglende forudsætning for kontrollen. Den ændrer ingen prognoser eller scorer. Faktisk offentlig levering skal stadig bevises.
