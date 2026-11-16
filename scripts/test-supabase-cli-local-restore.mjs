@@ -195,6 +195,9 @@ function safeError(error,stage){
          &&ROLE_OPERAND_LABELS.has(error.missingRoleClass)
          ?{missingRoleClass:error.missingRoleClass}:{}),
      }:{}),
+    ...((stage==='RESTORE_ARCHIVE_ROLES_SCHEMA_DATA'&&error?.inputOwner==='DATA'
+        ||stage==='RESTORE_ARCHIVE_HISTORY'&&error?.inputOwner==='HISTORY')&&error?.code==='SQLSTATE_42501'
+      ?{permissionDenied:publicArchivePermissionDiagnostic(error.permissionDenied)}:{}),
     ...(stage==='RESTORE_ARCHIVE_ROLES_SCHEMA_DATA'&&error?.code==='SQLSTATE_23514'&&error.inputOwner==='DATA'
       ?{checkConstraint:publicArchiveCheckDiagnostic(error.checkConstraint)}:{}),
     ...(['RESTORE_ARCHIVE_ROLES_SCHEMA_DATA','RESTORE_ARCHIVE_HISTORY'].includes(stage)
@@ -213,7 +216,7 @@ function diagnosticClass(bytes){
   ])if(expression.test(text))return code;
   return 'CHILD_EXIT';
 }
-function archiveInputDiagnostic(diagnostic,code,inputLines){
+function archiveInputDiagnostic(diagnostic,code,inputLines,inventory=null){
   const report={inputOwner:'UNKNOWN',...(ARCHIVE_ROLE_STATEMENT_STATES.has(code)&&Object.hasOwn(inputLines,'roleLineClasses')?{inputStatement:'UNKNOWN'}:{})};
   const text=diagnostic.toString('utf8');
   const frames=text.matchAll(/^psql:<stdin>:([1-9][0-9]{0,9}): ERROR: +([0-9A-Z]{5})(?:: ([^\r\n]*))?\r?$/gm);
@@ -237,7 +240,57 @@ function archiveInputDiagnostic(diagnostic,code,inputLines){
       }
     }
   }
+  if(code==='SQLSTATE_42501'&&['DATA','HISTORY'].includes(report.inputOwner))
+    report.permissionDenied=Buffer.isBuffer(diagnostic)&&Buffer.from(text,'utf8').equals(diagnostic)
+      ?archivePermissionDiagnostic(text,frame,inventory,report.inputOwner):{state:'UNAVAILABLE'};
   return report;
+}
+// This is only a bounded explanation of the native 42501, never restore authority.
+function publicArchivePermissionDiagnostic(value){
+  const unavailable={state:'UNAVAILABLE'},keys=['state','denialClass','resourceClass','nativeObjectTextSha256','relationClass','objectBinding'];
+  if(!value||Object.getPrototypeOf(value)!==Object.prototype
+    ||JSON.stringify(Object.keys(value).sort())!==JSON.stringify(keys.sort())
+    ||value.state!=='BUILTIN_ACL_DENIAL'||!['PRIVILEGE_REQUIRED','OWNER_REQUIRED'].includes(value.denialClass)
+    ||!['TABLE','SCHEMA','SEQUENCE','FUNCTION','TYPE','PARAMETER','RELATION'].includes(value.resourceClass)
+    ||(value.denialClass==='OWNER_REQUIRED'&&value.resourceClass==='PARAMETER')
+    ||(value.denialClass==='PRIVILEGE_REQUIRED'&&value.resourceClass==='RELATION')
+    ||typeof value.nativeObjectTextSha256!=='string'||!/^[a-f0-9]{64}$/.test(value.nativeObjectTextSha256)
+    ||!['UNIQUE_ARCHIVE_INVENTORY','UNKNOWN'].includes(value.objectBinding)
+    ||!(value.relationClass==='UNKNOWN'||Object.values(ARCHIVE_FIXED_RELATIONS).includes(value.relationClass))
+    ||(value.objectBinding==='UNKNOWN')!==(value.relationClass==='UNKNOWN')
+    ||(value.objectBinding==='UNIQUE_ARCHIVE_INVENTORY'&&!['TABLE','SEQUENCE','RELATION'].includes(value.resourceClass)))return unavailable;
+  return Object.fromEntries(keys.map(key=>[key,value[key]]));
+}
+function archivePermissionDiagnostic(text,frame,inventory,inputOwner){
+  const unavailable={state:'UNAVAILABLE'};
+  if(!['DATA','HISTORY'].includes(inputOwner)||Buffer.byteLength(text)>P.diagnosticBytes
+    ||(text.match(/\bERROR:/g)??[]).length!==1||typeof frame[3]!=='string'
+    ||!/^\r?\nLOCATION: +aclcheck_error, aclchk\.c:[1-9][0-9]{0,9}\r?\n?$/.test(text.slice(frame.index+frame[0].length)))return unavailable;
+  const message=/^(permission denied for|must be owner of) (table|schema|sequence|function|type|parameter|relation) ([^\r\n]+)$/.exec(frame[3]);
+  if(!message||Buffer.byteLength(message[3])>512)return unavailable;
+  const denialClass=message[1]==='permission denied for'?'PRIVILEGE_REQUIRED':'OWNER_REQUIRED',resourceClass=message[2].toUpperCase();
+  let relationClass='UNKNOWN';
+  // Native error object text is not a qualified relation identity. Only a unique
+  // match in the already admitted phase inventory can attach an existing label.
+  if(['TABLE','SEQUENCE','RELATION'].includes(resourceClass))try{
+    need(inventory?.complete===true&&/^[a-f0-9]{64}$/.test(inventory.digest)
+      &&Array.isArray(inventory.relations)&&inventory.relations.length<=8192,'ARCHIVE_PERMISSION_INVENTORY');
+    const matches=[],phase=inputOwner==='DATA'?'DATA':'HISTORY_DATA';
+    for(const row of inventory.relations){
+      const expected=archiveRelationEntry(row.phase==='DATA'?'data.sql':'history-data.sql',row.kind,row.qualified);
+      assert.deepEqual(row,expected);
+      if(row.phase!==phase||(resourceClass==='TABLE'&&row.kind!=='COPY')||(resourceClass==='SEQUENCE'&&row.kind!=='SEQUENCE'))continue;
+      const identifiers=new RegExp('^('+COPY_IDENTIFIER+')\\.('+COPY_IDENTIFIER+')$').exec(row.qualified).slice(1);
+      const names=identifiers.map(v=>v.slice(1,-1).replaceAll('""','"')),forms=new Set([row.qualified,identifiers[1]]);
+      if(/^[A-Za-z_][A-Za-z0-9_$]*$/.test(names[1]))forms.add(names[1]);
+      if(names.every(v=>/^[a-z_][a-z0-9_$]*$/.test(v)))forms.add(names.join('.'));
+      if(forms.has(message[3]))matches.push(row);
+    }
+    if(matches.length===1&&matches[0].relationClass!=='OTHER')relationClass=matches[0].relationClass;
+  }catch{}
+  return publicArchivePermissionDiagnostic({state:'BUILTIN_ACL_DENIAL',denialClass,resourceClass,
+    nativeObjectTextSha256:sha(Buffer.from(message[3],'utf8')),relationClass,
+    objectBinding:relationClass==='UNKNOWN'?'UNKNOWN':'UNIQUE_ARCHIVE_INVENTORY'});
 }
 // Only our exact owned P0001 guard and its bounded, identity-bound JSON DETAIL
 // can leave the private child diagnostic. Unknown text never becomes a label.
@@ -628,7 +681,7 @@ async function command(c,stage,bin,args,{cwd=c.root,input=null,maxMs=P.childMs,a
       if(!first&&exit===3&&signal===null){
         const bytes=Buffer.concat(err),diagnostic=diagnosticClass(bytes);
         fail(diagnostic.startsWith('SQLSTATE_')?diagnostic:'PSQL_SCRIPT_ERROR');
-        if(inputLines&&diagnostic.startsWith('SQLSTATE_'))Object.assign(first,archiveInputDiagnostic(bytes,diagnostic,inputLines));
+        if(inputLines&&diagnostic.startsWith('SQLSTATE_'))Object.assign(first,archiveInputDiagnostic(bytes,diagnostic,inputLines,c.archiveRelationInventory));
         if(diagnostic==='SQLSTATE_23514')first.checkConstraint=archiveCheckDiagnostic(c,stage,bytes,first.inputOwner);
         if(diagnostic==='SQLSTATE_P0001'&&first.inputOwner==='CHECK_SUSPEND')
           first.checkSuspend=archiveCheckSuspendDiagnostic(c,stage,bytes,first.inputOwner);
@@ -2959,6 +3012,100 @@ async function selfTest(){
         });
       }
     },{roleSql:sql});
+  });
+
+  test('archive42501 classifies only the fixed builtin ACL resource and denial forms',()=>{
+    const lines={ranges:new Map([['DATA',{first:1,last:1}]])};
+    const wire=message=>Buffer.from('psql:<stdin>:1: ERROR:  42501: '+message+'\nLOCATION:  aclcheck_error, aclchk.c:2843\n');
+    for(const resource of ['table','schema','sequence','function','type','parameter']){
+      const report=archiveInputDiagnostic(wire('permission denied for '+resource+' private-object-sentinel'),'SQLSTATE_42501',lines);
+      assert.equal(report.permissionDenied.state,'BUILTIN_ACL_DENIAL');assert.equal(report.permissionDenied.resourceClass,resource.toUpperCase());
+      assert.equal(report.permissionDenied.denialClass,'PRIVILEGE_REQUIRED');assert.equal(report.permissionDenied.relationClass,'UNKNOWN');
+      assert.equal(report.permissionDenied.nativeObjectTextSha256,sha(Buffer.from('private-object-sentinel')));
+      assert(!JSON.stringify(report).includes('private-object-sentinel'));
+    }
+    for(const resource of ['table','schema','sequence','function','type','relation']){
+      const report=archiveInputDiagnostic(wire('must be owner of '+resource+' private-owner-sentinel'),'SQLSTATE_42501',lines);
+      assert.equal(report.permissionDenied.state,'BUILTIN_ACL_DENIAL');assert.equal(report.permissionDenied.denialClass,'OWNER_REQUIRED');
+      assert.equal(report.permissionDenied.resourceClass,resource.toUpperCase());assert(!JSON.stringify(report).includes('private-owner-sentinel'));
+    }
+    for(const message of ['must be owner of parameter private','permission denied for relation private','permission denied for unsupported private'])
+      assert.deepEqual(archiveInputDiagnostic(wire(message),'SQLSTATE_42501',lines).permissionDenied,{state:'UNAVAILABLE'});
+  });
+  test('archive42501 attaches a fixed relation label only through unique admitted phase inventory',async()=>{
+    await ownArchive(async({c,env,index,materialize})=>{
+      const archive=await materializeArchiveInputs(c,index,{env,archive:materialize});c.archive=true;
+      const inventory=await collectArchiveRelationInventory(c,archive),inputLines={next:1,ranges:new Map()};
+      for await(const _chunk of materializedRestoreBytes(c,archive,false,inputLines)){}
+      const line=inputLines.ranges.get('DATA').first;
+      const report=(object,inv=inventory,resource='table')=>archiveInputDiagnostic(Buffer.from('psql:<stdin>:'+line+': ERROR:  42501: permission denied for '
+        +resource+' '+object+'\nLOCATION:  aclcheck_error, aclchk.c:2843\n'),'SQLSTATE_42501',inputLines,inv).permissionDenied;
+      for(const object of ['users','"users"','auth.users','"auth"."users"']){
+        assert.equal(report(object).relationClass,'AUTH_USERS');assert.equal(report(object).objectBinding,'UNIQUE_ARCHIVE_INVENTORY');
+      }
+      for(const inv of [null,{...inventory,complete:false},{...inventory,digest:'invalid'},
+        {...inventory,relations:inventory.relations.map(row=>row.relationClass==='AUTH_USERS'?{...row,relationClass:'STORAGE_OBJECTS'}:row)}]){
+        assert.equal(report('users',inv).relationClass,'UNKNOWN');assert.equal(report('users',inv).objectBinding,'UNKNOWN');
+      }
+      const ambiguous={...inventory,relations:[...inventory.relations,archiveRelationEntry('data.sql','COPY','"public"."users"')]};
+      assert.equal(report('users',ambiguous).relationClass,'UNKNOWN');
+      assert.equal(report('"auth"."users"',ambiguous).relationClass,'AUTH_USERS');
+      assert.equal(report('users',inventory,'sequence').relationClass,'UNKNOWN');
+      assert.equal(report('auth',inventory,'schema').relationClass,'UNKNOWN');
+      assert.equal(report('private-unlisted-sentinel').relationClass,'UNKNOWN');
+      assert(!JSON.stringify(report('private-unlisted-sentinel')).includes('private-unlisted-sentinel'));
+      const wrongPhase={...inventory,relations:inventory.relations.map(row=>({...row,phase:'HISTORY_DATA'}))};
+      assert.equal(report('users',wrongPhase).relationClass,'UNKNOWN');
+    },{fileSql:{'data.sql':'COPY "auth"."users" ("id") FROM stdin;\n\\.\nCOPY "auth"."identities" ("id") FROM stdin;\n\\.\n','history-data.sql':'-- empty history\n'}});
+  });
+  test('archive42501 refuses ambiguous multiline and foreign-routine diagnostics without private text',()=>{
+    const lines={ranges:new Map([['DATA',{first:1,last:1}]])},unknown={state:'UNAVAILABLE'};
+    const frame='psql:<stdin>:1: ERROR:  42501: permission denied for table private-diagnostic-sentinel\n';
+    const location='LOCATION:  aclcheck_error, aclchk.c:2843\n';
+    for(const text of [frame,frame+location+'private trailing sentinel\n',frame+location+frame+location,
+      frame+location+'ERROR: 42501 private second error\n',frame+location.replace('aclcheck_error','exec_stmt_raise'),
+      frame+location.replace('aclchk.c','pl_exec.c'),frame+location.replace(':2843',':0'),
+      frame.replace('private-diagnostic-sentinel','private\nmultiline')+location,
+      frame.replace('permission denied for table','permission denied to table')+location,
+      frame.replace('42501:','P0001:')+location,frame+location+location,
+      frame.replace('private-diagnostic-sentinel','x'.repeat(513))+location]){
+      const report=archiveInputDiagnostic(Buffer.from(text),'SQLSTATE_42501',lines);
+      assert.deepEqual(report.permissionDenied??unknown,unknown);
+      const safe=safeError({code:'SQLSTATE_42501',exit:3,...report},'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA');
+      assert(!JSON.stringify(safe).includes('private')&&!JSON.stringify(safe).includes('multiline'));
+    }
+    const known=archiveInputDiagnostic(Buffer.from(frame+location),'SQLSTATE_42501',lines).permissionDenied;
+    assert.equal(known.state,'BUILTIN_ACL_DENIAL');
+    assert.deepEqual(publicArchivePermissionDiagnostic({...known,rawName:'private-sentinel'}),unknown);
+    assert.deepEqual(publicArchivePermissionDiagnostic({...known,relationClass:'PRIVATE_UNLISTED'}),unknown);
+    assert.deepEqual(publicArchivePermissionDiagnostic({...known,objectBinding:'UNIQUE_ARCHIVE_INVENTORY'}),unknown);
+    const invalidUtf8=Buffer.concat([Buffer.from(frame.replace('private-diagnostic-sentinel','')),Buffer.from([255]),Buffer.from(location)]);
+    assert.deepEqual(archiveInputDiagnostic(invalidUtf8,'SQLSTATE_42501',lines).permissionDenied,unknown);
+    for(const [stage,owner,code]of [['OTHER','DATA','SQLSTATE_42501'],['RESTORE_ARCHIVE_HISTORY','DATA','SQLSTATE_42501'],
+      ['RESTORE_ARCHIVE_ROLES_SCHEMA_DATA','ROLES','SQLSTATE_42501'],['RESTORE_ARCHIVE_ROLES_SCHEMA_DATA','DATA','SQLSTATE_23514']])
+      assert.equal(safeError({code,inputOwner:owner,permissionDenied:known},stage).permissionDenied,undefined);
+  });
+  test('normal DATA and HISTORY commands retain first42501 and closed children with bounded ACL diagnostic',async()=>{
+    await ownArchive(async({c,env,index,materialize})=>{
+      const archive=await materializeArchiveInputs(c,index,{env,archive:materialize});c.archive=true;c.home=c.root;c.processes=[];
+      c.archiveRelationInventory=await collectArchiveRelationInventory(c,archive);
+      for(const [history,stage,owner]of [[false,'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA','DATA'],[true,'RESTORE_ARCHIVE_HISTORY','HISTORY']]){
+        const inputLines={next:1,ranges:new Map()},chunks=[];
+        for await(const chunk of materializedRestoreBytes(c,archive,history,inputLines))chunks.push(chunk);
+        const stderr='psql:<stdin>:'+inputLines.ranges.get(owner).first+': ERROR:  42501: permission denied for table '+(history?'identities':'users')+'\nLOCATION:  aclcheck_error, aclchk.c:2843\n';
+        const child=['-e','process.stdin.resume();process.stdin.on("end",()=>{process.stderr.write('+JSON.stringify(stderr)+',()=>process.exit(3));});'];
+        const input=(async function*(){for(const chunk of chunks)yield chunk;})();
+        await assert.rejects(command(c,stage,process.execPath,child,{input,archivePsql:true,inputLines,maxMs:10_000}),error=>{
+          assert.equal(error.code,'SQLSTATE_42501');assert.equal(error.exit,3);assert.equal(error.inputOwner,owner);
+          const first=safeError(error,stage);assert.equal(first.permissionDenied.state,'BUILTIN_ACL_DENIAL');
+          assert.equal(first.permissionDenied.relationClass,history?'AUTH_IDENTITIES':'AUTH_USERS');assert.equal(first.permissionDenied.objectBinding,'UNIQUE_ARCHIVE_INVENTORY');
+          const report=restorePublicReport(c,null,first,true);assert.equal(report.status,'FAILED_CLOSED');assert.equal(report.ownedDockerClosed,true);
+          assert.notEqual(report.fullDatabaseBackupVerified,true);assert(!JSON.stringify(first).includes('table users'));return true;
+        });
+      }
+      assert(c.processes.every(p=>p.processGroupClosed));
+    },{fileSql:{'data.sql':'COPY "auth"."users" ("id") FROM stdin;\n\\.\n',
+      'history-data.sql':'COPY "auth"."identities" ("id") FROM stdin;\n\\.\n'}});
   });
 
   test('owned archive GRANT 42704 projects only the exact missing role class',async()=>{

@@ -1,4 +1,4 @@
-const APP_VERSION = "4.0.599";
+const APP_VERSION = "4.0.600";
 const CACHE_PREFIX = "ravradar-app-";
 const PUBLIC_JSON_TRANSPORT = "public-json-bridge-20261103";
 const COMPACT_MAP = "plain-map-v3-20261104";
@@ -28,6 +28,7 @@ const STATIC = [
   `./js/services/site-function-test-service.js?v=${APP_VERSION}&ui=admin-model-startup-20261101&map=${COMPACT_MAP}`,
   `./js/services/admin-trip-count.js?v=${APP_VERSION}&ui=admin-current-data-20261028`,
   `./js/services/admin-account-categories.js?v=${APP_VERSION}&ui=admin-current-data-20261028`,
+  `./js/ui/admin-account-erasure.js?v=${APP_VERSION}`,
   `./js/core/about-home-return.js?v=${APP_VERSION}`,
   `./assets/about/qrcode.min.js?v=${APP_VERSION}`,
   "./config.js","./manifest.webmanifest","./version.json",

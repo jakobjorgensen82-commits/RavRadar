@@ -7,12 +7,17 @@ import path from 'node:path';
 import {readAccountErasureSource,accountErasureCatalogQuery,verifyAccountErasureCatalogMetadata}
  from '../verify-account-erasure-schema.mjs';
 const DB='rr_account_erasure_native_fixture';
-export const ACCOUNT_ERASURE_NATIVE_SQL_CASE_COUNT=48;
+export const ACCOUNT_ERASURE_NATIVE_SQL_CASE_COUNT=49;
 const actor='10000000-0000-4000-8000-000000000001';
 const id=n=>'20000000-0000-4000-8000-'+String(n).padStart(12,'0');
 const op=n=>'30000000-0000-4000-8000-'+String(n).padStart(12,'0');
 const auth=(user=actor,role='authenticated')=>"do $$ begin perform set_config('request.jwt.claim.sub','"+user+"',false); perform set_config('request.jwt.claim.role','"+role+"',false); end $$; set role "+role+';';
 const jsonLast=text=>JSON.parse(String(text).trim().split('\n').filter(x=>x.startsWith('{')).at(-1));
+export function accountErasurePrecommitFailureSql(sourceSql) {
+ const injected=sourceSql.replace(/commit;\s*$/,()=>"do $$begin raise exception 'SYNTHETIC_ERASURE_PRECOMMIT';end;$$;\ncommit;\n");
+ assert.notEqual(injected,sourceSql,'Account erasure transaction must have a final COMMIT');
+ return injected;
+}
 export async function exerciseAccountErasureOutbox({psql,runSql,repositoryRoot}) {
  assert.equal(await psql("select current_setting('listen_addresses');"),'','Existing owned native host only');
  assert.equal(await psql('select current_user;'),'rr_native_test','Existing native fixture owner only');
@@ -70,8 +75,7 @@ alter table storage.buckets enable row level security;
 alter table storage.s3_multipart_uploads enable row level security;
 alter table storage.s3_multipart_uploads_parts enable row level security;
 `+canonical.slice(start,end));
-  const injected=source.sql.replace(/commit;\s*$/,"do $$begin raise exception 'SYNTHETIC_ERASURE_PRECOMMIT';end;$;\ncommit;\n");
-  assert.notEqual(injected,source.sql);const rollback=await raw(injected);
+  const rollback=await raw(accountErasurePrecommitFailureSql(source.sql));
   assert.equal(rollback.code,3);assert.equal(rollback.sqlState,'P0001');
   assert.equal(await pg("select to_regclass('public.account_erasure_operations') is null and not exists(select 1 from pg_catalog.pg_proc where pronamespace='public'::regnamespace and proname like '%account_erasure%');"),'t');checked++;
   await pg(source.sql);
@@ -136,6 +140,20 @@ alter table storage.s3_multipart_uploads_parts enable row level security;
   await seed(13);await pg('alter table storage.s3_multipart_uploads_parts drop column owner_id;');
   assert.equal((await prepare(13)).holdReason,'STORAGE_CATALOG_UNKNOWN');checked++;
   await pg('alter table storage.s3_multipart_uploads_parts add column owner_id text;');
+  // Storage can change AFTER PG-stage. A synthetic service claim must still
+  // stop before Auth authority, then freshly qualify policy on explicit resume.
+  await seed(14);await prepare(14);await stage(14);
+  await pg('create policy synthetic_post_pg_upload on storage.objects for insert to authenticated with check(false);');
+  const postPgClaim="select public.claim_account_erasure_auth('"+op(14)+"','"+actor+"',null,'"+op(104)+"','"+created+"','"+subject+"');";
+  const storageHeld=await service(postPgClaim);
+  assert.equal(storageHeld.pgStageCommitted,true);assert.equal(storageHeld.shouldIssueDelete,false);
+  assert.equal(storageHeld.holdReason,'STORAGE_POLICY_UNQUALIFIED');assert.equal(storageHeld.authAttemptId,null);
+  assert.equal(storageHeld.authAbsent,false);assert.equal(storageHeld.complete,false);
+  await pg('drop policy synthetic_post_pg_upload on storage.objects;');
+  const storageQualified=await service(postPgClaim);
+  assert.equal(storageQualified.shouldIssueDelete,true);assert.equal(storageQualified.holdReason,null);
+  assert.equal(storageQualified.authAttemptId,op(104));assert.equal(storageQualified.authAbsent,false);
+  assert.equal(storageQualified.complete,false);checked++;
   await seed(4);await pg("insert into public.app_user_roles values('"+id(4)+"');");assert.equal((await prepare(4)).holdReason,'REFERENCE_POLICY');checked++;
   await seed(5);await pg("update public.profiles set email='expert@ravradar.dk' where id='"+id(5)+"';");assert.equal((await prepare(5)).holdReason,'PRIVILEGED_TARGET');checked++;
   // READ COMMITTED must re-read positive journal after a waited profile lock.
@@ -181,7 +199,7 @@ alter table storage.s3_multipart_uploads_parts enable row level security;
   result={passed:true,cases:checked,actualPostgres:true,syntheticSqlHost:true,realGoTrue:false,checkReference,checkExpressionDriftRefused:true,
    serviceEvidenceSynthetic:true,failedTransactionRolledBack:true,aclMutationRefused:true,ownerPendingDiscoveryAndPagination:true,
    authAttemptReplayAndGeneration:true,initialAbsenceWithoutDeleteClaim:true,
-   authUuidFenceSqlOnly:true,storageDefaultDenyAndOwnership:true,
+   authUuidFenceSqlOnly:true,storageDefaultDenyAndOwnership:true,postPgStorageClaimHeld:true,
    observationsAndBootstrapFence:true,readCommittedFreshness:true,repeatableReadNoLateCommit:true,
    serializableNoLateCommit:true,actorNonKeyPrivilegeLock:true,authDeletion:false,d1Ack:false,completionAuthority:false};
  } catch(error){firstError=error;}

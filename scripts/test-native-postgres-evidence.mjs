@@ -2571,9 +2571,9 @@ if(AFTER598_ACTIVE){
         definitions:Array.from({length:28},(_,i)=>['account_erasure_operations_check'+String(i).padStart(2,'0'),'CHECK (SYNTHETIC)'])});
       const app={kind:'ACCOUNT_ERASURE_APP_NATIVE_SQL_CASES',sqlExecuted:true,
         migrationVersion:'20261116181500',migrationSQLSha256:cryptoHash('sha256').update(sql).digest('hex'),sourceSqlFileCount:76,
-        passed:true,cases:48,actualPostgres:true,syntheticSqlHost:true,realGoTrue:false,checkReference,checkExpressionDriftRefused:true,
+        passed:true,cases:49,actualPostgres:true,syntheticSqlHost:true,realGoTrue:false,checkReference,checkExpressionDriftRefused:true,
         serviceEvidenceSynthetic:true,failedTransactionRolledBack:true,aclMutationRefused:true,ownerPendingDiscoveryAndPagination:true,
-        authAttemptReplayAndGeneration:true,initialAbsenceWithoutDeleteClaim:true,authUuidFenceSqlOnly:true,storageDefaultDenyAndOwnership:true,
+        authAttemptReplayAndGeneration:true,initialAbsenceWithoutDeleteClaim:true,authUuidFenceSqlOnly:true,storageDefaultDenyAndOwnership:true,postPgStorageClaimHeld:true,
         observationsAndBootstrapFence:true,readCommittedFreshness:true,repeatableReadNoLateCommit:true,serializableNoLateCommit:true,
         actorNonKeyPrivilegeLock:true,authDeletion:false,d1Ack:false,completionAuthority:false};
       // The original historical599/75 projection above remains valid, but never becomes current OFF proof.

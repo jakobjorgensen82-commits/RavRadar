@@ -1914,10 +1914,10 @@ function projectAccountErasureNative(value,identity,postgresMajor){
   assert(identity,'Historical75-row evidence cannot claim an OFF installation');
   const checkReference=accountErasureSchema.verifyAccountErasureCheckReference(value?.checkReference,{postgresMajor});
   const expected={kind:'ACCOUNT_ERASURE_APP_NATIVE_SQL_CASES',sqlExecuted:true,...identity,
-    passed:true,cases:48,actualPostgres:true,syntheticSqlHost:true,realGoTrue:false,checkReference,checkExpressionDriftRefused:true,
+    passed:true,cases:49,actualPostgres:true,syntheticSqlHost:true,realGoTrue:false,checkReference,checkExpressionDriftRefused:true,
     serviceEvidenceSynthetic:true,failedTransactionRolledBack:true,aclMutationRefused:true,ownerPendingDiscoveryAndPagination:true,
     authAttemptReplayAndGeneration:true,initialAbsenceWithoutDeleteClaim:true,
-    authUuidFenceSqlOnly:true,storageDefaultDenyAndOwnership:true,
+    authUuidFenceSqlOnly:true,storageDefaultDenyAndOwnership:true,postPgStorageClaimHeld:true,
     observationsAndBootstrapFence:true,readCommittedFreshness:true,repeatableReadNoLateCommit:true,
     serializableNoLateCommit:true,actorNonKeyPrivilegeLock:true,authDeletion:false,d1Ack:false,completionAuthority:false};
   assert.deepEqual(value,expected,'Whole typed OFF native result must match actual current SQL and every fixed truth');

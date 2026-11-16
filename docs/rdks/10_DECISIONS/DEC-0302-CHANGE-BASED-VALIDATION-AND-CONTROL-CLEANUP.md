@@ -1,3 +1,9 @@
+## Snæver appmigration med faktisk PG-kvalifikation
+
+Den samlede manuelle slettefeature tilføjer kun én uudstedt appmigration efter den installerede599-familie. Reader og nativeadapter indgår i det reelle udvidede PG-inventar; gamle inputprofiler og75SQL-originaler genudstedes ikke. Den eksisterende native599-fase udfører de faktiske SQL/ACL/RC/RR/SERIAL/resume/Storagecases og udsteder sourcebundet typedfacit for præcis28 constraintnavne og pg_get_constraintdef-strenge. Postinstallmetadata skal matche strengene uden normalisering; PG-major registreres ærligt, men forskellig major alene afviser ikke identiske bytes. Samme CHECK-antal med ændret udtryk skal afvises.
+
+Den eksisterende normale FULL-reference er eneste locator til dette facit før appwrite og ved readback. Selvskrevet facit, kopierede flags eller gamle75SQL-beviser giver ingen appautoritet. Default65filsview kan ikke skjule pendingSQL; kun appmode kan installere denne ene migration og udfører ingen Edge/vejr/D1deploy. Ukendt write kræver list/dryrun/readback før en ny handling. Kildekvalifikation, installation og faktisk ejer-/lagerforløb holdes adskilt. Automatisk inaktivitet og statistik er egne efterfølgende leverancer.
+
 ## Uafhængig levering og konkrete historiske prøveejere
 
 ### Lever uafhængige rettelser gennem deres faktiske kaldere

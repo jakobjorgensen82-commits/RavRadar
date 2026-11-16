@@ -1,3 +1,11 @@
+## Afgrænset forklaring af arkivets rettighedsafslag
+
+Ved en SQLSTATE42501 under arkivets DATA eller HISTORY kan den eksisterende fejllæser projicere en fast rettigheds- eller ejerkategori. Det kræver præcis én verbose-fejlramme og den afsluttende PostgreSQL-rutine aclcheck_error i aclchk.c samt en dokumenteret fast beskedform. Kun kendte ressourceklasser accepteres; ukendt, flertydig, flerlinjet eller ændret diagnostic giver UNAVAILABLE. Egen RAISE og andre rutiner bliver ikke gættet til en ACL-årsag.
+
+En fast relationslabel kræver ét entydigt match i den pågældende fases allerede komplette, identitetskontrollerede arkivinventar. Manglende eller modstridende inventory og private eller ukendte relationer beholder UNKNOWN-binding. Kun faste kategorier og SHA-256 af den begrænsede native objekttekst kan rapporteres. Denne hash er hverken et kanonisk kvalificeret relationsnavn, katalogbevis eller ret til at ændre adgang. Frie navne, SQL, fejltekst, rækker og andre private værdier udskrives ikke.
+
+Dette forklarer en allerede afvist operation; det ændrer ingen rolle, grant, SQL-strøm, constraint, rækkefølge, frist, oprindelig fejl eller acceptregel. De fem autentiske SQL-filer, indholds-/dublet-/sekvensparitet, Auth-funktion og ejet oprydning bevares. Den normale hele selvtest dækker klassifikation, privacy og de faktiske DATA-/HISTORY-fejlkaldere med syntetisk stderr. Den beviser ikke en bestemt årsag i originalarkivet eller en vellykket originalgendannelse. Præcis kildekvalifikation og et senere normalt originalforsøg skal stadig levere deres egne beviser.
+
 ## Ejerbeslutning 16. november — egress som budgetgrundlag for Free
 
 Ejeren accepterer de faktisk målte egress-tal og den konservative periodefremskrivning som budgetgrundlag for den planlagte Free-overgang. Den interne varslingsgrænse på 3,5 GB er ikke i sig selv en leveringsblokering. Der kræves ikke en ny særskilt målerunde med seks fejlfri døgnkørsler alene for at genbekræfte budgetaccepten.

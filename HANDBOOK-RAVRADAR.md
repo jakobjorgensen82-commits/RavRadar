@@ -1,3 +1,17 @@
+## 89.351 — Manuel kontosletning med synlig genoptagelse
+
+<div class="reader-guide"><p>En sletning er først færdig, når alle trin er bekræftet. Ejeren kan finde en uafsluttet sag igen og genoptage den med en ny, tydelig bekræftelse.</p></div>
+
+Den forberedte ejerfunktion samler kontoens sletteforløb i én vedvarende sag. En aktiv eneejer kan vælge en almindelig konto uden særlige rettigheder og bekræfte dens præcise bruger-id. Egen konto, den udpegede ekspert, uklare kategorier, rettigheds- eller reviewbindinger og ukendt lagerpolitik kan ikke godkendes som en almindelig sletning. Manuel sletning kræver ikke inaktivitet.
+
+Før login fjernes, skal databasens slettebarriere og oprydning være bekræftet. Barrieren beskytter også mod sene observationer, profiloprettelse og genbrug af samme konto-id efter sletning. Login slettes gennem den normale Auth-administrationsfunktion. Ukendt svar afklares ved genlæsning; et nyt udtrykkeligt genoptagelsesklik kan kun udstede ét nyt forsøg efter frisk bekræftelse af samme konto og dens oprindelige oprettelsestid. Sagen er først fuldført, når både loginfravær og turlagerets spærringer, oprydning og fysiske genlæsning er positivt bekræftet.
+
+Ejeren kan hente sine uafsluttede sager fra serveren, også efter genindlæsning, på en ny enhed eller efter at målprofilen er væk. Listen viser højst 64 sager ad gangen med Vis flere. Et ukendt udfald forsvinder ikke som afsluttet. Et afslag før databasefasen kræver efter afklaring en ny udtrykkelig forberedelse; en sag med vedvarende slettebarriere genoptages altid med samme sags-id.
+
+Dette er en app600-leveringskandidat med uændret numerisk modelfamilie599. Den ene nye appmigration kræver normal PostgreSQL-kvalifikation og fuld metadataaflæsning før server- og brugerfladelevering. Standardvejr og ren kodeinstallation stopper, mens migrationen mangler. Den allerede udførte Auth-prøve kvalificerer kun det præcise konto-id-værn og en normal ny konto bagefter, ikke hele sletteforløbet. Fuld kildekontrol, låseracer, lagerpolitik, D1-kæde, installation og faktisk ejerforløb er fortsat særskilte beviser.
+
+Automatisk sletning efter to års inaktivitet med 30 dages varsel og mulighed for at bevare kontoen ved login er fortsat åben og aktiveres ikke her. Manglende aktivitetsjournal betyder ukendt aktivitet. Statistik slået fra skal fortsat respekteres; privacyaccept, offentlig anonym statistik og kalibrering er ikke godkendt af denne levering. Backup- og gendannelsesbarrierer mod at genoplive slettede konti er fortsat åbne.
+
 ## 89.350 — Arkivets databasedele skal passe til det lokale mål
 
 <div class="reader-guide"><p>Arkivprøvens egne leverandørversioner skal kunne læse det gemte arkiv. Faste metadata hjælper med at finde forskellen, men er ikke bevis for vellykket gendannelse.</p></div>
@@ -57,6 +71,14 @@ Den eksisterende arkivlæser kan forklare sine tre faste P0001-afslag før CHECK
 Årsagstællerne beregnes alene efter et allerede afvist guardresultat. En ordinær fejl i selve diagnosticen bevarer den oprindelige P0001 og dens faste årsag med tom diagnostic; query_canceled følger fortsat den eksisterende afbrydelse og tidsgrænse. Den normale ejede arkiv-B/HISTORY-kalder bruger samme lukkede verbose-format som den primære DATA-kalder med SHOW_CONTEXT=never. Alle andre psql-kald, katalog-/snapshotbytes, originaler, semantiske lighedskrav, rollback, Auth, oprydning og PASS-betingelser bevares.
 
 Dette er diagnostic, ikke en ny accept af arkivdata eller en forklaring af det aktuelle arkivs konkrete guardafslag. Normal SQL-kvalifikation og faktisk original-/Auth-gendannelse skal fortsat gennemføres; egressbudgettets ejeraccept ændres ikke.
+### Fast forklaring af native rettighedsafslag
+
+Ved en SQLSTATE42501 under arkivets DATA eller HISTORY kan den eksisterende fejllæser projicere en fast rettigheds- eller ejerkategori. Det kræver præcis én verbose-fejlramme og den afsluttende PostgreSQL-rutine aclcheck_error i aclchk.c samt en dokumenteret fast beskedform. Kun kendte ressourceklasser accepteres; ukendt, flertydig, flerlinjet eller ændret diagnostic giver UNAVAILABLE. Egen RAISE og andre rutiner bliver ikke gættet til en ACL-årsag.
+
+En fast relationslabel kræver ét entydigt match i den pågældende fases allerede komplette, identitetskontrollerede arkivinventar. Manglende eller modstridende inventory og private eller ukendte relationer beholder UNKNOWN-binding. Kun faste kategorier og SHA-256 af den begrænsede native objekttekst kan rapporteres. Denne hash er hverken et kanonisk kvalificeret relationsnavn, katalogbevis eller ret til at ændre adgang. Frie navne, SQL, fejltekst, rækker og andre private værdier udskrives ikke.
+
+Dette forklarer en allerede afvist operation; det ændrer ingen rolle, grant, SQL-strøm, constraint, rækkefølge, frist, oprindelig fejl eller acceptregel. De fem autentiske SQL-filer, indholds-/dublet-/sekvensparitet, Auth-funktion og ejet oprydning bevares. Den normale hele selvtest dækker klassifikation, privacy og de faktiske DATA-/HISTORY-fejlkaldere med syntetisk stderr. Den beviser ikke en bestemt årsag i originalarkivet eller en vellykket originalgendannelse. Præcis kildekvalifikation og et senere normalt originalforsøg skal stadig levere deres egne beviser.
+
 
 ## 89.349 — AI vælger fakta, serveren skriver svaret
 
@@ -197,9 +219,9 @@ Dette er en forberedt kildeændring. Kodekvalifikation, faktisk fjernelse, maila
 Den nye V4-kandidat vælger normale mål fra PR'ens faktiske merge-base til dens præcise head. Før tidligere godkendte områder kan genbruges, kvalificerer den den mergede bases faktiske producent, job, hele typede kvittering, træ og afsluttende upload samt senere negativ evidens. Den normale forbruger udføres på basens rigtige Git-checkout; kandidaten gendannes og kontrolleres bagefter. En verificeret direkte sammenfatning hindrer rekursiv genåbning af hele forfaderkæden. V3 beholder sin oprindelige kumulative betydning. Manglende eller udløbet basekvittering vælger kendte kumulative mål; konkret FAIL, modstrid eller ukendt kvalifikation stopper. PostgreSQL og C/I/T kvalificeres fortsat selvstændigt mod deres autentiske, uændrede input; ingen ny databaseprøve påstås.
 
 <!-- ravradar-derived-source-bindings-v1:begin -->
-## Afledt kildeidentitet — RavScore 4.0.599
+## Afledt kildeidentitet — RavScore 4.0.600
 
-4.0.599 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=d8319503e040139ab739d589fa80c97cb683dfad7a2fc6f79eeeec6a9afe44e9` over 100 kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere.
+4.0.600 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=d8319503e040139ab739d589fa80c97cb683dfad7a2fc6f79eeeec6a9afe44e9` over 100 kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere.
 
 Inaktiv Candidate G: `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=faa049cb86e733e451211f50c155ff90fd3462230310298cf5696757ef5c9f5d` over 101 transitive filer.
 
@@ -2518,7 +2540,7 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.599
+**Håndbogsversion:** 4.0.600
 
 **Lokal kildebinding — 29. oktober 2026, RavScore 4.0.591, ikke installeret:** Den integrerede model er offentlig som modeltype under den særskilt leverede 4.0.590. Den nye assistentefterfølger er lokalt udstedt og er endnu ikke samlet kvalificeret, installeret eller offentliggjort.
 

@@ -17,6 +17,11 @@ ok(site.includes("win.alert=message=>dialogs.push"),'Sitetesten opsamler ikke br
 ok(site.includes('Offentlig side, admin, service worker og version.json'),'Versionskontrollen bruger ikke de faktiske runtimekilder.');
 ok(store.includes("keys=['water-level-station-routing','direction-reviews','coastline-overrides']"),'Den første lagerkontrol følger ikke de aktive centrale admindokumenter.');
 ok(html.includes(pkg.version),`admin.html er ikke opdateret til ${pkg.version}.`);
+const worker=fs.readFileSync('service-worker.js','utf8');
+const staticAssets=runInNewContext(worker.slice(0,worker.indexOf("self.addEventListener('install'"))+';STATIC');
+const erasureImport=admin.match(/from '(\.\/admin-account-erasure\.js\?v=[^']+)'/);
+ok(erasureImport,'Admin mangler det versionsbundne kontoslettemodul.');
+ok(staticAssets.includes('./js/ui/'+erasureImport[1].slice(2)),'Kontoslettemodulets faktiske importadresse mangler i den nye service-worker-cache.');
 console.log('OK: Oversigt renderes ved første åbning, og sitetesten venter på færdig admin uden popup-dialoger.');
 
 // Execute the actual normal bootstrap/read/retry functions. All remote reads

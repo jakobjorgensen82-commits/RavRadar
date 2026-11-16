@@ -1,9 +1,18 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
+import {accountErasurePrecommitFailureSql} from './lib/account-erasure-outbox-native-fixture.mjs';
 import {readAccountErasureSource,verifyAccountErasureCatalogMetadata,accountErasureCatalogQuery,verifyInstalledAccountErasureSchema,accountErasureCheckReference}
  from './verify-account-erasure-schema.mjs';
 const source=readAccountErasureSource();
+test('native precommit rollback SQL preserves actual dollar delimiters before the normal runner',()=>{
+ const generated=accountErasurePrecommitFailureSql(source.sql);
+ const block="do $$begin raise exception 'SYNTHETIC_ERASURE_PRECOMMIT';end;$$;\ncommit;\n";
+ assert.equal(generated,source.sql.replace(/commit;\s*$/,()=>block));
+ assert.equal(generated.slice(-block.length),block);
+ assert.equal(generated.split('SYNTHETIC_ERASURE_PRECOMMIT').length,2);
+ assert.throws(()=>accountErasurePrecommitFailureSql('begin; select 1;'),/final COMMIT/);
+});
 // Artificial metadata only; the native fixture obtains these fields from PostgreSQL.
 function metadata() {
  const names=Object.keys(source.bodies),exposed=new Set(['get_account_erasure_status','list_account_erasure_operations','find_account_erasure_operation','prepare_account_erasure','stage_account_erasure_pg']);

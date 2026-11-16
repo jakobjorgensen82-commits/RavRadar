@@ -129,6 +129,15 @@ Historiske updaterorakler bruger deres eksisterende autentiske SOURCE598-origina
 Kun den begrænsede LF7-metadata bevares før den store arbejdsejer frigives. Kildekvalifikation, faktisk installation og generationsbundet LF7-/SOURCE-/T+3-accept dokumenteres særskilt; lokale prøver eller en plan afslutter ikke revisionens syv krav eller målets øvrige områder.
 
 
+## Afgrænset forklaring af arkivets rettighedsafslag
+
+Ved en SQLSTATE42501 under arkivets DATA eller HISTORY kan den eksisterende fejllæser projicere en fast rettigheds- eller ejerkategori. Det kræver præcis én verbose-fejlramme og den afsluttende PostgreSQL-rutine aclcheck_error i aclchk.c samt en dokumenteret fast beskedform. Kun kendte ressourceklasser accepteres; ukendt, flertydig, flerlinjet eller ændret diagnostic giver UNAVAILABLE. Egen RAISE og andre rutiner bliver ikke gættet til en ACL-årsag.
+
+En fast relationslabel kræver ét entydigt match i den pågældende fases allerede komplette, identitetskontrollerede arkivinventar. Manglende eller modstridende inventory og private eller ukendte relationer beholder UNKNOWN-binding. Kun faste kategorier og SHA-256 af den begrænsede native objekttekst kan rapporteres. Denne hash er hverken et kanonisk kvalificeret relationsnavn, katalogbevis eller ret til at ændre adgang. Frie navne, SQL, fejltekst, rækker og andre private værdier udskrives ikke.
+
+Dette forklarer en allerede afvist operation; det ændrer ingen rolle, grant, SQL-strøm, constraint, rækkefølge, frist, oprindelig fejl eller acceptregel. De fem autentiske SQL-filer, indholds-/dublet-/sekvensparitet, Auth-funktion og ejet oprydning bevares. Den normale hele selvtest dækker klassifikation, privacy og de faktiske DATA-/HISTORY-fejlkaldere med syntetisk stderr. Den beviser ikke en bestemt årsag i originalarkivet eller en vellykket originalgendannelse. Præcis kildekvalifikation og et senere normalt originalforsøg skal stadig levere deres egne beviser.
+
+
 ## 2026-11-14: DMI: tom vedligeholdelse uden falsk parserpause
 
 En vedligeholdelsestur, som ikke gennemgår nogen GRIB-fil, registreres som nul fremskridt i stedet for en parserfejl. Den gamle fejlklassifikation kan genvurderes én gang gennem det normale budget. En faktisk ugenkendelig fil får fortsat den normale 24-timers blokering, som bevares gennem gemning, genlæsning og backfill. Rettelsen ændrer ikke dekodning, RAW-grænser eller kildeprioritet. Den er kildeforberedt; faktisk DMI-hentning og gemning skal stadig verificeres i næste almindelige vejrkørsel.
@@ -177,6 +186,10 @@ Den normale beskyttede månedsrapport er læseaccepteret via den eksisterende ej
 Den afgrænsede kontrolkandidat lader alene det eksisterende regulære planner-/CURRENT-prøvepar vælge fire hele kontrolmål. Andre ændrede kontrolinput beholder alle otte, og øvrige produktområders hele mål består. Pages-delingscontrollerens tre præcise eksisterende stier får sharing-ansvar med hele controller-, timeline- og projection-prøver. Ukendte og beskyttede input, egne historiske kataloger, normal FULL-læsning, senere negativer og frisk kontrolreview bevares. Fokuseret lokal selektion er ikke hel CURRENT-kvalifikation eller offentlig accept; endelig præcis kilde-CI og Linux-tidsmargin er åbne. Se DEC-0302 og håndbog 89.342.
 
 Versionsværktøjets afgrænsede årsagsrettelse bevarer de udstedte engangs-/kapacitetspolicyer ved almindelige appversionsskift, så deres C/I-bundne ejerblad ikke omskrives. De tre præcise setter-/metadataprøvestier får releaseMetadata-ansvar med to hele normale mål og frisk review også for setter alene; validatoren beholder sourceControls-standardens otte. Den eksisterende Pages-controller kan forberede én fast, skrivefri offentlig schemalæsning med uændrede adgangs- og kildegrænser. De valgte hele slutmål, præcis kildekvalifikation, faktisk Cloudflare-læsning og offentlig/Free-accept er fortsat særskilte åbne beviser. Version, modelbindinger og historiske originaler bevares.
+
+### Manuel kontosletning — forberedt samlet leverance
+
+Den manuelle kontosletning er nu forberedt som én samlet app600-kandidat med fast modelfamilie599: holdbar UUID-outbox og slettebarrierer, normal Auth/D1-controller, ejerens genoptagelsesflade og serverbundet pendingliste. Den ene appmigration skal kvalificeres gennem faktisk normal PostgreSQL og installeres/genlæses før server/UI. Lokale prøver og den særskilte Auth-UUID-prøve er ikke accept af hele appen, låseracer, D1 eller faktisk sletning. Automatisk inaktivitet/varsel, statistik/privacy og backup-/restorebarrierer forbliver åbne. Se håndbog89.351.
 
 <!-- RAVRADAR_ACTIVE_ENTRY_END -->
 
