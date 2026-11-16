@@ -16,7 +16,7 @@ import {pipeline} from 'node:stream/promises';
 
 const P=Object.freeze({cli:'2.117.0',operationMs:20*60_000,cleanupMs:2*60_000,
   childMs:8*60_000,diagnosticBytes:1024*1024,fileBytes:8*1024*1024,totalBytes:32*1024*1024});
-const IMAGES=Object.freeze({db:'supabase/postgres:17.6.1.167',kong:'kong:2.8.1',auth:'supabase/gotrue:v2.196.0'});
+const IMAGES=Object.freeze({db:'supabase/postgres:17.6.1.167',kong:'kong:2.8.1',auth:'supabase/gotrue:v2.197.0'});
 const ARCHIVE_VENDOR_IMAGES=Object.freeze({auth:'supabase/gotrue:v2.197.0',storage:'supabase/storage-api:v1.86.0'});
 const ARCHIVE_VENDOR_PINS=Object.freeze({'gotrue-version':'v2.197.0\n','storage-version':'v1.86.0\n'});
 const EXCLUDE='realtime,storage-api,imgproxy,edge-runtime,postgres-meta,studio,supavisor,logflare,vector,mailpit,postgrest';
@@ -755,6 +755,33 @@ async function prepareArchiveVendorBootstrap(c,p){
     await fs.writeFile(path.join(directory,name),value,{flag:'wx',mode:0o600});
   await verifyArchiveVendorBootstrap(c,p);
 }
+// Synthetic A/B use the same already pinned Auth197 contract as archive B.
+// A fresh owned project receives only this create-only CLI version hint.
+async function syntheticAuthVersionPin(c,p,create){
+  need(c.archive===false&&/^[1-9][0-9]{0,18}-1$/.test(c.owner??'')&&['A','B'].includes(p.side)
+    &&p.id==='rr_restore_'+c.owner.replace('-','_')+'_'+p.side.toLowerCase()
+    &&path.isAbsolute(c.root)&&p.dir===path.join(c.root,p.side),'SYNTHETIC_AUTH_PIN_TARGET');
+  const directory=path.join(p.dir,'supabase','.temp'),value=IMAGES.auth.split(':').at(-1)+'\n';
+  for(const at of [c.root,p.dir,path.dirname(directory)]){
+    const stat=await fs.lstat(at);need(stat.isDirectory()&&!stat.isSymbolicLink(),'SYNTHETIC_AUTH_PIN_DIRECTORY');
+  }
+  if(create)await fs.mkdir(directory,{mode:0o700}).catch(e=>{if(e.code!=='EEXIST')throw e;});
+  const stat=await fs.lstat(directory);need(stat.isDirectory()&&!stat.isSymbolicLink(),'SYNTHETIC_AUTH_PIN_DIRECTORY');
+  const names=await fs.readdir(directory);
+  need(names.every(name=>name==='cli-latest'||!create&&name==='gotrue-version'),'SYNTHETIC_AUTH_PIN_INVENTORY');
+  const file=path.join(directory,'gotrue-version');
+  if(create)await fs.writeFile(file,value,{flag:'wx',mode:0o600});
+  const regular=st=>{need(st.isFile()&&!st.isSymbolicLink()&&st.nlink===1n,'SYNTHETIC_AUTH_PIN_FILE');
+    if(process.platform==='linux')need((st.mode&0o077n)===0n&&st.uid===BigInt(process.getuid()),'SYNTHETIC_AUTH_PIN_PERMISSIONS');};
+  const named=await fs.lstat(file,{bigint:true});regular(named);need(named.size===BigInt(Buffer.byteLength(value)),'SYNTHETIC_AUTH_PIN_VALUE');
+  const handle=await fs.open(file,constants.O_RDONLY|(constants.O_NOFOLLOW||0));
+  try{const before=await handle.stat({bigint:true});regular(before);assert.deepEqual(fileIdentity(before),fileIdentity(named));
+    const bytes=Buffer.alloc(Buffer.byteLength(value)+1),read=await handle.read(bytes,0,bytes.length,0);
+    need(read.bytesRead===Buffer.byteLength(value)&&bytes.subarray(0,read.bytesRead).equals(Buffer.from(value)),'SYNTHETIC_AUTH_PIN_VALUE');
+    const after=await handle.stat({bigint:true}),fresh=await fs.lstat(file,{bigint:true});regular(fresh);
+    assert.deepEqual(fileIdentity(before),fileIdentity(after));assert.deepEqual(fileIdentity(after),fileIdentity(fresh));
+  }finally{await handle.close();}
+}
 function serviceImageMetadata(c,p,service,info,image){
   need(c.archive!==true||p.side==='B','ARCHIVE_VENDOR_PROJECT');
   const expected=c.archive===true&&service==='auth'?ARCHIVE_VENDOR_IMAGES.auth:IMAGES[service];
@@ -773,6 +800,7 @@ async function startProject(c,p){
   await command(c,'INIT_'+p.side,'supabase',['init','--yes'],{cwd:p.dir,maxMs:30_000});
   await fs.writeFile(path.join(p.dir,'supabase/config.toml'),config(p.id,p.side==='B',c.archive===true),{mode:0o600});
   if(c.archive===true)await prepareArchiveVendorBootstrap(c,p);
+  else await syntheticAuthVersionPin(c,p,true);
   p.networkCreateAttempted=true;
   const raw=await command(c,'CREATE_NETWORK_'+p.side,'docker',['network','create','--driver','bridge',
     ...(c.archive?['--internal']:[]),
@@ -788,6 +816,7 @@ async function startProject(c,p){
     await command(c,'START_'+p.side,'supabase',['--network-id',p.network,'start','--exclude',EXCLUDE],{cwd:p.dir});
   }finally{if(relay)await relay.close();}
   if(c.archive===true)await verifyArchiveVendorBootstrap(c,p);
+  else await syntheticAuthVersionPin(c,p,false);
   const actual={};
   for(const service of ['db','kong','auth']){
     const info=(await jsonCommand(c,'INSPECT_'+p.side+'_'+service,['inspect','supabase_'+service+'_'+p.id]))[0];
@@ -837,24 +866,37 @@ function restoreArchiveSql(c,p,stage,archive,history=false){
   return command(c,stage,'docker',archiveBootstrapPsqlArguments(c,p),{input,maxMs:90_000,archivePsql:true,inputLines});
 }
 async function query(c,p,stage,sql){return JSON.parse((await psql(c,p,stage,Buffer.from(sql+'\n'))).toString().trim());}
-async function auth(c,p,route,{body=null,token=null,status=200}={}){
-  need(['/admin/users','/token?grant_type=password','/user'].includes(route),'AUTH_ROUTE');
-  c.stage=p.side+'_AUTH_'+(route==='/admin/users'?'CREATE':route==='/user'?'USER':'PASSWORD');
+function authRequestShape(c,p,route,body,method,status){
+  const adminUser=/^\/admin\/users\/([a-f0-9-]{36})$/i.exec(route),refresh=route==='/token?grant_type=refresh_token';
+  const original=['/admin/users','/token?grant_type=password','/user'].includes(route);
+  need(original||c.archive===false&&p.side==='B'&&(refresh||adminUser&&uuid(adminUser[1])),'AUTH_ROUTE');
+  const actualMethod=method??(body?'POST':'GET'),readback=Array.isArray(status);
+  need(adminUser?actualMethod==='GET'&&body===null||actualMethod==='DELETE'
+      &&body?.should_soft_delete===false&&Object.keys(body).length===1
+    :actualMethod===(route==='/user'?'GET':'POST'),'AUTH_METHOD');
+  need(!readback||adminUser&&actualMethod==='GET'&&JSON.stringify(status)==='[200,404]','AUTH_READBACK_STATUS');
+  return {method:actualMethod,admin:route==='/admin/users'||Boolean(adminUser),readback,
+    kind:adminUser?(actualMethod==='DELETE'?'DELETE':'ADMIN_USER'):refresh?'REFRESH':route==='/admin/users'?'CREATE':route==='/user'?'USER':'PASSWORD'};
+}
+async function auth(c,p,route,{body=null,token=null,status=200,method=null}={}){
+  const shape=authRequestShape(c,p,route,body,method,status);
+  c.stage=p.side+'_AUTH_'+shape.kind;
   need(Date.now()<c.deadline,'OPERATION_DEADLINE');
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),Math.min(10_000,c.deadline-Date.now()));
   try{
     const endpoint=c.archive?await archiveAuthEndpoint(c,p):null;
-    const url=new URL('/auth/v1'+route,endpoint?'http://'+endpoint.address+':8000':p.api),headers={apikey:route==='/admin/users'?p.service:p.anon};
+    const url=new URL('/auth/v1'+route,endpoint?'http://'+endpoint.address+':8000':p.api),headers={apikey:shape.admin?p.service:p.anon};
     if(token)headers.Authorization='Bearer '+token;if(body)headers['Content-Type']='application/json';
-    const response=await fetch(url,{method:body?'POST':'GET',headers,body:body?JSON.stringify(body):undefined,
+    const response=await fetch(url,{method:shape.method,headers,body:body?JSON.stringify(body):undefined,
       redirect:'error',signal:controller.signal});
     const reader=response.body?.getReader();need(reader,'AUTH_BODY');const chunks=[];let n=0;
     try{while(true){const part=await reader.read();if(part.done)break;n+=part.value.length;need(n<=64*1024,'AUTH_BODY_BOUND');chunks.push(Buffer.from(part.value));}}
     finally{await reader.cancel().catch(()=>{});}
     if(endpoint)assert.deepEqual(await archiveAuthEndpoint(c,p),endpoint,'ARCHIVE_AUTH_ENDPOINT_MOVED');
     c.authRequests.push({project:p.side,kind:c.stage,status:response.status,bodyBytes:n});
-    need(response.status===status,'AUTH_STATUS_'+response.status);
-    return status===200?JSON.parse(Buffer.concat(chunks).toString('utf8')):null;
+    need(shape.readback?status.includes(response.status):response.status===status,'AUTH_STATUS_'+response.status);
+    const user=response.status===200?JSON.parse(Buffer.concat(chunks).toString('utf8')):null;
+    return shape.readback?{status:response.status,user}:user;
   }finally{clearTimeout(timer);controller.abort();}
 }
 async function verifyArchiveAuthFunction(c,p){
@@ -867,6 +909,77 @@ async function verifyArchiveAuthFunction(c,p){
   const user=await auth(c,p,'/user',{token:login.access_token});need(user.id===created.id,'ARCHIVE_PROBE_AUTH_USER');
   need(user.user_metadata?.scope===metadata.scope,'ARCHIVE_PROBE_AUTH_METADATA');
   await auth(c,p,'/token?grant_type=password',{body:{email,password:password+'wrong'},status:400});
+}
+// This probe creates and deletes only its dedicated user in synthetic B.
+// Original archive Auth verification and every original restore SQL byte stay separate.
+function syntheticIssuedJwtClaims(token,userId){
+  need(typeof token==='string'&&token.length<=16384&&/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(token),'SYNTHETIC_AUTH_JWT');
+  const claims=JSON.parse(Buffer.from(token.split('.')[1],'base64url').toString('utf8'));
+  need(claims?.sub===userId&&uuid(claims.session_id)&&Number.isSafeInteger(claims.exp)
+    &&claims.exp>Date.now()/1000,'SYNTHETIC_AUTH_JWT_CLAIMS');
+  // Decoding an actual issuer response is not a signature/revocation assertion.
+  return Object.freeze({userId,sessionId:claims.session_id,expiresAt:claims.exp});
+}
+function syntheticAuthCountsSql(intent){
+  need(intent&&Object.keys(intent).sort().join(',')==='operationId,sessionId,userId'
+    &&uuid(intent.operationId)&&uuid(intent.userId)&&uuid(intent.sessionId),'SYNTHETIC_AUTH_IDENTITY');
+  const user=intent.userId,session=intent.sessionId;
+  return `select jsonb_build_object('users',(select count(*) from auth.users where id='${user}'::uuid),
+    'sessions',(select count(*) from auth.sessions where user_id='${user}'::uuid),
+    'matchingSession',(select count(*) from auth.sessions where user_id='${user}'::uuid and id='${session}'::uuid),
+    'refreshTokens',(select count(*) from auth.refresh_tokens where user_id::text='${user}'),
+    'identities',(select count(*) from auth.identities where user_id='${user}'::uuid),
+    'refreshed',exists(select 1 from auth.sessions where user_id='${user}'::uuid and id='${session}'::uuid and refreshed_at is not null));`;
+}
+function syntheticAuthDeleteReadback(intent,expected,admin,counts){
+  need(JSON.stringify(intent)===JSON.stringify(expected),'SYNTHETIC_AUTH_OPERATION_CHANGED');syntheticAuthCountsSql(intent);
+  need(counts&&Object.keys(counts).sort().join(',')==='identities,matchingSession,refreshTokens,refreshed,sessions,users'
+    &&['users','sessions','matchingSession','refreshTokens','identities'].every(k=>Number.isSafeInteger(counts[k])&&counts[k]>=0)
+    &&typeof counts.refreshed==='boolean','SYNTHETIC_AUTH_COUNTS');
+  need(admin?.status===404&&admin.user===null&&counts.users===0&&counts.sessions===0
+    &&counts.matchingSession===0&&counts.refreshTokens===0&&counts.identities===0&&!counts.refreshed,
+    'SYNTHETIC_AUTH_DELETE_COMMIT_UNKNOWN');
+  return Object.freeze({...intent,state:'AUTH_ABSENT_BY_ADMIN_AND_PG_READBACK'});
+}
+async function verifySyntheticBAuthLifecycle(c,p){
+  need(c.archive===false&&p.side==='B','SYNTHETIC_AUTH_LIFECYCLE_TARGET');
+  const email='owned-lifecycle-'+crypto.randomBytes(16).toString('hex')+'@example.invalid',password=crypto.randomBytes(32).toString('base64url');
+  const created=await auth(c,p,'/admin/users',{token:p.service,body:{email,password,email_confirm:true}});
+  need(uuid(created.id),'SYNTHETIC_AUTH_CREATED_USER');
+  const login=await auth(c,p,'/token?grant_type=password',{body:{email,password}});
+  need(login.user?.id===created.id&&typeof login.refresh_token==='string','SYNTHETIC_AUTH_LOGIN');
+  const claims=syntheticIssuedJwtClaims(login.access_token,created.id);
+  const currentUser=await auth(c,p,'/user',{token:login.access_token});need(currentUser.id===created.id,'SYNTHETIC_AUTH_USER');
+  const refreshed=await auth(c,p,'/token?grant_type=refresh_token',{body:{refresh_token:login.refresh_token}});
+  need(refreshed.user?.id===created.id&&typeof refreshed.refresh_token==='string','SYNTHETIC_AUTH_REFRESH');
+  const nextClaims=syntheticIssuedJwtClaims(refreshed.access_token,created.id);need(nextClaims.sessionId===claims.sessionId,'SYNTHETIC_AUTH_REFRESH_SESSION');
+  const intent=Object.freeze({operationId:crypto.randomUUID(),userId:created.id,sessionId:claims.sessionId}),expected=structuredClone(intent);
+  const admin=await auth(c,p,'/admin/users/'+intent.userId,{token:p.service});need(admin.id===intent.userId,'SYNTHETIC_AUTH_ADMIN_USER');
+  const sql=syntheticAuthCountsSql(intent),before=await query(c,p,'SYNTHETIC_AUTH_BEFORE_DELETE',sql);
+  need(before.users===1&&before.sessions===1&&before.matchingSession===1&&before.identities===1&&before.refreshed===true,'SYNTHETIC_AUTH_LIVE_SESSION');
+  // One real native DELETE; deliberately discard its reply. A transport failure
+  // is likewise unknown until independent readback. Never retry the mutation here.
+  try{await auth(c,p,'/admin/users/'+intent.userId,{method:'DELETE',token:p.service,body:{should_soft_delete:false}});}
+  catch{/* Only exact admin + database absence can close an unknown outcome. */}
+  let first;
+  for(let i=0;i<2;i++){
+    const read=await auth(c,p,'/admin/users/'+intent.userId,{token:p.service,status:[200,404]});
+    const counts=await query(c,p,'SYNTHETIC_AUTH_DELETE_READBACK',sql);
+    const result=syntheticAuthDeleteReadback(intent,expected,read,counts);
+    if(first)assert.deepEqual(result,first);else first=result;
+  }
+  await auth(c,p,'/token?grant_type=refresh_token',{body:{refresh_token:refreshed.refresh_token},status:400});
+  need(claims.expiresAt>Date.now()/1000,'SYNTHETIC_AUTH_OLD_JWT_EXPIRED');
+  await auth(c,p,'/user',{token:login.access_token,status:403});
+  await auth(c,p,'/token?grant_type=password',{body:{email,password},status:400});
+  syntheticAuthDeleteReadback(intent,expected,{status:404,user:null},await query(c,p,'SYNTHETIC_AUTH_FINAL_ABSENCE',sql));
+  return Object.freeze({kind:'SYNTHETIC_B_GOTRUE_ADMIN_DELETE_REFRESH_READBACK',authImage:IMAGES.auth,
+    normalRefreshVerified:true,liveSessionVerified:true,normalHardDeleteVerifiedByReadback:true,
+    deleteAttempts:1,deleteReplyDeliberatelyDiscarded:true,stableReadbackCount:2,
+    refreshAndPasswordAfterDeleteRejected:true,oldAccessJwtStillUnexpired:true,oldJwtUserLookupRejected:true,
+    usersSessionsTokensIdentitiesAbsent:true,jwtRevocationClaimed:false,durableOutboxVerified:false,
+    lifecycleRpcVerified:false,loginRefreshDeleteConcurrencyVerified:false,
+    unknownNetworkFaultInjected:false,productionAuthVerified:false});
 }
 function snapshotSql(){return `select jsonb_build_object(
  'row',(select jsonb_build_object('id',id,'owner',owner_id::text,'text',label,'decimal',amount::text,'metadata',metadata::text) from public.rr_restore_probe),
@@ -1866,7 +1979,9 @@ async function fixture({archive=false,inventoryOnly=false}={}){
     const restored=await auth(c,b,'/token?grant_type=password',{body:{email,password}});need(restored.user?.id===created.id&&typeof restored.access_token==='string','RESTORED_AUTH_LOGIN');
     const user=await auth(c,b,'/user',{token:restored.access_token});need(user.id===created.id,'RESTORED_USER_ID');assert.deepEqual(user.user_metadata,sourceUser.user_metadata);
     await auth(c,b,'/token?grant_type=password',{body:{email,password:password+'wrong'},status:400});
+    const syntheticAuthLifecycle=await verifySyntheticBAuthLifecycle(c,b);
     result={status:'PASS',scope:'synthetic-standard-cli-local-restore',sourceHead:process.env.EXPECTED_HEAD_SHA,cliVersion:P.cli,
+      syntheticAuthLifecycle,
       standardFiveFileRoundtrip:true,utf8DecimalMetadata:true,rolesAndMigrationHistory:true,newAuthPasswordLogin:true,
       syntheticRelationPreflight:relationPreflight,syntheticNotValidChecks:notValidChecks,
       productionBackupVerified:false,cryptoR2Verified:false,productionAuthRestoreVerified:false};
@@ -1923,6 +2038,72 @@ async function selfTest(){
     +'COPY "auth"."users" ("id") FROM stdin;\n\\.\nCOPY "auth"."identities" ("id") FROM stdin;\n\\.\nCOPY "public"."Private_Public_Sentinel" ("value") FROM stdin;\nsecret-row\n\\.\n'
     +`SELECT pg_catalog.setval('"storage"."Private_Sequence_Sentinel"', 7, true);\n`;
   const inventoryHistory='COPY "supabase_migrations"."schema_migrations" ("version") FROM stdin;\n20200101\n\\.\n';
+
+  test('synthetic A/B receive only a fresh owned Auth197 pin and refuse stale or redirected inputs',async()=>{
+    for(const side of ['A','B'])await ownArchive(async({c})=>{
+      c.archive=false;c.owner='123-1';const p={side,id:'rr_restore_123_1_'+side.toLowerCase(),dir:path.join(c.root,side)};
+      await fs.mkdir(path.join(p.dir,'supabase'),{recursive:true,mode:0o700});
+      for(const [context,project]of [[{...c,archive:true},p],[c,{...p,side:'X'}],[c,{...p,id:'other'}],[c,{...p,dir:c.root}]])
+        await assert.rejects(()=>syntheticAuthVersionPin(context,project,true),e=>e.code==='SYNTHETIC_AUTH_PIN_TARGET');
+      await syntheticAuthVersionPin(c,p,true);await syntheticAuthVersionPin(c,p,false);
+      const directory=path.join(p.dir,'supabase','.temp'),pin=path.join(directory,'gotrue-version');
+      assert.deepEqual(await fs.readdir(directory),['gotrue-version']);
+      assert.equal(await fs.readFile(pin,'utf8'),ARCHIVE_VENDOR_PINS['gotrue-version']);
+      await assert.rejects(()=>syntheticAuthVersionPin(c,p,true),e=>e.code==='SYNTHETIC_AUTH_PIN_INVENTORY');
+      await fs.writeFile(pin,'v2.196.0\n');await assert.rejects(()=>syntheticAuthVersionPin(c,p,false),e=>e.code==='SYNTHETIC_AUTH_PIN_VALUE');
+    });
+    for(const fault of ['linked','hardlink','directory'])await ownArchive(async({c})=>{
+      c.archive=false;c.owner='123-1';const p={side:'B',id:'rr_restore_123_1_b',dir:path.join(c.root,'B')};
+      await fs.mkdir(path.join(p.dir,'supabase'),{recursive:true,mode:0o700});await syntheticAuthVersionPin(c,p,true);
+      const directory=path.join(p.dir,'supabase','.temp');
+      if(fault==='linked')await fs.writeFile(path.join(directory,'project-ref'),'not-a-project',{flag:'wx'});
+      if(fault==='hardlink')await fs.link(path.join(directory,'gotrue-version'),path.join(c.root,'pin-alias'));
+      if(fault==='directory'){await fs.rename(directory,path.join(c.root,'pins'));
+        await fs.symlink(path.join(c.root,'pins'),directory,process.platform==='win32'?'junction':'dir');}
+      await assert.rejects(()=>syntheticAuthVersionPin(c,p,false),e=>/^SYNTHETIC_AUTH_PIN_/.test(e.code??''));
+    });
+  });
+  test('Auth delete and readback routes are exact synthetic-B operations and archive routes retain their old shape',()=>{
+    const c={archive:false},p={side:'B'},id='11111111-1111-4111-8111-111111111111',route='/admin/users/'+id;
+    for(const archive of [false,true])for(const [r,body,method]of [
+      ['/admin/users',{email:'fixture@example.invalid'},'POST'],['/token?grant_type=password',{password:'fixture'},'POST'],['/user',null,'GET']])
+      assert.equal(authRequestShape({archive},p,r,body,null,200).method,method);
+    assert.deepEqual(authRequestShape(c,p,route,null,null,[200,404]),{method:'GET',admin:true,readback:true,kind:'ADMIN_USER'});
+    assert.equal(authRequestShape(c,p,route,{should_soft_delete:false},'DELETE',200).kind,'DELETE');
+    assert.equal(authRequestShape(c,p,'/token?grant_type=refresh_token',{refresh_token:'fixture'},null,200).kind,'REFRESH');
+    for(const args of [[{archive:true},p,route,null,null,200],[c,{side:'A'},route,null,null,200],
+      [c,p,route+'?other=1',null,null,200],[c,p,'/admin/users/not-a-uuid',null,null,200],
+      [c,p,route,{should_soft_delete:true},'DELETE',200],[c,p,route,{should_soft_delete:false,other:true},'DELETE',200],
+      [c,p,route,null,'POST',200],[c,p,route,null,null,[200,401]],[c,p,'/user',null,null,[200,404]]])
+      assert.throws(()=>authRequestShape(...args),e=>/^AUTH_/.test(e.code??''));
+  });
+  test('unknown delete outcome closes only on stable operation plus exact admin and zero-row readback',()=>{
+    const intent={operationId:'11111111-1111-4111-8111-111111111111',userId:'22222222-2222-4222-8222-222222222222',sessionId:'33333333-3333-4333-8333-333333333333'},
+      counts={users:0,sessions:0,matchingSession:0,refreshTokens:0,identities:0,refreshed:false},admin={status:404,user:null};
+    const result=syntheticAuthDeleteReadback(intent,structuredClone(intent),admin,counts);
+    assert.equal(result.state,'AUTH_ABSENT_BY_ADMIN_AND_PG_READBACK');
+    assert.deepEqual(syntheticAuthDeleteReadback(structuredClone(intent),intent,admin,structuredClone(counts)),result);
+    for(const field of ['users','sessions','matchingSession','refreshTokens','identities'])
+      assert.throws(()=>syntheticAuthDeleteReadback(intent,intent,admin,{...counts,[field]:1}),e=>e.code==='SYNTHETIC_AUTH_DELETE_COMMIT_UNKNOWN');
+    for(const value of [{status:200,user:{id:intent.userId}},{status:401,user:null},{status:404,user:{id:intent.userId}},null])
+      assert.throws(()=>syntheticAuthDeleteReadback(intent,intent,value,counts),e=>e.code==='SYNTHETIC_AUTH_DELETE_COMMIT_UNKNOWN');
+    assert.throws(()=>syntheticAuthDeleteReadback(intent,intent,admin,{...counts,refreshed:true}),e=>e.code==='SYNTHETIC_AUTH_DELETE_COMMIT_UNKNOWN');
+    for(const changed of [{...intent,operationId:intent.userId},{...intent,userId:intent.sessionId},{...intent,sessionId:intent.userId}])
+      assert.throws(()=>syntheticAuthDeleteReadback(changed,intent,admin,counts),e=>e.code==='SYNTHETIC_AUTH_OPERATION_CHANGED');
+    for(const bad of [{...counts,users:-1},{...counts,users:'0'},{...counts,unexpected:'PRIVATE_SENTINEL'}])
+      assert.throws(()=>syntheticAuthDeleteReadback(intent,intent,admin,bad),e=>e.code==='SYNTHETIC_AUTH_COUNTS');
+    assert.throws(()=>syntheticAuthCountsSql({...intent,userId:"';delete from auth.users;--"}),e=>e.code==='SYNTHETIC_AUTH_IDENTITY');
+    assert.throws(()=>syntheticAuthCountsSql({...intent,unexpected:'PRIVATE_SENTINEL'}),e=>e.code==='SYNTHETIC_AUTH_IDENTITY');
+  });
+  test('issued JWT claim projection proves only identity and remaining exp, never signature or revocation',()=>{
+    const id='22222222-2222-4222-8222-222222222222',session='33333333-3333-4333-8333-333333333333',exp=Math.floor(Date.now()/1000)+3600;
+    const token=claims=>'e30.'+Buffer.from(JSON.stringify(claims)).toString('base64url')+'.not_verified';
+    assert.deepEqual(syntheticIssuedJwtClaims(token({sub:id,session_id:session,exp,privateCanary:'NEVER_REPORT'}),id),
+      {userId:id,sessionId:session,expiresAt:exp});
+    for(const claims of [{sub:session,session_id:session,exp},{sub:id,session_id:'invalid',exp},{sub:id,session_id:session,exp:1},
+      {sub:id,session_id:session,exp:String(exp)}])assert.throws(()=>syntheticIssuedJwtClaims(token(claims),id));
+    for(const bad of ['', 'not-a-jwt','a.b.c.d','a'.repeat(16385)])assert.throws(()=>syntheticIssuedJwtClaims(bad,id));
+  });
 
   test('archive CHECK staging wraps both original DATA streams without changing original file bytes',async()=>{
     await ownArchive(async({c,index,materialize,env,source})=>{
@@ -2194,7 +2375,7 @@ async function selfTest(){
       assert.equal(await fs.readFile(path.join(directory,'storage-version'),'utf8'),'v1.86.0\n');
       assert.deepEqual((await fs.readdir(directory)).sort(),['cli-latest','gotrue-version','storage-version']);
       await assert.rejects(()=>prepareArchiveVendorBootstrap(c,p),error=>error.code==='ARCHIVE_VENDOR_PIN_EXISTS');
-      assert.equal(P.cli,'2.117.0');assert.equal(IMAGES.auth,'supabase/gotrue:v2.196.0');
+      assert.equal(P.cli,'2.117.0');assert.equal(IMAGES.auth,'supabase/gotrue:v2.197.0');
       for(const [name,service]of [['gotrue-version','auth'],['storage-version','storage']])
         assert.equal(ARCHIVE_VENDOR_PINS[name],ARCHIVE_VENDOR_IMAGES[service].split(':').at(-1)+'\n');
       const body=startProject.toString();
@@ -2231,12 +2412,12 @@ async function selfTest(){
       await assert.rejects(()=>verifyArchiveVendorBootstrap(c,p),error=>/^ARCHIVE_VENDOR_/.test(error.code??''));
     });
   });
-  test('archive B uses exact Auth197 while synthetic A and B retain exact Auth196 and the same other images',()=>{
+  test('archive B and synthetic A/B use exact Auth197 and the same other images',()=>{
     const imageId='sha256:'+'a'.repeat(64),image={Id:imageId,RepoDigests:['synthetic-public-image-digest']};
     const info=tag=>({Image:imageId,Config:{Image:'ghcr.io/supabase/'+tag}});
     for(const side of ['A','B']){
-      assert.equal(serviceImageMetadata({archive:false},{side},'auth',info('gotrue:v2.196.0'),image).id,imageId);
-      assert.throws(()=>serviceImageMetadata({archive:false},{side},'auth',info('gotrue:v2.197.0'),image),error=>error.code==='UNEXPECTED_SERVICE_IMAGE');
+      assert.equal(serviceImageMetadata({archive:false},{side},'auth',info('gotrue:v2.197.0'),image).id,imageId);
+      assert.throws(()=>serviceImageMetadata({archive:false},{side},'auth',info('gotrue:v2.196.0'),image),error=>error.code==='UNEXPECTED_SERVICE_IMAGE');
     }
     assert.equal(serviceImageMetadata({archive:true},{side:'B'},'auth',info('gotrue:v2.197.0'),image).id,imageId);
     for(const tag of ['gotrue:v2.196.0','gotrue:v2.198.0','gotrue:latest'])
