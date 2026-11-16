@@ -1578,6 +1578,15 @@ Rettelsen er kildeforberedt på de eksisterende værter og sprog. Den opretter i
 
 Den normale tidsskyderprøve kontrollerer samme HEAD-regel: ingen prognosefiler hentes, og svaret har ingen krop. Alle kontroller af almindelig åbning, adresse, linkparametre, score og ugyldige input bevares. De to hele normale delingsprøver kræver fortsat kildekvalifikation; der ændres ingen produktkode eller testejerskab.
 
+### Fast fejldiagnostic ved schema-læsning, 16. november 2026
+
+Den skrivefri schema-læsning kan beskrive et afslag uden at gemme Cloudflares frie fejltekst. Kvitteringen viser fejlform, et antal begrænset til otte og en markering ved afkortning. En fast kategori kommer fra en præcis kode eller en dokumenteret beskedform, og kilden til kategorien angives. En ukendt kode vises som UNKNOWN; modstridende koder bevarer et ukendt udfald. Kategorien er et spor og ikke en bevist rodårsag.
+
+Højst de første 2.048 tegn i hver besked gennemgås. Kun ved forespørgselsvalidering kan faste offentlige felt- og typenavne fra den uændrede query vises som kandidater. Hele citerede eller entydige symboler kræves; private navne, stier, beskeder og frie leverandørværdier udskrives ikke. Samme forespørgsel, adgang, hovedgrenbinding, tids- og størrelsesgrænser samt højst ét kald uden automatisk gentagelse bevares.
+
+Hele den normale controllerprøve er bestået lokalt med 127 cases, heraf de 44 hidtidige schema-cases og 26 projektionscases. Det er lokal Windows-/Node24-dækning uden leverandørkald. Den konkrete schema-genlæsning og fejlafklaring, CPU-feltenes enhed, P99 for den faktiske GET-vej, Pages-læserens støtte til 599-modelfamilien og Cloudflare Free-kapacitet er fortsat åbne. Supabase beholder sine egne normale budget- og gendannelseskrav.
+
+
 ## 89.277 Undersøg de gemte data, før hentningen ændres
 
 **Kort fortalt: Huller i prognosen skal undersøges i de data, som vejrhentningen faktisk gemte. En afgrænset læsning kan vise, hvor meget de enkelte reservekilder udfyldte, uden at starte en ny vejrhentning.**

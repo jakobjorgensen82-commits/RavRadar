@@ -21,6 +21,12 @@ Samme 599-kode og en almindelig app600 med fast modelfamilie599 kan analyseres p
 Præcis kildekvalifikation, faktisk nødvendig PostgreSQL, installation og offentlig virkning er fortsat åbne. Se DEC-0302 og håndbog 89.342.
 
 
+## Aktuelt — afgrænset Pages-schema-fejlprojektion
+
+Den eksisterende skrivefri schema-læser har en lokalt prøvet projektion af fejlform, højst otte rækker og kategori fra præcis kode eller dokumenteret beskedform. Højst 2.048 beskedtegn og kun faste offentlige query-symboler som kandidater kan indgå. Kategoriens kilde oplyses; ukendt, modstridende og private eller tvetydige referencer giver ingen ny identitet. Rå fejltekst og frie leverandørværdier udskrives ikke. Alle eksisterende query-, adgangs-, transport- og no-write-grænser består.
+
+Hele normalmålet består lokalt på Windows/Node24 med 127 cases, inklusive de 44 hidtidige schema-cases. Det er ikke præcis kilde-CI eller en faktisk Cloudflare-aflæsning. Konkrete schemafejl, enhed, faktisk GET-P99/CPU, Pages599-forbrugeren og Cloudflare Free-kapacitet er fortsat åbne; Supabases egne normale budget- og gendannelseskrav ændres ikke. Version 4.0.598, SQL og C/I/T bevares. Se DEC-0294/0302 og håndbog 89.278.
+
 ## Aktuelt — årsagen til originalarkivets CHECK-afslag er identificeret
 
 Den autentiske diagnose binder afvisningen til en oprindeligt ikke-valideret tabel-CHECK. Hele schema-only-filen indlæses før DATA, selv om pg_dump normalt placerer ikke-validerede CHECKs efter data. NOT VALID fritager eksisterende rækker fra scanning, men håndhæves stadig ved ny COPY. Det forklarer den lokale indlæsningskonflikt; en korrupt originalrække er ikke dermed bevist.

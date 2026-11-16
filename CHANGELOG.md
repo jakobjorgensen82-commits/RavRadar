@@ -29,6 +29,12 @@ Samme 599-kode og en almindelig app600 med fast modelfamilie599 kan analyseres p
 Præcis kildekvalifikation, faktisk nødvendig PostgreSQL, installation og offentlig virkning er fortsat åbne. Se DEC-0302 og håndbog 89.342.
 
 
+## 16. november 2026 — fast fejlprojektion i Pages-schema-læseren
+
+- Udvid kun den eksisterende skrivefri fejlkvittering med afgrænset form/antal, præcis kode eller dokumenteret beskedkategori og faste offentlige query-symboler som kandidater. Ukendt og modstridende forbliver ukendt; rå fejltekst og private værdier udskrives ikke.
+- Bevar den faste query, alle adgangs-/transport-/no-write-afslag og eksisterende testejere. Den hele normale controllerprøve består lokalt med 127 cases, inklusive de 44 hidtidige schema-cases.
+- Hold faktisk schema-/årsagsafklaring, CPU-enhed/GET-P99, Pages599-forbruger og Cloudflare Free-accept åbne. Version 4.0.598, SQL og C/I/T bevares.
+
 ## 16. november 2026 — originalrestore og oprindeligt ikke-validerede CHECKs
 
 - Ret den lokale restore-rækkefølge: komplet katalogbundet udsættelse af understøttede NOT VALID-tabel-CHECKs under uændret DATA og identisk genetablering før commit; validerede regler bevares.

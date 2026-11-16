@@ -452,6 +452,38 @@ function schemaResponse(){return{data:{
   sums:{name:schemaGroup+'Sum',fields:[{name:'duration',description:'Synthetic duration description'},
     {name:'requests',description:'Synthetic request-count description'}]},
 }};}
+// Fixed synthetic provider labels; none claims a real Cloudflare root cause.
+const schemaErrorProjectionFixtures={
+  "projection-parse":{"errors":[{"message":"RAW_SCHEMA_PRIVATE","extensions":{"code":"GRAPHQL_PARSE_FAILED","ray_id":"RAW_SCHEMA_PRIVATE","timestamp":"RAW_SCHEMA_PRIVATE"}}],"classes":[["GRAPHQL_PARSE_FAILED","QUERY_PARSE"]]},
+  "projection-validation":{"errors":[{"message":"RAW_SCHEMA_PRIVATE","extensions":{"code":"GRAPHQL_VALIDATION_FAILED","ray_id":"RAW_SCHEMA_PRIVATE","timestamp":"RAW_SCHEMA_PRIVATE"}}],"classes":[["GRAPHQL_VALIDATION_FAILED","QUERY_VALIDATION"]]},
+  "projection-authentication":{"errors":[{"message":"RAW_SCHEMA_PRIVATE","extensions":{"code":"UNAUTHENTICATED","ray_id":"RAW_SCHEMA_PRIVATE","timestamp":"RAW_SCHEMA_PRIVATE"}}],"classes":[["UNAUTHENTICATED","AUTHENTICATION"]]},
+  "projection-authorization":{"errors":[{"message":"RAW_SCHEMA_PRIVATE","extensions":{"code":"FORBIDDEN","ray_id":"RAW_SCHEMA_PRIVATE","timestamp":"RAW_SCHEMA_PRIVATE"}}],"classes":[["FORBIDDEN","AUTHORIZATION"]]},
+  "projection-internal":{"errors":[{"message":"RAW_SCHEMA_PRIVATE","extensions":{"code":"INTERNAL_SERVER_ERROR","ray_id":"RAW_SCHEMA_PRIVATE","timestamp":"RAW_SCHEMA_PRIVATE"}}],"classes":[["INTERNAL_SERVER_ERROR","PROVIDER_INTERNAL"]]},
+  "projection-direct":{"errors":[{"code":"FORBIDDEN","message":"RAW_SCHEMA_PRIVATE"}],"classes":[["FORBIDDEN","AUTHORIZATION"]]},
+  "projection-same-code":{"errors":[{"code":"FORBIDDEN","extensions":{"code":"FORBIDDEN"},"message":"RAW_SCHEMA_PRIVATE"}],"classes":[["FORBIDDEN","AUTHORIZATION"]]},
+  "projection-conflicting-code":{"errors":[{"code":"FORBIDDEN","extensions":{"code":"UNAUTHENTICATED"},"message":"RAW_SCHEMA_PRIVATE"}],"classes":[["UNKNOWN","UNKNOWN"]]},
+  "projection-unknown-code":{"errors":[{"code":"RAW_SCHEMA_PRIVATE","extensions":{"other":"RAW_SCHEMA_PRIVATE"},"message":"RAW_SCHEMA_PRIVATE"}],"classes":[["UNKNOWN","UNKNOWN"]]},
+  "projection-numeric-code":{"errors":[{"extensions":{"code":1000},"message":"RAW_SCHEMA_PRIVATE"}],"classes":[["UNKNOWN","UNKNOWN"]]},
+  "projection-invalid-items":{"errors":[null,"RAW_SCHEMA_PRIVATE",7],"classes":[["UNKNOWN","UNKNOWN"],["UNKNOWN","UNKNOWN"],["UNKNOWN","UNKNOWN"]]},
+  "projection-invalid-form":{"errors":{"message":"RAW_SCHEMA_PRIVATE"},"classes":[["UNKNOWN","UNKNOWN"]],"form":"INVALID_ERRORS","count":null},
+  "projection-budget":{"errors":[{"message":"Account RAW_SCHEMA_PRIVATE has exceeded its rate limit. Please try again after 5 minutes.","extensions":{"code":"budget","timestamp":"RAW_SCHEMA_PRIVATE"},"path":null}],"classes":[["budget","RATE_LIMIT","CODE"]]},
+  "projection-message-field":{"errors":[{"message":"unknown field RAW_SCHEMA_PRIVATE","path":["viewer","RAW_SCHEMA_PRIVATE"],"extensions":{"timestamp":"RAW_SCHEMA_PRIVATE"}}],"classes":[["UNKNOWN","QUERY_VALIDATION","DOCUMENTED_MESSAGE"]]},
+  "projection-message-access":{"errors":[{"message":"does not have access to the path RAW_SCHEMA_PRIVATE","path":["RAW_SCHEMA_PRIVATE"],"extensions":{"timestamp":"RAW_SCHEMA_PRIVATE"}}],"classes":[["UNKNOWN","AUTHORIZATION","DOCUMENTED_MESSAGE"]]},
+  "projection-message-service":{"errors":[{"message":"unable to execute query, please try again later","extensions":{"timestamp":"RAW_SCHEMA_PRIVATE"}}],"classes":[["UNKNOWN","SERVICE_UNAVAILABLE","DOCUMENTED_MESSAGE"]]},
+  "projection-message-unknown-code":{"errors":[{"code":"RAW_SCHEMA_PRIVATE","message":"error parsing args RAW_SCHEMA_PRIVATE"}],"classes":[["UNKNOWN","QUERY_VALIDATION","DOCUMENTED_MESSAGE"]]},
+  "projection-message-code-conflict":{"errors":[{"code":"FORBIDDEN","extensions":{"code":"budget"},"message":"unknown field RAW_SCHEMA_PRIVATE"}],"classes":[["UNKNOWN","UNKNOWN","UNKNOWN"]]},
+  'projection-message-bound':{errors:[{message:'zones ['+'RAW_SCHEMA_PRIVATE'+'x'.repeat(2048)+'] are not authorized'}],
+    classes:[['UNKNOWN','UNKNOWN','UNKNOWN']]},
+  "projection-symbol-known":{"errors":[{"message":"unknown field \"isDeprecated\" on type \"AccountPagesFunctionsInvocationsAdaptiveGroupsQuantiles\"","extensions":{"timestamp":"RAW_SCHEMA_PRIVATE"}}],"classes":[["UNKNOWN","QUERY_VALIDATION","DOCUMENTED_MESSAGE",["isDeprecated","AccountPagesFunctionsInvocationsAdaptiveGroupsQuantiles"]]]},
+  "projection-symbol-bare":{"errors":[{"message":"unknown field includeDeprecated"}],"classes":[["UNKNOWN","QUERY_VALIDATION","DOCUMENTED_MESSAGE",["includeDeprecated"]]]},
+  "projection-symbol-private":{"errors":[{"message":"unknown field \"RAW_SCHEMA_PRIVATE_isDeprecated\""},{"message":"unknown field isDeprecated_PRIVATE"},{"message":"unknown field type.private"},{"message":"unknown field path.\"description\".private"}],"classes":[["UNKNOWN","QUERY_VALIDATION","DOCUMENTED_MESSAGE",[]],["UNKNOWN","QUERY_VALIDATION","DOCUMENTED_MESSAGE",[]],["UNKNOWN","QUERY_VALIDATION","DOCUMENTED_MESSAGE",[]],["UNKNOWN","QUERY_VALIDATION","DOCUMENTED_MESSAGE",[]]]},
+  "projection-symbol-conflict":{"errors":[{"code":"FORBIDDEN","extensions":{"code":"budget"},"message":"unknown field \"isDeprecated\""}],"classes":[["UNKNOWN","UNKNOWN","UNKNOWN",[]]]},
+  "projection-symbol-nonvalidation":{"errors":[{"extensions":{"code":"FORBIDDEN"},"message":"unknown field \"description\""}],"classes":[["FORBIDDEN","AUTHORIZATION","CODE",[]]]},
+  'projection-symbol-bound':{errors:[{message:'unknown field RAW_SCHEMA_PRIVATE'+'x'.repeat(2048)+' \"isDeprecated\"'}],
+    classes:[['UNKNOWN','QUERY_VALIDATION','DOCUMENTED_MESSAGE',[]]]},
+  'projection-bounded-array':{errors:Array.from({length:9},(_,n)=>({message:'RAW_SCHEMA_PRIVATE',
+    extensions:{code:n===8?'FORBIDDEN':'RAW_SCHEMA_PRIVATE'}})),classes:Array.from({length:8},()=>['UNKNOWN','UNKNOWN']),count:8,truncated:true}
+};
 async function schemaScenario(kind){
   let cfReads=0,ghReads=0,deploys=0,projectInputReads=0;const requests=[],receipts=[];
   const fetchImpl=async(url,options)=>{
@@ -472,6 +504,7 @@ async function schemaScenario(kind){
     if(kind==='too-large')return new Response('{}',{headers:{'Content-Length':String(2*1024*1024+1)}});
     const value=schemaResponse();
     if(kind==='errors')value.errors=[{message:'RAW_SCHEMA_PRIVATE'}];
+    if(Object.hasOwn(schemaErrorProjectionFixtures,kind))value.errors=structuredClone(schemaErrorProjectionFixtures[kind].errors);
     if(kind==='errors-null')value.errors=null;
     if(kind==='data-null')value.data=null;
     if(kind==='quantiles-null')value.data.quantiles=null;
@@ -525,6 +558,11 @@ for(const kind of ['401','403','500','json','empty-body','too-large','errors','d
     assert.equal(r.error.receipt.code,kind==='errors'?'SHARE_PAGES_SCHEMA_ERRORS':'SHARE_PAGES_SCHEMA_DATA');
     assert.equal(r.error.receipt.httpStatus,200);assert.equal(r.error.receipt.readKind,'GRAPHQL_SCHEMA');
   }
+  if(kind==='errors'){
+    assert.deepEqual(r.error.receipt.schemaErrors,{form:'NONEMPTY_ARRAY',count:1,truncated:false,reportedClassificationOnly:true,
+      errors:[{reportedCode:'UNKNOWN',reportedClass:'UNKNOWN',classificationSource:'UNKNOWN',querySymbolCandidates:[]}]});
+    assert.equal(r.error.receipt.querySha256,hash(FORECAST_SHARE_PAGES_SCHEMA_QUERY));
+  }else assert.equal(r.error.receipt.schemaErrors,undefined);
   if(kind==='401'||kind==='403'){
     assert.equal(r.error.receipt.code,'SHARE_PAGES_PERMISSION');assert.equal(r.error.receipt.httpStatus,Number(kind));
     assert.equal(r.error.receipt.readKind,'GRAPHQL_SCHEMA');
@@ -532,6 +570,22 @@ for(const kind of ['401','403','500','json','empty-body','too-large','errors','d
   schemaCases++;
 }
 assert.equal(schemaCases,44);cases+=schemaCases;
+let schemaErrorProjectionCases=0;
+for(const [kind,expected]of Object.entries(schemaErrorProjectionFixtures)){
+  const r=await schemaScenario(kind);
+  assert(r.error,kind);assert.equal(r.result,undefined);assert.equal(r.receipts.length,1);
+  assert.equal(r.cfReads,1);assert.equal(r.ghReads,1);
+  assert.equal(r.error.receipt.code,'SHARE_PAGES_SCHEMA_ERRORS');assert.equal(r.error.receipt.httpStatus,200);
+  assert.equal(r.error.receipt.readKind,'GRAPHQL_SCHEMA');assert.equal(r.error.receipt.outcome,'REFUSED_BEFORE_WRITE');
+  assert.equal(r.error.receipt.createIssued,false);assert.equal(r.error.receipt.deployIssued,false);
+  assert.equal(r.error.receipt.querySha256,hash(FORECAST_SHARE_PAGES_SCHEMA_QUERY));
+  assert.deepEqual(r.error.receipt.schemaErrors,{form:expected.form??'NONEMPTY_ARRAY',
+    count:Object.hasOwn(expected,'count')?expected.count:expected.classes.length,truncated:expected.truncated??false,
+    reportedClassificationOnly:true,errors:expected.classes.map(([reportedCode,reportedClass,classificationSource=reportedCode==='UNKNOWN'?'UNKNOWN':'CODE',querySymbolCandidates=[]])=>
+      ({reportedCode,reportedClass,classificationSource,querySymbolCandidates}))});
+  schemaErrorProjectionCases++;
+}
+assert.equal(schemaErrorProjectionCases,26);cases+=schemaErrorProjectionCases;
 
 async function processScenario(scenario){
   const host=Object.assign(new EventEmitter(),{platform:'linux'}),child=Object.assign(new EventEmitter(),{pid:24444,unref(){}});
@@ -558,5 +612,5 @@ for(const kind of ['success','timeout','descendant','unknown']){
   if(kind==='success')assert.equal(result.value.terminationConfirmed,true);
   else{assert(result.error);assert.equal(result.error.terminationConfirmed,kind!=='unknown');}cases++;
 }
-console.log(JSON.stringify({kind:'FORECAST_SHARE_PAGES_NORMAL_CONTROLLER_WORKFLOW_PROCESS_TARGET',cases,schemaCases,
+console.log(JSON.stringify({kind:'FORECAST_SHARE_PAGES_NORMAL_CONTROLLER_WORKFLOW_PROCESS_TARGET',cases,schemaCases,schemaErrorProjectionCases,
   actualCloudflareCalls:0,providerCalls:0,projectCreated:false,hostedPreviewProved:false,freeCapacityProved:false}));

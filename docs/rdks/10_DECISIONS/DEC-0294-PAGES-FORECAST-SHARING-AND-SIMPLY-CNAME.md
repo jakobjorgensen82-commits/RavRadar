@@ -91,3 +91,14 @@ Cloudflares normale fejlfri GraphQL-svar kan indeholde `errors: null`. Den faste
 Det er en dokumenteret protokolrettelse i den skrivefri tilstand. Den tidligere samlede konvolutafvisning viser ikke, hvilken konkret del af svaret der var forkert. Lokal og præcis kildekvalifikation, faktisk genlæsning af de faste schemafelter og enheds-/Free-accept er særskilte beviser. Ingen projekt-, DNS-, database-, vejr-, model-, nøgle- eller planændring.
 
 Primær protokolkilde: https://developers.cloudflare.com/analytics/graphql-api/getting-started/querying-basics/ (normale svar med errors:null).
+
+
+### Fast fejldiagnostic i schema-tilstanden, 16. november
+
+Den eksisterende inspect-schema-tilstand bevarer én uændret, skrivefri GraphQL-query. Kun afvisningen i schemaets errors-gren får en fast projektion: fejlform, højst otte rækker med afkortningsmarkør og en kategori fra præcist allowlistet kode eller Cloudflares dokumenterede beskedform. Højst 2.048 beskedtegn pr. række gennemgås. Kategoriens kilde oplyses; ukendt kode får ingen opdigtet kodeidentitet, og modstridende koder forbliver UNKNOWN.
+
+Ved QUERY_VALIDATION kan kun tolv faste offentlige navne fra den samme query vises som kandidater, når de fremgår som hele citerede eller entydige symboler. Ukendt eller tvetydig reference giver tom liste. Ingen rå besked, fri kode, sti, konto-/zonetag, timestamp eller ray-id udskrives. Kandidater og kategorier er ikke et bevist fejlpunkt eller en rodårsag. Den normale konvolut-/typekontrol og alle adgangs-, hovedgren-, kø-, attempt-, HTTP-, frist-, størrelses- og no-write-grænser bevares; der tilføjes ingen query, mode, nøgle, scope, tjeneste eller gentagelse.
+
+Hele den normale controllerprøve er bestået lokalt på Windows med Node24: 127 cases, heraf 44 eksisterende schema-cases og 26 projektionscases, uden faktiske leverandørkald. Præcis kildekvalifikation, det konkrete schema-afslag og genlæsningen, feltets enhed, faktisk GET-P99/CPU, Pages-læserens 599-modelfamilie og Cloudflare Free-kapacitet er fortsat åbne. Supabases budget- og gendannelseskrav følges i deres egne normale forløb. Se håndbog 89.278 og 89.342.
+
+Primære fejlformater: https://developers.cloudflare.com/analytics/graphql-api/errors/ og https://developers.cloudflare.com/analytics/graphql-api/account-based-rate-limiting/ (den præcise kode budget).
