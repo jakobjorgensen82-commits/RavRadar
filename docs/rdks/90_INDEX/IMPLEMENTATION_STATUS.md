@@ -1,3 +1,9 @@
+## Lokal status — Pages-schemaets faste fejlprojektion
+
+Implementeret og lokalt normalprøvet er bounded fejlform/antal, allowlistet kode eller dokumenteret beskedkategori og hele faste offentlige query-symboler som kandidater ved QUERY_VALIDATION. Projektionen læser højst otte fejlrækker og 2.048 beskedtegn pr. række; CODE, DOCUMENTED_MESSAGE og UNKNOWN skelnes. Kodekonflikt bevarer UNKNOWN, og ukendte/private/tvetydige symboler får tom liste. Rå fejltekst, paths og frie værdier udskrives ikke.
+
+Den hele eksisterende controllerprøve består på lokal Windows/Node24 med 127 cases, heraf 44 gamle schema-cases og 26 projektionscases, med nul leverandørkald. Gamle create/update-/proces-/no-write-afslag, fast query og transport er bevaret. Præcis kildekvalifikation og konkret schema-læsning/årsag, CPU-enhed/GET-P99, Pages-læserens 599-modelfamilie og Cloudflare Free-accept mangler fortsat. Supabase får ingen ekstra målerunde eller gate herfra. Version 4.0.598, SQL, C/I/T og hele historikken bevares. Se DEC-0294/0302 og håndbog 89.278/89.342.
+
 ## Restore-rækkefølge — afgrænset rettelse med faktisk gendannelse åben
 
 Årsagen til den autentiske DATA/23514 er identificeret som en oprindeligt ikke-valideret tabel-CHECK, der bliver aktiv før COPY i den samlede schema-only-før-data-vej. Den lokale reader udsætter kun komplette katalogbestemte ikke-validerede almindelige tabel-CHECKs og genetablerer deres identiske definition, tilstand og kommentar i samme lokale transaktion. Validerede regler er uændret kontrolgruppe; unsupported domæne/partition/arv/extension stopper før DATA. Originale fem filer, paritet, Auth og ejet closure består.
