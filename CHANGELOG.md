@@ -1,3 +1,11 @@
+## CI-hint til SDK må ikke følge isoleret PostgreSQL- og nationalprøve
+
+Den tidligere SDK-klargøring gemmer stien til Node24 i RAVRADAR_SOURCE_NODE24. Skiftet tilbage til Node22 fjerner ikke jobvariablen. Den isolerede PostgreSQL- og nationalprøve afviser korrekt enhver ukendt RAVRADAR_-override; hintet kunne derfor stoppe den normale prøve før SQL, selv efter bestået kildekontrol.
+
+Kun de to direkte CLI-indgange fjerner nu netop dette allerede forbrugte SDK-hint, før deres main kaldes. Modulimporter renser intet, og alle eksporterede miljøkontroller samt afslag på øvrige overrides og forkert Nodeversion bevares. SDK-prøvens forudgående faktiske Node24-valg og den isolerede prøves faktiske Node22-krav er uændrede. Ingen workflow-inverse, hashkohorte, SQL eller modelregel ændres.
+
+Den normale hele kildeprøve for native-evidens har bestået med den additive regressionscase for begge faktiske CLI-grænser, friske importer og uændrede strikte guards. Det er ikke en udført PostgreSQL-prøve. Præcis samlet kildekvalifikation, faktisk nødvendig native SQL, installation og offentlig effekt mangler fortsat.
+
 ## Historiske prøvers eget input og aktuelle sikkerhedsrammer
 
 De historiske workflowprøver læser deres egne allerede fastlagte Git-originaler. RAW-retention bruger sit f644-grundlag; Pages-/arkivprøverne bruger deres egne senere originaler. Ingen ny helfilkohorte, nuværende produktionsadgang eller genbrugstilladelse opstår af læsningen.

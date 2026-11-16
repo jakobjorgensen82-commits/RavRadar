@@ -15,6 +15,8 @@ Målet er færdiggørelse og selvstændig drift senest **18. november 2026**. De
 
 Historiske workflowprøver bruger deres eget allerede fastlagte input; aktuelle sikkerhedsrammer prøves særskilt på rå aktuelle workflows. Den seneste kontrolrettelse er lokalt målprøvet, men samlet kildekvalifikation, nødvendig PostgreSQL og installation mangler fortsat. Dette afslutter ikke revisionens syv målkrav.
 
+Det allerede forbrugte Node24-hint fra SDK-kontrol ryddes kun ved de to direkte isolerede PostgreSQL-/national-CLI-indgange. Eksporterede miljøguards og importer er uændrede. Den normale kildeprøve af denne afgrænsning er bestået; faktisk SQL-/samlet kildekvalifikation og levering er selvstændigt åbne.
+
 Find derefter det seneste private checkpoint i den eksisterende isolerede arbejdscheckout. Kontrollér faktisk main, igangværende skriver, cron og næste sikre handling derfra. Aktuelle kørsler, hashes, klokkeslæt, dækningsprocenter og engangskvitteringer hører hjemme dér. Skriv ikke nye statuscommits alene for disse skiftende oplysninger. Arbejd ikke i den gamle cb79-checkout.
 
 Læs kun yderligere historik, krav, håndbog og kode, som den konkrete opgave afhænger af. Genbrug allerede leveret arbejde; genåbn det kun ved en ny konkret fejl eller relevant ændring. Manglende evidens må ikke omdøbes til bestået.

@@ -2058,4 +2058,9 @@ async function main() {
   else console.log('Native PostgreSQL: REUSED from run '+ORIGIN.run+'/1, job '+ORIGIN.job+', head '+ORIGIN.head+'; no new SQL execution claimed.');
   await record(receipt);
 }
-if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url))await main();
+if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
+  // Earlier selected SDK contracts alone use this Node24 executable hint.
+  // Isolated native/national evidence keeps its normal Node22 and empty override guards.
+  delete process.env.RAVRADAR_SOURCE_NODE24;
+  await main();
+}

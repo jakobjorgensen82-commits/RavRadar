@@ -1,3 +1,7 @@
+## CI-hint til SDK må ikke følge isoleret PostgreSQL- og nationalprøve
+
+Det allerede forbrugte Node24-hint fra SDK-kontrol ryddes kun ved de to direkte isolerede PostgreSQL-/national-CLI-indgange. Eksporterede miljøguards og importer er uændrede. Den normale kildeprøve af denne afgrænsning er bestået; faktisk SQL-/samlet kildekvalifikation og levering er selvstændigt åbne.
+
 ## Historiske prøvers eget input og aktuelle sikkerhedsrammer
 
 Historiske workflowprøver bruger deres eget allerede fastlagte input; aktuelle sikkerhedsrammer prøves særskilt på rå aktuelle workflows. Den seneste kontrolrettelse er lokalt målprøvet, men samlet kildekvalifikation, nødvendig PostgreSQL og installation mangler fortsat. Dette afslutter ikke revisionens syv målkrav.

@@ -924,4 +924,9 @@ async function main(){
   await fs.writeFile(file,JSON.stringify(current)+'\n');
   console.log('Historical584 national '+result.status+'; frozen '+ORIGIN.head+'; CURRENT585 native/source remain separate.');
 }
-if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url))await main();
+if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
+  // Earlier selected SDK contracts alone use this Node24 executable hint.
+  // Isolated native/national evidence keeps its normal Node22 and empty override guards.
+  delete process.env.RAVRADAR_SOURCE_NODE24;
+  await main();
+}

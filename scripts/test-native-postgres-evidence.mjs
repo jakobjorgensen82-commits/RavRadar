@@ -2567,3 +2567,57 @@ if(AFTER598_ACTIVE){
     assert.equal(output,source.requireAssistantAfter598Output()); // DATA format checks are not native execution.
   });
 }
+
+
+test('native and national CLI boundaries discard only the earlier SDK hint while imports and runtime guards stay strict',async()=>{
+  const path=await import('node:path'),{fileURLToPath,pathToFileURL}=await import('node:url');
+  const {execFile}=await import('node:child_process'),{promisify}=await import('node:util');
+  const {verifyRuntime:verifyNationalRuntime}=await import('./national584-source-evidence.mjs');
+  const files=['native-postgres-evidence.mjs','national584-source-evidence.mjs'];
+  const inherited={RAVRADAR_SOURCE_NODE24:'/synthetic/sdk/node',RAVRADAR_SOURCE_NODE24_OTHER:'keep',
+    RAVRADAR_PRIVATE_RUNTIME_ROOT:'synthetic-private-root',PGHOST:'synthetic-pg-host',
+    NODE_OPTIONS:'synthetic-loader-option',PYTHONPATH:'synthetic-python-path',
+    GIT_OBJECT_DIRECTORY:'synthetic-object-directory',GITHUB_TOKEN:'synthetic-token'};
+  const retained={...inherited};delete retained.RAVRADAR_SOURCE_NODE24;
+  for(const file of files){
+    const filename=fileURLToPath(new URL(file,import.meta.url)),source=await fs.readFile(filename,'utf8');
+    const start=source.lastIndexOf('\nif(process.argv[1]');assert(start>0);
+    const entry=source.slice(start); // Execute the actual final caller boundary, with no product main/SQL.
+    for(const direct of [false,true]){
+      const argv1=direct?filename:path.resolve(path.dirname(filename),'synthetic-importing-parent.mjs');
+      const fixture='import path from "node:path";\n'
+        +'export const process='+JSON.stringify({argv:['node',argv1],env:inherited})+';\n'
+        +'const fileURLToPath=()=>'+JSON.stringify(filename)+';\n'
+        +'export let calls=0,observed=null;async function main(){calls++;observed={...process.env};}\n'
+        +entry;
+      const observed=await import('data:text/javascript;base64,'+Buffer.from(fixture).toString('base64'));
+      assert.equal(observed.calls,direct?1:0,file+' direct='+direct);
+      assert.deepEqual(observed.process.env,direct?retained:inherited);
+      assert.deepEqual(observed.observed,direct?retained:null,'The hint is discarded before main, with every other key retained');
+    }
+  }
+  // A fresh real import must not clean the importing process's environment.
+  const env=Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','TEMP','TMP']
+    .filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]]));
+  env.RAVRADAR_SOURCE_NODE24=inherited.RAVRADAR_SOURCE_NODE24;
+  env.RAVRADAR_PRIVATE_RUNTIME_ROOT=inherited.RAVRADAR_PRIVATE_RUNTIME_ROOT;
+  const code='import assert from "node:assert/strict";'
+    +files.map(file=>'await import('+JSON.stringify(pathToFileURL(fileURLToPath(new URL(file,import.meta.url))).href)+');'
+      +'assert.equal(process.env.RAVRADAR_SOURCE_NODE24,'+JSON.stringify(env.RAVRADAR_SOURCE_NODE24)+');'
+      +'assert.equal(process.env.RAVRADAR_PRIVATE_RUNTIME_ROOT,'+JSON.stringify(env.RAVRADAR_PRIVATE_RUNTIME_ROOT)+');').join('')
+    +'console.log("SDK_HINT_IMPORT_PRESERVATION_PASS");';
+  const result=await promisify(execFile)(process.execPath,['--input-type=module','-e',code],
+    {env,timeout:15000,maxBuffer:16384,windowsHide:true});
+  assert.equal(result.stderr,'');assert.equal(result.stdout.trim(),'SDK_HINT_IMPORT_PRESERVATION_PASS');
+  const current={...v2Runtime(),node:'v22.23.3'};
+  assert.doesNotThrow(()=>verifyAssistantPublic591Runtime(current));
+  assert.doesNotThrow(()=>verifyNationalRuntime(current,current));
+  for(const key of Object.keys(inherited).filter(key=>key!=='GITHUB_TOKEN')){
+    const changed={...current,overrides:[key]};
+    assert.throws(()=>verifyAssistantPublic591Runtime(changed),key+' remains a forbidden PG override');
+    assert.throws(()=>verifyNationalRuntime(changed,changed),key+' remains a forbidden national override');
+  }
+  const wrongNode={...current,node:'v24.22.1'};
+  assert.throws(()=>verifyAssistantPublic591Runtime(wrongNode));
+  assert.throws(()=>verifyNationalRuntime(wrongNode,wrongNode));
+});
