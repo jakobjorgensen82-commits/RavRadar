@@ -37,6 +37,46 @@ const RUNNER = fileURLToPath(new URL('../run-copernicus-weather-components.py', 
 const sha256 = value => crypto.createHash('sha256').update(value).digest('hex');
 const same = (a, b) => openMeteoPartSha256(a) === openMeteoPartSha256(b);
 const fail = code => { throw new Error(code); };
+const sizeLimitGuardFacts = new WeakMap();
+// Fixed descriptor totals captured by the failing guard, never a later stat.
+// Error identity only: copied or caller-supplied fields are not observations.
+export function privateWeatherPackSizeFailure(error) {
+  const facts = sizeLimitGuardFacts.get(error);
+  return facts ? { ...facts } : null;
+}
+export function assertPrivateWeatherPackSize(files, manifestBytes = null) {
+  const totals = files.reduce((value, file) => {
+    value.sourceBytes += file.bytes;
+    if (file.relativePath.startsWith(CP_PREFIX)) {
+      value.cpReferenceCount += 1;
+      value.cpReferenceBytes += file.bytes;
+    }
+    return value;
+  }, { sourceBytes: 0, cpReferenceCount: 0, cpReferenceBytes: 0 });
+  const inventory = manifestBytes === null;
+  const rawPackBytes = inventory ? null : MAGIC.length + 4 + manifestBytes + totals.sourceBytes;
+  const limit = inventory
+    ? files.length > MAX_FILES ? 'FILE_COUNT' : totals.sourceBytes > MAX_PACK_BYTES ? 'SOURCE_BYTES' : null
+    : manifestBytes > MAX_MANIFEST_BYTES ? 'MANIFEST_BYTES' : rawPackBytes > MAX_PACK_BYTES ? 'RAW_PACK_BYTES' : null;
+  if (limit !== null) {
+    const error = new Error('WEATHER_PACK_SIZE_LIMIT');
+    const facts = {
+      schemaVersion: 1, kind: 'WEATHER_PACK_SIZE_LIMIT_GUARD',
+      phase: inventory ? 'SOURCE_INVENTORY' : 'SERIALIZED_PACK', limit,
+      fileCount: files.length, ...totals,
+      headerBytes: MAGIC.length + 4, manifestBytes, rawPackBytes,
+      maximumRawPackBytes: MAX_PACK_BYTES,
+    };
+    if ([facts.fileCount, facts.sourceBytes, facts.cpReferenceCount, facts.cpReferenceBytes,
+      facts.headerBytes, facts.maximumRawPackBytes,
+      ...[manifestBytes, rawPackBytes].filter(value => value !== null)]
+      .every(value => Number.isSafeInteger(value) && value >= 0)) {
+      sizeLimitGuardFacts.set(error, Object.freeze(facts));
+    }
+    throw error;
+  }
+  return inventory ? totals.sourceBytes : rawPackBytes;
+}
 const safePath = (relative, includeOperationalProgress = false) => Object.values(PRIVATE_WEATHER_COMPONENT_FILES).includes(relative)
   || includeOperationalProgress === true && Object.values(PRIVATE_WEATHER_PROGRESS_ONLY_FILES).includes(relative)
   || relative.startsWith(CP_PREFIX) && [CP_OBJECT, CP_RECEIPT, CP_STATIC].some(pattern => pattern.test(relative.slice(CP_PREFIX.length)));
@@ -285,7 +325,7 @@ async function sourceInventory(root, conditions, {
     }
   }
   files.sort((a, b) => a.relativePath.localeCompare(b.relativePath, 'en'));
-  if (files.length > MAX_FILES || files.reduce((total, file) => total + file.bytes, 0) > MAX_PACK_BYTES) fail('WEATHER_PACK_SIZE_LIMIT');
+  assertPrivateWeatherPackSize(files);
   return { kind: 'PRIVATE_WEATHER_COMPONENT_PACK', schemaVersion: 1, marker, presence, files };
 }
 
@@ -312,8 +352,7 @@ async function buildPackWithJsonReadLifetime({
   });
   if (!manifest.marker && !manifest.files.length) return null;
   const manifestBytes = Buffer.from(JSON.stringify(manifest));
-  const size = MAGIC.length + 4 + manifestBytes.length + manifest.files.reduce((total, file) => total + file.bytes, 0);
-  if (manifestBytes.length > MAX_MANIFEST_BYTES || size > MAX_PACK_BYTES) fail('WEATHER_PACK_SIZE_LIMIT');
+  const size = assertPrivateWeatherPackSize(manifest.files, manifestBytes.length);
   const destination = path.join(packRoot, PRIVATE_WEATHER_COMPONENT_PACK_FILE.relativePath);
   await fs.mkdir(path.dirname(destination), { recursive: true, mode: 0o700 });
   // A cache parent must not escape through a pre-existing symlink.

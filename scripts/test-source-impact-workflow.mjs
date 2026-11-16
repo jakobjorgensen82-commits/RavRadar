@@ -7,7 +7,8 @@ import {projectSourceImpactWorkflowFull,SOURCE_IMPACT_FULL_WORKFLOW_ORIGIN,
   SOURCE_IMPACT_FULL_WORKFLOW_SHA256,SOURCE_IMPACT_FULL_STEP_CONDITION,SOURCE_IMPACT_CONTROL_TARGETS,
   SOURCE_IMPACT_PR_READ_GRANT,inverseSourceImpactPrReadGrant,inverseSourceImpactSdkEarlyLinux,
   SOURCE_IMPACT_HOUR_EARLY_LINUX_REVIEW,inverseSourceImpactHourEarlyLinux,
-  inverseOwnedCacheNativeWorkflow,isAdditiveOwnedCacheNativeWorkflowChange,OWNED_CACHE_NATIVE_EARLY_NODE24}
+  inverseOwnedCacheNativeWorkflow,isAdditiveOwnedCacheNativeWorkflowChange,OWNED_CACHE_NATIVE_EARLY_NODE24,
+  inverseSourceImpactFullCurrent,SOURCE_IMPACT_FULL_CURRENT_COMMAND}
   from './lib/source-impact-workflow-review.mjs';
 import {inverseSourceImpactDmiPython,SOURCE_IMPACT_DMI_PYTHON_REVIEW,SOURCE_IMPACT_DMI_REQUIREMENTS_REVIEW} from './lib/source-impact-workflow-review.mjs';
 import {verifyWorkflow,inverseSourceBeforePostgresWorkflow,inverseCandidatePublicSourceRunLine,
@@ -15,7 +16,31 @@ import {verifyWorkflow,inverseSourceBeforePostgresWorkflow,inverseCandidatePubli
 import {inverseCurrent586PhaseUpload} from './native-postgres-evidence.mjs';
 
 // Read-only normal caller/contract target. No source suite, SQL, API or provider.
-const currentSource=fs.readFileSync(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8').replace(/\r\n/g,'\n');
+const rawSource=fs.readFileSync(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8').replace(/\r\n/g,'\n');
+const currentSource=inverseSourceImpactFullCurrent(rawSource);
+function assertNormalFullCurrentEntry(value){
+  const start=value.indexOf('      - name: Install source-gate dependencies\n');
+  assert(start>=0);const end=value.indexOf('\n      - ',start+1),block=value.slice(start,end);
+  assert.equal(block.split(SOURCE_IMPACT_FULL_STEP_CONDITION).length,2);
+  assert.equal(value.split(SOURCE_IMPACT_FULL_CURRENT_COMMAND).length,2);
+  assert(block.includes('          && node scripts/test-source-impact-workflow.mjs\n'
+    +'          && '+SOURCE_IMPACT_FULL_CURRENT_COMMAND+'\n'));
+}
+assertNormalFullCurrentEntry(rawSource);
+assert.equal(projectSourceImpactWorkflowFull(rawSource),projectSourceImpactWorkflowFull(currentSource));
+assert.equal(currentSource.replace('          && node scripts/test-source-impact-workflow.mjs\n',
+  '          && node scripts/test-source-impact-workflow.mjs\n          && '+SOURCE_IMPACT_FULL_CURRENT_COMMAND+'\n'),rawSource);
+let fullCurrentCases=1;
+for(const changed of [rawSource.replace('          && '+SOURCE_IMPACT_FULL_CURRENT_COMMAND+'\n',''),
+  rawSource.replace('KILL 300s','KILL 301s'),rawSource.replace('KILL 300s','KILL 299s'),
+  rawSource.replace(SOURCE_IMPACT_FULL_CURRENT_COMMAND,SOURCE_IMPACT_FULL_CURRENT_COMMAND+' --unknown'),
+  rawSource.replace(SOURCE_IMPACT_FULL_CURRENT_COMMAND,SOURCE_IMPACT_FULL_CURRENT_COMMAND+'\n          && '+SOURCE_IMPACT_FULL_CURRENT_COMMAND),
+  rawSource.replace('      - name: Install source-gate dependencies\n'+SOURCE_IMPACT_FULL_STEP_CONDITION,
+    '      - name: Install source-gate dependencies\n'+SOURCE_IMPACT_FULL_STEP_CONDITION.replace('!=','=='))]){
+  assert.throws(()=>assertNormalFullCurrentEntry(changed));
+  if(changed!==currentSource)assert.throws(()=>projectSourceImpactWorkflowFull(changed));
+  fullCurrentCases++;
+}
 const actualSource=inverseOwnedCacheNativeWorkflow(currentSource);
 // Aktuel rå kalder: præcis to miljøsteps, normal Node22 og hele gamle ramme.
 assert.equal(currentSource.replace(OWNED_CACHE_NATIVE_EARLY_NODE24,''),actualSource);
@@ -211,7 +236,8 @@ const mutations=[
   source+'\n# unreviewed workflow delta\n',
 ];
 for(const changed of mutations){assert.throws(()=>projectSourceImpactWorkflowFull(changed));assert.throws(()=>verifyWorkflow(changed));passed++;}
-console.log(JSON.stringify({kind:'SOURCE_IMPACT_WORKFLOW_NORMAL_CALLER_TARGET',passed,failed:0,
+console.log(JSON.stringify({kind:'SOURCE_IMPACT_WORKFLOW_NORMAL_CALLER_TARGET',passed:passed+fullCurrentCases,failed:0,
+  normalFullCurrentCommand:SOURCE_IMPACT_FULL_CURRENT_COMMAND,normalFullCurrentCases:fullCurrentCases,
   declaredSteps:rows.length,runtimeSteps:rows.length+1,fullControlTargets:SOURCE_IMPACT_CONTROL_TARGETS.length,
   wholeQualifiedFullProjectionSha256:sha(origin),genuineHistoricalWorkflowPreserved:true,
   sourceCommandsExecuted:0,nativeSqlExecuted:false,liveApiRequests:0,production:false,deliveryAuthority:false}));

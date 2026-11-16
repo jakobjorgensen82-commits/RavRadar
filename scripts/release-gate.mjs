@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { RELEASE_GATE_TEST_FILES } from './lib/release-gate-test-plan.mjs';
+import { RELEASE_GATE_TEST_FILES,releaseGateTestArguments } from './lib/release-gate-test-plan.mjs';
 import { createRequiredFileReader } from './lib/release-gate-required-files.mjs';
 import {
   PRODUCTION_WORKFLOW_SOURCES,
@@ -59,7 +59,7 @@ const version=typeof pkg.version==='string'?pkg.version:'';
 ok(Boolean(version),'package.json mangler en gyldig releaseversion');
 
 for(const rel of RELEASE_GATE_TEST_FILES){
-  const result=spawnSync(process.execPath,[rel],{cwd:root,stdio:'inherit'});
+  const result=spawnSync(process.execPath,releaseGateTestArguments(rel),{cwd:root,stdio:'inherit'});
   ok(result.status===0,`Den integrerede RavScore-releasekontrakt fejlede: ${rel}`);
 }
 

@@ -7,14 +7,83 @@ import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {currentWorkflowTargets} from '../source-current-contract-plan.mjs';
+import * as ASSISTANT_WORKFLOW_SUCCESSORS from './assistant-later-h0-successor-source.mjs';
+import * as SOURCE_WORKFLOW_PROVENANCE from '../check-assistant-later-h0-predecessor-source.mjs';
+import * as HISTORICAL_WORKFLOW_REVIEW from './completed-private-runtime-workflow-review.mjs';
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 // One genuine pre-mail inventory for the older oracle. Never updated per PR.
 const LEGACY_WORKFLOW_HEAD='56d53a3fcb33eae3e248ffda8ca5f262b2dfc876';
 const LEGACY_WORKFLOW_TREE='c5507d6b43108b5b9855944a3f7e9b69f2d4f1de';
+// The introduction of these existing frames owns their original AFTER inputs.
+// This fixed historical origin never classifies or qualifies a current head.
+const PAGES_CLOSURE_ORIGINAL_HEAD='8c8aae9c74399680e4b11796e1ce51eeb37b668c';
+const PAGES_CLOSURE_ORIGINAL_TREE='650d94972ba18c662cdc8f0a0ab820cc2f04c519';
 const childEnvironment=()=>Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','HOME','USERPROFILE',
   'TMPDIR','TEMP','TMP','COMSPEC','PATHEXT','LANG','LC_ALL','PYTHON']
   .filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]]));
+
+// Exact test-input projection, not a new workflow/head cohort or admission.
+const AFTER598_BUILD_EDITS=Object.freeze([
+  [
+    "        if: steps.assistant-later-h0-source.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true && inputs.native_sampling_identity_original_recovery != true && inputs.checkpoint_only != true && inputs.quick_confirmation != true && inputs.completed_private_runtime != true && steps.operational-action.outputs.action == 'integrated'",
+    "        if: steps.assistant-later-h0-source.outputs.required != 'true' && steps.preflight.outputs.should_run == 'true' && inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true && inputs.native_sampling_identity_original_recovery != true && inputs.checkpoint_only != true && inputs.quick_confirmation != true && inputs.completed_private_runtime != true && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance')"
+  ],
+  [
+    "          node scripts/reconcile-private-runtime-checkpoint.mjs select",
+    "          if test \"$OPERATIONAL_ACTION\" = integrated-historical-maintenance; then\n            node scripts/reconcile-private-runtime-checkpoint.mjs select-after598\n          else\n            node scripts/reconcile-private-runtime-checkpoint.mjs select\n          fi"
+  ],
+  [
+    "        if: steps.preflight.outputs.should_run == 'true' && inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true && inputs.native_sampling_identity_original_recovery != true && inputs.checkpoint_only != true && inputs.quick_confirmation != true && inputs.completed_private_runtime != true && steps.operational-action.outputs.action == 'integrated' && steps.paired-checkpoint-route.outputs.required == 'true'",
+    "        if: steps.preflight.outputs.should_run == 'true' && inputs.weather_state_epoch_bootstrap != true && inputs.weather_state_epoch_checkpoint_reentry != true && inputs.native_sampling_identity_original_recovery != true && inputs.checkpoint_only != true && inputs.quick_confirmation != true && inputs.completed_private_runtime != true && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-historical-maintenance') && steps.paired-checkpoint-route.outputs.required == 'true'"
+  ],
+  [
+    "          node scripts/reconcile-private-runtime-checkpoint.mjs reconcile",
+    "          if test \"$OPERATIONAL_ACTION\" = integrated-historical-maintenance; then\n            node scripts/reconcile-private-runtime-checkpoint.mjs reconcile-after598\n          else\n            node scripts/reconcile-private-runtime-checkpoint.mjs reconcile\n          fi"
+  ]
+]);
+
+const after598WorkflowSelected=()=>ASSISTANT_WORKFLOW_SUCCESSORS.ACTIVE_ASSISTANT_SUCCESSOR?.sourcePhase==='assistant-after598-successor';
+export function inverseAssistantAfter598BuildTestInput(source){
+  assert.equal(arguments.length,1);assert.equal(typeof source,'string');
+  assert(after598WorkflowSelected(),'EXACT_AFTER598_WORKFLOW_PHASE');
+  const profile=ASSISTANT_WORKFLOW_SUCCESSORS.INACTIVE_ASSISTANT_AFTER598_SUCCESSOR;
+  assert(profile&&Object.isFrozen(profile),'ISSUED_AFTER598_WORKFLOW_PROFILE_REQUIRED');
+  assert.equal(ASSISTANT_WORKFLOW_SUCCESSORS.ACTIVE_ASSISTANT_SUCCESSOR,profile,'EXACT_AFTER598_WORKFLOW_PROFILE');
+  assert.equal(typeof SOURCE_WORKFLOW_PROVENANCE.assertSource598CodeSourceSelected,'function','ISSUED_AFTER598_CODE_GUARD_REQUIRED');
+  const binding=profile.requireBinding(),output=profile.requireOutput();
+  assert.equal(profile.requireRelease(),'4.0.599');
+  const migration=fs.readFileSync(path.join(ROOT,'supabase/migrations',profile.migration().filename));
+  assert.equal(sha(migration),output.migrationSha256,'Whole issued599 SQL before historical workflow projection');
+  const pkg=JSON.parse(fs.readFileSync(path.join(ROOT,'package.json'),'utf8'));
+  const version=JSON.parse(fs.readFileSync(path.join(ROOT,'version.json'),'utf8'));
+  assert.equal(pkg.version,version.version);assert.equal(version.releaseContract.releaseVersion,pkg.version);
+  assert.match(pkg.version,/^4\.0\.[0-9]+$/);
+  assert(Number(pkg.version.split('.').at(-1))>=599,'Application cannot precede the fixed issued599 model');
+  assert.equal(version.releaseContract.modelBindings.integrated.modelBundleSha256,binding.I);
+  assert.equal(version.releaseContract.modelBindings.candidateGRollback.modelBundleSha256,binding.C);
+  // Exact current app metadata chooses only its five whole UA lines. A pure
+  // app600 may retain model599; no arbitrary-version regexp rewrites source.
+  const ua=release=>'          WEATHER_USER_AGENT: "RavRadar/'+release+' (${{ github.server_url }}/${{ github.repository }})"';
+  const edits=[[ua('4.0.598'),ua(pkg.version),5],...AFTER598_BUILD_EDITS.map(([before,after])=>[before,after,1])];
+  let previous=source;
+  for(const [before,after,count]of edits){
+    assert.equal(previous.split(after).length,count+1,'Exact current599 workflow hunk cardinality');
+    previous=previous.replaceAll(after,before);
+  }
+  const selected=SOURCE_WORKFLOW_PROVENANCE.assertSource598CodeSourceSelected(),{git}=historicalWorkflowInventory();
+  assert.equal(git(['rev-parse',selected.head+'^{tree}']).trim(),selected.tree);
+  const authentic=git(['cat-file','blob',selected.head+':.github/workflows/reusable-weather-build.yml'],true,2*1024*1024);
+  assert(Buffer.from(previous).equals(authentic),'Whole authentic CODE598 workflow survives the inverse');
+  let roundtrip=previous;
+  for(const [before,after,count]of edits){
+    assert.equal(roundtrip.split(before).length,count+1,'Exact predecessor workflow hunk cardinality');
+    roundtrip=roundtrip.replaceAll(before,after);
+  }
+  assert.equal(roundtrip,source,'Whole current workflow must be reconstructed');
+  return previous;
+}
+
 // Pure planning only. The normal entry below independently reads the genuine
 // inventory and physically executes each required current owner target.
 export function planCurrentWorkflowInventory(actualNames,legacyNames,changedNames=[]){
@@ -86,6 +155,17 @@ export function readHistoricalBuildWorkflowSource(){
   assert.equal(sha(body),row.after.sha256,'Original build workflow identity');
   return body.toString('utf8');
 }
+// The RAW-retention oracle predates the Pages inventory and owns this existing base.
+export function readHistoricalCurrentRawRetentionWorkflowSource(){
+  assert.equal(arguments.length,0,'No caller-selected RAW-retention workflow origin');
+  const review=JSON.parse(fs.readFileSync(path.join(ROOT,
+    'scripts/lib/current-family-cold-start-workflow-review.json'),'utf8'));
+  const {git}=historicalWorkflowInventory(),row=review.roles.build;
+  const body=git(['cat-file','blob',review.baseHead+':'+row.relativePath],true,1024*1024);
+  assert(body.length>0&&body.length<=1024*1024,'Bounded original RAW-retention workflow');
+  assert.equal(sha(body),row.predecessorSha256,'Whole original RAW-retention workflow identity');
+  return body.toString('utf8');
+}
 // The older stage-source oracle uses the same authentic inventory for BOTH
 // workflow roles. Current caller checks continue reading their actual files.
 export function readHistoricalCompletedStageWorkflowSources(){
@@ -95,6 +175,115 @@ export function readHistoricalCompletedStageWorkflowSources(){
   const once=git(['cat-file','blob',blobs.get(name)],true);
   assert(once.length>0&&once.length<=128*1024,'Bounded original once workflow');
   return Object.freeze({build:readHistoricalBuildWorkflowSource(),once:once.toString('utf8')});
+}
+// Read the four original AFTER inputs, so the unchanged old projection and
+// mutation oracles exercise their own frames instead of newer caller bytes.
+export function readHistoricalPagesClosureWorkflowSources(){
+  assert.equal(arguments.length,0,'No caller-selected Pages closure source');
+  const {git}=historicalWorkflowInventory();
+  assert.equal(git(['rev-parse',PAGES_CLOSURE_ORIGINAL_HEAD+'^{tree}']).trim(),PAGES_CLOSURE_ORIGINAL_TREE);
+  return Object.freeze(Object.fromEntries(Object.entries(aliases).map(([role,relative])=>{
+    const row=frames[relative];
+    const body=role==='build'?Buffer.from(readHistoricalBuildWorkflowSource())
+      :git(['cat-file','blob',PAGES_CLOSURE_ORIGINAL_HEAD+':'+relative],true,row.after.bytes+1);
+    assert.equal(body.length,row.after.bytes,'Original Pages closure workflow size: '+role);
+    assert.equal(sha(body),row.after.sha256,'Original Pages closure workflow identity: '+role);
+    return [role,body.toString('utf8')];
+  })));
+}
+// The old metadata/Pages repair oracle owns its original input, not current YAML.
+export function readHistoricalRepairWorkflowSource(){
+  assert.equal(arguments.length,0,'No caller-selected historical repair source');
+  const inverse=HISTORICAL_WORKFLOW_REVIEW.inverseReviewedPagesArtifactMetadataCaller;
+  const row=HISTORICAL_WORKFLOW_REVIEW.pagesPublicProjectionWorkflowReview?.roles?.repair;
+  assert.equal(typeof inverse,'function','Original repair metadata inverse must exist');assert(row);
+  const {git}=historicalWorkflowInventory();
+  assert.equal(git(['rev-parse',PAGES_CLOSURE_ORIGINAL_HEAD+'^{tree}']).trim(),PAGES_CLOSURE_ORIGINAL_TREE);
+  const relative='.github/workflows/deploy-code-only-repair.yml';
+  const body=git(['cat-file','blob',PAGES_CLOSURE_ORIGINAL_HEAD+':'+relative],true,row.after.bytes+1).toString('utf8');
+  const previous=inverse(body,'repair',relative);
+  assert.notEqual(previous,body,'The original AFTER input must exercise its metadata inverse');
+  assert.equal(Buffer.byteLength(previous),row.after.bytes,'Original repair predecessor size');
+  assert.equal(sha(previous),row.after.sha256,'Whole original repair predecessor identity');
+  return body;
+}
+// Source/CI only: compare current SQL safety frames with their authenticated original input.
+// This is no workflow projection, runtime admission or new whole-file/hash cohort.
+export function assertCurrentRepairSqlSecurityFrames(raw){
+  assert.equal(arguments.length,1,'CURRENT_REPAIR_SQL_FRAME_ARGUMENTS');
+  assert.equal(typeof raw,'string','CURRENT_REPAIR_SQL_FRAME_TYPE');
+  assert(Buffer.byteLength(raw)>0&&Buffer.byteLength(raw)<=2*1024*1024,'CURRENT_REPAIR_SQL_FRAME_BOUND');
+  const original=readHistoricalRepairWorkflowSource();
+  const mutators=[
+    'Apply exact dry-run-verified post-cutover binding',
+    'Apply sole last-mile binding only after all new artifact checks',
+    'Complete exact native-original binding after artifacts and fresh authentic originals',
+    'Apply the sole new metadata binding after every artifact gate and fresh originals',
+  ];
+  const supporting=[
+    'Reverify the same assistant originals before binding installation',
+    'Dry-run and require only the latest exact integrated migration',
+    'Reconfirm current main before the database binding write',
+  ];
+  const archiveCommands=[
+    ['node scripts/update-weather.mjs','Build a new full public forecast through the normal provider-free updater'],
+    ['npm run release:gate','Run production release gate on the actual newly calculated forecast'],
+  ];
+  const frames=source=>{
+    const headings=[...source.matchAll(/^      - (?:name|uses): [^\n]+\n/gm)];
+    return headings.map((heading,index)=>{
+      const start=heading.index,end=index+1<headings.length?headings[index+1].index:source.length;
+      return {name:/^      - name: ([^\n]+)/.exec(heading[0])?.[1],start,end,body:source.slice(start,end)};
+    });
+  };
+  const actualFrames=frames(raw),originalFrames=frames(original),selected=[];
+  for(const name of [...mutators,...supporting,...archiveCommands.map(([,name])=>name)]){
+    const actual=actualFrames.filter(frame=>frame.name===name),expected=originalFrames.filter(frame=>frame.name===name);
+    assert.equal(actual.length,1,'CURRENT_REPAIR_SQL_FRAME_UNIQUE');
+    assert.equal(expected.length,1,'ORIGINAL_REPAIR_SQL_FRAME_UNIQUE');
+    assert(actual[0].body===expected[0].body,'CURRENT_REPAIR_SQL_SECURITY_FRAME_CHANGED: '+name);
+    selected.push({name,actual:actual[0],expected:expected[0]});
+  }
+  const prior=[...selected].sort((a,b)=>a.expected.start-b.expected.start);
+  assert.deepEqual([...selected].sort((a,b)=>a.actual.start-b.actual.start).map(frame=>frame.name),
+    prior.map(frame=>frame.name),'CURRENT_REPAIR_SQL_FRAME_ORDER');
+  for(let index=1;index<prior.length;index++){
+    if(prior[index-1].expected.end===prior[index].expected.start)
+      assert.equal(prior[index-1].actual.end,prior[index].actual.start,'CURRENT_REPAIR_SQL_FRESH_MAIN_ADJACENCY');
+  }
+  for(const match of raw.matchAll(/\bsupabase[ \t]+db[ \t]+push\b/g)){
+    const line=raw.slice(match.index).split('\n',1)[0];
+    const readOnly=/^supabase db push --linked --dry-run --skip-vault(?=[ \t]*(?:\)|2>&1 \||\r?$))/.test(line);
+    assert(readOnly||selected.some(frame=>mutators.includes(frame.name)&&match.index>=frame.actual.start
+      &&match.index<frame.actual.end),'CURRENT_REPAIR_SQL_UNKNOWN_APPLY_ROLE');
+  }
+  const jobHeader=source=>{
+    const marker='  build-code-only:\n';
+    assert.equal(source.split(marker).length,2,'CURRENT_REPAIR_SQL_JOB_UNIQUE');
+    const start=source.indexOf(marker),end=source.indexOf('    steps:\n',start);
+    assert(end>start,'CURRENT_REPAIR_SQL_JOB_BOUNDARY');return source.slice(start,end);
+  };
+  for(const key of ['RAVRADAR_WEATHER_CACHE_ONLY','RAVRADAR_REQUIRE_PRIVATE_WEATHER_BASELINE']){
+    const pattern=new RegExp('^      '+key+': [^\\n]+$','gm');
+    const actual=jobHeader(raw).match(pattern)??[],expected=jobHeader(original).match(pattern)??[];
+    assert.equal(actual.length,1,'CURRENT_REPAIR_PROVIDER_ENV_UNIQUE');
+    assert.equal(expected.length,1,'ORIGINAL_REPAIR_PROVIDER_ENV_UNIQUE');
+    assert.deepEqual(actual,expected,'CURRENT_REPAIR_PROVIDER_ENV_CHANGED');
+  }
+  for(const [command,name] of archiveCommands){
+    const frame=selected.find(candidate=>candidate.name===name).actual;
+    for(let at=raw.indexOf(command);at>=0;at=raw.indexOf(command,at+command.length))
+      assert(at>=frame.start&&at<frame.end,'CURRENT_REPAIR_UNKNOWN_ARCHIVE_COMMAND_ROLE');
+  }
+}
+// The old audit oracle owns the named original leaf in the existing inventory.
+export function readHistoricalSavedWeatherAuditWorkflowSource(){
+  assert.equal(arguments.length,0,'No caller-selected historical audit workflow origin');
+  const {git,blobs}=historicalWorkflowInventory(),name='audit-saved-weather-inputs.yml';
+  assert(blobs.has(name),'Original saved-weather audit workflow must exist');
+  const body=git(['cat-file','blob',blobs.get(name)],true,128*1024);
+  assert(body.length>0&&body.length<=128*1024,'Bounded original saved-weather audit workflow');
+  return body.toString('utf8');
 }
 export function qualifyCurrentWorkflowInventory(){
   assert.equal(arguments.length,0,'No caller-selected workflow inventory, catalog or target runner');

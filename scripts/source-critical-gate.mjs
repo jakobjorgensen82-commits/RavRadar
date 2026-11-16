@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { inverseArchivedWeatherRestartWorkflow } from './lib/archived-weather-restart-workflow-review.mjs';
+import { assertCurrentRepairSqlSecurityFrames } from './lib/pages-closure-historical-test-input.mjs';
 
 const root = process.cwd();
 const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
@@ -121,9 +121,8 @@ assert.ok(read('.github/workflows/validate-pull-request.yml').includes('run: npm
 assert.doesNotMatch(orchestrator, /\n  push:/, 'Normal vejrhentning må ikke starte automatisk ved merge.');
 
 const actualCodeOnlyWorkflow = read('.github/workflows/deploy-code-only-repair.yml').replace(/\r\n/g, '\n');
-// Source/CI only: qualify the exact reviewed new route first. Its complete
-// inverse then preserves every existing code-only oracle below; arbitrary
-// changed workflow bytes cannot obtain this historical source view.
+// Source/CI only: common gates inspect the raw current workflow.
+// The complete SQL safety frames retain their authenticated original semantics.
 for (const marker of [
   'code_only_repair: ${{ inputs.publish_newest_saved_weather != true && inputs.restart_archived_weather != true }}',
   'Select only the unconsumed last-mile archive restart',
@@ -134,7 +133,8 @@ for (const marker of [
 ]) assert.ok(actualCodeOnlyWorkflow.includes(marker), `Archive restart source contract is missing ${marker}.`);
 for (const forbidden of ['DMI_API_KEY', 'COPERNICUSMARINE_SERVICE_USERNAME', 'COPERNICUSMARINE_SERVICE_PASSWORD'])
   assert.ok(!actualCodeOnlyWorkflow.includes(forbidden), `Provider-free restart must not contain ${forbidden}.`);
-const codeOnlyWorkflow = inverseArchivedWeatherRestartWorkflow(actualCodeOnlyWorkflow);
+const codeOnlyWorkflow = actualCodeOnlyWorkflow;
+assertCurrentRepairSqlSecurityFrames(codeOnlyWorkflow);
 const codeOnlyTrigger = codeOnlyWorkflow.slice(
   codeOnlyWorkflow.indexOf('\non:'),
   codeOnlyWorkflow.indexOf('\npermissions:'),
@@ -172,7 +172,6 @@ for (const marker of [
   'node scripts/integrated-cutover-readiness.mjs verify-db',
   'node scripts/prepare-code-only-public-runtime.mjs',
   'providerRequestsPerformed == false',
-  'code_only_repair: ${{ inputs.publish_newest_saved_weather != true }}',
   'DEPLOY-SAVED-WEATHER-REPAIR',
   'saved-weather-continuation',
   'uses: ./.github/workflows/reusable-pages-deploy.yml',
@@ -196,30 +195,15 @@ for (const forbidden of [
   'COPERNICUSMARINE_SERVICE_USERNAME',
   'COPERNICUSMARINE_SERVICE_PASSWORD',
   'OPEN_METEO',
-  'node scripts/update-weather.mjs',
   'python scripts/update-dmi-bulk.py',
-  'npm run validate:source',
   'npm run validate',
-  'npm run release:gate',
+  'npm run validate:source',
 ]) {
   assert.ok(!codeOnlyWorkflow.includes(forbidden), `Code-only-workflowet må ikke indeholde ${forbidden}.`);
   assert.ok(!codeOnlyAcquisition.includes(forbidden), `Code-only-læseren må ikke indeholde ${forbidden}.`);
 }
-assert.equal(
-  (codeOnlyWorkflow.match(/supabase db push --linked/g) || []).length,
-  6,
-  'Code-only-workflowet må kun have de fem præcist afgrænsede dry-run-læsninger og én apply.',
-);
-assert.equal((codeOnlyWorkflow.match(/supabase db push --linked --dry-run --skip-vault/g) || []).length, 5,
-  'Normal plan, historiske kontroller, ny assistentgenkontrol og installeret assistentplan skal være dry-run, ikke skrivninger.');
-assert.equal((codeOnlyWorkflow.match(/^\s*supabase db push --linked --skip-vault\s*$/gm) || []).length, 1,
-  'Der skal fortsat være præcis én database-apply.');
-assert.match(codeOnlyWorkflow,
-  /if test "\$\{RAVRADAR_ACCOUNT_ASSISTANT_PREWRITE_REQUIRED:-false\}" = "true"; then[\s\S]*?supabase migration list --linked[\s\S]*?supabase db push --linked --dry-run --skip-vault[\s\S]*?--account-assistant-prewrite-plan --require-prewrite-gate[\s\S]*?--expected-pending-version 20261013210000[\s\S]*?fi\s+if test "\$\{RAVRADAR_STATISTICS_REVISION_PHASE:-\}" = "before"; then[\s\S]*?supabase migration list --linked[\s\S]*?supabase db push --linked --dry-run --skip-vault[\s\S]*?verify-statistics-preference-revision-plan\.mjs[\s\S]*?--phase before[\s\S]*?fi\s+if test "\$\{RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_PHASE:-\}" = 'before'; then[\s\S]*?env -u SUPABASE_DB_PASSWORD node[\s\S]*?established-native-current-origin-prewrite\.mjs"[\s\S]*?--slot final[\s\S]*?supabase migration list --linked[\s\S]*?supabase db push --linked --dry-run --skip-vault[\s\S]*?verify-established-native-current-origin-plan\.mjs"[\s\S]*?--phase before[\s\S]*?fi\s+if test "\$\{RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_PHASE:-\}" != 'installed'; then\s+supabase db push --linked --skip-vault/,
-  'Historiske gates bevares, og den nye assistentfase skal have frisk originalkontrol og egen eksakt plan før den ene apply.');
-assert.match(codeOnlyWorkflow,
-  /\(cd "\$\{\{ steps\.migration-view\.outputs\.workdir \}\}" && supabase db push --linked --dry-run --skip-vault\)[\s\S]*?RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_UPGRADE_OPT_IN=false node scripts\/verify-established-native-current-origin-plan\.mjs[\s\S]*?--phase installed[\s\S]*?node scripts\/verify-statistics-preference-revision-schema\.mjs/,
-  'Den sidste dry-run skal bevise installeret ny assistentfase med opt-in false og efterfølgende uændret schema2-genlæsning.');
+for (const forbidden of ['node scripts/update-weather.mjs', 'npm run release:gate'])
+  assert.ok(!codeOnlyAcquisition.includes(forbidden), `Code-only-læseren må ikke indeholde ${forbidden}.`);
 assert.ok(
   read('scripts/verify-code-only-migration-plan.mjs')
     .includes('LATEST_REQUIRED_CUTOVER_MIGRATION'),

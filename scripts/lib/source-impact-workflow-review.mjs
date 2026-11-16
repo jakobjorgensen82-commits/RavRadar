@@ -139,7 +139,7 @@ export const SOURCE_IMPACT_DMI_REQUIREMENTS_REVIEW=Object.freeze({
 });
 export function inverseSourceImpactDmiPython(value){
   assert.equal(arguments.length,1);assert.equal(typeof value,'string');
-  let source=value.replace(/\r\n/g,'\n');const review=SOURCE_IMPACT_DMI_PYTHON_REVIEW;
+  let source=inverseSourceImpactFullCurrent(value);const review=SOURCE_IMPACT_DMI_PYTHON_REVIEW;
   if(sha(source)===SOURCE_IMPACT_DMI_REQUIREMENTS_REVIEW.afterSha256){
     const correction=SOURCE_IMPACT_DMI_REQUIREMENTS_REVIEW;assert.equal(Buffer.byteLength(source),correction.afterBytes);
     for(const hunk of correction.hunks)source=once(source,hunk.after,hunk.before);
@@ -152,6 +152,21 @@ export function inverseSourceImpactDmiPython(value){
   source=once(source,anchor,review.oldPythonStep+anchor);
   assert.equal(Buffer.byteLength(source),review.beforeBytes);assert.equal(sha(source),review.beforeSha256);
   return source;
+}
+
+// Den eksisterende FULL-kontrolkæde ejer også hele CURRENT med uændret 300s-budget.
+export const SOURCE_IMPACT_FULL_CURRENT_COMMAND='timeout --signal=KILL 300s node --test scripts/test-source-current-contracts.mjs';
+export function inverseSourceImpactFullCurrent(value){
+  assert.equal(arguments.length,1);assert.equal(typeof value,'string');
+  const source=value.replace(/\r\n/g,'\n');
+  if(!source.includes('test-source-current-contracts.mjs'))return source;
+  const anchor='          && node scripts/test-source-impact-workflow.mjs\n';
+  const addition='          && '+SOURCE_IMPACT_FULL_CURRENT_COMMAND+'\n';
+  const before=once(source,anchor+addition,anchor);
+  assert.equal(sha(inverseOwnedCacheNativeWorkflow(before)),SOURCE_IMPACT_DMI_REQUIREMENTS_REVIEW.afterSha256,
+    'Kun den præcise eksisterende FULL-kalder kan få hele CURRENT');
+  assert.equal(once(before,anchor,anchor+addition),source,'Hele CURRENT-registreringen har præcis inverse');
+  return before;
 }
 
 export function projectSourceImpactWorkflowFull(value){

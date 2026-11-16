@@ -1161,6 +1161,8 @@ export function inverseAssistant590RetentionCompanionTestInput(source, relative)
   assert.equal(typeof source, 'string', 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ASSISTANT590_RETENTION_TYPE');
   const row = ASSISTANT590_RETENTION_COMPANION_TEST_REVIEW;
   assert.equal(relative, row.path, 'ALTERNATIVE_C_TEST_INPUT_CHANGED:ASSISTANT590_RETENTION_PATH');
+  if(source.includes('assistantAfter598RuntimePredecessor')||source.includes("assistant-after598-successor"))
+    source=inverseAssistantAfter598RetentionCompanionSource(source,relative);
   source = source.replace(/\r\n/g, '\n');
   // Exact issued597/594 TESTDATA views precede every unchanged593/591/590 oracle.
   if ([ASSISTANT_AFTER597_RETENTION_COMPANION_TEST_REVIEW.after.bytes,ISSUED597_RETENTION_COMPANION_TEST_REVIEW.after.bytes,
@@ -1298,6 +1300,9 @@ export function inverseIssued597RetentionCompanionSource(source,relative){
   assert.equal(arguments.length,2,'RETENTION597_ARGUMENTS');
   assert.equal(typeof source,'string','RETENTION597_TYPE');
   const row=ISSUED597_RETENTION_COMPANION_TEST_REVIEW;assert.equal(relative,row.path,'RETENTION597_PATH');
+  if(source.includes('assistantAfter598RuntimePredecessor')||source.includes("assistant-after598-successor"))
+    source=inverseAssistantAfter598RetentionCompanionSource(source,relative);
+
   if(digest(source)===ASSISTANT_AFTER597_RETENTION_COMPANION_TEST_REVIEW.after.sha256)
     source=inverseAssistantAfter597RetentionCompanionSource(source,relative);
   if(digest(source)===row.before.sha256){assert.equal(Buffer.byteLength(source),row.before.bytes);return source;}
@@ -1320,6 +1325,9 @@ export function inverseIssued594RetentionCompanionSource(source,relative){
   assert.equal(arguments.length,2,'RETENTION594_ARGUMENTS');
   assert.equal(typeof source,'string','RETENTION594_TYPE');
   const row=ISSUED594_RETENTION_COMPANION_TEST_REVIEW;assert.equal(relative,row.path,'RETENTION594_PATH');
+  if(source.includes('assistantAfter598RuntimePredecessor')||source.includes("assistant-after598-successor"))
+    source=inverseAssistantAfter598RetentionCompanionSource(source,relative);
+
   if(digest(source)===ASSISTANT_AFTER597_RETENTION_COMPANION_TEST_REVIEW.after.sha256)
     source=inverseAssistantAfter597RetentionCompanionSource(source,relative);
   if(digest(source)===ISSUED597_RETENTION_COMPANION_TEST_REVIEW.after.sha256)
@@ -1362,6 +1370,9 @@ export function inverseAssistantAfter597RetentionCompanionSource(source,relative
   assert.equal(typeof source,'string','RETENTION_AFTER597_TYPE');
   const row=ASSISTANT_AFTER597_RETENTION_COMPANION_TEST_REVIEW;
   assert.equal(relative,row.path,'RETENTION_AFTER597_PATH');
+  if(source.includes('assistantAfter598RuntimePredecessor')||source.includes("assistant-after598-successor"))
+    source=inverseAssistantAfter598RetentionCompanionSource(source,relative);
+
   if(digest(source)===row.before.sha256){assert.equal(Buffer.byteLength(source),row.before.bytes);return source;}
   assert.equal(Buffer.byteLength(source),row.after.bytes,'RETENTION_AFTER597_SIZE');
   assert.equal(digest(source),row.after.sha256,'RETENTION_AFTER597_WHOLE_SOURCE');
@@ -1373,4 +1384,37 @@ export function inverseAssistantAfter597RetentionCompanionSource(source,relative
   let roundtrip=source;
   for(const [prior,current]of row.hunks){assert.equal(roundtrip.split(prior).length,2);roundtrip=roundtrip.replace(prior,()=>current);}
   assert.equal(roundtrip,original,'Whole after597-to597-to-after597 reader TEST DATA inverse');return source;
+}
+
+
+// One semantic TEST-DATA inverse for the actual after598 arm. No new head/hash
+// cohort: the entire reconstructed old source must match the existing after597
+// pin, and applying these same two edits must restore every current source byte.
+export const ASSISTANT_AFTER598_RETENTION_COMPANION_TEST_EDITS=Object.freeze([
+  Object.freeze([
+    "import {readAssistantLaterH0RetentionInput,assistantAfter597RuntimePredecessor} from './assistant-later-h0-runtime-transition.mjs';",
+    "import {readAssistantLaterH0RetentionInput,assistantAfter597RuntimePredecessor,assistantAfter598RuntimePredecessor} from './assistant-later-h0-runtime-transition.mjs';"
+  ]),
+  Object.freeze([
+    "const ACTIVE_PREDECESSOR=ACTIVE.sourcePhase==='assistant-mixed-after597-successor'?assistantAfter597RuntimePredecessor():\n  ",
+    "const ACTIVE_PREDECESSOR=ACTIVE.sourcePhase==='assistant-after598-successor'?assistantAfter598RuntimePredecessor():\n  ACTIVE.sourcePhase==='assistant-mixed-after597-successor'?assistantAfter597RuntimePredecessor():\n  "
+  ]),
+]);
+export function inverseAssistantAfter598RetentionCompanionSource(source,relative){
+  assert.equal(arguments.length,2,'RETENTION_AFTER598_ARGUMENTS');
+  assert.equal(typeof source,'string','RETENTION_AFTER598_TYPE');
+  const old=ASSISTANT_AFTER597_RETENTION_COMPANION_TEST_REVIEW;
+  assert.equal(relative,old.path,'RETENTION_AFTER598_PATH');
+  if(digest(source)===old.after.sha256){assert.equal(Buffer.byteLength(source),old.after.bytes);return source;}
+  const original=source;
+  for(const[before,after]of [...ASSISTANT_AFTER598_RETENTION_COMPANION_TEST_EDITS].reverse()){
+    assert.equal(source.split(after).length,2,'RETENTION_AFTER598_EXACT_HUNK');source=source.replace(after,()=>before);
+  }
+  assert.equal(Buffer.byteLength(source),old.after.bytes,'RETENTION_AFTER598_OLD_SIZE');
+  assert.equal(digest(source),old.after.sha256,'RETENTION_AFTER598_WHOLE_OLD_SOURCE');
+  let roundtrip=source;
+  for(const[before,after]of ASSISTANT_AFTER598_RETENTION_COMPANION_TEST_EDITS){
+    assert.equal(roundtrip.split(before).length,2,'RETENTION_AFTER598_OLD_HUNK');roundtrip=roundtrip.replace(before,()=>after);
+  }
+  assert.equal(roundtrip,original,'RETENTION_AFTER598_WHOLE_ROUNDTRIP');return source;
 }

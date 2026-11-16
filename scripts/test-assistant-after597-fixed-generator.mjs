@@ -6,19 +6,35 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {spawnSync} from 'node:child_process';
 import {test} from 'node:test';
-import {prepareAssistantAfter597PredecessorAliases,prepareAssistantAfter597SuccessorStructure,
-  buildAssistantAfter597BindingSuccessor} from './build-assistant-later-h0-successor.mjs';
-import {ACTIVE_ASSISTANT_SUCCESSOR,INACTIVE_SCALAR597_LATER_H0_SUCCESSOR,
-  UNISSUED_ASSISTANT_AFTER597_SUCCESSOR as next,ASSISTANT_AFTER597_ALIASES,
+// Explicit normal current entry. No project constructor/runtime import
+// precedes the fixed after598 issuance guard. Old PRE bodies stay unchanged.
+const currentArguments=process.argv.slice(2);
+assert(currentArguments.length===0||(currentArguments.length===1&&currentArguments[0]==='--after598-current'),'Unknown or mixed assistant test mode');
+const AFTER598_CURRENT_MODE=currentArguments.length===1;
+const currentSource=await import('./lib/assistant-later-h0-successor-source.mjs');
+if(AFTER598_CURRENT_MODE){
+  currentSource.requireAssistantAfter598Output();currentSource.requireAssistantAfter598Release();
+  assert.equal(currentSource.ACTIVE_ASSISTANT_SUCCESSOR,currentSource.INACTIVE_ASSISTANT_AFTER598_SUCCESSOR);
+}
+const {prepareAssistantAfter597PredecessorAliases,prepareAssistantAfter597SuccessorStructure,
+  buildAssistantAfter597BindingSuccessor}=await import('./build-assistant-later-h0-successor.mjs');
+const {ACTIVE_ASSISTANT_SUCCESSOR,INACTIVE_SCALAR597_LATER_H0_SUCCESSOR,
+  UNISSUED_ASSISTANT_AFTER597_SUCCESSOR:next,ASSISTANT_AFTER597_ALIASES,
   ASSISTANT_AFTER597_RELEASE,readScalar597LaterH0CanonicalSource,
-  assistantLaterH0Definition as definition,assistantAfter597CheckpointContractFromBase}
-  from './lib/assistant-later-h0-successor-source.mjs';
-import {checkpointCasContractFromCanonicalSource} from './integrated-cutover-readiness.mjs';
-import {assertAssistantBindingPrewriteCaller} from './assistant-later-h0-binding-prewrite.mjs';
+  assistantLaterH0Definition:definition,assistantAfter597CheckpointContractFromBase}=await import('./lib/assistant-later-h0-successor-source.mjs');
+const {checkpointCasContractFromCanonicalSource}=await import('./integrated-cutover-readiness.mjs');
+const {assertAssistantBindingPrewriteCaller}=await import('./assistant-later-h0-binding-prewrite.mjs');
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const CP='ravradar_ravscore_checkpoint_';
+
+// Current source checks run only after the fixed issuance/ACTIVE admission above.
+if(AFTER598_CURRENT_MODE){
+  const {verifyAssistantAfter598SourceTarget}=await import('./national584-source-evidence.mjs');
+  await verifyAssistantAfter598SourceTarget();
+}
+if(!AFTER598_CURRENT_MODE){
 
 test('normal aliaskonstruktion bruger hele den ægte597-forælder uden at udstede en efterfølger',async()=>{
   const original=await readScalar597LaterH0CanonicalSource();
@@ -93,3 +109,56 @@ test('normal førskrivningskalder beholder597 og kan ikke vælge den uudstedte g
   try{Object.assign(process.env,changes);assert.deepEqual(assertAssistantBindingPrewriteCaller(),INACTIVE_SCALAR597_LATER_H0_SUCCESSOR.binding);}
   finally{for(const[key,value]of Object.entries(old))if(value===undefined)delete process.env[key];else process.env[key]=value;}
 });
+
+}else{
+
+  const currentBuilder=await import('./build-assistant-later-h0-successor.mjs');
+  test('after598 current normal constructor matches actual issued C/I/T and whole SQL without issuing',async()=>{
+    const old=await currentSource.readAssistantAfter597CanonicalSource();
+    const aliases=await currentBuilder.prepareAssistantAfter598PredecessorAliases();
+    assert.equal(aliases.originalCanonicalSha256,currentSource.ASSISTANT_AFTER598_BEFORE.canonicalSha256);
+    assert.equal(sha(old.canonicalSource),aliases.originalCanonicalSha256);
+    assert.deepEqual(aliases.aliases.map(({name,signature})=>({name,signature})),currentSource.ASSISTANT_AFTER598_ALIASES);
+    const made=await currentBuilder.buildAssistantAfter598BindingSuccessor({version:currentSource.requireAssistantAfter598Binding().version});
+    assert.deepEqual(made.nextBinding,currentSource.requireAssistantAfter598Binding());
+    assert.deepEqual({migrationSha256:made.migrationSha256,canonicalSha256:made.afterCanonicalSha256,
+      checkpointContractSha256:made.checkpointContractSha256,tripBindingPolicySha256:made.tripBindingPolicySha256},currentSource.requireAssistantAfter598Output());
+    assert.deepEqual(await fs.readFile(path.join(ROOT,'supabase/migrations',currentSource.assistantAfter598Migration().filename)),Buffer.from(made.migration));
+    for(const original of old.originalDefinitions)assert.equal(definition(made.canonicalSource,original.name),original.definition);
+    assert.equal(made.migrationIssued,false);assert.equal(made.productionAuthority,false);assert.equal(made.postgresRun,false);
+  });
+  test('after598 current malformed versions and caller tuple/source overrides refuse before IO',async t=>{
+    let io=0;for(const key of ['readFile','writeFile','lstat','mkdir','readdir'])t.mock.method(fs,key,async()=>{io++;throw Error('UNEXPECTED_IO');});
+    t.mock.method(globalThis,'fetch',async()=>{io++;throw Error('UNEXPECTED_NETWORK');});
+    for(const version of [null,currentSource.ASSISTANT_AFTER598_BEFORE.version,'x','20260230000000']){
+      if(version==='20260230000000'&&version>currentSource.ASSISTANT_AFTER598_BEFORE.version)continue;
+      await assert.rejects(currentBuilder.prepareAssistantAfter598SuccessorStructure({version}));
+    }
+    for(const key of ['profile','family','tuple','root','head','source'])
+      await assert.rejects(currentBuilder.prepareAssistantAfter598SuccessorStructure({version:currentSource.requireAssistantAfter598Binding().version,[key]:'caller-selected'}));
+    await assert.rejects(currentBuilder.prepareAssistantAfter598PredecessorAliases({family:'597'}));
+    assert.throws(()=>currentSource.requireAssistantAfter598Binding({C:'a'.repeat(64)}));
+    assert.throws(()=>next.requireBinding({family:'598'}));assert.equal(io,0);
+  });
+  test('after598 current exact CLI checks actual SQL and create-only write collision preserves it',async()=>{
+    const file=path.join(ROOT,'supabase/migrations',currentSource.assistantAfter598Migration().filename),before=await fs.readFile(file);
+    const env=Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','TEMP','TMP'].filter(k=>process.env[k]!==undefined).map(k=>[k,process.env[k]]));
+    for(const args of [['--assistant-after598','--check'],['--assistant-after598','--write'],['--assistant-after598','--unknown'],['--assistant-after598','--check','--profile=597']]){
+      const result=spawnSync(process.execPath,[path.join(ROOT,'scripts/build-assistant-later-h0-successor.mjs'),...args],{cwd:ROOT,env,encoding:'utf8',timeout:30000,maxBuffer:1024*1024});
+      assert.equal(result.error,undefined);assert.equal(result.status,args[1]==='--check'&&args.length===2?0:1);
+      if(args[1]==='--write')assert.match(result.stderr,/EEXIST/);
+      assert.deepEqual(await fs.readFile(file),before);
+    }
+  });
+  test('after598 current prewrite caller cannot choose a family by environment',()=>{
+    const env={GITHUB_WORKFLOW:'Apply RavRadar backend bindings without weather',GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_REF:'refs/heads/main',
+      GITHUB_SHA:'82200280c42b9060f14be2721ba7b766e0ede5a6',GITHUB_RUN_ID:'123',GITHUB_RUN_ATTEMPT:'1',
+      RAVRADAR_ASSISTANT_LATER_H0_ORIGINAL_OPT_IN:'true',RAVRADAR_ASSISTANT_LATER_H0_BINDING_CONFIRMATION:'APPLY-WEATHER-MODEL-BINDING',
+      RAVRADAR_ASSISTANT_AFTER597_PROFILE:'scalar597-later-h0-original594-successor'};
+    const previous=Object.fromEntries(Object.keys(env).map(key=>[key,process.env[key]]));
+    try{Object.assign(process.env,env);assert.deepEqual(assertAssistantBindingPrewriteCaller(),currentSource.requireAssistantAfter598Binding());
+      assert.throws(()=>assertAssistantBindingPrewriteCaller({family:'597'}));
+    }finally{for(const[key,value]of Object.entries(previous))if(value===undefined)delete process.env[key];else process.env[key]=value;}
+  });
+
+}

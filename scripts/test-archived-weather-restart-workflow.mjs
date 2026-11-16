@@ -7,6 +7,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
+import {readHistoricalRepairWorkflowSource,assertCurrentRepairSqlSecurityFrames} from './lib/pages-closure-historical-test-input.mjs';
 import {inverseArchivedWeatherRestartWorkflow} from './lib/archived-weather-restart-workflow-review.mjs';
 import {inverseArchivedProductionGate} from './lib/archived-production-gate-review.mjs';
 import {inversePagesPublicProjectionWorkflow,inverseTerminalRepair4145Workflow,terminalRepair4145WorkflowReview} from './lib/completed-private-runtime-workflow-review.mjs';
@@ -19,7 +20,9 @@ import {requireLastMileEnclosureBinding} from './lib/last-mile-enclosure-success
 import {ESTABLISHED_NATIVE_CURRENT_ORIGIN_BINDING} from './lib/established-native-current-origin-successor-source.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-const actualPagesCodeOnly=fs.readFileSync(path.join(ROOT,'.github/workflows/deploy-code-only-repair.yml'),'utf8').replace(/\r\n/g,'\n');
+const rawCurrentPagesCodeOnly=fs.readFileSync(path.join(ROOT,'.github/workflows/deploy-code-only-repair.yml'),'utf8').replace(/\r\n/g,'\n');
+// The fixed native/Pages oracles own their original input; current599 stays raw.
+const actualPagesCodeOnly=readHistoricalRepairWorkflowSource();
 const actualTerminalCodeOnly=inversePagesPublicProjectionWorkflow(actualPagesCodeOnly,'repair');
 const actualCurrentCodeOnly=inverseTerminalRepair4145Workflow(actualTerminalCodeOnly,'repair');
 const nativeCurrent=crypto.createHash('sha256').update(actualCurrentCodeOnly).digest('hex')===CURRENT_INSTALLED_CODE_ONLY_WORKFLOW_SHA256
@@ -29,6 +32,39 @@ const current=inverseAccountStatisticsAssistantWorkflow(actualCurrent);
 const actual=inverseArchivedProductionGate(current);
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const historical=inverseArchivedWeatherRestartWorkflow(actual);
+test('raw current repair keeps authenticated SQL security frames before historical oracles',()=>{
+  assert.notEqual(rawCurrentPagesCodeOnly,actualPagesCodeOnly);
+  assert.throws(()=>inverseNativeOriginalContinuityWorkflow(rawCurrentPagesCodeOnly));
+  assertCurrentRepairSqlSecurityFrames(rawCurrentPagesCodeOnly);
+  const legacy='Apply exact dry-run-verified post-cutover binding';
+  const native='Complete exact native-original binding after artifacts and fresh authentic originals';
+  const main='Reconfirm current main before the database binding write';
+  const change=(name,before,after)=>{
+    const block=named(rawCurrentPagesCodeOnly,name).text;
+    return replaceOne(rawCurrentPagesCodeOnly,block,replaceOne(block,before,after));
+  };
+  const mainBlock=named(rawCurrentPagesCodeOnly,main).text;
+  const legacyBlock=named(rawCurrentPagesCodeOnly,legacy).text;
+  for(const changed of [
+    change(main,'test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"','test true'),
+    change(native,'node scripts/verify-native-original-continuity-plan.mjs --phase "$RAVRADAR_NATIVE_ORIGINAL_CONTINUITY_PHASE"',
+      'node scripts/verify-native-original-continuity-plan.mjs --phase installed'),
+    change(legacy,'SUPABASE_URL: ${{ secrets.SUPABASE_URL }}','SUPABASE_URL: https://unknown.invalid'),
+    rawCurrentPagesCodeOnly+'\n      - name: Unreviewed extra SQL writer\n        run: supabase db push --linked --skip-vault\n',
+    ...['--linked','--skip-vault --linked','--linked --dry-run --skip-vault --dry-run=false']
+      .map(flags=>rawCurrentPagesCodeOnly+'\n      - name: Unreviewed alternate SQL writer\n        run: supabase db push '+flags+'\n'),
+    rawCurrentPagesCodeOnly+'\n      - name: Unreviewed provider caller\n        run: node scripts/update-weather.mjs\n',
+    replaceOne(rawCurrentPagesCodeOnly,
+      "      RAVRADAR_WEATHER_CACHE_ONLY: ${{ inputs.restart_archived_weather == true && 'true' || 'false' }}",
+      "      RAVRADAR_WEATHER_CACHE_ONLY: 'false'"),
+    rawCurrentPagesCodeOnly.replace(mainBlock,'').replace(legacyBlock,()=>legacyBlock+mainBlock),
+    rawCurrentPagesCodeOnly.replace(legacyBlock,()=>
+      '      - name: Unreviewed operation after final main\n        run: ":"\n\n'+legacyBlock),
+  ]){
+    assert.notEqual(changed,rawCurrentPagesCodeOnly);
+    assert.throws(()=>assertCurrentRepairSqlSecurityFrames(changed));
+  }
+});
 test('current installed code-only routing qualifies its whole additive layer before unchanged historical oracles',()=>{
   assert.equal(sha(actualCurrentCodeOnly),CURRENT_INSTALLED_CODE_ONLY_WORKFLOW_SHA256);
   assert.equal(sha(nativeCurrent),NATIVE_ORIGINAL_CONTINUITY_WORKFLOW_SHA256);

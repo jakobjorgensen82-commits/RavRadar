@@ -7,6 +7,8 @@ import {execFileSync} from 'node:child_process';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {scanAllSourceDependencies} from './lib/source-impact-control-imports.mjs';
 import {createHash} from 'node:crypto';
+import {SOURCE598_CODE_SOURCE_PROVENANCE,assertSource598CodeSourceSelected}
+  from './check-assistant-later-h0-predecessor-source.mjs';
 const SOURCE=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const BASE='169bebcd7bf2c4389be63c31dcd76fb303d71621';
 const LEGACY_BASE='a4dc9319dbf42cdd7fc8116733ad4eeef46e0525',LEGACY_REFERENCE='e8786fabba66bd9184ab08a0c8c83bf97711f807';
@@ -22,6 +24,16 @@ const environment={...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'
 const git=(root,args,input)=>execFileSync('git',['-C',root,...args],{input,env:environment,timeout:10000,
   maxBuffer:64*1024*1024,stdio:['pipe','pipe','pipe']});
 const text=(root,args,input)=>git(root,args,input).toString('utf8').trim();
+// Historical V2 DATA roles keep their authentic598 source; the planner itself stays current.
+const historical598FixtureData=new Set(['scripts/source-impact-domain-inputs.mjs',
+  'scripts/test-source-impact-domain-inputs.mjs','scripts/test-source-impact-domain-plan.mjs']);
+const read598FixtureControl=file=>{
+  if(!historical598FixtureData.has(file))return fs.readFileSync(path.join(SOURCE,file));
+  assertSource598CodeSourceSelected();
+  const source=SOURCE598_CODE_SOURCE_PROVENANCE;
+  assert.equal(text(SOURCE,['rev-parse',source.head+'^{tree}']),source.tree);
+  return git(SOURCE,['cat-file','blob',source.head+':'+file]);
+};
 test('all-specifier scanner exposes bare/URL/data/require/computed imports and tracks read/command surfaces',()=>{
   const source="import fs from 'node:fs';export {x} from 'pkg';import 'https://example.invalid/a.js';import('data:text/javascript,1');require('other');import(selected);fs.readFileSync('known.json');";
   const scan=scanAllSourceDependencies(source);
@@ -316,7 +328,8 @@ test('OM owners select actual normal bank and runtime callers and keep unknown i
     'scripts/test-source-impact-domain-plan.mjs','scripts/test-fixed-assistant-failure-log-20261101.mjs'];
   const currentFiles=[...new Set([...files,...controls,bankFile])];
   const legacyControls=new Set(['scripts/source-impact-domain-inputs.mjs','scripts/test-source-impact-domain-inputs.mjs',
-    'scripts/source-impact-domain-plan.mjs','scripts/test-source-impact-domain-plan.mjs','scripts/test-source-targeted-domain-integration.mjs']);
+    'scripts/source-impact-domain-plan.mjs','scripts/test-source-impact-domain-plan.mjs','scripts/test-source-targeted-domain-integration.mjs',
+    'scripts/test-fixed-assistant-failure-log-20261101.mjs']);
   // Genuine before597-catalog CODE for this historical594 fixture; no oracle is retagged.
   const body=file=>git(SOURCE,['cat-file','blob',(legacyControls.has(file)
     ?'45594e185f087ff02c8e72649d02cb45cf79cf16':currentHead)+':'+file]);
@@ -503,6 +516,11 @@ test('normal598 registry keeps genuine148 inputs and closes only known normal co
     'scripts/test-source-impact-domain-inputs.mjs','scripts/source-impact-domain-plan.mjs',
     'scripts/lib/source-impact-domain-owners-598.json','scripts/test-source-impact-domain-plan.mjs',
     'scripts/test-source-targeted-domain-integration.mjs'];
+  const controlBody=file=>{
+    assert(controls.includes(file));
+    return file==='scripts/test-source-targeted-domain-integration.mjs'
+      ?git(SOURCE,['cat-file','blob',historicalAfter+':'+file]):read598FixtureControl(file);
+  };
   const root598=fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()),'rr-domain597-plan-'));
   const owned598=fs.lstatSync(root598,{bigint:true}),temporary598=path.dirname(root598);
   try{
@@ -510,7 +528,7 @@ test('normal598 registry keeps genuine148 inputs and closes only known normal co
     const objects=fs.realpathSync(path.join(text(SOURCE,['rev-parse','--path-format=absolute','--git-common-dir']),'objects'));
     fs.mkdirSync(path.join(root598,'.git/objects/info'),{recursive:true});
     fs.writeFileSync(path.join(root598,'.git/objects/info/alternates'),objects.replaceAll('\\','/')+'\n');
-    const rows=controls.map(file=>[file,fs.readFileSync(path.join(SOURCE,file))]);
+    const rows=controls.map(file=>[file,controlBody(file)]);
     const make598=(parent,changes,label)=>{
       git(root598,['read-tree',parent]);
       for(const [file,bytes]of changes)git(root598,['update-index','--add','--cacheinfo','100644',
@@ -521,7 +539,7 @@ test('normal598 registry keeps genuine148 inputs and closes only known normal co
     for(const file of [...controls,'scripts/lib/source-impact-domain-inputs-594.json','scripts/lib/source-impact-domain-owners-594.json','scripts/lib/source-impact-domain-inputs-597.json',
       'scripts/lib/source-impact-domain-owners-597.json','scripts/lib/source-impact-control-imports.mjs']){
       const target=path.join(root598,file);fs.mkdirSync(path.dirname(target),{recursive:true});
-      fs.writeFileSync(target,controls.includes(file)?fs.readFileSync(path.join(SOURCE,file)):
+      fs.writeFileSync(target,controls.includes(file)?controlBody(file):
         git(SOURCE,['cat-file','blob',reference+':'+file]));
     }
     const {planSourceDomainImpactFromGit:plan598}=await import(pathToFileURL(path.join(root598,'scripts/source-impact-domain-plan.mjs')).href);
@@ -623,7 +641,7 @@ test('normal598 registry keeps genuine148 inputs and closes only known normal co
     });
     await t.test('exact598 DMI scheduler and normal Python caller pairs preserve PG/CIT and refuse byte drift',()=>{
       const owners=['scripts/update-dmi-bulk.py','scripts/test-dmi-dkss-primary-mode.py','scripts/test-current-operational-python-contracts.mjs'];
-      const changes=owners.map(file=>[file,fs.readFileSync(path.join(SOURCE,file))]);
+      const changes=owners.map(file=>[file,git(SOURCE,['cat-file','blob',historicalAfter+':'+file])]);
       const actual=run598(make598(baseline598,changes,'synthetic exact reviewed DMI scheduler pairs'));
       assert.equal(actual.selection,'CONTROL_QUALIFICATION_REQUIRED',JSON.stringify(actual.reasonCodes));
       assert.equal(actual.commands.filter(value=>value==='node --test scripts/test-current-operational-python-contracts.mjs').length,1);
@@ -837,12 +855,12 @@ test('closed EN2 admin UI cohort requires exact frames and keeps unsafe scope FU
   const make=(parent,rows,label)=>{git(root,['read-tree',parent]);for(const [file,body]of rows)
    git(root,['update-index','--add','--cacheinfo','100644',text(root,['hash-object','-w','--stdin'],body),file]);
    return text(root,['commit-tree',text(root,['write-tree']),'-p',parent,'-m',label]);};
-  const controlRows=controls.map(file=>[file,fs.readFileSync(path.join(SOURCE,file))]);
+  const controlRows=controls.map(file=>[file,read598FixtureControl(file)]);
   const beforeRows=Object.entries(frames).map(([file,frame])=>[file,git(SOURCE,['cat-file','blob',frame.beforeBlob])]);
   const afterRows=Object.entries(frames).map(([file,frame])=>[file,git(SOURCE,['cat-file','blob',frame.afterBlob])]);
   const fixtureRows=Object.entries(registry.assistantAdminUi.fixtureSources).map(([file,frame])=>{const bytes=git(SOURCE,['cat-file','blob',frame.blob]);assert.equal(createHash('sha256').update(bytes).digest('hex'),frame.sha256);return[file,bytes];});
   const baseline=make(reference,[...controlRows,...beforeRows,...fixtureRows],'synthetic closed UI before exact frames');
-  for(const file of controls){const dst=path.join(root,file);fs.mkdirSync(path.dirname(dst),{recursive:true});fs.writeFileSync(dst,fs.readFileSync(path.join(SOURCE,file)));}
+  for(const file of controls){const dst=path.join(root,file);fs.mkdirSync(path.dirname(dst),{recursive:true});fs.writeFileSync(dst,read598FixtureControl(file));}
   const {planSourceDomainImpactFromGit:plan}=await import(pathToFileURL(path.join(root,'scripts/source-impact-domain-plan.mjs')).href);
   const run=head=>{git(root,['update-ref','HEAD',head]);return plan({baselineCommit:baseline,candidateCommit:head,expectedHead:head});};
   const candidate=make(baseline,afterRows,'synthetic exact closed UI after frames'),actual=run(candidate);

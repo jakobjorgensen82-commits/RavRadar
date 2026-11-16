@@ -30,14 +30,14 @@ if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
 def ordinary_workflow_oracle() -> str:
-    # Same exact whole-file inverse as the JavaScript workflow tests; every
-    # original assertion remains intact. New-route tests inspect actual bytes.
+    # The old whole-file oracle reads its already authentic historical input,
+    # through the same reviewed preparation as the JavaScript workflow tests.
     return subprocess.check_output(
         [
             "node", "--input-type=module", "-e",
-            "import fs from 'node:fs';"
+            "import { readHistoricalBuildWorkflowSource, projectPagesClosureHistoricalTestInput } from './scripts/lib/pages-closure-historical-test-input.mjs';"
             "import { inverseCompletedRuntimeWorkflow } from './scripts/lib/completed-private-runtime-workflow-review.mjs';"
-            "process.stdout.write(inverseCompletedRuntimeWorkflow(fs.readFileSync('.github/workflows/reusable-weather-build.yml', 'utf8').replaceAll('\\r\\n', '\\n'), 'build'));",
+            "process.stdout.write(inverseCompletedRuntimeWorkflow(projectPagesClosureHistoricalTestInput(readHistoricalBuildWorkflowSource(), 'build'), 'build'));",
         ],
         cwd=ROOT,
         text=True,
@@ -4831,7 +4831,18 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         )
         reentry_fallback = epoch_fallback.replace("$" + "{{ ", "$" + "{{ " + reentry_prefix, 1)
         self.assertEqual(actual_fallback, [reentry_fallback])
-        actual_reentry_fallback = actual_fallback[0]
+        # Current routing keeps its raw operand; the old oracle above owns
+        # only its historical compatibility markers.
+        raw_workflow = (
+            ROOT / ".github" / "workflows" / "reusable-weather-build.yml"
+        ).read_text("utf-8")
+        _, raw_dmi = workflow_step(raw_workflow, "Update DMI bulk model cache")
+        raw_fallback = [
+            line.strip() for line in raw_dmi.splitlines()
+            if line.strip().startswith("DMI_BULK_DEPLOYED_FALLBACK_PATH:")
+        ]
+        self.assertEqual(raw_fallback, [reentry_fallback])
+        actual_reentry_fallback = raw_fallback[0]
         self.assertEqual(dmi.count(reentry_fallback), 1)
         epoch_dmi = dmi.replace(reentry_fallback, epoch_fallback)
         actual_fallback = [

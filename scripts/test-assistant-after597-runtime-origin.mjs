@@ -5,22 +5,39 @@ import crypto from 'node:crypto';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {test} from 'node:test';
-import {modelSourceRelativeModuleSpecifiers} from './lib/model-source-imports.mjs';
-import {ACTIVE_ASSISTANT_SUCCESSOR,INACTIVE_SCALAR597_LATER_H0_SUCCESSOR,
-  UNISSUED_ASSISTANT_AFTER597_SUCCESSOR as next,SCALAR597_LATER_H0_BEFORE as old594,
-  assertAssistantAfter597CheckpointInverse} from './lib/assistant-later-h0-successor-source.mjs';
-import {assistantAfter597RuntimePredecessor} from './assistant-later-h0-runtime-transition.mjs';
-import {isScalar597OriginParentBinding,assertScalar597OriginParentMetadata,
+// Explicit normal current entry. No project constructor/runtime import
+// precedes the fixed after598 issuance guard. Old PRE bodies stay unchanged.
+const currentArguments=process.argv.slice(2);
+assert(currentArguments.length===0||(currentArguments.length===1&&currentArguments[0]==='--after598-current'),'Unknown or mixed assistant test mode');
+const AFTER598_CURRENT_MODE=currentArguments.length===1;
+const currentSource=await import('./lib/assistant-later-h0-successor-source.mjs');
+if(AFTER598_CURRENT_MODE){
+  currentSource.requireAssistantAfter598Output();currentSource.requireAssistantAfter598Release();
+  assert.equal(currentSource.ACTIVE_ASSISTANT_SUCCESSOR,currentSource.INACTIVE_ASSISTANT_AFTER598_SUCCESSOR);
+}
+const {modelSourceRelativeModuleSpecifiers}=await import('./lib/model-source-imports.mjs');
+const {ACTIVE_ASSISTANT_SUCCESSOR,INACTIVE_SCALAR597_LATER_H0_SUCCESSOR,
+  UNISSUED_ASSISTANT_AFTER597_SUCCESSOR:next,SCALAR597_LATER_H0_BEFORE:old594,
+  assertAssistantAfter597CheckpointInverse}=await import('./lib/assistant-later-h0-successor-source.mjs');
+const {assistantAfter597RuntimePredecessor}=await import('./assistant-later-h0-runtime-transition.mjs');
+const {isScalar597OriginParentBinding,assertScalar597OriginParentMetadata,
   isAssistantAfter597OriginParentBinding,assertAssistantAfter597OriginParentMetadata,
-  assertAssistantAfter597OriginTarget} from './lib/established-native-current-origin.mjs';
-import {assistantAfter597ReconcileParent,requiresPrivateRuntimeCheckpointReconcile,
-  privateRuntimeCheckpointReconcileFailureDiagnostic} from './reconcile-private-runtime-checkpoint.mjs';
+  assertAssistantAfter597OriginTarget}=await import('./lib/established-native-current-origin.mjs');
+const {assistantAfter597ReconcileParent,requiresPrivateRuntimeCheckpointReconcile,
+  privateRuntimeCheckpointReconcileFailureDiagnostic}=await import('./reconcile-private-runtime-checkpoint.mjs');
 
 const H0='2026-11-04T04:00:00.000Z',later='2026-11-04T08:00:00.000Z';
 const descriptor={modelBinding:{modelBundleSha256:next.before.I},productionReferenceAt:H0,
   contractHashes:{continuationStateContractSha256:next.before.T}};
 const checkpoint={candidateGRollbackCompanion:{modelBinding:{modelBundleSha256:next.before.C}}};
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+
+// Current source checks run only after the fixed issuance/ACTIVE admission above.
+if(AFTER598_CURRENT_MODE){
+  const {verifyAssistantAfter598SourceTarget}=await import('./national584-source-evidence.mjs');
+  await verifyAssistantAfter598SourceTarget();
+}
+if(!AFTER598_CURRENT_MODE){
 
 test('den faste597-originalfamilie kræver ægte597-metadata og en strengt nyere hel time',()=>{
   assert.equal(isAssistantAfter597OriginParentBinding(descriptor.modelBinding),true);
@@ -104,3 +121,56 @@ test('normal modelimport kræver præcise nye hunks og genskaber de ægte gamle 
       assert.throws(()=>modelSourceRelativeModuleSpecifiers(changed,file),/Whole reviewed model import source changed/);
   }
 });
+
+}else{
+
+  const origin=await import('./lib/established-native-current-origin.mjs');
+  const runtime=await import('./assistant-later-h0-runtime-transition.mjs'),reconcile=await import('./reconcile-private-runtime-checkpoint.mjs');
+  const before598=currentSource.ASSISTANT_AFTER598_BEFORE;
+  const oldDescriptor={modelBinding:{modelBundleSha256:before598.I},productionReferenceAt:H0,contractHashes:{continuationStateContractSha256:before598.T}};
+  const oldCheckpoint={candidateGRollbackCompanion:{modelBinding:{modelBundleSha256:before598.C}}};
+  test('after598 current fixed old598 origin enforces each C/I/T and strictly later whole H0',()=>{
+    assert.equal(origin.isAssistantAfter598OriginParentBinding(oldDescriptor.modelBinding),true);
+    assert.equal(origin.assertAssistantAfter598OriginParentMetadata(oldDescriptor,oldCheckpoint),true);
+    assert.equal(origin.assertAssistantAfter598OriginTarget(oldDescriptor,later),true);
+    for(const time of [H0,'2026-11-04T03:00:00.000Z','2026-11-04T08:30:00.000Z','invalid'])
+      assert.throws(()=>origin.assertAssistantAfter598OriginTarget(oldDescriptor,time));
+    for(const prior of [old594,next.before]){
+      assert.equal(origin.isAssistantAfter598OriginParentBinding({modelBundleSha256:prior.I}),false);
+      assert.throws(()=>origin.assertAssistantAfter598OriginParentMetadata({...oldDescriptor,modelBinding:{modelBundleSha256:prior.I}},oldCheckpoint));
+      assert.throws(()=>origin.assertAssistantAfter598OriginParentMetadata({...oldDescriptor,contractHashes:{continuationStateContractSha256:prior.T}},oldCheckpoint));
+      assert.throws(()=>origin.assertAssistantAfter598OriginParentMetadata(oldDescriptor,{candidateGRollbackCompanion:{modelBinding:{modelBundleSha256:prior.C}}}));
+    }
+    assert.equal(isScalar597OriginParentBinding({modelBundleSha256:old594.I}),true);
+    assert.equal(isAssistantAfter597OriginParentBinding({modelBundleSha256:next.before.I}),true);
+    assert.equal(isAssistantAfter597OriginParentBinding(oldDescriptor.modelBinding),false);
+  });
+  test('after598 current runtime and reconcile select old598 only and reject foreign original handles or caller overrides',()=>{
+    const fixed=runtime.assistantAfter598RuntimePredecessor();assert.equal(typeof fixed.snapshot,'function');
+    assert.throws(()=>fixed.snapshot({}));assert.throws(()=>runtime.assistantAfter598RuntimePredecessor({family:'597'}));
+    assert.throws(()=>runtime.assistantAfter597RuntimePredecessor({family:'598'}));
+    const rows=[{payload:{modelBinding:oldDescriptor.modelBinding,continuationStateContractSha256:before598.T,productionReferenceAt:H0}}];
+    assert.equal(reconcile.assistantAfter598ReconcileParent(rows,later),true);
+    for(const time of [H0,'2026-11-04T03:00:00.000Z','2026-11-04T08:30:00.000Z'])assert.throws(()=>reconcile.assistantAfter598ReconcileParent(rows,time));
+    assert.equal(reconcile.assistantAfter598ReconcileParent([{payload:{...rows[0].payload,continuationStateContractSha256:next.before.T}}],later),false);
+    const ordinary={GITHUB_WORKFLOW:'Run current RavRadar weather once',GITHUB_REF:'refs/heads/main',GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_RUN_ATTEMPT:'1',
+      GITHUB_SHA:'82200280c42b9060f14be2721ba7b766e0ede5a6',OPERATIONAL_ACTION:'integrated'};
+    assert.doesNotThrow(()=>currentSource.ACTIVE_ASSISTANT_SUCCESSOR.assertCaller(ordinary));
+    for(const invalid of [{...ordinary,GITHUB_WORKFLOW:'Deploy RavRadar code-only repair'},{...ordinary,COMPLETED_PRIVATE_RUNTIME:'true'}])
+      assert.throws(()=>currentSource.ACTIVE_ASSISTANT_SUCCESSOR.assertCaller(invalid));
+  });
+  test('after598 current four reviewed import frames reconstruct whole genuine old sources and reject unknown changes',async()=>{
+    const reader=await fs.readFile(path.join(ROOT,'scripts/lib/model-source-imports.mjs'),'utf8');
+    const match=/const ASSISTANT_AFTER598_REVIEW_DATA=(\{[\s\S]*?\});\nconst ASSISTANT_AFTER598_REVIEWED/.exec(reader);assert(match);
+    const reviewed=JSON.parse(match[1]);assert.equal(Object.keys(reviewed).length,4);
+    for(const[file,row]of Object.entries(reviewed)){
+      const source=await fs.readFile(path.join(ROOT,file),'utf8'),imports=modelSourceRelativeModuleSpecifiers(source,file);let original=source;
+      for(const hunk of [...row.hunks].reverse()){assert.equal(original.split(hunk.after).length,2);original=original.replace(hunk.after,()=>hunk.before);}
+      assert.equal(crypto.createHash('sha256').update(original).digest('hex'),row.beforeSha256);
+      assert.deepEqual(modelSourceRelativeModuleSpecifiers(original,file),imports);
+      const hunk=row.hunks[0];for(const changed of [source.replace(hunk.after,''),source.replace(hunk.after,hunk.after+'\n// unknown'),source+'\n'+hunk.after])
+        assert.throws(()=>modelSourceRelativeModuleSpecifiers(changed,file));
+    }
+  });
+
+}

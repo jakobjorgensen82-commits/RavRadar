@@ -341,3 +341,103 @@ test('normal598 input profile uses genuine source bytes without qualifying a bas
   }
 });
 
+
+
+// Actual issued599 input bytes, with independent owned Git objects only.
+// These are source-analysis facts; never a FULL/native/runtime qualification.
+test('derived599 input inventory keeps genuine metadata, factory origins and all refusal boundaries',async t=>{
+  const p=JSON.parse(fs.readFileSync(path.join(SOURCE,'scripts/lib/source-impact-domain-inputs-598.json')));
+  const origins=[...p.frozenGitAnchors,
+    {head:'bd9cf518fe798ddea45d2b835f324f6e2bea06fc',tree:'2f71c562eea774ca03996802f83bdad7cccd43cc'},
+    {head:'82200280c42b9060f14be2721ba7b766e0ede5a6',tree:'c69c1beed4275fb02af216a1c4741410555e2675'}];
+  const modelFiles=Object.values(p.models).flatMap(def=>{
+    const raw=fs.readFileSync(path.join(SOURCE,def.file),'utf8');
+    const manifest=JSON.parse(raw.slice(raw.indexOf('Object.freeze(')+14,raw.lastIndexOf(');')));
+    return [def.file,...manifest.files.map(row=>row[def.rowKey])];
+  });
+  const migrations=text(SOURCE,['ls-files','-z']).split('\0').filter(file=>file.startsWith('supabase/migrations/')&&file.endsWith('.sql'));
+  assert.equal(migrations.length,75);
+  const selected=[...new Set([...p.postgresModules,...p.postgresData,...p.nativeEvidenceControls,...p.setupInputs,
+    ...p.plannerTrustChain,...p.continuation.files,p.continuation.file,...modelFiles,...migrations,'package.json','version.json'])];
+  const temporary=fs.realpathSync(os.tmpdir()),root=fs.mkdtempSync(path.join(temporary,'rr-domain599-inputs-'));
+  const owned=fs.lstatSync(root,{bigint:true});
+  try{
+    command(root,['init','-q']);command(root,['config','core.autocrlf','false']);
+    for(const file of selected){assert(!path.isAbsolute(file)&&!file.split('/').includes('..'));
+      const from=path.join(SOURCE,file),target=path.join(root,file);assert(fs.lstatSync(from).isFile());
+      fs.mkdirSync(path.dirname(target),{recursive:true});fs.copyFileSync(from,target);}
+    const extras=[['bd9cf518fe798ddea45d2b835f324f6e2bea06fc','version.json'],
+      ['82200280c42b9060f14be2721ba7b766e0ede5a6','scripts/test-protected-ravscore-continuation-checkpoint.mjs'],
+      ['82200280c42b9060f14be2721ba7b766e0ede5a6','data/admin/ravscore-profile-selection.json'],
+      // Exact ancestor tree objects for these historical selected paths only.
+      ['82200280c42b9060f14be2721ba7b766e0ede5a6','scripts'],
+      ['82200280c42b9060f14be2721ba7b766e0ede5a6','data'],
+      ['82200280c42b9060f14be2721ba7b766e0ede5a6','data/admin']];
+    const extraBlobs=extras.map(([ref,file])=>text(SOURCE,['rev-parse',ref+':'+file]));
+    command(root,['unpack-objects','-q'],command(SOURCE,['pack-objects','--stdout'],
+      [...new Set([...origins.flatMap(row=>[row.head,row.tree]),...extraBlobs])].join('\n')+'\n'));
+    command(root,['add','--all']);const tree=text(root,['write-tree']);
+    const baseline=text(root,['commit-tree',tree,'-m','synthetic owned current599 source facts, not qualification']);
+    command(root,['update-ref','HEAD',baseline]);assert.equal(text(root,['status','--porcelain','--untracked-files=no']),'');
+    const {analyzeSourceDomainInputs:analyze}=await import(pathToFileURL(path.join(root,'scripts/source-impact-domain-inputs.mjs')).href);
+    const run=candidate=>{const result=analyze({baselineCommit:baseline,candidateCommit:candidate,expectedHead:candidate});noAuthority(result);return result;};
+    const reset=()=>command(root,['reset','--hard',baseline]);
+    const change=(file,body)=>{
+      reset();fs.writeFileSync(path.join(root,file),body);command(root,['add','--',file]);
+      const candidate=text(root,['commit-tree',text(root,['write-tree']),'-p',baseline,'-m','synthetic current599 input mutation']);
+      command(root,['update-ref','HEAD',candidate]);return candidate;
+    };
+    const original=run(baseline);assert.equal(original.analysis,'COMPLETE',original.failureCode);
+    await t.test('same actual599 family is complete without PG or gate authority',()=>{
+      assert.equal(original.profile.id,'DERIVED_599_DOMAIN_INPUTS_C101_I100_T12');
+      assert.equal(original.profile.scope,'DERIVED_599_INPUT_INVENTORY_ONLY');
+      assert.equal(original.actualPostgresInput.before.modules,69);assert.equal(original.actualPostgresInput.before.dataFiles,5);
+      assert.equal(original.actualPostgresInput.before.sqlFiles,75);assert.equal(original.actualPostgresInput.before.totalFiles,149);
+      assert.equal(original.models.C.before.files.length,101);assert.equal(original.models.I.before.files.length,100);
+      assert.equal(original.models.T.before.files.length,12);assert.equal(original.frozenGitAnchors.anchors.length,18);
+      assert.equal(original.actualPostgresInput.unchanged,true);for(const family of Object.values(original.models))assert.equal(family.unchanged,true);
+    });
+    // equal/deepEqual append their diff: the existing normal API deliberately
+    // projects these failures to its closed generic refusal code.
+    await t.test('whole metadata and actual application release cannot be forged',()=>{
+      const version=JSON.parse(fs.readFileSync(path.join(root,'version.json'),'utf8'));
+      for(const mutate of [value=>{value.releaseContract.unknown=true;},
+        value=>{value.releaseContract.modelBindings.integrated.modelId='unknown';},
+        value=>{value.releaseContract.releaseVersion='4.0.600';},value=>{value.version='4.0.600';}]){
+        const invalid=structuredClone(version);mutate(invalid);
+        const result=run(change('version.json',JSON.stringify(invalid)+'\n'));
+        assert.equal(result.analysis,'REFUSED');assert.equal(result.failureCode,'DOMAIN_INPUT_ANALYSIS_REFUSED');
+      }
+    });
+    await t.test('old expected head, changed manifest, T and archived SQL stay refused or changed',()=>{
+      reset();const version=fs.readFileSync(path.join(root,'version.json'));
+      const candidate=change('version.json',version);
+      const oldHead=analyze({baselineCommit:baseline,candidateCommit:baseline,expectedHead:baseline});
+      noAuthority(oldHead);assert.equal(oldHead.analysis,'REFUSED');assert.equal(oldHead.failureCode,'DOMAIN_INPUT_ANALYSIS_REFUSED');
+      reset();const generated=fs.readFileSync(path.join(root,p.models.C.file),'utf8');
+      const bad=run(change(p.models.C.file,generated.replace('faa049cb86e733e451211f50c155ff90fd3462230310298cf5696757ef5c9f5d','0'.repeat(64))));
+      assert.equal(bad.analysis,'REFUSED');assert.equal(bad.failureCode,'DOMAIN_INPUT_ANALYSIS_REFUSED');
+      reset();const tFile='js/core/ravscore-mobilisation-memory.js',tBytes=fs.readFileSync(path.join(root,tFile));
+      const changedT=run(change(tFile,Buffer.concat([tBytes,Buffer.from('\n// synthetic changed T input\n')])));
+      assert.equal(changedT.analysis,'REFUSED');assert.equal(changedT.failureCode,'DOMAIN_INPUT_ANALYSIS_REFUSED');
+      reset();const sql=migrations[0],sqlBytes=fs.readFileSync(path.join(root,sql));
+      const changedSql=run(change(sql,Buffer.concat([sqlBytes,Buffer.from('\n-- synthetic archived SQL drift\n')])));
+      assert.equal(changedSql.analysis,'COMPLETE',changedSql.failureCode);assert.equal(changedSql.actualPostgresInput.unchanged,false);
+      assert(changedSql.actualPostgresInput.changes.some(row=>row.file===sql));
+    });
+    await t.test('both fixed metadata and factory inputs must physically exist in the owned object store',()=>{
+      reset();for(const [id,failureCode]of [[origins.at(-2).head,'DOMAIN_FROZEN_ANCHOR_UNAVAILABLE'],[extraBlobs[1],'DOMAIN_SELECTED_OBJECT_UNAVAILABLE']]){
+        assert.match(id,/^[a-f0-9]{40}$/);const file=path.resolve(root,'.git/objects',id.slice(0,2),id.slice(2));
+        assert(file.startsWith(path.resolve(root,'.git/objects')+path.sep));assert(fs.lstatSync(file).isFile());
+        const saved=file+'.synthetic-unavailable';fs.renameSync(file,saved);
+        try{const result=run(baseline);assert.equal(result.analysis,'REFUSED');assert.equal(result.failureCode,failureCode);}
+        finally{fs.renameSync(saved,file);}
+      }
+    });
+  }finally{
+    const current=fs.lstatSync(root,{bigint:true}),resolved=path.resolve(root);
+    assert.equal(path.dirname(resolved),temporary);assert(path.basename(resolved).startsWith('rr-domain599-inputs-'));
+    assert.equal(current.dev,owned.dev);assert.equal(current.ino,owned.ino);assert(!current.isSymbolicLink());
+    fs.rmSync(resolved,{recursive:true,force:false});
+  }
+});

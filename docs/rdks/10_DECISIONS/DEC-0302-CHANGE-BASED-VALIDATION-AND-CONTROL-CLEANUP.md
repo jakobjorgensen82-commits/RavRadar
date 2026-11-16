@@ -1,3 +1,64 @@
+## CI-hint til SDK må ikke følge isoleret PostgreSQL- og nationalprøve
+
+Den tidligere SDK-klargøring gemmer stien til Node24 i RAVRADAR_SOURCE_NODE24. Skiftet tilbage til Node22 fjerner ikke jobvariablen. Den isolerede PostgreSQL- og nationalprøve afviser korrekt enhver ukendt RAVRADAR_-override; hintet kunne derfor stoppe den normale prøve før SQL, selv efter bestået kildekontrol.
+
+Kun de to direkte CLI-indgange fjerner nu netop dette allerede forbrugte SDK-hint, før deres main kaldes. Modulimporter renser intet, og alle eksporterede miljøkontroller samt afslag på øvrige overrides og forkert Nodeversion bevares. SDK-prøvens forudgående faktiske Node24-valg og den isolerede prøves faktiske Node22-krav er uændrede. Ingen workflow-inverse, hashkohorte, SQL eller modelregel ændres.
+
+Den normale hele kildeprøve for native-evidens har bestået med den additive regressionscase for begge faktiske CLI-grænser, friske importer og uændrede strikte guards. Det er ikke en udført PostgreSQL-prøve. Præcis samlet kildekvalifikation, faktisk nødvendig native SQL, installation og offentlig effekt mangler fortsat.
+
+## Historiske prøvers eget input og aktuelle sikkerhedsrammer
+
+De historiske workflowprøver læser deres egne allerede fastlagte Git-originaler. RAW-retention bruger sit f644-grundlag; Pages-/arkivprøverne bruger deres egne senere originaler. Ingen ny helfilkohorte, nuværende produktionsadgang eller genbrugstilladelse opstår af læsningen.
+
+Python-prøvens to gamle WAM-workflowkaldere bruger samme allerede gennemgåede læser og projektionsrækkefølge som JavaScript-prøven. Autentisk historisk input læses før den eksisterende completed-runtime-inverse. Den særskilte reentry-expression læses fortsat fra det rå aktuelle DMI-trin og afprøves med sine oprindelige mutationer. Alle 71 cases og de 696 hidtidige assertions bevares; ingen produktkode, helfilhash eller skip-regel ændres. De to rettede kaldere består lokalt. Den hele Linux-prøve og præcis samlet kildekvalifikation kræves fortsat.
+
+Den aktuelle kildegate læser fortsat rå aktuelle workflows. De eksisterende hele SQL-, original-, plan- og frisk-main-rammer, deres rækkefølge og de afgrænsede arkivkommandoer kontrolleres særskilt. Alle SQL-pushformer uden for de kendte skriverammer afvises, bortset fra den præcise eksisterende skrivefri dry-run. Den aktuelle snapshotlæser må fortsat ikke starte updater, leverandører, fuld validering eller releasegate.
+
+Rettelsen ændrer kontrolinput og prøveforberedelse, ikke produktkode, vejr, score eller udstedte migrationer. Lokale målprøver er ikke samlet kilde-/PostgreSQL-kvalifikation, installation eller revisionsaccept. Alle fem hovedmål og revisionens resterende beviser består.
+
+## Afgrænset forklaring af arkivlæserens CHECK_SUSPEND-afslag
+
+Den eksisterende arkivlæser kan forklare sine tre faste P0001-afslag før CHECK_SUSPEND: ikke-understøttet eller for stor CHECK-metadata, ikke-understøttede COPY-mål og ændret CHECK-katalog. Kun præcis fejlramme, fase, inventory-hash og mættede årsagstællere må forlade den ejede lokale database. Navne, definitioner, kommentarer, rækker og rå fejltekst forbliver private. Ukendt eller modstridende diagnostic bliver UNAVAILABLE.
+
+Årsagstællerne beregnes alene efter et allerede afvist guardresultat. En ordinær fejl i selve diagnosticen bevarer den oprindelige P0001 og dens faste årsag med tom diagnostic; query_canceled følger fortsat den eksisterende afbrydelse og tidsgrænse. Den normale ejede arkiv-B/HISTORY-kalder bruger samme lukkede verbose-format som den primære DATA-kalder med SHOW_CONTEXT=never. Alle andre psql-kald, katalog-/snapshotbytes, originaler, semantiske lighedskrav, rollback, Auth, oprydning og PASS-betingelser bevares.
+
+Dette er diagnostic, ikke en ny accept af arkivdata eller en forklaring af det aktuelle arkivs konkrete guardafslag. Normal SQL-kvalifikation og faktisk original-/Auth-gendannelse skal fortsat gennemføres; egressbudgettets ejeraccept ændres ikke.
+
+## 15. november — Prøveforberedelse og faktisk FULL-kontrolejerskab
+
+Den normale CURRENT-fixture kan genbruge sin deterministiske plandel til et syntetisk PR-review ved præcis samme Git-, profil-, mappe- og namespaceidentitet. Den genopbygger fortsat reviewtekst, hash, state og API-svar ved hver læsning. Ukendte eller ændrede input og funktioner bruger den normale beregning. Alle faktiske producer-/consumerplaner, målprocesser, før-/efterkontroller og ændringsafslag er uændrede.
+
+Den eksisterende FULL-kontrolkæde udfører nu også hele det normale CURRENT-mål én gang med samme hårde grænse på 300 sekunder. TARGETED-grenen udfører fortsat sine relevante hele mål gennem den normale producent. Den historiske workflowprøve bruger en præcis inverse til sit allerede autentiske grundlag; der tilføjes ingen ny head- eller hashkohorte.
+
+Genbrug af prøveforberedelse er ingen genbrug af kilde-, PostgreSQL- eller produktionsaccept. Faktisk afsluttet CURRENT, nødvendig ny PostgreSQL-kvalifikation, præcis kildekontrol og normal installation skal fortsat dokumenteres; en tidligere tidsafbrudt prøve er ikke bestået.
+
+### Den normale kæde skal kende den udstedte familie
+
+Historiske prøver beholder deres egne originale konstruktører, migrationer og forventninger, når den aktuelle familie bliver 599. De normale kaldere vælger den allerede autentiske 594- eller 598-kontekst efter den konkrete rolle. Den aktuelle førskrivnings- og runtimekontrol bruger fortsat den faktisk udstedte 599-binding. Et nyt familienavn alene er ikke grund til at acceptere en gammel prøve på nye input. Workflow- og actionprøver læser de allerede autentiske førbilleder for hver rolle og anvender de eksisterende inverser i deres oprindelige rækkefølge. SDK-kalderen anvender først den eksisterende inverse for det ejede cache- og nativetrin; gamle forventninger og hashkrav bevares, mens aktuelle 599-ruter og afslag prøves særskilt. Den aktuelle kildebevislæser projicerer først den allerede gennemgåede FULL-CURRENT-registrering og derefter de ejede cache-/nativetrin, før hele workflowets oprindelige hash og trinforløb kontrolleres. Flaget for de ekstra cachetrin sammenlignes alene med resultatet efter den første projektion. Rå aktuelle input prøves særskilt; historiske hash-, status-, tids- og kvitteringskrav bevares uden nye head- eller versionskohorter.
+
+Før- og efteraflæsning af PostgreSQL-programkvartetten er påkrævet, når public591, scalar597, after597 eller after598 er valgt. Den afsluttende programidentitet bekræftes efter bevist processtop og ejet oprydning og før den færdige rapport.
+
+Den historiske efter597-CLI prøves med sin egen allerede autentiske 598-kodekæde, CODE822; dens normale læser kører selv `--assistant-after597 --check`. Den aktuelle kalder prøves særskilt med `--active --check`. De eksisterende produktguards og facit samt C/I/T- og SQL-bytes bevares. Præcis samlet CI, nødvendig PostgreSQL-kvalifikation og verificeret produktionseffekt er fortsat selvstændige åbne krav.
+
+Det afledte 599-kildeinventar bygger på det bytevaliderede 598-inventar, den autentiske releasekontrakt og den eksisterende historiske 598-factory. Den kendte udstedte C/I-kombination, hele appreleasekontrakten, 75 originale migrationer og de faktiske transitive input bestemmer familien; intet appversionsinterval eller aktuelt head giver adgang. Gamle profiler bevares, og der indføres ingen ny JSON-profil eller per-head-kohorte. Inputanalyse er ikke et PostgreSQL- eller produktionsbevis.
+
+Samme 599-kode og en almindelig app600 med fast modelfamilie599 kan analyseres på deres egne committed input. Kildepariteten mellem forskellige versioner må stadig afvise ændrede rå modul-, pakke-, model- eller kontrolinput. Den ældre domæneplan vælger eksplicit FULL for denne familie; den aktuelle V4-plan bruger det faktisk beregnede inventar. De fulde guards ved almindelig afslutning ændres ikke.
+
+Den normale workflowprøve skal tilsvarende verificere den nye migrationsrække og de præcise nye kald før sine uændrede historiske projektioner. Hele den nye række, oprindelig SQL, workflowets øvrige bytes og begge rundrejser kontrolleres. Der opfindes ingen ny baseline eller generel versionsnormalisering. De relevante normale mål, faktisk Linux-kildekontrol, ny nødvendig PostgreSQL-eksekvering og sikker installation er fortsat særskilte krav.
+
+
+## 15. november 2026 — lokal599-udstedelse og adskilt app-/modelfamilie
+
+En almindelig appopdatering skal beholde den installerede modelfamilie, når modelinput er uændrede. Den aktuelle package-læser binder appversionen præcist til kildens version.json og den fulde normale releasekontrakt med de udstedte C/I-bindinger. Native-kvitteringer og direkte familiekrav beholder deres faste modelrelease. Kun de normale aktuelle kaldere fører den verificerede appkontekst til den faste familie; gamle profiler og gamle kvitteringer ommærkes ikke. FULL-genbrug læser den historiske producents egne committed appmetadata.
+
+Den samme normale versionsprøve skal verificere uændrede C/I/T, alle gamle SQL-filer og korrekte afslag ved forkert appversion, ændrede modelmetadata og et forkert native-familieargument. Den nye current-positivfixture skal indeholde den normale CLI-afslutning; migrationslæserens strenge formatkrav består.
+
+Den historiske CURRENT-fixture vælger sine input før importgrafen indsamles. De oprindelige model-/PG-/T-filer bevares fra deres autentiske reference; den historiske native-/national-/FULL-kontekst læses fra den allerede eksisterende verificerede kodeoprindelse. Aktuelle producer-, consumer-, receipt- og plannerkaldere forbliver aktuelle, og den faktiske nye SOURCE-familie prøves særskilt. En kontrolimport må ikke tavst overskrive et beskyttet modelinput. Modstridende input afvises før materialisering; gamle assertioner og direkte aktuelle native-/FULL-prøver består. Ingen nye head-cohorts, frosne banker, modelbindinger eller SQL følger af fixturekorrektionen.
+
+## Præcis lokal kildematerialisering før model- og nativekontrol
+
+Før filer materialiseres i en ny, egen isoleret kildebank, sættes bankens lokale Git-konfiguration til `core.autocrlf=false` og `core.eol=lf`. Før en builder eller nativeprøve skal de faktiske filbytes og SHA-256 sammenholdes med de eksakte indexblobs for alle uændrede PostgreSQL-, C/I/T- og profilinput, også JSON. En grøn normaliseret Git-diff eller samme tree er ikke fysisk bytebevis. Ved checkout-konvertering genskabes alene den egne banks uændrede filer fra deres autentiske blobs; ændrede kilder bevares og gennemgås særskilt. Gamle banker og global Git-konfiguration ændres ikke, og hashberegningen må ikke normalisere afvigelser væk.
+
 ## Tillæg — korrekt post-data-CHECK i den eksisterende restore-reader
 
 Den samme manuelle arkivkalder og samme ejede lokale B-database bevares. Et komplet privat katalogsnapshot omfatter samtlige CHECKs; kun understøttede almindelige tabel-CHECKs med oprindelig convalidated=false udsættes med DROP RESTRICT. Definition, navn, NOT VALID-tilstand og kommentar genetableres efter uændret DATA, med fuld semantisk kataloglighed før commit. Validerede CHECKs berøres ikke. Domæner, partitioner, arv, extensionafhængigheder, ufuldstændig eller for stor metadata stopper før DATA. Begge eksisterende DATA-faser bruger samme mekanisme; ingen original SQL eller række omskrives.

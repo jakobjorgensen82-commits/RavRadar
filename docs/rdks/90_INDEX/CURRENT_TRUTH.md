@@ -1,3 +1,36 @@
+## Afgrænset forklaring af arkivlæserens CHECK_SUSPEND-afslag
+
+Den eksisterende arkivlæser kan forklare sine tre faste P0001-afslag før CHECK_SUSPEND: ikke-understøttet eller for stor CHECK-metadata, ikke-understøttede COPY-mål og ændret CHECK-katalog. Kun præcis fejlramme, fase, inventory-hash og mættede årsagstællere må forlade den ejede lokale database. Navne, definitioner, kommentarer, rækker og rå fejltekst forbliver private. Ukendt eller modstridende diagnostic bliver UNAVAILABLE.
+
+Årsagstællerne beregnes alene efter et allerede afvist guardresultat. En ordinær fejl i selve diagnosticen bevarer den oprindelige P0001 og dens faste årsag med tom diagnostic; query_canceled følger fortsat den eksisterende afbrydelse og tidsgrænse. Den normale ejede arkiv-B/HISTORY-kalder bruger samme lukkede verbose-format som den primære DATA-kalder med SHOW_CONTEXT=never. Alle andre psql-kald, katalog-/snapshotbytes, originaler, semantiske lighedskrav, rollback, Auth, oprydning og PASS-betingelser bevares.
+
+Dette er diagnostic, ikke en ny accept af arkivdata eller en forklaring af det aktuelle arkivs konkrete guardafslag. Normal SQL-kvalifikation og faktisk original-/Auth-gendannelse skal fortsat gennemføres; egressbudgettets ejeraccept ændres ikke.
+
+## 15. november 2026 — lokal599-udstedelse og adskilt app-/modelfamilie
+
+Den afgrænsede599-kandidat samler assistentens rettelse af sammensatte strøm-/bølgespørgsmål med faste årsagsoplysninger ved komponentcachens eksisterende størrelsesafslag. Den normale C-bygger, I-bygger og T-afledning danner de faktiske bindinger før den almindelige originalbevarende SQL-konstruktør, metadata- og håndbogssynkronisering. Den nye append-only migration er `20261115174259_assistant_after598_original598_bound_successor.sql`. Alle 74 tidligere SQL-filer bevares. Scoreregler, kildeprioritet og administratorens geometri følger deres eksisterende kontrakter.
+
+En almindelig appopdatering skal beholde den installerede modelfamilie, når modelinput er uændrede. Den aktuelle package-læser binder appversionen præcist til kildens version.json og den fulde normale releasekontrakt med de udstedte C/I-bindinger. Native-kvitteringer og direkte familiekrav beholder deres faste modelrelease. Kun de normale aktuelle kaldere fører den verificerede appkontekst til den faste familie; gamle profiler og gamle kvitteringer ommærkes ikke. FULL-genbrug læser den historiske producents egne committed appmetadata.
+
+Udstedelsen og den efterfølgende almindelige appversionsprøve er lokalt afprøvet. Den nye familie kræver fortsat faktisk PostgreSQL-kvalifikation, præcis samlet kildekontrol, installation gennem normalvejen og verificeret offentlig virkning. Alle fem hovedmål og de syv særskilte revisionskrav består. Den tidligere førudstedelsespost er et historisk forberedelsescheckpoint, ikke den aktuelle lokale outputtilstand.
+
+### Normale 599-kaldere og uændrede historiske beviser
+
+Historiske prøver beholder deres egne originale konstruktører, migrationer og forventninger, når den aktuelle familie bliver 599. De normale kaldere vælger den allerede autentiske 594- eller 598-kontekst efter den konkrete rolle. Den aktuelle førskrivnings- og runtimekontrol bruger fortsat den faktisk udstedte 599-binding. Et nyt familienavn alene er ikke grund til at acceptere en gammel prøve på nye input. Workflow- og actionprøver læser de allerede autentiske førbilleder for hver rolle og anvender de eksisterende inverser i deres oprindelige rækkefølge. SDK-kalderen anvender først den eksisterende inverse for det ejede cache- og nativetrin; gamle forventninger og hashkrav bevares, mens aktuelle 599-ruter og afslag prøves særskilt. Den aktuelle kildebevislæser projicerer først den allerede gennemgåede FULL-CURRENT-registrering og derefter de ejede cache-/nativetrin, før hele workflowets oprindelige hash og trinforløb kontrolleres. Flaget for de ekstra cachetrin sammenlignes alene med resultatet efter den første projektion. Rå aktuelle input prøves særskilt; historiske hash-, status-, tids- og kvitteringskrav bevares uden nye head- eller versionskohorter.
+
+Python-prøvens to gamle WAM-workflowkaldere bruger samme allerede gennemgåede læser og projektionsrækkefølge som JavaScript-prøven. Autentisk historisk input læses før den eksisterende completed-runtime-inverse. Den særskilte reentry-expression læses fortsat fra det rå aktuelle DMI-trin og afprøves med sine oprindelige mutationer. Alle 71 cases og de 696 hidtidige assertions bevares; ingen produktkode, helfilhash eller skip-regel ændres. De to rettede kaldere består lokalt. Den hele Linux-prøve og præcis samlet kildekvalifikation kræves fortsat.
+
+Før- og efteraflæsning af PostgreSQL-programkvartetten er påkrævet, når public591, scalar597, after597 eller after598 er valgt. Den afsluttende programidentitet bekræftes efter bevist processtop og ejet oprydning og før den færdige rapport.
+
+Den historiske efter597-CLI prøves med sin egen allerede autentiske 598-kodekæde, CODE822; dens normale læser kører selv `--assistant-after597 --check`. Den aktuelle kalder prøves særskilt med `--active --check`. De eksisterende produktguards og facit samt C/I/T- og SQL-bytes bevares. Præcis samlet CI, nødvendig PostgreSQL-kvalifikation og verificeret produktionseffekt er fortsat selvstændige åbne krav.
+
+Det afledte 599-kildeinventar bygger på det bytevaliderede 598-inventar, den autentiske releasekontrakt og den eksisterende historiske 598-factory. Den kendte udstedte C/I-kombination, hele appreleasekontrakten, 75 originale migrationer og de faktiske transitive input bestemmer familien; intet appversionsinterval eller aktuelt head giver adgang. Gamle profiler bevares, og der indføres ingen ny JSON-profil eller per-head-kohorte. Inputanalyse er ikke et PostgreSQL- eller produktionsbevis.
+
+Samme 599-kode og en almindelig app600 med fast modelfamilie599 kan analyseres på deres egne committed input. Kildepariteten mellem forskellige versioner må stadig afvise ændrede rå modul-, pakke-, model- eller kontrolinput. Den ældre domæneplan vælger eksplicit FULL for denne familie; den aktuelle V4-plan bruger det faktisk beregnede inventar. De fulde guards ved almindelig afslutning ændres ikke.
+
+Præcis kildekvalifikation, faktisk nødvendig PostgreSQL, installation og offentlig virkning er fortsat åbne. Se DEC-0302 og håndbog 89.342.
+
+
 ## Aktuelt — afgrænset Pages-schema-fejlprojektion
 
 Den eksisterende skrivefri schema-læser har en lokalt prøvet projektion af fejlform, højst otte rækker og kategori fra præcis kode eller dokumenteret beskedform. Højst 2.048 beskedtegn og kun faste offentlige query-symboler som kandidater kan indgå. Kategoriens kilde oplyses; ukendt, modstridende og private eller tvetydige referencer giver ingen ny identitet. Rå fejltekst og frie leverandørværdier udskrives ikke. Alle eksisterende query-, adgangs-, transport- og no-write-grænser består.
@@ -77,6 +110,10 @@ Vejret skal fortsat hentes og opdateres gennem DMI, dernæst Copernicus og til s
 Dækningsgrad betyder **alle forventede timer for alle zoner over hele prognosehorisonten**, med tydelig periode og nævner. Opgør de fem vejrtyper hver for sig, deres samtidige dækning og fordelingen pr. prognosedag. Hold zoner, underdele og tilstrækkelig strøm-/scorehistorik adskilt. Råfilantal, kun manifestets eksisterende timer eller et grønt leverandørtrin er ikke dækningsmål. Halen og historikopbygningen er fortsat reelle driftsopgaver.
 
 Gamle samlede Source-pakker er udgået som leveringsenheder. Målkrav verificeres på aktuel main; en ny Source-overgang er ikke et selvstændigt slutmål. Kun konkrete aktuelle kodehuller begrunder nye ændringer. Relevante krav til numerik, originaler, adgang og faktiske beviser består. Kræver et konkret kodehul en numerisk, state- eller schemaovergang, skal relevant første anvendelse, fortsættelse og næste appændring fungere med ærlig backendkvalifikation. Tidligere private Source-kandidater er ikke dermed installeret eller accepteret; uafhængige rettelser fortsætter på aktuel main.
+
+Historiske workflowprøver bruger deres eget allerede fastlagte input; aktuelle sikkerhedsrammer prøves særskilt på rå aktuelle workflows. Den seneste kontrolrettelse er lokalt målprøvet, men samlet kildekvalifikation, nødvendig PostgreSQL og installation mangler fortsat. Dette afslutter ikke revisionens syv målkrav.
+
+Det allerede forbrugte Node24-hint fra SDK-kontrol ryddes kun ved de to direkte isolerede PostgreSQL-/national-CLI-indgange. Eksporterede miljøguards og importer er uændrede. Den normale kildeprøve af denne afgrænsning er bestået; faktisk SQL-/samlet kildekvalifikation og levering er selvstændigt åbne.
 
 Den ændringsbaserede V4-kontrolvej har reel kildekvalifikation, men hver ny ændring kræver sit eget relevante bevis. Kode-CI er ikke bevis for ny offentlig prognose, korrekt botoprydning eller leveret mail. Prognosedeling, adminvisning og assistent har allerede leverede delrettelser; de skal genbruges og må ikke forveksles med afsluttede samlede opgaver.
 

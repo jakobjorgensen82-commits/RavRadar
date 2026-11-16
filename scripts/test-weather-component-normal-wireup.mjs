@@ -851,7 +851,9 @@ value,diagnostic=producer.load_qualified_scalar_acquisition_planning(targets,ref
 assert value is None and diagnostic['valid'] is False
 print('NORMAL_PHYSICAL_DMI_READER_PASS')
 `;
-    assert.equal(run(python,['-B','-X','utf8','-c',probe,repository]).trim(),'NORMAL_PHYSICAL_DMI_READER_PASS');
+    const probeLines=run(python,['-B','-X','utf8','-c',probe,repository]).trim().split(/\r?\n/);
+    assert.equal(probeLines.at(-1),'NORMAL_PHYSICAL_DMI_READER_PASS');
+    assert.equal(probeLines.filter(line=>line==='NORMAL_PHYSICAL_DMI_READER_PASS').length,1);
     await assert.rejects(loadRetainedPartScalarPlanning({root,dmiCachePath:path.join(root,'.cache/invalid-candidate.json'),
       productionReferenceAt:H0}));
     await assert.rejects(loadRetainedWeatherComponentPlanningInputs({privateCacheRoot:path.join(root,'.cache'),

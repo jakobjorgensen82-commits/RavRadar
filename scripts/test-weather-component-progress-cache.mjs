@@ -9,7 +9,7 @@ import { promisify } from 'node:util';
 import { execFile } from 'node:child_process';
 import { weatherComponentProgressCache, withAuthenticatedWeatherProgress,
   WEATHER_PROGRESS_CIPHER_PATH, WEATHER_PROGRESS_MAX_CIPHER_BYTES } from './weather-component-progress-cache.mjs';
-import { buildPrivateWeatherComponentPack } from './lib/private-weather-component-pack.mjs';
+import { buildPrivateWeatherComponentPack, assertPrivateWeatherPackSize, privateWeatherPackSizeFailure } from './lib/private-weather-component-pack.mjs';
 import { PRIVATE_WEATHER_COMPONENT_FILES as files } from './lib/private-weather-component-inventory.mjs';
 import { PRIVATE_WEATHER_PROGRESS_ONLY_FILES as progressFiles } from './lib/private-weather-progress-files.mjs';
 import { mergeVerifiedProtectedProgressComponents,
@@ -1155,7 +1155,7 @@ test('missing key, absent snapshot, invalid original pack and unsafe destination
 // Inject a fixed pack rejection at its ordinary output-open boundary, after
 // genuine source inventory readers have closed. No large fixture or second
 // inventory implementation is needed to test the caller's failure report.
-async function withPackSizeRejection(root, inspect, { afterRejection = async () => {}, statOverride = null } = {}) {
+async function withPackSizeRejection(root, inspect, { afterRejection = async () => {}, statOverride = null, rejection = null } = {}) {
   root = await fs.realpath(root);
   const originalOpen = fs.open, originalReadFile = fs.readFile, originalLstat = fs.lstat;
   let rejected = false, payloadReadsAfterRejection = 0, leafStatsAfterRejection = 0;
@@ -1164,7 +1164,7 @@ async function withPackSizeRejection(root, inspect, { afterRejection = async () 
     if (!rejected && args[1] === 'wx' && path.basename(String(args[0])).startsWith('weather-component-inputs.pack.tmp-')) {
       rejected = true;
       await afterRejection();
-      throw new Error('WEATHER_PACK_SIZE_LIMIT');
+      throw rejection ?? new Error('WEATHER_PACK_SIZE_LIMIT');
     }
     if (rejected) payloadReadsAfterRejection += 1;
     return originalOpen.apply(fs, args);
@@ -1187,6 +1187,46 @@ async function withPackSizeRejection(root, inspect, { afterRejection = async () 
     fs.open = originalOpen; fs.readFile = originalReadFile; fs.lstat = originalLstat;
   }
 }
+
+test('progress guard telemetry projects only genuine fixed guard facts and preserves private inputs', async t => {
+  const f = await fixture(t);
+  assert.equal((await f.call('save')).saved, true);
+  const cipher = await fs.readFile(path.join(f.source, WEATHER_PROGRESS_CIPHER_PATH));
+  const originalBank = await fs.readFile(path.join(f.source, files.openMeteoBank));
+  const maximum = 768 * 1024 * 1024;
+  for (const manifestBytes of [null, 2]) {
+    // Guard arithmetic is tested above the filesystem boundary; inject that
+    // actual error through the existing output-open failure seam only to test
+    // the normal SAVE report/redaction. These are not the tiny fixture's sizes.
+    let rejection;
+    try { assertPrivateWeatherPackSize([{ relativePath: '.cache/SYNTHETIC_PRIVATE_INPUT.json',
+      bytes: manifestBytes === null ? maximum + 1 : maximum - 33 }], manifestBytes); }
+    catch (error) { rejection = error; }
+    assert.equal(rejection?.message, 'WEATHER_PACK_SIZE_LIMIT');
+    const expected = privateWeatherPackSizeFailure(rejection);
+    rejection.privateDetail = 'SYNTHETIC_PRIVATE_CONTENT';
+    rejection.sizeLimitGuard = { sourceBytes: 'SYNTHETIC_PRIVATE_FORGED_FACTS' };
+    const { result } = await withPackSizeRejection(f.source, () => f.call('save'), { rejection });
+    assert.equal(result.code, 'WEATHER_PACK_SIZE_LIMIT');
+    assert.equal(result.saved, false);
+    assert.equal(result.productionAuthority, false);
+    assert.deepEqual(result.sizeLimitGuard, expected);
+    assert.equal(result.postFailureObservation.atomic, false,
+      'guard totals must not relabel the later fixed-file observations');
+    for (const privateText of ['SYNTHETIC_PRIVATE', f.source, '.cache/', encryptionKey])
+      assert.equal(JSON.stringify(result).includes(privateText), false);
+    assert.deepEqual(await fs.readFile(path.join(f.source, WEATHER_PROGRESS_CIPHER_PATH)), cipher);
+    assert.deepEqual(await fs.readFile(path.join(f.source, files.openMeteoBank)), originalBank);
+  }
+  const forged = new Error('WEATHER_PACK_SIZE_LIMIT');
+  Object.defineProperty(forged, 'sizeLimitGuard', { get() { throw new Error('SYNTHETIC_PRIVATE_GETTER'); } });
+  const { result } = await withPackSizeRejection(f.source, () => f.call('save'), { rejection: forged });
+  assert.equal(result.code, 'WEATHER_PACK_SIZE_LIMIT');
+  assert.equal(Object.hasOwn(result, 'sizeLimitGuard'), false,
+    'an unregistered/copy failure cannot supply guard facts');
+  assert.equal(JSON.stringify(result).includes('SYNTHETIC_PRIVATE'), false);
+  assert.deepEqual(await fs.readFile(path.join(f.source, WEATHER_PROGRESS_CIPHER_PATH)), cipher);
+});
 
 test('progress failure metadata observes only 21 fixed files after rejection and preserves the prior snapshot', async t => {
   const f = await fixture(t);

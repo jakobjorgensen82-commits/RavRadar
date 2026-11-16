@@ -39,7 +39,10 @@ import {ASSISTANT_LATER_H0_BEFORE as OLD,ASSISTANT_LATER_H0_ALIASES as ALIASES,
   requireScalar597LaterH0Output,scalar597LaterH0Migration,
   ASSISTANT_AFTER597_BEFORE,ASSISTANT_AFTER597_ALIASES,readScalar597LaterH0CanonicalSource,
   assistantAfter597CheckpointContractFromBase,requireAssistantAfter597Binding,
-  requireAssistantAfter597Output,requireAssistantAfter597Release,assistantAfter597Migration}
+  requireAssistantAfter597Output,requireAssistantAfter597Release,assistantAfter597Migration,
+  ASSISTANT_AFTER598_BEFORE,ASSISTANT_AFTER598_ALIASES,readAssistantAfter597CanonicalSource,
+  assistantAfter598CheckpointContractFromBase,requireAssistantAfter598Binding,
+  requireAssistantAfter598Output,requireAssistantAfter598Release,assistantAfter598Migration}
   from './lib/assistant-later-h0-successor-source.mjs';
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),CP='ravradar_ravscore_checkpoint_';
 const sha=v=>crypto.createHash('sha256').update(v).digest('hex');
@@ -106,8 +109,17 @@ const ASSISTANT_AFTER597=Object.freeze({
   kind:'ASSISTANT_AFTER597_SUCCESSOR_STRUCTURE',
 });
 
+const ASSISTANT_AFTER598=Object.freeze({
+  previous:ASSISTANT_AFTER598_BEFORE,aliases:ASSISTANT_AFTER598_ALIASES,
+  previousRelease:598,validatorCount:45,
+  readPredecessor:readAssistantAfter597CanonicalSource,
+  checkpointFromBase:assistantAfter598CheckpointContractFromBase,
+  contractTail:"    || E'\\n-- assistant-later-h0-original597-payload-validator --\\n' || v_ask597_payload_definition;",
+  kind:'ASSISTANT_AFTER598_SUCCESSOR_STRUCTURE',
+});
+
 function fixedProfile(profile){
-  assert(profile===LEGACY586||profile===PUBLIC587||profile===PUBLIC588||profile===PUBLIC590||profile===PUBLIC591||profile===INSTALLED593_ORIGINAL591||profile===SCALAR597_LATER_H0||profile===ASSISTANT_AFTER597,'ASSISTANT_SUCCESSOR_UNKNOWN_PROFILE');
+  assert(profile===LEGACY586||profile===PUBLIC587||profile===PUBLIC588||profile===PUBLIC590||profile===PUBLIC591||profile===INSTALLED593_ORIGINAL591||profile===SCALAR597_LATER_H0||profile===ASSISTANT_AFTER597||profile===ASSISTANT_AFTER598,'ASSISTANT_SUCCESSOR_UNKNOWN_PROFILE');
   return profile;
 }
 function metadata(source,next,inventory,OLD){
@@ -174,6 +186,31 @@ export async function prepareAssistantAfter597SuccessorStructure(options){
   assert.equal(typeof options.version,'string');assert.match(options.version,/^[0-9]{14}$/);
   assert(options.version>ASSISTANT_AFTER597_BEFORE.version);
   return prepareStructure(ASSISTANT_AFTER597,options.version);
+}
+// Samme normale aliaskonstruktion som prepareStructure. Kun ægte598-kildedata;
+// ingen ny tuple, version, migrationsfil, udstedelse eller installationsautoritet.
+export async function prepareAssistantAfter598PredecessorAliases(){
+  assert.equal(arguments.length,0,'Ingen caller-valgt familie, kilde eller version');
+  const prior=await ASSISTANT_AFTER598.readPredecessor();
+  const prepared=predecessorAliases(ASSISTANT_AFTER598,prior);
+  const contract=definition(prior.canonicalSource,CP+'contract');
+  const oid=/  v_validator_oids oid\[\] := array\[([\s\S]*?)\n  \];/.exec(contract);assert(oid);
+  assert.equal([...oid[1].matchAll(/pg_catalog\.to_regprocedure\(/g)].length,ASSISTANT_AFTER598.validatorCount);
+  assert.equal(contract.split(ASSISTANT_AFTER598.contractTail).length,2);
+  return Object.freeze({kind:'ASSISTANT_AFTER598_PREDECESSOR_ALIASES_ONLY',admission:'NO_ADMISSION',
+    aliases:prepared.aliases,originalCanonicalSha256:sha(prior.canonicalSource),
+    originalCanonicalUnchanged:true,validatorCount:ASSISTANT_AFTER598.validatorCount,
+    nextBinding:null,migration:null,migrationIssued:false,installationPerformed:false,sameH0Capability:false});
+}
+// Den eksisterende DATA-konstruktør får først et reelt tidsstempel ved særskilt
+// normal udstedelse. Den skriver intet og giver aldrig produktionsautoritet.
+// Den normale CLI nedenfor kræver allerede udstedte bindinger før ethvert I/O.
+export async function prepareAssistantAfter598SuccessorStructure(options){
+  assert.equal(arguments.length,1);assert(options&&Object.getPrototypeOf(options)===Object.prototype);
+  assert.deepEqual(Object.keys(options),['version'],'Kun normalt tidsstempel; ingen caller-valgt profil eller tuple');
+  assert.equal(typeof options.version,'string');assert.match(options.version,/^[0-9]{14}$/);
+  assert(options.version>ASSISTANT_AFTER598_BEFORE.version);
+  return prepareStructure(ASSISTANT_AFTER598,options.version);
 }
 function predecessorAliases(profile,prior){
   fixedProfile(profile);const OLD=profile.previous,ALIASES=profile.aliases,before=prior.canonicalSource;
@@ -496,8 +533,29 @@ function scalar597Output(result){
     checkpointContractSha256:result.checkpointContractSha256,tripBindingPolicySha256:result.tripBindingPolicySha256};
 }
 
+export async function buildAssistantAfter598BindingSuccessor(options){
+  assert.equal(arguments.length,1);
+  const core=await prepareAssistantAfter598SuccessorStructure(options);
+  return wrap(core,await readAssistantAfter597CanonicalSource(),ASSISTANT_AFTER598);
+}
+
 async function main(){
   const args=process.argv.slice(2);
+  if(args[0]==='--active'&&ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-after598-successor')
+    args[0]='--assistant-after598';
+  if(args[0]==='--assistant-after598'){
+    const issued=requireAssistantAfter598Binding(),pins=requireAssistantAfter598Output();
+    requireAssistantAfter598Release();
+    assert.equal(args.length,2);assert(['--check','--write'].includes(args[1]));
+    const result=await buildAssistantAfter598BindingSuccessor({version:issued.version});
+    assert.deepEqual(result.nextBinding,issued);assert.deepEqual(scalar597Output(result),pins);
+    const file=path.join(ROOT,'supabase/migrations',assistantAfter598Migration().filename);
+    if(args[1]==='--write')await fs.writeFile(file,result.migration,{flag:'wx'});
+    else assert.deepEqual(await fs.readFile(file),Buffer.from(result.migration));
+    console.log('Præcis assistentkilde efter598 kontrolleret; ingen installation eller tilstandsoptagelse.');
+    return;
+  }
+
   if(args[0]==='--active'&&ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-mixed-after597-successor')
     args[0]='--assistant-after597';
   if(args[0]==='--assistant-after597'){

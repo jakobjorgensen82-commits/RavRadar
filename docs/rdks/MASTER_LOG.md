@@ -1,3 +1,21 @@
+## 15. november 2026 — lokal599-udstedelse og adskilt app-/modelfamilie
+
+Den afgrænsede599-kandidat samler assistentens rettelse af sammensatte strøm-/bølgespørgsmål med faste årsagsoplysninger ved komponentcachens eksisterende størrelsesafslag. Den normale C-bygger, I-bygger og T-afledning danner de faktiske bindinger før den almindelige originalbevarende SQL-konstruktør, metadata- og håndbogssynkronisering. Den nye append-only migration er `20261115174259_assistant_after598_original598_bound_successor.sql`. Alle 74 tidligere SQL-filer bevares. Scoreregler, kildeprioritet og administratorens geometri følger deres eksisterende kontrakter.
+
+En almindelig appopdatering skal beholde den installerede modelfamilie, når modelinput er uændrede. Den aktuelle package-læser binder appversionen præcist til kildens version.json og den fulde normale releasekontrakt med de udstedte C/I-bindinger. Native-kvitteringer og direkte familiekrav beholder deres faste modelrelease. Kun de normale aktuelle kaldere fører den verificerede appkontekst til den faste familie; gamle profiler og gamle kvitteringer ommærkes ikke. FULL-genbrug læser den historiske producents egne committed appmetadata.
+
+Udstedelsen og den efterfølgende almindelige appversionsprøve er lokalt afprøvet. Den nye familie kræver fortsat faktisk PostgreSQL-kvalifikation, præcis samlet kildekontrol, installation gennem normalvejen og verificeret offentlig virkning. Alle fem hovedmål og de syv særskilte revisionskrav består. Den tidligere førudstedelsespost er et historisk forberedelsescheckpoint, ikke den aktuelle lokale outputtilstand.
+
+## 15. november 2026 — 4.0.599 er samlet kildeforberedelse før udstedelse
+
+Den private 4.0.599-kandidat sammenfører den gennemgåede assistent-/kildeforberedelse efter598 med den faktiske hovedgren efter SourceOps- og inventory-leveringen. Begge dokumentdeltaer og den kanoniske håndbog bevares; den statiske INSTALL-kopi indeholder samme bog. Versionsværktøjets rettelse bevarer de historiske engangspolicyer ved et rent appversionsløft. De to fjernede linjer i én forældet Public588-fejltekstassertion genindføres ikke; alle præcise hele kildehashassertioner består.
+
+Normale package-, source-, native- og FULL-kald har eksplicit efter598-ansvar. De fem eksisterende testforældres nye current-tilstand kræver faktisk udstedt tuple, output, SQL, release og den korrekte ACTIVE-profil; deres 17 historiske PRE-testkroppe og gamle facit bevares. Historisk FULL598 ejer sin navngivne udstedte profil og autentiske CODE822-data, mens den aktuelle599-kildevej prøves særskilt. Retentionkalderens semantiske inverse skal genskabe den eksisterende hele gamle kildehash og den fulde fremadgående rundtur. Der indføres ingen ny helfilhashgruppe eller kopieret legacykontrolpakke.
+
+Syntaks og afgrænsede rene kalder-/inverseprøver er bestået på de gennemgåede kildeinput. Den første nye C/I/T-afledning og migrations-SQL er endnu ikke udstedt; efter598-binding, output og release er fortsat null, og ACTIVE ejer stadig den gamle udstedte598-familie. De 74 gamle migrationsfiler, schema, to genererede modelmoduler, fortsættelsens 12 filer og autentiske originaler bevares. Ingen PostgreSQL, factory, ekstern kilde-CI eller produktion er kørt som del af denne integration.
+
+Root skal gennemgå det præcise samlede input før normal udstedelse. Derefter kræves de faktiske current-forældre, normal native-/FULL-/releasekvalifikation og den næste rene appversionsprøve599→600 med samme udstedte familie. Den kendte stramme package-/releasekobling er ikke kaldt bestået. Endelig RDKS-, håndbogs- og changelogdokumentation skal følge de faktiske resultater før levering; denne post er et permanent forberedelsescheckpoint, ingen stabil release, installation eller produktionsaccept.
+
 ## 13. november — særskilt oprydning af udløbet ejerprøve
 
 En read-only gatewaykontrol kunne standse mailprøven efter positiv installation og fuld kildegenlæsning, før den kendt-ejede oprydning blev nået. Den lokale rettelse forbinder dette punkt med samme oprydning efter det oprindelige udløb. Den oprindelige gatewayfejl bevares; ukendt installation eller DELETE giver fortsat stop uden automatisk gentagelse.

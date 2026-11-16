@@ -161,7 +161,7 @@ function assertCurrentModeRelations(source) {
   const stage = currentStepById(source, 'private-build-stage-seal');
   assert.match(stage, /if test -n "\$COMPLETED_STAGE_SOURCE"; then[\s\S]*ordinary-completed-stage-admission\.mjs preserve-cipher[\s\S]*else[\s\S]*staged-private-production-runtime\.mjs seal/);
   assert.match(stage, /--source-head "\$GITHUB_SHA"[\s\S]*--repository "\$GITHUB_REPOSITORY"[\s\S]*--run-id "\$GITHUB_RUN_ID"[\s\S]*--run-attempt "\$GITHUB_RUN_ATTEMPT"/);
-  assert.match(currentStepById(source, 'private-runtime-publish'), /if test -n "\$COMPLETED_STAGE_SOURCE"; then[\s\S]*ordinary-completed-stage-admission\.mjs publish[\s\S]*else[\s\S]*protected-private-production-runtime\.mjs/);
+  assert.match(currentStepById(source, 'private-runtime-publish'), /if test -n "\$COMPLETED_STAGE_SOURCE"; then[\s\S]*ordinary-completed-stage-admission\.mjs publish[\s\S]*else[\s\S]*publish-private-weather-runtime\.mjs/);
   const beforeB = step(source, 'Prove the whole recreated B manifest and installed originals are unchanged');
   assert.ok(source.indexOf(beforeB) < at('private-runtime-publish'), 'Original B proof precedes protected B publication');
   assert.match(beforeB, /ordinary-completed-stage-admission\.mjs before-publish[\s\S]*else[\s\S]*completed-private-runtime-admission\.mjs before-publish/);
@@ -225,6 +225,15 @@ export function assertCurrentCompletedRuntimeWorkflow(actualBuild, actualOnce) {
   assert.equal(actualBuild.split("      - uses: actions/checkout@v7\n        with:\n          fetch-depth: 0\n").length, 2, 'One full-history checkout on the current ordinary route');
   assert.equal(actualBuild.includes("          fetch-depth: ${{ inputs.completed_private_runtime && '0' || '1' }}"), false, 'The old conditional depth remains historical only');
 }
+
+test('current weather publisher preserves protected authority and refuses caller replacement', async () => {
+  const wrapper=await rawWorkflow('./publish-private-weather-runtime.mjs');
+  assert.match(wrapper,/import \{ createProtectedPrivateRuntimeClients, publishProtectedPrivateProductionRuntime,\s+PROTECTED_PRIVATE_RUNTIME_POLICY \} from '\.\/protected-private-production-runtime\.mjs';/);
+  assert.match(wrapper,/return publishProtectedPrivateProductionRuntime\(\{ \.\.\.options, storage \}\);/);
+  const {publishPrivateWeatherRuntime}=await import('./publish-private-weather-runtime.mjs');
+  for(const key of ['storage','policy'])await assert.rejects(publishPrivateWeatherRuntime({[key]:{}}),
+    {code:'PRIVATE_WEATHER_PUBLICATION_OPTION_INVALID'});
+});
 
 test('current Pages workflow keeps completed-runtime B S gates and provider exclusion on raw callers', async () => {
   const [build, once] = await Promise.all(['../.github/workflows/reusable-weather-build.yml', '../.github/workflows/run-current-weather-once.yml'].map(rawWorkflow));

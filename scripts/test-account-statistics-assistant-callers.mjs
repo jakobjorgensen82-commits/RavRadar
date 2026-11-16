@@ -16,6 +16,8 @@ const activeNationalReaderRelease=activeNationalSource.requireRelease();
 const installed593Original591Current=activeNationalSource.sourcePhase==='assistant-installed593-origin591-successor';
 const scalar597Current=activeNationalSource.sourcePhase==='scalar597-later-h0-original594-successor';
 const after597Current=activeNationalSource.sourcePhase==='assistant-mixed-after597-successor';
+const after598Current=activeNationalSource.sourcePhase==='assistant-after598-successor';
+const activeNationalPackageRelease=after598Current?JSON.parse(await fs.readFile(new URL('../version.json',import.meta.url),'utf8')).version:activeNationalReaderRelease;
 
 test('593 V2 national reader derives every native prefix from the actual whole-phase execution or reuse',async()=>{
   // Genuine frozen593 modules retain their own ACTIVE guard. Never retag593
@@ -31,8 +33,8 @@ test('593 V2 national reader derives every native prefix from the actual whole-p
   const currentReader=await import('./national584-source-evidence.mjs');
   const historicalPackage=JSON.parse(await fs.readFile(path.join(frozenRoot,'package.json'),'utf8'));
   assert.equal(historicalPackage.version,'4.0.593');historicalReader.verifyPackage(historicalPackage);
-  if(installed593Original591Current||after597Current)assert.throws(()=>currentReader.verifyPackage(historicalPackage),error=>
-    error.code==='ERR_ASSERTION'&&error.actual==='4.0.593'&&error.expected===activeNationalReaderRelease);
+  if(installed593Original591Current||after597Current||after598Current)assert.throws(()=>currentReader.verifyPackage(historicalPackage),error=>
+    error.code==='ERR_ASSERTION'&&error.actual==='4.0.593'&&error.expected===activeNationalPackageRelease);
   const current={run:ORIGIN.run+593,attempt:1,head:'b'.repeat(40),pullRequest:756,branch:'synthetic593-national-v2'};
   const receipt={schemaVersion:2,kind:ASSISTANT_PUBLIC591_V2_KIND,profile:ASSISTANT_PUBLIC591_V2_PROFILE,
     phase:'ASSISTANT_PUBLIC591_SUCCESSOR',commands:[...ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS],
@@ -53,7 +55,7 @@ test('593 V2 national reader derives every native prefix from the actual whole-p
     if(reused){value.status='REUSED';value.executedInThisRun=false;value.origin={run:ORIGIN.run+500,attempt:1,job:123,
       head:'a'.repeat(40),artifactId:456,artifactDigest:'sha256:'+'d'.repeat(64),sourceTreeSha256:'sha256:'+'e'.repeat(64)};}
     assert.equal(verifyAssistantPublic591SuccessorNativeContext(value,current,'4.0.593').status,value.status);
-    if(installed593Original591Current||after597Current){
+    if(installed593Original591Current||after597Current||after598Current){
       assert.throws(()=>currentReader.verifyAssistantPublic591SuccessorNativeContext(value,current,'4.0.593'),error=>
         error.code==='ERR_ASSERTION'&&error.actual===activeNationalSource.sourcePhase&&error.expected==='assistant-public591-successor');
       assert.throws(()=>currentReader.verifyInstalled593Original591NativeContext(value,current,activeNationalReaderRelease));
@@ -774,12 +776,12 @@ test('current586 source registration preserves exact585 predecessor and distinct
   if(later){
     if(ASSISTANT_LATER_H0_BINDING===null)assert.throws(()=>verifyPackage(actualPkg),/ASSISTANT_LATER_H0_UNISSUED/);
     else assert.throws(()=>verifyPackage(actualPkg),error=>error.code==='ERR_ASSERTION'
-      &&error.actual===actualPkg.version&&error.expected===activeNationalReaderRelease,
+      &&error.actual===actualPkg.version&&error.expected===activeNationalPackageRelease,
       'ACTIVE-first590 rejects the preserved historical587 package');
   }
   const pkg=later?{...actualPkg,version:'4.0.586',scripts:inverseAssistantLaterH0SourceScripts(actualPkg.scripts)}:actualPkg;
   assert.equal(pkg.version,'4.0.586');assert.throws(()=>verifyPackage(pkg),error=>error.code==='ERR_ASSERTION'
-    &&error.actual==='4.0.586'&&error.expected===activeNationalReaderRelease,
+    &&error.actual==='4.0.586'&&error.expected===activeNationalPackageRelease,
     'ACTIVE-first590 rejects historical586 while its whole scripts inverse remains tested');
   assert.doesNotThrow(()=>inverseReviewedAccountStatisticsAssistantSourceScripts(pkg.scripts));
   const critical=pkg.scripts['test:ravscore-source-critical'],group='test:native-original-continuity-source';
@@ -816,7 +818,7 @@ test('assistant later-H0 registration keeps exact older scripts and refuses phas
   if(ASSISTANT_LATER_H0_BINDING===null)assert.throws(()=>verifyPackage(pkg),/ASSISTANT_LATER_H0_UNISSUED/);
   else{
     assert.equal(pkg.version,requireAssistantLaterH0Release());assert.throws(()=>verifyPackage(pkg),error=>error.code==='ERR_ASSERTION'
-      &&error.actual===pkg.version&&error.expected===activeNationalReaderRelease);
+      &&error.actual===pkg.version&&error.expected===activeNationalPackageRelease);
     assert.throws(()=>verifyCurrentNativeCommands([...ASSISTANT_LATER_H0_NATIVE_COMMANDS],pkg.version),error=>error.code==='ERR_ASSERTION'
       &&error.actual===pkg.version&&error.expected===activeNationalReaderRelease);
     assert.throws(()=>verifyCurrentNativeCommands(ASSISTANT_LATER_H0_NATIVE_COMMANDS.map(c=>c.replace(' --assistant-later-h0','')),pkg.version));
@@ -1144,6 +1146,8 @@ test('private-study006: privat eksport bevarer hele installationsarm og normale 
     const calls=[],host={insertAdjacentHTML(){}},firstAccess={profile:{id:'synthetic-first',is_active:true,role:'owner'},permissions:new Set(['full_admin'])};
     let learningCalls=0;
     const context={state:{tab:'learning',stationMap:null,access:firstAccess},content:host,
+      document:{querySelector:selector=>selector==='#adminLearningModelRead'?host:null},
+      currentAdminRead:()=>{const access=context.state.access;return()=>context.state.access===access;},
       analyzeObservations:()=>{learningCalls++;return{};},activePublicRavScoreState:()=>({ok:false}),
       activeModelUnavailableCard:()=>'SYNTHETIC_UNAVAILABLE_MODEL',moduleGuide:()=>'',bindModuleGuide(){},
       destroyCoastlineEditor(){},destroyDirectionMap(){},mountPrivateTripStudyCard(actualHost,access){
@@ -1161,7 +1165,9 @@ test('private-study006: privat eksport bevarer hele installationsarm og normale 
     const viewDeclarations=render.includes('adminViewEpoch++')
       ? source.match(/^let adminConnectionRead=[^\n]*adminViewEpoch=0,pendingCleanAdminRead=null;$/m)?.[0] : '';
     if(render.includes('adminViewEpoch++'))assert(viewDeclarations,'actual clean-read view declarations');
-    vm.runInContext(declarations+'\n'+(viewDeclarations||'')+'\n'+guards+'\n'+source.slice(learningStart,learningEnd)+';'+render+';render();',sandbox);
+    const blockedReadGuard=source.match(/^function rememberCleanBlockedAdminRead\([^]*?^\}/m)?.[0];
+    assert(blockedReadGuard,'actual blocked-read tracker used by the learning renderer');
+    vm.runInContext(declarations+'\n'+(viewDeclarations||'')+'\n'+guards+'\n'+blockedReadGuard+'\n'+source.slice(learningStart,learningEnd)+';'+render+';render();',sandbox);
     assert.equal(calls.length,1,'one private-study mount on learning');assert.equal(calls[0].access,firstAccess);assert.equal(learningCalls,1);
     const tabs=[...render.matchAll(/(?:\{|,)(\w+):render\w+/g)].map(x=>x[1]);assert(tabs.includes('learning')&&tabs.includes('dashboard'));
     for(const tab of tabs.filter(name=>name!=='learning')){context.state.tab=tab;vm.runInContext('render();',sandbox);assert.equal(calls.length,1,'no private-study mount on '+tab);}
@@ -1306,7 +1312,7 @@ test('public587 national entry refuses unissued before I/O and leaves historical
 // TEST ONLY: exact590 package DATA inverse before whole unchanged588/587 oracles.
 // This view is never passed to a runtime/native receipt verifier or installer.
 async function reviewed588PackageViewForUnchangedOracles(pkg){
-  if(!scalar597Current&&!after597Current&&Object.hasOwn(pkg.scripts,'test:supabase-backup')){
+  if(!scalar597Current&&!after597Current&&!after598Current&&Object.hasOwn(pkg.scripts,'test:supabase-backup')){
     const {inverseReviewedSupabaseBackupSourceScripts}=await import('./lib/account-statistics-assistant-package-review.mjs');
     return reviewed588PackageViewForUnchangedOracles({...pkg,scripts:inverseReviewedSupabaseBackupSourceScripts(pkg.scripts)});
   }
@@ -1317,12 +1323,16 @@ async function reviewed588PackageViewForUnchangedOracles(pkg){
   const {ASSISTANT_PUBLIC590_SUCCESSOR_SOURCE_COMMAND,ASSISTANT_PUBLIC587_SUCCESSOR_SOURCE_COMMAND,
     verifyAssistantPublic590SuccessorPackage,verifyAssistantPublic587SuccessorPackage}
     =await import('./national584-source-evidence.mjs');
-  if(activeNationalSource.sourcePhase==='assistant-public591-successor'||installed593Original591Current||scalar597Current||after597Current){
-    if(after597Current){
+  if(activeNationalSource.sourcePhase==='assistant-public591-successor'||installed593Original591Current||scalar597Current||after597Current||after598Current){
+    if(after598Current){
+      const {inverseAssistantAfter598Package}=await import('./national584-source-evidence.mjs');
+      pkg=inverseAssistantAfter598Package(pkg);
+    }
+    if(after597Current||after598Current){
       const {inverseAssistantAfter597Package}=await import('./national584-source-evidence.mjs');
       pkg=inverseAssistantAfter597Package(pkg);
     }
-    if(scalar597Current||after597Current){
+    if(scalar597Current||after597Current||after598Current){
       const {inverseScalar597LaterH0Package}=await import('./national584-source-evidence.mjs');
       pkg=inverseScalar597LaterH0Package(pkg);
       const {inverseReviewedDmiScalarGapSourceScripts}=await import('./lib/account-statistics-assistant-package-review.mjs');
@@ -1332,7 +1342,7 @@ async function reviewed588PackageViewForUnchangedOracles(pkg){
     const {inverseReviewedForecastShareProjectionSourceScripts}=await import('./lib/account-statistics-assistant-package-review.mjs');
     const {requireAssistantPublic587SuccessorRelease}=await import('./lib/assistant-later-h0-successor-source.mjs');
     const original=structuredClone(pkg);
-    (installed593Original591Current||scalar597Current||after597Current?verifyInstalled593Original591Package:verifyAssistantPublic591SuccessorPackage)(pkg);
+    (installed593Original591Current||scalar597Current||after597Current||after598Current?verifyInstalled593Original591Package:verifyAssistantPublic591SuccessorPackage)(pkg);
     const scripts=inverseReviewedForecastShareProjectionSourceScripts(pkg.scripts);
     const prior={...pkg,version:requireAssistantPublic587SuccessorRelease(),scripts:{...scripts,
       'test:assistant-later-h0-source':ASSISTANT_PUBLIC587_SUCCESSOR_SOURCE_COMMAND}};
@@ -1363,13 +1373,15 @@ test('compact-sharing registration qualifies actual592 plan once before unchange
   const {inverseReviewedForecastShareProjectionSourceScripts,inverseAssistantPublic588SuccessorSourceScripts}
     =await import('./lib/account-statistics-assistant-package-review.mjs');
   const {verifyAssistantPublic591SuccessorPackage,verifyInstalled593Original591Package,
-    verifyScalar597LaterH0Package,inverseScalar597LaterH0Package,verifyAssistantAfter597Package,inverseAssistantAfter597Package}
+    verifyScalar597LaterH0Package,inverseScalar597LaterH0Package,verifyAssistantAfter597Package,inverseAssistantAfter597Package,
+    verifyAssistantAfter598Package,inverseAssistantAfter598Package}
     =await import('./national584-source-evidence.mjs');
-  const verifyActual=after597Current?verifyAssistantAfter597Package:scalar597Current?verifyScalar597LaterH0Package:
+  const verifyActual=after598Current?verifyAssistantAfter598Package:after597Current?verifyAssistantAfter597Package:scalar597Current?verifyScalar597LaterH0Package:
     installed593Original591Current?verifyInstalled593Original591Package:verifyAssistantPublic591SuccessorPackage;
   assert.doesNotThrow(()=>verifyActual(actual));
-  const beforeScalar=after597Current?inverseAssistantAfter597Package(actual):actual;
-  const historical=scalar597Current||after597Current?inverseScalar597LaterH0Package(beforeScalar):beforeScalar;
+  const beforeAfter597=after598Current?inverseAssistantAfter598Package(actual):actual;
+  const beforeScalar=after597Current||after598Current?inverseAssistantAfter597Package(beforeAfter597):beforeAfter597;
+  const historical=scalar597Current||after597Current||after598Current?inverseScalar597LaterH0Package(beforeScalar):beforeScalar;
   const prior=inverseReviewedForecastShareProjectionSourceScripts(historical.scripts);
   const command='node scripts/test-forecast-share-projection.mjs',key='test:privacy-source-critical';
   assert.equal(prior[key]+' && '+command,actual.scripts[key]);
@@ -1390,16 +1402,20 @@ test('active590 national reader validates actual591 before exact whole588 packag
   const actual=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8')),original=structuredClone(actual);
   const {verifyPackage,verifyInstalled593Original591Package,verifyAssistantPublic591SuccessorPackage,verifyAssistantPublic590SuccessorPackage,verifyAssistantPublic587SuccessorPackage,
     verifyScalar597LaterH0Package,inverseScalar597LaterH0Package,verifyAssistantAfter597Package,inverseAssistantAfter597Package,
+    verifyAssistantAfter598Package,inverseAssistantAfter598Package,ASSISTANT_AFTER598_SOURCE_COMMAND,
     ASSISTANT_AFTER597_SOURCE_COMMAND,INSTALLED593_ORIGINAL591_SOURCE_COMMAND,ASSISTANT_PUBLIC591_SUCCESSOR_SOURCE_COMMAND,ASSISTANT_PUBLIC590_SUCCESSOR_SOURCE_COMMAND,ASSISTANT_PUBLIC587_SUCCESSOR_SOURCE_COMMAND}
     =await import('./national584-source-evidence.mjs');
   const {requireAssistantPublic590SuccessorRelease}=await import('./lib/assistant-later-h0-successor-source.mjs');
   const current592=activeNationalSource.sourcePhase==='assistant-public591-successor';
   const compactCurrent=current592||installed593Original591Current;
-  const activePackageVerifier=after597Current?verifyAssistantAfter597Package:scalar597Current?verifyScalar597LaterH0Package:
+  const activePackageVerifier=after598Current?verifyAssistantAfter598Package:after597Current?verifyAssistantAfter597Package:scalar597Current?verifyScalar597LaterH0Package:
     installed593Original591Current?verifyInstalled593Original591Package
     :current592?verifyAssistantPublic591SuccessorPackage:verifyAssistantPublic590SuccessorPackage;
-  assert.equal(actual.version,compactCurrent||scalar597Current||after597Current?activeNationalReaderRelease:requireAssistantPublic590SuccessorRelease());
-  if(after597Current){
+  assert.equal(actual.version,after598Current?activeNationalPackageRelease:compactCurrent||scalar597Current||after597Current?activeNationalReaderRelease:requireAssistantPublic590SuccessorRelease());
+  if(after598Current){
+    assert.equal(actual.scripts['test:assistant-later-h0-source'],ASSISTANT_AFTER598_SOURCE_COMMAND);
+    assert.throws(()=>verifyPackage(inverseAssistantAfter598Package(actual)));
+  }else if(after597Current){
     assert.equal(actual.scripts['test:assistant-later-h0-source'],ASSISTANT_AFTER597_SOURCE_COMMAND);
     assert.throws(()=>verifyPackage(inverseAssistantAfter597Package(actual)));
   }else if(scalar597Current){
@@ -1408,9 +1424,9 @@ test('active590 national reader validates actual591 before exact whole588 packag
     assert.throws(()=>verifyPackage(inverseScalar597LaterH0Package(actual)));
   }else assert.equal(actual.scripts['test:assistant-later-h0-source'],installed593Original591Current?INSTALLED593_ORIGINAL591_SOURCE_COMMAND
     :current592?ASSISTANT_PUBLIC591_SUCCESSOR_SOURCE_COMMAND:ASSISTANT_PUBLIC590_SUCCESSOR_SOURCE_COMMAND);
-  if(compactCurrent||after597Current)assert.throws(()=>verifyAssistantPublic590SuccessorPackage(actual),error=>error.code==='ERR_ASSERTION'
+  if(compactCurrent||after597Current||after598Current)assert.throws(()=>verifyAssistantPublic590SuccessorPackage(actual),error=>error.code==='ERR_ASSERTION'
     &&error.actual===activeNationalSource.sourcePhase&&error.expected==='assistant-public590-successor');
-  if(installed593Original591Current||after597Current)assert.throws(()=>verifyAssistantPublic591SuccessorPackage(actual),error=>error.code==='ERR_ASSERTION'
+  if(installed593Original591Current||after597Current||after598Current)assert.throws(()=>verifyAssistantPublic591SuccessorPackage(actual),error=>error.code==='ERR_ASSERTION'
     &&error.actual===activeNationalSource.sourcePhase&&error.expected==='assistant-public591-successor');
   assert.doesNotThrow(()=>verifyPackage(actual));
   assert.doesNotThrow(()=>activePackageVerifier(actual));
@@ -1430,12 +1446,12 @@ test('active590 national reader validates actual591 before exact whole588 packag
     assert.throws(()=>verifyPackage(changed));
     assert.throws(()=>activePackageVerifier(changed));
   }
-  for(const version of ['4.0.586','4.0.587','4.0.588','4.0.590',...(compactCurrent||after597Current?['4.0.591']:[]),
-    ...(installed593Original591Current||after597Current?['4.0.592','4.0.593']:[]),
-    ...(scalar597Current||after597Current?['4.0.594','4.0.595','4.0.596']:[]),...(after597Current?['4.0.597']:[])]){
+  for(const version of ['4.0.586','4.0.587','4.0.588','4.0.590',...(compactCurrent||after597Current||after598Current?['4.0.591']:[]),
+    ...(installed593Original591Current||after597Current||after598Current?['4.0.592','4.0.593']:[]),
+    ...(scalar597Current||after597Current||after598Current?['4.0.594','4.0.595','4.0.596']:[]),...(after597Current||after598Current?['4.0.597']:[]),...(after598Current?['4.0.598']:[])]){
     const changed={...actual,version};
     assert.throws(()=>verifyPackage(changed),error=>error.code==='ERR_ASSERTION'
-      &&error.actual===version&&error.expected===activeNationalReaderRelease);
+      &&error.actual===version&&error.expected===activeNationalPackageRelease);
   }
   assert.deepEqual(actual,original);
 });
@@ -1447,7 +1463,32 @@ test('active590 normal national reader rejects old,retagged,reused,stale or muta
   const {INSTALLED593_ORIGINAL591_COMMANDS,INSTALLED593_ORIGINAL591_PHASE_KIND,ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS,ASSISTANT_PUBLIC590_SUCCESSOR_COMMANDS,
     verifyAssistantPublic591SuccessorPhaseReceipt,verifyAssistantPublic590SuccessorPhaseReceipt,verifyAssistantPublic587SuccessorPhaseReceipt}
     =await import('./native-postgres-evidence.mjs');
-  if(after597Current){
+  if(after598Current){
+    const {ASSISTANT_AFTER598_COMMANDS,ASSISTANT_AFTER597_COMMANDS,SCALAR597_LATER_H0_COMMANDS,verifyInstalled593Original591PhaseReceipt}
+      =await import('./native-postgres-evidence.mjs');
+    const {verifyAssistantAfter598NativeContext,assistantAfter598NativeClaims}=await import('./national584-source-evidence.mjs');
+    const {INACTIVE_INSTALLED593_ORIGINAL591_SUCCESSOR:old}=await import('./lib/assistant-later-h0-successor-source.mjs');
+    const current={run:90000000000,attempt:1,head:'a'.repeat(40),pullRequest:123,branch:'codex/synthetic-old594-reader'};
+    // Historical validator DATA only; never a successful new599 native receipt/capability.
+    const receipt={schemaVersion:1,kind:INSTALLED593_ORIGINAL591_PHASE_KIND,phase:'INSTALLED593_ORIGINAL591_SUCCESSOR',
+      sourcePhase:old.sourcePhase,releaseVersion:old.requireRelease(),binding:old.requireBinding(),output:old.requireOutput(),
+      databaseBefore:old.databaseBefore,current,commands:INSTALLED593_ORIGINAL591_COMMANDS,status:'EXECUTED',
+      executedInThisRun:true,origin:null,eligibleForReuse:false};
+    assert.equal(verifyInstalled593Original591PhaseReceipt(receipt,current).status,'EXECUTED');
+    assert.doesNotThrow(()=>verifyCurrentNativeCommands(ASSISTANT_AFTER598_COMMANDS,activeNationalReaderRelease));
+    for(const stale of [ASSISTANT_AFTER597_COMMANDS,SCALAR597_LATER_H0_COMMANDS,INSTALLED593_ORIGINAL591_COMMANDS,ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS,
+      ASSISTANT_PUBLIC590_SUCCESSOR_COMMANDS,ASSISTANT_PUBLIC587_SUCCESSOR_NATIVE_COMMANDS,
+      [...ASSISTANT_AFTER598_COMMANDS,'node changed.mjs']])
+      assert.throws(()=>verifyCurrentNativeCommands(stale,activeNationalReaderRelease));
+    assert.throws(()=>verifyCurrentNativeCommands(ASSISTANT_AFTER598_COMMANDS,'4.0.597'));
+    assert.throws(()=>verifyCurrentNativeCommands(ASSISTANT_AFTER598_COMMANDS,'4.0.598'));
+    for(const changed of [receipt,{...receipt,sourcePhase:activeNationalSource.sourcePhase,releaseVersion:activeNationalReaderRelease},
+      {...receipt,commands:ASSISTANT_AFTER598_COMMANDS},{...receipt,status:'REUSED',origin:{run:1}},
+      {...receipt,current:{...current,attempt:2}},{...receipt,current:{...current,head:'b'.repeat(40)}}]){
+      await assert.rejects(verifyAssistantAfter598NativeContext(changed,current,activeNationalReaderRelease));
+      await assert.rejects(assistantAfter598NativeClaims(changed,current));
+    }
+  }else   if(after597Current){
     const {ASSISTANT_AFTER597_COMMANDS,SCALAR597_LATER_H0_COMMANDS,verifyInstalled593Original591PhaseReceipt}
       =await import('./native-postgres-evidence.mjs');
     const {verifyAssistantAfter597NativeContext,assistantAfter597NativeClaims}=await import('./national584-source-evidence.mjs');
@@ -1615,8 +1656,10 @@ function reviewedPrivateStudyOperatorPublisher(source){
 test('DMI scalar source registration qualifies75 commands before unchanged72-command oracles',async()=>{
   const live=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8'));
   const liveOriginal=structuredClone(live);
-  const beforeScalar=after597Current
-    ? (await import('./national584-source-evidence.mjs')).inverseAssistantAfter597Package(live):live;
+  const beforeAfter597=after598Current
+    ? (await import('./national584-source-evidence.mjs')).inverseAssistantAfter598Package(live):live;
+  const beforeScalar=after597Current||after598Current
+    ? (await import('./national584-source-evidence.mjs')).inverseAssistantAfter597Package(beforeAfter597):beforeAfter597;
   const historical=beforeScalar.version==='4.0.597'
     ? (await import('./national584-source-evidence.mjs')).inverseScalar597LaterH0Package(beforeScalar)
     : beforeScalar;

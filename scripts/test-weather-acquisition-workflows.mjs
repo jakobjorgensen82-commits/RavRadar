@@ -1,4 +1,5 @@
-import { projectPagesClosureHistoricalTestInput as historicalPagesInput } from './lib/pages-closure-historical-test-input.mjs';
+import { projectPagesClosureHistoricalTestInput as historicalPagesInput,
+  readHistoricalBuildWorkflowSource, readHistoricalCompletedStageWorkflowSources } from './lib/pages-closure-historical-test-input.mjs';
 import assert from 'node:assert/strict';
 import { inverseCompletedRuntimeWorkflow, inverseImmediateOrdinaryPagesWorkflow, inversePagesPublicProjectionWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
 import {writeRuntimeAuditExecutionObservation} from './observe-runtime-audit-execution.mjs';
@@ -12,9 +13,10 @@ import { runInNewContext } from 'node:vm';
 // Workflow contract and an isolated shell guard. Never reads private data or calls a provider.
 const read = file => fs.readFileSync(file, 'utf8').replaceAll('\r\n', '\n');
 const actualNormalWorkflow = read('.github/workflows/reusable-weather-build.yml');
-const normal = inverseCompletedRuntimeWorkflow(historicalPagesInput(actualNormalWorkflow, 'build'), 'build');
+const historicalNormalWorkflow = readHistoricalBuildWorkflowSource();
+const normal = inverseCompletedRuntimeWorkflow(historicalPagesInput(historicalNormalWorkflow, 'build'), 'build');
 const orchestrator = read('.github/workflows/update-and-deploy.yml');
-const manual = inverseCompletedRuntimeWorkflow(read('.github/workflows/run-current-weather-once.yml'), 'once');
+const manual = inverseCompletedRuntimeWorkflow(readHistoricalCompletedStageWorkflowSources().once, 'once');
 const watchdog = read('.github/workflows/preserve-copernicus-current-shadow.yml');
 const retiredOneoff = read('.github/workflows/validate-copernicus-current-pilot.yml');
 assert.match(normal, /quick_confirmation:\s+required: false\s+type: boolean\s+default: false/);
@@ -492,6 +494,8 @@ test('runtime audit execution observation keeps actual exit and private-free met
 
 
 test('qualified scalar planning uses the restored snapshot and preserves conservative special routes', () => {
+  // This original layout oracle keeps its genuine input; the current layout is checked separately below.
+  const actualNormalWorkflow = historicalNormalWorkflow;
   const budget = step(actualNormalWorkflow, 'Choose DMI budget from retained five-component PART coverage');
   const planner = step(actualNormalWorkflow, 'Plan global current acquisition before DMI');
   const dmi = step(actualNormalWorkflow, 'Update DMI bulk model cache');
@@ -526,5 +530,52 @@ test('qualified scalar planning uses the restored snapshot and preserves conserv
   for (const unknown of [actualNormalWorkflow+'\n', actualNormalWorkflow.replace(schema12, schema12+' || true')]) {
     assert.throws(() => inverseCompletedRuntimeWorkflow(unknown, 'build'),
       'Unknown whole workflows retain the historical rejection');
+  }
+});
+
+test('raw current acquisition binds one retained snapshot to planner then qualified DMI budget', () => {
+  function requireCurrentChain(source) {
+    const snapshot = step(source, 'Prepare retained DMI planning snapshot');
+    const planner = step(source, 'Plan global current acquisition before DMI');
+    const budget = step(source, 'Choose DMI budget from retained five-component PART coverage');
+    const dmi = step(source, 'Update DMI bulk model cache');
+    const offsets = [snapshot, planner, budget, dmi].map(block => source.indexOf(block));
+    assert.ok(offsets.every((at, index) => at >= 0 && (!index || at > offsets[index - 1])),
+      'Materialize one snapshot, finish the planner, derive its qualified budget, then run DMI');
+    const guard = "inputs.completed_private_runtime != true && (steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true')";
+    for (const block of [snapshot, planner, budget])
+      assert.equal(block.match(/^        if: (.+)$/m)?.[1], guard, 'Same ordinary provider-route guard');
+    assert.match(snapshot, /id: dmi-recovery-snapshot/);
+    assert.ok(snapshot.includes("printf 'cache_path=%s\\n' \"$recovery_cache\" >> \"$GITHUB_OUTPUT\""));
+    for (const block of [planner, budget]) {
+      assert.ok(block.includes('DMI_PLANNING_SNAPSHOT: ${{ steps.dmi-recovery-snapshot.outputs.cache_path }}'));
+      assert.ok(block.includes('DMI_PART_CONTINUITY_DONOR_PATH: ${{ steps.restored-dmi-part-continuity-donor.outputs.path }}'));
+      assert.ok(block.includes('--scalar-history "$DMI_PART_CONTINUITY_DONOR_PATH"'));
+    }
+    assert.ok(planner.includes('if ! python scripts/build-weather-acquisition-plan.py'));
+    assert.ok(planner.includes('"${qualified_args[@]}"; then'));
+    assert.ok(planner.includes('rm -f .cache/weather-current-acquisition-plan.json .cache/weather-qualified-acquisition-plan.json'));
+    assert.ok(budget.includes('python scripts/plan-dmi-recovery.py'));
+    for (const argument of ['--qualified-plan .cache/weather-qualified-acquisition-plan.json',
+      '--current-plan .cache/weather-current-acquisition-plan.json', '--scalar-snapshot "$DMI_PLANNING_SNAPSHOT"',
+      '--cache "$DMI_PLANNING_SNAPSHOT"', '--parts data/live/coastal-parts-v2.json',
+      '--at "$RAVRADAR_PRODUCTION_TARGET_HOUR"', '"${qualified_args[@]}"', '--github-output "$GITHUB_OUTPUT"'])
+      assert.ok(budget.includes(argument), 'Normal qualified budget argument: ' + argument);
+    assert.ok(budget.includes("printf 'cache_path=%s\\n' \"$DMI_PLANNING_SNAPSHOT\" >> \"$GITHUB_OUTPUT\""));
+    for (const variable of ['DMI_BULK_CURRENT_ACQUISITION_PLAN_PATH: .cache/weather-current-acquisition-plan.json',
+      'DMI_BULK_QUALIFIED_ACQUISITION_PLAN_PATH: .cache/weather-qualified-acquisition-plan.json',
+      'DMI_BULK_SCALAR_SNAPSHOT_PATH: ${{ steps.dmi-recovery-budget.outputs.cache_path }}'])
+      assert.ok(dmi.includes(variable), 'DMI receives the same qualified planning inputs: ' + variable);
+    return { planner, budget, guard };
+  }
+  const { planner, budget, guard } = requireCurrentChain(actualNormalWorkflow);
+  for (const changed of [
+    actualNormalWorkflow.replace(budget, '').replace(planner, () => budget + planner),
+    actualNormalWorkflow.replace(budget, () => budget.replace('--qualified-plan .cache/weather-qualified-acquisition-plan.json', '')),
+    actualNormalWorkflow.replace(budget, () => budget.replace('steps.dmi-recovery-snapshot.outputs.cache_path', 'steps.dmi-recovery-budget.outputs.cache_path')),
+    actualNormalWorkflow.replace(budget, () => budget.replace('        if: ' + guard, '        if: true')),
+  ]) {
+    assert.notEqual(changed, actualNormalWorkflow);
+    assert.throws(() => requireCurrentChain(changed));
   }
 });

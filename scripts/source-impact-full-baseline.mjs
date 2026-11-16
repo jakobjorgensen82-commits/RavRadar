@@ -4,16 +4,17 @@ import {execFileSync} from 'node:child_process';
 import {decideSourceGate,SOURCE_GATE_CONTRACT,PULL_REQUEST_SOURCE_JOB,
   PULL_REQUEST_SOURCE_WORKFLOW,PULL_REQUEST_SOURCE_STEPS} from './lib/weather-source-gate.mjs';
 import {sourceTreeContentSha256,sourceTreeProofArtifactName} from './lib/source-tree-content.mjs';
+import {assertReleaseContractMetadata} from './lib/release-contract-metadata.mjs';
 import {verifyAssistantPublic591SuccessorPhaseReceipt,verifyAssistantPublic591V2PhaseReceipt,
   verifyAssistantPublic591Metadata,ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND,
   ASSISTANT_PUBLIC591_V2_KIND,INSTALLED593_ORIGINAL591_PHASE_KIND,
   verifyInstalled593Original591PhaseReceipt,INSTALLED593_ORIGINAL591_V2_KIND,
   verifyInstalled593Original591V2PhaseReceipt,sourceImpactEvidenceBudget,
   SCALAR597_LATER_H0_PHASE_KIND,verifyScalar597LaterH0PhaseReceipt,
-  ASSISTANT_AFTER597_PHASE_KIND,verifyAssistantAfter597PhaseReceipt} from './native-postgres-evidence.mjs';
+  ASSISTANT_AFTER597_PHASE_KIND,verifyAssistantAfter597PhaseReceipt,ASSISTANT_AFTER598_PHASE_KIND,verifyAssistantAfter598PhaseReceipt} from './native-postgres-evidence.mjs';
 import {ORIGIN as NATIONAL_ORIGIN,COMMAND as NATIONAL_COMMAND,STEP as NATIONAL_STEP,
   ASSISTANT_PUBLIC591_SUCCESSOR_SOURCE_COMMAND,INSTALLED593_ORIGINAL591_SOURCE_COMMAND,installed593Original591NativeClaims,
-  scalar597LaterH0NativeClaims,assistantAfter597NativeClaims}
+  scalar597LaterH0NativeClaims,assistantAfter597NativeClaims,assistantAfter598NativeClaims}
   from './national584-source-evidence.mjs';
 
 export const SOURCE_IMPACT_FULL_BASELINE_KIND='RAVRADAR_SOURCE_IMPACT_FULL_BASELINE_V1';
@@ -76,6 +77,8 @@ function artifactMetadata(metadata,reference,kind,phase){
 }
 
 async function nativeProof(proof,reference,current,releaseVersion){
+  const after598=proof.kind===ASSISTANT_AFTER598_PHASE_KIND;
+  if(releaseVersion==='4.0.599')assert(after598);
   const after597=proof.kind===ASSISTANT_AFTER597_PHASE_KIND;
   if(releaseVersion==='4.0.598')assert(after597);
   if(after597)assert.equal(releaseVersion,'4.0.598');
@@ -85,12 +88,13 @@ async function nativeProof(proof,reference,current,releaseVersion){
   assert([1,2].includes(proof.schemaVersion));
   const v2Installed594=proof.kind===INSTALLED593_ORIGINAL591_V2_KIND;
   const installed594=proof.kind===INSTALLED593_ORIGINAL591_PHASE_KIND;
-  assert.equal(proof.kind,after597?ASSISTANT_AFTER597_PHASE_KIND:scalar597?SCALAR597_LATER_H0_PHASE_KIND:v2Installed594?INSTALLED593_ORIGINAL591_V2_KIND:proof.schemaVersion===2?ASSISTANT_PUBLIC591_V2_KIND:
+  assert.equal(proof.kind,after598?ASSISTANT_AFTER598_PHASE_KIND:after597?ASSISTANT_AFTER597_PHASE_KIND:scalar597?SCALAR597_LATER_H0_PHASE_KIND:v2Installed594?INSTALLED593_ORIGINAL591_V2_KIND:proof.schemaVersion===2?ASSISTANT_PUBLIC591_V2_KIND:
     installed594?INSTALLED593_ORIGINAL591_PHASE_KIND:ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND);
   assert.equal(proof.repository,reference.repository);assert.equal(proof.headSha,reference.producerHead);
   assert.equal(proof.sourceTreeSha256,reference.sourceTreeSha256);assert.equal(proof.privatePayloadIncluded,false);
   const native=proof.nativePostgres;
-  if(after597){assert.equal(proof.schemaVersion,1);await verifyAssistantAfter597PhaseReceipt(native,current);}
+  if(after598){assert.equal(proof.schemaVersion,1);await verifyAssistantAfter598PhaseReceipt(native,current);}
+  else if(after597){assert.equal(proof.schemaVersion,1);await verifyAssistantAfter597PhaseReceipt(native,current);}
   else if(scalar597){assert.equal(proof.schemaVersion,1);verifyScalar597LaterH0PhaseReceipt(native,current);}
   else if(v2Installed594){assert.equal(proof.schemaVersion,2);verifyInstalled593Original591V2PhaseReceipt(native,current);}
   else if(installed594)verifyInstalled593Original591PhaseReceipt(native,current);
@@ -109,7 +113,11 @@ async function historicalNational(proof,current,native){
   assert.equal(national.historicalInput?.head,NATIONAL_ORIGIN.head);
   assert.equal(national.historicalInput?.tree,NATIONAL_ORIGIN.tree);
   assert.equal(national.historicalInput?.content,NATIONAL_ORIGIN.content);
-  if(native.kind===ASSISTANT_AFTER597_PHASE_KIND){
+  if(native.kind===ASSISTANT_AFTER598_PHASE_KIND){
+    const expected=await assistantAfter598NativeClaims(native,current);
+    assert.deepEqual(Object.keys(national).filter(key=>key.startsWith('current')).sort(),['current',...Object.keys(expected)].sort());
+    for(const[key,value]of Object.entries(expected))assert.deepEqual(national[key],value,'The599 claim preserves its actual FULL native provenance');
+  }else if(native.kind===ASSISTANT_AFTER597_PHASE_KIND){
     const expected=await assistantAfter597NativeClaims(native,current);
     assert.deepEqual(Object.keys(national).filter(key=>key.startsWith('current')).sort(),['current',...Object.keys(expected)].sort());
     for(const [key,value]of Object.entries(expected))assert.deepEqual(national[key],value,'The598claim preserves its actual FULL-run native provenance');
@@ -185,7 +193,7 @@ export async function qualifySourceImpactFullBaseline(input,dependencies){
     const gitTree=text(['rev-parse',reference.mergeCommit+'^{tree}']);assert.match(gitTree,/^[a-f0-9]{40}$/);
     assert.equal(text(['rev-parse',reference.producerHead+'^{tree}']),gitTree);
     assert.equal(sourceTreeContentSha256(reference.mergeCommit,{git}),reference.sourceTreeSha256);
-    // This cheap path inherits a current native phase only from the same release.
+    // De gamle597/598-profiler kræver samme apprelease; after598 binder app og fast nativefamilie særskilt.
     const version=commit=>{
       const raw=git(['cat-file','blob',commit+':package.json']);assert(raw.length<=65536);
       const value=JSON.parse(raw).version;assert.match(value,/^4\.0\.\d+$/);return value;
@@ -252,6 +260,17 @@ export async function qualifySourceImpactFullBaseline(input,dependencies){
     const current={run:reference.runId,attempt:1,head:reference.producerHead,
       pullRequest:reference.pullRequest,branch:run.head_branch};
     const native=await nativeProof(phaseProof,reference,current,baselineVersion);assert.deepEqual(full.nativePostgres,native);
+    if(phaseProof.kind===ASSISTANT_AFTER598_PHASE_KIND){
+      // Appversionen kommer fra producentens autentiske Git-træ; native beholder sin faste modelrelease.
+      const raw=git(['cat-file','blob',reference.producerHead+':version.json']);
+      assert(raw.length>0&&raw.length<=65536);
+      const metadata=JSON.parse(raw);assert(metadata&&Object.getPrototypeOf(metadata)===Object.prototype);
+      assert.equal(metadata.version,baselineVersion);
+      assert.equal(metadata.releaseContract?.releaseVersion,baselineVersion);
+      assertReleaseContractMetadata(metadata.releaseContract,{releaseVersion:baselineVersion});
+      assert.equal(metadata.releaseContract.modelBindings.integrated.modelBundleSha256,native.binding.I);
+      assert.equal(metadata.releaseContract.modelBindings.candidateGRollback.modelBundleSha256,native.binding.C);
+    }
     await historicalNational(full,current,native);
     assert.deepEqual(await json(runRoute),run);
     for(const kind of ['native','final'])assert.deepEqual(await json(base+'/artifacts/'+metadata[kind].id),metadata[kind]);

@@ -14,7 +14,8 @@ import {CURRENT_CONTRACT_SOURCE_CONTRACT,CURRENT_CONTRACT_SOURCE_KIND,currentCon
   currentChangeSourceArtifactName,validateCurrentChangeSourceReceipt,readCurrentChangeReview,CURRENT_CHANGE_SOURCE_MAX_FILE_BYTES}
   from './source-current-contract-receipt.mjs';
 import {ORIGIN,sourceImpactEvidenceBudget} from './native-postgres-evidence.mjs';
-import {inverseOwnedCacheNativeWorkflow,OWNED_CACHE_NATIVE_EARLY_STEP_NAMES} from './lib/source-impact-workflow-review.mjs';
+import {inverseOwnedCacheNativeWorkflow,inverseSourceImpactFullCurrent,OWNED_CACHE_NATIVE_EARLY_STEP_NAMES}
+  from './lib/source-impact-workflow-review.mjs';
 
 // Archived namespaces are parsed here without initializing their old planner.
 // Their actual validators are loaded only when that legacy type is consumed.
@@ -81,8 +82,11 @@ function locatorIdentity(record,env){
 export function verifyTargetedSourceStepShape(job,workflowText){
   assert.equal(arguments.length,2);assert(Array.isArray(job.steps));
   const modern=workflowText!==undefined;
-  const previous=modern?inverseOwnedCacheNativeWorkflow(workflowText):null;
-  const ownedCacheNative=modern&&previous!==workflowText;
+  // Project only the already reviewed whole CURRENT registration before the
+  // independent owned-cache step shape; neither inverse grants source authority.
+  const workflow=modern?inverseSourceImpactFullCurrent(workflowText):null;
+  const previous=modern?inverseOwnedCacheNativeWorkflow(workflow):null;
+  const ownedCacheNative=modern&&previous!==workflow;
   const workflowHash=modern?sha(previous):null;
   if(modern)assert([DMI_PYTHON_WORKFLOW_SHA256,DMI_REQUIREMENTS_WORKFLOW_SHA256].includes(workflowHash),'EXACT_DMI_PYTHON_WORKFLOW_REQUIRED');
   if(ownedCacheNative)assert.equal(workflowHash,DMI_REQUIREMENTS_WORKFLOW_SHA256,'EXACT_OWNED_CACHE_NATIVE_PREDECESSOR_REQUIRED');
