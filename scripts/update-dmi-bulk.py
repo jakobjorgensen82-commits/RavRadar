@@ -15179,7 +15179,7 @@ def main() -> int:
     adaptive_recovery = next_adaptive_recovery(
         previous, requested=extended_recovery, runtime_budget_seconds=MAX_RUNTIME_SECONDS,
         selected_runtime_budget_seconds=selected_runtime_budget,
-        generated_at=generated,
+        generated_at=generated, production_reference_at=locked_production_reference,
         before_counts=(json.loads(os.getenv("DMI_BULK_RECOVERY_BEFORE_COUNTS", "{}"))
                        if extended_recovery else None),
     )

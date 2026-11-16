@@ -15,7 +15,7 @@ from pathlib import Path
 from time import monotonic
 
 from lib.dmi_bulk_storage import read_dmi_bulk_document
-from lib.dmi_adaptive_recovery import retained_adaptive_recovery
+from lib.dmi_adaptive_recovery import retained_adaptive_recovery, extended_runtime_profile_selected
 from lib.copernicus_target_identity import targets_from_registry
 from lib.weather_acquisition_plan import read_qualified_acquisition_plan, scalar_snapshot_paths
 
@@ -208,12 +208,28 @@ def decide(cache, registry, target, *, now=None, qualified_scalar_plan=None):
                               for key in COMPONENT_FIELDS) else None)
     clock = now or datetime.now(timezone.utc)
     try:
-        elapsed = (clock - datetime.fromisoformat(str(last_at).replace("Z", "+00:00"))).total_seconds()
+        marked_at = datetime.fromisoformat(str(last_at).replace("Z", "+00:00"))
+        elapsed = (clock - marked_at).total_seconds()
     except (TypeError, ValueError):
         elapsed = None
+    # A new ordinary four-hour production window must not lose its turn to
+    # planner/updater startup skew. Only a measured long marker can bind H0.
+    production_cadence_elapsed = False
+    try:
+        previous_reference = reference_hour(previous.get("productionReferenceAt"))
+        production_cadence_elapsed = (
+            previous_total is not None and elapsed is not None and elapsed >= 0
+            and extended_runtime_profile_selected(previous.get("runtimeBudgetSeconds"),
+                                                  previous.get("selectedRuntimeBudgetSeconds"))
+            and marked_at.utcoffset() == timedelta(0)
+            and previous_reference <= marked_at <= clock and start <= clock
+            and (start - previous_reference).total_seconds() >= 4 * 3600)
+    except (TypeError, ValueError):
+        pass
     # Progress merits another recovery turn. Persistent negative/spatial
     # responses cannot force a one-hour run on every 15-minute cron tick.
     cooled_down = (elapsed is not None and 0 <= elapsed < 4 * 3600
+                   and not production_cadence_elapsed
                    and (previous_total is None or current_total >= previous_total - 100))
     result = {
         "extended": bool(recovering) and not cooled_down,
