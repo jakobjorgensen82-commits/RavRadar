@@ -310,6 +310,18 @@ for (const name of ['reusable-weather-build', 'deploy-code-only-repair']) {
   }
 }
 const deploy = await read('reusable-pages-deploy');
+// Current raw caller, included in the normal whole Pages-generation command.
+// A public deployment does not implicitly authenticate its later owner read.
+{
+  const source=deploy.replaceAll('\r\n','\n'),marker='      - name: Clear only the publicly verified completed pre-activation phase\n';
+  assert.equal(source.split(marker).length,2,'Keep one normal final cleanup caller');
+  const start=source.indexOf(marker),end=source.indexOf('\n      - ',start+marker.length),clear=source.slice(start,end<0?source.length:end);
+  assert.match(clear,/^          GH_TOKEN: \$\{\{ github\.token \}\}$/m,
+    'The final owner read requires the existing scoped GitHub token');
+  assert.match(clear,/^        if: steps\.deployment-terminal\.outputs\.deployed_verified == 'true'$/m);
+  assert.match(clear,/node scripts\/protected-operational-reentry-evidence\.mjs --clear-pre-activation/);
+  assert.ok(source.indexOf('id: deployment-terminal')<start);
+}
 // Historical-owner closure reads exact committed source blobs. Every actual
 // reservation, claim, reconciliation and clear caller needs those Git objects.
 function assertPagesOwnerSourceHistory(source, job = null) {

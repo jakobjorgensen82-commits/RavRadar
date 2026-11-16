@@ -1,3 +1,7 @@
+## Afsluttende Pages-oprydning med verificeret ejeradgang
+
+Den sidste oprydning efter en offentligt verificeret Pages-udgivelse skal have workflowets eksisterende GitHub-læseadgang med til kontrollen af den oprindelige skriver. Den afsluttede føraktiveringsfase må først fjernes efter den præcise terminalkvittering og de normale ejer- og offentlige kontroller. Lokal kalderkontrol er ikke bevis for, at en konkret fase er fjernet; faktisk oprydning og normal kildekvalifikation verificeres særskilt.
+
 ## Arkivets komplette CHECK-kontrol og afgrænsede udsættelse
 
 Den lokale arkivlæser skelner nu mellem det komplette CHECK-katalog og det mindre sæt, som skal udsættes under DATA. Kun oprindeligt ikke-validerede CHECKs på katalogbeviste selvstændige almindelige tabeller i den pågældende fases direkte COPY-inventar udsættes og genetableres. Hele kataloget før og efter, inklusive validerede og urørte ikke-validerede regler, skal fortsat være identisk. Udsatte, bevarede ikke-validerede og validerede regler tælles særskilt; deres sum skal være det komplette antal.

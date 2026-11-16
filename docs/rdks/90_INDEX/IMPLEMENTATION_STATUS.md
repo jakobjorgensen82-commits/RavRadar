@@ -133,6 +133,10 @@ De konkrete controller-/kildeejere får naturligt sourceControls-ansvar med begg
 
 # Aktiv restliste
 
+## Afsluttende Pages-oprydning med verificeret ejeradgang
+
+Den sidste oprydning efter en offentligt verificeret Pages-udgivelse skal have workflowets eksisterende GitHub-læseadgang med til kontrollen af den oprindelige skriver. Den afsluttede føraktiveringsfase må først fjernes efter den præcise terminalkvittering og de normale ejer- og offentlige kontroller. Lokal kalderkontrol er ikke bevis for, at en konkret fase er fjernet; faktisk oprydning og normal kildekvalifikation verificeres særskilt.
+
 Alle fem hovedområder i ejerens gældende mål består, indtil deres krav er faktisk leveret og verificeret. Leverede delrettelser genbruges; de er ikke nye lokale kandidater. Tabellen skelner mellem leveret funktion og de resterende faktiske beviser. Se [aktuel sandhed](CURRENT_TRUTH.md), [aktive krav](../20_REQUIREMENTS/ACTIVE-REQUIREMENTS.md) og [roadmap](ACTIVE_ROADMAP.md), før en afsluttet del genåbnes.
 
 | Område | Leveret grundlag og reel rest |
