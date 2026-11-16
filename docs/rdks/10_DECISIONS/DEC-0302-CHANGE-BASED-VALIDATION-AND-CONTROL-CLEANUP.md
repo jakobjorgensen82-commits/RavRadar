@@ -1,3 +1,9 @@
+## Allerede afsluttet prognose før kontrol af ny backendbinding
+
+En allerede centralt afsluttet almindelig Pages-prognose kvalificeres som en skrivefri no-op før parathed for en nyere checkoutbinding. Hele den oprindelige producent-, deployment-, datasæt-, referencetime-, manifest-, implementation- og modelbinding skal stadig matche, og en afventende overgang får ingen afslutningsret. Den normale kalder kontrollerer fortsat alle faktiske Pages-skrivere bagefter; aktiv eller ændret ejer stopper ny drift. En uafsluttet prognose beholder frisk kilde-/database-/Edge-parathed, offentlig målverifikation, genlæsninger og atomisk CAS. Originaler, model, SQL og vejr ændres ikke. Præcis kildekvalifikation og efterfølgende almindelig vejrhentning kræves før produktionsaccept.
+
+Readiness-prøvens positive matrix bruger nu sin faktisk committed forgænger og aktuelle checkout i samme familie. Den normale produktlæser skal først bevise uændrede PostgreSQL-, C/I/T- og kontrolinput på det rene træ. De tidligere 598-originaler bevares som afslag mod den aktuelle familie; deres tidligere positive bevis gælder fortsat kun deres oprindelige kontekst. Ingen produktguard eller kontrakt ændres af testkonteksten.
+
 ## CI-hint til SDK må ikke følge isoleret PostgreSQL- og nationalprøve
 
 Den tidligere SDK-klargøring gemmer stien til Node24 i RAVRADAR_SOURCE_NODE24. Skiftet tilbage til Node22 fjerner ikke jobvariablen. Den isolerede PostgreSQL- og nationalprøve afviser korrekt enhver ukendt RAVRADAR_-override; hintet kunne derfor stoppe den normale prøve før SQL, selv efter bestået kildekontrol.
