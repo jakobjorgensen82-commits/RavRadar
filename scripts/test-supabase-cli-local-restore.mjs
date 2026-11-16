@@ -13,6 +13,7 @@ import {setTimeout as sleep} from 'node:timers/promises';
 import {fileURLToPath} from 'node:url';
 import {Readable,Writable} from 'node:stream';
 import {pipeline} from 'node:stream/promises';
+import {readAccountErasureSource} from './verify-account-erasure-schema.mjs';
 
 const P=Object.freeze({cli:'2.117.0',operationMs:20*60_000,cleanupMs:2*60_000,
   childMs:8*60_000,diagnosticBytes:1024*1024,fileBytes:8*1024*1024,totalBytes:32*1024*1024});
@@ -941,8 +942,47 @@ function syntheticAuthDeleteReadback(intent,expected,admin,counts){
     'SYNTHETIC_AUTH_DELETE_COMMIT_UNKNOWN');
   return Object.freeze({...intent,state:'AUTH_ABSENT_BY_ADMIN_AND_PG_READBACK'});
 }
-async function verifySyntheticBAuthLifecycle(c,p){
-  need(c.archive===false&&p.side==='B','SYNTHETIC_AUTH_LIFECYCLE_TARGET');
+function syntheticAccountErasureAuthFenceSql(source,intent,actorId){
+  syntheticAuthCountsSql(intent);
+  need(uuid(actorId)&&actorId!==intent.userId&&source&&typeof source.sql==='string'
+    &&source.sha256===sha(Buffer.from(source.sql)),'SYNTHETIC_ERASURE_FENCE_SOURCE');
+  const tableStart='create table public.account_erasure_operations (',tableEnd='create function public.account_erasure_require_owner()',
+    guardStart='create function public.account_erasure_auth_uuid_guard()',guardEnd='comment on table public.account_erasure_operations is';
+  for(const marker of [tableStart,tableEnd,guardStart,guardEnd])
+    need(source.sql.split(marker).length===2,'SYNTHETIC_ERASURE_FENCE_SOURCE');
+  const outbox=source.sql.slice(source.sql.indexOf(tableStart),source.sql.indexOf(tableEnd)),
+    guard=source.sql.slice(source.sql.indexOf(guardStart),source.sql.indexOf(guardEnd)),
+    body=/as \$auth_uuid\$\n([\s\S]*?)\n\$auth_uuid\$;/.exec(guard)?.[1];
+  need(outbox.startsWith(tableStart)&&guard.startsWith(guardStart)&&typeof body==='string'
+    &&source.bodies?.account_erasure_auth_uuid_guard===sha(Buffer.from(body.trim())),
+    'SYNTHETIC_ERASURE_FENCE_SOURCE');
+  // Exactly the current migration's outbox DDL and Auth fence. The only small
+  // extra table is an explicit profile-id fixture with the actual Auth CASCADE.
+  // This is not a full profiles schema, PG-stage RPC or Storage qualification.
+  // The existing psql caller owns --single-transaction; do not end it here.
+  const sql=`set local lock_timeout='5s'; set local statement_timeout='30s';
+create table public.profiles(id uuid primary key references auth.users(id) on delete cascade);
+${outbox}${guard}
+insert into public.profiles(id) values('${intent.userId}'::uuid);
+with own_clock as(select clock_timestamp() as at)
+insert into public.account_erasure_operations(operation_id,target_user_id,requested_by,profile_was_active,state,prepared_at,updated_at,pg_staged_at)
+select '${intent.operationId}'::uuid,'${intent.userId}'::uuid,'${actorId}'::uuid,true,'PG_STAGED_AUTH_PENDING',at,at,at from own_clock;
+\n`;
+  return {sql,sourceSha256:source.sha256,outboxDdlSha256:sha(Buffer.from(outbox)),authGuardDdlSha256:sha(Buffer.from(guard)),
+    authGuardBodyMd5:crypto.createHash('md5').update(body.trim()).digest('hex')};
+}
+function syntheticAccountErasureAuthFenceReadbackSql(intent){
+  syntheticAuthCountsSql(intent);
+  return `select jsonb_build_object('profiles',(select count(*) from public.profiles where id='${intent.userId}'::uuid),
+    'outboxRows',(select count(*) from public.account_erasure_operations where operation_id='${intent.operationId}'::uuid
+      and target_user_id='${intent.userId}'::uuid and state='PG_STAGED_AUTH_PENDING' and pg_staged_at is not null),
+    'guardMd5',(select md5(btrim(prosrc,E' \\n\\r\\t')) from pg_catalog.pg_proc where oid='public.account_erasure_auth_uuid_guard()'::regprocedure),
+    'triggerScoped',exists(select 1 from pg_catalog.pg_trigger where tgname='account_erasure_auth_uuid_insert_guard'
+      and tgrelid='auth.users'::regclass and tgfoid='public.account_erasure_auth_uuid_guard()'::regprocedure
+      and tgtype=7 and tgenabled='O' and not tgisinternal));`;
+}
+async function verifySyntheticBAuthLifecycle(c,p,fixtureActorId){
+  need(c.archive===false&&p.side==='B'&&uuid(fixtureActorId),'SYNTHETIC_AUTH_LIFECYCLE_TARGET');
   const email='owned-lifecycle-'+crypto.randomBytes(16).toString('hex')+'@example.invalid',password=crypto.randomBytes(32).toString('base64url');
   const created=await auth(c,p,'/admin/users',{token:p.service,body:{email,password,email_confirm:true}});
   need(uuid(created.id),'SYNTHETIC_AUTH_CREATED_USER');
@@ -957,6 +997,11 @@ async function verifySyntheticBAuthLifecycle(c,p){
   const admin=await auth(c,p,'/admin/users/'+intent.userId,{token:p.service});need(admin.id===intent.userId,'SYNTHETIC_AUTH_ADMIN_USER');
   const sql=syntheticAuthCountsSql(intent),before=await query(c,p,'SYNTHETIC_AUTH_BEFORE_DELETE',sql);
   need(before.users===1&&before.sessions===1&&before.matchingSession===1&&before.identities===1&&before.refreshed===true,'SYNTHETIC_AUTH_LIVE_SESSION');
+  const fence=syntheticAccountErasureAuthFenceSql(readAccountErasureSource(),intent,fixtureActorId),
+    fenceReadback=syntheticAccountErasureAuthFenceReadbackSql(intent);
+  await psql(c,p,'SYNTHETIC_ACCOUNT_ERASURE_AUTH_UUID_FENCE_SETUP',Buffer.from(fence.sql));
+  const fenceBefore=await query(c,p,'SYNTHETIC_ACCOUNT_ERASURE_AUTH_UUID_FENCE_BEFORE',fenceReadback);
+  assert.deepEqual(fenceBefore,{profiles:1,outboxRows:1,guardMd5:fence.authGuardBodyMd5,triggerScoped:true});
   // One real native DELETE; deliberately discard its reply. A transport failure
   // is likewise unknown until independent readback. Never retry the mutation here.
   try{await auth(c,p,'/admin/users/'+intent.userId,{method:'DELETE',token:p.service,body:{should_soft_delete:false}});}
@@ -973,11 +1018,34 @@ async function verifySyntheticBAuthLifecycle(c,p){
   await auth(c,p,'/user',{token:login.access_token,status:403});
   await auth(c,p,'/token?grant_type=password',{body:{email,password},status:400});
   syntheticAuthDeleteReadback(intent,expected,{status:404,user:null},await query(c,p,'SYNTHETIC_AUTH_FINAL_ABSENCE',sql));
+  // The same former email/password with a custom erased UUID must fail in the
+  // real GoTrue transaction. No SQL Auth DELETE or legacy bootstrap is used.
+  await auth(c,p,'/admin/users',{token:p.service,body:{id:intent.userId,email,password,email_confirm:true},status:500});
+  const customRead=await auth(c,p,'/admin/users/'+intent.userId,{token:p.service,status:[200,404]});
+  syntheticAuthDeleteReadback(intent,expected,customRead,await query(c,p,'SYNTHETIC_AUTH_CUSTOM_ID_ROLLBACK',sql));
+  const fenceAfter=await query(c,p,'SYNTHETIC_ACCOUNT_ERASURE_AUTH_UUID_FENCE_AFTER',fenceReadback);
+  assert.deepEqual(fenceAfter,{...fenceBefore,profiles:0});
+  // Reuse the deleted account's own email so an unrelated email rejection
+  // cannot masquerade as the UUID fence. A genuine fresh UUID still logs in.
+  const fresh=await auth(c,p,'/admin/users',{token:p.service,body:{email,password,email_confirm:true}});
+  need(uuid(fresh.id)&&fresh.id!==intent.userId,'SYNTHETIC_AUTH_FRESH_UUID');
+  const freshLogin=await auth(c,p,'/token?grant_type=password',{body:{email,password}});
+  need(freshLogin.user?.id===fresh.id,'SYNTHETIC_AUTH_FRESH_UUID_LOGIN');
+  const freshClaims=syntheticIssuedJwtClaims(freshLogin.access_token,fresh.id);
+  need((await auth(c,p,'/user',{token:freshLogin.access_token})).id===fresh.id,'SYNTHETIC_AUTH_FRESH_UUID_USER');
+  const freshCounts=await query(c,p,'SYNTHETIC_AUTH_FRESH_UUID_SESSION',syntheticAuthCountsSql({operationId:crypto.randomUUID(),userId:fresh.id,sessionId:freshClaims.sessionId}));
+  need(freshCounts.users===1&&freshCounts.sessions===1&&freshCounts.matchingSession===1&&freshCounts.identities===1
+    &&freshCounts.refreshTokens>=1,'SYNTHETIC_AUTH_FRESH_UUID_SESSION');
+  syntheticAuthDeleteReadback(intent,expected,{status:404,user:null},await query(c,p,'SYNTHETIC_AUTH_ERASED_UUID_STILL_ABSENT',sql));
   return Object.freeze({kind:'SYNTHETIC_B_GOTRUE_ADMIN_DELETE_REFRESH_READBACK',authImage:IMAGES.auth,
     normalRefreshVerified:true,liveSessionVerified:true,normalHardDeleteVerifiedByReadback:true,
     deleteAttempts:1,deleteReplyDeliberatelyDiscarded:true,stableReadbackCount:2,
     refreshAndPasswordAfterDeleteRejected:true,oldAccessJwtStillUnexpired:true,oldJwtUserLookupRejected:true,
     usersSessionsTokensIdentitiesAbsent:true,jwtRevocationClaimed:false,durableOutboxVerified:false,
+    authUuidFence:{sourceSha256:fence.sourceSha256,outboxDdlSha256:fence.outboxDdlSha256,authGuardDdlSha256:fence.authGuardDdlSha256,
+      exactCurrentMigrationFragments:true,profileIdFixtureOnly:true,profileAuthCascadeVerified:true,seededPgStageOnly:true,
+      customIdCreateRejectedAndRolledBack:true,erasedUuidStillAbsent:true,freshUuidSameEmailLoginVerified:true,
+      legacyBootstrapClaimed:false,fullAppSchemaVerified:false},
     lifecycleRpcVerified:false,loginRefreshDeleteConcurrencyVerified:false,
     unknownNetworkFaultInjected:false,productionAuthVerified:false});
 }
@@ -1979,7 +2047,7 @@ async function fixture({archive=false,inventoryOnly=false}={}){
     const restored=await auth(c,b,'/token?grant_type=password',{body:{email,password}});need(restored.user?.id===created.id&&typeof restored.access_token==='string','RESTORED_AUTH_LOGIN');
     const user=await auth(c,b,'/user',{token:restored.access_token});need(user.id===created.id,'RESTORED_USER_ID');assert.deepEqual(user.user_metadata,sourceUser.user_metadata);
     await auth(c,b,'/token?grant_type=password',{body:{email,password:password+'wrong'},status:400});
-    const syntheticAuthLifecycle=await verifySyntheticBAuthLifecycle(c,b);
+    const syntheticAuthLifecycle=await verifySyntheticBAuthLifecycle(c,b,restored.user.id);
     result={status:'PASS',scope:'synthetic-standard-cli-local-restore',sourceHead:process.env.EXPECTED_HEAD_SHA,cliVersion:P.cli,
       syntheticAuthLifecycle,
       standardFiveFileRoundtrip:true,utf8DecimalMetadata:true,rolesAndMigrationHistory:true,newAuthPasswordLogin:true,
@@ -2039,6 +2107,25 @@ async function selfTest(){
     +`SELECT pg_catalog.setval('"storage"."Private_Sequence_Sentinel"', 7, true);\n`;
   const inventoryHistory='COPY "supabase_migrations"."schema_migrations" ("version") FROM stdin;\n20200101\n\\.\n';
 
+  test('synthetic Auth UUID fence takes exact current migration fragments without Auth SQL stubs or legacy bootstrap',()=>{
+    const source=readAccountErasureSource(),intent={operationId:'11111111-1111-4111-8111-111111111111',
+      userId:'22222222-2222-4222-8222-222222222222',sessionId:'33333333-3333-4333-8333-333333333333'},actor='44444444-4444-4444-8444-444444444444';
+    const result=syntheticAccountErasureAuthFenceSql(source,intent,actor);
+    const table=source.sql.slice(source.sql.indexOf('create table public.account_erasure_operations ('),source.sql.indexOf('create function public.account_erasure_require_owner()')),
+      guard=source.sql.slice(source.sql.indexOf('create function public.account_erasure_auth_uuid_guard()'),source.sql.indexOf('comment on table public.account_erasure_operations is'));
+    assert(result.sql.includes(table));assert(result.sql.includes(guard));
+    assert.equal(result.sourceSha256,source.sha256);assert.equal(result.outboxDdlSha256,sha(Buffer.from(table)));
+    assert.equal(result.authGuardDdlSha256,sha(Buffer.from(guard)));
+    assert(result.sql.includes('public.profiles(id uuid primary key references auth.users(id) on delete cascade)'));
+    assert(!result.sql.includes('create table auth.users'));assert(!result.sql.includes('delete from auth.users'));
+    assert(!result.sql.includes('handle_new_ravradar_user'));assert(!result.sql.includes('create function public.stage_account_erasure_pg'));
+    assert.throws(()=>syntheticAccountErasureAuthFenceSql(source,intent,intent.userId));
+    assert.throws(()=>syntheticAccountErasureAuthFenceSql({...source,sql:source.sql+'-- changed'},intent,actor));
+    assert.throws(()=>syntheticAccountErasureAuthFenceSql({...source,bodies:{...source.bodies,account_erasure_auth_uuid_guard:'0'.repeat(64)}},intent,actor));
+    const duplicate=source.sql+'\ncreate function public.account_erasure_auth_uuid_guard()';
+    assert.throws(()=>syntheticAccountErasureAuthFenceSql({...source,sql:duplicate,sha256:sha(Buffer.from(duplicate))},intent,actor));
+    assert(syntheticAccountErasureAuthFenceReadbackSql(intent).includes("E' \\n\\r\\t'"));
+  });
   test('synthetic A/B receive only a fresh owned Auth197 pin and refuse stale or redirected inputs',async()=>{
     for(const side of ['A','B'])await ownArchive(async({c})=>{
       c.archive=false;c.owner='123-1';const p={side,id:'rr_restore_123_1_'+side.toLowerCase(),dir:path.join(c.root,side)};
