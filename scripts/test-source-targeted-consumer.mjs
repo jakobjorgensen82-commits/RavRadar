@@ -142,7 +142,7 @@ function copyModule(name,seen=new Set()){
     'FIXTURE_MODULE_OUTSIDE_REPOSITORY');
   const key=relative.split(path.sep).join('/');
   if(seen.has(key))return;seen.add(key);const bytes=fs.readFileSync(sourceFile);write(key,bytes);
-  for(const match of bytes.toString('utf8').matchAll(/^import\b[^;]*?\bfrom\s*['"](\.[^'"]+)['"]/gm))
+  for(const match of bytes.toString('utf8').matchAll(/^(?:import\b[^;]*?\bfrom|export\s*(?:\{[^}]*\}|\*(?:\s+as\s+[A-Za-z_$][\w$]*)?)\s+from)\s*['"](\.[^'"]+)['"]/gm))
     copyModule(new URL(match[1],url).href,seen);
 }
 try{
@@ -157,6 +157,10 @@ try{
     'scripts/source-targeted-receipt.mjs'])copyModule(name,currentModules);
   for(const name of ['scripts/source-targeted-consumer.mjs','scripts/source-impact-full-baseline.mjs',
     'scripts/native-postgres-evidence.mjs'])assert(fs.readFileSync(path.join(root,name)).equals(fs.readFileSync(path.join(SOURCE,name))));
+  // Static re-exports are real dependencies too; retain their actual current bytes.
+  const schemaDependency='scripts/verify-account-erasure-schema.mjs';
+  assert(currentModules.has(schemaDependency),'The current schema re-export must traverse the normal local module graph');
+  assert(fs.readFileSync(path.join(root,schemaDependency)).equals(fs.readFileSync(path.join(SOURCE,schemaDependency))));
   for(const name of ['package.json','scripts/lib/account-statistics-assistant-package-review.json',
     'scripts/sync-admin-config.py','data/water-level-station-routing.json',
     'js/ui/about-i18n.js','js/ui/about-explainer-i18n.js','js/ui/learn-i18n.js','js/ui/learn-i18n-de.js','js/ui/learn-i18n-en.js'])
