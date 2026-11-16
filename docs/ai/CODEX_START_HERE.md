@@ -21,6 +21,8 @@ Find derefter det seneste private checkpoint i den eksisterende isolerede arbejd
 
 Læs kun yderligere historik, krav, håndbog og kode, som den konkrete opgave afhænger af. Genbrug allerede leveret arbejde; genåbn det kun ved en ny konkret fejl eller relevant ændring. Manglende evidens må ikke omdøbes til bestået.
 
+Den afgrænsede DMI-cadencerettelse og arkivlæserrettelse leveres uden LF7-observation. DMI-markøren bindes til den faktisk valgte produktionsreference med uændrede budgetter og konservativ legacyregel. Arkivlæseren bevarer hele CHECK-kataloget og lader urørte arve-/partitionsregler håndhæves. Den identiske reader/SQL-fixture er syntetisk Linux-afprøvet; originalrestore og faktisk virkning i næste normale kald er særskilte åbne beviser. Se DEC-0254/0302 og håndbog89.294/89.350.
+
 <!-- RAVRADAR_ACTIVE_ENTRY_END -->
 
 ## Daterede notater og tidligere indgange — uændret historik
