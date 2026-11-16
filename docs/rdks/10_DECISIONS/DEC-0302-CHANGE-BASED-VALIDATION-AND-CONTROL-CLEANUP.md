@@ -1,3 +1,11 @@
+## Afgrænset forklaring af arkivlæserens CHECK_SUSPEND-afslag
+
+Den eksisterende arkivlæser kan forklare sine tre faste P0001-afslag før CHECK_SUSPEND: ikke-understøttet eller for stor CHECK-metadata, ikke-understøttede COPY-mål og ændret CHECK-katalog. Kun præcis fejlramme, fase, inventory-hash og mættede årsagstællere må forlade den ejede lokale database. Navne, definitioner, kommentarer, rækker og rå fejltekst forbliver private. Ukendt eller modstridende diagnostic bliver UNAVAILABLE.
+
+Årsagstællerne beregnes alene efter et allerede afvist guardresultat. En ordinær fejl i selve diagnosticen bevarer den oprindelige P0001 og dens faste årsag med tom diagnostic; query_canceled følger fortsat den eksisterende afbrydelse og tidsgrænse. Den normale ejede arkiv-B/HISTORY-kalder bruger samme lukkede verbose-format som den primære DATA-kalder med SHOW_CONTEXT=never. Alle andre psql-kald, katalog-/snapshotbytes, originaler, semantiske lighedskrav, rollback, Auth, oprydning og PASS-betingelser bevares.
+
+Dette er diagnostic, ikke en ny accept af arkivdata eller en forklaring af det aktuelle arkivs konkrete guardafslag. Normal SQL-kvalifikation og faktisk original-/Auth-gendannelse skal fortsat gennemføres; egressbudgettets ejeraccept ændres ikke.
+
 ## 15. november — Prøveforberedelse og faktisk FULL-kontrolejerskab
 
 Den normale CURRENT-fixture kan genbruge sin deterministiske plandel til et syntetisk PR-review ved præcis samme Git-, profil-, mappe- og namespaceidentitet. Den genopbygger fortsat reviewtekst, hash, state og API-svar ved hver læsning. Ukendte eller ændrede input og funktioner bruger den normale beregning. Alle faktiske producer-/consumerplaner, målprocesser, før-/efterkontroller og ændringsafslag er uændrede.

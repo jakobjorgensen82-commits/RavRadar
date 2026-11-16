@@ -31,6 +31,15 @@ const ARCHIVE_ROLE_STATEMENT_STATES=new Set(['SQLSTATE_42501','SQLSTATE_42704'])
 const MAX_ROLE_CLASS_LINES=8192;
 const ARCHIVE_CHECK_CATALOG=Object.freeze({maximum:512,point:'BEFORE_DATA_SAME_TRANSACTION',
   hashFormat:'SHA256_LENGTH_PREFIXED_UTF8_SCHEMA_RELATION_CONSTRAINT_V1'});
+const ARCHIVE_CHECK_SUSPEND_COUNTS=Object.freeze({
+  ARCHIVE_CHECK_SCOPE_UNSUPPORTED_OR_BOUND:Object.freeze({checkCount:4097,semanticBytes:8388609,notValidCount:4097,
+    unsupportedNotValidCount:4097,catalogLookupMismatchCount:4097,domainOrNoRelationCount:4097,nonTableCount:4097,partitionOrInheritanceCount:4097,
+    systemSchemaCount:4097,extensionDependencyCount:4097,definitionBytesExceededCount:4097,
+    commentBytesExceededCount:4097,notValidSuffixMissingCount:4097}),
+  ARCHIVE_CHECK_TARGET_UNSUPPORTED:Object.freeze({copyTargetCount:8193,unsupportedTargetCount:8193,
+    missingTargetCount:8193,nonTableTargetCount:8193,partitionTargetCount:8193,inheritanceTargetCount:8193}),
+  ARCHIVE_CHECK_CATALOG_CHANGED:Object.freeze({removedSemanticCount:4097,addedSemanticCount:4097}),
+});
 const ROLE_STATEMENT_CATEGORIES=Object.freeze({
   'CREATE ROLE':'CREATE_ROLE','ALTER ROLE':'ALTER_ROLE',
   GRANT:'GRANT_ROLE',REVOKE:'REVOKE_ROLE','COMMENT ON ROLE':'COMMENT_ROLE',
@@ -186,7 +195,10 @@ function safeError(error,stage){
          ?{missingRoleClass:error.missingRoleClass}:{}),
      }:{}),
     ...(stage==='RESTORE_ARCHIVE_ROLES_SCHEMA_DATA'&&error?.code==='SQLSTATE_23514'&&error.inputOwner==='DATA'
-      ?{checkConstraint:publicArchiveCheckDiagnostic(error.checkConstraint)}:{})};
+      ?{checkConstraint:publicArchiveCheckDiagnostic(error.checkConstraint)}:{}),
+    ...(['RESTORE_ARCHIVE_ROLES_SCHEMA_DATA','RESTORE_ARCHIVE_HISTORY'].includes(stage)
+      &&error?.code==='SQLSTATE_P0001'&&error.inputOwner==='CHECK_SUSPEND'
+      ?{checkSuspend:publicArchiveCheckSuspendDiagnostic(error.checkSuspend)}:{})};
 }
 function diagnosticClass(bytes){
   const text=bytes.toString('utf8');
@@ -225,6 +237,45 @@ function archiveInputDiagnostic(diagnostic,code,inputLines){
     }
   }
   return report;
+}
+// Only our exact owned P0001 guard and its bounded, identity-bound JSON DETAIL
+// can leave the private child diagnostic. Unknown text never becomes a label.
+function publicArchiveCheckSuspendDiagnostic(value){
+  const unavailable={state:'UNAVAILABLE'},keys=['state','reason','phase','inventorySha256','measurementPoint','counts'];
+  if(!value||Object.getPrototypeOf(value)!==Object.prototype
+    ||JSON.stringify(Object.keys(value).sort())!==JSON.stringify(keys.sort())
+    ||value.state!=='OWNED_GUARD_BOUND'||typeof value.reason!=='string'||!Object.hasOwn(ARCHIVE_CHECK_SUSPEND_COUNTS,value.reason)
+    ||!['DATA','HISTORY_DATA'].includes(value.phase)||typeof value.inventorySha256!=='string'||!/^[a-f0-9]{64}$/.test(value.inventorySha256)
+    ||value.measurementPoint!=='BEFORE_DATA_SAME_TRANSACTION'||!value.counts
+    ||Object.getPrototypeOf(value.counts)!==Object.prototype)return unavailable;
+  const bounds=ARCHIVE_CHECK_SUSPEND_COUNTS[value.reason],counts=value.counts;
+  if(JSON.stringify(Object.keys(counts).sort())!==JSON.stringify(Object.keys(bounds).sort())
+    ||Object.entries(bounds).some(([key,max])=>!Number.isSafeInteger(counts[key])||counts[key]<0||counts[key]>max))return unavailable;
+  if(value.reason==='ARCHIVE_CHECK_SCOPE_UNSUPPORTED_OR_BOUND'){
+    if(counts.notValidCount>counts.checkCount||Object.keys(bounds).filter(key=>!['checkCount','semanticBytes','notValidCount'].includes(key))
+      .some(key=>counts[key]>counts.notValidCount)
+      ||!(counts.checkCount===4097||counts.semanticBytes===8388609||counts.unsupportedNotValidCount>0
+        ||counts.definitionBytesExceededCount>0||counts.commentBytesExceededCount>0||counts.notValidSuffixMissingCount>0))return unavailable;
+  }else if(value.reason==='ARCHIVE_CHECK_TARGET_UNSUPPORTED'){
+    if(counts.unsupportedTargetCount<1||Object.keys(bounds).filter(key=>key!=='copyTargetCount').some(key=>counts[key]>counts.copyTargetCount)
+      ||counts.missingTargetCount+counts.nonTableTargetCount+counts.partitionTargetCount+counts.inheritanceTargetCount<counts.unsupportedTargetCount)return unavailable;
+  }else if(counts.removedSemanticCount+counts.addedSemanticCount<1)return unavailable;
+  return {state:value.state,reason:value.reason,phase:value.phase,inventorySha256:value.inventorySha256,
+    measurementPoint:value.measurementPoint,counts:Object.fromEntries(Object.keys(bounds).map(key=>[key,counts[key]]))};
+}
+function archiveCheckSuspendDiagnostic(c,stage,bytes,inputOwner){
+  const unavailable={state:'UNAVAILABLE'},phase=stage==='RESTORE_ARCHIVE_ROLES_SCHEMA_DATA'?'DATA':stage==='RESTORE_ARCHIVE_HISTORY'?'HISTORY_DATA':null;
+  if(!phase||inputOwner!=='CHECK_SUSPEND'||c.archiveRelationInventory?.complete!==true
+    ||!Buffer.isBuffer(bytes)||bytes.length>P.diagnosticBytes)return unavailable;
+  const text=bytes.toString('utf8'),frames=[...text.matchAll(/^psql:<stdin>:([1-9][0-9]{0,9}): ERROR: +P0001: ([^\r\n]*)\r?$/gm)],
+    details=[...text.matchAll(/^DETAIL: +(\{[^\r\n]{1,2048}\})\r?$/gm)];
+  if(frames.length!==1||(text.match(/\bERROR:/g)??[]).length!==1||details.length!==1
+    ||!Object.hasOwn(ARCHIVE_CHECK_SUSPEND_COUNTS,frames[0][2])||details[0].index<frames[0].index)return unavailable;
+  try{
+    const report=publicArchiveCheckSuspendDiagnostic(JSON.parse(details[0][1]));
+    return report.state==='OWNED_GUARD_BOUND'&&report.reason===frames[0][2]&&report.phase===phase
+      &&report.inventorySha256===c.archiveRelationInventory.digest?report:unavailable;
+  }catch{return unavailable;}
 }
 function archiveCheckTupleHash(parts){
   if(!Array.isArray(parts)||parts.length!==3)return null;
@@ -578,6 +629,8 @@ async function command(c,stage,bin,args,{cwd=c.root,input=null,maxMs=P.childMs,a
         fail(diagnostic.startsWith('SQLSTATE_')?diagnostic:'PSQL_SCRIPT_ERROR');
         if(inputLines&&diagnostic.startsWith('SQLSTATE_'))Object.assign(first,archiveInputDiagnostic(bytes,diagnostic,inputLines));
         if(diagnostic==='SQLSTATE_23514')first.checkConstraint=archiveCheckDiagnostic(c,stage,bytes,first.inputOwner);
+        if(diagnostic==='SQLSTATE_P0001'&&first.inputOwner==='CHECK_SUSPEND')
+          first.checkSuspend=archiveCheckSuspendDiagnostic(c,stage,bytes,first.inputOwner);
       }
       if(stdinClosed)fail('STDIN_TRANSPORT');
       if(!inputDone)fail('STDIN_INCOMPLETE');
@@ -749,10 +802,15 @@ async function startProject(c,p){
   need(typeof status.ANON_KEY==='string'&&status.ANON_KEY.length>32&&typeof status.SERVICE_ROLE_KEY==='string'
     &&status.SERVICE_ROLE_KEY.length>32,'LOCAL_RUNTIME_KEYS_REQUIRED');p.anon=status.ANON_KEY;p.service=status.SERVICE_ROLE_KEY;
 }
-async function psql(c,p,stage,bytes,inputLines=null){
-  return command(c,stage,'docker',['exec','-i','-e','PGPASSWORD='+decodeURIComponent(p.dbUrl.password),p.db,'psql','-X',
+function psqlArguments(c,p,stage,inputLines){
+  const archiveHistory=c.archive===true&&p.side==='B'&&stage==='RESTORE_ARCHIVE_HISTORY'&&inputLines!==null;
+  return ['exec','-i','-e','PGPASSWORD='+decodeURIComponent(p.dbUrl.password),p.db,'psql','-X',
     '--host=127.0.0.1','--port=5432','--username=postgres','--dbname=postgres','--quiet','--single-transaction','--variable=ON_ERROR_STOP=1',
-    '--set=VERBOSITY=sqlstate','--tuples-only','--no-align',...(inputLines?['--file=-']:[])],
+    ...(archiveHistory?['--set=VERBOSITY=verbose','--set=SHOW_CONTEXT=never']:['--set=VERBOSITY=sqlstate']),
+    '--tuples-only','--no-align',...(inputLines?['--file=-']:[])];
+}
+async function psql(c,p,stage,bytes,inputLines=null){
+  return command(c,stage,'docker',psqlArguments(c,p,stage,inputLines),
     {input:bytes,maxMs:90_000,archivePsql:!Buffer.isBuffer(bytes),inputLines});
 }
 function archiveBootstrapPsqlArguments(c,p){
@@ -1170,6 +1228,37 @@ function archiveNotValidCheckSql(inventory,phase,after=false){
     +" LEFT JOIN pg_catalog.pg_namespace tn ON tn.oid=t.typnamespace WHERE con.contype='c'";
   const targets=inventory.relations.filter(r=>r.phase===phase&&r.kind==='COPY');
   const required=targets.length?'VALUES '+targets.map(r=>'('+sqlString(r.qualified)+')').join(','):'SELECT NULL::text WHERE false';
+  // Diagnostics are evaluated only on an already-failing branch, in this same
+  // transaction. Counts saturate at fixed guard+1 caps; private catalogue text
+  // stays inside PostgreSQL. The original predicates and semantic JSON stay exact.
+  const diagnostic=(reason,counts)=>"jsonb_build_object('state','OWNED_GUARD_BOUND','reason',"+sqlString(reason)
+    +",'phase',"+sqlString(phase)+",'inventorySha256',"+sqlString(inventory.digest)
+    +",'measurementPoint','BEFORE_DATA_SAME_TRANSACTION','counts',"+counts+")";
+  const scopeCounts="jsonb_build_object('checkCount',least(count(*),4097),'semanticBytes',least(coalesce(sum(pg_catalog.pg_column_size(semantic)),0),8388609),"
+    +"'notValidCount',least(count(*) FILTER(WHERE NOT convalidated),4097),"
+    +"'unsupportedNotValidCount',least(count(*) FILTER(WHERE NOT convalidated AND unsupported IS DISTINCT FROM false),4097),"
+    +"'catalogLookupMismatchCount',least(count(*) FILTER(WHERE NOT convalidated AND NOT diagnostic_catalog_match),4097),"
+    +"'domainOrNoRelationCount',least(count(*) FILTER(WHERE NOT convalidated AND diagnostic_catalog_match AND diagnostic_domain_no_relation),4097),"
+    +"'nonTableCount',least(count(*) FILTER(WHERE NOT convalidated AND diagnostic_catalog_match AND diagnostic_non_table),4097),"
+    +"'partitionOrInheritanceCount',least(count(*) FILTER(WHERE NOT convalidated AND diagnostic_catalog_match AND diagnostic_partition_inheritance),4097),"
+    +"'systemSchemaCount',least(count(*) FILTER(WHERE NOT convalidated AND diagnostic_catalog_match AND diagnostic_system_schema),4097),"
+    +"'extensionDependencyCount',least(count(*) FILTER(WHERE NOT convalidated AND diagnostic_catalog_match AND diagnostic_extension),4097),"
+    +"'definitionBytesExceededCount',least(count(*) FILTER(WHERE NOT convalidated AND pg_catalog.octet_length(definition)>131072),4097),"
+    +"'commentBytesExceededCount',least(count(*) FILTER(WHERE NOT convalidated AND pg_catalog.octet_length(coalesce(comment,''))>65536),4097),"
+    +"'notValidSuffixMissingCount',least(count(*) FILTER(WHERE NOT convalidated AND definition !~ ' NOT VALID$'),4097))";
+  // A changed/missing catalogue lookup is explicit; no subcategory is guessed.
+  const scopeDetail="(SELECT "+diagnostic('ARCHIVE_CHECK_SCOPE_UNSUPPORTED_OR_BOUND',scopeCounts)+" FROM (SELECT snapshot.*,(live.constraint_oid IS NOT NULL AND live.semantic IS NOT DISTINCT FROM snapshot.semantic AND live.unsupported IS NOT DISTINCT FROM snapshot.unsupported) AS diagnostic_catalog_match,(con.contypid<>0 OR con.conrelid=0) AS diagnostic_domain_no_relation,(r.relkind<>'r') AS diagnostic_non_table,(r.relispartition OR NOT con.conislocal OR con.coninhcount<>0 OR con.conparentid<>0 OR EXISTS(SELECT 1 FROM pg_catalog.pg_inherits i WHERE i.inhrelid=r.oid OR i.inhparent=r.oid)) AS diagnostic_partition_inheritance,(snapshot.schema_name ~ '^pg_' OR snapshot.schema_name='information_schema') AS diagnostic_system_schema,(EXISTS(SELECT 1 FROM pg_catalog.pg_depend d WHERE d.deptype='e' AND ((d.classid='pg_catalog.pg_constraint'::regclass AND d.objid=con.oid) OR (d.classid='pg_catalog.pg_class'::regclass AND d.objid=r.oid))) OR EXISTS(SELECT 1 FROM pg_catalog.pg_depend d JOIN pg_catalog.pg_depend e ON e.classid=d.refclassid AND e.objid=d.refobjid AND e.deptype='e' WHERE d.classid='pg_catalog.pg_constraint'::regclass AND d.objid=con.oid)) AS diagnostic_extension FROM pg_temp.rr_archive_check_snapshot snapshot LEFT JOIN pg_temp.rr_archive_check_live live ON live.constraint_oid=snapshot.constraint_oid LEFT JOIN pg_catalog.pg_constraint con ON con.oid=snapshot.constraint_oid LEFT JOIN pg_catalog.pg_class r ON r.oid=con.conrelid) diagnostic_snapshot)::text";
+  const targetCounts="jsonb_build_object('copyTargetCount',least(count(*),8193),"
+    +"'unsupportedTargetCount',least(count(*) FILTER(WHERE r.oid IS NULL OR r.relkind<>'r' OR r.relispartition OR EXISTS(SELECT 1 FROM pg_catalog.pg_inherits i WHERE i.inhrelid=r.oid OR i.inhparent=r.oid)),8193),"
+    +"'missingTargetCount',least(count(*) FILTER(WHERE r.oid IS NULL),8193),"
+    +"'nonTableTargetCount',least(count(*) FILTER(WHERE r.oid IS NOT NULL AND r.relkind<>'r'),8193),"
+    +"'partitionTargetCount',least(count(*) FILTER(WHERE r.relispartition),8193),"
+    +"'inheritanceTargetCount',least(count(*) FILTER(WHERE EXISTS(SELECT 1 FROM pg_catalog.pg_inherits i WHERE i.inhrelid=r.oid OR i.inhparent=r.oid)),8193))";
+  const targetDetail="(WITH required(qualified) AS ("+required+") SELECT "+diagnostic('ARCHIVE_CHECK_TARGET_UNSUPPORTED',targetCounts)
+    +" FROM required e LEFT JOIN pg_catalog.pg_class r ON r.oid=pg_catalog.to_regclass(e.qualified))::text";
+  const differenceCounts="jsonb_build_object('removedSemanticCount',(SELECT least(count(*),4097) FROM (SELECT semantic FROM pg_temp.rr_archive_check_snapshot EXCEPT ALL SELECT semantic FROM pg_temp.rr_archive_check_live) d),"
+    +"'addedSemanticCount',(SELECT least(count(*),4097) FROM (SELECT semantic FROM pg_temp.rr_archive_check_live EXCEPT ALL SELECT semantic FROM pg_temp.rr_archive_check_snapshot) d))";
+  const changedDetail=diagnostic('ARCHIVE_CHECK_CATALOG_CHANGED',differenceCounts)+"::text";
   const sql=after?String.raw`SET LOCAL search_path=pg_catalog;
 DO $rr_archive_check_restore$ DECLARE item record; BEGIN
   IF current_user<>'postgres' OR current_database()<>'postgres' THEN RAISE SQLSTATE '42501'; END IF;
@@ -1189,25 +1278,45 @@ SELECT jsonb_build_object('kind','ARCHIVE_NOTVALID_CHECK_RESTORE_V1','phase',${s
 `:String.raw`SET LOCAL search_path=pg_catalog;
 CREATE TEMP VIEW rr_archive_check_live AS ${catalog};
 CREATE TEMP TABLE rr_archive_check_snapshot ON COMMIT DROP AS SELECT * FROM pg_temp.rr_archive_check_live;
-DO $rr_archive_check_suspend$ DECLARE item record; BEGIN
+DO $rr_archive_check_suspend$ DECLARE item record; diagnostic_detail text; BEGIN
   IF current_user<>'postgres' OR current_database()<>'postgres' THEN RAISE SQLSTATE '42501'; END IF;
   IF (SELECT count(*) FROM pg_temp.rr_archive_check_snapshot)>${maximum}
     OR (SELECT coalesce(sum(pg_catalog.pg_column_size(semantic)),0) FROM pg_temp.rr_archive_check_snapshot)>${maximumBytes}
     OR EXISTS(SELECT 1 FROM pg_temp.rr_archive_check_snapshot WHERE NOT convalidated AND
       (unsupported IS DISTINCT FROM false OR pg_catalog.octet_length(definition)>131072
        OR pg_catalog.octet_length(coalesce(comment,''))>65536 OR definition !~ ' NOT VALID$')) THEN
-    RAISE SQLSTATE 'P0001' USING MESSAGE='ARCHIVE_CHECK_SCOPE_UNSUPPORTED_OR_BOUND';
+    BEGIN
+      diagnostic_detail := ${scopeDetail};
+    EXCEPTION
+      WHEN query_canceled THEN RAISE;
+      WHEN OTHERS THEN diagnostic_detail := '';
+    END;
+    RAISE SQLSTATE 'P0001' USING MESSAGE='ARCHIVE_CHECK_SCOPE_UNSUPPORTED_OR_BOUND', DETAIL=coalesce(diagnostic_detail,'');
   END IF;
   IF EXISTS(WITH required(qualified) AS (${required}) SELECT 1 FROM required e
     LEFT JOIN pg_catalog.pg_class r ON r.oid=pg_catalog.to_regclass(e.qualified)
     WHERE r.oid IS NULL OR r.relkind<>'r' OR r.relispartition
       OR EXISTS(SELECT 1 FROM pg_catalog.pg_inherits i WHERE i.inhrelid=r.oid OR i.inhparent=r.oid)) THEN
-    RAISE SQLSTATE 'P0001' USING MESSAGE='ARCHIVE_CHECK_TARGET_UNSUPPORTED';
+    BEGIN
+      diagnostic_detail := ${targetDetail};
+    EXCEPTION
+      WHEN query_canceled THEN RAISE;
+      WHEN OTHERS THEN diagnostic_detail := '';
+    END;
+    RAISE SQLSTATE 'P0001' USING MESSAGE='ARCHIVE_CHECK_TARGET_UNSUPPORTED', DETAIL=coalesce(diagnostic_detail,'');
   END IF;
   FOR item IN SELECT DISTINCT constraint_oid,schema_name,table_name FROM pg_temp.rr_archive_check_snapshot WHERE NOT convalidated ORDER BY constraint_oid LOOP
     EXECUTE pg_catalog.format('LOCK TABLE %I.%I IN ACCESS EXCLUSIVE MODE',item.schema_name,item.table_name);
   END LOOP;
-  IF NOT (${same}) THEN RAISE SQLSTATE 'P0001' USING MESSAGE='ARCHIVE_CHECK_CATALOG_CHANGED'; END IF;
+  IF NOT (${same}) THEN
+    BEGIN
+      diagnostic_detail := ${changedDetail};
+    EXCEPTION
+      WHEN query_canceled THEN RAISE;
+      WHEN OTHERS THEN diagnostic_detail := '';
+    END;
+    RAISE SQLSTATE 'P0001' USING MESSAGE='ARCHIVE_CHECK_CATALOG_CHANGED', DETAIL=coalesce(diagnostic_detail,'');
+  END IF;
   FOR item IN SELECT * FROM pg_temp.rr_archive_check_snapshot WHERE NOT convalidated ORDER BY constraint_oid LOOP
     EXECUTE pg_catalog.format('ALTER TABLE %I.%I DROP CONSTRAINT %I RESTRICT',item.schema_name,item.table_name,item.conname);
   END LOOP;
@@ -1382,6 +1491,35 @@ CREATE SEQUENCE public.rr_restore_check_canary_seq START 77;
     if(afterData)yield Buffer.from(afterData);
     yield archiveNotValidCheckSql(inventory,inventory.relations[0].phase,true);
   })();
+  // Existing owned-B SQL qualification also proves that real PostgreSQL emits
+  // the fixed DETAIL. The subtransaction catches only the already-raised P0001;
+  // its rollback and the original nontransactional DATA canary remain observable.
+  const suspendReport=async(inventory,reason,edit=sql=>sql)=>{
+    const body=edit(archiveNotValidCheckSql(inventory,'DATA').toString())+"SELECT nextval('public.rr_restore_check_canary_seq');\n";
+    const capture=String.raw`CREATE TEMP TABLE rr_restore_check_diagnostic_capture(value jsonb) ON COMMIT DROP;
+DO $rr_check_diagnostic$ DECLARE own_message text; own_detail text; BEGIN
+  BEGIN
+    EXECUTE ${sqlString(body)};
+    RAISE SQLSTATE 'P0002' USING MESSAGE='SYNTHETIC_CHECK_GUARD_DID_NOT_REFUSE';
+  EXCEPTION WHEN SQLSTATE 'P0001' THEN
+    GET STACKED DIAGNOSTICS own_message=MESSAGE_TEXT,own_detail=PG_EXCEPTION_DETAIL;
+    IF own_message<>${sqlString(reason)} THEN RAISE SQLSTATE 'P0002' USING MESSAGE='SYNTHETIC_CHECK_GUARD_REASON'; END IF;
+    INSERT INTO pg_temp.rr_restore_check_diagnostic_capture VALUES(
+      CASE WHEN coalesce(own_detail,'')='' THEN '{"state":"UNAVAILABLE"}'::jsonb ELSE own_detail::jsonb END);
+    IF pg_catalog.to_regclass('pg_temp.rr_archive_check_snapshot') IS NOT NULL
+      OR pg_catalog.to_regclass('pg_temp.rr_archive_check_live') IS NOT NULL THEN
+      RAISE SQLSTATE 'P0002' USING MESSAGE='SYNTHETIC_CHECK_GUARD_SUBTRANSACTION_NOT_ROLLED_BACK';
+    END IF;
+  END;
+END $rr_check_diagnostic$;
+SELECT value FROM pg_temp.rr_restore_check_diagnostic_capture;
+`;
+    const report=JSON.parse((await run(c,p,'SYNTHETIC_CHECK_GUARD_DIAGNOSTIC',Buffer.from(capture))).toString().trim());
+    assert.deepEqual(publicArchiveCheckSuspendDiagnostic(report),report);
+    if(report.state==='UNAVAILABLE'){assert.deepEqual(report,{state:'UNAVAILABLE'});return report;}
+    assert.equal(report.state,'OWNED_GUARD_BOUND');assert.equal(report.reason,reason);
+    assert.equal(report.inventorySha256,inventory.digest);assert.equal(report.phase,'DATA');return report;
+  };
   const reports=[];
   for(const phase of ['DATA','HISTORY_DATA']){
     const inventory=scope(phase),before=await rows();
@@ -1411,9 +1549,34 @@ CREATE SEQUENCE public.rr_restore_check_canary_seq START 77;
   for(const [ddl,cleanup]of unsupported){
     await run(c,p,'SYNTHETIC_CHECK_UNSUPPORTED_SETUP',Buffer.from(ddl));const before=await canary();
     await assert.rejects(()=>run(c,p,'SYNTHETIC_CHECK_UNSUPPORTED_REFUSED',staged(inventory,probe)),e=>e.code==='SQLSTATE_P0001');
+    const diagnostic=await suspendReport(inventory,'ARCHIVE_CHECK_SCOPE_UNSUPPORTED_OR_BOUND');
+    assert(diagnostic.counts.unsupportedNotValidCount>=1);
+    assert(diagnostic.counts[ddl.startsWith('CREATE DOMAIN')?'domainOrNoRelationCount':'partitionOrInheritanceCount']>=1);
+    if(ddl.startsWith('CREATE DOMAIN')){
+      const beforeFaultRows=await rows();
+      const unavailable=await suspendReport(inventory,'ARCHIVE_CHECK_SCOPE_UNSUPPORTED_OR_BOUND',sql=>{
+        const assignment=/^      diagnostic_detail := [^\r\n]*;$/m;
+        assert(assignment.test(sql));
+        return sql.replace(assignment,'      diagnostic_detail := (1/0)::text;');
+      });
+      assert.deepEqual(unavailable,{state:'UNAVAILABLE'},'A secondary diagnostic error must retain the exact original P0001/message, with no invented binding');
+      assert.deepEqual(await rows(),beforeFaultRows,'The failed guard subtransaction must roll back the owned SQL snapshot without changing rows');
+    }
     assert.deepEqual(await canary(),before,'Unsupported scope must stop before the nontransactional DATA canary');
     await run(c,p,'SYNTHETIC_CHECK_UNSUPPORTED_CLEANUP',Buffer.from(cleanup));
   }
+  const beforeDiagnostic=await canary();
+  await run(c,p,'SYNTHETIC_CHECK_TARGET_DIAGNOSTIC_SETUP',Buffer.from('CREATE TABLE rr_restore_check_scope.target_partition(value integer) PARTITION BY RANGE(value);\n'));
+  const targetRelations=[...inventory.relations,archiveRelationEntry('data.sql','COPY','"rr_restore_check_scope"."target_partition"')];
+  const targetInventory={complete:true,relations:targetRelations,digest:sha(Buffer.from(JSON.stringify(targetRelations)))};
+  const targetDiagnostic=await suspendReport(targetInventory,'ARCHIVE_CHECK_TARGET_UNSUPPORTED');
+  assert.equal(targetDiagnostic.counts.unsupportedTargetCount,1);assert.equal(targetDiagnostic.counts.partitionTargetCount,1);
+  assert.equal(targetDiagnostic.counts.nonTableTargetCount,1);assert.deepEqual(await canary(),beforeDiagnostic);
+  await run(c,p,'SYNTHETIC_CHECK_TARGET_DIAGNOSTIC_CLEANUP',Buffer.from('DROP TABLE rr_restore_check_scope.target_partition;\n'));
+  const changedDiagnostic=await suspendReport(inventory,'ARCHIVE_CHECK_CATALOG_CHANGED',sql=>sql.replace('DO $rr_archive_check_suspend$',
+    'ALTER TABLE rr_restore_check_scope.other ADD CONSTRAINT rr_diagnostic_changed CHECK(value>=0);\nDO $rr_archive_check_suspend$'));
+  assert.equal(changedDiagnostic.counts.addedSemanticCount,1);assert.equal(changedDiagnostic.counts.removedSemanticCount,0);
+  assert.deepEqual(await canary(),beforeDiagnostic);
   await run(c,p,'SYNTHETIC_CHECK_CLEANUP',Buffer.from('DROP TABLE public.rr_restore_check_legacy; DROP TABLE rr_restore_check_scope.other; DROP SEQUENCE public.rr_restore_check_canary_seq; DROP SCHEMA rr_restore_check_scope;\n'));
   return {status:'PASS',scope:'SYNTHETIC_OWNED_POSTGRES_NOTVALID_CHECK_RESTORE',phases:reports.map(r=>r.phase),
     legacyRowsAndDuplicates:true,validatedChecksPreserved:true,newViolationsRefused:true,recreateMismatchRolledBack:true,
@@ -1748,6 +1911,116 @@ async function selfTest(){
       assert.throws(()=>readArchiveNotValidCheckReport(context(),'DATA',bytes),e=>e.code==='ARCHIVE_RELATION_CHECK_REPORT_MISSING');
     const c=context();readArchiveNotValidCheckReport(c,'DATA',wire(report));
     assert.throws(()=>readArchiveNotValidCheckReport(c,'DATA',wire(report)),e=>e.code==='ARCHIVE_RELATION_CHECK_REPORT_DUPLICATE');
+  });
+
+  test('only the normal owned archive-B HISTORY stream gets primary-style verbose diagnostics with unchanged psql target and limits',()=>{
+    const p={side:'B',db:'synthetic-owned-container',dbUrl:new URL('postgres://postgres:synthetic-password@127.0.0.1:54322/postgres')},
+      lines={next:1,ranges:new Map()},prefix=['exec','-i','-e','PGPASSWORD=synthetic-password',p.db,'psql','-X',
+        '--host=127.0.0.1','--port=5432','--username=postgres','--dbname=postgres','--quiet','--single-transaction','--variable=ON_ERROR_STOP=1'],
+      tail=['--tuples-only','--no-align'];
+    assert.deepEqual(psqlArguments({archive:true},p,'RESTORE_ARCHIVE_HISTORY',lines),
+      [...prefix,'--set=VERBOSITY=verbose','--set=SHOW_CONTEXT=never',...tail,'--file=-']);
+    for(const [c,target,stage,inputLines]of [[{archive:false},p,'RESTORE_ARCHIVE_HISTORY',lines],
+      [{archive:true},{...p,side:'A'},'RESTORE_ARCHIVE_HISTORY',lines],[{archive:true},p,'ARCHIVE_DATA_PARITY',lines],
+      [{archive:true},p,'RESTORE_ARCHIVE_HISTORY',null],[{archive:true},p,'SYNTHETIC_CHECK_GUARD_DIAGNOSTIC',null]])
+      assert.deepEqual(psqlArguments(c,target,stage,inputLines),[...prefix,'--set=VERBOSITY=sqlstate',...tail,...(inputLines?['--file=-']:[])]);
+  });
+
+  function suspendDiagnosticFixture(reason='ARCHIVE_CHECK_SCOPE_UNSUPPORTED_OR_BOUND',phase='DATA'){
+    const inventory={complete:true,digest:'d'.repeat(64),relations:[]};
+    const counts=Object.fromEntries(Object.keys(ARCHIVE_CHECK_SUSPEND_COUNTS[reason]).map(key=>[key,0]));
+    if(reason==='ARCHIVE_CHECK_SCOPE_UNSUPPORTED_OR_BOUND')Object.assign(counts,{checkCount:3,semanticBytes:512,notValidCount:2,
+      unsupportedNotValidCount:1,domainOrNoRelationCount:1});
+    else if(reason==='ARCHIVE_CHECK_TARGET_UNSUPPORTED')Object.assign(counts,{copyTargetCount:2,unsupportedTargetCount:1,
+      nonTableTargetCount:1,partitionTargetCount:1});
+    else counts.addedSemanticCount=1;
+    const report={state:'OWNED_GUARD_BOUND',reason,phase,inventorySha256:inventory.digest,
+      measurementPoint:'BEFORE_DATA_SAME_TRANSACTION',counts};
+    const wire=(r=report,message=reason)=>Buffer.from('psql:<stdin>:7: ERROR:  P0001: '+message+'\nDETAIL:  '+JSON.stringify(r)
+      +'\nCONTEXT:  private-catalog-definition-row-sentinel\nLOCATION:  exec_stmt_raise, pl_exec.c:3905\n');
+    return {inventory,report,wire};
+  }
+  test('owned CHECK_SUSPEND projects only three exact guard reasons and bounded same-transaction counts',()=>{
+    for(const reason of Object.keys(ARCHIVE_CHECK_SUSPEND_COUNTS))for(const phase of ['DATA','HISTORY_DATA']){
+      const f=suspendDiagnosticFixture(reason,phase),c={archiveRelationInventory:f.inventory},stage=phase==='DATA'?'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA':'RESTORE_ARCHIVE_HISTORY';
+      assert.deepEqual(archiveCheckSuspendDiagnostic(c,stage,f.wire(),'CHECK_SUSPEND'),f.report);
+      const failure=safeError({code:'SQLSTATE_P0001',exit:3,inputOwner:'CHECK_SUSPEND',checkSuspend:f.report},stage);
+      assert.equal(failure.code,'SQLSTATE_P0001');assert.equal(failure.exit,3);assert.equal(failure.inputOwner,'CHECK_SUSPEND');
+      assert.deepEqual(failure.checkSuspend,f.report);assert(!JSON.stringify(failure).includes('private-catalog-definition-row-sentinel'));
+      const limits=structuredClone(f.report);Object.assign(limits.counts,ARCHIVE_CHECK_SUSPEND_COUNTS[reason]);
+      assert.deepEqual(publicArchiveCheckSuspendDiagnostic(limits),limits);
+    }
+  });
+  test('CHECK_SUSPEND refuses unknown conflicting unbound or malformed diagnostics without exposing sentinels',()=>{
+    const f=suspendDiagnosticFixture(),c={archiveRelationInventory:f.inventory},stage='RESTORE_ARCHIVE_ROLES_SCHEMA_DATA',unknown={state:'UNAVAILABLE'};
+    const changed=edit=>{const r=structuredClone(f.report);edit(r);return r;};
+    for(const report of [changed(r=>r.reason={toString:7}),changed(r=>r.inventorySha256={toString:7}),changed(r=>r.reason='PRIVATE_REASON_SENTINEL'),changed(r=>r.phase='PRIVATE_PHASE_SENTINEL'),
+      changed(r=>r.measurementPoint='AFTER_COMMIT'),changed(r=>r.extra='PRIVATE_CATALOG_SENTINEL'),
+      changed(r=>r.counts.extra=1),changed(r=>delete r.counts.checkCount),changed(r=>r.counts.checkCount=4098),
+      changed(r=>r.counts.semanticBytes=8388610),changed(r=>r.counts.notValidCount=4),
+      changed(r=>r.counts.domainOrNoRelationCount=-1),changed(r=>r.counts.domainOrNoRelationCount=0.5),
+      changed(r=>Object.keys(r.counts).forEach(key=>r.counts[key]=0))]){
+      assert.deepEqual(publicArchiveCheckSuspendDiagnostic(report),unknown);
+      assert.deepEqual(archiveCheckSuspendDiagnostic(c,stage,f.wire(report),'CHECK_SUSPEND'),unknown);
+    }
+    for(const bytes of [Buffer.alloc(0),Buffer.alloc(P.diagnosticBytes+1),Buffer.concat([f.wire(),f.wire()]),
+      Buffer.from(f.wire().toString().replace('P0001:','23514:')),f.wire(f.report,'PRIVATE_MESSAGE_SENTINEL'),
+      f.wire(f.report,'ARCHIVE_CHECK_TARGET_UNSUPPORTED'),Buffer.from(f.wire().toString().replace('DETAIL:  ','DETAIL:  PRIVATE_PREFIX_SENTINEL')),
+      Buffer.from(f.wire().toString()+'DETAIL:  '+JSON.stringify(f.report)+'\n'),
+      f.wire(changed(r=>r.inventorySha256='e'.repeat(64))),f.wire(changed(r=>r.phase='HISTORY_DATA'))])
+      assert.deepEqual(archiveCheckSuspendDiagnostic(c,stage,bytes,'CHECK_SUSPEND'),unknown);
+    for(const owner of ['DATA','CHECK_RESTORE','UNKNOWN'])assert.deepEqual(archiveCheckSuspendDiagnostic(c,stage,f.wire(),owner),unknown);
+    assert.deepEqual(archiveCheckSuspendDiagnostic(c,'UNOWNED_STAGE',f.wire(),'CHECK_SUSPEND'),unknown);
+    assert.deepEqual(archiveCheckSuspendDiagnostic({archiveRelationInventory:{...f.inventory,complete:false}},stage,f.wire(),'CHECK_SUSPEND'),unknown);
+    for(const edit of [{code:'SQLSTATE_23514'},{inputOwner:'DATA'}])
+      assert(!Object.hasOwn(safeError({code:'SQLSTATE_P0001',inputOwner:'CHECK_SUSPEND',checkSuspend:f.report,...edit},stage),'checkSuspend'));
+    assert.deepEqual(safeError({code:'SQLSTATE_P0001',inputOwner:'CHECK_SUSPEND',checkSuspend:{...f.report,private:'PRIVATE_SENTINEL'}},stage).checkSuspend,unknown);
+  });
+  test('normal owned archive command retains P0001 exit and CHECK_SUSPEND owner while projecting bounded guard DETAIL',async()=>{
+    const c={root:os.tmpdir(),home:os.tmpdir(),deadline:Date.now()+30_000,processes:[]};
+    for(const reason of Object.keys(ARCHIVE_CHECK_SUSPEND_COUNTS)){
+      const f=suspendDiagnosticFixture(reason);c.archiveRelationInventory=f.inventory;
+      const inputLines={next:10,ranges:new Map([['CHECK_SUSPEND',{first:1,last:9}]])};
+      const child=['-e','process.stdin.resume();process.stdin.on("end",()=>process.stderr.write('+JSON.stringify(f.wire().toString())+',()=>process.exit(3)))'];
+      await assert.rejects(command(c,'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA',process.execPath,child,
+        {input:Buffer.from('-- own synthetic CHECK_SUSPEND\n'.repeat(9)),archivePsql:true,inputLines,maxMs:10_000}),error=>{
+        assert.equal(error.code,'SQLSTATE_P0001');assert.equal(error.exit,3);assert.equal(error.inputOwner,'CHECK_SUSPEND');
+        assert.deepEqual(error.checkSuspend,f.report);const failure=safeError(error,'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA');
+        assert.deepEqual(failure.checkSuspend,f.report);assert(!JSON.stringify(failure).includes('private-catalog-definition-row-sentinel'));return true;
+      });
+    }
+    const fallback=suspendDiagnosticFixture();c.archiveRelationInventory=fallback.inventory;
+    const noDetail=fallback.wire().toString().replace(/^DETAIL: [^\r\n]*\n/m,'DETAIL:  \n');
+    const fallbackChild=['-e','process.stdin.resume();process.stdin.on("end",()=>process.stderr.write('+JSON.stringify(noDetail)+',()=>process.exit(3)))'];
+    await assert.rejects(command(c,'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA',process.execPath,fallbackChild,
+      {input:Buffer.from('-- own synthetic CHECK_SUSPEND\n'.repeat(9)),archivePsql:true,
+        inputLines:{next:10,ranges:new Map([['CHECK_SUSPEND',{first:1,last:9}]])},maxMs:10_000}),error=>{
+      assert.equal(error.code,'SQLSTATE_P0001');assert.equal(error.exit,3);assert.equal(error.inputOwner,'CHECK_SUSPEND');
+      assert.deepEqual(error.checkSuspend,{state:'UNAVAILABLE'});
+      assert.deepEqual(safeError(error,'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA').checkSuspend,{state:'UNAVAILABLE'});return true;
+    });
+    assert(c.processes.every(p=>p.processGroupClosed));
+  });
+  test('CHECK_SUSPEND SQL adds only bounded own DETAIL and leaves its three guard predicates and semantic comparison intact',()=>{
+    const f=suspendDiagnosticFixture();
+    for(const phase of ['DATA','HISTORY_DATA']){
+      const sql=archiveNotValidCheckSql(f.inventory,phase).toString(),post=archiveNotValidCheckSql(f.inventory,phase,true).toString();
+      for(const reason of Object.keys(ARCHIVE_CHECK_SUSPEND_COUNTS))assert(sql.includes("RAISE SQLSTATE 'P0001' USING MESSAGE='"+reason+"', DETAIL="));
+      assert(sql.includes("IF current_user<>'postgres' OR current_database()<>'postgres' THEN RAISE SQLSTATE '42501'; END IF;"));
+      assert(sql.includes('FROM pg_temp.rr_archive_check_snapshot)>4096'));
+      assert(sql.includes('FROM pg_temp.rr_archive_check_snapshot)>8388608'));
+      assert(sql.includes("unsupported IS DISTINCT FROM false OR pg_catalog.octet_length(definition)>131072"));
+      assert(sql.includes("OR pg_catalog.octet_length(coalesce(comment,''))>65536 OR definition !~ ' NOT VALID$'"));
+      assert(sql.includes('WHERE r.oid IS NULL OR r.relkind<>\'r\' OR r.relispartition'));
+      assert(sql.includes('EXCEPT ALL SELECT semantic FROM pg_temp.rr_archive_check_live'));
+      assert(sql.includes('EXCEPT ALL SELECT semantic FROM pg_temp.rr_archive_check_snapshot'));
+      assert(sql.includes("'inventorySha256','"+f.inventory.digest+"'"));assert(sql.includes("'phase','"+phase+"'"));
+      assert(sql.includes('least(count(*),4097)'));assert(sql.includes('least(count(*),8193)'));
+      assert.equal((sql.match(/WHEN query_canceled THEN RAISE;/g)??[]).length,3);
+      assert.equal((sql.match(/WHEN OTHERS THEN diagnostic_detail := '';/g)??[]).length,3);
+      assert.equal((sql.match(/DETAIL=coalesce\(diagnostic_detail,''\)/g)??[]).length,3);
+      assert(!post.includes('OWNED_GUARD_BOUND'));assert(post.includes("MESSAGE='ARCHIVE_CHECK_SEMANTIC_MISMATCH';"));
+    }
   });
 
   test('inventory-only uses the authenticated materializer and complete parser before any Docker or SQL',async()=>{

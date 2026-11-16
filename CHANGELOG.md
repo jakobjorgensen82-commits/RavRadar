@@ -1,3 +1,11 @@
+## Afgrænset forklaring af arkivlæserens CHECK_SUSPEND-afslag
+
+Den eksisterende arkivlæser kan forklare sine tre faste P0001-afslag før CHECK_SUSPEND: ikke-understøttet eller for stor CHECK-metadata, ikke-understøttede COPY-mål og ændret CHECK-katalog. Kun præcis fejlramme, fase, inventory-hash og mættede årsagstællere må forlade den ejede lokale database. Navne, definitioner, kommentarer, rækker og rå fejltekst forbliver private. Ukendt eller modstridende diagnostic bliver UNAVAILABLE.
+
+Årsagstællerne beregnes alene efter et allerede afvist guardresultat. En ordinær fejl i selve diagnosticen bevarer den oprindelige P0001 og dens faste årsag med tom diagnostic; query_canceled følger fortsat den eksisterende afbrydelse og tidsgrænse. Den normale ejede arkiv-B/HISTORY-kalder bruger samme lukkede verbose-format som den primære DATA-kalder med SHOW_CONTEXT=never. Alle andre psql-kald, katalog-/snapshotbytes, originaler, semantiske lighedskrav, rollback, Auth, oprydning og PASS-betingelser bevares.
+
+Dette er diagnostic, ikke en ny accept af arkivdata eller en forklaring af det aktuelle arkivs konkrete guardafslag. Normal SQL-kvalifikation og faktisk original-/Auth-gendannelse skal fortsat gennemføres; egressbudgettets ejeraccept ændres ikke.
+
 ## 15. november 2026 — lokal599-udstedelse og adskilt app-/modelfamilie
 
 Den afgrænsede599-kandidat samler assistentens rettelse af sammensatte strøm-/bølgespørgsmål med faste årsagsoplysninger ved komponentcachens eksisterende størrelsesafslag. Den normale C-bygger, I-bygger og T-afledning danner de faktiske bindinger før den almindelige originalbevarende SQL-konstruktør, metadata- og håndbogssynkronisering. Den nye append-only migration er `20261115174259_assistant_after598_original598_bound_successor.sql`. Alle 74 tidligere SQL-filer bevares. Scoreregler, kildeprioritet og administratorens geometri følger deres eksisterende kontrakter.

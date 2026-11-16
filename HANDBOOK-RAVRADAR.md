@@ -46,6 +46,13 @@ Læsende betyder her ingen ændring af fjernlager eller database, ikke ingen fil
 
 Rapporten viser faste skema- og typekategorier, tællere, filernes størrelser og identiteter samt SHA-256 af de ukategoriserede Auth-/Storage-måls præcist citerede navne. Frie relationer, kolonnenavne, SQL og rækker vises ikke. Ejet privat scratch fjernes med identitetskontrol og faktisk fraværsaflæsning. Det autentiske inventory har afklaret de seks leverandørrelationers identitet mod officielle migrationer; den eksisterende faste labeltabel kan nu navngive deres offentlige kategorier. Ukendte fremtidige eller private relationer forbliver OTHER. Inventory ændrer ingen data og beviser hverken faktisk kompatibilitet, restore-PASS, autonom kvittering eller Free-klarhed.
 
+
+Den eksisterende arkivlæser kan forklare sine tre faste P0001-afslag før CHECK_SUSPEND: ikke-understøttet eller for stor CHECK-metadata, ikke-understøttede COPY-mål og ændret CHECK-katalog. Kun præcis fejlramme, fase, inventory-hash og mættede årsagstællere må forlade den ejede lokale database. Navne, definitioner, kommentarer, rækker og rå fejltekst forbliver private. Ukendt eller modstridende diagnostic bliver UNAVAILABLE.
+
+Årsagstællerne beregnes alene efter et allerede afvist guardresultat. En ordinær fejl i selve diagnosticen bevarer den oprindelige P0001 og dens faste årsag med tom diagnostic; query_canceled følger fortsat den eksisterende afbrydelse og tidsgrænse. Den normale ejede arkiv-B/HISTORY-kalder bruger samme lukkede verbose-format som den primære DATA-kalder med SHOW_CONTEXT=never. Alle andre psql-kald, katalog-/snapshotbytes, originaler, semantiske lighedskrav, rollback, Auth, oprydning og PASS-betingelser bevares.
+
+Dette er diagnostic, ikke en ny accept af arkivdata eller en forklaring af det aktuelle arkivs konkrete guardafslag. Normal SQL-kvalifikation og faktisk original-/Auth-gendannelse skal fortsat gennemføres; egressbudgettets ejeraccept ændres ikke.
+
 ## 89.349 — AI vælger fakta, serveren skriver svaret
 
 Den afgrænsede assistentkandidat gør hele systeminstruksen til evidensvalg og beder den eksisterende GPT-OSS-model om samme femfeltsprotokol gennem Cloudflares direkte JSON-schema-format. Svarfeltet er en lokaliseret fast markør; modellen vælger fortsat disposition og alle nødvendige eksisterende fakta-ID’er. Serveren skriver fortsat det viste svar fra de godkendte tekstenheder.
