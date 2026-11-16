@@ -17,6 +17,12 @@ Samme 599-kode og en almindelig app600 med fast modelfamilie599 kan analyseres p
 Præcis kildekvalifikation, faktisk nødvendig PostgreSQL, installation og offentlig virkning er fortsat åbne. Se DEC-0302 og håndbog 89.342.
 
 
+## Lokal implementation — katalogbundet arkiv-CHECK-diagnostic
+
+Den eksisterende restore-reader har en afgrænset lokal diagnostic for primær DATA/23514. Samme præ-DATA-katalogaflæsning binder højst 512 CHECK-tuplehashes til fast skemakategori, contype, convalidated og BEFORE_DATA_SAME_TRANSACTION. Kun entydige serverfelter kan bindes; manglende, tvetydig, for stor eller fremmed metadata bliver UNAVAILABLE uden at erstatte første fejl. Andre fejlformater og de oprindelige SQL-/rollback-/oprydnings-/PASS-ejere er bevaret.
+
+Den normale hele selvtest og det relevante normale lifecycle-mål er bestået lokalt. Arkivkrypto/materialisering, captureworkflow og kontrolregistrering er uændrede; deres gamle beviser ommærkes ikke til ny diagnostic eller SQL-eksekvering. Præcis kildekvalifikation, uafhængigt review og faktisk diagnostic i samme autentiske originalarkiv er fortsat åbne. Den aktuelle 23514-årsag, originalrestore/Auth, autonom reserve og Free-klarhed er ikke løst. Version 4.0.598 og udstedte SQL/modelinput bevares. Se DEC-0302 og håndbog 89.350.
+
 ## 15. november — Afgrænset protokolrettelse til schema-læsning
 
 Cloudflares normale fejlfri GraphQL-svar kan indeholde `errors: null`. Den faste schema-læser afviste denne dokumenterede form. Den afgrænsede rettelse accepterer kun fraværende fejl, null eller en tom fejlliste; ikke-tomme fejl, fremmede felter og manglende typedata afvises fortsat. Konvolut, leverandørfejl og typedata har særskilte faste kategorier og HTTP-status uden rå svartekst.

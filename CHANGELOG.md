@@ -25,6 +25,10 @@ Samme 599-kode og en almindelig app600 med fast modelfamilie599 kan analyseres p
 Præcis kildekvalifikation, faktisk nødvendig PostgreSQL, installation og offentlig virkning er fortsat åbne. Se DEC-0302 og håndbog 89.342.
 
 
+## 4.0.598 — Afgrænset identifikation af arkivets CHECK-fejl
+
+Den eksisterende arkivlæser kan binde den primære DATA/23514-fejl til et begrænset CHECK-katalog fra samme transaktion før DATA. Kun entydig tuplehash og faste metadata kan vises; ukendt forbliver ukendt. Original SQL, constraints, rækkefølge, rollback, første fejl og stærke gendannelseskrav bevares. Normal selvtest og lifecycle-kalder er lokalt afprøvet; faktisk constraint-identitet, årsag og originalrestore/Auth er fortsat åbne. Dette er diagnose og giver ingen Free- eller restoreaccept.
+
 ## 4.0.598 — Normale vendorversioner til isoleret arkivgendannelse
 
 Den ældre lokale bootstrap indeholder ikke arkivets fire SCIM-/recovery-relationer og to Storage-lifecycle-relationer. Identiteterne er afklaret ved navne-SHA mod officielle migrationer. Kun det friske, ikke tilknyttede archive-B får create-only lokale versionspins til Auth v2.197.0 og Storage v1.86.0 før den normale CLI 2.117.0-start. Gamle pins, projekttilknytning og Storage-migrationsloft afvises; pinfilerne genlæses efter start. Den syntetiske vej, de tre vedvarende tjenester, image-/netværks-/stop-/oprydningskontroller og alle fem originale SQL-strømme bevares.

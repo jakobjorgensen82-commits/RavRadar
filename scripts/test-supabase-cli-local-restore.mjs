@@ -29,6 +29,8 @@ const DOCUMENTED_CLI_LOGIN_GRANT='GRANT "postgres" TO "cli_login_postgres" WITH 
 const ARCHIVE_SQL_STATEMENTS=['UNKNOWN','CREATE_ROLE','ALTER_ROLE','GRANT_ROLE','REVOKE_ROLE','COMMENT_ROLE','CLI_LOGIN_POSTGRES_GRANT'];
 const ARCHIVE_ROLE_STATEMENT_STATES=new Set(['SQLSTATE_42501','SQLSTATE_42704']);
 const MAX_ROLE_CLASS_LINES=8192;
+const ARCHIVE_CHECK_CATALOG=Object.freeze({maximum:512,point:'BEFORE_DATA_SAME_TRANSACTION',
+  hashFormat:'SHA256_LENGTH_PREFIXED_UTF8_SCHEMA_RELATION_CONSTRAINT_V1'});
 const ROLE_STATEMENT_CATEGORIES=Object.freeze({
   'CREATE ROLE':'CREATE_ROLE','ALTER ROLE':'ALTER_ROLE',
   GRANT:'GRANT_ROLE',REVOKE:'REVOKE_ROLE','COMMENT ON ROLE':'COMMENT_ROLE',
@@ -182,7 +184,9 @@ function safeError(error,stage){
        ...(stage==='RESTORE_ARCHIVE_ROLES_SCHEMA_DATA'&&isGrantRoleStatement(error.inputStatement)
          &&ROLE_OPERAND_LABELS.has(error.missingRoleClass)
          ?{missingRoleClass:error.missingRoleClass}:{}),
-     }:{})};
+     }:{}),
+    ...(stage==='RESTORE_ARCHIVE_ROLES_SCHEMA_DATA'&&error?.code==='SQLSTATE_23514'&&error.inputOwner==='DATA'
+      ?{checkConstraint:publicArchiveCheckDiagnostic(error.checkConstraint)}:{})};
 }
 function diagnosticClass(bytes){
   const text=bytes.toString('utf8');
@@ -221,6 +225,77 @@ function archiveInputDiagnostic(diagnostic,code,inputLines){
     }
   }
   return report;
+}
+function archiveCheckTupleHash(parts){
+  if(!Array.isArray(parts)||parts.length!==3)return null;
+  const chunks=[];
+  for(const name of parts){
+    if(typeof name!=='string'||/[\x00-\x1f\x7f]/.test(name))return null;
+    const bytes=Buffer.from(name,'utf8');
+    if(bytes.length<1||bytes.length>63||bytes.toString('utf8')!==name)return null;
+    const length=Buffer.alloc(4);length.writeUInt32BE(bytes.length);chunks.push(length,bytes);
+  }
+  return sha(Buffer.concat(chunks));
+}
+function publicArchiveCheckDiagnostic(value){
+  const unavailable={state:'UNAVAILABLE'},keys=['state','tupleSha256','schemaClass','contype','convalidated','measurementPoint'];
+  if(!value||Object.getPrototypeOf(value)!==Object.prototype
+    ||JSON.stringify(Object.keys(value).sort())!==JSON.stringify(keys.sort())
+    ||value.state!=='CATALOG_BOUND'||!/^[a-f0-9]{64}$/.test(value.tupleSha256??'')
+    ||![...Object.values(ARCHIVE_RELATION_SCHEMAS),'OTHER'].includes(value.schemaClass)
+    ||value.contype!=='c'||typeof value.convalidated!=='boolean'
+    ||value.measurementPoint!==ARCHIVE_CHECK_CATALOG.point)return unavailable;
+  return Object.fromEntries(keys.map(key=>[key,value[key]]));
+}
+function readArchiveCheckCatalog(c,phase,bytes){
+  // Diagnostic metadata cannot replace the original SQLSTATE or relation guard.
+  c.archiveCheckCatalogs??=new Map();c.archiveCheckCatalogs.delete(phase);
+  try{
+    if(!Buffer.isBuffer(bytes)||bytes.length>P.diagnosticBytes)return;
+    if(c.archiveRelationInventory?.complete!==true||!['DATA','HISTORY_DATA'].includes(phase))return;
+    const found=[];
+    for(const line of bytes.toString('utf8').split(/\r?\n/))try{
+      const value=JSON.parse(line);if(value?.kind==='ARCHIVE_CHECK_CATALOG_V1')found.push(value);
+    }catch{}
+    if(found.length!==1)return;
+    const value=found[0],keys=['kind','phase','inventorySha256','measurementPoint','hashFormat','complete','entries'];
+    if(JSON.stringify(Object.keys(value).sort())!==JSON.stringify(keys.sort())
+      ||value.phase!==phase||value.inventorySha256!==c.archiveRelationInventory.digest
+      ||value.measurementPoint!==ARCHIVE_CHECK_CATALOG.point||value.hashFormat!==ARCHIVE_CHECK_CATALOG.hashFormat
+      ||value.complete!==true||!Array.isArray(value.entries)||value.entries.length>ARCHIVE_CHECK_CATALOG.maximum)return;
+    const schemas=new Set(c.archiveRelationInventory.relations.filter(r=>r.phase===phase&&r.kind==='COPY').map(r=>r.schemaClass));
+    const entries=new Map(),entryKeys=['tupleSha256','schemaClass','contype','convalidated'];
+    for(const entry of value.entries){
+      if(!entry||Object.getPrototypeOf(entry)!==Object.prototype
+        ||JSON.stringify(Object.keys(entry).sort())!==JSON.stringify(entryKeys.sort())
+        ||!/^[a-f0-9]{64}$/.test(entry.tupleSha256??'')||!schemas.has(entry.schemaClass)
+        ||entry.contype!=='c'||typeof entry.convalidated!=='boolean'||entries.has(entry.tupleSha256))return;
+      entries.set(entry.tupleSha256,{...entry});
+    }
+    c.archiveCheckCatalogs.set(phase,{inventorySha256:value.inventorySha256,entries});
+  }catch{ /* No raw diagnostic, partial catalogue, or secondary error escapes. */ }
+}
+function archiveCheckDiagnostic(c,stage,bytes,inputOwner){
+  const unavailable={state:'UNAVAILABLE'};
+  if(stage!=='RESTORE_ARCHIVE_ROLES_SCHEMA_DATA'||inputOwner!=='DATA')return unavailable;
+  const catalog=c.archiveCheckCatalogs?.get('DATA');
+  if(!catalog||catalog.inventorySha256!==c.archiveRelationInventory?.digest)return unavailable;
+  const text=bytes.toString('utf8');
+  const frames=[...text.matchAll(/^psql:<stdin>:([1-9][0-9]{0,9}): ERROR: +23514(?:: [^\r\n]*)?\r?$/gm)];
+  if(frames.length!==1||(text.match(/\bERROR:/g)??[]).length!==1)return unavailable;
+  const tail=text.slice(frames[0].index+frames[0][0].length),fields=[];
+  for(const label of ['SCHEMA NAME','TABLE NAME','CONSTRAINT NAME']){
+    const all=[...tail.matchAll(new RegExp('^'+label+':  ([^\\r\\n]*)\\r?$','gm'))];
+    if(all.length!==1)return unavailable;fields.push(all[0][1]);
+  }
+  // Only PostgreSQL's table-CHECK emitter is supported. Its real fields must be
+  // the final adjacent fields before LOCATION, not text injected in DETAIL.
+  const suffix=/\r?\nSCHEMA NAME:  [^\r\n]*\r?\nTABLE NAME:  [^\r\n]*\r?\nCONSTRAINT NAME:  [^\r\n]*\r?\nLOCATION:  ExecConstraints, execMain\.c:[1-9][0-9]{0,9}\r?\n?$/;
+  if(!suffix.test(tail)||(tail.match(/^LOCATION:/gm)??[]).length!==1)return unavailable;
+  const tupleSha256=archiveCheckTupleHash(fields),entry=catalog.entries.get(tupleSha256);
+  const schemaClass=Object.hasOwn(ARCHIVE_RELATION_SCHEMAS,fields[0])?ARCHIVE_RELATION_SCHEMAS[fields[0]]:'OTHER';
+  if(!tupleSha256||!entry||entry.schemaClass!==schemaClass)return unavailable;
+  return publicArchiveCheckDiagnostic({state:'CATALOG_BOUND',...entry,measurementPoint:ARCHIVE_CHECK_CATALOG.point});
 }
 // Recognise only complete single-line statements from a role dump prefix.
 // A multi-line string, comment, psql command or unfamiliar construct leaves attribution unknown.
@@ -429,6 +504,8 @@ async function* materializedRestoreBytes(c,archive,history=false,inputLines=null
 // Process closure never claims that a Docker daemon-side operation has stopped.
 async function command(c,stage,bin,args,{cwd=c.root,input=null,maxMs=P.childMs,audit=null,archivePsql=false,inputLines=null}={}){
   c.stage=stage;need(Date.now()<c.deadline,'OPERATION_DEADLINE');
+  if(stage==='RESTORE_ARCHIVE_ROLES_SCHEMA_DATA')c.archiveCheckCatalogs?.delete('DATA');
+  if(stage==='RESTORE_ARCHIVE_HISTORY')c.archiveCheckCatalogs?.delete('HISTORY_DATA');
   need(input===null||Buffer.isBuffer(input)||typeof input?.[Symbol.asyncIterator]==='function','RESTORE_INPUT_STREAM');
   let child,closed=false,exit=null,signal=null,first=null,outBytes=0,errBytes=0,inputStream=null,inputPump=null,inputDone=false,stdinClosed=false;
   const out=[],err=[],started=Date.now();
@@ -497,6 +574,7 @@ async function command(c,stage,bin,args,{cwd=c.root,input=null,maxMs=P.childMs,a
         const bytes=Buffer.concat(err),diagnostic=diagnosticClass(bytes);
         fail(diagnostic.startsWith('SQLSTATE_')?diagnostic:'PSQL_SCRIPT_ERROR');
         if(inputLines&&diagnostic.startsWith('SQLSTATE_'))Object.assign(first,archiveInputDiagnostic(bytes,diagnostic,inputLines));
+        if(diagnostic==='SQLSTATE_23514')first.checkConstraint=archiveCheckDiagnostic(c,stage,bytes,first.inputOwner);
       }
       if(stdinClosed)fail('STDIN_TRANSPORT');
       if(!inputDone)fail('STDIN_INCOMPLETE');
@@ -1067,16 +1145,33 @@ function archiveRelationPreflightSql(inventory,phase){
   const wrong="oid IS NOT NULL AND NOT ((kind='COPY' AND relkind IN ('r','p')) OR (kind='SEQUENCE' AND relkind='S'))";
   const grouped=where=>`coalesce((SELECT jsonb_object_agg(schema_class,n) FROM (SELECT schema_class,count(*) n FROM observed WHERE ${where} GROUP BY schema_class) g),'{}'::jsonb)`;
   const fixed=where=>`coalesce((SELECT jsonb_agg(relation_class ORDER BY relation_class) FROM (SELECT DISTINCT relation_class FROM observed WHERE ${where} AND relation_class<>'OTHER') g),'[]'::jsonb)`;
+  // Length-prefixed UTF-8 names match archiveCheckTupleHash without exposing
+  // names/definitions. Only bounded CHECK metadata for exact COPY targets.
+  const tuple=['n.nspname','target.relname','con.conname'].map(name=>
+    `pg_catalog.int4send(pg_catalog.octet_length(pg_catalog.convert_to(${name}::text,'UTF8')))||pg_catalog.convert_to(${name}::text,'UTF8')`).join('||');
   const sql=`SET LOCAL standard_conforming_strings = on;\nWITH required(kind,qualified,schema_class,relation_class) AS (${required}),
-observed AS (SELECT e.*,c.oid,c.relkind FROM required e LEFT JOIN pg_catalog.pg_class c ON c.oid=pg_catalog.to_regclass(e.qualified))
+observed AS (SELECT e.*,c.oid,c.relkind FROM required e LEFT JOIN pg_catalog.pg_class c ON c.oid=pg_catalog.to_regclass(e.qualified)),
+check_rows AS MATERIALIZED (SELECT DISTINCT con.oid,
+pg_catalog.encode(pg_catalog.sha256(${tuple}),'hex') AS tuple_sha256,e.schema_class,con.contype::text,con.convalidated
+FROM observed e JOIN pg_catalog.pg_constraint con ON con.conrelid=e.oid AND con.contype='c'
+JOIN pg_catalog.pg_class target ON target.oid=e.oid JOIN pg_catalog.pg_namespace n ON n.oid=target.relnamespace
+WHERE e.kind='COPY' AND e.relkind IN ('r','p') ORDER BY con.oid LIMIT ${ARCHIVE_CHECK_CATALOG.maximum+1})
 SELECT jsonb_build_object('kind','ARCHIVE_RELATION_PREFLIGHT_V1','phase',${sqlString(phase)},'inventorySha256',${sqlString(inventory.digest)},
 'completeParse',true,'copyTargets',count(*) FILTER (WHERE kind='COPY'),'sequenceTargets',count(*) FILTER (WHERE kind='SEQUENCE'),
 'missingCount',count(*) FILTER (WHERE oid IS NULL),'wrongKindCount',count(*) FILTER (WHERE ${wrong}),
 'missingBySchema',${grouped('oid IS NULL')},'wrongKindBySchema',${grouped(wrong)},
 'missingFixedRelations',${fixed('oid IS NULL')},'wrongKindFixedRelations',${fixed(wrong)}) AS rr_archive_relation_report,
-(count(*) FILTER (WHERE oid IS NULL OR (${wrong}))=0) AS rr_archive_relation_ok FROM observed
+(count(*) FILTER (WHERE oid IS NULL OR (${wrong}))=0) AS rr_archive_relation_ok,
+jsonb_build_object('kind','ARCHIVE_CHECK_CATALOG_V1','phase',${sqlString(phase)},'inventorySha256',${sqlString(inventory.digest)},
+'measurementPoint',${sqlString(ARCHIVE_CHECK_CATALOG.point)},'hashFormat',${sqlString(ARCHIVE_CHECK_CATALOG.hashFormat)},
+'complete',(SELECT count(*)<=${ARCHIVE_CHECK_CATALOG.maximum} FROM check_rows),
+'entries',CASE WHEN (SELECT count(*)<=${ARCHIVE_CHECK_CATALOG.maximum} FROM check_rows) THEN
+coalesce((SELECT jsonb_agg(jsonb_build_object('tupleSha256',tuple_sha256,'schemaClass',schema_class,
+'contype',contype,'convalidated',convalidated) ORDER BY tuple_sha256) FROM check_rows),'[]'::jsonb)
+ELSE '[]'::jsonb END) AS rr_archive_check_catalog FROM observed
 \\gset
 \\echo :rr_archive_relation_report
+\\echo :rr_archive_check_catalog
 \\if :rr_archive_relation_ok
 \\else
 DO $rr_archive_relation$ BEGIN RAISE SQLSTATE 'P0001' USING MESSAGE='ARCHIVE_RELATION_PREFLIGHT_MISSING_OR_KIND'; END $rr_archive_relation$;
@@ -1108,7 +1203,7 @@ function readArchiveRelationPreflight(c,stage,bytes,exit){
   }
   need(report.missingCount+report.wrongKindCount<=rows.length,'ARCHIVE_RELATION_REPORT_COUNTS');
   c.archiveRelationReports??=new Map();need(!c.archiveRelationReports.has(phase),'ARCHIVE_RELATION_REPORT_DUPLICATE');
-  c.archiveRelationReports.set(phase,report);return report;
+  c.archiveRelationReports.set(phase,report);readArchiveCheckCatalog(c,phase,bytes);return report;
 }
 async function verifyArchiveDataParity(c,p,archive){
   const expected={},input=archiveParitySql(c,archive,expected);
@@ -1819,6 +1914,107 @@ async function selfTest(){
     assert.equal(diagnosticClass(Buffer.from('ERROR: 23505 private synthetic detail')),'SQLSTATE_23505');
     assert.equal(diagnosticClass(Buffer.from('Cannot connect to the Docker daemon')),'DOCKER_UNAVAILABLE');
     assert.equal(diagnosticClass(Buffer.from('token=must-not-appear')),'CHILD_EXIT');
+  });
+  function checkDiagnosticFixture(inventory={complete:true,digest:'a'.repeat(64),
+    relations:[archiveRelationEntry('data.sql','COPY','"auth"."users"')]}){
+    const phase='DATA',entry={tupleSha256:archiveCheckTupleHash(['auth','users','fixture_check']),
+      schemaClass:'AUTH',contype:'c',convalidated:true};
+    const report={kind:'ARCHIVE_RELATION_PREFLIGHT_V1',phase,inventorySha256:inventory.digest,completeParse:true,
+      copyTargets:inventory.relations.filter(r=>r.phase===phase&&r.kind==='COPY').length,
+      sequenceTargets:inventory.relations.filter(r=>r.phase===phase&&r.kind==='SEQUENCE').length,
+      missingCount:0,wrongKindCount:0,missingBySchema:{},wrongKindBySchema:{},missingFixedRelations:[],wrongKindFixedRelations:[]};
+    const catalog={kind:'ARCHIVE_CHECK_CATALOG_V1',phase,inventorySha256:inventory.digest,
+      measurementPoint:ARCHIVE_CHECK_CATALOG.point,hashFormat:ARCHIVE_CHECK_CATALOG.hashFormat,complete:true,entries:[entry]};
+    const verbose=(line=7)=>Buffer.from('psql:<stdin>:'+line+': ERROR:  23514: private primary message\n'
+      +'DETAIL:  Failing row contains (private-row-never-report).\nSCHEMA NAME:  auth\nTABLE NAME:  users\n'
+      +'CONSTRAINT NAME:  fixture_check\nLOCATION:  ExecConstraints, execMain.c:2041\n');
+    const wire=(value=catalog)=>Buffer.from(JSON.stringify(report)+'\n'+(value===null?'':JSON.stringify(value)+'\n'));
+    return{inventory,entry,report,catalog,verbose,wire};
+  }
+  test('CHECK diagnostic hashes exact length-prefixed UTF8 tuples and reads only bounded same-transaction catalogue metadata',()=>{
+    const f=checkDiagnosticFixture(),c={archiveRelationInventory:f.inventory};
+    assert.equal(f.entry.tupleSha256,sha(Buffer.from('00000004617574680000000575736572730000000d666978747572655f636865636b','hex')));
+    assert.notEqual(archiveCheckTupleHash(['a','bc','d']),archiveCheckTupleHash(['ab','c','d']));
+    assert.notEqual(archiveCheckTupleHash(['auth','Users','fixture_check']),f.entry.tupleSha256);
+    for(const parts of [['auth','users','x\ny'],['auth','users','x\0y'],['auth','users','æ'.repeat(32)],['auth','users','\ud800']])
+      assert.equal(archiveCheckTupleHash(parts),null);
+    assert.notEqual(archiveCheckTupleHash(['auth','users','æøå']),archiveCheckTupleHash(['auth','users','aeoeaa']));
+    const sql=archiveRelationPreflightSql(f.inventory,'DATA').toString();
+    assert(sql.includes('pg_catalog.pg_constraint')&&sql.includes("con.contype='c'")&&sql.includes('con.convalidated'));
+    assert(sql.includes('pg_catalog.int4send(pg_catalog.octet_length(pg_catalog.convert_to('));
+    assert(sql.includes('LIMIT 513')&&sql.includes('\\echo :rr_archive_check_catalog'));
+    assert(!sql.includes('pg_get_constraintdef')&&!sql.includes('pg_get_expr')&&!sql.includes('private-row'));
+    assert.deepEqual(readArchiveRelationPreflight(c,'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA',f.wire(),3),f.report);
+    for(const convalidated of [true,false]){
+      const catalog=structuredClone(f.catalog);catalog.entries[0].convalidated=convalidated;
+      const trial={archiveRelationInventory:f.inventory};readArchiveCheckCatalog(trial,'DATA',f.wire(catalog));
+      assert.deepEqual(archiveCheckDiagnostic(trial,'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA',f.verbose(),'DATA'),
+        {state:'CATALOG_BOUND',...f.entry,convalidated,measurementPoint:ARCHIVE_CHECK_CATALOG.point});
+    }
+    assert(!JSON.stringify(restorePublicReport({...c,archive:true},null,{code:'OTHER_FAILURE'},true)).includes('fixture_check'));
+  });
+  test('CHECK diagnostic refuses missing replayed malformed duplicate and over-bound catalogues without replacing the SQL failure',()=>{
+    const f=checkDiagnosticFixture(),unknown={state:'UNAVAILABLE'};
+    for(const change of [v=>{v.complete=false;},v=>{v.phase='HISTORY_DATA';},v=>{v.inventorySha256='b'.repeat(64);},
+      v=>{v.measurementPoint='AFTER_ROLLBACK';},v=>{v.hashFormat='UNKNOWN';},v=>{v.extra='private-value';},
+      v=>{v.entries[0].name='private-constraint';},v=>{v.entries[0].tupleSha256='x';},v=>{v.entries[0].schemaClass='OTHER';},
+      v=>{v.entries[0].contype='f';},v=>{v.entries[0].convalidated=null;},v=>{v.entries.push({...v.entries[0]});},
+      v=>{v.entries=Array.from({length:513},()=>({...v.entries[0]}));}]){
+      const value=structuredClone(f.catalog);change(value);const c={archiveRelationInventory:f.inventory};
+      readArchiveCheckCatalog(c,'DATA',f.wire());readArchiveCheckCatalog(c,'DATA',f.wire(value));
+      assert.deepEqual(archiveCheckDiagnostic(c,'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA',f.verbose(),'DATA'),unknown);
+    }
+    for(const wire of [f.wire(null),Buffer.concat([f.wire(),Buffer.from(JSON.stringify(f.catalog)+'\n')]),Buffer.alloc(P.diagnosticBytes+1)]){
+      const c={archiveRelationInventory:f.inventory};readArchiveCheckCatalog(c,'DATA',wire);
+      assert.deepEqual(archiveCheckDiagnostic(c,'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA',f.verbose(),'DATA'),unknown);
+    }
+    const c={archiveRelationInventory:f.inventory};readArchiveCheckCatalog(c,'DATA',f.wire());
+    c.archiveRelationInventory={...f.inventory,digest:'b'.repeat(64)};
+    assert.deepEqual(archiveCheckDiagnostic(c,'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA',f.verbose(),'DATA'),unknown);
+    assert.deepEqual(publicArchiveCheckDiagnostic({state:'CATALOG_BOUND',...f.entry,measurementPoint:ARCHIVE_CHECK_CATALOG.point,
+      rawName:'private-value'}),unknown);
+    assert(!Object.hasOwn(safeError({code:'SQLSTATE_23505'},'OWNED_STAGE'),'checkConstraint'));
+  });
+  test('CHECK diagnostic binds only unique PostgreSQL table-CHECK verbose fields and never free text or injected DETAIL',()=>{
+    const f=checkDiagnosticFixture(),c={archiveRelationInventory:f.inventory},unknown={state:'UNAVAILABLE'};
+    readArchiveCheckCatalog(c,'DATA',f.wire());const text=f.verbose().toString();
+    for(const diagnostic of [text+text,text.replace('23514:','23505:'),text.replace('SCHEMA NAME:  auth\n',''),
+      text.replace('fixture_check\nLOCATION:','unbound_check\nLOCATION:'),text.replace('TABLE NAME:  users','TABLE NAME:  Users'),
+      text.replace('DETAIL:  ','DETAIL:  \nSCHEMA NAME:  auth\n'),text.replace('ExecConstraints, execMain.c:2041','exec_stmt_raise, pl_exec.c:3905'),
+      text+'private trailing text\n',text.replace('TABLE NAME:  users\nCONSTRAINT NAME:  fixture_check','CONSTRAINT NAME:  fixture_check\nTABLE NAME:  users'),
+      'psql:<stdin>:7: ERROR:  23514: new row for relation "users" violates check constraint "fixture_check"\n'])
+      assert.deepEqual(archiveCheckDiagnostic(c,'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA',Buffer.from(diagnostic),'DATA'),unknown);
+    assert.deepEqual(archiveCheckDiagnostic(c,'RESTORE_ARCHIVE_HISTORY',f.verbose(),'HISTORY'),unknown);
+    assert.deepEqual(archiveCheckDiagnostic(c,'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA',f.verbose(),'SCHEMA'),unknown);
+    const output=safeError({code:'SQLSTATE_23514',exit:3,inputOwner:'DATA',
+      checkConstraint:archiveCheckDiagnostic(c,'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA',f.verbose(),'DATA')},'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA');
+    assert.equal(output.code,'SQLSTATE_23514');assert.equal(output.inputOwner,'DATA');assert.equal(output.checkConstraint.state,'CATALOG_BOUND');
+    for(const privateValue of ['fixture_check','users','private primary message','private-row-never-report','ExecConstraints'])
+      assert(!JSON.stringify(output).includes(privateValue));
+  });
+  test('normal archive command preserves first SQLSTATE23514 and owned closure with a bound or unavailable CHECK diagnostic',async()=>{
+    await ownArchive(async({c,env,index,materialize})=>{
+      const archive=await materializeArchiveInputs(c,index,{env,archive:materialize});c.archive=true;c.processes=[];c.home=c.root;
+      c.archiveRelationInventory=await collectArchiveRelationInventory(c,archive);const f=checkDiagnosticFixture(c.archiveRelationInventory);
+      const inputLines={next:1,ranges:new Map()},chunks=[];
+      for await(const chunk of materializedRestoreBytes(c,archive,false,inputLines))chunks.push(chunk);
+      const diagnostic=f.verbose(inputLines.ranges.get('DATA').first+1).toString();
+      for(const [catalog,state]of [[f.catalog,'CATALOG_BOUND'],[undefined,'UNAVAILABLE'],[null,'UNAVAILABLE'],[{...f.catalog,complete:false},'UNAVAILABLE']]){
+        c.archiveRelationReports=new Map();
+        const child=['-e','process.stdin.resume();process.stdin.on("end",()=>{process.stdout.write('+JSON.stringify(catalog===undefined?'':f.wire(catalog).toString())
+          +');process.stderr.write('+JSON.stringify(diagnostic)+',()=>process.exit(3));});'];
+        const input=(async function*(){for(const chunk of chunks)yield chunk;})();
+        await assert.rejects(command(c,'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA',process.execPath,child,
+          {input,archivePsql:true,inputLines,maxMs:10_000}),error=>{
+          assert.equal(error.code,'SQLSTATE_23514');assert.equal(error.exit,3);assert.equal(error.inputOwner,'DATA');
+          const firstFailure=safeError(error,'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA');assert.equal(firstFailure.checkConstraint.state,state);
+          const report=restorePublicReport(c,null,firstFailure,true);
+          assert.equal(report.status,'FAILED_CLOSED');assert.equal(report.ownedDockerClosed,true);assert.notEqual(report.fullDatabaseBackupVerified,true);
+          assert(!JSON.stringify(report).includes('private-row-never-report')&&!JSON.stringify(report).includes('fixture_check'));return true;
+        });
+      }
+      assert(c.processes.every(p=>p.processGroupClosed));
+    },{fileSql:{'data.sql':'COPY "auth"."users" ("id") FROM stdin;\nprivate-row-never-report\n\\.\nCOPY "auth"."identities" ("id") FROM stdin;\n\\.\n','history-data.sql':'-- empty history\n'}});
   });
   test('archive psql exit 3 retains only the SQLSTATE across early stdin closure',async()=>{
     const c={root:os.tmpdir(),home:os.tmpdir(),deadline:Date.now()+15_000,processes:[]};
