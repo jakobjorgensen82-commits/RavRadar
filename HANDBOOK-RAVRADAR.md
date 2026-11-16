@@ -342,6 +342,8 @@ Den normale workflowprøve skal tilsvarende verificere den nye migrationsrække 
 
 ## 89.340 Ét sikkert Pages-genforsøg og frisk vejr bagefter
 
+<h3>En allerede afsluttet prognose efter en ny backendbinding</h3><p>En allerede centralt afsluttet almindelig Pages-prognose kvalificeres som en skrivefri no-op før parathed for en nyere checkoutbinding. Hele den oprindelige producent-, deployment-, datasæt-, referencetime-, manifest-, implementation- og modelbinding skal stadig matche, og en afventende overgang får ingen afslutningsret. Den normale kalder kontrollerer fortsat alle faktiske Pages-skrivere bagefter; aktiv eller ændret ejer stopper ny drift. En uafsluttet prognose beholder frisk kilde-/database-/Edge-parathed, offentlig målverifikation, genlæsninger og atomisk CAS. Originaler, model, SQL og vejr ændres ikke. Præcis kildekvalifikation og efterfølgende almindelig vejrhentning kræves før produktionsaccept.</p><p>Readiness-prøvens positive matrix bruger nu sin faktisk committed forgænger og aktuelle checkout i samme familie. Den normale produktlæser skal først bevise uændrede PostgreSQL-, C/I/T- og kontrolinput på det rene træ. De tidligere 598-originaler bevares som afslag mod den aktuelle familie; deres tidligere positive bevis gælder fortsat kun deres oprindelige kontekst. Ingen produktguard eller kontrakt ændres af testkonteksten.</p>
+
 Når en senere udgivelse skal kontrollere en tidligere kørsels programfiler, skal filerne også være hentet på den nye runner. Kontroljob og udgivelsesjob får nu samme fulde Git-historik. Kontrollen af de præcise kildefiler ændres ikke; rettelsen retter en manglende forudsætning for kontrollen. Den ændrer ingen prognoser eller scorer. Faktisk offentlig levering skal stadig bevises.
 
 

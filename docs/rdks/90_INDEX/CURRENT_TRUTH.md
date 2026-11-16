@@ -1,3 +1,9 @@
+## Allerede afsluttet prognose før kontrol af ny backendbinding
+
+En allerede centralt afsluttet almindelig Pages-prognose kvalificeres som en skrivefri no-op før parathed for en nyere checkoutbinding. Hele den oprindelige producent-, deployment-, datasæt-, referencetime-, manifest-, implementation- og modelbinding skal stadig matche, og en afventende overgang får ingen afslutningsret. Den normale kalder kontrollerer fortsat alle faktiske Pages-skrivere bagefter; aktiv eller ændret ejer stopper ny drift. En uafsluttet prognose beholder frisk kilde-/database-/Edge-parathed, offentlig målverifikation, genlæsninger og atomisk CAS. Originaler, model, SQL og vejr ændres ikke. Præcis kildekvalifikation og efterfølgende almindelig vejrhentning kræves før produktionsaccept.
+
+Readiness-prøvens positive matrix bruger nu sin faktisk committed forgænger og aktuelle checkout i samme familie. Den normale produktlæser skal først bevise uændrede PostgreSQL-, C/I/T- og kontrolinput på det rene træ. De tidligere 598-originaler bevares som afslag mod den aktuelle familie; deres tidligere positive bevis gælder fortsat kun deres oprindelige kontekst. Ingen produktguard eller kontrakt ændres af testkonteksten.
+
 ## Afgrænset forklaring af arkivlæserens CHECK_SUSPEND-afslag
 
 Den eksisterende arkivlæser kan forklare sine tre faste P0001-afslag før CHECK_SUSPEND: ikke-understøttet eller for stor CHECK-metadata, ikke-understøttede COPY-mål og ændret CHECK-katalog. Kun præcis fejlramme, fase, inventory-hash og mættede årsagstællere må forlade den ejede lokale database. Navne, definitioner, kommentarer, rækker og rå fejltekst forbliver private. Ukendt eller modstridende diagnostic bliver UNAVAILABLE.

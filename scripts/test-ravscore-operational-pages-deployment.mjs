@@ -2744,10 +2744,22 @@ const checkpointDatabaseReadback = {
 }
 
 async function verifyPreActivationClearRestoresLegacyPointer({publishedOrdinary=false,pagesWriteOnly=false,readinessRolesOnly=false}={}) {
-  // Immutable, genuine public-producer and later installed-backend identities.
+  // Genuine committed producer/backend roles in the actual unchanged family.
   const readinessRoles=pagesWriteOnly||readinessRolesOnly;
-  const sourceHead=readinessRoles?'b599d3e4e83a712f4481c556ac49908f9b152258':'e'.repeat(40);
-  const liveHead='250417469d197bd9d94c3b0e1a4753e859e05d6c';
+  const {execFileSync}=await import('node:child_process');
+  const gitHead=ref=>execFileSync('git',['rev-parse',ref],{encoding:'utf8',windowsHide:true}).trim();
+  const sourceHead=readinessRoles?gitHead('HEAD^'):'e'.repeat(40);
+  const liveHead=readinessRoles?gitHead('HEAD'):'250417469d197bd9d94c3b0e1a4753e859e05d6c';
+  if(readinessRoles){
+    const {assertPublishedOrdinaryReadinessSourceParity}=await import('./protected-operational-reentry-evidence.mjs');
+    await assertPublishedOrdinaryReadinessSourceParity({producerHead:sourceHead,liveHead,executorHead:liveHead});
+    // The original 598-positive evidence keeps its own historical context;
+    // it cannot assert unchanged backend/model input in the current family.
+    await assert.rejects(assertPublishedOrdinaryReadinessSourceParity({
+      producerHead:'b599d3e4e83a712f4481c556ac49908f9b152258',
+      liveHead:'250417469d197bd9d94c3b0e1a4753e859e05d6c',executorHead:liveHead}),
+      /Published ordinary completion readiness backend inputs differ/);
+  }
   const path = await import('node:path');
   const os = await import('node:os');
   const {
@@ -3143,6 +3155,69 @@ function legacySchemaOnePointer(value, {
     assert.deepEqual(legacySchemaOnePointer(row.payload),row.payload);
     assert.deepEqual(await clearProtectedPreActivationTarget({...common,sourceHead,baseUrl:'https://ravradar.example.test/',
       fetchImpl:()=>{throw new Error('idempotent clear must not fetch');}}),{cleared:false,reason:'no-pre-activation'});
+    // This existing sealed synthetic source is a valid stored binding, but is
+    // deliberately different from today's checkout. It is not a new model/PG proof.
+    {
+      const p=await import('./protected-operational-reentry-evidence.mjs');
+      const priorPointer=copy(row),priorCentral=copy(central),priorProfile=copy(profileRow);
+      const oldTarget=copy(row.payload.current),executorHead='f'.repeat(40);
+      const env={GITHUB_REF:'refs/heads/main',GITHUB_SHA:executorHead,GITHUB_REPOSITORY:repository,
+        GITHUB_RUN_ID:'51004',GITHUB_RUN_ATTEMPT:'1',GITHUB_EVENT_NAME:'workflow_dispatch',
+        GITHUB_WORKFLOW_REF:repository+'/.github/workflows/run-current-weather-once.yml@refs/heads/main'};
+      row={...row,payload:{...row.payload,schemaVersion:'3.0.0',pagesWrite:{target:oldTarget,
+        owner:{repository,runId:51003,runAttempt:1,headSha:sourceHead,attemptId:targetId}}}};
+      const completedPointer=copy(row),beforeWrites=writes.length;
+      const resolved=activation.resolveOperationalRavScoreModel(central,{profileRow});
+      assert.equal(activation.operationalResolvedBindingCurrent(resolved),false,
+        'The already completed stored source must really differ from the checkout binding');
+      let activeWriter=false,changedAttempt=false,readinessCalls=0,sourceCalls=0,atomicCalls=0;
+      const fetchImpl=async input=>{
+        const url=new URL(input);
+        assert.equal(url.origin,'https://api.github.com','this no-op makes no backend/provider/public request');
+        if(url.pathname.endsWith('/git/ref/heads/main'))return{ok:true,json:async()=>({object:{sha:executorHead}})};
+        if(url.pathname.includes('/actions/runs/51004/'))return{ok:true,json:async()=>({id:51004,run_attempt:1,
+          head_sha:executorHead,head_branch:'main',repository:{full_name:repository},status:'in_progress',
+          event:'workflow_dispatch',path:'.github/workflows/run-current-weather-once.yml'})};
+        const run={id:51003,run_attempt:changedAttempt?2:1,head_sha:sourceHead,head_branch:'main',
+          repository:{full_name:repository},path:'.github/workflows/run-current-weather-once.yml',
+          status:activeWriter?'in_progress':'completed',conclusion:activeWriter?null:'success',updated_at:'2026-08-29T12:08:00Z'};
+        const jobs=['Deploy prepared Pages artifact through reusable workflow / Deploy prepared Pages artifact',
+          'Finish an interrupted generation before new work / resume-pre-activation-pages',
+          'Redeploy only a helper-proven exact sealed Pages target'].map((name,index)=>({id:510030+index,
+          run_id:51003,run_attempt:1,head_sha:sourceHead,name,status:'completed',conclusion:'skipped'}));
+        Object.assign(jobs[0],{conclusion:'success',steps:[{name:'Deploy to GitHub Pages',number:31,status:'completed',
+          conclusion:'success',completed_at:'2026-08-29T12:07:00Z'}]});
+        return{ok:true,json:async()=>url.pathname.endsWith('/jobs')?{total_count:3,jobs}:run};
+      };
+      const noop=()=>p.completePublishedOrdinaryPreActivationTarget({...common,sourceHead:executorHead,env,fetchImpl,
+        atomicRequest:async()=>{atomicCalls++;throw new Error('completed target cannot CAS');},
+        checkReadiness:async()=>{readinessCalls++;throw new Error('completed target cannot require new binding readiness');},
+        checkSource:async()=>{sourceCalls++;throw new Error('completed target must preserve normal source fallback');}});
+      assert.equal((await noop()).reason,'ALREADY_ACTIVE');
+      // Same next operation as the real nonpending workflow branch: no no-op
+      // result is permission to omit the actual terminal Pages-owner closure.
+      assert.equal((await p.assertProtectedPagesWritesClosed({...common,fetchImpl,env})).closed,true);
+      for(const [field,value] of [['deploymentId','pages-51009-1'],['sourceHead','a'.repeat(40)],
+        ['datasetId','rr-completion-other-210']]){
+        central=copy(priorCentral);central.payload[field]=value;
+        if(field==='deploymentId')central.payload.sourceDeploymentId=value;
+        await assert.rejects(noop(),/Published ordinary completion central source version or binding differs/);
+      }
+      central=copy(priorCentral);
+      for(const field of ['publicManifestSha256','sourcePublicManifestSha256','requestedPublicManifestSha256'])central.payload[field]='0'.repeat(64);
+      await assert.rejects(noop(),/Published ordinary completion central source version or binding differs/);
+      central=copy(priorCentral);
+      for(const changed of ['active','attempt']){
+        activeWriter=changed==='active';changedAttempt=changed==='attempt';
+        assert.equal((await noop()).reason,'ALREADY_ACTIVE');
+        await assert.rejects(p.assertProtectedPagesWritesClosed({...common,fetchImpl,env}),/PAGES_OWNER_RUN_ACTIVE_CHANGED_OR_UNKNOWN/);
+      }
+      assert.equal(readinessCalls,0);assert.equal(sourceCalls,0);assert.equal(atomicCalls,0);assert.equal(writes.length,beforeWrites);
+      assert.deepEqual(row,completedPointer);assert.deepEqual(central,priorCentral);assert.deepEqual(profileRow,priorProfile);
+      for(const [name,bytes] of objectBefore)assert.deepEqual(objects.get(name),bytes);
+      row=priorPointer;
+      console.log('Completed stored prior binding: exact no-op before new readiness, unchanged originals, no CAS and mandatory actual owner closure: passed.');
+    }
     for(const [label,descriptor] of [['current',row.payload.current],['previous',row.payload.previous]]){
       const restored=path.join(work,'restored-'+label);
       const restoredResult=await restoreProtectedOperationalEvidence({...common,directory:restored,deploymentId:descriptor.deploymentId});

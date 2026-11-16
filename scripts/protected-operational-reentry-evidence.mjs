@@ -1465,11 +1465,13 @@ export async function completePublishedOrdinaryPreActivationTarget({request,atom
     if(handoff.legacySourceRequired!==false||!Number.isSafeInteger(handoff.centralVersion)||handoff.centralVersion<1)
       throw new Error('Published ordinary completion is not the exact ordinary handoff');
     if(current.pending)return {completed:false,reason:'PENDING_TRANSITION',privatePayloadIncluded:false};
+    // A completed immutable target needs no new checkout/backend binding.
+    // The normal caller still proves every actual Pages writer closed next.
+    if(current.deploymentId===d.deploymentId&&phaseTargetCompleted(current,d))
+      return {completed:false,reason:'ALREADY_ACTIVE',privatePayloadIncluded:false};
     if(current.model!=='integrated'||current.bindingCurrent!==true
       ||sha256CanonicalJson(current.modelBinding)!==d.modelBindingSha256)
       throw new Error('Published ordinary completion central source version or binding differs');
-    if(current.deploymentId===d.deploymentId&&phaseTargetCompleted(current,d))
-      return {completed:false,reason:'ALREADY_ACTIVE',privatePayloadIncluded:false};
     if(handoff.centralVersion!==current.centralVersion)
       throw new Error('Published ordinary completion central source version or binding differs');
     owners=[ownerFromDescriptor(d),writer.owner];
