@@ -44,6 +44,10 @@ Den eksisterende Pages-controller får en særskilt tilstand til én fast GraphQ
 
 Dette er kildeforberedelse. Fokuserede scopeprøver og tidligere uændrede lokale produktprøver erstatter ikke de valgte hele normale mål på det endelige kilde-head. Faktisk Cloudflare-adgang, schemaets enheder og beskrivelser, installation, offentlig deling og samlet Free-klarhed er ikke bevist af denne kandidat. Ingen ny tjeneste, nøgle, plan, version, numerisk model, migrations-SQL eller produktionsaktivering følger af den.
 
+Den efterfølgende schema-fejlprojektion bruger samme normale Pages-controller og ejerprøve. Kun faste koder, dokumenterede beskedkategorier og højst tolv offentlige query-symbolreferencer kan vises, med højst otte fejlrækker og 2.048 beskedtegn pr. række. Ukendt og kodekonflikt giver ingen ny identitet eller adgang; kategorier og symboler er kandidater, ikke rodårsagsbevis. Query, mode, credentials, transport og afslag ændres ikke.
+
+Den hele eksisterende controllerprøve er bestået lokalt på Windows/Node24 med 127 cases, inklusive de 44 hidtidige schema-cases og 26 projektionscases. Det er relevant lokal dækning uden leverandørkald; almindeligt sharing-ejerskab, frisk kontrolreview og præcis kilde-CI består. Der tilføjes ingen testvej eller genbrugstilladelse. Faktisk schema-læsning, årsag, CPU-enhed/GET-P99, Pages599-forbruger og Cloudflare Free-accept bevises særskilt. Se DEC-0294 og håndbog 89.278/89.342.
+
 ## Tillæg — lukket backupRestore-rolle for læsende arkiv-inventory
 
 Den nye faste `--run-archive-inventory`-gren er en reel udvidelse af kommandorammen. Kun denne entydige CLI-gren og den navngivne inventory-workflowrolle kan normaliseres før sammenligning med det eksisterende grundlag; gamle import-/dispatch-pins, oprindelse og den tidligere outerqueue-only-regel bevares. Workflowet beholder syntetisk standard, samme to arkivlåse, exact-main/commitment/bekræftelse, kildebevis før credentials og frister. Alle andre workflowbytes skal matche. Ukendt mode, argument, trin, adgang, credential eller ændret beskyttet input afvises fortsat. Der er ingen ny helfilhashgruppe eller genbrug af gammel sikkerhedsautoritet som uændret.

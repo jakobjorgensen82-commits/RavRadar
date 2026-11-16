@@ -1,3 +1,9 @@
+## Åbent — Pages-schemaets konkrete fejl og CPU-enhed
+
+Den dokumenterede errors:null-form er understøttet. Det efterfølgende HTTP200-afslag i schemaets errors-gren har fortsat ingen konkret leverandørforklaring i den bevarede faste rapport. Den nye lokale fejlprojektion kan vise afgrænset form/antal, præcis kode eller dokumenteret beskedkategori samt hele faste offentlige query-symboler som kandidater. Kilde til kategorien oplyses; UNKNOWN, kodekonflikt og private eller tvetydige referencer giver ingen opdigtet identitet. Rå besked, frie navne, paths og leverandørmetadata udskrives ikke.
+
+Den hele normale controllerprøve består lokalt med 127 cases uden leverandørkald; præcis kildekvalifikation og næste konkrete schema-genlæsning er fortsat nødvendige. Fejlårsag, de præcise Pages-felters enhed, faktisk GET-P99/CPU, Pages-læserens støtte til 599-modelfamilien og Cloudflare Free-kapacitet er åbne. Diagnosticen ændrer ikke query, adgang, plan eller Supabases egne normale budget-/gendannelseskrav. Se DEC-0294/0302 og håndbog 89.278.
+
 ## Originalarkiv — NOT VALID-CHECK indlæses for tidligt
 
 Årsagen til det hidtidige autentiske DATA/23514-afslag er nu knyttet til en oprindeligt ikke-valideret tabel-CHECK. Schema-only indeholder post-data-regler, og NOT VALID håndhæves ved ny COPY. Rettelsen er fasevis lokal udsættelse og identisk genetablering af det komplette understøttede ikke-validerede CHECK-sæt; validerede regler og originale SQL-/række-/sekvensbytes bevares. Unsupported semantik afvises før DATA.

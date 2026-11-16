@@ -173,6 +173,69 @@ function schemaDescription(row){
     &&!/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/u.test(row.description),'SCHEMA_DESCRIPTION');
   return row.description;
 }
+const SCHEMA_ERROR_CODE_CLASSES=Object.freeze({
+  GRAPHQL_PARSE_FAILED:'QUERY_PARSE',GRAPHQL_VALIDATION_FAILED:'QUERY_VALIDATION',
+  UNAUTHENTICATED:'AUTHENTICATION',FORBIDDEN:'AUTHORIZATION',INTERNAL_SERVER_ERROR:'PROVIDER_INTERNAL',budget:'RATE_LIMIT',
+});
+// Exact forms/prefixes from Cloudflare Analytics error responses; never emit their text.
+const SCHEMA_ERROR_MESSAGES=Object.freeze({
+  'unable to execute query, please try again later':'SERVICE_UNAVAILABLE',
+  'too many queries in progress, please try again later':'SERVICE_UNAVAILABLE',
+  'scalar fields must have no selections':'QUERY_VALIDATION','object field must have selections':'QUERY_VALIDATION',
+  'query contains error, please review it and retry':'QUERY_VALIDATION',
+  'rate limiter budget depleted, try again after 5 minutes':'RATE_LIMIT',
+  'in combination, your request queries too many nodes, zones and accounts':'RATE_LIMIT',
+  'query consumed excessive resources, please try running smaller queries which consume fewer resources':'RATE_LIMIT',
+  Unauthorized:'AUTHENTICATION','not authorized for that account':'AUTHORIZATION','Internal server error':'PROVIDER_INTERNAL',
+});
+const SCHEMA_ERROR_PREFIXES=Object.freeze({
+  'cannot request data older than':'DATASET_LIMIT',
+  "number of fields can't be more than":'DATASET_LIMIT',
+  'limit must be positive number and not greater than':'DATASET_LIMIT','query time range is too large':'DATASET_LIMIT',
+  'error parsing args':'QUERY_VALIDATION','unknown field':'QUERY_VALIDATION',
+  'does not have access to the path':'AUTHORIZATION',
+});
+function schemaMessageClass(value){
+  if(typeof value!=='string')return 'UNKNOWN';
+  const message=value.slice(0,2048);
+  if(Object.hasOwn(SCHEMA_ERROR_MESSAGES,message))return SCHEMA_ERROR_MESSAGES[message];
+  for(const [prefix,category]of Object.entries(SCHEMA_ERROR_PREFIXES))if(message.startsWith(prefix))return category;
+  return message.startsWith('zones [')&&message.endsWith('] are not authorized')?'AUTHORIZATION':'UNKNOWN';
+}
+// These are public references, never proof of the failing field or cause.
+const SCHEMA_QUERY_SYMBOLS=Object.freeze(['__type','name','fields','type','kind','ofType',
+  'includeDeprecated','description','isDeprecated',...Object.values(SCHEMA_TYPES)]);
+function schemaQuerySymbolCandidates(value){
+  if(typeof value!=='string')return [];
+  const message=value.slice(0,2048),before=char=>char===undefined||/^[\s(:,]$/.test(char),
+    after=char=>char===undefined||/^[\s),.:;]$/.test(char);
+  return SCHEMA_QUERY_SYMBOLS.filter(symbol=>{
+    const quoted=["\"","'","`"].some(quote=>{
+      const token=quote+symbol+quote,at=message.indexOf(token);
+      return at!==-1&&before(message[at-1])&&after(message[at+token.length]);
+    });
+    const plain='unknown field '+symbol;
+    return quoted||message.startsWith(plain)&&(message.length===plain.length||/^[\s),:;]$/.test(message[plain.length]));
+  });
+}
+function schemaErrorsProjection(value){
+  const unknown=()=>({reportedCode:'UNKNOWN',reportedClass:'UNKNOWN',classificationSource:'UNKNOWN',querySymbolCandidates:[]});
+  if(!Array.isArray(value)||value.length===0)return{form:'INVALID_ERRORS',count:null,truncated:false,
+    reportedClassificationOnly:true,errors:[unknown()]};
+  const errors=value.slice(0,8).map(row=>{
+    const direct=object(row)?row.code:undefined,extension=object(row)&&object(row.extensions)?row.extensions.code:undefined;
+    if(direct!==undefined&&extension!==undefined&&direct!==extension)return unknown();
+    const code=extension===undefined?direct:extension;
+    if(typeof code==='string'&&Object.hasOwn(SCHEMA_ERROR_CODE_CLASSES,code))
+      return{reportedCode:code,reportedClass:SCHEMA_ERROR_CODE_CLASSES[code],classificationSource:'CODE',
+        querySymbolCandidates:SCHEMA_ERROR_CODE_CLASSES[code]==='QUERY_VALIDATION'?schemaQuerySymbolCandidates(row.message):[]};
+    const category=schemaMessageClass(object(row)?row.message:undefined);
+    return{reportedCode:'UNKNOWN',reportedClass:category,classificationSource:category==='UNKNOWN'?'UNKNOWN':'DOCUMENTED_MESSAGE',
+      querySymbolCandidates:category==='QUERY_VALIDATION'?schemaQuerySymbolCandidates(object(row)?row.message:undefined):[]};
+  });
+  return{form:'NONEMPTY_ARRAY',count:Math.min(value.length,8),truncated:value.length>8,
+    reportedClassificationOnly:true,errors};
+}
 function pagesSchemaMetadata(value){
   need(object(value)&&Object.keys(value).every(key=>key==='data'||key==='errors'),'SCHEMA_ENVELOPE');
   // Cloudflare documents errors:null as a normal successful GraphQL response.
@@ -235,7 +298,7 @@ export async function deployForecastSharePages({env=process.env,fetchImpl=global
   deployImpl=deployForecastSharePagesProcess,git=args=>{const text=execFileSync('git',args,{cwd:ROOT,encoding:'utf8'});return args[0]==='show'?text:text.trimEnd();},
   now=()=>Date.now(),report=()=>{}}={}){
   let stage='AUTHORITY',operation=null,createIssued=false,deployIssued=false,terminationConfirmed=null,ownedId=null;
-  let readback='NOT_ATTEMPTED',lastKind=null,httpStatus=null;
+  let readback='NOT_ATTEMPTED',lastKind=null,httpStatus=null,schemaErrors=null;
   const emit=value=>report(value);
   try{
     operation=assertForecastSharePagesAuthority(env);const commit=env.EXPECTED_MAIN;
@@ -255,7 +318,10 @@ export async function deployForecastSharePages({env=process.env,fetchImpl=global
       try{
         need(response.status===200,'SCHEMA_STATUS');
         schema=pagesSchemaMetadata(response.value);
-      }catch(error){throw Object.assign(error,{kind:'GRAPHQL_SCHEMA',httpStatus:response.status});}
+      }catch(error){
+        if(error?.code==='SHARE_PAGES_SCHEMA_ERRORS')schemaErrors=schemaErrorsProjection(response.value.errors);
+        throw Object.assign(error,{kind:'GRAPHQL_SCHEMA',httpStatus:response.status});
+      }
       await freshMain();
       stage='COMPLETE';readback='SCHEMA_METADATA_PROVED';
       const receipt={kind:'FORECAST_SHARE_PAGES_SCHEMA_READBACK_V1',stage,sourceSha:commit,operation,
@@ -385,7 +451,8 @@ export async function deployForecastSharePages({env=process.env,fetchImpl=global
     const receipt={kind:'FORECAST_SHARE_PAGES_RELEASE_STOP_V1',stage,sourceSha:SHA.test(env.EXPECTED_MAIN??'')?env.EXPECTED_MAIN:null,
       code:/^SHARE_PAGES_[A-Z_]+$/.test(error?.code??'')?error.code:'SHARE_PAGES_VALIDATION_OR_TRANSPORT',
       operation,readKind:lastKind,httpStatus,projectId:ownedId,createIssued,deployIssued,terminationConfirmed,readback,
-      outcome:createIssued||deployIssued?'UNKNOWN_NO_RETRY':'REFUSED_BEFORE_WRITE'};emit(receipt);
+      outcome:createIssued||deployIssued?'UNKNOWN_NO_RETRY':'REFUSED_BEFORE_WRITE',
+      ...(schemaErrors?{querySha256:sha(FORECAST_SHARE_PAGES_SCHEMA_QUERY),schemaErrors}:{})};emit(receipt);
     throw Object.assign(fail(receipt.outcome),{receipt});
   }
 }
