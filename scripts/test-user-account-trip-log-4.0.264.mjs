@@ -1316,7 +1316,7 @@ const pub=row=>Object.fromEntries(keys.map(key=>[key,row[key]]));
 const payload=attempt=>({operation:'account-inactivity-resume',noticeId:notice,attemptId:attempt,confirmation:NOTICE_CONFIRMATION});
 async function fixture(options,work){
  const originalFetch=globalThis.fetch,originalDeno=globalThis.Deno;
- const h={row:initial(options.initial),calls:[],posts:[],reads:0,failures:options.failures||0,usedAttempts:new Set()};
+ const h={row:initial(options.initial),calls:[],posts:[],reads:0,failures:options.failures||0,authFailures:0,providerFailures:0,usedAttempts:new Set()};
  const env={SUPABASE_URL:'https://notice-fixture.supabase.co',SUPABASE_ANON_KEY:'synthetic-publishable',
   SUPABASE_SERVICE_ROLE_KEY:'sb_secret_synthetic',RAVRADAR_RESEND_NOTICE_SEND_KEY:'re_synthetic_existing_key'};
  const body=inactivityNoticeBody('synthetic@example.invalid',false);
@@ -1331,27 +1331,42 @@ async function fixture(options,work){
    if(name==='list_account_inactivity_notices')return json({scope:'own-account-inactivity-notices',rows:[pub(h.row)],truncated:false});
    if(name==='get_account_inactivity_notice_service_status')return json(h.row);
    if(name==='hold_account_inactivity_notice'){
-    h.row={...h.row,state:'HELD',holdReason:p.p_reason,revision:String(BigInt(h.row.revision)+1n)};return json(pub(h.row));
+    if(p.p_expected_revision===h.row.revision&&!['CANCELLED','DELIVERED'].includes(h.row.state))
+     h.row={...h.row,state:p.p_reason==='TARGET_MISSING'?'CANCELLED':'HELD',holdReason:p.p_reason,
+      revision:String(BigInt(h.row.revision)+1n),deleteNotBefore:null};
+    return json(pub(h.row));
    }
    if(name==='claim_account_inactivity_notice'){
-    const allowed=p.p_expected_revision===h.row.revision&&!h.row.accepted&&!h.usedAttempts.has(p.p_attempt);
+    const allowed=p.p_expected_revision===h.row.revision&&!h.row.accepted
+     &&['HELD','READY','CLAIMED','UNKNOWN'].includes(h.row.state)&&!h.usedAttempts.has(p.p_attempt);
     if(allowed){h.usedAttempts.add(p.p_attempt);h.row={...h.row,state:'CLAIMED',holdReason:null,revision:String(BigInt(h.row.revision)+1n),attemptId:p.p_attempt,
      recipientDigest:p.p_recipient_digest,authUserCreatedAt:p.p_auth_created_at,reservedAt:h.row.reservedAt||new Date().toISOString()};
     }
     return json({...h.row,shouldSend:allowed});
    }
    if(name==='acknowledge_account_inactivity_notice'){
-    if(h.row.state==='CANCELLED'||p.p_expected_revision!==h.row.revision)return json(pub(h.row));
-    h.row.revision=String(BigInt(h.row.revision)+1n);
-    if(p.p_outcome==='accepted')h.row={...h.row,state:'ACCEPTED',accepted:true,providerId:p.p_provider,holdReason:'DELIVERY_UNCONFIRMED'};
-    else if(p.p_outcome==='delivered')h.row={...h.row,state:'DELIVERED',delivered:true,holdReason:null,deleteNotBefore:new Date(Date.now()+30*86400000).toISOString()};
-    else h.row={...h.row,state:'UNKNOWN',holdReason:'SEND_OUTCOME_UNKNOWN'};
+    // Model the SQL CAS/state/provider/attempt guards; this is not SQL execution.
+    if(p.p_expected_revision==null||p.p_expected_revision!==h.row.revision||p.p_attempt!==h.row.attemptId)return json(pub(h.row));
+    if(p.p_outcome==='delivered'){
+     if(!['ACCEPTED','HELD'].includes(h.row.state)||!h.row.accepted||!h.row.providerId
+      ||p.p_provider!==h.row.providerId||p.p_attempt==null)return json({code:'22023'},400);
+     h.row={...h.row,state:'DELIVERED',revision:String(BigInt(h.row.revision)+1n),delivered:true,
+      holdReason:null,deleteNotBefore:new Date(Date.now()+30*86400000).toISOString()};
+    }else{
+     if(h.row.state!=='CLAIMED')return json(pub(h.row));
+     if(!['accepted','unknown','rejected','limited','not_attempted'].includes(p.p_outcome)
+      ||p.p_outcome==='accepted'&&!p.p_provider)return json({code:'22023'},400);
+     h.row={...h.row,revision:String(BigInt(h.row.revision)+1n),state:p.p_outcome==='accepted'?'ACCEPTED':'UNKNOWN',
+      accepted:p.p_outcome==='accepted',providerId:p.p_outcome==='accepted'?p.p_provider:null,
+      holdReason:p.p_outcome==='accepted'?'DELIVERY_UNCONFIRMED':'SEND_OUTCOME_UNKNOWN'};
+    }
     return json(pub(h.row));
    }
    throw Error('Unexpected synthetic RPC '+name);
   }
   if(url.origin===env.SUPABASE_URL&&url.pathname==='/auth/v1/admin/users/'+target){
-   assert.equal(init.method,'GET');return json({id:target,email:'synthetic@example.invalid',created_at:nativeCreated});
+   assert.equal(init.method,'GET');if(h.authFailures-->0)return json({error:'synthetic temporary unavailable'},503);
+    return json({id:target,email:'synthetic@example.invalid',created_at:nativeCreated});
   }
   assert.equal(url.origin,'https://api.resend.com','No other external service');
   if(url.pathname==='/emails'&&init.method==='POST'){
@@ -1361,7 +1376,7 @@ async function fixture(options,work){
    return json({id:providerId});
   }
   if(url.pathname==='/emails/'+providerId&&init.method==='GET'){
-   h.reads++;if(options.provider403)return json({error:'forbidden'},403);
+   h.reads++;if(options.provider403||h.providerFailures-->0)return json({error:'forbidden'},403);
    return json({id:providerId,from:body.from,to:body.to,subject:body.subject,text:body.text,
     reply_to:[body.reply_to],last_event:options.event||'delivered'});
   }
@@ -1369,6 +1384,8 @@ async function fixture(options,work){
  };
  h.run=p=>runAccountInactivityNotice(new Request('https://notice-fixture.supabase.co/functions/v1/trip-log',{
   method:'POST',headers:{Authorization:'Bearer synthetic-owner-token'}}),owner,p);
+ h.ack=p=>globalThis.fetch(env.SUPABASE_URL+'/rest/v1/rpc/acknowledge_account_inactivity_notice',{
+  method:'POST',headers:{apikey:'sb_secret_synthetic'},body:JSON.stringify(p)});
  try{await work(h);}finally{globalThis.fetch=originalFetch;globalThis.Deno=originalDeno;}
 }
 test('inactivity notice: existing sender wire body and idempotency remain unchanged',async()=>{
@@ -1392,6 +1409,38 @@ test('inactivity notice: accepted is not delivered; provider positive read start
 });
 test('inactivity notice: send-only provider denial is HOLD with no fabricated delivery or new key',()=>fixture({provider403:true},async h=>{
  const result=await h.run(payload(uid(8)));assert.equal(result.accepted,true);assert.equal(result.holdReason,'DELIVERY_UNAVAILABLE');assert.equal(result.delivered,false);assert.equal(result.deleteNotBefore,null);assert.equal(h.posts.length,1);
+}));
+test('inactivity notice: transient accepted readback HOLD resumes delivery with the original send identity and no new POST',async()=>{
+ for(const failure of ['authFailures','providerFailures']){
+  const options={event:'sent'};
+  await fixture(options,async h=>{
+   const accepted=await h.run(payload(uid(8)));assert.equal(accepted.state,'ACCEPTED');
+   const identity=()=>[h.row.attemptId,h.row.providerId,h.row.recipientDigest,h.row.authUserCreatedAt,h.row.reservedAt];
+   const originalIdentity=identity();h[failure]=1;options.event='delivered';
+   const held=await h.run(payload(uid(9)));assert.equal(held.state,'HELD');assert.equal(held.accepted,true);
+   assert.equal(held.holdReason,failure==='authFailures'?'AUTH_UNAVAILABLE':'DELIVERY_UNAVAILABLE');
+   assert.equal(held.delivered,false);assert.equal(held.deleteNotBefore,null);assert.deepEqual(identity(),originalIdentity);
+   const delivered=await h.run(payload(uid(10)));assert.equal(delivered.state,'DELIVERED');assert.equal(delivered.delivered,true);
+   assert(delivered.deleteNotBefore);assert.equal(delivered.automaticDeletionEnabled,false);
+   assert.deepEqual(identity(),originalIdentity);assert.equal(h.posts.length,1,'accepted mail is never posted again');
+   assert.equal(h.calls.filter(c=>c.path.endsWith('/claim_account_inactivity_notice')).length,1);
+  });
+ }
+});
+test('inactivity notice: accepted readback still rejects a changed receipt/state and stale attempt or CAS',()=>fixture({event:'sent'},async h=>{
+ await h.run(payload(uid(8)));h.providerFailures=1;
+ await h.run(payload(uid(9)));assert.equal(h.row.state,'HELD');
+ const snapshot={...h.row},ack={p_expected_revision:h.row.revision,p_attempt:h.row.attemptId,p_outcome:'delivered',p_provider:h.row.providerId};
+ for(const delta of [{p_expected_revision:'1'},{p_attempt:uid(99)}]){
+  assert.equal((await h.ack({...ack,...delta})).status,200);assert.deepEqual(h.row,snapshot);
+ }
+ assert.equal((await h.ack({...ack,p_provider:uid(99)})).status,400);assert.deepEqual(h.row,snapshot);
+ for(const delta of [{state:'UNKNOWN'},{accepted:false,providerId:null},{attemptId:null}]){
+  h.row={...snapshot,...delta};const before={...h.row};
+  const response=await h.ack({...ack,p_attempt:h.row.attemptId});
+  assert.equal(response.status,400);assert.deepEqual(h.row,before);
+ }
+ h.row=snapshot;assert.equal(h.posts.length,1);assert.equal(h.row.deleteNotBefore,null);
 }));
 test('inactivity notice: login cancellation during mail preserves cancellation and no deadline',()=>fixture({cancelOnPost:true},async h=>{
  const result=await h.run(payload(uid(8)));assert.equal(result.state,'CANCELLED');assert.equal(result.deleteNotBefore,null);assert.equal(result.automaticDeletionEnabled,false);assert.equal(h.reads,0);

@@ -271,7 +271,10 @@ begin
     return public.account_inactivity_notice_json(p_notice,actor,false);
   end if;
   if p_outcome = 'delivered' then
-    if n.state <> 'ACCEPTED' or n.provider_id is distinct from p_provider then
+    -- A transient Auth/provider readback HOLD does not revoke the accepted send.
+    -- Reconcile that same immutable receipt; claim still forbids any new POST.
+    if n.state not in ('ACCEPTED','HELD') or n.accepted_at is null
+      or n.provider_id is null or n.provider_id is distinct from p_provider or p_attempt is null then
       raise exception 'ACCOUNT_NOTICE_RECEIPT_INVALID' using errcode = '22023';
     end if;
     reason := public.account_inactivity_notice_hold(n.target_user_id);

@@ -9,7 +9,7 @@ import {readAccountErasureSource,accountErasureCatalogQuery,verifyAccountErasure
  from '../verify-account-erasure-schema.mjs';
 const DB='rr_account_erasure_native_fixture';
 export const ACCOUNT_ERASURE_NATIVE_SQL_CASE_COUNT=49;
-export const ACCOUNT_INACTIVITY_NOTICE_NATIVE_SQL_CASE_COUNT=13;
+export const ACCOUNT_INACTIVITY_NOTICE_NATIVE_SQL_CASE_COUNT=17;
 const actor='10000000-0000-4000-8000-000000000001';
 const id=n=>'20000000-0000-4000-8000-'+String(n).padStart(12,'0');
 const op=n=>'30000000-0000-4000-8000-'+String(n).padStart(12,'0');
@@ -201,7 +201,14 @@ alter table storage.s3_multipart_uploads_parts enable row level security;
   // Notice-only extension on the SAME already-owned host/database. Backdated
   // rows and enabled policy below are synthetic prerequisites, not real history.
   const noticeSql=fs.readFileSync(path.join(repositoryRoot,'supabase/migrations/20261116230000_account_inactivity_notice_off.sql'),'utf8');
+  const manualBeforeNoticeInstall=jsonLast(await owner("select public.get_account_erasure_status('"+op(3)+"');"));
   await pg(noticeSql);let noticeChecked=0;
+  const afterNoticeMetadata=JSON.parse(await pg(accountErasureCatalogQuery));
+  verifyAccountErasureCatalogMetadata([{metadata:afterNoticeMetadata}],{source,expectedCheckReference:checkReference});
+  assert.deepEqual(jsonLast(await owner("select public.get_account_erasure_status('"+op(3)+"');")),manualBeforeNoticeInstall);
+  assert.deepEqual(jsonLast(await owner('select public.list_account_erasure_operations();')),page1);
+  noticeChecked++; // The new installation must preserve the qualified manual API/catalogue.
+
   const notice=n=>'40000000-0000-4000-8000-'+String(n).padStart(12,'0');
   const attempt=n=>'50000000-0000-4000-8000-'+String(n).padStart(12,'0');
   const prepareNotice=n=>owner("select public.prepare_account_inactivity_notice('"+notice(n)+"','"+id(n)+"');").then(jsonLast);
@@ -250,6 +257,38 @@ alter table storage.s3_multipart_uploads_parts enable row level security;
   const unknownSecond=await ack(104,secondNoticeAttempt.revision,attempt(4),'unknown');
   const replayFirst=await service(claimNotice(104,unknownSecond.revision,attempt(3)));
   assert.equal(replayFirst.shouldSend,false);assert.equal(replayFirst.attemptId,attempt(4));noticeChecked++;
+  for(const [n,reason] of [[105,'AUTH_UNAVAILABLE'],[106,'DELIVERY_UNAVAILABLE']]){
+   const prepared=await qualified(n),tryId=attempt(n);
+   const claimed=await service(claimNotice(n,prepared.revision,tryId));
+   const accepted=await ack(n,claimed.revision,tryId,'accepted');
+   const identitySql="select jsonb_build_array(attempt_id,provider_id,recipient_digest,auth_user_created_at,claimed_at,accepted_at,attempt_ids) from public.account_inactivity_notices where notice_id='"+notice(n)+"';";
+   const identity=await pg(identitySql);
+   const held=await service("select public.hold_account_inactivity_notice('"+notice(n)+"','"+actor+"',"+accepted.revision+",'"+reason+"');");
+   assert.equal(held.state,'HELD');assert.equal(held.accepted,true);assert.equal(held.deleteNotBefore,null);
+   assert.equal((await service(claimNotice(n,held.revision,attempt(n+100)))).shouldSend,false);
+   assert.deepEqual(await ack(n,accepted.revision,tryId,'delivered'),held,'Stale CAS cannot acknowledge delivery');
+   assert.deepEqual(await ack(n,held.revision,attempt(n+100),'delivered'),held,'Changed attempt cannot acknowledge delivery');
+   const wrongProvider=await raw(auth(actor,'service_role')+"select public.acknowledge_account_inactivity_notice('"+notice(n)+"','"+actor+"',"+held.revision+",'"+tryId+"','delivered','60000000-0000-4000-8000-000000000099');");
+   assert.equal(wrongProvider.code,3);assert.equal(wrongProvider.sqlState,'22023');
+   const recovered=await ack(n,held.revision,tryId,'delivered');
+   assert.equal(recovered.state,'DELIVERED');assert.equal(recovered.automaticDeletionEnabled,false);
+   assert.equal(await pg(identitySql),identity,'Readback must retain original receipt/body/generation/send-attempt');
+   assert.equal(await pg("select delete_not_before=delivered_at+interval '720 hours' from public.account_inactivity_notices where notice_id='"+notice(n)+"';"),'t');
+   noticeChecked++;
+  }
+  // A transient readback recovery must still recheck fresh policy/activity.
+  const guardPrepared=await qualified(107),guardAttempt=attempt(107);
+  const guardClaimed=await service(claimNotice(107,guardPrepared.revision,guardAttempt));
+  const guardAccepted=await ack(107,guardClaimed.revision,guardAttempt,'accepted');
+  const guardHeld=await service("select public.hold_account_inactivity_notice('"+notice(107)+"','"+actor+"',"+guardAccepted.revision+",'DELIVERY_UNAVAILABLE');");
+  await pg('update public.account_inactivity_policy set delivery_qualified=false;');
+  const stillHeld=await ack(107,guardHeld.revision,guardAttempt,'delivered');
+  assert.equal(stillHeld.state,'HELD');assert.equal(stillHeld.holdReason,'DELIVERY_UNQUALIFIED');assert.equal(stillHeld.deleteNotBefore,null);
+  await pg('update public.account_inactivity_policy set delivery_qualified=true;');
+  await positive(107);const guardCancelled=await noticeStatus(107);
+  const cancelledDelivery=await raw(auth(actor,'service_role')+"select public.acknowledge_account_inactivity_notice('"+notice(107)+"','"+actor+"',"+guardCancelled.revision+",'"+guardAttempt+"','delivered','60000000-0000-4000-8000-000000000001');");
+  assert.equal(cancelledDelivery.code,3);assert.equal(cancelledDelivery.sqlState,'22023');
+  assert.deepEqual(await noticeStatus(107),guardCancelled);noticeChecked++;
   assert.equal(noticeChecked,ACCOUNT_INACTIVITY_NOTICE_NATIVE_SQL_CASE_COUNT,'Whole notice SQL extension must execute');
   result={passed:true,cases:checked,actualPostgres:true,syntheticSqlHost:true,realGoTrue:false,checkReference,checkExpressionDriftRefused:true,
    inactivityNotice:{cases:noticeChecked,migrationVersion:'20261116230000',migrationSQLSha256:createHash('sha256').update(noticeSql).digest('hex'),
