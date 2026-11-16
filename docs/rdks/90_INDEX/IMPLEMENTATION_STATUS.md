@@ -1,3 +1,11 @@
+## Arkivets komplette CHECK-kontrol og afgrænsede udsættelse
+
+Den lokale arkivlæser skelner nu mellem det komplette CHECK-katalog og det mindre sæt, som skal udsættes under DATA. Kun oprindeligt ikke-validerede CHECKs på katalogbeviste selvstændige almindelige tabeller i den pågældende fases direkte COPY-inventar udsættes og genetableres. Hele kataloget før og efter, inklusive validerede og urørte ikke-validerede regler, skal fortsat være identisk. Udsatte, bevarede ikke-validerede og validerede regler tælles særskilt; deres sum skal være det komplette antal.
+
+Kendte lokale arve- og partitionsregler forbliver urørte og aktive. En REPLICA- eller ALWAYS-trigger kan stadig skrive uden for de direkte COPY-mål; den skrivning møder de bevarede CHECKs og skal ved en reel overtrædelse stoppe med sin oprindelige fejl. Direkte COPY til ikke-understøttede familier samt foreign-/ukendt relationstype, domæne, system, extension og for stor metadata afvises fortsat. Der tilføjes ingen familiegenopbygning eller specialcase på en bestemt relation.
+
+Baggrunden er et faktisk lukket afslag før DATA: det komplette katalog indeholdt én ikke-valideret arve-/partitionsregel, som den tidligere globale guard krævede udsættelsesstøtte for. Den præcise relation og dens berøring er ikke identificeret. Den normale credentialfri readerprøve og lifecycle-målet består lokalt; de udvidede SQL-cases i den eksisterende B-prøve er kildeforberedt, men skal faktisk køres på Linux. Den kvalificerede 599-mainbaseline er ikke kvalifikation af denne efterfølgende ændring. Frisk kildekontrol, uafhængigt review, faktisk original-/Auth-gendannelse og de øvrige backup-/Free-beviser er fortsat nødvendige.
+
 ## CI-hint til SDK må ikke følge isoleret PostgreSQL- og nationalprøve
 
 Det allerede forbrugte Node24-hint fra SDK-kontrol ryddes kun ved de to direkte isolerede PostgreSQL-/national-CLI-indgange. Eksporterede miljøguards og importer er uændrede. Den normale kildeprøve af denne afgrænsning er bestået; faktisk SQL-/samlet kildekvalifikation og levering er selvstændigt åbne.
@@ -47,7 +55,7 @@ Den hele eksisterende controllerprøve består på lokal Windows/Node24 med 127 
 
 ## Restore-rækkefølge — afgrænset rettelse med faktisk gendannelse åben
 
-Årsagen til den autentiske DATA/23514 er identificeret som en oprindeligt ikke-valideret tabel-CHECK, der bliver aktiv før COPY i den samlede schema-only-før-data-vej. Den lokale reader udsætter kun komplette katalogbestemte ikke-validerede almindelige tabel-CHECKs og genetablerer deres identiske definition, tilstand og kommentar i samme lokale transaktion. Validerede regler er uændret kontrolgruppe; unsupported domæne/partition/arv/extension stopper før DATA. Originale fem filer, paritet, Auth og ejet closure består.
+Årsagen til den autentiske DATA/23514 er identificeret som en oprindeligt ikke-valideret tabel-CHECK, der blev aktiv før COPY. Den første rettelse afviste globalt ikke-understøttet NOT VALID-semantik. Den efterfølgende lokale kandidat skelner mellem katalogbeviste direkte COPY-regler, der kan udsættes, og urørte aktive regler; dens aktuelle afgrænsning og åbne SQL-/originalbeviser står øverst. Originale fem filer, paritet, Auth og ejet oprydning består.
 
 De eksisterende lokale Node-mål kvalificerer reader/forbruger; den udvidede normale syntetiske B-fixtures SQL-cases skal faktisk køres på Linux. Kildekvalifikation, faktisk original-/Auth-gendannelse, autonom kvittering, reserve og rotation er selvstændige åbne leverancer. Ingen produktionsdata eller numerisk model ændres. Ejerens egressbudget er accepteret; fysisk DB-margin og fungerende retention færdiggøres før abonnementsændring. Se håndbog89.350.
 
