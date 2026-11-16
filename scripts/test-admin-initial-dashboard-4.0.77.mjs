@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import {runInNewContext} from 'node:vm';
+import './test-admin-frontend-4.0.44.mjs';
 const admin=fs.readFileSync('js/ui/admin-dashboard.js','utf8');
 const site=fs.readFileSync('js/services/site-function-test-service.js','utf8');
 const store=fs.readFileSync('js/services/admin-document-store.js','utf8');
@@ -601,9 +602,9 @@ async function cleanEarlyReadView(tab,{leave=null,changeIdentity=false,replaceHo
  x.context.loadZoneRegistry=async()=>{const features=[{properties:{id:'one',name:'Synthetic one'}},{properties:{id:'two',name:'Synthetic two'}}];return{all:features,active:features,collection:{features},counts:{registered:2,active:2,legacy:0}};};
  x.nodes.set('moduleGuideBody',{hidden:false});x.nodes.set('toggleModuleGuide',{textContent:'Skjul guide',setAttribute(name,value){this[name]=value;}});
  x.content.insertAdjacentHTML=()=>{x.nodes.get('moduleGuideBody').hidden=false;};
- for(const name of ['renderDashboard','renderWeather','renderWaterStations','renderZones','renderAdminCoastlineEditor','renderDirectionAudit','renderVisitors','renderLearning','renderUsers','renderHandbook','renderDocumentation','renderSystem'])
+ for(const name of ['renderDashboard','renderWeather','renderWaterStations','renderZones','renderAdminCoastlineEditor','renderDirectionAudit','renderVisitors','renderLearning','renderUsers','renderOwnerUsers','renderHandbook','renderDocumentation','renderSystem'])
   x.context[name]=()=>{x.content.innerHTML='synthetic '+x.context.state.tab+' controls';};
- Object.assign(x.context,{invalidateAdminTripCount(){},invalidateAdminUserCategories(){},disposeOwnerNoticeProbe:null,
+ Object.assign(x.context,{invalidateAdminTripCount(){},invalidateAdminUserCategories(){},disposeOwnerAccountErasure:null,disposeOwnerNoticeProbe:null,
   destroyCoastlineEditor(){},destroyDirectionMap(){},moduleGuide:()=>'<p>synthetic guide</p>',bindModuleGuide(){},
   mountPrivateTripStudyCard(){studyMounts++;},historicalSummary:()=>({count:0,excludedCount:0,finds:0,successRate:null,averages:{ravScore:null},allRows:[]}),
   resolveAdminActivePublicRavScore:()=>({statusDa:'synthetic verified model',labelDa:'synthetic model',binding:{},observationCalibrationEligible:true,kind:'integrated',scoreProfile:{activationState:'synthetic'}}),
@@ -657,9 +658,9 @@ async function learningLateModelRead({changeIdentity=false,replaceModelHost=fals
  x.content.isConnected=true;x.nodes.set('adminContent',x.content);
  x.nodes.set('moduleGuideBody',{hidden:false});x.nodes.set('toggleModuleGuide',{textContent:'Skjul guide',setAttribute(name,value){this[name]=value;}});
  x.content.insertAdjacentHTML=()=>{x.nodes.get('moduleGuideBody').hidden=false;};
- for(const name of ['renderDashboard','renderWeather','renderWaterStations','renderZones','renderAdminCoastlineEditor','renderDirectionAudit','renderObservations','renderHistory','renderVisitors','renderUsers','renderHandbook','renderDocumentation','renderSystem'])
+ for(const name of ['renderDashboard','renderWeather','renderWaterStations','renderZones','renderAdminCoastlineEditor','renderDirectionAudit','renderObservations','renderHistory','renderVisitors','renderUsers','renderOwnerUsers','renderHandbook','renderDocumentation','renderSystem'])
   x.context[name]=()=>{x.content.innerHTML='synthetic '+x.context.state.tab+' controls';};
- Object.assign(x.context,{invalidateAdminTripCount(){},invalidateAdminUserCategories(){},disposeOwnerNoticeProbe:null,
+ Object.assign(x.context,{invalidateAdminTripCount(){},invalidateAdminUserCategories(){},disposeOwnerAccountErasure:null,disposeOwnerNoticeProbe:null,
   destroyCoastlineEditor(){},destroyDirectionMap(){},moduleGuide:()=>'<p>synthetic guide</p>',bindModuleGuide(){},
   analyzeObservations:()=>({sampleSize:0,zoneCount:0,noFindCount:0,modes:{}}),
   mountPrivateTripStudyCard(){studyMounts++;report={button:{disabled:true},download:{disabled:true},output:{innerHTML:'synthetic report remains'},inFlight:true};},
@@ -718,10 +719,10 @@ async function directionLateBootstrap({leave=false,changeIdentity=false}={}){
  x.context.loadZones=async()=>({coastalParts:parts});
  const load=x.context.loadAdminDocument;
  x.context.loadAdminDocument=async(key,...args)=>key==='direction-reviews'?reviewRead.promise:key==='coastal-point-staging-status'?staging:load(key,...args);
- for(const name of ['renderDashboard','renderWeather','renderWaterStations','renderZones','renderAdminCoastlineEditor','renderObservations','renderHistory','renderVisitors','renderLearning','renderUsers','renderHandbook','renderDocumentation','renderSystem'])
+ for(const name of ['renderDashboard','renderWeather','renderWaterStations','renderZones','renderAdminCoastlineEditor','renderObservations','renderHistory','renderVisitors','renderLearning','renderUsers','renderOwnerUsers','renderHandbook','renderDocumentation','renderSystem'])
   x.context[name]=()=>{x.content.innerHTML='synthetic '+x.context.state.tab+' controls';};
  let draft=null;
- Object.assign(x.context,{invalidateAdminTripCount(){},invalidateAdminUserCategories(){},disposeOwnerNoticeProbe:null,
+ Object.assign(x.context,{invalidateAdminTripCount(){},invalidateAdminUserCategories(){},disposeOwnerAccountErasure:null,disposeOwnerNoticeProbe:null,
   destroyCoastlineEditor(){},destroyDirectionMap(){},destroyPartDirectionEditor:null,moduleGuide:()=>'<p>synthetic guide</p>',bindModuleGuide(){},
   createDirectionEditor(host,options){mounts++;config=options;draft={note:{value:'initial'},range:{value:0}};host.draftControls=draft;host.innerHTML='synthetic ready editor';return()=>{disposals++;};},
   directionReviews:()=>JSON.parse(x.context.localStorage.getItem('test-directions')||'{}'),
