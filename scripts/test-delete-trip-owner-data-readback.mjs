@@ -210,3 +210,6 @@ test('shared server erasure waits for actual Supabase body before any receipt', 
     await pending;
   }
 });
+
+// The existing whole owner-erasure target also covers the additive app readback contract.
+await import('./test-account-erasure-outbox.mjs');
