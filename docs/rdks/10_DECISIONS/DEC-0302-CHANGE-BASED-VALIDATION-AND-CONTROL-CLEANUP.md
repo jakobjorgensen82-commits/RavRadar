@@ -10,6 +10,10 @@ Genbrug af prøveforberedelse er ingen genbrug af kilde-, PostgreSQL- eller prod
 
 Historiske prøver beholder deres egne originale konstruktører, migrationer og forventninger, når den aktuelle familie bliver 599. De normale kaldere vælger den allerede autentiske 594- eller 598-kontekst efter den konkrete rolle. Den aktuelle førskrivnings- og runtimekontrol bruger fortsat den faktisk udstedte 599-binding. Et nyt familienavn alene er ikke grund til at acceptere en gammel prøve på nye input. Workflow- og actionprøver læser de allerede autentiske førbilleder for hver rolle og anvender de eksisterende inverser i deres oprindelige rækkefølge. SDK-kalderen anvender først den eksisterende inverse for det ejede cache- og nativetrin; gamle forventninger og hashkrav bevares, mens aktuelle 599-ruter og afslag prøves særskilt.
 
+Før- og efteraflæsning af PostgreSQL-programkvartetten er påkrævet, når public591, scalar597, after597 eller after598 er valgt. Den afsluttende programidentitet bekræftes efter bevist processtop og ejet oprydning og før den færdige rapport.
+
+Den historiske efter597-CLI prøves med sin egen allerede autentiske 598-kodekæde, CODE822; dens normale læser kører selv `--assistant-after597 --check`. Den aktuelle kalder prøves særskilt med `--active --check`. De eksisterende produktguards og facit samt C/I/T- og SQL-bytes bevares. Præcis samlet CI, nødvendig PostgreSQL-kvalifikation og verificeret produktionseffekt er fortsat selvstændige åbne krav.
+
 Det afledte 599-kildeinventar bygger på det bytevaliderede 598-inventar, den autentiske releasekontrakt og den eksisterende historiske 598-factory. Den kendte udstedte C/I-kombination, hele appreleasekontrakten, 75 originale migrationer og de faktiske transitive input bestemmer familien; intet appversionsinterval eller aktuelt head giver adgang. Gamle profiler bevares, og der indføres ingen ny JSON-profil eller per-head-kohorte. Inputanalyse er ikke et PostgreSQL- eller produktionsbevis.
 
 Samme 599-kode og en almindelig app600 med fast modelfamilie599 kan analyseres på deres egne committed input. Kildepariteten mellem forskellige versioner må stadig afvise ændrede rå modul-, pakke-, model- eller kontrolinput. Den ældre domæneplan vælger eksplicit FULL for denne familie; den aktuelle V4-plan bruger det faktisk beregnede inventar. De fulde guards ved almindelig afslutning ændres ikke.
@@ -28,6 +32,14 @@ Den historiske CURRENT-fixture vælger sine input før importgrafen indsamles. D
 ## Præcis lokal kildematerialisering før model- og nativekontrol
 
 Før filer materialiseres i en ny, egen isoleret kildebank, sættes bankens lokale Git-konfiguration til `core.autocrlf=false` og `core.eol=lf`. Før en builder eller nativeprøve skal de faktiske filbytes og SHA-256 sammenholdes med de eksakte indexblobs for alle uændrede PostgreSQL-, C/I/T- og profilinput, også JSON. En grøn normaliseret Git-diff eller samme tree er ikke fysisk bytebevis. Ved checkout-konvertering genskabes alene den egne banks uændrede filer fra deres autentiske blobs; ændrede kilder bevares og gennemgås særskilt. Gamle banker og global Git-konfiguration ændres ikke, og hashberegningen må ikke normalisere afvigelser væk.
+
+## Tillæg — korrekt post-data-CHECK i den eksisterende restore-reader
+
+Den samme manuelle arkivkalder og samme ejede lokale B-database bevares. Et komplet privat katalogsnapshot omfatter samtlige CHECKs; kun understøttede almindelige tabel-CHECKs med oprindelig convalidated=false udsættes med DROP RESTRICT. Definition, navn, NOT VALID-tilstand og kommentar genetableres efter uændret DATA, med fuld semantisk kataloglighed før commit. Validerede CHECKs berøres ikke. Domæner, partitioner, arv, extensionafhængigheder, ufuldstændig eller for stor metadata stopper før DATA. Begge eksisterende DATA-faser bruger samme mekanisme; ingen original SQL eller række omskrives.
+
+Den normale restoreindgang kræver komplet inventory før første SQL. Den indre streamhelpers tidligere no-inventory-testadfærd bevares symmetrisk uden at give den normale indgang en genvej. Første reelle SQLSTATE, fasevis rollback, sekvensparitet, Auth og ejet oprydning består. Der indføres intet nyt workflow, testregister, fejltolerance eller numerisk model.
+
+De relevante lokale mål er hele readerens normale selvtest og hele backup-lifecycle-prøven. De oprindelige arkiv-/workflowejere er uændrede og bliver stadig valgt normalt i præcis kilde-CI. Nye egentlige SQL-cases er placeret i den eksisterende syntetiske B-fixture og skal køres gennem det eksisterende Linux-forløb før en rettet autentisk prøve. Et lokalt Node-PASS er ikke PostgreSQL-eksekvering eller produktionsbevis. Se håndbog89.350.
 
 ## Tillæg — katalogbundet CHECK-diagnostic i den eksisterende arkivlæser
 

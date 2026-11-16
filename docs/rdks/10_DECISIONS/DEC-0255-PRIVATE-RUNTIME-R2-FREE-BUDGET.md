@@ -1,3 +1,14 @@
+## Ejerbeslutning 16. november — egress som budgetgrundlag for Free
+
+Ejeren accepterer de faktisk målte egress-tal og den konservative periodefremskrivning som budgetgrundlag for den planlagte Free-overgang. Den interne varslingsgrænse på 3,5 GB er ikke i sig selv en leveringsblokering. Der kræves ikke en ny særskilt målerunde med seks fejlfri døgnkørsler alene for at genbekræfte budgetaccepten.
+
+Accepten er ikke en garanti for senere trafik eller bevis for, at abonnementet allerede er Free. Fysisk database-/TOAST-margin, eksisterende automatisk retention samt faktisk original-/Auth-gendannelse og autonom backupkvittering/rotation færdiggøres på deres normale egne krav. Skiftende målinger, kvitteringer og konkrete abonnementsdatoer føres i det private checkpoint. Plan eller betalingsoplysninger ændres først efter de nødvendige faktiske driftsbeviser.
+## Tillæg — lokal restore følger NOT VALID-reglernes post-data-semantik
+
+En autentisk præ-DATA-diagnose har identificeret en ikke-valideret tabel-CHECK. Hele schema-only før DATA håndhæver denne regel for tidligt under COPY. Den eksisterende ejede lokale reader udsætter kun komplette katalogbestemte ikke-validerede almindelige tabel-CHECKs og genetablerer identiske definitioner, tilstande og kommentarer før hver fases commit; validerede regler forbliver aktive. Unsupported domæne-/partitions-/arve-/extensionsemantik stopper før DATA.
+
+Originale fem SQL-filer, fuld indholds-/dublet-/sekvensparitet, faktisk Auth og bekræftet ejet oprydning bevares. Nye SQL-cases ligger i den eksisterende normale syntetiske B-fixture. Kildekvalifikation, faktisk syntetisk SQL, autentisk gendannelse, autonom kvittering og rotation har fortsat hver deres bevis. Ingen ny capture erstatter det oprindelige arkivs afklaring. Ingen fysisk kompaktion, abonnementsændring eller ny service følger af denne kodelevering. Se håndbog89.350.
+
 ## Tillæg 15. november 2026 — archive-only Storage-bootstrap og lokal metadata før original SQL
 
 **Status: accepteret lokal kildekandidat; lokal selvtest UNKNOWN, ingen faktisk originalrestore accepteret.** Den hidtidige arkivdiagnose har påvist manglende Auth- og Storage-mål. Den normale capture udelader managed DDL og leverandørernes migrationshistorik, selv om deres data kan indgå. Den deaktiverede lokale Storage-bootstrap er en konkret årsag; de fire Auth-mål og kolonnekompatibilitet er fortsat uafklarede. Der må ikke udledes en OAuth-årsag eller foretages blind opgradering.

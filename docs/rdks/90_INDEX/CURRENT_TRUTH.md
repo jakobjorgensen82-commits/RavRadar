@@ -10,6 +10,10 @@ Udstedelsen og den efterfølgende almindelige appversionsprøve er lokalt afprø
 
 Historiske prøver beholder deres egne originale konstruktører, migrationer og forventninger, når den aktuelle familie bliver 599. De normale kaldere vælger den allerede autentiske 594- eller 598-kontekst efter den konkrete rolle. Den aktuelle førskrivnings- og runtimekontrol bruger fortsat den faktisk udstedte 599-binding. Et nyt familienavn alene er ikke grund til at acceptere en gammel prøve på nye input. Workflow- og actionprøver læser de allerede autentiske førbilleder for hver rolle og anvender de eksisterende inverser i deres oprindelige rækkefølge. SDK-kalderen anvender først den eksisterende inverse for det ejede cache- og nativetrin; gamle forventninger og hashkrav bevares, mens aktuelle 599-ruter og afslag prøves særskilt.
 
+Før- og efteraflæsning af PostgreSQL-programkvartetten er påkrævet, når public591, scalar597, after597 eller after598 er valgt. Den afsluttende programidentitet bekræftes efter bevist processtop og ejet oprydning og før den færdige rapport.
+
+Den historiske efter597-CLI prøves med sin egen allerede autentiske 598-kodekæde, CODE822; dens normale læser kører selv `--assistant-after597 --check`. Den aktuelle kalder prøves særskilt med `--active --check`. De eksisterende produktguards og facit samt C/I/T- og SQL-bytes bevares. Præcis samlet CI, nødvendig PostgreSQL-kvalifikation og verificeret produktionseffekt er fortsat selvstændige åbne krav.
+
 Det afledte 599-kildeinventar bygger på det bytevaliderede 598-inventar, den autentiske releasekontrakt og den eksisterende historiske 598-factory. Den kendte udstedte C/I-kombination, hele appreleasekontrakten, 75 originale migrationer og de faktiske transitive input bestemmer familien; intet appversionsinterval eller aktuelt head giver adgang. Gamle profiler bevares, og der indføres ingen ny JSON-profil eller per-head-kohorte. Inputanalyse er ikke et PostgreSQL- eller produktionsbevis.
 
 Samme 599-kode og en almindelig app600 med fast modelfamilie599 kan analyseres på deres egne committed input. Kildepariteten mellem forskellige versioner må stadig afvise ændrede rå modul-, pakke-, model- eller kontrolinput. Den ældre domæneplan vælger eksplicit FULL for denne familie; den aktuelle V4-plan bruger det faktisk beregnede inventar. De fulde guards ved almindelig afslutning ændres ikke.
@@ -17,6 +21,17 @@ Samme 599-kode og en almindelig app600 med fast modelfamilie599 kan analyseres p
 Præcis kildekvalifikation, faktisk nødvendig PostgreSQL, installation og offentlig virkning er fortsat åbne. Se DEC-0302 og håndbog 89.342.
 
 
+## Aktuelt — årsagen til originalarkivets CHECK-afslag er identificeret
+
+Den autentiske diagnose binder afvisningen til en oprindeligt ikke-valideret tabel-CHECK. Hele schema-only-filen indlæses før DATA, selv om pg_dump normalt placerer ikke-validerede CHECKs efter data. NOT VALID fritager eksisterende rækker fra scanning, men håndhæves stadig ved ny COPY. Det forklarer den lokale indlæsningskonflikt; en korrupt originalrække er ikke dermed bevist.
+
+Den afgrænsede rettelse udsætter alene de katalogbestemte ikke-validerede almindelige tabel-CHECKs i den ejede lokale database og genetablerer dem identisk før commit. Fuld semantisk kataloglighed og validerede kontrolregler bevares. Domæne-, partitions-, arve- og extensionsemantik, som ikke er understøttet, afvises før DATA. Fem originale SQL-filer, rækker, sekvenser, Auth-accept og ejet oprydning bevares. Begge normale DATA-faser dækkes. Kildelevering og syntetiske prøver er ikke faktisk originalrestore eller autonom backupaccept. Se håndbog89.350 og DEC-0255/DEC-0302.
+
+## Ejerbeslutning 16. november — egress som budgetgrundlag for Free
+
+Ejeren accepterer de faktisk målte egress-tal og den konservative periodefremskrivning som budgetgrundlag for den planlagte Free-overgang. Den interne varslingsgrænse på 3,5 GB er ikke i sig selv en leveringsblokering. Der kræves ikke en ny særskilt målerunde med seks fejlfri døgnkørsler alene for at genbekræfte budgetaccepten.
+
+Accepten er ikke en garanti for senere trafik eller bevis for, at abonnementet allerede er Free. Fysisk database-/TOAST-margin, eksisterende automatisk retention samt faktisk original-/Auth-gendannelse og autonom backupkvittering/rotation færdiggøres på deres normale egne krav. Skiftende målinger, kvitteringer og konkrete abonnementsdatoer føres i det private checkpoint. Plan eller betalingsoplysninger ændres først efter de nødvendige faktiske driftsbeviser.
 ## Aktuelt — originalarkivets CHECK-fejl er endnu ikke forklaret
 
 Det autentiske arkivforsøg stopper i DATA med SQLSTATE 23514 efter bestået relations- og systemrollekontrol; ejet Dockerlukning er bekræftet. Den bevarede rapport indeholder ingen constraint-identitet. Den lokale readerdiagnostic udleder et begrænset katalogfingeraftryk før DATA i samme transaktion og tillader kun hash/faste metadata for den præcise primære fejl; ukendt forbliver UNAVAILABLE. Lokal selvtest og normal lifecycle-prøve består, men dette er ikke en restore-rettelse, faktisk ny diagnostic, kildekvalifikation eller installation.

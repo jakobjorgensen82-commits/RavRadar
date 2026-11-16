@@ -6,12 +6,22 @@ Den lokalt reproducerede kobling mellem appversion og udstedt modelfamilie er re
 
 Historiske prøver beholder deres egne originale konstruktører, migrationer og forventninger, når den aktuelle familie bliver 599. De normale kaldere vælger den allerede autentiske 594- eller 598-kontekst efter den konkrete rolle. Den aktuelle førskrivnings- og runtimekontrol bruger fortsat den faktisk udstedte 599-binding. Et nyt familienavn alene er ikke grund til at acceptere en gammel prøve på nye input. Workflow- og actionprøver læser de allerede autentiske førbilleder for hver rolle og anvender de eksisterende inverser i deres oprindelige rækkefølge. SDK-kalderen anvender først den eksisterende inverse for det ejede cache- og nativetrin; gamle forventninger og hashkrav bevares, mens aktuelle 599-ruter og afslag prøves særskilt.
 
+Før- og efteraflæsning af PostgreSQL-programkvartetten er påkrævet, når public591, scalar597, after597 eller after598 er valgt. Den afsluttende programidentitet bekræftes efter bevist processtop og ejet oprydning og før den færdige rapport.
+
+Den historiske efter597-CLI prøves med sin egen allerede autentiske 598-kodekæde, CODE822; dens normale læser kører selv `--assistant-after597 --check`. Den aktuelle kalder prøves særskilt med `--active --check`. De eksisterende produktguards og facit samt C/I/T- og SQL-bytes bevares. Præcis samlet CI, nødvendig PostgreSQL-kvalifikation og verificeret produktionseffekt er fortsat selvstændige åbne krav.
+
 Det afledte 599-kildeinventar bygger på det bytevaliderede 598-inventar, den autentiske releasekontrakt og den eksisterende historiske 598-factory. Den kendte udstedte C/I-kombination, hele appreleasekontrakten, 75 originale migrationer og de faktiske transitive input bestemmer familien; intet appversionsinterval eller aktuelt head giver adgang. Gamle profiler bevares, og der indføres ingen ny JSON-profil eller per-head-kohorte. Inputanalyse er ikke et PostgreSQL- eller produktionsbevis.
 
 Samme 599-kode og en almindelig app600 med fast modelfamilie599 kan analyseres på deres egne committed input. Kildepariteten mellem forskellige versioner må stadig afvise ændrede rå modul-, pakke-, model- eller kontrolinput. Den ældre domæneplan vælger eksplicit FULL for denne familie; den aktuelle V4-plan bruger det faktisk beregnede inventar. De fulde guards ved almindelig afslutning ændres ikke.
 
 Præcis kildekvalifikation, faktisk nødvendig PostgreSQL, installation og offentlig virkning er fortsat åbne. Se DEC-0302 og håndbog 89.342.
 
+
+## Originalarkiv — NOT VALID-CHECK indlæses for tidligt
+
+Årsagen til det hidtidige autentiske DATA/23514-afslag er nu knyttet til en oprindeligt ikke-valideret tabel-CHECK. Schema-only indeholder post-data-regler, og NOT VALID håndhæves ved ny COPY. Rettelsen er fasevis lokal udsættelse og identisk genetablering af det komplette understøttede ikke-validerede CHECK-sæt; validerede regler og originale SQL-/række-/sekvensbytes bevares. Unsupported semantik afvises før DATA.
+
+Der påstås endnu ingen faktisk original-/Auth-restore, autonom kvittering eller samlet Free-klarhed. Den oprindelige afvisning og diagnosticfasen bevares som historik, men deres tidligere ukendte årsag er afløst på dette konkrete led. Lokal Node-prøve, egentlig syntetisk PostgreSQL og autentisk restore har hver sin bevisgrænse. Se håndbog89.350 og DEC-0255.
 
 ## Åbent: originalarkivets DATA afvises med CHECK-fejl
 

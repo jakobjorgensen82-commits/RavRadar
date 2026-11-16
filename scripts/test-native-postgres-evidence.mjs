@@ -1526,7 +1526,7 @@ test('593 quartet observation remains conditional and follows proved cleanup wit
 
 test('597 quartet observation is conditional and follows proved stop and cleanup before the completed report',async()=>{
   const source=await fs.readFile('scripts/lib/checkpoint-cas-native-postgres.mjs','utf8');
-  const before=source.indexOf('const nativeProgramsBefore=includeAssistantPublic591Successor||includeScalar597LaterH0Successor||includeAssistantAfter597Successor\n    ?await nativePostgresProgramIdentity(programs):null;');
+  const before=source.indexOf('const nativeProgramsBefore=includeAssistantPublic591Successor||includeScalar597LaterH0Successor||includeAssistantAfter597Successor||includeAssistantAfter598Successor\n    ?await nativePostgresProgramIdentity(programs):null;');
   const setup=source.indexOf("const root = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-checkpoint-pg-'))",before);
   const stop=source.indexOf("assert.equal(stop.code,0,'native server stop was not proved; preserve directory');",setup);
   const terminal=source.indexOf("assert.equal(status.code,3,'native server is not physically terminal; preserve directory');",stop);
@@ -2152,13 +2152,24 @@ test('after597 normal PG entry and report collector enforce real admission befor
 });
 
 test('after597 actual normal CLI checks issued source or refuses unissued before PostgreSQL',async()=>{
+  if(AFTER598_ACTIVE){
+    // This existing authenticated CODE822 reader already executes the genuine
+    // after597 --check and validates its complete original stdout before callback.
+    const historical=await genuineIssued598SourceData();
+    assert.equal(historical.sourcePhase,ASSISTANT_AFTER597_PHASE);
+    assert.equal(historical.pkg.version,'4.0.598');
+  }
   const {execFile}=await import('node:child_process');
   const result=await new Promise(resolve=>execFile(process.execPath,
-    AFTER597_ISSUED?['scripts/build-assistant-later-h0-successor.mjs','--assistant-after597','--check']
+    AFTER598_ACTIVE?['scripts/build-assistant-later-h0-successor.mjs','--active','--check']
+      :AFTER597_ISSUED?['scripts/build-assistant-later-h0-successor.mjs','--assistant-after597','--check']
       :['scripts/test-protected-ravscore-continuation-checkpoint.mjs','--assistant-after597-successor'],
     {env:{PATH:process.env.PATH,SystemRoot:process.env.SystemRoot},timeout:10000,maxBuffer:16384},
     (error,stdout,stderr)=>resolve({code:error?.code??0,stdout,stderr})));
-  if(AFTER597_ISSUED){
+  if(AFTER598_ACTIVE){
+    assert.equal(result.code,0);assert.equal(result.stderr,'');
+    assert.match(result.stdout,/Præcis assistentkilde efter598 kontrolleret/);
+  }else if(AFTER597_ISSUED){
     assert.equal(result.code,0);assert.equal(result.stderr,'');
     assert.match(result.stdout,/Præcis assistentkilde efter597 kontrolleret/);
   }else{
