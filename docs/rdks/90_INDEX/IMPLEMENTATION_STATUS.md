@@ -1,3 +1,7 @@
+## Historiske prøvers eget input og aktuelle sikkerhedsrammer
+
+Historiske workflowprøver bruger deres eget allerede fastlagte input; aktuelle sikkerhedsrammer prøves særskilt på rå aktuelle workflows. Den seneste kontrolrettelse er lokalt målprøvet, men samlet kildekvalifikation, nødvendig PostgreSQL og installation mangler fortsat. Dette afslutter ikke revisionens syv målkrav.
+
 ## Afgrænset forklaring af arkivlæserens CHECK_SUSPEND-afslag
 
 Den eksisterende arkivlæser kan forklare sine tre faste P0001-afslag før CHECK_SUSPEND: ikke-understøttet eller for stor CHECK-metadata, ikke-understøttede COPY-mål og ændret CHECK-katalog. Kun præcis fejlramme, fase, inventory-hash og mættede årsagstællere må forlade den ejede lokale database. Navne, definitioner, kommentarer, rækker og rå fejltekst forbliver private. Ukendt eller modstridende diagnostic bliver UNAVAILABLE.

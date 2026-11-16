@@ -1,4 +1,5 @@
-import { projectPagesClosureHistoricalTestInput as historicalPagesInput } from './lib/pages-closure-historical-test-input.mjs';
+import { projectPagesClosureHistoricalTestInput as historicalPagesInput,
+  readHistoricalPagesClosureWorkflowSources } from './lib/pages-closure-historical-test-input.mjs';
 import { inverseAlternativeCCaller } from './lib/alternative-c-caller-test-input.mjs';
 import assert from 'node:assert/strict';
 import { inverseCompletedRuntimeWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
@@ -506,10 +507,19 @@ const historicalUpdater = runInNewContext(
 assert.equal(digest(historicalUpdater),
   '62bbe6eb4325dcba05afb922028150a9bdf7c45f2ebd7a7e975d85f3941d6288');
 const bulkUpdater = await fs.readFile(new URL('./update-dmi-bulk.py', import.meta.url), 'utf8');
+const rawProductionWorkflows = await readProductionWorkflowSources();
+const historicalWorkflowSources = readHistoricalPagesClosureWorkflowSources();
+// Model/updater inputs remain current; only the old workflow oracle uses its own originals.
 const productionWorkflows = Object.freeze(Object.fromEntries(
-  Object.entries(await readProductionWorkflowSources()).map(([role, source]) =>
-    [role, inverseCompletedRuntimeWorkflow(historicalPagesInput(source.replaceAll('\r\n', '\n'), role), role)]),
+  Object.entries(rawProductionWorkflows).map(([role, source]) =>
+    [role, inverseCompletedRuntimeWorkflow(historicalPagesInput(
+      (Object.hasOwn(historicalWorkflowSources, role) ? historicalWorkflowSources[role] : source)
+        .replaceAll('\r\n', '\n'), role), role)]),
 ));
+assert.notEqual(rawProductionWorkflows.build, historicalWorkflowSources.build);
+assert.throws(() => inverseCompletedRuntimeWorkflow(
+  historicalPagesInput(rawProductionWorkflows.build.replaceAll('\r\n', '\n'), 'build'), 'build'),
+'Raw current workflow is not historical generator-oracle input');
 const productionPartPipeline = await fs.readFile(
   new URL('./lib/ravscore-production-part-pipeline.mjs', import.meta.url),
   'utf8',

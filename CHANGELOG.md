@@ -1,3 +1,11 @@
+## Historiske prøvers eget input og aktuelle sikkerhedsrammer
+
+De historiske workflowprøver læser deres egne allerede fastlagte Git-originaler. RAW-retention bruger sit f644-grundlag; Pages-/arkivprøverne bruger deres egne senere originaler. Ingen ny helfilkohorte, nuværende produktionsadgang eller genbrugstilladelse opstår af læsningen.
+
+Den aktuelle kildegate læser fortsat rå aktuelle workflows. De eksisterende hele SQL-, original-, plan- og frisk-main-rammer, deres rækkefølge og de afgrænsede arkivkommandoer kontrolleres særskilt. Alle SQL-pushformer uden for de kendte skriverammer afvises, bortset fra den præcise eksisterende skrivefri dry-run. Den aktuelle snapshotlæser må fortsat ikke starte updater, leverandører, fuld validering eller releasegate.
+
+Rettelsen ændrer kontrolinput og prøveforberedelse, ikke produktkode, vejr, score eller udstedte migrationer. Lokale målprøver er ikke samlet kilde-/PostgreSQL-kvalifikation, installation eller revisionsaccept. Alle fem hovedmål og revisionens resterende beviser består.
+
 ## Afgrænset forklaring af arkivlæserens CHECK_SUSPEND-afslag
 
 Den eksisterende arkivlæser kan forklare sine tre faste P0001-afslag før CHECK_SUSPEND: ikke-understøttet eller for stor CHECK-metadata, ikke-understøttede COPY-mål og ændret CHECK-katalog. Kun præcis fejlramme, fase, inventory-hash og mættede årsagstællere må forlade den ejede lokale database. Navne, definitioner, kommentarer, rækker og rå fejltekst forbliver private. Ukendt eller modstridende diagnostic bliver UNAVAILABLE.

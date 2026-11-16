@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
+import { readHistoricalRepairWorkflowSource } from './lib/pages-closure-historical-test-input.mjs';
 import { inverseArchivedWeatherRestartWorkflow } from './lib/archived-weather-restart-workflow-review.mjs';
 import './test-post-cutover-migration-routing.mjs';
 import crypto from 'node:crypto';
@@ -268,7 +269,12 @@ for (const marker of [
   'kan ikke ugyldiggøre',
 ]) assert.ok(decision.includes(marker), `DEC-0148 mangler ${marker}`);
 
-const workflow = inverseArchivedWeatherRestartWorkflow(fs.readFileSync('.github/workflows/deploy-code-only-repair.yml', 'utf8').replace(/\r\n/g, '\n'));
+const rawCurrentRepairWorkflow = fs.readFileSync('.github/workflows/deploy-code-only-repair.yml', 'utf8').replace(/\r\n/g, '\n');
+// The older binding/userdata oracle owns the original repair; current callers stay raw.
+const workflow = inverseArchivedWeatherRestartWorkflow(readHistoricalRepairWorkflowSource());
+assert.throws(() => inverseArchivedWeatherRestartWorkflow(rawCurrentRepairWorkflow),
+  'Current599 must not be accepted as an unchanged historical code-only workflow');
+assert.match(rawCurrentRepairWorkflow, /node scripts\/publish-private-weather-runtime\.mjs --publish/);
 const prewriteOrder = [
   'Rebind saved private runtime to current source without changing measurements',
   'Require exact code-only reuse invariants',
@@ -1377,3 +1383,38 @@ if (process.platform === 'linux') {
 } else {
   console.log('Linux extractor CLI contracts not executed on this platform');
 }
+
+// 2026-11-16: these immutable counts/phases belong to the original repair oracle.
+userdataTest('historical source-critical SQL counts and phases preserve the authentic repair compatibility contract',()=>{
+const codeOnlyWorkflow=workflow;
+const codeOnlyAcquisition=publicAcquisition;
+for (const forbidden of [
+  'DMI_API_KEY',
+  'COPERNICUSMARINE_SERVICE_USERNAME',
+  'COPERNICUSMARINE_SERVICE_PASSWORD',
+  'OPEN_METEO',
+  'node scripts/update-weather.mjs',
+  'python scripts/update-dmi-bulk.py',
+  'npm run validate:source',
+  'npm run validate',
+  'npm run release:gate',
+]) {
+  assert.ok(!codeOnlyWorkflow.includes(forbidden), `Code-only-workflowet må ikke indeholde ${forbidden}.`);
+  assert.ok(!codeOnlyAcquisition.includes(forbidden), `Code-only-læseren må ikke indeholde ${forbidden}.`);
+}
+assert.equal(
+  (codeOnlyWorkflow.match(/supabase db push --linked/g) || []).length,
+  6,
+  'Code-only-workflowet må kun have de fem præcist afgrænsede dry-run-læsninger og én apply.',
+);
+assert.equal((codeOnlyWorkflow.match(/supabase db push --linked --dry-run --skip-vault/g) || []).length, 5,
+  'Normal plan, historiske kontroller, ny assistentgenkontrol og installeret assistentplan skal være dry-run, ikke skrivninger.');
+assert.equal((codeOnlyWorkflow.match(/^\s*supabase db push --linked --skip-vault\s*$/gm) || []).length, 1,
+  'Der skal fortsat være præcis én database-apply.');
+assert.match(codeOnlyWorkflow,
+  /if test "\$\{RAVRADAR_ACCOUNT_ASSISTANT_PREWRITE_REQUIRED:-false\}" = "true"; then[\s\S]*?supabase migration list --linked[\s\S]*?supabase db push --linked --dry-run --skip-vault[\s\S]*?--account-assistant-prewrite-plan --require-prewrite-gate[\s\S]*?--expected-pending-version 20261013210000[\s\S]*?fi\s+if test "\$\{RAVRADAR_STATISTICS_REVISION_PHASE:-\}" = "before"; then[\s\S]*?supabase migration list --linked[\s\S]*?supabase db push --linked --dry-run --skip-vault[\s\S]*?verify-statistics-preference-revision-plan\.mjs[\s\S]*?--phase before[\s\S]*?fi\s+if test "\$\{RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_PHASE:-\}" = 'before'; then[\s\S]*?env -u SUPABASE_DB_PASSWORD node[\s\S]*?established-native-current-origin-prewrite\.mjs"[\s\S]*?--slot final[\s\S]*?supabase migration list --linked[\s\S]*?supabase db push --linked --dry-run --skip-vault[\s\S]*?verify-established-native-current-origin-plan\.mjs"[\s\S]*?--phase before[\s\S]*?fi\s+if test "\$\{RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_PHASE:-\}" != 'installed'; then\s+supabase db push --linked --skip-vault/,
+  'Historiske gates bevares, og den nye assistentfase skal have frisk originalkontrol og egen eksakt plan før den ene apply.');
+assert.match(codeOnlyWorkflow,
+  /\(cd "\$\{\{ steps\.migration-view\.outputs\.workdir \}\}" && supabase db push --linked --dry-run --skip-vault\)[\s\S]*?RAVRADAR_ESTABLISHED_NATIVE_CURRENT_ORIGIN_UPGRADE_OPT_IN=false node scripts\/verify-established-native-current-origin-plan\.mjs[\s\S]*?--phase installed[\s\S]*?node scripts\/verify-statistics-preference-revision-schema\.mjs/,
+  'Den sidste dry-run skal bevise installeret ny assistentfase med opt-in false og efterfølgende uændret schema2-genlæsning.');
+});

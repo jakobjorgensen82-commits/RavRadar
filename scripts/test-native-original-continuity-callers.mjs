@@ -800,6 +800,28 @@ const reviewedCapacity593Sources=Object.freeze({
     ]
   }
 });
+// Historical text DATA only. The existing selected CODE598 ref owns these five
+// inputs; actual current caller views below keep reading their raw current files.
+async function readHistoricalAssistantSource(file){
+  assert.equal(arguments.length,1,'No caller-selected historical source origin');
+  assert(Object.hasOwn(reviewedIssued592Sources,file),'Only the five reviewed historical source owners');
+  if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase!=='assistant-after598-successor')
+    return fs.readFile(path.join(ROOT,file),'utf8');
+  const provenance=await import('./check-assistant-later-h0-predecessor-source.mjs');
+  assert.equal(typeof provenance.assertSource598CodeSourceSelected,'function');
+  const selected=provenance.assertSource598CodeSourceSelected();
+  const {execFileSync}=await import('node:child_process');
+  const environment=Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','TEMP','TMP','LANG','LC_ALL']
+    .filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]]));
+  const git=args=>execFileSync('git',['-c','protocol.allow=never','-C',ROOT,...args],{
+    env:{...environment,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_OPTIONAL_LOCKS:'0',
+      GIT_TERMINAL_PROMPT:'0',GIT_CONFIG_NOSYSTEM:'1',
+      GIT_CONFIG_GLOBAL:process.platform==='win32'?'NUL':'/dev/null'},
+    timeout:10_000,maxBuffer:128*1024,stdio:['ignore','pipe','pipe']});
+  assert.equal(git(['rev-parse',selected.head+'^{tree}']).toString('utf8').trim(),selected.tree);
+  return git(['cat-file','blob',selected.head+':'+file]).toString('utf8');
+}
+
 function canonical592CapacitySource(source,file){
   source=inverseIssued594HistoricalSource(source,file);
   const row=reviewedCapacity593Sources[file];if(!row)return source;
@@ -1005,7 +1027,7 @@ function historical588PrewriteSource(source){
 
 test('assistant binding original prewrite keeps one bank pass and normal owned readers before fresh identity',async()=>{
   const currentSource=await fs.readFile(path.join(ROOT,'scripts/assistant-later-h0-binding-prewrite.mjs'),'utf8');
-  const priorSource=historical691AssistantSource(currentSource,'scripts/assistant-later-h0-binding-prewrite.mjs');
+  const priorSource=historical691AssistantSource(await readHistoricalAssistantSource('scripts/assistant-later-h0-binding-prewrite.mjs'),'scripts/assistant-later-h0-binding-prewrite.mjs');
   for(const [source,freshCall]of [[historical588PrewriteSource(priorSource),'await assertAuthenticatedFrozen587SnapshotFresh(handle)'],
     [priorSource,'await ACTIVE_PREDECESSOR.fresh(handle)'],[currentSource,'await ACTIVE_PREDECESSOR.fresh(handle)']]){
   const prepare=source.slice(source.indexOf('async function prepare(p){'),source.indexOf('async function plan(){'));
@@ -1064,7 +1086,7 @@ test('assistant binding original prewrite workflow keeps locks, exact normal cen
 test('assistant binding original prewrite exact source-import variants reject changed bytes and preserve old variants',async()=>{
   for(const file of ['scripts/lib/authenticated-frozen586-predecessor.mjs','scripts/assistant-later-h0-binding-prewrite.mjs']){
     const source=await fs.readFile(path.join(ROOT,file),'utf8');
-    for(const view of [historical691AssistantSource(source,file),source]){
+    for(const view of [historical691AssistantSource(await readHistoricalAssistantSource(file),file),source]){
       const imports=modelSourceRelativeModuleSpecifiers(view,file);assert(imports.length>0);
       assert.throws(()=>modelSourceRelativeModuleSpecifiers(view+'\n// changed\n',file),/Whole reviewed model import source changed/);
     }
@@ -1081,7 +1103,7 @@ test('assistant binding original prewrite exact source-import variants reject ch
 test('assistant binding prewrite fixed diagnostics preserve prepare order and first error',async()=>{
   const {runInNewContext}=await import('node:vm');
   const currentSource=await fs.readFile(path.join(ROOT,'scripts/assistant-later-h0-binding-prewrite.mjs'),'utf8');
-  const priorSource=historical691AssistantSource(currentSource,'scripts/assistant-later-h0-binding-prewrite.mjs');
+  const priorSource=historical691AssistantSource(await readHistoricalAssistantSource('scripts/assistant-later-h0-binding-prewrite.mjs'),'scripts/assistant-later-h0-binding-prewrite.mjs');
   for(const variant of [{source:historical588PrewriteSource(priorSource),phase:null},
     {source:priorSource,phase:'assistant-public587-successor'},{source:priorSource,phase:'assistant-public588-successor'},
     {source:currentSource,phase:'assistant-public587-successor'},{source:currentSource,phase:'assistant-public588-successor'},
@@ -1159,13 +1181,14 @@ test('assistant binding prewrite fixed diagnostics preserve prepare order and fi
       // Whole source was authenticated by historical691AssistantSource above.
       // Adapt only this exact ESM declaration for the existing Script fixture;
       // keep its complete function body, selector and all diagnostic code.
-      const esm='export function assistantAfter597PrewritePredecessor(){',
-        script='function assistantAfter597PrewritePredecessor(){';
+      for(const name of ['assistantAfter597PrewritePredecessor','assistantAfter598PrewritePredecessor']){
+      const esm='export function '+name+'(){',script='function '+name+'(){';
       if(route.includes(esm)){
         const originalRoute=route;assert.equal(route.split(esm).length,2);
         route=route.replace(esm,()=>script);
         assert.equal(route.split(script).length,2);
         assert.equal(route.replace(script,()=>esm),originalRoute,'Exact ESM-to-Script roundtrip only');
+      }
       }
     }
     const api=runInNewContext(route+'\n'+diagnostic+'\n'+executablePrepare+
@@ -1523,7 +1546,8 @@ test('assistant public587 import variants bind whole sources and reject every un
   ]){
     const actual=await fs.readFile(path.join(ROOT,file),'utf8');
     // Exact DATA views keep the old587/592 import oracles;593 has a real additional edge.
-    const source=canonical591AssistantSource(actual,file),issued592=canonical592CapacitySource(actual,file);
+    const historical=await readHistoricalAssistantSource(file);
+    const source=canonical591AssistantSource(historical,file),issued592=canonical592CapacitySource(historical,file);
     assert.deepEqual([...modelSourceRelativeModuleSpecifiers(source,file)],expected);
     assert.deepEqual([...modelSourceRelativeModuleSpecifiers(issued592,file)],expected);
     const currentExpected=file==='scripts/lib/authenticated-frozen586-predecessor.mjs'
@@ -1544,7 +1568,7 @@ test('assistant public587 import variants bind whole sources and reject every un
 test('assistant public587 genuine DATA host keeps fixed family and exact producer ancestor policy seam',async()=>{
   const {runInNewContext}=await import('node:vm'),{createHash}=await import('node:crypto');
   const hash=value=>createHash('sha256').update(value).digest('hex');
-  const actualAuth=canonical591AssistantSource(await fs.readFile(path.join(ROOT,'scripts/lib/authenticated-frozen586-predecessor.mjs'),'utf8'),'scripts/lib/authenticated-frozen586-predecessor.mjs');
+  const actualAuth=canonical591AssistantSource(await readHistoricalAssistantSource('scripts/lib/authenticated-frozen586-predecessor.mjs'),'scripts/lib/authenticated-frozen586-predecessor.mjs');
   const start=actualAuth.indexOf('const FROZEN587=Object.freeze({'),end=actualAuth.indexOf('const FROZEN588=Object.freeze({',start);
   assert(start>=0&&end>start);const profileSource=actualAuth.slice(start,end);
   assert.equal(hash(profileSource),'5f2b912b83735ba76b6424dd8ed0783604631ade26cf148abf66e97c7361adc1','Den hele historiske587-profil er byteuændret');
@@ -1929,7 +1953,7 @@ test('assistant public587 operative import variants remain whole-source bound',a
   for(const file of ['scripts/assistant-later-h0-binding-prewrite.mjs','scripts/lib/established-native-current-origin.mjs',
     'scripts/lib/authenticated-frozen586-predecessor.mjs','scripts/check-assistant-later-h0-predecessor-source.mjs']){
     const source=(await fs.readFile(path.join(ROOT,file),'utf8')).replace(/\r\n?/g,'\n');
-    for(const view of [historical691AssistantSource(source,file),source]){
+    for(const view of [historical691AssistantSource(await readHistoricalAssistantSource(file),file),source]){
       const imports=modelSourceRelativeModuleSpecifiers(view,file);assert(Object.isFrozen(imports));
       for(const changed of [view+'\n',view+"\nimport './unknown.mjs';\n"])
         assert.throws(()=>modelSourceRelativeModuleSpecifiers(changed,file),/Whole reviewed model import source changed/);
@@ -1947,7 +1971,7 @@ test('assistant public587 operative import variants remain whole-source bound',a
     ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-after598-successor'?(await import('./national584-source-evidence.mjs')).ASSISTANT_AFTER598_SOURCE_COMMAND
       :ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-mixed-after597-successor'?after597Command
       :ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='scalar597-later-h0-original594-successor'?scalarCommand:historicalCommand);
-  const builder=canonical591AssistantSource(await fs.readFile(path.join(ROOT,'scripts/build-assistant-later-h0-successor.mjs'),'utf8'),'scripts/build-assistant-later-h0-successor.mjs');
+  const builder=canonical591AssistantSource(await readHistoricalAssistantSource('scripts/build-assistant-later-h0-successor.mjs'),'scripts/build-assistant-later-h0-successor.mjs');
   const from=builder.indexOf('  const issued=public587?requireAssistantPublic587SuccessorBinding()'),to=builder.indexOf('\n}\nif(process.argv[1]',from);
   assert(from>=0&&to>from);
   assert.equal(successorHash('sha256').update(builder.slice(from,to)).digest('hex'),'a9dae0f55e685015441b8c0d3d528f563f3703a17e72927e3a000e2cabcc6edb',
@@ -2080,7 +2104,7 @@ test('ordinary companion readers use the exact active predecessor before and aft
 
 test('assistant592 strict source DATA inverse preserves canonical591 and refuses changed bytes',async()=>{
   for(const file of Object.keys(reviewedIssued592Sources)){
-    const raw=await fs.readFile(path.join(ROOT,file),'utf8'),canonical=canonical591AssistantSource(raw,file);
+    const raw=await readHistoricalAssistantSource(file),canonical=canonical591AssistantSource(raw,file);
     assert.equal(canonical591AssistantSource(canonical,file),canonical);
     for(const changed of [raw+'\n',raw.replace(/./,'X'),canonical+'\n'])
       assert.throws(()=>canonical591AssistantSource(changed,file));
@@ -2175,8 +2199,8 @@ test('assistant594 native evidence requires its own new commands and rejects old
 // The uninstalled592 source stays in Git; only the closed actual593 plan is eligible.
 test('assistant593 exact outer source DATA and closed direct591 migration plan',async()=>{
   for(const [file,row]of Object.entries(reviewedCapacity593Sources)){
-    const currentRaw=await fs.readFile(path.join(ROOT,file),'utf8');
-    const raw=inverseIssued594HistoricalSource(currentRaw,file),old=canonical592CapacitySource(raw,file);
+    const historicalRaw=await readHistoricalAssistantSource(file);
+    const raw=inverseIssued594HistoricalSource(historicalRaw,file),old=canonical592CapacitySource(raw,file);
     assert.equal(Buffer.byteLength(old),row.before.bytes);assert.equal(successorHash('sha256').update(old).digest('hex'),row.before.sha256);
     for(const [previous,current]of row.hunks){
       assert.equal(raw.split(current).length,2,'Historisk negativ mutation skal faktisk ændre sin593-kilde');

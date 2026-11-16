@@ -1146,6 +1146,8 @@ test('private-study006: privat eksport bevarer hele installationsarm og normale 
     const calls=[],host={insertAdjacentHTML(){}},firstAccess={profile:{id:'synthetic-first',is_active:true,role:'owner'},permissions:new Set(['full_admin'])};
     let learningCalls=0;
     const context={state:{tab:'learning',stationMap:null,access:firstAccess},content:host,
+      document:{querySelector:selector=>selector==='#adminLearningModelRead'?host:null},
+      currentAdminRead:()=>{const access=context.state.access;return()=>context.state.access===access;},
       analyzeObservations:()=>{learningCalls++;return{};},activePublicRavScoreState:()=>({ok:false}),
       activeModelUnavailableCard:()=>'SYNTHETIC_UNAVAILABLE_MODEL',moduleGuide:()=>'',bindModuleGuide(){},
       destroyCoastlineEditor(){},destroyDirectionMap(){},mountPrivateTripStudyCard(actualHost,access){
@@ -1163,7 +1165,9 @@ test('private-study006: privat eksport bevarer hele installationsarm og normale 
     const viewDeclarations=render.includes('adminViewEpoch++')
       ? source.match(/^let adminConnectionRead=[^\n]*adminViewEpoch=0,pendingCleanAdminRead=null;$/m)?.[0] : '';
     if(render.includes('adminViewEpoch++'))assert(viewDeclarations,'actual clean-read view declarations');
-    vm.runInContext(declarations+'\n'+(viewDeclarations||'')+'\n'+guards+'\n'+source.slice(learningStart,learningEnd)+';'+render+';render();',sandbox);
+    const blockedReadGuard=source.match(/^function rememberCleanBlockedAdminRead\([^]*?^\}/m)?.[0];
+    assert(blockedReadGuard,'actual blocked-read tracker used by the learning renderer');
+    vm.runInContext(declarations+'\n'+(viewDeclarations||'')+'\n'+guards+'\n'+blockedReadGuard+'\n'+source.slice(learningStart,learningEnd)+';'+render+';render();',sandbox);
     assert.equal(calls.length,1,'one private-study mount on learning');assert.equal(calls[0].access,firstAccess);assert.equal(learningCalls,1);
     const tabs=[...render.matchAll(/(?:\{|,)(\w+):render\w+/g)].map(x=>x[1]);assert(tabs.includes('learning')&&tabs.includes('dashboard'));
     for(const tab of tabs.filter(name=>name!=='learning')){context.state.tab=tab;vm.runInContext('render();',sandbox);assert.equal(calls.length,1,'no private-study mount on '+tab);}

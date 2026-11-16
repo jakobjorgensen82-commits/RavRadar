@@ -205,6 +205,14 @@ Autoriteten er version.json.releaseContract.modelBindings og de aktuelle generer
 
 ## 89.342 Kontrol af ændringer med en fast sikkerhedskerne
 
+### Historiske prøvers eget input og aktuelle sikkerhedsrammer
+
+De historiske workflowprøver læser deres egne allerede fastlagte Git-originaler. RAW-retention bruger sit f644-grundlag; Pages-/arkivprøverne bruger deres egne senere originaler. Ingen ny helfilkohorte, nuværende produktionsadgang eller genbrugstilladelse opstår af læsningen.
+
+Den aktuelle kildegate læser fortsat rå aktuelle workflows. De eksisterende hele SQL-, original-, plan- og frisk-main-rammer, deres rækkefølge og de afgrænsede arkivkommandoer kontrolleres særskilt. Alle SQL-pushformer uden for de kendte skriverammer afvises, bortset fra den præcise eksisterende skrivefri dry-run. Den aktuelle snapshotlæser må fortsat ikke starte updater, leverandører, fuld validering eller releasegate.
+
+Rettelsen ændrer kontrolinput og prøveforberedelse, ikke produktkode, vejr, score eller udstedte migrationer. Lokale målprøver er ikke samlet kilde-/PostgreSQL-kvalifikation, installation eller revisionsaccept. Alle fem hovedmål og revisionens resterende beviser består.
+
 ### Hele SDK-native-prøven er en særskilt Linux-accept
 
 Den kildekvalificerede normale CURRENT-vej har ansvar for den eksisterende dependency-prøve og hele nativefilens 19 cases. Dependency-prøven kommer først. Nativearbejdet bruger faktisk Node24 og egen npm-cache uden credentials; øvrig kildekontrol beholder Node22. Kun V4-kvitteringen får den præcise Pythonoperation. Gamle formater, PostgreSQL-/modelbeviser og produktionskontroller beholder deres betydning.
