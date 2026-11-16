@@ -26,7 +26,12 @@ const weatherPublicationScopeOnly=process.argv.includes('--weather-publication-s
 // The fixed restore command owns only its reviewed fixture body. Import and
 // dispatch frames retain the old form plus the closed inventory mode; --self-test runs separately.
 const restoreFixture='scripts/test-supabase-cli-local-restore.mjs';
-const restoreSource=fs.readFileSync(new URL('./test-supabase-cli-local-restore.mjs',import.meta.url),'utf8').replaceAll('\r\n','\n');
+// This already qualified historical test input grants no scope to current readers.
+const RESTORE_SCOPE_FIXTURE_ORIGIN='13ecde5895cea1da42ba2421e5d2570efb6db645';
+const restoreSource=execFileSync('git',['-c','protocol.allow=never','-C',SOURCE,'cat-file','blob',
+  RESTORE_SCOPE_FIXTURE_ORIGIN+':'+restoreFixture],{timeout:10000,maxBuffer:256*1024,windowsHide:true,
+  env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_OPTIONAL_LOCKS:'0',GIT_TERMINAL_PROMPT:'0'}}).toString('utf8');
+const currentRestoreSource=fs.readFileSync(new URL('./test-supabase-cli-local-restore.mjs',import.meta.url),'utf8');
 assert.deepEqual(CURRENT_CONTRACT_COMMANDS.backupRestore,['node '+restoreFixture+' --self-test',
   'node --test scripts/test-archive-supabase-database-backup.mjs',
   'node --test scripts/test-supabase-database-backup-workflow.mjs',
@@ -41,6 +46,10 @@ for(const changed of [
  restoreSource.replace('\nconst P=Object.freeze(','\nconst P=Object.freeze(\nconst P=Object.freeze('),
  ' '.repeat(256*1024)+restoreSource,
 ])assert.equal(isBoundedLocalRestoreFixtureChange(restoreSource,changed),false);
+if(Buffer.byteLength(currentRestoreSource)>256*1024){
+  assert.equal(isBoundedLocalRestoreFixtureChange(currentRestoreSource,currentRestoreSource),false);
+  assert.equal(isBoundedLocalRestoreFixtureChange(restoreSource,currentRestoreSource),false);
+}
 // Eksisterende ownerindgang: kun fast helper-scope, aldrig et blanket Pages-skip.
 const ownerHelpers=['scripts/github-pages-attempt-evidence.mjs','scripts/protected-operational-reentry-evidence.mjs'];
 const deploymentCommand='node scripts/test-ravscore-operational-pages-deployment.mjs';
@@ -516,7 +525,7 @@ function assertArchiveOuterQueuePlanScope({baselineCommit,baselineTree,rewriteTr
 
 
 // Inventory er en ny, lukket sikkerhedsrolle; gammel CLI/origin retagges ikke.
-function assertArchiveInventoryPlanScope({baselineCommit,baselineTree,rewriteTree,makeCommit,checkoutCommit,plan,restoreHead,fixtureSource,workflowSource}){
+function assertArchiveInventoryPlanScope({baselineCommit,baselineTree,rewriteTree,makeCommit,checkoutCommit,plan,restoreHead,fixtureSource,currentFixtureSource,workflowSource}){
   const fixture='scripts/test-supabase-cli-local-restore.mjs',workflow='.github/workflows/verify-supabase-cli-local-restore.yml';
   const legacyWorkflow=archiveRestoreWorkflowWithoutInventory(workflowSource);
   const branchStart=fixtureSource.indexOf("  else if(process.argv[2]==='--run-archive-inventory')");
@@ -586,6 +595,13 @@ function assertArchiveInventoryPlanScope({baselineCommit,baselineTree,rewriteTre
     }
     const fixtureRejected=select('unknown-cli',legacyFixture,legacyWorkflow,badFixtures[0][1],workflowSource);
     assert.equal(fixtureRejected.selection,'FULL');assert.deepEqual(fixtureRejected.reasonCodes,['CURRENT_RESTORE_FIXTURE_SECURITY_FRAME_CHANGED']);
+    if(Buffer.byteLength(currentFixtureSource)>256*1024){
+      const currentRejected=select('actual-current-oversize',fixtureSource,workflowSource,currentFixtureSource,workflowSource);
+      assert.equal(currentRejected.status,'REFUSED');assert.equal(currentRejected.selection,'FULL');
+      assert.deepEqual(currentRejected.reasonCodes,['CURRENT_RESTORE_FIXTURE_SECURITY_FRAME_CHANGED']);
+      assert.deepEqual(currentRejected.commands,[]);assert.equal(currentRejected.skipAuthorized,false);
+      assert.equal(currentRejected.productionAuthority,false);
+    }
     for(const label of ['source-gate','inventory-sql']){
       const body=badWorkflows.find(row=>row[0]===label)[1];
       const rejected=select(label,fixtureSource,workflowSource,fixtureSource,body);
@@ -1910,7 +1926,7 @@ try{
   scenarios.push('only the exact manual archive outer queue replacement composes with the unchanged fixture security frame; all four backup targets and fresh control review remain');
   const archiveInventoryResults=assertArchiveInventoryPlanScope({baselineCommit:firstDelivery.main,
     baselineTree:text(root,['rev-parse',firstDelivery.main+'^{tree}']),rewriteTree:rewrite,
-    makeCommit:commit,checkoutCommit:checkout,plan,restoreHead:head,fixtureSource:restoreSource,
+    makeCommit:commit,checkoutCommit:checkout,plan,restoreHead:head,fixtureSource:restoreSource,currentFixtureSource:currentRestoreSource,
     workflowSource:fs.readFileSync(new URL('../.github/workflows/verify-supabase-cli-local-restore.yml',import.meta.url),'utf8')});
   cases+=archiveInventoryResults.length;
   scenarios.push('the fixed inventory CLI and workflow role select all four backup targets and fresh review; unknown mode, source/writer changes and adjacent paths refuse');
