@@ -79,7 +79,7 @@ import { createProtectedDmiNativeCurrentInspector, buildProtectedDmiNativeCurren
 import { readDmiLegacyCurrentOriginals } from './lib/dmi-legacy-current-originals.mjs';
 import { packDmiPartContinuity, unpackDmiPartContinuity } from './lib/dmi-part-continuity.mjs';
 import { countDmiBackedZones, createPersistentDmiStore, prioritizeDmiFeatures, summarizeAvailableCoverage } from './lib/dmi-acquisition-state.mjs';
-import { buildWaterSourceForecastIndex, applyWaterSourceForecastStatus, applyWaterSourceRouting, applyVerifiedWaterSourceRoutingToPartHourly, packWaterSourceForecastContinuity, unpackWaterSourceForecastContinuity } from './lib/water-source-forecast-routing.mjs';
+import { buildWaterSourceForecastIndex, applyWaterSourceForecastStatus, applyWaterSourceRouting, applyVerifiedWaterSourceRoutingToPartHourly, packWaterSourceForecastContinuity, unpackWaterSourceForecastContinuity, summarizeLf7WaterRouting } from './lib/water-source-forecast-routing.mjs';
 import { buildFurWaterRoutingDiagnostic } from './lib/fur-water-routing-diagnostic.mjs';
 import { applyCurrentTransportToHistory } from './lib/current-transport-history.mjs';
 import { retainWeatherHistory, RESEARCH_HISTORY_HOURS } from './lib/weather-history-retention.mjs';
@@ -2902,6 +2902,7 @@ function scoreCoastalPartsRuntime(
           candidateGState,
           candidateGRollbackScores,
           record: { ...record, hourly },
+          waterRoutingObservation: routedWater.waterRoutingObservation ?? null,
           scores
         });
       }
@@ -3036,6 +3037,7 @@ function scoreCoastalPartsRuntime(
     establishedNativeCurrentPartResults,
     currentSourceDomainTransitions,
     furWaterRoutingTrace,
+    waterRoutingAudit: summarizeLf7WaterRouting(partRows, contract, partForecastStartAt),
     weatherSourceAge,
     currentInputTrace: RAVSCORE_CURRENT_TRACE_PART_IDS.size > 0 ? {
       schemaVersion: 1,
@@ -4282,7 +4284,7 @@ function enrichZoneSources(zone, generatedAt) {
   return zone;
 }
 
-function buildRuntimeDiagnostics(output, health) {
+function buildRuntimeDiagnostics(output, health, lf7WaterRouting = null) {
   const zones = Object.entries(output.zones ?? {});
   const components = ['wind','wave','current','waterLevel','waterTemperature'];
   const componentCoverage = Object.fromEntries(components.map(component => {
@@ -4302,6 +4304,9 @@ function buildRuntimeDiagnostics(output, health) {
     version: APP_VERSION,
     health,
     componentCoverage,
+    datasetId: output.datasetId,
+    productionReferenceAt: output.productionReferenceAt,
+    lf7WaterRouting,
     forecastCompleteness: (() => {
       const horizons = [6, 24, 48, ACCEPTED_FORECAST_HOURS];
       const rows = Object.fromEntries(horizons.map(hours => {
@@ -4824,7 +4829,7 @@ console.log(`Skrev privat offentlig-timepakke: ${publicHourPack.marker.packBytes
 const previousHealth = await readHealth();
 const weatherHealth = buildWeatherHealth(previousHealth, output, buildGeneratedAt);
 await fs.writeFile(HEALTH_PATH, `${JSON.stringify(weatherHealth, null, 2)}\n`);
-await fs.writeFile(RUNTIME_DIAGNOSTICS_PATH, `${JSON.stringify(buildRuntimeDiagnostics(output, weatherHealth), null, 2)}\n`);
+await fs.writeFile(RUNTIME_DIAGNOSTICS_PATH, `${JSON.stringify(buildRuntimeDiagnostics(output, weatherHealth, coastalPartScoreBuild?.waterRoutingAudit ?? null), null, 2)}\n`);
 reportWeatherBuildStage('public-artifacts-written', {
   zoneCount: Object.keys(output.zones).length,
 });

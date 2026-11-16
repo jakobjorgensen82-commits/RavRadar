@@ -4,6 +4,25 @@ En allerede centralt afsluttet almindelig Pages-prognose kvalificeres som en skr
 
 Readiness-prøvens positive matrix bruger nu sin faktisk committed forgænger og aktuelle checkout i samme familie. Den normale produktlæser skal først bevise uændrede PostgreSQL-, C/I/T- og kontrolinput på det rene træ. De tidligere 598-originaler bevares som afslag mod den aktuelle familie; deres tidligere positive bevis gælder fortsat kun deres oprindelige kontekst. Ingen produktguard eller kontrakt ændres af testkonteksten.
 
+## 16. november — LF7 på kvalificeret 599-kildebasis
+
+599-kildebasen har faktisk bestået den fulde Linux-kildekontrol, den nye native PostgreSQL-fase og normal FULL-/main-kvalifikation. Historisk 584-national genbrug er fortsat historisk og er ikke en ny 599-produktionsgeneration. Installation gennem normalvejen og verificeret offentlig virkning er fortsat åbne. Den særskilte LF7-observation er en lokal efterfølger og kræver sit eget præcise kildebevis samt aflæsning i næste almindelige generation. Alle fem hovedmål og de syv revisionskrav består.
+
+## Naturligt testansvar for vandstandsrouting og normal vejrproduktion
+
+Den eksisterende CURRENT-plan har permanent ansvar for de konkrete routing-, updater- og runtime-auditfiler. Routingbiblioteket vælger både de hele vandstandsmål og runtime-auditmål, fordi auditten importerer dets tællere og konfigurationsbinding. Den normale updater vælger desuden sine eksisterende bredere kaldermål. Der oprettes ingen ny testvej, per-head-kohorte eller manuel spring-over-regel.
+
+Den normale wireupprøve køres som sit allerede kendte hele solomål, så den eksisterende credentialfri Copernicus-forberedelse faktisk udføres. De fire øvrige filer fra den tidligere fælles Nodekommando køres samlet én gang; wireup gentages ikke. Den hele nationale runtime-audit beholdes ufiltreret. Ukendte, beskyttede, tilføjede, slettede eller modeændrede produktinput bevarer deres normale udvidede kontrol eller afslag.
+
+Registreringen kræver frisk uafhængig kontrolgennemgang. Den eksisterende kapacitetskontrol køres før målene, og alle kvitterings-, proces- og tidsgrænser bevares. Lokal selektion eller en lokal hel runtimeprøve er ikke præcis kilde-CI, installation eller faktisk revisionsaccept i en almindelig vejrkørsel.
+
+## Aktuel LF7-/SOURCE-/T+3-observation i normal vejrproduktion
+
+Den eksisterende normale producent registrerer nu en afgrænset observation ved det faktisk udførte vandstandskildevalg og T+3-predikat. Observationen omfatter de faktiske underdele i de syv kystzoner og 118 offentlige timer; T+3 bruger de allerede validerede private støttetimer. Der beregnes ingen ekstra score eller trend, og kildevalg, numeriske værdier, strøm-/temperaturudelukkelse og øvrige Limfjordszoner bevares.
+
+Kun generationsmetadata, hash af den faktisk hydrerede routingkonfiguration, udvalgs-/slutværdi-hashes og faste tællere gemmes i den eksisterende private runtime-diagnostik. Den normale runtime-audit sammenholder samme generation, lokal konfiguration og allerede beregnede PART-værdier. Manglende, for gammel, ufuldstændig eller modstridende observation giver UNKNOWN eller observeret afvigelse. Der tilføjes ingen ny workflow, offentlig proveniens eller produktionsgate.
+
+OBSERVED_CONFORMANT betyder kun overensstemmelse i den observerede politik og de beregnede værdier. Dækning og sammenlignelige T+3-par rapporteres særskilt. Gamle generationer får ingen efterfølgende tilskrevet routingaccept. De normale lokale mål kvalificerer koden; præcis kildekvalifikation og faktisk observation i en efterfølgende almindelig vejrproduktion kræves før revisionsaccept. C/I/T, alle udstedte migrationer, scoreformel, central konfiguration og geodata bevares.
 ## CI-hint til SDK må ikke følge isoleret PostgreSQL- og nationalprøve
 
 Den tidligere SDK-klargøring gemmer stien til Node24 i RAVRADAR_SOURCE_NODE24. Skiftet tilbage til Node22 fjerner ikke jobvariablen. Den isolerede PostgreSQL- og nationalprøve afviser korrekt enhver ukendt RAVRADAR_-override; hintet kunne derfor stoppe den normale prøve før SQL, selv efter bestået kildekontrol.

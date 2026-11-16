@@ -347,6 +347,87 @@ function verifiedWaterSourceTrendKnown(sourceRows, futureRows, zoneId) {
     && sourceRowsAllowedForZone(futureRows, zoneId);
 }
 
+
+// Read-only observations of the normal caller; never source/score authority.
+export const LF7_WATER_ROUTING_COUNTERS = Object.freeze([
+  'observedHours', 'routedHours', 'lfWaterHours', 'directHours', 'missingWaterHours',
+  'comparableT3Hours', 'unknownT3Hours', 'invalidTrendHours',
+  'forbiddenLfCurrentHours', 'forbiddenLfTemperatureHours',
+]);
+export function lf7WaterOnlyZone(zoneId) {
+  return !dmiMarineCollectionAllowedForZone('dkss_lf', zoneId)
+    && dmiMarineCollectionAllowedForZone('dkss_lf', zoneId, 'waterLevel');
+}
+export function waterRoutingConfigurationSha256(routing) {
+  return routing && typeof routing === 'object' && !Array.isArray(routing)
+    ? sourceDigest(Buffer.from(JSON.stringify(routing))) : null;
+}
+function observeLf7Routing({ part, zoneId, hourly, routedHourly, rows, method,
+  routing, referenceAt, decisions }) {
+  if (!lf7WaterOnlyZone(zoneId) || !exactHour(referenceAt) || rows.length > 16) return null;
+  const counts = Object.fromEntries(LF7_WATER_ROUTING_COUNTERS.map(key => [key, 0]));
+  const start = Date.parse(referenceAt), seen = new Set();
+  for (let i = 0; i < hourly.length; i++) {
+    const before = hourly[i], after = routedHourly[i], time = before?.time;
+    const offset = (Date.parse(time) - start) / 3_600_000;
+    if (!Number.isInteger(offset) || offset < 0 || offset >= 118) continue;
+    if (seen.has(time) || after?.time !== time) return null;
+    seen.add(time); counts.observedHours++;
+    const decision = decisions.get(time);
+    const valuePresent = finite(after.waterLevelCm) !== null;
+    if (decision) {
+      counts.routedHours++;
+      counts.comparableT3Hours += Number(decision.trendKnown);
+      counts.unknownT3Hours += Number(!decision.trendKnown);
+      counts.invalidTrendHours += Number(!decision.trendKnown && finite(after.waterLevelTrendCm3h) !== null);
+      counts.lfWaterHours += Number(decision.lfWater);
+    } else if (valuePresent) {
+      counts.directHours++;
+      counts.lfWaterHours += Number((after.waterLevelProvenance ?? after.sources?.waterLevel)?.collection === 'dkss_lf');
+    } else counts.missingWaterHours++;
+    const current = after.currentProvenance ?? after.sources?.current;
+    counts.forbiddenLfCurrentHours += Number((current?.collection === 'dkss_lf'
+      && (current.status === 'verified' || after.currentVerified === true))
+      || after.currentStateOnlyHold?.collection === 'dkss_lf');
+    counts.forbiddenLfTemperatureHours += Number(finite(after.waterTemperatureC) !== null
+      && (after.waterTemperatureProvenance ?? after.sources?.waterTemperature)?.collection === 'dkss_lf');
+  }
+  return { referenceAt, configurationSha256: waterRoutingConfigurationSha256(routing),
+    selectionSha256: sourceDigest(Buffer.from(JSON.stringify([part.partId, zoneId, part.waterPoint,
+      method, rows.map(row => [sourceKey(row), row.point, row.weight])]))), counts };
+}
+export function summarizeLf7WaterRouting(partRows, contract, referenceAt) {
+  const expected = Object.entries(contract?.zones ?? {}).filter(([zone]) => lf7WaterOnlyZone(zone))
+    .flatMap(([zoneId, parts]) => parts.map(part => ({ zoneId, partId: part.partId })));
+  if (!exactHour(referenceAt) || !expected.length || expected.length > 673
+    || new Set(expected.map(part => part.partId)).size !== expected.length) return null;
+  const counts = Object.fromEntries([...LF7_WATER_ROUTING_COUNTERS, 'computedValueMismatchHours'].map(key => [key, 0]));
+  const selections = [], computedValues = [], configurations = new Set(); let observedPartCount = 0;
+  for (const part of expected) {
+    const matches = partRows.filter(row => row.partId === part.partId && row.zoneId === part.zoneId);
+    if (matches.length !== 1) continue;
+    const row = matches[0], observation = row.waterRoutingObservation;
+    if (!observation || observation.referenceAt !== referenceAt) continue;
+    observedPartCount++; configurations.add(observation.configurationSha256);
+    selections.push([part.partId, observation.selectionSha256]);
+    for (const key of LF7_WATER_ROUTING_COUNTERS) counts[key] += observation.counts[key];
+    const routed = new Map(row.record.hourly.map(hour => [hour.time, hour]));
+    const computed = new Map(row.scores.map(hour => [hour.time, hour.weather]));
+    for (let offset = 0; offset < 118; offset++) {
+      const time = new Date(Date.parse(referenceAt) + offset * 3_600_000).toISOString();
+      const left = routed.get(time), right = computed.get(time);
+      computedValues.push([part.partId, time, right?.waterLevelCm ?? null, right?.waterLevelTrendCm3h ?? null]);
+      if (!left || !right || (left.waterLevelCm ?? null) !== (right.waterLevelCm ?? null)
+        || (left.waterLevelTrendCm3h ?? null) !== (right.waterLevelTrendCm3h ?? null)) counts.computedValueMismatchHours++;
+    }
+  }
+  return { schemaVersion: 1, kind: 'LF7_WATER_ROUTING_OBSERVATION', referenceAt,
+    expectedPartCount: expected.length, observedPartCount, expectedPartHours: expected.length * 118,
+    configurationSha256: configurations.size === 1 ? [...configurations][0] : null,
+    selectionSha256: sourceDigest(Buffer.from(JSON.stringify(selections.sort((a,b) => a[0].localeCompare(b[0]))))),
+    computedValuesSha256: sourceDigest(Buffer.from(JSON.stringify(computedValues.sort((a,b) => a[0].localeCompare(b[0]) || a[1].localeCompare(b[1]))))), counts };
+}
+
 function routedWaterLevelSource(sourceRows,rows,method,referenceAt=null){
   const sources=sourceRows.map(row=>row?.sources?.waterLevel).filter(source=>source?.provider==='dmi'&&source.collection&&source.modelRun);
   if(sources.length!==sourceRows.length)return {provider:'dmi',fallback:false,routing:'dmi-water-source-interpolation',provenanceStatus:'incomplete'};
@@ -418,7 +499,11 @@ export function applyVerifiedWaterSourceRoutingToPartHourly({
       previousDiagnostic: previousRoutingDiagnostic,
       productionReferenceAt: diagnosticReferenceAt,
     }) : null;
-  if (!rows.length) return { hourly, appliedHours: 0, diagnostic: diagnostic(hourly) };
+  const decisions = new Map();
+  const observation = routedHourly => observeLf7Routing({ part, zoneId, hourly, routedHourly,
+    rows, method, routing, referenceAt: diagnosticReferenceAt, decisions });
+  if (!rows.length) return { hourly, appliedHours: 0, diagnostic: diagnostic(hourly),
+    waterRoutingObservation: observation(hourly) };
   let appliedHours = 0;
   const routedHourly = hourly.map(hour => {
     const timeMs = Date.parse(hour?.time ?? '');
@@ -431,6 +516,9 @@ export function applyVerifiedWaterSourceRoutingToPartHourly({
     const futureTime = new Date(timeMs + 3 * 3_600_000).toISOString();
     const futureRows = sourceMaps.map(map => map.get(futureTime));
     const trendKnown = verifiedWaterSourceTrendKnown(sourceRows, futureRows, zoneId);
+    // Record the predicate actually used above, without calculating another trend.
+    if (lf7WaterOnlyZone(zoneId)) decisions.set(hour.time, { trendKnown,
+      lfWater: sourceRows.some(row => row.sources.waterLevel.collection === 'dkss_lf') });
     const futureValue = trendKnown ? round(futureRows.reduce((sum, sourceRow, i) =>
       sum + sourceRow.waterLevelCm * rows[i].weight, 0), 0) : null;
     const provenance = {
@@ -450,7 +538,8 @@ export function applyVerifiedWaterSourceRoutingToPartHourly({
       sources: { ...(hour.sources ?? {}), waterLevel: provenance },
     };
   });
-  return { hourly: routedHourly, appliedHours, diagnostic: diagnostic(routedHourly) };
+  return { hourly: routedHourly, appliedHours, diagnostic: diagnostic(routedHourly),
+    waterRoutingObservation: observation(routedHourly) };
 }
 
 export function applyWaterSourceRouting({features,output,forecastStore,sources,index,routing,haversineKm,generatedAt}){

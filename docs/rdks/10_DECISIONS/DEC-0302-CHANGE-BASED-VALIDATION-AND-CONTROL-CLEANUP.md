@@ -4,6 +4,13 @@ En allerede centralt afsluttet almindelig Pages-prognose kvalificeres som en skr
 
 Readiness-prøvens positive matrix bruger nu sin faktisk committed forgænger og aktuelle checkout i samme familie. Den normale produktlæser skal først bevise uændrede PostgreSQL-, C/I/T- og kontrolinput på det rene træ. De tidligere 598-originaler bevares som afslag mod den aktuelle familie; deres tidligere positive bevis gælder fortsat kun deres oprindelige kontekst. Ingen produktguard eller kontrakt ændres af testkonteksten.
 
+## Naturligt testansvar for vandstandsrouting og normal vejrproduktion
+
+Den eksisterende CURRENT-plan har permanent ansvar for de konkrete routing-, updater- og runtime-auditfiler. Routingbiblioteket vælger både de hele vandstandsmål og runtime-auditmål, fordi auditten importerer dets tællere og konfigurationsbinding. Den normale updater vælger desuden sine eksisterende bredere kaldermål. Der oprettes ingen ny testvej, per-head-kohorte eller manuel spring-over-regel.
+
+Den normale wireupprøve køres som sit allerede kendte hele solomål, så den eksisterende credentialfri Copernicus-forberedelse faktisk udføres. De fire øvrige filer fra den tidligere fælles Nodekommando køres samlet én gang; wireup gentages ikke. Den hele nationale runtime-audit beholdes ufiltreret. Ukendte, beskyttede, tilføjede, slettede eller modeændrede produktinput bevarer deres normale udvidede kontrol eller afslag.
+
+Registreringen kræver frisk uafhængig kontrolgennemgang. Den eksisterende kapacitetskontrol køres før målene, og alle kvitterings-, proces- og tidsgrænser bevares. Lokal selektion eller en lokal hel runtimeprøve er ikke præcis kilde-CI, installation eller faktisk revisionsaccept i en almindelig vejrkørsel.
 ## CI-hint til SDK må ikke følge isoleret PostgreSQL- og nationalprøve
 
 Den tidligere SDK-klargøring gemmer stien til Node24 i RAVRADAR_SOURCE_NODE24. Skiftet tilbage til Node22 fjerner ikke jobvariablen. Den isolerede PostgreSQL- og nationalprøve afviser korrekt enhver ukendt RAVRADAR_-override; hintet kunne derfor stoppe den normale prøve før SQL, selv efter bestået kildekontrol.

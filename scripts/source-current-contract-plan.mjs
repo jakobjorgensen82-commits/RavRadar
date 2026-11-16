@@ -127,6 +127,41 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
   ownerErasure:[
     'node --test scripts/test-delete-trip-owner-data-readback.mjs',
   ],
+  waterSourceRouting:[
+    "node scripts/test-water-source-forecast-routing-4.0.100.mjs",
+    "node scripts/test-water-source-automatic-selection-4.0.101.mjs",
+    "node scripts/test-water-source-production-chain-4.0.103.mjs",
+    "node scripts/test-water-regressions-4.0.104.mjs"
+  ],
+  weatherUpdater:[
+    "node scripts/test-dmi-acquisition-resilience.mjs",
+    "node scripts/test-dmi-forecast-store.mjs",
+    "node scripts/test-dmi-part-continuity.mjs",
+    "node scripts/test-dmi-marine-run-seam-recovery.mjs",
+    "node scripts/test-dmi-bulk-storage.mjs",
+    "node --test scripts/test-current-operational-python-contracts.mjs scripts/test-dmi-bulk-forecast-integration.mjs scripts/test-dmi-protected-tuple-continuity.mjs scripts/test-protected-live-current-assembly.mjs",
+    "node --test scripts/test-weather-component-normal-wireup.mjs",
+    "node scripts/test-weather-acquisition-workflows.mjs",
+    "node scripts/test-current-operational-live-adapter.mjs",
+    "node scripts/test-public-weather-continuity.mjs",
+    "node scripts/test-bounded-json-writer.mjs",
+    "node scripts/test-private-conditions-hourly.mjs",
+    "node scripts/test-bounded-conditions-predecessor-transition.mjs",
+    "node --test scripts/test-public-hour-delivery-pack.mjs scripts/test-progressive-public-conditions-4.0.216.mjs scripts/test-public-nonblocking-forecast-4.0.83.mjs scripts/test-map-zoom-refresh-4.0.88.mjs scripts/test-public-search-pages.mjs",
+    "node --test scripts/test-current-provenance-sealing.mjs",
+    "node --test scripts/test-ravscore-integrated-generator.mjs scripts/test-ravscore-recovery-replay.mjs scripts/test-score-prognosis-plain-copy.mjs scripts/test-ravscore-initial-current-window-audit.mjs scripts/test-saved-current-window-scratch.mjs scripts/test-post-h0-dmi-original-dependencies.mjs scripts/test-saved-current-forward-original-plan.mjs",
+    "node scripts/test-ravscore-production-adapters.mjs",
+    "node scripts/test-runtime-diagnostics-envelope-4.0.234.mjs",
+    "node scripts/test-admin-config-production-contract-4.0.94.mjs",
+    "node --test scripts/test-weather-component-runtime.mjs scripts/test-open-meteo-part-bank.mjs scripts/test-open-meteo-part-runtime.mjs scripts/test-open-meteo-normal-component-chain.mjs"
+  ],
+  runtimeAudit:[
+    "node scripts/test-ravscore-public-runtime-contract.mjs",
+    "node scripts/test-ravscore-public-data-service-binding.mjs",
+    "node scripts/test-ravscore-integrated-public-runtime-audit.mjs",
+    "node scripts/test-ravscore-integrated-public-consumers.mjs",
+    "node scripts/test-ravscore-public-browser-closure.mjs"
+  ],
   // Shared capture/SAVE/restore, authenticated audit and local installation.
   // The ordinary package group plus its actual caller contracts run in full.
   weatherProgressRecovery:[
@@ -305,6 +340,21 @@ const PATH_AREAS=freeze({
     'supabase/functions/_shared/trip-owner-erasure.js',
     'scripts/test-delete-trip-owner-data-readback.mjs',
   ],
+  waterSourceRouting:[
+    "scripts/lib/water-source-forecast-routing.mjs",
+    "scripts/test-water-source-forecast-routing-4.0.100.mjs",
+    "scripts/test-water-source-production-chain-4.0.103.mjs",
+    "scripts/update-weather.mjs"
+  ],
+  weatherUpdater:[
+    "scripts/update-weather.mjs"
+  ],
+  runtimeAudit:[
+    "scripts/audit-ravscore-integrated-public-runtime.mjs",
+    "scripts/test-ravscore-integrated-public-runtime-audit.mjs",
+    "scripts/update-weather.mjs",
+    "scripts/lib/water-source-forecast-routing.mjs"
+  ],
   weatherProgressRecovery:[
     'scripts/weather-component-progress-cache.mjs',
     'scripts/test-weather-component-progress-cache.mjs',
@@ -341,6 +391,7 @@ const PATH_AREAS=freeze({
     'scripts/lib/source-impact-domain-owners-598.json',
   ],
 });
+const WEATHER_OPERATION_PATHS=new Set([...PATH_AREAS.waterSourceRouting,...PATH_AREAS.weatherUpdater,...PATH_AREAS.runtimeAudit]);
 const RELEASE_METADATA_PATHS=new Set(PATH_AREAS.releaseMetadata);
 const WEATHER_PROGRESS_RECOVERY_PATHS=new Set(PATH_AREAS.weatherProgressRecovery);
 const SMALL_USER_CONTRACT_PATHS=new Set([...PATH_AREAS.sharing,...PATH_AREAS.ownerErasure]);
@@ -875,6 +926,9 @@ export function planSourceCurrentContractsFromGit(input){
       if(['scripts/admin-document-history-maintenance.mjs','scripts/test-admin-document-history-maintenance.mjs'].includes(file)
         &&(row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'))
         return refuse('CURRENT_ADMIN_HISTORY_REQUIRES_EXISTING_REGULAR_SOURCE');
+      if(WEATHER_OPERATION_PATHS.has(file)
+        &&(row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'))
+        return refuse('CURRENT_WEATHER_OPERATION_REQUIRES_EXISTING_REGULAR_SOURCE');
       if(RELEASE_METADATA_PATHS.has(file)
         &&(row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'))
         return refuse('CURRENT_RELEASE_METADATA_REQUIRES_EXISTING_REGULAR_SOURCE');
@@ -910,7 +964,7 @@ export function planSourceCurrentContractsFromGit(input){
         pathAreas.get(file)??(/^docs\/(?:rdks|ai|handbook)\/.+\.md$/.test(file)?['documentation']:null));
       if(!areas){unknown.push(file);continue;}
       for(const area of areas){if(!selected.has(area))selected.set(area,[]);selected.get(area).push(file);}
-      if(sourceControlPaths.has(file)||historicalPaths.has(file)||areas.includes('compatibility')||areas.includes('assistantEdge')||areas.includes('mailOwnerProbe')||areas.includes('currentInstalledCodeOnly')||areas.includes('workflowSupport')||areas.includes('weatherPublication')||areas.includes('dmiBudget')||areas.includes('dmiCollectionRecovery')||areas.includes('adminHistory')||areas.includes('sharing')||areas.includes('releaseMetadata')||areas.includes('ownerErasure')||areas.includes('weatherProgressRecovery')||areas.includes('ownedCacheNative')||file.startsWith('scripts/test-'))
+      if(WEATHER_OPERATION_PATHS.has(file)||sourceControlPaths.has(file)||historicalPaths.has(file)||areas.includes('compatibility')||areas.includes('assistantEdge')||areas.includes('mailOwnerProbe')||areas.includes('currentInstalledCodeOnly')||areas.includes('workflowSupport')||areas.includes('weatherPublication')||areas.includes('dmiBudget')||areas.includes('dmiCollectionRecovery')||areas.includes('adminHistory')||areas.includes('sharing')||areas.includes('releaseMetadata')||areas.includes('ownerErasure')||areas.includes('weatherProgressRecovery')||areas.includes('ownedCacheNative')||file.startsWith('scripts/test-'))
         out.controlQualificationRequired=true;
     }
     if(unknown.length){out.unclassifiedPaths=unknown.sort();return refuse('CURRENT_UNCLASSIFIED_PATH');}

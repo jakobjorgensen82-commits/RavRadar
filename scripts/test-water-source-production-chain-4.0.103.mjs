@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
-import { applyWaterSourceRouting, buildWaterSourceForecastIndex, applyWaterSourceForecastStatus } from './lib/water-source-forecast-routing.mjs';
+import { applyWaterSourceRouting, buildWaterSourceForecastIndex, applyWaterSourceForecastStatus, applyVerifiedWaterSourceRoutingToPartHourly, summarizeLf7WaterRouting } from './lib/water-source-forecast-routing.mjs';
 import { recommendWaterStationBracket } from '../js/core/water-station-routing.js';
 import { readProductionWorkflowSource } from './lib/production-workflow-sources.mjs';
 import { dmiWaterSourceFixture } from './test-helpers/dmi-water-source-fixture.mjs';
@@ -80,3 +80,28 @@ assert.doesNotMatch(updater,/forecast_days:\s*'5'/,'Five calendar days truncate 
 assert.match(updater,/water-source-audit\.json/,'Vejrkørslen skal skrive en fuld audit af alle vandstandskilder.');
 
 console.log('OK: Pages-sikkerhed, geografiske vægte, automatisk routing, administratoroverride og produceret time-for-time-serie er regressionstestet samlet.');
+
+{
+  const zones=['DK-B01-01','DK-B01-02','DK-B02-08','DK-B02-09','DK-B02-11','DK-B03-01','DK-B03-02'];
+  const referenceAt=new Date(generatedAt).toISOString(), contract={zones:{}}, rows=[];
+  const config={zones:Object.fromEntries(zones.map(zone=>[zone,{enabled:true,requireAll:true,
+    stations:[{sourceKey:sources[0].sourceKey,weight:1}],method:'manual-weights'}]))};
+  for(const zoneId of zones){
+    const part={zoneId,partId:zoneId+'-synthetic',waterPoint:point};contract.zones[zoneId]=[part];
+    const hourly=Array.from({length:121},(_,i)=>({time:new Date(Date.parse(referenceAt)+i*3600000).toISOString(),waterLevelCm:null}));
+    const routed=applyVerifiedWaterSourceRoutingToPartHourly({part,parentFeature:{properties:{id:zoneId}},
+      hourly,sources:aware,index,routing:config,haversineKm,diagnosticReferenceAt:referenceAt});
+    rows.push({...part,record:{hourly:routed.hourly},waterRoutingObservation:routed.waterRoutingObservation,
+      scores:routed.hourly.slice(0,118).map(hour=>({time:hour.time,weather:{waterLevelCm:hour.waterLevelCm,waterLevelTrendCm3h:hour.waterLevelTrendCm3h}}))});
+  }
+  const summary=summarizeLf7WaterRouting(rows,contract,referenceAt);
+  assert.equal(summary.expectedPartCount,7);assert.equal(summary.observedPartCount,7);
+  assert.equal(summary.counts.observedHours,7*118);assert.equal(summary.counts.computedValueMismatchHours,0);
+  rows[0].scores[0].weather.waterLevelCm+=1;
+  assert.equal(summarizeLf7WaterRouting(rows,contract,referenceAt).counts.computedValueMismatchHours,1,
+    'Observe already computed output; do not recompute a score to hide a mismatch');
+  assert.match(updater,/waterRoutingObservation: routedWater\.waterRoutingObservation/);
+  assert.match(updater,/waterRoutingAudit: summarizeLf7WaterRouting\(partRows, contract, partForecastStartAt\)/);
+  assert.match(updater,/buildRuntimeDiagnostics\(output, weatherHealth, coastalPartScoreBuild\?\.waterRoutingAudit \?\? null\)/);
+}
+console.log('LF7_NORMAL_PRODUCER_AUDIT: all seven current part contexts reach existing private diagnostics; actual computed-value mismatch is visible.');
