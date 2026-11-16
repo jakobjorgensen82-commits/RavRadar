@@ -977,7 +977,15 @@ try{
     return text(root,['mktree','--missing','-z'],kept.map(row=>`${row.mode} ${row.type} ${row.oid}\t${row.name}\0`).join(''));
   }
   const protectedTree=selectedTree(referenceTree);
-  const targetFiles=[...new Set(Object.values(CURRENT_CONTRACT_COMMANDS).flat().flatMap(command=>command.split(' ').filter(part=>part.endsWith('.mjs'))))];
+  // The producer/consumer protocol below executes its own declared scenarios.
+  // Weather and historical-updater owners use the separate planning-only Git
+  // fixture below and their real complete targets run in ordinary source CI.
+  // Do not enlarge every historical protocol tree with unused fake weather
+  // executables merely because the permanent command catalogue grows.
+  const planningOnlyWeatherAreas=new Set(['waterSourceRouting','weatherUpdater','runtimeAudit','historicalUpdaterOracles']);
+  const protocolCommands=Object.entries(CURRENT_CONTRACT_COMMANDS)
+    .filter(([area])=>!planningOnlyWeatherAreas.has(area)).flatMap(([,commands])=>commands);
+  const targetFiles=[...new Set(protocolCommands.flatMap(command=>command.split(' ').filter(part=>part.endsWith('.mjs'))))];
   assert(targetFiles.length>0);for(const file of targetFiles)assert(!protectedFiles.has(file),'A synthetic target must never replace143/CIT: '+file);
   const tiny=()=>Buffer.from("import fs from 'node:fs';\n"
     +"fs.mkdirSync('.cache',{recursive:true});\n"
@@ -2171,3 +2179,241 @@ console.log(JSON.stringify({kind:'SYNTHETIC_CURRENT_V4_PRODUCER_CONSUMER_INTEGRA
   genuineProtected148AndCIT:true,frozenAnchors:16,plannerMock:false,productSourceTestsExecuted:false,
   actualSqlOrSqliteExecuted:false,actualGitHubOrFullQualification:false,actualCurrentAfter598SourceVerified,
   network:false,production:false,deliveryAuthority:false}));
+
+// BEGIN FOCUSED WEATHER OPERATION OWNER CASES
+// Real current Git input; plans/receipt capacity only, never native or source PASS.
+{
+const gitEnvironment={...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_OPTIONAL_LOCKS:'0',
+  GIT_TERMINAL_PROMPT:'0',GIT_AUTHOR_NAME:'Synthetic current-contract protocol',GIT_AUTHOR_EMAIL:'fixture@example.invalid',
+  GIT_COMMITTER_NAME:'Synthetic current-contract protocol',GIT_COMMITTER_EMAIL:'fixture@example.invalid',
+  GIT_AUTHOR_DATE:'2026-11-12T09:00:00Z',GIT_COMMITTER_DATE:'2026-11-12T09:00:00Z'};
+const git=(where,args,input)=>execFileSync('git',['-C',where,...args],{input,env:gitEnvironment,
+  timeout:30000,maxBuffer:256*1024*1024,stdio:['pipe','pipe','pipe']});
+const text=(where,args,input)=>git(where,args,input).toString('utf8').trim();
+  const temp=fs.realpathSync(os.tmpdir()),root=fs.mkdtempSync(path.join(temp,'rr-weather-operation-owner-'));
+  const owned=fs.lstatSync(root,{bigint:true});
+const commandRows=tree=>git(root,['ls-tree','-z',tree]).toString('utf8').split('\0').filter(Boolean).map(line=>{
+  const m=/^(\d{6}) (blob|tree) ([a-f0-9]{40})\t(.+)$/.exec(line);assert(m);return{mode:m[1],type:m[2],oid:m[3],name:m[4]};});
+function rewrite(tree,changes){
+  const entries=tree?commandRows(tree):[],groups=new Map();
+  for(const[file,body]of changes){const[name,...tail]=file.split('/'),group=groups.get(name)??[];group.push([tail.join('/'),body]);groups.set(name,group);}
+  for(const[name,group]of groups){const prior=entries.find(row=>row.name===name),next=group[0][0]===''
+    ?{name,mode:prior?.mode??'100644',type:'blob',oid:text(root,['hash-object','-w','--stdin'],group[0][1])}
+    :{name,mode:'040000',type:'tree',oid:rewrite(prior?.oid,group)};
+    if(prior)entries.splice(entries.indexOf(prior),1);entries.push(next);}
+  return text(root,['mktree','--missing','-z'],entries.map(row=>`${row.mode} ${row.type} ${row.oid}\t${row.name}\0`).join(''));
+}
+const commit=(tree,parents,label)=>text(root,['commit-tree',tree,...parents.flatMap(parent=>['-p',parent]),'-m',label]);
+const checkout=commitId=>git(root,['reset','--hard',commitId]);
+  const pointHead=id=>git(root,['update-ref','HEAD',id]);
+  const controlSources=new Set(),fixtureControlBytes=file=>fs.readFileSync(path.join(SOURCE,file));
+function collect(file){
+  if(controlSources.has(file))return;
+  const sourceFile=path.resolve(SOURCE,file),relative=path.relative(SOURCE,sourceFile);
+  assert(relative&&!path.isAbsolute(relative)&&relative!=='..'&&!relative.startsWith('..'+path.sep));
+  controlSources.add(file);
+  const body=fixtureControlBytes(file).toString('utf8'),url=pathToFileURL(sourceFile);
+  for(const match of body.matchAll(/^import\b[^;]*?\bfrom\s*['"](\.[^'"]+)['"]/gm)){
+    const dep=fileURLToPath(new URL(match[1],url)),name=path.relative(SOURCE,dep).split(path.sep).join('/');
+    collect(name);
+  }
+}
+  try{
+    const sourceHead=text(SOURCE,['rev-parse','HEAD']);
+    assert.match(sourceHead,/^[a-f0-9]{40}$/);
+    git(root,['init','-q']);git(root,['config','core.autocrlf','false']);
+    // Only existing local object addresses are shared for reading. All newly
+    // made fixture objects/index/HEAD belong to this owned temporary repository.
+    const objects=fs.realpathSync(path.resolve(SOURCE,text(SOURCE,['rev-parse','--git-path','objects'])));
+    fs.writeFileSync(path.join(root,'.git/objects/info/alternates'),objects.replaceAll('\\','/')+'\n');
+    assert.equal(text(root,['cat-file','-t',sourceHead]),'commit');
+    collect('scripts/source-current-contract-plan.mjs');
+    collect('scripts/source-current-contract-receipt.mjs');
+    for(const file of [...controlSources,'package.json','version.json',
+      ...['594','597','598'].map(version=>'scripts/lib/source-impact-domain-inputs-'+version+'.json'),
+      'scripts/test-source-current-contracts.mjs']){
+      const target=path.join(root,file);fs.mkdirSync(path.dirname(target),{recursive:true});
+      fs.writeFileSync(target,fixtureControlBytes(file));
+    }
+    git(root,['read-tree',sourceHead]);
+    git(root,['add','--','scripts/source-current-contract-plan.mjs','scripts/test-source-current-contracts.mjs']);
+    const seedTree=text(root,['write-tree']),seed=commit(seedTree,[sourceHead],'synthetic current weather owner controls');pointHead(seed);
+    const {planSourceCurrentContractsFromGit:plan}=await import(pathToFileURL(path.join(root,'scripts/source-current-contract-plan.mjs')).href);
+    const receipt=await import(pathToFileURL(path.join(root,'scripts/source-current-contract-receipt.mjs')).href);
+    const {expandSourceCommands}=await import(pathToFileURL(path.join(SOURCE,'scripts/validate-source-once.mjs')).href);
+    const scripts=JSON.parse(fixtureControlBytes('package.json')).scripts;
+    const expectedWater=['node scripts/test-water-source-forecast-routing-4.0.100.mjs',
+      'node scripts/test-water-source-automatic-selection-4.0.101.mjs','node scripts/test-water-source-production-chain-4.0.103.mjs',
+      'node scripts/test-water-regressions-4.0.104.mjs'];
+    const expectedRuntime=expandSourceCommands(scripts,'test:ravscore-integrated-public');
+    const expectedUpdater=[...expandSourceCommands(scripts,'test:weather-source-critical').filter(command=>command.startsWith('node ')).flatMap(command=>
+        command.includes('scripts/test-current-operational-python-contracts.mjs')&&command.includes('scripts/test-weather-component-normal-wireup.mjs')
+          ?[command.replace(' scripts/test-weather-component-normal-wireup.mjs',''),'node --test scripts/test-weather-component-normal-wireup.mjs']:[command]),
+      expandSourceCommands(scripts,'test:ravscore-source-critical').find(command=>command.startsWith('node --test scripts/test-ravscore-integrated-generator.mjs ')),
+      'node scripts/test-ravscore-production-adapters.mjs','node scripts/test-runtime-diagnostics-envelope-4.0.234.mjs',
+      'node scripts/test-admin-config-production-contract-4.0.94.mjs',
+      expandSourceCommands(scripts,'test:provider-continuity').find(command=>command.startsWith('node --test scripts/test-weather-component-runtime.mjs '))];
+    assert.equal(expectedUpdater.length,20);assert(expectedUpdater.every(Boolean));
+    assert(expectedUpdater.includes('node --test scripts/test-weather-component-normal-wireup.mjs'));
+    const once=['scripts/test-current-operational-python-contracts.mjs','scripts/test-dmi-bulk-forecast-integration.mjs',
+      'scripts/test-weather-component-normal-wireup.mjs','scripts/test-dmi-protected-tuple-continuity.mjs','scripts/test-protected-live-current-assembly.mjs'];
+    for(const file of once)assert.equal(expectedUpdater.flatMap(command=>command.split(' ')).filter(word=>word===file).length,1,
+      'Each normal file runs once, with the recognized solo scalar preparation');
+    assert.deepEqual(CURRENT_CONTRACT_COMMANDS.waterSourceRouting,expectedWater);
+    assert.deepEqual(CURRENT_CONTRACT_COMMANDS.runtimeAudit,expectedRuntime);
+    assert.deepEqual(CURRENT_CONTRACT_COMMANDS.weatherUpdater,expectedUpdater);
+    assert(expectedRuntime.includes('node scripts/test-ravscore-integrated-public-runtime-audit.mjs'));
+    const expectedHistoricalUpdater=[
+      expectedUpdater.find(command=>command.startsWith('node --test scripts/test-ravscore-integrated-generator.mjs ')),
+      'node --test scripts/test-weather-update-entrypoint.mjs',
+      'node scripts/test-weather-history-retention-4.0.209.mjs',
+      'node --test scripts/test-audit-saved-weather-inputs.mjs',
+    ];
+    assert(expectedHistoricalUpdater.every(Boolean));
+    assert.deepEqual(CURRENT_CONTRACT_COMMANDS.historicalUpdaterOracles,expectedHistoricalUpdater);
+    const historicalUpdaterOwners={
+      'scripts/lib/archived-weather-restart-updater-test-input.mjs':expectedHistoricalUpdater,
+      'scripts/test-post-h0-dmi-original-dependencies.mjs':[expectedHistoricalUpdater[0]],
+      'scripts/test-ravscore-initial-current-window-audit.mjs':[expectedHistoricalUpdater[0]],
+      'scripts/test-ravscore-integrated-generator.mjs':[expectedHistoricalUpdater[0]],
+      'scripts/test-ravscore-recovery-replay.mjs':[expectedHistoricalUpdater[0]],
+      'scripts/test-weather-update-entrypoint.mjs':[expectedHistoricalUpdater[1]],
+      'scripts/test-weather-history-retention-4.0.209.mjs':[expectedHistoricalUpdater[2]],
+    };
+    const ownerAreas={
+      'scripts/lib/water-source-forecast-routing.mjs':['waterSourceRouting','runtimeAudit'],
+      'scripts/test-water-source-forecast-routing-4.0.100.mjs':['waterSourceRouting'],
+      'scripts/test-water-source-production-chain-4.0.103.mjs':['waterSourceRouting'],
+      'scripts/audit-ravscore-integrated-public-runtime.mjs':['runtimeAudit'],
+      'scripts/test-ravscore-integrated-public-runtime-audit.mjs':['runtimeAudit'],
+      'scripts/update-weather.mjs':['waterSourceRouting','weatherUpdater','runtimeAudit'],
+    };
+    const paths=Object.keys(ownerAreas),bytes=new Map(paths.map(file=>[file,fixtureControlBytes(file)]));
+    const run=(before,after)=>{pointHead(after);return plan({baselineCommit:before,candidateCommit:after,expectedHead:after});};
+    // A closed current Git child covers every owner plus normal docs/controls.
+    // This does not depend on a previous release/head or fabricate a baseline.
+    const budgetFiles=[...paths,...Object.keys(historicalUpdaterOwners),'CHANGELOG.md','scripts/source-current-contract-plan.mjs','scripts/test-source-current-contracts.mjs'];
+    const budgetChanges=budgetFiles.map(file=>[file,Buffer.concat([bytes.get(file)??fixtureControlBytes(file),
+      Buffer.from('\n// Synthetic bounded owner-budget delta\n')])]);
+    const prior=seed,budgetHead=commit(rewrite(seedTree,budgetChanges),[seed],'synthetic complete current weather owner budget');
+    const budgetPlan=run(prior,budgetHead);
+    assert.equal(budgetPlan.selection,'CURRENT_CONTRACTS',JSON.stringify(budgetPlan));
+    assert(budgetPlan.commands.length<=128);assert.equal(Object.keys(budgetPlan.areas).length<=32,true);
+    const beforeTree=text(root,['rev-parse',prior+'^{tree}']),repository='jakobjorgensen82-commits/RavRadar',max=Number.MAX_SAFE_INTEGER;
+    // Existing FULL/frontier header format, with conservative maximum numeric
+    // widths and fixed-width digest DATA solely for byte budgeting. No receipt,
+    // command result or externally qualified baseline is manufactured here.
+    const fullBaseline={schemaVersion:1,kind:'RAVRADAR_SOURCE_IMPACT_FULL_BASELINE_V1',scope:'FULL_SOURCE',
+      repository,mergeCommit:prior,producerHead:prior,gitTree:beforeTree,sourceTreeSha256:'sha256:'+'a'.repeat(64),
+      pullRequest:max,runId:max,runAttempt:1,jobId:max,finalArtifactId:max,finalArtifactDigest:'sha256:'+'b'.repeat(64),
+      finalProofSha256:'c'.repeat(64),nativeArtifactId:max,nativeArtifactDigest:'sha256:'+'d'.repeat(64),
+      historicalNationalScope:'HISTORICAL_584_NATIONAL_ONLY',providerOrProductionProof:false};
+    const current={repository,head:budgetHead,sourceTreeSha256:'sha256:'+'e'.repeat(64),pullRequest:max,
+      runId:max-1,runAttempt:1,jobId:max};
+    const capacity=receipt.assertCurrentChangeReceiptCapacity({current,fullBaseline,
+      changeBase:{commit:prior,gitTree:beforeTree,pullBaseCommit:prior},currentPlan:budgetPlan,cumulativePlan:budgetPlan,
+      frontier:{schemaVersion:1,kind:'QUALIFIED_CHANGE_FRONTIER',mode:'FULL',repository,commit:prior,gitTree:beforeTree,
+        sourceTreeSha256:fullBaseline.sourceTreeSha256,sourceRecord:null,sourceProofTime:null,missingReason:'MISSING'}});
+    assert.equal(capacity.receiptCreated,false);assert.equal(capacity.actualCommandResults,false);
+    console.log(JSON.stringify({kind:'WEATHER_OPERATION_RECEIPT_PREFLIGHT',commands:budgetPlan.commands.length,
+      maximumCommands:128,areas:Object.keys(budgetPlan.areas).length,maximumAreas:32,...capacity,scopeCasesStarted:0}));
+    let checked=0;
+    const positive=(selected,wanted,commands=null)=>{
+      assert.equal(selected.status,'PLANNED');assert.equal(selected.selection,'CURRENT_CONTRACTS');
+      assert.equal(selected.controlQualificationRequired,true);
+      assert.deepEqual(selected.protectedInputs,{postgresUnchanged:true,CUnchanged:true,IUnchanged:true,TUnchanged:true});
+      const areas=['core',...Object.keys(CURRENT_CONTRACT_COMMANDS).filter(area=>wanted.includes(area))];
+      assert.deepEqual(Object.keys(selected.areas),areas);
+      assert.deepEqual(selected.commands,commands??[...new Set(areas.flatMap(area=>CURRENT_CONTRACT_COMMANDS[area]))]);checked++;
+    };
+    const select=(files,label,extra=[])=>{
+      const changes=files.map(file=>[file,Buffer.concat([bytes.get(file)??fixtureControlBytes(file),Buffer.from('\n// Synthetic permanent weather owner delta\n')])]);
+      const child=commit(rewrite(seedTree,[...changes,...extra]),[seed],label);return run(seed,child);
+    };
+    for(const [file,areas]of Object.entries(ownerAreas)){
+      positive(select([file],'synthetic single natural weather owner'),areas);
+    }
+    positive(select(paths,'synthetic combined natural weather owners'),['waterSourceRouting','weatherUpdater','runtimeAudit']);
+    const mixed=select([...paths,'CHANGELOG.md','scripts/source-current-contract-plan.mjs','scripts/test-source-current-contracts.mjs'],
+      'synthetic mixed documentation and owner controls');
+    assert.equal(mixed.selection,'CURRENT_CONTRACTS');assert.equal(mixed.controlQualificationRequired,true);
+    assert.deepEqual(mixed.areas.sourceControls.commands,sourceControlCommandsForChangedInputs([
+      {path:'scripts/source-current-contract-plan.mjs',status:'M',beforeMode:'100644',afterMode:'100644'},
+      {path:'scripts/test-source-current-contracts.mjs',status:'M',beforeMode:'100644',afterMode:'100644'}]));
+    assert.equal(mixed.commands.length,new Set(mixed.commands).size);checked++;
+    for(const [file,reason]of [['scripts/unclassified-weather-operation.mjs','CURRENT_UNCLASSIFIED_PATH'],
+      ['js/core/ravscore-regime-memory.js','CURRENT_INPUT_ANALYSIS_INCOMPLETE']]){
+      const original=file.startsWith('js/')?git(root,['cat-file','blob',seed+':'+file]):Buffer.from('// Unknown adjacent source\n');
+      const rejected=select([paths[0]],'synthetic unsafe weather neighbour',[[file,Buffer.concat([original,Buffer.from('\n// Synthetic delta\n')])]]);
+      assert.equal(rejected.selection,'FULL');assert.deepEqual(rejected.commands,[]);assert.deepEqual(rejected.reasonCodes,[reason]);
+      assert.equal(rejected.authority,'PLANNING_ONLY');
+      for(const key of ['baselineQualified','skipAuthorized','productionAuthority'])assert.equal(rejected[key],false);checked++;
+    }
+    const updater='scripts/update-weather.mjs';
+    git(root,['read-tree',seedTree]);git(root,['update-index','--force-remove','--',updater]);
+    const absentTree=text(root,['write-tree']),absent=commit(absentTree,[seed],'synthetic absent normal updater');
+    const added=commit(seedTree,[absent],'synthetic newly added normal updater');
+    const blob=text(root,['rev-parse',seed+':'+updater]);git(root,['read-tree',seedTree]);
+    git(root,['update-index','--cacheinfo','100755,'+blob+','+updater]);
+    const executable=commit(text(root,['write-tree']),[seed],'synthetic executable updater mode');
+    for(const [before,after]of [[seed,absent],[absent,added],[seed,executable]]){
+      const rejected=run(before,after);assert.equal(rejected.selection,'FULL');assert.deepEqual(rejected.commands,[]);
+      assert.deepEqual(rejected.reasonCodes,['CURRENT_WEATHER_OPERATION_REQUIRES_EXISTING_REGULAR_SOURCE']);
+      assert.equal(rejected.authority,'PLANNING_ONLY');
+      for(const key of ['baselineQualified','skipAuthorized','productionAuthority'])assert.equal(rejected[key],false);checked++;
+    }
+    // BEGIN FOCUSED HISTORICAL UPDATER OWNER CASES
+    const historicalCaseStart=checked;
+    for(const [file,commands]of Object.entries(historicalUpdaterOwners)){
+      positive(select([file],'synthetic single historical updater input owner'),['historicalUpdaterOracles'],
+        [...CURRENT_CONTRACT_COMMANDS.core,...commands]);
+    }
+    const helper='scripts/lib/archived-weather-restart-updater-test-input.mjs';
+    const allHistorical=select(Object.keys(historicalUpdaterOwners),'synthetic complete historical updater owners');
+    positive(allHistorical,['historicalUpdaterOracles'],
+      [...CURRENT_CONTRACT_COMMANDS.core,...expectedHistoricalUpdater]);
+    assert.equal(allHistorical.commands.length,new Set(allHistorical.commands).size);
+    const historicalMixed=select([...Object.keys(historicalUpdaterOwners),'CHANGELOG.md',
+      'scripts/source-current-contract-plan.mjs','scripts/test-source-current-contracts.mjs'],
+      'synthetic historical input owners with documentation and controls');
+    assert.equal(historicalMixed.selection,'CURRENT_CONTRACTS');
+    assert.equal(historicalMixed.controlQualificationRequired,true);
+    assert.deepEqual(historicalMixed.areas.historicalUpdaterOracles.commands,expectedHistoricalUpdater);
+    assert.equal(historicalMixed.commands.length,new Set(historicalMixed.commands).size);checked++;
+    const unsafeHistorical=(selected)=>{
+      assert.equal(selected.selection,'FULL');assert.deepEqual(selected.commands,[]);
+      assert.equal(selected.authority,'PLANNING_ONLY');
+      for(const key of ['baselineQualified','skipAuthorized','productionAuthority'])assert.equal(selected[key],false);checked++;
+    };
+    unsafeHistorical(select([helper],'synthetic unknown historical helper neighbour',[
+      ['scripts/lib/unclassified-historical-updater-input.mjs',Buffer.from('// Unknown adjacent helper\n')]]));
+    for(const file of ['js/core/ravscore-regime-memory.js','supabase/schema.sql']){
+      const original=git(root,['cat-file','blob',seed+':'+file]);
+      unsafeHistorical(select([helper],'synthetic protected historical helper neighbour',
+        [[file,Buffer.concat([original,Buffer.from('\n// Synthetic protected drift\n')])]]));
+    }
+    for(const file of [helper,'scripts/test-weather-update-entrypoint.mjs']){
+      git(root,['read-tree',seedTree]);git(root,['update-index','--force-remove','--',file]);
+      const absentTree=text(root,['write-tree']),absent=commit(absentTree,[seed],'synthetic absent historical updater input');
+      const added=commit(seedTree,[absent],'synthetic newly added historical updater input');
+      const blob=text(root,['rev-parse',seed+':'+file]);git(root,['read-tree',seedTree]);
+      git(root,['update-index','--cacheinfo','100755,'+blob+','+file]);
+      const executable=commit(text(root,['write-tree']),[seed],'synthetic executable historical updater input');
+      for(const [before,after]of [[seed,absent],[absent,added],[seed,executable]])unsafeHistorical(run(before,after));
+    }
+    console.log(JSON.stringify({kind:'FOCUSED_HISTORICAL_UPDATER_OWNER_SELECTION_CASES',cases:checked-historicalCaseStart,
+      normalWholeCommands:expectedHistoricalUpdater.length,realIsolatedGit:true,actualTargetProcesses:0,
+      modelsAndSqlExecuted:false,wholeCurrentExecuted:false,independentReviewRequired:true,production:false}));
+    // END FOCUSED HISTORICAL UPDATER OWNER CASES
+    console.log(JSON.stringify({kind:'FOCUSED_NEW_WEATHER_OWNER_SELECTION_CASES',cases:checked,passed:checked,
+      realIsolatedGit:true,modelsAndSqlExecuted:false,wholeCurrentExecuted:false,production:false,
+      expectedUpdaterCommands:20,expectedWaterCommands:4,expectedRuntimeCommands:5,
+      wholeRuntimeAuditStillRequired:true,sourceInputProfile:budgetPlan.inputProfile.id}));
+  }finally{
+    assert.equal(path.dirname(fs.realpathSync(root)),temp);
+    const current=fs.lstatSync(root,{bigint:true});
+    assert.equal(current.dev,owned.dev);assert.equal(current.ino,owned.ino);assert.equal(current.birthtimeNs,owned.birthtimeNs);
+    fs.rmSync(root,{recursive:true,force:false});
+  }
+}
+// END FOCUSED WEATHER OPERATION OWNER CASES

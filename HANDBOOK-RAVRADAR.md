@@ -210,6 +210,34 @@ Autoriteten er version.json.releaseContract.modelBindings og de aktuelle generer
 
 ## 89.342 Kontrol af ændringer med en fast sikkerhedskerne
 
+### Lever uafhængige rettelser gennem deres faktiske kaldere
+
+En uafhængigt leveringsklar rettelse må ikke vente på en særskilt observations-, dokumentations- eller historisk prøverest. Del efter faktisk produktpåvirkning og nødvendige afhængigheder, mens alle oprindelige mål og reelle kendte fejl bevares. En uafklaret fejl i den berørte funktion må fortsat ikke omgås.
+
+Kode, der kun bruges ved GitHubs leverandørhentning eller i en isoleret backupprøve, kræver ingen særskilt Pages- eller Edge-udrulning, når app-, serverfunktions- og offentlige runtimefiler er uændrede. Leveringen følger stadig præcis kildekvalifikation, sikkert mergevindue og normal kvalifikation af faktisk main. Virkningen bevises derefter gennem den næste relevante normale kalder; kildegrøn er ikke faktisk vejrhentning eller originalgendannelse.
+
+### Historiske updaterinput og LF7-observation efter oprydning
+
+Historiske updaterprøver læser deres allerede faste SOURCE598-kilde og kontrollerer den mod scalar-prøvens eksisterende efterbillede, før de uændrede inverser bruges. Helfilkrav, mutationer og facit bevares uden ny headkohorte eller normalisering. Aktuelle produktgrene læser fortsat rå aktuel kode; den frosne followers-kalder og dens egne originale input ændres ikke.
+
+Den eksisterende testhelper har permanent CURRENT-ansvar for alle sine aktuelle forbrugere gennem de fire hele normale mål: den fælles syvfilskæde, updaterens entrypoint, historikretention og audit af gemt vejr. De seks kendte orakeltestblade vælger deres relevante hele mål; audit beholder også sin eksisterende ejer. Kommandoer deduplikeres. Kun ændring af en eksisterende almindelig fil får denne vej; nye, slettede, modeændrede, ukendte eller beskyttede input beholder FULL eller afslag og frisk uafhængig kontrolgennemgang. Nye planmål udvider ikke den gamle protokol-fixtures ubrugte kunstige filtræ.
+
+Den normale updater bevarer kun den allerede beregnede, begrænsede LF7-observation før den store produktions-/recoveryejer frigives. Den senere private diagnostik bruger denne lille metadata, mens ukendt observation fortsat er null. Den eksisterende production-chain-prøve udfører den rå aktuelle oprydning og diagnostikskrivning og kontrollerer både bevaret observation og fortsat null-ejer. Scoreregler, beregnede resultater, kildeprioritet, storejerens frigivelse og PG/C/I/T bevares.
+
+Dette er kildeforberedelse. Historiske input, lokale mål og en plan er ikke præcis samlet kildekvalifikation, PostgreSQL-eksekvering, installation eller faktisk LF7-/SOURCE-/T+3-dækning. Den næste normale generation skal stadig observeres og bindes til faktisk konfiguration og beregnede slutværdier; ukendt routing eller tidsstøtte må ikke kaldes komplet.
+
+### Forbered kun protokolprøvens egne kunstige mål
+
+Den gamle producer-/consumer-protokolprøve forbereder kun de kunstige mål, dens egne scenarier kan udføre. De separate aktuelle Git-prøver for vandstandsudvælgelse, updater og runtime-audit bevarer deres hele normale mållister og afslag; de rigtige produktprøver udføres fortsat af kildekontrollen. Fælles mål bevares også i protokol-fixturen. Dermed ændrer en ny katalogpost ikke unødigt alle ældre prøveinput. Ingen assertion, forventet fejl, normal produktkommando eller femminuttersgrænse ændres. Kildekvalifikation skal fortsat dokumentere faktisk afslutning af hele de valgte mål.
+
+### Naturligt testansvar for vandstandsrouting og normal vejrproduktion
+
+Den eksisterende CURRENT-plan har permanent ansvar for de konkrete routing-, updater- og runtime-auditfiler. Routingbiblioteket vælger både de hele vandstandsmål og runtime-auditmål, fordi auditten importerer dets tællere og konfigurationsbinding. Den normale updater vælger desuden sine eksisterende bredere kaldermål. Der oprettes ingen ny testvej, per-head-kohorte eller manuel spring-over-regel.
+
+Den normale wireupprøve køres som sit allerede kendte hele solomål, så den eksisterende credentialfri Copernicus-forberedelse faktisk udføres. De fire øvrige filer fra den tidligere fælles Nodekommando køres samlet én gang; wireup gentages ikke. Den hele nationale runtime-audit beholdes ufiltreret. Ukendte, beskyttede, tilføjede, slettede eller modeændrede produktinput bevarer deres normale udvidede kontrol eller afslag.
+
+Registreringen kræver frisk uafhængig kontrolgennemgang. Den eksisterende kapacitetskontrol køres før målene, og alle kvitterings-, proces- og tidsgrænser bevares. Lokal selektion eller en lokal hel runtimeprøve er ikke præcis kilde-CI, installation eller faktisk revisionsaccept i en almindelig vejrkørsel.
+
 ### Afgræns Node24-hintet før isoleret native-evidens
 
 Den tidligere SDK-klargøring gemmer stien til Node24 i RAVRADAR_SOURCE_NODE24. Skiftet tilbage til Node22 fjerner ikke jobvariablen. Den isolerede PostgreSQL- og nationalprøve afviser korrekt enhver ukendt RAVRADAR_-override; hintet kunne derfor stoppe den normale prøve før SQL, selv efter bestået kildekontrol.
@@ -2703,6 +2731,14 @@ Det eksisterende normale readiness-target består lokalt, også ved faktisk afve
 Før de faktiske godkendte læsninger kræves det nye heads præcise kildekontrol og sikker levering, eksakt main, første run-attempt, allerede grønt kildebevis, frisk kontrol af afsluttet writer og genkontrol af main. Snapshot er ikke en atomisk writerlease. Kun den valgte læsestep får den eksisterende Supabase-nøgle. Ingen nye nøgler, planer, tjenester, SQL-installation, produktionsskrivning eller ekstra vejrhentning følger. Alle fem hovedmål og den samlede revision er fortsat åbne; gamle DMI/T+3-afsnit bevares som historik.
 
 ## 89.213 Tre timers vandstandsændring på tværs af gemte banker
+
+### Aktuel observation i almindelig vejrproduktion
+
+Den eksisterende normale producent registrerer nu en afgrænset observation ved det faktisk udførte vandstandskildevalg og T+3-predikat. Observationen omfatter de faktiske underdele i de syv kystzoner og 118 offentlige timer; T+3 bruger de allerede validerede private støttetimer. Der beregnes ingen ekstra score eller trend, og kildevalg, numeriske værdier, strøm-/temperaturudelukkelse og øvrige Limfjordszoner bevares.
+
+Kun generationsmetadata, hash af den faktisk hydrerede routingkonfiguration, udvalgs-/slutværdi-hashes og faste tællere gemmes i den eksisterende private runtime-diagnostik. Den normale runtime-audit sammenholder samme generation, lokal konfiguration og allerede beregnede PART-værdier. Manglende, for gammel, ufuldstændig eller modstridende observation giver UNKNOWN eller observeret afvigelse. Der tilføjes ingen ny workflow, offentlig proveniens eller produktionsgate.
+
+OBSERVED_CONFORMANT betyder kun overensstemmelse i den observerede politik og de beregnede værdier. Dækning og sammenlignelige T+3-par rapporteres særskilt. Gamle generationer får ingen efterfølgende tilskrevet routingaccept. De normale lokale mål kvalificerer koden; præcis kildekvalifikation og faktisk observation i en efterfølgende almindelig vejrproduktion kræves før revisionsaccept. C/I/T, alle udstedte migrationer, scoreformel, central konfiguration og geodata bevares.
 
 En gyldig vandstand nu og en gyldig vandstand tre timer senere kan ligge i hver sin gemte kildebank. Den normale centrale SOURCE-routing skal kunne beregne forskellen, når de to punkter efter genlæsning er verificeret og samlet i det samme routede indeks. Den aktuelle række skal ikke allerede have en gammel trend, beregnet inden bankerne blev samlet.
 

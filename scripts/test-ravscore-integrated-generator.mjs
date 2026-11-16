@@ -1,6 +1,7 @@
 import { projectPagesClosureHistoricalTestInput as historicalPagesInput,
   readHistoricalPagesClosureWorkflowSources } from './lib/pages-closure-historical-test-input.mjs';
 import { inverseAlternativeCCaller } from './lib/alternative-c-caller-test-input.mjs';
+import { readHistoricalWeatherRestartUpdaterSource } from './lib/archived-weather-restart-updater-test-input.mjs';
 import assert from 'node:assert/strict';
 import { inverseCompletedRuntimeWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
 import { spawnSync } from 'node:child_process';
@@ -489,7 +490,7 @@ assert.throws(() => buildIntegratedPartScoreSeries({
 
 const updater = (await fs.readFile(new URL('./update-weather.mjs', import.meta.url), 'utf8'))
   .replaceAll('\r\n', '\n');
-const ordinaryUpdater = inverseAlternativeCCaller(updater, 'scripts/update-weather.mjs');
+const ordinaryUpdater = inverseAlternativeCCaller(readHistoricalWeatherRestartUpdaterSource(), 'scripts/update-weather.mjs');
 // Reuse only the existing pure inverse, not the entrypoint target's top-level tests.
 // Its whole-source SHA keeps these historical assertions bound to genuine 903307.
 const entrypointOracle = (await fs.readFile(

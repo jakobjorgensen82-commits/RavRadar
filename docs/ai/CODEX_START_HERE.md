@@ -1,5 +1,14 @@
 <!-- RAVRADAR_ACTIVE_ENTRY_START -->
 
+## LF7-observation, historiske prøveinput og uafhængig levering
+
+Den afgrænsede LF7-opfølgning observerer det normale vandstandskildevalg, T+3-støtte og beregnede slutværdier i de syv kystzoner. Den ændrer ikke kildevalg, strøm-/temperaturudelukkelse, interpolation, scoreformel, administratorpunkter eller geometri. Manglende eller modstridende observation mærkes ærligt; den bliver ikke en ny produktionsgate eller et bevis for komplet dækning.
+
+Historiske updaterorakler bruger deres eksisterende autentiske SOURCE598-original før de uændrede inverser. Aktuelle produktkaldere prøves fortsat på rå aktuel kode. De kendte helper-/kalderfiler vælger hele normale mål gennem permanent naturligt testansvar, og protokolprøven forbereder kun sine egne kunstige mål. Ukendte og beskyttede input beholder de normale udvidede kontroller.
+
+Kun den begrænsede LF7-metadata bevares før den store arbejdsejer frigives. Kildekvalifikation, faktisk installation og generationsbundet LF7-/SOURCE-/T+3-accept dokumenteres særskilt; lokale prøver eller en plan afslutter ikke revisionens syv krav eller målets øvrige områder.
+
+
 # Aktiv indgang til RavRadar
 
 Læs denne korte indgang og de fire aktive indgange nedenfor før arbejde. Stop den obligatoriske startlæsning ved deres historikmarkør. De uændrede daterede afsnit er opslagsmateriale; deres tidligere ord som »aktuel«, »næste« og »færdig« er ikke en ny opgave eller en beskrivelse af nuværende drift.

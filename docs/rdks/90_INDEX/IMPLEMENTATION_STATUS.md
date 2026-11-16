@@ -131,6 +131,15 @@ De konkrete controller-/kildeejere får naturligt sourceControls-ansvar med begg
 
 <!-- RAVRADAR_ACTIVE_ENTRY_START -->
 
+## LF7-observation, historiske prøveinput og uafhængig levering
+
+Den afgrænsede LF7-opfølgning observerer det normale vandstandskildevalg, T+3-støtte og beregnede slutværdier i de syv kystzoner. Den ændrer ikke kildevalg, strøm-/temperaturudelukkelse, interpolation, scoreformel, administratorpunkter eller geometri. Manglende eller modstridende observation mærkes ærligt; den bliver ikke en ny produktionsgate eller et bevis for komplet dækning.
+
+Historiske updaterorakler bruger deres eksisterende autentiske SOURCE598-original før de uændrede inverser. Aktuelle produktkaldere prøves fortsat på rå aktuel kode. De kendte helper-/kalderfiler vælger hele normale mål gennem permanent naturligt testansvar, og protokolprøven forbereder kun sine egne kunstige mål. Ukendte og beskyttede input beholder de normale udvidede kontroller.
+
+Kun den begrænsede LF7-metadata bevares før den store arbejdsejer frigives. Kildekvalifikation, faktisk installation og generationsbundet LF7-/SOURCE-/T+3-accept dokumenteres særskilt; lokale prøver eller en plan afslutter ikke revisionens syv krav eller målets øvrige områder.
+
+
 # Aktiv restliste
 
 ## Afsluttende Pages-oprydning med verificeret ejeradgang

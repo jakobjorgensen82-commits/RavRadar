@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import { deriveCurrentTransportHistory } from './lib/current-transport-history.mjs';
 import { inverseCurrentFamilyColdZoneHistoryTestInput, CURRENT_FAMILY_COLD_ZONE_HISTORY_TEST_REVIEW,
   inverseCurrentFamilyColdTargetTestInput, inverseArchivedWeatherRestartUpdater,
-  inverseFinalizedWeatherOwnersTestInput }
+  inverseFinalizedWeatherOwnersTestInput, readHistoricalWeatherRestartUpdaterSource }
   from './lib/archived-weather-restart-updater-test-input.mjs';
 import { ACTIVE_HISTORY_HOURS, RESEARCH_HISTORY_HOURS, attachVerifiedCurrentToSample, retainWeatherHistory } from './lib/weather-history-retention.mjs';
 import { buildPublicConditions } from './public-conditions-lib.mjs';
@@ -139,20 +139,21 @@ for (const field of ['windSpeedMps', 'windDirectionDeg', 'waveHeightM', 'waveDir
 }
 assert.match(projection, /if \(currentFamilyColdStart !== null\)/);
 assert.doesNotMatch(projection, /coldRequested|process\.env|coastalParts|checkpoint/);
+const historicalUpdater = readHistoricalWeatherRestartUpdaterSource();
 // The test-only outer inverse must recover the exact whole reviewed source;
 // every older whole-source oracle remains unchanged.
-const previousUpdater = inverseCurrentFamilyColdZoneHistoryTestInput(updater, 'scripts/update-weather.mjs');
+const previousUpdater = inverseCurrentFamilyColdZoneHistoryTestInput(historicalUpdater, 'scripts/update-weather.mjs');
 assert.equal(Buffer.byteLength(previousUpdater), CURRENT_FAMILY_COLD_ZONE_HISTORY_TEST_REVIEW.before.bytes);
 assert.equal(inverseCurrentFamilyColdZoneHistoryTestInput(previousUpdater, 'scripts/update-weather.mjs'), previousUpdater);
 const coldBefore = inverseCurrentFamilyColdTargetTestInput(previousUpdater, 'scripts/update-weather.mjs');
-assert.equal(inverseCurrentFamilyColdTargetTestInput(updater, 'scripts/update-weather.mjs'), coldBefore);
-assert.equal(inverseArchivedWeatherRestartUpdater(updater), inverseArchivedWeatherRestartUpdater(previousUpdater));
-const coldOracleInput = inverseFinalizedWeatherOwnersTestInput(updater, 'scripts/update-weather.mjs');
+assert.equal(inverseCurrentFamilyColdTargetTestInput(historicalUpdater, 'scripts/update-weather.mjs'), coldBefore);
+assert.equal(inverseArchivedWeatherRestartUpdater(historicalUpdater), inverseArchivedWeatherRestartUpdater(previousUpdater));
+const coldOracleInput = inverseFinalizedWeatherOwnersTestInput(historicalUpdater, 'scripts/update-weather.mjs');
 for (const changed of [coldOracleInput + '// foreign drift\n', coldOracleInput.replace('zone[key] = withoutHistoricCurrent(zone[key])',
   'zone[key] = []'), coldOracleInput.replace('currentFamilyColdStart !== null) {\n  for (const zone',
   'coldRequested) {\n  for (const zone')]) {
   assert.throws(() => inverseCurrentFamilyColdZoneHistoryTestInput(changed, 'scripts/update-weather.mjs'),
     /COLD_ZONE_HISTORY/);
 }
-assert.throws(() => inverseCurrentFamilyColdZoneHistoryTestInput(updater, 'scripts/unknown.mjs'), /COLD_ZONE_HISTORY/);
+assert.throws(() => inverseCurrentFamilyColdZoneHistoryTestInput(historicalUpdater, 'scripts/unknown.mjs'), /COLD_ZONE_HISTORY/);
 assert.throws(() => inverseCurrentFamilyColdZoneHistoryTestInput(null, 'scripts/update-weather.mjs'), /COLD_ZONE_HISTORY/);

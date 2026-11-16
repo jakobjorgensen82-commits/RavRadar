@@ -1,3 +1,11 @@
+## LF7-observation, historiske prøveinput og uafhængig levering
+
+Den afgrænsede LF7-opfølgning observerer det normale vandstandskildevalg, T+3-støtte og beregnede slutværdier i de syv kystzoner. Den ændrer ikke kildevalg, strøm-/temperaturudelukkelse, interpolation, scoreformel, administratorpunkter eller geometri. Manglende eller modstridende observation mærkes ærligt; den bliver ikke en ny produktionsgate eller et bevis for komplet dækning.
+
+Historiske updaterorakler bruger deres eksisterende autentiske SOURCE598-original før de uændrede inverser. Aktuelle produktkaldere prøves fortsat på rå aktuel kode. De kendte helper-/kalderfiler vælger hele normale mål gennem permanent naturligt testansvar, og protokolprøven forbereder kun sine egne kunstige mål. Ukendte og beskyttede input beholder de normale udvidede kontroller.
+
+Kun den begrænsede LF7-metadata bevares før den store arbejdsejer frigives. Kildekvalifikation, faktisk installation og generationsbundet LF7-/SOURCE-/T+3-accept dokumenteres særskilt; lokale prøver eller en plan afslutter ikke revisionens syv krav eller målets øvrige områder.
+
 ## Afsluttende Pages-oprydning med verificeret ejeradgang
 
 Den sidste oprydning efter en offentligt verificeret Pages-udgivelse skal have workflowets eksisterende GitHub-læseadgang med til kontrollen af den oprindelige skriver. Den afsluttede føraktiveringsfase må først fjernes efter den præcise terminalkvittering og de normale ejer- og offentlige kontroller. Lokal kalderkontrol er ikke bevis for, at en konkret fase er fjernet; faktisk oprydning og normal kildekvalifikation verificeres særskilt.

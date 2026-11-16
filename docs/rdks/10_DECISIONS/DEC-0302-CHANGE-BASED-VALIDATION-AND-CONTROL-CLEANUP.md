@@ -1,3 +1,33 @@
+## Uafhængig levering og konkrete historiske prøveejere
+
+### Lever uafhængige rettelser gennem deres faktiske kaldere
+
+En uafhængigt leveringsklar rettelse må ikke vente på en særskilt observations-, dokumentations- eller historisk prøverest. Del efter faktisk produktpåvirkning og nødvendige afhængigheder, mens alle oprindelige mål og reelle kendte fejl bevares. En uafklaret fejl i den berørte funktion må fortsat ikke omgås.
+
+Kode, der kun bruges ved GitHubs leverandørhentning eller i en isoleret backupprøve, kræver ingen særskilt Pages- eller Edge-udrulning, når app-, serverfunktions- og offentlige runtimefiler er uændrede. Leveringen følger stadig præcis kildekvalifikation, sikkert mergevindue og normal kvalifikation af faktisk main. Virkningen bevises derefter gennem den næste relevante normale kalder; kildegrøn er ikke faktisk vejrhentning eller originalgendannelse.
+
+### Historiske updaterinput og LF7-observation efter oprydning
+
+Historiske updaterprøver læser deres allerede faste SOURCE598-kilde og kontrollerer den mod scalar-prøvens eksisterende efterbillede, før de uændrede inverser bruges. Helfilkrav, mutationer og facit bevares uden ny headkohorte eller normalisering. Aktuelle produktgrene læser fortsat rå aktuel kode; den frosne followers-kalder og dens egne originale input ændres ikke.
+
+Den eksisterende testhelper har permanent CURRENT-ansvar for alle sine aktuelle forbrugere gennem de fire hele normale mål: den fælles syvfilskæde, updaterens entrypoint, historikretention og audit af gemt vejr. De seks kendte orakeltestblade vælger deres relevante hele mål; audit beholder også sin eksisterende ejer. Kommandoer deduplikeres. Kun ændring af en eksisterende almindelig fil får denne vej; nye, slettede, modeændrede, ukendte eller beskyttede input beholder FULL eller afslag og frisk uafhængig kontrolgennemgang. Nye planmål udvider ikke den gamle protokol-fixtures ubrugte kunstige filtræ.
+
+Den normale updater bevarer kun den allerede beregnede, begrænsede LF7-observation før den store produktions-/recoveryejer frigives. Den senere private diagnostik bruger denne lille metadata, mens ukendt observation fortsat er null. Den eksisterende production-chain-prøve udfører den rå aktuelle oprydning og diagnostikskrivning og kontrollerer både bevaret observation og fortsat null-ejer. Scoreregler, beregnede resultater, kildeprioritet, storejerens frigivelse og PG/C/I/T bevares.
+
+Dette er kildeforberedelse. Historiske input, lokale mål og en plan er ikke præcis samlet kildekvalifikation, PostgreSQL-eksekvering, installation eller faktisk LF7-/SOURCE-/T+3-dækning. Den næste normale generation skal stadig observeres og bindes til faktisk konfiguration og beregnede slutværdier; ukendt routing eller tidsstøtte må ikke kaldes komplet.
+
+### Forbered kun protokolprøvens egne kunstige mål
+
+Den gamle producer-/consumer-protokolprøve forbereder kun de kunstige mål, dens egne scenarier kan udføre. De separate aktuelle Git-prøver for vandstandsudvælgelse, updater og runtime-audit bevarer deres hele normale mållister og afslag; de rigtige produktprøver udføres fortsat af kildekontrollen. Fælles mål bevares også i protokol-fixturen. Dermed ændrer en ny katalogpost ikke unødigt alle ældre prøveinput. Ingen assertion, forventet fejl, normal produktkommando eller femminuttersgrænse ændres. Kildekvalifikation skal fortsat dokumentere faktisk afslutning af hele de valgte mål.
+
+### Naturligt testansvar for vandstandsrouting og normal vejrproduktion
+
+Den eksisterende CURRENT-plan har permanent ansvar for de konkrete routing-, updater- og runtime-auditfiler. Routingbiblioteket vælger både de hele vandstandsmål og runtime-auditmål, fordi auditten importerer dets tællere og konfigurationsbinding. Den normale updater vælger desuden sine eksisterende bredere kaldermål. Der oprettes ingen ny testvej, per-head-kohorte eller manuel spring-over-regel.
+
+Den normale wireupprøve køres som sit allerede kendte hele solomål, så den eksisterende credentialfri Copernicus-forberedelse faktisk udføres. De fire øvrige filer fra den tidligere fælles Nodekommando køres samlet én gang; wireup gentages ikke. Den hele nationale runtime-audit beholdes ufiltreret. Ukendte, beskyttede, tilføjede, slettede eller modeændrede produktinput bevarer deres normale udvidede kontrol eller afslag.
+
+Registreringen kræver frisk uafhængig kontrolgennemgang. Den eksisterende kapacitetskontrol køres før målene, og alle kvitterings-, proces- og tidsgrænser bevares. Lokal selektion eller en lokal hel runtimeprøve er ikke præcis kilde-CI, installation eller faktisk revisionsaccept i en almindelig vejrkørsel.
+
 ## Arkivets komplette CHECK-kontrol og afgrænsede udsættelse
 
 Den lokale arkivlæser skelner nu mellem det komplette CHECK-katalog og det mindre sæt, som skal udsættes under DATA. Kun oprindeligt ikke-validerede CHECKs på katalogbeviste selvstændige almindelige tabeller i den pågældende fases direkte COPY-inventar udsættes og genetableres. Hele kataloget før og efter, inklusive validerede og urørte ikke-validerede regler, skal fortsat være identisk. Udsatte, bevarede ikke-validerede og validerede regler tælles særskilt; deres sum skal være det komplette antal.

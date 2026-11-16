@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { buildWaterSourceForecastIndex, applyWaterSourceForecastStatus, applyWaterSourceRouting, applyVerifiedWaterSourceRoutingToPartHourly, packWaterSourceForecastContinuity, unpackWaterSourceForecastContinuity, mergeWaterSourceForecastContinuity } from './lib/water-source-forecast-routing.mjs';
+import { buildWaterSourceForecastIndex, applyWaterSourceForecastStatus, applyWaterSourceRouting, applyVerifiedWaterSourceRoutingToPartHourly, packWaterSourceForecastContinuity, unpackWaterSourceForecastContinuity, mergeWaterSourceForecastContinuity, summarizeLf7WaterRouting } from './lib/water-source-forecast-routing.mjs';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -846,3 +846,42 @@ console.log('OK: målestationer og DMI-prognosepunkter leverer samme DKSS-femdø
   assert.equal(JSON.stringify({complete,partial}),originalInputs,'All original frame bytes/values remain unchanged');
 }
 console.log('SOURCE_SPLIT_BANK_T3: complete and selected same-series endpoints remain usable after normal save/import; mixed, false and missing support stays null.');
+
+// Observe the actual normal LF7 routing/predicate without changing any value.
+{
+  const source = sources[0], zoneId = 'DK-B01-01';
+  const lfBulk = { generatedAt, zones: { ['SOURCE::'+source.sourceKey]: {
+    hourly: rows(0, 'dkss_lf', source.sourceKey, source.point) } } };
+  const lfIndex = buildWaterSourceForecastIndex([source], lfBulk, generatedAt);
+  const config = { zones: { [zoneId]: { enabled:true, requireAll:true,
+    stations:[{sourceKey:source.sourceKey, weight:1}], method:'manual-weights' } } };
+  const input = Array.from({length:121},(_,i)=>({time:new Date(Date.parse(currentHour)+i*3600000).toISOString(),
+    waterLevelCm:null, waterLevelTrendCm3h:null, windSpeedMps:7}));
+  const args = { part:{...part,zoneId}, parentFeature:{properties:{...features[0].properties,id:zoneId}},
+    hourly:input,sources:[aware[0]],index:lfIndex,routing:config,haversineKm:hav,diagnosticReferenceAt:currentHour };
+  const before = JSON.stringify({input,lfBulk,config});
+  const observed = applyVerifiedWaterSourceRoutingToPartHourly(args);
+  const unobserved = applyVerifiedWaterSourceRoutingToPartHourly({...args,diagnosticReferenceAt:null});
+  assert.deepEqual(observed.hourly,unobserved.hourly,'Observation must not alter normal routed values/proofs');
+  assert.equal(observed.waterRoutingObservation.counts.observedHours,118);
+  assert.equal(observed.waterRoutingObservation.counts.lfWaterHours,118);
+  assert.equal(observed.waterRoutingObservation.counts.comparableT3Hours,118);
+  assert.equal(observed.waterRoutingObservation.counts.forbiddenLfCurrentHours,0);
+  assert.equal(observed.waterRoutingObservation.counts.forbiddenLfTemperatureHours,0);
+  assert.ok(observed.hourly.every(hour=>hour.windSpeedMps===7));
+  const missing = new Map(lfIndex), record = structuredClone(lfIndex.get(source.sourceKey));
+  record.hourly.find(row=>row.time===new Date(Date.parse(currentHour)+118*3600000).toISOString()).waterLevelCm=null;
+  missing.set(source.sourceKey,record);
+  const gap = applyVerifiedWaterSourceRoutingToPartHourly({...args,index:missing});
+  assert.equal(gap.hourly[115].waterLevelTrendCm3h,null);
+  assert.equal(gap.waterRoutingObservation.counts.unknownT3Hours,1);
+  assert.equal(gap.waterRoutingObservation.counts.invalidTrendHours,0);
+  const dirty = structuredClone(input);
+  dirty[0].currentProvenance={status:'verified',collection:'dkss_lf'};
+  dirty[0].waterTemperatureC=9;dirty[0].waterTemperatureProvenance={collection:'dkss_lf'};
+  const forbidden = applyVerifiedWaterSourceRoutingToPartHourly({...args,hourly:dirty});
+  assert.equal(forbidden.waterRoutingObservation.counts.forbiddenLfCurrentHours,1);
+  assert.equal(forbidden.waterRoutingObservation.counts.forbiddenLfTemperatureHours,1);
+  assert.equal(JSON.stringify({input,lfBulk,config}),before,'All original/config inputs remain immutable');
+}
+console.log('LF7_NORMAL_ROUTING_OBSERVATION: actual LF-water/predicate, missing T+3 and forbidden component counters; no value/proof changes.');
