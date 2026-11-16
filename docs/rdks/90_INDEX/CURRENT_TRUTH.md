@@ -127,6 +127,10 @@ En vedligeholdelsestur, som ikke gennemgår nogen GRIB-fil, registreres som nul 
 
 # Aktiv sandhed og bevisgrænser
 
+## Afsluttende Pages-oprydning med verificeret ejeradgang
+
+Den sidste oprydning efter en offentligt verificeret Pages-udgivelse skal have workflowets eksisterende GitHub-læseadgang med til kontrollen af den oprindelige skriver. Den afsluttede føraktiveringsfase må først fjernes efter den præcise terminalkvittering og de normale ejer- og offentlige kontroller. Lokal kalderkontrol er ikke bevis for, at en konkret fase er fjernet; faktisk oprydning og normal kildekvalifikation verificeres særskilt.
+
 **Den fungerende produktionsvej er den numeriske 598-driftsfamilie.** Almindelig vejrhentning og offentlig levering har faktisk fungeret. Det beviser ikke fuld dækning, alle fejlforløb eller hele projektets færdiggørelse. Seneste leverance, igangværende kørsel og næste skrivevindue skal aflæses i det private checkpoint; flygtige kørselsoplysninger fastholdes ikke her.
 
 Vejret skal fortsat hentes og opdateres gennem DMI, dernæst Copernicus og til sidst Open-Meteo. DMI skal prioritere reelle tomme huller før overtagelse af gyldige timer fra andre kilder. Nyere gyldige data skal fortsat kunne opdatere prognosen efter de gældende kilde- og proveniensregler. Cache og fremadrettet historik fortsætter uden endnu en nulstilling. Gamle originale data og offentliggjorte scorer bevares efter deres egne kontrakter; de er ikke en tvungen gammel strømhistorik for den nye drift.
