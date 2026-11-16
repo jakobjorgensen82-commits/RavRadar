@@ -1,3 +1,7 @@
+# Kontrolforberedelse: ubrugte kunstige vejrmål holdes ude af protokol-fixturen
+
+Det permanente vejrmålkatalog udvider ikke længere automatisk den gamle producer-/consumer-fixtures kunstige eksekverbare filtræ. Dens egne faktiske mål og alle assertioner bevares; den separate aktuelle vejrejer-fixture og de hele normale produktmål er uændrede. Ingen tidsgrænse hæves. Hel præcis kildekvalifikation og produktionsaccept følger fortsat særskilt.
+
 ## Samlet kildekandidat og adskilte bevisgrænser
 
 Den samlede lokale kildekandidat bygger på den efterfølgende main, som har faktisk CURRENT-kildekvalifikation og normal main-admission. Den tidligere fuldt kvalificerede 599-kildebasis forbliver den særskilte FULL-reference; en CURRENT-frontier ommærkes ikke til FULL. LF7-observation, recovery-cadence og den afgrænsede restore-rettelse er fortsat efterfølgende kildeændringer med krav om deres eget præcise kildebevis. Installation og verificeret offentlig virkning følger deres normale egne forløb.

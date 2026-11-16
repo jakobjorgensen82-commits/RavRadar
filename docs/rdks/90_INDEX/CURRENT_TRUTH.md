@@ -1,3 +1,7 @@
+## Afgrænset forberedelse af protokolprøvens kunstige mål
+
+Den gamle protokol-fixture oprettes alene med de kunstige eksekverbare mål, dens faktiske producer-/consumer-scenarier bruger. De nye vejrejere prøves fortsat i deres separate aktuelle Git-fixture og gennem de normale hele produktmål. Delte mål, alle assertioner og den eksisterende tidsgrænse bevares. En delrapport eller lokal timeout er ikke kildeaccept; faktisk hel kvalifikation og tidsmargin er fortsat åbne.
+
 ## Samlet kildekandidat og adskilte bevisgrænser
 
 Den samlede lokale kildekandidat bygger på den efterfølgende main, som har faktisk CURRENT-kildekvalifikation og normal main-admission. Den tidligere fuldt kvalificerede 599-kildebasis forbliver den særskilte FULL-reference; en CURRENT-frontier ommærkes ikke til FULL. LF7-observation, recovery-cadence og den afgrænsede restore-rettelse er fortsat efterfølgende kildeændringer med krav om deres eget præcise kildebevis. Installation og verificeret offentlig virkning følger deres normale egne forløb.

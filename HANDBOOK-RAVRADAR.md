@@ -210,6 +210,10 @@ Autoriteten er version.json.releaseContract.modelBindings og de aktuelle generer
 
 ## 89.342 Kontrol af ændringer med en fast sikkerhedskerne
 
+### Forbered kun protokolprøvens egne kunstige mål
+
+Den gamle producer-/consumer-protokolprøve forbereder kun de kunstige mål, dens egne scenarier kan udføre. De separate aktuelle Git-prøver for vandstandsudvælgelse, updater og runtime-audit bevarer deres hele normale mållister og afslag; de rigtige produktprøver udføres fortsat af kildekontrollen. Fælles mål bevares også i protokol-fixturen. Dermed ændrer en ny katalogpost ikke unødigt alle ældre prøveinput. Ingen assertion, forventet fejl, normal produktkommando eller femminuttersgrænse ændres. Kildekvalifikation skal fortsat dokumentere faktisk afslutning af hele de valgte mål.
+
 ### 599-kildebasis og lokal LF7-efterfølger
 
 599-kildebasen har faktisk bestået den fulde Linux-kildekontrol, den nye native PostgreSQL-fase og normal FULL-/main-kvalifikation. Historisk 584-national genbrug er fortsat historisk og er ikke en ny 599-produktionsgeneration. Installation gennem normalvejen og verificeret offentlig virkning er fortsat åbne. Den særskilte LF7-observation er en lokal efterfølger og kræver sit eget præcise kildebevis samt aflæsning i næste almindelige generation. Alle fem hovedmål og de syv revisionskrav består.

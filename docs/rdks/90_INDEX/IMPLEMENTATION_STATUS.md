@@ -1,3 +1,7 @@
+## Afgrænset protokolforberedelse, ikke færre produktprøver
+
+Den gamle CURRENT-protokol-fixture får ikke længere ubrugte kunstige eksekverbare filer fra de tre separate vejrejerområder. Dens faktiske cases og delte mål, de aktuelle vejrejer-cases, de hele normale produktprøver og tidsgrænsen bevares. Præcis afsluttet kildekvalifikation og målt tidsmargin er fortsat nødvendige, før ændringen kan kaldes leveret.
+
 ## Samlet kildekandidat og adskilte bevisgrænser
 
 Den samlede lokale kildekandidat bygger på den efterfølgende main, som har faktisk CURRENT-kildekvalifikation og normal main-admission. Den tidligere fuldt kvalificerede 599-kildebasis forbliver den særskilte FULL-reference; en CURRENT-frontier ommærkes ikke til FULL. LF7-observation, recovery-cadence og den afgrænsede restore-rettelse er fortsat efterfølgende kildeændringer med krav om deres eget præcise kildebevis. Installation og verificeret offentlig virkning følger deres normale egne forløb.

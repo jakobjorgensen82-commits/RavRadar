@@ -1,3 +1,7 @@
+## Forbered kun de kunstige mål, protokolscenariet faktisk kan udføre
+
+En udvidelse af det permanente målkatalog må ikke automatisk gøre alle historiske producer-/consumer-fixtures større. Den eksisterende protokolprøve materialiserer kun sine egne kunstige eksekverbare mål. Vandstands-, updater- og runtime-auditområdernes separate aktuelle Git-fixture beholder sine fulde selektions-, ukendt-, model- og modeafslag; de rigtige hele produktmål køres fortsat normalt i kildekontrollen. Delte mål bevares hos deres øvrige ejere. Ingen assertion, forventet fejl, normal kommando eller femminuttersgrænse fjernes. Afgrænset prøveforberedelse er ikke i sig selv et bestået helt mål eller kildebevis.
+
 ## Samlet kildekandidat og adskilte bevisgrænser
 
 Den samlede lokale kildekandidat bygger på den efterfølgende main, som har faktisk CURRENT-kildekvalifikation og normal main-admission. Den tidligere fuldt kvalificerede 599-kildebasis forbliver den særskilte FULL-reference; en CURRENT-frontier ommærkes ikke til FULL. LF7-observation, recovery-cadence og den afgrænsede restore-rettelse er fortsat efterfølgende kildeændringer med krav om deres eget præcise kildebevis. Installation og verificeret offentlig virkning følger deres normale egne forløb.

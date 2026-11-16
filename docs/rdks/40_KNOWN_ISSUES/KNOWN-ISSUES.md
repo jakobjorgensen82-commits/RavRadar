@@ -1,3 +1,7 @@
+## Protokol-fixturen voksede med ubrugte kunstige vejrmål
+
+En faktisk kildekørsel ramte det hele CURRENT-måls femminuttersgrænse efter de hidtidige protokolcases og før afslutning af de nye vejrejer-cases. Udvidelse af det permanente katalog havde også udvidet den gamle fixtur med kunstige mål, som dens kald ikke brugte. Den afgrænsede prøveforberedelse holder disse særskilte planområder ude af det gamle kunstige filtræ, men bevarer alle faktiske cases, delte mål, normale produktkommandoer og tidsgrænser. Frisk hel mål-/kildeaccept og målt tidsmargin mangler, indtil den rettede præcise kilde faktisk er kvalificeret. Ingen vejr- eller produktrettelse udledes af kontrollens timeout alene.
+
 ## Samlet kildekandidat og adskilte bevisgrænser
 
 Den samlede lokale kildekandidat bygger på den efterfølgende main, som har faktisk CURRENT-kildekvalifikation og normal main-admission. Den tidligere fuldt kvalificerede 599-kildebasis forbliver den særskilte FULL-reference; en CURRENT-frontier ommærkes ikke til FULL. LF7-observation, recovery-cadence og den afgrænsede restore-rettelse er fortsat efterfølgende kildeændringer med krav om deres eget præcise kildebevis. Installation og verificeret offentlig virkning følger deres normale egne forløb.

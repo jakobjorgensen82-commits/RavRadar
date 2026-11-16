@@ -38,6 +38,8 @@ Baggrunden er et faktisk lukket afslag før DATA: det komplette katalog indehold
 
 Den samlede lokale kildekandidat bygger på den efterfølgende main, som har faktisk CURRENT-kildekvalifikation og normal main-admission. Den tidligere fuldt kvalificerede 599-kildebasis forbliver den særskilte FULL-reference; en CURRENT-frontier ommærkes ikke til FULL. LF7-observation, recovery-cadence og den afgrænsede restore-rettelse er fortsat efterfølgende kildeændringer med krav om deres eget præcise kildebevis. Installation og verificeret offentlig virkning følger deres normale egne forløb.
 
+Prøveforberedelsens afgrænsning ved nye vejrejere er beskrevet i DEC-0302. Den ændrer alene den gamle protokol-fixtures ubrugte kunstige eksekverbare blade; de faktiske protokolcases, separate aktuelle Git-cases, hele produktmål og tidsgrænser består. En lokal tidsgrænse eller en delrapport er ikke hel målaccept; brug det præcise kildebevis og checkpointets faktisk udførte resultat.
+
 <!-- RAVRADAR_ACTIVE_ENTRY_END -->
 
 ## Daterede notater og tidligere indgange — uændret historik

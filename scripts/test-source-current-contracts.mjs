@@ -977,7 +977,15 @@ try{
     return text(root,['mktree','--missing','-z'],kept.map(row=>`${row.mode} ${row.type} ${row.oid}\t${row.name}\0`).join(''));
   }
   const protectedTree=selectedTree(referenceTree);
-  const targetFiles=[...new Set(Object.values(CURRENT_CONTRACT_COMMANDS).flat().flatMap(command=>command.split(' ').filter(part=>part.endsWith('.mjs'))))];
+  // The producer/consumer protocol below executes its own declared scenarios.
+  // The three weather owners are checked in the separate planning-only Git
+  // fixture below and their real complete targets run in ordinary source CI.
+  // Do not enlarge every historical protocol tree with unused fake weather
+  // executables merely because the permanent command catalogue grows.
+  const planningOnlyWeatherAreas=new Set(['waterSourceRouting','weatherUpdater','runtimeAudit']);
+  const protocolCommands=Object.entries(CURRENT_CONTRACT_COMMANDS)
+    .filter(([area])=>!planningOnlyWeatherAreas.has(area)).flatMap(([,commands])=>commands);
+  const targetFiles=[...new Set(protocolCommands.flatMap(command=>command.split(' ').filter(part=>part.endsWith('.mjs'))))];
   assert(targetFiles.length>0);for(const file of targetFiles)assert(!protectedFiles.has(file),'A synthetic target must never replace143/CIT: '+file);
   const tiny=()=>Buffer.from("import fs from 'node:fs';\n"
     +"fs.mkdirSync('.cache',{recursive:true});\n"
