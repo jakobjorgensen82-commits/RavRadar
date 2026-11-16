@@ -21,6 +21,7 @@ export async function exerciseAccountErasureOutbox({psql,runSql,repositoryRoot})
  const pending=[];
  const raw=(text,timeout=15000)=>{const promise=runSql(sql(text),timeout);pending.push(promise);return promise;};
  const owner=text=>pg(auth()+text);
+ const service=text=>pg(auth(actor,'service_role')+text).then(jsonLast);
  const prepare=n=>owner("select public.prepare_account_erasure('"+op(n)+"','"+id(n)+"');").then(jsonLast);
  const stage=n=>owner("select public.stage_account_erasure_pg('"+op(n)+"','STAGE-MANUAL-ACCOUNT-PG-ERASURE');").then(jsonLast);
  let checked=0;
@@ -42,7 +43,7 @@ export async function exerciseAccountErasureOutbox({psql,runSql,repositoryRoot})
   const canonical=fs.readFileSync(path.join(repositoryRoot,'supabase/schema.sql'),'utf8').replaceAll('\r\n','\n');
   const start=canonical.indexOf('-- ACCOUNT_ASSISTANT_SCHEMA_GENERATED_BEGIN'),end=canonical.indexOf('-- ACCOUNT_ASSISTANT_SCHEMA_GENERATED_END');
   assert(start>=0&&end>start);
-  await pg(String.raw`create schema auth; create schema extensions;
+  await pg(String.raw`create schema auth; create schema extensions; create schema storage;
 create extension pgcrypto with schema extensions;
 create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
 create function auth.role() returns text language sql stable as $$ select current_setting('request.jwt.claim.role',true) $$;
@@ -59,6 +60,14 @@ create table public.admin_documents(updated_by uuid references auth.users(id) on
 create table public.admin_document_versions(created_by uuid references auth.users(id) on delete set null);
 create table public.admin_audit_log(actor_id uuid references auth.users(id) on delete set null);
 create table auth.scim_users(user_id uuid references auth.users(id) on delete set null);
+create table storage.objects(owner uuid,owner_id text);
+create table storage.buckets(owner uuid,owner_id text);
+create table storage.s3_multipart_uploads(owner_id text);
+create table storage.s3_multipart_uploads_parts(owner_id text);
+alter table storage.objects enable row level security;
+alter table storage.buckets enable row level security;
+alter table storage.s3_multipart_uploads enable row level security;
+alter table storage.s3_multipart_uploads_parts enable row level security;
 `+canonical.slice(start,end));
   await pg(source.sql);
   await pg("insert into auth.users values('"+actor+"'); insert into public.profiles values('"+actor+"','owner-synthetic@example.invalid','owner',true);");
@@ -73,7 +82,7 @@ create table auth.scim_users(user_id uuid references auth.users(id) on delete se
   await stateFailure(auth()+"select public.stage_account_erasure_pg('"+op(1)+"','wrong');",'22023');
   await pg("update public.account_activity_journal set last_activity_at='2026-01-02T00:00:00Z' where user_id='"+id(1)+"';");
   assert.equal((await stage(1)).state,'HOLD_ACTIVITY_CHANGED');assert.equal(await pg('select count(*) from public.observations where id=1;'),'1');checked++;
-  await seed(3,false);await prepare(3);const staged=await stage(3);assert.equal(staged.state,'PG_STAGED_AUTH_PENDING');assert.equal(staged.pgRowsRemoved,1);assert.equal(staged.complete,false);assert.equal(staged.authDeleted,false);checked++;
+  await seed(3,false);await prepare(3);const staged=await stage(3);assert.equal(staged.state,'PG_STAGED_AUTH_PENDING');assert.equal(staged.pgRowsRemoved,1);assert.equal(staged.complete,false);assert.equal(staged.authAbsent,false);checked++;
   assert.deepEqual(await stage(3),staged);checked++;
   assert.equal(await pg("select exists(select 1 from auth.users where id='"+id(3)+"');"),'t');checked++;
   await stateFailure(auth(actor,'service_role')+"insert into public.observations(id,user_id) values(303,'"+id(3)+"');",'42501');
@@ -86,6 +95,33 @@ create table auth.scim_users(user_id uuid references auth.users(id) on delete se
   await stateFailure("insert into public.profiles(id,email,role) values('"+id(3)+"','changed@example.invalid','expert') on conflict(id) do update set email=excluded.email;",'42501');
   await pg("delete from public.observations where id=305; delete from public.profiles where id='"+id(3)+"';");
   assert.equal(jsonLast(await owner("select public.get_account_erasure_status('"+op(3)+"');")).state,'PG_STAGED_AUTH_PENDING');checked++;
+  await stateFailure("insert into auth.users values('"+id(3)+"');",'42501');
+  // SQL phase/ACL tests use explicitly synthetic service attestations here.
+  // Only the existing genuine GoTrue fixture can qualify their HTTP evidence.
+  const subject='usr_v1_'+'A'.repeat(43),created='2026-01-01T00:00:00.123456Z',attemptA=op(100),attemptB=op(101),attemptC=op(102);
+  const claim=(previous,attempt,generation=created)=>"select public.claim_account_erasure_auth('"+op(3)+"','"+actor+"',"+(previous?"'"+previous+"'":'null')+",'"+attempt+"','"+generation+"','"+subject+"');";
+  await stateFailure(auth()+claim(null,attemptA),'42501');
+  const claimed=await service(claim(null,attemptA));assert.equal(claimed.shouldIssueDelete,true);assert.equal(claimed.authUserCreatedAt,created);checked++;
+  assert.equal((await service(claim(null,attemptA))).shouldIssueDelete,false);checked++;
+  assert.equal((await service(claim(attemptA,attemptB))).shouldIssueDelete,true);checked++;
+  assert.equal((await service(claim(attemptB,attemptA))).shouldIssueDelete,false);checked++;
+  await stateFailure(auth(actor,'service_role')+claim(null,attemptC),'40001');
+  const changed=await service(claim(attemptB,attemptC,'2026-01-01T00:00:00.123457Z'));
+  assert.equal(changed.shouldIssueDelete,false);assert.equal(changed.holdReason,'AUTH_GENERATION_CHANGED');checked++;
+  await stateFailure(auth(actor,'service_role')+"select public.acknowledge_account_erasure_d1('"+op(3)+"','"+actor+"','"+attemptB+"','"+subject+"',0);",'22023');
+  const absent=await service("select public.acknowledge_account_erasure_auth_absent('"+op(3)+"','"+actor+"','"+attemptB+"','"+attemptB+"','"+subject+"');");
+  assert.equal(absent.authAbsent,true);assert.equal(absent.complete,false);checked++;
+  // A false service attestation cannot complete while the Auth row remains.
+  await stateFailure(auth(actor,'service_role')+"select public.acknowledge_account_erasure_d1('"+op(3)+"','"+actor+"','"+attemptB+"','"+subject+"',0);",'P0001');
+  await seed(10);await prepare(10);await stage(10);
+  const initialAbsent=await service("select public.acknowledge_account_erasure_auth_absent('"+op(10)+"','"+actor+"',null,'"+op(103)+"','"+subject+"');");
+  assert.equal(initialAbsent.authUserCreatedAt,null);assert.equal(initialAbsent.authAbsent,true);assert.equal(initialAbsent.complete,false);checked++;
+  assert.equal(await pg("select auth_claimed_at is null from public.account_erasure_operations where operation_id='"+op(10)+"';"),'t');checked++;
+  await seed(11);await pg('create policy synthetic_unknown_upload on storage.objects for insert to authenticated with check(false);');
+  assert.equal((await prepare(11)).holdReason,'STORAGE_POLICY_UNQUALIFIED');checked++;
+  await pg('drop policy synthetic_unknown_upload on storage.objects;');
+  await seed(12);await pg("insert into storage.objects(owner_id) values('"+id(12)+"');");
+  assert.equal((await prepare(12)).holdReason,'STORAGE_OWNERSHIP');checked++;
   await seed(4);await pg("insert into public.app_user_roles values('"+id(4)+"');");assert.equal((await prepare(4)).holdReason,'REFERENCE_POLICY');checked++;
   await seed(5);await pg("update public.profiles set email='expert@ravradar.dk' where id='"+id(5)+"';");assert.equal((await prepare(5)).holdReason,'PRIVILEGED_TARGET');checked++;
   // READ COMMITTED must re-read positive journal after a waited profile lock.
@@ -115,6 +151,8 @@ create table auth.scim_users(user_id uuid references auth.users(id) on delete se
   const revoke=await raw("set lock_timeout='100ms';update public.profiles set is_active=false where id='"+actor+"';");
   assert.equal(revoke.code,3);assert.equal(revoke.sqlState,'55P03');assert.equal((await ownerRead).code,0);checked++;
   result={passed:true,cases:checked,actualPostgres:true,syntheticSqlHost:true,realGoTrue:false,
+   serviceEvidenceSynthetic:true,authAttemptReplayAndGeneration:true,initialAbsenceWithoutDeleteClaim:true,
+   authUuidFenceSqlOnly:true,storageDefaultDenyAndOwnership:true,
    observationsAndBootstrapFence:true,readCommittedFreshness:true,repeatableReadNoLateCommit:true,
    serializableNoLateCommit:true,actorNonKeyPrivilegeLock:true,authDeletion:false,d1Ack:false,completionAuthority:false};
  } catch(error){firstError=error;}
