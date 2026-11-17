@@ -596,12 +596,12 @@ export async function verifyAssistantAfter598NativeContext(native,current,versio
   verifyAssistantAfter598NativeCommands(native.commands,version);
   return verifyAssistantAfter598PhaseReceipt(native,current);
 }
-export async function verifyAssistantAfter599NativeContext(native,current,version){
+export async function verifyAssistantAfter599NativeContext(native,current,version,options){
   requireAssistantAfter599Output(); // FIRST: no receipt/options read when unissued.
   assert.equal(ACTIVE.sourcePhase,ASSISTANT_AFTER599_PHASE);
   assert.equal(version,requireAssistantAfter599Release());
   verifyAssistantAfter599NativeCommands(native.commands,version);
-  return verifyAssistantAfter599PhaseReceipt(native,current);
+  return verifyAssistantAfter599PhaseReceipt(native,current,options);
 }
 export async function assistantAfter598NativeClaims(native,current){
   requireAssistantAfter598Output();
@@ -614,9 +614,9 @@ export async function assistantAfter598NativeClaims(native,current){
     currentAssistantAfter598NationalExecutionClaimed:false,
   };
 }
-export async function assistantAfter599NativeClaims(native,current){
+export async function assistantAfter599NativeClaims(native,current,options){
   requireAssistantAfter599Output();
-  await verifyAssistantAfter599NativeContext(native,current,requireAssistantAfter599Release());
+  await verifyAssistantAfter599NativeContext(native,current,requireAssistantAfter599Release(),options);
   return {
     currentAssistantAfter599Native:{status:native.status,executedInThisRun:native.executedInThisRun,
       origin:native.origin,phase:native.sourcePhase,eligibleForReuse:native.eligibleForReuse,separatelyRequired:true},
@@ -678,7 +678,7 @@ async function currentContext() {
   if(ACTIVE.sourcePhase===ASSISTANT_AFTER599_PHASE)await verifyAssistantAfter599NativeContext(native,
     {run:Number(env.GITHUB_RUN_ID),attempt:Number(env.GITHUB_RUN_ATTEMPT),head,
       pullRequest:Number(env.PULL_REQUEST_NUMBER),branch:event.pull_request.head.ref},requireAssistantAfter599Release());
-  if(ACTIVE.sourcePhase===ASSISTANT_AFTER598_PHASE)await verifyAssistantAfter598NativeContext(native,
+  else if(ACTIVE.sourcePhase===ASSISTANT_AFTER598_PHASE)await verifyAssistantAfter598NativeContext(native,
     {run:Number(env.GITHUB_RUN_ID),attempt:Number(env.GITHUB_RUN_ATTEMPT),head,
       pullRequest:Number(env.PULL_REQUEST_NUMBER),branch:event.pull_request.head.ref},requireAssistantAfter598Release());
   else if(ACTIVE.sourcePhase===ASSISTANT_AFTER597_PHASE)await verifyAssistantAfter597NativeContext(native,

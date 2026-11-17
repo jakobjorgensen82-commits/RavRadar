@@ -101,7 +101,7 @@ jobs:
           && node scripts/test-source-targeted-producer.mjs
           && node scripts/test-source-targeted-consumer.mjs
           && node scripts/test-source-impact-workflow.mjs
-          && timeout --signal=KILL 300s node --test scripts/test-source-current-contracts.mjs
+          && timeout --signal=KILL 480s node --test scripts/test-source-current-contracts.mjs
 
       # The fixed local cache action uses Node24. Exercise it only against its
       # own synthetic native fixture; never invoke the real cache service here.

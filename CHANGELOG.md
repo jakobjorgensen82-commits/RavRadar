@@ -1,5 +1,17 @@
 ## 4.0.601 — emneopfølgning og afgrænset UV-/mængdeviden, lokal kandidat
 
+## Afgrænset kontroloprydning og privat månedskalder
+
+Den sammenhængende kildekandidat fjerner en ekstra global testudførelse fra den historiske workflowfortegnelse, giver privat statistik ét naturligt normalt testmål og kvalificerer uændret after599-PostgreSQL som særskilt genbrug af den autentiske oprindelige fase. Hele CURRENT-prøvens maksimum er 480 sekunder; vejrets frister og numeriske kontrakter ændres ikke. Månedskalderen genlæser faktisk OFF/ON og kan ikke aktivere eller installere statistik. Se DEC-0302 og håndbog89.342/89.321. Kildekvalifikation, installation og faktisk automatisk virkning er særskilte åbne trin.
+
+### Automatisk månedskalder og faktisk ejer-eksport
+
+Den eksisterende private statistikvej får en fast kørsel første dag i måneden kl. 06.47 UTC for senest afsluttede UTC-måned. Kalderen genlæser den faktiske Worker og dens bindingskontrakt før konto- eller statistikdata. Bevisligt OFF giver et vellykket indholdsfrit spring over; ukendt tilstand stopper. Schedule kan ikke installere, erstatte eller aktivere Workeren. ON kræver fortsat den eksisterende præcise aktivering og dens bindingsbeviser.
+
+Den normale beskyttede rapportvisning og JSON-eksport gennem ejerens knap er faktisk afprøvet. Eksporten indeholder de 160 faste støjtilføjede celler og ingen individuel turpayload; genlæsningen er byteidentisk. En anonym forespørgsel med den offentlige nøgle afvises uden rapportdata. Faktiske ekspert- og almindelig-bruger-JWT, første automatisk producerede måned, samlet privacy-/kalibreringsaccept og Free-klarhed har fortsat deres egne åbne beviser.
+
+Frosne rapporter genbruges uden ny støj eller nyt budgettræk. Det eksisterende livstidsbudget giver højst to bidragsmåneder pr. konto. Ukendt skrivning giver ingen blind gentagelse; den nye planlægning påstår ikke at genoprette et gammelt uafklaret administrationswrite. Offentlig statistik, kalibrering og automatisk kontosletning aktiveres ikke.
+
 Assistenten bevarer kvalifikationerne i et nyt emnebundet spørgsmål på dansk, tysk og engelsk. Tre offentlige fakta forklarer fluorescens, dagslyskontrast og manglende observation af ravmængder; de45 tidligere fakta og de rå sikkerhedsgrænser består. En ravkese-opfølgning skal besvare strand-/brugsleddet fremfor alene at gentage definitionen.
 
 Kandidaten bruger den normale nye binding efter ægte599 og app600. C/I/T og privat DATA-preview er afledt normalt, mens alle76 udstedte SQL-originaler bevares. Nativeledgerens syntetiske førinput er adskilt fra faktisk udført SQL. Den ene nye append er nu lokalt udstedt gennem normalvejen. Frisk FULL/PG/native, installation og hosted/offentlig AI-accept for601 er fortsat åbne. Native/FULL-admission kræver det komplette aktuelle77/49/28-appfacit og producentens egne releasebindinger; den generiske migrationsgenlæsning vælger kun én familievalidator. App600s manuelle kontoslettefunktion og selvstændige levering bevares.

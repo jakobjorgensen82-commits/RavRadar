@@ -1,3 +1,7 @@
+## Kontrolkandidat: nationalt familiefald og gentagne workflowmål
+
+Den faktiske after599-nativefase er gennemført; den efterfølgende nationalkalder faldt efter korrekt familieaccept videre til en anden families validator. Den lokale rettelse vælger én sammenhængende if/else-if-kæde og er regressionsprøvet. Den gamle workflowfortegnelse startede desuden aktuelle mål en ekstra gang og kunne standse på en uvedkommende pensioneret workflowejer. Den ekstra udførelse er fjernet i kildekandidaten, mens normal aktuel måludførelse består. Samlet præcis kildekvalifikation og levering er åbne. Se DEC-0302 og privat checkpoint.
+
 ## Assistent601: lokal forberedelse efter app600 og model599
 
 App600 er nu faktisk databaseinstalleret og server-/UI-leveret gennem den normale rene kodevej med fortsat numerisk modelfamilie599. Normal FULL-kvalifikation, de28 præcise CHECK-definitioner og kataloggenlæsning er bekræftet; offentlig210/673 og den terminale afslutning er verificeret. Det oprindelige fejlede installerforløbs udfald står særskilt UNKNOWN og omskrives ikke til succes. Ejerens normale kontomodal og præference er browserlæst på600, men faktisk sletning, privacy- og samlet målopfyldelse er ikke accepteret. Alle fem hovedmål er fortsat åbne. Ældre600-kandidatposter nedenfor er erstattet på dette leveringsstatuspunkt.

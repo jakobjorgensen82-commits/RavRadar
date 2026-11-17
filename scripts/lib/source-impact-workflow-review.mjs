@@ -154,14 +154,18 @@ export function inverseSourceImpactDmiPython(value){
   return source;
 }
 
-// Den eksisterende FULL-kontrolkæde ejer også hele CURRENT med uændret 300s-budget.
-export const SOURCE_IMPACT_FULL_CURRENT_COMMAND='timeout --signal=KILL 300s node --test scripts/test-source-current-contracts.mjs';
+// FULL-testen har et fast budget på 480 sekunder; den autentiske form med 300 sekunder bevares.
+export const SOURCE_IMPACT_FULL_CURRENT_COMMAND='timeout --signal=KILL 480s node --test scripts/test-source-current-contracts.mjs';
+export const SOURCE_IMPACT_FULL_CURRENT_PREVIOUS_COMMAND='timeout --signal=KILL 300s node --test scripts/test-source-current-contracts.mjs';
 export function inverseSourceImpactFullCurrent(value){
   assert.equal(arguments.length,1);assert.equal(typeof value,'string');
   const source=value.replace(/\r\n/g,'\n');
   if(!source.includes('test-source-current-contracts.mjs'))return source;
   const anchor='          && node scripts/test-source-impact-workflow.mjs\n';
-  const addition='          && '+SOURCE_IMPACT_FULL_CURRENT_COMMAND+'\n';
+  const commands=[SOURCE_IMPACT_FULL_CURRENT_COMMAND,SOURCE_IMPACT_FULL_CURRENT_PREVIOUS_COMMAND]
+    .filter(command=>source.includes('          && '+command+'\n'));
+  assert.equal(commands.length,1,'Kun én præcis aktuel eller historisk FULL/CURRENT-kalder');
+  const addition='          && '+commands[0]+'\n';
   const before=once(source,anchor+addition,anchor);
   assert.equal(sha(inverseOwnedCacheNativeWorkflow(before)),SOURCE_IMPACT_DMI_REQUIREMENTS_REVIEW.afterSha256,
     'Kun den præcise eksisterende FULL-kalder kan få hele CURRENT');

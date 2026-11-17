@@ -224,7 +224,7 @@ test('exact native phase reuse; drift, missing evidence and later failure execut
     const readGit=args=>{
       if(args[0]==='status'||args[0]==='for-each-ref'||args[0]==='merge-base')return '';
       if(args[0]==='rev-parse'&&args[1]==='HEAD^{commit}')return newOid;
-      if(args[0]==='rev-parse'&&args[1]==='--is-shallow-repository')return 'false';
+      if(args[0]==='rev-parse'&&args[1]==='--is-shallow-repository')return 'false\n';
       if(args[0]==='rev-parse')return verifyInputTrees(tree,tree).frozenGitTrees.find(row=>args[1]===row.head+'^{tree}').tree;
       if(args[0]==='show')return args[1].startsWith('HEAD:')?candidateWorkflow:originalWorkflow;
       if(args[0]==='ls-tree')return tree.map(([file,mode,type,id])=>mode+' '+type+' '+id+'\t'+file+'\0').join('');
@@ -274,7 +274,7 @@ test('follow-up PR identity and both native branch histories remain independentl
     const readGit=args=>{
       if(['status','for-each-ref','merge-base'].includes(args[0]))return '';
       if(args[0]==='rev-parse'&&args[1]==='HEAD^{commit}')return newOid;
-      if(args[0]==='rev-parse'&&args[1]==='--is-shallow-repository')return 'false';
+      if(args[0]==='rev-parse'&&args[1]==='--is-shallow-repository')return 'false\n';
       if(args[0]==='rev-parse')return verifyInputTrees(tree,tree).frozenGitTrees.find(row=>args[1]===row.head+'^{tree}').tree;
       if(args[0]==='show')return args[1].startsWith('HEAD:')?candidateWorkflow:originalWorkflow;
       if(args[0]==='ls-tree')return tree.map(([file,mode,type,id])=>mode+' '+type+' '+id+'\t'+file+'\0').join('');
@@ -494,7 +494,7 @@ test('current586 exact EXECUTED origin survives a later source failure; missing,
   const readGit=args=>{
     if(['status','for-each-ref','merge-base'].includes(args[0]))return '';
     if(args[0]==='rev-parse'&&args[1]==='HEAD^{commit}')return newOid;
-    if(args[0]==='rev-parse'&&args[1]==='--is-shallow-repository')return 'false';
+    if(args[0]==='rev-parse'&&args[1]==='--is-shallow-repository')return 'false\n';
     if(args[0]==='rev-parse')return nativeInput.frozenGitTrees.find(row=>args[1]===row.head+'^{tree}').tree;
     if(args[0]==='show'&&args[1].endsWith(':package.json'))return '{"version":"4.0.586"}';
     if(args[0]==='show'&&args[1].endsWith(':'+WORKFLOW))return workflow;
@@ -2759,6 +2759,64 @@ if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
       current:installed594Receipt().current,commands:[...native.ASSISTANT_AFTER599_COMMANDS],status:'EXECUTED',executedInThisRun:true,
       origin:null,eligibleForReuse:false,runtime,report};
     assert.equal(await native.verifyAssistantAfter599PhaseReceipt(receipt,receipt.current),receipt);
+    // Exercise the complete raw normal consumer, including its real package,
+    // workflow, command and current77-file native validators. Transport is DATA.
+    const normal=await import('./national584-source-evidence.mjs');
+    const caller=await fs.readFile('scripts/national584-source-evidence.mjs','utf8');
+    const begin=caller.indexOf('async function currentContext() {'),end=caller.indexOf('async function authenticatedReuse(ctx) {',begin);
+    assert(begin>=0&&end>begin);
+    const currentContextSource=caller.slice(begin,end).trim();
+    const packageData=JSON.parse(await fs.readFile('package.json','utf8'));
+    const workflow=await fs.readFile(normal.WORKFLOW,'utf8');
+    const path=await import('node:path'),root=path.resolve('synthetic-national-consumer');
+    const contentHash='sha256:'+'c'.repeat(64),context=receipt.current;
+    const env={GITHUB_EVENT_NAME:'pull_request',GITHUB_REPOSITORY:normal.ORIGIN.repository,
+      SOURCE_GATE_HEAD_SHA:context.head,GITHUB_EVENT_PATH:'synthetic-event.json',GITHUB_RUN_ID:String(context.run),
+      GITHUB_RUN_ATTEMPT:String(context.attempt),PULL_REQUEST_NUMBER:String(context.pullRequest)};
+    const event={pull_request:{number:context.pullRequest,head:{sha:context.head,ref:context.branch,repo:{full_name:normal.ORIGIN.repository}}}};
+    const proof={headSha:context.head,repository:normal.ORIGIN.repository,contractId:'weather-source-gate-content-v2',
+      privatePayloadIncluded:false,sourceTreeSha256:contentHash,nativePostgres:receipt};
+    const runContext=async(value=proof,phase=source.ACTIVE_ASSISTANT_SUCCESSOR)=>{
+      const calls=[];
+      const dependencies={assert,path,ROOT:root,WORKFLOW:normal.WORKFLOW,ORIGIN:normal.ORIGIN,ACTIVE:phase,
+        process:{env},fs:{async readFile(file){
+          if(file===env.GITHUB_EVENT_PATH)return JSON.stringify(event);
+          if(file===path.join(root,normal.WORKFLOW))return workflow;
+          if(file===path.join(root,'package.json'))return JSON.stringify(packageData);
+          assert.equal(file,path.join(root,'.cache/source-tree-content-proof.json'));return JSON.stringify(value);
+        }},git(...args){
+          if(args[0]==='rev-parse'){assert.deepEqual(args,['rev-parse','HEAD^{commit}']);return context.head;}
+          if(args[0]==='status'){assert.deepEqual(args,['status','--porcelain','--untracked-files=no']);return '';}
+          assert.deepEqual(args,['merge-base','--is-ancestor',normal.ORIGIN.head,context.head]);return '';
+        },content(ref){assert.equal(ref,'HEAD');return contentHash;},verifyWorkflow:normal.verifyWorkflow,verifyPackage:normal.verifyPackage,
+        ASSISTANT_AFTER599_PHASE:native.ASSISTANT_AFTER599_PHASE,ASSISTANT_AFTER598_PHASE:native.ASSISTANT_AFTER598_PHASE,
+        ASSISTANT_AFTER597_PHASE:native.ASSISTANT_AFTER597_PHASE,SCALAR597_LATER_H0_PHASE:native.SCALAR597_LATER_H0_PHASE,
+        ASSISTANT_PUBLIC588_SUCCESSOR_RELEASE:source.ASSISTANT_PUBLIC588_SUCCESSOR_RELEASE,
+        requireAssistantAfter599Release:source.requireAssistantAfter599Release,
+        requireAssistantAfter598Release:source.requireAssistantAfter598Release,
+        async verifyAssistantAfter599NativeContext(...args){calls.push('after599');return normal.verifyAssistantAfter599NativeContext(...args);},
+        verifyAssistantAfter598NativeContext:normal.verifyAssistantAfter598NativeContext,
+        verifyAssistantAfter597NativeContext:normal.verifyAssistantAfter597NativeContext,
+        verifyScalar597LaterH0NativeContext:normal.verifyScalar597LaterH0NativeContext,
+        verifyInstalled593Original591NativeContext:normal.verifyInstalled593Original591NativeContext,
+        verifyAssistantPublic591SuccessorNativeContext:normal.verifyAssistantPublic591SuccessorNativeContext,
+        verifyAssistantPublic590SuccessorNativeContext:normal.verifyAssistantPublic590SuccessorNativeContext,
+        verifyAssistantPublic588SuccessorNativeContext:normal.verifyAssistantPublic588SuccessorNativeContext,
+        verifyCurrent586PhaseReceipt:native.verifyCurrent586PhaseReceipt,
+        verifyAssistantLaterH0PhaseReceipt:native.verifyAssistantLaterH0PhaseReceipt,
+        verifyAssistantPublic587SuccessorPhaseReceipt:native.verifyAssistantPublic587SuccessorPhaseReceipt,
+        verifyCurrentNativeCommands:normal.verifyCurrentNativeCommands};
+      const execute=Function(...Object.keys(dependencies),'return ('+currentContextSource+');')(...Object.values(dependencies));
+      const result=await execute();assert.deepEqual(calls,['after599']);return result;
+    };
+    const accepted=await runContext();assert.deepEqual(accepted.proof,proof);assert.equal(accepted.head,context.head);
+    for(const mutate of [p=>p.nativePostgres.phase='ASSISTANT_PUBLIC587_SUCCESSOR',p=>p.nativePostgres.current.head='d'.repeat(40),
+      p=>p.nativePostgres.commands=[...native.ASSISTANT_AFTER598_COMMANDS],p=>delete p.nativePostgres.report.accountErasure,
+      p=>p.nativePostgres.report.accountErasure.sourceSqlFileCount=76,p=>p.sourceTreeSha256='sha256:'+'d'.repeat(64),
+      p=>p.historical584National={status:'EXECUTED'}]){
+      const changed=copy(proof);mutate(changed);await assert.rejects(runContext(changed));
+    }
+    await assert.rejects(runContext(proof,{sourcePhase:'unknown-current-phase'}));
     for(const mutate of [r=>delete r.accountErasure,r=>r.accountErasure=undefined,
       r=>r.accountErasure.sourceSqlFileCount=76,r=>r.accountErasure.sourceSqlFileCount=75,
       r=>r.accountErasure.migrationVersion='20261115060000',r=>r.accountErasure.migrationSQLSha256='0'.repeat(64),
@@ -2776,6 +2834,141 @@ if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
       const changed=copy(report);mutate(changed.assistantAfter599Successor);
       await assert.rejects(native.assistantAfter599NativeReportProjection(changed,{selectedPrograms:runtime.selectedPrograms}));
     }
+    // The original V1 is an immutable fact, not rewritten as a reused run.
+    const {execFileSync}=await import('node:child_process');
+    const actualHead=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
+    const parentHead=execFileSync('git',['rev-parse','HEAD^'],{encoding:'utf8'}).trim();
+    const actualInput=await native.captureAssistantAfter599PgInput();
+    assert.equal(actualInput.sqlFiles,77);assert.equal(actualInput.complete,true);
+    const currentReuse={run:ORIGIN.run+900,attempt:1,head:actualHead,pullRequest:947,branch:'synthetic-after599-same-pr'};
+    const originRun={...copy(run),id:ORIGIN.run+800,run_attempt:1,head_sha:parentHead,head_branch:currentReuse.branch,
+      repository:{full_name:ORIGIN.repository},head_repository:{full_name:ORIGIN.repository},pull_requests:[{number:947}],
+      created_at:'2026-11-17T10:00:00Z',status:'completed',conclusion:'failure'};
+    const currentRun={...copy(originRun),id:currentReuse.run,head_sha:actualHead,created_at:'2026-11-17T12:00:00Z',status:'in_progress',conclusion:null};
+    const originalReceipt={...copy(receipt),current:{run:originRun.id,attempt:1,head:parentHead,pullRequest:947,branch:currentReuse.branch}};
+    const originalBytes=JSON.stringify(originalReceipt);
+    const makeAfter599Fixture=({mutate={},locator=null,later=false,unrelatedLater=false}={})=>{
+      const zip=Buffer.from('bounded after599 synthetic ZIP'),calls=[],origin=copy(originRun),active=copy(currentRun);
+      const laterRun={...copy(origin),id:origin.id+1,head_sha:unrelatedLater?'c'.repeat(40):actualHead};
+      const jobsFor=r=>({total_count:1,jobs:[{id:r.id+1000,name:JOB,run_id:r.id,run_attempt:1,head_sha:r.head_sha,
+        status:'completed',conclusion:'failure',steps:Array.from({length:17},(_,i)=>({number:i+1,
+          name:i===14?'Validate source contracts and release governance':i===15?STEP:i===16?CURRENT586_PHASE_UPLOAD:'setup'+i,
+          status:'completed',conclusion:'success',started_at:'2026-11-17T10:00:00Z',
+          completed_at:i<15?'2026-11-17T10:00:00Z':'2026-11-17T10:02:00Z'}))}]});
+      const metadata=r=>({id:r.id+2000,name:'native586-phase-'+r.id+'-1-'+r.head_sha,expired:false,size_in_bytes:zip.length,
+        digest:'sha256:'+v2Hash(zip),created_at:'2026-11-17T10:01:00Z',workflow_run:{id:r.id,head_sha:r.head_sha}});
+      const rows=[active,...(locator||later||unrelatedLater?[laterRun]:[]),origin];let decoding=origin,pullReads=0;
+      const proofFor=r=>({schemaVersion:r.id===laterRun.id&&locator?2:1,kind:r.id===laterRun.id&&locator?native.ASSISTANT_AFTER599_REUSE_KIND:native.ASSISTANT_AFTER599_PHASE_KIND,
+        repository:ORIGIN.repository,headSha:r.head_sha,sourceTreeSha256:'sha256:'+'e'.repeat(64),privatePayloadIncluded:false,
+        nativePostgres:r.id===laterRun.id&&locator?{...copy(locator),current:{...currentReuse,run:r.id}}:copy(originalReceipt)});
+      const get=async(route,options={})=>{
+        calls.push(route);if(mutate.unavailable)throw Error('SYNTHETIC_UNAVAILABLE');
+        if(route.endsWith('/pulls/947')){pullReads++;return {number:947,state:'open',draft:false,base:{ref:'main',repo:{full_name:ORIGIN.repository}},
+          head:{sha:mutate.prHead?'f'.repeat(40):mutate.originPrHead&&pullReads>1?normal.ORIGIN.head:actualHead,ref:currentReuse.branch,repo:{full_name:ORIGIN.repository}}};}
+        if(route.includes('/workflows/'))return {total_count:rows.length,workflow_runs:copy(rows)};
+        for(const r of rows){
+          if(route.endsWith('/runs/'+r.id))return {...copy(r),...(mutate.attempt&&r.id===origin.id?{run_attempt:2}:{})};
+          if(route.includes('/runs/'+r.id+'/attempts/1/jobs')){
+            const value=jobsFor(r);if((mutate.pgFailure&&r.id===origin.id)||((later||unrelatedLater)&&!locator&&r.id===laterRun.id))value.jobs[0].steps[15].conclusion='failure';
+            if(mutate.sourceFailure&&r.id===origin.id)value.jobs[0].steps[14].conclusion='failure';
+            if(mutate.uploadFailure&&r.id===origin.id)value.jobs[0].steps[16].conclusion='failure';return value;
+          }
+          if(route.endsWith('/runs/'+r.id+'/artifacts?per_page=100'))return {total_count:1,artifacts:[{...metadata(r),...(mutate.expired?{expired:true}:{})}]};
+          if(route.endsWith('/artifacts/'+(r.id+2000)+'/zip')){decoding=r;return mutate.zip?Buffer.from('wrong'):zip;}
+          if(route.endsWith('/artifacts/'+(r.id+2000)))return {...metadata(r),...(mutate.finalArtifact?{expired:true}:{})};
+        }
+        throw Error('UNEXPECTED_SYNTHETIC_ROUTE');
+      };
+      let inputCalls=0,runtimeCalls=0;
+      const options={env:{GITHUB_EVENT_NAME:'pull_request',GITHUB_REPOSITORY:ORIGIN.repository,GITHUB_RUN_ATTEMPT:'1',
+        SOURCE_GATE_HEAD_SHA:actualHead,GITHUB_RUN_ID:String(currentReuse.run),PULL_REQUEST_NUMBER:'947',GITHUB_HEAD_REF:currentReuse.branch},
+        get,getInput:async({ref='HEAD'}={})=>{
+          inputCalls++;const result=copy(actualInput);
+          if((mutate.input&&ref===parentHead)||(mutate.freshInput&&inputCalls>2))result.inputSha256='f'.repeat(64);
+          if(mutate.sql79&&ref===parentHead||unrelatedLater&&ref===laterRun.head_sha){result.sqlFiles=79;result.inputSha256='d'.repeat(64);}return result;
+        },getRuntime:async()=>{runtimeCalls++;return {...v2Runtime(),...(mutate.runtime||mutate.freshRuntime&&runtimeCalls>1?{imageVersion:'20261117.999'}:{})};},
+        readGit:args=>{
+          if(args[0]==='rev-parse'&&args[1]==='HEAD^{commit}')return actualHead+'\n';
+          if(args[0]==='rev-parse'&&args[1]==='--is-shallow-repository')return 'false\n';
+          if(args[0]==='status'||args[0]==='for-each-ref')return '';
+          if(args[0]==='ls-tree'||args[0]==='cat-file'&&args[1]==='blob')return execFileSync('git',args);
+          return execFileSync('git',args,{encoding:'utf8'});
+        },decode:()=>{const proof=proofFor(decoding);if(mutate.receipt)mutate.receipt(proof.nativePostgres);return Buffer.from(JSON.stringify(proof));}};
+      return {options,calls};
+    };
+    const positive=makeAfter599Fixture();
+    const reused=await native.decideAssistantAfter599Reuse(positive.options);
+    assert(reused,'The genuine after599 V1 phase survives its later national failure');
+    assert.equal(reused.kind,native.ASSISTANT_AFTER599_REUSE_KIND);assert.equal(reused.status,'REUSED');
+    assert.equal(reused.executedInThisRun,false);assert.equal(reused.origin.run,originRun.id);assert.equal(reused.origin.head,parentHead);
+    assert.equal(reused.eligibleForReuse,false);assert.equal(JSON.stringify(originalReceipt),originalBytes);
+    assert.equal(await native.verifyAssistantAfter599PhaseReceipt(reused,currentReuse),reused);
+    const claims=await normal.assistantAfter599NativeClaims(reused,currentReuse);
+    assert.equal(claims.currentAssistantAfter599Native.status,'REUSED');assert.equal(claims.currentAssistantAfter599Native.executedInThisRun,false);
+    const located=await native.decideAssistantAfter599Reuse(makeAfter599Fixture({locator:reused}).options);
+    assert(located);assert.equal(located.origin.run,originRun.id,'A reused locator is never a SQL origin');
+    for(const key of ['unavailable','prHead','originPrHead','attempt','pgFailure','sourceFailure','uploadFailure','expired','zip','finalArtifact','input','sql79','freshInput','runtime','freshRuntime']){
+      const f=makeAfter599Fixture({mutate:{[key]:true}});assert.equal(await native.decideAssistantAfter599Reuse(f.options),null,key);
+    }
+    assert.equal(await native.decideAssistantAfter599Reuse(makeAfter599Fixture({later:true}).options),null,'Later relevant native failure executes normally');
+    const unrelated=await native.decideAssistantAfter599Reuse(makeAfter599Fixture({unrelatedLater:true}).options);
+    assert(unrelated,'A proved different79-SQL failure cannot invalidate the unchanged77-SQL phase');
+    let clock=0;const clockMock=t.mock.method(performance,'now',()=>clock);
+    try{const late=makeAfter599Fixture(),transport=late.options.get;
+      late.options.get=async(...args)=>{const value=await transport(...args);clock=60001;return value;};
+      assert.equal(await native.decideAssistantAfter599Reuse(late.options),null,'Expired qualification never grants reuse');
+    }finally{clockMock.mock.restore();}
+    for(const mutate of [r=>r.eligibleForReuse=true,r=>r.status='REUSED',r=>r.executedInThisRun=false,
+      r=>r.report.assistantAfter599Successor.sqlExecuted=false,r=>r.report.accountErasure.sourceSqlFileCount=76,
+      r=>r.report.accountErasure.cases=48,r=>r.report.accountErasure.checkReference.definitions.pop()]){
+      assert.equal(await native.decideAssistantAfter599Reuse(makeAfter599Fixture({mutate:{receipt:mutate}}).options),null);
+    }
+    // The actual ESM CLI, main, reuse-return and record bodies run unchanged.
+    // Only the already qualified decision and file transport are synthetic.
+    const os=await import('node:os'),{pathToFileURL}=await import('node:url');
+    const nativeSource=await fs.readFile('scripts/native-postgres-evidence.mjs','utf8');
+    const executeStart=nativeSource.indexOf('export async function executeAssistantAfter599Native(){');
+    const recordStart=nativeSource.indexOf('async function record(receipt) {',executeStart);
+    const mainStart=nativeSource.indexOf('async function main() {',recordStart);
+    const entryStart=nativeSource.lastIndexOf('if(process.argv[1]');
+    assert(executeStart>=0&&recordStart>executeStart&&mainStart>recordStart&&entryStart>mainStart);
+    const owned=await fs.mkdtemp(path.join(os.tmpdir(),'rr-after599-reuse-cli-'));
+    try{
+      const entry=path.join(owned,'normal-entry.mjs');
+      const nativeDriverNames=["CURRENT586_PHASE_FILE","ASSISTANT_AFTER599_PHASE","ASSISTANT_AFTER598_PHASE","ASSISTANT_AFTER597_PHASE","SCALAR597_LATER_H0_PHASE","ASSISTANT_AFTER599_PHASE_KIND","ASSISTANT_AFTER598_PHASE_KIND","ASSISTANT_AFTER597_PHASE_KIND","SCALAR597_LATER_H0_PHASE_KIND","INSTALLED593_ORIGINAL591_V2_KIND","INSTALLED593_ORIGINAL591_PHASE_KIND","CURRENT586_PHASE_KIND","ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND","ASSISTANT_PUBLIC590_SUCCESSOR_PHASE_KIND","ASSISTANT_PUBLIC588_SUCCESSOR_PHASE_KIND","ASSISTANT_PUBLIC587_SUCCESSOR_PHASE_KIND","ASSISTANT_LATER_H0_PHASE_KIND","ACTIVE_NATIVE_SCRIPT","ACTIVE_COMMANDS","ASSISTANT_AFTER599_SCRIPT","executeAssistantAfter598Native","executeAssistantAfter597Native","captureInstalled593Original591Input","captureAssistantPublic591Input","verifyInstalled593Original591Input","verifyAssistantPublic591Input","verifyInstalled593Original591V2PhaseReceipt","verifyAssistantPublic591V2PhaseReceipt","decideInstalled593Original591Reuse","decideAssistantPublic591Reuse","completeInstalled593Original591Execution","assistantPublic591Runtime","verifyAssistantPublic591Runtime","assistantAfter599NativeReportCollector","verifyAssistantAfter599PhaseReceipt","verifyAssistantAfter598PhaseReceipt","verifyAssistantAfter597PhaseReceipt","verifyScalar597LaterH0PhaseReceipt","verifyInstalled593Original591PhaseReceipt","verifyCurrent586PhaseReceipt","verifyAssistantPublic591SuccessorPhaseReceipt","verifyAssistantPublic590SuccessorPhaseReceipt","verifyAssistantPublic588SuccessorPhaseReceipt","verifyAssistantPublic587SuccessorPhaseReceipt","verifyAssistantLaterH0PhaseReceipt"];
+      const sourceDriverNames=["requireInstalled593Original591Release","requireInstalled593Original591Binding","requireInstalled593Original591Output","INSTALLED593_ORIGINAL591_DATABASE_BEFORE","requireAssistantPublic591SuccessorRelease","requireAssistantPublic590SuccessorRelease","requireAssistantPublic588SuccessorRelease","requireAssistantPublic587SuccessorRelease","requireAssistantLaterH0Release"];
+      for(const name of nativeDriverNames)assert(Object.hasOwn(native,name),'Actual native export '+name);
+      for(const name of sourceDriverNames)assert(Object.hasOwn(source,name),'Actual source export '+name);
+      const driver=`import assert from 'node:assert/strict';import path from 'node:path';import {fileURLToPath} from 'node:url';
+const native=await import(${JSON.stringify(pathToFileURL(path.resolve('scripts/native-postgres-evidence.mjs')).href)});
+const source=await import(${JSON.stringify(pathToFileURL(path.resolve('scripts/lib/assistant-later-h0-successor-source.mjs')).href)});
+const ORIGIN=native.ORIGIN,ACTIVE=source.ACTIVE_ASSISTANT_SUCCESSOR;
+const {${nativeDriverNames.join(',')}}=native;
+const {${sourceDriverNames.join(',')}}=source;
+const unselectedSql=()=>{throw Error('SYNTHETIC_CLI_UNSELECTED_SQL_BRANCH');};
+const assistantAfter599PhaseIdentity=unselectedSql,accountErasureSourceIdentity=unselectedSql,executeMarkedNative=unselectedSql,
+installed593Original591LocalProof=unselectedSql,assistantPublic591LocalProof=unselectedSql,
+executeAssistantPublic591Native=unselectedSql,executeScalar597LaterH0=unselectedSql,spawnSync=unselectedSql;
+const receipt=${JSON.stringify(reused)},writes=[];let decisions=0;
+const proof={headSha:receipt.current.head,repository:ORIGIN.repository,contractId:'weather-source-gate-content-v2',privatePayloadIncluded:false,sourceTreeSha256:'sha256:'+'e'.repeat(64)};
+const fs={async readFile(file){assert.equal(file,'.cache/source-tree-content-proof.json');return JSON.stringify(proof);},async writeFile(file,text,options){writes.push({file,value:JSON.parse(text),options});}};
+const git=args=>{assert.deepEqual(args,['rev-parse','HEAD^{commit}']);return receipt.current.head;};
+const assertCurrentAccountErasureNativeReport=async report=>{assert.deepEqual(await native.assistantAfter599NativeReportProjection(report,{selectedPrograms:receipt.runtime.selectedPrograms}),report);};
+async function decideAssistantAfter599Reuse(){assert.equal(process.env.RAVRADAR_SOURCE_NODE24,undefined);decisions++;return receipt;}
+${nativeSource.slice(executeStart,recordStart).replace(/^export /,'')}
+${nativeSource.slice(recordStart,mainStart)}
+${nativeSource.slice(mainStart,entryStart)}
+${nativeSource.slice(entryStart)}
+assert.equal(decisions,1);assert.equal(writes.length,2);const phase=writes.find(row=>row.file===CURRENT586_PHASE_FILE);
+assert.equal(phase.value.schemaVersion,2);assert.equal(phase.value.kind,native.ASSISTANT_AFTER599_REUSE_KIND);
+assert.equal(phase.value.nativePostgres.status,'REUSED');assert.equal(phase.value.nativePostgres.executedInThisRun,false);
+console.log(JSON.stringify({scope:'SYNTHETIC_NORMAL_CLI_WIRING',decisions,writes:writes.length,sqlExecuted:false}));`;
+      await fs.writeFile(entry,driver);
+      const stdout=execFileSync(process.execPath,[entry],{encoding:'utf8',timeout:65000,maxBuffer:32768,
+        env:{PATH:process.env.PATH,SystemRoot:process.env.SystemRoot,GITHUB_RUN_ID:String(currentReuse.run),GITHUB_RUN_ATTEMPT:'1',
+          PULL_REQUEST_NUMBER:String(currentReuse.pullRequest),GITHUB_HEAD_REF:currentReuse.branch,RAVRADAR_SOURCE_NODE24:'synthetic-earlier-sdk-hint'}});
+      assert.deepEqual(JSON.parse(stdout),{scope:'SYNTHETIC_NORMAL_CLI_WIRING',decisions:1,writes:2,sqlExecuted:false});
+    }finally{await fs.rm(owned,{recursive:true,force:true});}
     t.diagnostic('Typed DATA fixture only; no PostgreSQL, full historical installation or production receipt claimed.');
   });
 }

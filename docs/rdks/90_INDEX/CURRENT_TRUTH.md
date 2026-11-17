@@ -138,6 +138,12 @@ De konkrete controller-/kildeejere får naturligt sourceControls-ansvar med begg
 
 <!-- RAVRADAR_ACTIVE_ENTRY_START -->
 
+## Afgrænset kontroloprydning og privat månedskalder
+
+Den sammenhængende kildekandidat fjerner en ekstra global testudførelse fra den historiske workflowfortegnelse, giver privat statistik ét naturligt normalt testmål og kvalificerer uændret after599-PostgreSQL som særskilt genbrug af den autentiske oprindelige fase. Hele CURRENT-prøvens maksimum er 480 sekunder; vejrets frister og numeriske kontrakter ændres ikke. Månedskalderen genlæser faktisk OFF/ON og kan ikke aktivere eller installere statistik. Se DEC-0302 og håndbog89.342/89.321. Kildekvalifikation, installation og faktisk automatisk virkning er særskilte åbne trin.
+
+
+
 ## LF7-observation, historiske prøveinput og uafhængig levering
 
 Den afgrænsede LF7-opfølgning observerer det normale vandstandskildevalg, T+3-støtte og beregnede slutværdier i de syv kystzoner. Den ændrer ikke kildevalg, strøm-/temperaturudelukkelse, interpolation, scoreformel, administratorpunkter eller geometri. Manglende eller modstridende observation mærkes ærligt; den bliver ikke en ny produktionsgate eller et bevis for komplet dækning.
@@ -167,7 +173,7 @@ En vedligeholdelsestur, som ikke gennemgår nogen GRIB-fil, registreres som nul 
 
 Den sidste oprydning efter en offentligt verificeret Pages-udgivelse skal have workflowets eksisterende GitHub-læseadgang med til kontrollen af den oprindelige skriver. Den afsluttede føraktiveringsfase må først fjernes efter den præcise terminalkvittering og de normale ejer- og offentlige kontroller. Lokal kalderkontrol er ikke bevis for, at en konkret fase er fjernet; faktisk oprydning og normal kildekvalifikation verificeres særskilt.
 
-**Den fungerende produktionsvej er den numeriske 598-driftsfamilie.** Almindelig vejrhentning og offentlig levering har faktisk fungeret. Det beviser ikke fuld dækning, alle fejlforløb eller hele projektets færdiggørelse. Seneste leverance, igangværende kørsel og næste skrivevindue skal aflæses i det private checkpoint; flygtige kørselsoplysninger fastholdes ikke her.
+**Den fungerende produktionsvej er den numeriske 599-driftsfamilie.** Almindelig vejrhentning og offentlig levering har faktisk fungeret. Det beviser ikke fuld dækning, alle fejlforløb eller hele projektets færdiggørelse. Seneste leverance, igangværende kørsel og næste skrivevindue skal aflæses i det private checkpoint; flygtige kørselsoplysninger fastholdes ikke her.
 
 Vejret skal fortsat hentes og opdateres gennem DMI, dernæst Copernicus og til sidst Open-Meteo. DMI skal prioritere reelle tomme huller før overtagelse af gyldige timer fra andre kilder. Nyere gyldige data skal fortsat kunne opdatere prognosen efter de gældende kilde- og proveniensregler. Cache og fremadrettet historik fortsætter uden endnu en nulstilling. Gamle originale data og offentliggjorte scorer bevares efter deres egne kontrakter; de er ikke en tvungen gammel strømhistorik for den nye drift.
 

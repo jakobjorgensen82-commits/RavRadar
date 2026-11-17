@@ -8,6 +8,7 @@ import fsSync from 'node:fs';
 import vm from 'node:vm';
 import {exactRelativeModuleSpecifiers} from './lib/static-module-closure.mjs';
 import test from 'node:test';
+import {readHistoricalPrivateStudySources} from './lib/pages-closure-historical-test-input.mjs';
 // Keep the existing active water-routing display contract in this normal adminUI caller.
 await import('./test-water-station-active-routing-display-4.0.102.mjs');
 import {ACTIVE_ASSISTANT_SUCCESSOR as activeNationalSource} from './lib/assistant-later-h0-successor-source.mjs';
@@ -165,7 +166,7 @@ test('private-study005: the normal workflow stays OFF and DDL remains outside Wo
 });
 
 async function privateStudyPre007Workflow(){
-  let source=(await fs.readFile(new URL('../.github/workflows/private-trip-weather-study.yml',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  let source=readHistoricalPrivateStudySources().workflow;
   source=reviewedFrozenReplayWorkflow(source);
   const review=JSON.parse(await fs.readFile(new URL('./lib/private-trip-study-categorical-review.json',import.meta.url),'utf8')).workflow;
   const hash=value=>crypto.createHash('sha256').update(value).digest('hex');
@@ -197,7 +198,7 @@ async function privateStudyPre007Workflow(){
 }
 
 async function privateStudyPre007Controller(){
-  let source=(await fs.readFile(new URL('./deploy-private-trip-study.mjs',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  let source=readHistoricalPrivateStudySources().controller;
   const review=JSON.parse(await fs.readFile(new URL('./lib/private-trip-study-categorical-review.json',import.meta.url),'utf8'));
   const hash=value=>crypto.createHash('sha256').update(value).digest('hex');
   assert.equal(review.kind,'PRIVATE_TRIP_STUDY_007_TEST_ONLY_INVERSE');
@@ -927,7 +928,7 @@ test('private-study006: privat eksport bevarer hele installationsarm og normale 
     ["inputs.operation == 'export'","inputs.operation != 'deliver'"],['node scripts/publish-private-trip-weather-study.mjs','node scripts/deploy-private-trip-study.mjs']]){
     assert(workflow.includes(before));assert.throws(()=>validate(workflow.replace(before,after)));
   }
-  const publisher=reviewedPrivateStudyOperatorPublisher(reviewedFrozenReplayPublisher(await read('scripts/publish-private-trip-weather-study.mjs')));
+  const publisher=reviewedPrivateStudyOperatorPublisher(reviewedFrozenReplayPublisher(readHistoricalPrivateStudySources().publisher));
   assert.equal(sha(publisher),'5b087741711e31ad64401be9a8bbfc4ffb0bfe53bd7e68a50a9fe08cd947d6dc');
   // TEST DATA only: the exact normal594 versioned dashboard precedes every
   // unchanged593 and older whole-file oracle. No UI behavior is ported here.

@@ -12,7 +12,7 @@ import {SOURCE_GATE_CONTRACT,PULL_REQUEST_SOURCE_JOB,PULL_REQUEST_SOURCE_WORKFLO
 import {currentChangeSourceArtifactName,currentContractSourceArtifactName}
   from './source-current-contract-receipt.mjs';
 import {TARGETED_SOURCE_STEP_NAMES,TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES,TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES,TARGETED_OWNED_CACHE_NATIVE_SOURCE_STEP_NAMES,verifyTargetedSourceStepShape} from './source-targeted-consumer.mjs';
-import {SOURCE_IMPACT_DMI_REQUIREMENTS_REVIEW,SOURCE_IMPACT_FULL_CURRENT_COMMAND,
+import {SOURCE_IMPACT_DMI_REQUIREMENTS_REVIEW,SOURCE_IMPACT_FULL_CURRENT_COMMAND,SOURCE_IMPACT_FULL_CURRENT_PREVIOUS_COMMAND,
   inverseOwnedCacheNativeWorkflow,inverseSourceImpactFullCurrent} from './lib/source-impact-workflow-review.mjs';
 import {ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS,ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND,ORIGIN}
   from './native-postgres-evidence.mjs';
@@ -235,12 +235,20 @@ try{
   // Actual raw current input is accepted independently of the historical oracle.
   assert.notEqual(currentNativeWorkflow,nativeWorkflow,'The raw current workflow must retain its reviewed whole CURRENT owner');
   assert.equal(verifyTargetedSourceStepShape({steps:nativeSteps},currentNativeWorkflow).proofTime,Date.parse(stamp(9)));cases++;
+  assert.equal(SOURCE_IMPACT_FULL_CURRENT_COMMAND,'timeout --signal=KILL 480s node --test scripts/test-source-current-contracts.mjs');
+  const historicalCurrentWorkflow=currentNativeWorkflow.replace(SOURCE_IMPACT_FULL_CURRENT_COMMAND,SOURCE_IMPACT_FULL_CURRENT_PREVIOUS_COMMAND);
+  assert.notEqual(historicalCurrentWorkflow,currentNativeWorkflow);
+  assert.equal(verifyTargetedSourceStepShape({steps:nativeSteps},historicalCurrentWorkflow).proofTime,Date.parse(stamp(9)));cases++;
+  for(const changed of [historicalCurrentWorkflow.replace('KILL 300s','KILL 299s'),historicalCurrentWorkflow.replace('KILL 300s','KILL 301s')]){
+    assert.throws(()=>verifyTargetedSourceStepShape({steps:nativeSteps},changed));cases++;
+  }
   const currentLine='          && '+SOURCE_IMPACT_FULL_CURRENT_COMMAND+'\n';
   const currentAnchor='          && node scripts/test-source-impact-workflow.mjs\n';
   assert.equal(currentNativeWorkflow.split(currentAnchor+currentLine).length,2);
   for(const changed of [
-    currentNativeWorkflow.replace(SOURCE_IMPACT_FULL_CURRENT_COMMAND,SOURCE_IMPACT_FULL_CURRENT_COMMAND.replace('300s','299s')),
+    currentNativeWorkflow.replace(SOURCE_IMPACT_FULL_CURRENT_COMMAND,SOURCE_IMPACT_FULL_CURRENT_COMMAND.replace('480s','479s')),
     currentNativeWorkflow.replace(currentLine,currentLine+currentLine),
+    currentNativeWorkflow.replace(currentLine,currentLine+'          && '+SOURCE_IMPACT_FULL_CURRENT_PREVIOUS_COMMAND+'\n'),
     currentNativeWorkflow.replace(currentAnchor+currentLine,currentLine+currentAnchor),
     currentNativeWorkflow+'\n',currentNativeWorkflow.replace('RAVRADAR_SOURCE_NODE24=','RAVRADAR_SOURCE_OTHER='),
   ]){

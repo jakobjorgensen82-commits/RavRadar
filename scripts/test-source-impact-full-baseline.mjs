@@ -682,4 +682,42 @@ if(ACTIVE.sourcePhase==='assistant-after599-successor'){
       const result=await f.qualify();assert.equal(result.status,'REFUSED');assert.equal(qualifiedAccountErasureChecks(result),null);
     }
   });
+  test('601 FULL admits separately qualified after599 PG reuse without rewriting executed V1 evidence',async()=>{
+    const native=await import('./native-postgres-evidence.mjs');
+    const actualHead=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
+    const actualInput=await native.captureAssistantAfter599PgInput();
+    assert.equal(actualInput.sqlFiles,77,'Real current source inventory, not an old receipt flag');
+    const f=await synthetic601FullFixture(),v1=copy(f.full.nativePostgres),v1Bytes=JSON.stringify(v1);
+    const reused={...copy(v1),schemaVersion:2,kind:native.ASSISTANT_AFTER599_REUSE_KIND,
+      status:'REUSED',executedInThisRun:false,nativeInput:actualInput,
+      origin:{run:runId-1,attempt:1,job:jobId-1,head:h('f'),artifactId:50000000000,
+        artifactDigest:'sha256:'+'d'.repeat(64),sourceTreeSha256}};
+    f.full.nativePostgres=reused;Object.assign(f.phase,{schemaVersion:2,kind:native.ASSISTANT_AFTER599_REUSE_KIND,nativePostgres:copy(reused)});
+    Object.assign(f.full.historical584National.currentAssistantAfter599Native,{status:'REUSED',executedInThisRun:false,origin:copy(reused.origin)});
+    const originalRead=f.dependencies.readGit;
+    // Existing synthetic transport maps its producer object to the actual77-file
+    // source snapshot for the normal raw PG-input reader. No historical pins,
+    // metadata facit or production qualification is rewritten.
+    f.dependencies.readGit=(args,options)=>{
+      if(args[0]==='ls-tree'&&args.at(-1)===head)return execFileSync('git',args.map(arg=>arg===head?actualHead:arg),options);
+      if(args[0]==='cat-file'&&args[1]==='blob'&&args[2].startsWith(head+':')&&!args[2].endsWith(':version.json'))
+        return execFileSync('git',args.map(arg=>arg.startsWith(head+':')?actualHead+arg.slice(head.length):arg),options);
+      if(args[0]==='rev-parse'&&args[1].endsWith('^{tree}')&&![head,merge,candidate].some(ref=>args[1]===ref+'^{tree}'))
+        return execFileSync('git',args,options);
+      return originalRead(args,options);
+    };
+    f.rebuild();const result=await f.qualify();assert.equal(result.kind,SOURCE_IMPACT_FULL_BASELINE_KIND);
+    assert.equal(qualifiedAccountErasureChecks(result).checkReference.definitions.length,28);
+    assert.equal(JSON.stringify(v1),v1Bytes);assert.equal(reused.executedInThisRun,false);
+    for(const mutate of [r=>r.executedInThisRun=true,r=>r.origin.attempt=2,
+      r=>r.nativeInput.inputSha256='0'.repeat(64),r=>r.nativeInput.sqlFiles=79,
+      r=>delete r.report.accountErasure,r=>r.report.accountErasure.sourceSqlFileCount=76,
+      r=>r.report.accountErasure.sourceSqlFileCount=75,r=>r.report.accountErasure.cases=48,
+      r=>r.report.accountErasure.checkReference.definitions.pop()]){
+      const bad=copy(reused);mutate(bad);f.full.nativePostgres=bad;f.phase.nativePostgres=copy(bad);
+      Object.assign(f.full.historical584National.currentAssistantAfter599Native,
+        {status:bad.status,executedInThisRun:bad.executedInThisRun,origin:copy(bad.origin)});
+      f.rebuild();assert.equal((await f.qualify()).status,'REFUSED');
+    }
+  });
 }

@@ -8,7 +8,7 @@ import {projectSourceImpactWorkflowFull,SOURCE_IMPACT_FULL_WORKFLOW_ORIGIN,
   SOURCE_IMPACT_PR_READ_GRANT,inverseSourceImpactPrReadGrant,inverseSourceImpactSdkEarlyLinux,
   SOURCE_IMPACT_HOUR_EARLY_LINUX_REVIEW,inverseSourceImpactHourEarlyLinux,
   inverseOwnedCacheNativeWorkflow,isAdditiveOwnedCacheNativeWorkflowChange,OWNED_CACHE_NATIVE_EARLY_NODE24,
-  inverseSourceImpactFullCurrent,SOURCE_IMPACT_FULL_CURRENT_COMMAND}
+  inverseSourceImpactFullCurrent,SOURCE_IMPACT_FULL_CURRENT_COMMAND,SOURCE_IMPACT_FULL_CURRENT_PREVIOUS_COMMAND}
   from './lib/source-impact-workflow-review.mjs';
 import {inverseSourceImpactDmiPython,SOURCE_IMPACT_DMI_PYTHON_REVIEW,SOURCE_IMPACT_DMI_REQUIREMENTS_REVIEW} from './lib/source-impact-workflow-review.mjs';
 import {verifyWorkflow,inverseSourceBeforePostgresWorkflow,inverseCandidatePublicSourceRunLine,
@@ -23,23 +23,35 @@ function assertNormalFullCurrentEntry(value){
   assert(start>=0);const end=value.indexOf('\n      - ',start+1),block=value.slice(start,end);
   assert.equal(block.split(SOURCE_IMPACT_FULL_STEP_CONDITION).length,2);
   assert.equal(value.split(SOURCE_IMPACT_FULL_CURRENT_COMMAND).length,2);
+  assert.equal(value.includes(SOURCE_IMPACT_FULL_CURRENT_PREVIOUS_COMMAND),false);
   assert(block.includes('          && node scripts/test-source-impact-workflow.mjs\n'
     +'          && '+SOURCE_IMPACT_FULL_CURRENT_COMMAND+'\n'));
 }
+assert.equal(SOURCE_IMPACT_FULL_CURRENT_COMMAND,'timeout --signal=KILL 480s node --test scripts/test-source-current-contracts.mjs');
 assertNormalFullCurrentEntry(rawSource);
 assert.equal(projectSourceImpactWorkflowFull(rawSource),projectSourceImpactWorkflowFull(currentSource));
 assert.equal(currentSource.replace('          && node scripts/test-source-impact-workflow.mjs\n',
   '          && node scripts/test-source-impact-workflow.mjs\n          && '+SOURCE_IMPACT_FULL_CURRENT_COMMAND+'\n'),rawSource);
-let fullCurrentCases=1;
+// Den historiske form med 300 sekunder er adskilt fra den aktuelle grænse på 480 sekunder.
+const historicalSource=rawSource.replace(SOURCE_IMPACT_FULL_CURRENT_COMMAND,SOURCE_IMPACT_FULL_CURRENT_PREVIOUS_COMMAND);
+assert.notEqual(historicalSource,rawSource);
+assert.throws(()=>assertNormalFullCurrentEntry(historicalSource));
+assert.equal(inverseSourceImpactFullCurrent(historicalSource),currentSource);
+assert.equal(projectSourceImpactWorkflowFull(historicalSource),projectSourceImpactWorkflowFull(rawSource));
+let fullCurrentCases=2;
 for(const changed of [rawSource.replace('          && '+SOURCE_IMPACT_FULL_CURRENT_COMMAND+'\n',''),
-  rawSource.replace('KILL 300s','KILL 301s'),rawSource.replace('KILL 300s','KILL 299s'),
+  rawSource.replace('KILL 480s','KILL 481s'),rawSource.replace('KILL 480s','KILL 479s'),
   rawSource.replace(SOURCE_IMPACT_FULL_CURRENT_COMMAND,SOURCE_IMPACT_FULL_CURRENT_COMMAND+' --unknown'),
   rawSource.replace(SOURCE_IMPACT_FULL_CURRENT_COMMAND,SOURCE_IMPACT_FULL_CURRENT_COMMAND+'\n          && '+SOURCE_IMPACT_FULL_CURRENT_COMMAND),
+  rawSource.replace(SOURCE_IMPACT_FULL_CURRENT_COMMAND,SOURCE_IMPACT_FULL_CURRENT_COMMAND+'\n          && '+SOURCE_IMPACT_FULL_CURRENT_PREVIOUS_COMMAND),
   rawSource.replace('      - name: Install source-gate dependencies\n'+SOURCE_IMPACT_FULL_STEP_CONDITION,
     '      - name: Install source-gate dependencies\n'+SOURCE_IMPACT_FULL_STEP_CONDITION.replace('!=','=='))]){
   assert.throws(()=>assertNormalFullCurrentEntry(changed));
   if(changed!==currentSource)assert.throws(()=>projectSourceImpactWorkflowFull(changed));
   fullCurrentCases++;
+}
+for(const changed of [historicalSource.replace('KILL 300s','KILL 301s'),historicalSource.replace('KILL 300s','KILL 299s')]){
+  assert.throws(()=>projectSourceImpactWorkflowFull(changed));fullCurrentCases++;
 }
 const actualSource=inverseOwnedCacheNativeWorkflow(currentSource);
 // Aktuel rå kalder: præcis to miljøsteps, normal Node22 og hele gamle ramme.

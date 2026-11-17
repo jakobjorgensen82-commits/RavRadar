@@ -4,6 +4,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import vm from 'node:vm';
+import childProcess from 'node:child_process';
+import {syncBuiltinESMExports} from 'node:module';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {qualifyOwnerProbeCli,ownerProbeInventory,readUniqueConfirmedOwner,runOwnerProbeWindow,
   materializeOwnerProbe} from './owner-notice-probe-ci.mjs';
@@ -77,6 +79,31 @@ test('one current owner catalog closes new and changed workflows; the legacy inv
   assert.equal(currentWorkflowTargets('../outside.yml'),null);
   assert.throws(()=>qualifyCurrentWorkflowInventory('synthetic override'),/No caller-selected/);
 });
+
+test('legacy inventory uses authentic membership without starting current target commands',()=>{
+  const original=childProcess.execFileSync,calls=[];
+  childProcess.execFileSync=(command,args,options)=>{
+    calls.push({command,args:[...args]});
+    assert.equal(command,'git','Historical membership must not start a current target');
+    assert(!args.some(value=>['fetch','push','checkout','update-ref'].includes(value)),'Historical inventory reads only Git objects');
+    return original(command,args,options);
+  };
+  syncBuiltinESMExports();
+  try{
+    const names=qualifyCurrentWorkflowInventory();
+    assert(Object.isFrozen(names));assert(names.length>0);
+    assert(names.every(name=>/^[A-Za-z0-9_.-]+\.ya?ml$/.test(name)));
+    assert.equal(names.length,new Set(names).size);
+    assert(calls.length>0);assert(calls.every(call=>call.command==='git'));
+    assert.throws(()=>qualifyCurrentWorkflowInventory('replacement catalog'),/No caller-selected/);
+    const rawProducer=fs.readFileSync(path.join(root,'scripts/source-targeted-producer.mjs'),'utf8');
+    const rawConsumer=fs.readFileSync(path.join(root,'scripts/source-targeted-consumer.mjs'),'utf8');
+    assert(rawProducer.includes('for(const command of executionPlan.commands)'),'The normal CURRENT producer still executes its own selected commands');
+    assert(rawConsumer.includes('readCommittedCurrentSourcePlans'),'The normal consumer still recomputes actual committed plans');
+    assert(rawConsumer.includes('qualifySourceImpactFullBaseline'),'The normal consumer still qualifies authentic baseline evidence');
+  }finally{childProcess.execFileSync=original;syncBuiltinESMExports();}
+});
+
 function fixture(change={}){
   const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'rr-mail-ci-')),calls=[],announcements=[];
   let deployed=!!change.cleanupOnly,deleted=false,deployment,now=1_800_000_000_000,listReads=0;

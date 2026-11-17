@@ -149,6 +149,12 @@ De konkrete controller-/kildeejere får naturligt sourceControls-ansvar med begg
 
 <!-- RAVRADAR_ACTIVE_ENTRY_START -->
 
+## Afgrænset kontroloprydning og privat månedskalder
+
+Den sammenhængende kildekandidat fjerner en ekstra global testudførelse fra den historiske workflowfortegnelse, giver privat statistik ét naturligt normalt testmål og kvalificerer uændret after599-PostgreSQL som særskilt genbrug af den autentiske oprindelige fase. Hele CURRENT-prøvens maksimum er 480 sekunder; vejrets frister og numeriske kontrakter ændres ikke. Månedskalderen genlæser faktisk OFF/ON og kan ikke aktivere eller installere statistik. Se DEC-0302 og håndbog89.342/89.321. Kildekvalifikation, installation og faktisk automatisk virkning er særskilte åbne trin.
+
+
+
 ## LF7-observation, historiske prøveinput og uafhængig levering
 
 Den afgrænsede LF7-opfølgning observerer det normale vandstandskildevalg, T+3-støtte og beregnede slutværdier i de syv kystzoner. Den ændrer ikke kildevalg, strøm-/temperaturudelukkelse, interpolation, scoreformel, administratorpunkter eller geometri. Manglende eller modstridende observation mærkes ærligt; den bliver ikke en ny produktionsgate eller et bevis for komplet dækning.
@@ -200,7 +206,7 @@ Revisionens syv målkrav består hos de aktuelle ejere: Fur og bevarelse af gyld
 
 Den konkret identificerede 240-sekunders failure-worker tilhører den pensionerede private Source-tail. Den er ikke en ny global frist for almindelig R2-/cacheupload. Den normale lokale SAVE og efterfølgende upload er adskilte operationer. DMI-finalisering og CP-timeout-recovery bevarer deres egne vedtagne budgetter samt fysisk stop, afventning og første fejl. Kravet om sikker, tidsafgrænset fejlafslutning består som en afgrænset acceptrest. Den additive normale SDK-prøve for tab af actionparent er separat kildeforberedt og indgår ikke i denne pakke; syntakskontrol er ikke faktisk Linux-/SDK-accept eller bevis for en produktfejl.
 
-Den normale beskyttede månedsrapport er læseaccepteret via den eksisterende ejerknap med færdig rapport og genetablerede kontroller. De ni relevante kalder-/adgangs-/schemafiler er bytebevist uændrede siden den accepterede læsning; installations-SQL er uændret uden for håndbogspayload. Dette lukker kun den almindelige beskyttede visningsprøve. JSON-eksport, andre rollers adgang, privacybevis, kalibreringsgyldighed og offentlig statistikaktivering har egne rester.
+Den normale beskyttede månedsrapport er læseaccepteret via den eksisterende ejerknap med færdig rapport og genetablerede kontroller. De ni relevante kalder-/adgangs-/schemafiler er bytebevist uændrede siden den accepterede læsning; installations-SQL er uændret uden for håndbogspayload. Dette lukker kun den almindelige beskyttede visningsprøve. JSON-eksport er nu faktisk accepteret gennem ejerens normale knap. Andre rollers adgang, privacybevis, kalibreringsgyldighed og offentlig statistikaktivering har egne rester.
 
 Den afgrænsede kontrolkandidat lader alene det eksisterende regulære planner-/CURRENT-prøvepar vælge fire hele kontrolmål. Andre ændrede kontrolinput beholder alle otte, og øvrige produktområders hele mål består. Pages-delingscontrollerens tre præcise eksisterende stier får sharing-ansvar med hele controller-, timeline- og projection-prøver. Ukendte og beskyttede input, egne historiske kataloger, normal FULL-læsning, senere negativer og frisk kontrolreview bevares. Fokuseret lokal selektion er ikke hel CURRENT-kvalifikation eller offentlig accept; endelig præcis kilde-CI og Linux-tidsmargin er åbne. Se DEC-0302 og håndbog 89.342.
 

@@ -1,3 +1,9 @@
+## 17. november — fjern overflødige kontrolkrav
+
+Ejerens instruktion er at fjerne alle overflødige kontrolkrav og uvedkommende stop. En historisk workflowfortegnelse er prøveinput, ikke en ekstra global teststarter. Den eksisterende historiske læser bevarer sit autentiske grundlag og kontrollerer en begrænset, sikker aktuel fortegnelsesform; den starter ikke aktuelle målprocesser og kræver ikke, at pensionerede workflows fortsat findes. Den normale CURRENT-producent og -forbruger vælger og udfører fortsat relevante hele mål for den faktiske ændring. Månedskalderen har ét naturligt account-callers-mål, som allerede importerer månedsskifte og controller; tre identiske starter er ikke nødvendige.
+
+Genbrug positivt kvalificeret uændret databasearbejde gennem normalvejen. Nye eller ændrede relevante databaseinput kræver faktisk prøve; historiske kvitteringer omskrives ikke. Detaljer i DEC-0302 og privat checkpoint. Denne arbejdsregel ændrer ingen score-, data-, adgangs- eller produktionskontrakt.
+
 ## 30. oktober — ændringsbaseret kontrol og oprydning
 
 Testomfanget skal følge ændringens faktiske påvirkning og relevante afhængigheder. Uændrede, uvedkommende områder skal ikke automatisk udløse dybe prøver. Korte prøver af den normale kæde kommer tidligt; overflødige, gentagne og erstattede kontroller fjernes fra den normale leveringsvej.

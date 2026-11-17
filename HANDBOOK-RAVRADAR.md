@@ -417,6 +417,17 @@ Samme 599-kode og en almindelig app600 med fast modelfamilie599 kan analyseres p
 
 Den normale workflowprøve skal tilsvarende verificere den nye migrationsrække og de præcise nye kald før sine uændrede historiske projektioner. Hele den nye række, oprindelig SQL, workflowets øvrige bytes og begge rundrejser kontrolleres. Der opfindes ingen ny baseline eller generel versionsnormalisering. De relevante normale mål, faktisk Linux-kildekontrol, ny nødvendig PostgreSQL-eksekvering og sikker installation er fortsat særskilte krav.
 
+### Færre gentagelser og klar adskillelse af historiske prøveinput
+
+Ejerens instruktion er at fjerne alle overflødige kontrolkrav og uvedkommende stop. En historisk workflowfortegnelse er prøveinput, ikke en ekstra global teststarter. Den eksisterende historiske læser bevarer sit autentiske grundlag og kontrollerer en begrænset, sikker aktuel fortegnelsesform; den starter ikke aktuelle målprocesser og kræver ikke, at pensionerede workflows fortsat findes. Den normale CURRENT-producent og -forbruger vælger og udfører fortsat relevante hele mål for den faktiske ændring. Månedskalderen har ét naturligt account-callers-mål, som allerede importerer månedsskifte og controller; tre identiske starter er ikke nødvendige.
+
+En faktisk bestået after599-PostgreSQL-fase kan kvalificeres særskilt som REUSED-V2, også når den oprindelige kørsel senere stoppede i nationalprøven. Den oprindelige EXECUTED-V1-kvittering ændres ikke. Genbrug kræver positivt samme faktiske native-/SQL-/model-/frosne Git-input, relevante pakkeresolverfelter og observerede runtime samt autentisk oprindelig fase, artifact, kørsel, job og forsøg. En fremrykket PR kræver også korrekt stamrelation. Relevante senere fejl, ændrede input eller ukendt evidens giver ikke genbrug. Nye SQL-filer kræver deres egen udførelse. Nationalkalderen og FULL-læseren bevarer samme komplette konto-appfacit og frigiver kun det allerede kvalificerede CHECK-facit.
+
+Det eksisterende hele CURRENT-prøvemål får 480 sekunder i FULL-forløbet, så en langsommere testvært ikke dræber en fortsat aktiv prøve ved 300 sekunder. Dette er alene prøvens maksimum; det er ikke en ny ventetid eller en ændring af vejrhentningens frister. De gamle historiske 300-sekunders input beholder deres oprindelige betydning. Fjernelse af dobbeltarbejde og gyldigt fasegenbrug er de egentlige tidsbesparelser. Ingen ny tjeneste, kontrolramme, per-head-kohorte eller generel spring-over-markør indføres.
+
+Dette beskriver den sammenhængende kildekandidat. Præcis kildekvalifikation og normal levering er fortsat nødvendige. Alle fem mål, originaler, numeriske regler, kildeprioritet, adgang og databevarelse består.
+
+
 ## 89.340 Ét sikkert Pages-genforsøg og frisk vejr bagefter
 
 <h3>Oprydning efter en verificeret udgivelse</h3><p>En udgivet prognose og oprydningen efter udgivelsen har hver sin kvittering. Den sidste oprydning får workflowets eksisterende læseadgang til GitHub, så den kan kontrollere den oprindelige Pages-skriver, før en afsluttet føraktiveringsfase fjernes. Den kræver stadig den verificerede offentlige prognose og den præcise terminalkvittering. En oprydningsfejl må ikke skjule den offentliggjorte prognose eller give ret til en ny udgivelse. Lokal kildekontrol er ikke bevis for, at den konkrete fase er fjernet.</p>
@@ -465,6 +476,15 @@ Genlæs den samme private rapport med dens oprindelige binding og tydelig forkla
 Den eksisterende ejerknap til månedsrapporten er afprøvet gennem ventetilstand og adgangskontrol til en færdig beskyttet rapport. Kontrollerne blev tilgængelige igen. De relevante visnings-, adgangs- og schemafiler er uændrede siden denne læsning, så det samme forløb skal ikke stå som uafprøvet.
 
 Accepten gælder denne normale private visning. Den er ikke JSON-eksport, adgangsaccept for andre roller, bevis for anonymitet eller kalibreringsgyldighed og aktiverer ingen offentlig statistik. Rapportens støj og begrænsninger skal fortsat forklares.
+
+### Automatisk månedskalder og faktisk ejer-eksport
+
+Den eksisterende private statistikvej får en fast kørsel første dag i måneden kl. 06.47 UTC for senest afsluttede UTC-måned. Kalderen genlæser den faktiske Worker og dens bindingskontrakt før konto- eller statistikdata. Bevisligt OFF giver et vellykket indholdsfrit spring over; ukendt tilstand stopper. Schedule kan ikke installere, erstatte eller aktivere Workeren. ON kræver fortsat den eksisterende præcise aktivering og dens bindingsbeviser.
+
+Den normale beskyttede rapportvisning og JSON-eksport gennem ejerens knap er faktisk afprøvet. Eksporten indeholder de 160 faste støjtilføjede celler og ingen individuel turpayload; genlæsningen er byteidentisk. En anonym forespørgsel med den offentlige nøgle afvises uden rapportdata. Faktiske ekspert- og almindelig-bruger-JWT, første automatisk producerede måned, samlet privacy-/kalibreringsaccept og Free-klarhed har fortsat deres egne åbne beviser.
+
+Frosne rapporter genbruges uden ny støj eller nyt budgettræk. Det eksisterende livstidsbudget giver højst to bidragsmåneder pr. konto. Ukendt skrivning giver ingen blind gentagelse; den nye planlægning påstår ikke at genoprette et gammelt uafklaret administrationswrite. Offentlig statistik, kalibrering og automatisk kontosletning aktiveres ikke.
+
 
 ## 89.320 Gamle og nye gennemgåede koldstartgrænser i samme register
 

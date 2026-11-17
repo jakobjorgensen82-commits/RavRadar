@@ -124,6 +124,10 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
     'node scripts/test-forecast-share-projection.mjs',
     'node scripts/test-forecast-share-pages-deploy.mjs',
   ],
+  privateStudy:[
+    // This whole existing entry imports month-rollover and categorical-controller.
+    'node --test scripts/test-account-statistics-assistant-callers.mjs',
+  ],
   ownerErasure:[
     'node --test scripts/test-delete-trip-owner-data-readback.mjs',
   ],
@@ -342,6 +346,14 @@ const PATH_AREAS=freeze({
     'scripts/deploy-forecast-share-pages.mjs',
     'scripts/test-forecast-share-pages-deploy.mjs',
   ],
+  privateStudy:[
+      ".github/workflows/private-trip-weather-study.yml",
+      "scripts/publish-private-trip-weather-study.mjs",
+      "scripts/deploy-private-trip-study.mjs",
+      "scripts/test-trip-aggregate-month-rollover.mjs",
+      "scripts/test-private-trip-study-categorical-controller.mjs",
+      "scripts/test-account-statistics-assistant-callers.mjs"
+  ],
   ownerErasure:[
     'supabase/functions/_shared/trip-owner-erasure.js',
     'scripts/test-delete-trip-owner-data-readback.mjs',
@@ -408,7 +420,7 @@ const PATH_AREAS=freeze({
 const WEATHER_OPERATION_PATHS=new Set([...PATH_AREAS.waterSourceRouting,...PATH_AREAS.weatherUpdater,...PATH_AREAS.runtimeAudit]);
 const RELEASE_METADATA_PATHS=new Set(PATH_AREAS.releaseMetadata);
 const WEATHER_PROGRESS_RECOVERY_PATHS=new Set(PATH_AREAS.weatherProgressRecovery);
-const SMALL_USER_CONTRACT_PATHS=new Set([...PATH_AREAS.sharing,...PATH_AREAS.ownerErasure]);
+const SMALL_USER_CONTRACT_PATHS=new Set([...PATH_AREAS.sharing,...PATH_AREAS.ownerErasure,...PATH_AREAS.privateStudy]);
 const sourceControlPaths=new Set(PATH_AREAS.sourceControls);
 // The same actual owner/target catalog serves current CI and historical input admission.
 // This is only a lookup; it does not run a producer, read Git or qualify a receipt.
@@ -990,7 +1002,7 @@ export function planSourceCurrentContractsFromGit(input){
         pathAreas.get(file)??(/^docs\/(?:rdks|ai|handbook)\/.+\.md$/.test(file)?['documentation']:null));
       if(!areas){unknown.push(file);continue;}
       for(const area of areas){if(!selected.has(area))selected.set(area,[]);selected.get(area).push(file);}
-      if(HISTORICAL_UPDATER_PATHS.has(file)||WEATHER_OPERATION_PATHS.has(file)||sourceControlPaths.has(file)||historicalPaths.has(file)||areas.includes('compatibility')||areas.includes('assistantEdge')||areas.includes('mailOwnerProbe')||areas.includes('currentInstalledCodeOnly')||areas.includes('workflowSupport')||areas.includes('weatherPublication')||areas.includes('dmiBudget')||areas.includes('dmiCollectionRecovery')||areas.includes('adminHistory')||areas.includes('sharing')||areas.includes('releaseMetadata')||areas.includes('ownerErasure')||areas.includes('weatherProgressRecovery')||areas.includes('ownedCacheNative')||file.startsWith('scripts/test-'))
+      if(HISTORICAL_UPDATER_PATHS.has(file)||WEATHER_OPERATION_PATHS.has(file)||sourceControlPaths.has(file)||historicalPaths.has(file)||areas.includes('compatibility')||areas.includes('assistantEdge')||areas.includes('mailOwnerProbe')||areas.includes('currentInstalledCodeOnly')||areas.includes('workflowSupport')||areas.includes('weatherPublication')||areas.includes('dmiBudget')||areas.includes('dmiCollectionRecovery')||areas.includes('adminHistory')||areas.includes('sharing')||areas.includes('privateStudy')||areas.includes('releaseMetadata')||areas.includes('ownerErasure')||areas.includes('weatherProgressRecovery')||areas.includes('ownedCacheNative')||file.startsWith('scripts/test-'))
         out.controlQualificationRequired=true;
     }
     if(unknown.length){out.unclassifiedPaths=unknown.sort();return refuse('CURRENT_UNCLASSIFIED_PATH');}

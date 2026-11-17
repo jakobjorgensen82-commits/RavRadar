@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import fs from 'node:fs';
+import {readHistoricalPrivateStudySources} from './lib/pages-closure-historical-test-input.mjs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import vm from 'node:vm';
@@ -103,6 +104,7 @@ test('private-study007: all five additions, changed guard, ten-shard isolation a
 });
 
 test('private-study007: whole exact test-only inverse preserves historical controller assertions',async()=>{
+  const source=readHistoricalPrivateStudySources().controller;
   const review=JSON.parse(fs.readFileSync('scripts/lib/private-trip-study-categorical-review.json','utf8'));
   const enableBefore=(value,enable)=>{
     if(sha(value)===enable.afterSha256){
@@ -127,7 +129,7 @@ test('private-study007: whole exact test-only inverse preserves historical contr
   for(const altered of [source+'\n',source.replace('rows.length>46','rows.length>47'),
     source.replace("await verifySchema('EXACT_004_005_006');await attest(currentVersion,true);",
       "await verifySchema('EXACT_004_005_006');await attest(currentVersion);")])assert.throws(()=>inverse(altered));
-  const workflow=enableBefore(reviewedFrozenReplayWorkflow(fs.readFileSync('.github/workflows/private-trip-weather-study.yml','utf8').replaceAll('\r\n','\n')),review.workflow.enableSuccessor);
+  const workflow=enableBefore(reviewedFrozenReplayWorkflow(readHistoricalPrivateStudySources().workflow),review.workflow.enableSuccessor);
   const readPermission=review.workflow.sourceProofReadPermission;
   assert.equal(sha(workflow),readPermission.afterSha256);
   const assertSourceProofReadPermission=value=>{
@@ -151,7 +153,7 @@ test('private-study007: whole exact test-only inverse preserves historical contr
   assert(from>0&&to>from);
   const legacyReaders=vm.runInNewContext(callers.slice(from,to).replaceAll('import.meta.url','moduleUrl')
     +'\n({privateStudyPre007Workflow,privateStudyPre007Controller});',
-  {fs:fs.promises,URL,moduleUrl:pathToFileURL(callersPath).href,assert,crypto,Buffer});
+  {fs:fs.promises,URL,moduleUrl:pathToFileURL(callersPath).href,assert,crypto,Buffer,readHistoricalPrivateStudySources});
   assert.equal(await legacyReaders.privateStudyPre007Controller(),old);
   const oldWorkflow=await legacyReaders.privateStudyPre007Workflow();
   assert.equal(sha(oldWorkflow),'bdde67e93ae059a520e21305af42c1566080faa0da786fc670d7f28dc0285949');
@@ -176,7 +178,8 @@ test('private-study007: whole exact test-only inverse preserves historical contr
 // Run the unmodified normal deploy body with synthetic transports/commands only.
 // SQLite executes exact migration bytes; a failed write is never retried here.
 function controllerFixture({state='EXACT_004_005_006',mode='deliver',allow007='true',failure=null,workerOff=true,
-  confirmation='',allow004='false',allow005='false',allow006='false',callerPrivacyBoolean=''}={}){
+  confirmation='',allow004='false',allow005='false',allow006='false',callerPrivacyBoolean='',
+  eventName='workflow_dispatch',eventSchedule='',envOverrides={}}={}){
   const dbs=Array.from({length:10},(_,i)=>database(i===0?state:'ABSENT')),
     files=new Map(),events=[],writes=[],reads=[],account='a'.repeat(32),head='b'.repeat(40),
     version='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',nextVersion='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
@@ -210,7 +213,7 @@ function controllerFixture({state='EXACT_004_005_006',mode='deliver',allow007='t
     events.push(options.expectedPlainTextBindings?'attest:'+(options.expectedPlainTextBindings.TRIP_AGGREGATE_ENABLED==='true'?'ON':'OFF'):'attest:bindings');
     assert.deepEqual(JSON.parse(JSON.stringify(options.expectedBindings)),config.d1_databases);
     if(options.expectedVersion)assert.equal(options.expectedVersion,active);
-    if(mode!=='enable'&&options.expectedPlainTextBindings)assert.equal(options.expectedPlainTextBindings.TRIP_AGGREGATE_ENABLED,'false');
+    if(mode!=='enable'&&eventName!=='schedule'&&options.expectedPlainTextBindings)assert.equal(options.expectedPlainTextBindings.TRIP_AGGREGATE_ENABLED,'false');
     // Real normal verifier, with only its existing metadata transport injected.
     // This must detect its own expected-value refusal and actual ON/OFF mismatch.
     return verifyExistingWorkerBindings({...options,fetchImpl:async(input,init)=>{
@@ -223,7 +226,7 @@ function controllerFixture({state='EXACT_004_005_006',mode='deliver',allow007='t
       const body=deployment?{success:true,result:{deployments:[{id:active,strategy:'percentage',versions:[{version_id:active,percentage:100}]}]}}
         :{success:true,result:{id:active,resources:{bindings:[...config.d1_databases.map((row,index)=>({type:'d1',name:row.binding,id:
           failure==='plan-off-binding-drift'&&index===9&&events.includes('attest:OFF')?nextVersion:row.database_id})),
-          ...(failure==='plan-off-binding-missing'?[]:[{type:'plain_text',name:'TRIP_AGGREGATE_ENABLED',text:failure==='enable-post-binding'&&active===nextVersion?(activeFlag==='true'?'false':'true'):activeFlag}])]}}};
+          ...(failure==='plan-off-binding-missing'?[]:[{type:'plain_text',name:'TRIP_AGGREGATE_ENABLED',text:failure==='monthly-unknown-flag'?'unknown':failure==='enable-post-binding'&&active===nextVersion?(activeFlag==='true'?'false':'true'):activeFlag}])]}}};
       return new Response(JSON.stringify(body));
     }});
   };
@@ -258,13 +261,13 @@ function controllerFixture({state='EXACT_004_005_006',mode='deliver',allow007='t
     deployTripWorker:async()=>{events.push('worker:deploy');active=nextVersion;activeFlag=JSON.parse(files.get(configPath)).vars.TRIP_AGGREGATE_ENABLED;workerOff=activeFlag==='false';
       return{terminationConfirmed:failure!=='enable-process-unknown',stdout:'Current Version ID: '+nextVersion+'\n'};},
     waitForTripStorageEdgeReadiness:async()=>({ok:true}),boundedFetch:transport,
-    process:{platform:'linux',on(){},off(){},env:{GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_WORKFLOW:'Private RavRadar trip weather study',
+    process:{platform:'linux',on(){},off(){},env:{GITHUB_EVENT_NAME:eventName,PRIVATE_STUDY_EVENT_SCHEDULE:eventSchedule,GITHUB_WORKFLOW:'Private RavRadar trip weather study',
       GITHUB_REF:'refs/heads/main',GITHUB_RUN_ATTEMPT:'1',GITHUB_RUN_ID:'123',GITHUB_SHA:head,
       SUPABASE_PROJECT_ID:'afqhhdrkjfjtpadntdzo',TRIP_STORAGE_OPERATION:'existing-private-study-upgrade',TRIP_STORAGE_PRIVATE_STUDY:'1',
       TRIP_PRIVATE_STUDY_MODE:mode,TRIP_PRIVATE_STUDY_APPLY_ALLOWED:allow004,TRIP_PRIVATE_STUDY_JOBS_APPLY_ALLOWED:allow005,
       TRIP_PRIVATE_STUDY_JOB_BINDING_APPLY_ALLOWED:allow006,TRIP_PRIVATE_STUDY_CATEGORICAL_APPLY_ALLOWED:allow007,
       TRIP_PRIVATE_STUDY_ENABLE_CONFIRMATION:confirmation,TRIP_PRIVATE_STUDY_PRIVACY_QUALIFIED:callerPrivacyBoolean,
-      CLOUDFLARE_ACCOUNT_ID:account,CLOUDFLARE_API_TOKEN:'SYNTHETIC_NOT_A_CREDENTIAL'}},
+      CLOUDFLARE_ACCOUNT_ID:account,CLOUDFLARE_API_TOKEN:'SYNTHETIC_NOT_A_CREDENTIAL',...envOverrides}},
     Buffer,AbortController,setTimeout,clearTimeout,console};
   const realm=vm.createContext(context),decodeRows=vm.runInContext('value=>JSON.parse(value)',realm);
   // node:sqlite is a host-native injection. Recreate its JSON result arrays in
@@ -437,7 +440,7 @@ test('private-study enable: existing plan and deliver remain defaultOFF and a la
 test('private-study enable: raw workflow and controller are exact additive successors before the unchanged old oracles',()=>{
   const review=JSON.parse(fs.readFileSync('scripts/lib/private-trip-study-categorical-review.json','utf8'));
   const actualWorkflow=fs.readFileSync('.github/workflows/private-trip-weather-study.yml','utf8').replaceAll('\r\n','\n');
-  const workflow=reviewedFrozenReplayWorkflow(actualWorkflow);
+  const workflow=reviewedFrozenReplayWorkflow(readHistoricalPrivateStudySources().workflow);
   const setupCondition="        if: inputs.operation == 'deliver' || inputs.operation == 'enable'";
   assert.equal(actualWorkflow.split("      - uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf\n        if: inputs.operation == 'deliver' || inputs.operation == 'enable'").length,2);
   for(const operation of ['plan','deliver','enable','export']){
@@ -455,7 +458,7 @@ test('private-study enable: raw workflow and controller are exact additive succe
   };
   assert.equal(review.afterSha256,'18f6526742667dc0c40a41e2ff2985c1c1ce431d5ceb5c0c349b88de988a7a0f');
   assert.equal(review.workflow.sourceProofReadPermission.afterSha256,'93d713d717eef8f4541e347ef8860555eb8b8948176c6ce2f9d492c3915f7255');
-  const oldController=inverse(inverse(source,review.planOffSuccessor),review.enableSuccessor),oldWorkflow=inverse(workflow,review.workflow.enableSuccessor);
+  const oldController=inverse(inverse(readHistoricalPrivateStudySources().controller,review.planOffSuccessor),review.enableSuccessor),oldWorkflow=inverse(workflow,review.workflow.enableSuccessor);
   assert.equal(sha(oldController),review.afterSha256);
   assert.equal(sha(oldWorkflow),review.workflow.sourceProofReadPermission.afterSha256);
   assert.equal(workflow.slice(workflow.indexOf('  private-study-export:')),oldWorkflow.slice(oldWorkflow.indexOf('  private-study-export:')));
@@ -470,4 +473,38 @@ test('private-study enable: raw workflow and controller are exact additive succe
     assert.throws(()=>inverse(mutation,review.planOffSuccessor));
   for(const mutation of [workflow+'\n',workflow.replace('default: plan','default: enable'),workflow.replace("inputs.allow_007 && 'true' || 'false'",'true')])
     assert.throws(()=>inverse(mutation,review.workflow.enableSuccessor));
+});
+
+
+test('private-study monthly plan proves actual OFF or ON with no DDL or mutation',async()=>{
+  for(const workerOff of [true,false]){
+    const fx=controllerFixture({state:'EXACT_004_005_006_007',mode:'plan',allow007:'false',workerOff,
+      eventName:'schedule',eventSchedule:'47 6 1 * *'});
+    try{
+      const out=await fx.invoke();
+      assert.equal(out.operation,'READ_ONLY_PLAN');assert.equal(out.privateAggregationEnabled,!workerOff);
+      assert.equal(out.aggregateOffAttested,workerOff);assert.equal(out.schemaApplied,false);assert.equal(out.workerUpdated,false);
+      assert(fx.events.filter(x=>x===(workerOff?'attest:OFF':'attest:ON')).length>=2);
+      assert.equal(fx.writes.length,0);assert(!fx.events.some(x=>x==='worker:deploy'||x.startsWith('supabase:')||x.startsWith('sleep:')));
+      for(const table of ['trip_weather_aggregate_releases','trip_weather_aggregate_account_charges'])
+        assert.equal(fx.dbs[0].prepare('select count(*) n from '+table).get().n,0);
+      noFixtureGap(fx);
+    }finally{fx.close();}
+  }
+});
+
+test('private-study monthly plan rejects unknown flag, bad authority and incomplete ON without writes',async()=>{
+  const valid={state:'EXACT_004_005_006_007',mode:'plan',allow007:'false',eventName:'schedule',eventSchedule:'47 6 1 * *'};
+  for(const change of [
+    {eventSchedule:'48 6 1 * *'},{mode:'enable'}, {allow007:'true'}, {eventName:'workflow_dispatch'},
+    {envOverrides:{GITHUB_RUN_ATTEMPT:'2'}},
+    {failure:'plan-off-binding-missing'},{failure:'plan-off-binding-drift'},
+    {failure:'monthly-unknown-flag'}, {state:'EXACT_004_005_006',workerOff:false},
+  ]){
+    const fx=controllerFixture({...valid,...change});try{
+      await assert.rejects(fx.invoke());assert.equal(fx.writes.length,0);
+      assert(!fx.events.some(x=>x==='worker:deploy'||x.startsWith('supabase:')||x.startsWith('sleep:')));
+      noFixtureGap(fx);
+    }finally{fx.close();}
+  }
 });

@@ -78,6 +78,7 @@ export const ASSISTANT_AFTER598_COMMANDS=Object.freeze(['node scripts/test-prote
 export const ASSISTANT_AFTER598_SCRIPT='set -euo pipefail\n'+ASSISTANT_AFTER598_COMMANDS.join('\n')+'\n';
 export const ASSISTANT_AFTER599_PHASE=INACTIVE_ASSISTANT_AFTER599_SUCCESSOR.sourcePhase;
 export const ASSISTANT_AFTER599_PHASE_KIND='RAVRADAR_ASSISTANT_AFTER599_POSTGRES_PHASE_V1';
+export const ASSISTANT_AFTER599_REUSE_KIND='RAVRADAR_ASSISTANT_AFTER599_POSTGRES_REUSE_V2';
 export const ASSISTANT_AFTER599_COMMANDS=Object.freeze(['node scripts/test-protected-ravscore-continuation-checkpoint.mjs --assistant-after599-successor']);
 export const ASSISTANT_AFTER599_SCRIPT='set -euo pipefail\n'+ASSISTANT_AFTER599_COMMANDS.join('\n')+'\n';
 export const ACTIVE_COMMANDS=ACTIVE.sourcePhase===ASSISTANT_AFTER599_PHASE?ASSISTANT_AFTER599_COMMANDS:ACTIVE.sourcePhase===ASSISTANT_AFTER598_PHASE?ASSISTANT_AFTER598_COMMANDS:ACTIVE.sourcePhase===ASSISTANT_AFTER597_PHASE?ASSISTANT_AFTER597_COMMANDS
@@ -2054,7 +2055,118 @@ export async function verifyAssistantAfter598PhaseReceipt(native,current){
     status:'EXECUTED',executedInThisRun:true,origin:null,eligibleForReuse:false,runtime,report});
   return native;
 }
-export async function verifyAssistantAfter599PhaseReceipt(native,current){
+// The normal old EXECUTED-V1 receipt stays unchanged. This separately typed
+// decision qualifies an authentic original phase; it never claims new SQL.
+function after599BoundedGit(readGit,deadline){
+  return args=>{
+    const remaining=()=>{const value=Math.floor(deadline-performance.now());assert(value>0,'AFTER599_PG_REUSE_TIME_BOUND');return value;};
+    const time=remaining();const value=readGit===git?execFileSync('git',args,{encoding:'utf8',maxBuffer:64*1024*1024,
+      timeout:Math.min(10000,time),env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0'}}):readGit(args);
+    remaining();return value;
+  };
+}
+export async function captureAssistantAfter599PgInput(options){
+  requireAssistantAfter599Output(); // FIRST, including before option getters.
+  assert(arguments.length<=1);options??={};assert(options&&Object.getPrototypeOf(options)===Object.prototype);
+  assert(Object.keys(options).every(key=>['ref','readGit','root','physical'].includes(key)));
+  const {ref='HEAD',root=process.cwd(),physical=true}=options;
+  const readGit=after599BoundedGit(options.readGit??git,performance.now()+60000);
+  const tree=parseTree(readGit(['ls-tree','-rz','--full-tree',ref])),index=new Map(tree.map(row=>[row[0],row]));
+  const sql=tree.filter(row=>row[0].startsWith('supabase/migrations/')&&row[0].endsWith('.sql')).map(row=>row[0]).sort();
+  assert(sql.length>0&&sql.length<=512);
+  if(physical)assert.deepEqual((await fs.readdir(path.join(root,'supabase/migrations'))).filter(file=>file.endsWith('.sql')).sort(),
+    sql.map(file=>path.posix.basename(file)));
+  const rows=new Map();let bytes=0;
+  const read=async file=>{
+    assert(typeof file==='string'&&file.length<=512&&!file.startsWith('/')&&!file.split('/').includes('..'));
+    if(rows.has(file))return rows.get(file);
+    const row=index.get(file);
+    if(!row){assert(!physical,'Required current native input is absent: '+file);const absent={file,present:false};rows.set(file,absent);return absent;}
+    assert(['100644','100755'].includes(row[1])&&row[2]==='blob');
+    const raw=Buffer.from(readGit(['cat-file','blob',ref+':'+file]));bytes+=raw.length;
+    assert(raw.length<=4*1024*1024&&bytes<=64*1024*1024&&rows.size<512);
+    if(physical){const absolute=path.resolve(root,file),stat=await fs.lstat(absolute);
+      assert(stat.isFile()&&!stat.isSymbolicLink());assert.equal(stat.size,raw.length);assert.equal(await fs.realpath(absolute),absolute);
+      assert.deepEqual(await fs.readFile(absolute),raw,'Physical native input differs from Git');}
+    const value={file,mode:row[1],bytes:raw.length,sha256:sha(raw)};rows.set(file,value);return value;
+  };
+  const profileFile='scripts/lib/source-impact-domain-inputs-598.json';await read(profileFile);
+  const profile=JSON.parse(String(readGit(['cat-file','blob',ref+':'+profileFile])));
+  assert.equal(profile.id,'REVIEWED_598_DOMAIN_INPUTS_C101_I100_T12');assert.equal(profile.postgresModules.length,69);
+  const modules=new Set([...profile.postgresModules,'scripts/verify-account-erasure-schema.mjs','scripts/lib/account-erasure-outbox-native-fixture.mjs']);
+  const setup=profile.setupInputs.filter(file=>file!==WORKFLOW&&file!=='package.json');
+  const selected=new Set([...modules,...profile.postgresData,...setup,...profile.continuation.files,profile.continuation.file,...sql]);
+  for(const definition of Object.values(profile.models)){
+    await read(definition.file);selected.add(definition.file);
+    const source=String(readGit(['cat-file','blob',ref+':'+definition.file]));
+    const escaped=definition.manifestName.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    const match=new RegExp('export const '+escaped+' = Object\\.freeze\\(([\\s\\S]*)\\);\\n$').exec(source);assert(match);
+    const manifest=JSON.parse(match[1]);assert.equal(manifest.schemaVersion,definition.schemaVersion);
+    assert.equal(manifest.normalizationId,definition.normalizationId);assert(Array.isArray(manifest.files)&&manifest.files.length<=512);
+    for(const row of manifest.files){assert(typeof row[definition.rowKey]==='string');selected.add(row[definition.rowKey]);}
+  }
+  for(const file of [...selected].sort())await read(file);
+  const scopePaths=new Set(['package.json']);
+  for(const file of modules)for(let directory=path.posix.dirname(file);directory!=='.';directory=path.posix.dirname(directory))scopePaths.add(directory+'/package.json');
+  const scopes=[];
+  for(const file of [...scopePaths].sort()){
+    if(!index.has(file)){
+      if(physical){let stat=null;try{stat=await fs.lstat(path.resolve(root,file));}catch(error){if(error.code!=='ENOENT')throw error;}assert.equal(stat,null,'Untracked package scope changes native resolution');}
+      scopes.push({file,present:false});continue;
+    }
+    const row=index.get(file);assert(['100644','100755'].includes(row[1])&&row[2]==='blob');
+    const raw=Buffer.from(readGit(['cat-file','blob',ref+':'+file]));
+    if(physical){const absolute=path.resolve(root,file),stat=await fs.lstat(absolute);
+      assert(stat.isFile()&&!stat.isSymbolicLink());assert.equal(await fs.realpath(absolute),absolute);
+      assert.deepEqual(await fs.readFile(absolute),raw);}
+    const value=JSON.parse(raw);assert(value&&typeof value==='object'&&!Array.isArray(value));
+    // Preserve name/main and all explicit resolver maps; release/script metadata
+    // alone is not an execution input and is still reviewed by fresh source CI.
+    scopes.push({file,present:true,mode:row[1],type:value.type??null,name:value.name??null,main:value.main??null,imports:value.imports??null,exports:value.exports??null});
+  }
+  const anchors=[...profile.frozenGitAnchors,{head:FROZEN599_NATIVE_SOURCE.codeHead,tree:FROZEN599_NATIVE_SOURCE.codeTree}];
+  const frozenGitTrees=[...new Map(anchors.map(row=>[row.head,row])).values()].sort((a,b)=>a.head.localeCompare(b.head));
+  for(const row of frozenGitTrees)assert.equal(readGit(['rev-parse',row.head+'^{tree}']).trim(),row.tree);
+  const files=[...rows.values()].sort((a,b)=>a.file.localeCompare(b.file,'en'));
+  return {schemaVersion:1,kind:'AFTER599_ACTUAL_PG_INPUT_V1',files:files.length,sqlFiles:sql.length,
+    complete:files.every(row=>row.present!==false),inputSha256:sha(JSON.stringify(files)),packageScopes:scopes,frozenGitTrees};
+}
+export function verifyAssistantAfter599PgInput(value,prior=value){
+  requireAssistantAfter599Output();
+  assert.deepEqual(value,prior,'Actual SQL/native/model/frozen inputs changed');
+  assert.deepEqual(Object.keys(value).sort(),['schemaVersion','kind','files','sqlFiles','complete','inputSha256','packageScopes','frozenGitTrees'].sort());
+  assert.equal(value.schemaVersion,1);assert.equal(value.kind,'AFTER599_ACTUAL_PG_INPUT_V1');assert.equal(value.complete,true);
+  assert(Number.isSafeInteger(value.files)&&value.files>0&&value.files<=512);
+  assert(Number.isSafeInteger(value.sqlFiles)&&value.sqlFiles>0&&value.sqlFiles<=512);assert.match(value.inputSha256,hashPattern);
+  assert(Array.isArray(value.packageScopes)&&value.packageScopes.length>0&&value.packageScopes.length<=128);
+  assert(Array.isArray(value.frozenGitTrees)&&value.frozenGitTrees.length>0&&value.frozenGitTrees.length<=64);
+  return value;
+}
+export async function verifyAssistantAfter599ReusePhaseReceipt(native,current,options){
+  const identity=await assistantAfter599PhaseIdentity(); // FIRST before receipt/options.
+  options??={};assert(options&&Object.getPrototypeOf(options)===Object.prototype);
+  assert(Object.keys(options).every(key=>key==='readGit'));const readGit=options.readGit??git;
+  assert.equal(native?.kind,ASSISTANT_AFTER599_REUSE_KIND);assert.equal(native.schemaVersion,2);
+  assert.match(current.head,/^[a-f0-9]{40}$/);assert(Number.isSafeInteger(current.run)&&current.run>ORIGIN.run);
+  assert.equal(current.attempt,1);assert(Number.isSafeInteger(current.pullRequest)&&current.pullRequest>0);
+  assert(typeof current.branch==='string'&&current.branch.length>0&&current.branch.length<=255);
+  const runtime=verifyAssistantPublic591Runtime(native?.runtime);
+  const report=await assistantAfter599NativeReportProjection(native.report,{selectedPrograms:runtime.selectedPrograms});
+  const input=verifyAssistantAfter599PgInput(native.nativeInput);
+  verifyAssistantAfter599PgInput(input,await captureAssistantAfter599PgInput({ref:current.head,readGit,physical:current.head===String(readGit(['rev-parse','HEAD'])).trim()}));
+  const origin=native.origin;assert(Number.isSafeInteger(origin?.run)&&origin.run>ORIGIN.run&&origin.run<current.run);
+  assert.equal(origin.attempt,1);assert(Number.isSafeInteger(origin.job)&&origin.job>0);assert.match(origin.head,/^[a-f0-9]{40}$/);
+  assert(Number.isSafeInteger(origin.artifactId)&&origin.artifactId>0);assert.match(origin.artifactDigest,/^sha256:[a-f0-9]{64}$/);
+  assert.match(origin.sourceTreeSha256,/^sha256:[a-f0-9]{64}$/);
+  const {shape,migrationInventory,ledgerFixture,...issued}=identity;
+  assert.deepEqual(native,{schemaVersion:2,kind:ASSISTANT_AFTER599_REUSE_KIND,phase:AFTER599_RESULT,sourcePhase:ASSISTANT_AFTER599_PHASE,
+    ...issued,current,commands:ASSISTANT_AFTER599_COMMANDS,status:'REUSED',executedInThisRun:false,
+    origin,eligibleForReuse:false,nativeInput:input,runtime,report});return native;
+}
+
+export async function verifyAssistantAfter599PhaseReceipt(native,current,options){
+  requireAssistantAfter599Output();
+  if(native?.kind===ASSISTANT_AFTER599_REUSE_KIND)return verifyAssistantAfter599ReusePhaseReceipt(native,current,options);
   const identity=await assistantAfter599PhaseIdentity();
   assert.match(current.head,/^[a-f0-9]{40}$/);
   assert(Number.isSafeInteger(current.run)&&current.run>ORIGIN.run);
@@ -2097,7 +2209,131 @@ export async function executeAssistantAfter598Native(){
     sourcePhase:ASSISTANT_AFTER598_PHASE,...issued,current,commands:ASSISTANT_AFTER598_COMMANDS,
     status:'EXECUTED',executedInThisRun:true,origin:null,eligibleForReuse:false,runtime,report});
 }
+// Uses the existing bounded GitHub/artifact transport. A prior successful PG
+// upload survives a later national-only failure; a newer relevant negative does not.
+export async function decideAssistantAfter599Reuse(options){
+  requireAssistantAfter599Output(); // FIRST: an unissued family never reads options.
+  try{
+    assert(arguments.length<=1);options??={};assert(options&&Object.getPrototypeOf(options)===Object.prototype);
+    assert(Object.keys(options).every(key=>['env','get','readGit','getRuntime','getInput','decode'].includes(key)));
+    let {env=process.env,get,getRuntime=assistantPublic591Runtime,getInput=captureAssistantAfter599PgInput,decode=decodeCurrent586Artifact}=options;
+    const deadline=performance.now()+60000,readGit=after599BoundedGit(options.readGit??git,deadline);
+    get??=installed593Original591Reader({env});
+    const transport=get;get=async(...args)=>{assert(performance.now()<deadline,'AFTER599_PG_REUSE_TIME_BOUND');const value=await transport(...args);assert(performance.now()<deadline,'AFTER599_PG_REUSE_TIME_BOUND');return value;};
+    assert.equal(env.GITHUB_EVENT_NAME,'pull_request');assert.equal(env.GITHUB_REPOSITORY,ORIGIN.repository);
+    assert.equal(env.GITHUB_RUN_ATTEMPT,'1');assert.match(env.SOURCE_GATE_HEAD_SHA,/^[a-f0-9]{40}$/);
+    const head=env.SOURCE_GATE_HEAD_SHA;
+    const checkout=()=>{
+      assert.equal(readGit(['rev-parse','HEAD^{commit}']).trim(),head);
+      assert.equal(readGit(['status','--porcelain','--untracked-files=no']).trim(),'');
+      assert.equal(readGit(['for-each-ref','refs/replace']).trim(),'');
+      assert.equal(readGit(['rev-parse','--is-shallow-repository']).trim(),'false');
+    };checkout();
+    const current={run:Number(env.GITHUB_RUN_ID),attempt:1,head,pullRequest:Number(env.PULL_REQUEST_NUMBER),branch:env.GITHUB_HEAD_REF};
+    assert(Number.isSafeInteger(current.run)&&current.run>ORIGIN.run);
+    assert(Number.isSafeInteger(current.pullRequest)&&current.pullRequest>0);
+    assert(typeof current.branch==='string'&&current.branch.length>0);
+    const nativeInput=verifyAssistantAfter599PgInput(await getInput({readGit}));
+    const runtime=verifyAssistantPublic591Runtime(await getRuntime());
+    const repo='/repos/'+ORIGIN.repository,base=repo+'/actions';
+    const running=await get(base+'/runs/'+current.run);
+    assert.equal(running.id,current.run);assert.equal(running.run_attempt,1);assert.equal(running.head_sha,head);
+    assert.equal(running.head_branch,current.branch);assert.equal(running.path,WORKFLOW);assert.equal(running.event,'pull_request');
+    verifyCurrentPullRequest(await get(repo+'/pulls/'+current.pullRequest),running,current.pullRequest);
+    const currentJobs=await get(base+'/runs/'+current.run+'/attempts/1/jobs?per_page=100');assert(complete(currentJobs,'jobs'));
+    const currentJob=one(currentJobs.jobs.filter(row=>row.name===JOB));
+    assert.equal(currentJob.head_sha,head);assert.equal(currentJob.run_attempt,1);assert.equal(currentJob.run_id,current.run);
+    assert(successful(one(currentJob.steps.filter(row=>row.name==='Validate source contracts and release governance'))));
+    const query=new URLSearchParams({event:'pull_request',per_page:'100',created:'>='+new Date(Date.parse(running.created_at)-30*86400000).toISOString()});
+    const listing=await get(base+'/workflows/validate-pull-request.yml/runs?'+query);
+    assert(Number.isSafeInteger(listing.total_count)&&listing.total_count>=0);
+    assert.equal(listing.workflow_runs.length,Math.min(listing.total_count,100));
+    assert.equal(new Set(listing.workflow_runs.map(row=>row.id)).size,listing.workflow_runs.length);
+    const inputs=new Map([[head,nativeInput]]);
+    const inputFor=async ref=>{if(!inputs.has(ref))inputs.set(ref,await getInput({ref,readGit,physical:false}));return inputs.get(ref);};
+    const sameInput=async ref=>JSON.stringify(await inputFor(ref))===JSON.stringify(nativeInput);
+    let selected=null;
+    for(const row of [...listing.workflow_runs].filter(row=>row.id<current.run).sort((a,b)=>b.id-a.id)){
+      if(await sameInput(row.head_sha)){selected=row;break;}
+    }
+    assert(selected,'No authentic matching phase');
+    const originPr=async(run,number)=>{
+      const pr=await get(repo+'/pulls/'+number);
+      assert.equal(pr.number,number);assert(['open','closed'].includes(pr.state));assert.equal(pr.base?.ref,'main');
+      assert.equal(pr.base?.repo?.full_name,ORIGIN.repository);assert.equal(pr.head?.repo?.full_name,ORIGIN.repository);
+      assert.equal(pr.head.ref,run.head_branch);assert.match(pr.head.sha,/^[a-f0-9]{40}$/);
+      assert(Array.isArray(run.pull_requests));if(run.pull_requests.length)assert.equal(one(run.pull_requests).number,number);
+      if(pr.head.sha!==run.head_sha)readGit(['merge-base','--is-ancestor',run.head_sha,pr.head.sha]);
+      return pr;
+    };
+    const load=async expected=>{
+      const run=await get(base+'/runs/'+expected.id);
+      assert.equal(run.id,expected.id);assert.equal(run.head_sha,expected.head_sha);assert.equal(run.run_attempt,1);
+      const jobs=await get(base+'/runs/'+run.id+'/attempts/1/jobs?per_page=100');
+      const phase=verifyAssistantPublic591Metadata(run,jobs,readGit);
+      const artifacts=await get(base+'/runs/'+run.id+'/artifacts?per_page=100');assert(complete(artifacts,'artifacts'));
+      const metadata=one(artifacts.artifacts.filter(row=>row.name==='native586-phase-'+run.id+'-1-'+run.head_sha));
+      verifyAssistantPublic591ArtifactMetadata(metadata,run,phase);
+      const zip=await get(base+'/artifacts/'+metadata.id+'/zip',{zip:true});assert.equal(zip.length,metadata.size_in_bytes);
+      assert.equal('sha256:'+sha(zip),metadata.digest);const raw=decode(zip);assert(raw.length>0&&raw.length<=32768);
+      const proof=JSON.parse(raw);assert([1,2].includes(proof.schemaVersion));
+      assert.equal(proof.repository,ORIGIN.repository);assert.equal(proof.headSha,run.head_sha);
+      assert.equal(proof.privatePayloadIncluded,false);assert.match(proof.sourceTreeSha256,/^sha256:[a-f0-9]{64}$/);
+      const receipt=proof.nativePostgres;
+      assert.equal(proof.kind,receipt.kind);assert.equal(proof.schemaVersion,receipt.schemaVersion);
+      assert.equal(receipt.current.head,run.head_sha);assert.equal(receipt.current.run,run.id);assert.equal(receipt.current.attempt,1);
+      assert.equal(receipt.current.branch,run.head_branch);await originPr(run,receipt.current.pullRequest);
+      await verifyAssistantAfter599PhaseReceipt(receipt,receipt.current,{readGit});
+      return {run,phase,metadata,proof};
+    };
+    let original=await load(selected);
+    if(original.proof.nativePostgres.kind===ASSISTANT_AFTER599_REUSE_KIND){
+      const locator=original.proof.nativePostgres.origin;
+      original=await load({id:locator.run,head_sha:locator.head});
+      assert.equal(original.phase.job,locator.job);assert.equal(original.metadata.id,locator.artifactId);
+      assert.equal(original.metadata.digest,locator.artifactDigest);assert.equal(original.proof.sourceTreeSha256,locator.sourceTreeSha256);
+    }
+    const prior=original.proof.nativePostgres;
+    assert.equal(prior.kind,ASSISTANT_AFTER599_PHASE_KIND);assert.equal(prior.schemaVersion,1);
+    assert.equal(prior.status,'EXECUTED');assert.equal(prior.executedInThisRun,true);assert.equal(prior.origin,null);
+    assert.equal(prior.eligibleForReuse,false,'The historical V1 flags remain unchanged');
+    verifyAssistantAfter599PgInput(nativeInput,await inputFor(original.run.head_sha));
+    verifyAssistantPublic591Runtime(runtime,prior.runtime);
+    const laterQuery=new URLSearchParams({event:'pull_request',per_page:'100',created:'>='+original.run.created_at});
+    const later=await get(base+'/workflows/validate-pull-request.yml/runs?'+laterQuery);assert(complete(later,'workflow_runs'));
+    assert.equal(new Set(later.workflow_runs.map(row=>row.id)).size,later.total_count);
+    assert(later.workflow_runs.some(row=>row.id===original.run.id)&&later.workflow_runs.some(row=>row.id===current.run));
+    for(const row of later.workflow_runs.filter(row=>row.id>original.run.id&&row.id!==current.run)){
+      if(!await sameInput(row.head_sha))continue;
+      assert.equal(row.run_attempt,1);assert.equal(row.path,WORKFLOW);assert.equal(row.event,'pull_request');
+      assert.equal(row.status,'completed');assert.equal(row.repository?.full_name,ORIGIN.repository);
+      const jobs=await get(base+'/runs/'+row.id+'/attempts/1/jobs?per_page=100');assert(complete(jobs,'jobs'));
+      const job=one(jobs.jobs.filter(value=>value.name===JOB));assert.equal(job.run_id,row.id);assert.equal(job.head_sha,row.head_sha);
+      assert.equal(job.run_attempt,1);assert.equal(job.status,'completed');
+      assert(successful(one(job.steps.filter(value=>value.name==='Validate source contracts and release governance'))));
+      const pg=one(job.steps.filter(value=>value.name===STEP));assert(pg.conclusion==='skipped'||successful(pg));
+    }
+    // Fresh identity and independent origin metadata after the history walk.
+    verifyAssistantAfter599PgInput(nativeInput,await getInput({readGit}));
+    verifyAssistantPublic591Runtime(runtime,await getRuntime());checkout();
+    const finalRun=await get(base+'/runs/'+original.run.id);assert.deepEqual(finalRun,original.run);
+    const finalJobs=await get(base+'/runs/'+original.run.id+'/attempts/1/jobs?per_page=100');
+    assert.deepEqual(verifyAssistantPublic591Metadata(finalRun,finalJobs,readGit),original.phase);
+    assert.deepEqual(await get(base+'/artifacts/'+original.metadata.id),original.metadata);
+    await originPr(finalRun,prior.current.pullRequest);
+    verifyCurrentPullRequest(await get(repo+'/pulls/'+current.pullRequest),running,current.pullRequest);
+    const identity=await assistantAfter599PhaseIdentity(),{shape,migrationInventory,ledgerFixture,...issued}=identity;
+    return {schemaVersion:2,kind:ASSISTANT_AFTER599_REUSE_KIND,phase:AFTER599_RESULT,sourcePhase:ASSISTANT_AFTER599_PHASE,
+      ...issued,current,commands:ASSISTANT_AFTER599_COMMANDS,status:'REUSED',executedInThisRun:false,
+      origin:{run:original.run.id,attempt:1,head:original.run.head_sha,job:original.phase.job,artifactId:original.metadata.id,
+        artifactDigest:original.metadata.digest,sourceTreeSha256:original.proof.sourceTreeSha256},
+      eligibleForReuse:false,nativeInput,runtime,report:prior.report};
+  }catch{return null;}
+}
+
 export async function executeAssistantAfter599Native(){
+  const reused=await decideAssistantAfter599Reuse();
+  if(reused){await record(reused);return;}
   const identity=await assistantAfter599PhaseIdentity(); // Before environment/Git/native launch.
   const appSourceBefore=await accountErasureSourceIdentity();
   const env={...process.env},head=env.SOURCE_GATE_HEAD_SHA;

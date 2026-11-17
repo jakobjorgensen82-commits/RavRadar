@@ -145,6 +145,10 @@ export async function deployPrivateTripStudy(){
   env.TRIP_PRIVATE_STUDY_CATEGORICAL_APPLY_ALLOWED??='false';
   env.TRIP_PRIVATE_STUDY_ENABLE_CONFIRMATION??='';
   const enableMode=env.TRIP_PRIVATE_STUDY_MODE==='enable';
+  const scheduledPlan=env.GITHUB_EVENT_NAME==='schedule'&&env.PRIVATE_STUDY_EVENT_SCHEDULE==='47 6 1 * *'
+    &&env.TRIP_PRIVATE_STUDY_MODE==='plan'&&env.TRIP_PRIVATE_STUDY_ENABLE_CONFIRMATION===''
+    &&[env.TRIP_PRIVATE_STUDY_APPLY_ALLOWED,env.TRIP_PRIVATE_STUDY_JOBS_APPLY_ALLOWED,
+      env.TRIP_PRIVATE_STUDY_JOB_BINDING_APPLY_ALLOWED,env.TRIP_PRIVATE_STUDY_CATEGORICAL_APPLY_ALLOWED].every(value=>value==='false');
   let expectedVars=VARS;
   delete env.SUPABASE_SERVICE_ROLE_KEY;delete env.SUPABASE_DB_PASSWORD;delete env.TRIP_PSEUDONYM_SECRET_V1;
   delete env.EXPECTED_TRIP_WORKER_VERSION;
@@ -156,7 +160,7 @@ export async function deployPrivateTripStudy(){
     catch{throw fail(stage);}
   };
   const exactMain=()=>{
-    if(interrupted||process.platform!=='linux'||env.GITHUB_EVENT_NAME!=='workflow_dispatch'
+    if(interrupted||process.platform!=='linux'||(!scheduledPlan&&!(env.GITHUB_EVENT_NAME==='workflow_dispatch'&&!env.PRIVATE_STUDY_EVENT_SCHEDULE))
       ||env.GITHUB_WORKFLOW!=='Private RavRadar trip weather study'||env.GITHUB_REF!=='refs/heads/main'
       ||env.GITHUB_RUN_ATTEMPT!=='1'||!/^\d+$/.test(env.GITHUB_RUN_ID||'')||!/^[a-f0-9]{40}$/.test(env.GITHUB_SHA||'')
       ||env.SUPABASE_PROJECT_ID!=='afqhhdrkjfjtpadntdzo'||env.TRIP_STORAGE_OPERATION!=='existing-private-study-upgrade'
@@ -276,6 +280,18 @@ export async function deployPrivateTripStudy(){
     fs.writeFileSync(PLAN,JSON.stringify(plan)+'\n',{flag:'wx',mode:0o600});
     if(env.TRIP_PRIVATE_STUDY_MODE==='plan'){
       stage='READ_ONLY_PLAN_WORKER_OFF';
+      if(scheduledPlan){
+        let privateAggregationEnabled=false;
+        try{await attest(currentVersion,true,VARS);}
+        catch(error){
+          if(error?.message!=='TRIP_STORAGE_WORKER_BINDINGS_UNVERIFIED')throw error;
+          await attest(currentVersion,true,ENABLE_VARS);privateAggregationEnabled=true;
+        }
+        if(privateAggregationEnabled&&before.state!=='EXACT_004_005_006_007')throw fail('MONTHLY_REQUIRES_EXACT_007');
+        await attest(currentVersion,true,privateAggregationEnabled?ENABLE_VARS:VARS);
+        return{...plan,operation:'READ_ONLY_PLAN',schemaApplied:false,workerUpdated:false,
+          aggregateOffAttested:!privateAggregationEnabled,privateAggregationEnabled};
+      }
       let aggregateOffAttested=false;
       try{await attest(currentVersion,true);aggregateOffAttested=true;}
       catch(error){
