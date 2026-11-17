@@ -293,7 +293,11 @@ try{
     descriptor.manifestSha256=sha256Text(compactJson(target));
     if(mutateDescriptor)mutateDescriptor(descriptor);
     const entry=descriptor.zones.find(row=>row.id===shareZoneId),path='./data/live/'+entry.path.slice(2);
-    const documents=new Map([['./data/live/manifest.json',compactJson(target)],
+    const trust=structuredClone(compactShareFiles.trustIndex);
+    trust.publicMetadata=Object.fromEntries(Object.keys(trust.publicMetadata).map(key=>[key,target[key]]));
+    trust.manifestSha256=descriptor.manifestSha256;trust.zones=structuredClone(descriptor.zones);
+    const documents=new Map([['./data/live/forecast-share-trust.json',JSON.stringify(trust)],
+      ['./data/live/manifest.json',compactJson(target)],
       ['./data/live/forecast-share.json',JSON.stringify(descriptor)+'\n'],[path,zoneText??JSON.stringify(document)]]);
     const reads=[];
     return{reads,fetchPublic:async(path,options)=>{
@@ -354,7 +358,7 @@ try{
         assert.equal(target.origin,'https://ravradar.dk');
         assert.equal(target.search,'');assert.equal(target.hash,'');
         assert.equal(target.username,'');assert.equal(target.password,'');
-        assert.ok(['/data/live/manifest.json','/data/live/forecast-share.json'].includes(target.pathname)
+        assert.ok(['/data/live/manifest.json','/data/live/forecast-share.json','/data/live/forecast-share-trust.json'].includes(target.pathname)
           || /^\/data\/live\/share\/[a-f0-9]{64}\.json$/.test(target.pathname));
         assert.equal(call.redirect,'manual');assert.equal(call.credentials,'omit');
         assert.deepEqual(call.headers,{Accept:'application/json'});
@@ -367,7 +371,7 @@ try{
     const expected=exactMapZoneScore({conditions:a.conditions,time:h1,zoneId:shareZoneId,mode});
     const result=await shareWorkerRequest(url,{headers:{Authorization:'Bearer synthetic',Cookie:'synthetic=1',
       'X-Forwarded-Host':'forged.invalid','X-Share-Base-Url':'https://forged.invalid/'}});
-    assert.equal(result.response.status,200);assert.equal(result.reads.length,3);
+    assert.equal(result.response.status,200);assert.equal(result.reads.length,2);
     assert.equal(result.response.headers.get('content-type'),'text/html; charset=utf-8');
     assert.equal(result.response.headers.get('cache-control'),'no-store');
     assert.equal(result.response.headers.get('referrer-policy'),'no-referrer');
@@ -406,7 +410,7 @@ try{
     assert.equal(result.upstream.length,0);assert.doesNotMatch(result.html,/\d+\/100|forged\.invalid/);cases++;
   }
   const facebook=await shareWorkerRequest(shareUrl+'&fbclid=synthetic');
-  assert.equal(facebook.response.status,200);assert.equal(facebook.reads.length,3);
+  assert.equal(facebook.response.status,200);assert.equal(facebook.reads.length,2);
   assert.doesNotMatch(facebook.html,/fbclid|synthetic/);
   assert.ok(facebook.html.includes('content="'+escapeShareAttribute(shareUrl)+'"'));cases++;
   const unavailableShare=async(fixture,url=shareUrl)=>{
@@ -429,20 +433,20 @@ try{
   // læser afviser alle 3xx før JSON/digest, og den offentlige fejl er stadig ærlig.
   for(const status of [301,302,303,307,308]){
     const result=await unavailableShare(compactShareFixture({responseStatus:status,location:'https://forged.invalid/redirect'}));
-    assert.deepEqual(result.reads,['./data/live/manifest.json']);
+    assert.deepEqual(result.reads,['./data/live/forecast-share-trust.json']);
     assert.equal(result.upstream.length,1);assert.equal(result.upstream[0].redirect,'manual');cases++;
   }
   const forgedPath=await unavailableShare(compactShareFixture({mutateDescriptor:target=>{
     target.zones.find(row=>row.id===shareZoneId).path='https://forged.invalid/forecast.json';
   }}));
-  assert.deepEqual(forgedPath.reads,['./data/live/manifest.json','./data/live/forecast-share.json']);cases++;
+  assert.deepEqual(forgedPath.reads,['./data/live/forecast-share-trust.json']);cases++;
   const outside=await unavailableShare(compactShareFixture(),forecastShareUrl(shareBase,{...shareSelection,
     time:new Date(Date.parse(last)+3600000).toISOString()}));
-  assert.deepEqual(outside.reads,['./data/live/manifest.json']);cases++;
+  assert.deepEqual(outside.reads,['./data/live/forecast-share-trust.json']);cases++;
   try{
     Date.now=()=>freshNow+2*3600000;
     const expired=await unavailableShare(compactShareFixture());
-    assert.deepEqual(expired.reads,['./data/live/manifest.json']);
+    assert.deepEqual(expired.reads,['./data/live/forecast-share-trust.json']);
   }finally{Date.now=()=>freshNow;}cases++;
 
   // Same normal reader/HTTP contract on Pages; frontend cutover is later.
@@ -460,12 +464,12 @@ try{
     const pages=await shareWorkerRequest(forecastShareUrl(FORECAST_SHARE_PAGES_BASE_URL,selection),{pages:true});
     assert.equal(pages.response.status,legacy.response.status);
     assert.equal(pages.html,legacy.html.replaceAll(shareBase,FORECAST_SHARE_PAGES_BASE_URL));
-    assert.deepEqual(pages.upstream,legacy.upstream);assert.equal(pages.reads.length,3);cases++;
+    assert.deepEqual(pages.upstream,legacy.upstream);assert.equal(pages.reads.length,2);cases++;
     const custom=await shareWorkerRequest(forecastShareUrl(customBase,selection),{pages:true});
     assert.equal(custom.response.status,pages.response.status);
     assert.equal(custom.html,pages.html.replaceAll(FORECAST_SHARE_PAGES_BASE_URL,customBase),
       'OG and canonical share links keep the exact validated host; app links retain ravradar.dk');
-    assert.deepEqual(custom.upstream,pages.upstream);assert.equal(custom.reads.length,3);cases++;
+    assert.deepEqual(custom.upstream,pages.upstream);assert.equal(custom.reads.length,2);cases++;
   }
   const pagesUrl=forecastShareUrl(FORECAST_SHARE_PAGES_BASE_URL,shareSelection);
   const pagesHead=await shareWorkerRequest(pagesUrl,{pages:true,method:'HEAD'});
@@ -503,7 +507,7 @@ try{
   const outsideCustom=await shareWorkerRequest(forecastShareUrl(customBase,{...shareSelection,
     time:new Date(Date.parse(last)+3600000).toISOString()}),{pages:true});
   assert.equal(outsideCustom.response.status,200);assert.ok(outsideCustom.html.includes(forecastShareCopy('da').unavailable));
-  assert.doesNotMatch(outsideCustom.html,/\d+\/100/);assert.deepEqual(outsideCustom.reads,['./data/live/manifest.json']);cases++;
+  assert.doesNotMatch(outsideCustom.html,/\d+\/100/);assert.deepEqual(outsideCustom.reads,['./data/live/forecast-share-trust.json']);cases++;
   const pagesInvalid=await shareWorkerRequest(pagesUrl+'&score=100',{pages:true});
   assert.equal(pagesInvalid.response.status,400);assert.equal(pagesInvalid.upstream.length,0);cases++;
   const pagesFacebook=await shareWorkerRequest(pagesUrl+'&fbclid=synthetic',{pages:true});
@@ -516,14 +520,14 @@ try{
   try{Date.now=()=>freshNow+2*3600000;
     const result=await shareWorkerRequest(pagesUrl,{pages:true});
     assert.equal(result.response.status,200);assert.ok(result.html.includes(forecastShareCopy('da').unavailable));
-    assert.deepEqual(result.reads,['./data/live/manifest.json']);
+    assert.deepEqual(result.reads,['./data/live/forecast-share-trust.json']);
   }finally{Date.now=()=>freshNow;}cases++;
 
   try{
     const expiredDuringRead=await unavailableShare(compactShareFixture({onRead:path=>{
       if(/^\.\/data\/live\/share\/[a-f0-9]{64}\.json$/.test(path))Date.now=()=>freshNow+2*3600000;
     }}));
-    assert.equal(expiredDuringRead.reads.length,3);
+    assert.equal(expiredDuringRead.reads.length,2);
   }finally{Date.now=()=>freshNow;}cases++;
 
 

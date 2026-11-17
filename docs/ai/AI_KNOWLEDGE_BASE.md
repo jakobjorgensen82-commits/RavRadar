@@ -1,3 +1,19 @@
+## App 602: deling, normal LF7-læsning og inaktiv kontoforberedelse
+
+Den samlede lokale app 602-kandidat erstatter den tidligere delings-only-sammensætning. Den forener det mindre generationsbundne delingsindeks, LF7-audit af de normale gemte timefiler og to kontoappends til aktivitetsregistrering og varsling. Den numeriske601-familie, C/I/T, alle 77 tidligere SQL-filer, de ni601-kalderrettelser og score/kildeprioritet/admin/geometri bevares. Kildekataloget har 79 SQL-filer; den afgrænsede konto-installationsvisning kræver de 66 installerede forgængere og netop de to nye appends.
+
+Én samlet faktisk 79-kilde-/PostgreSQL-kvalifikation skal dække de nye SQL- og katalogkontrakter samt de berørte normale kaldere. Uændrede lokale beviser genbruges med deres oprindelige input; gammel 77-kvalifikation ommærkes ikke til79. Samlingen reducerer leveringsrunder, ikke relevante sikkerheds- eller datakrav.
+
+601 skal først kvalificeres og leveres gennem almindeligt nyt vejr; den eksisterende V1-delingskode skal følge den nye binding. Efter den samlede602-kvalifikation installeres og genlæses kontoappends før den ændrede aktivitetsklient og trip-log-Edge. Derefter følger normal602-kodelevering med begge delingsindekser og kontrolleret V2-Functions med faktisk svar-/generationsparitet og målt kold CPU/Free-forbrug.
+
+Kontodelen installeres med coverage UNKNOWN, notices OFF og automatisk sletning OFF. Den konfigurerer ingen Auth-hook, automatisk mail eller cron. Positiv aktivitet og ægte leverandørlevering holdes adskilt fra manglende registrering og accepteret afsendelse. Faktisk signup/profil-bootstrap, hook/capture, kontinuitet, automatisk varsling og senere 30-dages sletning er fortsat åbne. Lokal samling er ikke installation eller brugeraccept. Se håndbog 89.353/89.354 og det private checkpoint; alle fem mål består.
+
+## Delingens mindre datakald er en lokal 602-kandidat
+
+Et samlet prognoseindeks kan lade en delingsvisning hente den valgte zones allerede beregnede score uden hele kortets detail-/kortinventarer. Samme tidspunkt, søgemåde, kvalitetsmærkning og lokale dækning skal bevares. Korrekte hashes og en lille fil beviser hverken ravfund, fuld vejrdækning eller gratis drift.
+
+Den lokale kandidat bevarer 601-modelfamilien, gamle V1-links og alle eksisterende numeriske/SQL-originaler. Den skal stadig gennem faktisk kilde- og leveringskvalifikation, hosted svarparitet og målt kold CPU/Free. Tidligere lokale M5-målinger må ikke omtales som 601- eller Cloudflare-bevis. Se håndbog 89.353 og DEC-0296.
+
 # 4.0.576 – afgrænset håndtering af gatewayfejl, 2026-10-13
 
 Den tidligere præcise uploaddiagnostik har bestået GitHubs kildekontrol og er lagt på main. Den faktisk gennemførte, snævre aflæsning registrerede HTTP 400 i lagringen og HTTP 520 i gatewayen. De to kategorier er ikke bevis for samme forespørgsel eller objekt; størrelse, kvote, MIME og den konkrete leverandørårsag er fortsat uafklarede. En genlevering fra den allerede gemte vejrpakke er startet gennem det normale kontrollerede forløb uden nye providerkald; startkvittering er ikke offentlig leveringssucces.

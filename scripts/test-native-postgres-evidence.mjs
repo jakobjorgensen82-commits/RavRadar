@@ -2709,6 +2709,20 @@ test('native app fixture database ownership survives Auth timestamp shadowing wi
   }
 });
 
+
+// Synthetic typed DATA for the separately required current79 OFF phase; never
+// a replay/retag of the old77 PostgreSQL execution or a new SQL execution claim.
+async function currentInactivityOffProtocolData(postgresMajor){
+ const schema=await import('./verify-account-erasure-schema.mjs'),{createHash}=await import('node:crypto');
+ const source=schema.readAccountInactivitySource(),counts={account_inactivity_policy:4,account_lifecycle_activity:2,account_inactivity_notices:11};
+ const definitions=Object.entries(counts).flatMap(([name,count])=>Array.from({length:count},(_,i)=>[name+'.'+name+'_check'+String(i).padStart(2,'0'),'CHECK (SYNTHETIC_CURRENT79)'])).sort((a,b)=>a[0].localeCompare(b[0]));
+ const checkReference=schema.verifyAccountInactivityCheckReference({format:'PG_CONSTRAINTDEF_V1',postgresMajor,definitions,
+  definitionsSha256:createHash('sha256').update(JSON.stringify(definitions)).digest('hex')});
+ return {kind:'ACCOUNT_INACTIVITY_OFF_NATIVE_SQL_CASES',sqlExecuted:true,sourceSqlFileCount:79,migrations:source.migrations.map(({sql,id,...row})=>row),cases:17,
+  checkReference,catalogVerified:true,captureSqlExecuted:true,hookConfigured:false,syntheticSqlHost:true,actualPostgres:true,coverageSynthetic:true,
+  providerDeliverySynthetic:true,positiveRpcCancellation:true,defaultOff:true,automaticDeletion:false,realAuth:false,realMail:false};
+}
+
 if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
   test('after599 typed native ledger keeps synthetic prefix separate from whole executed SQL',async t=>{
     const native=await import('./native-postgres-evidence.mjs'),source=await import('./lib/assistant-later-h0-successor-source.mjs');
@@ -2740,7 +2754,10 @@ if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
     const checkReference=schema.accountErasureCheckReference({format:'PG_CONSTRAINTDEF_V1',postgresMajor:16,
       definitions:[["account_erasure_operations_auth_attempt_ids_check", "CHECK (((COALESCE(array_ndims(auth_attempt_ids), 1) = 1) AND (COALESCE(array_lower(auth_attempt_ids, 1), 1) = 1) AND (array_position(auth_attempt_ids, NULL::uuid) IS NULL) AND (NOT ('00000000-0000-0000-0000-000000000000'::uuid = ANY (auth_attempt_ids)))))"], ["account_erasure_operations_auth_user_created_at_check", "CHECK (((auth_user_created_at IS NULL) OR (auth_user_created_at ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?Z$'::text)))"], ["account_erasure_operations_check", "CHECK ((target_user_id <> requested_by))"], ["account_erasure_operations_check1", "CHECK (((activity_first IS NULL) = (activity_last IS NULL)))"], ["account_erasure_operations_check10", "CHECK (((auth_user_created_at IS NOT NULL) = (auth_claimed_at IS NOT NULL)))"], ["account_erasure_operations_check11", "CHECK (((state <> 'AUTH_ATTEMPTED'::text) OR (auth_claimed_at IS NOT NULL)))"], ["account_erasure_operations_check12", "CHECK (((auth_claimed_at IS NULL) OR ((auth_attempt_id IS NOT NULL) AND isfinite(auth_claimed_at) AND (auth_claimed_at >= pg_staged_at))))"], ["account_erasure_operations_check13", "CHECK (((state = ANY (ARRAY['AUTH_ABSENT_D1_PENDING'::text, 'COMPLETE'::text])) = (auth_absent_at IS NOT NULL)))"], ["account_erasure_operations_check14", "CHECK (((auth_absent_at IS NULL) OR ((auth_attempt_id IS NOT NULL) AND (d1_owner_subject IS NOT NULL) AND isfinite(auth_absent_at) AND (auth_absent_at >= COALESCE(auth_claimed_at, pg_staged_at)))))"], ["account_erasure_operations_check15", "CHECK (((state = 'COMPLETE'::text) = (d1_ack_at IS NOT NULL)))"], ["account_erasure_operations_check16", "CHECK (((d1_ack_at IS NOT NULL) = (d1_deleted_count IS NOT NULL)))"], ["account_erasure_operations_check17", "CHECK (((d1_ack_at IS NULL) OR (isfinite(d1_ack_at) AND (d1_ack_at >= auth_absent_at))))"], ["account_erasure_operations_check18", "CHECK (((auth_attempt_id IS NULL) OR ((pg_staged_at IS NOT NULL) AND (d1_owner_subject IS NOT NULL))))"], ["account_erasure_operations_check2", "CHECK (((activity_first IS NULL) OR (isfinite(activity_first) AND isfinite(activity_last) AND (activity_first <= activity_last))))"], ["account_erasure_operations_check3", "CHECK ((isfinite(prepared_at) AND isfinite(updated_at) AND (prepared_at <= updated_at)))"], ["account_erasure_operations_check4", "CHECK (((state = ANY (ARRAY['PG_STAGED_AUTH_PENDING'::text, 'AUTH_ATTEMPTED'::text, 'AUTH_ABSENT_D1_PENDING'::text, 'COMPLETE'::text])) = (pg_staged_at IS NOT NULL)))"], ["account_erasure_operations_check5", "CHECK (((pg_staged_at IS NULL) OR (isfinite(pg_staged_at) AND (pg_staged_at >= prepared_at))))"], ["account_erasure_operations_check6", "CHECK (((state <> ALL (ARRAY['HOLD_ACTIVITY_CHANGED'::text, 'HOLD_POLICY'::text])) OR (hold_reason IS NOT NULL)))"], ["account_erasure_operations_check7", "CHECK (((state <> ALL (ARRAY['PREPARED'::text, 'COMPLETE'::text])) OR (hold_reason IS NULL)))"], ["account_erasure_operations_check8", "CHECK (((pg_staged_at IS NOT NULL) OR (pg_rows_removed = 0)))"], ["account_erasure_operations_check9", "CHECK ((NOT (auth_attempt_id IS DISTINCT FROM auth_attempt_ids[cardinality(auth_attempt_ids)])))"], ["account_erasure_operations_d1_deleted_count_check", "CHECK (((d1_deleted_count >= 0) AND (d1_deleted_count <= '9007199254740991'::bigint)))"], ["account_erasure_operations_d1_owner_subject_check", "CHECK (((d1_owner_subject IS NULL) OR (d1_owner_subject ~ '^usr_v1_[A-Za-z0-9_-]{43}$'::text)))"], ["account_erasure_operations_hold_reason_check", "CHECK ((hold_reason = ANY (ARRAY['ACTIVITY_CHANGED'::text, 'PRIVILEGED_TARGET'::text, 'REFERENCE_POLICY'::text, 'REFERENCE_CATALOG_UNKNOWN'::text, 'TARGET_MISSING'::text, 'STORAGE_CATALOG_UNKNOWN'::text, 'STORAGE_POLICY_UNQUALIFIED'::text, 'STORAGE_OWNERSHIP'::text, 'AUTH_GENERATION_CHANGED'::text])))"], ["account_erasure_operations_mode_check", "CHECK ((mode = 'MANUAL_OWNER'::text))"], ["account_erasure_operations_operation_id_check", "CHECK ((operation_id <> '00000000-0000-0000-0000-000000000000'::uuid))"], ["account_erasure_operations_pg_rows_removed_check", "CHECK (((pg_rows_removed >= 0) AND (pg_rows_removed <= '9007199254740991'::bigint)))"], ["account_erasure_operations_state_check", "CHECK ((state = ANY (ARRAY['PREPARED'::text, 'HOLD_ACTIVITY_CHANGED'::text, 'HOLD_POLICY'::text, 'PG_STAGED_AUTH_PENDING'::text, 'AUTH_ATTEMPTED'::text, 'AUTH_ABSENT_D1_PENDING'::text, 'COMPLETE'::text])))"]]});
     const sourceSqlFileCount=(await fs.readdir(new URL('../supabase/migrations/',import.meta.url))).filter(file=>file.endsWith('.sql')).length;
-    assert.equal(sourceSqlFileCount,77,'Actual current source inventory, never a77 flag on76 files');
+    const pair=schema.ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS;
+    assert.equal(sourceSqlFileCount-pair.length,77,'The genuine77-file predecessor remains, plus only the two named OFF appends');
+    assert.equal(sourceSqlFileCount,79,'Actual current79 source, never an old77 execution retag');
+    const accountInactivity=await currentInactivityOffProtocolData(16);
     const accountErasure={kind:'ACCOUNT_ERASURE_APP_NATIVE_SQL_CASES',sqlExecuted:true,
       migrationVersion:'20261116181500',migrationSQLSha256:schema.readAccountErasureSource().sha256,sourceSqlFileCount,
       passed:true,cases:49,actualPostgres:true,syntheticSqlHost:true,realGoTrue:false,checkReference,checkExpressionDriftRefused:true,
@@ -2749,7 +2766,7 @@ if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
       observationsAndBootstrapFence:true,readCommittedFreshness:true,repeatableReadNoLateCommit:true,serializableNoLateCommit:true,
       actorNonKeyPrivilegeLock:true,authDeletion:false,d1Ack:false,completionAuthority:false};
     const report={kind:'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',sqlExecuted:true,migrationExecuted:true,tcpEnabled:false,normalModelPartCount:673,
-      postgresMajorVersion:16,nativeProgramIdentity:runtime.selectedPrograms,assistantAfter599Successor:observed,accountErasure};
+      postgresMajorVersion:16,nativeProgramIdentity:runtime.selectedPrograms,assistantAfter599Successor:observed,accountErasure,accountInactivity};
     assert.deepEqual(await native.assistantAfter599NativeReportProjection(report,{selectedPrograms:runtime.selectedPrograms}),report);
     const collector=native.assistantAfter599NativeReportCollector({selectedPrograms:runtime.selectedPrograms});collector.write(JSON.stringify(report)+'\n');
     assert.deepEqual(await collector.finish(),report);
@@ -2759,7 +2776,11 @@ if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
       current:installed594Receipt().current,commands:[...native.ASSISTANT_AFTER599_COMMANDS],status:'EXECUTED',executedInThisRun:true,
       origin:null,eligibleForReuse:false,runtime,report};
     assert.equal(await native.verifyAssistantAfter599PhaseReceipt(receipt,receipt.current),receipt);
-    for(const mutate of [r=>delete r.accountErasure,r=>r.accountErasure=undefined,
+    for(const mutate of [r=>delete r.accountInactivity,r=>r.accountInactivity.sourceSqlFileCount=77,
+      r=>r.accountInactivity.cases=16,r=>r.accountInactivity.captureSqlExecuted=false,r=>r.accountInactivity.automaticDeletion=true,
+      r=>r.accountInactivity.migrations.reverse(),r=>r.accountInactivity.migrations[1].sha256='0'.repeat(64),
+      r=>r.accountInactivity.checkReference.definitions.pop(),r=>r.accountErasure.sourceSqlFileCount=77,
+      r=>delete r.accountErasure,r=>r.accountErasure=undefined,
       r=>r.accountErasure.sourceSqlFileCount=76,r=>r.accountErasure.sourceSqlFileCount=75,
       r=>r.accountErasure.migrationVersion='20261115060000',r=>r.accountErasure.migrationSQLSha256='0'.repeat(64),
       r=>r.accountErasure.cases=48,r=>r.accountErasure.checkReference.definitions.pop(),

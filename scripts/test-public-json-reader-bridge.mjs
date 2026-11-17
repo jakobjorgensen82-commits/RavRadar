@@ -1,3 +1,4 @@
+import {buildForecastShareTrustIndex} from '../js/services/forecast-share-trust-index.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -323,6 +324,7 @@ export async function checkPublicReaderBridge() {
           }) };
         const files = new Map([['./data/live/manifest.json', manifestText],
           ['./data/live/forecast-share.json', JSON.stringify(descriptor)],
+          ['./data/live/forecast-share-trust.json', JSON.stringify(buildForecastShareTrustIndex(baseManifest, descriptor))],
           ['./data/live/' + targetEntry.path.slice(2), overrun ? target.text.padEnd(32769, ' ') : target.text]]);
         return { fetchPublic: async relative => { assert.ok(files.has(relative)); return new Response(files.get(relative)); } };
       }

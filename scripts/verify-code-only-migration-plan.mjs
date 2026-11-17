@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {execFileSync} from 'node:child_process';
-import {readAccountErasureSource,verifyInstalledAccountErasureSchema} from './verify-account-erasure-schema.mjs';
+import {readAccountErasureSource,verifyInstalledAccountErasureSchema,readAccountInactivitySource,verifyInstalledAccountInactivitySchema} from './verify-account-erasure-schema.mjs';
 import {
   LATEST_REQUIRED_CUTOVER_MIGRATION,
   REQUIRED_CUTOVER_MIGRATIONS,
@@ -13,6 +13,8 @@ import {
 } from './integrated-cutover-readiness.mjs';
 import * as accountInactivityCutover from './integrated-cutover-readiness.mjs';
 const ACCOUNT_ERASURE_APP_MIGRATION=accountInactivityCutover.ACCOUNT_ERASURE_APP_MIGRATION;
+const ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS=accountInactivityCutover.ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS;
+const currentInactivityOff=accountInactivityCutover.DEFAULT_CUTOVER_SOURCE_PHASE==='assistant-after599-successor'&&ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS!==undefined;
 import { CURRENT_GRID_MIGRATION } from './lib/current-grid-successor-source.mjs';
 
 function argument(name) {
@@ -39,31 +41,46 @@ async function qualifyCurrentAccountErasureChecks(){
     readGit(['fetch','--no-tags','origin',reference.producerHead]);
   }
   const {sourceImpactEvidenceAccess}=await import('./native-postgres-evidence.mjs');
-  const {qualifySourceImpactFullBaseline,qualifiedAccountErasureChecks}=await import('./source-impact-full-baseline.mjs');
+  const {qualifySourceImpactFullBaseline,qualifiedAccountErasureChecks,qualifiedAccountInactivityChecks}=await import('./source-impact-full-baseline.mjs');
   const access=sourceImpactEvidenceAccess({env:process.env});
   const qualified=await qualifySourceImpactFullBaseline({candidateCommit:head,reference},{...access,readGit});
   const facit=qualifiedAccountErasureChecks(qualified);
   assert(facit&&facit.candidateCommit===head&&facit.migrationSQLSha256===readAccountErasureSource().sha256,
     'The exact qualified native phase must contain this app SQL CHECK facit');
-  return facit.checkReference;
+  const inactivity=!currentInactivityOff?null:qualifiedAccountInactivityChecks(qualified);
+  if(currentInactivityOff){
+    const source=readAccountInactivitySource();
+    assert(inactivity&&inactivity.candidateCommit===head&&inactivity.sourceSqlFileCount===79,
+      'The current OFF pair requires its own qualified native79 result');
+    assert.deepEqual(inactivity.migrations,source.migrations.map(({sql,id,...row})=>row));
+  }
+  return {manual:facit.checkReference,inactivity:inactivity?.checkReference??null};
 }
 const appProofMode=process.argv[2];
 if(['--qualify-account-erasure-source','--read-account-erasure-installed'].includes(appProofMode)){
   try{
-    assert.equal(process.argv.length,3);const expectedCheckReference=await qualifyCurrentAccountErasureChecks();
+    assert.equal(process.argv.length,3);const checks=await qualifyCurrentAccountErasureChecks();
+    const expectedCheckReference=checks.manual;
     if(appProofMode==='--read-account-erasure-installed'){
       const receipt=await verifyInstalledAccountErasureSchema({accessToken:process.env.SUPABASE_ACCESS_TOKEN,expectedCheckReference});
       const {checkReference,...summary}=receipt;
+      if(checks.inactivity){
+        const {checkReference:noticeChecks,...off}=await verifyInstalledAccountInactivitySchema({accessToken:process.env.SUPABASE_ACCESS_TOKEN,expectedCheckReference:checks.inactivity});
+        summary.inactivity={...off,checkDefinitions:noticeChecks.definitions.length,checkDefinitionsSha256:noticeChecks.definitionsSha256};
+      }
       console.log(JSON.stringify({...summary,checkDefinitions:checkReference.definitions.length,
         postgresMajor:checkReference.postgresMajor,checkDefinitionsSha256:checkReference.definitionsSha256}));
     }else console.log(JSON.stringify({kind:'QUALIFIED_ACCOUNT_ERASURE_NATIVE_CHECKS',
       sourceSha256:readAccountErasureSource().sha256,postgresMajor:expectedCheckReference.postgresMajor,
-      definitions:expectedCheckReference.definitions.length,definitionsSha256:expectedCheckReference.definitionsSha256}));
+      definitions:expectedCheckReference.definitions.length,definitionsSha256:expectedCheckReference.definitionsSha256,
+      ...(checks.inactivity?{inactivity:{sourceSqlFileCount:79,definitions:checks.inactivity.definitions.length,definitionsSha256:checks.inactivity.definitionsSha256}}:{})}));
   }catch{console.error('ACCOUNT_ERASURE_QUALIFIED_SCHEMA_EVIDENCE_REQUIRED');process.exitCode=1;}
 }else{
 const latest = LATEST_REQUIRED_CUTOVER_MIGRATION;
 const currentGridRoute = process.argv.includes('--current-grid-prewrite-plan');
 const inactivityOffRoute=process.argv.includes('--account-erasure-plan');
+const selectedOffMigrations=inactivityOffRoute&&currentInactivityOff
+  ?ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS:[ACCOUNT_ERASURE_APP_MIGRATION];
 if(inactivityOffRoute){
   assert(ACCOUNT_ERASURE_APP_MIGRATION,'The explicit OFF route requires its current app descriptor');
   assert.equal(process.env.GITHUB_EVENT_NAME,'workflow_dispatch');assert.equal(process.env.GITHUB_REF,'refs/heads/main');
@@ -115,8 +132,9 @@ if (process.argv.includes('--expected-pending-version')) {
 }
 assert.ok(
   plan.pendingVersions.length === 0
-    || (plan.pendingVersions.length === 1 && plan.pendingVersions[0]
-      ===(inactivityOffRoute?ACCOUNT_ERASURE_APP_MIGRATION.version:latest.version)),
+    || (inactivityOffRoute?plan.pendingVersions.length<=selectedOffMigrations.length
+      &&plan.pendingVersions.every(version=>selectedOffMigrations.some(row=>row.version===version))
+      :plan.pendingVersions.length===1&&plan.pendingVersions[0]===latest.version),
   'Code-only deployment may apply only the exact latest required integrated migration',
 );
 if (currentGridRoute || plan.pendingVersions.includes(CURRENT_GRID_MIGRATION.version)) {
@@ -136,6 +154,6 @@ if (currentGridRoute || plan.pendingVersions.includes(CURRENT_GRID_MIGRATION.ver
 console.log(
   plan.pendingVersions.length === 0
     ? 'Code-only migration is already applied; retry is safe.'
-    : `Code-only migration dry-run contains exactly ${inactivityOffRoute?ACCOUNT_ERASURE_APP_MIGRATION.filename:latest.filename}.`,
+    : `Code-only migration dry-run contains exactly ${inactivityOffRoute?selectedOffMigrations.filter(row=>plan.pendingVersions.includes(row.version)).map(row=>row.filename).join(', '):latest.filename}.`,
 );
 }

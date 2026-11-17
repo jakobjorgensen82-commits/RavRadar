@@ -4,10 +4,12 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import {readAccountErasureSource,accountErasureCatalogQuery,verifyAccountErasureCatalogMetadata}
+import {readAccountErasureSource,accountErasureCatalogQuery,verifyAccountErasureCatalogMetadata,
+ readAccountInactivitySource,accountInactivityCatalogQuery,verifyAccountInactivityCatalogMetadata}
  from '../verify-account-erasure-schema.mjs';
 const DB='rr_account_erasure_native_fixture';
 export const ACCOUNT_ERASURE_NATIVE_SQL_CASE_COUNT=49;
+export const ACCOUNT_INACTIVITY_NOTICE_NATIVE_SQL_CASE_COUNT=17;
 const actor='10000000-0000-4000-8000-000000000001';
 const id=n=>'20000000-0000-4000-8000-'+String(n).padStart(12,'0');
 const op=n=>'30000000-0000-4000-8000-'+String(n).padStart(12,'0');
@@ -17,6 +19,65 @@ export function accountErasurePrecommitFailureSql(sourceSql) {
  const injected=sourceSql.replace(/commit;\s*$/,()=>"do $$begin raise exception 'SYNTHETIC_ERASURE_PRECOMMIT';end;$$;\ncommit;\n");
  assert.notEqual(injected,sourceSql,'Account erasure transaction must have a final COMMIT');
  return injected;
+}
+// Shared app scaffolding only. Native Auth mode never creates/replaces Auth
+// users, sessions, auth.uid/role or SCIM; the existing owned B supplies them.
+export function accountErasureNativeFixtureSql(repositoryRoot,{nativeAuth=false}={}) {
+ assert.equal(typeof nativeAuth,'boolean');
+ const canonical=fs.readFileSync(path.join(repositoryRoot,'supabase/schema.sql'),'utf8').replaceAll('\r\n','\n');
+ const start=canonical.indexOf('-- ACCOUNT_ASSISTANT_SCHEMA_GENERATED_BEGIN'),end=canonical.indexOf('-- ACCOUNT_ASSISTANT_SCHEMA_GENERATED_END');
+ assert(start>=0&&end>start);
+ let fixture=String.raw`create schema auth; create schema extensions; create schema storage;
+create extension pgcrypto with schema extensions;
+create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
+create function auth.role() returns text language sql stable as $$ select current_setting('request.jwt.claim.role',true) $$;
+grant usage on schema public,auth to authenticated,anon,service_role;
+create table auth.users(id uuid primary key);
+create table public.profiles(id uuid primary key references auth.users(id) on delete cascade,email text,role text not null,is_active boolean not null default true);
+create table public.user_permissions(user_id uuid references public.profiles(id) on delete cascade,enabled boolean not null);
+create table public.observations(id bigint primary key,user_id uuid references auth.users(id) on delete set null,payload text default 'SYNTHETIC');
+grant select,insert,update,delete on public.observations to service_role;
+create table public.app_user_roles(user_id uuid references auth.users(id) on delete restrict);
+create table public.handbook_reviews(created_by uuid references auth.users(id) on delete restrict,resolved_by uuid references auth.users(id) on delete set null);
+create table public.handbook_review_versions(changed_by uuid references auth.users(id) on delete set null);
+create table public.admin_documents(updated_by uuid references auth.users(id) on delete set null);
+create table public.admin_document_versions(created_by uuid references auth.users(id) on delete set null);
+create table public.admin_audit_log(actor_id uuid references auth.users(id) on delete set null);
+create table auth.scim_users(user_id uuid references auth.users(id) on delete set null);
+create table storage.objects(owner uuid,owner_id text);
+create table storage.buckets(owner uuid,owner_id text);
+create table storage.s3_multipart_uploads(owner_id text);
+create table storage.s3_multipart_uploads_parts(owner_id text);
+alter table storage.objects enable row level security;
+alter table storage.buckets enable row level security;
+alter table storage.s3_multipart_uploads enable row level security;
+alter table storage.s3_multipart_uploads_parts enable row level security;
+`;
+ if(nativeAuth){
+  // The genuine Supabase host already owns its vendor schemas and privileges.
+  // Only the public app scaffolding belongs to this native capture fixture.
+  for(const line of [
+   'create schema auth; ',
+   'create schema extensions; ',
+   'create schema storage;\n',
+   'create extension pgcrypto with schema extensions;\n',
+   "create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;\n",
+   "create function auth.role() returns text language sql stable as $$ select current_setting('request.jwt.claim.role',true) $$;\n",
+   'grant usage on schema public,auth to authenticated,anon,service_role;\n',
+   'create table auth.users(id uuid primary key);\n',
+   'create table auth.scim_users(user_id uuid references auth.users(id) on delete set null);\n',
+   'create table storage.objects(owner uuid,owner_id text);\n',
+   'create table storage.buckets(owner uuid,owner_id text);\n',
+   'create table storage.s3_multipart_uploads(owner_id text);\n',
+   'create table storage.s3_multipart_uploads_parts(owner_id text);\n',
+   'alter table storage.objects enable row level security;\n',
+   'alter table storage.buckets enable row level security;\n',
+   'alter table storage.s3_multipart_uploads enable row level security;\n',
+   'alter table storage.s3_multipart_uploads_parts enable row level security;\n',
+  ]){assert(fixture.includes(line));fixture=fixture.replace(line,'');}
+  fixture="do $$begin if to_regclass('auth.users') is null or to_regclass('auth.sessions') is null or to_regclass('auth.scim_users') is null then raise exception 'GENUINE_AUTH_SCHEMA_REQUIRED';end if;end;$$;\n"+fixture;
+ }
+ return fixture+canonical.slice(start,end);
 }
 export async function exerciseAccountErasureOutbox({psql,runSql,repositoryRoot}) {
  assert.equal(await psql("select current_setting('listen_addresses');"),'','Existing owned native host only');
@@ -46,35 +107,7 @@ export async function exerciseAccountErasureOutbox({psql,runSql,repositoryRoot})
  }
  try {
   await psql('create database '+DB+';');databaseCreated=true;
-  const canonical=fs.readFileSync(path.join(repositoryRoot,'supabase/schema.sql'),'utf8').replaceAll('\r\n','\n');
-  const start=canonical.indexOf('-- ACCOUNT_ASSISTANT_SCHEMA_GENERATED_BEGIN'),end=canonical.indexOf('-- ACCOUNT_ASSISTANT_SCHEMA_GENERATED_END');
-  assert(start>=0&&end>start);
-  await pg(String.raw`create schema auth; create schema extensions; create schema storage;
-create extension pgcrypto with schema extensions;
-create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
-create function auth.role() returns text language sql stable as $$ select current_setting('request.jwt.claim.role',true) $$;
-grant usage on schema public,auth to authenticated,anon,service_role;
-create table auth.users(id uuid primary key);
-create table public.profiles(id uuid primary key references auth.users(id) on delete cascade,email text,role text not null,is_active boolean not null default true);
-create table public.user_permissions(user_id uuid references public.profiles(id) on delete cascade,enabled boolean not null);
-create table public.observations(id bigint primary key,user_id uuid references auth.users(id) on delete set null,payload text default 'SYNTHETIC');
-grant select,insert,update,delete on public.observations to service_role;
-create table public.app_user_roles(user_id uuid references auth.users(id) on delete restrict);
-create table public.handbook_reviews(created_by uuid references auth.users(id) on delete restrict,resolved_by uuid references auth.users(id) on delete set null);
-create table public.handbook_review_versions(changed_by uuid references auth.users(id) on delete set null);
-create table public.admin_documents(updated_by uuid references auth.users(id) on delete set null);
-create table public.admin_document_versions(created_by uuid references auth.users(id) on delete set null);
-create table public.admin_audit_log(actor_id uuid references auth.users(id) on delete set null);
-create table auth.scim_users(user_id uuid references auth.users(id) on delete set null);
-create table storage.objects(owner uuid,owner_id text);
-create table storage.buckets(owner uuid,owner_id text);
-create table storage.s3_multipart_uploads(owner_id text);
-create table storage.s3_multipart_uploads_parts(owner_id text);
-alter table storage.objects enable row level security;
-alter table storage.buckets enable row level security;
-alter table storage.s3_multipart_uploads enable row level security;
-alter table storage.s3_multipart_uploads_parts enable row level security;
-`+canonical.slice(start,end));
+  await pg(accountErasureNativeFixtureSql(repositoryRoot));
   const rollback=await raw(accountErasurePrecommitFailureSql(source.sql));
   assert.equal(rollback.code,3);assert.equal(rollback.sqlState,'P0001');
   assert.equal(await pg("select to_regclass('public.account_erasure_operations') is null and not exists(select 1 from pg_catalog.pg_proc where pronamespace='public'::regnamespace and proname like '%account_erasure%');"),'t');checked++;
@@ -196,7 +229,112 @@ alter table storage.s3_multipart_uploads_parts enable row level security;
   await stateFailure(auth(id(1))+'select public.list_account_erasure_operations();','42501');
   await stateFailure(auth(actor,'service_role')+'select public.list_account_erasure_operations();','42501');
   assert.equal(checked,ACCOUNT_ERASURE_NATIVE_SQL_CASE_COUNT,'Whole app SQL/race case inventory must execute');
+  // Notice-only extension on the SAME already-owned host/database. Backdated
+  // rows and enabled policy below are synthetic prerequisites, not real history.
+  const noticeSql=fs.readFileSync(path.join(repositoryRoot,'supabase/migrations/20261117180000_account_inactivity_notice_off.sql'),'utf8');
+  const manualBeforeNoticeInstall=jsonLast(await owner("select public.get_account_erasure_status('"+op(3)+"');"));
+  // This existing owned PG-only fixture has no real Auth service. The one
+  // named NOLOGIN grantee is catalogue scaffolding, never native Auth evidence.
+  await psql("create role supabase_auth_admin nologin noinherit;");
+  await pg(noticeSql);
+  const inactivitySource=readAccountInactivitySource(repositoryRoot);
+  const capture=inactivitySource.migrations[1];await pg(capture.sql);
+  const offMetadata=JSON.parse(await pg(accountInactivityCatalogQuery));
+  const offCatalog=verifyAccountInactivityCatalogMetadata([{metadata:offMetadata}],{source:inactivitySource});
+  let noticeChecked=0;
+  const afterNoticeMetadata=JSON.parse(await pg(accountErasureCatalogQuery));
+  verifyAccountErasureCatalogMetadata([{metadata:afterNoticeMetadata}],{source,expectedCheckReference:checkReference});
+  assert.deepEqual(jsonLast(await owner("select public.get_account_erasure_status('"+op(3)+"');")),manualBeforeNoticeInstall);
+  assert.deepEqual(jsonLast(await owner('select public.list_account_erasure_operations();')),page1);
+  noticeChecked++; // The new installation must preserve the qualified manual API/catalogue.
+
+  const notice=n=>'40000000-0000-4000-8000-'+String(n).padStart(12,'0');
+  const attempt=n=>'50000000-0000-4000-8000-'+String(n).padStart(12,'0');
+  const prepareNotice=n=>owner("select public.prepare_account_inactivity_notice('"+notice(n)+"','"+id(n)+"');").then(jsonLast);
+  const noticeStatus=n=>owner("select public.get_account_inactivity_notice_status('"+notice(n)+"');").then(jsonLast);
+  const positive=n=>pg(auth(id(n))+"select public.record_account_lifecycle_activity();").then(jsonLast);
+  const claimNotice=(n,revision,tryId)=>"select public.claim_account_inactivity_notice('"+notice(n)+"','"+actor+"',"+revision+",'"+tryId+"','"+'a'.repeat(64)+"','2020-01-01T00:00:00.123456789Z');";
+  const expectState=async(text,state)=>{const r=await raw(text);assert.equal(r.code,3);assert.equal(r.sqlState,state);noticeChecked++;};
+  await seed(101);const off=await prepareNotice(101);assert.equal(off.state,'HELD');assert.equal(off.holdReason,'POLICY_OFF');
+  assert.equal(off.automaticDeletionEnabled,false);noticeChecked++;
+  assert.equal((await positive(101)).recorded,true);const cancelled=await noticeStatus(101);
+  assert.equal(cancelled.state,'CANCELLED');assert(BigInt(cancelled.revision)>BigInt(off.revision));
+  assert.equal(cancelled.deleteNotBefore,null);noticeChecked++;
+  await expectState(auth(id(101),'anon')+'select public.record_account_lifecycle_activity();','42501');
+  await expectState(auth(id(101))+"select public.prepare_account_inactivity_notice('"+notice(102)+"','"+id(101)+"');",'42501');
+  await expectState(auth(actor,'service_role')+"insert into public.account_inactivity_policy(singleton) values(false);",'42501');
+  await pg("update public.account_inactivity_policy set notices_enabled=true,coverage_status='CAPTURING',coverage_started_at=clock_timestamp()-interval '3 years',delivery_qualified=true;");
+  const qualified=async n=>{
+   await seed(n);await positive(n);
+   await pg("update public.account_activity_journal set first_observed_at=clock_timestamp()-interval '4 years',last_activity_at=clock_timestamp()-interval '3 years' where user_id='"+id(n)+"';"
+    +"update public.account_lifecycle_activity set first_observed_at=clock_timestamp()-interval '4 years',last_activity_at=clock_timestamp()-interval '3 years',coverage_epoch=(select coverage_epoch from public.account_inactivity_policy) where user_id='"+id(n)+"';");
+   return prepareNotice(n);
+  };
+  const readyNotice=await qualified(102);assert.equal(readyNotice.state,'READY');noticeChecked++;
+  const nullCas=await service(claimNotice(102,'null',attempt(1)));assert.equal(nullCas.shouldSend,false);assert.equal(nullCas.state,'READY');noticeChecked++;
+  const noticeClaimed=await service(claimNotice(102,readyNotice.revision,attempt(1)));assert.equal(noticeClaimed.shouldSend,true);
+  assert.equal(noticeClaimed.authUserCreatedAt,'2020-01-01T00:00:00.123456789Z');noticeChecked++;
+  const ack=(n,version,tryId,outcome)=>service("select public.acknowledge_account_inactivity_notice('"+notice(n)+"','"+actor+"',"+version+",'"+tryId+"','"+outcome+"','60000000-0000-4000-8000-000000000001');");
+  const noticeAccepted=await ack(102,noticeClaimed.revision,attempt(1),'accepted');assert.equal(noticeAccepted.accepted,true);
+  assert.equal(noticeAccepted.delivered,false);assert.equal(noticeAccepted.deleteNotBefore,null);noticeChecked++;
+  const noticeDelivered=await ack(102,noticeAccepted.revision,attempt(1),'delivered');assert.equal(noticeDelivered.delivered,true);
+  assert.equal(await pg("select delete_not_before=delivered_at+interval '720 hours' from public.account_inactivity_notices where notice_id='"+notice(102)+"';"),'t');
+  assert.equal(noticeDelivered.automaticDeletionEnabled,false);noticeChecked++;
+  await positive(102);const noticeRetained=await noticeStatus(102);assert.equal(noticeRetained.state,'CANCELLED');assert.equal(noticeRetained.deleteNotBefore,null);
+  assert.equal(await pg("select exists(select 1 from auth.users where id='"+id(102)+"');"),'t');
+  assert.equal(await pg('select count(*) from public.observations where id=102;'),'1');noticeChecked++;
+  const racing=await qualified(103);
+  const activity=raw("set application_name='rr_notice_positive_activity';"+auth(id(103))+"begin;select public.record_account_lifecycle_activity();select pg_sleep(0.3);commit;");
+  await waitApplication('rr_notice_positive_activity');
+  const competing=raw(auth(actor,'service_role')+claimNotice(103,racing.revision,attempt(2)));
+  const activityResult=await activity,claimResult=await competing;assert.equal(activityResult.code,0);assert.equal(claimResult.code,0);
+  const afterLogin=jsonLast(claimResult.stdout);assert.equal(afterLogin.state,'CANCELLED');assert.equal(afterLogin.shouldSend,false);noticeChecked++;
+  const replayReady=await qualified(104);
+  const firstNoticeAttempt=await service(claimNotice(104,replayReady.revision,attempt(3)));
+  const unknownFirst=await ack(104,firstNoticeAttempt.revision,attempt(3),'unknown');
+  const secondNoticeAttempt=await service(claimNotice(104,unknownFirst.revision,attempt(4)));
+  const unknownSecond=await ack(104,secondNoticeAttempt.revision,attempt(4),'unknown');
+  const replayFirst=await service(claimNotice(104,unknownSecond.revision,attempt(3)));
+  assert.equal(replayFirst.shouldSend,false);assert.equal(replayFirst.attemptId,attempt(4));noticeChecked++;
+  for(const [n,reason] of [[105,'AUTH_UNAVAILABLE'],[106,'DELIVERY_UNAVAILABLE']]){
+   const prepared=await qualified(n),tryId=attempt(n);
+   const claimed=await service(claimNotice(n,prepared.revision,tryId));
+   const accepted=await ack(n,claimed.revision,tryId,'accepted');
+   const identitySql="select jsonb_build_array(attempt_id,provider_id,recipient_digest,auth_user_created_at,claimed_at,accepted_at,attempt_ids) from public.account_inactivity_notices where notice_id='"+notice(n)+"';";
+   const identity=await pg(identitySql);
+   const held=await service("select public.hold_account_inactivity_notice('"+notice(n)+"','"+actor+"',"+accepted.revision+",'"+reason+"');");
+   assert.equal(held.state,'HELD');assert.equal(held.accepted,true);assert.equal(held.deleteNotBefore,null);
+   assert.equal((await service(claimNotice(n,held.revision,attempt(n+100)))).shouldSend,false);
+   assert.deepEqual(await ack(n,accepted.revision,tryId,'delivered'),held,'Stale CAS cannot acknowledge delivery');
+   assert.deepEqual(await ack(n,held.revision,attempt(n+100),'delivered'),held,'Changed attempt cannot acknowledge delivery');
+   const wrongProvider=await raw(auth(actor,'service_role')+"select public.acknowledge_account_inactivity_notice('"+notice(n)+"','"+actor+"',"+held.revision+",'"+tryId+"','delivered','60000000-0000-4000-8000-000000000099');");
+   assert.equal(wrongProvider.code,3);assert.equal(wrongProvider.sqlState,'22023');
+   const recovered=await ack(n,held.revision,tryId,'delivered');
+   assert.equal(recovered.state,'DELIVERED');assert.equal(recovered.automaticDeletionEnabled,false);
+   assert.equal(await pg(identitySql),identity,'Readback must retain original receipt/body/generation/send-attempt');
+   assert.equal(await pg("select delete_not_before=delivered_at+interval '720 hours' from public.account_inactivity_notices where notice_id='"+notice(n)+"';"),'t');
+   noticeChecked++;
+  }
+  // A transient readback recovery must still recheck fresh policy/activity.
+  const guardPrepared=await qualified(107),guardAttempt=attempt(107);
+  const guardClaimed=await service(claimNotice(107,guardPrepared.revision,guardAttempt));
+  const guardAccepted=await ack(107,guardClaimed.revision,guardAttempt,'accepted');
+  const guardHeld=await service("select public.hold_account_inactivity_notice('"+notice(107)+"','"+actor+"',"+guardAccepted.revision+",'DELIVERY_UNAVAILABLE');");
+  await pg('update public.account_inactivity_policy set delivery_qualified=false;');
+  const stillHeld=await ack(107,guardHeld.revision,guardAttempt,'delivered');
+  assert.equal(stillHeld.state,'HELD');assert.equal(stillHeld.holdReason,'DELIVERY_UNQUALIFIED');assert.equal(stillHeld.deleteNotBefore,null);
+  await pg('update public.account_inactivity_policy set delivery_qualified=true;');
+  await positive(107);const guardCancelled=await noticeStatus(107);
+  const cancelledDelivery=await raw(auth(actor,'service_role')+"select public.acknowledge_account_inactivity_notice('"+notice(107)+"','"+actor+"',"+guardCancelled.revision+",'"+guardAttempt+"','delivered','60000000-0000-4000-8000-000000000001');");
+  assert.equal(cancelledDelivery.code,3);assert.equal(cancelledDelivery.sqlState,'22023');
+  assert.deepEqual(await noticeStatus(107),guardCancelled);noticeChecked++;
+  assert.equal(noticeChecked,ACCOUNT_INACTIVITY_NOTICE_NATIVE_SQL_CASE_COUNT,'Whole notice SQL extension must execute');
   result={passed:true,cases:checked,actualPostgres:true,syntheticSqlHost:true,realGoTrue:false,checkReference,checkExpressionDriftRefused:true,
+   inactivityNotice:{cases:noticeChecked,migrations:inactivitySource.migrations.map(({sql,id,...row})=>row),
+    checkReference:offCatalog.checkReference,catalogVerified:offCatalog.catalogVerified,
+    captureSqlExecuted:true,hookConfigured:false,syntheticSqlHost:true,
+    actualPostgres:true,coverageSynthetic:true,providerDeliverySynthetic:true,
+    positiveRpcCancellation:true,defaultOff:true,automaticDeletion:false,realAuth:false,realMail:false},
    serviceEvidenceSynthetic:true,failedTransactionRolledBack:true,aclMutationRefused:true,ownerPendingDiscoveryAndPagination:true,
    authAttemptReplayAndGeneration:true,initialAbsenceWithoutDeleteClaim:true,
    authUuidFenceSqlOnly:true,storageDefaultDenyAndOwnership:true,postPgStorageClaimHeld:true,

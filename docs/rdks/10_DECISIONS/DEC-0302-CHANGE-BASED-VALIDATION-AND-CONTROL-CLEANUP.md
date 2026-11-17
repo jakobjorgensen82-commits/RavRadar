@@ -1,3 +1,13 @@
+## 17. november — én faktisk kvalifikation af samlet app602
+
+De gennemgåede apprettelser til deling/LF7 og inaktiv kontoopsætning samles før næste kildekvalifikation for at undgå endnu en versions- og databasekontrolrunde alene ved senere sammenføring. Kombinationen har 79 SQL-filer og kræver en ny faktisk kvalifikation af de to nye appends og deres normale kaldere. Gamle77-/manuelle beviser bevares med deres eget katalog; de ommærkes ikke. Uændrede mål gentages kun ved relevante nye input. Dette giver ingen undtagelse fra konkret relevant fejl eller ukendt påvirkning.
+
+## LF7-audit læser den autentiske gemte timeprojektion
+
+Den private LF7-audit læser de eksisterende 118 public-hour-filer én ad gangen, fordi den normale gemte PART-form ikke længere indeholder hourly-rækker. Hver fil skal bestå de normale descriptor-, størrelses-, hash-, transport-, generations-, model-, time- og PART-/zonekontroller. Kun de to allerede beregnede vandstandstal indgår i den uændrede digest; der genskabes ingen PART-historik eller score, og der faldes ikke tilbage til tilsyneladende korrekte in-memory-rækker.
+
+Manglende eller ukvalificeret observation forbliver UNKNOWN; en korrekt bundet værdiafvigelse bliver OBSERVED_VIOLATION. OBSERVED_CONFORMANT er ikke i sig selv komplet dækning eller bevist T+3-støtte: de særskilte coverageComplete- og allRoutedT3Comparable-felter skal fortsat læses. De 121 private kildetimer giver støtte til de 118 offentlige timer; nævneren udvides ikke. Rå værdier, private navne og koordinater kommer ikke i rapporten. Dette er lokal kildeforberedelse på endnu ikke merget601; præcis kvalifikation og en ny faktisk generation kræves fortsat.
+
 ## Samme aktuelle appfacit ved alle601-admissionskald
 
 Den navngivne601-families normale FULL-læser kontrollerer producentens egen appversion og hele releasekontrakt. Dens eksporterede nativeprojektion og receiptadmission kræver samme komplette aktuelle77-filers konto-appfacit med49 udførte cases og28 typed CHECK-definitioner, som execute/record allerede kræver. Manglende eller undefined appfelt, gamle76-/75-former og ændret version, SQL-hash, caseantal eller CHECK-reference afvises. Kun den normale kvalificerede FULL-returnerings opaque token kan frigive CHECK-referencen; kopier og påståede flag giver ingen autoritet. De gamle familiers historiske75-/76-betydning bevares i deres egne læsere.

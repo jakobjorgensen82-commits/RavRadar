@@ -21,6 +21,11 @@ export const SOURCE_IMPACT_FULL_BASELINE_KIND='RAVRADAR_SOURCE_IMPACT_FULL_BASEL
 // Only this normal genuine FULL qualification may release app schema facit.
 // Old receipt/reference formats remain unchanged; caller booleans grant nothing.
 const qualifiedAccountErasureChecksByResult=new WeakMap();
+const qualifiedAccountInactivityChecksByResult=new WeakMap();
+export function qualifiedAccountInactivityChecks(result){
+  const value=result&&typeof result==='object'?qualifiedAccountInactivityChecksByResult.get(result):null;
+  return value?structuredClone(value):null;
+}
 export function qualifiedAccountErasureChecks(result){
   const value=result&&typeof result==='object'?qualifiedAccountErasureChecksByResult.get(result):null;
   return value?structuredClone(value):null;
@@ -296,6 +301,11 @@ export async function qualifySourceImpactFullBaseline(input,dependencies){
       qualifiedAccountErasureChecksByResult.set(result,{candidateCommit:input.candidateCommit,reference,
         migrationSQLSha256:native.report.accountErasure.migrationSQLSha256,
         checkReference:native.report.accountErasure.checkReference});
+    }
+    if(phaseProof.kind===ASSISTANT_AFTER599_PHASE_KIND&&native.report.accountInactivity?.checkReference){
+      qualifiedAccountInactivityChecksByResult.set(result,{candidateCommit:input.candidateCommit,reference,
+        sourceSqlFileCount:native.report.accountInactivity.sourceSqlFileCount,migrations:native.report.accountInactivity.migrations,
+        checkReference:native.report.accountInactivity.checkReference});
     }
     return result;
   }catch{return refused();}

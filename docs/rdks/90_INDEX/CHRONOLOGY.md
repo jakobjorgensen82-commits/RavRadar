@@ -1,3 +1,11 @@
+## 17. november2026 — samlet lokal602-appkandidat
+
+De tidligere afgrænsede delings-/LF7-kilder er samlet med to inaktive kontoappends på601-familien. Den faktiske integration bevarer77 gamle SQL, C/I/T og de ni senere601-kalderrettelser. Ét79-katalog med egne nye native-/CHECK-facit erstatter ingen historiske beviser. SQL/readback skal komme før aktivitetsklient og Edge; Auth-hook, automatisk mail og sletning er fortsat OFF. Kildekvalifikation, installation og faktiske bruger-/Free-beviser er åbne. Se håndbog 89.354 og privat checkpoint.
+
+## 17. november 2026 — lokal app 602 efter 601
+
+Et samlet, generationsbundet delingsindeks er porteret som almindelig appændring på den udstedte 601-modelfamilie. Den gamle V1 og zonefilerne bevares under den planlagte trinvise levering. Fuld normal artifactparitet, offentlig genlæsning, begge tidskontroller og uændrede C/I/T samt 77 SQL-originaler består som krav. Normal lokal kvalifikation er adskilt fra source-CI, installation, hosted paritet og den åbne kold-/Free-CPU-grænse. Se DEC-0296/håndbog 89.353 og privat checkpoint.
+
 ## 17. november 2026 —4.0.601-forberedelse ovenpå app600
 
 Tre offentlige vidensfakta og emneopfølgning samles med en lukket after599-konstruktør. C/I/T og privat DATA-preview er beregnet;76 udstedte SQL-originaler bevares. Ingen ny append, native-, FULL-, installations- eller offentlig accept er påstået. Se aktuel sandhed og håndbog89.352.

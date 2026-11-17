@@ -1,3 +1,19 @@
+## App 602: deling, normal LF7-læsning og inaktiv kontoforberedelse
+
+Den samlede lokale app 602-kandidat erstatter den tidligere delings-only-sammensætning. Den forener det mindre generationsbundne delingsindeks, LF7-audit af de normale gemte timefiler og to kontoappends til aktivitetsregistrering og varsling. Den numeriske601-familie, C/I/T, alle 77 tidligere SQL-filer, de ni601-kalderrettelser og score/kildeprioritet/admin/geometri bevares. Kildekataloget har 79 SQL-filer; den afgrænsede konto-installationsvisning kræver de 66 installerede forgængere og netop de to nye appends.
+
+Én samlet faktisk 79-kilde-/PostgreSQL-kvalifikation skal dække de nye SQL- og katalogkontrakter samt de berørte normale kaldere. Uændrede lokale beviser genbruges med deres oprindelige input; gammel 77-kvalifikation ommærkes ikke til79. Samlingen reducerer leveringsrunder, ikke relevante sikkerheds- eller datakrav.
+
+601 skal først kvalificeres og leveres gennem almindeligt nyt vejr; den eksisterende V1-delingskode skal følge den nye binding. Efter den samlede602-kvalifikation installeres og genlæses kontoappends før den ændrede aktivitetsklient og trip-log-Edge. Derefter følger normal602-kodelevering med begge delingsindekser og kontrolleret V2-Functions med faktisk svar-/generationsparitet og målt kold CPU/Free-forbrug.
+
+Kontodelen installeres med coverage UNKNOWN, notices OFF og automatisk sletning OFF. Den konfigurerer ingen Auth-hook, automatisk mail eller cron. Positiv aktivitet og ægte leverandørlevering holdes adskilt fra manglende registrering og accepteret afsendelse. Faktisk signup/profil-bootstrap, hook/capture, kontinuitet, automatisk varsling og senere 30-dages sletning er fortsat åbne. Lokal samling er ikke installation eller brugeraccept. Se håndbog 89.353/89.354 og det private checkpoint; alle fem mål består.
+
+## 4.0.602 — delingsindeks på uændret 601-modelfamilie, lokal kandidat
+
+Den gennemgåede lokale prototype er porteret til 601-kilden og løftet med normal set-version til app 602. Syv produktblade tilføjer ét faktisk trust-kontraktmodul, et samlet generationsindeks og normal offentlig genlæsning; tre eksisterende normale klient-/artifactmål bruger samme nye kontrakt. V1-indeks og alle zonefiler bevares. De normale C-, I- og T/bindingschecks består uden genudstedelse, og alle 77 migrationsoriginaler bevares.
+
+Det fulde manifest og national 49.560-paritet kontrolleres fortsat gennem normale producer-, kopi-, audit-/privacy- og hosted-verifierkald. Begge faktiske friskhedskontroller, fælles 15-sekunders frist og transportafslag består. De gamle 337-målinger er M5-evidens alene. Kilde-CI, kvalificeret 601-base, normal ny 601-/602-levering, V1/V2-hosting og faktisk kold CPU/Free er fortsat åbne; intet er installeret eller aktiveret af denne lokale forberedelse. Se DEC-0296 og håndbog 89.353.
+
 ## 17. november 2026 — assistent 4.0.601 før udstedelse
 
 App600 er nu faktisk databaseinstalleret og server-/UI-leveret gennem den normale rene kodevej med fortsat numerisk modelfamilie599. Normal FULL-kvalifikation, de28 præcise CHECK-definitioner og kataloggenlæsning er bekræftet; offentlig210/673 og den terminale afslutning er verificeret. Det oprindelige fejlede installerforløbs udfald står særskilt UNKNOWN og omskrives ikke til succes. Ejerens normale kontomodal og præference er browserlæst på600, men faktisk sletning, privacy- og samlet målopfyldelse er ikke accepteret. Alle fem hovedmål er fortsat åbne. Ældre600-kandidatposter nedenfor er erstattet på dette leveringsstatuspunkt.

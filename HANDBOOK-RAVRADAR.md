@@ -1,3 +1,33 @@
+## 89.354 — Aktivitet og varsel før automatisk kontosletning
+
+<div class="reader-guide"><p>Registrér aktivitet sikkert, og begynd først et 30-dages varsel på en faktisk leveringskvittering. Installationen aktiverer ingen automatisk sletning.</p></div>
+
+App 602 forbereder registrering af positiv kontoaktivitet og et holdbart varslingsforløb. De to nye kontoappends ændrer ingen RavScore, vejrtal, kildeprioritet, centrale punkter eller geometri. Alle77 tidligere SQL-filer og601-modelfamiliens C/I/T bevares.
+
+En manglende registrering er aldrig bevis for inaktivitet. Den nye capturefunktion arbejder med kontoens eksisterende profil og journal, samme kontogeneration og en revisionskontrol. Positiv aktivitet annullerer ventende varsler. Hvis en native registrering ikke kan gennemføres, skal den konservative ugyldiggørelse af dækningen og annullering lykkes i samme transaktion, før tokenudstedelsen kan fortsætte.
+
+Varslet har sit eget UUID, revision, afsendelsesforsøg og leverandør-id. En accepteret afsendelse er ikke leveret post. Den samme accepterede afsendelse må ikke blive til en ny POST efter en midlertidig fejl; en senere kontrolleret genlæsning skal matche den samme modtager, skabelon og kontogeneration. Først en kvalificeret leveringskvittering kan starte fristen på 720 timer. Ny positiv aktivitet annullerer varslet og slettefristen.
+
+Installationen begynder med ukendt aktivitetsdækning, deaktiverede varsler og deaktiveret automatisk sletning. Den konfigurerer ingen Auth-hook, automatisk mail eller cron og giver ikke varslingskoden manuel sletteautoritet. Det eksisterende manuelle sletteforløb og dets barrierer bevares.
+
+Den normale kontoappmode kræver den faktisk installerede 601-familie og app600. Dens migrationsvisning indeholder de 66 krævede forgængere og præcis de to nye appends; hele kildekataloget har 79 SQL-filer. Gamle manuelle prøver og CHECK-definitioner beholder deres egne facit. En ny faktisk kvalifikation skal dække det nye katalog, SQL, låseracer, ACL og de normale kaldere. SQL og genlæsning skal bestå før den ændrede aktivitetsklient og trip-log-Edge leveres.
+
+Dette er lokal kildeforberedelse. Den tidligere syntetiske Auth-prøve indsatte sin profil før login og beviser derfor ikke normalt signup eller den faktisk installerede profiltrigger. Signup/profil-bootstrap, hosted hook/capture, sammenhængende aktivitetsgrundlag, automatisk varsling og efterfølgende sikker sletning er fortsat åbne. Kontoen må ikke slettes automatisk alene på denne installation eller afsenderens tidligere leveringsprøve.
+
+## 89.353 — Mindre datakald ved deling
+
+<div class="reader-guide"><p>Et mindre datakald skal vise samme score og mærkning som kortet. Mindre data beviser ikke i sig selv gratis drift.</p></div>
+
+Den lokale app 602-kandidat forbereder en delingsvisning, der henter ét samlet prognoseindeks og derefter kun den valgte zones eksisterende fil. Indekset beskriver den samme 118-timers prognose, de 210 zoner og begge søgemåder. Score, kvalitetsmærkning og lokal dækning kommer fortsat fra de allerede beregnede offentlige resultater. Der beregnes ingen ny score i delingsfunktionen.
+
+Indekset og alle zonefiler kontrolleres i den normale bygge-, kopi- og efterkontrol mod hele prognosens manifest og alle 49.560 valg af zone, time og søgemåde. Den valgte zonefil kontrolleres fortsat med sin præcise størrelse og SHA-256. GET genlæser ikke det store mastermanifest; dets hash i indekset er en proveniensreference. Tilliden bygger på den normale fulde artifactkontrol, den atomiske offentlige levering og HTTPS.
+
+Begge aktuelle kontroller af tidspunkt og gyldighed bevares sammen med én fælles frist på 15 sekunder. Afvigende, ufuldstændige eller udløbne data giver ingen opdigtet score, anden time eller gammel generation. Hverken score eller friskhed caches som en genvej. Det gamle V1-indeks og de 210 zonefiler bevares, så gamle delingslinks kan fungere under den trinvise levering.
+
+Leveringsplanen er først normalt 601-vejr og den eksisterende V1-delingskode kompileret til 601. Derefter følger app 602 med begge indekser og til sidst V2-delingskoden med faktisk kontrol af generation og svar. App 602 bevarer 601-modelfamiliens C/I/T-bindinger og alle 77 migrationsoriginaler. Scoreformel, kildeprioritet, punkter, geometri og den normale databevarelse ændres ikke.
+
+Dette er lokal kildeforberedelse. Præcis kildekvalifikation, offentlig levering, kompatibilitet, faktisk kold og varm Cloudflare-CPU samt kontoens samlede Free-forbrug er fortsat åbne. De tidligere lokale M5-målinger er deres eget bevis og bliver ikke ommærket til 601. En mindre fil eller et hurtigt lokalt kald er ikke dokumentation for drift under Free-planens CPU-grænse.
+
 ## 89.352 — Assistentens emneopfølgning og UV-forklaring
 
 <div class="reader-guide"><p>Hele opfølgningsspørgsmålet tæller; lys og modelscore beviser hverken ravets identitet eller antal.</p></div>
@@ -241,9 +271,9 @@ Dette er en forberedt kildeændring. Kodekvalifikation, faktisk fjernelse, maila
 Den nye V4-kandidat vælger normale mål fra PR'ens faktiske merge-base til dens præcise head. Før tidligere godkendte områder kan genbruges, kvalificerer den den mergede bases faktiske producent, job, hele typede kvittering, træ og afsluttende upload samt senere negativ evidens. Den normale forbruger udføres på basens rigtige Git-checkout; kandidaten gendannes og kontrolleres bagefter. En verificeret direkte sammenfatning hindrer rekursiv genåbning af hele forfaderkæden. V3 beholder sin oprindelige kumulative betydning. Manglende eller udløbet basekvittering vælger kendte kumulative mål; konkret FAIL, modstrid eller ukendt kvalifikation stopper. PostgreSQL og C/I/T kvalificeres fortsat selvstændigt mod deres autentiske, uændrede input; ingen ny databaseprøve påstås.
 
 <!-- ravradar-derived-source-bindings-v1:begin -->
-## Afledt kildeidentitet — RavScore 4.0.601
+## Afledt kildeidentitet — RavScore 4.0.602
 
-4.0.601 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=8eb4a77c96c86d1357209b23afca39c79862cc74b61383d60071837bd14d1313` over 100 kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere.
+4.0.602 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=8eb4a77c96c86d1357209b23afca39c79862cc74b61383d60071837bd14d1313` over 100 kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere.
 
 Inaktiv Candidate G: `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=2c323c2bdcf73c6449b2cd105300836ea4a8f88e014156d2c18b2dde408ba076` over 101 transitive filer.
 
@@ -253,6 +283,12 @@ Autoriteten er version.json.releaseContract.modelBindings og de aktuelle generer
 <!-- ravradar-derived-source-bindings-v1:end -->
 
 ## 89.342 Kontrol af ændringer med en fast sikkerhedskerne
+
+### LF7-audit af den normale gemte timeprojektion
+
+Den private LF7-audit læser de eksisterende 118 public-hour-filer én ad gangen, fordi den normale gemte PART-form ikke længere indeholder hourly-rækker. Hver fil skal bestå de normale descriptor-, størrelses-, hash-, transport-, generations-, model-, time- og PART-/zonekontroller. Kun de to allerede beregnede vandstandstal indgår i den uændrede digest; der genskabes ingen PART-historik eller score, og der faldes ikke tilbage til tilsyneladende korrekte in-memory-rækker.
+
+Manglende eller ukvalificeret observation forbliver UNKNOWN; en korrekt bundet værdiafvigelse bliver OBSERVED_VIOLATION. OBSERVED_CONFORMANT er ikke i sig selv komplet dækning eller bevist T+3-støtte: de særskilte coverageComplete- og allRoutedT3Comparable-felter skal fortsat læses. De 121 private kildetimer giver støtte til de 118 offentlige timer; nævneren udvides ikke. Rå værdier, private navne og koordinater kommer ikke i rapporten. Dette er lokal kildeforberedelse på endnu ikke merget601; præcis kvalifikation og en ny faktisk generation kræves fortsat.
 
 ### Lever uafhængige rettelser gennem deres faktiske kaldere
 
@@ -2562,7 +2598,7 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.601
+**Håndbogsversion:** 4.0.602
 
 **Lokal kildebinding — 29. oktober 2026, RavScore 4.0.591, ikke installeret:** Den integrerede model er offentlig som modeltype under den særskilt leverede 4.0.590. Den nye assistentefterfølger er lokalt udstedt og er endnu ikke samlet kvalificeret, installeret eller offentliggjort.
 

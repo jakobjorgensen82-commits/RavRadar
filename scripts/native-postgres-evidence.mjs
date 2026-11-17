@@ -1949,7 +1949,9 @@ async function accountErasureSourceIdentity(){
     return null;
   }
   assert.deepEqual(descriptor,{version:'20261116181500',id:'20261116181500_account_erasure_outbox_off',filename});
-  const expectedCount=ACTIVE.sourcePhase===ASSISTANT_AFTER599_PHASE?77:76;
+  const notice=accountErasureSchema.ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS;
+  if(notice!==undefined)assert.equal(ACTIVE.sourcePhase,ASSISTANT_AFTER599_PHASE,'Current notice source cannot impersonate a historical family');
+  const expectedCount=ACTIVE.sourcePhase===ASSISTANT_AFTER599_PHASE?(notice===undefined?77:79):76;
   assert.equal(files.length,expectedCount,'Every original SQL and the active append must physically exist');
   assert(files.includes(filename),'The current OFF source must physically exist');
   const file=new URL(filename,directory),stat=await fs.lstat(file);
@@ -1957,6 +1959,31 @@ async function accountErasureSourceIdentity(){
   const source=await fs.readFile(file);assert.equal(source.length,stat.size);
   return {migrationVersion:descriptor.version,migrationSQLSha256:sha(source),sourceSqlFileCount:expectedCount};
 }
+
+async function accountInactivitySourceIdentity(){
+  if(accountErasureSchema.ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS===undefined)return null;
+  assert.equal(ACTIVE.sourcePhase,ASSISTANT_AFTER599_PHASE);
+  const source=accountErasureSchema.readAccountInactivitySource();
+  const files=(await fs.readdir(new URL('../supabase/migrations/',import.meta.url))).filter(file=>file.endsWith('.sql'));
+  assert.equal(files.length,79,'Current OFF pair requires the actual whole79-file source');
+  assert(!files.includes('20261116230000_account_inactivity_notice_off.sql')&&!files.includes('20261117030000_account_native_activity_capture_off.sql'),
+    'Private donor names must not become historical-prefix migrations');
+  return {sourceSqlFileCount:79,migrations:source.migrations.map(({sql,id,...row})=>row)};
+}
+function projectAccountInactivityNative(value,identity,postgresMajor){
+  if(identity===null){assert.equal(value,undefined,'Historical source cannot claim the new OFF pair');return null;}
+  const checkReference=accountErasureSchema.verifyAccountInactivityCheckReference(value?.checkReference,{postgresMajor});
+  const expected={kind:'ACCOUNT_INACTIVITY_OFF_NATIVE_SQL_CASES',sqlExecuted:true,...identity,cases:17,
+    checkReference,catalogVerified:true,captureSqlExecuted:true,hookConfigured:false,syntheticSqlHost:true,
+    actualPostgres:true,coverageSynthetic:true,providerDeliverySynthetic:true,positiveRpcCancellation:true,
+    defaultOff:true,automaticDeletion:false,realAuth:false,realMail:false};
+  assert.deepEqual(value,expected,'The actual OFF pair needs its separate exact SQL/CHECK result, never the old77 result');
+  return Object.freeze(expected);
+}
+export async function assertCurrentAccountInactivityNativeReport(report){
+  return projectAccountInactivityNative(report.accountInactivity,await accountInactivitySourceIdentity(),report.postgresMajorVersion);
+}
+
 function projectAccountErasureNative(value,identity,postgresMajor){
   assert(identity,'Historical75-row evidence cannot claim an OFF installation');
   const checkReference=accountErasureSchema.verifyAccountErasureCheckReference(value?.checkReference,{postgresMajor});
@@ -2025,9 +2052,10 @@ export async function assistantAfter599NativeReportProjection(report,options){
   for(const[key,value]of Object.entries(observed))assert.deepEqual(report.assistantAfter599Successor?.[key],value,'After599 native report: '+key);
   assert(Object.hasOwn(report,'accountErasure'),'After599 requires actual current77-file app evidence');
   const app=projectAccountErasureNative(report.accountErasure,await accountErasureSourceIdentity(),postgresMajorVersion);
+  const inactivity=projectAccountInactivityNative(report.accountInactivity,await accountInactivitySourceIdentity(),postgresMajorVersion);
   return {kind:SCALAR597_REPORT_MARKER,sqlExecuted:true,migrationExecuted:true,tcpEnabled:false,
     normalModelPartCount:673,postgresMajorVersion,nativeProgramIdentity:selectedPrograms,assistantAfter599Successor:observed,
-    accountErasure:app};
+    accountErasure:app,...(inactivity===null?{}:{accountInactivity:inactivity})};
 }
 export function assistantAfter598NativeReportCollector(options){
   requireAssistantAfter598Output(); // FIRST before options or evidence ingestion.
@@ -2134,6 +2162,7 @@ async function record(receipt) {
     head:proof.headSha,pullRequest:Number(process.env.PULL_REQUEST_NUMBER),branch:process.env.GITHUB_HEAD_REF};
   if(ACTIVE.sourcePhase===ASSISTANT_AFTER599_PHASE){
     await assertCurrentAccountErasureNativeReport(receipt.report);
+    await assertCurrentAccountInactivityNativeReport(receipt.report);
     await verifyAssistantAfter599PhaseReceipt(receipt,current);
   }
   else if(ACTIVE.sourcePhase===ASSISTANT_AFTER598_PHASE){

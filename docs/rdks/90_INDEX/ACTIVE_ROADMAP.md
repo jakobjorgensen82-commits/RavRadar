@@ -1,3 +1,21 @@
+## Samlet 602-levering efter 601
+
+1. Afslut faktisk 601-kvalifikation, almindeligt nyt 601-vejr og den eksisterende V1-Functions opdateret til 601.
+2. Kvalificér den samlede602-kilde én gang med ægte79-katalog/ny PostgreSQL, relevante normale kaldere og dokument-/versionskrav. Bevar gammel 77-evidens som gammel evidens.
+3. Installér og genlæs kun de to inaktive kontoappends gennem eksisterende appmode, før den nye aktivitetsklient/trip-log-Edge leveres.
+4. Lever normalt 602-artifact med LF7-kontrollens gemte timefiler og både V1-/nyt delingsindeks; lever derefter V2-Functions og mål faktisk offentlig paritet/CPU/Free.
+5. Afslut faktiske rester for signup/profil-bootstrap, capture/hook, kontinuitet, varsling, senere automatisk sletning, anonym statistik og backup-/Free-drift. OFF-installationen aktiverer ingen af disse alene.
+
+Denne samlede plan erstatter den tidligere delings-only 602-plan nedenfor. Ingen ny numerisk model eller lempede gates. Se håndbog 89.353/89.354 og privat checkpoint.
+
+## Deling602 — trinvis forberedelse efter 601
+
+1. Kvalificér og lever601 normalt med faktisk nyt vejr. Den eksisterende Functions-V1 genleveres kompileret på 601, så den følger den nye binding.
+2. Kvalificér app 602 uden ny numerisk familie eller SQL og lever et normalt artifact med både gammelt V1-indeks og nyt samlet prognoseindeks samt uændrede210 zonefiler.
+3. Lever Functions-V2 gennem den eksisterende kontrollerede vej, verificér præcis faktisk generation/selection/svar og mål kold/varm CPU samt samlet Free-forbrug. Bevar gammel Worker og afvis ukendte/skiftende input; intet cold/Free-PASS følger af lokal prototype.
+
+ROOT ejer integration og produktion. Denne appforberedelse ændrer ikke601s aktuelle kildekvalifikation og starter ingen ekstern aktivitet. Se DEC-0296 og håndbog89.353.
+
 ## 5. november — 4.0.598: sammensatte ravspørgsmål og bevarede originaler
 
 1. Afslut den almindelige vejrhentning og verificér faktisk gemning, genbrug, offentlig levering og alle fem felters dækning over hele den forventede horisont.

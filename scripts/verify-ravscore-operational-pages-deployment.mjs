@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import crypto from 'node:crypto';
+import {assertForecastShareTrustParity} from '../js/services/forecast-share-trust-index.js';
 import { assertForecastShareDescriptor, assembleForecastShareProjection, assertForecastShareProjectionParity, FORECAST_SHARE_INDEX_MAX_BYTES }
   from '../js/services/forecast-share-projection.js';
 import fs from 'node:fs/promises';
@@ -636,6 +637,17 @@ async function verifyOnce({
       'data/live/forecast-share.json', sourceHead, observationNonce), 'forecast-share.json', httpRetryBudget);
     if (descriptorBytes.length > FORECAST_SHARE_INDEX_MAX_BYTES) throw new Error('Deployed forecast sharing descriptor is too large');
     const descriptor = assertForecastShareDescriptor(JSON.parse(descriptorBytes.toString('utf8')), manifest, manifestFileSha256, expectedBinding);
+    // The sealed browser closure selects its real imported data contract.
+    // Historical594 has only the original projection module and keeps v1.
+    // A new reader importing the actual trust helper must have its index;
+    // absence is never treated as a legacy fallback for that implementation.
+    if (expectedPublicClosure.files.some(item => item.path === 'js/services/forecast-share-trust-index.js')) {
+      const trustBytes = await fetchBytes(fetchImpl, withCacheBuster(baseUrl,
+        'data/live/forecast-share-trust.json', sourceHead, observationNonce), 'forecast-share-trust.json', httpRetryBudget);
+      if (trustBytes.length > FORECAST_SHARE_INDEX_MAX_BYTES) throw new Error('Deployed forecast sharing trust index is too large');
+      assertForecastShareTrustParity(JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(trustBytes)),
+        manifest, descriptor, expectedBinding);
+    }
     const payloads = [];
     for (const entry of descriptor.zones) {
       const relative = 'data/live/' + entry.path.slice(2);

@@ -42,6 +42,7 @@ export async function handleForecastShare(request, { shareBaseUrl, fetchPublic =
         fetchPublic: (path, options) => {
           // Only source-owned fixed paths and manifest-owned hashes reach here.
           if (path !== './data/live/manifest.json' && path !== './data/live/forecast-share.json'
+              && path !== './data/live/forecast-share-trust.json'
               && !/^\.\/data\/live\/share\/[a-f0-9]{64}\.json$/.test(path)) throw new Error('PUBLIC_PATH_REJECTED');
           return fetchPublic(new URL(path, PUBLIC_PAGE), {
             ...options, redirect: 'manual', credentials: 'omit', headers: { Accept: 'application/json' },

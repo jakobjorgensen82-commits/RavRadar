@@ -1190,7 +1190,7 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
       const {compareAssistantAfter599Successor}=await import('./assistant-later-h0-postgres.mjs');
       assistantAfter599Successor=await compareAssistantAfter599Successor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
     }
-    let assistantAfter598Successor,accountErasure;
+    let assistantAfter598Successor,accountErasure,accountInactivity;
     if(includeAssistantAfter598Successor){
       nativePhase='ASSISTANT_AFTER598_SUCCESSOR';
       const {compareAssistantAfter598Successor}=await import('./assistant-later-h0-postgres.mjs');
@@ -1202,11 +1202,18 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
         const {exerciseAccountErasureOutbox}=await import('./account-erasure-outbox-native-fixture.mjs');
         const source=accountErasureSchema.readAccountErasureSource(repositoryRoot);
         const files=(await fs.readdir(path.join(repositoryRoot,'supabase/migrations'))).filter(file=>file.endsWith('.sql'));
-        assert.equal(files.length,includeAssistantAfter599Successor?77:76);assert(files.includes(accountErasureSchema.ACCOUNT_ERASURE_APP_MIGRATION.filename));
+        const hasNotice=accountErasureSchema.ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS!==undefined;
+        assert(!hasNotice||includeAssistantAfter599Successor,'The notice append belongs only to current601');
+        assert.equal(files.length,includeAssistantAfter599Successor?(hasNotice?79:77):76);
+        assert(files.includes(accountErasureSchema.ACCOUNT_ERASURE_APP_MIGRATION.filename));
+        const {inactivityNotice,...manual}=await exerciseAccountErasureOutbox({psql,runSql,repositoryRoot});
         accountErasure={kind:'ACCOUNT_ERASURE_APP_NATIVE_SQL_CASES',sqlExecuted:true,
           migrationVersion:accountErasureSchema.ACCOUNT_ERASURE_APP_MIGRATION.version,
-          migrationSQLSha256:source.sha256,sourceSqlFileCount:files.length,
-          ...await exerciseAccountErasureOutbox({psql,runSql,repositoryRoot})};
+          migrationSQLSha256:source.sha256,sourceSqlFileCount:files.length,...manual};
+        if(hasNotice){
+          assert(inactivityNotice,'The actual current79 source requires its separate OFF SQL result');
+          accountInactivity={kind:'ACCOUNT_INACTIVITY_OFF_NATIVE_SQL_CASES',sqlExecuted:true,sourceSqlFileCount:files.length,...inactivityNotice};
+        }else assert.equal(inactivityNotice,undefined);
       }
     }
     completedReport={kind:'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',accountAssistant,currentGrid,
@@ -1228,6 +1235,7 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
       ...(includeAssistantAfter598Successor?{assistantAfter598Successor}:{}),
       ...(includeAssistantAfter599Successor?{assistantAfter599Successor}:{}),
       ...(accountErasure?{accountErasure}:{}),
+      ...(accountInactivity?{accountInactivity}:{}),
       issuedSource:issued.sourceReceipt,postgresMajorVersion:programs.majorVersion,
       tcpEnabled:false,normalModelPartCount:673,sqlExecuted:true,migrationExecuted:true,
       migrationSQLSha256:hash(newSource),caseCount:reports.length,

@@ -1,4 +1,4 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.601";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.602";
 
 const STORAGE_KEY = "ravradar-auth-session";
 const REFRESH_MARGIN_SECONDS = 300;
@@ -108,7 +108,7 @@ function noteAccountActivity(active, epoch = identityEpoch) {
   write.promise = (async () => {
     const guard = timeoutSignal();
     try {
-      const response = await fetch(`${PUBLIC_CONFIG.supabaseUrl}/rest/v1/rpc/record_account_activity`, {
+      const response = await fetch(`${PUBLIC_CONFIG.supabaseUrl}/rest/v1/rpc/record_account_lifecycle_activity`, {
         method: 'POST', body: '{}',
         headers: { apikey: PUBLIC_CONFIG.supabasePublishableKey,
           Authorization: `Bearer ${active.access_token}`, 'Content-Type': 'application/json' },
@@ -160,6 +160,7 @@ export async function refreshSession({ force = false } = {}) {
     if (session !== active) throw new Error("Kontoen blev ændret. Prøv igen fra den rigtige konto.");
     if (!next.refresh_token) next.refresh_token = active.refresh_token;
     saveSession(next);
+    noteAccountActivity(session);
     return session;
   }).catch(error => {
     if (session === active && (error.status === 400 || error.status === 401)) saveSession(null);

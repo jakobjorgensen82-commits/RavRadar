@@ -647,7 +647,7 @@ export async function auditPagesArtifactPrivacy(siteRoot, {
     shareFiles = await readForecastShareProjectionFiles({ liveDirectory: path.join(root, 'data/live'),
       manifestText: await fs.readFile(path.join(root, 'data/live/manifest.json'), 'utf8'), required: shareRequired });
   } catch { issues.push('invalid or missing public forecast sharing projection'); }
-  const sharePaths = shareFiles ? ['data/live/forecast-share.json',
+  const sharePaths = shareFiles ? ['data/live/forecast-share.json', 'data/live/forecast-share-trust.json',
     ...shareFiles.descriptor.zones.map(file => 'data/live/' + file.path.slice(2))] : [];
   const expectedFiles = new Set([...EXPECTED_LIVE_FILES, ...deliveryFiles.keys(), ...mapFiles.keys(), ...sharePaths]);
   const bulkLogicalPath = 'data/live/public-condition-details.json';

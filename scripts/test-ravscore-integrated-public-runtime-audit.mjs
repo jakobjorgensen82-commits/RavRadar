@@ -34,6 +34,7 @@ import {
   auditIntegratedRavScorePublicRuntime,
   projectFurWaterRoutingPresence,
   projectLf7WaterRoutingAcceptance,
+  projectLf7WaterRoutingAcceptanceFromPublicHours,
   candidateGReferenceMatchesProduction,
   publicModeFormulaIsConsistent,
 } from './audit-ravscore-integrated-public-runtime.mjs';
@@ -59,6 +60,7 @@ import {
   buildPublicConditionDetails,
   buildPublicConditions,
   buildPublicManifest,
+  buildPublicDeliveryDocument,
   compactJson,
   sha256Text,
 } from './public-conditions-lib.mjs';
@@ -881,6 +883,7 @@ function assertColdReplayProvenanceCohort() {
     positive: 3, negative: mutations.length + 1, originalLabelsPreserved: true,
     numericalAndLineageInputsUnchanged: true, actualAuditorAndStateBuilders: true, realNetwork: 0 }));
 }
+if (!process.argv.includes('--lf7-only')) {
 assertColdReplayProvenanceCohort();
 let national = syntheticFull({
   zoneCount: 210,
@@ -2026,6 +2029,7 @@ async function assertBoundedAuditTextAndFailureReceipt() {
 }
 
 await assertBoundedAuditTextAndFailureReceipt();
+}
 
 // Synthetic parser/producer evidence, never a claim about a real generation.
 {
@@ -2075,3 +2079,169 @@ await assertBoundedAuditTextAndFailureReceipt();
   assert.equal(projectLf7WaterRoutingAcceptance(full,incomplete,routing).status,'UNKNOWN');
 }
 console.log('LF7_RUNTIME_AUDIT: genuine synthetic normal routing, exact generation/config/output binding, legacy UNKNOWN and payload-free refusals.');
+
+// Normal persisted conditions have no PART hourly arrays. Read back the exact
+// public-hour projections instead; this fixture is synthetic, not a live claim.
+async function assertLf7CompactedPublicHourAcceptance(projectFromFiles) {
+  const { buildPrivatePublicHourDeliveryPack, compactPrivateConditionsForPersistence }
+    = await import('./lib/public-hour-delivery-pack.mjs');
+  const { buildWaterSourceForecastIndex, applyVerifiedWaterSourceRoutingToPartHourly, summarizeLf7WaterRouting }
+    = await import('./lib/water-source-forecast-routing.mjs');
+  const { dmiWaterSourceFixture } = await import('./test-helpers/dmi-water-source-fixture.mjs');
+  const at = REFERENCE_AT;
+  const zones = ['DK-B01-01','DK-B01-02','DK-B02-08','DK-B02-09','DK-B02-11','DK-B03-01','DK-B03-02'];
+  const source = { sourceKey: 'SYNTHETIC_PRIVATE_SENTINEL', stationId: 'private', point: [10,56], routingEligible: true };
+  const native = Array.from({ length: 121 }, (_, i) => {
+    const row = dmiWaterSourceFixture(source, time(i), (i - 60) / 10, at);
+    row.sources.waterLevel.collection = 'dkss_lf'; return row;
+  });
+  const index = buildWaterSourceForecastIndex([source], { generatedAt: at, zones: {
+    ['SOURCE::' + source.sourceKey]: { hourly: Object.fromEntries(native.map(row => [row.time,row])) },
+  } }, at);
+  const routing = { zones: Object.fromEntries(zones.map(zone => [zone, { enabled: true, requireAll: true,
+    method: 'manual-weights', stations: [{ sourceKey: source.sourceKey, weight: 1 }] }])) };
+  const full = syntheticFull({ zoneCount: 7, partCounts: Array(7).fill(1) });
+  const contract = { zones: {} }, rows = [];
+  for (const [i, zoneId] of zones.entries()) {
+    const old = 'synthetic-zone-' + (i + 1), partId = 'synthetic-part-' + (i + 1);
+    full.zones[zoneId] = full.zones[old]; delete full.zones[old];
+    full.coastalParts.zones[zoneId] = full.coastalParts.zones[old]; delete full.coastalParts.zones[old];
+    const part = full.coastalParts.parts[partId]; part.zoneId = zoneId;
+    const definition = { ...part, partId, waterPoint: [10,56] }; contract.zones[zoneId] = [definition];
+    const routed = applyVerifiedWaterSourceRoutingToPartHourly({ part: definition,
+      parentFeature: { properties: { id: zoneId } }, hourly: native.map(row => ({ time: row.time, waterLevelCm: null })),
+      sources: [source], index, routing, haversineKm: () => 0, diagnosticReferenceAt: at });
+    const scores = routed.hourly.slice(0,118).map(hour => {
+      const current = structuredClone(part.current);
+      current.time = hour.time; current.weather = { ...current.weather, time: hour.time,
+        waterLevelCm: hour.waterLevelCm, waterLevelTrendCm3h: hour.waterLevelTrendCm3h };
+      for (const mode of ['waders','beach']) if (current[mode]?.weather) current[mode].weather.time = hour.time;
+      return current;
+    });
+    part.hourly = scores; part.current = structuredClone(scores[0]);
+    rows.push({ ...definition, record: { hourly: routed.hourly }, scores, waterRoutingObservation: routed.waterRoutingObservation });
+  }
+  full.coastalParts.scoreAvailability = buildIntegratedPublicScoreAvailability({ zones: full.coastalParts.zones,
+    referenceAt: at, zoneNames: new Map(zones.map(id => [id,id])) });
+  const diagnostics = { datasetId: full.datasetId, generatedAt: at, productionReferenceAt: at,
+    lf7WaterRouting: summarizeLf7WaterRouting(rows,contract,at) };
+  const package_ = publicPackage(full);
+  const manifest = { ...package_.manifest, ravScoreModelBinding: binding,
+    detailDelivery: { schemaVersion: 1, forecastHours: 118,
+      sourceDetailsSha256: package_.manifest.publicConditionDetailsSha256, hours: {}, zones: {} } };
+  const temporary = await observationFs.mkdtemp(observationPath.join(observationTmpdir(),'rr-lf7-public-hour-'));
+  try {
+    await observationFs.mkdir(observationPath.join(temporary,'forecast'));
+    const write = async (document) => {
+      const text = compactJson(document), sha256 = sha256Text(text);
+      await observationFs.writeFile(observationPath.join(temporary,'forecast',sha256 + '.json'),text);
+      return { path: './forecast/' + sha256 + '.json', sha256, bytes: Buffer.byteLength(text) };
+    };
+    for (const id of zones) manifest.detailDelivery.zones[id] = await write(
+      buildPublicDeliveryDocument(full,package_.details,manifest,'zone',id));
+    for (let i = 0; i < 118; i++) manifest.detailDelivery.hours[time(i)] = await write(
+      buildPublicDeliveryDocument(full,package_.details,manifest,'hour',time(i)));
+    const packed = await buildPrivatePublicHourDeliveryPack({ liveDirectory: temporary, publicManifest: manifest,
+      startupNationalForecast: package_.startup.nationalForecast, outputPath: observationPath.join(temporary,'private-hour-pack.bin') });
+    const compact = compactPrivateConditionsForPersistence(full,packed.marker);
+    assert.ok(Object.values(compact.coastalParts.parts).every(part => !Object.hasOwn(part,'hourly')));
+    assert.equal(projectLf7WaterRoutingAcceptance(compact,diagnostics,routing).reason,'COMPUTED_HOUR_MISSING');
+    const context = { manifest, liveDirectory: temporary };
+    const report = await projectFromFiles(compact,diagnostics,routing,context);
+    assert.equal(report.status,'OBSERVED_CONFORMANT','Real compaction must retain auditable LF7 values through normal public-hour files');
+    assert.equal(report.computedValuesMatch,true);
+    assert.equal(report.counts.observedHours,7 * 118);
+    assert.equal(JSON.stringify(report).includes(source.sourceKey),false);
+
+    const read = (value = compact, meta = diagnostics, config = routing, selected = manifest) =>
+      projectFromFiles(value,meta,config,{ manifest: selected, liveDirectory: temporary });
+    assert.equal((await read(compact,null)).reason,'NOT_RECORDED');
+    assert.equal((await read(compact,{})).reason,'NOT_RECORDED');
+    const otherDiagnostics = structuredClone(diagnostics); otherDiagnostics.datasetId = 'other-generation';
+    assert.equal((await read(compact,otherDiagnostics)).reason,'GENERATION_MISMATCH');
+    const wrongConfig = structuredClone(routing); wrongConfig.zones[zones[0]].enabled = false;
+    assert.equal((await read(compact,diagnostics,wrongConfig)).reason,'CONFIGURATION_MISMATCH');
+    const first = time(0), firstPart = 'synthetic-part-1';
+    const original = JSON.parse(await observationFs.readFile(observationPath.join(temporary,manifest.detailDelivery.hours[first].path),'utf8'));
+    const changedHour = async mutate => {
+      const document = structuredClone(original); mutate(document);
+      const selected = structuredClone(manifest); selected.detailDelivery.hours[first] = await write(document); return selected;
+    };
+    for (const [label, mutate] of [
+      ['dataset',d => { d.datasetId = 'other-generation'; }],
+      ['generated',d => { d.generatedAt = time(1); }],
+      ['reference',d => { d.productionReferenceAt = time(1); }],
+      ['selection',d => { d.delivery.key = time(1); }],
+      ['source-details',d => { d.delivery.sourceDetailsSha256 = '1'.repeat(64); }],
+      ['model',d => { d.delivery.modelBinding.modelBundleSha256 = '1'.repeat(64); }],
+      ['nested-model',d => { d.coastalParts.modelBinding.modelBundleSha256 = '1'.repeat(64); }],
+      ['part-zone',d => { d.coastalParts.parts[firstPart].zoneId = zones[1]; }],
+      ['part-id',d => { d.coastalParts.parts[firstPart].id = 'other-part'; }],
+      ['part-time',d => { d.coastalParts.parts[firstPart].current.time = time(1); }],
+      ['weather-time',d => { d.coastalParts.parts[firstPart].current.weather.time = time(1); }],
+    ]) assert.equal((await read(compact,diagnostics,routing,await changedHour(mutate))).reason,'PUBLIC_HOUR_UNQUALIFIED',label);
+    const changedScalar = await changedHour(d => { d.coastalParts.parts[firstPart].current.weather.waterLevelCm += 0.001; });
+    const violation = await read(compact,diagnostics,routing,changedScalar);
+    assert.equal(violation.status,'OBSERVED_VIOLATION'); assert.equal(violation.computedValuesMatch,false);
+    // The CLI file API must never fall back to seemingly correct in-memory hourly rows.
+    assert.equal((await read(full,diagnostics,routing,changedScalar)).status,'OBSERVED_VIOLATION');
+    const missingWeather = await changedHour(d => { delete d.coastalParts.parts[firstPart].current.weather; });
+    assert.equal((await read(compact,diagnostics,routing,missingWeather)).reason,'COMPUTED_HOUR_MISSING');
+    for (const mutate of [
+      m => { m.datasetId = 'other-generation'; },
+      m => { m.ravScoreModelBinding.modelBundleSha256 = '1'.repeat(64); },
+      m => { m.detailDelivery.hours[first].bytes++; },
+      m => { m.detailDelivery.hours[first].bytes = 16 * 1024 * 1024 + 1; },
+      m => { m.detailDelivery.hours[first].path = '../conditions.json'; },
+      m => { delete m.detailDelivery.hours[first]; },
+      m => { m.detailDelivery.hours[first].sha256 = '1'.repeat(64); m.detailDelivery.hours[first].path = './forecast/' + '1'.repeat(64) + '.json'; },
+    ]) { const selected = structuredClone(manifest); mutate(selected);
+      assert.equal((await read(full,diagnostics,routing,selected)).reason,'PUBLIC_HOUR_UNQUALIFIED'); }
+    const damagedFile = observationPath.join(temporary,manifest.detailDelivery.hours[first].path);
+    const originalBytes = await observationFs.readFile(damagedFile);
+    try {
+      const corrupted = Buffer.from(originalBytes); corrupted[0] ^= 1;
+      await observationFs.writeFile(damagedFile,corrupted);
+      assert.equal((await read(full)).reason,'PUBLIC_HOUR_UNQUALIFIED','Outer SHA mismatch cannot fall back');
+    } finally { await observationFs.writeFile(damagedFile,originalBytes); }
+    // Projection equivalence includes fractional/negative/zero and nullish values.
+    for (const value of [-12.345678901,0,0.123456789,null,undefined]) {
+      const selected = structuredClone(full), row = selected.coastalParts.parts[firstPart].hourly[0];
+      row.weather.waterLevelCm = value; row.weather.waterLevelTrendCm3h = value;
+      const document = buildPublicDeliveryDocument(selected,package_.details,manifest,'hour',first);
+      const transported = JSON.parse(compactJson(document)).coastalParts.parts[firstPart].current.weather;
+      assert.equal(transported.waterLevelCm ?? null,value ?? null);
+      assert.equal(transported.waterLevelTrendCm3h ?? null,value ?? null);
+    }
+    // Exercise the current 12 raw + 106 encoded normal transport, with actual map
+    // frames from its existing producer rather than an invented schema marker.
+    const { createMapHourWriter } = await import('./lib/public-map-hour-projection.mjs');
+    const { writeColdPublicHour } = await import('./lib/public-cold-hour-transport.mjs');
+    const cold = structuredClone(manifest); cold.zoneRegistryFeatureCount = 7;
+    cold.detailDelivery.mapHoursLandingSchema = 1;
+    const writer = createMapHourWriter({ manifest: cold, liveDirectory: temporary, zoneIds: zones,
+      coastalParts: { zones: Object.fromEntries(zones.map((id,i) => [id,[{ sourceZoneId:id,partId:'synthetic-part-'+(i+1) }]])) },
+      zoneRegistry: { type:'FeatureCollection',features:zones.map(id => ({ type:'Feature',properties:{id,zoneStatus:'active'},geometry:null })) } });
+    for (let i = 0; i < 118; i++) {
+      const entry = { ...manifest.detailDelivery.hours[time(i)],kind:'hour',key:time(i) };
+      const raw = await observationFs.readFile(observationPath.join(temporary,entry.path));
+      await writer.write(entry,JSON.parse(raw));
+      if (i >= 12) cold.detailDelivery.hours[entry.key] = await writeColdPublicHour({ liveDirectory:temporary,entry,raw });
+    }
+    cold.detailDelivery.mapHours = writer.descriptors; cold.detailDelivery.coldHoursSchema = 1;
+    assert.equal((await read(compact,diagnostics,routing,cold)).status,'OBSERVED_CONFORMANT');
+    const badLogical = structuredClone(cold); badLogical.detailDelivery.hours[time(12)].rawSha256 = '2'.repeat(64);
+    assert.equal((await read(compact,diagnostics,routing,badLogical)).reason,'PUBLIC_HOUR_UNQUALIFIED');
+    for (const result of [report,violation,await read(compact,null)]) {
+      const serialized = JSON.stringify(result);
+      assert.equal(serialized.includes(source.sourceKey),false); assert.equal(result.rawValuesIncluded,false);
+      assert.equal(serialized.includes('waterLevelCm'),false); assert.equal(serialized.includes(firstPart),false);
+    }
+    console.log('LF7_COMPACT_PUBLIC_HOURS: PASS; real compactor, normal public-hour builder and 826 scalar tuples.');
+  } finally {
+    const absolute = observationPath.resolve(temporary), allowed = observationPath.resolve(observationTmpdir()) + observationPath.sep;
+    assert.ok(absolute.startsWith(allowed) && observationPath.basename(absolute).startsWith('rr-lf7-public-hour-'));
+    await observationFs.rm(absolute,{recursive:true,force:true});
+  }
+}
+await assertLf7CompactedPublicHourAcceptance(projectLf7WaterRoutingAcceptanceFromPublicHours);

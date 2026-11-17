@@ -1,3 +1,17 @@
+## 4.0.602 — samlet kandidat med inaktiv kontoopsætning
+
+Den endelige lokale sammensætning omfatter det generationsbundne delingsindeks, LF7-audit af normalt gemte timefiler og to inaktive kontoappends til aktivitetsregistrering/varsling. De77 gamle migrationer og601s C/I/T bevares; den nye kilde har 79 SQL-filer. Konto-SQL og eksakt genlæsning skal leveres før den nye aktivitetsklient og Edge.
+
+Faktisk79-kilde-/PostgreSQL-kvalifikation, installation og offentlig effekt er åbne. Samlingen aktiverer ingen Auth-hook, automatisk mail, cron eller kontosletning. Ægte delivery-ACK, aktivitet, senere automatisk 30-dages sletning og anonym statistik kræver egne beviser. Delingens faktiske CPU-/Free-accept og revisionens faktiske LF7-/T+3-accept er fortsat åbne. Se håndbog 89.354; den tidligere delings-only 602-forberedelse nedenfor er erstattet af denne sammensætning.
+
+## 4.0.602 — samlet delingsindeks, lokal appkandidat på 601
+
+Delingsvisningen får ét strengt prognoseindeks og læser derefter kun den valgte eksisterende zonefil. Normal nationalparitet, uafhængig genlæsning mod hele manifestet, begge kopiveje, privacy og den forseglede offentlige implementering bevarer deres kontroller. Det gamle V1-indeks og alle 210 zonefiler bevares, så den gamle delingskode kan fortsætte under den trinvise levering. Der tilføjes ingen ny scoreberegning, tjeneste, databasebinding eller cachet friskhed.
+
+Normal set-version602 bevarer den udstedte601-modelfamilies C/I/T og alle 77 migrationsoriginaler. Det er lokal forberedelse efter den endnu ukvalificerede601-kilde, ikke ny model-/SQL-udstedelse, installation eller offentlig levering. Først leveres normalt601-vejr og en601-kompatibel V1-Functions; derefter602-artifact med begge indekser; til sidst V2-Functions med faktisk generations-/svarparitet og kold/varm CPU samt samlet Free-måling. M5-prototypens lokale målinger er ikke601- eller Cloudflare-bevis. Hosted CPU under 10ms og selvstændig Free-drift er fortsat åbne.
+
+LF7-auditten aflæser nu de normale gemte public-hour-slutværdier med fuld transport- og generationsbinding i stedet for fjernede PART.hourly-rækker. Den rene auditkerne, kildevalg, T+3-regler, model og SQL bevares. UNKNOWN og faktisk mismatch holdes adskilt; dette er ikke en ny produktions- eller revisionsaccept.
+
 ## 4.0.601 — emneopfølgning og afgrænset UV-/mængdeviden, lokal kandidat
 
 Assistenten bevarer kvalifikationerne i et nyt emnebundet spørgsmål på dansk, tysk og engelsk. Tre offentlige fakta forklarer fluorescens, dagslyskontrast og manglende observation af ravmængder; de45 tidligere fakta og de rå sikkerhedsgrænser består. En ravkese-opfølgning skal besvare strand-/brugsleddet fremfor alene at gentage definitionen.
