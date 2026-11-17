@@ -21,6 +21,7 @@ const P=Object.freeze({cli:'2.117.0',operationMs:20*60_000,cleanupMs:2*60_000,
 const IMAGES=Object.freeze({db:'supabase/postgres:17.6.1.167',kong:'kong:2.8.1',auth:'supabase/gotrue:v2.198.0'});
 const ARCHIVE_VENDOR_IMAGES=Object.freeze({auth:'supabase/gotrue:v2.197.0',storage:'supabase/storage-api:v1.86.0'});
 const ARCHIVE_VENDOR_PINS=Object.freeze({'gotrue-version':'v2.197.0\n','storage-version':'v1.86.0\n'});
+const NATIVE_ACTIVITY_VENDOR_PINS=Object.freeze({...ARCHIVE_VENDOR_PINS,'gotrue-version':IMAGES.auth.split(':').at(-1)+'\n'});
 const EXCLUDE='realtime,storage-api,imgproxy,edge-runtime,postgres-meta,studio,supavisor,logflare,vector,mailpit,postgrest';
 const FILES=['roles.sql','schema.sql','data.sql','history_schema.sql','history_data.sql'];
 const ARCHIVE_FILES=['roles.sql','schema.sql','data.sql','history-schema.sql','history-data.sql'];
@@ -770,14 +771,14 @@ enabled = false
 [edge_runtime]
 enabled = false
 `;}
-function archiveVendorPinDirectory(c,p){
-  need(c.archive===true&&/^[1-9][0-9]{0,18}-1$/.test(c.owner??'')
+function archiveVendorPinDirectory(c,p,nativeActivity=false){
+  need(typeof nativeActivity==='boolean'&&(nativeActivity?c.archive===false:c.archive===true)&&/^[1-9][0-9]{0,18}-1$/.test(c.owner??'')
     &&p.side==='B'&&p.id==='rr_restore_'+c.owner.replace('-','_')+'_b'
     &&path.isAbsolute(c.root)&&p.dir===path.join(c.root,'B'),'ARCHIVE_VENDOR_PROJECT');
   return path.join(p.dir,'supabase','.temp');
 }
-async function verifyArchiveVendorBootstrap(c,p){
-  const directory=archiveVendorPinDirectory(c,p);
+async function verifyArchiveVendorBootstrap(c,p,nativeActivity=false){
+  const directory=archiveVendorPinDirectory(c,p,nativeActivity),pins=nativeActivity?NATIVE_ACTIVITY_VENDOR_PINS:ARCHIVE_VENDOR_PINS;
   for(const at of [c.root,p.dir,path.dirname(directory),directory]){
     const stat=await fs.lstat(at);
     need(stat.isDirectory()&&!stat.isSymbolicLink(),'ARCHIVE_VENDOR_DIRECTORY');
@@ -785,8 +786,8 @@ async function verifyArchiveVendorBootstrap(c,p){
   const names=await fs.readdir(directory);
   need(!names.includes('storage-migration'),'ARCHIVE_VENDOR_MIGRATION_CEILING');
   need(!names.includes('project-ref')&&!names.includes('pooler-url'),'ARCHIVE_VENDOR_LINKED_PROJECT');
-  need(names.every(name=>name==='cli-latest'||Object.hasOwn(ARCHIVE_VENDOR_PINS,name)),'ARCHIVE_VENDOR_PIN_INVENTORY');
-  for(const [name,value]of Object.entries(ARCHIVE_VENDOR_PINS)){
+  need(names.every(name=>name==='cli-latest'||Object.hasOwn(pins,name)),'ARCHIVE_VENDOR_PIN_INVENTORY');
+  for(const [name,value]of Object.entries(pins)){
     const file=path.join(directory,name),named=await fs.lstat(file,{bigint:true});
     const regular=stat=>{
       need(stat.isFile()&&!stat.isSymbolicLink()&&stat.nlink===1n,'ARCHIVE_VENDOR_PIN_FILE');
@@ -803,8 +804,8 @@ async function verifyArchiveVendorBootstrap(c,p){
     }finally{await handle.close();}
   }
 }
-async function prepareArchiveVendorBootstrap(c,p){
-  const directory=archiveVendorPinDirectory(c,p);
+async function prepareArchiveVendorBootstrap(c,p,nativeActivity=false){
+  const directory=archiveVendorPinDirectory(c,p,nativeActivity),pins=nativeActivity?NATIVE_ACTIVITY_VENDOR_PINS:ARCHIVE_VENDOR_PINS;
   for(const at of [c.root,p.dir,path.dirname(directory)]){
     const stat=await fs.lstat(at);
     need(stat.isDirectory()&&!stat.isSymbolicLink(),'ARCHIVE_VENDOR_DIRECTORY');
@@ -817,9 +818,9 @@ async function prepareArchiveVendorBootstrap(c,p){
   need(!names.includes('project-ref')&&!names.includes('pooler-url'),'ARCHIVE_VENDOR_LINKED_PROJECT');
   // The CLI may keep its own latest-version cache; no prior service pins are adopted.
   need(names.every(name=>name==='cli-latest'),'ARCHIVE_VENDOR_PIN_EXISTS');
-  for(const [name,value]of Object.entries(ARCHIVE_VENDOR_PINS))
+  for(const [name,value]of Object.entries(pins))
     await fs.writeFile(path.join(directory,name),value,{flag:'wx',mode:0o600});
-  await verifyArchiveVendorBootstrap(c,p);
+  await verifyArchiveVendorBootstrap(c,p,nativeActivity);
 }
 // New synthetic A/B qualify Auth198; archive197 and its existing proofs stay separate.
 // A fresh owned project receives only this create-only CLI version hint.
@@ -859,13 +860,19 @@ function serviceImageMetadata(c,p,service,info,image){
   need(Array.isArray(image.RepoDigests)&&image.RepoDigests.length>0,'IMAGE_DIGEST_REQUIRED');
   return {id:image.Id,digests:[...image.RepoDigests].sort()};
 }
-async function startProject(c,p){
+async function startProject(c,p,{nativeActivity=false}={}){
+  need(typeof nativeActivity==='boolean','NATIVE_ACTIVITY_BOOTSTRAP_MODE');
+  if(nativeActivity){
+    archiveVendorPinDirectory(c,p,true);need(!Object.hasOwn(p,'nativeStorageBootstrap'),'NATIVE_ACTIVITY_BOOTSTRAP_REENTRY');
+    Object.defineProperty(p,'nativeStorageBootstrap',{value:true});
+  }
   await fs.mkdir(p.dir,{mode:0o700});await projectsAbsent(c,p);
   const before=(await command(c,'NETWORK_ABSENCE','docker',['network','ls','-q','--filter','name=^'+p.network+'$'])).toString().trim();
   need(!before,'NETWORK_ALREADY_EXISTS');
   await command(c,'INIT_'+p.side,'supabase',['init','--yes'],{cwd:p.dir,maxMs:30_000});
-  await fs.writeFile(path.join(p.dir,'supabase/config.toml'),config(p.id,p.side==='B',c.archive===true),{mode:0o600});
-  if(c.archive===true)await prepareArchiveVendorBootstrap(c,p);
+  await fs.writeFile(path.join(p.dir,'supabase/config.toml'),nativeActivity?syntheticNativeStorageConfig(p):config(p.id,p.side==='B',c.archive===true),{mode:0o600});
+  if(nativeActivity)await prepareArchiveVendorBootstrap(c,p,true);
+  else if(c.archive===true)await prepareArchiveVendorBootstrap(c,p);
   else await syntheticAuthVersionPin(c,p,true);
   p.networkCreateAttempted=true;
   const raw=await command(c,'CREATE_NETWORK_'+p.side,'docker',['network','create','--driver','bridge',
@@ -881,7 +888,8 @@ async function startProject(c,p){
   try{
     await command(c,'START_'+p.side,'supabase',['--network-id',p.network,'start','--exclude',EXCLUDE],{cwd:p.dir});
   }finally{if(relay)await relay.close();}
-  if(c.archive===true)await verifyArchiveVendorBootstrap(c,p);
+  if(nativeActivity)await verifyArchiveVendorBootstrap(c,p,true);
+  else if(c.archive===true)await verifyArchiveVendorBootstrap(c,p);
   else await syntheticAuthVersionPin(c,p,false);
   const actual={};
   for(const service of ['db','kong','auth']){
@@ -1063,9 +1071,15 @@ async function syntheticNativeActivitySource(){
   }
   return {root,sql,notice,bodies,sha256:sha(Buffer.from(sql)),noticeSha256:sha(Buffer.from(notice))};
 }
+function syntheticNativeStorageConfig(p){
+  need(p.side==='B'&&/^rr_restore_[1-9][0-9]*_1_b$/.test(p.id)&&p.nativeStorageBootstrap===true,'NATIVE_ACTIVITY_STORAGE_B_PROJECT');
+  const original=config(p.id,true,false),marker='\n[storage]\nenabled = false\n';
+  need(original.split(marker).length===2,'NATIVE_ACTIVITY_STORAGE_CONFIG');
+  return original.replace(marker,'\n[storage]\nenabled = true\n');
+}
 function syntheticNativeHookConfig(p){
   need(p.side==='B'&&/^rr_restore_[1-9][0-9]*_1_b$/.test(p.id),'NATIVE_ACTIVITY_B_PROJECT');
-  return config(p.id,true,false)+'\n[auth.hook.custom_access_token]\nenabled = true\n'
+  return (p.nativeStorageBootstrap===true?syntheticNativeStorageConfig(p):config(p.id,true,false))+'\n[auth.hook.custom_access_token]\nenabled = true\n'
     +'uri = "pg-functions://postgres/public/rr_native_activity_test_hook"\n';
 }
 async function restartSyntheticBWithNativeHook(c,p){
@@ -1073,7 +1087,7 @@ async function restartSyntheticBWithNativeHook(c,p){
     &&p.dir===path.join(c.root,'B')&&p.startAttempted===true,'NATIVE_ACTIVITY_OWNED_RESTART');
   const file=path.join(p.dir,'supabase/config.toml'),named=await fs.lstat(file);
   need(named.isFile()&&!named.isSymbolicLink()&&named.nlink===1,'NATIVE_ACTIVITY_CONFIG_FILE');
-  assert.equal(await fs.readFile(file,'utf8'),config(p.id,true,false));
+  assert.equal(await fs.readFile(file,'utf8'),p.nativeStorageBootstrap===true?syntheticNativeStorageConfig(p):config(p.id,true,false));
   // Standard owned CLI restart, preserving this disposable B database. The final
   // existing stopProject still removes only this exact project's owned volumes.
   await command(c,'NATIVE_ACTIVITY_STOP_B','supabase',['stop','--project-id',p.id],{cwd:p.dir,maxMs:60_000});
@@ -1081,7 +1095,8 @@ async function restartSyntheticBWithNativeHook(c,p){
   need(network.Id===p.networkId&&network.Labels?.['ravradar.synthetic.restore.owner']===c.owner,'NATIVE_ACTIVITY_NETWORK_CHANGED');
   await fs.writeFile(file,syntheticNativeHookConfig(p),{mode:0o600});
   await command(c,'NATIVE_ACTIVITY_START_B','supabase',['--network-id',p.network,'start','--exclude',EXCLUDE],{cwd:p.dir});
-  await syntheticAuthVersionPin(c,p,false);
+  if(p.nativeStorageBootstrap===true)await verifyArchiveVendorBootstrap(c,p,true);
+  else await syntheticAuthVersionPin(c,p,false);
   const actual={};
   for(const service of ['db','kong','auth']){
     const info=(await jsonCommand(c,'NATIVE_ACTIVITY_INSPECT_'+service,['inspect','supabase_'+service+'_'+p.id]))[0];
@@ -1283,6 +1298,7 @@ function nativeActivityQualifiedReady(prepared){
 }
 async function verifySyntheticBNativeActivityCapture(c,p,fixtureActorId){
   need(c.archive===false&&p.side==='B'&&uuid(fixtureActorId),'NATIVE_ACTIVITY_SYNTHETIC_B_ONLY');
+  need(p.nativeStorageBootstrap===true,'NATIVE_ACTIVITY_STORAGE_BOOTSTRAP_REQUIRED');
   const source=await syntheticNativeActivitySource(),manual=readAccountErasureSource();
   // Replace only the previous case's EMPTY minimal profile-id fixture. Its
   // exact outbox/guard was already read back; no Auth relation is recreated.
@@ -1503,6 +1519,7 @@ async function verifySyntheticBNativeActivityCapture(c,p,fixtureActorId){
     return Object.freeze({kind:'SYNTHETIC_B_GENUINE_AUTH198_POSITIVE_NATIVE_CAPTURE',authImage:IMAGES.auth,
       sourceSha256:source.sha256,noticeSourceSha256:source.noticeSha256,manualSourceSha256:manual.sha256,
       exactFunctionBodiesVerified:true,appScaffoldingSynthetic:true,realTwoYearHistoryVerified:false,
+      storageImagePin:ARCHIVE_VENDOR_IMAGES.storage,storageBootstrap:'OWNED_CLI_FRESH_B_ONE_SHOT',persistentStorageService:false,
       providerDeliverySynthetic:true,mailPostExecuted:false,controllerNoPostProof:'SQL_AUTHORITY_FALSE_ONLY',
       automaticErasureEnabled:false,hostedHookConfigured:false,productionAuthVerified:false,
       rejectedReuseBranch:branch.v2?'V2_SESSION_LOGOUT':'LEGACY_TOKEN_FAMILY',otherReuseBranch:'UNRUN',cases});
@@ -2544,7 +2561,7 @@ async function fixture({archive=false,inventoryOnly=false}={}){
     await command(c,'QUIESCE_A_AUTH','docker',['stop','--time','10',a.auth],{maxMs:30_000});
     const before=await query(c,a,'SOURCE_SNAPSHOT',snapshotSql());need(before.row.decimal===DECIMAL&&before.row.text===TEXT,'SOURCE_PRECISION');
     const dumps=await dumpFiles(c,a);await stopProject(c,a);
-    await startProject(c,b);
+    await startProject(c,b,{nativeActivity:true});
     const empty=await query(c,b,'TARGET_EMPTY',"select jsonb_build_array(to_regclass('public.rr_restore_probe') is null,not exists(select 1 from pg_roles where rolname='rr_restore_reader'),to_regclass('supabase_migrations.schema_migrations') is null,(select count(*)=0 from auth.users));");
     assert.deepEqual(empty,[true,true,true,true]);
     await auth(c,b,'/token?grant_type=password',{body:{email,password},status:400});
@@ -2830,6 +2847,37 @@ ${syntheticNativeActivityInstrumentationSql()}`);
     const duplicate=source.sql+'\ncreate function public.account_erasure_auth_uuid_guard()';
     assert.throws(()=>syntheticAccountErasureAuthFenceSql({...source,sql:duplicate,sha256:sha(Buffer.from(duplicate))},intent,actor));
     assert(syntheticAccountErasureAuthFenceReadbackSql(intent).includes("E' \\n\\r\\t'"));
+  });
+  test('native activity Storage setup reuses create-only vendor bootstrap solely for fresh owned synthetic B',async()=>{
+    await ownArchive(async({c})=>{
+      c.archive=false;c.owner='123-1';const p={side:'B',id:'rr_restore_123_1_b',dir:path.join(c.root,'B'),nativeStorageBootstrap:true};
+      await fs.mkdir(path.join(p.dir,'supabase'),{recursive:true,mode:0o700});
+      const original=config(p.id,true,false),storage=syntheticNativeStorageConfig(p);
+      assert.equal(storage.replace('\n[storage]\nenabled = true\n','\n[storage]\nenabled = false\n'),original);
+      assert(EXCLUDE.split(',').includes('storage-api'));assert(storage.includes('[realtime]\n# The CLI runs this one-shot bootstrap even when the persistent service is excluded.\nenabled = false'));
+      assert.equal(syntheticNativeHookConfig(p),storage+'\n[auth.hook.custom_access_token]\nenabled = true\n'
+        +'uri = "pg-functions://postgres/public/rr_native_activity_test_hook"\n');
+      assert.equal(syntheticNativeHookConfig({...p,nativeStorageBootstrap:undefined}),original+'\n[auth.hook.custom_access_token]\nenabled = true\n'
+        +'uri = "pg-functions://postgres/public/rr_native_activity_test_hook"\n');
+      assert.deepEqual(NATIVE_ACTIVITY_VENDOR_PINS,{'gotrue-version':'v2.198.0\n','storage-version':'v1.86.0\n'});
+      assert.deepEqual(ARCHIVE_VENDOR_PINS,{'gotrue-version':'v2.197.0\n','storage-version':'v1.86.0\n'});
+      for(const [context,project]of [[{...c,archive:true},p],[{...c,owner:'123-2'},p],[c,{...p,side:'A'}],
+        [c,{...p,id:'linked-project'}],[c,{...p,dir:c.root}]]){
+        assert.throws(()=>archiveVendorPinDirectory(context,project,true),error=>error.code==='ARCHIVE_VENDOR_PROJECT');
+        await assert.rejects(()=>startProject(context,project,{nativeActivity:true}),error=>error.code==='ARCHIVE_VENDOR_PROJECT');
+      }
+      assert.throws(()=>archiveVendorPinDirectory(c,p),error=>error.code==='ARCHIVE_VENDOR_PROJECT');
+      assert.throws(()=>archiveVendorPinDirectory(c,p,'yes'),error=>error.code==='ARCHIVE_VENDOR_PROJECT');
+      assert.throws(()=>syntheticNativeStorageConfig({...p,nativeStorageBootstrap:false}),error=>error.code==='NATIVE_ACTIVITY_STORAGE_B_PROJECT');
+      await prepareArchiveVendorBootstrap(c,p,true);await verifyArchiveVendorBootstrap(c,p,true);
+      const directory=path.join(p.dir,'supabase','.temp');
+      assert.deepEqual((await fs.readdir(directory)).sort(),['gotrue-version','storage-version']);
+      for(const [name,value]of Object.entries(NATIVE_ACTIVITY_VENDOR_PINS))assert.equal(await fs.readFile(path.join(directory,name),'utf8'),value);
+      await assert.rejects(()=>syntheticAuthVersionPin(c,p,false),error=>error.code==='SYNTHETIC_AUTH_PIN_INVENTORY');
+      await assert.rejects(()=>prepareArchiveVendorBootstrap(c,p,true),error=>error.code==='ARCHIVE_VENDOR_PIN_EXISTS');
+      await fs.writeFile(path.join(directory,'storage-migration'),'SYNTHETIC-CEILING',{flag:'wx'});
+      await assert.rejects(()=>verifyArchiveVendorBootstrap(c,p,true),error=>error.code==='ARCHIVE_VENDOR_MIGRATION_CEILING');
+    });
   });
   test('synthetic A/B receive only a fresh owned Auth198 pin and refuse stale or redirected inputs',async()=>{
     for(const side of ['A','B'])await ownArchive(async({c})=>{
