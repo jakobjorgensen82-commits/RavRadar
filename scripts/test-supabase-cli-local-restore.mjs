@@ -188,6 +188,12 @@ async function openArchiveDbRelay(c,p){
 function safeError(error,stage){
   return {stage,code:/^[A-Z0-9_]+$/.test(error?.code??'')?error.code:'LOCAL_RESTORE_REFUSED',
     exit:Number.isInteger(error?.exit)?error.exit:null,externalDockerOutcome:'UNKNOWN_UNTIL_OWNED_READBACK',
+    ...(stage==='NATIVE_ACTIVITY_SQL'&&error?.code==='NATIVE_ACTIVITY_QUALIFIED_READY'
+      &&NATIVE_ACTIVITY_NOTICE_STATES.includes(error.nativeActivityNoticeState)?{nativeActivityNoticeState:error.nativeActivityNoticeState}:{}),
+    ...(stage==='NATIVE_ACTIVITY_SQL'&&error?.code==='NATIVE_ACTIVITY_QUALIFIED_READY'
+      &&NATIVE_ACTIVITY_NOTICE_HOLD_REASONS.includes(error.nativeActivityNoticeHoldReason)?{nativeActivityNoticeHoldReason:error.nativeActivityNoticeHoldReason}:{}),
+    ...(stage==='NATIVE_ACTIVITY_SQL'&&error?.code==='NATIVE_ACTIVITY_QUALIFIED_READY'&&error?.nativeActivityNoticeHoldReason==='TARGET_POLICY'
+      ?nativeActivityTargetPolicyDiagnostic(error.nativeActivityTargetPolicy):{}),
     ...(stage==='NATIVE_ACTIVITY_APP_FIXTURE'&&[...NATIVE_ACTIVITY_APP_PARTS,'UNKNOWN'].includes(error?.nativeActivityFixturePart)
       ?{nativeActivityFixturePart:error.nativeActivityFixturePart}:{}),
     ...(ARCHIVE_SQL_OWNERS.includes(error?.inputOwner)?{inputOwner:error.inputOwner}:{}),
@@ -1184,6 +1190,97 @@ function nativeActivityAppDiagnostic(c,stage,diagnostic,code,inputLines){
   }catch{return unknown;}
 }
 
+const NATIVE_ACTIVITY_NOTICE_STATES=Object.freeze(['HELD','READY','CLAIMED','ACCEPTED','DELIVERED','UNKNOWN','CANCELLED']);
+const NATIVE_ACTIVITY_NOTICE_HOLD_REASONS=Object.freeze(['POLICY_OFF','COVERAGE_UNKNOWN','DELIVERY_UNQUALIFIED',
+  'ACTIVITY_UNKNOWN','ACTIVITY_TOO_RECENT','ERASURE_PENDING','TARGET_POLICY','ACTIVITY_CHANGED']);
+const NATIVE_ACTIVITY_TARGET_POLICY_REASONS=Object.freeze([null,'TARGET_MISSING','PRIVILEGED_TARGET','REFERENCE_CATALOG_UNKNOWN',
+  'REFERENCE_POLICY','STORAGE_CATALOG_UNKNOWN','STORAGE_POLICY_UNQUALIFIED','STORAGE_OWNERSHIP']);
+const NATIVE_ACTIVITY_REFERENCE_FIELDS=Object.freeze(['oidExists','relkindTable','rlsEnabled','columnTypeMatches']);
+const NATIVE_ACTIVITY_STORAGE_FIELDS=Object.freeze([...NATIVE_ACTIVITY_REFERENCE_FIELDS,'anonAuthOwnerMember',
+  'anonAuthWritePolicy','anonAuthWritePrivilege','policyQualified']);
+function nativeActivityTargetPolicyDiagnostic(value){
+  try{
+    const own=(object,key)=>{const item=Object.getOwnPropertyDescriptor(object,key);need(item&&Object.hasOwn(item,'value'),'DIAGNOSTIC_SHAPE');return item.value;};
+    const objectKeys=(object,keys)=>need(object&&Object.getPrototypeOf(object)===Object.prototype
+      &&Reflect.ownKeys(object).length===keys.length&&keys.every(key=>Object.hasOwn(object,key)),'DIAGNOSTIC_SHAPE');
+    objectKeys(value,['policyHold','referenceCatalogs','storageOwners']);
+    const policyHold=own(value,'policyHold');need(NATIVE_ACTIVITY_TARGET_POLICY_REASONS.includes(policyHold),'DIAGNOSTIC_SHAPE');
+    const rows=(key,count,fields)=>{
+      const list=own(value,key);need(Array.isArray(list)&&list.length===count&&Reflect.ownKeys(list).length===count+1,'DIAGNOSTIC_SHAPE');
+      return Object.freeze(Array.from({length:count},(_,i)=>{
+        const row=own(list,String(i));objectKeys(row,fields);const clean={};
+        for(const field of fields){const bit=own(row,field);need(typeof bit==='boolean','DIAGNOSTIC_SHAPE');clean[field]=bit;}
+        return Object.freeze(clean);
+      }));
+    };
+    return {nativeActivityTargetPolicy:Object.freeze({policyHold,
+      referenceCatalogs:rows('referenceCatalogs',8,NATIVE_ACTIVITY_REFERENCE_FIELDS),
+      storageOwners:rows('storageOwners',6,NATIVE_ACTIVITY_STORAGE_FIELDS)})};
+  }catch{return {};}
+}
+function nativeActivityTargetPolicySql(target){
+  need(uuid(target),'NATIVE_ACTIVITY_TARGET_POLICY_INPUT');
+  // One read-only statement. Fixed order matches the unchanged manual policy;
+  // relation/column names, OIDs and target identity never enter its JSON result.
+  return `set transaction read only;
+with reference_shape(n,relation_name,column_name) as (values
+ (1,'public.app_user_roles','user_id'),(2,'public.handbook_reviews','created_by'),
+ (3,'public.handbook_reviews','resolved_by'),(4,'public.handbook_review_versions','changed_by'),
+ (5,'public.admin_documents','updated_by'),(6,'public.admin_document_versions','created_by'),
+ (7,'public.admin_audit_log','actor_id'),(8,'auth.scim_users','user_id')),
+reference_checks as (select s.n,c.oid is not null as oid_exists,coalesce(c.relkind='r',false) as relkind_table,
+ coalesce(c.relrowsecurity,false) as rls_enabled,exists(select 1 from pg_catalog.pg_attribute a where a.attrelid=c.oid
+ and a.attname=s.column_name and a.atttypid='uuid'::regtype and a.attnum>0 and not a.attisdropped) as type_matches
+ from reference_shape s left join pg_catalog.pg_class c on c.oid=pg_catalog.to_regclass(s.relation_name)),
+storage_shape(n,relation_name,column_name,column_type) as (values
+ (1,'storage.objects','owner','uuid'),(2,'storage.objects','owner_id','text'),
+ (3,'storage.buckets','owner','uuid'),(4,'storage.buckets','owner_id','text'),
+ (5,'storage.s3_multipart_uploads','owner_id','text'),(6,'storage.s3_multipart_uploads_parts','owner_id','text')),
+storage_checks as (select s.n,c.oid is not null as oid_exists,coalesce(c.relkind='r',false) as relkind_table,
+ coalesce(c.relrowsecurity,false) as rls_enabled,exists(select 1 from pg_catalog.pg_attribute a where a.attrelid=c.oid
+ and a.attname=s.column_name and a.atttypid=pg_catalog.to_regtype(s.column_type) and a.attnum>0 and not a.attisdropped) as type_matches,
+ coalesce(pg_catalog.pg_has_role('anon',c.relowner,'MEMBER') or pg_catalog.pg_has_role('authenticated',c.relowner,'MEMBER'),false) as owner_member,
+ exists(select 1 from pg_catalog.pg_policy p cross join lateral unnest(p.polroles) roles(role_oid)
+ where p.polrelid=c.oid and p.polcmd in ('a','w','*') and case when role_oid=0 then true
+ else pg_catalog.pg_has_role('anon',role_oid,'MEMBER') or pg_catalog.pg_has_role('authenticated',role_oid,'MEMBER') end) as write_policy,
+ coalesce(pg_catalog.has_table_privilege('anon',c.oid,'INSERT,UPDATE')
+ or pg_catalog.has_table_privilege('authenticated',c.oid,'INSERT,UPDATE'),false) as write_privilege
+ from storage_shape s left join pg_catalog.pg_class c on c.oid=pg_catalog.to_regclass(s.relation_name)),
+role_safety as (select not exists(select 1 from pg_catalog.pg_roles where rolname in ('anon','authenticated')
+ and (rolsuper or rolbypassrls)) as qualified)
+select jsonb_build_object('policyHold',public.account_erasure_policy_hold('${target}'),
+ 'referenceCatalogs',(select jsonb_agg(jsonb_build_object('oidExists',oid_exists,'relkindTable',relkind_table,
+ 'rlsEnabled',rls_enabled,'columnTypeMatches',type_matches) order by n) from reference_checks),
+ 'storageOwners',(select jsonb_agg(jsonb_build_object('oidExists',oid_exists,'relkindTable',relkind_table,
+ 'rlsEnabled',rls_enabled,'columnTypeMatches',type_matches,'anonAuthOwnerMember',owner_member,
+ 'anonAuthWritePolicy',write_policy,'anonAuthWritePrivilege',write_privilege,
+ 'policyQualified',oid_exists and relkind_table and rls_enabled and type_matches and qualified and not owner_member and not write_policy)
+ order by n) from storage_checks cross join role_safety));`;
+}
+async function nativeActivityNoticePolicyFailure(error,c,p,target,read=query){
+  if(error?.code!=='NATIVE_ACTIVITY_QUALIFIED_READY'||error.nativeActivityNoticeHoldReason!=='TARGET_POLICY'
+    ||c.archive!==false||p.side!=='B'||typeof c.owner!=='string'||p.id!=='rr_restore_'+c.owner.replace('-','_')+'_b'||p.dir!==path.join(c.root,'B'))return error;
+  const stage=c.stage;
+  try{Object.assign(error,nativeActivityTargetPolicyDiagnostic(await read(c,p,'NATIVE_ACTIVITY_TARGET_POLICY',nativeActivityTargetPolicySql(target))));}
+  catch{} // An optional observation never replaces or clears the first failure.
+  finally{c.stage=stage;}
+  return error;
+}
+function nativeActivityQualifiedReady(prepared){
+  try{need(prepared.state==='READY','NATIVE_ACTIVITY_QUALIFIED_READY');}
+  catch(error){
+    if(error?.code==='NATIVE_ACTIVITY_QUALIFIED_READY'){
+      // Only enum-valued data already returned by prepare; no extra SQL/readback.
+      try{
+        const state=Object.getOwnPropertyDescriptor(prepared,'state'),reason=Object.getOwnPropertyDescriptor(prepared,'holdReason');
+        if(state&&Object.hasOwn(state,'value')&&NATIVE_ACTIVITY_NOTICE_STATES.includes(state.value))error.nativeActivityNoticeState=state.value;
+        if(reason&&Object.hasOwn(reason,'value')&&NATIVE_ACTIVITY_NOTICE_HOLD_REASONS.includes(reason.value))error.nativeActivityNoticeHoldReason=reason.value;
+      }catch{} // Optional diagnostics can never replace the original failure.
+    }
+    throw error;
+  }
+  return prepared;
+}
 async function verifySyntheticBNativeActivityCapture(c,p,fixtureActorId){
   need(c.archive===false&&p.side==='B'&&uuid(fixtureActorId),'NATIVE_ACTIVITY_SYNTHETIC_B_ONLY');
   const source=await syntheticNativeActivitySource(),manual=readAccountErasureSource();
@@ -1262,7 +1359,8 @@ async function verifySyntheticBNativeActivityCapture(c,p,fixtureActorId){
         first_observed_at=excluded.first_observed_at,last_activity_at=excluded.last_activity_at,coverage_epoch=excluded.coverage_epoch;
       update public.account_inactivity_notices set state='CANCELLED',delete_not_before=null where target_user_id='${target.id}';`);
     const notice=crypto.randomUUID(),prepared=await rpc('authenticated',`public.prepare_account_inactivity_notice('${notice}','${target.id}')`);
-    need(prepared.state==='READY','NATIVE_ACTIVITY_QUALIFIED_READY');return prepared;
+    try{return nativeActivityQualifiedReady(prepared);}
+    catch(error){throw await nativeActivityNoticePolicyFailure(error,c,p,target.id);}
   };
   const claim=(target,n,attempt=crypto.randomUUID())=>rpc('service_role',`public.claim_account_inactivity_notice('${n.noticeId}','${fixtureActorId}',
     ${BigInt(n.revision)},'${attempt}','${'a'.repeat(64)}',${sqlString(target.createdAt)})`);
@@ -1397,8 +1495,8 @@ async function verifySyntheticBNativeActivityCapture(c,p,fixtureActorId){
     for(const invalid of [{...event,user_id:crypto.randomUUID()},{user_id:target.id,claims:null}])
       await assert.rejects(()=>sql(`set local role supabase_auth_admin;select public.account_native_activity_token_hook(${sqlString(JSON.stringify(invalid))}::jsonb);`),e=>e.code==='SQLSTATE_22023');
     const fenced=await fresh();
-    await sql(`insert into public.account_erasure_operations(operation_id,target_user_id,requested_by,profile_was_active,state,pg_staged_at)
-      values('${crypto.randomUUID()}','${fenced.id}','${fixtureActorId}',true,'PG_STAGED_AUTH_PENDING',clock_timestamp());`);
+    await sql(`insert into public.account_erasure_operations(operation_id,target_user_id,requested_by,profile_was_active,prepared_at,updated_at,state,pg_staged_at)
+      values('${crypto.randomUUID()}','${fenced.id}','${fixtureActorId}',true,pg_catalog.transaction_timestamp(),pg_catalog.transaction_timestamp(),'PG_STAGED_AUTH_PENDING',pg_catalog.transaction_timestamp());`);
     await login(fenced);const fenceAfter=await snapshot(fenced.id);
     need(fenceAfter.activity===null&&fenceAfter.journal===null&&fenceAfter.coverage==='INVALID','NATIVE_ACTIVITY_ERASURE_FENCE');
     pass('B9_CLAIMS_ACL_AND_EXISTING_POST_PG_FENCE');
@@ -2596,6 +2694,76 @@ ${syntheticNativeActivityInstrumentationSql()}`);
     const historical=archiveInputDiagnostic(Buffer.from('psql:<stdin>:1: ERROR:  42501\n'),'SQLSTATE_42501',{ranges:new Map([['SCHEMA',{first:1,last:1}]])});
     assert.deepEqual(historical,{inputOwner:'SCHEMA'});
     assert.equal(safeError({code:'SQLSTATE_42501',exit:3,nativeActivityFixturePart:'CAPTURE_SQL'},'RESTORE_ARCHIVE_HISTORY').nativeActivityFixturePart,undefined);
+  });
+  test('native notice qualification preserves the first error and emits only returned fixed state and hold reason',()=>{
+    const marker='PRIVATE-NOTICE-SENTINEL',ready={state:'READY',holdReason:null};
+    assert.strictEqual(nativeActivityQualifiedReady(ready),ready);
+    const inspect=prepared=>{
+      let error;try{nativeActivityQualifiedReady(prepared);}catch(observed){error=observed;}
+      assert(error instanceof Error);assert.equal(error.code,'NATIVE_ACTIVITY_QUALIFIED_READY');
+      assert.equal(error.message,'LOCAL_RESTORE_FAILED_CLOSED');
+      const report=safeError(error,'NATIVE_ACTIVITY_SQL');
+      assert.equal(report.code,error.code);assert.equal(report.exit,null);
+      assert.equal(report.externalDockerOutcome,'UNKNOWN_UNTIL_OWNED_READBACK');
+      assert(!JSON.stringify(report).includes(marker));return {error,report};
+    };
+    const known=inspect({state:'HELD',holdReason:'TARGET_POLICY',targetUserId:marker});
+    assert.equal(known.report.nativeActivityNoticeState,'HELD');
+    assert.equal(known.report.nativeActivityNoticeHoldReason,'TARGET_POLICY');
+    assert.equal(safeError(known.error,'RESTORE_ARCHIVE_HISTORY').nativeActivityNoticeState,undefined);
+    assert.equal(safeError(known.error,'RESTORE_ARCHIVE_HISTORY').nativeActivityNoticeHoldReason,undefined);
+    for(const prepared of [{state:marker,holdReason:marker},{state:'HELD'},{state:'HELD',holdReason:null},
+      {state:'HELD',get holdReason(){throw new Error(marker);}}]){
+      const {report}=inspect(prepared);
+      assert.equal(report.nativeActivityNoticeState,prepared.state==='HELD'?'HELD':undefined);
+      assert.equal(report.nativeActivityNoticeHoldReason,undefined);
+    }
+    const first=Object.assign(new Error(marker),{code:'SYNTHETIC_FIRST_ERROR'});
+    assert.throws(()=>nativeActivityQualifiedReady({get state(){throw first;}}),error=>error===first);
+    assert.equal(safeError({...known.error,code:'SQLSTATE_42501'},'NATIVE_ACTIVITY_SQL').nativeActivityNoticeState,undefined);
+    const raw=safeError({...known.error,nativeActivityNoticeState:marker,nativeActivityNoticeHoldReason:marker},'NATIVE_ACTIVITY_SQL');
+    assert.equal(raw.nativeActivityNoticeState,undefined);assert.equal(raw.nativeActivityNoticeHoldReason,undefined);
+  });
+  test('TARGET_POLICY observes one owned B read with fixed catalog bits and retains the first READY failure',async()=>{
+    const marker='PRIVATE-POLICY-SENTINEL',target='20000000-0000-4000-8000-000000000001';
+    const sample={policyHold:'STORAGE_CATALOG_UNKNOWN',
+      referenceCatalogs:Array.from({length:8},()=>Object.fromEntries(NATIVE_ACTIVITY_REFERENCE_FIELDS.map(key=>[key,true]))),
+      storageOwners:Array.from({length:6},()=>Object.fromEntries(NATIVE_ACTIVITY_STORAGE_FIELDS.map(key=>[key,false])))};
+    const first=reason=>{try{nativeActivityQualifiedReady({state:'HELD',holdReason:reason});}catch(error){return error;}};
+    const observe=async(value,{reason='TARGET_POLICY',archive=false,side='B',throws=false}={})=>{
+      const error=first(reason),c={archive,owner:'123-1',root:os.tmpdir(),stage:'NATIVE_ACTIVITY_SQL'};
+      const p={side,id:'rr_restore_123_1_b',dir:path.join(c.root,'B')};let reads=0;
+      const returned=await nativeActivityNoticePolicyFailure(error,c,p,target,async(context,project,stage,sql)=>{
+        reads++;assert.strictEqual(context,c);assert.strictEqual(project,p);assert.equal(stage,'NATIVE_ACTIVITY_TARGET_POLICY');
+        assert(sql.startsWith('set transaction read only;\n'));assert(sql.includes("public.account_erasure_policy_hold('"+target+"')"));
+        assert(!/\b(?:grant|revoke|create|alter|delete|truncate)\b/i.test(sql));
+        c.stage=stage;if(throws)throw Object.assign(new Error(marker),{code:'SQLSTATE_42501'});return value;
+      });
+      assert.strictEqual(returned,error);assert.equal(error.code,'NATIVE_ACTIVITY_QUALIFIED_READY');
+      assert.equal(error.message,'LOCAL_RESTORE_FAILED_CLOSED');assert.equal(c.stage,'NATIVE_ACTIVITY_SQL');
+      const report=safeError(error,c.stage);assert.equal(report.code,error.code);assert.equal(report.exit,null);
+      assert(!JSON.stringify(report).includes(marker));assert(!JSON.stringify(report).includes(target));
+      return {error,report,reads};
+    };
+    const valid=await observe(sample);assert.equal(valid.reads,1);assert.deepEqual(valid.report.nativeActivityTargetPolicy,sample);
+    assert(Object.isFrozen(valid.error.nativeActivityTargetPolicy));
+    assert.equal(safeError(valid.error,'RESTORE_ARCHIVE_HISTORY').nativeActivityTargetPolicy,undefined);
+    const noCurrentHold=await observe({...sample,policyHold:null});assert.equal(noCurrentHold.report.nativeActivityTargetPolicy.policyHold,null);
+    for(const options of [{reason:'POLICY_OFF'},{reason:null},{reason:marker},{archive:true},{side:'A'}]){
+      const skipped=await observe(sample,options);assert.equal(skipped.reads,0);
+      assert.equal(skipped.report.nativeActivityTargetPolicy,undefined);
+    }
+    const absent=first(null),context={archive:false,owner:'123-1',root:os.tmpdir(),stage:'NATIVE_ACTIVITY_SQL'};
+    assert.strictEqual(await nativeActivityNoticePolicyFailure(absent,context,{side:'B',id:'rr_restore_123_1_b',dir:path.join(context.root,'B')},target,
+      ()=>{assert.fail('Missing returned reason must not issue a read');}),absent);
+    const badBit=JSON.parse(JSON.stringify(sample));badBit.storageOwners[0].oidExists=marker;
+    for(const bad of [{...sample,policyHold:marker},{...sample,referenceCatalogs:sample.referenceCatalogs.slice(1)},
+      {...sample,storageOwners:[...sample.storageOwners,{}]},{...sample,rawSql:marker},badBit,
+      {...sample,get policyHold(){throw new Error(marker);}}]){
+      const rejected=await observe(bad);assert.equal(rejected.reads,1);assert.equal(rejected.report.nativeActivityTargetPolicy,undefined);
+    }
+    const transport=await observe(sample,{throws:true});assert.equal(transport.reads,1);assert.equal(transport.report.nativeActivityTargetPolicy,undefined);
+    assert.throws(()=>nativeActivityTargetPolicySql(marker),error=>error.code==='NATIVE_ACTIVITY_TARGET_POLICY_INPUT');
   });
   test('owned native capture source reader keeps exact append bodies and real-Auth fixture admission',async()=>{
     const source=await syntheticNativeActivitySource();
