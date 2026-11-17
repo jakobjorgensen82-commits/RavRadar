@@ -1,3 +1,9 @@
+## 17. november — faktisk lille standardkildevej
+
+Standardkildekontrollen består nu af otte faste kommandoer og de relevante hele prøver for de faktisk ændrede funktioner. Den eksisterende CURRENT-fortegnelse vælger disse fra den faktiske Git-diff; kun bytebeviste rene versionsskift fritages for en særskilt funktionsprøve. Et ukendt testansvar bliver tydeligt afvist frem for automatisk at starte 82 historiske kommandoer. Den store samlede601-ændring kan derfor stadig vælge væsentligt flere end otte mål; en lille delingsændring vælger tre relevante ekstra mål. Der påstås ingen historisk blanketudførelse eller SQL-kvalifikation fra denne kerne. Eksisterende native- og nationalfaser bevarer deres eget faktiske bevis. Den aktuelle pakkelæser kræver relevante entrypoints og bindinger, mens historiske whole-map-prøver bruger deres eget autentiske gamle input.
+
+Ejerens seneste mål og stående autoritet har forrang. Normal offentlig effekt, brugeradgang, databevarelse, eksklusiv skrivning og sikker Free består. Fjernede eller uudførte historiske prøver mærkes ikke som bestået.
+
 ## 17. november — fjern overflødige kontrolkrav
 
 Ejerens instruktion er at fjerne alle overflødige kontrolkrav og uvedkommende stop. En historisk workflowfortegnelse er prøveinput, ikke en ekstra global teststarter. Den eksisterende historiske læser bevarer sit autentiske grundlag og kontrollerer en begrænset, sikker aktuel fortegnelsesform; den starter ikke aktuelle målprocesser og kræver ikke, at pensionerede workflows fortsat findes. Den normale CURRENT-producent og -forbruger vælger og udfører fortsat relevante hele mål for den faktiske ændring. Månedskalderen har ét naturligt account-callers-mål, som allerede importerer månedsskifte og controller; tre identiske starter er ikke nødvendige.

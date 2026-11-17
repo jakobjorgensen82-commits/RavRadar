@@ -60,6 +60,7 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
     'node scripts/test-fixed-assistant-failure-log-20261101.mjs',
   ],
   publicUI:[
+    'node --test scripts/test-assistant-ui-error-boundary.mjs',
     'node scripts/test-ravscore-public-data-service-binding.mjs',
     'node scripts/test-ravscore-public-browser-closure.mjs',
     'node scripts/test-map-forecast-timeline.mjs',
@@ -430,6 +431,52 @@ export function currentWorkflowTargets(relative){
   const areas=pathAreas.get(relative);
   if(!areas?.length||areas.some(area=>!COMMANDS[area]?.length))return null;
   return freeze({path:relative,owners:areas.map(area=>({area,commands:[...COMMANDS[area]]}))});
+}
+// Execution-only lookup for the normal source driver. The complete Git diff
+// chooses existing natural owners; this is not a baseline or reuse receipt.
+export function currentSourceTargets(relative){
+  assert.equal(arguments.length,1);
+  if(typeof relative!=='string'||!/^[A-Za-z0-9_.\/-]+$/.test(relative)
+    ||relative.startsWith('/')||relative.split('/').some(part=>part==='.'||part==='..'))return null;
+  let areas=pathAreas.get(relative);
+  if(['scripts/validate-source-once.mjs','scripts/source-critical-gate.mjs'].includes(relative))
+    return freeze({path:relative,owners:[{area:'sourceDriver',commands:['node scripts/test-source-validation-once.mjs']}]});
+  if(relative==='scripts/national584-source-evidence.mjs')areas=['sourceControls'];
+  if(!areas&&/^docs\/(?:rdks|ai|handbook)\//.test(relative))areas=['documentation'];
+  if(!areas&&['package.json','version.json','data/kystdata.json','data/zones.geojson',
+    'docs/handbook/content.json','CHANGELOG.md','AGENTS.md'].includes(relative))areas=['core'];
+  if(!areas&&/^scripts\/test-[A-Za-z0-9_.-]+\.mjs$/.test(relative))
+    return freeze({path:relative,owners:[{area:'changedTest',commands:['node --test '+relative]}]});
+  if(!areas&&/^js\/core\//.test(relative))areas=['runtimeAudit'];
+  if(!areas&&/^js\/(?:services|ui)\//.test(relative))areas=['publicUI'];
+  if(!areas&&/^js\/(?:map|jordrav)\//.test(relative))areas=['publicUI'];
+  if(!areas&&/^knowledge\//.test(relative))areas=['assistantEdge'];
+  if(!areas&&/^scripts\/fixtures\/rav-assistant-/.test(relative))areas=['assistantEdge'];
+  if(!areas&&/^data\/admin\/ravscore-/.test(relative))areas=['core'];
+  if(!areas&&/^scripts\/(?:assistant-later-h0-|build-assistant-later-h0-|check-assistant-later-h0-|run-frozen586-assistant-later-h0-|sync-ravscore-model-binding|integrated-cutover-readiness|read-authenticated-dmi-current-companions|reconcile-private-runtime-checkpoint)/.test(relative))areas=['runtimeAudit'];
+  if(!areas&&/^scripts\/lib\/(?:assistant-later-h0-|checkpoint-cas-native-|established-native-current-origin|model-source-imports|authenticated-frozen586-)/.test(relative))areas=['runtimeAudit'];
+  if(!areas&&/^scripts\/rollback-assets\//.test(relative))areas=['runtimeAudit'];
+  if(!areas&&['scripts/lib/account-statistics-assistant-package-review.mjs',
+    'scripts/lib/alternative-c-caller-test-input.mjs','scripts/lib/release-gate-test-plan.mjs'].includes(relative))areas=['historicalTests'];
+  if(!areas&&relative==='scripts/source-impact-domain-inputs.mjs')areas=['sourceControls'];
+  if(!areas&&relative==='.github/workflows/validate-copernicus-current-pilot.yml')areas=['actionVersions'];
+  // SQL is executed by the existing separate native phase. This lookup never
+  // represents the preflight as SQL execution or historical qualification.
+  if(!areas&&/^supabase\/(?:migrations\/[A-Za-z0-9_.-]+\.sql|schema\.sql|INSTALL-[A-Za-z0-9_.-]+\.sql)$/.test(relative))areas=['core'];
+  if(!areas&&/^supabase\/functions\/(?:_shared\/rav-assistant-[A-Za-z0-9_.-]+\.(?:ts|js)|rav-assistant\/[A-Za-z0-9_.-]+\.ts)$/.test(relative))areas=['assistantEdge'];
+  if(!areas&&/\.(?:html|css)$/.test(relative))areas=['publicUI'];
+  if(!areas||areas.some(area=>!COMMANDS[area]))return null;
+  return freeze({path:relative,owners:areas.map(area=>{
+    let commands=[...COMMANDS[area]];
+    if(area==='sourceControls'){
+      const test=relative.replace(/^scripts\/(?!test-)/,'scripts/test-');
+      const matching=commands.filter(command=>command.split(' ').includes(test));
+      if(matching.length)commands=matching;
+      else if(relative==='scripts/national584-source-evidence.mjs')
+        commands=commands.filter(command=>command.includes('test-native-postgres-evidence.mjs'));
+    }
+    return {area,commands};
+  })});
 }
 const PAGES_DEPLOYMENT_COMMAND='node scripts/test-ravscore-operational-pages-deployment.mjs';
 const PAGES_OWNER_COMPLETION_COMMAND=PAGES_DEPLOYMENT_COMMAND+' --owner-completion-only';

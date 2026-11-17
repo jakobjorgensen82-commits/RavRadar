@@ -10,6 +10,9 @@ RavRadar observerer ikke, hvor mange stykker rav eller hvor meget rav der findes
 
 Dette er en lokal601-kandidat ovenpå app600. Vidensgrundlaget er gennemgået, men den nye binding, installation og faktiske svar på dansk, tysk og engelsk skal kvalificeres gennem normalvejen. Lokale kontraktprøver er ikke hosted AI- eller offentlig produktaccept.
 
+App-ejet offentlig hjælp besvarer generelle høj-/lavvandsspørgsmål, offentlig ophavsmand og Facebook-gruppe, begynderhjælp og uklare sammensatte navne. Hele praktiske spørgsmål om ravkese på stranden kan også omfatte almindelige forholdsregler; de sammensættes af eksisterende godkendte udstyrs- og strandtekster. Hele spørgsmålet skal være dækket. Private oplysninger, ukendte tillæg, lokale tid-/stedspørgsmål og fundgarantier bliver ikke klippet væk. Den normale AI-vej og prognoserangering bevares. Dette ændrer ingen numerisk model eller SQL og er ikke en påstand om samlet ekstern AI-kvalitet.
+
+
 ## 89.351 — Manuel kontosletning med synlig genoptagelse
 
 <div class="reader-guide"><p>En sletning er først færdig, når alle trin er bekræftet. Ejeren kan finde en uafsluttet sag igen og genoptage den med en ny, tydelig bekræftelse.</p></div>
@@ -100,6 +103,8 @@ Ved en SQLSTATE42501 under arkivets DATA eller HISTORY kan den eksisterende fejl
 En fast relationslabel kræver ét entydigt match i den pågældende fases allerede komplette, identitetskontrollerede arkivinventar. Manglende eller modstridende inventory og private eller ukendte relationer beholder UNKNOWN-binding. Kun faste kategorier og SHA-256 af den begrænsede native objekttekst kan rapporteres. Denne hash er hverken et kanonisk kvalificeret relationsnavn, katalogbevis eller ret til at ændre adgang. Frie navne, SQL, fejltekst, rækker og andre private værdier udskrives ikke.
 
 Dette forklarer en allerede afvist operation; det ændrer ingen rolle, grant, SQL-strøm, constraint, rækkefølge, frist, oprindelig fejl eller acceptregel. De fem autentiske SQL-filer, indholds-/dublet-/sekvensparitet, Auth-funktion og ejet oprydning bevares. Den normale hele selvtest dækker klassifikation, privacy og de faktiske DATA-/HISTORY-fejlkaldere med syntetisk stderr. Den beviser ikke en bestemt årsag i originalarkivet eller en vellykket originalgendannelse. Præcis kildekvalifikation og et senere normalt originalforsøg skal stadig levere deres egne beviser.
+
+Den primære arkivgendannelse bruger den allerede kontrollerede lokale supabase_admin-session, fordi de oprindelige leverandørrelationer kræver denne ejeradgang. Den normale CHECK-suspension og -genoprettelse skal derfor bindes til samme præcise session_user, current_user og lokale postgres-database. Den afgrænsede rettelse ændrer ingen grants, originale SQL-filer eller CHECK-semantik. HISTORY og den syntetiske vej beholder den hidtidige postgres-kontrol. Den kildegennemgang fandt en konkret rollekonflikt før næste forsøg; de målrettede kalderprøver består, men faktisk original SQL-/Auth-gendannelse, autonom kvittering/rotation og samlet Free-klarhed er stadig åbne.
 
 
 ## 89.349 — AI vælger fakta, serveren skriver svaret
@@ -426,6 +431,10 @@ En faktisk bestået after599-PostgreSQL-fase kan kvalificeres særskilt som REUS
 Det eksisterende hele CURRENT-prøvemål får 480 sekunder i FULL-forløbet, så en langsommere testvært ikke dræber en fortsat aktiv prøve ved 300 sekunder. Dette er alene prøvens maksimum; det er ikke en ny ventetid eller en ændring af vejrhentningens frister. De gamle historiske 300-sekunders input beholder deres oprindelige betydning. Fjernelse af dobbeltarbejde og gyldigt fasegenbrug er de egentlige tidsbesparelser. Ingen ny tjeneste, kontrolramme, per-head-kohorte eller generel spring-over-markør indføres.
 
 Dette beskriver den sammenhængende kildekandidat. Præcis kildekvalifikation og normal levering er fortsat nødvendige. Alle fem mål, originaler, numeriske regler, kildeprioritet, adgang og databevarelse består.
+
+Den forberedte normale produktionskontrol undersøger den faktisk nye vejrpakke med ti artifactkommandoer og én versionskontrol i stedet for 55 og tre kommandoer. Den bevarer data, vejrhelbred, kyst- og zoneplan, geometri, offentlig deterministisk projektion og filintegritet, strøm-/cacheforhold, state-reference og adskilte kystdele. UI-, udviklings- og kildefixtures hører til ændringer af deres egne funktioner frem for hver vejrhentning. De øvrige private, offentlige, no-loss-, B/S/T-, ene-skriver- og leveringskontroller er uændrede. Der er 47 færre processtarter; den faktiske tidsbesparelse og næste normale produktionsvirkning er endnu ikke målt.
+
+Standardkildekontrollen består nu af otte faste kommandoer og de relevante hele prøver for de faktisk ændrede funktioner. Den eksisterende CURRENT-fortegnelse vælger disse fra den faktiske Git-diff; kun bytebeviste rene versionsskift fritages for en særskilt funktionsprøve. Et ukendt testansvar bliver tydeligt afvist frem for automatisk at starte 82 historiske kommandoer. Den store samlede601-ændring kan derfor stadig vælge væsentligt flere end otte mål; en lille delingsændring vælger tre relevante ekstra mål. Der påstås ingen historisk blanketudførelse eller SQL-kvalifikation fra denne kerne. Eksisterende native- og nationalfaser bevarer deres eget faktiske bevis. Den aktuelle pakkelæser kræver relevante entrypoints og bindinger, mens historiske whole-map-prøver bruger deres eget autentiske gamle input.
 
 
 ## 89.340 Ét sikkert Pages-genforsøg og frisk vejr bagefter

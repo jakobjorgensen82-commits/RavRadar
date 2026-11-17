@@ -1,3 +1,16 @@
+## 4.0.601 — ændringsbaseret kildevej og offentlig hjælp, kildekandidat
+
+- Otte kommandoers fast kildekerne med relevante ændrede funktioners eksisterende hele mål; otte er ikke et løfte om samlet antal i den store601-samling.
+- Historiske npm-scriptkort er ikke længere adgangskrav for den aktuelle app; gamle orakler læser deres egne autentiske kilder.
+- App-ejede lokale hjælpe- og praktiske ravkese-/strandsvar med hele spørgsmålets vagter, uændret numerisk service og ingen AI-provenienspåstand.
+- Præcis kildekvalifikation, offentlig levering og resterende samlet AI-/Free-accept er fortsat åbne.
+
+## 4.0.601 — kortere normal driftskontrol og rettet arkivkalder, kildekandidat
+
+- Normal artifact-/releasekontrol forkortes fra55+3 til10+1 aktuelle datakontroller; øvrige driftsværn bevares. Faktisk tidsbesparelse er ikke målt.
+- Arkivets CHECK-suspension og -genoprettelse bruger samme kontrollerede lokale administrator som den primære indlæsning. HISTORY beholder postgres; ingen originale SQL eller grants ændres.
+- Præcis kildekvalifikation, normal offentlig virkning og originalgendannelse er fortsat nødvendige.
+
 ## 4.0.601 — emneopfølgning og afgrænset UV-/mængdeviden, lokal kandidat
 
 ## Afgrænset kontroloprydning og privat månedskalder

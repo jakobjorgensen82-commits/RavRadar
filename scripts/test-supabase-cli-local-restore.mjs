@@ -576,7 +576,7 @@ async function* materializedRestoreBytes(c,archive,history=false,inputLines=null
     }
     if(c.archiveRelationInventory&&i===(history?1:2)){
       yield track(archiveRelationPreflightSql(c.archiveRelationInventory,history?'HISTORY_DATA':'DATA'),'RELATION_PREFLIGHT');
-      if(c.archive===true)yield track(archiveNotValidCheckSql(c.archiveRelationInventory,history?'HISTORY_DATA':'DATA'),'CHECK_SUSPEND');
+      if(c.archive===true)yield track(archiveNotValidCheckSql(c.archiveRelationInventory,history?'HISTORY_DATA':'DATA',false,!history),'CHECK_SUSPEND');
     }
     const owner=history?'HISTORY':['ROLES','SCHEMA','DATA'][i];
     const roleLines=owner==='ROLES'&&inputLines&&Object.hasOwn(inputLines,'roleLineClasses')?
@@ -607,7 +607,7 @@ async function* materializedRestoreBytes(c,archive,history=false,inputLines=null
     yield track(Buffer.from('\n'));
   }
   if(!history)yield track(Buffer.from(ARCHIVE_LOCAL_ADMIN_ROLE_CHECK),'DATA_ROLE_CHECK');
-  if(c.archive===true&&c.archiveRelationInventory)yield track(archiveNotValidCheckSql(c.archiveRelationInventory,history?'HISTORY_DATA':'DATA',true),'CHECK_RESTORE');
+  if(c.archive===true&&c.archiveRelationInventory)yield track(archiveNotValidCheckSql(c.archiveRelationInventory,history?'HISTORY_DATA':'DATA',true,!history),'CHECK_RESTORE');
 }
 
 // Same owned process-group timeout shape as export-supabase-database.mjs.
@@ -1440,9 +1440,15 @@ async function collectArchiveRelationInventory(c,archive){
   for(const phase of ['DATA','HISTORY_DATA'])archiveRelationPreflightSql(inventory,phase);return inventory;
 }
 // Keep complete CHECK metadata private; only counts/digest leave this transaction.
-function archiveNotValidCheckSql(inventory,phase,after=false){
+function archiveNotValidCheckSql(inventory,phase,after=false,localArchiveAdmin=false){
   need(inventory?.complete===true&&/^[a-f0-9]{64}$/.test(inventory.digest)
     &&['DATA','HISTORY_DATA'].includes(phase)&&typeof after==='boolean','ARCHIVE_RELATION_CHECK_INVENTORY');
+  need(typeof localArchiveAdmin==='boolean'&&(!localArchiveAdmin||phase==='DATA'),'ARCHIVE_CHECK_ROLE_MODE');
+  // Only the owned archive-B primary stream uses the asserted local admin.
+  // Synthetic and HISTORY retain their exact existing postgres contract.
+  const identityGuard=localArchiveAdmin
+    ? "IF session_user <> 'supabase_admin' OR current_user <> 'supabase_admin' OR current_database()<>'postgres' THEN RAISE SQLSTATE '42501'; END IF;"
+    : "IF current_user<>'postgres' OR current_database()<>'postgres' THEN RAISE SQLSTATE '42501'; END IF;";
   const maximum=4096,maximumBytes=8*1024*1024;
   const comparison='semantic,unsupported,unsafe';
   const same=`NOT EXISTS ((SELECT ${comparison} FROM pg_temp.rr_archive_check_snapshot EXCEPT ALL SELECT ${comparison} FROM pg_temp.rr_archive_check_live)`
@@ -1506,7 +1512,7 @@ function archiveNotValidCheckSql(inventory,phase,after=false){
   const changedDetail=diagnostic('ARCHIVE_CHECK_CATALOG_CHANGED',differenceCounts)+"::text";
   const sql=after?String.raw`SET LOCAL search_path=pg_catalog;
 DO $rr_archive_check_restore$ DECLARE item record; BEGIN
-  IF current_user<>'postgres' OR current_database()<>'postgres' THEN RAISE SQLSTATE '42501'; END IF;
+  ${identityGuard}
   FOR item IN SELECT * FROM pg_temp.rr_archive_check_staged ORDER BY constraint_oid LOOP
     EXECUTE pg_catalog.format('ALTER TABLE %I.%I ADD CONSTRAINT %I %s',item.schema_name,item.table_name,item.conname,item.definition);
     IF item.comment IS NOT NULL THEN
@@ -1534,7 +1540,7 @@ JOIN pg_catalog.pg_constraint con ON con.oid=snapshot.constraint_oid
 WHERE NOT snapshot.convalidated AND snapshot.unsupported IS FALSE
   AND EXISTS(SELECT 1 FROM required e WHERE pg_catalog.to_regclass(e.qualified)=con.conrelid);
 DO $rr_archive_check_suspend$ DECLARE item record; diagnostic_detail text; BEGIN
-  IF current_user<>'postgres' OR current_database()<>'postgres' THEN RAISE SQLSTATE '42501'; END IF;
+  ${identityGuard}
   IF (SELECT count(*) FROM pg_temp.rr_archive_check_snapshot)>${maximum}
     OR (SELECT coalesce(sum(pg_catalog.pg_column_size(semantic)),0) FROM pg_temp.rr_archive_check_snapshot)>${maximumBytes}
     OR EXISTS(SELECT 1 FROM pg_temp.rr_archive_check_snapshot WHERE NOT convalidated AND
@@ -2384,10 +2390,17 @@ async function selfTest(){
   });
   test('CHECK_SUSPEND separates the exact COPY staging set from the complete CHECK control group',()=>{
     const f=suspendDiagnosticFixture();
-    for(const phase of ['DATA','HISTORY_DATA']){
-      const sql=archiveNotValidCheckSql(f.inventory,phase).toString(),post=archiveNotValidCheckSql(f.inventory,phase,true).toString();
+    for(const [phase,localArchiveAdmin]of [['DATA',false],['DATA',true],['HISTORY_DATA',false]]){
+      const sql=archiveNotValidCheckSql(f.inventory,phase,false,localArchiveAdmin).toString(),post=archiveNotValidCheckSql(f.inventory,phase,true,localArchiveAdmin).toString();
       for(const reason of Object.keys(ARCHIVE_CHECK_SUSPEND_COUNTS))assert(sql.includes("RAISE SQLSTATE 'P0001' USING MESSAGE='"+reason+"', DETAIL="));
-      assert(sql.includes("IF current_user<>'postgres' OR current_database()<>'postgres' THEN RAISE SQLSTATE '42501'; END IF;"));
+      const guard=localArchiveAdmin
+        ? "IF session_user <> 'supabase_admin' OR current_user <> 'supabase_admin' OR current_database()<>'postgres' THEN RAISE SQLSTATE '42501'; END IF;"
+        : "IF current_user<>'postgres' OR current_database()<>'postgres' THEN RAISE SQLSTATE '42501'; END IF;";
+      assert(sql.includes(guard));assert(post.includes(guard));
+      assert(!sql.includes(localArchiveAdmin?"IF current_user<>'postgres'":"IF session_user <> 'supabase_admin'"));
+      for(const invalidMode of ['postgres','supabase_admin',null,{}])
+        assert.throws(()=>archiveNotValidCheckSql(f.inventory,phase,false,invalidMode),e=>e.code==='ARCHIVE_CHECK_ROLE_MODE');
+      assert.throws(()=>archiveNotValidCheckSql(f.inventory,'HISTORY_DATA',false,true),e=>e.code==='ARCHIVE_CHECK_ROLE_MODE');
       assert(sql.includes('FROM pg_temp.rr_archive_check_snapshot)>4096'));
       assert(sql.includes('FROM pg_temp.rr_archive_check_snapshot)>8388608'));
       assert(sql.includes("unsafe IS DISTINCT FROM false OR pg_catalog.octet_length(definition)>131072"));
@@ -3367,6 +3380,12 @@ async function selfTest(){
         const streamed=[];for await(const part of materializedRestoreBytes(c,archive,historyPhase))streamed.push(part);
         const original=await fs.readFile(path.join(archive.directory,historyPhase?'history-data.sql':'data.sql'));
         const wire=Buffer.concat(streamed);assert(wire.indexOf(query)<wire.indexOf(original));assert(wire.includes(original));
+        const expectedGuard=historyPhase
+          ? "IF current_user<>'postgres' OR current_database()<>'postgres' THEN RAISE SQLSTATE '42501'; END IF;"
+          : "IF session_user <> 'supabase_admin' OR current_user <> 'supabase_admin' OR current_database()<>'postgres' THEN RAISE SQLSTATE '42501'; END IF;";
+        const guardBytes=Buffer.from(expectedGuard);assert.equal(wire.indexOf(guardBytes)<wire.indexOf(original),true);
+        assert.equal(wire.indexOf(guardBytes,wire.indexOf(original)+original.length)>wire.indexOf(original),true,
+          'CHECK restoration must preserve the same exact phase identity');
         const report={kind:'ARCHIVE_RELATION_PREFLIGHT_V1',phase,inventorySha256:inventory.digest,completeParse:true,
           copyTargets:rows.filter(r=>r.kind==='COPY').length,sequenceTargets:rows.filter(r=>r.kind==='SEQUENCE').length,
           missingCount:0,wrongKindCount:0,missingBySchema:{},wrongKindBySchema:{},missingFixedRelations:[],wrongKindFixedRelations:[]};

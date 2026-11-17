@@ -352,7 +352,7 @@ export async function verifyAssistantAfter597SourceTarget(){
   const pkg=JSON.parse(await fs.readFile(path.join(ROOT,'package.json'),'utf8'));
   verifyAssistantAfter597Package(pkg);
   // The preceding normal builder --active --check owns exact C/I/T/SQL bytes.
-  // This target adds the full package inverse and genuine canonical reader.
+  // This target checks the current package entrypoints and genuine canonical reader.
   const canonical=await readAssistantAfter597CanonicalSource();
   assert.equal(sha(canonical.canonicalSource),output.canonicalSha256);
   return Object.freeze({kind:'ASSISTANT_AFTER597_SOURCE_TARGET',sourcePhase:ASSISTANT_AFTER597_PHASE,
@@ -412,7 +412,15 @@ export function verifyAssistantAfter598Package(pkg){
   return inverseAssistantAfter598Package(pkg);
 }
 export function verifyAssistantAfter599Package(pkg){
-  return inverseAssistantAfter599Package(pkg);
+  requireAssistantAfter599Output();
+  assert.equal(arguments.length,1);
+  assertAssistantAfter599ApplicationRelease(pkg.version);
+  assert.equal(pkg.scripts?.['test:assistant-later-h0-source'],ASSISTANT_AFTER599_SOURCE_COMMAND);
+  assert.equal(pkg.scripts?.['validate:source'],'node scripts/validate-source-once.mjs');
+  assert.equal(pkg.scripts?.['source:critical-gate'],'node scripts/source-critical-gate.mjs');
+  // Current app/version, issued model and actual source entrypoints are relevant.
+  // The old complete npm map is historical test data, not numerical provenance.
+  return pkg;
 }
 export async function verifyAssistantAfter598SourceTarget(){
   const output=requireAssistantAfter598Output(); // FIRST: NULL never reads files.
@@ -422,7 +430,7 @@ export async function verifyAssistantAfter598SourceTarget(){
   const pkg=JSON.parse(await fs.readFile(path.join(ROOT,'package.json'),'utf8'));
   verifyAssistantAfter598Package(pkg);
   // The preceding normal builder --active --check owns exact C/I/T/SQL bytes.
-  // This target adds the full package inverse and genuine canonical reader.
+  // This target checks the current package entrypoints and genuine canonical reader.
   const binding=requireAssistantAfter598Binding();
   const [integrated,candidate,continuation]=await Promise.all([
     import('../js/core/ravscore-model-contract.js'),import('./rollback-assets/ravscore-model-contract.js'),
@@ -444,7 +452,7 @@ export async function verifyAssistantAfter599SourceTarget(){
   const pkg=JSON.parse(await fs.readFile(path.join(ROOT,'package.json'),'utf8'));
   verifyAssistantAfter599Package(pkg);
   // The preceding normal builder --active --check owns exact C/I/T/SQL bytes.
-  // This target adds the full package inverse and genuine canonical reader.
+  // This target checks the current package entrypoints and genuine canonical reader.
   const binding=requireAssistantAfter599Binding();
   const [integrated,candidate,continuation]=await Promise.all([
     import('../js/core/ravscore-model-contract.js'),import('./rollback-assets/ravscore-model-contract.js'),

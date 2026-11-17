@@ -1398,7 +1398,9 @@ test('compact-sharing registration qualifies actual592 plan once before unchange
     const changed=structuredClone(actual.scripts),changedHistorical=structuredClone(historical.scripts);
     mutate(changed);mutate(changedHistorical);
     assert.throws(()=>inverseReviewedForecastShareProjectionSourceScripts(changedHistorical));
-    assert.throws(()=>verifyActual({...actual,scripts:changed}));
+    if(!after599Current)assert.throws(()=>verifyActual({...actual,scripts:changed}));
+    else assert.doesNotThrow(()=>verifyActual({...actual,scripts:changed}),
+      'Historical unrelated npm form is not a current model input');
   }
   assert.throws(()=>inverseReviewedForecastShareProjectionSourceScripts(historical.scripts,{}));
 });
