@@ -4,6 +4,8 @@ Den navngivne601-families normale FULL-læser kontrollerer producentens egen app
 
 Den generiske migrationsgenlæsning vælger præcis én navngiven familievalidator. En allerede godkendt after598-gren falder ikke bagefter igennem til public587. De konkrete familie-, parser-, ledger-, pending- og ukendt-version-afslag består. De almindelige sourceejere og testomfang bevares; der indføres ingen ny valideringsramme eller genbrugsvej. Lokale protokolprøver er fortsat ikke faktisk PostgreSQL eller kilde-CI for601.
 
+De tidlige normale593/591-orakler registrerer også den navngivne after599-familie med autentiske594-/599-kildeinput; historiske facit, den særskilte SQL-forberedelsesguard og de rå aktuelle ordinary-runtimeafslag bevares.
+
 ## Lukket after599-register og nativeledgerens bevisgrænse
 
 En ny navngiven familie udvider kun eksisterende normale source-, factory-, runtime-, retention-, reconcile-, installerings- og kvitteringsejere. Den ændrer ikke historiske ankre eller facit. En snæver semantisk registerinverse rekonstruerer hele det allerede kvalificerede after598-førbillede gennem den eksisterende regel; den almindelige lexer afviser nye imports i fragmenterne, og manglende/dublerede/fremmede registerdele samt ændret generisk loader eller cleanup afvises. De oprindelige leaf-orakler bruger deres egne autentiske reader-/lexer-/sourcebytes. Aktuelle ejere prøves særskilt råt; historisk input giver ingen aktuel genbrugsautoritet.

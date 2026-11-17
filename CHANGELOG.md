@@ -4,6 +4,8 @@ Assistenten bevarer kvalifikationerne i et nyt emnebundet spørgsmål på dansk,
 
 Kandidaten bruger den normale nye binding efter ægte599 og app600. C/I/T og privat DATA-preview er afledt normalt, mens alle76 udstedte SQL-originaler bevares. Nativeledgerens syntetiske førinput er adskilt fra faktisk udført SQL. Den ene nye append er nu lokalt udstedt gennem normalvejen. Frisk FULL/PG/native, installation og hosted/offentlig AI-accept for601 er fortsat åbne. Native/FULL-admission kræver det komplette aktuelle77/49/28-appfacit og producentens egne releasebindinger; den generiske migrationsgenlæsning vælger kun én familievalidator. App600s manuelle kontoslettefunktion og selvstændige levering bevares.
 
+De tidlige normale593/591-orakler registrerer også den navngivne after599-familie med autentiske594-/599-kildeinput; historiske facit, den særskilte SQL-forberedelsesguard og de rå aktuelle ordinary-runtimeafslag bevares.
+
 Arkivlæseren medtager en selvstændig rettelse af et autentisk DATA/42501-afslag: den allerede ejede lokale supabase_admin-session nedskiftes ikke længere til postgres før ROLES/SCHEMA/DATA. Tre identitetskontroller og alle fem originale SQL-strømme med deres hashes bevares; ingen ny GRANT, ownerændring eller rolletildeling indføres.
 
 HISTORY beholder postgres og faktisk uafprøvet originalautoritet. Den normale lokale selvtest er bestået, men præcis samlet kildekvalifikation, Linux/SQL, originalrestore, indholds-/Auth-accept, autonom kvittering, rotation og Free-klarhed er fortsat åbne. Ingen produktionsgendannelse er udført. Se håndbog 89.350.
