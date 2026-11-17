@@ -615,7 +615,7 @@ async function main(){
     const file=path.join(ROOT,'supabase/migrations',assistantAfter599Migration().filename);
     if(args[1]==='--write')await fs.writeFile(file,result.migration,{flag:'wx'});
     else assert.deepEqual(await fs.readFile(file),Buffer.from(result.migration));
-    console.log('Præcis assistentkilde efter598 kontrolleret; ingen installation eller tilstandsoptagelse.');
+    console.log('Præcis assistentkilde efter599 kontrolleret; ingen installation eller tilstandsoptagelse.');
     return;
   }
 

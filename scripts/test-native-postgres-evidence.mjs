@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import {inverseReviewedAfter599PackageForHistoricalOracles} from './lib/account-statistics-assistant-package-review.mjs';
 import test from 'node:test';
 import {inverseSourceBeforePostgresWorkflow, SOURCE_BEFORE_POSTGRES_BLOCK,
   SCALAR597_LATER_H0_SOURCE_COMMAND,inverseScalar597LaterH0Package,verifyScalar597LaterH0NativeContext,
-  ASSISTANT_AFTER598_SOURCE_COMMAND,inverseAssistantAfter598Package,
+  ASSISTANT_AFTER599_SOURCE_COMMAND,ASSISTANT_AFTER598_SOURCE_COMMAND,inverseAssistantAfter598Package,
   scalar597LaterH0NativeClaims,ASSISTANT_AFTER597_SOURCE_COMMAND,inverseAssistantAfter597Package}
   from './national584-source-evidence.mjs';
 import {projectSourceImpactWorkflowFull,inverseOwnedCacheNativeWorkflow,OWNED_CACHE_NATIVE_EARLY_STEP_NAMES}
@@ -17,6 +18,7 @@ import {ORIGIN, WORKFLOW, JOB, STEP, COMMANDS, ACCOUNT_STATISTICS_ASSISTANT_COMM
   SCALAR597_LATER_H0_PHASE,SCALAR597_LATER_H0_PHASE_KIND,SCALAR597_LATER_H0_COMMANDS,SCALAR597_LATER_H0_SCRIPT,
   scalar597NativeReportCollector,verifyScalar597LaterH0PhaseReceipt,
   ASSISTANT_AFTER597_PHASE,ASSISTANT_AFTER597_COMMANDS,ASSISTANT_AFTER597_SCRIPT,
+  ASSISTANT_AFTER599_PHASE,ASSISTANT_AFTER599_COMMANDS,ASSISTANT_AFTER599_SCRIPT,
   ASSISTANT_AFTER598_PHASE,ASSISTANT_AFTER598_COMMANDS,ASSISTANT_AFTER598_SCRIPT,
   ASSISTANT_LATER_H0_PHASE_KIND,verifyAssistantLaterH0PhaseReceipt,
   inverseCurrent586PhaseUpload,verifyCurrent586Workflow,verifyCurrent586Runtime,
@@ -595,7 +597,10 @@ test('public587 successor native commands append588 without retagging whole587 i
   assert.deepEqual(ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS,[ASSISTANT_LATER_H0_COMMANDS[0],
     ASSISTANT_LATER_H0_COMMANDS[1]+' --assistant-public587-successor']);
   assert.equal(ASSISTANT_PUBLIC587_SUCCESSOR_SCRIPT,'set -euo pipefail\n'+ASSISTANT_PUBLIC587_SUCCESSOR_COMMANDS.join('\n')+'\n');
-  if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase===ASSISTANT_AFTER598_PHASE){
+  if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase===ASSISTANT_AFTER599_PHASE){
+    assert.equal(ACTIVE_COMMANDS,ASSISTANT_AFTER599_COMMANDS);
+    assert.equal(ACTIVE_NATIVE_SCRIPT,ASSISTANT_AFTER599_SCRIPT);
+  }else if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase===ASSISTANT_AFTER598_PHASE){
     assert.equal(ACTIVE_COMMANDS,ASSISTANT_AFTER598_COMMANDS);
     assert.equal(ACTIVE_NATIVE_SCRIPT,ASSISTANT_AFTER598_SCRIPT);
   }else if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase===ASSISTANT_AFTER597_PHASE){
@@ -845,7 +850,9 @@ test('calendar588 normal native route uses genuine parent factory then current c
   const main=evidence.slice(evidence.indexOf('async function main() {'));
   assert(main.indexOf('requireAssistantPublic588SuccessorRelease()')<main.indexOf('spawnSync('));
   assert(!main.includes('await decideReuse('));assert(!main.includes('await decideCurrent586Reuse('));
-  if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase===ASSISTANT_AFTER598_PHASE)
+  if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase===ASSISTANT_AFTER599_PHASE)
+    assert.equal(ACTIVE_COMMANDS,ASSISTANT_AFTER599_COMMANDS);
+  else if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase===ASSISTANT_AFTER598_PHASE)
     assert.equal(ACTIVE_COMMANDS,ASSISTANT_AFTER598_COMMANDS);
   else if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase===ASSISTANT_AFTER597_PHASE)
     assert.equal(ACTIVE_COMMANDS,ASSISTANT_AFTER597_COMMANDS);
@@ -865,6 +872,7 @@ test('calendar588 normal native route uses genuine parent factory then current c
 test('calendar588 normal source command follows only its source-owned active profile',async()=>{
   const packageData=JSON.parse(await fs.readFile('package.json','utf8'));
   assert.equal(packageData.scripts['test:assistant-later-h0-source'],
+    ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase===ASSISTANT_AFTER599_PHASE?ASSISTANT_AFTER599_SOURCE_COMMAND:
     ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase===ASSISTANT_AFTER598_PHASE?ASSISTANT_AFTER598_SOURCE_COMMAND:
     ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase===ASSISTANT_AFTER597_PHASE?ASSISTANT_AFTER597_SOURCE_COMMAND:
     ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase===SCALAR597_LATER_H0_PHASE?SCALAR597_LATER_H0_SOURCE_COMMAND:
@@ -1215,7 +1223,7 @@ test('593 V2 input capture closes65 modules/four JSON/all71 SQL and package scop
   const {execFileSync}=await import('node:child_process'),cache=new Map(),requests=[];
   const readGit=args=>{const key=JSON.stringify(args);requests.push(args);
     if(!cache.has(key))cache.set(key,execFileSync('git',
-      [ASSISTANT_AFTER598_PHASE,ASSISTANT_AFTER597_PHASE,SCALAR597_LATER_H0_PHASE,'assistant-installed593-origin591-successor'].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase)
+      [ASSISTANT_AFTER599_PHASE,ASSISTANT_AFTER598_PHASE,ASSISTANT_AFTER597_PHASE,SCALAR597_LATER_H0_PHASE,'assistant-installed593-origin591-successor'].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase)
         ?args.map(arg=>arg==='HEAD'?FROZEN593_NATIVE_CODE.head:arg.startsWith('HEAD:')?FROZEN593_NATIVE_CODE.head+arg.slice(4):arg):args,
       {encoding:'utf8',maxBuffer:64*1024*1024,env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0'}}));return cache.get(key);};
   const original=await captureAssistantPublic591Input({root:sourceRoot,readGit});
@@ -1262,7 +1270,7 @@ test('593 V2 input capture closes65 modules/four JSON/all71 SQL and package scop
   await assert.rejects(captureAssistantPublic591Input({physical:false,readGit:args=>
     args[0]==='rev-parse'&&args[1]===ASSISTANT_PUBLIC591_FROZEN.at(-1).head+'^{tree}'?'d'.repeat(40):readGit(args)}));
   };
-  if([ASSISTANT_AFTER598_PHASE,ASSISTANT_AFTER597_PHASE,SCALAR597_LATER_H0_PHASE,'assistant-installed593-origin591-successor'].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase))
+  if([ASSISTANT_AFTER599_PHASE,ASSISTANT_AFTER598_PHASE,ASSISTANT_AFTER597_PHASE,SCALAR597_LATER_H0_PHASE,'assistant-installed593-origin591-successor'].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase))
     await withInstalled593CodePredecessorSource(check);
   else await check(process.cwd());
 });
@@ -1527,7 +1535,7 @@ test('593 quartet observation remains conditional and follows proved cleanup wit
 
 test('597 quartet observation is conditional and follows proved stop and cleanup before the completed report',async()=>{
   const source=await fs.readFile('scripts/lib/checkpoint-cas-native-postgres.mjs','utf8');
-  const before=source.indexOf('const nativeProgramsBefore=includeAssistantPublic591Successor||includeScalar597LaterH0Successor||includeAssistantAfter597Successor||includeAssistantAfter598Successor\n    ?await nativePostgresProgramIdentity(programs):null;');
+  const before=source.indexOf('const nativeProgramsBefore=includeAssistantPublic591Successor||includeScalar597LaterH0Successor||includeAssistantAfter597Successor||includeAssistantAfter598Successor||includeAssistantAfter599Successor\n    ?await nativePostgresProgramIdentity(programs):null;');
   const setup=source.indexOf("const root = await fs.mkdtemp(path.join(os.tmpdir(), 'rr-checkpoint-pg-'))",before);
   const stop=source.indexOf("assert.equal(stop.code,0,'native server stop was not proved; preserve directory');",setup);
   const terminal=source.indexOf("assert.equal(status.code,3,'native server is not physically terminal; preserve directory');",stop);
@@ -1573,7 +1581,7 @@ import {withFrozen593CheckpointPostgresSource} from './run-frozen586-assistant-l
 import {FROZEN593_NATIVE_CODE,verifyFrozen593NativeCodeManifest,withInstalled593CodePredecessorSource} from './check-installed593-code-predecessor-source.mjs';
 const FROZEN594_NATIVE_EVIDENCE_HEAD='84051e2d700595837ebf80426410dcbef8e08704';
 async function historical593ImportReviewSource(file){
-  if([ASSISTANT_AFTER598_PHASE,ASSISTANT_AFTER597_PHASE,SCALAR597_LATER_H0_PHASE,'assistant-installed593-origin591-successor'].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase)
+  if([ASSISTANT_AFTER599_PHASE,ASSISTANT_AFTER598_PHASE,ASSISTANT_AFTER597_PHASE,SCALAR597_LATER_H0_PHASE,'assistant-installed593-origin591-successor'].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase)
     &&Object.hasOwn(reviewedConditions593ImportViews,file)){
     const {execFileSync}=await import('node:child_process');
     return execFileSync('git',['cat-file','blob',FROZEN593_NATIVE_CODE.head+':'+file],{
@@ -1591,7 +1599,7 @@ function installed594Receipt(){return {schemaVersion:1,kind:INSTALLED593_ORIGINA
   commands:[...INSTALLED593_ORIGINAL591_COMMANDS],status:'EXECUTED',executedInThisRun:true,origin:null,eligibleForReuse:false};}
 
 test('installed593 new594 active native commands and receipt refuse predecessor, reused and changed inputs',()=>{
-  if([ASSISTANT_AFTER598_PHASE,ASSISTANT_AFTER597_PHASE,SCALAR597_LATER_H0_PHASE].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase)){
+  if([ASSISTANT_AFTER599_PHASE,ASSISTANT_AFTER598_PHASE,ASSISTANT_AFTER597_PHASE,SCALAR597_LATER_H0_PHASE].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase)){
     assert.notDeepEqual(ACTIVE_COMMANDS,INSTALLED593_ORIGINAL591_COMMANDS);
     assert.notEqual(ACTIVE_NATIVE_SCRIPT,INSTALLED593_ORIGINAL591_SCRIPT);
   }else{
@@ -1618,11 +1626,12 @@ test('installed593 new594 active native commands and receipt refuse predecessor,
 
 test('installed593 new594 normal national caller preserves package and executed-only native claims',async()=>{
   const activePackage=JSON.parse(await fs.readFile('package.json','utf8')),receipt=installed594Receipt();
-  const beforeAfter597=ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase===ASSISTANT_AFTER598_PHASE
-    ?inverseAssistantAfter598Package(activePackage):activePackage;
-  const scalarPackage=[ASSISTANT_AFTER598_PHASE,ASSISTANT_AFTER597_PHASE].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase)
+  const beforeAfter597=AFTER599_ACTIVE?await inverseReviewedAfter599PackageForHistoricalOracles(activePackage)
+    :ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase===ASSISTANT_AFTER598_PHASE
+      ?inverseAssistantAfter598Package(activePackage):activePackage;
+  const scalarPackage=[ASSISTANT_AFTER599_PHASE,ASSISTANT_AFTER598_PHASE,ASSISTANT_AFTER597_PHASE].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase)
     ?inverseAssistantAfter597Package(beforeAfter597):beforeAfter597;
-  const pkg=[ASSISTANT_AFTER598_PHASE,ASSISTANT_AFTER597_PHASE,SCALAR597_LATER_H0_PHASE].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase)
+  const pkg=[ASSISTANT_AFTER599_PHASE,ASSISTANT_AFTER598_PHASE,ASSISTANT_AFTER597_PHASE,SCALAR597_LATER_H0_PHASE].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase)
     ?inverseScalar597LaterH0Package(scalarPackage):scalarPackage;
   verifyInstalled593Original591Package(pkg);
   verifyInstalled593Original591NativeContext(receipt,receipt.current,pkg.version);
@@ -1693,7 +1702,7 @@ test('594 V2 normal capture binds66 actual modules/five data/all72 SQL, controls
   const {execFileSync}=await import('node:child_process'),cache=new Map(),selected=new Set();
   const readGit=args=>{const key=JSON.stringify(args);if(args[0]==='cat-file')selected.add(args[2].split(':').slice(1).join(':'));
     if(!cache.has(key))cache.set(key,execFileSync('git',
-      [ASSISTANT_AFTER598_PHASE,ASSISTANT_AFTER597_PHASE,SCALAR597_LATER_H0_PHASE].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase)
+      [ASSISTANT_AFTER599_PHASE,ASSISTANT_AFTER598_PHASE,ASSISTANT_AFTER597_PHASE,SCALAR597_LATER_H0_PHASE].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase)
         ?args.map(arg=>arg==='HEAD'?FROZEN594_NATIVE_EVIDENCE_HEAD:
           arg.startsWith('HEAD:')?FROZEN594_NATIVE_EVIDENCE_HEAD+arg.slice(4):arg):args,
       {encoding:'utf8',maxBuffer:64*1024*1024,timeout:30000,
