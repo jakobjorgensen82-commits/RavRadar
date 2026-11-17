@@ -22,6 +22,7 @@ const IMAGES=Object.freeze({db:'supabase/postgres:17.6.1.167',kong:'kong:2.8.1',
 const ARCHIVE_VENDOR_IMAGES=Object.freeze({auth:'supabase/gotrue:v2.197.0',storage:'supabase/storage-api:v1.86.0'});
 const ARCHIVE_VENDOR_PINS=Object.freeze({'gotrue-version':'v2.197.0\n','storage-version':'v1.86.0\n'});
 const NATIVE_ACTIVITY_VENDOR_PINS=Object.freeze({...ARCHIVE_VENDOR_PINS,'gotrue-version':IMAGES.auth.split(':').at(-1)+'\n'});
+const NATIVE_ACTIVITY_B9_ROLE_MARKER='NATIVE_ACTIVITY_B9_ROLE_CONFIRMED';
 const EXCLUDE='realtime,storage-api,imgproxy,edge-runtime,postgres-meta,studio,supavisor,logflare,vector,mailpit,postgrest';
 const FILES=['roles.sql','schema.sql','data.sql','history_schema.sql','history_data.sql'];
 const ARCHIVE_FILES=['roles.sql','schema.sql','data.sql','history-schema.sql','history-data.sql'];
@@ -195,6 +196,8 @@ function safeError(error,stage){
       &&NATIVE_ACTIVITY_NOTICE_HOLD_REASONS.includes(error.nativeActivityNoticeHoldReason)?{nativeActivityNoticeHoldReason:error.nativeActivityNoticeHoldReason}:{}),
     ...(stage==='NATIVE_ACTIVITY_SQL'&&error?.code==='NATIVE_ACTIVITY_QUALIFIED_READY'&&error?.nativeActivityNoticeHoldReason==='TARGET_POLICY'
       ?nativeActivityTargetPolicyDiagnostic(error.nativeActivityTargetPolicy):{}),
+    ...(stage==='NATIVE_ACTIVITY_B9_ROLE'&&typeof error?.nativeActivityB9RoleConfirmed==='boolean'
+      ?{nativeActivityB9RoleConfirmed:error.nativeActivityB9RoleConfirmed}:{}),
     ...(stage==='NATIVE_ACTIVITY_APP_FIXTURE'&&[...NATIVE_ACTIVITY_APP_PARTS,'UNKNOWN'].includes(error?.nativeActivityFixturePart)
       ?{nativeActivityFixturePart:error.nativeActivityFixturePart}:{}),
     ...(ARCHIVE_SQL_OWNERS.includes(error?.inputOwner)?{inputOwner:error.inputOwner}:{}),
@@ -702,6 +705,8 @@ async function command(c,stage,bin,args,{cwd=c.root,input=null,maxMs=P.childMs,a
     if(first){if(first.code==='CHILD_EXIT')first.code=diagnosticClass(Buffer.concat(err));
       if(c.archive===false&&stage==='NATIVE_ACTIVITY_APP_FIXTURE')
         Object.assign(first,nativeActivityAppDiagnostic(c,stage,Buffer.concat(err),first.code,inputLines));
+      if(c.archive===false&&stage==='NATIVE_ACTIVITY_B9_ROLE'&&inputLines?.nativeActivityB9Role===true)
+        first.nativeActivityB9RoleConfirmed=Buffer.concat(out).equals(Buffer.from(NATIVE_ACTIVITY_B9_ROLE_MARKER+'\n'));
       first.exit=exit;throw first;}
     return Buffer.concat(out);
   }finally{
@@ -916,8 +921,14 @@ async function psql(c,p,stage,bytes,inputLines=null){
   return command(c,stage,'docker',psqlArguments(c,p,stage,inputLines),
     {input:bytes,maxMs:90_000,archivePsql:!Buffer.isBuffer(bytes),inputLines});
 }
-function archiveBootstrapPsqlArguments(c,p){
-  need(c.archive===true&&p.side==='B'&&/^[a-f0-9]{64}$/.test(p.db??''),'ARCHIVE_BOOTSTRAP_TARGET');
+function archiveBootstrapPsqlArguments(c,p,nativeB9=false){
+  if(nativeB9){
+    need(nativeB9===true&&c.archive===false&&/^[1-9][0-9]{0,18}-1$/.test(c.owner??'')&&path.isAbsolute(c.root)
+      &&p.side==='B'&&p.id==='rr_restore_'+c.owner.replace('-','_')+'_b'&&p.dir===path.join(c.root,'B')
+      &&p.network==='rr-restore-'+c.owner+'-b'&&/^[a-f0-9]{64}$/.test(p.networkId??'')
+      &&/^[a-f0-9]{64}$/.test(p.db??'')&&p.startAttempted===true&&p.networkCreated===true&&p.closed!==true
+      &&p.nativeStorageBootstrap===true&&/^sha256:[a-f0-9]{64}$/.test(c.images?.auth?.id??''),'NATIVE_ACTIVITY_B9_TRANSPORT');
+  }else need(nativeB9===false&&c.archive===true&&p.side==='B'&&/^[a-f0-9]{64}$/.test(p.db??''),'ARCHIVE_BOOTSTRAP_TARGET');
   const shell=[
     'test "${POSTGRES_HOST:-}" = /var/run/postgresql',
     'test -n "${POSTGRES_PASSWORD:-}"',
@@ -927,6 +938,32 @@ function archiveBootstrapPsqlArguments(c,p){
   // Run the initial role assertion before stdin so archive error line numbers stay physical.
   const bootstrapRole="DO $rr_restore$ BEGIN IF session_user <> 'supabase_admin' OR current_user <> 'supabase_admin' THEN RAISE SQLSTATE '42501'; END IF; END; $rr_restore$;";
   return ['exec','-i',p.db,'sh','-ceu',shell,'archive-bootstrap',bootstrapRole];
+}
+function nativeActivityB9RoleInput(roleName,kind,payload){
+  need(['supabase_auth_admin','anon','authenticated','service_role'].includes(roleName),'NATIVE_ACTIVITY_B9_ROLE_INPUT');
+  let expression;
+  if(kind==='token-hook'){
+    const json=JSON.stringify(payload);need(typeof json==='string'&&Buffer.byteLength(json)<=8192,'NATIVE_ACTIVITY_B9_ROLE_INPUT');
+    expression='public.account_native_activity_token_hook('+sqlString(json)+'::jsonb)';
+  }else{
+    need(kind==='private-capture'&&uuid(payload),'NATIVE_ACTIVITY_B9_ROLE_INPUT');
+    expression="public.account_native_activity_capture('"+payload+"')";
+  }
+  // ACL tests need controlled SET ROLE, not a new role grant. The marker is
+  // emitted only after the real role is entered; a failed switch cannot count
+  // as the expected function EXECUTE denial in a negative case.
+  return Buffer.from(`set local role ${roleName};
+do $rr_native_b9_role$ begin
+ if session_user <> 'supabase_admin' or current_user <> '${roleName}' then raise sqlstate '42501';end if;
+end $rr_native_b9_role$;
+select '${NATIVE_ACTIVITY_B9_ROLE_MARKER}';
+select ${expression};\n`);
+}
+async function nativeActivityB9RoleSql(c,p,roleName,kind,payload){
+  const args=archiveBootstrapPsqlArguments(c,p,true),input=nativeActivityB9RoleInput(roleName,kind,payload);
+  const text=(await command(c,'NATIVE_ACTIVITY_B9_ROLE','docker',args,{input,maxMs:90_000,
+    inputLines:{nativeActivityB9Role:true}})).toString().trim();
+  need(text.startsWith(NATIVE_ACTIVITY_B9_ROLE_MARKER+'\n'),'NATIVE_ACTIVITY_B9_ROLE_UNCONFIRMED');return text;
 }
 function restoreArchiveSql(c,p,stage,archive,history=false){
   if(c.archive===true){
@@ -1502,14 +1539,14 @@ async function verifySyntheticBNativeActivityCapture(c,p,fixtureActorId){
     await flags(target.id);pass('B8_LOGOUT_AND_REJECTED_REUSE_COMMIT_WITHOUT_CAPTURE_HOOK');
 
     const event={user_id:target.id,claims:{sub:target.id,role:'authenticated',aud:'authenticated',custom:{unchanged:true}}};
-    const same=await sql(`set local role supabase_auth_admin;select public.account_native_activity_token_hook(${sqlString(JSON.stringify(event))}::jsonb);`);
+    const same=await nativeActivityB9RoleSql(c,p,'supabase_auth_admin','token-hook',event);
     assert.deepEqual(JSON.parse(same.split('\n').at(-1)),{claims:event.claims});
     for(const roleName of ['anon','authenticated','service_role'])
-      await assert.rejects(()=>sql(`set local role ${roleName};select public.account_native_activity_token_hook(${sqlString(JSON.stringify(event))}::jsonb);`),e=>e.code==='SQLSTATE_42501');
+      await assert.rejects(()=>nativeActivityB9RoleSql(c,p,roleName,'token-hook',event),e=>e.code==='SQLSTATE_42501'&&e.nativeActivityB9RoleConfirmed===true);
     for(const roleName of ['anon','authenticated','service_role','supabase_auth_admin'])
-      await assert.rejects(()=>sql(`set local role ${roleName};select public.account_native_activity_capture('${target.id}');`),e=>e.code==='SQLSTATE_42501');
+      await assert.rejects(()=>nativeActivityB9RoleSql(c,p,roleName,'private-capture',target.id),e=>e.code==='SQLSTATE_42501'&&e.nativeActivityB9RoleConfirmed===true);
     for(const invalid of [{...event,user_id:crypto.randomUUID()},{user_id:target.id,claims:null}])
-      await assert.rejects(()=>sql(`set local role supabase_auth_admin;select public.account_native_activity_token_hook(${sqlString(JSON.stringify(invalid))}::jsonb);`),e=>e.code==='SQLSTATE_22023');
+      await assert.rejects(()=>nativeActivityB9RoleSql(c,p,'supabase_auth_admin','token-hook',invalid),e=>e.code==='SQLSTATE_22023'&&e.nativeActivityB9RoleConfirmed===true);
     const fenced=await fresh();
     await sql(`insert into public.account_erasure_operations(operation_id,target_user_id,requested_by,profile_was_active,prepared_at,updated_at,state,pg_staged_at)
       values('${crypto.randomUUID()}','${fenced.id}','${fixtureActorId}',true,pg_catalog.transaction_timestamp(),pg_catalog.transaction_timestamp(),'PG_STAGED_AUTH_PENDING',pg_catalog.transaction_timestamp());`);
@@ -2877,6 +2914,52 @@ ${syntheticNativeActivityInstrumentationSql()}`);
       await assert.rejects(()=>prepareArchiveVendorBootstrap(c,p,true),error=>error.code==='ARCHIVE_VENDOR_PIN_EXISTS');
       await fs.writeFile(path.join(directory,'storage-migration'),'SYNTHETIC-CEILING',{flag:'wx'});
       await assert.rejects(()=>verifyArchiveVendorBootstrap(c,p,true),error=>error.code==='ARCHIVE_VENDOR_MIGRATION_CEILING');
+    });
+  });
+  test('B9 role control uses only the existing socket admin transport in the exact owned synthetic B',()=>{
+    const c={archive:false,owner:'123-1',root:os.tmpdir(),images:{auth:{id:'sha256:'+'3'.repeat(64)}}};
+    const p={side:'B',id:'rr_restore_123_1_b',dir:path.join(c.root,'B'),db:'a'.repeat(64),network:'rr-restore-123-1-b',
+      networkId:'b'.repeat(64),startAttempted:true,networkCreated:true,nativeStorageBootstrap:true,closed:false};
+    const args=archiveBootstrapPsqlArguments(c,p,true);
+    assert.deepEqual(args,archiveBootstrapPsqlArguments({archive:true},p),'The established socket admin command/body is unchanged');
+    assert(args.includes('--file=-')===false);assert(args[5].includes('--username=supabase_admin'));
+    assert(args[5].includes('--single-transaction'));assert(args[5].includes('--file=-'));
+    assert(args.at(-1).includes("session_user <> 'supabase_admin' OR current_user <> 'supabase_admin'"));
+    assert.throws(()=>archiveBootstrapPsqlArguments(c,p),error=>error.code==='ARCHIVE_BOOTSTRAP_TARGET');
+    for(const [context,project]of [[{...c,archive:true},p],[{...c,owner:'123-2'},p],[{...c,images:null},p],
+      [c,{...p,side:'A'}],[c,{...p,id:'other'}],[c,{...p,dir:c.root}],[c,{...p,db:'other'}],
+      [c,{...p,networkId:'other'}],[c,{...p,nativeStorageBootstrap:false}],[c,{...p,closed:true}]])
+      assert.throws(()=>archiveBootstrapPsqlArguments(context,project,true),error=>error.code==='NATIVE_ACTIVITY_B9_TRANSPORT');
+    assert.throws(()=>archiveBootstrapPsqlArguments(c,p,'yes'),error=>error.code==='NATIVE_ACTIVITY_B9_TRANSPORT');
+    const target='20000000-0000-4000-8000-000000000001',event={user_id:target,claims:{sub:target,custom:{unchanged:true}}};
+    const text=nativeActivityB9RoleInput('supabase_auth_admin','token-hook',event).toString();
+    assert(text.startsWith('set local role supabase_auth_admin;\n'));
+    assert(text.includes("current_user <> 'supabase_auth_admin'"));
+    assert(text.indexOf("current_user <> 'supabase_auth_admin'")<text.indexOf("select '"+NATIVE_ACTIVITY_B9_ROLE_MARKER+"'"));
+    assert(text.indexOf("select '"+NATIVE_ACTIVITY_B9_ROLE_MARKER+"'")<text.indexOf('select public.account_native_activity_token_hook('));
+    assert(text.includes(sqlString(JSON.stringify(event))+'::jsonb'));
+    assert(!/\b(?:grant|revoke|alter\s+role|create\s+role)\b/i.test(text));
+    assert(nativeActivityB9RoleInput('anon','private-capture',target).toString().includes("public.account_native_activity_capture('"+target+"')"));
+    for(const input of [['postgres','token-hook',event],['supabase_auth_admin','other',target],['anon','private-capture','bad'],
+      ['supabase_auth_admin','token-hook','x'.repeat(8193)]])assert.throws(()=>nativeActivityB9RoleInput(...input),error=>error.code==='NATIVE_ACTIVITY_B9_ROLE_INPUT');
+  });
+  test('B9 expected SQL denials require a role confirmation and keep the original error with physically closed children',async()=>{
+    await ownArchive(async({c})=>{
+      c.archive=false;c.home=c.root;c.processes=[];const marker=NATIVE_ACTIVITY_B9_ROLE_MARKER+'\n',privateText='PRIVATE-B9-SENTINEL';
+      for(const [stdout,state,confirmed]of [[marker,'42501',true],['','42501',false],
+        [marker+privateText+'\n','42501',false],[marker,'22023',true]]){
+        const stderr='ERROR:  '+state+'\n',child=['-e','process.stdin.resume();process.stdin.on("end",()=>{process.stdout.write('
+          +JSON.stringify(stdout)+',()=>process.stderr.write('+JSON.stringify(stderr)+',()=>process.exit(3)));});'];
+        await assert.rejects(()=>command(c,'NATIVE_ACTIVITY_B9_ROLE',process.execPath,child,{input:Buffer.from('synthetic role input\n'),
+          inputLines:{nativeActivityB9Role:true},maxMs:10_000}),error=>{
+          assert.equal(error.code,'SQLSTATE_'+state);assert.equal(error.exit,3);assert.equal(error.nativeActivityB9RoleConfirmed,confirmed);
+          const report=safeError(error,'NATIVE_ACTIVITY_B9_ROLE');assert.equal(report.nativeActivityB9RoleConfirmed,confirmed);
+          assert.equal(report.code,error.code);assert(!JSON.stringify(report).includes(privateText));
+          assert.equal(safeError(error,'RESTORE_ARCHIVE_HISTORY').nativeActivityB9RoleConfirmed,undefined);return true;
+        });
+      }
+      assert(c.processes.every(child=>child.processGroupClosed===true));
+      assert.equal(safeError({code:'SQLSTATE_42501',nativeActivityB9RoleConfirmed:privateText},'NATIVE_ACTIVITY_B9_ROLE').nativeActivityB9RoleConfirmed,undefined);
     });
   });
   test('synthetic A/B receive only a fresh owned Auth198 pin and refuse stale or redirected inputs',async()=>{
