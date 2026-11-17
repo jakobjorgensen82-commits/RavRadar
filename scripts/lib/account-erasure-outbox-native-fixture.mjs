@@ -21,7 +21,7 @@ export function accountErasurePrecommitFailureSql(sourceSql) {
 export async function exerciseAccountErasureOutbox({psql,runSql,repositoryRoot}) {
  assert.equal(await psql("select current_setting('listen_addresses');"),'','Existing owned native host only');
  assert.equal(await psql('select current_user;'),'rr_native_test','Existing native fixture owner only');
- const source=readAccountErasureSource(repositoryRoot);let created=false,firstError=null,result=null;
+ const source=readAccountErasureSource(repositoryRoot);let databaseCreated=false,firstError=null,result=null;
  const sql=text=>'\\connect '+DB+'\n'+text;
  const pg=text=>psql(sql(text));
  const pending=[];
@@ -45,7 +45,7 @@ export async function exerciseAccountErasureOutbox({psql,runSql,repositoryRoot})
    +"insert into public.observations(id,user_id) values("+n+",'"+id(n)+"');");
  }
  try {
-  await psql('create database '+DB+';');created=true;
+  await psql('create database '+DB+';');databaseCreated=true;
   const canonical=fs.readFileSync(path.join(repositoryRoot,'supabase/schema.sql'),'utf8').replaceAll('\r\n','\n');
   const start=canonical.indexOf('-- ACCOUNT_ASSISTANT_SCHEMA_GENERATED_BEGIN'),end=canonical.indexOf('-- ACCOUNT_ASSISTANT_SCHEMA_GENERATED_END');
   assert(start>=0&&end>start);
@@ -205,7 +205,7 @@ alter table storage.s3_multipart_uploads_parts enable row level security;
  } catch(error){firstError=error;}
  finally {
   await Promise.allSettled(pending); // Observe every owned psql child before database cleanup.
-  if(created){const cleanup=await runSql('drop database '+DB+';',15000);if(cleanup.code!==0&&!firstError)firstError=new Error('ACCOUNT_ERASURE_NATIVE_OWNED_DATABASE_CLEANUP_FAILED');}
+  if(databaseCreated){const cleanup=await runSql('drop database '+DB+';',15000);if(cleanup.code!==0&&!firstError)firstError=new Error('ACCOUNT_ERASURE_NATIVE_OWNED_DATABASE_CLEANUP_FAILED');}
  }
  if(firstError)throw firstError;return result;
 }

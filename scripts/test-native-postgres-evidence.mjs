@@ -2664,3 +2664,30 @@ test('native and national CLI boundaries discard only the earlier SDK hint while
   assert.throws(()=>verifyAssistantPublic591Runtime(wrongNode));
   assert.throws(()=>verifyNationalRuntime(wrongNode,wrongNode));
 });
+
+// Synthetic transport lifecycle only: this calls the real adapter but aborts
+// before bootstrap SQL. It produces no PostgreSQL, Auth or 49-case acceptance.
+test('native app fixture database ownership survives Auth timestamp shadowing without executing SQL',async()=>{
+  const {exerciseAccountErasureOutbox}=await import('./lib/account-erasure-outbox-native-fixture.mjs');
+  const {fileURLToPath}=await import('node:url');
+  const database='rr_account_erasure_native_fixture',repositoryRoot=fileURLToPath(new URL('../',import.meta.url));
+  for(const stop of ['CREATE','BOOTSTRAP']){
+    const first=new Error('SYNTHETIC_NATIVE_DATABASE_LIFETIME_STOP'),calls=[];
+    const psql=async statement=>{
+      if(statement==="select current_setting('listen_addresses');"){calls.push('LISTEN');return '';}
+      if(statement==='select current_user;'){calls.push('OWNER');return 'rr_native_test';}
+      if(statement==='create database '+database+';'){
+        calls.push('CREATE');if(stop==='CREATE')throw first;return '';
+      }
+      assert(statement.startsWith("\\connect "+database+"\ncreate schema auth;"),'Actual normal bootstrap frame only');
+      calls.push('BOOTSTRAP');throw first;
+    };
+    const runSql=async(statement,timeout)=>{
+      assert.equal(statement,'drop database '+database+';');assert.equal(timeout,15000);
+      calls.push('DROP');return{code:0};
+    };
+    await assert.rejects(exerciseAccountErasureOutbox({psql,runSql,repositoryRoot}),error=>error===first,
+      'The first transport failure must survive while the confirmed owned database is cleaned');
+    assert.deepEqual(calls,['LISTEN','OWNER','CREATE',...(stop==='BOOTSTRAP'?['BOOTSTRAP','DROP']:[])]);
+  }
+});

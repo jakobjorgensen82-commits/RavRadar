@@ -192,6 +192,8 @@ Versionsværktøjets afgrænsede årsagsrettelse bevarer de udstedte engangs-/ka
 
 Den manuelle kontosletning er nu forberedt som én samlet app600-kandidat med fast modelfamilie599: holdbar UUID-outbox og slettebarrierer, normal Auth/D1-controller, ejerens genoptagelsesflade og serverbundet pendingliste. Den ene appmigration skal kvalificeres gennem faktisk normal PostgreSQL og installeres/genlæses før server/UI. Lokale prøver og den særskilte Auth-UUID-prøve er ikke accept af hele appen, låseracer, D1 eller faktisk sletning. Automatisk inaktivitet/varsel, statistik/privacy og backup-/restorebarrierer forbliver åbne. Se håndbog89.351.
 
+Den forberedte kodevej for den installerede modelfamilie bruger det eksisterende rebound-Edge-trin efter succes for både privat runtime og checkpoint. Den navngivne appmigration installeres og genlæses først; normal ren kodelevering kræver en tom SQL-plan. Worker/D1-opgradering, numerisk model og automatisk sletteautoritet bevares.
+
 <!-- RAVRADAR_ACTIVE_ENTRY_END -->
 
 ## 14. november — erstattet aktivstatus før denne konsolidering

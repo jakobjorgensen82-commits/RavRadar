@@ -209,6 +209,20 @@ test('current installed code-only normal workflow keeps read-only SQL, hard curr
   assert.equal(activeCondition('Apply exact dry-run-verified post-cutover binding'),false);
   assert.equal(activeCondition('Publish measured continuation checkpoint without promoting rollback readiness'),false);
   assert.equal(activeCondition('Publish measured continuation only after verified warmup private runtime'),true);
+  const checkpointPublish='established-native-current-origin-checkpoint-publish';
+  steps[checkpointPublish]={outcome:'success'};
+  const tripEdges='Deploy exact rebound trip Edges without Worker or D1 replay';
+  assert.equal(activeCondition(tripEdges),true,'The validated installed source must deploy its changed trip Edges');
+  for(const publisher of ['current-private-publish',checkpointPublish]){
+    for(const outcome of ['failure','skipped','cancelled',undefined]){
+      steps[publisher].outcome=outcome;
+      assert.equal(activeCondition(tripEdges),false,'Both actual publications must succeed: '+publisher+'/'+outcome);
+    }
+    steps[publisher].outcome='success';
+  }
+  env.RAVRADAR_CURRENT_INSTALLED_CODE_ONLY_SOURCE_ACTIVE='false';
+  assert.equal(activeCondition(tripEdges),false,'An unselected source gains no new deployment branch');
+  env.RAVRADAR_CURRENT_INSTALLED_CODE_ONLY_SOURCE_ACTIVE='true';
   steps['current-private-publish'].outcome='failure';
   assert.equal(activeCondition('Publish measured continuation only after verified warmup private runtime'),false);
   assert.equal(activeCondition('Deploy exact rebound trip Edges without Worker or D1 replay'),false);

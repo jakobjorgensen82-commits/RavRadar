@@ -8,6 +8,8 @@ Før login fjernes, skal databasens slettebarriere og oprydning være bekræftet
 
 Ejeren kan hente sine uafsluttede sager fra serveren, også efter genindlæsning, på en ny enhed eller efter at målprofilen er væk. Listen viser højst 64 sager ad gangen med Vis flere. Et ukendt udfald forsvinder ikke som afsluttet. Et afslag før databasefasen kræver efter afklaring en ny udtrykkelig forberedelse; en sag med vedvarende slettebarriere genoptages altid med samme sags-id.
 
+Databaseinstallationen og server-/webleveringen er to trin. Ejerfunktionen tages først i brug efter bekræftet database, serverkode og offentlig brugerflade. Den rene kodelevering genbruger de gemte vejrdata og beholder modelfamilien.
+
 Dette er en app600-leveringskandidat med uændret numerisk modelfamilie599. Den ene nye appmigration kræver normal PostgreSQL-kvalifikation og fuld metadataaflæsning før server- og brugerfladelevering. Standardvejr og ren kodeinstallation stopper, mens migrationen mangler. Den allerede udførte Auth-prøve kvalificerer kun det præcise konto-id-værn og en normal ny konto bagefter, ikke hele sletteforløbet. Fuld kildekontrol, låseracer, lagerpolitik, D1-kæde, installation og faktisk ejerforløb er fortsat særskilte beviser.
 
 Automatisk sletning efter to års inaktivitet med 30 dages varsel og mulighed for at bevare kontoen ved login er fortsat åben og aktiveres ikke her. Manglende aktivitetsjournal betyder ukendt aktivitet. Statistik slået fra skal fortsat respekteres; privacyaccept, offentlig anonym statistik og kalibrering er ikke godkendt af denne levering. Backup- og gendannelsesbarrierer mod at genoplive slettede konti er fortsat åbne.
