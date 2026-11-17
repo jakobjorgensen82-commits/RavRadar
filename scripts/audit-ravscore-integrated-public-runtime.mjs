@@ -96,6 +96,8 @@ import {
 import { hydratePrivateConditionsHourly } from './lib/private-conditions-hourly.mjs';
 import { publicManifestWithoutBulkArchive } from './lib/public-bulk-details-archive.mjs';
 import { validFurWaterRoutingDiagnostic } from './lib/fur-water-routing-diagnostic.mjs';
+import { LF7_WATER_ROUTING_COUNTERS, lf7WaterOnlyZone, waterRoutingConfigurationSha256 }
+  from './lib/water-source-forecast-routing.mjs';
 
 const DEFAULT_INPUT = 'data/live/conditions.json';
 const DEFAULT_STARTUP = 'data/live/public-conditions.json';
@@ -1151,6 +1153,73 @@ export function projectFurWaterRoutingPresence(full) {
     tPlus3Proved: false, nationalQueueProved: false, historicalCausalityProved: false };
 }
 
+
+// This projection observes a completed normal producer; missing legacy data is
+// UNKNOWN. It neither changes source eligibility nor authorizes a model/state.
+export function projectLf7WaterRoutingAcceptance(full, diagnostics, routing) {
+  const unknown = reason => ({ status: 'UNKNOWN', reason, waterOnlyConformant: false,
+    sourceTrendConformant: false, computedValuesMatch: false, coverageComplete: false,
+    allRoutedT3Comparable: false, counts: null, rawValuesIncluded: false });
+  const observation = diagnostics?.lf7WaterRouting;
+  if (!observation) return unknown('NOT_RECORDED');
+  if (!full?.datasetId || !validTime(full.productionReferenceAt) || !validTime(full.generatedAt)
+    || diagnostics.datasetId !== full.datasetId || diagnostics.productionReferenceAt !== full.productionReferenceAt
+    || diagnostics.generatedAt !== full.generatedAt || observation.referenceAt !== full.productionReferenceAt) return unknown('GENERATION_MISMATCH');
+  const countKeys = [...LF7_WATER_ROUTING_COUNTERS, 'computedValueMismatchHours'];
+  const keys = ['schemaVersion','kind','referenceAt','expectedPartCount','observedPartCount',
+    'expectedPartHours','configurationSha256','selectionSha256','computedValuesSha256','counts'];
+  const exact = (value, names) => value && typeof value === 'object' && !Array.isArray(value)
+    && Object.keys(value).sort().join(',') === [...names].sort().join(',');
+  if (!exact(observation, keys) || observation.schemaVersion !== 1 || observation.kind !== 'LF7_WATER_ROUTING_OBSERVATION'
+    || !exact(observation.counts, countKeys) || !countKeys.every(key => Number.isSafeInteger(observation.counts[key])
+      && observation.counts[key] >= 0 && observation.counts[key] <= 673 * 118)
+    || !Number.isSafeInteger(observation.expectedPartCount) || observation.expectedPartCount < 1 || observation.expectedPartCount > 673
+    || !Number.isSafeInteger(observation.observedPartCount) || observation.observedPartCount < 0 || observation.observedPartCount > observation.expectedPartCount
+    || observation.expectedPartHours !== observation.expectedPartCount * 118
+    || !['configurationSha256','selectionSha256','computedValuesSha256'].every(key => /^[a-f0-9]{64}$/.test(observation[key]))) return unknown('FORMAT_INVALID');
+  if (waterRoutingConfigurationSha256(routing) !== observation.configurationSha256) return unknown('CONFIGURATION_MISMATCH');
+  const parts = Object.entries(full.coastalParts?.parts ?? {}).filter(([,part]) => lf7WaterOnlyZone(part?.zoneId));
+  const counts = observation.counts;
+  if (parts.length !== observation.expectedPartCount || new Set(parts.map(([,part]) => part.zoneId)).size !== 7
+    || observation.observedPartCount !== parts.length || counts.observedHours !== observation.expectedPartHours
+    || counts.routedHours + counts.directHours + counts.missingWaterHours !== counts.observedHours
+    || counts.comparableT3Hours + counts.unknownT3Hours !== counts.routedHours
+    || counts.lfWaterHours > counts.routedHours + counts.directHours) return unknown('COVERAGE_OR_COUNTS_INCOMPLETE');
+  const values = [];
+  for (const [partId, part] of parts) {
+    const rows = new Map((part.hourly ?? []).map(row => [row.time, row.weather]));
+    for (let offset = 0; offset < 118; offset++) {
+      const time = new Date(Date.parse(full.productionReferenceAt) + offset * 3_600_000).toISOString();
+      const weather = rows.get(time);
+      if (!weather) return unknown('COMPUTED_HOUR_MISSING');
+      values.push([partId, time, weather.waterLevelCm ?? null, weather.waterLevelTrendCm3h ?? null]);
+    }
+  }
+  const computedSha = sha256Text(JSON.stringify(values.sort((a,b) => a[0].localeCompare(b[0]) || a[1].localeCompare(b[1]))));
+  const computedValuesMatch = computedSha === observation.computedValuesSha256 && counts.computedValueMismatchHours === 0;
+  const waterOnlyConformant = counts.forbiddenLfCurrentHours === 0 && counts.forbiddenLfTemperatureHours === 0;
+  const sourceTrendConformant = counts.invalidTrendHours === 0;
+  return { status: computedValuesMatch && waterOnlyConformant && sourceTrendConformant ? 'OBSERVED_CONFORMANT' : 'OBSERVED_VIOLATION',
+    reason: null, waterOnlyConformant, sourceTrendConformant, computedValuesMatch,
+    coverageComplete: counts.missingWaterHours === 0, allRoutedT3Comparable: counts.unknownT3Hours === 0,
+    configurationSha256: observation.configurationSha256, selectionSha256: observation.selectionSha256,
+    counts: { ...counts }, rawValuesIncluded: false };
+}
+async function readBoundedRoutingAuditJson(file, maximumBytes) {
+  let handle;
+  try {
+    const leaf = await fs.lstat(file);
+    if (!leaf.isFile() || leaf.isSymbolicLink() || leaf.size > maximumBytes) return null;
+    handle = await fs.open(file, 'r'); const before = await handle.stat();
+    if (!before.isFile() || before.size !== leaf.size || before.ino !== leaf.ino || before.dev !== leaf.dev) return null;
+    const buffer = Buffer.alloc(before.size + 1);
+    const { bytesRead } = await handle.read(buffer, 0, buffer.length, 0);
+    const after = await handle.stat();
+    if (bytesRead !== before.size || after.size !== before.size || after.mtimeMs !== before.mtimeMs) return null;
+    return JSON.parse(buffer.subarray(0, bytesRead).toString('utf8'));
+  } catch { return null; } finally { if (handle) await handle.close(); }
+}
+
 export function auditIntegratedRavScorePublicRuntime(full, {
   startup,
   startupText = startup ? compactJson(startup) : '',
@@ -1161,6 +1230,7 @@ export function auditIntegratedRavScorePublicRuntime(full, {
   manifest,
   expectedZoneCount = EXPECTED_ZONES,
   expectedPartCount = EXPECTED_PARTS,
+  lf7WaterRoutingDiagnostics = null, waterRoutingConfiguration = null,
 } = {}) {
   const collector = createCollector();
   const coastal = full?.coastalParts;
@@ -2113,6 +2183,7 @@ export function auditIntegratedRavScorePublicRuntime(full, {
     datasetId: full.datasetId,
     productionReferenceAt: full.productionReferenceAt,
     furWaterRoutingPresence: projectFurWaterRoutingPresence(full),
+    lf7WaterRoutingAcceptance: projectLf7WaterRoutingAcceptance(full, lf7WaterRoutingDiagnostics, waterRoutingConfiguration),
     model: {
       modelId: RAVSCORE_MODEL_ID,
       stateSchemaVersion: RAVSCORE_STATE_SCHEMA_VERSION,
@@ -2282,8 +2353,13 @@ async function main() {
   // No second large details JSON.parse and no new acceptance/failure schema.
   await auditForecastShareProjectionFiles({ liveDirectory: path.dirname(manifestPath), manifestText,
     details, registry: JSON.parse(zoneRegistryText) });
+  const lf7WaterRoutingDiagnostics = await readBoundedRoutingAuditJson(
+    path.join(path.dirname(inputPath), 'ravradar-runtime-diagnostics.json'), 64 * 1024 * 1024);
+  const waterRoutingConfiguration = await readBoundedRoutingAuditJson(
+    'data/water-level-station-routing.json', 256 * 1024);
   const report = auditIntegratedRavScorePublicRuntime(full, {
     startup, startupText, details, detailsText, coastalPartsText, zoneRegistryText, manifest,
+    lf7WaterRoutingDiagnostics, waterRoutingConfiguration,
   });
   cliFailureState.phase = 'CREATE_OUTPUT_DIRECTORY';
   await fs.mkdir(path.dirname(outputPath), { recursive: true });

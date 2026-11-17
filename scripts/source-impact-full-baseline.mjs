@@ -18,6 +18,13 @@ import {ORIGIN as NATIONAL_ORIGIN,COMMAND as NATIONAL_COMMAND,STEP as NATIONAL_S
   from './national584-source-evidence.mjs';
 
 export const SOURCE_IMPACT_FULL_BASELINE_KIND='RAVRADAR_SOURCE_IMPACT_FULL_BASELINE_V1';
+// Only this normal genuine FULL qualification may release app schema facit.
+// Old receipt/reference formats remain unchanged; caller booleans grant nothing.
+const qualifiedAccountErasureChecksByResult=new WeakMap();
+export function qualifiedAccountErasureChecks(result){
+  const value=result&&typeof result==='object'?qualifiedAccountErasureChecksByResult.get(result):null;
+  return value?structuredClone(value):null;
+}
 export const SOURCE_IMPACT_FULL_REFERENCE_KEYS=Object.freeze(['repository','mergeCommit','producerHead',
   'sourceTreeSha256','pullRequest','runId','runAttempt','jobId','finalArtifactId','finalArtifactDigest',
   'finalProofSha256','nativeArtifactId','nativeArtifactDigest']);
@@ -276,7 +283,13 @@ export async function qualifySourceImpactFullBaseline(input,dependencies){
     for(const kind of ['native','final'])assert.deepEqual(await json(base+'/artifacts/'+metadata[kind].id),metadata[kind]);
     assertHead();
     remainingBudget();
-    return {schemaVersion:1,kind:SOURCE_IMPACT_FULL_BASELINE_KIND,scope:'FULL_SOURCE',...reference,gitTree,
+    const result={schemaVersion:1,kind:SOURCE_IMPACT_FULL_BASELINE_KIND,scope:'FULL_SOURCE',...reference,gitTree,
       historicalNationalScope:'HISTORICAL_584_NATIONAL_ONLY',providerOrProductionProof:false};
+    if(phaseProof.kind===ASSISTANT_AFTER598_PHASE_KIND&&native.report.accountErasure?.checkReference){
+      qualifiedAccountErasureChecksByResult.set(result,{candidateCommit:input.candidateCommit,reference,
+        migrationSQLSha256:native.report.accountErasure.migrationSQLSha256,
+        checkReference:native.report.accountErasure.checkReference});
+    }
+    return result;
   }catch{return refused();}
 }

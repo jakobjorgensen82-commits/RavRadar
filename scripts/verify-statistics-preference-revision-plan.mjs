@@ -10,6 +10,20 @@ import {assertSupabaseMigrationPlan,assertSupabaseMigrationsApplied,parseSupabas
 import {STATISTICS_REVISION_MIGRATION}
   from './build-statistics-preference-revision.mjs';
 import {nativeIdentityMigration} from './lib/native-sampling-identity-successor-source.mjs';
+import * as assistantSource from './lib/assistant-later-h0-successor-source.mjs';
+import * as cutover from './integrated-cutover-readiness.mjs';
+
+function installedStatisticsLatestVersion(rows){
+  if(assistantSource.ACTIVE_ASSISTANT_SUCCESSOR?.sourcePhase==='assistant-after598-successor'){
+    assistantSource.requireAssistantAfter598Output();
+    const off=cutover.ACCOUNT_ERASURE_APP_MIGRATION;
+    assert(off&&off.version==='20261116181500'&&off.filename==='20261116181500_account_erasure_outbox_off.sql');
+    // assertSupabaseMigrationsApplied already validated the complete, unique raw history.
+    return rows.some(row=>row.remote===off.version)?off.version:LATEST_REQUIRED_CUTOVER_MIGRATION.version;
+  }
+  assert.equal(LATEST_REQUIRED_CUTOVER_MIGRATION.version,nativeIdentityMigration().version);
+  return nativeIdentityMigration().version;
+}
 
 // Select one explicit phase from linked migration identities, never by probing
 // schema2 and falling back to schema1. This selects a plan, not write authority.
@@ -23,14 +37,15 @@ export function selectStatisticsRevisionRoute({migrationListText,environment=pro
     'RAVRADAR_ACCOUNT_ASSISTANT_UPGRADE_OPT_IN','RAVRADAR_CURRENT_GRID_UPGRADE_OPT_IN']) {
     assert.notEqual(environment[name],'true','Statistics route cannot combine historical upgrade scopes');
   }
-  assert.equal(LATEST_REQUIRED_CUTOVER_MIGRATION.version,nativeIdentityMigration().version);
+  if(assistantSource.ACTIVE_ASSISTANT_SUCCESSOR?.sourcePhase!=='assistant-after598-successor')
+    assert.equal(LATEST_REQUIRED_CUTOVER_MIGRATION.version,nativeIdentityMigration().version);
   assert.equal(optIn,'false','NATIVE_SAMPLING_IDENTITY_RECOVERY_ROUTE_REQUIRED: no historical statistics grant replay');
   assertSupabaseMigrationsApplied(migrationListText);
   const rows=parseSupabaseMigrationList(migrationListText);
   const remote=rows.map(row=>row.remote).filter(Boolean).sort();
   for(const {version} of REQUIRED_CUTOVER_MIGRATIONS)
     assert(remote.includes(version),'Statistics route requires every installed predecessor: '+version);
-  assert.equal(remote.at(-1),nativeIdentityMigration().version,
+  assert.equal(remote.at(-1),installedStatisticsLatestVersion(rows),
     'No unknown later migration in the native-identity installed-only route');
   assert(remote.includes(STATISTICS_REVISION_MIGRATION.version));
   return 'installed';
@@ -63,7 +78,7 @@ const remote=rows.map(row=>row.remote).filter(Boolean).sort();
 assert.equal(process.env.RAVRADAR_STATISTICS_REVISION_UPGRADE_OPT_IN,'false');
 selectStatisticsRevisionRoute({migrationListText});
 assert.deepEqual(result.pendingVersions,[]);
-assert.equal(remote.at(-1),nativeIdentityMigration().version);
+assert.equal(remote.at(-1),installedStatisticsLatestVersion(rows));
 assert(rows.some(row=>row.local===STATISTICS_REVISION_MIGRATION.version&&row.remote===row.local));
 console.log('Exact statistics revision '+phase+' plan verified; no write or installation performed.');
 }

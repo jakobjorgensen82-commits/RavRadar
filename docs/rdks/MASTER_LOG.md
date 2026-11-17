@@ -1,3 +1,7 @@
+## 4.0.600 — samlet manuel kontoslettekandidat
+
+App600 bevarer modelfamilie599, de75 udstedte SQL-originaler, LF7-observation, DMI-cadence og Pages-ejerrettelsen. Én ny appmigration, normal Auth/D1-controller og ejerens genoptagelsesflade forberedes samlet med faktisk PG-kvalifikation før installation. Den afgrænsede arkivrettighedsdiagnostic ændrer ingen restore- eller privilegieadfærd. Lokale prøver og den præcise Auth-UUID-guardprøve er ikke fuld app-, D1-, installations- eller brugeraccept. Automatisk inaktivitet/30d-varsel, statistik/privacy og backup-/restorebarrierer er fortsat åbne.
+
 ## 15. november 2026 — lokal599-udstedelse og adskilt app-/modelfamilie
 
 Den afgrænsede599-kandidat samler assistentens rettelse af sammensatte strøm-/bølgespørgsmål med faste årsagsoplysninger ved komponentcachens eksisterende størrelsesafslag. Den normale C-bygger, I-bygger og T-afledning danner de faktiske bindinger før den almindelige originalbevarende SQL-konstruktør, metadata- og håndbogssynkronisering. Den nye append-only migration er `20261115174259_assistant_after598_original598_bound_successor.sql`. Alle 74 tidligere SQL-filer bevares. Scoreregler, kildeprioritet og administratorens geometri følger deres eksisterende kontrakter.

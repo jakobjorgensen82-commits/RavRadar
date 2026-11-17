@@ -33,6 +33,7 @@ import {
 import {
   auditIntegratedRavScorePublicRuntime,
   projectFurWaterRoutingPresence,
+  projectLf7WaterRoutingAcceptance,
   candidateGReferenceMatchesProduction,
   publicModeFormulaIsConsistent,
 } from './audit-ravscore-integrated-public-runtime.mjs';
@@ -2025,3 +2026,52 @@ async function assertBoundedAuditTextAndFailureReceipt() {
 }
 
 await assertBoundedAuditTextAndFailureReceipt();
+
+// Synthetic parser/producer evidence, never a claim about a real generation.
+{
+  const {buildWaterSourceForecastIndex,applyVerifiedWaterSourceRoutingToPartHourly,summarizeLf7WaterRouting}
+    = await import('./lib/water-source-forecast-routing.mjs');
+  const {dmiWaterSourceFixture}=await import('./test-helpers/dmi-water-source-fixture.mjs');
+  const at='2026-08-05T06:00:00.000Z',zones=['DK-B01-01','DK-B01-02','DK-B02-08','DK-B02-09','DK-B02-11','DK-B03-01','DK-B03-02'];
+  const source={sourceKey:'SYNTHETIC_PRIVATE_SENTINEL',stationId:'private',point:[10,56],routingEligible:true};
+  const native=Array.from({length:121},(_,i)=>{const time=new Date(Date.parse(at)+i*3600000).toISOString();
+    const row=dmiWaterSourceFixture(source,time,i,at);row.sources.waterLevel.collection='dkss_lf';return row;});
+  const index=buildWaterSourceForecastIndex([source],{generatedAt:at,zones:{['SOURCE::'+source.sourceKey]:{hourly:Object.fromEntries(native.map(row=>[row.time,row]))}}},at);
+  const routing={zones:Object.fromEntries(zones.map(zone=>[zone,{enabled:true,requireAll:true,
+    method:'manual-weights',stations:[{sourceKey:source.sourceKey,weight:1}]}]))};
+  const full={datasetId:'rr-synthetic-lf7',productionReferenceAt:at,generatedAt:at,coastalParts:{parts:{}}};
+  const contract={zones:{}},rows=[];
+  for(const zoneId of zones){const part={zoneId,partId:zoneId+'-synthetic',waterPoint:[10,56]};contract.zones[zoneId]=[part];
+    const result=applyVerifiedWaterSourceRoutingToPartHourly({part,parentFeature:{properties:{id:zoneId}},
+      hourly:native.map(row=>({time:row.time,waterLevelCm:null})),sources:[source],index,routing,haversineKm:()=>0,diagnosticReferenceAt:at});
+    const scores=result.hourly.slice(0,118).map(hour=>({time:hour.time,weather:{waterLevelCm:hour.waterLevelCm,waterLevelTrendCm3h:hour.waterLevelTrendCm3h}}));
+    rows.push({...part,record:{hourly:result.hourly},scores,waterRoutingObservation:result.waterRoutingObservation});
+    full.coastalParts.parts[part.partId]={...part,hourly:scores};
+  }
+  const diagnostics={datasetId:full.datasetId,productionReferenceAt:at,generatedAt:at,
+    lf7WaterRouting:summarizeLf7WaterRouting(rows,contract,at)};
+  const report=projectLf7WaterRoutingAcceptance(full,diagnostics,routing);
+  assert.equal(report.status,'OBSERVED_CONFORMANT');assert.equal(report.counts.lfWaterHours,7*118);
+  assert.equal(report.computedValuesMatch,true);assert.equal(report.allRoutedT3Comparable,true);
+  assert.equal(JSON.stringify(report).includes('SYNTHETIC_PRIVATE_SENTINEL'),false);
+  assert.equal(projectLf7WaterRoutingAcceptance(full,null,routing).status,'UNKNOWN');
+  assert.equal(projectLf7WaterRoutingAcceptance(full,{},routing).reason,'NOT_RECORDED');
+  for(const key of ['datasetId','productionReferenceAt','generatedAt']){
+    const changed=structuredClone(diagnostics);changed[key]=key==='datasetId'?'rr-other':'2026-08-05T07:00:00.000Z';
+    assert.equal(projectLf7WaterRoutingAcceptance(full,changed,routing).reason,'GENERATION_MISMATCH');
+  }
+  const changedConfig=structuredClone(routing);changedConfig.zones[zones[0]].enabled=false;
+  assert.equal(projectLf7WaterRoutingAcceptance(full,diagnostics,changedConfig).reason,'CONFIGURATION_MISMATCH');
+  const changedOutput=structuredClone(full);changedOutput.coastalParts.parts[rows[0].partId].hourly[0].weather.waterLevelCm+=1;
+  assert.equal(projectLf7WaterRoutingAcceptance(changedOutput,diagnostics,routing).status,'OBSERVED_VIOLATION');
+  for(const counter of ['forbiddenLfCurrentHours','forbiddenLfTemperatureHours','invalidTrendHours','computedValueMismatchHours']){
+    const changed=structuredClone(diagnostics);changed.lf7WaterRouting.counts[counter]=1;
+    assert.equal(projectLf7WaterRoutingAcceptance(full,changed,routing).status,'OBSERVED_VIOLATION',counter);
+  }
+  const malformed=structuredClone(diagnostics);malformed.lf7WaterRouting.counts.privateValue='SYNTHETIC_PRIVATE_SENTINEL';
+  const unknown=projectLf7WaterRoutingAcceptance(full,malformed,routing);
+  assert.equal(unknown.reason,'FORMAT_INVALID');assert.equal(JSON.stringify(unknown).includes('SYNTHETIC_PRIVATE_SENTINEL'),false);
+  const incomplete=structuredClone(diagnostics);incomplete.lf7WaterRouting.observedPartCount--;
+  assert.equal(projectLf7WaterRoutingAcceptance(full,incomplete,routing).status,'UNKNOWN');
+}
+console.log('LF7_RUNTIME_AUDIT: genuine synthetic normal routing, exact generation/config/output binding, legacy UNKNOWN and payload-free refusals.');

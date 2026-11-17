@@ -1,36 +1,37 @@
-import { mountPrivateTripStudyCard } from './admin-private-trip-study.js?v=4.0.599&study=frozen-replay-noise-20261106';
-import { PUBLIC_CONFIG } from '../../config.js?v=4.0.599';
-import { analyzeObservations } from '../services/learning-analysis.js?v=4.0.599';
-import { historicalSummary } from '../services/historical-analysis.js?v=4.0.599';
-import { loadZoneRegistry } from '../services/zone-registry.js?v=4.0.599';
-import { recommendWaterStationBracket } from '../core/water-station-routing.js?v=4.0.599';
-import { loadAdminDocument, readAdminDocumentNow, queueAdminDocumentSave, saveAdminDocumentNow, onAdminSaveStatus, centralAdminStorageEnabled, adminStorageHealth } from '../services/admin-document-store.js?v=4.0.599';
-import { listProfiles, savePermissions, PERMISSIONS, EXPERT_PERMISSIONS, myAccess, hasPermission } from '../services/permissions-service.js?v=4.0.599';
-import { authEnabled, currentSession, requireFreshSession, testConnection, signOut, authIdentityEpoch, onAuthChange } from '../services/auth-service.js?v=4.0.599';
-import { loadAdminTripCount } from '../services/admin-trip-count.js?v=4.0.599&ui=admin-current-data-20261028';
-import { loadAdminAccountCategories, filterAdminAccountProfiles } from '../services/admin-account-categories.js?v=4.0.599&ui=admin-current-data-20261028';
-import { auditCurrentDirection } from '../core/current-direction-audit.js?v=4.0.599';
-import { renderCoastlineEditor, destroyCoastlineEditor } from './admin-coastline-editor.js?v=4.0.599';
-import { createDirectionEditor } from './admin-direction-editor.js?v=4.0.599';
-import { runFullPersistenceTest } from '../services/persistence-test-service.js?v=4.0.599';
-import { runFullSiteFunctionTest } from '../services/site-function-test-service.js?v=4.0.599&ui=admin-model-startup-20261101&map=plain-map-v3-20261104';
-import { submitHandbookReview, listHandbookReviews, updateHandbookReview, exportLocalHandbookDrafts, localHandbookDraftCount, listLocalHandbookDrafts, deleteLocalHandbookDraft, retryLocalHandbookDraft, archiveHandbookReview } from '../services/handbook-review-store.js?v=4.0.599';
-import { loadVisitorReport } from '../services/visitor-report-service.js?v=4.0.599&report=scope-20261108';
-import { decodeRuntimeDiagnosticsEnvelope } from '../services/protected-runtime-envelope.js?v=4.0.599';
-import { sanitizeTrustedHtml } from '../services/html-sanitizer.js?v=4.0.599';
-import { projectAdminObservationDto } from '../services/calibration-eligibility.js?v=4.0.599';
+import { mountPrivateTripStudyCard } from './admin-private-trip-study.js?v=4.0.600&study=frozen-replay-noise-20261106';
+import { PUBLIC_CONFIG } from '../../config.js?v=4.0.600';
+import { analyzeObservations } from '../services/learning-analysis.js?v=4.0.600';
+import { historicalSummary } from '../services/historical-analysis.js?v=4.0.600';
+import { loadZoneRegistry } from '../services/zone-registry.js?v=4.0.600';
+import { recommendWaterStationBracket } from '../core/water-station-routing.js?v=4.0.600';
+import { loadAdminDocument, readAdminDocumentNow, queueAdminDocumentSave, saveAdminDocumentNow, onAdminSaveStatus, centralAdminStorageEnabled, adminStorageHealth } from '../services/admin-document-store.js?v=4.0.600';
+import { listProfiles, savePermissions, PERMISSIONS, EXPERT_PERMISSIONS, myAccess, hasPermission } from '../services/permissions-service.js?v=4.0.600';
+import { authEnabled, currentSession, requireFreshSession, testConnection, signOut, authIdentityEpoch, onAuthChange, authorizedFetch } from '../services/auth-service.js?v=4.0.600';
+import { loadAdminTripCount } from '../services/admin-trip-count.js?v=4.0.600&ui=admin-current-data-20261028';
+import { loadAdminAccountCategories, filterAdminAccountProfiles } from '../services/admin-account-categories.js?v=4.0.600&ui=admin-current-data-20261028';
+import { mountOwnerAccountErasure } from './admin-account-erasure.js?v=4.0.600';
+import { auditCurrentDirection } from '../core/current-direction-audit.js?v=4.0.600';
+import { renderCoastlineEditor, destroyCoastlineEditor } from './admin-coastline-editor.js?v=4.0.600';
+import { createDirectionEditor } from './admin-direction-editor.js?v=4.0.600';
+import { runFullPersistenceTest } from '../services/persistence-test-service.js?v=4.0.600';
+import { runFullSiteFunctionTest } from '../services/site-function-test-service.js?v=4.0.600&ui=admin-model-startup-20261101&map=plain-map-v3-20261104';
+import { submitHandbookReview, listHandbookReviews, updateHandbookReview, exportLocalHandbookDrafts, localHandbookDraftCount, listLocalHandbookDrafts, deleteLocalHandbookDraft, retryLocalHandbookDraft, archiveHandbookReview } from '../services/handbook-review-store.js?v=4.0.600';
+import { loadVisitorReport } from '../services/visitor-report-service.js?v=4.0.600&report=scope-20261108';
+import { decodeRuntimeDiagnosticsEnvelope } from '../services/protected-runtime-envelope.js?v=4.0.600';
+import { sanitizeTrustedHtml } from '../services/html-sanitizer.js?v=4.0.600';
+import { projectAdminObservationDto } from '../services/calibration-eligibility.js?v=4.0.600';
 import {
  applyAdminObservationModelPolicy,
  resolveAdminActivePublicRavScore,
-} from './admin-active-ravscore.js?v=4.0.599';
+} from './admin-active-ravscore.js?v=4.0.600';
 import {
  loadConditions,
  loadDataManifest,
  loadPublicStartupSnapshot,
  loadZones,
-} from '../services/data-service.js?v=4.0.599&ui=admin-model-startup-20261101&map=plain-map-v3-20261104';
+} from '../services/data-service.js?v=4.0.600&ui=admin-model-startup-20261101&map=plain-map-v3-20261104';
 
-const VERSION='4.0.599';
+const VERSION='4.0.600';
 const SITE_TEST_MODE=new URLSearchParams(location.search).has('ravradarAdminSiteTest');
 const WATER_ROUTING_KEY='ravradar-water-station-routing-v1';
 const DIRECTION_REVIEW_KEY='ravradar-direction-reviews-v1';
@@ -48,6 +49,7 @@ let adminTripCountRenderEpoch=0;
 let disposeAdminTripCount=null;
 let adminUserRenderEpoch=0;
 let disposeAdminUserCategories=null;
+let disposeOwnerAccountErasure=null;
 function invalidateAdminUserCategories(){adminUserRenderEpoch++;disposeAdminUserCategories?.();disposeAdminUserCategories=null;}
 
 function invalidateAdminTripCount(){adminTripCountRenderEpoch++;disposeAdminTripCount?.();disposeAdminTripCount=null;}
@@ -382,7 +384,7 @@ const MODULE_GUIDES={
 };
 function moduleGuide(){const g=MODULE_GUIDES[state.tab]||MODULE_GUIDES.dashboard;return `<article class="admin-card module-guide"><div class="module-guide-head"><div><span class="eyebrow">Hjælp til modulet</span><h2>${esc(g.title)}</h2><p>${esc(g.purpose)}</p></div><button class="admin-button secondary" id="toggleModuleGuide" aria-expanded="true">Skjul guide</button></div><div id="moduleGuideBody"><ol class="guided-steps">${g.steps.map((x,i)=>`<li><span>${i+1}</span><div>${esc(x)}</div></li>`).join('')}</ol><div class="guide-result"><b>Vigtigt:</b> ${esc(g.result)}</div></div></article>`}
 function bindModuleGuide(){const b=document.querySelector('#toggleModuleGuide'),body=document.querySelector('#moduleGuideBody');if(!b||!body)return;b.onclick=()=>{const hidden=body.hidden=!body.hidden;b.textContent=hidden?'Vis guide':'Skjul guide';b.setAttribute('aria-expanded',String(!hidden));};}
-function render(){adminViewEpoch++;pendingCleanAdminRead=null;invalidateAdminTripCount();invalidateAdminUserCategories();disposeOwnerNoticeProbe?.();if(state.tab!=='coastlineEditor')destroyCoastlineEditor();if(state.tab!=='directionAudit')destroyDirectionMap();if(state.tab!=='waterStations'&&state.stationMap){state.stationMap.remove();state.stationMap=null;}({dashboard:renderDashboard,weather:renderWeather,waterStations:renderWaterStations,zones:renderZones,coastlineEditor:renderAdminCoastlineEditor,directionAudit:renderDirectionAudit,observations:renderObservations,history:renderHistory,visitors:renderVisitors,learning:renderLearning,users:renderUsers,handbook:renderHandbook,documentation:renderDocumentation,system:renderSystem}[state.tab]||renderDashboard)();content.insertAdjacentHTML('afterbegin',moduleGuide());bindModuleGuide();if(state.tab==='learning')mountPrivateTripStudyCard(content,state.access);}
+function render(){adminViewEpoch++;pendingCleanAdminRead=null;invalidateAdminTripCount();invalidateAdminUserCategories();disposeOwnerAccountErasure?.();disposeOwnerAccountErasure=null;disposeOwnerNoticeProbe?.();if(state.tab!=='coastlineEditor')destroyCoastlineEditor();if(state.tab!=='directionAudit')destroyDirectionMap();if(state.tab!=='waterStations'&&state.stationMap){state.stationMap.remove();state.stationMap=null;}({dashboard:renderDashboard,weather:renderWeather,waterStations:renderWaterStations,zones:renderZones,coastlineEditor:renderAdminCoastlineEditor,directionAudit:renderDirectionAudit,observations:renderObservations,history:renderHistory,visitors:renderVisitors,learning:renderLearning,users:renderOwnerUsers,handbook:renderHandbook,documentation:renderDocumentation,system:renderSystem}[state.tab]||renderDashboard)();content.insertAdjacentHTML('afterbegin',moduleGuide());bindModuleGuide();if(state.tab==='learning')mountPrivateTripStudyCard(content,state.access);}
 
 function scoreAvailabilityCard(){
  const active=activePublicRavScoreState();
@@ -712,6 +714,26 @@ function renderObservations(){
  };
 }
 
+async function renderOwnerUsers(){
+ if(state.access?.profile?.role!=='owner'||state.access.profile.is_active!==true)return renderUsers();
+ const epoch=adminViewEpoch,identity=authIdentityEpoch(),owner=currentSession()?.user?.id;
+ const host=document.createElement('section');host.className='admin-owner-erasure';content.before(host);
+ const current=()=>epoch===adminViewEpoch&&state.tab==='users'&&host.isConnected
+  &&identity===authIdentityEpoch()&&owner===currentSession()?.user?.id&&Boolean(owner);
+ const view=mountOwnerAccountErasure(host,{
+  ownerId:owner,current,access:myAccess,categories:loadAdminAccountCategories,uuid:()=>crypto.randomUUID(),confirm:message=>window.confirm(message),
+  request:(path,body)=>authorizedFetch(PUBLIC_CONFIG.supabaseUrl+(path==='find'?'/rest/v1/rpc/find_account_erasure_operation':'/functions/v1/trip-log'),{
+   method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),cache:'no-store',
+  },{consumeJson:true,expectedUserId:owner,retry401:false,timeoutMs:30_000}),
+ });
+ const unsubscribe=onAuthChange(()=>{if(!current()){view.destroy();host.remove();}});
+ disposeOwnerAccountErasure=()=>{unsubscribe();view.destroy();host.remove();};
+ state.profiles=[];
+ content.innerHTML='<article class="admin-card"><p>Henter åbne slettesager før kontolisten…</p></article>';
+ await view.hydrate();if(!current())return;
+ await renderUsers();if(!current())return;
+ view.setProfiles(state.profiles);content.insertAdjacentHTML('afterbegin',moduleGuide());bindModuleGuide();
+}
 async function renderUsers(){
  invalidateAdminUserCategories();const generation=adminUserRenderEpoch,identity=authIdentityEpoch(),owner=currentSession()?.user?.id;
  const canManageAll=state.access?.profile?.role==='owner'||state.access?.permissions?.has('full_admin');

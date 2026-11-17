@@ -13,10 +13,11 @@ import {setTimeout as sleep} from 'node:timers/promises';
 import {fileURLToPath} from 'node:url';
 import {Readable,Writable} from 'node:stream';
 import {pipeline} from 'node:stream/promises';
+import {readAccountErasureSource} from './verify-account-erasure-schema.mjs';
 
 const P=Object.freeze({cli:'2.117.0',operationMs:20*60_000,cleanupMs:2*60_000,
   childMs:8*60_000,diagnosticBytes:1024*1024,fileBytes:8*1024*1024,totalBytes:32*1024*1024});
-const IMAGES=Object.freeze({db:'supabase/postgres:17.6.1.167',kong:'kong:2.8.1',auth:'supabase/gotrue:v2.196.0'});
+const IMAGES=Object.freeze({db:'supabase/postgres:17.6.1.167',kong:'kong:2.8.1',auth:'supabase/gotrue:v2.197.0'});
 const ARCHIVE_VENDOR_IMAGES=Object.freeze({auth:'supabase/gotrue:v2.197.0',storage:'supabase/storage-api:v1.86.0'});
 const ARCHIVE_VENDOR_PINS=Object.freeze({'gotrue-version':'v2.197.0\n','storage-version':'v1.86.0\n'});
 const EXCLUDE='realtime,storage-api,imgproxy,edge-runtime,postgres-meta,studio,supavisor,logflare,vector,mailpit,postgrest';
@@ -194,6 +195,9 @@ function safeError(error,stage){
          &&ROLE_OPERAND_LABELS.has(error.missingRoleClass)
          ?{missingRoleClass:error.missingRoleClass}:{}),
      }:{}),
+    ...((stage==='RESTORE_ARCHIVE_ROLES_SCHEMA_DATA'&&error?.inputOwner==='DATA'
+        ||stage==='RESTORE_ARCHIVE_HISTORY'&&error?.inputOwner==='HISTORY')&&error?.code==='SQLSTATE_42501'
+      ?{permissionDenied:publicArchivePermissionDiagnostic(error.permissionDenied)}:{}),
     ...(stage==='RESTORE_ARCHIVE_ROLES_SCHEMA_DATA'&&error?.code==='SQLSTATE_23514'&&error.inputOwner==='DATA'
       ?{checkConstraint:publicArchiveCheckDiagnostic(error.checkConstraint)}:{}),
     ...(['RESTORE_ARCHIVE_ROLES_SCHEMA_DATA','RESTORE_ARCHIVE_HISTORY'].includes(stage)
@@ -212,7 +216,7 @@ function diagnosticClass(bytes){
   ])if(expression.test(text))return code;
   return 'CHILD_EXIT';
 }
-function archiveInputDiagnostic(diagnostic,code,inputLines){
+function archiveInputDiagnostic(diagnostic,code,inputLines,inventory=null){
   const report={inputOwner:'UNKNOWN',...(ARCHIVE_ROLE_STATEMENT_STATES.has(code)&&Object.hasOwn(inputLines,'roleLineClasses')?{inputStatement:'UNKNOWN'}:{})};
   const text=diagnostic.toString('utf8');
   const frames=text.matchAll(/^psql:<stdin>:([1-9][0-9]{0,9}): ERROR: +([0-9A-Z]{5})(?:: ([^\r\n]*))?\r?$/gm);
@@ -236,7 +240,57 @@ function archiveInputDiagnostic(diagnostic,code,inputLines){
       }
     }
   }
+  if(code==='SQLSTATE_42501'&&['DATA','HISTORY'].includes(report.inputOwner))
+    report.permissionDenied=Buffer.isBuffer(diagnostic)&&Buffer.from(text,'utf8').equals(diagnostic)
+      ?archivePermissionDiagnostic(text,frame,inventory,report.inputOwner):{state:'UNAVAILABLE'};
   return report;
+}
+// This is only a bounded explanation of the native 42501, never restore authority.
+function publicArchivePermissionDiagnostic(value){
+  const unavailable={state:'UNAVAILABLE'},keys=['state','denialClass','resourceClass','nativeObjectTextSha256','relationClass','objectBinding'];
+  if(!value||Object.getPrototypeOf(value)!==Object.prototype
+    ||JSON.stringify(Object.keys(value).sort())!==JSON.stringify(keys.sort())
+    ||value.state!=='BUILTIN_ACL_DENIAL'||!['PRIVILEGE_REQUIRED','OWNER_REQUIRED'].includes(value.denialClass)
+    ||!['TABLE','SCHEMA','SEQUENCE','FUNCTION','TYPE','PARAMETER','RELATION'].includes(value.resourceClass)
+    ||(value.denialClass==='OWNER_REQUIRED'&&value.resourceClass==='PARAMETER')
+    ||(value.denialClass==='PRIVILEGE_REQUIRED'&&value.resourceClass==='RELATION')
+    ||typeof value.nativeObjectTextSha256!=='string'||!/^[a-f0-9]{64}$/.test(value.nativeObjectTextSha256)
+    ||!['UNIQUE_ARCHIVE_INVENTORY','UNKNOWN'].includes(value.objectBinding)
+    ||!(value.relationClass==='UNKNOWN'||Object.values(ARCHIVE_FIXED_RELATIONS).includes(value.relationClass))
+    ||(value.objectBinding==='UNKNOWN')!==(value.relationClass==='UNKNOWN')
+    ||(value.objectBinding==='UNIQUE_ARCHIVE_INVENTORY'&&!['TABLE','SEQUENCE','RELATION'].includes(value.resourceClass)))return unavailable;
+  return Object.fromEntries(keys.map(key=>[key,value[key]]));
+}
+function archivePermissionDiagnostic(text,frame,inventory,inputOwner){
+  const unavailable={state:'UNAVAILABLE'};
+  if(!['DATA','HISTORY'].includes(inputOwner)||Buffer.byteLength(text)>P.diagnosticBytes
+    ||(text.match(/\bERROR:/g)??[]).length!==1||typeof frame[3]!=='string'
+    ||!/^\r?\nLOCATION: +aclcheck_error, aclchk\.c:[1-9][0-9]{0,9}\r?\n?$/.test(text.slice(frame.index+frame[0].length)))return unavailable;
+  const message=/^(permission denied for|must be owner of) (table|schema|sequence|function|type|parameter|relation) ([^\r\n]+)$/.exec(frame[3]);
+  if(!message||Buffer.byteLength(message[3])>512)return unavailable;
+  const denialClass=message[1]==='permission denied for'?'PRIVILEGE_REQUIRED':'OWNER_REQUIRED',resourceClass=message[2].toUpperCase();
+  let relationClass='UNKNOWN';
+  // Native error object text is not a qualified relation identity. Only a unique
+  // match in the already admitted phase inventory can attach an existing label.
+  if(['TABLE','SEQUENCE','RELATION'].includes(resourceClass))try{
+    need(inventory?.complete===true&&/^[a-f0-9]{64}$/.test(inventory.digest)
+      &&Array.isArray(inventory.relations)&&inventory.relations.length<=8192,'ARCHIVE_PERMISSION_INVENTORY');
+    const matches=[],phase=inputOwner==='DATA'?'DATA':'HISTORY_DATA';
+    for(const row of inventory.relations){
+      const expected=archiveRelationEntry(row.phase==='DATA'?'data.sql':'history-data.sql',row.kind,row.qualified);
+      assert.deepEqual(row,expected);
+      if(row.phase!==phase||(resourceClass==='TABLE'&&row.kind!=='COPY')||(resourceClass==='SEQUENCE'&&row.kind!=='SEQUENCE'))continue;
+      const identifiers=new RegExp('^('+COPY_IDENTIFIER+')\\.('+COPY_IDENTIFIER+')$').exec(row.qualified).slice(1);
+      const names=identifiers.map(v=>v.slice(1,-1).replaceAll('""','"')),forms=new Set([row.qualified,identifiers[1]]);
+      if(/^[A-Za-z_][A-Za-z0-9_$]*$/.test(names[1]))forms.add(names[1]);
+      if(names.every(v=>/^[a-z_][a-z0-9_$]*$/.test(v)))forms.add(names.join('.'));
+      if(forms.has(message[3]))matches.push(row);
+    }
+    if(matches.length===1&&matches[0].relationClass!=='OTHER')relationClass=matches[0].relationClass;
+  }catch{}
+  return publicArchivePermissionDiagnostic({state:'BUILTIN_ACL_DENIAL',denialClass,resourceClass,
+    nativeObjectTextSha256:sha(Buffer.from(message[3],'utf8')),relationClass,
+    objectBinding:relationClass==='UNKNOWN'?'UNKNOWN':'UNIQUE_ARCHIVE_INVENTORY'});
 }
 // Only our exact owned P0001 guard and its bounded, identity-bound JSON DETAIL
 // can leave the private child diagnostic. Unknown text never becomes a label.
@@ -627,7 +681,7 @@ async function command(c,stage,bin,args,{cwd=c.root,input=null,maxMs=P.childMs,a
       if(!first&&exit===3&&signal===null){
         const bytes=Buffer.concat(err),diagnostic=diagnosticClass(bytes);
         fail(diagnostic.startsWith('SQLSTATE_')?diagnostic:'PSQL_SCRIPT_ERROR');
-        if(inputLines&&diagnostic.startsWith('SQLSTATE_'))Object.assign(first,archiveInputDiagnostic(bytes,diagnostic,inputLines));
+        if(inputLines&&diagnostic.startsWith('SQLSTATE_'))Object.assign(first,archiveInputDiagnostic(bytes,diagnostic,inputLines,c.archiveRelationInventory));
         if(diagnostic==='SQLSTATE_23514')first.checkConstraint=archiveCheckDiagnostic(c,stage,bytes,first.inputOwner);
         if(diagnostic==='SQLSTATE_P0001'&&first.inputOwner==='CHECK_SUSPEND')
           first.checkSuspend=archiveCheckSuspendDiagnostic(c,stage,bytes,first.inputOwner);
@@ -755,6 +809,33 @@ async function prepareArchiveVendorBootstrap(c,p){
     await fs.writeFile(path.join(directory,name),value,{flag:'wx',mode:0o600});
   await verifyArchiveVendorBootstrap(c,p);
 }
+// Synthetic A/B use the same already pinned Auth197 contract as archive B.
+// A fresh owned project receives only this create-only CLI version hint.
+async function syntheticAuthVersionPin(c,p,create){
+  need(c.archive===false&&/^[1-9][0-9]{0,18}-1$/.test(c.owner??'')&&['A','B'].includes(p.side)
+    &&p.id==='rr_restore_'+c.owner.replace('-','_')+'_'+p.side.toLowerCase()
+    &&path.isAbsolute(c.root)&&p.dir===path.join(c.root,p.side),'SYNTHETIC_AUTH_PIN_TARGET');
+  const directory=path.join(p.dir,'supabase','.temp'),value=IMAGES.auth.split(':').at(-1)+'\n';
+  for(const at of [c.root,p.dir,path.dirname(directory)]){
+    const stat=await fs.lstat(at);need(stat.isDirectory()&&!stat.isSymbolicLink(),'SYNTHETIC_AUTH_PIN_DIRECTORY');
+  }
+  if(create)await fs.mkdir(directory,{mode:0o700}).catch(e=>{if(e.code!=='EEXIST')throw e;});
+  const stat=await fs.lstat(directory);need(stat.isDirectory()&&!stat.isSymbolicLink(),'SYNTHETIC_AUTH_PIN_DIRECTORY');
+  const names=await fs.readdir(directory);
+  need(names.every(name=>name==='cli-latest'||!create&&name==='gotrue-version'),'SYNTHETIC_AUTH_PIN_INVENTORY');
+  const file=path.join(directory,'gotrue-version');
+  if(create)await fs.writeFile(file,value,{flag:'wx',mode:0o600});
+  const regular=st=>{need(st.isFile()&&!st.isSymbolicLink()&&st.nlink===1n,'SYNTHETIC_AUTH_PIN_FILE');
+    if(process.platform==='linux')need((st.mode&0o077n)===0n&&st.uid===BigInt(process.getuid()),'SYNTHETIC_AUTH_PIN_PERMISSIONS');};
+  const named=await fs.lstat(file,{bigint:true});regular(named);need(named.size===BigInt(Buffer.byteLength(value)),'SYNTHETIC_AUTH_PIN_VALUE');
+  const handle=await fs.open(file,constants.O_RDONLY|(constants.O_NOFOLLOW||0));
+  try{const before=await handle.stat({bigint:true});regular(before);assert.deepEqual(fileIdentity(before),fileIdentity(named));
+    const bytes=Buffer.alloc(Buffer.byteLength(value)+1),read=await handle.read(bytes,0,bytes.length,0);
+    need(read.bytesRead===Buffer.byteLength(value)&&bytes.subarray(0,read.bytesRead).equals(Buffer.from(value)),'SYNTHETIC_AUTH_PIN_VALUE');
+    const after=await handle.stat({bigint:true}),fresh=await fs.lstat(file,{bigint:true});regular(fresh);
+    assert.deepEqual(fileIdentity(before),fileIdentity(after));assert.deepEqual(fileIdentity(after),fileIdentity(fresh));
+  }finally{await handle.close();}
+}
 function serviceImageMetadata(c,p,service,info,image){
   need(c.archive!==true||p.side==='B','ARCHIVE_VENDOR_PROJECT');
   const expected=c.archive===true&&service==='auth'?ARCHIVE_VENDOR_IMAGES.auth:IMAGES[service];
@@ -773,6 +854,7 @@ async function startProject(c,p){
   await command(c,'INIT_'+p.side,'supabase',['init','--yes'],{cwd:p.dir,maxMs:30_000});
   await fs.writeFile(path.join(p.dir,'supabase/config.toml'),config(p.id,p.side==='B',c.archive===true),{mode:0o600});
   if(c.archive===true)await prepareArchiveVendorBootstrap(c,p);
+  else await syntheticAuthVersionPin(c,p,true);
   p.networkCreateAttempted=true;
   const raw=await command(c,'CREATE_NETWORK_'+p.side,'docker',['network','create','--driver','bridge',
     ...(c.archive?['--internal']:[]),
@@ -788,6 +870,7 @@ async function startProject(c,p){
     await command(c,'START_'+p.side,'supabase',['--network-id',p.network,'start','--exclude',EXCLUDE],{cwd:p.dir});
   }finally{if(relay)await relay.close();}
   if(c.archive===true)await verifyArchiveVendorBootstrap(c,p);
+  else await syntheticAuthVersionPin(c,p,false);
   const actual={};
   for(const service of ['db','kong','auth']){
     const info=(await jsonCommand(c,'INSPECT_'+p.side+'_'+service,['inspect','supabase_'+service+'_'+p.id]))[0];
@@ -837,24 +920,37 @@ function restoreArchiveSql(c,p,stage,archive,history=false){
   return command(c,stage,'docker',archiveBootstrapPsqlArguments(c,p),{input,maxMs:90_000,archivePsql:true,inputLines});
 }
 async function query(c,p,stage,sql){return JSON.parse((await psql(c,p,stage,Buffer.from(sql+'\n'))).toString().trim());}
-async function auth(c,p,route,{body=null,token=null,status=200}={}){
-  need(['/admin/users','/token?grant_type=password','/user'].includes(route),'AUTH_ROUTE');
-  c.stage=p.side+'_AUTH_'+(route==='/admin/users'?'CREATE':route==='/user'?'USER':'PASSWORD');
+function authRequestShape(c,p,route,body,method,status){
+  const adminUser=/^\/admin\/users\/([a-f0-9-]{36})$/i.exec(route),refresh=route==='/token?grant_type=refresh_token';
+  const original=['/admin/users','/token?grant_type=password','/user'].includes(route);
+  need(original||c.archive===false&&p.side==='B'&&(refresh||adminUser&&uuid(adminUser[1])),'AUTH_ROUTE');
+  const actualMethod=method??(body?'POST':'GET'),readback=Array.isArray(status);
+  need(adminUser?actualMethod==='GET'&&body===null||actualMethod==='DELETE'
+      &&body?.should_soft_delete===false&&Object.keys(body).length===1
+    :actualMethod===(route==='/user'?'GET':'POST'),'AUTH_METHOD');
+  need(!readback||adminUser&&actualMethod==='GET'&&JSON.stringify(status)==='[200,404]','AUTH_READBACK_STATUS');
+  return {method:actualMethod,admin:route==='/admin/users'||Boolean(adminUser),readback,
+    kind:adminUser?(actualMethod==='DELETE'?'DELETE':'ADMIN_USER'):refresh?'REFRESH':route==='/admin/users'?'CREATE':route==='/user'?'USER':'PASSWORD'};
+}
+async function auth(c,p,route,{body=null,token=null,status=200,method=null}={}){
+  const shape=authRequestShape(c,p,route,body,method,status);
+  c.stage=p.side+'_AUTH_'+shape.kind;
   need(Date.now()<c.deadline,'OPERATION_DEADLINE');
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),Math.min(10_000,c.deadline-Date.now()));
   try{
     const endpoint=c.archive?await archiveAuthEndpoint(c,p):null;
-    const url=new URL('/auth/v1'+route,endpoint?'http://'+endpoint.address+':8000':p.api),headers={apikey:route==='/admin/users'?p.service:p.anon};
+    const url=new URL('/auth/v1'+route,endpoint?'http://'+endpoint.address+':8000':p.api),headers={apikey:shape.admin?p.service:p.anon};
     if(token)headers.Authorization='Bearer '+token;if(body)headers['Content-Type']='application/json';
-    const response=await fetch(url,{method:body?'POST':'GET',headers,body:body?JSON.stringify(body):undefined,
+    const response=await fetch(url,{method:shape.method,headers,body:body?JSON.stringify(body):undefined,
       redirect:'error',signal:controller.signal});
     const reader=response.body?.getReader();need(reader,'AUTH_BODY');const chunks=[];let n=0;
     try{while(true){const part=await reader.read();if(part.done)break;n+=part.value.length;need(n<=64*1024,'AUTH_BODY_BOUND');chunks.push(Buffer.from(part.value));}}
     finally{await reader.cancel().catch(()=>{});}
     if(endpoint)assert.deepEqual(await archiveAuthEndpoint(c,p),endpoint,'ARCHIVE_AUTH_ENDPOINT_MOVED');
     c.authRequests.push({project:p.side,kind:c.stage,status:response.status,bodyBytes:n});
-    need(response.status===status,'AUTH_STATUS_'+response.status);
-    return status===200?JSON.parse(Buffer.concat(chunks).toString('utf8')):null;
+    need(shape.readback?status.includes(response.status):response.status===status,'AUTH_STATUS_'+response.status);
+    const user=response.status===200?JSON.parse(Buffer.concat(chunks).toString('utf8')):null;
+    return shape.readback?{status:response.status,user}:user;
   }finally{clearTimeout(timer);controller.abort();}
 }
 async function verifyArchiveAuthFunction(c,p){
@@ -867,6 +963,144 @@ async function verifyArchiveAuthFunction(c,p){
   const user=await auth(c,p,'/user',{token:login.access_token});need(user.id===created.id,'ARCHIVE_PROBE_AUTH_USER');
   need(user.user_metadata?.scope===metadata.scope,'ARCHIVE_PROBE_AUTH_METADATA');
   await auth(c,p,'/token?grant_type=password',{body:{email,password:password+'wrong'},status:400});
+}
+// This probe creates and deletes only its dedicated user in synthetic B.
+// Original archive Auth verification and every original restore SQL byte stay separate.
+function syntheticIssuedJwtClaims(token,userId){
+  need(typeof token==='string'&&token.length<=16384&&/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(token),'SYNTHETIC_AUTH_JWT');
+  const claims=JSON.parse(Buffer.from(token.split('.')[1],'base64url').toString('utf8'));
+  need(claims?.sub===userId&&uuid(claims.session_id)&&Number.isSafeInteger(claims.exp)
+    &&claims.exp>Date.now()/1000,'SYNTHETIC_AUTH_JWT_CLAIMS');
+  // Decoding an actual issuer response is not a signature/revocation assertion.
+  return Object.freeze({userId,sessionId:claims.session_id,expiresAt:claims.exp});
+}
+function syntheticAuthCountsSql(intent){
+  need(intent&&Object.keys(intent).sort().join(',')==='operationId,sessionId,userId'
+    &&uuid(intent.operationId)&&uuid(intent.userId)&&uuid(intent.sessionId),'SYNTHETIC_AUTH_IDENTITY');
+  const user=intent.userId,session=intent.sessionId;
+  return `select jsonb_build_object('users',(select count(*) from auth.users where id='${user}'::uuid),
+    'sessions',(select count(*) from auth.sessions where user_id='${user}'::uuid),
+    'matchingSession',(select count(*) from auth.sessions where user_id='${user}'::uuid and id='${session}'::uuid),
+    'refreshTokens',(select count(*) from auth.refresh_tokens where user_id::text='${user}'),
+    'identities',(select count(*) from auth.identities where user_id='${user}'::uuid),
+    'refreshed',exists(select 1 from auth.sessions where user_id='${user}'::uuid and id='${session}'::uuid and refreshed_at is not null));`;
+}
+function syntheticAuthDeleteReadback(intent,expected,admin,counts){
+  need(JSON.stringify(intent)===JSON.stringify(expected),'SYNTHETIC_AUTH_OPERATION_CHANGED');syntheticAuthCountsSql(intent);
+  need(counts&&Object.keys(counts).sort().join(',')==='identities,matchingSession,refreshTokens,refreshed,sessions,users'
+    &&['users','sessions','matchingSession','refreshTokens','identities'].every(k=>Number.isSafeInteger(counts[k])&&counts[k]>=0)
+    &&typeof counts.refreshed==='boolean','SYNTHETIC_AUTH_COUNTS');
+  need(admin?.status===404&&admin.user===null&&counts.users===0&&counts.sessions===0
+    &&counts.matchingSession===0&&counts.refreshTokens===0&&counts.identities===0&&!counts.refreshed,
+    'SYNTHETIC_AUTH_DELETE_COMMIT_UNKNOWN');
+  return Object.freeze({...intent,state:'AUTH_ABSENT_BY_ADMIN_AND_PG_READBACK'});
+}
+function syntheticAccountErasureAuthFenceSql(source,intent,actorId){
+  syntheticAuthCountsSql(intent);
+  need(uuid(actorId)&&actorId!==intent.userId&&source&&typeof source.sql==='string'
+    &&source.sha256===sha(Buffer.from(source.sql)),'SYNTHETIC_ERASURE_FENCE_SOURCE');
+  const tableStart='create table public.account_erasure_operations (',tableEnd='create function public.account_erasure_require_owner()',
+    guardStart='create function public.account_erasure_auth_uuid_guard()',guardEnd='comment on table public.account_erasure_operations is';
+  for(const marker of [tableStart,tableEnd,guardStart,guardEnd])
+    need(source.sql.split(marker).length===2,'SYNTHETIC_ERASURE_FENCE_SOURCE');
+  const outbox=source.sql.slice(source.sql.indexOf(tableStart),source.sql.indexOf(tableEnd)),
+    guard=source.sql.slice(source.sql.indexOf(guardStart),source.sql.indexOf(guardEnd)),
+    body=/as \$auth_uuid\$\n([\s\S]*?)\n\$auth_uuid\$;/.exec(guard)?.[1];
+  need(outbox.startsWith(tableStart)&&guard.startsWith(guardStart)&&typeof body==='string'
+    &&source.bodies?.account_erasure_auth_uuid_guard===sha(Buffer.from(body.trim())),
+    'SYNTHETIC_ERASURE_FENCE_SOURCE');
+  // Exactly the current migration's outbox DDL and Auth fence. The only small
+  // extra table is an explicit profile-id fixture with the actual Auth CASCADE.
+  // This is not a full profiles schema, PG-stage RPC or Storage qualification.
+  // The existing psql caller owns --single-transaction; do not end it here.
+  const sql=`set local lock_timeout='5s'; set local statement_timeout='30s';
+create table public.profiles(id uuid primary key references auth.users(id) on delete cascade);
+${outbox}${guard}
+insert into public.profiles(id) values('${intent.userId}'::uuid);
+with own_clock as(select clock_timestamp() as at)
+insert into public.account_erasure_operations(operation_id,target_user_id,requested_by,profile_was_active,state,prepared_at,updated_at,pg_staged_at)
+select '${intent.operationId}'::uuid,'${intent.userId}'::uuid,'${actorId}'::uuid,true,'PG_STAGED_AUTH_PENDING',at,at,at from own_clock;
+\n`;
+  return {sql,sourceSha256:source.sha256,outboxDdlSha256:sha(Buffer.from(outbox)),authGuardDdlSha256:sha(Buffer.from(guard)),
+    authGuardBodyMd5:crypto.createHash('md5').update(body.trim()).digest('hex')};
+}
+function syntheticAccountErasureAuthFenceReadbackSql(intent){
+  syntheticAuthCountsSql(intent);
+  return `select jsonb_build_object('profiles',(select count(*) from public.profiles where id='${intent.userId}'::uuid),
+    'outboxRows',(select count(*) from public.account_erasure_operations where operation_id='${intent.operationId}'::uuid
+      and target_user_id='${intent.userId}'::uuid and state='PG_STAGED_AUTH_PENDING' and pg_staged_at is not null),
+    'guardMd5',(select md5(btrim(prosrc,E' \\n\\r\\t')) from pg_catalog.pg_proc where oid='public.account_erasure_auth_uuid_guard()'::regprocedure),
+    'triggerScoped',exists(select 1 from pg_catalog.pg_trigger where tgname='account_erasure_auth_uuid_insert_guard'
+      and tgrelid='auth.users'::regclass and tgfoid='public.account_erasure_auth_uuid_guard()'::regprocedure
+      and tgtype=7 and tgenabled='O' and not tgisinternal));`;
+}
+async function verifySyntheticBAuthLifecycle(c,p,fixtureActorId){
+  need(c.archive===false&&p.side==='B'&&uuid(fixtureActorId),'SYNTHETIC_AUTH_LIFECYCLE_TARGET');
+  const email='owned-lifecycle-'+crypto.randomBytes(16).toString('hex')+'@example.invalid',password=crypto.randomBytes(32).toString('base64url');
+  const created=await auth(c,p,'/admin/users',{token:p.service,body:{email,password,email_confirm:true}});
+  need(uuid(created.id),'SYNTHETIC_AUTH_CREATED_USER');
+  const login=await auth(c,p,'/token?grant_type=password',{body:{email,password}});
+  need(login.user?.id===created.id&&typeof login.refresh_token==='string','SYNTHETIC_AUTH_LOGIN');
+  const claims=syntheticIssuedJwtClaims(login.access_token,created.id);
+  const currentUser=await auth(c,p,'/user',{token:login.access_token});need(currentUser.id===created.id,'SYNTHETIC_AUTH_USER');
+  const refreshed=await auth(c,p,'/token?grant_type=refresh_token',{body:{refresh_token:login.refresh_token}});
+  need(refreshed.user?.id===created.id&&typeof refreshed.refresh_token==='string','SYNTHETIC_AUTH_REFRESH');
+  const nextClaims=syntheticIssuedJwtClaims(refreshed.access_token,created.id);need(nextClaims.sessionId===claims.sessionId,'SYNTHETIC_AUTH_REFRESH_SESSION');
+  const intent=Object.freeze({operationId:crypto.randomUUID(),userId:created.id,sessionId:claims.sessionId}),expected=structuredClone(intent);
+  const admin=await auth(c,p,'/admin/users/'+intent.userId,{token:p.service});need(admin.id===intent.userId,'SYNTHETIC_AUTH_ADMIN_USER');
+  const sql=syntheticAuthCountsSql(intent),before=await query(c,p,'SYNTHETIC_AUTH_BEFORE_DELETE',sql);
+  need(before.users===1&&before.sessions===1&&before.matchingSession===1&&before.identities===1&&before.refreshed===true,'SYNTHETIC_AUTH_LIVE_SESSION');
+  const fence=syntheticAccountErasureAuthFenceSql(readAccountErasureSource(),intent,fixtureActorId),
+    fenceReadback=syntheticAccountErasureAuthFenceReadbackSql(intent);
+  await psql(c,p,'SYNTHETIC_ACCOUNT_ERASURE_AUTH_UUID_FENCE_SETUP',Buffer.from(fence.sql));
+  const fenceBefore=await query(c,p,'SYNTHETIC_ACCOUNT_ERASURE_AUTH_UUID_FENCE_BEFORE',fenceReadback);
+  assert.deepEqual(fenceBefore,{profiles:1,outboxRows:1,guardMd5:fence.authGuardBodyMd5,triggerScoped:true});
+  // One real native DELETE; deliberately discard its reply. A transport failure
+  // is likewise unknown until independent readback. Never retry the mutation here.
+  try{await auth(c,p,'/admin/users/'+intent.userId,{method:'DELETE',token:p.service,body:{should_soft_delete:false}});}
+  catch{/* Only exact admin + database absence can close an unknown outcome. */}
+  let first;
+  for(let i=0;i<2;i++){
+    const read=await auth(c,p,'/admin/users/'+intent.userId,{token:p.service,status:[200,404]});
+    const counts=await query(c,p,'SYNTHETIC_AUTH_DELETE_READBACK',sql);
+    const result=syntheticAuthDeleteReadback(intent,expected,read,counts);
+    if(first)assert.deepEqual(result,first);else first=result;
+  }
+  await auth(c,p,'/token?grant_type=refresh_token',{body:{refresh_token:refreshed.refresh_token},status:400});
+  need(claims.expiresAt>Date.now()/1000,'SYNTHETIC_AUTH_OLD_JWT_EXPIRED');
+  await auth(c,p,'/user',{token:login.access_token,status:403});
+  await auth(c,p,'/token?grant_type=password',{body:{email,password},status:400});
+  syntheticAuthDeleteReadback(intent,expected,{status:404,user:null},await query(c,p,'SYNTHETIC_AUTH_FINAL_ABSENCE',sql));
+  // The same former email/password with a custom erased UUID must fail in the
+  // real GoTrue transaction. No SQL Auth DELETE or legacy bootstrap is used.
+  await auth(c,p,'/admin/users',{token:p.service,body:{id:intent.userId,email,password,email_confirm:true},status:500});
+  const customRead=await auth(c,p,'/admin/users/'+intent.userId,{token:p.service,status:[200,404]});
+  syntheticAuthDeleteReadback(intent,expected,customRead,await query(c,p,'SYNTHETIC_AUTH_CUSTOM_ID_ROLLBACK',sql));
+  const fenceAfter=await query(c,p,'SYNTHETIC_ACCOUNT_ERASURE_AUTH_UUID_FENCE_AFTER',fenceReadback);
+  assert.deepEqual(fenceAfter,{...fenceBefore,profiles:0});
+  // Reuse the deleted account's own email so an unrelated email rejection
+  // cannot masquerade as the UUID fence. A genuine fresh UUID still logs in.
+  const fresh=await auth(c,p,'/admin/users',{token:p.service,body:{email,password,email_confirm:true}});
+  need(uuid(fresh.id)&&fresh.id!==intent.userId,'SYNTHETIC_AUTH_FRESH_UUID');
+  const freshLogin=await auth(c,p,'/token?grant_type=password',{body:{email,password}});
+  need(freshLogin.user?.id===fresh.id,'SYNTHETIC_AUTH_FRESH_UUID_LOGIN');
+  const freshClaims=syntheticIssuedJwtClaims(freshLogin.access_token,fresh.id);
+  need((await auth(c,p,'/user',{token:freshLogin.access_token})).id===fresh.id,'SYNTHETIC_AUTH_FRESH_UUID_USER');
+  const freshCounts=await query(c,p,'SYNTHETIC_AUTH_FRESH_UUID_SESSION',syntheticAuthCountsSql({operationId:crypto.randomUUID(),userId:fresh.id,sessionId:freshClaims.sessionId}));
+  need(freshCounts.users===1&&freshCounts.sessions===1&&freshCounts.matchingSession===1&&freshCounts.identities===1
+    &&freshCounts.refreshTokens>=1,'SYNTHETIC_AUTH_FRESH_UUID_SESSION');
+  syntheticAuthDeleteReadback(intent,expected,{status:404,user:null},await query(c,p,'SYNTHETIC_AUTH_ERASED_UUID_STILL_ABSENT',sql));
+  return Object.freeze({kind:'SYNTHETIC_B_GOTRUE_ADMIN_DELETE_REFRESH_READBACK',authImage:IMAGES.auth,
+    normalRefreshVerified:true,liveSessionVerified:true,normalHardDeleteVerifiedByReadback:true,
+    deleteAttempts:1,deleteReplyDeliberatelyDiscarded:true,stableReadbackCount:2,
+    refreshAndPasswordAfterDeleteRejected:true,oldAccessJwtStillUnexpired:true,oldJwtUserLookupRejected:true,
+    usersSessionsTokensIdentitiesAbsent:true,jwtRevocationClaimed:false,durableOutboxVerified:false,
+    authUuidFence:{sourceSha256:fence.sourceSha256,outboxDdlSha256:fence.outboxDdlSha256,authGuardDdlSha256:fence.authGuardDdlSha256,
+      exactCurrentMigrationFragments:true,profileIdFixtureOnly:true,profileAuthCascadeVerified:true,seededPgStageOnly:true,
+      customIdCreateRejectedAndRolledBack:true,erasedUuidStillAbsent:true,freshUuidSameEmailLoginVerified:true,
+      legacyBootstrapClaimed:false,fullAppSchemaVerified:false},
+    lifecycleRpcVerified:false,loginRefreshDeleteConcurrencyVerified:false,
+    unknownNetworkFaultInjected:false,productionAuthVerified:false});
 }
 function snapshotSql(){return `select jsonb_build_object(
  'row',(select jsonb_build_object('id',id,'owner',owner_id::text,'text',label,'decimal',amount::text,'metadata',metadata::text) from public.rr_restore_probe),
@@ -1866,7 +2100,9 @@ async function fixture({archive=false,inventoryOnly=false}={}){
     const restored=await auth(c,b,'/token?grant_type=password',{body:{email,password}});need(restored.user?.id===created.id&&typeof restored.access_token==='string','RESTORED_AUTH_LOGIN');
     const user=await auth(c,b,'/user',{token:restored.access_token});need(user.id===created.id,'RESTORED_USER_ID');assert.deepEqual(user.user_metadata,sourceUser.user_metadata);
     await auth(c,b,'/token?grant_type=password',{body:{email,password:password+'wrong'},status:400});
+    const syntheticAuthLifecycle=await verifySyntheticBAuthLifecycle(c,b,restored.user.id);
     result={status:'PASS',scope:'synthetic-standard-cli-local-restore',sourceHead:process.env.EXPECTED_HEAD_SHA,cliVersion:P.cli,
+      syntheticAuthLifecycle,
       standardFiveFileRoundtrip:true,utf8DecimalMetadata:true,rolesAndMigrationHistory:true,newAuthPasswordLogin:true,
       syntheticRelationPreflight:relationPreflight,syntheticNotValidChecks:notValidChecks,
       productionBackupVerified:false,cryptoR2Verified:false,productionAuthRestoreVerified:false};
@@ -1923,6 +2159,91 @@ async function selfTest(){
     +'COPY "auth"."users" ("id") FROM stdin;\n\\.\nCOPY "auth"."identities" ("id") FROM stdin;\n\\.\nCOPY "public"."Private_Public_Sentinel" ("value") FROM stdin;\nsecret-row\n\\.\n'
     +`SELECT pg_catalog.setval('"storage"."Private_Sequence_Sentinel"', 7, true);\n`;
   const inventoryHistory='COPY "supabase_migrations"."schema_migrations" ("version") FROM stdin;\n20200101\n\\.\n';
+
+  test('synthetic Auth UUID fence takes exact current migration fragments without Auth SQL stubs or legacy bootstrap',()=>{
+    const source=readAccountErasureSource(),intent={operationId:'11111111-1111-4111-8111-111111111111',
+      userId:'22222222-2222-4222-8222-222222222222',sessionId:'33333333-3333-4333-8333-333333333333'},actor='44444444-4444-4444-8444-444444444444';
+    const result=syntheticAccountErasureAuthFenceSql(source,intent,actor);
+    const table=source.sql.slice(source.sql.indexOf('create table public.account_erasure_operations ('),source.sql.indexOf('create function public.account_erasure_require_owner()')),
+      guard=source.sql.slice(source.sql.indexOf('create function public.account_erasure_auth_uuid_guard()'),source.sql.indexOf('comment on table public.account_erasure_operations is'));
+    assert(result.sql.includes(table));assert(result.sql.includes(guard));
+    assert.equal(result.sourceSha256,source.sha256);assert.equal(result.outboxDdlSha256,sha(Buffer.from(table)));
+    assert.equal(result.authGuardDdlSha256,sha(Buffer.from(guard)));
+    assert(result.sql.includes('public.profiles(id uuid primary key references auth.users(id) on delete cascade)'));
+    assert(!result.sql.includes('create table auth.users'));assert(!result.sql.includes('delete from auth.users'));
+    assert(!result.sql.includes('handle_new_ravradar_user'));assert(!result.sql.includes('create function public.stage_account_erasure_pg'));
+    assert.throws(()=>syntheticAccountErasureAuthFenceSql(source,intent,intent.userId));
+    assert.throws(()=>syntheticAccountErasureAuthFenceSql({...source,sql:source.sql+'-- changed'},intent,actor));
+    assert.throws(()=>syntheticAccountErasureAuthFenceSql({...source,bodies:{...source.bodies,account_erasure_auth_uuid_guard:'0'.repeat(64)}},intent,actor));
+    const duplicate=source.sql+'\ncreate function public.account_erasure_auth_uuid_guard()';
+    assert.throws(()=>syntheticAccountErasureAuthFenceSql({...source,sql:duplicate,sha256:sha(Buffer.from(duplicate))},intent,actor));
+    assert(syntheticAccountErasureAuthFenceReadbackSql(intent).includes("E' \\n\\r\\t'"));
+  });
+  test('synthetic A/B receive only a fresh owned Auth197 pin and refuse stale or redirected inputs',async()=>{
+    for(const side of ['A','B'])await ownArchive(async({c})=>{
+      c.archive=false;c.owner='123-1';const p={side,id:'rr_restore_123_1_'+side.toLowerCase(),dir:path.join(c.root,side)};
+      await fs.mkdir(path.join(p.dir,'supabase'),{recursive:true,mode:0o700});
+      for(const [context,project]of [[{...c,archive:true},p],[c,{...p,side:'X'}],[c,{...p,id:'other'}],[c,{...p,dir:c.root}]])
+        await assert.rejects(()=>syntheticAuthVersionPin(context,project,true),e=>e.code==='SYNTHETIC_AUTH_PIN_TARGET');
+      await syntheticAuthVersionPin(c,p,true);await syntheticAuthVersionPin(c,p,false);
+      const directory=path.join(p.dir,'supabase','.temp'),pin=path.join(directory,'gotrue-version');
+      assert.deepEqual(await fs.readdir(directory),['gotrue-version']);
+      assert.equal(await fs.readFile(pin,'utf8'),ARCHIVE_VENDOR_PINS['gotrue-version']);
+      await assert.rejects(()=>syntheticAuthVersionPin(c,p,true),e=>e.code==='SYNTHETIC_AUTH_PIN_INVENTORY');
+      await fs.writeFile(pin,'v2.196.0\n');await assert.rejects(()=>syntheticAuthVersionPin(c,p,false),e=>e.code==='SYNTHETIC_AUTH_PIN_VALUE');
+    });
+    for(const fault of ['linked','hardlink','directory'])await ownArchive(async({c})=>{
+      c.archive=false;c.owner='123-1';const p={side:'B',id:'rr_restore_123_1_b',dir:path.join(c.root,'B')};
+      await fs.mkdir(path.join(p.dir,'supabase'),{recursive:true,mode:0o700});await syntheticAuthVersionPin(c,p,true);
+      const directory=path.join(p.dir,'supabase','.temp');
+      if(fault==='linked')await fs.writeFile(path.join(directory,'project-ref'),'not-a-project',{flag:'wx'});
+      if(fault==='hardlink')await fs.link(path.join(directory,'gotrue-version'),path.join(c.root,'pin-alias'));
+      if(fault==='directory'){await fs.rename(directory,path.join(c.root,'pins'));
+        await fs.symlink(path.join(c.root,'pins'),directory,process.platform==='win32'?'junction':'dir');}
+      await assert.rejects(()=>syntheticAuthVersionPin(c,p,false),e=>/^SYNTHETIC_AUTH_PIN_/.test(e.code??''));
+    });
+  });
+  test('Auth delete and readback routes are exact synthetic-B operations and archive routes retain their old shape',()=>{
+    const c={archive:false},p={side:'B'},id='11111111-1111-4111-8111-111111111111',route='/admin/users/'+id;
+    for(const archive of [false,true])for(const [r,body,method]of [
+      ['/admin/users',{email:'fixture@example.invalid'},'POST'],['/token?grant_type=password',{password:'fixture'},'POST'],['/user',null,'GET']])
+      assert.equal(authRequestShape({archive},p,r,body,null,200).method,method);
+    assert.deepEqual(authRequestShape(c,p,route,null,null,[200,404]),{method:'GET',admin:true,readback:true,kind:'ADMIN_USER'});
+    assert.equal(authRequestShape(c,p,route,{should_soft_delete:false},'DELETE',200).kind,'DELETE');
+    assert.equal(authRequestShape(c,p,'/token?grant_type=refresh_token',{refresh_token:'fixture'},null,200).kind,'REFRESH');
+    for(const args of [[{archive:true},p,route,null,null,200],[c,{side:'A'},route,null,null,200],
+      [c,p,route+'?other=1',null,null,200],[c,p,'/admin/users/not-a-uuid',null,null,200],
+      [c,p,route,{should_soft_delete:true},'DELETE',200],[c,p,route,{should_soft_delete:false,other:true},'DELETE',200],
+      [c,p,route,null,'POST',200],[c,p,route,null,null,[200,401]],[c,p,'/user',null,null,[200,404]]])
+      assert.throws(()=>authRequestShape(...args),e=>/^AUTH_/.test(e.code??''));
+  });
+  test('unknown delete outcome closes only on stable operation plus exact admin and zero-row readback',()=>{
+    const intent={operationId:'11111111-1111-4111-8111-111111111111',userId:'22222222-2222-4222-8222-222222222222',sessionId:'33333333-3333-4333-8333-333333333333'},
+      counts={users:0,sessions:0,matchingSession:0,refreshTokens:0,identities:0,refreshed:false},admin={status:404,user:null};
+    const result=syntheticAuthDeleteReadback(intent,structuredClone(intent),admin,counts);
+    assert.equal(result.state,'AUTH_ABSENT_BY_ADMIN_AND_PG_READBACK');
+    assert.deepEqual(syntheticAuthDeleteReadback(structuredClone(intent),intent,admin,structuredClone(counts)),result);
+    for(const field of ['users','sessions','matchingSession','refreshTokens','identities'])
+      assert.throws(()=>syntheticAuthDeleteReadback(intent,intent,admin,{...counts,[field]:1}),e=>e.code==='SYNTHETIC_AUTH_DELETE_COMMIT_UNKNOWN');
+    for(const value of [{status:200,user:{id:intent.userId}},{status:401,user:null},{status:404,user:{id:intent.userId}},null])
+      assert.throws(()=>syntheticAuthDeleteReadback(intent,intent,value,counts),e=>e.code==='SYNTHETIC_AUTH_DELETE_COMMIT_UNKNOWN');
+    assert.throws(()=>syntheticAuthDeleteReadback(intent,intent,admin,{...counts,refreshed:true}),e=>e.code==='SYNTHETIC_AUTH_DELETE_COMMIT_UNKNOWN');
+    for(const changed of [{...intent,operationId:intent.userId},{...intent,userId:intent.sessionId},{...intent,sessionId:intent.userId}])
+      assert.throws(()=>syntheticAuthDeleteReadback(changed,intent,admin,counts),e=>e.code==='SYNTHETIC_AUTH_OPERATION_CHANGED');
+    for(const bad of [{...counts,users:-1},{...counts,users:'0'},{...counts,unexpected:'PRIVATE_SENTINEL'}])
+      assert.throws(()=>syntheticAuthDeleteReadback(intent,intent,admin,bad),e=>e.code==='SYNTHETIC_AUTH_COUNTS');
+    assert.throws(()=>syntheticAuthCountsSql({...intent,userId:"';delete from auth.users;--"}),e=>e.code==='SYNTHETIC_AUTH_IDENTITY');
+    assert.throws(()=>syntheticAuthCountsSql({...intent,unexpected:'PRIVATE_SENTINEL'}),e=>e.code==='SYNTHETIC_AUTH_IDENTITY');
+  });
+  test('issued JWT claim projection proves only identity and remaining exp, never signature or revocation',()=>{
+    const id='22222222-2222-4222-8222-222222222222',session='33333333-3333-4333-8333-333333333333',exp=Math.floor(Date.now()/1000)+3600;
+    const token=claims=>'e30.'+Buffer.from(JSON.stringify(claims)).toString('base64url')+'.not_verified';
+    assert.deepEqual(syntheticIssuedJwtClaims(token({sub:id,session_id:session,exp,privateCanary:'NEVER_REPORT'}),id),
+      {userId:id,sessionId:session,expiresAt:exp});
+    for(const claims of [{sub:session,session_id:session,exp},{sub:id,session_id:'invalid',exp},{sub:id,session_id:session,exp:1},
+      {sub:id,session_id:session,exp:String(exp)}])assert.throws(()=>syntheticIssuedJwtClaims(token(claims),id));
+    for(const bad of ['', 'not-a-jwt','a.b.c.d','a'.repeat(16385)])assert.throws(()=>syntheticIssuedJwtClaims(bad,id));
+  });
 
   test('archive CHECK staging wraps both original DATA streams without changing original file bytes',async()=>{
     await ownArchive(async({c,index,materialize,env,source})=>{
@@ -2194,7 +2515,7 @@ async function selfTest(){
       assert.equal(await fs.readFile(path.join(directory,'storage-version'),'utf8'),'v1.86.0\n');
       assert.deepEqual((await fs.readdir(directory)).sort(),['cli-latest','gotrue-version','storage-version']);
       await assert.rejects(()=>prepareArchiveVendorBootstrap(c,p),error=>error.code==='ARCHIVE_VENDOR_PIN_EXISTS');
-      assert.equal(P.cli,'2.117.0');assert.equal(IMAGES.auth,'supabase/gotrue:v2.196.0');
+      assert.equal(P.cli,'2.117.0');assert.equal(IMAGES.auth,'supabase/gotrue:v2.197.0');
       for(const [name,service]of [['gotrue-version','auth'],['storage-version','storage']])
         assert.equal(ARCHIVE_VENDOR_PINS[name],ARCHIVE_VENDOR_IMAGES[service].split(':').at(-1)+'\n');
       const body=startProject.toString();
@@ -2231,12 +2552,12 @@ async function selfTest(){
       await assert.rejects(()=>verifyArchiveVendorBootstrap(c,p),error=>/^ARCHIVE_VENDOR_/.test(error.code??''));
     });
   });
-  test('archive B uses exact Auth197 while synthetic A and B retain exact Auth196 and the same other images',()=>{
+  test('archive B and synthetic A/B use exact Auth197 and the same other images',()=>{
     const imageId='sha256:'+'a'.repeat(64),image={Id:imageId,RepoDigests:['synthetic-public-image-digest']};
     const info=tag=>({Image:imageId,Config:{Image:'ghcr.io/supabase/'+tag}});
     for(const side of ['A','B']){
-      assert.equal(serviceImageMetadata({archive:false},{side},'auth',info('gotrue:v2.196.0'),image).id,imageId);
-      assert.throws(()=>serviceImageMetadata({archive:false},{side},'auth',info('gotrue:v2.197.0'),image),error=>error.code==='UNEXPECTED_SERVICE_IMAGE');
+      assert.equal(serviceImageMetadata({archive:false},{side},'auth',info('gotrue:v2.197.0'),image).id,imageId);
+      assert.throws(()=>serviceImageMetadata({archive:false},{side},'auth',info('gotrue:v2.196.0'),image),error=>error.code==='UNEXPECTED_SERVICE_IMAGE');
     }
     assert.equal(serviceImageMetadata({archive:true},{side:'B'},'auth',info('gotrue:v2.197.0'),image).id,imageId);
     for(const tag of ['gotrue:v2.196.0','gotrue:v2.198.0','gotrue:latest'])
@@ -2691,6 +3012,100 @@ async function selfTest(){
         });
       }
     },{roleSql:sql});
+  });
+
+  test('archive42501 classifies only the fixed builtin ACL resource and denial forms',()=>{
+    const lines={ranges:new Map([['DATA',{first:1,last:1}]])};
+    const wire=message=>Buffer.from('psql:<stdin>:1: ERROR:  42501: '+message+'\nLOCATION:  aclcheck_error, aclchk.c:2843\n');
+    for(const resource of ['table','schema','sequence','function','type','parameter']){
+      const report=archiveInputDiagnostic(wire('permission denied for '+resource+' private-object-sentinel'),'SQLSTATE_42501',lines);
+      assert.equal(report.permissionDenied.state,'BUILTIN_ACL_DENIAL');assert.equal(report.permissionDenied.resourceClass,resource.toUpperCase());
+      assert.equal(report.permissionDenied.denialClass,'PRIVILEGE_REQUIRED');assert.equal(report.permissionDenied.relationClass,'UNKNOWN');
+      assert.equal(report.permissionDenied.nativeObjectTextSha256,sha(Buffer.from('private-object-sentinel')));
+      assert(!JSON.stringify(report).includes('private-object-sentinel'));
+    }
+    for(const resource of ['table','schema','sequence','function','type','relation']){
+      const report=archiveInputDiagnostic(wire('must be owner of '+resource+' private-owner-sentinel'),'SQLSTATE_42501',lines);
+      assert.equal(report.permissionDenied.state,'BUILTIN_ACL_DENIAL');assert.equal(report.permissionDenied.denialClass,'OWNER_REQUIRED');
+      assert.equal(report.permissionDenied.resourceClass,resource.toUpperCase());assert(!JSON.stringify(report).includes('private-owner-sentinel'));
+    }
+    for(const message of ['must be owner of parameter private','permission denied for relation private','permission denied for unsupported private'])
+      assert.deepEqual(archiveInputDiagnostic(wire(message),'SQLSTATE_42501',lines).permissionDenied,{state:'UNAVAILABLE'});
+  });
+  test('archive42501 attaches a fixed relation label only through unique admitted phase inventory',async()=>{
+    await ownArchive(async({c,env,index,materialize})=>{
+      const archive=await materializeArchiveInputs(c,index,{env,archive:materialize});c.archive=true;
+      const inventory=await collectArchiveRelationInventory(c,archive),inputLines={next:1,ranges:new Map()};
+      for await(const _chunk of materializedRestoreBytes(c,archive,false,inputLines)){}
+      const line=inputLines.ranges.get('DATA').first;
+      const report=(object,inv=inventory,resource='table')=>archiveInputDiagnostic(Buffer.from('psql:<stdin>:'+line+': ERROR:  42501: permission denied for '
+        +resource+' '+object+'\nLOCATION:  aclcheck_error, aclchk.c:2843\n'),'SQLSTATE_42501',inputLines,inv).permissionDenied;
+      for(const object of ['users','"users"','auth.users','"auth"."users"']){
+        assert.equal(report(object).relationClass,'AUTH_USERS');assert.equal(report(object).objectBinding,'UNIQUE_ARCHIVE_INVENTORY');
+      }
+      for(const inv of [null,{...inventory,complete:false},{...inventory,digest:'invalid'},
+        {...inventory,relations:inventory.relations.map(row=>row.relationClass==='AUTH_USERS'?{...row,relationClass:'STORAGE_OBJECTS'}:row)}]){
+        assert.equal(report('users',inv).relationClass,'UNKNOWN');assert.equal(report('users',inv).objectBinding,'UNKNOWN');
+      }
+      const ambiguous={...inventory,relations:[...inventory.relations,archiveRelationEntry('data.sql','COPY','"public"."users"')]};
+      assert.equal(report('users',ambiguous).relationClass,'UNKNOWN');
+      assert.equal(report('"auth"."users"',ambiguous).relationClass,'AUTH_USERS');
+      assert.equal(report('users',inventory,'sequence').relationClass,'UNKNOWN');
+      assert.equal(report('auth',inventory,'schema').relationClass,'UNKNOWN');
+      assert.equal(report('private-unlisted-sentinel').relationClass,'UNKNOWN');
+      assert(!JSON.stringify(report('private-unlisted-sentinel')).includes('private-unlisted-sentinel'));
+      const wrongPhase={...inventory,relations:inventory.relations.map(row=>({...row,phase:'HISTORY_DATA'}))};
+      assert.equal(report('users',wrongPhase).relationClass,'UNKNOWN');
+    },{fileSql:{'data.sql':'COPY "auth"."users" ("id") FROM stdin;\n\\.\nCOPY "auth"."identities" ("id") FROM stdin;\n\\.\n','history-data.sql':'-- empty history\n'}});
+  });
+  test('archive42501 refuses ambiguous multiline and foreign-routine diagnostics without private text',()=>{
+    const lines={ranges:new Map([['DATA',{first:1,last:1}]])},unknown={state:'UNAVAILABLE'};
+    const frame='psql:<stdin>:1: ERROR:  42501: permission denied for table private-diagnostic-sentinel\n';
+    const location='LOCATION:  aclcheck_error, aclchk.c:2843\n';
+    for(const text of [frame,frame+location+'private trailing sentinel\n',frame+location+frame+location,
+      frame+location+'ERROR: 42501 private second error\n',frame+location.replace('aclcheck_error','exec_stmt_raise'),
+      frame+location.replace('aclchk.c','pl_exec.c'),frame+location.replace(':2843',':0'),
+      frame.replace('private-diagnostic-sentinel','private\nmultiline')+location,
+      frame.replace('permission denied for table','permission denied to table')+location,
+      frame.replace('42501:','P0001:')+location,frame+location+location,
+      frame.replace('private-diagnostic-sentinel','x'.repeat(513))+location]){
+      const report=archiveInputDiagnostic(Buffer.from(text),'SQLSTATE_42501',lines);
+      assert.deepEqual(report.permissionDenied??unknown,unknown);
+      const safe=safeError({code:'SQLSTATE_42501',exit:3,...report},'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA');
+      assert(!JSON.stringify(safe).includes('private')&&!JSON.stringify(safe).includes('multiline'));
+    }
+    const known=archiveInputDiagnostic(Buffer.from(frame+location),'SQLSTATE_42501',lines).permissionDenied;
+    assert.equal(known.state,'BUILTIN_ACL_DENIAL');
+    assert.deepEqual(publicArchivePermissionDiagnostic({...known,rawName:'private-sentinel'}),unknown);
+    assert.deepEqual(publicArchivePermissionDiagnostic({...known,relationClass:'PRIVATE_UNLISTED'}),unknown);
+    assert.deepEqual(publicArchivePermissionDiagnostic({...known,objectBinding:'UNIQUE_ARCHIVE_INVENTORY'}),unknown);
+    const invalidUtf8=Buffer.concat([Buffer.from(frame.replace('private-diagnostic-sentinel','')),Buffer.from([255]),Buffer.from(location)]);
+    assert.deepEqual(archiveInputDiagnostic(invalidUtf8,'SQLSTATE_42501',lines).permissionDenied,unknown);
+    for(const [stage,owner,code]of [['OTHER','DATA','SQLSTATE_42501'],['RESTORE_ARCHIVE_HISTORY','DATA','SQLSTATE_42501'],
+      ['RESTORE_ARCHIVE_ROLES_SCHEMA_DATA','ROLES','SQLSTATE_42501'],['RESTORE_ARCHIVE_ROLES_SCHEMA_DATA','DATA','SQLSTATE_23514']])
+      assert.equal(safeError({code,inputOwner:owner,permissionDenied:known},stage).permissionDenied,undefined);
+  });
+  test('normal DATA and HISTORY commands retain first42501 and closed children with bounded ACL diagnostic',async()=>{
+    await ownArchive(async({c,env,index,materialize})=>{
+      const archive=await materializeArchiveInputs(c,index,{env,archive:materialize});c.archive=true;c.home=c.root;c.processes=[];
+      c.archiveRelationInventory=await collectArchiveRelationInventory(c,archive);
+      for(const [history,stage,owner]of [[false,'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA','DATA'],[true,'RESTORE_ARCHIVE_HISTORY','HISTORY']]){
+        const inputLines={next:1,ranges:new Map()},chunks=[];
+        for await(const chunk of materializedRestoreBytes(c,archive,history,inputLines))chunks.push(chunk);
+        const stderr='psql:<stdin>:'+inputLines.ranges.get(owner).first+': ERROR:  42501: permission denied for table '+(history?'identities':'users')+'\nLOCATION:  aclcheck_error, aclchk.c:2843\n';
+        const child=['-e','process.stdin.resume();process.stdin.on("end",()=>{process.stderr.write('+JSON.stringify(stderr)+',()=>process.exit(3));});'];
+        const input=(async function*(){for(const chunk of chunks)yield chunk;})();
+        await assert.rejects(command(c,stage,process.execPath,child,{input,archivePsql:true,inputLines,maxMs:10_000}),error=>{
+          assert.equal(error.code,'SQLSTATE_42501');assert.equal(error.exit,3);assert.equal(error.inputOwner,owner);
+          const first=safeError(error,stage);assert.equal(first.permissionDenied.state,'BUILTIN_ACL_DENIAL');
+          assert.equal(first.permissionDenied.relationClass,history?'AUTH_IDENTITIES':'AUTH_USERS');assert.equal(first.permissionDenied.objectBinding,'UNIQUE_ARCHIVE_INVENTORY');
+          const report=restorePublicReport(c,null,first,true);assert.equal(report.status,'FAILED_CLOSED');assert.equal(report.ownedDockerClosed,true);
+          assert.notEqual(report.fullDatabaseBackupVerified,true);assert(!JSON.stringify(first).includes('table users'));return true;
+        });
+      }
+      assert(c.processes.every(p=>p.processGroupClosed));
+    },{fileSql:{'data.sql':'COPY "auth"."users" ("id") FROM stdin;\n\\.\n',
+      'history-data.sql':'COPY "auth"."identities" ("id") FROM stdin;\n\\.\n'}});
   });
 
   test('owned archive GRANT 42704 projects only the exact missing role class',async()=>{

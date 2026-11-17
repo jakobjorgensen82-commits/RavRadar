@@ -2,6 +2,9 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { assertSource598CodeSourceSelected } from '../check-assistant-later-h0-predecessor-source.mjs';
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 // TEST INPUT ONLY: exact V7 scalar-planning callback extraction, before all
 // immutable old updater oracles. Current DMI/loader tests use actual V7 code.
@@ -20,6 +23,32 @@ export const DMI_SCALAR_PLANNING_UPDATER_TEST_REVIEW = Object.freeze({
   ]
 ].map(hunk => Object.freeze(hunk))),
 });
+// Historical source data only. Reuse the issued CODE598 origin and the
+// scalar-planning oracle's existing AFTER identity before older inverses.
+// Current callers and LF7 tests continue to read the raw current updater.
+export function readHistoricalWeatherRestartUpdaterSource() {
+  assert.equal(arguments.length, 0, 'HISTORICAL_WEATHER_UPDATER_ARGUMENTS');
+  const selected = assertSource598CodeSourceSelected();
+  const row = DMI_SCALAR_PLANNING_UPDATER_TEST_REVIEW;
+  const root = fileURLToPath(new URL('../../', import.meta.url));
+  const env = {
+    ...Object.fromEntries(['PATH', 'Path', 'SystemRoot', 'WINDIR', 'TEMP', 'TMP']
+      .filter(key => typeof process.env[key] === 'string').map(key => [key, process.env[key]])),
+    GIT_NO_LAZY_FETCH: '1', GIT_NO_REPLACE_OBJECTS: '1', GIT_OPTIONAL_LOCKS: '0',
+    GIT_TERMINAL_PROMPT: '0', GIT_CONFIG_NOSYSTEM: '1',
+    GIT_CONFIG_GLOBAL: process.platform === 'win32' ? 'NUL' : '/dev/null',
+    GIT_CONFIG_COUNT: '1', GIT_CONFIG_KEY_0: 'protocol.allow', GIT_CONFIG_VALUE_0: 'never',
+  };
+  const git = args => execFileSync('git', ['-C', root, ...args], {
+    env, timeout: 10000, maxBuffer: row.after.bytes + 1, stdio: ['pipe', 'pipe', 'pipe'],
+  });
+  assert.equal(git(['rev-parse', selected.head + '^{tree}']).toString('ascii').trim(), selected.tree,
+    'HISTORICAL_WEATHER_UPDATER_ORIGIN_TREE');
+  const raw = git(['cat-file', 'blob', selected.head + ':' + row.path]);
+  assert.equal(raw.length, row.after.bytes, 'HISTORICAL_WEATHER_UPDATER_ORIGINAL_SIZE');
+  assert.equal(sha(raw), row.after.sha256, 'HISTORICAL_WEATHER_UPDATER_ORIGINAL_WHOLE');
+  return new TextDecoder('utf-8', { fatal: true }).decode(raw);
+}
 export function inverseDmiScalarPlanningUpdaterTestInput(source, relative) {
   assert.equal(arguments.length, 2, 'DMI_SCALAR_PLANNING_UPDATER_ARGUMENTS');
   assert.equal(typeof source, 'string', 'DMI_SCALAR_PLANNING_UPDATER_TYPE');

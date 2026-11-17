@@ -1,5 +1,23 @@
 <!-- RAVRADAR_ACTIVE_ENTRY_START -->
 
+## LF7-observation, historiske prøveinput og uafhængig levering
+
+Den afgrænsede LF7-opfølgning observerer det normale vandstandskildevalg, T+3-støtte og beregnede slutværdier i de syv kystzoner. Den ændrer ikke kildevalg, strøm-/temperaturudelukkelse, interpolation, scoreformel, administratorpunkter eller geometri. Manglende eller modstridende observation mærkes ærligt; den bliver ikke en ny produktionsgate eller et bevis for komplet dækning.
+
+Historiske updaterorakler bruger deres eksisterende autentiske SOURCE598-original før de uændrede inverser. Aktuelle produktkaldere prøves fortsat på rå aktuel kode. De kendte helper-/kalderfiler vælger hele normale mål gennem permanent naturligt testansvar, og protokolprøven forbereder kun sine egne kunstige mål. Ukendte og beskyttede input beholder de normale udvidede kontroller.
+
+Kun den begrænsede LF7-metadata bevares før den store arbejdsejer frigives. Kildekvalifikation, faktisk installation og generationsbundet LF7-/SOURCE-/T+3-accept dokumenteres særskilt; lokale prøver eller en plan afslutter ikke revisionens syv krav eller målets øvrige områder.
+
+
+## Afgrænset forklaring af arkivets rettighedsafslag
+
+Ved en SQLSTATE42501 under arkivets DATA eller HISTORY kan den eksisterende fejllæser projicere en fast rettigheds- eller ejerkategori. Det kræver præcis én verbose-fejlramme og den afsluttende PostgreSQL-rutine aclcheck_error i aclchk.c samt en dokumenteret fast beskedform. Kun kendte ressourceklasser accepteres; ukendt, flertydig, flerlinjet eller ændret diagnostic giver UNAVAILABLE. Egen RAISE og andre rutiner bliver ikke gættet til en ACL-årsag.
+
+En fast relationslabel kræver ét entydigt match i den pågældende fases allerede komplette, identitetskontrollerede arkivinventar. Manglende eller modstridende inventory og private eller ukendte relationer beholder UNKNOWN-binding. Kun faste kategorier og SHA-256 af den begrænsede native objekttekst kan rapporteres. Denne hash er hverken et kanonisk kvalificeret relationsnavn, katalogbevis eller ret til at ændre adgang. Frie navne, SQL, fejltekst, rækker og andre private værdier udskrives ikke.
+
+Dette forklarer en allerede afvist operation; det ændrer ingen rolle, grant, SQL-strøm, constraint, rækkefølge, frist, oprindelig fejl eller acceptregel. De fem autentiske SQL-filer, indholds-/dublet-/sekvensparitet, Auth-funktion og ejet oprydning bevares. Den normale hele selvtest dækker klassifikation, privacy og de faktiske DATA-/HISTORY-fejlkaldere med syntetisk stderr. Den beviser ikke en bestemt årsag i originalarkivet eller en vellykket originalgendannelse. Præcis kildekvalifikation og et senere normalt originalforsøg skal stadig levere deres egne beviser.
+
+
 # Aktiv indgang til RavRadar
 
 Læs denne korte indgang og de fire aktive indgange nedenfor før arbejde. Stop den obligatoriske startlæsning ved deres historikmarkør. De uændrede daterede afsnit er opslagsmateriale; deres tidligere ord som »aktuel«, »næste« og »færdig« er ikke en ny opgave eller en beskrivelse af nuværende drift.
@@ -11,7 +29,7 @@ Målet er færdiggørelse og selvstændig drift senest **18. november 2026**. De
 3. [Fungerende drift og dens begrænsninger](../rdks/90_INDEX/CURRENT_TRUTH.md).
 4. [Åbne leverancer og krav til afslutning](../rdks/90_INDEX/IMPLEMENTATION_STATUS.md).
 
-**Prioritet:** Bevar almindelig vejrhentning, reel dækning, fremadrettet historik og offentlig levering. Færdiggør afgrænsede rettelser sideløbende, uden at kontrolarbejde holder vejret pauset i timer. Den fungerende numeriske driftsfamilie er 598. Gamle samlede Source-pakker er udgået som leveringsenheder. Målkrav verificeres på aktuel main; en ny Source-overgang er ikke et selvstændigt slutmål. Kun konkrete aktuelle kodehuller begrunder nye ændringer. Relevante krav til numerik, originaler, adgang og faktiske beviser består.
+**Prioritet:** Bevar almindelig vejrhentning, reel dækning, fremadrettet historik og offentlig levering. Færdiggør afgrænsede rettelser sideløbende, uden at kontrolarbejde holder vejret pauset i timer. Den fungerende numeriske driftsfamilie er 599. Gamle samlede Source-pakker er udgået som leveringsenheder. Målkrav verificeres på aktuel main; en ny Source-overgang er ikke et selvstændigt slutmål. Kun konkrete aktuelle kodehuller begrunder nye ændringer. Relevante krav til numerik, originaler, adgang og faktiske beviser består.
 
 Historiske workflowprøver bruger deres eget allerede fastlagte input; aktuelle sikkerhedsrammer prøves særskilt på rå aktuelle workflows. Det omfatter også Python-WAM-prøvens to kaldere; den aktuelle reentry-expression læses fortsat rå. Den seneste kontrolrettelse er lokalt målprøvet, men samlet kildekvalifikation, nødvendig PostgreSQL og installation mangler fortsat. Dette afslutter ikke revisionens syv målkrav.
 
@@ -22,6 +40,10 @@ Find derefter det seneste private checkpoint i den eksisterende isolerede arbejd
 Læs kun yderligere historik, krav, håndbog og kode, som den konkrete opgave afhænger af. Genbrug allerede leveret arbejde; genåbn det kun ved en ny konkret fejl eller relevant ændring. Manglende evidens må ikke omdøbes til bestået.
 
 Den afgrænsede DMI-cadencerettelse og arkivlæserrettelse leveres uden LF7-observation. DMI-markøren bindes til den faktisk valgte produktionsreference med uændrede budgetter og konservativ legacyregel. Arkivlæseren bevarer hele CHECK-kataloget og lader urørte arve-/partitionsregler håndhæves. Den identiske reader/SQL-fixture er syntetisk Linux-afprøvet; originalrestore og faktisk virkning i næste normale kald er særskilte åbne beviser. Se DEC-0254/0302 og håndbog89.294/89.350.
+
+### Manuel kontosletning — forberedt samlet leverance
+
+Den manuelle kontosletning er nu forberedt som én samlet app600-kandidat med fast modelfamilie599: holdbar UUID-outbox og slettebarrierer, normal Auth/D1-controller, ejerens genoptagelsesflade og serverbundet pendingliste. Den ene appmigration skal kvalificeres gennem faktisk normal PostgreSQL og installeres/genlæses før server/UI. Lokale prøver og den særskilte Auth-UUID-prøve er ikke accept af hele appen, låseracer, D1 eller faktisk sletning. Automatisk inaktivitet/varsel, statistik/privacy og backup-/restorebarrierer forbliver åbne. Se håndbog89.351.
 
 <!-- RAVRADAR_ACTIVE_ENTRY_END -->
 

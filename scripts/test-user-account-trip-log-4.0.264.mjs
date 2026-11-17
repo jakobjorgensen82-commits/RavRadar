@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { isManualAccountErasureOperation, validateManualAccountErasurePayload, MANUAL_ACCOUNT_ERASURE_CONFIRMATION }
+  from '../supabase/functions/_shared/account-lifecycle.js';
 import fs from 'node:fs';
 
 const account = fs.readFileSync('js/ui/account-panel.js', 'utf8');
@@ -402,6 +404,11 @@ const edgeScope = {
   requireAuthenticatedUserId: async () => {
     edgeCalls.push(['auth']); if (!edgeUser) throw new TestGatewayError(401, 'LOGIN_REQUIRED'); return edgeUser;
   },
+  isManualAccountErasureOperation, validateManualAccountErasurePayload,
+  runManualAccountErasure: async (_request, actor, payload) => {
+    edgeCalls.push(['account-erasure', actor, payload.operation, payload.operationId]);
+    return { operationId: payload.operationId, state: 'PREPARED', complete: false };
+  },
   exportOwnTripPage: async (...args) => { edgeCalls.push(['export', ...args]); return { rows: [], snapshot_at: snapshot, next_cursor: null }; },
   listOwnTripObservations: async (...args) => { edgeCalls.push(['list', ...args]); return []; },
   jsonResponse: (_request, body) => new Response(JSON.stringify(body)),
@@ -433,6 +440,34 @@ assert.deepEqual(edgeCalls.map(row => row[0]), ['rate']);
 rateFailure = false; edgeCalls.length = 0;
 assert.equal((await callEdge({ limit: 100 })).status, 200);
 assert.deepEqual(edgeCalls.at(-1), ['list', ownerA, 100], 'Den eksisterende logkalder bevares.');
+
+const erasureOperation='33333333-3333-4333-8333-333333333333',erasureAttempt='44444444-4444-4444-8444-444444444444';
+for(const payload of [
+  {operation:'account-erasure-prepare',operationId:erasureOperation,targetUserId:ownerB},
+  {operation:'account-erasure-status',operationId:erasureOperation},
+  {operation:'account-erasure-resume',operationId:erasureOperation,attemptId:erasureAttempt,confirmation:MANUAL_ACCOUNT_ERASURE_CONFIRMATION},
+  {operation:'account-erasure-list'},
+  {operation:'account-erasure-list',afterOperationId:erasureOperation},
+]){
+  edgeCalls.length=0;const response=await callEdge(payload);assert.equal(response.status,200);
+  assert.equal(response.headers.get('cache-control'),'no-store');
+  assert.deepEqual(edgeCalls,[['rate','trip-log','{"minute":12,"hour":120,"globalDay":5000}'],['auth'],
+    ['account-erasure',ownerA,payload.operation,payload.operationId]]);
+}
+edgeCalls.length=0;
+for(const payload of [
+  {operation:'account-erasure-prepare',operationId:erasureOperation,targetUserId:ownerB,actorId:ownerB},
+  {operation:'account-erasure-status',operationId:erasureOperation,targetUserId:ownerB},
+  {operation:'account-erasure-resume',operationId:erasureOperation,attemptId:erasureAttempt,confirmation:'STAGE-MANUAL-ACCOUNT-PG-ERASURE'},
+  {operation:'account-erasure-resume',operationId:erasureOperation,attemptId:'not-a-uuid',confirmation:MANUAL_ACCOUNT_ERASURE_CONFIRMATION},
+  {operation:'account-erasure-resume',operationId:erasureOperation,attemptId:erasureAttempt,confirmation:MANUAL_ACCOUNT_ERASURE_CONFIRMATION,d1Acknowledged:true},
+  {operation:'account-erasure-list',actorId:ownerB},
+  {operation:'account-erasure-list',afterOperationId:'invalid'},
+])assert.equal((await callEdge(payload)).status,400);
+assert.deepEqual(edgeCalls,[],'Forged erasure authority is refused before rate/auth/controller.');
+edgeUser=null;
+assert.equal((await callEdge({operation:'account-erasure-status',operationId:erasureOperation})).status,401);
+assert.equal(edgeCalls.some(row=>row[0]==='account-erasure'),false);edgeUser=ownerA;edgeCalls.length=0;
 
 // Run the normal renderer/click handler; failure must never create a blob.
 async function checkExportButton({ fail = false, switchOwner = false, stop = null, readExport = null } = {}) {

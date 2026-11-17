@@ -127,6 +127,41 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
   ownerErasure:[
     'node --test scripts/test-delete-trip-owner-data-readback.mjs',
   ],
+  waterSourceRouting:[
+    "node scripts/test-water-source-forecast-routing-4.0.100.mjs",
+    "node scripts/test-water-source-automatic-selection-4.0.101.mjs",
+    "node scripts/test-water-source-production-chain-4.0.103.mjs",
+    "node scripts/test-water-regressions-4.0.104.mjs"
+  ],
+  weatherUpdater:[
+    "node scripts/test-dmi-acquisition-resilience.mjs",
+    "node scripts/test-dmi-forecast-store.mjs",
+    "node scripts/test-dmi-part-continuity.mjs",
+    "node scripts/test-dmi-marine-run-seam-recovery.mjs",
+    "node scripts/test-dmi-bulk-storage.mjs",
+    "node --test scripts/test-current-operational-python-contracts.mjs scripts/test-dmi-bulk-forecast-integration.mjs scripts/test-dmi-protected-tuple-continuity.mjs scripts/test-protected-live-current-assembly.mjs",
+    "node --test scripts/test-weather-component-normal-wireup.mjs",
+    "node scripts/test-weather-acquisition-workflows.mjs",
+    "node scripts/test-current-operational-live-adapter.mjs",
+    "node scripts/test-public-weather-continuity.mjs",
+    "node scripts/test-bounded-json-writer.mjs",
+    "node scripts/test-private-conditions-hourly.mjs",
+    "node scripts/test-bounded-conditions-predecessor-transition.mjs",
+    "node --test scripts/test-public-hour-delivery-pack.mjs scripts/test-progressive-public-conditions-4.0.216.mjs scripts/test-public-nonblocking-forecast-4.0.83.mjs scripts/test-map-zoom-refresh-4.0.88.mjs scripts/test-public-search-pages.mjs",
+    "node --test scripts/test-current-provenance-sealing.mjs",
+    "node --test scripts/test-ravscore-integrated-generator.mjs scripts/test-ravscore-recovery-replay.mjs scripts/test-score-prognosis-plain-copy.mjs scripts/test-ravscore-initial-current-window-audit.mjs scripts/test-saved-current-window-scratch.mjs scripts/test-post-h0-dmi-original-dependencies.mjs scripts/test-saved-current-forward-original-plan.mjs",
+    "node scripts/test-ravscore-production-adapters.mjs",
+    "node scripts/test-runtime-diagnostics-envelope-4.0.234.mjs",
+    "node scripts/test-admin-config-production-contract-4.0.94.mjs",
+    "node --test scripts/test-weather-component-runtime.mjs scripts/test-open-meteo-part-bank.mjs scripts/test-open-meteo-part-runtime.mjs scripts/test-open-meteo-normal-component-chain.mjs"
+  ],
+  runtimeAudit:[
+    "node scripts/test-ravscore-public-runtime-contract.mjs",
+    "node scripts/test-ravscore-public-data-service-binding.mjs",
+    "node scripts/test-ravscore-integrated-public-runtime-audit.mjs",
+    "node scripts/test-ravscore-integrated-public-consumers.mjs",
+    "node scripts/test-ravscore-public-browser-closure.mjs"
+  ],
   // Shared capture/SAVE/restore, authenticated audit and local installation.
   // The ordinary package group plus its actual caller contracts run in full.
   weatherProgressRecovery:[
@@ -146,6 +181,12 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
   ],
   actionVersions:[
     'node scripts/test-github-action-versions.mjs',
+  ],
+  historicalUpdaterOracles:[
+    'node --test scripts/test-ravscore-integrated-generator.mjs scripts/test-ravscore-recovery-replay.mjs scripts/test-score-prognosis-plain-copy.mjs scripts/test-ravscore-initial-current-window-audit.mjs scripts/test-saved-current-window-scratch.mjs scripts/test-post-h0-dmi-original-dependencies.mjs scripts/test-saved-current-forward-original-plan.mjs',
+    'node --test scripts/test-weather-update-entrypoint.mjs',
+    'node scripts/test-weather-history-retention-4.0.209.mjs',
+    'node --test scripts/test-audit-saved-weather-inputs.mjs',
   ],
   historicalTests:[],
 });
@@ -305,6 +346,21 @@ const PATH_AREAS=freeze({
     'supabase/functions/_shared/trip-owner-erasure.js',
     'scripts/test-delete-trip-owner-data-readback.mjs',
   ],
+  waterSourceRouting:[
+    "scripts/lib/water-source-forecast-routing.mjs",
+    "scripts/test-water-source-forecast-routing-4.0.100.mjs",
+    "scripts/test-water-source-production-chain-4.0.103.mjs",
+    "scripts/update-weather.mjs"
+  ],
+  weatherUpdater:[
+    "scripts/update-weather.mjs"
+  ],
+  runtimeAudit:[
+    "scripts/audit-ravscore-integrated-public-runtime.mjs",
+    "scripts/test-ravscore-integrated-public-runtime-audit.mjs",
+    "scripts/update-weather.mjs",
+    "scripts/lib/water-source-forecast-routing.mjs"
+  ],
   weatherProgressRecovery:[
     'scripts/weather-component-progress-cache.mjs',
     'scripts/test-weather-component-progress-cache.mjs',
@@ -319,13 +375,21 @@ const PATH_AREAS=freeze({
     '.github/workflows/reusable-operational-reentry.yml',
     'scripts/test-github-action-versions.mjs',
   ],
+  historicalUpdaterOracles:[
+    'scripts/lib/archived-weather-restart-updater-test-input.mjs',
+    'scripts/test-post-h0-dmi-original-dependencies.mjs',
+    'scripts/test-ravscore-initial-current-window-audit.mjs',
+    'scripts/test-ravscore-integrated-generator.mjs',
+    'scripts/test-ravscore-recovery-replay.mjs',
+    'scripts/test-weather-update-entrypoint.mjs',
+    'scripts/test-weather-history-retention-4.0.209.mjs',
+  ],
   historicalTests:[
     'scripts/lib/pages-closure-historical-test-input.mjs',
     'scripts/test-account-statistics-assistant-callers.mjs',
     'scripts/test-completed-private-runtime-admission.mjs',
     'scripts/test-completed-private-runtime-workflow-inverse.mjs',
     'scripts/test-ordinary-completed-stage-source.mjs',
-    'scripts/test-ravscore-integrated-generator.mjs',
     'scripts/test-reconcile-private-runtime-checkpoint.mjs',
     'scripts/test-reusable-production-workflows.mjs',
     'scripts/test-reusable-production-workflow-cases.mjs',
@@ -341,6 +405,7 @@ const PATH_AREAS=freeze({
     'scripts/lib/source-impact-domain-owners-598.json',
   ],
 });
+const WEATHER_OPERATION_PATHS=new Set([...PATH_AREAS.waterSourceRouting,...PATH_AREAS.weatherUpdater,...PATH_AREAS.runtimeAudit]);
 const RELEASE_METADATA_PATHS=new Set(PATH_AREAS.releaseMetadata);
 const WEATHER_PROGRESS_RECOVERY_PATHS=new Set(PATH_AREAS.weatherProgressRecovery);
 const SMALL_USER_CONTRACT_PATHS=new Set([...PATH_AREAS.sharing,...PATH_AREAS.ownerErasure]);
@@ -363,6 +428,15 @@ const PAGES_FULLY_EXECUTED_TESTS=new Set(COMMANDS.pages.filter(command=>command!
 const PAGES_SCOPE_CONTROLS=new Set(['scripts/source-current-contract-plan.mjs','scripts/test-source-current-contracts.mjs']);
 const PAGES_TRANSPORT_INPUTS=new Set(['scripts/lib/run-sealed-pages-deployment.mjs',
   'scripts/test-ordinary-pages-immediate-retry.mjs']);
+const HISTORICAL_UPDATER_PATHS=new Set(PATH_AREAS.historicalUpdaterOracles);
+function historicalUpdaterCommandsForChangedInputs(changes){
+  const files=changes.filter(row=>HISTORICAL_UPDATER_PATHS.has(row.path)).map(row=>row.path);
+  const commands=COMMANDS.historicalUpdaterOracles;
+  if(files.includes('scripts/lib/archived-weather-restart-updater-test-input.mjs'))return commands;
+  return commands.filter((command,index)=>files.some(file=>index===0
+    ?!['scripts/test-weather-update-entrypoint.mjs','scripts/test-weather-history-retention-4.0.209.mjs'].includes(file)
+    :command.split(' ').includes(file)));
+}
 const historicalPaths=new Set(PATH_AREAS.historicalTests);
 const pathAreas=new Map();
 for(const [area,files]of Object.entries(PATH_AREAS))for(const file of files){
@@ -875,6 +949,12 @@ export function planSourceCurrentContractsFromGit(input){
       if(['scripts/admin-document-history-maintenance.mjs','scripts/test-admin-document-history-maintenance.mjs'].includes(file)
         &&(row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'))
         return refuse('CURRENT_ADMIN_HISTORY_REQUIRES_EXISTING_REGULAR_SOURCE');
+      if(HISTORICAL_UPDATER_PATHS.has(file)
+        &&(row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'))
+        return refuse('CURRENT_HISTORICAL_UPDATER_REQUIRES_EXISTING_REGULAR_SOURCE');
+      if(WEATHER_OPERATION_PATHS.has(file)
+        &&(row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'))
+        return refuse('CURRENT_WEATHER_OPERATION_REQUIRES_EXISTING_REGULAR_SOURCE');
       if(RELEASE_METADATA_PATHS.has(file)
         &&(row.status!=='M'||row.beforeMode!=='100644'||row.afterMode!=='100644'))
         return refuse('CURRENT_RELEASE_METADATA_REQUIRES_EXISTING_REGULAR_SOURCE');
@@ -910,7 +990,7 @@ export function planSourceCurrentContractsFromGit(input){
         pathAreas.get(file)??(/^docs\/(?:rdks|ai|handbook)\/.+\.md$/.test(file)?['documentation']:null));
       if(!areas){unknown.push(file);continue;}
       for(const area of areas){if(!selected.has(area))selected.set(area,[]);selected.get(area).push(file);}
-      if(sourceControlPaths.has(file)||historicalPaths.has(file)||areas.includes('compatibility')||areas.includes('assistantEdge')||areas.includes('mailOwnerProbe')||areas.includes('currentInstalledCodeOnly')||areas.includes('workflowSupport')||areas.includes('weatherPublication')||areas.includes('dmiBudget')||areas.includes('dmiCollectionRecovery')||areas.includes('adminHistory')||areas.includes('sharing')||areas.includes('releaseMetadata')||areas.includes('ownerErasure')||areas.includes('weatherProgressRecovery')||areas.includes('ownedCacheNative')||file.startsWith('scripts/test-'))
+      if(HISTORICAL_UPDATER_PATHS.has(file)||WEATHER_OPERATION_PATHS.has(file)||sourceControlPaths.has(file)||historicalPaths.has(file)||areas.includes('compatibility')||areas.includes('assistantEdge')||areas.includes('mailOwnerProbe')||areas.includes('currentInstalledCodeOnly')||areas.includes('workflowSupport')||areas.includes('weatherPublication')||areas.includes('dmiBudget')||areas.includes('dmiCollectionRecovery')||areas.includes('adminHistory')||areas.includes('sharing')||areas.includes('releaseMetadata')||areas.includes('ownerErasure')||areas.includes('weatherProgressRecovery')||areas.includes('ownedCacheNative')||file.startsWith('scripts/test-'))
         out.controlQualificationRequired=true;
     }
     if(unknown.length){out.unclassifiedPaths=unknown.sort();return refuse('CURRENT_UNCLASSIFIED_PATH');}
@@ -947,7 +1027,8 @@ export function planSourceCurrentContractsFromGit(input){
     for(const area of Object.keys(COMMANDS))if(selected.has(area))out.areas[area]={
       status:area==='historicalTests'?'NOT_EXECUTED':'SELECTED',executed:false,
       commands:area==='pages'?pagesContractCommandsForChangedInputs(changedInputs)
-        :area==='sourceControls'?sourceControlCommandsForChangedInputs(changedInputs):[...COMMANDS[area]],
+        :area==='sourceControls'?sourceControlCommandsForChangedInputs(changedInputs)
+        :area==='historicalUpdaterOracles'?historicalUpdaterCommandsForChangedInputs(changedInputs):[...COMMANDS[area]],
       changedPaths:[...new Set(selected.get(area))].sort()};
     out.commands=[...new Set(Object.values(out.areas).flatMap(area=>area.commands))];
     assert(out.commands.length>0&&out.commands.every(command=>command===LOCAL_RESTORE_SELF_TEST||command===PAGES_OWNER_COMPLETION_COMMAND||command===OWNED_CACHE_NATIVE_COMMAND||/^node(?: --[a-z-]+)*(?: [A-Za-z0-9_./-]+\.mjs)+$/.test(command)));

@@ -18,7 +18,7 @@ import { inverseWindTailCapacityUpdaterTestInput, WIND_TAIL_CAPACITY_UPDATER_TES
   inverseCandidateGReadyGapUpdaterTestInput, CANDIDATE_G_READY_GAP_UPDATER_TEST_REVIEW,
   inverseDmiScalarPlanningUpdaterTestInput, DMI_SCALAR_PLANNING_UPDATER_TEST_REVIEW,
   inverseCurrentNativeOriginalProducerTestInput, CURRENT_NATIVE_ORIGINAL_PRODUCER_TEST_REVIEW,
-  inverseCurrentFamilyColdTargetTestInput }
+  inverseCurrentFamilyColdTargetTestInput, readHistoricalWeatherRestartUpdaterSource }
   from './lib/archived-weather-restart-updater-test-input.mjs';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
@@ -32,7 +32,8 @@ import { withFrozenEstablishedNativeCurrentOriginSourceTarget } from './run-froz
 
 const producerPath = new URL('./update-weather.mjs', import.meta.url);
 const sourceText = async file => {
-  let source = (await fs.readFile(file, 'utf8')).replace(/\r\n/g, '\n');
+  let source = file === producerPath ? readHistoricalWeatherRestartUpdaterSource()
+    : (await fs.readFile(file, 'utf8')).replace(/\r\n/g, '\n');
   if (file instanceof URL && file.href === new URL('./lib/private-dmi-recovery-record.mjs', import.meta.url).href)
     source = inverseCurrentNativeOriginalProducerTestInput(source, 'scripts/lib/private-dmi-recovery-record.mjs');
   if (file instanceof URL && file.href === new URL('./read-authenticated-dmi-current-companions.mjs', import.meta.url).href)
@@ -1174,7 +1175,7 @@ test('forward gate diagnostic input has a whole153 inverse before every unchange
 });
 
 test('default-OFF original-plan caller preserves the whole FFD updater and all existing normal reader inverses', async () => {
-  const actual = inverseAlternativeCCaller((await fs.readFile(producerPath, 'utf8')).replace(/\r\n/g, '\n'), 'scripts/update-weather.mjs');
+  const actual = inverseAlternativeCCaller(readHistoricalWeatherRestartUpdaterSource(), 'scripts/update-weather.mjs');
   assert.equal(digest(actual), '06892b9200406b2529430a4227d18a36fc8438b334a1ff0c303f42b4503a0c6d', 'exact actual original-plan caller');
   const before = inverseSavedCurrentForwardOriginalPlan(actual);
   assert.equal(digest(before), '4e5b24d8f535c6074a6612b402157b8426b08ef20e507d9817b47d45bb32b034');
@@ -1200,7 +1201,8 @@ test('native-original producer preserves exact whole archived inputs and rejects
   assert.deepEqual(CURRENT_NATIVE_ORIGINAL_PRODUCER_TEST_REVIEW.rows.map(row => row.path),
     ['scripts/update-weather.mjs', 'scripts/lib/private-dmi-recovery-record.mjs']);
   for (const row of CURRENT_NATIVE_ORIGINAL_PRODUCER_TEST_REVIEW.rows) {
-    const raw = (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+    const raw = row.path === 'scripts/update-weather.mjs' ? readHistoricalWeatherRestartUpdaterSource()
+      : (await fs.readFile(new URL('../' + row.path, import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
     const actual = row.path === 'scripts/update-weather.mjs'
       ? inverseCurrentFamilyColdTargetTestInput(raw, row.path)
       : inverseDmiScalarPlanningRecordTestInput(raw, row.path);
@@ -1596,7 +1598,7 @@ test('assistant591 retention companion uses actual592 whole source before unchan
 
 test('READY-gap caller has an exact outer inverse before every unchanged wind-tail and historical updater oracle', async () => {
   const actual = inverseDmiScalarPlanningUpdaterTestInput(
-    (await fs.readFile(producerPath, 'utf8')).replaceAll('\r\n', '\n'), 'scripts/update-weather.mjs');
+    readHistoricalWeatherRestartUpdaterSource(), 'scripts/update-weather.mjs');
   const row = CANDIDATE_G_READY_GAP_UPDATER_TEST_REVIEW;
   assert.equal(Buffer.byteLength(actual), row.after.bytes);
   assert.equal(digest(actual), row.after.sha256);
@@ -1628,7 +1630,7 @@ test('READY-gap caller has an exact outer inverse before every unchanged wind-ta
 
 test('wind-tail default inverse preserves every old updater oracle and refuses other budget or source bytes', async () => {
   const actual = inverseCandidateGReadyGapUpdaterTestInput(
-    (await fs.readFile(producerPath, 'utf8')).replaceAll('\r\n', '\n'), 'scripts/update-weather.mjs');
+    readHistoricalWeatherRestartUpdaterSource(), 'scripts/update-weather.mjs');
   const row = WIND_TAIL_CAPACITY_UPDATER_TEST_REVIEW;
   assert.equal(Buffer.byteLength(actual), row.after.bytes);
   assert.equal(digest(actual), row.after.sha256);
@@ -1683,7 +1685,7 @@ test('conditions593 retention reader preserves whole592 and refuses changed IO c
 
 
 test('DMI scalar callback extraction retains actualV7 tests and every immutable updater oracle', async () => {
-  const raw = (await fs.readFile(producerPath, 'utf8')).replaceAll('\r\n', '\n');
+  const raw = readHistoricalWeatherRestartUpdaterSource();
   const row = DMI_SCALAR_PLANNING_UPDATER_TEST_REVIEW, relative = row.path;
   assert.equal(Buffer.byteLength(raw), row.after.bytes); assert.equal(digest(raw), row.after.sha256);
   const previous = inverseDmiScalarPlanningUpdaterTestInput(raw, relative);

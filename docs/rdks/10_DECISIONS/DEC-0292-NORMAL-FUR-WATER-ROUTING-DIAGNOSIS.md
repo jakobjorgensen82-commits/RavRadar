@@ -1,3 +1,11 @@
+## LF7-observation, historiske prøveinput og uafhængig levering
+
+Den eksisterende normale producent registrerer nu en afgrænset observation ved det faktisk udførte vandstandskildevalg og T+3-predikat. Observationen omfatter de faktiske underdele i de syv kystzoner og 118 offentlige timer; T+3 bruger de allerede validerede private støttetimer. Der beregnes ingen ekstra score eller trend, og kildevalg, numeriske værdier, strøm-/temperaturudelukkelse og øvrige Limfjordszoner bevares.
+
+Kun generationsmetadata, hash af den faktisk hydrerede routingkonfiguration, udvalgs-/slutværdi-hashes og faste tællere gemmes i den eksisterende private runtime-diagnostik. Den normale runtime-audit sammenholder samme generation, lokal konfiguration og allerede beregnede PART-værdier. Manglende, for gammel, ufuldstændig eller modstridende observation giver UNKNOWN eller observeret afvigelse. Der tilføjes ingen ny workflow, offentlig proveniens eller produktionsgate.
+
+OBSERVED_CONFORMANT betyder kun overensstemmelse i den observerede politik og de beregnede værdier. Dækning og sammenlignelige T+3-par rapporteres særskilt. Gamle generationer får ingen efterfølgende tilskrevet routingaccept. De normale lokale mål kvalificerer koden; præcis kildekvalifikation og faktisk observation i en efterfølgende almindelig vejrproduktion kræves før revisionsaccept. C/I/T, alle udstedte migrationer, scoreformel, central konfiguration og geodata bevares.
+
 # DEC-0292 – Privat diagnose af Fur-vandstand i normale vejrhentninger
 
 **Status:** IMPLEMENTERET og deployet i 4.0.542; faktisk normal diagnoseeffekt, gammel årsag og timeretention er åbne.

@@ -1,3 +1,23 @@
+## Manuel kontosletning: kandidatens resterende accept
+
+Den manuelle kontosletning er nu forberedt som én samlet app600-kandidat med fast modelfamilie599: holdbar UUID-outbox og slettebarrierer, normal Auth/D1-controller, ejerens genoptagelsesflade og serverbundet pendingliste. Den ene appmigration skal kvalificeres gennem faktisk normal PostgreSQL og installeres/genlæses før server/UI. Lokale prøver og den særskilte Auth-UUID-prøve er ikke accept af hele appen, låseracer, D1 eller faktisk sletning. Automatisk inaktivitet/varsel, statistik/privacy og backup-/restorebarrierer forbliver åbne. Se håndbog89.351. Den normale CURRENT-plan skal afvise det reelt ændrede PG-input og vælge FULL; der oprettes ingen genvej til billig genbrug. Ukendt Storage-policy eller Auth-generation forbliver HOLD. Backup-/restoreforløbet skal fortsat forhindre genoplivning af et slettet UUID før onlineadgang.
+
+## LF7-observation, historiske prøveinput og uafhængig levering
+
+Den afgrænsede LF7-opfølgning observerer det normale vandstandskildevalg, T+3-støtte og beregnede slutværdier i de syv kystzoner. Den ændrer ikke kildevalg, strøm-/temperaturudelukkelse, interpolation, scoreformel, administratorpunkter eller geometri. Manglende eller modstridende observation mærkes ærligt; den bliver ikke en ny produktionsgate eller et bevis for komplet dækning.
+
+Historiske updaterorakler bruger deres eksisterende autentiske SOURCE598-original før de uændrede inverser. Aktuelle produktkaldere prøves fortsat på rå aktuel kode. De kendte helper-/kalderfiler vælger hele normale mål gennem permanent naturligt testansvar, og protokolprøven forbereder kun sine egne kunstige mål. Ukendte og beskyttede input beholder de normale udvidede kontroller.
+
+Kun den begrænsede LF7-metadata bevares før den store arbejdsejer frigives. Kildekvalifikation, faktisk installation og generationsbundet LF7-/SOURCE-/T+3-accept dokumenteres særskilt; lokale prøver eller en plan afslutter ikke revisionens syv krav eller målets øvrige områder.
+
+## Afgrænset forklaring af arkivets rettighedsafslag
+
+Ved en SQLSTATE42501 under arkivets DATA eller HISTORY kan den eksisterende fejllæser projicere en fast rettigheds- eller ejerkategori. Det kræver præcis én verbose-fejlramme og den afsluttende PostgreSQL-rutine aclcheck_error i aclchk.c samt en dokumenteret fast beskedform. Kun kendte ressourceklasser accepteres; ukendt, flertydig, flerlinjet eller ændret diagnostic giver UNAVAILABLE. Egen RAISE og andre rutiner bliver ikke gættet til en ACL-årsag.
+
+En fast relationslabel kræver ét entydigt match i den pågældende fases allerede komplette, identitetskontrollerede arkivinventar. Manglende eller modstridende inventory og private eller ukendte relationer beholder UNKNOWN-binding. Kun faste kategorier og SHA-256 af den begrænsede native objekttekst kan rapporteres. Denne hash er hverken et kanonisk kvalificeret relationsnavn, katalogbevis eller ret til at ændre adgang. Frie navne, SQL, fejltekst, rækker og andre private værdier udskrives ikke.
+
+Dette forklarer en allerede afvist operation; det ændrer ingen rolle, grant, SQL-strøm, constraint, rækkefølge, frist, oprindelig fejl eller acceptregel. De fem autentiske SQL-filer, indholds-/dublet-/sekvensparitet, Auth-funktion og ejet oprydning bevares. Den normale hele selvtest dækker klassifikation, privacy og de faktiske DATA-/HISTORY-fejlkaldere med syntetisk stderr. Den beviser ikke en bestemt årsag i originalarkivet eller en vellykket originalgendannelse. Præcis kildekvalifikation og et senere normalt originalforsøg skal stadig levere deres egne beviser.
+
 ## Afsluttende Pages-oprydning med verificeret ejeradgang
 
 Den sidste oprydning efter en offentligt verificeret Pages-udgivelse skal have workflowets eksisterende GitHub-læseadgang med til kontrollen af den oprindelige skriver. Den afsluttede føraktiveringsfase må først fjernes efter den præcise terminalkvittering og de normale ejer- og offentlige kontroller. Lokal kalderkontrol er ikke bevis for, at en konkret fase er fjernet; faktisk oprydning og normal kildekvalifikation verificeres særskilt.

@@ -174,7 +174,7 @@ test('normal synkronisering og genkontrol bevarer mixedV2 Edge og afviser defekt
 
   test('after598 current next ordinary app release keeps issued family, original598 and unchanged C/I/T and SQL',async()=>{
     const {execFileSync}=await import('node:child_process'),{pathToFileURL}=await import('node:url');
-    const {assistantAfter598RequiredMigrations}=await import('./integrated-cutover-readiness.mjs');
+    const {assistantAfter598RequiredMigrations,ACCOUNT_ERASURE_APP_MIGRATION}=await import('./integrated-cutover-readiness.mjs');
     const stage=await fs.mkdtemp(path.join(os.tmpdir(),'rr-after598-next-app-'));
     const family=currentSource.ACTIVE_ASSISTANT_SUCCESSOR,issued=currentSource.requireAssistantAfter598Binding();
     const version=JSON.parse(await fs.readFile(path.join(ROOT,'package.json'),'utf8')).version;
@@ -194,7 +194,13 @@ test('normal synkronisering og genkontrol bevarer mixedV2 Edge og afviser defekt
       const manifest=JSON.parse(source.slice(source.indexOf('Object.freeze(')+14,source.lastIndexOf(');')));
       return [def.file,...manifest.files.map(row=>row[def.rowKey])];
     }))).flat();
-    const analysisFiles=[...new Set([...inputProfile.postgresModules,...inputProfile.postgresData,
+    // The genuine ancillary app schema selects these same two PG companions
+    // in the normal analyzer. Include their actual tracked bytes in both owned
+    // Git operands, as well as the immutable numerical inventory and all SQL.
+    const appSchemaInputs=files.includes('supabase/migrations/'+ACCOUNT_ERASURE_APP_MIGRATION.filename)
+      ? ['scripts/verify-account-erasure-schema.mjs','scripts/lib/account-erasure-outbox-native-fixture.mjs'] : [];
+    for(const file of appSchemaInputs)assert(files.includes(file),'Tracked actual app-schema input '+file);
+    const analysisFiles=[...new Set([...inputProfile.postgresModules,...appSchemaInputs,...inputProfile.postgresData,
       ...inputProfile.nativeEvidenceControls,...inputProfile.setupInputs,...inputProfile.plannerTrustChain,
       ...inputProfile.continuation.files,inputProfile.continuation.file,...modelFiles,...migrations,
       'version.json','data/admin/ravscore-profile-selection.json','knowledge/rav-assistant-public-v1.json',

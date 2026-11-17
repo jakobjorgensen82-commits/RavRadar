@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 // Fixed metadata-only installation readback. No account rows or arbitrary SQL.
 import assert from 'node:assert/strict';
+export {ACCOUNT_ERASURE_APP_MIGRATION,accountErasureCatalogQuery,verifyAccountErasureCatalogMetadata,
+ readAccountErasureSource,verifyInstalledAccountErasureSchema,verifyAccountErasureCheckReference} from './verify-account-erasure-schema.mjs';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { readAccountAssistantCanonicalSource } from './lib/account-assistant-successor-source.mjs';

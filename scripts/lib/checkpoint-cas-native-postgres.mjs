@@ -7,6 +7,7 @@ import { execFile } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { accountAssistantCatalogQuery, verifyAccountAssistantCatalogMetadata }
   from '../verify-account-assistant-schema.mjs';
+import * as accountErasureSchema from '../verify-account-assistant-schema.mjs';
 
 const OLD_MIGRATION = '20261010130000_owner_export_origin_bound_successor.sql';
 const NEW_MIGRATION = '20261012200000_checkpoint_cas_single_projection_successor.sql';
@@ -33,7 +34,7 @@ const sqlText = text => String(text).replace(/\r\n?/g, '\n');
 const NATIVE_PSQL_PHASES = new Set(['NATIVE_SETUP', 'CAS200_MIGRATION',
   'BASELINE_FIXTURES', 'BASELINE_ADMISSION', 'BASELINE_CAS_CASES',
   'ACCOUNT213', 'CURRENT220', 'STATISTICS230', 'NATIVE_IDENTITY0600', 'CURRENT_MEMORY_WARMUP',
-  'ESTABLISHED_NATIVE_CURRENT_ORIGIN', 'LAST_MILE_ENCLOSURE', 'ACCOUNT_STATISTICS_ASSISTANT', 'NATIVE_ORIGINAL_CONTINUITY', 'ASSISTANT_LATER_H0', 'ASSISTANT_PUBLIC587_SUCCESSOR', 'ASSISTANT_PUBLIC588_SUCCESSOR', 'ASSISTANT_PUBLIC590_SUCCESSOR', 'ASSISTANT_AFTER597_SUCCESSOR', 'ASSISTANT_AFTER598_SUCCESSOR', 'UNKNOWN']);
+  'ESTABLISHED_NATIVE_CURRENT_ORIGIN', 'LAST_MILE_ENCLOSURE', 'ACCOUNT_STATISTICS_ASSISTANT', 'NATIVE_ORIGINAL_CONTINUITY', 'ASSISTANT_LATER_H0', 'ASSISTANT_PUBLIC587_SUCCESSOR', 'ASSISTANT_PUBLIC588_SUCCESSOR', 'ASSISTANT_PUBLIC590_SUCCESSOR', 'ASSISTANT_AFTER597_SUCCESSOR', 'ASSISTANT_AFTER598_SUCCESSOR', 'ACCOUNT_ERASURE_APP', 'UNKNOWN']);
 const NATIVE_PSQL_STATES = Object.freeze({
   '22003':'SQL_RANGE', '22023':'SQL_PARAMETER', '22P02':'SQL_TEXT_FORMAT',
   '23502':'SQL_NOT_NULL', '23503':'SQL_FOREIGN_KEY', '23505':'SQL_UNIQUE',
@@ -1163,11 +1164,22 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
       const {compareAssistantAfter597Successor}=await import('./assistant-later-h0-postgres.mjs');
       assistantAfter597Successor=await compareAssistantAfter597Successor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
     }
-    let assistantAfter598Successor;
+    let assistantAfter598Successor,accountErasure;
     if(includeAssistantAfter598Successor){
       nativePhase='ASSISTANT_AFTER598_SUCCESSOR';
       const {compareAssistantAfter598Successor}=await import('./assistant-later-h0-postgres.mjs');
       assistantAfter598Successor=await compareAssistantAfter598Successor({psql,runSql,root,sourceDocumentAt,atHour,saveCheckpoint});
+      if(accountErasureSchema.ACCOUNT_ERASURE_APP_MIGRATION){
+        nativePhase='ACCOUNT_ERASURE_APP';
+        const {exerciseAccountErasureOutbox}=await import('./account-erasure-outbox-native-fixture.mjs');
+        const source=accountErasureSchema.readAccountErasureSource(repositoryRoot);
+        const files=(await fs.readdir(path.join(repositoryRoot,'supabase/migrations'))).filter(file=>file.endsWith('.sql'));
+        assert.equal(files.length,76);assert(files.includes(accountErasureSchema.ACCOUNT_ERASURE_APP_MIGRATION.filename));
+        accountErasure={kind:'ACCOUNT_ERASURE_APP_NATIVE_SQL_CASES',sqlExecuted:true,
+          migrationVersion:accountErasureSchema.ACCOUNT_ERASURE_APP_MIGRATION.version,
+          migrationSQLSha256:source.sha256,sourceSqlFileCount:files.length,
+          ...await exerciseAccountErasureOutbox({psql,runSql,repositoryRoot})};
+      }
     }
     completedReport={kind:'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',accountAssistant,currentGrid,
       ...(includeStatisticsRevision?{statisticsRevision}:{}),
@@ -1185,7 +1197,7 @@ select public.native_checkpoint_attempt(${baseline},${version},(select payload f
       ...(includeInstalled593Original591Successor?{installed593Original591Successor}:{}),
       ...(includeScalar597LaterH0Successor?{scalar597LaterH0Successor}:{}),
       ...(includeAssistantAfter597Successor?{assistantAfter597Successor}:{}),
-      ...(includeAssistantAfter598Successor?{assistantAfter598Successor}:{}),
+      ...(includeAssistantAfter598Successor?{assistantAfter598Successor,...(accountErasure?{accountErasure}:{})}:{}),
       issuedSource:issued.sourceReceipt,postgresMajorVersion:programs.majorVersion,
       tcpEnabled:false,normalModelPartCount:673,sqlExecuted:true,migrationExecuted:true,
       migrationSQLSha256:hash(newSource),caseCount:reports.length,

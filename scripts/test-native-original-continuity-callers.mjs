@@ -209,6 +209,20 @@ test('current installed code-only normal workflow keeps read-only SQL, hard curr
   assert.equal(activeCondition('Apply exact dry-run-verified post-cutover binding'),false);
   assert.equal(activeCondition('Publish measured continuation checkpoint without promoting rollback readiness'),false);
   assert.equal(activeCondition('Publish measured continuation only after verified warmup private runtime'),true);
+  const checkpointPublish='established-native-current-origin-checkpoint-publish';
+  steps[checkpointPublish]={outcome:'success'};
+  const tripEdges='Deploy exact rebound trip Edges without Worker or D1 replay';
+  assert.equal(activeCondition(tripEdges),true,'The validated installed source must deploy its changed trip Edges');
+  for(const publisher of ['current-private-publish',checkpointPublish]){
+    for(const outcome of ['failure','skipped','cancelled',undefined]){
+      steps[publisher].outcome=outcome;
+      assert.equal(activeCondition(tripEdges),false,'Both actual publications must succeed: '+publisher+'/'+outcome);
+    }
+    steps[publisher].outcome='success';
+  }
+  env.RAVRADAR_CURRENT_INSTALLED_CODE_ONLY_SOURCE_ACTIVE='false';
+  assert.equal(activeCondition(tripEdges),false,'An unselected source gains no new deployment branch');
+  env.RAVRADAR_CURRENT_INSTALLED_CODE_ONLY_SOURCE_ACTIVE='true';
   steps['current-private-publish'].outcome='failure';
   assert.equal(activeCondition('Publish measured continuation only after verified warmup private runtime'),false);
   assert.equal(activeCondition('Deploy exact rebound trip Edges without Worker or D1 replay'),false);
@@ -804,7 +818,8 @@ const reviewedCapacity593Sources=Object.freeze({
 // inputs; actual current caller views below keep reading their raw current files.
 async function readHistoricalAssistantSource(file){
   assert.equal(arguments.length,1,'No caller-selected historical source origin');
-  assert(Object.hasOwn(reviewedIssued592Sources,file),'Only the five reviewed historical source owners');
+  assert(Object.hasOwn(reviewedIssued592Sources,file)||file==='scripts/verify-code-only-migration-plan.mjs',
+    'Only the reviewed historical source owners and their original migration-plan CLI');
   if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase!=='assistant-after598-successor')
     return fs.readFile(path.join(ROOT,file),'utf8');
   const provenance=await import('./check-assistant-later-h0-predecessor-source.mjs');
@@ -1075,7 +1090,9 @@ test('assistant binding original prewrite workflow keeps locks, exact normal cen
   assert(apply.indexOf('python scripts/apply-central-zone-reviews.py')<apply.indexOf('node scripts/build-public-coastal-parts-v2.mjs'));
   assert(apply.indexOf('node scripts/build-public-coastal-parts-v2.mjs')<apply.indexOf('node scripts/assistant-later-h0-binding-prewrite.mjs verify'));
   assert(workflow.slice(verify,sql).trim().endsWith('cd "'+String.fromCharCode(36)+'{{ steps.migration-view.outputs.workdir }}"'));
-  const generic=await fs.readFile(path.join(ROOT,'scripts/verify-code-only-migration-plan.mjs'));
+  // The unchanged whole-file oracle owns the existing CODE822 CLI; actual
+  // current app-plan/evidence/route cases below continue to execute raw current.
+  const generic=Buffer.from(await readHistoricalAssistantSource('scripts/verify-code-only-migration-plan.mjs'),'utf8');
   const {createHash}=await import('node:crypto');
   assert.equal(createHash('sha256').update(generic.toString('utf8').replace(/\r\n?/g,'\n')).digest('hex'),
     'f33e7f723ffe970bd6bbff5085ec65110d18953f5e7fb78b2609be2e5b57cc45');
@@ -2385,4 +2402,126 @@ test('current installed saved-weather caller keeps normal public and strictly ne
     await assert.rejects(stageCodeOnlyPublicCoastalRegistry({repositoryRoot:ROOT,snapshotRoot:directory,expectedIdentity}),
       /does not match the authenticated private source identity/);
   }finally{await fs.unlink(path.join(directory,'manifest.json'));await fs.rmdir(directory);}
+});
+
+// UNISSUED current599 OFF successor. Historical50/63 and earlier family bodies remain unchanged.
+test('current OFF app migration stages real source and preserves default refusal/installed routing',async()=>{
+  const current=await import('./integrated-cutover-readiness.mjs');
+  const os=await import('node:os');
+  const {spawnSync}=await import('node:child_process');
+  const off=current.ACCOUNT_ERASURE_APP_MIGRATION,required=current.REQUIRED_CUTOVER_MIGRATIONS;
+  assert.equal(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase,'assistant-after598-successor');
+  const originalIds=required.map(row=>row.id);
+  const temporary=await fs.mkdtemp(path.join(os.tmpdir(),'rr-account-erasure-'));
+  try{
+    const normal=await current.prepareTemporarySupabaseCutoverWorkdir({workdir:path.join(temporary,'normal')});
+    assert.deepEqual((await fs.readdir(normal.migrationsDirectory)).sort(),[...required.map(row=>row.filename),off.filename].sort(),
+      'Normal view exposes exactly64 numerical rows plus the one app dependency, never dormant SQL');
+    const prepared=await current.prepareTemporarySupabaseCutoverWorkdir({workdir:path.join(temporary,'off'),includeAccountErasureSource:true});
+    assert.deepEqual(await fs.readFile(path.join(prepared.migrationsDirectory,off.filename)),await fs.readFile(path.join(ROOT,'supabase/migrations',off.filename)));
+    const rows=required.map(row=>row.version+' | '+row.version+' | synthetic');
+    const list=(installed=false)=>'Local | Remote | Time (UTC)\n'+rows.join('\n')+'\n'+off.version+' | '+(installed?off.version:'')+' | synthetic';
+    const noop='DRY RUN: migrations will *not* be pushed to the database.\nRemote database is up to date.';
+    const dry='DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n • '+off.filename+'\nFinished supabase db push.';
+    const request={migrationListText:list(),dryRunText:dry,migrationsDirectory:prepared.migrationsDirectory};
+    const omitted=await current.prepareTemporarySupabaseCutoverWorkdir({workdir:path.join(temporary,'omitted')});
+    await fs.unlink(path.join(omitted.migrationsDirectory,off.filename));
+    await assert.rejects(current.assertSupabaseMigrationPlan({migrationListText:'Local | Remote | Time (UTC)\n'+rows.join('\n'),
+      dryRunText:noop,migrationsDirectory:omitted.migrationsDirectory}),'Special temp view cannot erase an active dependency');
+    await assert.rejects(current.assertSupabaseMigrationPlan(request),'Default never gains OFF write authority');
+    assert.deepEqual((await current.assertSupabaseMigrationPlan({...request,allowAccountErasurePlan:true})).pendingVersions,[off.version]);
+    await assert.rejects(current.assertSupabaseMigrationPlan({...request,allowAccountErasurePlan:'true'}));
+    for(const changed of [
+      {...request,migrationListText:list()+'\n20990101000000 | 20990101000000 | unknown'},
+      {...request,migrationListText:list()+'\n'+off.version+' | | duplicate'},
+      {...request,migrationListText:list().replace(rows[0],required[0].version+' | | missing')},
+      {...request,dryRunText:dry.replace(off.filename,'20990101000000_unknown.sql')},
+      {...request,allowAccountAssistantPrewritePlan:true},
+      {...request,allowStatisticsPreferenceRevisionPlan:true},
+    ])await assert.rejects(current.assertSupabaseMigrationPlan({...changed,allowAccountErasurePlan:true}));
+    assert.deepEqual((await current.assertSupabaseMigrationPlan({...request,migrationListText:list(true),dryRunText:noop})).pendingVersions,[]);
+    assert.doesNotThrow(()=>current.assertSupabaseMigrationsApplied(list(true),{requireAccountErasure:true}));
+    assert.throws(()=>current.assertSupabaseMigrationsApplied('Local | Remote | Time (UTC)\n'+rows.join('\n'),{requireAccountErasure:true}));
+    assert.throws(()=>current.assertSupabaseMigrationsApplied(list()));
+    const installedOptions={environment:installedCodeOnlyCaller(),migrationListText:list(true),dryRunText:noop,migrationsDirectory:prepared.migrationsDirectory};
+    assert.deepEqual((await verifyCurrentInstalledCodeOnlyPlan(installedOptions)).pendingVersions,[]);
+    await assert.rejects(verifyCurrentInstalledCodeOnlyPlan({...installedOptions,migrationListText:list(),dryRunText:dry}));
+    // A cache/history miss recovers this sole applied migration from REAL current SQL, not a placeholder.
+    const remoteOnly='Local | Remote | Time (UTC)\n'+rows.join('\n')+'\n | '+off.version+' | synthetic';
+    const hydrated=await current.hydrateTemporaryRemoteMigrationHistory({workdir:normal.workdir,migrationListText:remoteOnly});
+    assert.deepEqual(hydrated.placeholders,[]);
+    assert.deepEqual(await fs.readFile(path.join(normal.migrationsDirectory,off.filename)),await fs.readFile(path.join(ROOT,'supabase/migrations',off.filename)));
+    await assert.rejects(current.hydrateTemporaryRemoteMigrationHistory({workdir:normal.workdir,migrationListText:remoteOnly+'\n | 20990101000000 | unknown'}));
+    const listFile=path.join(temporary,'list.txt'),dryFile=path.join(temporary,'dry.txt');
+    await fs.writeFile(listFile,list());await fs.writeFile(dryFile,dry);
+    const environment={...Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','TEMP','TMP','HOME'].filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]])),
+      GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_REF:'refs/heads/main',GITHUB_RUN_ATTEMPT:'1',RAVRADAR_ACCOUNT_ERASURE_OPT_IN:'true'};
+    const invoke=env=>spawnSync(process.execPath,[path.join(ROOT,'scripts/verify-code-only-migration-plan.mjs'),'--account-erasure-plan',
+      '--migration-list',listFile,'--dry-run',dryFile,'--migrations-directory',prepared.migrationsDirectory],
+      {encoding:'utf8',env,timeout:20000,maxBuffer:65536,windowsHide:true});
+    const actual=invoke(environment);assert.equal(actual.status,0,actual.stderr);
+    assert.notEqual(invoke({...environment,RAVRADAR_ACCOUNT_ERASURE_OPT_IN:'false'}).status,0);
+    const {selectStatisticsRevisionRoute}=await import('./verify-statistics-preference-revision-plan.mjs');
+    const statisticsEnvironment={GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_REF:'refs/heads/main',
+      GITHUB_RUN_ATTEMPT:'1',RAVRADAR_STATISTICS_REVISION_UPGRADE_OPT_IN:'false'};
+    const select=history=>selectStatisticsRevisionRoute({migrationListText:history,environment:statisticsEnvironment});
+    assert.equal(select('Local | Remote | Time (UTC)\n'+rows.join('\n')),'installed');
+    assert.equal(select(list(true)),'installed','Normal later code-only accepts only this already-installed ancillary row');
+    assert.throws(()=>select(list()),'Pending OFF never gains statistics write authority');
+    assert.throws(()=>select(list(true)+'\n20990101000000 | 20990101000000 | unknown'));
+    assert.throws(()=>select(list(true)+'\n'+off.version+' | '+off.version+' | duplicate'));
+    assert.deepEqual(current.REQUIRED_CUTOVER_MIGRATIONS.map(row=>row.id),originalIds,'No model/readiness migration-ID reissue');
+  }finally{
+    const owned=await fs.realpath(temporary),parent=await fs.realpath(os.tmpdir());
+    assert.equal(path.dirname(owned),parent);assert(path.basename(owned).startsWith('rr-account-erasure-'));
+    await fs.rm(owned,{recursive:true,force:true});
+  }
+});
+
+test('app schema evidence modes refuse missing, foreign and stale locators before transport',async()=>{
+  const {spawnSync}=await import('node:child_process');
+  const environment={PATH:process.env.PATH,SystemRoot:process.env.SystemRoot,
+    GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_REF:'refs/heads/main',GITHUB_RUN_ATTEMPT:'1',
+    GITHUB_SHA:'1'.repeat(40),GITHUB_REPOSITORY:'jakobjorgensen82-commits/RavRadar',RAVRADAR_ACCOUNT_ERASURE_OPT_IN:'true'};
+  for(const mode of ['--qualify-account-erasure-source','--read-account-erasure-installed'])
+    for(const reference of ['', 'null',JSON.stringify({repository:'foreign/project'}),
+      JSON.stringify({repository:environment.GITHUB_REPOSITORY,mergeCommit:'2'.repeat(40),producerHead:'3'.repeat(40)})]){
+      const result=spawnSync(process.execPath,[path.join(ROOT,'scripts/verify-code-only-migration-plan.mjs'),mode],{
+        env:{...environment,RAVRADAR_ACCOUNT_ERASURE_SOURCE_REFERENCE:reference},encoding:'utf8',timeout:10000,maxBuffer:32768});
+      assert.equal(result.error,undefined);assert.equal(result.status,1);assert.equal(result.stdout,'');
+      assert.equal(result.stderr.trim(),'ACCOUNT_ERASURE_QUALIFIED_SCHEMA_EVIDENCE_REQUIRED');
+    }
+});
+test('actual OFF binding workflow ends after fixed metadata without Edge/mail/capture authority',async()=>{
+  const workflow=(await fs.readFile(path.join(ROOT,'.github/workflows/apply-weather-model-binding-only.yml'),'utf8')).replace(/\r\n/g,'\n');
+  const block=name=>{const mark='      - name: '+name+'\n',start=workflow.indexOf(mark);
+    assert(start>=0&&workflow.indexOf(mark,start+mark.length)<0);const end=workflow.indexOf('\n      - name:',start+mark.length);
+    return workflow.slice(start,end<0?workflow.length:end);};
+  const authority=block('Require explicit main authority and exact head');
+  assert(authority.includes('test "$CONFIRMATION" = APPLY-ACCOUNT-ERASURE'));
+  for(const name of ['RAVRADAR_CURRENT_GRID_UPGRADE_OPT_IN','RAVRADAR_CURRENT_GRID_DIAGNOSE_ONLY','RAVRADAR_ASSISTANT_LATER_H0_ORIGINAL_OPT_IN'])
+    assert(authority.includes('test "$'+name+'" != true'));
+  assert(authority.includes('test "$GITHUB_RUN_ATTEMPT" = 1'));
+  assert(block('Prepare isolated exact migration view').includes('--account-erasure-source'));
+  for(const name of ['Dry-run and allow only the latest exact binding migration','Apply only the dry-run-verified binding migration']){
+    const text=block(name);assert(text.includes('--account-erasure-plan'));
+    assert(text.indexOf('verify-statistics-preference-revision-schema.mjs')<text.indexOf('--account-erasure-plan'));
+  }
+  assert(block('Read back applied migration and live database binding').includes('--account-erasure'));
+  const qualified=block('Require qualified native CHECK definitions before the account app write');
+  assert(qualified.includes('--qualify-account-erasure-source')&&qualified.includes('inputs.account_erasure_source_reference'));
+  assert(workflow.indexOf(qualified)<workflow.indexOf(block('Read linked migration history')));
+  assert(block('Read back the manual account-erasure app schema').includes('--read-account-erasure-installed'));
+  for(const name of ['Reconfirm exact main before assistant Edge deployment','Deploy only the exact RavRadar assistant Edge function',
+    'Verify exact backend and assistant readback without weather or Pages'])
+    assert(block(name).includes('if: inputs.install_account_erasure != true &&'));
+  const source=await fs.readFile(path.join(ROOT,'supabase/migrations/20261116181500_account_erasure_outbox_off.sql'),'utf8');
+  const executable=source.split('\n').filter(line=>!line.trimStart().startsWith('--')).join('\n');
+  assert.match(executable,/\bbegin;/i);assert.match(executable,/\bcommit;\s*$/i);
+  assert.doesNotMatch(executable,/\b(?:select|perform|call)\s+public\.begin_account_activity_capture_v1\s*\(/i);
+  assert.match(executable,/before insert on auth\.users/);assert.doesNotMatch(executable,/(?:after|before) (?:update|delete)[^;]*on auth\./i);
+  const native=await fs.readFile(path.join(ROOT,'scripts/lib/checkpoint-cas-native-postgres.mjs'),'utf8');
+  assert(native.includes('await exerciseAccountErasureOutbox({psql,runSql,repositoryRoot})'));
+  const fixture=await fs.readFile(path.join(ROOT,'scripts/lib/account-erasure-outbox-native-fixture.mjs'),'utf8');
+  assert(fixture.includes("raise exception 'SYNTHETIC_ERASURE_PRECOMMIT'"));
 });

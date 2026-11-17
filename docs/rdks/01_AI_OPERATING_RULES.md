@@ -2,7 +2,7 @@
 
 # Aktive arbejdsregler
 
-Bevar den fungerende 598-drift, og lever små afsluttelige ændringer gennem den eksisterende normale vej. Hovedagenten koordinerer integration og produktionsskrivning; afgrænsede parallelle opgaver må ikke overlappe samme skriver eller gentage undersøgelser. Ejerens stående autoritet i mål og AGENTS gælder fortsat. Spørg kun ved en faktisk ny beslutning uden for den.
+Bevar den fungerende 599-drift, og lever små afsluttelige ændringer gennem den eksisterende normale vej. Hovedagenten koordinerer integration og produktionsskrivning; afgrænsede parallelle opgaver må ikke overlappe samme skriver eller gentage undersøgelser. Ejerens stående autoritet i mål og AGENTS gælder fortsat. Spørg kun ved en faktisk ny beslutning uden for den.
 
 - **Verificér mål på aktuel main.** Gamle samlede Source-pakker er udgået som leveringsenheder, og en ny Source-overgang er ikke et selvstændigt slutmål. Bevar alle fem mål og ukendte beviser; ændr kun konkrete aktuelle kodehuller.
 - **Kontrollér påvirkningen.** Brug fast sikkerhedskerne, nødvendige dokument-/versionskontroller og normale prøver for det faktisk berørte område. En app-/tekst-/deployændring skal ikke i sig selv genudstede numerisk model eller SQL. Reelle fælles eller ukendte input kræver den relevante udvidede afklaring.
