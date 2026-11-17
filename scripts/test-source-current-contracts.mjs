@@ -2273,7 +2273,8 @@ function collect(file){
   assert(relative&&!path.isAbsolute(relative)&&relative!=='..'&&!relative.startsWith('..'+path.sep));
   controlSources.add(file);
   const body=fixtureControlBytes(file).toString('utf8'),url=pathToFileURL(sourceFile);
-  for(const match of body.matchAll(/^import\b[^;]*?\bfrom\s*['"](\.[^'"]+)['"]/gm)){
+  // Static re-exports also load their real module before any reader is called.
+  for(const match of body.matchAll(/^(?:import\b|export\s+(?:\*|\{))[^;]*?\bfrom\s*['"](\.[^'"]+)['"]/gm)){
     const dep=fileURLToPath(new URL(match[1],url)),name=path.relative(SOURCE,dep).split(path.sep).join('/');
     collect(name);
   }
@@ -2289,6 +2290,8 @@ function collect(file){
     assert.equal(text(root,['cat-file','-t',sourceHead]),'commit');
     collect('scripts/source-current-contract-plan.mjs');
     collect('scripts/source-current-contract-receipt.mjs');
+    for(const file of ['scripts/verify-account-assistant-schema.mjs','scripts/verify-account-erasure-schema.mjs'])
+      assert(controlSources.has(file),'Actual app schema import/re-export closure: '+file);
     for(const file of [...controlSources,'package.json','version.json',
       ...['594','597','598'].map(version=>'scripts/lib/source-impact-domain-inputs-'+version+'.json'),
       'scripts/test-source-current-contracts.mjs']){
