@@ -747,12 +747,33 @@ const historicalControlSources=new Set(['scripts/native-postgres-evidence.mjs',
 const {assertSource598CodeSourceSelected}=await import(pathToFileURL(path.join(SOURCE,'scripts/check-assistant-later-h0-predecessor-source.mjs')).href);
 const fixedCode598=assertSource598CodeSourceSelected();
 assert.equal(text(SOURCE,['rev-parse',fixedCode598.head+'^{tree}']),fixedCode598.tree);
+// Current planner DATA is distinct from the unchanged protected historical PG module.
+const currentDomainFamily=(await import(pathToFileURL(path.join(SOURCE,'scripts/lib/assistant-later-h0-successor-source.mjs')).href)).ASSISTANT_AFTER599_BINDING;
+assert(currentDomainFamily&&Object.isFrozen(currentDomainFamily));
+assert.deepEqual(Object.keys(currentDomainFamily).sort(),['C','I','T','version']);
+const currentDomainFamilyImport="import {ASSISTANT_AFTER599_BINDING as FAMILY601} from './lib/assistant-later-h0-successor-source.mjs';";
+function currentDomainFixtureBytes(bytes){
+  const body=bytes.toString('utf8');
+  const imports=[...body.matchAll(/^import\b[^;]*?\bfrom\s*['"]\.\/lib\/assistant-later-h0-successor-source\.mjs['"];$/gm)].map(match=>match[0]);
+  assert.deepEqual(imports,[currentDomainFamilyImport],'Only the actual current binding DATA import is materialized');
+  return Buffer.from(body.replace(currentDomainFamilyImport,'const FAMILY601=Object.freeze('+JSON.stringify(currentDomainFamily)+');'));
+}
+const currentDomainBytes=fs.readFileSync(path.join(SOURCE,'scripts/source-impact-domain-inputs.mjs'));
+assert.throws(()=>currentDomainFixtureBytes(Buffer.from(currentDomainBytes.toString('utf8').replace(currentDomainFamilyImport,''))));
+assert.throws(()=>currentDomainFixtureBytes(Buffer.concat([currentDomainBytes,Buffer.from('\n'+currentDomainFamilyImport+'\n')])));
+assert.throws(()=>currentDomainFixtureBytes(Buffer.from(currentDomainBytes.toString('utf8').replace('ASSISTANT_AFTER599_BINDING as FAMILY601','ASSISTANT_AFTER599_BINDING as FAMILY601,ASSISTANT_AFTER599_OUTPUT'))));
 const fixtureControlOrigin=file=>protectedFiles.has(file)?'REFERENCE':historicalControlSources.has(file)?'CODE598':'SOURCE';
 function fixtureControlBytes(file){
   const origin=fixtureControlOrigin(file);
-  return origin==='REFERENCE'?sourceBlob(file):origin==='CODE598'
+  const bytes=origin==='REFERENCE'?sourceBlob(file):origin==='CODE598'
     ?git(SOURCE,['cat-file','blob',fixedCode598.head+':'+file]):fs.readFileSync(path.join(SOURCE,file));
+  if(file!=='scripts/source-impact-domain-inputs.mjs')return bytes;
+  assert.equal(origin,'SOURCE');return currentDomainFixtureBytes(bytes);
 }
+const historicalSuccessor='scripts/lib/assistant-later-h0-successor-source.mjs';
+assert.equal(fixtureControlOrigin(historicalSuccessor),'REFERENCE');
+assert(fixtureControlBytes(historicalSuccessor).equals(sourceBlob(historicalSuccessor)),
+  'Whole historical FULL/PG helper remains authentic; no current exports or behavior added');
 const controlSources=new Set();
 function collect(file){
   if(controlSources.has(file))return;
