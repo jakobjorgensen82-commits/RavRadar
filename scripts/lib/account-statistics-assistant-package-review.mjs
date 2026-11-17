@@ -237,3 +237,19 @@ export function inverseReviewedAccountStatisticsAssistantSourceScripts(scripts){
   assert.equal(sha(canonical(prior)),review.afterSha256,'Whole genuine585 scripts reconstructed before unchanged old oracles');
   return inverseReviewed585AccountStatisticsAssistantSourceScripts(prior);
 }
+
+// TEST DATA only: actual after599 is qualified before unchanged older package oracles.
+// The old after598 actual-release checker deliberately retains its own model binding.
+export async function inverseReviewedAfter599PackageForHistoricalOracles(pkg){
+  assert.equal(arguments.length,1);
+  const actual=structuredClone(pkg),national=await import('../national584-source-evidence.mjs');
+  const {requireAssistantAfter597Release}=await import('./assistant-later-h0-successor-source.mjs');
+  const previous=national.inverseAssistantAfter599Package(pkg);
+  const prior={...previous,version:requireAssistantAfter597Release(),scripts:{...previous.scripts,
+    'test:assistant-later-h0-source':national.ASSISTANT_AFTER597_SOURCE_COMMAND}};
+  national.verifyAssistantAfter597Package(prior);
+  assert.deepEqual({...prior,version:actual.version,scripts:{...prior.scripts,
+    'test:assistant-later-h0-source':actual.scripts['test:assistant-later-h0-source']}},actual,
+    'Whole after599 package DATA roundtrip; only version and the one normal source command differ');
+  assert.deepEqual(pkg,actual,'Current package is never edited or retagged');return prior;
+}

@@ -1,3 +1,4 @@
+import {inverseReviewedAfter599PackageForHistoricalOracles} from './lib/account-statistics-assistant-package-review.mjs';
 import { reviewedFixedAssistantFailureLegacyWorkflow } from './lib/fixed-assistant-failure-workflow-review.mjs';
 import './test-source-child-environment.mjs';
 import {inverseReviewedAccountStatisticsAssistantSourceScripts,inverseReviewedDmiScalarGapSourceScripts,inverseReviewedSupabaseBackupSourceScripts} from './lib/account-statistics-assistant-package-review.mjs';
@@ -45,10 +46,12 @@ function inverseReviewedForecastShareProjectionRegistration(actualScripts) {
 }
 const activeSourcePackage = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 const {ACTIVE_ASSISTANT_SUCCESSOR} = await import('./lib/assistant-later-h0-successor-source.mjs');
-const beforeAfter597SourcePackage = ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase === 'assistant-after598-successor'
+const beforeAfter597SourcePackage = ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase === 'assistant-after599-successor'
+  ? await inverseReviewedAfter599PackageForHistoricalOracles(activeSourcePackage)
+  : ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase === 'assistant-after598-successor'
   ? (await import('./national584-source-evidence.mjs')).inverseAssistantAfter598Package(activeSourcePackage)
   : activeSourcePackage;
-const beforeScalarSourcePackage = ['assistant-after598-successor','assistant-mixed-after597-successor'].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase)
+const beforeScalarSourcePackage = ['assistant-after599-successor','assistant-after598-successor','assistant-mixed-after597-successor'].includes(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase)
   ? (await import('./national584-source-evidence.mjs')).inverseAssistantAfter597Package(beforeAfter597SourcePackage)
   : beforeAfter597SourcePackage;
 const historicalSourcePackage = beforeScalarSourcePackage.version === '4.0.597'

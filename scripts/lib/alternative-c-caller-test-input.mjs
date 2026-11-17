@@ -1405,6 +1405,8 @@ export function inverseAssistantAfter598RetentionCompanionSource(source,relative
   assert.equal(typeof source,'string','RETENTION_AFTER598_TYPE');
   const old=ASSISTANT_AFTER597_RETENTION_COMPANION_TEST_REVIEW;
   assert.equal(relative,old.path,'RETENTION_AFTER598_PATH');
+  if(source.includes('assistantAfter599RuntimePredecessor')||source.includes("assistant-after599-successor"))
+    source=inverseAssistantAfter599RetentionCompanionSource(source,relative);
   if(digest(source)===old.after.sha256){assert.equal(Buffer.byteLength(source),old.after.bytes);return source;}
   const original=source;
   for(const[before,after]of [...ASSISTANT_AFTER598_RETENTION_COMPANION_TEST_EDITS].reverse()){
@@ -1417,4 +1419,31 @@ export function inverseAssistantAfter598RetentionCompanionSource(source,relative
     assert.equal(roundtrip.split(before).length,2,'RETENTION_AFTER598_OLD_HUNK');roundtrip=roundtrip.replace(before,()=>after);
   }
   assert.equal(roundtrip,original,'RETENTION_AFTER598_WHOLE_ROUNDTRIP');return source;
+}
+
+// Semantic TEST-DATA transition only; the existing entire old-source oracle remains final.
+export const ASSISTANT_AFTER599_RETENTION_COMPANION_TEST_EDITS=Object.freeze([
+  Object.freeze([
+    "import {readAssistantLaterH0RetentionInput,assistantAfter597RuntimePredecessor,assistantAfter598RuntimePredecessor} from './assistant-later-h0-runtime-transition.mjs';",
+    "import {readAssistantLaterH0RetentionInput,assistantAfter597RuntimePredecessor,assistantAfter598RuntimePredecessor,assistantAfter599RuntimePredecessor} from './assistant-later-h0-runtime-transition.mjs';"
+  ]),
+  Object.freeze([
+    "const ACTIVE_PREDECESSOR=ACTIVE.sourcePhase==='assistant-after598-successor'?assistantAfter598RuntimePredecessor():\n  ",
+    "const ACTIVE_PREDECESSOR=ACTIVE.sourcePhase==='assistant-after599-successor'?assistantAfter599RuntimePredecessor():\n  ACTIVE.sourcePhase==='assistant-after598-successor'?assistantAfter598RuntimePredecessor():\n  "
+  ]),
+]);
+export function inverseAssistantAfter599RetentionCompanionSource(source,relative){
+  assert.equal(arguments.length,2,'RETENTION_AFTER599_ARGUMENTS');
+  assert.equal(typeof source,'string','RETENTION_AFTER599_TYPE');
+  assert.equal(relative,ASSISTANT_AFTER597_RETENTION_COMPANION_TEST_REVIEW.path,'RETENTION_AFTER599_PATH');
+  const original=source;
+  for(const[before,after]of [...ASSISTANT_AFTER599_RETENTION_COMPANION_TEST_EDITS].reverse()){
+    assert.equal(source.split(after).length,2,'RETENTION_AFTER599_EXACT_HUNK');source=source.replace(after,()=>before);
+  }
+  inverseAssistantAfter598RetentionCompanionSource(source,relative); // Entire existing historical pin, no new cohort.
+  let roundtrip=source;
+  for(const[before,after]of ASSISTANT_AFTER599_RETENTION_COMPANION_TEST_EDITS){
+    assert.equal(roundtrip.split(before).length,2,'RETENTION_AFTER599_OLD_HUNK');roundtrip=roundtrip.replace(before,()=>after);
+  }
+  assert.equal(roundtrip,original,'RETENTION_AFTER599_WHOLE_ROUNDTRIP');return source;
 }
