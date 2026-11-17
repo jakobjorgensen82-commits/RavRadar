@@ -14,10 +14,11 @@ import {fileURLToPath} from 'node:url';
 import {Readable,Writable} from 'node:stream';
 import {pipeline} from 'node:stream/promises';
 import {readAccountErasureSource} from './verify-account-erasure-schema.mjs';
+import {accountErasureNativeFixtureSql} from './lib/account-erasure-outbox-native-fixture.mjs';
 
 const P=Object.freeze({cli:'2.117.0',operationMs:20*60_000,cleanupMs:2*60_000,
   childMs:8*60_000,diagnosticBytes:1024*1024,fileBytes:8*1024*1024,totalBytes:32*1024*1024});
-const IMAGES=Object.freeze({db:'supabase/postgres:17.6.1.167',kong:'kong:2.8.1',auth:'supabase/gotrue:v2.197.0'});
+const IMAGES=Object.freeze({db:'supabase/postgres:17.6.1.167',kong:'kong:2.8.1',auth:'supabase/gotrue:v2.198.0'});
 const ARCHIVE_VENDOR_IMAGES=Object.freeze({auth:'supabase/gotrue:v2.197.0',storage:'supabase/storage-api:v1.86.0'});
 const ARCHIVE_VENDOR_PINS=Object.freeze({'gotrue-version':'v2.197.0\n','storage-version':'v1.86.0\n'});
 const EXCLUDE='realtime,storage-api,imgproxy,edge-runtime,postgres-meta,studio,supavisor,logflare,vector,mailpit,postgrest';
@@ -809,7 +810,7 @@ async function prepareArchiveVendorBootstrap(c,p){
     await fs.writeFile(path.join(directory,name),value,{flag:'wx',mode:0o600});
   await verifyArchiveVendorBootstrap(c,p);
 }
-// Synthetic A/B use the same already pinned Auth197 contract as archive B.
+// New synthetic A/B qualify Auth198; archive197 and its existing proofs stay separate.
 // A fresh owned project receives only this create-only CLI version hint.
 async function syntheticAuthVersionPin(c,p,create){
   need(c.archive===false&&/^[1-9][0-9]{0,18}-1$/.test(c.owner??'')&&['A','B'].includes(p.side)
@@ -923,14 +924,16 @@ async function query(c,p,stage,sql){return JSON.parse((await psql(c,p,stage,Buff
 function authRequestShape(c,p,route,body,method,status){
   const adminUser=/^\/admin\/users\/([a-f0-9-]{36})$/i.exec(route),refresh=route==='/token?grant_type=refresh_token';
   const original=['/admin/users','/token?grant_type=password','/user'].includes(route);
-  need(original||c.archive===false&&p.side==='B'&&(refresh||adminUser&&uuid(adminUser[1])),'AUTH_ROUTE');
+  const logout=c.archive===false&&p.side==='B'&&route==='/logout?scope=global';
+  need(original||c.archive===false&&p.side==='B'&&(refresh||logout||adminUser&&uuid(adminUser[1])),'AUTH_ROUTE');
   const actualMethod=method??(body?'POST':'GET'),readback=Array.isArray(status);
+  need(!logout||actualMethod==='POST'&&body===null&&status===204,'AUTH_LOGOUT_SHAPE');
   need(adminUser?actualMethod==='GET'&&body===null||actualMethod==='DELETE'
       &&body?.should_soft_delete===false&&Object.keys(body).length===1
     :actualMethod===(route==='/user'?'GET':'POST'),'AUTH_METHOD');
   need(!readback||adminUser&&actualMethod==='GET'&&JSON.stringify(status)==='[200,404]','AUTH_READBACK_STATUS');
   return {method:actualMethod,admin:route==='/admin/users'||Boolean(adminUser),readback,
-    kind:adminUser?(actualMethod==='DELETE'?'DELETE':'ADMIN_USER'):refresh?'REFRESH':route==='/admin/users'?'CREATE':route==='/user'?'USER':'PASSWORD'};
+    kind:adminUser?(actualMethod==='DELETE'?'DELETE':'ADMIN_USER'):logout?'LOGOUT':refresh?'REFRESH':route==='/admin/users'?'CREATE':route==='/user'?'USER':'PASSWORD'};
 }
 async function auth(c,p,route,{body=null,token=null,status=200,method=null}={}){
   const shape=authRequestShape(c,p,route,body,method,status);
@@ -943,9 +946,10 @@ async function auth(c,p,route,{body=null,token=null,status=200,method=null}={}){
     if(token)headers.Authorization='Bearer '+token;if(body)headers['Content-Type']='application/json';
     const response=await fetch(url,{method:shape.method,headers,body:body?JSON.stringify(body):undefined,
       redirect:'error',signal:controller.signal});
-    const reader=response.body?.getReader();need(reader,'AUTH_BODY');const chunks=[];let n=0;
-    try{while(true){const part=await reader.read();if(part.done)break;n+=part.value.length;need(n<=64*1024,'AUTH_BODY_BOUND');chunks.push(Buffer.from(part.value));}}
-    finally{await reader.cancel().catch(()=>{});}
+    const reader=response.body?.getReader(),emptyLogout=shape.kind==='LOGOUT'&&response.status===204;
+    need(reader||emptyLogout&&response.body===null,'AUTH_BODY');const chunks=[];let n=0;
+    try{while(reader){const part=await reader.read();if(part.done)break;n+=part.value.length;need(n<=64*1024,'AUTH_BODY_BOUND');chunks.push(Buffer.from(part.value));}}
+    finally{await reader?.cancel().catch(()=>{});}
     if(endpoint)assert.deepEqual(await archiveAuthEndpoint(c,p),endpoint,'ARCHIVE_AUTH_ENDPOINT_MOVED');
     c.authRequests.push({project:p.side,kind:c.stage,status:response.status,bodyBytes:n});
     need(shape.readback?status.includes(response.status):response.status===status,'AUTH_STATUS_'+response.status);
@@ -1033,6 +1037,337 @@ function syntheticAccountErasureAuthFenceReadbackSql(intent){
     'triggerScoped',exists(select 1 from pg_catalog.pg_trigger where tgname='account_erasure_auth_uuid_insert_guard'
       and tgrelid='auth.users'::regclass and tgfoid='public.account_erasure_auth_uuid_guard()'::regprocedure
       and tgtype=7 and tgenabled='O' and not tgisinternal));`;
+}
+const NATIVE_ACTIVITY_SQL='supabase/migrations/20261117030000_account_native_activity_capture_off.sql';
+const NOTICE_SQL='supabase/migrations/20261116230000_account_inactivity_notice_off.sql';
+async function syntheticNativeActivitySource(){
+  const root=fileURLToPath(new URL('../',import.meta.url));
+  const sql=(await fs.readFile(path.join(root,NATIVE_ACTIVITY_SQL),'utf8')).replaceAll('\r\n','\n');
+  const notice=(await fs.readFile(path.join(root,NOTICE_SQL),'utf8')).replaceAll('\r\n','\n');
+  const bodies={};
+  for(const name of ['account_native_activity_capture','record_account_lifecycle_activity','account_native_activity_token_hook']){
+    const expression=new RegExp('create(?: or replace)? function public\\.'+name+'\\([\\s\\S]*?as \\$(\\w+)\\$\\n([\\s\\S]*?)\\n\\$\\1\\$;','g');
+    const matches=[...sql.matchAll(expression)];need(matches.length===1,'NATIVE_ACTIVITY_SOURCE_FUNCTION');
+    bodies[name]=crypto.createHash('md5').update(matches[0][2].trim()).digest('hex');
+  }
+  return {root,sql,notice,bodies,sha256:sha(Buffer.from(sql)),noticeSha256:sha(Buffer.from(notice))};
+}
+function syntheticNativeHookConfig(p){
+  need(p.side==='B'&&/^rr_restore_[1-9][0-9]*_1_b$/.test(p.id),'NATIVE_ACTIVITY_B_PROJECT');
+  return config(p.id,true,false)+'\n[auth.hook.custom_access_token]\nenabled = true\n'
+    +'uri = "pg-functions://postgres/public/rr_native_activity_test_hook"\n';
+}
+async function restartSyntheticBWithNativeHook(c,p){
+  need(c.archive===false&&p.side==='B'&&p.id==='rr_restore_'+c.owner.replace('-','_')+'_b'
+    &&p.dir===path.join(c.root,'B')&&p.startAttempted===true,'NATIVE_ACTIVITY_OWNED_RESTART');
+  const file=path.join(p.dir,'supabase/config.toml'),named=await fs.lstat(file);
+  need(named.isFile()&&!named.isSymbolicLink()&&named.nlink===1,'NATIVE_ACTIVITY_CONFIG_FILE');
+  assert.equal(await fs.readFile(file,'utf8'),config(p.id,true,false));
+  // Standard owned CLI restart, preserving this disposable B database. The final
+  // existing stopProject still removes only this exact project's owned volumes.
+  await command(c,'NATIVE_ACTIVITY_STOP_B','supabase',['stop','--project-id',p.id],{cwd:p.dir,maxMs:60_000});
+  const network=(await jsonCommand(c,'NATIVE_ACTIVITY_NETWORK',['network','inspect',p.network]))[0];
+  need(network.Id===p.networkId&&network.Labels?.['ravradar.synthetic.restore.owner']===c.owner,'NATIVE_ACTIVITY_NETWORK_CHANGED');
+  await fs.writeFile(file,syntheticNativeHookConfig(p),{mode:0o600});
+  await command(c,'NATIVE_ACTIVITY_START_B','supabase',['--network-id',p.network,'start','--exclude',EXCLUDE],{cwd:p.dir});
+  await syntheticAuthVersionPin(c,p,false);
+  const actual={};
+  for(const service of ['db','kong','auth']){
+    const info=(await jsonCommand(c,'NATIVE_ACTIVITY_INSPECT_'+service,['inspect','supabase_'+service+'_'+p.id]))[0];
+    p[service]=ownedContainer(info,p,service,false);
+    actual[service]=serviceImageMetadata(c,p,service,info,(await jsonCommand(c,'NATIVE_ACTIVITY_IMAGE_'+service,['image','inspect',info.Image]))[0]);
+  }
+  assert.deepEqual(actual,c.images);
+  const found=(await command(c,'NATIVE_ACTIVITY_EXACT_SERVICE_SET','docker',['ps','--no-trunc','-aq','--filter','label=com.supabase.cli.project='+p.id])).toString().trim().split(/\s+/).filter(Boolean);
+  assert.deepEqual(found.sort(),[p.db,p.kong,p.auth].sort());
+  const status=JSON.parse((await command(c,'NATIVE_ACTIVITY_STATUS','supabase',['status','--output','json'],{cwd:p.dir,maxMs:30_000})).toString());
+  p.api=localUrl(status.API_URL,'api');p.dbUrl=localUrl(status.DB_URL,'db');
+  need(typeof status.ANON_KEY==='string'&&status.ANON_KEY.length>32&&typeof status.SERVICE_ROLE_KEY==='string'
+    &&status.SERVICE_ROLE_KEY.length>32,'LOCAL_RUNTIME_KEYS_REQUIRED');p.anon=status.ANON_KEY;p.service=status.SERVICE_ROLE_KEY;
+}
+function syntheticNativeActivityInstrumentationSql(){return String.raw`
+create table public.rr_native_activity_probe(singleton boolean primary key default true check(singleton),
+  calls bigint not null default 0,mode text not null default 'normal',target uuid,
+  fail_capture boolean not null default false,fail_invalid boolean not null default false,fail_cancel boolean not null default false);
+insert into public.rr_native_activity_probe(singleton) values(true);
+revoke all on public.rr_native_activity_probe from public,anon,authenticated,service_role;
+grant select,update on public.rr_native_activity_probe to supabase_auth_admin;
+-- Fixture observer only: actual production hook/body/ACL remain unchanged. This
+-- invoker wrapper calls it as the genuine Auth role, in the SAME native TX.
+create function public.rr_native_activity_test_hook(event jsonb) returns jsonb language plpgsql set search_path='' as $fixture_hook$
+declare result jsonb; mode text;
+begin
+  update public.rr_native_activity_probe set calls=calls+1 where singleton returning rr_native_activity_probe.mode into mode;
+  result:=public.account_native_activity_token_hook(event);
+  if mode='abort-after-capture' then raise exception 'SYNTHETIC_NATIVE_AFTER_CAPTURE'; end if;
+  if mode='hold-after-capture' then
+    perform set_config('application_name','rr_native_capture_hook',true);
+    perform pg_advisory_xact_lock(17030001);
+  end if;
+  return result;
+end;
+$fixture_hook$;
+revoke all on function public.rr_native_activity_test_hook(jsonb) from public,anon,authenticated,service_role;
+grant execute on function public.rr_native_activity_test_hook(jsonb) to supabase_auth_admin;
+create function public.rr_native_activity_failpoint() returns trigger language plpgsql set search_path='' as $fixture_fail$
+declare probe public.rr_native_activity_probe%rowtype;
+begin
+  select * into probe from public.rr_native_activity_probe where singleton;
+  if TG_TABLE_NAME='account_activity_journal' then
+    if probe.fail_capture and NEW.user_id=probe.target then raise exception 'SYNTHETIC_NATIVE_CAPTURE_FAILURE';end if;
+  elsif TG_TABLE_NAME='account_inactivity_policy' and probe.fail_invalid then
+    raise exception 'SYNTHETIC_NATIVE_CAPTURE_FAILURE';
+  elsif TG_TABLE_NAME='account_inactivity_notices' then
+    if probe.fail_cancel and NEW.target_user_id=probe.target then raise exception 'SYNTHETIC_NATIVE_CAPTURE_FAILURE';end if;
+  end if;
+  return NEW;
+end;
+$fixture_fail$;
+create trigger rr_native_capture_failure before insert or update on public.account_activity_journal
+  for each row execute function public.rr_native_activity_failpoint();
+create trigger rr_native_invalidation_failure before update on public.account_inactivity_policy
+  for each row execute function public.rr_native_activity_failpoint();
+create trigger rr_native_cancel_failure before update on public.account_inactivity_notices
+  for each row execute function public.rr_native_activity_failpoint();
+`;}
+async function verifySyntheticBNativeActivityCapture(c,p,fixtureActorId){
+  need(c.archive===false&&p.side==='B'&&uuid(fixtureActorId),'NATIVE_ACTIVITY_SYNTHETIC_B_ONLY');
+  const source=await syntheticNativeActivitySource(),manual=readAccountErasureSource();
+  // Replace only the previous case's EMPTY minimal profile-id fixture. Its
+  // exact outbox/guard was already read back; no Auth relation is recreated.
+  const minimal=await query(c,p,'NATIVE_ACTIVITY_PRIOR_FIXTURE',`select jsonb_build_object(
+    'profileRows',(select count(*) from public.profiles),'profileColumns',(select count(*) from pg_catalog.pg_attribute
+      where attrelid='public.profiles'::regclass and attnum>0 and not attisdropped),
+    'outboxRows',(select count(*) from public.account_erasure_operations),
+    'stagedRows',(select count(*) from public.account_erasure_operations where pg_staged_at is not null),
+    'guardMd5',(select md5(btrim(prosrc,E' \\n\\r\\t')) from pg_catalog.pg_proc
+      where oid='public.account_erasure_auth_uuid_guard()'::regprocedure));`);
+  const fence=syntheticAccountErasureAuthFenceSql(manual,{operationId:crypto.randomUUID(),userId:crypto.randomUUID(),sessionId:crypto.randomUUID()},fixtureActorId);
+  assert.deepEqual(minimal,{profileRows:0,profileColumns:1,outboxRows:1,stagedRows:1,guardMd5:fence.authGuardBodyMd5});
+  await psql(c,p,'NATIVE_ACTIVITY_APP_FIXTURE',Buffer.from(`
+drop trigger account_erasure_auth_uuid_insert_guard on auth.users;
+drop function public.account_erasure_auth_uuid_guard();
+drop table public.account_erasure_operations;
+drop table public.profiles;
+${accountErasureNativeFixtureSql(source.root,{nativeAuth:true})}
+${manual.sql}
+${source.notice}
+${source.sql}
+insert into public.profiles(id,email,role) values('${fixtureActorId}','owned-native-owner@example.invalid','owner');
+${syntheticNativeActivityInstrumentationSql()}`));
+  const catalog=await query(c,p,'NATIVE_ACTIVITY_SOURCE_CATALOG',`select jsonb_build_object(
+    'bodies',(select jsonb_object_agg(p.proname,md5(btrim(p.prosrc,E' \\n\\r\\t'))) from pg_catalog.pg_proc p
+      where p.oid in ('public.account_native_activity_capture(uuid)'::regprocedure,
+        'public.record_account_lifecycle_activity()'::regprocedure,'public.account_native_activity_token_hook(jsonb)'::regprocedure)),
+    'definers',(select bool_and(p.prosecdef and (r.rolsuper or r.rolbypassrls) and 'search_path=""'=any(p.proconfig))
+      from pg_catalog.pg_proc p join pg_catalog.pg_roles r on r.oid=p.proowner where p.oid in (
+        'public.account_native_activity_capture(uuid)'::regprocedure,'public.record_account_lifecycle_activity()'::regprocedure,
+        'public.account_native_activity_token_hook(jsonb)'::regprocedure)),
+    'hookAcl',has_function_privilege('supabase_auth_admin','public.account_native_activity_token_hook(jsonb)','EXECUTE')
+      and not has_function_privilege('authenticated','public.account_native_activity_token_hook(jsonb)','EXECUTE')
+      and not has_function_privilege('anon','public.account_native_activity_token_hook(jsonb)','EXECUTE')
+      and not has_function_privilege('service_role','public.account_native_activity_token_hook(jsonb)','EXECUTE'),
+    'kernelPrivate',not exists(select 1 from unnest(array['anon','authenticated','service_role','supabase_auth_admin']) r
+      where has_function_privilege(r,'public.account_native_activity_capture(uuid)','EXECUTE')),
+    'browserAcl',has_function_privilege('authenticated','public.record_account_lifecycle_activity()','EXECUTE')
+      and not has_function_privilege('anon','public.record_account_lifecycle_activity()','EXECUTE'),
+    'noAuthTrigger',not exists(select 1 from pg_catalog.pg_trigger t where t.tgrelid in ('auth.users'::regclass,'auth.sessions'::regclass)
+      and t.tgfoid in ('public.account_native_activity_token_hook(jsonb)'::regprocedure,
+        'public.rr_native_activity_test_hook(jsonb)'::regprocedure,'public.rr_native_activity_failpoint()'::regprocedure)),
+    'initialOff',(select not notices_enabled and coverage_status='UNKNOWN' and not delivery_qualified
+      from public.account_inactivity_policy where singleton));`);
+  assert.deepEqual(catalog,{bodies:source.bodies,definers:true,hookAcl:true,kernelPrivate:true,browserAcl:true,noAuthTrigger:true,initialOff:true});
+  await restartSyntheticBWithNativeHook(c,p);
+  const pending=[],cases=[];
+  const track=promise=>{pending.push(promise);promise.catch(()=>{});return promise;};
+  const sql=async text=>(await psql(c,p,'NATIVE_ACTIVITY_SQL',Buffer.from(text+'\n'))).toString().trim();
+  const value=text=>query(c,p,'NATIVE_ACTIVITY_READBACK',text);
+  const role=(who,kind,text)=>`select set_config('request.jwt.claim.sub','${who}',true),set_config('request.jwt.claim.role','${kind}',true);set local role ${kind};${text}`;
+  const rpc=(kind,text)=>sql(role(fixtureActorId,kind,'select '+text+';')).then(text=>JSON.parse(text.split('\n').at(-1)));
+  const flags=async(target,{mode='normal',capture=false,invalid=false,cancel=false}={})=>{
+    need(uuid(target)&&['normal','abort-after-capture','hold-after-capture'].includes(mode),'NATIVE_ACTIVITY_FIXTURE_FLAGS');
+    await sql(`update public.rr_native_activity_probe set calls=0,mode='${mode}',target='${target}',
+      fail_capture=${capture},fail_invalid=${invalid},fail_cancel=${cancel};`);
+  };
+  const snapshot=target=>value(`select jsonb_build_object('calls',(select calls from public.rr_native_activity_probe where singleton),
+    'coverage',(select coverage_status from public.account_inactivity_policy where singleton),
+    'activity',(select revision::text from public.account_lifecycle_activity where user_id='${target}'),
+    'journal',(select last_activity_at::text from public.account_activity_journal where user_id='${target}'),
+    'sessions',(select count(*) from auth.sessions where user_id='${target}'),
+    'notices',coalesce((select jsonb_agg(jsonb_build_array(state,revision::text,delete_not_before::text) order by notice_id)
+      from public.account_inactivity_notices where target_user_id='${target}'),'[]'::jsonb));`);
+  const login=(target,status=200)=>auth(c,p,'/token?grant_type=password',{body:{email:target.email,password:target.password},status});
+  const fresh=async()=>{
+    const email='owned-native-'+crypto.randomBytes(16).toString('hex')+'@example.invalid',password=crypto.randomBytes(32).toString('base64url');
+    const created=await auth(c,p,'/admin/users',{token:p.service,body:{email,password,email_confirm:true}});
+    need(uuid(created.id)&&typeof created.created_at==='string','NATIVE_ACTIVITY_USER');
+    await sql(`insert into public.profiles(id,email,role) values('${created.id}','owned-native-target@example.invalid','user');`);
+    return {id:created.id,email,password,createdAt:created.created_at};
+  };
+  const qualify=async target=>{
+    // SYNTHETIC history/delivery attestation, never a two-year real-world claim.
+    await sql(`update public.account_inactivity_policy set notices_enabled=true,coverage_status='CAPTURING',
+      coverage_started_at=clock_timestamp()-interval '3 years',delivery_qualified=true where singleton;
+      insert into public.account_activity_journal(user_id,first_observed_at,last_activity_at)
+        values('${target.id}',clock_timestamp()-interval '3 years',clock_timestamp()-interval '3 years')
+      on conflict(user_id) do update set first_observed_at=excluded.first_observed_at,last_activity_at=excluded.last_activity_at;
+      insert into public.account_lifecycle_activity(user_id,revision,first_observed_at,last_activity_at,coverage_epoch)
+        select '${target.id}',1,clock_timestamp()-interval '3 years',clock_timestamp()-interval '3 years',coverage_epoch
+        from public.account_inactivity_policy where singleton on conflict(user_id) do update set
+        first_observed_at=excluded.first_observed_at,last_activity_at=excluded.last_activity_at,coverage_epoch=excluded.coverage_epoch;
+      update public.account_inactivity_notices set state='CANCELLED',delete_not_before=null where target_user_id='${target.id}';`);
+    const notice=crypto.randomUUID(),prepared=await rpc('authenticated',`public.prepare_account_inactivity_notice('${notice}','${target.id}')`);
+    need(prepared.state==='READY','NATIVE_ACTIVITY_QUALIFIED_READY');return prepared;
+  };
+  const claim=(target,n,attempt=crypto.randomUUID())=>rpc('service_role',`public.claim_account_inactivity_notice('${n.noticeId}','${fixtureActorId}',
+    ${BigInt(n.revision)},'${attempt}','${'a'.repeat(64)}',${sqlString(target.createdAt)})`);
+  const acknowledge=(n,attempt,outcome,provider)=>rpc('service_role',`public.acknowledge_account_inactivity_notice('${n.noticeId}','${fixtureActorId}',
+    ${BigInt(n.revision)},'${attempt}','${outcome}',${provider?"'"+provider+"'":'null'})`);
+  const status=n=>rpc('authenticated',`public.get_account_inactivity_notice_status('${n.noticeId}')`);
+  const cancelled=async n=>{const read=await status(n);need(read.state==='CANCELLED'&&read.deleteNotBefore===null,'NATIVE_ACTIVITY_NOTICE_NOT_CANCELLED');return read;};
+  const pass=name=>cases.push({case:name,status:'PASS'});
+  const waitLock=async(name,event)=>{
+    const until=Date.now()+1200;
+    do{if(await value(`select to_jsonb(exists(select 1 from pg_catalog.pg_stat_activity where application_name='${name}'
+      and wait_event_type='Lock'${event?" and wait_event='"+event+"'":''}))`))return;
+      await new Promise(resolve=>setTimeout(resolve,10));}while(Date.now()<until);
+    need(false,'NATIVE_ACTIVITY_RACE_NOT_OBSERVED');
+  };
+  // All asynchronous native/psql calls are owned and settled before outer B cleanup.
+  let firstError=null;
+  try{
+    const target=await fresh();await flags(target.id);let notice=await qualify(target),before=await snapshot(target.id);
+    const issued=await login(target);syntheticIssuedJwtClaims(issued.access_token,target.id);
+    let after=await snapshot(target.id);need(BigInt(after.activity)===BigInt(before.activity)+1n&&after.calls===1,'NATIVE_ACTIVITY_PASSWORD_COMMIT');
+    await cancelled(notice);before=after;
+    const refreshed=await auth(c,p,'/token?grant_type=refresh_token',{body:{refresh_token:issued.refresh_token}});
+    syntheticIssuedJwtClaims(refreshed.access_token,target.id);after=await snapshot(target.id);
+    need(BigInt(after.activity)===BigInt(before.activity)+1n&&after.calls===2,'NATIVE_ACTIVITY_REFRESH_COMMIT');
+    await auth(c,p,'/token?grant_type=refresh_token',{body:{refresh_token:issued.refresh_token}});
+    need((await snapshot(target.id)).calls===3,'NATIVE_ACTIVITY_ALLOWED_REUSE_CAPTURE');
+    pass('B1_PASSWORD_REFRESH_ALLOWED_REUSE');
+
+    notice=await qualify(target);await flags(target.id,{mode:'abort-after-capture'});before=await snapshot(target.id);
+    await login(target,500);assert.deepEqual(await snapshot(target.id),before);await flags(target.id);
+    pass('B2_AUTH_OUTER_TRANSACTION_ROLLBACK');
+
+    notice=await qualify(target);await flags(target.id,{mode:'hold-after-capture'});
+    let release;const gate=new Promise(resolve=>{release=resolve;});
+    const hold=(async function*(){yield Buffer.from("set local application_name='rr_native_capture_barrier';select pg_advisory_xact_lock(17030001);\n");
+      await gate;yield Buffer.from('select 1;\n');})();
+    const holder=track(psql(c,p,'NATIVE_ACTIVITY_COMMIT_BARRIER',hold));
+    try{
+      // Observe the actual holder, then the hook's advisory wait and claim's row wait.
+      let seen=false;for(let i=0;i<40&&!seen;i++){
+        seen=await value("select to_jsonb(exists(select 1 from pg_catalog.pg_stat_activity where application_name='rr_native_capture_barrier' and state='idle in transaction'))");
+        if(!seen)await new Promise(resolve=>setTimeout(resolve,10));
+      }need(seen,'NATIVE_ACTIVITY_BARRIER_NOT_OBSERVED');
+      const authTask=track(login(target));await waitLock('rr_native_capture_hook','advisory');
+      const claimTask=track(sql(role(fixtureActorId,'service_role',`set local application_name='rr_native_capture_claim';
+        select public.claim_account_inactivity_notice('${notice.noticeId}','${fixtureActorId}',${BigInt(notice.revision)},
+          '${crypto.randomUUID()}','${'a'.repeat(64)}',${sqlString(target.createdAt)});`)).then(t=>JSON.parse(t.split('\n').at(-1))));
+      await waitLock('rr_native_capture_claim');release();await holder;await authTask;
+      const blocked=await claimTask;need(blocked.shouldSend===false&&blocked.state==='CANCELLED','NATIVE_ACTIVITY_ACTIVITY_FIRST_CLAIM');
+    }finally{release();await holder.catch(()=>{});}
+    await flags(target.id);pass('B3_ACTIVITY_FIRST_FRESH_CLAIM_HAS_NO_SEND_AUTHORITY');
+
+    notice=await qualify(target);let claimed=await claim(target,notice);need(claimed.shouldSend===true,'NATIVE_ACTIVITY_FIRST_CLAIM');
+    await login(target);let current=await cancelled(notice);
+    await acknowledge(claimed,claimed.attemptId,'accepted',crypto.randomUUID());
+    await acknowledge(current,claimed.attemptId,'accepted',crypto.randomUUID());await cancelled(notice);
+    need((await claim(target,await status(notice))).shouldSend===false,'NATIVE_ACTIVITY_LATE_ACK_SEND');
+    pass('B4_CLAIM_FIRST_ACTIVITY_CANCELS_AND_LATE_ACK_CANNOT_REOPEN');
+
+    notice=await qualify(target);claimed=await claim(target,notice);const provider=crypto.randomUUID();
+    let accepted=await acknowledge(claimed,claimed.attemptId,'accepted',provider);
+    let held=await rpc('service_role',`public.hold_account_inactivity_notice('${notice.noticeId}','${fixtureActorId}',${BigInt(accepted.revision)},'DELIVERY_UNAVAILABLE')`);
+    need(held.state==='HELD'&&held.accepted===true,'NATIVE_ACTIVITY_ACCEPTED_HELD');
+    // First prove the retained 6f124 recovery through real SQL, then native cancel.
+    let delivered=await acknowledge(held,claimed.attemptId,'delivered',provider);
+    need(delivered.state==='DELIVERED'&&delivered.deleteNotBefore!==null,'NATIVE_ACTIVITY_ACCEPTED_HELD_RECOVERY');
+    await login(target);current=await cancelled(notice);
+    await acknowledge(delivered,claimed.attemptId,'delivered',provider);
+    await assert.rejects(()=>acknowledge(current,claimed.attemptId,'delivered',provider),e=>e.code==='SQLSTATE_22023');
+    await cancelled(notice);
+    notice=await qualify(target);claimed=await claim(target,notice);
+    accepted=await acknowledge(claimed,claimed.attemptId,'accepted',provider);
+    held=await rpc('service_role',`public.hold_account_inactivity_notice('${notice.noticeId}','${fixtureActorId}',${BigInt(accepted.revision)},'DELIVERY_UNAVAILABLE')`);
+    await login(target);current=await cancelled(notice);
+    await acknowledge(held,claimed.attemptId,'delivered',provider);
+    await assert.rejects(()=>acknowledge(current,claimed.attemptId,'delivered',provider),e=>e.code==='SQLSTATE_22023');
+    await cancelled(notice);pass('B5_ACCEPTED_HELD_RECOVERY_AND_ACTIVITY_DEADLINE_CANCELLATION');
+
+    notice=await qualify(target);await flags(target.id,{capture:true});before=await snapshot(target.id);await login(target);
+    after=await snapshot(target.id);need(after.coverage==='INVALID'&&after.activity===before.activity&&after.journal===before.journal
+      &&after.calls===1,'NATIVE_ACTIVITY_CAPTURE_FAILURE_FALLBACK');await cancelled(notice);
+    pass('B6_CAPTURE_FAILURE_ATOMIC_INVALID_AND_CANCEL');await flags(target.id);
+
+    for(const failure of [{capture:true,invalid:true},{capture:true,cancel:true}]){
+      notice=await qualify(target);await flags(target.id,failure);before=await snapshot(target.id);
+      await login(target,500);assert.deepEqual(await snapshot(target.id),before);await flags(target.id);
+    }
+    // Native Auth must not wait for an opposite profile writer. Its NOWAIT
+    // fallback can succeed only with BOTH INVALID and target cancellation.
+    notice=await qualify(target);let unlock;const profileGate=new Promise(resolve=>{unlock=resolve;});
+    const profileHolder=track(psql(c,p,'NATIVE_ACTIVITY_PROFILE_BARRIER',(async function*(){
+      yield Buffer.from(`set local application_name='rr_native_profile_barrier';select id from public.profiles where id='${target.id}' for update;\n`);
+      await profileGate;yield Buffer.from('select 1;\n');})()));
+    try{
+      let seen=false;for(let i=0;i<40&&!seen;i++){
+        seen=await value("select to_jsonb(exists(select 1 from pg_catalog.pg_stat_activity where application_name='rr_native_profile_barrier' and state='idle in transaction'))");
+        if(!seen)await new Promise(resolve=>setTimeout(resolve,10));
+      }need(seen,'NATIVE_ACTIVITY_PROFILE_BARRIER_NOT_OBSERVED');
+      await login(target);after=await snapshot(target.id);need(after.coverage==='INVALID','NATIVE_ACTIVITY_PROFILE_NOWAIT');await cancelled(notice);
+    }finally{unlock();await profileHolder.catch(()=>{});}
+    pass('B7_FALLBACK_FAILURE_ROLLBACK_AND_PROFILE_NOWAIT');
+
+    // Prepare genuine sessions BEFORE making every attempted capture fail. A
+    // zero hook count alone is insufficient: inspect the committed revocation.
+    await flags(target.id);const logoutTarget=await fresh(),logoutToken=await login(logoutTarget);
+    const reuseTarget=await fresh(),reuse0=await login(reuseTarget),reuseClaims=syntheticIssuedJwtClaims(reuse0.access_token,reuseTarget.id);
+    let rotating=reuse0;for(let i=0;i<3;i++)rotating=await auth(c,p,'/token?grant_type=refresh_token',{body:{refresh_token:rotating.refresh_token}});
+    const branch=await value(`select jsonb_build_object('v2',refresh_token_hmac_key is not null and refresh_token_counter is not null)
+      from auth.sessions where id='${reuseClaims.sessionId}' and user_id='${reuseTarget.id}';`);
+    await sql(`update auth.refresh_tokens set updated_at=clock_timestamp()-interval '1 day' where user_id::text='${reuseTarget.id}';
+      update auth.sessions set refreshed_at=clock_timestamp()-interval '1 day' where id='${reuseClaims.sessionId}';`);
+    await flags(logoutTarget.id,{capture:true,invalid:true});
+    await auth(c,p,'/logout?scope=global',{method:'POST',token:logoutToken.access_token,status:204});
+    need((await snapshot(logoutTarget.id)).sessions===0&&(await snapshot(logoutTarget.id)).calls===0,'NATIVE_ACTIVITY_LOGOUT_COMMIT');
+    await flags(reuseTarget.id,{capture:true,invalid:true});
+    await auth(c,p,'/token?grant_type=refresh_token',{body:{refresh_token:reuse0.refresh_token},status:400});
+    const revoked=await value(`select jsonb_build_object('sessionGone',not exists(select 1 from auth.sessions where id='${reuseClaims.sessionId}'),
+      'legacyRevoked',exists(select 1 from auth.refresh_tokens where user_id::text='${reuseTarget.id}')
+        and not exists(select 1 from auth.refresh_tokens where user_id::text='${reuseTarget.id}' and not revoked),
+      'calls',(select calls from public.rr_native_activity_probe where singleton));`);
+    need(revoked.calls===0&&(branch.v2?revoked.sessionGone:revoked.legacyRevoked),'NATIVE_ACTIVITY_REJECTED_REUSE_MUST_COMMIT');
+    await flags(target.id);pass('B8_LOGOUT_AND_REJECTED_REUSE_COMMIT_WITHOUT_CAPTURE_HOOK');
+
+    const event={user_id:target.id,claims:{sub:target.id,role:'authenticated',aud:'authenticated',custom:{unchanged:true}}};
+    const same=await sql(`set local role supabase_auth_admin;select public.account_native_activity_token_hook(${sqlString(JSON.stringify(event))}::jsonb);`);
+    assert.deepEqual(JSON.parse(same.split('\n').at(-1)),{claims:event.claims});
+    for(const roleName of ['anon','authenticated','service_role'])
+      await assert.rejects(()=>sql(`set local role ${roleName};select public.account_native_activity_token_hook(${sqlString(JSON.stringify(event))}::jsonb);`),e=>e.code==='SQLSTATE_42501');
+    for(const roleName of ['anon','authenticated','service_role','supabase_auth_admin'])
+      await assert.rejects(()=>sql(`set local role ${roleName};select public.account_native_activity_capture('${target.id}');`),e=>e.code==='SQLSTATE_42501');
+    for(const invalid of [{...event,user_id:crypto.randomUUID()},{user_id:target.id,claims:null}])
+      await assert.rejects(()=>sql(`set local role supabase_auth_admin;select public.account_native_activity_token_hook(${sqlString(JSON.stringify(invalid))}::jsonb);`),e=>e.code==='SQLSTATE_22023');
+    const fenced=await fresh();
+    await sql(`insert into public.account_erasure_operations(operation_id,target_user_id,requested_by,profile_was_active,state,pg_staged_at)
+      values('${crypto.randomUUID()}','${fenced.id}','${fixtureActorId}',true,'PG_STAGED_AUTH_PENDING',clock_timestamp());`);
+    await login(fenced);const fenceAfter=await snapshot(fenced.id);
+    need(fenceAfter.activity===null&&fenceAfter.journal===null&&fenceAfter.coverage==='INVALID','NATIVE_ACTIVITY_ERASURE_FENCE');
+    pass('B9_CLAIMS_ACL_AND_EXISTING_POST_PG_FENCE');
+    return Object.freeze({kind:'SYNTHETIC_B_GENUINE_AUTH198_POSITIVE_NATIVE_CAPTURE',authImage:IMAGES.auth,
+      sourceSha256:source.sha256,noticeSourceSha256:source.noticeSha256,manualSourceSha256:manual.sha256,
+      exactFunctionBodiesVerified:true,appScaffoldingSynthetic:true,realTwoYearHistoryVerified:false,
+      providerDeliverySynthetic:true,mailPostExecuted:false,controllerNoPostProof:'SQL_AUTHORITY_FALSE_ONLY',
+      automaticErasureEnabled:false,hostedHookConfigured:false,productionAuthVerified:false,
+      rejectedReuseBranch:branch.v2?'V2_SESSION_LOGOUT':'LEGACY_TOKEN_FAMILY',otherReuseBranch:'UNRUN',cases});
+  }catch(error){firstError=error;throw error;}
+  finally{
+    const settled=await Promise.allSettled(pending);
+    if(!firstError){const failed=settled.find(r=>r.status==='rejected');if(failed)throw failed.reason;}
+  }
 }
 async function verifySyntheticBAuthLifecycle(c,p,fixtureActorId){
   need(c.archive===false&&p.side==='B'&&uuid(fixtureActorId),'SYNTHETIC_AUTH_LIFECYCLE_TARGET');
@@ -2101,8 +2436,9 @@ async function fixture({archive=false,inventoryOnly=false}={}){
     const user=await auth(c,b,'/user',{token:restored.access_token});need(user.id===created.id,'RESTORED_USER_ID');assert.deepEqual(user.user_metadata,sourceUser.user_metadata);
     await auth(c,b,'/token?grant_type=password',{body:{email,password:password+'wrong'},status:400});
     const syntheticAuthLifecycle=await verifySyntheticBAuthLifecycle(c,b,restored.user.id);
+    const syntheticNativeActivity=await verifySyntheticBNativeActivityCapture(c,b,restored.user.id);
     result={status:'PASS',scope:'synthetic-standard-cli-local-restore',sourceHead:process.env.EXPECTED_HEAD_SHA,cliVersion:P.cli,
-      syntheticAuthLifecycle,
+      syntheticAuthLifecycle,syntheticNativeActivity,
       standardFiveFileRoundtrip:true,utf8DecimalMetadata:true,rolesAndMigrationHistory:true,newAuthPasswordLogin:true,
       syntheticRelationPreflight:relationPreflight,syntheticNotValidChecks:notValidChecks,
       productionBackupVerified:false,cryptoR2Verified:false,productionAuthRestoreVerified:false};
@@ -2160,6 +2496,38 @@ async function selfTest(){
     +`SELECT pg_catalog.setval('"storage"."Private_Sequence_Sentinel"', 7, true);\n`;
   const inventoryHistory='COPY "supabase_migrations"."schema_migrations" ("version") FROM stdin;\n20200101\n\\.\n';
 
+  test('owned native capture source reader keeps exact append bodies and real-Auth fixture admission',async()=>{
+    const source=await syntheticNativeActivitySource();
+    assert.equal(source.sha256,sha(Buffer.from((await fs.readFile(path.join(source.root,NATIVE_ACTIVITY_SQL),'utf8')).replaceAll('\r\n','\n'))));
+    assert.deepEqual(Object.keys(source.bodies).sort(),['account_native_activity_capture','account_native_activity_token_hook','record_account_lifecycle_activity']);
+    for(const digest of Object.values(source.bodies))assert.match(digest,/^[a-f0-9]{32}$/);
+    const existing=accountErasureNativeFixtureSql(source.root),native=accountErasureNativeFixtureSql(source.root,{nativeAuth:true});
+    assert(existing.includes('create table auth.users(id uuid primary key)'));
+    assert(existing.includes('create function auth.uid()'));
+    assert(!/create (?:table|function|schema) auth\./i.test(native));
+    assert(!native.includes('create schema auth;'));assert(!native.includes('create table auth.scim_users'));
+    assert(native.includes("to_regclass('auth.sessions') is null"));
+    assert(native.includes('references auth.users(id) on delete cascade'));
+    assert(native.includes('-- ACCOUNT_ASSISTANT_SCHEMA_GENERATED_BEGIN'));
+    assert.throws(()=>accountErasureNativeFixtureSql(source.root,{nativeAuth:'yes'}));
+  });
+  test('local native token hook config is explicit B-only and the original local config stays hook-free',()=>{
+    const p={side:'B',id:'rr_restore_123_1_b'},value=syntheticNativeHookConfig(p);
+    assert.equal(value,config(p.id,true,false)+'\n[auth.hook.custom_access_token]\nenabled = true\n'
+      +'uri = "pg-functions://postgres/public/rr_native_activity_test_hook"\n');
+    assert(!config(p.id,true,false).includes('auth.hook'));
+    for(const wrong of [{...p,side:'A'},{...p,id:'rr_restore_123_1_a'},{...p,id:'linked-or-hosted'},
+      {...p,id:'rr_restore_123_2_b'}])assert.throws(()=>syntheticNativeHookConfig(wrong));
+  });
+  test('native security logout route is exact synthetic B POST with bounded empty-204 semantics',()=>{
+    const p={side:'B'},route='/logout?scope=global';
+    assert.deepEqual(authRequestShape({archive:false},p,route,null,'POST',204),
+      {method:'POST',admin:false,readback:false,kind:'LOGOUT'});
+    for(const args of [[{archive:true},p,route,null,'POST',204],[{archive:false},{side:'A'},route,null,'POST',204],
+      [{archive:false},p,'/logout?scope=local',null,'POST',204],[{archive:false},p,route,{},'POST',204],
+      [{archive:false},p,route,null,'GET',204],[{archive:false},p,route,null,'POST',200]])
+      assert.throws(()=>authRequestShape(...args),e=>/^AUTH_/.test(e.code??''));
+  });
   test('synthetic Auth UUID fence takes exact current migration fragments without Auth SQL stubs or legacy bootstrap',()=>{
     const source=readAccountErasureSource(),intent={operationId:'11111111-1111-4111-8111-111111111111',
       userId:'22222222-2222-4222-8222-222222222222',sessionId:'33333333-3333-4333-8333-333333333333'},actor='44444444-4444-4444-8444-444444444444';
@@ -2179,7 +2547,7 @@ async function selfTest(){
     assert.throws(()=>syntheticAccountErasureAuthFenceSql({...source,sql:duplicate,sha256:sha(Buffer.from(duplicate))},intent,actor));
     assert(syntheticAccountErasureAuthFenceReadbackSql(intent).includes("E' \\n\\r\\t'"));
   });
-  test('synthetic A/B receive only a fresh owned Auth197 pin and refuse stale or redirected inputs',async()=>{
+  test('synthetic A/B receive only a fresh owned Auth198 pin and refuse stale or redirected inputs',async()=>{
     for(const side of ['A','B'])await ownArchive(async({c})=>{
       c.archive=false;c.owner='123-1';const p={side,id:'rr_restore_123_1_'+side.toLowerCase(),dir:path.join(c.root,side)};
       await fs.mkdir(path.join(p.dir,'supabase'),{recursive:true,mode:0o700});
@@ -2188,7 +2556,7 @@ async function selfTest(){
       await syntheticAuthVersionPin(c,p,true);await syntheticAuthVersionPin(c,p,false);
       const directory=path.join(p.dir,'supabase','.temp'),pin=path.join(directory,'gotrue-version');
       assert.deepEqual(await fs.readdir(directory),['gotrue-version']);
-      assert.equal(await fs.readFile(pin,'utf8'),ARCHIVE_VENDOR_PINS['gotrue-version']);
+      assert.equal(await fs.readFile(pin,'utf8'),IMAGES.auth.split(':').at(-1)+'\n');
       await assert.rejects(()=>syntheticAuthVersionPin(c,p,true),e=>e.code==='SYNTHETIC_AUTH_PIN_INVENTORY');
       await fs.writeFile(pin,'v2.196.0\n');await assert.rejects(()=>syntheticAuthVersionPin(c,p,false),e=>e.code==='SYNTHETIC_AUTH_PIN_VALUE');
     });
@@ -2515,7 +2883,7 @@ async function selfTest(){
       assert.equal(await fs.readFile(path.join(directory,'storage-version'),'utf8'),'v1.86.0\n');
       assert.deepEqual((await fs.readdir(directory)).sort(),['cli-latest','gotrue-version','storage-version']);
       await assert.rejects(()=>prepareArchiveVendorBootstrap(c,p),error=>error.code==='ARCHIVE_VENDOR_PIN_EXISTS');
-      assert.equal(P.cli,'2.117.0');assert.equal(IMAGES.auth,'supabase/gotrue:v2.197.0');
+      assert.equal(P.cli,'2.117.0');assert.equal(IMAGES.auth,'supabase/gotrue:v2.198.0');
       for(const [name,service]of [['gotrue-version','auth'],['storage-version','storage']])
         assert.equal(ARCHIVE_VENDOR_PINS[name],ARCHIVE_VENDOR_IMAGES[service].split(':').at(-1)+'\n');
       const body=startProject.toString();
@@ -2552,11 +2920,11 @@ async function selfTest(){
       await assert.rejects(()=>verifyArchiveVendorBootstrap(c,p),error=>/^ARCHIVE_VENDOR_/.test(error.code??''));
     });
   });
-  test('archive B and synthetic A/B use exact Auth197 and the same other images',()=>{
+  test('archive B keeps Auth197 while new synthetic A/B explicitly qualify Auth198',()=>{
     const imageId='sha256:'+'a'.repeat(64),image={Id:imageId,RepoDigests:['synthetic-public-image-digest']};
     const info=tag=>({Image:imageId,Config:{Image:'ghcr.io/supabase/'+tag}});
     for(const side of ['A','B']){
-      assert.equal(serviceImageMetadata({archive:false},{side},'auth',info('gotrue:v2.197.0'),image).id,imageId);
+      assert.equal(serviceImageMetadata({archive:false},{side},'auth',info('gotrue:v2.198.0'),image).id,imageId);
       assert.throws(()=>serviceImageMetadata({archive:false},{side},'auth',info('gotrue:v2.196.0'),image),error=>error.code==='UNEXPECTED_SERVICE_IMAGE');
     }
     assert.equal(serviceImageMetadata({archive:true},{side:'B'},'auth',info('gotrue:v2.197.0'),image).id,imageId);

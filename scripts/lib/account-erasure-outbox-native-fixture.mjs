@@ -20,6 +20,55 @@ export function accountErasurePrecommitFailureSql(sourceSql) {
  assert.notEqual(injected,sourceSql,'Account erasure transaction must have a final COMMIT');
  return injected;
 }
+// Shared app scaffolding only. Native Auth mode never creates/replaces Auth
+// users, sessions, auth.uid/role or SCIM; the existing owned B supplies them.
+export function accountErasureNativeFixtureSql(repositoryRoot,{nativeAuth=false}={}) {
+ assert.equal(typeof nativeAuth,'boolean');
+ const canonical=fs.readFileSync(path.join(repositoryRoot,'supabase/schema.sql'),'utf8').replaceAll('\r\n','\n');
+ const start=canonical.indexOf('-- ACCOUNT_ASSISTANT_SCHEMA_GENERATED_BEGIN'),end=canonical.indexOf('-- ACCOUNT_ASSISTANT_SCHEMA_GENERATED_END');
+ assert(start>=0&&end>start);
+ let fixture=String.raw`create schema auth; create schema extensions; create schema storage;
+create extension pgcrypto with schema extensions;
+create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
+create function auth.role() returns text language sql stable as $$ select current_setting('request.jwt.claim.role',true) $$;
+grant usage on schema public,auth to authenticated,anon,service_role;
+create table auth.users(id uuid primary key);
+create table public.profiles(id uuid primary key references auth.users(id) on delete cascade,email text,role text not null,is_active boolean not null default true);
+create table public.user_permissions(user_id uuid references public.profiles(id) on delete cascade,enabled boolean not null);
+create table public.observations(id bigint primary key,user_id uuid references auth.users(id) on delete set null,payload text default 'SYNTHETIC');
+grant select,insert,update,delete on public.observations to service_role;
+create table public.app_user_roles(user_id uuid references auth.users(id) on delete restrict);
+create table public.handbook_reviews(created_by uuid references auth.users(id) on delete restrict,resolved_by uuid references auth.users(id) on delete set null);
+create table public.handbook_review_versions(changed_by uuid references auth.users(id) on delete set null);
+create table public.admin_documents(updated_by uuid references auth.users(id) on delete set null);
+create table public.admin_document_versions(created_by uuid references auth.users(id) on delete set null);
+create table public.admin_audit_log(actor_id uuid references auth.users(id) on delete set null);
+create table auth.scim_users(user_id uuid references auth.users(id) on delete set null);
+create table storage.objects(owner uuid,owner_id text);
+create table storage.buckets(owner uuid,owner_id text);
+create table storage.s3_multipart_uploads(owner_id text);
+create table storage.s3_multipart_uploads_parts(owner_id text);
+alter table storage.objects enable row level security;
+alter table storage.buckets enable row level security;
+alter table storage.s3_multipart_uploads enable row level security;
+alter table storage.s3_multipart_uploads_parts enable row level security;
+`;
+ if(nativeAuth){
+  for(const line of [
+   'create schema auth; ',
+   "create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;\n",
+   "create function auth.role() returns text language sql stable as $$ select current_setting('request.jwt.claim.role',true) $$;\n",
+   'create table auth.users(id uuid primary key);\n',
+   'create table auth.scim_users(user_id uuid references auth.users(id) on delete set null);\n',
+  ]){assert(fixture.includes(line));fixture=fixture.replace(line,'');}
+  fixture=fixture.replace('create schema extensions;','create schema if not exists extensions;')
+   .replace('create schema storage;','create schema if not exists storage;')
+   .replace('create extension pgcrypto','create extension if not exists pgcrypto')
+   .replaceAll('create table storage.','create table if not exists storage.');
+  fixture="do $$begin if to_regclass('auth.users') is null or to_regclass('auth.sessions') is null or to_regclass('auth.scim_users') is null then raise exception 'GENUINE_AUTH_SCHEMA_REQUIRED';end if;end;$$;\n"+fixture;
+ }
+ return fixture+canonical.slice(start,end);
+}
 export async function exerciseAccountErasureOutbox({psql,runSql,repositoryRoot}) {
  assert.equal(await psql("select current_setting('listen_addresses');"),'','Existing owned native host only');
  assert.equal(await psql('select current_user;'),'rr_native_test','Existing native fixture owner only');
@@ -48,35 +97,7 @@ export async function exerciseAccountErasureOutbox({psql,runSql,repositoryRoot})
  }
  try {
   await psql('create database '+DB+';');created=true;
-  const canonical=fs.readFileSync(path.join(repositoryRoot,'supabase/schema.sql'),'utf8').replaceAll('\r\n','\n');
-  const start=canonical.indexOf('-- ACCOUNT_ASSISTANT_SCHEMA_GENERATED_BEGIN'),end=canonical.indexOf('-- ACCOUNT_ASSISTANT_SCHEMA_GENERATED_END');
-  assert(start>=0&&end>start);
-  await pg(String.raw`create schema auth; create schema extensions; create schema storage;
-create extension pgcrypto with schema extensions;
-create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
-create function auth.role() returns text language sql stable as $$ select current_setting('request.jwt.claim.role',true) $$;
-grant usage on schema public,auth to authenticated,anon,service_role;
-create table auth.users(id uuid primary key);
-create table public.profiles(id uuid primary key references auth.users(id) on delete cascade,email text,role text not null,is_active boolean not null default true);
-create table public.user_permissions(user_id uuid references public.profiles(id) on delete cascade,enabled boolean not null);
-create table public.observations(id bigint primary key,user_id uuid references auth.users(id) on delete set null,payload text default 'SYNTHETIC');
-grant select,insert,update,delete on public.observations to service_role;
-create table public.app_user_roles(user_id uuid references auth.users(id) on delete restrict);
-create table public.handbook_reviews(created_by uuid references auth.users(id) on delete restrict,resolved_by uuid references auth.users(id) on delete set null);
-create table public.handbook_review_versions(changed_by uuid references auth.users(id) on delete set null);
-create table public.admin_documents(updated_by uuid references auth.users(id) on delete set null);
-create table public.admin_document_versions(created_by uuid references auth.users(id) on delete set null);
-create table public.admin_audit_log(actor_id uuid references auth.users(id) on delete set null);
-create table auth.scim_users(user_id uuid references auth.users(id) on delete set null);
-create table storage.objects(owner uuid,owner_id text);
-create table storage.buckets(owner uuid,owner_id text);
-create table storage.s3_multipart_uploads(owner_id text);
-create table storage.s3_multipart_uploads_parts(owner_id text);
-alter table storage.objects enable row level security;
-alter table storage.buckets enable row level security;
-alter table storage.s3_multipart_uploads enable row level security;
-alter table storage.s3_multipart_uploads_parts enable row level security;
-`+canonical.slice(start,end));
+  await pg(accountErasureNativeFixtureSql(repositoryRoot));
   const rollback=await raw(accountErasurePrecommitFailureSql(source.sql));
   assert.equal(rollback.code,3);assert.equal(rollback.sqlState,'P0001');
   assert.equal(await pg("select to_regclass('public.account_erasure_operations') is null and not exists(select 1 from pg_catalog.pg_proc where pronamespace='public'::regnamespace and proname like '%account_erasure%');"),'t');checked++;
