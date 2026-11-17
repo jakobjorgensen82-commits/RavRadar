@@ -118,7 +118,10 @@ test('fixed diagnose-only route keeps every post-prepare mutation unavailable', 
   ];
   for (const name of postPrepare) {
     const body = step(name);
-    assert.match(body, /^        if: inputs\.diagnose_current_grid_original != true(?: && steps\.integrated-implementation\.outputs\.defer_edges != 'true')?\n/,
+    const condition=name.includes('assistant')
+      ? /^        if: inputs\.install_account_erasure != true && inputs\.diagnose_current_grid_original != true && steps\.integrated-implementation\.outputs\.defer_edges != 'true'\n/
+      : /^        if: inputs\.diagnose_current_grid_original != true\n/;
+    assert.match(body, condition,
       'diagnose true must skip the exact post-prepare caller ' + name);
     if (name.includes('assistant')) assert.match(body, /&& steps\.integrated-implementation\.outputs\.defer_edges != 'true'/,
       'old current-grid Edge floor remains independent');
@@ -133,7 +136,7 @@ test('fixed diagnose-only route keeps every post-prepare mutation unavailable', 
   await t.test('actual existing Bash authority guard has no retries or external operation', {
     skip: process.platform !== 'linux' ? 'GNU Bash normal guard is unavailable here; real Linux CI remains required' : false,
   }, () => {
-    for (const [diagnose, upgrade, confirmation, attempt, expected] of [
+    for (const [diagnose, upgrade, confirmation, attempt, expected, app='false', assistant='false'] of [
       ['false', 'false', 'APPLY-WEATHER-MODEL-BINDING', '1', 0],
       ['false', 'false', 'APPLY-WEATHER-MODEL-BINDING', '2', 0],
       ['false', 'true', 'CHECK-CURRENT-GRID-ORIGINALS', '1', 1],
@@ -141,9 +144,14 @@ test('fixed diagnose-only route keeps every post-prepare mutation unavailable', 
       ['true', 'false', 'CHECK-CURRENT-GRID-ORIGINALS', '1', 1],
       ['true', 'true', 'APPLY-WEATHER-MODEL-BINDING', '1', 1],
       ['true', 'true', 'CHECK-CURRENT-GRID-ORIGINALS', '2', 1],
+      ['false', 'false', 'APPLY-ACCOUNT-ERASURE', '1', 0, 'true'],
+      ['true', 'false', 'APPLY-ACCOUNT-ERASURE', '1', 1, 'true'],
+      ['false', 'false', 'APPLY-ACCOUNT-ERASURE', '1', 1, 'true', 'true'],
     ]) {
       const result = spawnSync('/bin/bash', ['-c', authorityGuard], { encoding: 'utf8', timeout: 5_000,
         env: { GITHUB_EVENT_NAME: 'workflow_dispatch', GITHUB_REF: 'refs/heads/main',
+          RAVRADAR_ACCOUNT_ERASURE_OPT_IN: app,
+          RAVRADAR_ASSISTANT_LATER_H0_ORIGINAL_OPT_IN: assistant,
           RAVRADAR_CURRENT_GRID_DIAGNOSE_ONLY: diagnose,
           RAVRADAR_CURRENT_GRID_UPGRADE_OPT_IN: upgrade,
           CONFIRMATION: confirmation, GITHUB_RUN_ATTEMPT: attempt } });

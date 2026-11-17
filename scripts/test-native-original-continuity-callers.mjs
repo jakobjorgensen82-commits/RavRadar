@@ -804,7 +804,8 @@ const reviewedCapacity593Sources=Object.freeze({
 // inputs; actual current caller views below keep reading their raw current files.
 async function readHistoricalAssistantSource(file){
   assert.equal(arguments.length,1,'No caller-selected historical source origin');
-  assert(Object.hasOwn(reviewedIssued592Sources,file),'Only the five reviewed historical source owners');
+  assert(Object.hasOwn(reviewedIssued592Sources,file)||file==='scripts/verify-code-only-migration-plan.mjs',
+    'Only the reviewed historical source owners and their original migration-plan CLI');
   if(ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase!=='assistant-after598-successor')
     return fs.readFile(path.join(ROOT,file),'utf8');
   const provenance=await import('./check-assistant-later-h0-predecessor-source.mjs');
@@ -1075,7 +1076,9 @@ test('assistant binding original prewrite workflow keeps locks, exact normal cen
   assert(apply.indexOf('python scripts/apply-central-zone-reviews.py')<apply.indexOf('node scripts/build-public-coastal-parts-v2.mjs'));
   assert(apply.indexOf('node scripts/build-public-coastal-parts-v2.mjs')<apply.indexOf('node scripts/assistant-later-h0-binding-prewrite.mjs verify'));
   assert(workflow.slice(verify,sql).trim().endsWith('cd "'+String.fromCharCode(36)+'{{ steps.migration-view.outputs.workdir }}"'));
-  const generic=await fs.readFile(path.join(ROOT,'scripts/verify-code-only-migration-plan.mjs'));
+  // The unchanged whole-file oracle owns the existing CODE822 CLI; actual
+  // current app-plan/evidence/route cases below continue to execute raw current.
+  const generic=Buffer.from(await readHistoricalAssistantSource('scripts/verify-code-only-migration-plan.mjs'),'utf8');
   const {createHash}=await import('node:crypto');
   assert.equal(createHash('sha256').update(generic.toString('utf8').replace(/\r\n?/g,'\n')).digest('hex'),
     'f33e7f723ffe970bd6bbff5085ec65110d18953f5e7fb78b2609be2e5b57cc45');

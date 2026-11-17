@@ -156,7 +156,13 @@ async function profilesListScenario(action,{hydrate=false,render=false}={}){
   if(render){
     const dashboard=fs.readFileSync(new URL('../js/ui/admin-dashboard.js',import.meta.url),'utf8');
     const start=dashboard.indexOf('async function renderUsers(){'),end=dashboard.indexOf('async function renderHandbook(){',start);
-    const lifetime=dashboard.match(/^let adminUserRenderEpoch=0;\r?\nlet disposeAdminUserCategories=null;\r?\nfunction invalidateAdminUserCategories\(\)\{[^\n]+\}/m)?.[0];
+    // Actual declarations and guard keep their own identity when an unrelated
+    // owner-view lifetime declaration is inserted between them.
+    const lifetimeParts=[dashboard.match(/^let adminUserRenderEpoch=0;\r?$/m)?.[0],
+      dashboard.match(/^let disposeAdminUserCategories=null;\r?$/m)?.[0],
+      dashboard.match(/^function invalidateAdminUserCategories\(\)\{[^\r\n]+\}/m)?.[0]];
+    assert(lifetimeParts.every(Boolean),'Use each actual normal profile-view lifetime declaration and guard');
+    const lifetime=lifetimeParts.join('\n');
     assert.ok(start>=0&&end>start);assert.ok(lifetime,'Use the actual normal profile-view lifetime guard');
     vm.runInNewContext(body('admin-account-categories')+'\nthis.filterAdminAccountProfiles=filterAdminAccountProfiles;',view);
     // Keep the actual pure filter, but never start the separate classification

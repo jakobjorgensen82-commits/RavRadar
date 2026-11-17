@@ -1157,6 +1157,7 @@ test('private-study006: privat eksport bevarer hele installationsarm og normale 
     for(const name of new Set([...render.matchAll(/(?:\:|\|\|)(render\w+)/g)].map(x=>x[1])))context[name]=()=>{};
     const declarationNames=['adminTripCountRenderEpoch','disposeAdminTripCount','adminUserRenderEpoch','disposeAdminUserCategories'];
     if(render.includes('disposeOwnerNoticeProbe?.();'))declarationNames.push('disposeOwnerNoticeProbe');
+    if(render.includes('disposeOwnerAccountErasure?.();'))declarationNames.push('disposeOwnerAccountErasure');
     const declarations=declarationNames
       .map(name=>{const actual=source.match(new RegExp('^let '+name+'=[^;]+;','m'))?.[0];assert(actual,name);return actual;}).join('\n');
     const guards=['invalidateAdminTripCount','invalidateAdminUserCategories']

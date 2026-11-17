@@ -849,6 +849,9 @@ const POST_H0_FIXED_CLI_SOURCES=[
   'scripts/lib/water-station-routing-alerts.mjs',
   'scripts/lib/weather-history-retention.mjs',
   'scripts/verify-account-assistant-schema.mjs',
+  // Its actual static re-export has only node: dependencies. Both ordinary
+  // CLI hosts need the genuine module even when no app-schema call is made.
+  'scripts/verify-account-erasure-schema.mjs',
   // Exact normal default-OFF preamble/decode/reprojection leaves; copy actual
   // bytes, not a loader stub or an import-rewritten approximation.
   'scripts/prepare-cached-coherent-current-work.mjs',
