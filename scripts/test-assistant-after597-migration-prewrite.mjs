@@ -7,12 +7,17 @@ import {test} from 'node:test';
 // Explicit normal current entry. No project constructor/runtime import
 // precedes the fixed after598 issuance guard. Old PRE bodies stay unchanged.
 const currentArguments=process.argv.slice(2);
-assert(currentArguments.length===0||(currentArguments.length===1&&currentArguments[0]==='--after598-current'),'Unknown or mixed assistant test mode');
-const AFTER598_CURRENT_MODE=currentArguments.length===1;
+assert(currentArguments.length===0||(currentArguments.length===1&&['--after598-current','--after599-current'].includes(currentArguments[0])),'Unknown or mixed assistant test mode');
+const AFTER598_CURRENT_MODE=currentArguments[0]==='--after598-current';
+const AFTER599_CURRENT_MODE=currentArguments[0]==='--after599-current';
 const currentSource=await import('./lib/assistant-later-h0-successor-source.mjs');
 if(AFTER598_CURRENT_MODE){
   currentSource.requireAssistantAfter598Output();currentSource.requireAssistantAfter598Release();
   assert.equal(currentSource.ACTIVE_ASSISTANT_SUCCESSOR,currentSource.INACTIVE_ASSISTANT_AFTER598_SUCCESSOR);
+}
+if(AFTER599_CURRENT_MODE){
+  currentSource.requireAssistantAfter599Output();currentSource.requireAssistantAfter599Release();
+  assert.equal(currentSource.ACTIVE_ASSISTANT_SUCCESSOR,currentSource.INACTIVE_ASSISTANT_AFTER599_SUCCESSOR);
 }
 const {ACTIVE_ASSISTANT_SUCCESSOR,INACTIVE_SCALAR597_LATER_H0_SUCCESSOR,
   UNISSUED_ASSISTANT_AFTER597_SUCCESSOR:next,readScalar597LaterH0CanonicalSource,
@@ -38,7 +43,11 @@ if(AFTER598_CURRENT_MODE){
   const {verifyAssistantAfter598SourceTarget}=await import('./national584-source-evidence.mjs');
   await verifyAssistantAfter598SourceTarget();
 }
-if(!AFTER598_CURRENT_MODE){
+if(AFTER599_CURRENT_MODE){
+  const {verifyAssistantAfter599SourceTarget}=await import('./national584-source-evidence.mjs');
+  await verifyAssistantAfter599SourceTarget();
+}
+if(!AFTER598_CURRENT_MODE&&!AFTER599_CURRENT_MODE){
 
 test('den faktiske597-plan og alle gamle krav bevares uden SOURCE eller en uudstedt migration',async()=>{
   assert.equal(rows.length,62);assert.deepEqual(REQUIRED_CUTOVER_MIGRATIONS,rows);
@@ -95,7 +104,7 @@ test('normal kontraktlæser kan behandle ægte597-aliasdata uden at give dem ins
   assert.equal(aliasData.migration,null);assert.equal(next.originalStateFamily,'597');
 });
 
-}else{
+}else if(AFTER598_CURRENT_MODE){
 
   const ready=await import('./integrated-cutover-readiness.mjs'),prewrite=await import('./assistant-later-h0-binding-prewrite.mjs');
   const currentRows=ready.assistantAfter598RequiredMigrations();
@@ -126,4 +135,71 @@ test('normal kontraktlæser kan behandle ægte597-aliasdata uden at give dem ins
       await assert.rejects(ready.prepareAssistantAfter598CutoverWorkdir(options));
   });
 
+}else{
+
+  const ready=await import('./integrated-cutover-readiness.mjs'),prewrite=await import('./assistant-later-h0-binding-prewrite.mjs');
+  const currentRows=ready.assistantAfter599RequiredMigrations();
+  const migrationList=(values=currentRows,pending=false)=>'Local | Remote | Time (UTC)\n'+values.map((row,i)=>row.version+' | '+(pending&&i===values.length-1?'':row.version)+' | ').join('\n');
+  test('after599 current normal66 migration plan and canonical contracts require actual old599 and new SQL',async()=>{
+    assert.equal(currentRows.length,66);assert.deepEqual(currentRows.slice(0,64),ready.assistantAfter598RequiredMigrations());
+    assert.equal(currentRows.at(-2).version,'20261116181500');
+    assert.deepEqual(ready.REQUIRED_CUTOVER_MIGRATIONS,currentRows);assert.equal(ready.DEFAULT_CUTOVER_SOURCE_PHASE,currentSource.ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase);
+    assert.equal(ready.assertSupabaseMigrationsApplied(migrationList()).appliedVersions.length,66);
+    const plan=await ready.assertAssistantAfter599MigrationPlan({migrationListText:migrationList(),dryRunText:upToDate,migrationsDirectory:path.join(ROOT,'supabase/migrations')});
+    assert.deepEqual(plan.pendingVersions,[]);assert.equal(ready.assertAssistantAfter599MigrationsApplied(migrationList()).appliedVersions.length,66);
+    const pending=await ready.assertAssistantAfter599MigrationPlan({migrationListText:migrationList(currentRows,true),
+      dryRunText:'DRY RUN: migrations will *not* be pushed to the database.\nWould push these migrations:\n • '+currentRows.at(-1).filename+'\nFinished supabase db push.\n',migrationsDirectory:path.join(ROOT,'supabase/migrations')});
+    assert.deepEqual(pending.pendingVersions,[currentRows.at(-1).version]);
+    const output=currentSource.requireAssistantAfter599Output();
+    assert.equal((await ready.expectedCheckpointCasContract({sourcePhase:'assistant-after599-successor'})).sha256,output.checkpointContractSha256);
+    assert.equal((await ready.expectedTripBindingPolicy({sourcePhase:'assistant-after599-successor'})).sha256,output.tripBindingPolicySha256);
+  });
+  test('after599 current plan rejects missing duplicate extra SQL and caller-selected prewrite source',async()=>{
+    for(const bad of [currentRows.slice(1),currentRows.filter(row=>row.version!=='20261116181500'),
+      currentRows.filter(row=>row.version!==currentSource.ASSISTANT_AFTER599_BEFORE.version),[...currentRows,currentRows.at(-1)],[...currentRows,{version:'20990101000000'}]])
+      await assert.rejects(ready.assertAssistantAfter599MigrationPlan({migrationListText:migrationList(bad),dryRunText:upToDate,migrationsDirectory:path.join(ROOT,'supabase/migrations')}));
+    await assert.rejects(ready.assertAssistantAfter599MigrationPlan({migrationListText:migrationList(currentRows,true),dryRunText:upToDate,migrationsDirectory:path.join(ROOT,'supabase/migrations')}));
+    assert.throws(()=>prewrite.assistantAfter599PrewritePredecessor({family:'597'}));
+    assert.throws(()=>prewrite.assistantAfter597PrewritePredecessor({family:'599'}));
+    const fixed=prewrite.assistantAfter599PrewritePredecessor();
+    const original=await import('./lib/authenticated-frozen586-predecessor.mjs');
+    assert.equal(fixed.read,original.readAuthenticatedSource599Predecessor);assert.equal(fixed.snapshot,original.assertAuthenticatedSource599Snapshot);
+    assert.equal(fixed.plan,ready.assertAssistantAfter599MigrationPlan);
+    for(const options of [{family:'597'}, {workdir:'caller-selected',family:'599'}])
+      await assert.rejects(ready.prepareAssistantAfter599CutoverWorkdir(options));
+  });
+
+
+  test('after599 generic raw dispatcher selects exactly one current or historical family',async()=>{
+    const source=await fs.readFile(path.join(ROOT,'scripts/integrated-cutover-readiness.mjs'),'utf8');
+    const whole=name=>{const match=new RegExp('^(?:export )?function '+name+'\\(','m').exec(source);assert(match);
+      const end=source.indexOf('\n}',match.index)+2;assert(end>match.index);return source.slice(match.index,end);};
+    const raw=whole('assertSupabaseMigrationsApplied'),unique=whole('uniqueVersions');
+    const local=raw.replace('export function','function');assert.equal(local.replace('function','export function'),raw);
+    const build=async body=>(await import('data:text/javascript;base64,'+Buffer.from("import assert from 'node:assert/strict';\nexport function build(context){\n"
+      +"const {ACTIVE,REQUIRED_CUTOVER_MIGRATIONS,ACCOUNT_ERASURE_APP_MIGRATION,parseSupabaseMigrationList,"
+      +"assertAssistantAfter598MigrationsApplied,assertAssistantAfter599MigrationsApplied,assertAssistantAfter597MigrationsApplied,"
+      +"assertScalar597LaterH0MigrationsApplied,assertInstalled593Original591MigrationsApplied,assertAssistantPublic591SuccessorMigrationsApplied,"
+      +"assertAssistantPublic590SuccessorMigrationsApplied,assertAssistantPublic588SuccessorMigrationsApplied,assertAssistantPublic587SuccessorMigrationsApplied}=context;\n"
+      +unique+'\n'+body+'\nreturn assertSupabaseMigrationsApplied;}').toString('base64'))).build;
+    const compile=await build(local);
+    const fixture=(phase,rows)=>{const calls=[],context={ACTIVE:Object.freeze({sourcePhase:phase}),REQUIRED_CUTOVER_MIGRATIONS:rows,
+      ACCOUNT_ERASURE_APP_MIGRATION:ready.ACCOUNT_ERASURE_APP_MIGRATION,parseSupabaseMigrationList:ready.parseSupabaseMigrationList};
+      for(const name of ['assertAssistantAfter598MigrationsApplied','assertAssistantAfter599MigrationsApplied','assertAssistantAfter597MigrationsApplied',
+        'assertScalar597LaterH0MigrationsApplied','assertInstalled593Original591MigrationsApplied','assertAssistantPublic591SuccessorMigrationsApplied',
+        'assertAssistantPublic590SuccessorMigrationsApplied','assertAssistantPublic588SuccessorMigrationsApplied','assertAssistantPublic587SuccessorMigrationsApplied'])
+        context[name]=(...args)=>{calls.push(name);return ready[name](...args);};
+      return {calls,context};};
+    for(const [phase,rows,selected]of [['assistant-after598-successor',ready.assistantAfter598RequiredMigrations(),'assertAssistantAfter598MigrationsApplied'],
+      ['assistant-after599-successor',currentRows,'assertAssistantAfter599MigrationsApplied']]){
+      const f=fixture(phase,rows);assert.equal(compile(f.context)(migrationList(rows)).appliedVersions.length,rows.length);assert.deepEqual(f.calls,[selected]);
+      for(const bad of [migrationList(rows,true),migrationList(rows.slice(1)),migrationList([...rows,rows.at(-1)]),migrationList([...rows,{version:'20990101000000'}])])
+        assert.throws(()=>compile(fixture(phase,rows).context)(bad));
+    }
+    const marker="  else if(ACTIVE.sourcePhase==='assistant-after599-successor')";assert.equal(local.split(marker).length,2);
+    const buggy=await build(local.replace(marker,"  if(ACTIVE.sourcePhase==='assistant-after599-successor')"));
+    const old=fixture('assistant-after598-successor',ready.assistantAfter598RequiredMigrations());
+    assert.throws(()=>buggy(old.context)(migrationList(old.context.REQUIRED_CUTOVER_MIGRATIONS)));
+    assert.deepEqual(old.calls,['assertAssistantAfter598MigrationsApplied','assertAssistantPublic587SuccessorMigrationsApplied']);
+  });
 }

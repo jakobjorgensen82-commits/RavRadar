@@ -792,6 +792,7 @@ let base,head,main,baseContent,content,baselinePlan,coordinate,decide,discover,a
 let native,namespace,sourceContent,fullBody,phaseBody,fullJobBody,selectedJobBody;
 let immutableFullZip,immutablePhaseZip;
 let actualCurrentAfter598SourceVerified=false;
+let actualCurrentAfter599SourceVerified=false;
 let maps,zips,selectedReceipt,selectedZip,selectedMetadata,rows=[],cases=0,actualProcesses=0,calls=0;
 const state={movedReview:false,missingReview:false,wrongPlan:false,merged:false,
   baseTip:null,hintOverride:null,duplicateReview:false,malformedReview:false,headMismatch:false,expiredFull:false,laterNegative:false,modernWorkflow:false,ownedCacheNativeWorkflow:false,fullModernWorkflow:false,sdkStepFault:null};
@@ -1537,6 +1538,28 @@ try{
     actualCurrentAfter598SourceVerified=true;cases++;
     scenarios.push('actual current after598 source namespace/package is distinct from authentic historical FULL598; old receipt refused, no PG execution');
   }
+  if(actualSuccessor.ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-after599-successor'){
+    const actualNational=await import(pathToFileURL(path.join(SOURCE,'scripts/national584-source-evidence.mjs')).href);
+    const actualNative=await import(pathToFileURL(path.join(SOURCE,'scripts/native-postgres-evidence.mjs')).href);
+    const currentOutput=actualSuccessor.requireAssistantAfter599Output(),currentBinding=actualSuccessor.requireAssistantAfter599Binding();
+    const currentPackage=JSON.parse(fs.readFileSync(path.join(SOURCE,'package.json'),'utf8'));
+    actualNational.verifyAssistantAfter599Package(currentPackage);
+    const checked=await actualNational.verifyAssistantAfter599SourceTarget();
+    assert.equal(checked.sourcePhase,'assistant-after599-successor');assert.equal(checked.canonicalSha256,currentOutput.canonicalSha256);
+    assert.equal(checked.release,actualSuccessor.requireAssistantAfter599Release());
+    assert.deepEqual([checked.sourceOnly,checked.sqlExecuted,checked.originalsAuthenticated,checked.productionProof],[true,false,false,false]);
+    assert.notDeepEqual(actualNative.ASSISTANT_AFTER599_COMMANDS,nativeReceipt.commands);
+    assert.notDeepEqual(currentBinding,nativeReceipt.binding);
+    actualNational.verifyAssistantAfter599NativeCommands(actualNative.ASSISTANT_AFTER599_COMMANDS,actualSuccessor.requireAssistantAfter599Release());
+    assert.throws(()=>actualNational.verifyAssistantAfter599NativeCommands(nativeReceipt.commands,actualSuccessor.requireAssistantAfter599Release()));
+    await assert.rejects(actualNative.verifyAssistantAfter599PhaseReceipt(nativeReceipt,nativeCurrent));
+    await assert.rejects(actualNational.verifyAssistantAfter599NativeContext(nativeReceipt,nativeCurrent,actualSuccessor.requireAssistantAfter599Release()));
+    const omitted=structuredClone(currentPackage);omitted.scripts['test:assistant-later-h0-source']=
+      omitted.scripts['test:assistant-later-h0-source'].replace(actualNational.ASSISTANT_AFTER599_CURRENT_SOURCE_COMMANDS[0]+' && ','');
+    assert.throws(()=>actualNational.verifyAssistantAfter599Package(omitted));
+    actualCurrentAfter599SourceVerified=true;cases++;
+    scenarios.push('actual current after599 source namespace/package is distinct from authentic historical FULL599; old receipt refused, no PG execution');
+  }
 
 
   async function assertScalarSourcePrerequisites(){
@@ -2193,7 +2216,7 @@ try{
 console.log(JSON.stringify({kind:'SYNTHETIC_CURRENT_V4_PRODUCER_CONSUMER_INTEGRATION',cases,passed:cases,failed:0,scenarios,
   actualTargetProcesses:actualProcesses,syntheticTransportCalls:calls,realIsolatedGit:true,
   genuineProtected148AndCIT:true,frozenAnchors:16,plannerMock:false,productSourceTestsExecuted:false,
-  actualSqlOrSqliteExecuted:false,actualGitHubOrFullQualification:false,actualCurrentAfter598SourceVerified,
+  actualSqlOrSqliteExecuted:false,actualGitHubOrFullQualification:false,actualCurrentAfter598SourceVerified,actualCurrentAfter599SourceVerified,
   network:false,production:false,deliveryAuthority:false}));
 
 // BEGIN FOCUSED WEATHER OPERATION OWNER CASES

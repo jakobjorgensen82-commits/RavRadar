@@ -1,26 +1,26 @@
-import { requireExactZone, visibleZonePreview } from './js/services/zone-hour-preview.js?v=4.0.600&map=plain-map-v3-20261104';
-import { sameRavScoreModelBinding } from './js/core/ravscore-public-runtime-contract.js?v=4.0.600';
-import { exceptionalScoreMark, scoreRating } from "./js/core/score-presentation.js?v=4.0.600";
-import { loadConditions, loadConditionDetails, mergeConditionDetails, loadZones, loadDataManifest, mapForecastTimeline, loadMapForecastHour, loadPublicLandingView, publicLandingTimeline, loadPublicLandingForecastHour, refreshPublicLandingRuntime } from "./js/services/data-service.js?v=4.0.600&ui=forecast-share-20261024&share=custom-domain-20261102&transport=public-json-bridge-20261103&map=plain-map-v3-20261104";
-import { createMapForecastController, exactMapZoneScore, mapCoastalPartsForDisplay } from './js/services/map-forecast-view.js?v=4.0.600';
-import { bindMapTimeline, mapTimelineDate } from './js/ui/map-timeline.js?v=4.0.600&ui=timeline-days-20261018';
-import { readForecastShare } from './js/services/forecast-share-contract.js?v=4.0.600&ui=forecast-share-20261024&share=custom-domain-20261102';
-import { mountForecastShareControl, openForecastShareSelection } from './js/ui/forecast-share.js?v=4.0.600&ui=forecast-share-20261024&share=custom-domain-20261102';
-import { submitTripEvidenceObservation, syncPendingObservations } from "./js/services/observation-service.js?v=4.0.600";
-import { consumeAuthCallback } from "./js/services/auth-service.js?v=4.0.600";
-import { createMap, installFlowArrows, refreshZoneStyles, renderZones } from "./js/map/map-view.js?v=4.0.600";
-import { projectPublicCoastlines } from "./js/map/public-coast-projection.js?v=4.0.600";
-import { bindZoneInfoInteractions, showZoneInfo, showZoneMapPreview } from "./js/ui/info-panel.js?v=4.0.600&ui=zone-panels-20261027&map=plain-map-v3-20261104";
-import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.600&ui=account-20261006";
-import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.600";
-import { askRavRadar, quickQuestions, ravQuestionNeedsConditionDetails, classifyRavQuestion, assistantTopicForQuestion, assistantLocalFollowupAnswer } from "./js/services/rav-assistant.js?v=4.0.600";
-import { formatDateTime, formatNumber, getLanguage, getLocale, t, setLanguage, applyDocumentTranslations } from "./js/i18n.js?v=4.0.600";
-import { buildLocalZoneScore, isCurrentForecastHour, selectLocalBestForDay } from "./js/core/local-zone-score.js?v=4.0.600";
-import { addNationalRanking, compareNationalRankingRows } from "./js/core/zone-ranking.js?v=4.0.600";
-import { createPublicTripEvidenceRuntime } from './js/services/trip-evidence-runtime.js?v=4.0.600';
-import { createPublicPageResumeHandler } from './js/core/public-page-resume.js?v=4.0.600';
-import { forecastDateKeyInTimeZone, visibleForecastDays } from './js/core/forecast-calendar.js?v=4.0.600';
-import { assertRavScoreModelBinding } from './js/core/ravscore-model-contract.js?v=4.0.600';
+import { requireExactZone, visibleZonePreview } from './js/services/zone-hour-preview.js?v=4.0.601&map=plain-map-v3-20261104';
+import { sameRavScoreModelBinding } from './js/core/ravscore-public-runtime-contract.js?v=4.0.601';
+import { exceptionalScoreMark, scoreRating } from "./js/core/score-presentation.js?v=4.0.601";
+import { loadConditions, loadConditionDetails, mergeConditionDetails, loadZones, loadDataManifest, mapForecastTimeline, loadMapForecastHour, loadPublicLandingView, publicLandingTimeline, loadPublicLandingForecastHour, refreshPublicLandingRuntime } from "./js/services/data-service.js?v=4.0.601&ui=forecast-share-20261024&share=custom-domain-20261102&transport=public-json-bridge-20261103&map=plain-map-v3-20261104";
+import { createMapForecastController, exactMapZoneScore, mapCoastalPartsForDisplay } from './js/services/map-forecast-view.js?v=4.0.601';
+import { bindMapTimeline, mapTimelineDate } from './js/ui/map-timeline.js?v=4.0.601&ui=timeline-days-20261018';
+import { readForecastShare } from './js/services/forecast-share-contract.js?v=4.0.601&ui=forecast-share-20261024&share=custom-domain-20261102';
+import { mountForecastShareControl, openForecastShareSelection } from './js/ui/forecast-share.js?v=4.0.601&ui=forecast-share-20261024&share=custom-domain-20261102';
+import { submitTripEvidenceObservation, syncPendingObservations } from "./js/services/observation-service.js?v=4.0.601";
+import { consumeAuthCallback } from "./js/services/auth-service.js?v=4.0.601";
+import { createMap, installFlowArrows, refreshZoneStyles, renderZones } from "./js/map/map-view.js?v=4.0.601";
+import { projectPublicCoastlines } from "./js/map/public-coast-projection.js?v=4.0.601";
+import { bindZoneInfoInteractions, showZoneInfo, showZoneMapPreview } from "./js/ui/info-panel.js?v=4.0.601&ui=zone-panels-20261027&map=plain-map-v3-20261104";
+import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.601&ui=account-20261006";
+import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.601";
+import { askRavRadar, quickQuestions, ravQuestionNeedsConditionDetails, classifyRavQuestion, assistantTopicForQuestion, assistantLocalFollowupAnswer, assistantPublicFollowupQuestion } from "./js/services/rav-assistant.js?v=4.0.601";
+import { formatDateTime, formatNumber, getLanguage, getLocale, t, setLanguage, applyDocumentTranslations } from "./js/i18n.js?v=4.0.601";
+import { buildLocalZoneScore, isCurrentForecastHour, selectLocalBestForDay } from "./js/core/local-zone-score.js?v=4.0.601";
+import { addNationalRanking, compareNationalRankingRows } from "./js/core/zone-ranking.js?v=4.0.601";
+import { createPublicTripEvidenceRuntime } from './js/services/trip-evidence-runtime.js?v=4.0.601';
+import { createPublicPageResumeHandler } from './js/core/public-page-resume.js?v=4.0.601';
+import { forecastDateKeyInTimeZone, visibleForecastDays } from './js/core/forecast-calendar.js?v=4.0.601';
+import { assertRavScoreModelBinding } from './js/core/ravscore-model-contract.js?v=4.0.601';
 
 const incomingForecastShare=readForecastShare(location.href);
 if(incomingForecastShare.status==='valid'){
@@ -698,8 +698,9 @@ async function submitAssistantQuestion(question){
   const pending=addAssistantMessage(t('assistant.working'),"assistant",true);
   try{
     const forecast=assistantForecastQuestion(clean,previous);
-    const routedQuestion=forecast?.question??clean;
-    const followup=forecast?null:assistantLocalFollowupAnswer(clean,previous,frame.language);
+    const knowledgeQuestion=forecast?null:assistantPublicFollowupQuestion(clean,previous,frame.language);
+    const routedQuestion=forecast?.question??knowledgeQuestion??clean;
+    const followup=forecast||knowledgeQuestion?null:assistantLocalFollowupAnswer(clean,previous,frame.language);
     const assistantIntent=classifyRavQuestion(routedQuestion);
     const needsDetails=ravQuestionNeedsConditionDetails(routedQuestion,assistantContext());
     const usesCurrentZone=activeLandingView&&state.selectedZone
@@ -719,7 +720,8 @@ async function submitAssistantQuestion(question){
     }
     const answer=followup??await askRavRadar(routedQuestion,assistantContext());
     pending.querySelector("p").textContent=answer;pending.classList.remove("loading");
-    let topic=forecast?.topic??(followup===null?assistantTopicForQuestion(clean):previous);
+    let topic=forecast?.topic??(knowledgeQuestion?previous:(followup===null?assistantTopicForQuestion(clean):previous));
+    if(knowledgeQuestion&&[t('assistant.refusal'),t('assistant.remoteUnavailable')].includes(answer))topic=null;
     if(!topic&&followup===null&&frame.language==='en'&&assistantIntent==='wind'&&clean.length<=600){
       // Keep the original first answer. The service still owns whole-question topic admission.
       const topicQuestion=clean.replace(/^(?:what|which)\s+wind\s+direction\s+is\s+(?:good|best)(?=\s|[?!.]|$)/iu,'which wind is best');

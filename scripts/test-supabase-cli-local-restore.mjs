@@ -25,7 +25,9 @@ const FILES=['roles.sql','schema.sql','data.sql','history_schema.sql','history_d
 const ARCHIVE_FILES=['roles.sql','schema.sql','data.sql','history-schema.sql','history-data.sql'];
 const ARCHIVE_SQL=Object.freeze({fileBytes:1_000_000_000,totalBytes:2_000_000_000,chunkBytes:64*1024});
 const ARCHIVE_SQL_OWNERS=['ROLES','ROLE_SWITCH','SCHEMA','SCHEMA_ROLE_CHECK','REPLICA_SETTING','RELATION_PREFLIGHT','CHECK_SUSPEND','CHECK_RESTORE','DATA','DATA_ROLE_CHECK','HISTORY','UNKNOWN'];
-const ARCHIVE_POSTGRES_ROLE_CHECK="DO $rr_restore$ BEGIN IF session_user <> 'supabase_admin' OR current_user <> 'postgres' THEN RAISE SQLSTATE '42501'; END IF; END; $rr_restore$;\n";
+// The owned local archive-B already connects as supabase_admin. Keep that same
+// session through original ROLES/SCHEMA/DATA, as pinned CLI local restore does.
+const ARCHIVE_LOCAL_ADMIN_ROLE_CHECK="DO $rr_restore$ BEGIN IF session_user <> 'supabase_admin' OR current_user <> 'supabase_admin' THEN RAISE SQLSTATE '42501'; END IF; END; $rr_restore$;\n";
 const DOCUMENTED_CLI_LOGIN_GRANT='GRANT "postgres" TO "cli_login_postgres" WITH INHERIT FALSE GRANTED BY "supabase_admin";';
 const ARCHIVE_SQL_STATEMENTS=['UNKNOWN','CREATE_ROLE','ALTER_ROLE','GRANT_ROLE','REVOKE_ROLE','COMMENT_ROLE','CLI_LOGIN_POSTGRES_GRANT'];
 const ARCHIVE_ROLE_STATEMENT_STATES=new Set(['SQLSTATE_42501','SQLSTATE_42704']);
@@ -567,9 +569,9 @@ async function* materializedRestoreBytes(c,archive,history=false,inputLines=null
   const names=history?ARCHIVE_FILES.slice(3):ARCHIVE_FILES.slice(0,3);
   for(let i=0;i<names.length;i++){
     const name=names[i],entry=archive.files.find(f=>f.file===name);need(entry,'ARCHIVE_FILE_DESCRIPTOR');
-    if(!history&&i===1)yield track(Buffer.from('SET LOCAL ROLE postgres;\n'+ARCHIVE_POSTGRES_ROLE_CHECK),'ROLE_SWITCH');
+    if(!history&&i===1)yield track(Buffer.from(ARCHIVE_LOCAL_ADMIN_ROLE_CHECK),'ROLE_SWITCH');
     if(!history&&i===2){
-      yield track(Buffer.from(ARCHIVE_POSTGRES_ROLE_CHECK),'SCHEMA_ROLE_CHECK');
+      yield track(Buffer.from(ARCHIVE_LOCAL_ADMIN_ROLE_CHECK),'SCHEMA_ROLE_CHECK');
       yield track(Buffer.from('SET session_replication_role = replica;\n'),'REPLICA_SETTING');
     }
     if(c.archiveRelationInventory&&i===(history?1:2)){
@@ -604,7 +606,7 @@ async function* materializedRestoreBytes(c,archive,history=false,inputLines=null
     }finally{await h.close();}
     yield track(Buffer.from('\n'));
   }
-  if(!history)yield track(Buffer.from(ARCHIVE_POSTGRES_ROLE_CHECK),'DATA_ROLE_CHECK');
+  if(!history)yield track(Buffer.from(ARCHIVE_LOCAL_ADMIN_ROLE_CHECK),'DATA_ROLE_CHECK');
   if(c.archive===true&&c.archiveRelationInventory)yield track(archiveNotValidCheckSql(c.archiveRelationInventory,history?'HISTORY_DATA':'DATA',true),'CHECK_RESTORE');
 }
 
@@ -2902,8 +2904,8 @@ async function selfTest(){
     assert(c.processes.every(p=>p.processGroupClosed));
   });
   function expectedPrimaryArchiveSql([roles,schema,data]){
-    const roleCheck="DO $rr_restore$ BEGIN IF session_user <> 'supabase_admin' OR current_user <> 'postgres' THEN RAISE SQLSTATE '42501'; END IF; END; $rr_restore$;\n";
-    return Buffer.concat([roles,Buffer.from('\nSET LOCAL ROLE postgres;\n'+roleCheck),schema,
+    const roleCheck="DO $rr_restore$ BEGIN IF session_user <> 'supabase_admin' OR current_user <> 'supabase_admin' THEN RAISE SQLSTATE '42501'; END IF; END; $rr_restore$;\n";
+    return Buffer.concat([roles,Buffer.from('\n'+roleCheck),schema,
       Buffer.from('\n'+roleCheck+'SET session_replication_role = replica;\n'),data,Buffer.from('\n'+roleCheck)]);
   }
   test('archive SQLSTATE reports only the matching streamed input owner',async()=>{
@@ -2921,8 +2923,8 @@ async function selfTest(){
       assert(Buffer.concat(chunks).equals(expectedPrimaryArchiveSql(source)));
       const frame=line=>Buffer.from('psql:<stdin>:'+line+': ERROR:  42501\n');
       const archiveInputOwner=(...args)=>archiveInputDiagnostic(...args).inputOwner;
-      for(const [line,owner]of [[1,'ROLES'],[2,'UNKNOWN'],[3,'ROLE_SWITCH'],[4,'ROLE_SWITCH'],[5,'SCHEMA'],
-        [6,'UNKNOWN'],[7,'SCHEMA_ROLE_CHECK'],[8,'REPLICA_SETTING'],[9,'DATA'],[10,'DATA'],[11,'DATA'],[12,'UNKNOWN'],[13,'DATA_ROLE_CHECK'],[14,'UNKNOWN']])
+      for(const [line,owner]of [[1,'ROLES'],[2,'UNKNOWN'],[3,'ROLE_SWITCH'],[4,'SCHEMA'],
+        [5,'UNKNOWN'],[6,'SCHEMA_ROLE_CHECK'],[7,'REPLICA_SETTING'],[8,'DATA'],[9,'DATA'],[10,'DATA'],[11,'UNKNOWN'],[12,'DATA_ROLE_CHECK'],[13,'UNKNOWN']])
         assert.equal(archiveInputOwner(frame(line),'SQLSTATE_42501',inputLines),owner);
       assert.equal(archiveInputOwner(Buffer.concat([frame(1),frame(3)]),'SQLSTATE_42501',inputLines),'UNKNOWN');
       assert.equal(archiveInputOwner(frame(8),'SQLSTATE_23505',inputLines),'UNKNOWN');
@@ -2934,7 +2936,7 @@ async function selfTest(){
       assert.equal(archiveInputOwner(frame(3),'SQLSTATE_42501',history),'HISTORY');
       Object.assign(c,{home:c.root,processes:[]});
       const streamed={next:1,ranges:new Map()};
-      const child=['-e','process.stdin.resume();process.stdin.on("end",()=>{process.stderr.write("psql:<stdin>:4: ERROR:  42501\\n",()=>process.exit(3))})'];
+      const child=['-e','process.stdin.resume();process.stdin.on("end",()=>{process.stderr.write("psql:<stdin>:3: ERROR:  42501\\n",()=>process.exit(3))})'];
       await assert.rejects(command(c,'ARCHIVE_SQL_TEST',process.execPath,child,
         {input:materializedRestoreBytes(c,archive,false,streamed),archivePsql:true,inputLines:streamed}),
       error=>{
@@ -2943,6 +2945,35 @@ async function selfTest(){
         return true;
       });
     });
+  });
+  test('archive primary keeps owned local admin without rewriting demotion or history',async()=>{
+    const roleSql='ALTER ROLE "postgres" WITH NOSUPERUSER NOCREATEROLE;\n';
+    await ownArchive(async({c,env,index,materialize,source})=>{
+      const archive=await materializeArchiveInputs(c,index,{env,archive:materialize});
+      const chunks=[];
+      for await(const chunk of materializedRestoreBytes(c,archive))chunks.push(chunk);
+      const actual=Buffer.concat(chunks);
+      assert(actual.equals(expectedPrimaryArchiveSql(source)));
+      assert(source[0].equals(Buffer.from(roleSql)));
+      let cursor=0;const detached=[];
+      for(const original of source.slice(0,3)){
+        const at=actual.indexOf(original,cursor);assert(at>=cursor);
+        detached.push(actual.subarray(cursor,at));cursor=at+original.length;
+      }
+      detached.push(actual.subarray(cursor));
+      const envelope=Buffer.concat(detached).toString('utf8');
+      assert.equal((envelope.match(/DO \$rr_restore\$/g)??[]).length,3);
+      assert.equal((envelope.match(/session_user <> 'supabase_admin' OR current_user <> 'supabase_admin'/g)??[]).length,3);
+      assert.doesNotMatch(envelope,/\b(?:GRANT|REVOKE|ALTER\s+ROLE|OWNER\s+TO|SET\s+(?:LOCAL\s+)?ROLE|RESET\s+ROLE)\b/i);
+      assert.equal(actual.indexOf(source[0]),0);
+      assert.equal(actual.indexOf(Buffer.from(roleSql),source[0].length),-1);
+      const history=[];
+      for await(const chunk of materializedRestoreBytes(c,archive,true))history.push(chunk);
+      assert(Buffer.concat(history).equals(restoreBytes(source.slice(3),true)));
+      const args=psqlArguments({archive:true},{side:'B',db:'a'.repeat(64),dbUrl:{password:'synthetic'}},'RESTORE_ARCHIVE_HISTORY',{next:1,ranges:new Map()});
+      assert(args.includes('--username=postgres'));assert(args.includes('--single-transaction'));
+      assert(args.includes('--variable=ON_ERROR_STOP=1'));assert(args.includes('--file=-'));
+    },{roleSql});
   });
   test('primary archive SQLSTATE reports a fixed category for a verified standalone roles statement',async()=>{
     const grant=DOCUMENTED_CLI_LOGIN_GRANT;

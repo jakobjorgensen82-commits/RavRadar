@@ -614,3 +614,61 @@ export async function withFrozen598CheckpointFactorySource(callback){
     return callback({factory,repositoryRoot,originalProfile,parentCodeHead:fixed.codeHead});
   });
 }
+
+// Fixed TEST-only old599 factory. The normal CODE materializer already owns
+// its whole model/F/P/T closure. No native adapter or new readset cohort is used.
+export const FROZEN599_NATIVE_SOURCE=Object.freeze({
+  codeHead:'9d67207fbbec0f6bcf7819048f72e57535e9615d',codeTree:'a1a76ef3b38885ba46f3422ee287fe1b1c581363',
+  factorySourceSha256:'a6251fe2370dabe00191c79dd545a0f6a33e42acfbaf3089828da6cec602d2ea',
+  factoryBytes:73002,profileSha256:'3c5a8b22c53dfc4be1683201f982adc8dbf51d2ee652a8785d3636eac81ce5d4',
+  candidate:'faa049cb86e733e451211f50c155ff90fd3462230310298cf5696757ef5c9f5d',
+  integrated:'d8319503e040139ab739d589fa80c97cb683dfad7a2fc6f79eeeec6a9afe44e9',
+  continuation:'23577d15b555acb50ee73f0fb4117282701f4d97e933932f30ac54df2c679645',
+});
+export async function withFrozen599CheckpointFactorySource(callback){
+  const {requireAssistantAfter599Output}=await import('./lib/assistant-later-h0-successor-source.mjs');
+  requireAssistantAfter599Output(); // FIRST, before arguments, Git, factory or filesystem.
+  assert.equal(arguments.length,1);assert.equal(typeof callback,'function');
+  const {withSource599CodeParent,SOURCE599_CODE_SOURCE_PROVENANCE}=await import('./check-assistant-later-h0-predecessor-source.mjs');
+  const fixed=FROZEN599_NATIVE_SOURCE;
+  assert.equal(SOURCE599_CODE_SOURCE_PROVENANCE.head,fixed.codeHead);
+  assert.equal(SOURCE599_CODE_SOURCE_PROVENANCE.tree,fixed.codeTree);
+  const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
+  const execute=promisify(callbackExec);
+  const environment=Object.fromEntries(['PATH','Path','SystemRoot','WINDIR','TEMP','TMP','LANG','LC_ALL']
+    .filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]]));
+  const git=async args=>(await execute('git',['-C',ROOT,'-c','protocol.allow=never',...args],{
+    encoding:null,timeout:30000,maxBuffer:2*1024*1024,env:{...environment,GIT_NO_LAZY_FETCH:'1',
+      GIT_NO_REPLACE_OBJECTS:'1',GIT_OPTIONAL_LOCKS:'0',GIT_TERMINAL_PROMPT:'0'}})).stdout;
+  assert.equal(String(await git(['rev-parse',fixed.codeHead+'^{tree}'])).trim(),fixed.codeTree);
+  const raw=Buffer.from(await git(['cat-file','blob',fixed.codeHead+':scripts/test-protected-ravscore-continuation-checkpoint.mjs']));
+  assert.equal(raw.length,fixed.factoryBytes);assert.equal(sha(raw),fixed.factorySourceSha256);
+  const profileBytes=Buffer.from(await git(['cat-file','blob',fixed.codeHead+':data/admin/ravscore-profile-selection.json']));
+  assert.equal(profileBytes.length,1633);assert.equal(sha(profileBytes),fixed.profileSha256);
+  const originalProfile=JSON.parse(profileBytes);assert.equal(originalProfile.sourceVersion,'4.0.599');
+  assert.equal(originalProfile.modelBundleSha256,fixed.integrated);
+  const source=raw.toString('utf8'),slice=(a,z)=>{
+    assert.equal(source.split(a).length,2);assert.equal(source.split(z).length,2);
+    assert(source.indexOf(a)<source.indexOf(z));return source.slice(source.indexOf(a),source.indexOf(z));};
+  const recipe=slice('const PART_COUNT =','const safeShape =')+slice('const samples =','const sourceDocument =');
+  assert.equal(sha(recipe),'832098498476efe1b119472f16fe6e254496640b2e7ad5bf23d5518088926ed2');
+  return withSource599CodeParent(async repositoryRoot=>{
+    const imports=[['buildIntegratedRavScoreStateSeries','js/core/ravscore-integrated-state-pipeline.js'],
+      ['buildCandidateGDerivedStateSeries','js/core/ravscore-candidate-g-state-pipeline.js'],
+      ['ravScoreModelBinding','js/core/ravscore-model-contract.js'],
+      ['ravScoreModelBinding as candidateGRollbackModelBinding','scripts/rollback-assets/ravscore-model-contract.js'],
+      ['candidateGStateKey','scripts/lib/coastal-point-staging-contract.mjs'],
+      ['CANDIDATE_G_OPERATIONAL_ROLLBACK_ID','scripts/lib/ravscore-candidate-g-rollback-runtime.mjs'],
+      ['RAVSCORE_CONTINUATION_CHECKPOINT_POLICY,saveRavScoreContinuationCheckpoint','scripts/ravscore-continuation-checkpoint.mjs'],
+      ['ravScoreContinuationImplementationSha256','scripts/lib/ravscore-continuation-implementation-contract.mjs'],
+      ['privateRuntimeContractHashes','scripts/private-production-runtime-workflow.mjs']];
+    const program="import crypto from 'node:crypto';\n"+imports.map(([names,file])=>
+      'import { '+names+' } from '+JSON.stringify(pathToFileURL(path.join(repositoryRoot,file)).href)+';').join('\n')+'\n'+recipe
+      +'\nexport {sourceDocumentAt,atHour,saveRavScoreContinuationCheckpoint,ravScoreModelBinding,candidateGRollbackModelBinding,CURRENT_CONTINUATION_IMPLEMENTATION_SHA256,privateRuntimeContractHashes};';
+    const factory=await import('data:text/javascript;base64,'+Buffer.from(program).toString('base64'));
+    assert.equal(factory.ravScoreModelBinding().modelBundleSha256,fixed.integrated);
+    assert.equal(factory.candidateGRollbackModelBinding().modelBundleSha256,fixed.candidate);
+    assert.equal(factory.CURRENT_CONTINUATION_IMPLEMENTATION_SHA256,fixed.continuation);
+    return callback({factory,repositoryRoot,originalProfile,parentCodeHead:fixed.codeHead});
+  });
+}

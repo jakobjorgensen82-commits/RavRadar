@@ -6,7 +6,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {FROZEN590_CODE_SOURCE_PROVENANCE,assertFrozen590CodeSourceSelected,
-  FROZEN591_CODE_SOURCE_PROVENANCE,assertFrozen591CodeSourceSelected,assertSource597CodeSourceSelected,assertSource598CodeSourceSelected}
+  FROZEN591_CODE_SOURCE_PROVENANCE,assertFrozen591CodeSourceSelected,assertSource597CodeSourceSelected,assertSource598CodeSourceSelected,assertSource599CodeSourceSelected}
   from '../check-assistant-later-h0-predecessor-source.mjs';
 import {NATIVE_ORIGINAL_CONTINUITY_BINDING,NATIVE_ORIGINAL_CONTINUITY_OUTPUT,
   readNativeOriginalContinuityCanonicalSource,nativeOriginalContinuityDefinition}
@@ -112,7 +112,7 @@ export async function readAssistantLaterH0CanonicalSource(options){
   return readFixedCanonicalSource(ISSUED587_SOURCE,options,pins,migration);
 }
 async function readFixedCanonicalSource(profile,options,pins,migration){
-  assert(profile===ISSUED587_SOURCE||profile===PUBLIC587_SUCCESSOR_SOURCE||profile===PUBLIC588_SUCCESSOR_SOURCE||profile===PUBLIC590_SUCCESSOR_SOURCE||profile===PUBLIC591_SUCCESSOR_SOURCE||profile===INSTALLED593_ORIGINAL591_SOURCE||profile===SCALAR597_LATER_H0_SOURCE||profile===ASSISTANT_AFTER597_SOURCE||profile===ASSISTANT_AFTER598_SOURCE,'ASSISTANT_SUCCESSOR_UNKNOWN_SOURCE_PROFILE');
+  assert(profile===ISSUED587_SOURCE||profile===PUBLIC587_SUCCESSOR_SOURCE||profile===PUBLIC588_SUCCESSOR_SOURCE||profile===PUBLIC590_SUCCESSOR_SOURCE||profile===PUBLIC591_SUCCESSOR_SOURCE||profile===INSTALLED593_ORIGINAL591_SOURCE||profile===SCALAR597_LATER_H0_SOURCE||profile===ASSISTANT_AFTER597_SOURCE||profile===ASSISTANT_AFTER598_SOURCE||profile===ASSISTANT_AFTER599_SOURCE,'ASSISTANT_SUCCESSOR_UNKNOWN_SOURCE_PROFILE');
   let migrationsDirectory=path.join(ROOT,'supabase/migrations');
   if(options!==undefined){assert(options&&Object.getPrototypeOf(options)===Object.prototype);
     assert.deepEqual(Object.keys(options),['migrationsDirectory']);assert(path.isAbsolute(options.migrationsDirectory));
@@ -143,7 +143,7 @@ async function readFixedCanonicalSource(profile,options,pins,migration){
 }
 
 // Fast profil for den faktisk offentlige 587. Disse kildepins er DATA,
-// ikke en snapshotkapabilitet eller tilladelse til at læse en anden familie.
+// ikke en snapshotkapabilitet eller tilladelse til at lÃ¦se en anden familie.
 export const ASSISTANT_PUBLIC587_SUCCESSOR_BEFORE=Object.freeze({
   sourceHead:'aab72babd27175a4276c2a2f1965c74bb021b4af',
   sourceTree:'959f63d40c3980e804caa750da227cbd96e34a49',
@@ -233,8 +233,8 @@ export async function readAssistantPublic587SuccessorCanonicalSource(options){
 }
 
 
-// Kalender-only efter den ægte588-familie. Udstedt kildebinding, ikke installeret; ingen SOURCE-aktivering.
-// Disse nye kildeejede felter kan ikke sættes af miljø, tuple eller caller.
+// Kalender-only efter den Ã¦gte588-familie. Udstedt kildebinding, ikke installeret; ingen SOURCE-aktivering.
+// Disse nye kildeejede felter kan ikke sÃ¦ttes af miljÃ¸, tuple eller caller.
 export const ASSISTANT_PUBLIC588_SUCCESSOR_BEFORE=Object.freeze({
   sourceHead:'b57480082fb16f31ed4e4aa2bc308fff9abfe2d0',sourceTree:'fe3b9bf6270c2a506aac003d57e1e4d2a7d491de',
   version:'20261025110000',
@@ -445,8 +445,8 @@ export const INACTIVE_ASSISTANT_PUBLIC590_SUCCESSOR=Object.freeze({
 });
 
 
-// Aktiv operativ familie vælges KUN af denne gennemgåede kilde. De gamle
-// navngivne586→587-eksporter ovenfor forbliver historiske; NULL falder aldrig tilbage.
+// Aktiv operativ familie vÃ¦lges KUN af denne gennemgÃ¥ede kilde. De gamle
+// navngivne586â†’587-eksporter ovenfor forbliver historiske; NULL falder aldrig tilbage.
 export function assertAssistantPublic587SuccessorTarget(descriptor,targetReferenceAt){
   assert.equal(arguments.length,2);
   assert.equal(descriptor?.modelBinding?.modelBundleSha256,ASSISTANT_PUBLIC587_SUCCESSOR_BEFORE.I);
@@ -641,8 +641,8 @@ export const INACTIVE_ASSISTANT_PUBLIC591_SUCCESSOR=Object.freeze({
 });
 
 
-// Aktiv operativ familie vælges KUN af denne gennemgåede kilde. De gamle
-// navngivne586→587-eksporter ovenfor forbliver historiske; NULL falder aldrig tilbage.
+// Aktiv operativ familie vÃ¦lges KUN af denne gennemgÃ¥ede kilde. De gamle
+// navngivne586â†’587-eksporter ovenfor forbliver historiske; NULL falder aldrig tilbage.
 
 // Database593 er installeret, men den autentiske originale vejr-/statefamilie
 // er fortsat591. Ingen593-original eller ny originalvalidator konstrueres.
@@ -899,8 +899,8 @@ export async function readAssistantAfter597CanonicalSource(options){
   assert(arguments.length<=1);const output=requireAssistantAfter597Output();
   return readFixedCanonicalSource(ASSISTANT_AFTER597_SOURCE,options,output,assistantAfter597Migration());
 }
-// Hele den ægte597-S skal kunne genskabes; kun udstedte metadata må ændres.
-// Værdisammenligning alene giver ingen original-, SQL- eller runtimeautoritet.
+// Hele den Ã¦gte597-S skal kunne genskabes; kun udstedte metadata mÃ¥ Ã¦ndres.
+// VÃ¦rdisammenligning alene giver ingen original-, SQL- eller runtimeautoritet.
 export function assertAssistantAfter597CheckpointInverse(old,incoming,next){
   assert.equal(arguments.length,3);requireAssistantAfter597Output();
   assert.deepEqual(next,requireAssistantAfter597Binding());
@@ -1026,8 +1026,8 @@ export async function readAssistantAfter598CanonicalSource(options){
   assert(arguments.length<=1);const output=requireAssistantAfter598Output();
   return readFixedCanonicalSource(ASSISTANT_AFTER598_SOURCE,options,output,assistantAfter598Migration());
 }
-// Hele den ægte598-S skal kunne genskabes; kun udstedte metadata må ændres.
-// Værdisammenligning alene giver ingen original-, SQL- eller runtimeautoritet.
+// Hele den Ã¦gte598-S skal kunne genskabes; kun udstedte metadata mÃ¥ Ã¦ndres.
+// VÃ¦rdisammenligning alene giver ingen original-, SQL- eller runtimeautoritet.
 export function assertAssistantAfter598CheckpointInverse(old,incoming,next){
   assert.equal(arguments.length,3);requireAssistantAfter598Output();
   assert.deepEqual(next,requireAssistantAfter598Binding());
@@ -1084,4 +1084,138 @@ export const INACTIVE_ASSISTANT_AFTER598_SUCCESSOR=Object.freeze({
   assertTarget:assertAssistantAfter598Target,assertCaller:assertAssistantPublic591SuccessorCaller,
 });
 
-export const ACTIVE_ASSISTANT_SUCCESSOR=INACTIVE_ASSISTANT_AFTER598_SUCCESSOR;
+// Inactive/unissued601 preparation over the genuine qualified599 canonical.
+// No SQL, original-data or runtime authority until normal reviewed issuance.
+export const ASSISTANT_AFTER599_BEFORE=Object.freeze({...ASSISTANT_AFTER598_BINDING,
+  canonicalSha256:ASSISTANT_AFTER598_OUTPUT.canonicalSha256});
+export const ASSISTANT_AFTER599_DATABASE_LEDGER=Object.freeze({
+  modelVersion:ASSISTANT_AFTER599_BEFORE.version,
+  maximumVersion:'20261116181500',
+  appMigrationFilename:'20261116181500_account_erasure_outbox_off.sql',
+  appMigrationSha256:'80fad3aa7232443558973d9ee9adc1a0e590c30cecf66eb4bb8c85fade7aa499',
+});
+export const ASSISTANT_AFTER599_BINDING=Object.freeze({
+  "version": "20261117052301",
+  "C": "2c323c2bdcf73c6449b2cd105300836ea4a8f88e014156d2c18b2dde408ba076",
+  "I": "8eb4a77c96c86d1357209b23afca39c79862cc74b61383d60071837bd14d1313",
+  "T": "e1eb1f8e40b33ec3ab6c7459a7fb43d0eb369a1f0dd6aa8a867c65da7f0a5b34"
+});
+export const ASSISTANT_AFTER599_OUTPUT=Object.freeze({
+  "migrationSha256": "0823bf663c6658bb40f6b4c5e35df88b7d13eb212b7d2ec2f9c4a54f37982b15",
+  "canonicalSha256": "288d36b8ced9ced39f67796600a1957c4e1973cdcc59d7fba6ded9d79d7d6c6d",
+  "checkpointContractSha256": "0e4fa461d750caed9991709d4ef8a46be6337afa2e9501a36471415f8f44a6c2",
+  "tripBindingPolicySha256": "5cd6cb2a3745ff5d7b79b80dea2f6c0721d2b7b3d240dea834ced0b2b76a1129"
+});
+export const ASSISTANT_AFTER599_RELEASE="4.0.601";
+export const ASSISTANT_AFTER599_ALIASES=Object.freeze([
+  Object.freeze({name:'ravradar_ravscore_checkpoint_ask599_state_valid',signature:'(jsonb,text)'}),
+  Object.freeze({name:'ravradar_ravscore_checkpoint_ask599_payload_valid',signature:'(jsonb,timestamptz)'}),
+]);
+export function requireAssistantAfter599Binding(){
+  assert.equal(arguments.length,0,'No caller-selected assistant binding');
+  assert(ASSISTANT_AFTER599_BINDING&&Object.isFrozen(ASSISTANT_AFTER599_BINDING),'ASSISTANT_AFTER599_UNISSUED');
+  const binding=ASSISTANT_AFTER599_BINDING;
+  assert.deepEqual(Object.keys(binding).sort(),['C','I','T','version']);
+  assert.match(binding.version,/^[0-9]{14}$/);assert(binding.version>ASSISTANT_AFTER599_BEFORE.version);
+  for(const key of ['C','I','T'])assert.match(binding[key],/^[a-f0-9]{64}$/);
+  assert.equal(new Set(['C','I','T'].flatMap(key=>[binding[key],ASSISTANT_AFTER599_BEFORE[key]])).size,6);
+  assertSource599CodeSourceSelected();
+  return binding;
+}
+export function requireAssistantAfter599Output(){
+  assert.equal(arguments.length,0);requireAssistantAfter599Binding();
+  assert(ASSISTANT_AFTER599_OUTPUT&&Object.isFrozen(ASSISTANT_AFTER599_OUTPUT),'ASSISTANT_AFTER599_SQL_UNISSUED');
+  const output=ASSISTANT_AFTER599_OUTPUT;
+  assert.deepEqual(Object.keys(output).sort(),['canonicalSha256','checkpointContractSha256','migrationSha256','tripBindingPolicySha256']);
+  for(const value of Object.values(output))assert.match(value,/^[a-f0-9]{64}$/);
+  return output;
+}
+export function requireAssistantAfter599Release(){
+  assert.equal(arguments.length,0);requireAssistantAfter599Output();
+  assert.equal(typeof ASSISTANT_AFTER599_RELEASE,'string');
+  assert.match(ASSISTANT_AFTER599_RELEASE,/^4\.0\.[0-9]+$/);
+  assert(Number(ASSISTANT_AFTER599_RELEASE.split('.').at(-1))>599);
+  return ASSISTANT_AFTER599_RELEASE;
+}
+export function assistantAfter599Migration(){
+  assert.equal(arguments.length,0);const{version}=requireAssistantAfter599Binding();
+  const id=version+'_assistant_after599_original599_bound_successor';
+  return Object.freeze({version,id,filename:id+'.sql'});
+}
+export function assistantAfter599CheckpointContractFromBase(source,base){
+  assert.equal(arguments.length,2);
+  let text=assistantAfter598CheckpointContractFromBase(source,base).definition;
+  for(const[index,alias]of ASSISTANT_AFTER599_ALIASES.entries()){
+    const whole=nativeOriginalContinuityDefinition(source,alias.name);
+    text+='\n-- assistant-later-h0-original599-'+(index===0?'state':'payload')+'-validator --\n'
+      +whole.slice(whole.indexOf('as $$')+5,whole.lastIndexOf('$$;')).replace(/\r\n?/g,'\n').trim();
+  }
+  return Object.freeze({id:base.id,definition:text,sha256:sha(text)});
+}
+const ASSISTANT_AFTER599_SOURCE=Object.freeze({
+  readPredecessor:readAssistantAfter598CanonicalSource,aliases:ASSISTANT_AFTER599_ALIASES,previousRelease:599,
+});
+export async function readAssistantAfter599CanonicalSource(options){
+  assert(arguments.length<=1);const output=requireAssistantAfter599Output();
+  return readFixedCanonicalSource(ASSISTANT_AFTER599_SOURCE,options,output,assistantAfter599Migration());
+}
+// Hele den Ã¦gte598-S skal kunne genskabes; kun udstedte metadata mÃ¥ Ã¦ndres.
+// VÃ¦rdisammenligning alene giver ingen original-, SQL- eller runtimeautoritet.
+export function assertAssistantAfter599CheckpointInverse(old,incoming,next){
+  assert.equal(arguments.length,3);requireAssistantAfter599Output();
+  assert.deepEqual(next,requireAssistantAfter599Binding());
+  const before=ASSISTANT_AFTER599_BEFORE;
+  assert.equal(old?.modelBinding?.modelBundleSha256,before.I);
+  assert.equal(old?.candidateGRollbackCompanion?.modelBinding?.modelBundleSha256,before.C);
+  assert.equal(old?.continuationStateContractSha256,before.T);
+  assert.equal(incoming?.modelBinding?.modelBundleSha256,next.I);
+  assert.equal(incoming?.candidateGRollbackCompanion?.modelBinding?.modelBundleSha256,next.C);
+  assert.equal(incoming?.continuationStateContractSha256,next.T);
+  const ids=Object.keys(old.states).sort();assert.equal(ids.length,673);
+  assert.deepEqual(Object.keys(old.candidateGRollbackCompanion.states).sort(),ids);
+  assert.deepEqual(Object.keys(incoming.states).sort(),ids);
+  assert.deepEqual(Object.keys(incoming.candidateGRollbackCompanion.states).sort(),ids);
+  const inverse=structuredClone(incoming);
+  inverse.modelBinding.modelBundleSha256=before.I;
+  inverse.candidateGRollbackCompanion.modelBinding.modelBundleSha256=before.C;
+  inverse.continuationStateContractSha256=before.T;
+  for(const id of ids){
+    assert.equal(inverse.states[id].modelBundleSha256,next.I);
+    inverse.states[id].modelBundleSha256=old.states[id].modelBundleSha256;
+    const candidate=inverse.candidateGRollbackCompanion.states[id];
+    if(Object.hasOwn(candidate,'modelBundleSha256')){
+      assert.equal(candidate.modelBundleSha256,next.C);
+      assert(Object.hasOwn(old.candidateGRollbackCompanion.states[id],'modelBundleSha256'));
+      candidate.modelBundleSha256=old.candidateGRollbackCompanion.states[id].modelBundleSha256;
+    }
+  }
+  for(const key of ['generationSha256','stateSha256']){
+    inverse[key]=old[key];
+    if(Object.hasOwn(old.candidateGRollbackCompanion,key))inverse.candidateGRollbackCompanion[key]=old.candidateGRollbackCompanion[key];
+  }
+  assert.deepEqual(inverse,old,'Hele den originale598-checkpoint skal genskabes');return true;
+}
+export function assertAssistantAfter599Target(descriptor,targetReferenceAt){
+  assert.equal(arguments.length,2);
+  assert.equal(descriptor?.modelBinding?.modelBundleSha256,ASSISTANT_AFTER599_BEFORE.I);
+  assert.equal(descriptor?.contractHashes?.continuationStateContractSha256,ASSISTANT_AFTER599_BEFORE.T);
+  for(const value of [descriptor.productionReferenceAt,targetReferenceAt]){
+    assert.equal(typeof value,'string');assert.match(value,/^\d{4}-\d{2}-\d{2}T\d{2}:00:00\.000Z$/);
+    assert.equal(new Date(value).toISOString(),value);
+  }
+  assert(Date.parse(targetReferenceAt)>Date.parse(descriptor.productionReferenceAt),'ASSISTANT_AFTER599_STRICTLY_LATER');
+  return true; // Input constraint only, no original authentication or SQL authority.
+}
+export const INACTIVE_ASSISTANT_AFTER599_SUCCESSOR=Object.freeze({
+  sourcePhase:'assistant-after599-successor',
+  before:ASSISTANT_AFTER599_BEFORE,databaseBefore:ASSISTANT_AFTER599_BEFORE,originalStateFamily:'599',
+  binding:ASSISTANT_AFTER599_BINDING,output:ASSISTANT_AFTER599_OUTPUT,databaseLedger:ASSISTANT_AFTER599_DATABASE_LEDGER,
+  requireBinding:requireAssistantAfter599Binding,requireOutput:requireAssistantAfter599Output,
+  requireRelease:requireAssistantAfter599Release,migration:assistantAfter599Migration,
+  readCanonicalSource:readAssistantAfter599CanonicalSource,
+  readPredecessorCanonicalSource:readAssistantAfter598CanonicalSource,
+  assertTarget:assertAssistantAfter599Target,assertCaller:assertAssistantPublic591SuccessorCaller,
+});
+
+
+export const ACTIVE_ASSISTANT_SUCCESSOR=INACTIVE_ASSISTANT_AFTER599_SUCCESSOR;

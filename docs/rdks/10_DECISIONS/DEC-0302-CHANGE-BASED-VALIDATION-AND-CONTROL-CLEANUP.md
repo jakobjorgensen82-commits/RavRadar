@@ -1,3 +1,15 @@
+## Samme aktuelle appfacit ved alle601-admissionskald
+
+Den navngivne601-families normale FULL-læser kontrollerer producentens egen appversion og hele releasekontrakt. Dens eksporterede nativeprojektion og receiptadmission kræver samme komplette aktuelle77-filers konto-appfacit med49 udførte cases og28 typed CHECK-definitioner, som execute/record allerede kræver. Manglende eller undefined appfelt, gamle76-/75-former og ændret version, SQL-hash, caseantal eller CHECK-reference afvises. Kun den normale kvalificerede FULL-returnerings opaque token kan frigive CHECK-referencen; kopier og påståede flag giver ingen autoritet. De gamle familiers historiske75-/76-betydning bevares i deres egne læsere.
+
+Den generiske migrationsgenlæsning vælger præcis én navngiven familievalidator. En allerede godkendt after598-gren falder ikke bagefter igennem til public587. De konkrete familie-, parser-, ledger-, pending- og ukendt-version-afslag består. De almindelige sourceejere og testomfang bevares; der indføres ingen ny valideringsramme eller genbrugsvej. Lokale protokolprøver er fortsat ikke faktisk PostgreSQL eller kilde-CI for601.
+
+## Lukket after599-register og nativeledgerens bevisgrænse
+
+En ny navngiven familie udvider kun eksisterende normale source-, factory-, runtime-, retention-, reconcile-, installerings- og kvitteringsejere. Den ændrer ikke historiske ankre eller facit. En snæver semantisk registerinverse rekonstruerer hele det allerede kvalificerede after598-førbillede gennem den eksisterende regel; den almindelige lexer afviser nye imports i fragmenterne, og manglende/dublerede/fremmede registerdele samt ændret generisk loader eller cleanup afvises. De oprindelige leaf-orakler bruger deres egne autentiske reader-/lexer-/sourcebytes. Aktuelle ejere prøves særskilt råt; historisk input giver ingen aktuel genbrugsautoritet.
+
+Den lukkede601-familie kræver nye normale FULL/PG/native-beviser. Kildeinventar er ikke antal hele migrationer udført. I den eksisterende isolerede nativevært skal historiske ledger-fixtureposter og faktisk udførte hele migrationsfiler bindes og kvitteres særskilt; ingen syntetisk post bliver produktionshistorik. Den præcise app600-ledgerguard lempes ikke. Ukendte, beskyttede og ændrede model-/SQL-/kontrolinput beholder FULL eller afslag og frisk uafhængigt review. Private konstruktorpreviews og mutable afledninger er forberedelse, ikke udstedelse eller installation.
+
 ## Snæver appmigration med faktisk PG-kvalifikation
 
 Den samlede manuelle slettefeature tilføjer kun én uudstedt appmigration efter den installerede599-familie. Reader og nativeadapter indgår i det reelle udvidede PG-inventar; gamle inputprofiler og75SQL-originaler genudstedes ikke. Den eksisterende native599-fase udfører de faktiske SQL/ACL/RC/RR/SERIAL/resume/Storagecases og udsteder sourcebundet typedfacit for præcis28 constraintnavne og pg_get_constraintdef-strenge. Postinstallmetadata skal matche strengene uden normalisering; PG-major registreres ærligt, men forskellig major alene afviser ikke identiske bytes. Samme CHECK-antal med ændret udtryk skal afvises.

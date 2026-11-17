@@ -9,8 +9,9 @@ import {fileURLToPath} from 'node:url';
 import {computeCandidateGRollbackBundle,renderCandidateGRollbackGeneratedModule} from './build-candidate-g-rollback-bundle.mjs';
 import {computeRavScoreModelBundle,renderGeneratedBundleModule} from './build-ravscore-model-bundle.mjs';
 import {ravScoreContinuationImplementationSha256} from './lib/ravscore-continuation-implementation-contract.mjs';
+import {readAccountErasureSource} from './verify-account-erasure-schema.mjs';
 import {statisticsPreferenceRevisionCatalogQuery} from './verify-account-assistant-schema.mjs';
-import {checkpointCasContractFromCanonicalSource,tripBindingPolicyFromCanonicalSource} from './integrated-cutover-readiness.mjs';
+import {checkpointCasContractFromCanonicalSource,tripBindingPolicyFromCanonicalSource,assistantAfter598RequiredMigrations} from './integrated-cutover-readiness.mjs';
 import {ASSISTANT_LATER_H0_BEFORE as OLD,ASSISTANT_LATER_H0_ALIASES as ALIASES,
   readAssistantLaterH0PredecessorCanonicalSource,assistantLaterH0Definition as definition,
   assistantLaterH0CheckpointContractFromBase,requireAssistantLaterH0Binding,
@@ -42,7 +43,10 @@ import {ASSISTANT_LATER_H0_BEFORE as OLD,ASSISTANT_LATER_H0_ALIASES as ALIASES,
   requireAssistantAfter597Output,requireAssistantAfter597Release,assistantAfter597Migration,
   ASSISTANT_AFTER598_BEFORE,ASSISTANT_AFTER598_ALIASES,readAssistantAfter597CanonicalSource,
   assistantAfter598CheckpointContractFromBase,requireAssistantAfter598Binding,
-  requireAssistantAfter598Output,requireAssistantAfter598Release,assistantAfter598Migration}
+  requireAssistantAfter598Output,requireAssistantAfter598Release,assistantAfter598Migration,
+  ASSISTANT_AFTER599_BEFORE,ASSISTANT_AFTER599_ALIASES,ASSISTANT_AFTER599_DATABASE_LEDGER,readAssistantAfter598CanonicalSource,
+  assistantAfter599CheckpointContractFromBase,requireAssistantAfter599Binding,
+  requireAssistantAfter599Output,requireAssistantAfter599Release,assistantAfter599Migration}
   from './lib/assistant-later-h0-successor-source.mjs';
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),CP='ravradar_ravscore_checkpoint_';
 const sha=v=>crypto.createHash('sha256').update(v).digest('hex');
@@ -118,8 +122,17 @@ const ASSISTANT_AFTER598=Object.freeze({
   kind:'ASSISTANT_AFTER598_SUCCESSOR_STRUCTURE',
 });
 
+const ASSISTANT_AFTER599=Object.freeze({
+  previous:ASSISTANT_AFTER599_BEFORE,aliases:ASSISTANT_AFTER599_ALIASES,
+  previousRelease:599,validatorCount:47,
+  readPredecessor:readAssistantAfter598CanonicalSource,
+  checkpointFromBase:assistantAfter599CheckpointContractFromBase,
+  contractTail:"    || E'\\n-- assistant-later-h0-original598-payload-validator --\\n' || v_ask598_payload_definition;",
+  kind:'ASSISTANT_AFTER599_SUCCESSOR_STRUCTURE',
+});
+
 function fixedProfile(profile){
-  assert(profile===LEGACY586||profile===PUBLIC587||profile===PUBLIC588||profile===PUBLIC590||profile===PUBLIC591||profile===INSTALLED593_ORIGINAL591||profile===SCALAR597_LATER_H0||profile===ASSISTANT_AFTER597||profile===ASSISTANT_AFTER598,'ASSISTANT_SUCCESSOR_UNKNOWN_PROFILE');
+  assert(profile===LEGACY586||profile===PUBLIC587||profile===PUBLIC588||profile===PUBLIC590||profile===PUBLIC591||profile===INSTALLED593_ORIGINAL591||profile===SCALAR597_LATER_H0||profile===ASSISTANT_AFTER597||profile===ASSISTANT_AFTER598||profile===ASSISTANT_AFTER599,'ASSISTANT_SUCCESSOR_UNKNOWN_PROFILE');
   return profile;
 }
 function metadata(source,next,inventory,OLD){
@@ -212,6 +225,31 @@ export async function prepareAssistantAfter598SuccessorStructure(options){
   assert(options.version>ASSISTANT_AFTER598_BEFORE.version);
   return prepareStructure(ASSISTANT_AFTER598,options.version);
 }
+export async function prepareAssistantAfter599PredecessorAliases(){
+  assert.equal(arguments.length,0,'Ingen caller-valgt familie, kilde eller version');
+  const prior=await ASSISTANT_AFTER599.readPredecessor();
+  const prepared=predecessorAliases(ASSISTANT_AFTER599,prior);
+  const contract=definition(prior.canonicalSource,CP+'contract');
+  const oid=/  v_validator_oids oid\[\] := array\[([\s\S]*?)\n  \];/.exec(contract);assert(oid);
+  assert.equal([...oid[1].matchAll(/pg_catalog\.to_regprocedure\(/g)].length,ASSISTANT_AFTER599.validatorCount);
+  assert.equal(contract.split(ASSISTANT_AFTER599.contractTail).length,2);
+  return Object.freeze({kind:'ASSISTANT_AFTER599_PREDECESSOR_ALIASES_ONLY',admission:'NO_ADMISSION',
+    aliases:prepared.aliases,originalCanonicalSha256:sha(prior.canonicalSource),
+    originalCanonicalUnchanged:true,validatorCount:ASSISTANT_AFTER599.validatorCount,
+    nextBinding:null,migration:null,migrationIssued:false,installationPerformed:false,sameH0Capability:false});
+}
+// Den eksisterende DATA-konstruktør får først et reelt tidsstempel ved særskilt
+// normal udstedelse. Den skriver intet og giver aldrig produktionsautoritet.
+// Den normale CLI nedenfor kræver allerede udstedte bindinger før ethvert I/O.
+export async function prepareAssistantAfter599SuccessorStructure(options){
+  assert.equal(arguments.length,1);assert(options&&Object.getPrototypeOf(options)===Object.prototype);
+  assert.deepEqual(Object.keys(options),['version'],'Kun normalt tidsstempel; ingen caller-valgt profil eller tuple');
+  assert.equal(typeof options.version,'string');assert.match(options.version,/^[0-9]{14}$/);
+  assert(options.version>ASSISTANT_AFTER599_DATABASE_LEDGER.maximumVersion);
+  assistantAfter599InstalledLedgerGuard();
+  return prepareStructure(ASSISTANT_AFTER599,options.version);
+}
+
 function predecessorAliases(profile,prior){
   fixedProfile(profile);const OLD=profile.previous,ALIASES=profile.aliases,before=prior.canonicalSource;
   assert.equal(sha(before),OLD.canonicalSha256);
@@ -425,6 +463,23 @@ function preservationQuery(signatures){
 
 
 
+// Fixed post-cutover ledger: installed model599 plus the exact known app600.
+// Older pre-cutover history retains the existing allowance. No caller ledger.
+function assistantAfter599InstalledLedgerGuard(){
+  const ledger=ASSISTANT_AFTER599_DATABASE_LEDGER;
+  assert.equal(ledger.modelVersion,ASSISTANT_AFTER599_BEFORE.version);
+  assert.equal(readAccountErasureSource().sha256,ledger.appMigrationSha256,'ASSISTANT_AFTER599_APP600_SOURCE_CHANGED');
+  const required=assistantAfter598RequiredMigrations();
+  assert.equal(required.length,64);assert.equal(required.at(-1).version,ledger.modelVersion);
+  const versions=[...required.map(row=>row.version),ledger.maximumVersion].sort();
+  assert.equal(new Set(versions).size,65);assert(ledger.maximumVersion>ledger.modelVersion);
+  const values=versions.map(value=>{assert.match(value,/^[0-9]{14}$/);return "'"+value+"'";}).join(',');
+  return [
+    "  if (select max(version::text) from supabase_migrations.schema_migrations) is distinct from '"+ledger.maximumVersion+"' then raise exception 'ASSISTANT_AFTER599_EXACT_APP600_LEDGER_REQUIRED'; end if;",
+    "  if (select coalesce(array_agg(version::text order by version::text),array[]::text[]) from supabase_migrations.schema_migrations where version::text >= '"+versions[0]+"') is distinct from array["+values+"]::text[] then raise exception 'ASSISTANT_AFTER599_EXACT_APP600_LEDGER_REQUIRED'; end if;",
+  ];
+}
+
 function wrap(core,prior,profile=LEGACY586){
   fixedProfile(profile);const OLD=profile.previous;
   assert.equal(core.kind,profile.kind);
@@ -442,7 +497,8 @@ function wrap(core,prior,profile=LEGACY586){
   const snapshot=preservationQuery(signatures);
   const prefix=['do $assistant_later_h0_successor$',
     'declare original_catalog jsonb; after_catalog jsonb; account_observed jsonb; function_name text;','begin',
-    "  if (select max(version::text) from supabase_migrations.schema_migrations) is distinct from '"+OLD.version+"' then raise exception 'ASSISTANT_LATER_H0_EXACT_INSTALLED"+profile.previousRelease+"_REQUIRED'; end if;",
+    ...(profile===ASSISTANT_AFTER599?assistantAfter599InstalledLedgerGuard():[
+    "  if (select max(version::text) from supabase_migrations.schema_migrations) is distinct from '"+OLD.version+"' then raise exception 'ASSISTANT_LATER_H0_EXACT_INSTALLED"+profile.previousRelease+"_REQUIRED'; end if;"]),
     "  if exists(select 1 from supabase_migrations.schema_migrations where version::text=any(array['20261014140000','20261015030000','20261016030000'])) then raise exception 'ASSISTANT_LATER_H0_ARCHIVED_PHASE_MUST_BE_ABSENT'; end if;",
     "  if not exists(select 1 from supabase_migrations.schema_migrations where version::text='20261013230000') then raise exception 'ASSISTANT_LATER_H0_INSTALLED230_REQUIRED'; end if;",
     '  lock table public.account_activity_journal,public.account_statistics_preferences in access share mode;'].join('\n');
@@ -539,8 +595,30 @@ export async function buildAssistantAfter598BindingSuccessor(options){
   return wrap(core,await readAssistantAfter597CanonicalSource(),ASSISTANT_AFTER598);
 }
 
+export async function buildAssistantAfter599BindingSuccessor(options){
+  assert.equal(arguments.length,1);
+  const core=await prepareAssistantAfter599SuccessorStructure(options);
+  return wrap(core,await readAssistantAfter598CanonicalSource(),ASSISTANT_AFTER599);
+}
+
+
 async function main(){
   const args=process.argv.slice(2);
+  if(args[0]==='--active'&&ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-after599-successor')
+    args[0]='--assistant-after599';
+  if(args[0]==='--assistant-after599'){
+    const issued=requireAssistantAfter599Binding(),pins=requireAssistantAfter599Output();
+    requireAssistantAfter599Release();
+    assert.equal(args.length,2);assert(['--check','--write'].includes(args[1]));
+    const result=await buildAssistantAfter599BindingSuccessor({version:issued.version});
+    assert.deepEqual(result.nextBinding,issued);assert.deepEqual(scalar597Output(result),pins);
+    const file=path.join(ROOT,'supabase/migrations',assistantAfter599Migration().filename);
+    if(args[1]==='--write')await fs.writeFile(file,result.migration,{flag:'wx'});
+    else assert.deepEqual(await fs.readFile(file),Buffer.from(result.migration));
+    console.log('Præcis assistentkilde efter598 kontrolleret; ingen installation eller tilstandsoptagelse.');
+    return;
+  }
+
   if(args[0]==='--active'&&ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase==='assistant-after598-successor')
     args[0]='--assistant-after598';
   if(args[0]==='--assistant-after598'){

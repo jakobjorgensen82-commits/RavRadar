@@ -8,6 +8,22 @@ export const RAV_ASSISTANT_SOURCES = Object.freeze({
     'mixed',
     'RavRadar synthesis of direct amber research, coastal analogues, official data documentation and practical evidence.'
   ),
+  'uw-physics-fluorescence': source(
+    'University of Wisconsin–Madison Physics: Fluorescence',
+    'https://www.physics.wisc.edu/outreach/wonders-of-physics-outreach-fellows/activities/fluorescence/',
+    'university',
+    'general-physics',
+    'UV absorption and visible emission at a longer wavelength; general optics, not an amber field-yield measurement.',
+    '2026-11-17'
+  ),
+  'gia-blue-amber-2014': source(
+    'Color Phenomena of Blue Amber, Liu, Shi and Wang (2014)',
+    'https://www.gia.edu/gems-gemology/summer-2014-liu-color-phenomena-blue-amber',
+    'peer-reviewed',
+    'direct-amber',
+    'Fluorescence contrast against daylight and a dark background in studied blue amber; not a Danish Baltic-amber 395 nm field trial.',
+    '2026-11-17'
+  ),
   'rr-user-spec': source(
     'RavRadar explanation and validation specification',
     'docs/research/RAV_AMBER_USER_EXPLANATION_AND_VALIDATION_SPEC.md',
@@ -192,8 +208,8 @@ export const RAV_ASSISTANT_SOURCES = Object.freeze({
   )
 });
 
-function source(title, url, kind, evidenceClass, scope) {
-  return Object.freeze({ title, url, kind, evidenceClass, scope, checked:'2026-08-29' });
+function source(title, url, kind, evidenceClass, scope, checked = '2026-08-29') {
+  return Object.freeze({ title, url, kind, evidenceClass, scope, checked });
 }
 
 export function ravAssistantSource(id) {

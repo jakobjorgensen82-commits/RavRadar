@@ -1,23 +1,23 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.600";
-import { LOCAL_RAV_KNOWLEDGE_EXAMPLES, localRavKnowledgeAnswer, matchLocalRavKnowledge, localRavQuestionRequiresWholeAnswer } from "../../knowledge/rav-assistant-local-v2.js?v=4.0.600";
-import { buildLocalZoneScore, selectLocalBestForDay } from "../core/local-zone-score.js?v=4.0.600";
-import { addNationalRanking, compareNationalRankingRows } from "../core/zone-ranking.js?v=4.0.600";
-import { forecastDateKeyForDayOffset, forecastDateKeyInTimeZone, visibleForecastDays } from "../core/forecast-calendar.js?v=4.0.600";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.601";
+import { LOCAL_RAV_KNOWLEDGE_EXAMPLES, localRavKnowledgeAnswer, matchLocalRavKnowledge, localRavQuestionRequiresWholeAnswer } from "../../knowledge/rav-assistant-local-v2.js?v=4.0.601";
+import { buildLocalZoneScore, selectLocalBestForDay } from "../core/local-zone-score.js?v=4.0.601";
+import { addNationalRanking, compareNationalRankingRows } from "../core/zone-ranking.js?v=4.0.601";
+import { forecastDateKeyForDayOffset, forecastDateKeyInTimeZone, visibleForecastDays } from "../core/forecast-calendar.js?v=4.0.601";
 import {
   RAVSCORE_CALIBRATION_ELIGIBLE,
   ravScoreModelBinding,
-} from "../core/ravscore-model-contract.js?v=4.0.600";
-import { sameRavScoreModelBinding, ravScorePublicHorizonValidUntil } from "../core/ravscore-public-runtime-contract.js?v=4.0.600";
-import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.600";
-import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.600";
-import { formatDateTime, formatNumber, getLanguage, normaliseLanguage, t } from "../i18n.js?v=4.0.600";
+} from "../core/ravscore-model-contract.js?v=4.0.601";
+import { sameRavScoreModelBinding, ravScorePublicHorizonValidUntil } from "../core/ravscore-public-runtime-contract.js?v=4.0.601";
+import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.601";
+import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.601";
+import { formatDateTime, formatNumber, getLanguage, normaliseLanguage, t } from "../i18n.js?v=4.0.601";
 
 // Compatibility name for existing source-contract tests. The implementation
 // now selects the only adapter matching the artifact's exact active binding.
 const presentIntegratedRavScoreExplanation = presentActiveRavScoreExplanation;
 const ACTIVE_RAVSCORE_MODEL_BINDING = ravScoreModelBinding();
 const RAV_ASSISTANT_KNOWLEDGE_SCHEMA = 'rav-assistant-public-knowledge-v1';
-const RAV_ASSISTANT_KNOWLEDGE_SHA256 = 'b719ea805a455410e996eb41e829086ff811ad809b99aeca938d531f414b3533';
+const RAV_ASSISTANT_KNOWLEDGE_SHA256 = 'f159bdfd06fd4a341e7ea8e40383de00ad5a0c24dcaa09c2adb1b229b09e6694';
 const RAV_ASSISTANT_BINDING_HEADERS = Object.freeze({
   modelId:'x-ravradar-model-id',
   modelStateVersion:'x-ravradar-model-state-version',
@@ -488,6 +488,7 @@ export function routeRavQuestion(question) {
   const text = String(question || '').trim();
   if (!text || SECURITY_PATTERN.test(text) || OUT_OF_SCOPE_PATTERN.test(text)) return 'fixed-refusal';
   if(PRIVATE_FIND_REQUEST_PATTERN.test(text))return 'remote-candidate';
+  if (isPublicKnowledgeFollowupQuestion(text, getLanguage())) return 'remote-candidate';
   if (mixedKnowledgeForecastQuestion(text,getLanguage())
     || knownAmberNetDefinitionUseQuestion(text,getLanguage())) return 'local-deterministic';
   if (unknownAmberEquipmentQuestion(text, getLanguage())) return 'remote-candidate';
@@ -950,6 +951,12 @@ export async function askRavRadar(question, context = {}, options = {}) {
     return t('assistant.unknown', {}, language);
   }
   if (route === 'fixed-refusal') return t('assistant.refusal', {}, language);
+  // A resolved public referent does not certify the new qualification. Preserve
+  // the whole question for normal AI coverage; never substitute its definition.
+  if (isPublicKnowledgeFollowupQuestion(raw, language)) {
+    if (options?.localOnly) return t('assistant.unknown', {}, language);
+    return await remoteAnswer(raw, context, language) || t('assistant.unknown', {}, language);
+  }
   if (unknownAmberEquipmentQuestion(raw, language)) {
     if (options?.localOnly) return unknownAmberEquipmentGuaranteeQuestion(raw,language)
       ? unknownAmberEquipmentGuaranteeAnswer(language) : t('assistant.unknown', {}, language);
@@ -1170,14 +1177,55 @@ function publicMethodFollowupAnswer(question,topic,language){
 
 // Only an explicit authored topic may be retained by the local dialog.
 // No question, answer, location details or transcript is retained/sent.
+const PUBLIC_KNOWLEDGE_REFERENTS = Object.freeze({
+  'equipment.amber-net': Object.freeze({
+    prefixes:Object.freeze({da:'Om ravkesen: ',de:'Zum Bernsteinkescher: ',en:'About the amber net: '}),
+    examples:Object.freeze([]),
+  }),
+  'identification.uv-clue-not-proof': Object.freeze({
+    prefixes:Object.freeze({da:'Om rav-UV-lygten: ',de:'Zur Bernstein-UV-Lampe: ',en:'About the amber UV lamp: '}),
+    examples:Object.freeze(['uv-wavelength','uv-darkness']),
+  }),
+});
+const PUBLIC_KNOWLEDGE_PRONOUNS = Object.freeze({
+  da:/(?<!\p{L})(?:den|det|dens|dets)(?!\p{L})/iu,
+  de:/(?<!\p{L})(?:er|es|ihn|ihm|sie|damit|dafür)(?!\p{L})/iu,
+  en:/(?<!\p{L})(?:it|its)(?!\p{L})/iu,
+});
+function publicKnowledgeTopicForQuestion(question) {
+  if (generalLocalIntent(question) === 'amber-net') return 'public-knowledge:equipment.amber-net';
+  const text=normalizeLocalQuestion(question).replace(/[?!.]+$/u,'').toLowerCase();
+  for (const [id,entry] of Object.entries(PUBLIC_KNOWLEDGE_REFERENTS)) {
+    if (entry.examples.some(key=>(LOCAL_RAV_KNOWLEDGE_EXAMPLES[key]||[]).some(example=>
+      normalizeLocalQuestion(example).replace(/[?!.]+$/u,'').toLowerCase()===text))) return 'public-knowledge:'+id;
+  }
+  return null;
+}
+function isPublicKnowledgeFollowupQuestion(question, language) {
+  return Object.hasOwn(PUBLIC_KNOWLEDGE_PRONOUNS,language) && question.length<=600 && Object.values(PUBLIC_KNOWLEDGE_REFERENTS).some(entry=>{
+    const prefix=entry.prefixes[language];
+    return prefix && question.startsWith(prefix) && PUBLIC_KNOWLEDGE_PRONOUNS[language]?.test(question.slice(prefix.length));
+  });
+}
+export function assistantPublicFollowupQuestion(question, topic, language=getLanguage()) {
+  const raw=String(question||'').trim(),namespace='public-knowledge:';
+  if (!Object.hasOwn(PUBLIC_KNOWLEDGE_PRONOUNS,language) || !raw || raw.length>600 || SECURITY_PATTERN.test(raw) || PRIVATE_FIND_REQUEST_PATTERN.test(raw)
+    || OUT_OF_SCOPE_PATTERN.test(raw) || !PUBLIC_KNOWLEDGE_PRONOUNS[language]?.test(raw)) return null;
+  const id=typeof topic==='string'&&topic.startsWith(namespace)?topic.slice(namespace.length):null;
+  if (!Object.hasOwn(PUBLIC_KNOWLEDGE_REFERENTS,id)) return null;
+  const prefix=PUBLIC_KNOWLEDGE_REFERENTS[id].prefixes[language];
+  const resolved=prefix?prefix+raw:null;
+  return resolved&&resolved.length<=600?resolved:null;
+}
 export function assistantTopicForQuestion(question) {
   const text = String(question || '').trim();
-  if (SECURITY_PATTERN.test(text) || OUT_OF_SCOPE_PATTERN.test(text) || PRIVATE_FIND_REQUEST_PATTERN.test(text)) return null;
+  if (text.length>600 || SECURITY_PATTERN.test(text) || OUT_OF_SCOPE_PATTERN.test(text) || PRIVATE_FIND_REQUEST_PATTERN.test(text)) return null;
   return mixedKnowledgeForecastQuestion(text,getLanguage())?.topic
     ?? (isOriginIdentificationQuestion(text) || isAuthoredOriginQuestion(text) ? 'amber-origin-identification' : null)
     ?? fieldCompoundAnswer(text, getLanguage())?.topic
     ?? (isPracticalAlongshoreQuestion(text) ? 'alongshore' : null)
-    ?? publicSearchTopicForQuestion(text);
+    ?? publicSearchTopicForQuestion(text)
+    ?? publicKnowledgeTopicForQuestion(text);
 }
 
 export function assistantLocalFollowupAnswer(question, topic, language = getLanguage()) {

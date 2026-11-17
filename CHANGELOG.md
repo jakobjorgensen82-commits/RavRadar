@@ -1,4 +1,16 @@
+## 4.0.601 — emneopfølgning og afgrænset UV-/mængdeviden, lokal kandidat
+
+Assistenten bevarer kvalifikationerne i et nyt emnebundet spørgsmål på dansk, tysk og engelsk. Tre offentlige fakta forklarer fluorescens, dagslyskontrast og manglende observation af ravmængder; de45 tidligere fakta og de rå sikkerhedsgrænser består. En ravkese-opfølgning skal besvare strand-/brugsleddet fremfor alene at gentage definitionen.
+
+Kandidaten bruger den normale nye binding efter ægte599 og app600. C/I/T og privat DATA-preview er afledt normalt, mens alle76 udstedte SQL-originaler bevares. Nativeledgerens syntetiske førinput er adskilt fra faktisk udført SQL. Den ene nye append er nu lokalt udstedt gennem normalvejen. Frisk FULL/PG/native, installation og hosted/offentlig AI-accept for601 er fortsat åbne. Native/FULL-admission kræver det komplette aktuelle77/49/28-appfacit og producentens egne releasebindinger; den generiske migrationsgenlæsning vælger kun én familievalidator. App600s manuelle kontoslettefunktion og selvstændige levering bevares.
+
+Arkivlæseren medtager en selvstændig rettelse af et autentisk DATA/42501-afslag: den allerede ejede lokale supabase_admin-session nedskiftes ikke længere til postgres før ROLES/SCHEMA/DATA. Tre identitetskontroller og alle fem originale SQL-strømme med deres hashes bevares; ingen ny GRANT, ownerændring eller rolletildeling indføres.
+
+HISTORY beholder postgres og faktisk uafprøvet originalautoritet. Den normale lokale selvtest er bestået, men præcis samlet kildekvalifikation, Linux/SQL, originalrestore, indholds-/Auth-accept, autonom kvittering, rotation og Free-klarhed er fortsat åbne. Ingen produktionsgendannelse er udført. Se håndbog 89.350.
+
 ## 4.0.600 — manuel kontosletning som samlet leveringskandidat
+
+Senere bekræftet levering: App600 er nu faktisk databaseinstalleret og server-/UI-leveret gennem den normale rene kodevej med fortsat numerisk modelfamilie599. Normal FULL-kvalifikation, de28 præcise CHECK-definitioner og kataloggenlæsning er bekræftet; offentlig210/673 og den terminale afslutning er verificeret. Det oprindelige fejlede installerforløbs udfald står særskilt UNKNOWN og omskrives ikke til succes. Ejerens normale kontomodal og præference er browserlæst på600, men faktisk sletning, privacy- og samlet målopfyldelse er ikke accepteret. Alle fem hovedmål er fortsat åbne. Ældre600-kandidatposter nedenfor er erstattet på dette leveringsstatuspunkt.
 
 Den manuelle kontosletning er nu forberedt som én samlet app600-kandidat med fast modelfamilie599: holdbar UUID-outbox og slettebarrierer, normal Auth/D1-controller, ejerens genoptagelsesflade og serverbundet pendingliste. Den ene appmigration skal kvalificeres gennem faktisk normal PostgreSQL og installeres/genlæses før server/UI. Lokale prøver og den særskilte Auth-UUID-prøve er ikke accept af hele appen, låseracer, D1 eller faktisk sletning. Automatisk inaktivitet/varsel, statistik/privacy og backup-/restorebarrierer forbliver åbne. Se håndbog89.351.
 

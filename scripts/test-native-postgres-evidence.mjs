@@ -34,6 +34,8 @@ import {ASSISTANT_AFTER597_BINDING as AFTER597_BINDING} from './lib/assistant-la
 const AFTER597_ISSUED=AFTER597_BINDING!==null;
 import {ACTIVE_ASSISTANT_SUCCESSOR as CURRENT_ASSISTANT} from './lib/assistant-later-h0-successor-source.mjs';
 const AFTER598_ACTIVE=CURRENT_ASSISTANT.sourcePhase==='assistant-after598-successor';
+const AFTER599_ACTIVE=CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor';
+const HISTORICAL598_INPUT_REQUIRED=AFTER598_ACTIVE||AFTER599_ACTIVE;
 // The existing authenticated old CODE host supplies actual old package/profile
 // input. No rewritten current package, copied legacy suite or new cohort.
 async function genuineIssued598SourceData(){
@@ -2029,7 +2031,7 @@ test('after597 frozen native boundary preserves CODE/native identities and check
   const {SOURCE597_CODE_SOURCE_PROVENANCE:code}=await import('./check-assistant-later-h0-predecessor-source.mjs');
   const {SCALAR597_LATER_H0_BINDING:binding,ASSISTANT_AFTER597_BINDING,ASSISTANT_AFTER597_OUTPUT,
     ACTIVE_ASSISTANT_SUCCESSOR}=await import('./lib/assistant-later-h0-successor-source.mjs');
-  if(AFTER598_ACTIVE){
+  if(HISTORICAL598_INPUT_REQUIRED){
     const historical=await genuineIssued598SourceData();
     assert.equal(historical.sourcePhase,ASSISTANT_AFTER597_PHASE);
     assert.deepEqual(historical.binding,ASSISTANT_AFTER597_BINDING);
@@ -2079,7 +2081,7 @@ test('after597 fixed native profile keeps genuine597 CODE/native identities and 
   if(AFTER597_ISSUED){
     assert.equal(p.requireBinding(),source.ASSISTANT_AFTER597_BINDING);
     assert.equal(p.requireOutput(),source.ASSISTANT_AFTER597_OUTPUT);
-    if(AFTER598_ACTIVE){
+    if(HISTORICAL598_INPUT_REQUIRED){
       const old=await genuineIssued598SourceData();
       assert.equal(source.requireAssistantAfter597Release(),old.pkg.version);
       assert.equal(old.sourcePhase,source.UNISSUED_ASSISTANT_AFTER597_SUCCESSOR.sourcePhase);
@@ -2118,8 +2120,8 @@ test('after597 normal routing selects only the fixed source-owned active command
   assert.deepEqual(native.ASSISTANT_AFTER597_COMMANDS,
     ['node scripts/test-protected-ravscore-continuation-checkpoint.mjs --assistant-after597-successor']);
   assert.equal(native.ASSISTANT_AFTER597_SCRIPT,'set -euo pipefail\n'+native.ASSISTANT_AFTER597_COMMANDS[0]+'\n');
-  assert.equal(native.ACTIVE_COMMANDS,AFTER598_ACTIVE?native.ASSISTANT_AFTER598_COMMANDS:AFTER597_ISSUED?native.ASSISTANT_AFTER597_COMMANDS:native.SCALAR597_LATER_H0_COMMANDS);
-  assert.equal(native.ACTIVE_NATIVE_SCRIPT,AFTER598_ACTIVE?native.ASSISTANT_AFTER598_SCRIPT:AFTER597_ISSUED?native.ASSISTANT_AFTER597_SCRIPT:native.SCALAR597_LATER_H0_SCRIPT);
+  assert.equal(native.ACTIVE_COMMANDS,AFTER599_ACTIVE?native.ASSISTANT_AFTER599_COMMANDS:AFTER598_ACTIVE?native.ASSISTANT_AFTER598_COMMANDS:AFTER597_ISSUED?native.ASSISTANT_AFTER597_COMMANDS:native.SCALAR597_LATER_H0_COMMANDS);
+  assert.equal(native.ACTIVE_NATIVE_SCRIPT,AFTER599_ACTIVE?native.ASSISTANT_AFTER599_SCRIPT:AFTER598_ACTIVE?native.ASSISTANT_AFTER598_SCRIPT:AFTER597_ISSUED?native.ASSISTANT_AFTER597_SCRIPT:native.SCALAR597_LATER_H0_SCRIPT);
   const caller=await fs.readFile('scripts/test-protected-ravscore-continuation-checkpoint.mjs','utf8');
   const guard=caller.indexOf('if(assistantAfter597Native){'),first=caller.indexOf('requireAssistantAfter597Output();',guard);
   assert(guard>=0&&first>guard&&first<caller.indexOf('const PART_COUNT ='));
@@ -2151,7 +2153,7 @@ test('after597 normal PG entry and report collector enforce real admission befor
 });
 
 test('after597 actual normal CLI checks issued source or refuses unissued before PostgreSQL',async()=>{
-  if(AFTER598_ACTIVE){
+  if(HISTORICAL598_INPUT_REQUIRED){
     // This existing authenticated CODE822 reader already executes the genuine
     // after597 --check and validates its complete original stdout before callback.
     const historical=await genuineIssued598SourceData();
@@ -2160,12 +2162,15 @@ test('after597 actual normal CLI checks issued source or refuses unissued before
   }
   const {execFile}=await import('node:child_process');
   const result=await new Promise(resolve=>execFile(process.execPath,
-    AFTER598_ACTIVE?['scripts/build-assistant-later-h0-successor.mjs','--active','--check']
+    HISTORICAL598_INPUT_REQUIRED?['scripts/build-assistant-later-h0-successor.mjs','--active','--check']
       :AFTER597_ISSUED?['scripts/build-assistant-later-h0-successor.mjs','--assistant-after597','--check']
       :['scripts/test-protected-ravscore-continuation-checkpoint.mjs','--assistant-after597-successor'],
     {env:{PATH:process.env.PATH,SystemRoot:process.env.SystemRoot},timeout:10000,maxBuffer:16384},
     (error,stdout,stderr)=>resolve({code:error?.code??0,stdout,stderr})));
-  if(AFTER598_ACTIVE){
+  if(AFTER599_ACTIVE){
+    assert.equal(result.code,0);assert.equal(result.stderr,'');
+    assert.match(result.stdout,/Præcis assistentkilde efter599 kontrolleret/);
+  }else if(AFTER598_ACTIVE){
     assert.equal(result.code,0);assert.equal(result.stderr,'');
     assert.match(result.stdout,/Præcis assistentkilde efter598 kontrolleret/);
   }else if(AFTER597_ISSUED){
@@ -2183,10 +2188,10 @@ test('after597 nationalreader keeps exact issued source and old unissued input b
   const normal=await import('./national584-source-evidence.mjs');
   const profile=await import('./lib/assistant-later-h0-successor-source.mjs');
   if(AFTER597_ISSUED){
-    const pkg=AFTER598_ACTIVE?(await genuineIssued598SourceData()).pkg:JSON.parse(await fs.readFile('package.json','utf8'));
-    if(!AFTER598_ACTIVE)assert.equal(profile.ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase,ASSISTANT_AFTER597_PHASE);
+    const pkg=HISTORICAL598_INPUT_REQUIRED?(await genuineIssued598SourceData()).pkg:JSON.parse(await fs.readFile('package.json','utf8'));
+    if(!HISTORICAL598_INPUT_REQUIRED)assert.equal(profile.ACTIVE_ASSISTANT_SUCCESSOR.sourcePhase,ASSISTANT_AFTER597_PHASE);
     assert.equal(profile.requireAssistantAfter597Release(),pkg.version);
-    if(AFTER598_ACTIVE){normal.verifyAssistantAfter597Package(pkg);normal.verifyAssistantAfter597NativeCommands(ASSISTANT_AFTER597_COMMANDS,pkg.version);
+    if(HISTORICAL598_INPUT_REQUIRED){normal.verifyAssistantAfter597Package(pkg);normal.verifyAssistantAfter597NativeCommands(ASSISTANT_AFTER597_COMMANDS,pkg.version);
       assert.throws(()=>normal.verifyCurrentNativeCommands(ASSISTANT_AFTER597_COMMANDS,pkg.version));
     }else{normal.verifyPackage(pkg);normal.verifyCurrentNativeCommands(ASSISTANT_AFTER597_COMMANDS,pkg.version);}
     const previous=normal.inverseAssistantAfter597Package(pkg);
@@ -2194,7 +2199,7 @@ test('after597 nationalreader keeps exact issued source and old unissued input b
     const tampered=copy(pkg);tampered.scripts['test:assistant-later-h0-source']+=' --write';
     assert.throws(()=>normal.inverseAssistantAfter597Package(tampered));
     assert.throws(()=>normal.verifyCurrentNativeCommands(SCALAR597_LATER_H0_COMMANDS,pkg.version));
-    if(AFTER598_ACTIVE){await assert.rejects(normal.verifyAssistantAfter597SourceTarget());}else{
+    if(HISTORICAL598_INPUT_REQUIRED){await assert.rejects(normal.verifyAssistantAfter597SourceTarget());}else{
     const checked=await normal.verifyAssistantAfter597SourceTarget();
     assert.equal(checked.release,pkg.version);
     assert.equal(checked.canonicalSha256,profile.requireAssistantAfter597Output().canonicalSha256);
@@ -2241,7 +2246,10 @@ test('after597 actual source-package CLI checks issued source only or refuses NU
   const result=spawnSync(process.execPath,[script,'assistant-after597-source'],{
     cwd:fileURLToPath(new URL('..',import.meta.url)),env,encoding:'utf8',timeout:30000,maxBuffer:1024*1024});
   assert.equal(result.error,undefined);
-  if(AFTER598_ACTIVE){
+  if(AFTER599_ACTIVE){
+    assert.equal(result.status,1);assert.equal(result.stdout,'');assert.match(result.stderr,/assistant-after599-successor/);
+    assert.match(result.stderr,/assistant-mixed-after597-successor/);assert.doesNotMatch(result.stderr,/ENOENT|not a git repository/);
+  }else if(AFTER598_ACTIVE){
     assert.equal(result.status,1);assert.equal(result.stdout,'');assert.match(result.stderr,/assistant-after598-successor/);
     assert.match(result.stderr,/assistant-mixed-after597-successor/);assert.doesNotMatch(result.stderr,/ENOENT|not a git repository/);
   }else if(AFTER597_ISSUED){
@@ -2691,3 +2699,74 @@ test('native app fixture database ownership survives Auth timestamp shadowing wi
     assert.deepEqual(calls,['LISTEN','OWNER','CREATE',...(stop==='BOOTSTRAP'?['BOOTSTRAP','DROP']:[])]);
   }
 });
+
+if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
+  test('after599 typed native ledger keeps synthetic prefix separate from whole executed SQL',async t=>{
+    const native=await import('./native-postgres-evidence.mjs'),source=await import('./lib/assistant-later-h0-successor-source.mjs');
+    const {assistantAfter599RequiredMigrations}=await import('./integrated-cutover-readiness.mjs');
+    const rows=assistantAfter599RequiredMigrations(),runtime=v2Runtime(),binding=source.requireAssistantAfter599Binding();
+    const canonical=await source.readAssistantAfter599CanonicalSource();
+    const contract=source.assistantLaterH0Definition(canonical.canonicalSource,'ravradar_ravscore_checkpoint_contract');
+    const array=/v_validator_oids oid\[\] := array\[([\s\S]+?)\n  \];/.exec(contract);assert(array);
+    const inventory=await Promise.all(rows.map(async row=>({version:row.version,filename:row.filename,
+      sha256:cryptoHash('sha256').update(await fs.readFile('supabase/migrations/'+row.filename)).digest('hex')})));
+    const ledgerFixture={kind:'SYNTHETIC_PRIOR_LEDGER_AND_EXECUTED_SUFFIX_V1',
+      priorFixtureVersions:rows.slice(0,45).map(row=>row.version),wholeExecutedMigrationVersions:rows.slice(45).map(row=>row.version),
+      sourceInventorySha256:cryptoHash('sha256').update(JSON.stringify(inventory)).digest('hex')};
+    assert.equal(ledgerFixture.priorFixtureVersions.length,45);assert.equal(ledgerFixture.wholeExecutedMigrationVersions.length,21);
+    assert.equal(ledgerFixture.priorFixtureVersions.at(-1),'20261010130000');
+    assert.equal(ledgerFixture.wholeExecutedMigrationVersions.at(-2),'20261116181500');
+    const observed={kind:'ASSISTANT_AFTER599_SUCCESSOR',sourceMigrationInventory:66,databaseBeforeVersion:'20261116181500',
+      originalStateRelease:599,migrationVersion:binding.version,partCount:673,checkpointOidSlots:(array[1].match(/pg_catalog\.to_regprocedure\(/g)??[]).length,
+      contractBodies:(contract.match(/\|\| v_[a-z0-9_]+_definition/g)??[]).length+1,productionSeedAuthenticated:false,
+      parentCodeHead:'9d67207fbbec0f6bcf7819048f72e57535e9615d',predecessorSetupMigrationCount:11,
+      app600InstalledInCheckpointDatabase:true,app600CatalogPreserved:true,beforeGuardCases:14,
+      allHistoricalMigrationsExecuted:false,productionInstalledHistoryEvidence:false,ledgerFixture};
+    for(const key of ['sqlExecuted','wholeMigrationExecuted','oldFunctionsAndOidsPreserved','allOriginalDefinitionsPreserved','exactCheckpointContract','exactTripContract','schema2Catalog',
+      'normalProtectedJsonbRoundtrip','originalDigestsPreserved','trueOld599Fixtures','currentNormalFixtures','old599ModelNotRetagged','wholeMetadataInverse','strictlyLater599ToNextOnly','sqlIsNotOriginAuthentication','predecessorExecutedInSameHost'])observed[key]=true;
+    observed.intermediateRuntime=Object.fromEntries(['old599ActiveAfterSql','nextRefusedBeforeActivation','pendingBothRefused','nextActiveAfterCompletion','old599RefusedAfterCompletion','wholeHistoryAndDocumentsPreserved','quotaFunctionAndAdmissionUnchanged','quotaServiceRoleWorking'].map(key=>[key,true]));
+    // Public schema expressions only, reused as SYNTHETIC protocol data.
+    // Their old76-source qualification is never a qualification of this77-source receipt.
+    const schema=await import('./verify-account-erasure-schema.mjs');
+    const checkReference=schema.accountErasureCheckReference({format:'PG_CONSTRAINTDEF_V1',postgresMajor:16,
+      definitions:[["account_erasure_operations_auth_attempt_ids_check", "CHECK (((COALESCE(array_ndims(auth_attempt_ids), 1) = 1) AND (COALESCE(array_lower(auth_attempt_ids, 1), 1) = 1) AND (array_position(auth_attempt_ids, NULL::uuid) IS NULL) AND (NOT ('00000000-0000-0000-0000-000000000000'::uuid = ANY (auth_attempt_ids)))))"], ["account_erasure_operations_auth_user_created_at_check", "CHECK (((auth_user_created_at IS NULL) OR (auth_user_created_at ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?Z$'::text)))"], ["account_erasure_operations_check", "CHECK ((target_user_id <> requested_by))"], ["account_erasure_operations_check1", "CHECK (((activity_first IS NULL) = (activity_last IS NULL)))"], ["account_erasure_operations_check10", "CHECK (((auth_user_created_at IS NOT NULL) = (auth_claimed_at IS NOT NULL)))"], ["account_erasure_operations_check11", "CHECK (((state <> 'AUTH_ATTEMPTED'::text) OR (auth_claimed_at IS NOT NULL)))"], ["account_erasure_operations_check12", "CHECK (((auth_claimed_at IS NULL) OR ((auth_attempt_id IS NOT NULL) AND isfinite(auth_claimed_at) AND (auth_claimed_at >= pg_staged_at))))"], ["account_erasure_operations_check13", "CHECK (((state = ANY (ARRAY['AUTH_ABSENT_D1_PENDING'::text, 'COMPLETE'::text])) = (auth_absent_at IS NOT NULL)))"], ["account_erasure_operations_check14", "CHECK (((auth_absent_at IS NULL) OR ((auth_attempt_id IS NOT NULL) AND (d1_owner_subject IS NOT NULL) AND isfinite(auth_absent_at) AND (auth_absent_at >= COALESCE(auth_claimed_at, pg_staged_at)))))"], ["account_erasure_operations_check15", "CHECK (((state = 'COMPLETE'::text) = (d1_ack_at IS NOT NULL)))"], ["account_erasure_operations_check16", "CHECK (((d1_ack_at IS NOT NULL) = (d1_deleted_count IS NOT NULL)))"], ["account_erasure_operations_check17", "CHECK (((d1_ack_at IS NULL) OR (isfinite(d1_ack_at) AND (d1_ack_at >= auth_absent_at))))"], ["account_erasure_operations_check18", "CHECK (((auth_attempt_id IS NULL) OR ((pg_staged_at IS NOT NULL) AND (d1_owner_subject IS NOT NULL))))"], ["account_erasure_operations_check2", "CHECK (((activity_first IS NULL) OR (isfinite(activity_first) AND isfinite(activity_last) AND (activity_first <= activity_last))))"], ["account_erasure_operations_check3", "CHECK ((isfinite(prepared_at) AND isfinite(updated_at) AND (prepared_at <= updated_at)))"], ["account_erasure_operations_check4", "CHECK (((state = ANY (ARRAY['PG_STAGED_AUTH_PENDING'::text, 'AUTH_ATTEMPTED'::text, 'AUTH_ABSENT_D1_PENDING'::text, 'COMPLETE'::text])) = (pg_staged_at IS NOT NULL)))"], ["account_erasure_operations_check5", "CHECK (((pg_staged_at IS NULL) OR (isfinite(pg_staged_at) AND (pg_staged_at >= prepared_at))))"], ["account_erasure_operations_check6", "CHECK (((state <> ALL (ARRAY['HOLD_ACTIVITY_CHANGED'::text, 'HOLD_POLICY'::text])) OR (hold_reason IS NOT NULL)))"], ["account_erasure_operations_check7", "CHECK (((state <> ALL (ARRAY['PREPARED'::text, 'COMPLETE'::text])) OR (hold_reason IS NULL)))"], ["account_erasure_operations_check8", "CHECK (((pg_staged_at IS NOT NULL) OR (pg_rows_removed = 0)))"], ["account_erasure_operations_check9", "CHECK ((NOT (auth_attempt_id IS DISTINCT FROM auth_attempt_ids[cardinality(auth_attempt_ids)])))"], ["account_erasure_operations_d1_deleted_count_check", "CHECK (((d1_deleted_count >= 0) AND (d1_deleted_count <= '9007199254740991'::bigint)))"], ["account_erasure_operations_d1_owner_subject_check", "CHECK (((d1_owner_subject IS NULL) OR (d1_owner_subject ~ '^usr_v1_[A-Za-z0-9_-]{43}$'::text)))"], ["account_erasure_operations_hold_reason_check", "CHECK ((hold_reason = ANY (ARRAY['ACTIVITY_CHANGED'::text, 'PRIVILEGED_TARGET'::text, 'REFERENCE_POLICY'::text, 'REFERENCE_CATALOG_UNKNOWN'::text, 'TARGET_MISSING'::text, 'STORAGE_CATALOG_UNKNOWN'::text, 'STORAGE_POLICY_UNQUALIFIED'::text, 'STORAGE_OWNERSHIP'::text, 'AUTH_GENERATION_CHANGED'::text])))"], ["account_erasure_operations_mode_check", "CHECK ((mode = 'MANUAL_OWNER'::text))"], ["account_erasure_operations_operation_id_check", "CHECK ((operation_id <> '00000000-0000-0000-0000-000000000000'::uuid))"], ["account_erasure_operations_pg_rows_removed_check", "CHECK (((pg_rows_removed >= 0) AND (pg_rows_removed <= '9007199254740991'::bigint)))"], ["account_erasure_operations_state_check", "CHECK ((state = ANY (ARRAY['PREPARED'::text, 'HOLD_ACTIVITY_CHANGED'::text, 'HOLD_POLICY'::text, 'PG_STAGED_AUTH_PENDING'::text, 'AUTH_ATTEMPTED'::text, 'AUTH_ABSENT_D1_PENDING'::text, 'COMPLETE'::text])))"]]});
+    const sourceSqlFileCount=(await fs.readdir(new URL('../supabase/migrations/',import.meta.url))).filter(file=>file.endsWith('.sql')).length;
+    assert.equal(sourceSqlFileCount,77,'Actual current source inventory, never a77 flag on76 files');
+    const accountErasure={kind:'ACCOUNT_ERASURE_APP_NATIVE_SQL_CASES',sqlExecuted:true,
+      migrationVersion:'20261116181500',migrationSQLSha256:schema.readAccountErasureSource().sha256,sourceSqlFileCount,
+      passed:true,cases:49,actualPostgres:true,syntheticSqlHost:true,realGoTrue:false,checkReference,checkExpressionDriftRefused:true,
+      serviceEvidenceSynthetic:true,failedTransactionRolledBack:true,aclMutationRefused:true,ownerPendingDiscoveryAndPagination:true,
+      authAttemptReplayAndGeneration:true,initialAbsenceWithoutDeleteClaim:true,authUuidFenceSqlOnly:true,storageDefaultDenyAndOwnership:true,postPgStorageClaimHeld:true,
+      observationsAndBootstrapFence:true,readCommittedFreshness:true,repeatableReadNoLateCommit:true,serializableNoLateCommit:true,
+      actorNonKeyPrivilegeLock:true,authDeletion:false,d1Ack:false,completionAuthority:false};
+    const report={kind:'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',sqlExecuted:true,migrationExecuted:true,tcpEnabled:false,normalModelPartCount:673,
+      postgresMajorVersion:16,nativeProgramIdentity:runtime.selectedPrograms,assistantAfter599Successor:observed,accountErasure};
+    assert.deepEqual(await native.assistantAfter599NativeReportProjection(report,{selectedPrograms:runtime.selectedPrograms}),report);
+    const collector=native.assistantAfter599NativeReportCollector({selectedPrograms:runtime.selectedPrograms});collector.write(JSON.stringify(report)+'\n');
+    assert.deepEqual(await collector.finish(),report);
+    const receipt={schemaVersion:1,kind:native.ASSISTANT_AFTER599_PHASE_KIND,phase:'ASSISTANT_AFTER599_SUCCESSOR',
+      sourcePhase:native.ASSISTANT_AFTER599_PHASE,releaseVersion:source.requireAssistantAfter599Release(),binding,output:source.requireAssistantAfter599Output(),
+      databaseBefore:{...source.ASSISTANT_AFTER599_BEFORE,version:source.ASSISTANT_AFTER599_DATABASE_LEDGER.maximumVersion},
+      current:installed594Receipt().current,commands:[...native.ASSISTANT_AFTER599_COMMANDS],status:'EXECUTED',executedInThisRun:true,
+      origin:null,eligibleForReuse:false,runtime,report};
+    assert.equal(await native.verifyAssistantAfter599PhaseReceipt(receipt,receipt.current),receipt);
+    for(const mutate of [r=>delete r.accountErasure,r=>r.accountErasure=undefined,
+      r=>r.accountErasure.sourceSqlFileCount=76,r=>r.accountErasure.sourceSqlFileCount=75,
+      r=>r.accountErasure.migrationVersion='20261115060000',r=>r.accountErasure.migrationSQLSha256='0'.repeat(64),
+      r=>r.accountErasure.cases=48,r=>r.accountErasure.checkReference.definitions.pop(),
+      r=>r.accountErasure.checkReference.definitionsSha256='0'.repeat(64),r=>r.accountErasure.checkExpressionDriftRefused=false]){
+      const changed=copy(receipt);mutate(changed.report);
+      await assert.rejects(native.assistantAfter599NativeReportProjection(changed.report,{selectedPrograms:runtime.selectedPrograms}));
+      await assert.rejects(native.verifyAssistantAfter599PhaseReceipt(changed,changed.current));
+    }
+
+    for(const mutate of [r=>delete r.ledgerFixture,r=>r.allHistoricalMigrationsExecuted=true,r=>r.productionInstalledHistoryEvidence=true,
+      r=>r.ledgerFixture.priorFixtureVersions.shift(),r=>r.ledgerFixture.wholeExecutedMigrationVersions.push(r.ledgerFixture.priorFixtureVersions.shift()),
+      r=>r.ledgerFixture.wholeExecutedMigrationVersions.pop(),r=>r.ledgerFixture.sourceInventorySha256='0'.repeat(64),
+      r=>r.ledgerFixture.extra=true,r=>r.beforeGuardCases=12,r=>r.app600InstalledInCheckpointDatabase=false,r=>r.app600CatalogPreserved=false]){
+      const changed=copy(report);mutate(changed.assistantAfter599Successor);
+      await assert.rejects(native.assistantAfter599NativeReportProjection(changed,{selectedPrograms:runtime.selectedPrograms}));
+    }
+    t.diagnostic('Typed DATA fixture only; no PostgreSQL, full historical installation or production receipt claimed.');
+  });
+}

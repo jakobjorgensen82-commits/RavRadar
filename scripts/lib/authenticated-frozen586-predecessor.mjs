@@ -15,7 +15,8 @@ import {withAuthenticated586PredecessorSource,withAuthenticated587PredecessorSou
   withAuthenticated591PredecessorSource,assertFrozen591CodeSourceSelected,FROZEN591_CODE_SOURCE_PROVENANCE,
   withSource594OriginalDataSource,assertSource594OriginalDataSourceSelected,SOURCE594_CODE_SOURCE_PROVENANCE,
   withSource597OriginalDataSource,assertSource597OriginalDataSourceSelected,SOURCE597_CODE_SOURCE_PROVENANCE,
-  withSource598OriginalDataSource,assertSource598OriginalDataSourceSelected,SOURCE598_CODE_SOURCE_PROVENANCE}
+  withSource598OriginalDataSource,assertSource598OriginalDataSourceSelected,SOURCE598_CODE_SOURCE_PROVENANCE,
+  withSource599OriginalDataSource,assertSource599OriginalDataSourceSelected,SOURCE599_CODE_SOURCE_PROVENANCE}
   from '../check-assistant-later-h0-predecessor-source.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
@@ -23,7 +24,7 @@ const exec=promisify(callbackExec),failedCloses=new Map();
 // Ukendt fysisk FD-lukning blokerer samme sti på tværs af begge familier.
 // Opaque snapshots og friskhedsfunktioner tilhører derimod kun én fast profil.
 function fixedSnapshot(profile){
-  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588||profile===FROZEN590||profile===FROZEN591||profile===SOURCE_FROZEN594||profile===SOURCE_FROZEN597||profile===SOURCE_FROZEN598,'FROZEN_PREDECESSOR_UNKNOWN_PROFILE');
+  assert(profile===FROZEN586||profile===FROZEN587||profile===FROZEN588||profile===FROZEN590||profile===FROZEN591||profile===SOURCE_FROZEN594||profile===SOURCE_FROZEN597||profile===SOURCE_FROZEN598||profile===SOURCE_FROZEN599,'FROZEN_PREDECESSOR_UNKNOWN_PROFILE');
   const contexts=new WeakMap(),refreshers=new WeakMap();
   const SOURCE=profile.sourceHead;
 const SHA=/^[a-f0-9]{64}$/, HEAD=/^[a-f0-9]{40}$/, MB=1024*1024;
@@ -116,7 +117,7 @@ async function fixedPaths(){
 }
 async function readAuthenticatedPredecessor(){
   need(arguments.length===0,'ARGUMENTS');
-  const conditionsMaximum=profile===FROZEN591||profile===SOURCE_FROZEN594||profile===SOURCE_FROZEN597||profile===SOURCE_FROZEN598
+  const conditionsMaximum=profile===FROZEN591||profile===SOURCE_FROZEN594||profile===SOURCE_FROZEN597||profile===SOURCE_FROZEN598||profile===SOURCE_FROZEN599
     ?PRIVATE_CONDITIONS_MAX_BYTES:256*MB;
   // These normal workflow paths select already restored immutable B; they are
   // not authority. No consumed 0200/140000 upgrade flag is reused as permission.
@@ -381,3 +382,21 @@ export async function readAuthenticatedSource598Predecessor(){
 }
 export function assertAuthenticatedSource598Snapshot(handle){return sourceSnapshot598.snapshot(...arguments);}
 export async function assertAuthenticatedSource598SnapshotFresh(handle){return sourceSnapshot598.fresh(...arguments);}
+
+// Independent capability family over a genuinely new normal599 B/S bank.
+// CODE selection never establishes installation, CURRENT/S or original data.
+// The fixed599 DATA host rejects metadata-only views and historical594 banks.
+const SOURCE_FROZEN599=Object.freeze({
+  sourceHead:SOURCE599_CODE_SOURCE_PROVENANCE?.head,
+  requiredSha:Object.freeze([SOURCE599_CODE_SOURCE_PROVENANCE?.originSha256,
+    SOURCE599_CODE_SOURCE_PROVENANCE?.partPipelineSha256]),
+  withSource:withSource599OriginalDataSource,
+  assertionPath:'scripts/lib/established-native-current-origin-599-assertion.mjs',
+  assertionExport:'assertSource599OriginSnapshotData',
+  temporaryPrefix:'rr-source599-snapshot-',errorPrefix:'SOURCE599_PREDECESSOR_'});
+const sourceSnapshot599=fixedSnapshot(SOURCE_FROZEN599);
+export async function readAuthenticatedSource599Predecessor(){
+  assertSource599OriginalDataSourceSelected();return sourceSnapshot599.read(...arguments);
+}
+export function assertAuthenticatedSource599Snapshot(handle){return sourceSnapshot599.snapshot(...arguments);}
+export async function assertAuthenticatedSource599SnapshotFresh(handle){return sourceSnapshot599.fresh(...arguments);}

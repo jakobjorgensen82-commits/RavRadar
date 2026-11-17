@@ -688,7 +688,7 @@ try{
       emergencySnapshotReferenceAt:()=>null,assertRavScoreModelBinding:binding=>assert.equal(binding,full.ravScoreRuntime.modelBinding),
       zoneCondition:()=>({}),
       assistantTopicFrame:()=>({}),sameAssistantTopicFrame:()=>false,assistantForecastQuestion:()=>null,
-      assistantLocalFollowupAnswer:()=>null,assistantTopicForQuestion:()=>null,
+      assistantLocalFollowupAnswer:()=>null,assistantTopicForQuestion:()=>null,assistantPublicFollowupQuestion:()=>null,
       addAssistantMessage:()=>({querySelector:()=>({}),classList:{remove(){}}}),
       ravQuestionNeedsConditionDetails:q=>q==='bedste tidspunkt',
       classifyRavQuestion:q=>({'kese':'amber-net','vandstand':'water','bedste tidspunkt':'best-time'})[q],

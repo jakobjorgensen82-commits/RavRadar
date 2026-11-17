@@ -1,8 +1,20 @@
+## 89.352 — Assistentens emneopfølgning og UV-forklaring
+
+<div class="reader-guide"><p>Hele opfølgningsspørgsmålet tæller; lys og modelscore beviser hverken ravets identitet eller antal.</p></div>
+
+Rav kan lyse, fordi fluorescerende molekyler optager UV-lys og hurtigt afgiver en del af energien som synligt lys med længere bølgelængde. UV kan også fremkalde fluorescens i dagslys, men kraftigt omgivende lys kan skjule gløden. Mørke eller afskærmning af omgivende lys kan forbedre kontrasten. Glød alene er stadig ikke bevis for rav.
+
+Et opfølgningsspørgsmål om kendt udstyr skal også besvare den nye kvalifikation. Et spørgsmål om at bruge en ravkese på stranden må derfor ikke ende ved netdefinitionen. Svaret skal holde sig til den fagligt underbyggede brug og tydelige begrænsninger fremfor at opfinde en særlig tørstrandsteknik.
+
+RavRadar observerer ikke, hvor mange stykker rav eller hvor meget rav der findes på en strand eller i et lokalt ravlager. Score og vejrgrundlag kan ikke omregnes til et observeret antal eller et garanteret udbytte. Manglende observation skal beskrives som ukendt, mens spørgsmål uden for emnet fortsat afvises.
+
+Dette er en lokal601-kandidat ovenpå app600. Vidensgrundlaget er gennemgået, men den nye binding, installation og faktiske svar på dansk, tysk og engelsk skal kvalificeres gennem normalvejen. Lokale kontraktprøver er ikke hosted AI- eller offentlig produktaccept.
+
 ## 89.351 — Manuel kontosletning med synlig genoptagelse
 
 <div class="reader-guide"><p>En sletning er først færdig, når alle trin er bekræftet. Ejeren kan finde en uafsluttet sag igen og genoptage den med en ny, tydelig bekræftelse.</p></div>
 
-Den forberedte ejerfunktion samler kontoens sletteforløb i én vedvarende sag. En aktiv eneejer kan vælge en almindelig konto uden særlige rettigheder og bekræfte dens præcise bruger-id. Egen konto, den udpegede ekspert, uklare kategorier, rettigheds- eller reviewbindinger og ukendt lagerpolitik kan ikke godkendes som en almindelig sletning. Manuel sletning kræver ikke inaktivitet.
+Ejerfunktionen samler kontoens sletteforløb i én vedvarende sag. En aktiv eneejer kan vælge en almindelig konto uden særlige rettigheder og bekræfte dens præcise bruger-id. Egen konto, den udpegede ekspert, uklare kategorier, rettigheds- eller reviewbindinger og ukendt lagerpolitik kan ikke godkendes som en almindelig sletning. Manuel sletning kræver ikke inaktivitet.
 
 Før login fjernes, skal databasens slettebarriere og oprydning være bekræftet. Barrieren beskytter også mod sene observationer, profiloprettelse og genbrug af samme konto-id efter sletning. Login slettes gennem den normale Auth-administrationsfunktion. Ukendt svar afklares ved genlæsning; et nyt udtrykkeligt genoptagelsesklik kan kun udstede ét nyt forsøg efter frisk bekræftelse af samme konto og dens oprindelige oprettelsestid. Sagen er først fuldført, når både loginfravær og turlagerets spærringer, oprydning og fysiske genlæsning er positivt bekræftet.
 
@@ -10,13 +22,21 @@ Ejeren kan hente sine uafsluttede sager fra serveren, også efter genindlæsning
 
 Databaseinstallationen og server-/webleveringen er to trin. Ejerfunktionen tages først i brug efter bekræftet database, serverkode og offentlig brugerflade. Den rene kodelevering genbruger de gemte vejrdata og beholder modelfamilien.
 
-Dette er en app600-leveringskandidat med uændret numerisk modelfamilie599. Den ene nye appmigration kræver normal PostgreSQL-kvalifikation og fuld metadataaflæsning før server- og brugerfladelevering. Standardvejr og ren kodeinstallation stopper, mens migrationen mangler. Den allerede udførte Auth-prøve kvalificerer kun det præcise konto-id-værn og en normal ny konto bagefter, ikke hele sletteforløbet. Fuld kildekontrol, låseracer, lagerpolitik, D1-kæde, installation og faktisk ejerforløb er fortsat særskilte beviser.
+App600 er databaseinstalleret og server-/UI-leveret gennem normalvejen med uændret numerisk modelfamilie599. Den normale fulde kildekvalifikation, de28 præcise databasekontroller og kataloggenlæsningen er bekræftet. Den offentlige prognose med210 zoner og673 kystdele samt leveringsforløbets afslutning er verificeret. Det oprindelige fejlede installerforløb står fortsat særskilt med ukendt udfald. Ejerens normale kontomodal og præference er browserlæst; det er ikke et udført sletteforløb eller samlet privacyaccept. Auth-prøvernes afgrænsede, versionsbundne beviser og den egentlige slette-/lageraccept holdes fortsat adskilt.
 
 Automatisk sletning efter to års inaktivitet med 30 dages varsel og mulighed for at bevare kontoen ved login er fortsat åben og aktiveres ikke her. Manglende aktivitetsjournal betyder ukendt aktivitet. Statistik slået fra skal fortsat respekteres; privacyaccept, offentlig anonym statistik og kalibrering er ikke godkendt af denne levering. Backup- og gendannelsesbarrierer mod at genoplive slettede konti er fortsat åbne.
 
 ## 89.350 — Arkivets databasedele skal passe til det lokale mål
 
 <div class="reader-guide"><p>Arkivprøvens egne leverandørversioner skal kunne læse det gemte arkiv. Faste metadata hjælper med at finde forskellen, men er ikke bevis for vellykket gendannelse.</p></div>
+
+### Samme lokale administrator under originalindlæsningen
+
+Et autentisk gendannelsesforsøg nåede DATA, men blev afvist med SQLSTATE 42501 på en leverandørejet Storage-tabel. Den ejede lokale forbindelse var allerede oprettet som supabase_admin. Restore-envelopen indsatte imidlertid SET LOCAL ROLE postgres før SCHEMA og DATA og mistede derved den nødvendige lokale restoreautoritet.
+
+Den afgrænsede rettelse bevarer samme ejede supabase_admin-session og current_user gennem den første ROLES/SCHEMA/DATA-transaktion. Tre identitetskontroller før SCHEMA, før DATA og efter DATA kræver fortsat den præcise lokale administrator. Ingen GRANT, ownerændring eller ny rolletildeling tilføjes. De fem autentiske SQL-filer, alle originale bytes og hashes samt de eksisterende katalog-, CHECK-, transaktions-, første-fejl- og oprydningskontroller bevares.
+
+HISTORY beholder sin separate postgres-transaktion. Dens faktiske rettigheder i originalarkivet er endnu ikke afprøvet. Den normale lokale selvtest er bestået på Windows med Node 24, men det er ikke Linux-/SQL- eller originalrestoreaccept. Fuld indholds-, dublet- og sekvensparitet, gendannet Auth, faktisk originalrestore, autonom kvittering, backuprotation og samlet Free-klarhed er fortsat åbne. Rettelsen giver ingen ny autoritet til gendannelse i produktion.
 
 Den lokale kildekandidat bruger leverandørernes normale initialisering alene på arkivprøvens friske, ikke tilknyttede B-mål. Supabase CLI 2.117.0 bevares. Før normal start oprettes lokale versionspins til Auth v2.197.0 og Storage v1.86.0; eksisterende pins, projekttilknytning og et gammelt Storage-migrationsloft afvises. Filerne genlæses efter start, og den vedvarende Auth-tjenestes præcise version og imageidentitet kontrolleres. Den syntetiske A→B-standardvej beholder sine tidligere pins. Storage er fortsat udelukket som vedvarende tjeneste; det kontrollerede sæt er stadig database, gateway og Auth på det samme isolerede netværk.
 
@@ -221,13 +241,13 @@ Dette er en forberedt kildeændring. Kodekvalifikation, faktisk fjernelse, maila
 Den nye V4-kandidat vælger normale mål fra PR'ens faktiske merge-base til dens præcise head. Før tidligere godkendte områder kan genbruges, kvalificerer den den mergede bases faktiske producent, job, hele typede kvittering, træ og afsluttende upload samt senere negativ evidens. Den normale forbruger udføres på basens rigtige Git-checkout; kandidaten gendannes og kontrolleres bagefter. En verificeret direkte sammenfatning hindrer rekursiv genåbning af hele forfaderkæden. V3 beholder sin oprindelige kumulative betydning. Manglende eller udløbet basekvittering vælger kendte kumulative mål; konkret FAIL, modstrid eller ukendt kvalifikation stopper. PostgreSQL og C/I/T kvalificeres fortsat selvstændigt mod deres autentiske, uændrede input; ingen ny databaseprøve påstås.
 
 <!-- ravradar-derived-source-bindings-v1:begin -->
-## Afledt kildeidentitet — RavScore 4.0.600
+## Afledt kildeidentitet — RavScore 4.0.601
 
-4.0.600 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=d8319503e040139ab739d589fa80c97cb683dfad7a2fc6f79eeeec6a9afe44e9` over 100 kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere.
+4.0.601 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=8eb4a77c96c86d1357209b23afca39c79862cc74b61383d60071837bd14d1313` over 100 kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere.
 
-Inaktiv Candidate G: `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=faa049cb86e733e451211f50c155ff90fd3462230310298cf5696757ef5c9f5d` over 101 transitive filer.
+Inaktiv Candidate G: `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=2c323c2bdcf73c6449b2cd105300836ea4a8f88e014156d2c18b2dde408ba076` over 101 transitive filer.
 
-Fortsættelse: `continuationStateContractSha256=23577d15b555acb50ee73f0fb4117282701f4d97e933932f30ac54df2c679645` (`23577d15…`) over 12 normaliserede kildefiler med `utf8-bomless-lf-v2`.
+Fortsættelse: `continuationStateContractSha256=e1eb1f8e40b33ec3ab6c7459a7fb43d0eb369a1f0dd6aa8a867c65da7f0a5b34` (`e1eb1f8e…`) over 12 normaliserede kildefiler med `utf8-bomless-lf-v2`.
 
 Autoriteten er version.json.releaseContract.modelBindings og de aktuelle genererede manifester. Dette er afledt kildeidentitet. Identiteten beviser ikke i sig selv PostgreSQL-kvalifikation, installation eller offentlig levering. Tidligere daterede oplysninger nedenfor er historik.
 <!-- ravradar-derived-source-bindings-v1:end -->
@@ -2542,7 +2562,7 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.600
+**Håndbogsversion:** 4.0.601
 
 **Lokal kildebinding — 29. oktober 2026, RavScore 4.0.591, ikke installeret:** Den integrerede model er offentlig som modeltype under den særskilt leverede 4.0.590. Den nye assistentefterfølger er lokalt udstedt og er endnu ikke samlet kvalificeret, installeret eller offentliggjort.
 
