@@ -188,6 +188,8 @@ async function openArchiveDbRelay(c,p){
 function safeError(error,stage){
   return {stage,code:/^[A-Z0-9_]+$/.test(error?.code??'')?error.code:'LOCAL_RESTORE_REFUSED',
     exit:Number.isInteger(error?.exit)?error.exit:null,externalDockerOutcome:'UNKNOWN_UNTIL_OWNED_READBACK',
+    ...(stage==='NATIVE_ACTIVITY_APP_FIXTURE'&&[...NATIVE_ACTIVITY_APP_PARTS,'UNKNOWN'].includes(error?.nativeActivityFixturePart)
+      ?{nativeActivityFixturePart:error.nativeActivityFixturePart}:{}),
     ...(ARCHIVE_SQL_OWNERS.includes(error?.inputOwner)?{inputOwner:error.inputOwner}:{}),
     ...(ARCHIVE_ROLE_STATEMENT_STATES.has(error?.code)&&ARCHIVE_SQL_STATEMENTS.includes(error.inputStatement)?{inputStatement:error.inputStatement}:{}),
     ...(error?.code==='SQLSTATE_42704'&&error.inputOwner==='ROLES'?{
@@ -690,7 +692,10 @@ async function command(c,stage,bin,args,{cwd=c.root,input=null,maxMs=P.childMs,a
       if(stdinClosed)fail('STDIN_TRANSPORT');
       if(!inputDone)fail('STDIN_INCOMPLETE');
     }
-    if(first){if(first.code==='CHILD_EXIT')first.code=diagnosticClass(Buffer.concat(err));first.exit=exit;throw first;}
+    if(first){if(first.code==='CHILD_EXIT')first.code=diagnosticClass(Buffer.concat(err));
+      if(c.archive===false&&stage==='NATIVE_ACTIVITY_APP_FIXTURE')
+        Object.assign(first,nativeActivityAppDiagnostic(c,stage,Buffer.concat(err),first.code,inputLines));
+      first.exit=exit;throw first;}
     return Buffer.concat(out);
   }finally{
     process.removeListener('SIGINT',interrupted);process.removeListener('SIGTERM',interrupted);
@@ -1130,6 +1135,55 @@ create trigger rr_native_invalidation_failure before update on public.account_in
 create trigger rr_native_cancel_failure before update on public.account_inactivity_notices
   for each row execute function public.rr_native_activity_failpoint();
 `;}
+const NATIVE_ACTIVITY_APP_PARTS=Object.freeze(['PRIOR_FIXTURE_REMOVAL','APP_RELATIONS','MANUAL_SQL',
+  'NOTICE_SQL','CAPTURE_SQL','OWNER_PROFILE','INSTRUMENTATION']);
+function syntheticNativeActivityAppInput(source,manual,fixtureActorId){
+  need(uuid(fixtureActorId),'NATIVE_ACTIVITY_FIXTURE_ACTOR');
+  const parts=[['PRIOR_FIXTURE_REMOVAL',String.raw`
+drop trigger account_erasure_auth_uuid_insert_guard on auth.users;
+drop function public.account_erasure_auth_uuid_guard();
+drop table public.account_erasure_operations;
+drop table public.profiles;
+`],['APP_RELATIONS',accountErasureNativeFixtureSql(source.root,{nativeAuth:true})+'\n'],
+    ['MANUAL_SQL',manual.sql+'\n'],['NOTICE_SQL',source.notice+'\n'],['CAPTURE_SQL',source.sql+'\n'],
+    ['OWNER_PROFILE',`insert into public.profiles(id,email,role) values('${fixtureActorId}','owned-native-owner@example.invalid','owner');\n`],
+    ['INSTRUMENTATION',syntheticNativeActivityInstrumentationSql()]];
+  const inputLines={next:1,ranges:new Map(),nativeActivityAppParts:true},chunks=[];
+  for(const [part,text]of parts){
+    need(typeof text==='string'&&text.endsWith('\n'),'NATIVE_ACTIVITY_INPUT_PART');
+    const first=inputLines.next;inputLines.next+=text.split('\n').length-1;
+    inputLines.ranges.set(part,{first,last:inputLines.next-1});chunks.push(text);
+  }
+  return {bytes:Buffer.from(chunks.join('')),inputLines};
+}
+// Diagnostic only for this synthetic loader. Bad/ambiguous frames or positions
+// yield UNKNOWN; neither the original error nor any SQL/runtime guard changes.
+function nativeActivityAppDiagnostic(c,stage,diagnostic,code,inputLines){
+  const unknown={nativeActivityFixturePart:'UNKNOWN'};
+  try{
+    if(c.archive!==false||stage!=='NATIVE_ACTIVITY_APP_FIXTURE'||inputLines?.nativeActivityAppParts!==true
+      ||!/^SQLSTATE_[0-9A-Z]{5}$/.test(code))return {};
+    if(!Buffer.isBuffer(diagnostic)||diagnostic.length>P.diagnosticBytes
+      ||!(inputLines.ranges instanceof Map)||inputLines.ranges.size!==NATIVE_ACTIVITY_APP_PARTS.length)return unknown;
+    let next=1;
+    for(const part of NATIVE_ACTIVITY_APP_PARTS){
+      const range=inputLines.ranges.get(part);
+      if(!range||!Number.isSafeInteger(range.first)||!Number.isSafeInteger(range.last)
+        ||range.first!==next||range.last<range.first)return unknown;
+      next=range.last+1;
+    }
+    if(!Number.isSafeInteger(inputLines.next)||next!==inputLines.next)return unknown;
+    const text=diagnostic.toString('utf8');
+    if(!Buffer.from(text,'utf8').equals(diagnostic)||(text.match(/\bERROR:/g)??[]).length!==1)return unknown;
+    const matches=[...text.matchAll(/^psql:<stdin>:([1-9][0-9]{0,9}): ERROR: +([0-9A-Z]{5})\r?$/gm)];
+    if(matches.length!==1||code!=='SQLSTATE_'+matches[0][2])return unknown;
+    const line=Number(matches[0][1]);
+    for(const part of NATIVE_ACTIVITY_APP_PARTS){const range=inputLines.ranges.get(part);
+      if(line>=range.first&&line<=range.last)return {nativeActivityFixturePart:part};}
+    return unknown;
+  }catch{return unknown;}
+}
+
 async function verifySyntheticBNativeActivityCapture(c,p,fixtureActorId){
   need(c.archive===false&&p.side==='B'&&uuid(fixtureActorId),'NATIVE_ACTIVITY_SYNTHETIC_B_ONLY');
   const source=await syntheticNativeActivitySource(),manual=readAccountErasureSource();
@@ -1144,17 +1198,8 @@ async function verifySyntheticBNativeActivityCapture(c,p,fixtureActorId){
       where oid='public.account_erasure_auth_uuid_guard()'::regprocedure));`);
   const fence=syntheticAccountErasureAuthFenceSql(manual,{operationId:crypto.randomUUID(),userId:crypto.randomUUID(),sessionId:crypto.randomUUID()},fixtureActorId);
   assert.deepEqual(minimal,{profileRows:0,profileColumns:1,outboxRows:1,stagedRows:1,guardMd5:fence.authGuardBodyMd5});
-  await psql(c,p,'NATIVE_ACTIVITY_APP_FIXTURE',Buffer.from(`
-drop trigger account_erasure_auth_uuid_insert_guard on auth.users;
-drop function public.account_erasure_auth_uuid_guard();
-drop table public.account_erasure_operations;
-drop table public.profiles;
-${accountErasureNativeFixtureSql(source.root,{nativeAuth:true})}
-${manual.sql}
-${source.notice}
-${source.sql}
-insert into public.profiles(id,email,role) values('${fixtureActorId}','owned-native-owner@example.invalid','owner');
-${syntheticNativeActivityInstrumentationSql()}`));
+  const appInput=syntheticNativeActivityAppInput(source,manual,fixtureActorId);
+  await psql(c,p,'NATIVE_ACTIVITY_APP_FIXTURE',appInput.bytes,appInput.inputLines);
   const catalog=await query(c,p,'NATIVE_ACTIVITY_SOURCE_CATALOG',`select jsonb_build_object(
     'bodies',(select jsonb_object_agg(p.proname,md5(btrim(p.prosrc,E' \\n\\r\\t'))) from pg_catalog.pg_proc p
       where p.oid in ('public.account_native_activity_capture(uuid)'::regprocedure,
@@ -2496,6 +2541,62 @@ async function selfTest(){
     +`SELECT pg_catalog.setval('"storage"."Private_Sequence_Sentinel"', 7, true);\n`;
   const inventoryHistory='COPY "supabase_migrations"."schema_migrations" ("version") FROM stdin;\n20200101\n\\.\n';
 
+  test('synthetic native app diagnostic maps physical fixed parts without changing one SQL input',async()=>{
+    const source=await syntheticNativeActivitySource(),manual=readAccountErasureSource(),actor='10000000-0000-4000-8000-000000000001';
+    const input=syntheticNativeActivityAppInput(source,manual,actor);
+    const original=Buffer.from(`
+drop trigger account_erasure_auth_uuid_insert_guard on auth.users;
+drop function public.account_erasure_auth_uuid_guard();
+drop table public.account_erasure_operations;
+drop table public.profiles;
+${accountErasureNativeFixtureSql(source.root,{nativeAuth:true})}
+${manual.sql}
+${source.notice}
+${source.sql}
+insert into public.profiles(id,email,role) values('${actor}','owned-native-owner@example.invalid','owner');
+${syntheticNativeActivityInstrumentationSql()}`);
+    assert.deepEqual(input.bytes,original,'The same SQL bytes go through one psql/transaction');
+    const c={archive:false},stage='NATIVE_ACTIVITY_APP_FIXTURE',frame=line=>Buffer.from('psql:<stdin>:'+line+': ERROR:  42501\n');
+    assert.deepEqual([...input.inputLines.ranges.keys()],NATIVE_ACTIVITY_APP_PARTS);
+    for(const [part,range]of input.inputLines.ranges)for(const line of [range.first,range.last])
+      assert.deepEqual(nativeActivityAppDiagnostic(c,stage,frame(line),'SQLSTATE_42501',input.inputLines),{nativeActivityFixturePart:part});
+    const drop=original.toString('utf8').split('\n').indexOf('drop trigger account_erasure_auth_uuid_insert_guard on auth.users;')+1;
+    assert.equal(drop,2);assert.equal(nativeActivityAppDiagnostic(c,stage,frame(drop),'SQLSTATE_42501',input.inputLines).nativeActivityFixturePart,'PRIOR_FIXTURE_REMOVAL');
+    const p={side:'B',db:'a'.repeat(64),dbUrl:new URL('postgres://postgres:synthetic-only@127.0.0.1:54322/postgres')};
+    const args=psqlArguments(c,p,stage,input.inputLines);
+    assert.equal(args.filter(x=>x==='--single-transaction').length,1);assert.equal(args.filter(x=>x==='--file=-').length,1);
+    assert(!psqlArguments(c,p,stage,null).includes('--file=-'));
+  });
+  test('synthetic native app diagnostic keeps first error, refuses wrong frames and leaves archive callers unchanged',async()=>{
+    const source=await syntheticNativeActivitySource(),manual=readAccountErasureSource();
+    const input=syntheticNativeActivityAppInput(source,manual,'10000000-0000-4000-8000-000000000001');
+    const c={archive:false,root:os.tmpdir(),home:os.tmpdir(),deadline:Date.now()+15_000,processes:[]},stage='NATIVE_ACTIVITY_APP_FIXTURE';
+    const line=input.inputLines.ranges.get('CAPTURE_SQL').first,frame='psql:<stdin>:'+line+': ERROR:  42501\n';
+    const child=['-e','process.stdin.resume();process.stdin.on("end",()=>process.stderr.write('+JSON.stringify(frame)+',()=>process.exit(3)));'];
+    await assert.rejects(command(c,stage,process.execPath,child,{input:input.bytes,inputLines:input.inputLines,maxMs:10_000}),error=>{
+      assert.equal(error.code,'SQLSTATE_42501');assert.equal(error.exit,3);assert.equal(error.nativeActivityFixturePart,'CAPTURE_SQL');
+      assert.deepEqual(safeError(error,stage),{stage,code:'SQLSTATE_42501',exit:3,externalDockerOutcome:'UNKNOWN_UNTIL_OWNED_READBACK',nativeActivityFixturePart:'CAPTURE_SQL'});
+      assert(!error.message.includes(frame));return true;
+    });assert(c.processes.every(p=>p.processGroupClosed));
+    const unknown={nativeActivityFixturePart:'UNKNOWN'},secret='private-marker-email-uuid-sql-must-not-escape';
+    for(const raw of [frame+frame,frame+'ERROR: 42501\n',frame.replace('42501','23514'),frame.replace(':'+line+':',':0:'),
+      frame.replace(':'+line+':',':'+input.inputLines.next+':'),frame.replace('42501','42501: '+secret),
+      frame.replace('<stdin>',secret),secret,Buffer.from([255])]){
+      const diagnostic=Buffer.isBuffer(raw)?raw:Buffer.from(raw);
+      const observed=nativeActivityAppDiagnostic(c,stage,diagnostic,'SQLSTATE_42501',input.inputLines);
+      assert.deepEqual(observed,unknown);assert(!JSON.stringify(observed).includes(secret));
+    }
+    for(const changed of [{...input.inputLines,ranges:null},{...input.inputLines,next:0},
+      {...input.inputLines,ranges:new Map([['PRIVATE_PART',{first:1,last:999999}]])},
+      {...input.inputLines,ranges:new Map([...input.inputLines.ranges].map(([part,r])=>[part,{...r,first:1}]))}])
+      assert.deepEqual(nativeActivityAppDiagnostic(c,stage,Buffer.from(frame),'SQLSTATE_42501',changed),unknown);
+    assert.deepEqual(nativeActivityAppDiagnostic({archive:true},stage,Buffer.from(frame),'SQLSTATE_42501',input.inputLines),{});
+    assert.deepEqual(nativeActivityAppDiagnostic(c,'RESTORE_ARCHIVE_ROLES_SCHEMA_DATA',Buffer.from(frame),'SQLSTATE_42501',input.inputLines),{});
+    assert.deepEqual(nativeActivityAppDiagnostic(c,stage,Buffer.from(frame),'CHILD_TIMEOUT',input.inputLines),{});
+    const historical=archiveInputDiagnostic(Buffer.from('psql:<stdin>:1: ERROR:  42501\n'),'SQLSTATE_42501',{ranges:new Map([['SCHEMA',{first:1,last:1}]])});
+    assert.deepEqual(historical,{inputOwner:'SCHEMA'});
+    assert.equal(safeError({code:'SQLSTATE_42501',exit:3,nativeActivityFixturePart:'CAPTURE_SQL'},'RESTORE_ARCHIVE_HISTORY').nativeActivityFixturePart,undefined);
+  });
   test('owned native capture source reader keeps exact append bodies and real-Auth fixture admission',async()=>{
     const source=await syntheticNativeActivitySource();
     assert.equal(source.sha256,sha(Buffer.from((await fs.readFile(path.join(source.root,NATIVE_ACTIVITY_SQL),'utf8')).replaceAll('\r\n','\n'))));
