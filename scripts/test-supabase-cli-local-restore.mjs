@@ -2603,11 +2603,26 @@ ${syntheticNativeActivityInstrumentationSql()}`);
     assert.deepEqual(Object.keys(source.bodies).sort(),['account_native_activity_capture','account_native_activity_token_hook','record_account_lifecycle_activity']);
     for(const digest of Object.values(source.bodies))assert.match(digest,/^[a-f0-9]{32}$/);
     const existing=accountErasureNativeFixtureSql(source.root),native=accountErasureNativeFixtureSql(source.root,{nativeAuth:true});
+    const marker='-- ACCOUNT_ASSISTANT_SCHEMA_GENERATED_BEGIN',boundary=existing.indexOf(marker);
+    const canonical=(await fs.readFile(path.join(source.root,'supabase/schema.sql'),'utf8')).replaceAll('\r\n','\n');
+    assert(boundary>0);
+    assert.equal(sha(Buffer.from(existing.slice(0,boundary))),'68c09f952644e8e773b4de17f57cc9ce75e871f8cc028d994a0add485a433701',
+      'The original49+17 default setup literal remains byte-identical');
+    assert.equal(existing.slice(boundary),canonical.slice(canonical.indexOf(marker),canonical.indexOf('-- ACCOUNT_ASSISTANT_SCHEMA_GENERATED_END')));
     assert(existing.includes('create table auth.users(id uuid primary key)'));
     assert(existing.includes('create function auth.uid()'));
+    assert(!/\b(?:create|alter|drop)\s+(?:schema|extension)\b|\b(?:create|alter|drop)\s+(?:table|function|trigger|policy)\s+(?:if\s+not\s+exists\s+)?(?:auth|storage|extensions)\./i.test(native),
+      'The genuine native host must not execute synthetic vendor schema/extension/table DDL');
+    assert(!/\b(?:grant|revoke)\b[^\n]*(?:\bauth\b|\bstorage\b|\bextensions\b)/i.test(native),
+      'The genuine native host must not change vendor schema grants');
     assert(!/create (?:table|function|schema) auth\./i.test(native));
     assert(!native.includes('create schema auth;'));assert(!native.includes('create table auth.scim_users'));
     assert(native.includes("to_regclass('auth.sessions') is null"));
+    assert(native.includes("to_regclass('auth.users') is null")&&native.includes("to_regclass('auth.scim_users') is null"));
+    for(const relation of ['profiles','user_permissions','observations','app_user_roles','handbook_reviews',
+      'handbook_review_versions','admin_documents','admin_document_versions','admin_audit_log','account_activity_journal'])
+      assert(native.includes('create table public.'+relation+'(')||native.includes('create table public.'+relation+' ('),
+        'The public app relations and canonical account block must remain present');
     assert(native.includes('references auth.users(id) on delete cascade'));
     assert(native.includes('-- ACCOUNT_ASSISTANT_SCHEMA_GENERATED_BEGIN'));
     assert.throws(()=>accountErasureNativeFixtureSql(source.root,{nativeAuth:'yes'}));

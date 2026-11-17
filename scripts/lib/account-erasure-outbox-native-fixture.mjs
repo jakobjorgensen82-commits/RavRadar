@@ -54,17 +54,27 @@ alter table storage.s3_multipart_uploads enable row level security;
 alter table storage.s3_multipart_uploads_parts enable row level security;
 `;
  if(nativeAuth){
+  // The genuine Supabase host already owns its vendor schemas and privileges.
+  // Only the public app scaffolding belongs to this native capture fixture.
   for(const line of [
    'create schema auth; ',
+   'create schema extensions; ',
+   'create schema storage;\n',
+   'create extension pgcrypto with schema extensions;\n',
    "create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;\n",
    "create function auth.role() returns text language sql stable as $$ select current_setting('request.jwt.claim.role',true) $$;\n",
+   'grant usage on schema public,auth to authenticated,anon,service_role;\n',
    'create table auth.users(id uuid primary key);\n',
    'create table auth.scim_users(user_id uuid references auth.users(id) on delete set null);\n',
+   'create table storage.objects(owner uuid,owner_id text);\n',
+   'create table storage.buckets(owner uuid,owner_id text);\n',
+   'create table storage.s3_multipart_uploads(owner_id text);\n',
+   'create table storage.s3_multipart_uploads_parts(owner_id text);\n',
+   'alter table storage.objects enable row level security;\n',
+   'alter table storage.buckets enable row level security;\n',
+   'alter table storage.s3_multipart_uploads enable row level security;\n',
+   'alter table storage.s3_multipart_uploads_parts enable row level security;\n',
   ]){assert(fixture.includes(line));fixture=fixture.replace(line,'');}
-  fixture=fixture.replace('create schema extensions;','create schema if not exists extensions;')
-   .replace('create schema storage;','create schema if not exists storage;')
-   .replace('create extension pgcrypto','create extension if not exists pgcrypto')
-   .replaceAll('create table storage.','create table if not exists storage.');
   fixture="do $$begin if to_regclass('auth.users') is null or to_regclass('auth.sessions') is null or to_regclass('auth.scim_users') is null then raise exception 'GENUINE_AUTH_SCHEMA_REQUIRED';end if;end;$$;\n"+fixture;
  }
  return fixture+canonical.slice(start,end);
