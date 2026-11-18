@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import vm from 'node:vm';
 
 const auth = await fs.readFile('js/services/auth-service.js', 'utf8');
+const accountLifecycleActivityPath = '/rest/v1/rpc/record_account_lifecycle_activity';
 const dashboard = await fs.readFile('js/ui/admin-dashboard.js', 'utf8');
 const account = await fs.readFile('js/ui/account-panel.js', 'utf8');
 const css = await fs.readFile('style.css', 'utf8');
@@ -207,7 +208,7 @@ async function authHarness(initial, signedIn = sessionB, { holdLogout = false, h
   };
   globalThis.fetch = async (input, options) => {
     const url = new URL(input);
-    if (url.pathname === '/rest/v1/rpc/record_account_activity') {
+    if (url.pathname === accountLifecycleActivityPath) {
       assert.equal(options.method, 'POST'); assert.equal(options.body, '{}');
       return Response.json({}, { status: 503 });
     }
@@ -466,13 +467,17 @@ async function accountActivityJournalScenario(mode) {
     setTimeout(fn, ms) { const id=++nextTimer; timers.set(id,{fn,ms}); return id; }, clearTimeout: id => timers.delete(id),
     async fetch(input, options) {
       const url = new URL(input); assert.equal(url.origin, 'https://activity.example.invalid');
-      if (url.pathname === '/rest/v1/rpc/record_account_activity') {
+      if (url.pathname === accountLifecycleActivityPath) {
         return await new Promise((resolve,reject) => {
           rpc.push({ options, resolve, reject });
           options.signal.addEventListener('abort', () => reject(options.signal.reason), {once:true});
         });
       }
-      if (url.pathname === '/auth/v1/token') return Response.json(sourceSession(nextOwner));
+      if (url.pathname === '/auth/v1/token') {
+        const next = sourceSession(nextOwner);
+        if (url.searchParams.get('grant_type') === 'refresh_token') next.access_token = 'renewed-token-' + nextOwner;
+        return Response.json(next);
+      }
       if (url.pathname === '/auth/v1/user') { identityLookups++; return Response.json({id:nextOwner}); }
       if (url.pathname === '/auth/v1/logout') return Response.json({});
       assert.equal(url.pathname, '/rest/v1/profiles'); operations++;
@@ -516,9 +521,18 @@ async function accountActivityJournalScenario(mode) {
       if(rpc[1]) { assert.equal(rpc[1].options.body,'{}'); rpc[1].resolve(Response.json({recorded:true})); }
       await new Promise(resolve=>setImmediate(resolve));
       const count=rpc.length;
-      await api.refreshSession({force:true}); assert.equal(rpc.length,count,'Token renewal is not explicit login/use');
-      await api.signOut(); assert.equal(rpc.length,count,'Logout does not renew retention activity');
+      await api.refreshSession({force:true});
+      assert.equal(rpc.length,count+1,'Successful token renewal emits one positive activity for the same owner');
+      const renewal=rpc[count];
+      assert.equal(renewal.options.method,'POST');
+      assert.equal(renewal.options.body,'{}');
+      assert.equal(renewal.options.headers.Authorization,'Bearer renewed-token-'+owner);
+      await api.signOut(); assert.equal(rpc.length,count+1,'Logout does not renew retention activity');
+      const signedOutChanges=notifications.length;
+      renewal.resolve(Response.json({recorded:true}));
+      await new Promise(resolve=>setImmediate(resolve));
       assert.equal(api.currentSession(),null);
+      assert.equal(notifications.length,signedOutChanges,'A late renewal acknowledgement cannot restore a logged-out session');
     }
     for(const [key,value] of originals) assert.equal(bank.get(key),value,'Pending/outbox/backups are untouched');
   } finally {
@@ -549,4 +563,9 @@ assert.match(journalSql,/revoke all on table public\.account_activity_journal fr
 assert.match(journalSql,/grant execute on function public\.record_account_activity\(\) to authenticated/);
 assert.doesNotMatch(journalSql,/insert into public\.account_activity_journal[\s\S]*?select/i,'No fabricated historical backfill');
 assert.doesNotMatch(journalSql,/\bdelete from\b|\bupdate public\.(profiles|observations)\b/i);
+const lifecycleSql = await fs.readFile('supabase/migrations/20261117180000_account_inactivity_notice_off.sql','utf8');
+assert.match(lifecycleSql,/revoke all on function public\.record_account_lifecycle_activity\(\) from public,anon,authenticated,service_role/);
+assert.match(lifecycleSql,/grant execute on function public\.record_account_lifecycle_activity\(\) to authenticated;/);
+const captureSql = await fs.readFile('supabase/migrations/20261117180100_account_native_activity_capture_off.sql','utf8');
+assert.match(captureSql,/create or replace function public\.record_account_lifecycle_activity\(\)[\s\S]*?actor uuid := auth\.uid\(\);[\s\S]*?auth\.role\(\) is distinct from 'authenticated'[\s\S]*?return public\.account_native_activity_capture\(actor\);/);
 console.log('PASS: 8 normal account-activity caller cases; SQL source guards only, no installation or retention eligibility proof.');

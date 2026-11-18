@@ -377,7 +377,12 @@ try{
     assert.equal(result.response.headers.get('cache-control'),'no-store');
     assert.equal(result.response.headers.get('referrer-policy'),'no-referrer');
     assert.equal(result.response.headers.get('x-content-type-options'),'nosniff');
-    assert.equal(result.response.headers.get('content-security-policy'),"default-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'");
+    const scripts=[...result.html.matchAll(/<script>([^<]+)<\/script>/g)];
+    assert.equal(scripts.length,1,'The share page contains one fixed inline navigation');
+    assert.equal([...result.html.matchAll(/<script\b/gi)].length,1);
+    const script=scripts[0][1],scriptHash=crypto.createHash('sha256').update(script).digest('base64');
+    assert.equal(result.response.headers.get('content-security-policy'),
+      "default-src 'none'; script-src 'sha256-"+scriptHash+"'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'");
     assert.ok(result.html.startsWith('<!doctype html><html lang="'+language+'">'));
     assert.ok(result.html.includes('<meta property="og:title" content="'));
     assert.ok(result.html.includes(forecastShareCopy(language).score+' '+expected.score+'/100'));
@@ -388,8 +393,14 @@ try{
     assert.ok(result.html.includes('<meta property="og:url" content="'+escapeShareAttribute(url)+'">'));
     assert.ok(result.html.includes('<link rel="canonical" href="'+escapeShareAttribute(url)+'">'));
     assert.ok(result.html.includes('<meta property="og:image" content="https://ravradar.dk/assets/icons/ravradar-512.png">'));
-    assert.ok(result.html.includes('href="'+escapeShareAttribute(forecastShareUrl('https://ravradar.dk/',selection))+'"'));
-    assert.doesNotMatch(result.html,/<script|forged\.invalid|synthetic=|Bearer synthetic|modelBundleSha256|coastalParts/);cases++;
+    const appUrl=forecastShareUrl('https://ravradar.dk/',selection),opened=[];
+    assert.ok(result.html.includes('<a id="ravradar-forecast" href="'+escapeShareAttribute(appUrl)+'"'));
+    vm.runInNewContext(script,{
+      document:{getElementById(id){assert.equal(id,'ravradar-forecast');return{href:appUrl};}},
+      location:{replace(url){opened.push(url);}},
+    },{timeout:1000,contextCodeGeneration:{strings:false,wasm:false}});
+    assert.deepEqual(opened,[appUrl],'Browser navigation preserves the exact zone, hour, mode and language');
+    assert.doesNotMatch(result.html,/forged\.invalid|synthetic=|Bearer synthetic|modelBundleSha256|coastalParts/);cases++;
   }
   const shareUrl=forecastShareUrl(shareBase,shareSelection);
   const head=await shareWorkerRequest(shareUrl,{method:'HEAD'});
@@ -408,7 +419,7 @@ try{
   }
   for(const extra of ['&score=100','&upstream=https%3A%2F%2Fforged.invalid%2F','&shareBaseUrl=https%3A%2F%2Fforged.invalid%2F','&zone=another']){
     const result=await shareWorkerRequest(shareUrl+extra);assert.equal(result.response.status,400);
-    assert.equal(result.upstream.length,0);assert.doesNotMatch(result.html,/\d+\/100|forged\.invalid/);cases++;
+    assert.equal(result.upstream.length,0);assert.doesNotMatch(result.html,/<script\b|\d+\/100|forged\.invalid/i);cases++;
   }
   const facebook=await shareWorkerRequest(shareUrl+'&fbclid=synthetic');
   assert.equal(facebook.response.status,200);assert.equal(facebook.reads.length,2);
@@ -464,10 +475,12 @@ try{
     const legacy=await shareWorkerRequest(forecastShareUrl(shareBase,selection));
     const pages=await shareWorkerRequest(forecastShareUrl(FORECAST_SHARE_PAGES_BASE_URL,selection),{pages:true});
     assert.equal(pages.response.status,legacy.response.status);
+    assert.equal(pages.response.headers.get('content-security-policy'),legacy.response.headers.get('content-security-policy'));
     assert.equal(pages.html,legacy.html.replaceAll(shareBase,FORECAST_SHARE_PAGES_BASE_URL));
     assert.deepEqual(pages.upstream,legacy.upstream);assert.equal(pages.reads.length,2);cases++;
     const custom=await shareWorkerRequest(forecastShareUrl(customBase,selection),{pages:true});
     assert.equal(custom.response.status,pages.response.status);
+    assert.equal(custom.response.headers.get('content-security-policy'),pages.response.headers.get('content-security-policy'));
     assert.equal(custom.html,pages.html.replaceAll(FORECAST_SHARE_PAGES_BASE_URL,customBase),
       'OG and canonical share links keep the exact validated host; app links retain ravradar.dk');
     assert.deepEqual(custom.upstream,pages.upstream);assert.equal(custom.reads.length,2);cases++;

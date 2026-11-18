@@ -2645,6 +2645,7 @@ async function buildNormalPublishedOrdinaryFixture(work,implementation) {
   const sharing=share.serializeForecastShareProjection({projection:projection.buildForecastShareProjection({manifest,details,registry:JSON.parse(zoneRegistryText)}),
     manifest,manifestSha256:sha256(manifestBytes)});
   files.set('/data/live/forecast-share.json',sharing.descriptorBytes);
+  files.set('/data/live/forecast-share-trust.json',sharing.trustBytes);
   for(const file of sharing.zoneFiles)files.set('/data/live/'+file.entry.path.slice(2),file.bytes);
   normalPublishedOrdinaryTemplate={implementation:structuredClone(implementation),
     fixture:{manifest,files,datasetId:manifest.datasetId}};
