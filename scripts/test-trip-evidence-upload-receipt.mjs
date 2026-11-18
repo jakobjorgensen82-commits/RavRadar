@@ -58,7 +58,7 @@ function harness(owner = A, hydrated = true, clock = null) {
     // Activity is a separate best-effort RPC, never the held trip transport.
     // This receipt fixture deliberately models an unavailable activity journal;
     // successful activity/JSON ownership is covered by the existing auth target.
-    if (url.pathname === '/rest/v1/rpc/record_account_activity') {
+    if (url.pathname === '/rest/v1/rpc/record_account_lifecycle_activity') {
       assert.equal(options.method, 'POST'); assert.equal(options.body, '{}');
       assert.equal(options.headers.apikey, config.supabasePublishableKey);
       assert.ok(options.headers.Authorization.startsWith('Bearer '));

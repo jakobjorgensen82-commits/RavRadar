@@ -12,6 +12,7 @@ const authBody = body('auth-service'), permissionsBody = body('permissions-servi
 const ownerA = '11111111-1111-4111-8111-111111111111';
 const ownerB = '22222222-2222-4222-8222-222222222222';
 const config = { supabaseUrl: 'https://example.invalid', supabasePublishableKey: 'synthetic-public-key' };
+const accountLifecycleActivityPath = '/rest/v1/rpc/record_account_lifecycle_activity';
 const sessionFor = (owner = ownerA, token = 'synthetic-original') => ({
   access_token: token, refresh_token: 'synthetic-refresh', expires_at: 9_999_999_999, user: { id: owner },
 });
@@ -44,7 +45,7 @@ async function scenario(caller, action, { hydrate = false } = {}) {
     async fetch(input, options) {
       const url = new URL(input);
       assert.equal(url.origin, config.supabaseUrl, 'No external transport');
-      if(url.pathname==='/rest/v1/rpc/record_account_activity'){assert.equal(options.method,'POST');assert.equal(options.body,'{}');return Response.json({}, {status:503});}
+      if(url.pathname===accountLifecycleActivityPath){assert.equal(options.method,'POST');assert.equal(options.body,'{}');return Response.json({}, {status:503});}
       if (url.pathname === '/auth/v1/user') { hydrations += 1; return Response.json({ id: ownerA }); }
       if (url.pathname === '/auth/v1/logout') return Response.json({});
       if (url.pathname === '/auth/v1/token') {
@@ -133,7 +134,7 @@ async function profilesListScenario(action,{hydrate=false,render=false}={}){
   const scope={PUBLIC_CONFIG:config,AbortController,DOMException,localStorage:{getItem:k=>bank.get(k)??null,setItem:(k,v)=>bank.set(k,String(v)),removeItem:k=>bank.delete(k)},
     setTimeout(fn,ms){const timer=setTimeout(()=>{timers.delete(timer);fn();},ms);timers.add(timer);return timer;},clearTimeout(timer){clearTimeout(timer);timers.delete(timer);},
     async fetch(input,options){const url=new URL(input);assert.equal(url.origin,config.supabaseUrl);
-      if(url.pathname==='/rest/v1/rpc/record_account_activity'){assert.equal(options.method,'POST');assert.equal(options.body,'{}');return Response.json({}, {status:503});}
+      if(url.pathname===accountLifecycleActivityPath){assert.equal(options.method,'POST');assert.equal(options.body,'{}');return Response.json({}, {status:503});}
       if(url.pathname==='/auth/v1/user'){hydrations++;return Response.json({id:ownerA});}
       if(url.pathname==='/auth/v1/logout'){if(holdAuth)await authRelease.promise;return Response.json({});}
       if(url.pathname==='/auth/v1/token'){
@@ -208,7 +209,7 @@ async function jsonConsumerScenario(caller,mode){
  const scope={PUBLIC_CONFIG:config,AbortController,DOMException,
   localStorage:{getItem:key=>saved.get(key)??null,setItem:(key,value)=>saved.set(key,String(value)),removeItem:key=>saved.delete(key)},
   setTimeout(callback,ms){const timer=++id;timers.set(timer,{at:now+ms,callback});return timer;},clearTimeout:timer=>timers.delete(timer),
-  async fetch(input,options){const url=new URL(input);assert.equal(url.origin,config.supabaseUrl);if(url.pathname==='/rest/v1/rpc/record_account_activity'){assert.equal(options.method,'POST');assert.equal(options.body,'{}');return Response.json({}, {status:503});}assert.equal(options.headers.Authorization,'Bearer synthetic-original');requests++;
+  async fetch(input,options){const url=new URL(input);assert.equal(url.origin,config.supabaseUrl);if(url.pathname===accountLifecycleActivityPath){assert.equal(options.method,'POST');assert.equal(options.body,'{}');return Response.json({}, {status:503});}assert.equal(options.headers.Authorization,'Bearer synthetic-original');requests++;
    const selected=url.pathname===heldPath;assert.ok(['/rest/v1/profiles','/rest/v1/user_permissions'].includes(url.pathname));
    return{ok:!(mode==='http-error'&&selected),status:mode==='http-error'&&selected?503:200,async json(){
     if(selected){reads++;reached.resolve();await release.promise;if(mode==='malformed')throw new SyntaxError('SYNTHETIC_UNSAFE_BODY');if(mode==='null')return null;if(mode==='object')return {};if(mode==='empty')return [];}
@@ -259,7 +260,7 @@ async function profileReadbackScenario(rows, expectedRole, { renewal = false } =
     async fetch(input, options) {
       const url = new URL(input);
       assert.equal(url.origin, config.supabaseUrl, 'Only synthetic local HTTP responses');
-      if(url.pathname==='/rest/v1/rpc/record_account_activity'){assert.equal(options.method,'POST');assert.equal(options.body,'{}');return Response.json({}, {status:503});}
+      if(url.pathname===accountLifecycleActivityPath){assert.equal(options.method,'POST');assert.equal(options.body,'{}');return Response.json({}, {status:503});}
       if (url.pathname === '/auth/v1/token') {
         assert.equal(url.searchParams.get('grant_type'), 'refresh_token');
         refreshes += 1;
@@ -337,7 +338,7 @@ test('statistics preference: normal default ON, explicit OFF, owner-switch logou
    async fetch(input,options){const url=new URL(input);assert.equal(url.origin,config.supabaseUrl);
     if(url.pathname==='/auth/v1/token')return Response.json(sessionFor(loginOwner,'token-'+loginOwner));
     if(url.pathname==='/auth/v1/logout')return Response.json({});
-    if(url.pathname==='/rest/v1/rpc/record_account_activity')return Response.json({}, {status:503});
+    if(url.pathname===accountLifecycleActivityPath)return Response.json({}, {status:503});
     assert.ok(['/rest/v1/rpc/get_own_statistics_preference','/rest/v1/rpc/set_own_statistics_preference'].includes(url.pathname));
     assert.equal(options.method,'POST');
     if(url.pathname.endsWith('/get_own_statistics_preference'))assert.equal(options.body,'{}','Browser cannot select another owner/time or submit trip data');
@@ -447,7 +448,7 @@ test('account history: rendered and pending views follow their exact owner lifet
           return Response.json(sessionFor(loginOwner, 'synthetic-renewed'));
         }
         if (url.pathname === '/auth/v1/logout') return Response.json({});
-        if (url.pathname === '/rest/v1/rpc/record_account_activity') {
+        if (url.pathname === accountLifecycleActivityPath) {
           assert.equal(options.body, '{}'); return Response.json({}, { status: 503 });
         }
         assert.equal(url.pathname, '/functions/v1/trip-log');
@@ -575,7 +576,7 @@ test('statistics revision: observed ON, conservative OFF and owner-bound acknowl
         const url = new URL(input); assert.equal(url.origin, config.supabaseUrl);
         if (url.pathname === '/auth/v1/token') return Response.json(sessionFor(nextOwner, 'token-'+label+'-'+nextOwner));
         if (url.pathname === '/auth/v1/logout') return Response.json({});
-        if (url.pathname === '/rest/v1/rpc/record_account_activity') return Response.json({}, { status: 503 });
+        if (url.pathname === accountLifecycleActivityPath) return Response.json({}, { status: 503 });
         const owner = [ownerA, ownerB].find(value => options.headers.Authorization === 'Bearer token-'+label+'-'+value);
         assert.ok(owner, 'Normal auth transport, not a caller-selected owner');
         const operation = url.pathname.slice('/rest/v1/rpc/'.length), payload = JSON.parse(options.body);
