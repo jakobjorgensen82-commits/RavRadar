@@ -45,6 +45,12 @@ assert(!sharing.some(c=>/native-postgres|test-source-current-contracts/.test(c))
 assert(sourceCommandsForChangedPaths(['js/services/rav-assistant-public-help.js'])
   .includes('node --test scripts/test-assistant-ui-error-boundary.mjs'),
   'Public help-only changes must execute the normal whole UI caller contract');
+assert.deepEqual(sourceCommandsForChangedPaths(['scripts/test-assistant-after597-sync-binding.mjs']),
+  expandSourceCommands(scripts,'test:assistant-later-h0-source').filter(command=>command.includes('/test-assistant-after597-sync-binding.mjs')));
+assert(!sourceCommandsForChangedPaths(['supabase/functions/ravradar-assistant/index.ts'])
+  .some(command=>command.includes('test-fixed-assistant-failure-log-20261101.mjs')));
+assert.deepEqual(sourceCommandsForChangedPaths(['scripts/read-fixed-assistant-failure-log-20261101.mjs']),
+  ['node scripts/test-fixed-assistant-failure-log-20261101.mjs']);
 assert.deepEqual(sourceCommandsForChangedPaths(['scripts/lib/pages-closure-historical-test-input.mjs']),[]);
 assert.throws(()=>sourceCommandsForChangedPaths(['../arbitrary.mjs']));
 assert.throws(()=>sourceCommandsForChangedPaths(['unowned-source.mjs']),/SOURCE_CHANGED_OWNER_REQUIRED/);

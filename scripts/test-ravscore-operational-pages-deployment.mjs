@@ -2744,12 +2744,13 @@ const checkpointDatabaseReadback = {
 }
 
 async function verifyPreActivationClearRestoresLegacyPointer({publishedOrdinary=false,pagesWriteOnly=false,readinessRolesOnly=false}={}) {
-  // Genuine committed producer/backend roles in the actual unchanged family.
+  // The default backend check uses separate sealed and live records from the
+  // same real commit. The previous commit may have changed protected inputs.
   const readinessRoles=pagesWriteOnly||readinessRolesOnly;
   const {execFileSync}=await import('node:child_process');
   const gitHead=ref=>execFileSync('git',['rev-parse',ref],{encoding:'utf8',windowsHide:true}).trim();
-  const sourceHead=readinessRoles?gitHead('HEAD^'):'e'.repeat(40);
   const liveHead=readinessRoles?gitHead('HEAD'):'250417469d197bd9d94c3b0e1a4753e859e05d6c';
+  const sourceHead=readinessRoles?liveHead:'e'.repeat(40);
   if(readinessRoles){
     const {assertPublishedOrdinaryReadinessSourceParity}=await import('./protected-operational-reentry-evidence.mjs');
     await assertPublishedOrdinaryReadinessSourceParity({producerHead:sourceHead,liveHead,executorHead:liveHead});
@@ -3056,11 +3057,11 @@ function legacySchemaOnePointer(value, {
         assert(readinessRolesOnly||defaultSourceNegativePassed,'the source-negative uses the normal default seam too');
         assert.deepEqual(liveReadiness,targetReadiness.sourceHead===liveHead?targetReadiness:await readinessModule.buildIntegratedCutoverReadiness(liveHead,
           {publicImplementationClosureSha256:identity.implementationClosureSha256}));
-        console.log('Normal default ordinary completion: immutable public producer + later authentic backend, full sealed DB/Trip/Assistant checks, unchanged raw contracts, final row reread and eight strict no-CAS negatives passed.');
+        console.log('Normal default ordinary completion: sealed producer and live backend records from the same commit, full DB/Trip/Assistant checks, final row reread and strict no-CAS negatives passed.');
       }
       if(readinessRolesOnly){await verifyDefaultReadinessMatrix();return;}
       const completed=await invoke({lostReply:true,defaultReadiness:readinessRoles});initialDefaultCompletion=completed;assert.equal(completed.completed,true);assert.equal(atomicWrites,1);
-      assert.equal(central.payload.sourceHead,sourceHead,'immutable producer is preserved; executor is distinct');
+      assert.equal(central.payload.sourceHead,sourceHead,'immutable producer identity is preserved');
       assert.equal(central.payload.deploymentId,targetId);assert.equal(central.payload.datasetId,target.manifest.datasetId);
       const completedPointer=copy(row),completedCentral=copy(central),completedProfile=copy(profileRow),beforeWrites=atomicWrites;
       assert.deepEqual(row.payload,saved.row.payload,'central completion does not clear/retag Pages phase');

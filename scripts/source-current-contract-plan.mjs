@@ -14,6 +14,14 @@ const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const freeze=value=>{for(const item of Object.values(value))if(item&&typeof item==='object')freeze(item);return Object.freeze(value);};
 const INSTALLER='supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql';
 const WEATHER_BUILD='.github/workflows/reusable-weather-build.yml';
+const ASSISTANT_SUCCESSOR_TESTS=new Set([
+  'scripts/test-assistant-after597-fixed-generator.mjs',
+  'scripts/test-assistant-after597-migration-prewrite.mjs',
+  'scripts/test-assistant-after597-parent-profiles.mjs',
+  'scripts/test-assistant-after597-runtime-origin.mjs',
+  'scripts/test-assistant-after597-sync-binding.mjs',
+]);
+const FIXED_ASSISTANT_LOG_TEST='scripts/test-fixed-assistant-failure-log-20261101.mjs';
 const LOCAL_RESTORE_FIXTURE='scripts/test-supabase-cli-local-restore.mjs';
 const LOCAL_RESTORE_SELF_TEST='node '+LOCAL_RESTORE_FIXTURE+' --self-test';
 const LOCAL_RESTORE_WORKFLOW='.github/workflows/verify-supabase-cli-local-restore.yml';
@@ -57,8 +65,8 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
   assistantEdge:[
     'node scripts/test-rav-assistant-edge-cloudflare-4.0.290.mjs',
     'node scripts/test-rav-assistant-main-edge-roundtrip.mjs',
-    'node scripts/test-fixed-assistant-failure-log-20261101.mjs',
   ],
+  assistantDiagnostic:['node '+FIXED_ASSISTANT_LOG_TEST],
   publicUI:[
     'node --test scripts/test-assistant-ui-error-boundary.mjs',
     'node scripts/test-ravscore-public-data-service-binding.mjs',
@@ -235,8 +243,8 @@ const PATH_AREAS=freeze({
     'supabase/functions/_shared/rav-assistant-contract.ts',
     'scripts/test-rav-assistant-edge-cloudflare-4.0.290.mjs',
     'scripts/test-rav-assistant-main-edge-roundtrip.mjs',
-    'scripts/test-fixed-assistant-failure-log-20261101.mjs',
   ],
+  assistantDiagnostic:[FIXED_ASSISTANT_LOG_TEST,'scripts/read-fixed-assistant-failure-log-20261101.mjs'],
   publicUI:[
     'app.js','bootstrap.js','index.html','service-worker.js',
     'scripts/test-ravscore-public-data-service-binding.mjs',
@@ -439,6 +447,8 @@ export function currentSourceTargets(relative){
   if(typeof relative!=='string'||!/^[A-Za-z0-9_.\/-]+$/.test(relative)
     ||relative.startsWith('/')||relative.split('/').some(part=>part==='.'||part==='..'))return null;
   let areas=pathAreas.get(relative);
+  if(ASSISTANT_SUCCESSOR_TESTS.has(relative))
+    return freeze({path:relative,owners:[{area:'assistantSuccessor',commands:['node '+relative+' --after599-current']}]});
   if(['scripts/validate-source-once.mjs','scripts/source-critical-gate.mjs'].includes(relative))
     return freeze({path:relative,owners:[{area:'sourceDriver',commands:['node scripts/test-source-validation-once.mjs']}]});
   if(relative==='scripts/national584-source-evidence.mjs')areas=['sourceControls'];
