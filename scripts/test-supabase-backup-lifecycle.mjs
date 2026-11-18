@@ -147,3 +147,17 @@ test('manual archive keeps the retention lock and does not acquire the weather q
   assert.equal((workflow.match(/cancel-in-progress: false/g)??[]).length,2);
   assert(!workflow.includes('persistSupabaseDatabaseRestoreReceipt'));
 });
+
+test('manual stock inspection only reads on qualified main under the trip storage lock',()=>{
+  const workflow=fs.readFileSync(new URL('../.github/workflows/inspect-supabase-database-backup.yml',import.meta.url),'utf8');
+  assert.match(workflow,/group: ravradar-trip-storage-production\n      queue: max\n      cancel-in-progress: false/);
+  assert.match(workflow,/github\.ref == 'refs\/heads\/main' && github\.run_attempt == 1 && inputs\.expected_head == github\.sha/);
+  assert.match(workflow,/permissions:\n  contents: read\n  actions: read\n  pull-requests: read/);
+  assert(!/ravradar-weather-production-v2|: write|workflow_run:|schedule:|SUPABASE_DB_PASSWORD|CLOUDFLARE_API_TOKEN|supabase\/setup-cli|upload-artifact/.test(workflow));
+  assert.deepEqual([...workflow.matchAll(/\brun: (.+)/g)].map(([,command])=>command),[
+    'node scripts/weather-source-gate.mjs check',
+    'test "${{ steps.source-proof.outputs.required }}" = false',
+    'node scripts/inspect-supabase-database-backup.mjs',
+  ]);
+  assert(workflow.indexOf('Refuse missing exact source proof before backup credentials')<workflow.indexOf('secrets.SUPABASE_URL'));
+});
