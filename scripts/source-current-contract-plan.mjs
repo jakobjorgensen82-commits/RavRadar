@@ -219,6 +219,7 @@ const PATH_AREAS=freeze({
     'scripts/github-pages-attempt-evidence.mjs',
     'scripts/protected-operational-reentry-evidence.mjs',
     'scripts/ravscore-operational-pages-recovery.mjs',
+    'scripts/verify-ravscore-operational-pages-deployment.mjs',
     'scripts/lib/pages-per-artifact-identity.mjs',
     'scripts/lib/pages-sealed-retry-decision.mjs',
     'scripts/lib/publish-sealed-pages-with-recovery.mjs',

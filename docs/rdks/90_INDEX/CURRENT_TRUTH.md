@@ -8,6 +8,16 @@ Appversionssynk må bevare 601s udstedte C/I/T og alle 77 migrationer. Det er in
 
 Den samlede lokale602-kandidat bevarer også LF7-auditten af de normale gemte public-hour-filer med uændret ren auditkerne og uden in-memory-fallback. Den rette fil-/generationsbinding og UNKNOWN/VIOLATION-skelnen erstatter ikke faktisk LF7-/SOURCE-/T+3-accept. Alle ni601-kalderrettelser bevares; kandidaten skal endeligt afstemmes mod den senere faktiske main.
 
+## 18. november — afslut Pages-registrering efter den skrivende kørsel
+
+Ved #347 var udgivelsen og den centrale aktivering gennemført. Det sidste trin krævede en afsluttet Pages-ejer, mens det selv var en del af ejerens aktive kørsel. Den særskilte genoptagelse #11 gennemførte den uændrede kontrol og lukning, efter at Pages-ejeren var afsluttet. Den almindelige Pages-kørsel får derfor fjernet sit eget forsøg på at lukke registreringen. Levering og næste almindelige kørsel verificeres særskilt.
+
+## 18. november — afgrænset genlæsning før og efter Pages-levering
+
+Rettelsen lader den eksisterende offentlige kontrol gentage samme filkald efter bestemte kortvarige forbindelsesfejl, før serveren har svaret. Forbindelsesfejl og HTTP 502, 503 og 504 deler de samme tre ekstra forsøg. Ved afslag angiver loggen den offentlige fil og en fast fejlkategori. Hele pakkens kontrolsummer og indhold skal stadig stemme.
+
+Vejrkørsel #346 gemte den beregnede pakke, men kunne ikke læse den allerede offentlige prognose under kontrollen før aktivering. Loggen viste `fetch failed` uden nærmere årsag. #345 forblev offentlig. Lokal afprøvning, GitHub-kvalifikation og faktisk drift føres særskilt.
+
 ## Assistent601: lokal forberedelse efter app600 og model599
 
 App600 er nu faktisk databaseinstalleret og server-/UI-leveret gennem den normale rene kodevej med fortsat numerisk modelfamilie599. Normal FULL-kvalifikation, de28 præcise CHECK-definitioner og kataloggenlæsning er bekræftet; offentlig210/673 og den terminale afslutning er verificeret. Det oprindelige fejlede installerforløbs udfald står særskilt UNKNOWN og omskrives ikke til succes. Ejerens normale kontomodal og præference er browserlæst på600, men faktisk sletning, privacy- og samlet målopfyldelse er ikke accepteret. Alle fem hovedmål er fortsat åbne. Ældre600-kandidatposter nedenfor er erstattet på dette leveringsstatuspunkt.

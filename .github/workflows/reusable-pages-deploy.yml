@@ -1083,15 +1083,5 @@ jobs:
           esac
           echo "deployed_verified=true" >> "$GITHUB_OUTPUT"
 
-      - name: Clear only the publicly verified completed pre-activation phase
-        if: steps.deployment-terminal.outputs.deployed_verified == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          node scripts/protected-operational-reentry-evidence.mjs --clear-pre-activation \
-            --repository "$GITHUB_REPOSITORY" --base-url "$RAVRADAR_PUBLIC_BASE_URL" \
-            --output /tmp/ravradar-pre-activation-complete.json
+      # A completed pre-activation phase is cleared by operational reentry.
+      # That caller runs after this Pages owner is terminal and rechecks the exact target.

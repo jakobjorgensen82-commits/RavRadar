@@ -8,6 +8,18 @@ Appversionssynk må bevare 601s udstedte C/I/T og alle 77 migrationer. Det er in
 
 Den samlede lokale602-kandidat bevarer også LF7-auditten af de normale gemte public-hour-filer med uændret ren auditkerne og uden in-memory-fallback. Den rette fil-/generationsbinding og UNKNOWN/VIOLATION-skelnen erstatter ikke faktisk LF7-/SOURCE-/T+3-accept. Alle ni601-kalderrettelser bevares; kandidaten skal endeligt afstemmes mod den senere faktiske main.
 
+## 18. november — afslut Pages-registrering efter den skrivende kørsel
+
+- [x] #347 udgav og verificerede prognosen. Den særskilte genoptagelse #11 lukkede registreringen efter ejerens afslutning.
+- [x] Den lokale rettelse fjerner den umulige oprydning under samme normale Pages-kørsel. Den målrettede prøve kræver den eksisterende, uafhængige kontrol.
+- [ ] Præcis GitHub-kontrol og faktisk almindelig drift af rettelsen.
+
+## 18. november — afgrænset genlæsning før og efter Pages-levering
+
+- [x] Vejrkørsel #346 nåede den gemte prognose og den sidste læsning før aktivering. Det offentlige datasæt fra #345 blev bevaret.
+- [x] Den lokale kode bruger den eksisterende grænse til samme filkald ved genkendte forbindelsesfejl.
+- [ ] Præcis kildekontrol, sikker levering og faktisk offentlig prognose.
+
 ## Assistent601: lokal forberedelse efter app600 og model599
 
 App600 er nu faktisk databaseinstalleret og server-/UI-leveret gennem den normale rene kodevej med fortsat numerisk modelfamilie599. Normal FULL-kvalifikation, de28 præcise CHECK-definitioner og kataloggenlæsning er bekræftet; offentlig210/673 og den terminale afslutning er verificeret. Det oprindelige fejlede installerforløbs udfald står særskilt UNKNOWN og omskrives ikke til succes. Ejerens normale kontomodal og præference er browserlæst på600, men faktisk sletning, privacy- og samlet målopfyldelse er ikke accepteret. Alle fem hovedmål er fortsat åbne. Ældre600-kandidatposter nedenfor er erstattet på dette leveringsstatuspunkt.

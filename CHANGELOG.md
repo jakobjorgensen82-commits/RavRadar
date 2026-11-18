@@ -34,6 +34,14 @@ Normal set-version602 bevarer den udstedte601-modelfamilies C/I/T og alle 77 mig
 
 LF7-auditten aflæser nu de normale gemte public-hour-slutværdier med fuld transport- og generationsbinding i stedet for fjernede PART.hourly-rækker. Den rene auditkerne, kildevalg, T+3-regler, model og SQL bevares. UNKNOWN og faktisk mismatch holdes adskilt; dette er ikke en ny produktions- eller revisionsaccept.
 
+## 4.0.601 — afslut Pages-registrering på en uafhængig kørsel
+
+Den normale Pages-kørsel lader den beskyttede registrering ligge, indtil GitHub har afsluttet kørslen. Den næste uafhængige kørsel verificerer den samme offentlige prognose, lukker registreringen og kan derefter hente frisk vejr.
+
+## 4.0.601 — robust offentlig prognosekontrol, driftsrettelse
+
+Rettelsen lader den eksisterende offentlige kontrol gentage samme filkald efter bestemte kortvarige forbindelsesfejl, før serveren har svaret. Forbindelsesfejl og HTTP 502, 503 og 504 deler de samme tre ekstra forsøg. Ved afslag angiver loggen den offentlige fil og en fast fejlkategori. Hele pakkens kontrolsummer og indhold skal stadig stemme.
+
 ## 4.0.601 — emneopfølgning og afgrænset UV-/mængdeviden, lokal kandidat
 
 ## Afgrænset kontroloprydning og privat månedskalder
