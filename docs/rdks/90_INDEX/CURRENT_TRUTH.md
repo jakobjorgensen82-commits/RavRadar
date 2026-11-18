@@ -1,3 +1,7 @@
+## 18. november — ravfund og korte opfølgninger
+
+Den eksterne AI er målt gennem den normale offentlige brugerflade på tre sprog i en afgrænset prøve. Den særskilte appopdatering på 602 er en lokal kildekandidat, der bruger den samme validerede faktavej for det kendte skånsomme identifikationsspørgsmål og husker fundet ved en snæver opfølgning. Den næste leveringsprøve omfatter den tidligere fejlede tyske formulering.
+
 ## App 602: mindre delingskald med samme 601-modelfamilie
 
 Den afgrænsede lokale app 602-kandidat porter den gennemgåede delingsprototype til 601-kilden. Ét separat prognoseindeks indeholder den nødvendige model-, profil-, runtime-, evidens-, kildealder-, tids- og generationsmetadata samt de 210 præcise zonefilers stier, størrelser og hashes. Det nye delingskald henter indekset og én eksisterende zonefil. Det gamle V1-indeks og alle 210 zonefilers format bevares til den gamle Worker; scoretal, kvalitetsmærkning og lokal dækningsstatus kommer fortsat fra de allerede beregnede normale resultater.

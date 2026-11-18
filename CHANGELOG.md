@@ -1,3 +1,9 @@
+## 4.0.602 — spørgsmål om ravfund
+
+- Korte opfølgninger om svag UV-glød og gennemsigtighed beholder fundet som samtaleemne.
+- Afgrænsede sammensatte spørgsmål om skånsom vurdering bruger de eksisterende relevante fakta på dansk, tysk og engelsk.
+- Kildekvalifikation og offentlig prøve af den tidligere fejl afventer.
+
 ## 4.0.602 — ændringsbaseret kildevej og offentlig hjælp, kildekandidat
 
 - Otte kommandoers fast kildekerne med relevante ændrede funktioners eksisterende hele mål; otte er ikke et løfte om samlet antal i den store601-samling.

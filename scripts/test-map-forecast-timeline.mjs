@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
 import vm from 'node:vm';
-import {publicRavAssistantHelp} from '../js/services/rav-assistant-public-help.js';
+import {publicRavAssistantHelp,publicRavAssistantFindTopic,publicRavAssistantFindFollowup} from '../js/services/rav-assistant-public-help.js';
 import os from 'node:os';
 import path from 'node:path';
 import {createMapHourWriter} from './lib/public-map-hour-projection.mjs';
@@ -316,7 +316,7 @@ try{
   assert.match(version,/^4\.0\.\d+$/);
   const bootstrapQuery='?v='+version+'&copy=footer-20261005&ui=zone-panels-20261027'
     +'&assistant=forecast-followup-20261101&share=custom-domain-20261102'
-    +'&transport=public-json-bridge-20261103&map=plain-map-v3-20261104&assistant-topic=wind-followup-20261110';
+    +'&transport=public-json-bridge-20261103&map=plain-map-v3-20261104&assistant-topic=wind-followup-20261110&assistant-find=20261118';
   const shareQuery='?v='+version+'&ui=forecast-share-20261024&share=custom-domain-20261102';
   for(const[file,needles]of[
     ['../index.html',['bootstrap.js'+bootstrapQuery]],
@@ -706,7 +706,7 @@ try{
       emergencySnapshotReferenceAt:()=>null,assertRavScoreModelBinding:binding=>assert.equal(binding,full.ravScoreRuntime.modelBinding),
       zoneCondition:()=>({}),
       assistantTopicFrame:()=>({}),sameAssistantTopicFrame:()=>false,assistantForecastQuestion:()=>null,
-      publicRavAssistantHelp,
+      publicRavAssistantHelp, publicRavAssistantFindTopic, publicRavAssistantFindFollowup,
       assistantLocalFollowupAnswer:()=>null,assistantTopicForQuestion:()=>null,assistantPublicFollowupQuestion:()=>null,
       addAssistantMessage:()=>({querySelector:()=>({}),classList:{remove(){}}}),
       ravQuestionNeedsConditionDetails:q=>q==='bedste tidspunkt',

@@ -5,6 +5,13 @@
   "updatedAt": "2026-11-17",
   "sections": [
     {
+      "id": "assistant-find-identification-2026-11-18",
+      "chapter": "89.355",
+      "title": "Når et fund kan ligne rav",
+      "summary": "En kort opfølgning om glød eller gennemsigtighed beholder fundet som emne.",
+      "body": "<div class=\"reader-guide\"><p>En kort opfølgning om glød eller gennemsigtighed beholder fundet som emne.</p></div><p>Spørg RavRadar kan følge et spørgsmål om et fund med en kort opfølgning om gennemsigtighed og svag UV-glød. Gennemsigtighed ses også hos efterligninger. Ravets glød varierer, og andre materialer kan lyse. Brug flere skånsomme spor sammen, og få usikre eller værdifulde fund vurderet fagligt.</p><p>Når hele spørgsmålet handler om skånsom vurdering af et konkret fund, får AI-tjenesten de eksisterende fakta om UV, efterligninger og ikke-destruktive undersøgelser. Det normaliserede svar kontrolleres på samme måde som andre svar. Ukendte tillæg går gennem den almindelige emnekontrol, og private spørgsmål afvises.</p><p>Den offentlige 4.0.601 har leveret verificerede AI-svar på dansk, tysk og engelsk i det afgrænsede forløb. En længere tysk formulering blev afvist, da der manglede et læsbart struktureret svar. Kilderettelsen skal bestå den normale levering og derefter prøves med den længere formulering i brugerfladen.</p>"
+    },
+    {
       "id": "account-activity-notice-off-2026-11-17",
       "chapter": "89.354",
       "title": "Aktivitet og varsel før automatisk kontosletning",
