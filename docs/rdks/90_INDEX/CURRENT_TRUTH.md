@@ -148,6 +148,32 @@ De konkrete controller-/kildeejere får naturligt sourceControls-ansvar med begg
 
 <!-- RAVRADAR_ACTIVE_ENTRY_START -->
 
+## Drift frem for brede historiske kontrolkrav
+
+Standardkildekontrollen består nu af otte faste kommandoer og de relevante hele prøver for de faktisk ændrede funktioner. Den eksisterende CURRENT-fortegnelse vælger disse fra den faktiske Git-diff; kun bytebeviste rene versionsskift fritages for en særskilt funktionsprøve. Et ukendt testansvar bliver tydeligt afvist frem for automatisk at starte 82 historiske kommandoer. Den store samlede601-ændring kan derfor stadig vælge væsentligt flere end otte mål; en lille delingsændring vælger tre relevante ekstra mål. Der påstås ingen historisk blanketudførelse eller SQL-kvalifikation fra denne kerne. Eksisterende native- og nationalfaser bevarer deres eget faktiske bevis. Den aktuelle pakkelæser kræver relevante entrypoints og bindinger, mens historiske whole-map-prøver bruger deres eget autentiske gamle input.
+
+GitHubs trin til installation af afhængigheder starter ikke længere de otte kontrolprogrammer som en fast blok. Relevante prøver vælges i selve kildekontrollen. Den aktuelle læser kontrollerer PR-jobbets adgang, rækkefølge og beviser direkte. Historiske prøver beholder deres eget workflow. Den tidligere faste 480-sekunders prøve i installationstrinnet er erstattet af denne ændring. Den nye kode kræver sin egen GitHub-kontrol.
+
+App-ejet offentlig hjælp besvarer generelle høj-/lavvandsspørgsmål, offentlig ophavsmand og Facebook-gruppe, begynderhjælp og uklare sammensatte navne. Hele praktiske spørgsmål om ravkese på stranden kan også omfatte almindelige forholdsregler; de sammensættes af eksisterende godkendte udstyrs- og strandtekster. Hele spørgsmålet skal være dækket. Private oplysninger, ukendte tillæg, lokale tid-/stedspørgsmål og fundgarantier bliver ikke klippet væk. Den normale AI-vej og prognoserangering bevares. Dette ændrer ingen numerisk model eller SQL og er ikke en påstand om samlet ekstern AI-kvalitet.
+
+Præcis samlet kildekvalifikation og faktisk levering er fortsat åbne. Alle fem mål og sikker Free bevares; automatisk retention, gendannelse og målt kontoforbrug skal fortsat verificeres gennem deres normale forløb.
+
+
+
+## Forberedt driftsforenkling og sammenhængende arkividentitet
+
+Den forberedte normale produktionskontrol undersøger den faktisk nye vejrpakke med ti artifactkommandoer og én versionskontrol i stedet for 55 og tre kommandoer. Den bevarer data, vejrhelbred, kyst- og zoneplan, geometri, offentlig deterministisk projektion og filintegritet, strøm-/cacheforhold, state-reference og adskilte kystdele. UI-, udviklings- og kildefixtures hører til ændringer af deres egne funktioner frem for hver vejrhentning. De øvrige private, offentlige, no-loss-, B/S/T-, ene-skriver- og leveringskontroller er uændrede. Der er 47 færre processtarter; den faktiske tidsbesparelse og næste normale produktionsvirkning er endnu ikke målt.
+
+Den primære arkivgendannelse bruger den allerede kontrollerede lokale supabase_admin-session, fordi de oprindelige leverandørrelationer kræver denne ejeradgang. Den normale CHECK-suspension og -genoprettelse skal derfor bindes til samme præcise session_user, current_user og lokale postgres-database. Den afgrænsede rettelse ændrer ingen grants, originale SQL-filer eller CHECK-semantik. HISTORY og den syntetiske vej beholder den hidtidige postgres-kontrol. Den kildegennemgang fandt en konkret rollekonflikt før næste forsøg; de målrettede kalderprøver består, men faktisk original SQL-/Auth-gendannelse, autonom kvittering/rotation og samlet Free-klarhed er stadig åbne.
+
+
+
+## App602: direkte delingslink og forståelig offentlig assistenthjælp
+
+Den lokale app602-kandidat omfatter nu direkte åbning af den allerede kontrollerede delte prognose. Serverens Facebook-/Open-Graph-indhold og fallbacklink bevares. App-ejede lokale hjælpesvar retter generelle vandstandsspørgsmål, offentlig ophavsmand/Facebook og begynderhjælp samt fejllæsning af Ravfund, uden at genudstede den numeriske model. Hele spørgsmålets vagter og normale prognoserangering bevares. Se håndbog89.352/89.353. Kildekvalifikation og offentlig levering er fortsat nødvendige; faktisk ekstern AI og hosted CPU/Free er åbne. Alle fem mål består.
+
+
+
 ## App 602: deling, normal LF7-læsning og inaktiv kontoforberedelse
 
 Den samlede lokale app 602-kandidat erstatter den tidligere delings-only-sammensætning. Den forener det mindre generationsbundne delingsindeks, LF7-audit af de normale gemte timefiler og to kontoappends til aktivitetsregistrering og varsling. Den numeriske601-familie, C/I/T, alle 77 tidligere SQL-filer, de ni601-kalderrettelser og score/kildeprioritet/admin/geometri bevares. Kildekataloget har 79 SQL-filer; den afgrænsede konto-installationsvisning kræver de 66 installerede forgængere og netop de to nye appends.
@@ -157,6 +183,12 @@ Den samlede lokale app 602-kandidat erstatter den tidligere delings-only-sammens
 601 skal først kvalificeres og leveres gennem almindeligt nyt vejr; den eksisterende V1-delingskode skal følge den nye binding. Efter den samlede602-kvalifikation installeres og genlæses kontoappends før den ændrede aktivitetsklient og trip-log-Edge. Derefter følger normal602-kodelevering med begge delingsindekser og kontrolleret V2-Functions med faktisk svar-/generationsparitet og målt kold CPU/Free-forbrug.
 
 Kontodelen installeres med coverage UNKNOWN, notices OFF og automatisk sletning OFF. Den konfigurerer ingen Auth-hook, automatisk mail eller cron. Positiv aktivitet og ægte leverandørlevering holdes adskilt fra manglende registrering og accepteret afsendelse. Faktisk signup/profil-bootstrap, hook/capture, kontinuitet, automatisk varsling og senere 30-dages sletning er fortsat åbne. Lokal samling er ikke installation eller brugeraccept. Se håndbog 89.353/89.354 og det private checkpoint; alle fem mål består.
+
+
+## Afgrænset kontroloprydning og privat månedskalder
+
+Den sammenhængende kildekandidat fjerner en ekstra global testudførelse fra den historiske workflowfortegnelse, giver privat statistik ét naturligt normalt testmål og kvalificerer uændret after599-PostgreSQL som særskilt genbrug af den autentiske oprindelige fase. Hele CURRENT-prøvens maksimum er 480 sekunder; vejrets frister og numeriske kontrakter ændres ikke. Månedskalderen genlæser faktisk OFF/ON og kan ikke aktivere eller installere statistik. Se DEC-0302 og håndbog89.342/89.321. Kildekvalifikation, installation og faktisk automatisk virkning er særskilte åbne trin.
+
 
 
 ## LF7-observation, historiske prøveinput og uafhængig levering
@@ -188,7 +220,7 @@ En vedligeholdelsestur, som ikke gennemgår nogen GRIB-fil, registreres som nul 
 
 Den sidste oprydning efter en offentligt verificeret Pages-udgivelse skal have workflowets eksisterende GitHub-læseadgang med til kontrollen af den oprindelige skriver. Den afsluttede føraktiveringsfase må først fjernes efter den præcise terminalkvittering og de normale ejer- og offentlige kontroller. Lokal kalderkontrol er ikke bevis for, at en konkret fase er fjernet; faktisk oprydning og normal kildekvalifikation verificeres særskilt.
 
-**Den fungerende produktionsvej er den numeriske 598-driftsfamilie.** Almindelig vejrhentning og offentlig levering har faktisk fungeret. Det beviser ikke fuld dækning, alle fejlforløb eller hele projektets færdiggørelse. Seneste leverance, igangværende kørsel og næste skrivevindue skal aflæses i det private checkpoint; flygtige kørselsoplysninger fastholdes ikke her.
+**Den fungerende produktionsvej er den numeriske 599-driftsfamilie.** Almindelig vejrhentning og offentlig levering har faktisk fungeret. Det beviser ikke fuld dækning, alle fejlforløb eller hele projektets færdiggørelse. Seneste leverance, igangværende kørsel og næste skrivevindue skal aflæses i det private checkpoint; flygtige kørselsoplysninger fastholdes ikke her.
 
 Vejret skal fortsat hentes og opdateres gennem DMI, dernæst Copernicus og til sidst Open-Meteo. DMI skal prioritere reelle tomme huller før overtagelse af gyldige timer fra andre kilder. Nyere gyldige data skal fortsat kunne opdatere prognosen efter de gældende kilde- og proveniensregler. Cache og fremadrettet historik fortsætter uden endnu en nulstilling. Gamle originale data og offentliggjorte scorer bevares efter deres egne kontrakter; de er ikke en tvungen gammel strømhistorik for den nye drift.
 

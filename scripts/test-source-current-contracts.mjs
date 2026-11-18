@@ -11,8 +11,8 @@ import vm from 'node:vm';
 import {copernicusOfflineEnvironment} from './lib/copernicus-offline-environment.mjs';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {OWNED_CACHE_DEPENDENCY_COMMAND,OWNED_CACHE_NATIVE_COMMAND,currentChangeCommand} from './source-current-contract-receipt.mjs';
-import {inverseOwnedCacheNativeWorkflow,OWNED_CACHE_NATIVE_EARLY_NODE24} from './lib/source-impact-workflow-review.mjs';
-import {CURRENT_CONTRACT_COMMANDS,isBoundedLocalRestoreFixtureChange,isArchiveRestoreOuterQueueOnlyChange,archiveRestoreWorkflowWithoutInventory,isArchiveRestoreWorkflowChange,pagesContractCommandsForChangedInputs,sourceControlCommandsForChangedInputs,dmiBudgetWeatherBuildAreas,isDmiBudgetOnlyUpdaterChange,isDmiBudgetOnlySupervisorChange,isDmiCollectionRecoveryOnlyUpdaterChange,isDmiCollectionRecoveryOnlyFixtureChange,dmiCollectionRecoveryUpdaterAreas} from './source-current-contract-plan.mjs';
+import {inverseOwnedCacheNativeWorkflow,OWNED_CACHE_NATIVE_EARLY_NODE24,readHistoricalSourceSetupWorkflow} from './lib/source-impact-workflow-review.mjs';
+import {CURRENT_CONTRACT_COMMANDS,currentWorkflowTargets,isBoundedLocalRestoreFixtureChange,isArchiveRestoreOuterQueueOnlyChange,archiveRestoreWorkflowWithoutInventory,isArchiveRestoreWorkflowChange,pagesContractCommandsForChangedInputs,sourceControlCommandsForChangedInputs,dmiBudgetWeatherBuildAreas,isDmiBudgetOnlyUpdaterChange,isDmiBudgetOnlySupervisorChange,isDmiCollectionRecoveryOnlyUpdaterChange,isDmiCollectionRecoveryOnlyFixtureChange,dmiCollectionRecoveryUpdaterAreas} from './source-current-contract-plan.mjs';
 
 import { WEATHER_PUBLICATION_PATHS, inversePrivateWeatherPublicationWorkflow, isPrivateWeatherPublicationWorkflowChange,
   PRIVATE_WEATHER_PUBLICATION_OWNER_EDITS, isAdditivePrivateWeatherPublicationOwnerChange } from './lib/private-weather-publication-workflow.mjs';
@@ -352,6 +352,60 @@ function assertSmallUserContractPlanScope({baselineCommit,baselineTree,rewriteTr
     refuse(select(prior,tree,[...changes,['config.js',Buffer.concat([protectedBefore,Buffer.from('\n// Changed protected input\n')])]],'protected input'),
       'CURRENT_PROTECTED_INPUT_CHANGED');
     return passed;
+  }finally{checkoutCommit(restoreHead);}
+}
+
+
+// Existing whole account target also owns its normally imported month/controller modules.
+function assertPrivateStudyPlanScope({baselineCommit,baselineTree,rewriteTree,makeCommit,checkoutCommit,plan,restoreHead}){
+  const paths=[".github/workflows/private-trip-weather-study.yml","scripts/publish-private-trip-weather-study.mjs","scripts/deploy-private-trip-study.mjs","scripts/test-trip-aggregate-month-rollover.mjs","scripts/test-private-trip-study-categorical-controller.mjs","scripts/test-account-statistics-assistant-callers.mjs"],command='node --test scripts/test-account-statistics-assistant-callers.mjs';
+  assert.deepEqual(CURRENT_CONTRACT_COMMANDS.privateStudy,[command]);
+  // The one normal account target executes its imported month/controller cases.
+  // Planning checks owner scope and refusal boundaries, not source spelling.
+  const owner=currentWorkflowTargets(paths[0]);
+  assert.deepEqual(owner,{path:paths[0],owners:[{area:'privateStudy',commands:[command]}]});
+  const original=paths.map(file=>[file,fixtureControlBytes(file)]),tree=rewriteTree(baselineTree,original);
+  const prior=makeCommit(tree,[baselineCommit],'synthetic existing private-study callers'),results=[];
+  const select=(files,extra=[])=>{
+    const changes=files.map(file=>[file,Buffer.concat([git(root,['cat-file','blob',prior+':'+file]),Buffer.from('\n// Synthetic private-study owner delta\n')])]);
+    const candidate=makeCommit(rewriteTree(tree,[...changes,...extra]),[prior],'synthetic private-study scope');
+    checkoutCommit(candidate);const result=plan({baselineCommit:prior,candidateCommit:candidate,expectedHead:candidate});results.push(result);return result;
+  };
+  const safe=result=>{
+    assert.equal(result.selection,'CURRENT_CONTRACTS',JSON.stringify(result));
+    assert.deepEqual(result.areas.privateStudy.commands,[command]);
+    assert.equal(result.controlQualificationRequired,true);
+    assert.deepEqual(result.protectedInputs,{postgresUnchanged:true,CUnchanged:true,IUnchanged:true,TUnchanged:true});
+    assert.equal(result.commands.filter(value=>value===command).length,1);
+    assert.equal(result.authority,'PLANNING_ONLY');
+    for(const field of ['baselineQualified','skipAuthorized','productionAuthority'])assert.equal(result[field],false);
+  };
+  const refused=result=>{assert.equal(result.selection,'FULL',JSON.stringify(result));assert.deepEqual(result.commands,[]);};
+  try{
+    for(const file of paths){const result=select([file]);safe(result);assert.deepEqual(result.areas.privateStudy.changedPaths,[file]);}
+    const together=select(paths);safe(together);assert.deepEqual(together.areas.privateStudy.changedPaths,[...paths].sort());
+    assert.deepEqual(together.commands,[...CURRENT_CONTRACT_COMMANDS.core,command]);
+    for(const neighbour of ['scripts/publish-private-trip-weather-study-extra.mjs','.github/workflows/private-trip-weather-study-extra.yml']){
+      const result=select([paths[0]],[[neighbour,Buffer.from('// Unknown adjacent owner\n')]]);refused(result);
+      assert.deepEqual(result.reasonCodes,['CURRENT_UNCLASSIFIED_PATH']);
+    }
+    const protectedFile='config.js',before=git(root,['cat-file','blob',prior+':'+protectedFile]);
+    const protectedResult=select([paths[0]],[[protectedFile,Buffer.concat([before,Buffer.from('\n// Protected drift\n')])]]);
+    refused(protectedResult);assert.deepEqual(protectedResult.reasonCodes,['CURRENT_PROTECTED_INPUT_CHANGED']);
+    for(const file of paths.slice(0,3)){
+      checkoutCommit(prior);git(root,['update-index','--force-remove','--',file]);
+      const absent=makeCommit(text(root,['write-tree']),[prior],'synthetic absent private-study caller');
+      checkoutCommit(absent);const deleted=plan({baselineCommit:prior,candidateCommit:absent,expectedHead:absent});refused(deleted);
+      assert.deepEqual(deleted.reasonCodes,['CURRENT_SMALL_USER_CONTRACT_REQUIRES_EXISTING_REGULAR_SOURCE']);
+      const added=makeCommit(tree,[absent],'synthetic added private-study caller');checkoutCommit(added);
+      const addPlan=plan({baselineCommit:absent,candidateCommit:added,expectedHead:added});refused(addPlan);
+      assert.deepEqual(addPlan.reasonCodes,['CURRENT_SMALL_USER_CONTRACT_REQUIRES_EXISTING_REGULAR_SOURCE']);
+      checkoutCommit(prior);git(root,['update-index','--chmod=+x','--',file]);
+      const executable=makeCommit(text(root,['write-tree']),[prior],'synthetic private-study mode');checkoutCommit(executable);
+      const modePlan=plan({baselineCommit:prior,candidateCommit:executable,expectedHead:executable});refused(modePlan);
+      assert.deepEqual(modePlan.reasonCodes,['CURRENT_SMALL_USER_CONTRACT_REQUIRES_EXISTING_REGULAR_SOURCE']);
+    }
+    return results.length+9;
   }finally{checkoutCommit(restoreHead);}
 }
 
@@ -1112,7 +1166,8 @@ try{
   }
 
   if(!weatherPublicationScopeOnly&&!dmiBudgetScopeOnly&&!dmiRecoveryScopeOnly&&!adminHistoryScopeOnly){
-    const ownerCases=assertSmallUserContractPlanScope({baselineCommit:base,baselineTree,rewriteTree:rewrite,makeCommit:commit,checkoutCommit:checkout,plan,restoreHead:base});
+    const ownerCases=assertSmallUserContractPlanScope({baselineCommit:base,baselineTree,rewriteTree:rewrite,makeCommit:commit,checkoutCommit:checkout,plan,restoreHead:base})
+      +assertPrivateStudyPlanScope({baselineCommit:base,baselineTree,rewriteTree:rewrite,makeCommit:commit,checkoutCommit:checkout,plan,restoreHead:base});
     const prerequisiteCases=assertSelectedProgressCopernicusPrerequisite();
     cases+=ownerCases+prerequisiteCases;
     scenarios.push('Exact sharing/erasure/progress owners retain whole tests and refusal boundaries; selected CP prerequisite is bounded and credential-free');
@@ -1372,20 +1427,21 @@ try{
   scenarios.push('normal Git transport-only selection keeps four full Pages targets, fresh control review, protected inputs and broad/FULL mixed fallbacks');
   // Slut på de nye normale Gittransportcases.
 
-  // Aktuel helefilsejer samt præcis workflowbootstrap; kun normale Git-/planlæsninger.
+  // The reviewed SDK-only addition uses its historical setup. Current planning
+  // still owns the actual Python fixture and decides which prerequisite to run.
   if(!weatherPublicationScopeOnly&&!dmiBudgetScopeOnly&&!dmiRecoveryScopeOnly&&!adminHistoryScopeOnly){
     const restore=text(root,['rev-parse','HEAD']),tree=text(root,['rev-parse',base+'^{tree}']);
     const nativeFile='scripts/test-owned-dmi-grib-save-native.py',workflow='.github/workflows/validate-pull-request.yml';
     const source=git(root,['show',base+':'+nativeFile]);
-    const currentWorkflow=fs.readFileSync(path.join(SOURCE,workflow),'utf8');
-    const predecessor=inverseOwnedCacheNativeWorkflow(currentWorkflow);
+    const sdkWorkflow=readHistoricalSourceSetupWorkflow();
+    const predecessor=inverseOwnedCacheNativeWorkflow(sdkWorkflow);
     try{
       const beforeTree=rewrite(tree,[[workflow,Buffer.from(predecessor)]]);
       const before=commit(beforeTree,[base],'synthetic normal SDK environment predecessor');
       const frontierTree=rewrite(beforeTree,[['docs/rdks/90_INDEX/SYNTHETIC-NATIVE-FRONTIER.md',Buffer.from('Synthetic ordinary documentation frontier\n')]]);
       const frontier=commit(frontierTree,[before],'synthetic qualified current frontier');
       const afterTree=rewrite(frontierTree,[[nativeFile,Buffer.concat([source,Buffer.from('\n# Synthetic native test delta\n')])],
-        [workflow,Buffer.from(currentWorkflow)]]);
+        [workflow,Buffer.from(sdkWorkflow)]]);
       const after=commit(afterTree,[frontier],'synthetic whole native owner with normal environment');checkout(after);
       const nativePlans=new Map();
       for(const baselineCommit of [frontier,before]){
@@ -2154,8 +2210,9 @@ try{
       maps,zips,state:clone(state),priorMaps:new Map(priorMaps),priorZips:new Map(priorZips),gitHead:text(root,['rev-parse','HEAD'])};
     try{
       const workflow='.github/workflows/validate-pull-request.yml';
-      const sdkWorkflow=git(SOURCE,['cat-file','blob','HEAD:'+workflow]).toString('utf8');
-      assert.equal(sdkWorkflow,fixtureControlBytes(workflow).toString('utf8').replaceAll('\r\n','\n'));
+      // This exercise qualifies the historical SDK-only change and its former
+      // FULL producer. The dependency-only workflow has its own current test.
+      const sdkWorkflow=readHistoricalSourceSetupWorkflow();
       const predecessor=inverseOwnedCacheNativeWorkflow(sdkWorkflow);assert.notEqual(predecessor,sdkWorkflow);
       const seedTree=rewrite(baselineTree,[[workflow,Buffer.from(predecessor)]]);
       base=commit(seedTree,[saved.base],'synthetic same genuine PG seed with normal DMI environment');

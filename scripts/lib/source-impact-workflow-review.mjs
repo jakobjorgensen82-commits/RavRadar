@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
+import {execFileSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
 
 // One reviewed controller delta against the actually qualified 334 FULL path.
 // This does not qualify a run or turn skipped SQL/national steps into success.
@@ -26,6 +28,16 @@ const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
 const once=(source,from,to)=>{assert.equal(source.split(from).length,2,'Exact once-only reviewed workflow field required');
   return source.replace(from,()=>to);};
 
+// Historical test fixture only. Run 1487 completed this workflow before the
+// installation step stopped running the old blanket tests.
+export function readHistoricalSourceSetupWorkflow(){
+  return execFileSync('git',['-c','protocol.allow=never','cat-file','blob',
+    '89ee37b537279253f72ce77df60ac90d4671a1a6:.github/workflows/validate-pull-request.yml'],{
+    cwd:fileURLToPath(new URL('../../',import.meta.url)),encoding:'utf8',timeout:10000,maxBuffer:65536,
+    env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0'},
+  });
+}
+
 
 // Fælles lukket miljøinverse. Ingen kildekvalifikation eller ny historisk pin.
 export const OWNED_CACHE_NATIVE_EARLY_NODE24="      # Kun runtimeklargøring; faktisk nativearbejde vælges og kvalificeres normalt.\n      - name: Set up Node24 for selected owned-cache native contracts\n        uses: actions/setup-node@v7\n        with:\n          node-version: 24\n      - name: Retain actual Node24 executable for selected native contracts\n        shell: bash\n        run: |\n          set -euo pipefail\n          node -e \"const fs=require('node:fs');const p=fs.realpathSync(process.execPath);if(process.platform!=='linux'||process.versions.node.split('.')[0]!=='24'||/[\\r\\n]/.test(p))throw Error('SOURCE_NATIVE_NODE24_REQUIRED');fs.appendFileSync(process.env.GITHUB_ENV,'RAVRADAR_SOURCE_NODE24='+p+'\\n');\"\n\n";
@@ -34,6 +46,29 @@ export const OWNED_CACHE_NATIVE_EARLY_STEP_NAMES=Object.freeze([
   'Set up Node24 for selected owned-cache native contracts',
   'Retain actual Node24 executable for selected native contracts',
 ]);
+export const TARGETED_SOURCE_STEP_NAMES=Object.freeze(['Set up job','Run actions/checkout@v7','Require exact pull-request source head',
+  'Run actions/setup-node@v7','Build deterministic source-tree content identity',
+  'Diagnose normal pack-reader closure on artificial data only','Run actions/setup-python@v7',
+  'Install source-gate dependencies','Set up Node24 for isolated acquisition contracts',
+  'Install exact local cache-action dependencies without scripts','Verify locked cache API distribution without runtime calls',
+  'Validate isolated acquisition ownership and raw-save cohort','Restore Node22 for existing source validation',
+  'Validate bounded native current diagnosis on artificial data only','Validate source contracts and release governance',
+  'Validate native PostgreSQL checkpoint CAS on artificial data only','Upload independently completed native586 PostgreSQL phase',
+  'Validate isolated restart and two ordinary national followers',
+  'Validate durable Copernicus current-reference baseline on artificial data only',
+  'Validate download-inclusive DMI capacity on artificial data only','Require validated source tree to remain unchanged',
+  'Upload tree-content source validation proof']);
+export const TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES=Object.freeze([
+  ...TARGETED_SOURCE_STEP_NAMES.slice(0,4),'Run actions/setup-python@v7',
+  'Install declared requests dependency before source planning',
+  ...TARGETED_SOURCE_STEP_NAMES.slice(4,6),...TARGETED_SOURCE_STEP_NAMES.slice(7)]);
+export const TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES=Object.freeze(
+  TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES.map((name,index)=>index===5?'Install declared DMI dependencies before source planning':name));
+export const TARGETED_OWNED_CACHE_NATIVE_SOURCE_STEP_NAMES=Object.freeze([
+  ...TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES.slice(0,3),...OWNED_CACHE_NATIVE_EARLY_STEP_NAMES,
+  ...TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES.slice(3),
+]);
+
 export function inverseOwnedCacheNativeWorkflow(value){
   assert.equal(arguments.length,1);assert.equal(typeof value,'string');
   const source=value.replace(/\r\n/g,'\n');
@@ -48,6 +83,85 @@ export function isAdditiveOwnedCacheNativeWorkflowChange(before,after){
     return old!==next&&inverseOwnedCacheNativeWorkflow(old)===old
       &&inverseOwnedCacheNativeWorkflow(next)===old;
   }catch{return false;}
+}
+
+export function hasDependencyOnlySourceSetup(value){
+  if(typeof value!=='string')return false;
+  const source=value.replace(/\r\n/g,'\n');
+  if(!source.includes('      - name: '+OWNED_CACHE_NATIVE_EARLY_STEP_NAMES[0]+'\n'))return false;
+  const start=source.indexOf('      - name: Install source-gate dependencies\n');
+  if(start<0)return false;
+  const end=source.indexOf('\n      - ',start+1),block=source.slice(start,end<0?undefined:end);
+  return !block.includes('scripts/test-');
+}
+
+// Current source execution is checked by its actual read-only job, critical
+// entrypoints and ordered source/PG/upload evidence. It is not projected into
+// a historical whole-workflow hash or a claim to the old blanket self-tests.
+export function verifyCurrentSourceWorkflow(value){
+  assert.equal(arguments.length,1);assert.equal(typeof value,'string');
+  const source=value.replace(/\r\n/g,'\n').replace(/^ *#[^\n]*\n/gm,'');
+  assert(hasDependencyOnlySourceSetup(source),'CURRENT_SOURCE_DEPENDENCY_ONLY_SETUP_REQUIRED');
+  assert.deepEqual(source.match(/^[a-z][a-z-]*:/gm),['name:','on:','permissions:','concurrency:','jobs:']);
+  assert.match(source,/\non:\n  pull_request:\n\npermissions:\n  contents: read\n  actions: read\n  pull-requests: read\n\nconcurrency:/);
+  assert.match(source,/\njobs:\n  validate:\n    name: Source validation and release gate\n    runs-on: ubuntu-24\.04\n    timeout-minutes: 180\n    steps:\n/);
+  assert.deepEqual(source.slice(source.indexOf('\njobs:')).match(/^  \S[^\n]*:/gm),['  validate:']);
+  assert.doesNotMatch(source,/^[ \t]+(?:permissions|continue-on-error|defaults|strategy|needs):|\bsecrets\.|:\s*write\b/m);
+  const rows=[...source.matchAll(/^      - (name|uses):([^\n]+)\n/gm)];
+  const blocks=rows.map((row,index)=>source.slice(row.index,rows[index+1]?.index??source.length));
+  const names=rows.map(row=>(row[1]==='uses'?'Run ':'')+row[2].trim());
+  assert.deepEqual(names,TARGETED_OWNED_CACHE_NATIVE_SOURCE_STEP_NAMES.slice(1));
+  assert.deepEqual(source.match(/^ {6}- .+$/gm),rows.map(row=>row[0].trimEnd()));
+  const block=name=>blocks[names.indexOf(name)];
+  const run=name=>{
+    const value=block(name),match=/\n        run: ([^\n]*)\n/.exec(value);
+    assert(match,'CURRENT_SOURCE_RUN_REQUIRED: '+name);
+    if(!['>-','|'].includes(match[1]))return match[1];
+    return value.slice(match.index+match[0].length).split('\n')
+      .filter(line=>line.startsWith('          ')).map(line=>line.trim()).join(' ');
+  };
+  for(let index=0;index<blocks.length;index++){
+    const conditions=blocks[index].match(/^ +if: .*\n/gm)??[];
+    assert.deepEqual(conditions,index>=8&&index<=21?[SOURCE_IMPACT_FULL_STEP_CONDITION]:[],'CURRENT_SOURCE_STEP_CONDITION');
+  }
+  assert.deepEqual(source.match(/^        id: .+$/gm),['        id: source-content']);
+  const proofEnvironment=[
+    '          GITHUB_TOKEN: ${{ github.token }}',
+    '          SOURCE_GATE_HEAD_SHA: ${{ github.event.pull_request.head.sha }}',
+    '          PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}',
+  ];
+  for(const name of ['Build deterministic source-tree content identity',
+    'Validate native PostgreSQL checkpoint CAS on artificial data only',
+    'Validate isolated restart and two ordinary national followers']){
+    assert.deepEqual(block(name).match(/^          [A-Z][A-Z0-9_]*: .+$/gm),proofEnvironment);
+  }
+  assert(block('Run actions/checkout@v7').includes('fetch-depth: 0')
+    &&block('Run actions/checkout@v7').includes('ref: ${{ github.event.pull_request.head.sha }}'));
+  assert(run('Require exact pull-request source head').includes('test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"'));
+  assert.match(block('Set up Node24 for selected owned-cache native contracts'),/\n        uses: actions\/setup-node@v7\n        with:\n          node-version: 24\n/);
+  assert.match(block('Retain actual Node24 executable for selected native contracts'),/process\.versions\.node\.split\('\.'\)\[0\]!=='24'/);
+  assert.match(block('Retain actual Node24 executable for selected native contracts'),/RAVRADAR_SOURCE_NODE24=/);
+  assert.equal(run('Install source-gate dependencies'),
+    'python -m pip install --disable-pip-version-check -r requirements-dmi.txt -r requirements-geometry.txt -r requirements-copernicus.txt');
+  assert.equal(run('Build deterministic source-tree content identity'),'node scripts/weather-source-gate.mjs impact-digest');
+  assert.equal(run('Validate source contracts and release governance'),
+    'npm run validate:source && node scripts/test-fixed-public-rate-log-20261013.mjs && node scripts/test-fixed-storage-upload-log-20261013.mjs && node scripts/test-fixed-public-rate-console-log-20261015.mjs && node scripts/test-prepare-candidate-g-operational-rollback.mjs && node scripts/test-candidate-g-rollback-public-stage.mjs');
+  assert.equal(run('Validate native PostgreSQL checkpoint CAS on artificial data only'),
+    'set -euo pipefail node --test scripts/test-native-postgres-evidence.mjs node scripts/native-postgres-evidence.mjs');
+  assert.equal(run('Validate isolated restart and two ordinary national followers'),'node scripts/national584-source-evidence.mjs');
+  for(const [name,markers] of [
+    ['Upload independently completed native586 PostgreSQL phase',[
+      'uses: actions/upload-artifact@v7','name: native586-phase-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.event.pull_request.head.sha }}',
+      'path: .cache/native-postgres-phase-proof.json','if-no-files-found: error']],
+    ['Require validated source tree to remain unchanged',[
+      'tracked_status="$(git status --short --untracked-files=no)"','if [[ -n "$tracked_status" ]]','exit 1','test -z "$tracked_status"']],
+    ['Upload tree-content source validation proof',[
+      'uses: actions/upload-artifact@v7','name: ${{ steps.source-content.outputs.artifact_name }}',
+      "path: ${{ steps.source-content.outputs.receipt_path || '.cache/source-tree-content-proof.json' }}",'if-no-files-found: error']],
+  ])for(const marker of markers)assert(block(name).includes(marker),'CURRENT_SOURCE_CRITICAL_FRAME: '+marker);
+  assert.doesNotMatch(source,/\b(?:curl|wget|supabase|wrangler)\s|DMI_API_KEY|COPERNICUSMARINE_SERVICE_PASSWORD|SUPABASE_SERVICE_ROLE_KEY/);
+  return {scope:'CURRENT_SOURCE_WORKFLOW',dependencySetupOnly:true,
+    historicalBlanketExecuted:false,sourceBeforeNative:true,nativeUploadNumber:20};
 }
 
 // Exact test-only outer inverse: the hour-lock target is selected before SDK
@@ -154,14 +268,18 @@ export function inverseSourceImpactDmiPython(value){
   return source;
 }
 
-// Den eksisterende FULL-kontrolkæde ejer også hele CURRENT med uændret 300s-budget.
-export const SOURCE_IMPACT_FULL_CURRENT_COMMAND='timeout --signal=KILL 300s node --test scripts/test-source-current-contracts.mjs';
+// FULL-testen har et fast budget på 480 sekunder; den autentiske form med 300 sekunder bevares.
+export const SOURCE_IMPACT_FULL_CURRENT_COMMAND='timeout --signal=KILL 480s node --test scripts/test-source-current-contracts.mjs';
+export const SOURCE_IMPACT_FULL_CURRENT_PREVIOUS_COMMAND='timeout --signal=KILL 300s node --test scripts/test-source-current-contracts.mjs';
 export function inverseSourceImpactFullCurrent(value){
   assert.equal(arguments.length,1);assert.equal(typeof value,'string');
   const source=value.replace(/\r\n/g,'\n');
   if(!source.includes('test-source-current-contracts.mjs'))return source;
   const anchor='          && node scripts/test-source-impact-workflow.mjs\n';
-  const addition='          && '+SOURCE_IMPACT_FULL_CURRENT_COMMAND+'\n';
+  const commands=[SOURCE_IMPACT_FULL_CURRENT_COMMAND,SOURCE_IMPACT_FULL_CURRENT_PREVIOUS_COMMAND]
+    .filter(command=>source.includes('          && '+command+'\n'));
+  assert.equal(commands.length,1,'Kun én præcis aktuel eller historisk FULL/CURRENT-kalder');
+  const addition='          && '+commands[0]+'\n';
   const before=once(source,anchor+addition,anchor);
   assert.equal(sha(inverseOwnedCacheNativeWorkflow(before)),SOURCE_IMPACT_DMI_REQUIREMENTS_REVIEW.afterSha256,
     'Kun den præcise eksisterende FULL-kalder kan få hele CURRENT');

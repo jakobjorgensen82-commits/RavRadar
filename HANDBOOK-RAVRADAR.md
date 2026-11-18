@@ -28,6 +28,9 @@ Leveringsplanen er først normalt 601-vejr og den eksisterende V1-delingskode ko
 
 Dette er lokal kildeforberedelse. Præcis kildekvalifikation, offentlig levering, kompatibilitet, faktisk kold og varm Cloudflare-CPU samt kontoens samlede Free-forbrug er fortsat åbne. De tidligere lokale M5-målinger er deres eget bevis og bliver ikke ommærket til 601. En mindre fil eller et hurtigt lokalt kald er ikke dokumentation for drift under Free-planens CPU-grænse.
 
+Et gyldigt delingslink åbner nu den præcise zone, time, søgemåde og sprog direkte i RavRadar i en almindelig browser. Facebook-forhåndsvisningens titel, score og billede findes fortsat i den oprindelige HTML. En lille fast browserkode bruger kun det allerede kontrollerede link; ugyldige valg får ingen automatisk viderestilling. Linket Åbn i RavRadar bevares, hvis browseren ikke udfører koden. Der bruges ingen nye datakald, database eller billedlager. Faktisk Facebook-/browseraccept efter denne ændring og hosted CPU/Free er særskilte åbne trin.
+
+
 ## 89.352 — Assistentens emneopfølgning og UV-forklaring
 
 <div class="reader-guide"><p>Hele opfølgningsspørgsmålet tæller; lys og modelscore beviser hverken ravets identitet eller antal.</p></div>
@@ -39,6 +42,11 @@ Et opfølgningsspørgsmål om kendt udstyr skal også besvare den nye kvalifikat
 RavRadar observerer ikke, hvor mange stykker rav eller hvor meget rav der findes på en strand eller i et lokalt ravlager. Score og vejrgrundlag kan ikke omregnes til et observeret antal eller et garanteret udbytte. Manglende observation skal beskrives som ukendt, mens spørgsmål uden for emnet fortsat afvises.
 
 Dette er en lokal601-kandidat ovenpå app600. Vidensgrundlaget er gennemgået, men den nye binding, installation og faktiske svar på dansk, tysk og engelsk skal kvalificeres gennem normalvejen. Lokale kontraktprøver er ikke hosted AI- eller offentlig produktaccept.
+
+Generelle spørgsmål om højvande eller lavvande besvares med praktisk forklaring uden at påføre en valgt zones tekniske beregning. Hele spørgsmål om RavRadars ophavsmand, Facebook-gruppe og begynderhjælp har app-ejede lokale svar fra offentlige oplysninger. Et uklart navn som Ravfund udløser afklaring i stedet for automatisk at blive læst som Hvad er rav. Kun hele kendte spørgsmål matches; private, blandede og ukendte tillæg beholder det normale samlede sikkerheds- og AI-forløb. De eksisterende ravdefinitioner og nationale prognoserangeringer bevares. Denne tekstvej ændrer ingen numerisk modelbinding eller score og er ikke dokumentation for fungerende ekstern AI.
+
+App-ejet offentlig hjælp besvarer generelle høj-/lavvandsspørgsmål, offentlig ophavsmand og Facebook-gruppe, begynderhjælp og uklare sammensatte navne. Hele praktiske spørgsmål om ravkese på stranden kan også omfatte almindelige forholdsregler; de sammensættes af eksisterende godkendte udstyrs- og strandtekster. Hele spørgsmålet skal være dækket. Private oplysninger, ukendte tillæg, lokale tid-/stedspørgsmål og fundgarantier bliver ikke klippet væk. Den normale AI-vej og prognoserangering bevares. Dette ændrer ingen numerisk model eller SQL og er ikke en påstand om samlet ekstern AI-kvalitet.
+
 
 ## 89.351 — Manuel kontosletning med synlig genoptagelse
 
@@ -130,6 +138,8 @@ Ved en SQLSTATE42501 under arkivets DATA eller HISTORY kan den eksisterende fejl
 En fast relationslabel kræver ét entydigt match i den pågældende fases allerede komplette, identitetskontrollerede arkivinventar. Manglende eller modstridende inventory og private eller ukendte relationer beholder UNKNOWN-binding. Kun faste kategorier og SHA-256 af den begrænsede native objekttekst kan rapporteres. Denne hash er hverken et kanonisk kvalificeret relationsnavn, katalogbevis eller ret til at ændre adgang. Frie navne, SQL, fejltekst, rækker og andre private værdier udskrives ikke.
 
 Dette forklarer en allerede afvist operation; det ændrer ingen rolle, grant, SQL-strøm, constraint, rækkefølge, frist, oprindelig fejl eller acceptregel. De fem autentiske SQL-filer, indholds-/dublet-/sekvensparitet, Auth-funktion og ejet oprydning bevares. Den normale hele selvtest dækker klassifikation, privacy og de faktiske DATA-/HISTORY-fejlkaldere med syntetisk stderr. Den beviser ikke en bestemt årsag i originalarkivet eller en vellykket originalgendannelse. Præcis kildekvalifikation og et senere normalt originalforsøg skal stadig levere deres egne beviser.
+
+Den primære arkivgendannelse bruger den allerede kontrollerede lokale supabase_admin-session, fordi de oprindelige leverandørrelationer kræver denne ejeradgang. Den normale CHECK-suspension og -genoprettelse skal derfor bindes til samme præcise session_user, current_user og lokale postgres-database. Den afgrænsede rettelse ændrer ingen grants, originale SQL-filer eller CHECK-semantik. HISTORY og den syntetiske vej beholder den hidtidige postgres-kontrol. Den kildegennemgang fandt en konkret rollekonflikt før næste forsøg; de målrettede kalderprøver består, men faktisk original SQL-/Auth-gendannelse, autonom kvittering/rotation og samlet Free-klarhed er stadig åbne.
 
 
 ## 89.349 — AI vælger fakta, serveren skriver svaret
@@ -453,6 +463,23 @@ Samme 599-kode og en almindelig app600 med fast modelfamilie599 kan analyseres p
 
 Den normale workflowprøve skal tilsvarende verificere den nye migrationsrække og de præcise nye kald før sine uændrede historiske projektioner. Hele den nye række, oprindelig SQL, workflowets øvrige bytes og begge rundrejser kontrolleres. Der opfindes ingen ny baseline eller generel versionsnormalisering. De relevante normale mål, faktisk Linux-kildekontrol, ny nødvendig PostgreSQL-eksekvering og sikker installation er fortsat særskilte krav.
 
+### Færre gentagelser og klar adskillelse af historiske prøveinput
+
+Ejerens instruktion er at fjerne alle overflødige kontrolkrav og uvedkommende stop. En historisk workflowfortegnelse er prøveinput, ikke en ekstra global teststarter. Den eksisterende historiske læser bevarer sit autentiske grundlag og kontrollerer en begrænset, sikker aktuel fortegnelsesform; den starter ikke aktuelle målprocesser og kræver ikke, at pensionerede workflows fortsat findes. Den normale CURRENT-producent og -forbruger vælger og udfører fortsat relevante hele mål for den faktiske ændring. Månedskalderen har ét naturligt account-callers-mål, som allerede importerer månedsskifte og controller; tre identiske starter er ikke nødvendige.
+
+En faktisk bestået after599-PostgreSQL-fase kan kvalificeres særskilt som REUSED-V2, også når den oprindelige kørsel senere stoppede i nationalprøven. Den oprindelige EXECUTED-V1-kvittering ændres ikke. Genbrug kræver positivt samme faktiske native-/SQL-/model-/frosne Git-input, relevante pakkeresolverfelter og observerede runtime samt autentisk oprindelig fase, artifact, kørsel, job og forsøg. En fremrykket PR kræver også korrekt stamrelation. Relevante senere fejl, ændrede input eller ukendt evidens giver ikke genbrug. Nye SQL-filer kræver deres egen udførelse. Nationalkalderen og FULL-læseren bevarer samme komplette konto-appfacit og frigiver kun det allerede kvalificerede CHECK-facit.
+
+Det eksisterende hele CURRENT-prøvemål får 480 sekunder i FULL-forløbet, så en langsommere testvært ikke dræber en fortsat aktiv prøve ved 300 sekunder. Dette er alene prøvens maksimum; det er ikke en ny ventetid eller en ændring af vejrhentningens frister. De gamle historiske 300-sekunders input beholder deres oprindelige betydning. Fjernelse af dobbeltarbejde og gyldigt fasegenbrug er de egentlige tidsbesparelser. Ingen ny tjeneste, kontrolramme, per-head-kohorte eller generel spring-over-markør indføres.
+
+Dette beskriver den sammenhængende kildekandidat. Præcis kildekvalifikation og normal levering er fortsat nødvendige. Alle fem mål, originaler, numeriske regler, kildeprioritet, adgang og databevarelse består.
+
+Den forberedte normale produktionskontrol undersøger den faktisk nye vejrpakke med ti artifactkommandoer og én versionskontrol i stedet for 55 og tre kommandoer. Den bevarer data, vejrhelbred, kyst- og zoneplan, geometri, offentlig deterministisk projektion og filintegritet, strøm-/cacheforhold, state-reference og adskilte kystdele. UI-, udviklings- og kildefixtures hører til ændringer af deres egne funktioner frem for hver vejrhentning. De øvrige private, offentlige, no-loss-, B/S/T-, ene-skriver- og leveringskontroller er uændrede. Der er 47 færre processtarter; den faktiske tidsbesparelse og næste normale produktionsvirkning er endnu ikke målt.
+
+Standardkildekontrollen består nu af otte faste kommandoer og de relevante hele prøver for de faktisk ændrede funktioner. Den eksisterende CURRENT-fortegnelse vælger disse fra den faktiske Git-diff; kun bytebeviste rene versionsskift fritages for en særskilt funktionsprøve. Et ukendt testansvar bliver tydeligt afvist frem for automatisk at starte 82 historiske kommandoer. Den store samlede601-ændring kan derfor stadig vælge væsentligt flere end otte mål; en lille delingsændring vælger tre relevante ekstra mål. Der påstås ingen historisk blanketudførelse eller SQL-kvalifikation fra denne kerne. Eksisterende native- og nationalfaser bevarer deres eget faktiske bevis. Den aktuelle pakkelæser kræver relevante entrypoints og bindinger, mens historiske whole-map-prøver bruger deres eget autentiske gamle input.
+
+GitHubs trin til installation af afhængigheder starter ikke længere de otte kontrolprogrammer som en fast blok. Relevante prøver vælges i selve kildekontrollen. Den aktuelle læser kontrollerer PR-jobbets adgang, rækkefølge og beviser direkte. Historiske prøver beholder deres eget workflow. Den tidligere faste 480-sekunders prøve i installationstrinnet er erstattet af denne ændring. Den nye kode kræver sin egen GitHub-kontrol.
+
+
 ## 89.340 Ét sikkert Pages-genforsøg og frisk vejr bagefter
 
 <h3>Oprydning efter en verificeret udgivelse</h3><p>En udgivet prognose og oprydningen efter udgivelsen har hver sin kvittering. Den sidste oprydning får workflowets eksisterende læseadgang til GitHub, så den kan kontrollere den oprindelige Pages-skriver, før en afsluttet føraktiveringsfase fjernes. Den kræver stadig den verificerede offentlige prognose og den præcise terminalkvittering. En oprydningsfejl må ikke skjule den offentliggjorte prognose eller give ret til en ny udgivelse. Lokal kildekontrol er ikke bevis for, at den konkrete fase er fjernet.</p>
@@ -501,6 +528,15 @@ Genlæs den samme private rapport med dens oprindelige binding og tydelig forkla
 Den eksisterende ejerknap til månedsrapporten er afprøvet gennem ventetilstand og adgangskontrol til en færdig beskyttet rapport. Kontrollerne blev tilgængelige igen. De relevante visnings-, adgangs- og schemafiler er uændrede siden denne læsning, så det samme forløb skal ikke stå som uafprøvet.
 
 Accepten gælder denne normale private visning. Den er ikke JSON-eksport, adgangsaccept for andre roller, bevis for anonymitet eller kalibreringsgyldighed og aktiverer ingen offentlig statistik. Rapportens støj og begrænsninger skal fortsat forklares.
+
+### Automatisk månedskalder og faktisk ejer-eksport
+
+Den eksisterende private statistikvej får en fast kørsel første dag i måneden kl. 06.47 UTC for senest afsluttede UTC-måned. Kalderen genlæser den faktiske Worker og dens bindingskontrakt før konto- eller statistikdata. Bevisligt OFF giver et vellykket indholdsfrit spring over; ukendt tilstand stopper. Schedule kan ikke installere, erstatte eller aktivere Workeren. ON kræver fortsat den eksisterende præcise aktivering og dens bindingsbeviser.
+
+Den normale beskyttede rapportvisning og JSON-eksport gennem ejerens knap er faktisk afprøvet. Eksporten indeholder de 160 faste støjtilføjede celler og ingen individuel turpayload; genlæsningen er byteidentisk. En anonym forespørgsel med den offentlige nøgle afvises uden rapportdata. Faktiske ekspert- og almindelig-bruger-JWT, første automatisk producerede måned, samlet privacy-/kalibreringsaccept og Free-klarhed har fortsat deres egne åbne beviser.
+
+Frosne rapporter genbruges uden ny støj eller nyt budgettræk. Det eksisterende livstidsbudget giver højst to bidragsmåneder pr. konto. Ukendt skrivning giver ingen blind gentagelse; den nye planlægning påstår ikke at genoprette et gammelt uafklaret administrationswrite. Offentlig statistik, kalibrering og automatisk kontosletning aktiveres ikke.
+
 
 ## 89.320 Gamle og nye gennemgåede koldstartgrænser i samme register
 

@@ -9,9 +9,11 @@ import { readForecastShare, forecastShareUrl, forecastShareCopy, forecastShareDa
 initializeForecastShareDateFormatters();
 
 const PUBLIC_PAGE = 'https://ravradar.dk/';
+// Fixed browser-only navigation; its CSP digest is source-owned, never computed per request.
+const SHARE_OPEN_SCRIPT = "const link=document.getElementById('ravradar-forecast');if(link)location.replace(link.href);";
 const SHARE_RESPONSE_HEADERS = Object.freeze({ 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store',
       'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer',
-      'Content-Security-Policy': "default-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'" });
+      'Content-Security-Policy': "default-src 'none'; script-src 'sha256-8OjiuxGZLGLvEiEy6unSxYcLHTyHK5g9TQkPdaCMfUA='; base-uri 'none'; frame-ancestors 'none'; form-action 'none'" });
 const escape = value => String(value).replace(/[&<>"']/g, char => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
 })[char]);
@@ -76,7 +78,8 @@ export async function handleForecastShare(request, { shareBaseUrl, fetchPublic =
     + '<meta property="og:image:width" content="512"><meta property="og:image:height" content="512">'
     + '<meta property="og:image:alt" content="RavRadar"><link rel="canonical" href="' + escape(shareUrl) + '">'
     + '</head><body><main><h1>' + escape(title) + '</h1><p>' + escape(description)
-    + '</p><p><a href="' + escape(appUrl) + '">' + escape(copy.open) + '</a></p></main></body></html>';
+    + '</p><p><a id="ravradar-forecast" href="' + escape(appUrl) + '">' + escape(copy.open) + '</a></p></main>'
+    + (selection ? '<script>' + SHARE_OPEN_SCRIPT + '</script>' : '') + '</body></html>';
   return new Response(html, {
     status: incoming.status === 'valid' ? 200 : 400,
     headers: SHARE_RESPONSE_HEADERS,

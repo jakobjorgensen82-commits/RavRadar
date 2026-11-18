@@ -19,7 +19,8 @@ function targeted(rows,expected){
   const p=plan(rows);assert.equal(p.selection,'TARGETED');assert.deepEqual(p.profiles,expected);
   assert.equal(p.database.status,'NOT_APPLICABLE');assert.equal(p.database.executed,false);
   assert.equal(p.authority,'PLANNING_ONLY');assert.equal(p.completeGitDiffVerified,false);
-  assert.equal(p.qualifiedBaselineVerified,false);assert(p.commands.length<full.length);
+  assert.equal(p.qualifiedBaselineVerified,false);
+  assert(p.commands.length>0,'A targeted profile still needs its actual relevant commands');
   assert.equal(p.ordinaryWeatherMutatedByPlanner,false);
   assert(!Object.hasOwn(p,'ordinaryWeatherChanged'),'Planning must not claim the candidate leaves weather unchanged');
   assert(p.commands.includes(expandSourceCommands(scripts,'validate:release-version')[0]));

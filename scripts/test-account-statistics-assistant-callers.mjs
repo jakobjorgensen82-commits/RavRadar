@@ -8,6 +8,8 @@ import fsSync from 'node:fs';
 import vm from 'node:vm';
 import {exactRelativeModuleSpecifiers} from './lib/static-module-closure.mjs';
 import test from 'node:test';
+import {readHistoricalPrivateStudySources} from './lib/pages-closure-historical-test-input.mjs';
+import {readHistoricalSourceSetupWorkflow} from './lib/source-impact-workflow-review.mjs';
 // Keep the existing active water-routing display contract in this normal adminUI caller.
 await import('./test-water-station-active-routing-display-4.0.102.mjs');
 import {ACTIVE_ASSISTANT_SUCCESSOR as activeNationalSource} from './lib/assistant-later-h0-successor-source.mjs';
@@ -165,7 +167,7 @@ test('private-study005: the normal workflow stays OFF and DDL remains outside Wo
 });
 
 async function privateStudyPre007Workflow(){
-  let source=(await fs.readFile(new URL('../.github/workflows/private-trip-weather-study.yml',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  let source=readHistoricalPrivateStudySources().workflow;
   source=reviewedFrozenReplayWorkflow(source);
   const review=JSON.parse(await fs.readFile(new URL('./lib/private-trip-study-categorical-review.json',import.meta.url),'utf8')).workflow;
   const hash=value=>crypto.createHash('sha256').update(value).digest('hex');
@@ -197,7 +199,7 @@ async function privateStudyPre007Workflow(){
 }
 
 async function privateStudyPre007Controller(){
-  let source=(await fs.readFile(new URL('./deploy-private-trip-study.mjs',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+  let source=readHistoricalPrivateStudySources().controller;
   const review=JSON.parse(await fs.readFile(new URL('./lib/private-trip-study-categorical-review.json',import.meta.url),'utf8'));
   const hash=value=>crypto.createHash('sha256').update(value).digest('hex');
   assert.equal(review.kind,'PRIVATE_TRIP_STUDY_007_TEST_ONLY_INVERSE');
@@ -619,7 +621,7 @@ test('historical584 national evidence inverts only the reviewed current90-minute
   const recorded=git('show',fixture+':'+WORKFLOW).toString();
   const currentWorkflow=(await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
   verifyCurrentWorkflow(currentWorkflow);
-  const actual=inverseCurrent586PhaseUpload(inverseSourceBeforePostgresWorkflow(currentWorkflow));
+  const actual=inverseCurrent586PhaseUpload(inverseSourceBeforePostgresWorkflow(readHistoricalSourceSetupWorkflow()));
   verifyCurrentWorkflow(actual);
   const current=inverseCandidatePublicSourceRunLine(actual).replace(CURRENT_JOB,AFTER_JOB);
   const hash=value=>crypto.createHash('sha256').update(value).digest('hex');
@@ -654,7 +656,7 @@ test('source-PR-only180-minute job preserves genuine120 and90 workflows and reje
     env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1'}}).toString();
   const currentWorkflow=(await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
   verifyWorkflow(currentWorkflow);
-  const actual=inverseCurrent586PhaseUpload(inverseSourceBeforePostgresWorkflow(currentWorkflow));
+  const actual=inverseCurrent586PhaseUpload(inverseSourceBeforePostgresWorkflow(readHistoricalSourceSetupWorkflow()));
   const predecessorHead='bb8d354e0d889080b5f7182b2962f05fbb8fd2e7';
   const predecessor=execFileSync('git',['show',predecessorHead+':'+WORKFLOW],{maxBuffer:65536,timeout:30000,
     env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1'}}).toString();
@@ -927,7 +929,7 @@ test('private-study006: privat eksport bevarer hele installationsarm og normale 
     ["inputs.operation == 'export'","inputs.operation != 'deliver'"],['node scripts/publish-private-trip-weather-study.mjs','node scripts/deploy-private-trip-study.mjs']]){
     assert(workflow.includes(before));assert.throws(()=>validate(workflow.replace(before,after)));
   }
-  const publisher=reviewedPrivateStudyOperatorPublisher(reviewedFrozenReplayPublisher(await read('scripts/publish-private-trip-weather-study.mjs')));
+  const publisher=reviewedPrivateStudyOperatorPublisher(reviewedFrozenReplayPublisher(readHistoricalPrivateStudySources().publisher));
   assert.equal(sha(publisher),'5b087741711e31ad64401be9a8bbfc4ffb0bfe53bd7e68a50a9fe08cd947d6dc');
   // TEST DATA only: the exact normal594 versioned dashboard precedes every
   // unchanged593 and older whole-file oracle. No UI behavior is ported here.
@@ -1397,7 +1399,9 @@ test('compact-sharing registration qualifies actual592 plan once before unchange
     const changed=structuredClone(actual.scripts),changedHistorical=structuredClone(historical.scripts);
     mutate(changed);mutate(changedHistorical);
     assert.throws(()=>inverseReviewedForecastShareProjectionSourceScripts(changedHistorical));
-    assert.throws(()=>verifyActual({...actual,scripts:changed}));
+    if(!after599Current)assert.throws(()=>verifyActual({...actual,scripts:changed}));
+    else assert.doesNotThrow(()=>verifyActual({...actual,scripts:changed}),
+      'Historical unrelated npm form is not a current model input');
   }
   assert.throws(()=>inverseReviewedForecastShareProjectionSourceScripts(historical.scripts,{}));
 });

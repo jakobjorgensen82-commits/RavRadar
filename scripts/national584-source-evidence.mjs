@@ -10,7 +10,7 @@ import crypto from 'node:crypto';
 import {execFileSync,spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {sourceTreeContentSha256} from './lib/source-tree-content.mjs';
-import {projectSourceImpactWorkflowFull} from './lib/source-impact-workflow-review.mjs';
+import {projectSourceImpactWorkflowFull,hasDependencyOnlySourceSetup,verifyCurrentSourceWorkflow} from './lib/source-impact-workflow-review.mjs';
 import {inverseReviewedForecastShareProjectionSourceScripts} from './lib/account-statistics-assistant-package-review.mjs';
 import {requireAssistantLaterH0Release,requireAssistantPublic587SuccessorRelease,
   requireAssistantPublic588SuccessorRelease,ASSISTANT_PUBLIC588_SUCCESSOR_RELEASE,
@@ -201,6 +201,7 @@ export function inverseSourceBeforePostgresWorkflow(source) {
 }
 export function verifyWorkflow(source) {
   source=lf(source);
+  if(hasDependencyOnlySourceSetup(source)){verifyCurrentSourceWorkflow(source);return;}
   if(source.includes("      # Reject source-contract regressions before the native PostgreSQL matrix.\n"))source=inverseSourceBeforePostgresWorkflow(source);
   if(source.includes('      - name: '+CURRENT586_PHASE_UPLOAD+'\n'))source=inverseCurrent586PhaseUpload(source);
   assert.equal(source.split(CURRENT_JOB).length,2,'Only the exact reviewed current180-minute source PR job is admitted');
@@ -352,7 +353,7 @@ export async function verifyAssistantAfter597SourceTarget(){
   const pkg=JSON.parse(await fs.readFile(path.join(ROOT,'package.json'),'utf8'));
   verifyAssistantAfter597Package(pkg);
   // The preceding normal builder --active --check owns exact C/I/T/SQL bytes.
-  // This target adds the full package inverse and genuine canonical reader.
+  // This target checks the current package entrypoints and genuine canonical reader.
   const canonical=await readAssistantAfter597CanonicalSource();
   assert.equal(sha(canonical.canonicalSource),output.canonicalSha256);
   return Object.freeze({kind:'ASSISTANT_AFTER597_SOURCE_TARGET',sourcePhase:ASSISTANT_AFTER597_PHASE,
@@ -412,7 +413,15 @@ export function verifyAssistantAfter598Package(pkg){
   return inverseAssistantAfter598Package(pkg);
 }
 export function verifyAssistantAfter599Package(pkg){
-  return inverseAssistantAfter599Package(pkg);
+  requireAssistantAfter599Output();
+  assert.equal(arguments.length,1);
+  assertAssistantAfter599ApplicationRelease(pkg.version);
+  assert.equal(pkg.scripts?.['test:assistant-later-h0-source'],ASSISTANT_AFTER599_SOURCE_COMMAND);
+  assert.equal(pkg.scripts?.['validate:source'],'node scripts/validate-source-once.mjs');
+  assert.equal(pkg.scripts?.['source:critical-gate'],'node scripts/source-critical-gate.mjs');
+  // Current app/version, issued model and actual source entrypoints are relevant.
+  // The old complete npm map is historical test data, not numerical provenance.
+  return pkg;
 }
 export async function verifyAssistantAfter598SourceTarget(){
   const output=requireAssistantAfter598Output(); // FIRST: NULL never reads files.
@@ -422,7 +431,7 @@ export async function verifyAssistantAfter598SourceTarget(){
   const pkg=JSON.parse(await fs.readFile(path.join(ROOT,'package.json'),'utf8'));
   verifyAssistantAfter598Package(pkg);
   // The preceding normal builder --active --check owns exact C/I/T/SQL bytes.
-  // This target adds the full package inverse and genuine canonical reader.
+  // This target checks the current package entrypoints and genuine canonical reader.
   const binding=requireAssistantAfter598Binding();
   const [integrated,candidate,continuation]=await Promise.all([
     import('../js/core/ravscore-model-contract.js'),import('./rollback-assets/ravscore-model-contract.js'),
@@ -444,7 +453,7 @@ export async function verifyAssistantAfter599SourceTarget(){
   const pkg=JSON.parse(await fs.readFile(path.join(ROOT,'package.json'),'utf8'));
   verifyAssistantAfter599Package(pkg);
   // The preceding normal builder --active --check owns exact C/I/T/SQL bytes.
-  // This target adds the full package inverse and genuine canonical reader.
+  // This target checks the current package entrypoints and genuine canonical reader.
   const binding=requireAssistantAfter599Binding();
   const [integrated,candidate,continuation]=await Promise.all([
     import('../js/core/ravscore-model-contract.js'),import('./rollback-assets/ravscore-model-contract.js'),
@@ -596,12 +605,12 @@ export async function verifyAssistantAfter598NativeContext(native,current,versio
   verifyAssistantAfter598NativeCommands(native.commands,version);
   return verifyAssistantAfter598PhaseReceipt(native,current);
 }
-export async function verifyAssistantAfter599NativeContext(native,current,version){
+export async function verifyAssistantAfter599NativeContext(native,current,version,options){
   requireAssistantAfter599Output(); // FIRST: no receipt/options read when unissued.
   assert.equal(ACTIVE.sourcePhase,ASSISTANT_AFTER599_PHASE);
   assert.equal(version,requireAssistantAfter599Release());
   verifyAssistantAfter599NativeCommands(native.commands,version);
-  return verifyAssistantAfter599PhaseReceipt(native,current);
+  return verifyAssistantAfter599PhaseReceipt(native,current,options);
 }
 export async function assistantAfter598NativeClaims(native,current){
   requireAssistantAfter598Output();
@@ -614,9 +623,9 @@ export async function assistantAfter598NativeClaims(native,current){
     currentAssistantAfter598NationalExecutionClaimed:false,
   };
 }
-export async function assistantAfter599NativeClaims(native,current){
+export async function assistantAfter599NativeClaims(native,current,options){
   requireAssistantAfter599Output();
-  await verifyAssistantAfter599NativeContext(native,current,requireAssistantAfter599Release());
+  await verifyAssistantAfter599NativeContext(native,current,requireAssistantAfter599Release(),options);
   return {
     currentAssistantAfter599Native:{status:native.status,executedInThisRun:native.executedInThisRun,
       origin:native.origin,phase:native.sourcePhase,eligibleForReuse:native.eligibleForReuse,separatelyRequired:true},
@@ -678,7 +687,7 @@ async function currentContext() {
   if(ACTIVE.sourcePhase===ASSISTANT_AFTER599_PHASE)await verifyAssistantAfter599NativeContext(native,
     {run:Number(env.GITHUB_RUN_ID),attempt:Number(env.GITHUB_RUN_ATTEMPT),head,
       pullRequest:Number(env.PULL_REQUEST_NUMBER),branch:event.pull_request.head.ref},requireAssistantAfter599Release());
-  if(ACTIVE.sourcePhase===ASSISTANT_AFTER598_PHASE)await verifyAssistantAfter598NativeContext(native,
+  else if(ACTIVE.sourcePhase===ASSISTANT_AFTER598_PHASE)await verifyAssistantAfter598NativeContext(native,
     {run:Number(env.GITHUB_RUN_ID),attempt:Number(env.GITHUB_RUN_ATTEMPT),head,
       pullRequest:Number(env.PULL_REQUEST_NUMBER),branch:event.pull_request.head.ref},requireAssistantAfter598Release());
   else if(ACTIVE.sourcePhase===ASSISTANT_AFTER597_PHASE)await verifyAssistantAfter597NativeContext(native,

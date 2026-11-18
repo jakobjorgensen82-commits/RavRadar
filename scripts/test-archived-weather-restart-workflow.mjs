@@ -394,7 +394,7 @@ test('actual585 metadata workflow qualifies its own callers before the unchanged
     assert.notEqual(bash(body,{...base,...changes}).status,0,'Fresh exact-main purpose remains required');
 });
 
-test('archive restart uses the unchanged normal 55+3 collectors and requires both actual outcomes',()=>{
+test('archive restart uses the normal artifact and release collectors and requires both actual outcomes',()=>{
   assert.equal(sha(current),'b10eac363d4c067bf7f7c81159881b57a70923851ae8e78d1dde2357a770a477');
   assert.equal(inverseArchivedProductionGate(current),actual);
   const artifact=named(current,'Validate critical production artifact on the actual newly calculated forecast');
@@ -416,8 +416,8 @@ test('archive restart uses the unchanged normal 55+3 collectors and requires bot
   assert(barrier.at<named(current,'Apply sole last-mile binding only after all new artifact checks').at);
   assert(barrier.at<named(current,'Create current private runtime bundle atomically').at);
   const scripts=JSON.parse(fs.readFileSync(path.join(ROOT,'package.json'),'utf8')).scripts;
-  assert.equal(expandValidationCommands(scripts,'validate:production-artifact').length,55);
-  assert.equal(expandValidationCommands(scripts,'validate:production-release').length,3);
+  assert(expandValidationCommands(scripts,'validate:production-artifact').includes('node scripts/validate-data.mjs'),'the normal artifact collection must inspect its actual newly built data');
+  assert(expandValidationCommands(scripts,'validate:production-release').includes('node scripts/validate-release-version.mjs'),'the normal release collection must inspect the actual release version');
   assert.equal(scripts['release:gate:production'],'node scripts/run-validation-collection.mjs --script validate:production-release --output .geometry-v2-work/production-release-validation-report.json');
   const state=context();
   assert(enabled(artifact,state));assert(enabled(release,state));

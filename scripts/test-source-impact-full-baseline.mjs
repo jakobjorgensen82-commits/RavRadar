@@ -5,7 +5,7 @@ import {execFileSync} from 'node:child_process';
 import {syncBuiltinESMExports} from 'node:module';
 import test from 'node:test';
 import fs from 'node:fs/promises';
-import {OWNED_CACHE_NATIVE_EARLY_STEP_NAMES} from './lib/source-impact-workflow-review.mjs';
+import {OWNED_CACHE_NATIVE_EARLY_STEP_NAMES,readHistoricalSourceSetupWorkflow} from './lib/source-impact-workflow-review.mjs';
 import {ACTIVE_ASSISTANT_SUCCESSOR as ACTIVE,UNISSUED_ASSISTANT_AFTER597_SUCCESSOR as ISSUED598,
   INACTIVE_ASSISTANT_AFTER598_SUCCESSOR as CURRENT599} from './lib/assistant-later-h0-successor-source.mjs';
 import {qualifySourceImpactFullBaseline,SOURCE_IMPACT_FULL_BASELINE_KIND,qualifiedAccountErasureChecks,qualifiedAccountInactivityChecks}
@@ -165,29 +165,37 @@ test('actual normal gate plus bound artifact bodies qualify V1 and V2 full ances
 });
 
 test('normal FULL qualifier binds the new raw native layout to the actual producer workflow blob',async()=>{
-  const f=fixture({v2:true}),steps=f.job.steps;
-  const workflow=await fs.readFile(new URL('../'+PULL_REQUEST_SOURCE_WORKFLOW,import.meta.url),'utf8');
-  steps[2].name='Require exact pull-request source head';
-  const dmi={...steps[5],name:'Install declared DMI dependencies before source planning'};
-  for(const value of steps.slice(5))value.number++;
-  steps[5].name='Build deterministic source-tree content identity';steps.splice(5,0,dmi);
-  const environment=OWNED_CACHE_NATIVE_EARLY_STEP_NAMES.map((name,index)=>({...steps[3],name,number:4+index}));
-  for(const value of steps.slice(3))value.number+=2;
-  steps.splice(3,0,...environment);f.rebuild();
-  const originalReadGit=f.dependencies.readGit,reads=[];
-  f.dependencies.readGit=(args,options)=>{
-    if(args[0]==='cat-file'&&args[2]===head+':'+PULL_REQUEST_SOURCE_WORKFLOW){
-      reads.push(args);return Buffer.from(workflow);
-    }
-    return originalReadGit(args,options);
-  };
-  const result=await f.qualify();assert.equal(result.kind,SOURCE_IMPACT_FULL_BASELINE_KIND);
-  assert.equal(result.scope,'FULL_SOURCE');assert.equal(result.providerOrProductionProof,false);
-  assert.equal(f.phase.nativePostgres.schemaVersion,2);assert.equal(reads.length,1);
-  assert.equal(f.zipCalls.length,2);
-  f.dependencies.readGit=(args,options)=>args[0]==='cat-file'&&args[2]===head+':'+PULL_REQUEST_SOURCE_WORKFLOW
-    ?Buffer.from(workflow+'\n'):originalReadGit(args,options);
-  const refused=await f.qualify();assert.equal(refused.status,'REFUSED');assert.equal(refused.cheapPlanAvailable,false);
+  const current=await fs.readFile(new URL('../'+PULL_REQUEST_SOURCE_WORKFLOW,import.meta.url),'utf8');
+  const historical=readHistoricalSourceSetupWorkflow();
+  assert.notEqual(current,historical);
+  for(const [workflow,invalid] of [
+    [current,current.replace('  contents: read','  contents: write')],
+    [historical,historical+'\n'],
+  ]){
+    assert.notEqual(workflow,invalid);
+    const f=fixture({v2:true}),steps=f.job.steps;
+    steps[2].name='Require exact pull-request source head';
+    const dmi={...steps[5],name:'Install declared DMI dependencies before source planning'};
+    for(const value of steps.slice(5))value.number++;
+    steps[5].name='Build deterministic source-tree content identity';steps.splice(5,0,dmi);
+    const environment=OWNED_CACHE_NATIVE_EARLY_STEP_NAMES.map((name,index)=>({...steps[3],name,number:4+index}));
+    for(const value of steps.slice(3))value.number+=2;
+    steps.splice(3,0,...environment);f.rebuild();
+    const originalReadGit=f.dependencies.readGit,reads=[];
+    let workflowBlob=workflow;
+    f.dependencies.readGit=(args,options)=>{
+      if(args[0]==='cat-file'&&args[2]===head+':'+PULL_REQUEST_SOURCE_WORKFLOW){
+        reads.push(args);return Buffer.from(workflowBlob);
+      }
+      return originalReadGit(args,options);
+    };
+    const result=await f.qualify();assert.equal(result.kind,SOURCE_IMPACT_FULL_BASELINE_KIND);
+    assert.equal(result.scope,'FULL_SOURCE');assert.equal(result.providerOrProductionProof,false);
+    assert.equal(f.phase.nativePostgres.schemaVersion,2);assert.equal(reads.length,1);
+    assert.equal(f.zipCalls.length,2);
+    workflowBlob=invalid;
+    const refused=await f.qualify();assert.equal(refused.status,'REFUSED');assert.equal(refused.cheapPlanAvailable,false);
+  }
 });
 
 test('source-only/main locators, foreign identities and incomplete or non-green deep steps cannot be a FULL baseline',async()=>{
@@ -706,6 +714,50 @@ if(ACTIVE.sourcePhase==='assistant-after599-successor'){
       f=>f.applicationMetadata.releaseContract.modelBindings.candidateGRollback.modelBundleSha256=CURRENT599.requireBinding().C]){
       f.full.nativePostgres=copy(goodNative);f.applicationMetadata=copy(goodMetadata);mutate(f);f.phase.nativePostgres=copy(f.full.nativePostgres);f.rebuild();
       const result=await f.qualify();assert.equal(result.status,'REFUSED');assert.equal(qualifiedAccountErasureChecks(result),null);
+    }
+  });
+  test('601 FULL admits separately qualified after599 PG reuse without rewriting executed V1 evidence',async()=>{
+    const native=await import('./native-postgres-evidence.mjs');
+    const actualHead=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
+    const actualInput=await native.captureAssistantAfter599PgInput();
+    assert.equal(actualInput.sqlFiles,79,'Real current source inventory, not an old receipt flag');
+    const f=await synthetic601FullFixture(),v1=copy(f.full.nativePostgres),v1Bytes=JSON.stringify(v1);
+    f.applicationMetadata=JSON.parse(await fs.readFile('version.json','utf8'));
+    use597Package(f,{candidateVersion:f.applicationMetadata.version,producerVersion:f.applicationMetadata.version});
+    const reused={...copy(v1),schemaVersion:2,kind:native.ASSISTANT_AFTER599_REUSE_KIND,
+      status:'REUSED',executedInThisRun:false,nativeInput:actualInput,
+      origin:{run:runId-1,attempt:1,job:jobId-1,head:h('f'),artifactId:50000000000,
+        artifactDigest:'sha256:'+'d'.repeat(64),sourceTreeSha256}};
+    f.full.nativePostgres=reused;Object.assign(f.phase,{schemaVersion:2,kind:native.ASSISTANT_AFTER599_REUSE_KIND,nativePostgres:copy(reused)});
+    Object.assign(f.full.historical584National.currentAssistantAfter599Native,{status:'REUSED',executedInThisRun:false,origin:copy(reused.origin)});
+    const originalRead=f.dependencies.readGit;
+    // Existing synthetic transport maps its producer object to the actual79-file
+    // source snapshot for the normal raw PG-input reader. No historical pins,
+    // metadata facit or production qualification is rewritten.
+    f.dependencies.readGit=(args,options)=>{
+      if(args[0]==='ls-tree'&&args.at(-1)===head)return execFileSync('git',args.map(arg=>arg===head?actualHead:arg),options);
+      if(args[0]==='cat-file'&&args[1]==='blob'&&args[2].startsWith(head+':')&&!args[2].endsWith(':version.json'))
+        return execFileSync('git',args.map(arg=>arg.startsWith(head+':')?actualHead+arg.slice(head.length):arg),options);
+      if(args[0]==='rev-parse'&&args[1].endsWith('^{tree}')&&![head,merge,candidate].some(ref=>args[1]===ref+'^{tree}'))
+        return execFileSync('git',args,options);
+      return originalRead(args,options);
+    };
+    f.rebuild();const result=await f.qualify();assert.equal(result.kind,SOURCE_IMPACT_FULL_BASELINE_KIND);
+    assert.equal(qualifiedAccountErasureChecks(result).checkReference.definitions.length,28);
+    const off=qualifiedAccountInactivityChecks(result);assert.equal(off.sourceSqlFileCount,79);
+    assert.deepEqual(off.checkReference,v1.report.accountInactivity.checkReference);
+    assert.equal(JSON.stringify(v1),v1Bytes);assert.equal(reused.executedInThisRun,false);
+    for(const mutate of [r=>r.executedInThisRun=true,r=>r.origin.attempt=2,
+      r=>r.nativeInput.inputSha256='0'.repeat(64),r=>r.nativeInput.sqlFiles=77,
+      r=>delete r.report.accountInactivity,r=>r.report.accountInactivity.sourceSqlFileCount=77,
+      r=>r.report.accountInactivity.captureSqlExecuted=false,
+      r=>delete r.report.accountErasure,r=>r.report.accountErasure.sourceSqlFileCount=76,
+      r=>r.report.accountErasure.sourceSqlFileCount=75,r=>r.report.accountErasure.cases=48,
+      r=>r.report.accountErasure.checkReference.definitions.pop()]){
+      const bad=copy(reused);mutate(bad);f.full.nativePostgres=bad;f.phase.nativePostgres=copy(bad);
+      Object.assign(f.full.historical584National.currentAssistantAfter599Native,
+        {status:bad.status,executedInThisRun:bad.executedInThisRun,origin:copy(bad.origin)});
+      f.rebuild();assert.equal((await f.qualify()).status,'REFUSED');
     }
   });
 }

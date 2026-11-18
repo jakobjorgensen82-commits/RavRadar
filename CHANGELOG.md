@@ -1,3 +1,23 @@
+## 4.0.602 — ændringsbaseret kildevej og offentlig hjælp, kildekandidat
+
+- Otte kommandoers fast kildekerne med relevante ændrede funktioners eksisterende hele mål; otte er ikke et løfte om samlet antal i den store601-samling.
+- GitHubs afhængighedstrin installerer kun pakker. De otte tidligere faste teststarter er fjernet, og aktuelle og historiske arbejdsgange kontrolleres på deres egne input.
+- Historiske npm-scriptkort er ikke længere adgangskrav for den aktuelle app; gamle orakler læser deres egne autentiske kilder.
+- App-ejede lokale hjælpe- og praktiske ravkese-/strandsvar med hele spørgsmålets vagter, uændret numerisk service og ingen AI-provenienspåstand.
+- Præcis kildekvalifikation, offentlig levering og resterende samlet AI-/Free-accept er fortsat åbne.
+
+## 4.0.602 — kortere normal driftskontrol og rettet arkivkalder, kildekandidat
+
+- Normal artifact-/releasekontrol forkortes fra55+3 til10+1 aktuelle datakontroller; øvrige driftsværn bevares. Faktisk tidsbesparelse er ikke målt.
+- Arkivets CHECK-suspension og -genoprettelse bruger samme kontrollerede lokale administrator som den primære indlæsning. HISTORY beholder postgres; ingen originale SQL eller grants ændres.
+- Præcis kildekvalifikation, normal offentlig virkning og originalgendannelse er fortsat nødvendige.
+
+## 4.0.602 — supplerende visningsrettelser, lokal kandidat
+
+- Gyldige delingslinks åbner automatisk den samme prognose; Facebook-indhold og manuelt link bevares.
+- Generelle lokale assistentsvar om vandstand, RavRadar og begynderhjælp bliver forståelige og uafhængige af valgt zone. Ukendte sammensatte navne afklares.
+- Ingen ny numerisk binding, scoreformel, kildeprioritet eller geometri. Faktisk levering, ekstern AI og hosted Free-grænse er fortsat åbne.
+
 ## 4.0.602 — samlet kandidat med inaktiv kontoopsætning
 
 Den endelige lokale sammensætning omfatter det generationsbundne delingsindeks, LF7-audit af normalt gemte timefiler og to inaktive kontoappends til aktivitetsregistrering/varsling. De77 gamle migrationer og601s C/I/T bevares; den nye kilde har 79 SQL-filer. Konto-SQL og eksakt genlæsning skal leveres før den nye aktivitetsklient og Edge.
@@ -13,6 +33,18 @@ Normal set-version602 bevarer den udstedte601-modelfamilies C/I/T og alle 77 mig
 LF7-auditten aflæser nu de normale gemte public-hour-slutværdier med fuld transport- og generationsbinding i stedet for fjernede PART.hourly-rækker. Den rene auditkerne, kildevalg, T+3-regler, model og SQL bevares. UNKNOWN og faktisk mismatch holdes adskilt; dette er ikke en ny produktions- eller revisionsaccept.
 
 ## 4.0.601 — emneopfølgning og afgrænset UV-/mængdeviden, lokal kandidat
+
+## Afgrænset kontroloprydning og privat månedskalder
+
+Den sammenhængende kildekandidat fjerner en ekstra global testudførelse fra den historiske workflowfortegnelse, giver privat statistik ét naturligt normalt testmål og kvalificerer uændret after599-PostgreSQL som særskilt genbrug af den autentiske oprindelige fase. Hele CURRENT-prøvens maksimum er 480 sekunder; vejrets frister og numeriske kontrakter ændres ikke. Månedskalderen genlæser faktisk OFF/ON og kan ikke aktivere eller installere statistik. Se DEC-0302 og håndbog89.342/89.321. Kildekvalifikation, installation og faktisk automatisk virkning er særskilte åbne trin.
+
+### Automatisk månedskalder og faktisk ejer-eksport
+
+Den eksisterende private statistikvej får en fast kørsel første dag i måneden kl. 06.47 UTC for senest afsluttede UTC-måned. Kalderen genlæser den faktiske Worker og dens bindingskontrakt før konto- eller statistikdata. Bevisligt OFF giver et vellykket indholdsfrit spring over; ukendt tilstand stopper. Schedule kan ikke installere, erstatte eller aktivere Workeren. ON kræver fortsat den eksisterende præcise aktivering og dens bindingsbeviser.
+
+Den normale beskyttede rapportvisning og JSON-eksport gennem ejerens knap er faktisk afprøvet. Eksporten indeholder de 160 faste støjtilføjede celler og ingen individuel turpayload; genlæsningen er byteidentisk. En anonym forespørgsel med den offentlige nøgle afvises uden rapportdata. Faktiske ekspert- og almindelig-bruger-JWT, første automatisk producerede måned, samlet privacy-/kalibreringsaccept og Free-klarhed har fortsat deres egne åbne beviser.
+
+Frosne rapporter genbruges uden ny støj eller nyt budgettræk. Det eksisterende livstidsbudget giver højst to bidragsmåneder pr. konto. Ukendt skrivning giver ingen blind gentagelse; den nye planlægning påstår ikke at genoprette et gammelt uafklaret administrationswrite. Offentlig statistik, kalibrering og automatisk kontosletning aktiveres ikke.
 
 Assistenten bevarer kvalifikationerne i et nyt emnebundet spørgsmål på dansk, tysk og engelsk. Tre offentlige fakta forklarer fluorescens, dagslyskontrast og manglende observation af ravmængder; de45 tidligere fakta og de rå sikkerhedsgrænser består. En ravkese-opfølgning skal besvare strand-/brugsleddet fremfor alene at gentage definitionen.
 

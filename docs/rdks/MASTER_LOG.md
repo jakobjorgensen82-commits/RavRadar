@@ -1,3 +1,23 @@
+## Drift frem for brede historiske kontrolkrav
+
+Standardkildekontrollen består nu af otte faste kommandoer og de relevante hele prøver for de faktisk ændrede funktioner. Den eksisterende CURRENT-fortegnelse vælger disse fra den faktiske Git-diff; kun bytebeviste rene versionsskift fritages for en særskilt funktionsprøve. Et ukendt testansvar bliver tydeligt afvist frem for automatisk at starte 82 historiske kommandoer. Den store samlede601-ændring kan derfor stadig vælge væsentligt flere end otte mål; en lille delingsændring vælger tre relevante ekstra mål. Der påstås ingen historisk blanketudførelse eller SQL-kvalifikation fra denne kerne. Eksisterende native- og nationalfaser bevarer deres eget faktiske bevis. Den aktuelle pakkelæser kræver relevante entrypoints og bindinger, mens historiske whole-map-prøver bruger deres eget autentiske gamle input.
+
+GitHubs trin til installation af afhængigheder starter ikke længere de otte kontrolprogrammer som en fast blok. Relevante prøver vælges i selve kildekontrollen. Den aktuelle læser kontrollerer PR-jobbets adgang, rækkefølge og beviser direkte. Historiske prøver beholder deres eget workflow. Den tidligere faste 480-sekunders prøve i installationstrinnet er erstattet af denne ændring. Den nye kode kræver sin egen GitHub-kontrol.
+
+App-ejet offentlig hjælp besvarer generelle høj-/lavvandsspørgsmål, offentlig ophavsmand og Facebook-gruppe, begynderhjælp og uklare sammensatte navne. Hele praktiske spørgsmål om ravkese på stranden kan også omfatte almindelige forholdsregler; de sammensættes af eksisterende godkendte udstyrs- og strandtekster. Hele spørgsmålet skal være dækket. Private oplysninger, ukendte tillæg, lokale tid-/stedspørgsmål og fundgarantier bliver ikke klippet væk. Den normale AI-vej og prognoserangering bevares. Dette ændrer ingen numerisk model eller SQL og er ikke en påstand om samlet ekstern AI-kvalitet.
+
+Præcis samlet kildekvalifikation og faktisk levering er fortsat åbne. Alle fem mål og sikker Free bevares; automatisk retention, gendannelse og målt kontoforbrug skal fortsat verificeres gennem deres normale forløb.
+
+## Forberedt driftsforenkling og sammenhængende arkividentitet
+
+Den forberedte normale produktionskontrol undersøger den faktisk nye vejrpakke med ti artifactkommandoer og én versionskontrol i stedet for 55 og tre kommandoer. Den bevarer data, vejrhelbred, kyst- og zoneplan, geometri, offentlig deterministisk projektion og filintegritet, strøm-/cacheforhold, state-reference og adskilte kystdele. UI-, udviklings- og kildefixtures hører til ændringer af deres egne funktioner frem for hver vejrhentning. De øvrige private, offentlige, no-loss-, B/S/T-, ene-skriver- og leveringskontroller er uændrede. Der er 47 færre processtarter; den faktiske tidsbesparelse og næste normale produktionsvirkning er endnu ikke målt.
+
+Den primære arkivgendannelse bruger den allerede kontrollerede lokale supabase_admin-session, fordi de oprindelige leverandørrelationer kræver denne ejeradgang. Den normale CHECK-suspension og -genoprettelse skal derfor bindes til samme præcise session_user, current_user og lokale postgres-database. Den afgrænsede rettelse ændrer ingen grants, originale SQL-filer eller CHECK-semantik. HISTORY og den syntetiske vej beholder den hidtidige postgres-kontrol. Den kildegennemgang fandt en konkret rollekonflikt før næste forsøg; de målrettede kalderprøver består, men faktisk original SQL-/Auth-gendannelse, autonom kvittering/rotation og samlet Free-klarhed er stadig åbne.
+
+## App602: direkte delingslink og forståelig offentlig assistenthjælp
+
+Den lokale app602-kandidat omfatter nu direkte åbning af den allerede kontrollerede delte prognose. Serverens Facebook-/Open-Graph-indhold og fallbacklink bevares. App-ejede lokale hjælpesvar retter generelle vandstandsspørgsmål, offentlig ophavsmand/Facebook og begynderhjælp samt fejllæsning af Ravfund, uden at genudstede den numeriske model. Hele spørgsmålets vagter og normale prognoserangering bevares. Se håndbog89.352/89.353. Kildekvalifikation og offentlig levering er fortsat nødvendige; faktisk ekstern AI og hosted CPU/Free er åbne. Alle fem mål består.
+
 ## App 602: deling, normal LF7-læsning og inaktiv kontoforberedelse
 
 Den samlede lokale app 602-kandidat erstatter den tidligere delings-only-sammensætning. Den forener det mindre generationsbundne delingsindeks, LF7-audit af de normale gemte timefiler og to kontoappends til aktivitetsregistrering og varsling. Den numeriske601-familie, C/I/T, alle 77 tidligere SQL-filer, de ni601-kalderrettelser og score/kildeprioritet/admin/geometri bevares. Kildekataloget har 79 SQL-filer; den afgrænsede konto-installationsvisning kræver de 66 installerede forgængere og netop de to nye appends.
@@ -13,6 +33,20 @@ Kontodelen installeres med coverage UNKNOWN, notices OFF og automatisk sletning 
 Den gennemgåede lokale prototype er porteret til 601-kilden og løftet med normal set-version til app 602. Syv produktblade tilføjer ét faktisk trust-kontraktmodul, et samlet generationsindeks og normal offentlig genlæsning; tre eksisterende normale klient-/artifactmål bruger samme nye kontrakt. V1-indeks og alle zonefiler bevares. De normale C-, I- og T/bindingschecks består uden genudstedelse, og alle 77 migrationsoriginaler bevares.
 
 Det fulde manifest og national 49.560-paritet kontrolleres fortsat gennem normale producer-, kopi-, audit-/privacy- og hosted-verifierkald. Begge faktiske friskhedskontroller, fælles 15-sekunders frist og transportafslag består. De gamle 337-målinger er M5-evidens alene. Kilde-CI, kvalificeret 601-base, normal ny 601-/602-levering, V1/V2-hosting og faktisk kold CPU/Free er fortsat åbne; intet er installeret eller aktiveret af denne lokale forberedelse. Se DEC-0296 og håndbog 89.353.
+
+## 17. november — kontroloprydning på den eksisterende601-kandidat
+
+## Afgrænset kontroloprydning og privat månedskalder
+
+Den sammenhængende kildekandidat fjerner en ekstra global testudførelse fra den historiske workflowfortegnelse, giver privat statistik ét naturligt normalt testmål og kvalificerer uændret after599-PostgreSQL som særskilt genbrug af den autentiske oprindelige fase. Hele CURRENT-prøvens maksimum er 480 sekunder; vejrets frister og numeriske kontrakter ændres ikke. Månedskalderen genlæser faktisk OFF/ON og kan ikke aktivere eller installere statistik. Se DEC-0302 og håndbog89.342/89.321. Kildekvalifikation, installation og faktisk automatisk virkning er særskilte åbne trin.
+
+### Automatisk månedskalder og faktisk ejer-eksport
+
+Den eksisterende private statistikvej får en fast kørsel første dag i måneden kl. 06.47 UTC for senest afsluttede UTC-måned. Kalderen genlæser den faktiske Worker og dens bindingskontrakt før konto- eller statistikdata. Bevisligt OFF giver et vellykket indholdsfrit spring over; ukendt tilstand stopper. Schedule kan ikke installere, erstatte eller aktivere Workeren. ON kræver fortsat den eksisterende præcise aktivering og dens bindingsbeviser.
+
+Den normale beskyttede rapportvisning og JSON-eksport gennem ejerens knap er faktisk afprøvet. Eksporten indeholder de 160 faste støjtilføjede celler og ingen individuel turpayload; genlæsningen er byteidentisk. En anonym forespørgsel med den offentlige nøgle afvises uden rapportdata. Faktiske ekspert- og almindelig-bruger-JWT, første automatisk producerede måned, samlet privacy-/kalibreringsaccept og Free-klarhed har fortsat deres egne åbne beviser.
+
+Frosne rapporter genbruges uden ny støj eller nyt budgettræk. Det eksisterende livstidsbudget giver højst to bidragsmåneder pr. konto. Ukendt skrivning giver ingen blind gentagelse; den nye planlægning påstår ikke at genoprette et gammelt uafklaret administrationswrite. Offentlig statistik, kalibrering og automatisk kontosletning aktiveres ikke.
 
 ## 17. november 2026 — assistent 4.0.601 før udstedelse
 

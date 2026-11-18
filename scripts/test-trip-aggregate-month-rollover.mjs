@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import {readHistoricalPrivateStudySources} from './lib/pages-closure-historical-test-input.mjs';
 import { DatabaseSync } from 'node:sqlite';
 import { advanceTripWeatherAggregateJob as advance }
   from '../cloudflare/trip-gateway/trip-aggregate-job.js';
@@ -816,6 +817,19 @@ async function invokePrivateStudyOperatorFixture(options = {}) {
     execFileSync:(command,args,config)=>{
       calls.read++;
       assert.equal(config.timeout,60000);assert.equal(config.maxBuffer,65536);
+      if(command==='node'&&args[0]==='scripts/deploy-private-trip-study.mjs'){
+        assert.equal(config.env.GITHUB_EVENT_NAME,'schedule');assert.equal(config.env.PRIVATE_STUDY_EVENT_SCHEDULE,'47 6 1 * *');
+        assert.equal(config.env.TRIP_PRIVATE_STUDY_MODE,'plan');assert.equal(config.env.CLOUDFLARE_API_TOKEN,secret);
+        for(const key of ['TRIP_PRIVATE_STUDY_APPLY_ALLOWED','TRIP_PRIVATE_STUDY_JOBS_APPLY_ALLOWED',
+          'TRIP_PRIVATE_STUDY_JOB_BINDING_APPLY_ALLOWED','TRIP_PRIVATE_STUDY_CATEGORICAL_APPLY_ALLOWED'])assert.equal(config.env[key],'false');
+        for(const key of ['SUPABASE_SERVICE_ROLE_KEY','SUPABASE_DB_PASSWORD','TRIP_PSEUDONYM_SECRET_V1','TRIP_GATEWAY_SHARED_SECRET'])assert.equal(config.env[key],undefined);
+        if(options.activationError)throw options.activationError;
+        const enabled=options.activation!=='off';
+        return JSON.stringify(options.activation==='unknown'?{}:{kind:'PRIVATE_TRIP_STUDY_CONTROL0_PLAN',operation:'READ_ONLY_PLAN',sourceSha:head,
+          workerVersionId:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',schemaApplied:false,workerUpdated:false,
+          privateAggregationEnabled:enabled,aggregateOffAttested:!enabled,state:'EXACT_004_005_006_007',
+          originalJobBindingReady:true,categoricalPolicyReady:true});
+      }
       assert.equal(config.env.GITHUB_TOKEN,secret,'The normal source check receives the existing token');
       for(const key of ['SUPABASE_ACCESS_TOKEN','SUPABASE_SERVICE_ROLE_KEY','TRIP_GATEWAY_SHARED_SECRET',
         'TRIP_PSEUDONYM_SECRET_V1','CLOUDFLARE_API_TOKEN'])assert.equal(config.env[key],undefined);
@@ -888,7 +902,7 @@ test('private-study operator diagnostic view preserves the entire immutable publ
   assert.equal(callers.split(begin).length,2);assert.equal(callers.split(end).length,2);
   const from=callers.indexOf(begin),until=callers.indexOf(end,from);
   const view=vm.runInNewContext(callers.slice(from,until)+'\n(source=>reviewedPrivateStudyOperatorPublisher(reviewedFrozenReplayPublisher(source)));',{assert,crypto,Buffer});
-  const actual=fs.readFileSync(new URL('./publish-private-trip-weather-study.mjs',import.meta.url),'utf8');
+  const actual=readHistoricalPrivateStudySources().publisher;
   const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
   const before=view(actual);
   assert.equal(sha(before),'5b087741711e31ad64401be9a8bbfc4ffb0bfe53bd7e68a50a9fe08cd947d6dc');
@@ -1212,4 +1226,74 @@ test('binary cell ordering preserves closed keys, candidates, noise order and fr
       }finally{f.close();}
     }
   }finally{globalThis.fetch=oldFetch;}
+});
+
+test('private-study monthly schedule uses the actual fixed publisher without activation or retry', async () => {
+  const scheduled = { GITHUB_EVENT_NAME:'schedule', PRIVATE_STUDY_EVENT_SCHEDULE:'47 6 1 * *',
+    PRIVATE_STUDY_EXPORT_MODE:'ordinary' };
+  const success = await invokePrivateStudyOperatorFixture({ env:scheduled });
+  assert.equal(success.failure,null);
+  assert.equal(success.receipt?.kind,'PRIVATE_STUDY_ADMIN_BLOB_VERIFIED');
+  assert.deepEqual(success.calls,{read:5,aggregate:1,publish:1});
+  const cases = [
+    { env:{...scheduled,PRIVATE_STUDY_EVENT_SCHEDULE:'48 6 1 * *'},phase:'AUTHORITY' },
+    { env:{...scheduled,PRIVATE_STUDY_EVENT_SCHEDULE:''},phase:'AUTHORITY' },
+    { env:{...scheduled,GITHUB_EVENT_NAME:'push'},phase:'AUTHORITY' },
+    { env:{...scheduled,GITHUB_REF:'refs/heads/foreign'},phase:'AUTHORITY' },
+    { env:{...scheduled,GITHUB_RUN_ATTEMPT:'2'},phase:'AUTHORITY' },
+    { env:{...scheduled,TRIP_STORAGE_OPERATION:'existing-private-study-upgrade'},phase:'AUTHORITY' },
+    { env:{...scheduled,GITHUB_EVENT_NAME:'workflow_dispatch'},phase:'AUTHORITY' },
+    { env:{...scheduled,PRIVATE_STUDY_EXPORT_MODE:'frozen-replay',PRIVATE_STUDY_FROZEN_MONTH:'2026-10',
+      PRIVATE_STUDY_FROZEN_BINDING_SHA256:'a'.repeat(64),PRIVATE_STUDY_FROZEN_REPORT_SHA256:'b'.repeat(64)},phase:'AUTHORITY' },
+  ];
+  for (const item of cases) {
+    const result = await invokePrivateStudyOperatorFixture({env:item.env});
+    assert.equal(result.failure?.phase,item.phase);
+    assert.equal(result.failure.errorCode,'PRIVATE_STUDY_OPERATOR_AUTHORITY');
+    assert.equal(result.failure.writeOutcome,'NOT_STARTED');
+    assert.deepEqual(result.calls,{read:0,aggregate:0,publish:0});
+  }
+  const source = await invokePrivateStudyOperatorFixture({env:scheduled,sourceRequired:true});
+  assert.equal(source.failure.phase,'SOURCE_PROOF');
+  assert.deepEqual(source.calls,{read:4,aggregate:0,publish:0});
+  for (const input of [
+    {aggregateError:Error('AGGREGATE_CALLER_TIMEOUT'),phase:'AGGREGATE',calls:{read:5,aggregate:1,publish:0}},
+    {publishError:Error('PRIVATE_STUDY_DOCUMENT_WRITE_OUTCOME_UNKNOWN'),phase:'ADMIN_PUBLISH',calls:{read:5,aggregate:1,publish:1}},
+  ]) {
+    const result = await invokePrivateStudyOperatorFixture({env:scheduled,...input});
+    assert.equal(result.failure.phase,input.phase);
+    assert.equal(result.failure.writeOutcome,'UNKNOWN_NO_RETRY');
+    assert.deepEqual(result.calls,input.calls);
+  }
+});
+
+test('private-study monthly workflow only selects ordinary export and preserves the normal locks', () => {
+  const source = fs.readFileSync(new URL('../.github/workflows/private-trip-weather-study.yml',import.meta.url),'utf8');
+  assert(source.includes("  schedule:\n    - cron: '47 6 1 * *'\n"));
+  assert(source.includes("github.event_name == 'schedule' && 'export' || inputs.operation"));
+  assert(source.includes("github.event_name == 'schedule' && 'ordinary' || inputs.export_mode"));
+  assert(source.includes("PRIVATE_STUDY_EVENT_SCHEDULE: " + '$' + '{{ github.event.schedule || ' + "'' }}"));
+  assert(source.includes("test \"$PRIVATE_STUDY_EVENT_SCHEDULE\" = '47 6 1 * *'"));
+  assert.match(source,/group: ravradar-weather-production-v2\n  queue: max\n  cancel-in-progress: false/);
+  const upgrade = source.slice(source.indexOf('  private-study-upgrade:'),source.indexOf('  private-study-export:'));
+  assert(upgrade.includes("if: " + '$' + "{{ inputs.operation == 'plan' || inputs.operation == 'deliver' || inputs.operation == 'enable' }}"));
+  const exported = source.slice(source.indexOf('  private-study-export:'));
+  assert(exported.includes("if: " + '$' + "{{ inputs.operation == 'export' || github.event_name == 'schedule' }}"));
+  assert.match(exported,/group: ravradar-trip-storage-production\n      cancel-in-progress: false/);
+  assert.equal(exported.split('run: node scripts/publish-private-trip-weather-study.mjs').length,2);
+  assert.doesNotMatch(exported,/allow_00[4567]|APPLY_ALLOWED|deploy-private-trip-study|upload-artifact/);
+});
+
+
+test('private-study monthly OFF is a successful no-op before account or aggregate inputs',async()=>{
+  const env={GITHUB_EVENT_NAME:'schedule',PRIVATE_STUDY_EVENT_SCHEDULE:'47 6 1 * *'};
+  const off=await invokePrivateStudyOperatorFixture({env,activation:'off'});
+  assert.equal(off.failure,null);assert.equal(off.exitCode,undefined);
+  assert.equal(off.receipt.kind,'PRIVATE_STUDY_MONTHLY_SKIPPED');assert.equal(off.receipt.status,'SKIPPED_PRIVATE_AGGREGATION_OFF');
+  assert.equal(off.receipt.reportExported,false);assert.deepEqual(off.calls,{read:5,aggregate:0,publish:0});
+  for(const options of [{activation:'unknown'},{activationError:Object.assign(Error('PRIVATE_FIXTURE_SENSITIVE'),{code:'ETIMEDOUT'})}]){
+    const bad=await invokePrivateStudyOperatorFixture({env,...options});
+    assert.equal(bad.failure.phase,'PRIVATE_ACTIVATION');assert.equal(bad.failure.writeOutcome,'NOT_STARTED');
+    assert.deepEqual(bad.calls,{read:5,aggregate:0,publish:0});
+  }
 });

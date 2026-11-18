@@ -8,7 +8,8 @@ import {projectSourceImpactWorkflowFull,SOURCE_IMPACT_FULL_WORKFLOW_ORIGIN,
   SOURCE_IMPACT_PR_READ_GRANT,inverseSourceImpactPrReadGrant,inverseSourceImpactSdkEarlyLinux,
   SOURCE_IMPACT_HOUR_EARLY_LINUX_REVIEW,inverseSourceImpactHourEarlyLinux,
   inverseOwnedCacheNativeWorkflow,isAdditiveOwnedCacheNativeWorkflowChange,OWNED_CACHE_NATIVE_EARLY_NODE24,
-  inverseSourceImpactFullCurrent,SOURCE_IMPACT_FULL_CURRENT_COMMAND}
+  inverseSourceImpactFullCurrent,SOURCE_IMPACT_FULL_CURRENT_COMMAND,SOURCE_IMPACT_FULL_CURRENT_PREVIOUS_COMMAND,
+  readHistoricalSourceSetupWorkflow,verifyCurrentSourceWorkflow,hasDependencyOnlySourceSetup}
   from './lib/source-impact-workflow-review.mjs';
 import {inverseSourceImpactDmiPython,SOURCE_IMPACT_DMI_PYTHON_REVIEW,SOURCE_IMPACT_DMI_REQUIREMENTS_REVIEW} from './lib/source-impact-workflow-review.mjs';
 import {verifyWorkflow,inverseSourceBeforePostgresWorkflow,inverseCandidatePublicSourceRunLine,
@@ -16,30 +17,61 @@ import {verifyWorkflow,inverseSourceBeforePostgresWorkflow,inverseCandidatePubli
 import {inverseCurrent586PhaseUpload} from './native-postgres-evidence.mjs';
 
 // Read-only normal caller/contract target. No source suite, SQL, API or provider.
-const rawSource=fs.readFileSync(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8').replace(/\r\n/g,'\n');
+const liveSource=fs.readFileSync(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8').replace(/\r\n/g,'\n');
+verifyCurrentSourceWorkflow(liveSource);
+verifyWorkflow(liveSource);
+let liveCases=1;
+for (const [before,after] of [
+  ['  contents: read','  contents: write'],
+  ['        id: source-content','        id: unbound-content'],
+  ['        id: source-content','        id: source-content\n        continue-on-error: true'],
+  ['        id: source-content','        id: source-content\n        if: false'],
+  ["outputs.selection != 'TARGETED'", "outputs.selection == 'TARGETED'"],
+  ['SOURCE_GATE_HEAD_SHA: \${{ github.event.pull_request.head.sha }}','SOURCE_GATE_HEAD_SHA: \${{ github.sha }}'],
+  ['path: .cache/native-postgres-phase-proof.json','path: .cache/changed-phase.json'],
+  ['-r requirements-copernicus.txt\n','-r requirements-copernicus.txt\n          && node scripts/test-source-impact-plan.mjs\n'],
+]) {
+  const changed=liveSource.replace(before,after);
+  assert.notEqual(changed,liveSource);
+  assert.throws(()=>verifyCurrentSourceWorkflow(changed));
+  liveCases++;
+}
+const rawSource=readHistoricalSourceSetupWorkflow();
 const currentSource=inverseSourceImpactFullCurrent(rawSource);
 function assertNormalFullCurrentEntry(value){
   const start=value.indexOf('      - name: Install source-gate dependencies\n');
   assert(start>=0);const end=value.indexOf('\n      - ',start+1),block=value.slice(start,end);
   assert.equal(block.split(SOURCE_IMPACT_FULL_STEP_CONDITION).length,2);
   assert.equal(value.split(SOURCE_IMPACT_FULL_CURRENT_COMMAND).length,2);
+  assert.equal(value.includes(SOURCE_IMPACT_FULL_CURRENT_PREVIOUS_COMMAND),false);
   assert(block.includes('          && node scripts/test-source-impact-workflow.mjs\n'
     +'          && '+SOURCE_IMPACT_FULL_CURRENT_COMMAND+'\n'));
 }
+assert.equal(SOURCE_IMPACT_FULL_CURRENT_COMMAND,'timeout --signal=KILL 480s node --test scripts/test-source-current-contracts.mjs');
 assertNormalFullCurrentEntry(rawSource);
 assert.equal(projectSourceImpactWorkflowFull(rawSource),projectSourceImpactWorkflowFull(currentSource));
 assert.equal(currentSource.replace('          && node scripts/test-source-impact-workflow.mjs\n',
   '          && node scripts/test-source-impact-workflow.mjs\n          && '+SOURCE_IMPACT_FULL_CURRENT_COMMAND+'\n'),rawSource);
-let fullCurrentCases=1;
+// Den historiske form med 300 sekunder er adskilt fra den aktuelle grænse på 480 sekunder.
+const historicalSource=rawSource.replace(SOURCE_IMPACT_FULL_CURRENT_COMMAND,SOURCE_IMPACT_FULL_CURRENT_PREVIOUS_COMMAND);
+assert.notEqual(historicalSource,rawSource);
+assert.throws(()=>assertNormalFullCurrentEntry(historicalSource));
+assert.equal(inverseSourceImpactFullCurrent(historicalSource),currentSource);
+assert.equal(projectSourceImpactWorkflowFull(historicalSource),projectSourceImpactWorkflowFull(rawSource));
+let fullCurrentCases=2;
 for(const changed of [rawSource.replace('          && '+SOURCE_IMPACT_FULL_CURRENT_COMMAND+'\n',''),
-  rawSource.replace('KILL 300s','KILL 301s'),rawSource.replace('KILL 300s','KILL 299s'),
+  rawSource.replace('KILL 480s','KILL 481s'),rawSource.replace('KILL 480s','KILL 479s'),
   rawSource.replace(SOURCE_IMPACT_FULL_CURRENT_COMMAND,SOURCE_IMPACT_FULL_CURRENT_COMMAND+' --unknown'),
   rawSource.replace(SOURCE_IMPACT_FULL_CURRENT_COMMAND,SOURCE_IMPACT_FULL_CURRENT_COMMAND+'\n          && '+SOURCE_IMPACT_FULL_CURRENT_COMMAND),
+  rawSource.replace(SOURCE_IMPACT_FULL_CURRENT_COMMAND,SOURCE_IMPACT_FULL_CURRENT_COMMAND+'\n          && '+SOURCE_IMPACT_FULL_CURRENT_PREVIOUS_COMMAND),
   rawSource.replace('      - name: Install source-gate dependencies\n'+SOURCE_IMPACT_FULL_STEP_CONDITION,
     '      - name: Install source-gate dependencies\n'+SOURCE_IMPACT_FULL_STEP_CONDITION.replace('!=','=='))]){
   assert.throws(()=>assertNormalFullCurrentEntry(changed));
   if(changed!==currentSource)assert.throws(()=>projectSourceImpactWorkflowFull(changed));
   fullCurrentCases++;
+}
+for(const changed of [historicalSource.replace('KILL 300s','KILL 301s'),historicalSource.replace('KILL 300s','KILL 299s')]){
+  assert.throws(()=>projectSourceImpactWorkflowFull(changed));fullCurrentCases++;
 }
 const actualSource=inverseOwnedCacheNativeWorkflow(currentSource);
 // Aktuel rå kalder: præcis to miljøsteps, normal Node22 og hele gamle ramme.
@@ -157,24 +189,31 @@ assert.equal(historical,recorded);verifyReviewed90Workflow(historical);passed++;
 // Execute the unmodified normal source-workflow section of the existing order
 // caller, rather than importing its unrelated production/deploy test domains.
 const order=fs.readFileSync(new URL('./test-workflow-validation-order-4.0.108.mjs',import.meta.url),'utf8');
+const historicalFs={readFileSync: file=>{
+  assert(file.replaceAll('\\','/').endsWith('/validate-pull-request.yml'));
+  return rawSource;
+}};
 const begin="const actualPullRequestValidation = fs.readFileSync(`${workflowDirectory}/validate-pull-request.yml`, 'utf8').replace(/\\r\\n/g, '\\n');";
 const end="const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));";
 assert.equal(order.split(begin).length,2);const start=order.indexOf(begin),finish=order.indexOf(end,start);
 assert(finish>start);
 new Function('fs','workflowDirectory','verifyCurrentNationalWorkflow','inverseSourceBeforePostgresWorkflow',
+  'hasDependencyOnlySourceSetup','readHistoricalSourceSetupWorkflow',
   'CURRENT_SOURCE_JOB','REVIEWED90_SOURCE_JOB','assert',order.slice(start,finish))(
-  fs,fileURLToPath(new URL('../.github/workflows',import.meta.url)),verifyWorkflow,
-  inverseSourceBeforePostgresWorkflow,CURRENT_JOB,AFTER_JOB,assert);
+  historicalFs,fileURLToPath(new URL('../.github/workflows',import.meta.url)),verifyWorkflow,
+  inverseSourceBeforePostgresWorkflow,hasDependencyOnlySourceSetup,readHistoricalSourceSetupWorkflow,CURRENT_JOB,AFTER_JOB,assert);
 passed++;
 const parityBegin='let sourceGatePathCount = 0;',parityEnd='assert.equal(sourceGatePathCount, 6,';
 assert.equal(order.split(parityBegin).length,2);const parityStart=order.indexOf(parityBegin);
 const parityFinish=order.indexOf(parityEnd,parityStart);assert(parityFinish>parityStart);
 const markers=order.slice(order.indexOf('const sourceGateRequirementMarkers = ['),
   order.indexOf('const assertCopernicusSegmentJournal = '));
-const parity=new Function('fs','workflowDirectory','sourceGateWorkflowNames','projectSourceImpactWorkflowFull','assert',
+const parity=new Function('fs','workflowDirectory','sourceGateWorkflowNames','projectSourceImpactWorkflowFull',
+  'hasDependencyOnlySourceSetup','readHistoricalSourceSetupWorkflow','verifyCurrentSourceWorkflow','assert',
   markers+order.slice(parityStart,parityFinish)+'\nreturn sourceGatePathCount;');
-assert.equal(parity(fs,fileURLToPath(new URL('../.github/workflows',import.meta.url)),
-  ['validate-pull-request.yml'],projectSourceImpactWorkflowFull,assert),1);
+assert.equal(parity(historicalFs,fileURLToPath(new URL('../.github/workflows',import.meta.url)),
+  ['validate-pull-request.yml'],projectSourceImpactWorkflowFull,
+  hasDependencyOnlySourceSetup,readHistoricalSourceSetupWorkflow,verifyCurrentSourceWorkflow,assert),1);
 passed++;
 
 const rows=[...source.matchAll(/^      - (?:name|uses):[^\n]*\n/gm)];assert.equal(rows.length,21);
@@ -236,7 +275,7 @@ const mutations=[
   source+'\n# unreviewed workflow delta\n',
 ];
 for(const changed of mutations){assert.throws(()=>projectSourceImpactWorkflowFull(changed));assert.throws(()=>verifyWorkflow(changed));passed++;}
-console.log(JSON.stringify({kind:'SOURCE_IMPACT_WORKFLOW_NORMAL_CALLER_TARGET',passed:passed+fullCurrentCases,failed:0,
+console.log(JSON.stringify({kind:'SOURCE_IMPACT_WORKFLOW_NORMAL_CALLER_TARGET',passed:passed+fullCurrentCases+liveCases,failed:0,liveCases,
   normalFullCurrentCommand:SOURCE_IMPACT_FULL_CURRENT_COMMAND,normalFullCurrentCases:fullCurrentCases,
   declaredSteps:rows.length,runtimeSteps:rows.length+1,fullControlTargets:SOURCE_IMPACT_CONTROL_TARGETS.length,
   wholeQualifiedFullProjectionSha256:sha(origin),genuineHistoricalWorkflowPreserved:true,

@@ -84,8 +84,9 @@ export function inverseAssistantAfter598BuildTestInput(source){
   return previous;
 }
 
-// Pure planning only. The normal entry below independently reads the genuine
-// inventory and physically executes each required current owner target.
+// Pure catalog planning only; it does not execute or qualify current targets.
+// The normal CURRENT producer/consumer owns actual changed-target execution.
+// The legacy entry below reads only its authentic historical membership.
 export function planCurrentWorkflowInventory(actualNames,legacyNames,changedNames=[]){
   assert(arguments.length===2||arguments.length===3);
   for(const names of [actualNames,legacyNames]){
@@ -131,6 +132,24 @@ function historicalWorkflowInventory(){
   });
   return {environment,git,legacy,blobs};
 }
+// Fixed authentic sources for older private-study oracles; never current authority.
+export function readHistoricalPrivateStudySources(){
+  assert.equal(arguments.length,0,'No caller-selected historical private-study source');
+  const {git}=historicalWorkflowInventory();
+  return Object.freeze(Object.fromEntries([
+    ['workflow','.github/workflows/private-trip-weather-study.yml'],
+    ['publisher','scripts/publish-private-trip-weather-study.mjs'],
+    ['controller','scripts/deploy-private-trip-study.mjs'],
+  ].map(([role,relative])=>{
+    const row=git(['ls-tree','-z',LEGACY_WORKFLOW_HEAD,'--',relative]);
+    const entry=/^100644 blob ([a-f0-9]{40})\t([^\0]+)\0$/.exec(row);
+    assert(entry&&entry[2]===relative,'Original private-study source must be a regular fixed Git blob');
+    const body=git(['cat-file','blob',entry[1]],true,128*1024);
+    assert(body.length>0&&body.length<=128*1024,'Bounded original private-study source');
+    return [role,body.toString('utf8')];
+  })));
+}
+
 // The older oracle reads its own already-pinned inventory, never current bytes
 // coerced into another successor. This reader grants no current qualification.
 export function readHistoricalMaintenanceWorkflowSources(){
@@ -285,35 +304,24 @@ export function readHistoricalSavedWeatherAuditWorkflowSource(){
   assert(body.length>0&&body.length<=128*1024,'Bounded original saved-weather audit workflow');
   return body.toString('utf8');
 }
+// Historical test data only. Current changed targets belong to the normal
+// CURRENT producer/consumer, never a second global sweep from this old oracle.
 export function qualifyCurrentWorkflowInventory(){
   assert.equal(arguments.length,0,'No caller-selected workflow inventory, catalog or target runner');
-  const {environment,legacy,blobs}=historicalWorkflowInventory(),changed=[];
+  const {legacy}=historicalWorkflowInventory();
   const directory=path.join(ROOT,'.github/workflows');
   const actual=fs.readdirSync(directory).filter(name=>/\.ya?ml$/i.test(name)).sort();
+  assert(actual.length>0&&actual.length<=200,'Bounded current inventory shape');
+  assert.equal(new Set(actual).size,actual.length,'Duplicate current workflow name');
   for(const name of actual){
-    const file=path.join(directory,name),stat=fs.lstatSync(file);assert(stat.isFile()&&!stat.isSymbolicLink());
+    assert(/^[A-Za-z0-9_.-]+\.ya?ml$/.test(name),'Safe current workflow name');
+    const file=path.join(directory,name),stat=fs.lstatSync(file);
+    assert(stat.isFile()&&!stat.isSymbolicLink(),'Regular current workflow');
     assert(stat.size>0&&stat.size<=2*1024*1024,'Bounded actual workflow');
-    if(blobs.has(name)){
-      const body=fs.readFileSync(file);
-      // Exact Git blob identity only selects the current owner target; it is
-      // neither a new snapshot pin nor evidence that any target has passed.
-      const blob=crypto.createHash('sha1').update('blob '+body.length+'\0').update(body).digest('hex');
-      if(blob!==blobs.get(name))changed.push(name);
-    }
   }
-  const plan=planCurrentWorkflowInventory(actual,legacy,changed),completed=new Set();
-  for(const owner of plan.owners)for(const command of owner.commands){
-    if(completed.has(command))continue;
-    assert(/^node(?: --[a-z-]+)*(?: [A-Za-z0-9_./-]+\.mjs)+(?: --self-test)?$/.test(command));
-    try{
-      execFileSync(process.execPath,command.split(' ').slice(1),{cwd:ROOT,env:environment,
-        timeout:120_000,maxBuffer:4*1024*1024,stdio:['ignore','pipe','pipe']});
-    }catch{throw new Error('CURRENT_WORKFLOW_OWNER_TARGET_FAILED '+owner.area);}
-    completed.add(command);
-    console.log('Current workflow owner target completed: '+owner.area+' '+command);
-  }
-  return Object.freeze(plan.legacyNames);
+  return Object.freeze([...legacy].sort());
 }
+
 const frames = {
   ".github/workflows/reusable-weather-build.yml": {
     "before": {

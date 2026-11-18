@@ -4,6 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import crypto from 'node:crypto';
+import {runInNewContext} from 'node:vm';
 import {registerHooks} from 'node:module';
 import {copyPublicDeliveryShards} from './copy-public-delivery-shards.mjs';
 import {copyPagesPublicDelivery} from './copy-pages-public-delivery.mjs';
@@ -22,6 +23,21 @@ import {forecastShareUrl, FORECAST_SHARE_PAGES_BASE_URL, FORECAST_SHARE_WORKER_B
 
 const sha=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 const text=value=>JSON.stringify(value)+'\n';
+function assertForecastShareAutoOpen(body,headers,expectedUrl){
+  assert.equal(headers.get('Location'),null,'The HTTP response remains the OG document');
+  assert.doesNotMatch(body,/<meta[^>]+http-equiv=["']refresh/i);
+  const scripts=[...body.matchAll(/<script>([\s\S]*?)<\/script>/g)];assert.equal(scripts.length,1);
+  const script=scripts[0][1],digest=crypto.createHash('sha256').update(script).digest('base64');
+  assert.equal(headers.get('Content-Security-Policy'),"default-src 'none'; script-src 'sha256-"+digest+"'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'");
+  const href=body.match(/<a id="ravradar-forecast" href="([^"]+)">/);assert(href);
+  assert.equal(href[1].replaceAll('&amp;','&'),expectedUrl);
+  const navigations=[];
+  runInNewContext(script,{document:{getElementById(id){assert.equal(id,'ravradar-forecast');return {href:expectedUrl};}},
+    location:{replace(url){navigations.push(url);}}},{timeout:1000});
+  assert.deepEqual(navigations,[expectedUrl]);
+  assert.doesNotThrow(()=>runInNewContext(script,{document:{getElementById(){return null;}},
+    location:{replace(){assert.fail('Missing fallback link must not navigate');}}},{timeout:1000}));
+}
 const fixtureUrl=new URL('./test-ravscore-public-data-service-binding.mjs?compactShareFixture',import.meta.url).href;
 const fixtureSource=(await fs.readFile(new URL('./test-ravscore-public-data-service-binding.mjs',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
 const sentinel="const primary = bundle('primary-integrated', 61);";
@@ -160,6 +176,7 @@ try{
       const get=await handleForecastShare(new Request(link),{shareBaseUrl:host,fetchPublic:transport});
       assert.equal(get.status,200);assert.equal(requests.length-start,2);
       const body=await get.text();assert(body.includes(String(normal.score)+'/100'));
+      assertForecastShareAutoOpen(body,get.headers,forecastShareUrl('https://ravradar.dk/',{...selection,language}));
       const beforeHead=requests.length;
       const head=await handleForecastShare(new Request(link,{method:'HEAD'}),{shareBaseUrl:host,fetchPublic:transport});
       assert.equal(head.status,get.status);assert.deepEqual([...head.headers],[...get.headers]);
@@ -171,6 +188,7 @@ try{
     const beforeHead=requests.length;
     const head=await handleForecastShare(new Request(invalid,{method:'HEAD'}),{shareBaseUrl:host,fetchPublic:transport});
     assert.equal(get.status,400);assert.equal(head.status,get.status);
+    assert.doesNotMatch(await get.text(),/<script(?:\s|>)/);assert.equal(get.headers.get('Location'),null);
     assert.deepEqual([...head.headers],[...get.headers]);assert.equal(await head.text(),'');
     assert.equal(requests.length,beforeHead);cases++;
     const unbound=await handleForecastShare(new Request('https://unbound.invalid/',{method:'HEAD'}),

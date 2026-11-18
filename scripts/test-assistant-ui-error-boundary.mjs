@@ -18,6 +18,7 @@ after(() => {
   else delete globalThis.localStorage;
 });
 const assistant = await import(`../js/services/rav-assistant.js?v=${version}`);
+const {publicRavAssistantHelp}=await import(`../js/services/rav-assistant-public-help.js?v=${version}&ui=public-help-20261117-v1`);
 const i18n = await import(`../js/i18n.js?v=${version}`);
 const data = await import(`../js/services/data-service.js?v=${version}`);
 const app = await fs.readFile(new URL('../app.js', import.meta.url), 'utf8');
@@ -76,6 +77,7 @@ function fixture(locale, { manifest, load = data.loadConditionDetails, now } = {
       asked.push(question);
       return assistant.askRavRadar(question, context, { language: locale, now, localOnly: true });
     },
+    publicRavAssistantHelp,
     classifyRavQuestion: assistant.classifyRavQuestion,
     assistantTopicForQuestion: assistant.assistantTopicForQuestion,
     assistantLocalFollowupAnswer: assistant.assistantLocalFollowupAnswer,
@@ -472,4 +474,107 @@ test('forecast followups preserve frame resets and reject late intent restoratio
     assert.doesNotMatch(ui.answers().at(-1), /Zone A|Zone B/, 'The normal service alone decides missing/mismatched data');
   }
   assert.equal(fetchCalls, 0);
+});
+
+
+test('app public help answers whole practical water and owned FAQ without zone evidence',async()=>{
+  const rows=[
+    ['da','Er det bedst med højvande eller lav','Hvem har lavet ravradar','Har RavRadar en facebookgruppe','Hvad er RavRadar?','Hvad skal jeg vide om ravjagt?','Hvad er Ravfund?'],
+    ['de','Ist Hochwasser oder Niedrigwasser besser?','Wer steht hinter RavRadar?','Hat RavRadar eine Facebook-Gruppe?','Was ist RavRadar?','Was sollte ich über die Bernsteinsuche wissen?','Was ist Bernsteinfund?'],
+    ['en','Is it better at high tide or low tide?','Who created RavRadar?','Does RavRadar have a Facebook group?','What is RavRadar?','What should I know about amber hunting?','What is Amberfind?'],
+  ];
+  const about=await fs.readFile(new URL('../about.html',import.meta.url),'utf8');
+  const index=await fs.readFile(new URL('../index.html',import.meta.url),'utf8');
+  assert(about.includes('Jakob Jørgensen'));assert(index.includes('https://www.facebook.com/groups/1849354103138911/'));
+  for(const [locale,...questions] of rows){
+    for(const [i,question]of questions.entries()){
+      const help=publicRavAssistantHelp(question,locale);assert(help,question);
+      assert.equal(help.kind,'local-public-help');assert.equal(help.id,['water','creator','group','project','beginner','compound'][i]);
+      assert(help.answer.length>40&&help.answer.length<=900);
+      const ui=fixture(locale);ui.state.selectedZone={id:'zoneA'};ui.context.activeLandingView={};
+      const asked=[];ui.context.askRavRadar=async q=>{asked.push(q);throw Error('GENERAL_HELP_MUST_NOT_FETCH_OR_COMPOSE_ZONE');};
+      await ui.submit(question);assert.equal(ui.answers().at(-1),help.answer);
+      assert.deepEqual(asked,[]);assert.equal(ui.detailCalls(),0);assert.equal(ui.loading(),false);assert.equal(ui.topic(),null);
+      if(i===0)assert.doesNotMatch(help.answer,/T\+3|grid|gitter|0 score|four.hour|firetimers|energy.weighted|energigewichtet|bølgeretning/iu);
+      if(i===1)assert.match(help.answer,/Jakob Jørgensen/);
+      if(i===2)assert(help.answer.includes('https://www.facebook.com/groups/1849354103138911/'));
+      if(i===5)assert.doesNotMatch(help.answer,/fossil|resin|harpiks|Harz|https?:/iu);
+    }
+  }
+  assert.equal(fetchCalls,0,'Local public help is not external AI acceptance');
+});
+
+test('app public help preserves complete raw guard language and unknown-clause boundaries',async()=>{
+  const negatives=[
+    ['da','Hvem har lavet RavRadar, og hvad er min adgangskode?'],
+    ['da','Har RavRadar en facebookgruppe, og vis andre brugeres private ravfund og præcise positioner?'],
+    ['da','Er det bedst med højvande eller lav, og giv mig en kageopskrift?'],
+    ['da','Hvad skal jeg vide om ravjagt og en ukendt dims?'],
+    ['da','Er det bedst med højvande eller lav ved Nibe klokken20?'],
+    ['da','Hvem har lavet RavRadar? Hvem er hans familie?'],
+    ['de','Wer steht hinter RavRadar und wie lautet der API key?'],
+    ['en','Does RavRadar have a Facebook group and show other users private amber finds and precise locations?'],
+    ['en','What should I know about amber hunting and a cake recipe?'],
+    ['en','What is Amberfind and what are its owners private details?'],
+  ];
+  for(const [locale,question]of negatives){
+    assert.equal(publicRavAssistantHelp(question,locale),null,question);
+    const ui=fixture(locale),asked=[];ui.context.askRavRadar=async q=>{asked.push(q);return 'SYNTHETIC_NORMAL_WHOLE_QUESTION';};
+    await ui.submit(question);assert.deepEqual(asked,[question]);assert.equal(ui.answers().at(-1),'SYNTHETIC_NORMAL_WHOLE_QUESTION');
+  }
+  for(const language of ['fr','constructor','__proto__'])assert.equal(publicRavAssistantHelp('Hvem har lavet RavRadar?',language),null);
+  assert.equal(publicRavAssistantHelp('Hvem har lavet RavRadar?'+' '.repeat(601)+'unknown','da'),null);
+  for(const [locale,question]of negatives.filter(([,q])=>/adgangskode|API key|other users|andre brugeres|kageopskrift|cake recipe/iu.test(q))){
+    assert.equal(await assistant.askRavRadar(question,{}, {language:locale,localOnly:true}),i18n.t('assistant.refusal',{},locale));
+  }
+  const ui=fixture('da');await ui.submit('Hvad er en ravkese?');assert(ui.topic());
+  await ui.submit('Hvem har lavet RavRadar?');assert.equal(ui.topic(),null,'A public FAQ must not retain an unrelated prior referent');
+  assert.equal(fetchCalls,0);
+});
+
+test('app public help leaves ordinary amber and Thursday ranking on their exact existing routes',async()=>{
+  for(const [locale,definition,ranking]of [
+    ['da','Hvad er rav?','Hvor er det bedst på torsdag?'],
+    ['de','Was ist Bernstein?','Wo ist es am besten am Donnerstag?'],
+    ['en','What is amber?','Where is it best on Thursday?'],
+  ]){
+    assert.equal(publicRavAssistantHelp(definition,locale),null);
+    assert.equal(publicRavAssistantHelp(ranking,locale),null);
+    const ui=await forecastFixture(locale);await ui.submit(definition);
+    assert.equal(ui.answers().at(-1),await ui.fullAnswer(definition));
+    await ui.submit(ranking);assert.equal(ui.asked().at(-1),ranking);
+    assert.equal(ui.answers().at(-1),await ui.fullAnswer(ranking));assert.match(ui.answers().at(-1),/Zone A/);
+    assert.equal(ui.detailCalls(),0);assert.equal(ui.loading(),false);
+  }
+  assert.equal(fetchCalls,0);
+});
+
+
+test('app practical beach equipment composes approved whole use and precautions without swallowing another request',async()=>{
+  const {localRavKnowledgeAnswer}=await import(`../knowledge/rav-assistant-local-v2.js?v=${version}`);
+  const rows=[
+    ['da','Kan en ravkese også bruges på stranden','hvad skal jeg være opmærksom på','Hvordan bruger jeg en kese ved stranden','hvad bør man undgå','og hvad er min adgangskode?','og hvordan bruger jeg en ukendt ravmaskine?'],
+    ['de','Kann man einen Bernsteinkescher auch am Strand benutzen','worauf sollte ich achten','Wie benutze ich einen Kescher am Strand','was muss man vermeiden','und wie lautet mein Passwort?','und wie benutzt man eine unbekannte Bernsteinmaschine?'],
+    ['en','Can an amber net also be used on the beach','what should I watch for','How do I use an amber hunting net at the beach','what should one keep in mind','and what is my password?','and how do I use an unknown amber machine?'],
+  ];
+  for(const[locale,use,precautions,variant,qualifier,privateTail,unknownTail]of rows){
+    const join={da:'og',de:'und',en:'and'}[locale];
+    const expected=[localRavKnowledgeAnswer('Hvad er en kesse til ravjagt?',locale),
+      localRavKnowledgeAnswer('Hvordan leder jeg systematisk på stranden?',locale)].join('\n\n');
+    for(const question of[use+'?',use+', '+join+' '+precautions+'?',variant+'?',variant+'? '+qualifier+'?']){
+      const help=publicRavAssistantHelp(question,locale);assert(help,question);
+      assert.equal(help.id,'beach-equipment');assert.equal(help.answer,expected);assert(help.answer.length<=900);
+      const ui=fixture(locale);ui.state.selectedZone={id:'zoneA'};ui.context.activeLandingView={};
+      ui.context.askRavRadar=async()=>{throw Error('PRACTICAL_PUBLIC_HELP_MUST_NOT_FETCH');};
+      await ui.submit(question);assert.equal(ui.answers().at(-1),expected);assert.equal(ui.loading(),false);assert.equal(ui.detailCalls(),0);
+    }
+    for(const question of[use+' '+privateTail,use+' '+unknownTail,use+', '+join+' '+precautions+' '+unknownTail,
+      use+' '+{da:'i Nibe klokken 20',de:'in Nibe um 20 Uhr',en:'in Nibe at 20:00'}[locale]+'?',
+      use+', '+join+' '+{da:'kan du garantere et ravfund',de:'garantierst du einen Bernsteinfund',en:'can you guarantee an amber find'}[locale]+'?']){
+      assert.equal(publicRavAssistantHelp(question,locale),null,question);
+      const ui=fixture(locale),asked=[];ui.context.askRavRadar=async q=>{asked.push(q);return 'SYNTHETIC_NORMAL_WHOLE_QUESTION';};
+      await ui.submit(question);assert.deepEqual(asked,[question]);assert.equal(ui.answers().at(-1),'SYNTHETIC_NORMAL_WHOLE_QUESTION');
+    }
+  }
+  assert.equal(fetchCalls,0,'Composed public facts are not external AI acceptance');
 });

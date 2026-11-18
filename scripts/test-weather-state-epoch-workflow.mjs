@@ -1,4 +1,4 @@
-import { projectPagesClosureHistoricalTestInput as historicalPagesInput } from './lib/pages-closure-historical-test-input.mjs';
+import { projectPagesClosureHistoricalTestInput as historicalPagesInput, readHistoricalCompletedStageWorkflowSources } from './lib/pages-closure-historical-test-input.mjs';
 import assert from 'node:assert/strict';
 import { inverseCompletedRuntimeWorkflow } from './lib/completed-private-runtime-workflow-review.mjs';
 import fs from 'node:fs/promises';
@@ -10,8 +10,9 @@ import test from 'node:test';
 import { isLatestUnpairedWeatherGeneration } from './protected-private-production-runtime.mjs';
 import { inspectDmiForecastFile } from './lib/dmi-forecast-file.mjs';
 
-const wrapper = inverseCompletedRuntimeWorkflow((await fs.readFile('.github/workflows/run-current-weather-once.yml', 'utf8')).replaceAll('\r\n', '\n'), 'once');
-const build = inverseCompletedRuntimeWorkflow(historicalPagesInput((await fs.readFile('.github/workflows/reusable-weather-build.yml', 'utf8')).replaceAll('\r\n', '\n'), 'build'), 'build');
+const historicalWorkflows = readHistoricalCompletedStageWorkflowSources();
+const wrapper = inverseCompletedRuntimeWorkflow(historicalWorkflows.once, 'once');
+const build = inverseCompletedRuntimeWorkflow(historicalPagesInput(historicalWorkflows.build, 'build'), 'build');
 function block(text, header) {
   const at = text.indexOf(header + '\n'); assert(at >= 0, header);
   const indent = header.match(/^ */)[0].length;

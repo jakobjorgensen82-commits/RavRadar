@@ -1,5 +1,5 @@
 import './test-current-pages-workflow-wiring.mjs';
-import { projectPagesClosureHistoricalTestInput as historicalPagesInput, qualifyCurrentWorkflowInventory, readHistoricalMaintenanceWorkflowSources } from './lib/pages-closure-historical-test-input.mjs';
+import { projectPagesClosureHistoricalTestInput as historicalPagesInput, qualifyCurrentWorkflowInventory, readHistoricalMaintenanceWorkflowSources, readHistoricalCompletedStageWorkflowSources, readHistoricalPrivateStudySources } from './lib/pages-closure-historical-test-input.mjs';
 import assert from 'node:assert/strict';
 import {inverseForecastSharePagesWorkflowInventory}
   from './test-forecast-share-pages-deploy.mjs';
@@ -10,7 +10,9 @@ import {
   forecastShareDomainsForWorker, forecastShareCfEnvelopeDiagnostic,
 } from './deploy-forecast-share.mjs';
 import { verifyWorkflow as verifyCurrentNationalWorkflow, inverseSourceBeforePostgresWorkflow, CURRENT_JOB as CURRENT_SOURCE_JOB, AFTER_JOB as REVIEWED90_SOURCE_JOB } from './national584-source-evidence.mjs';
-import {projectSourceImpactWorkflowFull} from './lib/source-impact-workflow-review.mjs';
+import {projectSourceImpactWorkflowFull,verifyCurrentSourceWorkflow,hasDependencyOnlySourceSetup,
+  readHistoricalSourceSetupWorkflow} from './lib/source-impact-workflow-review.mjs';
+import {currentWorkflowTargets} from './source-current-contract-plan.mjs';
 import { assertEarlyCompletedRuntimeStageOrder, inverseCompletedRuntimeWorkflow, inverseTerminalRepair4145WorkflowInventory } from './lib/completed-private-runtime-workflow-review.mjs';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
@@ -31,11 +33,13 @@ import {
 
 const workflowDirectory = '.github/workflows';
 const productionWorkflowSources = await readProductionWorkflowSources();
+const historicalStageWorkflowSources = readHistoricalCompletedStageWorkflowSources();
+const historicalBuildWorkflowSource = historicalStageWorkflowSources.build;
 // The reviewed Pages delta leaves the four early-stage blocks unchanged.
 // Preserve their whole-byte oracle through only that exact test projection.
-assertEarlyCompletedRuntimeStageOrder(historicalPagesInput(productionWorkflowSources.build.replace(/\r\n/g, '\n'), 'build'));
+assertEarlyCompletedRuntimeStageOrder(historicalPagesInput(historicalBuildWorkflowSource, 'build'));
 const productionWorkflows = Object.freeze(Object.fromEntries(
-  Object.entries(productionWorkflowSources).map(([role, source]) => [role, inverseCompletedRuntimeWorkflow(historicalPagesInput(source.replace(/\r\n/g, '\n'), role), role)]),
+  Object.entries(productionWorkflowSources).map(([role, source]) => [role, inverseCompletedRuntimeWorkflow(historicalPagesInput(role === 'build' ? historicalBuildWorkflowSource : source.replace(/\r\n/g, '\n'), role), role)]),
 ));
 const {
   orchestrator: orchestratorWorkflow,
@@ -710,7 +714,7 @@ function reviewedFrozenReplayWorkflow(source){
   return source;
 }
 
-const privateStudyActualSource = privateStudyPre007Workflow(reviewedFrozenReplayWorkflow(fs.readFileSync(`${workflowDirectory}/${privateStudyName}`, 'utf8').replace(/\r\n/g, '\n')));
+const privateStudyActualSource = privateStudyPre007Workflow(reviewedFrozenReplayWorkflow(readHistoricalPrivateStudySources().workflow));
 function inversePrivateStudy006ExportWorkflow(source) {
   const sha = value => crypto.createHash('sha256').update(value).digest('hex');
   assert.equal(sha(source), 'bdde67e93ae059a520e21305af42c1566080faa0da786fc670d7f28dc0285949',
@@ -815,10 +819,7 @@ for (const workflowName of [
 }
 assert.doesNotMatch(r2MigrationWorkflow, /pages: write|id-token: write|deploy-pages|--publish/,
   'The copy-only R2 migration must not deploy or change the pointer');
-const manualCurrentWeatherWorkflow = inverseCompletedRuntimeWorkflow(fs.readFileSync(
-  `${workflowDirectory}/run-current-weather-once.yml`,
-  'utf8',
-).replace(/\r\n/g, '\n'), 'once');
+const manualCurrentWeatherWorkflow = inverseCompletedRuntimeWorkflow(historicalStageWorkflowSources.once, 'once');
 for (const marker of [
   '  workflow_dispatch:',
   'group: ravradar-weather-production-v2',
@@ -885,18 +886,40 @@ const assertCopernicusSegmentJournal = (section, label) => {
     `${label} skal binde journalen til restore, runner, write-authority og save.`,
   );
 };
-const sourceGateWorkflowNames = workflowFiles.filter((name) => fs
-  .readFileSync(`${workflowDirectory}/${name}`, 'utf8')
-  .includes('npm run validate:source'));
+// The original four raw owners retain their own complete six-path parity oracle.
+// That old form does not constrain every later source-only job shape. Actual
+// additional source workflows keep their normal CURRENT owner and real targets.
+const currentSourceGateWorkflowNames = fs.readdirSync(workflowDirectory)
+  .filter(name => /\.ya?ml$/i.test(name)).sort().filter(name => {
+    assert.match(name, /^[A-Za-z0-9_.-]+\.ya?ml$/);
+    const file = `${workflowDirectory}/${name}`, stat = fs.statSync(file, {throwIfNoEntry:false});
+    assert(stat?.isFile() && !fs.lstatSync(file).isSymbolicLink());
+    assert(stat.size > 0 && stat.size <= 2 * 1024 * 1024);
+    return fs.readFileSync(file, 'utf8').includes('npm run validate:source');
+  });
+const originalSourceGateOwners = ['deploy-trip-storage.yml', 'reusable-weather-build.yml',
+  'validate-copernicus-current-pilot.yml', 'validate-pull-request.yml'];
+const sourceGateWorkflowNames = currentSourceGateWorkflowNames.filter(name => originalSourceGateOwners.includes(name));
+for (const name of currentSourceGateWorkflowNames.filter(name => !originalSourceGateOwners.includes(name))) {
+  const target = currentWorkflowTargets(`.github/workflows/${name}`);
+  assert(target?.owners.length, 'An additional current source workflow needs its real normal owner');
+  assert(target.owners.every(owner => owner.commands.length > 0));
+  // Planning data only. No test process starts from this historical oracle.
+}
+
 assert.deepEqual(
   sourceGateWorkflowNames,
   ['deploy-trip-storage.yml', 'reusable-weather-build.yml', 'validate-copernicus-current-pilot.yml', 'validate-pull-request.yml'],
-  'Alle workflows med validate:source skal være kendte og dækket af dependency-paritetsgaten.',
+  'De oprindelige fire rå workflows bevarer deres egen dependency-paritetsgate.',
 );
 let sourceGatePathCount = 0;
 for (const workflowName of sourceGateWorkflowNames) {
   const actualWorkflow = fs.readFileSync(`${workflowDirectory}/${workflowName}`, 'utf8').replace(/\r\n/g, '\n');
-  const workflow = workflowName==='validate-pull-request.yml'?projectSourceImpactWorkflowFull(actualWorkflow):actualWorkflow;
+  const currentPrWorkflow = workflowName==='validate-pull-request.yml' && hasDependencyOnlySourceSetup(actualWorkflow);
+  if(currentPrWorkflow)verifyCurrentSourceWorkflow(actualWorkflow);
+  const workflow = workflowName==='validate-pull-request.yml'
+    ? projectSourceImpactWorkflowFull(currentPrWorkflow?readHistoricalSourceSetupWorkflow():actualWorkflow)
+    : actualWorkflow;
   let searchFrom = 0;
   while (true) {
     const sourceGateRun = workflow.indexOf('npm run validate:source', searchFrom);
@@ -1005,7 +1028,10 @@ if (/\.nc(?:\s|$)/m.test(historicalWavePilot)) {
 }
 const actualPullRequestValidation = fs.readFileSync(`${workflowDirectory}/validate-pull-request.yml`, 'utf8').replace(/\r\n/g, '\n');
 verifyCurrentNationalWorkflow(actualPullRequestValidation);
-const pullRequestValidation = inverseSourceBeforePostgresWorkflow(actualPullRequestValidation).replace(CURRENT_SOURCE_JOB, REVIEWED90_SOURCE_JOB);
+const historicalPullRequestValidation = hasDependencyOnlySourceSetup(actualPullRequestValidation)
+  ? readHistoricalSourceSetupWorkflow()
+  : actualPullRequestValidation;
+const pullRequestValidation = inverseSourceBeforePostgresWorkflow(historicalPullRequestValidation).replace(CURRENT_SOURCE_JOB, REVIEWED90_SOURCE_JOB);
 for (const marker of [
   'pull_request:',
   'permissions:\n  contents: read',

@@ -100,31 +100,30 @@ assert.ok(projectPlan.includes('python scripts/test-dmi-oneoff-fill.py'));
 assert.ok(projectPlan.includes('python scripts/test-dmi-contiguous-component-horizon-4.0.210.py'));
 
 const productionPlan = expandValidationCommands(projectScripts, 'validate:production-artifact');
-assert.equal(productionPlan.length, 54,
-  'the production artifact gate must retain the 52 original checks plus both public-hour delivery checks');
-for (const command of [
+// These commands inspect the fresh hydrated artifact. Source fixtures and UI
+// regressions belong to their changed-source owners, not every weather build.
+assert.deepEqual(productionPlan, [
+  'node scripts/validate-data.mjs',
   'node scripts/validate-weather-health.mjs',
-  'node scripts/test-forecast-integrity-4.0.17.mjs',
-  'node scripts/test-score-presentation-4.0.45.mjs',
+  'node scripts/validate-coastlines.mjs',
+  'node scripts/validate-zone-plan.mjs',
+  'node scripts/audit-zone-geometry-4.0.33.mjs',
   'node scripts/test-public-runtime-4.0.74.mjs',
-  'node scripts/test-current-full-coverage-gate-4.0.232.mjs',
-  'node scripts/test-current-provenance-null-safety-4.0.78.mjs',
-  'node scripts/test-missing-weather-null-safety-4.0.116.mjs',
-  'node scripts/test-water-source-production-chain-4.0.103.mjs',
+  'node scripts/test-public-runtime-pipeline-4.0.75.mjs',
+  'node scripts/test-current-spatial-scientific-audit-4.0.76.mjs',
+  'node scripts/test-state-reference-report-4.0.113.mjs',
+  'node scripts/test-local-part-direction-isolation-4.0.233.mjs',
+], 'production validates the actual data, projections, provenance and geometry');
+for (const command of [
+  'node scripts/test-local-weather-snapshot.mjs',
+  'node scripts/test-workflow-validation-order-4.0.108.mjs',
   'node --test scripts/test-public-hour-delivery-pack.mjs',
   'node --test scripts/test-current-provenance-sealing.mjs',
-]) assert.ok(productionPlan.includes(command), `critical production plan is missing ${command}`);
-for (const command of [
-  'node scripts/test-dmi-bulk-model-download.mjs',
-  'node scripts/test-feedback-learning.mjs',
-  'node scripts/test-workflow-validation-order-4.0.108.mjs',
-]) assert.ok(!productionPlan.includes(command), `production plan retained non-artifact check ${command}`);
+]) assert.ok(!productionPlan.includes(command), `production retained a development fixture ${command}`);
 
 const productionReleasePlan = expandValidationCommands(projectScripts, 'validate:production-release');
 assert.deepEqual(productionReleasePlan, [
   'node scripts/validate-release-version.mjs',
-  'node scripts/build-ravscore-model-bundle.mjs --check',
-  'node scripts/sync-ravscore-model-binding.mjs --check',
-], 'normal production must keep only exact version and active model-binding governance');
+], 'normal production keeps the exact release version; model binding is already checked before these post-data gates');
 
-console.log(`Validation collector covers all ${projectPlan.length} full-suite checks, the ${productionPlan.length}-check production gate and three release checks, preserves partial progress and reports every failure.`);
+console.log(`Validation collector covers all ${projectPlan.length} full-suite checks, the ${productionPlan.length}-check production gate and ${productionReleasePlan.length} release check, preserves partial progress and reports every failure.`);

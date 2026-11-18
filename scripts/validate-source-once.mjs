@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
+import {currentSourceTargets} from './source-current-contract-plan.mjs';
 
 // Fail-fast binding checks make an invalid generated model obvious immediately.
 // The remaining critical checks still run to completion and report together.
@@ -36,6 +37,78 @@ export function buildSourceValidationPlan(scripts) {
     gate,
     remaining: commands.filter(command => command !== gate && !SOURCE_BINDING_PREFLIGHT.includes(command)),
   };
+}
+
+export function sourceCommandsForChangedPaths(paths){
+  assert(Array.isArray(paths)&&paths.every(relative=>typeof relative==='string'));
+  const commands=new Set();
+  for(const relative of paths){
+    const target=currentSourceTargets(relative);
+    assert(target,'SOURCE_CHANGED_OWNER_REQUIRED: '+relative);
+    for(const owner of target.owners)for(const command of owner.commands)commands.add(command);
+  }
+  return [...commands];
+}
+
+export function isOnlyReleaseVersionChange(before,after,oldVersion,newVersion){
+  if(typeof before!=='string'||typeof after!=='string'
+    ||before.includes('\0')||after.includes('\0')||before.includes('\uFFFD')||after.includes('\uFFFD')
+    ||!/^4\.0\.(?:0|[1-9][0-9]*)$/.test(oldVersion??'')
+    ||!/^4\.0\.(?:0|[1-9][0-9]*)$/.test(newVersion??'')
+    ||oldVersion===newVersion||before===after)return false;
+  // Only literal v= cache parameters in static imports and asset tags. A
+  // version comparison, metadata value or other semver literal is real code.
+  const version=oldVersion.replaceAll('.','\\.');
+  const query=new RegExp('([?&]v=)'+version+'(?=&|#|$)','g');
+  const cacheUrl=url=>url.replace(query,(_,prefix)=>prefix+newVersion);
+  const imports=/^([ \t]*(?:(?:import|export)[ \t]+[A-Za-z0-9_$*{}, \t]*?\bfrom[ \t]+|import[ \t]+|}[ \t]+from[ \t]+))(['"])([^'"\r\n]+)\2([ \t]*;?[ \t]*(?:\/\/[^\r\n]*)?)(\r?)$/gm;
+  const tags=/^[ \t]*<(?:script|link|img|source|video|audio|input)\b[^<>\r\n]*>/gm;
+  const projected=before.replace(imports,(_,prefix,quote,url,suffix,cr)=>
+    prefix+quote+cacheUrl(url)+quote+suffix+cr).replace(tags,tag=>
+    tag.replace(/\b(src|href)([ \t]*=[ \t]*)(['"])([^'"\r\n]*)\3/g,
+      (_,attribute,equal,quote,url)=>attribute+equal+quote+cacheUrl(url)+quote));
+  return projected!==before&&projected===after;
+}
+
+function changedSourcePaths(){
+  const git=args=>{
+    const result=spawnSync('git',args,{cwd:process.cwd(),encoding:'utf8',shell:false,
+      env:sourceChildEnvironment('git'),timeout:30000,maxBuffer:8*1024*1024});
+    assert(result.status===0&&!result.error&&!result.signal,'SOURCE_DIFF_UNAVAILABLE');
+    return result.stdout;
+  };
+  const head=git(['rev-parse','HEAD']).trim();
+  let base='HEAD^1';
+  if(process.env.GITHUB_EVENT_NAME==='pull_request'){
+    const event=JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH,'utf8'));
+    assert.equal(event.pull_request?.head?.sha,head,'SOURCE_DIFF_HEAD_CHANGED');
+    base=event.pull_request?.base?.sha;
+    assert.match(base??'',/^[a-f0-9]{40}$/,'SOURCE_DIFF_BASE_UNAVAILABLE');
+  }
+  const raw=git(['diff','--raw','-z','--no-abbrev','--no-renames','--no-ext-diff',
+    '--no-textconv',base,head,'--']).split('\0');
+  assert.equal(raw.pop(),'','SOURCE_DIFF_NUL_REQUIRED');
+  assert.equal(raw.length%2,0,'SOURCE_DIFF_RAW_REQUIRED');
+  const paths=[];
+  for(let i=0;i<raw.length;i+=2){
+    const entry=/^:([0-7]{6}) ([0-7]{6}) [a-f0-9]{40} [a-f0-9]{40} ([AMD])$/.exec(raw[i]);
+    assert(entry&&[entry[1],entry[2]].every(mode=>['000000','100644','100755'].includes(mode)),
+      'SOURCE_DIFF_REGULAR_FILES_REQUIRED');
+    paths.push(raw[i+1]);
+  }
+  let oldVersion=null;
+  try{oldVersion=JSON.parse(git(['show',base+':package.json'])).version;}catch{/* No version-only exemption. */}
+  const newVersion=JSON.parse(fs.readFileSync('package.json','utf8')).version;
+  const versionOnly=[];
+  const selected=paths.filter(relative=>{
+    if(!/^[A-Za-z0-9_.\/-]+$/.test(relative))return true;
+    try{
+      const before=git(['show',base+':'+relative]),after=git(['show',head+':'+relative]);
+      if(isOnlyReleaseVersionChange(before,after,oldVersion,newVersion)){versionOnly.push(relative);return false;}
+    }catch{/* Added/deleted/non-text remains an actual changed owner. */}
+    return true;
+  });
+  return {paths:selected,versionOnly};
 }
 
 // Source checks run synthetic fixtures, not the hydrated production runtime.
@@ -111,10 +184,21 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     assert.ok(process.argv.length === 2 || (process.argv.length === 3 && process.argv[2] === '--plan'), 'Unsupported source option');
     const scripts = JSON.parse(fs.readFileSync('package.json', 'utf8')).scripts;
     const plan = buildSourceValidationPlan(scripts);
+    const diff=changedSourcePaths(),changed=sourceCommandsForChangedPaths(diff.paths);
+    plan.remaining=[...new Set([...plan.remaining,...changed])]
+      .filter(command=>command!==plan.gate&&!plan.preflight.includes(command));
     if (process.argv[2] === '--plan') {
       console.log(JSON.stringify({ criticalSourceGate: true, bindingPreflight: plan.preflight.length,
-        criticalChecks: plan.remaining.length + 1, totalCommands: plan.preflight.length + plan.remaining.length + 1 }));
-    } else process.exitCode = runSourceValidation(plan);
+        criticalChecks: plan.remaining.length + 1, totalCommands: plan.preflight.length + plan.remaining.length + 1,
+        changedOwnerPaths:diff.paths.length,versionOnlyPaths:diff.versionOnly.length,
+        historicalBlanketExecuted:false,nativePostgresScope:'SEPARATE_WORKFLOW_PHASE' }));
+    } else {
+      console.log('SOURCE_SCOPE '+JSON.stringify({fixedCommands:SOURCE_BINDING_PREFLIGHT.length+6,
+        changedOwnerPaths:diff.paths.length,versionOnlyPaths:diff.versionOnly.length,
+        selectedCommands:plan.remaining.length+1,historicalBlanketExecuted:false,
+        nativePostgresScope:'SEPARATE_WORKFLOW_PHASE'}));
+      process.exitCode = runSourceValidation(plan);
+    }
   } catch (error) {
     console.error(error.message);
     process.exitCode = 1;

@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { assertCurrentRepairSqlSecurityFrames } from './lib/pages-closure-historical-test-input.mjs';
+import { expandValidationCommands } from './run-validation-collection.mjs';
 
 const root = process.cwd();
 const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
@@ -57,47 +58,22 @@ for (const page of ['index.html', 'about.html', 'admin.html', 'jordrav.html']) {
 }
 
 const buildWorkflow = read('.github/workflows/reusable-weather-build.yml');
-const productionValidationSteps = packageJson.scripts['validate:production-artifact']
-  ?.split(/\s*&&\s*/)
-  .map(command => command.match(/^npm run ([\w:.-]+)$/)?.[1]);
-assert.deepEqual(productionValidationSteps, [
-  'validate:data',
-  'validate:weather-health',
-  'validate:coastlines',
-  'validate:zone-plan',
-  'test:data-quality',
-  'test:forecast-integrity',
-  'audit:zone-geometry',
-  'test:score-presentation',
-  'test:fresh-startup',
-  'test:site-function-suite',
-  'test:best-time-consistency',
-  'test:public-runtime',
-  'test:mobile-live-cache',
-  'test:release-integrity-4.0.73',
-  'test:public-runtime-pipeline',
-  'test:progressive-public-conditions',
-  'test:current-full-coverage-gate',
-  'test:current-spatial-audit',
-  'test:current-provenance-null-safety',
-  'test:public-startup-order',
-  'test:public-nonblocking-forecast',
-  'test:current-provenance-vector-consistency',
-  'test:flow-arrow-runtime',
-  'test:map-zoom-refresh',
-  'test:zone-admin-propagation',
-  'test:zone-deletion-runtime',
-  'test:admin-config-production',
-  'test:state-reference-report',
-  'test:current-transport-history',
-  'test:dmi-vector-grid-integrity',
-  'test:missing-weather-null-safety',
-  'test:local-part-direction-isolation',
-  'test:current-direction-audit',
-  'test:water-source-production-chain',
-  'test:water-station-active-routing-display',
-  'test:hydrated-zone-pruning',
-], 'Den kritiske produktionsgate må ikke vokse med historiske eller kildeinterne kontroller.');
+const productionValidationSteps = expandValidationCommands(packageJson.scripts,'validate:production-artifact');
+// Require the actual post-data contracts, regardless of npm aliases or literal
+// commands. Historical source-regex tests are not fresh vector-data evidence.
+for(const required of [
+  'node scripts/validate-data.mjs',
+  'node scripts/validate-weather-health.mjs',
+  'node scripts/validate-coastlines.mjs',
+  'node scripts/validate-zone-plan.mjs',
+  'node scripts/audit-zone-geometry-4.0.33.mjs',
+  'node scripts/test-public-runtime-4.0.74.mjs',
+  'node scripts/test-public-runtime-pipeline-4.0.75.mjs',
+  'node scripts/test-current-spatial-scientific-audit-4.0.76.mjs',
+  'node scripts/test-state-reference-report-4.0.113.mjs',
+  'node scripts/test-local-part-direction-isolation-4.0.233.mjs',
+])assert.ok(productionValidationSteps.includes(required),
+  'Produktionsgaten mangler sin faktiske datakontrakt: '+required);
 assert.ok(buildWorkflow.includes('node scripts/run-validation-collection.mjs')
   && buildWorkflow.includes('--script validate:production-artifact')
   && buildWorkflow.includes('--output .geometry-v2-work/production-artifact-validation-report.json'),
@@ -216,5 +192,4 @@ for (const file of [...browserSources, 'package.json', '.github/workflows/update
   assert.doesNotMatch(read(file), /^(?:<<<<<<<|=======|>>>>>>>)(?: |$)/m, `${file} indeholder uløste merge-markører.`);
 }
 
-await import('./test-jordrav.mjs');
-console.log(`OK: ${browserSources.length} browserfiler, lokale sideaktiver, versionsbinding, jordravkontrakt og post-data deploygates er intakte.`);
+console.log(`OK: ${browserSources.length} browserfiler, lokale sideaktiver, versionsbinding og post-data deploygates er intakte.`);

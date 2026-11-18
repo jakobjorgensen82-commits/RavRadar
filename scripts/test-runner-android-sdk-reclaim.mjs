@@ -9,6 +9,7 @@ import {
   SOURCE_IMPACT_SDK_EARLY_LINUX_REVIEW, SOURCE_IMPACT_FULL_WORKFLOW_SHA256,
   inverseOwnedCacheNativeWorkflow,
   inverseSourceImpactSdkEarlyLinux, projectSourceImpactWorkflowFull, inverseSourceImpactHourEarlyLinux, inverseSourceImpactDmiPython,
+  readHistoricalSourceSetupWorkflow, verifyCurrentSourceWorkflow,
 } from './lib/source-impact-workflow-review.mjs';
 
 const SDK = '/usr/local/lib/android/sdk';
@@ -302,19 +303,19 @@ test('fixed spawn failure reports no child and never claims an SDK success', asy
 });
 
 test('early Linux source step runs the actual fixed SDK caller before its unchanged short matrix', async () => {
-  const source = inverseSourceImpactDmiPython(inverseOwnedCacheNativeWorkflow(await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml', import.meta.url), 'utf8')));
+  const source = (await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  verifyCurrentSourceWorkflow(source);
   const begin = source.indexOf('      - name: Diagnose normal pack-reader closure on artificial data only\n');
   assert(begin > 0);
   const step = source.slice(begin, source.indexOf('\n      - ', begin + 1));
   assert.match(step, /timeout-minutes: 3\n/);
   assert.match(step, /run: >-\n          node scripts\/test-production-hour-lock-4\.0\.236\.mjs &&\n          node scripts\/reclaim-runner-android-sdk\.mjs &&\n          node scripts\/test-post-cutover-migration-routing\.mjs &&/);
   assert.equal(source.split('node scripts/reclaim-runner-android-sdk.mjs &&\n').length, 2);
-  assert.equal((source.match(/^      - (?:name|uses):/gm) ?? []).length, 21);
   assert.match(step, /steps\.source-content\.outputs\.selection != 'TARGETED'/);
 });
 
-test('early SDK workflow has an exact whole inverse and rejects missing changed or duplicate reviewed hunks', async () => {
-  const rawSource = inverseSourceImpactDmiPython(inverseOwnedCacheNativeWorkflow(await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml', import.meta.url), 'utf8')));
+test('historical early SDK proof rejects missing changed or duplicate reviewed hunks', () => {
+  const rawSource = inverseSourceImpactDmiPython(inverseOwnedCacheNativeWorkflow(readHistoricalSourceSetupWorkflow()));
   const source = inverseSourceImpactHourEarlyLinux(rawSource);
   assert.equal(projectSourceImpactWorkflowFull(rawSource), projectSourceImpactWorkflowFull(source));
   const review = SOURCE_IMPACT_SDK_EARLY_LINUX_REVIEW;

@@ -20,6 +20,7 @@ const ci = {CI:'true', GITHUB_EVENT_NAME:'pull_request', GITHUB_REPOSITORY:'synt
   GITHUB_SHA:'a'.repeat(40), GITHUB_TOKEN:'synthetic-source-proof-token',
   RUNNER_OS:process.platform, SOURCE_GATE_HEAD_SHA:'a'.repeat(40), PULL_REQUEST_NUMBER:'17',
   GIT_NO_LAZY_FETCH:'1'};
+ci.GITHUB_EVENT_PATH=path.join(owned,'event.json');
 const production = {
   RAVRADAR_PRIVATE_RUNTIME_STORAGE_BACKEND:'r2', RAVRADAR_PRIVATE_RUNTIME_ROOT:'synthetic-private-root',
   RAVRADAR_PRIVATE_RUNTIME_BUNDLE:'synthetic-private-bundle', RAVRADAR_PRODUCTION_TARGET_HOUR:'synthetic-hour',
@@ -55,6 +56,19 @@ const run = env => spawnSync(process.execPath, ['scripts/validate-source-once.mj
   {cwd:owned, env, encoding:'utf8', timeout:15000, maxBuffer:1024*1024});
 try {
   await fs.mkdir(path.join(owned,'scripts'));
+  // Real isolated Git/event context for the driver's complete changed-file
+  // inventory. Owner lookup is inert here: this fixture tests env boundaries.
+  await fs.writeFile(path.join(owned,'scripts/source-current-contract-plan.mjs'),
+    'export const currentSourceTargets=()=>({owners:[]});\n');
+  const git=args=>{
+    const value=spawnSync('git',args,{cwd:owned,env:host,encoding:'utf8',timeout:10000});
+    assert.equal(value.status,0,value.stderr);return value.stdout.trim();
+  };
+  git(['init','-q']);
+  const commit=()=>git(['-c','user.name=Synthetic','-c','user.email=synthetic@example.invalid',
+    'commit','--allow-empty','-qm','synthetic source environment']);
+  commit();const base=git(['rev-parse','HEAD']);commit();const head=git(['rev-parse','HEAD']);
+  await fs.writeFile(ci.GITHUB_EVENT_PATH,JSON.stringify({pull_request:{base:{sha:base},head:{sha:head}}}));
   await fs.writeFile(path.join(owned,'package.json'), JSON.stringify({scripts:{
     'validate:source':'node scripts/validate-source-once.mjs',
     'source:critical-gate':'node scripts/source-critical-gate.mjs',
