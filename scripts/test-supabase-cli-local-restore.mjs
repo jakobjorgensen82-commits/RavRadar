@@ -1125,7 +1125,8 @@ alter table public.rr_restore_probe enable row level security;
 create policy own_probe on public.rr_restore_probe for select to authenticated using(owner_id=auth.uid());
 grant usage on schema public to rr_restore_reader;
 grant select on public.rr_restore_probe to rr_restore_reader;
-create table public.rr_restore_duplicates(value text);
+create table public.rr_restore_duplicates(value text, "found" boolean not null default true,
+ "detail, note" text not null default 'synthetic note');
 insert into public.rr_restore_duplicates(value) values ('same'),('same'),('other');
 `;
 // CLI dump runs inside this exact owned bridge, so its destination is the
@@ -1207,8 +1208,12 @@ async function* archiveParitySql(c,archive,summary,inventoryOnly=false){
     let header=[],headerBytes=0,copy=null,lineBytes=0,prefix=Buffer.alloc(0);
     const controlState={restrict:null,seenRestrict:false},utf8=new TextDecoder('utf-8',{fatal:true});
     function endCopy(){
-      const {table,columns,temp}=copy,record='ROW('+columns+')::text COLLATE "C"';
-      const expected=`SELECT ${record} FROM pg_temp.${temp}`,actual=`SELECT ${record} FROM ONLY ${table}`;
+      const {table,columns,temp}=copy;
+      // A bare quoted "found" is ambiguous with PL/pgSQL's implicit FOUND.
+      const identifiers=columns.match(new RegExp(COPY_IDENTIFIER,'g'));
+      const record=alias=>'ROW('+identifiers.map(identifier=>alias+'.'+identifier).join(', ')+')::text COLLATE "C"';
+      const expected=`SELECT ${record('rr_expected_row')} FROM pg_temp.${temp} AS rr_expected_row`;
+      const actual=`SELECT ${record('rr_restored_row')} FROM ONLY ${table} AS rr_restored_row`;
       copy=null;
       return `DO $rr_archive_parity$ BEGIN IF EXISTS (((${expected}) EXCEPT ALL (${actual})) UNION ALL ((${actual}) EXCEPT ALL (${expected}))) THEN RAISE SQLSTATE 'P0001' USING MESSAGE='ARCHIVE_DATA_CONTENT_OR_DUPLICATE_MISMATCH'; END IF; END $rr_archive_parity$;\nDROP TABLE pg_temp.${temp};\n`;
     }
@@ -3332,9 +3337,10 @@ async function selfTest(){
     assert.match(archiveStep,/--run-archive-restore/);assert.match(workflow,/if: inputs.restore_mode == 'synthetic'[\s\S]*--run-local-fixture/);
   });
   test('archive parity emits COPY-preserving PostgreSQL content duplicate and sequence checks',async()=>{
-    const payload='--row-is-data\t9007199254740993.123456789\nsame\t1\nsame\t1\n'+('æ'.repeat(ARCHIVE_SQL.chunkBytes))+'\t2\n';
+    const payload='--row-is-data\t9007199254740993.123456789\tt\tfirst\nsame\t1\tf\tduplicate\nsame\t1\tf\tduplicate\n'
+      +('æ'.repeat(ARCHIVE_SQL.chunkBytes))+'\t2\tt\tlast\n';
     const data="SET client_encoding = 'UTF8';\nSELECT pg_catalog.set_config('search_path', '', false);\n"
-      +'COPY "public"."probe" ("label", "amount") FROM stdin;\n'+payload+'\\.\n'
+      +'COPY "public"."probe" ("label", "amount", "found", "detail, note") FROM stdin;\n'+payload+'\\.\n'
       +'COPY "auth"."users" ("id", "encrypted_password") FROM stdin;\nsynthetic-id\tsynthetic-hash\n\\.\n'
       +'COPY "auth"."identities" ("id") FROM stdin;\n\\.\n'
       +`SELECT pg_catalog.setval('"public"."probe_id_seq"', 7, true);\nRESET ALL;\n`;
@@ -3345,7 +3351,10 @@ async function selfTest(){
       const sql=Buffer.concat(chunks).toString('utf8');
       assert.deepEqual(summary,{tableCount:4,rowCount:6,sequenceCount:1});assert(sql.includes(payload));
       assert.equal((sql.match(/EXCEPT ALL/g)??[]).length,8);assert.equal((sql.match(/COLLATE "C"/g)??[]).length,16);
-      assert(sql.includes('FROM ONLY "public"."probe"'));assert(sql.includes('SELECT last_value::text,is_called'));
+      for(const [alias,relation] of [['rr_expected_row','pg_temp."rr_archive_expected_1"'],['rr_restored_row','ONLY "public"."probe"']]){
+        assert(sql.includes(`ROW(${alias}."label", ${alias}."amount", ${alias}."found", ${alias}."detail, note")::text COLLATE "C" FROM ${relation} AS ${alias}`));
+      }
+      assert(sql.includes('SELECT last_value::text,is_called'));
       assert(!sql.includes('pg_catalog.setval('));assert(!sql.includes('COPY "public"'));
       assert(sql.includes("'scope','AUTHENTICATED_ARCHIVE_CONTENT_AND_DUPLICATES'"));
       await fs.writeFile(path.join(archive.directory,'data.sql'),Buffer.from(data.replace('same\t1','same\t3')));
