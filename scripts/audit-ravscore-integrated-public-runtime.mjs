@@ -2,6 +2,10 @@
 import fs from 'node:fs/promises';
 import { auditForecastShareProjectionFiles } from './build-forecast-share-projection.mjs';
 import path from 'node:path';
+import { publicDeliveryTransportEntries } from '../js/services/public-delivery-transport-binding.js';
+import { assertPublicDeliveryDocument } from '../js/core/public-delivery-contract.js';
+import { readPublicDeliveryJsonFile } from './lib/public-delivery-json-transport.mjs';
+import { assertPublicDeliveryNestedBinding } from './lib/public-delivery-nested-binding.mjs';
 import { fileURLToPath } from 'node:url';
 import { getHeapStatistics } from 'node:v8';
 import {
@@ -1156,10 +1160,13 @@ export function projectFurWaterRoutingPresence(full) {
 
 // This projection observes a completed normal producer; missing legacy data is
 // UNKNOWN. It neither changes source eligibility nor authorizes a model/state.
-export function projectLf7WaterRoutingAcceptance(full, diagnostics, routing) {
-  const unknown = reason => ({ status: 'UNKNOWN', reason, waterOnlyConformant: false,
+function lf7Unknown(reason) {
+  return { status: 'UNKNOWN', reason, waterOnlyConformant: false,
     sourceTrendConformant: false, computedValuesMatch: false, coverageComplete: false,
-    allRoutedT3Comparable: false, counts: null, rawValuesIncluded: false });
+    allRoutedT3Comparable: false, counts: null, rawValuesIncluded: false };
+}
+function prepareLf7WaterRoutingAcceptance(full, diagnostics, routing) {
+  const unknown = lf7Unknown;
   const observation = diagnostics?.lf7WaterRouting;
   if (!observation) return unknown('NOT_RECORDED');
   if (!full?.datasetId || !validTime(full.productionReferenceAt) || !validTime(full.generatedAt)
@@ -1185,6 +1192,28 @@ export function projectLf7WaterRoutingAcceptance(full, diagnostics, routing) {
     || counts.routedHours + counts.directHours + counts.missingWaterHours !== counts.observedHours
     || counts.comparableT3Hours + counts.unknownT3Hours !== counts.routedHours
     || counts.lfWaterHours > counts.routedHours + counts.directHours) return unknown('COVERAGE_OR_COUNTS_INCOMPLETE');
+  return { parts, observation };
+}
+
+function finishLf7WaterRoutingAcceptance(values, observation) {
+  const counts = observation.counts;
+  const computedSha = sha256Text(JSON.stringify(values.sort((a,b) => a[0].localeCompare(b[0]) || a[1].localeCompare(b[1]))));
+  const computedValuesMatch = computedSha === observation.computedValuesSha256 && counts.computedValueMismatchHours === 0;
+  const waterOnlyConformant = counts.forbiddenLfCurrentHours === 0 && counts.forbiddenLfTemperatureHours === 0;
+  const sourceTrendConformant = counts.invalidTrendHours === 0;
+  return { status: computedValuesMatch && waterOnlyConformant && sourceTrendConformant ? 'OBSERVED_CONFORMANT' : 'OBSERVED_VIOLATION',
+    reason: null, waterOnlyConformant, sourceTrendConformant, computedValuesMatch,
+    coverageComplete: counts.missingWaterHours === 0, allRoutedT3Comparable: counts.unknownT3Hours === 0,
+    configurationSha256: observation.configurationSha256, selectionSha256: observation.selectionSha256,
+    counts: { ...counts }, rawValuesIncluded: false };
+}
+
+// Retain the synchronous pure API for callers with the original computed rows.
+export function projectLf7WaterRoutingAcceptance(full, diagnostics, routing) {
+  const prepared = prepareLf7WaterRoutingAcceptance(full, diagnostics, routing);
+  if (prepared.status === 'UNKNOWN') return prepared;
+  const { parts, observation } = prepared;
+  const unknown = lf7Unknown;
   const values = [];
   for (const [partId, part] of parts) {
     const rows = new Map((part.hourly ?? []).map(row => [row.time, row.weather]));
@@ -1195,15 +1224,56 @@ export function projectLf7WaterRoutingAcceptance(full, diagnostics, routing) {
       values.push([partId, time, weather.waterLevelCm ?? null, weather.waterLevelTrendCm3h ?? null]);
     }
   }
-  const computedSha = sha256Text(JSON.stringify(values.sort((a,b) => a[0].localeCompare(b[0]) || a[1].localeCompare(b[1]))));
-  const computedValuesMatch = computedSha === observation.computedValuesSha256 && counts.computedValueMismatchHours === 0;
-  const waterOnlyConformant = counts.forbiddenLfCurrentHours === 0 && counts.forbiddenLfTemperatureHours === 0;
-  const sourceTrendConformant = counts.invalidTrendHours === 0;
-  return { status: computedValuesMatch && waterOnlyConformant && sourceTrendConformant ? 'OBSERVED_CONFORMANT' : 'OBSERVED_VIOLATION',
-    reason: null, waterOnlyConformant, sourceTrendConformant, computedValuesMatch,
-    coverageComplete: counts.missingWaterHours === 0, allRoutedT3Comparable: counts.unknownT3Hours === 0,
-    configurationSha256: observation.configurationSha256, selectionSha256: observation.selectionSha256,
-    counts: { ...counts }, rawValuesIncluded: false };
+  return finishLf7WaterRoutingAcceptance(values, observation);
+}
+
+// The normal CLI audits the persisted compact format. Qualify one existing
+// public hour at a time, retaining only LF7 water scalars, never rehydrating PARTs.
+export async function projectLf7WaterRoutingAcceptanceFromPublicHours(full, diagnostics, routing, {
+  manifest, liveDirectory,
+} = {}) {
+  const prepared = prepareLf7WaterRoutingAcceptance(full, diagnostics, routing);
+  if (prepared.status === 'UNKNOWN') return prepared;
+  const { parts, observation } = prepared;
+  const values = [];
+  try {
+    assertRavScoreModelBinding(manifest?.ravScoreModelBinding);
+    if (manifest.datasetId !== full.datasetId || manifest.generatedAt !== full.generatedAt
+      || manifest.productionReferenceAt !== full.productionReferenceAt
+      || manifest.zoneCount !== Object.keys(full.zones ?? {}).length
+      || manifest.coastalPartCount !== Object.keys(full.coastalParts.parts).length
+      || !sameCanonical(manifest.ravScoreModelBinding, full.coastalParts.modelBinding)
+      || typeof liveDirectory !== 'string' || !liveDirectory) return lf7Unknown('PUBLIC_HOUR_UNQUALIFIED');
+    const hours = publicDeliveryTransportEntries(manifest).filter(entry => entry.kind === 'hour');
+    if (hours.length !== RAVSCORE_PUBLIC_FORECAST_HOURS) return lf7Unknown('PUBLIC_HOUR_UNQUALIFIED');
+    for (const entry of hours) {
+      const loaded = await readPublicDeliveryJsonFile(path.join(liveDirectory, entry.path), entry,
+        manifest.detailDelivery?.coldHoursSchema === 1);
+      const document = loaded.value;
+      assertPublicDeliveryDocument(document, manifest, entry);
+      assertPublicDeliveryNestedBinding(document, manifest.ravScoreModelBinding);
+      const publicParts = document.coastalParts.parts;
+      const selectedIds = Object.keys(publicParts).filter(id => lf7WaterOnlyZone(publicParts[id]?.zoneId));
+      if (selectedIds.length !== parts.length) return lf7Unknown('PUBLIC_HOUR_UNQUALIFIED');
+      for (const [partId, part] of parts) {
+        const publicPart = publicParts[partId];
+        if (!publicPart || publicPart.id !== partId || publicPart.zoneId !== part.zoneId) {
+          return lf7Unknown('PUBLIC_HOUR_UNQUALIFIED');
+        }
+        const current = publicPart.current, weather = current?.weather;
+        if (current?.time !== entry.key || !weather || typeof weather !== 'object' || Array.isArray(weather)) {
+          return lf7Unknown('COMPUTED_HOUR_MISSING');
+        }
+        for (const key of ['waterLevelCm', 'waterLevelTrendCm3h']) {
+          if (weather[key] != null && !finite(weather[key])) return lf7Unknown('PUBLIC_HOUR_UNQUALIFIED');
+        }
+        // The normal projection copies these scalars without rounding. Its
+        // omitted/undefined and explicit-null values share the producer's ?? null.
+        values.push([partId, entry.key, weather.waterLevelCm ?? null, weather.waterLevelTrendCm3h ?? null]);
+      }
+    }
+  } catch { return lf7Unknown('PUBLIC_HOUR_UNQUALIFIED'); }
+  return finishLf7WaterRoutingAcceptance(values, observation);
 }
 async function readBoundedRoutingAuditJson(file, maximumBytes) {
   let handle;
@@ -2361,6 +2431,10 @@ async function main() {
     startup, startupText, details, detailsText, coastalPartsText, zoneRegistryText, manifest,
     lf7WaterRoutingDiagnostics, waterRoutingConfiguration,
   });
+  report.lf7WaterRoutingAcceptance = await projectLf7WaterRoutingAcceptanceFromPublicHours(
+    full, lf7WaterRoutingDiagnostics, waterRoutingConfiguration,
+    { manifest, liveDirectory: path.dirname(manifestPath) },
+  );
   cliFailureState.phase = 'CREATE_OUTPUT_DIRECTORY';
   await fs.mkdir(path.dirname(outputPath), { recursive: true });
   cliFailureState.phase = 'WRITE_REPORT';

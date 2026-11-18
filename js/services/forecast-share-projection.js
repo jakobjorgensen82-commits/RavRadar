@@ -1,8 +1,8 @@
 // Detached display-only projection of already computed public scores.
-import { exactMapZoneScore } from './map-forecast-view.js?v=4.0.601';
-import { assertRavScoreModelBinding } from '../core/ravscore-model-contract.js?v=4.0.601';
+import { exactMapZoneScore } from './map-forecast-view.js?v=4.0.602';
+import { assertRavScoreModelBinding } from '../core/ravscore-model-contract.js?v=4.0.602';
 import { RAVSCORE_PUBLIC_MODEL_BINDING_FIELDS, assertExactPublicRavScoreModelBindingShape }
-  from '../core/ravscore-public-profile-contract.js?v=4.0.601';
+  from '../core/ravscore-public-profile-contract.js?v=4.0.602';
 
 export const FORECAST_SHARE_DESCRIPTOR_PATH = './data/live/forecast-share.json';
 export const FORECAST_SHARE_DESCRIPTOR_SCHEMA = 'ravradar-forecast-share-zone-index-v1';
@@ -191,4 +191,21 @@ export function assertForecastShareProjectionParity({projection,descriptor,manif
   }
   need(comparisons === ZONES * HOURS * MODES.length, 'FORECAST_SHARE_PARITY_INCOMPLETE');
   return Object.freeze({comparisons});
+}
+
+export function assertForecastShareTrustedZone(payload, index, entry) {
+  // The index has just passed its closed schema and the same complete public
+  // metadata validators as the ordinary manifest. No caller-derived cache.
+  const metadata = index.publicMetadata;
+  keys(payload, ['schemaVersion','datasetId','generatedAt','productionReferenceAt','sourceDetailsSha256','zoneRegistrySha256','modelBinding','axis','modes','qualities','coverageStatuses','zone']);
+  generation(payload, metadata, null);
+  need(payload.schemaVersion === FORECAST_SHARE_ZONE_SCHEMA
+    && payload.sourceDetailsSha256 === metadata.publicConditionDetailsSha256
+    && payload.zoneRegistrySha256 === metadata.zoneRegistrySha256
+    && same(payload.modes, MODES) && same(payload.qualities, QUALITIES)
+    && same(payload.coverageStatuses, COVERAGES), 'FORECAST_SHARE_PROJECTION_BINDING');
+  keys(payload.axis, ['firstHour','count','stepMs']);
+  need(same(payload.axis, index.axis) && index.zones.includes(entry), 'FORECAST_SHARE_PROJECTION_INVENTORY');
+  assertZone(payload.zone, entry.id);
+  return payload;
 }

@@ -1,23 +1,25 @@
-import { displayNationalRankingScore } from '../core/zone-ranking.js?v=4.0.601';
-import { forecastDateKeyInTimeZone } from '../core/forecast-calendar.js?v=4.0.601';
-import { arrowInputs, assertMapHour, landingKind, plainMapHourEntries, readMapHour } from './plain-map-hour.js?v=4.0.601&map=plain-map-v3-20261104';
-import { scoreRating } from '../core/score-presentation.js?v=4.0.601';
+import { displayNationalRankingScore } from '../core/zone-ranking.js?v=4.0.602';
+import { forecastDateKeyInTimeZone } from '../core/forecast-calendar.js?v=4.0.602';
+import { arrowInputs, assertMapHour, landingKind, plainMapHourEntries, readMapHour } from './plain-map-hour.js?v=4.0.602&map=plain-map-v3-20261104';
+import { scoreRating } from '../core/score-presentation.js?v=4.0.602';
 import { assertPublicDeliveryTransportIdentity, inspectPublicDeliveryTransport, publicDeliveryTransportEntries }
-  from './public-delivery-transport-binding.js?v=4.0.601&map=plain-map-v3-20261104';
-import { PUBLIC_JSON_ENVELOPE_KIND, decodePublicJsonTransport } from './public-json-transport.js?v=4.0.601&transport=public-json-bridge-20261103';
+  from './public-delivery-transport-binding.js?v=4.0.602&map=plain-map-v3-20261104';
+import { PUBLIC_JSON_ENVELOPE_KIND, decodePublicJsonTransport } from './public-json-transport.js?v=4.0.602&transport=public-json-bridge-20261103';
 import { assertForecastShareDescriptor, assertForecastShareZoneProjection, forecastShareZoneProjectionSelection,
-  FORECAST_SHARE_DESCRIPTOR_PATH, FORECAST_SHARE_INDEX_MAX_BYTES, FORECAST_SHARE_ZONE_MAX_BYTES } from './forecast-share-projection.js?v=4.0.601';
-import { normalizeZoneRegistry } from './zone-registry.js?v=4.0.601';
-import { exactForecastShareSelection } from './forecast-share-contract.js?v=4.0.601&ui=forecast-share-20261024&share=custom-domain-20261102';
-import { exactMapZoneScore } from './map-forecast-view.js?v=4.0.601';
+  FORECAST_SHARE_DESCRIPTOR_PATH, FORECAST_SHARE_INDEX_MAX_BYTES, FORECAST_SHARE_ZONE_MAX_BYTES,
+  assertForecastShareTrustedZone } from './forecast-share-projection.js?v=4.0.602';
+import {FORECAST_SHARE_TRUST_PATH, assertForecastShareTrustIndex} from './forecast-share-trust-index.js?v=4.0.602';
+import { normalizeZoneRegistry } from './zone-registry.js?v=4.0.602';
+import { exactForecastShareSelection } from './forecast-share-contract.js?v=4.0.602&ui=forecast-share-20261024&share=custom-domain-20261102';
+import { exactMapZoneScore } from './map-forecast-view.js?v=4.0.602';
 import { publicDeliveryEntries, assertPublicDeliveryDocument, publicDeliveryGeneration,
-  reuseVerifiedPublicHour, refreshVerifiedPublicGeneration, createBoundedPublicMemory } from '../core/public-delivery-contract.js?v=4.0.601';
+  reuseVerifiedPublicHour, refreshVerifiedPublicGeneration, createBoundedPublicMemory } from '../core/public-delivery-contract.js?v=4.0.602';
 import {
   RAVSCORE_CALIBRATION_ELIGIBLE,
   RAVSCORE_CURRENT_SUPPLY_POLICY,
   assertRavScoreModelBinding,
   ravScoreModelBinding,
-} from '../core/ravscore-model-contract.js?v=4.0.601';
+} from '../core/ravscore-model-contract.js?v=4.0.602';
 import {
   RAVSCORE_PUBLIC_COASTAL_PART_COUNT,
   RAVSCORE_PUBLIC_DETAILS_KIND,
@@ -37,18 +39,18 @@ import {
   ravScorePublicHorizonValidUntil,
   selectPublicRuntimeAvailability,
   sameRavScoreModelBinding,
-} from '../core/ravscore-public-runtime-contract.js?v=4.0.601';
+} from '../core/ravscore-public-runtime-contract.js?v=4.0.602';
 import {
   assertExactPublicRavScoreProfile,
-} from '../core/ravscore-public-profile-contract.js?v=4.0.601';
+} from '../core/ravscore-public-profile-contract.js?v=4.0.602';
 import {
   assertRavScoreVerifiedEvidenceTrust,
-} from '../core/ravscore-evidence-trust-contract.js?v=4.0.601';
+} from '../core/ravscore-evidence-trust-contract.js?v=4.0.602';
 import {
   assertPublicWeatherSourceAge,
-} from '../core/ravscore-public-weather-source-age.js?v=4.0.601';
+} from '../core/ravscore-public-weather-source-age.js?v=4.0.602';
 
-export { createForecastSnapshotReference } from './trip-evidence-contract.js?v=4.0.601';
+export { createForecastSnapshotReference } from './trip-evidence-contract.js?v=4.0.602';
 
 const DEFAULT_PUBLIC_CONDITIONS_URL = './data/live/public-conditions.json';
 const DEFAULT_PUBLIC_DETAILS_URL = './data/live/public-condition-details.json';
@@ -301,7 +303,7 @@ function assertPublicVerifiedEvidenceTrust(document, label) {
   return root;
 }
 
-function assertManifest(manifest) {
+function assertManifestMetadata(manifest, deliveryManifest = null) {
   if (!manifest || typeof manifest !== 'object' || Array.isArray(manifest)) throw new Error('Datamanifestet mangler.');
   if (manifest.schemaVersion !== 4 || manifest.complete !== true || !manifest.datasetId) {
     throw new Error('Datamanifestet har ikke den atomiske runtimekontrakt.');
@@ -356,7 +358,7 @@ function assertManifest(manifest) {
     throw new Error('Manifestets scoretilgængelighed dækker ikke de samme 210 zoner.');
   }
   const runtime = manifest.ravScoreRuntime;
-  plainMapHourEntries(manifest, publicDeliveryTransportEntries(manifest));
+  if (deliveryManifest !== null) plainMapHourEntries(deliveryManifest, publicDeliveryTransportEntries(deliveryManifest));
   assertPublicRuntimeManifest(runtime, {
     modelBinding: manifest.ravScoreModelBinding,
     startup: {
@@ -371,6 +373,11 @@ function assertManifest(manifest) {
   });
   return manifest;
 }
+
+function assertManifest(manifest) { return assertManifestMetadata(manifest, manifest); }
+// Full, unprojected source admission for the independent artifact producer and
+// reader. It includes the ordinary transport/map inventories, not a flag.
+export function assertPublicForecastShareSourceManifest(manifest) { return assertManifest(manifest); }
 
 function assertZoneRegistryDocument(document, manifest) {
   const registry = normalizeZoneRegistry(document);
@@ -1559,7 +1566,13 @@ export async function loadPublicForecastShareSelection(input, { fetchPublic } = 
 }
 
 // Compact demand-only sharing; normal map/timeline loading remains unchanged.
-export async function loadCompactPublicForecastShareSelection(input, { fetchPublic } = {}) {
+export function loadCompactPublicForecastShareSelection(input, options = {}) {
+  return loadBoundedForecastShareSelection(input, options, true);
+}
+export function loadLegacyCompactPublicForecastShareSelection(input, options = {}) {
+  return loadBoundedForecastShareSelection(input, options, false);
+}
+async function loadBoundedForecastShareSelection(input, { fetchPublic } = {}, trustIndex) {
   const selection = exactForecastShareSelection(input);
   if (!selection || typeof fetchPublic !== 'function') throw new Error('FORECAST_SHARE_READER_INVALID');
   // One deadline from manifest start, not a fresh15 seconds per fetch. This also
@@ -1604,6 +1617,23 @@ export async function loadCompactPublicForecastShareSelection(input, { fetchPubl
     return withText ? { document: decoded.value, text } : decoded.value;
   }
   try {
+    if (trustIndex) {
+      const index = assertForecastShareTrustIndex(await read(FORECAST_SHARE_TRUST_PATH, {limit: FORECAST_SHARE_INDEX_MAX_BYTES}));
+      const metadata = assertManifestMetadata(index.publicMetadata);
+      const availability = selectPublicRuntimeAvailability(metadata, {modelBinding: ravScoreModelBinding()});
+      const entry = index.zones.find(item => item.id === selection.zoneId);
+      const hour = (Date.parse(selection.time) - Date.parse(index.axis.firstHour)) / index.axis.stepMs;
+      if (!entry || selection.time < availability.selectedReferenceAt
+        || !Number.isInteger(hour) || hour < 0 || hour >= index.axis.count) return null;
+      const projection = await read('./data/live/' + entry.path.slice(2), {
+        bytes: entry.bytes, sha256: entry.sha256, limit: FORECAST_SHARE_ZONE_MAX_BYTES,
+      });
+      assertForecastShareTrustedZone(projection, index, entry);
+      budget();
+      const fresh = selectPublicRuntimeAvailability(metadata, {modelBinding: ravScoreModelBinding()});
+      if (selection.time < fresh.selectedReferenceAt) return null;
+      return forecastShareZoneProjectionSelection(projection, selection);
+    }
     const loaded = await read('./data/live/manifest.json', { withText: true });
     const manifest = assertManifest(loaded.document);
     const availability = selectPublicRuntimeAvailability(manifest, { modelBinding: ravScoreModelBinding() });

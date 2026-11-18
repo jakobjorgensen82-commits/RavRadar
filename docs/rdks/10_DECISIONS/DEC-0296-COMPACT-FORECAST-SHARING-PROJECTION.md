@@ -1,3 +1,7 @@
+## Samlet 602-appkandidat med separat konto-installation
+
+Delingsdelen og dens score-/model-/datakontrakt bevares i den samlede602-kilde med LF7-kontrollen og to inaktive kontoappends. Kontodelen har eget79-katalog og SQL/readback før aktivitetsklient/Edge; deling giver ingen konto- eller sletteautoritet. Først kvalificeret601-vejr/V1, derefter602-artifact med begge indeksversioner og V2-Functions med faktisk hosted CPU/Free-accept. Se håndbog 89.353/89.354; tidligere lokale delingsmålinger bevarer deres egen generation.
+
 # DEC-0296 – Kompakt offentlig prognosedeling uden ny scoreberegning
 
 **Dato:** 2026-10-29
@@ -33,3 +37,14 @@ Der tilføjes ingen DB-, R2-, KV-, D1- eller Supabase-binding, billedlager, nye 
 5. GET/HEAD, OG, robots, ugyldig og udløbet selection samt Facebooks faktiske preview og egen cache skal afprøves efter levering. Godkendt Pages/DNS/TLS og det senere klientskifte beholder DEC-0294s særskilte gates. Ingen offentlig delingsklar-påstand før disse relevante beviser og legacy-kompatibiliteten foreligger.
 
 Alle driftsidentiteter, konkrete tids-/CPU-målinger og private pakkeoplysninger føres i checkpointet. Håndbog 89.282 er kanonisk i Markdown og spejles til web og den normale INSTALL-håndbogspayload. Ældre 89.279-diagnostik, 89.281-taildokumentation og de øvrige afsnit bevares. De øvrige åbne mål består.
+
+
+## Tillæg 17. november — ét generationsindeks til kold deling
+
+Den godkendte lokale app 602-kandidat følger den faktisk udstedte601-familie. Den erstatter kun den nye delingslæseres behov for at genlæse hele manifestets uvedkommende detail-/kortdescriptorer. Et særskilt fast prognoseindeks projicerer de nødvendige28 metadatafelter,118-timersaksen og 210 sorterede zoneposter med præcis sti/størrelse/SHA. Eksisterende V1-indeks og alle zonefiler bevares byte-/formatkompatible. Den nye læser foretager to kald; dens indeks og zonefil beholder128/32KiB-lofterne og én samlet15s-deadline. Den gamle tre-kaldskontrakt ovenfor er historik for den nye læser og fortsat normal for gammel V1.
+
+Normalproducenten bruger samme allerede beregnede resultater. Begge kopiveje og den uafhængige artifact-/privacy-audit genlæser indekset mod hele mastermanifestet og alle 49.560 normale zone/time/søgemåde-resultater. Det komplette artifact bindes fortsat gennem normalt Pages-segl og atomisk publicering. GET validerer det lukkede trust-view, model/profil/runtime/evidens/kildealder, tid og valgt hashbundet zone; det genberegner ikke master-SHA. Masterhashen i indekset er proveniens, ikke en selvudstedt autoritet eller digital signatur.
+
+Det faktisk importerede trust-kontraktmodul i den forseglede browserclosure gør nyt indeks obligatorisk i den normale offentlige verifier. Genuine594 beholder sin egen v1-kilde. Manglende indeks må ikke skabe tavs fallback for ny implementering. Begge reelle klokke-/tilgængelighedskald, fatal UTF-8, EOF, størrelse/SHA, udløb og alle uændrede offentlige status/headere/renderafslag består.
+
+Dette er appkode på uændret601-C/I/T, ikke ny numerisk udstedelse eller SQL. Alle 77 migrationsbytes bevares. Først leveres normalt601-vejr og V1-Functions kompileret601; derefter602 med begge indekser; derefter V2-Functions og faktisk hosted generations-/svarparitet samt cold/warm CPU og kontokvote. Gamle M5/337-målinger ommærkes ikke. En lokal gevinst eller mindre datamængde er ikke Cloudflare10ms-/Free-accept. Ingen ny tjeneste, nøgle, plan, database, billedrute eller ændret score/kilde/geometri indføres.

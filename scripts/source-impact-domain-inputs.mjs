@@ -19,6 +19,7 @@ const PROFILE601_ID='DERIVED_601_DOMAIN_INPUTS_C101_I100_T12';
 const FACTORY599=Object.freeze({head:'9d67207fbbec0f6bcf7819048f72e57535e9615d',tree:'a1a76ef3b38885ba46f3422ee287fe1b1c581363'});
 // One semantic ancillary app schema after issued599, never a per-head profile.
 const ERASURE_SQL='supabase/migrations/20261116181500_account_erasure_outbox_off.sql';
+const INACTIVITY_OFF_SQL=Object.freeze(['supabase/migrations/20261117180000_account_inactivity_notice_off.sql','supabase/migrations/20261117180100_account_native_activity_capture_off.sql']);
 const ERASURE_METADATA_READER='scripts/verify-account-erasure-schema.mjs';
 const ERASURE_NATIVE_ADAPTER='scripts/lib/account-erasure-outbox-native-fixture.mjs';
 const PROFILE_FILE='scripts/lib/source-impact-domain-inputs-594.json';
@@ -314,9 +315,14 @@ export function analyzeSourceDomainInputs(input){
       scopePaths.add(directory+'/package.json');
     const sql=ref=>[...trees.get(ref).keys()].filter(file=>file.startsWith('supabase/migrations/')&&file.endsWith('.sql')).sort();
     const offPresent=ref=>(is599||is601)&&trees.get(ref).has(ERASURE_SQL);
-    const pgModules=ref=>offPresent(ref)?[...p.postgresModules,ERASURE_METADATA_READER,ERASURE_NATIVE_ADAPTER]:p.postgresModules;
+    const noticePresent=ref=>{
+      const count=INACTIVITY_OFF_SQL.filter(file=>trees.get(ref).has(file)).length;
+      assert(count===0||(is601&&count===2),'DOMAIN_PARTIAL_OR_WRONG_FAMILY_NOTICE_SQL');
+      return count===2;
+    };
+    const pgModules=ref=>{noticePresent(ref);return offPresent(ref)?[...p.postgresModules,ERASURE_METADATA_READER,ERASURE_NATIVE_ADAPTER]:p.postgresModules;};
     // All SQL stays in the real PG inventory; the known76th row grants no reuse.
-    assert.equal(sql(input.baselineCommit).length,is601?77:is599?75+Number(offPresent(input.baselineCommit)):is598?74:is597?73:72,
+    assert.equal(sql(input.baselineCommit).length,is601?77+2*Number(noticePresent(input.baselineCommit)):is599?75+Number(offPresent(input.baselineCommit)):is598?74:is597?73:72,
       'DOMAIN_BASELINE_PROFILE_SQL_COUNT');
     if(is597||is598||is599||is601){assert.equal(modelData.get(input.baselineCommit).C.manifest.files.length,101,'DOMAIN_BASELINE_MODEL_MEMBERSHIP');
       assert.equal(modelData.get(input.baselineCommit).I.manifest.files.length,100,'DOMAIN_BASELINE_MODEL_MEMBERSHIP');}

@@ -1,3 +1,19 @@
+## App 602: deling, normal LF7-læsning og inaktiv kontoforberedelse
+
+Den samlede lokale app 602-kandidat erstatter den tidligere delings-only-sammensætning. Den forener det mindre generationsbundne delingsindeks, LF7-audit af de normale gemte timefiler og to kontoappends til aktivitetsregistrering og varsling. Den numeriske601-familie, C/I/T, alle 77 tidligere SQL-filer, de ni601-kalderrettelser og score/kildeprioritet/admin/geometri bevares. Kildekataloget har 79 SQL-filer; den afgrænsede konto-installationsvisning kræver de 66 installerede forgængere og netop de to nye appends.
+
+Én samlet faktisk 79-kilde-/PostgreSQL-kvalifikation skal dække de nye SQL- og katalogkontrakter samt de berørte normale kaldere. Uændrede lokale beviser genbruges med deres oprindelige input; gammel 77-kvalifikation ommærkes ikke til79. Samlingen reducerer leveringsrunder, ikke relevante sikkerheds- eller datakrav.
+
+601 skal først kvalificeres og leveres gennem almindeligt nyt vejr; den eksisterende V1-delingskode skal følge den nye binding. Efter den samlede602-kvalifikation installeres og genlæses kontoappends før den ændrede aktivitetsklient og trip-log-Edge. Derefter følger normal602-kodelevering med begge delingsindekser og kontrolleret V2-Functions med faktisk svar-/generationsparitet og målt kold CPU/Free-forbrug.
+
+Kontodelen installeres med coverage UNKNOWN, notices OFF og automatisk sletning OFF. Den konfigurerer ingen Auth-hook, automatisk mail eller cron. Positiv aktivitet og ægte leverandørlevering holdes adskilt fra manglende registrering og accepteret afsendelse. Faktisk signup/profil-bootstrap, hook/capture, kontinuitet, automatisk varsling og senere 30-dages sletning er fortsat åbne. Lokal samling er ikke installation eller brugeraccept. Se håndbog 89.353/89.354 og det private checkpoint; alle fem mål består.
+
+## Samlet delingsindeks med uændret modelfamilie
+
+App 602 må kun projicere allerede valideret offentlig generation og eksisterende210 zonefiler. Det nye indeks skal binde komplet nødvendig model-/profil-/runtime-/evidens-/kildealdermetadata, dataset/H0/gyldighed,118-timersakse og præcise zonefilers størrelse/SHA. Ingen genberegning af score, ny service, cachet friskhed eller implicit numerisk/SQL-overgang tillades. V1-indeks og zonebytes bevares.
+
+Normal artifact-admission og offentlig genlæsning skal sammenligne trust-view med hele manifestet og normal 49.560-celleparitet. Den reelle, forseglede browserclosures kontraktmodul kræver nyt indeks; manglende indeks må ikke give fallback i ny læser. Begge aktuelle tilgængelighedskontroller og alle transport-/tidsafslag består. Master-SHA i indekset er proveniens, ikke påstand om mastergenlæsning ved GET. Før aktivering kræves faktisk 601-base, normal 602-levering, V2-kompatibilitet og hosted CPU/Free-måling; lokal Node-proxy er utilstrækkelig. Se DEC-0296/håndbog89.353.
+
 ## Manuel kontosletning som samlet appkandidat
 
 Den aktive eneejer må forberede og udtrykkeligt genoptage fuld sletning af en almindelig fremmed konto. Manuel handling får aldrig inaktivitetsmode eller eligibility. Holdbar UUID-outbox, permanent PG-fence også efter COMPLETE, observationernes INSERT/UPDATE/ejerskifte, profilbootstrap og Auth-UUID-genbrug skal beskyttes. Observationer fjernes før normal GoTrue admin-DELETE; roller, reviews, SCIM og ukendt Storage-ejerskab/policy kræver HOLD. Direkte SQL-sletning af auth.users er ikke produktvejen.

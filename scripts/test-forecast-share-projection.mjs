@@ -2,22 +2,42 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import {fileURLToPath} from 'node:url';
 import crypto from 'node:crypto';
+import {runInNewContext} from 'node:vm';
 import {registerHooks} from 'node:module';
 import {copyPublicDeliveryShards} from './copy-public-delivery-shards.mjs';
+import {copyPagesPublicDelivery} from './copy-pages-public-delivery.mjs';
 import {buildPublicConditions,buildPublicConditionDetails,buildPublicManifest,buildPublicDeliveryDocument,compactJson} from './public-conditions-lib.mjs';
 import {auditPagesArtifactPrivacy,PagesArtifactPrivacyError} from './audit-pages-artifact-privacy.mjs';
 import {writeForecastShareProjection,readForecastShareProjectionFiles,copyForecastShareProjection} from './build-forecast-share-projection.mjs';
 import {assertForecastShareDescriptor,assertForecastShareProjection,assertForecastShareZoneProjection,assembleForecastShareProjection,assertForecastShareProjectionParity} from '../js/services/forecast-share-projection.js';
-import {loadCompactPublicForecastShareSelection,loadPublicForecastShareSelection} from '../js/services/data-service.js';
+import {loadCompactPublicForecastShareSelection,loadLegacyCompactPublicForecastShareSelection,loadPublicForecastShareSelection} from '../js/services/data-service.js';
 import {exactMapZoneScore} from '../js/services/map-forecast-view.js';
 import {buildReleaseContractMetadata} from './lib/release-contract-metadata.mjs';
 import {handleForecastShare} from './forecast-share/handler.mjs';
+import {verifyRavScoreOperationalPagesDeployment} from './verify-ravscore-operational-pages-deployment.mjs';
+import {computeRavScorePublicBrowserClosure} from './lib/ravscore-public-browser-closure.mjs';
 import {forecastShareUrl, FORECAST_SHARE_PAGES_BASE_URL, FORECAST_SHARE_WORKER_BASE_URL}
   from '../js/services/forecast-share-contract.js';
 
 const sha=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 const text=value=>JSON.stringify(value)+'\n';
+function assertForecastShareAutoOpen(body,headers,expectedUrl){
+  assert.equal(headers.get('Location'),null,'The HTTP response remains the OG document');
+  assert.doesNotMatch(body,/<meta[^>]+http-equiv=["']refresh/i);
+  const scripts=[...body.matchAll(/<script>([\s\S]*?)<\/script>/g)];assert.equal(scripts.length,1);
+  const script=scripts[0][1],digest=crypto.createHash('sha256').update(script).digest('base64');
+  assert.equal(headers.get('Content-Security-Policy'),"default-src 'none'; script-src 'sha256-"+digest+"'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'");
+  const href=body.match(/<a id="ravradar-forecast" href="([^"]+)">/);assert(href);
+  assert.equal(href[1].replaceAll('&amp;','&'),expectedUrl);
+  const navigations=[];
+  runInNewContext(script,{document:{getElementById(id){assert.equal(id,'ravradar-forecast');return {href:expectedUrl};}},
+    location:{replace(url){navigations.push(url);}}},{timeout:1000});
+  assert.deepEqual(navigations,[expectedUrl]);
+  assert.doesNotThrow(()=>runInNewContext(script,{document:{getElementById(){return null;}},
+    location:{replace(){assert.fail('Missing fallback link must not navigate');}}},{timeout:1000}));
+}
 const fixtureUrl=new URL('./test-ravscore-public-data-service-binding.mjs?compactShareFixture',import.meta.url).href;
 const fixtureSource=(await fs.readFile(new URL('./test-ravscore-public-data-service-binding.mjs',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
 const sentinel="const primary = bundle('primary-integrated', 61);";
@@ -118,7 +138,7 @@ try{
     assert.throws(()=>assembleForecastShareProjection(files.zoneFiles.map(file=>file.payload),files.descriptor,manifest,invalidExpected),/binding/i);
     assert.throws(()=>assertForecastShareProjectionParity({projection:files.projection,descriptor:files.descriptor,manifest,details,registry},invalidExpected),/binding/i);cases++;
   }
-  const copy=await copyPublicDeliveryShards({source:live,target});assert.equal(copy.files,539);
+  const copy=await copyPublicDeliveryShards({source:live,target});assert.equal(copy.files,540);
   for(const name of ['manifest.json','public-conditions.json','public-condition-details.json','coastal-parts-v2.json'])await fs.copyFile(path.join(live,name),path.join(target,name));
   await fs.copyFile(path.join(workspace,'data/zones.geojson'),path.join(artifact,'data/zones.geojson'));
   await fs.writeFile(path.join(artifact,'index.html'),'<!doctype html><title>Synthetic sharing artifact</title>\n');
@@ -127,6 +147,7 @@ try{
   await fs.copyFile(new URL('../js/services/forecast-share-projection.js',import.meta.url),path.join(artifact,'js/services/forecast-share-projection.js'));
   const privacy=await auditPagesArtifactPrivacy(artifact,{requirePrivateManifest:false});assert.ok(privacy.fileCount>=546);cases++;
   assert.deepEqual(await fs.readFile(path.join(target,'forecast-share.json')),files.descriptorBytes);
+  assert.deepEqual(await fs.readFile(path.join(target,'forecast-share-trust.json')),files.trustBytes);
   for(const file of files.zoneFiles)assert.deepEqual(await fs.readFile(path.join(target,file.entry.path.slice(2))),file.bytes);cases++;
   const zoneId=files.projection.zones[0].id,time=horizonTimes[availableIndex],mode='beach';
   const selection={zoneId,time,mode,language:'da'};
@@ -134,12 +155,15 @@ try{
   const zoneEntry=manifest.detailDelivery.zones[zoneId];
   const zoneBytes=await fs.readFile(path.join(live,zoneEntry.path.slice(2)));
   const available=new Map([['./data/live/manifest.json',manifestBytes],['./data/live/forecast-share.json',files.descriptorBytes],
+    ['./data/live/forecast-share-trust.json',files.trustBytes],
     ['./data/live/'+selectedFile.entry.path.slice(2),selectedFile.bytes],
     ['./data/live/'+zoneEntry.path.slice(2),zoneBytes],['./data/zones.geojson',Buffer.from(zoneRegistryText)]]);
   const requests=[];let offline=null;Date.now=()=>freshNow;
   const fetchPublic=async(relative)=>{requests.push(relative);if(relative===offline)throw new Error('SYNTHETIC_OFFLINE');assert.ok(available.has(relative));return new Response(available.get(relative),{headers:{'content-type':'application/json'}});};
-  const compact=await loadCompactPublicForecastShareSelection(selection,{fetchPublic});assert.equal(requests.length,3);
-  const legacy=await loadPublicForecastShareSelection(selection,{fetchPublic});assert.equal(requests.length,6);
+  const compact=await loadCompactPublicForecastShareSelection(selection,{fetchPublic});assert.equal(requests.length,2);
+  const oldCompact=await loadLegacyCompactPublicForecastShareSelection(selection,{fetchPublic});
+  assert.deepEqual(compact,oldCompact);assert.equal(requests.length,5);
+  const legacy=await loadPublicForecastShareSelection(selection,{fetchPublic});assert.equal(requests.length,8);
   assert.deepEqual(compact,legacy);
   const normal=exactMapZoneScore({conditions:{coastalParts:details.coastalParts,mapForecastTime:time},zoneId,time,mode});
   assert.equal(compact.result.score,normal.score);assert.equal(compact.result.scoreQuality,normal.scoreQuality);cases++;
@@ -150,8 +174,9 @@ try{
       const link=forecastShareUrl(host,{...selection,language});
       const start=requests.length;
       const get=await handleForecastShare(new Request(link),{shareBaseUrl:host,fetchPublic:transport});
-      assert.equal(get.status,200);assert.equal(requests.length-start,3);
+      assert.equal(get.status,200);assert.equal(requests.length-start,2);
       const body=await get.text();assert(body.includes(String(normal.score)+'/100'));
+      assertForecastShareAutoOpen(body,get.headers,forecastShareUrl('https://ravradar.dk/',{...selection,language}));
       const beforeHead=requests.length;
       const head=await handleForecastShare(new Request(link,{method:'HEAD'}),{shareBaseUrl:host,fetchPublic:transport});
       assert.equal(head.status,get.status);assert.deepEqual([...head.headers],[...get.headers]);
@@ -163,6 +188,7 @@ try{
     const beforeHead=requests.length;
     const head=await handleForecastShare(new Request(invalid,{method:'HEAD'}),{shareBaseUrl:host,fetchPublic:transport});
     assert.equal(get.status,400);assert.equal(head.status,get.status);
+    assert.doesNotMatch(await get.text(),/<script(?:\s|>)/);assert.equal(get.headers.get('Location'),null);
     assert.deepEqual([...head.headers],[...get.headers]);assert.equal(await head.text(),'');
     assert.equal(requests.length,beforeHead);cases++;
     const unbound=await handleForecastShare(new Request('https://unbound.invalid/',{method:'HEAD'}),
@@ -171,7 +197,7 @@ try{
     const post=await handleForecastShare(new Request(host,{method:'POST'}),{shareBaseUrl:host,fetchPublic:transport});
     assert.equal(post.status,405);assert.equal(post.headers.get('Allow'),'GET, HEAD');cases++;
   }
-  offline='./data/live/forecast-share.json';await assert.rejects(()=>loadCompactPublicForecastShareSelection(selection,{fetchPublic}),/SYNTHETIC_OFFLINE/);
+  offline='./data/live/forecast-share-trust.json';await assert.rejects(()=>loadCompactPublicForecastShareSelection(selection,{fetchPublic}),/SYNTHETIC_OFFLINE/);
   offline='./data/live/'+zoneEntry.path.slice(2);await assert.rejects(()=>loadPublicForecastShareSelection(selection,{fetchPublic}),/SYNTHETIC_OFFLINE/);offline=null;cases++;
   const missingHour={...selection,time:new Date(Date.parse(horizonTimes[117])+3600000).toISOString()};
   assert.equal(await loadCompactPublicForecastShareSelection(missingHour,{fetchPublic}),null);assert.equal(await loadPublicForecastShareSelection(missingHour,{fetchPublic}),null);cases++;
@@ -185,10 +211,69 @@ try{
   const alteredPath=path.join(target,alteredDescriptor.zones[entryIndex].path.slice(2));
   assert.equal(sha(await fs.readFile(projectionPath)),selectedFile.entry.sha256);await fs.unlink(projectionPath);
   try{await fs.writeFile(alteredPath,alteredBytes,{flag:'wx'});await fs.writeFile(descriptorPath,text(alteredDescriptor));
+    await fs.writeFile(path.join(target,'forecast-share-trust.json'),text({...files.trustIndex,zones:alteredDescriptor.zones}));
     await assert.rejects(()=>auditPagesArtifactPrivacy(artifact,{requirePrivateManifest:false}),error=>error instanceof PagesArtifactPrivacyError&&error.issues.includes('public forecast sharing results differ from normal public results'));cases++;
-  }finally{await fs.unlink(alteredPath);await fs.writeFile(projectionPath,selectedFile.bytes,{flag:'wx'});await fs.writeFile(descriptorPath,files.descriptorBytes);}
+  }finally{await fs.unlink(alteredPath);await fs.writeFile(projectionPath,selectedFile.bytes,{flag:'wx'});await fs.writeFile(descriptorPath,files.descriptorBytes);await fs.writeFile(path.join(target,'forecast-share-trust.json'),files.trustBytes);}
   await fs.unlink(descriptorPath);try{await assert.rejects(()=>auditPagesArtifactPrivacy(artifact,{requirePrivateManifest:false}),error=>error instanceof PagesArtifactPrivacyError&&error.issues.includes('invalid or missing public forecast sharing projection'));cases++;}
   finally{await fs.writeFile(descriptorPath,files.descriptorBytes,{flag:'wx'});}
-  const copied=await copyForecastShareProjection({source:live,target:path.join(temporary,'share-only')});assert.equal(copied.files,211);cases++;
+  const copied=await copyForecastShareProjection({source:live,target:path.join(temporary,'share-only')});assert.equal(copied.files,212);
+  const pagesOnly=path.join(temporary,'pages-copy');await fs.mkdir(pagesOnly);
+  const pagesCopy=await copyPagesPublicDelivery({source:live,target:pagesOnly});
+  assert.deepEqual(await fs.readFile(path.join(pagesOnly,'forecast-share-trust.json')),files.trustBytes);
+  for(const file of files.zoneFiles)assert.deepEqual(await fs.readFile(path.join(pagesOnly,file.entry.path.slice(2))),file.bytes);cases++;
+  // The actual normal hosted verifier reads the new index only for its
+  // sealed implementation importing the real trust-contract module.
+  const root=fileURLToPath(new URL('../',import.meta.url));
+  const closure=(await computeRavScorePublicBrowserClosure({root})).manifest;
+  assert(closure.files.some(item=>item.path==='js/services/forecast-share-trust-index.js'));
+  const sourceFiles=new Set([...closure.files.map(item=>item.path),...closure.htmlEntrypoints.map(item=>item.path)]);
+  const common={baseUrl:'https://ravradar.example.test/',sourceHead:'45e943c9a53a27ceefc2773d4a83ee80c4b41b8a',
+    expectedManifest:manifest,expectedModel:'integrated',expectedBinding:manifest.ravScoreModelBinding,
+    expectedContractText:await fs.readFile(path.join(root,'js/core/ravscore-model-contract.js'),'utf8'),
+    expectedBundleText:await fs.readFile(path.join(root,'js/core/ravscore-model-bundle.generated.js'),'utf8'),
+    expectedPublicClosure:closure,observationNonce:'synthetic-trust-index-normal-artifact',attempts:1};
+  let omitHostedTrust=false;const hostedReads=[];
+  const hosted=async value=>{const relative=new URL(value).pathname.slice(1);hostedReads.push(relative);
+    if(omitHostedTrust&&relative==='data/live/forecast-share-trust.json')return new Response('',{status:404});
+    const file=path.join(sourceFiles.has(relative)?root:artifact,relative);
+    return new Response(await fs.readFile(file),{headers:{'Content-Type':'application/json'}});};
+  assert.equal((await verifyRavScoreOperationalPagesDeployment({...common,fetchImpl:hosted})).status,'passed');
+  assert(hostedReads.includes('data/live/forecast-share-trust.json'));cases++;
+  omitHostedTrust=true;
+  await assert.rejects(()=>verifyRavScoreOperationalPagesDeployment({...common,fetchImpl:hosted}),/forecast-share-trust.json returned HTTP 404/);cases++;
+  // The new trust view is admitted independently against the WHOLE manifest;
+  // coherent metadata/zone-pointer tampering cannot qualify its own authority.
+  const trustPath=path.join(target,'forecast-share-trust.json');
+  for(const change of [v=>v.publicMetadata.ravScoreEvidenceTrust={},v=>v.publicMetadata.datasetId+='-other',
+    v=>v.manifestSha256='0'.repeat(64),v=>v.zones.pop()]){
+    const value=structuredClone(files.trustIndex);change(value);await fs.writeFile(trustPath,text(value));
+    await assert.rejects(()=>auditPagesArtifactPrivacy(artifact,{requirePrivateManifest:false}),
+      error=>error instanceof PagesArtifactPrivacyError&&error.issues.includes('invalid or missing public forecast sharing projection'));cases++;
+  }
+  await fs.writeFile(trustPath,files.trustBytes);
+  await auditPagesArtifactPrivacy(artifact,{requirePrivateManifest:false});cases++;
+  const trustKey='./data/live/forecast-share-trust.json';
+  for(const change of [v=>v.publicMetadata.ravScoreModelBinding.modelBundleSha256='0'.repeat(64),
+    v=>v.publicMetadata.ravScoreEvidenceTrust={},v=>v.publicMetadata.weatherSourceAge={},
+    v=>v.publicMetadata.ravScoreProfile={},v=>v.publicMetadata.ravScoreRuntime={},
+    v=>v.publicMetadata.ravScoreAvailability={},v=>v.publicMetadata.validUntil=source.productionReferenceAt,
+    v=>v.publicMetadata.generatedAt=new Date(freshNow+3600000).toISOString(),
+    v=>v.axis.count=117,v=>v.zones.pop(),v=>v.publicMetadata.unexpected='PRIVATE_MARKER',
+    v=>v.zones[0].path='https://forged.invalid/score']){
+    const value=structuredClone(files.trustIndex);change(value);available.set(trustKey,Buffer.from(text(value)));
+    await assert.rejects(()=>loadCompactPublicForecastShareSelection(selection,{fetchPublic}));cases++;
+  }
+  available.set(trustKey,files.trustBytes);
+  // Dataset/H0/source digests are also checked against the content-addressed
+  // selected zone, rather than accepting a self-consistent index alone.
+  for(const change of [v=>v.publicMetadata.datasetId+='-mixed',v=>v.publicMetadata.zoneRegistrySha256='0'.repeat(64)]){
+    const value=structuredClone(files.trustIndex);change(value);available.set(trustKey,Buffer.from(text(value)));
+    await assert.rejects(()=>loadCompactPublicForecastShareSelection(selection,{fetchPublic}),/FORECAST_SHARE_PROJECTION_GENERATION|FORECAST_SHARE_PROJECTION_BINDING/);cases++;
+  }
+  available.set(trustKey,files.trustBytes);
+  const originalTime=Date.now;let zoneSeen=false;
+  try{Date.now=()=>zoneSeen?freshNow+3*3600000:freshNow;
+    assert.equal(await loadCompactPublicForecastShareSelection(selection,{fetchPublic:async p=>{const response=await fetchPublic(p);if(p.includes('/share/'))zoneSeen=true;return response;}}),null);cases++;
+  }finally{Date.now=originalTime;}cases++;
   console.log('OK: compact sharing normal producer, full210/673 synthetic contract artifact/privacy/copy,49,560 parity, both readers, offline/hour and coherent tamper guards ('+cases+' cases).');
 }finally{Date.now=savedNow;const resolved=path.resolve(temporary),parent=path.resolve(os.tmpdir());assert.ok(resolved.startsWith(parent+path.sep)&&path.basename(resolved).startsWith('ravradar-share-projection-'));await fs.rm(resolved,{recursive:true,force:true});}

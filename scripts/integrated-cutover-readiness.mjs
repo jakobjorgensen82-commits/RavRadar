@@ -21,6 +21,7 @@ import { buildSupabaseAdminHeaders } from './lib/supabase-admin-rest.mjs';
 import * as accountErasureSchema from './verify-account-assistant-schema.mjs';
 // Historical schema namespaces need not export this later, inert app descriptor.
 export const ACCOUNT_ERASURE_APP_MIGRATION=accountErasureSchema.ACCOUNT_ERASURE_APP_MIGRATION;
+export const ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS=accountErasureSchema.ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS;
 import { ACCOUNT_ASSISTANT_MIGRATION } from './lib/account-assistant-successor-source.mjs';
 import { CURRENT_GRID_MIGRATION } from './lib/current-grid-successor-source.mjs';
 import { nativeIdentityMigration, readNativeIdentityCanonicalSource }
@@ -785,13 +786,19 @@ function fixedAssistantRows(migrationListText,profile){
   assertCurrentMemoryWarmupArchivesAbsent(local,remote);
   const allowed=new Set(required.map(row=>row.version)),next=required.at(-1);
   // One ancillary OFF app migration; historical model profiles remain closed.
-  const offVersion=[ASSISTANT_AFTER598_ROWS,ASSISTANT_AFTER599_ROWS].includes(profile)?ACCOUNT_ERASURE_APP_MIGRATION.version:null;
+  const offVersions=new Set([ASSISTANT_AFTER598_ROWS,ASSISTANT_AFTER599_ROWS].includes(profile)?[ACCOUNT_ERASURE_APP_MIGRATION.version]:[]);
+  if(profile===ASSISTANT_AFTER599_ROWS){
+    for(const row of ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS)offVersions.add(row.version);
+    const [notice,capture]=ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS;
+    assert(!remote.has(capture.version)||remote.has(notice.version),'Native capture requires its exact prior notice append');
+    for(const row of ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS)if(remote.has(row.version))assert(local.has(row.version),'Applied OFF app requires its actual source');
+  }
   for(const {version}of required){assert(local.has(version),'Missing exact assistant later-H0 source');
     if(version!==next.version)assert(remote.has(version),'Missing genuine installed assistant predecessor');}
   for(const versions of [local,remote])for(const version of versions)
-    assert(allowed.has(version)||version===offVersion||migrationChronologicalKey(version)<migrationChronologicalKey(required[0].version),
+    assert(allowed.has(version)||offVersions.has(version)||migrationChronologicalKey(version)<migrationChronologicalKey(required[0].version),
       'Unknown post-cutover assistant later-H0 migration');
-  const latest=[...remote].filter(version=>version!==offVersion)
+  const latest=[...remote].filter(version=>!offVersions.has(version))
     .sort((a,b)=>migrationChronologicalKey(a)<migrationChronologicalKey(b)?-1:1).at(-1);
   assert.equal(latest,remote.has(next.version)?next.version:profile.before.version);
   return {required,local,remote};
@@ -1389,8 +1396,8 @@ function assertTemporaryCutoverWorkdir(value) {
 
 export async function prepareTemporarySupabaseCutoverWorkdir({ workdir: inputWorkdir, includeStatisticsPreferenceRevisionSource = false, includeAccountErasureSource = false, sourcePhase = DEFAULT_CUTOVER_SOURCE_PHASE } = {}) {
   assert.equal(typeof includeAccountErasureSource,'boolean');
-  if(includeAccountErasureSource)assert.equal(sourcePhase,'assistant-after598-successor',
-    'The OFF app installer requires the actual installed599 family');
+  if(includeAccountErasureSource)assert(['assistant-after598-successor','assistant-after599-successor'].includes(sourcePhase),
+    'The OFF app installer requires an explicitly supported installed family');
   const requiredMigrations = migrationsForSourcePhase(sourcePhase);
   assert.equal(typeof includeStatisticsPreferenceRevisionSource,'boolean');
   if (includeStatisticsPreferenceRevisionSource) await assertStatisticsPreferenceRevisionSource(MIGRATIONS_DIRECTORY);
@@ -1414,6 +1421,10 @@ export async function prepareTemporarySupabaseCutoverWorkdir({ workdir: inputWor
   if(sourcePhase==='assistant-after598-successor'&&ACCOUNT_ERASURE_APP_MIGRATION)await fs.copyFile(
     path.join(MIGRATIONS_DIRECTORY,ACCOUNT_ERASURE_APP_MIGRATION.filename),
     path.join(migrationsDirectory,ACCOUNT_ERASURE_APP_MIGRATION.filename));
+  if(includeAccountErasureSource&&sourcePhase==='assistant-after599-successor'){
+    const source=accountErasureSchema.readAccountInactivitySource();
+    for(const row of source.migrations)await fs.copyFile(path.join(MIGRATIONS_DIRECTORY,row.filename),path.join(migrationsDirectory,row.filename));
+  }
   // Statistics230 is now a required historical source and was copied above.
   // Its explicit legacy option still verifies the immutable source, not a grant.
   return Object.freeze({ workdir, migrationsDirectory });
@@ -1563,6 +1574,12 @@ export async function hydrateTemporaryRemoteMigrationHistory({
   const placeholders = [];
   for (const version of [...remote].filter(item => !local.has(item)).sort()) {
     assert.ok(!required.has(version), `required migration ${version} was remote-only in the temporary source view`);
+    if(sourcePhase==='assistant-after599-successor'&&ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS.some(row=>row.version===version)){
+      const source=accountErasureSchema.readAccountInactivitySource();
+      const row=source.migrations.find(item=>item.version===version);
+      await fs.copyFile(path.join(MIGRATIONS_DIRECTORY,row.filename),path.join(migrationsDirectory,row.filename));
+      continue; // The fixed app source, never a history placeholder.
+    }
     if(sourcePhase==='assistant-after598-successor'&&version===ACCOUNT_ERASURE_APP_MIGRATION.version){
       const file=path.join(MIGRATIONS_DIRECTORY,ACCOUNT_ERASURE_APP_MIGRATION.filename),stat=await fs.lstat(file);
       assert(stat.isFile()&&!stat.isSymbolicLink(),'The known applied app migration requires its actual regular source');
@@ -1608,7 +1625,7 @@ export async function assertSupabaseMigrationPlan({
   assert.equal(typeof allowStatisticsPreferenceRevisionPlan,'boolean');
   assert.equal(typeof allowAccountErasurePlan,'boolean');
   if(allowAccountErasurePlan){
-    assert.equal(ACTIVE.sourcePhase,'assistant-after598-successor');
+    assert(['assistant-after598-successor','assistant-after599-successor'].includes(ACTIVE.sourcePhase));
     assert.equal(allowAccountAssistantPrewritePlan,false);assert.equal(allowStatisticsPreferenceRevisionPlan,false);
   }
   const inspected=await inspectMigrationSources({ migrationsDirectory });
@@ -1618,6 +1635,16 @@ export async function assertSupabaseMigrationPlan({
     const appSource=await fs.readFile(path.join(migrationsDirectory,ACCOUNT_ERASURE_APP_MIGRATION.filename),'utf8');
     assert.equal(appSource.replaceAll('\r\n','\n'),accountErasureSchema.readAccountErasureSource().sql,
       'The app plan requires the exact current normal SQL source');
+  }
+  const selectedAppMigrations=allowAccountErasurePlan
+    ?(ACTIVE.sourcePhase==='assistant-after599-successor'?ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS:[ACCOUNT_ERASURE_APP_MIGRATION]):[];
+  if(allowAccountErasurePlan&&ACTIVE.sourcePhase==='assistant-after599-successor'){
+    const source=accountErasureSchema.readAccountInactivitySource();
+    for(const row of source.migrations){
+      assert.equal(inspected.versionToFilename.get(row.version),row.filename,'OFF app source may not be omitted or renamed');
+      const staged=await fs.readFile(path.join(migrationsDirectory,row.filename),'utf8');
+      assert.equal(staged.replaceAll('\r\n','\n'),row.sql,'OFF plan requires the exact current app source');
+    }
   }
   if (allowStatisticsPreferenceRevisionPlan) {
     assert.equal(allowAccountAssistantPrewritePlan,false,'Statistics revision is a separate sole prewrite route');
@@ -1635,7 +1662,10 @@ export async function assertSupabaseMigrationPlan({
   assert.ok(remote.has(establishedNativeCurrentOriginMigration().version),
     'ESTABLISHED_NATIVE_CURRENT_ORIGIN_PREWRITE_ROUTE_REQUIRED');
   if(ACTIVE.sourcePhase==='assistant-after599-successor'){
-    assertAssistantAfter599MigrationsApplied(migrationListText);
+    if(allowAccountErasurePlan){
+      const {required}=fixedAssistantRows(migrationListText,ASSISTANT_AFTER599_ROWS);
+      for(const row of required)assert(remote.has(row.version),'OFF installation requires installed601 and app600');
+    }else assertAssistantAfter599MigrationsApplied(migrationListText);
   }
   if(ACTIVE.sourcePhase==='assistant-after598-successor'){
     assert.ok(remote.has(assistantAfter598Migration().version),'ASSISTANT_AFTER598_PREWRITE_ROUTE_REQUIRED');
@@ -1668,7 +1698,7 @@ export async function assertSupabaseMigrationPlan({
   assert.ok(remote.has(assistantPublic587SuccessorMigration().version),'ASSISTANT_PUBLIC587_SUCCESSOR_PREWRITE_ROUTE_REQUIRED');
   if(!['assistant-public588-successor','assistant-public590-successor','assistant-public591-successor','assistant-installed593-origin591-successor','scalar597-later-h0-original594-successor','assistant-mixed-after597-successor','assistant-after598-successor','assistant-after599-successor'].includes(ACTIVE.sourcePhase))assertAssistantPublic587SuccessorMigrationsApplied(migrationListText);
   const plannedMigrations = allowAccountErasurePlan
-    ? [...REQUIRED_CUTOVER_MIGRATIONS,ACCOUNT_ERASURE_APP_MIGRATION] : REQUIRED_CUTOVER_MIGRATIONS;
+    ? [...REQUIRED_CUTOVER_MIGRATIONS,...selectedAppMigrations] : REQUIRED_CUTOVER_MIGRATIONS;
   const requiredVersions = new Set(plannedMigrations.map(item => item.version));
 
   for (const migration of REQUIRED_CUTOVER_MIGRATIONS) {
@@ -1678,9 +1708,9 @@ export async function assertSupabaseMigrationPlan({
   const pending = [...local].filter(version => !remote.has(version));
   if(allowAccountErasurePlan){
     for(const row of REQUIRED_CUTOVER_MIGRATIONS)assert(remote.has(row.version),'OFF installation requires every actual installed predecessor');
-    assert(local.has(ACCOUNT_ERASURE_APP_MIGRATION.version));
-    assert.deepEqual(pending,remote.has(ACCOUNT_ERASURE_APP_MIGRATION.version)?[]:[ACCOUNT_ERASURE_APP_MIGRATION.version],
-      'Only the named OFF app migration may be pending');
+    for(const row of selectedAppMigrations)assert(local.has(row.version));
+    assert.deepEqual(pending,selectedAppMigrations.filter(row=>!remote.has(row.version)).map(row=>row.version),
+      'Only the selected finite OFF app catalogue may be pending');
   }
   if (pending.includes(STATISTICS_REVISION_MIGRATION.version)) {
     assert.equal(allowStatisticsPreferenceRevisionPlan,true,'Pending statistics revision requires its named prewrite route');
@@ -1739,9 +1769,10 @@ export function assertSupabaseMigrationsApplied(migrationListText,{requireAccoun
   const pending = [...local].filter(version => !remote.has(version));
   assert.deepEqual(pending, [], `pending migrations remain after db push: ${pending.join(', ')}`);
   if(requireAccountErasure){
-    assert.equal(ACTIVE.sourcePhase,'assistant-after598-successor');
-    assert(local.has(ACCOUNT_ERASURE_APP_MIGRATION.version)&&remote.has(ACCOUNT_ERASURE_APP_MIGRATION.version),
-      'The named OFF app migration must actually be applied');
+    assert(['assistant-after598-successor','assistant-after599-successor'].includes(ACTIVE.sourcePhase));
+    const selected=ACTIVE.sourcePhase==='assistant-after599-successor'?ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS:[ACCOUNT_ERASURE_APP_MIGRATION];
+    for(const row of selected)assert(local.has(row.version)&&remote.has(row.version),
+      'Every selected OFF app migration must actually be applied');
   }
   return Object.freeze({ appliedVersions: Object.freeze([...requiredVersions]) });
 }

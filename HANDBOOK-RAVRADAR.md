@@ -1,3 +1,36 @@
+## 89.354 — Aktivitet og varsel før automatisk kontosletning
+
+<div class="reader-guide"><p>Registrér aktivitet sikkert, og begynd først et 30-dages varsel på en faktisk leveringskvittering. Installationen aktiverer ingen automatisk sletning.</p></div>
+
+App 602 forbereder registrering af positiv kontoaktivitet og et holdbart varslingsforløb. De to nye kontoappends ændrer ingen RavScore, vejrtal, kildeprioritet, centrale punkter eller geometri. Alle77 tidligere SQL-filer og601-modelfamiliens C/I/T bevares.
+
+En manglende registrering er aldrig bevis for inaktivitet. Den nye capturefunktion arbejder med kontoens eksisterende profil og journal, samme kontogeneration og en revisionskontrol. Positiv aktivitet annullerer ventende varsler. Hvis en native registrering ikke kan gennemføres, skal den konservative ugyldiggørelse af dækningen og annullering lykkes i samme transaktion, før tokenudstedelsen kan fortsætte.
+
+Varslet har sit eget UUID, revision, afsendelsesforsøg og leverandør-id. En accepteret afsendelse er ikke leveret post. Den samme accepterede afsendelse må ikke blive til en ny POST efter en midlertidig fejl; en senere kontrolleret genlæsning skal matche den samme modtager, skabelon og kontogeneration. Først en kvalificeret leveringskvittering kan starte fristen på 720 timer. Ny positiv aktivitet annullerer varslet og slettefristen.
+
+Installationen begynder med ukendt aktivitetsdækning, deaktiverede varsler og deaktiveret automatisk sletning. Den konfigurerer ingen Auth-hook, automatisk mail eller cron og giver ikke varslingskoden manuel sletteautoritet. Det eksisterende manuelle sletteforløb og dets barrierer bevares.
+
+Den normale kontoappmode kræver den faktisk installerede 601-familie og app600. Dens migrationsvisning indeholder de 66 krævede forgængere og præcis de to nye appends; hele kildekataloget har 79 SQL-filer. Gamle manuelle prøver og CHECK-definitioner beholder deres egne facit. En ny faktisk kvalifikation skal dække det nye katalog, SQL, låseracer, ACL og de normale kaldere. SQL og genlæsning skal bestå før den ændrede aktivitetsklient og trip-log-Edge leveres.
+
+Dette er lokal kildeforberedelse. Den tidligere syntetiske Auth-prøve indsatte sin profil før login og beviser derfor ikke normalt signup eller den faktisk installerede profiltrigger. Signup/profil-bootstrap, hosted hook/capture, sammenhængende aktivitetsgrundlag, automatisk varsling og efterfølgende sikker sletning er fortsat åbne. Kontoen må ikke slettes automatisk alene på denne installation eller afsenderens tidligere leveringsprøve.
+
+## 89.353 — Mindre datakald ved deling
+
+<div class="reader-guide"><p>Et mindre datakald skal vise samme score og mærkning som kortet. Mindre data beviser ikke i sig selv gratis drift.</p></div>
+
+Den lokale app 602-kandidat forbereder en delingsvisning, der henter ét samlet prognoseindeks og derefter kun den valgte zones eksisterende fil. Indekset beskriver den samme 118-timers prognose, de 210 zoner og begge søgemåder. Score, kvalitetsmærkning og lokal dækning kommer fortsat fra de allerede beregnede offentlige resultater. Der beregnes ingen ny score i delingsfunktionen.
+
+Indekset og alle zonefiler kontrolleres i den normale bygge-, kopi- og efterkontrol mod hele prognosens manifest og alle 49.560 valg af zone, time og søgemåde. Den valgte zonefil kontrolleres fortsat med sin præcise størrelse og SHA-256. GET genlæser ikke det store mastermanifest; dets hash i indekset er en proveniensreference. Tilliden bygger på den normale fulde artifactkontrol, den atomiske offentlige levering og HTTPS.
+
+Begge aktuelle kontroller af tidspunkt og gyldighed bevares sammen med én fælles frist på 15 sekunder. Afvigende, ufuldstændige eller udløbne data giver ingen opdigtet score, anden time eller gammel generation. Hverken score eller friskhed caches som en genvej. Det gamle V1-indeks og de 210 zonefiler bevares, så gamle delingslinks kan fungere under den trinvise levering.
+
+Leveringsplanen er først normalt 601-vejr og den eksisterende V1-delingskode kompileret til 601. Derefter følger app 602 med begge indekser og til sidst V2-delingskoden med faktisk kontrol af generation og svar. App 602 bevarer 601-modelfamiliens C/I/T-bindinger og alle 77 migrationsoriginaler. Scoreformel, kildeprioritet, punkter, geometri og den normale databevarelse ændres ikke.
+
+Dette er lokal kildeforberedelse. Præcis kildekvalifikation, offentlig levering, kompatibilitet, faktisk kold og varm Cloudflare-CPU samt kontoens samlede Free-forbrug er fortsat åbne. De tidligere lokale M5-målinger er deres eget bevis og bliver ikke ommærket til 601. En mindre fil eller et hurtigt lokalt kald er ikke dokumentation for drift under Free-planens CPU-grænse.
+
+Et gyldigt delingslink åbner nu den præcise zone, time, søgemåde og sprog direkte i RavRadar i en almindelig browser. Facebook-forhåndsvisningens titel, score og billede findes fortsat i den oprindelige HTML. En lille fast browserkode bruger kun det allerede kontrollerede link; ugyldige valg får ingen automatisk viderestilling. Linket Åbn i RavRadar bevares, hvis browseren ikke udfører koden. Der bruges ingen nye datakald, database eller billedlager. Faktisk Facebook-/browseraccept efter denne ændring og hosted CPU/Free er særskilte åbne trin.
+
+
 ## 89.352 — Assistentens emneopfølgning og UV-forklaring
 
 <div class="reader-guide"><p>Hele opfølgningsspørgsmålet tæller; lys og modelscore beviser hverken ravets identitet eller antal.</p></div>
@@ -9,6 +42,8 @@ Et opfølgningsspørgsmål om kendt udstyr skal også besvare den nye kvalifikat
 RavRadar observerer ikke, hvor mange stykker rav eller hvor meget rav der findes på en strand eller i et lokalt ravlager. Score og vejrgrundlag kan ikke omregnes til et observeret antal eller et garanteret udbytte. Manglende observation skal beskrives som ukendt, mens spørgsmål uden for emnet fortsat afvises.
 
 Dette er en lokal601-kandidat ovenpå app600. Vidensgrundlaget er gennemgået, men den nye binding, installation og faktiske svar på dansk, tysk og engelsk skal kvalificeres gennem normalvejen. Lokale kontraktprøver er ikke hosted AI- eller offentlig produktaccept.
+
+Generelle spørgsmål om højvande eller lavvande besvares med praktisk forklaring uden at påføre en valgt zones tekniske beregning. Hele spørgsmål om RavRadars ophavsmand, Facebook-gruppe og begynderhjælp har app-ejede lokale svar fra offentlige oplysninger. Et uklart navn som Ravfund udløser afklaring i stedet for automatisk at blive læst som Hvad er rav. Kun hele kendte spørgsmål matches; private, blandede og ukendte tillæg beholder det normale samlede sikkerheds- og AI-forløb. De eksisterende ravdefinitioner og nationale prognoserangeringer bevares. Denne tekstvej ændrer ingen numerisk modelbinding eller score og er ikke dokumentation for fungerende ekstern AI.
 
 App-ejet offentlig hjælp besvarer generelle høj-/lavvandsspørgsmål, offentlig ophavsmand og Facebook-gruppe, begynderhjælp og uklare sammensatte navne. Hele praktiske spørgsmål om ravkese på stranden kan også omfatte almindelige forholdsregler; de sammensættes af eksisterende godkendte udstyrs- og strandtekster. Hele spørgsmålet skal være dækket. Private oplysninger, ukendte tillæg, lokale tid-/stedspørgsmål og fundgarantier bliver ikke klippet væk. Den normale AI-vej og prognoserangering bevares. Dette ændrer ingen numerisk model eller SQL og er ikke en påstand om samlet ekstern AI-kvalitet.
 
@@ -246,9 +281,9 @@ Dette er en forberedt kildeændring. Kodekvalifikation, faktisk fjernelse, maila
 Den nye V4-kandidat vælger normale mål fra PR'ens faktiske merge-base til dens præcise head. Før tidligere godkendte områder kan genbruges, kvalificerer den den mergede bases faktiske producent, job, hele typede kvittering, træ og afsluttende upload samt senere negativ evidens. Den normale forbruger udføres på basens rigtige Git-checkout; kandidaten gendannes og kontrolleres bagefter. En verificeret direkte sammenfatning hindrer rekursiv genåbning af hele forfaderkæden. V3 beholder sin oprindelige kumulative betydning. Manglende eller udløbet basekvittering vælger kendte kumulative mål; konkret FAIL, modstrid eller ukendt kvalifikation stopper. PostgreSQL og C/I/T kvalificeres fortsat selvstændigt mod deres autentiske, uændrede input; ingen ny databaseprøve påstås.
 
 <!-- ravradar-derived-source-bindings-v1:begin -->
-## Afledt kildeidentitet — RavScore 4.0.601
+## Afledt kildeidentitet — RavScore 4.0.602
 
-4.0.601 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=8eb4a77c96c86d1357209b23afca39c79862cc74b61383d60071837bd14d1313` over 100 kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere.
+4.0.602 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=8eb4a77c96c86d1357209b23afca39c79862cc74b61383d60071837bd14d1313` over 100 kanonisk normaliserede transitive implementeringsfiler og de deklarerede forbrugere.
 
 Inaktiv Candidate G: `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=2c323c2bdcf73c6449b2cd105300836ea4a8f88e014156d2c18b2dde408ba076` over 101 transitive filer.
 
@@ -258,6 +293,12 @@ Autoriteten er version.json.releaseContract.modelBindings og de aktuelle generer
 <!-- ravradar-derived-source-bindings-v1:end -->
 
 ## 89.342 Kontrol af ændringer med en fast sikkerhedskerne
+
+### LF7-audit af den normale gemte timeprojektion
+
+Den private LF7-audit læser de eksisterende 118 public-hour-filer én ad gangen, fordi den normale gemte PART-form ikke længere indeholder hourly-rækker. Hver fil skal bestå de normale descriptor-, størrelses-, hash-, transport-, generations-, model-, time- og PART-/zonekontroller. Kun de to allerede beregnede vandstandstal indgår i den uændrede digest; der genskabes ingen PART-historik eller score, og der faldes ikke tilbage til tilsyneladende korrekte in-memory-rækker.
+
+Manglende eller ukvalificeret observation forbliver UNKNOWN; en korrekt bundet værdiafvigelse bliver OBSERVED_VIOLATION. OBSERVED_CONFORMANT er ikke i sig selv komplet dækning eller bevist T+3-støtte: de særskilte coverageComplete- og allRoutedT3Comparable-felter skal fortsat læses. De 121 private kildetimer giver støtte til de 118 offentlige timer; nævneren udvides ikke. Rå værdier, private navne og koordinater kommer ikke i rapporten. Dette er lokal kildeforberedelse på endnu ikke merget601; præcis kvalifikation og en ny faktisk generation kræves fortsat.
 
 ### Lever uafhængige rettelser gennem deres faktiske kaldere
 
@@ -436,7 +477,7 @@ Den forberedte normale produktionskontrol undersøger den faktisk nye vejrpakke 
 
 Standardkildekontrollen består nu af otte faste kommandoer og de relevante hele prøver for de faktisk ændrede funktioner. Den eksisterende CURRENT-fortegnelse vælger disse fra den faktiske Git-diff; kun bytebeviste rene versionsskift fritages for en særskilt funktionsprøve. Et ukendt testansvar bliver tydeligt afvist frem for automatisk at starte 82 historiske kommandoer. Den store samlede601-ændring kan derfor stadig vælge væsentligt flere end otte mål; en lille delingsændring vælger tre relevante ekstra mål. Der påstås ingen historisk blanketudførelse eller SQL-kvalifikation fra denne kerne. Eksisterende native- og nationalfaser bevarer deres eget faktiske bevis. Den aktuelle pakkelæser kræver relevante entrypoints og bindinger, mens historiske whole-map-prøver bruger deres eget autentiske gamle input.
 
-GitHubs trin til installation af afhængigheder starter ikke længere de otte kontrolprogrammer som en fast blok. Relevante prøver vælges i selve kildekontrollen. Den aktuelle læser kontrollerer PR-jobbets adgang, rækkefølge og beviser direkte. Historiske prøver beholder deres eget workflow. Den tidligere faste 480-sekunders prøve i installationstrinnet er erstattet af denne ændring. Den nye kode kræver sin egen GitHub-kontrol. Kildekontrollen bruger nu de fem assistentprøvers udstedte aktuelle tilstand. Den daterede fejllogprøve hører kun til sin egen læser. Den almindelige Edge-prøve følger Edge-koden. Prøven af næste appversion bruger den aktuelle pakkelæser og dens afslag på et forkert assistent-entrypoint. Historiske Git-prøver ejer deres egne arkivinput. Pages-prøven bruger samme kvalificerede kilde til den positive genoptagelse, mens afvisning af afvigende input bevares.
+GitHubs trin til installation af afhængigheder starter ikke længere de otte kontrolprogrammer som en fast blok. Relevante prøver vælges i selve kildekontrollen. Den aktuelle læser kontrollerer PR-jobbets adgang, rækkefølge og beviser direkte. Historiske prøver beholder deres eget workflow. Den tidligere faste 480-sekunders prøve i installationstrinnet er erstattet af denne ændring. Den nye kode kræver sin egen GitHub-kontrol. Kildekontrollen bruger nu de fem assistentprøvers udstedte aktuelle tilstand. Den daterede fejllogprøve hører kun til sin egen læser. Den almindelige Edge-prøve følger Edge-koden. Prøven af næste appversion bruger den aktuelle pakkelæser og dens afslag på et forkert assistent-entrypoint. Historiske Git-prøver ejer deres egne arkivinput. Pages-prøven bruger samme kvalificerede kilde til den positive genoptagelse, mens afvisning af afvigende input bevares. Kildekontrollen vælger de eksisterende prøver af delingsdata, Pages-pakkens privatliv, kontoschema og turlog, når de tilhørende filer ændres. Database- og produktionskontrollerne kører fortsat på deres egne trin.
 
 
 ## 89.340 Ét sikkert Pages-genforsøg og frisk vejr bagefter
@@ -2593,7 +2634,7 @@ En særskilt, dokumenteret Storage-formatkant rettes samtidig: immutable upload 
 
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.601
+**Håndbogsversion:** 4.0.602
 
 **Lokal kildebinding — 29. oktober 2026, RavScore 4.0.591, ikke installeret:** Den integrerede model er offentlig som modeltype under den særskilt leverede 4.0.590. Den nye assistentefterfølger er lokalt udstedt og er endnu ikke samlet kvalificeret, installeret eller offentliggjort.
 

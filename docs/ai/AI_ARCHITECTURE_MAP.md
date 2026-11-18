@@ -1,3 +1,19 @@
+## App 602: deling, normal LF7-læsning og inaktiv kontoforberedelse
+
+Den samlede lokale app 602-kandidat erstatter den tidligere delings-only-sammensætning. Den forener det mindre generationsbundne delingsindeks, LF7-audit af de normale gemte timefiler og to kontoappends til aktivitetsregistrering og varsling. Den numeriske601-familie, C/I/T, alle 77 tidligere SQL-filer, de ni601-kalderrettelser og score/kildeprioritet/admin/geometri bevares. Kildekataloget har 79 SQL-filer; den afgrænsede konto-installationsvisning kræver de 66 installerede forgængere og netop de to nye appends.
+
+Én samlet faktisk 79-kilde-/PostgreSQL-kvalifikation skal dække de nye SQL- og katalogkontrakter samt de berørte normale kaldere. Uændrede lokale beviser genbruges med deres oprindelige input; gammel 77-kvalifikation ommærkes ikke til79. Samlingen reducerer leveringsrunder, ikke relevante sikkerheds- eller datakrav.
+
+601 skal først kvalificeres og leveres gennem almindeligt nyt vejr; den eksisterende V1-delingskode skal følge den nye binding. Efter den samlede602-kvalifikation installeres og genlæses kontoappends før den ændrede aktivitetsklient og trip-log-Edge. Derefter følger normal602-kodelevering med begge delingsindekser og kontrolleret V2-Functions med faktisk svar-/generationsparitet og målt kold CPU/Free-forbrug.
+
+Kontodelen installeres med coverage UNKNOWN, notices OFF og automatisk sletning OFF. Den konfigurerer ingen Auth-hook, automatisk mail eller cron. Positiv aktivitet og ægte leverandørlevering holdes adskilt fra manglende registrering og accepteret afsendelse. Faktisk signup/profil-bootstrap, hook/capture, kontinuitet, automatisk varsling og senere 30-dages sletning er fortsat åbne. Lokal samling er ikke installation eller brugeraccept. Se håndbog 89.353/89.354 og det private checkpoint; alle fem mål består.
+
+## Delingsindeks i lokal app 602
+
+Den normale offentlige producent og kode-only-forberedelse kalder samme writeForecastShareProjection. Den bygger fortsat gamle V1 og 210 indholdshashede zonefiler samt et nyt forecast-share-trust.json med hele den nødvendige offentlige metadata, fælles akse og præcise zoneposter. Begge normale kopiveje samt uafhængig artifact-/privacy-audit genlæser indekset mod hele manifestet og normal nationalparitet. Ingen producentflag er acceptbevis.
+
+Den nye delingslæser henter trust-index og én zone med samme lukkede transport- og tidsgrænser. Den normale offentlige verifier kræver indekset, når det reelle importerede forecast-share-trust-index.js-modul indgår i den forseglede browserclosure; gamle genuine 594-kilder beholder deres egen V1-kontrakt. GET genberegner ikke mastermanifestets SHA. Dette er ydre appkode, ikke ny numerisk model, SQL, leverandør- eller privat datarute. Faktisk 601/602-hosting og kold CPU/Free-accept mangler. Se DEC-0296 og håndbog 89.353.
+
 ## 2026-09-19 lokal 4.0.429 – saved-weather og HARMONIE-arbejdstid
 
 - Saved-weather-continuation og normal integrated maintenance deler den samme

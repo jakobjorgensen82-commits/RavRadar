@@ -12,6 +12,31 @@ Præcis samlet kildekvalifikation og faktisk levering er fortsat åbne. Alle fem
 
 
 
+## App602: direkte delingslink og forståelig offentlig assistenthjælp
+
+Den lokale app602-kandidat omfatter nu direkte åbning af den allerede kontrollerede delte prognose. Serverens Facebook-/Open-Graph-indhold og fallbacklink bevares. App-ejede lokale hjælpesvar retter generelle vandstandsspørgsmål, offentlig ophavsmand/Facebook og begynderhjælp samt fejllæsning af Ravfund, uden at genudstede den numeriske model. Hele spørgsmålets vagter og normale prognoserangering bevares. Se håndbog89.352/89.353. Kildekvalifikation og offentlig levering er fortsat nødvendige; faktisk ekstern AI og hosted CPU/Free er åbne. Alle fem mål består.
+
+
+
+## App 602: deling, normal LF7-læsning og inaktiv kontoforberedelse
+
+Den samlede lokale app 602-kandidat erstatter den tidligere delings-only-sammensætning. Den forener det mindre generationsbundne delingsindeks, LF7-audit af de normale gemte timefiler og to kontoappends til aktivitetsregistrering og varsling. Den numeriske601-familie, C/I/T, alle 77 tidligere SQL-filer, de ni601-kalderrettelser og score/kildeprioritet/admin/geometri bevares. Kildekataloget har 79 SQL-filer; den afgrænsede konto-installationsvisning kræver de 66 installerede forgængere og netop de to nye appends. Kildekontrollen vælger de eksisterende prøver af delingsdata, Pages-pakkens privatliv, kontoschema og turlog, når de tilhørende filer ændres. Database- og produktionskontrollerne kører fortsat på deres egne trin.
+
+Én samlet faktisk 79-kilde-/PostgreSQL-kvalifikation skal dække de nye SQL- og katalogkontrakter samt de berørte normale kaldere. Uændrede lokale beviser genbruges med deres oprindelige input; gammel 77-kvalifikation ommærkes ikke til79. Samlingen reducerer leveringsrunder, ikke relevante sikkerheds- eller datakrav.
+
+601 skal først kvalificeres og leveres gennem almindeligt nyt vejr; den eksisterende V1-delingskode skal følge den nye binding. Efter den samlede602-kvalifikation installeres og genlæses kontoappends før den ændrede aktivitetsklient og trip-log-Edge. Derefter følger normal602-kodelevering med begge delingsindekser og kontrolleret V2-Functions med faktisk svar-/generationsparitet og målt kold CPU/Free-forbrug.
+
+Kontodelen installeres med coverage UNKNOWN, notices OFF og automatisk sletning OFF. Den konfigurerer ingen Auth-hook, automatisk mail eller cron. Positiv aktivitet og ægte leverandørlevering holdes adskilt fra manglende registrering og accepteret afsendelse. Faktisk signup/profil-bootstrap, hook/capture, kontinuitet, automatisk varsling og senere 30-dages sletning er fortsat åbne. Lokal samling er ikke installation eller brugeraccept. Se håndbog 89.353/89.354 og det private checkpoint; alle fem mål består.
+
+
+## App 602: mindre delingskald med samme 601-modelfamilie
+
+Den afgrænsede lokale app 602-kandidat porter den gennemgåede delingsprototype til 601-kilden. Ét separat prognoseindeks indeholder den nødvendige model-, profil-, runtime-, evidens-, kildealder-, tids- og generationsmetadata samt de 210 præcise zonefilers stier, størrelser og hashes. Det nye delingskald henter indekset og én eksisterende zonefil. Det gamle V1-indeks og alle 210 zonefilers format bevares til den gamle Worker; scoretal, kvalitetsmærkning og lokal dækningsstatus kommer fortsat fra de allerede beregnede normale resultater.
+
+Hele manifestet og alle 49.560 resultater kontrolleres fortsat i den normale producer-, kopi-, artifact-/privacy- og offentlige genlæsningskæde. Den forseglede browserclosures faktiske kontraktmodul gør det nye indeks obligatorisk; genuine594 beholder sin egen gamle kontrakt. GET genberegner ikke mastermanifestets SHA. Begge aktuelle tilgængeligheds-/friskhedskontroller,15-sekunders fælles deadline, EOF/UTF-8/størrelse/SHA og alle normale afslag består. Ingen cachet score eller fallback til en gammel generation tilføjes.
+
+Appversionssynk må bevare601s udstedte C/I/T og alle 77 migrationer. Det er ingen ny numerisk familie, kildeprioritet, SQL-installation eller ændring af vejr/score/geometri. Kildekvalifikation, faktisk 601-levering, ny602-prognose og senere Functions-V2 med hosted-paritet og målt kold CPU/Free er åbne. De tidligere lokale337-målinger gælder kun deres egen M5-kontekst og ommærkes ikke til 601. Se DEC-0296 og håndbog89.353; alle fem mål består.
+
 ## Afgrænset kontroloprydning og privat månedskalder
 
 Den sammenhængende kildekandidat fjerner en ekstra global testudførelse fra den historiske workflowfortegnelse, giver privat statistik ét naturligt normalt testmål og kvalificerer uændret after599-PostgreSQL som særskilt genbrug af den autentiske oprindelige fase. Hele CURRENT-prøvens maksimum er 480 sekunder; vejrets frister og numeriske kontrakter ændres ikke. Månedskalderen genlæser faktisk OFF/ON og kan ikke aktivere eller installere statistik. Se DEC-0302 og håndbog89.342/89.321. Kildekvalifikation, installation og faktisk automatisk virkning er særskilte åbne trin.

@@ -2,7 +2,9 @@
 // Fixed metadata-only installation readback. No account rows or arbitrary SQL.
 import assert from 'node:assert/strict';
 export {ACCOUNT_ERASURE_APP_MIGRATION,accountErasureCatalogQuery,verifyAccountErasureCatalogMetadata,
- readAccountErasureSource,verifyInstalledAccountErasureSchema,verifyAccountErasureCheckReference} from './verify-account-erasure-schema.mjs';
+ readAccountErasureSource,verifyInstalledAccountErasureSchema,verifyAccountErasureCheckReference,
+ ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS,readAccountInactivitySource,accountInactivityCatalogQuery,
+ verifyAccountInactivityCatalogMetadata,verifyAccountInactivityCheckReference,verifyInstalledAccountInactivitySchema} from './verify-account-erasure-schema.mjs';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { readAccountAssistantCanonicalSource } from './lib/account-assistant-successor-source.mjs';

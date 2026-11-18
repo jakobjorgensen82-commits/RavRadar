@@ -8,7 +8,7 @@ on:
         required: true
         type: string
       install_account_erasure:
-        description: "Kun manuel konto-erasure-appmigration; ingen kontohandling, automatik, mail eller Edge"
+        description: "Kun konto-app-SQL og genlæsning; ingen kontosletning, Auth-hook, automatisk mail eller Edge"
         required: false
         default: false
         type: boolean

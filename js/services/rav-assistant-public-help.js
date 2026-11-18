@@ -1,7 +1,7 @@
 // App-owned public help, not a numerical RavScore/model input. Unknown or mixed
 // questions keep the existing whole-question/AI path; no provider claim is made.
-import {routeRavQuestion,classifyRavQuestion} from './rav-assistant.js?v=4.0.601';
-import {localRavKnowledgeAnswer} from '../../knowledge/rav-assistant-local-v2.js?v=4.0.601';
+import {routeRavQuestion,classifyRavQuestion} from './rav-assistant.js?v=4.0.602';
+import {localRavKnowledgeAnswer} from '../../knowledge/rav-assistant-local-v2.js?v=4.0.602';
 
 const PUBLIC_ABOUT='https://ravradar.dk/about.html';
 const PUBLIC_GROUP='https://www.facebook.com/groups/1849354103138911/';

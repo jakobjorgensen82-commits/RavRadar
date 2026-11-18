@@ -2711,6 +2711,20 @@ test('native app fixture database ownership survives Auth timestamp shadowing wi
   }
 });
 
+
+// Synthetic typed DATA for the separately required current79 OFF phase; never
+// a replay/retag of the old77 PostgreSQL execution or a new SQL execution claim.
+async function currentInactivityOffProtocolData(postgresMajor){
+ const schema=await import('./verify-account-erasure-schema.mjs'),{createHash}=await import('node:crypto');
+ const source=schema.readAccountInactivitySource(),counts={account_inactivity_policy:4,account_lifecycle_activity:2,account_inactivity_notices:11};
+ const definitions=Object.entries(counts).flatMap(([name,count])=>Array.from({length:count},(_,i)=>[name+'.'+name+'_check'+String(i).padStart(2,'0'),'CHECK (SYNTHETIC_CURRENT79)'])).sort((a,b)=>a[0].localeCompare(b[0]));
+ const checkReference=schema.verifyAccountInactivityCheckReference({format:'PG_CONSTRAINTDEF_V1',postgresMajor,definitions,
+  definitionsSha256:createHash('sha256').update(JSON.stringify(definitions)).digest('hex')});
+ return {kind:'ACCOUNT_INACTIVITY_OFF_NATIVE_SQL_CASES',sqlExecuted:true,sourceSqlFileCount:79,migrations:source.migrations.map(({sql,id,...row})=>row),cases:17,
+  checkReference,catalogVerified:true,captureSqlExecuted:true,hookConfigured:false,syntheticSqlHost:true,actualPostgres:true,coverageSynthetic:true,
+  providerDeliverySynthetic:true,positiveRpcCancellation:true,defaultOff:true,automaticDeletion:false,realAuth:false,realMail:false};
+}
+
 if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
   test('after599 typed native ledger keeps synthetic prefix separate from whole executed SQL',async t=>{
     const native=await import('./native-postgres-evidence.mjs'),source=await import('./lib/assistant-later-h0-successor-source.mjs');
@@ -2742,7 +2756,10 @@ if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
     const checkReference=schema.accountErasureCheckReference({format:'PG_CONSTRAINTDEF_V1',postgresMajor:16,
       definitions:[["account_erasure_operations_auth_attempt_ids_check", "CHECK (((COALESCE(array_ndims(auth_attempt_ids), 1) = 1) AND (COALESCE(array_lower(auth_attempt_ids, 1), 1) = 1) AND (array_position(auth_attempt_ids, NULL::uuid) IS NULL) AND (NOT ('00000000-0000-0000-0000-000000000000'::uuid = ANY (auth_attempt_ids)))))"], ["account_erasure_operations_auth_user_created_at_check", "CHECK (((auth_user_created_at IS NULL) OR (auth_user_created_at ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?Z$'::text)))"], ["account_erasure_operations_check", "CHECK ((target_user_id <> requested_by))"], ["account_erasure_operations_check1", "CHECK (((activity_first IS NULL) = (activity_last IS NULL)))"], ["account_erasure_operations_check10", "CHECK (((auth_user_created_at IS NOT NULL) = (auth_claimed_at IS NOT NULL)))"], ["account_erasure_operations_check11", "CHECK (((state <> 'AUTH_ATTEMPTED'::text) OR (auth_claimed_at IS NOT NULL)))"], ["account_erasure_operations_check12", "CHECK (((auth_claimed_at IS NULL) OR ((auth_attempt_id IS NOT NULL) AND isfinite(auth_claimed_at) AND (auth_claimed_at >= pg_staged_at))))"], ["account_erasure_operations_check13", "CHECK (((state = ANY (ARRAY['AUTH_ABSENT_D1_PENDING'::text, 'COMPLETE'::text])) = (auth_absent_at IS NOT NULL)))"], ["account_erasure_operations_check14", "CHECK (((auth_absent_at IS NULL) OR ((auth_attempt_id IS NOT NULL) AND (d1_owner_subject IS NOT NULL) AND isfinite(auth_absent_at) AND (auth_absent_at >= COALESCE(auth_claimed_at, pg_staged_at)))))"], ["account_erasure_operations_check15", "CHECK (((state = 'COMPLETE'::text) = (d1_ack_at IS NOT NULL)))"], ["account_erasure_operations_check16", "CHECK (((d1_ack_at IS NOT NULL) = (d1_deleted_count IS NOT NULL)))"], ["account_erasure_operations_check17", "CHECK (((d1_ack_at IS NULL) OR (isfinite(d1_ack_at) AND (d1_ack_at >= auth_absent_at))))"], ["account_erasure_operations_check18", "CHECK (((auth_attempt_id IS NULL) OR ((pg_staged_at IS NOT NULL) AND (d1_owner_subject IS NOT NULL))))"], ["account_erasure_operations_check2", "CHECK (((activity_first IS NULL) OR (isfinite(activity_first) AND isfinite(activity_last) AND (activity_first <= activity_last))))"], ["account_erasure_operations_check3", "CHECK ((isfinite(prepared_at) AND isfinite(updated_at) AND (prepared_at <= updated_at)))"], ["account_erasure_operations_check4", "CHECK (((state = ANY (ARRAY['PG_STAGED_AUTH_PENDING'::text, 'AUTH_ATTEMPTED'::text, 'AUTH_ABSENT_D1_PENDING'::text, 'COMPLETE'::text])) = (pg_staged_at IS NOT NULL)))"], ["account_erasure_operations_check5", "CHECK (((pg_staged_at IS NULL) OR (isfinite(pg_staged_at) AND (pg_staged_at >= prepared_at))))"], ["account_erasure_operations_check6", "CHECK (((state <> ALL (ARRAY['HOLD_ACTIVITY_CHANGED'::text, 'HOLD_POLICY'::text])) OR (hold_reason IS NOT NULL)))"], ["account_erasure_operations_check7", "CHECK (((state <> ALL (ARRAY['PREPARED'::text, 'COMPLETE'::text])) OR (hold_reason IS NULL)))"], ["account_erasure_operations_check8", "CHECK (((pg_staged_at IS NOT NULL) OR (pg_rows_removed = 0)))"], ["account_erasure_operations_check9", "CHECK ((NOT (auth_attempt_id IS DISTINCT FROM auth_attempt_ids[cardinality(auth_attempt_ids)])))"], ["account_erasure_operations_d1_deleted_count_check", "CHECK (((d1_deleted_count >= 0) AND (d1_deleted_count <= '9007199254740991'::bigint)))"], ["account_erasure_operations_d1_owner_subject_check", "CHECK (((d1_owner_subject IS NULL) OR (d1_owner_subject ~ '^usr_v1_[A-Za-z0-9_-]{43}$'::text)))"], ["account_erasure_operations_hold_reason_check", "CHECK ((hold_reason = ANY (ARRAY['ACTIVITY_CHANGED'::text, 'PRIVILEGED_TARGET'::text, 'REFERENCE_POLICY'::text, 'REFERENCE_CATALOG_UNKNOWN'::text, 'TARGET_MISSING'::text, 'STORAGE_CATALOG_UNKNOWN'::text, 'STORAGE_POLICY_UNQUALIFIED'::text, 'STORAGE_OWNERSHIP'::text, 'AUTH_GENERATION_CHANGED'::text])))"], ["account_erasure_operations_mode_check", "CHECK ((mode = 'MANUAL_OWNER'::text))"], ["account_erasure_operations_operation_id_check", "CHECK ((operation_id <> '00000000-0000-0000-0000-000000000000'::uuid))"], ["account_erasure_operations_pg_rows_removed_check", "CHECK (((pg_rows_removed >= 0) AND (pg_rows_removed <= '9007199254740991'::bigint)))"], ["account_erasure_operations_state_check", "CHECK ((state = ANY (ARRAY['PREPARED'::text, 'HOLD_ACTIVITY_CHANGED'::text, 'HOLD_POLICY'::text, 'PG_STAGED_AUTH_PENDING'::text, 'AUTH_ATTEMPTED'::text, 'AUTH_ABSENT_D1_PENDING'::text, 'COMPLETE'::text])))"]]});
     const sourceSqlFileCount=(await fs.readdir(new URL('../supabase/migrations/',import.meta.url))).filter(file=>file.endsWith('.sql')).length;
-    assert.equal(sourceSqlFileCount,77,'Actual current source inventory, never a77 flag on76 files');
+    const pair=schema.ACCOUNT_INACTIVITY_OFF_APP_MIGRATIONS;
+    assert.equal(sourceSqlFileCount-pair.length,77,'The genuine77-file predecessor remains, plus only the two named OFF appends');
+    assert.equal(sourceSqlFileCount,79,'Actual current79 source, never an old77 execution retag');
+    const accountInactivity=await currentInactivityOffProtocolData(16);
     const accountErasure={kind:'ACCOUNT_ERASURE_APP_NATIVE_SQL_CASES',sqlExecuted:true,
       migrationVersion:'20261116181500',migrationSQLSha256:schema.readAccountErasureSource().sha256,sourceSqlFileCount,
       passed:true,cases:49,actualPostgres:true,syntheticSqlHost:true,realGoTrue:false,checkReference,checkExpressionDriftRefused:true,
@@ -2751,7 +2768,7 @@ if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
       observationsAndBootstrapFence:true,readCommittedFreshness:true,repeatableReadNoLateCommit:true,serializableNoLateCommit:true,
       actorNonKeyPrivilegeLock:true,authDeletion:false,d1Ack:false,completionAuthority:false};
     const report={kind:'NATIVE_POSTGRES_CHECKPOINT_CAS_COMPARISON',sqlExecuted:true,migrationExecuted:true,tcpEnabled:false,normalModelPartCount:673,
-      postgresMajorVersion:16,nativeProgramIdentity:runtime.selectedPrograms,assistantAfter599Successor:observed,accountErasure};
+      postgresMajorVersion:16,nativeProgramIdentity:runtime.selectedPrograms,assistantAfter599Successor:observed,accountErasure,accountInactivity};
     assert.deepEqual(await native.assistantAfter599NativeReportProjection(report,{selectedPrograms:runtime.selectedPrograms}),report);
     const collector=native.assistantAfter599NativeReportCollector({selectedPrograms:runtime.selectedPrograms});collector.write(JSON.stringify(report)+'\n');
     assert.deepEqual(await collector.finish(),report);
@@ -2762,7 +2779,7 @@ if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
       origin:null,eligibleForReuse:false,runtime,report};
     assert.equal(await native.verifyAssistantAfter599PhaseReceipt(receipt,receipt.current),receipt);
     // Exercise the complete raw normal consumer, including its real package,
-    // workflow, command and current77-file native validators. Transport is DATA.
+    // workflow, command and current79-file native validators. Transport is DATA.
     const normal=await import('./national584-source-evidence.mjs');
     const caller=await fs.readFile('scripts/national584-source-evidence.mjs','utf8');
     const begin=caller.indexOf('async function currentContext() {'),end=caller.indexOf('async function authenticatedReuse(ctx) {',begin);
@@ -2819,7 +2836,11 @@ if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
       const changed=copy(proof);mutate(changed);await assert.rejects(runContext(changed));
     }
     await assert.rejects(runContext(proof,{sourcePhase:'unknown-current-phase'}));
-    for(const mutate of [r=>delete r.accountErasure,r=>r.accountErasure=undefined,
+    for(const mutate of [r=>delete r.accountInactivity,r=>r.accountInactivity.sourceSqlFileCount=77,
+      r=>r.accountInactivity.cases=16,r=>r.accountInactivity.captureSqlExecuted=false,r=>r.accountInactivity.automaticDeletion=true,
+      r=>r.accountInactivity.migrations.reverse(),r=>r.accountInactivity.migrations[1].sha256='0'.repeat(64),
+      r=>r.accountInactivity.checkReference.definitions.pop(),r=>r.accountErasure.sourceSqlFileCount=77,
+      r=>delete r.accountErasure,r=>r.accountErasure=undefined,
       r=>r.accountErasure.sourceSqlFileCount=76,r=>r.accountErasure.sourceSqlFileCount=75,
       r=>r.accountErasure.migrationVersion='20261115060000',r=>r.accountErasure.migrationSQLSha256='0'.repeat(64),
       r=>r.accountErasure.cases=48,r=>r.accountErasure.checkReference.definitions.pop(),
@@ -2841,7 +2862,7 @@ if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
     const actualHead=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
     const parentHead=execFileSync('git',['rev-parse','HEAD^'],{encoding:'utf8'}).trim();
     const actualInput=await native.captureAssistantAfter599PgInput();
-    assert.equal(actualInput.sqlFiles,77);assert.equal(actualInput.complete,true);
+    assert.equal(actualInput.sqlFiles,79);assert.equal(actualInput.complete,true);
     const currentReuse={run:ORIGIN.run+900,attempt:1,head:actualHead,pullRequest:947,branch:'synthetic-after599-same-pr'};
     const originRun={...copy(run),id:ORIGIN.run+800,run_attempt:1,head_sha:parentHead,head_branch:currentReuse.branch,
       repository:{full_name:ORIGIN.repository},head_repository:{full_name:ORIGIN.repository},pull_requests:[{number:947}],
@@ -2887,7 +2908,7 @@ if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
         get,getInput:async({ref='HEAD'}={})=>{
           inputCalls++;const result=copy(actualInput);
           if((mutate.input&&ref===parentHead)||(mutate.freshInput&&inputCalls>2))result.inputSha256='f'.repeat(64);
-          if(mutate.sql79&&ref===parentHead||unrelatedLater&&ref===laterRun.head_sha){result.sqlFiles=79;result.inputSha256='d'.repeat(64);}return result;
+          if(mutate.sql77&&ref===parentHead||unrelatedLater&&ref===laterRun.head_sha){result.sqlFiles=77;result.inputSha256='d'.repeat(64);}return result;
         },getRuntime:async()=>{runtimeCalls++;return {...v2Runtime(),...(mutate.runtime||mutate.freshRuntime&&runtimeCalls>1?{imageVersion:'20261117.999'}:{})};},
         readGit:args=>{
           if(args[0]==='rev-parse'&&args[1]==='HEAD^{commit}')return actualHead+'\n';
@@ -2909,12 +2930,12 @@ if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
     assert.equal(claims.currentAssistantAfter599Native.status,'REUSED');assert.equal(claims.currentAssistantAfter599Native.executedInThisRun,false);
     const located=await native.decideAssistantAfter599Reuse(makeAfter599Fixture({locator:reused}).options);
     assert(located);assert.equal(located.origin.run,originRun.id,'A reused locator is never a SQL origin');
-    for(const key of ['unavailable','prHead','originPrHead','attempt','pgFailure','sourceFailure','uploadFailure','expired','zip','finalArtifact','input','sql79','freshInput','runtime','freshRuntime']){
+    for(const key of ['unavailable','prHead','originPrHead','attempt','pgFailure','sourceFailure','uploadFailure','expired','zip','finalArtifact','input','sql77','freshInput','runtime','freshRuntime']){
       const f=makeAfter599Fixture({mutate:{[key]:true}});assert.equal(await native.decideAssistantAfter599Reuse(f.options),null,key);
     }
     assert.equal(await native.decideAssistantAfter599Reuse(makeAfter599Fixture({later:true}).options),null,'Later relevant native failure executes normally');
     const unrelated=await native.decideAssistantAfter599Reuse(makeAfter599Fixture({unrelatedLater:true}).options);
-    assert(unrelated,'A proved different79-SQL failure cannot invalidate the unchanged77-SQL phase');
+    assert(unrelated,'A proved different77-SQL failure cannot invalidate the unchanged79-SQL phase');
     let clock=0;const clockMock=t.mock.method(performance,'now',()=>clock);
     try{const late=makeAfter599Fixture(),transport=late.options.get;
       late.options.get=async(...args)=>{const value=await transport(...args);clock=60001;return value;};
@@ -2937,7 +2958,7 @@ if(CURRENT_ASSISTANT.sourcePhase==='assistant-after599-successor'){
     const owned=await fs.mkdtemp(path.join(os.tmpdir(),'rr-after599-reuse-cli-'));
     try{
       const entry=path.join(owned,'normal-entry.mjs');
-      const nativeDriverNames=["CURRENT586_PHASE_FILE","ASSISTANT_AFTER599_PHASE","ASSISTANT_AFTER598_PHASE","ASSISTANT_AFTER597_PHASE","SCALAR597_LATER_H0_PHASE","ASSISTANT_AFTER599_PHASE_KIND","ASSISTANT_AFTER598_PHASE_KIND","ASSISTANT_AFTER597_PHASE_KIND","SCALAR597_LATER_H0_PHASE_KIND","INSTALLED593_ORIGINAL591_V2_KIND","INSTALLED593_ORIGINAL591_PHASE_KIND","CURRENT586_PHASE_KIND","ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND","ASSISTANT_PUBLIC590_SUCCESSOR_PHASE_KIND","ASSISTANT_PUBLIC588_SUCCESSOR_PHASE_KIND","ASSISTANT_PUBLIC587_SUCCESSOR_PHASE_KIND","ASSISTANT_LATER_H0_PHASE_KIND","ACTIVE_NATIVE_SCRIPT","ACTIVE_COMMANDS","ASSISTANT_AFTER599_SCRIPT","executeAssistantAfter598Native","executeAssistantAfter597Native","captureInstalled593Original591Input","captureAssistantPublic591Input","verifyInstalled593Original591Input","verifyAssistantPublic591Input","verifyInstalled593Original591V2PhaseReceipt","verifyAssistantPublic591V2PhaseReceipt","decideInstalled593Original591Reuse","decideAssistantPublic591Reuse","completeInstalled593Original591Execution","assistantPublic591Runtime","verifyAssistantPublic591Runtime","assistantAfter599NativeReportCollector","verifyAssistantAfter599PhaseReceipt","verifyAssistantAfter598PhaseReceipt","verifyAssistantAfter597PhaseReceipt","verifyScalar597LaterH0PhaseReceipt","verifyInstalled593Original591PhaseReceipt","verifyCurrent586PhaseReceipt","verifyAssistantPublic591SuccessorPhaseReceipt","verifyAssistantPublic590SuccessorPhaseReceipt","verifyAssistantPublic588SuccessorPhaseReceipt","verifyAssistantPublic587SuccessorPhaseReceipt","verifyAssistantLaterH0PhaseReceipt"];
+      const nativeDriverNames=["assertCurrentAccountInactivityNativeReport","CURRENT586_PHASE_FILE","ASSISTANT_AFTER599_PHASE","ASSISTANT_AFTER598_PHASE","ASSISTANT_AFTER597_PHASE","SCALAR597_LATER_H0_PHASE","ASSISTANT_AFTER599_PHASE_KIND","ASSISTANT_AFTER598_PHASE_KIND","ASSISTANT_AFTER597_PHASE_KIND","SCALAR597_LATER_H0_PHASE_KIND","INSTALLED593_ORIGINAL591_V2_KIND","INSTALLED593_ORIGINAL591_PHASE_KIND","CURRENT586_PHASE_KIND","ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND","ASSISTANT_PUBLIC590_SUCCESSOR_PHASE_KIND","ASSISTANT_PUBLIC588_SUCCESSOR_PHASE_KIND","ASSISTANT_PUBLIC587_SUCCESSOR_PHASE_KIND","ASSISTANT_LATER_H0_PHASE_KIND","ACTIVE_NATIVE_SCRIPT","ACTIVE_COMMANDS","ASSISTANT_AFTER599_SCRIPT","executeAssistantAfter598Native","executeAssistantAfter597Native","captureInstalled593Original591Input","captureAssistantPublic591Input","verifyInstalled593Original591Input","verifyAssistantPublic591Input","verifyInstalled593Original591V2PhaseReceipt","verifyAssistantPublic591V2PhaseReceipt","decideInstalled593Original591Reuse","decideAssistantPublic591Reuse","completeInstalled593Original591Execution","assistantPublic591Runtime","verifyAssistantPublic591Runtime","assistantAfter599NativeReportCollector","verifyAssistantAfter599PhaseReceipt","verifyAssistantAfter598PhaseReceipt","verifyAssistantAfter597PhaseReceipt","verifyScalar597LaterH0PhaseReceipt","verifyInstalled593Original591PhaseReceipt","verifyCurrent586PhaseReceipt","verifyAssistantPublic591SuccessorPhaseReceipt","verifyAssistantPublic590SuccessorPhaseReceipt","verifyAssistantPublic588SuccessorPhaseReceipt","verifyAssistantPublic587SuccessorPhaseReceipt","verifyAssistantLaterH0PhaseReceipt"];
       const sourceDriverNames=["requireInstalled593Original591Release","requireInstalled593Original591Binding","requireInstalled593Original591Output","INSTALLED593_ORIGINAL591_DATABASE_BEFORE","requireAssistantPublic591SuccessorRelease","requireAssistantPublic590SuccessorRelease","requireAssistantPublic588SuccessorRelease","requireAssistantPublic587SuccessorRelease","requireAssistantLaterH0Release"];
       for(const name of nativeDriverNames)assert(Object.hasOwn(native,name),'Actual native export '+name);
       for(const name of sourceDriverNames)assert(Object.hasOwn(source,name),'Actual source export '+name);

@@ -24,6 +24,30 @@ Den forberedte normale produktionskontrol undersøger den faktisk nye vejrpakke 
 
 Den primære arkivgendannelse bruger den allerede kontrollerede lokale supabase_admin-session, fordi de oprindelige leverandørrelationer kræver denne ejeradgang. Den normale CHECK-suspension og -genoprettelse skal derfor bindes til samme præcise session_user, current_user og lokale postgres-database. Den afgrænsede rettelse ændrer ingen grants, originale SQL-filer eller CHECK-semantik. HISTORY og den syntetiske vej beholder den hidtidige postgres-kontrol. Den kildegennemgang fandt en konkret rollekonflikt før næste forsøg; de målrettede kalderprøver består, men faktisk original SQL-/Auth-gendannelse, autonom kvittering/rotation og samlet Free-klarhed er stadig åbne.
 
+## App602: direkte delingslink og forståelig offentlig assistenthjælp
+
+Den lokale app602-kandidat omfatter nu direkte åbning af den allerede kontrollerede delte prognose. Serverens Facebook-/Open-Graph-indhold og fallbacklink bevares. App-ejede lokale hjælpesvar retter generelle vandstandsspørgsmål, offentlig ophavsmand/Facebook og begynderhjælp samt fejllæsning af Ravfund, uden at genudstede den numeriske model. Hele spørgsmålets vagter og normale prognoserangering bevares. Se håndbog89.352/89.353. Kildekvalifikation og offentlig levering er fortsat nødvendige; faktisk ekstern AI og hosted CPU/Free er åbne. Alle fem mål består.
+
+## App 602: deling, normal LF7-læsning og inaktiv kontoforberedelse
+
+Den samlede lokale app 602-kandidat erstatter den tidligere delings-only-sammensætning. Den forener det mindre generationsbundne delingsindeks, LF7-audit af de normale gemte timefiler og to kontoappends til aktivitetsregistrering og varsling. Den numeriske601-familie, C/I/T, alle 77 tidligere SQL-filer, de ni601-kalderrettelser og score/kildeprioritet/admin/geometri bevares. Kildekataloget har 79 SQL-filer; den afgrænsede konto-installationsvisning kræver de 66 installerede forgængere og netop de to nye appends. Kildekontrollen vælger de eksisterende prøver af delingsdata, Pages-pakkens privatliv, kontoschema og turlog, når de tilhørende filer ændres. Database- og produktionskontrollerne kører fortsat på deres egne trin.
+
+Én samlet faktisk 79-kilde-/PostgreSQL-kvalifikation skal dække de nye SQL- og katalogkontrakter samt de berørte normale kaldere. Uændrede lokale beviser genbruges med deres oprindelige input; gammel 77-kvalifikation ommærkes ikke til79. Samlingen reducerer leveringsrunder, ikke relevante sikkerheds- eller datakrav.
+
+601 skal først kvalificeres og leveres gennem almindeligt nyt vejr; den eksisterende V1-delingskode skal følge den nye binding. Efter den samlede602-kvalifikation installeres og genlæses kontoappends før den ændrede aktivitetsklient og trip-log-Edge. Derefter følger normal602-kodelevering med begge delingsindekser og kontrolleret V2-Functions med faktisk svar-/generationsparitet og målt kold CPU/Free-forbrug.
+
+Kontodelen installeres med coverage UNKNOWN, notices OFF og automatisk sletning OFF. Den konfigurerer ingen Auth-hook, automatisk mail eller cron. Positiv aktivitet og ægte leverandørlevering holdes adskilt fra manglende registrering og accepteret afsendelse. Faktisk signup/profil-bootstrap, hook/capture, kontinuitet, automatisk varsling og senere 30-dages sletning er fortsat åbne. Lokal samling er ikke installation eller brugeraccept. Se håndbog 89.353/89.354 og det private checkpoint; alle fem mål består.
+
+## LF7-observation efter normal komprimering
+
+Den tidligere sammenligning forventede PART.hourly efter den normale komprimering og kunne derfor ende i UNKNOWN/COMPUTED_HOUR_MISSING uden at aflæse de gemte slutværdier. Den lokale rettelse bruger de allerede eksisterende, fuldt bundne public-hour-filer. Manglende observation forbliver UNKNOWN, og korrekt bundet mismatch bliver VIOLATION; der gives ingen ny kilde-, model- eller produktionsautoritet. Faktisk ny generationsbundet LF7-/SOURCE-/T+3-accept er fortsat åben. Se DEC-0302 og håndbog89.342.
+
+## Delingskaldets kolde CPU er fortsat en åben Free-grænse
+
+App 602s lokale kandidat reducerer det normale delingskald til et samlet prognoseindeks og én eksisterende zonefil. Tidligere M5-prøver viste samme svar og mindre varmt arbejde, men ikke robust kold CPU under 10ms; de bliver ikke ommærket til 601. Ny601-/602-kildekvalifikation, normal generation, trinvist V1/V2-deploy, hosted paritet og faktisk kold/varm Cloudflare-CPU samt fælles kontokvote er endnu ikke accepteret. En mindre fil eller lokal grøn prøve lukker ikke problemet.
+
+Der må ikke faldes tilbage til gammel model, time eller generation for at få en score. Manglende nyt indeks afvises af ny læser/verifier, og gammel V1 bevares til gammel Worker. Denne lokale appkandidat ændrer ingen af revisionens øvrige åbne forhold. Se DEC-0296 og håndbog89.353.
+
 ## Kontrolkandidat: nationalt familiefald og gentagne workflowmål
 
 Den faktiske after599-nativefase er gennemført; den efterfølgende nationalkalder faldt efter korrekt familieaccept videre til en anden families validator. Den lokale rettelse vælger én sammenhængende if/else-if-kæde og er regressionsprøvet. Den gamle workflowfortegnelse startede desuden aktuelle mål en ekstra gang og kunne standse på en uvedkommende pensioneret workflowejer. Den ekstra udførelse er fjernet i kildekandidaten, mens normal aktuel måludførelse består. Samlet præcis kildekvalifikation og levering er åbne. Se DEC-0302 og privat checkpoint.

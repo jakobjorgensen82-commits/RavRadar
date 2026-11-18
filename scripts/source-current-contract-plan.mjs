@@ -23,6 +23,7 @@ const ASSISTANT_SUCCESSOR_TESTS=new Set([
   'scripts/test-assistant-after597-sync-binding.mjs',
 ]);
 const FIXED_ASSISTANT_LOG_TEST='scripts/test-fixed-assistant-failure-log-20261101.mjs';
+const SHARE_PROJECTION_SOURCE_TEST='node scripts/test-forecast-share-projection.mjs';
 const LOCAL_RESTORE_FIXTURE='scripts/test-supabase-cli-local-restore.mjs';
 const LOCAL_RESTORE_SELF_TEST='node '+LOCAL_RESTORE_FIXTURE+' --self-test';
 const LOCAL_RESTORE_WORKFLOW='.github/workflows/verify-supabase-cli-local-restore.yml';
@@ -131,7 +132,7 @@ export const CURRENT_CONTRACT_COMMANDS=freeze({
   ],
   sharing:[
     'node scripts/test-map-forecast-timeline.mjs',
-    'node scripts/test-forecast-share-projection.mjs',
+    SHARE_PROJECTION_SOURCE_TEST,
     'node scripts/test-forecast-share-pages-deploy.mjs',
   ],
   privateStudy:[
@@ -442,12 +443,32 @@ export function currentWorkflowTargets(relative){
   if(!areas?.length||areas.some(area=>!COMMANDS[area]?.length))return null;
   return freeze({path:relative,owners:areas.map(area=>({area,commands:[...COMMANDS[area]]}))});
 }
+// Existing whole callers for precise app and Pages inputs. This lookup
+// selects test commands without adding short-path qualification authority.
+const ACCOUNT_SCHEMA_SOURCE_TEST='node --test scripts/test-account-erasure-outbox.mjs';
+const TRIP_LOG_SOURCE_TEST='node --test scripts/test-user-account-trip-log-4.0.264.mjs';
+const SOURCE_EXECUTION_TARGETS=freeze({
+  'scripts/audit-pages-artifact-privacy.mjs':['node scripts/test-pages-artifact-privacy.mjs',SHARE_PROJECTION_SOURCE_TEST],
+  'scripts/build-forecast-share-projection.mjs':[SHARE_PROJECTION_SOURCE_TEST],
+  'scripts/verify-ravscore-operational-pages-deployment.mjs':[SHARE_PROJECTION_SOURCE_TEST],
+  'scripts/lib/account-erasure-outbox-native-fixture.mjs':[ACCOUNT_SCHEMA_SOURCE_TEST],
+  'scripts/verify-account-assistant-schema.mjs':[ACCOUNT_SCHEMA_SOURCE_TEST],
+  'scripts/verify-account-erasure-schema.mjs':[ACCOUNT_SCHEMA_SOURCE_TEST],
+  'scripts/verify-code-only-migration-plan.mjs':[ACCOUNT_SCHEMA_SOURCE_TEST],
+  'supabase/functions/_shared/account-inactivity-notice.js':[TRIP_LOG_SOURCE_TEST],
+  'supabase/functions/_shared/account-lifecycle.js':[TRIP_LOG_SOURCE_TEST,...COMMANDS.ownerErasure],
+  'supabase/functions/_shared/inactivity-notice-mail.mjs':[TRIP_LOG_SOURCE_TEST],
+  'supabase/functions/trip-log/index.ts':[TRIP_LOG_SOURCE_TEST],
+});
+
 // Execution-only lookup for the normal source driver. The complete Git diff
 // chooses existing natural owners; this is not a baseline or reuse receipt.
 export function currentSourceTargets(relative){
   assert.equal(arguments.length,1);
   if(typeof relative!=='string'||!/^[A-Za-z0-9_.\/-]+$/.test(relative)
     ||relative.startsWith('/')||relative.split('/').some(part=>part==='.'||part==='..'))return null;
+  if(Object.hasOwn(SOURCE_EXECUTION_TARGETS,relative))
+    return freeze({path:relative,owners:[{area:'sourceExecution',commands:[...SOURCE_EXECUTION_TARGETS[relative]]}]});
   let areas=pathAreas.get(relative);
   if(ASSISTANT_SUCCESSOR_TESTS.has(relative))
     return freeze({path:relative,owners:[{area:'assistantSuccessor',commands:['node '+relative+' --after599-current']}]});

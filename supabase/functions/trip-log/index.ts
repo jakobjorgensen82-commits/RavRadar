@@ -21,6 +21,7 @@ import { tripStorageReadinessHeaders } from "../_shared/trip-storage-readiness.t
 import { readAdminTripCount } from "../_shared/admin-trip-count.ts";
 import { readAdminAccountCategories, validateAdminCategoryIds } from "../_shared/admin-account-categories.ts";
 import { isManualAccountErasureOperation, runManualAccountErasure, validateManualAccountErasurePayload } from "../_shared/account-lifecycle.js";
+import { runAccountInactivityNotice, validateAccountInactivityNoticePayload } from "../_shared/account-inactivity-notice.js";
 
 Deno.serve(async (request) => {
   try {
@@ -59,8 +60,12 @@ Deno.serve(async (request) => {
     const adminCountRequested = payload.operation === "admin-count";
     const adminCategoriesRequested = payload.operation === "admin-account-categories";
     const exportRequested = payload.operation === "export-page";
+    const noticeRequested = ["account-inactivity-list", "account-inactivity-prepare", "account-inactivity-status", "account-inactivity-resume"].includes(payload.operation);
     const accountErasureRequested = isManualAccountErasureOperation(payload.operation);
-    const allowedFields = accountErasureRequested ? (payload.operation === "account-erasure-list"
+    const allowedFields = noticeRequested ? (payload.operation === "account-inactivity-list"
+      ? ["operation", "afterNoticeId"] : payload.operation === "account-inactivity-prepare" ? ["operation", "noticeId", "targetUserId"]
+      : payload.operation === "account-inactivity-status" ? ["operation", "noticeId"] : ["operation", "noticeId", "attemptId", "confirmation"])
+      : accountErasureRequested ? (payload.operation === "account-erasure-list"
       ? ["operation", "afterOperationId"] : payload.operation === "account-erasure-prepare"
       ? ["operation", "operationId", "targetUserId"] : payload.operation === "account-erasure-status"
       ? ["operation", "operationId"] : ["operation", "operationId", "attemptId", "confirmation"])
@@ -68,6 +73,7 @@ Deno.serve(async (request) => {
     const unknown = Object.keys(payload).filter(key => !allowedFields.includes(key));
     if (unknown.length) throw new GatewayError(400, "UNKNOWN_FIELDS");
     if (accountErasureRequested) validateManualAccountErasurePayload(payload);
+    if (noticeRequested) validateAccountInactivityNoticePayload(payload);
     if (adminCategoriesRequested) validateAdminCategoryIds(payload.ids);
     if (exportRequested && !(payload.cursor === null || (typeof payload.cursor === "string" && payload.cursor.length <= 512))) {
       throw new GatewayError(400, "INVALID_EXPORT_CURSOR");
@@ -75,6 +81,11 @@ Deno.serve(async (request) => {
     const limit = Math.max(1, Math.min(200, Math.round(Number(payload.limit) || 100)));
     await enforceRateLimits(request, "trip-log", { minute: 12, hour: 120, globalDay: 5000 });
     const userId = await requireAuthenticatedUserId(request);
+    if (noticeRequested) {
+      const response = jsonResponse(request, await runAccountInactivityNotice(request, userId, payload));
+      response.headers.set("Cache-Control", "no-store");
+      return response;
+    }
     if (accountErasureRequested) {
       const response = jsonResponse(request, await runManualAccountErasure(request, userId, payload));
       response.headers.set("Cache-Control", "no-store");

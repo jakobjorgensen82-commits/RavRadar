@@ -1,3 +1,39 @@
+## 4.0.602 — ændringsbaseret kildevej og offentlig hjælp, kildekandidat
+
+- Otte kommandoers fast kildekerne med relevante ændrede funktioners eksisterende hele mål; otte er ikke et løfte om samlet antal i den store601-samling.
+- GitHubs afhængighedstrin installerer kun pakker. De otte tidligere faste teststarter er fjernet, og aktuelle og historiske arbejdsgange kontrolleres på deres egne input.
+- Kildekontrollen vælger den aktuelle assistentprøve, bruger historiske input til den daterede diagnostik og bevarer Pages-kontrollens afvisning af afvigende kildeinput.
+- Historiske npm-scriptkort er ikke længere adgangskrav for den aktuelle app. Edge-kontrollen og prøven af næste appversion følger deres aktuelle kaldere. Gamle orakler læser deres egne autentiske kilder.
+- De berørte 602-filer får målrettede prøver af prognosedeling, Pages-pakkens privatliv, kontoschema og turlog.
+- App-ejede lokale hjælpe- og praktiske ravkese-/strandsvar med hele spørgsmålets vagter, uændret numerisk service og ingen AI-provenienspåstand.
+- Præcis kildekvalifikation, offentlig levering og resterende samlet AI-/Free-accept er fortsat åbne.
+
+## 4.0.602 — kortere normal driftskontrol og rettet arkivkalder, kildekandidat
+
+- Normal artifact-/releasekontrol forkortes fra55+3 til10+1 aktuelle datakontroller; øvrige driftsværn bevares. Faktisk tidsbesparelse er ikke målt.
+- Arkivets CHECK-suspension og -genoprettelse bruger samme kontrollerede lokale administrator som den primære indlæsning. HISTORY beholder postgres; ingen originale SQL eller grants ændres.
+- Præcis kildekvalifikation, normal offentlig virkning og originalgendannelse er fortsat nødvendige.
+
+## 4.0.602 — supplerende visningsrettelser, lokal kandidat
+
+- Gyldige delingslinks åbner automatisk den samme prognose; Facebook-indhold og manuelt link bevares.
+- Generelle lokale assistentsvar om vandstand, RavRadar og begynderhjælp bliver forståelige og uafhængige af valgt zone. Ukendte sammensatte navne afklares.
+- Ingen ny numerisk binding, scoreformel, kildeprioritet eller geometri. Faktisk levering, ekstern AI og hosted Free-grænse er fortsat åbne.
+
+## 4.0.602 — samlet kandidat med inaktiv kontoopsætning
+
+Den endelige lokale sammensætning omfatter det generationsbundne delingsindeks, LF7-audit af normalt gemte timefiler og to inaktive kontoappends til aktivitetsregistrering/varsling. De77 gamle migrationer og601s C/I/T bevares; den nye kilde har 79 SQL-filer. Konto-SQL og eksakt genlæsning skal leveres før den nye aktivitetsklient og Edge.
+
+Faktisk79-kilde-/PostgreSQL-kvalifikation, installation og offentlig effekt er åbne. Samlingen aktiverer ingen Auth-hook, automatisk mail, cron eller kontosletning. Ægte delivery-ACK, aktivitet, senere automatisk 30-dages sletning og anonym statistik kræver egne beviser. Delingens faktiske CPU-/Free-accept og revisionens faktiske LF7-/T+3-accept er fortsat åbne. Se håndbog 89.354; den tidligere delings-only 602-forberedelse nedenfor er erstattet af denne sammensætning.
+
+## 4.0.602 — samlet delingsindeks, lokal appkandidat på 601
+
+Delingsvisningen får ét strengt prognoseindeks og læser derefter kun den valgte eksisterende zonefil. Normal nationalparitet, uafhængig genlæsning mod hele manifestet, begge kopiveje, privacy og den forseglede offentlige implementering bevarer deres kontroller. Det gamle V1-indeks og alle 210 zonefiler bevares, så den gamle delingskode kan fortsætte under den trinvise levering. Der tilføjes ingen ny scoreberegning, tjeneste, databasebinding eller cachet friskhed.
+
+Normal set-version602 bevarer den udstedte601-modelfamilies C/I/T og alle 77 migrationsoriginaler. Det er lokal forberedelse efter den endnu ukvalificerede601-kilde, ikke ny model-/SQL-udstedelse, installation eller offentlig levering. Først leveres normalt601-vejr og en601-kompatibel V1-Functions; derefter602-artifact med begge indekser; til sidst V2-Functions med faktisk generations-/svarparitet og kold/varm CPU samt samlet Free-måling. M5-prototypens lokale målinger er ikke601- eller Cloudflare-bevis. Hosted CPU under 10ms og selvstændig Free-drift er fortsat åbne.
+
+LF7-auditten aflæser nu de normale gemte public-hour-slutværdier med fuld transport- og generationsbinding i stedet for fjernede PART.hourly-rækker. Den rene auditkerne, kildevalg, T+3-regler, model og SQL bevares. UNKNOWN og faktisk mismatch holdes adskilt; dette er ikke en ny produktions- eller revisionsaccept.
+
 ## 4.0.601 — afslut Pages-registrering på en uafhængig kørsel
 
 Den normale Pages-kørsel lader den beskyttede registrering ligge, indtil GitHub har afsluttet kørslen. Den næste uafhængige kørsel verificerer den samme offentlige prognose, lukker registreringen og kan derefter hente frisk vejr.
@@ -5,21 +41,6 @@ Den normale Pages-kørsel lader den beskyttede registrering ligge, indtil GitHub
 ## 4.0.601 — robust offentlig prognosekontrol, driftsrettelse
 
 Rettelsen lader den eksisterende offentlige kontrol gentage samme filkald efter bestemte kortvarige forbindelsesfejl, før serveren har svaret. Forbindelsesfejl og HTTP 502, 503 og 504 deler de samme tre ekstra forsøg. Ved afslag angiver loggen den offentlige fil og en fast fejlkategori. Hele pakkens kontrolsummer og indhold skal stadig stemme.
-
-## 4.0.601 — ændringsbaseret kildevej og offentlig hjælp, kildekandidat
-
-- Otte kommandoers fast kildekerne med relevante ændrede funktioners eksisterende hele mål; otte er ikke et løfte om samlet antal i den store601-samling.
-- GitHubs afhængighedstrin installerer kun pakker. De otte tidligere faste teststarter er fjernet, og aktuelle og historiske arbejdsgange kontrolleres på deres egne input.
-- Kildekontrollen vælger den aktuelle assistentprøve, bruger historiske input til den daterede diagnostik og bevarer Pages-kontrollens afvisning af afvigende kildeinput.
-- Historiske npm-scriptkort er ikke længere adgangskrav for den aktuelle app. Edge-kontrollen og prøven af næste appversion følger deres aktuelle kaldere. Gamle orakler læser deres egne autentiske kilder.
-- App-ejede lokale hjælpe- og praktiske ravkese-/strandsvar med hele spørgsmålets vagter, uændret numerisk service og ingen AI-provenienspåstand.
-- Præcis kildekvalifikation, offentlig levering og resterende samlet AI-/Free-accept er fortsat åbne.
-
-## 4.0.601 — kortere normal driftskontrol og rettet arkivkalder, kildekandidat
-
-- Normal artifact-/releasekontrol forkortes fra55+3 til10+1 aktuelle datakontroller; øvrige driftsværn bevares. Faktisk tidsbesparelse er ikke målt.
-- Arkivets CHECK-suspension og -genoprettelse bruger samme kontrollerede lokale administrator som den primære indlæsning. HISTORY beholder postgres; ingen originale SQL eller grants ændres.
-- Præcis kildekvalifikation, normal offentlig virkning og originalgendannelse er fortsat nødvendige.
 
 ## 4.0.601 — emneopfølgning og afgrænset UV-/mængdeviden, lokal kandidat
 

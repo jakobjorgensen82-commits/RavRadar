@@ -14,6 +14,16 @@ Den forberedte normale produktionskontrol undersøger den faktisk nye vejrpakke 
 
 Den primære arkivgendannelse bruger den allerede kontrollerede lokale supabase_admin-session, fordi de oprindelige leverandørrelationer kræver denne ejeradgang. Den normale CHECK-suspension og -genoprettelse skal derfor bindes til samme præcise session_user, current_user og lokale postgres-database. Den afgrænsede rettelse ændrer ingen grants, originale SQL-filer eller CHECK-semantik. HISTORY og den syntetiske vej beholder den hidtidige postgres-kontrol. Den kildegennemgang fandt en konkret rollekonflikt før næste forsøg; de målrettede kalderprøver består, men faktisk original SQL-/Auth-gendannelse, autonom kvittering/rotation og samlet Free-klarhed er stadig åbne.
 
+## 17. november — én faktisk kvalifikation af samlet app602
+
+De gennemgåede apprettelser til deling/LF7 og inaktiv kontoopsætning samles før næste kildekvalifikation for at undgå endnu en versions- og databasekontrolrunde alene ved senere sammenføring. Kombinationen har 79 SQL-filer og kræver en ny faktisk kvalifikation af de to nye appends og deres normale kaldere. Gamle77-/manuelle beviser bevares med deres eget katalog; de ommærkes ikke. Uændrede mål gentages kun ved relevante nye input. Dette giver ingen undtagelse fra konkret relevant fejl eller ukendt påvirkning. Kildekontrollen vælger de eksisterende prøver af delingsdata, Pages-pakkens privatliv, kontoschema og turlog, når de tilhørende filer ændres. Database- og produktionskontrollerne kører fortsat på deres egne trin.
+
+## LF7-audit læser den autentiske gemte timeprojektion
+
+Den private LF7-audit læser de eksisterende 118 public-hour-filer én ad gangen, fordi den normale gemte PART-form ikke længere indeholder hourly-rækker. Hver fil skal bestå de normale descriptor-, størrelses-, hash-, transport-, generations-, model-, time- og PART-/zonekontroller. Kun de to allerede beregnede vandstandstal indgår i den uændrede digest; der genskabes ingen PART-historik eller score, og der faldes ikke tilbage til tilsyneladende korrekte in-memory-rækker.
+
+Manglende eller ukvalificeret observation forbliver UNKNOWN; en korrekt bundet værdiafvigelse bliver OBSERVED_VIOLATION. OBSERVED_CONFORMANT er ikke i sig selv komplet dækning eller bevist T+3-støtte: de særskilte coverageComplete- og allRoutedT3Comparable-felter skal fortsat læses. De 121 private kildetimer giver støtte til de 118 offentlige timer; nævneren udvides ikke. Rå værdier, private navne og koordinater kommer ikke i rapporten. Dette er lokal kildeforberedelse på endnu ikke merget601; præcis kvalifikation og en ny faktisk generation kræves fortsat.
+
 ## Færre gentagelser og klar adskillelse af historiske prøveinput
 
 Ejerens instruktion er at fjerne alle overflødige kontrolkrav og uvedkommende stop. En historisk workflowfortegnelse er prøveinput, ikke en ekstra global teststarter. Den eksisterende historiske læser bevarer sit autentiske grundlag og kontrollerer en begrænset, sikker aktuel fortegnelsesform; den starter ikke aktuelle målprocesser og kræver ikke, at pensionerede workflows fortsat findes. Den normale CURRENT-producent og -forbruger vælger og udfører fortsat relevante hele mål for den faktiske ændring. Månedskalderen har ét naturligt account-callers-mål, som allerede importerer månedsskifte og controller; tre identiske starter er ikke nødvendige.
