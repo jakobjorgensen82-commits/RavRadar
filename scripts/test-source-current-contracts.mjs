@@ -28,10 +28,11 @@ const weatherPublicationScopeOnly=process.argv.includes('--weather-publication-s
 const restoreFixture='scripts/test-supabase-cli-local-restore.mjs';
 // This already qualified historical test input grants no scope to current readers.
 const RESTORE_SCOPE_FIXTURE_ORIGIN='13ecde5895cea1da42ba2421e5d2570efb6db645';
-const restoreSource=execFileSync('git',['-c','protocol.allow=never','-C',SOURCE,'cat-file','blob',
-  RESTORE_SCOPE_FIXTURE_ORIGIN+':'+restoreFixture],{timeout:10000,maxBuffer:256*1024,windowsHide:true,
+const readCommittedFixture=ref=>execFileSync('git',['-c','protocol.allow=never','-C',SOURCE,'cat-file','blob',
+  ref+':'+restoreFixture],{timeout:10000,maxBuffer:4*1024*1024,windowsHide:true,
   env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_OPTIONAL_LOCKS:'0',GIT_TERMINAL_PROMPT:'0'}}).toString('utf8');
-const currentRestoreSource=fs.readFileSync(new URL('./test-supabase-cli-local-restore.mjs',import.meta.url),'utf8');
+const restoreSource=readCommittedFixture(RESTORE_SCOPE_FIXTURE_ORIGIN);
+const currentRestoreSource=readCommittedFixture('HEAD');
 assert.deepEqual(CURRENT_CONTRACT_COMMANDS.backupRestore,['node '+restoreFixture+' --self-test',
   'node --test scripts/test-archive-supabase-database-backup.mjs',
   'node --test scripts/test-supabase-database-backup-workflow.mjs',
@@ -46,10 +47,15 @@ for(const changed of [
  restoreSource.replace('\nconst P=Object.freeze(','\nconst P=Object.freeze(\nconst P=Object.freeze('),
  ' '.repeat(256*1024)+restoreSource,
 ])assert.equal(isBoundedLocalRestoreFixtureChange(restoreSource,changed),false);
-if(Buffer.byteLength(currentRestoreSource)>256*1024){
-  assert.equal(isBoundedLocalRestoreFixtureChange(currentRestoreSource,currentRestoreSource),false);
-  assert.equal(isBoundedLocalRestoreFixtureChange(restoreSource,currentRestoreSource),false);
-}
+const currentBodyEdit=currentRestoreSource.replace('const IMAGES=','// Synthetic current restore body edit\nconst IMAGES=');
+assert.notEqual(currentBodyEdit,currentRestoreSource);
+assert.equal(isBoundedLocalRestoreFixtureChange(currentRestoreSource,currentBodyEdit),true);
+for(const changed of [
+ '// Synthetic current import delta\n'+currentBodyEdit,
+ currentBodyEdit+'\n// Synthetic current dispatch delta\n',
+ currentBodyEdit.replace('const IMAGES=','/*'+(' '.repeat(4*1024*1024))+'*/\nconst IMAGES='),
+ currentBodyEdit.replace('const IMAGES=','// Synthetic NUL\0\nconst IMAGES='),
+])assert.equal(isBoundedLocalRestoreFixtureChange(currentRestoreSource,changed),false);
 // Eksisterende ownerindgang: kun fast helper-scope, aldrig et blanket Pages-skip.
 const ownerHelpers=['scripts/github-pages-attempt-evidence.mjs','scripts/protected-operational-reentry-evidence.mjs'];
 const deploymentCommand='node scripts/test-ravscore-operational-pages-deployment.mjs';
@@ -647,9 +653,15 @@ function assertArchiveInventoryPlanScope({baselineCommit,baselineTree,rewriteTre
     }
     const fixtureRejected=select('unknown-cli',legacyFixture,legacyWorkflow,badFixtures[0][1],workflowSource);
     assert.equal(fixtureRejected.selection,'FULL');assert.deepEqual(fixtureRejected.reasonCodes,['CURRENT_RESTORE_FIXTURE_SECURITY_FRAME_CHANGED']);
-    if(Buffer.byteLength(currentFixtureSource)>256*1024){
-      const currentRejected=select('actual-current-oversize',fixtureSource,workflowSource,currentFixtureSource,workflowSource);
-      assert.equal(currentRejected.status,'REFUSED');assert.equal(currentRejected.selection,'FULL');
+    const currentBody=currentFixtureSource.replace('const IMAGES=','// Reviewed update in the current fixture body\nconst IMAGES=');
+    assert.notEqual(currentBody,currentFixtureSource);
+    const currentSelected=select('actual-current-body',currentFixtureSource,workflowSource,currentBody,workflowSource);
+    assert.equal(currentSelected.selection,'CURRENT_CONTRACTS');assert.equal(currentSelected.controlQualificationRequired,true);
+    assert.deepEqual(currentSelected.commands,expectedCommands);
+    for(const [label,body] of [['import-change','// Modified current import frame\n'+currentBody],
+      ['dispatch-change',currentBody+'\n// Modified current dispatch frame\n']]){
+      const currentRejected=select(label,currentFixtureSource,workflowSource,body,workflowSource);
+      assert.equal(currentRejected.selection,'FULL');
       assert.deepEqual(currentRejected.reasonCodes,['CURRENT_RESTORE_FIXTURE_SECURITY_FRAME_CHANGED']);
       assert.deepEqual(currentRejected.commands,[]);assert.equal(currentRejected.skipAuthorized,false);
       assert.equal(currentRejected.productionAuthority,false);

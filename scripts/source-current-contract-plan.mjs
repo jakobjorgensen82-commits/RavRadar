@@ -11,6 +11,7 @@ import {OWNED_CACHE_DEPENDENCY_COMMAND,OWNED_CACHE_NATIVE_COMMAND} from './sourc
 import {isAdditiveOwnedCacheNativeWorkflowChange} from './lib/source-impact-workflow-review.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+const MAX_COMMITTED_TEXT_BYTES=4*1024*1024;
 const freeze=value=>{for(const item of Object.values(value))if(item&&typeof item==='object')freeze(item);return Object.freeze(value);};
 const INSTALLER='supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql';
 const WEATHER_BUILD='.github/workflows/reusable-weather-build.yml';
@@ -26,7 +27,7 @@ const SHARE_PROJECTION_SOURCE_TEST='node scripts/test-forecast-share-projection.
 const LOCAL_RESTORE_FIXTURE='scripts/test-supabase-cli-local-restore.mjs';
 const LOCAL_RESTORE_SELF_TEST='node '+LOCAL_RESTORE_FIXTURE+' --self-test';
 const LOCAL_RESTORE_WORKFLOW='.github/workflows/verify-supabase-cli-local-restore.yml';
-// Existing qualified security frame, not a per-head fixture-body fingerprint.
+// Existing legacy pins apply only when comparing the fixed inventory dispatch addition.
 const LOCAL_RESTORE_IMPORTS='\nconst P=Object.freeze(';
 const LOCAL_RESTORE_DISPATCH='if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){';
 const LOCAL_RESTORE_IMPORTS_SHA256='dd05a1d036c7d9afff9ae2ba4c0511dff199ad4faf5baab258b2a17b0cd728d4';
@@ -611,9 +612,11 @@ function readCommittedText(ref,file,regular=false){
       assert(match&&match[2]===file,'Existing regular restore input required');
     }
     const raw=execFileSync('git',['-C',ROOT,'cat-file','blob',ref+':'+file],
-      {env,timeout:10000,maxBuffer:4*1024*1024,stdio:['pipe','pipe','pipe']});
-    assert(raw.length>0&&raw.length<=4*1024*1024);
-    return new TextDecoder('utf-8',{fatal:true}).decode(raw);
+      {env,timeout:10000,maxBuffer:MAX_COMMITTED_TEXT_BYTES,stdio:['pipe','pipe','pipe']});
+    assert(raw.length>0&&raw.length<=MAX_COMMITTED_TEXT_BYTES);
+    const source=new TextDecoder('utf-8',{fatal:true}).decode(raw);
+    if(regular)assert(Buffer.from(source).equals(raw),'Exact restore source bytes required');
+    return source;
   };
   return read(ref,file);
 }
@@ -737,22 +740,28 @@ export function isPagesAndSupportOnlyWeatherBuildChange(before, after) {
 // independent control review and its actual credential-free --self-test.
 export function isBoundedLocalRestoreFixtureChange(before,after){
   try{
-    for(const source of [before,after]){
-      assert(typeof source==='string'&&!source.includes('\r')&&Buffer.byteLength(source)<=256*1024);
+    const readFrame=source=>{
+      assert(typeof source==='string'&&!source.includes('\r')&&!source.includes('\0')
+        &&Buffer.byteLength(source)<=MAX_COMMITTED_TEXT_BYTES);
       const imports=source.indexOf(LOCAL_RESTORE_IMPORTS),dispatch=source.indexOf(LOCAL_RESTORE_DISPATCH);
       assert(imports>0&&dispatch>imports);
       assert.equal(source.indexOf(LOCAL_RESTORE_IMPORTS,imports+1),-1);
       assert.equal(source.indexOf(LOCAL_RESTORE_DISPATCH,dispatch+1),-1);
-      const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
-      assert.equal(sha(source.slice(0,imports)),LOCAL_RESTORE_IMPORTS_SHA256);
-      let frame=source.slice(dispatch);
+      return {imports:source.slice(0,imports),dispatch:source.slice(dispatch)};
+    };
+    const previous=readFrame(before),current=readFrame(after);
+    if(previous.imports!==current.imports)return false;
+    if(previous.dispatch===current.dispatch)return true;
+    const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
+    if(sha(previous.imports)!==LOCAL_RESTORE_IMPORTS_SHA256)return false;
+    const matchesLegacyDispatch=frame=>{
       if(frame.includes('--run-archive-inventory')){
         assert.equal(frame.split(LOCAL_RESTORE_INVENTORY_DISPATCH).length,2);
         frame=frame.replace(LOCAL_RESTORE_INVENTORY_DISPATCH,'');
       }
-      assert.equal(sha(frame),LOCAL_RESTORE_DISPATCH_SHA256);
-    }
-    return true;
+      return sha(frame)===LOCAL_RESTORE_DISPATCH_SHA256;
+    };
+    return matchesLegacyDispatch(previous.dispatch)&&matchesLegacyDispatch(current.dispatch);
   }catch{return false;}
 }
 
