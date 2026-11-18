@@ -1,3 +1,9 @@
+## 18. november — afgrænset genlæsning før og efter Pages-levering
+
+Vejrkørsel #346 gemte den beregnede pakke, men kunne ikke læse den allerede offentlige prognose under kontrollen før aktivering. Loggen viste `fetch failed` uden nærmere årsag. #345 forblev offentlig. Lokal afprøvning, GitHub-kvalifikation og faktisk drift føres særskilt.
+
+Rettelsen lader den eksisterende offentlige kontrol gentage samme filkald efter bestemte kortvarige forbindelsesfejl, før serveren har svaret. Forbindelsesfejl og HTTP 502, 503 og 504 deler de samme tre ekstra forsøg. Ved afslag angiver loggen den offentlige fil og en fast fejlkategori. Hele pakkens kontrolsummer og indhold skal stadig stemme.
+
 ## Drift frem for brede historiske kontrolkrav
 
 Standardkildekontrollen består nu af otte faste kommandoer og de relevante hele prøver for de faktisk ændrede funktioner. Den eksisterende CURRENT-fortegnelse vælger disse fra den faktiske Git-diff; kun bytebeviste rene versionsskift fritages for en særskilt funktionsprøve. Et ukendt testansvar bliver tydeligt afvist frem for automatisk at starte 82 historiske kommandoer. Den store samlede601-ændring kan derfor stadig vælge væsentligt flere end otte mål; en lille delingsændring vælger tre relevante ekstra mål. Der påstås ingen historisk blanketudførelse eller SQL-kvalifikation fra denne kerne. Eksisterende native- og nationalfaser bevarer deres eget faktiske bevis. Den aktuelle pakkelæser kræver relevante entrypoints og bindinger, mens historiske whole-map-prøver bruger deres eget autentiske gamle input.

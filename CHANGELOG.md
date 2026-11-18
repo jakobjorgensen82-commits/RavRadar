@@ -1,3 +1,7 @@
+## 4.0.601 — robust offentlig prognosekontrol, driftsrettelse
+
+Rettelsen lader den eksisterende offentlige kontrol gentage samme filkald efter bestemte kortvarige forbindelsesfejl, før serveren har svaret. Forbindelsesfejl og HTTP 502, 503 og 504 deler de samme tre ekstra forsøg. Ved afslag angiver loggen den offentlige fil og en fast fejlkategori. Hele pakkens kontrolsummer og indhold skal stadig stemme.
+
 ## 4.0.601 — ændringsbaseret kildevej og offentlig hjælp, kildekandidat
 
 - Otte kommandoers fast kildekerne med relevante ændrede funktioners eksisterende hele mål; otte er ikke et løfte om samlet antal i den store601-samling.
