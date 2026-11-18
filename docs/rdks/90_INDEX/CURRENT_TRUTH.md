@@ -1,3 +1,7 @@
+## 18. november — original backup gendannet og skrivefri lagerkontrol klargjort
+
+Den isolerede prøve #50 gendannede det originale Supabase-arkiv. Data blev sammenlignet med de autentiske SQL-filer, login blev verificeret, og det midlertidige miljø blev lukket. Rotation kræver fortsat et aktuelt arkivindeks og målt lagerplads. Den lokale læser bruger kun det godkendte indeks og lagerets metadata. Ekstra objekter giver uafklaret status. Ugentlig backup og Free-overgang afventer deres egne beviser.
+
 ## 18. november — afslut Pages-registrering efter den skrivende kørsel
 
 Ved #347 var udgivelsen og den centrale aktivering gennemført. Det sidste trin krævede en afsluttet Pages-ejer, mens det selv var en del af ejerens aktive kørsel. Den særskilte genoptagelse #11 gennemførte den uændrede kontrol og lukning, efter at Pages-ejeren var afsluttet. Den almindelige Pages-kørsel får derfor fjernet sit eget forsøg på at lukke registreringen. Levering og næste almindelige kørsel verificeres særskilt.

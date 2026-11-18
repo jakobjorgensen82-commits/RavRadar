@@ -1,0 +1,64 @@
+name: Inspect RavRadar database backup stock
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_head:
+        description: Exact qualified main commit
+        required: true
+        type: string
+      archive_index_commitment:
+        description: Domain-separated commitment of the already authenticated archive index
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+jobs:
+  inspect-backup-stock:
+    if: github.repository == 'jakobjorgensen82-commits/RavRadar' && github.ref == 'refs/heads/main' && github.run_attempt == 1 && inputs.expected_head == github.sha
+    concurrency:
+      group: ravradar-trip-storage-production
+      queue: max
+      cancel-in-progress: false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Restore qualified source locator before private metadata access
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/weather-source-validation.json
+          key: weather-source-proof-v2-${{ runner.os }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}-backup-stock
+          restore-keys: |
+            weather-source-proof-v2-${{ runner.os }}-${{ github.sha }}-
+      - name: Check the already qualified exact source
+        id: source-proof
+        timeout-minutes: 2
+        run: node scripts/weather-source-gate.mjs check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Refuse missing exact source proof before backup credentials
+        run: test "${{ steps.source-proof.outputs.required }}" = false
+      - name: Read current archive metadata and backup stock
+        run: node scripts/inspect-supabase-database-backup.mjs
+        env:
+          EXPECTED_HEAD_SHA: ${{ inputs.expected_head }}
+          RESTORE_ARCHIVE_INDEX_COMMITMENT: ${{ inputs.archive_index_commitment }}
+          GITHUB_TOKEN: ${{ github.token }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          RAVRADAR_R2_ACCOUNT_ID: ${{ secrets.RAVRADAR_R2_ACCOUNT_ID }}
+          RAVRADAR_R2_ACCESS_KEY_ID: ${{ secrets.RAVRADAR_R2_ACCESS_KEY_ID }}
+          RAVRADAR_R2_SECRET_ACCESS_KEY: ${{ secrets.RAVRADAR_R2_SECRET_ACCESS_KEY }}

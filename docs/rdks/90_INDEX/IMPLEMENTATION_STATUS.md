@@ -1,3 +1,9 @@
+## 18. november — backup og plan for automatisk rotation
+
+- [x] Gendan det autentiske databasearkiv isoleret og bekræft data og login. Hosted #50 bestod.
+- [x] Klargør en skrivefri måling af plads og aktuelt arkiv. Den er afprøvet lokalt.
+- [ ] Kvalificér og kør den skrivefri måling på aktuel main. Bekræft varig gendannelseskvittering og efterfølgende sikker rotation.
+
 ## 18. november — afslut Pages-registrering efter den skrivende kørsel
 
 - [x] #347 udgav og verificerede prognosen. Den særskilte genoptagelse #11 lukkede registreringen efter ejerens afslutning.
