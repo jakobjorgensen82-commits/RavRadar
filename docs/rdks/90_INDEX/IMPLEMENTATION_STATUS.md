@@ -1,3 +1,9 @@
+## 18. november — afgrænset genlæsning før og efter Pages-levering
+
+- [x] Vejrkørsel #346 nåede den gemte prognose og den sidste læsning før aktivering. Det offentlige datasæt fra #345 blev bevaret.
+- [x] Den lokale kode bruger den eksisterende grænse til samme filkald ved genkendte forbindelsesfejl.
+- [ ] Præcis kildekontrol, sikker levering og faktisk offentlig prognose.
+
 ## Assistent601: lokal forberedelse efter app600 og model599
 
 App600 er nu faktisk databaseinstalleret og server-/UI-leveret gennem den normale rene kodevej med fortsat numerisk modelfamilie599. Normal FULL-kvalifikation, de28 præcise CHECK-definitioner og kataloggenlæsning er bekræftet; offentlig210/673 og den terminale afslutning er verificeret. Det oprindelige fejlede installerforløbs udfald står særskilt UNKNOWN og omskrives ikke til succes. Ejerens normale kontomodal og præference er browserlæst på600, men faktisk sletning, privacy- og samlet målopfyldelse er ikke accepteret. Alle fem hovedmål er fortsat åbne. Ældre600-kandidatposter nedenfor er erstattet på dette leveringsstatuspunkt.

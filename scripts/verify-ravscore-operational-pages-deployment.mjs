@@ -181,22 +181,48 @@ function scanBindings(value, expected, label, pathPrefix = label) {
   }
 }
 
+const TRANSIENT_FETCH_CAUSES = new Set([
+  'UND_ERR_SOCKET', 'UND_ERR_CONNECT_TIMEOUT', 'UND_ERR_HEADERS_TIMEOUT',
+  'ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'EAI_AGAIN', 'ENETUNREACH',
+]);
+
+function transientFetchCause(error) {
+  if (error?.name !== 'TypeError') return null;
+  const cause = error.cause;
+  if (TRANSIENT_FETCH_CAUSES.has(cause?.code)) return cause.code;
+  // Node can group the failed IPv4 and IPv6 connection attempts.
+  if (cause instanceof AggregateError && cause.errors.length > 0
+    && cause.errors.every(item => TRANSIENT_FETCH_CAUSES.has(item?.code))) return 'CONNECT_AGGREGATE';
+  return null;
+}
+
 async function fetchBytes(fetchImpl, url, label, httpRetryBudget, readBody = null) {
-  // Only a refused transient HTTP response may repeat this exact request.
-  // Tokens belong to the whole verification, including manifest observation.
+  const request = {
+    cache: 'no-store',
+    headers: { accept: label.endsWith('.json') || label.endsWith('.geojson')
+      ? 'application/json' : label.endsWith('.gz') ? 'application/gzip' : 'text/javascript' },
+  };
+  // Both kinds of transient error share one budget across all public reads.
   for (let attempt = 1; ; attempt += 1) {
-    const response = await fetchImpl(url, {
-      cache: 'no-store',
-      headers: { accept: label.endsWith('.json') || label.endsWith('.geojson')
-        ? 'application/json' : label.endsWith('.gz') ? 'application/gzip' : 'text/javascript' },
-    });
-    if (response?.ok) return readBody ? await readBody(response) : Buffer.from(await response.arrayBuffer());
-    const error = new Error(`${label} returned HTTP ${response?.status ?? 'unknown'}`);
-    // Do not abandon an unread response body before a retry or refusal.
-    // Failed cleanup, fetch/abort and body-read errors remain immediate failures.
-    if (typeof response?.body?.cancel === 'function') await response.body.cancel();
-    if (![502, 503, 504].includes(response?.status)
-      || attempt >= 3 || httpRetryBudget.remaining <= 0) throw error;
+    let failure;
+    let retryable = false;
+    let response;
+    try {
+      response = await fetchImpl(url, request);
+    } catch (error) {
+      if (error?.name === 'AbortError' || error?.name === 'TimeoutError') throw error;
+      const category = transientFetchCause(error);
+      failure = new Error(`${label} public fetch failed (${category ?? 'UNCLASSIFIED'})`);
+      retryable = category !== null;
+    }
+    if (!failure) {
+      if (response?.ok) return readBody ? await readBody(response) : Buffer.from(await response.arrayBuffer());
+      failure = new Error(`${label} returned HTTP ${response?.status ?? 'unknown'}`);
+      // Finish cleanup before a retry. Cleanup and body-read errors still fail immediately.
+      if (typeof response?.body?.cancel === 'function') await response.body.cancel();
+      retryable = [502, 503, 504].includes(response?.status);
+    }
+    if (!retryable || attempt >= 3 || httpRetryBudget.remaining <= 0) throw failure;
     httpRetryBudget.remaining -= 1;
     await new Promise(resolve => setTimeout(resolve, httpRetryBudget.delayMs));
   }
@@ -719,7 +745,7 @@ export async function verifyRavScoreOperationalPagesDeployment({
   // Pages may serve its previous manifest for up to ten minutes after deploy.
   // Poll only the exact manifest/startup pair; the large package is checked once.
   // A matching manifest can precede its startup bytes during Pages propagation.
-  // Refused transient HTTP requests share at most three extra attempts total.
+  // Transient HTTP and pre-response transport failures share at most three extra attempts total.
   attempts = 121,
   retryDelayMs = 5_000,
   knownSourceRepairId = null,

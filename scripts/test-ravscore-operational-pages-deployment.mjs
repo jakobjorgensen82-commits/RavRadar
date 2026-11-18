@@ -1776,6 +1776,55 @@ async function verifyBoundedTransientHttpContract() {
     assert.equal(hard.cancellations(), 1);
     assert.equal(hard.counts.get(manifestPath), 1, 'hard HTTP failures never become manifest propagation');
   }
+  const transportError = code => new TypeError('fixture fetch failed', { cause: { code } });
+  const recoveredTransport = makeFetch(({ pathname, count }) => {
+    if (pathname === detailsPath && count === 1) throw transportError('UND_ERR_SOCKET');
+  });
+  assert.equal((await verifyRavScoreOperationalPagesDeployment({
+    ...options, fetchImpl: recoveredTransport.fetch,
+  })).status, 'passed');
+  assert.equal(recoveredTransport.cancellations(), 0);
+  assert.equal(recoveredTransport.counts.get(manifestPath), 1);
+  assert.equal(recoveredTransport.counts.get(detailsPath), 2);
+  const [firstRequest, repeatedRequest] = recoveredTransport.requests.get(detailsPath);
+  assert.deepEqual(repeatedRequest, firstRequest);
+
+  const connectionAttempts = makeFetch(({ pathname, count }) => {
+    if (pathname === detailsPath && count === 1) {
+      const causes = [{ code: 'ENETUNREACH' }, { code: 'ETIMEDOUT' }];
+      throw new TypeError('fixture fetch failed', { cause: new AggregateError(causes) });
+    }
+  });
+  assert.equal((await verifyRavScoreOperationalPagesDeployment({ ...options, fetchImpl: connectionAttempts.fetch })).status, 'passed');
+  assert.equal(connectionAttempts.counts.get(detailsPath), 2);
+
+  const sharedBudget = makeFetch(({ pathname, count, refused }) => {
+    if (pathname === manifestPath && count <= 2) return refused(503);
+    if (pathname === detailsPath) throw transportError('UND_ERR_CONNECT_TIMEOUT');
+  });
+  await assert.rejects(verifyRavScoreOperationalPagesDeployment({
+    ...options, fetchImpl: sharedBudget.fetch,
+  }), /public-condition-details\.json public fetch failed \(UND_ERR_CONNECT_TIMEOUT\)/);
+  assert.equal(sharedBudget.counts.get(manifestPath), 3);
+  assert.equal(sharedBudget.counts.get(detailsPath), 2);
+
+  const refusedCauses = [
+    { code: 'CERT_HAS_EXPIRED' },
+    { code: 'ENOTFOUND' },
+    new AggregateError([{ code: 'ECONNRESET' }, { code: 'CERT_HAS_EXPIRED' }]),
+    undefined,
+  ];
+  for (const cause of refusedCauses) {
+    const unclassified = makeFetch(({ pathname }) => {
+      if (pathname === detailsPath) throw new TypeError('raw diagnostic must stay private', { cause });
+    });
+    await assert.rejects(verifyRavScoreOperationalPagesDeployment({
+      ...options, fetchImpl: unclassified.fetch,
+    }), error => /public-condition-details\.json public fetch failed \(UNCLASSIFIED\)/.test(error.message)
+      && !error.message.includes('raw diagnostic'));
+    assert.equal(unclassified.counts.get(detailsPath), 1);
+  }
+
   const malformed = makeFetch(({ pathname }) =>
     pathname === manifestPath ? response(Buffer.from('{invalid JSON')) : undefined);
   await assert.rejects(verifyRavScoreOperationalPagesDeployment({
@@ -1983,7 +2032,7 @@ async function verifySealedStartupPropagationContract() {
         if (failure === 'network') throw new Error('fixed synthetic network refusal');
         return { ok: true, status: 200, arrayBuffer: async () => { throw new Error('fixed synthetic body refusal'); } };
       },
-    }), /HTTP 404|fixed synthetic (?:network|body) refusal/);
+    }), /HTTP 404|public fetch failed \(UNCLASSIFIED\)|fixed synthetic body refusal/);
     assert.deepEqual(failed, new Map([[manifestPath, 1], [startupPath, 1]]),
       'hard HTTP, transport and body errors never become propagation retries');
   }
