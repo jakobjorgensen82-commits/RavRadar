@@ -1,3 +1,9 @@
+## 18. november — afslut Pages-registrering efter den skrivende kørsel
+
+- [x] #347 udgav og verificerede prognosen. Den særskilte genoptagelse #11 lukkede registreringen efter ejerens afslutning.
+- [x] Den lokale rettelse fjerner den umulige oprydning under samme normale Pages-kørsel. Den målrettede prøve kræver den eksisterende, uafhængige kontrol.
+- [ ] Præcis GitHub-kontrol og faktisk almindelig drift af rettelsen.
+
 ## 18. november — afgrænset genlæsning før og efter Pages-levering
 
 - [x] Vejrkørsel #346 nåede den gemte prognose og den sidste læsning før aktivering. Det offentlige datasæt fra #345 blev bevaret.

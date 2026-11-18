@@ -1888,7 +1888,7 @@ Når fortegnelsen stemmer, kontrolleres selve datafilerne og hjemmesidens tilhø
 
 En server kan også kortvarigt afvise et enkelt filkald, selv om filen er offentliggjort. Ved HTTP 502, 503 eller 504, eller når en kendt midlertidig forbindelsesfejl opstår før serverens svar, kan netop samme kald gentages efter fem sekunder. Hele kontrollen har tilsammen højst tre ekstra forsøg, og samme fil må højst forsøges tre gange. Filer, som allerede er kontrolleret, hentes ikke igen. Forkert indhold eller kontrolsum, en manglende fil, manglende adgang og afbrudte kald giver ikke denne undtagelse. Den fulde kontrol af pakken er stadig nødvendig.
 
-Ventetiden ændrer hverken vejrhentningen, beregningen eller scoremodellen. En kvittering fra leveringssystemet og en færdigkontrolleret offentlig prognose er to forskellige ting. Først den sidste viser, at den samlede pakke faktisk kan læses korrekt.
+Ventetiden ændrer hverken vejrhentningen, beregningen eller scoremodellen. En kvittering fra leveringssystemet og en færdigkontrolleret offentlig prognose er to forskellige ting. Først den sidste viser, at den samlede pakke faktisk kan læses korrekt. Den normale Pages-kørsel lader den beskyttede registrering ligge, indtil GitHub har afsluttet kørslen. Den næste uafhængige kørsel verificerer den samme offentlige prognose, lukker registreringen og kan derefter hente frisk vejr.
 
 ## 89.269 Offentlig klientkode og beskyttede oplysninger har forskellige roller
 

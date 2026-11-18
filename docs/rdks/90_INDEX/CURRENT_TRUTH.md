@@ -1,3 +1,7 @@
+## 18. november — afslut Pages-registrering efter den skrivende kørsel
+
+Ved #347 var udgivelsen og den centrale aktivering gennemført. Det sidste trin krævede en afsluttet Pages-ejer, mens det selv var en del af ejerens aktive kørsel. Den særskilte genoptagelse #11 gennemførte den uændrede kontrol og lukning, efter at Pages-ejeren var afsluttet. Den almindelige Pages-kørsel får derfor fjernet sit eget forsøg på at lukke registreringen. Levering og næste almindelige kørsel verificeres særskilt.
+
 ## 18. november — afgrænset genlæsning før og efter Pages-levering
 
 Rettelsen lader den eksisterende offentlige kontrol gentage samme filkald efter bestemte kortvarige forbindelsesfejl, før serveren har svaret. Forbindelsesfejl og HTTP 502, 503 og 504 deler de samme tre ekstra forsøg. Ved afslag angiver loggen den offentlige fil og en fast fejlkategori. Hele pakkens kontrolsummer og indhold skal stadig stemme.
