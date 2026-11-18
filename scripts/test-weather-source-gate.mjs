@@ -248,35 +248,10 @@ const nativeSqlStep = 'Validate native PostgreSQL checkpoint CAS on artificial d
 assert.ok(PULL_REQUEST_SOURCE_STEPS.includes(nativeSqlStep));
 // Reject source-contract regressions before the native database matrix.
 // This is ordering only: every original gate stays mandatory before proof.
-const {projectSourceImpactWorkflowFull}=await import('./lib/source-impact-workflow-review.mjs');
-const prValidation = projectSourceImpactWorkflowFull(await readFile(
-  new URL('../.github/workflows/validate-pull-request.yml', import.meta.url), 'utf8'));
+const {verifyCurrentSourceWorkflow}=await import('./lib/source-impact-workflow-review.mjs');
+const prValidation = await readFile(new URL('../.github/workflows/validate-pull-request.yml', import.meta.url),'utf8');
 function assertSourceBeforeNativeSql(source) {
-  const names = [
-    'Require exact pull-request source head',
-    'Build deterministic source-tree content identity',
-    'Diagnose normal pack-reader closure on artificial data only',
-    'Restore Node22 for existing source validation',
-    'Validate bounded native current diagnosis on artificial data only',
-    'Validate source contracts and release governance',
-    nativeSqlStep,
-    'Upload independently completed native586 PostgreSQL phase',
-    'Validate isolated restart and two ordinary national followers',
-    'Validate durable Copernicus current-reference baseline on artificial data only',
-    'Validate download-inclusive DMI capacity on artificial data only',
-    'Require validated source tree to remain unchanged',
-    'Upload tree-content source validation proof',
-  ];
-  let previous = -1;
-  for (const name of names) {
-    const marker = '      - name: ' + name + '\n';
-    assert.equal(source.split(marker).length, 2, 'one actual mandatory gate: ' + name);
-    const position = source.indexOf(marker);
-    assert.ok(position > previous, 'source must precede native SQL; national gates and final proof remain after both');
-    previous = position;
-    const block = source.slice(position).split('\n      - ').at(0);
-    assert.doesNotMatch(block, /^\s+(?:if|continue-on-error):/m, 'mandatory gates cannot be skipped or softened');
-  }
+  verifyCurrentSourceWorkflow(source);
 }
 assertSourceBeforeNativeSql(prValidation);
 assert.throws(() => assertSourceBeforeNativeSql(prValidation.replace('      - name: ' + nativeSqlStep + '\n', '      - name: missing-native-sql\n')));

@@ -14,7 +14,9 @@ import {CURRENT_CONTRACT_SOURCE_CONTRACT,CURRENT_CONTRACT_SOURCE_KIND,currentCon
   currentChangeSourceArtifactName,validateCurrentChangeSourceReceipt,readCurrentChangeReview,CURRENT_CHANGE_SOURCE_MAX_FILE_BYTES}
   from './source-current-contract-receipt.mjs';
 import {ORIGIN,sourceImpactEvidenceBudget} from './native-postgres-evidence.mjs';
-import {inverseOwnedCacheNativeWorkflow,inverseSourceImpactFullCurrent,OWNED_CACHE_NATIVE_EARLY_STEP_NAMES}
+import {inverseOwnedCacheNativeWorkflow,inverseSourceImpactFullCurrent,OWNED_CACHE_NATIVE_EARLY_STEP_NAMES,
+  hasDependencyOnlySourceSetup,verifyCurrentSourceWorkflow,TARGETED_SOURCE_STEP_NAMES,
+  TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES,TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES,TARGETED_OWNED_CACHE_NATIVE_SOURCE_STEP_NAMES}
   from './lib/source-impact-workflow-review.mjs';
 
 // Archived namespaces are parsed here without initializing their old planner.
@@ -26,28 +28,9 @@ const DOMAIN_TARGETED_SOURCE_KIND='RAVRADAR_SOURCE_TARGETED_DOMAINS_RECEIPT_V2';
 
 const LOCATOR_KEYS=['contractId','repository','headSha','producerHeadSha','sourceTreeSha256',
   'pullRequestNumber','runId','runAttempt','jobId','artifactId','artifactDigest','proofSha256'];
-export const TARGETED_SOURCE_STEP_NAMES=Object.freeze(['Set up job','Run actions/checkout@v7','Require exact pull-request source head',
-  'Run actions/setup-node@v7','Build deterministic source-tree content identity',
-  'Diagnose normal pack-reader closure on artificial data only','Run actions/setup-python@v7',
-  'Install source-gate dependencies','Set up Node24 for isolated acquisition contracts',
-  'Install exact local cache-action dependencies without scripts','Verify locked cache API distribution without runtime calls',
-  'Validate isolated acquisition ownership and raw-save cohort','Restore Node22 for existing source validation',
-  'Validate bounded native current diagnosis on artificial data only','Validate source contracts and release governance',
-  'Validate native PostgreSQL checkpoint CAS on artificial data only','Upload independently completed native586 PostgreSQL phase',
-  'Validate isolated restart and two ordinary national followers',
-  'Validate durable Copernicus current-reference baseline on artificial data only',
-  'Validate download-inclusive DMI capacity on artificial data only','Require validated source tree to remain unchanged',
-  'Upload tree-content source validation proof']);
-export const TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES=Object.freeze([
-  ...TARGETED_SOURCE_STEP_NAMES.slice(0,4),'Run actions/setup-python@v7',
-  'Install declared requests dependency before source planning',
-  ...TARGETED_SOURCE_STEP_NAMES.slice(4,6),...TARGETED_SOURCE_STEP_NAMES.slice(7)]);
-export const TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES=Object.freeze(
-  TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES.map((name,index)=>index===5?'Install declared DMI dependencies before source planning':name));
-export const TARGETED_OWNED_CACHE_NATIVE_SOURCE_STEP_NAMES=Object.freeze([
-  ...TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES.slice(0,3),...OWNED_CACHE_NATIVE_EARLY_STEP_NAMES,
-  ...TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES.slice(3),
-]);
+export {TARGETED_SOURCE_STEP_NAMES,TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES,
+  TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES,TARGETED_OWNED_CACHE_NATIVE_SOURCE_STEP_NAMES}
+  from './lib/source-impact-workflow-review.mjs';
 const DMI_PYTHON_WORKFLOW_SHA256='742835aa72adb58c50f6f404f5c3c1308a7c11b0038a528a9b5a1ac6253b3cff';
 const DMI_REQUIREMENTS_WORKFLOW_SHA256='2947d429c6df45cfc415ace970f4e5efc89410ca60d277de19529dde73882843';
 const verifiedMainFrontiers=new WeakMap();
@@ -82,14 +65,16 @@ function locatorIdentity(record,env){
 export function verifyTargetedSourceStepShape(job,workflowText){
   assert.equal(arguments.length,2);assert(Array.isArray(job.steps));
   const modern=workflowText!==undefined;
+  const current=modern&&hasDependencyOnlySourceSetup(workflowText);
+  if(current)verifyCurrentSourceWorkflow(workflowText);
   // Project only the already reviewed whole CURRENT registration before the
   // independent owned-cache step shape; neither inverse grants source authority.
-  const workflow=modern?inverseSourceImpactFullCurrent(workflowText):null;
-  const previous=modern?inverseOwnedCacheNativeWorkflow(workflow):null;
-  const ownedCacheNative=modern&&previous!==workflow;
-  const workflowHash=modern?sha(previous):null;
-  if(modern)assert([DMI_PYTHON_WORKFLOW_SHA256,DMI_REQUIREMENTS_WORKFLOW_SHA256].includes(workflowHash),'EXACT_DMI_PYTHON_WORKFLOW_REQUIRED');
-  if(ownedCacheNative)assert.equal(workflowHash,DMI_REQUIREMENTS_WORKFLOW_SHA256,'EXACT_OWNED_CACHE_NATIVE_PREDECESSOR_REQUIRED');
+  const workflow=modern&&!current?inverseSourceImpactFullCurrent(workflowText):null;
+  const previous=workflow===null?null:inverseOwnedCacheNativeWorkflow(workflow);
+  const ownedCacheNative=current||previous!==workflow;
+  const workflowHash=previous===null?null:sha(previous);
+  if(modern&&!current)assert([DMI_PYTHON_WORKFLOW_SHA256,DMI_REQUIREMENTS_WORKFLOW_SHA256].includes(workflowHash),'EXACT_DMI_PYTHON_WORKFLOW_REQUIRED');
+  if(ownedCacheNative&&!current)assert.equal(workflowHash,DMI_REQUIREMENTS_WORKFLOW_SHA256,'EXACT_OWNED_CACHE_NATIVE_PREDECESSOR_REQUIRED');
   const names=ownedCacheNative?TARGETED_OWNED_CACHE_NATIVE_SOURCE_STEP_NAMES
     :modern?(workflowHash===DMI_PYTHON_WORKFLOW_SHA256?TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES:TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES):TARGETED_SOURCE_STEP_NAMES;
   assert.deepEqual(job.steps.filter(value=>value.number<=names.length).map(value=>value.number),Array.from({length:names.length},(_,i)=>i+1));

@@ -22,7 +22,8 @@ import * as accountErasureSchema from './verify-account-assistant-schema.mjs';
 import {ASSISTANT_AFTER599_DATABASE_LEDGER} from './lib/assistant-later-h0-successor-source.mjs';
 import {FROZEN597_NATIVE_SOURCE,FROZEN598_NATIVE_SOURCE,FROZEN599_NATIVE_SOURCE} from './run-frozen586-assistant-later-h0-postgres-source.mjs';
 import {inverseOwnedCacheNativeWorkflow,OWNED_CACHE_NATIVE_EARLY_STEP_NAMES,
-  projectSourceImpactWorkflowFull,SOURCE_IMPACT_FULL_WORKFLOW_SHA256}
+  projectSourceImpactWorkflowFull,SOURCE_IMPACT_FULL_WORKFLOW_SHA256,
+  hasDependencyOnlySourceSetup,verifyCurrentSourceWorkflow}
   from './lib/source-impact-workflow-review.mjs';
 
 export const ORIGIN = Object.freeze({
@@ -1040,8 +1041,11 @@ export function verifyAssistantPublic591Metadata(run,jobs,readGit=git){
     const raw=readGit(['cat-file','blob',run.head_sha+':'+WORKFLOW]);
     assert(Buffer.isBuffer(raw)||typeof raw==='string');assert(Buffer.byteLength(raw)<=65536);
     const workflow=(Buffer.isBuffer(raw)?raw.toString('utf8'):raw).replace(/\r\n/g,'\n');
-    assert.notEqual(inverseOwnedCacheNativeWorkflow(workflow),workflow,'EXACT_OWNED_CACHE_NATIVE_WORKFLOW_REQUIRED');
-    assert.equal(sha(projectSourceImpactWorkflowFull(workflow)),SOURCE_IMPACT_FULL_WORKFLOW_SHA256);
+    if(hasDependencyOnlySourceSetup(workflow))verifyCurrentSourceWorkflow(workflow);
+    else{
+      assert.notEqual(inverseOwnedCacheNativeWorkflow(workflow),workflow,'EXACT_OWNED_CACHE_NATIVE_WORKFLOW_REQUIRED');
+      assert.equal(sha(projectSourceImpactWorkflowFull(workflow)),SOURCE_IMPACT_FULL_WORKFLOW_SHA256);
+    }
     for(let index=0;index<OWNED_CACHE_NATIVE_EARLY_STEP_NAMES.length;index++){
       const step=one(earlyNode24.filter(row=>row.name===OWNED_CACHE_NATIVE_EARLY_STEP_NAMES[index]));
       assert.equal(step.number,4+index);assert(successful(step));

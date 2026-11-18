@@ -7,7 +7,8 @@ import {inverseSourceBeforePostgresWorkflow, SOURCE_BEFORE_POSTGRES_BLOCK,
   ASSISTANT_AFTER599_SOURCE_COMMAND,ASSISTANT_AFTER598_SOURCE_COMMAND,inverseAssistantAfter598Package,
   scalar597LaterH0NativeClaims,ASSISTANT_AFTER597_SOURCE_COMMAND,inverseAssistantAfter597Package}
   from './national584-source-evidence.mjs';
-import {projectSourceImpactWorkflowFull,inverseOwnedCacheNativeWorkflow,OWNED_CACHE_NATIVE_EARLY_STEP_NAMES}
+import {projectSourceImpactWorkflowFull,inverseOwnedCacheNativeWorkflow,OWNED_CACHE_NATIVE_EARLY_STEP_NAMES,
+  readHistoricalSourceSetupWorkflow,verifyCurrentSourceWorkflow}
   from './lib/source-impact-workflow-review.mjs';
 import {ORIGIN, WORKFLOW, JOB, STEP, COMMANDS, ACCOUNT_STATISTICS_ASSISTANT_COMMANDS, CURRENT586_COMMANDS as CURRENT_COMMANDS,
   CURRENT_COMMANDS as ASSISTANT_LATER_H0_COMMANDS, NATIVE_SCRIPT as ASSISTANT_LATER_H0_SCRIPT, NEW_NATIVE_BLOCK,
@@ -393,10 +394,9 @@ test('current586 phase artifact is independent, exact, honest, and does not rela
   const actualWorkflow=(await fs.readFile(WORKFLOW,'utf8')).replace(/\r\n/g,'\n');
   // Only the historical V1 oracle and its mutation inputs receive the exact
   // qualified FULL workflow. V2 captures the actual workflow bytes unchanged.
-  const historicalWorkflow=projectSourceImpactWorkflowFull(actualWorkflow);
+  const historicalWorkflow=projectSourceImpactWorkflowFull(readHistoricalSourceSetupWorkflow());
   const workflow=inverseSourceBeforePostgresWorkflow(historicalWorkflow);
-  assert(actualWorkflow.indexOf('      - name: Validate source contracts')<actualWorkflow.indexOf('      - name: '+STEP));
-  assert(actualWorkflow.indexOf(CURRENT586_PHASE_UPLOAD_BLOCK)<actualWorkflow.indexOf('      - name: Validate isolated restart and two ordinary national followers'));
+  verifyCurrentSourceWorkflow(actualWorkflow);
   // The existing586 whole-workflow hash below proves the complete inverse, not a new current hash.
   for(const changed of [
     historicalWorkflow.replace('npm run validate:source','true'),
@@ -456,7 +456,7 @@ test('current586 exact EXECUTED origin survives a later source failure; missing,
     end.writeUInt32LE(central.length+name.length,12);end.writeUInt32LE(local.length+name.length+raw.length,16);
     return Buffer.concat([local,name,raw,central,name,end]);
   };
-  const workflow=inverseSourceBeforePostgresWorkflow(await fs.readFile(WORKFLOW,'utf8')),
+  const workflow=inverseSourceBeforePostgresWorkflow(readHistoricalSourceSetupWorkflow()),
     oldId=ORIGIN.run+10,currentId=oldId+2,number=700;
   const branch='synthetic-native586',nativeInput=verifyInputTrees(tree,tree);
   const oldRun={id:oldId,run_attempt:1,head_sha:oid,head_branch:branch,path:WORKFLOW,event:'pull_request',
@@ -1399,7 +1399,7 @@ test('native phase metadata permits only the reviewed early DMI setup step',()=>
   }
 });
 
-test('native FULL metadata accepts only the whole authenticated owned-cache environment layout',async()=>{
+test('native FULL metadata verifies the actual and historical owned-cache environment layouts',async()=>{
   const fixture=v2LiveFixture(),requests=[];
   const expected=verifyAssistantPublic591Metadata(fixture.origin,fixture.originalJobs,()=>{
     throw new Error('Old metadata must not need a new workflow read');
@@ -1419,7 +1419,9 @@ test('native FULL metadata accepts only the whole authenticated owned-cache envi
   };
   assert.deepEqual(verifyAssistantPublic591Metadata(fixture.origin,shifted,readWorkflow),expected);
   assert.equal(requests.length,1);
-  for(const value of [predecessor,predecessor.replace(/\n/g,'\r\n'),workflow+'\n',
+  const historical=readHistoricalSourceSetupWorkflow();
+  assert.deepEqual(verifyAssistantPublic591Metadata(fixture.origin,shifted,args=>readWorkflow(args,historical)),expected);
+  for(const value of [predecessor,predecessor.replace(/\n/g,'\r\n'),historical+'\n',
     workflow.replace('          node-version: 24','          node-version: 22'),
     workflow.replace('  contents: read','  contents: write')])
     assert.throws(()=>verifyAssistantPublic591Metadata(fixture.origin,shifted,args=>readWorkflow(args,value)));

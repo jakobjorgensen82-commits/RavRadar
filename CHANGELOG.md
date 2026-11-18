@@ -1,6 +1,7 @@
 ## 4.0.601 — ændringsbaseret kildevej og offentlig hjælp, kildekandidat
 
 - Otte kommandoers fast kildekerne med relevante ændrede funktioners eksisterende hele mål; otte er ikke et løfte om samlet antal i den store601-samling.
+- GitHubs afhængighedstrin installerer kun pakker. De otte tidligere faste teststarter er fjernet, og aktuelle og historiske arbejdsgange kontrolleres på deres egne input.
 - Historiske npm-scriptkort er ikke længere adgangskrav for den aktuelle app; gamle orakler læser deres egne autentiske kilder.
 - App-ejede lokale hjælpe- og praktiske ravkese-/strandsvar med hele spørgsmålets vagter, uændret numerisk service og ingen AI-provenienspåstand.
 - Præcis kildekvalifikation, offentlig levering og resterende samlet AI-/Free-accept er fortsat åbne.

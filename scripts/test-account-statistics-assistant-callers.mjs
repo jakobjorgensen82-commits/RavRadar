@@ -9,6 +9,7 @@ import vm from 'node:vm';
 import {exactRelativeModuleSpecifiers} from './lib/static-module-closure.mjs';
 import test from 'node:test';
 import {readHistoricalPrivateStudySources} from './lib/pages-closure-historical-test-input.mjs';
+import {readHistoricalSourceSetupWorkflow} from './lib/source-impact-workflow-review.mjs';
 // Keep the existing active water-routing display contract in this normal adminUI caller.
 await import('./test-water-station-active-routing-display-4.0.102.mjs');
 import {ACTIVE_ASSISTANT_SUCCESSOR as activeNationalSource} from './lib/assistant-later-h0-successor-source.mjs';
@@ -620,7 +621,7 @@ test('historical584 national evidence inverts only the reviewed current90-minute
   const recorded=git('show',fixture+':'+WORKFLOW).toString();
   const currentWorkflow=(await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
   verifyCurrentWorkflow(currentWorkflow);
-  const actual=inverseCurrent586PhaseUpload(inverseSourceBeforePostgresWorkflow(currentWorkflow));
+  const actual=inverseCurrent586PhaseUpload(inverseSourceBeforePostgresWorkflow(readHistoricalSourceSetupWorkflow()));
   verifyCurrentWorkflow(actual);
   const current=inverseCandidatePublicSourceRunLine(actual).replace(CURRENT_JOB,AFTER_JOB);
   const hash=value=>crypto.createHash('sha256').update(value).digest('hex');
@@ -655,7 +656,7 @@ test('source-PR-only180-minute job preserves genuine120 and90 workflows and reje
     env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1'}}).toString();
   const currentWorkflow=(await fs.readFile(new URL('../.github/workflows/validate-pull-request.yml',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
   verifyWorkflow(currentWorkflow);
-  const actual=inverseCurrent586PhaseUpload(inverseSourceBeforePostgresWorkflow(currentWorkflow));
+  const actual=inverseCurrent586PhaseUpload(inverseSourceBeforePostgresWorkflow(readHistoricalSourceSetupWorkflow()));
   const predecessorHead='bb8d354e0d889080b5f7182b2962f05fbb8fd2e7';
   const predecessor=execFileSync('git',['show',predecessorHead+':'+WORKFLOW],{maxBuffer:65536,timeout:30000,
     env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1'}}).toString();

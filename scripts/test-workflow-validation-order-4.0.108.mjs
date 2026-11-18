@@ -10,7 +10,8 @@ import {
   forecastShareDomainsForWorker, forecastShareCfEnvelopeDiagnostic,
 } from './deploy-forecast-share.mjs';
 import { verifyWorkflow as verifyCurrentNationalWorkflow, inverseSourceBeforePostgresWorkflow, CURRENT_JOB as CURRENT_SOURCE_JOB, AFTER_JOB as REVIEWED90_SOURCE_JOB } from './national584-source-evidence.mjs';
-import {projectSourceImpactWorkflowFull} from './lib/source-impact-workflow-review.mjs';
+import {projectSourceImpactWorkflowFull,verifyCurrentSourceWorkflow,hasDependencyOnlySourceSetup,
+  readHistoricalSourceSetupWorkflow} from './lib/source-impact-workflow-review.mjs';
 import {currentWorkflowTargets} from './source-current-contract-plan.mjs';
 import { assertEarlyCompletedRuntimeStageOrder, inverseCompletedRuntimeWorkflow, inverseTerminalRepair4145WorkflowInventory } from './lib/completed-private-runtime-workflow-review.mjs';
 import fs from 'node:fs';
@@ -914,7 +915,11 @@ assert.deepEqual(
 let sourceGatePathCount = 0;
 for (const workflowName of sourceGateWorkflowNames) {
   const actualWorkflow = fs.readFileSync(`${workflowDirectory}/${workflowName}`, 'utf8').replace(/\r\n/g, '\n');
-  const workflow = workflowName==='validate-pull-request.yml'?projectSourceImpactWorkflowFull(actualWorkflow):actualWorkflow;
+  const currentPrWorkflow = workflowName==='validate-pull-request.yml' && hasDependencyOnlySourceSetup(actualWorkflow);
+  if(currentPrWorkflow)verifyCurrentSourceWorkflow(actualWorkflow);
+  const workflow = workflowName==='validate-pull-request.yml'
+    ? projectSourceImpactWorkflowFull(currentPrWorkflow?readHistoricalSourceSetupWorkflow():actualWorkflow)
+    : actualWorkflow;
   let searchFrom = 0;
   while (true) {
     const sourceGateRun = workflow.indexOf('npm run validate:source', searchFrom);
@@ -1023,7 +1028,10 @@ if (/\.nc(?:\s|$)/m.test(historicalWavePilot)) {
 }
 const actualPullRequestValidation = fs.readFileSync(`${workflowDirectory}/validate-pull-request.yml`, 'utf8').replace(/\r\n/g, '\n');
 verifyCurrentNationalWorkflow(actualPullRequestValidation);
-const pullRequestValidation = inverseSourceBeforePostgresWorkflow(actualPullRequestValidation).replace(CURRENT_SOURCE_JOB, REVIEWED90_SOURCE_JOB);
+const historicalPullRequestValidation = hasDependencyOnlySourceSetup(actualPullRequestValidation)
+  ? readHistoricalSourceSetupWorkflow()
+  : actualPullRequestValidation;
+const pullRequestValidation = inverseSourceBeforePostgresWorkflow(historicalPullRequestValidation).replace(CURRENT_SOURCE_JOB, REVIEWED90_SOURCE_JOB);
 for (const marker of [
   'pull_request:',
   'permissions:\n  contents: read',

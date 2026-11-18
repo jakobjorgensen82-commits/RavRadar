@@ -11,7 +11,7 @@ import vm from 'node:vm';
 import {copernicusOfflineEnvironment} from './lib/copernicus-offline-environment.mjs';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {OWNED_CACHE_DEPENDENCY_COMMAND,OWNED_CACHE_NATIVE_COMMAND,currentChangeCommand} from './source-current-contract-receipt.mjs';
-import {inverseOwnedCacheNativeWorkflow,OWNED_CACHE_NATIVE_EARLY_NODE24} from './lib/source-impact-workflow-review.mjs';
+import {inverseOwnedCacheNativeWorkflow,OWNED_CACHE_NATIVE_EARLY_NODE24,readHistoricalSourceSetupWorkflow} from './lib/source-impact-workflow-review.mjs';
 import {CURRENT_CONTRACT_COMMANDS,currentWorkflowTargets,isBoundedLocalRestoreFixtureChange,isArchiveRestoreOuterQueueOnlyChange,archiveRestoreWorkflowWithoutInventory,isArchiveRestoreWorkflowChange,pagesContractCommandsForChangedInputs,sourceControlCommandsForChangedInputs,dmiBudgetWeatherBuildAreas,isDmiBudgetOnlyUpdaterChange,isDmiBudgetOnlySupervisorChange,isDmiCollectionRecoveryOnlyUpdaterChange,isDmiCollectionRecoveryOnlyFixtureChange,dmiCollectionRecoveryUpdaterAreas} from './source-current-contract-plan.mjs';
 
 import { WEATHER_PUBLICATION_PATHS, inversePrivateWeatherPublicationWorkflow, isPrivateWeatherPublicationWorkflowChange,
@@ -1427,20 +1427,21 @@ try{
   scenarios.push('normal Git transport-only selection keeps four full Pages targets, fresh control review, protected inputs and broad/FULL mixed fallbacks');
   // Slut på de nye normale Gittransportcases.
 
-  // Aktuel helefilsejer samt præcis workflowbootstrap; kun normale Git-/planlæsninger.
+  // The reviewed SDK-only addition uses its historical setup. Current planning
+  // still owns the actual Python fixture and decides which prerequisite to run.
   if(!weatherPublicationScopeOnly&&!dmiBudgetScopeOnly&&!dmiRecoveryScopeOnly&&!adminHistoryScopeOnly){
     const restore=text(root,['rev-parse','HEAD']),tree=text(root,['rev-parse',base+'^{tree}']);
     const nativeFile='scripts/test-owned-dmi-grib-save-native.py',workflow='.github/workflows/validate-pull-request.yml';
     const source=git(root,['show',base+':'+nativeFile]);
-    const currentWorkflow=fs.readFileSync(path.join(SOURCE,workflow),'utf8');
-    const predecessor=inverseOwnedCacheNativeWorkflow(currentWorkflow);
+    const sdkWorkflow=readHistoricalSourceSetupWorkflow();
+    const predecessor=inverseOwnedCacheNativeWorkflow(sdkWorkflow);
     try{
       const beforeTree=rewrite(tree,[[workflow,Buffer.from(predecessor)]]);
       const before=commit(beforeTree,[base],'synthetic normal SDK environment predecessor');
       const frontierTree=rewrite(beforeTree,[['docs/rdks/90_INDEX/SYNTHETIC-NATIVE-FRONTIER.md',Buffer.from('Synthetic ordinary documentation frontier\n')]]);
       const frontier=commit(frontierTree,[before],'synthetic qualified current frontier');
       const afterTree=rewrite(frontierTree,[[nativeFile,Buffer.concat([source,Buffer.from('\n# Synthetic native test delta\n')])],
-        [workflow,Buffer.from(currentWorkflow)]]);
+        [workflow,Buffer.from(sdkWorkflow)]]);
       const after=commit(afterTree,[frontier],'synthetic whole native owner with normal environment');checkout(after);
       const nativePlans=new Map();
       for(const baselineCommit of [frontier,before]){
@@ -2209,8 +2210,9 @@ try{
       maps,zips,state:clone(state),priorMaps:new Map(priorMaps),priorZips:new Map(priorZips),gitHead:text(root,['rev-parse','HEAD'])};
     try{
       const workflow='.github/workflows/validate-pull-request.yml';
-      const sdkWorkflow=git(SOURCE,['cat-file','blob','HEAD:'+workflow]).toString('utf8');
-      assert.equal(sdkWorkflow,fixtureControlBytes(workflow).toString('utf8').replaceAll('\r\n','\n'));
+      // This exercise qualifies the historical SDK-only change and its former
+      // FULL producer. The dependency-only workflow has its own current test.
+      const sdkWorkflow=readHistoricalSourceSetupWorkflow();
       const predecessor=inverseOwnedCacheNativeWorkflow(sdkWorkflow);assert.notEqual(predecessor,sdkWorkflow);
       const seedTree=rewrite(baselineTree,[[workflow,Buffer.from(predecessor)]]);
       base=commit(seedTree,[saved.base],'synthetic same genuine PG seed with normal DMI environment');

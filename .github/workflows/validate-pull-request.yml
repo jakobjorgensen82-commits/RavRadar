@@ -94,14 +94,6 @@ jobs:
           -r requirements-dmi.txt
           -r requirements-geometry.txt
           -r requirements-copernicus.txt
-          && node scripts/test-source-impact-plan.mjs
-          && node scripts/test-source-impact-git-diff.mjs
-          && node --test scripts/test-source-impact-full-baseline.mjs
-          && node scripts/test-source-targeted-receipt.mjs
-          && node scripts/test-source-targeted-producer.mjs
-          && node scripts/test-source-targeted-consumer.mjs
-          && node scripts/test-source-impact-workflow.mjs
-          && timeout --signal=KILL 480s node --test scripts/test-source-current-contracts.mjs
 
       # The fixed local cache action uses Node24. Exercise it only against its
       # own synthetic native fixture; never invoke the real cache service here.

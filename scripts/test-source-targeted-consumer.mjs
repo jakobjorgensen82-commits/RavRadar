@@ -13,7 +13,7 @@ import {currentChangeSourceArtifactName,currentContractSourceArtifactName}
   from './source-current-contract-receipt.mjs';
 import {TARGETED_SOURCE_STEP_NAMES,TARGETED_DMI_PYTHON_SOURCE_STEP_NAMES,TARGETED_DMI_REQUIREMENTS_SOURCE_STEP_NAMES,TARGETED_OWNED_CACHE_NATIVE_SOURCE_STEP_NAMES,verifyTargetedSourceStepShape} from './source-targeted-consumer.mjs';
 import {SOURCE_IMPACT_DMI_REQUIREMENTS_REVIEW,SOURCE_IMPACT_FULL_CURRENT_COMMAND,SOURCE_IMPACT_FULL_CURRENT_PREVIOUS_COMMAND,
-  inverseOwnedCacheNativeWorkflow,inverseSourceImpactFullCurrent} from './lib/source-impact-workflow-review.mjs';
+  inverseOwnedCacheNativeWorkflow,inverseSourceImpactFullCurrent,readHistoricalSourceSetupWorkflow} from './lib/source-impact-workflow-review.mjs';
 import {ASSISTANT_PUBLIC591_SUCCESSOR_COMMANDS,ASSISTANT_PUBLIC591_SUCCESSOR_PHASE_KIND,ORIGIN}
   from './native-postgres-evidence.mjs';
 import {ORIGIN as NATIONAL,COMMAND as NATIONAL_COMMAND,ASSISTANT_PUBLIC591_SUCCESSOR_SOURCE_COMMAND}
@@ -217,13 +217,18 @@ try{
   const canonicalReceipt=copy(receipt);rebuildTarget();maps();
   const check=async mutate=>{receipt=copy(canonicalReceipt);rebuildTarget();maps();const deps=dependencies();mutate?.(deps);
     const result=await decide(locator,env,d(deps));cases++;return {result,deps};};
-  const currentNativeWorkflow=fs.readFileSync(path.join(SOURCE,'.github/workflows/validate-pull-request.yml'),'utf8');
+  const liveWorkflow=fs.readFileSync(path.join(SOURCE,'.github/workflows/validate-pull-request.yml'),'utf8');
+  const currentNativeWorkflow=readHistoricalSourceSetupWorkflow();
   // The unchanged historical shapes retain their exact whole predecessor.
   const nativeWorkflow=inverseSourceImpactFullCurrent(currentNativeWorkflow);
   const dmiWorkflow=inverseOwnedCacheNativeWorkflow(nativeWorkflow);
   const nativeSteps=TARGETED_OWNED_CACHE_NATIVE_SOURCE_STEP_NAMES.map((name,index)=>({name,number:index+1,status:'completed',
     conclusion:index>=9&&index<=22?'skipped':'success',started_at:stamp(index),completed_at:stamp(index+1)}));
   assert.equal(verifyTargetedSourceStepShape({steps:nativeSteps},nativeWorkflow).proofTime,Date.parse(stamp(9)));cases++;
+  assert.equal(verifyTargetedSourceStepShape({steps:nativeSteps},liveWorkflow).proofTime,Date.parse(stamp(9)));cases++;
+  const skippedSource=copy(nativeSteps);
+  skippedSource.find(step=>step.number===25).conclusion='skipped';
+  assert.throws(()=>verifyTargetedSourceStepShape({steps:skippedSource},liveWorkflow));cases++;
   for(const edit of [x=>x[3].conclusion='skipped',x=>x[4].conclusion='skipped',x=>x[8].conclusion='skipped',
     x=>x[9].conclusion='success',x=>x.splice(4,1),x=>x.push(copy(x[4]))]){
     const changed=copy(nativeSteps);edit(changed);

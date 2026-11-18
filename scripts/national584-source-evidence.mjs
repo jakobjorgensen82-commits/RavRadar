@@ -10,7 +10,7 @@ import crypto from 'node:crypto';
 import {execFileSync,spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {sourceTreeContentSha256} from './lib/source-tree-content.mjs';
-import {projectSourceImpactWorkflowFull} from './lib/source-impact-workflow-review.mjs';
+import {projectSourceImpactWorkflowFull,hasDependencyOnlySourceSetup,verifyCurrentSourceWorkflow} from './lib/source-impact-workflow-review.mjs';
 import {inverseReviewedForecastShareProjectionSourceScripts} from './lib/account-statistics-assistant-package-review.mjs';
 import {requireAssistantLaterH0Release,requireAssistantPublic587SuccessorRelease,
   requireAssistantPublic588SuccessorRelease,ASSISTANT_PUBLIC588_SUCCESSOR_RELEASE,
@@ -201,6 +201,7 @@ export function inverseSourceBeforePostgresWorkflow(source) {
 }
 export function verifyWorkflow(source) {
   source=lf(source);
+  if(hasDependencyOnlySourceSetup(source)){verifyCurrentSourceWorkflow(source);return;}
   if(source.includes("      # Reject source-contract regressions before the native PostgreSQL matrix.\n"))source=inverseSourceBeforePostgresWorkflow(source);
   if(source.includes('      - name: '+CURRENT586_PHASE_UPLOAD+'\n'))source=inverseCurrent586PhaseUpload(source);
   assert.equal(source.split(CURRENT_JOB).length,2,'Only the exact reviewed current180-minute source PR job is admitted');
