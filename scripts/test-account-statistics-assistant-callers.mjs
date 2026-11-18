@@ -1447,15 +1447,29 @@ test('active590 national reader validates actual591 before exact whole588 packag
   assert.equal(prior.version,'4.0.588');
   assert.equal(prior.scripts['test:assistant-later-h0-source'],ASSISTANT_PUBLIC587_SUCCESSOR_SOURCE_COMMAND);
   assert.doesNotThrow(()=>verifyAssistantPublic587SuccessorPackage(prior));
-  for(const mutate of [v=>v.version='4.0.588',v=>v.version='0.0.0',
+  const requiredInputMutations=[v=>v.version='4.0.588',v=>v.version='0.0.0',
     v=>v.scripts['test:assistant-later-h0-source']=ASSISTANT_PUBLIC587_SUCCESSOR_SOURCE_COMMAND,
     v=>v.scripts['test:assistant-later-h0-source']+=' --unexpected',
-    v=>delete v.scripts['test:assistant-later-h0-source'],v=>v.scripts.unreviewed='true',
-    v=>v.scripts['test:ravscore-source-critical']+=' && npm run test:assistant-later-h0-source',
-    v=>v.scripts['test:ravscore-source-critical']=v.scripts['test:ravscore-source-critical'].replace(
-      'npm run test:native-original-continuity-source && npm run test:assistant-later-h0-source',
-      'npm run test:assistant-later-h0-source && npm run test:native-original-continuity-source')]){
+    v=>delete v.scripts['test:assistant-later-h0-source']];
+  if(after599Current){
+    // Current provenance requires these entrypoints, independently of old npm test registration.
+    for(const key of ['validate:source','source:critical-gate']){
+      requiredInputMutations.push(v=>delete v.scripts[key],v=>v.scripts[key]+=' --unexpected');
+    }
+    const unrelated=structuredClone(actual);
+    unrelated.scripts.unreviewed='true';
+    assert.doesNotThrow(()=>verifyPackage(unrelated));
+    assert.doesNotThrow(()=>activePackageVerifier(unrelated));
+  }else{
+    requiredInputMutations.push(v=>v.scripts.unreviewed='true',
+      v=>v.scripts['test:ravscore-source-critical']+=' && npm run test:assistant-later-h0-source',
+      v=>v.scripts['test:ravscore-source-critical']=v.scripts['test:ravscore-source-critical'].replace(
+        'npm run test:native-original-continuity-source && npm run test:assistant-later-h0-source',
+        'npm run test:assistant-later-h0-source && npm run test:native-original-continuity-source'));
+  }
+  for(const mutate of requiredInputMutations){
     const changed=structuredClone(actual);mutate(changed);
+    assert.notDeepEqual(changed,actual);
     assert.throws(()=>verifyPackage(changed));
     assert.throws(()=>activePackageVerifier(changed));
   }

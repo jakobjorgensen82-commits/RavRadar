@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import { runInNewContext } from 'node:vm';
 import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 import { reviewedFixedAssistantFailureLegacyWorkflow, reviewedFixedAssistantFailureLegacyRegistry, reviewedFixedAssistantFailureBeforeBaselineHintRegistry, reviewedFixedAssistantFailureBeforePrSourceReadGrantRegistry, reviewedFixedAssistantFailureBeforePrivateStudyRegistry } from './lib/fixed-assistant-failure-workflow-review.mjs';
 
 // One normal offline caller target. No hosted logs, SQL engine or real token.
@@ -32,6 +33,10 @@ assert.ok(unknown.includes("inputs.operation != '" + route + "'"));
 const digest = value => createHash('sha256').update(value).digest('hex');
 const review = JSON.parse(await text('scripts/lib/fixed-assistant-failure-workflow-review.json'));
 assert.equal(review.sourceHead, '14ade133b7f3b9557f312630a5b557086245b938');
+const historicalText=file=>execFileSync('git',['-c','protocol.allow=never','cat-file','blob',review.sourceHead+':'+file],{
+  cwd:new URL('../',import.meta.url),encoding:'utf8',timeout:10000,maxBuffer:1024*1024,
+  env:{...process.env,GIT_NO_LAZY_FETCH:'1',GIT_NO_REPLACE_OBJECTS:'1',GIT_TERMINAL_PROMPT:'0'},
+}).replaceAll('\r\n','\n');
 // The real source-proof callers inherit exactly these three read grants.
 const readPermission = review.sourceProofReadPermission;
 assert.equal(digest(workflow), readPermission.afterSha256);
@@ -79,7 +84,7 @@ const integratedOracle = integrated.slice(integratedStart,integratedEnd);
 assert.equal(digest(integratedOracle),review.historicalOracleSha256.integrated);
 assert.throws(()=>runInNewContext(integratedOracle,{assert,typedActualReadJob:readJob}), /two unchanged historical readers/);
 runInNewContext(integratedOracle,{assert,typedActualReadJob:legacyReadJob});
-const sourceValidation = await text('scripts/test-source-validation-once.mjs');
+const sourceValidation = historicalText('scripts/test-source-validation-once.mjs');
 const sourceStart = sourceValidation.indexOf('const consoleOperation =');
 const sourceEnd = sourceValidation.indexOf('\nconsole.log(`Source validation:',sourceStart);
 const sourceOracle = sourceValidation.slice(sourceStart,sourceEnd);
@@ -92,7 +97,7 @@ const jobsStart = sourceValidation.indexOf('const fixedJobsSource =');
 const jobsEnd = sourceValidation.indexOf('// A source fallback',jobsStart);
 const jobsParser = sourceValidation.slice(jobsStart,jobsEnd);
 assert(grammarStart >= 0 && grammarEnd > grammarStart && jobsStart >= 0 && jobsEnd > jobsStart);
-const ci = await text('.github/workflows/validate-pull-request.yml');
+const ci = historicalText('.github/workflows/validate-pull-request.yml');
 const runSourceOracle = current => runInNewContext(grammar+'\n'+jobsParser+'\n'+sourceOracle,{
   assert,fixedWorkflow:current,
   actualFixedReadJob:current.slice(current.indexOf('  read-fixed-supabase-metadata:'),current.indexOf('  reject-unknown-operation:')),
